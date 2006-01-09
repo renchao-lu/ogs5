@@ -1,0 +1,1414 @@
+// gs_mat_mp.cpp : implementation file
+// 11/2003 OK Implementation
+#include "stdafx.h"
+#include "afxdisp.h"
+#include "afxdlgs.h"
+#include"makros.h"
+#include "GeoSys.h"
+#include "MainFrm.h"
+// C++
+#include <vector>
+#include <cstring>
+#include <string>
+using namespace std;
+// GEOLib
+#include "geo_ply.h"
+#include "geo_sfc.h"
+#include "geo_vol.h"
+// FEMLib
+#include "rf_mmp_new.h"
+#include ".\gs_mat_mp.h"
+#include ".\gs_mat_mp_dataedit.h"
+#include "gs_project.h"
+
+#include "tools.h"
+#include "rf_out_new.h"
+// CMATGroupEditor dialog
+
+IMPLEMENT_DYNAMIC(CMATGroupEditor, CDialog)
+CMATGroupEditor::CMATGroupEditor(CWnd* pParent /*=NULL*/)
+	: CDialog(CMATGroupEditor::IDD, pParent)
+    , m_strMATName(_T(""))
+{
+  m_iSelectedMMPGroup = -1;
+  m_iSelectedGEO = -1;
+  dataeditdirect = NULL;
+}
+
+CMATGroupEditor::~CMATGroupEditor()
+{
+  if(dataeditdirect)
+  {
+    delete dataeditdirect;
+    dataeditdirect = NULL;
+  }
+}
+
+void CMATGroupEditor::DoDataExchange(CDataExchange* pDX)
+{
+    CDialog::DoDataExchange(pDX);
+    DDX_Text(pDX, IDC_FILENAME, m_fileopen);
+    DDX_Control(pDX, IDC_FILENAME, m_sfilename);
+    DDX_Control(pDX, IDC_COMBO_TYPENAMES, m_combo_typenames);
+    DDX_Text(pDX, IDC_COMBO_TYPENAMES, m_strDBTypeName);
+    DDX_Control(pDX, IDC_LISTCONTROL_MMP, m_LC_MMP);
+    DDX_Control(pDX, IDC_COMBO_MAT_PROPERTIES, m_CB_MMP_PROPERTIES);
+    DDX_Control(pDX, IDC_LIST_MAT_GEO, m_LB_GEO);
+    DDX_Control(pDX, IDC_COMBO_MAT_GEO_TYPE, m_CB_GEO_TYPE);
+    DDX_Text(pDX, IDC_EDIT_MAT, m_strMATName);
+    DDX_Control(pDX, IDC_LIST_MAT_GEO_TYPE, m_LB_GEO_TYPE);
+}
+
+BEGIN_MESSAGE_MAP(CMATGroupEditor, CDialog)
+    ON_BN_CLICKED(IDC_BUTTON_GEO2MSH, OnButtonCreate)
+    ON_BN_CLICKED(IDC_BUTTON_WRITE_MP, OnBnClickedButtonWriteMP)
+    ON_BN_CLICKED(IDC_CREATE_FIELDS, OnBnClickedCreateFields)
+    ON_BN_CLICKED(IDC_BUTTON_WRITE_TEC, OnBnClickedButtonWriteTec)
+    ON_BN_CLICKED(IDC_GETVALUES, OnBnClickedGetvalues)
+    ON_BN_CLICKED(IDC_FILEOPEN, OnFileopen)
+    //ON_BN_CLICKED(IDC_BUTTON_MAT_UPDATE, OnBnClickedButtonMATUpdate)
+    ON_BN_CLICKED(IDC_GRID_REMOVE_BUTTON, OnBnClickedGridRemoveButton)
+    ON_CBN_SELCHANGE(IDC_COMBO_TYPENAMES, OnCbnSelchangeComboMATNames)
+    ON_NOTIFY(LVN_ITEMCHANGED, IDC_LISTCONTROL_MMP, OnLvnItemchangedListcontrolMMP)
+    ON_CBN_SELCHANGE(IDC_COMBO_MAT_PROPERTIES, OnCbnSelchangeComboMMPProperties)
+    ON_BN_CLICKED(IDC_BUTTON_GEO_MAT, OnBnClickedButtonGeoMat)
+    ON_LBN_SELCHANGE(IDC_LIST_MAT_GEO, OnLbnSelchangeListMatGeo)
+    ON_CBN_SELCHANGE(IDC_COMBO_MAT_GEO_TYPE, OnCbnSelchangeComboMatGeoType)
+    ON_BN_CLICKED(IDC_BUTTON_MAT_GEO_CLEAR, OnBnClickedButtonMatGeoClear)
+    ON_LBN_SELCHANGE(IDC_LIST_MAT_GEO_TYPE, OnLbnSelchangeListMatGeoType)
+END_MESSAGE_MAP()
+
+// CMATGroupEditor message handlers
+
+/**************************************************************************
+GeoLibGUI-Method: 
+Task: 
+Programing:
+11/2003 OK Implementation
+01/2004 WW/JG Mat GRID
+03/2005 OK/JG ListControl
+07/2005 MB LAYER
+10/2005 OK GEO data removed
+last modified:
+**************************************************************************/
+BOOL CMATGroupEditor::OnInitDialog()
+{
+  CDialog::OnInitDialog();
+  //----------------------------------------------------------------------
+  // Data base
+  if(!dataedit_pre){
+    m_fileopen = "C:\\";
+  }
+  if(m_fileopen == ""){//invalid typename, new filename selection
+    m_fileopen = "C:\\";
+  }
+
+  //----------------------------------------------------------------------
+  // GEO data
+  m_CB_GEO_TYPE.ResetContent();
+  m_CB_GEO_TYPE.InitStorage(6,80);
+  m_CB_GEO_TYPE.AddString("POINT");
+  m_CB_GEO_TYPE.AddString("POLYLINE");
+  m_CB_GEO_TYPE.AddString("SURFACE");
+  m_CB_GEO_TYPE.AddString("VOLUME");
+  m_CB_GEO_TYPE.AddString("DOMAIN");
+  m_CB_GEO_TYPE.AddString("LAYER");
+  //----------------------------------------------------------------------
+  // MMP data
+  FillTable();
+  //----------------------------------------------------------------------
+  UpdateData(FALSE);
+  //----------------------------------------------------------------------
+  CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+  mainframe->dataedit = false;
+  if(strlen(m_strDBTypeName) == 0){  
+    dataedit_pre = false;
+  }
+  geotypeselection = false;
+  GetDlgItem(IDC_BUTTON_GEO2MSH) -> EnableWindow(FALSE);
+  //----------------------------------------------------------------------
+  GetDlgItem(IDC_BUTTON_MAT_UPDATE) -> EnableWindow(FALSE);
+  GetDlgItem(IDC_GRID_REMOVE_BUTTON) -> EnableWindow(FALSE);
+
+  //CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+  mainframe->m_iSelectedMMPGroup = -1;
+  mainframe->dataupdate = false;
+  return TRUE;  // return TRUE unless you set the focus to a control
+}
+
+//////////////////////////////////////////////////////////////////////////
+// MAT Data Base
+
+/**************************************************************************
+GeoLibGUI-Method: 
+Task: 
+Programing:
+03/2005 JG Implementation
+last modified:
+**************************************************************************/
+void CMATGroupEditor::OnFileopen()
+{
+    
+    if(m_sfilename.GetModify() == TRUE){
+      UpdateData(TRUE);
+      if(m_fileopen.Find(".xls")== -1 && m_fileopen.Find(".csv")== -1){
+        AfxMessageBox("No Valid Input File!");
+        return;
+      }
+      CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+      mainframe->m_fileopen = m_fileopen;
+    }    
+    else{
+      char szFilters[]="Excel Files (*.xls)|*.xls|Text Files (*.csv)|*.csv|All Files (*.*)|*.*||";
+      
+      CFileDialog m_ldFile(TRUE, "xls", "*.xls", OFN_FILEMUSTEXIST| OFN_HIDEREADONLY, szFilters, this);
+	  if(m_ldFile.DoModal() == IDOK){
+	    m_fileopen = m_ldFile.GetPathName();
+        if(m_fileopen.Find(".xls")== -1 && m_fileopen.Find(".csv")== -1){
+          AfxMessageBox("No Valid Input File!");
+          return;
+        }
+        CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+        mainframe->m_fileopen = m_fileopen;
+        UpdateData(FALSE);
+      }
+    }
+
+    if(m_fileopen.Find(".xls")!= -1){
+    //fill typenames from excel into combobox
+    Excel_typenames2Combo();
+    }
+    if(m_fileopen.Find(".csv")!= -1){
+    //fill typenames from csv-Textfile into combobox
+    CSV_typenames2Combo((string)m_fileopen);
+    }
+
+    GetDlgItem(IDC_COMBO_TYPENAMES) -> EnableWindow(TRUE);
+    GetDlgItem(IDC_GETVALUES) -> EnableWindow(TRUE);
+    GetDlgItem(IDC_CHOOSETEXT) -> EnableWindow(TRUE);
+
+    m_combo_typenames.SetCurSel(0);
+    dataedit_pre = true;
+    UpdateData(FALSE);//display typenames in combobox
+
+    //OKif(geotypeselection == true){
+      GetDlgItem(IDC_BUTTON_GEO2MSH) -> EnableWindow(TRUE);
+    //OIK}
+
+    oExcel.Quit();
+}
+//////////////////////////////////////////////////////////////////////////
+// GEO Types
+
+/**************************************************************************
+GeoLibGUI-Method: 
+Task: 
+Programing:
+03/2005 JG Implementation
+last modified:
+**************************************************************************/
+void CMATGroupEditor::OnBnClickedGetvalues()
+{
+  if (oExcel.m_lpDispatch != NULL){
+    oExcel.Quit();
+  }
+
+  GetTypenamefromComboBox();
+
+  //--- open DataEdit Dialog ---
+  CMATGroupEditorDataEdit dlg;
+    if(dlg.DoModal() == IDCANCEL){
+      if (oExcel.m_lpDispatch != NULL){
+      oExcel.Quit();
+      }
+      OnCancel();
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// MMP Data
+
+/**************************************************************************
+GeoLibGUI-Method: 
+Task: 
+Programing:
+11/2003 OK Implementation
+01/2004 WW/JG Mat GRID
+03/2005 JG EXCEL interface
+05/2005 OK Tests
+07/2005 JG/MB strings for filenames
+10/2005 OK/YD Bugfixes Richards model
+10/2005 OK DIMENSION
+10/2005 OK Check existing MMP
+last modified:
+**************************************************************************/
+void CMATGroupEditor::OnButtonCreate()
+{
+  int i;
+  CMediumProperties *m_mmp = NULL;
+  bool EmptyName = false;
+  bool Created = false;
+  CGLPolyline *m_polyline=NULL;
+  Surface *m_surface=NULL;
+  CGLVolume *m_volume = NULL;
+  CString strItem;
+  dataeditdirect = new CMATGroupEditorDataEdit();
+  //----------------------------------------------------------------------
+  if (oExcel.m_lpDispatch != NULL){
+    oExcel.Quit();
+  }
+  //----------------------------------------------------------------------
+  CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+
+  //----if data have NOT been edited-------------
+  if(mainframe->dataedit == false){
+  GetTypenamefromComboBox();
+    //CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+    //----excel------------------------------------
+    if(mainframe->m_fileopen.Find(".xls")!= -1){
+        //CMATGroupEditorDataEdit exceldirect();
+        dataeditdirect->ExcelDirect2SafeArray();
+        //delete exceldirect;
+    }
+    //----csv-text---------------------------------
+    if(mainframe->m_fileopen.Find(".csv")!= -1){
+        //CMATGroupEditorDataEdit csvdirect;
+        dataeditdirect->CSVtextDirect2SafeArray();
+        //delete csvdirect;
+    }
+  }
+  //MMP-stuff-------------------------------------------------------------
+  //----------------------------------------------------------------------
+  // Check existing MMP
+  for(i=0;i<(int)mmp_vector.size();i++){
+    m_mmp = mmp_vector[i];
+    if(m_strDBTypeName.Compare(m_mmp->name.data())==0){
+      AfxMessageBox("Warning: MAT group already exists.");
+      Created = true;
+      return;
+    }
+  }
+  //----------------------------------------------------------------------
+  if(strlen(m_strDBTypeName))
+    EmptyName = false;
+  else
+    EmptyName = true;
+  //----------------------------------------------------------------------
+  //if((!Created)&&(!EmptyName)){
+  if((Created)||(EmptyName)){
+    return;
+  }
+  m_mmp = new CMediumProperties();
+  m_mmp->geo_type_name = m_strGEOTypeName;
+  m_mmp->geo_name = m_strGEOName;
+  m_mmp->number = (int)mmp_vector.size();
+  m_mmp->name = m_strDBTypeName;
+  //----------------------------------------------------------------------
+  // Copy data from SafeArray saEdt to MMP
+  long index[2];
+  for(int i=0;i<(int)key_word_vector.size();i++){
+    index[0]=i;//typename-row
+    index[1]=0;
+    COleVariant vData;
+    string key_word = key_word_vector[i];
+    CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+    mainframe->saEdt.GetElement(index,vData);
+    //....................................................................
+    if(key_word.compare("DIMENSION")==0){
+      double szdata = vData.dblVal; 
+      m_mmp->geo_dimension = (int)szdata;
+    }
+    //....................................................................
+    if(key_word.compare("POROSITY")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->porosity_model_values[0] = szdata;
+        if(m_mmp->porosity_model_values[0]>0.0)
+          m_mmp->porosity_model = 1;
+      }
+      if(vData.vt == VT_BSTR){ //if string
+        CString szstringdata = vData.bstrVal;
+        m_mmp->porosity_model = 11;  //ToDo for string
+        m_mmp->porosity_file = szstringdata; 
+      }
+    }
+    if(key_word.compare("TORTUOSITY")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->tortuosity_model_values[0] = szdata;
+        if(m_mmp->tortuosity_model_values[0]>0.0)
+          m_mmp->tortuosity_model = 1;
+      }
+    }
+    //....................................................................
+    // Groundwater flow
+    if(key_word.compare("FLOWLINEARITY")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->flowlinearity_model_values[0] = szdata;
+        if(m_mmp->flowlinearity_model_values[0]>0.0)
+          m_mmp->flowlinearity_model = 1;
+      }
+    }
+    if(key_word.compare("STORAGE")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->storage_model_values[0] = szdata;
+        if(m_mmp->storage_model_values[0]>0.0)
+          m_mmp->storage_model = 1;
+      }
+    }
+    if(key_word.compare("CONDUCTIVITY")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->conductivity = szdata;
+        if(m_mmp->conductivity>0.0)
+          m_mmp->conductivity_model = 1;
+      }
+    }
+    if(key_word.compare("PERMEABILITY_TENSOR")==0){
+      //m_mmp->permeability_tensor_type_name = "I"; MB
+      //This is for the simplist isotropic case.
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->permeability_tensor_type_name = "I";
+        m_mmp->permeability_tensor[0] = szdata;
+        m_mmp->permeability_tensor[1] = szdata;
+        m_mmp->permeability_tensor[2] = szdata;
+        if(m_mmp->permeability_tensor[0]>0.0){
+          m_mmp->permeability_model = 1;
+          m_mmp->permeability_tensor_type = 1;
+        }
+      }
+      if(vData.vt == VT_BSTR){
+        CString szstringdata = vData.bstrVal;
+        m_mmp->permeability_tensor_type_name = "F";
+        m_mmp->permeability_file = szstringdata;
+        m_mmp->permeability_model = 2;
+        m_mmp->permeability_tensor_type = 2;
+      }
+    }
+    //....................................................................
+    // Richards flow
+    int fluid_phase = 0;
+    if(key_word.compare("PERMEABILITY_SATURATION")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->permeability_saturation_model[0] = (int)szdata;
+      }
+    }
+    if(key_word.compare("CAPILLARY_PRESSURE")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->capillary_pressure_model = (int)szdata;
+      }
+    }
+    if(key_word.compare("SATURATION_RESIDUAL")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->saturation_res[0] = szdata;
+      }
+    }
+    if(key_word.compare("SATURATION_MAXIMUM")==0){ //OKYD
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->saturation_max[fluid_phase] = szdata;
+      }
+    }
+    if(key_word.compare("VAN_GENUCHTEN_ALPHA")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->saturation_exp[fluid_phase] = szdata;
+      }
+    }
+    if(key_word.compare("VAN_GENUCHTEN_BETA")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->capillary_pressure_model_values[fluid_phase] = szdata;
+      }
+    }
+    //....................................................................
+    // Overland flow
+    if(key_word.compare("DARCY_WEISBACH_COEFFICIENT")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->friction_coefficient = szdata;
+      }
+    }
+    if(key_word.compare("CHEZY_COEFFICIENT")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->friction_coefficient = szdata;
+      }
+    }
+    if(key_word.compare("MANNING_COEFFICIENT")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->friction_coefficient = szdata;
+      }
+    }
+    //....................................................................
+    // Mass transport
+    if(key_word.compare("MASSDISPERSION_LONG")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+
+        m_mmp->mass_dispersion_longitudinal = szdata;
+        if(m_mmp->mass_dispersion_longitudinal>0.0)
+          m_mmp->mass_dispersion_model = 1;
+      }
+    }
+    if(key_word.compare("MASSDISPERSION_TRANS")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+
+        m_mmp->mass_dispersion_transverse = szdata;
+        if(m_mmp->mass_dispersion_transverse>0.0)
+          m_mmp->mass_dispersion_model = 1; 
+      }
+    }
+    //....................................................................
+    // Heat transport
+    if(key_word.compare("HEATDISPERSION_LONG")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+
+        m_mmp->heat_dispersion_longitudinal = szdata;
+        if(m_mmp->heat_dispersion_longitudinal>0.0)
+          m_mmp->heat_dispersion_model = 1;
+      }
+    }
+    if(key_word.compare("HEATDISPERSION_TRANS")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->heat_dispersion_transverse = szdata;
+        if(m_mmp->heat_dispersion_transverse>0.0)
+          m_mmp->heat_dispersion_model = 1;
+      }
+    }
+  }
+  //----------------------------------------------------------------------
+  // GEO
+  //.....................................................................
+  m_polyline = GEOGetPLYByName((string)m_strGEOName);//CC
+  if(m_polyline) {
+    m_polyline->mat_group = m_mmp->number;
+    m_mmp->geo_dimension = 1;
+    m_mmp->geo_area = 1.0;
+  }
+  //.....................................................................
+  m_surface = GEOGetSFCByName((string)m_strGEOName);//CC
+  if(m_surface) {
+    m_surface->mat_group = m_mmp->number;
+    string this_mat_group_name((string)m_strMATDbName);
+    m_surface->mat_group_name = this_mat_group_name;
+    m_mmp->geo_dimension = 2;
+    m_mmp->geo_area = 1.0;
+  }
+  //.....................................................................
+  m_volume = GEOGetVOL((string)m_strGEOName);
+  if(m_volume) {
+    m_volume->mat_group = m_mmp->number;
+    string this_mat_group_name((string)m_strMATDbName);
+    m_volume->mat_group_name = this_mat_group_name;
+    m_mmp->geo_dimension = 3;
+  }
+  //--------------------------------------------------------------------
+  mmp_vector.push_back(m_mmp);
+  //--------------------------------------------------------------------
+//OK
+  CGSProject* m_gsp = GSPGetMember("gli");
+  if(m_gsp)
+    GSPAddMember(m_gsp->base + ".mmp");
+  //--------------------------------------------------------------------
+  if(dataeditdirect)
+  {
+     delete dataeditdirect;
+     dataeditdirect = NULL;
+  }  
+  OnInitDialog();
+}
+
+/**************************************************************************
+GeoLibGUI-Method: 
+Task: 
+Programing:
+03/2005 JG Implementation
+10/2005 OK V2, JG please check
+last modified:
+**************************************************************************/
+//Delete material groups
+void CMATGroupEditor::OnBnClickedGridRemoveButton()
+{
+  //----------------------------------------------------------------------
+  // Get selected item
+  POSITION p = m_LC_MMP.GetFirstSelectedItemPosition();
+/*JG please check
+  while (p){
+	m_iSelectedMMPGroup = m_LC_MMP.GetNextSelectedItem(p);
+	//delete item-row from Listcontrol
+    m_LC_MMP.DeleteItem(m_iSelectedMMPGroup);
+    //delete material group from vector 
+    CMediumProperties* m_mmp = NULL;
+    m_mmp = mmp_vector[m_iSelectedMMPGroup];
+    delete m_mmp;
+    mmp_vector.erase(mmp_vector.begin()+m_iSelectedMMPGroup);
+  }
+*/
+  //----------------------------------------------------------------------
+  int nSel = m_LC_MMP.GetNextSelectedItem(p);
+  if(nSel>=(int)mmp_vector.size()){
+    AfxMessageBox("Error: no MMP data");
+    return;
+  }
+  m_LC_MMP.DeleteItem(nSel);
+  CMediumProperties* m_mmp = NULL;
+  m_mmp = mmp_vector[nSel];
+  delete m_mmp;
+  mmp_vector.erase(mmp_vector.begin()+nSel);
+  //----------------------------------------------------------------------
+  // Refresh ListCtrl
+  FillTable();
+  //----------------------------------------------------------------------
+  GetDlgItem(IDC_BUTTON_MAT_UPDATE) -> EnableWindow(FALSE);
+  GetDlgItem(IDC_GRID_REMOVE_BUTTON) -> EnableWindow(FALSE);
+
+  UpdateData(FALSE);
+}
+/**************************************************************************
+GeoLibGUI-Method: 
+Task: 
+Programing:
+03/2005 OK/JG Implementation
+last modified:
+**************************************************************************/
+/*/TODO JG
+void CMATGroupEditor::OnBnClickedButtonMATUpdate()
+{
+  // Get clicked list row number
+  int mmp_selected = 0; 
+  // Get corresponding MMP instance
+  int mmp_vector_size = (int)mmp_vector.size();
+  if(mmp_selected<mmp_vector_size)
+    m_mmp = mmp_vector[mmp_selected];
+
+  matrix2MMP();
+
+}*/
+/**************************************************************************
+GeoLibGUI-Method: 
+Task: 
+Programing:
+11/2003 OK Implementation
+10/2005 OK GSP
+last modified:
+**************************************************************************/
+void CMATGroupEditor::OnBnClickedButtonWriteMP()
+{
+  CGSProject* m_gsp = NULL;
+  m_gsp = GSPGetMember("pcs");
+  if(m_gsp){
+    MMPWrite(m_gsp->path+m_gsp->base);
+    return;
+  }
+  m_gsp = GSPGetMember("gli");
+  if(m_gsp){
+    MMPWrite(m_gsp->path+m_gsp->base);
+    return;
+  }
+  m_gsp = GSPGetMember("msh");
+  if(m_gsp){
+    MMPWrite(m_gsp->path+m_gsp->base);
+    return;
+  }
+}
+
+/**************************************************************************
+GeoLibGUI-Method: 
+Task: 
+Programing:
+07/2005 MB/OK Implementation
+last modified:
+**************************************************************************/
+void CMATGroupEditor::OnBnClickedCreateFields()
+{
+  GetHeterogeneousFields();
+  //char file_name[80];
+  //CRFProcess *m_pcs = NULL;
+  //// Get selected items
+  //POSITION p = m_LC_MMP.GetFirstSelectedItemPosition();
+  //m_iSelectedMMPGroup = m_LC_MMP.GetNextSelectedItem(p);
+  //if((m_iSelectedMMPGroup>-1)&&(m_iSelectedMMPGroup<(int)mmp_vector.size())){
+  //  m_mmp = mmp_vector[m_iSelectedMMPGroup];
+  //}
+  //
+  ////----------------------------------------------------------------------
+  //if(m_mmp){
+  //  m_pcs = m_mmp->m_pcs;
+  //  //....................................................................
+  //  // permeability
+  //  if(m_mmp->permeability_file.size()>0){
+  //    strcpy(file_name,m_mmp->permeability_file.data());
+  //    FctReadHeterogeneousFields(file_name);
+  //  }
+  //  //....................................................................
+  //  // porosity
+  //  if(m_mmp->porosity_file.size()>0){
+  //    strcpy(file_name,m_mmp->porosity_file.data());
+  //    FctReadHeterogeneousFields(file_name);
+  //  }
+  //}
+}
+
+/**************************************************************************
+GeoLibGUI-Method: 
+Task: 
+Programing:
+01/2005 OK Implementation for prism based volumes
+06/2005 MB Heterogeneous fields
+last modified:
+**************************************************************************/
+void CMATGroupEditor::OnBnClickedButtonWriteTec()
+{
+  int m,j;
+  long i;
+  long no_mmp_elements;
+  long* nodes = NULL;
+  double x,y,z;
+  ios::pos_type position;
+  CGLPoint m_point;
+  CGLVolume* m_vol = NULL;
+  int no_mmp = (int)mmp_vector.size();
+  CRFProcess *m_pcs = NULL;
+  int layer = 0;
+  CElem* m_ele = NULL;
+  int temp;
+  temp = 1; // 1 für Het Fields, 2 alt 
+  for(m=0;m<no_mmp;m++){
+    m_mmp = mmp_vector[m];
+    m_pcs = m_mmp->m_pcs;
+    no_mmp_elements = 0;
+    //--------------------------------------------------------------------
+    // File handling
+    string mat_file_name = m_mmp->name + TEC_FILE_EXTENSION;
+    fstream mat_file (mat_file_name.data(),ios::trunc|ios::out);
+    mat_file.setf(ios::scientific,ios::floatfield);
+    mat_file.precision(12);
+    if (!mat_file.good()) return;
+    mat_file.seekg(0L,ios::beg);
+    //--------------------------------------------------------------------
+    if (temp ==1){
+
+      long NumberOfElements = (long)m_pcs->m_msh->ele_vector.size();
+      long NumberOfNodes = (long)m_pcs->m_msh->nod_vector.size();
+      int EleStart = -1;
+      int EleEnd = -1;
+      int NodeStart = -1;
+      int NodeEnd = -1;
+      int NumberOfLayers = m_pcs->m_msh->no_msh_layer;
+      long NumberOfElementsPerLayer = NumberOfElements / NumberOfLayers;
+      long NumberOfNodesPerLayer = NumberOfNodes / (NumberOfLayers + 1);
+      double DeltaZ = 0.;
+
+      
+      //Schreiben von Elementdaten
+      //------------------------------------------------------------------
+      //Schichtbezogen
+      if(m_mmp->geo_type_name.compare("LAYER") == 0){
+    
+        char* temp = strdup(m_mmp->geo_name.c_str());
+        layer = atoi(temp);
+        EleStart = (layer - 1) * NumberOfElementsPerLayer;
+        EleEnd = layer * NumberOfElementsPerLayer;
+        NodeStart = (layer - 1) * NumberOfNodesPerLayer;
+        NodeEnd = (layer + 1) * NumberOfNodesPerLayer;
+        //for spacing between layers
+        DeltaZ = 10. * (layer -1);
+      
+      }
+      //Gesamtes Netz
+      if(m_mmp->geo_type_name.compare("DOMAIN") == 0){
+    
+        layer = 1;
+        EleStart = 0;
+        EleEnd = NumberOfElementsPerLayer;
+        NodeStart = 0;
+        NodeEnd = 2 * NumberOfNodesPerLayer;        
+      }
+
+      //------------------------------------------------------------------
+      // Write Header
+      int NumberHetVariables = 0;
+      mat_file << "VARIABLES = X,Y,Z";
+      // permeabilty
+      if(m_mmp->permeability_file.size() > 0) {
+        mat_file << " ,Permeability";
+        NumberHetVariables ++;
+      }
+      // porosity      
+      if(m_mmp->porosity_file.size() > 0) {
+        mat_file << " ,Porosity";
+        NumberHetVariables ++;
+      }
+      mat_file << endl;
+      mat_file << "ZONE";
+      mat_file << ", N=" << NumberOfNodesPerLayer*2;
+      mat_file << ", E=" << NumberOfElementsPerLayer;
+      mat_file << ", DATAPACKING=BLOCK"; //necessary for cellcentered data in Tecplot10
+      // which variables are cellcentered
+      if(NumberHetVariables > 0){
+        mat_file << ", VARLOCATION=("; 
+        for(j=0;j<NumberHetVariables;j++) {
+          mat_file << j+4 <<"=CELLCENTERED ";
+        }
+        mat_file << ")"; 
+      } 
+      mat_file << ", ZONETYPE=FEBRICK";
+      mat_file << endl;
+   
+      //--------------------------------------------------------------------
+      // Write Node data
+      int count = 0;
+      for(i=NodeStart;i<NodeEnd;i++){
+        double x = m_pcs->m_msh->nod_vector[i]->X();
+        mat_file << x  << " ";
+        count++;
+        if (count == 20){ //Tecplot does not read in very long lines
+          mat_file << endl;
+          count = 0;
+        }
+      }
+      count = 0;
+      mat_file << endl;
+      for(i=NodeStart;i<NodeEnd;i++){
+        double y = m_pcs->m_msh->nod_vector[i]->Y();
+        mat_file << y << " ";
+        count++;
+        if (count == 20){
+          mat_file << endl;
+          count = 0;
+        }
+      }
+      count = 0;
+      mat_file << endl;
+      for(i=NodeStart;i<NodeEnd;i++){
+        double z = m_pcs->m_msh->nod_vector[i]->Z() - DeltaZ;
+        mat_file << z << " ";
+        count++;
+        if (count == 20){
+          mat_file << endl;
+          count = 0;
+        }
+      }
+      mat_file << endl;
+      double test;
+      //--------------------------------------------------------------------
+      // Write Element Variable data
+      for(j=0;j<NumberHetVariables;j++) {
+        
+        count = 0;
+        for(i=EleStart;i<EleEnd;i++){
+          m_ele = m_pcs->m_msh->ele_vector[i];
+          test = m_ele->mat_vector(j);
+          mat_file << m_ele->mat_vector(j) << " ";
+          count++;
+          if (count == 20){
+            mat_file << endl;
+            count = 0;
+          }
+        }
+        mat_file << endl;
+      }
+      //--------------------------------------------------------------------
+      // Write Element Nodes
+      /*  for(i=EleStart;i<EleEnd;i++){
+            m_ele = m_pcs->m_msh->ele_vector[i];
+            mat_file
+                << m_ele->nodes[0]+1 << " " << m_ele->nodes[0]+1 << " " << m_ele->nodes[1]+1 << " " << m_ele->nodes[2]+1 << " " \
+                << m_ele->nodes[3]+1 << " " << m_ele->nodes[3]+1 << " " << m_ele->nodes[4]+1 << " " << m_ele->nodes[5]+1 << endl;
+        }*/
+
+      for(i=EleStart;i<EleEnd;i++){
+        m_ele = m_pcs->m_msh->ele_vector[i];
+        switch(m_ele->GetElementType()){
+          case 3: //HEx
+            mat_file
+            << m_ele->nodes_index[0]+1 - (layer -1)* NumberOfNodesPerLayer << " " << m_ele->nodes_index[1]+1 - (layer -1) * NumberOfNodesPerLayer << " " << m_ele->nodes_index[2]+1 - (layer -1) * NumberOfNodesPerLayer << " " << m_ele->nodes_index[3]+1 - (layer -1) * NumberOfNodesPerLayer << " " \
+            << m_ele->nodes_index[4]+1 - (layer -1)* NumberOfNodesPerLayer << " " << m_ele->nodes_index[5]+1 - (layer -1) * NumberOfNodesPerLayer << " " << m_ele->nodes_index[6]+1 -(layer -1) * NumberOfNodesPerLayer << " " << m_ele->nodes_index[7]+1 - (layer -1) * NumberOfNodesPerLayer << endl;
+          break;
+          case 6: //Pris
+            mat_file
+            << m_ele->nodes_index[0]+1 - (layer -1)* NumberOfNodesPerLayer << " " << m_ele->nodes_index[0]+1 - (layer -1) * NumberOfNodesPerLayer << " " << m_ele->nodes_index[1]+1 - (layer -1) * NumberOfNodesPerLayer << " " << m_ele->nodes_index[2]+1 - (layer -1) * NumberOfNodesPerLayer << " " \
+            << m_ele->nodes_index[3]+1 - (layer -1)* NumberOfNodesPerLayer << " " << m_ele->nodes_index[3]+1 - (layer -1) * NumberOfNodesPerLayer << " " << m_ele->nodes_index[4]+1 -(layer -1) * NumberOfNodesPerLayer << " " << m_ele->nodes_index[5]+1 - (layer -1) * NumberOfNodesPerLayer << endl;
+          break;
+        }
+      }
+       
+   } //endif temp =1
+    
+    else{
+    //---------------------------------------------------------------------
+    switch(m_mmp->geo_dimension){
+      case 3:
+        if(m_mmp->geo_type_name.compare("VOLUME")==0)
+          m_vol = GEOGetVOL(m_mmp->geo_name);// CC 10/05
+        if(!m_vol)
+          return;
+        //................................................................
+        // Header
+        mat_file << "VARIABLES = X,Y,Z,MAT" << endl;
+      
+        long no_nodes = 0;
+        if (m_pcs->m_msh){
+          no_nodes = (long)m_pcs->m_msh->nod_vector.size();
+        }
+        else {
+          no_nodes = NodeListLength;
+        }
+
+        mat_file << "ZONE T = " << m_mmp->name << ", " \
+                 << "N = " << no_nodes << ", " \
+                 << "E = " << no_nodes << ", " \
+                 << "F = FEPOINT" << ", " << "ET = BRICK" << endl;
+        //................................................................
+        // Node data
+        for(i=0;i<no_nodes;i++){
+          if (m_pcs->m_msh){
+            //m_ele = m_msh->ele_vector[i];
+            double x = m_pcs->m_msh->nod_vector[i]->X();
+            double y = m_pcs->m_msh->nod_vector[i]->Y();
+            double z = m_pcs->m_msh->nod_vector[i]->Z();
+             mat_file \
+              << x << " " << y << " " << z \
+              << " " << m << endl;
+          }
+          else{
+            mat_file \
+              << GetNodeX(i) << " " << GetNodeY(i) << " " << GetNodeZ(i) \
+              << " " << m << endl;
+          }
+        }
+        //................................................................
+        // Element data
+        for(i=0;i<ElementListLength;i++) {
+          if(ElGetElementType(i)==6) {
+            // Element center point
+            nodes = ElGetElementNodes(i);
+            x=0.0; y=0.0; z=0.0;
+            for(j=0;j<6;j++) {
+              x += GetNodeX(nodes[j]);
+              y += GetNodeY(nodes[j]);
+              z += GetNodeZ(nodes[j]);
+            }
+            x /= double(6);
+            y /= double(6);
+            z /= double(6);
+            m_point.x = x;
+            m_point.y = y;
+            m_point.z = z;
+            if(m_vol->PointInVolume(&m_point,0)){
+              mat_file \
+                << nodes[0]+1 << " " << nodes[0]+1 << " " << nodes[1]+1 << " " << nodes[2]+1 << " " \
+                << nodes[3]+1 << " " << nodes[3]+1 << " " << nodes[4]+1 << " " << nodes[5]+1 << endl;
+              no_mmp_elements++;
+            }
+          }
+        } // Element data
+        mat_file.seekg(position,ios::beg);
+        mat_file << "VARIABLES = X,Y,Z,MAT" << endl;
+        mat_file << "ZONE T = " << m_mmp->name << ", " \
+                 << "N = " << no_nodes << ", " \
+                 << "E = " << no_mmp_elements << ", " \
+                 << "F = FEPOINT" << ", " << "ET = BRICK" << endl;
+    }
+    //--------------------------------------------------------------------
+   }//end else temp !=1   
+
+ } // mmp_vector
+ // delete out;
+}
+
+
+void CMATGroupEditor::Excel_typenames2ComboBox(void)
+{
+    CWorksheets oSheets;
+	CWorksheet oSheet;
+	CRange oRange, oRangeCols;
+	COleVariant covOptional(DISP_E_PARAMNOTFOUND,VT_ERROR);
+
+	  if (oExcel.m_lpDispatch == NULL) {
+		oExcel.CreateDispatch("Excel.Application");
+        if (oExcel.m_lpDispatch == NULL){
+          AfxMessageBox("Excel has not started!");
+        }
+	  }
+
+	//Open workbook
+    oBooks = oExcel.get_Workbooks();//Get workbooks collection
+    oBook = oBooks.Open (m_fileopen, covOptional, covOptional, covOptional, covOptional, covOptional, covOptional, covOptional, covOptional, covOptional, covOptional, covOptional, covOptional);
+    //Open first sheet
+    oSheets = oBook.get_Worksheets();
+    oSheet = oSheets.get_Item(COleVariant((short)1));//first worksheet!!
+    //get all data from sheet
+    oRange = oSheet.get_UsedRange();
+
+    COleSafeArray saTN(oRange.get_Value());
+
+    //long TNRows;
+    long TNCols;
+    //saTN.GetUBound(1, &TNRows);//anzahl der Reihen (1.dimension)
+    saTN.GetUBound(2, &TNCols);//anzahl der Spalten (2.dimension)
+    long index[2];
+    //put typenames into combobox
+    CString tnstr;
+    int rowCounter = 1;
+	    for (int colCounter = 2; colCounter <= TNCols; colCounter++) {
+	        index[0]=rowCounter;
+	        index[1]=colCounter;
+	        COleVariant vData;
+	        saTN.GetElement(index,vData);
+
+            if(vData.vt == VT_BSTR){ 
+                tnstr = vData.bstrVal;
+		        m_combo_typenames.AddString(tnstr);
+            } 
+            else{ 
+            AfxMessageBox("Invalid Typename found!");
+            return;//
+           }
+	    }
+    oExcel.Quit();
+}
+void CMATGroupEditor::GetTypenamefromComboBox(void)
+{
+  UpdateData(TRUE);//get Typename from Combobox
+
+  m_iSiteSelected = m_combo_typenames.GetCurSel();
+  if(m_iSiteSelected<0){return;}
+  m_combo_typenames.GetLBText( m_iSiteSelected, m_strDBTypeName );
+
+  CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+  mainframe->m_strDBTypeName = m_strDBTypeName;
+}
+
+/**************************************************************************
+GeoLibGUI-Method: 
+Task: 
+Programing:
+05/2003 OK Implementation
+last modified:
+**************************************************************************/
+void CMATGroupEditor::OnCbnSelchangeComboMATNames()
+{
+  if(!m_strDBTypeName.IsEmpty())
+    GetDlgItem(IDC_BUTTON_GEO2MSH) -> EnableWindow(TRUE);
+}
+
+
+/**************************************************************************
+GeoLibGUI-Method: 
+Task: 
+Programing:
+07/2005 OK Implementation
+last modified:
+**************************************************************************/
+void CMATGroupEditor::OnLvnItemchangedListcontrolMMP(NMHDR *pNMHDR, LRESULT *pResult)
+{
+  LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+  // TODO: Add your control notification handler code here
+  pResult = pResult;
+  POSITION p = m_LC_MMP.GetFirstSelectedItemPosition();
+  int m_mmp_group;
+  m_mmp_group = m_LC_MMP.GetNextSelectedItem(p);
+  m_mmp_group = pNMLV->iItem;
+  m_mmp = NULL;
+  if((m_mmp_group>-1)&&(m_mmp_group<(int)mmp_vector.size())){
+    m_mmp = mmp_vector[m_mmp_group];
+    m_iSelectedMMPGroup = m_mmp_group;
+    m_strMATName = m_mmp->name.data();
+  }
+  else
+    AfxMessageBox("no MMP data");
+  //----------------------------------------------------------------------
+  m_CB_MMP_PROPERTIES.ResetContent();
+  m_CB_MMP_PROPERTIES.InitStorage(20,80);
+  if(m_mmp){
+    if(m_mmp->porosity_model>-1)
+      m_CB_MMP_PROPERTIES.AddString("POROSITY");
+    if(m_mmp->conductivity_model>-1)
+      m_CB_MMP_PROPERTIES.AddString("CONDUCTIVITY");
+    if(m_mmp->storage_model>-1)
+      m_CB_MMP_PROPERTIES.AddString("STORAGE");
+    if(m_mmp->permeability_tensor_type>-1)
+      m_CB_MMP_PROPERTIES.AddString("PERMEABILITY_TENSOR");
+    if(m_mmp->permeability_saturation_model[0]>-1)
+      m_CB_MMP_PROPERTIES.AddString("PERMEABILITY_SATURATION");
+    if(m_mmp->capillary_pressure_model>-1)
+      m_CB_MMP_PROPERTIES.AddString("CAPILLARY_PRESSURE");
+    if(m_mmp->heat_dispersion_model>-1)
+      m_CB_MMP_PROPERTIES.AddString("HEAT_DISPERSION");
+    if(m_mmp->mass_dispersion_model>-1)
+      m_CB_MMP_PROPERTIES.AddString("MASS_DISPERSION");
+    if(m_mmp->friction_coefficient>-1)
+      m_CB_MMP_PROPERTIES.AddString("DARCY_WEISBACH_COEFFICIENT");
+    if(m_mmp->friction_coefficient>-1)
+      m_CB_MMP_PROPERTIES.AddString("CHEZY_COEFFICIENT");
+    if(m_mmp->friction_coefficient>-1)
+      m_CB_MMP_PROPERTIES.AddString("MANNING_COEFFICIENT");
+  }
+  m_CB_MMP_PROPERTIES.SetCurSel(0);
+  //----------------------------------------------------------------------
+  m_LB_GEO.ResetContent();
+  CString m_str;
+  for(int i=0;i<(int)m_mmp->geo_name_vector.size();i++){
+    m_str = m_mmp->geo_type_name.data();
+    m_str += ": ";
+    m_str += m_mmp->geo_name_vector[i].data();
+    m_LB_GEO.AddString(m_str);
+  }
+  //----------------------------------------------------------------------
+  UpdateData(FALSE);
+}
+
+/**************************************************************************
+GeoLibGUI-Method: 
+Task: 
+Programing:
+07/2005 OK Implementation
+last modified:
+**************************************************************************/
+void CMATGroupEditor::OnCbnSelchangeComboMMPProperties()
+{
+  m_CB_MMP_PROPERTIES.GetLBText(m_CB_MMP_PROPERTIES.GetCurSel(),m_strMMPPropertyName);
+//OK  POSITION p = m_LC_MMP.GetFirstSelectedItemPosition();
+//OK  int m_mmp_group = m_LC_MMP.GetNextSelectedItem(p);
+}
+
+/*
+  geotypeselection = true;
+  if(dataedit_pre){
+  GetDlgItem(IDC_BUTTON_GEO2MSH) -> EnableWindow(TRUE);
+  */
+/**************************************************************************
+GeoLibGUI-Method
+Programing:
+10/2005 OK Implementation
+**************************************************************************/
+void CMATGroupEditor::OnBnClickedButtonGeoMat()
+{
+  //----------------------------------------------------------------------
+  // Tests
+  if(m_strGEOName.IsEmpty()) {
+    AfxMessageBox("No GEO selected");
+    return;
+  }
+  CString m_str;
+  for(int i=0;i<m_LB_GEO.GetCount();i++){
+    m_LB_GEO.GetText(i,m_str);
+    if(m_str.Compare(m_strGEOName)==0){
+      AfxMessageBox("GEO already selected");
+      return;
+    }
+  }
+  //----------------------------------------------------------------------
+  m_str = m_strGEOTypeName + ": " + m_strGEOName;
+  m_LB_GEO.AddString(m_str);
+  //----------------------------------------------------------------------
+  m_mmp = mmp_vector[m_iSelectedMMPGroup];
+  m_mmp->geo_type_name = m_strGEOTypeName;
+  m_mmp->geo_name_vector.push_back((string)m_strGEOName);
+}
+
+/**************************************************************************
+GeoLibGUI-Method
+Programing:
+10/2005 OK Implementation
+**************************************************************************/
+void CMATGroupEditor::OnLbnSelchangeListMatGeo()
+{
+  //m_LB_GEO.GetLBText(m_LB_GEO.GetCurSel(),m_strGEOName);
+  m_iSelectedGEO = m_LB_GEO.GetCurSel();
+}
+
+/**************************************************************************
+GeoLibGUI-Method
+Programing:
+10/2005 OK Implementation
+**************************************************************************/
+void CMATGroupEditor::OnKeyDown(UINT nChar,UINT nRepCnt,UINT nFlags)
+{
+nFlags = nFlags;
+nRepCnt = nRepCnt;
+  if(nChar==VK_DELETE){
+    m_mmp = mmp_vector[m_iSelectedMMPGroup];
+    if(!m_mmp)
+      return;
+    if(m_iSelectedGEO>0){
+      m_mmp->geo_name_vector.erase(m_mmp->geo_name_vector.begin()+m_iSelectedGEO);
+      m_LB_GEO.DeleteString(m_iSelectedGEO);
+    }
+  }
+}
+
+/**************************************************************************
+GeoLibGUI-Method
+Programing:
+10/2005 OK Implementation
+**************************************************************************/
+void CMATGroupEditor::OnCbnSelchangeComboMatGeoType()
+{
+  m_CB_GEO_TYPE.GetLBText(m_CB_GEO_TYPE.GetCurSel(),m_strGEOTypeName);
+  //......................................................................
+  m_LB_GEO_TYPE.ResetContent();
+  if(m_strGEOTypeName.Compare("POLYLINE")==0){
+    CGLPolyline *m_ply = NULL;
+    vector<CGLPolyline*>::const_iterator p_ply = polyline_vector.begin();
+    while(p_ply!=polyline_vector.end()) {
+      m_ply = *p_ply;
+      m_LB_GEO_TYPE.AddString((CString)m_ply->name.c_str());
+      ++p_ply;
+      m_LB_GEO_TYPE.SetCurSel(0);
+    }
+    if(m_mmp)
+      m_mmp->geo_type_name = "POLYLINE";
+  }
+  //......................................................................
+  if(m_strGEOTypeName.Compare("SURFACE")==0){
+    Surface *m_sfc = NULL;
+    vector<Surface*>::const_iterator p_sfc = surface_vector.begin();
+    while(p_sfc!=surface_vector.end()) {
+      m_sfc = *p_sfc;
+      m_LB_GEO_TYPE.AddString((CString)m_sfc->name.data());
+      ++p_sfc;
+      m_LB_GEO_TYPE.SetCurSel(0); 
+    }  
+    if(m_mmp)
+      m_mmp->geo_type_name = "SURFACE";
+  }
+  //......................................................................
+  if(m_strGEOTypeName.Compare("VOLUME")==0){
+    CGLVolume *m_vol = NULL;
+    vector<CGLVolume*>::const_iterator p_vol = volume_vector.begin();
+    while(p_vol!=volume_vector.end()) {
+      m_vol = *p_vol;
+      m_LB_GEO_TYPE.AddString((CString)m_vol->name.data());
+      ++p_vol;
+      m_LB_GEO_TYPE.SetCurSel(0);
+    }  
+    if(m_mmp)
+      m_mmp->geo_type_name = "VOLUME";
+  }
+  //......................................................................
+  if(m_strGEOTypeName.Compare("DOMAIN")==0){
+    if(m_mmp)
+      m_mmp->geo_type_name = "DOMAIN";
+  }
+  //......................................................................
+  if(m_strGEOTypeName.Compare("LAYER")==0){
+    if(m_mmp)
+      m_mmp->geo_type_name = "LAYER";
+  }
+  //......................................................................
+}
+
+/**************************************************************************
+GeoLibGUI-Method
+Programing:
+10/2005 OK Implementation
+**************************************************************************/
+void CMATGroupEditor::OnBnClickedButtonMatGeoClear()
+{
+  if(m_iSelectedMMPGroup<0)
+    return;
+  if(m_iSelectedMMPGroup>(int)mmp_vector.size())
+    return;
+  m_mmp = mmp_vector[m_iSelectedMMPGroup];
+  m_mmp->geo_name_vector.clear();
+  m_LB_GEO.ResetContent();
+  UpdateData(FALSE);
+}
+
+/**************************************************************************
+GeoLibGUI-Method
+Programing:
+10/2005 OK Implementation
+**************************************************************************/
+void CMATGroupEditor::OnLbnSelchangeListMatGeoType()
+{
+  m_LB_GEO_TYPE.GetText(m_LB_GEO_TYPE.GetCurSel(),m_strGEOName);
+  CGLPolyline *m_ply = NULL;
+  GEOUnselectPLY();
+  if(m_strGEOTypeName.Compare("POLYLINE")==0){
+    m_ply = GEOGetPLYByName((string)m_strGEOName);
+    if(m_ply)
+      m_ply->highlighted = true;
+  }
+  Surface* m_sfc = NULL;
+  GEOUnselectSFC();
+  if(m_strGEOTypeName.Compare("SURFACE")==0){
+    m_sfc = GEOGetSFCByName((string)m_strGEOName);
+    if(m_sfc)
+      m_sfc->highlighted = true;
+  }
+  CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+  mainframe->OnDrawFromToolbar();
+}
+/**************************************************************************
+GeoLibGUI-Method: 
+Task: 
+Programing:
+07/2005 OK/JG Implementation
+last modified:
+**************************************************************************/
+void CMATGroupEditor::FillTable()
+{
+  //----------------------------------------------------------------------
+  // MMP data
+  CRect rect;
+  m_LC_MMP.GetClientRect(&rect);
+  m_LC_MMP.SetExtendedStyle (LVS_EX_GRIDLINES|LVS_EX_FULLROWSELECT);
+  m_LC_MMP.DeleteAllItems(); // Delete the current contents
+  // create columns
+  if(strlen(m_strDBTypeName) == 0){  
+    int nColInterval = rect.Width()/8;
+    m_LC_MMP.InsertColumn(0,_T("MMP No."),LVCFMT_LEFT, nColInterval*1);
+    m_LC_MMP.InsertColumn(1,_T("MMP Name"),LVCFMT_LEFT, nColInterval*2);
+    m_LC_MMP.InsertColumn(2,_T("GEO Type"),LVCFMT_LEFT, nColInterval*2);
+    m_LC_MMP.InsertColumn(3,_T("GEO Name"),LVCFMT_LEFT, nColInterval*3);//MB
+  }
+  //......................................................................
+  int mmp_vector_size = (int)mmp_vector.size();
+  CString strItem;
+  CString temp;
+  CMediumProperties* m_mmp = NULL;
+  LVITEM lvi;
+  for(int i=0;i<(int)mmp_vector.size();i++){
+    m_mmp = mmp_vector[i];
+    lvi.mask =  LVIF_TEXT;
+    // 1 column
+	strItem.Format("%i",i);
+	lvi.iItem = i;
+	lvi.iSubItem = 0;
+	lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+    m_LC_MMP.InsertItem(&lvi);
+    // 2 column
+    lvi.iSubItem = 1;
+	lvi.pszText = (LPTSTR)(LPCTSTR)(m_mmp->name.c_str());
+	m_LC_MMP.SetItem(&lvi);
+    // 3 column
+    lvi.iSubItem = 2;
+    //lvi.pszText = (LPTSTR)(LPCTSTR)(m_mmp->geo_name.c_str()); //MB
+	lvi.pszText = (LPTSTR)(LPCTSTR)(m_mmp->geo_type_name.c_str()); //MB
+    m_LC_MMP.SetItem(&lvi);
+    // 4 column
+    lvi.iSubItem = 3;
+    lvi.pszText = (LPTSTR)(LPCTSTR)(m_mmp->geo_name.c_str()); //MB
+	m_LC_MMP.SetItem(&lvi);
+  }
+}
+void CMATGroupEditor::Excel_typenames2Combo()
+{
+    m_combo_typenames.ResetContent();
+
+    CWorksheets oSheets;
+	CWorksheet oSheet;
+	CRange oRange, oRangeCols;
+	COleVariant covOptional(DISP_E_PARAMNOTFOUND,VT_ERROR);
+
+	if (oExcel.m_lpDispatch == NULL) {
+      oExcel.CreateDispatch("Excel.Application");
+      if (oExcel.m_lpDispatch == NULL){
+        AfxMessageBox("Excel has not started!");
+      }
+	}
+	//Open workbook
+    oBooks = oExcel.get_Workbooks();
+    oBook = oBooks.Open (m_fileopen, covOptional, covOptional, covOptional, covOptional, covOptional, covOptional, covOptional, covOptional, covOptional, covOptional, covOptional, covOptional);
+    //Open first sheet
+    oSheets = oBook.get_Worksheets();
+    oSheet = oSheets.get_Item(COleVariant((short)1));//first worksheet!!
+    //get all data from sheet
+    oRange = oSheet.get_UsedRange();
+
+    COleSafeArray saTN(oRange.get_Value());
+
+    //long TNRows;
+    long TNCols;
+    //saTN.GetUBound(1, &TNRows);//number of rows
+    saTN.GetUBound(2, &TNCols);//number of columns
+    long index[2];//1 based index for retrieving data from saTN
+    //typenames into combobox
+    CString tnstr;
+    int rowCounter = 1;
+	    for (int colCounter = 2; colCounter <= TNCols; colCounter++) {
+	        index[0]=rowCounter;
+	        index[1]=colCounter;
+	        COleVariant vData;
+	        saTN.GetElement(index,vData);
+
+            if(vData.vt == VT_BSTR){ 
+                tnstr = vData.bstrVal;
+		        m_combo_typenames.AddString(tnstr);
+            } 
+            else{ 
+            AfxMessageBox("Invalid Typename found!");
+            return;
+           }
+	    }
+    oExcel.Quit();
+}
+
+void CMATGroupEditor::CSV_typenames2Combo(string csv_file_name)
+{
+  string in;
+  string line;
+  string z_rest;
+  string type_name;
+  string type_name_tmp("TYPE_NAME");
+  char line_char[MAX_ZEILE];
+  string in1;//zwischenstring zum abschneiden der einheit
+  string delimiter(";");
+  double kwvalue;
+
+  //CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+
+  m_combo_typenames.ResetContent();
+
+  ifstream eingabe(csv_file_name.data(),ios::in);
+  if (eingabe.good()) {
+    eingabe.seekg(0L,ios::beg);//rewind um materialgruppen auszulesen
+	eingabe.getline(line_char, MAX_ZEILE);
+    line = line_char;
+    //typenames auslesen 
+    if(line.find(delimiter)!=string::npos) {
+      in = line.substr(1);
+
+      while(!type_name_tmp.empty()) {
+         type_name_tmp = readCSV_type_name(in,&z_rest);
+        if(type_name_tmp.empty()) 
+          break; 
+        else {
+          type_name = type_name_tmp;
+          m_combo_typenames.AddString(type_name.c_str());
+          in = z_rest;
+        }
+      }
+    }
+  }
+}
+
+string CMATGroupEditor::readCSV_type_name(string in, string *z_rest_out)
+{
+  string mat_name;
+  string z_rest;
+  string delimiter(";");
+  if(in.find_first_not_of(delimiter)!=string::npos)//if matrial group is found
+  {
+    z_rest = in.substr(in.find_first_not_of(delimiter));
+    mat_name = z_rest.substr(0,z_rest.find_first_of(delimiter)); //string for name of material group
+    *z_rest_out = z_rest.substr(mat_name.length());
+	return mat_name;
+  }
+  else
+    return "";
+}

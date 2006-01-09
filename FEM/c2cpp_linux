@@ -1,0 +1,7 @@
+#!/bin/sh
+
+for i in *.c; 
+do 
+  mv $i ${i%%.c}.cpp; 
+done 
+

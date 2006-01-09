@@ -1,0 +1,192 @@
+#!/bin/bash
+# --------------------------------------------------------------
+# RF-Benchmarks_Linux
+# Stand: 06.06.2003
+# last modified WW/OK
+# --------------------------------------------------------------
+PATH=$PWD:
+export PATH
+cd benchmarks
+echo $PWD
+# SM
+cd flow_singlephase
+echo $PWD
+ rf asm1d   > asm1d.txt
+ rf asm2d   > asm2d.txt
+ rf asm3d   > asm3d.txt
+ rf sm2dtri > sm2dtri.txt
+ rf sm1dd   > sm1dd.txt
+ rf sm1dnld > sm1dnld.txt
+#cd ..
+# DM
+cd ../deformation
+echo $PWD
+ rf dmsm2d > dmsm2d.txt
+ rf dmsm2d_c >dmsm2d_c.txt
+ rf dmrm2d > dmrm2d.txt
+ rf dmrm3d > dmrm3d.txt
+# GM
+cd ../flow_singlephase
+echo $PWD
+ rf gm_a23 > gm_a23.txt
+ rf gm_a24 > gm_a24.txt
+# GMRTM
+cd ../mass_transport
+echo $PWD
+ rf gtm1d > gtm1d.txt
+# RTM
+ rf rtm1d > rtm1d.txt
+ rf rtm2d > rtm2d.txt
+ rf rtm3d > rtm3d.txt
+ rf nleq1d > nleq1d.txt
+ rf nleq2d > nleq2d.txt
+ rf nleq3d > nleq3d.txt
+ rf noneq1d > noneq1d.txt
+ rf noneq2d > noneq2d.txt
+ rf noneq3d > noneq3d.txt
+ rf pnm1d > pnm1d.txt
+ rf lankin1d > lankin1d.txt
+ rf layers1d > layers1d.txt
+# MTM
+ rf mtm1d > mtm1d.txt
+ rf mtm2d > mtm2d.txt
+ rf mtm3d > mtm3d.txt
+# GMTM
+ rf gt_b51a > gt_b51a.txt
+# MMTM + Lagrange
+ rf f4lag > f4lag.txt
+cd ../heat_transport
+echo $PWD
+ rf htm1d > htm1d.txt
+ rf htm2d > htm2d.txt
+ rf htm3d > htm3d.txt
+ rf htm2d2 > htm2d2.txt
+ rf htm2dtri > htm2dtri.txt
+# RMRTM
+#\debug\rf3_cpp.exe rsm1d
+#\debug\rf3_cpp.exe rrm1d
+cd ../flow_multiphase
+echo $PWD
+ rf buckley1d > buckley1d.txt
+ rf buckley2d > buckley2d.txt
+ rf buckley3d > buckley3d.txt
+ rf mmtm3d > mmtm3d.txt
+ rf 2meter > 2meter.txt
+# DM
+# rf gmt0 > gmt0.txt
+ rf rich2dv > rich2dv.txt
+cd ../convection
+echo $PWD
+ rf elder2d > elder2d.txt
+ rf elder3d > elder3d.txt
+ rf henry2d > henry2d.txt
+# MMTM + Dichte + Geoelektrik
+cd ../geoelectric
+echo $PWD
+ rf geo_ele1d > geo_ele1d.txt
+ rf geo_ele3d > geo_ele3d.txt
+# MMTM + Multicontinuum
+cd ../multi_continua
+echo $PWD
+ rf m_cont_p2 > m_cont_p2.txt
+# MMTM + Deformation
+cd ../flow_multiphase
+echo $PWD
+ rf vegas_vg > vegas_vg.txt 
+# RTM (2)
+cd ../mass_transport
+echo $PWD
+ rf nitri1d > nitri1d.txt
+ rf nitri2d > nitri2d.txt
+ rf nitri3d > nitri3d.txt
+ rf decay1d > decay1d.txt
+ rf tce1d > tce1d.txt
+ rf saltsol > saltsol.txt
+ rf pnm1d > pnm1d.txt
+ rf csm1d > csm1d.txt
+# unconfined_flow
+cd ../flow_unconfined
+echo $PWD
+ rf asm1d_mb > asm1d_mb.txt
+ rf asm2d_mb > asm2d_mb.txt
+ rf asm3d_mb > asm3d_mb.txt
+ rf asm3dpri_mb > asm3dpri_mb.txt
+ rf vert3dpri_mb > vert3dpri_mb.txt
+ rf sm3dpri_mb > sm3dpri_mb.txt
+ rf uc_asm2d_mb > uc_asm2d_mb.txt
+ rf uc_3schichten_mb > uc_3schichten_mb.txt
+ rf uc_dam_mb > uc_dam_mb.txt
+ rf uc_asm3dpri_mb > uc_asm3dpri_mb.txt
+ rf uc_insel3dpri_mb > uc_insel3dpri_mb.txt
+ rf uc_jericho3dpri_mb > uc_jericho3dpri_mb.txt
+ rf henry2d_mb > henry2d_mb.txt
+ rf 2mrich1d_mb > 2mrich1d_mb.txt
+ rf 2mrich2d_mb > 2mrich2d_mb.txt
+ rf 2mrich3d_mb > 2mrich3d_mb.txt
+# TH non-isothermal flow
+cd ../flow_nonisothermal
+echo $PWD
+ rf th_richards > th_richards.txt
+ rf th_partitioned > th_partitioned.txt
+ rf th_monolithic > th_monolithic.txt
+ rf richards_isothermal > richards_isothermal.txt
+ rf multiphase_isothermal > multiphase_isothermal.txt
+cd ../mix
+echo $PWD
+ rf mix_asm2d > mix_asm2d.txt
+ rf mix_htm2d > mix_htm2d.txt
+# PCS
+cd ../pcs/deformation
+echo $PWD
+ rf pcs_dmsm2d > pcs_dmsm2d.txt
+ rf pcs_class > pcs_class.txt
+ rf pcs_mono_consolid |tee pcs_mono_consolid.txt
+cd ../flow_nonisothermal
+echo $PWD
+ rf pcs_th1 > pcs_th1.txt
+cd ../heat_transport
+echo $PWD
+ rf pcs_htm1d > pcs_htm1d.txt 
+cd ../flow_multiphase
+echo $PWD
+ rf pcs_buckley1d > pcs_buckley1d.txt
+cd ../thm
+echo $PWD
+ rf pcs_thm2d > pcs_thm2d.txt
+# Adaptation
+cd ../../grid_adaptation
+echo $PWD
+ rf asm1da > asm1da.txt
+ rf asm2da > asm2da.txt
+ rf asm3da > asm3da.txt
+ rf rtm1da > rtm1da.txt
+ rf rtm2da > rtm2da.txt
+ rf rtm3da > rtm3da.txt
+ rf nitri1da > nitri1da.txt
+# MMTM
+ rf theis2d > theis2d.txt 
+# Rene V3.6
+ rf sauty > sauty.txt 
+ rf gham1d2d > gham1d2d.txt
+# SM
+ rf theis_16 > theiss_16.txt
+ rf hoopes > hoopes.txt
+# RTM (2)
+cd ../mass_transport
+echo $PWD
+ rf decay2d > decay2d.txt
+ rf decay3d > decay3d.txt
+# MMTM
+cd ../flow_multiphase
+echo $PWD
+ rf rich2dv > rich2dv.txt
+# Langläufer
+cd ../convection
+echo $PWD
+ rf th_eld_a > th_eld_a.txt
+ rf th_eld_g > th_eld_g.txt
+rm -rf *.bak
+rm -rf *.sv1
+rm -rf *.sv2
+rm -rf pstprz.rf
+

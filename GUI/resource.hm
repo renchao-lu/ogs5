@@ -1,0 +1,4 @@
+// Microsoft Visual C++ generated Help ID include file.
+// Used by GeoSys.rc
+//
+#define HIDC_COMBO_TREND                0x809d0475    // IDD_DIALOG_KRIGING
