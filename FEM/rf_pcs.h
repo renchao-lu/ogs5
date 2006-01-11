@@ -343,6 +343,7 @@ extern int dm_pcs_number;
 extern double PCSGetNODConcentration(long index, long component, long timelevel); //SB
 extern void PCSSetNODConcentration(long index, long component, long timelevel, double value); //SB
 extern char *GetCompNamehelp(char *name); //SB:namepatch - superseded by GetPFNamebyCPName
+extern double PCSGetEleMeanNodeSecondary(long index, string pcs_name, string var_name, int timelevel); //SB4218
 extern string GetPFNamebyCPName(string line_string);
 
 extern int memory_opt; 

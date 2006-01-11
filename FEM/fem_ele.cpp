@@ -839,6 +839,7 @@ void CElement::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bool dyn)
     case 'L': // Liquid flow
       if(T_Flag)
       {
+         pcs = PCSGet("HEAT_TRANSPORT");
          idx_c0 = pcs->GetNodeValueIndex("TEMPERATURE1");
          idx_c1 = idx_c0+1;           
       }
@@ -848,6 +849,7 @@ void CElement::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bool dyn)
     case 'G': // Groundwater flow
       if(T_Flag)
       {
+         pcs = PCSGet("HEAT_TRANSPORT");
          idx_c0 = pcs->GetNodeValueIndex("TEMPERATURE1");
          idx_c1 = idx_c0+1;           
       }
@@ -857,12 +859,16 @@ void CElement::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bool dyn)
     case 'C': // Componental flow
       break;
     case 'H': // heat transport
+      //SB CMCD this needs to be fixed
+      pcs = PCSGet("GROUNDWATER_FLOW"); 
+      if(pcs == NULL) pcs = PCSGet("LIQUID_FLOW"); 
       idx_c0 = pcs->GetNodeValueIndex("PRESSURE1");
       idx_c1 = idx_c0+1;
       break;
     case 'M': // Mass transport
       if(T_Flag)
       {
+         pcs = PCSGet("HEAT_TRANSPORT");
          idx_c0 = pcs->GetNodeValueIndex("TEMPERATURE1");
          idx_c1 = idx_c0+1;           
       }

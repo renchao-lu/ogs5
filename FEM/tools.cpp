@@ -2317,6 +2317,7 @@ long GetNearestHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double ** i
   return nextele;
 }
 
+
 /**************************************************************************/
 /* ROCKFLOW - Funktion: GetLineFromFile
                                       */

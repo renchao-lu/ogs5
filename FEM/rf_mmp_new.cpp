@@ -2052,10 +2052,13 @@ double* CMediumProperties::MassDispersionTensorNew(int ip)
   CompProperties *m_cp = cp_vec[component];
   eleType=m_pcs->m_msh->ele_vector[number]->GetElementType();
   int Dim = m_pcs->m_msh->GetCoordinateFlag()/10;
+  CRFProcess *n_pcs = NULL;
 
   //----------------------------------------------------------------------
   // Materials
-  molecular_diffusion_value = m_cp->CalcDiffusionCoefficientCP(index) * TortuosityFunction(index,g,theta)*porosity;
+  molecular_diffusion_value = m_cp->CalcDiffusionCoefficientCP(index) * TortuosityFunction(index,g,theta);
+  molecular_diffusion_value *= Porosity(index,g,theta);
+  if(PCSGet("RICHARDS_FLOW")) molecular_diffusion_value *= PCSGetEleMeanNodeSecondary(index, "RICHARDS_FLOW", "SATURATION1", 1);
   for (i = 0; i<Dim*Dim; i++)
     molecular_diffusion[i] = 0.0;
   for (i = 0; i<Dim; i++)
@@ -2066,6 +2069,7 @@ double* CMediumProperties::MassDispersionTensorNew(int ip)
   double velocity[3]={0.,0.,0.};
   gp_ele->getIPvalue_vec(ip, velocity);//gp velocities
   vg = MBtrgVec(velocity,3);
+  if(index < 0) cout <<" Velocity in MassDispersionTensorNew(): "<<velocity[0]<<", "<<velocity[1]<<", "<<velocity[2]<<", "<<vg<<endl;
 
   //Dl in local coordinates
   alpha_l = mass_dispersion_longitudinal;
@@ -4141,11 +4145,18 @@ last modification:
 **************************************************************************/
 double* CMediumProperties::PermeabilityTensor(long index)
 {
-  static double tensor[9];
+static double tensor[9];
+int perm_index;
+
+if(permeability_model==2)
+    for(perm_index=0;perm_index<(int)m_pcs->m_msh->mat_names_vector.size();perm_index++)
+        if(m_pcs->m_msh->mat_names_vector[perm_index].compare("PERMEABILITY")==0)
+              break;
+
   switch(geo_dimension){
     case 1: // 1-D
         tensor[0] = permeability_tensor[0];
-		if(permeability_file.size() > 0) tensor[0] = GetHetValue(index,"permeability");
+		if(permeability_model==2) tensor[0] = m_msh->ele_vector[index]->mat_vector(perm_index);
       break;
     case 2: // 2-D
       if(permeability_tensor_type==0){
@@ -4153,8 +4164,9 @@ double* CMediumProperties::PermeabilityTensor(long index)
         tensor[1] = 0.0;
         tensor[2] = 0.0;
         tensor[3] = permeability_tensor[0];
-		if(permeability_file.size() > 0) {
-			tensor[0] = GetHetValue(index,"permeability");
+		if(permeability_model==2) {
+//SB 4218			tensor[0] = GetHetValue(index,"permeability");
+			tensor[0] = m_msh->ele_vector[index]->mat_vector(perm_index);
 			tensor[3] = tensor[0];
 		}
       }
@@ -4182,8 +4194,9 @@ double* CMediumProperties::PermeabilityTensor(long index)
         tensor[6] = 0.0;
         tensor[7] = 0.0;
         tensor[8] = permeability_tensor[0];
-		if(permeability_file.size() > 0) {
-			tensor[0] = GetHetValue(index,"permeability");
+		if(permeability_model==2) {
+//SB 4218			tensor[0] = GetHetValue(index,"permeability");
+			tensor[0] = m_msh->ele_vector[index]->mat_vector(perm_index);
 			tensor[4] = tensor[0];
 			tensor[8] = tensor[0];
 		}
@@ -5417,14 +5430,18 @@ Programing:
 **************************************************************************/
 void CMediumProperties::SetDistributedELEProperties(string file_name) 
 {
-  string line_string;
+  string line_string, line1;
   string mmp_property_name;
   string mmp_property_dis_type;
+  string mmp_property_mesh;
   CElem* m_ele_geo = NULL;
-  long i;
+  long i, ihet;
   double mmp_property_value;
   int mat_vector_size;
-  double ddummy;
+  double ddummy, conversion_factor;
+  vector <double> xvals, yvals, zvals, mmpvals;
+  double x, y, z, mmpv;
+  std::stringstream in;
   //----------------------------------------------------------------------
   // File handling
   ifstream mmp_property_file(file_name.data(),ios::in);
@@ -5452,6 +5469,7 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
     //....................................................................
     if(line_string.find("$MSH_TYPE")!=string::npos){
       line_string = GetLineFromFile1(&mmp_property_file);
+      mmp_property_mesh = line_string;
       m_msh = FEMGet(line_string);
       if(!m_msh){
         cout << "CMediumProperties::SetDistributedELEProperties: no MSH data" << endl;
@@ -5462,10 +5480,6 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
     //....................................................................
     if(line_string.find("$MMP_TYPE")!=string::npos){
       mmp_property_file >> mmp_property_name;
-      if(!m_msh){
-        cout << "CMediumProperties::SetDistributedELEProperties: no MSH data" << endl;
-        return;
-      }
       m_msh->mat_names_vector.push_back(mmp_property_name);
       continue;
     }
@@ -5475,9 +5489,45 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
       continue;
     }
     //....................................................................
+    if(line_string.find("$CONVERSION_FACTOR")!=string::npos){
+      mmp_property_file >> conversion_factor;
+      continue;
+    }
+    //....................................................................
     if(line_string.find("$DATA")!=string::npos){
       switch(mmp_property_dis_type[0]){
-        case 'I': // Raster data for interpolation
+        case 'N': // Next neighbour
+        case 'G': // Geometric mean
+          // Read in all values given, store in vectors for x, y, z and value
+          i=0;
+          while(i==0){
+            line1 = GetLineFromFile1(&mmp_property_file);        
+            if(line1.find("STOP")!=string::npos) break;
+            in.str((string)line1);
+            in >> x >> y >> z >> mmpv;
+            in.clear();
+            mmpv *= conversion_factor; // convert values
+            xvals.push_back(x);
+            yvals.push_back(y);
+            zvals.push_back(z);
+            mmpvals.push_back(mmpv);
+          }
+          // sort values to mesh
+          for(i=0;i<(long)m_msh->ele_vector.size();i++){
+             m_ele_geo = m_msh->ele_vector[i];
+             mat_vector_size = m_ele_geo->mat_vector.Size();
+             m_ele_geo->mat_vector.resize(mat_vector_size+1);
+             if(mmp_property_dis_type[0] == 'N'){
+                // Search for all elements of the mesh, which is the nearest given value in the input file
+                // Return value ihet is the index of the het. val in the mmpval-vector
+                ihet = GetNearestHetVal2(i, m_msh, xvals, yvals, zvals, mmpvals);
+                m_ele_geo->mat_vector(mat_vector_size) = mmpvals[ihet];
+             }
+             if(mmp_property_dis_type[0] == 'G'){
+                mmpv = GetAverageHetVal2(i, m_msh, xvals, yvals, zvals, mmpvals);
+                m_ele_geo->mat_vector(mat_vector_size) = mmpv;
+             }
+          }
           break;
         case 'E': // Element data
           for(i=0;i<(long)m_msh->ele_vector.size();i++){
@@ -5492,12 +5542,38 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
             }
           }
           break;
+          default:
+            cout << " Unknown interpolation option for het values!" << endl;
+            break;
       }
       continue;
     }
     //....................................................................
   }
   //----------------------------------------------------------------------
+  //Write sorted output file
+  //----------------------------------------------------------------------
+  // File handling
+  file_name +="_sorted";
+  ofstream mmp_property_file_out(file_name.data());
+  if(!mmp_property_file_out.good()){
+    cout << "Warning in CMediumProperties::WriteDistributedELEProperties: no MMP property data file to write to" << endl;
+    return;
+  }
+  mmp_property_file_out << "#MEDIUM_PROPERTIES_DISTRIBUTED" << endl;
+  mmp_property_file_out << "$MSH_TYPE" << endl << "  " << mmp_property_mesh << endl;
+  mmp_property_file_out << "$MSH_TYPE" << endl << "  " << mmp_property_mesh << endl;
+  mmp_property_file_out << "$MMP_TYPE" << endl << "  " << "PERMEABILITY" << endl;
+  mmp_property_file_out << "$DIS_TYPE" << endl << "  " << "ELEMENT" << endl;
+  mmp_property_file_out << "$DATA" << endl ;
+  for(i=0;i<(long)m_msh->ele_vector.size();i++){
+      m_ele_geo = m_msh->ele_vector[i];
+      mmp_property_file_out << i << "  " << m_ele_geo->mat_vector(mat_vector_size) << endl;
+  }
+  mmp_property_file_out << "#STOP" << endl;
+  mmp_property_file_out.close();
+  //----------------------------------------------------------------------
+
 }
 
 /**************************************************************************
@@ -5628,3 +5704,120 @@ void CMediumProperties::WriteTecplotDistributedProperties()
   }
   //--------------------------------------------------------------------
 }
+
+
+/**************************************************************************
+MSHLib-Method: GetNearestHetVal2
+Task: 
+Programing:
+0?/2004 SB Implementation
+09/2005 MB EleClass
+01/2006 SB ReImplementation with new concept by Olaf, moved here
+**************************************************************************/
+long GetNearestHetVal2(long EleIndex, CFEMesh *m_msh, vector <double> xvals,  vector <double> yvals,  vector <double> zvals,  vector <double> mmpvals){
+	
+  long i, nextele, no_values;
+  double ex, ey, ez, dist, dist1, dist2;
+  double x, y, z;
+  double* center = NULL;
+  Mesh_Group::CElem* m_ele = NULL;
+  no_values = (long) xvals.size();
+  
+  x=0.0; y=0.0; z=0.0;
+  dist = 10000000.0; //Startwert
+  dist2 = 0.01;	    // Abstand zwischen eingelesenen Knoten und Geometrieknoten-RF; 
+					// Achtung, doppelbelegung möglich bei kleinen Gitterabständen
+  nextele = -1;
+
+  //Get element data
+  m_ele = m_msh->ele_vector[EleIndex];
+  center = m_ele->GetGravityCenter();
+  x = center[0];
+  y = center[1];
+  z = center[2];
+  
+  //Calculate distances  
+  for(i=0;i<no_values;i++){
+    ex=xvals[i];
+    ey=yvals[i];
+	ez=zvals[i];
+	dist1 = (ex-x)*(ex-x)+(ey-y)*(ey-y)+(ez-z)*(ez-z);
+	if(dist1<dist){
+	  dist = dist1;
+	  nextele = i;
+	}
+  }
+  
+  return nextele;
+}
+/**************************************************************************
+MSHLib-Method: GetAverageHetVal2
+Task: 
+Programing:
+06/2005 MB Implementation
+01/2006 SB Adapted to new structure
+**************************************************************************/
+double GetAverageHetVal2(long EleIndex, CFEMesh *m_msh, vector <double> xvals,  vector <double> yvals,  vector <double> zvals,  vector <double> mmpvals){
+	
+  long i, j, ihet;
+  double average;
+  double xp[3],yp[3];
+  double value;
+  double NumberOfValues;
+  double InvNumberOfValues;
+  CGLPoint *m_point = NULL;
+  Mesh_Group::CElem* m_ele = NULL;
+  long   no_values = (long) xvals.size();
+
+  j = 0; //only for 1 value
+
+  //-----------------------------------------------------------------------
+  //Get element data
+  m_ele = m_msh->ele_vector[EleIndex];
+  for(j=0;j<3; j++) {
+    xp[j] = m_ele->GetNode(j)->X();
+    yp[j] = m_ele->GetNode(j)->Y();
+    //zp[j] = 0.0;
+  }
+
+  //-----------------------------------------------------------------------
+  //Find data points in the element
+  NumberOfValues = 0;
+  InvNumberOfValues = 0; 
+  m_point = new CGLPoint;
+ 
+  average = -1;
+  value = 0;
+
+  for(i=0;i<no_values;i++){
+    if(mmpvals[i]!= -999999.0){ //Data point not within an element yet
+      m_point->x = xvals[i];
+      m_point->y = yvals[i];
+      m_point->z = 0.0;
+ 
+      //....................................................................
+      //Calculate the product of values in element
+      if(m_point->IsInTriangleXYProjection(xp,yp)) {//CC 10/05
+        value = value + zvals[i];
+        NumberOfValues ++;
+        mmpvals[i] = -999999.0; //used as marker
+      }
+    }
+  }//end for
+  //........................................................................
+  if(NumberOfValues == 0){ //if no data points in element --> get neares value
+    ihet = GetNearestHetVal2(EleIndex, m_msh, xvals, yvals, zvals, mmpvals);
+    if(ihet<0)
+	  DisplayMsgLn(" Error getting nearest het_value location");
+	else{
+      average = mmpvals[ihet];     
+    }
+  }
+  //........................................................................
+  else{ //if data points in element --> Calculate arithmetic mean
+    average = value / NumberOfValues;
+  }
+  delete m_point;
+  return average;
+}
+

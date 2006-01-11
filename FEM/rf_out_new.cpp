@@ -824,6 +824,7 @@ void COutput::WriteTECNodeData(fstream& tec_file)
     //--------------------------------------------------------------------
     for(k=0;k<nName;k++){
       m_pcs = PCSGet(nod_value_vector[k],true);
+      if(m_pcs != NULL){
       NodeIndex[k] = m_pcs->GetNodeValueIndex(nod_value_vector[k]);
       //??????????????????????????????????????????????????????????????????
 	  if(nod_value_vector[k].find("SATURATION")!=string::npos)
@@ -838,6 +839,7 @@ void COutput::WriteTECNodeData(fstream& tec_file)
           NodeIndex[k]++;
           break;
         }
+      }
       }
     }
     //--------------------------------------------------------------------
@@ -897,7 +899,8 @@ void COutput::WriteTECNodeData(fstream& tec_file)
       else{
         for(k=0;k<nName;k++){
           m_pcs = GetPCS(nod_value_vector[k]);
-          if(NodeIndex[k]>-1)
+          if(m_pcs != NULL)
+           if(NodeIndex[k]>-1)
             tec_file << m_pcs->GetNodeValue( m_msh->nod_vector[j]->GetIndex(),NodeIndex[k]) << " ";
         }
       }
@@ -1256,10 +1259,10 @@ void COutput::NODWritePLYDataTEC(int number)
       tec_file << m_ply->sbuffer[j] << " ";
       for(k=0;k<no_variables;k++){
         m_pcs = PCSGet(nod_value_vector[k],bdummy);
-        if(!m_pcs){
+        if(!m_pcs)
           cout << "Warning in COutput::NODWritePLYDataTEC - no PCS data" << endl;
-        }
-	    tec_file << m_pcs->GetNodeValue(nodes_vector[m_ply->OrderedPoint[j]], NodeIndex[k]) << " ";
+        else
+	      tec_file << m_pcs->GetNodeValue(nodes_vector[m_ply->OrderedPoint[j]], NodeIndex[k]) << " ";
       }
       tec_file << endl;
     }

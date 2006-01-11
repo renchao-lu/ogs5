@@ -56,14 +56,7 @@ vector <REACT*> REACT_vec;
 **************************************************************************/
 void REACT::ExecuteReactions(void){
 
-	static int use_chem_flag;  /* 0 = no chemistry, 
-							   1 = PHREEQC, 
-							   2 = Dirk's Solver  */
-	/* check, if phreeqc input file is in folder */
-	if(aktueller_zeitschritt <2)
-	use_chem_flag = this->TestPHREEQC();
-
-	if(use_chem_flag == 1) this->ExecuteReactionsPHREEQC();
+	if(this->flag_pqc) this->ExecuteReactionsPHREEQC();
 //	if(use_chem_flag == 2) ExecuteReactionsV2();
 
 }
@@ -95,7 +88,6 @@ void REACT::ExecuteReactionsPHREEQC(void){
 // CRFProcess *m_pcs = NULL;
 // static REACTION_MODEL *rcml;
  FILE *indatei, *fphinp, *fsel_out=NULL;
- int flag_pqc = 1;              /*0- without reaction, 1- with reaction*/
  char fsout[80];
 
 
@@ -106,7 +98,7 @@ void REACT::ExecuteReactionsPHREEQC(void){
  
  /* Perform reaction step */
  /* --------------------------------------------------------------------------*/
-  if(flag_pqc != 0){
+  if(flag_pqc){
     	indatei=fopen(crdat,"r");
 	/* do only at first timestep */
     if (indatei != NULL){
@@ -202,6 +194,7 @@ REACT::REACT(void){
 	rateflag = NULL;
 	heatflag = 0;
 	nodenumber = 0;
+	flag_pqc = false;
 
   rcml_number_of_master_species=0;
   rcml_number_of_equi_phases=0;
@@ -339,7 +332,8 @@ void REACT::InitREACT(void){
  // Get Temperature values
  if(this->heatflag > 0){
 	this->name[np-2] = "temp";//MX CMCD
-  int index = m_pcs->GetNodeValueIndex("TEMPERATURE1");
+    m_pcs = PCSGet("HEAT_TRANSPORT");
+    int index = m_pcs->GetNodeValueIndex("TEMPERATURE1");
 	for(i=0;i<this->nodenumber;i++)
 		this->val_in[np-2][i] = m_pcs->GetNodeValue(i, index); //OK PCSGetNODTemperature1L(i)//MX CMCD -2, Liquid Flow, Heat Transport
   }	
@@ -432,11 +426,10 @@ void REACT::SetConcentrationResults(void)
 
  //Fix Process here ??
  //Rücksrache mit Sebastian
-  m_pcs = PCSGet("MASS_TRANSPORT"); //???
 
  timelevel = 1;  // concentrations are in new timelevel
  np = (int)pcs_vector.size();
-
+/*  SB4218
  for(comp=0; comp<this->number_of_comp;comp++){
 	 for(i=0;i<this->nodenumber;i++){
 		name = this->name[comp];
@@ -444,12 +437,16 @@ void REACT::SetConcentrationResults(void)
 		m_pcs->SetNodeValue(i, idx,this->val_out[comp][i]);
 	 }
  }
- 
+ */
+for(comp=0; comp<this->number_of_comp;comp++){
+	name = this->name[comp];
+    m_pcs = PCSGet("MASS_TRANSPORT",name); //???
+	idx = m_pcs->GetNodeValueIndex(name)+1;
+	for(i=0;i<this->nodenumber;i++)
+			m_pcs->SetNodeValue(i, idx,this->val_out[comp][i]);
 }
 
-
-
-
+}
 
 REACT* REACT::GetREACT(void)
 {
@@ -1217,26 +1214,16 @@ int REACT::ReadOutputPhreeqc(char* fout){
    allererste Version
    
    Programmaenderungen:
-   09/2003     SB         Erste Version  //SB:todo
+   09/2003     SB         Erste Version 
+   01/2006     SB         New File handling
 **************************************************************************/
-int REACT::TestPHREEQC(void){
+void REACT::TestPHREEQC(string file_base_name){
  
- FILE *indatei;
- int flag_pqc = 0;              /*0- without reaction, 1- with reaction*/
- if(!crdat) //OK
-   return 0;
- indatei=fopen(crdat,"r");
-
- if (indatei != NULL) {
-      flag_pqc = 1;
-	  fclose(indatei);
-//	  printf("Chemisty input file *.pqc found \n");
- }
- else {
-//	 printf("No file *.pqc\n");
- }
-
-  return flag_pqc;
+string pqc_file_name = file_base_name + CHEM_REACTION_EXTENSION;
+ifstream pqc_file (pqc_file_name.data(),ios::in);
+if (pqc_file.good()) 
+	flag_pqc = true;
+pqc_file.close();
 }
 
 
@@ -1347,7 +1334,7 @@ void REACT::GetTransportResults(void){
 
  int comp, phase, j, timelevel, np;
  CRFProcess *m_pcs = NULL;
- long  i;
+ long  i, index;
 
  timelevel = 1;  // concentrations are in new timelevel
  phase = 0;      //single phase so far
@@ -1376,7 +1363,8 @@ void REACT::GetTransportResults(void){
 
  if(heatflag > 0){
 	name[np-2] = "temp";//MX CMCD
-  int index = m_pcs->GetNodeValueIndex("TEMPERATURE1");
+    m_pcs = PCSGet("HEAT_TRANSPORT");
+    index = m_pcs->GetNodeValueIndex("TEMPERATURE1");
 	for(i=0;i<this->nodenumber;i++)
 		this->val_in[np-2][i] = m_pcs->GetNodeValue(i, index); //OK PCSGetNODTemperature1L(i)//MX CMCD -2, Liquid Flow, Heat Transport
 	}	
@@ -1482,4 +1470,12 @@ double MATCalcIonicStrengthNew(long index){
 	
   } /*for */
   return ion_strength;
+}
+
+
+void RCRead(string filename){
+
+REACT *rc = new REACT(); //SB
+rc->TestPHREEQC(filename); // Test if *.pqc file is present
+REACT_vec.push_back(rc);
 }

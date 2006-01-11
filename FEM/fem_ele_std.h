@@ -68,6 +68,8 @@ class CFiniteElementStd:public CElement
 	   void CalcAdvection();
 	   // 8. Storage matrix
 	   void CalcStorage();
+	 // 9. Content matrix
+	 void CalcContent();
      // Assembly
      void Assembly(); 
 	   void Assembly(int dimension);	// PCH for Fluid Momentum
@@ -127,6 +129,7 @@ class CFiniteElementStd:public CElement
      Matrix *Laplace;
 	   Matrix *Advection; //SB4200
 	   Matrix *Storage; //SB4200
+	 Matrix *Content; //SB4209
      Matrix *StrainCoupling;
      Vec       *RHS;      
      //-------------------------------------------------------
@@ -136,6 +139,7 @@ class CFiniteElementStd:public CElement
      inline void CalCoefLaplace(bool Gravity=false, int ip=0);
 	   inline double CalCoefAdvection(); //SB4200 OK/CMCD
 	   inline double CalCoefStorage(); //SB4200
+	 inline double CalCoefContent();
      inline double CalCoefStrainCouping();
      inline void CalNodalEnthalpy();
      //-----------------------------------------------------

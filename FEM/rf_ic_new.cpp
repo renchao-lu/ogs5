@@ -607,6 +607,7 @@ if(SubNumber==0)
     }
     while(!rfr_file.eof()) {
       rfr_file >> ldummy;
+        cout << ldummy << endl;
       for(i=0;i<no_var;i++){ // HEAD, m ...
         rfr_file >> ddummy;
         if(nidx[i]>-1)

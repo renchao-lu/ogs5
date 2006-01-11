@@ -3895,7 +3895,7 @@ void PCSRestart()
 {
   int j;
   CRFProcess *m_pcs = NULL;
-  int timelevel;
+//  int timelevel;
   int nidx0,nidx1;
   int i;
   int no_processes =(int)pcs_vector.size();
@@ -3913,10 +3913,10 @@ void PCSRestart()
   for(i=0;i<no_processes;i++){
     m_pcs = pcs_vector[i];
     for(j=0;j<m_pcs->GetPrimaryVNumber();j++) {
-      timelevel=1;
-      nidx1 = PCSGetNODValueIndex(m_pcs->GetPrimaryVName(j),timelevel);
-      timelevel=0;
-      nidx0 = PCSGetNODValueIndex(m_pcs->GetPrimaryVName(j),timelevel);
+      // timelevel=0;
+      nidx0 = m_pcs->GetNodeValueIndex(m_pcs->GetPrimaryVName(j));
+      // timelevel= 1;
+      nidx1 = nidx0+1;
       CopyNodeVals(nidx1,nidx0);
     }
   }
@@ -4871,9 +4871,12 @@ Programing:
 int CRFProcess::GetNodeValueIndex(string var_name)
 {
   int i;
-  int nidx = -1;
+  int nidx = -2;
+  string help;
   for(i=0;i<(int)nod_val_name_vector.size();i++){
-    if(nod_val_name_vector[i].compare(var_name)==0){
+//    if(nod_val_name_vector[i].compare(var_name)==0){
+    help = nod_val_name_vector[i];
+    if(help.compare(var_name)==0){
       nidx = i;
       return nidx;
     }
@@ -5542,6 +5545,13 @@ void CRFProcess::CopyTimestepNODValues()
     for(l=0;l<(long)m_msh->GetNodesNumber(false);l++)
       SetNodeValue(l,nidx0,GetNodeValue(l,nidx1));
     }
+   if(pcs_type_name.compare("RICHARDS_FLOW")==0)
+	  for(j=0;j<this->pcs_number_of_secondary_nvals;j++){
+		 nidx0 = GetNodeValueIndex(pcs_secondary_function_name[j]);
+         nidx1 = GetNodeValueIndex(pcs_secondary_function_name[j])+1;
+         for(l=0;l<(long)m_msh->GetNodesNumber(false);l++)
+              SetNodeValue(l,nidx0,GetNodeValue(l,nidx1));
+	 }
 }
 
 /**************************************************************************
@@ -5562,8 +5572,8 @@ CRFProcess* PCSGet(string pcs_type_name, string comp_name)
     if(m_pcs->pcs_type_name.compare(pcs_type_name)==0){
       testname = m_pcs->pcs_primary_function_name[0];
       if(testname.compare(comp_name)==0){
-        cout << " Found in PCSGetbyTypeandCompName for PCSType/Compname " << pcs_type_name << ", " << comp_name;
-        cout << " Process number " << m_pcs->pcs_number << ", compnumber " << m_pcs->pcs_component_number << endl;
+//        cout << " Found in PCSGetbyTypeandCompName for PCSType/Compname " << pcs_type_name << ", " << comp_name;
+//        cout << " Process number " << m_pcs->pcs_number << ", compnumber " << m_pcs->pcs_component_number << endl;
         return m_pcs;
       }
     }
@@ -5691,3 +5701,32 @@ void CRFProcess::CalcSecondaryVariablesRichards(int timelevel, bool update)
   }
 }
 
+/**************************************************************************
+   GeoSys - Function: Get mean element value for element index from secondary node values
+				      of process pcs_name and for variable var_name; old and new timelevel
+    01/2006   SB    Implementation
+**************************************************************************/
+double PCSGetEleMeanNodeSecondary(long index, string pcs_name, string var_name, int timelevel){
+
+double val = 1.0; // As this returns saturation, default is fully saturated = 1.0;
+int idx, j;
+long enode;
+CRFProcess *m_pcs = NULL;
+
+// Get process by process name
+m_pcs = PCSGet(pcs_name); 
+if(m_pcs){
+    // Get index of secondary node value
+    idx = m_pcs->GetNodeValueIndex(var_name)+timelevel; 
+    // Get element with index index
+	CElem* elem =NULL; 
+	elem = m_pcs->m_msh->ele_vector[index];
+	val = 0.0;
+	for(j=0; j<elem->GetVertexNumber(); j++){ // average all adjoining nodes
+		enode = elem->GetNodeIndex(j);
+        val +=  m_pcs->GetNodeValue(enode,idx);
+	}
+	val = val/((double)elem->GetVertexNumber());
+}
+return val;
+}

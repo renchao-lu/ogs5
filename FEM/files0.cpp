@@ -56,6 +56,7 @@
 #include "rf_msp_new.h"
 #include "rf_num_new.h"
 #include "rf_random_walk.h" // PCH
+#include "rf_react.h"
 #include "rf_fct.h" //OK
 /* Tools */
 #include "mathlib.h"
@@ -202,6 +203,7 @@ int ReadData ( char *dateiname )
   MSPRead(dateiname);
   MMPRead(dateiname);
   CPRead(dateiname); //SB:GS4
+  RCRead(dateiname);
   NUMRead(dateiname);
   if(FEMRead(dateiname)) //OK4108//WW4107
      MSH = true; 

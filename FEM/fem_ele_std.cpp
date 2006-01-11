@@ -56,7 +56,10 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
     idxS=idx3=-1;
     if(pcs->primary_variable_name.compare("HEAD")==0)
         HEAD_Flag = true;
-
+//SB4218 added  
+	string pcs_primary = pcs->pcs_primary_function_name[0];
+	if(pcs_primary.compare("HEAD")==0)
+        HEAD_Flag = true;    
     for(i=0; i<9; i++) mat[i] = 0.0;
 
     idx0 = idx1 = 0; // column index in the node value data
@@ -108,13 +111,13 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
         PcsType = H;
         idx0 = pcs->GetNodeValueIndex("TEMPERATURE1");
         idx1 = idx0+1;
-        idxS = pcs->GetNodeValueIndex("SATURATION1")+1;
+//SB4218        idxS = pcs->GetNodeValueIndex("SATURATION1")+1;
         break;
       case 'M': // Mass transport
         PcsType = M;
-	     	sprintf(name1, "%s",pcs->pcs_primary_function_name[0]);
-		    name2 = name1;
-		    idx0 = pcs->GetNodeValueIndex(name2);
+	   	sprintf(name1, "%s",pcs->pcs_primary_function_name[0]);
+	    name2 = name1;
+	    idx0 = pcs->GetNodeValueIndex(name2);
         idx1 = idx0+1;
         break;
       case 'O': // Liquid flow
@@ -138,6 +141,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
       Laplace = new Matrix(20,20);
 	  Advection = new Matrix(20,20);
 	  Storage = new Matrix(20,20);
+	  Content = new Matrix(20,20);
       if(D_Flag) 
           StrainCoupling = new Matrix(20,60);
       else StrainCoupling = NULL;
@@ -149,6 +153,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
        Laplace = NULL;
 	   Advection = NULL;
 	   Storage = NULL;
+	   Content = NULL;
        StrainCoupling = NULL;
        RHS = NULL;
     }
@@ -174,12 +179,14 @@ CFiniteElementStd::~CFiniteElementStd()
        if(Laplace) delete Laplace;
 	   if(Advection) delete Advection;
 	   if(Storage) delete Storage;
+	   if(Content) delete Content;
        if(StrainCoupling) delete StrainCoupling;
        if(RHS) delete RHS;
        Mass = NULL;
        Laplace = NULL;
 	   Advection = NULL;
 	   Storage = NULL;
+	   Content = NULL;
        StrainCoupling = NULL;
        RHS = NULL;
     }
@@ -216,6 +223,7 @@ void CFiniteElementStd::SetMemory()
        Laplace->LimitSize(nnodes, nnodes);
 	   Advection->LimitSize(nnodes, nnodes); //SB4200
 	   Storage->LimitSize(nnodes, nnodes); //SB4200
+	   Content->LimitSize(nnodes, nnodes); //SB4209
        if(D_Flag>0) 
           StrainCoupling->LimitSize(nnodes, dim*nnodesHQ);
        Size = nnodes;
@@ -228,7 +236,7 @@ void CFiniteElementStd::SetMemory()
         EleMat = pcs->Ele_Matrices[Index];
         Mass = EleMat->GetMass();
         Laplace = EleMat->GetLaplace();
-		// Advection, Storage ?
+		// Advection, Storage, Content SB:Todo ?
         RHS = EleMat->GetRHS();
         if(D_Flag>0) 
            StrainCoupling = EleMat->GetCouplingMatrixB();
@@ -618,7 +626,7 @@ inline double CFiniteElementStd::CalCoefMass()
     //....................................................................
     case M: // Mass transport //SB4200
 	  	val = MediaProp->Porosity(Index, unit,pcs->m_num->ls_theta); // Porosity
-//OK		val *= FluidProp->Density(); // Density
+		val *= PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
 	  	m_cp = cp_vec[pcs->pcs_component_number]; 
 	  	val *= m_cp->CalcElementRetardationFactorNew(Index, unit, pcs); //Retardation Factor
       break;
@@ -702,11 +710,72 @@ inline double CFiniteElementStd::CalCoefStorage()
     case M: // Mass transport //SB4200
     m_cp = cp_vec[pcs->pcs_component_number];//CMCD
 		val = MediaProp->Porosity(Index, unit,pcs->m_num->ls_theta); //Porosity
-		//val = 0.5; //SB- set porosity
+        val *= PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
 //		val *= FluidProp->Density();
 //		val *= m_cp->CalcElementDecayRate(Index); // Decay rate
 		val *= m_cp->CalcElementDecayRateNew(Index, pcs); // Decay rate
       break;
+    case O: // Liquid flow
+      break;
+    case R: // Richards
+      break;
+    case F:	// Fluid Momentum
+      break;
+    case A: // Air (gas) flow
+      break;
+  }
+   return val;
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Task: Calculate material coefficient for Content matrix
+Programing:
+01/2005 WW/OK Implementation
+03/2005 WW Heat transport
+07/2005 WW Change for geometry element object
+last modification:
+**************************************************************************/
+inline double CFiniteElementStd::CalCoefContent() 
+{
+  int Index = MeshElement->GetIndex();
+  double val = 0.0;
+  double dS = 0.0;
+  int pcs_vector_size =(int)pcs_vector.size();
+  double nodeval0, nodeval1;
+  CRFProcess *m_pcs = NULL;
+  CompProperties *m_cp = NULL; //SB4200
+  string name;
+
+  switch(PcsType){
+    default:
+      cout << "Fatal error in CalCoefContent: No valid PCS type" << endl;
+      break;
+    case L: // Liquid flow
+      break;
+    case U: // Unconfined flow
+      break;
+    case G: // MB now Groundwater flow
+      break;
+    case T: // Two-phase flow
+      break;
+    case C: // Componental flow
+      break;
+    case H: // heat transport
+      break;
+	case M:{ // Mass transport //SB4200
+		val = MediaProp->Porosity(Index, unit,pcs->m_num->ls_theta); // Porosity
+//		val *= PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
+//		val *= FluidProp->Density(Index, unit,pcs->m_num->ls_theta); // fluid density
+		m_cp = cp_vec[pcs->pcs_component_number]; 
+		val *= m_cp->CalcElementRetardationFactorNew(Index, unit, pcs); // Retardation factor
+		// Get saturation change:
+		nodeval0 = PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 0);
+		nodeval1 = PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
+		dS = nodeval1 - nodeval0; // 1/dt accounted for in assemble function
+//		if(Index == 195) cout << val << "Sat_old = " << nodeval0 << ", Sa_new: "<< nodeval1<< ", dS: " << dS << endl;
+		val*= dS;
+		break;}
     case O: // Liquid flow
       break;
     case R: // Richards
@@ -761,11 +830,13 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
             mat[i] = tensor[i]/mat_fac;
         break;
       case G: // Groundwater flow
+/* SB4218 - moved to ->PermeabilityTensor(Index);
         if(MediaProp->permeability_model==2){ //?efficiency
           for(i=0;i<(int)pcs->m_msh->mat_names_vector.size();i++){
             if(pcs->m_msh->mat_names_vector[i].compare("PERMEABILITY")==0)
               break;
           }
+
           mat_fac = MeshElement->mat_vector(i);
           mat_fac /= FluidProp->Viscosity();
           mat[0] = mat_fac;
@@ -779,12 +850,13 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
           mat[8] = mat_fac;
         }
         else{
+*/
         tensor = MediaProp->PermeabilityTensor(Index);
         //mat_fac = FluidProp->Viscosity(); CMCD out 4213
         mat_fac = 1.0;//CMCD
         for(i=0;i<dim*dim;i++)
           mat[i] = tensor[i]/mat_fac; //OK
-        }
+//        }
         break;
       case T: // Two-phase flow
         break;
@@ -796,8 +868,9 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
         break;
       case M: // Mass transport
 		    tensor = MediaProp->MassDispersionTensorNew(ip);
-		    mat_fac = 1.0; //MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
-		//OK mat_fac *= FluidProp->Density();
+		    mat_fac = 1.0; //MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta); // porosity now included in MassDispersionTensorNew()
+            if(PCSGet("RICHARDS_FLOW"))
+     		    mat_fac *= PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
 		for(i=0;i<dim*dim;i++) 
           mat[i] = tensor[i]*mat_fac*time_unit_factor; 
         break;
@@ -847,7 +920,10 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
       //------------------------------------------------------------------
       case R: // Richards flow
         // Change parameter caculation. WW
+		for(i=0;i<nnodes;i++) //SB 4209 - otherwise saturations are nonsense
+              NodalVal_Sat[i] = pcs->GetNodeValue(nodes[i], idxS);
         Sw = interpolate(NodalVal_Sat);
+//		cout << " Index, Sw: " << Index << ", " << Sw << endl;
         tensor = MediaProp->PermeabilityTensor(Index);
         mat_fac = time_unit_factor* MediaProp->PermeabilitySaturationFunction(Sw,0) \
                 / FluidProp->Viscosity();
@@ -1018,6 +1094,7 @@ void CFiniteElementStd::CalcMass()
       ComputeShapefct(1); // Linear interpolation function
       // Material
       mat_fac = CalCoefMass();
+	  if(Index < 0) cout << "mat_fac in CalCoeffMass: " << mat_fac << endl;
       // GEO factor
       fkt *= mat_fac;  
       // Calculate mass matrix
@@ -1028,10 +1105,12 @@ void CFiniteElementStd::CalcMass()
              (*Mass)(i,j) += fkt *shapefct[i]*shapefct[j];
          }
   }
+   //TEST OUTPUT
+//  if(Index == 195){cout << "Mass Matrix: " << endl; Mass->Write(); }
 }
 /***************************************************************************
    GeoSys - Funktion: 
-           CFiniteElementStd:: CalcMass
+           CFiniteElementStd:: CalcStorage
    Aufgabe:
            Compute mass matrix, i.e. int (N.mat.N). Linear interpolation
  
@@ -1071,8 +1150,54 @@ void CFiniteElementStd::CalcStorage()
 
   }
   //TEST OUTPUT
-  // if(Index < 5)  Storage->Write();
+//  if(Index == 195){cout << "Storage Matrix: " << endl; Storage->Write(); }
 }
+
+/***************************************************************************
+   GeoSys - Funktion: 
+           CFiniteElementStd:: CalcContent
+   Aufgabe:
+           Compute Content matrix, i.e. int (N.mat.N). Linear interpolation
+ 
+   Programming:
+   01/2005   WW   
+02/2005 OK GEO factor
+**************************************************************************/
+void CFiniteElementStd::CalcContent()
+{
+  int i, j;
+  // ---- Gauss integral
+  int gp;
+  int gp_r=0,gp_s=0,gp_t=0;
+  double fkt,mat_fac;
+  // Material
+  mat_fac = 1.0;
+  //----------------------------------------------------------------------
+  //======================================================================
+  // Loop over Gauss points
+  for (gp = 0; gp < nGaussPoints; gp++)
+  {
+      //---------------------------------------------------------
+      //  Get local coordinates and weights 
+ 	  //  Compute Jacobian matrix and its determinate
+      //---------------------------------------------------------
+      fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+	  // Compute geometry
+      ComputeShapefct(1); // Linear interpolation function
+      // Material
+      mat_fac = CalCoefContent();
+      // GEO factor
+      fkt *= mat_fac;  
+      // Calculate mass matrix
+      for (i = 0; i < nnodes; i++)
+         for (j = 0; j < nnodes; j++)
+             (*Content)(i,j) += fkt *shapefct[i]*shapefct[j];
+
+  }
+  //TEST OUTPUT
+//  if(Index == 195){cout << "COntent Matrix: " << endl; Content->Write(); }
+}
+
 
 /***************************************************************************
    GeoSys - Funktion: 
@@ -1173,7 +1298,7 @@ void CFiniteElementStd::CalcLaplace()
 	  }
   }
   //TEST OUTPUT
- // Laplace->Write();
+ // if(Index == 195){cout << " Laplace Matrix: " << endl; Laplace->Write();}
 }
 
 //SB4200
@@ -1213,7 +1338,7 @@ void CFiniteElementStd::CalcAdvection()
     //---------------------------------------------------------
 	  // Compute geometry
     ComputeGradShapefct(1); // Linear interpolation function....dNJ-1....var dshapefct
-	  ComputeShapefct(1);// Linear interpolation N....var shapefct
+	ComputeShapefct(1);// Linear interpolation N....var shapefct
     //---------------------------------------------------------
     //Velocity
     vel[0] = gp_ele->Velocity(0, gp);   
@@ -1228,8 +1353,7 @@ void CFiniteElementStd::CalcAdvection()
     }
   }
   //TEST OUTPUT
-  //if(Index < 5)	
-//Advection->Write();
+//  if(Index == 195){cout << "Advection Matrix: " << endl; Advection->Write(); }
 }
 
 void CFiniteElementStd::CalcRHS_by_ThermalDiffusion()
@@ -1515,9 +1639,12 @@ void  CFiniteElementStd::Cal_Velocity()
 
   // Loop over Gauss points
   double* G_coord = NULL;
-  k = (coordinate_system)%10;
-//  cout << " coordinate_system " << coordinate_system << " k " << k << endl;
-//  k=2;
+//  k = (coordinate_system)%10;
+  k=-1;
+  if(coordinate_system == 12) k=0;
+  if(coordinate_system == 22) k=1;
+  if(coordinate_system == 32) k=2;
+//  if(Index<1) cout << " coordinate_system: " << coordinate_system << ", k: " << k << endl;
   if(k==0)
      G_coord = X;
   else if(k==1)
@@ -1551,7 +1678,10 @@ void  CFiniteElementStd::Cal_Velocity()
          for(j=0; j<nnodes; j++)
 			 vel[i] += NodalVal[j]*dshapefct[i*nnodes+j];
 	  }     
-//SB4209   vel[k] -= gravity_constant*rho_w;
+      // Correct for gravity term if flow is calculated using Pressure as primary variable
+	  // and if Z-Koordinate is used (k determined by flag coordinate system)
+	  if((!HEAD_Flag) && (k>-1)) vel[k] -= gravity_constant*FluidProp->Density(); //+-
+
       for (i = 0; i < dim; i++)
       {
          for(j=0; j<dim; j++)
@@ -1559,7 +1689,7 @@ void  CFiniteElementStd::Cal_Velocity()
       }
   }
 
- // gp_ele->Velocity.Write();
+//  gp_ele->Velocity.Write();
 }
 
 /***************************************************************************
@@ -1837,12 +1967,13 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
   // Non-linearities
 //  double non_linear_function_iter = 1.0; //OK MediaProp->NonlinearFlowFunction(Index,unit,theta);
 //  double non_linear_function_t0   = 1.0; //OK MediaProp->NonlinearFlowFunction(Index,unit,0.0);
-  double fac_mass, fac_laplace, fac_advection, fac_storage;
+  double fac_mass, fac_laplace, fac_advection, fac_storage, fac_content;
   // Initialize.
   (*Mass) = 0.0;
   (*Laplace) = 0.0;
   (*Advection) = 0.0;
   (*Storage) = 0.0;
+  (*Content) = 0.0;
   //----------------------------------------------------------------------
   // GEO
   // double geo_fac = MediaProp->geo_area;
@@ -1857,8 +1988,10 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
   CalcLaplace();
   // Advection matrix.....................................................
   CalcAdvection();	
-  // Calc Storage Matrix for decay and fluid saturation changes
+  // Calc Storage Matrix for decay 
   CalcStorage();
+   // Calc Content Matrix for  saturation changes
+  CalcContent();
   //======================================================================
   // Assemble global matrix
   //----------------------------------------------------------------------
@@ -1879,6 +2012,7 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
    fac_laplace = theta ; //* non_linear_function_iter; //*geo_fac; 
    fac_advection = theta;
    fac_storage = theta;
+   fac_content = theta*dt_inverse;
 
   //Mass matrix
   *StiffMatrix    = *Mass;
@@ -1894,6 +2028,10 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
   // Storage matrix
   *AuxMatrix      = *Storage;
   (*AuxMatrix)   *= fac_storage;
+  *StiffMatrix   += *AuxMatrix;
+  // Content matrix
+  *AuxMatrix      = *Content;
+  (*AuxMatrix)   *= fac_content;
   *StiffMatrix   += *AuxMatrix;
 
   //----------------------------------------------------------------------
@@ -1914,6 +2052,7 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
   fac_laplace = -(1.0-theta); // * non_linear_function_t0; //*geo_fac;
   fac_advection = -(1.0-theta);
   fac_storage = -(1.0-theta); //*lambda
+  fac_content = -(1.0-theta)*dt_inverse;
 
   // Mass - Storage
   *AuxMatrix1    = *Mass;
@@ -1926,9 +2065,13 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
   *AuxMatrix     = *Advection;
   (*AuxMatrix)  *= fac_advection;
   *AuxMatrix1   += *AuxMatrix;
-  // Advection
+  // Storage
   *AuxMatrix     = *Storage;
   (*AuxMatrix)  *= fac_storage;
+  *AuxMatrix1   += *AuxMatrix;
+  // Content
+  *AuxMatrix     = *Content;
+  (*AuxMatrix)  *= fac_content;
   *AuxMatrix1   += *AuxMatrix;
 
   
@@ -1959,6 +2102,8 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
 	Laplace->Write();
 	cout << " Storage matrix" << endl;
 	Storage->Write();
+	cout << " Content matrix" << endl;
+	Content->Write();
 	cout << " Left matrix" << endl;
 	StiffMatrix->Write();
 	cout << " Right matrix" << endl;

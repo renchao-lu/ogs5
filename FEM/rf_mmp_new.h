@@ -174,7 +174,8 @@ extern void MMPDelete();
 extern CMediumProperties* MMPGet(string);
 extern void MMP2PCSRelation(CRFProcess*);
 extern void GetHeterogeneousFields(); //SB
-
+extern long GetNearestHetVal2(long EleIndex, CFEMesh *m_msh, vector <double> xvals,  vector <double> yvals,  vector <double> zvals,  vector <double> mmpvals);
+double GetAverageHetVal2(long EleIndex, CFEMesh *m_msh, vector <double> xvals,  vector <double> yvals,  vector <double> zvals,  vector <double> mmpvals);
 #define MMP_FILE_EXTENSION ".mmp"
 
 #endif

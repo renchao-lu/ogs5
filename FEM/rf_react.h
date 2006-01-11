@@ -23,6 +23,7 @@ class REACT{
 	int number_of_comp;/* Number of components in above data structures: size = number_of_comp * NodeListLength */
 	int heatflag;      /* if 1, heat transport is active and passed to phreeqc */
 	long nodenumber;   /* number of nodes, on which reactions are calculated */
+	bool flag_pqc;     /* flag if *.pqc file exists */
 	/* hier später arrays of reactions reinhängen ?*/
 
 	// rcml moved here
@@ -43,7 +44,7 @@ class REACT{
 	void InitREACT(void);
 	void ExecuteReactions(void);
 	void ExecuteReactionsPHREEQC(void);
-	int  TestPHREEQC(void);
+	void TestPHREEQC(string);
 	int  Call_Phreeqc(void);
 	void GetTransportResults(void);
 	int  ReadReactionModel(FILE *File);
@@ -59,6 +60,7 @@ class REACT{
 extern vector <REACT*> REACT_vec;
 
 extern void DestroyREACT(void);
+extern void RCRead(string);
 extern double MATCalcIonicStrengthNew(long index);
 
 #endif

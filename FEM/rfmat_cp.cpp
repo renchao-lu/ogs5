@@ -912,7 +912,7 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double*gp, C
 
 // porosity = GetSoilPorosity(index);
  porosity = m_mat_mp->Porosity(index,gp,theta);
- porosity = 0.5; //SB- set porosity
+// porosity = 0.5; //SB- set porosity
 // density_rock = 2000.0; // GetSolidDensity(index);
  density_rock = fabs(m_msp->Density());
 

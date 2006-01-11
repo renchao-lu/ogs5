@@ -128,9 +128,11 @@ void PCSCreate(void)
   for(i=0;i<no_processes;i++){
     cout << "............................................." << endl;
     m_pcs = pcs_vector[i];
-    cout << "Create: " << m_pcs->pcs_type_name << endl;
+    cout << "Create: " << m_pcs->pcs_type_name ;
     m_pcs->pcs_type_number = i;
     m_pcs->Config(); //OK
+    if(!m_pcs->pcs_type_name.compare("MASS_TRANSPORT")) cout << " for " << m_pcs->pcs_primary_function_name[0] << " ";
+    cout << endl;
     m_pcs->Create();
   }
   //----------------------------------------------------------------------
@@ -186,15 +188,19 @@ int LOPPreTimeLoop_PCS(void)
   //----------------------------------------------------------------------
   // REACTIONS 
   // Initialization of REACT structure for rate exchange between MTM2 and Reactions
-  REACT *rc = new REACT(); //SB
-  if (rc->TestPHREEQC()){//CMCD MX
+  REACT *rc = NULL; //SB
+//  rc->TestPHREEQC(); // Test if *.pqc file is present
+  rc = rc->GetREACT();
+  if (rc->flag_pqc){
     if(cp_vec.size()>0){ //OK
       rc->CreateREACT();//SB
       rc->InitREACT();
       rc->ExecuteReactions();
+	  REACT_vec.clear();
+	  REACT_vec.push_back(rc);
     }
   }
-  delete rc;
+//  delete rc;
   //----------------------------------------------------------------------
   // PAR
 #ifdef PARALLEL
@@ -302,10 +308,10 @@ int LOPTimeLoop_PCS(double*dt_sum)
           }
           //LOPExecuteRegionalRichardsFlow(pcs);
         }
-  //      if(!pcs->m_msh) //OK
-  //        VELCalcAll(pcs);
-		//else
-  //        pcs->CalIntegrationPointValue(); //WW
+//       if(!pcs->m_msh) //OK
+//         VELCalcAll(pcs);
+//	   else
+         m_pcs->CalIntegrationPointValue(); //WW
         //if(pcs->m_msh->no_layer>0)
         //  pcs->CalcFluxesForCoupling();
       }
@@ -464,12 +470,11 @@ int LOPTimeLoop_PCS(double*dt_sum)
               // Move inside iteration loop if couplingwith transport is implemented SB:todo
               //SB:todo move into Execute Reactions	  if((aktueller_zeitschritt % 1) == 0)  
            
-     //CMCD had to take this out to run a model with heat and mass transport.V4213
-	   /*if(cp_vec.size()>0){ //OK
-		   REACT *rc = NULL; //SB
-		   rc = REACT_vec[0];
-		   rc->ExecuteReactions();
-	   }*/
+//				REACT *rc = NULL; 
+//				rc = REACT_vec[0];
+//				if(rc->flag_pqc) rc->ExecuteReactions();
+//				delete rc;
+	   		    if(REACT_vec[0]->flag_pqc) REACT_vec[0]->ExecuteReactions();
 	         *dt_sum = 0.0;
             }
           }
