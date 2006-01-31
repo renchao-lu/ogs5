@@ -3,7 +3,7 @@ CXX_LD           = g++
 
 CXX_OPT_FLAGS    = -O3
 CXX_DEBUG_FLAGS  =
-CXX_WARN_FLAGS   =
-CXX_FLAGS        = -DGCC -D_POSIX_SOURCE -DNO_ERROR_CONTROL $(CXX_OPT_FLAGS)
+CXX_WARN_FLAGS   = 
+CXX_FLAGS        = -pedantic -fno-nonansi-builtins -DGCC -D_POSIX_SOURCE -DNO_ERROR_CONTROL $(CXX_OPT_FLAGS)
 CXX              = g++
 
