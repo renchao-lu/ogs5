@@ -16,7 +16,7 @@ public:
 private:
   double m_dXmin,m_dXmax,m_dYmin,m_dYmax;
   int width,height;
-  double time_last,time_step_last,time_step_max,time_step_current;
+  double time_last,time_step_last,time_step_max;
   CGraphics* m_graphics_dlg;
   CFunction* m_fct;
 // Operations

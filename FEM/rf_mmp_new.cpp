@@ -323,7 +323,7 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 		  in >> porosity_model_values[1];
 		  in >> porosity_model_values[2];
 		  in >> porosity_model_values[3];
-		  pcs_name_vector.push_back("PRESSURE1");
+		  porosity_pcs_name_vector.push_back("PRESSURE1");
 		  break;
 		case 3: // Chemical swelling model
 		  in >> porosity_model_values[0]; // Initial porosity
@@ -333,10 +333,10 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 		  in >> porosity_model_values[4]; // I
 		  in >> porosity_model_values[5]; // S^l_0
 		  in >> porosity_model_values[6]; // beta
-		  pcs_name_vector.push_back("SATURATION2");
-		  pcs_name_vector.push_back("TEMPERATURE1");
+		  porosity_pcs_name_vector.push_back("SATURATION2");
+		  porosity_pcs_name_vector.push_back("TEMPERATURE1");
 		 break;
-		case 4: // Chemical swelling model (constrained swelling)
+		case 4: // Chemical swelling model (constrained swelling, constant I)
 		 in >> porosity_model_values[0]; // Initial porosity
 		 in >> porosity_model_values[1]; // Specific surface[m^2/g]
 		 in >> porosity_model_values[2]; // Expansive min. fragtion
@@ -345,8 +345,8 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 		 in >> porosity_model_values[5]; // S^l_0
 		 in >> porosity_model_values[6]; // beta
 		 in >> porosity_model_values[7]; // n_min
-		 pcs_name_vector.push_back("SATURATION2");
-		 pcs_name_vector.push_back("TEMPERATURE1");
+		 porosity_pcs_name_vector.push_back("SATURATION1");  //for richard flow only
+		 porosity_pcs_name_vector.push_back("TEMPERATURE1");
 		 break;
  		case 5: // Chemical swelling model (free swelling, constant I)
 		 in >> porosity_model_values[0]; // Initial porosity
@@ -356,10 +356,10 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 		 in >> porosity_model_values[4]; // I
 		 in >> porosity_model_values[5]; // S^l_0
 		 in >> porosity_model_values[6]; // beta
-		 pcs_name_vector.push_back("SATURATION2");
-		 pcs_name_vector.push_back("TEMPERATURE1");
+		 porosity_pcs_name_vector.push_back("SATURATION2");
+		 porosity_pcs_name_vector.push_back("TEMPERATURE1");
 		 break;
- 		case 6: // Chemical swelling model (constrained swelling, constant I)
+ 		case 6: // Chemical swelling model (constrained swelling)
 		 in >> porosity_model_values[0]; // Initial porosity
 		 in >> porosity_model_values[1]; // Specific surface[m^2/g]
 		 in >> porosity_model_values[2]; // Expansive min. fragtion
@@ -368,8 +368,8 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 		 in >> porosity_model_values[5]; // S^l_0
 		 in >> porosity_model_values[6]; // beta
 		 in >> porosity_model_values[7]; // n_min
-		 pcs_name_vector.push_back("SATURATION2");
-		 pcs_name_vector.push_back("TEMPERATURE1");
+		 porosity_pcs_name_vector.push_back("SATURATION2");
+		 porosity_pcs_name_vector.push_back("TEMPERATURE1");
 		 break;
   		case 10: // Chemical swelling model (constrained swelling, constant I)
 		 in >> porosity_model_values[0]; // Initial porosity
@@ -947,6 +947,21 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
     if(line_string.find("$PERMEABILITY_DISTRIBUTION")!=string::npos) { //subkeyword found
       in.str(GetLineFromFile1(mmp_file));
       in >> permeability_file;
+      string file_name = permeability_file;
+      CGSProject* m_gsp = NULL;
+      m_gsp = GSPGetMember("mmp");
+      if(m_gsp)
+      {
+        file_name = m_gsp->path + permeability_file;
+      }
+      ifstream mmp_file(file_name.data(),ios::in);
+      if (!mmp_file.good()){
+        cout << "Fatal error in MMPRead: no PERMEABILITY_DISTRIBUTION file" << endl;
+#ifdef MFC
+        AfxMessageBox("Fatal error in MMPRead: no PERMEABILITY_DISTRIBUTION file");
+#endif
+      }  
+      mmp_file.close();
       permeability_model = 2;
       in.clear();
       continue;
@@ -1154,6 +1169,16 @@ if(heat_dispersion_model>-1){
   switch (heat_dispersion_model) {
     case 1:
       *mmp_file << "  " << heat_dispersion_model << " " << heat_dispersion_longitudinal <<" "<<heat_dispersion_transverse<<endl; //CMCD permeability
+      break;
+  }
+}
+  //....................................................................
+  //MASS DISPERSION 
+if(mass_dispersion_model>-1){
+  *mmp_file << " $MASS_DISPERSION" << endl;
+  switch(mass_dispersion_model) {
+    case 1:
+      *mmp_file << "  " << mass_dispersion_model << " " << mass_dispersion_longitudinal <<" "<<mass_dispersion_transverse<<endl; //CMCD permeability
       break;
   }
 }
@@ -2052,8 +2077,6 @@ double* CMediumProperties::MassDispersionTensorNew(int ip)
   CompProperties *m_cp = cp_vec[component];
   eleType=m_pcs->m_msh->ele_vector[number]->GetElementType();
   int Dim = m_pcs->m_msh->GetCoordinateFlag()/10;
-  CRFProcess *n_pcs = NULL;
-
   //----------------------------------------------------------------------
   // Materials
   molecular_diffusion_value = m_cp->CalcDiffusionCoefficientCP(index) * TortuosityFunction(index,g,theta);
@@ -2630,11 +2653,11 @@ double CMediumProperties::Porosity(long number,double*gp,double theta)
   //----------------------------------------------------------------------
   // Functional dependencies
   int i;
-  int no_pcs_names =(int)pcs_name_vector.size();
+  int no_pcs_names =(int)porosity_pcs_name_vector.size();
   for(i=0;i<no_pcs_names;i++){
     if(New)
     {
-       nidx0 = m_pcs->GetNodeValueIndex(pcs_name_vector[i]);
+       nidx0 = m_pcs->GetNodeValueIndex(porosity_pcs_name_vector[i]);
 	   nidx1 = nidx0+1;  
       if(mode==0){ // Gauss point values
          assem->ComputeShapefct(1);
@@ -2652,8 +2675,8 @@ double CMediumProperties::Porosity(long number,double*gp,double theta)
 	}
 	else
 	{
-       nidx0 = PCSGetNODValueIndex(pcs_name_vector[i],0);
-       nidx1 = PCSGetNODValueIndex(pcs_name_vector[i],1);
+       nidx0 = PCSGetNODValueIndex(porosity_pcs_name_vector[i],0);
+       nidx1 = PCSGetNODValueIndex(porosity_pcs_name_vector[i],1);
        if(mode==0){ // Gauss point values
         primary_variable[i] = (1.-theta)*InterpolValue(number,nidx0,gp[0],gp[1],gp[2]) \
                           + theta*InterpolValue(number,nidx1,gp[0],gp[1],gp[2]);
@@ -2744,9 +2767,9 @@ double CMediumProperties::Porosity(CFiniteElementStd* assem)
   //----------------------------------------------------------------------
   // Functional dependencies
   int i;
-  int no_pcs_names =(int)pcs_name_vector.size();
+  int no_pcs_names =(int)porosity_pcs_name_vector.size();
   for(i=0;i<no_pcs_names;i++){
-       nidx0 = m_pcs->GetNodeValueIndex(pcs_name_vector[i]);
+       nidx0 = m_pcs->GetNodeValueIndex(porosity_pcs_name_vector[i]);
 	   nidx1 = nidx0+1;  
       if(mode==0){ // Gauss point values
          assem->ComputeShapefct(1);
@@ -3125,7 +3148,9 @@ double CMediumProperties::PorosityEffectiveConstrainedSwelling(long index,double
   //--------------------------------------------------------------------
   // MSP solid properties 
   CSolidProperties *m_msp = NULL;
-  long group = ElGetElementGroupNumber(index);
+  //long group = ElGetElementGroupNumber(index);
+  
+  long group = m_pcs->m_msh->ele_vector[index]->GetPatchIndex();
   m_msp = msp_vector[group];
   density_rock  = m_msp->Density(1);
   //--------------------------------------------------------------------
@@ -3278,11 +3303,12 @@ double CMediumProperties::PorosityEffectiveConstrainedSwellingConstantIonicStren
 
   double mat_mp_m, beta;
   double porosity = 0.0;
-  double e;
   static double theta;
   double porosity_n, porosity_IL, d_porosity, \
-                n_total, density_rock, fmon;
-//  double n_max, n_min;
+                density_rock, fmon, porosity_max;
+  double n_sw, det_n_sw;
+  double old_value, new_value;
+  static double porosity_IP0;
   static double S_0;
   /* Component Properties */
   static double  satu, epsilon;
@@ -3303,7 +3329,8 @@ double CMediumProperties::PorosityEffectiveConstrainedSwellingConstantIonicStren
   //--------------------------------------------------------------------
   // MSP solid properties 
   CSolidProperties *m_msp = NULL;
-  long group = ElGetElementGroupNumber(index);
+ // long group = ElGetElementGroupNumber(index);
+  long group = m_pcs->m_msh->ele_vector[index]->GetPatchIndex();
   m_msp = msp_vector[group];
   density_rock  = m_msp->Density(1);
   //--------------------------------------------------------------------
@@ -3313,69 +3340,74 @@ double CMediumProperties::PorosityEffectiveConstrainedSwellingConstantIonicStren
   satu_0 = porosity_model_values[5];       /*Initial saturation, if the sample is homogenous [-]*/
   porosity_min = porosity_model_values[7]; /*minimal porosity after swelling compaction*/
 
- //  ion_strength = MATGetSoilIonicStrength(index);
-
   /* Field v0ariables */
-  /*theta = GetNumericalTimeCollocation("TRANSPORT");*/
-   theta = 1.0;
-  /*  T = MATGetTemperatureGP (index,0.0,0.0,0.0,theta);*/
-//  T=298.0;
+   theta = m_pcs->m_num->ls_theta;
   phase=1;
-  satu = saturation; //MATGetSaturationGP(phase, index, 0.0, 0.0, 0.0, theta); /*only for fluid, phase=1*/ 
+  satu = saturation;  /*only for fluid, phase=1*/ 
 
   /*-----------------------------------------------------------------------*/
   /* Interlayer Porositaet berechnen */
+  if (temperature < 0.0 || temperature > 600.0)
+	  temperature = 298.0;   //ToDo, MX
   epsilon =87.0+exp(-0.00456*(temperature-273.0));
   porosity_n = porosity_model_values[0]; 
 
     /* Maximal inter layer porosity */    
-  porosity_IL=fmon * psi * mat_mp_m * S_0 * (density_rock * 1.0e3) \
+  porosity_max=fmon * psi * mat_mp_m * S_0 * (density_rock * 1.0e3) \
            * sqrt(epsilon * epsilon_0 * R * temperature / (2000.0 * F_const * F_const * ion_strength ));
-  d_porosity=porosity_IL*(pow(satu, beta)-pow(satu_0, beta));    
+  d_porosity=porosity_max*(pow(satu, beta)-pow(satu_0, beta));    
 
 /*-----------Interlayer porosity calculation------------------*/    
 
 /*  porosity_IL = porosity_IL*satu; */
-  porosity_IL  *=pow(satu,beta);
-  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY_IL"),porosity_IL); 
-    /* constrained swelling */
-
+  porosity_IL  =porosity_max*pow(satu,beta);
+ // ElSetElementVal(index,PCSGetELEValueIndex("POROSITY_IL"),porosity_IL);
+  m_pcs->SetElementValue(index, m_pcs->GetElementValueIndex("POROSITY_IL"),porosity_IL);
+  
 /*-----------Effective porosity calculation------------------*/    
-/*  n_max=porosity_n;
-  n_min=porosity_min;
 
-  porosity = n_max-(n_max-n_min)*fmon*(pow(satu,1.5)); 
-
-  ElSetElementVal(index,poro_start,porosity); 
-
-*/
   porosity = porosity_n-d_porosity; 
 
   if (porosity<porosity_min) 
 	  porosity =porosity_min;
 
-  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY"),porosity);
-/*-----------Void ratio for swelling pressure calculation------------------*/ 
-  e = porosity/(1.-porosity);
-  ElSetElementVal(index,PCSGetELEValueIndex("VoidRatio"),e); 
-/*-----------Swelling potential calculation------------------*/      
-/* constrained swelling */
-//  n_total=porosity_n - d_porosity;
-  n_total=porosity_n + d_porosity-porosity_min;
- 
-//  if(n_total>porosity_min)
-  if(n_total>=0)
-  {  
-    *porosity_sw = n_total; 
+ // ElSetElementVal(index,PCSGetELEValueIndex("POROSITY"),porosity);
+     m_pcs->SetElementValue(index, m_pcs->GetElementValueIndex("POROSITY"),porosity);
+
+/*-----------Swelling strain rate, xie, wang and Kolditz, (23)------------------*/ 
+   
+  porosity_IP0  =porosity_n - porosity_max * pow(satu_0,beta);
+  n_sw = d_porosity-(porosity_IP0 - porosity_min);
+
+  if (n_sw<=0.0) {
+    n_sw = 0.0;
   }
-  else
-//    *porosity_sw=-porosity_IL*(satu-satu_0)+(porosity_n-porosity_min); 
-    *porosity_sw=d_porosity+(porosity_n-porosity_min); 
-  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY_SW"),*porosity_sw);  
+    int indx_sw0 =  m_pcs->GetElementValueIndex("n_sw");
+	int indx_sw1 = indx_sw0 + 1;
 
+    if ( aktuelle_zeit== dt) {
+	   m_pcs->SetElementValue(index,indx_sw0,n_sw);
+  	   m_pcs->SetElementValue(index,indx_sw1,n_sw);
+	}
+    if ( aktuelle_zeit >= 2*dt){
+	   m_pcs->SetElementValue(index,indx_sw1,n_sw);
+	}
 
-/*-----------Swelling pressure calculation------------------*/    
- // MATCalSoilSwellPressMethod0(index);
+      old_value =  m_pcs->GetElementValue(index,indx_sw0);
+	  new_value =  m_pcs->GetElementValue(index,indx_sw1);
+
+    if ( index == 399 && aktuelle_zeit== 10*dt){
+      
+	  index = index;  //only for debug
+    }
+
+// change rate of swelling strain
+    det_n_sw = new_value - old_value;
+	if (det_n_sw<-1.0e-8)
+		det_n_sw = det_n_sw;
+    if ( aktuelle_zeit== dt) 
+	   m_pcs->SetElementValue(index, m_pcs->GetElementValueIndex("n_sw_rate"),det_n_sw);
+	 m_pcs->SetElementValue(index, m_pcs->GetElementValueIndex("n_sw_rate")+1,det_n_sw);
 
   return porosity;
 }

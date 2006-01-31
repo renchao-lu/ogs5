@@ -262,6 +262,13 @@ last modified:
 void CFiniteElementStd::SetMaterial(int phase)
 {
   phase = 0;
+  if((int)mmp_vector.size()<pcs->m_msh->max_mmp_groups + 1){//CC8888
+#ifdef MFC
+    AfxMessageBox("Not enough MMP groups");
+#endif
+    cout << "Not enough MMP groups" << endl;
+    return;
+  }
   //----------------------------------------------------------------------
   // MMP
   long group;
@@ -269,12 +276,6 @@ void CFiniteElementStd::SetMaterial(int phase)
   MediaProp = mmp_vector[group];
   MediaProp->m_pcs = pcs;
   MediaProp->Fem_Ele_Std = this;
-      if((int)mmp_vector.size()<pcs->m_msh->max_mmp_groups + 1){//CC8888
-#ifdef MFC
-        AfxMessageBox("Not enough MMP groups");
-#endif
-        cout << "Not enough MMP groups" << endl;
-      }
   //----------------------------------------------------------------------
   // MSP
   if(msp_vector.size()>0) {
@@ -1718,10 +1719,11 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
 	
 	// Initialize Pressure and Conc vectors from the value already computed previously.
     CRFProcess* m_pcs = NULL;
+	m_pcs = PCSGet("LIQUID_FLOW");
 	for (int i = 0; i < nnodes; ++i)
 	{
 		NodalVal[i] = 0.0;
-		NodalVal1[i] = pcs->GetNodeValue(nodes[i], 1);   // 1 means always takes the current value of pressure. TEMP
+		NodalVal1[i] = m_pcs->GetNodeValue(nodes[i], 1);   // 1 means always takes the current value of pressure. TEMP
         NodalVal2[i] = 0.0;
 	}
 
@@ -1760,9 +1762,7 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
 					NodalVal[i]  -= fkt*dshapefct[dimension*nnodes+j]
 							    *mat[ele_dim*dimension+k]* shapefct[i] * NodalVal1[j];
                     NodalVal2[i] += fktG*dshapefct[dimension*nnodes+j]
-                                 // The following two lines should be verified with the better application.
-                                 //*mat[ele_dim*dimension+k]* shapefct[i]*Z[j];
-                                 *mat[ele_dim*dimension+k]* shapefct[i];
+                                 *mat[ele_dim*dimension+k]* shapefct[i]*Z[j];
                 }
     }
 
@@ -1776,9 +1776,10 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
             IsGroundwaterIntheProcesses = 1;
     }
 
+	// Compansate the gravity term along Z direction
     if(dimension == 2 && IsGroundwaterIntheProcesses == 0 )
         for (int i = 0; i < nnodes; i++)
-            NodalVal[i] -= NodalVal2[i];
+            NodalVal[i] += NodalVal2[i];
 
 	// Store the influence into the global vectors.
     m_pcs = PCSGet("FLUID_MOMENTUM");
@@ -2202,7 +2203,7 @@ void CFiniteElementStd::AssembleParabolicEquationNewton()
     dzx = Z[1] - Z[0];
   
     el = sqrt(dx*dx + dy*dy);
-    delt = el * 1; //hier später width
+    delt = el * 1; //hier sp?er width
   
     // 1/sqrt(dhds)
     //eslope = CalcEslope(index, m_pcs);
@@ -2832,6 +2833,7 @@ Programing:
 02/2005 OK Richards flow
 02/2005 WW Matrix output
 03/2005 WW Heat transport
+08/2005 PCH for Fluid_Momentum
 last modification:
 **************************************************************************/
 void  CFiniteElementStd::Assembly(int dimension)
@@ -2842,6 +2844,7 @@ void  CFiniteElementStd::Assembly(int dimension)
   //----------------------------------------------------------------------
 
    nn = nnodes;
+// PCH should check the following line carefully.
    if(pcs->type==41||pcs->type==4) nn = nnodesHQ;
 
    for(i=0;i<nn;i++){
@@ -2945,8 +2948,60 @@ ElementValue::~ElementValue()
    Velocity.resize(0,0);
 }
 
+/**************************************************************************
+FEMLib-Method: 
+01/2006 OK Implementation
+**************************************************************************/
+//void CFiniteElementStd::AssembleLHSMatrix()
+void CFiniteElementStd::AssembleParabolicEquationRHSVector()
+{
+  int i;
+  //----------------------------------------------------------------------
+  // TIM
+  double dt_inverse = 0.0;
+  dt_inverse = 1.0 / dt; 
+  //----------------------------------------------------------------------
+  // Initialize
+  // if (pcs->Memory_Type==2) skip the these initialization
+  (*Mass) = 0.0;
+  (*Laplace) = 0.0;
+  //----------------------------------------------------------------------
+  // Calculate matrices
+  // Mass matrix..........................................................
+  if(pcs->m_num->ele_mass_lumping)
+    CalcLumpedMass();
+  else
+    CalcMass();
+  // Laplace matrix.......................................................
+  CalcLaplace();
+  //----------------------------------------------------------------------
+  // Assemble local LHS matrix: 
+  // [C]/dt + theta [K]
+  //Mass matrix
+  *StiffMatrix    = *Mass;
+  (*StiffMatrix) *= dt_inverse;
+  // Laplace matrix
+  *AuxMatrix      = *Laplace;
+  *StiffMatrix   += *AuxMatrix;
+  //----------------------------------------------------------------------
+  for (i=0;i<nnodes; i++)
+  {
+    NodalVal1[i] = pcs->GetNodeValue(nodes[i],idx1);
+    NodalVal[i] = 0.0;
+  }
+  //----------------------------------------------------------------------
+  StiffMatrix->multi(NodalVal1, NodalVal);
+  //----------------------------------------------------------------------
+  for (i=0;i<nnodes;i++)
+  {
+    eqs_number[i] = MeshElement->nodes[i]->GetEquationIndex();
+    pcs->eqs->b[eqs_number[i]] +=  NodalVal[i];
+  }
+  //----------------------------------------------------------------------
+}
 
 }// end namespace
+//////////////////////////////////////////////////////////////////////////
 
 using FiniteElement::ElementValue;
 vector<ElementValue*> ele_gp_value;

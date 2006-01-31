@@ -31,6 +31,8 @@
 #include "gs_project.h"
 #include ".\gsformrightpicking.h"
 
+// GUI
+#include "ProgressBar.h"
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -63,6 +65,8 @@ BEGIN_MESSAGE_MAP(CGSFormRightPicking, CFormView)
     ON_BN_CLICKED(IDC_VELOCITYVECTOR, OnBnClickedVelocityvector)
     ON_BN_CLICKED(IDC_SHOWPARTICLE, OnBnClickedShowparticle)
     ON_BN_CLICKED(IDC_INOROUT, OnBnClickedInorout)
+	ON_BN_CLICKED(IDC_READPCT, OnBnClickedReadpct)
+	ON_BN_CLICKED(IDC_CINELE, OnBnClickedCinele)
 END_MESSAGE_MAP()
 
 
@@ -111,15 +115,6 @@ void CGSFormRightPicking::OnSimulateUnderDeveloperMode()
 	argv[0] = (char *)malloc(sizeOfWord * sizeof(char ));
 	sprintf(argv[0],"rf4.exe");
 	argv[1] = (char *)malloc(sizeOfWord * sizeof(char ));
-
-	// Let's get the project name such as 2d_quad or 2d_tri
-
-    /*TK: Projectname you can get with:
-       CGeoSysDoc *m_pDoc = GetDocument();
-       CString m_strFileNamePathBase = m_pDoc->m_strGSPFilePathBase; //name and path
-       CString m_strFileNameBase = m_pDoc->m_strGSPFileBase; //only name like 2d_quad
-    */
-
     
 	CGSProject* m_gsp = gsp_vector[0]; //TK it crash sometimes
 	for(int i=0; i<= (int)m_gsp->base.size(); ++i)
@@ -217,9 +212,128 @@ void CGSFormRightPicking::OnBnClickedInorout()
 */
   
     m_msh->PT->InterpolateVelocityOfTheParticle(&(m_msh->PT->X[0].Now), m_ele);
-//OK    double vx = m_msh->PT->X[0].Now.Vx; double vy = m_msh->PT->X[0].Now.Vy; double vz = m_msh->PT->X[0].Now.Vz;
+    double vx = m_msh->PT->X[0].Now.Vx; double vy = m_msh->PT->X[0].Now.Vy; double vz = m_msh->PT->X[0].Now.Vz;
     
 
-//OK    double ok = 1.0;
+    double ok = 1.0;
     
 }
+void CGSFormRightPicking::OnBnClickedReadpct()
+{
+	CFEMesh* m_msh = NULL;
+    m_msh = fem_msh_vector[0];  // Something must be done later on here.
+
+	RandomWalk* RW = NULL;
+	RW = m_msh->PT;
+ 
+	static char BASED_CODE szFilter[] = "Mesh Configuration File (*.pct)|*.pct|All Files (*.*)|*.*||";
+	CFileDialog pFlg(TRUE, "slt", NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, NULL );
+
+	if(pFlg.DoModal() == IDOK)
+	{	
+		FILE *pct_file;
+
+		pct_file = fopen(pFlg.GetPathName(), "r");
+
+		// Later on from this line, I can put which mesh I am dealing with. 
+		fscanf(pct_file,"%d", &(RW->numOfParticles));
+
+		for(int i=0; i< RW->numOfParticles; ++i)
+		{
+			int index = 0; 
+			double x = 0.0, y=0.0, z = 0.0;
+			fscanf(pct_file, "%d %lf %lf %lf", &index, &x, &y, &z);
+			RW->X[i].Now.elementIndex = index;
+			RW->X[i].Now.x = x; RW->X[i].Now.y = y; RW->X[i].Now.z = z; 
+
+			RW->X[i].Past = RW->X[i].Now;
+		}
+
+		fflush(pct_file);
+		fclose(pct_file);	
+	}
+}
+
+void CGSFormRightPicking::OnBnClickedCinele()
+{
+	CFEMesh* m_msh = NULL;
+    m_msh = fem_msh_vector[0]; 
+
+	RandomWalk* RW = NULL;
+	RW = m_msh->PT;
+	int numOfElement = m_msh->ele_vector.size();
+
+	// Temp store for concentrations
+	double* conc = NULL;
+	conc = new double[numOfElement]();
+
+	// Progress bar stuff
+	CProgressBar bar(_T("Computing concentration in elements... Please wait."), 60, numOfElement, TRUE);
+
+	// Loop over the elements
+	for(int i=0; i< numOfElement; ++i)
+	{
+		int elementCount = 0;
+
+		// Loop over the particles
+		for(int j=0; j< RW->numOfParticles; ++j)
+		{
+			if(i == RW->X[j].Now.elementIndex )
+				++elementCount;
+		}
+
+		// Store the number of particles in the element
+		conc[i] = elementCount;
+
+		// Progress a bar
+		bar.StepIt();
+		PeekAndPump();
+	}
+
+	// Store for the plot from the techplot.
+	static char BASED_CODE szFilter[] = "Mesh Configuration File (*.tec)|*.tec|All Files (*.*)|*.*||";
+	CFileDialog pFlg(FALSE, "slt", NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, NULL );
+
+	
+	if(pFlg.DoModal() == IDOK)
+	{	
+		FILE *tec_file;
+		tec_file = fopen(pFlg.GetPathName(), "w");
+		
+/*
+		// Heading for tecplot
+		fprintf(tec_file, "VARIABLES = X,Y,Z,CONCENTRATION1\n");
+		fprintf(tec_file, "ZONE T=\"1.000000000000e+00s\", N=%d, E=0, F=FEPOINT, ET=QUADRILATERAL\n", numOfElement); 
+*/
+		
+		for(int i=0; i< numOfElement; ++i)
+		{
+			CElem* m_ele = m_msh->ele_vector[i];	
+
+			double* center = m_ele->GetGravityCenter();
+
+			fprintf(tec_file, "%e %e %e %e\n", center[0], center[1], center[2], conc[i]);
+		}
+		
+		fflush(tec_file);
+		fclose(tec_file);
+	}
+
+	delete [] conc;
+}
+
+
+BOOL CGSFormRightPicking::PeekAndPump()
+{
+	static MSG msg;
+
+	while (::PeekMessage(&msg,NULL,0,0,PM_NOREMOVE)) {
+		if (!AfxGetApp()->PumpMessage()) {
+			::PostQuitMessage(0);
+			return FALSE;
+		}	
+	}
+
+	return TRUE;
+}
+

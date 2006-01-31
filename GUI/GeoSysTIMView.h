@@ -17,8 +17,10 @@ public:
 private:
   double m_dXmin,m_dXmax,m_dYmin,m_dYmax;
   int width,height;
-   double time_last,time_step_last,time_step_max,time_step_current;
-
+  double time_last,time_step_last,time_step_max,time_step;
+  CTimeDiscretization* m_tim;
+  vector<double>x_vector;
+  vector<double>y_vector;
 // Operations
 public:
 

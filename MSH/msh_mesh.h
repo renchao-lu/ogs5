@@ -17,6 +17,7 @@ last modified
 // MSHLib
 #include "msh_elem.h"
 class RandomWalk;
+class CFluidMomentum;
 //------------------------------------------------------------------------
 namespace Mesh_Group
 {
@@ -74,6 +75,7 @@ class CFEMesh
     int highest_mat_group_nb;
 
     RandomWalk* PT; // PCH
+    CFluidMomentum* fm_pcs; // by PCH
     CFEMesh(void);
     ~CFEMesh(void);
     ios::pos_type Read(ifstream*);
@@ -162,6 +164,7 @@ class CFEMesh
     void CreateLayerSurfaceTINsfromPris(Surface*); //OK
     // MAT
     vector<string>mat_names_vector; //OK
+    void DefineMobileNodes(CRFProcess*); //OK
 };
 
 } // namespace Mesh_Group

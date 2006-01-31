@@ -94,6 +94,7 @@ GLUquadricObj *obj;
 
 COGLPickingView::COGLPickingView()
 {
+    // Let's initialize two mesh stucture pointers
     m_pcs = NULL;
     m_msh = NULL;
     m_ele = NULL;
@@ -395,9 +396,6 @@ void COGLPickingView::DrawGLINodeScene(GLenum mode)
     
     // Number of points is taken from geo_pnt.h
 	for(int i=0; i < (int)gli_points_vector_view.size(); ++i)
-	/* The process to get rid of the .rfi file
-    for(int i=0; i < NodeListSize (); ++i)
-	*/
     {
         // Again, point id (index) is also taken from geo_pnt.h
         if (mode == GL_SELECT)
@@ -410,10 +408,6 @@ void COGLPickingView::DrawGLINodeScene(GLenum mode)
 			
         // Here I make tempary coordinates computed as OpenGL coordinates understand
         CGLPoint real, gl;
-		/* The process to get rid of the .rfi file for the moment
-        real.x = GetNodeX(i); real.y = GetNodeY(i); real.z = GetNodeZ(i);
-		*/
-
 		real.x = gli_points_vector_view[i]->x;
 		real.y = gli_points_vector_view[i]->y;
 		real.z = gli_points_vector_view[i]->z;
@@ -466,6 +460,7 @@ void COGLPickingView::DrawRFINode(void)
 	{
 		glColor3f(0.0, 1.0, 0.0) ;
         
+        // This is termperary measure only for single mesh cass
         m_msh = fem_msh_vector[0];
 
         CGLPoint real, gl;
@@ -2716,7 +2711,7 @@ CGLPoint COGLPickingView::ConvertScaleToOpenGL(CGLPoint real)
     CGLPoint gl;
 
     // Let's do some scale here.
-    double scale = longest_axis / 2.0*0.25;  // This is general scaling factor.
+    double scale = longest_axis / 2.0*WithNoZoomScale;  // This is general scaling factor.
 
     // Converting scale   
     GetMidPoint(); 
@@ -2730,7 +2725,7 @@ CGLPoint COGLPickingView::ConvertScaleToOpenGL(double x, double y, double z)
     CGLPoint gl;
     
     // Let's do some scale here.
-    double scale = longest_axis / 2.0*0.25; // This is general scaling factor.
+    double scale = longest_axis / 2.0*WithNoZoomScale; // This is general scaling factor.
 
     // Converting scale   
     GetMidPoint(); 
@@ -2798,6 +2793,7 @@ void COGLPickingView::OnSelectAllInPicking()
 	if(theApp.ElementSwitch == 1)
 	{
 		theApp.hitsElementTotal = 0;
+        // This is termperary measure only for single mesh cass
         m_msh = fem_msh_vector[0];
 		for(int i=0; i< (int)m_msh->ele_vector.size() ; ++i)
 		{
@@ -2820,6 +2816,7 @@ void COGLPickingView::OnSelectAllInPicking()
 		COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
         pView=pView;//TK
 
+        // This is termperary measure only for single mesh cass
         m_msh = fem_msh_vector[0];
         for(int i=0; i < (int)m_msh->nod_vector.size() ; ++i)        
 		{
@@ -2858,9 +2855,6 @@ void COGLPickingView::OnSelectAllInPicking()
 		int numberOfGLIPoints = pView->numberOfGLIPoints();
 
 		for(int i=0; i < numberOfGLIPoints; ++i)
-		/* The process to get rid of the .rfi file
-		for(int i=0; i < NodeListSize (); ++i)
-		*/
 		{
 			++theApp.hitsGLINodeTotal;
 			theApp.GLInodePickedTotal = (int *)realloc(theApp.GLInodePickedTotal, theApp.hitsGLINodeTotal*sizeof(int));
@@ -2916,32 +2910,26 @@ void COGLPickingView::OnDeselectAllInPicking()
 	if(theApp.RFINodeSwitch == 1)
 	{
 		theApp.hitsRFINodeTotal = 0;
-//		free(theApp.RFInodePickedTotal);
 	}
 	if(theApp.ElementSwitch == 1)
 	{
 		theApp.hitsElementTotal = 0;
-//		free(theApp.elementPickedTotal);
 	}
 	if(theApp.GLINodeSwitch == 1)
 	{
 		theApp.hitsGLINodeTotal = 0;
-//		free(theApp.GLInodePickedTotal);
 	}
 	if(theApp.PolylineSwitch == 1)
 	{
 		theApp.hitsPolylineTotal = 0;
-//		free(theApp.polylinePickedTotal);
 	}
     if(theApp.SurfaceSwitch == 1)
 	{
 		theApp.hitsSurfaceTotal = 0;
-//		free(theApp.surfacePickedTotal);
 	}
 	if(theApp.VolumeSwitch == 1)
 	{
 		theApp.hitsVolumeTotal = 0;
-//		free(theApp.volumePickedTotal);
 	}
 	
 

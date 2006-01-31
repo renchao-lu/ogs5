@@ -73,6 +73,7 @@ int LOPTimeLoop_PCS(double*);
 int LOPPostTimeLoop_PCS(void);
 VoidFuncVoid LOPCalcSecondaryVariables_USER;
 void LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs);
+void LOPCalcNODResultants(void);
 /*------------------------------------------------------------------------*/
 /* Tools */
 #include "mathlib.h"
@@ -191,13 +192,17 @@ int LOPPreTimeLoop_PCS(void)
   REACT *rc = NULL; //SB
 //  rc->TestPHREEQC(); // Test if *.pqc file is present
   rc = rc->GetREACT();
-  if (rc->flag_pqc){
-    if(cp_vec.size()>0){ //OK
-      rc->CreateREACT();//SB
-      rc->InitREACT();
-      rc->ExecuteReactions();
-	  REACT_vec.clear();
-	  REACT_vec.push_back(rc);
+  if(rc) //OK
+  {  
+    if(rc->flag_pqc){
+      if(cp_vec.size()>0)
+      { //OK
+        rc->CreateREACT();//SB
+        rc->InitREACT();
+        rc->ExecuteReactions();
+	    REACT_vec.clear();
+	    REACT_vec.push_back(rc);
+      }
     }
   }
 //  delete rc;
@@ -276,6 +281,8 @@ int LOPTimeLoop_PCS(double*dt_sum)
           VELCalcAll(m_pcs);
 		else
           m_pcs->CalIntegrationPointValue(); //WW
+			if(m_pcs->tim_type_name.compare("STEADY")==0)
+				m_pcs->selected = false;
       }
       //-------------------------------------------------------------------
       m_pcs = PCSGet("GROUNDWATER_FLOW");
@@ -377,6 +384,36 @@ int LOPTimeLoop_PCS(double*dt_sum)
       }
       //--------------------------------------------------------------------
       if(k==0) pcs_flow_error0 = pcs_flow_error;
+
+	m_pcs = PCSGet("FLUID_MOMENTUM");
+    if(m_pcs&&m_pcs->selected){
+		CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
+
+		if(m_pcs->tim_type_name.compare("STEADY")==0)
+			m_pcs->selected = false;
+
+		fm_pcs = m_msh->fm_pcs;
+		fm_pcs->Execute();
+    }
+
+		// PCH The velocity process ends here.
+    //----------------------------------------------------------------------
+    // PCH Random Walk Particle Tracking starts here.
+    m_pcs = PCSGet("RANDOM_WALK"); 
+    if(m_pcs&&m_pcs->selected)
+	{
+        lop_coupling_iterations = 1;
+
+		CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
+		rw_pcs = m_msh->PT;		
+		//	rw_pcs->AdvanceParticlesLaBolle(dt); 	
+		//rw_pcs->AdvanceByAdvection(dt); 
+//		rw_pcs->AdvanceByAdvectionNDispersion(dt);
+		rw_pcs->AdvanceByAdvectionNDispersionSplitTime(dt, 20);
+		rw_pcs->SetElementBasedConcentration();  
+
+	}
+	
 #ifdef _FEMPCHDEBUG_
 	// PCH Let's monitor what's going on in the FEM
 	// This messagebox is for debugging the primary variables at every time step.
@@ -386,41 +423,6 @@ int LOPTimeLoop_PCS(double*dt_sum)
 	free(pWnd);
 	// PCH Monitoring ends here
 #endif
-
-	// PCH adding the velocity process here before any transport process.
-	// But, the previous element based velocity is not commented out for now.
-	if(FLUID_MOMENTUM_Process)
-	{
-		// Flow processes is supposed to be done in H_Process previously.
-		// Now checking if any pressure or hydraulic head is solved previously
-		// If yes, 
-		if(pcs_problem_type.find("FLOW")!=string::npos)
-		{
-			fm_pcs = new CFluidMomentum ();			
-			fm_pcs->Execute();
-		}
-	}
-
-#ifdef _FEMPCHDEBUG_
-	// PCH Let's monitor what's going on in the FEM
-	// This messagebox is for debugging the primary variables at every time step.
-	// Should combine with the picking...
-	//CWnd * pWnd = NULL;
-	pWnd->MessageBox("Debug for this time step!!!","Debug help", MB_ICONINFORMATION);
-	free(pWnd);
-	// PCH Monitoring ends here
-#endif
-    if(RANDOM_WALK_Process)
-	{
-		// Flow processes is supposed to be done in H_Process previously.
-		// Now checking if any pressure or hydraulic head is solved previously
-		// If yes, 
-		if(pcs_problem_type.find("RANDOM_WALK")!=string::npos)
-		{
-			rw_pcs = new RandomWalk ();			
-			rw_pcs->AdvanceParticles(dt);   
-		}
-	}
 #ifdef OLD
 		// PCH The velocity process ends here.
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -469,11 +471,11 @@ int LOPTimeLoop_PCS(double*dt_sum)
               // Calculate Chemical reactions, after convergence of flow and transport 
               // Move inside iteration loop if couplingwith transport is implemented SB:todo
               //SB:todo move into Execute Reactions	  if((aktueller_zeitschritt % 1) == 0)  
-           
-//				REACT *rc = NULL; 
-//				rc = REACT_vec[0];
+			  //REACT *rc = NULL; //OK
+			  //rc = REACT_vec[0]; //OK
 //				if(rc->flag_pqc) rc->ExecuteReactions();
 //				delete rc;
+              if(REACT_vec.size()>0) //OK
 	   		    if(REACT_vec[0]->flag_pqc) REACT_vec[0]->ExecuteReactions();
 	         *dt_sum = 0.0;
             }
@@ -526,6 +528,15 @@ int LOPTimeLoop_PCS(double*dt_sum)
     {  
       if(m_pcs->m_msh){ // MSH
         m_pcs->CopyTimestepNODValues(); //MB
+#define SWELLING
+#ifdef SWELLING
+		for(j=6;j<m_pcs->pcs_number_of_evals;j++){  //MX ToDo
+          nidx0 =  m_pcs->GetElementValueIndex(m_pcs->pcs_eval_name[j]);
+          nidx1 =  m_pcs->GetElementValueIndex(m_pcs->pcs_eval_name[j])+1;
+		  for(long l=0;l<(long)m_pcs->m_msh->ele_vector.size();l++)
+             m_pcs->SetElementValue(l,nidx0, m_pcs->GetElementValue(l,nidx1));
+		}
+#endif
       }
       else{
         for(j=0;j<m_pcs->pcs_number_of_primary_nvals;j++){
@@ -540,6 +551,8 @@ int LOPTimeLoop_PCS(double*dt_sum)
   }
   //----------------------------------------------------------------------
   LOPCalcELEResultants();
+  cout << "Calculation of NOD resultants" << endl;
+  LOPCalcNODResultants(); //OK
   //----------------------------------------------------------------------
 
 //DECOVALEX TEST
@@ -1049,3 +1062,50 @@ void CFEMesh::SetActiveNodes()
   active_nodes_vector.clear();
 }
 */
+
+/**************************************************************************
+FEMLib-Method: 
+01/2006 OK Implementation
+**************************************************************************/
+void LOPCalcNODResultants(void)
+{
+  CRFProcess* m_pcs = NULL;
+  for(int p=0;p<(int)pcs_vector.size();p++){
+    m_pcs = pcs_vector[p];
+    if(!m_pcs->selected) //OK4108
+      continue;
+    switch(m_pcs->pcs_type_name[0]){
+      default:
+#ifdef MFC
+        AfxMessageBox("Error in LOPCalcNODResultants: no valid process !");
+#endif
+        break;
+      case 'L': // Liquid flow
+        break;
+      case 'G': // Groundwater flow
+        m_pcs->AssembleParabolicEquationRHSVector();
+        //m_pcs->GlobalAssembly();
+        m_pcs->SetNODFlux();
+        break;
+      case 'A': // Gas flow
+        break;
+      case 'T': // Two-phase flow
+        break;
+      case 'C': // Componental flow
+        break;
+      case 'H': // Heat transport
+        break;
+      case 'M': // Mass transport
+        break;
+      case 'D': // Deformation
+        break;
+      case 'O': // Overland flow
+        break;
+      case 'R': // Richards flow
+        break;
+	  case 'F': // Fluid Momentum
+        break;
+    }
+  }
+}
+

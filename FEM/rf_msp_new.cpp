@@ -3210,9 +3210,26 @@ void CSolidProperties::CalPrimaryVariable(vector<string>& pcs_name_vector)
 	}
   }
 }
+
+/**************************************************************************
+FEMLib-Method: 
+01/2006 OK Implementation
+**************************************************************************/
+void CSolidProperties::Write(fstream* msp_file)
+{
+  //----------------------------------------------------------------------
+  //KEYWORD
+  *msp_file << "#SOLID_PROPERTIES" << endl;
+  //----------------------------------------------------------------------
+  // Density
+  *msp_file << " $DENSITY" << endl;
+  *msp_file << "  " << 2000. << endl;
+  //----------------------------------------------------------------------
+}
+
+
 }// end namespace
 /////////////////////////////////////////////////////////////////////////////
-
 
 /**************************************************************************
 FEMLib-Method: 
@@ -3260,26 +3277,6 @@ bool MSPRead(string file_base_name)
   return true;
   //========================================================================
 }
-
-
-
-
-/**************************************************************************
-FEMLib-Method: 
-Task: write function
-Programing:
-08/2004 OK Implementation
-last modification:
-**************************************************************************/
-void MSPWrite(fstream* msp_file)
-{
-  //KEYWORD
-  *msp_file  <<"#SOLID PROPERTIES" << endl;
-  // Loop over msp_vector
-  //--------------------------------------------------------------------
-}
-
-
 
 /**************************************************************************
 ROCKFLOW - Funktion: TensorMutiplication2
@@ -3414,3 +3411,31 @@ void MSPDelete()
   }
   msp_vector.clear();
 }
+
+/**************************************************************************
+FEMLib-Method: 
+01/2006 OK Implementation
+**************************************************************************/
+void MSPWrite(string base_file_name)
+{
+  CSolidProperties* m_msp = NULL;
+  //----------------------------------------------------------------------
+  // File handling
+  fstream msp_file;
+  string msp_file_name = base_file_name + MSP_FILE_EXTENSION;
+  msp_file.open(msp_file_name.data(),ios::trunc|ios::out);
+  msp_file.setf(ios::scientific,ios::floatfield);
+  msp_file.precision(12);
+  if (!msp_file.good()) return;
+  //----------------------------------------------------------------------
+  msp_file << "GeoSys-MSP: Material Solid Properties -------------" << endl;
+  //----------------------------------------------------------------------
+  for(int i=0;i<(int)msp_vector.size();i++){
+    m_msp = msp_vector[i];
+    m_msp->Write(&msp_file);
+  }
+  msp_file << "#STOP";
+  msp_file.close();
+  //----------------------------------------------------------------------
+}
+

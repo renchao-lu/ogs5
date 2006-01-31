@@ -162,11 +162,13 @@ class CFiniteElementStd:public CElement
      void AssembleMixedHyperbolicParabolicEquation(); //SB4200
      void AssembleParabolicEquationNewton();
      inline void Assemble_strainCPL(); // Assembly of strain coupling
-	   void AssembleMassMatrix(); // PCH
+	 void AssembleMassMatrix(); // PCH
      // Assembly of RHS by Darcy's gravity term
      void Assemble_Gravity();
-	   void AssembleRHS(int dimension); // PCH
+	 void AssembleRHS(int dimension); // PCH
      bool check_matrices; //OK4104
+   public:
+     void AssembleParabolicEquationRHSVector(); //OK
 };
 
 

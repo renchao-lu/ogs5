@@ -90,6 +90,74 @@ last modification:
 class CRFProcess {
   //----------------------------------------------------------------------
   // Properties
+	//....................................................................
+	// 1-GEO
+    public:
+    string geo_type; //OK
+    string geo_type_name; //OK
+	//....................................................................
+    // 2-MSH
+	//....................................................................
+    // 3-TIM
+	//....................................................................
+	// 4-IC
+	//....................................................................
+	// 5-BC
+	//....................................................................
+	// 6-ST
+	//....................................................................
+	// 7-MFP
+	//....................................................................
+	// 8-MSP
+	//....................................................................
+	// 9-MMP
+	//....................................................................
+	// 10-MCP
+	//....................................................................
+	// 11-OUT
+	//....................................................................
+	// 12-NUM
+	//....................................................................
+	// 13-ELE
+  //----------------------------------------------------------------------
+  // Methods
+	//....................................................................
+    // Construction / destruction
+    CRFProcess(void);
+    void Create(void);
+	void CreateFDMProcess();
+    virtual ~CRFProcess();
+    void DestroyFDMProcess();
+	//....................................................................
+    // IO
+    ios::pos_type Read(ifstream*);
+    void Write(fstream*);
+	//....................................................................
+	// 1-GEO
+	//....................................................................
+    // 2-MSH
+	//....................................................................
+    // 3-TIM
+	//....................................................................
+	// 4-IC
+	//....................................................................
+	// 5-BC
+	//....................................................................
+	// 6-ST
+	//....................................................................
+	// 7-MFP
+	//....................................................................
+	// 8-MSP
+	//....................................................................
+	// 9-MMP
+	//....................................................................
+	// 10-MCP
+	//....................................................................
+	// 11-OUT
+	//....................................................................
+	// 12-NUM
+	//....................................................................
+	// 13-ELE
   protected: //WW
     friend class FiniteElement::CFiniteElementStd;
     friend class FiniteElement::CFiniteElementVec;
@@ -101,7 +169,8 @@ class CRFProcess {
     // 0. Do not keep them in the memory
     // 1. Keep them to vector Ele_Matrices
     int Memory_Type;
-	
+	//....................................................................
+    // TIM
 	friend class CTimeDiscretization;      
     CTimeDiscretization *Tim;    //time
 	// Time unit factor 
@@ -109,9 +178,9 @@ class CRFProcess {
     int NumDeactivated_SubDomains;
 	int Deactivated_SubDomain[20];
     // Position of unkowns from different DOFs in the system equation  
-
-	// Output 
-	//Eelement matrices output
+	//....................................................................
+	// OUT
+	// Element matrices output
     bool Write_Matrix;
     fstream *matrix_file;
     // Write RHS from source or Neumann BC terms to file
@@ -136,8 +205,6 @@ class CRFProcess {
     int GetObjType() {return type;}
 	int pcs_component_number; //SB: counter for transport components
     int GetProcessComponentNumber() const { return pcs_component_number;} //SB:namepatch
-
-
     string file_name_base; //OK
     // Access to PCS
     // Configuration 1 - NOD
@@ -162,7 +229,6 @@ class CRFProcess {
     void Set_secondary_function_value_history(const int index, double value) {pcs_secondary_function_value_history[index]=value;}//CMCD for analytical solution
     double Get_secondary_function_time_history(const int index){return pcs_secondary_function_time_history[index];}//CMCD for analytical solution
     double Get_secondary_function_value_history(const int index){return pcs_secondary_function_value_history[index];}//CMCD for analytical solution*/
- 
     // Configuration 2 - ELE
     PCS_EVAL_DATA* pcs_eval_data;
     int pcs_number_of_evals;
@@ -200,14 +266,6 @@ class CRFProcess {
     int GetElementValueIndex(string); //PCH
     //----------------------------------------------------------------------
     // Methods
-    // Construction / destruction
-    CRFProcess(void);
-    void Create(void);
-	void CreateFDMProcess();
-    virtual ~CRFProcess();
-    void DestroyFDMProcess();
-    ios::pos_type Read(ifstream*);
-    void Write(fstream*);
     // Access to PCS
     CRFProcess *GetProcessByFunctionName(char* name);
     CRFProcess *GetProcessByNumber(int);
@@ -235,7 +293,6 @@ class CRFProcess {
     //
 	double CalcIterationNODError(int method); //OK
     void CopyTimestepNODValues();
-
     //Coupling
     double CalcCouplingNODError(); //MB
     void CopyCouplingNODValues();
@@ -306,6 +363,9 @@ class CRFProcess {
     private:
       void VariableStaticProblem();
       void VariableDynamics();      
+    public:
+      void SetNODFlux(); //OK
+      void AssembleParabolicEquationRHSVector(); //OK
 }; 
 
 //========================================================================

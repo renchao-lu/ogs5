@@ -407,6 +407,7 @@ void COGLView::OnDrawGL()
 
 /*POINTS*/ 
     if (m_3dcontrol_points == 1 && points_vectorlength != 0) {
+
          GetMSHMinMax();
 		 if (points_vectorlength < 50)glPointSize(4.0);
 		 else glPointSize(3.0);
@@ -416,7 +417,10 @@ void COGLView::OnDrawGL()
 		 for (j=0;j<points_vectorlength;j++)
          { 
 		   glColor3d(0.5,0.1,0.0);	  
-		   glVertex3d(m_image_distort_factor_x*view_points_vector[j]->x,m_image_distort_factor_y*view_points_vector[j]->y,m_image_distort_factor_z*view_points_vector[j]->z);   		   
+//OK		   glVertex3d(m_image_distort_factor_x*view_points_vector[j]->x,m_image_distort_factor_y*view_points_vector[j]->y,m_image_distort_factor_z*view_points_vector[j]->z);   		   
+		   glVertex3d(m_image_distort_factor_x* (-x_mid +  gli_points_vector[j]->x),\
+                      m_image_distort_factor_y* (-y_mid +  gli_points_vector[j]->y),\
+                      m_image_distort_factor_z* (-z_mid +  gli_points_vector[j]->z));   		   
 		 }
     	 glEnd();
 		 
@@ -5562,6 +5566,7 @@ void COGLView::DisplayElementNumbers()
   }
 }
 
+// OK why this is member of COGLView
 void COGLView::GetGLIPointsforView() 
 {
 	int j=0;

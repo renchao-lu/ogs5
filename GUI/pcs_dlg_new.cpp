@@ -9,6 +9,7 @@
 #include "gs_project.h"
 #include "rf_out_new.h"
 #include "rf_tim_new.h"
+#include "rfmat_cp.h"
 // MSHLib
 #include "msh_lib.h"
 
@@ -159,7 +160,7 @@ Task:
 Programing:
 05/2005 OK Implementation
 06/2005 OK Control Panel
-last modification: 
+01/2006 OK MCP,MSP
 **************************************************************************/
 void CDialogPCS::OnBnClickedCreate()
 {
@@ -184,6 +185,8 @@ void CDialogPCS::OnBnClickedCreate()
     return;
   }
   //----------------------------------------------------------------------
+  ConfigSolverProperties();
+  //----------------------------------------------------------------------
   // Create PCS
   for(int i=0;i<(int)m_LB_PCS.GetCount();i++){
     m_LB_PCS.GetText(i,m_strPCSName);
@@ -192,6 +195,28 @@ void CDialogPCS::OnBnClickedCreate()
     m_pcs->pcs_number = i;
     m_pcs->pcs_type_number = i;
     m_pcs->pcs_type_name = m_strPCSName;
+    // MCP ...............................................................
+    if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0)
+    {
+      MCPDelete();  
+      CompProperties* m_mcp = new CompProperties((int)cp_vec.size());
+      m_mcp->diffusion_model = 1;
+      m_mcp->diffusion_model_values[0] = 1e-9;
+      m_mcp->count_of_diffusion_model_values = 1;
+      cp_vec.push_back(m_mcp);
+      string mcp_base_type = m_gsp->base + ".mcp";
+      GSPAddMember(mcp_base_type);
+    }
+    // MSP ...............................................................
+    if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0)
+    {
+      MSPDelete();  
+      SolidProp::CSolidProperties* m_msp = new SolidProp::CSolidProperties();
+      msp_vector.push_back(m_msp);
+      string msp_base_type = m_gsp->base + ".msp";
+      GSPAddMember(msp_base_type);
+    }
+    //....................................................................
     m_pcs->Config();
     m_pcs->PCSSetIC_USER = NULL;
     m_pcs->Create();
@@ -229,13 +254,17 @@ void CDialogPCS::OnBnClickedCreate()
       for(j=0;j<m_pcs->pcs_number_of_primary_nvals;j++){
         m_out->nod_value_vector.push_back(m_pcs->pcs_primary_function_name[j]);
       }
-      for(j=0;j<m_pcs->pcs_number_of_secondary_nvals;j++){
+/*OK
+      for(j=0;j<m_pcs->pcs_number_of_secondary_nvals;j++)
+      {
         m_out->nod_value_vector.push_back(m_pcs->pcs_secondary_function_name[j]);
       }
+*/
       out_vector.push_back(m_out);
       string out_base_type = m_gsp->base + ".out";
       GSPAddMember(out_base_type);
     }
+    //....................................................................
   }
   //----------------------------------------------------------------------
   // Display selected processes in PCSView

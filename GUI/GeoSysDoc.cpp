@@ -1489,6 +1489,7 @@ Programing:
 **************************************************************************/
 void CGeoSysDoc::OnSimulatorForward()
 {
+  short no_steps, no_all_steps;
   double dt_sum = 0.0;
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   CStatusBar* pStatus = &m_frame->m_wndStatusBar;
@@ -1525,7 +1526,9 @@ void CGeoSysDoc::OnSimulatorForward()
   int time_step_counter = 0;
   int i;
   m_tim->time_current = m_tim->time_start;
-  for(i=0;i<no_time_steps;i++){
+  for(i=0;i<no_time_steps;i++)
+  //OK while(m_tim->time_current<m_tim->time_end)
+  {
     dt = m_tim->CalcTimeStep();
     m_tim->time_current += dt;
     time_step_counter++;
@@ -1544,12 +1547,13 @@ void CGeoSysDoc::OnSimulatorForward()
   RECT PBRect;
   m_frame->m_wndStatusBar.GetItemRect(2,&PBRect);
   PBRect.left = 800;
+  no_all_steps = 10000;
   if(m_PBSimulationStep.m_hWnd==NULL){
     m_PBSimulationStep.Create(WS_VISIBLE|PBS_SMOOTH,MyRect,&m_frame->m_wndStatusBar,1);
-	m_PBSimulationStep.SetRange(0,100);
+	m_PBSimulationStep.SetRange(0,no_all_steps);
 	m_PBSimulationStep.SetStep(1);
   }
-  //========================================================================
+  //======================================================================
   m_tim->step_current = 0;
   m_tim->time_current = m_tim->time_start;
   while(m_tim->time_current < m_tim->time_end) {
@@ -1619,9 +1623,14 @@ void CGeoSysDoc::OnSimulatorForward()
       break;
     }
     //----------------------------------------------------------------------
+    no_steps = (short)(dt/m_tim->time_end*no_all_steps);
     m_ProgressBar.StepIt();
-    m_PBSimulationStep.StepIt();
+    for(i=0;i<no_steps;i++)
+    {
+      m_PBSimulationStep.StepIt();
+    }
   }
+  //======================================================================
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Simulation finished");
   m_ProgressBar.DestroyWindow();
   m_PBSimulationStep.DestroyWindow();

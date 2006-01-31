@@ -58,8 +58,7 @@ double CFluidMomentum::Execute()
 	{
 		m_pcs = pcs_vector[i];
         
-        // This is termperary measure only for single mesh cass 
-        // This automatically takes LIQUID_FLOW mesh.
+        // Select the mesh whose process name has "FLOW"
         if( m_pcs->pcs_type_name.find("FLOW")!=string::npos)
             m_msh = fem_msh_vector[i];
 		if(m_pcs->pcs_type_name.find("FLUID_MOMENTUM")!=string::npos)
@@ -109,7 +108,7 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 			ExecuteLinearSolver(m_pcs->eqs);
 
             /* Store solution vector in model node values table */
-            nidx1 = GetNodeValueIndex(m_pcs->pcs_primary_function_name[dimension])+1;
+            nidx1 = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[dimension])+1;
      		for(int j=0;j<m_pcs->eqs->dim;j++)
                m_pcs->SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,m_pcs->eqs->x[j]);
 		}
@@ -130,23 +129,28 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
                 vz += m_pcs->GetNodeValue(elem->GetNodeIndex(j), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);  
 			}
 			vx /= (double)numOfNodeInElement; vy /= (double)numOfNodeInElement; vz /= (double)numOfNodeInElement;
-				
+
+/*				
 			switch(phase) 
 			{
 				case 0:
-                    SetElementValue(i, GetElementValueIndex("VELOCITY1_X")+1, vx);
-                    SetElementValue(i, GetElementValueIndex("VELOCITY1_Y")+1, vy);
-                    SetElementValue(i, GetElementValueIndex("VELOCITY1_Z")+1, vz);
+*/
+                    m_pcs->SetElementValue(i, m_pcs->GetElementValueIndex("VELOCITY1_X")+1, vx);
+                    m_pcs->SetElementValue(i, m_pcs->GetElementValueIndex("VELOCITY1_Y")+1, vy);
+                    m_pcs->SetElementValue(i, m_pcs->GetElementValueIndex("VELOCITY1_Z")+1, vz);
+/*
 					break;
 				case 1:
-					SetElementValue(i, GetElementValueIndex("VELOCITY2_X")+1, vx);
-                    SetElementValue(i, GetElementValueIndex("VELOCITY2_Y")+1, vy);
-                    SetElementValue(i, GetElementValueIndex("VELOCITY2_Z")+1, vz);
+					m_pcs->SetElementValue(i, m_pcs->GetElementValueIndex("VELOCITY2_X")+1, vx);
+                    m_pcs->SetElementValue(i, m_pcs->GetElementValueIndex("VELOCITY2_Y")+1, vy);
+                    m_pcs->SetElementValue(i, m_pcs->GetElementValueIndex("VELOCITY2_Z")+1, vz);
 					break;
 				default:
 					cout << "Error in VELCalcElementVelocity: invalid phase number" << endl;
 			}
+*/
 		}
+
 	}
 
 	// Release memroy
@@ -181,4 +185,47 @@ void CFluidMomentum::Create()
 		pcs_nonlinear_iterations = m_num->nls_max_iterations;
 		pcs_nonlinear_iteration_tolerance = m_num->nls_error_tolerance;
 	}
+}
+void FMRead(string file_base_name)
+{
+    // Fluid_Momentum memory allocation is moved here. by PCH
+  //  CRFProcess* m_pcs = PCSGet("FLUID_MOMENTUM");
+  //  if(!m_pcs)
+  //  {
+  if(fem_msh_vector.size()==0) //OK
+    return;
+        CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
+        m_msh->fm_pcs = new CFluidMomentum ();
+  //  }
+}
+
+/**************************************************************************
+ROCKFLOW - Funktion: DATWriteFile
+Task: Write PCT file
+Programing:
+10/2005   PCH   Implementation
+**************************************************************************/
+void DATWriteHETFile(const char *file_name)
+{
+    FILE *tet_file = NULL;
+    char tet_file_name[MAX_ZEILE];
+	double* center = NULL;
+    CFEMesh* m_msh = NULL;
+    m_msh = fem_msh_vector[0];  // Something must be done later on here.
+	CElem* elem = NULL;
+									
+	sprintf(tet_file_name,"%s.%s",file_name,"tet");
+    tet_file = fopen(tet_file_name,"w+t");
+	// Obtain element-based velocity
+    for (int i = 0; i < (long)m_msh->ele_vector.size(); i++)
+    {
+		elem = m_msh->ele_vector[i];
+		center = elem->GetGravityCenter();
+																		  
+  		fprintf(tet_file, "%17.12e %17.12e %17.12e %17.12e\n",
+			center[0], center[1], center[2], elem->mat_vector(0)*1e7); 
+	}
+
+    // Let's close it, now
+    fclose(tet_file);
 }

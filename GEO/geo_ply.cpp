@@ -929,7 +929,8 @@ void CGLPolyline::SetPointOrderByDistance(CGLPoint*m_pnt)
   vector<CGLPoint*>point_vector_aux;
   for(i=0;i<(int)point_vector.size();i++){
     m_pnt_i = point_vector[i];
-    if(m_pnt->PointDisXY(m_pnt_i)<epsilon){
+    //OK if(m_pnt->PointDisXY(m_pnt_i)<epsilon){
+    if(m_pnt->PointDis(m_pnt_i)<epsilon){
       point_vector_aux.push_back(m_pnt_i);
     }
   }

@@ -1,23 +1,30 @@
 # GeoSys - Makefile for LINUX
 # Last modification 04/11/2004 WW
 
-COBJS =geo_db.o geo_dom.o geo_lin.o geo_ply.o geo_pnt.o geo_sfc.o \
-       geo_strings.o geo_vol.o geo_lib.o   
+ifneq ($(strip $(CHOSEN_TARGET)),)
+include $(TOPDIR)/configs/$(CHOSEN_TARGET)
+endif
 
-FEMINCLUDE=../FEM
-GEOINCLUDE=../GEO
-MSHINCLUDE=../MSH
-GEN_INCLUDES = -I$(FEMINCLUDE) -I$(GEOINCLUDE) -I$(MSHINCLUDE)  
+include objects.mak
 
-OPTFLAG = -O3 -fno-nonansi-builtins
-DEBFLAG = #-ggdb
-WARN = -Wall
+FEMINCLUDE     = ../FEM
+GEOINCLUDE     = ../GEO
+MSHINCLUDE     = ../MSH
+ROOTINCLUDE    = ../
 
-C++ = g++ -c $(WARN) -pedantic $(GEN_INCLUDES) $(OPTFLAG) $(DEBFLAG) -D_POSIX_SOURCE -DNO_ERROR_CONTROL
+CXX_INCS      += -I$(FEMINCLUDE) -I$(GEOINCLUDE) -I$(MSHINCLUDE) -I$(ROOTINCLUDE)
 
-PARAM = -lm
+
 .SUFFIXES: .o .cpp .h 
-.cpp.o:
-	$(C++)   $<
- dest: $(COBJS)
-clean:; rm -rf *.o
+%.o:	%.cpp
+	$(CXX) $(CXX_FLAGS) $(CXX_INCS) -c $<
+
+
+.PHONY : $(CONFIG_NAMES)
+$(CONFIG_NAMES): $(GEOOBJS)
+
+
+clean:
+	rm -rf *.o
+	rm -rf *~
+	rm -rf *.ti

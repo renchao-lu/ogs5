@@ -19,6 +19,7 @@ using namespace std;
 #include "rf_pcs.h"
 #include "elements.h"//CC
 #include "nodes.h"
+#include "gs_project.h"
 
 /**************************************************************************
 MshLib-Method: 
@@ -279,7 +280,7 @@ void PrismRefine(const int NLayers, const int Layer, const int NSubLayers)
              ElSetElementActiveState(NumElementNew,1);
 
              /* "rowx hochziehen"   */
-             /* loop über die betroffenen rows   */
+             /* loop ?er die betroffenen rows   */
              NRowsToShift = NRows - Layer;
              count = 0;
 
@@ -1425,7 +1426,23 @@ void Mesh_Single_Surface(string surface_name, const char *file_name_const_char)
             fprintf(geo_file,"%s\n","};");
 
   fclose(geo_file);
-  string m_strExecuteGEO = "..\\LIB\\gmsh " + m_strFileNameGEO +" -2";
+
+  string m_strExecuteGEO = "gmsh " + m_strFileNameGEO +" -2";
+
+// PCH & TK: Workaround for the old problem.
+#ifdef MFC
+  LPTSTR filename = new TCHAR[1024];
+  GetModuleFileName(NULL,filename,1024);
+  string m_strExecuteGEOonly = " " + m_strFileNameGEO +" -2";
+  
+  CString gmsh = filename;
+  gmsh.TrimRight(_T("exe.sySoeG\\gubeD\\iuG"));
+  gmsh += "\\Lib\\gmsh";
+  string gmshCommand = gmsh.GetString();  
+
+  m_strExecuteGEO = gmshCommand + m_strExecuteGEOonly;
+#endif
+
   const char *m_strExecute=0;
   m_strExecute = m_strExecuteGEO.data();
   system(m_strExecute); 

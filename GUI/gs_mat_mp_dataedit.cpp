@@ -50,7 +50,6 @@ BOOL CMATGroupEditorDataEdit::OnInitDialog()
   CDialog::OnInitDialog();
 
     CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
-    mainframe->dataedit = true;
 
     //--- ListControl for editing data ---
     CRect rect;
@@ -68,29 +67,91 @@ BOOL CMATGroupEditorDataEdit::OnInitDialog()
     //matrix2ListCtrl();
 
     //CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
-    if(mainframe->m_fileopen.Find(".xls")!= -1 &&  mainframe->dataupdate == false){
-    SafeArray2ListCtrl();
+    if(mainframe->m_fileopen.Find(".xls")!= -1 && mainframe->dataupdate == false && mainframe->datanew == false){
+        
+        m_typenamedispl.SetReadOnly();
+
+        SafeArray2ListCtrl();
+
+        //prompt: "Import Materialgroup:......"
+        CString rr = "Import Materialgroup: ";
+        m_tndisplstr = rr + mainframe->m_strDBTypeName;
+        UpdateData(FALSE);
+
     }
-    if(mainframe->m_fileopen.Find(".csv")!= -1 &&  mainframe->dataupdate == false){
+    if(mainframe->m_fileopen.Find(".csv")!= -1 &&  mainframe->dataupdate == false && mainframe->datanew == false){
+        
+        m_typenamedispl.SetReadOnly();//Typenameanzeige
+
         CSVtext2ListCtrl();
+
+        //Anzeige "Import Materialgroup:......"
+        CString rr = "Import Materialgroup: ";
+        m_tndisplstr = rr + mainframe->m_strDBTypeName;
+        UpdateData(FALSE);
+
     }
-    if(mainframe->m_fileopen == "" && mainframe->m_iSelectedMMPGroup>=0 &&  mainframe->dataupdate == true){
+
+    //---Update einer Materialgruppe (keine neue Materialgruppe)-------
+    if(mainframe->m_iSelectedMMPGroup>=0 &&  mainframe->dataupdate == true){
+
+        m_typenamedispl.SetReadOnly();
 
         // get selected m_mmp pointer
-        CMediumProperties *m_mmp = NULL;
-        m_mmp = new CMediumProperties();
-
         if((mainframe->m_iSelectedMMPGroup>-1)&&(mainframe->m_iSelectedMMPGroup<(int)mmp_vector.size())){
             m_mmp = mmp_vector[mainframe->m_iSelectedMMPGroup];
+
+            //fill key_word_vector with standartkeywords
+            StandardKeywords();
+
+            //fill ListControl with values from mmp_vector
+            MMP2UpdateListCtrl();    
         }
+
+        //prompt: "Update Materialgroup:......"
+        CString rr = "Update Materialgroup: ";
+        m_tndisplstr = rr + (m_mmp->name.c_str());
+        UpdateData(FALSE);//display Typename
+
+    }
+    //---Neue Materialgruppe erstellen durch Eingabe-------
+    if(mainframe->datanew == true &&  mainframe->dataupdate == false){
+
+    //fill key_word_vector with standartkeywords
+    StandardKeywords();
+
+    //fill keywords to ListControl
+    Keywords2NewListCtrl();
+
+    
+    //prompt: "New Materialgroup:......"
+    CString rr = "New Materialgroup: ";
+    m_tndisplstr = rr + mainframe->m_strDBTypeName;
+    UpdateData(FALSE);//display Typename
+
     }
     return TRUE;  // return TRUE unless you set the focus to a control
 }
 void CMATGroupEditorDataEdit::OnBnClickedOK()
 {
-  //ListCtrl2matrix();
-  ListCtrl2SafeArray();
+  CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+
+  ListCtrl2SafeArray();//Copy edited data to SaEdt
+
+  if(mainframe->dataupdate == false){
+      m_mmp = new CMediumProperties();
+  }
+  else{
+  SafeArray2MMP(m_mmp);//wird in CMediumProperties.OnButtonCreate gemacht
+  }
+
+  mainframe->dataedit = true;//wird revidiert wenn dataupdate == true siehe nächster block
   
+  if(mainframe->dataupdate == true){
+    mainframe->dataupdate = false;//hier zurücksetzen, da bei Update kein OnInitDialog vom CMatgroupEditor aufgerufen wird
+    mainframe->dataedit = false;//hier zurücksetzen, da bei Update kein OnInitDialog vom CMatgroupEditor aufgerufen wird
+  } 
+
   oExcel.Quit();
   OnOK();
 }
@@ -99,19 +160,26 @@ void CMATGroupEditorDataEdit::OnBnClickedOK()
 void CMATGroupEditorDataEdit::EmptytnkwVectors(void)
 {
   //empty the vectors
-  if(type_name_vector.size() > 0){
-    for(int i=0;i<(int)type_name_vector.size();i++){
+  if(type_name_vector.size() > 0)
+  {
+/*
+    for(int i=0;i<(int)type_name_vector.size();i++)
+    {
       type_name_vector[i].Delete;
+    }
+*/
+    type_name_vector.clear();
   }
-            type_name_vector.clear();
-        }
-
-        if(key_word_vector.size() > 0){
-    for(int i=0;i<(int)key_word_vector.size();i++){
+  if(key_word_vector.size() > 0)
+  {
+/*
+    for(int i=0;i<(int)key_word_vector.size();i++)
+    {
       key_word_vector[i].Delete;
-        }
-            key_word_vector.clear();
-        }
+    }
+*/
+    key_word_vector.clear();
+  }
 }
 void CMATGroupEditorDataEdit::SafeArray2ListCtrl(void)
 {
@@ -228,8 +296,6 @@ void CMATGroupEditorDataEdit::SafeArray2ListCtrl(void)
 
     }
 
-    m_tndisplstr = mainframe->m_strDBTypeName;
-    UpdateData(FALSE);//display Typename
 
 }
 
@@ -238,10 +304,13 @@ void CMATGroupEditorDataEdit::ListCtrl2SafeArray(void)
     //COleSafeArray saEdt;//wurde in mainframe deklariert
         CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
         DWORD numElements[] = {(int)key_word_vector.size(), 1}; // größe rows x cols
+        
+        mainframe->saEdt.DestroyData();
         mainframe->saEdt.Create(VT_VARIANT, 2, numElements);
 
     //editierte Daten in saEdt füllen
     long index[2];
+
     for(index[0]=0; index[0]<(int)key_word_vector.size(); index[0]++){
         //for(index[1]=0; index[1]<10; index[1]++){
         index[1]=0;
@@ -340,6 +409,8 @@ void CMATGroupEditorDataEdit::ExcelDirect2SafeArray(void)
   //..values in SafeArray saEdt
   //CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
   DWORD numElements[] = {(int)key_word_vector.size(), 1};//rows, cols
+
+  mainframe->saEdt.DestroyData();
   mainframe->saEdt.Create(VT_VARIANT, 2, numElements);
 
   long indexEdt[2];
@@ -380,7 +451,7 @@ void CMATGroupEditorDataEdit::CSVtext2ListCtrl()
   //fill listcontrol with data
     LVITEM lvi;
 	CString strItem;
-    int type_name_vector_index; //index of typename in tnvector
+    int type_name_vector_index = -1; //OKJG //index of typename in tnvector
     string line;
     string in;
     string z_rest;
@@ -388,7 +459,6 @@ void CMATGroupEditorDataEdit::CSVtext2ListCtrl()
     string type_name_tmp("TYPE_NAME");
     char line_char[MAX_ZEILE];
     int countGetline = 0;//Zähler für zeilen while-schleife
-
     //CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
     string fileopen = mainframe->m_fileopen;
 
@@ -520,9 +590,6 @@ void CMATGroupEditorDataEdit::CSV_keywords2keywordvector(string csv_file_name)
       CString in; 
       line = line_char;
       in = (line.substr(0,line.find_first_of(delimiter))).c_str();
-
-      string *t = new string(in);//.c_str()
-      
       if(in != ""){//in.size()>0
        key_word_vector.push_back(in);
       }
@@ -531,7 +598,7 @@ void CMATGroupEditorDataEdit::CSV_keywords2keywordvector(string csv_file_name)
 }
 void CMATGroupEditorDataEdit::CSVtextDirect2SafeArray(void)
 {
-    int type_name_vector_index; //index of typename in tnvector
+    int type_name_vector_index = -1; //OKJG //index of typename in tnvector
     string line;
     string in;
     string z_rest;
@@ -539,9 +606,7 @@ void CMATGroupEditorDataEdit::CSVtextDirect2SafeArray(void)
     string type_name_tmp; 
     char line_char[MAX_ZEILE];
     int countGetline = 0;//Zähler für zeilen beim durchlauf while-schleife
-
     CString strText;
-    
 
     CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
 
@@ -558,6 +623,8 @@ void CMATGroupEditorDataEdit::CSVtextDirect2SafeArray(void)
     //..values in SafeArray saEdt
     //CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
     DWORD numElements[] = {(int)key_word_vector.size(), 1};//rows, cols
+
+    mainframe->saEdt.DestroyData();
     mainframe->saEdt.Create(VT_VARIANT, 2, numElements);
     COleVariant vData;
 
@@ -633,4 +700,643 @@ void CMATGroupEditorDataEdit::CSVtextDirect2SafeArray(void)
        countGetline++;
       }//while(eingabe.getline...
     }//if (eingabe.good()
+}
+void CMATGroupEditorDataEdit::Keywords2NewListCtrl()
+{
+    for(int i=0;i<(int)key_word_vector.size();i++){
+      //fill listcontrol with data
+      LVITEM lvi;
+      CString strItem;
+
+      //Set first item (keywords)
+      lvi.mask =  LVIF_TEXT;
+      strItem = key_word_vector.at(i);
+      lvi.iItem = i;
+      lvi.iSubItem = 0;
+      lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+      m_listctrldata.InsertItem(&lvi);
+
+      //Set Subitem
+      //------------------------------------------------------------
+          //strItem.Format(_T("%g"), ?????);
+          //lvi.iSubItem =1;
+          //lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          //m_listctrldata.SetItem(&lvi);
+   }
+}
+
+
+//--------------------------------------------------
+//--------------------------------------------------
+//AB HIER DIE FUNKTIONEN ZUM INDIVIDUELLEN EDITIEREN
+
+//1. Funktion zum Keywordabgleich - Einlesen in den mmp_vector 
+void CMATGroupEditorDataEdit::SafeArray2MMP(CMediumProperties* m_mmp0)
+{
+  m_mmp = m_mmp0;
+// Copy parameter-data from SafeArray saEdt to MMP
+  long index[2];
+  for(int i=0;i<(int)key_word_vector.size();i++){
+    index[0]=i;//typename-row
+    index[1]=0;
+    COleVariant vData;
+    string key_word = key_word_vector[i];
+    CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+    mainframe->saEdt.GetElement(index,vData);
+
+    //....................................................................
+    if(key_word.compare("DIMENSION")==0){
+      double szdata = vData.dblVal; 
+      m_mmp->geo_dimension = (int)szdata;
+    }
+    //....................................................................
+    if(key_word.compare("POROSITY")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->porosity_model_values[0] = szdata;
+        if(m_mmp->porosity_model_values[0]>0.0)
+          m_mmp->porosity_model = 1;
+      }
+      if(vData.vt == VT_BSTR){ //if string
+        CString szstringdata = vData.bstrVal;
+        m_mmp->porosity_model = 11;  //ToDo for string
+        m_mmp->porosity_file = szstringdata; 
+      }
+    }
+    if(key_word.compare("TORTUOSITY")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->tortuosity_model_values[0] = szdata;
+        if(m_mmp->tortuosity_model_values[0]>0.0)
+          m_mmp->tortuosity_model = 1;
+      }
+    }
+    //....................................................................
+    // Groundwater flow
+    if(key_word.compare("FLOWLINEARITY")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->flowlinearity_model_values[0] = szdata;
+        if(m_mmp->flowlinearity_model_values[0]>0.0)
+          m_mmp->flowlinearity_model = 1;
+      }
+    }
+    if(key_word.compare("STORAGE")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->storage_model_values[0] = szdata;
+        if(m_mmp->storage_model_values[0]>0.0)
+          m_mmp->storage_model = 1;
+      }
+    }
+    if(key_word.compare("CONDUCTIVITY")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->conductivity = szdata;
+        if(m_mmp->conductivity>0.0)
+          m_mmp->conductivity_model = 1;
+      }
+    }
+    if(key_word.compare("PERMEABILITY_TENSOR")==0)
+    {
+      double szdata = vData.dblVal; 
+      m_mmp->permeability_tensor_type_name = "ISOTROPIC";
+      m_mmp->permeability_tensor[0] = szdata;
+      m_mmp->permeability_tensor[1] = szdata;
+      m_mmp->permeability_tensor[2] = szdata;
+      if(m_mmp->permeability_tensor[0]>0.0){
+        m_mmp->permeability_model = 1;
+        m_mmp->permeability_tensor_type = 0; //OK
+      }
+    }
+    if(key_word.compare("PERMEABILITY_DISTRIBUTION")==0)
+    {
+      CString szstringdata = vData.bstrVal;
+      m_mmp->permeability_tensor_type_name = "F";
+      m_mmp->permeability_file = szstringdata;
+      m_mmp->permeability_model = 2;
+      //OK m_mmp->permeability_tensor_type = 2;
+    }
+    //....................................................................
+    // Richards flow
+    int fluid_phase = 0;
+    if(key_word.compare("PERMEABILITY_SATURATION")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->permeability_saturation_model[0] = (int)szdata;
+      }
+    }
+    if(key_word.compare("CAPILLARY_PRESSURE")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->capillary_pressure_model = (int)szdata;
+      }
+    }
+    if(key_word.compare("SATURATION_RESIDUAL")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->saturation_res[0] = szdata;
+      }
+    }
+    if(key_word.compare("SATURATION_MAXIMUM")==0){ //OKYD
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->saturation_max[fluid_phase] = szdata;
+      }
+    }
+    if(key_word.compare("VAN_GENUCHTEN_ALPHA")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->saturation_exp[fluid_phase] = szdata;
+      }
+    }
+    if(key_word.compare("VAN_GENUCHTEN_BETA")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->capillary_pressure_model_values[fluid_phase] = szdata;
+      }
+    }
+    //....................................................................
+    // Overland flow
+    if(key_word.compare("DARCY_WEISBACH_COEFFICIENT")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->friction_coefficient = szdata;
+      }
+    }
+    if(key_word.compare("CHEZY_COEFFICIENT")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->friction_coefficient = szdata;
+      }
+    }
+    if(key_word.compare("MANNING_COEFFICIENT")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+        m_mmp->friction_coefficient = szdata;
+      }
+    }
+    //....................................................................
+    // Mass transport
+    if(key_word.compare("MASSDISPERSION_LONG")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+
+        m_mmp->mass_dispersion_longitudinal = szdata;
+        if(m_mmp->mass_dispersion_longitudinal>0.0)
+          m_mmp->mass_dispersion_model = 1;
+      }
+    }
+    if(key_word.compare("MASSDISPERSION_TRANS")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+
+        m_mmp->mass_dispersion_transverse = szdata;
+        if(m_mmp->mass_dispersion_transverse>0.0)
+          m_mmp->mass_dispersion_model = 1; 
+      }
+    }
+    //....................................................................
+    // Heat transport
+    if(key_word.compare("HEATDISPERSION_LONG")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+
+        m_mmp->heat_dispersion_longitudinal = szdata;
+        if(m_mmp->heat_dispersion_longitudinal>0.0)
+          m_mmp->heat_dispersion_model = 1;
+      }
+    }
+    if(key_word.compare("HEATDISPERSION_TRANS")==0){
+      if (vData.vt == VT_R8){
+        double szdata = vData.dblVal; 
+
+        m_mmp->heat_dispersion_transverse = szdata;
+        if(m_mmp->heat_dispersion_transverse>0.0)
+          m_mmp->heat_dispersion_model = 1;
+      }
+    }
+  }
+}
+
+//2. Funktion zum Keywordabgleich - Auslesen aus dem mmp_vector 
+void CMATGroupEditorDataEdit::MMP2UpdateListCtrl(void)
+{
+    for(int i=0;i<(int)key_word_vector.size();i++){
+      //fill listcontrol with data
+      LVITEM lvi;
+      CString strItem;
+
+      //Set first item (keywords)
+      lvi.mask =  LVIF_TEXT;
+      strItem = key_word_vector.at(i);
+      lvi.iItem = i;
+      lvi.iSubItem = 0;
+      lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+      m_listctrldata.InsertItem(&lvi);
+
+      //Set Subitem
+      //------------------------------------------------------------
+      if(strItem == "POROSITY"){
+        if(m_mmp->porosity_model == 1){//double value
+          strItem.Format(_T("%g"), m_mmp->porosity_model_values[0]);
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        }
+        if(m_mmp->porosity_model == 11){//string value (filename)
+          strItem = m_mmp->porosity_file.c_str();
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        }
+      }
+     //--------------------------------------------------------------
+      if(strItem == "TORTUOSITY"){
+        if(m_mmp->tortuosity_model == 1){//double value
+          strItem.Format(_T("%g"), m_mmp->tortuosity_model_values[0]);
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        }
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+     //----------Groundwater flow------------------------------------
+     //--------------------------------------------------------------
+      if(strItem == "FLOWLINEARITY"){
+        if(m_mmp->flowlinearity_model == 1){//double value
+          strItem.Format(_T("%g"), m_mmp->flowlinearity_model_values[0]);
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        }
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+     //--------------------------------------------------------------
+      if(strItem == "STORAGE"){
+        if(m_mmp->storage_model == 1){//double value
+          strItem.Format(_T("%g"), m_mmp->storage_model_values[0]);
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        }
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+     //--------------------------------------------------------------
+      if(strItem == "CONDUCTIVITY"){
+        if(m_mmp->conductivity_model == 1){//double value
+          strItem.Format(_T("%g"), m_mmp->conductivity);
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        }
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+     //--------------------------------------------------------------
+      if(strItem == "PERMEABILITY_TENSOR"){
+        if(m_mmp->permeability_tensor_type_name == "ISOTROPIC"){//double value    EIGENTLICH: if(m_mmp->permeability_model == 1 && m_mmp->permeability_tensor_type == 1 && m_mmp->permeability_tensor_type_name == "ISOTROPIC")
+          strItem.Format(_T("%g"), m_mmp->permeability_tensor[0]);//isotropic model, [0], [1] and [2] are identical
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+          m_mmp->permeability_tensor[1] = m_mmp->permeability_tensor[0];
+          m_mmp->permeability_tensor[2] = m_mmp->permeability_tensor[0];
+          if(m_mmp->permeability_tensor[0]>0.0){
+            m_mmp->permeability_model = 1;
+            m_mmp->permeability_tensor_type = 0; //OK
+          }
+        }
+      }
+    //....................................................................
+    if(strItem == "PERMEABILITY_DISTRIBUTION"){
+      strItem = m_mmp->permeability_file.c_str();
+      lvi.iSubItem =1;
+      lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+      m_listctrldata.SetItem(&lvi);
+      m_mmp->permeability_model = 2;
+    }
+     //----------Richards flow---------------------------------------
+     //--------------------------------------------------------------
+      if(strItem == "PERMEABILITY_SATURATION"){
+        if(m_mmp->permeability_saturation_model[0] >=0){//double value
+          strItem.Format(_T("%g"), m_mmp->permeability_saturation_model[0]);
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        }
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+     //--------------------------------------------------------------
+      if(strItem == "CAPILLARY_PRESSURE"){
+        if(m_mmp->permeability_saturation_model[0] >=0){//double value
+          strItem.Format(_T("%g"), m_mmp->capillary_pressure_model);
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        }
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+     //--------------------------------------------------------------
+      if(strItem == "SATURATION_RESIDUAL"){
+        if(m_mmp->permeability_saturation_model[0] >=0){//double value
+          strItem.Format(_T("%g"), m_mmp->saturation_res[0]);
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        }
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+     //--------------------------------------------------------------
+      if(strItem == "SATURATION_MAXIMUM"){
+        //if(m_mmp->conductivity_model == 1){//double value
+          //strItem.Format(_T("%g"), m_mmp->saturation_max[fluid_phase]);
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        //}
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+     //--------------------------------------------------------------
+      if(strItem == "VAN_GENUCHTEN_ALPHA"){ //was ist [fluid_phase]?JG
+        //if(m_mmp->conductivity_model == 1){//double value
+          //strItem.Format(_T("%g"), m_mmp->saturation_exp[fluid_phase]);
+          //lvi.iSubItem =1;
+          //lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          //m_listctrldata.SetItem(&lvi);
+        //}
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+     //--------------------------------------------------------------
+      if(strItem == "VAN_GENUCHTEN_BETA"){ //was ist [fluid_phase]?JG
+        //if(m_mmp->conductivity_model == 1){//double value
+          //strItem.Format(_T("%g"), m_mmp->capillary_pressure_model_values[fluid_phase]);
+          //lvi.iSubItem =1;
+          //lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          //m_listctrldata.SetItem(&lvi);
+        //}
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+     //----------Overland flow---------------------------------------
+     //--------------------------------------------------------------
+      if(strItem == "DARCY_WEISBACH_COEFFICIENT"){
+        if(m_mmp->friction_coefficient >= 0){//double value
+          strItem.Format(_T("%g"), m_mmp->friction_coefficient);
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        }
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+     //--------------------------------------------------------------
+      if(strItem == "CHEZY_COEFFICIENT"){
+        if(m_mmp->friction_coefficient >= 0){//double value
+          strItem.Format(_T("%g"), m_mmp->friction_coefficient);
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        }
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+     //--------------------------------------------------------------
+      if(strItem == "MANNING_COEFFICIENT"){
+        if(m_mmp->friction_coefficient >= 0){//double value
+          strItem.Format(_T("%g"), m_mmp->friction_coefficient);
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        }
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+     //----------Mass transport--------------------------------------
+     //--------------------------------------------------------------
+      if(strItem == "MASSDISPERSION_LONG"){
+        if(m_mmp->mass_dispersion_model == 1){//double value
+          strItem.Format(_T("%g"), m_mmp->mass_dispersion_longitudinal);
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        }
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+     //--------------------------------------------------------------
+      if(strItem == "MASSDISPERSION_TRANS"){
+        if(m_mmp->mass_dispersion_model == 1){//double value
+          strItem.Format(_T("%g"), m_mmp->mass_dispersion_transverse);
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        }
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+     //----------Heat transport--------------------------------------
+     //--------------------------------------------------------------
+      if(strItem == "HEATDISPERSION_LONG"){
+        if(m_mmp->heat_dispersion_model == 1){//double value
+          strItem.Format(_T("%g"), m_mmp->heat_dispersion_longitudinal);
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        }
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+     //--------------------------------------------------------------
+      if(strItem == "MASSDISPERSION_TRANS"){
+        if(m_mmp->heat_dispersion_model == 1){//double value
+          strItem.Format(_T("%g"), m_mmp->heat_dispersion_transverse);
+          lvi.iSubItem =1;
+          lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+          m_listctrldata.SetItem(&lvi);
+        }
+        //if(m_mmp->???? == ???){//string value (filename)
+        //  strItem = m_mmp->?????.c_str();
+        //  lvi.iSubItem =1;
+        //  lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+        //  m_listctrldata.SetItem(&lvi);
+        //}
+      }
+    }
+}
+
+
+//3. Funktion, um Standartkeywords für das Updaten von Materialgruppen anzulegen 
+void CMATGroupEditorDataEdit::StandardKeywords(void)
+{
+ CString in;
+
+    in = "POROSITY";
+       key_word_vector.push_back(in);
+
+    in = "TORTUOSITY";
+       key_word_vector.push_back(in);
+
+    in = "MOBILE_IMOBILE_MODEL";
+       key_word_vector.push_back(in);
+
+    in = "LITHOLOGY_GRAIN_CLASS";
+       key_word_vector.push_back(in);
+
+    in = "FLOWLINEARITY";
+       key_word_vector.push_back(in);
+
+    in = "SORPTION_MODEL";
+       key_word_vector.push_back(in);
+
+    in = "STORAGE";
+       key_word_vector.push_back(in);
+
+    in = "CONDUCTIVITY";
+       key_word_vector.push_back(in);
+
+    in = "PERMEABILITY";
+       key_word_vector.push_back(in);
+
+    in = "PERMEABILITY_TENSOR";
+       key_word_vector.push_back(in);
+
+    in = "PERMEABILITY_DISTRIBUTION";
+       key_word_vector.push_back(in);
+
+    in = "PERMEABILITY_FUNCTION";
+       key_word_vector.push_back(in);
+
+    in = "PERMEABILITY_FUNCTION_DEFORMATION";
+       key_word_vector.push_back(in);
+
+    in = "PERMEABILITY_FUNCTION_PRESSURE";
+       key_word_vector.push_back(in);
+
+    in = "PERMEABILITY_SATURATION";
+       key_word_vector.push_back(in);
+
+    in = "PERMEABILITY_FUNCTION_STRESS";
+       key_word_vector.push_back(in);
+
+    in = "PERMEABILITY_FUNCTION_VELOCITY";
+       key_word_vector.push_back(in);
+
+    in = "PERMEABILITY_FUNCTION_POROSITY";
+       key_word_vector.push_back(in);
+
+    in = "CAPILLARY_PRESSURE";
+       key_word_vector.push_back(in);
+
+    in = "MASSDISPERSION_LONG";
+       key_word_vector.push_back(in);
+
+    in = "MASSDISPERSION_TRANS";
+       key_word_vector.push_back(in);
+
+    in = "HEATDISPERSION_LONG";
+       key_word_vector.push_back(in);
+
+    in = "HEATDISPERSION_TRANS";
+       key_word_vector.push_back(in);
+
+    in = "ELECTRIC_CONDUCTIVITY";
+       key_word_vector.push_back(in);
+
+    in = "UNCONFINED_FLOW_GROUP";
+       key_word_vector.push_back(in);
+
+    in = "FLUID_EXCHANGE_WITH_OTHER_CONTINUA";
+       key_word_vector.push_back(in);
+
+    in = "SATURATION_RESIDUAL";
+       key_word_vector.push_back(in);
+
+    in = "VAN_GENUCHTEN_ALPHA";
+       key_word_vector.push_back(in);
+
+    in = "VAN_GENUCHTEN_BETA";
+       key_word_vector.push_back(in);
+
+    in = "DARCY_WEISBACH_COEFFICIENT";
+       key_word_vector.push_back(in);
+
+    in = "CHEZY_COEFFICIENT";
+       key_word_vector.push_back(in);
+
+    in = "MANNING_COEFFICIENT";
+       key_word_vector.push_back(in);
+
 }

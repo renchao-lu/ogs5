@@ -1,10 +1,11 @@
+# 13/01/2006 PCH update to solve _msize issue with Intel compiler
 ROOTINCLUDE=../
 FEMINCLUDE=../FEM
 GEOINCLUDE=../GEO
 MSHINCLUDE=../MSH
 GEN_INCLUDES = -I$(ROOTINCLUDE) -I$(FEMINCLUDE) -I$(GEOINCLUDE) -I$(MSHINCLUDE)  
 
-OPTFLAG =  -O3 
+OPTFLAG =  -O3 -DGCC
 DEBFLAG = #-ggdb
 WARN = -Wall  -wd981  -wd1418  -wd1419 -wd383
 

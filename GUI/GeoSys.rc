@@ -439,20 +439,6 @@ BEGIN
     LTEXT           "to:",IDC_STATIC,125,22,9,8
 END
 
-IDD_MAT_GROUP_EDITOR_DATAEDIT DIALOGEX 0, 0, 242, 205
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
-    WS_SYSMENU
-CAPTION "Edit Site-Data"
-FONT 8, "MS Shell Dlg", 400, 0, 0x1
-BEGIN
-    DEFPUSHBUTTON   "OK",IDC_OK,154,184,46,15
-    GROUPBOX        "Edit Data:",IDC_STATIC,7,7,228,174
-    CONTROL         "",IDC_LISTCONTROL_DATA,"SysListView32",LVS_REPORT | 
-                    LVS_SINGLESEL | LVS_EDITLABELS | LVS_ALIGNLEFT | 
-                    WS_BORDER | WS_TABSTOP,14,19,213,155
-    EDITTEXT        IDC_TYPENAMEDISPL,21,185,90,12,ES_READONLY
-END
-
 IDD_PCS_DISPLAY_CONTROL DIALOGEX 0, 0, 122, 61
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
     WS_VSCROLL | WS_SYSMENU
@@ -890,6 +876,21 @@ BEGIN
     LTEXT           "ROW",IDC_STATIC,60,42,19,8
 END
 
+IDD_MAT_GROUP_EDITOR_DATAEDIT DIALOGEX 0, 0, 307, 205
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
+CAPTION "MAT Group Editor: Edit Data"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDC_OK,221,185,46,15
+    GROUPBOX        "Edit Data:",IDC_STATIC,7,7,293,174
+    CONTROL         "",IDC_LISTCONTROL_DATA,"SysListView32",LVS_REPORT | 
+                    LVS_SINGLESEL | LVS_EDITLABELS | LVS_ALIGNLEFT | 
+                    WS_BORDER | WS_TABSTOP,14,19,279,155
+    EDITTEXT        IDC_TYPENAMEDISPL,6,188,166,12,ES_READONLY | NOT 
+                    WS_BORDER
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1027,14 +1028,6 @@ BEGIN
         BOTTOMMARGIN, 69
     END
 
-    IDD_MAT_GROUP_EDITOR_DATAEDIT, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 235
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 198
-    END
-
     IDD_PCS_DISPLAY_CONTROL, DIALOG
     BEGIN
         LEFTMARGIN, 7
@@ -1145,6 +1138,14 @@ BEGIN
         RIGHTMARGIN, 275
         TOPMARGIN, 7
         BOTTOMMARGIN, 155
+    END
+
+    IDD_MAT_GROUP_EDITOR_DATAEDIT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 300
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 198
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -1282,6 +1283,21 @@ END
 
 IDC_ZOOMCURSOR          CURSOR                  "res\\zoomcurs.cur"
 IDC_CURSOR_DRAW         CURSOR                  "res\\cursordraw.cur"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MATGROUP_POPUP MENU 
+BEGIN
+    POPUP "_MATGROUP_POPUP_"
+    BEGIN
+        MENUITEM "Update",                      ID_MATGROUP_POPUP_UPDATE
+        MENUITEM "Remove",                      ID_MATGROUP_POPUP_DELETE
+    END
+END
+
 #endif    // German (Germany) resources
 /////////////////////////////////////////////////////////////////////////////
 
@@ -1308,7 +1324,7 @@ BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,15,10,21,20
     DEFPUSHBUTTON   "OK",IDOK,178,7,32,14,WS_GROUP
     GROUPBOX        "",IDC_STATIC,10,0,160,38
-    LTEXT           "GeoSys 4.1.13OK",IDC_STATIC,69,17,55,11,SS_WORDELLIPSIS
+    LTEXT           "GeoSys 4.2.21",IDC_STATIC,69,17,55,11,SS_WORDELLIPSIS
 END
 
 IDD_OGLINFO_DIALOG DIALOG  0, 0, 187, 175
@@ -1896,54 +1912,15 @@ BEGIN
     PUSHBUTTON      "Simulate",IDC_BUTTON4,11,18,94,15
     PUSHBUTTON      "Display properties",IDC_BUTTON5,11,36,94,15
     GROUPBOX        "Picking",IDC_STATIC,7,7,102,49
-    GROUPBOX        "Particle Tracking",IDC_STATIC,7,58,102,67
+    GROUPBOX        "Particle Tracking",IDC_STATIC,7,58,102,93
     PUSHBUTTON      "Assign PT Values",IDC_PTVALUE,13,70,72,14
     CONTROL         "Velocity Vector",IDC_VELOCITYVECTOR,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,12,134,63,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,158,63,10
     CONTROL         "Show particles",IDC_SHOWPARTICLE,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,15,91,62,10
-    PUSHBUTTON      "In or out",IDC_INOROUT,15,150,50,14
-END
-
-IDD_MAT_GROUP_EDITOR DIALOGEX 0, 0, 234, 325
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
-    WS_SYSMENU
-CAPTION "MAT Group Editor"
-FONT 8, "MS Shell Dlg", 0, 0, 0x0
-BEGIN
-    GROUPBOX        "MAT Data Base (Excel)",IDC_STATIC,0,0,234,60
-    PUSHBUTTON      "Create MAT Group",IDC_BUTTON_GEO2MSH,36,66,78,15,
-                    WS_DISABLED
-    GROUPBOX        "MAT Groups",IDC_STATIC,0,84,234,123
-    PUSHBUTTON      "Remove",IDC_GRID_REMOVE_BUTTON,174,126,54,12
-    PUSHBUTTON      "Write file",IDC_BUTTON_WRITE_MP,174,168,53,12
-    PUSHBUTTON      "Write TEC file",IDC_BUTTON_WRITE_TEC,174,186,54,12
-    EDITTEXT        IDC_FILENAME,6,12,198,14,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_FILEOPEN,210,12,18,14
-    COMBOBOX        IDC_COMBO_TYPENAMES,6,42,138,45,CBS_DROPDOWNLIST | 
-                    WS_DISABLED | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Select Sitename:",IDC_CHOOSETEXT,6,30,65,8,WS_DISABLED
-    PUSHBUTTON      "Edit Property Values",IDC_GETVALUES,150,42,78,14,
-                    WS_DISABLED
-    PUSHBUTTON      "Update",IDC_BUTTON_MAT_UPDATE,174,108,54,14,WS_DISABLED
-    CONTROL         "",IDC_LISTCONTROL_MMP,"SysListView32",LVS_REPORT | 
-                    LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,6,98,162,103
-    COMBOBOX        IDC_COMBO_MAT_PROPERTIES,126,222,102,126,
-                    CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON      "Distribute",IDC_CREATE_FIELDS,174,144,54,12
-    GROUPBOX        "MAT Properties",IDC_STATIC,0,210,234,114
-    COMBOBOX        IDC_COMBO_MAT_GEO_TYPE,24,240,102,132,CBS_DROPDOWN | 
-                    WS_VSCROLL | WS_TABSTOP
-    LISTBOX         IDC_LIST_MAT_GEO,126,240,102,78,LBS_NOINTEGRALHEIGHT | 
-                    WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Materials",IDC_STATIC,90,222,30,8
-    LTEXT           "GEO",IDC_STATIC,6,240,15,8
-    PUSHBUTTON      "-->",IDC_BUTTON_GEO_MAT,90,306,30,10
-    EDITTEXT        IDC_EDIT_MAT,24,222,60,12,ES_AUTOHSCROLL | WS_DISABLED
-    LTEXT           "MAT",IDC_STATIC,6,222,15,8
-    LISTBOX         IDC_LIST_MAT_GEO_TYPE,24,252,102,48,LBS_NOINTEGRALHEIGHT | 
-                    WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON      "Clear",IDC_BUTTON_MAT_GEO_CLEAR,54,306,30,10
+    PUSHBUTTON      "In or out",IDC_INOROUT,11,174,50,14
+    PUSHBUTTON      "Read .pct",IDC_READPCT,12,106,45,14
+    PUSHBUTTON      "C in Ele",IDC_CINELE,60,106,45,14
 END
 
 IDD_MSH_EDITOR DIALOGEX 0, 0, 372, 210
@@ -2339,6 +2316,53 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,246,228,87,10
 END
 
+IDD_MAT_GROUP_EDITOR DIALOGEX 0, 0, 242, 369
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
+CAPTION "MAT Group Editor"
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    GROUPBOX        "Import Data",IDC_STATIC,0,0,241,60
+    PUSHBUTTON      "Create MAT Group",IDC_BUTTON_GEO2MSH,77,97,78,15,
+                    WS_DISABLED
+    GROUPBOX        "MAT Groups",IDC_STATIC,1,113,239,123
+    PUSHBUTTON      "Remove",IDC_GRID_REMOVE_BUTTON,182,163,54,14
+    PUSHBUTTON      "Write file",IDC_BUTTON_WRITE_MP,183,199,53,12
+    PUSHBUTTON      "Write TEC file",IDC_BUTTON_WRITE_TEC,182,217,54,12
+    EDITTEXT        IDC_FILENAME,6,12,206,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_FILEOPEN,217,12,18,14
+    COMBOBOX        IDC_COMBO_TYPENAMES,6,43,146,45,CBS_DROPDOWNLIST | 
+                    WS_DISABLED | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Select Name:",IDC_CHOOSETEXT,6,30,65,8,WS_DISABLED
+    PUSHBUTTON      "Edit Import Data",IDC_GETVALUES,157,43,78,13,
+                    WS_DISABLED
+    PUSHBUTTON      "Update",IDC_BUTTON_MAT_UPDATE,182,145,54,14,WS_DISABLED
+    CONTROL         "",IDC_LISTCONTROL_MMP,"SysListView32",LVS_REPORT | 
+                    LVS_SINGLESEL | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,6,
+                    127,171,103
+    COMBOBOX        IDC_COMBO_MAT_PROPERTIES,133,245,102,126,
+                    CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "MAT Properties",IDC_STATIC,1,236,239,131
+    COMBOBOX        IDC_COMBO_MAT_GEO_TYPE,6,270,102,132,CBS_DROPDOWN | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Property:",IDC_STATIC,101,246,32,8
+    LTEXT           "GEO:",IDC_STATIC,6,260,18,8
+    PUSHBUTTON      "->",IDC_BUTTON_GEO_MAT,112,302,17,15
+    EDITTEXT        IDC_EDIT_MAT,24,247,60,12,ES_READONLY | NOT WS_BORDER
+    LTEXT           "MAT:",IDC_STATIC,6,247,18,8
+    LISTBOX         IDC_LIST_MAT_GEO_TYPE,6,284,102,78,LBS_NOINTEGRALHEIGHT | 
+                    WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Clear",IDC_BUTTON_MAT_GEO_CLEAR,167,351,36,12
+    PUSHBUTTON      "New",IDC_BUTTON_NEW_MATGROUP,181,73,54,14
+    GROUPBOX        "Edit new Data",IDC_STATIC,0,60,241,33
+    EDITTEXT        IDC_NEWNAME,6,73,170,14,ES_AUTOHSCROLL
+    LISTBOX         IDC_LIST_MAT_GEO_FAKE,138,275,102,79,LBS_OWNERDRAWFIXED | 
+                    LBS_NOINTEGRALHEIGHT | NOT WS_VISIBLE | WS_DISABLED | 
+                    WS_VSCROLL | WS_TABSTOP
+    LISTBOX         IDC_LIST_MAT_GEO,133,270,102,79,LBS_NOINTEGRALHEIGHT | 
+                    WS_VSCROLL | WS_TABSTOP
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -2519,17 +2543,6 @@ BEGIN
         BOTTOMMARGIN, 633
     END
 
-    IDD_MAT_GROUP_EDITOR, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 227
-        VERTGUIDE, 14
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 311
-        HORZGUIDE, 84
-        HORZGUIDE, 119
-    END
-
     IDD_MSH_EDITOR, DIALOG
     BEGIN
         LEFTMARGIN, 7
@@ -2568,6 +2581,13 @@ BEGIN
         RIGHTMARGIN, 467
         TOPMARGIN, 7
         BOTTOMMARGIN, 264
+    END
+
+    IDD_MAT_GROUP_EDITOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 236
+        BOTTOMMARGIN, 355
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -2616,84 +2636,6 @@ BEGIN
 0x6552, 0x6361, 0x6974, 0x6576, 0x4d20, 0x7361, 0x2073, 0x7254, 0x6e61, 
 0x7073, 0x726f, 0x0074, 
     0
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Icon
-//
-
-// Icon with lowest ID value placed first to ensure application icon
-// remains consistent on all systems.
-IDR_MAINFRAME           ICON                    "res\\GeoSys.ico"
-IDR_GEOSYSTYPE          ICON                    "res\\GeoSysDoc.ico"
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Bitmap
-//
-
-IDR_MAINFRAME           BITMAP                  "res\\Toolbar.bmp"
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Accelerator
-//
-
-IDR_MAINFRAME ACCELERATORS 
-BEGIN
-    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL
-    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL
-    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL
-    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL
-    "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL
-    "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL
-    "V",            ID_EDIT_PASTE,          VIRTKEY, CONTROL
-    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT
-    VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT
-    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL
-    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT
-    VK_F6,          ID_NEXT_PANE,           VIRTKEY 
-    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Version
-//
-
-VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,1
- PRODUCTVERSION 1,0,0,1
- FILEFLAGSMASK 0x3fL
-#ifdef _DEBUG
- FILEFLAGS 0x1L
-#else
- FILEFLAGS 0x0L
-#endif
- FILEOS 0x4L
- FILETYPE 0x1L
- FILESUBTYPE 0x0L
-BEGIN
-    BLOCK "StringFileInfo"
-    BEGIN
-        BLOCK "040904b0"
-        BEGIN
-            VALUE "FileDescription", "GeoSys MFC Application"
-            VALUE "FileVersion", "1, 0, 0, 1"
-            VALUE "InternalName", "GeoSys"
-            VALUE "LegalCopyright", "Copyright (C) 1998"
-            VALUE "OriginalFilename", "GeoSys.EXE"
-            VALUE "ProductName", "GeoSys Application"
-            VALUE "ProductVersion", "1, 0, 0, 1"
-        END
-    END
-    BLOCK "VarFileInfo"
-    BEGIN
-        VALUE "Translation", 0x409, 1200
-    END
 END
 
 
@@ -3034,6 +2976,84 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON                    "res\\GeoSys.ico"
+IDR_GEOSYSTYPE          ICON                    "res\\GeoSysDoc.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDR_MAINFRAME           BITMAP                  "res\\Toolbar.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_MAINFRAME ACCELERATORS 
+BEGIN
+    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL
+    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL
+    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL
+    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL
+    "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL
+    "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL
+    "V",            ID_EDIT_PASTE,          VIRTKEY, CONTROL
+    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT
+    VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT
+    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL
+    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT
+    VK_F6,          ID_NEXT_PANE,           VIRTKEY 
+    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "FileDescription", "GeoSys MFC Application"
+            VALUE "FileVersion", "1, 0, 0, 1"
+            VALUE "InternalName", "GeoSys"
+            VALUE "LegalCopyright", "Copyright (C) 1998"
+            VALUE "OriginalFilename", "GeoSys.EXE"
+            VALUE "ProductName", "GeoSys Application"
+            VALUE "ProductVersion", "1, 0, 0, 1"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // Toolbar
 //
 
@@ -3078,7 +3098,7 @@ END
 
 STRINGTABLE 
 BEGIN
-    IDR_MAINFRAME           "GeoSys  -  4.2.16(OK)"
+    IDR_MAINFRAME           "GeoSys  -  4.2.21(JG)"
     IDR_GEOSYSTYPE          "\nGeoSys\nGeoSys\nGeoSys project file (*.gsp)\n.gsp\nGeoSys.Document\nGeoSys Document"
 END
 

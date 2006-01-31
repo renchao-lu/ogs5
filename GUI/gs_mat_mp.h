@@ -27,6 +27,7 @@ public:
 	virtual ~CMATGroupEditor();
     virtual BOOL OnInitDialog();
     afx_msg void OnButtonCreate();
+    afx_msg void OnButtonNewMatGroup();
     afx_msg void OnBnClickedButtonWriteMP();
     afx_msg void OnBnClickedCreateFields();
 
@@ -42,6 +43,9 @@ private:
     CString m_strGEOTypeName;
 	int Count;
 	int MarkedRow;
+    CString m_fileopen;
+    CString m_newgroup;
+
     CMediumProperties* m_mmp;
 public:
     CString m_strFileNameBase;
@@ -51,10 +55,11 @@ public:
     CWorkbooks oBooks;    
     CWorkbook oBook;
     CEdit m_sfilename;
+    CEdit m_snewname;
     CComboBox m_combo_typenames;
     afx_msg void OnFileopen();
     afx_msg void OnBnClickedGetvalues();
-    CString m_fileopen;
+    //CString m_fileopen;
     CString m_strDBTypeName;
     //afx_msg void OnBnClickedButtonMATUpdate(); //OK
     CListCtrl m_LC_MMP;
@@ -62,9 +67,11 @@ public:
     //afx_msg void OnNMClickListcontrolMmp(NMHDR *pNMHDR, LRESULT *pResult);
     int m_iSelectedMMPGroup;
     afx_msg void OnBnClickedGridRemoveButton();
-    bool dataedit, dataedit_pre;
-    bool geotypeselection;
-    void Excel_typenames2ComboBox(void);
+    afx_msg void OnBnClickedMATUpdateButton();
+
+    bool dataedit_pre;
+    bool dataremove;
+    //void Excel_typenames2ComboBox(void);
     void GetTypenamefromComboBox(void);
     afx_msg void OnCbnSelchangeComboMATNames();
     CComboBox m_CB_MMP_PROPERTIES;
@@ -90,13 +97,14 @@ public:
     void Excel_typenames2Combo(void);
     void CSV_typenames2Combo(string);
     string readCSV_type_name(string, string *);
+	afx_msg void OnClick_LC_MMP(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnRclick_LC_MMP(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnDblclick_LC_MMP(NMHDR* pNMHDR, LRESULT* pResult);
+    afx_msg void OnKillfocus_LC_MMP(NMHDR* pNMHDR, LRESULT* pResult);
+    afx_msg void OnEnSetfocusNewname();
     void UpdateMMP(void);
-
     afx_msg void OnCbnSelchangeComboMatLay();
-
     // Buffer
     CMATGroupEditorDataEdit *dataeditdirect;
-
-
+    int mat_type; //OKJG
 };

@@ -91,7 +91,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../gui; ../fem; ../lib; ../msh; ../msh/tm;../msh/delaunay;../geo; ../; ../gui/splitter"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;MFC;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;MFC;_FEMPCHDEBUG_"
 				RuntimeLibrary="3"
 				DisableLanguageExtensions="FALSE"
 				UsePrecompiledHeader="3"
@@ -832,6 +832,12 @@
 				</File>
 				<File
 					RelativePath=".\PickingHandle.h">
+				</File>
+				<File
+					RelativePath=".\ProgressBar.cpp">
+				</File>
+				<File
+					RelativePath=".\ProgressBar.h">
 				</File>
 				<File
 					RelativePath=".\PTValue.cpp">

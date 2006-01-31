@@ -440,19 +440,22 @@ void MSHSelectFreeSurfaceNodes (CFEMesh* m_msh)
   NumberOfNodes = (long)m_msh->nod_vector.size();
   NumberOfLayers = m_msh->no_msh_layer;
   NumberOfNodesPerLayer = NumberOfNodes / (NumberOfLayers + 1);  
-
+  int no_unconfined_layer = 0;
   // create array with nodes in vertical column
   for (i = 0; i < NumberOfNodesPerLayer; i++) {
    
     if(m_msh->nod_vector[i]->free_surface == 4){
-      nextnode = i;   
+      nextnode = i; 
+      no_unconfined_layer = 0;  
       for (j=0; j < m_msh->no_msh_layer; j++) {
         strang = (long*) Realloc(strang,(j+1)*sizeof(long));     
         strang[j] = nextnode;
         startnode = nextnode;
         nextnode = MSHGetNextNode (startnode, m_msh);
-        if(m_msh->nod_vector[nextnode]->free_surface == 4){
+        if(m_msh->nod_vector[nextnode]->free_surface == 4)
+        {
           strang[j+1] = nextnode;
+          no_unconfined_layer++;
         }
         else  {
           continue;
@@ -465,7 +468,7 @@ void MSHSelectFreeSurfaceNodes (CFEMesh* m_msh)
     //NODSetFreeSurfaceFlag(strang[0], 1);
     //NODSetFreeSurfaceFlag(strang[j], 2);
     m_msh->nod_vector[strang[0]]->free_surface = 1;
-    m_msh->nod_vector[strang[j]]->free_surface = 2;
+    m_msh->nod_vector[strang[no_unconfined_layer]]->free_surface = 2;
 
    
   } /*endfor*/ 
@@ -507,6 +510,8 @@ void MSHMoveNODUcFlow (CRFProcess*m_pcs)
   long NumberOfNodes;
   long NumberOfNodesPerLayer;
   int NumberOfLayers;
+  double MinThickness = 1e-1; //OKMB
+  double z_bottom; //OKMB
 
   // Number of nodes per node layer
   NumberOfNodes = (long)m_pcs->m_msh->nod_vector.size();
@@ -546,19 +551,25 @@ void MSHMoveNODUcFlow (CRFProcess*m_pcs)
   
     /* Die Knoten eines Stranges werden entsprechend der neuen Druckverteilung  verformt */
     /* Standrohrspiegelhöhe bestimmen */
+    nidy = m_pcs->GetNodeValueIndex("HEAD")+1;
+
     if (GetRFProcessDensityFlow()) {  /* mit Dichteunterschiede */
       //OK_MOD     head = MODCalcHeadInColumn_MB(strang, anz_zeilen);
     }
     else {  /* ohne Dichteunterschiede */
       //nidy = PCSGetNODValueIndex("HEAD",timelevel);
       //head = GetNodeVal(strang[0],nidy);
-      nidy = m_pcs->GetNodeValueIndex("HEAD")+1;
+      
       head = m_pcs->GetNodeValue(strang[0],nidy);
     } 
+    z_bottom = m_pcs->m_msh->nod_vector[strang[anz_zeilen]]->Z();
+    // Set minimum thickness
+    if(head - z_bottom < MinThickness)
+      head = z_bottom + MinThickness;
 
     /* Berechnung der Differenz: Alter Z-Wert - Neuer Z-Wert eines Free-Surface-Nodes */
     //spanne_ges = head - GetNodeZ(strang[anz_zeilen]);
-    spanne_ges = head - m_pcs->m_msh->nod_vector[strang[anz_zeilen]]->Z();
+    spanne_ges = head - z_bottom;
     spanne_rel = spanne_ges / anz_zeilen;
     //SetNodeZ (strang[0], head);  
     m_pcs->m_msh->nod_vector[strang[0]]->SetZ(head); 
@@ -1060,3 +1071,108 @@ void MSHCreateNOD2ELERelations(CFEMesh*m_msh)
   }
 */
 }
+
+/**************************************************************************
+FEMLib-Method: 
+Task: Searches mobile nodes and sets node->free_surface = 4
+Programing:
+09/2004 OK / MB Implementation
+05/2005 OK Bugfix
+07/2005 MB MMP keyword
+08/2005 MB m_pcs
+01/2006 OK LAYER
+**************************************************************************/
+void CFEMesh::DefineMobileNodes(CRFProcess*m_pcs)
+{
+  long* mobile_nodes = NULL;
+  long no_mobile_nodes = -1;
+  long i,j;
+  //----------------------------------------------------------------------
+  // Define mobile MSH nodes
+  //----------------------------------------------------------------------
+  //......................................................................
+  //DOMAIN
+  if(m_pcs->geo_type.find("DOMAIN")!=string::npos)
+  {
+    for(i=0;i<(long)nod_vector.size();i++) 
+    {
+      mobile_nodes = (long *) Realloc(mobile_nodes,sizeof(long)*(i+1));
+      mobile_nodes[i] = i;
+    }
+    no_mobile_nodes = (long)m_pcs->m_msh->nod_vector.size();
+  }
+  //......................................................................
+  //LAYER
+  if(m_pcs->geo_type.find("LAYER")!=string::npos)
+  {
+    string m_string;
+    long no_nodes_per_layer = (long)nod_vector.size() / (no_msh_layer+1);
+    int pos = 0;
+    int layer_start=0,layer_end=0;
+    if(m_pcs->geo_type_name.find("-")!=string::npos)
+    {
+      pos = m_pcs->geo_type_name.find("-")!=string::npos;
+      m_string = m_pcs->geo_type_name.substr(0,pos);
+      layer_start = strtol(m_string.c_str(),NULL,0);
+      m_string = m_pcs->geo_type_name.substr(pos+1,string::npos);
+      layer_end = strtol(m_string.c_str(),NULL,0);
+    }
+    else
+    {
+      layer_start = strtol(m_pcs->geo_type_name.c_str(),NULL,0);
+      layer_end = layer_start;
+    }
+    int no_layers = layer_end-layer_start+1;
+    no_mobile_nodes = (no_layers+1)*no_nodes_per_layer;
+    mobile_nodes = new long[no_mobile_nodes];
+    for(i=0;i<no_layers+1;i++)
+    {
+      for(j=0;j<no_nodes_per_layer;j++) 
+      {
+        mobile_nodes[i*no_nodes_per_layer+j] = j + (layer_start-1+i)*no_nodes_per_layer;
+      }
+    }
+  }
+  //......................................................................
+  //SURFACE 
+  if(m_pcs->geo_type.find("SURFACE")!=string::npos)
+  {
+    Surface *m_sfc = NULL;
+    m_sfc = GEOGetSFCByName(m_pcs->geo_type_name);//CC
+    if(m_sfc)
+      mobile_nodes = GetPointsIn(m_sfc,&no_mobile_nodes);//CC
+    else
+      cout << "Warning in CFEMesh::DefineMobileNodes - no GEO data" << endl;
+  }
+  //......................................................................
+  //VOLUME
+  if(m_pcs->geo_type.find("VOLUME")!=string::npos)
+  {
+    CGLVolume *m_vol = NULL;
+    m_vol = GEOGetVOL(m_pcs->geo_type_name);//CC 10/05
+    if(m_vol)
+      mobile_nodes = GetPointsInVolume(m_vol,&no_mobile_nodes);//CC 10/05
+    else
+      cout << "Warning in CFEMesh::DefineMobileNodes - no GEO data" << endl;
+  }
+  //----------------------------------------------------------------------
+  // Set mobile MSH nodes flag
+  //----------------------------------------------------------------------
+  for(i=0;i<(long)nod_vector.size();i++) 
+  {
+    nod_vector[i]->free_surface = -1;
+  }
+  for(i=0;i<no_mobile_nodes;i++){
+    nod_vector[i]->free_surface = 4;
+    //nod_vector[mobile_nodes[i]]->free_surface = 4;
+  }
+  //----------------------------------------------------------------------
+  if (no_mobile_nodes > 0)  {
+    m_pcs->mobile_nodes_flag = 1;
+    MSHSelectFreeSurfaceNodes(this);
+  }
+  //----------------------------------------------------------------------
+  delete [] mobile_nodes;
+  mobile_nodes = NULL;
+}
+

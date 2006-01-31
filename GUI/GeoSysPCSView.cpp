@@ -669,6 +669,14 @@ void CGeoSysView::OnMSPEditor()
 {
   MAT_Mech_dlg MMech_dlg;
   MMech_dlg.DoModal();
+/*
+  CMATGroupEditor m_dialog;
+  CGeoSysDoc* m_pDoc = GetDocument();
+  m_dialog.mat_type = 1; //OKJG
+  m_dialog.m_strFileNameBase = m_pDoc->m_strGSPFileBase;
+  m_dialog.DoModal();
+  Invalidate(FALSE);
+*/
 }
 //------------------------------------------------------------------------
 // MMP
@@ -681,6 +689,7 @@ void CGeoSysView::OnMMPEditor()
 {
   CMATGroupEditor m_dialog;
   CGeoSysDoc* m_pDoc = GetDocument();
+  m_dialog.mat_type = 0; //OKJG
   m_dialog.m_strFileNameBase = m_pDoc->m_strGSPFileBase;
   m_dialog.DoModal();
   Invalidate(FALSE);

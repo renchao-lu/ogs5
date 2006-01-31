@@ -421,13 +421,17 @@ void CRFProcess::Create()
   cout << "->Create NUM" << '\n';
   int no_numerics = (int)num_vector.size();
   CNumerics* m_num_tmp = NULL;
-  for(i=0;i<no_numerics;i++){
-    m_num_tmp = num_vector[i];
-    if((pcs_type_name.compare(m_num_tmp->pcs_type_name)==0)\
-     ||(m_num_tmp->pcs_type_name.compare(pcs_primary_function_name[0])==0))
-	{
-      m_num = m_num_tmp;
-      break;
+  if(pcs_type_name.compare("RANDOM_WALK"))	// PCH RWPT does not need this.
+  {
+	for(i=0;i<no_numerics;i++){
+		m_num_tmp = num_vector[i];
+
+		if((pcs_type_name.compare(m_num_tmp->pcs_type_name)==0) 
+		||(m_num_tmp->pcs_type_name.compare(pcs_primary_function_name[0])==0))
+		{
+			m_num = m_num_tmp;
+			break;
+		}
 	}
   }
   if(!m_num){
@@ -591,7 +595,7 @@ void CRFProcess::Create()
     }
     Number_of_Node_Variables += number_of_nvals; //WW
     // Create element values - PCH
-    int number_of_evals = pcs_number_of_evals;
+    int number_of_evals = 2*pcs_number_of_evals;  //PCH, increase memory
     for(i=0;i<pcs_number_of_evals;i++)
     {
       ele_val_name_vector.push_back(pcs_eval_name[i]); // new time
@@ -1096,6 +1100,7 @@ bool PCSRead(string file_base_name)
          string pcs_name_dm = m_pcs->pcs_type_name; 
          string num_type_name_dm = m_pcs->num_type_name;
          bool m_output = false;
+		 int rhs_out = m_pcs->WriteSourceNBC_RHS;
 		 bool r_load = m_pcs->reload;
          int m_memory = 0;
          int i = 0;
@@ -1115,6 +1120,7 @@ bool PCSRead(string file_base_name)
 
          m_pcs->pcs_type_name = pcs_name_dm;
          m_pcs->Write_Matrix=m_output;
+		 m_pcs->WriteSourceNBC_RHS = rhs_out;
          m_pcs->num_type_name = num_type_name_dm;
 		 m_pcs->Memory_Type = m_memory;
          m_pcs->NumDeactivated_SubDomains = m_inactive;
@@ -1157,6 +1163,7 @@ Programing:
 08/2004 WW Read deformation process
 11/2004 OK file streaming
 12/2005 OK MSH_TYPE
+01/2006 OK GEO_TYPE
 **************************************************************************/
 ios::pos_type CRFProcess::Read(ifstream *pcs_file)
 {
@@ -1208,7 +1215,6 @@ ios::pos_type CRFProcess::Read(ifstream *pcs_file)
 	      //if only "DEFORMATION", do not create solver for FLUID process. WW
           if(pcs_no_fluid_phases<1) 
             pcs_no_fluid_phases = 1;
-          
 	    }
 	    if(pcs_type_name.compare("MASS_TRANSPORT")==0)
         { 
@@ -1278,13 +1284,21 @@ ios::pos_type CRFProcess::Read(ifstream *pcs_file)
     }
     //....................................................................
     if(line_string.find("$ELEMENT_MATRIX_OUTPUT")!=string::npos) { // subkeyword found
-        *pcs_file >> Write_Matrix>>ws; //WW
+      *pcs_file >> Write_Matrix; //WW
+      pcs_file->ignore(MAX_ZEILE,'\n');
       continue;
     }
     //....................................................................
+    if(line_string.find("$IO_NEUMANN")!=string::npos) { // subkeyword found
+		*pcs_file >> WriteSourceNBC_RHS; //WW
+        pcs_file->ignore(MAX_ZEILE,'\n');
+        continue;
+    }
+    //....................................................................
     if(line_string.find("$MEMORY_TYPE")!=string::npos) { // subkeyword found
-        *pcs_file >> Memory_Type>>ws;  //WW
-      continue;
+       *pcs_file >> Memory_Type;  //WW
+       pcs_file->ignore(MAX_ZEILE,'\n');
+       continue;
     }
     //....................................................................
     if(line_string.find("$RELOAD")!=string::npos) { // subkeyword found
@@ -1300,6 +1314,11 @@ ios::pos_type CRFProcess::Read(ifstream *pcs_file)
     //....................................................................
     if(line_string.find("$MSH_TYPE")!=string::npos) { // subkeyword found
         *pcs_file >> msh_type_name >> ws;
+      continue;
+    }
+    //....................................................................
+    if(line_string.find("$GEO_TYPE")!=string::npos) { //OK
+      *pcs_file >> geo_type >> geo_type_name >> ws;
       continue;
     }
     //....................................................................
@@ -1589,11 +1608,14 @@ void CRFProcess::ConfigGroundwaterFlow()
   // Secondary variables
   pcs_number_of_secondary_nvals = 2;
   pcs_secondary_function_name[0] = "FLUX";
-  pcs_secondary_function_unit[0] = "m";
+  pcs_secondary_function_unit[0] = "m3/s";
   pcs_secondary_function_timelevel[0] = 1;
   pcs_secondary_function_name[1] = "WDEPTH";
   pcs_secondary_function_unit[1] = "m";
   pcs_secondary_function_timelevel[1] = 1;
+  //----------------------------------------------------------------------
+  if(m_msh)
+    m_msh->DefineMobileNodes(this);
 }
 
 /**************************************************************************
@@ -1976,7 +1998,7 @@ Task:
 Programing:
 03/2004 SB Implementation
         WW Splitted for processes
-last modified:
+01/2006 OK Tests        
 **************************************************************************/
 void CRFProcess::ConfigMassTransport()
 {
@@ -1989,6 +2011,16 @@ void CRFProcess::ConfigMassTransport()
   pcs_number_of_primary_nvals = 1;
   pcs_primary_function_name[0]= new char[80];
 //  sprintf(pcs_primary_function_name[0], "%s%li","CONCENTRATION",comp);
+  //----------------------------------------------------------------------
+  // Tests
+  if((int)cp_vec.size()<pcs_component_number+1){
+    cout << "Error in CRFProcess::ConfigMassTransport - not enough MCP data" << endl;
+#ifdef MFC
+    AfxMessageBox("Error in CRFProcess::ConfigMassTransport - not enough MCP data");
+#endif
+    return;
+  }
+  //----------------------------------------------------------------------
   sprintf(pcs_primary_function_name[0], "%s", cp_vec[pcs_component_number]->compname.c_str());
   pcs_primary_function_unit[0] = "kg/m3";  //SB
 /* SB: Eintrag component name in Ausgabestruktur */ //SB:todo : just one phase todo:name
@@ -2364,13 +2396,24 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_secondary_function_unit[3] = "Pa";
   pcs_secondary_function_timelevel[3] = 1;
   // 2 ELE values
-  pcs_number_of_evals = 3; 
+  pcs_number_of_evals = 8; 
   pcs_eval_name[0] = "VELOCITY1_X";
   pcs_eval_unit[0]  = "m/s";
   pcs_eval_name[1] = "VELOCITY1_Y";
   pcs_eval_unit[1]  = "m/s";
   pcs_eval_name[2] = "VELOCITY1_Z";
   pcs_eval_unit[2]  = "m/s";
+  pcs_eval_name[3] = "POROSITY";   //MX 11.2005
+  pcs_eval_unit[3] = "-";
+  pcs_eval_name[4] = "POROSITY_IL"; //MX 11.2005
+  pcs_eval_unit[4] = "-";
+  pcs_eval_name[5] = "PERMEABILITY"; //MX 11.2005
+  pcs_eval_unit[5] = "-";
+  pcs_eval_name[6] = "n_sw"; //MX 11.2005
+  pcs_eval_unit[6] = "-";
+  pcs_eval_name[7] = "n_sw_rate"; //MX 11.2005
+  pcs_eval_unit[7] = "-";
+
   // USER
   //PCSSetIC_USER = MMPSetICRichards;
 }
@@ -3035,8 +3078,8 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
     GlobalAssembly();
   else
     AssembleSystemMatrixNew();
-  /*---------------------------------------------------------------------*/
-  /* 3 Incorporate ST */
+  //----------------------------------------------------------------------
+  // 3 Incorporate ST 
   cout << "      Incorporate source terms" << endl;
 #ifdef CHECK_ST_GROUP
   CheckSTGroup();
@@ -3301,28 +3344,31 @@ void CRFProcess::GlobalAssembly()
   }
   //----------------------------------------------------------------------
   // STD
-  else{
-	if(Tim->time_control_name.compare("NEUMANN")==0)   
-	this->Tim->time_step_length_neumann = 1.e10;  //YD 
-    for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
+  else
+  {
+/*OK
+    if(Tim->time_control_name.compare("NEUMANN")==0)   
+	  Tim->time_step_length_neumann = 1.e10;  //YD 
+*/
+    for(i=0;i<(long)m_msh->ele_vector.size();i++)
     {
-        elem = m_msh->ele_vector[i];
-     //---------------------------------------------------
-	  if(this->Tim->time_control_name.compare("NEUMANN")==0)
-	  timebuffer = 0.5*elem->GetVolume()*elem->GetVolume();
-     //---------------------------------------------------
+      elem = m_msh->ele_vector[i];
+/*
+	  if(Tim->time_control_name.compare("NEUMANN")==0)
+	    timebuffer = 0.5*elem->GetVolume()*elem->GetVolume();
+*/
       if (elem->GetMark()) // Marked for use
       {
         fem->ConfigElement(elem, Check2D3D);
         fem->Assembly();
-     //---------------------------------------------------
-	  if(this->Tim->time_control_name.compare("NEUMANN")==0){
-	   //cout<<" i= "<<i<<"  "<<timebuffer<<" "; 
-	  this->Tim->time_step_length_neumann = MMin(Tim->time_step_length_neumann,timebuffer);
-	  if (this->Tim->time_step_length_neumann < MKleinsteZahl)
-			cout<<"Waning : Time Control Step Wrong, dt = 0.0 "<<endl;
-	  }
-     //---------------------------------------------------
+/*
+	    if(Tim->time_control_name.compare("NEUMANN")==0)
+        {
+	      Tim->time_step_length_neumann = MMin(Tim->time_step_length_neumann,timebuffer);
+	      if(Tim->time_step_length_neumann < MKleinsteZahl)
+		    cout<<"Warning : Time Control Step Wrong, dt = 0.0 "<<endl;
+	    }
+*/
       } 
     }
   }
@@ -4320,7 +4366,8 @@ void CRFProcess::CalcSecondaryVariables(int time_level)
     case 'C':
       break;
     case 'R': // Richards flow
-      CalcSecondaryVariablesRichards(time_level,false);
+	  if(pcs_type_name[1] == 'I')	// PCH To make a distinction with RANDOM WALK.
+		CalcSecondaryVariablesRichards(time_level,false);
       break;
   }
 }
@@ -4808,6 +4855,7 @@ void PCSDelete()
     delete pcs_vector[i];
   }
   pcs_vector.clear();
+  pcs_no_components = 0;
 }
 
 /**************************************************************************
@@ -5729,4 +5777,53 @@ if(m_pcs){
 	val = val/((double)elem->GetVertexNumber());
 }
 return val;
+}
+
+/*************************************************************************
+GeoSys-FEM Function:
+01/2006 OK Implementation
+**************************************************************************/
+void CRFProcess::SetNODFlux()
+{
+  long i;
+  //----------------------------------------------------------------------
+  int nidx;
+  nidx = GetNodeValueIndex("FLUX");
+  if(nidx<0)
+    return;
+  double m_val;
+  for(i=0;i<(long)m_msh->nod_vector.size();i++)
+  {
+    m_val = eqs->b[i]; //? m_nod->eqs_index
+    SetNodeValue(i,nidx,m_val);
+  }
+  //----------------------------------------------------------------------
+}
+
+/*************************************************************************
+GeoSys-FEM Function:
+01/2006 OK Implementation
+**************************************************************************/
+void CRFProcess::AssembleParabolicEquationRHSVector()
+{
+  long i;
+  //----------------------------------------------------------------------
+  // Init
+  for(i=0;i<(long)m_msh->nod_vector.size();i++)
+  {
+    eqs->b[i] = 0.0;
+  }
+  //----------------------------------------------------------------------
+  CElem* m_ele = NULL;
+  for(i=0;i<(long)m_msh->ele_vector.size();i++)
+  {
+    m_ele = m_msh->ele_vector[i];
+    if(m_ele->GetMark()) // Marked for use
+    {
+      fem->ConfigElement(m_ele,false);
+      fem->AssembleParabolicEquationRHSVector();
+      //fem->AssembleParabolicEquationLHSMatrix();
+    } 
+  }
+  //----------------------------------------------------------------------
 }

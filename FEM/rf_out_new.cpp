@@ -615,10 +615,11 @@ void COutput::NODWriteDOMDataTEC()
   }
   //----------------------------------------------------------------------
   // File name handling
-  if((int)fem_msh_vector.size()>1) // MultiMSH
-    tec_file_name = file_base_name + "_" + msh_type_name + "_" + "domain";
-  else
-    tec_file_name = file_base_name + "_" + "domain";
+  tec_file_name = file_base_name + "_" + "domain";
+  if(msh_type_name.size()>0) // MultiMSH
+    tec_file_name += "_" + msh_type_name;
+  if(pcs_type_name.size()>0) // PCS
+    tec_file_name += "_" + pcs_type_name;
   //======================================================================
   if(m_msh){//WW
     if(msh_no_line>0)
@@ -884,6 +885,8 @@ void COutput::WriteTECNodeData(fstream& tec_file)
               for(m=0;m<(int)m_pcs->nod_val_name_vector.size();m++){
                 if(m_pcs->nod_val_name_vector[m].compare(nod_value_name)==0){
                   m_pcs_out = PCSGet(pcs_type_name,nod_value_name);
+                  if(!m_pcs_out)
+                    continue;
                   if(timelevel==1){
                     nidx = m_pcs_out->GetNodeValueIndex(nod_value_name)+timelevel;
                     tec_file << m_pcs_out->GetNodeValue(m_msh->nod_vector[j]->GetIndex(),nidx) << " ";
@@ -1255,6 +1258,7 @@ void COutput::NODWritePLYDataTEC(int number)
     //--------------------------------------------------------------------
     CRFProcess* m_pcs = NULL;
     bool bdummy = false;
+    double flux_sum = 0.0; //OK
     for(j=0;j<(long)nodes_vector.size();j++){
       tec_file << m_ply->sbuffer[j] << " ";
       for(k=0;k<no_variables;k++){
@@ -1262,10 +1266,19 @@ void COutput::NODWritePLYDataTEC(int number)
         if(!m_pcs)
           cout << "Warning in COutput::NODWritePLYDataTEC - no PCS data" << endl;
         else
-	      tec_file << m_pcs->GetNodeValue(nodes_vector[m_ply->OrderedPoint[j]], NodeIndex[k]) << " ";
+        {
+          tec_file << m_pcs->GetNodeValue(nodes_vector[m_ply->OrderedPoint[j]], NodeIndex[k]) << " ";
+        }
+        //................................................................
+        if(nod_value_vector[k].compare("FLUX")==0)
+        {
+          flux_sum += m_pcs->GetNodeValue(nodes_vector[m_ply->OrderedPoint[j]],NodeIndex[k]);
+        }
+        //................................................................
       }
       tec_file << endl;
     }
+    cout << "Flux averall: " << flux_sum << endl;
   }
   //======================================================================
   // RFI
@@ -2027,4 +2040,46 @@ void COutput::GetELEValuesIndexVector(vector<int>&ele_value_index_vector)
   {
     ele_value_index_vector[i] = m_pcs->GetElementValueIndex(ele_value_vector[i]);
   }
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Programing:
+01/2006 OK Implementation
+**************************************************************************/
+void COutput::SetNODFluxAtPLY()
+{
+  //----------------------------------------------------------------------
+  // Tests
+  CGLPolyline* m_ply = GEOGetPLYByName(geo_name);
+//  m_polyline->GetPointOrderByDistance(); 
+  if(!m_ply)
+  {
+    cout << "Warning in COutput::SetNODFluxAtPLY() - no PLY data" << endl;
+    return;
+  }
+  CFEMesh* m_msh = GetMSH();
+  if(!m_msh)
+  {
+    cout << "Warning in COutput::SetNODFluxAtPLY() - no MSH data" << endl;
+    return;
+  }
+  CRFProcess* m_pcs = GetPCS("FLUX");
+  if(!m_pcs)
+  {
+    cout << "Warning in COutput::SetNODFluxAtPLY() - no PCS data" << endl;
+    return;
+  }
+  //----------------------------------------------------------------------
+  vector<long>nodes_vector;
+  m_msh->GetNODOnPLY(m_ply,nodes_vector);
+  vector<double> node_value_vector;
+  node_value_vector.resize(nodes_vector.size());
+  int nidx = m_pcs->GetNodeValueIndex("FLUX");
+  for(int i=0;i<(int)nodes_vector.size();i++)
+  {
+    node_value_vector[i] = m_pcs->GetNodeValue(nodes_vector[i],nidx); 
+  }
+  //----------------------------------------------------------------------
+//m_st->FaceIntegration(m_pcs,nodes_vector,node_value_vector);
 }

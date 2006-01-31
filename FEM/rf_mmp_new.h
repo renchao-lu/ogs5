@@ -88,6 +88,7 @@ class CMediumProperties
     // PCS
   CRFProcess*m_pcs; //OK
   vector<string>pcs_name_vector;
+	vector<string>porosity_pcs_name_vector;
   //....................................................................
   //GEO
   string geo_type_name;

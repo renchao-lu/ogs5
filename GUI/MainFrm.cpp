@@ -7,6 +7,7 @@
 #include ".\mainfrm.h"
 #include "GeoSysDoc.h"
 #include "gs_graphics.h"
+#include "afxdisp.h"
 
 // GeoSys-GUI
 #include "gs_output.h"

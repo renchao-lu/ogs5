@@ -75,14 +75,15 @@ BOOL CDialogTimeDiscretization::OnInitDialog()
     m_pcs = pcs_vector[i];
     m_strPCSTypeName = (CString)m_pcs->pcs_type_name.c_str();
     m_CB_PCSType.AddString(m_strPCSTypeName);
-    m_CB_PCSType.SetCurSel(0);
+    m_CB_PCSType.SetCurSel(i);
     //....................................................................
     m_tim = TIMGet(m_pcs->pcs_type_name);
     if(m_tim){
       m_dTIMStart = m_tim->time_start;
       m_dTIMEnd = m_tim->time_end;
+      m_LB_TIM.ResetContent();
       for(j=0;j<(int)m_tim->time_step_vector.size();j++){
-        m_str.Format("%g",m_tim->time_step_vector[i]);
+        m_str.Format("%g",m_tim->time_step_vector[j]);
         m_LB_TIM.AddString(m_str);
       }
     }

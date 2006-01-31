@@ -74,7 +74,7 @@ public:
     bool MarkPoint(CDC*,CPoint,CGLPoint*); //OK
     void DrawMSHNodes(CDC*,CFEMesh*); //OK
     void DrawMSHNode(CDC*,CNode*); //OK
-    void DrawXYPlot(CDC*,vector<double>&,vector<double>&); //OK
+    void DrawXYPlot(CDC*,vector<double>&,vector<double>&,int); //OK
     void DrawMATFunction(CDC*,CMediumProperties*,CString); //OK
     void DrawMSHElementsLabels(CDC*pDC,CFEMesh*m_fem_msh); //OK
     void DrawMSHElementLabel(CDC*dc,CElem*m_ele); //OK
@@ -85,6 +85,7 @@ public:
     void DrawSurfacesLabels(CDC*); //OK
     void DrawSurfaceNew(CDC*,Surface*); //OK
     void DrawSurfacesValues(CDC*,CRFProcess*); //OK
+    void SelectPenObject(CDC*,int); //OK
 
     void FillMSHElement(CDC*,int,long*);
     void MFCFillElement(int,double*,double*,CDC*,CBrush*);

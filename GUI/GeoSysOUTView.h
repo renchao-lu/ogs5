@@ -49,7 +49,7 @@ protected:
     int m_iDisplayOUTProperties;
     double m_dXmin,m_dXmax,m_dYmin,m_dYmax;
     CString m_strQuantityName;
-
+    COutput* m_out;
 // Generierte Message-Map-Funktionen
 protected:
 	DECLARE_MESSAGE_MAP()

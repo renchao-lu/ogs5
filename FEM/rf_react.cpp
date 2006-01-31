@@ -231,7 +231,7 @@ for(i=0;i<vector_size;i++){
 	m_pcs = pcs_vector[i];
 	if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0) np++;
 	if(m_pcs->pcs_type_name.compare("HEAT_TRANSPORT")==0) heatflag = 1;
-  nodenumber = m_pcs->m_msh->GetNodesNumber(false);
+	nodenumber = (long) m_pcs->m_msh->GetNodesNumber(false);
  }
  number_of_comp = np;
 

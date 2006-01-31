@@ -1,38 +1,65 @@
-#GeoSys makfile file
-# 04/11/2004 WW
-TARGET = rf4
-include link.mak
+TOPDIR = $(shell pwd)
+export TOPDIR
+
+TGT = rf4
+
+CONFIGS_DIR = $(TOPDIR)/configs
+
+CONFIG_NAMES_FULL = $(wildcard $(CONFIGS_DIR)/*)
+CONFIG_NAMES      = $(strip $(notdir $(CONFIG_NAMES_FULL)))
+export CONFIG_NAMES
+
+TARGET_NAMES      = $(CONFIG_NAMES) clean distclean
+
+CHOSEN_TARGET     = $(findstring $(MAKECMDGOALS),$(TARGET_NAMES))
 
 
-all:
-	make -C FEM -f makefile.gcc
-	make -C GEO -f makefile.gcc
-	make -C MSH -f makefile.gcc
-	g++ -o $(TARGET) $(FEMOBJS)  $(GEOOBJS)  $(MSHOBJS) -lm
+ifneq ("x","x$(CHOSEN_TARGET)")
+    REALGOAL = $(CHOSEN_TARGET)
+    ifneq (,$(findstring $(CHOSEN_TARGET),"clean distclean"))
+        CHOSEN_TARGET =
+    else
+        include $(CONFIGS_DIR)/$(CHOSEN_TARGET)
+    endif
+else
+    REALGOAL = not_valid
+endif
 
-linux:
-	make -C FEM -f makefile.gcc
-	make -C GEO -f makefile.gcc
-	make -C MSH -f makefile.gcc
-
-
-	g++ -o $(TARGET) $(FEMOBJS)  $(GEOOBJS)  $(MSHOBJS)  -lm
-
-NEC:
-	make -C FEM -f makefile.sxc
-	make -C GEO -f makefile.sxc
-	make -C MSH -f makefile.sxc
-	sxc++ -o $(TARGET) $(FEMOBJS)  $(GEOOBJS)  $(MSHOBJS) -lm
+export CHOSEN_TARGET
 
 
 
-clean:   
-	make -C FEM -f makefile.gcc clean
-	make -C GEO -f makefile.gcc clean
-	make -C MSH -f makefile.gcc clean
-	rm -rf  $(TARGET)
-	rm -rf  gs_project.o 
+SUBDIRS = FEM GEO MSH
+ifdef MPI
+SUBDIRS += MPI
+endif
+
+OBJS_PATTERN = $(foreach subdir,$(SUBDIRS),$(subdir)/*.o)
 
 
-           
+.PHONY:	first
+first:	check_config
+
+distclean clean:
+	@ for i in $(SUBDIRS); do \
+            ( cd $$i && $(MAKE) $@ ) \
+        done
+        
+not_valid:
+	@ echo "Possible configurations are '$(CONFIG_NAMES)'."
+
+.PHONY:	check_config
+check_config:	$(REALGOAL)
+
+
+.PHONY:	$(CONFIG_NAMES)
+$(CONFIG_NAMES):
+	@ echo "Real goal: $(REALGOAL)"
+	@ echo "Config names $(CONFIG_NAMES)"
+	@ echo "Chosen target '$(CHOSEN_TARGET)'"
+	@ for i in $(SUBDIRS); do \
+            $(MAKE) -C $$i $(CHOSEN_TARGET) || exit 1; \
+        done
+	$(CXX_LD) $(CXX_LDFLAGS) -o $(TGT) $(OBJS_PATTERN) $(CXX_LIBS)
+
 

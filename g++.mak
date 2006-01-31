@@ -4,7 +4,8 @@ GEOINCLUDE=../GEO
 MSHINCLUDE=../MSH
 GEN_INCLUDES = -I$(ROOTINCLUDE) -I$(FEMINCLUDE) -I$(GEOINCLUDE) -I$(MSHINCLUDE)  
 
-OPTFLAG =  -O3 -fno-nonansi-builtins -DGCC
+#OPTFLAG =  -O3 -fno-nonansi-builtins -DGCC
+OPTFLAG =  -g -DGCC
 DEBFLAG = #-ggdb
 WARN = -Wall
 

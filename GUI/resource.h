@@ -48,6 +48,7 @@
 #define IDD_STRUCTURED_MESH_DIALOG      170
 #define IDD_SHP                         171
 #define IDD_PTVALUES                    172
+#define IDR_MATGROUP_POPUP              172
 #define IDD_SOIL                        173
 #define IDD_BOUNDARY_CONDITIONS         220
 #define IDD_ST                          220
@@ -274,6 +275,7 @@
 #define IDC_LIST_GEOMETRY               1061
 #define IDC_RADIO3                      1061
 #define IDC_BUTTON_SELECT_NONE2         1061
+#define IDC_BUTTON_NEW_MATGROUP         1061
 #define IDC_LIST_MAT_GROUPS             1062
 #define IDC_BUTTON_SELECT_ALL3          1062
 #define IDC_LIST_MAT_PLY                1063
@@ -462,6 +464,7 @@
 #define IDC_CHECK_SIMULATOR6            1168
 #define IDC_ANDTEXT                     1168
 #define IDC_GET_MINMAXSEGLENGTH_BUTTON  1168
+#define IDC_NEWNAME                     1168
 #define IDC_CHECK_SIMULATOR7            1169
 #define IDC_Z_IMAGEDISTORT              1169
 #define IDC_CHECK_SIMULATOR8            1170
@@ -653,6 +656,7 @@
 #define IDC_LIST_VOL                    1229
 #define IDC_EDITOR_GEO_BUTTON           1229
 #define IDC_SHP_FILE                    1229
+#define IDC_READPCT                     1229
 #define IDC_LIST_BC_POLYLINES           1230
 #define IDC_LIST_GEO                    1230
 #define IDC_SHOWPARTICLE                1230
@@ -663,6 +667,7 @@
 #define IDC_BUTTON_VOL_REMOVE           1231
 #define IDC_GEO_EDITOR_BUTTON           1231
 #define IDC_FILE_SHP                    1231
+#define IDC_CINELE                      1231
 #define IDC_BUTTON_BC_UPDATE            1232
 #define IDC_BUTTON_VOL_READ             1232
 #define IDC_MSH_EDITOR_BUTTON           1232
@@ -708,6 +713,7 @@
 #define IDC_GEO_NUMBER                  1241
 #define IDC_BUTTON_BC_READ_CSV          1242
 #define IDC_BUTTON_GEO_WRITE            1242
+#define IDC_LIST_MAT_GEO_FAKE           1242
 #define IDC_BUTTON_BC_WRITE2            1243
 #define IDC_BUTTON_WRITE_TEC            1243
 #define IDC_EDIT_TS_1                   1301
@@ -1048,7 +1054,9 @@
 #define ID_MESHGENERATOR_DELAUNAY       33071
 #define ID_SELECT                       33072
 #define ID_DESELECT                     33073
+#define ID_MATGROUP_POPUP_UPDATE        33073
 #define ID_SELECTALL                    33074
+#define ID_MATGROUP_POPUP_DELETE        33074
 #define ID_DESELECTALL                  33075
 #define ID_MESHGENERATOR_STRUCTURED2D   33076
 #define ID_IMPORT_GMS                   33077

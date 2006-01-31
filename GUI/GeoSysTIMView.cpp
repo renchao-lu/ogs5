@@ -35,10 +35,15 @@ CGeoSysTIMView::CGeoSysTIMView()
   m_dYmax = 1.0;
   time_last = 0.0;
   time_step_last = 0.0;
-  if(time_vector.size()>0){
-    time_step_max = time_vector[0]->time_step_vector[0];
-    time_step_current = time_vector[0]->time_step_vector[0];
+  m_tim = NULL;
+  if(time_vector.size()<0)
+  {
+    m_tim = time_vector[0];
+    m_dXmin = m_tim->time_start;
+    m_dXmax = m_tim->time_end;
   }
+  x_vector.clear();
+  y_vector.clear();
 }
 
 CGeoSysTIMView::~CGeoSysTIMView()
@@ -66,23 +71,41 @@ void CGeoSysTIMView::OnDraw(CDC* pDC)
   ASSERT_VALID(pDoc);
   if (!pDoc)
     return;
+  //----------------------------------------------------------------------
+  // Tests
+  if(time_vector.size()==0)
+    return;
+  m_tim = time_vector[0];
   //-----------------------------------------------------------------------
-  pDC->TextOut(0,0," TIM objects");
+  // Info
+  CString m_strViewInfo = " Time stepping: ";
+  m_strViewInfo += m_tim->pcs_type_name.c_str();
+  pDC->TextOut(0,0,m_strViewInfo);
   //-----------------------------------------------------------------------
-//  GetWindowAttributes(this->m_hWnd,&width,&height);
+  // Window
+  //GetWindowAttributes(this->m_hWnd,&width,&height);
   RECT rect;
   GetClientRect(&rect);
   width=rect.right;
   height=rect.bottom;
   //-----------------------------------------------------------------------
-  CTimeDiscretization* m_tim = NULL;
-  if(time_vector.size()==0)
-    return;
-  m_tim = time_vector[0];
-  m_tim->time_end;
-  if(m_tim->step_current>time_step_max)
-    time_step_max = m_tim->step_current;
+  // Init
+  if(m_tim->time_current==m_tim->time_start)
+  {
+    x_vector.clear();
+    y_vector.clear();
+  }
   //-----------------------------------------------------------------------
+  // X: time
+  x_vector.push_back(m_tim->time_current);
+  //-----------------------------------------------------------------------
+  // Y: tine step
+  time_step = m_tim->CalcTimeStep(); //m_tim->time_step_length;
+  if(time_step>time_step_max)
+    time_step_max = time_step;
+  y_vector.push_back(time_step);
+  //-----------------------------------------------------------------------
+  // Draw function
   CGraphics m_graphics;
   m_graphics.width = width;
   m_graphics.height = height;
@@ -90,23 +113,22 @@ void CGeoSysTIMView::OnDraw(CDC* pDC)
   m_graphics.m_dXmax = m_tim->time_end; //m_dXmax;
   m_graphics.m_dDX = m_graphics.m_dXStep*(m_graphics.m_dXmax-m_graphics.m_dXmin);
   m_graphics.m_dYmin = 0.0; //m_dYmin;
-  m_graphics.m_dYmax = 2.*time_step_max; //m_dYmax;
+  m_graphics.m_dYmax = 1.1*time_step_max;
   m_graphics.m_dDY = m_graphics.m_dYStep*(m_graphics.m_dYmax-m_graphics.m_dYmin);
   //-----------------------------------------------------------------------
   // Koordinatenachsen zeichnen und beschriften
   m_graphics.DrawGridAxes(pDC);
   m_graphics.DrawCoordinateAxes(pDC);
   //-----------------------------------------------------------------------
-  time_step_current = m_tim->time_current - time_last;
-  //m_graphics.DrawLineOffset(time_last,time_step_last,m_tim->time_current,time_step_current,pDC);
-  //time_step_last = time_step_current;
   CGLPoint m_pnt;
   m_pnt.x = m_tim->time_current;
-  m_pnt.y = time_step_current;
-  m_pnt.circle_pix = 5;
+  m_pnt.y = time_step;
+  m_pnt.circle_pix = 3;
   pDC->SelectObject(&m_graphics.RedBoldPen);
-  m_graphics.DrawPointOffset(pDC,&m_pnt);
-  time_last = m_tim->time_current;
+  if(x_vector.size()<1000)
+    m_graphics.DrawXYPlot(pDC,x_vector,y_vector,0);
+  if(x_vector.size()>1000)
+    m_graphics.DrawPointOffset(pDC,&m_pnt);
 }
 
 

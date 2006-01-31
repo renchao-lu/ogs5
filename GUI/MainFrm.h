@@ -133,6 +133,7 @@ public:
     COleSafeArray saEdt;//JG
     int m_iSelectedMMPGroup;//JG 
     bool dataupdate;//JG
+    bool datanew;//JG
 //---------------------------
 };
 /////////////////////////////////////////////////////////////////////////////

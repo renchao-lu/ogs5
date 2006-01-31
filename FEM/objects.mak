@@ -1,6 +1,6 @@
 # GeoSys - Makefile for LINUX
 # Last modification 26/08/2005 WW
-OBJS = tools.o\
+FEMOBJS = tools.o\
          timer.o\
          testvar.o\
          steam.o\

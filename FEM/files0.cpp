@@ -57,6 +57,7 @@
 #include "rf_num_new.h"
 #include "rf_random_walk.h" // PCH
 #include "rf_react.h"
+#include "rf_fluid_momentum.h"  // PCH
 #include "rf_fct.h" //OK
 /* Tools */
 #include "mathlib.h"
@@ -69,6 +70,7 @@
 #include "geo_strings.h"
 
 #include "msh_lib.h"
+#include "gs_project.h"
 
 //#include "rf_ele_msh.h"
 
@@ -208,10 +210,9 @@ int ReadData ( char *dateiname )
   if(FEMRead(dateiname)) //OK4108//WW4107
      MSH = true; 
 //SBOK4209 FEMWrite(dateiname);
-  if(fem_msh_vector.size() == 0)  // PCH
-  {
- //   PCTRead(dateiname);
-  }
+  // PCTRead is bounded by msh
+  PCTRead(dateiname);   // PCH
+  FMRead(dateiname);    // PCH
   FCTRead(dateiname); //OK
   //----------------------------------------------------------------------
   // Read Excel/CVS data
@@ -413,7 +414,7 @@ int ReadData ( char *dateiname )
 /* ROCKFLOW - Funktion: CreateFileData
                                                                           */
 /* Aufgabe:
-   Erstellt Datenstruktur für Leseroutine ReadData
+   Erstellt Datenstruktur f? Leseroutine ReadData
                                                                           */
 /* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    E char *datei: Dateiname mit Extension

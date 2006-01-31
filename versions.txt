@@ -46,25 +46,25 @@ Datum      | Version | Aenderungen/Kommentar
                           loop02.c)
 
 18.09.1997 | 3.1.9   | Olaf:
-                       1 nichtlineare Fliessgesetze fuer Grundwasserströmung (aSM)
+                       1 nichtlineare Fliessgesetze fuer Grundwasserstr?ung (aSM)
                          (mod_00.c, loop00.c/h, cgs_asm.c, pst_flow.c
                           elements.h, models.c, globdat.c/h, files0.c)
-                       - Speicheroptimierung des nichtlinearen Lösers (loeser6.c)
-                       - Schlüsselwort 1D_GROUNDWATERFLOW_ELEMENT
+                       - Speicheroptimierung des nichtlinearen L?ers (loeser6.c)
+                       - Schl?selwort 1D_GROUNDWATERFLOW_ELEMENT
                          (files1.c, testvar.c/h)
                        - Bsp. e_a418.rfd/rfi
 
-                       2 Schlüsselwort FRACTURE_APERTURE_DISTRIBUTION zum Einlesen
-                         von Kluftöffnungsweitenverteilungen
+                       2 Schl?selwort FRACTURE_APERTURE_DISTRIBUTION zum Einlesen
+                         von Kluft?fnungsweitenverteilungen
                          (files1.c, testvar.c)
-                       - neues Permeabilitätsmodell (mat->materialmodell=3)
-                         für Gasströmungen,
-                         die Permeabilität wird aus der Kluftöffnungsweitenverteilungen
+                       - neues Permeabilit?smodell (mat->materialmodell=3)
+                         f? Gasstr?ungen,
+                         die Permeabilit? wird aus der Kluft?fnungsweitenverteilungen
                          berechnet
                          (cel_agm.c, pst_flow.c, c_vel.c)
 
                        Rene:
-                       - Elementnummerierung kann bei 0 beginnen, unabhängig von der
+                       - Elementnummerierung kann bei 0 beginnen, unabh?gig von der
                          Materialgruppenanzahl
                          (files2.c)
                        - (plot.c)
@@ -72,7 +72,7 @@ Datum      | Version | Aenderungen/Kommentar
                        Carsten:
                        - Mehrphasenmodell (0699), alle Dateien
                          neue Dateien (kap_amm.c/h, perm_amm.c/h)
-                       - Schlüsselwörter zum Mehrphasenmodell (0699)
+                       - Schl?selw?ter zum Mehrphasenmodell (0699)
                          (files1.c, testvar.c/h)
                        - globale Variablen
                          (globdat.c/h)
@@ -695,7 +695,7 @@ material.c/h geloescht
 17.09.98  09:50                 56.178 mod_0699.c
 17.09.98  09:50                  8.317 mod_0699.h
 
-17.09.98  09:50                304.985 files1.c   - keywords BC für Massenfluesse
+17.09.98  09:50                304.985 files1.c   - keywords BC f? Massenfluesse
                                                     BC_SATURATION war doppelt
                                                     Bugs (ok nicht initialisiert)
 17.09.98  09:50                 26.105 globdat.c  - neue BC Datenstrukturen
@@ -803,10 +803,10 @@ Die Version rf3.2.06 ist getested mit: gm_a21, gm_a22, gm_a23, gm_a24 und gt_b51
 23.10.98  13:05                  7.686 makros.h   - Makro SOLVER_SHOW_ERROR
 23.10.98  13:05                 62.059 matrix.c   - MXResiduum, Registervariablen
 
-23.10.98  13:05                 43.520 cel_atm.c  - vorläufiger Bugfix - Advektionsmatrix 3D
+23.10.98  13:05                 43.520 cel_atm.c  - vorl?figer Bugfix - Advektionsmatrix 3D
 23.10.98  13:05                 22.968 loop0099.c - per ifdef EXTRACT_OLD_RESULTS_FROM_SYSTEM_OF_EQUATION
 23.10.98  13:05                 30.753 loop0499.c - per ifdef EXTRACT_OLD_RESULTS_FROM_SYSTEM_OF_EQUATION
-                                                    (Lösergenauigkeit kann geringer eingestellt werden)
+                                                    (L?ergenauigkeit kann geringer eingestellt werden)
 
 23.10.98  13:05                 20.394 cgs_mmp.c  - Mehrphasenmodell
 23.10.98  13:05                 19.111 cgs_mms.c
@@ -821,12 +821,12 @@ Die Version rf3.2.06 ist getested mit: gm_a21, gm_a22, gm_a23, gm_a24 und gt_b51
                                            Objekte konzipiert und von den eigentlichen Modelle
                                            getrennt. Im selben Konzept sind drei weitere Objekte entworfen worden.
                                            Alle diese Objekte sind in eigenstaendigen Dateien behandelt.
-                                           Die neuen Moeglichkeiten, die sich außer der Datenkapsellung
+                                           Die neuen Moeglichkeiten, die sich au?r der Datenkapsellung
                                            dadurch eroeffnen, sind vielfaeltig.In einer Reihe von Beispielen
                                            wurden diese Moeglichkeiten getestet. Die Erweiterbarkeit diser
                                            Objekttypen ist in jeder Hinsicht sehr leicht. Die Anpassung an
                                            die Modelle ist ebenfalls mit geringem Aufwand zu erreichen.
-                       Neben dieser neuen Moeglichkeiten wurde drauf geachtet, daß noch
+                       Neben dieser neuen Moeglichkeiten wurde drauf geachtet, da?noch
                                            Alles altes funktioniert.
                                            Noch neue Sachen:
                                            Die Nummer aller Knoten und Elemente im Startnetz stehen zur Verfuegung.
@@ -939,11 +939,11 @@ Die Version rf3.2.06 ist getested mit: gm_a21, gm_a22, gm_a23, gm_a24 und gt_b51
 ************************************************************************
 12.12.1998 | 3.2.13 |
                        Dahmane: Mehrkomponententransport   (MTM)
-                                           Außerdem:
+                                           Au?rdem:
                                            Die Lesefunktionen zu den z.B. Rand- und Anfangsbedingungen
                                            sind nun von der Datei files1.c/files1.h entfernt
                                            und in den zugehoerigen Objektdatei gebunden worden.
-                                           Eben wie es sich im OOP-Konzept hingehört.
+                                           Eben wie es sich im OOP-Konzept hingeh?t.
 
 Allgemein:
 12.12.98  11:58                496.598 FILES1.C
@@ -2717,7 +2717,7 @@ Weitere Benchmarks:
 
 
 ************************************************************************
-16.11.1999 | 3.2.56 |   René
+16.11.1999 | 3.2.56 |   Ren?
 - Fuer die Gitteradaption stehen nun eine Reihe neuer Schluesselworte zur
   Verfuegung (Beispiele: rtm2da.* , rtm3da.*).
   Neben dem Schluesselwort #ADAPTATION existieren nun folgende
@@ -2830,7 +2830,7 @@ Weitere Benchmarks:
 
 
 ************************************************************************
-19.11.1999 | 3.2.57 |   René
+19.11.1999 | 3.2.57 |   Ren?
 - Zwischenspeicher fuer Massenerhaltung eingefuehrt.
   Die Zwischenloesung des aktuellen Zeitschrittes wird bei der Gitteradaption
   nicht mehr genullt und als Zwischenspeicher verwendet.
@@ -3284,7 +3284,7 @@ Alle bisherigen Benchmarks wurden aktualsiert.
 ************************************************************************
 16.02.2000 | 3.4.04 | OK+RK: Deformationsmodell (DM), 9-Knoten-Elemente
 
-- rfadt.c   : append_list() liefert Länge der Liste (vorher Position) (
+- rfadt.c   : append_list() liefert L?ge der Liste (vorher Position) (
 RFADT    C          63.833  11.02.00  16:23 rfadt.c
 - gridadap.c: diverse Zugriffsfunktionen fuer Adaptions-Daten
 GRIDADAP C          95.752  11.02.00  22:03 gridadap.c
@@ -3729,7 +3729,7 @@ Allgemein:
   24.264  03.05.00  19:29 cvel.c     - CalcNonlinearFlowPermeability
   27.304  03.05.00  21:00 cgs_asm.c  - MakeGS1D_ASM,MakeGS2D_ASM
 
-neue Benchmarks für nichtlineare Fließgesetze: asmnl1d,asmnl2d
+neue Benchmarks f? nichtlineare Flie?esetze: asmnl1d,asmnl2d
 
 
 ********************************************************************
@@ -3830,7 +3830,7 @@ neues Benchmarks: saltsol
 ********************************************************************
 10.07.2000 | 3.4.16  | AH
 
-Die Aenderungen betreffen hauptsächlich das Modell RTM.
+Die Aenderungen betreffen haupts?hlich das Modell RTM.
 
 
 TRACER_PROPERTIES:
@@ -4251,7 +4251,7 @@ CT:
   Knoten-Datenstruktur fuer Gitteradaption erweitert
   (nur zum Aufbau der Kanten- und Flaechenverzeichnisse (Startnetz))
   Keine Aktualisierung waehrend der Adaption !!!
-  zugehörige Funktionen: GetNodeEdges, AssignEdge
+  zugeh?ige Funktionen: GetNodeEdges, AssignEdge
                          GetNodePlains, AssignPlain
 
 
@@ -4519,7 +4519,7 @@ loop0097.c
 ---------------------------------------------------------------
 solver.c/h
   Abfragen bei potentieller Division durch 0
-  aufgeräumt, alte Funktionen raus
+  aufger?mt, alte Funktionen raus
 
 Quellen
 ---------------------------------------------------------------
@@ -4690,7 +4690,7 @@ relax.c      Neu: Methoden fuer Relaxation
 ***************************************************************
 25.02.2001 | 3.5.01  |  AH
 
-Neues Modell TBC: übernommen aus Modell MTM 
+Neues Modell TBC: ?ernommen aus Modell MTM 
 
 
 01.03.01  17:26                 81.401 cel_tbc.c
@@ -4740,7 +4740,7 @@ mathlib.c    Kommentare verbessert: MCalcDistancePointToPlane, MCalcProjectionOf
 
 
 ***************************************************************
-17.05.2001 | 3.5.03  |  MK Berechnung der relativen Permeabilität 
+17.05.2001 | 3.5.03  |  MK Berechnung der relativen Permeabilit? 
                            k_rel = k_rel(S)*k_rel(p)*k_rel(C)*k_rel(T)*k_rel(eps)
 
 material.c  CalcAllRelativePermeabilities(...)
@@ -4799,7 +4799,7 @@ Bereitstellung von Konstruktor/Destruktor-Funktionen:
 adaptiv.c
 adaptiv.h 
 
-Überarbeitet:
+?erarbeitet:
 
 edges.c
 indicat1.c
@@ -4827,14 +4827,14 @@ mathlib.c/h  M2Invertiere (invertierte und transponierte) in
              M2Invertiere invertiert jetzt korrekt  
              Alle M2Invertiere-Aufrufe durch M2InvertiereUndTransponiere
                ersetzt
-             -> keine Veränderung im Programmablauf 
+             -> keine Ver?derung im Programmablauf 
 
 ***************************************************************
 14.08.2001 | 3.6.02  |  MK
 
 mod_0010.c/h   Gesamtgleichungsssytem mit meheren Unbekannten (zur Zeit UP)     
 loop0010.c       - Positionen der Unbekannten im LGS
-cgs_dm.c         - Berücksichtigung der Kopplungsterme bei der Assembliereung
+cgs_dm.c         - Ber?ksichtigung der Kopplungsterme bei der Assembliereung
 cgs_asm.c        - Aktualisierung der Ergebnisse  
 rfbc.c/h
 rfsolver.c/h
@@ -4877,8 +4877,8 @@ MMSCalcSaturations
 void DumpModelNodeValues(void)
 
 28.09.2001  15:45               60.895 loop0010.c
-Löserobjekte, Anfangs- und Randbedingungen
-switch (flow_model==100) für multiphase flow
+L?erobjekte, Anfangs- und Randbedingungen
+switch (flow_model==100) f? multiphase flow
 28.09.2001  15:59               73.038 mod_0010.c
 20.09.2001  09:59                4.910 mod_0010.h
 neue Modelldaten-Zugriffsfunktionen
@@ -4891,7 +4891,7 @@ Abfrage wegen Generate2D_9N_Elements
 20.09.2001  15:33               12.858 rfmat_mp.h
 24.09.2001  14:57              355.455 material.cpp
 20.09.2001  15:35               44.614 material.h
-Herauslösen der Schnittstelle für MAT-MP (medium properties)
+Herausl?en der Schnittstelle f? MAT-MP (medium properties)
 
 Bug-Fixes von Georg Kosakowski auf Alpha mit DEC-Compiler
 ---------
@@ -4905,7 +4905,7 @@ Bug-Fixes von Georg Kosakowski auf Alpha mit DEC-Compiler
 ***************************************************************
 09.10.2001 | 3.6.05  |  RK
 
-Funktionen für quadratische Ansätze bereitgestellt
+Funktionen f? quadratische Ans?ze bereitgestellt
 (dreidim., 20 Knoten)
 
 elements.c 
@@ -4930,23 +4930,23 @@ mod_0699.c
 
 20.10.01  17:16  261.373 rfpriref.c  Anisotropes Vorverfeinern (Neue Methoden 17 und 18)
 20.10.01  17:16   14.117 rfpriref.h  Anisotropes Vorverfeinern (Neue Methoden 17 und 18)
-20.10.01  17:16  360.931 material.c  Einführung der Fraktionsanteile beim Zerfall
-20.10.01  17:16   44.783 material.h  Einführung der Fraktionsanteile beim Zerfall
+20.10.01  17:16  360.931 material.c  Einf?rung der Fraktionsanteile beim Zerfall
+20.10.01  17:16   44.783 material.h  Einf?rung der Fraktionsanteile beim Zerfall
 20.10.01  17:16  130.750 cel_rtm.c   Ergaenzungen
 20.10.01  17:16  105.200 cgs_rtm.c   Ergaenzungen
 20.10.01  17:16   73.433 loop0097.c  Ergaenzungen  (Massenquellen)
-20.10.01  17:16   81.051 cel_mtm.c   Mehrkomponentenmodell: überarbeitet
-20.10.01  17:16   72.077 cgs_mtm.c   Mehrkomponentenmodell: überarbeitet
+20.10.01  17:16   81.051 cel_mtm.c   Mehrkomponentenmodell: ?erarbeitet
+20.10.01  17:16   72.077 cgs_mtm.c   Mehrkomponentenmodell: ?erarbeitet
 20.10.01  17:16   68.177 loop0095.c  Ergaenzungen  (Massenquellen)
-20.10.01  17:16  157.527 mod_0095.c  Mehrkomponentenmodell: überarbeitet 
-                                     (Reaktiver Transport in thermohalinen Strömungen)
+20.10.01  17:16  157.527 mod_0095.c  Mehrkomponentenmodell: ?erarbeitet 
+                                     (Reaktiver Transport in thermohalinen Str?ungen)
 20.10.01  17:16  393.407 rfsolver.c  Warnung entfernt
 20.10.01  17:16    8.487 makros.h    Anpassung der Versionsnummer
 
 
 neue Benchmarks:
 tang.rfd/tang.rfi      Matrixdiffusion (TANG et al. 1981) 
-tang_e.plt/tang_e.lay  Exakte Lösung zu Tang
+tang_e.plt/tang_e.lay  Exakte L?ung zu Tang
 
 
 Tecplot-Layouts zu Benchmarks:
@@ -5148,7 +5148,7 @@ als CC-Dateien:   - Windows-GNU (g++)
                  
                  
 Berichtigungen von Speicherfreigaben:
-es wurden noch allen möglichen Speicherfreigaben korrigiert.
+es wurden noch allen m?lichen Speicherfreigaben korrigiert.
 
 Diverse Anpassungen des inversen Modells.
 
@@ -5227,7 +5227,7 @@ Fuer mehr Details siehe Beschreibung in den Files.
 10.12.2001 | 3.7.03  |  AH/CT   Saeuberungsaktion III
                    
 
-- Hier sind nur die Änderungen von CT bezüglich der Normierung des Gleichungslösers.
+- Hier sind nur die Änderungen von CT bez?lich der Normierung des Gleichungsl?ers.
 - Die Files test_ok.c/h wurden von hier entfernt und in die Shell-Version aufgenommen.
 
 12.11.01  17:11                 84.410 matrix.c   Bugfix
@@ -5239,22 +5239,22 @@ Fuer mehr Details siehe Beschreibung in den Files.
 13.12.2001 | 3.8.00  |  AH      Saeuberungsaktion IV und Promotionsversion
                    
 
-Da nicht alle Fehler im Gleichungslöser nicht zu entdecken sind, wurden die Files 
+Da nicht alle Fehler im Gleichungsl?er nicht zu entdecken sind, wurden die Files 
 rfsolver.c solver.c matrix.c und gridadap.c von der alten Version
 rf3419 wiederaufgenommen und um die Änderungen der letzen Versionen ergaenzt.
 Die Version rf3419 war insgesamt stabil und daher die Modifikationen auf der Basis
 dieser Version.
 Wenn alle Fehler beseitigt werden, koenne diese Aenderungen sehr schnell 
-wieder rückgängig gemacht werden. Man braucht nur diese vier Dateien mit den Dateien
+wieder r?kg?gig gemacht werden. Man braucht nur diese vier Dateien mit den Dateien
 aus der vorigen Version zu tauschen.
 Alle getestete RTM- und MTM-Modelle sind mit dieser Version
 richtig gelaufen.
 
 
-10.12.01  12:01                117.957 solver.c     Basisversion 3.4.19 und Ergänzungen
-10.12.01  12:01                462.479 rfsolver.c   Basisversion 3.4.19 und Ergänzungen
-10.12.01  12:01                 48.266 gridadap.c   Basisversion 3.4.19 und Ergänzungen
-10.12.01  12:01                 83.741 matrix.c     Basisversion 3.4.19 und Ergänzungen
+10.12.01  12:01                117.957 solver.c     Basisversion 3.4.19 und Erg?zungen
+10.12.01  12:01                462.479 rfsolver.c   Basisversion 3.4.19 und Erg?zungen
+10.12.01  12:01                 48.266 gridadap.c   Basisversion 3.4.19 und Erg?zungen
+10.12.01  12:01                 83.741 matrix.c     Basisversion 3.4.19 und Erg?zungen
 10.12.01  12:01                  8.745 makros.h     Versionsnummer
 
 
@@ -5266,7 +5266,7 @@ Betrifft nur Eingabedateien, die Zerfall berechnen.
 13.12.2001 | 3.8.01  |  AH      Wiederherstellen von 3.7.03
 
 
-Die vier Files bezgl. des Lösers wieder ausgetauscht.
+Die vier Files bezgl. des L?ers wieder ausgetauscht.
 
 
 23.02.01  16:47                 44.950 gridadap.c
@@ -5372,11 +5372,11 @@ timer.c     ...
 
 ***************************************************************
 03.05.2002 | 3.8.05  |  OK
-- Kern für Mehrphasen-Mehrkomponenten (KER-MPC)
-- Kern für Enthalpie (KER-ENT)
-- Modelle für Joelle (jdj) und Martin Beinhorn (mb)
-- Rauslösen der Fluideigenschaften aus material -> rfmat_fp
-  ! neues Zugriffskonzept für Materialeigenschaften
+- Kern f? Mehrphasen-Mehrkomponenten (KER-MPC)
+- Kern f? Enthalpie (KER-ENT)
+- Modelle f? Joelle (jdj) und Martin Beinhorn (mb)
+- Rausl?en der Fluideigenschaften aus material -> rfmat_fp
+  ! neues Zugriffskonzept f? Materialeigenschaften
 
 Allgemeines
 24.04.2002  09:00                9.365 makros.h
@@ -5388,7 +5388,7 @@ Allgemeines
 05.04.2002  14:04                  967 rf_apl.h
 22.04.2002  18:35               22.382 rf_apl.c
 22.04.2002  17:57               35.359 files1.c
-- neues Schlüsselwort #FLUID_PROPERTIES_NEW (Parserkonzept)
+- neues Schl?selwort #FLUID_PROPERTIES_NEW (Parserkonzept)
   soll #FLUID_PROPERTIES ersetzen
 
 05.04.2002  10:39               28.143 file_rfr.c
@@ -5407,9 +5407,9 @@ Materials - RF-MAT
 22.04.2002  18:14               40.283 material.h
 24.04.2002  08:34              141.146 rfmat_fp.c
 23.04.2002  19:12                9.803 rfmat_fp.h
-- Fluideigenschaften herausgelöst
+- Fluideigenschaften herausgel?t
 24.04.2002  08:22                  966 rfmat_tp.c
-- angelegt, um Componenteneigenschaften herauszulösen
+- angelegt, um Componenteneigenschaften herauszul?en
 10.04.2002  14:02              194.560 rfmat_mp.c
 23.04.2002  19:13               13.722 rfmat_mp.h
 
@@ -5423,16 +5423,16 @@ Modelle - RF-MOD
 24.04.2002  08:24               86.423 mod__jdj.c
 19.04.2002  18:16                4.822 mod__jdj.h
 23.04.2002  18:55               78.516 loop_jdj.c
-- Modell für Joelle
+- Modell f? Joelle
 24.04.2002  08:25               83.953 mod__mb.c
 19.04.2002  18:18                4.780 mod__mb.h
 28.03.2002  14:46                  685 loop_mb.h
 23.04.2002  19:03               77.925 loop_mb.c
-- Modell für Martin
+- Modell f? Martin
 04.04.2002  17:11                4.972 mod___MK.h
 24.04.2002  08:20               54.091 mod_0093.c
 19.04.2002  12:03               95.010 mod_0699.c
-- Namen für Randbedingungen
+- Namen f? Randbedingungen
 
 Kernels - RF-KER
 ASM
@@ -5444,7 +5444,7 @@ HTM
 22.03.2002  17:47                1.998 int_htm.c
 09.04.2002  14:14               22.596 cgs_htm.c
 22.03.2002  17:47                2.049 int_htm.h
-- Dreiecke für Wärmetransport
+- Dreiecke f? W?metransport
 MMP/MMS
 04.04.2002  16:57                2.016 int_mms.h
 04.04.2002  16:56                2.470 int_mmp.h
@@ -5465,7 +5465,7 @@ ENT
 ***************************************************************
 11.07.2002 | 3.8.06  |  RK
 
-- Überarbeitung der Gitteradaption
+- ?erarbeitung der Gitteradaption
 
 edges.h
 edges.c
@@ -5538,25 +5538,25 @@ rfbc.c       - NodeSetBoundaryConditions schreibt evtl. Abweichung raus
 ***************************************************************
 20.08.2002 | 3.8.08b  |  M.Kohlmeier 
 -------------------
-cel_asm.c            3D Kopplungsgroeßen DM -> SM (coupling_matrix_pu)
-cel_dm.c             3D Kopplungsgroeßen SM -> DM 
+cel_asm.c            3D Kopplungsgroe?n DM -> SM (coupling_matrix_pu)
+cel_dm.c             3D Kopplungsgroe?n SM -> DM 
 cel_mmp.c
-cgs_asm.c            3D Kopplungsgroeßen DM -> SM (coupling_matrix_pu) 
-cgs_dm.c             3D Kopplungsgroeßen SM -> DM 
-cgs_mmp.c            3D Kopplungsgroeßen DM -> MMP (coupling_matrix_pu)
+cgs_asm.c            3D Kopplungsgroe?n DM -> SM (coupling_matrix_pu) 
+cgs_dm.c             3D Kopplungsgroe?n SM -> DM 
+cgs_mmp.c            3D Kopplungsgroe?n DM -> MMP (coupling_matrix_pu)
 elements.c           Korrektur, ob Element existiert (index)                    
                      Degenerierte Elemente (gleiche Knotennummern
 files0.c             
 files1.c             FctLoadSolidPhaseZ
-int_asm.c/h          3D Kopplungsgroeßen DM -> SM (coupling_matrix_pu)
-int_dm.c/h           3D Kopplungsgroeßen SM -> DM 
-int_mmp.c/h          3D Kopplungsgroeßen DM -> MMP (coupling_matrix_pu)
+int_asm.c/h          3D Kopplungsgroe?n DM -> SM (coupling_matrix_pu)
+int_dm.c/h           3D Kopplungsgroe?n SM -> DM 
+int_mmp.c/h          3D Kopplungsgroe?n DM -> MMP (coupling_matrix_pu)
 loop0010.c
 loop__MK.c
 material.c/h         Thermischer Ausdehnungskoeffizient
-mod___MK.c/h         3D Kopplungsgroeßen DM -> SM (coupling_matrix_pu)
-                     3D Kopplungsgroeßen SM -> DM 
-                     3D Kopplungsgroeßen DM -> MMP (coupling_matrix_pu)
+mod___MK.c/h         3D Kopplungsgroe?n DM -> SM (coupling_matrix_pu)
+                     3D Kopplungsgroe?n SM -> DM 
+                     3D Kopplungsgroe?n DM -> MMP (coupling_matrix_pu)
 mod__mb.c            MODDConfigBC_mb() und MODConfigST_mb() in PreTimeLoop 
 mod__jdj.c            - " -
 loop_mb.c             - " -
@@ -5570,7 +5570,7 @@ rfsousin.c/h         FctLoadSolidPhaseZ
 ***************************************************************
 13.09.2002 | 3.8.08  |  M.Kohlmeier 
 -------------------
-material.c/h            solid poperties überarbeitet 
+material.c/h            solid poperties ?erarbeitet 
 cgs_mmp.c               warning 
 
 benchmarks angepasst
@@ -5603,7 +5603,7 @@ RFPost_Models(rfmp);
 16.09.2002  14:11                8.790 models.h
 24.09.2002  12:29              138.779 loop_jdj.c
 24.09.2002  12:35               92.931 mod__jdj.c
-- Zeiger für MAT Funktionen bereitgestellt
+- Zeiger f? MAT Funktionen bereitgestellt
 17.09.2002  09:05              242.022 mod_0097.c
 17.09.2002  09:04               16.339 mod_0097.h
 16.09.2002  12:21               84.190 mod__mb.c
@@ -5619,14 +5619,14 @@ RFPost_Models(rfmp);
 3 Kernels - RF-KER
 16.09.2002  17:54              155.647 cgs_mpc.c
 16.09.2002  17:53               89.155 cel_mpc.c
-- Zugriffe für MAT Funktionen
+- Zugriffe f? MAT Funktionen
 16.09.2002  15:20              113.445 cel_mmp.c
 16.09.2002  15:20                2.360 cel_mmp.h
 13.09.2002  18:10               53.466 cgs_mmp.c
 16.09.2002  14:05               44.172 cvel.c
 
 4 Materials - RF-MAT
-- Erweiterungen für Material-Funktionen
+- Erweiterungen f? Material-Funktionen
 16.09.2002  15:43              323.255 material.c
 16.09.2002  12:18               40.523 material.h
 23.09.2002  13:10              147.955 rfmat_fp.c
@@ -5642,15 +5642,15 @@ RFPost_Models(rfmp);
 13.09.2002  17:42                4.322 tools.h
 
 6 Ausgabe - RF-OUT
-- Erweiterung für Dreiecke
+- Erweiterung f? Dreiecke
 23.09.2002  17:53              298.388 rfoutput.c
-- Erste Beschreibung von #OUTPUT_EX (mühsam aus dem Quelltext ...)
+- Erste Beschreibung von #OUTPUT_EX (m?sam aus dem Quelltext ...)
 
 7 MathLib
 - MOmega2DTriangle
 16.09.2002  15:29              110.513 mathlib.c
 16.09.2002  15:27               12.125 mathlib.h
-- Interpolationen für Dreiecke
+- Interpolationen f? Dreiecke
 16.09.2002  15:24               57.233 femlib.c
 
 8 Sonstiges
@@ -5677,14 +5677,14 @@ RFPost_Models(rfmp);
   *tp -> *cp
 
 2. Eingabefunktion 
- - neue für Component_properties
-   über neue Schlüsselwörte
+ - neue f? Component_properties
+   ?er neue Schl?selw?te
  - Verarbeitung aller Benchmarks 
 
 3. 1-D Elementwerte Zeichnung
   25.09.2002 14:32              118.784 sh_graph.c
 
-4. Neue Function für Porosität
+4. Neue Function f? Porosit?
   CalcSoilPorosityMethod2    in rfmat_mp.c
 
 
@@ -5717,7 +5717,7 @@ RFPost_Models(rfmp);
          -> cpp2c.bat
          -> clean.bat
 
-   - sh3811: (Aufruf und Sortierkriterium für "Open File")
+   - sh3811: (Aufruf und Sortierkriterium f? "Open File")
         Rockflow.rc             149 KB  Ressourcenvorlage       07.10.2002  (IDR_FEMFRAME)
         ROCKFLOW.CPP              6 KB  C++-Quelldatei          02.10.2002  (IDR_FEMFRAME)
         resource.h               33 KB  C-Header-Datei          02.10.2002  (IDR_FEMFRAME)
@@ -5813,13 +5813,13 @@ alle // Kommentare entfernt
 
 ***************************************************************
 16.11.2002 | 3.8.15  |   OK
-Polyline PLY Objekte eingeführt
+Polyline PLY Objekte eingef?rt
 rf_ply.h/c
 
 ***************************************************************
 18.11.2002 | 3.8.16  |   OK
 Kapseln von TP aus materials in rfmat_tp (basierend auf 3.8.09)
-Rücksetzen auf TP Datenstrukturen und Funktionen
+R?ksetzen auf TP Datenstrukturen und Funktionen
 rfmat_cp: nur neue Lesefunktion und neue CP Funktionen
 18.11.2002  09:56              146.979 material.c
 18.11.2002  09:13               23.630 material.h
@@ -5829,7 +5829,7 @@ rfmat_cp: nur neue Lesefunktion und neue CP Funktionen
 18.11.2002  09:54               19.413 rfmat_tp.h
 18.11.2002  09:51               45.808 rfmat_cp.c
 18.11.2002  09:35                1.635 rfmat_cp.h
-Rücksetzen auf TP Funktionen
+R?ksetzen auf TP Funktionen
 18.11.2002  09:55               27.488 rf_apl.c
 18.11.2002  09:20               81.545 cel_tbc.c
 18.11.2002  09:20              132.814 cel_rtm.c
@@ -5839,7 +5839,7 @@ Rücksetzen auf TP Funktionen
 
 ***************************************************************
 11.12.2002 | 3.8.17  |   MB et al.
-ausführliches benchmarking
+ausf?rliches benchmarking
 Tecplot layouts (*.lay)
 
 
@@ -5847,7 +5847,7 @@ Tecplot layouts (*.lay)
 27.01.2003 | 3.8.18a |   RK
 
 Warnings entfernt !!!
-objects.mak ergänzt !!! (Bitte künftig daran denken !!!)
+objects.mak erg?zt !!! (Bitte k?ftig daran denken !!!)
 
 06.02.2003 | 3.8.18b |   MK
 
@@ -5869,9 +5869,9 @@ models.h, versions.h, objects.mak angepasst.
   steady_flow, unsteady_flow, transport_model_type, porosity_reaction_model
   chemical_nonequilibrium_model, physical_nonequilibrium_model)
   wurden im gesamten Programm entfernt. Zum Teil wurden diese in den
-  zugehörigen mod.c lokal neu definiert.
+  zugeh?igen mod.c lokal neu definiert.
 - globdat.h wurde entfernt
-- Für die in model.c (Schlüsselwort #MODEL) 
+- F? die in model.c (Schl?selwort #MODEL) 
   eingelesenen Parameter wurden Interface-Funktionen
   geschrieben (GetRFControl... und GetRFProcess ... ). Im gesamten Programm
   wurden die eingelesenen Parameter durch diese Funktionen ersetzt.
@@ -5879,7 +5879,7 @@ models.h, versions.h, objects.mak angepasst.
 - model.c und rfmodel.c wurden abgeglichen.
 - In allen mod_**.c wurde die Funktion InitModel** entfernt.
 - Die Freigabe der Modelldaten (Funktion: DestroyModelData in models.c)
-  befindet sich jetzt wieder in den mod_**.c. (Kapselung ist erst möglich,
+  befindet sich jetzt wieder in den mod_**.c. (Kapselung ist erst m?lich,
   wenn alle Modelle vereinheitlicht sind !!!! )
  
    
@@ -6051,8 +6051,8 @@ models.h, versions.h, objects.mak angepasst.
 
 20.03.2003 | 3.8.18d |   RK
 
-Schlüsselworte #CONTROL und #PROCESS_
-Zur Zeit kann auch noch das Schlüsselwort #MODEL verwendet werden !
+Schl?selworte #CONTROL und #PROCESS_
+Zur Zeit kann auch noch das Schl?selwort #MODEL verwendet werden !
 
 rfmodel.h rfmodel.c files1.c rf_apl.h models.c
 
@@ -6143,10 +6143,10 @@ rfmat_fp.c  25.4.2003 8:43  157 kb
 Bugfix in der Berechnung der Charaketeristischen Zahlen
 cgs_mpc     25.4.2003 9:11  153 kb 
 
-Änderungen der Kapillardruckberechnung in der PreTimeLoop für partitioniertes Modell
+Änderungen der Kapillardruckberechnung in der PreTimeLoop f? partitioniertes Modell
 loop_JDJ.c  08.05.2003 10:54  145 kb
 
-Kapillardruck in Abhängigkeit der Temperatur
+Kapillardruck in Abh?gigkeit der Temperatur
 rfmat_mp.c  08.05.2003 10:54  145 kb
 
 VELCalcElementVelocity von loop_jdj nach cvel.c
@@ -6165,7 +6165,7 @@ cel_asm.c/h
 BC keyword 'Head', Methode 21
 rfbc.c/h
 
-Unconfined flow für Dreiecksprismen
+Unconfined flow f? Dreiecksprismen
 rf_geo.c/h
 
 
@@ -6173,7 +6173,7 @@ rf_geo.c/h
 
 14.05.2003 | 3.8.22  | JDJ
 
-Einfügen von dT/dt und grad T Termen
+Einf?en von dT/dt und grad T Termen
 rfmat_fp.c  13.5.2003 17:57  158 kb
 rfmat_fp.h  13.5.2003 18:00  10 kb
 cgs_mpc     13.5.2003 18:30  156 kb
@@ -6313,8 +6313,8 @@ removing // comments
 
 - Warnings entfernt !!!!!
 
-Variablen müssen initialisiert werden (Wertzuweisung), wenn sie nur in einer
-if-Abfrage verwendet werden, ansonsten gibt es unzählige nervige Warnungen !!!!!
+Variablen m?sen initialisiert werden (Wertzuweisung), wenn sie nur in einer
+if-Abfrage verwendet werden, ansonsten gibt es unz?lige nervige Warnungen !!!!!
 
 cel_mpc.c
 loop_mb.c
@@ -6331,7 +6331,7 @@ rfmodel.h
 
 - Makefiles LINUX
 
-makefiles für c (linux.mak, objects.mak) und c++ (linux++.mak, objects.mak, objects++.mak)
+makefiles f? c (linux.mak, objects.mak) und c++ (linux++.mak, objects.mak, objects++.mak)
 
 makefile                              
 linux.mak                                                   NEW
@@ -6358,9 +6358,9 @@ rf_bc.h          include von macros.h fuer MAXZEILE
 rfmodel.c/.h  $INFLUENCING_PROCESSES
 
 25.06.2003 | 3.8.26b    | MK
-cel_dm.c      2D Terme fuer Thermoelastizität hinzugefuegt, Referenztemperatur=T_0 (global)
+cel_dm.c      2D Terme fuer Thermoelastizit? hinzugefuegt, Referenztemperatur=T_0 (global)
               3D Referenztemperatur=T_0 (global)
-cel_htm.c/h   GetTimeCollocationGlobal_HTM() läuft jetzt mit Parameter "TEMPERATURE0"      ACHTUNG
+cel_htm.c/h   GetTimeCollocationGlobal_HTM() l?ft jetzt mit Parameter "TEMPERATURE0"      ACHTUNG
               (#NUMERICS_TEMPERATURE verwenden)
 
 THM_plus-Benchmarks 
@@ -6419,28 +6419,28 @@ benchmarks/thm_plus
 
 *********************************************************************************************
 22.07.2003 | 3.8.31 | JDJ/MX
-rfmat_fp.cpp   Bugfix in Fluid density method 1 (druckabhängig)
+rfmat_fp.cpp   Bugfix in Fluid density method 1 (druckabh?gig)
                        Referenzdruck muss jetzt in das RFD File!!!
 
-rfmat_tp.cpp  Switch cases für Component diffusion coefficient
+rfmat_tp.cpp  Switch cases f? Component diffusion coefficient
                        Einlesen von Component diffusion coefficient vom RFD file sobald Component>0
 
 cel_ent.cpp  Aufruf von CalcTracerDiffusionCoefficient 
 cel_mpc  
 
-makros.h    MAX_ZEILE geändert für restart
+makros.h    MAX_ZEILE ge?dert f? restart
 
 *********************************************************************************************
 09.10.2003 | 3.9.01 | SB
 
 Ausgangsversion: 3.8.28 von OK
 Neuentwicklung des Transports auf der Prozess-Orientierten Grundlage:
-- Einfügen des neuen Transportkerns mtm2, entwickelt auf Grundlage des ATM Kerns
+- Einf?en des neuen Transportkerns mtm2, entwickelt auf Grundlage des ATM Kerns
 - neue Files:
 	cel_mtm2.cpp   cel_mtm2.h  
 	cgs_mtm2.cpp   cgs_mtm2.h  
 	int_mtm2.cpp   int_mtm2.h
-	help_mtm2.cpp  help_mtm2.h  (übergangsweise)
+	help_mtm2.cpp  help_mtm2.h  (?ergangsweise)
 
 Neues Reaktionskonzept:
 - Einbindung PHREEQC
@@ -6460,27 +6460,27 @@ Componenten haben jetzt Namen und sind mobil oder immobil
 09.10.2003 | 3.9.02 | SB/OK
 
 Compilieren der VErsion 3.9.01 mit dem dot-net Compiler
-Entfernen der Fehler und der Warnungen bezüglich der type-Umwandlungen
+Entfernen der Fehler und der Warnungen bez?lich der type-Umwandlungen
 
 *********************************************************************************************
 28.10.2003 | 3.9.03 | MB/JDJ/MX/OK
 
-rfmat_fp.cpp   Bugfix in Fluid density method 1 (druckabhängig)
+rfmat_fp.cpp   Bugfix in Fluid density method 1 (druckabh?gig)
                        Referenzdruck muss jetzt in das RFD File!!!
                        Einrichten von Case 4 in MATCalcFluidDensity und CalcFluidDensity, mit der Formel 
                        von Case 1 CalcFluidDensity (CT funktionen)
 
-rfmat_tp.cpp   Switch cases für Component diffusion coefficient
+rfmat_tp.cpp   Switch cases f? Component diffusion coefficient
                        Einlesen von Component diffusion coefficient vom RFD file sobald Component>0
 
 cel_ent.cpp    Aufruf von CalcTracerDiffusionCoefficient 
 cel_mpc  
 
-makros.h       MAX_ZEILE geändert für restart
+makros.h       MAX_ZEILE ge?dert f? restart
 
 cgs_asm.cpp	       MakeElementEntryEQS_ASM
 
-cel_asm.cpp            Analytische, numerische Lösung für Dreiecksprismen
+cel_asm.cpp            Analytische, numerische L?ung f? Dreiecksprismen
 cel_asm.h
 cel_atm.cpp
 cel_atm.h
@@ -6492,7 +6492,7 @@ cvel.h                  bugfix in VELCalcElementVelocity
 			DoubleFuncLI VELGetElementVelocityZ = NULL;
                         bugfix in CalcVelo2DTriangle
 
-femlib.cpp		InterpolValueVector ergänzt für Prismen
+femlib.cpp		InterpolValueVector erg?zt f? Prismen
 femlib.h		MXPGaussPktTri
 			MXPGaussFktTri
 			Get_Nt_x_Nt
@@ -6536,4 +6536,4 @@ cgs_asm.cpp/h
 *********************************************************************************************
 19.11.2003 | 3.9.06    | OK: new structure FEM/GEO/MsH/LIB/GUI
 rf_pcs.cpp/h             bugfixing of memory errors
-                         re-organized (i.e. aufgeräumt)
+                         re-organized (i.e. aufger?mt)

@@ -456,7 +456,7 @@ void GSPWriteData()
     }
     else if(m_gsp->type.compare("msp")==0){
       path_base = g_gsp_path + m_gsp->base;
-      //WWToDo MSPWrite(path_base.data());
+      MSPWrite(path_base.data());
     }
     else if(m_gsp->type.compare("mmp")==0){
       path_base = g_gsp_path + m_gsp->base;
@@ -464,7 +464,7 @@ void GSPWriteData()
     }
     else if(m_gsp->type.compare("mcp")==0){
       path_base = g_gsp_path + m_gsp->base;
-      //SBToDo CPWrite(path_base.data(),0);
+      CPWrite(path_base.data(),0);
     }
     else if(m_gsp->type.compare("fct")==0){
       path_base = g_gsp_path + m_gsp->base;

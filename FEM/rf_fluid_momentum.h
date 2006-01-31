@@ -42,6 +42,8 @@ private:
 	CRFProcess* m_pcs;
 };
 
+extern void FMRead(string);
+extern void DATWriteHETFile(const char *file_name);
 
 
 

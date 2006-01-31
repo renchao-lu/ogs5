@@ -1,24 +1,30 @@
 # GeoSys - Makefile for LINUX
-# Last modification 26/08/2005 WW
+# Last modification 04/11/2004 WW
 
-COBJS = msh_pnt.o msh_nodes_rfi.o msh_node.o msh_mat.o\
-        msh_lin.o msh_lib.o msh_gen_pris.o msh_gen.o\
-        msh_elements_rfi.o msh_mesh.o msh_elem.o msh_edge.o msh_core.o
+ifneq ($(strip $(CHOSEN_TARGET)),)
+include $(TOPDIR)/configs/$(CHOSEN_TARGET)
+endif
 
-FEMINCLUDE=../FEM
-GEOINCLUDE=../GEO
-MSHINCLUDE=../MSH
-GEN_INCLUDES = -I$(FEMINCLUDE) -I$(GEOINCLUDE) -I$(MSHINCLUDE)  
+include objects.mak
 
-OPTFLAG = -O3 -fno-nonansi-builtins
-DEBFLAG = #-ggdb
-WARN = -Wall
+FEMINCLUDE     = ../FEM
+GEOINCLUDE     = ../GEO
+MSHINCLUDE     = ../MSH
+ROOTINCLUDE    = ../
 
-C++ = g++ -c $(WARN) -pedantic $(GEN_INCLUDES) $(OPTFLAG) $(DEBFLAG) -D_POSIX_SOURCE -DNO_ERROR_CONTROL
+CXX_INCS      += -I$(FEMINCLUDE) -I$(GEOINCLUDE) -I$(MSHINCLUDE) -I$(ROOTINCLUDE)
 
-PARAM = -lm
+
 .SUFFIXES: .o .cpp .h 
-.cpp.o:
-	$(C++)   $<
- dest: $(COBJS)
-clean:; rm -rf *.o
+%.o:	%.cpp
+	$(CXX) $(CXX_FLAGS) $(CXX_INCS) -c $<
+
+
+.PHONY : $(CONFIG_NAMES)
+$(CONFIG_NAMES): $(MSHOBJS)
+
+
+clean:
+	rm -rf *.o
+	rm -rf *~
+	rm -rf *.ti

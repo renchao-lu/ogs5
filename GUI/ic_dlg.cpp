@@ -331,6 +331,7 @@ void CDialogInitialConditions::OnBnClickedButtonCreateGroup()
   else{
     AfxMessageBox("Select Process");
   }
+  aktuelle_zeit = 0.0; //OK
 }
 
 /**************************************************************************

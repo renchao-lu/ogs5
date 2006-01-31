@@ -101,52 +101,105 @@ Programing:
 **************************************************************************/
 void CGeoSysOUTProfileView::OnDraw(CDC* pDC)
 {
-  vector<double>x_vector;
-  x_vector.clear(); //OK
-  vector<double>y_vector;
-  y_vector.clear(); //OK
-  //CClientDC dc(this);
-  GetWindowAttributes(this->m_hWnd,&width,&height);
   //----------------------------------------------------------------------
-if(m_out->geo_type_name.compare("POLYLINE")==0){
-  // OUT->GEO->MSH (x data)
-  double x,y,z,dist;
+  // Tests
+  if(!(m_out->geo_type_name.compare("POLYLINE")==0))
+    return;
   CGLPolyline* m_ply = NULL;
-  m_ply = GEOGetPLYByName(m_out->geo_name);//CC
+  m_ply = GEOGetPLYByName(m_out->geo_name);
+  if(!m_ply)
+    return;
   CFEMesh* m_msh = NULL;
   m_msh = FEMGet(m_out->pcs_type_name);
-  vector<long>nodes_vector;
+  if(!m_msh)
+    return;
   CRFProcess* m_pcs = NULL;
   m_pcs = PCSGet(m_out->pcs_type_name);
-  if(m_ply&&m_msh&&m_pcs){
-    //m_msh->GetNODOnPLYSorted(m_ply,nodes_vector);
-    m_msh->GetNODOnPLY(m_ply,nodes_vector);
-    //GetNodeByDistance_Polyline(m_ply,nodes_vector); 
-    for(int i=0;i<(int)nodes_vector.size();i++){
-      x = m_msh->nod_vector[nodes_vector[i]]->X();
-      y = m_msh->nod_vector[nodes_vector[i]]->Y();
-      z = m_msh->nod_vector[nodes_vector[i]]->Z();
+  if(!m_pcs)
+    return;
+  //----------------------------------------------------------------------
+  int i,j,nidx1;
+  //----------------------------------------------------------------------
+  GetWindowAttributes(this->m_hWnd,&width,&height);
+  //======================================================================
+  // OUT->GEO->MSH (x data)
+  double x,y,z,dist;
+  vector<double>x_vector;
+  x_vector.clear(); //OK
+  CGLPolyline* m_ply_sorted = NULL;
+  m_ply_sorted = new CGLPolyline;
+  vector<long>nodes_vector;
+  //m_msh->GetNODOnPLYSorted(m_ply,nodes_vector);
+  m_msh->GetNODOnPLY(m_ply,nodes_vector);
+  //GetNodeByDistance_Polyline(m_ply,nodes_vector);
+  m_dXmin = 1.e+19;
+  m_dXmax = -1.e+19;
+  for(i=0;i<(int)nodes_vector.size();i++){
+    x = m_msh->nod_vector[nodes_vector[i]]->X();
+    y = m_msh->nod_vector[nodes_vector[i]]->Y();
+    z = m_msh->nod_vector[nodes_vector[i]]->Z();
+    dist = sqrt(x*x+y*y+z*z);
+    if(dist<m_dXmin) m_dXmin = dist;
+    if(dist>m_dXmax) m_dXmax = dist;
+    x_vector.push_back(dist);
+  }
+/*
+  CGLPoint* m_pnt = NULL;
+    m_ply_sorted->point_vector.clear();
+    for(i=0;i<(int)nodes_vector.size();i++) {
+      m_pnt = new CGLPoint;
+      m_pnt->x = m_msh->nod_vector[nodes_vector[i]]->X();
+      m_pnt->y = m_msh->nod_vector[nodes_vector[i]]->Y();
+      m_pnt->z = m_msh->nod_vector[nodes_vector[i]]->Z();
+      m_ply_sorted->point_vector.push_back(m_pnt);
+    }
+    m_ply_sorted->SetPointOrderByDistance(m_ply->point_vector[0]);
+    for(i=0;i<(int)m_ply_sorted->point_vector.size();i++){
+      x = m_ply_sorted->point_vector[i]->x;
+      y = m_ply_sorted->point_vector[i]->y;
+      z = m_ply_sorted->point_vector[i]->z;
       dist = sqrt(x*x+y*y+z*z);
       if(i==0) m_dXmin = dist;
       if(i==(int)nodes_vector.size()-1) m_dXmax = dist;
       x_vector.push_back(dist);
     }
-  }
-  //----------------------------------------------------------------------
+*/
+  //======================================================================
   // OUT->MSH->PCS (y data)
-  int nidx1;
-  double nod_value;
   m_dYmin = 1.e+19;
   m_dYmax = -1.e+19;
-  if(m_ply&&m_msh&&m_pcs){ //
-    nidx1 = m_pcs->GetNodeValueIndex(m_out->nod_value_name)+1; //ToDo
-    for(int i=0;i<(int)nodes_vector.size();i++){
+  vector<double>y_vector;
+  y_vector.clear(); //OK
+  double nod_value;
+  //----------------------------------------------------------------------
+  // min-max
+  if(m_out->nod_value_vector.size()>1)
+  {
+    for(i=0;i<(int)m_out->nod_value_vector.size();i++)
+    {
+      m_pcs = PCSGet(m_out->nod_value_vector[i],true);
+      if(!m_pcs)
+        continue;
+      nidx1 = m_pcs->GetNodeValueIndex(m_out->nod_value_vector[i])+1; //ToDo
+      for(j=0;j<(int)nodes_vector.size();j++)
+      {
+        nod_value = m_pcs->GetNodeValue(nodes_vector[j],nidx1);
+        if(nod_value<m_dYmin) m_dYmin = nod_value;
+        if(nod_value>m_dYmax) m_dYmax = nod_value;
+      }
+    }
+  }
+  else if(m_out->nod_value_vector.size()==1)
+  {
+    nidx1 = m_pcs->GetNodeValueIndex(m_out->nod_value_vector[0])+1; //ToDo
+    for(i=0;i<(int)nodes_vector.size();i++)
+    {
       nod_value = m_pcs->GetNodeValue(nodes_vector[i],nidx1);
       if(nod_value<m_dYmin) m_dYmin = nod_value;
       if(nod_value>m_dYmax) m_dYmax = nod_value;
-      y_vector.push_back(nod_value);
     }
   }
+  //......................................................................
   if(m_dYmin==m_dYmax){
     if(fabs(m_dYmin)<MKleinsteZahl){
       m_dYmin -= 0.5;
@@ -157,8 +210,7 @@ if(m_out->geo_type_name.compare("POLYLINE")==0){
       m_dYmax += 0.5*fabs(m_dYmax);
     }
   }
-}
-  //----------------------------------------------------------------------
+  //======================================================================
   CGraphics m_graphics;
   m_graphics.width = width;
   m_graphics.height = height;
@@ -171,6 +223,7 @@ if(m_out->geo_type_name.compare("POLYLINE")==0){
   m_graphics.m_strQuantityName = m_strQuantityName;
   m_graphics.m_strPolylineName = m_strPolylineName;
   //-----------------------------------------------------------------------
+  // Print info
   CString m_strViewInfo = "Profiles along Polylines: ";
   m_strViewInfo += m_out->nod_value_name.c_str();//m_strQuantityName;
   pDC->TextOut(0,0,m_strViewInfo);
@@ -180,7 +233,36 @@ if(m_out->geo_type_name.compare("POLYLINE")==0){
   m_graphics.DrawCoordinateAxes(pDC);
   //-----------------------------------------------------------------------
   // Draw x-y plot
-  m_graphics.DrawXYPlot(pDC,x_vector,y_vector);
+  if(m_out->nod_value_vector.size()>1)
+  //OK if(m_out->nod_value_name.compare("LIST")==0)
+  {
+    for(i=0;i<(int)m_out->nod_value_vector.size();i++)
+    {
+      m_pcs = PCSGet(m_out->nod_value_vector[i],true);
+      if(!m_pcs)
+        continue;
+      nidx1 = m_pcs->GetNodeValueIndex(m_out->nod_value_vector[i])+1; //ToDo
+      y_vector.clear();
+      for(j=0;j<(int)nodes_vector.size();j++)
+      {
+        nod_value = m_pcs->GetNodeValue(nodes_vector[j],nidx1);
+        y_vector.push_back(nod_value);
+      }
+      m_graphics.DrawXYPlot(pDC,x_vector,y_vector,i);
+    }
+  }
+  else if(m_out->nod_value_vector.size()==1)
+  {
+    //OK nidx1 = m_pcs->GetNodeValueIndex(m_out->nod_value_name)+1;
+    nidx1 = m_pcs->GetNodeValueIndex(m_out->nod_value_vector[0])+1;
+    y_vector.clear();
+    for(i=0;i<(int)nodes_vector.size();i++)
+    {
+      nod_value = m_pcs->GetNodeValue(nodes_vector[i],nidx1);
+      y_vector.push_back(nod_value);
+    }
+    m_graphics.DrawXYPlot(pDC,x_vector,y_vector,0);
+  }
   //m_graphics.DrawProfileBreakthroughCurves(pDC);
   //m_polyline = m_polyline->GEOGetPolyline((string)m_strPolylineName);
   //m_graphics.DrawPolylineValues(pDC,m_polyline);

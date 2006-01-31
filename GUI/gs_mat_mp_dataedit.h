@@ -37,7 +37,8 @@ public:
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	DECLARE_MESSAGE_MAP()
-
+private:
+    CMediumProperties* m_mmp;
 public:
 
     // ---- Handling Excel-Files ----
@@ -65,5 +66,10 @@ public:
     string readCSV_type_name(string, string *);//
     void CSV_keywords2keywordvector(string);
     string readCSV_key_word(string, string *);
+    void StandardKeywords(void);
+    void MMP2UpdateListCtrl(void);
+    void Keywords2NewListCtrl(void);
+    void SafeArray2MMP(CMediumProperties* m_mmp0=NULL);
+
 };
 

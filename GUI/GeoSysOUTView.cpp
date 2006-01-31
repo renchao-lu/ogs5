@@ -14,6 +14,7 @@
 #include "gs_output.h"
 #include "rf_p.h"
 #include ".\geosysoutview.h"
+#include "out_dlg.h"
 
 // GeoSys-FEM
 #include "femlib.h"
@@ -37,6 +38,9 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+vector<double>x_vector;
+vector<double>y_vector;
 
 /////////////////////////////////////////////////////////////////////////////
 // CGeoSysOUTView
@@ -112,37 +116,95 @@ Programing:
 12/2003 OK Implementation
 05/2004 CC Modification
 10/2004 OK LOAD_PATH_ANALYSIS
+01/2006 OK OUT,MSH,PCS concept
 **************************************************************************/
 void CGeoSysOUTView::OnDraw(CDC* pDC)
 {
-  //CClientDC dc(this);
+  //----------------------------------------------------------------------
+  // Tests
+  //......................................................................
+  CGLPoint* m_pnt = GEOGetPointByName(m_out->geo_name);
+  if(!m_pnt)
+  {
+    AfxMessageBox("Warning in CGeoSysOUTView::OnDraw - no GEO data");
+    return;
+  }
+  //......................................................................
+  CFEMesh* m_msh = m_out->GetMSH();
+  if(!m_msh)
+  {
+    AfxMessageBox("Warning in CGeoSysOUTView::OnDraw - no MSH data");
+    return;
+  }
+  //......................................................................
+  CRFProcess* m_pcs = m_out->GetPCS((string)m_strQuantityName);
+  if(!m_pcs)
+  {
+    AfxMessageBox("Warning in CGeoSysOUTView::OnDraw - no PCS data");
+    return;
+  }
+  //......................................................................
+  CTimeDiscretization* m_tim = NULL;
+  m_tim = TIMGet(m_pcs->pcs_type_name);
+  if(!m_tim){
+    AfxMessageBox("Warning in CGeoSysOUTView::OnDraw - no TIM data");
+    return;
+  }
+  //----------------------------------------------------------------------
   GetWindowAttributes(this->m_hWnd,&width,&height);
+  //----------------------------------------------------------------------
+  // View title
+  CString m_strViewInfo = "Temporal Profiles in Observation Points: ";
+  m_strViewInfo += m_out->nod_value_name.c_str();//m_strQuantityName;
+  pDC->TextOut(0,0,m_strViewInfo);
+  //----------------------------------------------------------------------
+  // OUT->GEO->MSH (x data)
+  if(aktuelle_zeit==0.0)
+    x_vector.clear(); 
+  x_vector.push_back(aktuelle_zeit);
+  //----------------------------------------------------------------------
+  // OUT->GEO->MSH (y data)
+  if(aktuelle_zeit==0.0)
+    y_vector.clear(); //OK
+  double nod_value;
+  int nidx1;
+  nidx1 = m_pcs->GetNodeValueIndex(m_out->nod_value_name);
+  if(nidx1<0)
+  {
+    AfxMessageBox("Warning in CGeoSysOUTView::OnDraw - no PCS data");
+    return;
+  }
+  nidx1++; // new time
+  long msh_node_number;
+  msh_node_number = m_msh->GetNODOnPNT(m_pnt);
+  nod_value = m_pcs->GetNodeValue(msh_node_number,nidx1);
+  y_vector.push_back(nod_value);
+  //-----------------------------------------------------------------------
+  // X-Y-Range
+  CGraphics m_graphics;
+  m_graphics.width = width;
+  m_graphics.height = height;
+  m_graphics.m_dXmin = m_tim->time_start;
+  m_graphics.m_dXmax = m_tim->time_end;
+  m_graphics.m_dDX = m_graphics.m_dXStep*(m_graphics.m_dXmax - m_graphics.m_dXmin);
+  m_graphics.m_dYmin = m_dYmin;
+  m_graphics.m_dYmax = m_dYmax;
+  m_graphics.m_dDY = m_graphics.m_dYStep*(m_graphics.m_dYmax - m_graphics.m_dYmin);
+  m_graphics.m_strQuantityName = m_strQuantityName;
+  //-----------------------------------------------------------------------
+  // Axis
+  m_graphics.DrawGridAxes(pDC);
+  m_graphics.DrawCoordinateAxes(pDC);
+  //----------------------------------------------------------------------
+  // Draw x-y plot
+  m_graphics.DrawXYPlot(pDC,x_vector,y_vector,0);
+  //-----------------------------------------------------------------------
+/*
   //-----------------------------------------------------------------------
   // Doc
   CGeoSysDoc* m_pDoc = GetDocument();
   CTimeDiscretization* m_out_tim = NULL;
   m_out_tim = m_pDoc->m_doc_tim;
-  //-----------------------------------------------------------------------
-  CGraphics m_graphics;
-  m_graphics.width = width;
-  m_graphics.height = height;
-  m_graphics.m_dXmin = m_dXmin;
-//OK_MMP  if(aktuelle_zeit>0.0)
-//OK_MMP    m_dXmax = 1e+8; //aktuelle_zeit;
-  m_graphics.m_dXmax = m_dXmax;
-  m_graphics.m_dDX = m_graphics.m_dXStep*(m_dXmax - m_dXmin);
-  m_graphics.m_dYmin = m_dYmin;
-  m_graphics.m_dYmax = m_dYmax;
-  m_graphics.m_dDY = m_graphics.m_dYStep*(m_dYmax - m_dYmin);
-  m_graphics.m_strQuantityName = m_strQuantityName;
-  //-----------------------------------------------------------------------
-  pDC->TextOut(0,0," Temporal Profiles in Observation Points");
-  pDC->TextOut(300,0,"Quantity:");
-  pDC->TextOut(370,0,m_strQuantityName);
-  //-----------------------------------------------------------------------
-  // Koordinatenachsen zeichnen und beschriften
-  m_graphics.DrawCoordinateAxes(pDC);
-  m_graphics.DrawGridAxes(pDC);
   //-----------------------------------------------------------------------
   // Fluid properties
   if(m_iDisplayOUTProperties){
@@ -169,6 +231,7 @@ void CGeoSysOUTView::OnDraw(CDC* pDC)
       m_graphics.DrawTemporalBreakthroughCurves(pDC,m_out_tim);
     }
   }
+*/
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -221,6 +284,10 @@ CGeoSysDoc* CGeoSysOUTView::GetDocument() // Die endgültige (nicht zur Fehlersuc
 
 void CGeoSysOUTView::OnProperties()
 {
+  CDialogOUT m_dlg;
+  m_dlg.DoModal();
+  m_out = m_dlg.m_obj;
+/*
   COutputObservation m_output;
 
   m_output.m_dXmin = m_dXmin;
@@ -237,7 +304,7 @@ void CGeoSysOUTView::OnProperties()
   m_dYmax = m_output.m_dYmax;
   m_strQuantityName = m_output.m_strQuantityName;
   m_iDisplayOUTProperties = 1;
-
+*/
   Invalidate(TRUE);
 
 }

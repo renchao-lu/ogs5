@@ -39,6 +39,7 @@ class COutput
     string nod_value_name;
     vector<string>nod_value_vector;
     void GetNodeIndexVector(vector<int>&); //OK
+    void SetNODFluxAtPLY(); //OK
     // ELE values
     string ele_value_name;
     vector<string>ele_value_vector;

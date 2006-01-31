@@ -43,6 +43,10 @@ public:
     afx_msg void OnBnClickedVelocityvector();
     afx_msg void OnBnClickedShowparticle();
     afx_msg void OnBnClickedInorout();
+	afx_msg void OnBnClickedReadpct();
+	afx_msg void OnBnClickedCinele();
+	
+	BOOL PeekAndPump();
 };
 
 

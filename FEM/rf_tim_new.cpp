@@ -427,6 +427,8 @@ void TIMDelete(string pcs_type_name)
   int no_tim =(int)time_vector.size();
   for(i=0;i<no_tim;i++){
     m_tim = TIMGet(pcs_type_name);
+    if(!m_tim) //OK
+      continue;
     if(m_tim->pcs_type_name.compare(pcs_type_name)==0){
       delete time_vector[i];
       time_vector.erase(time_vector.begin()+i);

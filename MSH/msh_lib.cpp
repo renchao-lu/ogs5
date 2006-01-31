@@ -601,6 +601,7 @@ void FEMWrite(string file_base_name)
   CFEMesh* m_fem_msh = NULL;
   string sub_line;
   string line_string;
+  msh_file_binary = false;
   //----------------------------------------------------------------------
   // File handling
   string fem_msh_file_name = file_base_name + FEM_FILE_EXTENSION;

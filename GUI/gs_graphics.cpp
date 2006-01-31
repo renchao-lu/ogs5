@@ -3096,14 +3096,15 @@ Task:
 Programing:
 05/2005 OK Implementation
 **************************************************************************/
-void CGraphics::DrawXYPlot(CDC*dc,vector<double>&x,vector<double>&y)
+void CGraphics::DrawXYPlot(CDC*dc,vector<double>&x,vector<double>&y,int color)
 {
   int i;
   double x0=0.0,y0=0.0;
+  double x1=0.0,y1=0.0;
   CGLPoint m_point;
   //----------------------------------------------------------------------
   // Graphics
-  dc->SelectObject(&RedSolidPen); 
+  SelectPenObject(dc,color); 
   //----------------------------------------------------------------------
   if((int)x.size()!=(int)y.size()){
     AfxMessageBox("x-y vectors incompatible");
@@ -3118,15 +3119,18 @@ void CGraphics::DrawXYPlot(CDC*dc,vector<double>&x,vector<double>&y)
     DrawPointOffset(dc,&m_point);
   }
   //----------------------------------------------------------------------
-/*
-  for(i=0;i<(int)x.size()-1;i++) {
-    x0 = x[i];
-    y0 = y[i];
-    x1 = x[i+1];
-    y1 = y[i+1];
-    DrawLineOffset(x0,y0,x1,y1,dc);
+if(max_dim<1) //OKToDo
+  if(x.size()>1)
+  {
+    for(i=0;i<(int)x.size()-1;i++) 
+    {
+      x0 = x[i];
+      y0 = y[i];
+      x1 = x[i+1];
+      y1 = y[i+1];
+      DrawLineOffset(x0,y0,x1,y1,dc);
+    }
   }
-*/
   //----------------------------------------------------------------------
 }
 
@@ -4309,3 +4313,29 @@ void CGraphics::DrawSurfacesLabels(CDC*pDC)
   }
 }
 
+/**************************************************************************
+GeoSys-GUI-Method:
+Programing:
+01/2006 OK Implementation
+**************************************************************************/
+void CGraphics::SelectPenObject(CDC*dc,int i)
+{
+  switch(i)
+  {
+    case 0:
+      dc->SelectObject(&RedSolidPen);
+      break;
+    case 1:
+      dc->SelectObject(&BlueSolidPen);
+      break;
+    case 2:
+      dc->SelectObject(&GreenSolidPen);
+      break;
+    case 3:
+      dc->SelectObject(&BlackSolidPen);
+      break;
+    default:
+      dc->SelectObject(&RedSolidPen);
+      break;
+  }
+}

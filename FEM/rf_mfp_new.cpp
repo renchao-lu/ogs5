@@ -523,9 +523,9 @@ void CFluidProperties::CalPrimaryVariable(vector<string>& pcs_name_vector)
   if(!Fem_Ele_Std) //OK
     return;
   for(int i=0;i<(int)pcs_name_vector.size();i++){
-     //m_pcs = PCSGet(Fem_Ele_Std->pcs->pcs_name);
-      m_pcs = PCSGet("HEAT_TRANSPORT");
-     
+    //MX  m_pcs = PCSGet("HEAT_TRANSPORT");
+     m_pcs = PCSGet(pcs_name_vector[i],true);
+	 if (!m_pcs) return;  //MX
      nidx0 = m_pcs->GetNodeValueIndex(pcs_name_vector[i]);
 	 nidx1 = nidx0+1;
     

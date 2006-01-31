@@ -1101,9 +1101,10 @@ void CFiniteElementVec::LocalAssembly_continuum(const long index, const int upda
   //--------------------------------------------------------------------
   // MMP medium properties
   int PoroModel = m_mmp->porosity_model;
-  if(PoroModel==3)
+  if(PoroModel==4)
      //OK deporo =  PCSGetElementPorosityChangeRate(index)/(double)ele_dim;
-      deporo = PCSGetELEValue(index,NULL,1.0,"n_sw_Rate")/(double)ele_dim; 
+    //MX  deporo = PCSGetELEValue(index,NULL,1.0,"n_sw_Rate")/(double)ele_dim;
+      deporo = pcs->GetElementValue(index,pcs->GetElementValueIndex("n_sw_rate"))/(double)ele_dim;
   if(T_Flag)
   { 
     for (i = 0; i < nnodes; i++) 
@@ -1144,7 +1145,7 @@ void CFiniteElementVec::LocalAssembly_continuum(const long index, const int upda
       }
 
 
-      if(PoroModel==3)// For swelling pressure
+      if(PoroModel==4)// For swelling pressure
 	     {
           dstrain[0] -= deporo;
           dstrain[1] -= deporo;
