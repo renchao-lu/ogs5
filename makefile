@@ -44,6 +44,7 @@ distclean clean:
 	@ for i in $(SUBDIRS); do \
             ( cd $$i && $(MAKE) $@ ) \
         done
+	$(RM) $(TGT)
         
 not_valid:
 	@ echo "Possible configurations are '$(CONFIG_NAMES)'."

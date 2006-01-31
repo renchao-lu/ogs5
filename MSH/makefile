@@ -24,7 +24,7 @@ CXX_INCS      += -I$(FEMINCLUDE) -I$(GEOINCLUDE) -I$(MSHINCLUDE) -I$(ROOTINCLUDE
 $(CONFIG_NAMES): $(MSHOBJS)
 
 
-clean:
+distclean clean:
 	rm -rf *.o
 	rm -rf *~
 	rm -rf *.ti

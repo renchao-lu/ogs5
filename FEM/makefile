@@ -27,7 +27,7 @@ endif
 $(CONFIG_NAMES): $(FEMOBJS)
 
 
-clean:
+distclean clean:
 	rm -rf *.o
 	rm -rf *~
 	rm -rf *.ti
