@@ -4,6 +4,7 @@ export TOPDIR
 TGT = rf4
 
 CONFIGS_DIR = $(TOPDIR)/configs
+export CONFIGS_DIR
 
 CONFIG_NAMES_FULL = $(wildcard $(CONFIGS_DIR)/*)
 CONFIG_NAMES      = $(strip $(notdir $(CONFIG_NAMES_FULL)))
@@ -27,6 +28,14 @@ endif
 
 export CHOSEN_TARGET
 
+
+#### Only temporarliy until random walk compiles on every platform
+
+ifndef NO_RANDOM_WALK
+CXX_FLAGS       += -DRANDOM_WALK
+else
+CXX_FLAGS       += -URANDOM_WALK
+endif
 
 
 SUBDIRS = FEM GEO MSH
@@ -62,5 +71,4 @@ $(CONFIG_NAMES):
             $(MAKE) -C $$i $(CHOSEN_TARGET) || exit 1; \
         done
 	$(CXX_LD) $(CXX_LDFLAGS) -o $(TGT) $(OBJS_PATTERN) $(CXX_LIBS)
-
 

@@ -21,7 +21,6 @@ FEMOBJS = tools.o\
          rf_vel_new.o\
          rf_tim_new.o\
          rf_st_new.o\
-         rf_random_walk.o\
          rf_react.o\
          rf_pcs.o\
          rf_out_new.o\
@@ -97,3 +96,8 @@ break.o\
 balance.o\
 adaptiv.o\
 ../gs_project.o
+
+ifndef NO_RANDOM_WALK
+FEMOBJS += rf_random_walk.o
+endif
+

@@ -1,9 +1,10 @@
-CXX_LDFLAGS      = -K rtti -Wl,-hlib_cyclic -P openmp
-CXX_LD           = sxc++
+# Take common part from 'nec-sx8'
 
-CXX_OPT_FLAGS    = -K rtti -Wl,-hlib_cyclic -P openmp
-CXX_DEBUG_FLAGS  =
-CXX_WARN_FLAGS   =
-CXX_FLAGS        = -D_POSIX_SOURCE -DNO_ERROR_CONTROL $(CXX_OPT_FLAGS)
-CXX              = sxc++
+include $(CONFIGS_DIR)/nec-sx8
+
+
+# OpenMP specializations
+
+CXX_LDFLAGS     += -P openmp
+CXX_OPT_FLAGS   += -P openmp
 

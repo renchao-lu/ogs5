@@ -4,6 +4,11 @@ CXX_LD           = sxc++
 CXX_OPT_FLAGS    = -K rtti -Wl,-hlib_cyclic
 CXX_DEBUG_FLAGS  =
 CXX_WARN_FLAGS   =
-CXX_FLAGS        = -D_POSIX_SOURCE -DNO_ERROR_CONTROL $(CXX_OPT_FLAGS)
+CXX_FLAGS        = -URANDOM_WALK -D_POSIX_SOURCE -DNO_ERROR_CONTROL $(CXX_OPT_FLAGS)
 CXX              = sxc++
+
+
+#### Only temporarily until random_walk compiles on the SX-8!
+
+NO_RANDOM_WALK   = yes
 

@@ -1,9 +1,12 @@
-CXX_LDFLAGS      =
-CXX_LD           = sxmpic++
+# Take common parts from 'nec-sx8'
 
-CXX_OPT_FLAGS    = -K rtti -Wl,-hlib_cyclic
-CXX_DEBUG_FLAGS  =
-CXX_WARN_FLAGS   =
-CXX_FLAGS        = -D_POSIX_SOURCE -DNO_ERROR_CONTROL $(CXX_OPT_FLAGS)
+include $(CONFIGS_DIR)/nec-sx8
+
+
+# Changes for 'nec-sx8-mpi'
+
+CXX_LD           = sxmpic++
 CXX              = sxmpic++
+
+USE_MPI          = yes
 
