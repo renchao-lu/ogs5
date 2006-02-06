@@ -90,7 +90,7 @@
 #include "msh_mesh.h"
 extern CFEMesh* FEMGet(string);
 
-#ifdef OPEN_MP
+#ifdef _OPENMP
 #include <omp.h>
 #endif
 /* Interne (statische) Deklarationen */
@@ -1883,7 +1883,7 @@ void M5MatVek(double *b, double *erg)
 //	  printf("num=%d\n",num);
 //	  printf("col_len=%d\n",col_len);
 
-#ifdef OPEN_MP
+#ifdef _OPENMP
 #pragma omp parallel for private(j) shared(temp_ergebnis,jdiag,b,num,col_ind)
 #endif
 #ifdef SX

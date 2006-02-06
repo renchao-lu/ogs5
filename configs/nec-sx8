@@ -4,7 +4,7 @@ CXX_LD           = sxc++
 CXX_OPT_FLAGS    = -K rtti -Wl,-hlib_cyclic
 CXX_DEBUG_FLAGS  =
 CXX_WARN_FLAGS   =
-CXX_FLAGS        = -URANDOM_WALK -D_POSIX_SOURCE -DNO_ERROR_CONTROL $(CXX_OPT_FLAGS)
+CXX_FLAGS        = -DSX -D_POSIX_SOURCE -DNO_ERROR_CONTROL $(CXX_OPT_FLAGS)
 CXX              = sxc++
 
 
