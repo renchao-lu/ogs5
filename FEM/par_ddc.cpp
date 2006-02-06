@@ -192,6 +192,7 @@ ios::pos_type CPARDomain::Read(ifstream *ddc_file)
   string hash("#");
   ios::pos_type position;
   long i;
+  CElem* m_ele = NULL;
   //======================================================================
   while (!new_keyword) {
     position = ddc_file->tellg();
@@ -216,7 +217,9 @@ ios::pos_type CPARDomain::Read(ifstream *ddc_file)
           break;
         }
         i = strtol(line,NULL,0);
-        elements.push_back(i);
+        m_ele = new CElem(); //OK
+        //OK m_ele->global_number = i;
+        elements.push_back(m_ele);
       }
     }
     //....................................................................
@@ -507,7 +510,7 @@ void CPARDomain::WriteTecplot(string msh_name)
   dom_file.seekg(0L,ios::beg);
   //--------------------------------------------------------------------
   for(i=0;i<(long)elements.size();i++){
-    m_ele = m_msh->ele_vector[elements[i]];
+    m_ele = m_msh->ele_vector[elements[i]->GetIndex()]; //OK
     if(!m_ele)
       continue;
     switch(m_ele->GetElementType()){
@@ -547,7 +550,7 @@ void CPARDomain::WriteTecplot(string msh_name)
   }
   //......................................................................
   for(i=0;i<(long)elements.size();i++){
-    m_ele = m_msh->ele_vector[elements[i]];
+    m_ele = m_msh->ele_vector[elements[i]->GetIndex()]; //OK global_index
     if(!m_ele)
       continue;
     switch(m_ele->GetElementType()){

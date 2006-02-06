@@ -186,7 +186,7 @@ class ElementValue
     friend class FiniteElement::CFiniteElementStd;
     // Process
     CRFProcess *pcs;
-    friend class COutput; //OK
+    friend class ::COutput; //OK
 }; 
 } // end namespace
 

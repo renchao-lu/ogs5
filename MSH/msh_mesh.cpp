@@ -26,7 +26,9 @@ using namespace std;
 #include "elements.h"
 #include "nodes.h"
 #include "msh_mesh.h"
+#ifdef RANDOM_WALK
 #include "rf_random_walk.h"
+#endif
 #include "msh_lib.h"
 // PCSLib
 extern string GetLineFromFile1(ifstream*);
@@ -54,7 +56,9 @@ CFEMesh::CFEMesh(void)
   useQuadratic = false;
   CrossSection=false;
   coordinate_system = 1;
+#ifdef RANDOM_WALK
   PT = new RandomWalk(); //PCH
+#endif
   no_msh_layer = 0; //OK
   min_edge_length = 1e-3; //OK
   max_mmp_groups = 0; //OKCC
@@ -87,7 +91,9 @@ CFEMesh::~CFEMesh(void)
   for(i=0; i<(long)ele_vector.size(); i++)
      delete ele_vector[i];
   ele_vector.clear();
+#ifdef RANDOM_WALK
   delete PT; // PCH
+#endif
 }
 
 /**************************************************************************

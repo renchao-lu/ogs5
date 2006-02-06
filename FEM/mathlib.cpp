@@ -1445,7 +1445,9 @@ int MAddVektoren(double *v1, double *v2, double *vout, long g)
 #endif
 {
     register long i;
+#ifdef SX
 #pragma cdir nodep
+#endif
     for (i = 0; i < g; i++)
         vout[i] = v1[i] + v2[i];
     return 1;
@@ -1474,19 +1476,27 @@ int MAddSkalVektoren(double *v1, double m1, double *v2, double m2, double *vout,
     register long i;
       //WW    if ((m1==1.)&&(m2==1.))
     if ((fabs(m1-1.)< MKleinsteZahl)&&(fabs(m2-1.)< MKleinsteZahl))
+#ifdef SX
 #pragma cdir nodep
+#endif
       for (i = 0; i < g; i++)
         vout[i] = v1[i] + v2[i];
     else if(fabs(m1-1.)< MKleinsteZahl) 
+#ifdef SX
 #pragma cdir nodep
+#endif
       for (i = 0; i < g; i++)
         vout[i] = v1[i] + m2 * v2[i];
     else if(fabs(m2-1.)< MKleinsteZahl) 
+#ifdef SX
 #pragma cdir nodep
+#endif
       for (i = 0; i < g; i++)
         vout[i] = m1 * v1[i] + v2[i];
     else  
+#ifdef SX
 #pragma cdir nodep
+#endif
       for (i = 0; i < g; i++)
         vout[i] = m1 * v1[i] + m2 * v2[i];
 
@@ -1514,7 +1524,9 @@ int MAddMatrizen(double *m1, double *m2, double *mout, long m, long n)
 #endif
 {
     register long i;
+#ifdef SX
 #pragma cdir nodep
+#endif
     for (i = 0; i < m * n; i++)
         mout[i] = m1[i] + m2[i];
     return 1;
@@ -1540,7 +1552,9 @@ int MMultVecSkalar(double *vec, double skal, long g)
 #endif
 {
     register long i;
+#ifdef SX
 #pragma cdir nodep
+#endif
     for (i = 0; i < g; i++)
         vec[i] *= skal;
     return 1;
@@ -1566,7 +1580,9 @@ int MMultMatSkalar(double *matrix, double skal, long m, long n)
 #endif
 {
     register long i;
+#ifdef SX
 #pragma cdir nodep
+#endif
     for (i = 0; i < m * n; i++)
         matrix[i] *= skal;
     return 1;
@@ -1697,7 +1713,9 @@ int MMultVecMat(double *vec, long gv,
     go = n;
     MNulleVec(veco, n);         /* cb: Nullen nicht vergessen ! */
     for (i = 0; i < m; i++)
+#ifdef SX
 #pragma cdir nodep
+#endif
         for (j = 0; j < n; j++)
             veco[j] += vec[i] * mat[j + i * n];
     return 1;
@@ -1822,14 +1840,18 @@ int MMultMatMat(double *mat1, long m1, long n1,
 #endif
 
 #ifndef CBLAS_MMultMatMat
+#ifdef SX
 #pragma cdir nodep
+#endif
     for (i = 0; i < mo * no; i++)
         mato[i] = 0.0;          /*Ergebnismatrix vorsichtshalber nullen */
 
     for (i = 0; i < n1 * m1; i++) {
         ih1 = i/n1*no;
         ih2 = (i-i/n1*m2)*n2;
+#ifdef SX
 #pragma cdir nodep
+#endif
         for (j = 0; j < n2; j++)
             mato[j+ih1] += mat1[i]*mat2[ih2+j];
     }
@@ -2173,7 +2195,9 @@ void MNullVec(double *zwerg, long g)
     if (zwerg == NULL)
         DisplayErrorMsg("Fehler in MNullVec");
 #endif
+#ifdef SX
 #pragma cdir nodep
+#endif
     for (i = 0; i < g; i++)
         zwerg[i] = 0.0;
 }                               /* MNullVec */
@@ -2226,7 +2250,9 @@ void MKopierVec(double *vecquelle, double *vecziel, long g)
     if ((vecquelle == NULL) || (vecziel == NULL))
         DisplayErrorMsg("Fehler in MLoeschVec");
 #endif
+#ifdef SX
 #pragma cdir nodep
+#endif
     for (i = 0; i < g; i++)
         vecziel[i] = vecquelle[i];
 }                               /* MKopierVec */
@@ -2439,7 +2465,9 @@ double MVekNorm1(double *x, long n)
 {
     register long i;
     register double erg = 0.0;
+#ifdef SX
 #pragma cdir nodep
+#endif
     for (i = 0l; i < n; i++)
         erg += fabs(x[i]);
     return erg;
@@ -2467,7 +2495,9 @@ double MVekNorm2(double *x, long n)
 {
     register long i;
     register double erg = 0.0;
+#ifdef SX
 #pragma cdir nodep
+#endif
     for (i = 0l; i < n; i++)
         erg += x[i] * x[i];
     return sqrt(erg);
@@ -2532,7 +2562,9 @@ void MVekSum(double*x,double alpha,double*y,long n)
 #endif
 {
     register long i;
+#ifdef SX
 #pragma cdir nodep
+#endif
     for (i = 0l; i < n; i++)
         x[i] += alpha * y[i];
 }

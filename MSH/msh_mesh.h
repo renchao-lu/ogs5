@@ -16,7 +16,9 @@ last modified
 #include "geo_vol.h"
 // MSHLib
 #include "msh_elem.h"
+#ifdef RANDOM_WALK
 class RandomWalk;
+#endif
 class CFluidMomentum;
 //------------------------------------------------------------------------
 namespace Mesh_Group
@@ -74,7 +76,9 @@ class CFEMesh
     int ele_mat_display_mode;
     int highest_mat_group_nb;
 
+#ifdef RANDOM_WALK
     RandomWalk* PT; // PCH
+#endif
     CFluidMomentum* fm_pcs; // by PCH
     CFEMesh(void);
     ~CFEMesh(void);

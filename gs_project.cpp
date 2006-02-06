@@ -412,7 +412,9 @@ void GSPWriteData()
     else if(m_gsp->type.compare("rfi")==0){
       path_base = g_gsp_path + m_gsp->base;
       DATWriteRFIFile(path_base.data());
+#ifdef RANDOM_WALK
       DATWritePCTFile(path_base.data());    // PCH Again, this is a temperary solution. Should be changed later on.
+#endif
     }
     if(m_gsp->type.compare("msh")==0){
       path_base = g_gsp_path + m_gsp->base;
@@ -420,7 +422,9 @@ void GSPWriteData()
     }
     else if(m_gsp->type.compare("pct")==0){     // PCH
       path_base = g_gsp_path + m_gsp->base;
+#ifdef RANDOM_WALK
       DATWritePCTFile(path_base.data());
+#endif
     }
     else if(m_gsp->type.compare("pcs")==0){
       path_base = g_gsp_path + m_gsp->base;

@@ -34,7 +34,8 @@ class CPARDomain
   private:
   public:
     int ID;
-    vector<long>elements;
+    //OK vector<CPARDomainElement*>elements;
+    vector<CElem*>elements;
     vector<long>nodes_inner;
     vector<long>nodes_halo;
     vector<long>nodes;
@@ -65,6 +66,13 @@ class CPARDomain
 extern vector<CPARDomain*>dom_vector;
 extern void DOMRead(string);
 extern void DOMCreate();
+/*---- MPI Parallel --------------*/
+extern int size;
+extern int myrank;
+extern char t_fname[3];
+extern double time_ele_paral;
+/*---- MPI Parallel --------------*/
+
 #define DDC_FILE_EXTENSION ".ddc"
 void DOMWriteTecplot(string);
 

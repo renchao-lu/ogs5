@@ -210,8 +210,10 @@ int ReadData ( char *dateiname )
   if(FEMRead(dateiname)) //OK4108//WW4107
      MSH = true; 
 //SBOK4209 FEMWrite(dateiname);
+#ifdef RANDOM_WALK
   // PCTRead is bounded by msh
   PCTRead(dateiname);   // PCH
+#endif
   FMRead(dateiname);    // PCH
   FCTRead(dateiname); //OK
   //----------------------------------------------------------------------

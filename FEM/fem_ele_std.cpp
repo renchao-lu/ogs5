@@ -742,9 +742,7 @@ inline double CFiniteElementStd::CalCoefContent()
   int Index = MeshElement->GetIndex();
   double val = 0.0;
   double dS = 0.0;
-  int pcs_vector_size =(int)pcs_vector.size();
   double nodeval0, nodeval1;
-  CRFProcess *m_pcs = NULL;
   CompProperties *m_cp = NULL; //SB4200
   string name;
 
@@ -2660,7 +2658,11 @@ void CFiniteElementStd::Assembly()
 {
   int i,j, nn;
   //----------------------------------------------------------------------
+#ifdef PARALLEL
+  index = m_dom->elements[e]->global_number;
+#else
   index = Index;
+#endif
   //----------------------------------------------------------------------
   nn = nnodes;
   if(pcs->type==41||pcs->type==4) nn = nnodesHQ; // ?2WW
@@ -2840,7 +2842,11 @@ void  CFiniteElementStd::Assembly(int dimension)
 {
     int i,j, nn;
   //----------------------------------------------------------------------
-  index = Index;
+#ifdef PARALLEL
+    index = m_dom->elements[e]->global_number;
+#else
+    index = Index;
+#endif
   //----------------------------------------------------------------------
 
    nn = nnodes;

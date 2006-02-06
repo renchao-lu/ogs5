@@ -64,6 +64,12 @@ extern void transM2toM6(void);
 /*-------------------- JAD    ---------------------------*/
 extern void transM2toM5(void);
 /*-------------------- JAD    ---------------------------*/
+/*--------------------- MPI Parallel  -------------------*/
+#ifdef MPI
+#include "mpi.h"
+#endif
+
+/*--------------------- MPI Parallel  -------------------*/
 /*-----------------------------------------------------------------------*/
 /* LOP */
 #include "rf_apl.h" // Loop...
@@ -616,13 +622,13 @@ void CRFProcess::Create()
     {
       for(j=0;j<m_msh_ele_vector_size;j++){
         ele_values = ele_val_vector[j];
-//OK #if 0
+#ifndef SX
 #ifdef GCC
         size = malloc_usable_size( ele_values )/sizeof(double); 
 #else
         size= _msize( ele_values )/sizeof(double);
 #endif
-//OK #endif
+#endif
         ele_values = resize(ele_values, size, size+ number_of_evals);
         ele_val_vector[j] = ele_values;
       }
@@ -3304,6 +3310,38 @@ void CRFProcess::GlobalAssembly()
   Check2D3D = false;
   if(type == 66) //Overland flow
     Check2D3D = true;
+#ifdef MPI
+  long total,local1,local2,start,end;
+  double starttime,endtime;
+  total = (long)m_msh->ele_vector.size();
+  local1 = total/size;
+  local2 = total - (size - 1)*(total/size);
+  start = myrank*local1;
+  if (myrank != (size-1))
+  {
+	  end = start+local1;
+  }
+  else if(myrank == (size-1))
+  {
+	  end = start+local2;
+  }
+  printf("In GlobalAssembly process %d, start = %d, end = %d, \n",myrank,start,end);
+  MPI_Barrier(MPI_COMM_WORLD);
+  starttime = MPI_Wtime();
+  for (i=start; i<end; i++)
+  {
+    elem = m_msh->ele_vector[i];
+    if (elem->GetMark()) // Marked for use
+    {
+       fem->ConfigElement(elem, Check2D3D);
+       fem->Assembly();
+    } 
+  }
+//  MPI_Barrier(MPI_COMM_WORLD);
+  endtime = MPI_Wtime();
+  time_ele_paral = time_ele_paral +(endtime - starttime);
+  printf("In GlobalAssembly process %d time_ele_paral = %f\n",myrank,time_ele_paral);
+#else
   //----------------------------------------------------------------------
   // DDC
   CPARDomain* m_dom = NULL;
@@ -3315,24 +3353,25 @@ void CRFProcess::GlobalAssembly()
       SetLinearSolver(m_dom->eqs);
       SetZeroLinearSolver(m_dom->eqs);
 	  Tim->time_step_length_neumann = 1.e10;  //YD 
-      for(i=0;i<(long)m_dom->elements.size();i++){
-        elem = m_msh->ele_vector[m_dom->elements[i]];
-     //---------------------------------------------------
-	  if(Tim->time_control_name.compare("NEUMANN")==0)
-	  timebuffer = 0.5*elem->GetVolume()*elem->GetVolume();
-     //---------------------------------------------------
+      for(i=0;i<(long)m_dom->elements.size();i++)
+      {
+        elem = m_msh->ele_vector[m_dom->elements[i]->GetIndex()]; //OKToDo
+        //---------------------------------------------------
+	    if(Tim->time_control_name.compare("NEUMANN")==0)
+	      timebuffer = 0.5*elem->GetVolume()*elem->GetVolume();
+        //---------------------------------------------------
         if(elem->GetMark()) // Marked for use
         {
           fem->ConfigElement(elem,m_msh->CrossSection);
           fem->Assembly();
-     //---------------------------------------------------
-	  if(Tim->time_control_name.compare("NEUMANN")==0){
-	   //cout<<" i= "<<i<<"  "<<timebuffer<<" "; 
-	  Tim->time_step_length_neumann = MMin(Tim->time_step_length_neumann,timebuffer);
-	  if (Tim->time_step_length_neumann < MKleinsteZahl)
-			cout<<"Waning : Time Control Step Wrong, dt = 0.0 "<<endl;
-	  }
-     //---------------------------------------------------
+          //---------------------------------------------------
+	      if(Tim->time_control_name.compare("NEUMANN")==0)
+          {
+	       //cout<<" i= "<<i<<"  "<<timebuffer<<" "; 
+	        Tim->time_step_length_neumann = MMin(Tim->time_step_length_neumann,timebuffer);
+	        if (Tim->time_step_length_neumann < MKleinsteZahl)
+			  cout<<"Warning : Time Control Step Wrong, dt = 0.0 "<<endl;
+	      }
         } 
       }
       //m_dom->WriteMatrix();
@@ -3373,6 +3412,7 @@ void CRFProcess::GlobalAssembly()
     }
   }
   //----------------------------------------------------------------------
+#endif
 }
 
 /*************************************************************************

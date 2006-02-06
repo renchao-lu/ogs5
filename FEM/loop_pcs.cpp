@@ -239,7 +239,9 @@ int LOPTimeLoop_PCS(double*dt_sum)
   CRFProcess *m_pcs = NULL;
   CRFProcessDeformation *dm_pcs = NULL;
   CFluidMomentum *fm_pcs = NULL; // by PCH
+#ifdef RANDOM_WALK
   RandomWalk* rw_pcs = NULL; // By PCH
+#endif
   //----------------------------------------------------------------------
   double TolCoupledF = 1.0e8;
   double pcs_flow_error = 1.0e8;
@@ -405,13 +407,14 @@ int LOPTimeLoop_PCS(double*dt_sum)
         lop_coupling_iterations = 1;
 
 		CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
+#ifdef RANDOM_WALK
 		rw_pcs = m_msh->PT;		
 		//	rw_pcs->AdvanceParticlesLaBolle(dt); 	
 		//rw_pcs->AdvanceByAdvection(dt); 
 //		rw_pcs->AdvanceByAdvectionNDispersion(dt);
 		rw_pcs->AdvanceByAdvectionNDispersionSplitTime(dt, 20);
 		rw_pcs->SetElementBasedConcentration();  
-
+#endif
 	}
 	
 #ifdef _FEMPCHDEBUG_

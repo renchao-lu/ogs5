@@ -90,8 +90,8 @@
 #include "msh_mesh.h"
 extern CFEMesh* FEMGet(string);
 
-#ifdef PARALLEL
-//#include <omp.h>
+#ifdef OPEN_MP
+#include <omp.h>
 #endif
 /* Interne (statische) Deklarationen */
 static void *wurzel = NULL;     /* interner Matrix-Wurzelzeiger */
@@ -1599,7 +1599,9 @@ void M1MatVek(double *vektor, double *ergebnis)
   for (i = 0; i < dim; i++)
     {
       ergebnis[i] = 0.0;
+#ifdef SX
 #pragma cdir nodep
+#endif
       for (k = 0; k < dim; k++)
         ergebnis[i] += Aik1(i, k) * vektor[k];
     }
@@ -1614,14 +1616,18 @@ void transM2toM5(void)
 /*------------------------------------------------------------*/
   int   count = 0; //WW
   jd_ptr_max = 0;
+#ifdef SX
 #pragma cdir nodep
+#endif
   for (k = 0; k < dim; k++) 
   {
     if ( Zeil2(k).anz > jd_ptr_max )
 	{
 	  jd_ptr_max = Zeil2(k).anz;
 	}
+#ifdef SX
 #pragma cdir nodep
+#endif
 	for (i = 0; i < Zeil2(k).anz; i++)
       count++;
   }
@@ -1655,7 +1661,17 @@ void transM2toM5(void)
 	  for (k = 0; k < dim; k++)
 		for (i = 0; i < Zeil2(k).anz; i++)
 		  jd_ptr[i]++;
-
+/*----------------------------------------------------------------------------------
+ * for(long i=0;i<(long)nod_vector.size();i++){
+ *     m_nod = nod_vector[i];
+ *         cout << (int)m_nod->connected_nodes.size() << ": ";
+ *             for(m=0;m<(int)m_nod->connected_nodes.size();m++){
+ *                   cout << m_nod->connected_nodes[m] << " ";
+ *                       }
+ *                           cout << endl;
+ *                             }
+ *
+ *-----------------------------------------------------------------------------------*/
 	  printf("In transM2toM5 dim=%ld\n",dim);
 	  for (k = 0; k < dim; k++)
 	  {
@@ -1702,8 +1718,9 @@ void insertionSort1_des(int *numbers,int *numbers1, int array_size)
 #endif
 {
   int i, j, index, index1;
-
+#ifdef SX
 #pragma cdir nodep
+#endif
   for (i=1; i < array_size; i++)
   {
 	index = numbers[i];
@@ -1753,7 +1770,9 @@ void transM2toM6(void)
 /*------------------------------------------------------------*/
 	 itpack_max = 0;
 
+#ifdef SX
 #pragma cdir nodep
+#endif
      for (k = 0; k < dim1; k++) 
 	 {
 		 if ( Zeil2(k).anz > itpack_max )
@@ -1818,7 +1837,9 @@ void M2MatVek(double *vektor, double *ergebnis)
     {
 #ifndef CBLAS_M2MatVek
       ergebnis[k] = 0.0;
+#ifdef SX
 #pragma cdir nodep
+#endif
       for (i = 0; i < Zeil2(k).anz; i++)
 	  {
         ergebnis[k] += Aik2(k, i) * vektor[Ind2(k, i)];
@@ -1849,7 +1870,9 @@ void M5MatVek(double *b, double *erg)
 
     dim1 = ((long*)wurzel)[0];
 
+#ifdef SX
 #pragma cdir nodep
+#endif
     for (i=0;i<dim1;i++)
     	temp_ergebnis[i]=0.0;
 
@@ -1860,13 +1883,20 @@ void M5MatVek(double *b, double *erg)
 //	  printf("num=%d\n",num);
 //	  printf("col_len=%d\n",col_len);
 
+#ifdef OPEN_MP
+#pragma omp parallel for private(j) shared(temp_ergebnis,jdiag,b,num,col_ind)
+#endif
+#ifdef SX
 #pragma cdir nodep
+#endif
 	  for (j=0; j<col_len; j++){
 		temp_ergebnis[j] = temp_ergebnis[j] + jdiag[num + j] * b[col_ind[num+j]];
 	  }
 	}
 
+#ifdef SX
 #pragma cdir nodep
+#endif
 	for(i=0; i<dim1; i++)
 	  erg[jd_ptr2[i]]=temp_ergebnis[i];
 }
@@ -1884,7 +1914,9 @@ void M6MatVek(double *b, double *erg)
 
     dim1 = ((long*)wurzel)[0];
 
+#ifdef SX
 #pragma cdir nodep
+#endif
     for (i=0;i<dim1;i++)
     	erg[i]=0.0;
 
@@ -1893,7 +1925,9 @@ void M6MatVek(double *b, double *erg)
 	for (i=0; i<itpack_max; i++)
 	{
 //#pragma omp parallel for private(j) shared(erg,itpackv,b,num,it_col)
+#ifdef SX
 #pragma cdir nodep
+#endif
 	  for (j=0; j<dim1; j++)
 	  {
 		erg[j] = erg[j] + itpackv[num + j] * b[it_col[num+j]];
@@ -1930,7 +1964,9 @@ void H_MX34_mul(double *x, double *r, int o)
   for (k = 0; k < dim; k++)
     {
       r[k] = w -> Diag[k] * x[k];
+#ifdef SX
 #pragma cdir nodep
+#endif
       for (j = 0; j < Sp34(k).anz; j++)
         {
           i = Ind34(k, j);
@@ -2927,9 +2963,10 @@ void M2Vorkond(int aufgabe, double *x, double *b)
   if (b == NULL || x == NULL)
     MX_Exit("M2Vorkond", 3);
 #endif
-
+  //======================================================================
   switch (aufgabe)
-    {
+  {
+    //--------------------------------------------------------------------
     case 0:                            /* Start des Vorkonditionierers */
       if VK_Modus
         (VK_Extraktion)
@@ -2967,11 +3004,11 @@ void M2Vorkond(int aufgabe, double *x, double *b)
             }
 #ifdef MATRIX_M5
 transM2toM5();
-printf("transM2toM5 \n");
+printf("In M2Vorkond: transM2toM5 \n");
 #endif
         }
       break;
-
+    //--------------------------------------------------------------------
     case 1:                            /* Ende des Vorkonditionierers */
       if VK_Modus
         (VK_Extraktion)
@@ -2981,13 +3018,16 @@ printf("transM2toM5 \n");
           x0 = (double *) Free(x0);
         }
       break;
-
+    //--------------------------------------------------------------------
     case 2:
+    //--------------------------------------------------------------------
     case 3:                            /* Linkstransformationen */
       if VK_Modus
         (VK_iLDU)                      /*  incomplete L(D)U-Zerlegung geht nicht! */
             DisplayMsgLn("Modell 2: kein ILU-Vorkonditionierer!");
-    }
+    //--------------------------------------------------------------------
+  }
+  //======================================================================
 }
 /**** Modell 3,4 **********************************************************/
 void M34Vorkond(int aufgabe, double *x, double *b)

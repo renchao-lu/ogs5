@@ -29,6 +29,13 @@
 #include "rfsystim.h"
 #include "geo_strings.h"
 
+/*-------------------  Include for MPI-Parallel ----  */
+#ifdef MPI
+#include "mpi.h"
+#include "par_ddc.h"
+#endif
+/*-------------------  Include for MPI-Parallel ----  */
+
 /* Deklarationen */
 int main ( int argc, char *argv[] );
 void ShowSwitches ( void );
@@ -59,6 +66,15 @@ int main ( int argc, char *argv[] )
 {
   char *dateiname;
   long rockflow_id_timer;
+/*---------- MPI Initialization ----------------------------------*/
+#ifdef MPI
+      printf("Before MPI_Init\n");
+      MPI_Init(&argc,&argv);
+      MPI_Comm_size(MPI_COMM_WORLD,&size);
+      MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
+      time_ele_paral = 0.0;
+#endif
+/*---------- MPI Initialization ----------------------------------*/
 /*========================================================================*/
 /* Kommunikation mit Betriebssystem */
   /* Ctrl-C ausschalten */
@@ -134,6 +150,13 @@ int main ( int argc, char *argv[] )
   /* Abspann ausgeben */
   /* Ctrl-C wieder normal */
   StandardBreak();
+/*--------- MPI Finalize ------------------*/
+#ifdef MPI
+
+      MPI_Finalize();
+
+#endif
+/*--------- MPI Finalize ------------------*/
   return 0;
 }
 

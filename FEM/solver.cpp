@@ -59,8 +59,9 @@ using namespace std;
 #ifdef UMFPACK
   #include <umfpack.h>
 #endif
-
-
+#ifdef MPI
+#include "mpi.h"
+#endif
 /**** Definitionen fuer Preconditioner (Ra, 3/2000) */
 #define VK_Skalierung  1
 #define VK_Extraktion 10
@@ -1547,6 +1548,28 @@ int SpBICGSTAB(double *b, double *x, long n)
     int k = 0, max_iter = 0, repeat = 0;
     double r0norm = 0., b0norm = 0., x0norm = 0., tt, ts, rsv;
     double error_rel;
+#ifdef MPI
+    int    ip,jp;
+    double sendbuff = 0;
+    double recvbuff = 0;
+    double *rb;
+
+    rb = (double*)malloc(n*sizeof(double));
+
+       for (ip=0; ip<n; ip++)
+        for(jp=0; jp<n; jp++)
+	{
+	  sendbuff = MXGet(ip,jp);
+	  MPI_Allreduce(&sendbuff,&recvbuff,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+          MXSet(ip,jp,recvbuff);
+	}																		                                
+
+          MPI_Allreduce(b,rb,n,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+
+          for (ip=0; ip<n; ip++)
+           b[ip]=rb[ip];
+        free(rb);
+#endif     
     /* Ggf. starten der Vorkonditionierung */
     if (vorkond){
 //WW      cout << "        Preconditioning" << endl;
@@ -1639,7 +1662,9 @@ int SpBICGSTAB(double *b, double *x, long n)
 
         if(k>1) {
            beta = (rho / rho1) * (alpha / omega);
+#ifdef SX
 #pragma cdir nodep
+#endif
            for (i = 0; i < n; i++)
               p[i] = r[i] + beta * (p[i] - omega * v[i]);
         }
@@ -1651,14 +1676,18 @@ int SpBICGSTAB(double *b, double *x, long n)
         rsv = MSkalarprodukt(rs, v, n);
 
         alpha = rho / rsv;
+#ifdef SX
 #pragma cdir nodep
+#endif
         for (i = 0; i < n; i++)
             s[i] = r[i] - alpha * v[i];
 
         /* Erste Abbruchmoeglichkeit */
         if (VEKNORM_BICGSTAB(s, n) <= eps) {
             /* Die Loesung nochmal updaten */
+#ifdef SX
 #pragma cdir nodep
+#endif
             for (i = 0; i < n; i++)
                x[i] += alpha * p[i];
             break;
@@ -1685,12 +1714,16 @@ int SpBICGSTAB(double *b, double *x, long n)
           /* tt ist Null, darf eigentlich nicht vorkommen */
           omega = 1.;
         }
+#ifdef SX
 #pragma cdir nodep
+#endif
         for (i = 0; i < n; i++) 
             x[i] += alpha * p[i] + omega * s[i];
 
         MXResiduum(x, b, r2);
+#ifdef SX
 #pragma cdir nodep
+#endif
         for (i = 0; i < n; i++) 
             r[i] = s[i] - omega * t[i];
 

@@ -160,6 +160,9 @@ double MSkalarprodukt(double *vec1, double *vec2, long g)
 #ifndef CBLAS_MSkalarprodukt
     register long i;
     register double sammy = 0.0; 
+#ifdef SX
+#pragma cdir nodep
+#endif
     for (i = 0l; i < g; i++)
         sammy += vec1[i] * vec2[i];
     return sammy;
