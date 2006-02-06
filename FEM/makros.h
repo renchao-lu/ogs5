@@ -249,7 +249,7 @@
 #define noSX
 #define noMPI
 #define noOPEN_MP
-#define MATRIX_M5 //PA raus
+#define noMATRIX_M5 //PA raus
 // Temporary Makro for RandomWalk Trouble
 
 /* Definitionen von Konstanten, die bei manchen Compilern benoetigt werden */
