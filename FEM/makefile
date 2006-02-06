@@ -18,6 +18,15 @@ ifdef MPI
 CXX_INCS      += -I$(MPIINCLUDE)
 endif
 
+#### Only temporarliy until random walk compiles on every platform
+
+ifndef NO_RANDOM_WALK
+CXX_FLAGS       += -DRANDOM_WALK
+else
+CXX_FLAGS       += -URANDOM_WALK
+endif
+
+
 .SUFFIXES: .o .cpp .h 
 %.o:	%.cpp
 	$(CXX) $(CXX_FLAGS) $(CXX_INCS) -c $<

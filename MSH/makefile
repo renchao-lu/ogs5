@@ -5,6 +5,16 @@ ifneq ($(strip $(CHOSEN_TARGET)),)
 include $(TOPDIR)/configs/$(CHOSEN_TARGET)
 endif
 
+
+#### Only temporarliy until random walk compiles on every platform
+
+ifndef NO_RANDOM_WALK
+CXX_FLAGS       += -DRANDOM_WALK
+else
+CXX_FLAGS       += -URANDOM_WALK
+endif
+
+
 include objects.mak
 
 FEMINCLUDE     = ../FEM

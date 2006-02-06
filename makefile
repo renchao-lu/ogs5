@@ -29,15 +29,6 @@ endif
 export CHOSEN_TARGET
 
 
-#### Only temporarliy until random walk compiles on every platform
-
-ifndef NO_RANDOM_WALK
-CXX_FLAGS       += -DRANDOM_WALK
-else
-CXX_FLAGS       += -URANDOM_WALK
-endif
-
-
 SUBDIRS = FEM GEO MSH
 ifdef MPI
 SUBDIRS += MPI
