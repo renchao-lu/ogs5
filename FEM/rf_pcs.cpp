@@ -3354,7 +3354,7 @@ void CRFProcess::GlobalAssembly()
       SetZeroLinearSolver(m_dom->eqs);
       for(i=0;i<(long)m_dom->elements.size();i++)
       {
-        elem = m_msh->ele_vector[m_dom->elements[i]];
+        elem = m_msh->ele_vector[m_dom->elements[i]->GetIndex()];
         if(elem->GetMark())
         {
           fem->ConfigElement(elem,m_msh->CrossSection);
