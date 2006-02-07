@@ -3344,37 +3344,24 @@ void CRFProcess::GlobalAssembly()
 #else
   //----------------------------------------------------------------------
   // DDC
-  CPARDomain* m_dom = NULL;
   if(dom_vector.size()>0){
     cout << "      Domain Decomposition" << '\n';
+    CPARDomain* m_dom = NULL;
     for(int j=0;j<(int)dom_vector.size();j++)
     {
       m_dom = dom_vector[j];
       SetLinearSolver(m_dom->eqs);
       SetZeroLinearSolver(m_dom->eqs);
-	  Tim->time_step_length_neumann = 1.e10;  //YD 
       for(i=0;i<(long)m_dom->elements.size();i++)
       {
-        elem = m_msh->ele_vector[m_dom->elements[i]->GetIndex()]; //OKToDo
-        //---------------------------------------------------
-	    if(Tim->time_control_name.compare("NEUMANN")==0)
-	      timebuffer = 0.5*elem->GetVolume()*elem->GetVolume();
-        //---------------------------------------------------
-        if(elem->GetMark()) // Marked for use
+        elem = m_msh->ele_vector[m_dom->elements[i]];
+        if(elem->GetMark())
         {
           fem->ConfigElement(elem,m_msh->CrossSection);
           fem->Assembly();
-          //---------------------------------------------------
-	      if(Tim->time_control_name.compare("NEUMANN")==0)
-          {
-	       //cout<<" i= "<<i<<"  "<<timebuffer<<" "; 
-	        Tim->time_step_length_neumann = MMin(Tim->time_step_length_neumann,timebuffer);
-	        if (Tim->time_step_length_neumann < MKleinsteZahl)
-			  cout<<"Warning : Time Control Step Wrong, dt = 0.0 "<<endl;
-	      }
         } 
       }
-      //m_dom->WriteMatrix();
+      m_dom->WriteMatrix();
     }
     //....................................................................
     // Assemble global system
@@ -3398,7 +3385,13 @@ void CRFProcess::GlobalAssembly()
 */
       if (elem->GetMark()) // Marked for use
       {
-        fem->ConfigElement(elem, Check2D3D);
+        fem->ConfigElement(elem,Check2D3D);
+/*
+        for(i=0;i<fem->nnodes;i++){
+          //eqs_number[i] = MeshElement->domain_nodes[i];
+          fem->eqs_number[i] = fem->MeshElement->nodes[i]->GetEquationIndex();
+        }
+*/
         fem->Assembly();
 /*
 	    if(Tim->time_control_name.compare("NEUMANN")==0)

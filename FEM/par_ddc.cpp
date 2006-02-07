@@ -80,7 +80,11 @@ void DOMRead(string file_base_name)
   // File handling
   ddc_file_name = file_base_name + DDC_FILE_EXTENSION;
   ifstream ddc_file (ddc_file_name.data(),ios::in);
-  if (!ddc_file.good()) return;
+  if (!ddc_file.good())
+  {
+    cout << "no DDC file" << endl;
+    return;
+  }
   ddc_file.seekg(0L,ios::beg);
   //----------------------------------------------------------------------
   cout << "DOMRead: ";
@@ -110,37 +114,40 @@ Programing:
 **************************************************************************/
 void DOMCreate()
 {
+  int no_domains =(int)dom_vector.size();
+  if(no_domains==0)
+    return;
   CPARDomain *m_dom = NULL;
   int i;
-  int no_domains =(int)dom_vector.size();
   //----------------------------------------------------------------------
   // Create domain nodes
+  cout << "->Create DOM" << endl;
   for(i=0;i<no_domains;i++){
     m_dom = dom_vector[i];
     m_dom->m_msh = fem_msh_vector[0]; //OK:ToDo
   }
   //----------------------------------------------------------------------
   // Create domain nodes
-cout << "Create domain nodes" << endl;
+cout << "i  Create domain nodes" << endl;
   for(i=0;i<no_domains;i++){
     m_dom = dom_vector[i];
-cout << "Domain:" << m_dom->ID << endl;
+cout << "    Domain:" << m_dom->ID << endl;
     m_dom->CreateNodes();
   }
   //----------------------------------------------------------------------
   // Create domain elements
-cout << "Create domain elements" << endl;
+cout << "  Create domain elements" << endl;
   for(i=0;i<no_domains;i++){
     m_dom = dom_vector[i];
-cout << "Domain:" << m_dom->ID << endl;
+cout << "    Domain:" << m_dom->ID << endl;
     m_dom->CreateElements();
   }
   //----------------------------------------------------------------------
   // Create domain EQS
-cout << "Create domain EQS" << endl;
+cout << "  Create domain EQS" << endl;
   for(i=0;i<no_domains;i++){
     m_dom = dom_vector[i];
-cout << "Domain:" << m_dom->ID << endl;
+cout << "    Domain:" << m_dom->ID << endl;
     m_dom->CreateEQS();
   }
   //----------------------------------------------------------------------

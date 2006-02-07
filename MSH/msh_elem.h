@@ -155,10 +155,8 @@ class CElem:public CCore
       // virtual void operator = (const CElem& elem);
      //-------------------------------------------------------------------
      // DDC
-#ifdef PARALLEL
 //     int domain; //OK
      long domain_nodes [8]; //OK, dynamisch
-#endif
    public: //GUI control variables 
    int selected;
 };

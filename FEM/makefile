@@ -20,9 +20,7 @@ endif
 
 #### Only temporarliy until random walk compiles on every platform
 
-ifndef NO_RANDOM_WALK
-CXX_FLAGS       += -DRANDOM_WALK
-else
+ifdef NO_RANDOM_WALK
 CXX_FLAGS       += -URANDOM_WALK
 endif
 

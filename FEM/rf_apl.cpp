@@ -175,10 +175,8 @@ int RFPre_FEM(char* dateiname)
     error_rfi = 1;
     return 0;
   }
-#ifdef PARALLEL
-  cout << "! Compiled for DDC - Domain DeComposition !" << endl;
+  //......................................................................
   DOMRead(dateiname);
-#endif
   if(mshType==100) return 1;
   /*-----------------------------------------------------------------------*/
   /* RF-Objekte konfigurieren, Verknüpfungen zwischen RF-Objekten */
