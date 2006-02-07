@@ -12,6 +12,8 @@ include objects.mak
 
 ifdef NO_RANDOM_WALK
 CXX_FLAGS       += -URANDOM_WALK
+else
+CXX_FLAGS       += -DRANDOM_WALK
 endif
 
 

@@ -251,7 +251,7 @@
 #define noOPEN_MP
 #define noMATRIX_M5 //PA raus
 // Temporary Makro for RandomWalk Trouble
-#define RANDOM_WALK
+//#define RANDOM_WALK
 /* Definitionen von Konstanten, die bei manchen Compilern benoetigt werden */
 #ifndef NULL
 #define NULL ((void *)0)
