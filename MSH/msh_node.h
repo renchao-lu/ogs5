@@ -27,14 +27,6 @@ class CNode:public CCore
    private: // Members
       long eqs_index; // renumber
       double coordinate[3];
-   public:
-      double epsilon;
-      long interior_test;
-   public: // Members
-      int free_surface; //MB ??? mobile
-      vector<long>connected_elements;
-      vector<long>connected_nodes; //OK
-   private:
       friend class CEdge;
       friend class CElem;
       // FEM
@@ -43,10 +35,16 @@ class CNode:public CCore
 	  friend class FiniteElement::CFiniteElementVec; 
       friend class FiniteElement::ElementMatrix; 
 	  friend class FiniteElement::ElementMatrix_DM;
-   public: // Methods
+   public:
+      double epsilon;
+      long interior_test;
+      int free_surface; //MB ??? mobile
+      vector<long>connected_elements;
+      vector<long>connected_nodes; //OK
+      vector<long>  m5_index; //WW
       CNode(const int Index):CCore(Index), eqs_index(-1) {}
       CNode(const int Index, const double x, const double y, const double z=0.0);
-      ~CNode(); //OK {connected_elements.resize(0);}
+      ~CNode() {}
       // Operator
       void operator = (const CNode& n);
       bool operator == (const CNode & n);
@@ -67,7 +65,7 @@ class CNode:public CCore
 	  void SetEquationIndex(const long eqIndex) {eqs_index = eqIndex;} //
       // Output
       void Write(ostream& os=cout) const;
-   public: //GUI control variables 
+      //GUI control variables 
       int selected;
 };
 

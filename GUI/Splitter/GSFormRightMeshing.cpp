@@ -178,6 +178,7 @@ void CGSFormRightMeshing::OnBnClickedTri2priButton()
 
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   FEMRead((string)m_strFileNameBase);
+  CompleteMesh(); //WW. Please move this to place where BEGIN_MESSAGE_MAP(CGSFormRightMeshing, CFormView) is over
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_frame->m_something_changed = 1;
   m_pDoc->UpdateAllViews(NULL);
@@ -217,6 +218,7 @@ void CGSFormRightMeshing::OnBnClickedQuad2hexButton()
 
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   FEMRead((string)m_strFileNameBase);
+  CompleteMesh(); //WW. Please move this to place where BEGIN_MESSAGE_MAP(CGSFormRightMeshing, CFormView) is over
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_frame->m_something_changed = 1;
   m_pDoc->UpdateAllViews(NULL);
@@ -247,6 +249,7 @@ void CGSFormRightMeshing::OnBnClickedHex2tetButton()
 
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   FEMRead((string)m_strFileNameBase);
+  CompleteMesh(); //WW. Please move this to place where BEGIN_MESSAGE_MAP(CGSFormRightMeshing, CFormView) is over
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_frame->m_something_changed = 1;
   m_pDoc->UpdateAllViews(NULL);
@@ -273,6 +276,7 @@ void CGSFormRightMeshing::OnBnClickedQuad2triButton()
 
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   FEMRead((string)m_strFileNameBase);
+  CompleteMesh(); //WW. Please move this to place where BEGIN_MESSAGE_MAP(CGSFormRightMeshing, CFormView) is over
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_frame->m_something_changed = 1;
   m_pDoc->UpdateAllViews(NULL);
@@ -522,6 +526,7 @@ void CGSFormRightMeshing::OnBnClickedStruc2dButton()
 
   GEOLIB_Read_GeoLib((string)m_strFileNameBase);
   FEMRead((string)m_strFileNameBase);
+  CompleteMesh(); //WW. Please move this to place where BEGIN_MESSAGE_MAP(CGSFormRightMeshing, CFormView) is over
 
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_pDoc->UpdateAllViews(NULL);
@@ -576,6 +581,7 @@ void CGSFormRightMeshing::OnBnClickedTriDelaunayButton()
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"MESH GENERATION: Finish....Load Data");  
 
   FEMRead((string)m_strFileNameBase);
+  CompleteMesh();//WW. Please move this to place where BEGIN_MESSAGE_MAP(CGSFormRightMeshing, CFormView) is over
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_frame->m_something_changed = 1;
   m_pDoc->UpdateAllViews(NULL);
@@ -803,6 +809,7 @@ void CGSFormRightMeshing::OnBnClickedStartGmshMeshing()
  
  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"MESH GENERATION: Load View Data");
  //FEMRead((string)m_strFileNameBase);/*OpenRFI*/ 
+ // CompleteMesh(); //WW
  m_frame->m_something_changed = 1;
  m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
  m_pDoc->UpdateAllViews(NULL);
@@ -1047,7 +1054,8 @@ void CGSFormRightMeshing::OnBnClickedGmshMshImport()
     file_name_const_char = m_strFileNameBase;
     pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"GMSH IMPORT: Load Mesh");
     //FEMRead(file_name_const_char);/*OpenMSH*/ 
-        // FEMRead((string)m_strFileNameBase);
+    // FEMRead((string)m_strFileNameBase);
+    //  CompleteMesh(); //WW
     GSPAddMember((string)m_pDoc->m_strGSPFileBase + ".msh");
 
     m_ProgressBar.StepIt();

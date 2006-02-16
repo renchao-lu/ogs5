@@ -237,11 +237,6 @@ ios::pos_type CInitialCondition::Read(ifstream *ic_file)
         in >> gradient_ref_depth_value; //CMCD
 		in >> gradient_ref_depth_gradient; //CMCD
        }
-      if(dis_type_name.find("GRADIENT_Z")!=string::npos) {
-		in >> gradient_ref_depth;  //CMCD
-        in >> gradient_ref_depth_value; //CMCD
-		in >> gradient_ref_depth_gradient; //CMCD
-       }
       if(dis_type_name.find("RESTART")!=string::npos) { //OK
 		in >> rfr_file_name;
       }
@@ -474,12 +469,15 @@ Programing:
 **************************************************************************/
 void CInitialCondition::SetDomain(int nidx)
 {
-  int k=0;
-  long i;
-  double node_val, node_depth=0.0;
-  vector<long>nodes_vector;
-  CFEMesh* m_msh = m_pcs->m_msh;
-//========================================================================
+    int k, onZ;
+	long i;
+	double node_val, node_depth;
+    vector<long>nodes_vector;
+    CFEMesh* m_msh = m_pcs->m_msh;
+    if(m_pcs->m_msh) //OK
+	onZ = m_msh->GetCoordinateFlag()%10;
+    node_depth = 0.0;
+    k=0;
 if(SubNumber==0) 
 {
   //----------------------------------------------------------------------
@@ -517,28 +515,16 @@ if(SubNumber==0)
            }
          }
       }
-     //................................................................
-      if(dis_type_name.compare("GRADIENT_Z")==0)//2D net setting gradient on the Z coordinate, made for DECOVALEX, CMCD MX
-	    {
-        if(m_msh){
-          for(i=0;i<m_msh->GetNodesNumber(true);i++){
-            node_depth = m_msh->nod_vector[i]->Z();
-	          node_val = ((gradient_ref_depth_gradient)*(gradient_ref_depth-node_depth))+
-                      gradient_ref_depth_value;
-				    m_pcs->SetNodeValue(m_msh->nod_vector[i]->GetIndex(),nidx,node_val);
-          }
-        }
-		  }
       //--------------------------------------------------------------------
-      if(dis_type_name.compare("GRADIENT")==0)
-	    {
+      if(dis_type_name.find("GRADIENT")!=string::npos)
+	  {
           if(m_msh)
           {
              for(i=0;i<m_msh->GetNodesNumber(true);i++) //WW
  	         {
-                if(max_dim==1) //2D 
+                if(onZ==1) //2D 
                  	node_depth = m_msh->nod_vector[i]->Y();
-                if(max_dim==2) //3D
+                if(onZ==2) //3D
                     node_depth = m_msh->nod_vector[i]->Z();
 	            node_val = ((gradient_ref_depth_gradient)*(gradient_ref_depth-node_depth))+
                         gradient_ref_depth_value;
@@ -622,8 +608,8 @@ if(SubNumber==0)
   //----------------------------------------------------------------------
 }
 //========================================================================
-else //WW
-{
+    else //WW
+    {
        bool quadratic = false;
        /// In case of P_U coupling monolithic scheme
        if(m_pcs->type==41) //WW Mono
@@ -638,21 +624,21 @@ else //WW
        for(k=0; k<SubNumber; k++)
        {
           GEOGetNodesInMaterialDomain(m_msh, subdom_index[k], nodes_vector, quadratic);
-          if(dis_type_name.compare("GRADIENT")==0)
+          if(dis_type_name.find("GRADIENT")!=string::npos)
           {
              if(k==0) //TEST for DECOVALEX
              {
-                for(i=0;i<m_msh->GetNodesNumber(quadratic);i++)
+                 for(i=0;i<(int)nodes_vector.size();i++)
                    m_pcs->SetNodeValue(nodes_vector[i],nidx, subdom_ic[k]);
              }
              else
-             for(i=0;i<m_msh->GetNodesNumber(quadratic);i++)
+             for(i=0;i<(int)nodes_vector.size();i++)
 	         {
                 if(max_dim==1) //2D 
-                    node_depth =  m_msh->nod_vector[i]->Y();
+                    node_depth =  m_msh->nod_vector[nodes_vector[i]]->Y();
                 if(max_dim==2) //3D
-		            node_depth =  m_msh->nod_vector[i]->Z();
-	              node_val = ((gradient_ref_depth_gradient)*(gradient_ref_depth-node_depth))+
+		            node_depth =  m_msh->nod_vector[nodes_vector[i]]->Z();
+	            node_val = ((gradient_ref_depth_gradient)*(gradient_ref_depth-node_depth))+
                         gradient_ref_depth_value;
                 m_pcs->SetNodeValue(nodes_vector[i],nidx,node_val);
              }
@@ -669,7 +655,7 @@ else //WW
        for(k=0; k<SubNumber; k++)
        {
            GEOGetNodesInMaterialDomain(subdom_index[k], nodes_vector);
-          if(dis_type_name.compare("GRADIENT")==0)
+          if(dis_type_name.find("GRADIENT")!=string::npos)
           {
              if(k==0) //TEST for DECOVALEX
              {

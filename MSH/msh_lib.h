@@ -18,6 +18,7 @@ extern CFEMesh* FEMGet(string msh_name);
 extern void MSHCreateNOD2ELERelations(Mesh_Group::CFEMesh*); //OK
 extern bool FEMRead(string);
 extern void FEMWrite(string);
+extern void CompleteMesh(); //WW
 extern void FEMDeleteAll();
 extern void MSHTopology(); //OK
 extern void MSHCalcMinMaxMidCoordinates(); //OK

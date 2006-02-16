@@ -379,12 +379,12 @@ rechts = rechts;
   //OK_ST IncorporateSourceSink(flux, rechts, NULL);
 
 }
-
+/*//WW
 double MMSGetSourceMultiplicator(long i)
 {
   return 1. / MMax(mfp_vector[activ_phase]->Density(),MKleinsteZahl);
 }
-
+*/
 
 /**************************************************************************
    ROCKFLOW - Funktion: MMSMakeMassMatrixEntry

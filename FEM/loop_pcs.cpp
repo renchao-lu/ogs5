@@ -129,13 +129,17 @@ void PCSCreate(void)
   for(i=0;i<no_processes;i++){
     cout << "............................................." << endl;
     m_pcs = pcs_vector[i];
-    cout << "Create: " << m_pcs->pcs_type_name ;
+    cout << "Create: " << m_pcs->pcs_type_name << endl;
     m_pcs->pcs_type_number = i;
     m_pcs->Config(); //OK
     if(!m_pcs->pcs_type_name.compare("MASS_TRANSPORT")) cout << " for " << m_pcs->pcs_primary_function_name[0] << " ";
     cout << endl;
     m_pcs->Create();
   }
+
+
+
+
   //----------------------------------------------------------------------
   for(i=0;i<no_processes;i++){
     m_pcs = pcs_vector[i];
@@ -235,6 +239,9 @@ last modified:
 int LOPTimeLoop_PCS(double*dt_sum)
 {
   int i,j,k;
+  //----------------------------------------------------------------------
+  int nidx0,nidx1;
+  int timelevel;
   int no_processes =(int)pcs_vector.size();
   CRFProcess *m_pcs = NULL;
   CRFProcessDeformation *dm_pcs = NULL;
@@ -249,29 +256,26 @@ int LOPTimeLoop_PCS(double*dt_sum)
   double pcs_dm_error = 1.0e8;
   double pcs_dm_error0 = 1.0e8;
   double pcs_dm_cp_error = 1.0e8;
-  int lop_coupling_iterations = 10; 
+  int lop_coupling_iterations = 1; 
+//  int lop_nonlinear_iterations = 15; //OK_OUT 2;
   double pcs_coupling_error = 1000; //MB
   //----------------------------------------------------------------------
   //
-  if(pcs_vector.size()==1) 
-      lop_coupling_iterations = 1; 
-  if(pcs_vector.size()>1) {
-    lop_coupling_iterations = pcs_vector[1]->m_num->cpl_iterations;  //Do not need coupling iterations for if #GROUNDWATER_FLOW #MASS_TRANSPORT //MB
-    TolCoupledF = pcs_vector[1]->m_num->cpl_tolerance;
-    //
-    lop_coupling_iterations = 1;
+  if(pcs_vector.size()>1) 
+  {
+      lop_coupling_iterations = pcs_vector[0]->m_num->cpl_iterations;
+      TolCoupledF = pcs_vector[0]->m_num->cpl_tolerance;
   }
   //----------------------------------------------------------------------
   // Problem type
   string pcs_problem_type = PCSProblemType();
+
   //======================================================================
   // Coupling loop
   for(k=0;k<lop_coupling_iterations;k++){
-    if(H_Process&&M_Process) 
-       cout << "  PCS coupling iteration: " << k << "/" << lop_coupling_iterations << endl;
-    if(lop_coupling_iterations > 1){ 
+    if(lop_coupling_iterations > 1)
       cout << "  PCS coupling iteration: " << k << "/" << lop_coupling_iterations << endl;
-    }
+   
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       // Flow processes
       //------------------------------------------------------------------
@@ -283,8 +287,8 @@ int LOPTimeLoop_PCS(double*dt_sum)
           VELCalcAll(m_pcs);
 		else
           m_pcs->CalIntegrationPointValue(); //WW
-			if(m_pcs->tim_type_name.compare("STEADY")==0)
-				m_pcs->selected = false;
+        if(m_pcs->tim_type_name.compare("STEADY")==0)
+            m_pcs->selected = false;
       }
       //-------------------------------------------------------------------
       m_pcs = PCSGet("GROUNDWATER_FLOW");
@@ -359,7 +363,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
       //--------------------------------------------------------------------
       m_pcs = PCSGet("OVERLAND_FLOW");
       if(m_pcs&&m_pcs->selected){
-        lop_coupling_iterations = m_pcs->m_num->cpl_iterations;
+        //WW lop_coupling_iterations = m_pcs->m_num->cpl_iterations;
         pcs_flow_error = m_pcs->ExecuteNonLinear();
         PCSCalcSecondaryVariables(); // PCS member function
       }
@@ -488,15 +492,14 @@ int LOPTimeLoop_PCS(double*dt_sum)
        }
     }
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    // Deformation process
     //if(H_Process&&aktueller_zeitschritt==1) break;
+    // Deformation process
     for(i=0;i<no_processes;i++){
       m_pcs = pcs_vector[i];
  	  if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
       {
           dm_pcs = (CRFProcessDeformation *)(m_pcs);
           pcs_dm_error=dm_pcs->Execute(k);
-
           //Error
           if(k==0) pcs_dm_cp_error = 1.0;
           else
@@ -505,31 +508,33 @@ int LOPTimeLoop_PCS(double*dt_sum)
           pcs_flow_error = max(pcs_flow_error, pcs_dm_cp_error);
       }
     }
-    
-    if(lop_coupling_iterations>1){
-      if(pcs_coupling_error<TolCoupledF)
+
+    //if(!H_Process) break;
+    if(k>0)
+    {
+        if(pcs_flow_error<TolCoupledF)
+        //    ||pcs_flow_error/pcs_flow_error0<TolCoupledF)
         break;
     }
-
     if(H_Process&&M_Process&&k>0) 
        cout << "\t    P-U coupling iteration: " << k 
        <<" Error: " <<pcs_flow_error<<endl;
-       
   } // coupling iterations
-  //----------------------------------------------------------------------
-  int nidx0,nidx1;
-  int timelevel;
+
+  //
+  // Extropolate the Gauss values to element nodes for deformation process
+  if(dm_pcs)
+  {
+      if(H_Process&&dm_pcs->type!=41) // HM partitioned scheme
+         dm_pcs->ResetTimeStep(); 
+      dm_pcs->Extropolation_GaussValue();
+  }
+  // 
+  //  
+  //  Update the results
   for(i=0;i<no_processes;i++){
-    m_pcs = pcs_vector[i];
-	// Extropolate the Gauss values to element nodes for deformation process
-	if(m_pcs->GetObjType()==4||m_pcs->GetObjType()==41)
-	{
-      if(dm_pcs) dm_pcs->Extropolation_GaussValue();
-	}
-    // Copy from new 2 old time level
-	else
-    {  
-      if(m_pcs->m_msh){ // MSH
+     m_pcs = pcs_vector[i];
+     if(m_pcs->m_msh){ // MSH
         m_pcs->CopyTimestepNODValues(); //MB
 #define SWELLING
 #ifdef SWELLING
@@ -540,8 +545,8 @@ int LOPTimeLoop_PCS(double*dt_sum)
              m_pcs->SetElementValue(l,nidx0, m_pcs->GetElementValue(l,nidx1));
 		}
 #endif
-      }
-      else{
+     }
+     else{
         for(j=0;j<m_pcs->pcs_number_of_primary_nvals;j++){
           timelevel=0;
           nidx0 = PCSGetNODValueIndex(m_pcs->pcs_primary_function_name[j],timelevel);
@@ -549,9 +554,10 @@ int LOPTimeLoop_PCS(double*dt_sum)
           nidx1 = PCSGetNODValueIndex(m_pcs->pcs_primary_function_name[j],timelevel);
           CopyNodeVals(nidx1,nidx0);
         }
-       }
-    }
+     }
   }
+  //
+
   //----------------------------------------------------------------------
   LOPCalcELEResultants();
   cout << "Calculation of NOD resultants" << endl;
@@ -559,6 +565,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
   //----------------------------------------------------------------------
 
 //DECOVALEX TEST
+//#define  EXCAVATION  
 #ifdef EXCAVATION    
    //TEST for DECOVALEX
    string StressFileName = FileName+".pat";
@@ -576,13 +583,13 @@ int LOPTimeLoop_PCS(double*dt_sum)
   {
 	   val0 = GetNodeValue(i,idx0); 
 	   val1 = GetNodeValue(i,idx1);
-       if(fabs(val0)<1.0e-9) val0 =  23.6; //THM2//25.0;
-       if(fabs(val1)<1.0e-9) val1 =  23.6; //THM2 //25.0;
+       if(fabs(val0)<1.0e-9) val0 =  25.0; //THM1 // 23.6; //THM2//
+       if(fabs(val1)<1.0e-9) val1 =  25.0; //THM1 // 23.6; //THM2 //
        file_pat<<val0<<deli<<val1<<endl;
 	   val0 = GetNodeValue(i,idx00); 
 	   val1 = GetNodeValue(i,idx11);
-       if(fabs(val0)<1.0e-9) val0 = 0.0; //THM2 //1.0e5;
-       if(fabs(val1)<1.0e-9) val1 = 0.0; //THM2 //1.0e5;
+       if(fabs(val0)<1.0e-9) val0 = 1.0e5; //THM1 //0.0; //THM2 //
+       if(fabs(val1)<1.0e-9) val1 = 1.0e5;  //THM1 //0.0; //THM2 //
        file_pat<<val0<<deli<<val1<<endl;
    }    
 
@@ -970,6 +977,7 @@ Task:
 Programing:
 02/2005 OK Implementation
 08/2005 WW Changes due to geometry objects applied
+08/2005 MB Changes .....
 last modification:
 **************************************************************************/
 void LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs)

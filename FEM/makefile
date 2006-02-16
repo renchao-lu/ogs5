@@ -19,12 +19,12 @@ CXX_INCS      += -I$(MPIINCLUDE)
 endif
 
 #### Only temporarliy until random walk compiles on every platform
-
-ifdef NO_RANDOM_WALK
-CXX_FLAGS       += -URANDOM_WALK
-else
-CXX_FLAGS       += -DRANDOM_WALK
-endif
+## Commented by WW
+#ifdef NO_RANDOM_WALK
+#CXX_FLAGS       += -URANDOM_WALK
+#else
+#CXX_FLAGS       += -DRANDOM_WALK
+#endif
 
 
 .SUFFIXES: .o .cpp .h 

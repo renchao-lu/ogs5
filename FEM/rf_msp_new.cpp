@@ -45,6 +45,7 @@ Task: OBJ read function
 Programing:
 08/2004 OK Implementation for fuild properties
 08/2004 WW Modification for solid properties
+12/2005 WW Creep properties
 **************************************************************************/
 ios::pos_type CSolidProperties::Read(ifstream *msp_file)
 {
@@ -78,49 +79,67 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
     }
 
     if(line_string.find("$SWELLING_PRESSURE_TYPE")!=string::npos) { // subkeyword found
-	  *msp_file>>SwellingPressureType;
-      if(SwellingPressureType==1)
-         *msp_file>>Max_SwellingPressure>>ws;
+      in_sd.str(GetLineFromFile1(msp_file));
+	  in_sd>>SwellingPressureType;
+      if(SwellingPressureType==1||SwellingPressureType==2)
+	  {
+         in_sd>>Max_SwellingPressure;
+         in_sd.clear();
+	  } 
       else
-         *msp_file>>ws;
+         in_sd.clear();
 	}
     //....................................................................
     if(line_string.find("$DENSITY")!=string::npos) { // subkeyword found
-      *msp_file>> Density_mode;
+      in_sd.str(GetLineFromFile1(msp_file));
+      in_sd>> Density_mode;
       if(Density_mode==0){ // rho = f(x)
-          *msp_file >> Size>>ws;
+          in_sd >> Size;
+		  in_sd.clear();		   
           data_Density = new Matrix(Size, 2);
           for(i=0; i<Size; i++)
           {
-             *msp_file >>(*data_Density)(i,0)>>(*data_Density)(i,1)>>ws;
+             in_sd.str(GetLineFromFile1(msp_file));             
+             in_sd >>(*data_Density)(i,0)>>(*data_Density)(i,1);
+             in_sd.clear();
           }
       }
       else if(Density_mode==1){ // rho = const
          data_Density = new Matrix(1);        
-         *msp_file >> (*data_Density)(0)>>ws;
+         in_sd >> (*data_Density)(0);
+		 in_sd.clear();
       }
     }
     //....................................................................
     if(line_string.find("$THERMAL")!=string::npos)
     {
-        *msp_file>>sub_line>>ThermalExpansion>>ws;
+        in_sd.str(GetLineFromFile1(msp_file));
+        in_sd>>sub_line>>ThermalExpansion;
+        in_sd.clear();
     }
     //....................................................................
     if(line_string.find("CAPACITY")!=string::npos) { // subkeyword found
-      *msp_file >> Capacity_mode;
+      in_sd.str(GetLineFromFile1(msp_file));
+      in_sd >> Capacity_mode;
       switch(Capacity_mode)
-	  {
-	     case 0: //  = f(x)
-           *msp_file >> Size>>ws;
+      {
+         case 0: //  = f(x)
+           in_sd >> Size;
+           in_sd.clear();
            data_Capacity = new Matrix(Size, 2);
            for(i=0; i<Size; i++)
-             *msp_file >>(*data_Capacity)(i,0)>>(*data_Capacity)(i,1)>>ws;
+		   {
+              in_sd.str(GetLineFromFile1(msp_file));             
+              in_sd >>(*data_Capacity)(i,0)>>(*data_Capacity)(i,1);
+              in_sd.clear();
+		   }
            break;
-		 case 1:  //  = const
+         case 1:  //  = const
            data_Capacity = new Matrix(1);        
-           *msp_file>> (*data_Capacity)(0)>>ws;
+           in_sd>> (*data_Capacity)(0);
+           in_sd.clear(); 
            break;
-		 case 2: // boiling model for rock. WW
+         case 2: // boiling model for rock. WW
            // 0. Wet capacity
            // 1. Dry capacity
            // 2. Boiling temperature
@@ -128,28 +147,36 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
            // 4. Latent of vaporization 
            data_Capacity = new Matrix(5);        
            for(i=0; i<5; i++)
-              *msp_file>> (*data_Capacity)(i)>>ws;    
+              in_sd>> (*data_Capacity)(i);
+           in_sd.clear();
            break;          
 		 case 3:  // DECOVALEX THM1, Bentonite
-           *msp_file>>ws;    
+           in_sd.clear();    
            break;                      
 	  }
     }
 
     //....................................................................
     if(line_string.find("CONDUCTIVITY")!=string::npos) { // subkeyword found
-      *msp_file>> Conductivity_mode;
+      in_sd.str(GetLineFromFile1(msp_file));
+      in_sd>> Conductivity_mode;
       switch(Conductivity_mode)
 	  {
 	     case 0: //  = f(x)
-            *msp_file>> Size>>ws;
+            in_sd>> Size;
+            in_sd.clear();
             data_Conductivity = new Matrix(Size, 2);
             for(i=0; i<Size; i++)
-               *msp_file >>(*data_Conductivity)(i,0)>>(*data_Conductivity)(i,1)>>ws;
+			{
+               in_sd.str(GetLineFromFile1(msp_file));
+               in_sd >>(*data_Conductivity)(i,0)>>(*data_Conductivity)(i,1);
+               in_sd.clear();
+			}
             break;
 		 case 1: //  = const
             data_Conductivity = new Matrix(1);        
-            *msp_file >> (*data_Conductivity)(0)>>ws;
+            in_sd >> (*data_Conductivity)(0);
+            in_sd.clear();
             break;
 		 case 2:  // boiling model for rock. WW
            // 0. Wet conductivity
@@ -158,12 +185,13 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
            // 3. Boiling temperature range
            data_Conductivity = new Matrix(4);        
            for(i=0; i<4; i++)
-              *msp_file>> (*data_Conductivity)(i)>>ws;
+              in_sd>> (*data_Conductivity)(i);
+           in_sd.clear();
            capacity_pcs_name_vector.push_back("TEMPERATURE1");
            capacity_pcs_name_vector.push_back("SATURATION1");
            break;                      
 		 case 3:  // DECOVALEX THM1, Bentonite
-           *msp_file>>ws;    
+           in_sd.clear();    
            break;                      
       }
     }
@@ -190,21 +218,46 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
 */
     //....................................................................
     if(line_string.find("$ELASTICITY")!=string::npos)  // subkeyword found
-      *msp_file>>sub_line>>PoissonRatio>>ws;
+	{
+       in_sd.str(GetLineFromFile1(msp_file));
+       in_sd>>sub_line>>PoissonRatio;
+       in_sd.clear();
+	}
     //....................................................................
     if(line_string.find("YOUNGS_MODULUS")!=string::npos) { // subkeyword found
-      *msp_file >> Youngs_mode;
+      in_sd.str(GetLineFromFile1(msp_file));
+      in_sd >> Youngs_mode;
       if(Youngs_mode==0){ //  = f(x)
-          *msp_file >> Size>>ws;
+          in_sd >> Size;
+		  in_sd.clear();
           data_Youngs = new Matrix(Size, 2);
           for(i=0; i<Size; i++)
-             *msp_file>>(*data_Youngs)(i,0)>>(*data_Youngs)(i,1)>>ws;
+		  {
+             in_sd.str(GetLineFromFile1(msp_file));
+             in_sd>>(*data_Youngs)(i,0)>>(*data_Youngs)(i,1);
+             in_sd.clear();
+		  }
       }
       else if(Youngs_mode==1){ //  = const
          data_Youngs = new Matrix(1);        
-         *msp_file >> (*data_Youngs)(0)>>ws;
+         in_sd >> (*data_Youngs)(0);
+         in_sd.clear();
       }
     }
+   //....................................................................
+    if(line_string.find("$CREEP")!=string::npos)
+    {
+        if(line_string.find("NORTON")!=string::npos)
+        {
+           Creep_mode=1;
+           data_Creep = new Matrix(2);
+           in_sd.str(GetLineFromFile1(msp_file));
+           in_sd>>(*data_Creep)(0);
+           in_sd>>(*data_Creep)(1);
+           in_sd.clear();           
+        }
+    }
+
     //....................................................................
     if(line_string.find("$PLASTICITY")!=string::npos) { // subkeyword found
        in_sd.str(GetLineFromFile1(msp_file));
@@ -264,7 +317,7 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
        else if(sub_line.find("CAM-CLAY")!=string::npos)
        {
            Plasticity_type=3;
-           Size = 9;         
+           Size = 10;         
 			  /*
                    Material parameters for Cam-Clay model
 				   i: parameter
@@ -277,20 +330,19 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
 				   6 : Initial stress_xx 
 				   7 : Initial stress_yy 
 				   8 : Initial stress_zz
+                   9 : Mimimum p: ( stress_xx + stress_yy + stress_zz )/3
 			  */
 
        }    
        data_Plasticity = new Matrix(Size);
-
-
        for(i=0; i<Size; i++)
        {           
            in_sd.str(GetLineFromFile1(msp_file));
            in_sd >>(*data_Plasticity)(i);
            in_sd.clear();
        }  
-
     }
+	in_sd.clear();
   }
   return position;
 }
@@ -306,7 +358,7 @@ Programing:
 **************************************************************************/
 CSolidProperties::CSolidProperties()
       :data_Density(NULL), data_Youngs(NULL),data_Plasticity(NULL),
-       data_Capacity(NULL),data_Conductivity(NULL)                     
+       data_Capacity(NULL),data_Conductivity(NULL), data_Creep(NULL)                          
 {
     PoissonRatio = 0.2;
     ThermalExpansion = 0.0;
@@ -316,6 +368,7 @@ CSolidProperties::CSolidProperties()
     Youngs_mode = -1;
     Capacity_mode = -1;
     Conductivity_mode = -1;
+    Creep_mode = -1; 
 
     SwellingPressureType = -1; 
 	Max_SwellingPressure = 0.0;
@@ -323,6 +376,7 @@ CSolidProperties::CSolidProperties()
     Plasticity_type = -1;
  
     E = Lambda = G = K = 0.0;
+    axisymmetry = false;
 
     // SYS
     d2G_dSdS=NULL;     
@@ -337,34 +391,41 @@ CSolidProperties::CSolidProperties()
     // 0: Time
     // 1: ...   
     CurveVariableType_Conductivity=-1;
-  
-    // Data CMCD
-    mode = 0; // Gauss point values
 
 }
 CSolidProperties::~CSolidProperties()
 {
-    delete data_Density;
-    delete data_Youngs;
-    delete data_Plasticity;
-    delete data_Capacity;
-    delete data_Conductivity;
+    if(data_Density) delete data_Density;
+    if(data_Density) delete data_Youngs;
+    if(data_Plasticity) delete data_Plasticity;
+    if(data_Capacity) delete data_Capacity;
+    if(data_Conductivity) delete data_Conductivity;
+    if(data_Creep) delete data_Creep;
 
     data_Density=NULL;
     data_Youngs=NULL;
     data_Plasticity=NULL;
     data_Capacity=NULL;
     data_Conductivity=NULL;
+    data_Creep = NULL;
 
-    delete d2G_dSdS;     
-    delete d2G_dSdM;
-    delete LocalJacobi;  // To store local Jacobi matrix 
-    delete inv_Jac;      // To store the inverse of the  Jacobi matrix 
-    delete sumA_Matrix;  
-    delete rhs_l;        // To store local unknowns of 15 
-    delete x_l;          // To store local unknowns of 15 
-    delete Li;              
+    if(d2G_dSdS) delete d2G_dSdS;     
+    if(d2G_dSdM) delete d2G_dSdM;
+    if(LocalJacobi) delete LocalJacobi;  // To store local Jacobi matrix 
+    if(inv_Jac) delete inv_Jac;      // To store the inverse of the  Jacobi matrix 
+    if(sumA_Matrix) delete sumA_Matrix;  
+    if(rhs_l) delete rhs_l;        // To store local unknowns of 15 
+    if(x_l) delete x_l;          // To store local unknowns of 15 
+    if(Li) delete Li;              
 
+    d2G_dSdS=NULL;     
+    d2G_dSdM=NULL;
+    LocalJacobi=NULL;   
+    inv_Jac=NULL;       
+    sumA_Matrix=NULL;  
+    rhs_l=NULL;         
+    x_l=NULL;           
+    Li=NULL;              
 }
 //----------------------------------------------------------------------------
 
@@ -480,6 +541,8 @@ bool CSolidProperties:: CheckTemperature_in_PhaseChange
 		   else if((T0<T_a)&&(T1>T_b))
              stat = true;
 		   else if((T0<T_b)&&(T1>T_b))
+             stat = true;
+		   else if((T1>=T_a)&&(T1<=T_b))
              stat = true;
 		}
         break;
@@ -799,6 +862,14 @@ void CSolidProperties::ElasticConsitutive(const int Dimension, Matrix *D_e) cons
       (*D_e)(2,1) = Lambda;
 
       (*D_e)(3,3) = G;
+      //
+      if(axisymmetry)
+	  {
+         (*D_e)(0,2) = Lambda; 
+         (*D_e)(1,2) = Lambda;
+         (*D_e)(2,2) = Lambda + 2 * G;
+	  }
+
 
       /* 
       //Plane stress
@@ -996,13 +1067,10 @@ double* CSolidProperties::StressIntegrationDP(const int GPiGPj,
    
   // Save the current stresses 
   if(Update>0)
-    {
-      for(i=0; i<Size; i++)
-         (*ele_val->Stress)(i, GPiGPj) = TryStress[i];
-
-      if((*dPhi)>0.0)
-        (*ele_val->pStrain)(GPiGPj) = ep;
-    }
+  {
+     if((*dPhi)>0.0)
+       (*ele_val->pStrain)(GPiGPj) = ep;
+  }
   return DevStress;	
 }
 
@@ -1103,6 +1171,27 @@ void CSolidProperties::ConsistentTangentialDP(Matrix *Dep,
            = 0.0; //c3*Al*s12+c4*s12*s33;		
         (*Dep)(3,3) 
            =  c1/2.0+c4*s12*s12;
+
+        if(axisymmetry)
+		{
+            (*Dep)(0,2) 
+                = -c1/3.0+c2+c3*(Xi*s33+Al*s11)+c4*s11*s33;  
+            // Row 2		  
+            (*Dep)(1,2) 
+                = -c1/3.0+c2+c3*(Xi*s33+Al*s22)+c4*s33*s22;		
+            // Row 3		  
+            (*Dep)(2,0) 
+               = -c1/3.0+c2+c3*(Xi*s11+Al*s33)+c4*s11*s33;		
+            (*Dep)(2,1) 
+               = -c1/3.0+c2+c3*(Xi*s22+Al*s33)+c4*s22*s33;		
+            (*Dep)(2,2) 
+               =  2.0*c1/3.0+c2+c3*(Al+Xi)*s33+c4*s33*s33;		
+            (*Dep)(2,3) 
+               = c3*Xi*s12+c4*s33*s12;
+            // Row 4		    
+            (*Dep)(3,2) 
+              = c3*Al*s12+c4*s12*s33;		
+		}
         break;
       case 3: // 3D
         // Row 1
@@ -2026,22 +2115,22 @@ int CSolidProperties::CalStress_and_TangentialMatrix_SYS
 
   // Save the current stresses 
   if(Update>0)
-    {
+  {
 
-       (*ele_val->pStrain)(GPiGPj) = ep;
-       for(i=0; i<LengthStrs; i++)
-           (*ele_val->Stress)(i, GPiGPj) = Stress_n1[i];
-       for(i=0; i<LengthStrs-1; i++)
-           (*ele_val->xi)(i, GPiGPj) = xi_n1[i];
-       for(i=0; i<LengthMat; i++)
-           (*ele_val->MatP)(i, GPiGPj) = Mat_n1[i];
+     (*ele_val->pStrain)(GPiGPj) = ep;
+     //for(i=0; i<LengthStrs; i++)
+     //    (*ele_val->Stress)(i, GPiGPj) = Stress_n1[i];
+     for(i=0; i<LengthStrs-1; i++)
+         (*ele_val->xi)(i, GPiGPj) = xi_n1[i];
+     for(i=0; i<LengthMat; i++)
+         (*ele_val->MatP)(i, GPiGPj) = Mat_n1[i];
 
-    }
-   else
-   {  /**** New stresses passed through dStress for the residual computation */
+  }
+//   else
+//   {  // New stresses passed through dStress for the residual computation 
       for(i=0; i<LengthStrs; i++)
         dStress[i] = Stress_n1[i];      
-   }
+//   }
    
    /*
    // Already considered in element_dm, ele_val_dm
@@ -2759,6 +2848,7 @@ void CSolidProperties::Gauss_Back(const int DimE, Matrix& AA, double * rhs, int 
    11/2003   WW  Erste Version
  
 **************************************************************************/
+//#define New
 #define associative
 void CSolidProperties::CalStress_and_TangentialMatrix_CC(const int GPiGPj,
      const ElementValue_DM *ele_val, double *dStrain,  Matrix *Dep, const int Update)
@@ -2767,11 +2857,16 @@ void CSolidProperties::CalStress_and_TangentialMatrix_CC(const int GPiGPj,
   double p, q, p_tr, q_tr, p_c, p_cn;
   double ep;
   double e_0, dev;
-  double F0, F, Jac, vep, vep0, TolP, TolF;
-  double var1, alpha1, alpha2, alpha3, beta1, beta2;
+  double F0, F, vep, vep0, TolP;
+  double var1, alpha1, alpha2, beta1, beta2;
   double gamma1, gamma2,gamma3,gamma4,gamma5;
   double dfdp, dfdq, dampFac;
   const double fac = sqrt(2.0/3.0);
+#ifdef New
+  double J11,J12, J21, J22;  
+#else
+  double  alpha3, Jac;
+#endif
   static double DevStress[6], TryStress[6];
 
   const int MaxI = 400;
@@ -2781,11 +2876,11 @@ void CSolidProperties::CalStress_and_TangentialMatrix_CC(const int GPiGPj,
   const double CompressIndex = (*data_Plasticity)(1); 
   const double M_s = (*data_Plasticity)(0); 
   const double M2 = M_s*M_s;
+  const double pmin = (*data_Plasticity)(9);
 
   double vartheta=0.0;
 
   TolP = Tolerance_Local_Newton*1.0e4; 
-  TolF = 1.0e-2;
 
   int dim = 2;
   ns =4;
@@ -2809,19 +2904,18 @@ void CSolidProperties::CalStress_and_TangentialMatrix_CC(const int GPiGPj,
   p = -(  (*ele_val->Stress)(0,GPiGPj)
          +(*ele_val->Stress)(1,GPiGPj)
          +(*ele_val->Stress)(2,GPiGPj))/3.0;
- 
-  if(fabs(p)<MKleinsteZahl) // Start the Cam-Clay model
-  {
-     p = -(  (*ele_val->Stress0)(0,GPiGPj)
-            +(*ele_val->Stress0)(1,GPiGPj)
-            +(*ele_val->Stress0)(2,GPiGPj))/3.0;
-  }
+
+  if(fabs(p)<pmin)
+     p = pmin;
 
   // Volume strain increment
   dev = -(dStrain[0]+dStrain[1]+dStrain[2]); 
   vartheta=(1.0+e_0)/(CompressIndex-SwellIndex); //TEST. Sign?
 
+ // if(fabs(dev)<MKleinsteZahl) 
   K = (1.0+e_0)*fabs(p)/SwellIndex;
+ // else
+ //    K = (1.0+e_0)*fabs(p)*(exp(PoissonRatio*dev/SwellIndex)-1.0)/dev;
 
   G = 1.5*K*(1-2.0*PoissonRatio)/(1+PoissonRatio); 
 
@@ -2829,19 +2923,9 @@ void CSolidProperties::CalStress_and_TangentialMatrix_CC(const int GPiGPj,
 
   ElasticConsitutive(dim, Dep);
 
-  if(Update==2) // Uniform surcharge
-  {
-     TryStress[0] = -1.0;
-     TryStress[1] = -1.0;
-     TryStress[2] = -1.0;
-     TryStress[3] =  0.0;
-  }
-  else // Strain to stress
-  { 
-      for(i=0; i<ns; i++)
-        TryStress[i] = 0.0;
-      Dep->multi(dStrain, TryStress);
-  }
+  for(i=0; i<ns; i++)
+     TryStress[i] = 0.0;
+  Dep->multi(dStrain, TryStress);
  
   for(i=0; i<ns; i++)
   { 
@@ -2869,6 +2953,8 @@ void CSolidProperties::CalStress_and_TangentialMatrix_CC(const int GPiGPj,
 
   F0 = F;
   if(pcs_deformation==1) F=-1.0;
+  if((*data_Plasticity)(3)<MKleinsteZahl) // p_c0=0
+     F=-1.0;
   if(F>0.0&&!PreLoad) // in yield status 
   {
       
@@ -2876,6 +2962,50 @@ void CSolidProperties::CalStress_and_TangentialMatrix_CC(const int GPiGPj,
     vep = 0.0;
      
 #ifdef associative
+#ifdef New
+	//Associative flow rule
+    while(isLoop) // Newton step for the plastic multiplier
+	{
+       NPStep++;
+       if(NPStep>MaxI)
+	   {
+        // printf("\n Too much iteration in Newton step in the integration of Cam-Clay \n");
+         break;
+		// abort();
+	   }
+	   dfdp = 2.0*p-p_c;
+	   dfdq = 2.0*q/M2;
+	   gamma1 = 1.0+2.0*vep*K;
+       // J11: df/ddphi. J12: df/dpc
+       // dp/dphi
+       alpha1 = -K*dfdp/gamma1;
+       // dq/dphi
+       alpha2 = -q/(vep+M2/(G*6.0));
+       //        
+       J11 = alpha1*dfdp+dfdq*alpha2;
+       J12 = dfdp*vep*K/gamma1;
+       // J21: dg/ddphi. J22: dg/dpc       
+       gamma2 = p_cn*exp(vartheta*dev*dfdp);
+       J21 = gamma2*vartheta*(dfdp+2.0*vep*alpha1);
+       J22 = gamma2*vartheta*vep*(2.0*dev*K/gamma1-1.0)-1.0;
+     
+       F = q*q/M2 + p*(p-p_c);
+       beta1 = gamma2-p_c;  // g;
+       if(fabs(beta1)<TolP)
+	   {
+//         if(fabs(F)<TolF) break;
+         if(fabs(F/F0)<TolP) break;
+       }    
+	   beta2 = J11*J22-J21*J12;
+       
+	   p_c -= (beta1*J11-F*J21)/beta2;
+       vep -= (F*J22-beta1*J12)/beta2;
+
+       p = (p_tr+vep*K*p_c)/gamma1; 
+       K = 
+       q = q_tr/(1.0+6.0*G*vep/M2);
+	}
+#else
 	//Associative flow rule
     while(isLoop) // Newton step for the plastic multiplier
 	{
@@ -2924,19 +3054,18 @@ void CSolidProperties::CalStress_and_TangentialMatrix_CC(const int GPiGPj,
       
           F = q*q/M2 + p*(p-p_c);
           if(F>0.0) break;
-		  if(fabs(F)<TolF) break;
 		  if(fabs(F/F0)<TolP) break;
           dampFac = 0.8;
        }
        vep0 = vep; 
-       if(fabs(F)<TolF) break;   
 	   if(fabs(F/F0)<TolP) break;
 	}
-		
+#endif		
 	// Plastic strain
-    alpha1 = 6.0*q*q/(M2*M2*(2.0*p-p_c)*(2.0*p-p_c));
-    ep += fabs(vep)*sqrt(2.0*(1.0/9.0+alpha1)/3.0);
- 
+//    alpha1 = 6.0*q*q/(M2*M2*(2.0*p-p_c)*(2.0*p-p_c));
+//    ep += fabs(vep)*sqrt(2.0*(1.0/9.0+alpha1)/3.0);
+    ep += 3.0*fabs(vep)*q/M2; 
+
 #else 
     double var2 = 0.0;
     while(1)
@@ -2979,8 +3108,8 @@ void CSolidProperties::CalStress_and_TangentialMatrix_CC(const int GPiGPj,
       if(fabs(F)<Tolerance_Local_Newton) break;
     }
 
-    ep += vep*sqrt(2.0*(2.0*K*q*q/G+(2.0*p-p_c)
-                        *(2.0*p-p_c))/3.0)/(2.0*p-p_c); 
+    ep += 3.0*fabs(vep)*q/M2; 
+
 #endif
 
     //-------------------------------------------------------------
@@ -3137,41 +3266,55 @@ void CSolidProperties::CalStress_and_TangentialMatrix_CC(const int GPiGPj,
        ElasticConsitutive(dim, Dep);  
   }
 
-   for(i=0; i<ns; i++)
+  for(i=0; i<ns; i++)
      dStrain[i] = TryStress[i];
-
-   /*
-   // Extract the initial stress
-   for(i=0; i<3; i++)
-    Sigma[i] -= get_sd_plastic_module(index, 6+i); // Initial stress
-   */
 
   // Save the current stresses 
   if(Update>0)
   {
-      if(Update==1) 
-      {
-         for(i=0; i<ns; i++)
-             (*ele_val->Stress)(i, GPiGPj) = dStrain[i];
-      }
-      //if(ep>0.0)
-      // {
-        var1 = dev*(1.+e_0);
-        e_0 -= var1;
-        (*ele_val->pStrain)(GPiGPj) = ep;
+     if((*data_Plasticity)(3)<MKleinsteZahl) // p_c0=0
+	 { 
+         p_c = p+q*q/(M2*p);
         (*ele_val->prep0)(GPiGPj) = p_c;
+	 }  
+     if(ep>0.0)
+     {
+         var1 = dev*(1.+e_0);
+         e_0 -= var1;
+        (*ele_val->pStrain)(GPiGPj) = ep;
         (*ele_val->e_i)(GPiGPj) = e_0;
-      // }
-
+        (*ele_val->prep0)(GPiGPj) = p_c;
+     }
   }
   
   // For the case of the initial stress being given, the contribution of 
   // the initial stress to the right hand side should be taken into account
   // If the initial stress is not accounted into the final stress
-  /*
-  for(i=0; i<3; i++)
-    dStrain[i] -= (*data_Plasticity)(6+i); // Initial stress
-  */
+  //
+  //  for(i=0; i<3; i++)
+  //    dStrain[i] -= (*data_Plasticity)(6+i); // Initial stress
+  //
+}
+/**************************************************************************
+FEMLib-Method:
+Task: Caculate increment of strain deduced by creep
+Programing:
+12/2005 WW 
+last modified:
+**************************************************************************/
+void CSolidProperties::AddStain_by_Creep(const int ns, double *stress_n, double *dstrain)
+{
+  int i, dim;
+  double norn_S, fac;
+  DeviatoricStress(stress_n);
+  dim = 2;
+  if(ns>4) dim =3;
+  norn_S = sqrt(TensorMutiplication2(stress_n, stress_n, dim));
+//  fac = pow(1.5, (*data_Creep)(1)+1.0)*(*data_Creep)(0)*pow(norn_S, (*data_Creep)(1)-1.0)*dt;
+  fac = pow(2.0/3.0, (*data_Creep)(1))*(*data_Creep)(0)*pow(norn_S, (*data_Creep)(1)-2.0)*dt;
+//  fac = (*data_Creep)(0)*pow(norn_S, (*data_Creep)(1)-1.0)*dt;
+  for(i=0; i<ns; i++)
+    dstrain[i] -= fac*stress_n[i];    
 }
 
 /**************************************************************************
@@ -3227,9 +3370,9 @@ void CSolidProperties::Write(fstream* msp_file)
   //----------------------------------------------------------------------
 }
 
-
 }// end namespace
 /////////////////////////////////////////////////////////////////////////////
+
 
 /**************************************************************************
 FEMLib-Method: 

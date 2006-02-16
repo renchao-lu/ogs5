@@ -19,7 +19,6 @@ class CEdge:public CCore
    private: // Members
       vec<CNode*>  nodes_of_edges;
       friend class CElem;
-   private: // Friends
 	  friend class FiniteElement::CElement;  
 	  friend class FiniteElement::CFiniteElementStd; 
 	  friend class FiniteElement::CFiniteElementVec; 
@@ -31,6 +30,7 @@ class CEdge:public CCore
       // Get functions
       void GetNodes( vec<CNode*>& Nodes) 
         { for(int i=0; i<3; i++)  Nodes[i] = nodes_of_edges[i]; }			
+      CNode* GetNode(const int l_index) {return nodes_of_edges[l_index];} 
       double Length();
       // Set functions
       void SetNodes( vec<CNode*>& Nodes)

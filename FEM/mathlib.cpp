@@ -548,22 +548,6 @@ int ok=0;
 	return ok = 1;
 }
 
-/***************************************************************************
-   ROCKFLOW - Funktion: MPhi2D
-
-   Aufgabe: Berechnet Testfunktion (r,s) ohne Upwind-Parameter
-            alpha (im Unterschied zu MPhi2D_SUPG)
-            Phi = Omega
-
-   Formalparameter: Z: *vf - 1x4 Feld
-                    E: r,s (s.o.)
-
-   Ergebnis: Vektor
-
-   Aenderungen/Korrekturen:
-   04/1995     R.Kaiser        Erste Version
-
- **************************************************************************/
 
 
 /***************************************************************************
@@ -1038,22 +1022,6 @@ void MNulleMat(double *mat, long m, long n)
         mat[i] = 0.0;
 }
 
-/***************************************************************************
-   ROCKFLOW - Funktion: MBtrgVec
-   Aufgabe:
-           Berechnet Betrag von Vektor
-   Formalparameter:
-           E: *vec
-           E: n
-   Ergebnis:
-           Betrag
-   Aenderungen/Korrekturen:
-   07/1995     hh        Erste Version
-   11/1999     C.Thorenz Register-Variablen
-
- **************************************************************************/
-
-
 
 /**************************************************************************
    ROCKFLOW - Function: MAngleVectors
@@ -1122,18 +1090,6 @@ double M2Determinante(double *matrix)
     return (matrix[0] * matrix[3] - matrix[1] * matrix[2]);
 }                               /* extern double M2Determinante */
 
-/***************************************************************************
-   ROCKFLOW - Funktion: M3Determinante
-   Aufgabe:
-           Berechnung der Determinante einer 3x3-Matrix
-           nach der Regel von Sarrus
-   Formalparameter:
-           E: *matrix
-   Ergebnis:
-           Determinante
-   Aenderungen/Korrekturen:
-   07/1994     hh        Erste Version
- **************************************************************************/
 
 
 /***************************************************************************
@@ -1202,18 +1158,6 @@ double Mxg2Determinante(double *matrix, long m, long n)
     return depp;
 }                               /* extern double Mxg2Determinante */
 
-/***************************************************************************
-   ROCKFLOW - Funktion: M4Determinante
-   Aufgabe:
-           Berechnung der Determinante einer 4x4-Matrix
-           nach der Regel von Sarrus
-   Formalparameter:
-           E: *matrix
-   Ergebnis:
-           Determinante
-   Aenderungen/Korrekturen:
-   10/2001   OK   Erste Version
- **************************************************************************/
 
 /**************************************************************************
    ROCKFLOW - Funktion: MTranspoVec
@@ -1586,40 +1530,7 @@ int MMultMatSkalar(double *matrix, double skal, long m, long n)
     for (i = 0; i < m * n; i++)
         matrix[i] *= skal;
     return 1;
-}                               /* extern int MMultMatSkalar */
-
-/***************************************************************************
-   ROCKFLOW - Funktion: MSkalarprodukt
-   Aufgabe:
-           Berechnung des Skalarprodukts aus zwei beliebig grossen
-           Vektoren
-   Formalparameter:
-           E: *vecX - Zeiger auf Vektoren
-           E: g - Ausdehnung bzw. Grad der Vektoren
-   Ergebnis:
-           Skalarprodukt
-   Aenderungen/Korrekturen:
-   07/1994    hh        Erste Version
-   11/1995    msr       register
-    8/0001    C.Thorenz CBLAS-eingehaengt
- **************************************************************************/
-
-
-/**************************************************************************
-   ROCKFLOW - Funktion: M3KreuzProdukt
-   Aufgabe:
-           Kreuzprodukt zweier 3D-Vektoren
-   Formalparameter:
-           E: *vec1
-           E: *vec2
-           A: *ec
-   Ergebnis:
-           In Vektor vec1 wird das Ergebnis gespeichert.
-   Aenderungen/Korrekturen:
-   08/1994     hh        Erste Version
- **************************************************************************/
-
-
+}
 /**************************************************************************
    ROCKFLOW - Funktion: MMultVecVec
    Aufgabe:
@@ -3539,25 +3450,33 @@ double* TensorDrehDich(double* d, double* velo)
                             2   Weight
    Programming:
    06/2003     WW        Erste Version
-
+0.166666666666667 0.166666666666667  0.166666666666667
+0.666666666666667 0.166666666666667  0.166666666666667
+0.166666666666667 0.666666666666667  0.166666666666667
+-------------------------------------------------------
+ On Edges
+POINTS & WEIGHTS:
+0.5 0.5 0.166666666666667
+0.0 0.5 0.166666666666667
+0.5 0.0 0.166666666666667
  **************************************************************************/
 void SamplePointTriHQ(const int nsample, double *SPoint)
 {
    switch(nsample)
    {
      case 0:
-            SPoint[0] = 0.5;
-            SPoint[1] = 0.0;
+            SPoint[0] = 0.166666666666667 ;
+            SPoint[1] = 0.166666666666667 ;
             SPoint[2] = 0.1666666666667;  // Weight 
             break;        
      case 1:
-            SPoint[0] = 0.5;
-            SPoint[1] = 0.5;
+            SPoint[0] = 0.666666666666667 ;
+            SPoint[1] = 0.166666666666667 ;
             SPoint[2] = 0.1666666666667;  // Weight 
             break;        
      case 2:
-            SPoint[0] = 0.0;
-            SPoint[1] = 0.5;
+            SPoint[0] = 0.166666666666667 ;
+            SPoint[1] = 0.666666666666667 ;
             SPoint[2] = 0.1666666666667;  // Weight 
             break; 
      default: break;            
@@ -3751,6 +3670,20 @@ void ShapeFunctionLine(double *N1, const double *u)
 
 /**************************************************************************
 MathLib-Method:
+Task:    
+Programing:
+07/2003 WW Implementation
+Last modified:
+**************************************************************************/
+void ShapeFunctionLineHQ(double *N1, const double *u)
+{
+   N1[0] = 0.5*u[0]*(u[0]-1.0); 
+   N1[1] = 0.5*u[0]*(u[0]+1.0); 
+   N1[2] = 1.0-u[0]*u[0];
+}
+
+/**************************************************************************
+MathLib-Method:
 Task: 
 Programing:
 02/2005 WW Implementation
@@ -3918,34 +3851,6 @@ void  realCoordTriHQ(double * x,   const double *XY, const double *u )
     x[1] = (1.0 - u[0] - u[1])*XY[0] +  u[0]*XY[1] + u[1]* XY[2]; 
     x[1] = (1.0 - u[0] - u[1])*XY[6] +  u[0]*XY[7] + u[1]* XY[8]; 
 }
-
-
-
-/***************************************************************************
-   ROCKFLOW - Funktion:  ShapeFunctionEdge
-
-   Aufgabe:
-        Compute the shape function for numerical intergral of edge of quadratic 
-   element. 
-   Formalparameter:
-           E: 
-             const int index      : 0, 1, 2
-             const  double eta    : Local coordinate 
-
-   Programming:
-   07/2003     WW        Erste Version
-
- **************************************************************************/
-double ShapeFunctionEdge(const int index, const double eta)
-{
-   if(index==0) return 0.5*eta*(eta-1.0); 
-   else if(index==1) return 0.5*eta*(eta+1.0); 
-   else if(index==2) return 1.0-eta*eta;
-   return -1.0;
-}
-
-
-
 
 
 /***************************************************************************
@@ -4707,41 +4612,11 @@ void GradShapeFunctionPriHQ(double *dN, const double *x)
 
 
 
-//Constrcutor
 
 
 
 
 
-
-/*******************************************************************
-  the coefficients b(i), c(i), and d(i) are computed
-  for a cubic interpolating spline
-
-    s(x) = y(i) + b(i)*(x-x(i)) + c(i)*(x-x(i))**2 + d(i)*(x-x(i))**3
-
-    for  x(i) .le. x .le. x(i+1)
-
-  input..
-
-    n = the number of data points or knots (n.ge.2)
-    x = the abscissas of the knots in strictly increasing order
-    y = the ordinates of the knots
-
-  output..
-
-    b, c, d  = arrays of spline coefficients as defined above.
-
-  using  p  to denote differentiation,
-
-    y(i) = s(x(i))
-    b(i) = sp(x(i))
-    c(i) = spp(x(i))/2
-    d(i) = sppp(x(i))/6  (derivative from the right)
-
-  the accompanying function subprogram  seval  can be used
-  to evaluate the spline.
-*******************************************************************/
 
 
 

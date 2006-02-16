@@ -248,10 +248,10 @@ extern int MGradPhi3D_20N(double *vf, double r, double s, double t);
 
 
 extern void  realCoordTriHQ(double * x, const double *XY, const double *u );
-extern double ShapeFunctionEdge(const int index, const double eta);
 
 // Family of  element interpolation. WW
 extern void ShapeFunctionLine(double *N1, const double *u);
+extern void ShapeFunctionLineHQ(double *N1, const double *u);
 extern void SamplePointTriHQ(const int nsample, double* SPoints);
 extern void SamplePointTet5(const int nsample, double* SPoints);
 extern void SamplePointTet15(const int nsample, double* SPoints);

@@ -403,16 +403,7 @@ Programing:
 **************************************************************************/
 bool FEMRead(string file_base_name)
 {
-  bool quad=false;
-  CRFProcess* m_pcs = NULL;
-  for(int i=0;i<(int)pcs_vector.size();i++){
-    m_pcs = pcs_vector[i];
-	if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
-	{
-       quad=true;
-       break;
-	}
-  }
+ 
   //----------------------------------------------------------------------
   FEMDeleteAll();  
   //----------------------------------------------------------------------
@@ -479,7 +470,6 @@ if(!msh_file_binary){
   {
      m_fem_msh = new CFEMesh();
      Read_RFI(msh_file_ascii, m_fem_msh);
-	 m_fem_msh->FillTransformMatrix();
      fem_msh_vector.push_back(m_fem_msh);
 	 msh_file_ascii.close();
 	 return true;
@@ -499,8 +489,6 @@ if(!msh_file_binary){
       if(line_string.find("#FEM_MSH")!=string::npos){ // keyword found
         m_fem_msh = new CFEMesh();
         position = m_fem_msh->ReadBIN(&msh_file_bin);
-        m_fem_msh->ConstructGrid(quad);
-        m_fem_msh->FillTransformMatrix();
         fem_msh_vector.push_back(m_fem_msh);
         msh_file_bin.seekg(position,ios::beg);
       } // keyword found
@@ -518,9 +506,6 @@ if(!msh_file_binary){
       if(line_string.find("#FEM_MSH")!=string::npos) { // keyword found
         m_fem_msh = new CFEMesh();
         position = m_fem_msh->Read(&msh_file_ascii);
-	    m_fem_msh->ConstructGrid(quad);
-	    //m_fem_msh->CalcCharacteristicELELength(); CMCD
-        m_fem_msh->FillTransformMatrix();
         fem_msh_vector.push_back(m_fem_msh);
         msh_file_ascii.seekg(position,ios::beg);
       } // keyword found
@@ -530,8 +515,6 @@ if(!msh_file_binary){
   //========================================================================
   return true;
 }
-
-
 /**************************************************************************
 MSHLib-Method: Read rfi file () 
 Task:
@@ -547,18 +530,6 @@ void Read_RFI(istream& msh_file,CFEMesh* m_msh)
   int End = 1;
   double x,y,z;
   string strbuffer;
-
-  bool quad=false;
-  CRFProcess* m_pcs = NULL;
-  int no_processes = (int)pcs_vector.size();
-  for(i=0;i<no_processes;i++){
-    m_pcs = pcs_vector[i];
-	if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
-	{
-       quad=true;
-       break;
-	}
-  }
 
   CNode* node = NULL;
   CElem* elem = NULL;
@@ -582,11 +553,34 @@ void Read_RFI(istream& msh_file,CFEMesh* m_msh)
 	}
     End =0;
   }
-  //----------------------------------------------------------------------
-  m_msh->ConstructGrid(quad);
 }
 
 
+/**************************************************************************
+FEMLib-Method: 
+Task:
+Programing:
+02/2006 WW Implementation
+**************************************************************************/
+void CompleteMesh()
+{
+   int i;
+   bool quad=false;
+   CRFProcess* m_pcs = NULL;
+   for(i=0;i<(int)pcs_vector.size();i++){
+     m_pcs = pcs_vector[i];
+     if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
+     {
+       quad=true;
+       break;
+     }
+   }
+   for(i=0;i<(int)fem_msh_vector.size(); i++)
+   {
+      fem_msh_vector[i]->ConstructGrid(quad);
+      fem_msh_vector[i]->FillTransformMatrix();
+   }      
+}
 /**************************************************************************
 FEMLib-Method:
 Task: Master write functionn

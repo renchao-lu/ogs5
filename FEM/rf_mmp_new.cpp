@@ -1577,7 +1577,8 @@ double CMediumProperties::PermeabilitySaturationFunction(const double Saturation
     case 0:  // k = f(x) user-defined function
       permeability_saturation = GetCurveValue((int)permeability_saturation_model_values[phase],0,saturation,&gueltig);  //CMCD permeability_saturation_model_values[phase]
      break;
-    case 1:  // linear function
+    case 1:  // constant WW. //linear function
+      return 1.0;    
       break;
     case 21:  // linear function from ! liquid saturation
         if (saturation > (saturation_max[phase] - MKleinsteZahl))

@@ -13,7 +13,6 @@
 using namespace std;
 // MSH
 #include "prototyp.h"
-//#include "rf_pcs.h"
 
 //#include "matrix_class.h"
 
@@ -33,7 +32,7 @@ namespace FiniteElement{
 class CElement
 {
   public:
-	 CElement (const int CoordFlag, const int order=1);
+	 CElement (int CoordFlag, const int order=1);
      virtual ~CElement ();
      //     
      virtual void ConfigNumerics(const int EleType);
@@ -53,6 +52,9 @@ class CElement
      virtual void RealCoordinates(double *realXYZ);
 	 // Compute the unit coordinates from known unit coordinates
      virtual void UnitCoordinates(double *realXYZ);
+	 // For axisymmetrical problems   
+     void CalculateRadius();
+     //
 	 void setUnitCoordinates(double* u) 
 	    { for(int i=0; i<3; i++) unit[i] = u[i];    }
 
@@ -73,11 +75,6 @@ class CElement
      bool isTemperatureCoupling() const {return T_Flag;}
      bool isFluidPressureCoupling() const {return F_Flag;}
      int isDeformationCoupling() const {return D_Flag;}
-     // Set coupling information
-     void ConfigureCoupling(CRFProcess* pcs, const int *Shift, bool dyn=false);
-
-     // Will be removed when all cel_fem:* are removed is ready
-     void ComputeStrainCouplingMatrix(const int compIndex, double *coupling_matrix_u);
 
      // Interpolate Gauss values
      double interpolate (double *nodalVal, const int order =1) const;
@@ -90,14 +87,15 @@ class CElement
 
    protected:    
      CElem* MeshElement; 
-    // Coordinate indicator
-	// 10:  X component only
-	// 11: Y component only
-	// 12: Z component only
-	// 20:  X, Y component
-	// 22:  X, Z component
-	// 32:  X, Y, Z component
-    int coordinate_system;
+     // Coordinate indicator
+     // 10:  X component only
+     // 11: Y component only
+     // 12: Z component only
+     // 20:  X, Y component
+     // 22:  X, Z component
+     // 32:  X, Y, Z component
+     int coordinate_system;
+     bool axisymmetry; 
      // Order of shape functions
      // Displacement, 2. Others, 1. Default, 1
      int Order;          
@@ -142,14 +140,14 @@ class CElement
      int nNodes;
      int nnodes;
      int nnodesHQ;
-     double time_unit_factor; 
+     double time_unit_factor;
+     double Radius; // For axisymmetrical problems
      long nodes[20];
      long eqs_number[20];
      double dShapefct[27]; // Auxullary 
      double X[20];
      double Y[20];
-     double Z[20];
-	 
+     double Z[20];	 
 	 double node_val[20];
 	 double dbuff[20];
 };

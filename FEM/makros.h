@@ -26,9 +26,9 @@
 
 
 /* ROCKFLOW-Version */
-#define ROCKFLOW_VERSION    "4.2.22"
+#define ROCKFLOW_VERSION    "4.3.02"
 #define RF_SHELL_VERSION    "4.2.22"
-#define ROCKFLOW_DATE       "01.02.2006"
+#define ROCKFLOW_DATE       "09.02.2006"
 
 
 /* Definitionen von Makros zur Steuerung der bedingten Compilierung */
@@ -249,9 +249,8 @@
 #define noSX
 #define noMPI
 #define noOPEN_MP
-#define noMATRIX_M5 //PA raus
 // Temporary Makro for RandomWalk Trouble
-//#define RANDOM_WALK
+//TEST WW #define RANDOM_WALK
 /* Definitionen von Konstanten, die bei manchen Compilern benoetigt werden */
 #ifndef NULL
 #define NULL ((void *)0)

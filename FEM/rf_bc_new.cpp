@@ -28,7 +28,6 @@ extern void remove_white_space(string*);
 #include "tools.h"
 #include "rf_node.h"
 #include "rf_bc_new.h"
-extern int pcs_deformation;
 #include "rf_pcs.h"
 // MathLib
 #include "mathlib.h"
@@ -194,11 +193,6 @@ ios::pos_type CBoundaryCondition::Read(ifstream *bc_file)
 
         geo_type_name = "VOLUME";
         geo_type = 3;
-      }
-       if(sub_string.find("MATERIAL_DOMAIN")!=string::npos) {//WW
-        geo_type_name = "MATERIAL_DOMAIN";
-		in >> geo_type;
-		in.clear();
       }
     }
     //....................................................................
@@ -939,6 +933,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
     //OK if(m_bc->pcs_type_name.compare(pcs_type_name)==0){ //OK/SB 4108
     if((m_bc->pcs_type_name.compare(pcs_type_name)==0)&&(m_bc->pcs_pv_name.compare(pcs_pv_name)==0)){
         //................................................................
+        cont = false;
         if(m_bc->dis_type_name.compare("VARIABLE")==0){ //OK
           cont = true;
           CGLPoint* m_geo_point = NULL;
@@ -1023,9 +1018,9 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
           //..............................................................
           if(m_bc->dis_type_name.compare("CONSTANT")==0){
             if(m_msh){ //OK
-				if(m_polyline->type==100) //WW
+              if(m_polyline->type==100) //WW
                    m_msh->GetNodesOnArc(m_polyline,nodes_vector);
-				else
+              else
                    m_msh->GetNODOnPLY(m_polyline,nodes_vector);
               for(i=0;i<(long)nodes_vector.size();i++){
                 m_node_value = new CBoundaryConditionNode();
@@ -1043,15 +1038,15 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
                 nodes = GetNodesOnArc(number_of_nodes,m_polyline); //WW CC
               else
                 nodes = MSHGetNodesClose(&number_of_nodes,m_polyline);
-            for(i=0;i<number_of_nodes;i++){
-              m_node_value = new CBoundaryConditionNode();
-              m_node_value->msh_node_number = -1;
-              m_node_value->msh_node_number = nodes[i]+ShiftInNodeVector;
-              m_node_value->geo_node_number = nodes[i];
-              m_node_value->node_value = m_bc->geo_node_value;  //dis_prop[0];
-              m_node_value->CurveIndex = m_bc->CurveIndex;
-              group_vector.push_back(m_node_value);
-              bc_group_vector.push_back(m_bc); //OK
+              for(i=0;i<number_of_nodes;i++){
+                m_node_value = new CBoundaryConditionNode();
+                m_node_value->msh_node_number = -1;
+                m_node_value->msh_node_number = nodes[i]+ShiftInNodeVector;
+                m_node_value->geo_node_number = nodes[i];
+                m_node_value->node_value = m_bc->geo_node_value;  //dis_prop[0];
+                m_node_value->CurveIndex = m_bc->CurveIndex;
+                group_vector.push_back(m_node_value);
+                bc_group_vector.push_back(m_bc); //OK
               }
             }
           }
@@ -1276,7 +1271,7 @@ CBoundaryConditionsGroup* BCGetGroup(string pcs_type_name,string pcs_pv_name)
     m_bc_group = *p_bc_group;
     if((m_bc_group->pcs_type_name.compare(pcs_type_name)==0)&&\
        (m_bc_group->pcs_pv_name.compare(pcs_pv_name)==0))
-      return m_bc_group;
+        return m_bc_group;
     ++p_bc_group;
   }
   return NULL;

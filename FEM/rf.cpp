@@ -94,11 +94,13 @@ int main ( int argc, char *argv[] )
   /* Eingabe-Dateinamen ermitteln */
   if (argc>1) {
       dateiname = (char *) Malloc((int)strlen(argv[1])+1);
-      dateiname = StrDown(strcpy(dateiname,argv[1]));
+//WW      dateiname = StrDown(strcpy(dateiname,argv[1]));
+      dateiname = strcpy(dateiname,argv[1]);
       DisplayMsgLn(dateiname);
   }
   else {
-      dateiname = StrDown(ReadString());
+//WW      dateiname = StrDown(ReadString());
+      dateiname = ReadString();
   }
   DisplayMsgLn("");
   DisplayMsgLn("");

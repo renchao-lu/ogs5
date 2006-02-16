@@ -54,10 +54,10 @@ CFEMesh::CFEMesh(void)
   selected = false;
   no_msh_layer = 0;
   useQuadratic = false;
-  CrossSection=false;
   coordinate_system = 1;
+  axisymmetry=false; //WW
 #ifdef RANDOM_WALK
-  PT = new RandomWalk(); //PCH
+  PT = new RandomWalk(); //PCH  // Please make this flexible
 #endif
   no_msh_layer = 0; //OK
   min_edge_length = 1e-3; //OK
@@ -146,9 +146,8 @@ ios::pos_type CFEMesh::Read(ifstream *fem_file)
       continue;
     }
     //....................................................................
-    if(line_string.find("$CROSS_SECTION")!=string::npos) { // subkeyword found
-      //fem_file >> pcs_name>>ws; //WW
-      CrossSection=true;
+    if(line_string.find("$AXISYMMETRY")!=string::npos) { // subkeyword found
+      axisymmetry=true;
       continue;
     }
     //....................................................................
@@ -246,9 +245,11 @@ void CFEMesh::ConstructGrid( const bool quadratic)
       }
    }
   //----------------------------------------------------------------------
-#ifdef PARALLEL
+
+//TEST WW
+//#ifdef PARALLEL
   ConnectedNodes();
-#endif
+//#endif
   //----------------------------------------------------------------------
    // Compute neighbors and edges
    for(e=0; e<e_size; e++)
@@ -260,7 +261,7 @@ void CFEMesh::ConstructGrid( const bool quadratic)
        for(i=0; i<nnodes0; i++) // Nodes
          e_nodes0[i] = nod_vector[node_index_glb0[i]];  
        m0 = thisElem0->GetFacesNumber();
-	      // neighbors
+	   // neighbors
        for(i=0; i<m0; i++) // Faces
        {
           if(Neighbors0[i])
@@ -471,9 +472,9 @@ void CFEMesh::ConstructGrid( const bool quadratic)
               if(e==nod_vector[node_index_glb0[i]]
                          ->connected_elements[j])
               {
-                done = true;
-                break;
-              }
+                  done = true;
+                  break;
+			  }
             }
             if(!done)  
             nod_vector[node_index_glb0[i]]->connected_elements.push_back(e);
@@ -1077,91 +1078,6 @@ void CFEMesh::GetNODOnSFC_PLY(Surface*m_sfc,vector<long>&msh_nod_vector)
     p_ply++;
   }
 }
-
-/**************************************************************************
-MSHLib-Method: 
-Task: Get nodes on plane surface by comparing the area of polygon computed
-      by triangles, which are formed by node and the gravity center 
-      with edges of polygon, respectively  
-Programing:
-09/2004 WW Implementation
-04/2005 OK MSH
-last modification:
-**************************************************************************/
-/*
-void CFEMesh::GetNODOnSFC_PLY(Surface*m_sfc,vector<long>&msh_nod_vector)
-{
-  long i,j,k;
-  double gC[3],p1[3],p2[3];
-  double Area1, Area2;
-  double Tol = m_sfc->epsilon;
-  list<CGLPolyline*>::const_iterator p_ply;
-  // Init
-  msh_nod_vector.clear();
-  //----------------------------------------------------------------------
-  // Grativity center of SFC
-  m_sfc->CalcCenterPoint();
-  gC[0] = m_sfc->center_point[0];
-  gC[1] = m_sfc->center_point[1];
-  gC[2] = m_sfc->center_point[2];
-    //....................................................................
-    // Area of this polygon by the grativity center
-CGLPoint* m_pnt1 = NULL;
-CGLPoint* m_pnt2 = NULL;
-    Area1 = 0.0;
-    for(i=0; i<(long)m_sfc->polygon_point_vector.size(); i++)
-    { 
-m_pnt1 = m_sfc->polygon_point_vector[i];
-      p1[0] = m_pnt1->x;
-      p1[1] = m_pnt1->y;
-      p1[2] = m_pnt1->z;
-      if(i<(long)m_sfc->polygon_point_vector.size()-1)
-      {
-m_pnt2 = m_sfc->polygon_point_vector[i+1];
-        p2[0] = m_pnt2->x;
-        p2[1] = m_pnt2->y;
-        p2[2] = m_pnt2->z;
-      }
-      else
-      {
-m_pnt2 = m_sfc->polygon_point_vector[0];
-        p2[0] = m_pnt2->x;
-        p2[1] = m_pnt2->y;
-        p2[2] = m_pnt2->z;
-      }
-      //Area1 += fabs(MSHCalcTriangleArea3 (p1, gC, p2));
-      Area1 += fabs(ComputeDetTri(p1, gC, p2));
-    }
-Tol = Area1/100.;
-    //....................................................................
-    // Check nodes by comparing area 
-    for(j=0;j<(long)nod_vector.size();j++)
-    {        
-      Area2 = 0.0;
-      gC[0] = nod_vector[j]->X();
-      gC[1] = nod_vector[j]->Y();
-      gC[2] = nod_vector[j]->Z();
-    for(i=0; i<(long)m_sfc->polygon_point_vector.size();i++)
-      { 
-m_pnt1 = m_sfc->polygon_point_vector[i];
-      p1[0] = m_pnt1->x;
-      p1[1] = m_pnt1->y;
-      p1[2] = m_pnt1->z;
-        k = i+1;
-        if(i==(long)m_sfc->polygon_point_vector.size()-1)
-          k = 0;
-m_pnt2 = m_sfc->polygon_point_vector[k];
-        p2[0] = m_pnt2->x;
-        p2[1] = m_pnt2->y;
-        p2[2] = m_pnt2->z;
-        //Area2 += fabs(MSHCalcTriangleArea3 (p1, gC, p2));
-        Area2 += fabs(ComputeDetTri (p1, gC, p2));
-      }
-      if(fabs(Area1-Area2)<Tol) 
-        msh_nod_vector.push_back(j);
-    } 
-}
-*/
 
 /**************************************************************************
 MSHLib-Method: 
@@ -2664,16 +2580,16 @@ MSHLib-Method:
 Task:
 Programing:
 10/2005 OK Implementation
+02/2006 WW Ordering
 **************************************************************************/
 void CFEMesh::ConnectedNodes()
 {
-  int m;
-  int j,l;
+  int i, j,l, k, n;
   CNode* m_nod = NULL;
   CElem* m_ele = NULL;
-#define TestConnectedNodes
+#define noTestConnectedNodes
   //----------------------------------------------------------------------
-  for(long i=0;i<(long)nod_vector.size();i++){
+  for(i=0;i<(long)nod_vector.size();i++){
     m_nod = nod_vector[i];
     for(j=0;j<(int)m_nod->connected_elements.size();j++){
       m_ele = ele_vector[m_nod->connected_elements[j]];
@@ -2684,10 +2600,9 @@ void CFEMesh::ConnectedNodes()
   }
   //----------------------------------------------------------------------
   vector<long>aux_vector;
-  long k;
   bool flag;
   //......................................................................
-  for(long i=0;i<(long)nod_vector.size();i++){
+  for(i=0;i<(long)nod_vector.size();i++){
     m_nod = nod_vector[i];
     k = m_nod->connected_nodes[0];
     aux_vector.push_back(k);
@@ -2710,9 +2625,34 @@ void CFEMesh::ConnectedNodes()
     m_nod->connected_nodes = aux_vector;
     aux_vector.clear();
   }  
+
+  // Sorting. WW
+  for(i=0;i<(long)nod_vector.size();i++){//WW
+    m_nod = nod_vector[i];
+    j = (int)m_nod->connected_nodes.size();
+    for(k=0; k<j; k++)
+	{     
+       for(l=k; l<j; l++)
+       {
+          if(m_nod->connected_nodes[l]<m_nod->connected_nodes[k])
+          {
+             n = m_nod->connected_nodes[k];
+             m_nod->connected_nodes[k] = m_nod->connected_nodes[l];
+             m_nod->connected_nodes[l] = n;
+          }
+	   }     
+	}
+    
+//    for(k=0; k<j; k++)
+//      cout<<m_nod->connected_nodes[k]<<"  ";
+//	cout<<endl;
+
+
+    m_nod->m5_index.resize(j);
+  } 
   //----------------------------------------------------------------------
 #ifdef TestConnectedNodes
-  for(long i=0;i<(long)nod_vector.size();i++){
+  for(i=0;i<(long)nod_vector.size();i++){
     m_nod = nod_vector[i];
     cout << (int)m_nod->connected_nodes.size() << ": ";
     for(m=0;m<(int)m_nod->connected_nodes.size();m++){

@@ -7,12 +7,12 @@ endif
 
 
 #### Only temporarliy until random walk compiles on every platform
-
-ifdef NO_RANDOM_WALK
-CXX_FLAGS       += -URANDOM_WALK
-else
-CXX_FLAGS       += -DRANDOM_WALK
-endif
+## Commented by WW. This option is already defined in source file
+#ifdef NO_RANDOM_WALK
+#CXX_FLAGS       += -URANDOM_WALK
+#else
+#CXX_FLAGS       += -DRANDOM_WALK
+#endif
 
 
 include objects.mak

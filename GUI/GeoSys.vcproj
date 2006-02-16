@@ -1210,12 +1210,6 @@
 				RelativePath="..\Fem\cel_asm.h">
 			</File>
 			<File
-				RelativePath="..\Fem\cel_htm.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\cel_htm.h">
-			</File>
-			<File
 				RelativePath="..\Fem\cel_mmp.cpp">
 			</File>
 			<File
@@ -1256,12 +1250,6 @@
 			</File>
 			<File
 				RelativePath="..\Fem\cgs_ge.h">
-			</File>
-			<File
-				RelativePath="..\Fem\cgs_htm.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\cgs_htm.h">
 			</File>
 			<File
 				RelativePath="..\Fem\cgs_mmp.cpp">
@@ -1388,12 +1376,6 @@
 			</File>
 			<File
 				RelativePath="..\Fem\int_ge.h">
-			</File>
-			<File
-				RelativePath="..\Fem\int_htm.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\int_htm.h">
 			</File>
 			<File
 				RelativePath="..\Fem\int_mmp.cpp">

@@ -28,9 +28,6 @@ namespace Mesh_Group
 class CFEMesh
 {
  private:
-    long NodesNumber_Linear;
-    long NodesNumber_Quadratic;
-	int max_ele_dim; // For overland flow and channel flow only
 
     // Finite element objects
     friend class FiniteElement::CElement;  
@@ -38,8 +35,15 @@ class CFEMesh
     friend class FiniteElement::CFiniteElementVec; 
     friend class FiniteElement::ElementMatrix; 
     friend class FiniteElement::ElementMatrix_DM;     
+    // Process friends
+    friend class process::CRFProcessDeformation;
+    friend class ::CRFProcess;
+
+    long NodesNumber_Linear;
+    long NodesNumber_Quadratic;
+	int max_ele_dim; // For overland flow and channel flow only
     bool useQuadratic;
-    bool CrossSection;
+    bool axisymmetry;
     // Coordinate indicator
 	// 1:  X component only
 	// 12: Y component only
@@ -48,9 +52,6 @@ class CFEMesh
 	// 23:  X, Z component
 	// 3:  X, Y, Z component
     int coordinate_system;
-    // Process friends
-    friend class process::CRFProcessDeformation;
-    friend class ::CRFProcess;
  public:	 
     string pcs_name;
     string geo_name; //MB
@@ -94,6 +95,7 @@ class CFEMesh
 	int GetMaxElementDim() {return max_ele_dim;}
     void SwitchOnQuadraticNodes(bool quad) { useQuadratic = quad;}
     bool getOrder() const {return useQuadratic;}
+    bool isAxisymmetry() const {return axisymmetry;}
     // Get number of nodes
     long GetNodesNumber(const bool quadr)//CMCD int to long 
       {if(quadr) return NodesNumber_Quadratic; else return  NodesNumber_Linear;}

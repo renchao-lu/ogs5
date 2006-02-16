@@ -90,6 +90,8 @@
 #include "msh_mesh.h"
 extern CFEMesh* FEMGet(string);
 
+using Mesh_Group::CNode;
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -147,6 +149,12 @@ typedef struct
   }
 Modell2;
 
+typedef struct
+  {
+    long NumDif;              //dummy
+  }
+Modell5;
+
 void *M2CreateMatrix(long param1, long param2, long param3);
 void *M2DestroyMatrix(void);
 void M2ResizeMatrix(long dimension);
@@ -159,12 +167,22 @@ void M2MatVek(double *vektor, double *ergebnis);
 /*-----------------------------------------------------------------------
  * JAD format Modell 5
  * */
+int M5Inc(long i, long j, double aij_inc);
+double M5Get(long i, long j);
+int M5Set(long i, long j, double e_val);
 void M5MatVek( double* b, double* erg);
+void M5InitMatrix(void);
+void *M5DestroyMatrix(void);
+
+//void M5CreateMatrix(void);
+void *M5CreateMatrix(long param1, long param2, long param3);
+
+
 void insertionSort1_des(int numbers[],int numbers1[], int array_size);
 void transM2toM5(void);
 int *jd_ptr1, *jd_ptr2, *jd_ptr, *jd_ptrf, *col_ind;
 double *temp_ergebnis,*jdiag;
-int count, jd_ptr_max;
+int m_count, jd_ptr_max, Dim_L;
 /*-----------------------------------------------------------------------
  * ITPACKV format Modell 6
  * */
@@ -410,14 +428,14 @@ int MXSetFunctionPointers(int type)
       MXCopyToAMG1R5Structure = M34CopyToAMG1R5Structure;
       break;
     case 5:
-      MXCreateMatrix = M2CreateMatrix;
-      MXDestroyMatrix = M2DestroyMatrix;
+      MXCreateMatrix = M5CreateMatrix;
+      MXDestroyMatrix = M5DestroyMatrix;
       MXResizeMatrix = M2ResizeMatrix;
-      MXInitMatrix = M2InitMatrix;
-      MXSet = M2Set;
-      MXInc = M2Inc;
+      MXInitMatrix = M5InitMatrix;
+      MXSet = M5Set;
+      MXInc = M5Inc;  //M2Inc;
       MXMul = M2Mul;
-      MXGet = M2Get;
+      MXGet = M5Get;
       MXMatVek = M5MatVek;
       MXMatTVek = M2MatTVek;
       MXVorkond = M2Vorkond;
@@ -649,36 +667,6 @@ void *M34CreateMatrix(long param1, long param2, long param3)
   return (void *) w;                   /* Die ILU-Pointer sind auch schon initialisiert */
 }
 
-/**** Modell 5 ************************************************************/
-void *M5CreateMatrix(long param1, long param2, long param3)
-{
-  static Modell2 *w;
-  static long i;
-
-#ifdef ERROR_CONTROL
-  if (param1 < 0)
-    MX_Exit("M2CreateMatrix", 0);
-#endif
-
-  param3 = 0;
-  w = (Modell2 *) Malloc(sizeof(Modell2));
-  MXSetMatrixPointer((void *) w);
-  w -> zeile = (M2_Zeile *) Malloc(param1 * sizeof(M2_Zeile));
-  for (i = 0; i < param1; i++)
-    {
-      Zeil2(i).index = (long *) Malloc(sp2_start * sizeof(long));
-      Zeil2(i).wert  = (double *) Malloc(sp2_start * sizeof(double));
-      Zeil2(i).max_anz = sp2_start;
-      Zeil2(i).anz = 0;
-      Zeil2(i).min_col = i;
-      Zeil2(i).max_col = i;
-    }
-  dim = w -> max_size = param1;
-  matrix_type = param2;
-  w -> NumDif = 0;
-  return (void *) w;
-}
-
 /*************************************************************************
  ROCKFLOW - Funktion: MxDestroyMatrix
 
@@ -806,6 +794,22 @@ void *M34DestroyMatrix(void)
   wurzel = Free(w);
   return NULL;
 }
+
+
+/**** Modell 5 ************************************************************/
+//WW/PA 08/02/2006
+void *M5DestroyMatrix(void)
+{
+     free(jd_ptr1); 
+     free(jd_ptr2);
+     free(jd_ptr);
+     free(jd_ptrf);
+	 free(temp_ergebnis);
+     free(col_ind);
+     free(jdiag);
+	 return (void*) 1;
+}
+
 
 /*************************************************************************
  ROCKFLOW - Funktion: M#ResizeMatrix
@@ -965,6 +969,19 @@ void M34InitMatrix(void)
     }
   w -> stat = 0;
 }
+
+
+/**** Modell 5 ************************************************************/
+//WW/PA 08/02/2006
+void M5InitMatrix(void)
+{
+
+  long k;
+  for (k = 0; k < m_count; k++) 
+      jdiag[k] = 0.0;
+}
+
+
 /**************************************************************************/
 
 /* ROCKFLOW - Funktion: M#Set
@@ -1412,6 +1429,71 @@ double M34Get(long i1, long k1)
     }
   return 0.0;                          /* Element ist nicht vorhanden */
 }
+//WW/PA 08/02/2006
+double M5Get(long i, long j)
+{
+  long k,dim1;
+  long ii, jj;  
+
+  CFEMesh* m_msh = NULL;
+  CNode *m_nod_i = NULL;
+  CNode *m_nod_j = NULL;
+  m_msh = FEMGet("GROUNDWATER_FLOW");
+  dim1 = m_msh->NodesInUsage();
+
+#ifdef ERROR_CONTROL
+  if ((i >= dim1) || (j >= dim1) || (i < 0) || (j < 0))
+    MX_Exit("M5Get", 2);
+#endif
+
+  ii = m_msh->Eqs2Global_NodeIndex[i];       
+  jj = m_msh->Eqs2Global_NodeIndex[j]; 
+  m_nod_i = m_msh->nod_vector[ii];
+  //  
+  for(k=0; k<(int)m_nod_i->connected_nodes.size(); k++)
+  {
+     if(m_nod_i->connected_nodes[k]==jj)
+	 {          
+		return  jdiag[m_nod_i->m5_index[k]];
+        break;
+	 }
+  }   
+
+  return 0.0;                          /* Kein Eintrag gefunden */
+}
+
+//WW/PA 08/02/2006
+int M5Set(long i, long j, double e_val)
+{
+  long k, dim1;
+  long ii, jj;  
+
+  CFEMesh* m_msh = NULL;
+  CNode *m_nod_i = NULL;
+  CNode *m_nod_j = NULL;
+  m_msh = FEMGet("GROUNDWATER_FLOW");
+  dim1 = m_msh->NodesInUsage();
+
+#ifdef ERROR_CONTROL
+  if ((i >= dim1) || (j >= dim1) || (i < 0) || (j < 0))
+    MX_Exit("M5Get", 2);
+#endif
+
+  ii = m_msh->Eqs2Global_NodeIndex[i];       
+  jj = m_msh->Eqs2Global_NodeIndex[j]; 
+  m_nod_i = m_msh->nod_vector[ii];
+  //  
+  for(k=0; k<(int)m_nod_i->connected_nodes.size(); k++)
+  {
+     if(m_nod_i->connected_nodes[k]==jj)
+	 {          
+		jdiag[m_nod_i->m5_index[k]] = e_val;
+        break;
+	 }
+  }   
+
+  return 0;                          /* Kein Eintrag gefunden */
+}
 
 /*************************************************************************
  ROCKFLOW - Funktion: MxCopyToAMG1R5Structure
@@ -1608,75 +1690,127 @@ void M1MatVek(double *vektor, double *ergebnis)
 }
 
 /****** Permutation when transforming from Modell2 to Modell 5 JAD ********/
-void transM2toM5(void)
+/**** Modell 2 ************************************************************/
+//WW/PA 08/02/2006
+int M5Inc(long i, long j, double aij_inc)
 {
-  Modell2 *w = (Modell2 *) wurzel;
-  int i,ii,count1;
-  long k; //OK
-/*------------------------------------------------------------*/
-  int   count = 0; //WW
-  jd_ptr_max = 0;
-#ifdef SX
-#pragma cdir nodep
+  long k, dim1;
+  long ii, jj;  
+
+  CFEMesh* m_msh = NULL;
+  CNode *m_nod_i = NULL;
+  CNode *m_nod_j = NULL;
+  m_msh = FEMGet("GROUNDWATER_FLOW");
+  dim1 = m_msh->NodesInUsage();
+
+#ifdef ERROR_CONTROL
+  if ((i >= dim1) || (j >= dim1) || (i < 0) || (j < 0))
+    MX_Exit("M5Inc", 2);
 #endif
-  for (k = 0; k < dim; k++) 
+  if (fabs(aij_inc)<MKleinsteZahl)
+    return 0;                          /* Abbruch bei Nullwert */
+
+  ii = m_msh->Eqs2Global_NodeIndex[i];       
+  jj = m_msh->Eqs2Global_NodeIndex[j]; 
+  m_nod_i = m_msh->nod_vector[ii];
+  //  
+  for(k=0; k<(int)m_nod_i->connected_nodes.size(); k++)
   {
-    if ( Zeil2(k).anz > jd_ptr_max )
-	{
-	  jd_ptr_max = Zeil2(k).anz;
-	}
-#ifdef SX
-#pragma cdir nodep
-#endif
-	for (i = 0; i < Zeil2(k).anz; i++)
-      count++;
-  }
-  //----------------------------------------------------------------------
+     if(m_nod_i->connected_nodes[k]==jj)
+	 {          
+		 jdiag[m_nod_i->m5_index[k]] += aij_inc; 
+         break;
+	 }
+  }   
+  return 1;
+}
+
+//WW/PA 08/02/2006
+void Write_Matrix_M5(double *b, ostream& os)
+{
+  long i,j , dim1; 
   CFEMesh* m_msh = NULL;
   m_msh = FEMGet("GROUNDWATER_FLOW");
-  Mesh_Group::CNode* m_nod = NULL;
-  long index;
-  for(k=0;k<dim;k++)
+
+#ifdef SX
+#pragma cdir nodep
+#endif
+  dim1 = m_msh->NodesInUsage();
+  for (i = 0; i < dim1; i++) 
   {
-    m_nod = m_msh->nod_vector[k];
-    for(i=0;i<(int)m_nod->connected_nodes.size();i++){ // anz
-      index = m_nod->connected_nodes[i]; // col_ind[]
-    }
+    for (j = 0; j < dim1; j++) 
+    {
+       if(fabs(MXGet(i,j))>MKleinsteZahl)
+          os<<i<<"  "<<j<<"  "<<MXGet(i,j)<<endl;
+	}  
+    if(fabs(b[i])>MKleinsteZahl) 
+     os<<i<<"  "<<dim1+1<<"  "<<b[i]<<endl;   // os<<endl;
   }
-  //----------------------------------------------------------------------
+}
+
+
+//void transM2toM5(void)
+//void M5CreateMatrix(void)
+//PA/WW 08/02/2006
+void *M5CreateMatrix(long param1, long param2, long param3)
+{
+  Modell5 *w = (Modell5 *) wurzel;
+  w = (Modell5 *) Malloc(sizeof(Modell5));
+  MXSetMatrixPointer((void *) w);
+  
+  matrix_type = param2;
+
+  int i,ii,count1;
+  long k, index, Size, dim1; //OK
 /*------------------------------------------------------------*/
-      jd_ptr1 = (int *)malloc(dim*sizeof(int));
-      jd_ptr2 = (int *)malloc(dim*sizeof(int));
+  jd_ptr_max = 0;
+  CFEMesh* m_msh = NULL;
+  m_msh = FEMGet("GROUNDWATER_FLOW");
+#ifdef SX
+#pragma cdir nodep
+#endif
+  dim1 = m_msh->NodesInUsage();
+  Dim_L = dim1;
+  for (k = 0; k < dim1; k++) 
+  {
+
+    index = m_msh->Eqs2Global_NodeIndex[k]; //      
+	Size = (int)m_msh->nod_vector[index]->connected_nodes.size(); //WW   
+    if ( Size > jd_ptr_max )
+	  jd_ptr_max = Size;
+#ifdef SX
+#pragma cdir nodep
+#endif
+	for (i = 0; i < Size; i++)
+      m_count++;
+  }
+/*------------------------------------------------------------*/
+      jd_ptr1 = (int *)malloc(dim1*sizeof(int));
+      jd_ptr2 = (int *)malloc(dim1*sizeof(int));
 /*------------------------------------------------------------*/	  
       jd_ptr = (int *)malloc(jd_ptr_max*sizeof(int));
       jd_ptrf = (int *)malloc((jd_ptr_max+1)*sizeof(int));
-	  temp_ergebnis = (double *)malloc(dim*sizeof(double));
-      col_ind = (int *)malloc(count*sizeof(int));
-      jdiag = (double *)malloc(count*sizeof(double));
+	  temp_ergebnis = (double *)malloc(dim1*sizeof(double));
+      col_ind = (int *)malloc(m_count*sizeof(int));
+      jdiag = (double *)malloc(m_count*sizeof(double));
 
 /*------------------------------------------------------------*/	  
 	  for (k = 0; k < jd_ptr_max; k++)
 		jd_ptr[k]=0;
 
-	  for (k = 0; k < dim; k++)
-		for (i = 0; i < Zeil2(k).anz; i++)
+	  for (k = 0; k < dim1; k++)
+	  {
+        index = m_msh->Eqs2Global_NodeIndex[k]; //      
+        Size = (int)m_msh->nod_vector[index]->connected_nodes.size(); //WW   
+		for (i = 0; i < Size; i++)
 		  jd_ptr[i]++;
-/*----------------------------------------------------------------------------------
- * for(long i=0;i<(long)nod_vector.size();i++){
- *     m_nod = nod_vector[i];
- *         cout << (int)m_nod->connected_nodes.size() << ": ";
- *             for(m=0;m<(int)m_nod->connected_nodes.size();m++){
- *                   cout << m_nod->connected_nodes[m] << " ";
- *                       }
- *                           cout << endl;
- *                             }
- *
- *-----------------------------------------------------------------------------------*/
-	  printf("In transM2toM5 dim=%ld\n",dim);
-	  for (k = 0; k < dim; k++)
+	  } 
+	  printf("In transM2toM5 dim=%ld\n",dim1);
+	  for (k = 0; k < dim1; k++)
 	  {
 //	  printf("Zeil2(%d).anz=%d\n",k,Zeil2(k).anz);
-		jd_ptr1[k]=Zeil2(k).anz;
+        index = m_msh->Eqs2Global_NodeIndex[k]; //      
+		jd_ptr1[k]= (int)m_msh->nod_vector[index]->connected_nodes.size(); //       Zeil2(k).anz;
 		jd_ptr2[k]=k;
 	  }
 
@@ -1686,7 +1820,7 @@ void transM2toM5(void)
 	  for(k=0;k<dim;k++)
 	  printf("jd_ptr2[%d]=%d\n",k,jd_ptr2[k]);
 */
-	  insertionSort1_des(jd_ptr1,jd_ptr2, dim);
+	  insertionSort1_des(jd_ptr1,jd_ptr2, dim1);
 /*
 	  printf("After insertionSort1_des\n");
 	  for(k=0;k<dim;k++)
@@ -1700,15 +1834,53 @@ void transM2toM5(void)
 	   for (k=0; k<jd_ptr_max; k++)
 		 jd_ptrf[k+1] = jd_ptrf[k] + jd_ptr[k] ;
 
+	   //
+/*
 	   count1 = 0;
 	   for (k = 0; k < jd_ptr_max; k++)
+	   {
 		for (i = 0; i < jd_ptr[k]; i++)
         {
 		  ii = jd_ptr2[i];
-         jdiag[count1] = Aik2(ii, k);
-	     col_ind[count1] = Ind2(ii, k);
+          jdiag[count1] = Aik2(ii, k);
+//	     col_ind[count1] = Ind2(ii, k);
+
+//TEST WW OUT
+         cout<<ii<<"  "<< col_ind[count1]<<"    ";
 		 count1++;
         }
+        cout<<endl;
+	   }
+
+
+//TEST WW OUT
+         cout<<"----------------------------"<<endl;
+
+*/
+
+
+       count1 = 0;
+	   for (k = 0; k < jd_ptr_max; k++)
+	   {
+          for (i = 0; i < jd_ptr[k]; i++)
+          {
+             // Row of equation system 
+             ii = jd_ptr2[i]; 
+             index =  m_msh->Eqs2Global_NodeIndex[ii];   
+			 col_ind[count1] =  m_msh->nod_vector[index]->connected_nodes[k];          
+			 m_msh->nod_vector[index]->m5_index[k]=count1;
+//TEST WW OUT
+//             cout<<ii<<"  "<< col_ind[count1]<<"    ";
+//             cout<<ii<<"    ";
+//////////////////////////////////
+
+             count1++;
+          }  
+//TEST WW
+//          cout<<endl;
+////////////////////
+       }
+   return (void*) w;
 }
 /*-------------------------------------------------------------*/
 #ifdef SX
@@ -1858,6 +2030,8 @@ void M2MatVek(double *vektor, double *ergebnis)
 }
 /*--------------------------------------------------------------------
  * Matrxi-Vektor Multiply with Jagged Diagonal Format (Modell 5)
+ PA Initial version
+ WW Reimplementation 09/02/2006
  ---------------------------------------------------------------------*/
 #ifdef SX
 void M5MatVek(double *restrict b, double *restrict erg)
@@ -1866,13 +2040,34 @@ void M5MatVek(double *b, double *erg)
 #endif
 {
 //  Modell2 *w = (Modell2 *) wurzel;
-  int i,j,col_len,num, dim1;
-
-    dim1 = ((long*)wurzel)[0];
+  int i, k, dim1;
+  long ii,jj, nod_c, counter; //WW
+  CFEMesh* m_msh = NULL; //WW
+  m_msh = FEMGet("GROUNDWATER_FLOW");
+  dim1 = m_msh->NodesInUsage();
 
 #ifdef SX
 #pragma cdir nodep
 #endif
+    for (i=0;i<dim1;i++)
+    	erg[i]=0.0;
+
+    // WW   //////
+    counter=0;
+    for (k = 0; k < jd_ptr_max; k++)
+    {
+       for (i = 0; i < jd_ptr[k]; i++)
+       {          
+          ii = jd_ptr2[i];  // Row index
+          nod_c=col_ind[counter];
+          jj=m_msh->nod_vector[nod_c]-> GetEquationIndex();
+		  erg[ii] += jdiag[counter]*b[jj];		  
+		  counter++;
+       }         
+    }
+    ///////////////////////////////////////////////// 
+
+/*
     for (i=0;i<dim1;i++)
     	temp_ergebnis[i]=0.0;
 
@@ -1890,7 +2085,7 @@ void M5MatVek(double *b, double *erg)
 #pragma cdir nodep
 #endif
 	  for (j=0; j<col_len; j++){
-		temp_ergebnis[j] = temp_ergebnis[j] + jdiag[num + j] * b[col_ind[num+j]];
+		temp_ergebnis[j] += jdiag[num + j] * b[col_ind[num+j]];
 	  }
 	}
 
@@ -1899,6 +2094,7 @@ void M5MatVek(double *b, double *erg)
 #endif
 	for(i=0; i<dim1; i++)
 	  erg[jd_ptr2[i]]=temp_ergebnis[i];
+*/
 }
 /*--------------------------------------------------------------------
  * Matrxi-Vektor Multiply with ITPACKV
@@ -2077,7 +2273,15 @@ void MXResiduum(double *x, double *b, double *ergebnis)
 #endif
 
   MXMatVek(x, ergebnis);
-  MAddSkalVektoren(ergebnis, -1., b, 1., ergebnis, dim);
+  
+  //WW
+  long Dimension = 0;  
+  if(matrix_type==5)
+     Dimension = Dim_L;
+  else
+     Dimension = dim;
+  //
+  MAddSkalVektoren(ergebnis, -1., b, 1., ergebnis, Dimension); //WW
 }
 
 /*************************************************************************
@@ -2100,7 +2304,7 @@ void MXResiduum(double *x, double *b, double *ergebnis)
                         der rechte Seite Eintrag skaliert
                         => keine boese Veraenderung an einer Stelle der Diagonale
   12/2001     C.Thorenz Diagonalwert = 0 abgefangen
-
+  02/2006      WW/PA M5 storage 
 *** Unterscheidung nach Modell innerhalb der Prozedur! ******************/
 void MXRandbed(long ir, double Ri, double *ReSei)
 {
@@ -2129,14 +2333,15 @@ void MXRandbed(long ir, double Ri, double *ReSei)
   if (fabs(diag) < DBL_MIN) 
     diag = MKleinsteZahl;
 
-
+//TEST WW
+/*
 #ifdef ERROR_CONTROL
   if ((ir >= dim) || (ir < 0))
     MX_Exit("MXRandbed", 2);
   if (ReSei == NULL)
     MX_Exit("MXRandbed", 3);
 #endif
-
+*/
   switch (matrix_type)
     {
     case 1:
@@ -2219,34 +2424,29 @@ void MXRandbed(long ir, double Ri, double *ReSei)
 
       }
       break;
-    case 5:
-      {
-        Modell2 *w = (Modell2 *) wurzel;
-        p = ir - w -> NumDif;
-        if (p < 0)
-          p = 0;
-        q = ir + w -> NumDif + 1;
-        if (q > dim)
-          q = dim;
-        for (i = p; i < q; i++)
-          if (i != ir)
-            {                          /* alle anderen Zeilen mit Spalte iR */
-              k = 0;
-              while (++k < Zeil2(i).anz)        /* Alle Eintraege (ausser Diag.) */
-                if (ir == Ind2(i, k))
-                  {
-                    ReSei[i] -= Aik2(i, k) * Ri;
-                    Aik2(i, k) = 0.0;
-                    goto End_Zeil5;
-                  }                    /*[i,iR] */
-            End_Zeil5:;
-            }
-
-        for (k = 0; k < Zeil2(ir).anz; k++)
-          Aik2(ir, k) = 0.0;           /* Rest der Zeile Null */
-        ReSei[ir] = Ri * diag;  /* Randwert einsetzen */
-        MXSet(ir, ir, diag);
-      }
+    case 5: //WW/PA  08/02/2006
+      {   
+       long dim1;
+       long ii, jj, jr;  
+       CFEMesh* m_msh = NULL;
+       CNode *m_nod_i = NULL;
+       CNode *m_nod_j = NULL;
+       m_msh = FEMGet("GROUNDWATER_FLOW");
+       dim1 = m_msh->NodesInUsage();
+       ii = m_msh->Eqs2Global_NodeIndex[ir];       
+       m_nod_i = m_msh->nod_vector[ii];
+       ReSei[ir] = Ri*MXGet(ir,ir);
+       for(k=0; k<(int)m_nod_i->connected_nodes.size(); k++) 
+       {
+           jj = m_nod_i->connected_nodes[k];
+           m_nod_j=m_msh->nod_vector[jj];
+           jr = m_nod_j->GetEquationIndex();
+           if(ir==jr) continue;
+           MXSet(ir,jr,0.0);
+           ReSei[jr] -= MXGet(jr,ir)*Ri;
+           MXSet(jr,ir,0.0);
+	   }
+	  }
       break;
     case 6:
       {
@@ -3002,10 +3202,6 @@ void M2Vorkond(int aufgabe, double *x, double *b)
                 exit(1);
               }
             }
-#ifdef MATRIX_M5
-transM2toM5();
-printf("In M2Vorkond: transM2toM5 \n");
-#endif
         }
       break;
     //--------------------------------------------------------------------

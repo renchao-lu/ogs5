@@ -949,9 +949,8 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
             m_node_value->node_distype = 0;
             m_node_value->node_value = node_value_vector[i];
             m_node_value->tim_type_name = m_st->tim_type_name; //OK
-            if(m_st->conditional){
+            if(m_st->conditional)
               m_node_value->msh_node_number_conditional = nodes_vector_conditional[i];
-            }
             test = test + m_node_value->node_value;
             // River
             if(dit_ply ==5)  {
@@ -991,8 +990,9 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
           m_node_value->node_distype = 0;
           m_node_value->node_value = 0;
           group_vector.push_back(m_node_value);
+          st_group_vector.push_back(m_st);  //Shoud be here. WW
         }
-        st_group_vector.push_back(m_st);
+//WW        st_group_vector.push_back(m_st);
       }
       
       //------------------------------------------------------------------
@@ -1071,8 +1071,8 @@ vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin()
                 node_value_vector[i] = node_value_vector[i] /2.0;
               }*/
           // WW  
-          if(max_dim==1) m_st->DomainIntegration(m_pcs, nodes_vector, node_value_vector);
-
+          if(m_msh->GetMaxElementDim()==2) // 2D 			  
+             m_st->DomainIntegration(m_pcs, nodes_vector, node_value_vector);
           for(i=0;i<nodes_vector_length;i++){
             m_node_value = new CNodeValue();
             m_node_value->msh_node_number = -1;
@@ -1202,13 +1202,13 @@ Task: Translate distributed Neumann boundary condition /source term on edges
       found on a polyline to nodes value for all kinds of element 
 Programming:
  07/2005 WW Re-Implementation
+ 12/2005 WW Axismmetry
 **************************************************************************/
 void CSourceTerm::EdgeIntegration(CRFProcess* m_pcs, vector<long>&nodes_on_ply, 
                                 vector<double>&node_value_vector)
 {
   long i, j, k, l;
   long this_number_of_nodes;
-  int problem_2d_type_dm = 0; //OK_ST 2 axisym
   int elemsCnode;
   int nedges, ii;
   vec<CNode*> e_nodes(3);    
@@ -1218,6 +1218,7 @@ void CSourceTerm::EdgeIntegration(CRFProcess* m_pcs, vector<long>&nodes_on_ply,
   double Weight = 0.0;
   double eta = 0.0;   
   double v1,v2, radius = 0.0;   
+  double Shfct[3];
   bool Const = false;
 
  
@@ -1300,11 +1301,12 @@ void CSourceTerm::EdgeIntegration(CRFProcess* m_pcs, vector<long>&nodes_on_ply,
             Jac = 0.5*edge->Length();
 			v1 = node_value_vector[G2L[e_nodes[0]->GetIndex()]]; 
             v2 = node_value_vector[G2L[e_nodes[1]->GetIndex()]];
-            if(Const)
+			if(Const&&(!msh->isAxisymmetry()))
             {
                 NVal[G2L[e_nodes[0]->GetIndex()]] += Jac*v1/3.0;
                 NVal[G2L[e_nodes[1]->GetIndex()]] += Jac*v1/3.0;  
                 NVal[G2L[e_nodes[2]->GetIndex()]] += 4.0*Jac*v1/3.0;  
+                
             }
             else
             {
@@ -1315,41 +1317,68 @@ void CSourceTerm::EdgeIntegration(CRFProcess* m_pcs, vector<long>&nodes_on_ply,
                     {
                          Weight = Jac*MXPGaussFkt(3, l);                                
                          eta = MXPGaussPkt(3, l);
+                         ShapeFunctionLineHQ(Shfct, &eta);
                          //Axisymmetical problem
-	                     if(problem_2d_type_dm==2) 
+						 if(msh->isAxisymmetry()) 
 		                 {
                             radius = 0.0;
-                            for(ii=0; ii<3; ii++) /* Gauss points */
-                               radius += ShapeFunctionEdge(ii, eta)
-							             *e_nodes[ii]->X();                             
-                               Weight *= 2.0*pai*radius;
+                            for(ii=0; ii<3; ii++) 
+                               radius += Shfct[ii]*e_nodes[ii]->X();                             
+                            Weight *= 2.0*pai*radius;
                          }
                          NVal[G2L[e_nodes[k]->GetIndex()]] += 
-							  0.5*(v1+v2+eta*(v2-v1))*ShapeFunctionEdge(k, eta)*Weight;         
+							  0.5*(v1+v2+eta*(v2-v1))*Shfct[k]*Weight;         
                      }                                           
                  }
             }
          }          
       }
-      else
+      else  // Linear
       {
          if(e_nodes[0]->GetMark()&&e_nodes[1]->GetMark())
 	     {
             Jac = 0.5*edge->Length();
 			v1 = node_value_vector[G2L[e_nodes[0]->GetIndex()]]; 
             v2 = node_value_vector[G2L[e_nodes[1]->GetIndex()]];
-            if(Const)
-            {
-                NVal[G2L[e_nodes[0]->GetIndex()]] += Jac*v1;
-                NVal[G2L[e_nodes[1]->GetIndex()]] += Jac*v1;  
-            }
-			else
+            if(!msh->isAxisymmetry())
 			{
-                NVal[G2L[e_nodes[0]->GetIndex()]]
-                    += Jac*(2.0*v1+v2)/3.0;
-                NVal[G2L[e_nodes[1]->GetIndex()]]
-                    += Jac*(v1+2.0*v2)/3.0;                        
+              if(Const)
+              {
+                  NVal[G2L[e_nodes[0]->GetIndex()]] += Jac*v1;
+                  NVal[G2L[e_nodes[1]->GetIndex()]] += Jac*v1;  
+              }
+              else
+              {
+                  NVal[G2L[e_nodes[0]->GetIndex()]]
+                      += Jac*(2.0*v1+v2)/3.0;
+                  NVal[G2L[e_nodes[1]->GetIndex()]]
+                      += Jac*(v1+2.0*v2)/3.0;                        
+              }
 			}
+			else // Axisymmetry
+			{
+
+               for(k=0; k<2; k++) // Three nodes 
+                {
+                    // Numerical integration   
+                    for(l=0; l<3; l++) // Gauss points 
+                    {
+                         Weight = Jac*MXPGaussFkt(3, l);                                
+                         eta = MXPGaussPkt(3, l);
+                         ShapeFunctionLine(Shfct, &eta);
+                         //Axisymmetical problem
+						 if(msh->isAxisymmetry()) 
+		                 {
+                            radius = 0.0;
+                            for(ii=0; ii<2; ii++) 
+                               radius += Shfct[ii]*e_nodes[ii]->X();                             
+                            Weight *= 2.0*pai*radius;
+                         }
+                         NVal[G2L[e_nodes[k]->GetIndex()]] += 
+							  0.5*(v1+v2+eta*(v2-v1))*Shfct[k]*Weight;         
+                     }                                           
+                 }
+			}// End of is (!axi)
 		 }           
       }      
   }
@@ -1370,7 +1399,7 @@ ROCKFLOW - Funktion: FaceIntegration
 Task: Translate distributed Neumann boundary condition /source term on faces
       found on a surface into nodes value for all kinds of element 
 Programming:
-08/2005 WW Re-Implementation
+ 08/2005 WW Re-Implementation
 11/2005 WW/OK Layer optimization
 **************************************************************************/
 void CSourceTerm::FaceIntegration(CRFProcess* m_pcs, vector<long>&nodes_on_sfc, 
@@ -1480,14 +1509,18 @@ void CSourceTerm::FaceIntegration(CRFProcess* m_pcs, vector<long>&nodes_on_sfc,
         }// while
      }//j
   }   
-  //----------------------------------------------------------------------
-  //
+
+
+  int Axisymm = 1; // ani-axisymmetry
   CFEMesh* msh = m_pcs->m_msh;
+  if(msh->isAxisymmetry()) Axisymm = -1; // Axisymmetry is true
   CElem* elem = NULL;
   CElem* face = new CElem(1);
-  CElement* fem = new CElement(msh->GetCoordinateFlag());
-  vec<CNode*> e_nodes(20);
-  vec<CElem*> e_neis(6);
+  CElement* fem = new CElement(Axisymm*msh->GetCoordinateFlag());
+  CNode* e_node = NULL;
+  CElem* e_nei = NULL;
+  //vec<CNode*> e_nodes(20);
+ // vec<CElem*> e_neis(6);
 
   face->SetFace();
   this_number_of_nodes = (long)nodes_on_sfc.size();
@@ -1507,27 +1540,27 @@ void CSourceTerm::FaceIntegration(CRFProcess* m_pcs, vector<long>&nodes_on_sfc,
      k = nodes_on_sfc[i];
      G2L[k] = i;
   }
+ 
 
   int count;
   double fac=1.0;
-  //......................................................................
   for (i = 0; i < (long)msh->ele_vector.size(); i++)
   {
       elem = msh->ele_vector[i];
       if(!elem->GetMark()) continue;
 	  nfaces = elem->GetFacesNumber();
-	  elem->GetNodes(e_nodes);
-	  elem->GetNeighbors(e_neis);
 	  elem->SetOrder(msh->getOrder());
       for(j=0; j<nfaces; j++)
       { 
+         e_nei =  elem->GetNeighbor(j);
 		 nfn = elem->GetElementFaceNodes(j, nodesFace);
          count=0;
          for(k=0; k<nfn; k++)
          { 
+            e_node = elem->GetNode(nodesFace[k]);
             for (l = 0; l <this_number_of_nodes; l++)
             {
-               if(*e_nodes[nodesFace[k]]==*msh->nod_vector[nodes_on_sfc[l]])
+               if(*e_node==*msh->nod_vector[nodes_on_sfc[l]])
                {
                    count++;
                    break;
@@ -1536,9 +1569,13 @@ void CSourceTerm::FaceIntegration(CRFProcess* m_pcs, vector<long>&nodes_on_sfc,
 		 }
          if(count!=nfn) continue; 
          for(k=0; k<nfn; k++)
-            nodesFVal[k] = node_value_vector[G2L[e_nodes[nodesFace[k]]->GetIndex()]];
+		 { 
+            e_node = elem->GetNode(nodesFace[k]);
+            nodesFVal[k] = node_value_vector[G2L[e_node->GetIndex()]];
+		 }
 		 fac = 1.0;
-		 if(!e_neis[j]->onBoundary()) fac = 0.5;
+		 if(elem->GetDimension()==e_nei->GetDimension()) // Not a surface face 
+	        fac = 0.5;
 		 face->SetFace(elem, j);
 		 face->SetOrder(msh->getOrder());
 		 face->ComputeVolume();
@@ -1546,7 +1583,10 @@ void CSourceTerm::FaceIntegration(CRFProcess* m_pcs, vector<long>&nodes_on_sfc,
 		 fem->ConfigElement(face, true);
 		 fem->FaceIntegration(nodesFVal);
          for(k=0; k<nfn; k++)
-            NVal[G2L[e_nodes[nodesFace[k]]->GetIndex()]] += fac*nodesFVal[k];      
+		 {
+            e_node = elem->GetNode(nodesFace[k]);
+            NVal[G2L[e_node->GetIndex()]] += fac*nodesFVal[k];      
+		 }
       }      
   }   
 
@@ -1557,8 +1597,6 @@ void CSourceTerm::FaceIntegration(CRFProcess* m_pcs, vector<long>&nodes_on_sfc,
 
   NVal.clear();
   G2L.clear();
-  e_nodes.resize(0);
-  e_neis.resize(0);
   delete fem;
   delete face;
 }
@@ -1580,13 +1618,14 @@ void CSourceTerm::DomainIntegration(CRFProcess* m_pcs, vector<long>&nodes_in_dom
 
   bool Const = false;
  
- if(dis_type_name.find("CONSTANT")!=string::npos)
+  if(dis_type_name.find("CONSTANT")!=string::npos)
      Const = true;
 
-
+  int Axisymm = 1; // ani-axisymmetry
   CFEMesh* msh = m_pcs->m_msh;
+  if(msh->isAxisymmetry()) Axisymm = -1; // Axisymmetry is true
   CElem* elem = NULL;
-  CElement* fem = new CElement(msh->GetCoordinateFlag());
+  CElement* fem = new CElement(Axisymm*msh->GetCoordinateFlag());
   vec<CNode*> e_nodes(20);
 
   this_number_of_nodes = (long)nodes_in_dom.size();

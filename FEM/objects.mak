@@ -57,7 +57,6 @@ loop_pcs.o\
 int_mtm2.o\
 int_mms.o\
 int_mmp.o\
-int_htm.o\
 int_ge.o\
 int_asm.o\
 int_agm.o\
@@ -81,7 +80,6 @@ cgs_mtm2.o\
 cgs_mpc.o\
 cgs_mms.o\
 cgs_mmp.o\
-cgs_htm.o\
 cgs_ge.o\
 cgs_asm.o\
 cgs_agm.o\
@@ -89,7 +87,6 @@ cel_mtm2.o\
 cel_mpc.o\
 cel_mms.o\
 cel_mmp.o\
-cel_htm.o\
 cel_asm.o\
 cel_agm.o\
 break.o\

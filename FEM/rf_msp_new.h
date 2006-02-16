@@ -41,7 +41,8 @@ class CSolidProperties
     Matrix *data_Plasticity;
     Matrix *data_Capacity;
     Matrix *data_Conductivity;
-
+    Matrix *data_Creep;
+    //
     int Density_mode;
     int Youngs_mode;
     int Capacity_mode;
@@ -50,14 +51,17 @@ class CSolidProperties
     double primary_variable[10]; //CMCD
     double primary_variable_t0[10];//CMCD
     double primary_variable_t1[10];//CMCD
+    // Creep property
+    // 1. Stationary Norton model
+    int Creep_mode;
+    //
+	bool axisymmetry;     
     
     int mode;//CMCD
-     
-	  // Swelling pressure
-	  int SwellingPressureType; 
-	  double Max_SwellingPressure; 
-
-
+	// Swelling pressure
+	int SwellingPressureType; 
+	double Max_SwellingPressure; 
+    //
     string CurveVariable_Conductivity;
     int CurveVariableType_Conductivity;
     // Secondary data 
@@ -119,8 +123,8 @@ class CSolidProperties
     double Heat_Capacity(double refence = 0.0);
     // Boiling model
     double Heat_Capacity(double temperature, const double latent_factor);
-	  int GetCapacityModel() const {return Capacity_mode;}
-	  bool CheckTemperature_in_PhaseChange(const double T0, const double T1);
+	int GetCapacityModel() const {return Capacity_mode;}
+	bool CheckTemperature_in_PhaseChange(const double T0, const double T1);
     double Enthalpy(double temperature, const double latent_factor );
     double Heat_Conductivity(double refence = 0.0);
     void HeatConductivityTensor(const int dim, double* tensor);
@@ -176,6 +180,9 @@ class CSolidProperties
     // 2.2 Cam-clay model
     void CalStress_and_TangentialMatrix_CC(const int GPiGPj,
           const ElementValue_DM *ele_val, double *dStrain,  Matrix *Dep, const int Update);
+
+    // Strain inrement by creep
+    void AddStain_by_Creep(const int ns, double *stress_n, double *dstrain);
 
     // Plasticity
     // 1. Drucker-Prager

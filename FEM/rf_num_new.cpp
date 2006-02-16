@@ -56,7 +56,7 @@ CNumerics::CNumerics(string pcs_type_name)
   nls_error_tolerance_local = 1.0e-10; //For element level
   nls_relaxation = 0.0;
   // cpl WW
-  cpl_iterations = 0;
+  cpl_iterations = 1; //OK
   cpl_tolerance = 1.0e-3;
   cpl_variable = "FLUX";
   // ELE
@@ -65,6 +65,7 @@ CNumerics::CNumerics(string pcs_type_name)
   ele_upwinding = 0;
   // Deformation
   GravityProfile = 0;
+  DynamicDamping = NULL; //WW
   if(pcs_type_name.compare("RICHARDS_FLOW")==0){
     ele_mass_lumping = 1;
     ele_upwinding = 0.5;

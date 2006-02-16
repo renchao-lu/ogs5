@@ -90,9 +90,49 @@ last modification:
 class CRFProcess {
   //----------------------------------------------------------------------
   // Properties
+  private:
+      void VariableStaticProblem();
+      void VariableDynamics();      
+  protected: //WW
+    friend class FiniteElement::CFiniteElementStd;
+    friend class FiniteElement::CFiniteElementVec;
+	CFiniteElementStd *fem; // Assembler  
+	// ELE
+    std::vector<FiniteElement::ElementMatrix*> Ele_Matrices;
+	// Storage type for all element matrices and vectors
+    // Case:  
+    // 0. Do not keep them in the memory
+    // 1. Keep them to vector Ele_Matrices
+    int Memory_Type;
+	//....................................................................
+    // TIM
+	friend class CTimeDiscretization;      
+    CTimeDiscretization *Tim;    //time
+	// Time unit factor 
+	double time_unit_factor; 
+    int NumDeactivated_SubDomains;
+	int Deactivated_SubDomain[20];
+    // Position of unkowns from different DOFs in the system equation  
+	//....................................................................
+	// OUT
+	// Element matrices output
+    bool Write_Matrix;
+    fstream *matrix_file;
+    // Write RHS from source or Neumann BC terms to file
+    // 0: Do nothing
+    // 1: Write
+    // 2: Read
+    int WriteSourceNBC_RHS;
+    // Write the current solutions/Read the previous solutions WW
+    // -1, default. Do nothing
+    // 1. Write
+    // 2. Read
+    int reload; 
+    inline void  WriteRHS_of_ST_NeumannBC(ostream& os=cout);  
+    friend bool PCSRead(string);
 	//....................................................................
 	// 1-GEO
-    public:
+  public:
     string geo_type; //OK
     string geo_type_name; //OK
 	//....................................................................
@@ -158,41 +198,6 @@ class CRFProcess {
 	// 12-NUM
 	//....................................................................
 	// 13-ELE
-  protected: //WW
-    friend class FiniteElement::CFiniteElementStd;
-    friend class FiniteElement::CFiniteElementVec;
-	CFiniteElementStd *fem; // Assembler  
-	// ELE
-    std::vector<FiniteElement::ElementMatrix*> Ele_Matrices;
-	// Storage type for all element matrices and vectors
-    // Case:  
-    // 0. Do not keep them in the memory
-    // 1. Keep them to vector Ele_Matrices
-    int Memory_Type;
-	//....................................................................
-    // TIM
-	friend class CTimeDiscretization;      
-    CTimeDiscretization *Tim;    //time
-	// Time unit factor 
-	double time_unit_factor; 
-    int NumDeactivated_SubDomains;
-	int Deactivated_SubDomain[20];
-    // Position of unkowns from different DOFs in the system equation  
-	//....................................................................
-	// OUT
-	// Element matrices output
-    bool Write_Matrix;
-    fstream *matrix_file;
-    // Write RHS from source or Neumann BC terms to file
-    // 0: Do nothing
-    // 1: Write
-    // 2: Read
-    int WriteSourceNBC_RHS;
-    // Read the previous solutions
-    bool reload;
-    inline void  WriteRHS_of_ST_NeumannBC(ostream& os=cout);  
-    friend bool PCSRead(string);
-  public:
 	int Shift[10];
     // Construction / destruction
     char pcs_name[MAX_ZEILE]; //string pcs_name;
@@ -360,12 +365,8 @@ class CRFProcess {
     void MMPCalcSecondaryVariablesRichards(int timelevel, bool update);
     void CalcSecondaryVariablesRichards(int timelevel, bool update); //OK
     bool non_linear; //OK/CMCD
-    private:
-      void VariableStaticProblem();
-      void VariableDynamics();      
-    public:
-      void SetNODFlux(); //OK
-      void AssembleParabolicEquationRHSVector(); //OK
+    void SetNODFlux(); //OK
+    void AssembleParabolicEquationRHSVector(); //OK
 }; 
 
 //========================================================================

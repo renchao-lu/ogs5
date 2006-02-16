@@ -23,7 +23,7 @@ Task:
 Programing:
 06/2005 WW Implementation
 **************************************************************************/
-CNode::CNode(const int Index, const double x, 
+CNode:: CNode(const int Index, const double x, 
             const double y, const double z):CCore(Index)
 {
   
@@ -34,14 +34,8 @@ CNode::CNode(const int Index, const double x,
    free_surface=-1; 
    interior_test=0;
    selected=0;
+   epsilon=0.0;
 }
-
-CNode::~CNode()
-{
-  if(connected_elements.size()>0) //TODO: clean Memory with delete!!
-    connected_elements.resize(0);
-}
-
 /**************************************************************************
 MSHLib-Method: 
 Task:

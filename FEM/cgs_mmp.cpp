@@ -656,19 +656,6 @@ rechts = rechts;
   sprintf(flux, "%s%i", source_volume_flow_name, phase + 1);
   //OK_ST IncorporateSourceSink(flux, rechts, NULL);
 }
-
-double MMPGetSourceMultiplicator(long i)
-{
-  /* Fuehrt zu Oszillationen bei kompressiblen Fluiden bei theta>0. */
-	return 1. / mfp_vector[activ_phase]->Density();
-}
-
-double MMPGetSinkMultiplicator(long i)
-{
-  i = i;
-  return -1.;
-}
-
 /**************************************************************************
  ROCKFLOW - Funktion: MMPMakeElementEntry
 

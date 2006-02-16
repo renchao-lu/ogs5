@@ -32,9 +32,10 @@ Task: Constructor of class CElement
 Programing:
 01/2005 WW Implementation
 01/2005 OK 1D case
+01/2006 WW Axisymmetry
 Last modified:
 **************************************************************************/
-CElement::CElement(const int CoordFlag, const int order)
+CElement::CElement(int CoordFlag, const int order)
         :MeshElement(NULL), Order(order),ele_dim(1), nGaussPoints(1),nGauss(1),
          ShapeFunction(NULL), ShapeFunctionHQ(NULL),
          GradShapeFunction(NULL),GradShapeFunctionHQ(NULL),
@@ -42,6 +43,14 @@ CElement::CElement(const int CoordFlag, const int order)
 {
     int i;
 	//
+    if(CoordFlag<0)  // Axisymmetry
+	{
+       CoordFlag *= -1;
+	   axisymmetry=true;
+	} 
+	else
+	   axisymmetry=false;
+    //
     dim = CoordFlag/10;
 	coordinate_system = CoordFlag;
     for(i=0; i<4; i++) unit[i] = 0.0;
@@ -122,11 +131,9 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
 	ConfigNumerics(MeshElement->GetElementType());
 	if (MeshElement->quadratic) nNodes = nnodesHQ;
 	else nNodes = nnodes;
-
     // Node indices    
     for(i=0; i<nNodes; i++)
        nodes[i] = MeshElement->nodes_index[i];
-
 	// Put coordinates of nodes to buffer to enhance the computation
     if(coordinate_system%10==2&&!FaceIntegration) // Z has number
 	{
@@ -165,7 +172,7 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
 						     *(MeshElement->nodes[i]->Y()-MeshElement->nodes[0]->Y())
 				           +(*MeshElement->tranform_tensor)(2,1)
 						     *(MeshElement->nodes[i]->Z()-MeshElement->nodes[0]->Z());
-		            Z[i] = MeshElement->nodes[i]->Z();        
+                    Z[i] =  MeshElement->nodes[i]->Z();
 	             }               
 			  }
 			  else
@@ -189,7 +196,24 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
 		   Z[i] = MeshElement->nodes[i]->Z();        
 	   }
     }
+
 }
+
+/**************************************************************************
+FEMLib-Method:
+Task: 
+Programing:
+06/2004 WW Implementation
+Last modified:
+**************************************************************************/
+void CElement::CalculateRadius()
+{
+   Radius = 0.0;
+   ComputeShapefct(1);
+   for(int i=0; i<nnodes; i++)
+	   Radius += shapefct[i]*X[i];
+}
+
 
 /**************************************************************************
 FEMLib-Method:
@@ -356,9 +380,8 @@ double CElement::elemnt_average (const int idx, CRFProcess* m_pcs, const int ord
         The determinate of Jacobian
  Programmaenderungen:
    06/2006     WW
-02/2005 OK case 1, line elements                                                                          
-06/2005 PCH Coordinate conversion for 2D element in 3D implemented 
-		by calling the existing function.
+   02/2005 OK case 1, line elements                                                                          
+   01/2006 WW Axisymmtry                                                                         
 **************************************************************************/
 double CElement::computeJacobian(const int order)
 {
@@ -366,9 +389,10 @@ double CElement::computeJacobian(const int order)
 	int nodes_number = nnodes;
 	double DetJac = 0.0;
     double *dN = dshapefct;
-    double L;
-    double dx,dy,dz;
-    dx=dy=dz=0;
+//    double *sh = shapefct;
+//    double L;
+    double dx,dy;
+    dx=dy=0.0;
 
     if(order==2) //OK4104
     {   
@@ -385,13 +409,20 @@ double CElement::computeJacobian(const int order)
     switch(ele_dim)
 	{
         case 1: 
-          dx = X[1]-X[0];
-          dy = Y[1]-Y[0];
-          dz = Z[1]-Z[0];
-          L = sqrt(dx*dx+dy*dy+dz*dz);
-          Jacobian[0] = L/2.; // L/2
-          invJacobian[0] = 2./L; // 2/L
+          dx = X[0]-X[1];
+          //dy = Y[1]-Y[0];
+          // We assume that line element always lies in 2D space
+          // If it is in 3D, a transform of 3D to 2D is applied  
+          //dz = Z[1]-Z[0];
+          //L = sqrt(dx*dx+dy*dy); //sqrt(dx*dx+dy*dy+dz*dz);
+          Jacobian[0] = 0.5*dx;  //L/2.; // L/2
+          invJacobian[0] = 2.0/dx;  //2./L; // 2/L
           DetJac = Jacobian[0];
+		  if(axisymmetry)
+          {
+             CalculateRadius();
+             DetJac *= 2.0*pai*Radius;             
+		  }
           break;
         case 2:
 
@@ -415,6 +446,13 @@ double CElement::computeJacobian(const int order)
 		  invJacobian[3] = Jacobian[0];
           for(i=0; i<ele_dim*ele_dim; i++)
              invJacobian[i] /= DetJac;
+          //
+		  if(axisymmetry)
+          {
+             
+             CalculateRadius();
+             DetJac *= 2.0*pai*Radius;             
+		  }
 		  break;
 		case 3:
  
@@ -714,6 +752,7 @@ void CElement::ComputeShapefct(const int order)
  
    Programming:
    06/2004     WW        Erste Version
+   10/2005     WW        2D element transform in 3D space
 **************************************************************************/
 void CElement::ComputeGradShapefct(const int order)
 {
@@ -734,8 +773,8 @@ void CElement::ComputeGradShapefct(const int order)
        for(j=0; j<ele_dim; j++)
 	   {
           for(k=0; k<ele_dim; k++)
-              dN[j*nNodes+i] += invJacobian[j*ele_dim+k]*Var[k];
-       }
+              dN[j*nNodes+i] += invJacobian[j*ele_dim+k]*Var[k]; 
+	   }
 	}
     // 1D element in 3D
     if(dim==3&&ele_dim==1)
@@ -758,7 +797,7 @@ void CElement::ComputeGradShapefct(const int order)
 		  { 
              dN[j*nNodes+i] = 0.0;
              for(k=0; k<ele_dim; k++)          
-			    dN[j*nNodes+i] += (*MeshElement->tranform_tensor)(j,k)*dShapefct[k*nNodes+i];   
+			    dN[j*nNodes+i] += (*MeshElement->tranform_tensor)(j, k)*dShapefct[k*nNodes+i];   
 		  }
 	   }
 	}
@@ -777,153 +816,6 @@ void CElement::SetCenterGP()
     unit[0] = unit[1] = 1.0/3.0;
   else if(MeshElement->GetElementType()==5)
     unit[0] = unit[1] = unit[2] = 0.25;
-}
-
-/**************************************************************************
-   GeoSys - Function: ConfigureCoupling
-
-   Aufgabe:
-         Set coupling information for local fem calculation
-   Programmaenderungen:
-   01/2005   WW    Erste Version
-   
-**************************************************************************/
-void CElement::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bool dyn)
-{
-  int i;  
-
-
-  char pcsT; 
-  pcsT = pcs->pcs_type_name[0];
- if(pcs->pcs_type_name.find("GAS")!=string::npos)
-    pcsT = 'A';
-
-
-
-  if(D_Flag>0) 
-  {  
-     if(dyn)
-     {        
-        Idx_dm0[0] = pcs->GetNodeValueIndex("ACCELERATION_X1");
-        Idx_dm0[1] = pcs->GetNodeValueIndex("ACCELERATION_Y1");
-     }
-     else
-     {
-       Idx_dm0[0] = pcs->GetNodeValueIndex("DISPLACEMENT_X1");
-       Idx_dm0[1] = pcs->GetNodeValueIndex("DISPLACEMENT_Y1");
-     }
-     Idx_dm1[0] = Idx_dm0[0]+1;
-     Idx_dm1[1] = Idx_dm0[1]+1; 
-     //     if(problem_dimension_dm==3)
-     if(dim==3)
-     {
-        if(dyn)       
-          Idx_dm0[2] = pcs->GetNodeValueIndex("ACCELERATION_Z1");
-        else
-          Idx_dm0[2] = pcs->GetNodeValueIndex("DISPLACEMENT_Z1");
-        Idx_dm1[2] = Idx_dm0[2]+1;
-     }  
-
-     for(i=0; i<4; i++)
-         NodeShift[i] = Shift[i];
-  }
-
-  switch(pcsT){
-    default:
-      if(T_Flag)
-      {
-         idx_c0 = pcs->GetNodeValueIndex("TEMPERATURE1");
-         idx_c1 = idx_c0+1;           
-      }
-      break;
-    case 'L': // Liquid flow
-      if(T_Flag)
-      {
-         pcs = PCSGet("HEAT_TRANSPORT");
-         idx_c0 = pcs->GetNodeValueIndex("TEMPERATURE1");
-         idx_c1 = idx_c0+1;           
-      }
-      break;
-    case 'U': // Unconfined flow
-      break;
-    case 'G': // Groundwater flow
-      if(T_Flag)
-      {
-         pcs = PCSGet("HEAT_TRANSPORT");
-         idx_c0 = pcs->GetNodeValueIndex("TEMPERATURE1");
-         idx_c1 = idx_c0+1;           
-      }
-      break;
-    case 'T': // Two-phase flow
-      break;
-    case 'C': // Componental flow
-      break;
-    case 'H': // heat transport
-      //SB CMCD this needs to be fixed
-      pcs = PCSGet("GROUNDWATER_FLOW"); 
-      if(pcs == NULL) 
-        pcs = PCSGet("LIQUID_FLOW"); 
-      if(pcs == NULL) 
-        pcs = PCSGet("RICHARDS_FLOW"); //OK
-      idx_c0 = pcs->GetNodeValueIndex("PRESSURE1");
-      idx_c1 = idx_c0+1;
-      break;
-    case 'M': // Mass transport
-      if(T_Flag)
-      {
-         pcs = PCSGet("HEAT_TRANSPORT");
-         idx_c0 = pcs->GetNodeValueIndex("TEMPERATURE1");
-         idx_c1 = idx_c0+1;           
-      }
-      break;
-    case 'O': // Liquid flow
-      break;
-    case 'R': // Richards flow
-      if(T_Flag) //if(PCSGet("HEAT_TRANSPORT"))
-      {
-         idx_c0 = pcs->GetNodeValueIndex("TEMPERATURE1");
-         idx_c1 = idx_c0+1;           
-      }
-      break;
-    case 'A': //Gas flow
-      break;
-    }
-}
-
-
-
-/***************************************************************************
-   GeoSys - Funktion: 
-           CElement::ComputePUCouplingMatrix
-
-   Formalparameter:
-           E: 
-              const int compIndex:  0->x
-                                    1->y
-                                    2->z
-              double *coupling_matrix_u 
-   Programming:
-   10/2004     WW        Erste Version
-**************************************************************************/
-void CElement::ComputeStrainCouplingMatrix(const int compIndex, double *coupling_matrix_u)
-{
-  int k,l,kl, gp, gp_r, gp_s, gp_t;
-  double fkt;
-  // Loop over Gauss points
-  for (gp = 0; gp < nGaussPoints; gp++)
-  {
-      fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
-
-      ComputeGradShapefct(2);
-      ComputeShapefct(1);
-	  for (k=0;k<nnodes;k++) 
-      {        
-         for (l=0;l<nnodes;l++) {    
-            kl = (nnodes*k)+l;      
-            coupling_matrix_u[kl] += shapefct[k] * dshapefctHQ[nnodes*compIndex+l] * fkt;  
-         }
-     }
-  }
 }
 
 /************************************************************************** 

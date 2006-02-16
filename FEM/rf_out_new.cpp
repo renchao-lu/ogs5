@@ -32,6 +32,8 @@ using namespace std;
 #include "fem_ele_std.h"
 // GeoSys-MSHLib
 #include "msh_lib.h"
+// Specific outoup for deformation 
+#include "rf_msp_new.h"
 
 using Mesh_Group::CFEMesh;
 //==========================================================================
@@ -114,7 +116,7 @@ ios::pos_type COutput::Read(ifstream *out_file)
           new_subkeyword = true;
           break;
         }
-		    if(line_string.size()==0) 
+		if(line_string.size()==0) 
           break; //SB: empty line
         nod_value_vector.push_back(line_string);
       }
@@ -493,7 +495,8 @@ void OUTData(double time_current, const int time_step_number)
           else 
 		  {
             for(j=0;j<no_times;j++){
-              if(time_current>=m_out->time_vector[j]){
+              if((time_current>m_out->time_vector[j])
+                 || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl 
                 m_out->NODWriteDOMDataTEC();
                 m_out->ELEWriteDOMDataTEC();
                 m_out->time_vector.erase(m_out->time_vector.begin()+j); 
@@ -513,7 +516,8 @@ void OUTData(double time_current, const int time_step_number)
 		  else
 		  {
             for(j=0;j<no_times;j++){
-              if(time_current>=m_out->time_vector[j]){
+              if((time_current>m_out->time_vector[j])
+                 || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl
                 m_out->NODWritePLYDataTEC(j);
                 m_out->time_vector.erase(m_out->time_vector.begin()+j);
                 break;
@@ -546,10 +550,11 @@ void OUTData(double time_current, const int time_step_number)
             } 
 		    else{
               for(j=0;j<no_times;j++){
-                if(time_current>=m_out->time_vector[j]){
-                  m_out->NODWriteSFCDataTEC(j);
-                  m_out->time_vector.erase(m_out->time_vector.begin()+j);
-                  break;
+                if((time_current>m_out->time_vector[j]) 
+                   || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl                m_out->NODWriteSFCDataTEC(j);
+                    m_out->NODWriteSFCDataTEC(j);
+                    m_out->time_vector.erase(m_out->time_vector.begin()+j);
+                    break;
                 }
               }
             }
@@ -572,7 +577,8 @@ void OUTData(double time_current, const int time_step_number)
 		  else
 		  {
             for(j=0;j<no_times;j++){
-              if(time_current>=m_out->time_vector[j]){
+              if((time_current>m_out->time_vector[j])
+                 || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl 
                 m_out->WriteRFO(); //OK
                 m_out->time_vector.erase(m_out->time_vector.begin()+j);
 		        break;	 
@@ -1185,9 +1191,18 @@ Programing:
            Remove existing files
 12/2005 OK Mass transport specifics
 12/2005 OK VAR,MSH,PCS concept
+12/2005 WW Output stress invariants
 **************************************************************************/
 void COutput::NODWritePLYDataTEC(int number)
 {
+  int i;
+  CRFProcess* dm_pcs = NULL; //WW
+  for(i=0;i<(int)pcs_vector.size();i++){
+	if(pcs_vector[i]->pcs_type_name.find("DEFORMATION")!=string::npos){
+       dm_pcs = pcs_vector[i];
+       break;
+    }
+  }
   //----------------------------------------------------------------------
   // File handling
   //......................................................................
@@ -1242,12 +1257,35 @@ void COutput::NODWritePLYDataTEC(int number)
   for(k=0;k<no_variables;k++){
     tec_file << nod_value_vector[k] << " ";
   }
+  int ns = 4;
+  int stress_i[6], strain_i[6];
+  double ss[6];
+  if(dm_pcs)  //WW
+  {
+     tec_file<< " p_(1st_Invariant) "<<" q_(2nd_Invariant)  "<<" Effective_Strain";
+     stress_i[0] = dm_pcs->GetNodeValueIndex("STRESS_XX");      
+     stress_i[1] = dm_pcs->GetNodeValueIndex("STRESS_YY");      
+     stress_i[2] = dm_pcs->GetNodeValueIndex("STRESS_ZZ");      
+     stress_i[3] = dm_pcs->GetNodeValueIndex("STRESS_XY"); 
+     strain_i[0] = dm_pcs->GetNodeValueIndex("STRAIN_XX"); 
+     strain_i[1] = dm_pcs->GetNodeValueIndex("STRAIN_YY");
+     strain_i[2] = dm_pcs->GetNodeValueIndex("STRAIN_ZZ");
+     strain_i[3] = dm_pcs->GetNodeValueIndex("STRAIN_XY");
+	 if(max_dim==2) // 3D
+	 {
+       ns = 6;
+       stress_i[4] = dm_pcs->GetNodeValueIndex("STRESS_XZ");
+       stress_i[5] = dm_pcs->GetNodeValueIndex("STRESS_YZ");        
+       strain_i[4] = dm_pcs->GetNodeValueIndex("STRAIN_XZ");
+       strain_i[5] = dm_pcs->GetNodeValueIndex("STRAIN_YZ");
+	 }
+  }
   tec_file << endl;
   tec_file << "ZONE T=\"TIME=" << time << "\"" << endl; // , I=" << NodeListLength << ", J=1, K=1, F=POINT" << endl;
   //--------------------------------------------------------------------
   // Write data
   int nidx;
-  long j;
+  long j, gnode;
   //======================================================================
   // MSH
   CFEMesh* m_msh = GetMSH();
@@ -1261,21 +1299,29 @@ void COutput::NODWritePLYDataTEC(int number)
     double flux_sum = 0.0; //OK
     for(j=0;j<(long)nodes_vector.size();j++){
       tec_file << m_ply->sbuffer[j] << " ";
+      gnode = nodes_vector[m_ply->OrderedPoint[j]]; //WW
       for(k=0;k<no_variables;k++){
         m_pcs = PCSGet(nod_value_vector[k],bdummy);
         if(!m_pcs)
           cout << "Warning in COutput::NODWritePLYDataTEC - no PCS data" << endl;
         else
-        {
-          tec_file << m_pcs->GetNodeValue(nodes_vector[m_ply->OrderedPoint[j]], NodeIndex[k]) << " ";
-        }
+          tec_file << m_pcs->GetNodeValue(gnode, NodeIndex[k]) << " ";
         //................................................................
         if(nod_value_vector[k].compare("FLUX")==0)
-        {
           flux_sum += m_pcs->GetNodeValue(nodes_vector[m_ply->OrderedPoint[j]],NodeIndex[k]);
-        }
         //................................................................
       }
+      if(dm_pcs) //WW
+	  {
+           for(i=0;i<ns;i++)
+             ss[i] = dm_pcs->GetNodeValue(gnode,stress_i[i]);
+           tec_file<<-DeviatoricStress(ss)/3.0<<" ";
+           tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0)<<"  ";
+           for(i=0;i<ns;i++)
+             ss[i] = dm_pcs->GetNodeValue(gnode,strain_i[i]);
+           DeviatoricStress(ss);
+           tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0);        
+	  }
       tec_file << endl;
     }
     cout << "Flux averall: " << flux_sum << endl;
@@ -1307,9 +1353,18 @@ Programing:
 08/2004 OK Implementation
 08/2005 WW MultiMesh
 12/2005 OK VAR,MSH,PCS concept
+12/2005 WW Output stress invariants
 **************************************************************************/
 void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
 {
+  int k,i;
+  CRFProcess* dm_pcs = NULL;
+  for(i=0;i<(int)pcs_vector.size();i++){
+	if(pcs_vector[i]->pcs_type_name.find("DEFORMATION")!=string::npos){
+       dm_pcs = pcs_vector[i];
+       break;
+    }
+  }
   //----------------------------------------------------------------------
   // File handling
   //......................................................................
@@ -1347,7 +1402,6 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
   }
   //----------------------------------------------------------------------
   // NIDX for output variables
-  int k,i;
   CRFProcess* m_pcs = NULL;
   int no_variables = (int)nod_value_vector.size();
   vector<int>NodeIndex(no_variables);
@@ -1358,11 +1412,36 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
     string project_title_string = "Time curves in points"; //project_title;
     tec_file << "TITLE = \"" << project_title_string << "\"" << endl;
     tec_file << "VARIABLES = Time ";
-    for(k=0;k<no_variables;k++){
+    for(k=0;k<no_variables;k++)
       tec_file << nod_value_vector[k] << " ";
-    }
+    //
+    if(dm_pcs) //WW
+       tec_file<< " p_(1st_Invariant) "<<" q_(2nd_Invariant)  "<<" Effective_Strain";
     tec_file << endl;
     tec_file << "ZONE T=\"POINT=" << geo_name << "\"" << endl; //, I=" << anz_zeitschritte << ", J=1, K=1, F=POINT" << endl;
+  }
+  // For deformation
+  int ns = 4;
+  int stress_i[6], strain_i[6];
+  double ss[6];
+  if(dm_pcs) //WW
+  {
+     stress_i[0] = dm_pcs->GetNodeValueIndex("STRESS_XX");      
+     stress_i[1] = dm_pcs->GetNodeValueIndex("STRESS_YY");      
+     stress_i[2] = dm_pcs->GetNodeValueIndex("STRESS_ZZ");      
+     stress_i[3] = dm_pcs->GetNodeValueIndex("STRESS_XY"); 
+     strain_i[0] = dm_pcs->GetNodeValueIndex("STRAIN_XX"); 
+     strain_i[1] = dm_pcs->GetNodeValueIndex("STRAIN_YY");
+     strain_i[2] = dm_pcs->GetNodeValueIndex("STRAIN_ZZ");
+     strain_i[3] = dm_pcs->GetNodeValueIndex("STRAIN_XY");
+	 if(m_msh->GetCoordinateFlag()/10==3) // 3D
+	 {
+       ns = 6;
+       stress_i[4] = dm_pcs->GetNodeValueIndex("STRESS_XZ");
+       stress_i[5] = dm_pcs->GetNodeValueIndex("STRESS_YZ");        
+       strain_i[4] = dm_pcs->GetNodeValueIndex("STRAIN_XZ");
+       strain_i[5] = dm_pcs->GetNodeValueIndex("STRAIN_YZ");
+	 }
   }
   //--------------------------------------------------------------------
   // Write data
@@ -1404,6 +1483,17 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
     for(i=0;i<(int)nod_value_vector.size();i++){
       m_pcs = GetPCS(nod_value_vector[i]);
       tec_file << m_pcs->GetNodeValue(msh_node_number,NodeIndex[i]) << " ";
+    }
+    if(dm_pcs) //WW
+    {
+         for(i=0;i<ns;i++)
+           ss[i] = dm_pcs->GetNodeValue(msh_node_number,stress_i[i]);
+         tec_file<<-DeviatoricStress(ss)/3.0<<" ";
+         tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0)<<"  ";
+         for(i=0;i<ns;i++)
+           ss[i] = dm_pcs->GetNodeValue(msh_node_number,strain_i[i]);
+         DeviatoricStress(ss);
+         tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0);        
     }
   }
   tec_file << endl;

@@ -280,7 +280,7 @@ void PrismRefine(const int NLayers, const int Layer, const int NSubLayers)
              ElSetElementActiveState(NumElementNew,1);
 
              /* "rowx hochziehen"   */
-             /* loop ?er die betroffenen rows   */
+             /* loop über die betroffenen rows   */
              NRowsToShift = NRows - Layer;
              count = 0;
 

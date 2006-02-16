@@ -1,7 +1,7 @@
 /*
    Class element declaration
    class for finite element.
-   Designed and programmed by Wenqing Wang, 06/2004
+   Designed and programmed by WW, 06/2004
 */
 #ifndef fem_dm_INC
 #define fem_dm_INC
@@ -12,6 +12,7 @@
 #include "rf_mmp_new.h"
 
 namespace SolidProp {class CSolidProperties;} 
+class CRFProcess;
 namespace process{class CRFProcessDeformation;}
 namespace Mesh_Group{class CElem;}
 namespace FiniteElement{
@@ -20,6 +21,7 @@ namespace FiniteElement{
     using Math_Group::Matrix;
     using Math_Group::SymMatrix;
     using Math_Group::Vec;
+    using ::CRFProcess;
     using process::CRFProcessDeformation;
 	using Mesh_Group::CElem; 
 
@@ -27,16 +29,20 @@ namespace FiniteElement{
 class ElementValue_DM
 {
   public:
-      ElementValue_DM(CElem* ele);
+      ElementValue_DM(CElem* ele, bool HM_Staggered);       
       ~ElementValue_DM(); 
+      void ResetStress(bool cpl_loop);
+      void Write_BIN(fstream& os);
+      void Read_BIN(fstream& is);
   private:
     // Friend class 
     friend class SolidProp::CSolidProperties;
     friend class process::CRFProcessDeformation;
     friend class CFiniteElementVec;
-
     Matrix *Stress0; // Initial stress
     Matrix *Stress;
+    Matrix *Stress_i;
+    Matrix *Stress_j;
     Matrix *pStrain;
     // Preconsolidation pressure
     Matrix *prep0;               
@@ -58,14 +64,15 @@ class ElementValue_DM
 class CFiniteElementVec:public CElement 
 {
   public:
-     CFiniteElementVec (process::CRFProcessDeformation *dm_pcs, const int C_Sys_Flad, const int order=2); 
+     CFiniteElementVec (process::CRFProcessDeformation *dm_pcs, 
+                        const int C_Sys_Flad, const int order=2); 
      ~CFiniteElementVec ();
 	 
      // Set memory for local matrices
      void SetMemory();
 	 
 	 // Compute the local finite element matrices and vectors    
-     void LocalAssembly(const long elementIndex, const int update);
+     void LocalAssembly(const int update);
 	 // Assemble local matrics and vectors to the global system    
      bool GlobalAssembly();
 
@@ -80,8 +87,7 @@ class CFiniteElementVec:public CElement
 
      //----------- Enhanced element -----------------------
      // Geometry related
-     bool LocalAssembly_CheckLocalization(const long index);
-     bool LocalAssembly_TraceDiscontinuity(const long index);
+     bool LocalAssembly_CheckLocalization(CElem* MElement);
      int IntersectionPoint(const int O_edge, 
                            const double *NodeA, double *NodeB);
      //----------- End of enhanced element ----------------
@@ -89,10 +95,10 @@ class CFiniteElementVec:public CElement
   private:  
    
      process::CRFProcessDeformation *pcs;
-     
-	 int ns;  // Number of stresses components
-     double Radius; // For axisymmetrical problems
-    
+     ::CRFProcess *h_pcs;
+	 ::CRFProcess *t_pcs;
+     //      
+	 int ns;  // Number of stresses components    
      // Flow coupling
      int Flow_Type;
 
@@ -136,7 +142,9 @@ class CFiniteElementVec:public CElement
      //  Straines:
 	 //  s11, s22, s33, s12, s13, s23
      double *dstrain;
-
+     double strain_ne[6];
+     double stress_ne[6];
+     double stress0[6];
      // Results, displacements
      //  u_x1, u_x2, u_x3, ..., u_xn,
      //  u_y1, u_y2, u_y3, ..., u_yn,
@@ -170,11 +178,6 @@ class CFiniteElementVec:public CElement
      double ComputeJumpDirectionAngle(const double *Mat);
      //------ End of enhanced element ------
 
-
-
-	 // For axisymmetrical problems   
-     void ComputeRadius();
-
 	 // Form B matric     
      void setB_Matrix(const int LocalIndex);
 	 // Form the tanspose of B matric     
@@ -187,7 +190,6 @@ class CFiniteElementVec:public CElement
      // 1. For extropolating gauss value to node
      int GetLocalIndex(const int gp_r, const int gp_s, int gp_t);
      double *Sxx, *Syy, *Szz, *Sxy, *Sxz, *Syz, *pstr;
-	 double *tolStrain;
      // 2. For enhanced strain approach
      Matrix *BDG, *PDB, *DtD, *PeDe ; // For enhanced strain element
 
@@ -195,12 +197,12 @@ class CFiniteElementVec:public CElement
 	 bool RecordGuassStrain(const int gp, const int gp_r, 
 		                    const int gp_s, int gp_t);
      void ExtropolateGuassStrain();
-     void ExtropolateGuassStress(const int index);
+     void ExtropolateGuassStress();
 
 
    	 // Compute the local finite element matrices     
-     void LocalAssembly_continuum(const long elementIndex, const int update);
-	 void LocalAssembly_EnhancedStrain(const long index, const int update);
+     void LocalAssembly_continuum(const int update);
+	 void LocalAssembly_EnhancedStrain(const int update);
 
      // Assembly local stiffness matrix
      void GlobalAssembly_Stiffness();

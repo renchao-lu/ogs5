@@ -289,6 +289,30 @@ void Matrix::Write(ostream& os)
     //os<<endl;     
 }
 
+/**************************************************************************
+MathLib-Method: 
+Task: 
+Programing:
+01/2006 WW Implementation
+**************************************************************************/
+void Matrix::Write_BIN(fstream& os)
+{
+    for(int i=0; i<size; i++) 
+      os.write((char*)(&data[i]), sizeof(data[i]));
+}
+/**************************************************************************
+MathLib-Method: 
+Task: 
+Programing:
+01/2006 WW Implementation
+**************************************************************************/
+void Matrix::Read_BIN(fstream& is)
+{
+    for(int i=0; i<size; i++) 
+      is.read((char*)(&data[i]), sizeof(data[i]));
+}
+
+
 //-----------------------------------------------------
 // Symmetrical matrix 
 SymMatrix::SymMatrix(const int dim):Matrix(0)

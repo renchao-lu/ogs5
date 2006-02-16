@@ -201,9 +201,9 @@ void CElem::FillTransformMatrix()
    double xx[3];
    double yy[3];
    double zz[3];
+   tranform_tensor = new Matrix(3,3);  
    if(geo_type==1)
    {
-       tranform_tensor = new Matrix(3);  
        // x"_vec
 	   xx[0] = nodes[1]->X()-nodes[0]->X();                
        xx[1] = nodes[1]->Y()-nodes[0]->Y();                  
@@ -235,13 +235,9 @@ void CElem::FillTransformMatrix()
        // y"_vec
        CrossProduction(zz,xx,yy);
        NormalizeVector(yy,3);
-       (*tranform_tensor)(0) = xx[0];          
-       (*tranform_tensor)(1) = yy[0];         
-       (*tranform_tensor)(2) = zz[0];                
    }
    else if (geo_type==2||geo_type==4)
    {
-       tranform_tensor = new Matrix(3,3);  
        // x"_vec
 	   xx[0] = nodes[1]->X()-nodes[0]->X();                
        xx[1] = nodes[1]->Y()-nodes[0]->Y();                  
@@ -251,19 +247,19 @@ void CElem::FillTransformMatrix()
        yy[0] = nodes[2]->X()-nodes[1]->X();                  
        yy[1] = nodes[2]->Y()-nodes[1]->Y();               
        yy[2] = nodes[2]->Z()-nodes[1]->Z(); 
-       // z"_vec
+       // z"_vec. off plane
        CrossProduction(xx,yy,zz);
        NormalizeVector(zz,3);
        // y"_vec
        CrossProduction(zz,xx,yy);
        NormalizeVector(yy,3);
-       for(i=0; i<3; i++)
-	   {
-          (*tranform_tensor)(i,0) = xx[i];          
-          (*tranform_tensor)(i,1) = yy[i];         
-          (*tranform_tensor)(i,2) = zz[i];         
-	   } 
    }
+   for(i=0; i<3; i++)
+   {
+      (*tranform_tensor)(i,0) = xx[i];          
+      (*tranform_tensor)(i,1) = yy[i];         
+      (*tranform_tensor)(i,2) = zz[i];         
+   } 
 }
 /**************************************************************************
 MSHLib-Method: 
@@ -398,17 +394,16 @@ void CElem::Read(istream& is, int fileType)
   // 1 Reading element type data
   switch(fileType){
     //....................................................................
-case 0: // msh
-      is>>index>>patch_index>>buffer;
-      if(buffer.find("line")!=string::npos ||buffer.find("quad")!=string::npos ||
-         buffer.find("hex")!=string::npos  ||buffer.find("tri")!=string::npos  ||
-         buffer.find("tet")!=string::npos  ||buffer.find("pri")!=string::npos)
-         name = buffer;
-      else
-      {
+    case 0: // msh
+      is>>index>>patch_index;
+      is>>buffer;
+	  if(buffer.find("-1")!=string::npos)
+	  {
           grid_adaptation = strtol(buffer.data(),NULL,0);
          is>>name;
-      }
+	  } 
+	  else
+	    name = buffer;
       if(name.find("line")!=string::npos)
          geo_type = 1;
       else if(name.find("quad")!=string::npos)
@@ -465,7 +460,6 @@ case 0: // msh
   }
   //----------------------------------------------------------------------
   // 2 Element configuration
-//OK Config();
   switch(geo_type)
    {
       case 1:
@@ -629,7 +623,22 @@ void CElem::WriteAll(ostream& os) const
        <<deli<<nodes[i]->Y()
        <<deli<<nodes[i]->Z()<<endl;
     }
+
 }
+/**************************************************************************
+MSHLib-Method: 
+Task:
+Programing:
+06/2005 WW Implementation
+**************************************************************************/
+void CElem::WriteNeighbors(ostream& os) const
+{
+    os<<"Neighbors of "<<index<<endl;
+    for(int i=0; i<nfaces; i++)
+      neighbors[i]->WriteAll(os);
+    os<<"End neighbors of "<<index<<endl<<endl;;
+}
+
 /**************************************************************************
 MSHLib-Method: 
 Task:
@@ -667,19 +676,6 @@ void CElem::SetNodes(vec<CNode*>&  ele_nodes, const bool ReSize)
         nodes[i] = ele_nodes[i];
         nodes_index[i] = nodes[i]->GetIndex();       
     }
-}
-/**************************************************************************
-MSHLib-Method: 
-Task:
-Programing:
-06/2005 WW Implementation
-**************************************************************************/
-void CElem::WriteNeighbors(ostream& os) const
-{
-    os<<"Neighbors of "<<index<<endl;
-    for(int i=0; i<nfaces; i++)
-      neighbors[i]->WriteAll(os);
-    os<<"End neighbors of "<<index<<endl<<endl;;
 }
 /**************************************************************************
 MSHLib-Method: 

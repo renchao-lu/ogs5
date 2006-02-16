@@ -14,7 +14,8 @@ using namespace std;
 
 #define PCT_FILE_EXTENSION ".pct"
 #define OUTSIDEOFDOMAIN -10
-#define SWAP(x,y) {int t; t=x; x=y; y=t;};
+//#define SWAP(x,y) {int t; t=x; x=y; y=t;};
+#define SWAP(x,y) {double t; t=x; x=y; y=t;}; //WW data type is change to double
 
 /**************************************************************************
 Class: RandomWalk
@@ -2334,10 +2335,13 @@ int RandomWalk::SolveForAdvectionNDispersionWithEdge(Particle* A, Particle* B)
 						
 							return 0;	// The element index switched to the neighbor element
 						}
-						else if(dotProduct < 0.0) ; // The direction of two vectors is opposite.
+						else if(dotProduct < 0.0)  // else if(dotProduct < 0.0) ;The direction of two vectors is opposite. 
+                           countNoIntersection = countNoIntersection; //WW The above empty "else if" condition with semi-colon gives warning and  may causes problem
+                                        
 					}
-					else;	// No intersection.
-						
+					else	// else; No intersection. WW This may causes problem
+                      countNoIntersection = countNoIntersection; // The empty "else" condition gives warning and  may causes problem
+	
 				}	
 		
 			}
@@ -2777,10 +2781,12 @@ int RandomWalk::SolveForPureAdvectionWithEdge(Particle* A, Particle* B)
 						{	
 							return 0;	// The element index switched to the neighbor element	
 						}
-						else if(dotProduct < 0.0) ; // The direction of two vectors is opposite.
+						else if(dotProduct < 0.0) // else if(dotProduct < 0.0) ; The direction of two vectors is opposite.
+                           countNoIntersection=countNoIntersection;  // WW The above empty "else if" condition with semi-colon gives warning and  may causes problem
+                                        
 					}
-					else;	// No intersection.
-						
+					else	//else;	 No intersection.
+                      countNoIntersection=countNoIntersection; //WW The above empty "else" condition with semi-colon gives warning and  may causes problem				
 				}	
 		
 			}
@@ -2986,10 +2992,11 @@ void PCTRead(string file_base_name)
     int End = 1;
     string strbuffer;    
     RandomWalk* RW = NULL;
-	
+#ifdef RANDOM_WALK	//WW
 	if(!(m_msh->PT))
 		m_msh->PT = new RandomWalk(); //PCH
     RW = m_msh->PT;
+#endif
  
     while(End)
     {
@@ -3034,7 +3041,9 @@ void DATWritePCTFile(const char *file_name)
     m_msh = fem_msh_vector[0];  // Something must be done later on here.
 
     RandomWalk* RW = NULL;
+#ifdef RANDOM_WALK	//WW
     RW = m_msh->PT;
+#endif
     
     sprintf(pct_file_name,"%s.%s",file_name,"pct");
     pct_file = fopen(pct_file_name,"w+t");

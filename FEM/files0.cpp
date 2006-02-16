@@ -208,7 +208,10 @@ int ReadData ( char *dateiname )
   RCRead(dateiname);
   NUMRead(dateiname);
   if(FEMRead(dateiname)) //OK4108//WW4107
-     MSH = true; 
+  {
+     CompleteMesh(); //WW
+     MSH = true;
+  }
 //SBOK4209 FEMWrite(dateiname);
 #ifdef RANDOM_WALK
   // PCTRead is bounded by msh
@@ -416,7 +419,7 @@ int ReadData ( char *dateiname )
 /* ROCKFLOW - Funktion: CreateFileData
                                                                           */
 /* Aufgabe:
-   Erstellt Datenstruktur f? Leseroutine ReadData
+   Erstellt Datenstruktur für Leseroutine ReadData
                                                                           */
 /* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    E char *datei: Dateiname mit Extension

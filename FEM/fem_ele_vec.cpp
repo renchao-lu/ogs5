@@ -33,10 +33,13 @@ namespace FiniteElement{
 
 //  Constructor of class Element_DM 
 CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, const int C_Sys_Flad, const int order)
- :CElement(C_Sys_Flad, order), pcs(dm_pcs), Radius(0.0)
+ :CElement(C_Sys_Flad, order), pcs(dm_pcs)
 {
+    int i;
+    h_pcs = NULL;
+    t_pcs = NULL;
 
-    for(int i=0; i<4; i++)
+    for(i=0; i<4; i++)
        NodeShift[i] = pcs->Shift[i];
     if(dm_pcs->pcs_type_name.find("DYNAMIC")!=string::npos)
     {
@@ -116,7 +119,6 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
 		 Szz = new double[9];
 		 Sxy = new double[9];
 		 pstr = new double[9];
-		 tolStrain = new double[4];
 
          Sxz = NULL;
          Syz = NULL;
@@ -152,7 +154,6 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
 		 Sxz = new double[20];
 		 Syz = new double[20];
 		 pstr = new double[20];
-		 tolStrain = NULL;
    
          // Indecex in nodal value table
          Idx_Strain[4] = pcs->GetNodeValueIndex("STRAIN_XZ");
@@ -192,40 +193,49 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
     for(int i=0;i<(int)pcs_vector.size();i++){
       if(pcs_vector[i]->pcs_type_name.find("FLOW")!=string::npos)
       {
+         h_pcs = pcs_vector[i];
          if(GetRFProcessNumPhases()==1) Flow_Type = 0; 
-         if(pcs_vector[i]->pcs_type_name.find("RICHARDS")!=string::npos)
+         if(h_pcs->pcs_type_name.find("RICHARDS")!=string::npos)
             Flow_Type = 1;
          else if  (GetRFProcessNumPhases()==2) Flow_Type = 2;
          idx_P0 = pcs->GetNodeValueIndex("POROPRESSURE0");
+         break;
       }
     }
     if(Flow_Type==0)
     {
-       idx_P1 = pcs->GetNodeValueIndex("PRESSURE1")+1;
+       idx_P1 = h_pcs->GetNodeValueIndex("PRESSURE1")+1;
        if(dynamic)
        {
-          idx_P = pcs->GetNodeValueIndex("PRESSURE1")+1;
-          idx_P1 = pcs->GetNodeValueIndex("PRESSURE_RATE1");
+          idx_P = h_pcs->GetNodeValueIndex("PRESSURE1")+1;
+          idx_P1 = h_pcs->GetNodeValueIndex("PRESSURE_RATE1");
        }
     }
     else if(Flow_Type==1)
     {
-       idx_P1 = pcs->GetNodeValueIndex("PRESSURE1")+1;
-       idx_P1_0 = pcs->GetNodeValueIndex("PRESSURE1");
-       idx_S0 = pcs->GetNodeValueIndex("SATURATION1");
-       idx_S = pcs->GetNodeValueIndex("SATURATION1")+1;
+       idx_P1 = h_pcs->GetNodeValueIndex("PRESSURE1")+1;
+       idx_P1_0 = h_pcs->GetNodeValueIndex("PRESSURE1");
+       idx_S0 = h_pcs->GetNodeValueIndex("SATURATION1");
+       idx_S = h_pcs->GetNodeValueIndex("SATURATION1")+1;
     }
     else if(Flow_Type==2)
     {
-       idx_P1 = pcs->GetNodeValueIndex("PRESSURE1")+1;
-       idx_P2 = pcs->GetNodeValueIndex("PRESSURE2")+1;
-       idx_S0 = pcs->GetNodeValueIndex("SATURATION2");
-       idx_S = pcs->GetNodeValueIndex("SATURATION2")+1;
+       idx_P1 = h_pcs->GetNodeValueIndex("PRESSURE1")+1;
+       idx_P2 = h_pcs->GetNodeValueIndex("PRESSURE2")+1;
+       idx_S0 = h_pcs->GetNodeValueIndex("SATURATION2");
+       idx_S = h_pcs->GetNodeValueIndex("SATURATION2")+1;
     }
  
+    for(int i=0;i<(int)pcs_vector.size();i++){
+      if(pcs_vector[i]->pcs_type_name.find("HEAT")!=string::npos)
+      {
+         t_pcs = pcs_vector[i];
+         break;
+	  }
+	}
     if(T_Flag)
     {
-       idx_T0 =  pcs->GetNodeValueIndex("TEMPERATURE1"); 
+       idx_T0 =  t_pcs->GetNodeValueIndex("TEMPERATURE1"); 
        idx_T1 =  idx_T0 +1;
     }
 	//
@@ -252,7 +262,6 @@ CFiniteElementVec::~CFiniteElementVec()
     delete pstr;
     if(Sxz) delete Sxz;
 	if(Syz) delete Syz;
-	if(tolStrain) delete tolStrain;
 	
     if(dynamic) 
     {
@@ -307,7 +316,6 @@ CFiniteElementVec::~CFiniteElementVec()
     Sxz = NULL;
     Syz = NULL;
     pstr = NULL;
-    tolStrain = NULL;
 }
 
 
@@ -319,7 +327,6 @@ CFiniteElementVec::~CFiniteElementVec()
          Set material data for local assembly 
    Formalparameter:
            E: 
-             const int EleIndex    : Global element index
  
    Programming:
    11/2004     WW        Erste Version
@@ -330,6 +337,7 @@ void CFiniteElementVec::SetMaterial()
    //
    int MatGroup = MeshElement->GetPatchIndex();
    smat = msp_vector[MatGroup];
+   smat->axisymmetry = pcs->m_msh->isAxisymmetry();
    // Single yield surface model   
    if(smat->Plasticity_type==2)  smat->ResizeMatricesSYS(ele_dim); 
 
@@ -408,10 +416,10 @@ void CFiniteElementVec::setB_Matrix(const int LocalIndex)
             // B_12, 0.0
 			(*B_matrix)(0,1) = 0.0;
 
-            if(problem_2d_type_dm==2) // Axisymmtry
+			if(axisymmetry) // Axisymmtry
 			{
                // B_21, N/r
-		       (*B_matrix)(1,0) = shapefctHQ[LocalIndex];      
+               (*B_matrix)(1,0) = shapefctHQ[LocalIndex]/Radius;      
                // B_22, 0.0
 		       (*B_matrix)(1,1) = 0.0; 
                // B_31, 0.0
@@ -432,9 +440,9 @@ void CFiniteElementVec::setB_Matrix(const int LocalIndex)
 			   (*B_matrix)(2,1) = 0.0;
 			}
             // B_41, dN/dy
-			(*B_matrix)(3,0) = (*B_matrix)(1,1); 
+			(*B_matrix)(3,0) = dshapefctHQ[nnodesHQ+LocalIndex];
             // B_42, dN/dx
-			(*B_matrix)(3,1) = (*B_matrix)(0,0);
+			(*B_matrix)(3,1) = dshapefctHQ[LocalIndex]; 
 
 			break;
 	     case 3:
@@ -500,78 +508,56 @@ void CFiniteElementVec::setTransB_Matrix(const int LocalIndex)
 **************************************************************************/
 void CFiniteElementVec::ComputeStrain()
 {
-	  int i, j=0, k=0;
-  	switch(dim)
-  	{
-	   case 2:
+  int i, j=0, k=0;
+  switch(dim)
+  {
+    case 2:
        for(i=0; i<ns; i++)
           dstrain[i] = 0.0;
-		     if(problem_2d_type_dm==2)
-		     {
+       if(axisymmetry)
+       {
           for(i=0; i<nnodesHQ; i++)
-	         {
+	      {
              j = i+nnodesHQ;
-		           dstrain[0] += Disp[i]*dshapefctHQ[i];
-		           dstrain[1] += Disp[i]*shapefctHQ[i]/Radius;
-	            dstrain[2] += Disp[j]*dshapefctHQ[j];
-			          dstrain[3] += Disp[i]*dshapefctHQ[j]
-                            +Disp[j]*dshapefctHQ[i];
-		       }
-		     }
-	    	 else
-		     {
-           for(i=0; i<nnodesHQ; i++)
-		         {
-              j = i+nnodesHQ;
-	             dstrain[0] += Disp[i]*dshapefctHQ[i];
-              dstrain[1] += Disp[j]*dshapefctHQ[j];
-              dstrain[3] += Disp[i]*dshapefctHQ[j]
+             dstrain[0] += Disp[i]*dshapefctHQ[i];
+             dstrain[1] += Disp[i]*shapefctHQ[i];
+             dstrain[2] += Disp[j]*dshapefctHQ[j];
+             dstrain[3] += Disp[i]*dshapefctHQ[j]
+                          +Disp[j]*dshapefctHQ[i];
+		  }
+          dstrain[1] /= Radius;         
+       }
+       else
+       {
+          for(i=0; i<nnodesHQ; i++)
+          {
+             j = i+nnodesHQ;
+             dstrain[0] += Disp[i]*dshapefctHQ[i];
+             dstrain[1] += Disp[j]*dshapefctHQ[j];
+             dstrain[3] += Disp[i]*dshapefctHQ[j]
                            +Disp[j]*dshapefctHQ[i];
-		         }
-		     }
-	    	 break;
-	   case 3:
-         for(i=0; i<ns; i++)
-           dstrain[i] = 0.0;
-
-         for(i=0; i<nnodesHQ; i++)
-         {
-            j = i+nnodesHQ;
-            k = i+2*nnodesHQ;
-            dstrain[0] += Disp[i]*dshapefctHQ[i];
-            dstrain[1] += Disp[j]*dshapefctHQ[j];
-            dstrain[2] += Disp[k]*dshapefctHQ[k];
-            dstrain[3] += Disp[i]*dshapefctHQ[j]
-                         +Disp[j]*dshapefctHQ[i];
-            dstrain[4] += Disp[i]*dshapefctHQ[k]
-                         +Disp[k]*dshapefctHQ[i];
-            dstrain[5] += Disp[j]*dshapefctHQ[k]
-                         +Disp[k]*dshapefctHQ[j];
-		      }
-		      break;
-	   }
-}
-
-
-
-/***************************************************************************
-   GeoSys - Funktion: 
-           CFiniteElementVec::  ComputeRadius(const double *unit)
-
-   Aufgabe:
-          For axisymmetrical problems
-   Formalparameter:
-           E: 
-            const double *unit  : unit coordinates
- 
-   Programming:
-   06/2004     WW        Erste Version
-**************************************************************************/
-void CFiniteElementVec::ComputeRadius()
-{
-   Radius = 0.0;
-   for(int i=0; i<nnodesHQ; i++)
-	   Radius += shapefctHQ[i]*X[i];
+          }
+       }
+       break;
+     case 3:
+       for(i=0; i<ns; i++)
+         dstrain[i] = 0.0;
+       for(i=0; i<nnodesHQ; i++)
+       {
+          j = i+nnodesHQ;
+          k = i+2*nnodesHQ;
+          dstrain[0] += Disp[i]*dshapefctHQ[i];
+          dstrain[1] += Disp[j]*dshapefctHQ[j];
+          dstrain[2] += Disp[k]*dshapefctHQ[k];
+          dstrain[3] += Disp[i]*dshapefctHQ[j]
+                       +Disp[j]*dshapefctHQ[i];
+          dstrain[4] += Disp[i]*dshapefctHQ[k]
+                       +Disp[k]*dshapefctHQ[i];
+          dstrain[5] += Disp[j]*dshapefctHQ[k]
+                       +Disp[k]*dshapefctHQ[j];
+        }
+        break;
+    }
 }
 
 /***************************************************************************
@@ -605,9 +591,9 @@ double CFiniteElementVec::CalDensity()
      // MMP medium properties
      porosity = m_mmp->Porosity(Index,unit,1.0) ;
      // Assume solid density is constant. (*smat->data_Density)(0)
-     rho = porosity * density_fluid;
      if(smat->Density()>0.0)
-           rho += (1. - porosity) * fabs(smat->Density());
+           rho = (1. - porosity) * fabs(smat->Density())+porosity * density_fluid;
+	 else rho = 0.0; 	  
      
    }
    else
@@ -633,7 +619,6 @@ void CFiniteElementVec::ComputeMatrix_RHS(const double fkt,
    int i, j, k, l;
    double rho;
    rho = CalDensity();
-
    for (i = 0; i < nnodesHQ; i++)
    {
       setTransB_Matrix(i);   
@@ -642,7 +627,8 @@ void CFiniteElementVec::ComputeMatrix_RHS(const double fkt,
       {
           for (k = 0; k<ns; k++) 
              (*RHS)(j*nnodesHQ+i) += 
-	         (*B_matrix_T)(j,k)*dstress[k]*fkt;
+//TEST             (*B_matrix_T)(j,k)*dstress[k]*fkt;
+                 (*B_matrix_T)(j,k)*(dstress[k]-stress0[k])*fkt;
       }         
       if(PreLoad==11) continue;       
       // Local assembly of stiffness matrix, B^T C B       
@@ -661,7 +647,6 @@ void CFiniteElementVec::ComputeMatrix_RHS(const double fkt,
 	      }
       }  // loop j 	    
   } // loop i 
-
   //---------------------------------------------------------
   // Assemble coupling matrix
   //---------------------------------------------------------
@@ -682,8 +667,6 @@ void CFiniteElementVec::ComputeMatrix_RHS(const double fkt,
   //---------------------------------------------------------
   // Assemble gravity force vector
   //---------------------------------------------------------
-  ComputeShapefct(2); // Quadratic interpolation function
-
   if(rho>0.0&&GravityForce)
   {  
       // 2D, in y-direction
@@ -695,19 +678,18 @@ void CFiniteElementVec::ComputeMatrix_RHS(const double fkt,
 }
 /***************************************************************************
    GeoSys - Funktion: 
-           CFiniteElementVec:: LocalAssembly(const long index)
+           CFiniteElementVec:: LocalAssembly
    Aufgabe:
            Compute the local finite element matrices     
    Formalparameter:
            E: 
-            const long index  : global element index
 			const int update  : indicator to update stress and strain only
  
    Programming:
    06/2004   WW   Generalize for different element types as a member of class
    05/2005   WW   ...
 **************************************************************************/
-void CFiniteElementVec::LocalAssembly(const long index, const int update)
+void CFiniteElementVec::LocalAssembly(const int update)
 {
     int i, j;
     double *a_n = NULL; 
@@ -763,36 +745,36 @@ void CFiniteElementVec::LocalAssembly(const long index, const int update)
        }
     }
 
-	   // Get saturation of element nodes
+    // Get saturation of element nodes
    	if(Flow_Type>0)
    	{
        for(i=0; i<nnodes; i++)
 	   {
-           AuxNodal_S[i] = pcs->GetNodeValue(nodes[i], idx_S);
-           AuxNodal_S0[i] = pcs->GetNodeValue(nodes[i], idx_S0);
+           AuxNodal_S[i] = h_pcs->GetNodeValue(nodes[i], idx_S);
+           AuxNodal_S0[i] = h_pcs->GetNodeValue(nodes[i], idx_S0);
 	   }
-   }
-    
+    }
+    // 
 
-    if(enhanced_strain_dm&&ele_value_dm[index]->Localized)
-        LocalAssembly_EnhancedStrain(index, update);
+    if(enhanced_strain_dm&&ele_value_dm[MeshElement->GetIndex()]->Localized)
+        LocalAssembly_EnhancedStrain(update);
     else 
-        LocalAssembly_continuum(index, update);
+        LocalAssembly_continuum(update);
 
     if(update==0)
     {
         if(dynamic)
             ComputeMass();
         GlobalAssembly();
-    }
-    //Output matrices
-    if(pcs->Write_Matrix)
-    {
-        (*pcs->matrix_file) << "### Element: " << Index << endl;
-        (*pcs->matrix_file) << "---Stiffness matrix: " << endl;
-        Stiffness->Write(*pcs->matrix_file);
-        (*pcs->matrix_file) << "---RHS: " <<endl;
-        RHS->Write(*pcs->matrix_file);
+        //Output matrices
+        if(pcs->Write_Matrix)
+        {
+           (*pcs->matrix_file) << "### Element: " << Index << endl;
+           (*pcs->matrix_file) << "---Stiffness matrix: " << endl;
+           Stiffness->Write(*pcs->matrix_file);
+           (*pcs->matrix_file) << "---RHS: " <<endl;
+           RHS->Write(*pcs->matrix_file);
+        }
     }
 
 }
@@ -848,7 +830,6 @@ void CFiniteElementVec::GlobalAssembly_Stiffness()
          }  // loop j 	    
       } // loop i    
    } 
-
    // Assemble stiffness matrix
    for (i = 0; i < nnodesHQ; i++)
    {
@@ -940,7 +921,7 @@ void CFiniteElementVec::ComputeMass()
 void CFiniteElementVec::GlobalAssembly_RHS()
 {
    int i, j, k;
-   double fact;
+   double fact, val_n=0.0;
    double *a_n = NULL; 
 
    bool Residual;  
@@ -976,20 +957,30 @@ void CFiniteElementVec::GlobalAssembly_RHS()
       {
           case 0:  // Liquid flow
              for (i=0;i<nnodes;i++)
-               AuxNodal[i] = LoadFactor*( Max(pcs->GetNodeValue(nodes[i],idx_P1),.0)
-                                         -Max(pcs->GetNodeValue(nodes[i],idx_P0),0.0));   
+			 {
+                val_n = h_pcs->GetNodeValue(nodes[i],idx_P1); 
+                if(val_n>0.0)
+                   AuxNodal[i] = LoadFactor*( val_n -Max(pcs->GetNodeValue(nodes[i],idx_P0),0.0));   
+				else
+                   AuxNodal[i] = 0.0;
+			 }
              break;
           case 1:  // Richards flow
              for (i=0;i<nnodes;i++)
-               AuxNodal[i] = LoadFactor*(Max(pcs->GetNodeValue(nodes[i],idx_P1),0.0)
-                                        -Max(pcs->GetNodeValue(nodes[i],idx_P0),0.0));
+			 {
+                val_n = h_pcs->GetNodeValue(nodes[i],idx_P1);
+                if(val_n>0.0)                  
+                  AuxNodal[i] = LoadFactor*(val_n-Max(pcs->GetNodeValue(nodes[i],idx_P0),0.0));
+				else
+                   AuxNodal[i] = 0.0;
+			 }
              break;
           case 2:  // Multi-phase-flow
              for (i=0;i<nnodes;i++)
-               AuxNodal[i] = LoadFactor*((1.- pcs->GetNodeValue(nodes[i],idx_S))
-                                 *pcs->GetNodeValue(nodes[i],idx_P1)
-                                + pcs->GetNodeValue(nodes[i],idx_S)
-                                *(pcs->GetNodeValue(nodes[i],idx_P2)-pcs->GetNodeValue(nodes[i],idx_P0)));
+               AuxNodal[i] = LoadFactor*((1.- h_pcs->GetNodeValue(nodes[i],idx_S))
+                                 *h_pcs->GetNodeValue(nodes[i],idx_P1)
+                                + h_pcs->GetNodeValue(nodes[i],idx_S)
+                                *(h_pcs->GetNodeValue(nodes[i],idx_P2)-h_pcs->GetNodeValue(nodes[i],idx_P0)));
              break;
       }
  
@@ -1041,13 +1032,12 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 
 /***************************************************************************
    GeoSys - Funktion: 
-           CFiniteElementVec:: LocalAssembly_continuum(const long index)
+           CFiniteElementVec:: LocalAssembly_continuum()
    Aufgabe:
            Compute the local finite element matrices with the framework
         of continuum assumption
    Formalparameter:
            E: 
-            const long index  : global element index
 			const int update  : indicator to update stress and strain only
  
    Programming:
@@ -1057,13 +1047,14 @@ void CFiniteElementVec::GlobalAssembly_RHS()
                   Local assemby of residual 
    07/2003   WW   Quadratic triangle element
    06/2004   WW   Generalize for different element types as a member of class
+   12/2005   WW   Creep
 **************************************************************************/
-void CFiniteElementVec::LocalAssembly_continuum(const long index, const int update)
+void CFiniteElementVec::LocalAssembly_continuum(const int update)
 {
   long i;
   
   Matrix *p_D = NULL; 
-  eleV_DM = ele_value_dm[index];
+  eleV_DM = ele_value_dm[MeshElement->GetIndex()];
 
   // ---- Gauss integral
   int gp, gp_r=0, gp_s=0, gp_t;
@@ -1079,19 +1070,12 @@ void CFiniteElementVec::LocalAssembly_continuum(const long index, const int upda
  
   double ThermalExpansion=0.0;
   double Tem=0.0;
-
-  unit[0]=0.0; unit[1]=0.0; unit[2]=0.0;
-
+  bool Strain_TCS = false;
+  //
   ThermalExpansion=0.0;
   // Thermal effect 
   if(smat->Thermal_Expansion()>0.0) 
       ThermalExpansion =smat->Thermal_Expansion();
-
-  // For strain extropolation in triangle element
-  if(MeshElement->GetElementType()==4)
-  {
-      for(i=0; i<ns; i++) tolStrain[i] = 0.0;
-  }
   
   //Get porosity model
   // ---- Material properties
@@ -1104,11 +1088,11 @@ void CFiniteElementVec::LocalAssembly_continuum(const long index, const int upda
   if(PoroModel==4)
      //OK deporo =  PCSGetElementPorosityChangeRate(index)/(double)ele_dim;
     //MX  deporo = PCSGetELEValue(index,NULL,1.0,"n_sw_Rate")/(double)ele_dim;
-      deporo = pcs->GetElementValue(index,pcs->GetElementValueIndex("n_sw_rate"))/(double)ele_dim;
+      deporo = h_pcs->GetElementValue(Index,pcs->GetElementValueIndex("n_sw_rate"))/(double)ele_dim;
   if(T_Flag)
   { 
     for (i = 0; i < nnodes; i++) 
-      Temp[i] =  pcs->GetNodeValue(nodes[i],idx_T1)-pcs->GetNodeValue(nodes[i],idx_T0);
+      Temp[i] =  t_pcs->GetNodeValue(nodes[i],idx_T1)-t_pcs->GetNodeValue(nodes[i],idx_T0);
   }
 
 
@@ -1118,7 +1102,9 @@ void CFiniteElementVec::LocalAssembly_continuum(const long index, const int upda
       smat->Calculate_Lame_Constant();
       smat->ElasticConsitutive(ele_dim, De);  
   }
-
+  //
+  if(PoroModel==4||T_Flag||smat->Creep_mode>0)
+    Strain_TCS =true;
   // Loop over Gauss points
   for (gp = 0; gp < nGaussPoints; gp++)
   {
@@ -1132,74 +1118,30 @@ void CFiniteElementVec::LocalAssembly_continuum(const long index, const int upda
 	     // Compute geometry
       //---------------------------------------------------------
       ComputeGradShapefct(2);
+      ComputeShapefct(2); 
       ComputeStrain();
-
+ 	   
       if( F_Flag||T_Flag) 
           ComputeShapefct(1); // Linear order interpolation function
-
-	     // Compute the radius for the Axisymmetrical problems
-      if(problem_2d_type_dm==2) 
-      {
-          ComputeRadius();
-          fkt *= 2.0*pai*Radius;
-      }
-
-
-      if(PoroModel==4)// For swelling pressure
-	     {
-          dstrain[0] -= deporo;
-          dstrain[1] -= deporo;
-          dstrain[2] -= deporo;
-	     }
-
-
-      if(T_Flag) // Contribution by thermal expansion 
-      {
-          Tem=0.0; 
-          for(i = 0; i< nnodes; i++)
-             Tem += shapefct[i]* Temp[i];
-          for (i = 0; i < 3; i++)
-              dstrain[i] -= ThermalExpansion*Tem;
-      } 
-
-     //---------------------------------------------------------
-     // Material properties (Integration of the stress)
-     //---------------------------------------------------------
-     // Initial the stress vector  
-     for (i = 0; i < ns; i++)
-        dstress[i] = 0.0;
-     // Compute try stress, stress incremental: 
-     if(PModel!=3)
-         De->multi(dstrain, dstress);
-
-     // Fluid coupling;
-     S_Water=1.0;
-     if(Flow_Type>0)
-        S_Water=interpolate(AuxNodal_S,1);
-
-     // Decovalex. Swelling pressure
-     if(smat->SwellingPressureType==1)
-     {
-        dS = -interpolate(AuxNodal_S0,1);
-        dS += S_Water;
-        for (i = 0; i < 3; i++)
-           dstress[i] -= 2.0*S_Water*dS*smat->Max_SwellingPressure;     
-     }
-	 //-----------------------------------------------------------------------
-     if(update) // For the mapping of strain
-     {
-        RecordGuassStrain(gp, gp_r, gp_s, gp_t);
-        if(PModel==-1) // Pure elesticity
-        {
-            for (i = 0; i < ns; i++)
-               (*eleV_DM->Stress)(i, gp) += dstress[i];
-        }    
-     }
-     //---------------------------------------------------------
-     // Integrate the stress by return mapping:
-     //---------------------------------------------------------
-     switch(PModel)
-     { 
+      //---------------------------------------------------------
+      // Material properties (Integration of the stress)
+      //---------------------------------------------------------
+      // Initial the stress vector  
+      if(PModel!=3)
+	  {
+         for (i = 0; i < ns; i++)
+            dstress[i] = 0.0;
+          De->multi(dstrain, dstress);
+	  }
+      //---------------------------------------------------------
+      // Integrate the stress by return mapping:
+      //---------------------------------------------------------
+      switch(PModel)
+      { 
+	     case -1:   // Pure elasticity
+           for (i = 0; i < ns; i++)
+             dstress[i] += (*eleV_DM->Stress)(i, gp);
+           break;
          case 1:  // Drucker-Prager model               
             DevStress
                 =smat->StressIntegrationDP(gp, eleV_DM, dstress, &dPhi, update);	  		
@@ -1222,44 +1164,94 @@ void CFiniteElementVec::LocalAssembly_continuum(const long index, const int upda
             smat->CalStress_and_TangentialMatrix_CC(gp, eleV_DM,
                            dstress,  ConsistDep, update);
             dPhi = 1.0;
-            break;                            
-     }
-
-     if(update<1)
-  	 {
-        //---------------------------------------------------------
-        // Assemble matrices and RHS
-        //---------------------------------------------------------
-        // Initial stress does not produce displacement
-        if(PModel==-1) // Pure elesticity
+            break;    
+      }
+      // --------------------------------------------------------------------
+      // Stress increment by heat, swelling, or heat
+      //
+      if(Strain_TCS)
+	  {
+        if(PModel==3)
+           smat->ElasticConsitutive(ele_dim, De);
+        for (i = 0; i < ns; i++)
+          strain_ne[i] = 0.0;
+        if(PoroModel==4)// For swelling pressure
         {
-           for (i = 0; i < ns; i++)
-              dstress[i] += (*eleV_DM->Stress)(i, gp);
+            for (i = 0; i < 3; i++)
+              strain_ne[i] -= deporo;
         }
+        //
+        if(T_Flag) // Contribution by thermal expansion 
+        {
+            Tem=0.0; 
+            for(i = 0; i< nnodes; i++)
+               Tem += shapefct[i]* Temp[i];
+            for (i = 0; i < 3; i++)
+                strain_ne[i] -= ThermalExpansion*Tem;
+        } 
+        if(smat->Creep_mode==1) // Strain increment by creep
+	    {
+           for (i = 0; i < ns; i++)
+             stress_ne[i] = (*eleV_DM->Stress)(i, gp);
+		   smat->AddStain_by_Creep(ns,stress_ne, strain_ne);           
+	    }
+        // Compute try stress, stress incremental: 
+        De->multi(strain_ne, dstress);
+        for (i = 0; i < ns; i++)
+          dstrain[i] += strain_ne[i];
+	  } 
 
-        if(dPhi<=0.0) p_D = De;
-        else p_D = ConsistDep;
-        ComputeMatrix_RHS(fkt, p_D);
-	   }  
+      // Fluid coupling;
+      S_Water=1.0;
+      if(Flow_Type>0)
+         S_Water=interpolate(AuxNodal_S,1);
+      // Decovalex. Swelling pressure
+      if(smat->SwellingPressureType==1)
+      {
+        dS = -interpolate(AuxNodal_S0,1);
+        dS += S_Water;
+        for (i = 0; i < 3; i++)
+           dstress[i] -= 2.0*S_Water*dS*smat->Max_SwellingPressure;     
+      }
+      else if(smat->SwellingPressureType==2) // LBNL's model
+      {
+        dS = -interpolate(AuxNodal_S0,1);
+        dS += S_Water;
+        for (i = 0; i < 3; i++)
+           dstress[i] -= dS*smat->Max_SwellingPressure;     
+      }
+      // Assemble matrices and RHS
+      if(update<1)
+  	  {
+         //---------------------------------------------------------
+         // Assemble matrices and RHS
+         //---------------------------------------------------------
+         if(dPhi<=0.0) p_D = De;
+         else p_D = ConsistDep;
+         for (i = 0; i<ns; i++)
+            stress0[i] = (*eleV_DM->Stress0)(i,gp);
+         ComputeMatrix_RHS(fkt, p_D);
+      }  
+	  else  // Update stress
+	  {
+        RecordGuassStrain(gp, gp_r, gp_s, gp_t);
+        for(i=0; i<ns; i++)
+           (*eleV_DM->Stress)(i, gp) = dstress[i];
+	  }
   }
   // The mapping of Gauss point strain to element nodes
   if(update)
       ExtropolateGuassStrain();	
 
 }
-
-
-
 /***************************************************************************
    GeoSys - Funktion: 
-           CFiniteElementVec::SetLocalIndex()
+           CFiniteElementVec::GetLocalIndex()
            For quadralateral and hexahedra element on the assumption that
            selected Gauss points form a quadralateral or hexahedra
    Aufgabe:
            Accumulate stress at each nodes      
    Formalparameter:
-           E: 
-            const long index  : global element index
  
    Programming:
    06/2004   WW  
@@ -1337,7 +1329,6 @@ int CFiniteElementVec::GetLocalIndex(const int gp_r, const int gp_s, int gp_t)
            Accumulate stress at each nodes      
    Formalparameter:
            E: 
-            const long index  : global element index
  
    Programming:
    06/2004   WW  
@@ -1345,7 +1336,7 @@ int CFiniteElementVec::GetLocalIndex(const int gp_r, const int gp_s, int gp_t)
 bool CFiniteElementVec::RecordGuassStrain(const int gp, 
               const int gp_r, const int gp_s, int gp_t)
 {
-   int i, LoIndex = 0;
+   int LoIndex = 0;
 
    //---------------------------------------------------------
    // Accumulate strains
@@ -1364,8 +1355,6 @@ bool CFiniteElementVec::RecordGuassStrain(const int gp,
          Syy[gp] = dstrain[1];
          Szz[gp] = dstrain[2];
          Sxy[gp] = dstrain[3];
-         for(i=0; i<ns; i++)
-            tolStrain[i] +=  dstrain[i];
 	     break;
      case 3:  // Hexahedra
          LoIndex = GetLocalIndex(gp_r, gp_s, gp_t);
@@ -1399,7 +1388,6 @@ bool CFiniteElementVec::RecordGuassStrain(const int gp,
            Extropolate the Gauss point strains to nodes    
    Formalparameter:
            E: 
-            const long index  : global element index
  
    Programming:
    06/2004   WW  
@@ -1436,20 +1424,30 @@ void CFiniteElementVec::ExtropolateGuassStrain()
       switch(MeshElement->GetElementType()) 
       {
          case 4: // Traingle
-             // Compute values at verteces  
+           // Compute values at verteces  
            switch(i)
 	       {
-		      case 0: gp=1; break;//P1=P-2P5
-		      case 1: gp=2; break;//P2=P-2P6
-		      case 2: gp=0; break;//P3=P-2P4
+		      case 0:
+	             unit[0] = -0.1666666666667;
+	             unit[1] = -0.1666666666667;
+                 break;
+		      case 1:
+	             unit[0] = 1.6666666666667;
+	             unit[1] = -0.1666666666667;
+                 break;
+		      case 2:
+	             unit[0] = -0.1666666666667;
+	             unit[1] = 1.6666666666667;
+                 break;
 		   }
-		   // Fetch the old strains
-             
-           ESxx += tolStrain[0]- 2.0*Sxx[gp];
-           ESyy += tolStrain[1]- 2.0*Syy[gp];
-           ESzz += tolStrain[2]- 2.0*Szz[gp];
-           ESxy += tolStrain[3]- 2.0*Sxy[gp];
-
+           ComputeShapefct(1); // Linear interpolation function
+           for(j=0; j<nnodes; j++)
+           {
+              ESxx += Sxx[j]*shapefct[j]; 
+              ESyy += Syy[j]*shapefct[j]; 
+              ESxy += Sxy[j]*shapefct[j]; 
+              ESzz += Szz[j]*shapefct[j]; 
+           }
 	       break;
 	     case 2: // Quadralateral element 
  
@@ -1654,26 +1652,20 @@ void CFiniteElementVec::ExtropolateGuassStrain()
            Extropolate the Gauss point strains to nodes    
    Formalparameter:
            E: 
-            const long index  : global element index
  
    Programming:
    06/2004   WW  
 **************************************************************************/
-void CFiniteElementVec::ExtropolateGuassStress(const int index)
+void CFiniteElementVec::ExtropolateGuassStress()
 {
   int i, j, gp, gp_r, gp_s, gp_t;
   int l1,l2,l3,l4, counter;
-  double ESxx, ESyy, ESzz, ESxy, ESxz, ESyz, Pls, Pls0;
+  double ESxx, ESyy, ESzz, ESxy, ESxz, ESyz, Pls;
   double r=0.0, Xi_p = 0.0;
   double Area1, Area2, Tol=10e-9;
 
   int ElementType = MeshElement->GetElementType();
 
-  // For strain extropolation in triangle element
-  if(ElementType==4)
-  {
-     for(i=0; i<ns; i++) tolStrain[i] = 0.0;
-  }
   // For strain and stress extropolation all element types
   // Number of elements associated to nodes
   for(i=0; i<nnodes; i++)
@@ -1691,10 +1683,8 @@ void CFiniteElementVec::ExtropolateGuassStress(const int index)
 
   l1=l2=l3=l4=0;
   gp_r=gp_s=gp_t=gp=0;
-  Pls0=0.0;
-
-  eleV_DM = ele_value_dm[index];
-  
+  eleV_DM = ele_value_dm[MeshElement->GetIndex()];
+  // 
   for(gp=0; gp<nGaussPoints; gp++)
   {
       if(ElementType==2||ElementType==3)
@@ -1744,37 +1734,6 @@ void CFiniteElementVec::ExtropolateGuassStress(const int index)
 */
   }
 
-  if(ElementType==4)
-  {
-	   for(i=0; i<ns; i++)
-       {
-          tolStrain[i] = 0.0;
-          for(gp=0; gp<nGaussPoints; gp++)
-             tolStrain[i] +=  (*eleV_DM->Stress)(i,gp);
-       }
-/*
-// FOR DECOVALEX
-       if(smat->SwellingPressureType==1)
-       {      
-	      for(i=0; i<3; i++)
-          {
-             for(gp=0; gp<nGaussPoints; gp++)
-	         {
-               GetGaussData(gp, gp_r, gp_t, gp_s);
-	           ComputeShapefct(1);
-	           S = interpolate(AuxNodal_S);
-               tolStrain[i] -= S*S*smat->Max_SwellingPressure;
-	         }
-   	      }
-       }
-///////////
-*/
-
-
-       Pls0 = 0.0;
-       for(gp=0; gp<nGaussPoints; gp++)
-          Pls0 +=  (*eleV_DM->pStrain)(gp);
-  }
   if(ElementType==2||ElementType==3)
   {
      for (gp = 0; gp < nGauss; gp++)
@@ -1797,24 +1756,34 @@ void CFiniteElementVec::ExtropolateGuassStress(const int index)
       switch(ElementType) 
       {
          case 4: // Traingle
-             // Compute values at verteces  
+           // Compute values at verteces  
+           // Compute values at verteces  
            switch(i)
 	       {
-		      case 0: gp=1; break;//P1=P-2P5
-		      case 1: gp=2; break;//P2=P-2P6
-		      case 2: gp=0; break;//P3=P-2P4
+		      case 0:
+	             unit[0] = -0.1666666666667;
+	             unit[1] = -0.1666666666667;
+                 break;
+		      case 1:
+	             unit[0] = 1.6666666666667;
+	             unit[1] = -0.1666666666667;
+                 break;
+		      case 2:
+	             unit[0] = -0.1666666666667;
+	             unit[1] = 1.6666666666667;
+                 break;
 		   }
-		   // Fetch the old strains
-             
-           ESxx += tolStrain[0]- 2.0*Sxx[gp];
-           ESyy += tolStrain[1]- 2.0*Syy[gp];
-           ESzz += tolStrain[2]- 2.0*Szz[gp];
-           ESxy += tolStrain[3]- 2.0*Sxy[gp];
-           Pls += Pls0- 2.0*pstr[gp];
-
+           ComputeShapefct(1); // Linear interpolation function
+           for(j=0; j<nnodes; j++)
+           {
+              ESxx += Sxx[j]*shapefct[j]; 
+              ESyy += Syy[j]*shapefct[j]; 
+              ESxy += Sxy[j]*shapefct[j]; 
+              ESzz += Szz[j]*shapefct[j]; 
+              Pls += shapefct[j]*pstr[j];
+           }
 	       break;
-	     case 2: // Quadralateral element 
- 
+	     case 2: // Quadralateral element  
 	       // Extropolation over nodes
            switch(i)
 	       {
@@ -2082,19 +2051,18 @@ void CFiniteElementVec::ComputeRESM(const double *tangJump)
 //TEST
 //    computeJacobian(1);
 //    ComputeGradShapefct(1);
-    for(i=0; i<ele_dim; i++)
+//
+	for(i=0; i<ele_dim; i++)
 	{
 		dphi_e[i] = 0.0;
         for(int j=0; j<nnodesHQ; j++)
 //        for(int j=0; j<nnodes; j++)
 		{
             if(NodesInJumpedA[j])
-               dphi_e[i] += dshapefctHQ[i*nnodesHQ+j];
+                dphi_e[i] += dshapefctHQ[i*nnodesHQ+j];
 //               dphi_e[i] += dshapefct[i*nnodes+j];
 		}
 	}
-
-
     // !!! Only for 2D up to now
 	tangJump = tangJump;
 	// Column 1
@@ -2232,7 +2200,7 @@ double CFiniteElementVec::ComputeJumpDirectionAngle(const double *Mat)
 
 /**************************************************************************
   GeoSys - Funktion: 
-    void CFiniteElementVec::LocalAssembly_CheckLocalization(const long index)
+    void CFiniteElementVec::LocalAssembly_CheckLocalization
  
    Aufgabe:
      Trace discontinuity surface and determine the normal direction to it 
@@ -2242,16 +2210,14 @@ double CFiniteElementVec::ComputeJumpDirectionAngle(const double *Mat)
   
    Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    E :
-     long index: Elementnummer
                                                                          
   Programmaenderungen:
      06/2004   WW  Erste Version
 **************************************************************************/
-bool CFiniteElementVec::LocalAssembly_CheckLocalization(const long index)
+bool CFiniteElementVec::LocalAssembly_CheckLocalization(CElem* MElement)
 {
   int i,j,k; 
   int MatGroup; 
-  eleV_DM = ele_value_dm[index];
 
   double ep, p, normXi, n1, n2;
 
@@ -2259,11 +2225,12 @@ bool CFiniteElementVec::LocalAssembly_CheckLocalization(const long index)
   double h_loc, detA, h_tol=1.0e-5;
   double pr_stress_ang, loc_ang;
   static double OriJ[2], Nj[2], Aac[4], Mat[3];
-
   bool LOCed = false;
+  //
+  MeshElement = MElement;
+  eleV_DM = ele_value_dm[MeshElement->GetIndex()];
 
   p = 0.0;
-
   // Get the total effective plastic strain 
   ep = 0.0;
   for(i=0; i<nGaussPoints; i++)
@@ -2489,7 +2456,6 @@ int CFiniteElementVec::IntersectionPoint(const int O_edge, const double *NodeA, 
   
    Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    E :
-     long index: Elementnummer
 	 const int update: 1 update Gauss values
 	                   0 do not update 
 
@@ -2499,7 +2465,7 @@ int CFiniteElementVec::IntersectionPoint(const int O_edge, const double *NodeA, 
   Programmaenderungen:
      06/2004   WW  Erste Version
 **************************************************************************/
-void CFiniteElementVec::LocalAssembly_EnhancedStrain(const long index, const int update)
+void CFiniteElementVec::LocalAssembly_EnhancedStrain(const int update)
 {
   int i,j, k,l, ii, jj, gp, gp_r, gp_s, gp_t; 
   double fkt=0.0 , area, Jac_e = 0.0, f_j;
@@ -2517,16 +2483,9 @@ void CFiniteElementVec::LocalAssembly_EnhancedStrain(const long index, const int
   BDG->LimitSize(2, 2*nnodesHQ);
   PDB->LimitSize(2*nnodesHQ,2);
 
-
-  // For strain extropolation in triangle element
-  if(MeshElement->GetElementType()==4)
-  {
-     for(i=0; i<ns; i++) tolStrain[i] = 0.0;
-  }
-
   gp_r = gp_s = gp_t = 0;
 
-  eleV_DM = ele_value_dm[index];
+  eleV_DM = ele_value_dm[MeshElement->GetIndex()];
 
   ThermalExpansion=0.0;
   if(T_Flag)
@@ -2535,7 +2494,7 @@ void CFiniteElementVec::LocalAssembly_EnhancedStrain(const long index, const int
     if(smat->Thermal_Expansion()>0.0) 
         ThermalExpansion =smat->Thermal_Expansion();
     for(i=0; i<nnodes; i++)
-       Temp[i] =  pcs->GetNodeValue(nodes[i],idx_T1)-pcs->GetNodeValue(nodes[i],idx_T0);
+       Temp[i] =  t_pcs->GetNodeValue(nodes[i],idx_T1)-t_pcs->GetNodeValue(nodes[i],idx_T0);
   }
 
   // Elastic modulus
@@ -2576,6 +2535,8 @@ void CFiniteElementVec::LocalAssembly_EnhancedStrain(const long index, const int
   // If this is the beginning of localization
   if(fabs(eleV_DM->tract_j)<MKleinsteZahl)
   {
+     
+     // average of stresses within an element
      for(j=0; j<ns; j++)
      {
         dstress[j] = 0.0;
@@ -2591,39 +2552,50 @@ void CFiniteElementVec::LocalAssembly_EnhancedStrain(const long index, const int
            tt0[i] += (*Pe)(i,j)*dstress[j];     
      }
      eleV_DM->tract_j = loc_dilatancy*tt0[0]+fabs(tt0[1]);
+	 /*
+     //
+     for(gp=0; gp<nGaussPoints; gp++)
+     {
+        //--------------------------------------------------------------
+        //-----------  Integrate of traction on the jump plane ---------
+        //--------------------------------------------------------------
+        for(i=0; i<ns; i++) dstress[i] = (*eleV_DM->Stress)(i,gp);
+        fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+        for(i=0; i<ele_dim; i++)
+        {
+           tt0[i] = 0.0;
+           for(j=0; j<ns; j++)
+              tt0[i] += (*Pe)(i,j)*dstress[j];     
+        }
+        eleV_DM->tract_j = fkt*(loc_dilatancy*tt0[0]+fabs(tt0[1]));         
+     }
+     eleV_DM->tract_j /= area;
+	 */
   }
-
+  //
   sj0 = eleV_DM->tract_j;
-
-
+  //
   CheckNodesInJumpedDomain();
-
-
-
-
   // On discontinuity by enhanced strain 
   // AuxMatrix temporarily used to store PDG
   (*AuxMatrix) = 0.0;
   // Integration of P^t*Stress^{elastic try}
   for(i=0; i<ele_dim; i++) tt0[i] = 0.0;
+  //TEST
+  for(i=0; i<ns; i++) dstress[i] = 0.0; //Test average appoach
   for(gp=0; gp<nGaussPoints; gp++)
   {
      //--------------------------------------------------------------
      //-----------  Integrate of traction on the jump plane ---------
      //--------------------------------------------------------------
-     for(i=0; i<ns; i++) dstress[i] = (*eleV_DM->Stress)(i,gp);
      fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
-
      //---------------------------------------------------------
      // Compute geometry
      //---------------------------------------------------------
      ComputeGradShapefct(2);
      ComputeStrain();
-
      // Compute Ge, regular part of enhanced strain-jump matrix
-     ComputeRESM();
-
-     
+     ComputeRESM();     
      if(T_Flag) // Contribution by thermal expansion 
      {
         ComputeShapefct(1); // Linear interpolation function
@@ -2633,13 +2605,26 @@ void CFiniteElementVec::LocalAssembly_EnhancedStrain(const long index, const int
         for (i = 0; i < 3; i++)
            dstrain[i] -= ThermalExpansion*Tem;
      } 
-     // Try stress
+     /*
+     for(i=0; i<ns; i++) dstress[i] = (*eleV_DM->Stress)(i,gp);
      De->multi(dstrain, dstress);
-     
+     // Try stress
      Pe->multi(dstress, tt0, fkt);
+	 */
      // Pe*De*Ge
      PeDe->multi(*Ge, *AuxMatrix, fkt);
+
+     //TEST -----------Average approach -------------------------
+     for(i=0; i<ns; i++) dstress[i] += (*eleV_DM->Stress)(i,gp);
+     De->multi(dstrain, dstress);
+     //----------------------------------------------------------- 
   }
+  
+  //TEST average approach
+  for(i=0; i<ns; i++) dstress[i] /= (double)nGaussPoints;
+  Pe->multi(dstress, tt0, 1.0);
+  for(i=0; i<ele_dim; i++) tt0[i] *= area;    
+  //-------------------------------------------------------------
 
   //  Local Newton iteration for discontinuity number 
   while(isLoop)
@@ -2727,10 +2712,9 @@ void CFiniteElementVec::LocalAssembly_EnhancedStrain(const long index, const int
             (*eleV_DM->Stress)(i,gp) =dstress[i];
              dstrain[i] = 0.0;
         }
-        Ge->multi(zeta, dstrain, -1.0);
+        Ge->multi(zeta, dstrain, 1.0);
         DeviatoricStress(dstrain);
-        (*eleV_DM->pStrain)(gp) 
-             += sqrt(2.0*TensorMutiplication2(dstrain, dstrain, 2)/3.0);
+        (*eleV_DM->pStrain)(gp) += sqrt(2.0*TensorMutiplication2(dstrain, dstrain, 2)/3.0);
      }
      else
      {
@@ -2821,7 +2805,7 @@ Allocate memory for element value
 						  |    6   |  m        |
                           ----------------------
 -----------------------------------------------------------------*/
-ElementValue_DM::ElementValue_DM(CElem* ele):NodesOnPath(NULL), 
+ElementValue_DM::ElementValue_DM(CElem* ele, bool HM_Staggered):NodesOnPath(NULL), 
                                  orientation(NULL)
 {
    int Plastic = 1;
@@ -2829,7 +2813,6 @@ ElementValue_DM::ElementValue_DM(CElem* ele):NodesOnPath(NULL),
    int LengthBS=4;  // Number of stress/strain components
    int NGPoints=0, NGP = 0;
    CSolidProperties *sdp = NULL;
-
    int ele_dim, ele_type;
    //
    Stress = NULL;
@@ -2838,7 +2821,8 @@ ElementValue_DM::ElementValue_DM(CElem* ele):NodesOnPath(NULL),
    e_i = NULL;
    xi = NULL;
    MatP = NULL;
-
+   NodesOnPath = NULL;
+   orientation = NULL;
    ele_type = ele->GetElementType();
    ele_dim = ele->GetDimension();
    sdp = msp_vector[ele->GetPatchIndex()];
@@ -2855,7 +2839,12 @@ ElementValue_DM::ElementValue_DM(CElem* ele):NodesOnPath(NULL),
    else NGPoints = (int)pow((double)NGP, (double)ele_dim);
 
    Stress0 = new Matrix(LengthBS, NGPoints);
-   Stress = new Matrix(LengthBS, NGPoints);
+   Stress_i = new Matrix(LengthBS, NGPoints);
+   Stress = Stress_i;
+   if(HM_Staggered)
+      Stress_j = new Matrix(LengthBS, NGPoints);
+   else
+      Stress_j = NULL; // for HM coupling iteration   
    pStrain = new Matrix(NGPoints);
              
    *Stress = 0.0;
@@ -2875,19 +2864,63 @@ ElementValue_DM::ElementValue_DM(CElem* ele):NodesOnPath(NULL),
        *prep0 = 0.0;
        *e_i = 0.0;
    }
-   if(enhanced_strain_dm>0)
-   {
-       disp_j=0.0;
-       tract_j=0.0;
-       Localized = false;
-   }
+   disp_j=0.0;
+   tract_j=0.0;
+   Localized = false;
+}
+// 01/2006 WW
+void ElementValue_DM::Write_BIN(fstream& os)
+{
+   Stress0->Write_BIN(os); 
+   Stress_i->Write_BIN(os); 
+   pStrain->Write_BIN(os);    
+   if(xi) xi->Write_BIN(os);    		
+   if(MatP) MatP->Write_BIN(os);    
+   if(prep0) prep0->Write_BIN(os);    
+   if(e_i) e_i->Write_BIN(os);    
+   if(NodesOnPath) NodesOnPath->Write_BIN(os);    
+   if(orientation) os.write((char*)(orientation), sizeof(*orientation));    
+   os.write((char*)(&disp_j), sizeof(disp_j));    
+   os.write((char*)(&tract_j), sizeof(tract_j));    
+   os.write((char*)(&Localized), sizeof(Localized));    
+}
+// 01/2006 WW
+void ElementValue_DM::Read_BIN(fstream& is)
+{
+   Stress0->Read_BIN(is); 
+   Stress_i->Read_BIN(is); 
+   pStrain->Read_BIN(is);    
+   if(xi) xi->Read_BIN(is);    		
+   if(MatP) MatP->Read_BIN(is);    
+   if(prep0) prep0->Read_BIN(is);    
+   if(e_i) e_i->Read_BIN(is);    
+   if(NodesOnPath) NodesOnPath->Read_BIN(is);    
+   if(orientation) 
+     is.read((char*)(orientation), sizeof(*orientation));    
+   is.read((char*)(&disp_j), sizeof(disp_j));    
+   is.read((char*)(&tract_j), sizeof(tract_j));    
+   is.read((char*)(&Localized), sizeof(Localized));    
 }
 
+void ElementValue_DM::ResetStress(bool cpl_loop)
+{
+   if(cpl_loop) // For coupling loop
+   {
+	   (*Stress_j) = (*Stress_i);
+       Stress = Stress_j;
+   }
+   else // Time loop
+   {
+	   (*Stress_i) = (*Stress_j);
+       Stress = Stress_i;
+   }
+}
 
 ElementValue_DM::~ElementValue_DM()
 {
     delete Stress0;
-    delete Stress;
+    if(Stress_i) delete Stress_i;
+    if(Stress_j) delete Stress_j;
     delete pStrain;
     // Preconsolidation pressure
     if(prep0) delete prep0;               
@@ -2903,6 +2936,8 @@ ElementValue_DM::~ElementValue_DM()
     orientation = NULL;
     Stress0 = NULL;
     Stress = NULL;
+    Stress_i = NULL; // for HM coupling iteration   
+    Stress_j = NULL; // for HM coupling iteration   
     pStrain = NULL;
     prep0 = NULL;
     e_i = NULL;

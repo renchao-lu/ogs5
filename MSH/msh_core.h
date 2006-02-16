@@ -35,7 +35,7 @@ class CCore
       bool mark; // e.g. marked to be refined or active 
       bool quadratic; // higher order
       string deli; // delimitor
-   protected: // Finite element objects
+      // Finite element objects
 	  friend class FiniteElement::CElement;  
 	  friend class FiniteElement::CFiniteElementStd; 
 	  friend class FiniteElement::CFiniteElementVec; 

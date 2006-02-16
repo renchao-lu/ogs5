@@ -39,7 +39,6 @@ namespace FiniteElement{
   using Math_Group::Vec;
   using process::CRFProcessDeformation;
   using ::CRFProcess;
-
 class CFiniteElementStd:public CElement
 {
    public:  
@@ -50,7 +49,10 @@ class CFiniteElementStd:public CElement
      void SetMaterial(const int phase=0);
      // Set memory for local matrices
      void SetMemory();
-	
+
+     // Set coupling information
+     void ConfigureCoupling(CRFProcess* pcs, const int *Shift, bool dyn=false);
+
      // Element claculation
      // 1. Mass matrix
      void CalcMass();
@@ -72,14 +74,14 @@ class CFiniteElementStd:public CElement
 	 void CalcContent();
      // Assembly
      void Assembly(); 
-	   void Assembly(int dimension);	// PCH for Fluid Momentum
+	 void Assembly(int dimension);	// PCH for Fluid Momentum
      void Cal_Velocity();
+     void AssembleParabolicEquationRHSVector(); //OK
 
      // MB only temporary
      void Get_Matrix_Quad();
      void CalcNLTERMS(int nn, double* H, double* HaaOld, double power, double* swval, double* swold, double* krwval);
-     void CalcCKWR(int nn, double* haa, double* z, double power, double* test, int* iups); 
-
+     void CalcCKWR(int nn, double* haa, double* z, double power, double* test, int* iups);
      CRFProcess *pcs;
      CSolidProperties *SolidProp;
      CFluidProperties *FluidProp;
@@ -98,7 +100,9 @@ class CFiniteElementStd:public CElement
      double mat[9];
      bool heat_phase_change;
      process::CRFProcessDeformation *dm_pcs;
+     ::CRFProcess *cpl_pcs; // Pointer to coupled process. WW  
      bool dynamic; 
+
      //-------------------------------------------------------
      // Auxillarary matrices
      Matrix *StiffMatrix;
@@ -106,6 +110,7 @@ class CFiniteElementStd:public CElement
      Matrix *AuxMatrix1;
      // Gravity matrix;
      SymMatrix *GravityMatrix;
+
      // Auxillarary vectors for node values
      // Vector of local node values, e.g. pressure, temperature.
      // Assume maximium element nodes is 20
@@ -127,8 +132,8 @@ class CFiniteElementStd:public CElement
      // Local matrices
      SymMatrix *Mass;
      Matrix *Laplace;
-	   Matrix *Advection; //SB4200
-	   Matrix *Storage; //SB4200
+     Matrix *Advection; //SB4200
+     Matrix *Storage; //SB4200
 	 Matrix *Content; //SB4209
      Matrix *StrainCoupling;
      Vec       *RHS;      
@@ -136,9 +141,9 @@ class CFiniteElementStd:public CElement
      // Primary as water head
      bool HEAD_Flag; 
      inline double CalCoefMass();
-     inline void CalCoefLaplace(bool Gravity=false, int ip=0);
-	   inline double CalCoefAdvection(); //SB4200 OK/CMCD
-	   inline double CalCoefStorage(); //SB4200
+     inline void CalCoefLaplace(bool Gravity, int ip=0);
+     inline double CalCoefAdvection(); //SB4200 OK/CMCD
+     inline double CalCoefStorage(); //SB4200
 	 inline double CalCoefContent();
      inline double CalCoefStrainCouping();
      inline void CalNodalEnthalpy();
@@ -167,8 +172,6 @@ class CFiniteElementStd:public CElement
      void Assemble_Gravity();
 	 void AssembleRHS(int dimension); // PCH
      bool check_matrices; //OK4104
-   public:
-     void AssembleParabolicEquationRHSVector(); //OK
 };
 
 

@@ -1479,3 +1479,4 @@ REACT *rc = new REACT(); //SB
 rc->TestPHREEQC(filename); // Test if *.pqc file is present
 REACT_vec.push_back(rc);
 }
+

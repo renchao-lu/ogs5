@@ -48,10 +48,6 @@ class CRFProcessDeformation:public CRFProcess
      void AllocateTempArrary(const int dims);
      double* GetAuxArray() const {return ARRAY;};
  
-
-     //Set member
-     void ConfigureCoupling();
-
      void ScalingNodeForce(const double SFactor);
      void InitGauss(); 
      //
@@ -64,9 +60,14 @@ class CRFProcessDeformation:public CRFProcess
      double NormOfDisp();
      double NormOfUnkonwn();
 
-     void UpdateSecondaryVariable();
-     void UpdateInitialStress(); 
-     void Extropolation_GaussValue(bool update=false); 
+	 // Stress
+     // For partitioned HM coupled scheme
+     void ResetCouplingStep();
+     void ResetTimeStep();
+     //
+     void UpdateStress();
+     void UpdateInitialStress(bool ZeroInitialS); 
+     void Extropolation_GaussValue(); 
 
      // Excavation computation
      void ReleaseLoadingByExcavation();
@@ -74,10 +75,7 @@ class CRFProcessDeformation:public CRFProcess
 
      // Dynamic
      bool CalcBC_or_SecondaryVariable_Dynamics(bool BC = false);
-
-     // Set coupling variable for THM coupling process with partition scheme
-     void SetInterimVariableIndex(const int CouplingIterations=0);
-     void SetInterimVariable();
+     // Calculate scaling factor for load increment
      double CaclMaxiumLoadRatio() ;
  
      // Write stresses
@@ -91,6 +89,8 @@ private:
      double *ARRAY;
      int counter; 
      double InitialNorm; 
+     double InitialNormU; 
+     double InitialNormU0; 
 
      // For strong discontinuity approach
      void Trace_Discontinuity();
@@ -104,7 +104,6 @@ extern double Tolerance_global_Newton;
 extern double Tolerance_Local_Newton;
 extern int enhanced_strain_dm;
 extern int number_of_load_steps;
-extern int problem_2d_type_dm; 
 extern int problem_dimension_dm; 
 extern int PreLoad;
 extern bool GravityForce;

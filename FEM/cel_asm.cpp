@@ -480,12 +480,14 @@ void CalcEle2D_ASM(long index,\
     /*------------------------------------------------------------------------*/
 
     /* Volumenelemente */
-    if (problem_2d_type_dm==2) {   /* axially symmetric */
+	/*
+    if (problem_2d_type_dm==2) {   // axially symmetric 
       area = 0;  
       for (i = 0; i < 4; i++) {
         area += 0.25*((GetNode(element_nodes[i]))->x) * 2.0 * PI;
-      }   /* axially symmetric */
+      }   // axially symmetric 
     }
+	*/
     for (i = 0; i < 16; i++) {
         capacitance_matrix[i] *= (area * storativity);
         conductance_matrix[i] *= (area);

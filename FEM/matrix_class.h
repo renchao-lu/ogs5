@@ -11,6 +11,7 @@
 #define matrix_class_INC
 
 #include<iostream>
+#include<fstream>
 
 //#define OverLoadNEW_DELETE
 
@@ -64,6 +65,8 @@ class Matrix
 
      // Print
      void Write(ostream& os=cout);
+     void Write_BIN(fstream& os);
+     void Read_BIN(fstream& is);
    protected:
      double *data;     
      int nrows, nrows0;
