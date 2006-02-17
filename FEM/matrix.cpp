@@ -173,6 +173,7 @@ int M5Set(long i, long j, double e_val);
 void M5MatVek( double* b, double* erg);
 void M5InitMatrix(void);
 void *M5DestroyMatrix(void);
+void M5Vorkond(int aufgabe, double *x, double *b);
 
 //void M5CreateMatrix(void);
 void *M5CreateMatrix(long param1, long param2, long param3);
@@ -181,6 +182,7 @@ void *M5CreateMatrix(long param1, long param2, long param3);
 void insertionSort1_des(int numbers[],int numbers1[], int array_size);
 void transM2toM5(void);
 int *jd_ptr1, *jd_ptr2, *jd_ptr, *jd_ptrf, *col_ind;
+long *diag5_i;
 double *temp_ergebnis,*jdiag;
 int m_count, jd_ptr_max, Dim_L;
 /*-----------------------------------------------------------------------
@@ -438,7 +440,7 @@ int MXSetFunctionPointers(int type)
       MXGet = M5Get;
       MXMatVek = M5MatVek;
       MXMatTVek = M2MatTVek;
-      MXVorkond = M2Vorkond;
+      MXVorkond = M5Vorkond;
       MXCopyToAMG1R5Structure = M2CopyToAMG1R5Structure;
       break;
     case 6:
@@ -807,7 +809,8 @@ void *M5DestroyMatrix(void)
 	 free(temp_ergebnis);
      free(col_ind);
      free(jdiag);
-	 return (void*) 1;
+     free(diag5_i); 
+     return (void*) 1;
 }
 
 
@@ -1760,7 +1763,7 @@ void *M5CreateMatrix(long param1, long param2, long param3)
   
   matrix_type = param2;
 
-  int i,ii,count1;
+  int i,ii,jj,count1;
   long k, index, Size, dim1; //OK
 /*------------------------------------------------------------*/
   jd_ptr_max = 0;
@@ -1793,6 +1796,7 @@ void *M5CreateMatrix(long param1, long param2, long param3)
 	  temp_ergebnis = (double *)malloc(dim1*sizeof(double));
       col_ind = (int *)malloc(m_count*sizeof(int));
       jdiag = (double *)malloc(m_count*sizeof(double));
+      diag5_i = (long *)malloc(dim1*sizeof(long));
 
 /*------------------------------------------------------------*/	  
 	  for (k = 0; k < jd_ptr_max; k++)
@@ -1867,17 +1871,21 @@ void *M5CreateMatrix(long param1, long param2, long param3)
              // Row of equation system 
              ii = jd_ptr2[i]; 
              index =  m_msh->Eqs2Global_NodeIndex[ii];   
-			 col_ind[count1] =  m_msh->nod_vector[index]->connected_nodes[k];          
+			 col_ind[count1] =  m_msh->nod_vector[index]->connected_nodes[k];   
+             jj = col_ind[count1] ;
 			 m_msh->nod_vector[index]->m5_index[k]=count1;
+             if(ii==jj)
+                diag5_i[ii] = count1;
 //TEST WW OUT
-//             cout<<ii<<"  "<< col_ind[count1]<<"    ";
+			 cout<<" Row: "<< ii<<"  "<< col_ind[count1]<<"    ";
 //             cout<<ii<<"    ";
+//             cout<< col_ind[count1]<<"    ";
 //////////////////////////////////
 
              count1++;
           }  
 //TEST WW
-//          cout<<endl;
+          cout<<endl;
 ////////////////////
        }
    return (void*) w;
@@ -3383,6 +3391,143 @@ void M34Vorkond(int aufgabe, double *x, double *b)
         }                              /* Ende ILU-Vorkonditionierer */
     }                                  /* switch aufgabe */
 }                                      /*M34Precond */
+
+
+
+
+
+/**** Modell 5 ************************************************************/
+// WW/PA 16/02/2006
+void M5Vorkond(int aufgabe, double *x, double *b)
+{
+  Modell2 *w = (Modell2 *) wurzel;
+  register long k;
+  register int i;
+  static double *x0, *r0, h;
+  long ii, count1;
+  double v_diag=0.0;
+
+#ifdef ERROR_CONTROL
+  if (b == NULL || x == NULL)
+    MX_Exit("M2Vorkond", 3);
+#endif
+  //======================================================================
+  switch (aufgabe)
+  {
+    //--------------------------------------------------------------------
+    case 0:                            /* Start des Vorkonditionierers */
+      if VK_Modus
+        (VK_Extraktion)
+        {                              /* immer zuerst! */
+          x0 = (double *) Malloc(sizeof(double) * dim);
+          r0 = (double *) Malloc(sizeof(double) * dim);
+          MXResiduum(x, b, r0);         /* Rechte Seite ex A*(Startloesung x) */
+          for (i = 0; i < dim; i++)
+            {
+              b[i] = r0[i];
+              x0[i] = x[i];
+              x[i] = 0.0;
+            }
+          r0 = (double *) Free(r0);
+        }
+      if VK_Modus
+        (VK_Skalierung)
+        {  
+          for (k = 0; k < Dim_L; k++)
+          {
+              v_diag = jdiag[diag5_i[k]];
+              if(fabs(v_diag) > DBL_MIN) {
+                h = 1. / v_diag;
+                b[k] *= h;
+              }
+			  else 
+              {
+                DisplayMsg("!!! Equation system: Line: ");
+                DisplayLong(k);
+                DisplayMsg(" Value: ");
+                DisplayDouble(Diag2(k), 0, 0);
+                DisplayMsgLn("");
+                DisplayMsgLn("!!! Diagonal near zero! Disable diagonal preconditioner!");
+                exit(1);
+              }
+            }
+
+
+		  // For test, must be improved
+		  double val;
+          for (k = 0; k < Dim_L; k++)
+          {
+             v_diag =  MXGet(k,k);
+             for (ii = 0; ii < Dim_L;ii++)
+             {
+                 val = MXGet(k,ii);
+                 val /= v_diag;
+                 MXSet(k,ii,val);
+			 }
+		  }
+
+		  /*
+            count1 = 0;
+	        for (k = 0; k < jd_ptr_max; k++)
+	        {
+               for (i = 0; i < jd_ptr[k]; i++)
+               {
+                  // Row of equation system 
+                  ii = jd_ptr2[i]; 
+                  v_diag = jdiag[diag5_i[ii]]; 
+                  if(fabs(v_diag) > DBL_MIN) 
+                     jdiag[count1] /= v_diag;  //    
+                  count1++;
+               }  
+	        }
+			*/
+
+    ///////////////////////////////////////////////// 
+
+          /*
+          // Diagonal-Skalierung 
+          for (k = 0; k < dim; k++)
+            {
+              if(fabs(Diag2(k)) > DBL_MIN) {
+                h = 1. / Diag2(k);
+                b[k] *= h;
+                for (i = 0; i < Zeil2(k).anz; i++)
+                  Aik2(k, i) *= h;
+              } else {
+                DisplayMsg("!!! Equation system: Line: ");
+                DisplayLong(k);
+                DisplayMsg(" Value: ");
+                DisplayDouble(Diag2(k), 0, 0);
+                DisplayMsgLn("");
+                DisplayMsgLn("!!! Diagonal near zero! Disable diagonal preconditioner!");
+                exit(1);
+              }
+            }
+			*/
+        }
+      break;
+    //--------------------------------------------------------------------
+    case 1:                            /* Ende des Vorkonditionierers */
+      if VK_Modus
+        (VK_Extraktion)
+        {                              /* immer zuletzt: Startloesung addieren */
+          for (i = 0; i < dim; i++)
+            x[i] += x0[i];
+          x0 = (double *) Free(x0);
+        }
+      break;
+    //--------------------------------------------------------------------
+    case 2:
+    //--------------------------------------------------------------------
+    case 3:                            /* Linkstransformationen */
+      if VK_Modus
+        (VK_iLDU)                      /*  incomplete L(D)U-Zerlegung geht nicht! */
+            DisplayMsgLn("Modell 2: kein ILU-Vorkonditionierer!");
+    //--------------------------------------------------------------------
+  }
+  //======================================================================
+}
+
 
 /*************************************************************************
  ROCKFLOW - Funktion: MXDumpGLS
