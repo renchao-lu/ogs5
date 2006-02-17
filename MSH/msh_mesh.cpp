@@ -2587,6 +2587,7 @@ void CFEMesh::ConnectedNodes()
   int i, j,l, k, n;
   CNode* m_nod = NULL;
   CElem* m_ele = NULL;
+  bool exist = false;
 #define noTestConnectedNodes
   //----------------------------------------------------------------------
   for(i=0;i<(long)nod_vector.size();i++){
@@ -2594,11 +2595,23 @@ void CFEMesh::ConnectedNodes()
     for(j=0;j<(int)m_nod->connected_elements.size();j++){
       m_ele = ele_vector[m_nod->connected_elements[j]];
       for(l=0;l<m_ele->GetNodesNumber(false);l++){
-        m_nod->connected_nodes.push_back(m_ele->nodes_index[l]);
+          exist = false;
+          for(k=0;k<(int)m_nod->connected_nodes.size();k++) //WW
+		  {
+             if(m_nod->connected_nodes[k]==m_ele->nodes_index[l])
+			 {
+                 exist = true;
+                 break;
+			 }
+		  }
+          if(!exist) //WW
+             m_nod->connected_nodes.push_back(m_ele->nodes_index[l]);      
       }
     }
   }
   //----------------------------------------------------------------------
+ /*
+  // Memory problem Commented by WW. 
   vector<long>aux_vector;
   bool flag;
   //......................................................................
@@ -2625,7 +2638,7 @@ void CFEMesh::ConnectedNodes()
     m_nod->connected_nodes = aux_vector;
     aux_vector.clear();
   }  
-
+ */
   // Sorting. WW
   for(i=0;i<(long)nod_vector.size();i++){//WW
     m_nod = nod_vector[i];
