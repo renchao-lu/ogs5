@@ -2041,7 +2041,8 @@ void M5MatVek(double *b, double *erg)
 {
 //  Modell2 *w = (Modell2 *) wurzel;
   int i, k, dim1;
-  long ii,jj, nod_c, counter; //WW
+  int j, num;
+  long ii,jj, nod_c, counter, col_len; 
   CFEMesh* m_msh = NULL; //WW
   m_msh = FEMGet("GROUNDWATER_FLOW");
   dim1 = m_msh->NodesInUsage();
@@ -2051,7 +2052,7 @@ void M5MatVek(double *b, double *erg)
 #endif
     for (i=0;i<dim1;i++)
     	erg[i]=0.0;
-
+/*
     // WW   //////
     counter=0;
     for (k = 0; k < jd_ptr_max; k++)
@@ -2066,8 +2067,8 @@ void M5MatVek(double *b, double *erg)
        }         
     }
     ///////////////////////////////////////////////// 
+*/
 
-/*
     for (i=0;i<dim1;i++)
     	temp_ergebnis[i]=0.0;
 
@@ -2094,7 +2095,7 @@ void M5MatVek(double *b, double *erg)
 #endif
 	for(i=0; i<dim1; i++)
 	  erg[jd_ptr2[i]]=temp_ergebnis[i];
-*/
+
 }
 /*--------------------------------------------------------------------
  * Matrxi-Vektor Multiply with ITPACKV
