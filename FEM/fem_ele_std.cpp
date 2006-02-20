@@ -69,6 +69,8 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
     pcsT = pcs->pcs_type_name[0];
     if(pcs->pcs_type_name.find("GAS")!=string::npos)
        pcsT = 'A';
+    if(pcs->pcs_type_name.find("DUAL_RICHARDS")!=string::npos)
+       pcsT = 'B';
     switch(pcsT){
       default:
         PcsType = L;
@@ -134,6 +136,13 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
         break;
       case 'A': // Air (gas) flow
         PcsType = A;
+        break;
+      case 'B': //YD Dual Richards flow
+        GravityMatrix = new  SymMatrix(20);
+        idx0 = pcs->GetNodeValueIndex("PRESSURE_D");
+        idx1 = idx0+1;
+        idxS = pcs->GetNodeValueIndex("SATURATION_D")+1;
+        PcsType = R;
         break;
     }
 
@@ -747,6 +756,7 @@ inline double CFiniteElementStd::CalCoefMass()
     //....................................................................
     case H: // Heat transport
       val = MediaProp->HeatCapacity(Index,unit,pcs->m_num->ls_theta,this)*time_unit_factor;
+     //YD val += FluidProp->SpecificHeatCapacity()*time_unit_factor;
       val /=time_unit_factor;
       break;
     //....................................................................
@@ -1338,7 +1348,7 @@ void CFiniteElementStd::CalcLumpedMass()
   SetCenterGP();
   // Factor
   factor = CalCoefMass(); 
-  pcs->timebuffer *= factor;  // What is this. WW
+  pcs->timebuffer = factor;  // Tim Control "Neumann"
   // Volume
   factor *= MeshElement->GetVolume()/(double)nnodes;
   for (i=0; i<nnodes; i++)
@@ -1802,7 +1812,7 @@ void  CFiniteElementStd::Assemble_Gravity()
    08/2005      
 **************************************************************************/
 // Local assembly
-void  CFiniteElementStd::Cal_Velocity()
+void  CFiniteElementStd::Cal_Velocity(bool cal_gravity)
 {
   int i, j, k;
   static double vel[3];  
@@ -1831,7 +1841,6 @@ void  CFiniteElementStd::Cal_Velocity()
   k = (coordinate_system)%10;
   for(i=0; i<nnodes; i++)
 	 NodalVal[i] = pcs->GetNodeValue(nodes[i], idx1); 
-
   for (gp = 0; gp < nGaussPoints; gp++)
   {
       //---------------------------------------------------------
@@ -3139,6 +3148,24 @@ void ElementValue::getIPvalue_vec(const int IP, double * vec)
 {
 	for(int i=0; i<Velocity.Rows(); i++) vec[i] = Velocity(i, IP);
 }
+
+/**************************************************************************
+FEMLib-Method:
+Task: 
+Programing:
+01/2006 YD Implementation
+last modification:
+**************************************************************************/
+void ElementValue::GetEleVelocity(double * vec)
+{
+	for(int i=0; i<Velocity.Rows(); i++)
+    { 
+      vec[i] = 0.0;
+      for(int j=0; j<Velocity.Cols(); j++) 
+        vec[i] += Velocity(i, j);
+      vec[i] /= Velocity.Cols();
+    }
+ }
 
 ElementValue::~ElementValue()
 {

@@ -439,7 +439,7 @@ void TIMDelete(string pcs_type_name)
 FEMLib-Method: 
 Task: Neumann estimation
 Programing:  
-YD
+10/2005 YD Implementation
 **************************************************************************/
 double CTimeDiscretization::FirstTimeStepEstimate(void) 
 {
@@ -453,6 +453,7 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
   static double Node_Sat[8];
   double buffer;
   int no_time_steps;
+  int no_processes =(int)pcs_vector.size();
   int mmp_vector_size = (int)mmp_vector.size(); 
 
   for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
@@ -489,15 +490,58 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
 			  buffer = m_mmp->SaturationPressureDependency(fem->interpolate(Node_Sat),m_pcs->m_num->ls_theta);
 			  buffer *= 0.5*elem->GetVolume()*elem->GetVolume();
 			  buffer *=m_mmp->porosity_model_values[0]*mfp_vector[0]->Viscosity()/m_mmp->permeability_tensor[0];
+              buffer /=m_pcs->time_unit_factor;
 			  time_step_length = MMin(time_step_length,buffer);  
 			  }
 			  if (time_step_length < MKleinsteZahl){
 				  cout<<"Waning : Time Control Step Wrong, dt = 0.0 "<<endl;
 			  }
 			 cout<<"Neumann Time Step: "<<time_step_length<<endl;
+             time_step_length_neumann = 1.e10;   
 			if(Write_tim_discrete)
 			*tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
 
+      break;
+//-----------------------------------------------------
+      case 'D': // Dual Richards
+      idxS  = m_pcs->GetNodeValueIndex("SATURATION_D");
+      no_time_steps = int(1e10);
+	  time_step_length = 1.e10;
+	  for(int m=0;m< mmp_vector_size;m++) m_mmp = mmp_vector[m];
+	  for (i=0;i< (long)m_pcs->m_msh->ele_vector.size();i++){  
+        elem = m_pcs->m_msh->ele_vector[i];
+        if (elem->GetMark())     // Element selected
+           {
+            // Activated Element 
+            group = elem->GetPatchIndex();
+            m_mmp = mmp_vector[group];
+            m_mmp->m_pcs=m_pcs;
+            EleType = elem->GetElementType();
+            if(EleType==4) // Traingle
+              {
+                 GP[0] = GP[1] = 0.1/0.3; 
+                 GP[2] = 0.0;
+              }
+              else if(EleType==5) 
+		         GP[0] = GP[1] = GP[2] = 0.25;
+              else
+		         GP[0] = GP[1] = GP[2] = 0.0; 
+            }
+		   for(j=0; j<elem->GetVertexNumber(); j++)
+              Node_Sat[j] = m_pcs->GetNodeValue(elem->GetNodeIndex(j),idxS);
+			  buffer = m_mmp->SaturationPressureDependency(fem->interpolate(Node_Sat),m_pcs->m_num->ls_theta);
+			  buffer *= 0.5*elem->GetVolume()*elem->GetVolume();
+			  buffer *=m_mmp->porosity_model_values[0]*mfp_vector[0]->Viscosity()/m_mmp->permeability_tensor[0];
+              buffer /=m_pcs->time_unit_factor;
+			  time_step_length = MMin(time_step_length,buffer);  
+			  }
+			  if (time_step_length < MKleinsteZahl){
+				  cout<<"Waning : Time Control Step Wrong, dt = 0.0 "<<endl;
+			  }
+			 cout<<"Neumann Time Step: "<<time_step_length<<endl;
+             time_step_length_neumann = 1.e10;   
+			if(Write_tim_discrete)
+			*tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
       break;
  }
 }
@@ -507,32 +551,34 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
 FEMLib-Method: 
 Task: Nuemann Control
 Programing:
+10/2005 YD Implementation
 **************************************************************************/
 double CTimeDiscretization::NeumannTimeControl(void) 
 {
-  //double time_step_length;
   CRFProcess* m_pcs = NULL;
 
   for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
   m_pcs = pcs_vector[n_p];
   switch(m_pcs->pcs_type_name[0]){
-  default:
-      cout << "Fatal error: No valid PCS type" << endl;
-      break;
   case 'R': // Richards
   time_step_length = time_step_length_neumann;
   break;
+  default:
+      cout << "Fatal error: No valid PCS type" << endl;
+      break;
  }
 }
   cout<<"Neumann Time Step: "<<time_step_length<<endl;
+	time_step_length_neumann = 1.e10;   
   if(Write_tim_discrete)
       *tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
   return time_step_length;
 }
 /**************************************************************************
 FEMLib-Method: 
-Task: 
+Task: Self adaptive method
 Programing:
+10/2005 YD Implementation
 **************************************************************************/
 double CTimeDiscretization::SelfAdaptiveTimeControl(void) 
 {

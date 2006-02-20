@@ -56,7 +56,7 @@ CNumerics::CNumerics(string pcs_type_name)
   nls_error_tolerance_local = 1.0e-10; //For element level
   nls_relaxation = 0.0;
   // cpl WW
-  cpl_iterations = 1; //OK
+  cpl_iterations = 6; //OK  //YD
   cpl_tolerance = 1.0e-3;
   cpl_variable = "FLUX";
   // ELE

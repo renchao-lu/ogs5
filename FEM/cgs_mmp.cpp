@@ -1929,40 +1929,62 @@ void CRFProcess::MMPCalcSecondaryVariablesRichards(int timelevel, bool update) /
   }
 }
 
+
 /*************************************************************************
 GeoSys-FEM Function:
 Task: 
 Programming: 
-02/2005 OK/YD Implementation
-08/2005 WW 
+01/2006 YD Implementation
 last modified:
 **************************************************************************/
-void CRFProcess::MMPSetICRichards(int dummy)
+void DualCalcSecondaryVariables()
 {
-  dummy=dummy;
-  int timelevel;
+  int timelevel = 1;
+  long i; 
+  double saturation, saturation1;
+  int idxp,idxS,idxtr,idxp1,idxS1,idxS_total;
+  double transfer,pressure1,pressured, total_saturation;
+  double alph = 0.1;    //ToDo
+  double K = 0.00001;
+  double gravity_constant = 9.81;
 
-  int idxp0 = GetNodeValueIndex("PRESSURE1");
-  int idxcp0 = GetNodeValueIndex("PRESSURE_CAP");
-
-  int idxp1 = idxp0+1;
-  int idxcp1 = idxcp0+1;
-
+  CMediumProperties* m_mmp = NULL;
+  CElem* elem =NULL;
+  CFluidProperties *m_mfp = NULL;
+  m_mfp = mfp_vector[0];
   //----------------------------------------------------------------------
-  // Capillary pressure
-  double p_cap;
-  for(int i=0;i<m_msh->GetNodesNumber(false);i++){
-    p_cap = -GetNodeValue(i,idxp0);
-    SetNodeValue(i,idxcp0,p_cap);
-    p_cap = -GetNodeValue(i,idxp1);
-    SetNodeValue(i,idxcp1,p_cap);
+  // PCS
+  CRFProcess *pcs_R = PCSGet("RICHARDS_FLOW");
+  CRFProcess *pcs_D = PCSGet("DUAL_RICHARDS");
+  CRFProcess*m_pcs_mmp = pcs_D;  
 
-  }
-
-  timelevel = 0;
-  // Node valus of Both levels are needed by the following line
-  MMPCalcSecondaryVariablesRichards(timelevel, false);
-  timelevel = 1;
-  MMPCalcSecondaryVariablesRichards(timelevel, false);
+  CFEMesh* m_msh = m_pcs_mmp->m_msh; 
+  CFiniteElementStd* fem = m_pcs_mmp->GetAssembler();
+  //----------------------------------------------------------------------
+  idxp1 = pcs_R->GetNodeValueIndex("PRESSURE1") + timelevel;
+  idxS1 = pcs_R->GetNodeValueIndex("SATURATION1") + timelevel;
+  //----------------------------------------------------------------------
+  idxp  = pcs_D->GetNodeValueIndex("PRESSURE_D") + timelevel;
+  idxS  = pcs_D->GetNodeValueIndex("SATURATION_D") + timelevel;
+  idxtr = pcs_D->GetNodeValueIndex("TRANSFER")+ timelevel;
+  idxS_total = pcs_D->GetNodeValueIndex("TOTAL_SATURATION")+ timelevel;
+  //----------------------------------------------------------------------
+  //   First order transfer term
+  for(i=0;i<(long)m_msh->GetNodesNumber(false);i++)
+  {
+    pressure1 = pcs_R->GetNodeValue(i, idxp1);
+    pressured = pcs_D->GetNodeValue(i, idxp);
+    transfer = alph*K*(pressured-pressure1)/m_mfp->Density()/gravity_constant;   //t=a*K*(Pd-P1)/rho/g
+    pcs_D->SetNodeValue(i,idxtr, transfer);
+  }       
+  //----------------------------------------------------------------------
+  // Total saturation
+  for(i=0;i<(long)m_msh->GetNodesNumber(false);i++)
+  {
+    saturation1 = pcs_R->GetNodeValue(i, idxS1);
+    saturation = pcs_D->GetNodeValue(i, idxS);
+    total_saturation = saturation1*(1-m_pcs_mmp->preferential_factor) + saturation*m_pcs_mmp->preferential_factor; //S1*wm+Sd*(1-wm) 
+    pcs_D->SetNodeValue(i,idxS_total,total_saturation);     
+   }
+  
 }
-

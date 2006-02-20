@@ -156,6 +156,8 @@ class CFEMesh
     vector<Mesh_Group::CEdge*> edge_vector;
     // All surface feces
     vector<Mesh_Group::CElem*> face_vector;
+    // All surface nomal
+    vector<double*> face_normal;        //YD
     // All elements 
     vector<Mesh_Group::CElem*> ele_vector;
     // Nodes in usage
@@ -171,6 +173,7 @@ class CFEMesh
     // MAT
     vector<string>mat_names_vector; //OK
     void DefineMobileNodes(CRFProcess*); //OK
+    void FaceNormal(); // YD
 };
 
 } // namespace Mesh_Group

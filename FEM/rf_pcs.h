@@ -252,6 +252,8 @@ class CRFProcess {
     char *pcs_sol_name;
     string cpl_type_name; 
     CNumerics* m_num;
+    // factor
+    double preferential_factor;
     //
     bool selected; //OK
     // MSH
@@ -290,6 +292,7 @@ class CRFProcess {
     void ConfigUnsaturatedFlow(); //OK4104
 	void ConfigFluidMomentum();
     void ConfigRandomWalk();
+    void ConfigDualUnsaturateFlow(); //YD
     // Configuration 1 - NOD
     void ConfigNODValues1(void);
     void ConfigNODValues2(void);
@@ -361,9 +364,9 @@ class CRFProcess {
     VoidFuncInt PCSSetIC_USER;
     void SetIC();
     void CalcSecondaryVariables(int);
-    void MMPSetICRichards(int dummy);
     void MMPCalcSecondaryVariablesRichards(int timelevel, bool update);
     void CalcSecondaryVariablesRichards(int timelevel, bool update); //OK
+    void CalcSecondaryVariablesDualRichards(int timelevel, bool update);
     bool non_linear; //OK/CMCD
     void SetNODFlux(); //OK
     void AssembleParabolicEquationRHSVector(); //OK

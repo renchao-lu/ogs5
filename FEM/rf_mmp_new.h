@@ -45,6 +45,7 @@ class CMediumProperties
 	double PermeabilityPressureFunctionMethod2(long ,double );//CMCD 9/2004 GeoSys 4
 	double PermeabilityPressureFunctionMethod3(long ,double );//CMCD 9/2004 GeoSys 4
 	double PermeabilityPressureFunctionMethod4(long ,double, double );//CMCD 9/2004 GeoSys 4
+    friend class CMediumPropertiesGroup;
  public:
   //-------------------------------------------
   // Methods
@@ -86,6 +87,7 @@ class CMediumProperties
   //-------------------------------------------
   // Properties
     // PCS
+    string pcs_type_name;   //YD
   CRFProcess*m_pcs; //OK
   vector<string>pcs_name_vector;
 	vector<string>porosity_pcs_name_vector;
@@ -160,6 +162,23 @@ class CMediumProperties
   double friction_model;
   double argument; //OK
 };
+
+ class CMediumPropertiesGroup  //YD
+{
+  public:
+    CMediumPropertiesGroup() {OrigSize=0;} 
+    void Set(CRFProcess* m_pcs);
+    string pcs_name;
+    string pcs_type_name; 
+    CFEMesh* m_msh;
+    vector<CMediumProperties*>mmp_group_vector; 
+  private:
+    int OrigSize;  // For excavation simulation. 
+}; 
+
+extern CMediumPropertiesGroup* MMPGetGroup(string pcs_type_name); //YD
+extern list<CMediumPropertiesGroup*>mmp_group_list;   //YD
+extern void MMPGroupDelete(string pcs_type_name);
 
 extern vector<CMediumProperties*>mmp_vector;
 extern void MATLoadDB(string);

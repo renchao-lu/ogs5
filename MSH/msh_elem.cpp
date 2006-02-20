@@ -1470,5 +1470,44 @@ void CElem::Config()
    }
 }
 
+/**************************************************************************
+MSHLib-Method: 
+Task:
+Programing:
+01/2006 YD Implementation
+**************************************************************************/
+void CElem::FaceNormal(int index0, int index1, double* face)
+{
+   int i;
+   double xx[3];
+   double yy[3];
+   double zz[3];
+//----plane normal----------------------------
+      // tranform_tensor = new Matrix(3,3); 
+       // face"_vec
+	   face[0] = nodes[index1]->X()-nodes[index0]->X();                
+       face[1] = nodes[index1]->Y()-nodes[index0]->Y();                  
+       face[2] = nodes[index1]->Z()-nodes[index0]->Z();  
+       // x"_vec
+	   xx[0] = nodes[1]->X()-nodes[0]->X();                
+       xx[1] = nodes[1]->Y()-nodes[0]->Y();                  
+       xx[2] = nodes[1]->Z()-nodes[0]->Z();             
+       //NormalizeVector(xx,3);   
+       // a vector on the plane
+       yy[0] = nodes[2]->X()-nodes[1]->X();                  
+       yy[1] = nodes[2]->Y()-nodes[1]->Y();               
+       yy[2] = nodes[2]->Z()-nodes[1]->Z(); 
+       // z"_vec
+       CrossProduction(xx,yy,zz);
+       NormalizeVector(zz,3);
+       // y"_vec
+       CrossProduction(face,zz,yy);
+       NormalizeVector(yy,3);
+       for(i=0; i<3; i++)
+	   {
+         face[i] = yy[i];         
+	   } 
+}
+//--------------------------------
 } // namespace Mesh_Group
 //========================================================================

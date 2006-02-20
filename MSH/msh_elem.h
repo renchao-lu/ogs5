@@ -105,6 +105,7 @@ class CElem:public CCore
 	  int GetNodesNumber(bool quad) const  {if(quad) return nnodesHQ; else return nnodes;}
 	  int GetVertexNumber() const  {return nnodes;}
       void SetNodesNumber(int ivalue) {nnodes = ivalue;} //OK
+      CElem* GetOwner() { return owner; }  //YD
       //------------------------------------------------------------------
       // Edges
       void GetEdges(vec<CEdge*>&  ele_edges) 
@@ -155,6 +156,8 @@ class CElem:public CCore
       // virtual void operator = (const CElem& elem);
      //-------------------------------------------------------------------
      // DDC
+      //------------------------------------------------------------------
+      void FaceNormal(const int index0, const int index1, double*);   //YD
 //     int domain; //OK
      long domain_nodes [8]; //OK, dynamisch
    public: //GUI control variables 

@@ -97,6 +97,7 @@ CSourceTerm::~CSourceTerm(void) {
     delimiter_type.clear();
     PointsHaveDistribedBC.clear();
     DistribedBC.clear();
+    element_st_vector.clear();
 }
 
 /**************************************************************************
@@ -667,6 +668,8 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
   CGLPolyline *m_polyline = NULL;
   
   CFEMesh* m_msh = m_pcs->m_msh;
+  CElem* elem = NULL;
+  vec<CNode*> e_nodes(20);
   //----------------------------------------------------------------------
   // Tests //OK
   if(!m_msh){
@@ -721,6 +724,21 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
            m_node_value->node_distype = 6;
            m_node_value->node_area = 1.0;
         }
+      //------------------------------------------------------------------
+		if(m_st->dis_type_name.compare("SYSTEM_DEPENDENT")==0){      //YD
+           m_node_value->node_distype = 7;
+           for (int ii = 0; ii < (long)m_msh->ele_vector.size(); ii++)
+             {
+                elem = m_msh->ele_vector[ii];
+                if(!elem->GetMark()) continue;
+	            elem->GetNodes(e_nodes);
+                int nn = elem->GetNodesNumber(m_msh->getOrder());
+				for(k=0; k < nn; k++){
+					if(*e_nodes[k]==m_st->geo_node_number)
+                    m_st->element_st_vector.push_back(ii);
+				}
+			 }
+	    } 
         group_vector.push_back(m_node_value);
         st_group_vector.push_back(m_st); //OK
       }
@@ -802,6 +820,7 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
           if(m_st->dis_type_name.compare("LINEAR_NEUMANN")==0) dit_ply = 4;
           if(m_st->dis_type_name.compare("RIVER")==0) dit_ply = 5;
           if(m_st->dis_type_name.compare("CRITICALDEPTH")==0) dit_ply = 6;
+          if(m_st->dis_type_name.compare("SYSTEM_DEPENDENT")==0) dit_ply = 7;   //YD  
 
           if(dit_ply==2||dit_ply==4)  {
             // Piecewise linear distributed. WW
@@ -817,6 +836,19 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
             
 			InterpolationAlongPolyline(m_polyline, node_value_vector);
 
+          }
+          else if(dit_ply==7)  {  //System Dependented YD
+          long no_face= (long)m_pcs->m_msh->face_vector.size();
+          for(int ii=0; ii < no_face;ii++){
+          int node_on_line = 0;
+          int no_vertex = m_pcs->m_msh->face_vector[ii]->GetVertexNumber();
+              for(int jj=0; jj < no_vertex; jj++){
+              for(int kk=0; kk < number_of_nodes; kk++)
+              if(nodes_vector[kk] == m_pcs->m_msh->face_vector[ii]->GetNodeIndex(jj))  node_on_line++;   
+              }
+              if(node_on_line == 2)
+              m_st->element_st_vector.push_back(m_pcs->m_msh->face_vector[ii]->GetOwner()->GetIndex());
+          }
           }
 		  else //WW
 		  {
@@ -966,6 +998,9 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
               m_node_value->node_distype = 6;
               m_node_value->node_area = node_value_vectorArea[i];
             } 
+            if(dit_ply ==7)  {
+              m_node_value->node_distype = 7;
+            }
           m_node_value->CurveIndex = m_st->CurveIndex;
           group_vector.push_back(m_node_value);
           st_group_vector.push_back(m_st); //OK
@@ -1091,6 +1126,10 @@ vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin()
      //====================================================================
     }
   }
+//......................................................
+    if(PCSGet("RICHARDS_FLOW")&&PCSGet("DUAL_RICHARDS"))  
+       preferential_factor = m_pcs->preferential_factor;
+//......................................................
 }
 /**************************************************************************
 FEMLib-Method:
@@ -1895,6 +1934,7 @@ void CSourceTermGroup::SetPLY(CSourceTerm*m_st)
     if(m_st->dis_type_name.compare("LINEAR_NEUMANN")==0) dit_ply = 4;
     if(m_st->dis_type_name.compare("RIVER")==0) dit_ply = 5;
     if(m_st->dis_type_name.compare("CRITICALDEPTH")==0) dit_ply = 6;
+    if(m_st->dis_type_name.compare("SYSTEM_DEPENDENT")==0) dit_ply = 7;   //YD    
     //--------------------------------------------------------------------
     // CONSTANT
     if(dit_ply==1){

@@ -75,7 +75,7 @@ class CFiniteElementStd:public CElement
      // Assembly
      void Assembly(); 
 	 void Assembly(int dimension);	// PCH for Fluid Momentum
-     void Cal_Velocity();
+     void Cal_Velocity(bool cal_gravity);
      void AssembleParabolicEquationRHSVector(); //OK
 
      // MB only temporary
@@ -183,6 +183,7 @@ class ElementValue
     ~ElementValue(); 
     void getIPvalue_vec(const int IP, double * vec);
     Matrix Velocity;
+      void GetEleVelocity(double * vec);
   private:
     // Friend class 
     friend class ::CRFProcess;

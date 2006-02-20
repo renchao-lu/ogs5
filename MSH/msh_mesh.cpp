@@ -71,6 +71,7 @@ Task:
 Programing:
 03/2005 OK Implementation
 07/2005 WW Changes due to the geometry objects
+01/2006 YD Changes for face normal
 **************************************************************************/
 CFEMesh::~CFEMesh(void)
 {
@@ -91,6 +92,10 @@ CFEMesh::~CFEMesh(void)
   for(i=0; i<(long)ele_vector.size(); i++)
      delete ele_vector[i];
   ele_vector.clear();
+  // normal  YD
+  for(i=0; i<(long)face_normal.size(); i++)
+     delete face_normal[i];
+  face_normal.clear();
 #ifdef RANDOM_WALK
   delete PT; // PCH
 #endif
@@ -2907,6 +2912,55 @@ void CFEMesh::GetELEOnSFC_TIN(Surface*m_sfc,vector<long>&msh_ele_vector)
     }
   }
   //----------------------------------------------------------------------
+}
+/**************************************************************************
+FEMLib-Method: 
+Task:  Renumbering nodes corresponding to the activiate of elements
+Programing:
+01/2006 YD Implementation
+**************************************************************************/
+void CFEMesh::FaceNormal()  
+{
+   int i,j;
+   int idx0_face,idx1_face,idx_owner,index0,index1;
+
+   CElem* elem = NULL;
+   CElem* elem_face = NULL;
+
+  // if(coordinate_system!=32) 
+  //   return;
+//------------------------
+   for (i = 0; i < (int)face_vector.size(); i++)
+   {
+      double* normal = new double[3]; 
+      elem_face = face_vector[i];
+	  elem = face_vector[i]->GetOwner();
+
+      if(elem->GetElementType()==1)
+      return;
+
+      int no_face_vertex = face_vector[i]->GetVertexNumber();
+	  int no_owner_vertex = face_vector[i]->GetOwner()->GetVertexNumber();
+      idx0_face = face_vector[i]->GetNodeIndex(0);
+      idx1_face = face_vector[i]->GetNodeIndex(1);
+	  for(j = 0; j < no_owner_vertex; j++){
+      idx_owner = face_vector[i]->GetOwner()->GetNodeIndex(j);
+	  if(idx0_face == idx_owner) index0=j;
+      }
+	  for(j = 0; j < no_owner_vertex; j++){
+      idx_owner = face_vector[i]->GetOwner()->GetNodeIndex(j);
+	  if(idx1_face == idx_owner) index1=j;
+      }
+	  if(elem->GetMark()){
+	     if((index1-index0) >= 1)
+           elem->FaceNormal(index0,index1,normal);
+	     else
+           elem->FaceNormal(index1,index0,normal);
+
+	  }
+      face_normal.push_back(normal);
+      elem_face->ComputeVolume();
+   }
 }
 
 } // namespace Mesh_Group

@@ -44,6 +44,7 @@ using namespace std;
 #include "rf_vel_new.h"
 #include "cel_mmp.h"
 #include "cgs_mpc.h"
+#include "cgs_mmp.h"
 #include "cgs_asm.h"
 #include "rf_fluid_momentum.h"	// By PCH
 #include "rf_random_walk.h"     // By PCH
@@ -310,14 +311,14 @@ int LOPTimeLoop_PCS(double*dt_sum)
       if(m_pcs&&m_pcs->selected){
         if(m_pcs->m_msh->no_msh_layer==0){
           pcs_flow_error = m_pcs->ExecuteNonLinear();
-          PCSCalcSecondaryVariables(); // PCS member function
+          //PCSCalcSecondaryVariables(); // PCS member function
         }
         else{
           //Achtung bei anderen Prozessen
           for(i=0;i<no_processes;i++){
             m_pcs = pcs_vector[i];
             pcs_flow_error = m_pcs->ExecuteNonLinear();
-            PCSCalcSecondaryVariables(); // PCS member function
+            //PCSCalcSecondaryVariables(); // PCS member function                 //YD
           }
           //LOPExecuteRegionalRichardsFlow(pcs);
         }
@@ -401,6 +402,16 @@ int LOPTimeLoop_PCS(double*dt_sum)
 		fm_pcs = m_msh->fm_pcs;
 		fm_pcs->Execute();
     }
+      //--------------------------------------------------------------------
+	  m_pcs = PCSGet("DUAL_RICHARDS"); //YD
+      if(m_pcs&&m_pcs->selected){
+        pcs_flow_error = m_pcs->ExecuteNonLinear();
+        PCSCalcSecondaryVariables(); // PCS member function
+        if(!m_pcs->m_msh) //OK
+          VELCalcAll(m_pcs);
+		else
+          m_pcs->CalIntegrationPointValue(); 
+      }
 
 		// PCH The velocity process ends here.
     //----------------------------------------------------------------------
@@ -903,6 +914,7 @@ void LOPCalcELEResultants(void)
       case 'O': // Overland flow
         break;
       case 'R': // Richards flow
+        break;
 	  case 'F': // Fluid Momentum
         break;
     }
@@ -918,7 +930,7 @@ void LOPCalcELEResultants(void)
                                                                           */
 /* Programmaenderungen:
    08/2003   SB   Implementation
-                                                                             */
+   01/2006   YD   add dual porosity                                                                          */
 /**************************************************************************/
 void PCSCalcSecondaryVariables(void){
 
@@ -960,6 +972,9 @@ void PCSCalcSecondaryVariables(void){
       break;
     case 12: /* Multi-phase flow process */
       MMPCalcSecondaryVariables();
+      break;
+	case 22: /*Dual porosity Richards model */
+      DualCalcSecondaryVariables();
       break;
 	default:
 		//DisplayMsgLn(" Error: Unknown PCS type in PCSCalcSecondaryVariables");

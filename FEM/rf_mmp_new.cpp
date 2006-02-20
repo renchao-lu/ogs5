@@ -44,6 +44,7 @@ list<char*>mat_name_list_char;
 list<CMediumProperties*>db_mat_mp_list;
 // MAT-MP list
 vector<CMediumProperties*>mmp_vector;
+list<CMediumPropertiesGroup*>mmp_group_list; 
 
 using FiniteElement::ElementValue;
 using FiniteElement::CFiniteElementStd;
@@ -173,6 +174,7 @@ Programing:
 11/2004 CMCD String streaming
 07/2005 MB porosity_file, permeability_file, GEO_TYPE layer
 10/2005 OK GEO_TYPE geo_name_vector
+01/2006 YD PCS_TYPE
 last modification:
 **************************************************************************/
 // Order of Key Words
@@ -236,6 +238,14 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
       break;
     }
     //--------------------------------------------------------------------
+    //PCS                         //YD
+    if(line_string.find("$PCS_TYPE")!=string::npos) { // subkeyword found
+      in.str(GetLineFromFile1(mmp_file));
+      in >> pcs_type_name;
+      in.clear();
+      continue;
+    }
+
     //NAME
     if(line_string.find("$NAME")!=string::npos) { //subkeyword found
       in.str(GetLineFromFile1(mmp_file));
@@ -5852,5 +5862,81 @@ double GetAverageHetVal2(long EleIndex, CFEMesh *m_msh, vector <double> xvals,  
   }
   delete m_point;
   return average;
+}
+
+/**************************************************************************
+FEMLib-Method:
+Task: set MMP group member
+Programing:
+01/2006 YD Implementation
+**************************************************************************/
+void CMediumPropertiesGroup::Set(CRFProcess* m_pcs)
+{
+  long j,k;
+  CFEMesh* m_msh = m_pcs->m_msh;
+  CMediumProperties* m_mmp = NULL;
+  CElem* elem = NULL;	
+  //----------------------------------------------------------------------
+  // Tests //
+  if(!m_msh){
+    cout << "Warning in CSourceTermGroup::Set - no MSH data" << endl;
+    //return;
+  }
+  //----------------------------------------------------------------------
+  long no_mmp =(long)mmp_vector.size();
+  for(j=0;j<no_mmp;j++){
+    m_mmp = mmp_vector[j];
+    //====================================================================
+    if(m_mmp->pcs_type_name.compare(pcs_type_name)==0){
+    	m_mmp = mmp_vector[j];
+       for(k=0;k<(long)m_msh->ele_vector.size();k++)
+       {
+       elem = m_msh->ele_vector[k];
+       elem->SetPatchIndex(j);
+       }
+     }
+   }
+}
+
+/**************************************************************************
+FEMLib-Method:
+Task:
+Programing:
+01/2006 YD Implementation
+last modification:
+**************************************************************************/  
+CMediumPropertiesGroup* MMPGetGroup(string pcs_type_name)
+{
+  CMediumPropertiesGroup *m_mmp_group = NULL;
+  list<CMediumPropertiesGroup*>::const_iterator p_mmp_group = mmp_group_list.begin();
+  while(p_mmp_group!=mmp_group_list.end()) {
+    m_mmp_group = *p_mmp_group;
+    if(m_mmp_group->pcs_type_name.compare(pcs_type_name)==0)
+      return m_mmp_group;
+    ++p_mmp_group;
+  }
+  return NULL;
+}
+
+/**************************************************************************
+FEMLib-Method:
+Task:
+Programing:
+01/2006 YD Implementation
+last modified:
+**************************************************************************/
+void MMPGroupDelete(string pcs_type_name)
+{
+  CMediumPropertiesGroup* m_mmp_group = NULL;
+  list<CMediumPropertiesGroup*>::const_iterator p=mmp_group_list.begin();
+  while (p!=mmp_group_list.end()){
+    m_mmp_group = *p;
+    if(m_mmp_group->pcs_type_name.compare(pcs_type_name)==0){
+      delete m_mmp_group;
+      mmp_group_list.remove(m_mmp_group);
+      return;
+    }
+    ++p;
+  }
 }
 

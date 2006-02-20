@@ -300,7 +300,7 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
         specific_heat_capacity_pcs_name_vector.push_back("SATURATION1");
         enthalpy_pcs_name_vector.push_back("TEMPERATURE1");
       }
-	  if(heat_capacity_model==4){ // YD: improved phase change
+	  if(heat_capacity_model==4){ // YD: improved phase change, function
         in >> T_Latent1;    // Tmin for phase change
         in >> T_Latent2;    // Tmax for phase change
         in >> specific_heat_capacity;   // ^c
@@ -990,10 +990,10 @@ double CFluidProperties::SpecificHeatCapacity()
         specific_heat_capacity = GetCurveValue(heat_phase_change_curve,0,temperature_buffer,&gueltig);
   		else{
         heat_capacity_model = 5;
-		    H1 = CalcEnthalpy();
+		    H1 = CalcEnthalpy(T1);
 		    T0 = primary_variable_t0[1];
         if(fabs(T_1-T0)<1.0e-8) T_1 +=1.0e-8;
-			    H0 = CalcEnthalpy(); 
+			    H0 = CalcEnthalpy(T0); 
 		      specific_heat_capacity = (H1-H0)/(T_1-T_0);
 		    }
         heat_capacity_model = 3;
@@ -1025,10 +1025,10 @@ double CFluidProperties::SpecificHeatCapacity()
       }
   		else {
         heat_capacity_model = 5;
-		  	H1 = CalcEnthalpy();
+		  	H1 = CalcEnthalpy(T1);
 		    T0 = primary_variable_t0[1];
         if(fabs(T_1-T0)<1.0e-8) T_1 +=1.0e-8;
-			    H0 = CalcEnthalpy(); 
+			    H0 = CalcEnthalpy(T0); 
 		    specific_heat_capacity = (H1-H0)/(T_1-T0);
 		  } 
       heat_capacity_model = 4;
@@ -2321,12 +2321,12 @@ Task:
 Programing:
 10/2005 YD Calculate Enthalpy
 **************************************************************************/
-double CFluidProperties::CalcEnthalpy()
+double CFluidProperties::CalcEnthalpy(double temperature)
 {
   //----------------------------------------------------------------------
   CalPrimaryVariable(enthalpy_pcs_name_vector);
   //----------------------------------------------------------------------
-  double temperature = primary_variable[0];
+  //double temperature = primary_variable[0];
   double val = 0.0;
   double T0_integrate = 0.0;
   double T1_integrate = 0.0;         

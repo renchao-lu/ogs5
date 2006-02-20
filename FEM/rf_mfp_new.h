@@ -92,7 +92,7 @@ class CFluidProperties
     double Viscosity();
     double SpecificHeatCapacity();
     double HeatConductivity();
-    double CalcEnthalpy();
+    double CalcEnthalpy(double temperature);
     double Enthalpy(int,double);
     double EnthalpyPhase(long,int,double*,double);
     double MassFraction(long number,int comp,double*gp,double theta, CFiniteElementStd* assem=NULL);

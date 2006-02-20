@@ -29,6 +29,7 @@ class CSourceTerm
     vector<double> DistBC_TRiverBed;
     vector<double> DistBC_BRiverBed;
     vector<double*>pnt_parameter_vector; //OK
+    vector<long>element_st_vector;   //YD
   private: 
     CGLPolyline *plyST; //OK ???
     friend class CSourceTermGroup;
@@ -116,6 +117,8 @@ class CSourceTermGroup
     double GetAnalyticalSolution(CSourceTerm *m_st,long node_number, string process);//CMCD
     void Write(ostream& os=cout) const; //WW
     void Read(istream& is=cin);  //WW
+    // TRANSFER OF DUAL RICHARDS
+    double preferential_factor;    //YD
   private:
     int OrigSize;  // For excavation simulation. WW
     void SetPLY(CSourceTerm*); //OK
