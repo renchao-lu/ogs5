@@ -1,4 +1,4 @@
-CXX_LDFLAGS      =
+CXX_LDFLAGS      = -g
 CXX_LD           = g++
 #OPTIMIZING. WW
 CXX_OPT_FLAGS    =   
