@@ -4411,10 +4411,15 @@ FEMLib-Method:
 Task: 
 Programing:
 02/2005 OK Implementation
+02/2006 YD Dual Richards
 **************************************************************************/
 void CRFProcess::CalcSecondaryVariables(int time_level)
 {
-  switch(pcs_type_name[0]){
+  char pcsT;
+  pcsT = pcs_type_name[0];
+  if(pcs_type_name.find("DUAL_RICHARDS")!=string::npos)
+    pcsT = 'B';
+  switch(pcsT){
     case 'L':
       break;
     case 'U':
@@ -4430,6 +4435,8 @@ void CRFProcess::CalcSecondaryVariables(int time_level)
 		CalcSecondaryVariablesRichards(time_level,false);
       break;
     case 'D':
+      break;
+    case 'B':
       CalcSecondaryVariablesDualRichards(time_level,false);  
       break;
   }
