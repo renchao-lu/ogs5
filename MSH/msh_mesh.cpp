@@ -2585,7 +2585,7 @@ MSHLib-Method:
 Task:
 Programing:
 10/2005 OK Implementation
-02/2006 WW Ordering
+02/2006 WW Ordering and remove bugs
 **************************************************************************/
 void CFEMesh::ConnectedNodes()
 {
@@ -2602,13 +2602,13 @@ void CFEMesh::ConnectedNodes()
       for(l=0;l<m_ele->GetNodesNumber(false);l++){
           exist = false;
           for(k=0;k<(int)m_nod->connected_nodes.size();k++) //WW
-		  {
+          {
              if(m_nod->connected_nodes[k]==m_ele->nodes_index[l])
-			 {
+             {
                  exist = true;
                  break;
-			 }
-		  }
+             }
+          }
           if(!exist) //WW
              m_nod->connected_nodes.push_back(m_ele->nodes_index[l]);      
       }
@@ -2616,7 +2616,7 @@ void CFEMesh::ConnectedNodes()
   }
   //----------------------------------------------------------------------
  /*
-  // Memory problem Commented by WW. 
+  // Memory problem Commented by WW.
   vector<long>aux_vector;
   bool flag;
   //......................................................................
@@ -2649,7 +2649,7 @@ void CFEMesh::ConnectedNodes()
     m_nod = nod_vector[i];
     j = (int)m_nod->connected_nodes.size();
     for(k=0; k<j; k++)
-	{     
+    {     
        for(l=k; l<j; l++)
        {
           if(m_nod->connected_nodes[l]<m_nod->connected_nodes[k])
@@ -2658,16 +2658,16 @@ void CFEMesh::ConnectedNodes()
              m_nod->connected_nodes[k] = m_nod->connected_nodes[l];
              m_nod->connected_nodes[l] = n;
           }
-	   }     
-	}
+       }     
+    }
     
 //    for(k=0; k<j; k++)
 //      cout<<m_nod->connected_nodes[k]<<"  ";
-//	cout<<endl;
+//    cout<<endl;
 
 
     m_nod->m5_index.resize(j);
-  } 
+  }
   //----------------------------------------------------------------------
 #ifdef TestConnectedNodes
   for(i=0;i<(long)nod_vector.size();i++){
@@ -2680,6 +2680,7 @@ void CFEMesh::ConnectedNodes()
   }
 #endif
 }
+
 
 
 /**************************************************************************

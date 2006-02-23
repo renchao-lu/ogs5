@@ -394,6 +394,7 @@ Programing:
 01/2005 OK 
 04/2005 OK GSP ASCII version
 10/2005 OK DOMRead
+02/2006 WW
 **************************************************************************/
 void CGeoSysDoc::GSPReadWIN(CArchive& ar)
 {
@@ -464,6 +465,7 @@ void CGeoSysDoc::GSPReadWIN(CArchive& ar)
     if(m_strGSPFileNameType=="msh"){
       pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read MSH data");
       FEMRead(gsp_member_path_base);
+      CompleteMesh();//WW
       m_bDataMSH = TRUE;
     }
     //....................................................................
@@ -544,7 +546,6 @@ void CGeoSysDoc::GSPReadWIN(CArchive& ar)
     }
     //....................................................................
   }
-  CompleteMesh(); //WW
 }
 
 /**************************************************************************
