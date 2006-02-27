@@ -344,7 +344,7 @@ void MSHDefineMobile(CRFProcess*m_pcs)
   for(i=0;i<(long) mmp_vector.size();i++){
     m_mat_mp = mmp_vector[i];
     
-    if (m_mat_mp->unconfined_flow_group ==1){
+    if (m_mat_mp->unconfined_flow_group ==1 && m_pcs->m_msh->GetMaxElementDim() == 3){
       //....................................................................
       //DOMAIN
       if(m_mat_mp->geo_type_name.find("DOMAIN")!=string::npos){
@@ -465,8 +465,6 @@ void MSHSelectFreeSurfaceNodes (CFEMesh* m_msh)
     
     // mark start of vertical column with 1 - end of column with 2
     // this is than used in MSHMoveNODUcFlow 
-    //NODSetFreeSurfaceFlag(strang[0], 1);
-    //NODSetFreeSurfaceFlag(strang[j], 2);
     m_msh->nod_vector[strang[0]]->free_surface = 1;
     m_msh->nod_vector[strang[no_unconfined_layer]]->free_surface = 2;
 
@@ -518,10 +516,8 @@ void MSHMoveNODUcFlow (CRFProcess*m_pcs)
   NumberOfLayers = m_pcs->m_msh->no_msh_layer;
   NumberOfNodesPerLayer = NumberOfNodes / (NumberOfLayers + 1);  
   
-  //for (node = 0; node < NodeListSize(); node++) {
   for (node = 0; node < NumberOfNodesPerLayer; node++) {
     
-    //index = NODGetFreeSurfaceFlag (node);
     index = m_pcs->m_msh->nod_vector[node]->free_surface;
     if (index == 1) {
       /* Zählen der Zeilen (-> anz_zeilen) */
@@ -530,11 +526,9 @@ void MSHMoveNODUcFlow (CRFProcess*m_pcs)
       nextnode = node;   
       do {
         startnode = nextnode;
-        //nextnode = MSHGetNextNode (startnode, direction);
         nextnode = MSHGetNextNode (startnode, m_pcs->m_msh);
 
         /* Test2: Gehört der nächste Knoten zu unterer Reihe ==> Abbruch */
-        //index2 = NODGetFreeSurfaceFlag (nextnode);
         index2 = m_pcs->m_msh->nod_vector[nextnode]->free_surface;
         
         if (index2 == 2)  {
@@ -544,7 +538,6 @@ void MSHMoveNODUcFlow (CRFProcess*m_pcs)
       } while (xxflag != 1);
       /** Ende Zählen der Zeilen zwischen den oberen free surface node etc... und den Unteren **/
 
-
     /* Die Knoten unterhalb eines Free Surface Knotens bilden einen Strang */
     /* Die Knoten eines Stranges werden zwischengespeichert */
     strang = MSHGetNodesInColumn(node, anz_zeilen, m_pcs->m_msh);
@@ -552,32 +545,38 @@ void MSHMoveNODUcFlow (CRFProcess*m_pcs)
     /* Die Knoten eines Stranges werden entsprechend der neuen Druckverteilung  verformt */
     /* Standrohrspiegelhöhe bestimmen */
     nidy = m_pcs->GetNodeValueIndex("HEAD")+1;
-
     if (GetRFProcessDensityFlow()) {  /* mit Dichteunterschiede */
       //OK_MOD     head = MODCalcHeadInColumn_MB(strang, anz_zeilen);
     }
     else {  /* ohne Dichteunterschiede */
-      //nidy = PCSGetNODValueIndex("HEAD",timelevel);
-      //head = GetNodeVal(strang[0],nidy);
-      
       head = m_pcs->GetNodeValue(strang[0],nidy);
     } 
+
+    /* nicht über surface elevation */
+    CRFProcess* m_pcs_OLF = NULL;
+    m_pcs_OLF = PCSGet("OVERLAND_FLOW");
+    double SurfaceZ; 
+  
+    if(m_pcs_OLF!=NULL){
+      SurfaceZ = m_pcs_OLF->m_msh->nod_vector[strang[0]]->Z();
+      if (head > SurfaceZ){   
+        head = SurfaceZ;
+      }
+    }
+    
+    /* Set minimum thickness */
     z_bottom = m_pcs->m_msh->nod_vector[strang[anz_zeilen]]->Z();
-    // Set minimum thickness
     if(head - z_bottom < MinThickness)
       head = z_bottom + MinThickness;
-
-    /* Berechnung der Differenz: Alter Z-Wert - Neuer Z-Wert eines Free-Surface-Nodes */
-    //spanne_ges = head - GetNodeZ(strang[anz_zeilen]);
+    
+    /* Berechnung der Differenz */
     spanne_ges = head - z_bottom;
     spanne_rel = spanne_ges / anz_zeilen;
-    //SetNodeZ (strang[0], head);  
     m_pcs->m_msh->nod_vector[strang[0]]->SetZ(head); 
 
     if(spanne_ges != 0) {
       /* Setzen der neuen Z-Werte entlang eines Stranges */
       for (i = 1; i< anz_zeilen; i++)  {  /* Schleife über Anzahl der Zeilen */
-        //SetNodeZ (strang[i], (head - i * spanne_rel));
         m_pcs->m_msh->nod_vector[strang[i]]->SetZ(head -i * spanne_rel); 
       } 
     }

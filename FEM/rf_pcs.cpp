@@ -2342,7 +2342,7 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_primary_function_unit[0] = "Pa";
    // 1.2 secondary variables
   //OK LOPCalcSecondaryVariables_USER = MMPCalcSecondaryVariablesRichards; // p_c and S^l
-  pcs_number_of_secondary_nvals = 4;
+  pcs_number_of_secondary_nvals = 6;
   pcs_secondary_function_name[0] = "SATURATION1";
   pcs_secondary_function_unit[0] = "m3/m3";
   pcs_secondary_function_timelevel[0] = 0;
@@ -2355,6 +2355,12 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_secondary_function_name[3] = "PRESSURE_CAP";
   pcs_secondary_function_unit[3] = "Pa";
   pcs_secondary_function_timelevel[3] = 1;
+  pcs_secondary_function_name[4] = "FLUX"; //MB
+  pcs_secondary_function_unit[4] = "m/s";
+  pcs_secondary_function_timelevel[4] = 0;
+  pcs_secondary_function_name[5] = "FLUX"; //MB
+  pcs_secondary_function_unit[5] = "m/s";
+  pcs_secondary_function_timelevel[6] = 1;
   // 2 ELE values
   pcs_number_of_evals = 8; 
   pcs_eval_name[0] = "VELOCITY1_X";
@@ -3667,19 +3673,8 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
   int curve, valid=0;
   long msh_node, shift;
   long i, j;
-  double h;
-  double paraA; //HRiver
-  double paraB; //KRiverBed
-  double paraC; //WRiverBed
-  double paraD; //TRiverBed
-  double paraE; //BRiverBed
-  double NodeReachLength;
-  double RiverConductance;
-  int nidx1;
   long bc_eqs_index;
   double H = 0.0;
-  double Haverage = 0.0;
-  double AnzNodes = 0.0;
   int  EleType;
   double q_face; 
   
@@ -3730,20 +3725,7 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
      //-----------------------------------------------------------------------
      long group_vector_length = (long)m_st_group->group_vector.size();
      //--------------------------------------------------------------------
-	 if(pcs_type_name.find("OVERLAND_FLOW")!=string::npos
-         ||pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
-	 {
-        //MB for CriticalDepth
-        for(i=0;i<group_vector_length;i++) {
-          if (m_st_group->group_vector[i]->node_distype==6){
-            msh_node = m_st_group->group_vector[i]->msh_node_number;
-	        //Haverage += GetNodeVal(msh_node,1);
-            Haverage += GetNodeValue(msh_node,1);
-            AnzNodes += 1;
-          }
-        }   
-        Haverage = Haverage / AnzNodes;
-	 } 
+	 
      //WW
      if(dynamic) 
      {
@@ -3755,44 +3737,57 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
     //--------------------------------------------------------------------
     for(i=0;i<group_vector_length;i++) {
       msh_node = m_st_group->group_vector[i]->msh_node_number-shift;
-      m_st = m_st_group->st_group_vector[i]; //[j];  Should be [i]. WW
-    //--------------------------------------------------------------------
-          if (m_st_group->group_vector[i]->node_distype==7){      // system dependent YD
-           long no_st_ele = (long)m_st->element_st_vector.size();
-		   for(long i_st=0;i_st<no_st_ele;i_st++){
-              long ele_index = m_st->element_st_vector[i_st];
-              elem = m_msh->ele_vector[ele_index];
-			  if (elem->GetMark()){ 
-                 fem->ConfigElement(elem);
-	             fem->Cal_Velocity(true); 
-				 }
-              gp_ele = ele_gp_value[ele_index];
-              gp_ele->GetEleVelocity(vel);
-              EleType = elem->GetElementType();
-              if(EleType == 1){   //Line
-              m_st_group->group_vector[i]->node_value += vel[0]; 
-              }
-              if(EleType == 4 || EleType == 2){   //Traingle & Qua
-                 for(long i_face=0;i_face < (long)m_msh->face_vector.size();i_face++){
-                   face = m_msh->face_vector[i_face];
-                   if(m_st->element_st_vector[i_st] == face->GetOwner()->GetIndex())
-                      q_face = PointProduction(vel,m_msh->face_normal[i_face])*face->GetVolume();   //   
-                  //for(i_node) 
-                 }
-			  m_st_group->group_vector[i]->node_value =+ q_face/2;
-              }
-          // cout<<"  value  "<<m_st_group->group_vector[i]->node_value<<endl;
+      m_st = m_st_group->st_group_vector[i]; 
+     //--------------------------------------------------------------------
+      if (m_st_group->group_vector[i]->node_distype==7){      // system dependent YD
+        long no_st_ele = (long)m_st->element_st_vector.size();
+		for(long i_st=0;i_st<no_st_ele;i_st++){
+          long ele_index = m_st->element_st_vector[i_st];
+          elem = m_msh->ele_vector[ele_index];
+	      if (elem->GetMark()){ 
+            fem->ConfigElement(elem);
+	        fem->Cal_Velocity(true); 
+		  }
+          gp_ele = ele_gp_value[ele_index];
+          gp_ele->GetEleVelocity(vel);
+          EleType = elem->GetElementType();
+          if(EleType == 1){   //Line
+            m_st_group->group_vector[i]->node_value += vel[0]; 
           }
-         }
-    //--------------------------------------------------------------------
-      if(m_st->conditional){
-        m_st_group->group_vector[i]->node_value = m_st_group->GetConditionalNODValue(i,m_st); //OK
+          if(EleType == 4 || EleType == 2){   //Traingle & Qua
+            for(long i_face=0;i_face < (long)m_msh->face_vector.size();i_face++){
+              face = m_msh->face_vector[i_face];
+              if(m_st->element_st_vector[i_st] == face->GetOwner()->GetIndex())
+                 q_face = PointProduction(vel,m_msh->face_normal[i_face])*face->GetVolume();   //   
+                  //for(i_node) 
+            }
+			m_st_group->group_vector[i]->node_value =+ q_face/2;
+          }
+          // cout<<"  value  "<<m_st_group->group_vector[i]->node_value<<endl;
+        }
       }
-      if(m_st->analytical)
-      {
+      //--------------------------------------------------------------------
+      if(m_st->conditional && !m_st->river){
+        value = m_st_group->GetConditionalNODValue(i,m_st); //MB
+      }
+      else if(m_st->analytical){
         m_st_group->m_msh = m_msh;
-        m_st_group->group_vector[i]->node_value = m_st_group->GetAnalyticalSolution(m_st,msh_node,(string)function_name[j]);
-      } 
+        value = m_st_group->GetAnalyticalSolution(m_st,msh_node,(string)function_name[j]);
+      }
+      else {
+        value = m_st_group->group_vector[i]->node_value;
+      }
+
+      if(m_st_group->group_vector[i]->node_distype==5)  {       // River Condition
+        value = m_st_group->GetRiverNODValue(i,m_st, msh_node); //MB
+      }
+      if(m_st_group->group_vector[i]->node_distype==6)  {       // CriticalDepth Condition
+        value = m_st_group->GetCriticalDepthNODValue(i,m_st, msh_node); //MB
+      }
+      if(m_st_group->group_vector[i]->node_distype == 8)  {     // NormalDepth Condition JOD
+        value = m_st_group->GetNormalDepthNODValue(i,m_st, msh_node); //MB        
+	  } 
+
       if(msh_node>=0) {
         curve = m_st_group->group_vector[i]->CurveIndex;
         if(curve>0) {
@@ -3803,68 +3798,9 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
           time_fac = 1.0;
         }
       }
-      else
-             time_fac = 1.0;
-      value = m_st_group->group_vector[i]->node_value;
+      else time_fac = 1.0;
 
-      //---------------------------------------------------------------------
-      if(m_st_group->group_vector[i]->node_distype==5)  {  // River Condition
-        paraA = m_st_group->group_vector[i]->node_parameterA; //HRiver
-        paraB = m_st_group->group_vector[i]->node_parameterB; //KRiverBed
-        paraC = m_st_group->group_vector[i]->node_parameterC; //WRiverBed
-        paraD = m_st_group->group_vector[i]->node_parameterD; //TRiverBed
-        paraE = m_st_group->group_vector[i]->node_parameterE; //BRiverBed
-        NodeReachLength = m_st_group->group_vector[i]->node_area;
-        //RiverConductance = paraB * paraC * 1.0 / (paraD - paraE);
-        RiverConductance = paraB * paraC * NodeReachLength / (paraD - paraE);
-        if(m_msh) {//MB
-          nidx1 = GetNodeValueIndex("HEAD")+1;
-          h = GetNodeValue(msh_node,nidx1);
-        }
-        else{
-          nidx1 = PCSGetNODValueIndex("HEAD",1);
-          h = GetNodeVal(msh_node,nidx1);
-        }
-        
-        if(h > paraE)  {  //HAquiver > BRiverBed
-          //q = (RiverConductance * HRiver)   -  (RiverConductance * HAquifer)  
-          value = RiverConductance * paraA; 
-          //node_index = GetNodeIndex(msh_node); //brauch ich dass???
-          MXInc(msh_node,msh_node,RiverConductance);
-        } 
-        if(h < paraE)  {  //HAquiver < BRiverBed
-          //q = (RiverConductance * HRiver)   - (RiverConductance * BRiverBed)  
-          value = RiverConductance * (paraA - paraE);
-        }
-        if(h == paraE) value = 0.;
-        }  // end if River Condition
-        //................................................................
-        if(m_st_group->group_vector[i]->node_distype==6)  {  // CriticalDepth Condition
-          //double MobileDepth = 0.00001;
-          double factor = 1.;
-          double valueAdd;
-          NodeReachLength = m_st_group->group_vector[i]->node_area;
-          //H = GetNodeVal(msh_node,1);
-          //H = GetNodeVal(msh_node,1) - GetNodeZ(msh_node);
-          H = GetNodeValue(msh_node,1) - m_msh->nod_vector[msh_node]->Z(); 
-          if (H < 0.0)  {H = 0.0;}      
-          double H3 = pow(H,3);
-          valueAdd = - 1 * sqrt(9.80665000000000 * H3);
-          valueAdd = valueAdd * NodeReachLength * factor;
-   		    value = valueAdd;
-          //Eventuell f? Kapselung wichtig !
-       
-   //m_st_group->group_vector[i]->node_value = value;
-          //printf("\n Node %d: Depth Hmobile valueAdd %e %e %e ", msh_node, GetNodeVal(msh_node,1), H, value);
-		      // rausschreiben der Flux Werte 
-		      double Haverage3 = pow(Haverage,3);
-          double temp = - 1 * sqrt(9.80665000000000 * Haverage3);
-          temp = temp * NodeReachLength * factor;
-          //SetNODValue(msh_node,GetNODValueIndex("FLUX")+0,temp*2);
-          SetNodeValue(msh_node,GetNodeValueIndex("FLUX")+0,temp*AnzNodes);
-          //SetNODValue(msh_node,GetNODValueIndex("FLUX")+0,temp*AnzNodes);
-        } 
-        //................................................................
+   
         value *= time_fac* fac;
        
         if(m_msh) //WW
@@ -5476,7 +5412,7 @@ double GetNodePastValueReference ( long n, int idx )
 FEMLib-Method: 
 Task: 
 Programing:
-11/2005 MB Implementation based on CalcELEMassFluxes
+11/2005 MB Implementation
 **************************************************************************/
 void CRFProcess::CalcFluxesForCoupling(void)
 {
@@ -5515,7 +5451,6 @@ void CRFProcess::CalcFluxesForCoupling(void)
   idxFLUX  = GetNodeValueIndex("FLUX")+1;
 
   for(i=0;i<no_richards_problems;i++){
-    //IndexBottomNode = i; // Bottom Node of Richards Column
     IndexBottomNode = ((i+1) * no_nodes)-1;
 
     // ToDo safe somewhere else so that this has to be done only once
@@ -5536,7 +5471,7 @@ void CRFProcess::CalcFluxesForCoupling(void)
     m_ele_OLF = m_msh_OLF->ele_vector[EleNumber];
 
     //-----------------------------------------------------------------
-    // Get Average values for element //ToDo encapsulate //WW: CElement::elemnt_averag??e         
+    // Get Average values for element //ToDo encapsulate //WW: CElement::elemnt_averag??e   
     NoOfGWNodes = m_ele_OLF->GetNodesNumber(m_msh_GW->getOrder());
     for(j=0; j<NoOfGWNodes; j++){
       NodeIndex_GW = m_ele_GW->GetNodeIndex(j);
@@ -5558,7 +5493,7 @@ void CRFProcess::CalcFluxesForCoupling(void)
         //WAIT FOR SEBASTIANS MASS TRANSPORT IN USAT ZONE !!!!!
         //TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST 
         flux = 0.00001;
-        //flux = 999666;
+        //flux = 1;
         SetNodeValue(n_index, idxFLUX, flux); 
       }
     }
@@ -5583,16 +5518,18 @@ void CRFProcess::CalcFluxesForCoupling(void)
       dh = AverageH_GW - AverageH_OLF;
       // get kf fully saturated of uppermost element ?
       // or user defined value: entry resistance / leakage factor ?
-      flux = dh * 0.001;
+      //flux = dh * 0.001;
       flux = dh * 1.;
 
-      
+      //1. Add reacharge value to GW flow -> Add to flux off IndexBottomNode
       //Achtung nur zum Testen Source für GW flow durchgehend !!!!!!
       //SetNodeValue(IndexBottomNode, idxFLUX, -flux);  //H_OLF  > H_GW -> + flux_GW
-      SetNodeValue(IndexBottomNode, idxFLUX, -flux+0.00001);
-      //1. Add reacharge value to OLF -> Add to flux off IndexTopNode
-      //2. Set flag to set reacharge to Usat to zero ???
+      SetNodeValue(IndexBottomNode, idxFLUX, 0.00001);
+      
+      //2. Add reacharge value to OLF -> Add to flux off IndexTopNode
       SetNodeValue(IndexTopNode, idxFLUX, flux);      //H_OLF  > H_GW -> - flux_OLF
+      //3. Set flag to set reacharge to Usat to zero ???
+
     }
   }
 }

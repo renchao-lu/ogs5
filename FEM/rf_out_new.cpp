@@ -474,8 +474,11 @@ void OUTData(double time_current, const int time_step_number)
     m_out->time = time_current;
     no_times = (int)m_out->time_vector.size();
     //----------------------------------------------------------------------
-    if (m_out->nSteps == -1) 
-      m_out->nSteps = no_times;//CMCD
+    // with Chris to do
+    /*if (m_out->nSteps == -1) 
+      m_out->nSteps = no_times;//CMCD*/
+
+
     if(no_times==0&&(m_out->nSteps>0)&&(time_step_number%m_out->nSteps==0))
     OutputBySteps = true; 
     //======================================================================
@@ -628,38 +631,38 @@ void COutput::NODWriteDOMDataTEC()
     tec_file_name += "_" + pcs_type_name;
   //======================================================================
   if(m_msh){//WW
-    if(msh_no_line>0)
+    if(m_msh->msh_no_line>0)
 	{
       tec_file_name += "_line";
       eleType = "QUADRILATERAL"; 
 	  te=1;
 	}
-	else if (msh_no_quad>0)
+	else if (m_msh->msh_no_quad>0)
 	{
       tec_file_name += "_quad";
       eleType = "QUADRILATERAL"; 
 	  te=2;
     }
-	else if (msh_no_hexs>0)
+	else if (m_msh->msh_no_hexs>0)
 	{
       tec_file_name += "_hex";
       eleType = "BRICK"; 
 	  te=3;
     }
-	else if (msh_no_tris>0)
+	else if (m_msh->msh_no_tris>0)
 	{
       tec_file_name += "_tri";
 //???Who was this eleType = "TRIANGLE";
       eleType = "QUADRILATERAL";
 	  te=4;
     }
-	else if (msh_no_tets>0)
+	else if (m_msh->msh_no_tets>0)
 	{
       tec_file_name += "_tet";
 	  eleType = "TETRAHEDRON"; 
       te=5;
     }
-	else if (msh_no_pris>0)
+	else if (m_msh->msh_no_pris>0)
 	{
       tec_file_name += "_pris";
       eleType = "BRICK"; 

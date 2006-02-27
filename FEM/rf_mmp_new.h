@@ -160,6 +160,7 @@ class CMediumProperties
   // surface water
   double friction_coefficient;  // MB
   double friction_model;
+  double channel_width;
   double argument; //OK
 };
 

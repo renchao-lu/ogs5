@@ -940,6 +940,12 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
       in.clear();
       continue;
     }
+	if(line_string.find("$WIDTH")!=string::npos) { //subkeyword found
+      in.str(GetLineFromFile1(mmp_file));
+      in >> channel_width;
+      in.clear();
+      continue;
+    }
 
 //------------------------------------------------------------------------
 //19 ELECTRIC_CONDUCTIVITY

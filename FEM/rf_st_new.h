@@ -61,8 +61,8 @@ class CSourceTerm
     string delimiter_type;
     string geo_name;
     bool conditional;
-    //double node_value_cond; //OK weg //MB
-    //double condition; //OK
+    bool river;
+    bool critical_depth;
     // TIM
     int curve;
     string tim_type_name;
@@ -114,6 +114,9 @@ class CSourceTermGroup
     CFEMesh* m_msh;
     vector<CSourceTerm*>st_group_vector; //OK
     double GetConditionalNODValue(int,CSourceTerm*); //OK
+    double GetRiverNODValue(int,CSourceTerm*, long msh_node); //MB
+    double GetCriticalDepthNODValue(int,CSourceTerm*, long msh_node); //MB
+     double GetNormalDepthNODValue(int,CSourceTerm*, long msh_node); //MB JOD
     double GetAnalyticalSolution(CSourceTerm *m_st,long node_number, string process);//CMCD
     void Write(ostream& os=cout) const; //WW
     void Read(istream& is=cin);  //WW

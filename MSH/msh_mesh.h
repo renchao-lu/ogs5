@@ -41,7 +41,7 @@ class CFEMesh
 
     long NodesNumber_Linear;
     long NodesNumber_Quadratic;
-	int max_ele_dim; // For overland flow and channel flow only
+	//int max_ele_dim; // For overland flow and channel flow only
     bool useQuadratic;
     bool axisymmetry;
     // Coordinate indicator
@@ -52,7 +52,8 @@ class CFEMesh
 	// 23:  X, Z component
 	// 3:  X, Y, Z component
     int coordinate_system;
- public:	 
+ public:	
+    int max_ele_dim; // For overland flow and channel flow only 
     string pcs_name;
     string geo_name; //MB
     int ele_type;
@@ -64,12 +65,13 @@ class CFEMesh
 //    int mat_group; //OK
     double min_edge_length; //TK
     double max_edge_length; //TK
-    long no_line;
-    long no_quad;
-    long no_hexs;
-    long no_tris;
-    long no_tets;
-    long no_pris;
+    long msh_no_line;
+    long msh_no_quad;
+    long msh_no_hexs;
+    long msh_no_tris;
+    long msh_no_tets;
+    long msh_no_pris;
+    int msh_max_dim;
   //3D View Control
   public:
     int ele_display_mode;

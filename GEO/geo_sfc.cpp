@@ -1189,7 +1189,7 @@ while(ok_true) {
         m_polyline = GEOGetPLYByName(line_string);//CC
         if(m_polyline) {
           polyline_of_surface_vector.push_back(m_polyline);    				   
-          type = m_polyline->data_type;
+          //type = m_polyline->data_type; //MB Please set surface type with surface type, not polyline type  
         }
       else{
         cout << "Warning in Surface::Read, polyline not found: " << line_string << endl;

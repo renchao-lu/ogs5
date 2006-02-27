@@ -529,7 +529,7 @@ void CFiniteElementStd::CalcNLTERMS(int nn, double* Haa, double* HaaOld, double 
       double wetted_area;
       double wetted_perimeter;
 
-      width = 1.0; // wo kommt das später mal her ??
+	  width = MediaProp->channel_width;
     
       wetted_area = width * Haa[i];
       wetted_perimeter = width + 2 * Haa[i];
@@ -617,8 +617,9 @@ int iups[4][4];
 double ckwr[4][4];
 double maxZ;
 double H;
-double zwu;
+double width;
 
+width = MediaProp->channel_width;
 pandz[0] =  haa[0]; 
 pandz[1] =  haa[1]; 
 pandz[2] =  haa[2]; 
@@ -627,25 +628,21 @@ pandz[3] =  haa[3];
 for (i = 0; i < nn; i++){
   for (j = 0; j < nn; j++){
     iups[i][j] = i;
-    if(pandz[j]>pandz[i]){
+    if(pandz[j]>pandz[i])
       iups[i][j]= j;
-    }
-  iups[j][i] = iups[i][j];
-      
-  if(i==iups[i][j]){
-    maxZ = MMax(z[i],z[j]);
-	H = haa[i] - maxZ;
-    if(H<0.0) H = 0.0;
-    zwu = pow(H,power);
-    ckwr[i][j] = H * zwu;        
-  }
-  else {
-    maxZ = MMax(z[i],z[j]);
-    H = haa[j] - maxZ;
-	if(H<0.0) H = 0.0;
-      zwu = pow(H,power);
-      ckwr[i][j] = H * zwu;  
-    }
+    
+  //iups[j][i] = iups[i][j];// not necessary??
+    maxZ = MMax(z[i],z[j]);      
+	if(i==iups[i][j]) 
+	  H = haa[i] - maxZ;
+	else 
+      H = haa[j] - maxZ;
+  if(H<0.0) H = 0.0;
+     
+  if(MeshElement->geo_type==1) // line
+    ckwr[i][j] = width * H * pow(H * width / (2 * H + width),power);
+  else
+    ckwr[i][j] = pow(H,power + 1);
   } //end for j
 } //end for i
   
@@ -1386,11 +1383,11 @@ void CFiniteElementStd::CalcLumpedMass()
 **************************************************************************/
 void CFiniteElementStd::CalcLaplace()
 {
-  int i, j, k, l;
+  int i, j, k, l, m;
   // ---- Gauss integral
   int gp, gp_r=0, gp_s=0, gp_t;
   gp_t = 0;
-  double fkt;
+  double fkt, water_depth, z;
   //----------------------------------------------------------------------
   // Loop over Gauss points
   for (gp = 0; gp < nGaussPoints; gp++)
@@ -1408,19 +1405,37 @@ void CFiniteElementStd::CalcLaplace()
       CalCoefLaplace(false,gp); 
       //---------------------------------------------------------
       // Calculate mass matrix
-      for (i = 0; i < nnodes; i++)
-	  {
-         for (j = 0; j < nnodes; j++)
-         {
-           //  if(j>i) continue;  //MB temporary as Laplace now defined unsymmetric
-             for (k = 0; k < dim; k++)
-             {
-                 for(l=0; l< dim; l++)
-                    (*Laplace)(i,j) += fkt * dshapefct[k*nnodes+i] \
-                                    * mat[dim*k+l] \
-                                    * dshapefct[l*nnodes+j];
-             }
-         }
+	  if(PcsType == G && MediaProp->unconfined_flow_group == 1 && MeshElement->ele_dim == 2) {
+		for (i = 0; i < nnodes; i++) {
+		  for (j = 0; j < nnodes; j++) {
+   		        //  if(j>i) continue;  //MB temporary as Laplace now defined unsymmetric
+             for (k = 0; k < dim; k++) {
+				 for(l=0; l< dim; l++) {
+			       for(m=0; m< nnodes; m++) {
+                       z = MeshElement->nodes[m]->Z(); 
+                       water_depth = (pcs->GetNodeValue(MeshElement->nodes_index[m],idx1) -z)*shapefct[m];
+                       (*Laplace)(i,j) += fkt * dshapefct[k*nnodes+i] \
+                                    * mat[dim*k+l] * water_depth \
+									* dshapefct[l*nnodes+j];
+				    }
+   		          } 
+			 }
+          }
+	    }
+	  }
+	  else {
+		for (i = 0; i < nnodes; i++) {
+		  for (j = 0; j < nnodes; j++) {
+   			      //  if(j>i) continue;  //MB temporary as Laplace now defined unsymmetric
+             for (k = 0; k < dim; k++) {
+				 for(l=0; l< dim; l++) {
+			         (*Laplace)(i,j) += fkt * dshapefct[k*nnodes+i] \
+                         * mat[dim*k+l] * dshapefct[l*nnodes+j];
+				    
+   		          } 
+			 }
+          }
+	    }
 	  }
   }
   //TEST OUTPUT
@@ -2341,7 +2356,7 @@ void CFiniteElementStd::AssembleParabolicEquationNewton()
   double delt = 0.;
   double power;
   double ast=0.0;
-  double krwval[4];
+  double dummy[4];
   double amat[4][4];
   double gammaij;
   double maxZ;
@@ -2358,6 +2373,7 @@ void CFiniteElementStd::AssembleParabolicEquationNewton()
   double el = 1.;
   //double akwr;
   double astor[4];
+  double width;
   
   GradH[0] = 0.0;
   GradH[1] = 0.0;
@@ -2382,6 +2398,7 @@ void CFiniteElementStd::AssembleParabolicEquationNewton()
   //------------------------------------------------------------------------
   // Element MMP group
   fric =  MediaProp->friction_coefficient;
+  width = MediaProp->channel_width;
 
   nidx1 = pcs->GetNodeValueIndex("HEAD")+1;
   nidx0 = pcs->GetNodeValueIndex("HEAD")+0;
@@ -2401,7 +2418,7 @@ void CFiniteElementStd::AssembleParabolicEquationNewton()
     dzx = Z[1] - Z[0];
   
     el = sqrt(dx*dx + dy*dy);
-    delt = el * 1; //hier später width
+    delt = el * width; 
   
     // 1/sqrt(dhds)
     //eslope = CalcEslope(index, m_pcs);
@@ -2505,7 +2522,7 @@ void CFiniteElementStd::AssembleParabolicEquationNewton()
   ast = delt /(double) (dt * nnodes); 
 
   //Compute constitutive relationships: swval, swold, krwval
-  CalcNLTERMS(nnodes, Haa, HaaOld, power, swval, swold, krwval);
+  CalcNLTERMS(nnodes, Haa, HaaOld, power, swval, swold, dummy);
 
   //Compute upstream weighting: ckwr, iups
   CalcCKWR(nnodes, haa, z, power, ckwr, iups);
@@ -2529,8 +2546,8 @@ void CFiniteElementStd::AssembleParabolicEquationNewton()
   if(MeshElement->geo_type==1){ // line
     astor[0] = swval[0] * ast; 
     astor[1] = swval[1] * ast; 
-    rhs[0] = swval[0] * ast * HaaOld[0]; 
-    rhs[1] = swval[1] * ast * HaaOld[1];
+	rhs[0] = swold[0] * ast * HaaOld[0]; // swval ?????
+    rhs[1] = swold[1] * ast * HaaOld[1]; // swval ?????
   }
 
 double test1[16];
@@ -2549,8 +2566,7 @@ for (i = 0; i < nnodes; i++){
   double epsilon = 1.e-5;
   double head_eps[4];
   double head_keep[4];
-  double krwval_eps[4];
-  double oldkrw;
+  //double oldkrw;
   double oldhead;
   double head[4];
   double sumjac=0.0;
@@ -2571,7 +2587,8 @@ for (i = 0; i < nnodes; i++){
 
   epsinv = 1 / epsilon;
 
-  //Form the residual excluding the right hand side vector 
+  //Form the residual excluding the right hand side vector
+  
     for(i=0; i<nnodes; i++)  {
       sum=0.0;
       for(j=0; j<nnodes; j++)  {
@@ -2588,34 +2605,28 @@ for (i = 0; i < nnodes; i++){
     head[i] = Haa[i];
   }
 
-  CalcNLTERMS(nnodes, head_eps, HaaOld, power, swval_eps, swold, krwval_eps);
+  CalcNLTERMS(nnodes, head_eps, HaaOld, power, swval_eps, swold, dummy);
 
   // Form jacobian !
     for(i=0; i<nnodes; i++)  {
-
-    oldkrw=krwval[i];
-    krwval[i]=krwval_eps[i];
     oldhead=Haa[i];
     head[i]=head_eps[i];
     sumjac=0.0;
 
     for(j=0; j<nnodes; j++)  {
 	  if(i!=j) {
-      //if(i==iups[i][j]){
-        if(i==iups[i*nnodes+j]){
-          maxZ = MMax(z[i],z[j]);
-		  flow_depth = head[i] + z[i] - maxZ;
-		  if(flow_depth<0.0) {flow_depth = 0.0;}
-		    akrw = flow_depth*(pow(flow_depth, power));
-	     }
-	     else{
-           maxZ = MMax(z[i],z[j]);
-		   flow_depth = head[j] + z[j] - maxZ;
-		   if(flow_depth<0.0) {flow_depth = 0.0;}
-		   akrw = flow_depth*(pow(flow_depth, power));
-	     }
-		
-	     //gammaij= akrw*( axx*edlluse[i][j] + ayy*edttuse[i][j] );
+		maxZ = MMax(z[i],z[j]);
+        if(i==iups[i*nnodes+j])
+		  flow_depth = head[i]+ z[i] - maxZ;		
+	    else
+		  flow_depth = head[j]+ z[j] - maxZ;
+     
+		if(flow_depth<0.0) {flow_depth = 0.0;}
+		if(MeshElement->geo_type==1) 
+	      akrw = width * flow_depth * pow(flow_depth * width / ( 2 * flow_depth + width), power);		
+		else 
+	      akrw = pow(flow_depth, power + 1);
+
          gammaij= akrw*( axx*edlluse[i*nnodes+j] + ayy*edttuse[i*nnodes+j] );
          
         
@@ -2639,7 +2650,6 @@ for (i = 0; i < nnodes; i++){
     sumjac=sumjac+stor_eps;
     jacobian[i][i]=(sumjac-residual[i])*epsinv ; 
     head[i]=oldhead;
-    krwval[i]=oldkrw;
   } // end i
 
 ////////ENDHIER???

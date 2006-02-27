@@ -257,13 +257,15 @@ int LOPTimeLoop_PCS(double*dt_sum)
   double pcs_dm_error = 1.0e8;
   double pcs_dm_error0 = 1.0e8;
   double pcs_dm_cp_error = 1.0e8;
-  int lop_coupling_iterations = 1; 
+  int lop_coupling_iterations = 10; 
 //  int lop_nonlinear_iterations = 15; //OK_OUT 2;
   double pcs_coupling_error = 1000; //MB
+  bool CalcVelocities = false;
   //----------------------------------------------------------------------
   //
-  if(pcs_vector.size()>1) 
-  {
+  if(pcs_vector.size()==1) 
+      lop_coupling_iterations = 1; 
+  if(pcs_vector.size()>1) {
       lop_coupling_iterations = pcs_vector[0]->m_num->cpl_iterations;
       TolCoupledF = pcs_vector[0]->m_num->cpl_tolerance;
   }
@@ -271,6 +273,12 @@ int LOPTimeLoop_PCS(double*dt_sum)
   // Problem type
   string pcs_problem_type = PCSProblemType();
 
+  //----------------------------------------------------------------------
+  // Need velocities ? //MB
+  if(T_Process||M_Process||MASS_TRANSPORT_Process){
+     cout << "  VELOCITIES " << endl;
+     CalcVelocities = true;
+   }
   //======================================================================
   // Coupling loop
   for(k=0;k<lop_coupling_iterations;k++){
@@ -304,30 +312,32 @@ int LOPTimeLoop_PCS(double*dt_sum)
           pcs_coupling_error = m_pcs->CalcCouplingNODError();
         }
         PCSCalcSecondaryVariables(); // PCS member function
-        m_pcs->CalIntegrationPointValue(); //WW
+
+        if (CalcVelocities){ 
+          m_pcs->CalIntegrationPointValue(); //WW
+        }
       }
       //------------------------------------------------------------------
       m_pcs = PCSGet("RICHARDS_FLOW");
       if(m_pcs&&m_pcs->selected){
         if(m_pcs->m_msh->no_msh_layer==0){
-          pcs_flow_error = m_pcs->ExecuteNonLinear();
-          //PCSCalcSecondaryVariables(); // PCS member function
-        }
-        else{
-          //Achtung bei anderen Prozessen
+          //For Regional Richards Flow with more than one m_pcs and m_msh 
+          //(as used in Benchmark Kopplung re) 
           for(i=0;i<no_processes;i++){
             m_pcs = pcs_vector[i];
             pcs_flow_error = m_pcs->ExecuteNonLinear();
-            //PCSCalcSecondaryVariables(); // PCS member function                 //YD
+            PCSCalcSecondaryVariables(); // PCS member function
           }
-          //LOPExecuteRegionalRichardsFlow(pcs);
         }
-//       if(!pcs->m_msh) //OK
-//         VELCalcAll(pcs);
-//	   else
-         m_pcs->CalIntegrationPointValue(); //WW
-        //if(pcs->m_msh->no_layer>0)
-        //  pcs->CalcFluxesForCoupling();
+        else{
+          //For Regional Richards Flow with just one m_pcs and m_msh 
+          //(as used in Benchmark Kopplung re) 
+          //LOPExecuteRegionalRichardsFlow(m_pcs);
+          m_pcs->CalcFluxesForCoupling();
+        }
+        if (CalcVelocities){ 
+          m_pcs->CalIntegrationPointValue(); //WW
+        }
       }
 	  //--------------------------------------------------------------------
       m_pcs = PCSGet("TWO_PHASE_FLOW");
@@ -364,7 +374,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
       //--------------------------------------------------------------------
       m_pcs = PCSGet("OVERLAND_FLOW");
       if(m_pcs&&m_pcs->selected){
-        //WW lop_coupling_iterations = m_pcs->m_num->cpl_iterations;
+        lop_coupling_iterations = m_pcs->m_num->cpl_iterations;
         pcs_flow_error = m_pcs->ExecuteNonLinear();
         PCSCalcSecondaryVariables(); // PCS member function
       }
