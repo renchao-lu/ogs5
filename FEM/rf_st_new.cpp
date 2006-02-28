@@ -1114,12 +1114,12 @@ vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin()
           //if(max_dim==1) m_st->DomainIntegration(m_pcs, nodes_vector, node_value_vector);
 
           //Msh dependent MB
-          if(m_msh->msh_max_dim ==2){      // For all meshes with 1-D or 2-D elements
+          if(m_msh->GetMaxElementDim()==2)     // For all meshes with 1-D or 2-D elements
             m_st->DomainIntegration(m_pcs, nodes_vector, node_value_vector);
-          }
-          else {                           // For all meshes with 3-D elements
+          //
+          else if(m_msh->GetMaxElementDim()==3)                           // For all meshes with 3-D elements
             m_st->FaceIntegration(m_pcs, nodes_vector, node_value_vector);
-          }
+         
 
           for(i=0;i<nodes_vector_length;i++){
             m_node_value = new CNodeValue();
@@ -1981,7 +1981,7 @@ double CSourceTermGroup::GetCriticalDepthNODValue(int i,CSourceTerm* m_st, long 
   double H3_epsilon = pow(H+epsilon,3.);
   double value_jacobi;
   double width = group_vector[i]->node_area;
-  if(m_pcs_this->m_msh->max_ele_dim ==1 ) {
+  if(m_pcs_this->m_msh->GetMaxElementDim() ==1 ) {
     msh_ele = m_pcs_this->m_msh->nod_vector[msh_node]->connected_elements[0]; 
     int group = m_pcs_this->m_msh->ele_vector[msh_ele]->GetPatchIndex();
     width = mmp_vector[group]->channel_width; 
@@ -2022,7 +2022,7 @@ double CSourceTermGroup::GetNormalDepthNODValue(int i,CSourceTerm* m_st, long ms
   
   double power, fric, width, temp;
   int group;
-  if(m_msh->max_ele_dim > 1)
+  if(m_msh->GetMaxElementDim() > 1)
 	cout << "!!!!! NORMAL DEPTH only for one dimensional river flow implemented !!!!!" << endl;
     
   H = m_pcs_this->GetNodeValue(msh_node,1) - m_msh->nod_vector[msh_node]->Z(); 
