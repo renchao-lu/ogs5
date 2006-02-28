@@ -51,9 +51,9 @@ class CFEMesh
 	// 2:  X, Y component
 	// 23:  X, Z component
 	// 3:  X, Y, Z component
-    int coordinate_system;
+    int coordinate_system; 
+    int max_ele_dim; 
  public:	
-    int max_ele_dim; // For overland flow and channel flow only 
     string pcs_name;
     string geo_name; //MB
     int ele_type;

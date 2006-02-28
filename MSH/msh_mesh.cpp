@@ -515,6 +515,7 @@ void CFEMesh::ConstructGrid( const bool quadratic)
    else if(x_sum>0.0&&y_sum>0.0&&z_sum>0.0)
       coordinate_system = 32;
    max_dim = coordinate_system/10-1;
+   /*
    //----------------------------------------------------------------------
    //Determin msh dimension
    double max_nodes = 0.0;
@@ -527,7 +528,7 @@ void CFEMesh::ConstructGrid( const bool quadratic)
    if(max_nodes <= 2.0) msh_max_dim = 1;      // 1-D elements
    else if(max_nodes <= 4.0) msh_max_dim = 2; // 2-D elements
    else msh_max_dim = 3;                      // 3-D elements
-
+   */
 
    //----------------------------------------------------------------------
    // Gravity center
