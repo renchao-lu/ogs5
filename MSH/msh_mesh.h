@@ -44,6 +44,7 @@ class CFEMesh
 	//int max_ele_dim; // For overland flow and channel flow only
     bool useQuadratic;
     bool axisymmetry;
+   
     // Coordinate indicator
 	// 1:  X component only
 	// 12: Y component only
@@ -72,6 +73,7 @@ class CFEMesh
     long msh_no_tets;
     long msh_no_pris;
     int msh_max_dim;
+    bool cross_section;
   //3D View Control
   public:
     int ele_display_mode;
