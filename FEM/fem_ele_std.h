@@ -12,6 +12,7 @@
 #include "rf_mmp_new.h"
 #include "rf_msp_new.h"
 #include "rf_out_new.h" //OK
+#include "par_ddc.h" //OK
 
 //-----------------------------------------------------
      // Process type
@@ -76,7 +77,6 @@ class CFiniteElementStd:public CElement
      void Assembly(); 
 	 void Assembly(int dimension);	// PCH for Fluid Momentum
      void Cal_Velocity(bool cal_gravity);
-     void AssembleParabolicEquationRHSVector(); //OK
 
      // MB only temporary
      void Get_Matrix_Quad();
@@ -172,6 +172,9 @@ class CFiniteElementStd:public CElement
      void Assemble_Gravity();
 	 void AssembleRHS(int dimension); // PCH
      bool check_matrices; //OK4104
+   public:
+     void AssembleParabolicEquationRHSVector(); //OK
+     CPARDomain *m_dom; //OK
 };
 
 

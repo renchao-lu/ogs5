@@ -30,9 +30,6 @@ export CHOSEN_TARGET
 
 
 SUBDIRS = FEM GEO MSH
-ifdef MPI
-SUBDIRS += MPI
-endif
 
 OBJS_PATTERN = $(foreach subdir,$(SUBDIRS),$(subdir)/*.o)
 

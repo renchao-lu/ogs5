@@ -225,7 +225,7 @@ typedef struct
     /*  0: initialisiert */
     /*  1: aik eingespeichert oder veraendert, */
     /*  2: ILU-Zerlegung gelaufen */
-    int l34_Aik;                /* L„nge von Aik */
+    int l34_Aik;                /* LÂ„nge von Aik */
     /* 2: symmetrisch, 4: unsymmetrisch */
     int i34_Bik;                /* Start Bik (Preconditioner) innerhalb aik */
     /* 1: symmetrisch, 2: unsymmetrisch */
@@ -1862,7 +1862,7 @@ void *M5CreateMatrix(long param1, long param2, long param3)
 
 */
 
-
+/*
        count1 = 0;
 	   for (k = 0; k < jd_ptr_max; k++)
 	   {
@@ -1887,7 +1887,7 @@ void *M5CreateMatrix(long param1, long param2, long param3)
 //TEST WW
           cout<<endl;
 ////////////////////
-       }
+       }*/
    return (void*) w;
 }
 /*-------------------------------------------------------------*/

@@ -8,5 +8,7 @@ include $(CONFIGS_DIR)/nec-sx8
 CXX_LD           = sxmpic++
 CXX              = sxmpic++
 
+CXX_FLAGS       += -DUSE_MPI
+
 USE_MPI          = yes
 

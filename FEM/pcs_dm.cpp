@@ -1850,7 +1850,7 @@ void CRFProcessDeformation:: GlobalAssembly()
    }
 
 #ifdef PARALLEL
-   DomainDecomposition();
+   // DomainDecomposition();
 #endif
    // Apply Neumann BC
    IncorporateSourceTerms();

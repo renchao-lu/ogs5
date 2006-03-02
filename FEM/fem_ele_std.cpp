@@ -630,14 +630,14 @@ for (i = 0; i < nn; i++){
     iups[i][j] = i;
     if(pandz[j]>pandz[i])
       iups[i][j]= j;
-    
+      
   //iups[j][i] = iups[i][j];// not necessary??
-    maxZ = MMax(z[i],z[j]);      
+    maxZ = MMax(z[i],z[j]);
 	if(i==iups[i][j]) 
-	  H = haa[i] - maxZ;
+	H = haa[i] - maxZ;
 	else 
-      H = haa[j] - maxZ;
-  if(H<0.0) H = 0.0;
+    H = haa[j] - maxZ;
+	if(H<0.0) H = 0.0;
      
   if(MeshElement->geo_type==1) // line
     ckwr[i][j] = width * H * pow(H * width / (2 * H + width),power);
@@ -1412,19 +1412,19 @@ void CFiniteElementStd::CalcLaplace()
       if(PcsType == G && MediaProp->unconfined_flow_group == 1 && MeshElement->ele_dim == 2 && !pcs->m_msh->cross_section) {
 		for (i = 0; i < nnodes; i++) {
 		  for (j = 0; j < nnodes; j++) {
-   		        //  if(j>i) continue;  //MB temporary as Laplace now defined unsymmetric
+           //  if(j>i) continue;  //MB temporary as Laplace now defined unsymmetric
              for (k = 0; k < dim; k++) {
 				 for(l=0; l< dim; l++) {
 			       for(m=0; m< nnodes; m++) {
                        z = MeshElement->nodes[m]->Z(); 
                        water_depth = (pcs->GetNodeValue(MeshElement->nodes_index[m],idx1) -z)*shapefct[m];
-                       (*Laplace)(i,j) += fkt * dshapefct[k*nnodes+i] \
+                    (*Laplace)(i,j) += fkt * dshapefct[k*nnodes+i] \
                                     * mat[dim*k+l] * water_depth \
-									* dshapefct[l*nnodes+j];
-				    }
-   		          } 
-			 }
-          }
+                                    * dshapefct[l*nnodes+j];
+             }
+         }
+	  }
+  }
 	    }
 	  }
 	  else {
@@ -2299,18 +2299,26 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
        NodalVal[i] = 0.0;
    }
    AuxMatrix1->multi(NodalVal1, NodalVal);  //AuxMatrix1 times vector NodalVal1 = NodalVal
-
-    
-
-   for (i=0;i<nnodes;i++)
-   {
+  //----------------------------------------------------------------------
+  if(dom_vector.size()>0)
+  {
+    for (i=0;i<nnodes;i++)
+    {
+      m_dom->eqs->b[NodeShift[problem_dimension_dm] + eqs_number[i]] += NodalVal[i];
+      (*RHS)(i+LocalShift) +=  NodalVal[i];
+    }
+  }
+  else
+  {
+    for (i=0;i<nnodes;i++)
+    {
        pcs->eqs->b[NodeShift[problem_dimension_dm] + eqs_number[i]] += NodalVal[i];
-       (*RHS)(i+LocalShift) +=  NodalVal[i];
-   }
-
-
-	//Debug output
-	if(Index < 0){
+      (*RHS)(i+LocalShift) +=  NodalVal[i];
+    }
+  }
+  //----------------------------------------------------------------------
+  //Debug output
+  if(Index < 0){
 	cout << " Element Number " << Index << endl;
 	cout << " Mass matrix" << endl;
 	Mass->Write();
@@ -2331,7 +2339,7 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
 	cout << " initial concentrations" << endl;
 	for (i=0;i<nnodes; i++) cout << "| " << NodalVal1[i] << " |" << endl;
 	
-	}
+  }
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -2492,7 +2500,7 @@ void CFiniteElementStd::AssembleParabolicEquationNewton()
   eslope = 1.0 / sqrt(dhds);
 
   /* Chezy-coefficient: C */
-  /* für b >> h gilt: C = H**1/6 n**-1 */
+  /* fÃ¼r b >> h gilt: C = H**1/6 n**-1 */
   if (MediaProp->friction_model==2){ // Chezy-coefficient C
     if(MeshElement->geo_type==1){ 
       axx = (eslope * fric) / el;
@@ -2591,7 +2599,7 @@ for (i = 0; i < nnodes; i++){
 
   epsinv = 1 / epsilon;
 
-  //Form the residual excluding the right hand side vector
+  //Form the residual excluding the right hand side vector 
   
     for(i=0; i<nnodes; i++)  {
       sum=0.0;
@@ -2619,18 +2627,18 @@ for (i = 0; i < nnodes; i++){
 
     for(j=0; j<nnodes; j++)  {
 	  if(i!=j) {
-		maxZ = MMax(z[i],z[j]);
+          maxZ = MMax(z[i],z[j]);
         if(i==iups[i*nnodes+j])
-		  flow_depth = head[i]+ z[i] - maxZ;		
+		  flow_depth = head[i] + z[i] - maxZ;
 	    else
-		  flow_depth = head[j]+ z[j] - maxZ;
+		   flow_depth = head[j] + z[j] - maxZ;
      
-		if(flow_depth<0.0) {flow_depth = 0.0;}
+		   if(flow_depth<0.0) {flow_depth = 0.0;}
 		if(MeshElement->geo_type==1) 
 	      akrw = width * flow_depth * pow(flow_depth * width / ( 2 * flow_depth + width), power);		
 		else 
 	      akrw = pow(flow_depth, power + 1);
-
+		
          gammaij= akrw*( axx*edlluse[i*nnodes+j] + ayy*edttuse[i*nnodes+j] );
          
         
@@ -2871,26 +2879,18 @@ void CFiniteElementStd::Assembly()
 {
   int i,j, nn;
   //----------------------------------------------------------------------
-#ifdef PARALLEL
-  index = m_dom->elements[e]->global_number;
-#else
+  //OK index = m_dom->elements[e]->global_number;
   index = Index;
-#endif
   //----------------------------------------------------------------------
   nn = nnodes;
   if(pcs->type==41||pcs->type==4) nn = nnodesHQ; // ?2WW
   //----------------------------------------------------------------------
   // EQS indices
   for(i=0;i<nn;i++){
-#ifdef PARALLEL
-    eqs_number[i] = MeshElement->domain_nodes[i];
-#else
-    if(pcs->m_msh){ //OK4108
+    if(dom_vector.size()>0)
+      eqs_number[i] = MeshElement->domain_nodes[i];
+    else    
       eqs_number[i] = MeshElement->nodes[i]->GetEquationIndex();
-    }
-    else
-      eqs_number[i] = GetNodeIndex(nodes[i]);
-#endif
   }
   //----------------------------------------------------------------------
   // Get room in the memory for local matrices

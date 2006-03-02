@@ -26,6 +26,10 @@
    
 *************************************************************************/
 
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
+
 #include "stdafx.h"             /* MFC */
 
 #include <iostream>
@@ -58,9 +62,6 @@ using namespace std;
 /* UMFPACK-Solver */
 #ifdef UMFPACK
   #include <umfpack.h>
-#endif
-#ifdef MPI
-#include "mpi.h"
 #endif
 /**** Definitionen fuer Preconditioner (Ra, 3/2000) */
 #define VK_Skalierung  1
@@ -228,10 +229,10 @@ void InitSolverParameter(void)
 
  Aufgabe:
    Iterative-Gleichungsloeser mit Speichertechnik aus 'matrix.h'
-   Herk¸mmliche Verfahren wie Richardson, Jacobi, Gauss-Seidel und SOR.
+   HerkÂ¸mmliche Verfahren wie Richardson, Jacobi, Gauss-Seidel und SOR.
    Konvergieren zwar sehr langsam im Vergleich zu den neuen Verfahren
    wie PCG oder BICGSTAB, dennoch haben sie gute Eigenschaften, die spaeter
-   benoetigt werden k¸nnen (Stichwort: Multigrid, Decomposition domain,
+   benoetigt werden kÂ¸nnen (Stichwort: Multigrid, Decomposition domain,
    Vorkonditionierung, etc.)
 
  Programmaenderungen:
@@ -1548,27 +1549,38 @@ int SpBICGSTAB(double *b, double *x, long n)
     int k = 0, max_iter = 0, repeat = 0;
     double r0norm = 0., b0norm = 0., x0norm = 0., tt, ts, rsv;
     double error_rel;
-#ifdef MPI
-    int    ip,jp;
+#ifdef USE_MPI
+    int    ip,jp, idx;
     double sendbuff = 0;
     double recvbuff = 0;
     double *rb;
+    double *ar_buf;
+
 
     rb = (double*)malloc(n*sizeof(double));
+    ar_buf = (double *)malloc(n * sizeof(double));
 
-       for (ip=0; ip<n; ip++)
-        for(jp=0; jp<n; jp++)
+    for (ip=0; ip<n; ip++) {
+      idx = 0;
+      for(jp=0; jp<n; jp++)
 	{
-	  sendbuff = MXGet(ip,jp);
-	  MPI_Allreduce(&sendbuff,&recvbuff,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-          MXSet(ip,jp,recvbuff);
-	}																		                                
+	  ar_buf[jp] = MXGet(ip,jp);
+	}
 
-          MPI_Allreduce(b,rb,n,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+      MPI_Allreduce(ar_buf, rb, n, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      
+      for(jp=0; jp<n; jp++) 
+	MXSet(ip,jp,rb[jp]);
+    }																		                                
 
-          for (ip=0; ip<n; ip++)
-           b[ip]=rb[ip];
-        free(rb);
+    MPI_Allreduce(b,rb,n,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+
+    for (ip=0; ip<n; ip++)
+      b[ip]=rb[ip];
+
+    free(rb);
+    free(ar_buf);
+
 #endif     
     /* Ggf. starten der Vorkonditionierung */
     if (vorkond){

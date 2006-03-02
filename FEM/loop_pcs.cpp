@@ -212,10 +212,8 @@ int LOPPreTimeLoop_PCS(void)
   }
 //  delete rc;
   //----------------------------------------------------------------------
-  // PAR
-#ifdef PARALLEL
+  // DDC
   DOMCreate();
-#endif
   //----------------------------------------------------------------------
   PCSRestart(); //SB
   //----------------------------------------------------------------------
@@ -314,8 +312,8 @@ int LOPTimeLoop_PCS(double*dt_sum)
         PCSCalcSecondaryVariables(); // PCS member function
 
         if (CalcVelocities){ 
-          m_pcs->CalIntegrationPointValue(); //WW
-        }
+        m_pcs->CalIntegrationPointValue(); //WW
+      }
       }
       //------------------------------------------------------------------
       m_pcs = PCSGet("RICHARDS_FLOW");
@@ -335,7 +333,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
           m_pcs->CalcFluxesForCoupling();
         }
         if (CalcVelocities){ 
-          m_pcs->CalIntegrationPointValue(); //WW
+         m_pcs->CalIntegrationPointValue(); //WW
         }
       }
 	  //--------------------------------------------------------------------
@@ -1116,6 +1114,7 @@ void LOPCalcNODResultants(void)
 #endif
         break;
       case 'L': // Liquid flow
+        cout << "LOPCalcNODResultants: not implemented for this process" << endl;
         break;
       case 'G': // Groundwater flow
         m_pcs->AssembleParabolicEquationRHSVector();
@@ -1123,22 +1122,32 @@ void LOPCalcNODResultants(void)
         m_pcs->SetNODFlux();
         break;
       case 'A': // Gas flow
+        cout << "LOPCalcNODResultants: not implemented for this process" << endl;
         break;
       case 'T': // Two-phase flow
+        cout << "LOPCalcNODResultants: not implemented for this process" << endl;
         break;
       case 'C': // Componental flow
+        cout << "LOPCalcNODResultants: not implemented for this process" << endl;
         break;
       case 'H': // Heat transport
+        cout << "LOPCalcNODResultants: not implemented for this process" << endl;
         break;
       case 'M': // Mass transport
+        cout << "LOPCalcNODResultants: not implemented for this process" << endl;
         break;
       case 'D': // Deformation
+        cout << "LOPCalcNODResultants: not implemented for this process" << endl;
         break;
       case 'O': // Overland flow
+        cout << "LOPCalcNODResultants: not implemented for this process" << endl;
         break;
       case 'R': // Richards flow
+        m_pcs->AssembleParabolicEquationRHSVector();
+        m_pcs->SetNODFlux();
         break;
 	  case 'F': // Fluid Momentum
+        cout << "LOPCalcNODResultants: not implemented for this process" << endl;
         break;
     }
   }

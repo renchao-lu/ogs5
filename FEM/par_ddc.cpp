@@ -29,6 +29,14 @@ extern void MakeElementEntryEQS_ASM(long,double*,double*,CPARDomain*,CRFProcess*
 
 vector<CPARDomain*>dom_vector;
 
+/*---- MPI Parallel --------------*/
+int size;
+int myrank;
+char t_fname[3];
+double time_ele_paral;
+/*---- MPI Parallel --------------*/
+
+
 /**************************************************************************
 STRLib-Method: 
 Task: 
@@ -70,6 +78,9 @@ Programing:
 **************************************************************************/
 void DOMRead(string file_base_name)
 {
+  //----------------------------------------------------------------------
+  cout << "DOMRead: ";
+  //----------------------------------------------------------------------
   CPARDomain *m_dom = NULL;
   char line[MAX_ZEILE];
   string sub_line;
@@ -80,14 +91,12 @@ void DOMRead(string file_base_name)
   // File handling
   ddc_file_name = file_base_name + DDC_FILE_EXTENSION;
   ifstream ddc_file (ddc_file_name.data(),ios::in);
-  if (!ddc_file.good())
+  if(!ddc_file.good())
   {
     cout << "no DDC file" << endl;
     return;
   }
   ddc_file.seekg(0L,ios::beg);
-  //----------------------------------------------------------------------
-  cout << "DOMRead: ";
   //----------------------------------------------------------------------
   // Keyword loop
   while (!ddc_file.eof()) {
@@ -114,7 +123,7 @@ Programing:
 **************************************************************************/
 void DOMCreate()
 {
-  int no_domains =(int)dom_vector.size();
+  int no_domains = (int)dom_vector.size();
   if(no_domains==0)
     return;
   CPARDomain *m_dom = NULL;
@@ -224,27 +233,7 @@ ios::pos_type CPARDomain::Read(ifstream *ddc_file)
           break;
         }
         i = strtol(line,NULL,0);
-        m_ele = new CElem(); //OK
-        //OK m_ele->global_number = i;
-        elements.push_back(m_ele);
-      }
-    }
-    //....................................................................
-    if(line_string.find("$NODES_INNER")!=string::npos) { // subkeyword found
-      while (!new_keyword) {
-        position = ddc_file->tellg();
-        ddc_file->getline(line,MAX_ZEILE);
-        line_string = line;
-        if(line_string.find(hash)!=string::npos) {
-          new_keyword = true;
-          break;
-        }
-        if(line_string.find(dollar)!=string::npos) {
-          new_subkeyword = true;
-          break;
-        }
-        i = strtol(line,NULL,0);
-        nodes_inner.push_back(i);
+        elements.push_back(i);
       }
     }
     //....................................................................
@@ -324,7 +313,6 @@ Programing:
 **************************************************************************/
 void CPARDomain::CreateElements()
 {
-#ifdef PARALLEL
   //----------------------------------------------------------------------
   if(!m_msh)
     return;
@@ -340,16 +328,15 @@ void CPARDomain::CreateElements()
       continue;
     }
     m_ele = m_msh->ele_vector[elements[i]];
-cout << i << " " << elements[i] << ": ";
+    // cout << i << " " << elements[i] << ": ";
     for(j=0;j<m_ele->GetNodesNumber(false);j++){
       m_nod = m_ele->GetNode(j);
       m_ele->domain_nodes[j] = GetDOMNode(m_nod->GetEquationIndex());
-cout << m_nod->GetEquationIndex() << "->"  << m_ele->domain_nodes[j] << " ";
+      // cout << m_nod->GetEquationIndex() << "->"  << m_ele->domain_nodes[j] << " ";
     }
-cout << endl;
+    // cout << endl;
   }
   //----------------------------------------------------------------------
-#endif
 }
 
 /**************************************************************************
@@ -517,7 +504,7 @@ void CPARDomain::WriteTecplot(string msh_name)
   dom_file.seekg(0L,ios::beg);
   //--------------------------------------------------------------------
   for(i=0;i<(long)elements.size();i++){
-    m_ele = m_msh->ele_vector[elements[i]->GetIndex()]; //OK
+    m_ele = m_msh->ele_vector[elements[i]];
     if(!m_ele)
       continue;
     switch(m_ele->GetElementType()){
@@ -557,7 +544,7 @@ void CPARDomain::WriteTecplot(string msh_name)
   }
   //......................................................................
   for(i=0;i<(long)elements.size();i++){
-    m_ele = m_msh->ele_vector[elements[i]->GetIndex()]; //OK global_index
+    m_ele = m_msh->ele_vector[elements[i]];
     if(!m_ele)
       continue;
     switch(m_ele->GetElementType()){

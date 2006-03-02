@@ -110,9 +110,9 @@ int mshType=0;  //WW To be removed
                   basiert auf Modell-Konfiguration (SetRockflowModelEx)
                   z. B. bei Ausgabe-Konfiguration (ConfigOutput())
    09/2002   OK   Kapselung von Pre/Post-Funktionen 
-                  für FEM Applikation und Modelle
+                  fÃ¼r FEM Applikation und Modelle
                   (dies vereinfacht die Einbettung von RF-FEM in andere Applikationen)
-   09/2002   OK   ToDo: Trennung zwischen modellabhängigen und -unabhängigen
+   09/2002   OK   ToDo: Trennung zwischen modellabhÃ¤ngigen und -unabhÃ¤ngigen
                         Objekten notwendig
    03/2003   RK   Liste fuer Rockflow-Modelle in Version rf3818 entfernt                     
                                                                           */
@@ -121,10 +121,10 @@ int RF_FEM (char *dateiname)
 {
 	int inv_flag;
     /*--------------------------------------------------------------------*/
-    /* 1 Objekte und Verknüpfungen für RF-FEM Applikation konstruieren */
+    /* 1 Objekte und VerknÃ¼pfungen fÃ¼r RF-FEM Applikation konstruieren */
     RFPre_FEM(dateiname);
     /*--------------------------------------------------------------------*/
-      /* 2.1 RF-Objekte konfigurieren, Verknüpfungen zwischen RF-Objekten */
+      /* 2.1 RF-Objekte konfigurieren, VerknÃ¼pfungen zwischen RF-Objekten */
       RFPre_Model();
       /* 2.2 Zeitschleife */ 
       inv_flag=ExecuteInverseMethodNew ("ROCKFLOW",ExecuteRFTimeLoop);
@@ -141,7 +141,7 @@ int RF_FEM (char *dateiname)
 /* ROCKFLOW - Funktion: RFPre_FEM
                                                                           */
 /* Aufgabe:
-   RF Objekte und Verknüpfungen konstruieren
+   RF Objekte und VerknÃ¼pfungen konstruieren
                                                                           */
 /* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    E char *dateiname: Dateiname der Eingabedatei ( ohne Extension )
@@ -179,7 +179,7 @@ int RFPre_FEM(char* dateiname)
   DOMRead(dateiname);
   if(mshType==100) return 1;
   /*-----------------------------------------------------------------------*/
-  /* RF-Objekte konfigurieren, Verknüpfungen zwischen RF-Objekten */
+  /* RF-Objekte konfigurieren, VerknÃ¼pfungen zwischen RF-Objekten */
   cout << "---------------------------------------------" << endl;
   cout << "Data configuration" << endl;
 //OK_OUT  ConfigFileData(dateiname);
@@ -220,7 +220,7 @@ void RFPost_FEM(void)
 /* ROCKFLOW - Funktion: RFPre_Model
                                                                           */
 /* Aufgabe:
-   RF-Objekte konfigurieren, Verknüpfungen zwischen RF-Objekten
+   RF-Objekte konfigurieren, VerknÃ¼pfungen zwischen RF-Objekten
                                                                           */
 /* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    E char *dateiname: Dateiname der Eingabedatei
@@ -241,7 +241,7 @@ void RFPre_Model()
   LOPConfig_PCS();
   //
   if(mshType!=100&&mshType!=0) InitGridAdaptation();   
-  /* RF-Objekte konfigurieren, Verknüpfungen zwischen RF-Objekten */
+  /* RF-Objekte konfigurieren, VerknÃ¼pfungen zwischen RF-Objekten */
   RFConfigObjects();
   /* RF-Objekte konfigurieren */
   if(mshType!=100&&mshType!=0) RFConfigRenumber();
@@ -379,14 +379,9 @@ int ExecuteRFTimeLoop(void)
     /* Ausgabe fuer Bilanzobjekte */
     BalanceOverAllGeometryObjects();
     /* Ergebnisausgabe */
-#ifdef MPI
-    if (myrank == 0) 
-    {
-     OUTData(m_tim->time_current,aktueller_zeitschritt);
-    }
-#else
+
     OUTData(m_tim->time_current,aktueller_zeitschritt);
-#endif     
+
     // update current time step number
     m_tim->step_current++;
     if(m_tim->step_current==no_time_steps){

@@ -20,22 +20,12 @@ using namespace std;
 #include "rf_pcs.h"
 
 //-----------------------------------------------
-class CPARDomainElement
-{
-  private:
-  public:
-    long global_number;
-    long *global_nodes; //Todo dynamical
-    long nodes[3]; //Todo dynamical
-};
-//-----------------------------------------------
 class CPARDomain
 {
   private:
   public:
     int ID;
-    //OK vector<CPARDomainElement*>elements;
-    vector<CElem*>elements;
+    vector<long>elements;
     vector<long>nodes_inner;
     vector<long>nodes_halo;
     vector<long>nodes;

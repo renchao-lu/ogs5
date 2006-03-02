@@ -34,7 +34,10 @@ using namespace std;
 #include "msh_lib.h"
 // Specific outoup for deformation 
 #include "rf_msp_new.h"
-
+// MPI Parallel
+#ifdef USE_MPI
+#include "par_ddc.h"
+#endif
 using Mesh_Group::CFEMesh;
 //==========================================================================
 vector<COutput*>out_vector;
@@ -178,11 +181,30 @@ ios::pos_type COutput::Read(ifstream *out_file)
         remove(tec_file_name.c_str());
         tec_file_name = file_base_name + "_domain_quad" + TEC_FILE_EXTENSION;
         remove(tec_file_name.c_str());
-        tec_file_name = file_base_name + "_domain_tri" + TEC_FILE_EXTENSION;
+#ifdef USE_MPI
+	sprintf(t_fname, "%d",myrank);
+	tec_file_name = file_base_name + "_domain_tri" + t_fname + TEC_FILE_EXTENSION;
+#else
+	tec_file_name = file_base_name + "_domain_tri" + TEC_FILE_EXTENSION;
+#endif
+//orig        tec_file_name = file_base_name + "_domain_tri" + TEC_FILE_EXTENSION;
         remove(tec_file_name.c_str());
-        tec_file_name = file_base_name + "_domain_pris" + TEC_FILE_EXTENSION;
+#ifdef USE_MPI
+	sprintf(t_fname, "%d",myrank);
+	tec_file_name = file_base_name + "_domain_pris" + t_fname + TEC_FILE_EXTENSION;
+#else
+	tec_file_name = file_base_name + "_domain_pris" + TEC_FILE_EXTENSION;
+#endif
+//orig        tec_file_name = file_base_name + "_domain_pris" + TEC_FILE_EXTENSION;
         remove(tec_file_name.c_str());
-        tec_file_name = file_base_name + "_domain_tet" + TEC_FILE_EXTENSION;
+#ifdef USE_MPI
+	sprintf(t_fname, "%d",myrank);
+	tec_file_name = file_base_name + "_domain_tet" + t_fname + TEC_FILE_EXTENSION;
+#else
+	tec_file_name = file_base_name + "_domain_tet" + TEC_FILE_EXTENSION;
+#endif
+
+//orig        tec_file_name = file_base_name + "_domain_tet" + TEC_FILE_EXTENSION;
         remove(tec_file_name.c_str());
         tec_file_name = file_base_name + "_domain_hex" + TEC_FILE_EXTENSION;
         remove(tec_file_name.c_str());
@@ -609,6 +631,10 @@ void COutput::NODWriteDOMDataTEC()
   int te=0;
   string eleType;
   string tec_file_name;
+  char tf_name[10];
+
+  std::cout << "Process " << myrank << " in WriteDOMDataTEC" << std::endl;
+
   //----------------------------------------------------------------------
   // Tests  
   if((int)nod_value_vector.size()==0)
@@ -667,7 +693,14 @@ void COutput::NODWriteDOMDataTEC()
       tec_file_name += "_pris";
       eleType = "BRICK"; 
 	  te=6;
-    }
+	}
+  
+#ifdef USE_MPI
+    sprintf(tf_name, "%d", myrank);
+    tec_file_name += "_" + string(tf_name);
+    std::cout << "Tecplot filename: " << tec_file_name << endl;
+#endif
+
     tec_file_name += TEC_FILE_EXTENSION;
     fstream tec_file (tec_file_name.data(),ios::app|ios::out);
     tec_file.setf(ios::scientific,ios::floatfield);
@@ -748,7 +781,16 @@ void COutput::NODWriteDOMDataTEC()
 #ifdef SX
       char sxbuffer[4096*4096];
 #endif
-      string tec_file_name = file_base_name + "_" + "domain" + "_tet" + TEC_FILE_EXTENSION;
+
+      string tec_file_name = file_base_name + "_" + "domain" + "_tet";
+
+#ifdef USE_MPI
+      sprintf(tf_name, "%d", myrank);
+      tec_file_name += "_" + string(tf_name);
+#endif
+
+      tec_file_name += TEC_FILE_EXTENSION;
+
       fstream tec_file (tec_file_name.data(),ios::app|ios::out);
 #ifdef SX
       tec_file.rdbuf()->pubsetbuf(sxbuffer,4096*4096);

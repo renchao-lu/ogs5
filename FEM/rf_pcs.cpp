@@ -8,6 +8,13 @@ Programing:
 07/2004 OK PCS2
 02/2005 WW/OK Element Assemblier and output 
 **************************************************************************/
+
+/*--------------------- MPI Parallel  -------------------*/
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
+/*--------------------- MPI Parallel  -------------------*/
+
 // MFC
 #include "stdafx.h" 
 #ifdef MFC
@@ -64,12 +71,6 @@ extern void transM2toM6(void);
 /*-------------------- JAD    ---------------------------*/
 extern void transM2toM5(void);
 /*-------------------- JAD    ---------------------------*/
-/*--------------------- MPI Parallel  -------------------*/
-#ifdef MPI
-#include "mpi.h"
-#endif
-
-/*--------------------- MPI Parallel  -------------------*/
 /*-----------------------------------------------------------------------*/
 /* LOP */
 #include "rf_apl.h" // Loop...
@@ -2332,7 +2333,7 @@ FEMLib-Method:
 Task: 
 Programing:
 02/2005 OK Implementation
-last modified:
+02/2006 OK FLUX
 **************************************************************************/
 void CRFProcess::ConfigUnsaturatedFlow()
 {
@@ -3059,6 +3060,8 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
     GlobalAssembly();
   else
     AssembleSystemMatrixNew();
+
+
   //----------------------------------------------------------------------
   // 3 Incorporate ST 
   cout << "      Incorporate source terms" << endl;
@@ -3294,37 +3297,33 @@ void CRFProcess::GlobalAssembly()
   Check2D3D = false;
   if(type == 66) //Overland flow
     Check2D3D = true;
-#ifdef MPI
-  long total,local1,local2,start,end;
-  double starttime,endtime;
-  total = (long)m_msh->ele_vector.size();
-  local1 = total/size;
-  local2 = total - (size - 1)*(total/size);
-  start = myrank*local1;
-  if (myrank != (size-1))
-  {
-	  end = start+local1;
+#ifdef USE_MPI
+  if(dom_vector.size()>0){
+    cout << "      Domain Decomposition " << myrank  << '\n';
+    CPARDomain* m_dom = NULL;
+//    for(int j=0;j<(int)dom_vector.size();j++)
+ //   {
+//orig      m_dom = dom_vector[j];
+      m_dom = dom_vector[myrank];
+      SetLinearSolver(m_dom->eqs);
+      SetZeroLinearSolver(m_dom->eqs);
+      for(i=0;i<(long)m_dom->elements.size();i++)
+      {
+        elem = m_msh->ele_vector[m_dom->elements[i]];
+        if(elem->GetMark())
+        {
+          fem->ConfigElement(elem,Check2D3D);
+          fem->m_dom = m_dom; //OK
+          fem->Assembly();
+        } 
+      }
+      // m_dom->WriteMatrix();
+//    }
+    //....................................................................
+    // Assemble global system
+    DDCAssembleGlobalMatrix();
+//MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);
   }
-  else if(myrank == (size-1))
-  {
-	  end = start+local2;
-  }
-  printf("In GlobalAssembly process %d, start = %d, end = %d, \n",myrank,start,end);
-  MPI_Barrier(MPI_COMM_WORLD);
-  starttime = MPI_Wtime();
-  for (i=start; i<end; i++)
-  {
-    elem = m_msh->ele_vector[i];
-    if (elem->GetMark()) // Marked for use
-    {
-       fem->ConfigElement(elem, Check2D3D);
-       fem->Assembly();
-    } 
-  }
-//  MPI_Barrier(MPI_COMM_WORLD);
-  endtime = MPI_Wtime();
-  time_ele_paral = time_ele_paral +(endtime - starttime);
-  printf("In GlobalAssembly process %d time_ele_paral = %f\n",myrank,time_ele_paral);
 #else
   //----------------------------------------------------------------------
   // DDC
@@ -3338,14 +3337,15 @@ void CRFProcess::GlobalAssembly()
       SetZeroLinearSolver(m_dom->eqs);
       for(i=0;i<(long)m_dom->elements.size();i++)
       {
-        elem = m_msh->ele_vector[m_dom->elements[i]->GetIndex()];
+        elem = m_msh->ele_vector[m_dom->elements[i]];
         if(elem->GetMark())
         {
           fem->ConfigElement(elem,Check2D3D);
+          fem->m_dom = m_dom; //OK
           fem->Assembly();
         } 
       }
-      m_dom->WriteMatrix();
+      // m_dom->WriteMatrix();
     }
     //....................................................................
     // Assemble global system
@@ -3462,13 +3462,18 @@ void CRFProcess::DDCAssembleGlobalMatrix()
   long i,j,ig,jg;
   CPARDomain *m_dom = NULL;
   double a_ij;
+  double b_i;
   int no_domains =(int)dom_vector.size();
-  long no_nodes;
+  long no_dom_nodes;
+#ifndef MPI
   for(k=0;k<no_domains;k++){
     m_dom = dom_vector[k];
-    no_nodes = (long)m_dom->nodes.size();
-    for(i=0;i<no_nodes;i++){
-      for(j=0;j<no_nodes;j++){
+#else
+    m_dom = dom_vector[myrank];
+#endif
+    no_dom_nodes = (long)m_dom->nodes.size();
+    for(i=0;i<no_dom_nodes;i++){
+      for(j=0;j<no_dom_nodes;j++){
         // get domain system matrix
         SetLinearSolver(m_dom->eqs);
         a_ij = MXGet(i,j);
@@ -3478,8 +3483,13 @@ void CRFProcess::DDCAssembleGlobalMatrix()
         jg = m_dom->nodes[j];
         MXInc(ig,jg,a_ij);
       }
+      // set global RHS vector //OK
+      b_i = m_dom->eqs->b[i];
+      eqs->b[ig] += b_i;
     }
+#ifndef MPI
   }
+#endif
 }
 
 /*************************************************************************
@@ -3738,35 +3748,35 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
     for(i=0;i<group_vector_length;i++) {
       msh_node = m_st_group->group_vector[i]->msh_node_number-shift;
       m_st = m_st_group->st_group_vector[i]; 
-     //--------------------------------------------------------------------
-      if (m_st_group->group_vector[i]->node_distype==7){      // system dependent YD
-        long no_st_ele = (long)m_st->element_st_vector.size();
-		for(long i_st=0;i_st<no_st_ele;i_st++){
-          long ele_index = m_st->element_st_vector[i_st];
-          elem = m_msh->ele_vector[ele_index];
-	      if (elem->GetMark()){ 
-            fem->ConfigElement(elem);
-	        fem->Cal_Velocity(true); 
-		  }
-          gp_ele = ele_gp_value[ele_index];
-          gp_ele->GetEleVelocity(vel);
-          EleType = elem->GetElementType();
-          if(EleType == 1){   //Line
-            m_st_group->group_vector[i]->node_value += vel[0]; 
-          }
-          if(EleType == 4 || EleType == 2){   //Traingle & Qua
-            for(long i_face=0;i_face < (long)m_msh->face_vector.size();i_face++){
-              face = m_msh->face_vector[i_face];
-              if(m_st->element_st_vector[i_st] == face->GetOwner()->GetIndex())
-                 q_face = PointProduction(vel,m_msh->face_normal[i_face])*face->GetVolume();   //   
+    //--------------------------------------------------------------------
+          if (m_st_group->group_vector[i]->node_distype==7){      // system dependent YD
+           long no_st_ele = (long)m_st->element_st_vector.size();
+		   for(long i_st=0;i_st<no_st_ele;i_st++){
+              long ele_index = m_st->element_st_vector[i_st];
+              elem = m_msh->ele_vector[ele_index];
+			  if (elem->GetMark()){ 
+                 fem->ConfigElement(elem);
+	             fem->Cal_Velocity(true); 
+				 }
+              gp_ele = ele_gp_value[ele_index];
+              gp_ele->GetEleVelocity(vel);
+              EleType = elem->GetElementType();
+              if(EleType == 1){   //Line
+              m_st_group->group_vector[i]->node_value += vel[0]; 
+              }
+              if(EleType == 4 || EleType == 2){   //Traingle & Qua
+                 for(long i_face=0;i_face < (long)m_msh->face_vector.size();i_face++){
+                   face = m_msh->face_vector[i_face];
+                   if(m_st->element_st_vector[i_st] == face->GetOwner()->GetIndex())
+                      q_face = PointProduction(vel,m_msh->face_normal[i_face])*face->GetVolume();   //   
                   //for(i_node) 
-            }
-			m_st_group->group_vector[i]->node_value =+ q_face/2;
-          }
+                 }
+			  m_st_group->group_vector[i]->node_value =+ q_face/2;
+              }
           // cout<<"  value  "<<m_st_group->group_vector[i]->node_value<<endl;
-        }
-      }
-      //--------------------------------------------------------------------
+          }
+         }
+    //--------------------------------------------------------------------
       if(m_st->conditional && !m_st->river){
         value = m_st_group->GetConditionalNODValue(i,m_st); //MB
       }
@@ -3776,7 +3786,7 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
       }
       else {
         value = m_st_group->group_vector[i]->node_value;
-      }
+      } 
 
       if(m_st_group->group_vector[i]->node_distype==5)  {       // River Condition
         value = m_st_group->GetRiverNODValue(i,m_st, msh_node); //MB
@@ -3799,8 +3809,8 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
         }
       }
       else time_fac = 1.0;
-
-   
+        
+       
         value *= time_fac* fac;
        
         if(m_msh) //WW
@@ -5471,7 +5481,7 @@ void CRFProcess::CalcFluxesForCoupling(void)
     m_ele_OLF = m_msh_OLF->ele_vector[EleNumber];
 
     //-----------------------------------------------------------------
-    // Get Average values for element //ToDo encapsulate //WW: CElement::elemnt_averag??e   
+    // Get Average values for element //ToDo encapsulate //WW: CElement::elemnt_averag??e         
     NoOfGWNodes = m_ele_OLF->GetNodesNumber(m_msh_GW->getOrder());
     for(j=0; j<NoOfGWNodes; j++){
       NodeIndex_GW = m_ele_GW->GetNodeIndex(j);
@@ -5522,7 +5532,7 @@ void CRFProcess::CalcFluxesForCoupling(void)
       flux = dh * 1.;
 
       //1. Add reacharge value to GW flow -> Add to flux off IndexBottomNode
-      //Achtung nur zum Testen Source für GW flow durchgehend !!!!!!
+      //Achtung nur zum Testen Source fÃ¼r GW flow durchgehend !!!!!!
       //SetNodeValue(IndexBottomNode, idxFLUX, -flux);  //H_OLF  > H_GW -> + flux_GW
       SetNodeValue(IndexBottomNode, idxFLUX, 0.00001);
       

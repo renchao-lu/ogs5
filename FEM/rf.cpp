@@ -14,6 +14,11 @@
                                                                           */
 /**************************************************************************/
 
+#ifdef USE_MPI
+#include <mpi.h>
+#include "par_ddc.h"
+#endif
+
 #include "stdafx.h" /* MFC */
 
 /* Preprozessor-Definitionen */
@@ -29,12 +34,6 @@
 #include "rfsystim.h"
 #include "geo_strings.h"
 
-/*-------------------  Include for MPI-Parallel ----  */
-#ifdef MPI
-#include "mpi.h"
-#include "par_ddc.h"
-#endif
-/*-------------------  Include for MPI-Parallel ----  */
 
 /* Deklarationen */
 int main ( int argc, char *argv[] );
@@ -67,7 +66,7 @@ int main ( int argc, char *argv[] )
   char *dateiname;
   long rockflow_id_timer;
 /*---------- MPI Initialization ----------------------------------*/
-#ifdef MPI
+#ifdef USE_MPI
       printf("Before MPI_Init\n");
       MPI_Init(&argc,&argv);
       MPI_Comm_size(MPI_COMM_WORLD,&size);
@@ -153,7 +152,7 @@ int main ( int argc, char *argv[] )
   /* Ctrl-C wieder normal */
   StandardBreak();
 /*--------- MPI Finalize ------------------*/
-#ifdef MPI
+#ifdef USE_MPI
 
       MPI_Finalize();
 
