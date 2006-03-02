@@ -1403,9 +1403,13 @@ void CFiniteElementStd::CalcLaplace()
       //---------------------------------------------------------
       // Material
       CalCoefLaplace(false,gp); 
+
+      
       //---------------------------------------------------------
       // Calculate mass matrix
-	  if(PcsType == G && MediaProp->unconfined_flow_group == 1 && MeshElement->ele_dim == 2) {
+      //this->pcs->m_msh
+	  //if(PcsType == G && MediaProp->unconfined_flow_group == 1 && MeshElement->ele_dim == 2) {
+      if(PcsType == G && MediaProp->unconfined_flow_group == 1 && MeshElement->ele_dim == 2 && !pcs->m_msh->cross_section) {
 		for (i = 0; i < nnodes; i++) {
 		  for (j = 0; j < nnodes; j++) {
    		        //  if(j>i) continue;  //MB temporary as Laplace now defined unsymmetric
