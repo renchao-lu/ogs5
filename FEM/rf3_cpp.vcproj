@@ -3,6 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="rf3_cpp"
+	ProjectGUID="{A0962184-BE1E-4FE9-AD42-0D7E0DA51B79}"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>
