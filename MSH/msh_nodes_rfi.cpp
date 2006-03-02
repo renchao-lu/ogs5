@@ -343,8 +343,15 @@ void MSHDefineMobile(CRFProcess*m_pcs)
   ////Schleife über alle Gruppen
   for(i=0;i<(long) mmp_vector.size();i++){
     m_mat_mp = mmp_vector[i];
+
+    int test = m_pcs->m_msh->GetMaxElementDim();
+    //m_pcs->m_msh->cross_section
     
-    if (m_mat_mp->unconfined_flow_group ==1 && m_pcs->m_msh->GetMaxElementDim() == 3){
+    //if (m_mat_mp->unconfined_flow_group ==1 && m_pcs->m_msh->GetMaxElementDim() == 3){
+   if (m_mat_mp->unconfined_flow_group ==1 && m_pcs->m_msh->GetMaxElementDim() == 3 || m_pcs->m_msh->cross_section){
+
+    //if (m_mat_mp->unconfined_flow_group ==1){
+    //if (m_pcs->m_msh->cross_section){
       //....................................................................
       //DOMAIN
       if(m_mat_mp->geo_type_name.find("DOMAIN")!=string::npos){
