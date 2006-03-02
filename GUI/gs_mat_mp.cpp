@@ -907,6 +907,7 @@ void CMATGroupEditor::OnCbnSelchangeComboMMPProperties()
 GeoLibGUI-Method
 Programing:
 10/2005 OK Implementation
+03/2006 CC geo_dimension
 **************************************************************************/
 void CMATGroupEditor::OnBnClickedButtonGeoMat()
 {
@@ -930,6 +931,14 @@ void CMATGroupEditor::OnBnClickedButtonGeoMat()
   //----------------------------------------------------------------------
   m_mmp = mmp_vector[m_iSelectedMMPGroup];
   m_mmp->geo_type_name = m_strGEOTypeName;
+  if(m_strGEOTypeName.Compare("POLYLINE")==0) //CC4304
+     m_mmp->geo_dimension = 1;
+  if(m_strGEOTypeName.Compare("SURFACE")==0)  //CC4304
+     m_mmp->geo_dimension = 2;
+  if(m_strGEOTypeName.Compare("VOLUME")==0)  //CC4304
+     m_mmp->geo_dimension = 3;
+  if(m_strGEOTypeName.Compare("DOMAIN")==0)  //CC4304
+     m_mmp->geo_dimension = 3;
   m_mmp->geo_name_vector.push_back((string)m_strGEOName);
 }
 
@@ -983,8 +992,10 @@ void CMATGroupEditor::OnCbnSelchangeComboMatGeoType()
       ++p_ply;
       m_LB_GEO_TYPE.SetCurSel(0);
     }
-    if(m_mmp)
+    if(m_mmp){
       m_mmp->geo_type_name = "POLYLINE";
+      m_mmp->geo_dimension = 1;//CC4304
+    } 
   }
   //......................................................................
   if(m_strGEOTypeName.Compare("SURFACE")==0){
@@ -996,8 +1007,10 @@ void CMATGroupEditor::OnCbnSelchangeComboMatGeoType()
       ++p_sfc;
       m_LB_GEO_TYPE.SetCurSel(0); 
     }  
-    if(m_mmp)
+    if(m_mmp){
       m_mmp->geo_type_name = "SURFACE";
+      m_mmp->geo_dimension = 2;//CC4304
+    } 
   }
   //......................................................................
   if(m_strGEOTypeName.Compare("VOLUME")==0){
@@ -1009,13 +1022,17 @@ void CMATGroupEditor::OnCbnSelchangeComboMatGeoType()
       ++p_vol;
       m_LB_GEO_TYPE.SetCurSel(0);
     }  
-    if(m_mmp)
+    if(m_mmp){
       m_mmp->geo_type_name = "VOLUME";
+      m_mmp->geo_dimension = 3;//CC4304
+    }
   }
   //......................................................................
   if(m_strGEOTypeName.Compare("DOMAIN")==0){
-    if(m_mmp)
+    if(m_mmp){
       m_mmp->geo_type_name = "DOMAIN";
+      m_mmp->geo_dimension = 3;//CC4304
+    }
   }
   //......................................................................
   if(m_strGEOTypeName.Compare("LAYER")==0){
