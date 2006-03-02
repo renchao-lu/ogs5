@@ -326,7 +326,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
           for(i=0;i<no_processes;i++){
             m_pcs = pcs_vector[i];
             pcs_flow_error = m_pcs->ExecuteNonLinear();
-            PCSCalcSecondaryVariables(); // PCS member function
+            //PCSCalcSecondaryVariables(); // PCS member function
           }
         }
         else{
