@@ -56,6 +56,7 @@ CFEMesh::CFEMesh(void)
   useQuadratic = false;
   coordinate_system = 1;
   axisymmetry=false; //WW
+  cross_section=false; //MB
 #ifdef RANDOM_WALK
   PT = new RandomWalk(); //PCH  // Please make this flexible
 #endif
@@ -153,6 +154,11 @@ ios::pos_type CFEMesh::Read(ifstream *fem_file)
     //....................................................................
     if(line_string.find("$AXISYMMETRY")!=string::npos) { // subkeyword found
       axisymmetry=true;
+      continue;
+    }
+    //....................................................................
+    if(line_string.find("$CROSS_SECTION")!=string::npos) { // subkeyword found
+      cross_section=true;
       continue;
     }
     //....................................................................
