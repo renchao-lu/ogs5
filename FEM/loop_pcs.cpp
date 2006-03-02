@@ -321,17 +321,16 @@ int LOPTimeLoop_PCS(double*dt_sum)
       m_pcs = PCSGet("RICHARDS_FLOW");
       if(m_pcs&&m_pcs->selected){
         if(m_pcs->m_msh->no_msh_layer==0){
-          //For Regional Richards Flow with more than one m_pcs and m_msh 
-          //(as used in Benchmark Kopplung re) 
-          for(i=0;i<no_processes;i++){
-            m_pcs = pcs_vector[i];
-            pcs_flow_error = m_pcs->ExecuteNonLinear();
-            //PCSCalcSecondaryVariables(); // PCS member function
-          }
+          pcs_flow_error = m_pcs->ExecuteNonLinear();
+          // ToDo: For Regional Richards Flow with more than one m_pcs and m_msh 
+          // for(i=0;i<no_processes;i++){
+          //   m_pcs = pcs_vector[i];
+          //   pcs_flow_error = m_pcs->ExecuteNonLinear();
+          // }
         }
         else{
           //For Regional Richards Flow with just one m_pcs and m_msh 
-          //(as used in Benchmark Kopplung re) 
+          //(as used in Benchmark COUPLED_FLOW) 
           //LOPExecuteRegionalRichardsFlow(m_pcs);
           m_pcs->CalcFluxesForCoupling();
         }
