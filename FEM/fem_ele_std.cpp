@@ -2310,15 +2310,15 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
   }
   else
   {
-    for (i=0;i<nnodes;i++)
-    {
+   for (i=0;i<nnodes;i++)
+   {
        pcs->eqs->b[NodeShift[problem_dimension_dm] + eqs_number[i]] += NodalVal[i];
-      (*RHS)(i+LocalShift) +=  NodalVal[i];
-    }
+       (*RHS)(i+LocalShift) +=  NodalVal[i];
+   }
   }
   //----------------------------------------------------------------------
-  //Debug output
-  if(Index < 0){
+	//Debug output
+	if(Index < 0){
 	cout << " Element Number " << Index << endl;
 	cout << " Mass matrix" << endl;
 	Mass->Write();
@@ -2500,7 +2500,7 @@ void CFiniteElementStd::AssembleParabolicEquationNewton()
   eslope = 1.0 / sqrt(dhds);
 
   /* Chezy-coefficient: C */
-  /* für b >> h gilt: C = H**1/6 n**-1 */
+  /* fÃ¼r b >> h gilt: C = H**1/6 n**-1 */
   if (MediaProp->friction_model==2){ // Chezy-coefficient C
     if(MeshElement->geo_type==1){ 
       axx = (eslope * fric) / el;
@@ -2888,10 +2888,14 @@ void CFiniteElementStd::Assembly()
   // EQS indices
   for(i=0;i<nn;i++){
     if(dom_vector.size()>0)
-      eqs_number[i] = MeshElement->domain_nodes[i];
+    eqs_number[i] = MeshElement->domain_nodes[i];
     else    
-      eqs_number[i] = MeshElement->nodes[i]->GetEquationIndex();
-  }
+      if(pcs->m_msh) {
+        eqs_number[i] = MeshElement->nodes[i]->GetEquationIndex();
+      }
+      else 
+        eqs_number[i] = GetNodeIndex(nodes[i]);
+    }
   //----------------------------------------------------------------------
   // Get room in the memory for local matrices
   SetMemory();

@@ -1143,8 +1143,8 @@ void LOPCalcNODResultants(void)
         cout << "LOPCalcNODResultants: not implemented for this process" << endl;
         break;
       case 'R': // Richards flow
-        m_pcs->AssembleParabolicEquationRHSVector();
-        m_pcs->SetNODFlux();
+        // m_pcs->AssembleParabolicEquationRHSVector();
+        // m_pcs->SetNODFlux();
         break;
 	  case 'F': // Fluid Momentum
         cout << "LOPCalcNODResultants: not implemented for this process" << endl;
