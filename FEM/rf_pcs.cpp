@@ -3487,7 +3487,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
       b_i = m_dom->eqs->b[i];
       eqs->b[ig] += b_i;
     }
-#ifndef MPI
+#ifndef USE_MPI
   }
 #endif
 }
