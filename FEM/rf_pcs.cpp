@@ -3465,7 +3465,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
   double b_i;
   int no_domains =(int)dom_vector.size();
   long no_dom_nodes;
-#ifndef MPI
+#ifndef USE_MPI
   for(k=0;k<no_domains;k++){
     m_dom = dom_vector[k];
 #else
