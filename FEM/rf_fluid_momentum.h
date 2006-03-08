@@ -17,10 +17,66 @@
 
 #include "cgs_asm.h"
 #include "matrix.h"
+#include "mathlib.h"
 
 using namespace std;
 
 using namespace FiniteElement;
+
+class PlaneSet
+{
+public:
+	int eleIndex;
+	double ratio; // ratio: contribution of velocity to this plane.
+
+	double V[3];
+	double norm[3];
+	double Eele[3];	// The vector from the crossroad to the center of the connected element
+					// that lies in one of the connected planes.
+
+	// Constructor
+	PlaneSet(void);
+
+	PlaneSet&operator=(const PlaneSet& B) 
+	{
+		eleIndex = B.eleIndex;
+		ratio = B.ratio;
+		for(int i=0; i<3; ++i)
+		{
+			V[i] = B.V[i];
+			norm[i] = B.norm[i];
+		}
+
+		return *this;
+	}
+};
+
+class CrossRoad
+{
+public:
+
+	int numOfThePlanes;
+	int Index;	// This can be node or edge index 
+				// depending on crossroad or edge
+
+	PlaneSet* plane;
+	
+	// Constructor and destructor
+	CrossRoad(void);
+	~CrossRoad(void);
+
+	void CreatePlaneSet(const int index);
+
+	// Some operator overloading
+	CrossRoad& operator=(const CrossRoad& B) 
+	{
+		Index = B.Index;
+		numOfThePlanes = B.numOfThePlanes;
+		plane = B.plane;
+
+		return *this;
+	};
+};
 
 
 class CFluidMomentum:public CRFProcess
@@ -28,11 +84,16 @@ class CFluidMomentum:public CRFProcess
 public:  
 	CFluidMomentum(void);
 	~CFluidMomentum(void);
- 
+	
+	int RWPTSwitch;
+
+	vector<CrossRoad*> crossroads;
+	vector<CrossRoad*> joints;
 
 	void Create(void);
 	virtual double Execute();
 	void SolveDarcyVelocityOnNode();
+	void ConstructFractureNetworkTopology();
 
 protected:
 	FiniteElement::CFiniteElementStd *fem;

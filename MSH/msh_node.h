@@ -38,9 +38,15 @@ class CNode:public CCore
    public:
       double epsilon;
       long interior_test;
+	  int crossroad;	// PCH: Make theses privates can be done later on.
       int free_surface; //MB ??? mobile
-      vector<long>connected_elements;
-      vector<long>connected_nodes; //OK
+      vector<long> connected_elements;
+      vector<long> connected_nodes; //OK
+	  // The vector to store the representive element index.
+      // This can be used to extract the norm of the plane that the element lies on.
+	  // Establishing this vector is done in the Fluid Momentum
+	  // since this is bounded by velocity.
+      vector<long> connected_planes;	// PCH 
       vector<long>  m5_index; //WW
       CNode(const int Index):CCore(Index), eqs_index(-1) {}
       CNode(const int Index, const double x, const double y, const double z=0.0);

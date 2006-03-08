@@ -52,6 +52,10 @@ class CElem:public CCore
       Matrix* tranform_tensor;
       vec<CElem*>neighbors;
       //vec<CElem*> sons;
+	  double angle[3];	// PCH, angle[0] rotation along y axis
+						//	    angle[1] rotation along x' axis
+						//		angle[2] translation along z'' axis.		
+	  double MatT[9];
    private: // Methods
       int GetElementFaces1D(int *FaceNode);
       int GetElementFacesTri(const int Face, int *FaceNode);
@@ -139,6 +143,13 @@ class CElem:public CCore
       //------------------------------------------------------------------
       // Coordinates transform
       void FillTransformMatrix();  
+	  void FillTransformMatrix(int noneed);
+	  double getTransformTensor(const int idx);
+	  double GetAngle(const int i) const { return angle[i]; }	// PCH
+	  void SetAngle(const int i, const double value) 
+	  { 
+		angle[i] = value; 
+	  }	// PCH
       //------------------------------------------------------------------
       // I/O
       void Read(istream& is=cin, int fileType=0);

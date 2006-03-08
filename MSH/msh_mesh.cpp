@@ -57,13 +57,9 @@ CFEMesh::CFEMesh(void)
   coordinate_system = 1;
   axisymmetry=false; //WW
   cross_section=false; //MB
-#ifdef RANDOM_WALK
-  PT = new RandomWalk(); //PCH  // Please make this flexible
-#endif
   no_msh_layer = 0; //OK
   min_edge_length = 1e-3; //OK
   max_mmp_groups = 0; //OKCC
-
 }
 
 /**************************************************************************
@@ -2214,7 +2210,7 @@ void CFEMesh::PrismRefine(const int Layer, const int subdivision)
           ele_vector.push_back(m_ele_new);
           //..............................................................
           /* "rowx hochziehen"   */
-          /* loop über die betroffenen rows   */
+          /* loop ?er die betroffenen rows   */
           NRowsToShift = NRows - Layer;
           count = 0;
           for(i=NRowsToShift;i>0;i--){
@@ -2559,7 +2555,7 @@ long CFEMesh::GetNearestELEOnPNT(CGLPoint*m_pnt)
 	
   dist = 10000000.0; //Startwert
   dist2 = 0.01;	// Abstand zwischen eingelesenen Knoten und Geometrieknoten-RF; 
-					// Achtung, doppelbelegung möglich bei kleinen Gitterabständen
+					// Achtung, doppelbelegung m?lich bei kleinen Gitterabst?den
   nextele = -1;
 
   x = m_pnt->x;

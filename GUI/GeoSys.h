@@ -89,7 +89,9 @@ public:
 	int AngleSwitch;
 	int DrawModeSwitch;
     int VelocitySwitch;
+	int CrossroadSwitch;
     int ParticleSwitch;
+	int GDebugSwitch;
 
     double mouseX, mouseY; // This can be done better way later. But for now, keep this way.
     double zoomRatio;
@@ -105,6 +107,7 @@ public:
 	int hitsNodeTotal;
 	int hitsGLINodeTotal;
 	int hitsRFINodeTotal;
+	int hitsParticleTotal;
 	int hitsElementTotal;
 	int hitsPolylineTotal;
     int hitsSurfaceTotal;
@@ -114,17 +117,20 @@ public:
 	int BothPrimaryVariable;
 	int BCAndST;
 	int NodeIndexOfElementSwitch;
+	int ShowAllSwitch;
 	// For the temparily store to calculate the correct number of hitsElementTotal
 	int hitsElement;
 
 	int	*GLInodePicked;
 	int	*RFInodePicked;
+	int	*ParticlePicked;
 	int	*elementPicked;
 	int	*boundaryPicked;
     int	*surfacePicked;
     int	*volumePicked;
 	int *nodePickedTotal;
 	int *GLInodePickedTotal;
+	int *ParticlePickedTotal;
 	int *RFInodePickedTotal;
 	int *elementPickedTotal;
 	int *polylinePickedTotal;

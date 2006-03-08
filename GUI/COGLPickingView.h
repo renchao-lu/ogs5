@@ -80,6 +80,7 @@ private:
 	CPoint mousePoint;
 	int hitsGLINode;
 	int hitsRFINode;
+	int hitsParticle;
 	int hitsElement;
 	int hitsBoundary;
     int hitsSurface;
@@ -145,7 +146,9 @@ private:
 	double computeCmax(void);
 
     void DrawVectorOnNode(void);
+	void DrawVectorOnCrossroads(void);
     void DrawParticles(void);
+	void DrawGDebug(void);
     double GetSquareOfMaximumOfMagnitudeOfVector(void);
     char* string2CharArrary(string aString);
 
@@ -157,14 +160,17 @@ private:
     void drawVolumeScene(GLenum mode);
 	void drawReferenceScene(GLenum mode);
     void DrawParticleScene(GLenum mode);
+	void DrawGDebugScene(GLenum mode);
 	void mouseGLINode(int x, int y);
 	void mouseRFINode(int x, int y);
+	void mouseParticle(int x, int y);
 	void mouseElement(int x, int y);
 	void mouseBoundary(int x, int y);
     void mouseSurface(int x, int y);
     void mouseVolume(int x, int y);
 	void processhitsGLINode(GLint hits, GLuint buffer[]);
 	void processhitsRFINode(GLint hits, GLuint buffer[]);
+	void processhitsParticle(GLint hits, GLuint buffer[]);
 	void processHitsElement(GLint hits, GLuint buffer[]);
 	void processHitsBoundary(GLint hits, GLuint buffer[]);
     void processHitsSurface(GLint hits, GLuint buffer[]);
@@ -173,6 +179,7 @@ private:
 
     // PCH from Thomas
     void GetRFIMinMaxPoints();
+	void GetMSHMinMax();
     void GetMinMaxPoints();
     void GetMidPoint(); 
     // PCH
@@ -185,15 +192,22 @@ public:
 	int numberOfGLIPoints();
 	CGLPoint GetGLIPointByIndex(int i);
 
-private:
-	bool bSelectEnabled;
-	bool bDeselectEnabled;
-
 	afx_msg void OnSelectInPicking();
 	afx_msg void OnDeselectInPicking();
 	afx_msg void OnPickedProperty();
 	afx_msg void OnSelectAllInPicking();
 	afx_msg void OnDeselectAllInPicking();
+
+private:
+	bool bSelectEnabled;
+	bool bDeselectEnabled;
+
+	// I'm adding this switch for faster plotting of OpenGL
+	int SwitchManager[9];	// Total 9 switches for now.
+	void TurnOnTheSwitches();
+	void TurnOffTheSwitches();
+	int SomeSwitchOn();
+	
 	afx_msg void OnPolylineDlg();
 	afx_msg void OnSurfaceDlg();
 	afx_msg void OnVolumeDlg();

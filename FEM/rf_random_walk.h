@@ -104,7 +104,6 @@ public:
     int SearchTheElementThatHasTheDisplacedParticle(Particle* A, CElem* m_ele);
     void RandomlyDriftAway(Particle* A, double dt, double* delta, int type);
 	int RandomWalkDrift(double* Z, int type);
-    void TransformRandomDriftToTheElementPlane(CElem* m_ele, double* delta);
     void SetElementBasedConcentration(void);
 	void SolveDispersionCoefficient(Particle* A);
 	int SolveForDiffusionWithEdge(Particle* A, Particle* B, double* n);
@@ -119,6 +118,18 @@ public:
 
 	int GetTheElementOfTheParticleFromNeighbor(Particle* A);
 	int GetTheElementOfTheParticleFromNeighborAggressive(Particle* A);
+	// Fracture Network
+	void DoJointEffectOfElementInitially(void);
+	void MakeRoulette(double* fit, double* roulette, int numOfCases);
+	int Select(double* roulette, int numOfCases);
+	int RouletteWheelSelection(double *chances, int numOfCases);
+
+	// Transform coordinates
+	void ToTheXYPlane(CElem* E, double* X);
+	void ToTheXYPlane(int idx, double* X);
+	void ToTheRealPlane(CElem* E, double* X);
+	void ToTheRealPlane(int idx, double* X);
+	void SolveAnglesOfTheElment(CElem* E);
 
 protected:
 	FiniteElement::CFiniteElementStd *fem;

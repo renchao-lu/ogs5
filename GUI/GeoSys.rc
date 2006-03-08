@@ -1758,6 +1758,9 @@ BEGIN
                     WS_TABSTOP,75,97,49,10
     CONTROL         "Node index",IDC_NODEINDEX,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,125,97,52,10
+    PUSHBUTTON      "Save as txt",IDC_SAVEASTXT,251,95,50,14
+    CONTROL         "Show all",IDC_SHOWALL,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,178,97,42,10
 END
 
 IDD_MSH_SURFACES DIALOGEX 0, 0, 418, 167
@@ -1918,9 +1921,18 @@ BEGIN
                     BS_AUTOCHECKBOX | WS_TABSTOP,7,158,63,10
     CONTROL         "Show particles",IDC_SHOWPARTICLE,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,15,91,62,10
-    PUSHBUTTON      "In or out",IDC_INOROUT,11,174,50,14
+    PUSHBUTTON      "In or out",IDC_INOROUT,8,187,50,14
     PUSHBUTTON      "Read .pct",IDC_READPCT,12,106,45,14
     PUSHBUTTON      "C in Ele",IDC_CINELE,60,106,45,14
+    CONTROL         "Select by particles",IDC_SPARTICLE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,14,132,73,10
+    PUSHBUTTON      "Pick ele's from a node",IDC_ELEFROMNODE,9,206,84,14
+    PUSHBUTTON      "Pick ele's from an edge",IDC_ELEFROMEDGE,9,224,83,14
+    PUSHBUTTON      "Pick crossroads",IDC_PICKCROSSROADS,9,243,63,14
+    CONTROL         "Crossroad Velocity",IDC_CROSSROADVEC,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,173,74,10
+    CONTROL         "XY Plane",IDC_TOXYPLANE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,10,263,45,10
 END
 
 IDD_MSH_EDITOR DIALOGEX 0, 0, 372, 210
@@ -3098,7 +3110,7 @@ END
 
 STRINGTABLE 
 BEGIN
-    IDR_MAINFRAME           "GeoSys  -  4.2.21(JG)"
+    IDR_MAINFRAME           "GeoSys  -  4.3.08(PCH)"
     IDR_GEOSYSTYPE          "\nGeoSys\nGeoSys\nGeoSys project file (*.gsp)\n.gsp\nGeoSys.Document\nGeoSys Document"
 END
 

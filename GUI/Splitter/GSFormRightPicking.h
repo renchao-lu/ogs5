@@ -38,7 +38,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
     afx_msg void OnSimulateUnderDeveloperMode();
-    afx_msg void OnBnClickedButton5();
+ //   afx_msg void OnBnClickedButton5();
     afx_msg void OnBnClickedPtvalue();
     afx_msg void OnBnClickedVelocityvector();
     afx_msg void OnBnClickedShowparticle();
@@ -47,6 +47,12 @@ public:
 	afx_msg void OnBnClickedCinele();
 	
 	BOOL PeekAndPump();
+	afx_msg void OnBnClickedElefromnode();
+	afx_msg void OnBnClickedElefromedge();
+	afx_msg void OnBnClickedPickcrossroads();
+	afx_msg void OnBnClickedCrossroadvec();
+	afx_msg void OnBnClickedToxyplane();
+	afx_msg void OnBnClickedSparticle();
 };
 
 

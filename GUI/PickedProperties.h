@@ -37,8 +37,16 @@ public:
 	void ListPolylineSelected();
     void ListSurfaceSelected();
     void ListVolumeSelected();
+	void ListParticleSelected();
 
-	char* string2CharArrary(string aString);
+	void ListGLINodeAll();
+	void ListRFINodeAll(int PCSSwitch);
+	void ListElementAll(int PCSSwitch);
+	void ListPolylineAll();
+    void ListSurfaceAll();
+    void ListVolumeAll();
+
+
 // Dialog Data
 	enum { IDD = IDD_PICKEDPROPERTY };
     CMyListCtrl m_SmallList;
@@ -49,6 +57,9 @@ private:
 	int PCSSwitch;
 	int BCnSTSwitch;
 
+	int numOfItemsEle;
+	int numOfItemsNode;
+
     CFEMesh* m_msh;
     CElem* m_ele;
 	char** CreateWordMemory(int numOfItems);
@@ -56,6 +67,8 @@ private:
 
 	int IsThisPointBCIfYesStoryValue(int index, CBoundaryConditionsGroup* m_bc_group, double* value);
 	int IsThisPointSTIfYesStoryValue(int index, CSourceTermGroup* m_st_group, double* value);
+
+	void ShowAll();
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
@@ -68,4 +81,6 @@ public:
 	afx_msg void OnBnClickedBothorone();
 	afx_msg void OnBnClickedBcnst();
 	afx_msg void OnBnClickedNodeindex();
+	afx_msg void OnBnClickedShowall();
+	afx_msg void OnBnClickedSaveastxt();
 };

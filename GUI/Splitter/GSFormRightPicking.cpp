@@ -26,6 +26,7 @@
 #include "rf_bc_new.h"
 #include "rf_mmp_new.h"
 #include "rf_st_new.h"
+#include "rf_fluid_momentum.h"
 #include "gs_pcs_oglcontrol.h"
 #include "gs_meshtypechange.h"
 #include "gs_project.h"
@@ -60,13 +61,19 @@ void CGSFormRightPicking::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CGSFormRightPicking, CFormView)
     ON_BN_CLICKED(IDC_BUTTON4, OnSimulateUnderDeveloperMode)
-    ON_BN_CLICKED(IDC_BUTTON5, OnBnClickedButton5)
+//    ON_BN_CLICKED(IDC_BUTTON5, OnBnClickedButton5)
     ON_BN_CLICKED(IDC_PTVALUE, OnBnClickedPtvalue)
     ON_BN_CLICKED(IDC_VELOCITYVECTOR, OnBnClickedVelocityvector)
     ON_BN_CLICKED(IDC_SHOWPARTICLE, OnBnClickedShowparticle)
     ON_BN_CLICKED(IDC_INOROUT, OnBnClickedInorout)
 	ON_BN_CLICKED(IDC_READPCT, OnBnClickedReadpct)
 	ON_BN_CLICKED(IDC_CINELE, OnBnClickedCinele)
+	ON_BN_CLICKED(IDC_ELEFROMNODE, OnBnClickedElefromnode)
+	ON_BN_CLICKED(IDC_ELEFROMEDGE, OnBnClickedElefromedge)
+	ON_BN_CLICKED(IDC_PICKCROSSROADS, OnBnClickedPickcrossroads)
+	ON_BN_CLICKED(IDC_CROSSROADVEC, OnBnClickedCrossroadvec)
+	ON_BN_CLICKED(IDC_TOXYPLANE, OnBnClickedToxyplane)
+	ON_BN_CLICKED(IDC_SPARTICLE, OnBnClickedSparticle)
 END_MESSAGE_MAP()
 
 
@@ -123,14 +130,6 @@ void CGSFormRightPicking::OnSimulateUnderDeveloperMode()
 	mainPCH ( numOfArguments, argv );
 
 	delete m_gsp;
-}
-
-void CGSFormRightPicking::OnBnClickedButton5()
-{
-    // PCH Monitoring implementation for temporary use
-    CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
-    mainframe->OnPickedProperty();
-    // PCH Ends here
 }
 
 void CGSFormRightPicking::OnBnClickedPtvalue()
@@ -337,3 +336,149 @@ BOOL CGSFormRightPicking::PeekAndPump()
 	return TRUE;
 }
 
+/******************************************************************************
+*	The following function will be used to search nodes on crossroad or
+	on joints.
+	It is velocity obatined from FM that determines the nodes.
+******************************************************************************/
+void CGSFormRightPicking::OnBnClickedElefromnode()
+{
+	CFEMesh* m_msh = fem_msh_vector[0]; 
+	
+	// Let's initilize the number of nodes picked.
+	theApp.hitsElementTotal = 0;
+
+	for(int i=0; i<theApp.hitsRFINodeTotal; ++i)
+	{
+		CNode* thisNode = m_msh->nod_vector[theApp.RFInodePickedTotal[i]];
+		int NumOfNeighborElements = thisNode->connected_elements.size();
+	
+		for(int j=0; j<NumOfNeighborElements; ++j)
+		{
+			++theApp.hitsElementTotal;
+			theApp.elementPickedTotal = (int *)realloc(theApp.elementPickedTotal, theApp.hitsElementTotal*sizeof(int));
+
+			// Let's get the element one by one.
+			int index = thisNode->connected_elements[j];
+			theApp.elementPickedTotal[theApp.hitsElementTotal-1] = index;
+		}
+	}
+
+	// Display the assoicated elements picked 
+	showChange();
+}
+
+void CGSFormRightPicking::OnBnClickedElefromedge()
+{
+	// This function is under development.
+
+	CFEMesh* m_msh = fem_msh_vector[0]; 
+	
+	// Let's initilize the number of nodes picked.
+	theApp.hitsElementTotal = 0;
+
+	if(theApp.hitsRFINodeTotal == 2)
+	{
+		for(int i=0; i<theApp.hitsRFINodeTotal; ++i)
+		{
+			CNode* thisNode = m_msh->nod_vector[theApp.RFInodePickedTotal[i]];
+			int NumOfNeighborElements = thisNode->connected_elements.size();    
+	
+			for(int j=0; j<NumOfNeighborElements; ++j)
+			{
+				++theApp.hitsElementTotal;
+				theApp.elementPickedTotal = (int *)realloc(theApp.elementPickedTotal, theApp.hitsElementTotal*sizeof(int));
+
+				// Let's get the element one by one.
+				int index = thisNode->connected_elements[j];
+				theApp.elementPickedTotal[theApp.hitsElementTotal-1] = index;
+			}
+		}
+	}
+	else
+	{
+		CWnd * pWnd = NULL;
+		pWnd->MessageBox("Only two nodes should be selected.","Number of nodes alert.", MB_ICONINFORMATION);
+	}
+
+	// Display the assoicated elements picked 
+	showChange();	
+}
+
+void CGSFormRightPicking::OnBnClickedPickcrossroads()
+{
+	CFEMesh* m_msh = fem_msh_vector[0]; 
+	
+	// Let's initilize the number of nodes picked.
+	theApp.hitsRFINodeTotal = 0;
+
+	for(int i=0; i<m_msh->nod_vector.size(); ++i)
+	{
+		CNode* thisNode = m_msh->nod_vector[i];
+		
+		if(thisNode->crossroad == 1)
+		{
+			++theApp.hitsRFINodeTotal;
+			theApp.RFInodePickedTotal = (int *)realloc(theApp.RFInodePickedTotal, theApp.hitsRFINodeTotal*sizeof(int));
+
+			// Let's get the element one by one.
+			theApp.RFInodePickedTotal[theApp.hitsRFINodeTotal-1] = i;
+		}
+	}
+
+	// Display the assoicated elements picked 
+	showChange();	
+}
+
+void CGSFormRightPicking::OnBnClickedCrossroadvec()
+{
+	// Let's select the crossroads
+	OnBnClickedPickcrossroads();
+
+	if(IsDlgButtonChecked(IDC_CROSSROADVEC))
+		theApp.CrossroadSwitch = 1;
+	else 
+		theApp.CrossroadSwitch = 0;
+
+    showChange();
+}
+
+void CGSFormRightPicking::OnBnClickedToxyplane()
+{
+	if(IsDlgButtonChecked(IDC_TOXYPLANE))
+		theApp.GDebugSwitch = 1;
+	else 
+		theApp.GDebugSwitch = 0;
+
+    showChange();	
+}
+
+void CGSFormRightPicking::OnBnClickedSparticle()
+{
+	if(IsDlgButtonChecked(IDC_SPARTICLE))
+	{
+		CFEMesh* m_msh = fem_msh_vector[0]; 
+
+		theApp.hitsElementTotal = 0;
+		for(int p=0; p<theApp.hitsParticleTotal; ++p)
+		{
+			for(int i=0; i<m_msh->ele_vector.size(); ++i)
+			{
+				if(m_msh->PT->X[theApp.ParticlePickedTotal[p]].Now.elementIndex 
+					== m_msh->ele_vector[i]->GetIndex())
+				{
+					++theApp.hitsElementTotal;
+					theApp.elementPickedTotal = (int *)realloc(theApp.elementPickedTotal, 
+												theApp.hitsElementTotal*sizeof(int));
+
+					// Let's get the element one by one.
+					theApp.elementPickedTotal[theApp.hitsElementTotal-1] = i;
+				}
+			}
+		}
+	}
+	else 
+		;
+
+    showChange();
+}

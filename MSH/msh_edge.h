@@ -16,8 +16,11 @@ namespace Mesh_Group
 // Class definition
 class CEdge:public CCore
 {
+   public:
+	  vector<long>connected_elements;	// PCH
    private: // Members
       vec<CNode*>  nodes_of_edges;
+	  int joint;	// PCH
       friend class CElem;
 	  friend class FiniteElement::CElement;  
 	  friend class FiniteElement::CFiniteElementStd; 
@@ -32,9 +35,11 @@ class CEdge:public CCore
         { for(int i=0; i<3; i++)  Nodes[i] = nodes_of_edges[i]; }			
       CNode* GetNode(const int l_index) {return nodes_of_edges[l_index];} 
       double Length();
+	  int GetJoint() const { return joint;}	// PCH
       // Set functions
       void SetNodes( vec<CNode*>& Nodes)
         { for(int i=0; i<3; i++)  nodes_of_edges[i] = Nodes[i]; }
+	  void SetJoint(const int i) { joint = i; }	// PCH
       // Operator
       void operator = (CEdge& edg);
       bool operator == (CEdge& edg);

@@ -35,6 +35,8 @@ CNode:: CNode(const int Index, const double x,
    interior_test=0;
    selected=0;
    epsilon=0.0;
+   // PCH
+   crossroad = 0;	// Set to be no crossroad
 }
 /**************************************************************************
 MSHLib-Method: 
@@ -343,7 +345,7 @@ void RemoveNode(long nnr, string projectname)
 	fprintf(geo_file,"%s","Plane Surface(1");
 	fprintf(geo_file,"%s",") = {1");
 	fprintf(geo_file,"%s\n","};");
-	/*Datei Schließen*/ 
+	/*Datei Schlie?n*/ 
 	fclose(geo_file);
 
 // Run MeshGeneration
@@ -395,7 +397,7 @@ long knotendummy1,knotendummy2,knotendummy3;
          break;
  }
   
-  //löschen der Elemente
+  //l?chen der Elemente
 	for (i=0;i<number_of_all_elements;i++)
 	{
 		if(	nnr == element_vector[i]->node1 || 
@@ -409,7 +411,7 @@ long knotendummy1,knotendummy2,knotendummy3;
 		} 
 	}
 
-	//löschen des Punktes
+	//l?chen des Punktes
 	for (i=0;i<number_of_all_nodes;i++)
 	{
 		id = nodes_vector[i]->nodenumber;
@@ -486,7 +488,7 @@ long knotendummy1,knotendummy2,knotendummy3;
 			fprintf(dat_out_rfi,"%ld \n",element_vector[i]->node3);
 		}
 
-	/*Datei Schließen*/ 
+	/*Datei Schlie?n*/ 
 	fclose(dat_out_rfi);
 	fclose(rfi_file2);
 

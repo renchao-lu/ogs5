@@ -253,13 +253,24 @@ void CElem::FillTransformMatrix()
        // y"_vec
        CrossProduction(zz,xx,yy);
        NormalizeVector(yy,3);
+       for(i=0; i<3; i++)
+	   {
+		  // PCH 	
+          MatT[i] = (*tranform_tensor)(i,0) = xx[i];          
+          MatT[3+i] = (*tranform_tensor)(i,1) = yy[i];         
+          MatT[6+i] = (*tranform_tensor)(i,2) = zz[i];        
+	   } 
    }
-   for(i=0; i<3; i++)
-   {
-      (*tranform_tensor)(i,0) = xx[i];          
-      (*tranform_tensor)(i,1) = yy[i];         
-      (*tranform_tensor)(i,2) = zz[i];         
-   } 
+}
+/**************************************************************************
+MSHLib-Method: 
+Task:
+Programing:
+02/2006 PCH Implementation
+**************************************************************************/
+double CElem::getTransformTensor(const int idx)
+{
+	return MatT[idx]; 
 }
 /**************************************************************************
 MSHLib-Method: 

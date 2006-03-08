@@ -28,6 +28,9 @@ CEdge::CEdge(const int Index, bool quadr)
    nodes_of_edges.resize(3);
    for(int i=0; i<3; i++)
      nodes_of_edges[i] = NULL;	 
+
+   // PCH
+   joint = 0;	// Set to be no joint.
 }
 /**************************************************************************
 MSHLib-Method: 

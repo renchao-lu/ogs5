@@ -7,6 +7,7 @@ Programing:
 
 #include "stdafx.h" //MFC
 #include "rf_random_walk.h"
+#include "rf_fluid_momentum.h"
 
 // C++ STL
 #include <iostream>
@@ -154,8 +155,11 @@ int RandomWalk::IsTheParticleInThisElement(Particle* A, CElem* m_ele)
 Class: RandomWalk
 Task: This function interpolates velocity of the particle 
 	  based on the inverse distance method
+	  RWPT-IM This function should OK with the real plane.
 Programing:
 10/2005 PCH Implementation
+02/2006 PCH The function is updated to solve for velocity in the element
+			that has a joint or crossroads.
 last modification:
 **************************************************************************/
 void RandomWalk::InterpolateVelocityOfTheParticleByInverseDistance(Particle* A)
@@ -197,9 +201,49 @@ void RandomWalk::InterpolateVelocityOfTheParticleByInverseDistance(Particle* A)
 		w[i] = 1.0/(d[i] * SumOfdInverse);
 
 		m_pcs = PCSGet("FLUID_MOMENTUM");
-		double vx = m_pcs->GetNodeValue(m_ele->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);
-        double vy = m_pcs->GetNodeValue(m_ele->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);
-        double vz = m_pcs->GetNodeValue(m_ele->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);
+		double vx = 0.0, vy = 0.0, vz = 0.0;
+		// If this node is crossroad,
+		if(m_msh->nod_vector[m_ele->GetNodeIndex(i)]->crossroad == 1)
+		{
+			// Get the velocity contributed in this element
+			CrossRoad* crossroad = NULL;
+			for(int j=0; j< (int)(m_msh->fm_pcs->crossroads.size()); ++j)
+				if( m_msh->fm_pcs->crossroads[j]->Index == m_msh->nod_vector[m_ele->GetNodeIndex(i)]->GetIndex() )
+					crossroad = m_msh->fm_pcs->crossroads[j];
+
+			if(crossroad)
+			{
+			}
+			else	// Failed to find the crossroad although it is a crossroad
+				abort();	
+
+			// Find the velocity of the crossroad associated with the connected planes.
+			for(int k=0; k< crossroad->numOfThePlanes; ++k)
+			{
+				// I am going to check the normal vector of the element and the connected plane.
+				double tolerance = 1e-10;
+				double E[3], P[3];
+				for(int p=0; p<3; ++p)
+				{
+					E[p] = m_ele->getTransformTensor(6+p); 
+					P[p] = crossroad->plane[k].norm[p];
+				}
+					
+				double same = (E[0]-P[0])*(E[0]-P[0]) + (E[1]-P[1])*(E[1]-P[1]) + (E[2]-P[2])*(E[2]-P[2]);
+
+				if(same < tolerance)
+				{
+					vx = crossroad->plane[k].V[0]; vy = crossroad->plane[k].V[1]; vz = crossroad->plane[k].V[2];	
+				}
+			}
+		}
+		else
+		{
+
+			vx = m_pcs->GetNodeValue(m_ele->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);
+			vy = m_pcs->GetNodeValue(m_ele->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);
+			vz = m_pcs->GetNodeValue(m_ele->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);
+		}
 
 		A->Vx += w[i]*vx; A->Vy += w[i]*vy; A->Vz += w[i]*vz;
 	}
@@ -220,6 +264,7 @@ Task: The function solves two intersections along x or y or z axis.
 	axis = 2: a line parallel to the z axis
 Programing:
 11/2005 PCH Implementation
+02/2006 PCH Improvement for RWPT in Fracture networks.
 last modification:
 **************************************************************************/
 int RandomWalk::SolveForTwoIntersectionsInTheElement(Particle* A, double* P1, double* P2, int axis)
@@ -239,43 +284,51 @@ int RandomWalk::SolveForTwoIntersectionsInTheElement(Particle* A, double* P1, do
 	// Set the size of displacement
 	double disp = 1e4; // This should be bigger the largest element size.
 	
+	// RWPT-IM
 	// Get the cooridinate of the nodes in the element 
 	for(int i=0; i< nnodes; ++i)
 	{
 		node = m_ele->GetNode(i);
-		vertex[i].x = node->X(); vertex[i].y = node->Y(); vertex[i].z = node->Z();
+		double X[3];
+		X[0] = node->X(); X[1] = node->Y(); X[2] = node->Z();
+		ToTheXYPlane(m_ele, X);
+		vertex[i].x = X[0]; vertex[i].y = X[1]; vertex[i].z = X[2];
 	}
 
 	// Solve for the line equation
 	for(int i=0; i< nnodes; ++i)
 	{
 		double p1[3], p2[3], p3[3], p4[3]; 
+		// Need coordinate transform here.
 		p1[0] = vertex[i%nnodes].x; p1[1] = vertex[i%nnodes].y; p1[2] = vertex[i%nnodes].z;
 		p2[0] = vertex[(i+1)%nnodes].x; p2[1] = vertex[(i+1)%nnodes].y; p2[2] = vertex[(i+1)%nnodes].z;
-		p3[0] = A->x; p3[1] = A->y; p3[2] = A->z;
-		p4[0] = A->x; p4[1] = A->y; p4[2] = A->z;
+		// RWPT-IM
+		double X[3];
+		X[0] = A->x; X[1] = A->y; X[2] = A->z;
+		ToTheXYPlane(m_ele, X);
+		for(int p=0; p<3; ++p) p3[p] = p4[p] = X[p];
 
 		for(int j=0; j<2; ++j)
 		{
 			// See if there is an intersection in this line.
 			// if a line is set to be parallel to x axis on the right
 			if(axis == 0 && j==0)
-				p4[0] = A->x + disp;
+				p4[0] = X[0] + disp;
 			// if a line is set to be parallel to y axis on the right,
 			else if(axis == 1 && j==0)
-				p4[1] = A->y + disp;
+				p4[1] = X[1] + disp;
 			// if a line is set to be parallel to z axis on the right,
 			else if(axis == 2 && j==0)
-				p4[2] = A->z + disp;
+				p4[2] = X[2] + disp;
 			// if a line is set to be parallel to x axis on the left
 			else if(axis == 0 && j==1)
-				p4[0] = A->x - disp;
+				p4[0] = X[0] - disp;
 			// if a line is set to be parallel to y axis on the left,
 			else if(axis == 1 && j==1)
-				p4[1] = A->y - disp;
+				p4[1] = X[1] - disp;
 			// if a line is set to be parallel to z axis on the left,
 			else if(axis == 2 && j==1)
-				p4[2] = A->z - disp;
+				p4[2] = X[2] - disp;
 			else
 			{
 				printf("Axis type in searching the intersection failed. Wrong axis type.\n");
@@ -286,14 +339,21 @@ int RandomWalk::SolveForTwoIntersectionsInTheElement(Particle* A, double* P1, do
 		
 			int status = G_intersect_line_segments( p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], p4[0], p4[1],
 													&ra, &rb, &x, &y); 
+			// RWPT-IM P1 and P2 are already on the XY plane.
 			if(status == 1&& j==0)
 			{
 				P1[0] = x; P1[1] = y; P1[2] = 0.0;
+				// Transform back the coordinates.
+				ToTheRealPlane(m_ele, P1);
+				
 				++R;
 			}
 			else if(status == 1&& j==1)
 			{
 				P2[0] = x; P2[1] = y; P2[2] = 0.0;
+				// Transform back the coordinates.
+				ToTheRealPlane(m_ele, P2);
+				
 				++L;
 			}
 			else;
@@ -319,6 +379,7 @@ Task: The function solves three displacement by derivatives of
 	 -1: The function failed
 Programing:
 11/2005 PCH Implementation
+02/2006 PCH Improved for the RWPT method in Fracture Networks.
 last modification:
 **************************************************************************/
 int RandomWalk::SolveForDisplacementByDerivativeOfDispersion(Particle* A, double* dD)
@@ -326,6 +387,7 @@ int RandomWalk::SolveForDisplacementByDerivativeOfDispersion(Particle* A, double
 	double TensorOfdD[9];
 
 	// Solve for the derivative of velocity first
+	// statusForDeivativeOfVelocity is never further used down the code.
 	int statusForDeivativeOfVelocity = -10;
 	statusForDeivativeOfVelocity = SolveForDerivativeOfVelocity(A);
 
@@ -340,26 +402,33 @@ int RandomWalk::SolveForDisplacementByDerivativeOfDispersion(Particle* A, double
     m_mat_mp = mmp_vector[group];
     alphaL = m_mat_mp->mass_dispersion_longitudinal;
     alphaT = m_mat_mp->mass_dispersion_transverse;
-	double U = sqrt(A->Vx*A->Vx + A->Vy*A->Vy + A->Vz*A->Vz);
+
+	// RWPT - IM
+	// This thing should be done on the XY plane too.
+	double V[3];
+	V[0] = A->Vx; V[1] = A->Vy; V[2] = A->Vz;
+	ToTheXYPlane(A->elementIndex, V);
 	
-	TensorOfdD[0] = A->Vx*A->dVxdx*(alphaL*(2.0/U-A->Vx*A->Vx/(U*U*U)) 
-					- alphaT*(A->Vy*A->Vy + A->Vz*A->Vz)/(U*U*U) );
-	TensorOfdD[1] = (alphaL-alphaT)*(A->dVydy*A->Vx/U - 
-					A->Vx*A->Vy*A->Vy/(U*U*U)*A->dVydy);
-	TensorOfdD[2] = (alphaL-alphaT)*(A->dVzdz*A->Vx/U - 
-					A->Vx*A->Vz*A->Vz/(U*U*U)*A->dVzdz);
-	TensorOfdD[3] = (alphaL-alphaT)*(A->dVxdx*A->Vy/U - 
-					A->Vy*A->Vx*A->Vx/(U*U*U)*A->dVxdx);
-	TensorOfdD[4] = A->Vy*A->dVydy*(alphaL*(2.0/U-A->Vy*A->Vy/(U*U*U)) 
-					- alphaT*(A->Vx*A->Vx + A->Vz*A->Vz)/(U*U*U) );
-	TensorOfdD[5] = (alphaL-alphaT)*(A->dVzdz*A->Vy/U - 
-					A->Vy*A->Vz*A->Vz/(U*U*U)*A->dVzdz);
-	TensorOfdD[6] = (alphaL-alphaT)*(A->dVxdx*A->Vz/U - 
-					A->Vz*A->Vx*A->Vx/(U*U*U)*A->dVxdx);
-	TensorOfdD[7] = (alphaL-alphaT)*(A->dVydy*A->Vz/U - 
-					A->Vz*A->Vy*A->Vy/(U*U*U)*A->dVydy);
-	TensorOfdD[8] = A->Vz*A->dVzdz*(alphaL*(2.0/U-A->Vz*A->Vz/(U*U*U)) 
-					- alphaT*(A->Vx*A->Vx + A->Vy*A->Vy)/(U*U*U) );
+	double U = sqrt(V[0]*V[0] + V[1]*V[1] + V[2]*V[2]);
+	
+	TensorOfdD[0] = V[0]*A->dVxdx*(alphaL*(2.0/U-V[0]*V[0]/(U*U*U)) 
+					- alphaT*(V[1]*V[1] + V[2]*V[2])/(U*U*U) );
+	TensorOfdD[1] = (alphaL-alphaT)*(A->dVydy*V[0]/U - 
+					V[0]*V[1]*V[1]/(U*U*U)*A->dVydy);
+	TensorOfdD[2] = (alphaL-alphaT)*(A->dVzdz*V[0]/U - 
+					V[0]*V[2]*V[2]/(U*U*U)*A->dVzdz);
+	TensorOfdD[3] = (alphaL-alphaT)*(A->dVxdx*V[1]/U - 
+					V[1]*V[0]*V[0]/(U*U*U)*A->dVxdx);
+	TensorOfdD[4] = V[1]*A->dVydy*(alphaL*(2.0/U-V[1]*V[1]/(U*U*U)) 
+					- alphaT*(V[0]*V[0] + V[2]*V[2])/(U*U*U) );
+	TensorOfdD[5] = (alphaL-alphaT)*(A->dVzdz*V[1]/U - 
+					V[1]*V[2]*V[2]/(U*U*U)*A->dVzdz);
+	TensorOfdD[6] = (alphaL-alphaT)*(A->dVxdx*V[2]/U - 
+					V[2]*V[0]*V[0]/(U*U*U)*A->dVxdx);
+	TensorOfdD[7] = (alphaL-alphaT)*(A->dVydy*V[2]/U - 
+					V[2]*V[1]*V[1]/(U*U*U)*A->dVydy);
+	TensorOfdD[8] = V[2]*A->dVzdz*(alphaL*(2.0/U-V[2]*V[2]/(U*U*U)) 
+					- alphaT*(V[0]*V[0] + V[1]*V[1])/(U*U*U) );
  	
 	// Solve the three displacement by the tensor of dispersion derivative.
 	dD[0] = TensorOfdD[0] + TensorOfdD[1] + TensorOfdD[2];
@@ -377,6 +446,7 @@ Task: The function solves three main derivative of velocity. The rest of
 	 -1: The function failed
 Programing:
 11/2005 PCH Implementation
+02/2006 PCH Improvement for fracture networks.
 last modification:
 **************************************************************************/
 int RandomWalk::SolveForDerivativeOfVelocity(Particle* A)
@@ -386,8 +456,12 @@ int RandomWalk::SolveForDerivativeOfVelocity(Particle* A)
 	// intersections for x and y axis
 	double x1[3], x2[3], y1[3], y2[3];	// I don't put the intersections for z direction for now.
 
+	// RWPT-IM x1 and x2 are the intersection coordinates on the XY plane.
+	// But the position of Particle A is on the realy plane.
 	// Get the two intersecitions parallel to x axis
 	status = SolveForTwoIntersectionsInTheElement(A, x1, x2, 0);
+	// RWPT-IM After SolveForTwoIntersectionsInTheElement, 
+	// All the coordinates are on the real plane.
 	// Check if the function succeeded.
 	if(status == -1)
 	{
@@ -396,16 +470,27 @@ int RandomWalk::SolveForDerivativeOfVelocity(Particle* A)
 	}
 	// Solve for the velocity for two intersections
 	Particle XR, XL;
-	XR = XL = *A;
+	// RWPT-IM
+	XR = XL = *A;	
+	// Again, the real plane coordinates.
 	XR.x = x1[0]; XR.y = x1[1]; XR.z = x1[2];
 	XL.x = x2[0]; XL.y = x2[1]; XL.z = x2[2];
+	
+	// Interpolating velocity by the real coordinates should be no problem.
 	InterpolateVelocityOfTheParticleByInverseDistance(&XR);
 	InterpolateVelocityOfTheParticleByInverseDistance(&XL);
 	// Solve for dVxdx
 	double x = XR.x - XL.x; double y = XR.y - XL.y; double z = XR.z - XL.z; 
-	double dx = sqrt(x*x + y*y + z*z);
-	A->dVxdx = (XR.Vx - XL.Vx) / dx; 	
+	double dx = sqrt(x*x + y*y + z*z);	// The distance does not make any difference.
+	// RWPT-IM
+	// Let me think if velocity should projected to the connected plane or treated in true 3D.
+	// Yes. Velocity should be on the XY plane
+	double Vx[3];
+	Vx[0] = XR.Vx - XL.Vx; Vx[1] = XR.Vy - XL.Vy; Vx[2] = XR.Vz - XL.Vz;
+	ToTheXYPlane(A->elementIndex, Vx);
+	A->dVxdx = Vx[0] / dx; // A->dVxdx = (XR.Vx - XL.Vx) / dx; 	
 
+	// RWPT-IM Just the same thing one more time.
 	// Get the two intersecitions parallel to y axis
 	status = SolveForTwoIntersectionsInTheElement(A, y1, y2, 1);
 	if(status == -1)
@@ -424,7 +509,11 @@ int RandomWalk::SolveForDerivativeOfVelocity(Particle* A)
 	// Solve for dVydy
 	x = YR.x - YL.x; y = YR.y - YL.y; z = YR.z - YL.z; 
 	double dy = sqrt(x*x + y*y + z*z);
-	A->dVydy = (YR.Vx - YL.Vx) / dy;
+	double Vy[3];
+	Vy[0] = YR.Vx - YL.Vx; Vy[1] = YR.Vy - YL.Vy; Vy[2] = YR.Vz - YL.Vz;
+	ToTheXYPlane(A->elementIndex, Vy);
+	A->dVydy = Vy[1] / dy; // A->dVydy = (YR.Vy - YL.Vy) / dy;	
+	
 
 	// Just set dVzdz to be zero for now
 	A->dVzdz = 0.0;
@@ -1438,7 +1527,7 @@ void RandomWalk::AdvanceByAdvection(double dt)
     {
 		Particle Y; // the displaced particle
 		int Astatus = 100;	// Set to be meaningless
-        CElem* m_ele = m_msh->ele_vector[X[i].Now.elementIndex];
+  //      CElem* m_ele = m_msh->ele_vector[X[i].Now.elementIndex];
 
 		// Let's record the current to the past
 		InterpolateVelocityOfTheParticleByInverseDistance(&(X[i].Now));
@@ -1503,6 +1592,13 @@ void RandomWalk::AdvanceByAdvectionNDispersionSplitTime(double dt, int numOfSpli
 	for(int i=0; i< numOfSplit; ++i)
 	{
 		AdvanceByAdvectionNDispersion(subdt);
+#ifdef _FEMPCHDEBUG_
+	// PCH Let's monitor what's going on in the FEM
+	// This messagebox is for debugging the primary variables at every time step.
+	// Should combine with the picking...
+	CWnd * pWnd = NULL;
+	pWnd->MessageBox("Split second!!!","Debug help", MB_ICONINFORMATION);
+#endif
 	}
 
 }
@@ -1522,8 +1618,6 @@ void RandomWalk::AdvanceByAdvectionNDispersion(double dt)
     {
 		Particle Y; // the displaced particle
 		int Astatus = 100;	// Set to be meaningless
-		m_msh = fem_msh_vector[0]; 
-        CElem* m_ele = m_msh->ele_vector[X[i].Now.elementIndex];
 
 		if(X[i].Now.elementIndex != -10)
 		{
@@ -1550,23 +1644,34 @@ void RandomWalk::AdvanceByAdvectionNDispersion(double dt)
 #endif
 			SolveDispersionCoefficient(&Y);
 		
+				if(Astatus == -1)
+					Y.t = dt;
 			Astatus = SolveForAdvectionNDispersionWithEdge(&(X[i].Now), &Y);
 			
-			// If particle stays in the element, Y.t = dt.
-			if(Y.t < tolerance) 
-				Y.t = dt;
+				// The result of the function is unknown error.
+				if(Astatus == -2)
+				{
+					printf("Astatus = %d\n", Astatus);
+					abort();
+				}
+				// Particle goes outside of the domain.
+				// Thus, do it again.
+				else if(Astatus == -1)
+				{
+					Y= X[i].Now;
+				}
+				// Right on track. Keep going.
+				else
+				{
+					// If particle stays in the element, Y.t = dt.
+					if(Y.t < tolerance) 
+						Y.t = dt;
 
-			// Update the current info
-			// where the advected particle is in either the element or 
-			// the neighboring element. 
-			X[i].Now = Y;
-
-			// Boundary and the function error check
-			if(Astatus == -1 || Astatus == -2)
-			{
-				printf("Astatus = %d\n", Astatus);
-				abort();
-			}
+					// Update the current info
+					// where the advected particle is in either the element or 
+					// the neighboring element. 
+					X[i].Now = Y;
+				}			
 
 		// Keep looping if the time is not spent all or
 		// if the particle is outside of the domain or
@@ -1575,13 +1680,6 @@ void RandomWalk::AdvanceByAdvectionNDispersion(double dt)
 			
 		// Update the correct dt
 		X[i].Now.t = X[i].Past.t + dt;
-
-		// Keep looping 
-		// if the particle is outside of the domain or
-		// if the function fails
-	
-	//	printf("No %d particle is done.\n", i);
-
 		}			
     }
 }
@@ -1682,52 +1780,6 @@ void RandomWalk::ConcPTFile(const char *file_name)
     fclose(pct_file);	
 }
 
-
-/**************************************************************************
-MSHLib-Method: 
-Task:The function transform the drift made in 3D to the plane that the 
-     element lies on.
-Programing:
-10/2005 PCH Implementation
-**************************************************************************/
-void RandomWalk::TransformRandomDriftToTheElementPlane(CElem* m_ele, double* delta)
-{
-    // This establish the transforming tensor of the element
-    m_ele->FillTransformMatrix();
-/*
-    double temp[3];
-    for(int i=0; i<3; ++i) 
-        temp[i] = m_ele->GetTranformTensor(i,0);
-*/
-/*  
-    if(m_ele->GetCoordinate_system()%10==2) // Z has number
-	{
-*/
-/*
-        int ele_dim = m_ele->GetDimension(); 
-        if(ele_dim==1||ele_dim==2)
-	    {
-
-            delta[0] =  m_ele->GetTranformTensor(0,0) * delta[0]
-		            +m_ele->GetTranformTensor(1,0) * delta[1]
-				    +m_ele->GetTranformTensor(2,0) * delta[2];
-			if(ele_dim==2)
-			{
-            	delta[1] =  m_ele->GetTranformTensor(0,1) * delta[0]
-		       		     +m_ele->GetTranformTensor(1,1) * delta[1]
-				   		 +m_ele->GetTranformTensor(2,1) * delta[2];
-		    	delta[2] = 0.0; //delta[2];      
-			}
-               
-	    }	
-*/	  
-	//}
-
-/*
-    for(int i=0; i<3; ++i) 
-        temp[i] = delta[i];
-*/
-}
 
 /**************************************************************************
 MSHLib-Method: 
@@ -1889,6 +1941,13 @@ int RandomWalk::RandomWalkDrift(double* Z, int dim)
 	return -1;	// Failed.
 }
 
+/**************************************************************************
+Task: SolveDispersionCoefficient(Particle* A)
+Programing: This function solves velocity tensor from the velocity of
+			particle.
+10/2005 PCH 
+02/2006 PCH	Extension to cover 2D elements in 3D
+**************************************************************************/
 void RandomWalk::SolveDispersionCoefficient(Particle* A)
 {
 	// To extract dispersivities from material properties    
@@ -1907,6 +1966,12 @@ void RandomWalk::SolveDispersionCoefficient(Particle* A)
 
     // Just solve for the magnitude of the velocity to compute the dispersion tensor
 	V[0] = A->Vx; V[1] = A->Vy; V[2] = A->Vz;
+	
+	// RWPT-IM
+	// Let's transform this velocity to be on the xy plane
+	// Some nice if condition to tell the need for transform will be nice. Later....
+	ToTheXYPlane(m_ele, V);
+	 
     double Vmagnitude = sqrt(V[0]*V[0] + V[1]*V[1] + V[2]*V[2]);
 
     // Compute the dispersion tensor at the particle location
@@ -2203,16 +2268,28 @@ int RandomWalk::SolveForAdvectionNDispersionWithEdge(Particle* A, Particle* B)
 		theEdges[i]->GetNodes(theNodes);
 
 		double p1[3], p2[3], p3[3], p4[3];			
+		// RWPT - IM 		
 		// Two points in the edge
-		p1[0] = theNodes[0]->X(); p1[1] = theNodes[0]->Y(); p1[2] = theNodes[0]->Z();
-		p2[0] = theNodes[1]->X(); p2[1] = theNodes[1]->Y(); p2[2] = theNodes[1]->Z();
+		double X1[3], X2[3];
+		X1[0] = theNodes[0]->X(); X1[1] = theNodes[0]->Y(); X1[2] = theNodes[0]->Z();
+		X2[0] = theNodes[1]->X(); X2[1] = theNodes[1]->Y(); X2[2] = theNodes[1]->Z();
+		ToTheXYPlane(theElement, X1); ToTheXYPlane(theElement, X2);
+		for(int j=0; j<3; ++j)
+		{
+			p1[j] = X1[j];	p2[j] = X2[j];
+		}
 		// The starting point displaced by pure advection
 		p3[0] = B->x; p3[1] = B->y; p3[2] = B->z;
+		ToTheXYPlane(theElement, p3);
 
 		int dDStatus = 1;
 #ifdef HETERO		
+		// This currently only return TRUE (1)
 		dDStatus = SolveForDisplacementByDerivativeOfDispersion(A, dD);
 #endif
+
+		// Let's get the local vector for particle velocity
+		double V[3];
 
 		// Create random drift according to the element dimension
 		RandomWalkDrift(Z, ele_dim);
@@ -2220,10 +2297,18 @@ int RandomWalk::SolveForAdvectionNDispersionWithEdge(Particle* A, Particle* B)
 		{
 			if(ele_dim == 2)
 			{
-				p4[0] = p3[0] + B->Vx * B->t + dD[0]*B->t + sqrt(6.0*B->D[0]*B->t) * Z[0] + sqrt(6.0*B->D[1]*B->t) * Z[1]; 
-				p4[1] = p3[1] + B->Vy * B->t + dD[1]*B->t + sqrt(6.0*B->D[3]*B->t) * Z[0] + sqrt(6.0*B->D[4]*B->t) * Z[1]; 
-
-				p4[2] = 0.0;
+				// RWPT - IM 
+				// This should be done carefully. Velocity should be transformed to be on the XY plane.
+				// dD[] should be fine because it is handled in the SolveForDisplacementByDerivativeOfDispersion function.
+				// Z[] should also be fine. Just randome nubmers.
+				// D[] Yes, this should be fine too. It is handled in the SolveDispersionCoefficient function.
+				// OK. Just velocity left.
+				V[0] = B->Vx;	V[1] = B->Vy;	V[2] = B->Vz;	// In fact, V[2] gotta be zero.
+				ToTheXYPlane(B->elementIndex, V);
+				p4[0] = p3[0] + V[0] * B->t + dD[0]*B->t + sqrt(6.0*B->D[0]*B->t) * Z[0] + sqrt(6.0*fabs(B->D[1])*B->t) * Z[1]; 
+				p4[1] = p3[1] + V[1] * B->t + dD[1]*B->t + sqrt(6.0*fabs(B->D[3])*B->t) * Z[0] + sqrt(6.0*B->D[4]*B->t) * Z[1]; 
+				// Fix for translation
+				p4[2] = theElement->GetAngle(2);
 			}
 			else
 			{
@@ -2233,6 +2318,7 @@ int RandomWalk::SolveForAdvectionNDispersionWithEdge(Particle* A, Particle* B)
 		}
 		else
 		{
+			// This should never be the case by now. Later on, maybe.
 			printf("SolveForDisplacementByDerivativeOfDispersion failed\n");
 			abort();
 		}
@@ -2252,30 +2338,17 @@ int RandomWalk::SolveForAdvectionNDispersionWithEdge(Particle* A, Particle* B)
 			// The common edge is theEdges[i]
 			
 			// Now I'm searching neighbor
-			int countOutside = 0;
 			for(int j=0; j<theElement->GetFacesNumber(); ++j)
 			{
-				CElem* thisNeighbor = theElement->GetNeighbor(j);
-				
-				if(thisNeighbor) ++countOutside;
+				// Compute the time left over.
+				double I[3];
+				// Fix for translation
+				I[0] = x; I[1] = y; I[2] = theElement->GetAngle(2);
 
-				// Get the edges of each neighbor
-				int neighborEdgesNumber = thisNeighbor->GetEdgesNumber();
-				vec<CEdge*> theNeighborEdges(neighborEdgesNumber);
-				thisNeighbor->GetEdges(theNeighborEdges);
-		
-				for(int k=0; k< neighborEdgesNumber; ++k)
-				{
-					// If the edge is shared by two elements
-					if(theEdges[i] == theNeighborEdges[k])	
-					{
-						// Compute the time left over.
-						double I[3];
-						I[0] = x; I[1] = y; I[2] = 0.0;
-						double d1 = SolveDistanceBetweenTwoPoints(p3, I);
-						double d = SolveDistanceBetweenTwoPoints(p3, p4);
-						double dt1 = dtt*d1/d;
-						double dt2 = dtt - dt1;
+				double d1 = SolveDistanceBetweenTwoPoints(p3, I);
+				double d = SolveDistanceBetweenTwoPoints(p3, p4);
+				double dt1 = dtt*d1/d;
+				double dt2 = dtt - dt1;
 
 						// dt2 should be positive
 						if(dt2 < 0.0)
@@ -2283,83 +2356,37 @@ int RandomWalk::SolveForAdvectionNDispersionWithEdge(Particle* A, Particle* B)
 							printf("The program aborts because dt2 < 0.0\n");
 							abort();
 						}
-						else;	// keep going.
+				else;	// keep going.
 
-						// Check if the edge is the right edge by comparing the direction 
-						// of two vectors 
-						double OVec[3];	double EVec[3];
-						OVec[0] = p4[0] - p3[0]; OVec[1] = p4[1] - p3[1]; OVec[2] = p4[2] - p3[2];
-						EVec[0] = x - p3[0]; EVec[1] = y - p3[1]; EVec[2] = 0.0;
-						double dotProduct = OVec[0]*EVec[0] + OVec[1]*EVec[1] + OVec[2]*EVec[2]; 
-						double tolerance = 1e-50;
+				// Update the record.
+				B->t = dt2; 
+				// Adjust the position for the obtained dt1.
+				double Dxx = sqrt(6.0*B->D[0]*dt1) * Z[0]; double Dxy = sqrt(6.0*fabs(B->D[1])*dt1) * Z[1];
+				double Dyx = sqrt(6.0*fabs(B->D[3])*dt1) * Z[0]; double Dyy = sqrt(6.0*B->D[4]*dt1) * Z[1];
+				double dsp[3];
+				dsp[0] = dD[0]*dt1 + Dxx + Dxy; 
+				dsp[1] = dD[1]*dt1 + Dyx + Dyy;
+				// Fix for translation
+				dsp[2] = theElement->GetAngle(2);
 
-						// If the direction of two vectors is same,
-						if(dotProduct > 0.0)
-						{
-							// Update the record.
-							B->t = dt2; 
-							// Adjust the position for the obtained dt1.
-							double Dxx = sqrt(6.0*B->D[0]*dt1) * Z[0]; double Dxy = sqrt(6.0*B->D[1]*dt1) * Z[1];
-							double Dyx = sqrt(6.0*B->D[3]*dt1) * Z[0]; double Dyy = sqrt(6.0*B->D[4]*dt1) * Z[1];
-							B->x = x + dD[0]*dt1 + Dxx + Dxy ; 
-							B->y = y + dD[1]*dt1 + Dyx + Dyy; 
-							B->z = 0.0; 
-							B->elementIndex = GetTheElementOfTheParticleFromNeighbor(B);
+				double IC[3];
+				// Fix for translation
+				IC[0] = x + dsp[0]; IC[1] = y + dsp[1]; IC[2] = theElement->GetAngle(2);
+				// Let's convert these XY plance coordinates to the real plane coordinates.
+				ToTheRealPlane(B->elementIndex, IC); 							
+				B->x = IC[0]; B->y = IC[1]; B->z = IC[2]; 
+				// The difference is that I need to update the element index.
+				B->elementIndex = GetTheElementOfTheParticleFromNeighbor(B);
 
-							if(B->elementIndex == -10)
-							{
-								printf("There's single intersection.\n");
-								abort();
-							}
+				if(B->elementIndex == -10)
+				{
+					printf("There's single intersection.\n But, it's going outside of the domain.");
+					return -1;
+				}
 
-
-#ifdef LINUX
-							if(isnan(B->x))
-							{
-									printf("single point. B->x is not a number\n");
-									abort();
-							}
-#endif
-
-							return 1;	// The element index switched to the neighbor element
-						}
-						else if(fabs(dotProduct) < tolerance) // The crossing segment is the point of the intersection
-						{	
-							// Update the record.
-							B->t = 0.0; 
-							
-							B->x = x; 
-							B->y = y; 
-							B->z = 0.0; 
-				//			B->elementIndex = B->elementIndex;
-						
-							return 0;	// The element index switched to the neighbor element
-						}
-						else if(dotProduct < 0.0)  // else if(dotProduct < 0.0) ;The direction of two vectors is opposite. 
-                           countNoIntersection = countNoIntersection; //WW The above empty "else if" condition with semi-colon gives warning and  may causes problem
-                                        
-					}
-					else	// else; No intersection. WW This may causes problem
-                      countNoIntersection = countNoIntersection; // The empty "else" condition gives warning and  may causes problem
-	
-				}	
-		
+				return 1;	// The element index switched to the neighbor element
 			}
 
-			// Check if the particle is outside of the domain
-			if(countOutside == nEdges)
-			{
-				// Particle steps outside of the problem domain	
-				B->elementIndex = -10;	// Outside of the domain
-						
-				return -1;	// Particle displaced outside of the domain	
-			}
-			else
-			{
-				// Something wrong.
-				printf("There must be something wrong in this algorithm\n");
-				abort();
-			}
 		}
 		// It couldn't reach to the edge
 		else if(status == 0)
@@ -2387,29 +2414,38 @@ int RandomWalk::SolveForAdvectionNDispersionWithEdge(Particle* A, Particle* B)
 	{
 		if(ele_dim == 2)
 		{
+			double V[3];
+			V[0] = B->Vx;	V[1] = B->Vy;	V[2] = B->Vz;	// In fact, V[2] gotta be zero.
+			ToTheXYPlane(B->elementIndex, V);	// V XY planed.
+
 			double Dxx = sqrt(6.0*B->D[0]*B->t) * Z[0]; double Dxy = sqrt(6.0*fabs(B->D[1])*B->t) * Z[1];
 			double Dyx = sqrt(6.0*fabs(B->D[3])*B->t) * Z[0]; double Dyy = sqrt(6.0*B->D[4]*B->t) * Z[1];
-			B->x += B->Vx * B->t + dD[0]*B->t + Dxx + Dxy;
-			B->y += B->Vy * B->t + dD[1]*B->t + Dyx + Dyy; 
-			B->z += 0.0;
-//			B->elementIndex = A->elementIndex;
-			// I don't think that I need to update the index in this case.
 
-#ifdef HETERO
-			// This will boot quite a bit of speed.
-			B->elementIndex = GetTheElementOfTheParticleFromNeighbor(B);
-#endif
+			double dsp[3];
+			dsp[0] = V[0]*B->t + dD[0]*B->t + Dxx + Dxy; 
+			dsp[1] = V[1]*B->t + dD[1]*B->t + Dyx + Dyy;
+			// Fix for translation
+			//	dsp[2] = 0.0;	// This gotta be zero all the times in fracture networks.
+			dsp[2] = theElement->GetAngle(2);
+								
+			// Assigning the next postion of the particle. The index of element in this if condition
+			// should be one of the connected planes randomly chosen.
+			// Now just solve the real plane coordinates for the particle at the next position.
+			double DspInNextEle[3];
+			for(int p=0; p<3; ++p) DspInNextEle[p] = dsp[p]; 
 			
-#ifdef LINUX				
-			if(isnan(B->x))
-			{
-				printf("no point, last time. B->x is not a number\n");
-				printf("Dxx = %e, Dxy = %e, Dyx = %e, Dyy = %e\n",  Dxx, Dxy, Dyx, Dyy);
-				printf("B->D[0] = %e, D[1] = %e, D[3] = %e, D[4] = %e\n",  B->D[0], B->D[1], B->D[3], B->D[4]);
-				printf("B->Vx = %f, B->Vy = %f\n", B->Vx, B->Vy);
-				abort();
-			}
-#endif
+			double P[3];
+			P[0] = B->x; P[1] = B->y; P[2] = B->z;
+			ToTheXYPlane(B->elementIndex, P);
+			P[0] += DspInNextEle[0]; P[1] += DspInNextEle[1]; P[2] = theElement->GetAngle(2);
+			ToTheRealPlane(B->elementIndex, P);
+			B->x = P[0]; B->y = P[1]; B->z = P[2];
+			
+			// Now, for the index of the element that this moved particle stays, 
+			// we have no idea. Thus, need to search.
+			// But, this is very costly process. I should think about this
+			// for speeding up later on.
+			B->elementIndex = GetTheElementOfTheParticleFromNeighbor(B);
 		}
 		else
 		{
@@ -2440,6 +2476,10 @@ int RandomWalk::GetTheElementOfTheParticleFromNeighbor(Particle* A)
 
 	m_msh = fem_msh_vector[0]; 
 	CElem* theElement = m_msh->ele_vector[A->elementIndex];
+	// Let's check this element first.
+	index = IsTheParticleInThisElement(A);
+	if(index != -1)	
+		return index;
 	
 	// First meighbor's search around the main element
 	for(int i=0; i<theElement->GetFacesNumber(); ++i)
@@ -2520,7 +2560,7 @@ int RandomWalk::GetTheElementOfTheParticleFromNeighbor(Particle* A)
 		}
 		else
 		{
-			printf("Searching exhastively failed.\n");
+			printf("The exhaustive search failed.\n");
 			abort();
 		}
     }
@@ -2599,6 +2639,8 @@ Task:This function returns the index of the element that contains
 	 Or return -1 if the particle is not in the element.
 Programing:
 12/2005 PCH Implementation
+02/2006 PCH Improved for the RWPT method in Fracture Networks.
+02/2006 PCH The ray method implemented based on the proven theory.
 **************************************************************************/
 int RandomWalk::IsTheParticleInThisElement(Particle* A)
 {
@@ -2607,7 +2649,8 @@ int RandomWalk::IsTheParticleInThisElement(Particle* A)
 	
 	// Getting the number of the edges in the element that Particle P belongs
 	int nEdges = theElement->GetEdgesNumber();
-	int numOfInside = 0;
+	int countOfInterception = 0;
+	int parallel = 0;
 	// Loop over the edges
 	for(int i=0; i< nEdges; ++i)
 	{
@@ -2619,14 +2662,25 @@ int RandomWalk::IsTheParticleInThisElement(Particle* A)
 		vec<CNode*> theNodes(3);
 		theEdges[i]->GetNodes(theNodes);
 
-		double p1[3], p2[3], p4[3];			
+		double p1[3], p2[3], p3[3], p4[3];	
+		// RWPT - IM 		
 		// Two points in the edge
-		p1[0] = theNodes[0]->X(); p1[1] = theNodes[0]->Y(); p1[2] = theNodes[0]->Z();
-		p2[0] = theNodes[1]->X(); p2[1] = theNodes[1]->Y(); p2[2] = theNodes[1]->Z();
-		// The starting point of the center of the element
-		double* p3 = theElement->GetGravityCenter();
-		p4[0] = A->x; p4[1] = A->y; p4[2] = A->z;
-		
+		double X1[3], X2[3];
+		X1[0] = theNodes[0]->X(); X1[1] = theNodes[0]->Y(); X1[2] = theNodes[0]->Z();
+		X2[0] = theNodes[1]->X(); X2[1] = theNodes[1]->Y(); X2[2] = theNodes[1]->Z();
+		ToTheXYPlane(theElement, X1); ToTheXYPlane(theElement, X2);
+		for(int j=0; j<3; ++j)
+		{
+			p1[j] = X1[j];	p2[j] = X2[j];
+		}
+
+		// The starting point which is the particle position
+		p3[0] = A->x; p3[1] = A->y; p3[2] = A->z;
+		// RWPT - IM 
+		ToTheXYPlane(theElement, p3);
+		// Make p4 very long in x direction in the XY plane
+		double big = 1e3;
+		p4[0] = p3[0] + big; p4[1] = p3[1]; p4[2] = p3[2];
 		
 		double x = 0.0, y = 0.0, ra = 0.0, rb = 0.0;
 		
@@ -2634,11 +2688,11 @@ int RandomWalk::IsTheParticleInThisElement(Particle* A)
 							&ra, &rb, &x, &y); 
 
 		if(status == 0)		// Not intersect but extension intersects
-			++numOfInside;
+			;
 		else if(status == -1) // Parallel
-			++numOfInside;
+			parallel = 1;
 		else if(status == 1)
-		; // single intersection
+			++countOfInterception; // single intersection
 		else if(status == 2)	// Overlap (this should be impossible)
 		{
 			printf("Overlapping in IsThisInElement is impossible.\n");
@@ -2652,8 +2706,12 @@ int RandomWalk::IsTheParticleInThisElement(Particle* A)
 		
 	}
 	// Check if this particle is inside of the element
-	if(numOfInside == nEdges)
+	// If the number of interceptions is odd,
+	// then, it is inside of this element.
+	if(countOfInterception%2 == 1)
 		return A->elementIndex;
+	// if the number is even,
+	// then, it is outside
 	else
 		return -1; // This element does not have the particle.
 }
@@ -2781,12 +2839,10 @@ int RandomWalk::SolveForPureAdvectionWithEdge(Particle* A, Particle* B)
 						{	
 							return 0;	// The element index switched to the neighbor element	
 						}
-						else if(dotProduct < 0.0) // else if(dotProduct < 0.0) ; The direction of two vectors is opposite.
-                           countNoIntersection=countNoIntersection;  // WW The above empty "else if" condition with semi-colon gives warning and  may causes problem
-                                        
+						else if(dotProduct < 0.0) ; // The direction of two vectors is opposite.
 					}
-					else	//else;	 No intersection.
-                      countNoIntersection=countNoIntersection; //WW The above empty "else" condition with semi-colon gives warning and  may causes problem				
+					else;	// No intersection.
+						
 				}	
 		
 			}
@@ -2968,6 +3024,329 @@ int RandomWalk::G_intersect_line_segments (
     return 2; /* colinear with overlap on an interval, not just a single point*/
 }
 
+/**************************************************************************
+FEMLib-Method: 
+Task: DoJointEffectOfElementInitially(void)
+Programing: This function does make a choice for each particle
+			that lies on a crossroad or a joint. The contribution is 
+			determined by Fluid Momentum. Roulette Wheel Selection (RWE)
+			determines which brach the particle continue to travel.
+02/2006 PCH 
+**************************************************************************/
+void RandomWalk::DoJointEffectOfElementInitially(void)
+{
+	// Get the mesh first
+	CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
+
+	// Looping all over the particles to have a choice which plane to go.
+	// Because all of the particles are on the joint initially.
+	for(int p=0; p< m_msh->PT->numOfParticles; ++p)
+	{
+		// Mount the element fromthe first particle from particles initially
+		int eleIdx = m_msh->PT->X[p].Now.elementIndex;
+		CElem* theEle = m_msh->ele_vector[eleIdx];
+		// Let's get the number of edges in the element and mount them
+		int numOfEdgeIntheElement = theEle->GetEdgesNumber();
+		vec<CEdge*> theEdges(numOfEdgeIntheElement);
+		theEle->GetEdges(theEdges);
+		CEdge* theJoint = NULL;
+
+		// Now, 1. find the joint out of theses edges
+		for(int i=0; i<numOfEdgeIntheElement; ++i)
+		{
+			// Is this a joint?
+			if(theEdges[i]->GetJoint() == 1)
+				theJoint = theEdges[i];	
+		}
+
+		// 2. Get multiple planes out of the joint
+		// Now we need one of crossroad from the joint
+		// Get the nodes of the edge
+		vec<CNode*> theNodes(3);
+		theJoint->GetNodes(theNodes);
+		// I will use the first node of the joint as a crossroad
+		CNode* crossnode = theNodes[0];	
+		// Let's mount the crossroad class
+		CrossRoad* crossroad = NULL;
+		for(int i=0; i < (int)(m_msh->fm_pcs->crossroads.size()); ++i)
+		{
+			if( m_msh->fm_pcs->crossroads[i]->Index == crossnode->GetIndex() )
+				crossroad = m_msh->fm_pcs->crossroads[i];
+		}
+		// Let's get the contribution of each connected plane.
+		double chances[100];	// I just set 100 as a maximum number of 
+							// connected planes.
+		for(int i=0; i<crossroad->numOfThePlanes; ++i)
+			chances[i] = crossroad->plane[i].ratio;
+
+		// 3. Roulette Wheel Selection
+		int whichWay = RouletteWheelSelection(chances, crossroad->numOfThePlanes);
+		m_msh->PT->X[p].Now.elementIndex = m_msh->PT->X[p].Past.elementIndex =
+			crossroad->plane[whichWay].eleIndex;
+	}
+	
+
+}
+
+/************************************************************************** 
+Task: ToTheXYPlane(CElem* E, double* X)
+Programing: This function rotate-transforms the vector to be on the xy plane
+02/2006 PCH 
+**************************************************************************/
+void RandomWalk::ToTheXYPlane(CElem* E, double* X)
+{
+	double x[3], xx[3];
+
+	// Get the norm of the element plane and do some initialization
+	for(int k=0; k<3; ++k)
+		x[k] = xx[k] = 0.0;
+
+	double alpha = E->GetAngle(0);
+	double beta = E->GetAngle(1);
+	// Let's rotate the original Enorm to the BB coordinate system 
+	// along the y axis
+	x[0] = cos(alpha)*X[0] + sin(alpha)*X[2];
+	x[1] = X[1];
+	x[2] = -sin(alpha)*X[0] + cos(alpha)*X[2];	
+	// Let's rotate the BB coordinate system to the BBB coordinate system
+	// along the x axis
+	xx[0] = x[0];
+	xx[1] = cos(beta)*x[1] - sin(beta)*x[2];
+	xx[2] = sin(beta)*x[1] + cos(beta)*x[2];
+
+	for(int i=0; i<3; ++i) X[i] = xx[i];
+	// Do translation along z'' axis.
+//	X[2] -= E->GetAngle(2);
+}
+
+void RandomWalk::ToTheXYPlane(int idx, double* X)
+{
+	CFEMesh* m_msh = NULL;  
+	if(fem_msh_vector.size()==0)
+		return; //OK
+	m_msh = fem_msh_vector[0];  
+	CElem* E = m_msh->ele_vector[idx];
+
+	double x[3], xx[3];
+
+	// Get the norm of the element plane and do some initialization
+	for(int k=0; k<3; ++k)
+		x[k] = xx[k] = 0.0;
+
+	double alpha = E->GetAngle(0);
+	double beta = E->GetAngle(1);
+	// Let's rotate the original Enorm to the BB coordinate system 
+	// along the y axis
+	x[0] = cos(alpha)*X[0] + sin(alpha)*X[2];
+	x[1] = X[1];
+	x[2] = -sin(alpha)*X[0] + cos(alpha)*X[2];	
+	// Let's rotate the BB coordinate system to the BBB coordinate system
+	// along the x axis
+	xx[0] = x[0];
+	xx[1] = cos(beta)*x[1] - sin(beta)*x[2];
+	xx[2] = sin(beta)*x[1] + cos(beta)*x[2];
+
+	for(int i=0; i<3; ++i) X[i] = xx[i];
+	// Do translation along z'' axis.
+//	X[2] -= E->GetAngle(2);
+}
+
+/************************************************************************** 
+Task: ToTheRealPlane(CElem* E, double* X)
+Programing: This function transform the vector on the xy plane to the 
+			original plane of the element in 3D.
+02/2006 PCH 
+**************************************************************************/
+void RandomWalk::ToTheRealPlane(CElem* E, double* X)
+{	
+	double x[3], xx[3];
+
+	// Get the norm of the element plane and do some initialization
+	for(int k=0; k<3; ++k)
+		x[k] = xx[k] = 0.0;
+
+	double alpha = E->GetAngle(0);
+	double beta = E->GetAngle(1);
+	// Let's rotate the original Enorm to the BB coordinate system 
+	// along the y axis
+	x[0] = cos(alpha)*X[0] - sin(alpha)*X[2];
+	x[1] = X[1];
+	x[2] = sin(alpha)*X[0] + cos(alpha)*X[2];	
+	// Let's rotate the BB coordinate system to the BBB coordinate system
+	// along the x axis
+	xx[0] = x[0];
+	xx[1] = cos(beta)*x[1] + sin(beta)*x[2];
+	xx[2] = -sin(beta)*x[1] + cos(beta)*x[2];
+
+	for(int i=0; i<3; ++i) X[i] = xx[i];
+	// Let's translate back to z axis.
+//	X[2] += E->GetAngle(2);
+}
+
+void RandomWalk::ToTheRealPlane(int idx, double* X)
+{
+	CFEMesh* m_msh = NULL;  
+	if(fem_msh_vector.size()==0)
+		return; 
+	m_msh = fem_msh_vector[0];  
+	CElem* E = m_msh->ele_vector[idx];
+
+	double x[3], xx[3];
+
+	// Get the norm of the element plane and do some initialization
+	for(int k=0; k<3; ++k)
+		x[k] = xx[k] = 0.0;
+
+	double alpha = E->GetAngle(0);
+	double beta = E->GetAngle(1);
+	// Let's rotate the original Enorm to the BB coordinate system 
+	// along the y axis
+	x[0] = cos(alpha)*X[0] - sin(alpha)*X[2];
+	x[1] = X[1];
+	x[2] = sin(alpha)*X[0] + cos(alpha)*X[2];	
+	// Let's rotate the BB coordinate system to the BBB coordinate system
+	// along the x axis
+	xx[0] = x[0];
+	xx[1] = cos(beta)*x[1] + sin(beta)*x[2];
+	xx[2] = -sin(beta)*x[1] + cos(beta)*x[2];
+
+	for(int i=0; i<3; ++i) X[i] = xx[i];
+	// Let's translate back to z axis.
+//	X[2] += E->GetAngle(2);
+}
+
+/************************************************************************** 
+Task: SolveAnglesOfTheElment(CElem* E)
+Programing: This function solves two angles for rotation transformation
+02/2006 PCH 
+**************************************************************************/
+void RandomWalk::SolveAnglesOfTheElment(CElem* E)
+{
+	CFEMesh* m_msh = NULL;  
+	if(fem_msh_vector.size()==0)
+		return;
+	m_msh = fem_msh_vector[0];  
+
+	double Enorm[3];
+
+	// Get the norm of the element plane and do some initialization
+	if(m_msh->GetCoordinateFlag() != 32)
+	{
+			Enorm[0] = 0.0; Enorm[1] = 0.0; Enorm[2] = 1.0;
+	}
+	else
+		for(int k=0; k<3; ++k)
+			Enorm[k] = E->getTransformTensor(k+6);
+
+	// solve for two angles for two rotation transformation.
+	// Solving alpha that will be used for rotation along y axis.
+	double alpha = acos(Enorm[2]/sqrt(Enorm[0]*Enorm[0]+Enorm[2]*Enorm[2]));
+	// The following if condition is required because
+	// the acos function is not distintive in the case that Enorm[0]'s of  
+	// the two planes are opposite each other. 
+	if(Enorm[0] < 0.0)
+		E->SetAngle(0, alpha );
+	else
+		E->SetAngle(0, alpha + 2.0*(PI - alpha) );
+	
+	// Solving beta that will be used for rotation along x axis
+	double beta = 0.0, BB[3], TranZ;
+	// Let's rotate the original Enorm to this coordinate system.
+	BB[0] = cos(E->GetAngle(0))*Enorm[0] + sin(E->GetAngle(0))*Enorm[2];
+	BB[1] = Enorm[1];
+	BB[2] = -sin(E->GetAngle(0))*Enorm[0] + cos(E->GetAngle(0))*Enorm[2];	
+	beta = atan(BB[1]/BB[2]);
+	E->SetAngle(1, beta );
+
+	// Solve for the translation.
+	// I'll use the center of the element for this translation.
+	double* center = E->GetGravityCenter();
+	double x[3], xx[3];
+	// Get the norm of the element plane and do some initialization
+	for(int k=0; k<3; ++k)
+		x[k] = xx[k] = 0.0;
+	// Let's rotate the original Enorm to the BB coordinate system 
+	// along the y axis
+	x[0] = cos(E->GetAngle(0))*center[0] + sin(E->GetAngle(0))*center[2];
+	x[1] = center[1];
+	x[2] = -sin(E->GetAngle(0))*center[0] + cos(E->GetAngle(0))*center[2];	
+	// Let's rotate the BB coordinate system to the BBB coordinate system
+	// along the x axis
+	xx[0] = x[0];
+	xx[1] = cos(E->GetAngle(1))*x[1] - sin(E->GetAngle(1))*x[2];
+	xx[2] = sin(E->GetAngle(1))*x[1] + cos(E->GetAngle(1))*x[2];
+	TranZ = xx[2];
+	E->SetAngle(2, TranZ);
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Task: RouletteWheelSelection(double *chances, int numOfCases)
+Programing: This function makes a choice by RWS that is based on 
+			velocity contribution on each of the connected planes.
+02/2006 PCH 
+**************************************************************************/
+int RandomWalk::RouletteWheelSelection(double *chances, int numOfCases)
+{
+	int whichOne = -1000; // Set it meaningless
+	double* roulette;
+	roulette = new double [numOfCases] ();
+
+	MakeRoulette(chances, roulette, numOfCases);
+	whichOne = Select(roulette, numOfCases);
+
+	delete [] roulette;
+
+	return whichOne; 
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Task: MakeRoulette(double* fit, double* roulette, int numOfCases)
+Programing: This function makes a roulette according to chances (fit)
+02/2006 PCH 
+**************************************************************************/
+void RandomWalk::MakeRoulette(double* fit, double* roulette, int numOfCases)
+{
+	double* pi = NULL; double* fitProbability = NULL;
+	double fitTotal = 0.0, ProbTotal = 0.0;
+
+	// Create memory for these two arrays dynamically
+	pi = new double [numOfCases] (); fitProbability = new double [numOfCases] ();
+
+	for(int i=0; i<numOfCases; ++i)
+	{
+		// Function modification can be done here. 
+		pi[i] = 1./exp(-fit[i]);
+		fitTotal += pi[i];
+	}
+	
+	// Making Roulette
+	for(int i=0; i<numOfCases; ++i)
+	{
+		fitProbability[i] = pi[i] / fitTotal;
+		ProbTotal += fitProbability[i];
+		roulette[i] = ProbTotal;
+	}
+
+	delete [] pi; delete [] fitProbability;	
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Task: Select(double* roulette)
+Programing: This function select a choice out of the roulette
+02/2006 PCH 
+**************************************************************************/
+int RandomWalk::Select(double* roulette, int numOfCases)
+{
+	double probability;
+	
+	probability = randomZeroToOne();
+	for(int i=0; i<numOfCases; ++i)
+		if(probability < roulette[i])
+			return (i);
+}
 
 /**************************************************************************
 FEMLib-Method: 
@@ -2978,9 +3357,11 @@ Programing:
 void PCTRead(string file_base_name)
 {
     CFEMesh* m_msh = NULL;
-  if(fem_msh_vector.size()==0)
-    return; //OK
-    m_msh = fem_msh_vector[0];  // Something must be done later on here.
+  
+	if(fem_msh_vector.size()==0)
+		return; //OK
+    
+	m_msh = fem_msh_vector[0];  // Something must be done later on here.
 
     // File handling
     string pct_file_name;
@@ -2992,9 +3373,8 @@ void PCTRead(string file_base_name)
     int End = 1;
     string strbuffer;    
     RandomWalk* RW = NULL;
-#ifdef RANDOM_WALK	//WW
-	if(!(m_msh->PT))
-		m_msh->PT = new RandomWalk(); //PCH
+#ifdef RANDOM_WALK	
+	m_msh->PT = new RandomWalk(); //PCH
     RW = m_msh->PT;
 #endif
  

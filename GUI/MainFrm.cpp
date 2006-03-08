@@ -7,6 +7,7 @@
 #include ".\mainfrm.h"
 #include "GeoSysDoc.h"
 #include "gs_graphics.h"
+#include "COGLPickingView.h"	//PCH
 #include "afxdisp.h"
 
 // GeoSys-GUI
@@ -46,7 +47,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
     ON_COMMAND(ID_OPENGLVIEWFORPICKING_OPENUPOPENGLWINDOW,OnViewOGLPicking)
     ON_COMMAND(ID_VIEWCONTROL,OnViewControl)
     ON_COMMAND(ID_OPENGLVIEWFORPICKING_PICKINGCONTROLPANEL, OnPickingHandle)
-    //ON_COMMAND(ID_PICKEDPROPERTY, OnPickedProperty)
+    ON_COMMAND(ID_PICKEDPROPERTY, OnPickedProperty)
     ON_COMMAND(ID_POINT, OnPointDlg)
     ON_UPDATE_COMMAND_UI(ID_POINT, OnUpdatePointDlg) //OK
 	ON_COMMAND(ID_POLYLINE, OnPolylineDlg)
@@ -59,6 +60,10 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_COMMAND(ID_PCS, OnPCSView)
 	ON_COMMAND(ID_CONTROL_PANEL, OnControlPanel) //OK
 	ON_COMMAND(ID_GEO, OnGEOView)
+	ON_COMMAND(ID_SELECT, OnSelectInPicking) //PCH
+	ON_COMMAND(ID_DESELECT, OnDeselectInPicking)
+	ON_COMMAND(ID_SELECTALL, OnSelectAllInPicking)
+	ON_COMMAND(ID_DESELECTALL, OnDeselectAllInPicking)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -929,4 +934,81 @@ void CMainFrame::OnGEOView()
 {
   //m_bIsGEOViewOpen = false;
   OnViewGEOCreate();
+}
+/**************************************************************************
+GeoSysGUI-Method: 
+Task: 
+Programing:
+01/2006 OK Implementation
+**************************************************************************/
+void CMainFrame::OnSelectInPicking()
+{
+	// Update the change by redrawing
+	CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+
+	// Get the active MDI child window.
+	CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+
+	// Get the active view attached to the active MDI child window.
+	COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
+
+	pView->OnSelectInPicking();
+}
+
+/**************************************************************************
+GeoSysGUI-Method: 
+Task: 
+Programing:
+01/2006 OK Implementation
+**************************************************************************/
+void CMainFrame::OnDeselectInPicking()
+{
+	// Update the change by redrawing
+	CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+
+	// Get the active MDI child window.
+	CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+
+	// Get the active view attached to the active MDI child window.
+	COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
+
+	pView->OnDeselectInPicking();
+}
+/**************************************************************************
+GeoSysGUI-Method: 
+Task: 
+Programing:
+01/2006 OK Implementation
+**************************************************************************/
+void CMainFrame::OnSelectAllInPicking()
+{
+	// Update the change by redrawing
+	CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+
+	// Get the active MDI child window.
+	CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+
+	// Get the active view attached to the active MDI child window.
+	COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
+
+	pView->OnSelectAllInPicking();
+}
+/**************************************************************************
+GeoSysGUI-Method: 
+Task: 
+Programing:
+01/2006 OK Implementation
+**************************************************************************/
+void CMainFrame::OnDeselectAllInPicking()
+{
+	// Update the change by redrawing
+	CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+
+	// Get the active MDI child window.
+	CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+
+	// Get the active view attached to the active MDI child window.
+	COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
+
+	pView->OnDeselectAllInPicking();
 }

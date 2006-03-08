@@ -4945,7 +4945,12 @@ int CRFProcess::GetNodeValueIndex(string var_name)
       return nidx;
     }
   }
-  cout << "Error in CRFProcess::GetNodeValueIndex - " << pcs_type_name << ", " << var_name << ", NIDX = " << nidx << endl;
+
+  // Suppress the following error message when Fluid Momentum process is on.
+  CRFProcess* m_pcs = PCSGet("FLUID_MOMENTUM");
+  if(m_pcs) ;	// Don't print any error message.
+  else
+	cout << "Error in CRFProcess::GetNodeValueIndex - " << pcs_type_name << ", " << var_name << ", NIDX = " << nidx << endl;
   //abort();
   return nidx;
 }

@@ -337,6 +337,15 @@ int LOPTimeLoop_PCS(double*dt_sum)
         }
       }
 	  //--------------------------------------------------------------------
+/*
+#ifdef _FEMPCHDEBUG_
+	// PCH Let's monitor what's going on in the FEM
+	// This messagebox is for debugging the primary variables at every time step.
+	// Should combine with the picking...
+	CWnd * pWnd = NULL;
+	pWnd->MessageBox("Richard's Flow is just solved!!!","Debug help", MB_ICONINFORMATION);
+#endif
+*/
       m_pcs = PCSGet("TWO_PHASE_FLOW");
       if(m_pcs&&m_pcs->selected){
         for(i=0;i<no_processes;i++){
@@ -421,6 +430,13 @@ int LOPTimeLoop_PCS(double*dt_sum)
       }
 
 		// PCH The velocity process ends here.
+#ifdef _FEMPCHDEBUG_
+	// PCH Let's monitor what's going on in the FEM
+	// This messagebox is for debugging the primary variables at every time step.
+	// Should combine with the picking...
+	CWnd * pWnd = NULL;
+	pWnd->MessageBox("Velocity is just solved!!!","Debug help", MB_ICONINFORMATION);
+#endif
     //----------------------------------------------------------------------
     // PCH Random Walk Particle Tracking starts here.
     m_pcs = PCSGet("RANDOM_WALK"); 
@@ -439,17 +455,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
 #endif
 	}
 	
-#ifdef _FEMPCHDEBUG_
-	// PCH Let's monitor what's going on in the FEM
-	// This messagebox is for debugging the primary variables at every time step.
-	// Should combine with the picking...
-	CWnd * pWnd = NULL;
-	pWnd->MessageBox("Debug for this time step!!!","Debug help", MB_ICONINFORMATION);
-	free(pWnd);
-	// PCH Monitoring ends here
-#endif
 #ifdef OLD
-		// PCH The velocity process ends here.
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	if(T_Process) //WW
 	{

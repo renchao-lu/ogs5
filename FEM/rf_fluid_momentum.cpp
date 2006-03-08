@@ -1,3 +1,5 @@
+// Some change
+
 /**************************************************************************
 FEMLib-Object: 
 Task: MediumProperties
@@ -12,8 +14,54 @@ Programing:
 using namespace std;
 
 #include "rf_fluid_momentum.h"
+#include "rf_random_walk.h"
 #include "elements.h" //OK
-//#include "rf_pcs.h"
+
+/**************************************************************************
+FEMLib-Method: ThreeComponet
+Task: constructor
+Programing:
+02/2006 PCH Implementation
+last modification:
+**************************************************************************/
+PlaneSet::PlaneSet(void)
+{
+	eleIndex = 0;
+	ratio = 0.0;
+	for(int i=0; i<3; ++i)
+		V[i] = norm[i] = 0.0;
+}
+
+/**************************************************************************
+FEMLib-Method: CrossRoad
+Task: constructor
+Programing:
+01/2006 PCH Implementation
+last modification:
+**************************************************************************/
+CrossRoad::CrossRoad(void)
+{
+	Index = 0;
+	numOfThePlanes = 0;
+	plane = NULL;
+}
+
+CrossRoad::~CrossRoad(void)
+{
+	if(plane) delete [] plane;
+}
+
+/**************************************************************************
+FEMLib-Method: CreatePlaneSet
+Task: Create a set of PlaneSet
+Programing:
+02/2006 PCH Implementation
+last modification:
+**************************************************************************/
+void CrossRoad::CreatePlaneSet(const int index)
+{
+	plane = new PlaneSet[index] ();
+}
 
 /**************************************************************************
 FEMLib-Method: CFluidMomentum
@@ -25,6 +73,7 @@ last modification:
 CFluidMomentum::CFluidMomentum(void)
 {
 	m_pcs = NULL;
+	RWPTSwitch = 0;		// Set to be no
 }
 
 /**************************************************************************
@@ -36,7 +85,7 @@ last modification:
 **************************************************************************/
 CFluidMomentum::~CFluidMomentum(void)
 {
-	
+
 }
 
 /**************************************************************************
@@ -65,6 +114,14 @@ double CFluidMomentum::Execute()
 			SolveDarcyVelocityOnNode();
 	}
 
+	// Just one time execution. Needs improvement later on.
+	m_pcs = PCSGet("RANDOM_WALK");
+	if(m_pcs && RWPTSwitch == 0)
+	{
+		ConstructFractureNetworkTopology();
+		RWPTSwitch = 1;
+	}
+
 	return pcs_error;
 }
 
@@ -83,11 +140,39 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 	
 	fem = new CFiniteElementStd(m_pcs, m_msh->GetCoordinateFlag()); 
 
+	// Checking the coordinateflag for proper solution.
+	int coordinateflag = m_msh->GetCoordinateFlag();
+	int dimension = 0;
+	int axis = 0;
+	if(coordinateflag == 10)
+	{
+		dimension = 1;	axis = 0;	// x only
+	}
+	else if(coordinateflag == 11)
+	{
+		dimension = 1;	axis = 1;	// y only
+	}
+	else if(coordinateflag == 12)
+	{
+		dimension = 1;	axis = 2;	// z only
+	}
+	else if(coordinateflag == 21)
+	{
+		dimension = 2;	axis = 1;	// x, y only
+	}
+	else if(coordinateflag == 22)
+	{
+		dimension = 2;	axis = 2;	// x, z only
+	}
+	else if(coordinateflag == 32)
+	{
+		dimension = 3;	axis = 2;	// x, y, z only
+	}
 
 	// Loop over three dimension to solve three velocity components
 	for (int phase=0;phase<GetRFProcessNumPhases();phase++)  
 	{
-		for(int dimension=0; dimension < 3; ++dimension)
+		for(int d=0; d < dimension; ++d)
 		{
 		
 			/* Initializations */
@@ -100,7 +185,7 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
                 if (elem->GetMark()) // Marked for use
                 {
                     fem->ConfigElement(elem);
-                    fem->Assembly(dimension);
+                    fem->Assembly(d);
                 } 
             }
 
@@ -108,9 +193,24 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 			ExecuteLinearSolver(m_pcs->eqs);
 
             /* Store solution vector in model node values table */
-            nidx1 = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[dimension])+1;
-     		for(int j=0;j<m_pcs->eqs->dim;j++)
-               m_pcs->SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,m_pcs->eqs->x[j]);
+			if(dimension == 1)
+				nidx1 = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[axis])+1;
+			else if(dimension == 2)
+			{
+				if(axis == 1)	// x,y only
+					nidx1 = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[(axis-d+1)%dimension])+1;
+				else if(axis == 2)	// x,z only
+					nidx1 = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[(axis-d+1)%3])+1;
+				else
+					abort();	// Just stop something's wrong.
+			}
+			else if(dimension == 3)
+				nidx1 = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[d])+1;
+			else
+				abort();	// Just stop something's wrong.
+     		
+			for(int j=0;j<m_pcs->eqs->dim;j++)
+               m_pcs->SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,m_pcs->eqs->x[j]);	
 		}
     
         // Obtain element-based velocity
@@ -186,6 +286,357 @@ void CFluidMomentum::Create()
 		pcs_nonlinear_iteration_tolerance = m_num->nls_error_tolerance;
 	}
 }
+
+
+
+
+/**************************************************************************
+FEMLib-Method: void ConstructFractureNetworkTopology()
+Task: The function constructs the joint edges and crossroad nodes.
+Programing:
+01/2006 PCH Implementation
+last modification:
+**************************************************************************/
+void CFluidMomentum::ConstructFractureNetworkTopology()
+{
+	// Mount the process and the mesh
+	m_pcs = PCSGet("FLUID_MOMENTUM");
+	CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
+	double tolerance = 1e-12;
+
+	// Checking the node is a crossroad starts here
+	// Loop over all the nodes
+	for(int i=0; i<m_msh->nod_vector.size(); ++i)
+	{
+		CNode* thisNode = m_msh->nod_vector[i];
+		int NumOfNeighborElements = thisNode->connected_elements.size();
+			
+		// Let's get the norm of the first connected element plane.
+		double norm[3];
+		int index = thisNode->connected_elements[0];
+		// Let's store the index of the reference element 
+		// to the connected_planes of thisNode
+		thisNode->connected_planes.push_back(index);
+		if(m_msh->GetCoordinateFlag() != 32)
+		{
+			norm[0] = 0.0; norm[1] = 0.0; norm[2] = 1.0;
+		}
+		else
+		{
+			for(int j=0; j<3; ++j)
+				norm[j] = m_msh->ele_vector[index]->getTransformTensor(j+6);	
+		}	
+
+		// Let's compare this norm with other norms of the connected elements
+		for(int j=1; j<NumOfNeighborElements; ++j)
+		{
+			double normOther[3];
+			// Let's get the element one by one.
+			int indexOther = thisNode->connected_elements[j];
+			if(m_msh->GetCoordinateFlag() != 32)
+			{
+				normOther[0] = 0.0; normOther[1] = 0.0; normOther[2] = 1.0;
+			}
+			else
+				for(int k=0; k<3; ++k)
+					normOther[k] = m_msh->ele_vector[indexOther]->getTransformTensor(k+6);
+
+			// Check two norms are same.
+			if( fabs(norm[0]-normOther[0]) < tolerance && fabs(norm[1]-normOther[1]) < tolerance 
+				&& fabs(norm[2]-normOther[2]) < tolerance )
+				; // Two elements stay on the same plane
+			else
+			{
+				thisNode->crossroad = 1;
+				// I am going to store all the element indeces which are different from
+				// the reference element. Then, I will get rid of the duplicate elements 
+				// of the same plane.
+				int indexOther = -1;
+				indexOther = thisNode->connected_elements[j];
+				thisNode->connected_planes.push_back(indexOther);
+			}	
+		}
+	
+		// Get rid of duplicates of the elements that have the same norm for the potential crossroads
+		// This works great with h_frac example in RWPT
+		if(thisNode->crossroad == 1)
+		{
+			// Let's get rid of duplicates of the elements on the same plane
+			int numOfPlanesAtCrossroad = thisNode->connected_planes.size();
+			for(int j=0; j<numOfPlanesAtCrossroad; ++j)
+			{
+				double normOther[3];
+				// Let's get the element one by one.
+				int indexOther = thisNode->connected_planes[j];
+				if(m_msh->GetCoordinateFlag() != 32)
+				{
+					normOther[0] = 0.0; normOther[1] = 0.0; normOther[2] = 1.0;
+				}
+				else
+					for(int k=0; k<3; ++k)
+						normOther[k] = m_msh->ele_vector[indexOther]->getTransformTensor(k+6);
+			
+				for(int l=j+1; l<numOfPlanesAtCrossroad; ++l)
+				{
+					double normAnother[3];
+					// Let's get the element one by one.
+					int indexAnother = thisNode->connected_planes[l];
+					if(m_msh->GetCoordinateFlag() != 32)
+					{
+						normAnother[0] = 0.0; normAnother[1] = 0.0; normAnother[2] = 1.0;
+					}
+					else
+						for(int k=0; k<3; ++k)
+							normAnother[k] = m_msh->ele_vector[indexAnother]->getTransformTensor(k+6);
+
+					// Check two norms are same.
+					// If two norms of the elemenets are same,
+					if( fabs(normOther[0]-normAnother[0]) < tolerance && fabs(normOther[1]-normAnother[1]) < tolerance 
+						&& fabs(normOther[2]-normAnother[2]) < tolerance )
+					{
+						// Two elements stay on the same plane
+						for(int m = l; m < (numOfPlanesAtCrossroad - 1); ++m)
+							thisNode->connected_planes[m] = thisNode->connected_planes[m+1];
+						
+						// Erase the element of the vector and adjust the number of the planes at crossroad
+						thisNode->connected_planes.erase(thisNode->connected_planes.begin() + numOfPlanesAtCrossroad -1);
+						numOfPlanesAtCrossroad = thisNode->connected_planes.size();
+						--l;	// Very important. Huh.
+					}
+				} 	
+			}
+		}
+		// Now we got the number of connected planes on nodes.
+		// Getting rid of duplicates ends here.
+
+		// Do some proper projection of velocity computed from Fluid Momentum.
+		// Get the fluid velocity for this node
+		double V[3];
+		V[0] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);  
+        V[1] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);  
+        V[2] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);  
+		if(thisNode->crossroad == 0)
+		{
+			// Let's solve the projected velocity on the element plane
+			// by  Vp = norm X (V X norm) assuming norm is a unit vector
+			double VxNorm[3], Vp[3];
+			CrossProduction(V,norm,VxNorm);
+			CrossProduction(norm,VxNorm, Vp);
+
+			// Store the projected velocity back to the node velocity
+			m_pcs->SetNodeValue(i,m_pcs->GetNodeValueIndex("VELOCITY1_X")+1,Vp[0]);
+			m_pcs->SetNodeValue(i,m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1,Vp[1]);
+			m_pcs->SetNodeValue(i,m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1,Vp[2]);	
+		}
+		else 
+		{
+			// For the velocity of the node that has more than one connected planes.
+			double Vmag = 0.0;
+			double* CenterOfEle = NULL;
+			// Mount cross
+			CrossRoad* thisCross;
+			thisCross = new CrossRoad();
+			thisCross->numOfThePlanes = thisNode->connected_planes.size();
+			thisCross->CreatePlaneSet(thisCross->numOfThePlanes);
+			// Loop over the number of connected planes
+			for(int j=0; j< thisCross->numOfThePlanes; ++j)
+			{
+				// Some local variables within this else
+				double norm[3], VxNorm[3], Vp[3];
+				// Solve for the norm of this plane.	
+				int index = thisNode->connected_planes[j];
+				if(m_msh->GetCoordinateFlag() != 32)
+				{
+					thisCross->plane[j].norm[0]=norm[0] = 0.0; 
+					thisCross->plane[j].norm[1]=norm[1] = 0.0; 
+					thisCross->plane[j].norm[2]=norm[2] = 1.0;
+				}
+				else
+					for(int k=0; k<3; ++k)					
+						thisCross->plane[j].norm[k] = norm[k] = m_msh->ele_vector[index]->getTransformTensor(k+6);
+
+				// Store the position vector defined below 
+				CenterOfEle = m_msh->ele_vector[index]->GetGravityCenter();
+				thisCross->plane[j].Eele[0] = CenterOfEle[0] - thisNode->X();
+				thisCross->plane[j].Eele[1] = CenterOfEle[1] - thisNode->Y();
+				thisCross->plane[j].Eele[2] = CenterOfEle[2] - thisNode->Z();
+
+				// Solve the velocity contribution for this plane.
+				CrossProduction(V,norm,VxNorm);
+				CrossProduction(norm,VxNorm, Vp);
+				for(int k=0; k<3; ++k) 
+					thisCross->plane[j].V[k] = Vp[k];
+				
+				// For ratio and Vmag
+				thisCross->plane[j].ratio = sqrt(Vp[0]*Vp[0] + Vp[1]*Vp[1] + Vp[2]*Vp[2]);
+				Vmag += thisCross->plane[j].ratio;
+				// Update the eleIndex for this plane
+				thisCross->plane[j].eleIndex = thisNode->connected_planes[j];
+			}
+			// Let's sort the contribution of each plane and the index of this node
+			for(int j=0; j< thisCross->numOfThePlanes; ++j)
+				thisCross->plane[j].ratio = thisCross->plane[j].ratio / Vmag; 
+			thisCross->Index = i;
+			// velocity for each connected planes ends here.
+
+			// Extract the real crossroads from all the potential crossroads.
+			// First, we will solve vectors from each potential crossroad to one of the center
+			// of the connected elements.
+			// Now some dot product.
+			for(int j=0; j< thisCross->numOfThePlanes; ++j)
+			{
+				double angle = 0.0;
+				double a[3], b[3];
+				for(int p=0; p<3; ++p)
+				{
+					a[p] = thisCross->plane[j].Eele[p];
+					b[p] = thisCross->plane[j].V[p];
+				}
+				// Let's normalize these two vectors first.
+				NormalizeVector(a,3); NormalizeVector(b,3);
+				double dotProduct = a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+
+				angle = acos(dotProduct);
+	
+				// If this angle is bigger than Pi/2 (90 degree),
+				// then this crossroad is not a realone.
+				if(angle > PI / 2.0)
+					thisNode->crossroad = 0;
+			} 
+			// Extraction ends here.
+				
+			// Now add this crossroad to the vector of all crossroads in the domain
+			if(thisNode->crossroad == 1)
+				crossroads.push_back(thisCross);	
+		}
+	}
+	// Checking the node is a crossroad ends here
+
+	// Checking the edge is a joint starts here
+	// Loop over all the edges
+	for(int i=0; i<m_msh->edge_vector.size(); ++i)
+	{
+		// Mount the nodes of the edge
+		vec<CNode*>theNodesOfThisEdge(3);
+		m_msh->edge_vector[i]->GetNodes(theNodesOfThisEdge);
+
+		// Do some proper projection of velocity computed from Fluid Momentum.
+		// Get the fluid velocity for this edge
+		double V[3], V0[3], V1[3];	
+		V0[0] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);  
+        V0[1] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);  
+        V0[2] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1); 
+		V1[0] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);  
+        V1[1] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);  
+        V1[2] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1); 
+		V[0] = (V0[0]+V1[0])/2.0; V[1] = (V0[1]+V1[1])/2.0; V[2] = (V0[2]+V1[2])/2.0;
+
+		if( theNodesOfThisEdge[0]->crossroad == 1 && theNodesOfThisEdge[1]->crossroad == 1 )
+		{
+			m_msh->edge_vector[i]->SetJoint(1);
+
+			// Constructing the connected elements of an edge starts here
+			int numOfCEfromNode0 = theNodesOfThisEdge[0]->connected_elements.size();
+			int numOfCEfromNode1 = theNodesOfThisEdge[1]->connected_elements.size();
+		
+			for(int j=0; j<numOfCEfromNode0; ++j)
+				for(int k=0; k<numOfCEfromNode1; ++k)
+				{
+					int indexOfCEfromNode0 = theNodesOfThisEdge[0]->connected_elements[j];
+					int indexOfCEfromNode1 = theNodesOfThisEdge[1]->connected_elements[k];
+					if( indexOfCEfromNode0 == indexOfCEfromNode1 )
+						m_msh->edge_vector[i]->connected_elements.push_back(indexOfCEfromNode0);
+				}
+			// Constructing the connected elements of an edge ends here
+
+			// Construct Joint vectors
+			// For the velocity of the edge that has more than one connected planes.
+			double Vmag = 0.0;
+			double* CenterOfEle = NULL;
+			CrossRoad* thisJoint;
+			thisJoint = new CrossRoad();
+			thisJoint->numOfThePlanes = m_msh->edge_vector[i]->connected_elements.size();
+			thisJoint->CreatePlaneSet(thisJoint->numOfThePlanes);
+
+			// Loop over the number of connected planes
+			for(int j=0; j< thisJoint->numOfThePlanes; ++j)
+			{
+				// Some local variables within this else
+				double norm[3], VxNorm[3], Vp[3];
+				// Solve for the norm of this plane.	
+				int index = m_msh->edge_vector[i]->connected_elements[j];
+				if(m_msh->GetCoordinateFlag() != 32)
+				{
+					norm[0] = 0.0; norm[1] = 0.0; norm[2] = 1.0;
+				}
+				else
+					for(int k=0; k<3; ++k)					
+						thisJoint->plane[j].norm[k] = norm[k] = m_msh->ele_vector[index]->getTransformTensor(k+6);
+
+				// Store the position vector defined below 
+				CenterOfEle = m_msh->ele_vector[index]->GetGravityCenter();
+				// I am using the center position of the joint
+				thisJoint->plane[j].Eele[0] = CenterOfEle[0] - (theNodesOfThisEdge[0]->X()+theNodesOfThisEdge[1]->X())/2.0;
+				thisJoint->plane[j].Eele[1] = CenterOfEle[1] - (theNodesOfThisEdge[0]->Y()+theNodesOfThisEdge[1]->Y())/2.0;
+				thisJoint->plane[j].Eele[2] = CenterOfEle[2] - (theNodesOfThisEdge[0]->Z()+theNodesOfThisEdge[1]->Z())/2.0;
+
+				// Solve the velocity contribution for this plane.
+				CrossProduction(V,norm,VxNorm);
+				CrossProduction(norm,VxNorm, Vp);
+				for(int k=0; k<3; ++k) 
+					thisJoint->plane[j].V[k] = Vp[k];
+				
+				// For ratio and Vmag
+				thisJoint->plane[j].ratio = sqrt(Vp[0]*Vp[0] + Vp[1]*Vp[1] + Vp[2]*Vp[2]);
+				Vmag += thisJoint->plane[j].ratio;
+				// Update the eleIndex for this plane
+				thisJoint->plane[j].eleIndex = m_msh->edge_vector[i]->connected_elements[j];	
+			}
+			// Let's sort the contribution of each plane and the index of this node
+			for(int j=0; j< thisJoint->numOfThePlanes; ++j)
+				thisJoint->plane[j].ratio = thisJoint->plane[j].ratio / Vmag; 
+			thisJoint->Index = i;
+			// velocity for each connected planes ends here.
+
+			// Extract the real joints from all the potential joints.
+			// First, we will solve vectors from each potential joint to one of the center
+			// of the connected elements.
+			// Now some dot product.
+			for(int j=0; j< thisJoint->numOfThePlanes; ++j)
+			{
+				double angle = 0.0;
+				double a[3], b[3];
+				for(int p=0; p<3; ++p)
+				{
+					a[p] = thisJoint->plane[j].Eele[p];
+					b[p] = thisJoint->plane[j].V[p];
+				}
+				// Let's normalize these two vectors first.
+				NormalizeVector(a,3); NormalizeVector(b,3);
+				double dotProduct = a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+
+				angle = acos(dotProduct);
+	
+				// If this angle is bigger than Pi/2 (90 degree),
+				// then this crossroad is not a realone.
+				if(angle > PI / 2.0)
+					m_msh->edge_vector[i]->SetJoint(0);
+			} 
+			// Extraction ends here.
+				
+			// Now add this crossroad to the vector of all crossroads in the domain
+			if(m_msh->edge_vector[i]->GetJoint() == 1)
+				joints.push_back(thisJoint);	
+		}	
+	}
+	// Checking the edge is a joint ends here
+
+	// Compute the angles of the element for rotation.
+	// This process can be embedded into CElem class when in need.
+	for(int i=0; i< m_msh->ele_vector.size(); ++i)
+		m_msh->PT->SolveAnglesOfTheElment(m_msh->ele_vector[i]);
+}
+
 void FMRead(string file_base_name)
 {
     // Fluid_Momentum memory allocation is moved here. by PCH
@@ -229,3 +680,4 @@ void DATWriteHETFile(const char *file_name)
     // Let's close it, now
     fclose(tet_file);
 }
+

@@ -3687,15 +3687,14 @@ MathLib-Method:
 Task: 
 Programing:
 02/2005 WW Implementation
+01/2006 PCH Correct the sign.
 Last modified:
 **************************************************************************/
 void GradShapeFunctionLine(double *dN1, const double *u)
 {
   u = u;
-//  dN1[0] = -0.5;
-//  dN1[1] = 0.5;
-  dN1[0] = 0.5;
-  dN1[1] = -0.5;
+  dN1[0] = 0.5;	// PCH switched this for having positive sign of velocity
+  dN1[1] = -0.5;		// and have WW in agreement.
 }
 
 /***************************************************************************

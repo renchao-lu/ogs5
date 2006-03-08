@@ -92,6 +92,7 @@ CElement::CElement(int CoordFlag, const int order)
        D_Flag = 41;
      F_Flag = H_Process;
      T_Flag = T_Process;
+	 PT_Flag = 0;	// PCH Initialize to be no RWPT. 
      
 
 }
@@ -197,6 +198,16 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
 	   }
     }
 
+	if(PT_Flag == 1)	// PCH
+	{
+
+       for(i=0; i<nNodes; i++)
+       {
+           X[i] = MeshElement->nodes[i]->X();  
+		   Y[i] = MeshElement->nodes[i]->Y();       
+		   Z[i] = MeshElement->nodes[i]->Z();        
+	   }
+    }
 }
 
 /**************************************************************************

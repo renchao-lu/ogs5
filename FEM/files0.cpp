@@ -419,7 +419,7 @@ int ReadData ( char *dateiname )
 /* ROCKFLOW - Funktion: CreateFileData
                                                                           */
 /* Aufgabe:
-   Erstellt Datenstruktur für Leseroutine ReadData
+   Erstellt Datenstruktur f? Leseroutine ReadData
                                                                           */
 /* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    E char *datei: Dateiname mit Extension

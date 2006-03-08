@@ -159,6 +159,7 @@ class CFiniteElementStd:public CElement
      //O: Liquid flow
      //R: Richards flow
      //A: Gas flow
+	 //F: Fluid Momentum
      ProcessType PcsType;
      //-----------------------------------------------------
      // Local Assembly

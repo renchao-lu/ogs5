@@ -40,6 +40,7 @@
 #include "rf_pcs.h"
 #include "rf_tim_new.h"
 #include "rf_bc_new.h"
+#include "rf_fluid_momentum.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -113,11 +114,6 @@ COGLPickingView::COGLPickingView()
     // Initialize scale factor
     ScaleFactor = longest_axis = 0.0;
   
-	// Initialize to the vector point for getting rid of the .rfi file for the moment
-	gli_points_vector_view.clear();
-    gli_points_vector_view = GetPointsVector();
-    points_vectorlength = (int)gli_points_vector_view.size();
-
 	// Initialize ColorSwitch
 	theApp.colorSwitch = TRUE;
 
@@ -126,6 +122,10 @@ COGLPickingView::COGLPickingView()
 	theApp.mMouseZoomMode = FALSE;
 	theApp.mMouseMoveMode = FALSE;
 	theApp.mEditMode = FALSE;
+
+	// Initialize SwitchManager
+	for(int i=0; i<9; ++i)
+		SwitchManager[i] = 0;
 }
 
 COGLPickingView::~COGLPickingView()
@@ -260,66 +260,176 @@ void COGLPickingView::OnDrawGL(void)
 
     AssiginSymbolLength();
 
+	// None of the objects are checked for drawing.
+	if(SomeSwitchOn() != 0)
+		InitializeScalesForOpenGL();
+
 	if(theApp.GLINodeSwitch == 1)
-    {
-        //Initialize scaling
-        InitializeScalesForOpenGL();    // There must be somthing to be done here later on.
-		DrawGLINode();  
-    }
+		DrawGLINode();
+    
 	if (theApp.PolylineSwitch == 1)
-    {
-        //Initialize scaling
-        InitializeScalesForOpenGL();    // There must be somthing to be done here later on.
 		DrawBoundary();
-    }
+  
     if (theApp.SurfaceSwitch == 1)
-    {
-        //Initialize scaling
-        InitializeScalesForOpenGL();    // There must be somthing to be done here later on.
 		DrawSurface();
-    }
+    
     if (theApp.VolumeSwitch == 1)
-    {
-        //Initialize scaling
-        InitializeScalesForOpenGL();    // There must be somthing to be done here later on.
 		DrawVolume();
-    }
+    
 	if(theApp.RFINodeSwitch == 1)
-    {
-        //Initialize scaling
-        InitializeScalesForOpenGL();    // There must be somthing to be done here later on.
 		DrawRFINode();
-    }
+    
 	if (theApp.ElementSwitch == 1)
-    {
-        //Initialize scaling
-        InitializeScalesForOpenGL();    // There must be somthing to be done here later on.
 		DrawElement();
-    }
+    
 	if (theApp.ReferenceSwitch == 1)
-    {
-        //Initialize scaling
-        InitializeScalesForOpenGL();    // There must be somthing to be done here later on.
 		DrawReference();
-    }
+    
     // Draw Vectors
     if(theApp.VelocitySwitch == 1)
-    {  
-        //Initialize scaling
-        InitializeScalesForOpenGL();  
         DrawVectorOnNode();
-    }  
+     
     // Draw Particles
     if(theApp.ParticleSwitch == 1)
-    {
-        //Initialize scaling
-        InitializeScalesForOpenGL();  
         DrawParticles();
-    }
+
+	// Draw the vectors of crossroads
+	if(theApp.CrossroadSwitch == 1)
+		DrawVectorOnCrossroads();
+
+	// For graphical debug
+	if(theApp.GDebugSwitch == 1)
+		DrawGDebug();
 
 	glPopMatrix();
 }
 
+int COGLPickingView::SomeSwitchOn()
+{
+	int SumOfSwitchOns = 0;
+	for(int i=0; i<9; ++i)
+		SumOfSwitchOns += SwitchManager[i];
+
+	return SumOfSwitchOns;
+}
+
+void COGLPickingView::TurnOnTheSwitches()
+{
+	if(SwitchManager[0] == 1)
+	{
+		SwitchManager[0] = 0;
+		theApp.GLINodeSwitch = 1;
+	}
+    
+	if (SwitchManager[1] == 1)
+	{
+		SwitchManager[1] = 0;
+		theApp.PolylineSwitch = 1;
+	}
+  
+    if (SwitchManager[2] == 1)
+	{
+		SwitchManager[2] = 0;
+		theApp.SurfaceSwitch =1;
+	}
+    
+    if (SwitchManager[3] == 1)
+	{
+		SwitchManager[3] = 0;
+		theApp.VolumeSwitch = 1;
+	}
+    
+	if(SwitchManager[4] == 1)
+	{
+		SwitchManager[4] = 0;
+		theApp.RFINodeSwitch = 1;
+	}
+    
+	if (SwitchManager[5] == 1)
+	{
+		SwitchManager[5] = 0;
+		theApp.ElementSwitch = 1;
+	}
+    
+	if (SwitchManager[6] == 1)
+	{
+		SwitchManager[6] = 0;
+		theApp.ReferenceSwitch = 1;
+	}
+    
+    // Draw Vectors
+    if(SwitchManager[7] == 1)
+	{
+		SwitchManager[7] = 0;
+        theApp.VelocitySwitch = 1;
+	}
+     
+    // Draw Particles
+    if(SwitchManager[8] == 1)
+	{
+		SwitchManager[8] = 0;
+        theApp.ParticleSwitch = 1;
+	}
+}
+
+void COGLPickingView::TurnOffTheSwitches()
+{
+	if(theApp.GLINodeSwitch == 1)
+	{
+		SwitchManager[0] = 1;
+		theApp.GLINodeSwitch = 0;
+	}
+    
+	if (theApp.PolylineSwitch == 1)
+	{
+		SwitchManager[1] = 1;
+		theApp.PolylineSwitch = 0;
+	}
+  
+    if (theApp.SurfaceSwitch == 1)
+	{
+		SwitchManager[2] = 1;
+		theApp.SurfaceSwitch =0;
+	}
+    
+    if (theApp.VolumeSwitch == 1)
+	{
+		SwitchManager[3] = 1;
+		theApp.VolumeSwitch = 0;
+	}
+    
+	if(theApp.RFINodeSwitch == 1)
+	{
+		SwitchManager[4] = 1;
+		theApp.RFINodeSwitch = 0;
+	}
+    
+	if (theApp.ElementSwitch == 1)
+	{
+		SwitchManager[5] = 1;
+		theApp.ElementSwitch = 0;
+	}
+    
+	if (theApp.ReferenceSwitch == 1)
+	{
+		SwitchManager[6] = 1;
+		theApp.ReferenceSwitch = 0;
+	}
+    
+    // Draw Vectors
+    if(theApp.VelocitySwitch == 1)
+	{
+		SwitchManager[7] = 1;
+        theApp.VelocitySwitch = 0;
+	}
+     
+    // Draw Particles
+    if(theApp.ParticleSwitch == 1)
+	{
+		SwitchManager[8] = 1;
+        theApp.ParticleSwitch = 0;
+	}
+}
 
 void COGLPickingView::DrawGLINode(void)
 {
@@ -355,23 +465,14 @@ void COGLPickingView::DrawGLINode(void)
     for(int j=0; j < theApp->hitsGLINodeTotal; ++j)
 	{
 		glColor3f(0.0, 1.0, 0.0) ;
-        
-        CGLPoint real, gl;
-		/* The process to get rid of .rfi file for the moment
-        real.x = GetNodeX(theApp->GLInodePickedTotal[j]); 
-        real.y = GetNodeY(theApp->GLInodePickedTotal[j]); 
-        real.z = GetNodeZ(theApp->GLInodePickedTotal[j]);
-		*/
+	
+		x = (gli_points_vector[theApp->GLInodePickedTotal[j]]->x-x_mid)/ScaleFactor; 
+        y = (gli_points_vector[theApp->GLInodePickedTotal[j]]->y-y_mid)/ScaleFactor;  
+        z = (gli_points_vector[theApp->GLInodePickedTotal[j]]->z-z_mid)/ScaleFactor;
 
-		real.x = gli_points_vector_view[theApp->GLInodePickedTotal[j]]->x;
-		real.y = gli_points_vector_view[theApp->GLInodePickedTotal[j]]->y;
-		real.z = gli_points_vector_view[theApp->GLInodePickedTotal[j]]->z;
-
-        gl = ConvertScaleToOpenGL(real);
-
-		centerX = gl.x;
-		centerY = gl.y;
-		centerZ = gl.z;
+		centerX = x;
+		centerY = y;
+		centerZ = z;
 
 		glBegin(GL_LINES);
 			glVertex3f(centerX+symbolLengthX, centerY, centerZ);
@@ -395,7 +496,7 @@ void COGLPickingView::DrawGLINodeScene(GLenum mode)
 	glInitNames();
     
     // Number of points is taken from geo_pnt.h
-	for(int i=0; i < (int)gli_points_vector_view.size(); ++i)
+	for(int i=0; i < (int)gli_points_vector.size(); ++i)
     {
         // Again, point id (index) is also taken from geo_pnt.h
         if (mode == GL_SELECT)
@@ -407,15 +508,12 @@ void COGLPickingView::DrawGLINodeScene(GLenum mode)
 		glColor3f(1.0, 1.0, 1.0) ;
 			
         // Here I make tempary coordinates computed as OpenGL coordinates understand
-        CGLPoint real, gl;
-		real.x = gli_points_vector_view[i]->x;
-		real.y = gli_points_vector_view[i]->y;
-		real.z = gli_points_vector_view[i]->z;
-
-        gl = ConvertScaleToOpenGL(real);
+		x = (gli_points_vector[i]->x-x_mid)/ScaleFactor; 
+        y = (gli_points_vector[i]->y-y_mid)/ScaleFactor;  
+        z = (gli_points_vector[i]->z-z_mid)/ScaleFactor;
         
 		glBegin(GL_POINTS);
-			glVertex3f( gl.x, gl.y, gl.z);
+			glVertex3f( x, y, z);
 		glEnd();
 
 		glPopMatrix() ;
@@ -453,27 +551,222 @@ void COGLPickingView::DrawRFINode(void)
 	}
 
 	// If nodes are selected, make'em green
+	// But only if velocity vector is not checked out.
+	// Draw symbol for selection
+	if(theApp->VelocitySwitch != 1)
+	{
+		float centerX = 0., centerY = 0., centerZ =0.;
+    
+		for(int j=0; j < theApp->hitsRFINodeTotal; ++j)
+		{
+			glColor3f(0.0, 1.0, 0.0) ;
+        
+			// This is termperary measure only for single mesh cass
+			m_msh = fem_msh_vector[0];
+
+			double x, y, z;
+
+			x = (m_msh->nod_vector[theApp->RFInodePickedTotal[j]]->X()-x_mid)/ScaleFactor; 
+			y = (m_msh->nod_vector[theApp->RFInodePickedTotal[j]]->Y()-y_mid)/ScaleFactor;  
+			z = (m_msh->nod_vector[theApp->RFInodePickedTotal[j]]->Z()-z_mid)/ScaleFactor;
+		
+			centerX = x; centerY = y; centerZ = z;
+
+			glBegin(GL_LINES);
+				glVertex3f(centerX+symbolLengthX, centerY, centerZ);
+				glVertex3f(centerX-symbolLengthX, centerY, centerZ);
+			glEnd();
+			glBegin(GL_LINES);
+				glVertex3f(centerX, centerY+symbolLengthY, centerZ);
+				glVertex3f(centerX, centerY-symbolLengthY, centerZ);
+			glEnd();
+			glBegin(GL_LINES);
+				glVertex3f(centerX, centerY, centerZ+symbolLengthZ);
+				glVertex3f(centerX, centerY, centerZ-symbolLengthZ);
+			glEnd();
+		}	
+	}
+}
+void COGLPickingView::DrawVectorOnCrossroads(void)
+{
+    double SquareOfMaximumOfMagnitudeOfVector = 0.0;
+
+    SquareOfMaximumOfMagnitudeOfVector = GetSquareOfMaximumOfMagnitudeOfVector();
+    
+    // Open the gate to processes 
+    m_pcs = PCSGet("FLUID_MOMENTUM");
+    m_msh = m_pcs->m_msh;
+
+	for(int i=0; i < theApp.hitsRFINodeTotal ; ++i)
+	{
+		// Find the index of crossroads
+		int crossIndex = 0;
+		for(int p=0; p< m_msh->fm_pcs->crossroads.size(); ++p)
+		{
+			if(theApp.RFInodePickedTotal[i] == m_msh->fm_pcs->crossroads[p]->Index)
+				crossIndex = p;
+		}
+		
+		// Looping one more which is times of the number of the planes around this crossroad.
+		for(int p=0; p< m_msh->fm_pcs->crossroads[crossIndex]->numOfThePlanes; ++p)
+		{
+			double V[3], unit[3], glOrigin[3], glTheOtherPoint[3];
+
+			for(int q=0; q<3; ++q)
+				V[q] = m_msh->fm_pcs->crossroads[crossIndex]->plane[p].V[q];
+			
+			double SquareOfMagnitudeOfVector = 0.0;
+
+			SquareOfMagnitudeOfVector = V[0]*V[0] + V[1]*V[1] + V[2]*V[2];
+
+			unit[0] = V[0] / sqrt(SquareOfMagnitudeOfVector); 
+			unit[1] = V[1] / sqrt(SquareOfMagnitudeOfVector); 
+			unit[2] = V[2] / sqrt(SquareOfMagnitudeOfVector);
+		
+			// Here I compute the other point from the known magnitude and direction
+			// This ratio is on the OpenGL scale
+			double ratio = SquareOfMagnitudeOfVector / SquareOfMaximumOfMagnitudeOfVector * LengthOfSideOfelement;
+
+			glOrigin[0] = (m_msh->nod_vector[theApp.RFInodePickedTotal[i]]->X()-x_mid)/ScaleFactor; 
+			glOrigin[1] = (m_msh->nod_vector[theApp.RFInodePickedTotal[i]]->Y()-y_mid)/ScaleFactor;  
+			glOrigin[2] = (m_msh->nod_vector[theApp.RFInodePickedTotal[i]]->Z()-z_mid)/ScaleFactor;
+
+			glTheOtherPoint[0] = unit[0]*ratio + glOrigin[0];
+			glTheOtherPoint[1] = unit[1]*ratio + glOrigin[1];
+			glTheOtherPoint[2] = unit[2]*ratio + glOrigin[2];
+        
+			// Now draw the line of the vector
+			glColor3f(0.0, 1.0, 1.0) ;  // Make the line cyan  
+
+			glBegin(GL_LINES);
+				//Draw the bottom triangle
+				glVertex3f(glOrigin[0], glOrigin[1], glOrigin[2]);
+				glVertex3f(glTheOtherPoint[0], glTheOtherPoint[1], glTheOtherPoint[2]);
+			glEnd();	
+        
+			//draw the wireframe sphere
+			// Let's walk to the center of the sphere	
+			glTranslatef(glTheOtherPoint[0], glTheOtherPoint[1], glTheOtherPoint[2]);	
+			gluSphere(obj, 0.05*LengthOfSideOfelement, 3, 3);
+			// Let's walk back to where it was. 
+			glTranslatef(-glTheOtherPoint[0], -glTheOtherPoint[1], -glTheOtherPoint[2]);
+		}
+	}
+   
+    Invalidate(TRUE);	 
+}
+
+void COGLPickingView::DrawGDebug(void)
+{
+	DrawGDebugScene(GL_RENDER);
+}
+
+void COGLPickingView::DrawVectorOnNode(void)
+{
+    double SquareOfMaximumOfMagnitudeOfVector = 0.0;
+
+    SquareOfMaximumOfMagnitudeOfVector = GetSquareOfMaximumOfMagnitudeOfVector();
+    
+    // Open the gate to processes 
+    m_pcs = PCSGet("FLUID_MOMENTUM");
+    m_msh = m_pcs->m_msh;
+
+	for(int i=0; i < theApp.hitsRFINodeTotal ; ++i)
+	{
+		double V[3], unit[3], glOrigin[3], glTheOtherPoint[3];
+      
+		for(int k=0; k<m_pcs->pcs_number_of_primary_nvals; ++k)
+		{
+			int idx = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[k])+1;
+
+			if(k == 0)
+				V[0] = m_pcs->GetNodeValue(theApp.RFInodePickedTotal[i],idx);
+            else if(k == 1)
+				V[1] = m_pcs->GetNodeValue(theApp.RFInodePickedTotal[i],idx);
+            else if(k == 2)
+				V[2] = m_pcs->GetNodeValue(theApp.RFInodePickedTotal[i],idx);
+		}
+        double SquareOfMagnitudeOfVector = 0.0;
+
+		SquareOfMagnitudeOfVector = V[0]*V[0] + V[1]*V[1] + V[2]*V[2];
+
+		unit[0] = V[0] / sqrt(SquareOfMagnitudeOfVector); 
+        unit[1] = V[1] / sqrt(SquareOfMagnitudeOfVector); 
+        unit[2] = V[2] / sqrt(SquareOfMagnitudeOfVector);
+		
+        // Here I compute the other point from the known magnitude and direction
+        // This ratio is on the OpenGL scale
+        double ratio = SquareOfMagnitudeOfVector / SquareOfMaximumOfMagnitudeOfVector * LengthOfSideOfelement;
+
+		glOrigin[0] = (m_msh->nod_vector[theApp.RFInodePickedTotal[i]]->X()-x_mid)/ScaleFactor; 
+        glOrigin[1] = (m_msh->nod_vector[theApp.RFInodePickedTotal[i]]->Y()-y_mid)/ScaleFactor;  
+        glOrigin[2] = (m_msh->nod_vector[theApp.RFInodePickedTotal[i]]->Z()-z_mid)/ScaleFactor;
+
+		glTheOtherPoint[0] = unit[0]*ratio + glOrigin[0];
+        glTheOtherPoint[1] = unit[1]*ratio + glOrigin[1];
+        glTheOtherPoint[2] = unit[2]*ratio + glOrigin[2];
+        
+        // Now draw the line of the vector
+        glColor3f(0.0, 1.0, 1.0) ;  // Make the line cyan  
+
+		glBegin(GL_LINES);
+			//Draw the bottom triangle
+			glVertex3f(glOrigin[0], glOrigin[1], glOrigin[2]);
+			glVertex3f(glTheOtherPoint[0], glTheOtherPoint[1], glTheOtherPoint[2]);
+		glEnd();	
+        
+        //draw the wireframe sphere
+        // Let's walk to the center of the sphere	
+		glTranslatef(glTheOtherPoint[0], glTheOtherPoint[1], glTheOtherPoint[2]);	
+		gluSphere(obj, 0.05*LengthOfSideOfelement, 3, 3);
+        // Let's walk back to where it was. 
+		glTranslatef(-glTheOtherPoint[0], -glTheOtherPoint[1], -glTheOtherPoint[2]);
+	}   
+    Invalidate(TRUE);	 
+}
+void COGLPickingView::DrawParticles(void)
+{
+	DrawParticleScene(GL_RENDER);
+
+	if (theApp.mSelectMode == TRUE || theApp.mDeselectMode == TRUE)
+	{
+		mouseParticle(mousePoint.x, mousePoint.y);
+		
+		if(theApp.mContinuous == FALSE)
+		{
+			theApp.mSelectMode = FALSE;
+			theApp.mDeselectMode = FALSE;
+		}
+	}
+	// Added for continuous picking
+	else if(theApp.mSelectMode == TRUE || theApp.mDeselectMode == TRUE && theApp.mContinuous == TRUE )
+	{
+		mouseParticle(mousePoint.x, mousePoint.y);
+		if(theApp.mContinuous == FALSE)
+		{
+			theApp.mSelectMode = FALSE;
+			theApp.mDeselectMode = FALSE;
+		}
+	}
+
+	// If nodes are selected, make'em green
 	// Draw symbol for selection
 	float centerX = 0., centerY = 0., centerZ =0.;
     
-    for(int j=0; j < theApp->hitsRFINodeTotal; ++j)
+	for(int j=0; j < theApp.hitsParticleTotal; ++j)
 	{
 		glColor3f(0.0, 1.0, 0.0) ;
         
-        // This is termperary measure only for single mesh cass
-        m_msh = fem_msh_vector[0];
+		// This is termperary measure only for single mesh cass
+		m_msh = fem_msh_vector[0];
 
-        CGLPoint real, gl;
-		
-        real.x = m_msh->nod_vector[theApp->RFInodePickedTotal[j]]->X(); 
-        real.y = m_msh->nod_vector[theApp->RFInodePickedTotal[j]]->Y();  
-        real.z = m_msh->nod_vector[theApp->RFInodePickedTotal[j]]->Z(); 
+		double x, y, z;
 
-        gl = ConvertScaleToOpenGL(real);
+		x = (m_msh->PT->X[theApp.ParticlePickedTotal[j]].Now.x-x_mid)/ScaleFactor; 
+        y = (m_msh->PT->X[theApp.ParticlePickedTotal[j]].Now.y-y_mid)/ScaleFactor;  
+        z = (m_msh->PT->X[theApp.ParticlePickedTotal[j]].Now.z-z_mid)/ScaleFactor;
 
-		centerX = gl.x;
-		centerY = gl.y;
-		centerZ = gl.z;
+		centerX = x; centerY = y; centerZ = z;
 
 		glBegin(GL_LINES);
 			glVertex3f(centerX+symbolLengthX, centerY, centerZ);
@@ -490,89 +783,11 @@ void COGLPickingView::DrawRFINode(void)
 	}	
 }
 
-void COGLPickingView::DrawVectorOnNode(void)
-{
-    double SquareOfMaximumOfMagnitudeOfVector = 0.0;
-//OK    double UnitVectorOfVelocity = 0.0;
-
-    SquareOfMaximumOfMagnitudeOfVector = GetSquareOfMaximumOfMagnitudeOfVector();
-    
-    // Open the gate to processes 
-	//CRFProcess* m_pcs = NULL;
-    m_pcs = PCSGet("FLUID_MOMENTUM");
-    m_msh = m_pcs->m_msh;
-
-    for(int i=0; i < (int)m_msh->nod_vector.size() ; ++i)
-	{
-        CGLPoint P, V, VTheOtherPoint, unit, glOrigin, glTheOtherPoint;
-      
-		for(int k=0; k<m_pcs->pcs_number_of_primary_nvals; ++k)
-		{
-            string pcs_primary = m_pcs->pcs_primary_function_name[k];
-			// The following function is written for handling sting to char*
-			char *VarName = string2CharArrary(pcs_primary);
-					
-            //int idx = GetNodeValueIndex(VarName)+1;
-            int idx = m_pcs->GetNodeValueIndex(VarName)+1;
-            
-            if(k == 0)
-                //V.x = GetNodeValue(i,idx);
-                V.x = m_pcs->GetNodeValue(i,idx);
-            else if(k == 1)
-                V.y = m_pcs->GetNodeValue(i,idx);
-            else if(k == 2)
-                V.z = m_pcs->GetNodeValue(i,idx);
-		}
-        double SquareOfMagnitudeOfVector = 0.0;
-
-        SquareOfMagnitudeOfVector = V.x*V.x + V.y*V.y + V.z*V.z;
-
-        unit.x = V.x / sqrt(SquareOfMagnitudeOfVector); 
-        unit.y = V.y / sqrt(SquareOfMagnitudeOfVector); 
-        unit.z = V.z / sqrt(SquareOfMagnitudeOfVector);
-		
-        // Here I compute the other point from the known magnitude and direction
-        // This ratio is on the OpenGL scale
-        double ratio = SquareOfMagnitudeOfVector / SquareOfMaximumOfMagnitudeOfVector * LengthOfSideOfelement;
-        
-        P.x = m_msh->nod_vector[i]->X(); 
-        P.y = m_msh->nod_vector[i]->Y();  
-        P.z = m_msh->nod_vector[i]->Z(); 
-
-        glOrigin = ConvertScaleToOpenGL(P);
-        glTheOtherPoint.x = unit.x*ratio + glOrigin.x;
-        glTheOtherPoint.y = unit.y*ratio + glOrigin.y;
-        glTheOtherPoint.z = unit.z*ratio + glOrigin.z;
-        
-        // Now draw the line of the vector
-        glColor3f(0.0, 1.0, 1.0) ;  // Make the line cyan  
-
-		glBegin(GL_LINES);
-			//Draw the bottom triangle
-			glVertex3f(glOrigin.x, glOrigin.y, glOrigin.z);
-			glVertex3f(glTheOtherPoint.x, glTheOtherPoint.y, glTheOtherPoint.z);
-		glEnd();	
-        
-        //draw the wireframe sphere
-        // Let's walk to the center of the sphere
-		glTranslatef(glTheOtherPoint.x, glTheOtherPoint.y, glTheOtherPoint.z);	
-		gluSphere(obj, 0.1*LengthOfSideOfelement, 8, 8);
-        // Let's walk back to where it was. 
-        glTranslatef(-glTheOtherPoint.x, -glTheOtherPoint.y, -glTheOtherPoint.z);
-	}   
-    Invalidate(TRUE);	 
-}
-void COGLPickingView::DrawParticles(void)
-{
-    DrawParticleScene(GL_RENDER);
-}
-
 double COGLPickingView::GetSquareOfMaximumOfMagnitudeOfVector(void)
 {
     double MaximumOfSquareOfMagnitudeOfVector = 0.0;
     
     // Open the gate to processes 
-	//CRFProcess* m_pcs = NULL;
     m_pcs = PCSGet("FLUID_MOMENTUM");
     m_msh = m_pcs->m_msh;
     
@@ -580,12 +795,8 @@ double COGLPickingView::GetSquareOfMaximumOfMagnitudeOfVector(void)
 	{
         double Vx = 0.0, Vy = 0.0, Vz = 0.0;
 		for(int k=0; k<m_pcs->pcs_number_of_primary_nvals; ++k)
-		{
-            string pcs_primary = m_pcs->pcs_primary_function_name[k];
-			// The following function is written for handling sting to char*
-			char *VarName = string2CharArrary(pcs_primary);
-					
-            int idx = m_pcs->GetNodeValueIndex(VarName)+1;
+		{					
+            int idx = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[k])+1;
             
             if(k == 0)
                 Vx = m_pcs->GetNodeValue(i,idx);
@@ -606,6 +817,9 @@ double COGLPickingView::GetSquareOfMaximumOfMagnitudeOfVector(void)
     return MaximumOfSquareOfMagnitudeOfVector;
 }
 
+
+// This function is very problematic. Either this should be improved or
+// never be used. Serious memory leaking.
 char* COGLPickingView::string2CharArrary(string aString)
 {
 	char *charArrary = NULL;
@@ -637,17 +851,13 @@ void COGLPickingView::DrawRFINodeScene(GLenum mode)
 
 		//color the object
 		glColor3f(1.0, 1.0, 1.0) ;   
-
-        CGLPoint real, gl;
 		
-        real.x = m_msh->nod_vector[i]->X(); 
-        real.y = m_msh->nod_vector[i]->Y();  
-        real.z = m_msh->nod_vector[i]->Z();
+        x = (m_msh->nod_vector[i]->X()-x_mid)/ScaleFactor; 
+        y = (m_msh->nod_vector[i]->Y()-y_mid)/ScaleFactor;  
+        z = (m_msh->nod_vector[i]->Z()-z_mid)/ScaleFactor;
 
-        gl = ConvertScaleToOpenGL(real);
-        
 		glBegin(GL_POINTS);
-			glVertex3f( gl.x, gl.y, gl.z);
+			glVertex3f( x, y, z);
 		glEnd();
 
 		glPopMatrix() ;
@@ -673,16 +883,12 @@ void COGLPickingView::DrawParticleScene(GLenum mode)
 		//color the object in red
 		glColor3f(1.0, 0.0, 0.0) ;   
 
-        CGLPoint real, gl;
-		
-        real.x = m_msh->PT->X[i].Now.x;
-        real.y = m_msh->PT->X[i].Now.y; 
-        real.z = m_msh->PT->X[i].Now.z;
-
-        gl = ConvertScaleToOpenGL(real);
+		x = (m_msh->PT->X[i].Now.x-x_mid)/ScaleFactor; 
+        y = (m_msh->PT->X[i].Now.y-y_mid)/ScaleFactor;  
+        z = (m_msh->PT->X[i].Now.z-z_mid)/ScaleFactor;
         
 		glBegin(GL_POINTS);
-			glVertex3f( gl.x, gl.y, gl.z);
+			glVertex3f( x, y, z);
 		glEnd();
 
 		glPopMatrix() ;
@@ -690,10 +896,156 @@ void COGLPickingView::DrawParticleScene(GLenum mode)
     }
 }
 
+void COGLPickingView::DrawGDebugScene(GLenum mode)
+{
+	// Open the gate to processes 
+    m_pcs = PCSGet("FLUID_MOMENTUM");
+	m_msh = m_pcs->m_msh;
+  
+	double SquareOfMaximumOfMagnitudeOfVector = 0.0;
+    SquareOfMaximumOfMagnitudeOfVector = GetSquareOfMaximumOfMagnitudeOfVector();
+
+    glInitNames();
+
+	for(int i=0; i < theApp.hitsElementTotal; ++i)
+	{
+		m_ele = m_msh->ele_vector[theApp.elementPickedTotal[i]];
+		/*TRIANGLES = 4*/ 
+		if (m_ele->GetElementType() == 4)
+		{
+			double N1[3], N2[3], N3[3];
+			double XYx[3], XYy[3], XYz[3];
+			double x[3], y[3], z[3];
+
+			N1[0] = m_msh->nod_vector[m_ele->GetNodeIndex(0)]->X();
+			N1[1] = m_msh->nod_vector[m_ele->GetNodeIndex(0)]->Y();
+			N1[2] = m_msh->nod_vector[m_ele->GetNodeIndex(0)]->Z();
+			N2[0] = m_msh->nod_vector[m_ele->GetNodeIndex(1)]->X();
+			N2[1] = m_msh->nod_vector[m_ele->GetNodeIndex(1)]->Y();
+			N2[2] = m_msh->nod_vector[m_ele->GetNodeIndex(1)]->Z();
+			N3[0] = m_msh->nod_vector[m_ele->GetNodeIndex(2)]->X();
+			N3[1] = m_msh->nod_vector[m_ele->GetNodeIndex(2)]->Y();
+			N3[2] = m_msh->nod_vector[m_ele->GetNodeIndex(2)]->Z();
+			m_msh->PT->ToTheXYPlane(m_ele, N1);	
+			m_msh->PT->ToTheXYPlane(m_ele, N2);
+			m_msh->PT->ToTheXYPlane(m_ele, N3);
+			
+			x[0] = (N1[0]-x_mid)/ScaleFactor; x[1] = (N2[0]-x_mid)/ScaleFactor; x[2] = (N3[0]-x_mid)/ScaleFactor;
+			y[0] = (N1[1]-y_mid)/ScaleFactor; y[1] = (N2[1]-y_mid)/ScaleFactor; y[2] = (N3[1]-y_mid)/ScaleFactor;
+			z[0] = (N1[2]-z_mid)/ScaleFactor; z[1] = (N2[2]-z_mid)/ScaleFactor; z[2] = (N3[2]-z_mid)/ScaleFactor;
+       
+			glBegin(GL_LINE_LOOP);
+			for(int j=0;j<3;++j)
+				glVertex3f(x[j], y[j], z[j]);
+			glEnd();
+		}
+
+		// Draw the velocity vector transformed.
+		for(int j=0; j<m_ele->GetEdgesNumber(); ++j)
+		{
+			double V[3], unit[3], glOrigin[3], glTheOtherPoint[3], Pxy[3];
+
+			// If this node is not a crossroad
+			if(m_msh->nod_vector[m_ele->GetNodeIndex(j)]->crossroad != 1)
+			{
+				for(int k=0; k<m_pcs->pcs_number_of_primary_nvals; ++k)
+				{
+					int idx = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[k])+1;
+
+					if(k == 0)
+						V[0] = m_pcs->GetNodeValue(m_ele->GetNodeIndex(j),idx);
+					else if(k == 1)
+						V[1] = m_pcs->GetNodeValue(m_ele->GetNodeIndex(j),idx);
+					else if(k == 2)
+						V[2] = m_pcs->GetNodeValue(m_ele->GetNodeIndex(j),idx);
+				}
+			}
+			else	// if this is a crossroad,
+			{
+				// Find the crossroad index
+				CrossRoad* crossroad = NULL;
+				for(int k=0; k< m_msh->fm_pcs->crossroads.size(); ++k)
+				{
+					if( m_msh->fm_pcs->crossroads[k]->Index == m_ele->GetNodeIndex(j) )
+						crossroad = m_msh->fm_pcs->crossroads[k];
+				}
+
+				if(crossroad)
+				{
+				}
+				else	// Failed to find the crossroad although it is a crossroad
+					abort();	
+
+				// Find the velocity of the crossroad associated with the connected planes.
+				for(int k=0; k< crossroad->numOfThePlanes; ++k)
+				{
+					// I am going to check the normal vector of the element and the connected plane.
+					double tolerance = 1e-10;
+					double E[3], P[3];
+					for(int p=0; p<3; ++p)
+					{
+						E[p] = m_ele->getTransformTensor(6+p); 
+						P[p] = crossroad->plane[k].norm[p];
+					}
+					
+					double same = (E[0]-P[0])*(E[0]-P[0]) + (E[1]-P[1])*(E[1]-P[1]) + (E[2]-P[2])*(E[2]-P[2]);
+
+					if(same < tolerance)
+					{
+						for(int p=0; p<3; ++p)
+							V[p] = crossroad->plane[k].V[p];	
+					}
+				}
+			}
+			
+			m_msh->PT->ToTheXYPlane(m_ele, V);
+			double SquareOfMagnitudeOfVector = 0.0;
+			SquareOfMagnitudeOfVector = V[0]*V[0] + V[1]*V[1] + V[2]*V[2];
+
+			unit[0] = V[0] / sqrt(SquareOfMagnitudeOfVector); 
+			unit[1] = V[1] / sqrt(SquareOfMagnitudeOfVector); 
+			unit[2] = V[2] / sqrt(SquareOfMagnitudeOfVector);
+		
+			// Here I compute the other point from the known magnitude and direction
+			// This ratio is on the OpenGL scale
+			double ratio = SquareOfMagnitudeOfVector / SquareOfMaximumOfMagnitudeOfVector * LengthOfSideOfelement;
+
+			Pxy[0] = m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X();
+			Pxy[1] = m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y();
+			Pxy[2] = m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z();
+			m_msh->PT->ToTheXYPlane(m_ele, Pxy);
+			glOrigin[0] = (Pxy[0]-x_mid)/ScaleFactor; 
+			glOrigin[1] = (Pxy[1]-y_mid)/ScaleFactor;  
+			glOrigin[2] = (Pxy[2]-z_mid)/ScaleFactor;
+
+			glTheOtherPoint[0] = unit[0]*ratio + glOrigin[0];
+			glTheOtherPoint[1] = unit[1]*ratio + glOrigin[1];
+			glTheOtherPoint[2] = unit[2]*ratio + glOrigin[2];
+        
+			// Now draw the line of the vector
+			glColor3f(0.0, 1.0, 1.0) ;  // Make the line cyan  
+
+			glBegin(GL_LINES);
+				//Draw the bottom triangle
+				glVertex3f(glOrigin[0], glOrigin[1], glOrigin[2]);
+				glVertex3f(glTheOtherPoint[0], glTheOtherPoint[1], glTheOtherPoint[2]);
+			glEnd();	
+        
+			//draw the wireframe sphere
+			// Let's walk to the center of the sphere	
+			glTranslatef(glTheOtherPoint[0], glTheOtherPoint[1], glTheOtherPoint[2]);	
+			gluSphere(obj, 0.05*LengthOfSideOfelement, 3, 3);
+			// Let's walk back to where it was. 
+			glTranslatef(-glTheOtherPoint[0], -glTheOtherPoint[1], -glTheOtherPoint[2]);
+		}
+	}
+}
+
 
 void COGLPickingView::DrawElement()
 {
 	CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
+
 
     for(int k=0; k < theApp->hitsElementTotal; ++k)
 	{
@@ -706,7 +1058,10 @@ void COGLPickingView::DrawElement()
 		drawHittedUnitElement(theApp->elementPickedTotal[k]);
 	}
 
+
     drawElementScene(GL_RENDER) ;
+
+
 	
 	if (theApp->mSelectMode == TRUE || theApp->mDeselectMode == TRUE)
 	{
@@ -741,50 +1096,59 @@ void COGLPickingView::drawHittedUnitElement(int index)
 	{
 		int numOfNodeInElement = 2;
 
-        CGLPoint gl[2];
+        double x[2], y[2], z[2];
 
         for(int j=0;j< numOfNodeInElement;++j)
+		{
             // Convert coordinate to OpenGL
-            gl[j] = ConvertScaleToOpenGL(m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X(), 
-                m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y(), m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z());
+			x[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X()-x_mid)/ScaleFactor;
+			y[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y()-y_mid)/ScaleFactor;
+			z[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z()-z_mid)/ScaleFactor;
+		}
 	    	
 		// Draw a line
 		glBegin(GL_LINES);
 			//Draw the line
-			glVertex3f(gl[0].x, gl[0].y, gl[0].z);
-			glVertex3f(gl[1].x, gl[1].y, gl[1].z);
+			glVertex3f(x[0], y[0], z[0]);
+			glVertex3f(x[1], y[1], z[1]);
 		glEnd();	
     }
     /*RECTANGLES = 2*/ 
 	if (m_ele->GetElementType() == 2)
 	{
-        CGLPoint gl[4];
+        double x[4], y[4], z[4];
         for(int j=0; j<4; ++j)
-            gl[j] = ConvertScaleToOpenGL(m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X(), 
-                m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y(), m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z());
+		{
+			x[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X()-x_mid)/ScaleFactor;
+			y[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y()-y_mid)/ScaleFactor;
+			z[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z()-z_mid)/ScaleFactor;
+		}
        
         glBegin(GL_LINE_LOOP);
 		for(int j=0;j<4;++j)
-            glVertex3f(gl[j].x, gl[j].y, gl[j].z);
+            glVertex3f(x[j], y[j], z[j]);
 	    glEnd();
     }
     /*HEXAHEDRA = 3*/ 
 	if (m_ele->GetElementType() == 3)
 	{
-        CGLPoint gl[8];
+        double x[8], y[8], z[8];
         for(int j=0; j<8; ++j)
-            gl[j] = ConvertScaleToOpenGL(m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X(), 
-                m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y(), m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z());
+		{
+			x[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X()-x_mid)/ScaleFactor;
+			y[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y()-y_mid)/ScaleFactor;
+			z[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z()-z_mid)/ScaleFactor;
+		}
 
 		//Draw both top and bottom plane
 		glBegin(GL_LINE_LOOP);
 			for(int j=0;j<4;++j)
-				glVertex3f(gl[j].x, gl[j].y, gl[j].z);
+				glVertex3f(x[j], y[j], z[j]);
 		glEnd();
 
 		glBegin(GL_LINE_LOOP);
 			for(int j=0;j<4;++j)
-				glVertex3f(gl[j+4].x, gl[j+4].y, gl[j+4].z);
+				glVertex3f(x[j+4], y[j+4], z[j+4]);
 		glEnd();
 
 		//Draw four side lines
@@ -792,49 +1156,55 @@ void COGLPickingView::drawHittedUnitElement(int index)
 			for(int j=0;j<4;j++)
 			{
 				// Line from local node 1 to local node 
-				glVertex3f(gl[j].x, gl[j].y, gl[j].z);
-				glVertex3f(gl[j+4].x, gl[j+4].y, gl[j+4].z);
+				glVertex3f(x[j], y[j], z[j]);
+				glVertex3f(x[j+4], y[j+4], z[j+4]);
 			}
 		glEnd();	
     }
     /*TRIANGLES = 4*/ 
 	if (m_ele->GetElementType() == 4)
 	{
-        CGLPoint gl[3];
+		double x[3], y[3], z[3];
         for(int j=0; j<3; ++j)
-            gl[j] = ConvertScaleToOpenGL(m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X(), 
-                m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y(), m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z());
+		{
+			x[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X()-x_mid)/ScaleFactor;
+			y[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y()-y_mid)/ScaleFactor;
+			z[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z()-z_mid)/ScaleFactor;
+		}
        
         glBegin(GL_LINE_LOOP);
 		for(int j=0;j<3;++j)
-            glVertex3f(gl[j].x, gl[j].y, gl[j].z);
+			glVertex3f(x[j], y[j], z[j]);
 	    glEnd();
     }
     /*TETRAHEDRAS = 5*/ 
 	if (m_ele->GetElementType() == 5)
 	{
 		int numOfNodeInElement = 4;     
-        CGLPoint gl[4];
+        double x[4], y[4], z[4];
         
         for(int j=0;j< numOfNodeInElement;++j)
+		{
             // Convert coordinate to OpenGL
-            gl[j] = ConvertScaleToOpenGL(m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X(), 
-                m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y(), m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z());
+			x[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X()-x_mid)/ScaleFactor;
+			y[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y()-y_mid)/ScaleFactor;
+			z[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z()-z_mid)/ScaleFactor;
+		}
 	    	
 		// Draw all the edges
 		glBegin(GL_LINES);
 			for(int j=0;j< 3;j++)
 			{
 				//Draw the bottom triangle
-				glVertex3f(gl[j].x, gl[j].y, gl[j].z);
+				glVertex3f(x[j], y[j], z[j]);
 				if(j!=2)
-					glVertex3f(gl[j+1].x, gl[j+1].y, gl[j+1].z);
+					glVertex3f(x[j+1], y[j+1], z[j+1]);
 				else
-					glVertex3f(gl[0].x, gl[0].y, gl[0].z);
+					glVertex3f(x[0], y[0], z[0]);
 
 				// Draw the other three lines
-				glVertex3f(gl[3].x, gl[3].y, gl[3].z);
-				glVertex3f(gl[j].x, gl[j].y, gl[j].z);
+				glVertex3f(x[3], y[3], z[3]);
+				glVertex3f(x[j], y[j], z[j]);
 			}
 		glEnd();	
     }
@@ -843,20 +1213,23 @@ void COGLPickingView::drawHittedUnitElement(int index)
 	{
 		int numOfNodeInElement = 6;
 
-        CGLPoint gl[6];
+        double x[6], y[6], z[6];
         for(int j=0; j<numOfNodeInElement; ++j)
-            gl[j] = ConvertScaleToOpenGL(m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X(), 
-                m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y(), m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z());
+		{
+			x[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X()-x_mid)/ScaleFactor;
+			y[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y()-y_mid)/ScaleFactor;
+			z[j] = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z()-z_mid)/ScaleFactor;
+		}
 
 		//Draw both top and bottom plane
 		glBegin(GL_LINE_LOOP);
 			for(int j=0;j<numOfNodeInElement/2;++j)
-				glVertex3f(gl[j].x, gl[j].y, gl[j].z);
+				glVertex3f(x[j], y[j], z[j]);
 		glEnd();
 
 		glBegin(GL_LINE_LOOP);
 			for(int j=0;j<numOfNodeInElement/2;++j)
-				glVertex3f(gl[j+numOfNodeInElement/2].x, gl[j+numOfNodeInElement/2].y, gl[j+numOfNodeInElement/2].z);
+				glVertex3f(x[j+numOfNodeInElement/2], y[j+numOfNodeInElement/2], z[j+numOfNodeInElement/2]);
 		glEnd();
 
 		//Draw four side lines
@@ -864,8 +1237,8 @@ void COGLPickingView::drawHittedUnitElement(int index)
 			for(int j=0;j<numOfNodeInElement/2;j++)
 			{
 				// Line from local node 1 to local node 
-				glVertex3f(gl[j].x, gl[j].y, gl[j].z);
-				glVertex3f(gl[j+numOfNodeInElement/2].x, gl[j+numOfNodeInElement/2].y, gl[j+numOfNodeInElement/2].z);
+				glVertex3f(x[j], y[j], z[j]);
+				glVertex3f(x[j+numOfNodeInElement/2], y[j+numOfNodeInElement/2], z[j+numOfNodeInElement/2]);
 			}
 		glEnd();	
     }
@@ -880,15 +1253,15 @@ void COGLPickingView::drawUnitElement(int i)
     m_msh = fem_msh_vector[0];      // This is because FEM is not executed.
 	m_ele = m_msh->ele_vector[i];
 
-	// Draw symbol for selection
-	float centerX = 0., centerY = 0., centerZ =0.;
-    
 	drawHittedUnitElement(i);
     
+
+/* This center symbol is too costly.
+
     // Compute the center of an element
     int numOfNodeInElement = 0;
 
-    /*LINES = 1*/ 
+    //LINES = 1 
     if (m_ele->GetElementType() == 1)
 	{
         numOfNodeInElement = 2;
@@ -907,7 +1280,7 @@ void COGLPickingView::drawUnitElement(int i)
 	    }
 	    centerX /= (double)numOfNodeInElement; centerY /= (double)numOfNodeInElement; centerZ /= (double)numOfNodeInElement; 
     }
-    /*RECTANGLES = 2*/ 
+    //RECTANGLES = 2 
 	if (m_ele->GetElementType() == 2)
 	{
         numOfNodeInElement = 4;     
@@ -925,7 +1298,7 @@ void COGLPickingView::drawUnitElement(int i)
 	    }
 	    centerX /= (double)numOfNodeInElement; centerY /= (double)numOfNodeInElement; centerZ /= (double)numOfNodeInElement; 
     }
-    /*HEXAHEDRA = 3*/ 
+    //HEXAHEDRA = 3 
 	if (m_ele->GetElementType() == 3)
 	{
         numOfNodeInElement = 8;
@@ -962,7 +1335,7 @@ void COGLPickingView::drawUnitElement(int i)
 			}
 		glEnd();	
     }
-    /*TRIANGLES = 4*/ 
+    //TRIANGLES = 4 
 	if (m_ele->GetElementType() == 4)
 	{
         numOfNodeInElement = 3;    
@@ -971,8 +1344,9 @@ void COGLPickingView::drawUnitElement(int i)
         for(int j=0;j< numOfNodeInElement;++j)
 	    {
             // Convert coordinate to OpenGL
-            gl[j] = ConvertScaleToOpenGL(m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X(), 
-                m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y(), m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z());
+			gl[j].x = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X()-x_mid)/ScaleFactor;
+			gl[j].y = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y()-y_mid)/ScaleFactor;
+			gl[j].z = (m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z()-z_mid)/ScaleFactor;
 	    	
             centerX += gl[j].x;
 	    	centerY += gl[j].y;
@@ -980,7 +1354,7 @@ void COGLPickingView::drawUnitElement(int i)
 	    }
 	    centerX /= (double)numOfNodeInElement; centerY /= (double)numOfNodeInElement; centerZ /= (double)numOfNodeInElement; 
     }
-    /*TETRAHEDRAS = 5*/ 
+    //TETRAHEDRAS = 5
 	if (m_ele->GetElementType() == 5)
 	{
 		numOfNodeInElement = 4;   
@@ -1015,7 +1389,7 @@ void COGLPickingView::drawUnitElement(int i)
 			}
 		glEnd();	
     }
-    /*PRISMS = 6*/ 
+    //PRISMS = 6 
 	if (m_ele->GetElementType() == 6)
 	{
         numOfNodeInElement = 6;
@@ -1065,6 +1439,9 @@ void COGLPickingView::drawUnitElement(int i)
 		glVertex3f(centerX, centerY, centerZ+symbolLengthZ);
 		glVertex3f(centerX, centerY, centerZ-symbolLengthZ);
 	glEnd();
+
+*/
+
 }
 
 
@@ -1655,6 +2032,10 @@ void COGLPickingView::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
 
+	// Turn off the switches for rotation
+	if (theApp->mMouseRotateMode == TRUE)
+		TurnOffTheSwitches();
+
 	if (theApp->mMouseRotateMode == TRUE && theApp->mMouseZoomMode == FALSE &&
 		theApp->mMouseMoveMode == FALSE )
 	{
@@ -1764,6 +2145,38 @@ void COGLPickingView::mouseRFINode(int x, int y)
 	glPopMatrix() ;
 
 	processhitsRFINode(hitsRFINode, selectBuf) ;
+	glMatrixMode(GL_MODELVIEW) ;
+	
+}
+
+void COGLPickingView::mouseParticle(int x, int y)
+{
+	GLuint selectBuf[BUFSIZE];
+	GLint viewport[4];
+	GLfloat ratio;
+
+	glSelectBuffer(BUFSIZE, selectBuf) ;
+	glGetIntegerv(GL_VIEWPORT,viewport) ;
+
+	ratio = (GLfloat)viewport[2]/(GLfloat)viewport[3];
+
+	glMatrixMode(GL_PROJECTION) ;
+
+	glPushMatrix() ;
+		glRenderMode(GL_SELECT) ;
+		glLoadIdentity() ;
+
+		gluPickMatrix((GLdouble) x, (GLdouble) (viewport[3] - y), 10.0,10.0,viewport) ;
+		gluPerspective(40.0,ratio,0.1f, 10.0f);
+		glTranslatef(theApp.mouseX, theApp.mouseY,theApp.zoomRatio);
+
+		glMatrixMode(GL_MODELVIEW) ;
+		DrawParticleScene(GL_SELECT) ;
+		hitsParticle = glRenderMode(GL_RENDER) ;
+		glMatrixMode(GL_PROJECTION) ;
+	glPopMatrix() ;
+
+	processhitsParticle(hitsParticle, selectBuf) ;
 	glMatrixMode(GL_MODELVIEW) ;
 	
 }
@@ -2005,6 +2418,50 @@ void COGLPickingView::processhitsRFINode(GLint hits, GLuint buffer[])
 
 }
 
+void COGLPickingView::processhitsParticle(GLint hits, GLuint buffer[])
+{
+	// Dynamic memory allocation for the picked nodes
+	theApp.ParticlePicked = (int *) realloc(theApp.ParticlePicked, hits * sizeof(int));
+	theApp.ParticlePickedTotal = (int *) realloc(theApp.ParticlePickedTotal, (theApp.hitsParticleTotal + hits)* sizeof(int));
+
+	if(theApp.mSelectMode == TRUE)
+	{
+		for(int i=0; i < hits; ++i)
+			theApp.ParticlePickedTotal[theApp.hitsParticleTotal + i] = buffer[i*4+3];
+		
+		// Store the tentative hits to the hitstotal to keep adding
+		theApp.hitsParticleTotal += hits;
+
+		// Eliminate the duplicates
+		for(i=0; i < theApp.hitsParticleTotal; ++i)
+			for(int j=i+1; j < theApp.hitsParticleTotal; ++j)
+				if(theApp.ParticlePickedTotal[i] == theApp.ParticlePickedTotal[j])
+				{
+					for(int k = j; k < (theApp.hitsParticleTotal - 1); ++k)
+						theApp.ParticlePickedTotal[k] = theApp.ParticlePickedTotal[k+1];
+				
+					--theApp.hitsParticleTotal;
+				}	
+	}
+	else if(theApp.mDeselectMode == TRUE)
+	{
+		for(int i=0; i < hits; ++i)
+			theApp.ParticlePicked[i] = buffer[i*4+3];
+		
+		// Search the same node and delete it
+		for(int j=0; j < hits; ++j)
+			for(i=0; i < theApp.hitsParticleTotal; ++i)
+				if (theApp.ParticlePickedTotal[i] == theApp.ParticlePicked[j])
+				{
+					for(int k = i; k < (theApp.hitsParticleTotal - 1); ++k)
+						theApp.ParticlePickedTotal[k] = theApp.ParticlePickedTotal[k+1];
+					
+					// Adjust the total number of node selected
+					--theApp.hitsParticleTotal;
+				}		
+	}
+
+}
 
 void COGLPickingView::processHitsElement(GLint hits, GLuint buffer[])
 {
@@ -2206,7 +2663,10 @@ void COGLPickingView::processHitsVolume(GLint hits, GLuint buffer[])
 
 void COGLPickingView::OnLButtonUp(UINT nFlags, CPoint point) 
 {
-	//CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
+	// Turn on when the rotation is over.
+	if (theApp.mMouseRotateMode == TRUE)
+		TurnOnTheSwitches();
+
     nFlags=nFlags;//TK
     point=point;//TK
 	// forget where we clicked
@@ -2216,14 +2676,6 @@ void COGLPickingView::OnLButtonUp(UINT nFlags, CPoint point)
 	// Important this will show the selection right away
 	Invalidate(TRUE);
 
-#ifdef PCH
-	// Toggle the switch
-	if(theApp->mContinuous == FALSE)
-		(theApp->pDrawModeDlg)->OnSelchangeModePublic();
-
-	else
-		(theApp->pDrawModeDlg)->OnContinuousPublic();
-#endif
 }
 
 void COGLPickingView::OnMouseMove(UINT nFlags, CPoint point) 
@@ -2326,47 +2778,21 @@ void COGLPickingView::OnMButtonDown(UINT nFlags, CPoint point)
 	theApp.mMouseMoveMode = FALSE;
 
 	theApp.mEditMode = FALSE;
-
-#ifdef PCH
-	// remember where we clicked
-	MouseDownPoint=point;
-	// capture mouse movements even outside window borders
-	SetCapture();
-	Invalidate(TRUE);
-
-	theApp.mMouseRotateMode = FALSE;
-	theApp.mMouseZoomMode = FALSE;
-	theApp.mMouseMoveMode = TRUE;
-
-	theApp.mEditMode = FALSE;
-#endif
 }
 
 void COGLPickingView::OnMButtonUp(UINT nFlags, CPoint point) 
 {
     nFlags=nFlags;//TK
     point=point;//TK
-#ifdef PCH
-	// TODO: Add your message handler code here and/or call default
-	theApp.mMouseRotateMode = TRUE;
-	theApp.mMouseZoomMode = FALSE;
-	theApp.mMouseMoveMode = FALSE;
-
-	theApp.mEditMode = FALSE;
-
-	// forget where we clicked
-	MouseDownPoint=CPoint(0,0);
-	// release mouse capture
-	ReleaseCapture();
-	// Important this will show the selection right away
-	Invalidate(TRUE);
-#endif
 }
 
 BOOL COGLPickingView::OnMouseWheel(UINT nFlags,short zDelta,CPoint point)
 {
     nFlags=nFlags;//TK
     point=point;//TK
+
+	// Turn off the switches for rotation
+//	TurnOffTheSwitches();
 
 	// do rolled out stuff here
 	theApp.zoomRatio += -(zDelta/120.0)*0.2;
@@ -2570,18 +2996,57 @@ void COGLPickingView::GetRFIMinMaxPoints()
 
 }
 
+void COGLPickingView::GetMSHMinMax()
+{
+		int j=0,i=0;
+
+    GetMinMaxPoints();
+
+  for(j=0;j<(long)fem_msh_vector.size();j++)
+  {
+     for(i=0;i<(long)fem_msh_vector[j]->nod_vector.size();i++)
+     {
+         x_count1 = fem_msh_vector[j]->nod_vector[i]->X();
+         y_count1 = fem_msh_vector[j]->nod_vector[i]->Y();
+         z_count1 = fem_msh_vector[j]->nod_vector[i]->Z();
+
+          if (x_count1 < x_min) x_min = x_count1;
+          if (x_count1 > x_max) x_max = x_count1;
+		  if (y_count1 < y_min) y_min = y_count1;
+          if (y_count1 > y_max) y_max = y_count1;
+		  if (z_count1 < z_min) z_min = z_count1;
+          if (z_count1 > z_max) z_max = z_count1;
+
+     }     
+	//if (z_min==0.0) z_min = 0.1; TODO
+    //if (z_max==0.0) z_max = 0.1;
+
+	if (x_min <= y_min && x_min <= z_min ) min = x_min;
+	if (y_min <= x_min && y_min <= z_min ) min = y_min;
+	if (z_min <= x_min && z_min <= y_min ) min = z_min;
+	if (x_max >= y_max && x_max >= z_max ) max = x_max;
+	if (y_max >= x_max && y_max >= z_max ) max = y_max;
+	if (z_max >= x_max && z_max >= y_max ) max = z_max;
+	}
+
+	x_dist_mesh = x_dist = x_max-x_min;
+    y_dist_mesh = y_dist = y_max-y_min;
+    z_dist_mesh = z_dist = z_max-z_min;
+    dist = x_dist;
+    if (y_dist > dist) dist = y_dist;
+    if (z_dist > dist) dist = z_dist;
+
+    GetMidPoint();
+}
+
 void COGLPickingView::GetMinMaxPoints() 
 {
 	int k=0;
     int j=0;
-
-	/* The process to get rid of the .rfi file for the moment
 	vector<CGLPoint*> gli_points_vector_view;
-	*/
     gli_points_vector_view.clear();
     gli_points_vector_view = GetPointsVector();//CC
     points_vectorlength = (int)gli_points_vector_view.size();
-
     /*GLI-POINTS*/ 
 	if (gli_points_vector_view.size() != NULL)
 	{
@@ -2607,6 +3072,15 @@ void COGLPickingView::GetMinMaxPoints()
 	}
 	}
 
+    else
+    {
+        x_min = 0.0;
+        x_max = 0.0;
+        y_min = 0.0;
+        y_max = 0.0;
+        z_min = 0.0;
+        z_max = 0.0;
+    }
     /*GLI-Surfaces*/ 
     Surface * m_surface = NULL;
     vector<Surface*>::iterator ps = surface_vector.begin();
@@ -2655,8 +3129,8 @@ void COGLPickingView::GetMinMaxPoints()
     }
 
     /*Auswertung*/ 
-	if (z_min==0.0) z_min = 0.1;
-    if (z_max==0.0) z_max = 0.1;
+	//if (z_min==0.0) z_min = 0.1;
+    //if (z_max==0.0) z_max = 0.1;
 
     if (x_min <= y_min && x_min <= z_min ) min = x_min;
 	if (y_min <= x_min && y_min <= z_min ) min = y_min;
@@ -2673,6 +3147,7 @@ void COGLPickingView::GetMinMaxPoints()
     if (z_dist > dist) dist = z_dist;
 
 
+
 }	
 
 void COGLPickingView::GetMidPoint() 
@@ -2685,7 +3160,7 @@ void COGLPickingView::GetMidPoint()
 void COGLPickingView::InitializeScalesForOpenGL()
 {
     // Catch some range
-    GetRFIMinMaxPoints();
+	GetMSHMinMax(); 
 
     // Converting scale   
     // First, obtain the longest axis.
@@ -2700,22 +3175,16 @@ void COGLPickingView::InitializeScalesForOpenGL()
 		if (zAxis < xAxis) longest_axis = xAxis;
 		else longest_axis = zAxis;
 	}
-	
-	// Let's compute ScaleFactor from here.
-    double lengthOfGLRange = 2.0;
-    ScaleFactor = longest_axis / lengthOfGLRange;   
+
+	ScaleFactor = longest_axis / 2.0*WithNoZoomScale;
 }
 
 CGLPoint COGLPickingView::ConvertScaleToOpenGL(CGLPoint real)
 {
     CGLPoint gl;
 
-    // Let's do some scale here.
-    double scale = longest_axis / 2.0*WithNoZoomScale;  // This is general scaling factor.
-
     // Converting scale   
-    GetMidPoint(); 
-    gl.x = (real.x - x_mid)  / scale; gl.y = (real.y - y_mid) / scale; gl.z = (real.z - z_mid) / scale;
+    gl.x = (real.x - x_mid)  / ScaleFactor; gl.y = (real.y - y_mid) / ScaleFactor; gl.z = (real.z - z_mid) / ScaleFactor;
     
     return gl;
 }
@@ -2723,13 +3192,9 @@ CGLPoint COGLPickingView::ConvertScaleToOpenGL(CGLPoint real)
 CGLPoint COGLPickingView::ConvertScaleToOpenGL(double x, double y, double z)
 {
     CGLPoint gl;
-    
-    // Let's do some scale here.
-    double scale = longest_axis / 2.0*WithNoZoomScale; // This is general scaling factor.
 
     // Converting scale   
-    GetMidPoint(); 
-    gl.x = (x - x_mid)  / scale; gl.y = (y - y_mid) / scale; gl.z = (z - z_mid) / scale;
+    gl.x = (x - x_mid)  / ScaleFactor; gl.y = (y - y_mid) / ScaleFactor; gl.z = (z - z_mid) / ScaleFactor;
 
     return gl;
 }
@@ -2743,12 +3208,13 @@ CGLPoint COGLPickingView::GetGLIPointByIndex(int i)
 {
 	CGLPoint AGLIPoint;
 
-	AGLIPoint.x = gli_points_vector_view[i]->x;
-	AGLIPoint.y = gli_points_vector_view[i]->y;
-	AGLIPoint.z = gli_points_vector_view[i]->z;
+	AGLIPoint.x = gli_points_vector[i]->x;
+	AGLIPoint.y = gli_points_vector[i]->y;
+	AGLIPoint.z = gli_points_vector[i]->z;
 
 	return AGLIPoint;
 }
+
 void COGLPickingView::OnSelectInPicking()
 {
 	theApp.mEditMode = TRUE;
@@ -2767,6 +3233,7 @@ void COGLPickingView::OnSelectInPicking()
 
 	theApp.mContinuous = TRUE;
 }
+
 
 void COGLPickingView::OnDeselectInPicking()
 {
@@ -2823,6 +3290,29 @@ void COGLPickingView::OnSelectAllInPicking()
 			++theApp.hitsRFINodeTotal;
 			theApp.RFInodePickedTotal = (int *)realloc(theApp.RFInodePickedTotal, theApp.hitsRFINodeTotal*sizeof(int));
 			theApp.RFInodePickedTotal[theApp.hitsRFINodeTotal-1] = i;
+		}
+	}
+	if(theApp.ParticleSwitch == 1)
+	{
+		theApp.hitsParticleTotal = 0;
+
+		// get the number of gli points from COGLPickingView
+		// Let's open the door to COGLPickingView
+		// Update the change by redrawing
+		CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+		// Get the active MDI child window.
+		CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+		// Get the active view attached to the active MDI child window.
+		COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
+        pView=pView;//TK
+
+        // This is termperary measure only for single mesh cass
+        m_msh = fem_msh_vector[0];
+		for(int i=0; i < m_msh->PT->numOfParticles ; ++i)        
+		{
+			++theApp.hitsParticleTotal;
+			theApp.ParticlePickedTotal = (int *)realloc(theApp.ParticlePickedTotal, theApp.hitsParticleTotal*sizeof(int));
+			theApp.ParticlePickedTotal[theApp.hitsParticleTotal-1] = i;
 		}
 	}
 	if(theApp.PolylineSwitch == 1)
@@ -2930,6 +3420,10 @@ void COGLPickingView::OnDeselectAllInPicking()
 	if(theApp.VolumeSwitch == 1)
 	{
 		theApp.hitsVolumeTotal = 0;
+	}
+	if(theApp.ParticleSwitch == 1)
+	{
+		theApp.hitsParticleTotal = 0;
 	}
 	
 

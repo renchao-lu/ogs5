@@ -125,114 +125,151 @@ void PTValue::AssignAParticleToTheElement(int no, CElem* m_ele)
 {
 
     double unit[4];
-
+	// Set the RWPT on
+	fem->SetRWPT(1);
     fem->ConfigElement(m_ele);
     fem->ConfigNumerics(m_ele->GetElementType());
+	// Turn it back off
+	fem->SetRWPT(0);
    
     // Assign the index of the element
     m_msh->PT->X[no].Past.elementIndex = m_msh->PT->X[no].Now.elementIndex = m_ele->GetIndex(); 
 
-    // Check the element
-    /*LINES = 1*/ 
-    if (m_ele->GetElementType() == 1)
+	if(theApp.ElementSwitch == 1 && theApp.RFINodeSwitch != 1)
 	{
-        unit[0] = m_msh->PT->randomMinusOneToOne();
-        unit[1] = 0.0;
-        unit[2] = 0.0;
-        fem->setUnitCoordinates(unit);
-        fem->ComputeShapefct(1);
-        fem->RealCoordinates(unit);
+		// Check the element
+		/*LINES = 1*/ 
+		if (m_ele->GetElementType() == 1)
+		{
+			unit[0] = m_msh->PT->randomMinusOneToOne();
+			unit[1] = 0.0;
+			unit[2] = 0.0;
+			fem->setUnitCoordinates(unit);
+			fem->ComputeShapefct(1);
+			fem->RealCoordinates(unit);
 
-        // Assign the number to the particle
-        m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
-        m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
-        m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
-    }
-    /*RECTANGLES = 2*/ 
-	if (m_ele->GetElementType() == 2)
-	{
-        unit[0] = m_msh->PT->randomMinusOneToOne();
-        unit[1] = m_msh->PT->randomMinusOneToOne();
-        unit[2] = 0.0;
-        fem->setUnitCoordinates(unit);
-        fem->ComputeShapefct(1);
-        fem->RealCoordinates(unit);
+			// Assign the number to the particle
+			m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
+			m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
+			m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
+		}
+		/*RECTANGLES = 2*/ 
+		if (m_ele->GetElementType() == 2)
+		{
+			unit[0] = m_msh->PT->randomMinusOneToOne();
+			unit[1] = m_msh->PT->randomMinusOneToOne();
+			unit[2] = 0.0;
+			fem->setUnitCoordinates(unit);
+			fem->ComputeShapefct(1);
+			fem->RealCoordinates(unit);
 
-        // Assign the number to the particle
-        m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
-        m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
-        m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
-    }
-    /*HEXAHEDRA = 3*/ 
-	if (m_ele->GetElementType() == 3)
-	{
-        unit[0] = m_msh->PT->randomMinusOneToOne();
-        unit[1] = m_msh->PT->randomMinusOneToOne();
-        unit[2] = m_msh->PT->randomMinusOneToOne();
-        fem->setUnitCoordinates(unit);
-        fem->ComputeShapefct(1);
-        fem->RealCoordinates(unit);
+			// Assign the number to the particle
+			m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
+			m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
+			m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
+		}
+		/*HEXAHEDRA = 3*/ 
+		if (m_ele->GetElementType() == 3)
+		{
+			unit[0] = m_msh->PT->randomMinusOneToOne();
+			unit[1] = m_msh->PT->randomMinusOneToOne();
+			unit[2] = m_msh->PT->randomMinusOneToOne();
+			fem->setUnitCoordinates(unit);
+			fem->ComputeShapefct(1);
+			fem->RealCoordinates(unit);
 
-        // Assign the number to the particle
-        m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
-        m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
-        m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
-    }
-    /*TRIANGLES = 4*/ 
-	if (m_ele->GetElementType() == 4)
-	{
-        do{
-            unit[0] = m_msh->PT->randomZeroToOne();
-            unit[1] = m_msh->PT->randomZeroToOne();
-            unit[2] = 0.0;
-        }while(unit[0] + unit[1] > 1.0);
+			// Assign the number to the particle
+			m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
+			m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
+			m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
+		}
+		/*TRIANGLES = 4*/ 
+		if (m_ele->GetElementType() == 4)
+		{
+			do{
+				unit[0] = m_msh->PT->randomZeroToOne();
+				unit[1] = m_msh->PT->randomZeroToOne();
+				unit[2] = 0.0;
+			}while(unit[0] + unit[1] > 1.0);
 
-        fem->setUnitCoordinates(unit);
-        fem->ComputeShapefct(1);
-        fem->RealCoordinates(unit);
+			fem->setUnitCoordinates(unit);
+			fem->ComputeShapefct(1);
+			fem->RealCoordinates(unit);
 
-        // Assign the number to the particle
-        m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
-        m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
-        m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
-    }
-    /*TETRAHEDRAS = 5*/ 
-	if (m_ele->GetElementType() == 5)
-	{
-        do{
-           unit[0] = m_msh->PT->randomZeroToOne();
-           unit[1] = m_msh->PT->randomZeroToOne();
-           unit[2] = m_msh->PT->randomZeroToOne();
-        }while(unit[0] + unit[1] + unit[2] > 1.0);
+			// Assign the number to the particle
+			m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
+			m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
+			m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
+		}
+		/*TETRAHEDRAS = 5*/ 
+		if (m_ele->GetElementType() == 5)
+		{
+			do{
+				unit[0] = m_msh->PT->randomZeroToOne();
+				unit[1] = m_msh->PT->randomZeroToOne();
+				unit[2] = m_msh->PT->randomZeroToOne();
+			}while(unit[0] + unit[1] + unit[2] > 1.0);
 
-        fem->setUnitCoordinates(unit);
-        fem->ComputeShapefct(1);
-        fem->RealCoordinates(unit);
+			fem->setUnitCoordinates(unit);
+			fem->ComputeShapefct(1);
+			fem->RealCoordinates(unit);
 
-        // Assign the number to the particle
-        m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
-        m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
-        m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
-    }
-    /*PRISMS = 6*/ 
-	if (m_ele->GetElementType() == 6)
-	{
-        do{
-            unit[0] = m_msh->PT->randomZeroToOne();
-            unit[1] = m_msh->PT->randomZeroToOne();
-         }while(unit[0] + unit[1] > 1.0);
-        unit[2] = m_msh->PT->randomMinusOneToOne();
+			// Assign the number to the particle
+			m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
+			m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
+			m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
+		}
+		/*PRISMS = 6*/ 
+		if (m_ele->GetElementType() == 6)
+		{
+			do{
+				unit[0] = m_msh->PT->randomZeroToOne();
+				unit[1] = m_msh->PT->randomZeroToOne();
+			}while(unit[0] + unit[1] > 1.0);
+			unit[2] = m_msh->PT->randomMinusOneToOne();
         
-        fem->setUnitCoordinates(unit);
-        fem->ComputeShapefct(1);
-        fem->RealCoordinates(unit);
+			fem->setUnitCoordinates(unit);
+			fem->ComputeShapefct(1);
+			fem->RealCoordinates(unit);
 
-        // Assign the number to the particle
-        m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
-        m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
-        m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
-    }
+			// Assign the number to the particle
+			m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
+			m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
+			m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
+		}
+	}
+	else if(theApp.ElementSwitch == 1 && theApp.RFINodeSwitch == 1)
+	{
+		if(theApp.hitsRFINodeTotal > 1)
+		{
+			double p0[3], p1[3], a[3];
+	
+			p0[0] = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->X();
+			p0[1] = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->Y();
+			p0[2] = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->Z();
+			p1[0] = m_msh->nod_vector[theApp.RFInodePickedTotal[1]]->X();
+			p1[1] = m_msh->nod_vector[theApp.RFInodePickedTotal[1]]->Y();
+			p1[2] = m_msh->nod_vector[theApp.RFInodePickedTotal[1]]->Z();
 
+			double R = m_msh->PT->randomZeroToOne();
+			a[0] = p1[0]-p0[0]; a[1] = p1[1]-p0[1]; a[2] = p1[2]-p0[2];
+			double L = sqrt( a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
+			double m = L*R;
+			// Normalization of this vector is necessary.
+			NormalizeVector(a,3);
+
+			// Assign the number to the particle
+			m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = a[0]*m + p0[0];
+			m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = a[1]*m + p0[1];
+			m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = a[2]*m + p0[2];
+		}
+		else
+		{
+			m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->X();
+			m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->Y();
+			m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->Z();
+		}
+	}
 }
 
 

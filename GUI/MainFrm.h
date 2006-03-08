@@ -125,6 +125,11 @@ public:
     CString m_strLAYName; //OK
     bool m_bModifiedGEOView; //OK
     bool m_bIsControlPanelOpen; //OK
+private:	//PCH
+	afx_msg void OnSelectInPicking();
+	afx_msg void OnDeselectInPicking();
+	afx_msg void OnSelectAllInPicking();
+	afx_msg void OnDeselectAllInPicking();
 public:
 //--- Excel Data-Exchange ---
     CString m_fileopen;//JG

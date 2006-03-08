@@ -456,7 +456,6 @@ void CGeoSysDoc::GSPReadWIN(CArchive& ar)
     //....................................................................
     if(m_strGSPFileNameType=="rfi"){
       pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read RFI data");
-      MSHOpen(gsp_member_path_base);
       FEMRead(gsp_member_path_base);   // PCH This is added for temperary purpose
       PCTRead(gsp_member_path_base);   // PCH This is added for temperary purpose
       m_bDataMSH = TRUE;
@@ -465,7 +464,8 @@ void CGeoSysDoc::GSPReadWIN(CArchive& ar)
     if(m_strGSPFileNameType=="msh"){
       pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read MSH data");
       FEMRead(gsp_member_path_base);
-      CompleteMesh();//WW
+	  PCTRead(gsp_member_path_base);   // PCH This is added for temperary purpose
+	  CompleteMesh();  
       m_bDataMSH = TRUE;
     }
     //....................................................................
@@ -542,7 +542,6 @@ void CGeoSysDoc::GSPReadWIN(CArchive& ar)
     //....................................................................
     if(m_strGSPFileNameType=="pct"){
       pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read PCT data");
-      PCTRead(gsp_member_path_base);
     }
     //....................................................................
   }
@@ -907,9 +906,9 @@ void CGeoSysDoc::OnUpdateAddFEM(CCmdUI *pCmdUI)
 // Remove Project Member
 /**************************************************************************
 GeoSys-Method: RemoveMemberfromProject(CString FileNameAndPath)
-Task: Liest übergbenen MemberType und löscht die entsprechenden
-      Einträge aus dem Projektfile
-	  Löscht ebenfalls das entsprechende File im Projektverzeichnis
+Task: Liest ?ergbenen MemberType und l?cht die entsprechenden
+      Eintr?e aus dem Projektfile
+	  L?cht ebenfalls das entsprechende File im Projektverzeichnis
       CString MemberExtension: "gli" "rfi" "rfd"
 Programing:
 01/2004 TK project related file handling
@@ -1363,8 +1362,8 @@ void CGeoSysDoc::OnImportBMP()
                                             path_name, IMAGE_BITMAP, 0, 0,
                                             LR_LOADFROMFILE | LR_CREATEDIBSECTION);
     if (hBitmap){
-      if (m_bmpBitmap.DeleteObject()) // letztes Bitmap löschen
-        m_bmpBitmap.Detach();         // letztes Bitmap lösen
+      if (m_bmpBitmap.DeleteObject()) // letztes Bitmap l?chen
+        m_bmpBitmap.Detach();         // letztes Bitmap l?en
       // Aktuell geladenes Bitmap mit Bitmap-Objekt verbinden
       m_bmpBitmap.Attach(hBitmap);
       GSPAddMember((string)m_strGSPFileBase + ".bmp"); //OK
@@ -1657,7 +1656,7 @@ void CGeoSysDoc::OnUpdateSimulatorForward(CCmdUI *pCmdUI)
 
 /**************************************************************************
 GeoSys-Method: GetProjectFileName
-Task: Gibt den Filenamen- Pfad+Name aber ohne Extension - zurück // bisher nicht verwendet
+Task: Gibt den Filenamen- Pfad+Name aber ohne Extension - zur?k // bisher nicht verwendet
 Programing:
 04/2004 TK Implementation
 **************************************************************************/

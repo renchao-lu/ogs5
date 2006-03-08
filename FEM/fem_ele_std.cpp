@@ -143,6 +143,8 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
         idx1 = idx0+1;
         idxS = pcs->GetNodeValueIndex("SATURATION_D")+1;
         PcsType = R;
+	  case 'F':	// Fluid Momentum Process
+		PcsType = R;	// R should include L if the eqn of R is written right.
         break;
     }
 
@@ -945,6 +947,7 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
   double GradH[3],Gradz[3],w[3],v1[3],v2[3];
   int nidx1;
   int Index = MeshElement->GetIndex();
+  CRFProcess* m_pcs = PCSGet("FLUID_MOMENTUM"); // PCH
   // For nodal value interpolation
   ComputeShapefct(1);
   //======================================================================
@@ -1040,7 +1043,9 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
         break;
       //------------------------------------------------------------------
       case R: // Richards flow
-        // Change parameter caculation. WW
+		// The following line only applies when Fluid Momentum is on
+		if(m_pcs)
+			idxS = pcs->GetNodeValueIndex("SATURATION1")+1;	// PCH FM needs this.
 		for(i=0;i<nnodes;i++) //SB 4209 - otherwise saturations are nonsense
               NodalVal_Sat[i] = pcs->GetNodeValue(nodes[i], idxS);
         Sw = interpolate(NodalVal_Sat);
@@ -1934,13 +1939,22 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
 	// Since I declare these variables locally, the object of Vec should handle destruction nicely  
 	// when this local function is done so that I don't bother with memory leak.
 	
-	// Initialize Pressure and Conc vectors from the value already computed previously.
+	// Initialize Pressure from the value already computed previously.
     CRFProcess* m_pcs = NULL;
-	m_pcs = PCSGet("LIQUID_FLOW");
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+    {
+        m_pcs = pcs_vector[i];
+        if(m_pcs->pcs_type_name.find("FLOW")!=string::npos)
+            break;
+    }
+	// Update the process for proper coefficient calculation.
+	pcs = m_pcs;
+
+	int nidx1 = m_pcs->GetNodeValueIndex("PRESSURE1")+1;
 	for (int i = 0; i < nnodes; ++i)
 	{
 		NodalVal[i] = 0.0;
-		NodalVal1[i] = m_pcs->GetNodeValue(nodes[i], 1);   // 1 means always takes the current value of pressure. TEMP
+		NodalVal1[i] = m_pcs->GetNodeValue(nodes[i], nidx1);   
         NodalVal2[i] = 0.0;
 	}
 
@@ -1960,7 +1974,7 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
 		ComputeShapefct(1); // Linear interpolation function
 
 		// Material
-		CalCoefLaplace(false);
+		CalCoefLaplace(true);
 
 		// Calculate vector that computes dNj/dx*Ni*Pressure(j)
 		// These index are very important. 
@@ -1979,7 +1993,7 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
 					NodalVal[i]  -= fkt*dshapefct[dimension*nnodes+j]
 							    *mat[ele_dim*dimension+k]* shapefct[i] * NodalVal1[j];
                     NodalVal2[i] += fktG*dshapefct[dimension*nnodes+j]
-                                 *mat[ele_dim*dimension+k]* shapefct[i]*Z[j];
+                                 *mat[ele_dim*dimension+k]* shapefct[i] * MeshElement->nodes[j]->Z();
                 }
     }
 
@@ -1993,10 +2007,17 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
             IsGroundwaterIntheProcesses = 1;
     }
 
+	// Checking the coordinateflag for proper solution.
+	int checkZaxis = 0;
+	int coordinateflag = pcs->m_msh->GetCoordinateFlag(); 
+	if( (coordinateflag == 12) || (coordinateflag == 22 && dimension == 1) ||
+		(coordinateflag == 32 && dimension == 2) )
+		checkZaxis = 1;	// Then, this gotta be z axis.
+
 	// Compansate the gravity term along Z direction
-    if(dimension == 2 && IsGroundwaterIntheProcesses == 0 )
+    if(checkZaxis && IsGroundwaterIntheProcesses == 0 )
         for (int i = 0; i < nnodes; i++)
-            NodalVal[i] += NodalVal2[i];
+            NodalVal[i] -= NodalVal2[i];
 
 	// Store the influence into the global vectors.
     m_pcs = PCSGet("FLUID_MOMENTUM");

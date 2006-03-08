@@ -85,6 +85,7 @@ class CElement
      void SetCenterGP();
      CElem* GetMeshElement() const {return MeshElement;} //OK 
 
+	 void SetRWPT(const int idx) { PT_Flag = idx; } // PCH
    protected:    
      CElem* MeshElement; 
      // Coordinate indicator
@@ -134,6 +135,7 @@ class CElement
      bool T_Flag; // Temperature
      bool F_Flag; // Fluid
      int D_Flag; // Deformation
+	 int PT_Flag;	// Particle Tracking Random Walk 
   
 	 // Buffer
      int Index;
