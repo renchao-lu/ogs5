@@ -1960,7 +1960,7 @@ double CSourceTermGroup::GetCriticalDepthNODValue(int i,CSourceTerm* m_st, long 
   
 
   //MB for CriticalDepth
-  long test = (long)group_vector.size();
+//WW  long test = (long)group_vector.size();
   for(j=0;j<(long)group_vector.size();j++) {
     if (group_vector[j]->node_distype==6){
       temp2 = group_vector[j]->msh_node_number;
@@ -1970,8 +1970,8 @@ double CSourceTermGroup::GetCriticalDepthNODValue(int i,CSourceTerm* m_st, long 
   }   
   Haverage = Haverage / AnzNodes;
 
-  double test1 = m_pcs_this->GetNodeValue(msh_node,1);
-  double test2 = m_pcs_this->m_msh->nod_vector[msh_node]->Z();
+//WW  double test1 = m_pcs_this->GetNodeValue(msh_node,1);
+//WW  double test2 = m_pcs_this->m_msh->nod_vector[msh_node]->Z();
 
   H = m_pcs_this->GetNodeValue(msh_node,1) - m_pcs_this->m_msh->nod_vector[msh_node]->Z(); 
          
@@ -2008,10 +2008,11 @@ Programing:
 **************************************************************************/
 double CSourceTermGroup::GetNormalDepthNODValue(int i,CSourceTerm* m_st, long msh_node)
 {
+  i=i; //WW
   double value;
-  double H;
-  int AnzNodes = 0;
-  double Haverage = 0;
+  double H = 0.0;
+//WW  int AnzNodes = 0;
+//WW  double Haverage = 0;
   long msh_ele;
 
   CFEMesh* m_msh = NULL;
