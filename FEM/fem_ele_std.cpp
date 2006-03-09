@@ -1926,9 +1926,9 @@ void  CFiniteElementStd::Cal_Velocity()
                for(j=0; j<ele_dim; j++)          
 			      vel[i] += coef*(*MeshElement->tranform_tensor)(i, k)*(*MeshElement->tranform_tensor)(2, k);   
 		    }
-		 } // To be correct   
+		 } // To be correctted   
 		 else
-           vel[dim-1] += coef;
+           vel[k] += coef;
 	  }
 	  for (i = 0; i < dim; i++)
       {
