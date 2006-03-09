@@ -76,7 +76,7 @@ class CFiniteElementStd:public CElement
      // Assembly
      void Assembly(); 
 	 void Assembly(int dimension);	// PCH for Fluid Momentum
-     void Cal_Velocity(bool cal_gravity);
+     void Cal_Velocity();
 
      // MB only temporary
      void Get_Matrix_Quad();
@@ -115,7 +115,8 @@ class CFiniteElementStd:public CElement
      // Vector of local node values, e.g. pressure, temperature.
      // Assume maximium element nodes is 20
      double OldMatrix[64]; // For grid adapting     
-     double NodalVal0[20];     
+  public: //OK
+     double NodalVal0[20]; //?? NodalValueSaturation, NodalValueTemperature; ...
      double NodalVal[20];     
      double NodalVal1[20];
      double NodalVal2[20]; 
@@ -124,6 +125,7 @@ class CFiniteElementStd:public CElement
      double NodalValC[20]; 
      double NodalValC1[20]; 
      double NodalVal_Sat[20]; 
+  private: //OK
      // Gauss point value. Buffers.
      double TG, PG, Sw;    
      double edlluse[16];

@@ -1763,7 +1763,7 @@ void *M5CreateMatrix(long param1, long param2, long param3)
   
   matrix_type = param2;
 
-  int i,ii,jj,count1;
+  int i; //ii,jj,count1;
   long k, index, Size, dim1; //OK
 /*------------------------------------------------------------*/
   jd_ptr_max = 0;
@@ -2048,9 +2048,10 @@ void M5MatVek(double *b, double *erg)
 #endif
 {
 //  Modell2 *w = (Modell2 *) wurzel;
-  int i, k, dim1;
+  int i, dim1;  //k, 
   int j, num;
-  long ii,jj, nod_c, counter, col_len; 
+//  long ii,jj, nod_c, counter;
+  long col_len; 
   CFEMesh* m_msh = NULL; //WW
   m_msh = FEMGet("GROUNDWATER_FLOW");
   dim1 = m_msh->NodesInUsage();
@@ -3404,7 +3405,7 @@ void M5Vorkond(int aufgabe, double *x, double *b)
   register long k;
   register int i;
   static double *x0, *r0, h;
-  long ii, count1;
+  long ii; // count1;
   double v_diag=0.0;
 
 #ifdef ERROR_CONTROL

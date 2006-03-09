@@ -43,6 +43,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
 	char name1[MAX_ZEILE];
     char pcsT;
     cpl_pcs=NULL; 
+    CRFProcess *m_pcs=NULL;  //MX
 
     GravityMatrix = NULL;
     dynamic = false;
@@ -116,6 +117,13 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
         idx0 = pcs->GetNodeValueIndex("TEMPERATURE1");
         idx1 = idx0+1;
 //SB4218        idxS = pcs->GetNodeValueIndex("SATURATION1")+1;
+        for (i=0; i<(int) pcs_vector.size(); i++){  //MX
+	      m_pcs = pcs_vector[i];
+	      if(m_pcs->pcs_type_name.compare("RICHARDS_FLOW") == 0){
+            idxS = m_pcs->GetNodeValueIndex("SATURATION1")+1; //MX
+            break;
+          }
+        }
         break;
       case 'M': // Mass transport
         PcsType = M;
@@ -357,8 +365,10 @@ void  CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bo
         cpl_pcs = PCSGet("LIQUID_FLOW"); 
       if(cpl_pcs == NULL) 
         cpl_pcs = PCSGet("RICHARDS_FLOW"); //OK
+      if (cpl_pcs){  //MX
       idx_c0 = cpl_pcs->GetNodeValueIndex("PRESSURE1");
       idx_c1 = idx_c0+1;
+      }
       break;
     case 'M': // Mass transport
       if(T_Flag)
@@ -754,7 +764,7 @@ inline double CFiniteElementStd::CalCoefMass()
       break;
     //....................................................................
     case H: // Heat transport
-      val = MediaProp->HeatCapacity(Index,unit,pcs->m_num->ls_theta,this)*time_unit_factor;
+      val = MediaProp->HeatCapacity(Index,unit,pcs->m_num->ls_theta,this);  //MX *time_unit_factor;
      //YD val += FluidProp->SpecificHeatCapacity()*time_unit_factor;
       val /=time_unit_factor;
       break;
@@ -987,8 +997,25 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
       case C: // Componental flow
         break;
       case H: // heat transport
+        if(SolidProp->GetCapacityModel()==3) // DECOVALEX THM1  //MX
+		{
+            Sw = interpolate(NodalVal_Sat); 
+            for(i=0; i<dim*dim; i++) mat[i] = 0.0; 
+			for(i=0; i<dim; i++) 
+	           mat[i*dim+i] = SolidProp->Heat_Conductivity(Sw);  
+		}  
+        else if(SolidProp->GetCapacityModel()==1 && MediaProp->heat_diffusion_model == 273){
+          tensor = MediaProp->HeatConductivityTensor(Index);
+          for(i=0; i<dim*dim; i++) 
+            mat[i] = tensor[i]; //mat[i*dim+i] = tensor[i];
+        }
+        else
+        {
           tensor = MediaProp->HeatDispersionTensorNew(ip);
-          for(i=0;i<dim*dim;i++) mat[i] = tensor[i]*time_unit_factor; //mat[i*dim+i] = tensor[i];
+          for(i=0;i<dim*dim;i++) 
+            mat[i] = tensor[i];  //MX *time_unit_factor; //mat[i*dim+i] = tensor[i];
+ 
+       }      
         break;
       case M: // Mass transport
 		    tensor = MediaProp->MassDispersionTensorNew(ip);
@@ -1121,7 +1148,7 @@ inline double CFiniteElementStd::CalCoefAdvection()
     case C: // Componental flow
       break;
     case H: // heat transport
-      val = FluidProp->SpecificHeatCapacity()*FluidProp->Density()*time_unit_factor;
+      val = FluidProp->SpecificHeatCapacity()*FluidProp->Density();  //MX *time_unit_factor;
       break;
     case M: // Mass transport //SB4200
 		// Get velocity(Gausspoint)/porosity(element)
@@ -1836,7 +1863,7 @@ void  CFiniteElementStd::Assemble_Gravity()
    08/2005      
 **************************************************************************/
 // Local assembly
-void  CFiniteElementStd::Cal_Velocity(bool cal_gravity)
+void  CFiniteElementStd::Cal_Velocity()
 {
   int i, j, k;
   static double vel[3];  
@@ -1886,7 +1913,7 @@ void  CFiniteElementStd::Cal_Velocity(bool cal_gravity)
       {
          vel[i] = 0.0; 
          for(j=0; j<nnodes; j++)
-			 vel[i] += fabs(NodalVal[j])*dshapefct[i*nnodes+j];
+			 vel[i] += NodalVal[j]*dshapefct[i*nnodes+j];
 	  }     
       // Gravity term
       if(k==2&&(!HEAD_Flag))
@@ -1901,7 +1928,7 @@ void  CFiniteElementStd::Cal_Velocity(bool cal_gravity)
 		    }
 		 } // To be correct   
 		 else
-           vel[k] -= coef;
+           vel[dim-1] += coef;
 	  }
 	  for (i = 0; i < dim; i++)
       {
@@ -2899,6 +2926,7 @@ Programing:
 void CFiniteElementStd::Assembly()
 {
   int i,j, nn;
+  CRFProcess *m_pcs=NULL;  //MX
   //----------------------------------------------------------------------
   //OK index = m_dom->elements[e]->global_number;
   index = Index;
@@ -2987,8 +3015,15 @@ void CFiniteElementStd::Assembly()
         CalNodalEnthalpy();
       if(SolidProp->GetCapacityModel()==3) // D_THM1, bentonite
 	  {
+        for (i=0; i<(int) pcs_vector.size(); i++){  //MX
+	      m_pcs = pcs_vector[i];
+	      if(m_pcs->pcs_type_name.compare("RICHARDS_FLOW") == 0){
+ //           idxS = m_pcs->GetNodeValueIndex("SATURATION1")+1; //MX
+            break;
+          }
+        }
         for(i=0;i<nnodes;i++)
-          NodalVal_Sat[i] = pcs->GetNodeValue(nodes[i], idxS);
+          NodalVal_Sat[i] = m_pcs->GetNodeValue(nodes[i], idxS);
 	  }
         AssembleMixedHyperbolicParabolicEquation(); //CMCD4213 
 	  break;

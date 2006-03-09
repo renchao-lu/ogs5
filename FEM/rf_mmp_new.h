@@ -70,7 +70,7 @@ class CMediumProperties
   double CapillaryPressureFunction(long number,double*gp,double theta,int phase,double saturation);//CMCD 9/2004 GeoSys 4
   double StorageFunction(long number,double*gp,double theta);//CMCD 9/2004 GeoSys 4
   double HeatCapacity(long number, double*gp,double theta, CFiniteElementStd* assem=NULL);
-  double* HeatConductivityTensor();
+  double* HeatConductivityTensor(int number); //MX
   double* HeatDispersionTensorNew(int ip);//CMCD
 	double* MassDispersionTensor(long number,double*gp,double theta,long component); //SB:GS4
 	double* MassDispersionTensorNew(int ip); //CMCD

@@ -3402,7 +3402,7 @@ void CRFProcess::CalIntegrationPointValue()
     if (elem->GetMark()) // Marked for use
     {
        fem->ConfigElement(elem);
-	   fem->Cal_Velocity(true);
+	   fem->Cal_Velocity();
     } 
   }
 }
@@ -3756,7 +3756,7 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
               elem = m_msh->ele_vector[ele_index];
 			  if (elem->GetMark()){ 
                  fem->ConfigElement(elem);
-	             fem->Cal_Velocity(true); 
+                 fem->Cal_Velocity(); 
 				 }
               gp_ele = ele_gp_value[ele_index];
               gp_ele->GetEleVelocity(vel);

@@ -1693,6 +1693,9 @@ double CMediumProperties::HeatCapacity(long number, double*gp,double theta,
   double porosity;
   int group;
   int nphase = (int)mfp_vector.size();
+  double Sw;
+  double T0,T1;
+  double H0,H1;
   // ??? 
   bool FLOW = false; //WW
   for(int ii=0;ii<(int)pcs_vector.size();ii++){
@@ -1702,7 +1705,8 @@ double CMediumProperties::HeatCapacity(long number, double*gp,double theta,
        nphase = 3;	 
   }
   //----------------------------------------------------------------------
-  switch(heat_capcity_model){
+  switch(assem->SolidProp->GetCapacityModel())
+  {
     //....................................................................
     case 0:  // f(x) user-defined function
       break;
@@ -1728,29 +1732,25 @@ double CMediumProperties::HeatCapacity(long number, double*gp,double theta,
       heat_capacity = heat_capacity_fluids \
                        + (1.-porosity) * specific_heat_capacity_solid * density_solid;
       break;
-    /*case 2:  //boiling model for YD
+    case 2:  //boiling model for YD
       //YD/OK: n c rho = n S^g c^g rho^g + n S^l c^l rho^l + (1-n) c^s rho^s
-      T1 = interpolate(NodalVal1);
-  	  if(heat_phase_change){
-        T0 = interpolate(NodalVal0);
+      T1 = assem->interpolate(assem->NodalVal1); //assem->GetNodalVal(1);
+  	  if(assem->FluidProp->heat_phase_change_curve>0){ //
+        T0 = assem->interpolate(assem->NodalVal0);
         if(fabs(T1-T0)<1.0e-8) T1 +=1.0e-8;
-        H0 = interpolate(NodalVal2);
-        H1 = interpolate(NodalVal3);
-		    heat_capacity = (H1-H0)/(T1-T0);
-		  }
-		  else heat_capacity = SolidProp->Heat_Capacity(-T1, 0.0);
+        H0 = assem->interpolate(assem->NodalVal2);
+        H1 = assem->interpolate(assem->NodalVal3);
+		heat_capacity = (H1-H0)/(T1-T0);
+	  }
+	  else 
+        heat_capacity = assem->SolidProp->Heat_Capacity(-T1, 0.0);
       break;
-    case 3:  // D_THM1
-      T1 = interpolate(NodalVal1);
-      poro = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
-      Sw = interpolate(NodalVal_Sat);
-      val = SolidProp->Heat_Capacity(T1)*fabs(SolidProp->Density())+ \
-      Sw*poro*MFPCalcFluidsHeatCapacity(Index,unit,pcs->m_num->ls_theta, this);
-      if(FluidProp) val_l = FluidProp->SpecificHeatCapacity(this)
-      val_s = SolidProp->Heat_Capacity(0.0)/time_unit_factor;
-      val_g = GasProp->SpecificHeatCapacity(this)/time_unit_factor;; 
-      val = val_l + val_s;
-      break;*/
+    case 3:  // D_THM1 - Richards model
+      T1 = assem->interpolate(assem->NodalVal1);
+      Sw = assem->interpolate(assem->NodalVal_Sat);
+      heat_capacity = assem->SolidProp->Heat_Capacity(T1)*fabs(assem->SolidProp->Density())+ \
+                   Sw*Porosity(assem)*MFPCalcFluidsHeatCapacity(number,gp,theta,assem);
+      break;
     //....................................................................
     default:
       cout << "Error in CMediumProperties::HeatCapacity: no valid material model" << endl;
@@ -1772,7 +1772,7 @@ Programing:
 last modification:
 ToDo:
 **************************************************************************/
-double* CMediumProperties::HeatConductivityTensor()
+double* CMediumProperties::HeatConductivityTensor(int number)
 {
   int i, dimen;
   CSolidProperties *m_msp = NULL;
@@ -1797,8 +1797,11 @@ double* CMediumProperties::HeatConductivityTensor()
   dimen = m_pcs->m_msh->GetCoordinateFlag()/10;
   int group = m_pcs->m_msh->ele_vector[number]->GetPatchIndex();
  
+  for(i=0;i<dimen*dimen;i++)  //MX
+    heat_conductivity_tensor[i] = 0.0;
+
   m_msp = msp_vector[group];
-  m_msp->HeatConductivityTensor(dimen,heat_conductivity_tensor);
+  m_msp->HeatConductivityTensor(dimen,heat_conductivity_tensor,group); //MX
 
 
   for(i=0;i<dimen*dimen;i++)
@@ -1835,7 +1838,7 @@ double* CMediumProperties::HeatDispersionTensorNew(int ip)
   ElementValue* gp_ele = ele_gp_value[index]; 
 
   // Materials
-  heat_conductivity_porous_medium = HeatConductivityTensor();
+  heat_conductivity_porous_medium = HeatConductivityTensor(index); //MX, add index
   m_mfp = Fem_Ele_Std->FluidProp;
   fluid_density = m_mfp->Density();
   heat_capacity_fluids = m_mfp->specific_heat_capacity;
@@ -3454,6 +3457,7 @@ double CMediumProperties::PorosityVolumetricChemicalReaction(long index)
 
  /*  MMP Medium Properties  */
   porosity = porosity_model_values[0];
+  if (!rc) return porosity;
   
 //  m=rcml->number_of_equi_phases;
   m = rc->rcml_number_of_equi_phases;
@@ -5032,9 +5036,13 @@ double CMediumProperties::SaturationCapillaryPressureFunction
   //----------------------------------------------------------------------
   switch(capillary_pressure_model){   
     case 0:  // k = f(x) user-defined function
+	  if(capillary_pressure < MKleinsteZahl)
+      saturation = 1.0;
+      else      
       saturation = GetCurveValueInverse((int)capillary_pressure_model_values[0],0,capillary_pressure,&gueltig);
       break;
     case 1:  // constant
+      saturation = 1.0;  //MX test for DECOVALEX
       break;
     case 2:  // Lineare Kapillardruck-Saettigungs-Beziehung
       // kap12 steigt linear von 0 auf kap[2] im Bereich satu_water_saturated bis satu_water_residual

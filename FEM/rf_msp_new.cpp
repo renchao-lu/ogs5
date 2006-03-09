@@ -192,6 +192,8 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
            break;                      
 		 case 3:  // DECOVALEX THM1, Bentonite
            in_sd.clear();    
+           capacity_pcs_name_vector.push_back("TEMPERATURE1");
+           capacity_pcs_name_vector.push_back("SATURATION1");
            break;                      
       }
     }
@@ -391,6 +393,7 @@ CSolidProperties::CSolidProperties()
     // 0: Time
     // 1: ...   
     CurveVariableType_Conductivity=-1;
+    mode = 0; // Gauss point values //OK
 
 }
 CSolidProperties::~CSolidProperties()
@@ -668,7 +671,8 @@ double CSolidProperties::Heat_Conductivity(double refence)
            val =  (*data_Conductivity)(1);
         break;
 	  case 3: // refence: saturation
-           val = 1.28-0.71/(1+10.0*exp(refence-0.65));
+           //val = 1.28-0.71/(1+10.0*exp(refence-0.65));  //MX
+           val = 1.28-0.71/(1+exp(10.0*(refence-0.65)));  
         break;
     }
     return val;
@@ -683,7 +687,7 @@ Programing:
 last modification:
 ToDo: geo_dimension
 **************************************************************************/
-void CSolidProperties::HeatConductivityTensor(const int dim, double* tensor)
+void CSolidProperties::HeatConductivityTensor(const int dim, double* tensor, int group)
 {
   //static double tensor[9];
   int heat_capacity_model;
@@ -694,7 +698,7 @@ void CSolidProperties::HeatConductivityTensor(const int dim, double* tensor)
   //--------------------------------------------------------------------
   // MMP medium properties
   CMediumProperties *m_mmp = NULL;
-  m_mmp = mmp_vector[0];  //Todo
+  m_mmp = mmp_vector[group];  //MX
   thermal_conductivity_tensor[0] = Heat_Conductivity(); //WW
   // Test for DECOVALEX
   // thermal_conductivity_tensor[0] =0.5+0.8*PCSGetELEValue(number,NULL,theta,"SATURATION1"); 
@@ -3333,8 +3337,8 @@ void CSolidProperties::CalPrimaryVariable(vector<string>& pcs_name_vector)
     return;
 
   for(int i=0;i<(int)pcs_name_vector.size();i++){
-    m_pcs = PCSGet(pcs_name_vector[i]);
-  
+    m_pcs = PCSGet(pcs_name_vector[i],true);
+	if (!m_pcs) return;  //MX  
     nidx0 = m_pcs->GetNodeValueIndex(pcs_name_vector[i]);
 	  nidx1 = nidx0+1;
     
