@@ -1687,7 +1687,7 @@ double CMediumProperties::HeatCapacity(long number, double*gp,double theta,
                                        CFiniteElementStd* assem)
 {
   CSolidProperties *m_msp = NULL;
-  int heat_capcity_model = 1;
+//WW  int heat_capcity_model = 1;
   double heat_capacity_fluids,specific_heat_capacity_solid; 
   double density_solid;
   double porosity;
@@ -4199,7 +4199,7 @@ last modification:
 double* CMediumProperties::PermeabilityTensor(long index)
 {
 static double tensor[9];
-int perm_index;
+int perm_index=0;
 
 if(permeability_model==2)
     for(perm_index=0;perm_index<(int)m_pcs->m_msh->mat_names_vector.size();perm_index++)
@@ -5494,8 +5494,8 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
   CElem* m_ele_geo = NULL;
   long i, ihet;
   double mmp_property_value;
-  int mat_vector_size;
-  double ddummy, conversion_factor;
+  int mat_vector_size=0; // Init WW
+  double ddummy, conversion_factor=1.0;; //init WW
   vector <double> xvals, yvals, zvals, mmpvals;
   double x, y, z, mmpv;
   std::stringstream in;
