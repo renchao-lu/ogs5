@@ -631,7 +631,7 @@ void COutput::NODWriteDOMDataTEC()
   int te=0;
   string eleType;
   string tec_file_name;
-  char tf_name[10];
+//WW  char tf_name[10];
 
   std::cout << "Process " << myrank << " in WriteDOMDataTEC" << std::endl;
 
