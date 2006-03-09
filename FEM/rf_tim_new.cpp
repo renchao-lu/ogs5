@@ -453,7 +453,7 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
   static double Node_Sat[8];
   double buffer;
   int no_time_steps;
-  int no_processes =(int)pcs_vector.size();
+//WW  int no_processes =(int)pcs_vector.size();
   int mmp_vector_size = (int)mmp_vector.size(); 
 
   for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
