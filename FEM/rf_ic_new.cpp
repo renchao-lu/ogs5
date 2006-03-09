@@ -554,7 +554,6 @@ if(SubNumber==0)
     vector<string>var_name;
     string var_name_string;
     string sdummy;
-    int* nidx;
     double ddummy;
     long ldummy;
     //....................................................................
@@ -582,27 +581,23 @@ if(SubNumber==0)
     for(i=0;i<no_var;i++){
       rfr_file >> var_n[i];
     }
-    nidx = new int[no_var];
     size_t pos;
     for(i=0;i<no_var;i++){ // HEAD, m ...
       rfr_file >> var_name_string >> sdummy;
       pos = var_name_string.find_first_of(',');
       var_name_string.erase(pos,1);
       var_name.push_back(var_name_string);
-      nidx[i] = m_pcs->GetNodeValueIndex(var_name_string);
     }
     while(!rfr_file.eof()) {
       rfr_file >> ldummy;
         cout << ldummy << endl;
       for(i=0;i<no_var;i++){ // HEAD, m ...
         rfr_file >> ddummy;
-        if(nidx[i]>-1)
-          m_pcs->SetNodeValue(ldummy,nidx[i],ddummy);
+          m_pcs->SetNodeValue(ldummy,nidx,ddummy);      
       }
     }
     //....................................................................
     delete var_n;
-    delete nidx;
     var_name.clear();
   }
   //----------------------------------------------------------------------
