@@ -3683,10 +3683,10 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
   int curve, valid=0;
   long msh_node, shift;
   long i, j;
-  long bc_eqs_index;
-  double H = 0.0;
+  long bc_eqs_index=-1;
+//WW  double H = 0.0;
   int  EleType;
-  double q_face; 
+  double q_face=0.0; 
   
   CElem* elem = NULL;
   CElem* face = NULL;
@@ -5804,9 +5804,9 @@ void CRFProcess::CalcSecondaryVariablesDualRichards(int timelevel, bool update)
   double GP[3];
   static double Node_Cap[8];
   int idxp,idxcp,idxS;
-  double alph = 0.1;    //ToDo
-  double K = 0.00001;
-  double gravity_constant = 9.81;
+//WW  double alph = 0.1;    //ToDo
+//WW  double K = 0.00001;
+//WW  double gravity_constant = 9.81;
 
   CMediumProperties* m_mmp = NULL;
   CElem* elem =NULL;
