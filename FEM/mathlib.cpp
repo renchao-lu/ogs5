@@ -4669,7 +4669,7 @@ double ComputeDetTri(const double *x1, const double *x2,
    09/2004     WW        Erste Version
 **************************************************************************/
 double ComputeDetTex(const double *x1, const double *x2,
-                              const double *x3, const double *x4)
+                     const double *x3, const double *x4)
 {
    return 
      fabs((x1[0]-x4[0])*((x2[1]-x4[1])*(x3[2]-x4[2])-(x2[2]-x4[2])*(x3[1]-x4[1]))
