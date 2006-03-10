@@ -90,6 +90,8 @@ CViewElements *m_view_elements = NULL;
 
 CPoint m_ptLast = CPoint(0,0);
 
+//CVS TEST
+
 /*----------------------------------------------------------------------*/
 // CALLBACKS for nonconvex surface glu_view
 #ifndef CALLBACK
@@ -254,7 +256,7 @@ void COGLView:: On3DControl()
     if (mainframe->m_something_changed == 1)
     {
         GetGLIPointsforView();
-        GetGLILinesforView();
+        //GetGLILinesforView();
         GetGLIPolylinesforView();
         GetGLISurfacesforView();
         //GetRFINodesforView();
@@ -347,7 +349,6 @@ void COGLView::OnDrawGL()
 	CGSProject prj;
     prj.ProjectName = doc->m_strGSPFilePathBase;
 
-    BOOL visible = IsWindowVisible( );
 
     // the couple glPush - glPop is necessary because the entire
 // scene is rotated of the given angle (which is absolute) at every redraw
@@ -407,7 +408,6 @@ void COGLView::OnDrawGL()
 
 /*POINTS*/ 
     if (m_3dcontrol_points == 1 && points_vectorlength != 0) {
-
          GetMSHMinMax();
 		 if (points_vectorlength < 50)glPointSize(4.0);
 		 else glPointSize(3.0);
@@ -416,12 +416,12 @@ void COGLView::OnDrawGL()
          j=0;
 		 for (j=0;j<points_vectorlength;j++)
          { 
+          if (gli_points_vector[j]->display_mode == 1)
+          {
 		   glColor3d(0.5,0.1,0.0);	  
-//OK		   glVertex3d(m_image_distort_factor_x*view_points_vector[j]->x,m_image_distort_factor_y*view_points_vector[j]->y,m_image_distort_factor_z*view_points_vector[j]->z);   		   
-		   glVertex3d(m_image_distort_factor_x* (-x_mid +  gli_points_vector[j]->x),\
-                      m_image_distort_factor_y* (-y_mid +  gli_points_vector[j]->y),\
-                      m_image_distort_factor_z* (-z_mid +  gli_points_vector[j]->z));   		   
-		 }
+		   glVertex3d(m_image_distort_factor_x*(-x_mid +  gli_points_vector[j]->x),m_image_distort_factor_y*(-y_mid +  gli_points_vector[j]->y),m_image_distort_factor_z*(-z_mid +  gli_points_vector[j]->z));   		   
+          }
+         }
     	 glEnd();
 		 
          if (m_3dcontrol_point_numbers == 1)
@@ -430,6 +430,8 @@ void COGLView::OnDrawGL()
 
          for (j=0;j<(int)gli_points_vector.size();j++)
          { 
+          if (gli_points_vector[j]->display_mode == 1)
+          {
 		   glColor3f(1.0,1.0,1.0);
 		   //glRasterPos3d(m_image_distort_factor_x*view_points_vector[j]->x,m_image_distort_factor_y*view_points_vector[j]->y,m_image_distort_factor_z*view_points_vector[j]->z);
            glRasterPos3d(m_image_distort_factor_x* (-x_mid +  gli_points_vector[j]->x),
@@ -439,6 +441,7 @@ void COGLView::OnDrawGL()
            long point_number = gli_points_vector[j]->id;
 		   sprintf(number,"%ld",point_number);
 		   Text2D(number);		
+          }
 		 }
          }
 
@@ -463,42 +466,6 @@ void COGLView::OnDrawGL()
 		 }
          if (preRect != lpRect) Invalidate(TRUE);
 		 ZoomAndMove(1);/*Skalierungs- und Translatations-Steuerung*/ 
-    }
- /*LINES*/ 
-    if (m_3dcontrol_lines == 1 && lines_vectorlength != 0) {
-
-   		 glBegin(GL_LINES);/*Linien lesen aus View-Linien-Vektor und darstellen*/
-		 for (j=0;j<lines_vectorlength;j++)
-         {
-             glColor3d(0.7,0.0,0.0);
-			 glVertex3d(m_image_distort_factor_x*view_lines_vector[j]->x1,m_image_distort_factor_y*view_lines_vector[j]->y1,m_image_distort_factor_z*view_lines_vector[j]->z1);            
-			 glVertex3d(m_image_distort_factor_x*view_lines_vector[j]->x2,m_image_distort_factor_y*view_lines_vector[j]->y2,m_image_distort_factor_z*view_lines_vector[j]->z2);
-     	 }
-		 glEnd();
-
-         /*DISPLAY*/ 
-         if (view_counter==NULL) /*First View*/ 
-		 {
-			 trans_x=trans_y=trans_z=0.0;
-             scale_x=scale_y=scale_z=0.9;
-			 glPushMatrix();
-		     glMatrixMode(GL_PROJECTION);
-		     glLoadIdentity(); 
-			 trackball.SetCamera(view_counter);
-			 trackball.currentQuat=unitquaternion(0,X_AXIS);
-	         glOrtho(-ClipSize*(dist),+ClipSize*(dist),\
-				     -ClipSize*(dist),+ClipSize*(dist),\
-					 -ClipSize*(dist),+ClipSize*(dist));   		           
-			 glScaled(scale_x,scale_y,scale_z);//TODO		 
-			 glMatrixMode(GL_MODELVIEW);
-		     glPopMatrix();
-		     Invalidate(TRUE);
-			 view_counter++;
-		 }
-         if (preRect != lpRect) Invalidate(TRUE);
-		 ZoomAndMove(1);/*Skalierungs- und Translatations-Steuerung*/ 
-
-
     }
 /*POLYLINES*/ 
     if (m_3dcontrol_polylines == 1 && polylines_vectorlength != 0) { 
@@ -4708,7 +4675,7 @@ void COGLView::OnColoredElevation()
 
 void COGLView::OnEnvirLighting() 
 {
-	double light1 [4]= { 1, 1, 1, 1};
+	//double light1 [4]= { 1, 1, 1, 1};
 	
 	//const GLfloat* angle = 180.0;
  
@@ -5566,7 +5533,6 @@ void COGLView::DisplayElementNumbers()
   }
 }
 
-// OK why this is member of COGLView
 void COGLView::GetGLIPointsforView() 
 {
 	int j=0;
@@ -5723,14 +5689,13 @@ void COGLView::GetGLISurfacesforView()
 	int j=0, k=0, l=0;
     int size=0;
 	double x_middle=0.0, y_middle=0.0, z_middle=0.0;
-    int pre_number, order_changed;
+    int pre_number=-1;
 	string Surface_Name;
     CString Polyline_Name;
 	CString SurfacePolyline_Name;
 	CGLPolyline *sfc_polyline = NULL;
 	CViewPolylines *m_surface_polyline = NULL;
 	Surface * m_surface = NULL;
-	CGLPoint *poly_points = NULL;
 	CGLPoint *poly_points0 = NULL;
 	CGLPoint *poly_view_points = NULL;
 
@@ -7031,7 +6996,9 @@ void COGLView::ShowMeshBoundingBox()
 {
          glDisable(GL_BLEND);
          glBegin(GL_LINES);
-         glColor4d(1.0,1.0,1.0,0.2);
+         glColor3d(0.0,0.0,0.8);
+         //glColor3d(0.0,0.0,0.0);//black box
+         //glColor4d(1.0,1.0,1.0,0.2);
          
          glVertex3d(m_image_distort_factor_x*(-x_dist_mesh/2),m_image_distort_factor_y*(-y_dist_mesh/2),m_image_distort_factor_z*(-z_dist_mesh/2));
          glVertex3d(m_image_distort_factor_x*(x_dist_mesh/2),m_image_distort_factor_y*(-y_dist_mesh/2),m_image_distort_factor_z*(-z_dist_mesh/2));
