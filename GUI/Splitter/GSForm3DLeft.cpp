@@ -169,17 +169,6 @@ hPOINTS = pCtrl->InsertItem(_T("Points"), 0, 1,hGEOMETRY);
         pCtrl->InsertItem(item_name,0,1, hPOINTS, TVI_LAST);
         gli_points_vector[i]->display_mode = 0;
     }
-/*Line TREE*/ 
-hLINES = pCtrl->InsertItem(_T("Lines"), 0, 1,hGEOMETRY);
-    line_list_length = (int)gli_file_lines_vector.size();
-    list_length = line_list_length;
-    for (i=0;i<list_length;i++)
-    {
-        item_name.Format(_T("%d"),gli_file_lines_vector[i]->gli_line_id);
-        _tprintf(_T("%s"), (LPCTSTR) item_name);
-        pCtrl->InsertItem(item_name,0,1, hLINES, TVI_LAST);
-        gli_file_lines_vector[i]->display_mode = 0;
-    }
 /*Polyline TREE*/ 
     HTREEITEM hPOLYLINES = pCtrl->InsertItem(_T("Polylines"),0, 1, hGEOMETRY);
     pp = polyline_vector.begin(); //CC
@@ -478,54 +467,6 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
 			 theApp.GLINodeSwitch = 0;
         }
 //
-        /*LINES*/   
-        if (nSelectedImage == 1 && item_name == "Lines")
-        {
-             m_3dcontrol_lines = 1;
-             /*---------------------------------------*/ 
-             size = (int)gli_file_lines_vector.size();
-             for (i=0; i<size; i++)
-             {
-               gli_file_lines_vector[i]->display_mode = 1;
-
-               if (i==0 && pCtrl->ItemHasChildren(hItem)) 
-               {
-                   hChildItem = pCtrl->GetChildItem(hItem);
-                   SetCheckBox(hChildItem, TRUE);
-               }
-               if (i>0 && pCtrl->ItemHasChildren(hItem)) 
-               {
-                   hChildItem = pCtrl->GetNextItem(hChildItem, TVGN_NEXT);
-                   SetCheckBox(hChildItem, TRUE);
-               }
-             }
-             /*---------------------------------------*/ 
-             OnDataChange();       
-        }
-        if (nSelectedImage == 0 && item_name == "Lines")
-        {
-              m_3dcontrol_lines = 1;
-
-             /*---------------------------------------*/ 
-             size = (int)gli_file_lines_vector.size();
-             for (i=0; i<size; i++)
-             {
-               gli_file_lines_vector[i]->display_mode = 0;
-
-               if (i==0 && pCtrl->ItemHasChildren(hItem)) 
-               {
-                   hChildItem = pCtrl->GetChildItem(hItem);
-                   SetCheckBox(hChildItem, FALSE);
-               }
-               if (i>0 && pCtrl->ItemHasChildren(hItem)) 
-               {
-                   hChildItem = pCtrl->GetNextItem(hChildItem, TVGN_NEXT);
-                   SetCheckBox(hChildItem, FALSE);
-               }
-             }
-             /*---------------------------------------*/ 
-              OnDataChange();       
-        }
         /*POLYLINES*/   
         if (nSelectedImage == 1 && item_name == "Polylines")
         {
@@ -1017,18 +958,6 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
 
                 OnDataChange();
             }                   
-            /*Lines*/      
-            if (item_name == "Lines")
-            {
-                m_3dcontrol_lines = 1;
-
-                item_name = pCtrl->GetItemText(hItem);
-                id = atol(item_name);
-                gli_file_lines_vector[id]->display_mode = 1;
-
-                OnDataChange();
-            }                   
- 
             /*POLYLINES*/      
             if (item_name == "Polylines")
             {
@@ -1193,17 +1122,6 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
                 item_name = pCtrl->GetItemText(hItem);
                 id = atol(item_name);
                 gli_points_vector[id]->display_mode = 0;
-
-                OnDataChange();
-            }        
-            /*LINES*/ 
-            if (item_name == "Lines")
-            {
-                m_3dcontrol_lines = 1;
-
-                item_name = pCtrl->GetItemText(hItem);
-                id = atol(item_name);
-                gli_file_lines_vector[id]->display_mode = 0;
 
                 OnDataChange();
             }        
