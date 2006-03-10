@@ -1441,7 +1441,7 @@ void CFiniteElementStd::CalcLaplace()
       // Calculate mass matrix
       //this->pcs->m_msh
 	  //if(PcsType == G && MediaProp->unconfined_flow_group == 1 && MeshElement->ele_dim == 2) {
-	  water_depth = 1.0
+	  water_depth = 1.0;
       // The following "if" is done by WW
       if(PcsType == G && MediaProp->unconfined_flow_group == 1 && MeshElement->ele_dim == 2 && !pcs->m_msh->cross_section) {
           water_depth = 0.0;
