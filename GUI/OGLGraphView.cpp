@@ -147,8 +147,8 @@ void COGLGraphView::OnCreateGL()
 // prepare charset for text
 	PrepareCharset2D("Arial",20);
 // Set the background color for the first view
-	//SetClearCol(16777215);white
-    SetClearCol(15624229);
+	SetClearCol(16777215);//white
+    //SetClearCol(15624229);//Blue
 }
 
 
@@ -187,18 +187,16 @@ void COGLGraphView::OnDrawGL()
         m_pDoc->UpdateAllViews(this);
 
 
- CMDIFrameWnd *pFrame = 
-             (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+ //CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
 
 // Get the active MDI child window.
-CMDIChildWnd *pChild = 
-             (CMDIChildWnd *) pFrame->GetActiveFrame();
+//CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
 
 // or CMDIChildWnd *pChild = pFrame->MDIGetActive();
 
 // Get the active view attached to the active MDI child
 // window.
-COGLGraphView *pView = (COGLGraphView *) pChild->GetActiveView();
+//COGLGraphView *pView = (COGLGraphView *) pChild->GetActiveView();
 
 
 }
@@ -231,7 +229,8 @@ void COGLGraphView::DrawOGLGraphAxis()
 		     glEnd();
 
              glBegin(GL_LINES); /*X-Hilfslinien*/
-			 glColor3d(0.0,0.5,0.0);
+			 glColor3d(0.0,0.0,0.0);//Black
+             //glColor3d(0.0,0.5,0.0);//Grey
              glVertex3d(x_graph_min,y_graph_max,0);
 			 glVertex3d(x_graph_max,y_graph_max,0);
              glVertex3d(x_graph_min,y_graph_max - 1*((y_graph_max-y_graph_min)/10),0);
@@ -255,7 +254,8 @@ void COGLGraphView::DrawOGLGraphAxis()
 		     glEnd();
 
  			 glBegin(GL_LINES); /*Y-Hilfslinien*/
-			 glColor3d(0.0,0.5,0.0);
+			 glColor3d(0.0,0.0,0.0);//Black
+             //glColor3d(0.0,0.5,0.0);//Grey
              glVertex3d(x_graph_min,y_graph_min,0);
 			 glVertex3d(x_graph_min,y_graph_max,0);       
 			 glVertex3d(1*((x_graph_max-x_graph_min)/10),y_graph_min,0);
@@ -316,19 +316,22 @@ void COGLGraphView::DrawOGLGraphAxis()
 				for (i=0;i<20;i++)
 				{
 				glBegin(GL_LINES);
-				glColor3d(0.7,0.7,0.7);
-				glVertex3d(x_graph_min + (i+1)*(x_graph_max/20),y_graph_max + 4*((y_graph_max-y_graph_min)/10),0);
+                glColor3d(0.0,0.0,0.0);//Black
+                //glColor3d(0.7,0.7,0.7);//Grey
+    			glVertex3d(x_graph_min + (i+1)*(x_graph_max/20),y_graph_max + 4*((y_graph_max-y_graph_min)/10),0);
 			    glVertex3d(x_graph_min + (i+1)*(x_graph_max/20),(y_graph_max + 4*((y_graph_max-y_graph_min)/10))+((norm_max_fac)*16*((y_graph_max-y_graph_min)/10)),0);
 				glEnd();
 
 				glBegin(GL_LINES);
-				glColor3d(0.7,0.7,0.7);
+                glColor3d(0.0,0.0,0.0);//Black
+                //glColor3d(0.7,0.7,0.7);//Grey
 				glVertex3d(x_graph_min + (i+1)*(x_graph_max/20),y_graph_max + 3.5*((y_graph_max-y_graph_min)/10),0);
 			    glVertex3d(x_graph_min + (i+1)*(x_graph_max/20),y_graph_max + 3*((y_graph_max-y_graph_min)/10),0);
 				glEnd();
 				if (i==0){
 				glBegin(GL_LINES);
-				glColor3d(0.7,0.7,0.7);
+                glColor3d(0.0,0.0,0.0);//Black
+                //glColor3d(0.7,0.7,0.7);//Grey
 				glVertex3d(x_graph_min + (i)*(x_graph_max/20),y_graph_max + 3.5*((y_graph_max-y_graph_min)/10),0);
 			    glVertex3d(x_graph_min + (i)*(x_graph_max/20),y_graph_max + 3*((y_graph_max-y_graph_min)/10),0);
 				glEnd();
@@ -342,7 +345,8 @@ void COGLGraphView::DrawOGLGraphAxis()
 				}
 
     		 glBegin(GL_LINES); /*X-Achse für Kästchen*/
-			 glColor3d(0.7,0.7,0.7);
+             glColor3d(0.0,0.0,0.0);//Black
+             //glColor3d(0.7,0.7,0.7);//Grey
 			 glVertex3d(x_graph_min,y_graph_max + 3.5*((y_graph_max-y_graph_min)/10),0);
 			 glVertex3d(x_graph_max,y_graph_max + 3.5*((y_graph_max-y_graph_min)/10),0);
 			 glVertex3d(x_graph_min,y_graph_max + 3.0*((y_graph_max-y_graph_min)/10),0);
@@ -426,8 +430,10 @@ void COGLGraphView::DrawQualityFactor()
 
 		prozent = 100.0*qiterator[i]/number_of_all_elements;
 		sprintf(txt,"%3.1lf",prozent);
-		glColor3d(0.6,0.6,0.6);
-		glRasterPos3d(x_graph_min + (i)*(x_graph_max/20),y_graph_max + 3.05*((y_graph_max-y_graph_min)/10),0);
+        glColor3d(0.0,0.0,0.0);//Black
+        //glColor3d(0.6,0.6,0.6);//Grey
+
+        glRasterPos3d(x_graph_min + (i)*(x_graph_max/20),y_graph_max + 3.05*((y_graph_max-y_graph_min)/10),0);
 		Text2D(txt);	
 	}
 
