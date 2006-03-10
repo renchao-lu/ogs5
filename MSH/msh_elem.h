@@ -101,6 +101,7 @@ class CElem:public CCore
 	    {for (int i=0; i< (int) nodes_index.Size();i++)
            node_index[i]= nodes_index[i];} 
       long GetNodeIndex(const int index) const  {return  nodes_index[index];} 
+      void SetNodeIndex(const int index, const long g_index) {nodes_index[index]= g_index;} 
       void GetNodes(vec<CNode*>&ele_nodes)
         {for (int i=0; i< (int) nodes.Size();i++) ele_nodes[i]= nodes[i];}
       CNode* GetNode(const int index) { return nodes[index]; }
