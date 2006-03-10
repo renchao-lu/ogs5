@@ -690,7 +690,10 @@ void CFEMesh::Write(fstream*fem_msh_file)
   *fem_msh_file << "  ";
   *fem_msh_file << (long)ele_vector.size() << endl;
   for(i=0;i<(long)ele_vector.size();i++)
+  {
+      ele_vector[i]->SetIndex(i); //20.01.06 WW/TK
 	  ele_vector[i]->WriteIndex(*fem_msh_file); //WW
+  }
   //--------------------------------------------------------------------
   *fem_msh_file << " $LAYER" << endl;
   *fem_msh_file << "  ";
@@ -966,19 +969,21 @@ void CFEMesh::GetNODOnSFC(Surface*m_sfc,vector<long>&msh_nod_vector)
     //....................................................................
     case 0: // Surface polygon
       #ifdef MFC
-        //TK
-        if(gsp_vector.size() > 0){ //OK Test not here, before.
-          string path = gsp_vector[0]->path; //??[0] m_gsp = GSPGetMember("msh");
+          //TODO allow only TIN or selected and user-controlled Nodes
+          //because it is more reliable
+          if(gsp_vector.size() > 0){
+          string path = gsp_vector[0]->path; 
           path = path + "temp_gmsh.msh";
           const char* file_name_const_char = 0;
-          file_name_const_char = path.data();
+          file_name_const_char = path.data();         
           Clear_Selected_Nodes_Elements();
           Mesh_Single_Surface(m_sfc->name, file_name_const_char);
-          Select_Nodes_Elements_by_GMSHFile(file_name_const_char);
+          GMSH2TIN(file_name_const_char);
+          Select_Nodes_Elements_by_TINFile(file_name_const_char);
           CopySelectedNodes(msh_nod_vector);
           Clear_Selected_Nodes_Elements(); 
-        }
-        //TK
+          }
+          //TK
       #else
         GetNODOnSFC_PLY(m_sfc,msh_nod_vector);
       #endif
@@ -1243,22 +1248,30 @@ last modification:
 **************************************************************************/
 void CFEMesh::GetNODOnSFC_TIN(Surface*m_sfc,vector<long>&msh_nod_vector)
 {
-  long i,j;
-  double xp[3],yp[3],zp[3];
+  long i=0,j=0,k=0,m=0;
+  double angle_sum, dist;
+  double tolerance = 0.001;
+  double min_mesh_dist=0.0;
+  double tri_point1[3],tri_point2[3],tri_point3[3],checkpoint[3];
+  double tri_x[3],tri_y[3],tri_z[3];
+  double sfc_min[3],sfc_max[3];
+
   CGLPoint m_node;
   CTriangle *m_triangle = NULL;
+  //Loop over all generated triangles of surface
   //----------------------------------------------------------------------
-  for(i=0;i<(long)m_sfc->TIN->Triangles.size();i++){
-    m_triangle = m_sfc->TIN->Triangles[i];
-    xp[0] = m_triangle->x[0];
-    yp[0] = m_triangle->y[0];
-    zp[0] = m_triangle->z[0];
-    xp[1] = m_triangle->x[1];
-    yp[1] = m_triangle->y[1];
-    zp[1] = m_triangle->z[1];
-    xp[2] = m_triangle->x[2];
-    yp[2] = m_triangle->y[2];
-    zp[2] = m_triangle->z[2];
+/*  for(m=0;m<(long)m_sfc->TIN->Triangles.size();m++){
+    m_triangle = m_sfc->TIN->Triangles[m];
+    tri_x[0] = m_triangle->x[0];
+    tri_y[0] = m_triangle->y[0];
+    tri_z[0] = m_triangle->z[0];
+    tri_x[1] = m_triangle->x[1];
+    tri_y[1] = m_triangle->y[1];
+    tri_z[1] = m_triangle->z[1];
+    tri_x[2] = m_triangle->x[2];
+    tri_y[2] = m_triangle->y[2];
+    tri_z[2] = m_triangle->z[2];
+    
     for(j=0;j<NodesInUsage();j++){
       m_node.x = nod_vector[j]->X();
       m_node.y = nod_vector[j]->Y();
@@ -1267,7 +1280,188 @@ void CFEMesh::GetNODOnSFC_TIN(Surface*m_sfc,vector<long>&msh_nod_vector)
          msh_nod_vector.push_back(nod_vector[j]->GetIndex());
       }
     }
+  }*/
+
+  //TK 03.2006
+  // ATTENTION: NO MULTI MESH YET!!!!!!
+  // Several possibilities to do this: 
+  // Mesh assignment by user input would be flexible or by process name is more static
+
+  //----------------------------------------------------------------------
+  // Create Bounding BOX = MIN/MAX of X/Y/Z
+  //----------------------------------------------------------------------
+
+  //Loop over all generated triangles of surface
+  for(m=0;m<(long)m_sfc->TIN->Triangles.size();m++){
+    m_triangle = m_sfc->TIN->Triangles[m];
+    tri_point1[0] = m_triangle->x[0];
+    tri_point1[1] = m_triangle->y[0];
+    tri_point1[2] = m_triangle->z[0];
+    tri_point2[0] = m_triangle->x[1];
+    tri_point2[1] = m_triangle->y[1];
+    tri_point2[2] = m_triangle->z[1];
+    tri_point3[0] = m_triangle->x[2];
+    tri_point3[1] = m_triangle->y[2];
+    tri_point3[2] = m_triangle->z[2];
+    if (m==0)
+    {
+     sfc_min[0]= tri_point1[0];
+     sfc_min[1]= tri_point1[1];
+     sfc_min[2]= tri_point1[2];
+     sfc_max[0]= tri_point1[0];
+     sfc_max[1]= tri_point1[1];
+     sfc_max[2]= tri_point1[2];
+     if (tri_point1[0] < sfc_min[0]) sfc_min[0] = tri_point1[0];
+     if (tri_point2[0] < sfc_min[0]) sfc_min[0] = tri_point2[0];
+     if (tri_point3[0] < sfc_min[0]) sfc_min[0] = tri_point3[0];
+     if (tri_point1[0] > sfc_max[0]) sfc_max[0] = tri_point1[0];
+     if (tri_point2[0] > sfc_max[0]) sfc_max[0] = tri_point2[0];
+     if (tri_point3[0] > sfc_max[0]) sfc_max[0] = tri_point3[0];
+     if (tri_point1[1] < sfc_min[1]) sfc_min[1] = tri_point1[1];
+     if (tri_point2[1] < sfc_min[1]) sfc_min[1] = tri_point2[1];
+     if (tri_point3[1] < sfc_min[1]) sfc_min[1] = tri_point3[1];
+     if (tri_point1[1] > sfc_max[1]) sfc_max[1] = tri_point1[1];
+     if (tri_point2[1] > sfc_max[1]) sfc_max[1] = tri_point2[1];
+     if (tri_point3[1] > sfc_max[1]) sfc_max[1] = tri_point3[1];
+     if (tri_point1[2] < sfc_min[2]) sfc_min[2] = tri_point1[2];
+     if (tri_point2[2] < sfc_min[2]) sfc_min[2] = tri_point2[2];
+     if (tri_point3[2] < sfc_min[2]) sfc_min[2] = tri_point3[2];
+     if (tri_point1[2] > sfc_max[2]) sfc_max[2] = tri_point1[2];
+     if (tri_point2[2] > sfc_max[2]) sfc_max[2] = tri_point2[2];
+     if (tri_point3[2] > sfc_max[2]) sfc_max[2] = tri_point3[2];
+    }
+    else
+    {
+     if (tri_point1[0] < sfc_min[0]) sfc_min[0] = tri_point1[0];
+     if (tri_point2[0] < sfc_min[0]) sfc_min[0] = tri_point2[0];
+     if (tri_point3[0] < sfc_min[0]) sfc_min[0] = tri_point3[0];
+     if (tri_point1[0] > sfc_max[0]) sfc_max[0] = tri_point1[0];
+     if (tri_point2[0] > sfc_max[0]) sfc_max[0] = tri_point2[0];
+     if (tri_point3[0] > sfc_max[0]) sfc_max[0] = tri_point3[0];
+     if (tri_point1[1] < sfc_min[1]) sfc_min[1] = tri_point1[1];
+     if (tri_point2[1] < sfc_min[1]) sfc_min[1] = tri_point2[1];
+     if (tri_point3[1] < sfc_min[1]) sfc_min[1] = tri_point3[1];
+     if (tri_point1[1] > sfc_max[1]) sfc_max[1] = tri_point1[1];
+     if (tri_point2[1] > sfc_max[1]) sfc_max[1] = tri_point2[1];
+     if (tri_point3[1] > sfc_max[1]) sfc_max[1] = tri_point3[1];
+     if (tri_point1[2] < sfc_min[2]) sfc_min[2] = tri_point1[2];
+     if (tri_point2[2] < sfc_min[2]) sfc_min[2] = tri_point2[2];
+     if (tri_point3[2] < sfc_min[2]) sfc_min[2] = tri_point3[2];
+     if (tri_point1[2] > sfc_max[2]) sfc_max[2] = tri_point1[2];
+     if (tri_point2[2] > sfc_max[2]) sfc_max[2] = tri_point2[2];
+     if (tri_point3[2] > sfc_max[2]) sfc_max[2] = tri_point3[2];
+    }
   }
+  //----------------------------------------------------------------------
+  // Create Short Search Vector at the end of fem_msh_vector
+  // Only nodes inside searching box  
+  //----------------------------------------------------------------------
+  CFEMesh* m_msh = NULL;       
+  m_msh = new CFEMesh();
+  CNode* node = NULL;
+  fem_msh_vector.push_back(m_msh);
+  int temp_mesh = (long)fem_msh_vector.size();
+  //Loop over all meshes
+    for(j=0;j<(long)fem_msh_vector.size()-1;j++)
+    {
+    //Loop over all edges
+        for(i=0;i<(long)fem_msh_vector[j]->edge_vector.size();i++)
+        {
+            if (j==0 && i==0){
+              min_mesh_dist = fem_msh_vector[j]->edge_vector[i]->Length();
+            }
+            else{
+              if (min_mesh_dist  > fem_msh_vector[j]->edge_vector[i]->Length())
+                  min_mesh_dist = fem_msh_vector[j]->edge_vector[i]->Length();
+            }
+        }
+        tolerance = min_mesh_dist;
+    //Loop over all mesh nodes
+        for(i=0;i<(long)fem_msh_vector[j]->nod_vector.size();i++)
+        {
+            checkpoint[0] = fem_msh_vector[j]->nod_vector[i]->X();
+            checkpoint[1] = fem_msh_vector[j]->nod_vector[i]->Y(); 
+            checkpoint[2] = fem_msh_vector[j]->nod_vector[i]->Z();
+            node = new CNode(i,checkpoint[0],checkpoint[1],checkpoint[2]);
+            if((checkpoint[0]>=sfc_min[0] && checkpoint[0]<=sfc_max[0] )&&
+               (checkpoint[1]>=sfc_min[1] && checkpoint[1]<=sfc_max[1] )&&
+               (checkpoint[2]>=sfc_min[2] && checkpoint[2]<=sfc_max[2] ) )
+            {              
+                fem_msh_vector[temp_mesh-1]->nod_vector.push_back(node);
+            }
+        }
+    }
+
+  //----------------------------------------------------------------------
+  // Search preselected Nodes within TIN Triangles
+  //----------------------------------------------------------------------
+  for(m=0;m<(long)m_sfc->TIN->Triangles.size();m++){
+    m_triangle = m_sfc->TIN->Triangles[m];
+    tri_point1[0] = m_triangle->x[0];
+    tri_point1[1] = m_triangle->y[0];
+    tri_point1[2] = m_triangle->z[0];
+    tri_point2[0] = m_triangle->x[1];
+    tri_point2[1] = m_triangle->y[1];
+    tri_point2[2] = m_triangle->z[1];
+    tri_point3[0] = m_triangle->x[2];
+    tri_point3[1] = m_triangle->y[2];
+    tri_point3[2] = m_triangle->z[2];
+    //Loop over all preselected mesh nodes
+        for(i=0;i<(long)fem_msh_vector[temp_mesh-1]->nod_vector.size();i++)
+        {
+            checkpoint[0] = fem_msh_vector[temp_mesh-1]->nod_vector[i]->X();
+            checkpoint[1] = fem_msh_vector[temp_mesh-1]->nod_vector[i]->Y(); 
+            checkpoint[2] = fem_msh_vector[temp_mesh-1]->nod_vector[i]->Z();
+            dist = MCalcDistancePointToPlane(checkpoint,tri_point1,tri_point2,tri_point3);
+            if (k==0) fem_msh_vector[temp_mesh-1]->nod_vector[i]->epsilon = dist;
+            else
+            {
+                if (fem_msh_vector[temp_mesh-1]->nod_vector[i]->epsilon > dist)
+                    fem_msh_vector[temp_mesh-1]->nod_vector[i]->epsilon = dist;
+            }
+                if (dist<=tolerance && dist>=-tolerance)
+                {
+                  angle_sum = AngleSumPointInsideTriangle(checkpoint,tri_point1,tri_point2,tri_point3, min_mesh_dist);
+                  if(angle_sum>359)
+                  fem_msh_vector[temp_mesh-1]->nod_vector[i]->selected = 1;
+                }
+        }
+  }
+
+  //----------------------------------------------------------------------
+  // Identify the preselected nodes of the search vector and copy to msh_nod_vector
+  // TODO: Works only for one mesh!!!
+  //----------------------------------------------------------------------
+  int index;
+  //Loop over all meshes
+    for(j=0;j<(long)fem_msh_vector.size()-1;j++)
+    {
+    //Loop over selected nodes
+        for(i=0;i<(long)fem_msh_vector[temp_mesh-1]->nod_vector.size();i++)
+        {
+            index = fem_msh_vector[temp_mesh-1]->nod_vector[i]->GetIndex();
+            if(index < (int)fem_msh_vector[j]->nod_vector.size())
+            {
+            if ((fem_msh_vector[temp_mesh-1]->nod_vector[i]->GetIndex() == fem_msh_vector[j]->nod_vector[index]->GetIndex()) 
+                &&
+                fem_msh_vector[temp_mesh-1]->nod_vector[i]->selected==1
+                &&
+                (fem_msh_vector[temp_mesh-1]->nod_vector[i]->X() == fem_msh_vector[j]->nod_vector[index]->X()) 
+                && 
+                (fem_msh_vector[temp_mesh-1]->nod_vector[i]->Y() == fem_msh_vector[j]->nod_vector[index]->Y()) 
+                &&
+                (fem_msh_vector[temp_mesh-1]->nod_vector[i]->Z() == fem_msh_vector[j]->nod_vector[index]->Z())) 
+            {
+                 msh_nod_vector.push_back(fem_msh_vector[j]->nod_vector[index]->GetIndex());
+            }
+            }
+        }
+    }
+  //----------------------------------------------------------------------
+  // Delete Search Vector at the end of fem_msh_vector
+  // TODO: Proper delete by MSHDelete!!!
+  //----------------------------------------------------------------------
+    fem_msh_vector.erase(fem_msh_vector.begin()+ temp_mesh-1);
 }
 
 /**************************************************************************
