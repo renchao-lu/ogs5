@@ -82,6 +82,15 @@ public:
     afx_msg void OnBnClickedPatchindexForPlains();
     afx_msg void OnBnClickedCombinePatchindex();
     afx_msg void OnBnClickedCompressPatchindex2();
+    afx_msg void OnBnClickedMergeMeshes();
+    afx_msg void OnBnClickedUpdateAllViews();
+    afx_msg void OnBnClickedCheckdoublenodes();
+    afx_msg void GetMinMaxEdgeLength(CFEMesh*m_msh);
+    afx_msg void OnBnClickedDeletedoublenodes();
+    afx_msg void OnBnClickedSplitelements();
+    afx_msg void OnBnClickedY2z();
+    afx_msg void OnBnClickedX2y();
+    afx_msg void OnBnClickedX2z();
 };
 
 

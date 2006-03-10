@@ -131,6 +131,14 @@ BEGIN_MESSAGE_MAP(CGSFormRightMeshing, CFormView)
     ON_BN_CLICKED(IDC_PATCHINDEX_FOR_PLAINS, OnBnClickedPatchindexForPlains)
     ON_BN_CLICKED(IDC_COMBINE_PATCHINDEX, OnBnClickedCombinePatchindex)
     ON_BN_CLICKED(IDC_COMPRESS_PATCHINDEX2, OnBnClickedCompressPatchindex2)
+    ON_BN_CLICKED(IDC_MERGE_MESHES, OnBnClickedMergeMeshes)
+    ON_BN_CLICKED(IDC_UPDATE_ALL_VIEWS, OnBnClickedUpdateAllViews)
+    ON_BN_CLICKED(IDC_CHECKDOUBLENODES, OnBnClickedCheckdoublenodes)
+    ON_BN_CLICKED(IDC_DELETEDOUBLENODES, OnBnClickedDeletedoublenodes)
+    ON_BN_CLICKED(IDC_SPLITELEMENTS, OnBnClickedSplitelements)
+    ON_BN_CLICKED(IDC_Y2Z, OnBnClickedY2z)
+    ON_BN_CLICKED(IDC_X2Y, OnBnClickedX2y)
+    ON_BN_CLICKED(IDC_X2Z, OnBnClickedX2z)
 END_MESSAGE_MAP()
 
 
@@ -160,7 +168,6 @@ void CGSFormRightMeshing::OnBnClickedTri2priButton()
   CString m_strFileNameMSH = m_strFileNameBase + ".msh";
   //========================================================================
   CFEMesh*m_msh = fem_msh_vector[0];
-
     CMeshTypeChange meshtypechange;
     if (meshtypechange.DoModal() == IDOK)
     {
@@ -170,15 +177,11 @@ void CGSFormRightMeshing::OnBnClickedTri2priButton()
         Create_Triangles2Prisms(meshtypechange.m_numberofprismlayers,meshtypechange.m_thicknessofprismlayer,m_msh);
         MSH_OverWriteMSH((string)m_strFileNameMSH);
       }
-
-
     }
-
   //========================================================================
 
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   FEMRead((string)m_strFileNameBase);
-  CompleteMesh(); //WW. Please move this to place where BEGIN_MESSAGE_MAP(CGSFormRightMeshing, CFormView) is over
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_frame->m_something_changed = 1;
   m_pDoc->UpdateAllViews(NULL);
@@ -218,7 +221,6 @@ void CGSFormRightMeshing::OnBnClickedQuad2hexButton()
 
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   FEMRead((string)m_strFileNameBase);
-  CompleteMesh(); //WW. Please move this to place where BEGIN_MESSAGE_MAP(CGSFormRightMeshing, CFormView) is over
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_frame->m_something_changed = 1;
   m_pDoc->UpdateAllViews(NULL);
@@ -249,7 +251,6 @@ void CGSFormRightMeshing::OnBnClickedHex2tetButton()
 
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   FEMRead((string)m_strFileNameBase);
-  CompleteMesh(); //WW. Please move this to place where BEGIN_MESSAGE_MAP(CGSFormRightMeshing, CFormView) is over
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_frame->m_something_changed = 1;
   m_pDoc->UpdateAllViews(NULL);
@@ -276,7 +277,6 @@ void CGSFormRightMeshing::OnBnClickedQuad2triButton()
 
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   FEMRead((string)m_strFileNameBase);
-  CompleteMesh(); //WW. Please move this to place where BEGIN_MESSAGE_MAP(CGSFormRightMeshing, CFormView) is over
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_frame->m_something_changed = 1;
   m_pDoc->UpdateAllViews(NULL);
@@ -526,7 +526,6 @@ void CGSFormRightMeshing::OnBnClickedStruc2dButton()
 
   GEOLIB_Read_GeoLib((string)m_strFileNameBase);
   FEMRead((string)m_strFileNameBase);
-  CompleteMesh(); //WW. Please move this to place where BEGIN_MESSAGE_MAP(CGSFormRightMeshing, CFormView) is over
 
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_pDoc->UpdateAllViews(NULL);
@@ -581,7 +580,6 @@ void CGSFormRightMeshing::OnBnClickedTriDelaunayButton()
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"MESH GENERATION: Finish....Load Data");  
 
   FEMRead((string)m_strFileNameBase);
-  CompleteMesh();//WW. Please move this to place where BEGIN_MESSAGE_MAP(CGSFormRightMeshing, CFormView) is over
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_frame->m_something_changed = 1;
   m_pDoc->UpdateAllViews(NULL);
@@ -809,7 +807,6 @@ void CGSFormRightMeshing::OnBnClickedStartGmshMeshing()
  
  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"MESH GENERATION: Load View Data");
  //FEMRead((string)m_strFileNameBase);/*OpenRFI*/ 
- // CompleteMesh(); //WW
  m_frame->m_something_changed = 1;
  m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
  m_pDoc->UpdateAllViews(NULL);
@@ -842,27 +839,44 @@ void CGSFormRightMeshing::OnBnClickedMshEditorButton()
 
 void CGSFormRightMeshing::OnBnClickedMshnodesInPolygon()
 {
+  CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Searching Nodes:");
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   CGeoSysDoc *m_pDoc = GetDocument();
   CString m_strFileNameBase = m_pDoc->m_strGSPFilePathBase + "_temp";
   CString m_strFileNameGLI = m_strFileNameBase + ".gli";
   CString m_strFileNameGEO = m_strFileNameBase + ".geo";
-  CString m_strFileNameGMSH = m_strFileNameBase + ".msh";
+  CString m_strFileNameTIN = m_strFileNameBase + ".tin";
   const char *file_name_const_char = 0;
   file_name_const_char = m_strFileNameBase; 
-  
-  int i=0, j=0, k=0;
+  int i=0;
+
   for (i=0;i<(int)surface_vector.size();i++)
   {
       if (surface_vector[i]->display_mode_3d == 1)
       {
-       /*Surface Meshing*/ 
+       if (surface_vector[i]->TIN)
+       {
+       /*TIN Search*/ 
+       pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Searching Nodes: TIN.......please wait");
+       m_strFileNameTIN = m_pDoc->m_strGSPFilePath + surface_vector[i]->TIN->name.c_str();
+       Select_Nodes_Elements_by_TINFile(m_strFileNameTIN);
+       break;
+       }
+       else
+       {
+       /*Surface Meshing & Search*/ 
+       pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Searching Nodes:.......please wait");
        Mesh_Single_Surface(surface_vector[i]->name, file_name_const_char);
+       GMSH2TIN(file_name_const_char);
+       Select_Nodes_Elements_by_TINFile(file_name_const_char);
+       }
        break;
       }
   }
        /*Node and Element Selection*/ 
-       Select_Nodes_Elements_by_GMSHFile(file_name_const_char);
+
+ pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)" ");
 
  m_frame->dist_geo_object = 0.001;
  UpdateData(TRUE);
@@ -886,6 +900,11 @@ void CGSFormRightMeshing::OnBnClickedMinMaxEdgeLength()
  double edge_length;
  double min_edge_length=0.0;
  double max_edge_length=0.0;
+ long node_id=0;
+ long node_id_old=0;
+ long ele_id=0;
+ long ele_id_old=0;
+ 
  char string2add [56];
  string info_string;
     
@@ -927,6 +946,44 @@ void CGSFormRightMeshing::OnBnClickedMinMaxEdgeLength()
         info_string = ">Max:" ;
         info_string.append(string2add);
         m_List.AddString(_T(info_string.data()));
+
+        /*FragmentedMesh Check*/ 
+        for(i=0;i<(long)fem_msh_vector[j]->nod_vector.size();i++)
+        {
+            node_id = fem_msh_vector[j]->nod_vector[i]->GetIndex();
+            if(node_id>0 && node_id != node_id_old+1)
+            {
+                sprintf(string2add, "%lg",node_id);
+                info_string = ">Gap after Node: " ;
+                info_string.append(string2add);
+                m_List.AddString(_T(info_string.data()));
+            }
+            node_id_old = fem_msh_vector[j]->nod_vector[i]->GetIndex();
+        }
+            if(node_id != i-1)
+            {
+                info_string = ">FRAGMENTED NODES!!!" ;
+                m_List.AddString(_T(info_string.data()));
+            }
+
+        for(i=0;i<(long)fem_msh_vector[j]->ele_vector.size();i++)
+        {
+            ele_id = fem_msh_vector[j]->ele_vector[i]->GetIndex();
+            if(ele_id>0 && ele_id != ele_id_old+1)
+            {
+                sprintf(string2add, "%lg",ele_id);
+                info_string = ">Gap after Element: " ;
+                info_string.append(string2add);
+                m_List.AddString(_T(info_string.data()));
+            }
+            ele_id_old = fem_msh_vector[j]->ele_vector[i]->GetIndex();
+        }
+            if(ele_id != i-1)
+            {
+                info_string = ">FRAGMENTED ELEMENTS!!!" ;
+                m_List.AddString(_T(info_string.data()));
+            }
+ 
     }
 
         m_List.AddString(_T("***********************************"));
@@ -1054,8 +1111,7 @@ void CGSFormRightMeshing::OnBnClickedGmshMshImport()
     file_name_const_char = m_strFileNameBase;
     pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"GMSH IMPORT: Load Mesh");
     //FEMRead(file_name_const_char);/*OpenMSH*/ 
-    // FEMRead((string)m_strFileNameBase);
-    //  CompleteMesh(); //WW
+        // FEMRead((string)m_strFileNameBase);
     GSPAddMember((string)m_pDoc->m_strGSPFileBase + ".msh");
 
     m_ProgressBar.StepIt();
@@ -1702,3 +1758,806 @@ void CGSFormRightMeshing::OnBnClickedCompressPatchindex2()
  Invalidate(TRUE);
 
 }
+
+void CGSFormRightMeshing::OnBnClickedMergeMeshes()
+{
+  CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+  CGeoSysDoc *m_pDoc = GetDocument();
+  //========================================================================
+  int i=0,j=0, k=0;
+  int mesh_counter = 0;
+  int node_vec_size=0;
+  int ele_vec_size=0;
+
+  CFEMesh*m_msh = NULL;
+  CFEMesh*m_msh_temp = NULL;
+  CFEMesh*m_msh_o = NULL;
+  CElem *m_ele = NULL;
+
+  for (i=0;i<(int)fem_msh_vector.size();i++)
+  {
+      m_msh_o = fem_msh_vector[i];
+      if (m_msh_o->ele_display_mode == 1 ||
+          m_msh_o->nod_display_mode == 1)
+      {
+          /*copy first mesh*/ 
+          if (mesh_counter == 0)
+          {
+          m_msh = new CFEMesh();
+          m_msh->pcs_name = m_msh_o->pcs_name + "_test";
+          m_msh->nod_vector = m_msh_o->nod_vector;
+          m_msh->ele_vector = m_msh_o->ele_vector;
+          fem_msh_vector.push_back(m_msh);        
+          m_msh_o->ele_display_mode = 0;
+          m_msh_o->nod_display_mode = 0;
+          mesh_counter++;
+          }
+      }
+      if (m_msh_o->ele_display_mode == 1 ||
+          m_msh_o->nod_display_mode == 1)
+      {   
+         /*add next mesh*/ 
+          if (mesh_counter >= 1)
+          {
+          node_vec_size = (int)m_msh->nod_vector.size();
+          ele_vec_size = (int)m_msh->ele_vector.size();
+          m_msh_temp = new CFEMesh();
+          m_msh_temp->pcs_name = m_msh_o->pcs_name + "_temp";
+          m_msh_temp->nod_vector = m_msh_o->nod_vector;
+          m_msh_temp->ele_vector = m_msh_o->ele_vector;
+          
+           for (j=0;j<(int)m_msh_temp->nod_vector.size();j++)
+           m_msh_temp->nod_vector[j]->SetIndex(j + (int)m_msh->nod_vector.size());
+
+           for (j=0;j<(int)m_msh_temp->ele_vector.size();j++)
+           {
+            m_ele =m_msh_o->ele_vector[j];
+            m_msh_temp->ele_vector[j]->SetIndex(j + (int)m_msh->ele_vector.size());
+            for (k=0;k<(int)m_ele->GetVertexNumber();k++)
+                m_msh_temp->ele_vector[j]->SetNodeIndex(k,(int)m_msh->nod_vector.size() + m_ele->GetNodeIndex(k));
+           }
+           m_msh->nod_vector.resize(node_vec_size + m_msh_temp->nod_vector.size());
+           for (j=0;j<(int)m_msh_temp->nod_vector.size();j++)
+           m_msh->nod_vector[j+node_vec_size] = m_msh_temp->nod_vector[j];         
+           m_msh->ele_vector.resize(ele_vec_size + m_msh_temp->ele_vector.size());
+           for (j=0;j<(int)m_msh_temp->ele_vector.size();j++)
+           m_msh->ele_vector[j+ele_vec_size] = m_msh_temp->ele_vector[j];  
+         
+          fem_msh_vector[i]->ele_display_mode = 0;
+          fem_msh_vector[i]->nod_display_mode = 0;
+          }
+
+      }
+  }
+  
+  //========================================================================
+ m_frame->m_something_changed = 1;
+ m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
+ m_pDoc->UpdateAllViews(NULL);
+ Invalidate(TRUE);
+
+}
+
+void CGSFormRightMeshing::OnBnClickedUpdateAllViews()
+{
+ CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+ CGeoSysDoc *m_pDoc = GetDocument();
+ m_frame->m_something_changed = 1;
+ m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
+ m_pDoc->UpdateAllViews(NULL);
+ Invalidate(TRUE);
+}
+
+void CGSFormRightMeshing::OnBnClickedCheckdoublenodes()
+{
+  CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
+  CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+  CGeoSysDoc *m_pDoc = GetDocument();
+  //========================================================================
+  int i=0,j=0, k=0;
+  double search_tolerance=0;
+  double node_distance=0;
+  CString iteration_name;
+  CString iteration_max;
+
+  CFEMesh*m_msh_temp = NULL;
+
+  for (i=0;i<(int)fem_msh_vector.size();i++)
+  {
+      if (fem_msh_vector[i]->ele_display_mode == 1 ||
+          fem_msh_vector[i]->nod_display_mode == 1)
+      {   
+          m_msh_temp = new CFEMesh();
+          m_msh_temp->pcs_name = "double_node_check";
+          m_msh_temp->nod_vector = fem_msh_vector[i]->nod_vector;
+          m_msh_temp->ele_vector = fem_msh_vector[i]->ele_vector;
+          m_msh_temp->edge_vector = fem_msh_vector[i]->edge_vector;
+
+          GetMinMaxEdgeLength(m_msh_temp);
+          search_tolerance = m_msh_temp->min_edge_length;
+
+           for (j=0;j<(int)fem_msh_vector[i]->nod_vector.size();j++)
+           {
+             iteration_max.Format(_T("%d"),(int)fem_msh_vector[i]->nod_vector.size());
+             _tprintf(_T("%s"), (LPCTSTR) iteration_max);
+             iteration_name.Format(_T("%d"),j+1);
+             _tprintf(_T("%s"), (LPCTSTR) iteration_name);
+             iteration_name = "Searching Double Nodes: " + iteration_name + " from " + iteration_max;
+             pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)iteration_name);
+
+             for (k=j+1;k<(int)m_msh_temp->nod_vector.size();k++)
+             {
+			    node_distance =    EuklVek3dDistCoor ( 
+                                    fem_msh_vector[i]->nod_vector[j]->X(),
+                                    fem_msh_vector[i]->nod_vector[j]->Y(),
+                                    fem_msh_vector[i]->nod_vector[j]->Z(),
+                                    m_msh_temp->nod_vector[k]->X(),
+                                    m_msh_temp->nod_vector[k]->Y(),
+                                    m_msh_temp->nod_vector[k]->Z());
+                 
+                if (node_distance < search_tolerance)
+                {
+                    fem_msh_vector[i]->nod_vector[k]->selected = 1;
+                }
+             }
+           }       
+      }
+        pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Searching Double Nodes: Finished");  
+
+  }
+  
+  //========================================================================
+ m_frame->m_something_changed = 1;
+ m_pDoc->UpdateAllViews(NULL);
+ Invalidate(TRUE);
+}
+
+void CGSFormRightMeshing::GetMinMaxEdgeLength(CFEMesh*m_msh)
+{
+ int i=0, j=0;
+ double edge_length;
+ double min_edge_length=0.0;
+ double max_edge_length=0.0;
+    
+        for(i=0;i<(long)m_msh->edge_vector.size();i++)
+        {
+            edge_length = m_msh->edge_vector[i]->Length();
+
+            if (j==0 && i==0)
+            {
+              min_edge_length = edge_length;
+              max_edge_length = edge_length;
+            }
+            else
+            {
+              if (min_edge_length > edge_length)min_edge_length = edge_length;
+              if (max_edge_length < edge_length)max_edge_length = edge_length;
+            }
+        }            
+        m_msh->min_edge_length = min_edge_length;
+        m_msh->max_edge_length = max_edge_length;
+}
+
+void CGSFormRightMeshing::OnBnClickedDeletedoublenodes()
+{ 
+  CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
+  CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+  CGeoSysDoc *m_pDoc = GetDocument();
+  //========================================================================
+  int i=0,j=0, k=0;
+  int index;
+  double search_tolerance=0;
+  double node_distance=0;
+  CString iteration_name;
+  CString iteration_max;
+
+  
+  CFEMesh*m_msh_temp = NULL;
+  CFEMesh*m_msh_serial = NULL;
+
+  for (i=0;i<(int)fem_msh_vector.size();i++)
+  {
+      if (fem_msh_vector[i]->ele_display_mode == 1 ||
+          fem_msh_vector[i]->nod_display_mode == 1)
+      {   
+          m_msh_temp = new CFEMesh();
+          m_msh_temp->pcs_name = "double_node_check";
+          m_msh_temp->nod_vector = fem_msh_vector[i]->nod_vector;
+          m_msh_temp->ele_vector = fem_msh_vector[i]->ele_vector;
+          m_msh_temp->edge_vector = fem_msh_vector[i]->edge_vector;
+
+          GetMinMaxEdgeLength(m_msh_temp);
+          search_tolerance = m_msh_temp->min_edge_length;
+           /*Check&Mark*/ 
+           for (j=0;j<(int)fem_msh_vector[i]->nod_vector.size();j++)
+           {
+             iteration_max.Format(_T("%d"),(int)fem_msh_vector[i]->nod_vector.size());
+             _tprintf(_T("%s"), (LPCTSTR) iteration_max);
+             iteration_name.Format(_T("%d"),j+1);
+             _tprintf(_T("%s"), (LPCTSTR) iteration_name);
+             iteration_name = "Searching Double Nodes: " + iteration_name + " from " + iteration_max;
+             pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)iteration_name);
+
+             for (k=j+1;k<(int)m_msh_temp->nod_vector.size();k++)
+             {
+                if (m_msh_temp->nod_vector[k]->selected != 1)
+                {
+			    node_distance =    EuklVek3dDistCoor ( 
+                                    fem_msh_vector[i]->nod_vector[j]->X(),
+                                    fem_msh_vector[i]->nod_vector[j]->Y(),
+                                    fem_msh_vector[i]->nod_vector[j]->Z(),
+                                    m_msh_temp->nod_vector[k]->X(),
+                                    m_msh_temp->nod_vector[k]->Y(),
+                                    m_msh_temp->nod_vector[k]->Z());
+                 
+                if (node_distance < search_tolerance)
+                {
+                    fem_msh_vector[i]->nod_vector[k]->selected = 1;
+                    m_msh_temp->nod_vector[k]->selected = 1;
+                    index = fem_msh_vector[i]->nod_vector[j]->GetIndex();
+                    m_msh_temp->nod_vector[k]->SetIndex(index);
+                }
+                }
+             }
+           }
+           pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Searching Double Nodes: Finished");  
+
+           pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Serializing Mesh: Start");  
+           pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Serializing Mesh: sorting node numbers.........................please wait");
+             /*Serialize Nodenumbers*/ 
+             int counter=0;
+             m_msh_serial = new CFEMesh();
+             m_msh_serial->pcs_name = "node_serial";
+             m_msh_serial->nod_vector = m_msh_temp->nod_vector;
+             m_msh_serial->ele_vector = m_msh_temp->ele_vector;
+
+             for (k=0;k<(int)m_msh_serial->nod_vector.size();k++)
+             {                
+                if (m_msh_serial->nod_vector[k]->selected != 1)
+                {
+                  m_msh_serial->nod_vector[k]->SetIndex(counter);
+                  counter++;
+                }        
+             }
+             for (k=0;k<(int)m_msh_temp->nod_vector.size();k++)
+             {                
+                if (m_msh_temp->nod_vector[k]->selected != 1)
+                  m_msh_temp->nod_vector[k]->SetIndex(m_msh_serial->nod_vector[k]->GetIndex());
+                else
+                  m_msh_temp->nod_vector[k]->SetIndex(m_msh_serial->nod_vector[m_msh_temp->nod_vector[k]->GetIndex()]->GetIndex());
+             }
+           pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Serializing Mesh: sorting element numbers.........................please wait");
+
+
+           /*Correct ElementNode Numbers*/ 
+           long N0=0;
+           long NN0=0;
+
+           for (j=0;j<(int)fem_msh_vector[i]->ele_vector.size();j++)
+           {
+             for (k=0;k<(int)fem_msh_vector[i]->ele_vector[j]->GetVertexNumber();k++)
+             {
+                N0 = fem_msh_vector[i]->ele_vector[j]->GetNodeIndex(k);
+                NN0 = m_msh_temp->nod_vector[N0]->GetIndex();
+                m_msh_temp->ele_vector[j]->SetNodeIndex(k,NN0);
+             }
+
+           }
+           pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Deleting Nodes....................please wait");
+           /*Delete DoubleNodes*/ 
+           for (j=0;j<(int)m_msh_temp->nod_vector.size();j++)
+           {
+               if(m_msh_temp->nod_vector[j]->selected == 1)
+               {
+                   m_msh_temp->nod_vector.erase( m_msh_temp->nod_vector.begin()+j);
+                   j--;
+               }
+           }
+           pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Deleting Double Nodes: Finished");  
+
+          fem_msh_vector[i]->nod_vector = m_msh_temp->nod_vector;
+          fem_msh_vector[i]->ele_vector = m_msh_temp->ele_vector;
+
+      }
+
+
+  }
+  
+  //========================================================================
+ m_frame->m_something_changed = 1;
+ m_pDoc->UpdateAllViews(NULL);
+ Invalidate(TRUE);
+}
+
+void CGSFormRightMeshing::OnBnClickedSplitelements()
+{
+  //========================================================================
+  // Status bar
+  //------------------------------------------------------------------------
+  CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"EdgeFileGeneration: Start");  
+   clock_t start, finish;
+   double  duration;
+   long hours=0,minutes=0,seconds=0;
+   start = clock();
+  //========================================================================
+  //File handling
+  //========================================================================
+  CGeoSysDoc *m_pDoc = GetDocument();
+  CString m_strFileNameBase = m_pDoc->m_strGSPFilePathBase;
+  CString m_strFileNameEdge = m_strFileNameBase + "_eges.txt";
+  CString m_strFileNameNodes = m_strFileNameBase + "_nodes.txt";
+  CString m_strFileNameElements = m_strFileNameBase + "_elements.txt";
+  CString m_strFileNameNewMSH = m_strFileNameBase + "_refined.txt";
+
+  const char *file_name_const_char = 0;
+  FILE *node_file=NULL;
+  file_name_const_char = m_strFileNameNodes;
+  node_file = fopen(file_name_const_char, "w+t");
+  FILE *ele_file=NULL;
+  file_name_const_char = m_strFileNameElements;
+  ele_file = fopen(file_name_const_char, "w+t");
+
+  FILE *edge_file=NULL;
+  file_name_const_char = m_strFileNameEdge;
+  edge_file = fopen(file_name_const_char, "w+t");
+  FILE *new_mesh_file=NULL;
+  file_name_const_char = m_strFileNameNewMSH;
+  new_mesh_file = fopen(file_name_const_char, "w+t");
+
+  //========================================================================
+  int i=0, j=0, k=0, m=0;
+  CFEMesh*m_msh = NULL;
+  CNode *m_node = NULL;
+  CElem *m_ele = NULL;
+  CEdge *m_edge = NULL;
+  vec<CNode*> e_nodes(3);    
+  vec<CNode*> control_edge_nodes(3);
+  vector<int> new_edge_nodes;
+  int point_counter=0;
+  int element_counter=0;
+  double x_midpoint=0.0,y_midpoint=0.0,z_midpoint=0.0;
+  int nNod=0;
+  char input_text[1024];
+  long id;
+  double x, y, z;
+  int ok=0;
+  CString iteration_name;
+  CString iteration_max;
+  CString duration_name;
+
+
+  for (i=0;i<(int)fem_msh_vector.size();i++)
+  {
+      new_edge_nodes.resize(0);
+      m_msh = fem_msh_vector[i];
+      if (m_msh->ele_display_mode == 1 || m_msh->nod_display_mode == 1)
+      { 
+        /*Read&Write Edges + Midpointnumber + New Edges****************/ 
+        fprintf(edge_file,"%s\n","#Edges");
+        new_edge_nodes.resize((int)m_msh->edge_vector.size());
+        for (j=0;j<(int)m_msh->edge_vector.size();j++)
+        {
+            new_edge_nodes[j] = (int)m_msh->nod_vector.size()+j;
+            m_edge = m_msh->edge_vector[j];
+            m_edge->GetNodes(e_nodes);
+
+            fprintf(edge_file,"%i %i %i\n",e_nodes[0]->GetIndex(), 
+                                             e_nodes[1]->GetIndex(),
+                                               new_edge_nodes[j]);
+        }
+
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Analyzing Nodes........");  
+        /*Read&Write Nodes*********************************************/ 
+        fprintf(node_file,"%s\n","#EdgeNodes");
+        for (j=0;j<(int)m_msh->nod_vector.size();j++)
+        {
+            m_node = m_msh->nod_vector[j];
+            fprintf(node_file,"%i ",m_node->GetIndex());
+            fprintf(node_file,"%20.14f %20.14f %20.14f\n",m_node->X(),
+                                                          m_node->Y(),
+                                                          m_node->Z());
+
+        }
+        nNod=j;
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Adding Nodes........");  
+        /*Add Points toEdges*********************************************/ 
+        fprintf(node_file,"%s\n","#Additional_Edge_Nodes");
+        point_counter = (int)m_msh->nod_vector.size();
+        for (j=0;j<(int)m_msh->edge_vector.size();j++)
+        {
+            m_edge = m_msh->edge_vector[j];
+            m_edge->GetNodes(e_nodes);
+            fprintf(node_file,"%i ",point_counter);      
+            x_midpoint = (e_nodes[0]->X() + e_nodes[1]->X())/2;
+            y_midpoint = (e_nodes[0]->Y() + e_nodes[1]->Y())/2;
+            z_midpoint = (e_nodes[0]->Z() + e_nodes[1]->Z())/2;
+            fprintf(node_file,"%20.14f %20.14f %20.14f\n",x_midpoint,y_midpoint,z_midpoint);
+            point_counter++;
+        }
+        nNod = point_counter;
+        fclose (node_file);
+        fclose(edge_file);
+
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Analyzing Elements........");  
+  finish = clock();
+  duration = (double)(finish - start) / CLOCKS_PER_SEC;
+
+  /*Read&Write Elements*********************************************/ 
+        file_name_const_char = m_strFileNameEdge;
+        edge_file = fopen(file_name_const_char, "rt");
+        int tri_point0,tri_point1,tri_point2;
+        int edge0_point0,edge0_point1;
+        int edge1_point0,edge1_point1;
+        int edge2_point0,edge2_point1;
+        long edge_nodes[6];
+        int patch_index;
+        long hit = 0;
+
+        vector<long*> nodesofnewedges;
+        long* nodes_info;
+        vector<long*> used_edges;
+
+
+        for (k=0;k<(int)m_msh->edge_vector.size();k++)
+        {
+            nodes_info = new long[4];
+             m_edge = m_msh->edge_vector[k];
+             m_edge->GetNodes(e_nodes);
+             nodes_info[0] = e_nodes[0]->GetIndex();
+             nodes_info[1] = e_nodes[1]->GetIndex();
+             nodes_info[2] = new_edge_nodes[k];
+             nodes_info[3] = 0;
+            nodesofnewedges.push_back(nodes_info);
+        }
+
+        fprintf(ele_file,"%s\n","#Elements");
+        for (j=0;j<(int)m_msh->ele_vector.size();j++)
+        { 
+             iteration_max.Format(_T("%d"),(int)fem_msh_vector[i]->ele_vector.size());
+             _tprintf(_T("%s"), (LPCTSTR) iteration_max);
+             iteration_name.Format(_T("%d"),j+1);
+             _tprintf(_T("%s"), (LPCTSTR) iteration_name);
+             iteration_name = "Checking to split element number: " + iteration_name + " from " + iteration_max;
+           
+             finish = clock();
+             duration = (double)(finish - start) / CLOCKS_PER_SEC;
+             duration_name.Format(_T("%5.0f"),duration);
+             _tprintf(_T("%s"), (LPCTSTR) duration_name);
+             iteration_name = iteration_name + "..................elapsed time: " + duration_name + " s";            
+             pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)iteration_name);
+
+           m_ele =m_msh->ele_vector[j];
+           tri_point0 = m_ele->GetNodeIndex(0);
+           tri_point1 = m_ele->GetNodeIndex(1);
+           tri_point2 = m_ele->GetNodeIndex(2);
+           patch_index = m_ele->GetPatchIndex();
+           hit = 0;
+           for (k=0;k<(int)nodesofnewedges.size();k++)
+           {
+             nodes_info = nodesofnewedges[k];
+              if (tri_point0 == nodes_info[0] && tri_point1 == nodes_info[1]){
+                 edge_nodes[0] = nodes_info[0];
+                 edge_nodes[1] = nodes_info[2];
+                 nodes_info[3] = nodes_info[3]+1;
+                 nodesofnewedges[k] = nodes_info;
+                 hit++;
+              }
+              if (tri_point1 == nodes_info[0] && tri_point2 == nodes_info[1]){
+                 edge_nodes[2] = nodes_info[0];
+                 edge_nodes[3] = nodes_info[2];
+                 nodes_info[3] = nodes_info[3]+1;
+                 nodesofnewedges[k] = nodes_info;
+                 hit++;
+              }
+              if (tri_point2 == nodes_info[0] && tri_point0 == nodes_info[1]){
+                 edge_nodes[4] = nodes_info[0];
+                 edge_nodes[5] = nodes_info[2];
+                 nodes_info[3] = nodes_info[3]+1;
+                 nodesofnewedges[k] = nodes_info;
+                 hit++;
+              }
+              if (tri_point0 == nodes_info[1] && tri_point1 == nodes_info[0]){
+                 edge_nodes[0] = nodes_info[1];
+                 edge_nodes[1] = nodes_info[2];
+                 nodes_info[3] = nodes_info[3]+1;
+                 nodesofnewedges[k] = nodes_info;
+                 hit++;
+              }
+              if (tri_point1 == nodes_info[1] && tri_point2 == nodes_info[0]){
+                 edge_nodes[2] = nodes_info[1];
+                 edge_nodes[3] = nodes_info[2];
+                 nodes_info[3] = nodes_info[3]+1;
+                 nodesofnewedges[k] = nodes_info;
+                 hit++;
+              }
+              if (tri_point2 == nodes_info[1] && tri_point0 == nodes_info[0]){
+                 edge_nodes[4] = nodes_info[1];
+                 edge_nodes[5] = nodes_info[2];
+                 nodes_info[3] = nodes_info[3]+1;
+                 nodesofnewedges[k] = nodes_info;
+                 hit++;
+              }
+ 
+              if(nodes_info[3]>=2)
+              {
+                 nodesofnewedges.erase(nodesofnewedges.begin()+k);
+                 used_edges.push_back(nodes_info);
+                 k--;
+              }
+              if(hit==3){
+                  hit=0;
+                  break;
+              }
+
+              if (hit<3 && k==(int)nodesofnewedges.size()-1)
+              {
+                 for (m=0;m<(int)used_edges.size();m++)
+                 {
+                    if (tri_point0 == nodes_info[0] && tri_point1 == nodes_info[1]){
+                        edge_nodes[0] = nodes_info[0];
+                        edge_nodes[1] = nodes_info[2];
+                        nodes_info[3] = nodes_info[3]+1;
+                        used_edges[m] = nodes_info;
+                        hit++;
+                    }
+                    if (tri_point1 == nodes_info[0] && tri_point2 == nodes_info[1]){
+                        edge_nodes[2] = nodes_info[0];
+                        edge_nodes[3] = nodes_info[2];
+                        nodes_info[3] = nodes_info[3]+1;
+                        used_edges[m] = nodes_info;
+                        hit++;
+                    }
+                    if (tri_point2 == nodes_info[0] && tri_point0 == nodes_info[1]){
+                        edge_nodes[4] = nodes_info[0];
+                        edge_nodes[5] = nodes_info[2];
+                        nodes_info[3] = nodes_info[3]+1;
+                        used_edges[m] = nodes_info;
+                        hit++;
+                    }
+                    if (tri_point0 == nodes_info[1] && tri_point1 == nodes_info[0]){
+                        edge_nodes[0] = nodes_info[1];
+                        edge_nodes[1] = nodes_info[2];
+                        nodes_info[3] = nodes_info[3]+1;
+                        used_edges[m] = nodes_info;
+                        hit++;
+                    }
+                    if (tri_point1 == nodes_info[1] && tri_point2 == nodes_info[0]){
+                        edge_nodes[2] = nodes_info[1];
+                        edge_nodes[3] = nodes_info[2];
+                        nodes_info[3] = nodes_info[3]+1;
+                        used_edges[m] = nodes_info;
+                        hit++;
+                    }
+                    if (tri_point2 == nodes_info[1] && tri_point0 == nodes_info[0]){
+                        edge_nodes[4] = nodes_info[1];
+                        edge_nodes[5] = nodes_info[2];
+                        nodes_info[3] = nodes_info[3]+1;
+                        used_edges[m] = nodes_info;
+                        hit++;
+                    }        
+                    if(hit==3){
+                        hit=0;
+                        break;
+                    }
+                 }       
+              }
+           }
+
+           fprintf(ele_file,"%i %i %i %i %i %i %i %i %i %i\n",tri_point0,tri_point1,tri_point2,
+                                                    edge_nodes[0],edge_nodes[1],
+                                                    edge_nodes[2],edge_nodes[3],
+                                                    edge_nodes[4],edge_nodes[5],
+                                                    patch_index);       
+        }
+
+        fprintf(ele_file,"%s\n","#STOP");
+        fclose(ele_file);
+        fclose(edge_file);
+
+        for (m=0;m<(int)used_edges.size();m++)
+        delete used_edges[m];
+        used_edges.clear();
+        for (k=0;k<(int)nodesofnewedges.size();k++)
+        delete nodesofnewedges[k];
+        nodesofnewedges.clear();
+
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Creating new external mesh........");  
+ 
+        /*Create New Elements*********************************************/ 
+        file_name_const_char = m_strFileNameNodes;
+        node_file = fopen(file_name_const_char, "rt");
+        file_name_const_char = m_strFileNameElements;
+        ele_file = fopen(file_name_const_char, "rt");
+
+        //write MSH Head
+	   	fprintf( new_mesh_file, "%s\n", "#FEM_MSH");
+        //write PCS Type
+        fprintf( new_mesh_file, "%s\n", " $PCS_TYPE");
+	   	fprintf( new_mesh_file, "%s\n", m_msh->pcs_name.data()); 
+        //Write Nodes
+	   	fprintf( new_mesh_file, "%s\n", " $NODES");
+        fprintf(new_mesh_file,"% ld\n",nNod);
+        //write Geometry    
+        while (!feof(node_file))
+        {
+          fgets(input_text,1024,node_file);
+          ok= sscanf(input_text,"%i %lg %lg %lg", &id,&x,&y,&z);
+          if (ok==4) fprintf(new_mesh_file,"%i %20.14f %20.14f %20.14f\n",id, x,y,z);
+        }
+
+
+
+        //write Elements
+        fprintf( new_mesh_file, "%s\n", " $ELEMENTS");
+        fprintf( new_mesh_file, "%i\n", 4*(int)m_msh->ele_vector.size());
+        //write Topology
+        while (!feof(ele_file))
+        {
+          fgets(input_text,1024,ele_file);
+          ok= sscanf(input_text,"%i %i %i %i %i %i %i %i %i %i", &tri_point0,&tri_point1,&tri_point2,
+                                                  &edge0_point0,&edge0_point1,
+                                                  &edge1_point0,&edge1_point1,
+                                                  &edge2_point0,&edge2_point1,
+                                                  &patch_index);
+          if (ok==10)
+          {
+          fprintf(new_mesh_file,"%i %i ",element_counter, patch_index);
+          fprintf( new_mesh_file, "%s", " tri  "); 
+          fprintf(new_mesh_file,"%i %i %i\n",edge0_point0,edge0_point1,edge2_point1);
+          element_counter++;
+          fprintf(new_mesh_file,"%i %i ",element_counter, patch_index);
+          fprintf( new_mesh_file, "%s", " tri  ");
+          fprintf(new_mesh_file,"%i %i %i\n",edge0_point1,edge1_point0,edge1_point1);
+          element_counter++;
+          fprintf(new_mesh_file,"%i %i ",element_counter, patch_index);
+          fprintf( new_mesh_file, "%s", " tri  "); 
+          fprintf(new_mesh_file,"%i %i %i\n",edge1_point1,edge2_point0,edge2_point1);
+          element_counter++;
+          fprintf(new_mesh_file,"%i %i ",element_counter, patch_index);
+          fprintf( new_mesh_file, "%s", " tri  ");
+          fprintf(new_mesh_file,"%i %i %i\n",edge0_point1,edge1_point1,edge2_point1);
+          element_counter++;
+          }
+        }
+
+        fprintf( new_mesh_file, "%s\n", "#STOP");
+        fclose(ele_file);
+        fclose(node_file);
+
+        break;
+      }
+
+  }
+
+             finish = clock();
+             duration = (double)(finish - start) / CLOCKS_PER_SEC;
+
+             hours = (long)duration /3600;
+             minutes = (long)duration /60;
+             seconds = (long)duration-(hours*3600)-(minutes*60);
+             duration_name.Format(_T("%d"),hours);
+             _tprintf(_T("%s"), (LPCTSTR) duration_name);
+             iteration_name = "New external mesh is ready!  (elapsed time: " + duration_name + "h:";
+             duration_name.Format(_T("%d"),minutes);
+             _tprintf(_T("%s"), (LPCTSTR) duration_name);
+             iteration_name = iteration_name + duration_name + "min:";
+             duration_name.Format(_T("%d"),seconds);
+             _tprintf(_T("%s"), (LPCTSTR) duration_name);
+             iteration_name = iteration_name + duration_name + "sec)";
+             pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)iteration_name);
+
+  //======================================================================== 
+  fclose(new_mesh_file);
+  CString exe_call;
+  //exe_call = "notepad.exe " + m_strFileNameEdge;
+  //WinExec(exe_call, SW_SHOW);
+  exe_call = "notepad.exe " + m_strFileNameNewMSH;
+  WinExec(exe_call, SW_SHOW);
+  //exe_call = "notepad.exe " + m_strFileNameNodes;
+  //WinExec(exe_call, SW_SHOW);
+  //exe_call = "notepad.exe " + m_strFileNameElements;
+  //WinExec(exe_call, SW_SHOW);
+  remove(m_strFileNameEdge);
+  remove(m_strFileNameNodes);
+  remove(m_strFileNameElements);
+  
+}
+
+void CGSFormRightMeshing::OnBnClickedY2z()
+{
+  CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+  CGeoSysDoc *m_pDoc = GetDocument();
+  //========================================================================
+  int i=0,j=0;
+  double y,z;
+  CFEMesh*m_msh = NULL;
+
+  for (i=0;i<(int)fem_msh_vector.size();i++)
+  {
+      m_msh = fem_msh_vector[i];
+      if (m_msh->ele_display_mode == 1 ||
+          m_msh->nod_display_mode == 1)
+      {
+          for (j=0;j<(int)m_msh->nod_vector.size();j++)
+          {
+              y = m_msh->nod_vector[j]->Y();
+              z = m_msh->nod_vector[j]->Z();
+              m_msh->nod_vector[j]->SetY(z);
+              m_msh->nod_vector[j]->SetZ(y);
+          }         
+      }
+  }
+  
+  //========================================================================
+ m_frame->m_something_changed = 1;
+ //m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
+ m_pDoc->UpdateAllViews(NULL);
+ Invalidate(TRUE);
+}
+
+void CGSFormRightMeshing::OnBnClickedX2y()
+{
+  CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+  CGeoSysDoc *m_pDoc = GetDocument();
+  //========================================================================
+  int i=0,j=0;
+  double x,y;
+  CFEMesh*m_msh = NULL;
+
+  for (i=0;i<(int)fem_msh_vector.size();i++)
+  {
+      m_msh = fem_msh_vector[i];
+      if (m_msh->ele_display_mode == 1 ||
+          m_msh->nod_display_mode == 1)
+      {
+          for (j=0;j<(int)m_msh->nod_vector.size();j++)
+          {
+              x = m_msh->nod_vector[j]->X();
+              y = m_msh->nod_vector[j]->Y();
+              m_msh->nod_vector[j]->SetX(y);
+              m_msh->nod_vector[j]->SetY(x);
+          }         
+      }
+  }
+  
+  //========================================================================
+ m_frame->m_something_changed = 1;
+ //m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
+ m_pDoc->UpdateAllViews(NULL);
+ Invalidate(TRUE);
+}
+
+void CGSFormRightMeshing::OnBnClickedX2z()
+{
+  CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+  CGeoSysDoc *m_pDoc = GetDocument();
+  //========================================================================
+  int i=0,j=0;
+  double x,z;
+  CFEMesh*m_msh = NULL;
+
+  for (i=0;i<(int)fem_msh_vector.size();i++)
+  {
+      m_msh = fem_msh_vector[i];
+      if (m_msh->ele_display_mode == 1 ||
+          m_msh->nod_display_mode == 1)
+      {
+          for (j=0;j<(int)m_msh->nod_vector.size();j++)
+          {
+              x = m_msh->nod_vector[j]->X();
+              z = m_msh->nod_vector[j]->Z();
+              m_msh->nod_vector[j]->SetX(z);
+              m_msh->nod_vector[j]->SetZ(x);
+          }         
+      }
+  }
+  
+  //========================================================================
+ m_frame->m_something_changed = 1;
+ //m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
+ m_pDoc->UpdateAllViews(NULL);
+ Invalidate(TRUE);
+}
+
+
