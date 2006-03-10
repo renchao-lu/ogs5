@@ -56,8 +56,9 @@ extern void MSHWriteVOL2TEC(string); //OK
 extern bool msh_file_binary; //OK
 extern void GMSH2MSH(char*,CFEMesh*);
 extern void Mesh_Single_Surface(string surface_name, const char *file_name_const_char);//TK
-extern void Select_Nodes_Elements_by_GMSHFile(const char *file_name_const_char);
+extern void Select_Nodes_Elements_by_TINFile(const char *file_name_const_char);
 extern void Clear_Selected_Nodes_Elements();
+extern void GMSH2TIN(const char *file_name_const_char);
 extern void MSHLayerWriteTecplot(); //OK
 extern CFEMesh* MSHGet(string mat_type_name); //OK
 extern CFEMesh* MSHGet(string pcs_type_name,string mat_type_name); //OK
