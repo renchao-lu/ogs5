@@ -1415,7 +1415,7 @@ void CFiniteElementStd::CalcLumpedMass()
 **************************************************************************/
 void CFiniteElementStd::CalcLaplace()
 {
-  int i, j, k, l, m;
+  int i, j, k, l;
   // ---- Gauss integral
   int gp, gp_r=0, gp_s=0, gp_t;
   gp_t = 0;
@@ -1441,8 +1441,32 @@ void CFiniteElementStd::CalcLaplace()
       // Calculate mass matrix
       //this->pcs->m_msh
 	  //if(PcsType == G && MediaProp->unconfined_flow_group == 1 && MeshElement->ele_dim == 2) {
+	  water_depth = 1.0
+      // The following "if" is done by WW
       if(PcsType == G && MediaProp->unconfined_flow_group == 1 && MeshElement->ele_dim == 2 && !pcs->m_msh->cross_section) {
-		for (i = 0; i < nnodes; i++) {
+          water_depth = 0.0;
+          for(i=0; i< nnodes; i++) 
+             water_depth += (pcs->GetNodeValue(nodes[i],idx1) -Z[i])*shapefct[i];          
+	  }
+      fkt *= water_depth;
+      for (i = 0; i < nnodes; i++) {
+		  for (j = 0; j < nnodes; j++) {
+   			      //  if(j>i) continue;  //MB temporary as Laplace now defined unsymmetric
+             for (k = 0; k < dim; k++) {
+				 for(l=0; l< dim; l++) {
+			         (*Laplace)(i,j) += fkt * dshapefct[k*nnodes+i] \
+                         * mat[dim*k+l] * dshapefct[l*nnodes+j];
+				    
+   		          } 
+			 }
+          }
+	    }
+      ///
+      /*
+      //WW
+      // The following "if" is done by MB (??)
+	  if(PcsType == G && MediaProp->unconfined_flow_group == 1 && MeshElement->ele_dim == 2 && !pcs->m_msh->cross_section) {          		  
+		  for (i = 0; i < nnodes; i++) {
 		  for (j = 0; j < nnodes; j++) {
            //  if(j>i) continue;  //MB temporary as Laplace now defined unsymmetric
              for (k = 0; k < dim; k++) {
@@ -1473,6 +1497,8 @@ void CFiniteElementStd::CalcLaplace()
           }
 	    }
 	  }
+	  ///////
+     */
   }
   //TEST OUTPUT
   // Laplace->Write();
@@ -1881,14 +1907,6 @@ void  CFiniteElementStd::Cal_Velocity()
 
   gp_ele->Velocity = 0.0;
   // Loop over Gauss points
-  double* G_coord = NULL;
-  k = (coordinate_system)/10;
-  if(k==1)
-     G_coord = X;
-  else if(k==2)
-     G_coord = Y;
-  else if(k==3)
-     G_coord = Z;
   k = (coordinate_system)%10;
   for(i=0; i<nnodes; i++)
 	 NodalVal[i] = pcs->GetNodeValue(nodes[i], idx1); 
@@ -1913,7 +1931,7 @@ void  CFiniteElementStd::Cal_Velocity()
       {
          vel[i] = 0.0; 
          for(j=0; j<nnodes; j++)
-			 vel[i] += NodalVal[j]*dshapefct[i*nnodes+j];
+			 vel[i] += fabs(NodalVal[j])*dshapefct[i*nnodes+j];
 	  }     
       // Gravity term
       if(k==2&&(!HEAD_Flag))
@@ -1928,7 +1946,7 @@ void  CFiniteElementStd::Cal_Velocity()
 		    }
 		 } // To be correctted   
 		 else
-           vel[k] += coef;
+           vel[dim-1] += coef;
 	  }
 	  for (i = 0; i < dim; i++)
       {
