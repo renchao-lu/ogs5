@@ -1430,18 +1430,55 @@ void Mesh_Single_Surface(string surface_name, const char *file_name_const_char)
   string m_strExecuteGEO = "gmsh " + m_strFileNameGEO +" -2";
 
 // PCH & TK: Workaround for the old problem.
-#ifdef MFC
-  LPTSTR filename = new TCHAR[1024];
-  GetModuleFileName(NULL,filename,1024);
-  string m_strExecuteGEOonly = " " + m_strFileNameGEO +" -2";
-  
-  CString gmsh = filename;
-  gmsh.TrimRight(_T("exe.sySoeG\\gubeD\\iuG"));
-  gmsh += "\\Lib\\gmsh";
-  string gmshCommand = gmsh.GetString();  
+  #ifdef MFC
+    LPTSTR filename = new TCHAR[1024];
+    GetModuleFileName(NULL,filename,1024);
+    string m_strExecuteGEOonly = " " + m_strFileNameGEO +" -2";
+    //m_strExecuteGEO = filename + m_strExecuteGEOonly; 
 
-  m_strExecuteGEO = gmshCommand + m_strExecuteGEOonly;
-#endif
+//
+   //LPCTSTR pstr = "C:";
+   CFileFind finder;
+   CString strWildcard(filename);
+   CString LIB_PATH;
+   CString Folder_Level_0 = strWildcard.Left(strWildcard.ReverseFind('\\'));
+   CString Folder_Level_1 = Folder_Level_0.Left(Folder_Level_0.ReverseFind('\\'));
+   CString Folder_Level_2 = Folder_Level_1.Left(Folder_Level_1.ReverseFind('\\'));
+   Folder_Level_1 = Folder_Level_1 + "\\*.*";
+   Folder_Level_2 = Folder_Level_2 + "\\*.*";
+
+  
+
+   
+   BOOL bWorking = finder.FindFile(Folder_Level_2);
+
+   while (bWorking)
+   {
+      bWorking = finder.FindNextFile();
+      // skip . and .. files; otherwise, we'd
+      // recur infinitely!
+      if (finder.IsDots())
+         continue;
+      // if it's a directory, recursively search it
+      if (finder.IsDirectory())
+      {
+         CString str = finder.GetFilePath();        
+         CString Folder = str.Right(str.GetLength()-str.ReverseFind('\\')-1);
+
+         if(Folder.Compare("LIB")==0)
+         {
+           LIB_PATH = str;
+           m_strExecuteGEO = LIB_PATH + "\\gmsh" + m_strExecuteGEOonly.data();
+         }
+      }
+   }
+   finder.Close();
+
+
+
+//
+  #endif
+ 
 
   const char *m_strExecute=0;
   m_strExecute = m_strExecuteGEO.data();
@@ -1460,50 +1497,21 @@ Task:    file_name_const_char = Path + Name  without extension of GMSH *msh-File
 Programing:
 12/2005 TK implementation
 **************************************************************************/
-void Select_Nodes_Elements_by_GMSHFile(const char *file_name_const_char)
+void Select_Nodes_Elements_by_TINFile(const char *file_name_const_char)
 {
    int i=0, j=0, k=0;
 //READ GMSH-File and fill local Element Vector
   vector<Mesh_Group::CFEMesh*>check_msh_vector;
   Mesh_Group::CFEMesh* m_check_elements;
   char text[1024];
-  long nbnod, nbelm;
-  long node_id;
-  long pnt;
-  double x,y,z;
+  long id_elem;
 
-  string m_strFileNameGMSH = file_name_const_char;
-  m_strFileNameGMSH = m_strFileNameGMSH + ".msh";
-  file_name_const_char = m_strFileNameGMSH.data();
-  ifstream gmsh_file (file_name_const_char,ios::in);
-
+  string m_strFileNameTIN = file_name_const_char;
+  m_strFileNameTIN = m_strFileNameTIN + ".tin";
+  file_name_const_char = m_strFileNameTIN.data();
+  ifstream tin_file (file_name_const_char,ios::in);
+  ifstream tin2check (file_name_const_char,ios::in);
   m_check_elements = new Mesh_Group::CFEMesh;
-  while (!gmsh_file.eof()) 
-  {
-    gmsh_file.getline(text, 1024);
-    if (!strncmp(text,"$NOD",4)){
-        gmsh_file>>nbnod>>ws;
-        m_check_elements->nod_vector.resize(nbnod);
-        for(i=0;i<nbnod;i++)
-        {
-            gmsh_file>>node_id>>x>>y>>z>>ws;  
-            m_check_elements->nod_vector[i] = new CNode(i,x,y,z);
-        }
-
-    }
-    if (!strncmp(text,"$ELM",4)){
-        gmsh_file>>nbelm>>ws; 
-        m_check_elements->ele_vector.resize(nbelm);
-        for(i=0;i<nbelm;i++)
-        {
-            m_check_elements->ele_vector[i] = new CElem(i);
-	        m_check_elements->ele_vector[i]->Read(gmsh_file, 2);
-        }
-
-    }
-   if (!strncmp(text,"$ENDELM",7)) break;
-  }
-
 //Loop over all generated triangles of surface
   CGLPoint point;
   double angle_sum, dist;
@@ -1511,33 +1519,71 @@ void Select_Nodes_Elements_by_GMSHFile(const char *file_name_const_char)
   double tri_point1[3],tri_point2[3],tri_point3[3],checkpoint[3];
   double tri_x[3],tri_y[3],tri_z[3];
   double min_mesh_dist=0.0;
+  double sfc_min[3],sfc_max[3];
 
-  for(k=0;k<(int)m_check_elements->ele_vector.size();k++)
-  {    
-        pnt = m_check_elements->ele_vector[k]->GetNodeIndex(0);
-         tri_point1[0] = m_check_elements->nod_vector[pnt]->X();
-         tri_point1[1] = m_check_elements->nod_vector[pnt]->Y();
-         tri_point1[2] = m_check_elements->nod_vector[pnt]->Z();
-        pnt = m_check_elements->ele_vector[k]->GetNodeIndex(1);
-         tri_point2[0] = m_check_elements->nod_vector[pnt]->X();
-         tri_point2[1] = m_check_elements->nod_vector[pnt]->Y();
-         tri_point2[2] = m_check_elements->nod_vector[pnt]->Z();
-        pnt = m_check_elements->ele_vector[k]->GetNodeIndex(2);
-         tri_point3[0] = m_check_elements->nod_vector[pnt]->X();
-         tri_point3[1] = m_check_elements->nod_vector[pnt]->Y();
-         tri_point3[2] = m_check_elements->nod_vector[pnt]->Z();
-         
-         tri_x[0]=tri_point1[0];
-         tri_x[1]=tri_point2[0];
-         tri_x[2]=tri_point3[0];
-         tri_y[0]=tri_point1[1];
-         tri_y[1]=tri_point2[1];
-         tri_y[2]=tri_point3[1];
-         tri_z[0]=tri_point1[2];
-         tri_z[1]=tri_point2[2];
-         tri_z[2]=tri_point3[2];
-    //Loop over all meshes
-    for(j=0;j<(long)fem_msh_vector.size();j++)
+  while (!tin2check.eof()) 
+  {  
+    i=tin2check.tellg();
+    tin2check>>id_elem>>tri_point1[0]>>tri_point1[1]>>tri_point1[2]>>tri_point2[0]>>tri_point2[1]>>tri_point2[2]>>tri_point3[0]>>tri_point3[1]>>tri_point3[2];  
+
+    if (i==0)
+    {
+     sfc_min[0]= tri_point1[0];
+     sfc_min[1]= tri_point1[1];
+     sfc_min[2]= tri_point1[2];
+     sfc_max[0]= tri_point1[0];
+     sfc_max[1]= tri_point1[1];
+     sfc_max[2]= tri_point1[2];
+     if (tri_point1[0] < sfc_min[0]) sfc_min[0] = tri_point1[0];
+     if (tri_point2[0] < sfc_min[0]) sfc_min[0] = tri_point2[0];
+     if (tri_point3[0] < sfc_min[0]) sfc_min[0] = tri_point3[0];
+     if (tri_point1[0] > sfc_max[0]) sfc_max[0] = tri_point1[0];
+     if (tri_point2[0] > sfc_max[0]) sfc_max[0] = tri_point2[0];
+     if (tri_point3[0] > sfc_max[0]) sfc_max[0] = tri_point3[0];
+     if (tri_point1[1] < sfc_min[1]) sfc_min[1] = tri_point1[1];
+     if (tri_point2[1] < sfc_min[1]) sfc_min[1] = tri_point2[1];
+     if (tri_point3[1] < sfc_min[1]) sfc_min[1] = tri_point3[1];
+     if (tri_point1[1] > sfc_max[1]) sfc_max[1] = tri_point1[1];
+     if (tri_point2[1] > sfc_max[1]) sfc_max[1] = tri_point2[1];
+     if (tri_point3[1] > sfc_max[1]) sfc_max[1] = tri_point3[1];
+     if (tri_point1[2] < sfc_min[2]) sfc_min[2] = tri_point1[2];
+     if (tri_point2[2] < sfc_min[2]) sfc_min[2] = tri_point2[2];
+     if (tri_point3[2] < sfc_min[2]) sfc_min[2] = tri_point3[2];
+     if (tri_point1[2] > sfc_max[2]) sfc_max[2] = tri_point1[2];
+     if (tri_point2[2] > sfc_max[2]) sfc_max[2] = tri_point2[2];
+     if (tri_point3[2] > sfc_max[2]) sfc_max[2] = tri_point3[2];
+    }
+    else
+    {
+     if (tri_point1[0] < sfc_min[0]) sfc_min[0] = tri_point1[0];
+     if (tri_point2[0] < sfc_min[0]) sfc_min[0] = tri_point2[0];
+     if (tri_point3[0] < sfc_min[0]) sfc_min[0] = tri_point3[0];
+     if (tri_point1[0] > sfc_max[0]) sfc_max[0] = tri_point1[0];
+     if (tri_point2[0] > sfc_max[0]) sfc_max[0] = tri_point2[0];
+     if (tri_point3[0] > sfc_max[0]) sfc_max[0] = tri_point3[0];
+     if (tri_point1[1] < sfc_min[1]) sfc_min[1] = tri_point1[1];
+     if (tri_point2[1] < sfc_min[1]) sfc_min[1] = tri_point2[1];
+     if (tri_point3[1] < sfc_min[1]) sfc_min[1] = tri_point3[1];
+     if (tri_point1[1] > sfc_max[1]) sfc_max[1] = tri_point1[1];
+     if (tri_point2[1] > sfc_max[1]) sfc_max[1] = tri_point2[1];
+     if (tri_point3[1] > sfc_max[1]) sfc_max[1] = tri_point3[1];
+     if (tri_point1[2] < sfc_min[2]) sfc_min[2] = tri_point1[2];
+     if (tri_point2[2] < sfc_min[2]) sfc_min[2] = tri_point2[2];
+     if (tri_point3[2] < sfc_min[2]) sfc_min[2] = tri_point3[2];
+     if (tri_point1[2] > sfc_max[2]) sfc_max[2] = tri_point1[2];
+     if (tri_point2[2] > sfc_max[2]) sfc_max[2] = tri_point2[2];
+     if (tri_point3[2] > sfc_max[2]) sfc_max[2] = tri_point3[2];
+    }
+  }
+  tin2check.close();
+
+  CFEMesh* m_msh = NULL;       
+  m_msh = new CFEMesh();
+  CNode* node = NULL;
+  fem_msh_vector.push_back(m_msh);
+  int temp_mesh = (long)fem_msh_vector.size();
+  //Loop over all meshes
+    for(j=0;j<(long)fem_msh_vector.size()-1;j++)
     {
     //Loop over all edges
         for(i=0;i<(long)fem_msh_vector[j]->edge_vector.size();i++)
@@ -1554,18 +1600,48 @@ void Select_Nodes_Elements_by_GMSHFile(const char *file_name_const_char)
     //Loop over all mesh nodes
         for(i=0;i<(long)fem_msh_vector[j]->nod_vector.size();i++)
         {
-            point.x = fem_msh_vector[j]->nod_vector[i]->X();
-            point.y = fem_msh_vector[j]->nod_vector[i]->Y();
-            point.z = fem_msh_vector[j]->nod_vector[i]->Z();
             checkpoint[0] = fem_msh_vector[j]->nod_vector[i]->X();
             checkpoint[1] = fem_msh_vector[j]->nod_vector[i]->Y(); 
             checkpoint[2] = fem_msh_vector[j]->nod_vector[i]->Z();
+            node = new CNode(i,checkpoint[0],checkpoint[1],checkpoint[2]);
+            if((checkpoint[0]>=sfc_min[0] && checkpoint[0]<=sfc_max[0] )&&
+               (checkpoint[1]>=sfc_min[1] && checkpoint[1]<=sfc_max[1] )&&
+               (checkpoint[2]>=sfc_min[2] && checkpoint[2]<=sfc_max[2] ) )
+            {              
+                fem_msh_vector[temp_mesh-1]->nod_vector.push_back(node);
+            }
+        }
+    }
+
+
+  while (!tin_file.eof()) 
+  {
+    //tin_file.getline(text, 1024);
+    tin_file>>id_elem>>tri_point1[0]>>tri_point1[1]>>tri_point1[2]>>tri_point2[0]>>tri_point2[1]>>tri_point2[2]>>tri_point3[0]>>tri_point3[1]>>tri_point3[2];  
+         tri_x[0]=tri_point1[0];
+         tri_x[1]=tri_point2[0];
+         tri_x[2]=tri_point3[0];
+         tri_y[0]=tri_point1[1];
+         tri_y[1]=tri_point2[1];
+         tri_y[2]=tri_point3[1];
+         tri_z[0]=tri_point1[2];
+         tri_z[1]=tri_point2[2];
+         tri_z[2]=tri_point3[2];
+    //Loop over all preselected mesh nodes
+        for(i=0;i<(long)fem_msh_vector[temp_mesh-1]->nod_vector.size();i++)
+        {
+            point.x = fem_msh_vector[temp_mesh-1]->nod_vector[i]->X();
+            point.y = fem_msh_vector[temp_mesh-1]->nod_vector[i]->Y();
+            point.z = fem_msh_vector[temp_mesh-1]->nod_vector[i]->Z();
+            checkpoint[0] = fem_msh_vector[temp_mesh-1]->nod_vector[i]->X();
+            checkpoint[1] = fem_msh_vector[temp_mesh-1]->nod_vector[i]->Y(); 
+            checkpoint[2] = fem_msh_vector[temp_mesh-1]->nod_vector[i]->Z();
             dist = MCalcDistancePointToPlane(checkpoint,tri_point1,tri_point2,tri_point3);
-            if (k==0) fem_msh_vector[j]->nod_vector[i]->epsilon = dist;
+            if (k==0) fem_msh_vector[temp_mesh-1]->nod_vector[i]->epsilon = dist;
             else
             {
-                if (fem_msh_vector[j]->nod_vector[i]->epsilon > dist)
-                    fem_msh_vector[j]->nod_vector[i]->epsilon = dist;
+                if (fem_msh_vector[temp_mesh-1]->nod_vector[i]->epsilon > dist)
+                    fem_msh_vector[temp_mesh-1]->nod_vector[i]->epsilon = dist;
             }
                 if (dist<=tolerance && dist>=-tolerance)
                 {
@@ -1573,9 +1649,38 @@ void Select_Nodes_Elements_by_GMSHFile(const char *file_name_const_char)
                   //if (point.PointInTriangle(tri_x,tri_y,tri_z) || angle_sum>359)
                   //if (point.PointInTriangle(tri_x,tri_y,tri_z))
                   if(angle_sum>359)
-                  fem_msh_vector[j]->nod_vector[i]->selected = 1;
+                  fem_msh_vector[temp_mesh-1]->nod_vector[i]->selected = 1;
                 }
-        }     
+        }
+
+  }
+
+  int a = fem_msh_vector[temp_mesh-1]->nod_vector.size();
+  int index;
+  //Loop over all meshes
+    for(j=0;j<(long)fem_msh_vector.size()-1;j++)
+    {
+    //Loop over selected nodes
+        for(i=0;i<(long)fem_msh_vector[temp_mesh-1]->nod_vector.size();i++)
+        {
+            index = fem_msh_vector[temp_mesh-1]->nod_vector[i]->GetIndex();
+            if(index < (int)fem_msh_vector[j]->nod_vector.size())
+            {
+            if ((fem_msh_vector[temp_mesh-1]->nod_vector[i]->GetIndex() == fem_msh_vector[j]->nod_vector[index]->GetIndex()) 
+                &&
+                fem_msh_vector[temp_mesh-1]->nod_vector[i]->selected==1
+                &&
+                (fem_msh_vector[temp_mesh-1]->nod_vector[i]->X() == fem_msh_vector[j]->nod_vector[index]->X()) 
+                && 
+                (fem_msh_vector[temp_mesh-1]->nod_vector[i]->Y() == fem_msh_vector[j]->nod_vector[index]->Y()) 
+                &&
+                (fem_msh_vector[temp_mesh-1]->nod_vector[i]->Z() == fem_msh_vector[j]->nod_vector[index]->Z())) 
+            {
+                fem_msh_vector[j]->nod_vector[index]->selected = 1;
+            }
+            }
+        }
+
         // Loop over all mesh elements
         vec<long> node_index(20);
         for(i=0;i<(long)fem_msh_vector[j]->ele_vector.size();i++)
@@ -1599,10 +1704,10 @@ void Select_Nodes_Elements_by_GMSHFile(const char *file_name_const_char)
                     fem_msh_vector[j]->ele_vector[i]->selected = 1;  
             }
         }     
-
-
     }
-  }
+
+
+    fem_msh_vector.erase(fem_msh_vector.begin()+ temp_mesh-1);
 
 }
 
@@ -1693,3 +1798,85 @@ void CFEMesh::SetMSHPart(vector<long>&elements_active, long StrangNumber)
   
 }
 
+/**************************************************************************
+MSHLib-Method: 
+Task:   GMSH 2 TIN
+        const char *file_name_const_char = Location and Name of GMSH FILE
+Programing:
+02/2006 TK implementation
+**************************************************************************/
+void GMSH2TIN(const char *file_name_const_char)
+{
+   int i=0, k=0;
+//READ GMSH-File and fill local Element Vector
+  vector<Mesh_Group::CFEMesh*>check_msh_vector;
+  Mesh_Group::CFEMesh* m_check_elements;
+  char text[1024];
+  long nbnod, nbelm;
+  long node_id;
+  long pnt;
+  double x,y,z;
+
+
+  string m_strFileNameGMSH = file_name_const_char;
+  string m_strFileNameTIN = file_name_const_char;
+  m_strFileNameGMSH = m_strFileNameGMSH + ".msh";
+  m_strFileNameTIN = m_strFileNameTIN + ".tin";
+  file_name_const_char = m_strFileNameGMSH.data();
+  ifstream gmsh_file (file_name_const_char,ios::in);
+
+  m_check_elements = new Mesh_Group::CFEMesh;
+  while (!gmsh_file.eof()) 
+  {
+    gmsh_file.getline(text, 1024);
+    if (!strncmp(text,"$NOD",4)){
+        gmsh_file>>nbnod>>ws;
+        m_check_elements->nod_vector.resize(nbnod);
+        for(i=0;i<nbnod;i++)
+        {
+            gmsh_file>>node_id>>x>>y>>z>>ws;  
+            m_check_elements->nod_vector[i] = new CNode(i,x,y,z);
+        }
+
+    }
+    if (!strncmp(text,"$ELM",4)){
+        gmsh_file>>nbelm>>ws; 
+        m_check_elements->ele_vector.resize(nbelm);
+        for(i=0;i<nbelm;i++)
+        {
+            m_check_elements->ele_vector[i] = new CElem(i);
+	        m_check_elements->ele_vector[i]->Read(gmsh_file, 2);
+        }
+
+    }
+   if (!strncmp(text,"$ENDELM",7)) break;
+  }
+
+//Loop over all generated triangles of surface
+  double tri_point1[3],tri_point2[3],tri_point3[3];
+  FILE *tin_file=NULL;
+  file_name_const_char = m_strFileNameTIN.data();
+  tin_file = fopen(file_name_const_char, "w+t");
+  for(k=0;k<(int)m_check_elements->ele_vector.size();k++)
+  {    
+        pnt = m_check_elements->ele_vector[k]->GetNodeIndex(0);
+         tri_point1[0] = m_check_elements->nod_vector[pnt]->X();
+         tri_point1[1] = m_check_elements->nod_vector[pnt]->Y();
+         tri_point1[2] = m_check_elements->nod_vector[pnt]->Z();
+        pnt = m_check_elements->ele_vector[k]->GetNodeIndex(1);
+         tri_point2[0] = m_check_elements->nod_vector[pnt]->X();
+         tri_point2[1] = m_check_elements->nod_vector[pnt]->Y();
+         tri_point2[2] = m_check_elements->nod_vector[pnt]->Z();
+        pnt = m_check_elements->ele_vector[k]->GetNodeIndex(2);
+         tri_point3[0] = m_check_elements->nod_vector[pnt]->X();
+         tri_point3[1] = m_check_elements->nod_vector[pnt]->Y();
+         tri_point3[2] = m_check_elements->nod_vector[pnt]->Z();
+         
+		    fprintf(tin_file,"%li ",k);
+            fprintf(tin_file,"%lg %lg %lg ",tri_point1[0], tri_point1[1], tri_point1[2]);
+            fprintf(tin_file,"%lg %lg %lg ",tri_point2[0], tri_point2[1], tri_point2[2]);
+            fprintf(tin_file,"%lg %lg %lg\n",tri_point3[0], tri_point3[1], tri_point3[2]);
+    
+  }
+  fclose(tin_file);  
+}
