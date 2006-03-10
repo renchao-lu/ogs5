@@ -8,7 +8,6 @@
  04/1997 OK Implementation
  05/2000 RK Anpassungen an Permeabilitaetsmodell
  10/2004 OK PCS2
-
  **************************************************************************/
 #include "stdafx.h" 
 #include "makros.h"
