@@ -1931,7 +1931,8 @@ void  CFiniteElementStd::Cal_Velocity()
       {
          vel[i] = 0.0; 
          for(j=0; j<nnodes; j++)
-			 vel[i] += fabs(NodalVal[j])*dshapefct[i*nnodes+j];
+			 vel[i] += NodalVal[j]*dshapefct[i*nnodes+j];
+//			 vel[i] += fabs(NodalVal[j])*dshapefct[i*nnodes+j];
 	  }     
       // Gravity term
       if(k==2&&(!HEAD_Flag))
