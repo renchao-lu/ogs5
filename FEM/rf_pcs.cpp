@@ -5453,10 +5453,19 @@ void CRFProcess::CalcFluxesForCoupling(void)
   Mesh_Group::CElem* m_ele_OLF = NULL;
   CRFProcess*m_pcs_GW = NULL;
   CRFProcess*m_pcs_OLF = NULL;
-   
   //Get processes
   m_pcs_GW = PCSGet("GROUNDWATER_FLOW");
+  if(!m_pcs_GW) //OK
+  {
+    cout << "Fatal error: no GROUNDWATER_FLOW process" << endl;
+    return;
+  }
   m_pcs_OLF  = PCSGet("OVERLAND_FLOW");
+  if(!m_pcs_OLF) //OK
+  {
+    cout << "Fatal error: no OVERLAND_FLOW process" << endl;
+    return;
+  }
   //Get meshes
   CFEMesh* m_msh_GW = m_pcs_GW->m_msh;
   CFEMesh* m_msh_OLF = m_pcs_OLF->m_msh;
