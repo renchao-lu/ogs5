@@ -685,66 +685,6 @@ void CGeoSysMSHView::OnLineGenPolylines()
 /**************************************************************************
 GeoSys-GUI: 
 Programing:
-01/2005 OK/YD Implementation
-02/2005 OK Bugfix
-last modified: 
-**************************************************************************/
-void CGeoSysMSHView::OnLineGenTriangles() //OK41
-{
-  int j;
-  long i;
-  long* nodes = NULL;
-  double x,y,z;
-  CGLLine* m_line = NULL;
-  Knoten* node = NULL;
-  //----------------------------------------------------------------------
-  // Data required
-  double length = 5.0;
-  int no_elements = 5;
-  int no_nodes = no_elements + 1;
-  //----------------------------------------------------------------------
-  // Surfacte triangle loop
-  for(i=0;i<ElListSize();i++){
-    // Select triangles
-    if(ElGetElementType(i)==4){
-      nodes = ElGetElementNodes(i);
-      x=y=z=0.0;
-      for(j=0;j<3;j++){
-        x += GetNodeX(nodes[j]);
-        y += GetNodeY(nodes[j]);
-        z += GetNodeZ(nodes[j]);
-      }
-      x /= 3.;
-      y /= 3.;
-      z /= 3.;
-      //...................................................................
-      // Generating lines
-      for(j=0;j<no_elements+1;j++){
-        node = NewNode();
-        node->x = x;
-        node->y = y;
-        node->z = z - j*(length/(double)no_nodes); //OK
-        AddNode(node);
-      }
-      //...................................................................
-      // Generating lines
-      for(j=0;j<no_elements;j++){
-        m_line = new CGLLine();
-        m_line->no_msh_nodes = 2;
-        m_line->msh_nodes = new long[2];
-        m_line->msh_nodes[0] = NodeListSize()- no_elements - 1 + j;
-        m_line->msh_nodes[1] = NodeListSize()- no_elements + j;
-        CreateMSHLines(m_line);//CC
-      }
-      //...................................................................
-    } // Triangles
-  } // ElListSize
-  //----------------------------------------------------------------------
-}
-
-/**************************************************************************
-GeoSys-GUI: 
-Programing:
 04/2005 OK Implementation
 last modified: 
 **************************************************************************/
@@ -1101,3 +1041,76 @@ void CGeoSysMSHView::OnLineGenSurface()
   CRegionalSoilModel m_dlg;
   m_dlg.DoModal();
 }
+
+/**************************************************************************
+GeoSys-GUI: 
+01/2005 OK/YD Implementation
+02/2005 OK Bugfix
+02/2006 OK MSH concept
+**************************************************************************/
+void CGeoSysMSHView::OnLineGenTriangles() //OK41
+{
+  CFEMesh* m_msh_this = NULL;
+  m_msh_this = FEMGet((string)m_strMSHName);
+  //m_msh_this = FEMGet("GROUNDWATER_FLOW");
+  if(!m_msh_this)
+  {
+    AfxMessageBox("no MSH data");
+    return;
+  }
+  m_msh_this->CreateLineELEFromTri();
+}
+/* old version
+void CGeoSysMSHView::OnLineGenTriangles() //OK41
+{
+  int j;
+  long i;
+  long* nodes = NULL;
+  double x,y,z;
+  CGLLine* m_line = NULL;
+  Knoten* node = NULL;
+  //----------------------------------------------------------------------
+  // Data required
+  double length = 5.0;
+  int no_elements = 5;
+  int no_nodes = no_elements + 1;
+  //----------------------------------------------------------------------
+  // Surfacte triangle loop
+  for(i=0;i<ElListSize();i++){
+    // Select triangles
+    if(ElGetElementType(i)==4){
+      nodes = ElGetElementNodes(i);
+      x=y=z=0.0;
+      for(j=0;j<3;j++){
+        x += GetNodeX(nodes[j]);
+        y += GetNodeY(nodes[j]);
+        z += GetNodeZ(nodes[j]);
+      }
+      x /= 3.;
+      y /= 3.;
+      z /= 3.;
+      //...................................................................
+      // Generating lines
+      for(j=0;j<no_elements+1;j++){
+        node = NewNode();
+        node->x = x;
+        node->y = y;
+        node->z = z - j*(length/(double)no_nodes); //OK
+        AddNode(node);
+      }
+      //...................................................................
+      // Generating lines
+      for(j=0;j<no_elements;j++){
+        m_line = new CGLLine();
+        m_line->no_msh_nodes = 2;
+        m_line->msh_nodes = new long[2];
+        m_line->msh_nodes[0] = NodeListSize()- no_elements - 1 + j;
+        m_line->msh_nodes[1] = NodeListSize()- no_elements + j;
+        CreateMSHLines(m_line);//CC
+      }
+      //...................................................................
+    } // Triangles
+  } // ElListSize
+  //----------------------------------------------------------------------
+}
+*/

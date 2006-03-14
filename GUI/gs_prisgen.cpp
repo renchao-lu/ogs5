@@ -70,7 +70,7 @@ Task:
 Programing:
 03/2004 OK Implementation
 04/2005 OK MSH
-last modification : 
+03/2006 OK bugfix
 **************************************************************************/
 BOOL CPRISGEN::OnInitDialog()
 {
@@ -83,8 +83,8 @@ BOOL CPRISGEN::OnInitDialog()
     m_msh = fem_msh_vector[i];
     m_msh->selected = false;
     m_CB_MSH.AddString(m_msh->pcs_name.c_str());
+    m_CB_MSH.SetCurSel(i);
   }
-  m_CB_MSH.SetCurSel(0);
   //----------------------------------------------------------------------
   // Surfaces ListBox
   Surface *m_surface = NULL;

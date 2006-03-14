@@ -435,7 +435,7 @@ void CGeoSysDoc::GSPReadWIN(CArchive& ar)
     }
     else
       ar >> m_strLine;
-    if(m_strLine=="#STOP")
+    if(m_strLine.Find("#STOP")==0) //OK
       return;
     pos = m_strLine.ReverseFind('.');
     CString m_strGSPFileNameBase = m_strLine.Left(pos);

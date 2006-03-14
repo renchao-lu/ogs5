@@ -191,7 +191,7 @@ void CGeoSysOUTProfileView::OnDraw(CDC* pDC)
   }
   else if(m_out->nod_value_vector.size()==1)
   {
-    nidx1 = m_pcs->GetNodeValueIndex(m_out->nod_value_vector[0])+1; //ToDo
+    nidx1 = m_pcs->GetNodeValueIndex(m_out->nod_value_vector[0]); //ToDo
     for(i=0;i<(int)nodes_vector.size();i++)
     {
       nod_value = m_pcs->GetNodeValue(nodes_vector[i],nidx1);
