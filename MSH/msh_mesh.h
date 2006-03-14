@@ -154,6 +154,8 @@ class CFEMesh
     void AppendLineELE();
     // TRI->PRIS
     void CreatePriELEFromTri(int,double);
+    // TRI->LINE
+    void CreateLineELEFromTri(); //OK
     // All nodes
     vector<Mesh_Group::CNode*> nod_vector;
     // All edges
@@ -178,6 +180,9 @@ class CFEMesh
     vector<string>mat_names_vector; //OK
     void DefineMobileNodes(CRFProcess*); //OK
     void FaceNormal(); // YD
+    void SetELENormalVectors(); //OK4310
+    void SetNODPatchAreas(); //OK4310
+    void SetNetworkIntersectionNodes(); //OK4319->PCH
 };
 
 } // namespace Mesh_Group

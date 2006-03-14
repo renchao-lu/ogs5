@@ -73,6 +73,7 @@ class CNode:public CCore
       void Write(ostream& os=cout) const;
       //GUI control variables 
       int selected;
+      double patch_area; //OK4310
 };
 
 } // namespace Mesh_Group

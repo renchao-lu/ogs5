@@ -23,7 +23,7 @@ Task:
 Programing:
 06/2005 WW Implementation
 **************************************************************************/
-CNode:: CNode(const int Index, const double x, 
+CNode::CNode(const int Index, const double x, 
             const double y, const double z):CCore(Index)
 {
   
@@ -37,6 +37,7 @@ CNode:: CNode(const int Index, const double x,
    epsilon=0.0;
    // PCH
    crossroad = 0;	// Set to be no crossroad
+   patch_area = -1.; //OK4310
 }
 /**************************************************************************
 MSHLib-Method: 
@@ -69,19 +70,23 @@ bool CNode::operator == (const CNode& n)
 }
 /**************************************************************************
 MSHLib-Method: 
-Task:
-Programing:
 06/2005 WW Implementation
+03/2006 OK patch_area
 **************************************************************************/
 void CNode::Write(ostream& osm) const
 {
-    osm.setf(ios::scientific, ios::floatfield);
-    setw(14);
-    osm.precision(14);
-    osm<<index<<deli
-       <<coordinate[0]<<deli
-       <<coordinate[1]<<deli
-	   <<coordinate[2]<<endl; 
+  osm.setf(ios::scientific, ios::floatfield);
+  setw(14);
+  osm.precision(14);
+  osm<<index<<deli
+     <<coordinate[0]<<deli
+     <<coordinate[1]<<deli
+     <<coordinate[2]<<deli; 
+  if(patch_area>0.0)
+  {
+    osm<<"$AREA"<<deli<<patch_area;
+  }
+  osm<<endl;
 }
 /**************************************************************************
 MSHLib-Method: 

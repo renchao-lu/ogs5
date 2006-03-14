@@ -48,6 +48,9 @@ class CElem:public CCore
       double gravity_center[3];
       int grid_adaptation;  // Flag for grid adapting.
       int patch_index;
+  public:
+      double normal_vector[3]; //OK
+  private:
 	  // MSH topology
       Matrix* tranform_tensor;
       vec<CElem*>neighbors;

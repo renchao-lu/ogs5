@@ -20,6 +20,7 @@ using namespace std;
 #include "elements.h"//CC
 #include "nodes.h"
 #include "gs_project.h"
+#include "rf_mmp_new.h" //OK
 
 /**************************************************************************
 MshLib-Method: 
@@ -338,6 +339,7 @@ Task:
 Programing:
 07/2005 MB Implementation
 11/2005 WW/MB element class
+03/2006 OK mat_group
 **************************************************************************/
 void CFEMesh::CreatePriELEFromTri(int no_layer,double layer_thickness)
 {
@@ -372,7 +374,7 @@ void CFEMesh::CreatePriELEFromTri(int no_layer,double layer_thickness)
       //Elements
       m_tri_ele = ele_vector[i];
       m_ele = new  Mesh_Group::CElem;
-      m_ele->SetPatchIndex(j); //OK
+      m_ele->SetPatchIndex((int)mmp_vector.size()+j); //OK
       m_ele->SetElementType(6);
       m_ele->nnodes = 6;
       m_ele->nodes_index.resize(m_ele->nnodes);

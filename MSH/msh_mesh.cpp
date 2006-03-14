@@ -1253,14 +1253,15 @@ void CFEMesh::GetNODOnSFC_TIN(Surface*m_sfc,vector<long>&msh_nod_vector)
   double tolerance = 0.001;
   double min_mesh_dist=0.0;
   double tri_point1[3],tri_point2[3],tri_point3[3],checkpoint[3];
-  double tri_x[3],tri_y[3],tri_z[3];
   double sfc_min[3],sfc_max[3];
 
   CGLPoint m_node;
   CTriangle *m_triangle = NULL;
   //Loop over all generated triangles of surface
   //----------------------------------------------------------------------
-/*  for(m=0;m<(long)m_sfc->TIN->Triangles.size();m++){
+/*  
+  double tri_x[3],tri_y[3],tri_z[3];
+    for(m=0;m<(long)m_sfc->TIN->Triangles.size();m++){
     m_triangle = m_sfc->TIN->Triangles[m];
     tri_x[0] = m_triangle->x[0];
     tri_y[0] = m_triangle->y[0];
@@ -3171,6 +3172,290 @@ void CFEMesh::FaceNormal()
       face_normal.push_back(normal);
       elem_face->ComputeVolume();
    }
+}
+
+/**************************************************************************
+MSHLib-Method:
+Programing:
+02/2006 OK Implementation
+**************************************************************************/
+void CFEMesh::CreateLineELEFromTri()
+{
+  int j,k;
+  long i,e;
+  double v1[3],v2[3],v3[3];
+  double patch_area;
+  double x,y,z;
+  double x0,y0,z0;
+  double x1,y1,z1;
+  double dl;
+  CNode* m_nod = NULL;
+  CNode* m_nod1 = NULL;
+  CNode* m_nod2 = NULL;
+  CNode* m_nod_line = NULL;
+  CElem* m_tri_ele = NULL;
+  CElem* m_ele = NULL;
+  CElem* m_ele1 = NULL;
+  //----------------------------------------------------------------------
+  // 1 - Element normal vector (for 2D elements only)
+  SetELENormalVectors();
+  //----------------------------------------------------------------------
+  // 2 - Node patch area
+  SetNODPatchAreas();
+  //----------------------------------------------------------------------
+  // 3 - Intersection nodes
+  //OKSetNetworkIntersectionNodes();
+  //----------------------------------------------------------------------
+  // 4 - Create MSH
+  MSHDelete("LINE_from_TRI");
+  CFEMesh* m_msh_line = NULL;
+  m_msh_line = new CFEMesh();
+  m_msh_line->pcs_name = "LINE_from_TRI";
+  m_msh_line->ele_type = 1;
+  m_msh_line->no_msh_layer = 10; // User-defined
+  double element_length = -0.1; // User-defined
+  dl = element_length * m_msh_line->no_msh_layer;
+  //----------------------------------------------------------------------
+  // 4.1 - Line nodes
+  for(i=0;i<(long)nod_vector.size();i++)
+  {
+    m_nod = nod_vector[i];
+    //OKif(m_nod->selected)
+      //OKcontinue;
+    if((int)m_nod->connected_elements.size()==0)
+      continue;
+    m_tri_ele = ele_vector[m_nod->connected_elements[0]];
+    //....................................................................
+    // Node normal vector
+    x0 = m_nod->X();
+    y0 = m_nod->Y();
+    z0 = m_nod->Z();
+    x1 = x0 + m_tri_ele->normal_vector[0]*dl;
+    y1 = y0 + m_tri_ele->normal_vector[1]*dl;
+    z1 = z0 + m_tri_ele->normal_vector[2]*dl;
+    //....................................................................
+    for(j=0;j<m_msh_line->no_msh_layer+1;j++)
+    {
+      x =  x0 + (x1-x0)*(j)/m_msh_line->no_msh_layer;
+      y =  y0 + (y1-y0)*(j)/m_msh_line->no_msh_layer;
+      z =  z0 + (z1-z0)*(j)/m_msh_line->no_msh_layer;
+      m_nod_line = new CNode((long)m_msh_line->nod_vector.size(),x,y,z);
+      m_msh_line->nod_vector.push_back(m_nod_line);
+    }
+  }
+  //----------------------------------------------------------------------
+  // 4.2 - Line elements
+  long i_count = 0;
+  for(i=0;i<(long)nod_vector.size();i++)
+  {
+    m_nod = nod_vector[i];
+    //....................................................................
+    // Intersection node
+    if(m_nod->selected)
+      continue;
+    if((int)m_nod->connected_elements.size()==0)
+      continue;
+    m_tri_ele = ele_vector[m_nod->connected_elements[0]];
+    //....................................................................
+    // Line elements
+    for(j=0;j<m_msh_line->no_msh_layer;j++)
+    {
+      m_ele = new Mesh_Group::CElem;
+      m_ele->SetIndex((long)m_msh_line->ele_vector.size());
+      m_ele->SetElementType(1);
+      m_ele->nnodes = 2;
+      m_ele->nodes_index.resize(m_ele->nnodes);
+      //....................................................................
+      // Line element nodes
+      for(k=0;k<m_ele->nnodes;k++)
+      {
+        m_ele->nodes_index[k] = i_count*m_msh_line->no_msh_layer + j + k + i_count;
+        m_ele->nodes[k] = m_msh_line->nod_vector[m_ele->nodes_index[k]];
+      }
+      //....................................................................
+      m_msh_line->ele_vector.push_back(m_ele);
+    }
+    i_count++;
+  }
+  //----------------------------------------------------------------------
+  if(m_msh_line->ele_vector.size()>0)
+    fem_msh_vector.push_back(m_msh_line);
+  else 
+    delete m_msh_line;
+  //----------------------------------------------------------------------
+  CGSProject* m_gsp = NULL;
+  m_gsp = GSPGetMember("gli");
+  if(m_gsp)
+    FEMWrite(m_gsp->path + "test");
+  else
+    FEMWrite("test");
+}
+
+/**************************************************************************
+MSHLib-Method:
+Programing:
+03/2006 OK Implementation
+**************************************************************************/
+void CFEMesh::SetELENormalVectors()
+{
+  //----------------------------------------------------------------------
+  long i;
+  double v1[3],v2[3];
+  double patch_area;
+  CNode* m_nod = NULL;
+  CNode* m_nod1 = NULL;
+  CNode* m_nod2 = NULL;
+  CElem* m_tri_ele = NULL;
+  //----------------------------------------------------------------------
+  for(i=0;i<(long)ele_vector.size();i++)
+  {
+    m_tri_ele = ele_vector[i];
+    if(m_tri_ele->GetElementType()!=4) // just for triangles
+      continue;
+    m_nod = nod_vector[m_tri_ele->GetNodeIndex(0)];
+    m_nod1 = nod_vector[m_tri_ele->GetNodeIndex(1)];
+    m_nod2 = nod_vector[m_tri_ele->GetNodeIndex(2)];
+    v1[0] = m_nod1->X() - m_nod->X();
+    v1[1] = m_nod1->Y() - m_nod->Y();
+    v1[2] = m_nod1->Z() - m_nod->Z();
+    v2[0] = m_nod2->X() - m_nod->X();
+    v2[1] = m_nod2->Y() - m_nod->Y();
+    v2[2] = m_nod2->Z() - m_nod->Z();
+    CrossProduction(v1,v2,m_tri_ele->normal_vector);
+    NormalizeVector(m_tri_ele->normal_vector,3);
+  }
+  //----------------------------------------------------------------------
+}
+
+/**************************************************************************
+MSHLib-Method:
+Programing:
+03/2006 OK Implementation
+**************************************************************************/
+void CFEMesh::SetNODPatchAreas()
+{
+  long i,e;
+  int j,k;
+  int n1=0,n2=0;
+  double v1[3],v2[3],v3[3];
+  double patch_area;
+  double x0,y0,z0;
+  double* gravity_center;
+  CNode* m_nod = NULL;
+  CNode* m_nod1 = NULL;
+  CNode* m_nod2 = NULL;
+  CElem* m_ele = NULL;
+  //----------------------------------------------------------------------
+  for(i=0;i<(long)nod_vector.size();i++)
+  {
+    m_nod = nod_vector[i]; // this node
+    patch_area = 0.0;
+    //....................................................................
+    // triangle neighbor nodes
+    for(j=0;j<(int)m_nod->connected_elements.size();j++)
+    {
+      e = m_nod->connected_elements[j];
+      m_ele = ele_vector[e];
+      for(k=0;k<3;k++)
+      {
+        if(m_ele->GetNodeIndex(k)==i)
+        {
+          switch(k)
+          {
+            case 0:
+              n1 = 2;
+              n2 = 1;
+              break;
+            case 1:
+              n1 = 0;
+              n2 = 2;
+              break;
+            case 2:
+              n1 = 1;
+              n2 = 0;
+              break;
+          }
+        }
+      }
+      //..................................................................
+      gravity_center = m_ele->GetGravityCenter();
+      v2[0] = gravity_center[0] - m_nod->X();
+      v2[1] = gravity_center[1] - m_nod->Y();
+      v2[2] = gravity_center[2] - m_nod->Z();
+      //..................................................................
+      m_nod1 = nod_vector[m_ele->GetNodeIndex(n1)];
+      x0 = 0.5*(m_nod1->X()-m_nod->X());
+      y0 = 0.5*(m_nod1->Y()-m_nod->Y());
+      z0 = 0.5*(m_nod1->Z()-m_nod->Z());
+      v1[0] = x0 - m_nod->X();
+      v1[1] = y0 - m_nod->Y();
+      v1[2] = z0 - m_nod->Z();
+      CrossProduction(v1,v2,v3);
+      patch_area += 0.5*MBtrgVec(v3,3);
+      //..................................................................
+      m_nod2 = nod_vector[m_ele->GetNodeIndex(n2)];
+      x0 = 0.5*(m_nod2->X()-m_nod->X());
+      y0 = 0.5*(m_nod2->Y()-m_nod->Y());
+      z0 = 0.5*(m_nod2->Z()-m_nod->Z());
+      v1[0] = x0 - m_nod->X();
+      v1[1] = y0 - m_nod->Y();
+      v1[2] = z0 - m_nod->Z();
+      CrossProduction(v1,v2,v3);
+      patch_area += 0.5*MBtrgVec(v3,3);
+      //..................................................................
+    }
+    m_nod->patch_area = patch_area;
+  }
+}
+
+/**************************************************************************
+MSHLib-Method:
+Programing:
+03/2006 OK Implementation
+**************************************************************************/
+void CFEMesh::SetNetworkIntersectionNodes()
+{
+  long i,e;
+  int j;
+  double v3[3];
+  double* gravity_center;
+  CNode* m_nod = NULL;
+  CElem* m_ele = NULL;
+  CElem* m_ele1 = NULL;
+  //----------------------------------------------------------------------
+  // Is node intersection node
+  for(i=0;i<(long)nod_vector.size();i++)
+  {
+    m_nod = nod_vector[i];
+    m_nod->selected = false;
+  }
+  double eps = 1e-3;
+  for(i=0;i<(long)nod_vector.size();i++)
+  {
+    m_nod = nod_vector[i]; // this node
+    if((int)m_nod->connected_elements.size()==0)
+      continue;
+    m_ele = ele_vector[m_nod->connected_elements[0]];
+    //....................................................................
+    // Compare element normal vectors
+    for(j=1;j<(int)m_nod->connected_elements.size();j++)
+    {
+      e = m_nod->connected_elements[j];
+      m_ele1 = ele_vector[e];
+      CrossProduction(m_ele->normal_vector,m_ele1->normal_vector,v3);
+      if(MBtrgVec(v3,3)>eps)
+        m_nod->selected = true;
+    }
+  }
+  // Count non-intersection nodes
+  long no_non_intersection_nodes = 0;
+  for(i=0;i<(long)nod_vector.size();i++)
+  {
+    m_nod = nod_vector[i];
+    if(m_nod->selected)
+      continue;
+    no_non_intersection_nodes++;
+  }
 }
 
 } // namespace Mesh_Group
