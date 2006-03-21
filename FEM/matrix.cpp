@@ -1763,7 +1763,7 @@ void *M5CreateMatrix(long param1, long param2, long param3)
   
   matrix_type = param2;
 
-  int i; //ii,jj,count1;
+  int i, ii,jj,count1;
   long k, index, Size, dim1; //OK
 /*------------------------------------------------------------*/
   jd_ptr_max = 0;
@@ -1862,7 +1862,7 @@ void *M5CreateMatrix(long param1, long param2, long param3)
 
 */
 
-/*
+
        count1 = 0;
 	   for (k = 0; k < jd_ptr_max; k++)
 	   {
@@ -1877,7 +1877,7 @@ void *M5CreateMatrix(long param1, long param2, long param3)
              if(ii==jj)
                 diag5_i[ii] = count1;
 //TEST WW OUT
-			 cout<<" Row: "<< ii<<"  "<< col_ind[count1]<<"    ";
+//			 cout<<" Row: "<< ii<<"  "<< col_ind[count1]<<"    ";
 //             cout<<ii<<"    ";
 //             cout<< col_ind[count1]<<"    ";
 //////////////////////////////////
@@ -1887,7 +1887,7 @@ void *M5CreateMatrix(long param1, long param2, long param3)
 //TEST WW
           cout<<endl;
 ////////////////////
-       }*/
+       }
    return (void*) w;
 }
 /*-------------------------------------------------------------*/
@@ -2050,7 +2050,6 @@ void M5MatVek(double *b, double *erg)
 //  Modell2 *w = (Modell2 *) wurzel;
   int i, dim1;  //k, 
   int j, num;
-//  long ii,jj, nod_c, counter;
   long col_len; 
   CFEMesh* m_msh = NULL; //WW
   m_msh = FEMGet("GROUNDWATER_FLOW");
@@ -2061,8 +2060,9 @@ void M5MatVek(double *b, double *erg)
 #endif
     for (i=0;i<dim1;i++)
     	erg[i]=0.0;
-/*
+    /*
     // WW   //////
+    long k, ii,jj, nod_c, counter;
     counter=0;
     for (k = 0; k < jd_ptr_max; k++)
     {
@@ -2070,17 +2070,19 @@ void M5MatVek(double *b, double *erg)
        {          
           ii = jd_ptr2[i];  // Row index
           nod_c=col_ind[counter];
-          jj=m_msh->nod_vector[nod_c]-> GetEquationIndex();
+          jj= m_msh->nod_vector[nod_c]-> GetEquationIndex();
 		  erg[ii] += jdiag[counter]*b[jj];		  
 		  counter++;
        }         
     }
+	*/
     ///////////////////////////////////////////////// 
-*/
+
 
     for (i=0;i<dim1;i++)
     	temp_ergebnis[i]=0.0;
 
+   
 	for (i=0; i<jd_ptr_max; i++)
 	{
 	  col_len = jd_ptrf[i+1] - jd_ptrf[i];
@@ -2104,6 +2106,7 @@ void M5MatVek(double *b, double *erg)
 #endif
 	for(i=0; i<dim1; i++)
 	  erg[jd_ptr2[i]]=temp_ergebnis[i];
+
 
 }
 /*--------------------------------------------------------------------
