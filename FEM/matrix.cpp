@@ -1809,7 +1809,7 @@ void *M5CreateMatrix(long param1, long param2, long param3)
 		for (i = 0; i < Size; i++)
 		  jd_ptr[i]++;
 	  } 
-	  printf("In transM2toM5 dim=%ld\n",dim1);
+	  // printf("In transM2toM5 dim=%ld\n",dim1);
 	  for (k = 0; k < dim1; k++)
 	  {
 //	  printf("Zeil2(%d).anz=%d\n",k,Zeil2(k).anz);
