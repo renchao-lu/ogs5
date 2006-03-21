@@ -1809,7 +1809,7 @@ void *M5CreateMatrix(long param1, long param2, long param3)
 		for (i = 0; i < Size; i++)
 		  jd_ptr[i]++;
 	  } 
-	  // printf("In transM2toM5 dim=%ld\n",dim1);
+//	  printf("In transM2toM5 dim=%ld\n",dim1);
 	  for (k = 0; k < dim1; k++)
 	  {
 //	  printf("Zeil2(%d).anz=%d\n",k,Zeil2(k).anz);
@@ -1862,8 +1862,8 @@ void *M5CreateMatrix(long param1, long param2, long param3)
 
 */
 
-
        count1 = 0;
+       long col_i=0;
 	   for (k = 0; k < jd_ptr_max; k++)
 	   {
           for (i = 0; i < jd_ptr[k]; i++)
@@ -1871,7 +1871,9 @@ void *M5CreateMatrix(long param1, long param2, long param3)
              // Row of equation system 
              ii = jd_ptr2[i]; 
              index =  m_msh->Eqs2Global_NodeIndex[ii];   
-			 col_ind[count1] =  m_msh->nod_vector[index]->connected_nodes[k];   
+//			 col_ind[count1] =   m_msh->go[m_msh->nod_vector[index]->connected_nodes[k]];   
+             col_i = m_msh->nod_vector[index]->connected_nodes[k];
+			 col_ind[count1] = m_msh->nod_vector[col_i]->GetEquationIndex();   
              jj = col_ind[count1] ;
 			 m_msh->nod_vector[index]->m5_index[k]=count1;
              if(ii==jj)
@@ -1885,7 +1887,7 @@ void *M5CreateMatrix(long param1, long param2, long param3)
              count1++;
           }  
 //TEST WW
-          cout<<endl;
+//          cout<<endl;
 ////////////////////
        }
    return (void*) w;
@@ -3408,7 +3410,7 @@ void M5Vorkond(int aufgabe, double *x, double *b)
   register long k;
   register int i;
   static double *x0, *r0, h;
-  long ii; // count1;
+  long ii; //, count1;
   double v_diag=0.0;
 
 #ifdef ERROR_CONTROL
@@ -3458,6 +3460,7 @@ void M5Vorkond(int aufgabe, double *x, double *b)
 
 
 		  // For test, must be improved
+		  
 		  double val;
           for (k = 0; k < Dim_L; k++)
           {
@@ -3469,9 +3472,10 @@ void M5Vorkond(int aufgabe, double *x, double *b)
                  MXSet(k,ii,val);
 			 }
 		  }
-
+          
+		  
 		  /*
-            count1 = 0;
+           long count1 = 0;
 	        for (k = 0; k < jd_ptr_max; k++)
 	        {
                for (i = 0; i < jd_ptr[k]; i++)
@@ -3484,8 +3488,7 @@ void M5Vorkond(int aufgabe, double *x, double *b)
                   count1++;
                }  
 	        }
-			*/
-
+           */
     ///////////////////////////////////////////////// 
 
           /*
