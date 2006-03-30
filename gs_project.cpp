@@ -420,7 +420,7 @@ void GSPWriteData()
       path_base = g_gsp_path + m_gsp->base;
       FEMWrite(path_base);
 #ifdef RANDOM_WALK
-	  DATWritePCTFile(path_base.data());    // PCH Again, this is a temperary solution. Should be changed later on.
+//	  DATWritePCTFile(path_base.data());    // PCH Again, this is a temperary solution. Should be changed later on.
 #endif
     }
     else if(m_gsp->type.compare("pct")==0){     // PCH

@@ -589,10 +589,22 @@
 					RelativePath=".\gs_pnt.h">
 				</File>
 				<File
+					RelativePath=".\gs_point_new.cpp">
+				</File>
+				<File
+					RelativePath=".\gs_point_new.h">
+				</File>
+				<File
 					RelativePath=".\gs_polyline.cpp">
 				</File>
 				<File
 					RelativePath=".\gs_polyline.h">
+				</File>
+				<File
+					RelativePath=".\gs_polyline_new.cpp">
+				</File>
+				<File
+					RelativePath=".\gs_polyline_new.h">
 				</File>
 				<File
 					RelativePath=".\gs_prisgen.cpp">
@@ -611,6 +623,12 @@
 				</File>
 				<File
 					RelativePath=".\gs_sfc.h">
+				</File>
+				<File
+					RelativePath=".\gs_sfc_new.cpp">
+				</File>
+				<File
+					RelativePath=".\gs_sfc_new.h">
 				</File>
 				<File
 					RelativePath=".\gs_st_new.cpp">

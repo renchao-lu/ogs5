@@ -635,8 +635,8 @@ void CMainFrame::OnPointDlg()
   theApp->OnCreatePoint();
   if(theApp->g_graphics_modeless_dlg->GetSafeHwnd()!=NULL) //CC
     theApp->g_graphics_modeless_dlg->m_iDisplayPNT = true;//CC
-  if (theApp->pPolyline->GetSafeHwnd()!=NULL)
-    theApp->pPolyline->add_polyline = false;
+  if (theApp->pPolylinenew->GetSafeHwnd()!=NULL)//CC9999
+   theApp->pPolylinenew->add_polyline = false;
   //----------------------------------------------------------------------
   // Create GEOView
   OnViewGEOCreate();
@@ -719,8 +719,8 @@ void CMainFrame::OnSurfaceDlg()
   //----------------------------------------------------------------------
   // Modeless dialog
   CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
-  if(theApp->pPolyline->GetSafeHwnd()!= NULL) //CC
-    theApp->pPolyline->add_polyline = false;// CC
+  if(theApp->pPolylinenew->GetSafeHwnd()!= NULL) //CC9999
+    theApp->pPolylinenew->add_polyline = false;// CC
   theApp->OnCreateSurface();
   //----------------------------------------------------------------------
 }

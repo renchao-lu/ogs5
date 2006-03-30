@@ -79,6 +79,9 @@ CGeoSysApp::CGeoSysApp()
   pPickedProperty = NULL;
   pPoint = NULL;
   pPolyline = NULL;
+  pPolylinenew = NULL;
+  pPointnew = NULL;
+  pSurfacenew = NULL; //CC03/2006
   pSurface = NULL;
   pVolume = NULL;
   m_bPickPLYPoints = false;
@@ -340,13 +343,13 @@ void CGeoSysApp::deleteMember()
 { 
     // test whether point editor is already open or not
     //destroy window will close the dialog window
-    if (pPoint->GetSafeHwnd() != NULL )
-    pPoint->DestroyWindow();
+    if (pPointnew->GetSafeHwnd() != NULL )
+    pPointnew->DestroyWindow();//CC03/2006
   //delete pPoint;
    // }
  
-    if (pPolyline->GetSafeHwnd() != NULL )
-    pPolyline->DestroyWindow();
+    if (pPolylinenew->GetSafeHwnd() != NULL )
+    pPolylinenew->DestroyWindow();//CC03/2006
 
         if (pSurface->GetSafeHwnd() != NULL )
     pSurface->DestroyWindow();
@@ -362,17 +365,19 @@ Task:
 Programing:
 06/2005 CC Implementation
 07/2005 CC Modification check the active dialog index
+03/2006 CC new dialog
 **************************************************************************/
-void CGeoSysApp::OnUpdataGeoListCtrl()
+void CGeoSysApp::OnUpdateGeoListCtrl()
 { 
   // test whether point editor is already open or not
-  if (pPoint->GetSafeHwnd() != NULL && ActiveDialogIndex == 1)
-    pPoint->OnButtonPointPropertiesUpdate();
-  if (pPolyline->GetSafeHwnd() != NULL && ActiveDialogIndex == 2){
-    pPolyline->OnButtonPolylinePropertiesUpdate();
-    pPolyline->OnMarkselectedPoint();//CC
+  if (pPointnew->GetSafeHwnd() != NULL && ActiveDialogIndex == 1)
+    //pPoint->OnButtonPointPropertiesUpdate();//CC9999
+      pPointnew->OnButtonPointPropertiesUpdate();//CC9999
+  if (pPolylinenew->GetSafeHwnd() != NULL && ActiveDialogIndex == 2)//CC9999
+    pPolylinenew->OnButtonPolylinePropertiesUpdate();//CC9999
+  if (pSurfacenew->GetSafeHwnd() != NULL && ActiveDialogIndex == 3)//CC9999
+    pSurfacenew->OnButtonSurfacePropertiesUpdate();//CC9999
   }
-}
 /////////////////////////////////////////////////////////////////////////////
 // CGeoSysApp commands
 CMultiDocTemplate * CGeoSysApp::GetDocTemplate(UINT uTemplate)
@@ -548,29 +553,33 @@ void CGeoSysApp::OnCreatePoint()
    if(pPoint->GetSafeHwnd() == NULL) {
 
 		
-		pPoint = new CGSPoint;
-		pPoint->Create(IDD_POINT);
-		pPoint->ShowWindow(SW_SHOW);
+        pPointnew = new CGSPointnew;//CC9999
+        pPointnew->Create(IDD_POINT_NEW);//CC9999
+		pPointnew->ShowWindow(SW_SHOW);//CC9999
 	}
 	else
-		pPoint->ShowWindow(SW_SHOW);
+		pPointnew->ShowWindow(SW_SHOW);//CC9999
 }
 /**************************************************************************
 Task: This dialog handles picked points to create polyline
 Programing:
 03/2005 PCH gs_polyline dialog handling at the global variable level
+12/2005 CC Modification
 **************************************************************************/
 void CGeoSysApp::OnCreatePolyline()
 {	
-  if(pPolyline->GetSafeHwnd() == NULL) 
+  if(pPolylinenew->GetSafeHwnd() == NULL) 
   {
-	pPolyline = new CPolyline;
-	pPolyline->Create(IDD_POLYLINE);
-	pPolyline->ShowWindow(SW_SHOW);
+	//pPolyline = new CPolyline;
+	//pPolyline->Create(IDD_POLYLINE);
+	//pPolyline->ShowWindow(SW_SHOW);
+ 	pPolylinenew = new CGSPolylinenew;
+	pPolylinenew->Create(IDD_POLYLINE_NEW);
+	pPolylinenew->ShowWindow(SW_SHOW);
   }
   else
-	pPolyline->ShowWindow(SW_SHOW);
-  m_bPickPLYPoints = true; //OK
+	pPolylinenew->ShowWindow(SW_SHOW);
+    m_bPickPLYPoints = true; //OK
 }
 
 
@@ -579,17 +588,18 @@ GeoSys-Method:
 Task: This dialog handles picked polylines to create surface
 Programing:
 04/2005 PCH 
+12/2005 CC Modification
 **************************************************************************/
 void CGeoSysApp::OnCreateSurface()
 {	
-	if(pSurface->GetSafeHwnd() == NULL) 
+	if(pSurfacenew->GetSafeHwnd() == NULL) 
 	{
-		pSurface = new CGSSurface;
-		pSurface->Create(IDD_SURFACE);
-		pSurface->ShowWindow(SW_SHOW);
+		pSurfacenew = new CGSSurfacenew;
+		pSurfacenew->Create(IDD_SURFACE_NEW);//CC9999
+		pSurfacenew->ShowWindow(SW_SHOW);
 	}
 	else
-		pSurface->ShowWindow(SW_SHOW);
+		pSurfacenew->ShowWindow(SW_SHOW);
 }
 
 /**************************************************************************

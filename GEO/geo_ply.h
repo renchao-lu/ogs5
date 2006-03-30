@@ -26,12 +26,16 @@ class CGLPolyline
     // ID
     long id;//CC
     string name;
+    string ply_name;
     //properties
     int type;
     int data_type;
+    string ply_type;//CC9999
+    string ply_data;//CC9999
     double epsilon;
     int mat_group;
     double minDis;
+    double mesh_density;//CC9999 ply density
     //display
     bool highlighted;// CC
     int m_color[3];
@@ -70,7 +74,6 @@ class CGLPolyline
     void CalcMinimumPointDistance(); //OK
 };
 
-typedef vector<CGLPolyline*> polyline_vec; //CC
 extern vector<CGLPolyline*> polyline_vector;//CC
 extern vector<CGLPolyline*> GetPolylineVector(void);//CC
 //Access
@@ -81,7 +84,7 @@ extern void GEOPolylineGLI2GEO(FILE *geo_file);
 extern void GEOUnselectPLY(); //OK
 //Remove
 extern void GEORemoveAllPolylines();//CC
-extern void GEORemovePolyline(polyline_vec::iterator Iter);//CC
+extern void GEORemovePolyline(long);//CC 03/06
 extern void GEORemovePLY(CGLPolyline*); //OK
 //I/O
 extern void GEOReadPolylines(string file_name_path_base);

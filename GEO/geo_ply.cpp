@@ -22,6 +22,7 @@ int ply_max = -1;
 CGLPolyline::CGLPolyline(void)
 {
   name = "POLYLINE";
+  ply_name = "POLYLINE";//CC
   closed = false;
   epsilon = 0.01;
   type = 2;
@@ -35,6 +36,7 @@ CGLPolyline::CGLPolyline(void)
   highlighted = false;  // CC
   ply_max++; //OK
   id = ply_max;
+  mesh_density = 100.0;
 }
 
 /**************************************************************************
@@ -114,14 +116,14 @@ Programing:
 01/2005 OK List destructor
 CCToDo Polyline destructor
 08/2005 CC Modification
-11/2005 TK "delete" loop
+02/2006 CC destructor
 **************************************************************************/
 void GEORemoveAllPolylines()
 {
-  int i=0;
-  for (i=0;i<(int)polyline_vector.size();i++)
-  {
-      delete polyline_vector[i];
+  CGLPolyline * m_ply = NULL;
+  for (int i = 0; i < polyline_vector.size(); i++){
+     m_ply = polyline_vector[0];
+     delete m_ply;
   }
   polyline_vector.clear();//CC
 }
@@ -129,13 +131,14 @@ void GEORemoveAllPolylines()
 GeoLib-Method: 
 Task: 
 Programing:
-04/2005 CC   Implementation
-07/2005 CC Modification remove polyline
+03/2006 CC destructor
 **************************************************************************/
-void GEORemovePolyline(polyline_vec::iterator Iter)
+void GEORemovePolyline(long nSel)
 {
-  polyline_vector.erase(Iter);
-
+  CGLPolyline * m_ply = NULL;
+  m_ply = polyline_vector[nSel];
+  delete m_ply;
+  polyline_vector.erase(polyline_vector.begin() + nSel);
 }
 /**************************************************************************
 GeoLib-Method: 
@@ -238,7 +241,12 @@ void CGLPolyline::Write(char* file_name)
   fprintf(f," $ID\n");//CC
   fprintf(f,"  %ld\n",id);//CC
   fprintf(f," $NAME\n");
+ if (data_type == 1)//CC8888
+ fprintf(f,"  %s\n",ply_name.c_str());//CC8888
+  else//CC8888
   fprintf(f,"  %s\n",name.c_str());
+  fprintf(f," $TYPE\n");
+  fprintf(f,"  %d\n",type);
   fprintf(f," $EPSILON\n");
   fprintf(f,"  %g\n",epsilon);
   fprintf(f," $MAT_GROUP\n");
@@ -251,7 +259,7 @@ void CGLPolyline::Write(char* file_name)
     }
     else if (data_type==1) {
       fprintf(f," $POINT_VECTOR\n");
-      string ply_file_name = name + PLY_FILE_EXTENSION;
+      string ply_file_name = ply_name + PLY_FILE_EXTENSION;//CC
       fprintf(f,"  %s\n",ply_file_name.data());  //TK
   }
   fclose(f);
@@ -326,7 +334,7 @@ void CGLPolyline::WritePointVector(string base)
       ply_path = m_gsp->path; 
 #else
 #endif
-    ply_file_name = name + PLY_FILE_EXTENSION;
+    ply_file_name = ply_name + PLY_FILE_EXTENSION;//CC
     ply_path_base_type = ply_path + ply_file_name;
     fstream ply_file (ply_path_base_type.data(),ios::trunc|ios::out);
     ply_file.setf(ios::scientific,ios::floatfield);
@@ -595,6 +603,8 @@ ios::pos_type CGLPolyline::Read(ifstream *gli_file,string file_path_base)//CC888
     if(line_string.find("$POINTS")!=string::npos) { // subkeyword found
       gli_file->getline(line,MAX_ZEILEN);
       line_string = line;
+      ply_type = "GEO_POINTS";//CC8888
+      ply_data = "POINTS";//CC8888
       long lvalue = strtol(line_string.data(),NULL,0);
       int i = 1;
       while(i == 1) {
@@ -631,10 +641,12 @@ ios::pos_type CGLPolyline::Read(ifstream *gli_file,string file_path_base)//CC888
     if(line_string.find("$POINT_VECTOR")!=string::npos) { // subkeyword found
       gli_file->getline(line,MAX_ZEILEN);
       line_string = line;
+      ply_type = "NOD_POINTS";//CC8888
       remove_white_space(&line_string);
       ply_file_name = line_string.substr(0);
       ReadPointVector(ply_file_name);//CC
       data_type = 1; //OK41
+      ply_data = line_string;
     } // subkeyword found
   //========================================================================
   }

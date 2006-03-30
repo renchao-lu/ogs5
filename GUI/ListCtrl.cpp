@@ -137,7 +137,7 @@ CMyListCtrl::EditSubItem (int Item, int Column)
     CEdit *pEdit = new CMyEditCell (this, Item, Column, GetItemText (Item, Column));
     pEdit->Create (dwStyle, Rect, this, IDC_EDITCELL);
     CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
-    theApp->OnUpdataGeoListCtrl();
+    theApp->OnUpdateGeoListCtrl();//CC
 
     return pEdit;
 }

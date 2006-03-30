@@ -3400,12 +3400,6 @@ void PCTRead(string file_base_name)
         End = 0;
     }   
 }
-
-
-
-
-
-
 /**************************************************************************
 ROCKFLOW - Funktion: DATWriteFile
 Task: Write PCT file
@@ -3439,5 +3433,3 @@ void DATWritePCTFile(const char *file_name)
     fclose(pct_file);
 
 }
-
-

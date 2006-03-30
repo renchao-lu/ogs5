@@ -49,15 +49,15 @@ CGLPoint::CGLPoint(void)
   x_pix = 0;
   y_pix = 0;
   epsilon = 1e-3;
+  mat = -1;//CC9999
   // PNT name //OK
   //......................................................................
   name = "POINT";
   string pnt_number;
   //OK pnt_id_last = GEOPointID();  //CC
-  int pnt_id_max = GEOMaxPointID(); //OK
-  id = pnt_id_max+1; //OK
+  pnt_id_last = GEOPointID();  //CC
   char pnt_number_char[10];
-  sprintf(pnt_number_char,"%li",id); //OK
+  sprintf(pnt_number_char,"%i",pnt_id_last); //OK
   //ultoa(pnt_id_last,pnt_number_char,10);//CC 10/05
   pnt_number = pnt_number_char;
   name += pnt_number;
@@ -223,8 +223,10 @@ void GEOReadPoints(string file_name_path_base)
 #endif
         m_gli_points = new CGLPoint();
         position = m_gli_points->Read(&dat_in,&ok);
-        if(ok)
+            if(ok && m_gli_points->id >=0) //CC8888
           gli_points_vector.push_back(m_gli_points); 
+            else //CC8888
+            delete m_gli_points; //CC8888
         dat_in.seekg(position,ios::beg);
       }   
 	}
@@ -291,16 +293,15 @@ ios::pos_type CGLPoint::Read(ifstream *gli_file,int* ok)
                                                                           
  Programmaenderungen:
    08/2003     TK        Erste Version
-   11/2005     TK        Erste Version
+   03/2006 CC Modification
 **************************************************************************/
 void GEORemoveAllPoints()
 {
-  int i=0;
-  for (i=0;i<(int)gli_points_vector.size();i++)
-  {
-      delete gli_points_vector[i];
-      gli_points_vector[i] = NULL;
-  }
+  CGLPoint * m_pnt = NULL;
+  for (int i = 0; i < gli_points_vector.size(); i++){
+     m_pnt = gli_points_vector[0];
+     delete m_pnt;
+   }
   gli_points_vector.clear();
 }
 /**************************************************************************
@@ -308,12 +309,14 @@ GeoLib-Method: GEOPointRemove
 Task: remove point from the list
 Programing:
 10/2003 CC Implementation
+03/2006 CC Modification destructor
 **************************************************************************/
-int GEORemovePoint(point_vec::iterator Iter)
+void GEORemovePoint(long nSel)
 {
-  gli_points_vector.erase(Iter);
-
-   return 0;
+  CGLPoint * m_pnt = NULL;
+  m_pnt = gli_points_vector[nSel];
+  delete m_pnt;
+  gli_points_vector.erase(gli_points_vector.begin() + nSel);
 }  
 /**************************************************************************/
 /* GEOLIB - Funktion: GEO_Search_DoublePoints

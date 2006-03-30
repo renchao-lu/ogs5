@@ -504,7 +504,7 @@ void CPolyline::OnButtonPolylineRemove()
   m_LBPolylines.DeleteString(nSel);
   m_listctrlPolyline.DeleteAllItems();
 //  CGLPolyline *gl_polyline = NULL;
-  GEORemovePolyline(polyline_vector.begin()+nSel);//CC
+  GEORemovePolyline(nSel);//CC
   m_strNamePolyline = "";
   m_LBPolylines.ResetContent();
   vector<CGLPolyline*>::iterator p = polyline_vector.begin();//CC

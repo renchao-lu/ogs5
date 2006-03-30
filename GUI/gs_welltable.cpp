@@ -166,7 +166,7 @@ void CListWellTable::OnDeleteAll()
   //long size = gli_points_vector.size();
   for(i = 0;i<point_vector_size;0)
   {
-	  GEORemovePoint(gli_points_vector.begin()+i);
+	  GEORemovePoint(i);//CC
 	  point_vector_size = (long)gli_points_vector.size();
   }
 
@@ -186,12 +186,12 @@ void CListWellTable::OnDelete()
     
    POSITION p = m_listwell.GetFirstSelectedItemPosition();
    
-   int nSelected = m_listwell.GetNextSelectedItem(p);
+   long nSelected = (long)m_listwell.GetNextSelectedItem(p);//CC
 	// Do something with item nSelected
    m_listwell.DeleteItem(nSelected);
 
    // delete wells from list
-   GEORemovePoint( gli_points_vector.begin()+nSelected);
+   GEORemovePoint(nSelected);//CC
 
 }
 /**************************************************************************

@@ -171,32 +171,47 @@ Programing:
 04/2005 PCH Modified to include surface_list in .gli files
 09/2005 OK $LAYER
 09/2005 OK MAT group name
-ToDo CC streaming
+11/05 CC Write function
 **************************************************************************/
-void CGLVolume::Write(FILE*gli_file)
+void CGLVolume::Write(string path_name)
 {
-  const char *char_string;
-  fprintf(gli_file,"%s\n","#VOLUME");
-  //-----------------------------------------------------------------
-  fprintf(gli_file," %s\n","$NAME");
-  char_string = name.data();
-  fprintf(gli_file,"  %s\n",char_string);
-  //-----------------------------------------------------------------
-  if((int)surface_vector.size()>0){
-    fprintf(gli_file," %s\n","$SURFACES");
-    vector<Surface*>::const_iterator p_sfc = surface_vector.begin();
-    while(p_sfc!=surface_vector.end()) {
-      m_sfc = *p_sfc;
-      fprintf(gli_file,"  %s\n",m_sfc->name.c_str());
-      ++p_sfc;
-    }
+ const char *char_string;
+ Surface* m_sfc = NULL;
+  //-----------------------------------------------------------------------
+  // File handling
+  FILE *gli_file = NULL;
+  string gli_file_name;
+  gli_file_name = path_name + ".gli";
+  const char *gli_file_name_char = 0; 
+  gli_file_name_char = gli_file_name.data();
+  gli_file = fopen(gli_file_name_char, "a");
+  if(gli_file==NULL) {
+#ifdef MFC
+    MessageBox(0,"GeoLib-FILE (*.gli) not found",0,MB_OK^MB_ICONERROR);
+#endif
+    return;
   }
-  //-----------------------------------------------------------------
-  fprintf(gli_file," %s\n","$MAT_GROUP");
-  fprintf(gli_file,"  %s\n",mat_group_name.data());
-  //-----------------------------------------------------------------
-  fprintf(gli_file," %s\n","$LAYER"); //OK
-  fprintf(gli_file,"  %i\n",layer);
+  else {
+
+    fprintf(gli_file,"%s\n","#VOLUME");
+    //-----------------------------------------------------------------
+    fprintf(gli_file," %s\n","$NAME");
+    char_string = name.data();
+	fprintf(gli_file,"  %s\n",char_string);
+ 
+	// Instead of the lines above, the following lines are added by PCH
+	int surface_list_size = (int)surface_vector.size();//CC
+    if(surface_list_size>0) {
+      fprintf(gli_file," %s\n","$SURFACES");
+      vector<Surface*>::iterator p_sfc =surface_vector.begin();//CC
+      while(p_sfc!=surface_vector.end()) {//CC
+        m_sfc = *p_sfc;
+        fprintf(gli_file,"  %s\n",m_sfc->name.c_str());
+        ++p_sfc;
+      }
+    }
+  } //dat_in
+  fclose(gli_file);
   //-----------------------------------------------------------------
 }
 
@@ -304,6 +319,17 @@ long CGLVolume::GEOInsertVolume2List(CGLVolume *m_volume)
 void CGLVolume::AddSurface(Surface* P_Surface)
 {
 	surface_vector.push_back(P_Surface);    //CC
+}
+/**************************************************************************
+GeoLib-Method: GEOGetVolumes
+Task: 
+Programing:
+07/2003 OK Implementation
+09/2005 CC
+**************************************************************************/
+vector<CGLVolume*> GEOGetVolumes(void)
+{
+  return volume_vector;
 }
 
 /**************************************************************************
@@ -450,14 +476,14 @@ GEOLib-Method:
 Task: 
 Programing:
 01/2005 OK Implementation
-CC:ToDo streaming
+03/2006 CC
 **************************************************************************/
-void GEOWriteVOL(FILE*gli_file)
+void GEOWriteVolumes(string path_name)
 {
   CGLVolume* m_vol = NULL;
-  for(int i=0;i<(int)volume_vector.size();i++){
-    m_vol = volume_vector[i];
-    m_vol->Write(gli_file);
+  for(int i = 0; i<(int)volume_vector.size();i++){
+  m_vol = volume_vector[i];
+  m_vol->Write(path_name);
   }
 }
 

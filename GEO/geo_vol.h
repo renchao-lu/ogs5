@@ -43,13 +43,14 @@ class CGLVolume
     void AddSurface(Surface* P_Surface);
     // I/O
     ios::pos_type Read(ifstream*);
-    void Write(FILE*);
+    void Write(string);//CC
     // GEO
     bool PointInVolume(CGLPoint*,int);
   //----------------------------------------------------------------------
 };
 
 extern vector<CGLVolume*> volume_vector;//CC
+extern vector<CGLVolume*> GEOGetVolumes(void);
 // I/O
 extern void GEOReadVolumes(string file_name_path_base);
 extern void GEOWriteVolumes(string);//CC

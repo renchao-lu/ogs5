@@ -188,16 +188,15 @@ void CGSSurface::OnBnSurfaceAdd()
     vector<Surface*>::iterator ps =surface_vector.begin();//CC
     while (ps!=surface_vector.end()){
       s_sfc = *ps;
-      size = s_sfc->id + 1; //OK?
-      ++ps;
-    }
+        ++ps;
+     }
+     size = s_sfc->id + 1;
   } 
   m_sfc = new Surface();
   size = sfc_ID_max; //OK
   sprintf(sfc_name,"%s%ld","SURFACE",size);
   m_sfc->name = sfc_name;
   m_sfc->id = size;
-  m_sfc->highlighted = true; // CC
   surface_vector.push_back(m_sfc);
   //----------------------------------------------//CC
   Surface *m_surface = NULL;
@@ -205,8 +204,8 @@ void CGSSurface::OnBnSurfaceAdd()
   while(p!=surface_vector.end()) {
     m_surface = *p;
     m_surface->highlighted = false;
-    ++p;
-  }
+   ++p;}
+  m_sfc->highlighted = true; // CC
   //-------------------------------------------------
   m_strNameSurface = sfc_name; //CC
   m_LBSFCPolylines.ResetContent();// CC
@@ -247,7 +246,7 @@ void CGSSurface::OnBnSurfaceRemove()
   // Remove this surface
   Surface *gs_surface = NULL;
 
-  GEORemoveSurface(surface_vector.begin() + nSel);//CC 08/05
+  GEORemoveSurface((long)nSel);//CC 08/05
  // gs_surface->Remove((string)m_strNameSurface);
   m_strNameSurface.Empty();
   // Refresh surface listbox

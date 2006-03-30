@@ -677,8 +677,8 @@ BOOL CGeoSysZoomView::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
   }*/
   if(mainframe->m_bIsPointEditorOn)
   SetCursor(m_hPointCursor);
-  else if(theApp->pPolyline->GetSafeHwnd()!=NULL){
-  if(theApp->pPolyline->add_polyline)
+  else if(theApp->pPolylinenew->GetSafeHwnd()!=NULL){//CC9999
+  if(theApp->pPolylinenew->add_polyline)//CC9999
    SetCursor(m_hPointCursor);
    else
    SetCursor(::LoadCursor(NULL, IDC_ARROW));

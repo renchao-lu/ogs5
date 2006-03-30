@@ -35,8 +35,10 @@ public:
     //Properties
 	int type;
     string type_name;
+    string data_name;
     //int data_type;
     double epsilon;
+    double mesh_density;
     int mat_group; // MMP
     string mat_group_name;
     double Radius; // Radius of cylinder. WW
@@ -89,7 +91,6 @@ public:
    
 }; 
 //vector
-typedef vector<Surface*> surface_vec; //CC
 extern vector<Surface*> surface_vector;//CC
 extern vector<Surface*> GetSurfaceVector(void);//CC
 extern void GEOCreateSurfacePointVector(void);//CC
@@ -100,7 +101,7 @@ extern void GEOReadSurfaces(string file_name_path_base);
 extern void GEOWriteSurfaces(string);//C
 //Remove
 extern void GEORemoveAllSurfaces();//CC
-extern void GEORemoveSurface(surface_vec::iterator Iter);//CC
+extern void GEORemoveSurface(long);//CC
 extern void GEORemoveSFC(Surface*m_sfc);
 //Topology
 extern void GEOSurfaceTopology(void);

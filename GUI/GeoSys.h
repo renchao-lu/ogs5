@@ -20,8 +20,11 @@
 #include "PickedProperties.h"
 #include "PTValue.h"
 #include "gs_pnt.h"
+#include "gs_point_new.h" //CC12/2005
 #include "gs_polyline.h"
+#include "gs_polyline_new.h" //CC9999
 #include "gs_sfc.h"
+#include "gs_sfc_new.h"
 #include "vol_dlg.h"
 #include "gs_graphics.h"
 
@@ -72,8 +75,11 @@ public:
     PickedProperties* pPickedProperty; // Dialog for internal database for picked items
     PTValue pPTValue;
     CGSPoint *pPoint; //06/2005 CC
+    CGSPointnew *pPointnew; //CC9999
     CPolyline* pPolyline;
+    CGSPolylinenew* pPolylinenew;//CC9999
     CGSSurface* pSurface;
+    CGSSurfacenew* pSurfacenew;//CC9999
     CDialogVolume* pVolume;
     CDialogVolumeNew* m_vol_dlg; //OK
     bool m_bPickPLYPoints;
@@ -150,7 +156,7 @@ private:
 	//{{AFX_VIRTUAL(CGeoSysApp)
 	public:
     void deleteMember();//CC 06/2005
-     void OnUpdataGeoListCtrl();//CC 06/2005
+     void OnUpdateGeoListCtrl();//CC 06/2005
 	virtual BOOL InitInstance();
 	virtual int ExitInstance();
 	//}}AFX_VIRTUAL

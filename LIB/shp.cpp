@@ -371,6 +371,99 @@ int SHPReadFile(char *dateiname)
                   //long aa =(long)polyline->point_vector.size();
                   }
                   break;
+  case 13 : sprintf(shapetype,"%s","3DPOLYLINE");
+				  
+				  //sprintf(shapetype,"%s","POLYLINE");
+                  gs_polyline_vector = GetPolylineVector();//CC
+                  number_of_ply = (long)gs_polyline_vector.size();
+			      sprintf(string_name,"%s%d",shapetype,number_of_ply);
+                 // polyline = polyline->Create(string_name);//CC 08/05
+                  polyline = new CGLPolyline;
+                  polyline->name = string_name;
+                  polyline_vector.push_back(polyline);
+                  polyline->id = number_of_ply;
+		 
+		          for(int j=0;j<=(hSHPObject->nVertices-1);j++)         
+			      {
+                  //sprintf(string_pntname,"%s%d","POINT",0);
+			      //m_point = m_point->Create(string_pntname);
+				  CGLPoint* m_point2 = NULL;
+				  CGLPoint* m_point1 = NULL;
+                  m_point= new CGLPoint;
+                  m_point->x_pix = 0;
+                  m_point->y_pix = 0;
+                  m_point->x = *(hSHPObject->padfX+j);
+                  m_point->y = *(hSHPObject->padfY+j);
+		          m_point->z = *(hSHPObject->padfZ+j);
+			      //m_point->gli_point_id = (long)j;
+				  //m_point->mesh_density = 0;
+                  gs_points_vector = GetPointsVector();//CC
+				  vector<CGLPoint*>::iterator p = gs_points_vector.begin();
+				  while(p!=gs_points_vector.end())
+				  {
+				  m_point2 = *p;
+                  double valuemin = m_point->PointDis(m_point2);
+				  if(valuemin < MKleinsteZahl)
+				  {
+					  overlap = TRUE;
+                      checklap = 0;
+					 
+				      break;
+				  }
+				  ++p;
+				  }
+				  if(overlap == FALSE)
+				  {
+			    //check gli_points_vector;
+				   number_of_point = (long)gli_points_vector.size();//CC
+                   sprintf(string_pntname,"%s%d","POINT",number_of_point);
+                   m_point1 = new CGLPoint();
+                   m_point1->name = string_pntname;
+                   m_point1->highlighted = false; //CC
+                   gli_points_vector.push_back(m_point1);
+				   m_point1->id = number_of_point;
+				  
+				   m_point1->x = m_point->x;
+				   m_point1->y = m_point->y;
+				   m_point1->z = m_point->z;
+				   m_point1->x_pix = 0;
+				   m_point->y_pix = 0;
+				   m_point1->mesh_density = m_point->mesh_density;
+				   //CC/OK m_point1->type = m_point->type;
+                  // polyline->point_list.push_back(m_point1);//CC remove
+                   polyline->point_vector.push_back(m_point1);
+                   //++point_number;
+				   checklap = 1;
+				  }
+				  
+				  if (checklap == 0)
+				  {
+                  //polyline->point_list.push_back(m_point2);//CC remove
+                  polyline->point_vector.push_back(m_point2);
+				  overlap = FALSE;
+				  }		
+
+                
+				  //                 
+                  }// end of for
+                  //04/2005 calculate minimal distance
+                  m_dXMin = 1.e+19;  
+		          d_points_vector = polyline->point_vector;
+                  number_of_points = (long)d_points_vector.size();
+                 
+                 
+                  for (int i = 0;i<number_of_points-1;i++)
+                  {
+                  start_point = d_points_vector[i];
+                  end_point = d_points_vector[i+1];
+                  double min = sqrt((start_point->x-end_point->x)*(start_point->x-end_point->x)+(start_point->y-end_point->y)*(start_point->y-end_point->y));
+                  if(min<m_dXMin)
+                     m_dXMin = min;
+                  }
+                  polyline->minDis = m_dXMin;        
+
+                 
+				  break;
           default: AfxMessageBox("undeclared shapefile type!",MB_OK,0);
 		 }
     

@@ -1207,37 +1207,22 @@ void GEOWrite(string file_name)
 {
   char file_name_char[1024];
   strcpy(file_name_char,file_name.c_str());
-  //----------------------------------------------------------------------
-  // File handling
+  // Points
+  GEOWritePoints(file_name_char);//CC
+  // Polylines
+  GEOWritePolylines(file_name_char);//CC
+  // Surfaces
+  GEOWriteSurfaces(file_name);
+  // Volumes
+  GEOWriteVolumes(file_name);
+  // Domain
+  // STOP
   FILE *gli_file = NULL;
   string gli_file_name;
   gli_file_name = file_name + ".gli";
   const char *gli_file_name_char = 0; 
   gli_file_name_char = gli_file_name.data();
   gli_file = fopen(gli_file_name_char, "a");
-  if(gli_file==NULL) {
-#ifdef MFC
-    MessageBox(0,"GeoLib-FILE (*.gli) not found",0,MB_OK^MB_ICONERROR);
-#endif
-    cout << "Writing GLI file failed" << endl;
-    return;
-  }
-  //......................................................................
-  // Points
-  GEOWritePoints(file_name_char);//CC
-  //......................................................................
-  // Polylines
-  GEOWritePolylines(file_name_char);//CC
-  //......................................................................
-  // Surfaces
-  GEOWriteSurfaces(file_name);
-  //......................................................................
-  // Volumes
-  GEOWriteVOL(gli_file); //OK
-  //......................................................................
-  // Domain
-  //......................................................................
-  // STOP
   fprintf(gli_file,"%s","#STOP");
   fclose(gli_file);
 }

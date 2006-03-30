@@ -13,6 +13,7 @@ extern long ElListSize();
 // Dialogs
 #include "gs_pnt.h"
 #include "gs_polyline.h"
+#include "gs_polyline_new.h"//CC9999
 #include "gs_sfc.h"
 #include "vol_dlg.h"
 #include "gs_graphics.h"
@@ -621,34 +622,15 @@ void CGeoSysGEOView::OnLButtonDown(UINT nFlags, CPoint point)
   }
   //----------------------------------------------------------------------
   //else if(GetZoomMode() == m_drawingPoint ){
-  else{
+  
     //....................................................................
     // Create points
-    if(mainframe->m_bIsPointEditorOn){ // set
+   else if(mainframe->m_bIsPointEditorOn){ // set
       CGLPoint *gl_point = NULL;
       char c_string_pnt[MAX_ZEILE];
       long number_of_points = GEOPointID();
       long size = number_of_points;
       CString m_Pointname;
-     /* CGLPoint *m_point = NULL;
-      char c_string_pnt[MAX_ZEILE];
-      CString m_Pointname;
-      long size = 0;
-      long number_of_points = (long)gli_points_vector.size();//CC
-      // CC
-      if(number_of_points==0){
-        sprintf(c_string_pnt, "%ld",number_of_points);
-        size = 0;
-      }
-      else
-      {
-        vector<CGLPoint*>::iterator p = gli_points_vector.begin();
-        while (p!=gli_points_vector.end()){
-          m_point = *p;
-          ++p;
-        }
-        size = m_point->id + 1;*/
-        //number_of_points =  m_point->id + 1;
         sprintf(c_string_pnt, "%ld",number_of_points);
       
       m_Pointname = "POINT";
@@ -671,17 +653,18 @@ void CGeoSysGEOView::OnLButtonDown(UINT nFlags, CPoint point)
       gl_point->x = gs_point.x;
       gl_point->y = gs_point.y;
       gl_point->z = gs_point.z;
-      if(theApp->pPoint->GetSafeHwnd()!=NULL) //OK safe dialog access
-        theApp->pPoint->OnUpdatePointListbox();
+      if(theApp->pPointnew->GetSafeHwnd()!=NULL) //OK safe dialog access
+      size = (long)gli_points_vector.size()-1;//CC8888
+      theApp->pPointnew->AddPointtoList(size);
     }
     //....................................................................
     // Identify points
     //CC 06/2005 draw polyline from picking exiting 2D points
     else if(mainframe->m_bIsPolylineEditorOn){
       char c_string_ply[2048];
-      if(theApp->pPolyline->GetSafeHwnd() != NULL) {
-        if(theApp->pPolyline->add_polyline){
-        strcpy(c_string_ply,theApp->pPolyline->m_strNamePolyline);
+      if(theApp->pPolylinenew->GetSafeHwnd() != NULL) {//CC9999
+        if(theApp->pPolylinenew->add_polyline){
+        strcpy(c_string_ply,theApp->pPolylinenew->m_strNamePolyline);
         CGLPolyline *gl_polyline = NULL;
         gl_polyline = GEOGetPLYByName(c_string_ply);//CC
         //push back the data into point vector
@@ -689,7 +672,6 @@ void CGeoSysGEOView::OnLButtonDown(UINT nFlags, CPoint point)
         if(nSelPoint!=-1){
           m_point = gli_points_vector[nSelPoint];
           gl_polyline->point_vector.push_back(m_point);
-          theApp->pPolyline->OnUpdatePolylinePointList();}
           nSelPoint = -1;
         }
         else
@@ -719,10 +701,10 @@ void CGeoSysGEOView::OnRButtonDown(UINT nFlags, CPoint point)
     {
     CGeoSysZoomView::OnRButtonDown(nFlags, point);
     }
-    else if (theApp->pPolyline->GetSafeHwnd() != NULL) {
-      if( theApp->pPolyline->add_polyline ){
+    else if (theApp->pPolylinenew->GetSafeHwnd() != NULL) {//CC9999
+      if( theApp->pPolylinenew->add_polyline ){
        MessageBox("Polyline has been created successfully!",0,MB_OK);
-       theApp->pPolyline->add_polyline = false;}
+       theApp->pPolylinenew->add_polyline = false;}
          }
 	CView::OnRButtonDown(nFlags, point);
 }

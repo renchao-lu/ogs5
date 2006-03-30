@@ -46,6 +46,9 @@ Surface::Surface(void):Radius(0.0)
   epsilon = 1e-3; //OK
   highlighted = false; // CC
   meshing_allowed = 0; //OK
+  data_name = "DOMAIN";
+  type_name = "POLYLINE";
+  mesh_density = 100;
   id = sfc_ID_max;
   sfc_ID_max++;
 }
@@ -443,26 +446,24 @@ void Surface::Write(string path_name)
     fprintf(gli_file," %s\n","$MAT_GROUP");
     fprintf(gli_file,"  %i\n",mat_group);
     //-----------------------------------------------------------------
-    //.................................................................
+    int polyline_of_surface_list_length = (int)polyline_of_surface_vector.size();//CC
+    if(polyline_of_surface_list_length>0) {
+      fprintf(gli_file," %s\n","$POLYLINES");
+      CGLPolyline *m_polyline = NULL;
+   //   list<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_list.begin();//CC
+vector<CGLPolyline*>::iterator p = polyline_of_surface_vector.begin();
+      while(p!=polyline_of_surface_vector.end()) {//CC
+        m_polyline = *p;
+        fprintf(gli_file,"  %s\n",m_polyline->name.c_str());
+        ++p;
+      }
+    }
+    //-----------------------------------------------------------------
     if(TIN) {
       int surface_TIN_length = (int)TIN->Triangles.size();
       if(surface_TIN_length>0) {
         fprintf(gli_file," %s\n","$TIN");
         fprintf(gli_file,"  %s.tin\n",TIN->name.c_str());
-      }
-    }
-    //.................................................................
-    else // PLY
-    {
-      if((int)polyline_of_surface_vector.size()>0) {
-        fprintf(gli_file," %s\n","$POLYLINES");
-        CGLPolyline *m_polyline = NULL;
-        vector<CGLPolyline*>::iterator p = polyline_of_surface_vector.begin();
-        while(p!=polyline_of_surface_vector.end()) {//CC
-          m_polyline = *p;
-          fprintf(gli_file,"  %s\n",m_polyline->name.c_str());
-          ++p;
-        }
       }
     }
     //-----------------------------------------------------------------
@@ -664,15 +665,14 @@ Programing:
 01/2005 OK List destructor
 CCToDo Surface destructor
 08/2005 CC
-11/2005 TK "delete" loop
+03/2006 CC
 **************************************************************************/
 void GEORemoveAllSurfaces()
 {  
-  int i=0;
-  for (i=0;i<(int)surface_vector.size();i++)
-  {
-      delete surface_vector[i];
-      //TODO: Memory Check TK
+  Surface * m_sfc = NULL;
+  for (int i = 0; i < surface_vector.size(); i++){
+     m_sfc = surface_vector[0];
+     delete m_sfc;
   }
   surface_vector.clear();
 }
@@ -682,11 +682,14 @@ Task:
 Programing:
 04/2005 CC   Implementation
 07/2005 CC Modification remove polyline
+03/2060 CC destructor
 **************************************************************************/
-void GEORemoveSurface(surface_vec::iterator Iter)
+void GEORemoveSurface(long nSel)
 {
-  surface_vector.erase(Iter);
-
+  Surface * m_sfc = NULL;
+  m_sfc = surface_vector[nSel];
+  delete m_sfc;
+  surface_vector.erase(surface_vector.begin() + nSel);
 }
 
 /**************************************************************************
@@ -1095,6 +1098,7 @@ ios::pos_type Surface::Read(ifstream *gli_file,string file_path_base)
   string dollar("$");
   CGLPoint *m_point = NULL;
   bool ok_true = true;
+  type_name = "POLYLINE";//CC8888
   //========================================================================
   // Schleife ueber alle Phasen bzw. Komponenten 
   while (!new_keyword) {
@@ -1135,7 +1139,6 @@ ios::pos_type Surface::Read(ifstream *gli_file,string file_path_base)
       gli_file->getline(line,MAX_ZEILEN);
       line_string = line;
       remove_white_space(&line_string);
-      type_name = line_string;
       type = strtol(line_string.data(),NULL,0);
       if(type==100)
       {
@@ -1164,6 +1167,8 @@ ios::pos_type Surface::Read(ifstream *gli_file,string file_path_base)
       sub_string = get_sub_string2(line_string,delimiter_file_extension,&cut_string);
       TIN->name = sub_string;
       type = 1; //OK41
+      type_name = "TIN";//CC8888
+      data_name = line_string;//CC8888
     } // subkeyword found
     //....................................................................
     if(line_string.find("$MAT_GROUP")!=string::npos) { // subkeyword found

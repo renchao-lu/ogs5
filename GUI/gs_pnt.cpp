@@ -194,7 +194,7 @@ void CGSPoint::OnButtonPointRemove()
   m_ListPoint.DeleteString(nSel);
   m_Pointname = "";
   m_Listctrlpoint.DeleteAllItems();
-  GEORemovePoint( gli_points_vector.begin()+nSel);
+  GEORemovePoint((long)nSel);//CC03/2006
   }
   else
       return;
@@ -218,7 +218,7 @@ void CGSPoint::OnButtonPointRemoveall()
   //long size = gli_points_vector.size();
   for(i = 0;i<point_vector_size;0)
   {
-	  GEORemovePoint(gli_points_vector.begin()+i);
+	  GEORemovePoint(i);//CC03/2006
 	  point_vector_size = (long)gli_points_vector.size();
   }
   //CCtodo point_vector.empty();

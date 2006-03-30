@@ -173,6 +173,7 @@ ios::pos_type CFEMesh::Read(ifstream *fem_file)
       for(i=0;i<no_elements;i++){
          newElem = new CElem(i);
          newElem->Read(*fem_file);
+        ele_type = newElem->geo_type ;//CC02/2006
          if(newElem->GetPatchIndex()>max_mmp_groups)
            max_mmp_groups = newElem->GetPatchIndex();
 		 ele_vector.push_back(newElem);
@@ -2502,6 +2503,7 @@ Programing:
 09/2005 OK Implementation
 09/2005 OK Epsilon
 10/2005 OK Delete existing layer polylines
+02/2006 CC polyline id 
 **************************************************************************/
 void CFEMesh::CreateLayerPolylines(CGLPolyline*m_ply)
 {
@@ -2529,6 +2531,24 @@ void CFEMesh::CreateLayerPolylines(CGLPolyline*m_ply)
   //nodes = MSHGetNodesCloseXY(&no_nodes); //OK41
   long nodes_per_layer = (long)nod_vector.size()/(no_msh_layer+1);
   int ply_nod_vector_layer = (int)ply_nod_vector.size()/(no_msh_layer+1);
+  //---------------------------------------------------------------------
+  // Create layer polylines
+ //polyline id CC8888---------------------------------------------------
+    long size = 0;
+    CGLPolyline *ms_polyline = NULL;
+    long number_of_polylines = (long)polyline_vector.size();
+    if(number_of_polylines==0)
+        size = 0;  
+    else
+      {
+        vector<CGLPolyline*>::iterator ps = polyline_vector.begin();
+        while (ps!=polyline_vector.end()){
+          ms_polyline = *ps;
+          ++ps;
+      }
+        size = ms_polyline->id + 1;
+      }
+
   if(ply_nod_vector_layer<1){
 #ifdef MFC
     AfxMessageBox("Not enough NOD data, increase EPS");
@@ -2540,9 +2560,17 @@ void CFEMesh::CreateLayerPolylines(CGLPolyline*m_ply)
   //......................................................................
   m_polyline = new CGLPolyline;
   sprintf(layer_number,"%ld",0L);
-  m_polyline->name = m_ply->name + "_L" + layer_number;
+  //CString names =  m_ply->name + "_L" + layer_number;
+ // m_polyline->name = names;
+  m_polyline->ply_name = m_ply->name.data();//CC/TK8888
+  m_polyline->ply_name.append("_L");//CC/TK8888
+  m_polyline->ply_name.append(layer_number);//CC/TK8888
+  m_polyline->name  = m_polyline->ply_name.data();//CC/TK8888
   m_polyline->data_type = 1;
+  m_polyline->id = size;//CC8888
   m_polyline->epsilon = m_ply->epsilon; //OK
+  m_polyline->ply_data = m_polyline->ply_name + ".ply";//CC
+  m_polyline->ply_type = "NOD_POINTS";//CC
 #ifdef MFC
   if(m_ply->epsilon<min_edge_length)
     AfxMessageBox("Warning: PLY-EPS < MSH_MIN_EDGE_LENGHT");
@@ -2558,14 +2586,18 @@ void CFEMesh::CreateLayerPolylines(CGLPolyline*m_ply)
   }
   m_polyline->SetPointOrderByDistance(m_ply->point_vector[0]);
   polyline_vector.push_back(m_polyline); 
-  m_polyline->WritePointVector(m_polyline->name);
+  m_polyline->WritePointVector(m_polyline->ply_name);
   m_polyline->WriteTecplot(" "); //OK41
   //......................................................................
   for(j=1;j<(no_msh_layer+1);j++) {
     m_polyline = new CGLPolyline;
     sprintf(layer_number,"%ld",j);
-    m_polyline->name = m_ply->name + "_L" + layer_number;
+    m_polyline->ply_name = m_ply->name.data();//CC/TK8888
+    m_polyline->ply_name.append("_L");//CC/TK8888
+    m_polyline->ply_name.append(layer_number);//CC/TK8888
+    m_polyline->name  = m_polyline->ply_name.data();//CC/TK8888
     m_polyline->data_type = 1;
+    m_polyline->ply_type = "NOD_POINTS";
     m_polyline->epsilon = min_edge_length / 2.; //OK
     for(i=0;i<ply_nod_vector_layer;i++) {
       m_point = new CGLPoint;
@@ -2578,56 +2610,11 @@ void CFEMesh::CreateLayerPolylines(CGLPolyline*m_ply)
 //OK    m_polyline->SortPointVectorByDistance();
     m_polyline->SetPointOrderByDistance(m_ply->point_vector[0]);
     polyline_vector.push_back(m_polyline); 
-    m_polyline->WritePointVector(m_polyline->name);
+    m_polyline->WritePointVector(m_polyline->ply_name);
     m_polyline->WriteTecplot(" "); //OK41
   }
 }
-/*
-  ///matrix = new long*[no_nodes];
-  matrix = (long**) Malloc(no_nodes*sizeof(long));
-  for(i=0;i<no_nodes;i++) {
-    x1 = GetNodeX(nodes[i]);
-    y1 = GetNodeY(nodes[i]);
-    col=0;
-    matrix[i] = NULL;
-    for(j=0;j<NodeListLength;j++) {
-      x = GetNodeX(j); // ToDo NodeNumber[j]
-      y = GetNodeY(j);
-      dist = sqrt((x-x1)*(x-x1)+(y-y1)*(y-y1));
-      if(dist<epsilon) {
-        col++;
-        matrix[i] = (long*) Realloc(matrix[i],col*sizeof(long));
-        matrix[i][col-1] = j; // ToDo NodeNumber[j];
-      }
-    }
-  }
-  //---------------------------------------------------------------------
-  // Create layer polylines
-  char layer_number[10];
-  for(j=0;j<col;j++) {
-    m_polyline = new CGLPolyline;
-    sprintf(layer_number,"%ld",j);
-    m_polyline->name = name + "_L" + layer_number;
-    m_polyline->type = 22;
-    m_polyline->data_type = 1;
-    for(i=0;i<nodes_per_layer;i++) {
-      m_point = new CGLPoint;
-      m_point->x = GetNodeX(matrix[no_layers*i][j]); // ToDo NodeNumber[j]
-      m_point->y = GetNodeY(matrix[no_layers*i][j]); // ToDo NodeNumber[j]
-      m_point->z = GetNodeZ(matrix[no_layers*i][j]); // ToDo NodeNumber[j]
-      m_polyline->point_vector.push_back(m_point);
-    }
-    polyline_list.push_back(m_polyline); 
-    m_polyline->WritePointVector(name);
-    m_polyline->WriteTecplot(); //OK41
- }
-  //-----------------------------------------------------------------------
-  // Memory
-  for(i=0;i<no_nodes;i++) {
-    matrix[i] = (long*) Free(matrix[i]);
-  }
-  matrix = (long**) Free(matrix);
-*/
+
 
 /**************************************************************************
 GeoLib-Method: 
@@ -2924,6 +2911,7 @@ Task:
 Programing:
 03/2004 OK Implementation
 11/2005 OK MSH
+03/2006 CC
 **************************************************************************/
 void CFEMesh::CreateSurfaceTINfromTri(Surface*m_sfc)
 {
@@ -2933,6 +2921,7 @@ void CFEMesh::CreateSurfaceTINfromTri(Surface*m_sfc)
   CElem* m_ele = NULL;
   double* xyz;
   vec<long>node_indeces(3);
+  m_sfc->TIN = new CTIN;//CC
   //----------------------------------------------------------------------
   for(long i=0;i<(long)ele_vector.size();i++){
     m_ele = ele_vector[i];
@@ -2951,6 +2940,7 @@ void CFEMesh::CreateSurfaceTINfromTri(Surface*m_sfc)
           m_triangle->z[j] = nod_vector[node_indeces[j]]->Z();
         }
         m_sfc->TIN->Triangles.push_back(m_triangle);
+        m_sfc->TIN->name = m_sfc->name;//CC
       } // element found
     } // triangle
   } // ele_vector
@@ -2988,8 +2978,10 @@ void CFEMesh::CreateLayerSurfaceTINsfromPris(Surface*m_sfc)
   string sfc_layer_name = m_sfc->name + "_layer_";
   for(int l=0;l<no_msh_layer+1;l++) {
     m_sfc_layer = new Surface;
+    m_sfc_layer->type_name = "TIN";
     sprintf(layer_number,"%i",l);
     m_sfc_layer->name = sfc_layer_name + layer_number;
+    m_sfc_layer->data_name = m_sfc_layer->name + ".tin";
     m_TIN = new CTIN;
     m_TIN->name = m_sfc_layer->name;
     m_sfc_layer->TIN = m_TIN;
@@ -3024,6 +3016,7 @@ void CFEMesh::CreateLayerSurfaceTINsfromPris(Surface*m_sfc)
           m_tri->z[j] = nod_vector[node_indeces[j]]->Z();
         }
         m_sfc_layer_0->TIN->Triangles.push_back(m_tri);
+        m_sfc_layer_0->TIN->name = m_sfc_layer_0->name;//CC
         for(int l=0;l<no_msh_layer;l++){
           sprintf(layer_number,"%i",l+1);
           sfc_layer_name = m_sfc->name + "_layer_" + layer_number;
@@ -3042,6 +3035,7 @@ void CFEMesh::CreateLayerSurfaceTINsfromPris(Surface*m_sfc)
             m_tri_new->z[j] = nod_vector[node_indeces[j+3]+l*no_nodes_per_layer]->Z();
           }
           m_sfc_layer->TIN->Triangles.push_back(m_tri_new);
+          m_sfc_layer->TIN->name = m_sfc_layer->name;//CC
         }
       } // element found
     } // triangle

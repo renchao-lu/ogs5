@@ -33,6 +33,7 @@ class CGLPoint
     double y;
     double z;
     double epsilon;
+    int mat;//CC9999
     double length; //OK well bore depth in 2D modells
 	long first_identical_id; //TK
 	long old_id, new_id; //TK
@@ -78,7 +79,6 @@ class CGLPoint
 };
 //------------------------------------------------------------------------
 // Properties
-typedef vector<CGLPoint*> point_vec; 
 extern vector<CGLPoint*> GetPointsVector(void);//CC
 extern vector<CGLPoint*> gli_points_vector;
 extern vector<CGLPoint*> pnt_properties_vector; //OK
@@ -86,7 +86,7 @@ extern vector<CGLPoint*> pnt_properties_vector; //OK
 //------------------------------------------------------------------------
 // Remove
 extern void GEORemoveAllPoints();
-extern int  GEORemovePoint(point_vec::iterator Iter);
+extern void GEORemovePoint(long);//CC
 //........................................................................
 // I/O
 extern void GEOReadPoints(string file_name_path_base);//CC
