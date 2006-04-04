@@ -1245,6 +1245,7 @@ Task:
 Programing:
 04/2005 OK
 07/2005 WW Node object is replaced
+04/2006 TK new method
 last modification:
 **************************************************************************/
 void CFEMesh::GetNODOnSFC_TIN(Surface*m_sfc,vector<long>&msh_nod_vector)
@@ -1355,45 +1356,41 @@ void CFEMesh::GetNODOnSFC_TIN(Surface*m_sfc,vector<long>&msh_nod_vector)
     }
   }
   //----------------------------------------------------------------------
-  // Create Short Search Vector at the end of fem_msh_vector
+  // Create Local Search Vector 
   // Only nodes inside searching box  
   //----------------------------------------------------------------------
-  CFEMesh* m_msh = NULL;       
-  m_msh = new CFEMesh();
+  
+  CFEMesh* m_msh_aux = NULL; 
+  m_msh_aux = new CFEMesh();
   CNode* node = NULL;
-  fem_msh_vector.push_back(m_msh);
-  int temp_mesh = (long)fem_msh_vector.size();
-  //Loop over all meshes
-    for(j=0;j<(long)fem_msh_vector.size()-1;j++)
-    {
-    //Loop over all edges
-        for(i=0;i<(long)fem_msh_vector[j]->edge_vector.size();i++)
+
+   //Loop over all edges
+        for(i=0;i<(long)edge_vector.size();i++)
         {
             if (j==0 && i==0){
-              min_mesh_dist = fem_msh_vector[j]->edge_vector[i]->Length();
+              min_mesh_dist = edge_vector[i]->Length();
             }
             else{
-              if (min_mesh_dist  > fem_msh_vector[j]->edge_vector[i]->Length())
-                  min_mesh_dist = fem_msh_vector[j]->edge_vector[i]->Length();
+              if (min_mesh_dist  > edge_vector[i]->Length())
+                  min_mesh_dist =  edge_vector[i]->Length();
             }
         }
         tolerance = min_mesh_dist;
     //Loop over all mesh nodes
-        for(i=0;i<(long)fem_msh_vector[j]->nod_vector.size();i++)
+        for(i=0;i<(long)nod_vector.size();i++)
         {
-            checkpoint[0] = fem_msh_vector[j]->nod_vector[i]->X();
-            checkpoint[1] = fem_msh_vector[j]->nod_vector[i]->Y(); 
-            checkpoint[2] = fem_msh_vector[j]->nod_vector[i]->Z();
+            checkpoint[0] = nod_vector[i]->X();
+            checkpoint[1] = nod_vector[i]->Y(); 
+            checkpoint[2] = nod_vector[i]->Z();
             node = new CNode(i,checkpoint[0],checkpoint[1],checkpoint[2]);
             if((checkpoint[0]>=sfc_min[0] && checkpoint[0]<=sfc_max[0] )&&
                (checkpoint[1]>=sfc_min[1] && checkpoint[1]<=sfc_max[1] )&&
                (checkpoint[2]>=sfc_min[2] && checkpoint[2]<=sfc_max[2] ) )
             {              
-                fem_msh_vector[temp_mesh-1]->nod_vector.push_back(node);
+                m_msh_aux->nod_vector.push_back(node);
             }
         }
-    }
-
+  
   //----------------------------------------------------------------------
   // Search preselected Nodes within TIN Triangles
   //----------------------------------------------------------------------
@@ -1409,23 +1406,23 @@ void CFEMesh::GetNODOnSFC_TIN(Surface*m_sfc,vector<long>&msh_nod_vector)
     tri_point3[1] = m_triangle->y[2];
     tri_point3[2] = m_triangle->z[2];
     //Loop over all preselected mesh nodes
-        for(i=0;i<(long)fem_msh_vector[temp_mesh-1]->nod_vector.size();i++)
+        for(i=0;i<(long)m_msh_aux->nod_vector.size();i++)
         {
-            checkpoint[0] = fem_msh_vector[temp_mesh-1]->nod_vector[i]->X();
-            checkpoint[1] = fem_msh_vector[temp_mesh-1]->nod_vector[i]->Y(); 
-            checkpoint[2] = fem_msh_vector[temp_mesh-1]->nod_vector[i]->Z();
+            checkpoint[0] = m_msh_aux->nod_vector[i]->X();
+            checkpoint[1] = m_msh_aux->nod_vector[i]->Y(); 
+            checkpoint[2] = m_msh_aux->nod_vector[i]->Z();
             dist = MCalcDistancePointToPlane(checkpoint,tri_point1,tri_point2,tri_point3);
-            if (k==0) fem_msh_vector[temp_mesh-1]->nod_vector[i]->epsilon = dist;
+            if (k==0) m_msh_aux->nod_vector[i]->epsilon = dist;
             else
             {
-                if (fem_msh_vector[temp_mesh-1]->nod_vector[i]->epsilon > dist)
-                    fem_msh_vector[temp_mesh-1]->nod_vector[i]->epsilon = dist;
+                if (m_msh_aux->nod_vector[i]->epsilon > dist)
+                    m_msh_aux->nod_vector[i]->epsilon = dist;
             }
                 if (dist<=tolerance && dist>=-tolerance)
                 {
                   angle_sum = AngleSumPointInsideTriangle(checkpoint,tri_point1,tri_point2,tri_point3, min_mesh_dist);
                   if(angle_sum>359)
-                  fem_msh_vector[temp_mesh-1]->nod_vector[i]->selected = 1;
+                  m_msh_aux->nod_vector[i]->selected = 1;
                 }
         }
   }
@@ -1435,35 +1432,34 @@ void CFEMesh::GetNODOnSFC_TIN(Surface*m_sfc,vector<long>&msh_nod_vector)
   // TODO: Works only for one mesh!!!
   //----------------------------------------------------------------------
   int index;
-  //Loop over all meshes
-    for(j=0;j<(long)fem_msh_vector.size()-1;j++)
-    {
     //Loop over selected nodes
-        for(i=0;i<(long)fem_msh_vector[temp_mesh-1]->nod_vector.size();i++)
+        for(i=0;i<(long)m_msh_aux->nod_vector.size();i++)
         {
-            index = fem_msh_vector[temp_mesh-1]->nod_vector[i]->GetIndex();
-            if(index < (int)fem_msh_vector[j]->nod_vector.size())
+            index = m_msh_aux->nod_vector[i]->GetIndex();
+            if(index < (int)nod_vector.size())
             {
-            if ((fem_msh_vector[temp_mesh-1]->nod_vector[i]->GetIndex() == fem_msh_vector[j]->nod_vector[index]->GetIndex()) 
+            if ((m_msh_aux->nod_vector[i]->GetIndex() == nod_vector[index]->GetIndex()) 
                 &&
-                fem_msh_vector[temp_mesh-1]->nod_vector[i]->selected==1
+                m_msh_aux->nod_vector[i]->selected==1
                 &&
-                (fem_msh_vector[temp_mesh-1]->nod_vector[i]->X() == fem_msh_vector[j]->nod_vector[index]->X()) 
+                (m_msh_aux->nod_vector[i]->X() == nod_vector[index]->X()) 
                 && 
-                (fem_msh_vector[temp_mesh-1]->nod_vector[i]->Y() == fem_msh_vector[j]->nod_vector[index]->Y()) 
+                (m_msh_aux->nod_vector[i]->Y() == nod_vector[index]->Y()) 
                 &&
-                (fem_msh_vector[temp_mesh-1]->nod_vector[i]->Z() == fem_msh_vector[j]->nod_vector[index]->Z())) 
+                (m_msh_aux->nod_vector[i]->Z() == nod_vector[index]->Z())) 
             {
-                 msh_nod_vector.push_back(fem_msh_vector[j]->nod_vector[index]->GetIndex());
+                 msh_nod_vector.push_back(nod_vector[index]->GetIndex());
             }
             }
         }
-    }
   //----------------------------------------------------------------------
   // Delete Search Vector at the end of fem_msh_vector
   // TODO: Proper delete by MSHDelete!!!
   //----------------------------------------------------------------------
-    fem_msh_vector.erase(fem_msh_vector.begin()+ temp_mesh-1);
+        for(i=0;i<(long)m_msh_aux->nod_vector.size();i++)
+        {
+          delete m_msh_aux->nod_vector[i];
+        }
 }
 
 /**************************************************************************
