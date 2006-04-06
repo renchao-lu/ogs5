@@ -68,6 +68,8 @@ class COutput
     // DIS
     string dis_type_name; //OK
 	//
+    // File status
+    bool new_file_opened;   //WW
 	COutput(void);
     ~COutput(void);
     ios::pos_type Read(ifstream*);

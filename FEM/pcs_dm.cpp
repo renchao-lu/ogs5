@@ -267,7 +267,6 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
   //-------------------------------------------------------
   // Controls for Newton-Raphson steps 
   int l;
-  int MaxIteration=30;
 
   //  const int MaxLoadsteps=10; //20;
   //  const double LoadAmplifier =2.0;
@@ -282,6 +281,8 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
   
   int ite_steps = 0;
  
+  //const int defaultSteps=100;
+  int MaxIteration=m_num->nls_max_iterations;
   int elasticity=0; 
   int monolithic=0;
 
@@ -428,9 +429,7 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
 
       // For p-u monolitic scheme. If first step (counter==1), take initial value
       if(pcs_deformation%11 == 0&&!fem_dm->dynamic) 
-         InitializeNewtonSteps(1); // p=0        
-	
-
+         InitializeNewtonSteps(1); // p=0     	
       //
       // Initialize inremental displacement: w=0
       InitializeNewtonSteps(0);
@@ -851,7 +850,7 @@ void CRFProcessDeformation::SetInitialGuess_EQS_VEC()
 		for(j=0; j<number_of_nodes; j++)
 		{
            eqs->x[shift+j] = 
-              GetNodeValue(m_msh->Eqs2Global_NodeIndex[j],eqs->unknown_vector_indeces[i]);
+              GetNodeValue(m_msh->Eqs2Global_NodeIndex[j],eqs->unknown_vector_indeces[i]-1);
 		}
         shift += number_of_nodes;
     }
@@ -2038,12 +2037,12 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
    // Store the released loads to source term buffer
    long number_of_nodes;
    CNodeValue *m_node_value = NULL;
-   CSourceTermGroup *m_st_group = NULL;
    CGLPolyline *m_polyline = NULL;
    Surface *m_surface = NULL;
    vector<long> nodes_vector(0);
 
    number_of_nodes = 0;
+   RecordNodeVSize((long)st_node_value.size());
    for(k=0; k<SizeSt; k++)
    {
       // Get nodes on cave surface
@@ -2075,14 +2074,7 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
       // Set released node forces from eqs->b;
       number_of_nodes = (int)nodes_vector.size();
       for(j=0;j<problem_dimension_dm;j++)
-      {
-          m_st_group = STGetGroup(pcs_type_name,pcs_primary_function_name[j]);
-          if(!m_st_group) {
-             m_st_group = new CSourceTermGroup();
-             st_group_list.push_back(m_st_group);
-             m_st_group->pcs_name = pcs_primary_function_name[j];
-          }
-          m_st_group->RecordNodeVSize((int)m_st_group->group_vector.size());
+      {		 
           for(i=0;i<number_of_nodes;i++){
              m_node_value = new CNodeValue();
              m_node_value->msh_node_number = nodes_vector[i]+Shift[j];
@@ -2090,8 +2082,7 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
 			 m_node_value->node_value = -eqs->b[m_msh->nod_vector[m_node_value->geo_node_number]
                                                  ->GetEquationIndex()+Shift[j]];
              m_node_value->CurveIndex = -1;
-             m_st_group->group_vector.push_back(m_node_value);
-             m_st_group->st_group_vector.push_back(m_st);
+             st_node_value.push_back(m_node_value);
           }
       }
       
@@ -2128,38 +2119,55 @@ void CRFProcessDeformation::ExcavationSimulating()
     cout<<"------------------------------------------"<<endl;
     cout<<"*** Simulating excavation"<<endl;
 
-    int i, j;
+    int i; //, j;
     int no_out =(int)out_vector.size();
-    const int OrigType = type;
-    const int Orig_pcs_deformation = pcs_deformation;
-    const int Orig_pcs_number_of_primary_nvals = pcs_number_of_primary_nvals;
+//    const int OrigType = type;
+//    const int Orig_pcs_deformation = pcs_deformation;
+//    const int Orig_pcs_number_of_primary_nvals = pcs_number_of_primary_nvals;
     COutput *m_out = NULL;
   
     if(type==41)  pcs_number_of_primary_nvals--;
     type = 4;
     pcs_deformation = 1; //Elasticity excavation
-
-    // If an initial stress state is given, skip this
-    // Establishing gravity force profile 
-    if (m_num&&m_num->GravityProfile==1)
-	{ 
-       GravityForce = true;
-       cout<<"1. Establish gravity force profile..."<<endl;
-       counter = 0;
-       Execute();
-	}
-    Extropolation_GaussValue();
-
-    // Write the results
-    for(i=0;i<no_out;i++){
-      m_out = out_vector[i];
-      m_out->time = -1.0;
-      if(m_out->geo_type_name.find("DOMAIN")!=string::npos)
-      {
-          cout << "Data output" << endl;
-          m_out->NODWriteDOMDataTEC(); //OK
-      }    
+    //
+    if(reload==2) 
+	{
+       cout<<"1. Reading intial stress..."<<endl;
+       ElementValue_DM* eleV_DM = NULL; 
+       for (long e = 0; e < (long)m_msh->ele_vector.size(); e++)
+       {
+          eleV_DM = ele_value_dm[e];
+          eleV_DM->Stress = eleV_DM->Stress_i;                                                        
+          (*eleV_DM->Stress0) = 0.0;                                                        
+       }
     }
+	else
+	{
+       // If an initial stress state is given, skip this
+       // Establishing gravity force profile 
+       if (m_num&&m_num->GravityProfile==1)
+	   { 
+          GravityForce = true;
+          cout<<"1. Establish gravity force profile..."<<endl;
+          counter = 0;
+          Execute();
+       }
+       Extropolation_GaussValue();
+       // Write the results
+       for(i=0;i<no_out;i++){
+         m_out = out_vector[i];
+         m_out->time = -1.0;
+         if(m_out->geo_type_name.find("DOMAIN")!=string::npos)
+         {
+            cout << "Data output" << endl;
+            m_out->NODWriteDOMDataTEC(); //OK
+            if(!m_out->new_file_opened)  
+              m_out->new_file_opened=true; 
+         }    
+      }
+      if(reload==1)
+         return;
+	} // Else
 
     // Excavating  
     cout<<"2. Excavating..."<<endl;
@@ -2170,9 +2178,9 @@ void CRFProcessDeformation::ExcavationSimulating()
     ReleaseLoadingByExcavation();
 	UpdateInitialStress(false); // s-->s0
 	
-	Execute();
+	Execute(); // s+s0-->s
 //    Extropolation_GaussValue(true);  // s+s0-->s
-    Extropolation_GaussValue();  // s+s0-->s
+    Extropolation_GaussValue(); 
 
     // Write the results
     for(i=0;i<no_out;i++){
@@ -2189,21 +2197,13 @@ void CRFProcessDeformation::ExcavationSimulating()
     //InitializeNewtonSteps(2);
 
     // Remove boundary loading by excavated domain    
-    CSourceTermGroup *m_st_group = NULL;
-    for(j=0;j<problem_dimension_dm;j++)
+	for(i=(int)st_node_value.size();i>GetOrigNodeVSize();i--)
     {
-        m_st_group = STGetGroup(pcs_type_name,pcs_primary_function_name[j]);
-        if(m_st_group)
-        {
-           for(i=(int)m_st_group->group_vector.size();i>m_st_group->GetOrigNodeVSize();i--)
-		   {
-              delete m_st_group->group_vector[i-1];
-              m_st_group->group_vector.pop_back();
-			  m_st_group->st_group_vector.pop_back();
-		   }
-        }
+       delete st_node_value[i-1];
+       st_node_value.pop_back();
     }
-    
+    //
+    /* // For simulation of excavation + operation
     type = OrigType;
     pcs_deformation = Orig_pcs_deformation;
     pcs_number_of_primary_nvals = Orig_pcs_number_of_primary_nvals;
@@ -2222,7 +2222,7 @@ void CRFProcessDeformation::ExcavationSimulating()
         InitializeLinearSolver(eqs,m_num);  
         InitEQS();     
     } 
-    
+    */
     cout<<"*** End of excavation"<<endl;
     cout<<"------------------------------------------"<<endl;
 }

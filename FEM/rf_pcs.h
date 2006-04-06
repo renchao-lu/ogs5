@@ -18,15 +18,22 @@ Programing:
 #include "rf_tim_new.h"
 // C++ STL
 #include <fstream>
+
+// The follows are implicit declaration. WW
+//---------------------------------------------------------------------------
 namespace FiniteElement {class CFiniteElementStd; class CFiniteElementVec; 
                          class ElementMatrix; class ElementValue;} 
 namespace Mesh_Group {class CFEMesh;} 
+//
+class CSourceTermGroup; 
+class CSourceTerm;
+class CNodeValue; 
 using FiniteElement::CFiniteElementStd;
 using FiniteElement::CFiniteElementVec;
 using FiniteElement::ElementMatrix;
 using FiniteElement::ElementValue;
 using Mesh_Group::CFEMesh;
-
+//---------------------------------------------------------------------------
 
 #define PCS_FILE_EXTENSION ".pcs"
 
@@ -96,7 +103,11 @@ class CRFProcess {
   protected: //WW
     friend class FiniteElement::CFiniteElementStd;
     friend class FiniteElement::CFiniteElementVec;
-	CFiniteElementStd *fem; // Assembler  
+	friend class ::CSourceTermGroup;
+	// Assembler
+	CFiniteElementStd *fem;   
+    //
+	long orig_size; // Size of source term nodes 
 	// ELE
     std::vector<FiniteElement::ElementMatrix*> Ele_Matrices;
 	// Storage type for all element matrices and vectors
@@ -129,6 +140,7 @@ class CRFProcess {
     // 2. Read
     int reload; 
     inline void  WriteRHS_of_ST_NeumannBC(ostream& os=cout);  
+    inline void  ReadRHS_of_ST_NeumannBC(istream& is=cin);  
     friend bool PCSRead(string);
 	//....................................................................
 	// 1-GEO
@@ -145,6 +157,12 @@ class CRFProcess {
 	// 5-BC
 	//....................................................................
 	// 6-ST
+    // Node values from sourse/sink or Neumann BC. WW
+	vector<CNodeValue*> st_node_value; //WW :: is for the strange sxc compiler
+	vector<CSourceTerm*> st_node; //WW
+    void RecordNodeVSize(const int Size) {orig_size = Size;}
+    int GetOrigNodeVSize () const {return orig_size;}
+
 	//....................................................................
 	// 7-MFP
 	//....................................................................
@@ -260,14 +278,14 @@ class CRFProcess {
     CFEMesh* m_msh; //OK
     string msh_type_name; //OK
     //MB-------------
-    vector<double*>nod_val_vector; //OK
-    vector<string>nod_val_name_vector; //OK
+    vector<double*> nod_val_vector; //OK
+    vector<string> nod_val_name_vector; //OK
     void SetNodeValue(long,int,double); //OK
     double GetNodeValue(long,int); //OK
     int GetNodeValueIndex(string); //OK
     //-----------------------------
-    vector<double*>ele_val_vector; //PCH
-    vector<string>ele_val_name_vector; //PCH
+    vector<double*> ele_val_vector; //PCH
+    vector<string> ele_val_name_vector; //PCH
     void SetElementValue(long,int,double); //PCH
     double GetElementValue(long,int); //PCH
     int GetElementValueIndex(string); //PCH
@@ -337,7 +355,7 @@ class CRFProcess {
     void SetOBJNames(); 
     // ST
     void IncorporateSourceTerms(const double Scaling=1.0);
-    void CheckSTGroup(); //OK
+    //WW void CheckSTGroup(); //OK
     // BC
     void IncorporateBoundaryConditions(const double Scaling=1.0);
     void CheckBCGroup(); //OK

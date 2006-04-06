@@ -520,6 +520,8 @@ int LOPTimeLoop_PCS(double*dt_sum)
     // Deformation process
     for(i=0;i<no_processes;i++){
       m_pcs = pcs_vector[i];
+      if(m_pcs->num_type_name.find("EXCAVATION")!=string::npos)
+         continue;
  	  if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
       {
           dm_pcs = (CRFProcessDeformation *)(m_pcs);
@@ -653,6 +655,7 @@ ROCKFLOW - Function: SetCriticalDepthSourceTerms
 Task: 
 Programing:
  12/2004 MB Implementation
+ 03/2006 WW 
 last modified:
 ***************************************************************************/
 void SetCriticalDepthSourceTerms(void)
@@ -662,45 +665,43 @@ void SetCriticalDepthSourceTerms(void)
   //  int valid=0;
 
   long msh_node;
-  long i, j;
+  long i; //, j;
   double valueAdd;
   double H=0.0;
   double Haverage = 0.0;
   double AnzNodes = 0.0;
 
 //  int test;
-  //-----------------------------------------------------------------------
+  //-----------------------s------------------------------------------------
   CRFProcess *m_pcs = NULL;
   m_pcs = pcs_vector[0];
-
-  CSourceTermGroup *m_st_group = NULL;
-  for(j=0; j<m_pcs->GetPrimaryVNumber(); j++)  {
-    //m_st_group = m_st_group->Get((string)pcs_primary_function_name[j]);
-    m_st_group = m_st_group->Get(m_pcs->GetPrimaryVName(j));
-    if(!m_st_group) continue;
-    //-----------------------------------------------------------------------
-    long group_vector_length = (int)m_st_group->group_vector.size();
-
-    for(i=0;i<group_vector_length;i++) {
-    if (m_st_group->group_vector[i]->conditional == 1){
-      msh_node = m_st_group->group_vector[i]->msh_node_number;
+  CNodeValue *cnodev = NULL; //WW
+  // 
+  //-----------------------------------------------------------------------
+  long group_vector_length = (int)m_pcs->st_node_value.size();
+  for(i=0;i<group_vector_length;i++) {
+    cnodev = m_pcs->st_node_value[i]; //WW
+    if (cnodev->conditional == 1){
+      msh_node = cnodev->msh_node_number;
 	  Haverage += GetNodeVal(msh_node,1);
       AnzNodes += 1;
-      }
-    }   
-    Haverage = Haverage / AnzNodes;
+     }
+  }   
+  Haverage = Haverage / AnzNodes;
 
-    for(i=0;i<group_vector_length;i++) {
-      msh_node = m_st_group->group_vector[i]->msh_node_number;
-      if(msh_node>=0) {
-        value = m_st_group->group_vector[i]->node_value;
+  for(i=0;i<group_vector_length;i++) {
+    cnodev = m_pcs->st_node_value[i]; //WW
+    //WW  msh_node = m_st_group->group_vector[i]->msh_node_number;
+    msh_node = cnodev->msh_node_number;
+    if(msh_node>=0) {
+        value = cnodev->node_value;
         
         //double MobileDepth = 0.001;
         double MobileDepth = 0.0;
         double NodeWidth = 100.0;
         double factor = 2;
         
-        if (m_st_group->group_vector[i]->conditional == 1){
+        if (cnodev->conditional == 1){
         //H = GetNodeVal(msh_node,1);
           H = Haverage;
           H = H - MobileDepth;
@@ -711,7 +712,7 @@ void SetCriticalDepthSourceTerms(void)
           valueAdd = valueAdd * NodeWidth * factor;
           //value += valueAdd;
           value = valueAdd;
-          m_st_group->group_vector[i]->node_value = value;
+          cnodev->node_value = value;
           printf("\n Node %ld: Depth Hmobile valueAdd %e %e %e ", msh_node, GetNodeVal(msh_node,1), H, valueAdd);
 
           // rausschreiben der Flux Werte, Achtung, 
@@ -720,8 +721,6 @@ void SetCriticalDepthSourceTerms(void)
         } // end if conditional == 1
       } // end if msh_node>=0
     } // end for group_vector_length
-
-  } // end for getPrimaryVNumber 
 }
 
 /**************************************************************************

@@ -42,3 +42,61 @@ last modification:
 CNodeValue::~CNodeValue()
 {
 }
+/**************************************************************************
+FEMLib-Method:
+Task: destructor
+Programing:
+03/2006 WW Implementation
+last modification:
+**************************************************************************/
+void CNodeValue::Write(ostream& os) const
+{
+   string deli = "  ";
+   os<<geo_node_number<<deli;
+   os<<msh_node_number<<deli;
+   os<< CurveIndex <<deli;
+   os<< node_value <<deli;
+   /*
+   // This is for river flow
+   // This writing will be valid for river flow when some 
+   // of its parameters being moved from CSourceTerm to here
+   os<< node_distype <<deli;
+   os<< node_area <<deli;
+   os<< node_parameterA <<deli;
+   os<< node_parameterB <<deli;
+   os<< node_parameterC <<deli;
+   os<< node_parameterD <<deli;
+   os<< node_parameterE <<deli;
+   os<< conditional <<deli;
+   */
+   os<<endl;  
+}
+
+/**************************************************************************
+FEMLib-Method:
+Task: destructor
+Programing:
+03/2006 WW Implementation
+last modification:
+**************************************************************************/
+void CNodeValue::Read(istream& is) 
+{
+   is>>geo_node_number;
+   is>>msh_node_number;
+   is>> CurveIndex ;
+   is>> node_value ;
+   /* 
+   // This is for river flow
+   // This writing will be valid for river flow when some 
+   // of its parameters being moved from CSourceTerm to here
+   is>> node_distype ;
+   is>> node_area ;
+   is>> node_parameterA ;
+   is>> node_parameterB ;
+   is>> node_parameterC ;
+   is>> node_parameterD ;
+   is>> node_parameterE ;
+   is>> conditional ;
+   */
+   is>> ws;  
+}

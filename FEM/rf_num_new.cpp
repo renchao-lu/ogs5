@@ -77,6 +77,8 @@ CNumerics::CNumerics(string pcs_type_name)
     nls_max_iterations = 25;
     nls_error_tolerance = 1.0e-3;
   }
+  //
+  preferential_factor = 0.0; //WW
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -251,6 +253,16 @@ ios::pos_type CNumerics::Read(ifstream *num_file)
       line.clear();
       continue;
 	}
+    //....................................................................
+	// Moved from rf_st_new.cpp by WW
+    if(line_string.find("$PREFERENTIAL_FRACTOR")!=string::npos)  //YD
+    {
+      line.str(GetLineFromFile1(num_file));
+      line >>preferential_factor;
+      line.clear();
+      continue;
+     }
+
     //....................................................................
 /*
     if(line_string.find("$TIME_STEPS")!=string::npos) { // subkeyword found

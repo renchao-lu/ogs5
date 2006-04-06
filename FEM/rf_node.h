@@ -12,6 +12,7 @@ last modified
 
 // C++ STL
 #include <list>
+#include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -23,6 +24,7 @@ class CNodeValue
   public:
 	CNodeValue(void);
     ~CNodeValue(void);
+ //
     long geo_node_number;
     long msh_node_number;
     double node_value;
@@ -39,9 +41,13 @@ class CNodeValue
     long msh_node_number_conditional;
     string tim_type_name;
 
+    void Write(ostream& os=cout) const; //WW
+    void Read(istream& is=cin); //WW
+
 };
 
 //========================================================================
+/* // Commented by WW
 class CNodeValueGroup
 {
   private:
@@ -53,5 +59,5 @@ class CNodeValueGroup
     void Set(string);
     CNodeValueGroup* Get(string);
 };
-
+*/
 #endif

@@ -74,8 +74,6 @@ class CSourceTerm
     double st_area;
     double analytical_diffusion;
     int number_of_terms;
-    
-
 
     //--------------------------------------------------------------------
     // Methods
@@ -101,29 +99,24 @@ class CSourceTerm
 class CSourceTermGroup
 {
   public:
-    CSourceTermGroup() {OrigSize=0;} //WW
+    CSourceTermGroup() {} //WW
     CSourceTermGroup* Get(string);
     void Set(CRFProcess* m_pcs, const int ShiftInNodeVector, string this_pv_name="");
-    vector<CNodeValue*>group_vector;
+//WW    vector<CNodeValue*>group_vector;
     string pcs_name;
     string pcs_type_name; //OK
     string pcs_pv_name; //OK
-    // Access to members
-    void RecordNodeVSize(const int Size) {OrigSize = Size;}
-    int GetOrigNodeVSize () const {return OrigSize;}
     CFEMesh* m_msh;
-    vector<CSourceTerm*>st_group_vector; //OK
-    double GetConditionalNODValue(int,CSourceTerm*); //OK
-    double GetRiverNODValue(int,CSourceTerm*, long msh_node); //MB
-    double GetCriticalDepthNODValue(int,CSourceTerm*, long msh_node); //MB
-     double GetNormalDepthNODValue(int,CSourceTerm*, long msh_node); //MB JOD
-    double GetAnalyticalSolution(CSourceTerm *m_st,long node_number, string process);//CMCD
-    void Write(ostream& os=cout) const; //WW
-    void Read(istream& is=cin);  //WW
+//WW    vector<CSourceTerm*>st_group_vector; //OK
+    //WW double GetConditionalNODValue(int,CSourceTerm*); //OK
+    //WW double GetRiverNODValue(int,CSourceTerm*, long msh_node); //MB
+    //WW double GetCriticalDepthNODValue(int,CSourceTerm*, long msh_node); //MB
+    //WW double GetNormalDepthNODValue(int,CSourceTerm*, long msh_node); //MB JOD
+	 //WW Changed from the above
+//    double GetAnalyticalSolution(CSourceTerm *m_st,long node_number, string process);//CMCD
     // TRANSFER OF DUAL RICHARDS
     double preferential_factor;    //YD
   private:
-    int OrigSize;  // For excavation simulation. WW
     void SetPLY(CSourceTerm*); //OK
 };
 
@@ -141,5 +134,14 @@ extern void STGroupDelete(string pcs_type_name,string pcs_pv_name);
 extern long aktueller_zeitschritt;
 extern double aktuelle_zeit;
 extern vector<string>analytical_processes;
+
+
+// WW moved here
+extern  double GetAnalyticalSolution(long node_number, CSourceTerm *m_st);//CMCD, WW
+extern  double GetRiverNODValue(CNodeValue* cnodev,CSourceTerm* m_st, long msh_node);
+extern	double GetConditionalNODValue(CSourceTerm* m_st, CNodeValue* cnodev); 
+extern  double GetCriticalDepthNODValue(CNodeValue* cnodev,CSourceTerm*, long msh_node); //MB
+extern  double GetNormalDepthNODValue(CSourceTerm*, long msh_node); //MB JOD
+
 
 #endif

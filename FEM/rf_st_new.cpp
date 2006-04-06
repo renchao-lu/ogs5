@@ -682,7 +682,8 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
   
   CFEMesh* m_msh = m_pcs->m_msh;
   CElem* elem = NULL;
-  vec<CNode*> e_nodes(20);
+  CNode* cnode = NULL; //WW
+
   //----------------------------------------------------------------------
   // Tests //OK
   if(!m_msh){
@@ -731,6 +732,7 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
         else
           m_node_value->msh_node_number = -1;
 		m_node_value->CurveIndex = m_st->CurveIndex;
+        m_node_value->geo_node_number =  m_node_value->msh_node_number-ShiftInNodeVector; //WW
         m_node_value->node_value = m_st->geo_node_value;
         m_node_value->tim_type_name = m_st->tim_type_name;
         if(m_st->dis_type_name.compare("CRITICALDEPTH")==0) {
@@ -751,16 +753,18 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
              {
                 elem = m_msh->ele_vector[ii];
                 if(!elem->GetMark()) continue;
-	            elem->GetNodes(e_nodes);
                 int nn = elem->GetNodesNumber(m_msh->getOrder());
 				for(k=0; k < nn; k++){
-					if(*e_nodes[k]==m_st->geo_node_number)
+					cnode = elem->GetNode(k); //WW
+                    if(cnode->GetIndex()==m_st->geo_node_number)
                     m_st->element_st_vector.push_back(ii);
 				}
 			 }
-	    } 
-        group_vector.push_back(m_node_value);
-        st_group_vector.push_back(m_st); //OK
+	    }         
+        //WW        group_vector.push_back(m_node_value);
+        //WW        st_group_vector.push_back(m_st); //OK
+        m_pcs->st_node_value.push_back(m_node_value);  //WW
+        m_pcs->st_node.push_back(m_st); //WW
       }
       //------------------------------------------------------------------
 //OK
@@ -790,8 +794,10 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
             m_node_value->geo_node_number = nodes[i];
             m_node_value->node_value = node_value_vector[i];
             m_node_value->CurveIndex = m_st->CurveIndex;
-            group_vector.push_back(m_node_value);
-            st_group_vector.push_back(m_st); //OK
+            //WW        group_vector.push_back(m_node_value);
+            //WW        st_group_vector.push_back(m_st); //OK
+            m_pcs->st_node_value.push_back(m_node_value);  //WW
+            m_pcs->st_node.push_back(m_st); //WW
           }
           node_value_vector.clear();
           m_polyline->point_vector.clear();
@@ -1014,9 +1020,11 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
             if(dit_ply ==8)  {
               m_node_value->node_distype = 8;
             }
-          m_node_value->CurveIndex = m_st->CurveIndex;
-          group_vector.push_back(m_node_value);
-          st_group_vector.push_back(m_st); //OK
+            m_node_value->CurveIndex = m_st->CurveIndex;
+            //WW        group_vector.push_back(m_node_value);
+            //WW        st_group_vector.push_back(m_st); //OK
+            m_pcs->st_node_value.push_back(m_node_value);  //WW
+            m_pcs->st_node.push_back(m_st); //WW
         }
         node_value_vector.clear();
 	
@@ -1037,10 +1045,11 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
           m_node_value->geo_node_number = nodes_vector[i];
           m_node_value->node_distype = 0;
           m_node_value->node_value = 0;
-          group_vector.push_back(m_node_value);
-          st_group_vector.push_back(m_st);  //Shoud be here. WW
+          //WW        group_vector.push_back(m_node_value);
+          //WW        st_group_vector.push_back(m_st); //OK
+           m_pcs->st_node_value.push_back(m_node_value);  //WW
+           m_pcs->st_node.push_back(m_st); //WW
         }
-//WW        st_group_vector.push_back(m_st);
       }
       
       //------------------------------------------------------------------
@@ -1084,9 +1093,8 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
           if(dit_ply==2||dit_ply==4)
           {
              // Linear interpolation  polygon-wise. WW
-           //  list<CGLPolyline*>::const_iterator p = m_surface->polyline_of_surface_list.begin();
-vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin();
-
+             //  list<CGLPolyline*>::const_iterator p = m_surface->polyline_of_surface_list.begin();
+             vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin();
              p = m_surface->polyline_of_surface_vector.begin();
              while(p!=m_surface->polyline_of_surface_vector.end())
              {
@@ -1117,7 +1125,7 @@ vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin()
           if(m_msh->GetMaxElementDim()==2)     // For all meshes with 1-D or 2-D elements
             m_st->DomainIntegration(m_pcs, nodes_vector, node_value_vector);
           //
-          else if(m_msh->GetMaxElementDim()==3)                           // For all meshes with 3-D elements
+          else if(m_msh->GetMaxElementDim()==3)  // For all meshes with 3-D elements
             m_st->FaceIntegration(m_pcs, nodes_vector, node_value_vector);
          
 
@@ -1128,11 +1136,13 @@ vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin()
             m_node_value->geo_node_number = nodes_vector[i];
             m_node_value->node_value = node_value_vector[i];
             m_node_value->CurveIndex = m_st->CurveIndex;
-            if(m_st->conditional){
+            if(m_st->conditional)
               m_node_value->msh_node_number_conditional = nodes_vector_conditional[i];
-            }
-            group_vector.push_back(m_node_value);
-            st_group_vector.push_back(m_st); //OK
+           
+            //WW        group_vector.push_back(m_node_value);
+            //WW        st_group_vector.push_back(m_st); //OK
+            m_pcs->st_node_value.push_back(m_node_value);  //WW
+            m_pcs->st_node.push_back(m_st); //WW
           }
         }
       }
@@ -1144,61 +1154,6 @@ vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin()
        preferential_factor = m_pcs->preferential_factor;
 //......................................................
 }
-/**************************************************************************
-FEMLib-Method:
-Task: Write the contribution of source term or Neumann BC to RHS to file 
-Programing:
-12/2005 WW Implementation
-last modification:
-**************************************************************************/
-void CSourceTermGroup::Write(ostream& os) const
-{
-   int i, Size;
-   CNodeValue *m_node_value= NULL;
-   //
-   Size = (int)group_vector.size();
-   os.write((char*)(&Size), sizeof(Size));
-   for(i=0;i<Size;i++){
-      m_node_value = group_vector[i];
-	  os.write((char*)(m_node_value), sizeof(*m_node_value));    
-   }  
-}
-/**************************************************************************
-FEMLib-Method:
-Task: Read the contribution of source term or Neumann BC to RHS to file 
-Programing:
-12/2005 WW Implementation
-last modification:
-**************************************************************************/
-void CSourceTermGroup::Read(istream& is)
-{
-   int i, Size;
-   CNodeValue *m_node_value= NULL;
-   CSourceTerm *m_st = NULL;
-   bool HasST=false;
-   for(i=0;i<(int)st_vector.size();i++){
-     m_st = st_vector[i];
-     if((m_st->pcs_type_name.compare(pcs_type_name)==0)&&(m_st->pcs_pv_name.compare(pcs_pv_name)==0))
-	 {
-         HasST = true;
-         break;
-	 }
-   }
-   if(!HasST) m_st = NULL;
-   //
-   group_vector.clear();
-   st_group_vector.clear();
-   Size = (int)group_vector.size();
-   is.read((char*)(&Size), sizeof(Size));
-   for(i=0;i<Size;i++){
-      m_node_value = new CNodeValue();
-	  is.read((char*)(m_node_value), sizeof(*m_node_value));
-      m_node_value->CurveIndex = m_st->CurveIndex;
-	  group_vector.push_back(m_node_value); 
-	  st_group_vector.push_back(m_st);
-   }  
-}
-
 
 
 /**************************************************************************
@@ -1849,7 +1804,8 @@ Task:
 Programing:
 02/2006 MB Implementation
 **************************************************************************/
-double CSourceTermGroup::GetConditionalNODValue(int i,CSourceTerm* m_st)
+//double CSourceTermGroup::GetConditionalNODValue(int i,CSourceTerm* m_st)
+double GetConditionalNODValue(CSourceTerm* m_st, CNodeValue* cnodev) //WW
 {
   int nidx;
   double value_cond = 0.0;
@@ -1861,12 +1817,14 @@ double CSourceTermGroup::GetConditionalNODValue(int i,CSourceTerm* m_st)
   m_pcs_this = PCSGet(m_st->pcs_type_name);
   m_pcs_cond = PCSGet(m_st->pcs_type_name_cond);
 
-  node_cond = group_vector[i]->msh_node_number_conditional;
+//WW  node_cond = group_vector[i]->msh_node_number_conditional;
+  node_cond = cnodev->msh_node_number_conditional; //WW
   nidx = m_pcs_cond->GetNodeValueIndex(m_st->pcs_pv_name_cond)+1;
   value_cond = m_pcs_cond->GetNodeValue(node_cond,nidx);
  
   if(m_st->pcs_pv_name_cond.find("FLUX")!=string::npos){
-    NodeReachLength = group_vector[i]->node_value;
+//WW    NodeReachLength = group_vector[i]->node_value;
+    NodeReachLength = cnodev->node_value; //WW
     value_cond = value_cond * NodeReachLength;
   }
 
@@ -1878,8 +1836,10 @@ FEMLib-Method:
 Task:
 Programing:
 02/2006 MB Implementation
+02/2006 WW Change argument
 **************************************************************************/
-double CSourceTermGroup::GetRiverNODValue(int i,CSourceTerm* m_st, long msh_node)
+//double CSourceTermGroup::GetRiverNODValue(int i,CSourceTerm* m_st, long msh_node) //WW
+double GetRiverNODValue(CNodeValue* cnodev,CSourceTerm* m_st, long msh_node) //WW
 {
   double h;
   double paraA; //HRiver
@@ -1891,12 +1851,21 @@ double CSourceTermGroup::GetRiverNODValue(int i,CSourceTerm* m_st, long msh_node
   double RiverConductance;
   int nidx1;
   double value;
+  /* // Commented by WW
   paraA = group_vector[i]->node_parameterA; //HRiver
   paraB = group_vector[i]->node_parameterB; //KRiverBed
   paraC = group_vector[i]->node_parameterC; //WRiverBed
   paraD = group_vector[i]->node_parameterD; //TRiverBed
   paraE = group_vector[i]->node_parameterE; //BRiverBed
   NodeReachLength = group_vector[i]->node_area;
+  */
+  //WW
+  paraA = cnodev->node_parameterA; //HRiver
+  paraB = cnodev->node_parameterB; //KRiverBed
+  paraC = cnodev->node_parameterC; //WRiverBed
+  paraD = cnodev->node_parameterD; //TRiverBed
+  paraE = cnodev->node_parameterE; //BRiverBed
+  NodeReachLength = cnodev->node_area;
   CRFProcess* m_pcs_this = NULL;
   
   m_pcs_this = PCSGet(m_st->pcs_type_name);
@@ -1908,7 +1877,8 @@ double CSourceTermGroup::GetRiverNODValue(int i,CSourceTerm* m_st, long msh_node
     m_pcs_cond = PCSGet(m_st->pcs_type_name_cond);
 
     int nidx = m_pcs_cond->GetNodeValueIndex(m_st->pcs_pv_name_cond)+1;
-    long node_cond = group_vector[i]->msh_node_number_conditional;
+//WW    long node_cond = group_vector[i]->msh_node_number_conditional;
+    long node_cond = cnodev->msh_node_number_conditional; //WW
     paraA = m_pcs_cond->GetNodeValue(node_cond,nidx);
   }
   
@@ -1942,8 +1912,10 @@ FEMLib-Method:
 Task:
 Programing:
 02/2006 MB Implementation
+02/2006 WW Change argument
 **************************************************************************/
-double CSourceTermGroup::GetCriticalDepthNODValue(int i,CSourceTerm* m_st, long msh_node)
+//double CSourceTermGroup::GetCriticalDepthNODValue(CNodeValue* cnodev,CSourceTerm* m_st, long msh_node)
+double GetCriticalDepthNODValue(CNodeValue* cnodev,CSourceTerm* m_st, long msh_node)
 {
   double value;
   double H;
@@ -1960,10 +1932,10 @@ double CSourceTermGroup::GetCriticalDepthNODValue(int i,CSourceTerm* m_st, long 
   
 
   //MB for CriticalDepth
-//WW  long test = (long)group_vector.size();
-  for(j=0;j<(long)group_vector.size();j++) {
-    if (group_vector[j]->node_distype==6){
-      temp2 = group_vector[j]->msh_node_number;
+//WW  for(j=0;j<(long)group_vector.size();j++) {
+  for(j=0;j<(long)m_pcs_this->st_node_value.size();j++) {
+    if (m_pcs_this->st_node_value[j]->node_distype==6){
+      temp2 = m_pcs_this->st_node_value[j]->msh_node_number;
       Haverage += m_pcs_this->GetNodeValue(temp2,1);
       AnzNodes += 1;
     }
@@ -1980,7 +1952,7 @@ double CSourceTermGroup::GetCriticalDepthNODValue(int i,CSourceTerm* m_st, long 
   double H3 = pow(H,3.);
   double H3_epsilon = pow(H+epsilon,3.);
   double value_jacobi;
-  double width = group_vector[i]->node_area;
+  double width = cnodev->node_area;
   if(m_pcs_this->m_msh->GetMaxElementDim() ==1 ) {
     msh_ele = m_pcs_this->m_msh->nod_vector[msh_node]->connected_elements[0]; 
     int group = m_pcs_this->m_msh->ele_vector[msh_ele]->GetPatchIndex();
@@ -2006,9 +1978,9 @@ Task:
 Programing:
 02/2006 MB JOD Implementation
 **************************************************************************/
-double CSourceTermGroup::GetNormalDepthNODValue(int i,CSourceTerm* m_st, long msh_node)
+//double CSourceTermGroup::GetNormalDepthNODValue(CSourceTerm* m_st, long msh_node)
+double GetNormalDepthNODValue(CSourceTerm* m_st, long msh_node)
 {
-  i=i; //WW
   double value;
   double H = 0.0;
 //WW  int AnzNodes = 0;
@@ -2285,8 +2257,10 @@ void CSourceTermGroup::SetPLY(CSourceTerm*m_st)
       //m_st->FaceIntegration(nodes, node_value_vector);   
     }
     //--------------------------------------------------------------------
-    group_vector.push_back(m_nod_val);
-    st_group_vector.push_back(m_st); //OK
+    //WW        group_vector.push_back(m_nod_val);
+    //WW        st_group_vector.push_back(m_st); //OK
+    m_pcs->st_node_value.push_back(m_nod_val);  //WW
+    m_pcs->st_node.push_back(m_st); //WW
     //--------------------------------------------------------------------
     // Memory
     ply_nod_vector.clear();
@@ -2332,9 +2306,11 @@ FEMLib-Method:
 Task:
 Programing:
 11/2005 CMCD Implementation
+04/2006 Moved from CSourceTermGroup and changed the arguments
 last modification:
 **************************************************************************/
-double CSourceTermGroup::GetAnalyticalSolution(CSourceTerm *m_st, long node_number, string primvar)
+//double CSourceTermGroup::GetAnalyticalSolution(CSourceTerm *m_st, long node_number, string primvar)
+double GetAnalyticalSolution(long node_number, CSourceTerm *m_st)
 {
   int idx, n;
   int size, process_no;
@@ -2348,14 +2324,16 @@ double CSourceTermGroup::GetAnalyticalSolution(CSourceTerm *m_st, long node_numb
   double t0, tn, tnn, val1,val2, area;
   double tvol, vol;
   bool out = false;
-  CNode* Node = m_msh->nod_vector[node_number];
+  string primvar; //WW
+  CNode* Node = NULL;
   CElem* Ele = NULL; 
   vector<double>time_history;
   vector<double>value_history;
   CRFProcess* m_pcs = NULL;
-  
   m_pcs = PCSGet(m_st->pcs_type_name); //OK
-
+  CFEMesh* m_msh = m_pcs->m_msh;  //WW
+  Node = m_msh->nod_vector[node_number]; //WW
+  primvar = m_st->pcs_pv_name; //WW
   t0 = tn = tnn = source = gradient = val1 = val2 = area = 0.0;
   idx = m_pcs->GetNodeValueIndex(primvar);
   value = m_pcs->GetNodeValue(node_number,idx);

@@ -56,6 +56,7 @@ COutput::COutput(void): out_amplifier(0.0), m_msh(NULL), nSteps(-1)
   dat_type_name = "TECPLOT";
   geo_type_name = "DOMAIN";
   selected = false;
+  new_file_opened = false; //WW
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -141,9 +142,12 @@ ios::pos_type COutput::Read(ifstream *out_file)
         ele_value_vector.push_back(line_string);
         out_file->ignore(MAX_ZEILE,'\n');
       }
+      /*
+      // Commented by WW
       // Remove files
       tec_file_name = file_base_name + "_domain_ele" + TEC_FILE_EXTENSION;
       remove(tec_file_name.c_str());
+      */
       continue;
     }
     //--------------------------------------------------------------------
@@ -174,6 +178,7 @@ ios::pos_type COutput::Read(ifstream *out_file)
       }
       if(geo_type_name.find("DOMAIN")!=string::npos) {
         geo_type = 4;
+        /* // Comment by WW
 		// Remove files
         tec_file_name = file_base_name + "_domain" + TEC_FILE_EXTENSION;
         remove(tec_file_name.c_str());
@@ -181,6 +186,7 @@ ios::pos_type COutput::Read(ifstream *out_file)
         remove(tec_file_name.c_str());
         tec_file_name = file_base_name + "_domain_quad" + TEC_FILE_EXTENSION;
         remove(tec_file_name.c_str());
+
 #ifdef USE_MPI
 	sprintf(t_fname, "%d",myrank);
 	tec_file_name = file_base_name + "_domain_tri" + t_fname + TEC_FILE_EXTENSION;
@@ -210,6 +216,7 @@ ios::pos_type COutput::Read(ifstream *out_file)
         remove(tec_file_name.c_str());
         tec_file_name = file_base_name + ".rfo"; //OK4105
         remove(tec_file_name.c_str());
+        */
       }
       continue;
     }
@@ -255,6 +262,7 @@ ios::pos_type COutput::Read(ifstream *out_file)
     if(line_string.find("$PCS_TYPE")!=string::npos) { // subkeyword found
      *out_file >> pcs_type_name;
       out_file->ignore(MAX_ZEILE,'\n');
+      /* // Comment by WW
       // Remove files
       tec_file_name = pcs_type_name + "_" + "domain" + "_line" + TEC_FILE_EXTENSION;
       remove(tec_file_name.c_str());
@@ -268,6 +276,7 @@ ios::pos_type COutput::Read(ifstream *out_file)
       remove(tec_file_name.c_str());
       tec_file_name = pcs_type_name + "_" + "domain" + "_hex" + TEC_FILE_EXTENSION;
       remove(tec_file_name.c_str());
+      */
       continue;
     }
     //--------------------------------------------------------------------
@@ -295,6 +304,7 @@ Programing:
 08/2004 WW Remove the old files
 01/2005 OK Boolean type
 01/2005 OK Destruct before read
+06/2006 WW Remove the old files by new way
 **************************************************************************/
 bool OUTRead(string file_base_name)
 {
@@ -306,7 +316,7 @@ bool OUTRead(string file_base_name)
   string sub_line;
   string line_string;
   ios::pos_type position;
-  char number_char[3];
+//  char number_char[3];
   string number_string;
   string tec_file_name;
   //========================================================================
@@ -331,6 +341,8 @@ bool OUTRead(string file_base_name)
       position = m_out->Read(&out_file);
       out_vector.push_back(m_out);
       out_file.seekg(position,ios::beg);
+      /*
+      // Commented by WW
       // Remove the old files
 	  if(m_out->geo_type==1){
 	    for(int i=0; i<(int)m_out->time_vector.size(); i++){
@@ -344,6 +356,7 @@ bool OUTRead(string file_base_name)
       tec_file_name=file_base_name + "_time_" + m_out->geo_name + TEC_FILE_EXTENSION;
       remove(tec_file_name.c_str());
       //  End remove files
+	  */
     } // keyword found
   } // eof
   return true;
@@ -460,6 +473,7 @@ Programing:
 05/2005 OK MSH
 05/2005 OK Profiles at surfaces
 12/2005 OK VAR,MSH,PCS concept
+03/2006 WW Flag to remove exsiting files
 **************************************************************************/
 void OUTData(double time_current, const int time_step_number)
 {
@@ -516,6 +530,7 @@ void OUTData(double time_current, const int time_step_number)
             m_out->NODWriteDOMDataTEC();
             m_out->ELEWriteDOMDataTEC();
             OutputBySteps = false;
+            if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
           }
           else 
 		  {
@@ -525,6 +540,7 @@ void OUTData(double time_current, const int time_step_number)
                 m_out->NODWriteDOMDataTEC();
                 m_out->ELEWriteDOMDataTEC();
                 m_out->time_vector.erase(m_out->time_vector.begin()+j); 
+                if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
                 break;	  
             }
 		  } 
@@ -536,6 +552,7 @@ void OUTData(double time_current, const int time_step_number)
           if(OutputBySteps)
 	      {
             m_out->NODWritePLYDataTEC(time_step_number);
+            if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
             OutputBySteps = false;
           } 
 		  else
@@ -545,6 +562,7 @@ void OUTData(double time_current, const int time_step_number)
                  || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl
                 m_out->NODWritePLYDataTEC(j);
                 m_out->time_vector.erase(m_out->time_vector.begin()+j);
+                if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
                 break;
               }
 		    }
@@ -554,6 +572,7 @@ void OUTData(double time_current, const int time_step_number)
         case 'I': // breakthrough curves in points
           cout << "Data output: Breakthrough curves - " << m_out->geo_name << endl;
           m_out->NODWritePNTDataTEC(time_current,time_step_number);
+          if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
         break;
         //------------------------------------------------------------------
         case 'R': // profiles at surfaces
@@ -563,6 +582,7 @@ void OUTData(double time_current, const int time_step_number)
             if(OutputBySteps){
               m_out->NODWriteSFCAverageDataTEC(time_current,time_step_number);
               OutputBySteps = false;
+              if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
             } 
 		    else{
             }
@@ -572,6 +592,7 @@ void OUTData(double time_current, const int time_step_number)
             if(OutputBySteps){
               m_out->NODWriteSFCDataTEC(time_step_number);
               OutputBySteps = false;
+              if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
             } 
 		    else{
               for(j=0;j<no_times;j++){
@@ -579,6 +600,7 @@ void OUTData(double time_current, const int time_step_number)
                    || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl                m_out->NODWriteSFCDataTEC(j);
                     m_out->NODWriteSFCDataTEC(j);
                     m_out->time_vector.erase(m_out->time_vector.begin()+j);
+                    if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
                     break;
                 }
               }
@@ -598,6 +620,7 @@ void OUTData(double time_current, const int time_step_number)
 		  {
 		    OutputBySteps = false;
             m_out->WriteRFO(); //OK
+            if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
 		  }
 		  else
 		  {
@@ -606,6 +629,7 @@ void OUTData(double time_current, const int time_step_number)
                  || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl 
                 m_out->WriteRFO(); //OK
                 m_out->time_vector.erase(m_out->time_vector.begin()+j);
+                if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
 		        break;	 
               }
 		    } 
@@ -702,6 +726,7 @@ void COutput::NODWriteDOMDataTEC()
 #endif
 
     tec_file_name += TEC_FILE_EXTENSION;
+    if(!new_file_opened) remove(tec_file_name.c_str()); //WW
     fstream tec_file (tec_file_name.data(),ios::app|ios::out);
     tec_file.setf(ios::scientific,ios::floatfield);
     tec_file.precision(12);
@@ -1131,6 +1156,7 @@ void COutput::ELEWriteDOMDataTEC()
   if(msh_type_name.size()>1) // MSH
     tec_file_name += "_" + msh_type_name;
   tec_file_name += TEC_FILE_EXTENSION;
+  if(!new_file_opened) remove(tec_file_name.c_str()); //WW
   //......................................................................
   fstream tec_file (tec_file_name.data(),ios::app|ios::out);
   tec_file.setf(ios::scientific,ios::floatfield);
@@ -1157,7 +1183,8 @@ void COutput::WriteELEValuesTECHeader(fstream& tec_file)
   // Write Header I: variables
   tec_file << "VARIABLES = X,Y,Z,VX,VY,VZ";
   for(i=0;i<(int)ele_value_vector.size();i++){
-     tec_file << "," << ele_value_vector[i];
+	  if(ele_value_vector[i].find("VELOCITY")==string::npos) //WW
+        tec_file << "," << ele_value_vector[i];
   }
   tec_file << endl;
   //--------------------------------------------------------------------
@@ -1186,11 +1213,22 @@ void COutput::WriteELEValuesTECData(fstream& tec_file)
   else
     return;
   //--------------------------------------------------------------------
+  int j;
   int no_ele_values = (int)ele_value_vector.size();
+  bool out_element_vel = false;
+  for(j=0; j<no_ele_values; j++) //WW
+  {
+      if(ele_value_vector[j].find("VELOCITY")!=string::npos)
+	  {
+           out_element_vel = true;
+           break;
+	  }
+            
+  }
+
   vector<int>ele_value_index_vector(no_ele_values);
   GetELEValuesIndexVector(ele_value_index_vector);
   //--------------------------------------------------------------------
-  int j;
   double* xyz;
   CElem* m_ele = NULL;
   FiniteElement::ElementValue* gp_ele = NULL;
@@ -1199,14 +1237,20 @@ void COutput::WriteELEValuesTECData(fstream& tec_file)
     m_ele = m_msh->ele_vector[i];
     xyz = m_ele->GetGravityCenter();
     tec_file << xyz[0] << " " << xyz[1] << " " << xyz[2] << " ";
-    //....................................................................
-    gp_ele = ele_gp_value[i];
-    tec_file << gp_ele->Velocity(0,0) << " ";
-    tec_file << gp_ele->Velocity(1,0) << " ";
-    tec_file << gp_ele->Velocity(2,0) << " ";
-    //....................................................................
-    for(j=0;j<(int)ele_value_index_vector.size();j++){
-      tec_file << m_pcs->GetElementValue(i,ele_value_index_vector[j]) << " ";
+    if(out_element_vel) //WW
+	{
+       //....................................................................
+       gp_ele = ele_gp_value[i];
+       tec_file << gp_ele->Velocity(0,0) << " ";
+       tec_file << gp_ele->Velocity(1,0) << " ";
+       tec_file << gp_ele->Velocity(2,0) << " ";
+	}
+	else
+	{
+       //....................................................................
+       for(j=0;j<(int)ele_value_index_vector.size();j++){
+           tec_file << m_pcs->GetElementValue(i,ele_value_index_vector[j]) << " ";
+       }
     }
 /*
   int j;
@@ -1260,6 +1304,7 @@ void COutput::NODWritePLYDataTEC(int number)
   if(msh_type_name.size()>0)
     tec_file_name += "_" + msh_type_name;
   tec_file_name += TEC_FILE_EXTENSION;
+  if(!new_file_opened) remove(tec_file_name.c_str()); //WW
   //......................................................................
   fstream tec_file (tec_file_name.data(),ios::app|ios::out);
   tec_file.setf(ios::scientific,ios::floatfield);
@@ -1419,6 +1464,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
   if(msh_type_name.size()>0)
     tec_file_name += "_" + msh_type_name;
   tec_file_name += TEC_FILE_EXTENSION;
+  if(!new_file_opened) remove(tec_file_name.c_str()); //WW
   //......................................................................
   fstream tec_file (tec_file_name.data(),ios::app|ios::out);
   tec_file.setf(ios::scientific,ios::floatfield);
@@ -1810,6 +1856,7 @@ void COutput::WriteRFO()
   // File handling
   string rfo_file_name;
   rfo_file_name = file_base_name + "." + "rfo";
+  if(!new_file_opened) remove(rfo_file_name.c_str()); //WW
   fstream rfo_file (rfo_file_name.data(),ios::app|ios::out);
   rfo_file.setf(ios::scientific,ios::floatfield);
   rfo_file.precision(12);
@@ -1842,6 +1889,7 @@ void COutput::NODWriteSFCDataTEC(int number)
   sprintf(number_char,"%i",number);
   string number_string = number_char;
   string tec_file_name = pcs_type_name + "_sfc_" + geo_name + "_t" + number_string + TEC_FILE_EXTENSION;
+  if(!new_file_opened) remove(tec_file_name.c_str()); //WW
   fstream tec_file (tec_file_name.data(),ios::app|ios::out);
   tec_file.setf(ios::scientific,ios::floatfield);
   tec_file.precision(12);
@@ -1931,6 +1979,7 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
   //--------------------------------------------------------------------
   // File handling
   string tec_file_name = file_base_name + "_TBC_" + geo_type_name + "_" + geo_name + TEC_FILE_EXTENSION;
+  if(!new_file_opened) remove(tec_file_name.c_str()); //WW
   fstream tec_file (tec_file_name.data(),ios::app|ios::out);
   tec_file.setf(ios::scientific,ios::floatfield);
   tec_file.precision(12);
