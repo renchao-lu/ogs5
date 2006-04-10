@@ -182,6 +182,7 @@ void CGSFormRightMeshing::OnBnClickedTri2priButton()
 
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   FEMRead((string)m_strFileNameBase);
+  CompleteMesh(); 
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_frame->m_something_changed = 1;
   m_pDoc->UpdateAllViews(NULL);
@@ -221,6 +222,7 @@ void CGSFormRightMeshing::OnBnClickedQuad2hexButton()
 
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   FEMRead((string)m_strFileNameBase);
+  CompleteMesh(); 
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_frame->m_something_changed = 1;
   m_pDoc->UpdateAllViews(NULL);
@@ -251,6 +253,7 @@ void CGSFormRightMeshing::OnBnClickedHex2tetButton()
 
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   FEMRead((string)m_strFileNameBase);
+  CompleteMesh(); 
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_frame->m_something_changed = 1;
   m_pDoc->UpdateAllViews(NULL);
@@ -277,6 +280,7 @@ void CGSFormRightMeshing::OnBnClickedQuad2triButton()
 
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   FEMRead((string)m_strFileNameBase);
+  CompleteMesh(); 
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_frame->m_something_changed = 1;
   m_pDoc->UpdateAllViews(NULL);
@@ -526,6 +530,7 @@ void CGSFormRightMeshing::OnBnClickedStruc2dButton()
 
   GEOLIB_Read_GeoLib((string)m_strFileNameBase);
   FEMRead((string)m_strFileNameBase);
+  CompleteMesh(); 
 
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_pDoc->UpdateAllViews(NULL);
@@ -580,6 +585,7 @@ void CGSFormRightMeshing::OnBnClickedTriDelaunayButton()
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"MESH GENERATION: Finish....Load Data");  
 
   FEMRead((string)m_strFileNameBase);
+  CompleteMesh(); 
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   m_frame->m_something_changed = 1;
   m_pDoc->UpdateAllViews(NULL);
