@@ -474,18 +474,18 @@ void CInitialCondition::SetDomain(int nidx)
 	double node_val, node_depth;
     vector<long>nodes_vector;
     CFEMesh* m_msh = m_pcs->m_msh;
-    if(m_pcs->m_msh) //OK
-	onZ = m_msh->GetCoordinateFlag()%10;
+    if(m_msh) //OK
+      onZ = m_msh->GetCoordinateFlag()%10;
     node_depth = 0.0;
     k=0;
-if(SubNumber==0) 
-{
-  //----------------------------------------------------------------------
-  if(dis_type_name.find("CONSTANT")!=string::npos) 
-  {
-    //....................................................................
-    if(m_pcs->pcs_type_name.compare("OVERLAND_FLOW")==0) 
-	{
+    if(SubNumber==0) 
+    {
+      //----------------------------------------------------------------------
+      if(dis_type_name.find("CONSTANT")!=string::npos) 
+      {
+        //....................................................................
+        if(m_pcs->pcs_type_name.compare("OVERLAND_FLOW")==0) 
+        {
             if(m_pcs->m_msh)
 	        {
 	           for(i=0;i<m_pcs->m_msh->GetNodesNumber(false);i++){ //OK MSH

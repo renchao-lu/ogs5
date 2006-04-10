@@ -1419,7 +1419,7 @@ void CFiniteElementStd::CalcLaplace()
   // ---- Gauss integral
   int gp, gp_r=0, gp_s=0, gp_t;
   gp_t = 0;
-  double fkt, water_depth, z;
+  double fkt, water_depth; 
   //----------------------------------------------------------------------
   // Loop over Gauss points
   for (gp = 0; gp < nGaussPoints; gp++)

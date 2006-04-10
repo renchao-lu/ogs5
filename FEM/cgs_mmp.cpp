@@ -1948,8 +1948,8 @@ void DualCalcSecondaryVariables()
   double K = 0.00001;
   double gravity_constant = 9.81;
 
-  CMediumProperties* m_mmp = NULL;
-  CElem* elem =NULL;
+//  CMediumProperties* m_mmp = NULL;
+//  CElem* elem =NULL;
   CFluidProperties *m_mfp = NULL;
   m_mfp = mfp_vector[0];
   //----------------------------------------------------------------------
@@ -1959,7 +1959,7 @@ void DualCalcSecondaryVariables()
   CRFProcess*m_pcs_mmp = pcs_D;  
 
   CFEMesh* m_msh = m_pcs_mmp->m_msh; 
-  CFiniteElementStd* fem = m_pcs_mmp->GetAssembler();
+//  CFiniteElementStd* fem = m_pcs_mmp->GetAssembler();
   //----------------------------------------------------------------------
   idxp1 = pcs_R->GetNodeValueIndex("PRESSURE1") + timelevel;
   idxS1 = pcs_R->GetNodeValueIndex("SATURATION1") + timelevel;
