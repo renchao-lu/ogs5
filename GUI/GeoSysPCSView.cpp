@@ -476,11 +476,10 @@ void CGeoSysView::OnDraw(CDC* pDC)
     }
     CFEMesh* m_msh = FEMGet((string)m_strPCSName);
     m_pcs = PCSGet((string)m_strPCSName);
-    for (i=0;i<(long)m_pcs->st_node_value.size();i++) {
-      m_node = m_pcs->st_node_value[i];
-      if(m_node->msh_node_number>=0) {
-      
-        if(m_msh){
+    if(m_msh){
+      for (i=0;i<(long)m_pcs->st_node_value.size();i++) {
+        m_node = m_pcs->st_node_value[i];
+        if(m_node->msh_node_number>=0) {
           m_point1.x_pix = xpixel(m_msh->nod_vector[m_node->msh_node_number]->X());
           m_point1.y_pix = ypixel(m_msh->nod_vector[m_node->msh_node_number]->Y());
           m_graphics.DrawPointPixel(pDC,&m_point1);
