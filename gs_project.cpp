@@ -413,7 +413,7 @@ void GSPWriteData()
       path_base = g_gsp_path + m_gsp->base;
       DATWriteRFIFile(path_base.data());
 #ifdef RANDOM_WALK
-      DATWritePCTFile(path_base.data());    // PCH Again, this is a temperary solution. Should be changed later on.
+      //DATWritePCTFile(path_base.data());    // PCH Again, this is a temperary solution. Should be changed later on.
 #endif
     }
     if(m_gsp->type.compare("msh")==0){
