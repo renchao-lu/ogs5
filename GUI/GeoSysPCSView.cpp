@@ -467,13 +467,28 @@ void CGeoSysView::OnDraw(CDC* pDC)
   }
   //-----------------------------------------------------------------------
   if (m_bDisplayST||theApp->g_graphics_modeless_dlg->m_bDisplayST){ //OK
-    CSourceTermGroup* m_st_group = NULL;
+    // WWCSourceTermGroup* m_st_group = NULL;
+    CRFProcess* m_pcs = NULL;
     CNodeValue *m_node = NULL;
     if(theApp->g_graphics_modeless_dlg->m_bDisplayST){ //OK
       m_strPCSName = theApp->g_graphics_modeless_dlg->m_strPCSName;
       m_strQuantityName = theApp->g_graphics_modeless_dlg->m_strQuantityName;
     }
     CFEMesh* m_msh = FEMGet((string)m_strPCSName);
+    m_pcs = PCSGet((string)m_strPCSName);
+    for (i=0;i<(long)m_pcs->st_node_value.size();i++) {
+      m_node = m_pcs->st_node_value[i];
+      if(m_node->msh_node_number>=0) {
+      
+        if(m_msh){
+          m_point1.x_pix = xpixel(m_msh->nod_vector[m_node->msh_node_number]->X());
+          m_point1.y_pix = ypixel(m_msh->nod_vector[m_node->msh_node_number]->Y());
+          m_graphics.DrawPointPixel(pDC,&m_point1);
+        }
+      }
+    }
+	
+	/* // Commented by WW 
     m_st_group = m_st_group->Get((string)m_strQuantityName);
     m_st_group = STGetGroup((string)m_strPCSName,(string)m_strQuantityName);
     for (i=0;i<(long)m_st_group->group_vector.size();i++) {
@@ -487,6 +502,7 @@ void CGeoSysView::OnDraw(CDC* pDC)
         }
       }
     }
+	*/
   }
   //--------------------------------------------------------------------
   // Isosurfaces

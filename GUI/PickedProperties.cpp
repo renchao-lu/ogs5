@@ -509,14 +509,35 @@ void PickedProperties::ListRFINodeSelected(int PCSSwitch)
 			{
 				m_pcs = pcs_vector[j];
 
+		        // ST printing
+                if ((int)m_pcs->st_node_value.size() > 0)
+                {
+                   double STValue = 0;
+                   if( IsThisPointSTIfYesStoryValue(theApp->RFInodePickedTotal[i], m_pcs, STValue) )
+                   {
+                      sprintf(tempNum[currentPosition], "%e", STValue);
+                      ++currentPosition;
+                   }
+                   else
+                   {
+                       sprintf(tempNum[currentPosition], "Not assigned");
+                 		++currentPosition;
+						}
+					}
+                else
+		        {
+                    sprintf(tempNum[currentPosition], "No source term used");	
+                   	++currentPosition;
+                }
+                //
 				for(int k=0; k<m_pcs->pcs_number_of_primary_nvals; ++k)
 				{
 					// Let's print BC and ST values
 					CBoundaryConditionsGroup *m_bc_group = NULL;
-					CSourceTermGroup *m_st_group = NULL;
+					// CSourceTermGroup *m_st_group = NULL;
 
                     m_bc_group = BCGetGroup(m_pcs->pcs_type_name,m_pcs->pcs_primary_function_name[k]);
-					m_st_group = STGetGroup(m_pcs->pcs_type_name,m_pcs->pcs_primary_function_name[k]);
+					//WW m_st_group = STGetGroup(m_pcs->pcs_type_name,m_pcs->pcs_primary_function_name[k]);
 				
 					// BC printing
 					double BCValue = 0.0;
@@ -530,7 +551,7 @@ void PickedProperties::ListRFINodeSelected(int PCSSwitch)
 						sprintf(tempNum[currentPosition], "Not assigned");
 						++currentPosition;
 					}
-
+/*
 					// ST printing
 					if (st_group_list.size() > 0)
 					{
@@ -551,6 +572,7 @@ void PickedProperties::ListRFINodeSelected(int PCSSwitch)
 						sprintf(tempNum[currentPosition], "No source term used");	
 						++currentPosition;
 					}
+*/
 				}
 			}
 			numOfItems = currentPosition;
@@ -582,7 +604,7 @@ void PickedProperties::ListParticleSelected()
 	int numOfItems = 9;
 
 	// Open the gate to processes 
-	CRFProcess* m_pcs = NULL;
+//	CRFProcess* m_pcs = NULL;
     m_msh = fem_msh_vector[0];
 
     m_SmallList.InsertColumn (0, "Count");
@@ -782,10 +804,32 @@ void PickedProperties::ListRFINodeAll(int PCSSwitch)
 				{
 					// Let's print BC and ST values
 					CBoundaryConditionsGroup *m_bc_group = NULL;
-					CSourceTermGroup *m_st_group = NULL;
+					//CSourceTermGroup *m_st_group = NULL;
 
                     m_bc_group = BCGetGroup(m_pcs->pcs_type_name,m_pcs->pcs_primary_function_name[k]);
-					m_st_group = STGetGroup(m_pcs->pcs_type_name,m_pcs->pcs_primary_function_name[k]);
+					//m_st_group = STGetGroup(m_pcs->pcs_type_name,m_pcs->pcs_primary_function_name[k]);
+
+					//
+					// ST printing
+					if ((int)m_pcs->st_node_value.size() > 0)
+					{
+						double STValue = 0;
+						if( IsThisPointSTIfYesStoryValue(i, m_pcs, STValue) )
+						{
+							sprintf(tempNum[currentPosition], "%e", STValue);
+							++currentPosition;
+						}
+						else
+						{
+							sprintf(tempNum[currentPosition], "Not assigned");
+							++currentPosition;
+						}
+					}
+					else
+					{
+						sprintf(tempNum[currentPosition], "No source term used");	
+						++currentPosition;
+					}
 				
 					// BC printing
 					double BCValue = 0.0;
@@ -799,7 +843,7 @@ void PickedProperties::ListRFINodeAll(int PCSSwitch)
 						sprintf(tempNum[currentPosition], "Not assigned");
 						++currentPosition;
 					}
-
+/*
 					// ST printing
 					if (st_group_list.size() > 0)
 					{
@@ -820,6 +864,7 @@ void PickedProperties::ListRFINodeAll(int PCSSwitch)
 						sprintf(tempNum[currentPosition], "No source term used");	
 						++currentPosition;
 					}
+*/
 				}
 			}
 			numOfItems = currentPosition;
@@ -1549,16 +1594,18 @@ int PickedProperties::IsThisPointBCIfYesStoryValue(int index, CBoundaryCondition
 	return 0;
 }
 
-int PickedProperties::IsThisPointSTIfYesStoryValue(int index, CSourceTermGroup* m_st_group, double* value)
+//WW int PickedProperties::IsThisPointSTIfYesStoryValue(int index, CSourceTermGroup* m_st_group, double* value)
+int PickedProperties::IsThisPointSTIfYesStoryValue(int index, CRFProcess* m_pcs, double& value)
 {
-	for(int p=0; p< (int)m_st_group->group_vector.size(); ++p)	
-		if(index == m_st_group->group_vector[p]->msh_node_number)
-		{
-			*value = m_st_group->group_vector[p]->node_value;
-			return 1; // Yes, found it.
-		}
-
-	return 0;
+   for(int p=0; p< (int)m_pcs->st_node_value.size(); ++p)	
+   {
+     if(index == m_pcs->st_node_value[p]->msh_node_number)
+     {
+         value = m_pcs->st_node_value[p]->node_value;
+         return 1; // Yes, found it.
+     }
+   }
+   return 0;
 }
 
 

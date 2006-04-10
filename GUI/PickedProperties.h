@@ -66,7 +66,8 @@ private:
 	int GetNumberOfNodesInElement(int index);
 
 	int IsThisPointBCIfYesStoryValue(int index, CBoundaryConditionsGroup* m_bc_group, double* value);
-	int IsThisPointSTIfYesStoryValue(int index, CSourceTermGroup* m_st_group, double* value);
+	int IsThisPointSTIfYesStoryValue(int index, CRFProcess* m_pcs, double& value);
+//	int IsThisPointSTIfYesStoryValue(int index, CSourceTermGroup* m_st_group, double* value);
 
 	void ShowAll();
 
