@@ -3140,7 +3140,7 @@ void CFEMesh::FaceNormal()
       if(elem->GetElementType()==1)
       return;
 
-      int no_face_vertex = face_vector[i]->GetVertexNumber();
+//WW      int no_face_vertex = face_vector[i]->GetVertexNumber();
 	  int no_owner_vertex = face_vector[i]->GetOwner()->GetVertexNumber();
       idx0_face = face_vector[i]->GetNodeIndex(0);
       idx1_face = face_vector[i]->GetNodeIndex(1);
@@ -3172,20 +3172,20 @@ Programing:
 void CFEMesh::CreateLineELEFromTri()
 {
   int j,k;
-  long i,e;
-  double v1[3],v2[3],v3[3];
-  double patch_area;
+  long i; //,e;
+//WW  double v1[3],v2[3],v3[3];
+//  double patch_area;
   double x,y,z;
   double x0,y0,z0;
   double x1,y1,z1;
   double dl;
   CNode* m_nod = NULL;
-  CNode* m_nod1 = NULL;
-  CNode* m_nod2 = NULL;
+//WW  CNode* m_nod1 = NULL;
+//WW  CNode* m_nod2 = NULL;
   CNode* m_nod_line = NULL;
   CElem* m_tri_ele = NULL;
   CElem* m_ele = NULL;
-  CElem* m_ele1 = NULL;
+//  CElem* m_ele1 = NULL;
   //----------------------------------------------------------------------
   // 1 - Element normal vector (for 2D elements only)
   SetELENormalVectors();
@@ -3291,7 +3291,7 @@ void CFEMesh::SetELENormalVectors()
   //----------------------------------------------------------------------
   long i;
   double v1[3],v2[3];
-  double patch_area;
+//WW  double patch_area;
   CNode* m_nod = NULL;
   CNode* m_nod1 = NULL;
   CNode* m_nod2 = NULL;
@@ -3408,7 +3408,7 @@ void CFEMesh::SetNetworkIntersectionNodes()
   long i,e;
   int j;
   double v3[3];
-  double* gravity_center;
+//WW  double* gravity_center;
   CNode* m_nod = NULL;
   CElem* m_ele = NULL;
   CElem* m_ele1 = NULL;
