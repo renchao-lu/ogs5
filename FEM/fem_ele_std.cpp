@@ -285,7 +285,7 @@ void  CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bo
 {
   int i;  
 
-
+  CRFProcess *pcs_D = PCSGet("DUAL_RICHARDS");
   char pcsT; 
   pcsT = pcs->pcs_type_name[0];
  if(pcs->pcs_type_name.find("GAS")!=string::npos)
@@ -386,6 +386,9 @@ void  CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bo
          cpl_pcs = PCSGet("HEAT_TRANSPORT"); 
          idx_c0 = cpl_pcs->GetNodeValueIndex("TEMPERATURE1");
          idx_c1 = idx_c0+1;           
+      }
+      if(RD_Flag){
+        idx_pd = pcs_D->GetNodeValueIndex("PRESSURE_D")+1;
       }
       break;
     case 'A': //Gas flow
@@ -801,6 +804,12 @@ inline double CFiniteElementStd::CalCoefMass()
          val -= poro * rhov*S_P/rhow;                  
          val += (1.0-Sw)*poro*rhov/(rhow*rhow*GAS_CONSTANT_V*TG);
       }	  
+     if(RD_Flag)
+     {
+      //val += MediaProp->transfer_coefficient*MediaProp->unsaturated_hydraulic_conductivity  \
+      //      /(pcs->preferential_factor*FluidProp->Density()*gravity_constant);
+      val += Sw*MediaProp->specific_storge;  
+     }
       break;
     case F:	// Fluid Momentum
   		val = 1.0;
@@ -2945,7 +2954,9 @@ Programing:
 void CFiniteElementStd::Assembly()
 {
   int i,j, nn;
+  int idx_tr;
   CRFProcess *m_pcs=NULL;  //MX
+  CRFProcess *pcs_D = PCSGet("DUAL_RICHARDS");
   //----------------------------------------------------------------------
   //OK index = m_dom->elements[e]->global_number;
   index = Index;
@@ -3065,6 +3076,22 @@ void CFiniteElementStd::Assembly()
         CalcRHS_by_ThermalDiffusion(); 
       AssembleParabolicEquation(); //OK
       Assemble_Gravity();
+      if(RD_Flag)
+      {
+        idx_tr = pcs_D->GetNodeValueIndex("TRANSFER")+1;  
+        idx_pd = pcs_D->GetNodeValueIndex("PRESSURE_D")+1;
+      if(pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos){
+      for(i=0;i<nnodes;i++)
+        NodalVal_P[i] = pcs_D->GetNodeValue(nodes[i], idx_pd)- pcs_D->GetNodeValue(nodes[i], idx_tr);   
+        //NodalVal_P[i] = pcs_D->GetNodeValue(nodes[i], idx_pd);   
+       }
+      if(pcs->pcs_type_name.find("DUAL_RICHARDS")!=string::npos){
+      for(i=0;i<nnodes;i++)  
+        NodalVal_P[i] = pcs_D->GetNodeValue(nodes[i], idx_tr)-pcs_D->GetNodeValue(nodes[i], idx_pd);                      
+        //NodalVal_P[i] = pcs_D->GetNodeValue(nodes[i], idx_tr);    
+       }
+         Assemble_Transfer();
+      }
       if(D_Flag)
         Assemble_strainCPL();
       break;
@@ -3316,7 +3343,44 @@ void CFiniteElementStd::AssembleParabolicEquationRHSVector()
   }
   //----------------------------------------------------------------------
 }
+/**************************************************************************
+FEMLib-Method: 
+03/2006 YD Implementation
+**************************************************************************/
+void  CFiniteElementStd::Assemble_Transfer()
+{
 
+  int i;
+  double fkt;
+  int gp, gp_r=0, gp_s=0, gp_t;
+  gp_t = 0;
+  
+  for (gp = 0; gp < nGaussPoints; gp++)
+  {
+      //---------------------------------------------------------
+      //  Get local coordinates and weights 
+ 	  //  Compute Jacobian matrix and its determination
+      //---------------------------------------------------------
+      fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+      // Material
+    fkt *= MediaProp->transfer_coefficient*MediaProp->unsaturated_hydraulic_conductivity  \
+          /(pcs->preferential_factor*FluidProp->Density()*gravity_constant) ;
+    		  
+      // Calculate mass matrix
+      for (i = 0; i < nnodes; i++)
+	  {
+            NodalVal[i] = fkt*NodalVal_P[i];
+      }
+  }
+      for (i=0;i<nnodes;i++)
+      {
+         pcs->eqs->b[NodeShift[problem_dimension_dm] + eqs_number[i]]
+	   	            += NodalVal[i];
+         (*RHS)(i+LocalShift) +=  NodalVal[i];
+       } 
+
+  //RHS->Write();
+}
 }// end namespace
 //////////////////////////////////////////////////////////////////////////
 
