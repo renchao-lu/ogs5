@@ -39,7 +39,7 @@ CElement::CElement(int CoordFlag, const int order)
         :MeshElement(NULL), Order(order),ele_dim(1), nGaussPoints(1),nGauss(1),
          ShapeFunction(NULL), ShapeFunctionHQ(NULL),
          GradShapeFunction(NULL),GradShapeFunctionHQ(NULL),
-         T_Flag(false), F_Flag(false), D_Flag(0)
+         T_Flag(false), F_Flag(false), D_Flag(0), RD_Flag(false)
 {
     int i;
 	//
@@ -93,7 +93,7 @@ CElement::CElement(int CoordFlag, const int order)
      F_Flag = H_Process;
      T_Flag = T_Process;
 	 PT_Flag = 0;	// PCH Initialize to be no RWPT. 
-     
+     RD_Flag = RD_Process;   
 
 }
 
