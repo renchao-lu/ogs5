@@ -1929,7 +1929,6 @@ void CRFProcess::MMPCalcSecondaryVariablesRichards(int timelevel, bool update) /
   }
 }
 
-
 /*************************************************************************
 GeoSys-FEM Function:
 Task: 
@@ -1943,13 +1942,10 @@ void DualCalcSecondaryVariables()
   long i; 
   double saturation, saturation1;
   int idxp,idxS,idxtr,idxp1,idxS1,idxS_total;
-  double transfer,pressure1,pressured, total_saturation;
-  double alph = 0.1;    //ToDo
-  double K = 0.00001;
-  double gravity_constant = 9.81;
+  int idxtr1,idxS_total1; 
+  double total_saturation,pressure1;
+  static double Node_Tra[8];
 
-//  CMediumProperties* m_mmp = NULL;
-//  CElem* elem =NULL;
   CFluidProperties *m_mfp = NULL;
   m_mfp = mfp_vector[0];
   //----------------------------------------------------------------------
@@ -1959,32 +1955,33 @@ void DualCalcSecondaryVariables()
   CRFProcess*m_pcs_mmp = pcs_D;  
 
   CFEMesh* m_msh = m_pcs_mmp->m_msh; 
-//  CFiniteElementStd* fem = m_pcs_mmp->GetAssembler();
   //----------------------------------------------------------------------
   idxp1 = pcs_R->GetNodeValueIndex("PRESSURE1") + timelevel;
   idxS1 = pcs_R->GetNodeValueIndex("SATURATION1") + timelevel;
   //----------------------------------------------------------------------
   idxp  = pcs_D->GetNodeValueIndex("PRESSURE_D") + timelevel;
   idxS  = pcs_D->GetNodeValueIndex("SATURATION_D") + timelevel;
-  idxtr = pcs_D->GetNodeValueIndex("TRANSFER")+ timelevel;
-  idxS_total = pcs_D->GetNodeValueIndex("TOTAL_SATURATION")+ timelevel;
+  idxtr = pcs_D->GetNodeValueIndex("TRANSFER");
+  idxS_total = pcs_D->GetNodeValueIndex("TOTAL_SATURATION");
+  idxtr1 = idxtr + timelevel;
+  idxS_total1 = idxS_total + timelevel;
+
   //----------------------------------------------------------------------
-  //   First order transfer term
+  // Transfer
   for(i=0;i<(long)m_msh->GetNodesNumber(false);i++)
   {
     pressure1 = pcs_R->GetNodeValue(i, idxp1);
-    pressured = pcs_D->GetNodeValue(i, idxp);
-    transfer = alph*K*(pressured-pressure1)/m_mfp->Density()/gravity_constant;   //t=a*K*(Pd-P1)/rho/g
-    pcs_D->SetNodeValue(i,idxtr, transfer);
-  }       
-  //----------------------------------------------------------------------
+    pcs_D->SetNodeValue(i,idxtr,pressure1);  
+    pcs_D->SetNodeValue(i,idxtr1,pressure1);   
+   }
   // Total saturation
   for(i=0;i<(long)m_msh->GetNodesNumber(false);i++)
   {
     saturation1 = pcs_R->GetNodeValue(i, idxS1);
     saturation = pcs_D->GetNodeValue(i, idxS);
     total_saturation = saturation1*(1-m_pcs_mmp->preferential_factor) + saturation*m_pcs_mmp->preferential_factor; //S1*wm+Sd*(1-wm) 
-    pcs_D->SetNodeValue(i,idxS_total,total_saturation);     
+    pcs_D->SetNodeValue(i,idxS_total,total_saturation);  
+    pcs_D->SetNodeValue(i,idxS_total1,total_saturation);   
    }
   
 }
