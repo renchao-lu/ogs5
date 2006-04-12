@@ -93,6 +93,7 @@ CFEMesh::~CFEMesh(void)
   for(i=0; i<(long)face_normal.size(); i++)
      delete face_normal[i];
   face_normal.clear();
+
 #ifdef RANDOM_WALK
   delete PT; // PCH
 #endif
@@ -196,6 +197,7 @@ FEMLib-Method: Construct grid
 Task: Establish topology of a grid
 Programing:
 05/2005 WW Implementation
+02/2006 YD Add 1D line neighbor element set
 **************************************************************************/
 void CFEMesh::ConstructGrid( const bool quadratic)
 {
@@ -270,6 +272,7 @@ void CFEMesh::ConstructGrid( const bool quadratic)
          e_nodes0[i] = nod_vector[node_index_glb0[i]];  
        m0 = thisElem0->GetFacesNumber();
 	   // neighbors
+       if(thisElem0->GetDimension()==2){     //YD
        for(i=0; i<m0; i++) // Faces
        {
           if(Neighbors0[i])
@@ -320,7 +323,33 @@ void CFEMesh::ConstructGrid( const bool quadratic)
           }
        }
        thisElem0->SetNeighbors(Neighbors0);						
-       // 
+      }
+//------------neighbor of 1D line
+      if(thisElem0->GetDimension()==1){    //YD
+       ii = 0;
+       for(i=0; i<m0; i++)
+       {
+          n0 = thisElem0->GetElementFaceNodes(i, faceIndex_loc0);
+          for(k=0;k<n0;k++)
+          {
+           e_size_l = (long)e_nodes0[faceIndex_loc0[k]]->connected_elements.size();  
+             for(ei=0; ei<e_size_l; ei++)
+             {
+                ee = e_nodes0[faceIndex_loc0[k]]->connected_elements[ei];  
+                thisElem = ele_vector[ee]; 
+                if(e_size_l == 2 && thisElem->GetIndex() != thisElem0->GetIndex()){
+                       Neighbors0[i] = thisElem;
+                       Neighbors[ii] = thisElem;
+                      // thisElem->SetNeighbor(ii, thisElem0);   //?? Todo YD
+                       ii++;
+                }
+             }
+          }  
+       }
+       thisElem0->SetNeighbors(Neighbors0);	
+      }
+
+       // --------------------------------
        // Edges
        nedges0 = thisElem0->GetEdgesNumber();
        thisElem0->GetEdges(Edges0);
