@@ -26,9 +26,9 @@
 
 
 /* ROCKFLOW-Version */
-#define ROCKFLOW_VERSION    "4.3.12"
+#define ROCKFLOW_VERSION    "4.3.13"
 #define RF_SHELL_VERSION    "4.3.07"
-#define ROCKFLOW_DATE       "05.04.2006"
+#define ROCKFLOW_DATE       "07.04.2006"
 
 
 /* Definitionen von Makros zur Steuerung der bedingten Compilierung */
