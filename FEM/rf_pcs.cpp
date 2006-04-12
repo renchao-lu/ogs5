@@ -123,6 +123,7 @@ string project_title("New project"); //OK41
 bool T_Process = false;
 bool H_Process = false;
 bool M_Process = false;
+bool RD_Process = false;
 bool MH_Process = false; // MH monolithic scheme
 bool MASS_TRANSPORT_Process = false;
 bool FLUID_MOMENTUM_Process = false;
@@ -1319,6 +1320,8 @@ ios::pos_type CRFProcess::Read(ifstream *pcs_file)
 			RANDOM_WALK_Process = true;
 			pcs_type_name = "RANDOM_WALK";
 		}
+        if(pcs_type_name.find("DUAL_RICHARDS")!=string::npos)
+           RD_Process = true;
       }
 /*
      *pcs_file >> pcs_type_name;
@@ -1406,6 +1409,13 @@ ios::pos_type CRFProcess::Read(ifstream *pcs_file)
     //....................................................................
     if(line_string.find("$GEO_TYPE")!=string::npos) { //OK
       *pcs_file >> geo_type >> geo_type_name >> ws;
+      continue;
+    }
+    //....................................................................
+    if(line_string.find("$PREFERENTIAL_FRACTOR")!=string::npos)  //YD
+    {
+     *pcs_file >>preferential_factor;
+      pcs_file->ignore(MAX_ZEILE,'\n');
       continue;
     }
     //....................................................................
@@ -1616,8 +1626,6 @@ void CRFProcess::Config(void)
   }
   if(pcs_type_name.find("DUAL_RICHARDS")!=string::npos) {
 	ConfigDualUnsaturateFlow();
-  }
-  if(PCSGet("RICHARDS_FLOW")&&PCSGet("DUAL_RICHARDS")){    
 	type = 22;
   }
 }
@@ -3870,34 +3878,10 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
      //   
     eqs->b[bc_eqs_index] += value;
   }
- 
-  //.......................................
-  if(PCSGet("RICHARDS_FLOW")&&PCSGet("DUAL_RICHARDS"))
-  {
-
-    CRFProcess *pcs_R = NULL;
-    for(int n_pcs = 0; n_pcs < (int)pcs_vector.size();n_pcs++){
-      pcs_R = pcs_vector[n_pcs];
-      CRFProcess *pcs_D = PCSGet("DUAL_RICHARDS");
-
-      int idxtr = pcs_D->GetNodeValueIndex("TRANSFER") ;
-      for(int i=0;i<m_msh->GetNodesNumber(false);i++){
-        value = pcs_R->GetNodeValue(i, idxtr);
-       // preferential_factor should be belonged to mmp
-       // preferential_factor is moved from rf_st_new.cpp to rf_num_new.cpp. 
-	   // Such relocation is temporary, please check it again 
-       // 
-        if(pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
-           eqs->b[bc_eqs_index] += value/pcs_R->m_num->preferential_factor;    // wm;
-        if(pcs_type_name.find("DUAL_RICHARDS")!=string::npos)
-           eqs->b[bc_eqs_index] -= value/pcs_D->m_num->preferential_factor;     // (1-wm);
-      }
-      }
+   //.......................................
   }
-  
-  //.......................................
+
   //-----------------------------------------------------------------------
-}
 
 /* // Commented by WW
 void CRFProcess::IncorporateSourceTerms(const double Scaling)
@@ -4045,24 +4029,6 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
         eqs->b[bc_eqs_index] += value;
       }
     }
-  //.......................................
-    if(PCSGet("RICHARDS_FLOW")&&PCSGet("DUAL_RICHARDS"))
-	 {
-           CRFProcess *pcs_R = NULL;
-           for(int n_pcs = 0; n_pcs < (int)pcs_vector.size();n_pcs++){
-               pcs_R = pcs_vector[n_pcs];
-           CRFProcess *pcs_D = PCSGet("DUAL_RICHARDS");
-
-		   int idxtr = pcs_D->GetNodeValueIndex("TRANSFER") ;
-		   for(int i=0;i<m_msh->GetNodesNumber(false);i++){
-		   value = pcs_R->GetNodeValue(i, idxtr);
-           if(pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
-			           eqs->b[bc_eqs_index] += value/m_st_group->preferential_factor;    // wm;
-           if(pcs_type_name.find("DUAL_RICHARDS")!=string::npos)
-			           eqs->b[bc_eqs_index] -= value/m_st_group->preferential_factor;     // (1-wm);
-         }
-	 }
-   }
   //.......................................
   }
   //-----------------------------------------------------------------------
@@ -5947,29 +5913,32 @@ void CRFProcess::CalcSecondaryVariablesRichards(int timelevel, bool update)
   double saturation,saturation_sum = 0.0;
   double GP[3];
   static double Node_Cap[8];
-  int idxp,idxcp,idxS;
+  int idxp,idxcp,idxS;   
   CMediumProperties* m_mmp = NULL;
   CElem* elem =NULL;
   CFiniteElementStd* fem = GetAssembler();
+  CRFProcess *pcs_R = PCSGet("RICHARDS_FLOW");
+
   //----------------------------------------------------------------------
   //WW
-  idxp  = GetNodeValueIndex("PRESSURE1") + timelevel;
-  idxcp = GetNodeValueIndex("PRESSURE_CAP") + timelevel;
-  idxS  = GetNodeValueIndex("SATURATION1") + timelevel;
+  idxp  = pcs_R->GetNodeValueIndex("PRESSURE1") + timelevel;
+  idxcp = pcs_R->GetNodeValueIndex("PRESSURE_CAP") + timelevel;
+  idxS  = pcs_R->GetNodeValueIndex("SATURATION1") + timelevel;
+  //idxf = GetNodeValueIndex("FLUX") + timelevel;
   //WW
   //----------------------------------------------------------------------
   // Capillary pressure
   for(i=0;i<(long)m_msh->GetNodesNumber(false);i++){
      p_cap = -GetNodeValue(i,idxp);
-     if(timelevel==1&&update)  SetNodeValue(i,idxcp-1,GetNodeValue(i,idxcp));
+     if(timelevel==1&&update)  pcs_R->SetNodeValue(i,idxcp-1,GetNodeValue(i,idxcp));
      SetNodeValue(i,idxcp,p_cap);
-	  if(timelevel==1&&update) SetNodeValue(i,idxS-1,GetNodeValue(i,idxS));
+	  if(timelevel==1&&update) pcs_R->SetNodeValue(i,idxS-1,GetNodeValue(i,idxS));
   }
   //----------------------------------------------------------------------
   // Liquid saturation
   //WW
   for (i = 0; i < m_msh->GetNodesNumber(false); i++)
-      SetNodeValue(i,idxS, 0.0);
+      pcs_R->SetNodeValue(i,idxS, 0.0);
   // 
   for (i = 0; i < (long)m_msh->ele_vector.size(); i++)  
   {
@@ -5994,10 +5963,12 @@ void CRFProcess::CalcSecondaryVariablesRichards(int timelevel, bool update)
           fem->ConfigElement(elem);
 		  fem->setUnitCoordinates(GP);
           fem->ComputeShapefct(1); // Linear
+
+          // fem->Cal_Velocity(true);     //YD
 		  for(j=0; j<elem->GetVertexNumber(); j++)
 		  {
              enode = elem->GetNodeIndex(j);
-             Node_Cap[j] =  GetNodeValue(enode,idxcp);
+             Node_Cap[j] =  pcs_R->GetNodeValue(enode,idxcp);
 		  }
 		  p_cap = fem->interpolate(Node_Cap);
           saturation = m_mmp->SaturationCapillaryPressureFunction(p_cap,(int)mfp_vector.size()-1);  //YD
@@ -6005,18 +5976,20 @@ void CRFProcess::CalcSecondaryVariablesRichards(int timelevel, bool update)
           {
 			  enode = elem->GetNodeIndex(j);
               saturation_sum = GetNodeValue(enode, idxS);
-			  SetNodeValue(enode,idxS, saturation_sum+saturation);
+			  pcs_R->SetNodeValue(enode,idxS, saturation_sum+saturation);
           }
       }
   }
   // Average 
   for (i = 0; i <(long)m_msh->GetNodesNumber(false); i++)
   {       	  
-	  saturation_sum = GetNodeValue(i, idxS);
+	  saturation_sum = pcs_R->GetNodeValue(i, idxS);
       p_cap = m_msh->nod_vector[i]->connected_elements.size();
       if(p_cap==0) p_cap =1;
 	  saturation_sum /= (double)p_cap;
-      SetNodeValue(i,idxS, saturation_sum);
+      pcs_R->SetNodeValue(i,idxS, saturation_sum);
+
+ //     cout<<i<<"  "<<saturation_sum<<"  "<<-GetNodeValue(i,idxp)<<endl;   //YD TEST
   }
 }
 
@@ -6027,7 +6000,6 @@ Programming:
 02/2006 YD Implementation
 last modified:
 **************************************************************************/
-//using FiniteElement::CFiniteElementStd;
 void CRFProcess::CalcSecondaryVariablesDualRichards(int timelevel, bool update)
 {
   int j, EleType;
@@ -6038,9 +6010,6 @@ void CRFProcess::CalcSecondaryVariablesDualRichards(int timelevel, bool update)
   double GP[3];
   static double Node_Cap[8];
   int idxp,idxcp,idxS;
-//WW  double alph = 0.1;    //ToDo
-//WW  double K = 0.00001;
-//WW  double gravity_constant = 9.81;
 
   CMediumProperties* m_mmp = NULL;
   CElem* elem =NULL;
@@ -6048,19 +6017,17 @@ void CRFProcess::CalcSecondaryVariablesDualRichards(int timelevel, bool update)
   m_mfp = mfp_vector[0];
   //----------------------------------------------------------------------
   // PCS
-  CRFProcess*m_pcs = NULL;
-  CRFProcess*m_pcs_mmp = NULL;
-  for(j=0;j<(int)pcs_vector.size();j++){
-    m_pcs = pcs_vector[j];
-    if(m_pcs->pcs_type_name.find("DUAL_RICHARDS")!=string::npos)
-      m_pcs_mmp = m_pcs;
-  }
+  CRFProcess *pcs_D = PCSGet("DUAL_RICHARDS");
+  CRFProcess*m_pcs_mmp = pcs_D;  
+
   CFEMesh* m_msh = m_pcs_mmp->m_msh; 
   CFiniteElementStd* fem = m_pcs_mmp->GetAssembler();
   //----------------------------------------------------------------------
-  idxp  = GetNodeValueIndex("PRESSURE_D") + timelevel;
-  idxcp = GetNodeValueIndex("PRESSURE_CAP_D") + timelevel;
-  idxS  = GetNodeValueIndex("SATURATION_D") + timelevel;
+  //----------------------------------------------------------------------
+  idxp  = pcs_D->GetNodeValueIndex("PRESSURE_D") + timelevel;
+  idxcp = pcs_D->GetNodeValueIndex("PRESSURE_CAP_D") + timelevel;
+  idxS  = pcs_D->GetNodeValueIndex("SATURATION_D") + timelevel;
+
   //----------------------------------------------------------------------
   // Capillary pressure
   for(i=0;i<(long)m_msh->GetNodesNumber(false);i++){
@@ -6082,7 +6049,7 @@ void CRFProcess::CalcSecondaryVariablesDualRichards(int timelevel, bool update)
           // Activated Element 
           group = elem->GetPatchIndex();
           m_mmp = mmp_vector[group];    //??
-          m_mmp->m_pcs=m_pcs;
+          m_mmp->m_pcs=pcs_D;
           EleType = elem->GetElementType();
           if(EleType==4) // Traingle
           {
@@ -6112,7 +6079,6 @@ void CRFProcess::CalcSecondaryVariablesDualRichards(int timelevel, bool update)
           }
       }
   }
-
   // Average 
   for (i = 0; i <(long)m_msh->GetNodesNumber(false); i++)
   {       	  

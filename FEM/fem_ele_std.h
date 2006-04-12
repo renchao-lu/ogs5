@@ -91,6 +91,7 @@ class CFiniteElementStd:public CElement
      long index;
 	 // Column index in the node value table
      int idx0, idx1, idxS, idx3; 
+     int idx_pd;   //YD
      int phase; 
      int comp; // Component
 	   int LocalShift; // For RHS
@@ -125,6 +126,7 @@ class CFiniteElementStd:public CElement
      double NodalValC[20]; 
      double NodalValC1[20]; 
      double NodalVal_Sat[20]; 
+     double NodalVal_P[20]; 
   private: //OK
      // Gauss point value. Buffers.
      double TG, PG, Sw;    
@@ -174,6 +176,7 @@ class CFiniteElementStd:public CElement
      // Assembly of RHS by Darcy's gravity term
      void Assemble_Gravity();
 	 void AssembleRHS(int dimension); // PCH
+     void Assemble_Transfer();
      bool check_matrices; //OK4104
    public:
      void AssembleParabolicEquationRHSVector(); //OK

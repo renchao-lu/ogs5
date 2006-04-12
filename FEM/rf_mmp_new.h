@@ -162,6 +162,10 @@ class CMediumProperties
   double friction_model;
   double channel_width;
   double argument; //OK
+  //Dual Richards transfer coefficient  YD
+  double transfer_coefficient;
+  double unsaturated_hydraulic_conductivity;
+  double specific_storge;
 };
 
  class CMediumPropertiesGroup  //YD

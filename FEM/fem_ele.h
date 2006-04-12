@@ -136,6 +136,7 @@ class CElement
      bool F_Flag; // Fluid
      int D_Flag; // Deformation
 	 int PT_Flag;	// Particle Tracking Random Walk 
+     bool RD_Flag; // Dual Richards
   
 	 // Buffer
      int Index;

@@ -477,6 +477,7 @@ extern int GetRFProcessSimulation(void);
 extern bool T_Process;
 extern bool H_Process;
 extern bool M_Process;
+extern bool RD_Process;
 extern bool MH_Process; // MH monolithic scheme
 extern bool MASS_TRANSPORT_Process;
 extern bool FLUID_MOMENTUM_Process;

@@ -115,7 +115,6 @@ class CSourceTermGroup
 	 //WW Changed from the above
 //    double GetAnalyticalSolution(CSourceTerm *m_st,long node_number, string process);//CMCD
     // TRANSFER OF DUAL RICHARDS
-    double preferential_factor;    //YD
   private:
     void SetPLY(CSourceTerm*); //OK
 };

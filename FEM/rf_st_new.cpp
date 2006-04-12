@@ -1150,9 +1150,6 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
     }
   }
 //......................................................
-    if(PCSGet("RICHARDS_FLOW")&&PCSGet("DUAL_RICHARDS"))  
-       preferential_factor = m_pcs->preferential_factor;
-//......................................................
 }
 
 

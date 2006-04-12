@@ -2341,9 +2341,9 @@ double CFluidProperties::CalcEnthalpy(double temperature)
   int npoint = 100;  //Gauss point
   double DT = (T1_integrate-T0_integrate)/npoint;
   for(int i=0;i<npoint;i++){
-    temperature_buffer = T0_integrate+i*DT;
+    temperature_buffer = T0_integrate+i*DT-273.15;
     heat_capacity_all = Fem_Ele_Std->FluidProp->SpecificHeatCapacity();
-    temperature_buffer = T0_integrate+(i+1)*DT;
+    temperature_buffer = T0_integrate+(i+1)*DT-273.15;
     heat_capacity_all += Fem_Ele_Std->FluidProp->SpecificHeatCapacity();
 	val += 0.5*DT*heat_capacity_all;
   }
@@ -2354,9 +2354,9 @@ double CFluidProperties::CalcEnthalpy(double temperature)
     T1_integrate = temperature+273.15;
 	DT = (T1_integrate-T0_integrate)/npoint;
 	for(int i=0;i<npoint;i++){
-    temperature_buffer = T0_integrate+i*DT;
+    temperature_buffer = T0_integrate+i*DT-273.15;
     heat_capacity_all = Fem_Ele_Std->FluidProp->SpecificHeatCapacity();
-    temperature_buffer = T0_integrate+(i+1)*DT;
+    temperature_buffer = T0_integrate+(i+1)*DT-273.15;
     heat_capacity_all += Fem_Ele_Std->FluidProp->SpecificHeatCapacity();   
 	val += 0.5*DT*heat_capacity_all;
 	}

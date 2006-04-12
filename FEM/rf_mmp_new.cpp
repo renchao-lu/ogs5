@@ -857,10 +857,26 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
           break;
 		case 4: // van Genuchten
 			 in >> capillary_pressure_model_values[0];
+          break;
         default:
           cout << "Error in MMPRead: no valid permeability saturation model" << endl;
           break;
       }
+      in.clear();
+      continue;
+    }
+    //....................................................................
+    if(line_string.find("$TRANSFER_COEFFICIENT")!=string::npos) { //Dual Richards
+      in.str(GetLineFromFile1(mmp_file));
+      in >> transfer_coefficient;      //(-)
+      in >> unsaturated_hydraulic_conductivity;      //(L/T)
+      in.clear();
+      continue;
+    }
+    //....................................................................
+    if(line_string.find("$SPECIFIC_STORGE")!=string::npos) { //Dual Richards
+      in.str(GetLineFromFile1(mmp_file));
+      in >> specific_storge;      //(Pa-1)
       in.clear();
       continue;
     }
@@ -1583,7 +1599,7 @@ double CMediumProperties::PermeabilitySaturationFunction(const double Saturation
     cout << "CMediumProperties::PermeabilitySaturationFunction: no PCS data" << endl;
     return 1.0;
   }
-  if(!(m_pcs->pcs_type_name.compare("RICHARDS_FLOW")==0)&&no_fluid_phases!=2)
+  if(!(m_pcs->pcs_type_name.find("RICHARDS")!=string::npos)&&no_fluid_phases!=2)
      return 1.0;
   double saturation, saturation_eff;
   int gueltig;

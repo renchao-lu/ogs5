@@ -63,8 +63,6 @@ class CNumerics
     int lag_use_matrix;
     int lag_vel_method;
     //
-    // Dual 
-    double  preferential_factor; // This is a good place. WW
     // Dynamics
     bool CheckDynamic(); 
     double GetDynamicDamping_beta1 () const {return DynamicDamping[0];}
