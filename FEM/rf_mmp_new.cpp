@@ -874,9 +874,9 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
       continue;
     }
     //....................................................................
-    if(line_string.find("$SPECIFIC_STORGE")!=string::npos) { //Dual Richards
+    if(line_string.find("$SPECIFIC_STORAGE")!=string::npos) { //Dual Richards
       in.str(GetLineFromFile1(mmp_file));
-      in >> specific_storge;      //(Pa-1)
+      in >> specific_storage;      //(Pa-1)
       in.clear();
       continue;
     }
