@@ -165,7 +165,7 @@ class CMediumProperties
   //Dual Richards transfer coefficient  YD
   double transfer_coefficient;
   double unsaturated_hydraulic_conductivity;
-  double specific_storge;
+  double specific_storage;
 };
 
  class CMediumPropertiesGroup  //YD
