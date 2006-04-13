@@ -104,10 +104,12 @@ GeoLib-Method: PointDis
 Task:two points distance calculation
 Programing:
 11/2003 CC Implementation
+04/2006 CC z = 0
 **************************************************************************/
 double CGLPoint::PointDis(CGLPoint *m_p2)
 {
-	return sqrt((x-m_p2->x)*(x-m_p2->x)+(y-m_p2->y)*(y-m_p2->y)+(z-m_p2->z)*(z-m_p2->z));
+	//return sqrt((x-m_p2->x)*(x-m_p2->x)+(y-m_p2->y)*(y-m_p2->y)+(z-m_p2->z)*(z-m_p2->z));
+    return sqrt((x-m_p2->x)*(x-m_p2->x)+(y-m_p2->y)*(y-m_p2->y));
 }
 /**************************************************************************
 GeoLib-Method: Get
