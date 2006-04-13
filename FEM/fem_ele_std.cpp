@@ -808,7 +808,7 @@ inline double CFiniteElementStd::CalCoefMass()
      {
       //val += MediaProp->transfer_coefficient*MediaProp->unsaturated_hydraulic_conductivity  \
       //      /(pcs->preferential_factor*FluidProp->Density()*gravity_constant);
-      val += Sw*MediaProp->specific_storge;  
+      val += Sw*MediaProp->specific_storage;  
      }
       break;
     case F:	// Fluid Momentum
