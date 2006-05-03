@@ -37,6 +37,7 @@ class CTimeDiscretization
     string time_unit;  //WW
 	double iter_times;  //YD
 	double multiply_coef; //YD
+    double max_time_step;  //YD
 	bool Write_tim_discrete;  //YD
 	fstream *tim_discrete;  //YD
   public:

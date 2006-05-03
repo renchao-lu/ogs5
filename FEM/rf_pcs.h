@@ -169,6 +169,9 @@ class CRFProcess {
 	// 8-MSP
 	//....................................................................
 	// 9-MMP
+	int GetContinnumType() {return continuum;}
+   // const int number_continuum=1;
+	vector<double> continuum_vector;
 	//....................................................................
 	// 10-MCP
 	//....................................................................
@@ -270,8 +273,6 @@ class CRFProcess {
     char *pcs_sol_name;
     string cpl_type_name; 
     CNumerics* m_num;
-    // factor
-    double preferential_factor;
     //
     bool selected; //OK
     // MSH
@@ -310,7 +311,6 @@ class CRFProcess {
     void ConfigUnsaturatedFlow(); //OK4104
 	void ConfigFluidMomentum();
     void ConfigRandomWalk();
-    void ConfigDualUnsaturateFlow(); //YD
     // Configuration 1 - NOD
     void ConfigNODValues1(void);
     void ConfigNODValues2(void);
@@ -384,10 +384,12 @@ class CRFProcess {
     void CalcSecondaryVariables(int);
     void MMPCalcSecondaryVariablesRichards(int timelevel, bool update);
     void CalcSecondaryVariablesRichards(int timelevel, bool update); //OK
-    void CalcSecondaryVariablesDualRichards(int timelevel, bool update);
     bool non_linear; //OK/CMCD
     void SetNODFlux(); //OK
     void AssembleParabolicEquationRHSVector(); //OK
+  private:
+      int continuum;
+	  bool continuum_ic;
 }; 
 
 //========================================================================

@@ -50,6 +50,8 @@ class CFiniteElementStd:public CElement
      void SetMaterial(const int phase=0);
      // Set memory for local matrices
      void SetMemory();
+	 // Set variable  YD
+	 void SetVariable();
 
      // Set coupling information
      void ConfigureCoupling(CRFProcess* pcs, const int *Shift, bool dyn=false);
@@ -91,7 +93,7 @@ class CFiniteElementStd:public CElement
      long index;
 	 // Column index in the node value table
      int idx0, idx1, idxS, idx3; 
-     int idx_pd;   //YD
+     int idxp0,idxp1;   //YD
      int phase; 
      int comp; // Component
 	   int LocalShift; // For RHS

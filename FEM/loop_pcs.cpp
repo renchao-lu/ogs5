@@ -419,15 +419,6 @@ int LOPTimeLoop_PCS(double*dt_sum)
 		fm_pcs->Execute();
     }
       //--------------------------------------------------------------------
-	  m_pcs = PCSGet("DUAL_RICHARDS"); //YD
-      if(m_pcs&&m_pcs->selected){
-        pcs_flow_error = m_pcs->ExecuteNonLinear();
-        PCSCalcSecondaryVariables(); // PCS member function
-        if(!m_pcs->m_msh) //OK
-          VELCalcAll(m_pcs);
-		else
-          m_pcs->CalIntegrationPointValue(); 
-      }
 
 		// PCH The velocity process ends here.
 #ifdef _FEMPCHDEBUG_
@@ -984,9 +975,6 @@ void PCSCalcSecondaryVariables(void){
       break;
     case 12: /* Multi-phase flow process */
       MMPCalcSecondaryVariables();
-      break;
-	case 22: /*Dual porosity Richards model */
-      DualCalcSecondaryVariables();
       break;
 	default:
 		//DisplayMsgLn(" Error: Unknown PCS type in PCSCalcSecondaryVariables");

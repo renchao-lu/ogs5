@@ -41,6 +41,7 @@ CTimeDiscretization::CTimeDiscretization(void)
   time_end = 1.0;
   time_type_name = "CONSTANT"; //OK
   time_unit = "SECOND"; 
+  max_time_step = 1.e10;   //YD 
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -211,6 +212,12 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
           }
           if(line_string.find("$")!=string::npos){
             new_subkeyword = true;
+            break;
+          }
+          if(line_string.find("MAX_TIME_STEP")!=string::npos){
+          *tim_file >> line_string;
+          max_time_step = strtod(line_string.data(),NULL);
+          line.clear();
             break;
           }
           line.str(line_string);
@@ -491,58 +498,20 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
 			  buffer *= 0.5*elem->GetVolume()*elem->GetVolume();
 			  buffer *=m_mmp->porosity_model_values[0]*mfp_vector[0]->Viscosity()/m_mmp->permeability_tensor[0];
               buffer /=m_pcs->time_unit_factor;
-			  time_step_length = MMin(time_step_length,buffer);  
+			  time_step_length = MMin(time_step_length, buffer);  
 			  }
 			  if (time_step_length < MKleinsteZahl){
 				  cout<<"Waning : Time Control Step Wrong, dt = 0.0 "<<endl;
+                  time_step_length = 1.e-6;
 			  }
 			 cout<<"Neumann Time Step: "<<time_step_length<<endl;
-             time_step_length_neumann = 1.e10;   
+             time_step_length_neumann = 1.e10; 
+             time_step_length = MMin(time_step_length, max_time_step);
 			if(Write_tim_discrete)
 			*tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
 
       break;
 //-----------------------------------------------------
-      case 'D': // Dual Richards
-      idxS  = m_pcs->GetNodeValueIndex("SATURATION_D");
-      no_time_steps = int(1e10);
-	  time_step_length = 1.e10;
-	  for(int m=0;m< mmp_vector_size;m++) m_mmp = mmp_vector[m];
-	  for (i=0;i< (long)m_pcs->m_msh->ele_vector.size();i++){  
-        elem = m_pcs->m_msh->ele_vector[i];
-        if (elem->GetMark())     // Element selected
-           {
-            // Activated Element 
-            group = elem->GetPatchIndex();
-            m_mmp = mmp_vector[group];
-            m_mmp->m_pcs=m_pcs;
-            EleType = elem->GetElementType();
-            if(EleType==4) // Traingle
-              {
-                 GP[0] = GP[1] = 0.1/0.3; 
-                 GP[2] = 0.0;
-              }
-              else if(EleType==5) 
-		         GP[0] = GP[1] = GP[2] = 0.25;
-              else
-		         GP[0] = GP[1] = GP[2] = 0.0; 
-            }
-		   for(j=0; j<elem->GetVertexNumber(); j++)
-              Node_Sat[j] = m_pcs->GetNodeValue(elem->GetNodeIndex(j),idxS);
-			  buffer = m_mmp->SaturationPressureDependency(fem->interpolate(Node_Sat),m_pcs->m_num->ls_theta);
-			  buffer *= 0.5*elem->GetVolume()*elem->GetVolume();
-			  buffer *=m_mmp->porosity_model_values[0]*mfp_vector[0]->Viscosity()/m_mmp->permeability_tensor[0];
-              buffer /=m_pcs->time_unit_factor;
-			  time_step_length = MMin(time_step_length,buffer);  
-			  }
-			  if (time_step_length < MKleinsteZahl){
-				  cout<<"Waning : Time Control Step Wrong, dt = 0.0 "<<endl;
-			  }
-			 cout<<"Neumann Time Step: "<<time_step_length<<endl;
-             time_step_length_neumann = 1.e10;   
-			if(Write_tim_discrete)
-			*tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
-      break;
  }
 }
   return time_step_length;
@@ -598,6 +567,7 @@ double CTimeDiscretization::SelfAdaptiveTimeControl(void)
   break;
  }
 }
+  time_step_length = MMin(time_step_length,max_time_step);
   cout<<"Self_Adaptive Time Step: "<<time_step_length<<endl;
   if(Write_tim_discrete)
      *tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;

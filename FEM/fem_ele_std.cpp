@@ -70,8 +70,6 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
     pcsT = pcs->pcs_type_name[0];
     if(pcs->pcs_type_name.find("GAS")!=string::npos)
        pcsT = 'A';
-    if(pcs->pcs_type_name.find("DUAL_RICHARDS")!=string::npos)
-       pcsT = 'B';
     switch(pcsT){
       default:
         PcsType = L;
@@ -137,20 +135,11 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
         break;
       case 'R': //OK4104 Richards flow
         GravityMatrix = new  SymMatrix(20);
-        idx0 = pcs->GetNodeValueIndex("PRESSURE1");
-        idx1 = idx0+1;
-        idxS = pcs->GetNodeValueIndex("SATURATION1")+1;
         PcsType = R;
         break;
       case 'A': // Air (gas) flow
         PcsType = A;
         break;
-      case 'B': //YD Dual Richards flow
-        GravityMatrix = new  SymMatrix(20);
-        idx0 = pcs->GetNodeValueIndex("PRESSURE_D");
-        idx1 = idx0+1;
-        idxS = pcs->GetNodeValueIndex("SATURATION_D")+1;
-        PcsType = R;
 	  case 'F':	// Fluid Momentum Process
 		PcsType = R;	// R should include L if the eqn of R is written right.
         break;
@@ -271,6 +260,25 @@ void CFiniteElementStd::SetMemory()
     AuxMatrix1->LimitSize(nnodes, nnodes);
 }
 
+/*************************************************************************
+FEMLib-Function: 
+Task: Set variable
+Programming: 
+04/2006 YD Implementation
+last modified:
+**************************************************************************/
+void CFiniteElementStd::SetVariable()
+{
+  int n_c;
+  idx0 = pcs->GetNodeValueIndex(pcs->pcs_primary_function_name[pcs->GetContinnumType()]);
+  idx1 = idx0+1;
+  n_c = (int)pcs->continuum_vector.size(); 
+  idxS = pcs->GetNodeValueIndex(pcs->pcs_secondary_function_name[pcs->GetContinnumType()*n_c])+1;
+  if((int)pcs->continuum_vector.size()== 2){
+    idxp0 = pcs->GetNodeValueIndex(pcs->pcs_primary_function_name[1-pcs->GetContinnumType()]);  
+    idxp1 = idxp0+1;      
+  }
+}
 
 /**************************************************************************
    GeoSys - Function: ConfigureCoupling
@@ -285,7 +293,6 @@ void  CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bo
 {
   int i;  
 
-  CRFProcess *pcs_D = PCSGet("DUAL_RICHARDS");
   char pcsT; 
   pcsT = pcs->pcs_type_name[0];
  if(pcs->pcs_type_name.find("GAS")!=string::npos)
@@ -387,9 +394,6 @@ void  CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bo
          idx_c0 = cpl_pcs->GetNodeValueIndex("TEMPERATURE1");
          idx_c1 = idx_c0+1;           
       }
-      if(RD_Flag){
-        idx_pd = pcs_D->GetNodeValueIndex("PRESSURE_D")+1;
-      }
       break;
     case 'A': //Gas flow
       break;
@@ -418,8 +422,14 @@ void CFiniteElementStd::SetMaterial(int phase)
   }
   //----------------------------------------------------------------------
   // MMP
-  long group;
-  group = MeshElement->GetPatchIndex();
+  long group;      //multi material & dual process  //YD
+  if((int)pcs->continuum_vector.size() == 1) 
+	group = MeshElement->GetPatchIndex();
+  else{
+	long multi_mmp = (long)mmp_vector.size()/(long)pcs->continuum_vector.size();
+	group = MeshElement->GetPatchIndex()+multi_mmp*pcs->GetContinnumType();   
+  }
+  //group = MeshElement->GetPatchIndex();
   MediaProp = mmp_vector[group];
   MediaProp->m_pcs = pcs;
   MediaProp->Fem_Ele_Std = this;
@@ -2954,9 +2964,7 @@ Programing:
 void CFiniteElementStd::Assembly()
 {
   int i,j, nn;
-  int idx_tr;
   CRFProcess *m_pcs=NULL;  //MX
-  CRFProcess *pcs_D = PCSGet("DUAL_RICHARDS");
   //----------------------------------------------------------------------
   //OK index = m_dom->elements[e]->global_number;
   index = Index;
@@ -2981,6 +2989,10 @@ void CFiniteElementStd::Assembly()
   //----------------------------------------------------------------------
   // Set material
   SetMaterial();
+  //----------------------------------------------------------------------
+  // Set variable
+  if(pcs->type==22||pcs->type==14)
+    SetVariable();
   //----------------------------------------------------------------------
   if((D_Flag==41&&pcs_deformation>100)||dynamic) // ?2WW
     dm_pcs = (process::CRFProcessDeformation*)pcs;
@@ -3078,19 +3090,9 @@ void CFiniteElementStd::Assembly()
       Assemble_Gravity();
       if(RD_Flag)
       {
-        idx_tr = pcs_D->GetNodeValueIndex("TRANSFER")+1;  
-        idx_pd = pcs_D->GetNodeValueIndex("PRESSURE_D")+1;
-      if(pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos){
-      for(i=0;i<nnodes;i++)
-        NodalVal_P[i] = pcs_D->GetNodeValue(nodes[i], idx_pd)- pcs_D->GetNodeValue(nodes[i], idx_tr);   
-        //NodalVal_P[i] = pcs_D->GetNodeValue(nodes[i], idx_pd);   
-       }
-      if(pcs->pcs_type_name.find("DUAL_RICHARDS")!=string::npos){
-      for(i=0;i<nnodes;i++)  
-        NodalVal_P[i] = pcs_D->GetNodeValue(nodes[i], idx_tr)-pcs_D->GetNodeValue(nodes[i], idx_pd);                      
-        //NodalVal_P[i] = pcs_D->GetNodeValue(nodes[i], idx_tr);    
-       }
-         Assemble_Transfer();
+        for(i=0;i<nnodes;i++)
+        NodalVal_P[i] = pcs->GetNodeValue(nodes[i], idxp1)-pcs->GetNodeValue(nodes[i], idx1);   
+        Assemble_Transfer();
       }
       if(D_Flag)
         Assemble_strainCPL();
@@ -3364,7 +3366,7 @@ void  CFiniteElementStd::Assemble_Transfer()
       fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
       // Material
     fkt *= MediaProp->transfer_coefficient*MediaProp->unsaturated_hydraulic_conductivity  \
-          /(pcs->preferential_factor*FluidProp->Density()*gravity_constant) ;
+		/(pcs->continuum_vector[pcs->GetContinnumType()]*FluidProp->Density()*gravity_constant) ;
     		  
       // Calculate mass matrix
       for (i = 0; i < nnodes; i++)

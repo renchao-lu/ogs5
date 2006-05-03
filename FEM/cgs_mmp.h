@@ -43,6 +43,5 @@ extern void MMPIncorporateSourceBoundaryConditions
 /* Data access to nodal data */
 extern IntFuncII MMPGetPhasePressureNodeIndex;
 extern void MMPSetICRichards(int); //OK4104
-extern void DualCalcSecondaryVariables();
 
 #endif
