@@ -260,6 +260,7 @@ CRFProcess::CRFProcess(void)
   pcs_nval_data = NULL;
   pcs_eval_data = NULL;
   non_linear = false; //OK/CMCD
+  continuum = 0;
 }
 
 /**************************************************************************
