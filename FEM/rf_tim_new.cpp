@@ -55,6 +55,9 @@ CTimeDiscretization::~CTimeDiscretization(void)
   {
       tim_discrete->close();
       if(tim_discrete) delete tim_discrete;
+      time_step_vector.clear();
+      time_adapt_tim_vector.clear();
+      time_adapt_coe_vector.clear();
   }
 }
 
