@@ -16,6 +16,7 @@ Programing:
 #include "rf_bc_new.h"
 #include "rf_pcs.h"
 #include "rf_tim_new.h"
+#include "rf_st_new.h"//CMCD 02_06
 // C++ STL
 #include <fstream>
 
@@ -62,21 +63,12 @@ typedef struct {  /* element data info */
   int index;
 } PCS_EVAL_DATA;
 
-typedef struct {
-  vector<double>value_reference; 
-  double value_store[PCS_NUMBER_MAX*2][51] ;//First ref no processes(two fields per process..time, value), second ref no values
-} NODE_HISTORY;
 //MB moved inside the Process object
 //extern vector<double*>nod_val_vector; //OK
 //extern vector<string>nod_val_name_vector; //OK
 //extern void pcs->SetNodeValue(long,int,double); //OK
 //extern double pcs->GetNodeValue(long,int); //OK
 //extern int pcs->GetNodeValueIndex(string); //OK
-
-extern vector<NODE_HISTORY>node_history_vector;//CMCD
-extern void SetNodePastValue ( long n, int pos, int idx, int max_size, double value);//CMCD
-extern double GetNodePastValue(long,int,int);//CMCD
-extern double GetNodePastValueReference ( long n, int idx );//CMCD
 
 // Element values for all process
 //Moved inside Process object

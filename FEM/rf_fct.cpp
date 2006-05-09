@@ -110,6 +110,13 @@ ios::pos_type CFunction::Read(ifstream *fct_file)
       }
     }
     //....................................................................
+    // DIS_TYPE //CMCD
+   if(line_string.find("$DIS_TYPE")!=string::npos) { //subkeyword found
+	  line_stream.str(GetLineFromFile1(fct_file));
+      line_stream >> dis_type_name;//TRANSIENT
+      line_stream.clear();
+    }
+    //....................................................................
     //VARIABLES
     if(line_string.find("$VARIABLES")!=string::npos) { //subkeyword found
 	  line_stream.str(GetLineFromFile1(fct_file));
@@ -470,17 +477,20 @@ void FCTReadTIMData(string file_name_base)
 FEMLib-Method:
 Task: read functionn
 Programing:
+
 01/2005 OK Implementation
+04/2006 CMCD Transient function
 last modification:
 **************************************************************************/
 double CFunction::GetValue(double point,bool*valid)
 {
-  static long anz;
+  long anz;
   anz = (long)variable_data_vector.size();
   if(anz==0)
     return 1.0;
   *valid = true;
   register long i;
+  long j;
   int method = 0;
   double value = 1.0;
   //----------------------------------------------------------------------
@@ -494,6 +504,8 @@ double CFunction::GetValue(double point,bool*valid)
     *valid = false;
     return variable_data_vector[anz-1][1];
   }
+  //Check what type of function, continuous or transient
+  if (dis_type_name != "TRANSIENT"){ 
   //----------------------------------------------------------------------
   // Suchen der Stuetzstelle. Vorraussetzung: Zeitpunkte aufsteigend geordnet
   i=1l;
@@ -505,6 +517,30 @@ double CFunction::GetValue(double point,bool*valid)
               + (variable_data_vector[i][1] - variable_data_vector[i-1][1]) \
               / (variable_data_vector[i][0] - variable_data_vector[i-1][0]) \
               * (point - variable_data_vector[i-1][0]);
+    }
+  }
+  }
+  if (dis_type_name == "TRANSIENT"){
+    long index = 0;
+    long pp = 0;
+    long np = 0;
+    for (j=0; j <anz; j+=2){
+      double temp1 = variable_data_vector[j][0];
+      double temp2 = variable_data_vector[j][1];
+      if(point>temp1)index++;
+    }
+    if (index%2==1){
+          pp = (index-1)*2;
+          np = index * 2;
+          value = variable_data_vector[pp][1] \
+              + (variable_data_vector[np][1] - variable_data_vector[pp][1]) \
+              / (variable_data_vector[np][0] - variable_data_vector[pp][0]) \
+              * (point - variable_data_vector[pp][0]);
+          *valid=true;
+    }
+    if (index%2==0){
+      *valid = false;
+      return -1.0;
     }
   }
   return value;

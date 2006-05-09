@@ -670,7 +670,7 @@ CCToDo Surface destructor
 void GEORemoveAllSurfaces()
 {  
   Surface * m_sfc = NULL;
-  for (int i = 0; i < surface_vector.size(); i++){
+  for (int i = 0; i < (int) surface_vector.size(); i++){
      m_sfc = surface_vector[0];
      delete m_sfc;
   }

@@ -306,10 +306,10 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 
 	// Checking the node is a crossroad starts here
 	// Loop over all the nodes
-	for(int i=0; i<m_msh->nod_vector.size(); ++i)
+	for(int i=0; i<(int) m_msh->nod_vector.size(); ++i)
 	{
 		CNode* thisNode = m_msh->nod_vector[i];
-		int NumOfNeighborElements = thisNode->connected_elements.size();
+		int NumOfNeighborElements = (int)thisNode->connected_elements.size();
 			
 		// Let's get the norm of the first connected element plane.
 		double norm[3];
@@ -362,7 +362,7 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 		if(thisNode->crossroad == 1)
 		{
 			// Let's get rid of duplicates of the elements on the same plane
-			int numOfPlanesAtCrossroad = thisNode->connected_planes.size();
+			int numOfPlanesAtCrossroad = (int)thisNode->connected_planes.size();
 			for(int j=0; j<numOfPlanesAtCrossroad; ++j)
 			{
 				double normOther[3];
@@ -400,7 +400,7 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 						
 						// Erase the element of the vector and adjust the number of the planes at crossroad
 						thisNode->connected_planes.erase(thisNode->connected_planes.begin() + numOfPlanesAtCrossroad -1);
-						numOfPlanesAtCrossroad = thisNode->connected_planes.size();
+						numOfPlanesAtCrossroad = (int)thisNode->connected_planes.size();
 						--l;	// Very important. Huh.
 					}
 				} 	
@@ -436,7 +436,7 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 			// Mount cross
 			CrossRoad* thisCross;
 			thisCross = new CrossRoad();
-			thisCross->numOfThePlanes = thisNode->connected_planes.size();
+			thisCross->numOfThePlanes = (int) thisNode->connected_planes.size();
 			thisCross->CreatePlaneSet(thisCross->numOfThePlanes);
 			// Loop over the number of connected planes
 			for(int j=0; j< thisCross->numOfThePlanes; ++j)
@@ -514,7 +514,7 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 
 	// Checking the edge is a joint starts here
 	// Loop over all the edges
-	for(int i=0; i<m_msh->edge_vector.size(); ++i)
+	for(int i=0; i<(int) m_msh->edge_vector.size(); ++i)
 	{
 		// Mount the nodes of the edge
 		vec<CNode*>theNodesOfThisEdge(3);
@@ -536,8 +536,8 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 			m_msh->edge_vector[i]->SetJoint(1);
 
 			// Constructing the connected elements of an edge starts here
-			int numOfCEfromNode0 = theNodesOfThisEdge[0]->connected_elements.size();
-			int numOfCEfromNode1 = theNodesOfThisEdge[1]->connected_elements.size();
+			int numOfCEfromNode0 = (int)theNodesOfThisEdge[0]->connected_elements.size();
+			int numOfCEfromNode1 = (int)theNodesOfThisEdge[1]->connected_elements.size();
 		
 			for(int j=0; j<numOfCEfromNode0; ++j)
 				for(int k=0; k<numOfCEfromNode1; ++k)
@@ -555,7 +555,7 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 			double* CenterOfEle = NULL;
 			CrossRoad* thisJoint;
 			thisJoint = new CrossRoad();
-			thisJoint->numOfThePlanes = m_msh->edge_vector[i]->connected_elements.size();
+			thisJoint->numOfThePlanes = (int)m_msh->edge_vector[i]->connected_elements.size();
 			thisJoint->CreatePlaneSet(thisJoint->numOfThePlanes);
 
 			// Loop over the number of connected planes
@@ -633,7 +633,7 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 
 	// Compute the angles of the element for rotation.
 	// This process can be embedded into CElem class when in need.
-	for(int i=0; i< m_msh->ele_vector.size(); ++i)
+	for(int i=0; i< (int)m_msh->ele_vector.size(); ++i)
 		m_msh->PT->SolveAnglesOfTheElment(m_msh->ele_vector[i]);
 }
 

@@ -429,6 +429,7 @@ double CElement::computeJacobian(const int order)
           Jacobian[0] = 0.5*dx;  //L/2.; // L/2
           invJacobian[0] = 2.0/dx;  //2./L; // 2/L
           DetJac = Jacobian[0];
+          DetJac*=MeshElement->GetFluxArea();//CMCD
 		  if(axisymmetry)
           {
              CalculateRadius();
@@ -458,6 +459,7 @@ double CElement::computeJacobian(const int order)
           for(i=0; i<ele_dim*ele_dim; i++)
              invJacobian[i] /= DetJac;
           //
+      DetJac*=MeshElement->GetFluxArea();//CMCD
 		  if(axisymmetry)
           {
              

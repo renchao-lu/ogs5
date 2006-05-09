@@ -504,13 +504,16 @@ void OUTData(double time_current, const int time_step_number)
       cout << "Warning in OUTData - no PCS data" << endl;
       continue;
     }
-    if(!m_pcs->selected)
-      continue;
-    //--------------------------------------------------------------------
+   
+    //if(!m_pcs->selected) CMCD
+      //continue;CMCD
+    
+   //--------------------------------------------------------------------
     m_out->time = time_current;
     no_times = (int)m_out->time_vector.size();
     //----------------------------------------------------------------------
-    // with Chris to do
+    
+   // with Chris to do
     /*if (m_out->nSteps == -1) 
       m_out->nSteps = no_times;//CMCD*/
 
@@ -1952,10 +1955,21 @@ COutput* OUTGet(string out_name)
 /**************************************************************************
 FEMLib-Method: 
 12/2005 OK Implementation
+04/2006 CMCD no mesh option & flux weighting
 last modification:
 **************************************************************************/
 void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number)
 {
+  bool no_pcs = false;
+  double dtemp;
+  vector<long>sfc_nodes_vector;
+  double node_flux = 0.0;
+  int idx = -1;
+  double t_flux = 0.0;
+  double node_conc = 0.0;
+  CRFProcess* m_pcs_gw = NULL;
+  m_pcs_gw = PCSGet("GROUNDWATER_FLOW");
+  if (!m_pcs_gw)PCSGet("LIQUID_FLOW"); 
   //--------------------------------------------------------------------
   // Tests
   Surface* m_sfc = NULL;
@@ -1973,8 +1987,9 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
   CRFProcess* m_pcs = NULL;
   m_pcs = PCSGet(pcs_type_name);
   if(!m_pcs){
-    cout << "Warning in COutput::NODWriteSFCAverageDataTEC - no PCS data" << endl;
-    return;
+    no_pcs = true;
+    //cout << "Warning in COutput::NODWriteSFCAverageDataTEC - no PCS data" << endl;
+    //return;
   }
   //--------------------------------------------------------------------
   // File handling
@@ -2002,32 +2017,59 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
   // node_value_index_vector
   vector<int>node_value_index_vector((int)nod_value_vector.size());
   int itemp;
-  for(i=0;i<(int)nod_value_vector.size();i++){
-    node_value_index_vector[i] = m_pcs->GetNodeValueIndex(nod_value_vector[i]);
-    itemp = node_value_index_vector[i];
-	for(i=0;i<m_pcs->GetPrimaryVNumber();i++){
-      if(nod_value_vector[i].compare(m_pcs->pcs_primary_function_name[i])==0){
-        node_value_index_vector[i]++;
-        break;
-	  }
-	}
+  if (m_pcs){
+    for(i=0;i<(int)nod_value_vector.size();i++){
+      node_value_index_vector[i] = m_pcs->GetNodeValueIndex(nod_value_vector[i]);
+      itemp = node_value_index_vector[i];
+	    for(i=0;i<m_pcs->GetPrimaryVNumber();i++){
+        if(nod_value_vector[i].compare(m_pcs->pcs_primary_function_name[i])==0){
+          node_value_index_vector[i]++;
+          break;
+	      }
+	    }
+    }
   }
-  //if(node_value_index_vector[i]>-1) //CMCD&WW >-1
   //--------------------------------------------------------------------
   // Write data
-  double dtemp;
-  vector<long>sfc_nodes_vector;
-  m_msh->GetNODOnSFC(m_sfc,sfc_nodes_vector);
-  tec_file << time_current << " ";
-  for(i=0;i<(int)nod_value_vector.size();i++){
-    dtemp = 0.0;
-	for(j=0;j<(int)sfc_nodes_vector.size();j++){
-      dtemp += m_pcs->GetNodeValue(sfc_nodes_vector[j],node_value_index_vector[i]);
+  if(no_pcs){
+    tec_file << time_current << " ";
+    for(i=0;i<(int)nod_value_vector.size();i++){
+      m_pcs = PCSGet("MASS_TRANSPORT",nod_value_vector[i]);//Specified currently for MASS_TRANSPORT only.
+      node_value_index_vector[i] = m_pcs->GetNodeValueIndex(nod_value_vector[i]);
+      m_pcs->m_msh->GetNODOnSFC(m_sfc,sfc_nodes_vector);
+      dtemp = 0.0;
+      t_flux = 0.0;
+	    for(j=0;j<(int)sfc_nodes_vector.size();j++){
+        idx = m_pcs_gw->GetNodeValueIndex("FLUX");
+        node_flux = abs(m_pcs_gw->GetNodeValue(sfc_nodes_vector[j],idx));
+        node_conc = m_pcs->GetNodeValue(sfc_nodes_vector[j],node_value_index_vector[i]);
+        dtemp += (node_flux * node_conc);
+        t_flux += node_flux;
+      }
+      dtemp /= t_flux;
+      tec_file << dtemp << " ";
     }
-    dtemp /= (double)sfc_nodes_vector.size();
-    tec_file << dtemp << " ";
+    tec_file << endl;
   }
-  tec_file << endl;
+  else{
+    m_msh->GetNODOnSFC(m_sfc,sfc_nodes_vector);
+    idx = m_pcs_gw->GetNodeValueIndex("FLUX");
+    tec_file << time_current << " ";
+    dtemp = 0.0;
+    t_flux = 0.0;
+    for(i=0;i<(int)nod_value_vector.size();i++){
+      dtemp = 0.0;
+	    for(j=0;j<(int)sfc_nodes_vector.size();j++){
+        node_flux = abs(m_pcs_gw->GetNodeValue(sfc_nodes_vector[j],idx));
+        node_conc = m_pcs->GetNodeValue(sfc_nodes_vector[j],node_value_index_vector[i]);
+        dtemp += (node_flux * node_conc);
+        t_flux += node_flux;
+      }
+      dtemp /= t_flux;
+      tec_file << dtemp << " ";
+    }
+    tec_file << endl;
+  }
 }
 
 /**************************************************************************

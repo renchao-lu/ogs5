@@ -33,6 +33,7 @@ class COutput
     // PCS
     string primary_variable;
     string pcs_type_name;
+    string pcs_pv_name;//CMCD
     CRFProcess* GetPCS(string); //OK
     CRFProcess* GetPCS_ELE(string); //OK
     // NOD values

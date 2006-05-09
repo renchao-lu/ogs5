@@ -16,6 +16,14 @@ using namespace std;
 #include "rf_node.h"
 #include "geo_ply.h"
 
+typedef struct {
+  vector<double>value_reference; 
+  vector<double>last_source_value; 
+  //double value_store[10][5000];
+  double** value_store;//[PCS_NUMBER_MAX*2]First ref no processes(two fields per process..time, value), second ref no values
+} NODE_HISTORY;
+
+//extern vector<NODE_HISTORY*>node_history_vector;//CMCD
 //========================================================================
 class CSourceTerm
 {
@@ -38,6 +46,7 @@ class CSourceTerm
     //string primary_variable;
     string pcs_pv_name; //OK
     string pcs_type_name;
+    CRFProcess* m_pcs; //OKCMCD
     int pcs_number;
     string pcs_type_name_cond; //OK
     string pcs_pv_name_cond; //OK
@@ -71,9 +80,17 @@ class CSourceTerm
     //Analytical term for matrix diffusion
     bool analytical;
     int analytical_material_group;
+    long resolution;
     double st_area;
     double analytical_diffusion;
-    int number_of_terms;
+    long number_of_terms;
+    int no_an_sol;
+    long max_no_terms;
+    double factor;
+    double analytical_porosity;
+    double analytical_tortousity;
+    double analytical_linear_sorption_Kd;
+    double analytical_matrix_density;
 
     //--------------------------------------------------------------------
     // Methods
@@ -93,6 +110,14 @@ class CSourceTerm
     void SetPolyline(CGLPolyline *Polyline) {plyST = Polyline;}  //OK ???
 
     void SetNOD2MSHNOD(vector<long>&nodes, vector<long>&conditional_nodes);
+
+    double GetNodeLastValue (long n, int idx);
+    void SetNodePastValue ( long n, int idx, int pos, double value);//CMCD
+    void SetNodeLastValue (long n, int idx, double value);
+    double GetNodePastValue(long,int,int);//CMCD
+    double GetNodePastValueReference ( long n, int idx );//CMCD
+    void CreateHistoryNodeMemory(NODE_HISTORY* nh );//CMCD
+    void DeleteHistoryNodeMemory();//CMCD
 };
 
 //========================================================================

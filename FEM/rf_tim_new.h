@@ -51,6 +51,7 @@ class CTimeDiscretization
     double FirstTimeStepEstimate();
     double NeumannTimeControl();
     double SelfAdaptiveTimeControl();
+    void CheckCourant();//CMCD
 };
 
 extern vector<CTimeDiscretization*>time_vector;

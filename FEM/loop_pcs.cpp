@@ -313,7 +313,12 @@ int LOPTimeLoop_PCS(double*dt_sum)
 
         if (CalcVelocities){ 
         m_pcs->CalIntegrationPointValue(); //WW
-      }
+        }
+			  if(m_pcs->tim_type_name.compare("STEADY")==0){//CMCD 05/2006
+          LOPCalcNODResultants();
+          LOPCalcELEResultants();
+				  m_pcs->selected = false;
+        }
       }
       //------------------------------------------------------------------
       m_pcs = PCSGet("RICHARDS_FLOW");
@@ -481,6 +486,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
        m_pcs = PCSGet("MASS_TRANSPORT");
        if(m_pcs){
           m_tim = TIMGet("MASS_TRANSPORT");
+          if (aktueller_zeitschritt == 1) m_tim->CheckCourant();//CMCD 03/2006
           if(m_tim){
             dt_pcs = m_tim->time_step_vector[0];
             if(*dt_sum>=dt_pcs){
@@ -555,7 +561,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
         m_pcs->CopyTimestepNODValues(); //MB
 #define SWELLING
 #ifdef SWELLING
-		for(j=6;j<m_pcs->pcs_number_of_evals;j++){  //MX ToDo
+		for(j=7;j<m_pcs->pcs_number_of_evals;j++){  //MX ToDo//CMCD here is a bug in j=7
           nidx0 =  m_pcs->GetElementValueIndex(m_pcs->pcs_eval_name[j]);
           nidx1 =  m_pcs->GetElementValueIndex(m_pcs->pcs_eval_name[j])+1;
 		  for(long l=0;l<(long)m_pcs->m_msh->ele_vector.size();l++)

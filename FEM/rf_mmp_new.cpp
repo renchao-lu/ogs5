@@ -4225,7 +4225,11 @@ if(permeability_model==2)
   switch(geo_dimension){
     case 1: // 1-D
         tensor[0] = permeability_tensor[0];
-		if(permeability_model==2) tensor[0] = m_msh->ele_vector[index]->mat_vector(perm_index);
+		if(permeability_model==2) {
+         tensor[0] = m_msh->ele_vector[index]->mat_vector(perm_index);
+         int edx = m_pcs->GetElementValueIndex("PERMEABILITY");//CMCD
+         m_pcs->SetElementValue(index,edx,tensor[0]);//CMCD
+         }
       break;
     case 2: // 2-D
       if(permeability_tensor_type==0){
@@ -4265,7 +4269,7 @@ if(permeability_model==2)
         tensor[8] = permeability_tensor[0];
 		if(permeability_model==2) {
 //SB 4218			tensor[0] = GetHetValue(index,"permeability");
-			tensor[0] = m_msh->ele_vector[index]->mat_vector(perm_index);
+			tensor[0] = m_pcs->m_msh->ele_vector[index]->mat_vector(perm_index);
 			tensor[4] = tensor[0];
 			tensor[8] = tensor[0];
 		}
@@ -5444,6 +5448,7 @@ Programing:
 09/2005 MB EleClass
 //SB/MB ? member function of CFEMesh / CMediumProperties
 11/2005 OK GEOMETRY_AREA
+04/2006 CMCD Constant area
 **************************************************************************/
 //MMPGetHeterogeneousFields
 void GetHeterogeneousFields()
@@ -5491,11 +5496,32 @@ void GetHeterogeneousFields()
       m_mmp->SetDistributedELEProperties(file_path_base_ext);
       m_mmp->WriteTecplotDistributedProperties();
     } 
+    else m_mmp->SetConstantELEarea(m_mmp->geo_area,i);
     //....................................................................
   } 
   //----------------------------------------------------------------------
 }
-
+/**************************************************************************
+PCSLib-Method: 
+Programing:
+04/2006 CMCD Implementation
+**************************************************************************/
+void CMediumProperties::SetConstantELEarea(double area, int group)
+{
+    long i,j, ele_group;
+    long no_ele;
+    int no_processes = (int) pcs_vector.size();
+    if (area != 1.0) {
+      for (i=0; i<no_processes; i++){
+        m_msh = FEMGet(pcs_vector[i]->pcs_type_name);
+        no_ele = (long) m_msh->ele_vector.size();
+        for(j=0;j<no_ele;j++){
+          ele_group = m_msh->ele_vector[j]->GetPatchIndex();
+          if (ele_group == group) m_msh->ele_vector[j]->SetFluxArea(area);
+        }
+      }
+    }
+}
 /**************************************************************************
 PCSLib-Method: 
 Programing:
@@ -5508,11 +5534,14 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
   string mmp_property_dis_type;
   string mmp_property_mesh;
   CElem* m_ele_geo = NULL;
+  bool element_area = false;
   long i, ihet;
   double mmp_property_value;
   int mat_vector_size=0; // Init WW
   double ddummy, conversion_factor=1.0;; //init WW
   vector <double> xvals, yvals, zvals, mmpvals;
+  vector<double>temp_store;
+  int c_vals;
   double x, y, z, mmpv;
   std::stringstream in;
   //----------------------------------------------------------------------
@@ -5552,8 +5581,10 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
     }
     //....................................................................
     if(line_string.find("$MMP_TYPE")!=string::npos){
+      element_area = false;
       mmp_property_file >> mmp_property_name;
       m_msh->mat_names_vector.push_back(mmp_property_name);
+      if (mmp_property_name == "GEOMETRY_AREA") element_area = true;
       continue;
     }
     //....................................................................
@@ -5607,16 +5638,28 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
             m_ele_geo = m_msh->ele_vector[i];
             mmp_property_file >> ddummy >> mmp_property_value;
             mat_vector_size = m_ele_geo->mat_vector.Size();
+            if (mat_vector_size > 0) {
+               for (c_vals = 0; c_vals < mat_vector_size; c_vals++)
+                    temp_store.push_back(m_ele_geo->mat_vector(c_vals));
+               m_ele_geo->mat_vector.resize(mat_vector_size+1);
+               for (c_vals = 0; c_vals < mat_vector_size; c_vals++)
+                    m_ele_geo->mat_vector(c_vals)=temp_store[c_vals];
+               m_ele_geo->mat_vector(mat_vector_size) = mmp_property_value;
+               temp_store.clear();
+            }
+            else {
             m_ele_geo->mat_vector.resize(mat_vector_size+1);
             m_ele_geo->mat_vector(mat_vector_size) = mmp_property_value;
+            }
+            if (element_area) m_msh->ele_vector[i]->SetFluxArea(mmp_property_value);
             if(line_string.empty()){
-              cout << "Error in CMediumProperties::SetDistributedELEProperties - no enough data sets" << endl;
+              cout << "Error in CMediumProperties::SetDistributedELEProperties - not enough data sets" << endl;
               return;
             }
           }
           break;
           default:
-            cout << " Unknown interpolation option for het values!" << endl;
+            cout << " Unknown interpolation option for the values!" << endl;
             break;
       }
       continue;

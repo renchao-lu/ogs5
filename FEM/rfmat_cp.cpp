@@ -742,6 +742,7 @@ int CompProperties::GetNumberDecayValuesCompProperties(int decay_model)
 /* Programmaenderungen:
    10/1999     AH         Erste Version  (Fall 0 bis 11)
    02/2004     SB         Adapted to CompProperties - nur method 0-3+15
+   04/2006     CMCD       Included for analytical fracture surface method, Tang et al. 1981, WRR.
  */
 /**************************************************************************/
 int CompProperties::GetNumberIsothermValuesCompProperties(int isotherm)
@@ -761,6 +762,8 @@ int CompProperties::GetNumberIsothermValuesCompProperties(int isotherm)
         n = 2;  break;                  /* Freundlich Isotherm */
     case 3:
         n = 2;  break;                  /* Langmuir Isotherm */
+    case 4:
+        n = 1;  break;                  /* Linear Isotherm, for fracture surface CMCD
 /*
     case 4:
         n = 3;  break;                  // Freundlich Langmuir Isotherm 
@@ -901,6 +904,7 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double*gp, C
  double theta = m_pcs->m_num->ls_theta;
  int gueltig;
  long group = 0; //SB4200 ToDO
+ double fracture_width = 0.0; //CMCD needed for wall retardation in a fracture
 
  group = m_pcs->m_msh->ele_vector[index]->GetPatchIndex();
 
@@ -923,6 +927,7 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double*gp, C
  switch(isotherm_model){
  case -1: /* no sorption */
 	 isotherm = 0.0;
+   retard = 1. + (1.-porosity)*density_rock*isotherm/porosity;//CMCD moved here
 	 break;
  case 0: /* from curve */
 	 isotherm = 0.0;
@@ -930,6 +935,7 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double*gp, C
 	 break;
  case 1: /* linear isotherm   */
 	isotherm = isotherm_model_values[0];
+   retard = 1. + (1.-porosity)*density_rock*isotherm/porosity;//CMCD moved here
 	break;
 /* rausgenommen, solange der PRozess linear ist */
  case 2: /* Freundlich Isotherm */
@@ -940,10 +946,17 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double*gp, C
 			isotherm = isotherm_model_values[0]; 
 		 else
 			isotherm = isotherm_model_values[0] * isotherm_model_values[1] * pow(fabs(conc),isotherm_model_values[1]-1.0);
+    retard = 1. + (1.-porosity)*density_rock*isotherm/porosity;//CMCD moved here
 	break;
  case 3: /* Langmuir Isotherm */
 	isotherm = isotherm_model_values[0] * isotherm_model_values[1] / pow((1 + isotherm_model_values[0] * fabs(conc)),2.0);
+   retard = 1. + (1.-porosity)*density_rock*isotherm/porosity;//CMCD moved here
 	break;
+ case 4: /* Face retardation model*/
+   isotherm = isotherm_model_values[0];
+   fracture_width = m_pcs->m_msh->ele_vector[index]->GetFluxArea();
+   retard = 1+ (isotherm/(fracture_width/2.0));//Tang et al. 1981, Contaminant transport in fractured porous media, anaylitacl solution for a single fracture, WRR 17, 3, 555-564.
+   break;
 // case 15: /* Input by curve */
 //	 isotherm = 0.0;
 //	 isotherm = GetCurveDerivative((int) isotherm_model_values[0], 0, fabs(conc), &gueltig);
@@ -951,12 +964,13 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double*gp, C
  default:
 	 DisplayMsgLn("Unknown sorption isotherm type. Assuming no sorption");
 	isotherm = 0.0;
+   retard = 1. + (1.-porosity)*density_rock*isotherm/porosity;//CMCD moved here
 	break;
  };
 // DisplayMsg(" conc: "); DisplayDouble(conc,0,0);DisplayMsg(" isotherm: "); DisplayDouble(isotherm,0,0); DisplayMsgLn(" "); 
 // if(conc < 0.0) isotherm = 0.0;
  
-  retard = 1. + (1.-porosity)*density_rock*isotherm/porosity;
+//  retard = 1. + (1.-porosity)*density_rock*isotherm/porosity; Case 4 doesn't use this function.
 //  if(index < 1) {DisplayMsg(" Retardation factor: "); DisplayDouble(retard,0,0); DisplayMsgLn(" ");} 
 
  return retard;

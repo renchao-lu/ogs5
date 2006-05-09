@@ -35,6 +35,7 @@ extern void remove_white_space(string*);
 CBoundaryConditionNode::CBoundaryConditionNode()
 {
   conditional = false;
+  funct_name = "";
 }
 //==========================================================================
 list<CBoundaryCondition*>bc_list;
@@ -979,6 +980,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
         }
 		m_node_value->conditional = cont;
 		m_node_value->CurveIndex = m_bc->CurveIndex;
+    m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group
         m_node_value->node_value = m_bc->geo_node_value;
         group_vector.push_back(m_node_value);
         bc_group_vector.push_back(m_bc); //OK
@@ -1029,6 +1031,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
                 m_node_value->geo_node_number = nodes_vector[i];
                 m_node_value->node_value = m_bc->geo_node_value;  //dis_prop[0];
                 m_node_value->CurveIndex = m_bc->CurveIndex;
+                m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group
                 group_vector.push_back(m_node_value);
                 bc_group_vector.push_back(m_bc); //OK
               }
@@ -1045,6 +1048,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
                 m_node_value->geo_node_number = nodes[i];
                 m_node_value->node_value = m_bc->geo_node_value;  //dis_prop[0];
                 m_node_value->CurveIndex = m_bc->CurveIndex;
+                m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group
                 group_vector.push_back(m_node_value);
                 bc_group_vector.push_back(m_bc); //OK
               }
@@ -1064,6 +1068,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
                 m_node_value->geo_node_number = nodes_vector[i];
                 m_node_value->node_value = m_bc->geo_node_value;  //dis_prop[0];
                 m_node_value->CurveIndex = m_bc->CurveIndex;
+                m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group
                 group_vector.push_back(m_node_value);
                 bc_group_vector.push_back(m_bc); //OK
             }
@@ -1079,6 +1084,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
               //m_node_value->geo_node_number = m_bc->geo_node_number;
               m_node_value->node_value = m_bc->node_value_vector[i];
               m_node_value->CurveIndex = m_bc->CurveIndex;
+              m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group
               group_vector.push_back(m_node_value);
               bc_group_vector.push_back(m_bc); //OK
             }
@@ -1107,6 +1113,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
               m_node_value->msh_node_number = nodes[i]+ShiftInNodeVector;
               m_node_value->geo_node_number = nodes[i];
               m_node_value->node_value = node_value[i];  
+              m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group 
               m_node_value->CurveIndex = m_bc->CurveIndex;
               group_vector.push_back(m_node_value);
               bc_group_vector.push_back(m_bc); //OK
@@ -1189,6 +1196,7 @@ vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin()
             else
               m_node_value->node_value = m_bc->geo_node_value;  
             m_node_value->CurveIndex = m_bc->CurveIndex;
+            m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group
             group_vector.push_back(m_node_value);
             m_bc->node_number_vector = nodes_vector; //OK
             bc_group_vector.push_back(m_bc); //OK
@@ -1207,6 +1215,7 @@ vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin()
           m_node_value->geo_node_number = nodes_vector[i]; //nodes[i];
           m_node_value->node_value = m_bc->geo_node_value;  
           m_node_value->CurveIndex = m_bc->CurveIndex;
+          m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group
           group_vector.push_back(m_node_value);
           bc_group_vector.push_back(m_bc); //OK
         }
@@ -1217,6 +1226,7 @@ vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin()
         m_node_value = new CBoundaryConditionNode;
         m_node_value->msh_node_number = m_bc->msh_node_number;
         m_node_value->node_value = m_bc->geo_node_value;
+        m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group
         group_vector.push_back(m_node_value);
         bc_group_vector.push_back(m_bc); //OK
       }

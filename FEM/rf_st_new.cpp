@@ -55,6 +55,8 @@ using Math_Group::vec;
 vector<CSourceTerm*> st_vector;
 list<CSourceTermGroup*>st_group_list;
 vector<string>analytical_processes;
+vector<string>analytical_processes_polylines;
+vector<NODE_HISTORY*> node_history_vector;//CMCD
 /**************************************************************************
 FEMLib-Method: 
 Task: ST constructor
@@ -81,6 +83,7 @@ Programing:
 04/2004 OK Implementation
 **************************************************************************/
 CSourceTerm::~CSourceTerm(void) {
+    DeleteHistoryNodeMemory();
     // PCS
     pcs_pv_name.clear();
     pcs_number = -1;
@@ -220,10 +223,16 @@ ios::pos_type CSourceTerm::Read(ifstream *st_file)
      if(dis_type_name.find("ANALYTICAL")!=string::npos) {
         in >> analytical_material_group;//Which material group is it being applied to
         in >> analytical_diffusion;//D value
+        in >> analytical_porosity;//n value of matrix
+        in >> analytical_tortousity;//t value of matrix
+        in >> analytical_linear_sorption_Kd;//Linear sorption coefficient
+        in >> analytical_matrix_density;//Density of solid
         in >> number_of_terms;//no timesteps to consider in solution
-        if (number_of_terms > 25) number_of_terms = 25;//Set a maximum number of terms to evaluate
+        in >> resolution;//every nth term will be considered
+        in >> factor;//to convert temperature to energy
         analytical = true;
         analytical_processes.push_back(pcs_pv_name);
+        if(geo_type_name.compare("POLYLINE")==0) analytical_processes_polylines.push_back(geo_name);
         in.clear();
       }
       if(dis_type_name.find("LINEAR")!=string::npos) {
@@ -376,8 +385,25 @@ bool STRead(string file_base_name)
   while (!st_file.eof()) {
     st_file.getline(line,MAX_ZEILE);
     line_string = line;
-    if(line_string.find("#STOP")!=string::npos)
+    if(line_string.find("#STOP")!=string::npos){//Code included to make dynamic memory for analytical solution
+      int no_source_terms = (int) st_vector.size();
+      int no_an_sol = 0;
+      long number_of_terms = 0;
+      int i;
+      for (i=0; i < no_source_terms; i++){//Need to find the memory size limits for the anal. solution.
+        if (st_vector[i]->analytical){
+          no_an_sol++;
+          number_of_terms = max(st_vector[i]->number_of_terms,number_of_terms);
+        }
+      }
+      if (no_an_sol > 0) {
+        for (i=0; i < no_source_terms; i++){
+          st_vector[i]->no_an_sol = no_an_sol;
+          st_vector[i]->max_no_terms = number_of_terms;
+        }
+      }
       return true;
+      }
     //----------------------------------------------------------------------
     if(line_string.find("#SOURCE_TERM")!=string::npos) { // keyword found
       m_st = new CSourceTerm();
@@ -848,6 +874,11 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
           if(m_st->dis_type_name.compare("CRITICALDEPTH")==0) dit_ply = 6;
           if(m_st->dis_type_name.compare("SYSTEM_DEPENDENT")==0) dit_ply = 7;   //YD  
           if(m_st->dis_type_name.compare("NORMALDEPTH")==0) dit_ply = 8;  //JOD MB
+          if(m_st->dis_type_name.compare("ANALYTICAL")==0) 
+          {
+            dit_ply = 9;//CMCD 02 2006
+            m_st->m_pcs = PCSGet(pcs_type_name);
+          }
 
 
           if(dit_ply==2||dit_ply==4)  {
@@ -967,7 +998,7 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
  
 
           //------------------------------------------------------------------------------------
-          if(dit_ply==6 || dit_ply == 8)  {  //CriticalDepth or NormalDepth
+          if(dit_ply==6 || dit_ply == 8 || dit_ply == 9)  {  //CriticalDepth or NormalDepth
 
             node_value_vectorArea.resize(number_of_nodes);
 
@@ -1020,6 +1051,10 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
             if(dit_ply ==8)  {
               m_node_value->node_distype = 8;
             }
+            if(dit_ply ==9)  {
+              m_node_value->node_distype = 9;
+              m_node_value->node_area = node_value_vectorArea[i];
+            }
             m_node_value->CurveIndex = m_st->CurveIndex;
             //WW        group_vector.push_back(m_node_value);
             //WW        st_group_vector.push_back(m_st); //OK
@@ -1045,6 +1080,7 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
           m_node_value->geo_node_number = nodes_vector[i];
           m_node_value->node_distype = 0;
           m_node_value->node_value = 0;
+          m_node_value->node_area = -1;
           //WW        group_vector.push_back(m_node_value);
           //WW        st_group_vector.push_back(m_st); //OK
            m_pcs->st_node_value.push_back(m_node_value);  //WW
@@ -2300,106 +2336,274 @@ void CSourceTerm::SetNOD2MSHNOD(vector<long>&nodes, vector<long>&conditional_nod
 }
 /**************************************************************************
 FEMLib-Method:
-Task:
+Task: Anaylitical diffusion in matrix. Replaces matrix. See paper to be issued.
 Programing:
 11/2005 CMCD Implementation
 04/2006 Moved from CSourceTermGroup and changed the arguments
 last modification:
+04/2006 CMCD Updated
 **************************************************************************/
-//double CSourceTermGroup::GetAnalyticalSolution(CSourceTerm *m_st, long node_number, string primvar)
-double GetAnalyticalSolution(long node_number, CSourceTerm *m_st)
+double GetAnalyticalSolution(long location, CSourceTerm *m_st)
 {
   int idx, n;
   int size, process_no;
-  long i, group;
-  double value, source, gradient, ref_value;
+  long i;
+  long step, no_terms_included;
+  double value, source, gradient, ref_value = 0.0;
   double timevalue;
   double fac = 1.0;
   double temp_time,temp_value;
   double pi = 3.1415926;
   double D = m_st->analytical_diffusion;
-  double t0, tn, tnn, val1,val2, area;
-  double tvol, vol;
+  double ne = m_st->analytical_porosity;
+  double tort = m_st->analytical_tortousity;
+  double Kd = m_st->analytical_linear_sorption_Kd;
+  double rho = m_st->analytical_matrix_density;
+  double Dtrans = (D*ne)/((ne+Kd*rho)*tort);
+  double Dsteady = D*ne/tort;
+  double t0, tn, tnn, val1,val2, node_area;
+  double tvol, vol, flux_area, tflux_area;
+  double mass_solute_present,mass_to_remove;
   bool out = false;
-  string primvar; //WW
-  CNode* Node = NULL;
+  int dimension = m_st->analytical_material_group;
+  string process;
+  CRFProcess* m_pcs = NULL;
+  m_pcs = PCSGet(m_st->pcs_type_name, m_st->pcs_pv_name);
+  CFEMesh* m_msh = m_pcs->m_msh;  //WW
   CElem* Ele = NULL; 
+  long node_number = m_pcs->st_node_value[location]->msh_node_number;
+  CNode* Node = m_msh->nod_vector[node_number]; 
+  double area = m_pcs->st_node_value[location]->node_area;
   vector<double>time_history;
   vector<double>value_history;
-  CRFProcess* m_pcs = NULL;
-  m_pcs = PCSGet(m_st->pcs_type_name); //OK
-  CFEMesh* m_msh = m_pcs->m_msh;  //WW
-  Node = m_msh->nod_vector[node_number]; //WW
-  primvar = m_st->pcs_pv_name; //WW
-  t0 = tn = tnn = source = gradient = val1 = val2 = area = 0.0;
-  idx = m_pcs->GetNodeValueIndex(primvar);
+  //Initialise
+  time_history.clear();
+  value_history.clear();
+  t0 = tn = tnn = source = gradient = val1 = val2 = node_area = flux_area = 0.0;
+  idx = m_pcs->GetNodeValueIndex(m_st->pcs_pv_name);
   value = m_pcs->GetNodeValue(node_number,idx);
+  if (value < MKleinsteZahl) value = 0.0;
   timevalue = aktuelle_zeit;
+  step = aktueller_zeitschritt;
+  if (step < 10) step = 10;
   size = (int)analytical_processes.size();
   process_no = 0;
+  //Domain or Polyline
   for (i = 0; i < size; i++){
-     if (analytical_processes[i] == primvar) process_no = i;
+     if (analytical_processes[i] == m_st->pcs_pv_name){
+        if(m_st->geo_type_name.compare("POLYLINE")==0){
+          if(m_st->geo_name == analytical_processes_polylines[i])
+              process_no = i;
+        }
+        if(m_st->geo_type_name.compare("DOMAIN")==0)
+          process_no = i;
+       }
   }
-  process_no*=2;//;
-  //Save data in a vector attached to the nodes
-  SetNodePastValue(node_number,process_no,0,m_st->number_of_terms,timevalue);
-  SetNodePastValue(node_number,process_no+1,0,m_st->number_of_terms,value);
-  //Recall historical data
-  ref_value = GetNodePastValueReference (node_number, process_no+1);
-  for (i = 0; i <m_st->number_of_terms; i++){ 
-    temp_time = GetNodePastValue(node_number,process_no,i);
-    temp_value = (GetNodePastValue(node_number,process_no+1,i)-ref_value);
-    time_history.push_back(temp_time);
-    value_history.push_back(temp_value);
+  //Identify process
+  if (process_no == 1){
+      process_no = process_no;
   }
-  //Calculate individual terms and sum  
-  if ((node_number == 32)&&(aktuelle_zeit ==2.4e+006 )) out = true;
-  for ( i = m_st->number_of_terms-1; i >0 ; i--){ 
-    t0 = time_history[0];
-    if (i == m_st->number_of_terms-1) tn = (t0-time_history[i])+(time_history[i-1]-time_history[i]);
-    else tn = t0-time_history[i+1];
-    tnn= t0-time_history[i];
-    val1 = 1/(sqrt(pi*D*tn));
-    val2 = 1/(sqrt(pi*D*tnn));
-    gradient += ((val2-val1)*value_history[i]);
-  }
-  tn = t0-time_history[1];
-  tnn = 0;
-  val1 = 1/(sqrt(pi*D*tn));
-  gradient -=(val1*value_history[0]);
-  //Include area represented by node
-  //Area only good for lines, triangles and quads.
-  Node->connected_elements.size();
-  tvol = 0.0;
-  for (i = 0; i <  (int) Node->connected_elements.size(); i++){
-     Ele = m_msh->ele_vector[ Node->connected_elements[i]];
-     vol = Ele->GetVolume();
-     n = Ele->GetVertexNumber();
-     tvol += (vol/n);
-  }
-  CMediumProperties *Matprop;
-  CFluidProperties *FluidProp;
-  if (primvar == "TEMPERATURE1") {
-    fac = 0.0;
-    for (i = 0; i <  (int) Node->connected_elements.size(); i++){
-      group = m_msh->ele_vector[ Node->connected_elements[i]]->GetPatchIndex();
-      FluidProp = mfp_vector[group];
-      Matprop = mmp_vector[group];
-      fac += FluidProp->Density() * FluidProp->SpecificHeatCapacity()*Matprop->porosity;
-    } 
-  fac /= (double) Node->connected_elements.size();
-  }
-  else {
-    fac = 0.0;
-    for (i = 0; i <  (int) Node->connected_elements.size(); i++){
-      group = m_msh->ele_vector[ Node->connected_elements[i]]->GetPatchIndex();
-      Matprop = mmp_vector[group];
-      fac += Matprop->porosity;
-    } 
-  fac /= (double) Node->connected_elements.size();
-  } 
-  area = tvol*2.;//* 2 because the diffusion is in two direction perpendicular to the fracture
-  source = gradient * m_st->analytical_diffusion * area * fac;
+  process_no*=2;//first column time, second column value, hence two columns per process;
 
+  //If time step require new calculation of source term then start
+  if ((aktueller_zeitschritt-1) % m_st->resolution == 0){
+
+    //Save data in a vector attached to the nodes
+    m_st->SetNodePastValue(node_number,process_no,0,timevalue);
+    m_st->SetNodePastValue(node_number,process_no+1,0,value);
+
+    //Recall historical data
+    ref_value = m_st->GetNodePastValueReference (node_number, (process_no/2));
+    if (step > m_st->number_of_terms) no_terms_included = m_st->number_of_terms;
+    else no_terms_included = step;
+    for (i = 0; i <no_terms_included; i++){ 
+      temp_time = m_st->GetNodePastValue(node_number,process_no,i);
+      temp_value = (m_st->GetNodePastValue(node_number,process_no+1,i)-ref_value);
+      time_history.push_back(temp_time);
+      value_history.push_back(temp_value);
+    }
+    
+    //Calculate individual terms and sum for gradient 
+    for ( i = no_terms_included-1; i >0 ; i--){ 
+      t0 = time_history[0];
+      if (i == no_terms_included-1) tn = (t0-time_history[i])+(time_history[i-1]-time_history[i]);
+      else tn = t0-time_history[i+1];
+      tnn= t0-time_history[i];
+      val1 = 1/(sqrt(pi*Dtrans*tn));
+      val2 = 1/(sqrt(pi*Dtrans*tnn));
+      gradient += ((val2-val1)*value_history[i]);
+    }
+    tn = t0-time_history[1];
+    tnn = 0;
+    val1 = 1/(sqrt(pi*Dtrans*tn));
+    gradient -=(val1*value_history[0]);
+
+    //Area calculations
+    mass_solute_present = 1.e99; //Initially set value very high
+ 
+   //Area for lines, triangles and quads in domain.
+    if (area < 0) {//set in set source terms function, domain area = -1 to start with
+      tvol = 0.0;
+      tflux_area = 0.0;
+      for (i = 0; i <  (int) Node->connected_elements.size(); i++){
+        Ele = m_msh->ele_vector[ Node->connected_elements[i]];
+        vol = Ele->GetVolume();//Assuming 1m thickness
+        flux_area = Ele->GetFluxArea();//Real thickness for a fracture
+        n = Ele->GetVertexNumber();
+        tvol += (vol/n);
+        tflux_area += (flux_area/n);
+      }
+      node_area = tvol*2.;//* 2 because the diffusion is in two direction perpendicular to the fracture
+      mass_solute_present = tflux_area * tvol * value;
+    }
+    //Area for polylines
+    else node_area = area;
+
+    //factor for conversion to energy for temperature if necessary
+    fac = m_st->factor;
+    source = gradient * Dsteady * fac * node_area;
+    mass_to_remove = abs(source)*dt;
+    if (mass_to_remove > mass_solute_present){
+          source*=(mass_solute_present/mass_to_remove);
+          }
+    m_st->SetNodeLastValue (node_number, (process_no/2),source);
+
+  } // If new source term calculation not required
+  else source = m_st->GetNodeLastValue (node_number, (process_no/2));
   return source;
+}
+/**************************************************************************
+FEMLib-Method: 
+Task: master write function
+Programing:
+11/2005 CMCD Implementation, functions to access and write the time history data
+of nodes 
+last modification:
+**************************************************************************/
+void CSourceTerm::SetNodePastValue ( long n, int idx, int pos, double value)
+{
+  long k = 0;
+  int j = 0;
+  bool endstepreached = false;
+  //----------------------------------------------------------------------
+  //Check whether this is the first call
+  CRFProcess* m_pcs = NULL;
+  m_pcs = PCSGet(pcs_type_name, pcs_pv_name);
+  if(!m_pcs){ //OK
+    cout << "Warning in SetNodePastValue - no PCS data" << endl;
+    return;
+  }
+  //----------------------------------------------------------------------
+  int size1 = (int) m_pcs->nod_val_vector.size();
+  int size = (int)node_history_vector.size();
+  
+  //Create memory for the values
+  if (size == 0){
+     int number_of_terms = max_no_terms;
+     for (k = 0; k< size1; k++){
+       NODE_HISTORY *nh = new NODE_HISTORY;
+       CreateHistoryNodeMemory(nh);
+       node_history_vector.push_back(nh);
+     }
+     for (k=0; k< size1; k++){
+       for (j=0;j<no_an_sol;j++) 
+          node_history_vector[k]->value_reference.push_back(-1.0);
+     }
+  }
+
+  //Store the first set of values as reference values
+  int flipflop = idx%2;
+  if (aktueller_zeitschritt==1){
+    //if (size2 == idx)
+       if (flipflop == 1)
+          node_history_vector[n]->value_reference[(idx-1)/2]=value;
+  }
+//  size2 = (int) node_history_vector[n]->value_reference.size();
+  long steps = 10;
+  if (aktueller_zeitschritt > steps) steps = aktueller_zeitschritt;
+  if (max_no_terms >= steps) steps = aktueller_zeitschritt;  
+  else {
+    steps = max_no_terms;
+    endstepreached = true;
+  }
+  //Enter the value and push the other values back
+  if (!endstepreached){
+    for (k = steps-1; k>0; k--)
+      node_history_vector[n]->value_store[idx][k] = node_history_vector[n]->value_store[idx][k-1];
+    node_history_vector[n]->value_store[idx][0] = value;
+  }
+  double cutvalue = 0.0;
+  double nextvalue = 0.0;
+  long no_steps_past_cutof = 0;
+  if (endstepreached){
+    no_steps_past_cutof = aktueller_zeitschritt-max_no_terms;
+    cutvalue = node_history_vector[n]->value_store[idx][steps-1];
+    nextvalue = node_history_vector[n]->value_store[idx][steps-2];
+    node_history_vector[n]->value_store[idx][steps-1]= (cutvalue * (double)(no_steps_past_cutof)+nextvalue)/((double)no_steps_past_cutof+1);
+    for (k = steps-2; k>0; k--)
+      node_history_vector[n]->value_store[idx][k] = node_history_vector[n]->value_store[idx][k-1];
+    node_history_vector[n]->value_store[idx][0] = value;
+  }
+}
+void CSourceTerm::SetNodeLastValue (long n, int idx, double value)
+{
+     int i;
+     int size = (int) node_history_vector[n]->last_source_value.size();
+     if (size == 0) {
+       for(i=0;i<no_an_sol;i++)
+         node_history_vector[n]->last_source_value.push_back(0);
+     }  
+     node_history_vector[n]->last_source_value[idx] = value;
+}
+double CSourceTerm::GetNodeLastValue (long n, int idx)
+{
+     double value = 0.0;
+     value = node_history_vector[n]->last_source_value[idx];
+     return value;
+}
+double CSourceTerm::GetNodePastValue ( long n, int idx, int pos)
+{
+  double value;
+  value = node_history_vector[n]->value_store[idx][pos];
+  return value;
+}
+double CSourceTerm::GetNodePastValueReference ( long n, int idx )
+{
+  double value;
+  value = node_history_vector[n]->value_reference[idx];
+  return value;
+}
+
+void CSourceTerm::CreateHistoryNodeMemory(NODE_HISTORY* nh )
+{
+  int s_col=no_an_sol*2;
+  long s_row=number_of_terms;
+  int k,i;
+  long j;
+
+  nh->value_store = new double* [s_col];
+  for(i=0; i<s_col; i++)
+   nh->value_store[i] = new double [s_row];
+
+  for (k = 0; k<s_col; k++){
+    for (j = 0; j < s_row; j++)
+      nh->value_store[k][j] = 0.0;
+  }
+}
+
+void CSourceTerm::DeleteHistoryNodeMemory()
+{
+  long size = (long) node_history_vector.size(); //m_st->
+  int s_row=no_an_sol*2;
+  long s_col=max_no_terms;
+  long j;
+  int i;
+  if (size > 0){
+    for (j=0; j < size; j++){
+      for(i=0; i<s_row; i++)
+        delete node_history_vector[j]->value_store[i];
+    delete node_history_vector[j]->value_store;
+    }
+    node_history_vector.clear();
+  }
 }

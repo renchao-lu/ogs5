@@ -29,6 +29,7 @@ class CFunction
     string type_name;
     string geo_name;
     string geo_type_name;
+    string dis_type_name;//CMCD
     vector<string>variable_names_vector;
     vector<double*>variable_data_vector;
     bool selected;

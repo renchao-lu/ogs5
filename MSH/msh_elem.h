@@ -48,6 +48,10 @@ class CElem:public CCore
       double gravity_center[3];
       int grid_adaptation;  // Flag for grid adapting.
       int patch_index;
+      double representative_length;//For stability calculations
+      double courant;
+      double neumann;	  // MSH topology
+      double area;//Flux area
   public:
       double normal_vector[3]; //OK
   private:
@@ -89,8 +93,15 @@ class CElem:public CCore
       int GetPatchIndex() const {return patch_index;} //MatGroup
       void SetPatchIndex(const int value) {patch_index = value;}
       void ComputeVolume();
+      void SetFluxArea(double fluxarea) {area = fluxarea;}//CMCD for <3D elements with varying area
+      double GetFluxArea() {return area;}//CMCD for <3D elements with varying area
 	  double GetVolume() const {return volume;}
       void SetVolume(const double Vol) {volume = Vol;}
+      void SetCourant(double Cour) {courant = Cour;}//CMCD
+      double GetCourant() {return courant;}//CMCD
+      void SetNeumann(double Neum) {neumann = Neum;}//CMCD
+      double GetNeumann() {return neumann;}//CMCD
+      double GetRepLength() {return representative_length;}//CMCD
       //------------------------------------------------------------------
       // ID
       int GetElementType() const {return geo_type;}

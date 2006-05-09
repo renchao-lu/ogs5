@@ -198,7 +198,6 @@ string PCSProblemType()
 //////////////////////////////////////////////////////////////////////////
 // It is better to have space between data type and data name. WW
 vector<CRFProcess*> pcs_vector;
-vector<NODE_HISTORY> node_history_vector;//CMCD
 vector<double*> ele_val_vector; //PCH
 vector<string> ele_val_name_vector; // PCH
 template <class T> T *resize(T *array, size_t old_size, size_t new_size);
@@ -404,7 +403,9 @@ void CRFProcess::SetOBJNames()
   COutput* m_out = NULL;
   for(i=0;i<(int)out_vector.size();i++){
     m_out = out_vector[i];
-	m_out->pcs_type_name = pcs_type_name;
+	  m_out->pcs_type_name = pcs_type_name;
+    //m_out->pcs_pv_name = pcs_primary_function_name[0];//CMCD
+    //string temp = pcs_primary_function_name[0];
   }
 }
 
@@ -2174,6 +2175,8 @@ void CRFProcess::ConfigMassTransport()
   pcs_num_name[0] = "CONCENTRATION0";
   /* SB: immer solver properties der ersten Komponente nehmen */
   pcs_sol_name = "LINEAR_SOLVER_PROPERTIES_CONCENTRATION1"; //SB ??
+
+
 }
 
 /**************************************************************************
@@ -3918,9 +3921,7 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
            value = GetConditionalNODValue(m_st, cnodev); //MB
        //
        else if(m_st->analytical){
-//WW      m_st_group->m_msh = m_msh;
-         value = GetAnalyticalSolution(msh_node,m_st); //WW
-//WW         value = m_st_group->GetAnalyticalSolution(m_st,msh_node,(string)function_name[j]);
+         value = GetAnalyticalSolution(i,m_st); //CMCD
        }
     //
        if(cnodev->node_distype==5)       // River Condition
@@ -5641,72 +5642,6 @@ void ReloadTandP(const int type, CRFProcess *pcs) // For DECOVALEX test
    file_stress.close();
    
 }
-/**************************************************************************
-FEMLib-Method: 
-Task: master write function
-Programing:
-11/2005 CMCD Implementation, functions to access and write the time history data
-of nodes, currently set up for 10 processes and max 20 previous time steps
-last modification:
-**************************************************************************/
-void SetNodePastValue ( long n, int idx, int pos, int max_size, double value)
-{
-  long k = 0;
-  int j = 0;
-  int no_processes;
-  no_processes = (int)pcs_vector.size();
-  NODE_HISTORY nh;
-
-  pos=pos; //WW
-  //----------------------------------------------------------------------
-  //Check whether this is the first call
-  CRFProcess* m_pcs = NULL;
-  //m_pcs = PCSGet("FLUID_FLOW"); //MB  TEMP to do
-  m_pcs = PCSGet("MASS_TRANSPORT"); //OK
-  if(!m_pcs){ //OK
-    cout << "Warning in SetNodePastValue - no PCS data" << endl;
-    return;
-  }
-  //Welcher Prozess ?????
-  //----------------------------------------------------------------------
-  int size1 = (int) m_pcs->nod_val_vector.size();
-  int size = (int)node_history_vector.size();
-  if (size == 0){
-     for (k = 0; k<no_processes*2; k++)
-       for (j = 0; j < 51; j++)
-         nh.value_store[k][j] = 0.0;
-     for (k = 0; k< size1; k++)
-       node_history_vector.push_back(nh);
-  }
-  //check whether this is the first call to a new process
-  int size2 = (int) node_history_vector[n].value_reference.size();
-
-  if (aktueller_zeitschritt==1){
-    if (size2 == 0){
-      for (k = 0; k<no_processes*2; k++)
-        node_history_vector[n].value_reference.push_back(0.0);
-    }
-    node_history_vector[n].value_reference[idx]=value;
-  }
-
-  //Enter the value and push the other values back
-  for (k = max_size-1; k>0; k--)
-    node_history_vector[n].value_store[idx][k] = node_history_vector[n].value_store[idx][k-1];
-  node_history_vector[n].value_store[idx][0] = value;
-}
-double GetNodePastValue ( long n, int idx, int pos)
-{
-  double value;
-  value = node_history_vector[n].value_store[idx][pos];
-  return value;
-}
-double GetNodePastValueReference ( long n, int idx )
-{
-  double value;
-  value = node_history_vector[n].value_reference[idx];
-  return value;
-}
-
 /**************************************************************************
 FEMLib-Method: 
 Task: 

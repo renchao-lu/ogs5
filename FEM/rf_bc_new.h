@@ -87,6 +87,7 @@ class CBoundaryConditionNode //OK raus
     int CurveIndex; // Time dependent function index
     //FCT
     int conditional; //OK
+    string funct_name;//CMCD
     CBoundaryConditionNode();
 };
 

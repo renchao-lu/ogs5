@@ -300,7 +300,7 @@ ios::pos_type CGLPoint::Read(ifstream *gli_file,int* ok)
 void GEORemoveAllPoints()
 {
   CGLPoint * m_pnt = NULL;
-  for (int i = 0; i < gli_points_vector.size(); i++){
+  for (int i = 0; i < (int) gli_points_vector.size(); i++){
      m_pnt = gli_points_vector[0];
      delete m_pnt;
    }

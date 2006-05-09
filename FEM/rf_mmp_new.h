@@ -82,6 +82,7 @@ class CMediumProperties
   double PermeabilitySaturationFunction(const double Saturation, int phase); //WW
 	double PorosityVolumetricChemicalReaction(long);  //MX 1/2005
 	double Porosity(long number,double*gp,double theta);//CMCD 9/2004 GeoSys 4
+    void SetConstantELEarea(double area, int group);//CMCD 4/2005
     void SetDistributedELEProperties(string); //OK
     void WriteTecplotDistributedProperties(); //OK
   //-------------------------------------------

@@ -21,6 +21,7 @@ using namespace std;
 #include "rf_mmp_new.h"
 #include "fem_ele_std.h"
 #include "mathlib.h"
+#include "elements.h" //set functions for stability criteria
 // ToDo
 double aktuelle_zeit;
 long aktueller_zeitschritt = 0;
@@ -575,4 +576,52 @@ double CTimeDiscretization::SelfAdaptiveTimeControl(void)
   if(Write_tim_discrete)
      *tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
   return time_step_length;
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Task: 
+Programing:CMCD 03/2006
+**************************************************************************/
+void CTimeDiscretization::CheckCourant(void)
+{
+  long index; 
+  long group;
+  double velocity[3]={0.,0.,0.};
+  double porosity, vg, advective_velocity, length, courant;
+  CRFProcess* m_pcs = NULL;
+  m_pcs = PCSGet("HEAD",false);
+  int pcs_no = m_pcs->pcs_number;
+  CMediumProperties* m_mmp = NULL;
+  CElem* elem =NULL;
+  ElementValue* gp_ele;
+  long critical_element_no = -1;
+  double recommended_time_step = 0.0;
+  double stable_time_step = 0.0;
+  int edx;
+
+
+  for (index=0;index< (long)m_pcs->m_msh->ele_vector.size();index++){  
+    elem = m_pcs->m_msh->ele_vector[index];
+    length = elem->GetRepLength();
+    group = elem->GetPatchIndex();
+    m_mmp = mmp_vector[group];
+    m_mmp->m_pcs = m_pcs;
+    porosity = m_mmp->Porosity(m_mmp->Fem_Ele_Std);
+    gp_ele = ele_gp_value[index];//to get gp velocities
+    gp_ele->getIPvalue_vec(pcs_no, velocity);
+    vg = MBtrgVec(velocity,3);
+    advective_velocity = vg/porosity;
+    courant = dt * advective_velocity/length;
+    elem->SetCourant(courant);
+    edx = m_pcs->GetElementValueIndex("COURANT");
+    m_pcs->SetElementValue(index,edx,courant);
+    stable_time_step = (1./courant)*dt;
+    if (index == 0) recommended_time_step = stable_time_step;
+    if (stable_time_step < recommended_time_step){
+      recommended_time_step = stable_time_step;
+      critical_element_no = index;
+    }
+  }
+  cout<<"Courant time step control, critical element = "<<critical_element_no<<" Recomended time step "<<recommended_time_step<<endl;
 }
