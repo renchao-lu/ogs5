@@ -2019,7 +2019,7 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
   int itemp;
   if (m_pcs){
     for(i=0;i<(int)nod_value_vector.size();i++){
-      node_value_index_vector[i] = m_pcs->GetNodeValueIndex(nod_value_vector[i]);
+      node_value_index_vector[i] = m_pcs->GetNodeValueIndex(nod_value_vector[i])+1;
       itemp = node_value_index_vector[i];
 	    for(i=0;i<m_pcs->GetPrimaryVNumber();i++){
         if(nod_value_vector[i].compare(m_pcs->pcs_primary_function_name[i])==0){
@@ -2035,7 +2035,7 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
     tec_file << time_current << " ";
     for(i=0;i<(int)nod_value_vector.size();i++){
       m_pcs = PCSGet("MASS_TRANSPORT",nod_value_vector[i]);//Specified currently for MASS_TRANSPORT only.
-      node_value_index_vector[i] = m_pcs->GetNodeValueIndex(nod_value_vector[i]);
+      node_value_index_vector[i] = m_pcs->GetNodeValueIndex(nod_value_vector[i])+1;
       m_pcs->m_msh->GetNODOnSFC(m_sfc,sfc_nodes_vector);
       dtemp = 0.0;
       t_flux = 0.0;
