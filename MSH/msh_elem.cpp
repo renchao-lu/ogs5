@@ -33,6 +33,7 @@ CElem::CElem(const int Index):CCore(Index)
    owner = NULL;
    tranform_tensor = NULL;
    gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
+   area = 1.0;
 }
 /**************************************************************************
 MSHLib-Method: 
@@ -56,6 +57,7 @@ CElem::CElem():CCore(0)
    nodes.resize(8); // Nodes of face   
    tranform_tensor = NULL;
    gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
+   area = 1.0;
 }
 /**************************************************************************
 MSHLib-Method: 
@@ -74,7 +76,6 @@ CElem:: CElem( const int Index,  CElem* onwer, const int Face):
    face_index = Face;
    gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
    tranform_tensor = NULL;
-   area = 1.0;
    switch(owner->geo_type)
    {
        case 1:  // 1-D bar element
