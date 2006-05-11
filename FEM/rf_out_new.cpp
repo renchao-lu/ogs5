@@ -216,6 +216,8 @@ ios::pos_type COutput::Read(ifstream *out_file)
         remove(tec_file_name.c_str());
         tec_file_name = file_base_name + ".rfo"; //OK4105
         remove(tec_file_name.c_str());
+        tec_file_name = file_base_name + ".vtk"; //kg44
+        remove(tec_file_name.c_str());
         */
       }
       continue;
@@ -612,6 +614,30 @@ void OUTData(double time_current, const int time_step_number)
           //..............................................................
         break;
         //------------------------------------------------------------------
+      }
+    }
+    //--------------------------------------------------------------------
+    // vtk 
+    else if(m_out->dat_type_name.compare("VTK")==0){
+      switch(m_out->geo_type_name[2]){
+        case 'M': // domain data
+          if(OutputBySteps)
+		  {
+		    OutputBySteps = false;
+            m_out->WriteDataVTK(time_step_number); //OK
+
+		  }
+		  else
+		  {
+            for(j=0;j<no_times;j++){
+              if(time_current>=m_out->time_vector[j]){
+                m_out->WriteDataVTK(time_step_number); //OK
+                m_out->time_vector.erase(m_out->time_vector.begin()+j);
+		        break;	 
+              }
+		    } 
+          }
+          break;
       }
     }
     //--------------------------------------------------------------------
@@ -1184,7 +1210,7 @@ void COutput::WriteELEValuesTECHeader(fstream& tec_file)
   int i;
   //--------------------------------------------------------------------
   // Write Header I: variables
-  tec_file << "VARIABLES = X,Y,Z,VX,VY,VZ";
+  tec_file << "VARIABLES = \"X\",\"Y\",\"Z\",\"VX\",\"VY\",\"VZ\"";
   for(i=0;i<(int)ele_value_vector.size();i++){
 	  if(ele_value_vector[i].find("VELOCITY")==string::npos) //WW
         tec_file << "," << ele_value_vector[i];
@@ -1903,7 +1929,7 @@ void COutput::NODWriteSFCDataTEC(int number)
   int k;
   string project_title_string = "Profile at surface"; //project_title;
   tec_file << "TITLE = \"" << project_title_string << "\"" << endl;
-  tec_file << "VARIABLES = X,Y,Z,";
+  tec_file << "VARIABLES = \"X\",\"Y\",\"Z\",";
   for(k=0;k<(int)nod_value_vector.size();k++){
      tec_file << nod_value_vector[k] << ",";
   }
@@ -2309,3 +2335,255 @@ void COutput::SetNODFluxAtPLY()
   //----------------------------------------------------------------------
 //m_st->FaceIntegration(m_pcs,nodes_vector,node_value_vector);
 }
+
+/**************************************************************************
+FEMLib-Method: 
+Task: 
+Programing:
+04/2006 KG44 Implementation
+**************************************************************************/
+void COutput::WriteDataVTK(int number)
+{
+  char number_char[10];
+  sprintf(number_char,"%i",number);
+  string number_string = number_char;
+
+  m_msh = FEMGet(pcs_type_name);
+  if(!m_msh){
+    cout << "Warning in COutput::WriteVTKNodes - no MSH data" << endl;
+    return;
+  }
+  //--------------------------------------------------------------------
+  // File handling
+  string vtk_file_name;
+  vtk_file_name = file_base_name + number_string + "." + "vtk";
+  fstream vtk_file (vtk_file_name.data(),ios::app|ios::out);
+  vtk_file.setf(ios::fixed,ios::floatfield);
+  vtk_file.precision(6);
+  if (!vtk_file.good()) return;
+  vtk_file.seekg(0L,ios::beg);
+  //--------------------------------------------------------------------
+    WriteVTKHeader(vtk_file);
+    WriteVTKNodeData(vtk_file);
+    WriteVTKElementData(vtk_file);
+    WriteVTKValues(vtk_file);
+  //======================================================================
+  // vtk
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Programing:
+04/2006 KG44 Implementation
+**************************************************************************/
+void COutput::WriteVTKHeader(fstream& vtk_file)
+{
+  // Write Header 
+  vtk_file << "# vtk DataFile Version 2.0" << endl;
+// title
+  vtk_file << "Unstructured Grid Rockflow"  << endl;
+// data type here always ASCII
+  vtk_file << "ASCII"  << endl;
+  vtk_file << endl;
+
+// geometry/topoology
+  vtk_file << "DATASET UNSTRUCTURED_GRID"  << endl;
+}
+/**************************************************************************
+FEMLib-Method: 
+Programing:
+04/2006 KG44 Implementation
+**************************************************************************/
+void COutput::WriteVTKNodeData(fstream& vtk_file)
+{
+// header for node data 
+      vtk_file << "POINTS "<< (long)m_msh->nod_vector.size() << " float" << endl;
+
+  CNode* m_nod = NULL;
+  for(long i=0;i<(long)m_msh->nod_vector.size();i++){
+    m_nod = m_msh->nod_vector[i];
+    vtk_file << " " << m_nod->X() << " " << m_nod->Y() << " " << m_nod->Z() << " " << endl;
+  }
+  vtk_file << endl; 
+
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Task: 
+Programing:
+04/2006 KG44 Implementation
+**************************************************************************/
+void COutput::WriteVTKElementData(fstream& vtk_file)
+{
+
+  int j;
+  long no_all_elements =0;
+  CElem* m_ele = NULL;
+
+// count overall length of element vector 
+  for(long i=0;i<(long)m_msh->ele_vector.size();i++){
+    m_ele = m_msh->ele_vector[i];
+    no_all_elements=no_all_elements+(m_ele->GetNodesNumber(false))+1;
+    }
+
+// write element header
+  vtk_file << "CELLS " << (long)m_msh->ele_vector.size() << " " << no_all_elements << endl; 
+
+// write elements
+  for(long i=0;i<(long)m_msh->ele_vector.size();i++){
+    m_ele = m_msh->ele_vector[i];
+
+        switch(m_ele->GetElementType()){
+	    case 1:  // vtk_line=3
+            vtk_file \
+		<< "2  " ;
+            break;
+	    case 2:  // quadrilateral=9
+            vtk_file \
+              << "4  ";
+            break;
+	    case 3: // hexahedron=12
+            vtk_file \
+              << "8  ";
+            break;
+	    case 4:  // triangle=5
+            vtk_file \
+              << "3  ";
+            break;
+	    case 5:  // tetrahedron=10
+            vtk_file \
+              << "4  ";
+            break;
+	    case 6:   // wedge=13
+            vtk_file \
+              << "6  ";
+            break;
+        }
+
+    for(j=0;j<m_ele->GetNodesNumber(false);j++){
+      vtk_file << m_ele->nodes_index[j] << " ";
+    }
+    vtk_file << endl;
+  }
+
+  vtk_file << endl; 
+
+// write cell types
+
+// write cell_types header
+  vtk_file << "CELL_TYPES " << m_msh->ele_vector.size() << endl; 
+
+  for(long i=0;i<(long)m_msh->ele_vector.size();i++){
+    m_ele = m_msh->ele_vector[i];
+
+        switch(m_ele->GetElementType()){
+	    case 1:  // vtk_line=3
+            vtk_file \
+		<< "3  "<< endl ;
+            break;
+	    case 2:  // quadrilateral=9
+            vtk_file \
+              << "9  "<< endl;
+            break;
+	    case 3: // hexahedron=12
+            vtk_file \
+              << "12  "<< endl;
+            break;
+	    case 4:  // triangle=5
+            vtk_file \
+              << "5  "<< endl;
+            break;
+	    case 5:  // tetrahedron=10
+            vtk_file \
+              << "10  "<< endl;
+            break;
+	    case 6:   // wedge=13
+            vtk_file \
+              << "13  "<< endl;
+            break;
+        }
+  }
+  vtk_file << endl; 
+
+ 
+}
+
+/**************************************************************************
+FEMLib-Method:
+Task:
+Programing:
+04/2006 kg44 Implementation
+**************************************************************************/
+void COutput::WriteVTKValues(fstream&vtk_file)
+{
+  int p,nidx;
+  CRFProcess* m_pcs = NULL;
+  int no_processes = (int)pcs_vector.size();
+
+// node data first
+    vtk_file << "POINT_DATA " << (long)m_msh->nod_vector.size() << endl;
+// Each process gets its own field
+  for(p=0;p<no_processes;p++){
+    m_pcs = pcs_vector[p];
+    vtk_file << "SCALARS " << m_pcs->pcs_primary_function_name[0] << " float 1" << endl;
+    vtk_file << "LOOKUP_TABLE default" <<endl;
+
+  for(long i=0;i<(long)m_msh->nod_vector.size();i++){
+      nidx = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0])+1;
+      vtk_file << " " << m_pcs->GetNodeValue(i,nidx) << endl;
+  } // end nodes
+
+  } // end processes
+
+// element data
+  if(ele_value_vector.size()>0)
+    m_pcs = GetPCS_ELE(ele_value_vector[0]);
+  else
+    return;
+  //--------------------------------------------------------------------
+  int no_ele_values = (int)ele_value_vector.size();
+  vector<int>ele_value_index_vector(no_ele_values);
+  GetELEValuesIndexVector(ele_value_index_vector);
+  //--------------------------------------------------------------------
+  int j;
+  double* xyz;
+  CElem* m_ele = NULL;
+  FiniteElement::ElementValue* gp_ele = NULL;
+// write header for cell data
+  vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;
+// header for velocities
+  vtk_file << "VECTORS velocity float " << endl;
+  
+  for(long i=0;i<(long)m_msh->ele_vector.size();i++){
+    //....................................................................
+//    m_ele = m_msh->ele_vector[i];
+//    xyz = m_ele->GetGravityCenter();
+//    tec_file << xyz[0] << " " << xyz[1] << " " << xyz[2] << " ";
+    //....................................................................
+    gp_ele = ele_gp_value[i];
+    vtk_file << gp_ele->Velocity(0,0) << " ";
+    vtk_file << gp_ele->Velocity(1,0) << " ";
+    vtk_file << gp_ele->Velocity(2,0) << " ";
+    vtk_file << endl;
+  }
+// now we write the rest
+
+    //....................................................................
+    for(j=0;j<(int)ele_value_index_vector.size();j++){
+// header now scalar data
+    vtk_file << "SCALARS " << m_pcs->pcs_primary_function_name[0] << " float 1" << endl;
+    vtk_file << "LOOKUP_TABLE default" <<endl;
+
+	for(long i=0;i<(long)m_msh->ele_vector.size();i++){
+	    vtk_file << m_pcs->GetElementValue(i,ele_value_index_vector[j]) << endl;
+	}
+    }
+  
+  //--------------------------------------------------------------------
+  ele_value_index_vector.clear();
+}
+
+
+
+

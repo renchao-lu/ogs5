@@ -161,6 +161,7 @@
 #define CHEM_REACTION_EXTENSION  ".pqc"
   /* Dateinamen-Erweiterung fuer Text-Eingabedatei (Chemical reaction) */
 #define TEC_FILE_EXTENSION ".tec"
+#define VTK_FILE_EXTENSION ".vtk" //GK
 #define CSV_FILE_EXTENSION ".csv"
 
 #define noTESTFILES
