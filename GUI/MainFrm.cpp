@@ -1012,3 +1012,26 @@ void CMainFrame::OnDeselectAllInPicking()
 
 	pView->OnDeselectAllInPicking();
 }
+
+/**************************************************************************
+GeoSysGUI-Method: 
+Task: 
+Programing:
+04/2006 TK Implementation
+**************************************************************************/
+void CMainFrame::UpdateSpecificView(char *view_class_name, CDocument *m_pDoc)
+{
+
+ 	POSITION position = m_pDoc->GetFirstViewPosition();
+    while (position != NULL)
+    {
+        CView* pView = m_pDoc->GetNextView(position);
+        CRuntimeClass* prt = pView->GetRuntimeClass();
+        prt->m_lpszClassName;
+        if ( strcmp( prt->m_lpszClassName, "COGLView" )  == 0 )
+        {
+            pView->Invalidate(TRUE);
+            
+        }
+    }
+}

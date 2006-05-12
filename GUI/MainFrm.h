@@ -79,6 +79,7 @@ public:
     afx_msg void OnMSHView(); //OK
     afx_msg void OnPCSView(); //OK
     afx_msg void OnControlPanel(); //OK
+    afx_msg void UpdateSpecificView(char *view_class_name, CDocument *m_pDoc); //TK
  
     //PCH ends
     void OnProgressBar();
@@ -104,6 +105,7 @@ public:
     int m_x_value_color;
     int m_y_value_color;
     int m_z_value_color;
+    int m_permeability_value_color;
     CString m_pcs_name;
     int m_3dcontrol_bc;
     double m_tolerancefactor;
