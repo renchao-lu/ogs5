@@ -554,7 +554,7 @@ void CInitialCondition::SetDomain(int nidx)
     vector<string>var_name;
     string var_name_string;
     string sdummy;
-    double ddummy;
+    double ddummy, dddummy;
     long ldummy;
     //....................................................................
     // File handling  
@@ -588,11 +588,12 @@ void CInitialCondition::SetDomain(int nidx)
       var_name_string.erase(pos,1);
       var_name.push_back(var_name_string);
     }
-    while(!rfr_file.eof()) {
-      rfr_file >> ldummy;
+    while(!rfr_file.eof()) { //TODO Implementation/Manual Correction of Keyword #STOP: TK
+      rfr_file >> dddummy;
+        ldummy  = (long)dddummy;
         cout << ldummy << endl;
       for(i=0;i<no_var;i++){ // HEAD, m ...
-        rfr_file >> ddummy;
+         rfr_file >> ddummy;
           m_pcs->SetNodeValue(ldummy,nidx,ddummy);      
       }
     }
