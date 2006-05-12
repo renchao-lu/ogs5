@@ -5920,7 +5920,31 @@ CRFProcess* PCSGet(string var_name,bool bdummy)
   }
   return NULL;
 }
-
+/**************************************************************************
+PCSLib-Method:
+05/2006 CMCD Implementation
+**************************************************************************/
+CRFProcess* PCSGetFluxProcess()
+{
+  CRFProcess *m_pcs;
+  int i;
+  bool found = false;
+  string help;
+  int no_processes = (int) pcs_vector.size();
+  for (i=0; i<no_processes; i++){
+    help = pcs_vector[i]->pcs_type_name;
+    if (pcs_vector[i]->pcs_type_name=="LIQUID_FLOW") {
+       m_pcs = pcs_vector[i];
+       found = true;
+       }
+    if (pcs_vector[i]->pcs_type_name=="GROUNDWATER_FLOW"){
+       m_pcs = pcs_vector[i];
+       found = true;
+       }
+    if (found) return m_pcs;
+  }
+  return NULL;
+}
 /*************************************************************************
 GeoSys-FEM Function:
 Task: 

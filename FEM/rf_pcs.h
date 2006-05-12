@@ -397,7 +397,8 @@ extern void PCSDelete();
 extern void PCSDelete(string);
 extern void PCSCreate();
 extern CRFProcess *PCSGet(string,string); //SB
-extern CRFProcess* PCSGet(string,bool); //OK
+extern CRFProcess *PCSGet(string,bool); //OK
+extern CRFProcess *PCSGetFluxProcess();//CMCD
 // NOD
 extern int PCSGetNODValueIndex(string,int);
 extern double PCSGetNODValue(long,char*,int);

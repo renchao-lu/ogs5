@@ -590,7 +590,8 @@ void CTimeDiscretization::CheckCourant(void)
   double velocity[3]={0.,0.,0.};
   double porosity, vg, advective_velocity, length, courant;
   CRFProcess* m_pcs = NULL;
-  m_pcs = PCSGet("HEAD",false);
+  m_pcs = PCSGetFluxProcess();
+  if (!m_pcs) return;
   int pcs_no = m_pcs->pcs_number;
   CMediumProperties* m_mmp = NULL;
   CElem* elem =NULL;
