@@ -2472,7 +2472,7 @@ void COutput::WriteVTKElementData(fstream& vtk_file)
 // write cell types
 
 // write cell_types header
-  vtk_file << "CELL_TYPES " << m_msh->ele_vector.size() << endl; 
+  vtk_file << "CELL_TYPES " << (int) m_msh->ele_vector.size() << endl; 
 
   for(long i=0;i<(long)m_msh->ele_vector.size();i++){
     m_ele = m_msh->ele_vector[i];
@@ -2547,7 +2547,7 @@ void COutput::WriteVTKValues(fstream&vtk_file)
   GetELEValuesIndexVector(ele_value_index_vector);
   //--------------------------------------------------------------------
   int j;
-  double* xyz;
+//  double* xyz;
   CElem* m_ele = NULL;
   FiniteElement::ElementValue* gp_ele = NULL;
 // write header for cell data
