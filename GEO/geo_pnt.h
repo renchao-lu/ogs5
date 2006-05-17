@@ -54,6 +54,7 @@ class CGLPoint
     int display_mode;
 	int m_color[3]; 
     bool selected;
+    int plg_hightlight_seg;
   //----------------------------------------------------------------------
   // Methods
     // Create

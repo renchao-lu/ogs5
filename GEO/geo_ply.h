@@ -41,6 +41,7 @@ class CGLPolyline
     int m_color[3];
     int display_mode;
     bool closed;
+    double min_plg_Dis;
     //components
 	bool computeline;
     int number_of_points;
