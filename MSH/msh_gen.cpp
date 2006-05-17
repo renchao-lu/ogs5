@@ -1379,7 +1379,7 @@ void Mesh_Single_Surface(string surface_name, const char *file_name_const_char)
 		    fprintf(geo_file,"%s",", ");
 		    fprintf(geo_file,"%g",surface_points_searchvector[k]->z);
 		    fprintf(geo_file,"%s",", ");
-		    fprintf(geo_file,"%g",density);
+		    fprintf(geo_file,"%g",density/4);
 		    fprintf(geo_file,"%s\n","};");
                     
           }
@@ -1505,7 +1505,7 @@ void Select_Nodes_Elements_by_TINFile(const char *file_name_const_char)
 //READ GMSH-File and fill local Element Vector
   vector<Mesh_Group::CFEMesh*>check_msh_vector;
   Mesh_Group::CFEMesh* m_check_elements;
-//  char text[1024];
+  char text[1024];
   long id_elem;
 
   string m_strFileNameTIN = file_name_const_char;
@@ -1648,16 +1648,29 @@ void Select_Nodes_Elements_by_TINFile(const char *file_name_const_char)
                 if (dist<=tolerance && dist>=-tolerance)
                 {
                   angle_sum = AngleSumPointInsideTriangle(checkpoint,tri_point1,tri_point2,tri_point3, min_mesh_dist);
-                  //if (point.PointInTriangle(tri_x,tri_y,tri_z) || angle_sum>359)
-                  //if (point.PointInTriangle(tri_x,tri_y,tri_z))
                   if(angle_sum>359)
                   fem_msh_vector[temp_mesh-1]->nod_vector[i]->selected = 1;
                 }
         }
+        // Loop over all mesh elements
+        for(i=0;i<(long)fem_msh_vector[temp_mesh-2]->ele_vector.size();i++)
+        {
+            if (fem_msh_vector[temp_mesh-2]->ele_vector[i]->GetElementType() == 2) /*Quad*/ 
+            {
+            double* xyz;
+            xyz = fem_msh_vector[temp_mesh-2]->ele_vector[i]->GetGravityCenter();
+            checkpoint[0] = xyz[0];
+            checkpoint[1] = xyz[1];
+            checkpoint[2] = xyz[2];
+            angle_sum = AngleSumPointInsideTriangle(checkpoint,tri_point1,tri_point2,tri_point3, min_mesh_dist/10);
 
+            if(angle_sum>359.8)
+            fem_msh_vector[temp_mesh-2]->ele_vector[i]->selected = 1;
+            }
+        }
   }
 
-  int a = (int) fem_msh_vector[temp_mesh-1]->nod_vector.size();
+  int a = fem_msh_vector[temp_mesh-1]->nod_vector.size();
   int index;
   //Loop over all meshes
     for(j=0;j<(long)fem_msh_vector.size()-1;j++)
@@ -1689,11 +1702,11 @@ void Select_Nodes_Elements_by_TINFile(const char *file_name_const_char)
         {
             fem_msh_vector[j]->ele_vector[i]->GetNodeIndeces(node_index);
 
-            if (fem_msh_vector[j]->ele_vector[i]->GetElementType() == 3) /*Quad*/ 
+            if (fem_msh_vector[j]->ele_vector[i]->GetElementType() == 0) /*Quad*/ 
             {
-                if (fem_msh_vector[j]->nod_vector[node_index[0]]->selected == 1 &&
-                    fem_msh_vector[j]->nod_vector[node_index[1]]->selected == 1 &&
-                    fem_msh_vector[j]->nod_vector[node_index[2]]->selected == 1 &&
+                if (fem_msh_vector[j]->nod_vector[node_index[0]]->selected == 1 ||
+                    fem_msh_vector[j]->nod_vector[node_index[1]]->selected == 1 ||
+                    fem_msh_vector[j]->nod_vector[node_index[2]]->selected == 1 ||
                     fem_msh_vector[j]->nod_vector[node_index[3]]->selected == 1 )
                     fem_msh_vector[j]->ele_vector[i]->selected = 1;   
             }

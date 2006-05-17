@@ -78,6 +78,7 @@ class CFEMesh
   public:
     int ele_display_mode;
     int nod_display_mode;
+    int patch_display_mode;
     int ele_mat_display_mode;
     int highest_mat_group_nb;
 
