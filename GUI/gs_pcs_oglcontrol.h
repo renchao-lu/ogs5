@@ -21,6 +21,7 @@ public:
     double m_pcs_min;
     double m_pcs_max;
     CString m_pcs_name;
+    void GetPcsMinmax();
 public: 
     void OnControlPanel(); 
 	DECLARE_MESSAGE_MAP()

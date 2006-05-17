@@ -140,6 +140,7 @@ void CGSForm3DLeft::SetTree()
     int i=0;
     int j=0;
     CString item_name;
+    CRFProcess* m_process = NULL;
 
 
 pCtrl = (CTreeCtrl*) GetDlgItem(IDC_TREE1);
@@ -227,19 +228,16 @@ HTREEITEM hMESH = pCtrl->InsertItem("MSH",9,9);
     _tprintf(_T("%s"), (LPCTSTR) item_name);
     item_name = "Elements (" + item_name + ")";
     pCtrl->InsertItem(item_name, 0, 1, hMESH);
-
-    
+   
     /*Material Group Numbers*/ 
     HTREEITEM hMATGROUPNB = pCtrl->InsertItem(_T("Material Groups"), 0, 1, hMESH);
     if((int)fem_msh_vector[i]->ele_vector.size()>0)
     fem_msh_vector[i]->highest_mat_group_nb = fem_msh_vector[i]->ele_vector[0]->GetPatchIndex();
     for (j=0;j<(int)fem_msh_vector[i]->ele_vector.size();j++)
-    {
-        
+    {       
         if (fem_msh_vector[i]->highest_mat_group_nb < fem_msh_vector[i]->ele_vector[j]->GetPatchIndex())
         fem_msh_vector[i]->highest_mat_group_nb = fem_msh_vector[i]->ele_vector[j]->GetPatchIndex();
     }
-
     for (j=0;j<=(int)fem_msh_vector[i]->highest_mat_group_nb;j++)
     {
         item_name.Format(_T("%d"),j);
@@ -257,6 +255,25 @@ HTREEITEM hMESH = pCtrl->InsertItem("MSH",9,9);
         pCtrl->InsertItem("X_Value",0,1, hMATGROUPNB, TVI_LAST);
         pCtrl->InsertItem("Y_Value",0,1, hMATGROUPNB, TVI_LAST);
         pCtrl->InsertItem("Z_Value",0,1, hMATGROUPNB, TVI_LAST);
+
+    int pcs_i=0;
+    int pcs_j=0;
+    for(pcs_j=0;pcs_j<(int)pcs_vector.size();pcs_j++)
+    {
+      m_process = pcs_vector[pcs_j];
+        for(pcs_i=0;pcs_i<(int)m_process->m_msh->mat_names_vector.size();pcs_i++)
+            if(m_process->m_msh->mat_names_vector[pcs_i].compare("PERMEABILITY")==0)
+                 pCtrl->InsertItem("Permeability",0,1, hMATGROUPNB, TVI_LAST);
+                 break;
+    }
+
+    /*Patch Areas */ 
+    item_name.Format(_T("%d"),fem_msh_vector[i]->nod_vector.size());
+    _tprintf(_T("%s"), (LPCTSTR) item_name);
+    item_name = "Patch Areas (" + item_name + ")";
+    pCtrl->InsertItem(item_name, 0, 1, hMESH);
+
+
     }
 
 
@@ -265,7 +282,6 @@ tvInsert.item.pszText = _T("PCS");
 HTREEITEM hFEM = pCtrl->InsertItem("PCS",9,9);
 
     /*PCS TREE*/   
-    CRFProcess* m_process = NULL;
     list_length = (int)pcs_vector.size();
     for(j=0;j<list_length;j++)
     {
@@ -349,6 +365,7 @@ void CGSForm3DLeft::OnDataChange()
     mainframe->m_x_value_color = m_x_value_color;
     mainframe->m_y_value_color = m_y_value_color;
     mainframe->m_z_value_color = m_z_value_color;
+    mainframe->m_permeability_value_color = m_permeability_value_color;
 
     mainframe->m_something_changed = 1;
     CGeoSysDoc* pdoc = GetDocument();
@@ -365,6 +382,7 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
   int i=0;
   int j=0;
   long id;
+  CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();   
   CString item_name;
   CString pcs_item_name;
   Cgs_pcs_oglcontrol* m_modelessDlg=NULL;
@@ -721,7 +739,7 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
 			 theApp.ElementSwitch = 0;
         }
 
-
+ 
         /*Material Groups*/   
         if (nSelectedImage == 1 && item_name.Find("Material Groups") == 0)
         {
@@ -791,6 +809,37 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
              OnDataChange();       
         }
 
+       /*PATCH AREA*/      
+        if (nSelectedImage == 1 && item_name.Find("Patch Areas") == 0)
+        {
+             hPCSItem = pCtrl->GetNextItem(hItem, TVGN_PREVIOUS);
+             hPCSItem = pCtrl->GetNextItem(hPCSItem, TVGN_PREVIOUS);
+             hPCSItem = pCtrl->GetNextItem(hPCSItem, TVGN_PREVIOUS);
+             hPCSItem = pCtrl->GetNextItem(hPCSItem, TVGN_PREVIOUS);
+             pcs_item_name = pCtrl->GetItemText(hPCSItem);
+             size = (long)fem_msh_vector.size();
+             for (i=0; i<size; i++)
+             {
+                 if (fem_msh_vector[i]->pcs_name.data() == pcs_item_name)
+                   fem_msh_vector[i]->patch_display_mode= 1;
+             }
+             OnDataChange();       
+        }
+        if (nSelectedImage == 0 && item_name.Find("Patch Areas") == 0)
+        {
+             hPCSItem = pCtrl->GetNextItem(hItem, TVGN_PREVIOUS);
+             hPCSItem = pCtrl->GetNextItem(hPCSItem, TVGN_PREVIOUS);
+             hPCSItem = pCtrl->GetNextItem(hPCSItem, TVGN_PREVIOUS);
+             hPCSItem = pCtrl->GetNextItem(hPCSItem, TVGN_PREVIOUS);
+             pcs_item_name = pCtrl->GetItemText(hPCSItem);
+             size = (long)fem_msh_vector.size();
+             for (i=0; i<size; i++)
+             {
+                 if (fem_msh_vector[i]->pcs_name.data() == pcs_item_name)
+                   fem_msh_vector[i]->patch_display_mode = 0;
+             }
+             OnDataChange();       
+        }
 
 
         /*MATERIAL PROPERTIES*/   
@@ -1028,12 +1077,14 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
              id = atol(item_name);
 
              if (item_name == "MG_Mesh" || item_name == "X_Value" ||
-                 item_name == "Y_Value" || item_name == "Z_Value" )
+                 item_name == "Y_Value" || item_name == "Z_Value" ||
+                 item_name == "Permeability" )
              {
                 if (item_name == "MG_Mesh" )m_selected_wire_frame = 1;
                 if (item_name == "X_Value" )m_x_value_color = 1;
                 if (item_name == "Y_Value" )m_y_value_color = 1;
                 if (item_name == "Z_Value" )m_z_value_color = 1;
+                if (item_name == "Permeability" )m_permeability_value_color = 1;
              }
              else
              {
@@ -1074,22 +1125,7 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
                 {
                     m_3dcontrol_pcs = 1;
                     m_pcs_name = parent_item_name;
-
-                    OnDataChange();
-	                if(m_modelessDlg==NULL)
-	                {
-		                m_modelessDlg=new Cgs_pcs_oglcontrol(this);
-		                m_modelessDlg->Create(IDD_PCS_DISPLAY_CONTROL);
-		                m_modelessDlg->ShowWindow(SW_SHOW);
-                        m_modelessDlg->BringWindowToTop();
-                        long cx = ::GetSystemMetrics(SM_CXMAXIMIZED);
-                        long cy = ::GetSystemMetrics(SM_CYMAXIMIZED);
-                        cx = 200;
-                        cy = 200;
-                        long x =  ::GetSystemMetrics(SM_CXMAXIMIZED)- cx;
-                        long y =  ::GetSystemMetrics(SM_CYMAXIMIZED)- cy ;
-                        m_modelessDlg->SetWindowPos(&CWnd::wndTop,x,y,cx,cy,SWP_NOSIZE);
-                    }
+                    OnDataChange();                   
                 }              
             }                   
 
@@ -1194,12 +1230,14 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
              item_name = pCtrl->GetItemText(hItem);
              id = atol(item_name);
              if (item_name == "MG_Mesh" || item_name == "X_Value" ||
-                 item_name == "Y_Value" || item_name == "Z_Value" )
+                 item_name == "Y_Value" || item_name == "Z_Value" ||
+                 item_name == "Permeability" )
              {
                 if (item_name == "MG_Mesh" )m_selected_wire_frame = 0;
                 if (item_name == "X_Value" )m_x_value_color = 0;
                 if (item_name == "Y_Value" )m_y_value_color = 0;
                 if (item_name == "Z_Value" )m_z_value_color = 0;
+                if (item_name == "Permeability" )m_permeability_value_color = 0;
              }
              else
              {

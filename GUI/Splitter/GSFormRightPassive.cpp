@@ -55,6 +55,10 @@ CGSFormRightPassive::CGSFormRightPassive()
     m_tolerancefactor=0.000;
     m_polyline_min_seg_length = 0.000;
     m_polyline_max_seg_length = 1.000;
+    m_polyline_smaller_seg_length_def = 0.000;
+    m_pcs_min= 0.0;
+    m_pcs_max= 0.0;
+    GetPcsMinmax();
 	//{{AFX_DATA_INIT(CGSFormRightPassive)
 		// NOTE: the ClassWizard will add member initialization here
 	//}}AFX_DATA_INIT
@@ -67,18 +71,23 @@ CGSFormRightPassive::~CGSFormRightPassive()
 
 void CGSFormRightPassive::DoDataExchange(CDataExchange* pDX)
 {
-	CFormView::DoDataExchange(pDX);
-	//{{AFX_DATA_MAP(CGSFormRightPassive)
-	DDX_Control(pDX, IDC_LIST, m_List);
+    CFormView::DoDataExchange(pDX);
+    //{{AFX_DATA_MAP(CGSFormRightPassive)
+    DDX_Control(pDX, IDC_LIST, m_List);
     DDX_Text(pDX,IDC_X_IMAGEDISTORT, m_image_distort_factor_x);
     DDX_Text(pDX,IDC_Y_IMAGEDISTORT, m_image_distort_factor_y);
     DDX_Text(pDX,IDC_Z_IMAGEDISTORT, m_image_distort_factor_z);
     DDX_Text(pDX,IDC_EDIT_TOLERANCE, m_tolerancefactor);
     DDX_Text(pDX, IDC_EDIT_MIN_POLYLENGTH, m_polyline_min_seg_length);
     DDX_Text(pDX, IDC_EDIT_MAX_POLYLENGTH, m_polyline_max_seg_length);
+    DDX_Text(pDX, IDC_EDIT_SMALER_POLYLENGTH_DEF, m_polyline_smaller_seg_length_def);
+    DDX_Text(pDX,IDC_PCS_MIN_EDIT, m_pcs_min);
+    DDX_Text(pDX,IDC_PCS_MAX_EDIT, m_pcs_max);
+    DDX_Control(pDX, IDC_SLIDER1, m_slider1);
+    DDX_Control(pDX, IDC_SLIDER2, m_slider2);
 
-  	//}}AFX_DATA_MAP
 
+    //}}AFX_DATA_MAP
 }
 
 BEGIN_MESSAGE_MAP(CGSFormRightPassive, CFormView)
@@ -94,6 +103,12 @@ BEGIN_MESSAGE_MAP(CGSFormRightPassive, CFormView)
     ON_BN_CLICKED(IDC_RELOAD_GEO_BUTTON, OnBnClickedReloadGeoButton)
     ON_BN_CLICKED(IDC_EDITOR_GEO_BUTTON, OnBnClickedEditorGeoButton)
     ON_BN_CLICKED(IDC_POINT_NUMBERS_CHECK, OnBnClickedPointNumbersCheck)
+    ON_BN_CLICKED(IDC_GET_SEGLENGTH_SMALLER_DEF, OnBnClickedGetSeglengthSmallerDef)
+    ON_BN_CLICKED(IDC_GET_PCS_MINMAX_BUTTON3, OnBnClickedGetPcsMinmaxButton3)
+    ON_BN_CLICKED(IDC_SET_PCS_MINMAX_BUTTON2, OnBnClickedSetPcsMinmaxButton2)
+    ON_BN_CLICKED(IDC_VALUE_POINTS_BUTTON, OnBnClickedValuePointsButton)
+    ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLIDER1, OnNMCustomdrawSlider1)
+    ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLIDER2, OnNMCustomdrawSlider2)
 END_MESSAGE_MAP()
 
 
@@ -212,8 +227,8 @@ void CGSFormRightPassive::OnNotDistortImage()
 void CGSFormRightPassive::OnBnClickedCheckDoublePoints()
 {
   CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
-  CGeoSysDoc *m_pDoc = GetDocument();
-  CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+  //CGeoSysDoc *m_pDoc = GetDocument();
+  //CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   
 
   if(double_points_button_check_on==1)double_points_button_check_on=0;
@@ -656,3 +671,203 @@ void CGSFormRightPassive::OnBnClickedPointNumbersCheck()
 
 }
 
+
+void CGSFormRightPassive::OnBnClickedGetSeglengthSmallerDef()
+{
+     UpdateData(TRUE);
+
+	int j=0, l=0, hit=0;
+	long pointsvectorsize, polylinesvectorsize;
+	long number_of_polylinepoints;
+	long check_point;
+    double x1=0.0,y1=0.0,z1=0.0,seg_length=0.0;
+    double x2=0.0,y2=0.0,z2=0.0,seg_length_saved=0.0;
+	vector<CGLPoint*> gli_points_vector;
+	gli_points_vector = GetPointsVector();
+    pointsvectorsize =(long)gli_points_vector.size();
+	CGLPolyline *gl_polyline = NULL;
+    vector<CGLPolyline*> polyline_vector;
+	polyline_vector = GetPolylineVector();
+	polylinesvectorsize =(long)polyline_vector.size();
+	vector<CGLPolyline*>::const_iterator p = polyline_vector.begin();
+
+	string Name;
+    
+   	for (l=0;l<polylinesvectorsize;l++)
+    { 	
+		gl_polyline = *p;
+		Name = gl_polyline->name;
+        gl_polyline->min_plg_Dis = m_polyline_smaller_seg_length_def;
+		number_of_polylinepoints = (long)gl_polyline->point_vector.size();
+		for (j=0;j<number_of_polylinepoints;j++)
+		{ 
+          gl_polyline->point_vector[j]->plg_hightlight_seg = 0;
+        }           
+        for (j=0;j<number_of_polylinepoints-1;j++)
+		{ 
+            check_point = gl_polyline->point_vector[j]->id;
+            x1 = gl_polyline->point_vector[j]->x;
+            y1 = gl_polyline->point_vector[j]->y;
+            z1 = gl_polyline->point_vector[j]->z;
+
+            check_point = gl_polyline->point_vector[j+1]->id;
+            x2 = gl_polyline->point_vector[j+1]->x;
+            y2 = gl_polyline->point_vector[j+1]->y;
+            z2 = gl_polyline->point_vector[j+1]->z;
+
+            seg_length = EuklVek3dDistCoor ( x1, y1, z1, x2, y2, z2 ); 
+
+            if (seg_length <  m_polyline_smaller_seg_length_def)
+            {
+                gl_polyline->point_vector[j]->plg_hightlight_seg = 1;    
+                gl_polyline->point_vector[j+1]->plg_hightlight_seg = 1;
+            }
+		}
+		++p;
+	}
+
+ 
+ CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+ CGeoSysDoc *m_pDoc = GetDocument();
+ m_frame->m_something_changed = 1;
+ //m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
+ m_pDoc->UpdateAllViews(NULL);
+ Invalidate(TRUE);
+
+
+
+}
+
+void CGSFormRightPassive::OnBnClickedGetPcsMinmaxButton3()
+{
+ CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+ CGeoSysDoc *m_pDoc = GetDocument();
+ m_pcs_name =  m_frame->m_pcs_name;
+ GetPcsMinmax();
+ UpdateData(FALSE);
+ m_frame->m_something_changed = 1;
+ //m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
+ m_pDoc->UpdateAllViews(NULL);
+ Invalidate(TRUE);
+}
+
+void CGSFormRightPassive::GetPcsMinmax()
+{
+  long i=0, j=0;
+  double value;
+  int nb_processes = 0;
+  CString pcs_name;
+  CString pcs_value_name;
+  m_pcs_min = 1.e+19;
+  m_pcs_max = -1.e+19;
+ 
+  CRFProcess* m_process = NULL;
+  nb_processes = (int)pcs_vector.size();
+  for(i=0;i<nb_processes;i++)
+  {
+      m_process = pcs_vector[i];
+      pcs_name = m_process->pcs_type_name.data();
+      if (m_process->pcs_primary_function_name[0]== m_pcs_name)
+      {
+        int nidx = m_process->GetNodeValueIndex((string)m_pcs_name);
+        for(j=0;j<(long)m_process->nod_val_vector.size();j++){
+        value = m_process->GetNodeValue(j,nidx);
+        if(value<m_pcs_min) m_pcs_min = value;
+        if(value>m_pcs_max) m_pcs_max = value;
+        }
+
+
+      }  
+  }
+    CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+    mainframe->m_pcs_min = m_pcs_min;
+    mainframe->m_pcs_max = m_pcs_max;
+    mainframe->m_something_changed = 1;
+}
+
+void CGSFormRightPassive::OnBnClickedSetPcsMinmaxButton2()
+{
+    UpdateData(TRUE);
+    CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+    CGeoSysDoc *m_pDoc = GetDocument();
+    m_frame->m_pcs_min = m_pcs_min;
+    m_frame->m_pcs_max = m_pcs_max;
+    m_frame->m_something_changed = 1;
+    m_pDoc->UpdateAllViews(NULL);
+    Invalidate(TRUE);
+}
+
+void CGSFormRightPassive::OnBnClickedValuePointsButton()
+{
+    CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+    CGeoSysDoc *m_pDoc = GetDocument();
+    m_frame->move_distance = 0;
+    m_frame->pcs_value_distort_factor = 0;
+    if (m_frame->m_pcs_values_mesh != 1)
+    m_frame->m_pcs_values_mesh = 1;
+    else m_frame->m_pcs_values_mesh = 0;
+    m_frame->m_something_changed = 1;
+    m_pDoc->UpdateAllViews(NULL);
+    Invalidate(TRUE);
+
+
+}
+
+void CGSFormRightPassive::OnNMCustomdrawSlider1(NMHDR *pNMHDR, LRESULT *pResult)
+{
+ 
+    LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
+
+    CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+    CGeoSysDoc *m_pDoc = GetDocument();
+ 
+    m_slider1.SetRangeMin(-100);
+    m_slider1.SetRangeMax(100);
+    int max = m_slider1.GetRangeMax();
+    int min = m_slider1.GetRangeMin(); 
+    int pos = m_slider1.GetPos();
+
+    if (pos != m_frame->move_distance)
+    {
+    m_frame->move_distance = pos;
+    
+    //START UpdateSpecificViews   
+    m_frame-> UpdateSpecificView("COGLView", m_pDoc);
+
+    
+
+    }
+    *pResult = 0;
+
+
+}
+
+
+
+void CGSFormRightPassive::OnNMCustomdrawSlider2(NMHDR *pNMHDR, LRESULT *pResult)
+{
+    LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
+
+    CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+    CGeoSysDoc *m_pDoc = GetDocument();
+ 
+    m_slider2.SetRangeMin(-100);
+    m_slider2.SetRangeMax(100);
+    int max = m_slider2.GetRangeMax();
+    int min = m_slider2.GetRangeMin();
+    int pos = m_slider2.GetPos();
+
+    if (pos != m_frame->pcs_value_distort_factor)
+    {
+        m_frame->pcs_value_distort_factor = pos;
+    
+    //START UpdateSpecificViews   
+    m_frame-> UpdateSpecificView("COGLView", m_pDoc);
+
+    
+
+    }
+    *pResult = 0;
+
+
+}

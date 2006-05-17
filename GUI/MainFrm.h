@@ -117,6 +117,9 @@ public:
     double m_pcs_min;
     double m_pcs_max;
     double dist_geo_object;
+    int move_distance;
+    int pcs_value_distort_factor;
+    int m_pcs_values_mesh;
     // View control
     bool m_bIsGEOViewOpen; //OK
     bool m_bIsMSHViewOpen; //OK

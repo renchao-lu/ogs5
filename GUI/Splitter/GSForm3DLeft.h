@@ -49,6 +49,7 @@ public:
     int m_x_value_color;
     int m_y_value_color;
     int m_z_value_color;
+    int m_permeability_value_color;
 
     CString m_pcs_name;
     CTreeCtrl* pCtrl;

@@ -96,6 +96,7 @@ BOOL CSourceTerms::OnInitDialog()
   m_CB_DISType.InitStorage(2,80);
   m_CB_DISType.AddString("CONSTANT");
   m_CB_DISType.AddString("LINEAR");
+  m_CB_DISType.AddString("CONSTANT_NEUMANN");
   m_CB_DISType.SetCurSel(0);
   //---------------------------------------------------------------------------
   // ST Table

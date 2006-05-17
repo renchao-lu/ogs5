@@ -44,6 +44,7 @@ public:
     int m_3dcontrol_mesh_quality_graph;
     int m_3dcontrol_point_numbers;
     int m_selected_wire_frame;
+    int m_pcs_values_mesh;
     CString m_pcs_name;
 
     double m_tolerancefactor;
@@ -55,8 +56,13 @@ public:
     int m_x_value_color;
     int m_y_value_color;
     int m_z_value_color;
+    int m_permeability_value_color;
     CString m_strQuantityName;
     CTreeCtrl* pCtrl;
+    double pre_time;
+    int move_distance;
+    int df;
+
 
      
 
@@ -217,9 +223,11 @@ private:
     void Draw_TetWireFrame(int msh_vector_position, int element_vector_position);
     void Draw_PrismWireFrame(int msh_vector_position, int element_vector_position);
     void Draw_SelectedTriangles(int msh_vector_position, int element_vector_position);
+    void Draw_SelectedQuads(int msh_vector_position, int element_vector_position);
     double Get_Red_Value(double value_norm);
     double Get_Green_Value(double value_norm);
     double Get_Blue_Value(double value_norm);
+    void UpdatePcsMinmax();
 
 private:
 	CGLDispList anothercube;
@@ -275,6 +283,7 @@ class CViewPolylines
     double y;
     double z;
     CString polylinename;
+    double plg_seg_min_def;
 	vector<CGLPoint*> polyline_point_vector;
 
 

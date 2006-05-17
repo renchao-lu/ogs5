@@ -1,4 +1,5 @@
 #pragma once
+#include "afxcmn.h"
 
 
 
@@ -16,7 +17,7 @@ protected:
 // Form Data
 public:
 	//{{AFX_DATA(CGSFormRightPassive)
-	enum { IDD = IDD_CONTROL_RIGHT_PASSIVE_FORM };
+    enum { IDD = IDD_CONTROL_RIGHT_PASSIVE_FORM };
    	CListBox	m_List;
     int m_bounding_box;
     int m_3dcontrol_double_points;
@@ -41,6 +42,11 @@ public:
     double m_tolerancefactor;
     double m_polyline_min_seg_length;
     double m_polyline_max_seg_length;
+    double m_polyline_smaller_seg_length_def;
+    double m_pcs_min;
+    double m_pcs_max;
+    CString m_pcs_name;
+
 
 
 #ifdef _DEBUG
@@ -81,6 +87,17 @@ public:
     afx_msg void OnBnClickedReloadGeoButton();
     afx_msg void OnBnClickedEditorGeoButton();
     afx_msg void OnBnClickedPointNumbersCheck();
+    afx_msg void OnBnClickedGetSeglengthSmallerDef();
+    afx_msg void OnBnClickedGetPcsMinmaxButton3();
+
+    void GetPcsMinmax();
+    afx_msg void OnBnClickedSetPcsMinmaxButton2();
+    afx_msg void OnBnClickedValuePointsButton();
+
+    CSliderCtrl m_slider1;
+    CSliderCtrl m_slider2;
+    afx_msg void OnNMCustomdrawSlider1(NMHDR *pNMHDR, LRESULT *pResult);
+    afx_msg void OnNMCustomdrawSlider2(NMHDR *pNMHDR, LRESULT *pResult);
 };
 
 

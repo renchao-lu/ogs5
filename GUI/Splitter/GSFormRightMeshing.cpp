@@ -882,6 +882,7 @@ void CGSFormRightMeshing::OnBnClickedMshnodesInPolygon()
   }
        /*Node and Element Selection*/ 
 
+
  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)" ");
 
  m_frame->dist_geo_object = 0.001;
