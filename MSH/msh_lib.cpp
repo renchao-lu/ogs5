@@ -381,14 +381,13 @@ FEMLib-Method:
 Task:
 Programing:
 03/2005 OK Implementation
+05/2005 TK modified
 **************************************************************************/
 void FEMDeleteAll()
 {
-  CFEMesh* m_fem_msh = NULL;
-  int fem_msh_vector_size = (int)fem_msh_vector.size();
-  for(int i=0;i<fem_msh_vector_size;i++){
-    m_fem_msh = fem_msh_vector[i];
-    if(m_fem_msh) delete m_fem_msh; //WW
+  for(int i=0;i<(int)fem_msh_vector.size();i++){
+      delete fem_msh_vector[i];
+      fem_msh_vector[i]=NULL;
   }
   fem_msh_vector.clear();
 }
