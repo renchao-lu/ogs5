@@ -666,13 +666,13 @@ Programing:
 CCToDo Surface destructor
 08/2005 CC
 03/2006 CC
+05/2006 TK
 **************************************************************************/
 void GEORemoveAllSurfaces()
 {  
-  Surface * m_sfc = NULL;
   for (int i = 0; i < (int) surface_vector.size(); i++){
-     m_sfc = surface_vector[0];
-     delete m_sfc;
+     delete surface_vector[i];
+     surface_vector[i]=NULL;
   }
   surface_vector.clear();
 }

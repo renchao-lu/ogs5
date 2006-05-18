@@ -296,13 +296,16 @@ ios::pos_type CGLPoint::Read(ifstream *gli_file,int* ok)
  Programmaenderungen:
    08/2003     TK        Erste Version
    03/2006 CC Modification
+   05/2006 TK BUGFIX
 **************************************************************************/
 void GEORemoveAllPoints()
 {
-  CGLPoint * m_pnt = NULL;
+  //CGLPoint * m_pnt = NULL;
   for (int i = 0; i < (int) gli_points_vector.size(); i++){
-     m_pnt = gli_points_vector[0];
-     delete m_pnt;
+     //m_pnt = gli_points_vector[0]; TK What's that?
+     //delete m_pnt;
+     delete gli_points_vector[i];
+     gli_points_vector[i]=NULL;
    }
   gli_points_vector.clear();
 }

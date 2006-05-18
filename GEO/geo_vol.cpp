@@ -500,12 +500,8 @@ void GEORemoveAllVolumes()
   int i=0;
   for (i=0;i<(int)volume_vector.size();i++)
   {
-      /*for (j=0;(int)volume_vector[i]->surface_vector.size();j++)
-      {
-        delete volume_vector[i]->surface_vector[j];
-      }
-      volume_vector[i]->surface_vector.clear();*/
       delete volume_vector[i];
+      volume_vector[i]=NULL;
   }
   volume_vector.clear();
 }

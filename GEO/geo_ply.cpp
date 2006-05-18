@@ -117,13 +117,16 @@ Programing:
 CCToDo Polyline destructor
 08/2005 CC Modification
 02/2006 CC destructor
+05/2006 TK BUGFIX
 **************************************************************************/
 void GEORemoveAllPolylines()
 {
-  CGLPolyline * m_ply = NULL;
+  //CGLPolyline * m_ply = NULL;
   for (int i = 0; i < (int) polyline_vector.size(); i++){
-     m_ply = polyline_vector[0];
-     delete m_ply;
+     //m_ply = polyline_vector[0]; //TK: What's that Cui?
+     //delete m_ply;
+  delete polyline_vector[i];
+  polyline_vector[i]=NULL;
   }
   polyline_vector.clear();//CC
 }
