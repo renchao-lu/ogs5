@@ -382,6 +382,7 @@ Task:
 Programing:
 03/2005 OK Implementation
 05/2005 TK modified
+05/2006 TK modified
 **************************************************************************/
 void FEMDeleteAll()
 {

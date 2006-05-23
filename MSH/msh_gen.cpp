@@ -1505,7 +1505,7 @@ void Select_Nodes_Elements_by_TINFile(const char *file_name_const_char)
 //READ GMSH-File and fill local Element Vector
   vector<Mesh_Group::CFEMesh*>check_msh_vector;
   Mesh_Group::CFEMesh* m_check_elements;
-  char text[1024];
+//WW  char text[1024];
   long id_elem;
 
   string m_strFileNameTIN = file_name_const_char;
@@ -1670,7 +1670,7 @@ void Select_Nodes_Elements_by_TINFile(const char *file_name_const_char)
         }
   }
 
-  int a = fem_msh_vector[temp_mesh-1]->nod_vector.size();
+//WW  int a = (int)fem_msh_vector[temp_mesh-1]->nod_vector.size();
   int index;
   //Loop over all meshes
     for(j=0;j<(long)fem_msh_vector.size()-1;j++)
@@ -1766,7 +1766,7 @@ void CFEMesh::SetMSHPart(vector<long>&elements_active, long StrangNumber)
   CFEMesh* m_msh_strang = NULL;
   CNode* m_nod = NULL;
   bool found = false;
-  
+  StrangNumber= StrangNumber;
   size = (long)elements_active.size();
 
   m_msh_strang = FEMGet("MSH_Strang");

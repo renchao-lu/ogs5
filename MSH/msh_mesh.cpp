@@ -197,6 +197,43 @@ ios::pos_type CFEMesh::Read(ifstream *fem_file)
 }
 
 /**************************************************************************
+FEMLib-Method: ConnectedElements2Node
+Task: 
+Programing:
+04/2006 WW Cut from Construct grid
+**************************************************************************/
+void CFEMesh::ConnectedElements2Node()
+{
+   long i, j, e, ni;
+   CElem* thisElem0=NULL;
+//   CElem* thisElem=NULL;
+   bool done = false;
+   // Set neighbors of node
+   for(i=0; i<(long)nod_vector.size(); i++)
+     nod_vector[i]->connected_elements.clear();
+   for(e=0; e<(long)ele_vector.size(); e++)
+   {
+      thisElem0 = ele_vector[e];   
+      if(!thisElem0->GetMark()) continue;
+      for(i=0; i<thisElem0->nnodes; i++)
+       {
+          done = false;
+          ni = thisElem0->GetNodeIndex(i);
+          for(j=0; j<(int)nod_vector[ni]->connected_elements.size(); j++)
+          {
+            if(e==nod_vector[ni]->connected_elements[j])
+            {
+              done = true;
+              break;
+            } 
+          }
+          if(!done)  
+            nod_vector[ni]->connected_elements.push_back(e);
+      }
+   }
+}
+
+/**************************************************************************
 FEMLib-Method: Construct grid
 Task: Establish topology of a grid
 Programing:
@@ -239,25 +276,7 @@ void CFEMesh::ConstructGrid( const bool quadratic)
    Edge_Orientation = 1;
   //----------------------------------------------------------------------
   // Set neighbors of node
-   for(e=0; e<e_size; e++)
-   {
-       thisElem0 = ele_vector[e];   
-       thisElem0->GetNodeIndeces(node_index_glb0);
-       for(i=0; i<thisElem0->nnodes; i++)
-       {
-          done = false;
-          for(j=0; j<(int)nod_vector[node_index_glb0[i]]->connected_elements.size(); j++)
-          {
-            if(e==nod_vector[node_index_glb0[i]]->connected_elements[j])
-            {
-              done = true;
-              break;
-            } 
-          }
-          if(!done)  
-          nod_vector[node_index_glb0[i]]->connected_elements.push_back(e);
-      }
-   }
+  ConnectedElements2Node();
   //----------------------------------------------------------------------
 
 //TEST WW
@@ -807,7 +826,7 @@ void CFEMesh::GetNodesOnArc(CGLPolyline*m_ply, vector<long>&msh_nod_vector)
    const long nNodes = NodesInUsage();   
    const int SizeCGLPoint = (int)m_ply->point_vector.size();
    double r1, r2,a0,a1,a2;
-   const double Tol = 1.0e-6;
+   const double Tol = 1.0e-5;
    double xa[3],xb[3],xc[3], xn[3];
    msh_nod_vector.clear();
    if(SizeCGLPoint>3)
@@ -858,8 +877,8 @@ void CFEMesh::GetNodesOnArc(CGLPolyline*m_ply, vector<long>&msh_nod_vector)
              msh_nod_vector.push_back(i);
          else
          {
-            a1 = acos(dotProduction(xa,xn, xc)/(r1*r1));
-            a2 = acos(dotProduction(xb,xn, xc)/(r1*r1));
+            a1 = acos(dotProduction(xa,xn, xc)/(r1*r2));
+            a2 = acos(dotProduction(xb,xn, xc)/(r1*r2));
             if(fabs(a1+a2-a0)<Tol)  
                msh_nod_vector.push_back(nod_vector[i]->GetIndex());
          }
@@ -1502,17 +1521,21 @@ Task: Get nodes on cylindrical surface by comparing the area of
 Programing:
 10/2004 WW Implementation
 05/2005 WW Transplant to this object from GEOLIB
+04/2006 WW Case of quadratic elements
 last modification:
 **************************************************************************/
 void CFEMesh::GetNodesOnCylindricalSurface(Surface*m_sfc, vector<long>& NodesS)
 {
-  long j;
-  const int nNodes = NodesInUsage();   
+  int k, l, nf;
+  long i, j, m, fnode;
+  const int nNodes = NodesInUsage(); 
+  int faceIndex_loc[10];
   double gC[3],p1[3],p2[3];
   double dist, R, dc1, dc2;
-
+  CElem* elem = NULL;
+  CNode* cnode = NULL; 
   NodesS.clear();
-
+  m_sfc->epsilon = 1.0e-6;
   p1[0] = m_sfc->polygon_point_vector[0]->x;
   p1[1] = m_sfc->polygon_point_vector[0]->y;
   p1[2] = m_sfc->polygon_point_vector[0]->z;
@@ -1528,9 +1551,10 @@ void CFEMesh::GetNodesOnCylindricalSurface(Surface*m_sfc, vector<long>& NodesS)
   // Check nodes by comparing area 
   for(j=0; j<nNodes; j++)
   {        
-     gC[0] = nod_vector[j]->X();
-     gC[1] = nod_vector[j]->Y();
-     gC[2] = nod_vector[j]->Z();
+     cnode = nod_vector[j];
+     gC[0] = cnode->X();
+     gC[1] = cnode->Y();
+     gC[2] = cnode->Z();
 
      dc1 =  (p2[0]-p1[0])*(gC[0]-p1[0])
            +(p2[1]-p1[1])*(gC[1]-p1[1])
@@ -1544,9 +1568,59 @@ void CFEMesh::GetNodesOnCylindricalSurface(Surface*m_sfc, vector<long>& NodesS)
      R = 2.0*fabs(ComputeDetTri (p1, gC, p2))/dist;
 
      if(fabs(R-m_sfc->Radius)<m_sfc->epsilon) 
-         NodesS.push_back(nod_vector[j]->GetIndex());
+         NodesS.push_back(cnode->GetIndex());
   } 
-      
+  bool done = false;
+  int counter = 0;
+  int hs;
+  long NodesS_size = (long)NodesS.size();
+  //
+  if(useQuadratic)
+  {
+     // Face elements are only in quadrilaterals or triangles
+     for(i=0; i<NodesS_size; i++)
+     {        
+         cnode = nod_vector[NodesS[i]];
+         for(j=0; j<(long)cnode->connected_elements.size(); j++)
+		 {
+            elem = ele_vector[cnode->connected_elements[j]];
+            for(k=0; k<elem->GetFacesNumber(); k++) 
+			{
+                nf = elem->GetElementFaceNodes(k, faceIndex_loc);
+                counter = 0;
+                hs = (int)(nf/2); 
+                for(l=0; l<hs; l++) // loop over face vertices
+                {
+                   fnode = elem->GetNodeIndex(faceIndex_loc[l]);
+                   for(m=0; m<NodesS_size; m++)
+                   {
+                      if(fnode==NodesS[m])
+						  counter++;
+				   }
+                }
+                //
+				if(counter==hs) // face is found on surface
+                {
+                   for(l=hs; l<nf; l++) // loop over face vertices
+                   {
+                      fnode = elem->GetNodeIndex(faceIndex_loc[l]);
+                      done = false;
+                      for(m=0; m<(long)NodesS.size(); m++)
+                      {
+                         if(fnode==NodesS[m])
+						 {
+                             done=true;
+                             break;
+						 }
+				      }
+                      if(!done)
+                          NodesS.push_back(fnode); 
+                   }
+                }                                        
+			}
+		 }
+	 }                  
+  }
 }
 
 /**************************************************************************
@@ -3156,7 +3230,7 @@ Programing:
 void CFEMesh::FaceNormal()  
 {
    int i,j;
-   int idx0_face,idx1_face,idx_owner,index0,index1;
+   int idx0_face,idx1_face,idx_owner,index0=0,index1=0;
 
    CElem* elem = NULL;
    CElem* elem_face = NULL;

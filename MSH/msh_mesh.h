@@ -175,6 +175,7 @@ class CFEMesh
     void SetMATGroupFromVOLLayer(CGLVolume*); //OK
     void SetMATGroupsFromVOLLayer(); //OK
     void ConnectedNodes(); //OK
+    void ConnectedElements2Node(); //WW
     void CreateSurfaceTINfromTri(Surface*); //OK
     void CreateLayerSurfaceTINsfromPris(Surface*); //OK
     // MAT
