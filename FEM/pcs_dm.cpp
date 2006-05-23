@@ -56,7 +56,6 @@ using FiniteElement::ElementValue_DM;
 using SolidProp::CSolidProperties;
 using Math_Group::Matrix;
 
-//#define EXCAVATION 
 
 namespace process{
 
@@ -108,35 +107,6 @@ CRFProcessDeformation::~CRFProcessDeformation()
            LastElement.pop_back();
    }
 }
-
-
-/*************************************************************************
-ROCKFLOW - Function: CRFProcess::UpdateInitialStress() 
-Task:  Compute number of element neighbors to a node
-Dim : Default=2
-Programming: 
- 12/2003 WW 
-**************************************************************************/
-void CRFProcessDeformation::UpdateInitialStress(bool ZeroInitialS) 
-{
-  long i;
-  ElementValue_DM *eval_DM;
-
-  // Over all elements
-  CElem* elem = NULL;
-  for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
-  {
-     elem = m_msh->ele_vector[i];
-     if (elem->GetMark()) // Marked for use
-     {           
-         eval_DM = ele_value_dm[i];
-         if(ZeroInitialS) (*eval_DM->Stress0) = 0.0;
-         else
-           (*eval_DM->Stress0) = (*eval_DM->Stress);          
-     }
-  }
-}
-
 
 /*************************************************************************
 Task: Initilization for deformation process
@@ -753,20 +723,20 @@ void CRFProcessDeformation::InitGauss(void)
             fem_dm->GetGaussData(gp, gp_r, gp_s, gp_t);
 			fem_dm->ComputeShapefct(2);
             fem_dm->RealCoordinates(xyz);
-            
+            /*
             //THM2
             z = 250.0-xyz[1]; 
 			(*eleV_DM->Stress)(1, gp) = -2360*9.81*z;
             (*eleV_DM->Stress)(2, gp) = 0.5*(*eleV_DM->Stress)(1, gp);
             (*eleV_DM->Stress)(0, gp) = 0.6*(*eleV_DM->Stress)(1, gp);
-                 
-            /*
-			//THM1
-            z = 500-xyz[1];
+            */     
+            
+            //THM1
+            z = 500-xyz[2]; // 3D xyz[1]; //2D
             (*eleV_DM->Stress)(2, gp) = -(0.02*z+0.6)*1.0e6;
             (*eleV_DM->Stress)(1, gp) = -2700*9.81*z;
             (*eleV_DM->Stress)(0, gp) = -(0.055*z+4.6)*1.0e6;
-            */
+            
             if(eleV_DM->Stress_j)
                (*eleV_DM->Stress_j) = (*eleV_DM->Stress);
             
@@ -1437,6 +1407,7 @@ void CRFProcessDeformation::Extropolation_GaussValue()
  //           (*eval_DM->Stress) -= (*eval_DM->Stress0);
       }
    }
+
 }
 
 /*--------------------------------------------------------------------------
@@ -1825,8 +1796,9 @@ void CRFProcessDeformation:: GlobalAssembly()
        elem = m_msh->ele_vector[i];
        if (elem->GetMark()) // Marked for use
 	   {
-		   fem_dm->ConfigElement(elem);
-		   fem_dm->LocalAssembly(0);
+             elem->SetOrder(true);
+	         fem_dm->ConfigElement(elem);
+	         fem_dm->LocalAssembly(0);
 	   } 
    }
    if(type==41) // p-u monolithic scheme
@@ -1857,6 +1829,7 @@ void CRFProcessDeformation:: GlobalAssembly()
    //     {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
    // Apply Dirchlete bounday condition
    IncorporateBoundaryConditions();
+  //{MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
    if(fem_dm->dynamic)
       CalcBC_or_SecondaryVariable_Dynamics(true);
 }
@@ -1967,6 +1940,7 @@ void CRFProcessDeformation::ReadGaussPointStress()
 }
 
 
+
 /**************************************************************************
  ROCKFLOW - Funktion: ReleaseLoadingByExcavation()
 
@@ -1981,13 +1955,14 @@ void CRFProcessDeformation::ReadGaussPointStress()
 void CRFProcessDeformation::ReleaseLoadingByExcavation()
 {
    long i, actElements;
-   int j, k, SizeSt, SizeSubD;
+   int j, k, l, SizeSt, SizeSubD;
 
    vector<int> ExcavDomainIndex;
    vector<long> NodesOnCaveSurface;
 
    CSourceTerm *m_st = NULL;
    SizeSt = (int)st_vector.size();
+   bool exist = false;
 
    for(k=0; k<SizeSt; k++)
    {
@@ -2055,20 +2030,23 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
          {
             m_st->SetPolyline(m_polyline);
             if(m_polyline->type==100)
-				m_msh->GetNodesOnArc(m_polyline, nodes_vector); //WW
-	        else
-		    {
+                m_msh->GetNodesOnArc(m_polyline, nodes_vector); //WW
+            else
+            {
                m_polyline->type = 3;  
-			   m_msh->GetNODOnPLY(m_polyline, nodes_vector);
-	        }
-          }
+               m_msh->GetNODOnPLY(m_polyline, nodes_vector);
+            }
+        }
       }
       if(m_st->geo_type_name.compare("SURFACE")==0)
       { 
           
           m_surface = GEOGetSFCByName(m_st->geo_name);//CC 10/05
           if(m_surface) {
-			  m_msh->GetNODOnSFC_PLY(m_surface, nodes_vector);
+             if(m_surface->type==100)
+                m_msh->GetNodesOnCylindricalSurface(m_surface, nodes_vector); 
+             else 
+                m_msh->GetNODOnSFC_PLY(m_surface, nodes_vector);
           }
       }
       // Set released node forces from eqs->b;
@@ -2079,10 +2057,22 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
              m_node_value = new CNodeValue();
              m_node_value->msh_node_number = nodes_vector[i]+Shift[j];
              m_node_value->geo_node_number = nodes_vector[i];
-			 m_node_value->node_value = -eqs->b[m_msh->nod_vector[m_node_value->geo_node_number]
+             m_node_value->node_value = -eqs->b[m_msh->nod_vector[m_node_value->geo_node_number] 
                                                  ->GetEquationIndex()+Shift[j]];
              m_node_value->CurveIndex = -1;
-             st_node_value.push_back(m_node_value);
+             
+             exist = false;
+             for(l=0; l<(int)st_node_value.size(); l++)
+             {
+                if(st_node_value[l]->msh_node_number==m_node_value->msh_node_number)
+                {
+                   exist = true;
+                   break;
+                }
+             }
+             if(!exist) 
+                st_node_value.push_back(m_node_value);
+             
           }
       }
       
@@ -2093,13 +2083,41 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
    for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
    {
       elem = m_msh->ele_vector[i];
-	  j=elem->GetMark();
-	  elem->SetMark(!j);
+      j=elem->GetMark();
+      elem->SetMark(!j);
    }
    PreLoad = 1;
 
 //TEST OUTPUT
 //{MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
+}
+
+
+/*************************************************************************
+ROCKFLOW - Function: CRFProcess::UpdateInitialStress() 
+Task:  Compute number of element neighbors to a node
+Dim : Default=2
+Programming: 
+ 12/2003 WW 
+**************************************************************************/
+void CRFProcessDeformation::UpdateInitialStress(bool ZeroInitialS) 
+{
+  long i;
+  ElementValue_DM *eval_DM;
+
+  // Over all elements
+  CElem* elem = NULL;
+  for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
+  {
+     elem = m_msh->ele_vector[i];
+     if (elem->GetMark()) // Marked for use
+     {           
+         eval_DM = ele_value_dm[i];
+         if(ZeroInitialS) (*eval_DM->Stress0) = 0.0;
+         else
+           (*eval_DM->Stress0) = (*eval_DM->Stress);          
+     }
+  }
 }
 
 
@@ -2131,7 +2149,7 @@ void CRFProcessDeformation::ExcavationSimulating()
     pcs_deformation = 1; //Elasticity excavation
     //
     if(reload==2) 
-	{
+    {
        cout<<"1. Reading intial stress..."<<endl;
        ElementValue_DM* eleV_DM = NULL; 
        for (long e = 0; e < (long)m_msh->ele_vector.size(); e++)
@@ -2141,12 +2159,12 @@ void CRFProcessDeformation::ExcavationSimulating()
           (*eleV_DM->Stress0) = 0.0;                                                        
        }
     }
-	else
-	{
+    else
+    {
        // If an initial stress state is given, skip this
        // Establishing gravity force profile 
        if (m_num&&m_num->GravityProfile==1)
-	   { 
+       { 
           GravityForce = true;
           cout<<"1. Establish gravity force profile..."<<endl;
           counter = 0;
@@ -2167,37 +2185,27 @@ void CRFProcessDeformation::ExcavationSimulating()
       }
       if(reload==1)
          return;
-	} // Else
+    } // Else
 
     // Excavating  
     cout<<"2. Excavating..."<<endl;
     counter = 0;
     InitializeNewtonSteps(0);
     InitializeNewtonSteps(2);
-	GravityForce = false;
+    GravityForce = false;	
     ReleaseLoadingByExcavation();
-	UpdateInitialStress(false); // s-->s0
-	
-	Execute(); // s+s0-->s
-//    Extropolation_GaussValue(true);  // s+s0-->s
+
+    //GravityForce = true;	
+    UpdateInitialStress(false); // s-->s0
+    m_msh->ConnectedElements2Node();
+    Execute(); // s+s0-->s
     Extropolation_GaussValue(); 
 
-    // Write the results
-    for(i=0;i<no_out;i++){
-      m_out = out_vector[i];
-      m_out->time = 0.0;
-      if(m_out->geo_type_name.find("DOMAIN")!=string::npos)
-      {
-          cout << "Data output" << endl;
-          m_out->NODWriteDOMDataTEC(); //OK
-      }    
-    }
-
-	UpdateInitialStress(true);  // s0 = 0;
+    UpdateInitialStress(true);  // s0 = 0;
     //InitializeNewtonSteps(2);
 
     // Remove boundary loading by excavated domain    
-	for(i=(int)st_node_value.size();i>GetOrigNodeVSize();i--)
+    for(i=(int)st_node_value.size();i>GetOrigNodeVSize();i--)
     {
        delete st_node_value[i-1];
        st_node_value.pop_back();
@@ -2223,6 +2231,7 @@ void CRFProcessDeformation::ExcavationSimulating()
         InitEQS();     
     } 
     */
+    reload=1; // Writing Gauss point stress in binary file.  
     cout<<"*** End of excavation"<<endl;
     cout<<"------------------------------------------"<<endl;
 }

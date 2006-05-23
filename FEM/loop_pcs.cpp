@@ -81,7 +81,6 @@ void LOPCalcNODResultants(void);
 #include "math.h" /* pow() */
 #include "matrix.h" /*MXDumpGLS*/
 
-//#define EXCAVATION    
 
 double dt_sum = 0.0;
 /**************************************************************************
@@ -557,6 +556,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
   //  Update the results
   for(i=0;i<no_processes;i++){
      m_pcs = pcs_vector[i];
+     m_pcs->WriteSolution();
      if(m_pcs->m_msh){ // MSH
         m_pcs->CopyTimestepNODValues(); //MB
 #define SWELLING
@@ -586,38 +586,6 @@ int LOPTimeLoop_PCS(double*dt_sum)
   cout << "Calculation of NOD resultants" << endl;
   LOPCalcNODResultants(); //OK
   //----------------------------------------------------------------------
-
-//DECOVALEX TEST
-//#define  EXCAVATION  
-#ifdef EXCAVATION    
-   //TEST for DECOVALEX
-   string StressFileName = FileName+".pat";
-   fstream file_pat (StressFileName.data(),ios::trunc|ios::out);   
-   string deli = " ";
-  // 
-  int idx0, idx1, idx00, idx11;
-  double val0, val1;
-  idx0 = GetNodeValueIndex("TEMPERATURE1");
-  idx1 = idx0+1;
-  idx00 = GetNodeValueIndex("PRESSURE1");
-  idx11 = idx00+1;
-
-  for(i=0; i<m_pcs->m_msh->NodesInUsage(); i++)
-  {
-	   val0 = GetNodeValue(i,idx0); 
-	   val1 = GetNodeValue(i,idx1);
-       if(fabs(val0)<1.0e-9) val0 =  25.0; //THM1 // 23.6; //THM2//
-       if(fabs(val1)<1.0e-9) val1 =  25.0; //THM1 // 23.6; //THM2 //
-       file_pat<<val0<<deli<<val1<<endl;
-	   val0 = GetNodeValue(i,idx00); 
-	   val1 = GetNodeValue(i,idx11);
-       if(fabs(val0)<1.0e-9) val0 = 1.0e5; //THM1 //0.0; //THM2 //
-       if(fabs(val1)<1.0e-9) val1 = 1.0e5;  //THM1 //0.0; //THM2 //
-       file_pat<<val0<<deli<<val1<<endl;
-   }    
-
-   file_pat.close();
-#endif
   return 1;
 }
 #ifdef LOOP_TO_DO

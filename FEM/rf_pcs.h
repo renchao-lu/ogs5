@@ -131,8 +131,8 @@ class CRFProcess {
     // 1. Write
     // 2. Read
     int reload; 
-    inline void  WriteRHS_of_ST_NeumannBC(ostream& os=cout);  
-    inline void  ReadRHS_of_ST_NeumannBC(istream& is=cin);  
+    inline void  WriteRHS_of_ST_NeumannBC();  
+    inline void  ReadRHS_of_ST_NeumannBC();  
     friend bool PCSRead(string);
 	//....................................................................
 	// 1-GEO
@@ -168,6 +168,8 @@ class CRFProcess {
 	// 10-MCP
 	//....................................................................
 	// 11-OUT
+    void  WriteSolution();  //WW
+    void  ReadSolution();   //WW
 	//....................................................................
 	// 12-NUM
 	//....................................................................
@@ -335,6 +337,7 @@ class CRFProcess {
     void GlobalAssembly(); //NEW 
 	void ConfigureCouplingForLocalAssemblier();
     void CalIntegrationPointValue();
+    bool cal_integration_point_value; //WW
     //---
     virtual double Execute();
     double ExecuteNonLinear();

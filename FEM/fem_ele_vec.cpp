@@ -1064,7 +1064,7 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
   double *DevStress ;
   const int PModel = smat->Plasticity_type;
   double dPhi = 0.0; // Sclar factor for the plastic strain  
-  double J2=0.0;
+//  double J2=0.0;
   double dS = 0.0;
 
  
@@ -1096,7 +1096,7 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
   }
 
 
-  if(PModel==1) smat->CalulateCoefficent_DP();
+  if(PModel==1||PModel==10) smat->CalulateCoefficent_DP();
   if(PModel!=3)
   {
       smat->Calculate_Lame_Constant();
@@ -1120,7 +1120,7 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
       ComputeGradShapefct(2);
       ComputeShapefct(2); 
       ComputeStrain();
- 	   
+      if(update) RecordGuassStrain(gp, gp_r, gp_s, gp_t);	   
       if( F_Flag||T_Flag) 
           ComputeShapefct(1); // Linear order interpolation function
       //---------------------------------------------------------
@@ -1143,13 +1143,19 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
              dstress[i] += (*eleV_DM->Stress)(i, gp);
            break;
          case 1:  // Drucker-Prager model               
-            DevStress
-                =smat->StressIntegrationDP(gp, eleV_DM, dstress, &dPhi, update);	  		
-            J2 = sqrt(TensorMutiplication2(DevStress, DevStress, ele_dim));
- 	       
-            // If yield, compute consistent tangent operator 
-            if(dPhi*J2>0.0)
-                smat->ConsistentTangentialDP(ConsistDep, DevStress, dPhi, ele_dim);                      
+            if(smat->StressIntegrationDP(gp, eleV_DM, dstress, dPhi, update))
+            {
+               DevStress = smat->devS; 	  		
+               smat->ConsistentTangentialDP(ConsistDep, dPhi, ele_dim);   
+            }                   
+            break;
+         case 10:  // Drucker-Prager model, direct integration. 02/06 WW               
+            if(smat->DirectStressIntegrationDP(gp, eleV_DM, dstress, update))
+            {
+               *ConsistDep = *De;
+               smat->TangentialDP(ConsistDep);                      
+               dPhi = 1.0;
+            }
             break;
          case 2:  // Rotational hardening model                
             // Compute stesses and plastic multi-plier 
@@ -1195,10 +1201,10 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
              stress_ne[i] = (*eleV_DM->Stress)(i, gp);
 		   smat->AddStain_by_Creep(ns,stress_ne, strain_ne);           
 	    }
-        // Compute try stress, stress incremental: 
+        // Stress deduced by thermal or swelling strain incremental: 
         De->multi(strain_ne, dstress);
-        for (i = 0; i < ns; i++)
-          dstrain[i] += strain_ne[i];
+       // for (i = 0; i < ns; i++)
+       //   dstrain[i] += strain_ne[i];
 	  } 
 
       // Fluid coupling;
@@ -1234,7 +1240,6 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
       }  
 	  else  // Update stress
 	  {
-        RecordGuassStrain(gp, gp_r, gp_s, gp_t);
         for(i=0; i<ns; i++)
            (*eleV_DM->Stress)(i, gp) = dstress[i];
 	  }
@@ -1395,10 +1400,10 @@ bool CFiniteElementVec::RecordGuassStrain(const int gp,
 void CFiniteElementVec::ExtropolateGuassStrain()
 {
   int i, j, gp=0;
-  int l1,l2,l3,l4, counter;
+  int l1,l2,l3,l4; //, counter;
   double ESxx, ESyy, ESzz, ESxy, ESxz, ESyz;
   double r=0.0, Xi_p = 0.0;
-  double Area1, Area2, Tol=10e-9;
+  //double Area1, Area2, Tol=10e-9;
 
   l1=l2=l3=l4=0;
 
@@ -1528,6 +1533,40 @@ void CFiniteElementVec::ExtropolateGuassStrain()
            }
            break;                               
          case 5: // Tedrahedra 
+           // Compute values at verteces  
+           switch(i)
+	       {
+             case 0:
+               unit[0] = -0.166666666666667;
+               unit[1] = -0.166666666666667;
+               unit[2] = -0.166666666666667;   
+                break;        
+             case 1:
+               unit[0] = 1.5;
+               unit[1] = -0.166666666666667 ;
+               unit[2] = -0.166666666666667 ;   
+               break;        
+             case 2:
+               unit[0] = -0.166666666666667;
+               unit[1] = 1.5;
+               unit[2] = -0.166666666666667;   
+               break;        
+             case 3:
+               unit[0] = -0.166666666666667;
+               unit[1] = -0.166666666666667;
+               unit[2] = 1.5;   
+ 		   }
+           ComputeShapefct(1); // Linear interpolation function
+           for(j=1; j<=nnodes; j++)
+           {
+              ESxx += Sxx[j]*shapefct[j-1]; 
+              ESyy += Syy[j]*shapefct[j-1]; 
+              ESxy += Sxy[j]*shapefct[j-1]; 
+              ESzz += Szz[j]*shapefct[j-1]; 
+              ESxz += Sxz[j]*shapefct[j-1]; 
+              ESyz += Syz[j]*shapefct[j-1]; 
+           }
+           /*
            switch(i)
            {
               case 0:
@@ -1576,7 +1615,8 @@ void CFiniteElementVec::ExtropolateGuassStrain()
             counter = 0;
             for (gp = 0; gp < nGauss; gp++)
             {
-               SamplePointTet15(gp, unit);
+//To be flexible               SamplePointTet15(gp, unit);
+               SamplePointTet5(gp, unit);
                ComputeShapefct(2);
                // Real coorinates of this Guass point
                RealCoordinates(X0);
@@ -1610,7 +1650,7 @@ void CFiniteElementVec::ExtropolateGuassStrain()
             ESzz /= (double)counter; 
             ESxz /= (double)counter; 
             ESyz /= (double)counter; 
-            
+        */    
         break;    
       }
 
@@ -1659,10 +1699,10 @@ void CFiniteElementVec::ExtropolateGuassStrain()
 void CFiniteElementVec::ExtropolateGuassStress()
 {
   int i, j, gp, gp_r, gp_s, gp_t;
-  int l1,l2,l3,l4, counter;
+  int l1,l2,l3,l4; //, counter;
   double ESxx, ESyy, ESzz, ESxy, ESxz, ESyz, Pls;
   double r=0.0, Xi_p = 0.0;
-  double Area1, Area2, Tol=10e-9;
+//  double Area1, Area2, Tol=10e-9;
 
   int ElementType = MeshElement->GetElementType();
 
@@ -1755,8 +1795,7 @@ void CFiniteElementVec::ExtropolateGuassStress()
 
       switch(ElementType) 
       {
-         case 4: // Traingle
-           // Compute values at verteces  
+         case 4: // Triangle
            // Compute values at verteces  
            switch(i)
 	       {
@@ -1863,6 +1902,41 @@ void CFiniteElementVec::ExtropolateGuassStress()
            }
            break;                               
          case 5: // Tedrahedra 
+           // Compute values at verteces  
+           switch(i)
+	       {
+             case 0:
+               unit[0] = -0.166666666666667;
+               unit[1] = -0.166666666666667;
+               unit[2] = -0.166666666666667;   
+                break;        
+             case 1:
+               unit[0] = 1.5;
+               unit[1] = -0.166666666666667 ;
+               unit[2] = -0.166666666666667 ;   
+               break;        
+             case 2:
+               unit[0] = -0.166666666666667;
+               unit[1] = 1.5;
+               unit[2] = -0.166666666666667;   
+               break;        
+             case 3:
+               unit[0] = -0.166666666666667;
+               unit[1] = -0.166666666666667;
+               unit[2] = 1.5;   
+ 		   }
+           ComputeShapefct(1); // Linear interpolation function
+           for(j=1; j<=nnodes; j++)
+           {
+              ESxx += Sxx[j]*shapefct[j-1]; 
+              ESyy += Syy[j]*shapefct[j-1]; 
+              ESxy += Sxy[j]*shapefct[j-1]; 
+              ESzz += Szz[j]*shapefct[j-1]; 
+              ESxz += Sxz[j]*shapefct[j-1]; 
+              ESyz += Syz[j]*shapefct[j-1]; 
+              Pls += shapefct[j]*pstr[j-1];
+           }
+/*
            switch(i)
            {
               case 0:
@@ -1910,7 +1984,8 @@ void CFiniteElementVec::ExtropolateGuassStress()
             counter = 0;
             for (gp = 0; gp < nGauss; gp++)
             {
-               SamplePointTet15(gp, unit);
+//To be flexible               SamplePointTet15(gp, unit);
+               SamplePointTet5(gp, unit);
                ComputeShapefct(2);
                // Real coorinates of this Guass point
                RealCoordinates(X0);
@@ -1946,6 +2021,7 @@ void CFiniteElementVec::ExtropolateGuassStress()
             ESxz /= (double)counter; 
             ESyz /= (double)counter; 
             Pls /= (double)counter; 
+            */
             
         break;    
       }
@@ -2846,7 +2922,14 @@ ElementValue_DM::ElementValue_DM(CElem* ele, bool HM_Staggered):NodesOnPath(NULL
    else
       Stress_j = NULL; // for HM coupling iteration   
    pStrain = new Matrix(NGPoints);
-             
+   //
+   if(Plastic>0)
+   {           
+      y_surface = new Matrix(NGPoints);
+      *y_surface = 0.0;
+   }  
+   else
+      y_surface = NULL;
    *Stress = 0.0;
    *pStrain = 0.0;
 
@@ -2873,7 +2956,8 @@ void ElementValue_DM::Write_BIN(fstream& os)
 {
    Stress0->Write_BIN(os); 
    Stress_i->Write_BIN(os); 
-   pStrain->Write_BIN(os);    
+   pStrain->Write_BIN(os);  
+   if(y_surface) y_surface->Write_BIN(os);  
    if(xi) xi->Write_BIN(os);    		
    if(MatP) MatP->Write_BIN(os);    
    if(prep0) prep0->Write_BIN(os);    
@@ -2890,6 +2974,7 @@ void ElementValue_DM::Read_BIN(fstream& is)
    Stress0->Read_BIN(is); 
    Stress_i->Read_BIN(is); 
    pStrain->Read_BIN(is);    
+   if(y_surface) y_surface->Read_BIN(is);  
    if(xi) xi->Read_BIN(is);    		
    if(MatP) MatP->Read_BIN(is);    
    if(prep0) prep0->Read_BIN(is);    
@@ -2922,6 +3007,8 @@ ElementValue_DM::~ElementValue_DM()
     if(Stress_i) delete Stress_i;
     if(Stress_j) delete Stress_j;
     delete pStrain;
+    if(y_surface) delete y_surface;  
+
     // Preconsolidation pressure
     if(prep0) delete prep0;               
     if(e_i) delete e_i;       // Void ratio        
@@ -2934,6 +3021,7 @@ ElementValue_DM::~ElementValue_DM()
 
     NodesOnPath = NULL;
     orientation = NULL;
+    y_surface = NULL;
     Stress0 = NULL;
     Stress = NULL;
     Stress_i = NULL; // for HM coupling iteration   

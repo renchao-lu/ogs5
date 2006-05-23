@@ -1440,7 +1440,7 @@ double M5Get(long i, long j)
 
   CFEMesh* m_msh = NULL;
   CNode *m_nod_i = NULL;
-  CNode *m_nod_j = NULL;
+//  CNode *m_nod_j = NULL;
   m_msh = FEMGet("GROUNDWATER_FLOW");
   dim1 = m_msh->NodesInUsage();
 
@@ -1473,7 +1473,7 @@ int M5Set(long i, long j, double e_val)
 
   CFEMesh* m_msh = NULL;
   CNode *m_nod_i = NULL;
-  CNode *m_nod_j = NULL;
+//  CNode *m_nod_j = NULL;
   m_msh = FEMGet("GROUNDWATER_FLOW");
   dim1 = m_msh->NodesInUsage();
 
@@ -1702,7 +1702,7 @@ int M5Inc(long i, long j, double aij_inc)
 
   CFEMesh* m_msh = NULL;
   CNode *m_nod_i = NULL;
-  CNode *m_nod_j = NULL;
+//  CNode *m_nod_j = NULL;
   m_msh = FEMGet("GROUNDWATER_FLOW");
   dim1 = m_msh->NodesInUsage();
 
@@ -1757,6 +1757,9 @@ void Write_Matrix_M5(double *b, ostream& os)
 //PA/WW 08/02/2006
 void *M5CreateMatrix(long param1, long param2, long param3)
 {
+  param1 = param1;
+  param3 = param3;
+  //
   Modell5 *w = (Modell5 *) wurzel;
   w = (Modell5 *) Malloc(sizeof(Modell5));
   MXSetMatrixPointer((void *) w);

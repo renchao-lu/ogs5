@@ -82,6 +82,13 @@ class CSolidProperties
     int  *Li;              
     void AllocateMemoryforSYS();
     void ResizeMatricesSYS(const int Dim);
+
+    // Direct stress integration for Drucker-Prager
+    double *devS;
+    double *dFds;
+    double *dGds;
+    double *D_dFds;
+    double *D_dGds;
     // Mini linear solver
     void Gauss_Elimination(const int DimE, Matrix& AA, int *L,  double *xx); 
     void Gauss_Back(const int DimE, Matrix& AA, double * rhs, int *L, double *xx); 
@@ -151,10 +158,12 @@ class CSolidProperties
     double GetAngleCoefficent_DP(const double Angle);
     double GetYieldCoefficent_DP(const double Angle);
     void CalulateCoefficent_DP();
-    double* StressIntegrationDP(const int GPiGPj, const ElementValue_DM *ele_val, 
-           double *TryStress, double* dPhi, const int Update);
-    void ConsistentTangentialDP(Matrix *Dep, const double *DevStress,
-             const double dPhi, const int Dim);
+    bool StressIntegrationDP(const int GPiGPj, const ElementValue_DM *ele_val, 
+           double *TryStress, double& dPhi, const int Update);
+    void ConsistentTangentialDP(Matrix *Dep, const double dPhi, const int Dim);
+    bool DirectStressIntegrationDP(const int GPiGPj, 
+            const ElementValue_DM *ele_val, double *TryStress, const int Update);
+    void TangentialDP(Matrix *Dep);
     // 2.2 Single yield surface model
     void dF_dNStress(double *dFdS, const double *DevS, const double *S_Invariants, 
                      const double *MatN1, const int LengthStrs);
@@ -193,7 +202,7 @@ class CSolidProperties
     double Hard;
     double Hard_Loc;
 
-    vector<string>capacity_pcs_name_vector;
+    vector<string>  capacity_pcs_name_vector;
 
 
 };

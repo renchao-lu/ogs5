@@ -804,10 +804,10 @@ void TransferNodeValuesToVectorLinearSolverVec_New(LINEAR_SOLVER * ls)
    08/1999     AH         Erweiterung memory  (neq)
 09/2004      Remove BC/Sink incoorperation    
 *************************************************************************/
-LINEAR_SOLVER *InitializeLinearSolver(LINEAR_SOLVER*ls,CNumerics*m_num)
+void SetLinearSolverType(LINEAR_SOLVER* ls ,CNumerics *m_num) //WW
 {
   if (!ls)
-    return NULL;
+    return;
   /* Gruppeneingenschaften setzen */
 /*
   SetPropertiesLinearSolver(ls, prop_name);
@@ -874,6 +874,11 @@ LINEAR_SOLVER *InitializeLinearSolver(LINEAR_SOLVER*ls,CNumerics*m_num)
         ls->LinearSolver = SpUMF;
         break;
     }
+}
+//WW
+LINEAR_SOLVER *InitializeLinearSolver(LINEAR_SOLVER* ls ,CNumerics *m_num)
+{
+    SetLinearSolverType(ls,m_num);
     InitLinearSolver(ls);
     /* Internen Speicher allokieren */
     InitMemoryLinearSolver(ls,ls->memory_number);

@@ -5514,6 +5514,7 @@ void CMediumProperties::SetConstantELEarea(double area, int group)
     if (area != 1.0) {
       for (i=0; i<no_processes; i++){
         m_msh = FEMGet(pcs_vector[i]->pcs_type_name);
+        if(!m_msh) return; //WW
         no_ele = (long) m_msh->ele_vector.size();
         for(j=0;j<no_ele;j++){
           ele_group = m_msh->ele_vector[j]->GetPatchIndex();

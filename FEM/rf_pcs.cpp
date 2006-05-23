@@ -142,14 +142,6 @@ using Math_Group::vec;
 #define noCHECK_ST_GROUP
 #define noCHECK_BC_GROUP
 
-//TEST FOR DECOVALEX
-//#define EXCAVATION
-
-/**************************************************************************
-   GeoSys - Function: Reload temperature and pressure. Will be changed
-    01/2005   WW    
-**************************************************************************/
-void ReloadTandP(const int type, CRFProcess *pcs=NULL); // For DECOVALEX test
 
 /*************************************************************************
 PCS2 - File structure
@@ -197,6 +189,7 @@ string PCSProblemType()
 // PCS vector
 //////////////////////////////////////////////////////////////////////////
 // It is better to have space between data type and data name. WW
+vector<LINEAR_SOLVER *> PCS_Solver; //WW
 vector<CRFProcess*> pcs_vector;
 vector<double*> ele_val_vector; //PCH
 vector<string> ele_val_name_vector; // PCH
@@ -231,6 +224,7 @@ CRFProcess::CRFProcess(void)
   m_num = NULL;
   cpl_type_name = "PARTITIONED"; //OK
   num_type_name = "FEM"; //OK
+  eqs = NULL; //WW
   //----------------------------------------------------------------------
   // ELE
   ConfigELEMatrices = NULL;
@@ -259,6 +253,7 @@ CRFProcess::CRFProcess(void)
   pcs_nval_data = NULL;
   pcs_eval_data = NULL;
   non_linear = false; //OK/CMCD
+  cal_integration_point_value = false; //WW
   continuum = 0;
 }
 
@@ -420,6 +415,7 @@ Programing:
 07/2005 WW Geometry element objects
 02/2006 WW Removed memory leaking
 01/2006 YD MMP for each PCS
+04/2006 WW Unique linear solver for all processes if they share the same mesh
 last modified:
 CREATE
 **************************************************************************/
@@ -428,6 +424,7 @@ void CRFProcess::Create()
   int i=0;
   int phase;
   int timelevel=0;
+  CRFProcess *m_pcs = NULL; //
   //----------------------------------------------------------------------------
   if(m_msh) //OK->MB please shift to Config()
   {
@@ -487,20 +484,48 @@ void CRFProcess::Create()
   phase=1;
   // create EQS
   if(type==4)
-    eqs = CreateLinearSolverDim(m_num->ls_storage_method,DOF,DOF*Shift[DOF-1]);
+  {
+     eqs = CreateLinearSolverDim(m_num->ls_storage_method,DOF,DOF*Shift[DOF-1]);
+     InitializeLinearSolver(eqs,m_num);
+     PCS_Solver.push_back(eqs); //WW
+  }
   else if(type==41)    
   {
       if(num_type_name.find("EXCAVATION")!=string::npos)
          eqs = CreateLinearSolverDim(m_num->ls_storage_method,DOF-1,Shift[DOF-1]);
       else
-         eqs = CreateLinearSolverDim(m_num->ls_storage_method,DOF,Shift[DOF-1]+m_msh->GetNodesNumber(false));    
+         eqs = CreateLinearSolverDim(m_num->ls_storage_method,DOF,Shift[DOF-1]+m_msh->GetNodesNumber(false));  
+      InitializeLinearSolver(eqs,m_num);
+      PCS_Solver.push_back(eqs); //WW
   }
   else
-    if(m_msh)
-      eqs = CreateLinearSolver(m_num->ls_storage_method,m_msh->GetNodesNumber(false));
-    else
-      eqs = CreateLinearSolver(m_num->ls_storage_method,NodeListLength);
-  InitializeLinearSolver(eqs,m_num);
+  {
+    /////////////////////////////////////////////////////////////////////
+    // If there is a solver exsiting. WW 
+    m_pcs = NULL; 
+    for(i=0; i<(int)pcs_vector.size(); i++)
+	{
+       m_pcs = pcs_vector[i];
+       if(m_pcs&&m_pcs->eqs)
+	   {
+          if(m_pcs->pcs_type_name.find("DEFORMATION")==string::npos)
+            break;
+	   }
+	}
+    // If unique mesh
+	if(m_pcs&&m_pcs->eqs&&(fem_msh_vector.size()==1))
+       eqs = m_pcs->eqs;
+    /////////////////////////////////////////////////////////////////////
+	else
+	{
+       if(m_msh)
+         eqs = CreateLinearSolver(m_num->ls_storage_method,m_msh->GetNodesNumber(false));
+       else
+         eqs = CreateLinearSolver(m_num->ls_storage_method,NodeListLength);
+       InitializeLinearSolver(eqs,m_num);
+       PCS_Solver.push_back(eqs); 
+	}
+  }
      // Set solver properties: EQS<->SOL
      // Internen Speicher allokieren
      // Speicher initialisieren
@@ -538,20 +563,9 @@ void CRFProcess::Create()
   CSourceTermGroup *m_st_group = NULL;
 
   // WW
-  ifstream *iSourceNBC_RHS_file = NULL;
-  ofstream *oSourceNBC_RHS_file = NULL;
-  //
+
   if(WriteSourceNBC_RHS==2) // Read from file
-  {
-     string m_file_name = FileName +"_"+pcs_type_name+"_ST_RHS.asc";
-     iSourceNBC_RHS_file = new ifstream(m_file_name.c_str(), ios::binary);     
-     if (!iSourceNBC_RHS_file->good())
-     {
-         cout << "File "<<m_file_name<<" is not found" << endl;
-         abort();
-     }
-     ReadRHS_of_ST_NeumannBC(*iSourceNBC_RHS_file);
-  }
+     ReadRHS_of_ST_NeumannBC();
   else // WW
   {  // Calculate directly
     for(i=0;i<DOF;i++)
@@ -567,16 +581,7 @@ void CRFProcess::Create()
       }
     }
     if(WriteSourceNBC_RHS==1)// WW
-	{
-        string m_file_name = FileName +"_"+pcs_type_name+"_ST_RHS.asc";
-        oSourceNBC_RHS_file = new ofstream(m_file_name.c_str(), ios::binary);     	
-        if (!oSourceNBC_RHS_file->good())
-        {
-           cout << "Failure to open file: "<<m_file_name << endl;
-           abort();
-        }
-   	    WriteRHS_of_ST_NeumannBC(*oSourceNBC_RHS_file);
-	}
+       WriteRHS_of_ST_NeumannBC();
   }
 
   //----------------------------------------------------------------------------
@@ -674,17 +679,8 @@ void CRFProcess::Create()
   }
 
 
-// DECOVALEX TEST . Will be changed
-if(pcs_type_name.find("HEAT")!=string::npos)
-{
-    if(reload==2) ReloadTandP(0, this);
-}
-if(pcs_type_name.find("FLOW")!=string::npos)
-{
-    if(reload==2) ReloadTandP(1, this);
-} 
-//TEST----------------------------------------
-
+  if(reload==2&&type!=4&&type!=41) 
+     ReadSolution(); //WW
   //----------------------------------------------------------------------------
   //SelectData(0);
   //----------------------------------------------------------------------------
@@ -775,20 +771,6 @@ if(pcs_type_name.find("FLOW")!=string::npos)
        cout << "Warning in GlobalAssembly: Matrix files are not found" << endl;
   }
 
-  if(iSourceNBC_RHS_file) //WW
-  {
-    iSourceNBC_RHS_file->close();
-     delete iSourceNBC_RHS_file;
-     iSourceNBC_RHS_file = NULL; 
-  }
-  if(oSourceNBC_RHS_file) //WW
-  {
-     oSourceNBC_RHS_file->close();
-     delete oSourceNBC_RHS_file;
-     oSourceNBC_RHS_file = NULL; 
-  }
-
-
 }
 /**************************************************************************
 FEMLib-Method:
@@ -797,10 +779,19 @@ Task: Write the contribution of ST or Neumann BC to RHS to a file after
 Programing:
 12/2005 WW 
 03/2006 WW Write as acsi
+04/2006 WW 
 last modified:
 **************************************************************************/
-inline void CRFProcess::WriteRHS_of_ST_NeumannBC(ostream& os)
+inline void CRFProcess::WriteRHS_of_ST_NeumannBC()
 {
+     string m_file_name = FileName +"_"+pcs_type_name+"_ST_RHS.asc";
+     ofstream os(m_file_name.c_str(), ios::trunc|ios::out);     	
+     if (!os.good())
+     {
+         cout << "Failure to open file: "<<m_file_name << endl;
+         abort();
+     }
+
 	/*
     CSourceTermGroup *m_st_group = NULL;
     list<CSourceTermGroup*>::const_iterator p_st_group = st_group_list.begin();
@@ -838,6 +829,7 @@ inline void CRFProcess::WriteRHS_of_ST_NeumannBC(ostream& os)
     os<<(long)st_node_value.size()<<endl;
     for(long i=0; i<(long)st_node_value.size(); i++)
       st_node_value[i]->Write(os); 
+    os.close();
 }
 
 /**************************************************************************
@@ -846,11 +838,19 @@ Task: Write the contribution of ST or Neumann BC to RHS to a file after
       integration
 Programing:
 03/2006 WW 
-last modified:
+last modified: 04/2006
 **************************************************************************/
-inline void CRFProcess::ReadRHS_of_ST_NeumannBC(istream& is)
+inline void CRFProcess::ReadRHS_of_ST_NeumannBC()
 {
     long Size;
+    string m_file_name = FileName +"_"+pcs_type_name+"_ST_RHS.asc";
+    ifstream is(m_file_name.c_str(), ios::in);     
+    if (!is.good())
+    {
+        cout << "File "<<m_file_name<<" is not found" << endl;
+        abort();
+    }
+
     string s_buffer;
     getline(is, s_buffer);
 	getline(is, s_buffer);
@@ -863,6 +863,78 @@ inline void CRFProcess::ReadRHS_of_ST_NeumannBC(istream& is)
 	   cnodev->Read(is);
        st_node_value.push_back(cnodev); 
 	}
+    is.close();
+}
+/**************************************************************************
+FEMLib-Method:
+Task: Write the solution
+Programing:
+04/2006 WW 
+last modified:
+**************************************************************************/
+void CRFProcess:: WriteSolution()
+{
+    if(reload!=1) return;	 
+    string m_file_name = FileName +"_"+pcs_type_name+"_primary_value.asc";
+    ofstream os(m_file_name.c_str(), ios::trunc|ios::out);     	
+    if (!os.good())
+    {
+       cout << "Failure to open file: "<<m_file_name << endl;
+       abort();
+    }
+    //
+    long i;
+    int j;
+    int idx[20];
+	for(j=0; j<pcs_number_of_primary_nvals; j++) 
+	{
+      idx[j] = GetNodeValueIndex(pcs_primary_function_name[j]);
+      idx[j+pcs_number_of_primary_nvals] = idx[j]+1;
+	}
+	for(i=0; i<m_msh->GetNodesNumber(false); i++)
+    {
+       for(j=0; j<2*pcs_number_of_primary_nvals; j++)
+         os<<GetNodeValue(i,idx[j]) <<"  ";
+       os<<endl;
+    }  
+    os.close();
+}
+
+/**************************************************************************
+FEMLib-Method:
+Task: Write the solution
+Programing:
+04/2006 WW 
+last modified:
+**************************************************************************/
+void CRFProcess:: ReadSolution()
+{
+    string m_file_name = FileName +"_"+pcs_type_name+"_primary_value.asc";
+    ifstream is(m_file_name.c_str(), ios::in);     	
+    if (!is.good())
+    {
+       cout << "Failure to open file: "<<m_file_name << endl;
+       abort();
+    }
+    //
+    long i;
+    int j;
+    int idx[20];
+    double val[20];
+	for(j=0; j<pcs_number_of_primary_nvals; j++) 
+	{
+       idx[j] = GetNodeValueIndex(pcs_primary_function_name[j]);
+       idx[j+pcs_number_of_primary_nvals] = idx[j]+1;
+	}
+	for(i=0; i<m_msh->GetNodesNumber(false); i++)
+    {
+       for(j=0; j<2*pcs_number_of_primary_nvals; j++)
+         is>>val[j];
+       is>>ws;
+       for(j=0; j<2*pcs_number_of_primary_nvals; j++)
+         SetNodeValue(i,idx[j], val[j]);
+    }  
+    is.close();
 }
 
 
@@ -1033,7 +1105,26 @@ void PCSDestroyAllProcesses(void)
   CRFProcess *m_process = NULL;
   long i;
   int j;
+  LINEAR_SOLVER *eqs;
   int no_processes =(int)pcs_vector.size();
+ //WW----------------------------------------
+  for(j=0;j<(int)PCS_Solver.size();j++)
+  {
+    eqs = PCS_Solver[j]; 
+    if(eqs->unknown_vector_indeces)
+       eqs->unknown_vector_indeces = \
+        (int*) Free(eqs->unknown_vector_indeces);
+    if(eqs->unknown_node_numbers)
+      eqs->unknown_node_numbers = \
+        (long*) Free(eqs->unknown_node_numbers);
+    if(eqs->unknown_update_methods)
+       eqs->unknown_update_methods = \
+        (int*) Free(eqs->unknown_update_methods); 
+     eqs = DestroyLinearSolver(eqs);
+     
+  }
+  //----------------------------------------
+
   for(j=0;j<no_processes;j++){
     m_process = pcs_vector[j];
     /* //WW
@@ -1045,17 +1136,6 @@ void PCSDestroyAllProcesses(void)
         (char **) Free(m_process->eqs->bc_names_neumann);
    */
     
-    if(m_process->eqs->unknown_vector_indeces)
-      m_process->eqs->unknown_vector_indeces = \
-        (int*) Free(m_process->eqs->unknown_vector_indeces);
-    if(m_process->eqs->unknown_node_numbers)
-      m_process->eqs->unknown_node_numbers = \
-        (long*) Free(m_process->eqs->unknown_node_numbers);
-    if(m_process->eqs->unknown_update_methods)
-      m_process->eqs->unknown_update_methods = \
-        (int*) Free(m_process->eqs->unknown_update_methods);
-    
-    m_process->eqs = DestroyLinearSolver(m_process->eqs);
 /*
     for(j=0;j<m_process->number_of_nvals;j++) 
       if( m_process->pcs_nval_data[j]) 
@@ -3156,7 +3236,8 @@ double CRFProcess::Execute()
   cout << "    ->Process " << pcs_number << ": " << pcs_type_name << endl;
   //----------------------------------------------------------------------
   // 0 Initializations
-   // System matrix
+  // System matrix
+  SetLinearSolverType(eqs, m_num); //WW
   SetZeroLinearSolver(eqs);
 
   // Solution vector
@@ -3461,7 +3542,9 @@ void CRFProcess::GlobalAssembly()
   long i;
   CElem* elem = NULL;
   bool Check2D3D;
+  bool order = false;
   Check2D3D = false;
+  if(M_Process) order = true;
   if(type == 66) //Overland flow
     Check2D3D = true;
 #ifdef USE_MPI
@@ -3479,6 +3562,7 @@ void CRFProcess::GlobalAssembly()
         elem = m_msh->ele_vector[m_dom->elements[i]];
         if(elem->GetMark())
         {
+          elem->SetOrder(order);
           fem->ConfigElement(elem,Check2D3D);
           fem->m_dom = m_dom; //OK
           fem->Assembly();
@@ -3507,6 +3591,7 @@ void CRFProcess::GlobalAssembly()
         elem = m_msh->ele_vector[m_dom->elements[i]];
         if(elem->GetMark())
         {
+          elem->SetOrder(order);
           fem->ConfigElement(elem,Check2D3D);
           fem->m_dom = m_dom; //OK
           fem->Assembly();
@@ -3528,6 +3613,7 @@ void CRFProcess::GlobalAssembly()
       elem = m_msh->ele_vector[i];
       if (elem->GetMark()) // Marked for use
       {
+         elem->SetOrder(order);
         fem->ConfigElement(elem,Check2D3D);
 /*
         for(i=0;i<fem->nnodes;i++){
@@ -3563,6 +3649,7 @@ void CRFProcess::CalIntegrationPointValue()
 {
   long i;
   CElem* elem = NULL;
+  cal_integration_point_value = true;
   for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
   {
     elem = m_msh->ele_vector[i];
@@ -3884,7 +3971,7 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
     value = cnodev->node_value;
     //
     if(msh_node<0) continue; 
-    if(st_node.size()>0)
+    if(st_node.size()>0&&(long)st_node.size()>i)
 	{
        m_st = st_node[i]; 
        //--------------------------------------------------------------------
@@ -5858,7 +5945,7 @@ void CRFProcess::CopyTimestepNODValues()
       SetNodeValue(l,nidx0,GetNodeValue(l,nidx1));
     }
    if(pcs_type_name.compare("RICHARDS_FLOW")==0)
-	  for(j=0;j<this->pcs_number_of_secondary_nvals;j++){
+	  for(j=0;j<pcs_number_of_secondary_nvals;j++){
 		 nidx0 = GetNodeValueIndex(pcs_secondary_function_name[j]);
          nidx1 = GetNodeValueIndex(pcs_secondary_function_name[j])+1;
          for(l=0;l<(long)m_msh->GetNodesNumber(false);l++)
@@ -5966,7 +6053,7 @@ void CRFProcess::CalcSecondaryVariablesRichards(int timelevel, bool update)
   double saturation,saturation_sum = 0.0;
   double GP[3];
   static double Node_Cap[8];
-  int idxp,idxcp,idxS,idx_tS; 
+  int idxp,idxcp,idxS,idx_tS=-1; 
   int number_continuum;
   double total_S;
   int i_pv,i_s,i_e;

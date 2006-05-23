@@ -267,7 +267,16 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
        in_sd.clear();
        if(sub_line.find("DRUCKER-PRAGER")!=string::npos)
        {
+           devS = new double[6];
            Plasticity_type=1;
+           if(sub_line.find("NORETURNMAPPING")!=string::npos) // No return mapping
+           {
+              Plasticity_type=10;
+              dFds = new double[6];
+              dGds = new double[6];
+              D_dFds = new double[6];
+              D_dGds = new double[6];
+           }            
            Size = 5;
            /*
                    Material parameters for Cam-Clay model
@@ -378,6 +387,7 @@ CSolidProperties::CSolidProperties()
     Plasticity_type = -1;
  
     E = Lambda = G = K = 0.0;
+    devS = NULL;
     axisymmetry = false;
 
     // SYS
@@ -388,7 +398,12 @@ CSolidProperties::CSolidProperties()
     sumA_Matrix=NULL;  
     rhs_l=NULL;         
     x_l=NULL;           
-    Li=NULL;              
+    Li=NULL;    
+    // Drucker-Prager     
+    dFds = NULL;
+    dGds = NULL;
+    D_dFds = NULL;
+    D_dGds = NULL;
     // Curve variable type
     // 0: Time
     // 1: ...   
@@ -404,6 +419,7 @@ CSolidProperties::~CSolidProperties()
     if(data_Capacity) delete data_Capacity;
     if(data_Conductivity) delete data_Conductivity;
     if(data_Creep) delete data_Creep;
+    if(devS) delete devS;
 
     data_Density=NULL;
     data_Youngs=NULL;
@@ -411,6 +427,7 @@ CSolidProperties::~CSolidProperties()
     data_Capacity=NULL;
     data_Conductivity=NULL;
     data_Creep = NULL;
+    devS=NULL;
 
     if(d2G_dSdS) delete d2G_dSdS;     
     if(d2G_dSdM) delete d2G_dSdM;
@@ -421,6 +438,14 @@ CSolidProperties::~CSolidProperties()
     if(x_l) delete x_l;          // To store local unknowns of 15 
     if(Li) delete Li;              
 
+    if(dFds) delete dFds;
+    if(dGds) delete dGds;
+    if(D_dFds) delete D_dFds;
+    if(D_dGds) delete D_dGds;
+    dFds = NULL;
+    dGds = NULL;
+    D_dFds = NULL;
+    D_dGds = NULL;
     d2G_dSdS=NULL;     
     d2G_dSdM=NULL;
     LocalJacobi=NULL;   
@@ -709,14 +734,14 @@ void CSolidProperties::HeatConductivityTensor(const int dim, double* tensor, int
 	  case 2: // Boiling model. DECOVALEX THM2
       temperature = primary_variable[0];
       //for(i=0; i<dim*dim; i++) mat[i] = 0.0; 
-			for(i=0; i<dim; i++) 
-	           tensor[i*dim+i] = Heat_Conductivity(temperature);
+      for(i=0; i<dim; i++) 
+          tensor[i*dim+i] = Heat_Conductivity(temperature);
       break;
     case 3: // DECOVALEX THM1
       saturation = primary_variable[1];
       //for(i=0; i<dim*dim; i++) mat[i] = 0.0; 
-			for(i=0; i<dim; i++) 
-	           tensor[i*dim+i] = Heat_Conductivity(saturation);
+      for(i=0; i<dim; i++) 
+         tensor[i*dim+i] = Heat_Conductivity(saturation);
       break;
     default: //Normal case
       thermal_conductivity_tensor_type = 0;
@@ -854,54 +879,30 @@ void  CSolidProperties::Calculate_Lame_Constant()
 void CSolidProperties::ElasticConsitutive(const int Dimension, Matrix *D_e) const
 {
    (*D_e) = 0.0; 
-   if(Dimension==2)
-   {
-      (*D_e)(0,0) = Lambda + 2 * G;
-      (*D_e)(0,1) = Lambda; 
+   (*D_e)(0,0) = Lambda + 2 * G;
+   (*D_e)(0,1) = Lambda; 
+   (*D_e)(0,2) = Lambda; 
 
-      (*D_e)(1,0) = Lambda;
-      (*D_e)(1,1) = Lambda + 2 * G;
+   (*D_e)(1,0) = Lambda;
+   (*D_e)(1,1) = Lambda + 2 * G;
+   (*D_e)(1,2) = Lambda;
 
-      (*D_e)(2,0) = Lambda;
-      (*D_e)(2,1) = Lambda;
+   (*D_e)(2,0) = Lambda;
+   (*D_e)(2,1) = Lambda;
+   (*D_e)(2,2) = Lambda + 2 * G;
 
-      (*D_e)(3,3) = G;
-      //
-      if(axisymmetry)
-	  {
-         (*D_e)(0,2) = Lambda; 
-         (*D_e)(1,2) = Lambda;
-         (*D_e)(2,2) = Lambda + 2 * G;
-	  }
-
-
-      /* 
+   (*D_e)(3,3) = G;      
       //Plane stress
-      (*D_e) = 0.0;
       // plane stress, only for test
-      (*D_e)(0,0) = (1.0-Mu)*Lambda + 2 * G;
-      (*D_e)(0,1) = Lambda; 
+      //(*D_e)(0,0) = (1.0-Mu)*Lambda + 2 * G;
+      //(*D_e)(0,1) = Lambda; 
 
-      (*D_e)(1,0) = Lambda;
-      (*D_e)(1,1) = (1.0-Mu)*Lambda + 2 * G;
-      (*D_e)(3,3) = G;
-      */
-   }  
-   else
+      //(*D_e)(1,0) = Lambda;
+      // (*D_e)(1,1) = (1.0-Mu)*Lambda + 2 * G;
+      // (*D_e)(3,3) = G;
+     
+   if(Dimension==3)
    {
-      (*D_e)(0,0) = Lambda + 2 * G;
-      (*D_e)(0,1) = Lambda; 
-      (*D_e)(0,2) = Lambda; 
-
-      (*D_e)(1,0) = Lambda;
-      (*D_e)(1,1) = Lambda + 2 * G;
-      (*D_e)(1,2) = Lambda;
- 
-      (*D_e)(2,0) = Lambda;
-      (*D_e)(2,1) = Lambda;
-      (*D_e)(2,2) = Lambda + 2 * G;
- 
-      (*D_e)(3,3) = G;
       (*D_e)(4,4) = G;
       (*D_e)(5,5) = G;
    }
@@ -918,22 +919,26 @@ double CSolidProperties::GetAngleCoefficent_DP(const double Angle)
    {
      double D_Angle = Angle*PI/180.0; 
      double sinA = sin(D_Angle); 
-     val = sinA/sqrt(9.0+4.0*sinA*sinA);
+//     val = sinA/sqrt(9.0+4.0*sinA*sinA);
+     val = 2.0*MSqrt2Over3*sinA/(3.0+sinA); //(3.0-sinA)
+//     val = 2.0*MSqrt2Over3*sinA/(3.0-sinA);
    }
    return val;
 }
 // WW. 09/02. Cumpute yield coefficient, beta 
 // For plane strain
+// al = 6.0*c*cos(a)/sqrt(3)/(3-sin(a))
 double CSolidProperties::GetYieldCoefficent_DP(const double Angle)
 {
    double val = 0.0;
    // Input as a coefficent 
-   if(Angle<0.0) val = 1.0;
+   if(Angle<0.0||Angle<MKleinsteZahl) val = 1.0;
    else // Input as a dialatant angle 
    {
      double D_Angle = Angle*PI/180.0; 
      double sinA = sin(D_Angle); 
-     val = 2.0*sqrt(3.0)*cos(D_Angle)/sqrt(9.0+4.0*sinA*sinA);
+     val = 6.0*sqrt(3.0)*cos(D_Angle)/(3.0+sinA); // (3.0-sinA)
+//     val = 2.0*sqrt(3.0)*cos(D_Angle)/sqrt(9.0+4.0*sinA*sinA);
    }
    return val;
 }
@@ -950,13 +955,12 @@ void CSolidProperties::CalulateCoefficent_DP()
      Hard_Loc = (*data_Plasticity)(4);
 }
 
-
 /**************************************************************************
   ROCKFLOW - Funktion: StressIntegrationDP
  
    Aufgabe:
    Computing the stresses at a point and return the plastical status of this 
-   point	
+   point (Return mapping method)	
 
   
    Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
@@ -983,74 +987,84 @@ void CSolidProperties::CalulateCoefficent_DP()
      02/2004   WW  Modify for the 3D case 
      08/2004   WW  Set As a member of material class
 **************************************************************************/
-double* CSolidProperties::StressIntegrationDP(const int GPiGPj, 
+bool CSolidProperties::StressIntegrationDP(const int GPiGPj, 
                const ElementValue_DM *ele_val, double *TryStress, 
-               double* dPhi, const int Update)
+               double& dPhi, const int Update)
 {
   int i = 0; 
   double I1 = 0.0;
   double ep, ep0;
-  double F = 0.0;
+  double F = 0.0, F0 = 0.0; //, yl;
   double RF0 = 0.0;
   double sqrtJ2 = 0.0;
   double Beta = 0.0;
   double p3, normXi, Jac, err;
+  int max_ite = 10;
+  int ite=0;
+  // double dstrs[6];
 
   bool isLoop = true; // Used only to avoid warnings with .net
+  bool ploading = false;
 
   const int Size = ele_val->Stress->Rows();
-  static double DevStress[6];
+  //static double DevStress[6];
 
   int Dim = 2;
-  if(Size>4) Dim = 3; 
-
-  /*
-   Note: For nolinear hardening, the below two guys should be calculated
-   at Gauss points 
-  const double Hard = MatGetHardening();
-  */  
-  
+  if(Size>4) Dim = 3;  
+ 
   // Get the total effective plastic strain 
   ep = (*ele_val->pStrain)(GPiGPj);
 
   for(i=0; i<Size; i++)
   { 
+//     dstrs[i] = TryStress[i];  // d_stress
      TryStress[i] += (*ele_val->Stress)(i, GPiGPj);
-     DevStress[i] = TryStress[i];
+     devS[i] = TryStress[i];
   }
 
-  I1 = DeviatoricStress(DevStress);
+  I1 = DeviatoricStress(devS);
   
-  sqrtJ2 = sqrt(TensorMutiplication2(DevStress, DevStress, Dim));
+  sqrtJ2 = sqrt(TensorMutiplication2(devS, devS, Dim));
 
   normXi = sqrtJ2;
   p3 = I1;
   /* If yield, compute plastic multiplier dPhi */
-  *dPhi = 0.0;
-  F = sqrtJ2 + Al*I1 - MSqrt2Over3*BetaN*(Y0+Hard*ep);
-
-  if(pcs_deformation==1) F=-1.0;
+  dPhi = 0.0;
+  F0 = sqrtJ2 + Al*I1; 
+  F = F0 - MSqrt2Over3*BetaN*(Y0+Hard*ep);
+  //if(pcs_deformation==1) F=-1.0;
+  // yl = sqrt(TensorMutiplication2(devS, dstrs, Dim))/sqrtJ2;
+  // yl += (dstrs[0]+dstrs[1]+dstrs[2])*Al; 
+  // if(yl<=0.0)
+  //   F = -1.0;
+  //   
+  if(F0<=(*ele_val->y_surface)(GPiGPj)) // unloading
+    F = -1.0;
+  //  
   if(F>0.0&&(!PreLoad)) // in yield status 
   {
+    ploading = true;
     // Local Newton-Raphson procedure
     //   If non-perfect plasticity, the below line has to be change
     Jac = -2.0*G-9.0*K*Al*Xi
-                 -MSqrt2Over3*BetaN*Hard*sqrt(1.0+3.0*Xi*Xi);
+             -MSqrt2Over3*BetaN*Hard*sqrt(1.0+3.0*Xi*Xi);
     err = 1.0e+5;
            
     ep0 = ep;
     RF0 = F;
     while(isLoop)
     {
+      ite++;
+	  if(ite>max_ite) break;
       if(F<0.0||fabs(F)<10.0*Tolerance_Local_Newton) break;
       //if(err<TolLocalNewT) break; 
-      *dPhi -= F/Jac;
+      dPhi -= F/Jac;
 
-      p3 = I1 - 9.0*(*dPhi)*Xi*K;
-      normXi = sqrtJ2 - 2.0*G*(*dPhi);
-      ep = ep0 + (*dPhi)*sqrt(1.0+3.0*Xi*Xi);
-	
-      F = normXi+ Al*p3 - MSqrt2Over3*BetaN*(Y0+Hard*ep);
+      p3 = I1 - 9.0*dPhi*Xi*K;
+      normXi = sqrtJ2 - 2.0*G*dPhi;
+      ep = ep0 + dPhi*sqrt(1.0+3.0*Xi*Xi);
+	  F0 =  normXi+ Al*p3 ;
+      F = F0 - MSqrt2Over3*BetaN*(Y0+Hard*ep);
       /*Jac = fun(); if non-linear hardening is involved*/	
       //err = fabs(F)/RF0;		
     }
@@ -1058,25 +1072,215 @@ double* CSolidProperties::StressIntegrationDP(const int GPiGPj,
   
 
   if(sqrtJ2>0.0)
-    Beta = 1.0-2.0*(*dPhi)*G/sqrtJ2;
+    Beta = 1.0-2.0*dPhi*G/sqrtJ2;
   else
     Beta = 1.0;
   
   for(i=0; i<Size; i++)
-     TryStress[i] = Beta*DevStress[i];
+     TryStress[i] = Beta*devS[i];
 
   for(i=0; i<3; i++)
-     TryStress[i] += I1/3.0-3.0*(*dPhi)*K*Xi;
+     TryStress[i] += I1/3.0-3.0*dPhi*K*Xi;
 
    
   // Save the current stresses 
   if(Update>0)
   {
-     if((*dPhi)>0.0)
+     if(dPhi>0.0)
        (*ele_val->pStrain)(GPiGPj) = ep;
+     (*ele_val->y_surface)(GPiGPj) = F0; 
   }
-  return DevStress;	
+  return ploading;
 }
+
+/**************************************************************************
+  ROCKFLOW - Funktion: DirectStressIntegrationDP
+   Computing the stresses at a point and return the plastical status of this 
+   point by direct integration.	
+  
+   Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+   E :
+     long index: Elementnummer
+     double *TryStress                   :   Try incremental stresses as input
+                                             New stresses as output              
+     const int GPi, const int GPj        :   Local indeces of Gauss Points
+
+     const double G, double K            :   Shear modulus, (2*lambda+2*G)/3
+     const double Al, const double Xi,
+     const double Y0, const double BetaN :   Coefficient for Drucker-Prager model 
+     double* dPhi                        :   Plastic multiplier.  
+     double &jt                          :   enhanced parameters
+     
+	 const int Update                    :   Indicator to store the stress or not.
+
+
+  return:
+   - double* - Deviatoric effetive stresses, s11,s22,s12,s33
+                                                                         
+  Programmaenderungen:
+     02/2006   WW  Erste Version
+**************************************************************************/
+bool CSolidProperties::DirectStressIntegrationDP(const int GPiGPj, 
+                const ElementValue_DM *ele_val, double *TryStress, const int Update)
+{
+  int i = 0, m=0, m_max=100; 
+  double I1 = 0.0;
+  double sy0, sy, ep, dlambda=0.0;
+  double F = 0.0, yy; //, yl;
+  double R=1.0;
+  double sqrtJ2 = 0.0;
+  double A_H = 0.0, domA=0.0;
+  double dstrs[6];
+  bool ploading = false;
+  const int Size = ele_val->Stress->Rows();
+  //static double DevStress[6];
+
+  int Dim = 2;
+  if(Size>4) Dim = 3;  
+ 
+  // Get the total effective plastic strain 
+  ep = (*ele_val->pStrain)(GPiGPj);
+
+  for(i=0; i<Size; i++)
+  {
+     dstrs[i] = TryStress[i];  // d_stress
+     TryStress[i] = (*ele_val->Stress)(i, GPiGPj); // stress_0
+     devS[i] = TryStress[i] + dstrs[i];
+  }
+
+  I1 = DeviatoricStress(devS);  
+  sqrtJ2 = sqrt(TensorMutiplication2(devS, devS, Dim));
+  //
+  sy = sqrtJ2 + Al*I1; 
+  yy = MSqrt2Over3*BetaN*(Y0+Hard*ep);
+  F = sy - yy;
+  sy0 = (*ele_val->y_surface)(GPiGPj);
+  //yl = sqrt(TensorMutiplication2(devS, dstrs, Dim))/sqrtJ2;
+  //yl += (dstrs[0]+dstrs[1]+dstrs[2])*Al; 
+  //if(yl<=0.0)
+  //  F = -1.0;
+  if(sy<=sy0) // unloading
+    F = -1.0;
+  if(F>0.0&&(!PreLoad)) // in yield status 
+  {
+     if(ep<MKleinsteZahl)  // Elastic in previous load step
+        R = F/(sy-sy0);   
+     m=(int)(8.0*F/yy)+1;
+     for(i=0; i<Size; i++)
+     {
+        TryStress[i] += (1.0-R)*dstrs[i];
+        dstrs[i] *= R/(double)m;
+     }
+     if(m>m_max)
+       m=m_max;
+     // sub-inrement
+     while(m>0)
+     {
+        // Compute dlamda
+        A_H = MSqrt2Over3*BetaN*Hard*sqrt(1+3.0*Xi*Xi); // Hard: if it is not constant....
+        for(i=0; i<Size; i++)
+          devS[i] = TryStress[i];
+        I1 = DeviatoricStress(devS);
+        sqrtJ2 = sqrt(TensorMutiplication2(devS, devS, Dim));
+        for(i=0; i<Size; i++)
+        {
+            devS[i] /= sqrtJ2;    
+            dFds[i] = devS[i];
+        }
+        for(i=0; i<3; i++)
+            dFds[i] += Al;
+        // dlambda        
+        dlambda = 0.0;
+        domA = A_H+2.0*G+9.0*Al*Xi*K;
+        for(i=0; i<Size; i++)
+           dlambda += dFds[i]*dstrs[i];
+        dlambda /= domA;
+        if(dlambda<0.0) dlambda = 0.0;
+        ep += dlambda*sqrt(1.0+3.0*Xi*Xi); 
+        // Update stress 
+        for(i=0; i<Size; i++)
+          TryStress[i] += dstrs[i]-2.0*dlambda*G*devS[i];
+		dlambda *= 3.0*Xi*K; 
+        for(i=0; i<3; i++)
+          TryStress[i] -= dlambda;
+        m--;              
+     }              
+     for(i=0; i<Size; i++)
+       devS[i] = TryStress[i];
+     I1 = DeviatoricStress(devS);
+     sqrtJ2 = sqrt(TensorMutiplication2(devS, devS, Dim));
+     sy = sqrtJ2 + Al*I1; 
+     yy = MSqrt2Over3*BetaN*(Y0+Hard*ep);
+     R=1.0;
+     if(sy>yy)
+       R = yy/sy;
+     for(i=0; i<Size; i++)
+     {
+        TryStress[i] *= R;
+        devS[i] *= R/sqrtJ2;
+     }
+     sy *= R;
+     ploading = true; 
+  }  
+  else
+  {
+     for(i=0; i<Size; i++)
+       TryStress[i] += dstrs[i];
+  }
+  // Save the current stresses 
+  if(Update>0)
+  {
+     (*ele_val->pStrain)(GPiGPj) = ep;
+     (*ele_val->y_surface)(GPiGPj) = sy; 
+  }
+  return ploading;
+}
+
+/**************************************************************************
+ ROCKFLOW - Funktion: CSolidProperties::ConsistentTangentialDP
+
+   Local assembly of elasto-plastic tangential matrix C^ep
+   (Drucker-Prager model)
+ 
+ Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+   E 
+   double *Dep            : Consistent tangential matrix 
+   const Dim              : Space dimension
+
+ Programmaenderungen:
+   10/2006   WW  Erste Version
+   02/2006   WW  programmed 
+**************************************************************************/
+void CSolidProperties::TangentialDP(Matrix *Dep)
+{
+   int i, j, Size;
+   double domA;
+   //
+   Size=Dep->Rows();
+   domA = MSqrt2Over3*BetaN*Hard*sqrt(1+3.0*Xi*Xi); // Hard: if it is not constant....
+   //   
+   for(i=0; i<Size; i++)
+   {
+       D_dFds[i] = 2.0*G*devS[i];
+       D_dGds[i] = 2.0*G*devS[i];
+   }
+   for(i=0; i<3; i++)
+   {
+       D_dFds[i] += 3.0*Al*K;
+       D_dGds[i] += 3.0*Xi*K;
+   }
+   // 
+   domA += 2.0*G+9.0*Al*Xi*K;
+   //
+   for(i=0; i<Size; i++)
+   {
+      for(j=0; j<Size; j++)
+        (*Dep)(i,j) -= D_dGds[i]*D_dFds[j]/domA;      
+   }
+
+//Dep->Write();
+}
+
 
 
 /**************************************************************************
@@ -1089,7 +1293,6 @@ double* CSolidProperties::StressIntegrationDP(const int GPiGPj,
  Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    E 
    double *Dep            : Consistent tangential matrix 
-   const double *DevStress: Deviatoric stresses, s11, s22, s12, s33
    const double dPhi      : Plastic multiplier
    const Dim              : Space dimension
  Ergebnis:
@@ -1099,8 +1302,7 @@ double* CSolidProperties::StressIntegrationDP(const int GPiGPj,
    10/2002   WW  Erste Version
    02/2004   WW  Modification for the 3D case 
 **************************************************************************/
-void CSolidProperties::ConsistentTangentialDP(Matrix *Dep,
-          const double *DevStress, const double dPhi, const int Dim)
+void CSolidProperties::ConsistentTangentialDP(Matrix *Dep, const double dPhi, const int Dim)
 {
    double s11, s22, s12, s33, s13, s23;
    double NormX = 0.0;   
@@ -1108,17 +1310,17 @@ void CSolidProperties::ConsistentTangentialDP(Matrix *Dep,
    double c1,c2,c3,c4;   
     
 
-   s11 = DevStress[0];
-   s22 = DevStress[1];
-   s33 = DevStress[2];
-   s12 = DevStress[3];
+   s11 = devS[0];
+   s22 = devS[1];
+   s33 = devS[2];
+   s12 = devS[3];
    s13 = 0.0;
    s23 = 0.0;
 
    if(Dim==3)
    {
-      s13 =  DevStress[4];
-      s23 =  DevStress[5];
+      s13 =  devS[4];
+      s23 =  devS[5];
       NormX = sqrt(s11*s11+s22*s22+s33*s33
                    +2.0*s12*s12+2.0*s13*s13+2.0*s23*s23);
    }
@@ -2119,17 +2321,17 @@ int CSolidProperties::CalStress_and_TangentialMatrix_SYS
 
   // Save the current stresses 
   if(Update>0)
-  {
+    {
 
-     (*ele_val->pStrain)(GPiGPj) = ep;
-     //for(i=0; i<LengthStrs; i++)
-     //    (*ele_val->Stress)(i, GPiGPj) = Stress_n1[i];
-     for(i=0; i<LengthStrs-1; i++)
-         (*ele_val->xi)(i, GPiGPj) = xi_n1[i];
-     for(i=0; i<LengthMat; i++)
-         (*ele_val->MatP)(i, GPiGPj) = Mat_n1[i];
+       (*ele_val->pStrain)(GPiGPj) = ep;
+       //for(i=0; i<LengthStrs; i++)
+       //    (*ele_val->Stress)(i, GPiGPj) = Stress_n1[i];
+       for(i=0; i<LengthStrs-1; i++)
+           (*ele_val->xi)(i, GPiGPj) = xi_n1[i];
+       for(i=0; i<LengthMat; i++)
+           (*ele_val->MatP)(i, GPiGPj) = Mat_n1[i];
 
-  }
+    }
 //   else
 //   {  // New stresses passed through dStress for the residual computation 
       for(i=0; i<LengthStrs; i++)

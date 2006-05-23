@@ -118,7 +118,7 @@ class CFiniteElementStd:public CElement
      // Vector of local node values, e.g. pressure, temperature.
      // Assume maximium element nodes is 20
      double OldMatrix[64]; // For grid adapting     
-  public: //OK
+  public: //OK // to be removed WW
      double NodalVal0[20]; //?? NodalValueSaturation, NodalValueTemperature; ...
      double NodalVal[20];     
      double NodalVal1[20];

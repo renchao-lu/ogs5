@@ -44,6 +44,7 @@ class ElementValue_DM
     Matrix *Stress_i;
     Matrix *Stress_j;
     Matrix *pStrain;
+    Matrix *y_surface;
     // Preconsolidation pressure
     Matrix *prep0;               
     Matrix *e_i;    // Void ratio        

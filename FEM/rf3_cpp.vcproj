@@ -23,7 +23,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../FEM;../MSH;../GEO; ../"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MSVCPP6; RANDOM_WALK"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MSVCPP6; RANDOM_WALK; "
 				RuntimeLibrary="5"
 				DisableLanguageExtensions="FALSE"
 				UsePrecompiledHeader="2"

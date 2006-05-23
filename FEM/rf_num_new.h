@@ -136,6 +136,7 @@ typedef struct {
 } LINEAR_SOLVER;
 
 extern LINEAR_SOLVER *InitLinearSolver(LINEAR_SOLVER*);
+extern void SetLinearSolverType(LINEAR_SOLVER*,CNumerics*);
 extern LINEAR_SOLVER *InitializeLinearSolver(LINEAR_SOLVER*,CNumerics*);
 extern LINEAR_SOLVER *InitMemoryLinearSolver(LINEAR_SOLVER*,int);
 extern LINEAR_SOLVER *SetMemoryZeroLinearSolver(LINEAR_SOLVER*);

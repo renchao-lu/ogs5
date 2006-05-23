@@ -684,7 +684,9 @@ void COutput::NODWriteDOMDataTEC()
   int te=0;
   string eleType;
   string tec_file_name;
-//WW  char tf_name[10];
+#ifdef USE_MPI //WW
+  char tf_name[10];
+#endif
 
   std::cout << "Process " << myrank << " in WriteDOMDataTEC" << std::endl;
 
@@ -2548,7 +2550,7 @@ void COutput::WriteVTKValues(fstream&vtk_file)
   //--------------------------------------------------------------------
   int j;
 //  double* xyz;
-  CElem* m_ele = NULL;
+//WW  CElem* m_ele = NULL;
   FiniteElement::ElementValue* gp_ele = NULL;
 // write header for cell data
   vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;

@@ -1883,7 +1883,7 @@ double GetRiverNODValue(CNodeValue* cnodev,CSourceTerm* m_st, long msh_node) //W
   double NodeReachLength;
   double RiverConductance;
   int nidx1;
-  double value;
+  double value=0.0;
   /* // Commented by WW
   paraA = group_vector[i]->node_parameterA; //HRiver
   paraB = group_vector[i]->node_parameterB; //KRiverBed
@@ -2364,8 +2364,8 @@ double GetAnalyticalSolution(long location, CSourceTerm *m_st)
   double t0, tn, tnn, val1,val2, node_area;
   double tvol, vol, flux_area, tflux_area;
   double mass_solute_present,mass_to_remove;
-  bool out = false;
-  int dimension = m_st->analytical_material_group;
+//WW  bool out = false;
+//WW  int dimension = m_st->analytical_material_group;
   string process;
   CRFProcess* m_pcs = NULL;
   m_pcs = PCSGet(m_st->pcs_type_name, m_st->pcs_pv_name);
@@ -2485,6 +2485,7 @@ void CSourceTerm::SetNodePastValue ( long n, int idx, int pos, double value)
   long k = 0;
   int j = 0;
   bool endstepreached = false;
+  pos=pos; //WW
   //----------------------------------------------------------------------
   //Check whether this is the first call
   CRFProcess* m_pcs = NULL;
@@ -2499,7 +2500,7 @@ void CSourceTerm::SetNodePastValue ( long n, int idx, int pos, double value)
   
   //Create memory for the values
   if (size == 0){
-     int number_of_terms = max_no_terms;
+//WW     int number_of_terms = max_no_terms;
      for (k = 0; k< size1; k++){
        NODE_HISTORY *nh = new NODE_HISTORY;
        CreateHistoryNodeMemory(nh);
@@ -2595,7 +2596,7 @@ void CSourceTerm::DeleteHistoryNodeMemory()
 {
   long size = (long) node_history_vector.size(); //m_st->
   int s_row=no_an_sol*2;
-  long s_col=max_no_terms;
+//WW  long s_col=max_no_terms;
   long j;
   int i;
   if (size > 0){

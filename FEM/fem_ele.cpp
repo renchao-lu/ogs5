@@ -292,7 +292,8 @@ void CElement::ConfigNumerics(const int EleType)
 	   break;
      case 5: // Tedrahedra 
        ele_dim =3;
-	   nGaussPoints = nGauss = 15;  // Fixed to 5
+//	   nGaussPoints = nGauss = 15;  // Fixed to 15
+	   nGaussPoints = nGauss = 5;  // Fixed to 5
        ShapeFunction = ShapeFunctionTet;
        ShapeFunctionHQ = ShapeFunctionTetHQ;
 	   GradShapeFunction = GradShapeFunctionTet;
@@ -459,7 +460,7 @@ double CElement::computeJacobian(const int order)
           for(i=0; i<ele_dim*ele_dim; i++)
              invJacobian[i] /= DetJac;
           //
-      DetJac*=MeshElement->GetFluxArea();//CMCD
+          DetJac*=MeshElement->GetFluxArea();//CMCD
 		  if(axisymmetry)
           {
              
@@ -644,7 +645,8 @@ double CElement::GetGaussData(const int gp, int& gp_r, int& gp_s, int& gp_t)
           fkt *= unit[2];      // Weights
           break;
        case 5: // Tedrahedra
-          SamplePointTet15(gp, unit);
+//To be flexible          SamplePointTet15(gp, unit);
+          SamplePointTet5(gp, unit);
           fkt = computeJacobian(Order);
           fkt *= unit[3];      // Weights
           break;

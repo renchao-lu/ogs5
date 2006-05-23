@@ -3262,7 +3262,8 @@ ElementValue::ElementValue(CRFProcess* m_pcs, CElem* ele):pcs(m_pcs)
       NGPoints=15;
    else NGPoints = (int)pow((double)NGP, (double)ele_dim);
 
-   Velocity.resize(m_pcs->m_msh->GetCoordinateFlag()/10, NGPoints);
+   //Velocity.resize(m_pcs->m_msh->GetCoordinateFlag()/10, NGPoints);
+   Velocity.resize(3, NGPoints);
    Velocity = 0.0;
 }
 //WW 08/2007
