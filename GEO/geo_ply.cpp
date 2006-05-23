@@ -852,6 +852,7 @@ Programing:
 last modification:
 23/2004 WW 
 08/2005 WW Set as a member of polyline
+04/2006 WW Fix a big for polyines have more than two points
 **************************************************************************/
 void CGLPolyline::GetPointOrderByDistance()  
 {
@@ -872,6 +873,7 @@ void CGLPolyline::GetPointOrderByDistance()
       OrderedPoint[j] = j;
 
    // Reorder the nodes finded along polyline 
+   /*
    for(i=0; i<SizeCGLPoint-1; i++)
    {
 	   // Reorder the node
@@ -894,6 +896,27 @@ void CGLPolyline::GetPointOrderByDistance()
 		  }
 	   }
    }
+   */
+
+   // Reorder the nodes within a sector
+   for(j=0; j<number_of_nodes; j++)
+   {
+       i=ibuffer[j];
+       for(k=j; k<number_of_nodes; k++)
+       {
+          if(ibuffer[k]!=i) continue;
+          s0 = sbuffer[j];
+          sl = sbuffer[k];		  
+          if(sl<s0)
+          {
+             l = OrderedPoint[j];
+             sbuffer[k] = s0;
+             sbuffer[j] = sl;
+             OrderedPoint[j] = OrderedPoint[k];
+             OrderedPoint[k] = l;
+          }
+	   }
+   }
 
    sl = 0.0;
    for(i=0; i<SizeCGLPoint-1; i++)
@@ -909,6 +932,25 @@ void CGLPolyline::GetPointOrderByDistance()
 	   yp = CGPb->y-CGPa->y;
 	   zp = CGPb->z-CGPa->z;
        sl += sqrt(xp*xp+yp*yp+zp*zp);       
+   }
+   //
+   // Reorder all nodes found 
+   for(j=0; j<number_of_nodes; j++)
+   {
+       for(k=j; k<number_of_nodes; k++)
+       {
+          if(k==j) continue;
+          s0 = sbuffer[j];
+          sl = sbuffer[k];		  
+          if(sl<s0)
+          {
+             l = OrderedPoint[j];
+             sbuffer[k] = s0;
+             sbuffer[j] = sl;
+             OrderedPoint[j] = OrderedPoint[k];
+             OrderedPoint[k] = l;
+          }
+	   }
    }
 }
 
