@@ -316,6 +316,8 @@ void CGeoSysDoc::Serialize(CArchive& ar)
 	if(m_strGSPFileExt==".gsp"){
       // Read GSP file
       GSPReadWIN(ar);
+      CompleteMesh(); //WW
+
       // Config GSP data
       if(m_bDataMSH){
         pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Config data");
@@ -465,7 +467,7 @@ void CGeoSysDoc::GSPReadWIN(CArchive& ar)
       pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read MSH data");
       FEMRead(gsp_member_path_base);
 	  PCTRead(gsp_member_path_base);   // PCH This is added for temperary purpose
-	  CompleteMesh();  
+	 // CompleteMesh(); //WW  
       m_bDataMSH = TRUE;
     }
     //....................................................................
