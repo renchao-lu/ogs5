@@ -317,7 +317,6 @@ void CGeoSysDoc::Serialize(CArchive& ar)
       // Read GSP file
       GSPReadWIN(ar);
       CompleteMesh(); //WW
-
       // Config GSP data
       if(m_bDataMSH){
         pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Config data");
