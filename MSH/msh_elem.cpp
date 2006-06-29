@@ -1501,6 +1501,7 @@ void CElem::FaceNormal(int index0, int index1, double* face)
    double xx[3];
    double yy[3];
    double zz[3];
+   if (this->GetElementType() == 4 || GetElementType() == 2){
 //----plane normal----------------------------
       // tranform_tensor = new Matrix(3,3); 
        // face"_vec
@@ -1526,6 +1527,7 @@ void CElem::FaceNormal(int index0, int index1, double* face)
 	   {
          face[i] = yy[i];         
 	   } 
+}
 }
 //--------------------------------
 } // namespace Mesh_Group

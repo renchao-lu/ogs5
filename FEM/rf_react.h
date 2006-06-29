@@ -24,6 +24,7 @@ class REACT{
 	int heatflag;      /* if 1, heat transport is active and passed to phreeqc */
 	long nodenumber;   /* number of nodes, on which reactions are calculated */
 	bool flag_pqc;     /* flag if *.pqc file exists */
+    long elenumber;    //number of elements
 	/* hier später arrays of reactions reinhängen ?*/
 
 	// rcml moved here
@@ -55,6 +56,11 @@ class REACT{
 	void SetConcentrationResults(void);
 	void CalculateReactionRateFlag(void);
 	void SetNeighborNodesActive(long startnode, long level, int* help);
+// Reaction at elements //MX
+	void InitREACT0(void);
+    void ExecuteReactionsPHREEQC0(void);
+    void SetConcentrationResultsEle(void);
+    void GetTransportResults2Element(void);
 
 };
 extern vector <REACT*> REACT_vec;

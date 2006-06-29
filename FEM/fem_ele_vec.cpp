@@ -1088,7 +1088,7 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
   if(PoroModel==4)
      //OK deporo =  PCSGetElementPorosityChangeRate(index)/(double)ele_dim;
     //MX  deporo = PCSGetELEValue(index,NULL,1.0,"n_sw_Rate")/(double)ele_dim;
-      deporo = h_pcs->GetElementValue(Index,pcs->GetElementValueIndex("n_sw_rate"))/(double)ele_dim;
+      deporo = h_pcs->GetElementValue(Index,h_pcs->GetElementValueIndex("n_sw_rate"))/(double)ele_dim;
   if(T_Flag)
   { 
     for (i = 0; i < nnodes; i++) 

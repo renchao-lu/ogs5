@@ -39,6 +39,7 @@ class CInitialCondition
     vector<CNodeValue*>node_value_vector;
     void SetDomain(int);
     void SetPolyline(int);
+    void SetPoint(int);  //MX
 	//void SetMaterialDomain(int); //MX
     string delimiter_type;
 	double gradient_ref_depth;
@@ -50,6 +51,8 @@ class CInitialCondition
     ios::pos_type Read(ifstream*);
     void Write(fstream*);
     void Set(int);
+    void SetEle(int);  //MX
+    void SetDomainEle(int); //MX
     CFEMesh* m_msh;
 };
 

@@ -382,6 +382,8 @@ class CRFProcess {
     bool non_linear; //OK/CMCD
     void SetNODFlux(); //OK
     void AssembleParabolicEquationRHSVector(); //OK
+    void InterpolateTempGP(CRFProcess *, string); //MX
+    void ExtropolateTempGP(CRFProcess *, string); //MX
   private:
       int continuum;
 	  bool continuum_ic;

@@ -299,6 +299,7 @@ void CInitialCondition::Set(int nidx)
 {
   switch(geo_type){
     case 0: // PNT
+      SetPoint(nidx);
       cout << "Warning CInitialCondition::Set - ToDo" << endl;
       break;
     case 1: // PLY
@@ -316,6 +317,55 @@ void CInitialCondition::Set(int nidx)
     }
 }
 
+/**************************************************************************
+FEMLib-Method:
+Task: set polyline values
+Programing:
+06/2006 MX Implementation
+last modification:
+**************************************************************************/
+void CInitialCondition::SetPoint(int nidx)
+{
+//  long i;
+  CGLPoint *m_point = NULL;
+  CFEMesh* m_msh = m_pcs->m_msh;
+
+  if((m_msh) && dis_type_name.find("CONSTANT")!=string::npos) {
+    m_point = GEOGetPointByName(geo_name);//CC
+    m_pcs->SetNodeValue(m_msh->GetNODOnPNT(m_point),nidx,node_value_vector[0]->node_value);
+  }
+  else{
+      cout << "Error in CInitialCondition::SetPoint - point: " << geo_name << " not found" << endl;
+  }
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Task: 
+Programing:
+08/2004 OK Implementation
+**************************************************************************/
+void CInitialCondition::SetEle(int nidx)
+{
+  switch(geo_type){
+    case 0: // PNT
+      cout << "Warning CInitialCondition::Set - ToDo" << endl;
+      break;
+    case 1: // PLY
+      // SetPolyline(nidx);
+      cout << "Warning CInitialCondition::Set - ToDo" << endl;
+      break;
+    case 2: // SFC
+      cout << "Warning CInitialCondition::Set - ToDo" << endl;
+      break;
+    case 3: // VOL
+      cout << "Warning CInitialCondition::Set - ToDo" << endl;
+      break;
+    case 4: // DOM
+	  SetDomainEle(nidx);
+	  break; 
+    }
+}
 
 /**************************************************************************
 FEMLib-Method:
@@ -731,3 +781,49 @@ void ICGroupDelete()
   ic_group_vector.clear();
 }
 
+/**************************************************************************
+FEMLib-Method:
+Task: set domain values to elements
+Programing:
+06/2006 MX Implementation
+**************************************************************************/
+void CInitialCondition::SetDomainEle(int nidx)
+{
+    int k;
+	long i;
+	double ele_val=0.0;
+    vector<long>ele_vector;
+    CFEMesh* m_msh = m_pcs->m_msh;
+    k=0;
+    CElem* m_ele = NULL;
+
+    if(SubNumber==0){  //only for constant values
+      ele_val = node_value_vector[0]->node_value;
+      for(i=0;i<(long)m_msh->ele_vector.size();i++)
+      {
+          m_ele = m_msh->ele_vector[i];
+          if(m_ele->GetMark()) // Marked for use
+          {
+            m_pcs->SetElementValue(i,nidx, ele_val);
+          } 
+       }
+    }
+//========================================================================
+    else //MX
+    {
+       if (m_msh){   
+         for(k=0; k<SubNumber; k++)
+         {
+           for(i=0;i<(long)m_msh->ele_vector.size();i++)
+           {
+             m_ele = m_msh->ele_vector[i];
+             if(m_ele->GetMark() && m_ele->GetPatchIndex() == subdom_index[k] ) // Marked for use
+             {
+               m_pcs->SetElementValue(i, nidx, subdom_ic[k]);
+               ele_val = m_pcs->GetElementValue(i, nidx);
+             } 
+           }
+         }
+       }  //if
+    }
+}

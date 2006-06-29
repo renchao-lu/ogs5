@@ -1737,7 +1737,7 @@ double CMediumProperties::HeatCapacity(long number, double*gp,double theta,
       density_solid = fabs(m_msp->Density());
       if(FLOW)
       {
-        porosity = Porosity(number,gp,theta);
+	    porosity = assem->MediaProp->Porosity(number,gp,theta);
         heat_capacity_fluids = porosity*MFPCalcFluidsHeatCapacity(number,gp,theta, assem);
       }
       else
@@ -1793,7 +1793,8 @@ double* CMediumProperties::HeatConductivityTensor(int number)
   int i, dimen;
   CSolidProperties *m_msp = NULL;
   double heat_conductivity_fluids;
-  double porosity =  this->porosity;
+//  double porosity =  this->porosity;  //MX
+  double porosity =  this->porosity_model_values[0];
   bool FLOW = false; //WW
 //  int heat_capacity_model = 0;
   CFluidProperties *m_mfp;
@@ -2682,6 +2683,7 @@ double CMediumProperties::Porosity(long number,double*gp,double theta)
   int gueltig;
   double porosity_sw;
   CFiniteElementStd* assem = m_pcs->GetAssember();
+  string str;
   ///
   bool New = false; // To be removed WW
   if(fem_msh_vector.size()>0) New = true;
@@ -2690,23 +2692,26 @@ double CMediumProperties::Porosity(long number,double*gp,double theta)
   // Functional dependencies
   int i;
   int no_pcs_names =(int)porosity_pcs_name_vector.size();
+  CRFProcess *pcs_temp;
   for(i=0;i<no_pcs_names;i++){
     if(New)
     {
-       nidx0 = m_pcs->GetNodeValueIndex(porosity_pcs_name_vector[i]);
+	   str = porosity_pcs_name_vector[i];
+	   pcs_temp = PCSGet(str, true);  //MX
+       nidx0 = pcs_temp->GetNodeValueIndex(porosity_pcs_name_vector[i]);
 	   nidx1 = nidx0+1;  
       if(mode==0){ // Gauss point values
          assem->ComputeShapefct(1);
-         primary_variable[i] = (1.-theta)*assem->interpolate(nidx0,m_pcs) 
-                                  + theta*assem->interpolate(nidx1,m_pcs);
+         primary_variable[i] = (1.-theta)*assem->interpolate(nidx0,pcs_temp) 
+                                  + theta*assem->interpolate(nidx1,pcs_temp);
       }
       else if(mode==1){ // Node values
-         primary_variable[i] = (1.-theta)*m_pcs->GetNodeValue(number,nidx0) \
-                            + theta*m_pcs->GetNodeValue(number,nidx1);
+         primary_variable[i] = (1.-theta)*pcs_temp->GetNodeValue(number,nidx0) \
+                            + theta*pcs_temp->GetNodeValue(number,nidx1);
       }
       else if(mode==2){ // Element average value
-         primary_variable[i] = (1.-theta)*assem->elemnt_average(nidx0,m_pcs)
-                                  + theta*assem->elemnt_average(nidx1,m_pcs);
+         primary_variable[i] = (1.-theta)*assem->elemnt_average(nidx0,pcs_temp)
+                                  + theta*assem->elemnt_average(nidx1,pcs_temp);
       }
 	}
 	else
@@ -3368,7 +3373,7 @@ double CMediumProperties::PorosityEffectiveConstrainedSwellingConstantIonicStren
  // long group = ElGetElementGroupNumber(index);
   long group = m_pcs->m_msh->ele_vector[index]->GetPatchIndex();
   m_msp = msp_vector[group];
-  density_rock  = m_msp->Density(1);
+  density_rock  = abs(m_msp->Density(1));
   //--------------------------------------------------------------------
 
   /* Component Properties */
@@ -3398,7 +3403,7 @@ double CMediumProperties::PorosityEffectiveConstrainedSwellingConstantIonicStren
 /*  porosity_IL = porosity_IL*satu; */
   porosity_IL  =porosity_max*pow(satu,beta);
  // ElSetElementVal(index,PCSGetELEValueIndex("POROSITY_IL"),porosity_IL);
-  m_pcs->SetElementValue(index, m_pcs->GetElementValueIndex("POROSITY_IL"),porosity_IL);
+  m_pcs->SetElementValue(index, m_pcs->GetElementValueIndex("POROSITY_IL")+1,porosity_IL);
   
 /*-----------Effective porosity calculation------------------*/    
 
@@ -3408,7 +3413,7 @@ double CMediumProperties::PorosityEffectiveConstrainedSwellingConstantIonicStren
 	  porosity =porosity_min;
 
  // ElSetElementVal(index,PCSGetELEValueIndex("POROSITY"),porosity);
-     m_pcs->SetElementValue(index, m_pcs->GetElementValueIndex("POROSITY"),porosity);
+     m_pcs->SetElementValue(index, m_pcs->GetElementValueIndex("POROSITY")+1,porosity);
 
 /*-----------Swelling strain rate, xie, wang and Kolditz, (23)------------------*/ 
    

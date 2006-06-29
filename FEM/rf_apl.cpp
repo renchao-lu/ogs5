@@ -72,6 +72,9 @@
 #include "tools.h"
 
 #include "par_ddc.h"
+#ifdef CHEMAPP
+  #include "eqlink.h"
+#endif
 /* Interne (statische) Deklarationen */
 void RFPost_FEM(void);
 void RFPost_Model(void);
@@ -497,6 +500,13 @@ void DestroyObjectLists(void)
   }
   // PCS
   pcs_vector.clear();
+#ifdef CHEMAPP
+  if (Eqlink_vec.size()>0){ 
+    Eqlink_vec[0]->DestroyMemory();
+    Eqlink_vec.clear();
+  }
+
+#endif
 }
 
 

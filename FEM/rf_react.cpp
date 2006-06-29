@@ -18,6 +18,7 @@ Reaction package to go with MTM2
 //#include "rfmat_tp.h"
 #include "rfmat_cp.h"
 #include "rf_react.h"
+#include "rf_ic_new.h"
 #include "stdio.h"
 #include "geo_strings.h"
 #include "rf_pcs.h" //OK_MOD"
@@ -28,6 +29,9 @@ Reaction package to go with MTM2
 #include <iostream>
 #include <fstream>
 #include "rf_tim_new.h"
+#include "rf_mmp_new.h"
+// Elem object
+#include "fem_ele_std.h"
 
 #include <vector>
 using namespace std;
@@ -232,6 +236,11 @@ for(i=0;i<vector_size;i++){
 	if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0) np++;
 	if(m_pcs->pcs_type_name.compare("HEAT_TRANSPORT")==0) heatflag = 1;
 	nodenumber = (long) m_pcs->m_msh->GetNodesNumber(false);
+    elenumber = (long) m_pcs->m_msh->ele_vector.size();
+
+	#ifdef REACTION_ELEMENT
+      if (nodenumber<elenumber) nodenumber = elenumber;  //MX 06/2006
+	#endif
  }
  number_of_comp = np;
 
@@ -339,6 +348,190 @@ void REACT::InitREACT(void){
   }	
 }
 
+/**************************************************************************
+   ROCKFLOW - Funktion: REACT::InitREACT0
+
+   Aufgabe:
+   Inserts reaction rate of component at index in field RECT->rate
+   
+   Programmaenderungen:
+   06/2006     MX         Erste Version
+**************************************************************************/
+void REACT::InitREACT0(void){
+
+ int comp, phase, j, timelevel, np;
+ long i;
+ int nidxe, nidxe1;
+ CRFProcess *m_pcs = NULL;
+ CInitialCondition* m_ic = NULL;
+
+ timelevel = 1;  // concentrations are in new timelevel
+ phase = 0;      //single phase so far
+ 
+ /* Initialize arrays of concentrations and array for reaction rates */
+ np = (int)pcs_vector.size();
+ for(j=0;j<np;j++){ // for all processes
+	m_pcs = pcs_vector[j];
+	if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0){ // if it is a mass transport process
+		comp = m_pcs->pcs_component_number; // get component number
+		this->name[comp] = (char *) cp_vec[comp]->compname.data(); // get component name
+
+        if (comp>=0 && (cp_vec[comp]->mobil > 0))
+            m_pcs->InterpolateTempGP(m_pcs,this->name[comp]);
+
+        if (comp>=0 && (cp_vec[comp]->mobil==0)){
+                m_ic = ic_vector[j];
+                m_ic->m_pcs = m_pcs;
+                if(m_ic->pcs_pv_name.compare(this->name[comp])==0){
+                    nidxe = m_pcs->GetElementValueIndex(this->name[comp]);
+                    nidxe1 = nidxe +1;
+                    m_ic->SetEle(nidxe);   //set IC to elements for reactions //MX 06/2006
+                    m_ic->SetEle(nidxe1);
+            } //for
+        }
+ 
+		for(i=0;i<this->elenumber;i++){
+			// get concentration values
+			this->val_in[comp][i] = m_pcs->GetElementValue(i,m_pcs->GetElementValueIndex(m_pcs->pcs_primary_function_name[0])+timelevel);
+			if((this->val_in[comp][i] < 0.0) && (strcmp(this->name[comp],"pe")!= 0) ) {  //MX, 01.2005
+				if(abs(this->val_in[comp][i]) > MKleinsteZahl) {
+					DisplayMsg(" Neg. conc for component "); DisplayLong((long) comp);
+					DisplayMsg(" at node "); DisplayLong((long)i);
+					DisplayMsg("; conc = "); DisplayDouble(this->val_in[comp][i],0,0);
+				DisplayMsgLn(" ");
+				}
+				this->val_in[comp][i] = 0.0 * this->val_in[comp][i];
+			}
+		    this->val_out[comp][i] = this->val_in[comp][i];
+		    this->rate [comp][i] = 0.0;
+		}
+     }      
+	}
+ 
+
+
+ for(i=0;i<this->elenumber;i++)
+	this->rateflag[i] = 1;
+ this->countsteps = 50;
+
+ // Get Temperature values for elements
+ if(this->heatflag > 0){
+	this->name[np-2] = "temp";
+    m_pcs = PCSGet("HEAT_TRANSPORT");
+    int idxT = m_pcs->GetElementValueIndex("TEMPERATURE1")+1;
+    m_pcs->InterpolateTempGP(m_pcs, "TEMPERATURE1");
+	for(i=0;i<this->elenumber;i++)
+		this->val_in[np-2][i] = m_pcs->GetElementValue(i, idxT); 
+
+  }	
+}
+
+void CRFProcess::InterpolateTempGP(CRFProcess *m_pcs, string name) //MX
+{
+  int j, EleType;
+  long i, enode;
+  long group;
+  double T_ele;
+  double GP[3];
+  static double Node_T[8];
+  int index1; //idxp,idxcp,idxS;
+  CMediumProperties* m_mmp = NULL;
+    CElem* elem =NULL;
+    index1 = m_pcs->GetElementValueIndex(name)+1; //->fem->interpolate(
+
+    for (i=0;i<(long) m_pcs->m_msh->ele_vector.size();i++) {
+      elem = m_pcs->m_msh->ele_vector[i]; 
+      m_pcs->GetAssembler();
+
+          // Activated Element 
+          group = elem->GetPatchIndex();
+          m_mmp = mmp_vector[group];
+          m_mmp->m_pcs=m_pcs;  //m_pcs_mmp
+          EleType = elem->GetElementType();
+          if(EleType==4) // Traingle
+          {
+             GP[0] = GP[1] = 0.1/0.3; 
+             GP[2] = 0.0;
+          }
+          else if(EleType==5) 
+		     GP[0] = GP[1] = GP[2] = 0.25;
+          else
+		     GP[0] = GP[1] = GP[2] = 0.0;  
+
+          m_pcs->fem->ConfigElement(elem);
+		  m_pcs->fem->setUnitCoordinates(GP);
+          m_pcs->fem->ComputeShapefct(1); // Linear
+		  for(j=0; j<elem->GetVertexNumber(); j++)
+		  {
+             enode = elem->GetNodeIndex(j);
+             Node_T[j] =  m_pcs->GetNodeValue(enode,m_pcs->GetNodeValueIndex(name)+1); //m_pcs_mmp
+		  }
+		  T_ele = fem->interpolate(Node_T);
+          m_pcs->SetElementValue(i,index1,T_ele);
+          m_pcs->SetElementValue(i,index1-1,T_ele);
+    }
+}
+
+
+void CRFProcess::ExtropolateTempGP(CRFProcess *m_pcs, string name) //MX
+{
+    int j, EleType;
+    long i, enode, nn;
+    long group;
+    double GP[3];
+    static double Node_T[8];
+    double T_sum=0.0;
+    int index1, index_nod; //idxp,idxcp,idxS;
+    CMediumProperties* m_mmp = NULL;
+    CElem* elem =NULL;
+
+    index1 = m_pcs->GetElementValueIndex(name)+1; //->fem->interpolate(
+    index_nod = m_pcs->GetNodeValueIndex(name)+1;
+
+	for (i = 0; i < m_msh->GetNodesNumber(false); i++)
+      SetNodeValue(i,index_nod, 0.0);
+
+    for (i=0;i<(long) m_pcs->m_msh->ele_vector.size();i++) {
+      elem = m_pcs->m_msh->ele_vector[i]; 
+      m_pcs->GetAssembler();
+
+          // Activated Element 
+          group = elem->GetPatchIndex();
+          m_mmp = mmp_vector[group];
+          m_mmp->m_pcs=m_pcs;  //m_pcs_mmp
+          EleType = elem->GetElementType();
+          if(EleType==4) // Traingle
+          {
+             GP[0] = GP[1] = 0.1/0.3; 
+             GP[2] = 0.0;
+          }
+          else if(EleType==5) 
+		     GP[0] = GP[1] = GP[2] = 0.25;
+          else
+		     GP[0] = GP[1] = GP[2] = 0.0;  
+
+          m_pcs->fem->ConfigElement(elem);
+		  m_pcs->fem->setUnitCoordinates(GP);
+          m_pcs->fem->ComputeShapefct(1); // Linear
+		  for(j=0; j<elem->GetVertexNumber(); j++)
+		  {
+             enode = elem->GetNodeIndex(j);
+             Node_T[j] =  m_pcs->GetElementValue(i,index1); 
+             T_sum = m_pcs->GetNodeValue(enode, index_nod);
+             m_pcs->SetNodeValue(enode,index_nod, T_sum+Node_T[j]);
+		  }
+   } //for
+
+  // Average 
+    for (i = 0; i <(long)m_msh->GetNodesNumber(false); i++)
+    {       	  
+	  T_sum = m_pcs->GetNodeValue(i, index_nod);
+      nn = (int) m_msh->nod_vector[i]->connected_elements.size();
+      if(nn==0) nn =1;
+	  T_sum /= (double)nn;
+      m_pcs->SetNodeValue(i,index_nod, T_sum);
+    }
+}
 
 /**************************************************************************
    ROCKFLOW - Funktion: CalculateReactionRates
@@ -446,6 +639,40 @@ for(comp=0; comp<this->number_of_comp;comp++){
 			m_pcs->SetNodeValue(i, idx,this->val_out[comp][i]);
 }
 
+}
+
+/**************************************************************************
+   ROCKFLOW - Funktion: SetConcentrationResultsEle
+
+   Aufgabe:
+   Save concentrations after reaction in concentration array
+   
+   Programmaenderungen:
+   06/2006     MX         Erste Version
+**************************************************************************/
+void REACT::SetConcentrationResultsEle(void)
+{
+  int comp, timelevel, np, idx;
+  long i;
+  string name;
+  CRFProcess *m_pcs = NULL;
+
+  timelevel = 1;  // concentrations are in new timelevel
+  np = (int)pcs_vector.size();
+
+  for(comp=0; comp<this->number_of_comp;comp++){
+	name = this->name[comp];
+    m_pcs = PCSGet("MASS_TRANSPORT",name); //???
+	idx = m_pcs->GetElementValueIndex(name)+1;
+
+	for(i=0;i<this->elenumber;i++)
+		m_pcs->SetElementValue(i, idx,this->val_out[comp][i]);
+
+    //Extropolate element data (center) to nodes
+    if (CPGetMobil(m_pcs->GetProcessComponentNumber())>= 0) 
+        m_pcs->ExtropolateTempGP(m_pcs, name);  
+
+  }
 }
 
 REACT* REACT::GetREACT(void)
@@ -1477,6 +1704,145 @@ void RCRead(string filename){
 
 REACT *rc = new REACT(); //SB
 rc->TestPHREEQC(filename); // Test if *.pqc file is present
-REACT_vec.push_back(rc);
+if (rc->flag_pqc)           //MX
+    REACT_vec.push_back(rc);
+else 
+    delete rc;
+rc =NULL;
 }
 
+/**************************************************************************
+   ROCKFLOW - Funktion: ExecuteReactionsPHREEQC
+
+   Aufgabe:
+   Berechnet chemische Reaktionen zwischen den einzelnen Komponenten
+   allererste VErsion
+   
+   Programmaenderungen:
+   06/2006     MX         Erste Version
+
+**************************************************************************/
+void REACT::ExecuteReactionsPHREEQC0(void){
+ 
+ long i,  ok = 0;
+ FILE *indatei, *fphinp, *fsel_out=NULL;
+ char fsout[80];
+
+
+ DisplayMsgLn("ExecuteReactionsPHREEQC:");
+
+  if (aktuelle_zeit>0)
+   GetTransportResults2Element();
+ 
+ /* Perform reaction step */
+ /* --------------------------------------------------------------------------*/
+  if(flag_pqc){
+    	indatei=fopen(crdat,"r");
+    if (indatei != NULL){
+		ok= this->ReadReactionModel(indatei);
+    }
+    else {
+      printf("ERROR: Can not open file *.pqc");
+      exit(0);
+    }
+
+ /* Read the input file (*.pqc) and set up the input file for PHREEQC ("phinp.dat")*/
+	/* set input file name */
+	strcpy(fsout, this->outfile);
+
+	fphinp = fopen("phinp.dat", "w");
+    if ((fphinp) && ok){
+      for(i=0;i<this->elenumber;i++){
+		if(this->rateflag[i] > 0){
+			rewind(indatei);
+			ok = ReadInputPhreeqc(i,indatei, fphinp);
+		}
+      }
+      fclose(indatei);
+      fclose(fphinp);
+    }
+	else{
+		DisplayMsgLn("The file phinput.dat could not be opened !");
+		exit(0);
+	}
+
+	/* Extern Program call to PHREEQC */
+    if(ok) ok = Call_Phreeqc();
+	if(ok ==0) exit(0);
+ 
+
+   /* Set up the output values for rockflow after Phreeqc reaction*/
+    fsel_out=fopen(fsout,"r");
+    if ((ok) && !fsel_out){
+        DisplayMsgLn("The selected output file doesn't exist!!!");
+        exit(0);
+    }
+    else if(ok){
+		ok = ReadOutputPhreeqc(fsout);
+      if(!ok) DisplayMsgLn(" Error in call to PHREEQC !!!");
+      fclose(fsel_out);
+	}
+ } /* if flag */
+ 
+ /* Calculate Rates */
+ CalculateReactionRates();
+ 
+ // SetConcentrationResults();
+ SetConcentrationResultsEle();
+}/* End of ExecuteReactionsPHREEQC */
+
+/**************************************************************************
+   ROCKFLOW - Funktion: REACT::GetTransportResults2Element
+
+   Aufgabe:
+   Get node results after transport and interpolate to elements (center)
+   
+   Programmaenderungen:
+   06/2006     MX         Erste Version
+**************************************************************************/
+void REACT::GetTransportResults2Element(void){
+
+  int comp, phase, j, timelevel, np;
+  CRFProcess *m_pcs = NULL;
+  long  i;  // index;
+  string cname;
+
+  timelevel = 1;  // concentrations are in new timelevel
+  phase = 0;      //single phase so far
+ 
+  np = (int)pcs_vector.size();
+  for(j=0;j<np;j++){ // for all processes
+	m_pcs = pcs_vector[j];
+	if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0){ // if it is a mass transport process
+		comp = m_pcs->pcs_component_number; // get component number
+        cname = m_pcs->pcs_primary_function_name[0];
+        if (CPGetMobil(m_pcs->GetProcessComponentNumber())> 0)
+            m_pcs->InterpolateTempGP(m_pcs,cname);  //line Interpolate to elements for ions  
+
+		for(i=0;i<elenumber;i++){
+			// get concentration values
+			val_in[comp][i] = m_pcs->GetElementValue(i,m_pcs->GetElementValueIndex(cname)+timelevel);
+			if((val_in[comp][i] < 0.0) && (strcmp(name[comp],"pe")!= 0) ) {  //MX, 01.2005
+				if(abs(val_in[comp][i]) > MKleinsteZahl) {
+					DisplayMsg(" Neg. conc for component "); DisplayLong((long) comp);
+					DisplayMsg(" at node "); DisplayLong((long)i);
+					DisplayMsg("; conc = "); DisplayDouble(val_in[comp][i],0,0);
+					DisplayMsgLn(" ");
+				}
+				val_in[comp][i] = 0.0 * val_in[comp][i];
+			}
+		}
+	}
+ }
+
+ // Get Temperature values for elements
+ if(this->heatflag > 0){
+	this->name[np-2] = "temp";//MX CMCD
+    m_pcs = PCSGet("HEAT_TRANSPORT");
+    int idxT = m_pcs->GetElementValueIndex("TEMPERATURE1")+1;
+    m_pcs->InterpolateTempGP(m_pcs, "TEMPERATURE1");
+	for(i=0;i<this->elenumber;i++)
+		this->val_in[np-2][i] = m_pcs->GetElementValue(i, idxT); //OK PCSGetNODTemperature1L(i)//MX CMCD -2, Liquid Flow, Heat Transport
+
+  }	
+}

@@ -86,7 +86,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="../FEM;../MSH;../GEO; ../"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;; RANDOM_WALK"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;; RANDOM_WALK; "
 				StringPooling="TRUE"
 				RuntimeLibrary="4"
 				EnableFunctionLevelLinking="TRUE"
@@ -2139,6 +2139,25 @@
 			</File>
 			<File
 				RelativePath="..\Msh\msh_rfi.cpp">
+			</File>
+		</Filter>
+		<Filter
+			Name="EQL"
+			Filter="">
+			<File
+				RelativePath="..\Eql\ca_vc_e.lib">
+			</File>
+			<File
+				RelativePath="..\Eql\cacint.cpp">
+			</File>
+			<File
+				RelativePath="..\Eql\cacint.h">
+			</File>
+			<File
+				RelativePath="..\Eql\eqlink.cpp">
+			</File>
+			<File
+				RelativePath="..\Eql\eqlink.h">
 			</File>
 		</Filter>
 		<File

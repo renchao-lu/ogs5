@@ -26,9 +26,9 @@
 
 
 /* ROCKFLOW-Version */
-#define ROCKFLOW_VERSION    "4.3.16"
+#define ROCKFLOW_VERSION    "4.3.17"
 #define RF_SHELL_VERSION    "4.3.07"
-#define ROCKFLOW_DATE       "18.05.2006"
+#define ROCKFLOW_DATE       "26.06.2006"
 
 
 
@@ -160,6 +160,7 @@
   /* Dateinamen-Erweiterung fuer Text-Eingabedatei (Inverses Modellieren) */
 #define CHEM_REACTION_EXTENSION  ".pqc"
   /* Dateinamen-Erweiterung fuer Text-Eingabedatei (Chemical reaction) */
+#define CHEMAPP_REACTION_EXTENSION  ".chm"
 #define TEC_FILE_EXTENSION ".tec"
 #define VTK_FILE_EXTENSION ".vtk" //GK
 #define CSV_FILE_EXTENSION ".csv"
@@ -248,6 +249,8 @@
 /**********************************************************************/
 /* Parallelization */
 #define noPARALLEL
+#define noCHEMAPP   //MX
+#define noREACTION_ELEMENT
 #define noSX
 #define noMPI
 #define noOPEN_MP

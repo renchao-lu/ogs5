@@ -2248,7 +2248,11 @@ void CRFProcess::ConfigMassTransport()
   // 2 ELE values
   pcs_number_of_evals = 0;
 //	  pcs_eval_name[0] = "Darcy velocity";
-//      pcs_eval_unit[0] = "m/s";
+#ifdef REACTION_ELEMENT
+  pcs_number_of_evals = 1;
+  pcs_eval_name[0] = pcs_primary_function_name[0];
+      pcs_eval_unit[0] = "mol/kgH2O";
+#endif
   // 3 ELE matrices
   ConfigELEMatrices = PCSConfigELEMatricesMTM;
   // NUM
@@ -2277,6 +2281,11 @@ void CRFProcess::ConfigHeatTransport()
   pcs_primary_function_name[0] = "TEMPERATURE1";
   pcs_primary_function_unit[0] = "K";
   pcs_number_of_secondary_nvals = 0;
+#ifdef REACTION_ELEMENT
+  pcs_number_of_evals = 1;  //MX
+  pcs_eval_name[0] = "TEMPERATURE1";
+  pcs_eval_unit[0] = "K";
+#endif
 }
 
 /**************************************************************************

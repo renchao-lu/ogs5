@@ -59,6 +59,9 @@
 #include "rf_react.h"
 #include "rf_fluid_momentum.h"  // PCH
 #include "rf_fct.h" //OK
+#ifdef CHEMAPP
+  #include "eqlink.h"  //MX
+#endif
 /* Tools */
 #include "mathlib.h"
 #include "femlib.h"
@@ -206,6 +209,9 @@ int ReadData ( char *dateiname )
   MMPRead(dateiname);
   CPRead(dateiname); //SB:GS4
   RCRead(dateiname);
+#ifdef CHEMAPP
+  CHMRead(dateiname); //MX for CHEMAPP
+#endif
   NUMRead(dateiname);
   if(FEMRead(dateiname)) //OK4108//WW4107
   {
