@@ -343,8 +343,10 @@ int LOPTimeLoop_PCS(double*dt_sum)
       //------------------------------------------------------------------
       m_pcs = PCSGet("RICHARDS_FLOW");
       if(m_pcs&&m_pcs->selected){
+        if(m_pcs->adaption) PCSStorage();
         if(m_pcs->m_msh->no_msh_layer==0){
           pcs_flow_error = m_pcs->ExecuteNonLinear();
+        PCSCalcSecondaryVariables(); // PCS member function
           // ToDo: For Regional Richards Flow with more than one m_pcs and m_msh 
           // for(i=0;i<no_processes;i++){
           //   m_pcs = pcs_vector[i];
@@ -1150,4 +1152,33 @@ void LOPCalcNODResultants(void)
     }
   }
 }
-
+/**************************************************************************
+Task: 
+Programing:PCSStorage
+   06/2006   YD   Implementation                                                                         */
+/**************************************************************************/
+void PCSStorage(void){
+  CRFProcess* m_pcs = NULL;
+  for(int p=0;p<(int)pcs_vector.size();p++){
+    m_pcs = pcs_vector[p];
+    if(!m_pcs->selected) //OK4108
+      continue;
+    switch(m_pcs->pcs_type_name[0]){
+      default:
+        break;
+      case 'L':
+        break;
+      case 'U':
+        break;
+      case 'G':
+        break;
+      case 'T':
+        break;
+      case 'C':
+        break;
+      case 'R': // Richards flow
+        m_pcs->PrimaryVariableStorageRichards();
+        break;
+    }
+  }
+}

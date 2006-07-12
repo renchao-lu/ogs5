@@ -255,6 +255,8 @@ CRFProcess::CRFProcess(void)
   non_linear = false; //OK/CMCD
   cal_integration_point_value = false; //WW
   continuum = 0;
+  Recalculate = false;    //YD
+  adaption = false;
 }
 
 /**************************************************************************
@@ -2549,7 +2551,7 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_primary_function_unit[0] = "Pa";
    // 1.2 secondary variables
   //OK LOPCalcSecondaryVariables_USER = MMPCalcSecondaryVariablesRichards; // p_c and S^l
-  pcs_number_of_secondary_nvals = 6;
+  pcs_number_of_secondary_nvals = 7;
   pcs_secondary_function_name[0] = "SATURATION1";
   pcs_secondary_function_unit[0] = "m3/m3";
   pcs_secondary_function_timelevel[0] = 0;
@@ -2567,7 +2569,10 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_secondary_function_timelevel[4] = 0;
   pcs_secondary_function_name[5] = "FLUX"; //MB
   pcs_secondary_function_unit[5] = "m/s";
-  pcs_secondary_function_timelevel[6] = 1;
+  pcs_secondary_function_timelevel[5] = 1;
+  pcs_secondary_function_name[6] = "STORAGE_P"; 
+  pcs_secondary_function_unit[6] = "Pa";
+  pcs_secondary_function_timelevel[6] = 0;
   }
   else if((int)continuum_vector.size() == 2){
   // 1.1 primary variables
@@ -5630,7 +5635,7 @@ double CRFProcess::ExecuteNonLinear()
 {
   //int iter;
   int i, j, iterations_continuum_couple = 1;
-  double nonlinear_iteration_error=0.0;
+  nonlinear_iteration_error=0.0;
   if((int)continuum_vector.size()>1) iterations_continuum_couple = 3;       // m_num->cpl_iterations;
   for(j=0; j<iterations_continuum_couple; j++){
   for(i=0; i<(int)continuum_vector.size(); i++){
@@ -5642,9 +5647,18 @@ double CRFProcess::ExecuteNonLinear()
     nonlinear_iteration_error = Execute();
     if(mobile_nodes_flag ==1)
         PCSMoveNOD();
-    if(nonlinear_iteration_error < pcs_nonlinear_iteration_tolerance)
+    if(nonlinear_iteration_error < pcs_nonlinear_iteration_tolerance){
+      Recalculate = false; 
       break;
+    }
   }
+    if(Tim->time_control_name.find("ADAPTIVE")!=string::npos){ 
+    if(nonlinear_iteration_error > pcs_nonlinear_iteration_tolerance){
+      cout << "   PCS repeat " << endl;  
+      PrimaryVariableReload();
+      Recalculate = true; 
+    }
+    }
   }
 /*/------------------
    if(iterations_continuum_couple > 1) {
@@ -6326,4 +6340,69 @@ void CRFProcess::AssembleParabolicEquationRHSVector()
     } 
   }
   //----------------------------------------------------------------------
+}
+/*************************************************************************
+GeoSys-FEM Function:
+06/2006 YD Implementation
+Reload primary variable
+**************************************************************************/
+void CRFProcess::PrimaryVariableReload()
+{
+  char pcsT;
+  pcsT = pcs_type_name[0];
+  switch(pcsT){
+    case 'L':
+      break;
+    case 'U':
+      break;
+    case 'G':
+      break;
+    case 'T':
+      break;
+    case 'C':
+      break;
+    case 'R': // Richards flow
+      PrimaryVariableReloadRichards();
+      break;
+  }
+}
+/*************************************************************************
+GeoSys-FEM Function:
+06/2006 YD Implementation
+Reload primary variable of Richards Flow
+**************************************************************************/
+void CRFProcess::PrimaryVariableReloadRichards()
+{
+  int i;
+  int idxp,idx_storage;
+  double storage_p;
+
+  idxp = GetNodeValueIndex(pcs_primary_function_name[0]);
+  idx_storage = GetNodeValueIndex("STORAGE_P");
+  for(i=0;i<(long)m_msh->GetNodesNumber(false);i++){
+    storage_p = GetNodeValue(i,idx_storage);
+    SetNodeValue(i,idxp,storage_p);
+    SetNodeValue(i,idxp+1,storage_p);
+  }     
+  CalcSecondaryVariables(0);
+  CalcSecondaryVariables(1);
+}
+
+/*************************************************************************
+GeoSys-FEM Function:
+06/2006 YD Implementation
+Reload primary variable of Richards Flow
+**************************************************************************/
+void CRFProcess::PrimaryVariableStorageRichards()
+{
+  int i;
+  int idxp,idx_storage;
+  double pressure;
+
+  idxp = GetNodeValueIndex(pcs_primary_function_name[0])+1;
+  idx_storage = GetNodeValueIndex("STORAGE_P");
+  for(i=0;i<(long)m_msh->GetNodesNumber(false);i++){
+    pressure = GetNodeValue(i,idxp);
+    SetNodeValue(i,idx_storage,pressure);
+  }     
 }

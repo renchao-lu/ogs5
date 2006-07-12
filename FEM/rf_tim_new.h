@@ -18,6 +18,7 @@ using namespace std;
 class CTimeDiscretization
 {
   private:
+	double safty_coe;
   public:
     string file_base_name;
     // TIM
@@ -38,6 +39,7 @@ class CTimeDiscretization
 	double iter_times;  //YD
 	double multiply_coef; //YD
     double max_time_step;  //YD
+    double min_time_step; 
 	bool Write_tim_discrete;  //YD
 	fstream *tim_discrete;  //YD
   public:
@@ -49,6 +51,8 @@ class CTimeDiscretization
     double time_step_length; //YD
     double CalcTimeStep();
     double FirstTimeStepEstimate();
+    double AdaptiveFirstTimeStepEstimate();
+	double ErrorControlAdaptiveTimeControl();
     double NeumannTimeControl();
     double SelfAdaptiveTimeControl();
     void CheckCourant();//CMCD

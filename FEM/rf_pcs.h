@@ -384,6 +384,13 @@ class CRFProcess {
     void AssembleParabolicEquationRHSVector(); //OK
     void InterpolateTempGP(CRFProcess *, string); //MX
     void ExtropolateTempGP(CRFProcess *, string); //MX
+    //Repeat Calculation
+    void PrimaryVariableReload();  //YD
+    void PrimaryVariableReloadRichards(); //YD
+    void PrimaryVariableStorageRichards(); //YD
+    bool Recalculate;  //YD
+    bool adaption; 
+    double nonlinear_iteration_error; //YD
   private:
       int continuum;
 	  bool continuum_ic;

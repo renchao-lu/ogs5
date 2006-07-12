@@ -17,7 +17,7 @@
                                                                           */
 /**************************************************************************/
 
-#define TEST_ADAPT
+#define TEST_ADAPT   
 
 #include "stdafx.h" /* MFC */
 

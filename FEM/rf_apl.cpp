@@ -351,9 +351,23 @@ int ExecuteRFTimeLoop(void)
   //======================================================================
   while(m_tim->time_current < m_tim->time_end) {
     //----------------------------------------------------------------------
+    // Recalculation  YD 06.06
+    if(m_tim->time_control_name.find("ADAPTIVE")!=string::npos){
+    if(m_pcs->Recalculate == true){
+        m_tim->time_current -= m_tim->time_step_length;
+        aktueller_zeitschritt--; 
+        aktuelle_zeit = m_tim->time_current; 
+    }
+    }
 	ct = 1.0;
     // Time step calculation
     dt = m_tim->CalcTimeStep();
+    //----------------------------------------------------------------------
+     if(dt < m_tim->min_time_step){
+       cout << "TIME step is too small, calculation will be stopped" << endl;
+       break;
+     }
+    //----------------------------------------------------------------------
 	//Include stability check CMCD GEOSYS4
 	if ((heat_flag)&&(aktueller_zeitschritt > 0)) {
 		ct = Checkcourant_PCS();

@@ -43,6 +43,7 @@ CTimeDiscretization::CTimeDiscretization(void)
   time_type_name = "CONSTANT"; //OK
   time_unit = "SECOND"; 
   max_time_step = 1.e10;   //YD 
+  min_time_step = 0;   //YD 
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -116,6 +117,8 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
   int iter_times;   //YD
   double multiply_coef;    //YD
   int i;
+  CRFProcess* m_pcs = NULL;
+  m_pcs = PCSGet("RICHARDS_FLOW");
   //========================================================================
   // Schleife ueber alle Phasen bzw. Komponenten 
   while(!new_keyword) {
@@ -207,7 +210,12 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
   	    if(time_control_name=="NEUMANN"){
           line.clear();
         }
+  	    if(time_control_name=="ERROR_CONTROL_ADAPTIVE"){
+          m_pcs->adaption = true;
+          line.clear();
+        }
   	    if(time_control_name=="SELF_ADAPTIVE"){
+          m_pcs->adaption = true;
           while((!new_keyword)||(!new_subkeyword)||(!tim_file->eof())){
           position = tim_file->tellg();
           line_string = GetLineFromFile1(tim_file);
@@ -221,6 +229,12 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
           if(line_string.find("MAX_TIME_STEP")!=string::npos){
           *tim_file >> line_string;
           max_time_step = strtod(line_string.data(),NULL);
+          line.clear();
+            break;
+          }
+          if(line_string.find("MIN_TIME_STEP")!=string::npos){
+          *tim_file >> line_string;
+          min_time_step = strtod(line_string.data(),NULL);
           line.clear();
             break;
           }
@@ -366,7 +380,7 @@ Programing:
 **************************************************************************/
 double CTimeDiscretization::CalcTimeStep(void) 
 {
-  double time_step_length = 0.0;
+ // time_step_length = 0.0;
   int no_time_steps = (int)time_step_vector.size();
   if(no_time_steps>0)
     time_step_length = time_step_vector[0];
@@ -383,6 +397,13 @@ double CTimeDiscretization::CalcTimeStep(void)
     time_step_length = NeumannTimeControl();
     else if(time_control_name == "SELF_ADAPTIVE") 
     time_step_length = SelfAdaptiveTimeControl();
+  }
+    if(time_control_name == "ERROR_CONTROL_ADAPTIVE")
+  {
+    if(aktuelle_zeit < MKleinsteZahl) 
+    time_step_length = AdaptiveFirstTimeStepEstimate();
+    else 
+    time_step_length = ErrorControlAdaptiveTimeControl();
   }
   //--------
   return time_step_length;
@@ -625,4 +646,92 @@ void CTimeDiscretization::CheckCourant(void)
     }
   }
   cout<<"Courant time step control, critical element = "<<critical_element_no<<" Recomended time step "<<recommended_time_step<<endl;
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Task: Neumann estimation
+Programing:  
+04/2006 YD Implementation
+**************************************************************************/
+double CTimeDiscretization::AdaptiveFirstTimeStepEstimate(void) 
+{
+  CNumerics *m_num = NULL;
+  CRFProcess* m_pcs = NULL;
+  CElem* elem =NULL;
+  int i, j, idxp;
+  static double Node_p[8];
+  double p_ini,buff=0.0;
+  int no_time_steps;
+  m_num = num_vector[0];
+  safty_coe = 5.0;
+  p_ini = 1.0e-10;
+
+  for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
+  m_pcs = pcs_vector[n_p];
+  CFiniteElementStd* fem = m_pcs->GetAssembler();
+
+  switch(m_pcs->pcs_type_name[0]){
+    case 'R': // Richards
+      idxp  = m_pcs->GetNodeValueIndex("PRESSURE1")+1;
+      no_time_steps = int(1e10);
+	  time_step_length = 1.e10;
+	  for (i=0;i< (long)m_pcs->m_msh->ele_vector.size();i++){  
+        elem = m_pcs->m_msh->ele_vector[i];
+		for(j=0; j<elem->GetVertexNumber(); j++)
+           Node_p[j] =  m_pcs->GetNodeValue(elem->GetNodeIndex(j),idxp);
+        p_ini = MMax(fabs(fem->interpolate(Node_p)),p_ini);
+	  }
+	  buff = safty_coe*sqrt(m_num->nls_error_tolerance/p_ini);
+      buff /=m_pcs->time_unit_factor;
+      time_step_length = MMin(time_step_length,buff);  
+	  if (time_step_length < MKleinsteZahl){
+		cout<<"Waning : Time Control Step Wrong, dt = 0.0 "<<endl;
+        time_step_length = 1.0e-8;
+	  }
+	  cout<<"Error Control Time Step: "<<time_step_length<<endl;
+	  if(Write_tim_discrete)
+		*tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
+      break;
+ }
+}
+  return time_step_length;
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Task: Error control adaptive method                                                              
+Programing:
+04/2006 YD Implementation
+**************************************************************************/
+double CTimeDiscretization::ErrorControlAdaptiveTimeControl(void) 
+{
+  CRFProcess* m_pcs = NULL;
+  double rmax = 5.0;
+  double rmin = 0.5;
+  double error = 0.0;
+  double safty_coe = 0.8;
+
+  for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
+  m_pcs = pcs_vector[n_p];
+
+  switch(m_pcs->pcs_type_name[0]){
+  default:
+      cout << "Fatal error: No valid PCS type" << endl;
+      break;
+  case 'R': // Richards
+ //-----accepted and refused time step----
+    error = m_pcs->nonlinear_iteration_error;
+    if(m_pcs->Recalculate){
+         time_step_length *=MMax(safty_coe*sqrt(m_pcs->m_num->nls_error_tolerance/error),rmin); 
+     }
+    else{
+         time_step_length *=MMin(safty_coe*sqrt(m_pcs->m_num->nls_error_tolerance/error),rmax); 
+    }
+  cout<<"Error_Self_Adaptive Time Step: "<<time_step_length<<endl;
+  if(Write_tim_discrete)
+     *tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
+  return time_step_length;
+}
+}
 }
