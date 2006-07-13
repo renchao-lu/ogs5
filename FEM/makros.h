@@ -26,9 +26,9 @@
 
 
 /* ROCKFLOW-Version */
-#define ROCKFLOW_VERSION    "4.3.17"
+#define ROCKFLOW_VERSION    "4.3.18"
 #define RF_SHELL_VERSION    "4.3.07"
-#define ROCKFLOW_DATE       "26.06.2006"
+#define ROCKFLOW_DATE       "12.07.2006"
 
 
 
