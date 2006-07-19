@@ -470,7 +470,6 @@ if(!msh_file_binary){
   {
      m_fem_msh = new CFEMesh();
      Read_RFI(msh_file_ascii, m_fem_msh);
-        m_fem_msh->FaceNormal();      //YD 
      fem_msh_vector.push_back(m_fem_msh);
 	 msh_file_ascii.close();
 	 return true;
@@ -490,7 +489,6 @@ if(!msh_file_binary){
       if(line_string.find("#FEM_MSH")!=string::npos){ // keyword found
         m_fem_msh = new CFEMesh();
         position = m_fem_msh->ReadBIN(&msh_file_bin);
-        m_fem_msh->FaceNormal();      //YD  
         fem_msh_vector.push_back(m_fem_msh);
         msh_file_bin.seekg(position,ios::beg);
       } // keyword found
@@ -581,7 +579,6 @@ void CompleteMesh()
    {
       fem_msh_vector[i]->ConstructGrid(quad);
       fem_msh_vector[i]->FillTransformMatrix();
-      fem_msh_vector[i]->FaceNormal();
    }      
 }
 /**************************************************************************

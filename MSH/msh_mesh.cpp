@@ -3237,8 +3237,9 @@ void CFEMesh::FaceNormal()
 
   // if(coordinate_system!=32) 
   //   return;
+   if((long)face_normal.size()>0) return; //WW
 //------------------------
-   for (i = 0; i < (int)face_vector.size(); i++)
+   for (i = 0; i < (long)face_vector.size(); i++)
    {
       double* normal = new double[3]; 
       elem_face = face_vector[i];
