@@ -775,6 +775,8 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
       //------------------------------------------------------------------
 		if(m_st->dis_type_name.compare("SYSTEM_DEPENDENT")==0){      //YD
            m_node_value->node_distype = 7;
+           m_pcs->compute_domain_face_normal = true; //WW
+
            for (int ii = 0; ii < (long)m_msh->ele_vector.size(); ii++)
              {
                 elem = m_msh->ele_vector[ii];
@@ -872,7 +874,11 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
           if(m_st->dis_type_name.compare("LINEAR_NEUMANN")==0) dit_ply = 4;
           if(m_st->dis_type_name.compare("RIVER")==0) dit_ply = 5;
           if(m_st->dis_type_name.compare("CRITICALDEPTH")==0) dit_ply = 6;
-          if(m_st->dis_type_name.compare("SYSTEM_DEPENDENT")==0) dit_ply = 7;   //YD  
+          if(m_st->dis_type_name.compare("SYSTEM_DEPENDENT")==0)
+		  { 
+			  dit_ply = 7;   //YD 
+              m_pcs->compute_domain_face_normal = true; //WW
+		  }
           if(m_st->dis_type_name.compare("NORMALDEPTH")==0) dit_ply = 8;  //JOD MB
           if(m_st->dis_type_name.compare("ANALYTICAL")==0) 
           {

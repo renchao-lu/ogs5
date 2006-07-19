@@ -24,6 +24,9 @@ class CInitialCondition
    int SubNumber; //WW
    vector<int> subdom_index; //WW
    vector<double> subdom_ic; //WW
+   // Coefficents for linear distribution function
+   // f = a0+b0*x+c0*y+d0*z
+   double *a0, *b0, *c0, *d0; //WW
   public:
     // PCS
     string pcs_type_name; //OK
@@ -32,6 +35,8 @@ class CInitialCondition
     // GEO
     string geo_type_name;
     int geo_type;
+    int GetNumDom() const {return (int)subdom_index.size();} //WW
+    int GetDomain(const int dom_index) const {return subdom_index[dom_index];} //WW
     string geo_name;
 	//int mat_type; //MX
     // DIS
@@ -39,6 +44,8 @@ class CInitialCondition
     vector<CNodeValue*>node_value_vector;
     void SetDomain(int);
     void SetPolyline(int);
+    double DistributionFuntion(const int dom_i, const double x, const double y, const double z) //WW
+          { return a0[dom_i]+b0[dom_i]*x+c0[dom_i]*y+d0[dom_i]*z;}
     void SetPoint(int);  //MX
 	//void SetMaterialDomain(int); //MX
     string delimiter_type;

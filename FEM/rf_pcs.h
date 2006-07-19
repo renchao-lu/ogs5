@@ -92,6 +92,7 @@ class CRFProcess {
   private:
       void VariableStaticProblem();
       void VariableDynamics();      
+	  bool compute_domain_face_normal; //WW
   protected: //WW
     friend class FiniteElement::CFiniteElementStd;
     friend class FiniteElement::CFiniteElementVec;

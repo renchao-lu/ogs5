@@ -1708,9 +1708,29 @@ void CFiniteElementStd::CalcStrainCoupling()
 		         Y[i] = MeshElement->nodes[i]->Z();       
 		         Z[i] = MeshElement->nodes[i]->Y();        
 	          }
-
+              break;
+			case 3:
+              for(i=nnodes; i<nnodesHQ; i++)
+              {
+                 X[i] = MeshElement->nodes[i]->X();  
+		         Y[i] = MeshElement->nodes[i]->Y();       
+		         Z[i] = MeshElement->nodes[i]->Z();        
+	          }
+        
 		}
    }
+   else
+   {
+      if(dim==1||dim==2)
+	  {
+          for(i=nnodes; i<nnodesHQ; i++)
+          {
+             X[i] = MeshElement->nodes[i]->X();  
+             Y[i] = MeshElement->nodes[i]->Y();       
+             Z[i] = MeshElement->nodes[i]->Z();        
+          }
+	  }
+   } 
    // Loop over Gauss points
    for(i=0; i<dim; i++ )
    {
@@ -2818,7 +2838,9 @@ void CFiniteElementStd::Assemble_strainCPL()
        fac = pcs->m_num->GetDynamicDamping_beta1()*dt;  
        u_n = dm_pcs->GetAuxArray();     
     }  
-
+    //
+    for (i=nnodes;i<nnodesHQ;i++)
+       nodes[i] = MeshElement->nodes_index[i];
     (*StrainCoupling) = 0.0;
     CalcStrainCoupling(); 
     //	if(D_Flag != 41&&aktueller_zeitschritt>1)

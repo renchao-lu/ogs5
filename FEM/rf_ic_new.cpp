@@ -47,6 +47,8 @@ CInitialCondition::CInitialCondition(void)
   m_node->node_value = 0.0;
   SubNumber=0;
   m_pcs = NULL; //OK
+
+  a0=b0=c0=d0=NULL; //WW
 }
 
 /**************************************************************************
@@ -58,6 +60,12 @@ Programing:
 CInitialCondition::~CInitialCondition(void) 
 {
   node_value_vector.clear();
+  //WW
+  if(a0) delete a0;
+  if(b0) delete b0;
+  if(c0) delete c0;
+  if(d0) delete d0;
+  a0=b0=c0=d0=NULL; 
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -149,6 +157,7 @@ Programing:
 01/2005 WW Initialize by sub-domain
 05/2005 OK PRIMARY_VARIABLE
 12/2005 OK RESTART
+07/2006 WW Read data by expression
 **************************************************************************/
 ios::pos_type CInitialCondition::Read(ifstream *ic_file)
 {
@@ -160,10 +169,10 @@ ios::pos_type CInitialCondition::Read(ifstream *ic_file)
   bool new_subkeyword = false;
   bool new_keyword = false;
   CNodeValue *m_node = NULL;
-  int i, ibuf;
+  int i, k, ibuf;
   double d_buf;
   i=0; ibuf=0; d_buf=0.0;
-
+  k=0;
   //========================================================================
   // Schleife ueber alle Phasen bzw. Komponenten 
   while (!new_keyword) {
@@ -209,15 +218,65 @@ ios::pos_type CInitialCondition::Read(ifstream *ic_file)
       }
       if(geo_type_name.find("DOMAIN")!=string::npos) {
         geo_type = 4;
-        if(geo_type_name.find("SUB")!=string::npos) //WW
+        //  Give initial condition by patches of domain. WW
+        if(geo_type_name.find("SUB")!=string::npos) 
         {
            *ic_file>>SubNumber;
-           for(i=0; i<SubNumber; i++) 
-           {
-               *ic_file>>ibuf>>d_buf;
-               subdom_index.push_back(ibuf);
-               subdom_ic.push_back(d_buf);
-           }
+           if(pcs_pv_name.find("STRESS")!=string::npos)
+		   {
+              string str_buff;
+              vector<string> tokens;
+              stringstream buff;
+              char *pch;
+              char seps[] = "+ \n";
+              char seps1[] = "*";
+              double f_buff;
+              a0 = new double [SubNumber];
+              b0 = new double [SubNumber];
+              c0 = new double [SubNumber];
+              d0 = new double [SubNumber];
+              for(i=0; i<SubNumber; i++) 
+              {
+                 a0[i] = b0[i]=c0[i]=d0[i]=0.0;
+                 *ic_file>> ibuf>>str_buff>>ws;  
+                 subdom_index.push_back(ibuf); 
+                 pch = strtok (const_cast<char*> (str_buff.c_str()),seps);   
+                 buff<<pch;
+                 buff>>a0[i];
+                 buff.clear();
+                 while (pch != NULL)
+                 { 
+                    pch = strtok (NULL, seps);
+                    if(pch==NULL) break;
+                    string token = pch;
+                    tokens.push_back(token);
+                 }
+                 for(k=0; k<(int)tokens.size(); k++)
+                 {
+                    pch = strtok (const_cast<char*> (tokens[k].c_str()),seps1);   
+                    buff<<pch;
+                    buff>>f_buff;
+                    buff.clear();
+                    pch = strtok (NULL,seps1);   
+                    switch(pch[0])
+                    {
+                       case 'x':  b0[i]=f_buff; break;
+                       case 'y':  c0[i]=f_buff; break;
+                       case 'z':  d0[i]=f_buff; break;
+                    }   
+                 }
+                 tokens.clear();
+			  }
+		   }
+		   else
+		   {
+             for(i=0; i<SubNumber; i++) 
+             {
+                 *ic_file>>ibuf>>d_buf;
+                 subdom_index.push_back(ibuf);
+                 subdom_ic.push_back(d_buf);
+             }
+		   }
         }
       }
       in.clear();
@@ -524,6 +583,7 @@ void CInitialCondition::SetDomain(int nidx)
 	double node_val, node_depth;
     vector<long>nodes_vector;
     CFEMesh* m_msh = m_pcs->m_msh;
+    onZ = 0;
     if(m_msh) //OK
       onZ = m_msh->GetCoordinateFlag()%10;
     node_depth = 0.0;

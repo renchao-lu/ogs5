@@ -257,6 +257,7 @@ CRFProcess::CRFProcess(void)
   continuum = 0;
   Recalculate = false;    //YD
   adaption = false;
+  compute_domain_face_normal = false; //WW
 }
 
 /**************************************************************************
@@ -773,6 +774,8 @@ void CRFProcess::Create()
        cout << "Warning in GlobalAssembly: Matrix files are not found" << endl;
   }
 
+  if(compute_domain_face_normal) //WW
+     m_msh->FaceNormal();        
 }
 /**************************************************************************
 FEMLib-Method:
@@ -1172,9 +1175,17 @@ void PCSDestroyAllProcesses(void)
   for(i=0; i<(long)ele_val_vector.size(); i++)
     delete ele_val_vector[i];
   ele_val_vector.clear();
+  //WW
+  for(i=0; i<(long)ic_vector.size(); i++)
+    delete ic_vector[i];
+  ic_vector.clear();
 
   //----------------------------------------------------------------------
   MSPDelete(); //WW
+  BCDelete();  //WW
+  STDelete();  //WW
+
+
 
 /*OK for PCS
   // Namen der Knotendaten loeschen
