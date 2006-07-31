@@ -139,10 +139,6 @@ void PCSCreate(void)
     cout << endl;
     m_pcs->Create();
   }
-
-
-
-
   //----------------------------------------------------------------------
   for(i=0;i<no_processes;i++){
     m_pcs = pcs_vector[i];
@@ -290,19 +286,17 @@ int LOPTimeLoop_PCS(double*dt_sum)
   //----------------------------------------------------------------------
   // Problem type
   string pcs_problem_type = PCSProblemType();
-
   //----------------------------------------------------------------------
   // Need velocities ? //MB
   if(T_Process||M_Process||MASS_TRANSPORT_Process){
-     cout << "  VELOCITIES " << endl;
-     CalcVelocities = true;
-   }
+    cout << "  VELOCITIES " << endl;
+    CalcVelocities = true;
+  }
   //======================================================================
   // Coupling loop
   for(k=0;k<lop_coupling_iterations;k++){
     if(lop_coupling_iterations > 1)
       cout << "  PCS coupling iteration: " << k << "/" << lop_coupling_iterations << endl;
-   
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       // Flow processes
       //------------------------------------------------------------------
@@ -344,23 +338,15 @@ int LOPTimeLoop_PCS(double*dt_sum)
       m_pcs = PCSGet("RICHARDS_FLOW");
       if(m_pcs&&m_pcs->selected){
         if(m_pcs->adaption) PCSStorage();
-        if(m_pcs->m_msh->no_msh_layer==0){
+        CFEMesh* m_msh = FEMGet("RICHARDS_FLOW");
+        if(m_msh->geo_name.compare("REGIONAL")==0)
+          LOPExecuteRegionalRichardsFlow(m_pcs);
+        else
           pcs_flow_error = m_pcs->ExecuteNonLinear();
         PCSCalcSecondaryVariables(); // PCS member function
-          // ToDo: For Regional Richards Flow with more than one m_pcs and m_msh 
-          // for(i=0;i<no_processes;i++){
-          //   m_pcs = pcs_vector[i];
-          //   pcs_flow_error = m_pcs->ExecuteNonLinear();
-          // }
-        }
-        else{
-          //For Regional Richards Flow with just one m_pcs and m_msh 
-          //(as used in Benchmark COUPLED_FLOW) 
-          //LOPExecuteRegionalRichardsFlow(m_pcs);
-          m_pcs->CalcFluxesForCoupling();
-        }
-        if (CalcVelocities){ 
-         m_pcs->CalIntegrationPointValue(); //WW
+        if (CalcVelocities)
+        { 
+          m_pcs->CalIntegrationPointValue(); //WW
         }
       }
 	  //--------------------------------------------------------------------
@@ -995,55 +981,168 @@ void PCSCalcSecondaryVariables(void){
 
 /**************************************************************************
 FEMLib-Method: 
-Task: 
-Programing:
 02/2005 OK Implementation
 08/2005 WW Changes due to geometry objects applied
-08/2005 MB Changes .....
-last modification:
+08/2005 MB Changes ... (OK to what ?)
+04/2006 OK and once again ...
 **************************************************************************/
-void LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs)
+void LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
 {
-  int j;
+  int j,k,s;
   long i;
-  vector<long>sfc_lines_vector;
-  int no_layer_lines = m_pcs->m_msh->no_msh_layer;
-  long no_richards_problems = (long)(m_pcs->m_msh->ele_vector.size()/no_layer_lines);
-
-  if(aktueller_zeitschritt==1){
-    m_pcs->eqs = DestroyLinearSolver(m_pcs->eqs);
-	//pcs->eqs = CreateLinearSolver(pcs->m_num->ls_storage_method, pcs->m_msh->NodesInUsage());
-    m_pcs->eqs = CreateLinearSolver(m_pcs->m_num->ls_storage_method, no_layer_lines+1);
-    InitializeLinearSolver(m_pcs->eqs,m_pcs->m_num);
-  }
-  
-  for(i=0;i<no_richards_problems;i++){
-    
-    cout<< "" << endl;
-    cout<< "Richard Problem Number: " << i << endl;
-    
-    // Select line elements related to surface element
-    for(j=0;j<no_layer_lines;j++){
-      sfc_lines_vector.push_back(j+(i*no_layer_lines));
+  CElem* m_ele = NULL;
+  CNode* m_nod = NULL;
+  int no_local_elements = m_pcs_global->m_msh->no_msh_layer;
+  int no_local_nodes = no_local_elements + 1;
+  long g_element_number,g_node_number;
+  CFEMesh* m_msh_local = NULL;
+  CRFProcess* m_pcs_local = NULL;
+  vec<CNode*>ele_nodes(20);
+  double value;
+  int timelevel = 1;
+  int idxp  = m_pcs_global->GetNodeValueIndex("PRESSURE1") + timelevel;
+  int idxcp = m_pcs_global->GetNodeValueIndex("PRESSURE_CAP") + timelevel;
+  int idxS  = m_pcs_global->GetNodeValueIndex("SATURATION1") + timelevel;
+  CElem* m_ele_local = NULL;
+  CNode* m_nod_local = NULL;
+  CNodeValue* m_nod_value = NULL;
+  //======================================================================
+  if(aktueller_zeitschritt==1)
+  {
+    //--------------------------------------------------------------------
+    // Create local RICHARDS process
+    cout << "    Create local RICHARDS process" << endl;
+    m_pcs_local = new CRFProcess();
+    pcs_vector.push_back(m_pcs_local);
+    m_pcs_local->pcs_type_name = m_pcs_global->pcs_type_name;
+    m_pcs_local->num_type_name = m_pcs_global->num_type_name;
+    m_pcs_local->cpl_type_name = m_pcs_global->cpl_type_name;
+    //m_pcs_local->Write_Matrix = true;
+    m_pcs_local->pcs_type_number = (int)pcs_vector.size();
+    m_pcs_local->Config();
+    //--------------------------------------------------------------------
+    // Create local MSH
+    m_msh_local = new CFEMesh();
+    m_msh_local->geo_name = "RICHARDS_FLOW_LOCAL";
+    m_msh_local->ele_type = 1;
+    m_msh_local->no_msh_layer = m_pcs_global->m_msh->no_msh_layer;
+    //....................................................................
+    m_msh_local->ele_vector.resize(no_local_elements);
+    for(j=0;j<no_local_elements;j++)
+    {
+      m_ele = m_pcs_global->m_msh->ele_vector[j];
+      m_ele_local = new CElem(j,m_ele);
+      for(k=0;k<2;k++) // ele_type
+        m_ele_local->nodes_index[k] = j+k;
+      m_msh_local->ele_vector[j] = m_ele_local;
     }
-    /*for(j=0;j<(long) sfc_lines_vector.size();j++){  
-      cout<< " " << j << "  " << sfc_lines_vector[j] <<  endl;
-    }*/
-
-    m_pcs->m_msh->SetMSHPart(sfc_lines_vector, i);
-
-    //Assign small mesh
-    m_pcs->m_msh = FEMGet("MSH_Strang");
-
-    m_pcs->ExecuteNonLinear();
-
-    //Assign big mesh again
-    m_pcs->m_msh = FEMGet("RICHARDS_FLOW");
-
-
-    // pcs->m_msh->RenumberNodesForGlobalAssembly(); related to Comment 1  // MB/WW
-    sfc_lines_vector.clear();
+    m_msh_local->nod_vector.resize(no_local_nodes);
+    m_msh_local->Eqs2Global_NodeIndex.resize(no_local_nodes);
+    for(j=0;j<no_local_nodes;j++)
+    {
+      m_nod = m_pcs_global->m_msh->nod_vector[j];
+      m_nod_local = new CNode(j,m_nod->X(),m_nod->Y(),m_nod->Z());
+      //m_nod_local = m_nod;
+      m_msh_local->nod_vector[j] = m_nod_local;
+   	  m_msh_local->nod_vector[j]->SetEquationIndex(j);
+      m_msh_local->Eqs2Global_NodeIndex[j] = m_msh_local->nod_vector[j]->GetIndex();
+    }
+    m_msh_local->ConstructGrid(false);
+    m_msh_local->FillTransformMatrix();
+    m_msh_local->FaceNormal();
+    //....................................................................
+    fem_msh_vector.push_back(m_msh_local);
+    //....................................................................
+    m_pcs_local->m_msh = m_msh_local;
+    m_pcs_local->Create();
+    for(s=0;s<(int)m_pcs_global->st_node_value.size();s++)
+    {
+      m_nod_value = m_pcs_global->st_node_value[s];
+      m_pcs_local->st_node_value.push_back(m_nod_value);
+    }
+    pcs_vector.push_back(m_pcs_local);
   }
+  //======================================================================
+  else
+  {
+    for(i=0;i<(long)m_pcs_global->m_msh->nod_vector.size();i++)
+    {
+      value = m_pcs_global->GetNodeValue(i,idxp);
+      m_pcs_global->SetNodeValue(i,idxp-1,value);
+      value = m_pcs_global->GetNodeValue(i,idxcp);
+      m_pcs_global->SetNodeValue(i,idxcp-1,value);
+      value = m_pcs_global->GetNodeValue(i,idxS);
+      m_pcs_global->SetNodeValue(i,idxS-1,value);
+    }
+  }
+  //======================================================================
+  cout << "    ->Process " << m_pcs_global->pcs_number << ": " \
+       << "REGIONAL_" << m_pcs_global->pcs_type_name << endl;
+  int no_richards_problems = (int)(m_pcs_global->m_msh->ele_vector.size()/no_local_elements);
+  for(i=0;i<no_richards_problems;i++)
+  //for(i=0;i<2;i++)
+  {
+    m_pcs_local = pcs_vector[(int)pcs_vector.size()-1];
+    m_pcs_local->pcs_number = i;
+    m_msh_local = fem_msh_vector[(int)fem_msh_vector.size()-1];
+    //....................................................................
+    // Set local NODs
+    for(j=0;j<no_local_nodes;j++)
+    {
+      g_node_number = j+(i*no_local_nodes);
+      m_nod = m_pcs_global->m_msh->nod_vector[g_node_number];
+      m_nod_local = m_msh_local->nod_vector[j];
+      //m_nod_local = m_nod;
+      m_nod_local->connected_elements.push_back(i);
+//m_nod_local->ok_dummy = i;
+    }
+    //....................................................................
+    // Set local ELEs
+    for(j=0;j<no_local_elements;j++)
+    {
+      g_element_number = j+(i*no_local_elements);
+      m_ele = m_pcs_global->m_msh->ele_vector[g_element_number];
+      m_ele_local = m_msh_local->ele_vector[j];
+      m_ele_local->SetPatchIndex(m_ele->GetPatchIndex());
+    }
+    //....................................................................
+    // Set ICs
+    for(j=0;j<no_local_nodes;j++)
+    {
+      g_node_number = j+(i*no_local_nodes);
+      value = m_pcs_global->GetNodeValue(g_node_number,idxp);
+      m_pcs_local->SetNodeValue(j,idxp-1,value);
+      value = m_pcs_global->GetNodeValue(g_node_number,idxcp);
+      m_pcs_local->SetNodeValue(j,idxcp-1,value);
+      value = m_pcs_global->GetNodeValue(g_node_number,idxS);
+      m_pcs_local->SetNodeValue(j,idxS-1,value);
+    }
+    //....................................................................
+    // Set local BCs
+    m_pcs_local->CreateBCGroup();
+    //....................................................................
+    // Set local STs
+    m_pcs_local->CreateSTGroup();
+    // look for corresponding OF-triangle
+    // m_ele_of = m_msh_of->GetElement(m_pnt_sf);
+    //....................................................................
+    m_pcs_local->ExecuteNonLinear();
+    //....................................................................
+    // Store results in global PCS tables
+    for(j=0;j<no_local_nodes;j++)
+    {
+      g_node_number = j+(i*no_local_nodes);
+      value = m_pcs_local->GetNodeValue(j,idxp);
+      m_pcs_global->SetNodeValue(g_node_number,idxp,value);
+      value = m_pcs_local->GetNodeValue(j,idxcp);
+      m_pcs_global->SetNodeValue(g_node_number,idxcp,value);
+      value = m_pcs_local->GetNodeValue(j,idxS);
+      m_pcs_global->SetNodeValue(g_node_number,idxS,value);
+    }
+    //m_pcs->m_msh = FEMGet("RICHARDS_FLOW");
+    // pcs->m_msh->RenumberNodesForGlobalAssembly(); related to Comment 1  // MB/WW
+  }
+  //----------------------------------------------------------------------
 }
 
 /**************************************************************************

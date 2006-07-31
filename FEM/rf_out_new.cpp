@@ -614,6 +614,11 @@ void OUTData(double time_current, const int time_step_number)
           //..............................................................
         break;
         //------------------------------------------------------------------
+        case 'Y': // Layer
+          cout << "Data output: Layer" << endl;
+          m_out->NODWriteLAYDataTEC(time_step_number);
+        break;
+        //------------------------------------------------------------------
       }
     }
     //--------------------------------------------------------------------
@@ -2584,6 +2589,80 @@ void COutput::WriteVTKValues(fstream&vtk_file)
   
   //--------------------------------------------------------------------
   ele_value_index_vector.clear();
+}
+
+/**************************************************************************
+FEMLib-Method: 
+04/2006 OK Implementation
+**************************************************************************/
+void COutput::NODWriteLAYDataTEC(int time_step_number)
+{
+  int k;
+  string tec_file_name;
+  //----------------------------------------------------------------------
+  // Tests  
+  const int nName = (int)nod_value_vector.size();
+  if(nName==0)
+    return;
+  vector<int>NodeIndex(nName);
+  //......................................................................
+  // PCS
+  CRFProcess* m_pcs = PCSGet(pcs_type_name);
+  if(!m_pcs)
+    return;
+  for(k=0;k<nName;k++){
+    NodeIndex[k] = m_pcs->GetNodeValueIndex(nod_value_vector[k]);
+  }
+  //......................................................................
+  // MSH
+  m_msh = GetMSH();
+  if(!m_msh)
+  {
+    cout << "Warning in COutput::NODWriteLAYDataTEC() - no MSH data" << endl;
+    return;
+  }
+  //----------------------------------------------------------------------
+  // File name handling
+  char char_time_step_number[10];
+  sprintf(char_time_step_number,"%i",time_step_number);
+  tec_file_name = file_base_name + "_" + "layer_";
+  tec_file_name += char_time_step_number;
+  tec_file_name += TEC_FILE_EXTENSION;
+  fstream tec_file (tec_file_name.data(),ios::trunc|ios::out);
+  tec_file.setf(ios::scientific,ios::floatfield);
+  tec_file.precision(12);
+  if (!tec_file.good()) return;
+  //--------------------------------------------------------------------
+  // Write Header I: variables
+  tec_file << "VARIABLES = X,Y";
+  for(k=0;k<nName;k++){
+    tec_file << "," << nod_value_vector[k] << " ";
+  }
+  tec_file << endl;
+  //======================================================================
+  long j;
+  long no_per_layer = m_msh->GetNodesNumber(false)/(m_msh->no_msh_layer+1);
+  long jl;
+  for(int l=0;l<m_msh->no_msh_layer;l++)
+  {
+    //--------------------------------------------------------------------
+    tec_file << "ZONE T=LAYER" << l << endl;
+    //--------------------------------------------------------------------
+    for(j=0l;j<no_per_layer;j++)
+    {
+      jl = j + j*m_msh->no_msh_layer;
+      //..................................................................
+      // XYZ
+      tec_file << m_msh->nod_vector[jl]->X() << " ";
+      tec_file << m_msh->nod_vector[jl]->Y() << " ";
+      //..................................................................
+      for(k=0;k<nName;k++)
+      {
+        tec_file << m_pcs->GetNodeValue(m_msh->nod_vector[jl]->GetIndex(),NodeIndex[k]) << " ";
+      }
+      tec_file << endl;
+    }
+  }
 }
 
 

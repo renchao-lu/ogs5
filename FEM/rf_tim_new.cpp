@@ -44,6 +44,7 @@ CTimeDiscretization::CTimeDiscretization(void)
   time_unit = "SECOND"; 
   max_time_step = 1.e10;   //YD 
   min_time_step = 0;   //YD 
+  repeat = false; //OK/YD
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -53,13 +54,13 @@ Programing:
 **************************************************************************/
 CTimeDiscretization::~CTimeDiscretization(void) 
 {
-	if(tim_discrete)  //YD
+  if(tim_discrete)  //YD
   {
-      tim_discrete->close();
-      if(tim_discrete) delete tim_discrete;
-      time_step_vector.clear();
-      time_adapt_tim_vector.clear();
-      time_adapt_coe_vector.clear();
+    tim_discrete->close();
+    if(tim_discrete) delete tim_discrete;
+    time_step_vector.clear();
+    time_adapt_tim_vector.clear();
+    time_adapt_coe_vector.clear();
   }
 }
 
@@ -380,32 +381,32 @@ Programing:
 **************************************************************************/
 double CTimeDiscretization::CalcTimeStep(void) 
 {
- // time_step_length = 0.0;
-  int no_time_steps = (int)time_step_vector.size();
-  if(no_time_steps>0)
-    time_step_length = time_step_vector[0];
-  // Standard time stepping
-  if(step_current<no_time_steps){
-    time_step_length = time_step_vector[step_current];
-  }
-  // Time step controls
-  if( time_control_name == "NEUMANN"||time_control_name == "SELF_ADAPTIVE")
-  {
-    if(aktuelle_zeit < MKleinsteZahl) 
-    time_step_length = FirstTimeStepEstimate();
-    else if( time_control_name == "NEUMANN" )
-    time_step_length = NeumannTimeControl();
-    else if(time_control_name == "SELF_ADAPTIVE") 
-    time_step_length = SelfAdaptiveTimeControl();
-  }
+    // time_step_length = 0.0;
+    int no_time_steps = (int)time_step_vector.size();
+    if(no_time_steps>0)
+      time_step_length = time_step_vector[0];
+    // Standard time stepping
+    if(step_current<no_time_steps){
+      time_step_length = time_step_vector[step_current];
+    }
+    // Time step controls
+    if( time_control_name == "NEUMANN"||time_control_name == "SELF_ADAPTIVE")
+    {
+      if(aktuelle_zeit < MKleinsteZahl) 
+        time_step_length = FirstTimeStepEstimate();
+      else if( time_control_name == "NEUMANN" )
+        time_step_length = NeumannTimeControl();
+      else if(time_control_name == "SELF_ADAPTIVE") 
+      time_step_length = SelfAdaptiveTimeControl();
+    }
     if(time_control_name == "ERROR_CONTROL_ADAPTIVE")
-  {
-    if(aktuelle_zeit < MKleinsteZahl) 
-    time_step_length = AdaptiveFirstTimeStepEstimate();
-    else 
-    time_step_length = ErrorControlAdaptiveTimeControl();
-  }
-  //--------
+    {
+      if(aktuelle_zeit < MKleinsteZahl) 
+        time_step_length = AdaptiveFirstTimeStepEstimate();
+      else 
+        time_step_length = ErrorControlAdaptiveTimeControl();
+    }
+    //--------
   return time_step_length;
 }
 
@@ -576,7 +577,14 @@ Programing:
 **************************************************************************/
 double CTimeDiscretization::SelfAdaptiveTimeControl(void) 
 {
-  CRFProcess* m_pcs = NULL;
+  CRFProcess* m_pcs = NULL; //YDToDo: m_pcs should be member
+
+  if(repeat)
+  {
+    cout << "   TIM step is repeated" << endl;  
+    m_pcs = PCSGet(pcs_type_name);
+    m_pcs->PrimaryVariableReload();
+  }
 
   for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
   m_pcs = pcs_vector[n_p];
@@ -596,6 +604,7 @@ double CTimeDiscretization::SelfAdaptiveTimeControl(void)
   cout<<"Self_Adaptive Time Step: "<<time_step_length<<endl;
   if(Write_tim_discrete)
      *tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
+//}
   return time_step_length;
 }
 
@@ -709,29 +718,34 @@ double CTimeDiscretization::ErrorControlAdaptiveTimeControl(void)
   CRFProcess* m_pcs = NULL;
   double rmax = 5.0;
   double rmin = 0.5;
-  double error = 0.0;
+  //double error = 0.0;
   double safty_coe = 0.8;
-
-  for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
-  m_pcs = pcs_vector[n_p];
-
-  switch(m_pcs->pcs_type_name[0]){
-  default:
-      cout << "Fatal error: No valid PCS type" << endl;
-      break;
-  case 'R': // Richards
- //-----accepted and refused time step----
-    error = m_pcs->nonlinear_iteration_error;
-    if(m_pcs->Recalculate){
-         time_step_length *=MMax(safty_coe*sqrt(m_pcs->m_num->nls_error_tolerance/error),rmin); 
-     }
-    else{
-         time_step_length *=MMin(safty_coe*sqrt(m_pcs->m_num->nls_error_tolerance/error),rmax); 
+  //----------------------------------------------------------------------
+  for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++)
+  {
+    m_pcs = pcs_vector[n_p];
+    switch(m_pcs->pcs_type_name[0])
+    {
+      //..................................................................
+      default:
+        cout << "Fatal error: No valid PCS type" << endl;
+        break;
+      //..................................................................
+      case 'R': // Richards, accepted and refused time step
+        //nonlinear_iteration_error = m_pcs->nonlinear_iteration_error;
+        if(repeat)
+        {
+          time_step_length *=MMax(safty_coe*sqrt(m_pcs->m_num->nls_error_tolerance/nonlinear_iteration_error),rmin); 
+        }
+        else
+        {
+          time_step_length *=MMin(safty_coe*sqrt(m_pcs->m_num->nls_error_tolerance/nonlinear_iteration_error),rmax); 
+        }
+        cout<<"Error_Self_Adaptive Time Step: "<<time_step_length<<endl;
+        if(Write_tim_discrete)
+          *tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
+      //..................................................................
     }
-  cout<<"Error_Self_Adaptive Time Step: "<<time_step_length<<endl;
-  if(Write_tim_discrete)
-     *tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
+  }
   return time_step_length;
-}
-}
 }

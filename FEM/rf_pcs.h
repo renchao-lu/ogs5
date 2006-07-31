@@ -198,8 +198,10 @@ class CRFProcess {
 	// 4-IC
 	//....................................................................
 	// 5-BC
+    void CreateBCGroup();
 	//....................................................................
 	// 6-ST
+    void CreateSTGroup();
 	//....................................................................
 	// 7-MFP
 	//....................................................................
@@ -214,6 +216,10 @@ class CRFProcess {
 	// 12-NUM
 	//....................................................................
 	// 13-ELE
+	//....................................................................
+	// 14-CPL
+    void SetCPL(); //OK8 OK4310
+	//....................................................................
 	int Shift[10];
     // Construction / destruction
     char pcs_name[MAX_ZEILE]; //string pcs_name;
@@ -389,9 +395,7 @@ class CRFProcess {
     void PrimaryVariableReload();  //YD
     void PrimaryVariableReloadRichards(); //YD
     void PrimaryVariableStorageRichards(); //YD
-    bool Recalculate;  //YD
     bool adaption; 
-    double nonlinear_iteration_error; //YD
   private:
       int continuum;
 	  bool continuum_ic;

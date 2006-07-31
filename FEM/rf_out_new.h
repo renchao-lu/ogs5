@@ -99,6 +99,7 @@ class COutput
     void WriteRFONodes(fstream&); //OK
     void WriteRFOElements(fstream&); //OK
     void WriteRFOValues(fstream&); //OK
+    void NODWriteLAYDataTEC(int); //OK
 };
 extern vector<COutput*>out_vector;
 extern bool OUTRead(string);

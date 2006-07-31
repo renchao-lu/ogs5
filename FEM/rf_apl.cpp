@@ -349,15 +349,18 @@ int ExecuteRFTimeLoop(void)
   cout << "*********************************************" << endl;
   cout << "Start of simulation" << endl;
   //======================================================================
-  while(m_tim->time_current < m_tim->time_end) {
+  while(m_tim->time_current < m_tim->time_end) 
+  {
     //----------------------------------------------------------------------
     // Recalculation  YD 06.06
-    if(m_tim->time_control_name.find("ADAPTIVE")!=string::npos){
-    if(m_pcs->Recalculate == true){
+    if(m_tim->time_control_name.find("ADAPTIVE")!=string::npos)
+    {
+      if(m_tim->repeat)
+      {
         m_tim->time_current -= m_tim->time_step_length;
         aktueller_zeitschritt--; 
         aktuelle_zeit = m_tim->time_current; 
-    }
+      }
     }
 	ct = 1.0;
     // Time step calculation

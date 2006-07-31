@@ -91,7 +91,8 @@ class CSourceTerm
     double analytical_tortousity;
     double analytical_linear_sorption_Kd;
     double analytical_matrix_density;
-
+    // MSH    
+    string msh_type_name; //OK4310
     //--------------------------------------------------------------------
     // Methods
 	CSourceTerm(void);

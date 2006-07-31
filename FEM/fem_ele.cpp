@@ -402,9 +402,9 @@ double CElement::computeJacobian(const int order)
 	double DetJac = 0.0;
     double *dN = dshapefct;
 //    double *sh = shapefct;
-//    double L;
-    double dx,dy;
-    dx=dy=0.0;
+    double dL;
+    double dx,dy,dz;
+    dx=dy=dz=0.0;
 
     if(order==2) //OK4104
     {   
@@ -417,18 +417,19 @@ double CElement::computeJacobian(const int order)
 
     for(i=0; i<ele_dim*ele_dim; i++)
        Jacobian[i] = 0.0;
-
+    //--------------------------------------------------------------------
     switch(ele_dim)
 	{
+        //................................................................
         case 1: 
           dx = X[0]-X[1];
-          //dy = Y[1]-Y[0];
+          dy = Y[1]-Y[0];
           // We assume that line element always lies in 2D space
           // If it is in 3D, a transform of 3D to 2D is applied  
-          //dz = Z[1]-Z[0];
-          //L = sqrt(dx*dx+dy*dy); //sqrt(dx*dx+dy*dy+dz*dz);
-          Jacobian[0] = 0.5*dx;  //L/2.; // L/2
-          invJacobian[0] = 2.0/dx;  //2./L; // 2/L
+          dz = Z[1]-Z[0];
+          dL = sqrt(dx*dx+dy*dy+dz*dz);
+          Jacobian[0] = -0.5*dL; // -!
+          invJacobian[0] = -2.0/dL; //-!
           DetJac = Jacobian[0];
           DetJac*=MeshElement->GetFluxArea();//CMCD
 		  if(axisymmetry)
@@ -437,8 +438,8 @@ double CElement::computeJacobian(const int order)
              DetJac *= 2.0*pai*Radius;             
 		  }
           break;
+        //................................................................
         case 2:
-
 		  for(i=0; i<nodes_number; i++)
 	      {  
              Jacobian[0] += X[i]*dN[i];
@@ -452,7 +453,6 @@ double CElement::computeJacobian(const int order)
             cout << "\n*** Jacobian: Det == 0 " << DetJac << "\n"; 
             abort(); 
           }
-
 		  invJacobian[0] = Jacobian[3];
 		  invJacobian[1] = -Jacobian[1];
 		  invJacobian[2] = -Jacobian[2];
@@ -463,13 +463,12 @@ double CElement::computeJacobian(const int order)
           DetJac*=MeshElement->GetFluxArea();//CMCD
 		  if(axisymmetry)
           {
-             
              CalculateRadius();
              DetJac *= 2.0*pai*Radius;             
 		  }
 		  break;
+        //................................................................
 		case 3:
- 
 		  for(i=0; i<nodes_number; i++)
 	      {
              j = i+nodes_number;
@@ -513,7 +512,7 @@ double CElement::computeJacobian(const int order)
              invJacobian[i] /= DetJac;
           break;
 	}
-   
+    //--------------------------------------------------------------------
     // Use absolute value (for grids by gmsh, whose orientation is clockwise)
 	return fabs(DetJac);
 }

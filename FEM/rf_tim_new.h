@@ -30,6 +30,7 @@ class CTimeDiscretization
     double time_current;
 	double time_control_manipulate; //CMCD
     int step_current;
+    bool repeat; //OK/YD
     // PCS
     string pcs_type_name; //OK
     // NUM
@@ -42,6 +43,7 @@ class CTimeDiscretization
     double min_time_step; 
 	bool Write_tim_discrete;  //YD
 	fstream *tim_discrete;  //YD
+    double nonlinear_iteration_error; //OK/YD
   public:
     CTimeDiscretization(void);
     ~CTimeDiscretization(void);

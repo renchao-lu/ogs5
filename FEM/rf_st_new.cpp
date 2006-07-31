@@ -116,6 +116,8 @@ Programing:
 02/2005 MB River condition 
 03/2005 WW Node force released by excavation 
 11/2005 CMCD Analytical source for matrix
+04/2006 OK CPL
+04/2006 OK MSH_TYPE
 **************************************************************************/
 ios::pos_type CSourceTerm::Read(ifstream *st_file)
 {
@@ -336,6 +338,15 @@ ios::pos_type CSourceTerm::Read(ifstream *st_file)
         dis_type_name = "RIVER";
         in.clear();
       }
+      //..................................................................
+      if(line_string.find("PCS")!=string::npos) //OK
+      {
+        dis_type_name = "CONSTANT_NEUMANN";
+	    in >> pcs_type_name_cond;
+    	in.clear();
+        continue;
+      }
+      //..................................................................
       //Coupling
       in.str(GetLineFromFile1(st_file)); //PCS type
       in >> line_string >> pcs_type_name_cond;
@@ -343,6 +354,17 @@ ios::pos_type CSourceTerm::Read(ifstream *st_file)
       in.str(GetLineFromFile1(st_file)); // 
       in >> pcs_pv_name_cond;
       in.clear();
+    }
+    //....................................................................
+    if(line_string.find("$MSH_TYPE")!=string::npos) { // subkeyword found
+	  in.str(GetLineFromFile1(st_file));
+      in >> sub_string; //sub_line
+      msh_type_name = "NODE";
+      if(sub_string.find("NODE")!=string::npos) {
+	    in >> msh_node_number;
+    	in.clear();
+      }
+	  continue;
     }
     //....................................................................
   }
@@ -682,10 +704,9 @@ Programing:
 09/2004 WW Face integration of Neumann boundary condition for all element type
 09/2004 WW Interpolation for piece-wise linear distributed source term or BC
 03/2005 OK LINE sources
-last modification:
 02/2005 MB River condition, CriticalDepth
-08/2008 WW Re-implementing  edge, face and domain integration versatile for 
-           all element types
+08/2006 WW Re-implementing edge,face and domain integration versatile for all element types
+04/2006 OK MSH types
 **************************************************************************/
 void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, string this_pv_name)
 {
@@ -1187,6 +1208,16 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
             m_pcs->st_node.push_back(m_st); //WW
           }
         }
+      }
+      //------------------------------------------------------------------
+      // MSH types //OK4310
+      if(m_st->msh_type_name.compare("NODE")==0) {
+        m_node_value = new CNodeValue();
+        m_node_value->msh_node_number = m_st->msh_node_number;
+        m_node_value->node_value = 0.0;
+        m_node_value->CurveIndex = m_st->CurveIndex;
+        m_pcs->st_node_value.push_back(m_node_value);  //WW
+        m_pcs->st_node.push_back(m_st); //WW
       }
      //====================================================================
     }

@@ -137,11 +137,9 @@ using Mesh_Group::CElem;
 using FiniteElement::ElementValue;
 using Math_Group::vec;
 
-
 #define noCHECK_EQS
 #define noCHECK_ST_GROUP
 #define noCHECK_BC_GROUP
-
 
 /*************************************************************************
 PCS2 - File structure
@@ -255,7 +253,6 @@ CRFProcess::CRFProcess(void)
   non_linear = false; //OK/CMCD
   cal_integration_point_value = false; //WW
   continuum = 0;
-  Recalculate = false;    //YD
   adaption = false;
   compute_domain_face_normal = false; //WW
 }
@@ -440,7 +437,6 @@ void CRFProcess::Create()
   // MMP - create mmp groups for each process   //YD
   cout << "->Create MMP" << '\n';
   CMediumPropertiesGroup *m_mmp_group = NULL;
-
   for(i=0;i<DOF;i++)
   {
     m_mmp_group = MMPGetGroup(pcs_type_name);
@@ -478,8 +474,6 @@ void CRFProcess::Create()
     pcs_nonlinear_iterations = m_num->nls_max_iterations;
     pcs_nonlinear_iteration_tolerance = m_num->nls_error_tolerance;
   }
-
-
   //----------------------------------------------------------------------------
   // EQS - create equation system
 //WW CreateEQS();
@@ -564,9 +558,7 @@ void CRFProcess::Create()
   // ST - create ST groups for each process
   cout << "->Create ST" << '\n';
   CSourceTermGroup *m_st_group = NULL;
-
   // WW
-
   if(WriteSourceNBC_RHS==2) // Read from file
      ReadRHS_of_ST_NeumannBC();
   else // WW
@@ -1673,7 +1665,6 @@ Programing:
 02/2005 MB string
 05/2005 WW/DL Dymanic problem
 01/2006 YD Dual Richards
-last modified: mb
 OKToDo switch to char
 get rid of type
 **************************************************************************/
@@ -1682,20 +1673,12 @@ void CRFProcess::Config(void)
   //----------------------------------------------------------------------
   // Set mesh pointer to corresponding mesh
   m_msh = FEMGet(pcs_type_name);
-//??OK
-  if(pcs_type_name.compare("RICHARDS_FLOW")==0){
-    m_msh = fem_msh_vector[pcs_type_number];
-  }
-  
   if((int)continuum_vector.size()== 0)  // YD
     continuum_vector.push_back(1.0);
-
   if(!m_msh)
     cout << "Error in CRFProcess::Config - no MSH data" << endl;
-
   CRFProcessDeformation *dm_pcs;
   dm_pcs = NULL;
-
   if(pcs_type_name.compare("LIQUID_FLOW")==0)  {
     type = 1; 
     ConfigLiquidFlow();
@@ -2562,7 +2545,7 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_primary_function_unit[0] = "Pa";
    // 1.2 secondary variables
   //OK LOPCalcSecondaryVariables_USER = MMPCalcSecondaryVariablesRichards; // p_c and S^l
-  pcs_number_of_secondary_nvals = 7;
+  pcs_number_of_secondary_nvals = 8;
   pcs_secondary_function_name[0] = "SATURATION1";
   pcs_secondary_function_unit[0] = "m3/m3";
   pcs_secondary_function_timelevel[0] = 0;
@@ -2584,6 +2567,9 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_secondary_function_name[6] = "STORAGE_P"; 
   pcs_secondary_function_unit[6] = "Pa";
   pcs_secondary_function_timelevel[6] = 0;
+  pcs_secondary_function_name[7] = "STORAGE_P"; 
+  pcs_secondary_function_unit[7] = "Pa";
+  pcs_secondary_function_timelevel[7] = 0;
   }
   else if((int)continuum_vector.size() == 2){
   // 1.1 primary variables
@@ -3256,7 +3242,6 @@ double CRFProcess::Execute()
   double pcs_error;
   int i;
   long j;
-
   //----------------------------------------------------------------------
   cout << "    ->Process " << pcs_number << ": " << pcs_type_name << endl;
   //----------------------------------------------------------------------
@@ -3322,21 +3307,17 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
     GlobalAssembly();
   else
     AssembleSystemMatrixNew();
-
-
   //----------------------------------------------------------------------
   // 3 Incorporate ST 
   cout << "      Incorporate source terms" << endl;
 //WW#ifdef CHECK_ST_GROUP
 //   CheckSTGroup();
 //#endif
-
  //ofstream Dum("rf_pcs.txt", ios::out);
 // Write_Matrix_M5(eqs->x, Dum); abort();
 //MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x); abort();
-
   IncorporateSourceTerms();
-
+  SetCPL(); //OK2
   //----------------------------------------------------------------------
   // 4 Incorporate BC
   cout << "      Incorporate boundary conditions" << endl;
@@ -3345,10 +3326,8 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
 #endif
   IncorporateBoundaryConditions();
 //  MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x); abort();
-
   //ofstream Dum("rf_pcs.txt", ios::out); WW
   //Write_Matrix_M5(eqs->b, Dum); abort();
-
   //----------------------------------------------------------------------
   /* 5 Solve EQS */
   cout << "      Solve equation system" << endl;
@@ -3400,7 +3379,7 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
 	       SetNodeVal(nn,nidx1, Val);
       }
     }
-	cout << endl << "      PCS error: " << pcs_error << endl;
+	cout << "      PCS error: " << pcs_error << endl; //OK7
   } // NEWTON
   //----------------------------------------------------------------------
   else{ //PICARD
@@ -3423,20 +3402,26 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
     //--------------------------------------------------------------------
     // 7 Store solution vector in model node values table
     //....................................................................
-    if(m_msh){ // MSH data
-	if(type == 22){
+  if(m_msh) // MSH data
+  {
+	if(type == 22)
+    {
       nidx1 = GetNodeValueIndex(pcs_primary_function_name[continuum]) + 1; //new time
 	  for(j=0;j<eqs->dim;j++)
            SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,eqs->x[j]);
 	}
-	else{
-      for(i=0; i<pcs_number_of_primary_nvals; i++){  
+	else
+    {
+      for(i=0; i<pcs_number_of_primary_nvals; i++)
+      {  
         nidx1 = GetNodeValueIndex(pcs_primary_function_name[i])+1;
 		for(j=0;j<eqs->dim;j++)
-           SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,eqs->x[j]);
+        {
+          SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,eqs->x[j]);
+        }
 	  }
 	}
-    }
+  }
     //....................................................................
     else{ // RFI data
       for(i=0; i<pcs_number_of_primary_nvals; i++){  
@@ -3832,6 +3817,7 @@ Programing:
 04/2005 OK MSH
 05/2005 OK conditional BCs
 07/2007 WW Changes due to the geometry object applied
+04/2006 OK Conditions by PCS coupling OK
 last modification:
 **************************************************************************/
 void CRFProcess::IncorporateBoundaryConditions(const double Scaling)
@@ -3961,6 +3947,7 @@ last modification:
 05/2005 WW Dynamic problems
 07/2005 WW Changes due to the geometry object applied
 03/2006 WW Re-arrange
+04/2006 OK CPL
 **************************************************************************/
 void CRFProcess::IncorporateSourceTerms(const double Scaling)
 {
@@ -4028,14 +4015,17 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
            // cout<<"  value  "<<m_st_group->group_vector[i]->node_value<<endl;
          }
        }
-       //--------------------------------------------------------------------
+      //--------------------------------------------------------------------
+      // MB
        if(m_st->conditional && !m_st->river)
            value = GetConditionalNODValue(m_st, cnodev); //MB
-       //
+      //--------------------------------------------------------------------
+      // CMCD
        else if(m_st->analytical){
          value = GetAnalyticalSolution(i,m_st); //CMCD
        }
-    //
+      //--------------------------------------------------------------------
+      // MB
        if(cnodev->node_distype==5)       // River Condition
            value = GetRiverNODValue(cnodev, m_st, msh_node); //MB
     
@@ -4045,7 +4035,8 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
        if(cnodev->node_distype == 8)      // NormalDepth Condition JOD
            value = GetNormalDepthNODValue(m_st, msh_node); //MB        
 	}
-    //      
+      //--------------------------------------------------------------------
+      // FCT
     curve = cnodev->CurveIndex;
     if(curve>0) {
        time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
@@ -4056,10 +4047,10 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
        }
     }
     else time_fac = 1.0;
-    //             
-       
+        //--------------------------------------------------------------------
     value *= time_fac* fac;
-       
+        //--------------------------------------------------------------------
+        // EQS->RHS
     if(m_msh) //WW
         bc_eqs_index = m_msh->nod_vector[msh_node]->GetEquationIndex()+shift;       
     else 
@@ -4072,7 +4063,7 @@ void CRFProcess::IncorporateSourceTerms(const double Scaling)
    else
     eqs->b[bc_eqs_index] += value;
   }
-   //.......................................
+    //====================================================================
   }
 
   //-----------------------------------------------------------------------
@@ -5639,46 +5630,58 @@ FEMLib-Method:
 Task: 
 Programing:
 05/2005 OK Implementation
-04/2006 YD Add contiuum coupling
-last modification:
+04/2006 YD Add contiuum coupling OK???Why ere
 **************************************************************************/
 double CRFProcess::ExecuteNonLinear()
 {
-  //int iter;
   int i, j, iterations_continuum_couple = 1;
-  nonlinear_iteration_error=0.0;
+  double nonlinear_iteration_error=0.0;
   if((int)continuum_vector.size()>1) iterations_continuum_couple = 3;       // m_num->cpl_iterations;
-  for(j=0; j<iterations_continuum_couple; j++){
-  for(i=0; i<(int)continuum_vector.size(); i++){
-    cout << " PCS continuum type: " << i << endl;
-    continuum = i;
-  for(iter=0;iter<pcs_nonlinear_iterations;iter++){
-    cout << "    PCS non-linear iteration: " << iter << "/"   
-         << pcs_nonlinear_iterations << endl;
-    nonlinear_iteration_error = Execute();
-    if(mobile_nodes_flag ==1)
-        PCSMoveNOD();
-    if(nonlinear_iteration_error < pcs_nonlinear_iteration_tolerance){
-      Recalculate = false; 
-      break;
-    }
-  }
-    if(Tim->time_control_name.find("ADAPTIVE")!=string::npos){ 
-    if(nonlinear_iteration_error > pcs_nonlinear_iteration_tolerance){
-      cout << "   PCS repeat " << endl;  
-      PrimaryVariableReload();
-      Recalculate = true; 
-    }
-    }
-  }
-/*/------------------
-   if(iterations_continuum_couple > 1) {
-      pcs_coupling_error = CalcCouplingNODError();
-      if(pcs_coupling_error < m_num->cpl_tolerance)
-       break;
-   }
+  //----------------------------------------------------------------------
+  // Multi-Continua
+  for(j=0;j<iterations_continuum_couple;j++) //OK???YD two processes with exchange
+  {
+    for(i=0;i<(int)continuum_vector.size();i++) //OK???YD
+    {
+      cout << " PCS continuum type: " << i << endl;
+      continuum = i;
+      //..................................................................
+      for(iter=0;iter<pcs_nonlinear_iterations;iter++)
+      {
+        cout << "    PCS non-linear iteration: " << iter << "/"   
+             << pcs_nonlinear_iterations << endl;
+        nonlinear_iteration_error = Execute();
+        if(mobile_nodes_flag ==1)
+          PCSMoveNOD();
+        if(nonlinear_iteration_error < pcs_nonlinear_iteration_tolerance)
+        {
+          Tim->repeat = false; //OK/YD
+          Tim->nonlinear_iteration_error = nonlinear_iteration_error; //OK/YD
+          break;
+        }
+       else
+          Tim->repeat = true; //OK/YD
+      }
+      //..................................................................
+/*
+//OK???YD why here, should be in TIM
+      if(Tim->time_control_name.find("ADAPTIVE")!=string::npos)
+      { 
+        if(nonlinear_iteration_error > pcs_nonlinear_iteration_tolerance)
+        {
+          cout << "   PCS repeat " << endl;  
+if(aktueller_zeitschritt==2&&pcs_number==167)
+{
+value = GetNodeValue(0,1);
+}
+          PrimaryVariableReload();
+          Recalculate = true; 
+        }
+      }
+      //..................................................................
 */
-//------------------
+    }
+  //----------------------------------------------------------------------
   }
   return nonlinear_iteration_error;
 }
@@ -6415,5 +6418,258 @@ void CRFProcess::PrimaryVariableStorageRichards()
   for(i=0;i<(long)m_msh->GetNodesNumber(false);i++){
     pressure = GetNodeValue(i,idxp);
     SetNodeValue(i,idx_storage,pressure);
+    SetNodeValue(i,idx_storage+1,pressure);
   }     
+}
+
+/**************************************************************************
+FEMLib-Method: 
+11/2005 MB Implementation
+03/2006 OK 2nd version (binary coupling)
+**************************************************************************/
+void CRFProcess::SetCPL()
+{
+  int i;
+  double value;
+  //----------------------------------------------------------------------
+  // Nothing to do
+  if((cpl_type_name.size()==0)||(cpl_type_name.compare("PARTITIONED")==0))
+    return;
+  //----------------------------------------------------------------------
+  // PCS CPL
+  CRFProcess* m_pcs_cpl = PCSGet(cpl_type_name);
+  if(!m_pcs_cpl)
+  {
+    cout << "Fatal error in CRFProcess::SetCPL: no PCS data" << endl;
+    return;
+  }
+  //----------------------------------------------------------------------
+  // MSH data for PCS CPL
+  CFEMesh* m_msh_cpl = m_pcs_cpl->m_msh;
+  if(!m_msh_cpl)
+  {
+    cout << "Fatal error in CRFProcess::SetCPL: no MSH data" << endl;
+    return;
+  }
+  //----------------------------------------------------------------------
+  // GEO data for PCS CPL
+  Surface* m_sfc = GEOGetSFCByName(m_msh_cpl->geo_name);
+  if(!m_sfc)
+  {
+    cout << "Fatal error in CRFProcess::SetCPL: no GEO data" << endl;
+    return;
+  }
+  //----------------------------------------------------------------------
+  //......................................................................
+  // MSH nodes of PCS CPL
+  cout << "      ->CPL: " << cpl_type_name << ": ";
+  vector<long>cpl_msh_nodes_vector;
+  m_msh_cpl->GetNODOnSFC(m_sfc,cpl_msh_nodes_vector);
+  if((int)cpl_msh_nodes_vector.size()==0)
+  {
+    cout << "Warning in CRFProcess::SetCPL: no MSH nodes found" << endl;
+  }
+  cout << "CPL nodes = " << (int)cpl_msh_nodes_vector.size() << endl;
+  //.....................................................................-
+  // MSH nodes of PCS
+  cout << "      ->CPL: " << pcs_type_name << ": ";
+  vector<long>msh_nodes_vector;
+  m_msh->GetNODOnSFC(m_sfc,msh_nodes_vector);
+  if((int)msh_nodes_vector.size()==0)
+  {
+    cout << "Warning in CRFProcess::SetCPL: no MSH nodes found" << endl;
+  }
+  cout << "CPL nodes = " << (int)msh_nodes_vector.size() << endl;
+  //----------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
+if(m_msh_cpl->pcs_name.compare("RICHARDS_FLOW")==0)
+{
+  m_msh->SetNODPatchAreas();
+  int nidx = GetNodeValueIndex("WDEPTH");
+  long st_node_number;
+  double st_node_value = 0.0;
+  CNode* m_nod = NULL;
+  for(i=0;i<(int)msh_nodes_vector.size();i++)
+  {
+    value = -2.314e-02;
+    st_node_number = msh_nodes_vector[i];
+    m_nod = m_msh->nod_vector[st_node_number];
+    st_node_value = GetNodeValue(st_node_number,nidx);
+    st_node_value /= m_nod->patch_area;
+    value *= st_node_value;
+    //cout << "CPL value = " << value << endl;
+    eqs->b[st_node_number] += value;
+  }
+}
+//////////////////////////////////////////////////////////////////////////
+if(pcs_type_name.compare("RICHARDS_FLOW")==0&&m_msh_cpl->pcs_name.compare("OVERLAND_FLOW")==0) // ToDo
+{
+  long msh_node_number;
+  long cpl_msh_nod_number;
+  long cpl_msh_ele_number;
+  value = 0.0;
+  cout << "CPL value = " << value << endl;
+/*
+  CGLPoint* m_pnt = GEOGetPointByName("POINT18");
+  msh_node_number = m_msh->GetNODOnPNT(m_pnt);
+  eqs->b[msh_node_number] += value;
+*/
+  // PCS-CON
+  CRFProcess* m_pcs_cond = PCSGet(cpl_type_name);
+  //int nidx = m_pcs_cond->GetNodeValueIndex(m_pcs_cond->pcs_primary_function_name[0]);
+  int cpl_nidx = m_pcs_cond->GetNodeValueIndex("WDEPTH");
+  //----------------------------------------------------------------------
+  // ELE of PCS_CPL related to NOD of PCS
+  CFEMesh* m_msh_this = MSHGet("RICHARDS_FLOW_LOCAL");
+  CElem* m_ele_cnd = NULL;
+  //----------------------------------------------------------------------
+  CSourceTermGroup *m_st_group = NULL;
+  CSourceTerm *m_st = NULL;
+//  m_st_group = STGetGroup(pcs_type_name,pcs_primary_function_name[0]);
+  //----------------------------------------------------------------------
+  double cpl_ele_val = 0.0;
+  int j;
+  CNodeValue *cnodev = NULL;
+//  for(i=0;i<(int)m_st_group->group_vector.size();i++)
+//  ofstream st_out_file("st_out_file.txt",ios::app);
+  for(i=0;i<(int)st_node_value.size();i++)
+  {
+    cnodev = st_node_value[i]; 
+    // MSH-PCS
+    //m_nod = m_msh_this->nod_vector[m_st_group->group_vector[i]->msh_node_number];
+    msh_node_number = cnodev->msh_node_number; //m_st_group->group_vector[i]->msh_node_number; //0
+    // MSH-PCS-CPL
+    cpl_msh_nod_number = msh_node_number;
+    cpl_msh_ele_number = pcs_number; //OK:TODO
+    m_ele_cnd = m_pcs_cond->m_msh->ele_vector[cpl_msh_ele_number];
+    for(j=0;j<m_ele_cnd->GetNodesNumber(false);j++)
+    {
+      cpl_ele_val += m_pcs_cond->GetNodeValue(m_ele_cnd->nodes_index[j],cpl_nidx);
+    }
+    cpl_ele_val /= m_ele_cnd->GetNodesNumber(false);
+    // VAL-CON
+    value = 2.314e-02 * cpl_ele_val * 1e-2;
+//    st_out_file << value << endl;
+    // EQS-RHS
+    eqs->b[msh_node_number] += value;
+  }
+  //----------------------------------------------------------------------
+/*
+  CNodeValue* m_node_value = NULL;
+  m_node_value = new CNodeValue();
+  m_node_value->msh_node_number = msh_node_number;
+  m_node_value->geo_node_number = m_pnt->id;
+  m_node_value->node_value = value;
+  CSourceTermGroup *m_st_group = NULL;
+  m_st_group = STGetGroup(pcs_type_name,pcs_primary_function_name[0]);
+  m_st_group->group_vector.push_back(m_node_value);
+  m_st_group->st_group_vector.push_back(m_st); //OK
+*/
+}
+//////////////////////////////////////////////////////////////////////////
+if(pcs_type_name.compare("GROUNDWATER_FLOW")==0&&m_msh_cpl->pcs_name.compare("OVERLAND_FLOW")==0) // ToDo
+{
+  long ie = (long)msh_nodes_vector.size()/(m_msh->no_msh_layer+1);
+  long of_node_number,gf_node_number;
+  double of_node_value,gf_node_value;
+  CNode* m_nod = NULL;
+  int of_nidx = GetNodeValueIndex("WDEPTH");
+
+  for(i=0;i<ie;i++)
+  {
+    of_node_number = msh_nodes_vector[i]; //ToDo
+    of_node_value = m_pcs_cpl->GetNodeValue(of_node_number,of_nidx);
+    //m_nod = m_msh->nod_vector[gf_node_number];
+    //st_node_value /= m_nod->patch_area;
+    gf_node_value = of_node_value*2e-11;
+if(gf_node_value>1e-13)
+    cout << "CPL value = " << gf_node_value << endl;
+    gf_node_number = msh_nodes_vector[i];
+    eqs->b[gf_node_number] += gf_node_value;
+  }
+}
+//////////////////////////////////////////////////////////////////////////
+  int idx = GetNodeValueIndex("FLUX")+1;
+  //for(i=0;i<(int)msh_nodes_vector.size();i++)
+  for(i=0;i<1;i++)
+  {
+    SetNodeValue(msh_nodes_vector[i],idx,value);
+  }
+}
+
+/**************************************************************************
+PCSLib-Method: 
+04/2006 OK Implementation
+**************************************************************************/
+void CRFProcess::CreateBCGroup()
+{
+  int DOF = GetPrimaryVNumber(); //OK should be PCS member variable
+  cout << "->Create BC" << '\n';
+  CBoundaryConditionsGroup *m_bc_group = NULL;
+  for(int i=0;i<DOF;i++){
+    BCGroupDelete(pcs_type_name,pcs_primary_function_name[i]);
+    m_bc_group = new CBoundaryConditionsGroup();
+    m_bc_group->pcs_type_name = pcs_type_name; //OK
+    m_bc_group->pcs_pv_name = pcs_primary_function_name[i]; //OK
+    m_bc_group->Set(this,Shift[i]);
+    bc_group_list.push_back(m_bc_group);
+  } 
+}
+
+/**************************************************************************
+PCSLib-Method: 
+04/2006 OK Implementation
+**************************************************************************/
+void CRFProcess::CreateSTGroup()
+{
+  int DOF = GetPrimaryVNumber(); //OK should be PCS member variable
+
+  cout << "->Create ST" << '\n';
+  CSourceTermGroup *m_st_group = NULL;
+  // WW
+  ifstream *iSourceNBC_RHS_file = NULL;
+  ofstream *oSourceNBC_RHS_file = NULL;
+  if(WriteSourceNBC_RHS==1)
+  {
+     string m_file_name = FileName +"_"+pcs_type_name+"_source_Neumann_RHS.bin";
+     oSourceNBC_RHS_file = new ofstream(m_file_name.c_str(), ios::binary);     
+  }
+  else if(WriteSourceNBC_RHS==2)
+  {
+     string m_file_name = FileName +"_"+pcs_type_name+"_source_Neumann_RHS.bin";
+     iSourceNBC_RHS_file = new ifstream(m_file_name.c_str(), ios::binary);     
+     if (!iSourceNBC_RHS_file->good())
+       cout << "_source_Neumann_RHS file is not found" << endl;
+  }
+
+  for(int i=0;i<DOF;i++)
+  {
+    //OK m_st_group = m_st_group->Get(pcs_primary_function_name[i]);
+    m_st_group = STGetGroup(pcs_type_name,pcs_primary_function_name[i]);
+    if(!m_st_group) {
+      m_st_group = new CSourceTermGroup();
+      m_st_group->pcs_type_name = pcs_type_name; //OK
+      m_st_group->pcs_pv_name = pcs_primary_function_name[i]; //OK
+//      if(iSourceNBC_RHS_file)  // Read from data. WW
+//        m_st_group->Read(*iSourceNBC_RHS_file);
+//	  else
+        m_st_group->Set(this,Shift[i]);
+      st_group_list.push_back(m_st_group);
+    }
+  }
+  if(oSourceNBC_RHS_file)// WW
+//    WriteRHS_of_ST_NeumannBC(*oSourceNBC_RHS_file);
+
+  if(iSourceNBC_RHS_file) //WW
+  {
+    iSourceNBC_RHS_file->close();
+     delete iSourceNBC_RHS_file;
+     iSourceNBC_RHS_file = NULL; 
+  }
+  if(oSourceNBC_RHS_file) //WW
+  {
+     oSourceNBC_RHS_file->close();
+     delete oSourceNBC_RHS_file;
+     oSourceNBC_RHS_file = NULL; 
+  }
 }
