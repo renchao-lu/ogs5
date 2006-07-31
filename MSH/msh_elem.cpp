@@ -18,7 +18,7 @@ Task:
 Programing:
 06/2005 WW Implementation
 **************************************************************************/
-CElem::CElem(const int Index):CCore(Index)
+CElem::CElem(const long Index):CCore(Index)
 {
 
    grid_adaptation = -1;
@@ -65,8 +65,7 @@ Task:
 Programing:
 06/2005 WW Implementation
 **************************************************************************/
-CElem:: CElem( const int Index,  CElem* onwer, const int Face):
-  CCore(Index), owner(onwer)
+CElem::CElem(const long Index,CElem* onwer, const int Face):CCore(Index),owner(onwer)
 {
    int i, j, k, n, ne; 
    static int faceIndex_loc[10];
@@ -1529,6 +1528,91 @@ void CElem::FaceNormal(int index0, int index1, double* face)
 	   } 
 }
 }
+
+/**************************************************************************
+MSHLib-Method: 
+Task:
+Programing:
+06/2005 WW Implementation
+**************************************************************************/
+CElem::CElem( const long Index, CElem* m_ele_parent):CCore(Index)
+{
+  int i, j, k, n, ne; 
+  static int faceIndex_loc[10];
+  static int edgeIndex_loc[10];
+  gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
+  tranform_tensor = NULL;
+  switch(m_ele_parent->geo_type)
+  {
+      case 1:
+         nnodes = 2;
+         nnodesHQ = 3;    
+         ele_dim = 1;
+         geo_type = 1;
+         nfaces = 2;
+         nedges = 0;
+         break;
+      case 2:
+         nnodes = 4;
+         nnodesHQ = 9;      
+         ele_dim = 2;
+         geo_type = 2;
+         nfaces = 4;
+         nedges = 4;
+         break;
+      case 3:
+         nnodes = 8;
+         nnodesHQ = 20;
+         ele_dim = 3;
+         nfaces = 6;
+         nedges = 12;
+         geo_type = 3;
+         break;
+      case 4:
+         nnodes = 3;
+         nnodesHQ = 6;
+         ele_dim = 2;
+         geo_type = 4;
+         nfaces = 3;
+         nedges = 3;
+         break;
+      case 5:
+         nnodes = 4;
+         nnodesHQ = 10;
+         ele_dim = 3;
+         geo_type = 5;
+         nfaces = 4;
+         nedges = 6;
+         break;
+      case 6:
+         nnodes = 6;
+         nnodesHQ = 15;
+         ele_dim = 3;
+         geo_type = 6;
+         nfaces = 5;
+         nedges = 9;
+		 break;
+    }
+    patch_index =  m_ele_parent->patch_index;
+	quadratic = m_ele_parent->quadratic;
+    nodes_index.resize(nnodes);
+    nodes.resize(nnodes);
+
+	boundary_type='I';
+   //----------------------------------------------------------------------
+  // Initialize topological properties
+  neighbors.resize(nfaces);
+  for(int i=0; i<nfaces; i++)
+    neighbors[i] = NULL;
+  edges.resize(nedges);    
+  edges_orientation.resize(nedges);
+  for(int i=0; i<nedges; i++)
+  {
+    edges[i] = NULL;
+	edges_orientation[i] = 1;
+  }
+}
+
 //--------------------------------
 } // namespace Mesh_Group
 //========================================================================

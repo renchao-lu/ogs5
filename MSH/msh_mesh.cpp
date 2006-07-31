@@ -153,6 +153,11 @@ ios::pos_type CFEMesh::Read(ifstream *fem_file)
       continue;
     }
     //....................................................................
+    if(line_string.find("$GEO_TYPE")!=string::npos) { //OK9_4310
+      *fem_file >> geo_type_name >> geo_name >> ws; //WW
+      continue;
+    }
+    //....................................................................
     if(line_string.find("$AXISYMMETRY")!=string::npos) { // subkeyword found
       axisymmetry=true;
       continue;
@@ -570,21 +575,6 @@ void CFEMesh::ConstructGrid( const bool quadratic)
    else if(x_sum>0.0&&y_sum>0.0&&z_sum>0.0)
       coordinate_system = 32;
    max_dim = coordinate_system/10-1;
-   /*
-   //----------------------------------------------------------------------
-   //Determin msh dimension
-   double max_nodes = 0.0;
-   double anz_nodes = 0.0;
-   for(e=0; e<e_size; e++){
-     thisElem0 = ele_vector[e];  
-     anz_nodes = thisElem0->GetNodesNumber(false);
-     max_nodes = max(max_nodes, anz_nodes);
-   }
-   if(max_nodes <= 2.0) msh_max_dim = 1;      // 1-D elements
-   else if(max_nodes <= 4.0) msh_max_dim = 2; // 2-D elements
-   else msh_max_dim = 3;                      // 3-D elements
-   */
-
    //----------------------------------------------------------------------
    // Gravity center
    for(e=0; e<e_size; e++)
@@ -726,9 +716,9 @@ void CFEMesh::Write(fstream*fem_msh_file)
   // MAT
   if(geo_name.size()>0)
   {
-    *fem_msh_file << " $GEO_NAME" << endl;
+    *fem_msh_file << " $GEO_TYPE" << endl;
     *fem_msh_file << "  ";
-    *fem_msh_file << geo_name << endl;
+    *fem_msh_file << geo_type_name << " " << geo_name << endl; //OK10_4310
   }
   //--------------------------------------------------------------------
   // NODES
@@ -3554,6 +3544,103 @@ void CFEMesh::SetNetworkIntersectionNodes()
       continue;
     no_non_intersection_nodes++;
   }
+}
+
+
+/**************************************************************************
+MSHLib-Method:
+Programing:
+04/2006 OK Implementation
+**************************************************************************/
+void CFEMesh::CreateLineELEFromTriELE()
+{
+  int j,k;
+  long i;
+  double x,y,z;
+  double x0,y0,z0;
+  double x1,y1,z1;
+  double dl;
+  double* gravity_center;
+  CNode* m_nod_line = NULL;
+  CElem* m_tri_ele = NULL;
+  CElem* m_ele = NULL;
+  //----------------------------------------------------------------------
+  // 1 - Element normal vector (for 2D elements only)
+  SetELENormalVectors();
+  //----------------------------------------------------------------------
+  // 2 - Create MSH
+  MSHDelete("LINE_from_TRI");
+  CFEMesh* m_msh_line = NULL;
+  m_msh_line = new CFEMesh();
+  m_msh_line->pcs_name = "LINE_from_TRI";
+  m_msh_line->ele_type = 1;
+  m_msh_line->no_msh_layer = 20; // User-defined
+  double element_length = -0.05; // User-defined
+  dl = element_length * m_msh_line->no_msh_layer;
+  //----------------------------------------------------------------------
+  // 3.1 - Line nodes
+  for(i=0;i<(long)ele_vector.size();i++)
+  {
+    m_tri_ele = ele_vector[i];
+    //....................................................................
+    // Element normal vector
+    gravity_center = m_tri_ele->GetGravityCenter();
+    x0 = gravity_center[0];
+    y0 = gravity_center[1];
+    z0 = gravity_center[2];
+    x1 = x0 + m_tri_ele->normal_vector[0]*dl;
+    y1 = y0 + m_tri_ele->normal_vector[1]*dl;
+    z1 = z0 + m_tri_ele->normal_vector[2]*dl;
+    //....................................................................
+    for(j=0;j<m_msh_line->no_msh_layer+1;j++)
+    {
+      x =  x0 + (x1-x0)*(j)/m_msh_line->no_msh_layer;
+      y =  y0 + (y1-y0)*(j)/m_msh_line->no_msh_layer;
+      z =  z0 + (z1-z0)*(j)/m_msh_line->no_msh_layer;
+      m_nod_line = new CNode((long)m_msh_line->nod_vector.size(),x,y,z);
+      m_msh_line->nod_vector.push_back(m_nod_line);
+    }
+  }
+  //----------------------------------------------------------------------
+  // 3.2 - Line elements
+  long i_count = 0;
+  for(i=0;i<(long)ele_vector.size();i++)
+  {
+    m_tri_ele = ele_vector[i];
+    //....................................................................
+    // Line elements
+    for(j=0;j<m_msh_line->no_msh_layer;j++)
+    {
+      m_ele = new Mesh_Group::CElem;
+      m_ele->SetIndex((long)m_msh_line->ele_vector.size());
+      m_ele->SetElementType(1);
+      m_ele->nnodes = 2;
+      m_ele->SetPatchIndex((int)mmp_vector.size()); //OK4310
+      m_ele->nodes_index.resize(m_ele->nnodes);
+      //....................................................................
+      // Line element nodes
+      for(k=0;k<m_ele->nnodes;k++)
+      {
+        m_ele->nodes_index[k] = i_count*m_msh_line->no_msh_layer + j + k + i_count;
+        m_ele->nodes[k] = m_msh_line->nod_vector[m_ele->nodes_index[k]];
+      }
+      //....................................................................
+      m_msh_line->ele_vector.push_back(m_ele);
+    }
+    i_count++;
+  }
+  //----------------------------------------------------------------------
+  if(m_msh_line->ele_vector.size()>0)
+    fem_msh_vector.push_back(m_msh_line);
+  else 
+    delete m_msh_line;
+  //----------------------------------------------------------------------
+  CGSProject* m_gsp = NULL;
+  m_gsp = GSPGetMember("gli");
+  if(m_gsp)
+    FEMWrite(m_gsp->path + "test");
+  else
+    FEMWrite("test");
 }
 
 } // namespace Mesh_Group

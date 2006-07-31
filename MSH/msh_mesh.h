@@ -57,6 +57,7 @@ class CFEMesh
  public:	
     string pcs_name;
     string geo_name; //MB
+    string geo_type_name; //OK10_4310
     int ele_type;
     bool selected;
     int no_msh_layer; //OK
@@ -158,6 +159,7 @@ class CFEMesh
     void CreatePriELEFromTri(int,double);
     // TRI->LINE
     void CreateLineELEFromTri(); //OK
+    void CreateLineELEFromTriELE(); //OK
     // All nodes
     vector<Mesh_Group::CNode*> nod_vector;
     // All edges

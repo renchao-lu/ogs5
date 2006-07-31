@@ -83,8 +83,9 @@ class CElem:public CCore
       friend class ::CRFProcess;
   public: // Methods
       CElem();
-      CElem(const int Index);
-      CElem( const int Index, CElem* onwer, const int Face); // For Faces: Face, local face index
+      CElem(const long Index);
+      CElem( const long Index, CElem* onwer, const int Face); // For Faces: Face, local face index
+      CElem(const long Index, CElem* m_ele_parent); //WWOK
       ~CElem();
       //------------------------------------------------------------------
       // Geometry
