@@ -5352,7 +5352,7 @@ Programing:
 03/2005 OK Implementation
 05/2005 OK pcs_pv_name, 
 12/2005 OK RESTART
-last modified:
+07/2006 OK/MX MSH
 **************************************************************************/
 void CRFProcess::SetIC()
 {
@@ -5361,8 +5361,10 @@ void CRFProcess::SetIC()
   for(int i=0;i<pcs_number_of_primary_nvals;i++){
     nidx = GetNodeValueIndex(pcs_primary_function_name[i]);
     nidx1 = nidx+1; //WW
-    for(int j=0;j<(int)ic_vector.size();j++){
+    for(int j=0;j<(int)ic_vector.size();j++)
+    {
       m_ic = ic_vector[j];
+      m_ic->m_msh = m_msh; //OK/MX
       if(!(m_ic->pcs_type_name.compare(pcs_type_name)==0))
         continue;
       m_ic->m_pcs = this;

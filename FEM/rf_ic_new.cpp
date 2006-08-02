@@ -431,20 +431,26 @@ FEMLib-Method:
 Task: set polyline values
 Programing:
 10/2004 OK Implementation
-last modification:
+07/2006 OK/MX MSH
 **************************************************************************/
 void CInitialCondition::SetPolyline(int nidx)
 {
   long i;
   CGLPolyline *m_polyline = NULL;
   long* msh_nodes = NULL;
-  long no_nodes = 0;
+  vector<long>nodes_vector;
+  double value;
+  //----------------------------------------------------------------------
   if(dis_type_name.find("CONSTANT")!=string::npos) {
     m_polyline = GEOGetPLYByName(geo_name);//CC
     if(m_polyline){
-      msh_nodes = MSHGetNodesClose(&no_nodes, m_polyline);//CC
-      for(i=0;i<no_nodes;i++){
-        SetNodeVal(msh_nodes[i],nidx,node_value_vector[0]->node_value);
+      m_msh->GetNODOnPLY(m_polyline,nodes_vector);
+      //msh_nodes = MSHGetNodesClose(&no_nodes, m_polyline);//CC
+      for(i=0;i<(long)nodes_vector.size();i++)
+      {
+        //SetNodeVal(msh_nodes[i],nidx,node_value_vector[0]->node_value);
+        value = node_value_vector[0]->node_value;
+        m_pcs->SetNodeValue(nodes_vector[i],nidx,node_value_vector[0]->node_value);
       }
     }
     else{
@@ -453,6 +459,7 @@ void CInitialCondition::SetPolyline(int nidx)
   }
   if(dis_type_name.find("LINEAR")!=string::npos){
   }
+  //----------------------------------------------------------------------
 }
 
 /**************************************************************************
