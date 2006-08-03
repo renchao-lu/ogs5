@@ -5608,13 +5608,15 @@ double CRFProcess::ExecuteNonLinear()
         nonlinear_iteration_error = Execute();
         if(mobile_nodes_flag ==1)
           PCSMoveNOD();
+        if(!Tim) //OK
+          continue;
         if(nonlinear_iteration_error < pcs_nonlinear_iteration_tolerance)
         {
           Tim->repeat = false; //OK/YD
           Tim->nonlinear_iteration_error = nonlinear_iteration_error; //OK/YD
           break;
         }
-       else
+        else
           Tim->repeat = true; //OK/YD
       }
       //..................................................................

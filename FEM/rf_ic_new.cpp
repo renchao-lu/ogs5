@@ -47,8 +47,8 @@ CInitialCondition::CInitialCondition(void)
   m_node->node_value = 0.0;
   SubNumber=0;
   m_pcs = NULL; //OK
-
   a0=b0=c0=d0=NULL; //WW
+  m_msh = NULL; //OK
 }
 
 /**************************************************************************
@@ -440,17 +440,31 @@ void CInitialCondition::SetPolyline(int nidx)
   long* msh_nodes = NULL;
   vector<long>nodes_vector;
   double value;
+  long no_nodes;
   //----------------------------------------------------------------------
-  if(dis_type_name.find("CONSTANT")!=string::npos) {
+  if(dis_type_name.find("CONSTANT")!=string::npos) 
+  {
     m_polyline = GEOGetPLYByName(geo_name);//CC
-    if(m_polyline){
-      m_msh->GetNODOnPLY(m_polyline,nodes_vector);
-      //msh_nodes = MSHGetNodesClose(&no_nodes, m_polyline);//CC
-      for(i=0;i<(long)nodes_vector.size();i++)
+    if(m_polyline)
+    {
+      if(m_msh)
       {
-        //SetNodeVal(msh_nodes[i],nidx,node_value_vector[0]->node_value);
-        value = node_value_vector[0]->node_value;
-        m_pcs->SetNodeValue(nodes_vector[i],nidx,node_value_vector[0]->node_value);
+        m_msh->GetNODOnPLY(m_polyline,nodes_vector);
+        //msh_nodes = MSHGetNodesClose(&no_nodes, m_polyline);//CC
+        for(i=0;i<(long)nodes_vector.size();i++)
+        {
+          //SetNodeVal(msh_nodes[i],nidx,node_value_vector[0]->node_value);
+          value = node_value_vector[0]->node_value;
+          m_pcs->SetNodeValue(nodes_vector[i],nidx,node_value_vector[0]->node_value);
+        }
+      }
+      else
+      {
+        msh_nodes = MSHGetNodesClose(&no_nodes, m_polyline);//CC
+        for(i=0;i<no_nodes;i++)
+        {
+          SetNodeVal(msh_nodes[i],nidx,node_value_vector[0]->node_value);
+        }
       }
     }
     else{
