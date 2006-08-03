@@ -1,6 +1,5 @@
 /**************************************************************************
 ROCKFLOW - Object: Process PCS
-Task: 
 Programing:
 02/2003 OK Implementation
   /2003 WW CRFProcessDeformation
@@ -269,57 +268,60 @@ CRFProcess::~CRFProcess(void)
 {
   long i;
   //----------------------------------------------------------------------
+  // Finite element
   if(fem) delete fem; //WW
   fem = NULL;
   //----------------------------------------------------------------------
+  // ELE: Element matrices
   ElementMatrix *eleMatrix = NULL;
   ElementValue* gp_ele = NULL;
-  //WW
   if(Ele_Matrices.size()>0)
   {
-     for (i=0;i<(long)Ele_Matrices.size();i++)
-     {
-         eleMatrix = Ele_Matrices[i];
-         delete eleMatrix;
-         eleMatrix = NULL;
-     }
-     Ele_Matrices.clear();
+    for (i=0;i<(long)Ele_Matrices.size();i++)
+    {
+      eleMatrix = Ele_Matrices[i];
+      delete eleMatrix;
+      eleMatrix = NULL;
+    }
+    Ele_Matrices.clear();
   }
-  //WW
+  //----------------------------------------------------------------------
+  // ELE: Element Gauss point values
   if(ele_gp_value.size()>0)
   {
-     for (i=0;i<(long)ele_gp_value.size();i++)
-     {
-         gp_ele = ele_gp_value[i];
-         delete gp_ele;
-         gp_ele = NULL;
-     }
-     ele_gp_value.clear();
+    for(i=0;i<(long)ele_gp_value.size();i++)
+    {
+      gp_ele = ele_gp_value[i];
+      delete gp_ele;
+      gp_ele = NULL;
+    }
+    ele_gp_value.clear();
   }
   //----------------------------------------------------------------------
-  // Matrix output
-  if(matrix_file) // WW
+  // OUT: Matrix output
+  if(matrix_file)
   {
-      matrix_file->close();
-      delete matrix_file;
+    matrix_file->close();
+    delete matrix_file;
   }     
   //----------------------------------------------------------------------
-  // Release memory of node values. WW
-  for(i=0; i<(int)nod_val_vector.size(); i++)
+  // NOD: Release memory of node values
+  for(i=0;i<(int)nod_val_vector.size();i++)
   {
-     delete nod_val_vector[i];
-     nod_val_vector[i] = NULL;
+    delete nod_val_vector[i];
+    nod_val_vector[i] = NULL;
   }
   nod_val_vector.clear();
-  //  WW
-  for(i=0; i<(int)st_node_value.size(); i++)
+  //----------------------------------------------------------------------
+  // ST:
+  for(i=0;i<(int)st_node_value.size();i++)
   {
-     delete st_node_value[i];
-     st_node_value[i] = NULL;    
+    delete st_node_value[i];
+    st_node_value[i] = NULL;    
   }
   st_node_value.clear();
   //----------------------------------------------------------------------
-  //pcs_type_name.clear();
+  // CON
   continuum_vector.clear();
 }
 
@@ -1092,10 +1094,8 @@ void CRFProcess::ConfigureCouplingForLocalAssemblier()
 }
 /**************************************************************************
 FEMLib-Method:
-Task:
-Programing:
 06/2003 OK Implementation
-last modified:
+        WW 2nd version, PCS_Solver
 **************************************************************************/
 void PCSDestroyAllProcesses(void)
 {
@@ -1103,8 +1103,8 @@ void PCSDestroyAllProcesses(void)
   long i;
   int j;
   LINEAR_SOLVER *eqs;
-  int no_processes =(int)pcs_vector.size();
- //WW----------------------------------------
+  //----------------------------------------------------------------------
+  // SOLver
   for(j=0;j<(int)PCS_Solver.size();j++)
   {
     eqs = PCS_Solver[j]; 
@@ -1118,33 +1118,14 @@ void PCSDestroyAllProcesses(void)
        eqs->unknown_update_methods = \
         (int*) Free(eqs->unknown_update_methods); 
      eqs = DestroyLinearSolver(eqs);
-     
   }
-  //----------------------------------------
-
-  for(j=0;j<no_processes;j++){
+  //----------------------------------------------------------------------
+  // PCS
+int QWPOJJB = (int)pcs_vector.size();
+  for(j=0;j<(int)pcs_vector.size();j++){
     m_process = pcs_vector[j];
-    /* //WW
-    if(m_process->eqs->bc_names_dirichlet)
-      m_process->eqs->bc_names_dirichlet = \
-        (char **) Free(m_process->eqs->bc_names_dirichlet);
-    if(m_process->eqs->bc_names_neumann)
-      m_process->eqs->bc_names_neumann = \
-        (char **) Free(m_process->eqs->bc_names_neumann);
-   */
-    
-/*
-    for(j=0;j<m_process->number_of_nvals;j++) 
-      if( m_process->pcs_nval_data[j]) 
-        m_process->pcs_nval_data[j] = (PCS_NVAL_DATA *) Free(m_process->pcs_nval_data[j]);
-*/
     if(m_process->pcs_nval_data)
       m_process->pcs_nval_data = (PCS_NVAL_DATA *) Free(m_process->pcs_nval_data);
-/*
-	for(j=0;j<m_process->pcs_number_of_evals;j++) 
-      if( m_process->pcs_eval_data[j]) 
-        m_process->pcs_eval_data[j] = (PCS_EVAL_DATA *) Free(m_process->pcs_eval_data[j]);
-*/
     if(m_process->pcs_eval_data)
        m_process->pcs_eval_data = (PCS_EVAL_DATA *) Free(m_process->pcs_eval_data);
 #ifdef PCS_NOD
@@ -1155,67 +1136,41 @@ void PCSDestroyAllProcesses(void)
 #endif
     if(m_process->TempArry)   //MX
       m_process->TempArry = (double *) Free(m_process->TempArry);
-
 	delete(m_process);
   }
-  
-  // WW
-  for(i=0; i<(long)fem_msh_vector.size(); i++)
+  //----------------------------------------------------------------------
+  // MSH
+  for(i=0;i<(long)fem_msh_vector.size();i++)
     delete fem_msh_vector[i];
   fem_msh_vector.clear();
-  // WW
-  for(i=0; i<(long)ele_val_vector.size(); i++)
+  //----------------------------------------------------------------------
+  // ELE
+  for(i=0;i<(long)ele_val_vector.size();i++)
     delete ele_val_vector[i];
   ele_val_vector.clear();
-  //WW
-  for(i=0; i<(long)ic_vector.size(); i++)
+  //----------------------------------------------------------------------
+  // IC ICDelete()
+  for(i=0;i<(long)ic_vector.size();i++)
     delete ic_vector[i];
   ic_vector.clear();
-
   //----------------------------------------------------------------------
   MSPDelete(); //WW
   BCDelete();  //WW
   STDelete();  //WW
-
-
-
-/*OK for PCS
-  // Namen der Knotendaten loeschen
-  for (i = 0; i < ModelsNumberNodeValInfoStructures(); i++)
-    {
-      if (nval_data[i].name)
-        nval_data[i].name = (char *) Free(nval_data[i].name);
-      if (nval_data[i].einheit)
-        nval_data[i].einheit = (char *) Free(nval_data[i].einheit);
-    }
-  nval_data = (NvalInfo *) Free(nval_data);
-  // Namen der Elementdaten loeschen
-  for (i = 0; i	< ModelsNumberElementValInfoStructures(); i++)
-    {
-      if (eval_data[i].name)
-        eval_data[i].name = (char *) Free(eval_data[i].name);
-      if (eval_data[i].einheit)
-        eval_data[i].einheit = (char *) Free(eval_data[i].einheit);
-    }
-  eval_data = (EvalInfo *) Free(eval_data);
-*/
-  /* Knoten-Daten  */
+  //----------------------------------------------------------------------
+  // RFI stuff
+  // Knoten-Daten
   for (i=0;i<NodeListSize();i++) {
     if (GetNode(i) != NULL) {                            
 	  DestroyModelNodeData(i);   //SB:todo
     }
   }
-
-  /* Element-Daten */
+  // Element-Daten
   for (i=0;i<ElListSize();i++) {
     if (ElGetElement(i) != NULL) {
       DestroyModelElementData(i);
     }
   }
-/*OK_MOD
-  if(MultiphaseFlow())
-    DestroyKernel_MMP();
-*/
 }
 
 /**************************************************************************
@@ -5352,7 +5307,7 @@ Programing:
 03/2005 OK Implementation
 05/2005 OK pcs_pv_name, 
 12/2005 OK RESTART
-07/2006 OK/MX MSH
+last modified:
 **************************************************************************/
 void CRFProcess::SetIC()
 {
@@ -5361,10 +5316,8 @@ void CRFProcess::SetIC()
   for(int i=0;i<pcs_number_of_primary_nvals;i++){
     nidx = GetNodeValueIndex(pcs_primary_function_name[i]);
     nidx1 = nidx+1; //WW
-    for(int j=0;j<(int)ic_vector.size();j++)
-    {
+    for(int j=0;j<(int)ic_vector.size();j++){
       m_ic = ic_vector[j];
-      m_ic->m_msh = m_msh; //OK/MX
       if(!(m_ic->pcs_type_name.compare(pcs_type_name)==0))
         continue;
       m_ic->m_pcs = this;

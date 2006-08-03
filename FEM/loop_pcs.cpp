@@ -2,16 +2,15 @@
 ROCKFLOW - Source: loop_pcs.c
 Task: LOP Template of process-oriented version
 Programing:
- 02/2003 OK Implementation
- 03/2003 OK SM is OK
- 04/2003 OK SM+RTM are OK
- 05/2003 OK 05.05.03 V31 MPC+HTM are OK (seufz...)
- 05/2003 OK 06.05.03 V32 SM+HTM are OK
- 05/2003 OK/WW DM start
- 06/2003 WW DM poro-elasticity
- 06/2003 WW DM poro-plasticity
- 07/2004 OK PCS2
-last modified:
+02/2003 OK Implementation
+03/2003 OK SM is OK
+04/2003 OK SM+RTM are OK
+05/2003 OK 05.05.03 V31 MPC+HTM are OK (seufz...)
+05/2003 OK 06.05.03 V32 SM+HTM are OK
+05/2003 OK/WW DM start
+06/2003 WW DM poro-elasticity
+06/2003 WW DM poro-plasticity
+07/2004 OK PCS2
 ***************************************************************************/
 /* Includes */
 /*========================================================================*/
@@ -83,7 +82,6 @@ void LOPCalcNODResultants(void);
 #include "mathlib.h"
 #include "math.h" /* pow() */
 #include "matrix.h" /*MXDumpGLS*/
-
 
 double dt_sum = 0.0;
 /**************************************************************************
@@ -1013,7 +1011,6 @@ void LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
     // Create local RICHARDS process
     cout << "    Create local RICHARDS process" << endl;
     m_pcs_local = new CRFProcess();
-    pcs_vector.push_back(m_pcs_local);
     m_pcs_local->pcs_type_name = m_pcs_global->pcs_type_name;
     m_pcs_local->num_type_name = m_pcs_global->num_type_name;
     m_pcs_local->cpl_type_name = m_pcs_global->cpl_type_name;
@@ -1057,7 +1054,10 @@ void LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
     m_pcs_local->Create();
     for(s=0;s<(int)m_pcs_global->st_node_value.size();s++)
     {
-      m_nod_value = m_pcs_global->st_node_value[s];
+      m_nod_value = new CNodeValue(); //OK
+      //m_nod_value = m_pcs_global->st_node_value[s];
+      m_nod_value->node_value = m_pcs_global->st_node_value[s]->node_value;
+      m_nod_value->msh_node_number = m_pcs_global->st_node_value[s]->msh_node_number;
       m_pcs_local->st_node_value.push_back(m_nod_value);
     }
     pcs_vector.push_back(m_pcs_local);
