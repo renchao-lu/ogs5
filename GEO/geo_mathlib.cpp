@@ -425,21 +425,21 @@ double MCalcDistancePointToPoint(double *pt1,double *pt2) {
 
 CubicSpline::CubicSpline(vector<double>&s, vector<double>&val)
 {
-	n = (int)s.size();
-	xx = s;
-	yy = val;
-	bb = new double[n];
-	cc = new double[n];
-	dd = new double[n];
+   n = (int)s.size();
+   xx = s;
+   yy = val;
+   bb = new double[n];
+   cc = new double[n];
+   dd = new double[n];
 
     ComputeCoefficents();
 }
 
 CubicSpline::~CubicSpline()
 {
-	delete bb;
-	delete cc;
-	delete dd;
+   delete [] bb;
+   delete [] cc;
+   delete [] dd;
 }
 
 double CubicSpline::interpolation(const double x)

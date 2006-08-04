@@ -2161,9 +2161,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
   CalcLaplace();
 
   pcs->timebuffer /= mat[0]; //YD
-  if(pcs->timebuffer < MKleinsteZahl || abs(pcs->timebuffer)>1.0e20)  //MX
-    pcs->timebuffer = 1.0e-5;
-  //======================================================================
+   //======================================================================
   // Assemble global matrix
   //----------------------------------------------------------------------
   // Time discretization 

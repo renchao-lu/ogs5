@@ -1420,6 +1420,7 @@ string GetLineFromFile1(ifstream *ein){
   string line, zeile = "";
   int fertig=0, i, j;
   char zeile1[MAX_ZEILEN];
+  line =""; //WW
   //----------------------------------------------------------------------
   while(fertig<1){
     if(ein->getline(zeile1,MAX_ZEILEN)){				//Zeile lesen

@@ -82,6 +82,7 @@ CFluidProperties::CFluidProperties(void)
   cal_gravity = true; 
   // Data
   mode = 0; // Gauss point values
+  Fem_Ele_Std = NULL;
 }
 
 /**************************************************************************

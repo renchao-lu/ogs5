@@ -492,8 +492,9 @@ int LOPTimeLoop_PCS(double*dt_sum)
        m_pcs = PCSGet("MASS_TRANSPORT");
        if(m_pcs){
           m_tim = TIMGet("MASS_TRANSPORT");
-          if (aktueller_zeitschritt == 1) m_tim->CheckCourant();//CMCD 03/2006
           if(m_tim){
+            //WW/OK  if(m_tim->time_control_name.compare("COURANT_MANIPULATE")==0) m_tim->CheckCourant();
+            //WW/OK  if (aktueller_zeitschritt == 1) m_tim->CheckCourant();//CMCD 03/2006
             dt_pcs = m_tim->time_step_vector[0];
             if(*dt_sum>=dt_pcs){
               for(i=0;i<no_processes;i++){
