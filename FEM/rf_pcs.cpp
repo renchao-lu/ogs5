@@ -5209,6 +5209,13 @@ last modified:
 **************************************************************************/
 void CRFProcess::SetNodeValue(long n,int nidx,double value)
 {
+#ifdef gDEBUG
+  if(nidx<0)
+  {
+    cout<<" Fatal error in  CRFProcess::SetNodeValue() "<<endl;
+    abort();
+  }
+#endif
   nod_val_vector[n][nidx] = value;
 }
 
@@ -5221,6 +5228,13 @@ last modified:
 **************************************************************************/
 void CRFProcess::SetElementValue(long n,int nidx,double value)
 {
+#ifdef gDEBUG
+  if(nidx<0)
+  {
+    cout<<" Fatal error in  CRFProcess::SetElementValue() "<<endl;
+    abort();
+  }
+#endif
   ele_val_vector[n][nidx] = value;
 }
 /**************************************************************************
@@ -5233,6 +5247,13 @@ last modified:
 double CRFProcess::GetNodeValue(long n,int nidx)
 {
   double value;
+#ifdef gDEBUG
+  if(nidx<0)
+  {
+    cout<<" Fatal error in  CRFProcess::GetNodeValue() "<<endl;
+    abort();
+  }
+#endif
   value = nod_val_vector[n][nidx];
   return value;
 }
@@ -5247,6 +5268,13 @@ last modified:
 double CRFProcess::GetElementValue(long n,int nidx)
 {
   double value;
+#ifdef gDEBUG
+  if(nidx<0)
+  {
+    cout<<" Fatal error in CRFProcess::GetElementValue() "<<endl;
+    abort();
+  }
+#endif
   value = ele_val_vector[n][nidx];
   return value;
 }
@@ -5268,6 +5296,13 @@ int CRFProcess::GetNodeValueIndex(string var_name)
     help = nod_val_name_vector[i];
     if(help.compare(var_name)==0){
       nidx = i;
+#ifdef gDEBUG
+     if(nidx<0)
+     {
+        cout<<" Fatal error in CRFProcess::GetNodeValueIndex() "<<endl;
+        abort();
+     }
+#endif
       return nidx;
     }
   }
@@ -5295,6 +5330,13 @@ int CRFProcess::GetElementValueIndex(string var_name)
   for(i=0;i<(int)ele_val_name_vector.size();i++){
     if(ele_val_name_vector[i].compare(var_name)==0){
       nidx = i;
+#ifdef gDEBUG
+     if(nidx<0)
+     {
+        cout<<" Fatal error in CRFProcess:::GetElementValueIndex() "<<endl;
+        abort();
+     }
+#endif
       return nidx;
     }
   }
