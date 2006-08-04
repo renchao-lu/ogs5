@@ -7,6 +7,7 @@ Programing:
 #ifndef geomathlib_INC
 #define geomathlib_INC
 
+#include <stdio.h>
 #include "float.h"
 #include <math.h>
 #include <vector>

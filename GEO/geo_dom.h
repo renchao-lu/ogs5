@@ -12,6 +12,7 @@ Programing:
   /* Schutz gegen mehrfaches Einfuegen */
 
 // C++ STL
+#include <stdio.h>
 #include <string>
 #include <vector>
 using namespace std;
