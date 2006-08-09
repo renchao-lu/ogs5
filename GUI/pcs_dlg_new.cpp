@@ -81,7 +81,7 @@ BOOL CDialogPCS::OnInitDialog()
   m_CBProcessH.AddString("NO_FLOW");
   m_CBProcessH.AddString("GROUNDWATER_FLOW");
   m_CBProcessH.AddString("LIQUID_FLOW");
-  m_CBProcessH.AddString("GAS_FLOW");
+  m_CBProcessH.AddString("AIR_FLOW");
   m_CBProcessH.AddString("TWO_PHASE_FLOW");
   m_CBProcessH.AddString("COMPONENTAL_TWO_PHASE_FLOW");
   m_CBProcessH.AddString("OVERLAND_FLOW");
