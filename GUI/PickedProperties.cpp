@@ -541,7 +541,7 @@ void PickedProperties::ListRFINodeSelected(int PCSSwitch)
 				
 					// BC printing
 					double BCValue = 0.0;
-					if( IsThisPointBCIfYesStoryValue(theApp->RFInodePickedTotal[i], m_bc_group, &BCValue) )
+					if( IsThisPointBCIfYesStoryValue(theApp->RFInodePickedTotal[i], m_pcs, BCValue) )
 					{
 						sprintf(tempNum[currentPosition], "%e", BCValue);
 						++currentPosition;
@@ -833,7 +833,7 @@ void PickedProperties::ListRFINodeAll(int PCSSwitch)
 				
 					// BC printing
 					double BCValue = 0.0;
-					if( IsThisPointBCIfYesStoryValue(i, m_bc_group, &BCValue) )
+					if( IsThisPointBCIfYesStoryValue(i, m_pcs, BCValue) )
 					{
 						sprintf(tempNum[currentPosition], "%e", BCValue);
 						++currentPosition;
@@ -1580,16 +1580,17 @@ void PickedProperties::OnBnClickedBcnst()
 	mainframe->OnPickedProperty();
 }
 
-int PickedProperties::IsThisPointBCIfYesStoryValue(int index, CBoundaryConditionsGroup* m_bc_group, double* value)
+//WWint PickedProperties::IsThisPointBCIfYesStoryValue(int index, CBoundaryConditionsGroup* m_bc_group, double* value)
+int PickedProperties::IsThisPointBCIfYesStoryValue(int index, CRFProcess* m_pcs, double& value)
 {
-	for(int p=0; p< (int)m_bc_group->group_vector.size(); ++p)	
-	{
-		if(index == m_bc_group->group_vector[p]->msh_node_number)
-		{
-			*value = m_bc_group->group_vector[p]->node_value;
-			return 1; // Yes, found it.
-		}	
-	}
+   for(int p=0; p< (int)m_pcs->bc_node_value.size(); ++p)	
+   {
+     if(index == m_pcs->bc_node_value[p]->msh_node_number)
+     {
+         value = m_pcs->bc_node_value[p]->node_value;
+         return 1; // Yes, found it.
+     }
+   }
 
 	return 0;
 }

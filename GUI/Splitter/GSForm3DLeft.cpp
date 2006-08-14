@@ -296,7 +296,8 @@ HTREEITEM hFEM = pCtrl->InsertItem("PCS",9,9);
         /*BC TREE*/ 
         CBoundaryConditionsGroup *m_bc_group = NULL;
         m_bc_group = m_bc_group->Get(m_process->pcs_type_name.data());
-        item_name.Format(_T("%d"),m_bc_group->group_vector.size());
+//WW        item_name.Format(_T("%d"),m_bc_group->group_vector.size());
+        item_name.Format(_T("%d"),m_process->bc_node_value.size());
         _tprintf(_T("%s"), (LPCTSTR) item_name);
         item_name = "BC (" + item_name + " nodes)";
         pCtrl->InsertItem(item_name, 0, 1, hFEM);

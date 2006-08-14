@@ -437,9 +437,10 @@ void CBoundaryConditions::OnBnClickedButtonCreateGroup()
 CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
 if(theApp->g_graphics_modeless_dlg->GetSafeHwnd())
 {
-  if(m_bc_group->group_vector.size()>0){
+//WW  if(m_bc_group->group_vector.size()>0){
+  if(m_pcs->bc_node_value.size()>0)
     theApp->g_graphics_modeless_dlg->m_iDisplayBC = true;
-  }
+  
   else{
     theApp->g_graphics_modeless_dlg->m_iDisplayBC = false;
   }

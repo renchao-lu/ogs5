@@ -65,9 +65,10 @@ private:
 	char** CreateWordMemory(int numOfItems);
 	int GetNumberOfNodesInElement(int index);
 
-	int IsThisPointBCIfYesStoryValue(int index, CBoundaryConditionsGroup* m_bc_group, double* value);
-	int IsThisPointSTIfYesStoryValue(int index, CRFProcess* m_pcs, double& value);
-//	int IsThisPointSTIfYesStoryValue(int index, CSourceTermGroup* m_st_group, double* value);
+    int IsThisPointBCIfYesStoryValue(int index, CRFProcess* m_pcs, double& value);
+    int IsThisPointSTIfYesStoryValue(int index, CRFProcess* m_pcs, double& value);
+//WW	int IsThisPointBCIfYesStoryValue(int index, CBoundaryConditionsGroup* m_bc_group, double* value);
+//WW	int IsThisPointSTIfYesStoryValue(int index, CSourceTermGroup* m_st_group, double* value);
 
 	void ShowAll();
 

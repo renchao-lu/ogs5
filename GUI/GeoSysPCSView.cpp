@@ -449,8 +449,18 @@ void CGeoSysView::OnDraw(CDC* pDC)
       //Info
       CString m_strInfo;
       CString m_strLabel;
-      m_strInfo.Format("%d",(long)m_bc_group->group_vector.size());
+      m_strInfo.Format("%d",(long)m_pcs->bc_node_value.size());
       //pDC->TextOut(0,0,m_strInfo);
+      for (i=0;i<(long)m_pcs->bc_node_value.size();i++) { //WW
+        m_node = m_pcs->bc_node_value[i];
+        if(m_node->msh_node_number>=0) {
+          m_point1.x_pix = xpixel(m_msh->nod_vector[m_node->msh_node_number]->X());
+          m_point1.y_pix = ypixel(m_msh->nod_vector[m_node->msh_node_number]->Y());
+          m_graphics.DrawPointPixel(pDC,&m_point1);
+        }
+      }
+
+      /* //Comment by WW
       for (i=0;i<(long)m_bc_group->group_vector.size();i++) {
         m_node = m_bc_group->group_vector[i];
         if(m_node->msh_node_number>=0) {
@@ -463,6 +473,7 @@ void CGeoSysView::OnDraw(CDC* pDC)
           }
         }
       }
+	  */
     }
   }
   //-----------------------------------------------------------------------

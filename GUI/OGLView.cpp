@@ -870,10 +870,37 @@ void COGLView::OnDrawGL()
 /*Boundary Conditions*/ 
     if (m_3dcontrol_bc == 1 ) { 
 
-        CBoundaryConditionsGroup *m_bc_group = NULL;
-        list<CBoundaryConditionsGroup*>::const_iterator p_bc_group = bc_group_list.begin();
+     //   CBoundaryConditionsGroup *m_bc_group = NULL;
+     //   list<CBoundaryConditionsGroup*>::const_iterator p_bc_group = bc_group_list.begin();
         //GetMSHMinMax();
         GetMidPoint();
+        //
+        for(j=0;j<(long)fem_msh_vector.size();j++) //WW/TK
+        {   
+           CRFProcess* m_pcs = NULL;   
+           for(i=0;i<(int)pcs_vector.size();i++){
+             m_pcs = pcs_vector[i];
+             if ((long)fem_msh_vector.size()>1)
+               m_pcs = PCSGet((string)fem_msh_vector[j]->pcs_name);
+               if( m_pcs){
+                  for (k=0;k<(long)m_pcs->bc_node_value.size();k++) {
+                  CBoundaryConditionNode *m_node = m_pcs->bc_node_value[k];
+                  if(m_node->msh_node_number>=0) {
+                     glPointSize(6.0);
+                     glColor3d(1.0,0.0,0.0);
+                     glBegin(GL_POINTS);
+                     bc_x = -x_mid + fem_msh_vector[j]->nod_vector[m_node->msh_node_number]->X();
+                     bc_y = -y_mid + fem_msh_vector[j]->nod_vector[m_node->msh_node_number]->Y();
+                     bc_z = -z_mid + fem_msh_vector[j]->nod_vector[m_node->msh_node_number]->Z();
+                     glVertex3d(m_image_distort_factor_x*bc_x,m_image_distort_factor_y*bc_y,m_image_distort_factor_z*bc_z);   		   
+                     glEnd();
+                  }
+                }
+              }
+		   }
+		}
+
+        /* Comment by WW
         while(p_bc_group!=bc_group_list.end()) {
             m_bc_group = *p_bc_group;
             if(m_bc_group->m_display_mode_bc == 1)
@@ -898,6 +925,7 @@ void COGLView::OnDrawGL()
             }       
             ++p_bc_group;
         }
+		*/
     }
 
 
@@ -2683,6 +2711,7 @@ void COGLView::OnDrawGL()
         m_pcs = pcs_vector[i];
     if ((long)fem_msh_vector.size()>1)
         m_pcs = PCSGet((string)fem_msh_vector[j]->pcs_name);
+
 
     if (m_pcs)
     {
