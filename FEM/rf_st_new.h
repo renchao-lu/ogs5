@@ -146,12 +146,12 @@ class CSourceTermGroup
 };
 
 extern CSourceTermGroup* STGetGroup(string pcs_type_name,string pcs_pv_name);
-extern list<CSourceTermGroup*>st_group_list;
+extern list<CSourceTermGroup*> st_group_list;
 extern bool STRead(string);
 extern void STWrite(string);
 #define ST_FILE_EXTENSION ".st"
 extern void STCreateFromPNT();
-extern vector<CSourceTerm*>st_vector;
+extern vector<CSourceTerm*> st_vector;
 extern void STDelete();
 void STCreateFromLIN(vector<CGLLine*>);
 CSourceTerm* STGet(string);

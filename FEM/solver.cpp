@@ -28,6 +28,7 @@
 
 #ifdef USE_MPI
 #include <mpi.h>
+#include "par_ddc.h"
 #endif
 
 #include "stdafx.h"             /* MFC */
@@ -127,8 +128,9 @@ double iteration_max_dt;
 
 IntFuncDXDXL LinearSolver;
 IntFuncDXDXLVXL NonlinearSolver;
+#ifndef USE_MPI
 IntFuncDXDXL LoeserFlow = SpBICGSTAB, LoeserTran = SpBICGSTAB, LoeserTemp = SpBICGSTAB, LoeserSatu = SpBICGSTAB;
-
+#endif
 
 /* LU Dekomposition */
 void ludcmp_3(double *a, long n, long *indx);
@@ -1499,6 +1501,559 @@ int SpBICG(double *b, double *x, long n)
     return k;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////
+#ifdef USE_MPI
+//WW
+inline void NullArray(double *array, const long n )
+{
+  long i;
+  for(i=0;i<n;i++)
+    array[i] = 0.0; 
+}
+
+/*************************************************************************
+GeoSys-Function:
+Task: Parallel BiCGStab solver 
+
+  HM monolithic case is to be considered. 
+Programming: 
+07/2006 WW Implementation
+**************************************************************************/
+inline double ScalarProduction_Interior(CPARDomain* m_dom, double *localr0,  double *localr1=NULL)
+{ 
+   long i;
+   int ii, k, dof, n_loc, nq;   
+   double val;
+   long i_start[2], i_end[2];
+   n_loc = m_dom->GetDomainNodes();
+   dof = 1;
+   nq = 1;
+   i_start[0] = 0;
+   i_end[0] = m_dom->GetNumInnerNodes(false); //Number of interior nodes
+   if( m_dom->quadratic)
+   {
+      dof  = GetUnknownVectorDimensionLinearSolver(m_dom->eqs);   
+	  nq = 2;
+      i_start[1] = i_end[0]+m_dom->GetNumHaloNodes(false);
+      i_end[1] = i_start[1]+m_dom->GetNumInnerNodes(true); //Number of interior nodes
+   }    
+   // 
+   val = 0.0;
+   if(!localr1)
+   {    
+      for(k=0; k<nq; k++)
+      {
+         for(i=i_start[k];i<i_end[k];i++)
+         {
+            for(ii=0; ii<dof; ii++) 
+            //
+               val += localr0[i+n_loc*ii]*localr0[i+n_loc*ii];
+         }
+      }
+   }
+   else
+   {
+      for(k=0; k<nq; k++)
+      {
+         for(i=i_start[k];i<i_end[k];i++)
+         {
+            for(ii=0; ii<dof; ii++) 
+            //
+               val += localr0[i+n_loc*ii]*localr1[i+n_loc*ii];
+         }
+      }
+   }
+   return val;
+}
+
+/*************************************************************************
+GeoSys-Function:
+Task: Parallel BiCGStab solver 
+
+  HM monolithic case is to be considered. 
+Programming: 
+06/2006 WW Implementation
+**************************************************************************/
+inline void global2local(CPARDomain* m_dom, double *globalr, const long n )
+{ 
+   long i, n_loc, ig;
+   int ii, dof;   
+   //
+   n_loc = m_dom->GetDomainNodes();
+   dof = 1;
+   if( m_dom->quadratic)
+      dof  = GetUnknownVectorDimensionLinearSolver(m_dom->eqs);
+   // 
+   long nnodes_g = (long)n/dof;
+   NullArray(buff_global, n);
+   for(i=0;i<n_loc;i++)
+   {
+      ig = m_dom->nodes[i];  
+      for(ii=0; ii<dof; ii++) 
+        buff_global[i+n_loc*ii] = globalr[ig+nnodes_g*ii];
+   }
+   for(i=0;i<n;i++)
+     globalr[i] = buff_global[i];
+ }
+/*************************************************************************
+GeoSys-Function:
+Task: Parallel BiCGStab solver 
+
+  HM monolithic case is to be considered. 
+Programming: 
+06/2005 WW Implementation
+**************************************************************************/
+inline void i_local2global(CPARDomain* m_dom, double *globalr, double *localr, const long n )
+{ 
+   long i_start[2], i_end[2];
+   long i, n_loc, ig, nnodes_g; 
+   int ii, dof, k, nq;   
+   //
+   n_loc = m_dom->GetDomainNodes();
+   dof = 1;
+   nq = 1;
+   i_start[0] = 0;
+   i_end[0] = m_dom->GetNumInnerNodes(false); //Number of interior nodes
+   if( m_dom->quadratic)
+   {
+      dof  = GetUnknownVectorDimensionLinearSolver(m_dom->eqs);   
+	  nq = 2;
+      i_start[1] = i_end[0]+m_dom->GetNumHaloNodes(false);
+      i_end[1] = i_start[1]+m_dom->GetNumInnerNodes(true); //Number of interior nodes
+   } 
+   nnodes_g = (long)n/dof;  
+   // 
+   for(k=0; k<nq; k++)
+   {
+      for(i=i_start[k];i<i_end[k];i++)
+      {
+         ig = m_dom->nodes[i];  
+         for(ii=0; ii<dof; ii++) 
+            globalr[ig+nnodes_g*ii] = localr[i+n_loc*ii];
+	  }
+   }
+   //    
+ }
+/*************************************************************************
+GeoSys-Function:
+Task: Parallel BiCGStab solver 
+
+  HM monolithic case is to be considered. 
+Programming: 
+07/2006 WW Implementation
+**************************************************************************/
+inline void local2bc(CPARDomain* m_dom, double *overlapped, double *localr)
+{ 
+   long i, n_loc, ig, n_bc;
+   long b_start[2], b_end[2], n_shift[2];
+   int ii, dof, k, nq;   
+   //
+   n_loc = m_dom->GetDomainNodes();
+   dof = 1;
+   n_bc = overlapped_entry_size;
+   nq=1;
+   b_start[0] =0;
+   b_end[0] = m_dom->GetNumHaloNodes(false);
+   n_shift[0] = m_dom->GetNumInnerNodes(false);
+   //
+   if( m_dom->quadratic)
+   {
+      dof  = GetUnknownVectorDimensionLinearSolver(m_dom->eqs); 
+      n_bc = overlapped_entry_sizeHQ;
+      nq = 2;	   
+      b_start[1] = b_end[0];
+      b_end[1] = b_start[1]+m_dom->GetNumHaloNodes(true);
+      n_shift[1] =  n_shift[0]+ m_dom->GetNumInnerNodes(true);
+   }
+
+   // BC
+   for(i=0;i<dof*n_bc;i++)
+      overlapped[i] = 0.0;
+   //
+   for(k=0; k<nq; k++)
+   {     
+      for(i=b_start[k];i<b_end[k];i++)
+      {
+        ig = m_dom->nodes_halo[i];  
+        for(ii=0; ii<dof; ii++) 
+          overlapped[ig+n_bc*ii] = localr[i+n_shift[k]+n_loc*ii];
+      }
+   }
+}
+
+
+/*************************************************************************
+GeoSys-Function:
+Task: Parallel BiCGStab solver 
+
+  HM monolithic case is to be considered. 
+Programming: 
+07/2006 WW Implementation
+**************************************************************************/
+inline void bc2local(CPARDomain* m_dom, double *bc_v, double *localv)
+{ 
+   long i, n_loc, ig, n_bc;
+   long b_start[2], b_end[2], n_shift[2];
+   int ii, dof, k, nq;   
+   //
+   n_loc = m_dom->GetDomainNodes();
+   dof = 1;
+   n_bc = overlapped_entry_size;
+   nq=1;
+   b_start[0] =0;
+   b_end[0] = m_dom->GetNumHaloNodes(false);
+   n_shift[0] = m_dom->GetNumInnerNodes(false);
+   //
+   if( m_dom->quadratic)
+   {
+      dof  = GetUnknownVectorDimensionLinearSolver(m_dom->eqs); 
+      n_bc = overlapped_entry_sizeHQ;
+      nq = 2;	   
+      b_start[1] = b_end[0];
+      b_end[1] = b_start[1]+m_dom->GetNumHaloNodes(true);
+      n_shift[1] =  n_shift[0]+ m_dom->GetNumInnerNodes(true);
+   }
+
+   //
+   for(k=0; k<nq; k++)
+   {
+      for(i=b_start[k];i<b_end[k];i++)
+      {
+        ig = m_dom->nodes_halo[i];  
+        for(ii=0; ii<dof; ii++) 
+          localv[i+n_shift[k]+n_loc*ii] = bc_v[ig+n_bc*ii];
+      }
+   }
+}
+
+
+/*************************************************************************
+GeoSys-Function:
+Task: Parallel BiCGStab solver 
+
+  HM monolithic case is to be considered. 
+Programming: 
+06/2006 WW Implementation
+**************************************************************************/
+inline double ScalarProduction(const double *array0, const double *array1, const long n )
+{
+  double val = 0.0;
+  long i;
+  for(i=0;i<n;i++)
+    val +=  array0[i]*array1[i]; 
+  return val;
+}
+
+/*************************************************************************
+GeoSys-Function:
+Task: Parallel BiCGStab solver 
+Argument: CPARDomain* m_dom
+          double *x,   // Global unknowns
+          long n
+
+  HM monolithic case is to be considered. 
+Programming: 
+06/2006 WW/PA Implementation
+07/2006 WW  Reprogramm
+**************************************************************************/
+int SpBICGSTAB_Parallel(CPARDomain *m_dom, double *x,  long n) 
+{
+  // int dof;
+  int  max_iter = 0, repeat = 0, dof, ii, kk, nq;
+  long i, j, k;
+  long i_start[2], i_end[2], n_loc, n_bc;
+  long counter,bc_size, nnodes_g;
+  double rho1, alpha1, omega1, rv, st, tt;  
+  double rho0, alpha0, omega0, beta, v_loc;
+  double normr0, normr1, f_buff;
+  //
+  LINEAR_SOLVER *dom_eqs = NULL;
+  dom_eqs = m_dom->eqs;
+  //
+  SetLinearSolver(dom_eqs); 
+  //
+  dof = 1;
+  nq = 1;
+  n_bc = overlapped_entry_size;
+  i_start[0] = 0;
+  i_end[0] = m_dom->GetNumInnerNodes(false); //Number of interior nodes
+  if( m_dom->quadratic)
+  {
+     dof  = GetUnknownVectorDimensionLinearSolver(m_dom->eqs);
+     n_bc = overlapped_entry_sizeHQ;
+     nq = 2;
+     i_start[1] = i_end[0]+m_dom->GetNumHaloNodes(false);
+     i_end[1] = i_start[1]+m_dom->GetNumInnerNodes(true); //Number of interior nodes
+  }
+  n_loc = m_dom->GetDomainNodes();
+
+
+  nnodes_g = (long)n/dof;  
+  bc_size = n_bc*dof;  
+  // Initial value
+  rho0 = alpha0 = omega0 = 1.0;
+  rho1 = alpha1 = omega1 = 1.0;
+
+  // r_0
+  // local_r
+  //  ...Set local x---->precondition
+  for(i=0;i<n_bc;i++)
+  {
+     k = overlapped_entry[i];  
+     for(ii=0; ii<dof; ii++) 
+        x_array_bc[i+n_bc*ii]= x[k+nnodes_g*ii];
+  }
+  global2local(m_dom, x, n );    
+  MXResiduum(x, dom_eqs->b, r_zero);
+  // update bc entries:    
+  local2bc(m_dom, buff_bc, r_zero);
+  //
+  MPI_Allreduce(buff_bc, r_zero_bc, bc_size, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  // Norm0
+  // local norm of r_0  
+  f_buff =ScalarProduction_Interior(m_dom, r_zero);
+  MPI_Allreduce(&f_buff, &normr0, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  normr0 += ScalarProduction(r_zero_bc, r_zero_bc, bc_size);
+
+
+  //
+  max_iter = cg_maxiter;
+  counter = 0;
+  // BiCGStab steps
+  for(kk=0; kk<nq; kk++)
+  {
+    for(i=i_start[kk];i<i_end[kk];i++)
+    {
+       for(ii=0; ii<dof; ii++) 
+       {
+          //
+          k = i+n_loc*ii;
+          r_array[k] = r_zero[k];  
+          p_array[k] = r_zero[k];       
+          v_array[k] = 0.0;       
+        }   
+    }
+  }
+  for (i = 0; i < bc_size; i++)
+  {
+     r_array_bc[i] = r_zero_bc[i];  
+     p_array_bc[i] = r_zero_bc[i];       
+     v_array_bc[i] = 0.0;       
+  }
+
+  for(;;)
+  {
+     //    
+     counter++;
+     if(counter> max_iter) break;  
+    
+     // rho
+     f_buff =ScalarProduction_Interior(m_dom, r_zero, r_array);
+     MPI_Allreduce(&f_buff, &rho1, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+     rho1 += ScalarProduction(r_zero_bc, r_array_bc, bc_size);
+     //
+     
+     // if(counter>1)
+     // {
+        beta = rho1*alpha1/rho0/omega0;
+        // p = r+beta*(p-omega*v)
+        for (i = 0; i < bc_size; i++)
+           p_array_bc[i] = r_array_bc[i] + beta * (p_array_bc[i] - omega1 * v_array_bc[i]);    
+
+        for(kk=0; kk<nq; kk++)
+        {
+           for(i=i_start[kk];i<i_end[kk];i++)
+           {
+               for(ii=0; ii<dof; ii++) 
+               {
+                  //
+                  k = i+n_loc*ii;
+                  p_array[k] = r_array[k] + beta * (p_array[k] - omega1 * v_array[k]);
+               }
+           }
+        }
+    // }     
+     //
+     // v=A*p  
+     bc2local(m_dom, p_array_bc, p_array);
+     MXMatVek(p_array, v_array);
+     // update bc entries:    
+     local2bc(m_dom, buff_bc, v_array);
+     MPI_Allreduce(buff_bc, v_array_bc, bc_size, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+     //rv
+     f_buff =ScalarProduction_Interior(m_dom, v_array, r_zero);
+     MPI_Allreduce(&f_buff, &rv, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+     rv += ScalarProduction(r_zero_bc, v_array_bc, bc_size);
+
+
+     //
+     alpha1 = rho1 / rv;
+     // s=... ////// 
+     for (i = 0; i < bc_size; i++)
+         s_array_bc[i] = r_array_bc[i] -alpha1 * v_array_bc[i];    
+     //
+     for(kk=0; kk<nq; kk++)
+     {
+        for(i=i_start[kk];i<i_end[kk];i++)
+        {
+           for(ii=0; ii<dof; ii++) 
+           {
+              //
+               k = i+n_loc*ii;
+               s_array[k] = r_array[k] - alpha1 * v_array[k]; 
+            }
+        }
+     }
+
+     //t=A*s
+     bc2local(m_dom, s_array_bc, s_array);
+     MXMatVek(s_array, t_array);
+
+     // update bc entries:    
+     local2bc(m_dom, buff_bc, t_array);
+     MPI_Allreduce(buff_bc, t_array_bc, bc_size, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+     // st
+     f_buff =ScalarProduction_Interior(m_dom, s_array, t_array);
+     MPI_Allreduce(&f_buff, &st, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+     st += ScalarProduction(t_array_bc, s_array_bc, bc_size);
+     //tt
+     f_buff =ScalarProduction_Interior(m_dom, t_array, t_array);
+     MPI_Allreduce(&f_buff, &tt, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+     tt += ScalarProduction(t_array_bc, t_array_bc, bc_size);
+     // Omega1 
+     omega1 = st/tt;
+
+
+     //// 
+     //     Norm_x0 = ScalarProduction(x, x, n );
+     // x
+     for (i = 0; i < bc_size; i++)
+         x_array_bc[i] += alpha1 * p_array_bc[i] + omega1 * s_array_bc[i];
+     //
+     for(kk=0; kk<nq; kk++)
+     {
+       for(i=i_start[kk];i<i_end[kk];i++)
+       {
+         for(ii=0; ii<dof; ii++) 
+         {
+            //
+             k = i+n_loc*ii;
+             x[k] += alpha1 * p_array[k] + omega1 * s_array[k];
+          }   
+       }
+     }
+     //     Norm_x1 = ScalarProduction(x, x, n );
+    
+     // 
+     // Real residual: r=b-Ax
+     bc2local(m_dom, x_array_bc, x);
+     MXMatVek(x, r_array);
+     // update bc entries: 
+     local2bc(m_dom, buff_bc, r_array);
+     MPI_Allreduce(buff_bc, r_array_bc, bc_size, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+     // ||r|| 
+     f_buff =ScalarProduction_Interior(m_dom, r_array, r_array);
+     MPI_Allreduce(&f_buff, &tt, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+     tt += ScalarProduction(r_array_bc, r_array_bc, bc_size);
+
+
+     if(sqrt(tt)<cg_eps)
+       break;
+ 
+     // update r
+     for (i = 0; i < bc_size; i++)
+         r_array_bc[i] = s_array_bc[i] - omega1 * t_array_bc[i];
+     //
+     for(kk=0; kk<nq; kk++)
+     {
+        for(i=i_start[kk];i<i_end[kk];i++)
+        {
+           for(ii=0; ii<dof; ii++) 
+           {
+              //
+               k = i+n_loc*ii;
+               r_array[k] = s_array[k] - omega1 * t_array[k];      
+           } 
+        }
+     }
+     //
+     rho0 = rho1;
+     alpha0 = alpha1;
+     omega0 = omega1;
+
+     f_buff =ScalarProduction_Interior(m_dom, r_array, r_array);
+     MPI_Allreduce(&f_buff, &normr1, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+     normr1 += ScalarProduction(r_array_bc, r_array_bc, bc_size);
+     if(fabs(sqrt(normr1/normr0))<cg_eps)
+       break;
+  }
+
+  // Mapping to global;
+  NullArray(buff_global, n);
+  i_local2global(m_dom, buff_global, x, n);
+  MPI_Allreduce(buff_global, x, n, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+
+  for(i=0;i<n_bc;i++)
+  {
+     k = overlapped_entry[i];  
+     for(ii=0; ii<dof; ii++) 
+        x[k+nnodes_g*ii] = x_array_bc[i+n_bc*ii];
+  }
+
+  
+
+  cout<<"BiCGStab iterations: "<<counter<<endl;
+  return counter;
+}
+
+/**************************************************************************
+ ROCKFLOW - Funktion: NormOfUnkonwn
+                                                                         
+ Aufgabe:
+   Parallel compute the norm of RHS of a linear equation 
+                                                                         
+ Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+   E: LINEAR_SOLVER * ls: linear solver 
+                                                                         
+ Ergebnis:
+   - double - Eucleadian Norm
+                                                                         
+ Programmaenderungen:
+   06/2006   WW   Erste Version
+                                                                         
+**************************************************************************/
+double CalcNormOfRHS(const long n)
+{
+  int dof;
+   long i, j;
+   long  bc_size;
+   double norm, f_buff;
+   //
+   LINEAR_SOLVER *dom_eqs = NULL;
+   CPARDomain *m_dom = dom_vector[myrank]; 
+   dom_eqs = m_dom->eqs;
+
+   dof  = 1;
+   bc_size = overlapped_entry_size*dof; 
+   if( m_dom->quadratic)
+   {
+     dof  = GetUnknownVectorDimensionLinearSolver(m_dom->eqs);
+     bc_size = overlapped_entry_sizeHQ*dof; 
+   }
+   //
+   local2bc(m_dom, buff_bc,  m_dom->eqs->b);
+   MPI_Allreduce(buff_bc, r_array_bc, bc_size, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+
+   f_buff =ScalarProduction_Interior(m_dom,  m_dom->eqs->b);
+   MPI_Allreduce(&f_buff, &norm, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+   norm += ScalarProduction(r_array_bc, r_array_bc, bc_size);
+   //  
+   return sqrt(norm);
+}
+
+#endif
+//--------------------------
+
 /*************************************************************************
  ROCKFLOW - Funktion: SpBICGSTAB
 
@@ -1549,39 +2104,6 @@ int SpBICGSTAB(double *b, double *x, long n)
     int k = 0, max_iter = 0, repeat = 0;
     double r0norm = 0., b0norm = 0., x0norm = 0., tt, ts, rsv;
     double error_rel;
-#ifdef USE_MPI
-    int    ip,jp, idx;
-    double sendbuff = 0;
-    double recvbuff = 0;
-    double *rb;
-    double *ar_buf;
-
-
-    rb = (double*)malloc(n*sizeof(double));
-    ar_buf = (double *)malloc(n * sizeof(double));
-
-    for (ip=0; ip<n; ip++) {
-      idx = 0;
-      for(jp=0; jp<n; jp++)
-	{
-	  ar_buf[jp] = MXGet(ip,jp);
-	}
-
-      MPI_Allreduce(ar_buf, rb, n, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-      
-      for(jp=0; jp<n; jp++) 
-	MXSet(ip,jp,rb[jp]);
-    }																		                                
-
-    MPI_Allreduce(b,rb,n,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-
-    for (ip=0; ip<n; ip++)
-      b[ip]=rb[ip];
-
-    free(rb);
-    free(ar_buf);
-
-#endif     
     /* Ggf. starten der Vorkonditionierung */
     if (vorkond){
 //WW      cout << "        Preconditioning" << endl;
@@ -1744,7 +2266,7 @@ int SpBICGSTAB(double *b, double *x, long n)
 #endif
 //OK
         error_rel = VEKNORM_BICGSTAB(r2,n)/eps;
-//WW        printf("\r        SpBICGSTAB iteration: %i/%i Error: %f",k,max_iter,error_rel);
+//WW  	printf("\r        SpBICGSTAB iteration: %i/%i Error: %f",k,max_iter,error_rel);
         if (linear_error_type == 4)
             eps = cg_eps * (VEKNORM_BICGSTAB(x, n));
         if (VEKNORM_BICGSTAB(r2, n) <= eps)
@@ -1788,7 +2310,6 @@ int SpBICGSTAB(double *b, double *x, long n)
 
     return k;
 }
-
 
 /*************************************************************************
  ROCKFLOW - Funktion: SpQMRCGSTAB
@@ -2845,7 +3366,9 @@ int NonLinearSolve(long cas, double *b, double *x, long n, void (*f) (double *, 
             LinearSolver = SpGauss;
             break;
         case 2:
+#ifndef USE_MPI
             LinearSolver = SpBICGSTAB;
+#endif
             break;
         case 3:
             LinearSolver = SpBICG;
@@ -2896,7 +3419,9 @@ int NonLinearSolve(long cas, double *b, double *x, long n, void (*f) (double *, 
             LinearSolver = SpGauss;
             break;
         case 2:
+#ifndef USE_MPI
             LinearSolver = SpBICGSTAB;
+#endif
             break;
         case 3:
             LinearSolver = SpBICG;

@@ -82,12 +82,15 @@ class CBoundaryConditionNode //OK raus
   public:
     long geo_node_number;
     long msh_node_number;
+    long msh_node_number_subst; //WW
 
     double node_value;
     int CurveIndex; // Time dependent function index
+    string pcs_pv_name; //YD/WW
+    //
+    string fct_name; //WW
     //FCT
     int conditional; //OK
-    string funct_name;//CMCD
     CBoundaryConditionNode();
 };
 
@@ -102,15 +105,15 @@ class CBoundaryConditionsGroup
     long msh_node_number_subst; //WW
     string fct_name; //OK
   public:
-    vector<CBoundaryConditionNode*>group_vector;
+    //WW vector<CBoundaryConditionNode*>group_vector;
     void Set(CRFProcess* m_pcs, const int ShiftInNodeVector, string this_pv_name="");
     CBoundaryConditionsGroup* Get(string);
 	CBoundaryConditionsGroup(void);
     ~CBoundaryConditionsGroup(void);
     void WriteTecplot(void);
     CFEMesh* m_msh; //OK
-    vector<CBoundaryCondition*>bc_group_vector; //OK
-    double GetConditionalNODValue(int,CBoundaryCondition*); //OK
+    //WW vector<CBoundaryCondition*>bc_group_vector; //OK
+    //WW double GetConditionalNODValue(int,CBoundaryCondition*); //OK
 
    public: // TK display
      int m_display_mode_bc;
@@ -118,7 +121,7 @@ class CBoundaryConditionsGroup
 
 //========================================================================
 #define BC_FILE_EXTENSION ".bc"
-extern list<CBoundaryConditionsGroup*>bc_group_list;
+extern list<CBoundaryConditionsGroup*> bc_group_list;
 extern CBoundaryConditionsGroup* BCGetGroup(string pcs_type_name,string pcs_pv_name);
 extern list<CBoundaryCondition*> bc_list;
 extern bool BCRead(string);
@@ -131,6 +134,7 @@ extern void BCGroupDelete(string,string);
 //ToDo
 extern long IsNodeBoundaryCondition(char *name, long node);
 extern void ScalingDirichletBoundaryConditions(const double factor);
-extern int NodeSetBoundaryConditions(char*,int,string);
+//WW extern int NodeSetBoundaryConditions(char*,int,string);
+extern int NodeSetBoundaryConditions(char *pv_name,int ndx,CRFProcess* m_pcs);
 
 #endif

@@ -41,13 +41,15 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
     int i;
 	string name2;
 	char name1[MAX_ZEILE];
-    char pcsT;
     cpl_pcs=NULL; 
     CRFProcess *m_pcs=NULL;  //MX
 
     GravityMatrix = NULL;
+    m_dom = NULL;
+    eqs_rhs = NULL;
+    //
     dynamic = false;
-    if(pcs->pcs_type_name.find("DYNAMIC")!=string::npos)
+    if(pcs->pcs_type_name_vector.size()&&pcs->pcs_type_name_vector[0].find("DYNAMIC")!=string::npos)
       dynamic = true;
 
 	dm_pcs =NULL;
@@ -74,8 +76,21 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
       default:
         PcsType = L;
         GravityMatrix = new  SymMatrix(20);
-        idx0 = pcs->GetNodeValueIndex("PRESSURE1");
-        idx1 = idx0+1;
+        if(dynamic)
+        {
+           idx0 = pcs->GetNodeValueIndex("PRESSURE_RATE1");
+           idx1 = idx0+1;
+           idx_pres = pcs->GetNodeValueIndex("PRESSURE1");
+           idx_vel_disp[0] = pcs->GetNodeValueIndex("VELOCITY_DM_X");
+           idx_vel_disp[1] = pcs->GetNodeValueIndex("VELOCITY_DM_Y");
+           if(dim==3)
+              idx_vel_disp[2] = pcs->GetNodeValueIndex("VELOCITY_DM_Z");
+        }
+		else
+		{
+          idx0 = pcs->GetNodeValueIndex("PRESSURE1");
+          idx1 = idx0+1;
+		}
         break;
       case 'L': // Liquid flow
         PcsType = L;
@@ -85,10 +100,10 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
            idx0 = pcs->GetNodeValueIndex("PRESSURE_RATE1");
            idx1 = idx0+1;
            idx_pres = pcs->GetNodeValueIndex("PRESSURE1");
-           idx_vel_disp[0] = pcs->GetNodeValueIndex("VELOCITY_X1");
-           idx_vel_disp[1] = pcs->GetNodeValueIndex("VELOCITY_Y1");
+           idx_vel_disp[0] = pcs->GetNodeValueIndex("VELOCITY_DM_X");
+           idx_vel_disp[1] = pcs->GetNodeValueIndex("VELOCITY_DM_Y");
            if(dim==3)
-              idx_vel_disp[2] = pcs->GetNodeValueIndex("VELOCITY_Z1");
+              idx_vel_disp[2] = pcs->GetNodeValueIndex("VELOCITY_DM_Z");
         }
         else
         {
@@ -135,6 +150,9 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
         break;
       case 'R': //OK4104 Richards flow
         GravityMatrix = new  SymMatrix(20);
+        idx0 = pcs->GetNodeValueIndex("PRESSURE1");
+        idx1 = idx0+1;
+        idxS = pcs->GetNodeValueIndex("SATURATION1")+1;
         PcsType = R;
         break;
       case 'A': // Air (gas) flow
@@ -149,9 +167,18 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
     {
       Mass = new SymMatrix(20);
       Laplace = new Matrix(20,20);
-	  Advection = new Matrix(20,20);
-	  Storage = new Matrix(20,20);
-	  Content = new Matrix(20,20);
+      if(pcsT=='H'||pcsT=='M')
+	  {
+         Advection = new Matrix(20,20);
+         Storage = new Matrix(20,20);
+         Content = new Matrix(20,20);
+	  }
+	  else
+      {
+         Advection = NULL;
+         Storage = NULL;
+         Content = NULL;
+      }
       if(D_Flag) 
           StrainCoupling = new Matrix(20,60);
       else StrainCoupling = NULL;
@@ -231,9 +258,12 @@ void CFiniteElementStd::SetMemory()
     {
        Mass->LimitSize(nnodes);
        Laplace->LimitSize(nnodes, nnodes);
-	   Advection->LimitSize(nnodes, nnodes); //SB4200
-	   Storage->LimitSize(nnodes, nnodes); //SB4200
-	   Content->LimitSize(nnodes, nnodes); //SB4209
+       if(pcsT=='H'||pcsT=='M')
+	   {
+	      Advection->LimitSize(nnodes, nnodes); //SB4200
+	      Storage->LimitSize(nnodes, nnodes); //SB4200
+	      Content->LimitSize(nnodes, nnodes); //SB4209
+	   }
        if(D_Flag>0) 
           StrainCoupling->LimitSize(nnodes, dim*nnodesHQ);
        Size = nnodes;
@@ -1659,7 +1689,7 @@ void CFiniteElementStd::CalcRHS_by_ThermalDiffusion()
          (*RHS)(i) -= (*Laplace)(i,j)*NodalValC[j];
 		 (*RHS)(i) += (*Mass)(i,j)*(NodalValC1[j]-NodalValC[j])/dt;
       }
-      pcs->eqs->b[NodeShift[problem_dimension_dm] + eqs_number[i]]
+      eqs_rhs[NodeShift[problem_dimension_dm] + eqs_number[i]]
            += (*RHS)(i);
   }
 
@@ -1828,7 +1858,7 @@ void  CFiniteElementStd::Assemble_Gravity()
 
   for (i=0;i<nnodes;i++)
   {
-      pcs->eqs->b[NodeShift[problem_dimension_dm] + eqs_number[i]]
+      eqs_rhs[NodeShift[problem_dimension_dm] + eqs_number[i]]
                += k_rel_iteration* geo_fac*NodalVal[i];
      (*RHS)(i+LocalShift) += NodalVal[i];
   }
@@ -2137,7 +2167,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
   double *p_n = NULL; 
   double fac1, fac2;
   double beta1 = 0.0;
-  if(pcs->pcs_type_name.find("DYNAMIC")==0){ //OK
+  if(pcs->pcs_type_name_vector.size()&&pcs->pcs_type_name_vector[0].find("DYNAMIC")==0){ 
     dynamic = true;
     if(pcs->m_num->CheckDynamic()) // why NUM, it is PCS
     beta1  = pcs->m_num->GetDynamicDamping_beta1();
@@ -2161,7 +2191,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
   CalcLaplace();
 
   pcs->timebuffer /= mat[0]; //YD
-   //======================================================================
+  //======================================================================
   // Assemble global matrix
   //----------------------------------------------------------------------
   // Time discretization 
@@ -2211,7 +2241,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
   if(dynamic)
   {
     fac1 = -1.0;
-    fac2 = -beta1*dt;
+    fac2 = beta1*dt;
   }
   else 
   {
@@ -2250,7 +2280,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
   }
   for (i=0;i<nnodes;i++)
   {
-    pcs->eqs->b[NodeShift[problem_dimension_dm] + eqs_number[i]] += NodalVal[i];
+    eqs_rhs[NodeShift[problem_dimension_dm] + eqs_number[i]] += NodalVal[i];
     (*RHS)(i+LocalShift) +=  NodalVal[i];
   }
 	//Debug output
@@ -2406,21 +2436,10 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
    }
    AuxMatrix1->multi(NodalVal1, NodalVal);  //AuxMatrix1 times vector NodalVal1 = NodalVal
   //----------------------------------------------------------------------
-  if(dom_vector.size()>0)
+  for (i=0;i<nnodes;i++)
   {
-    for (i=0;i<nnodes;i++)
-    {
-      m_dom->eqs->b[NodeShift[problem_dimension_dm] + eqs_number[i]] += NodalVal[i];
+      eqs_rhs[NodeShift[problem_dimension_dm] + eqs_number[i]] += NodalVal[i];
       (*RHS)(i+LocalShift) +=  NodalVal[i];
-    }
-  }
-  else
-  {
-   for (i=0;i<nnodes;i++)
-   {
-       pcs->eqs->b[NodeShift[problem_dimension_dm] + eqs_number[i]] += NodalVal[i];
-       (*RHS)(i+LocalShift) +=  NodalVal[i];
-   }
   }
   //----------------------------------------------------------------------
 	//Debug output
@@ -2901,7 +2920,7 @@ void CFiniteElementStd::Assemble_strainCPL()
         // Add RHS
         for (i=0;i<nnodes;i++)
         {
-           pcs->eqs->b[NodeShift[problem_dimension_dm] + eqs_number[i]]
+           eqs_rhs[NodeShift[problem_dimension_dm] + eqs_number[i]]
 		            += NodalVal[i];
            (*RHS)(i+LocalShift) +=  NodalVal[i];
         }
@@ -2982,6 +3001,7 @@ Programing:
 05/2005 OK regional PCS
 08/2005 OK Air (gas) flow
 10/2005 OK DDC
+06/2005 WW Adjustment in DDC
 **************************************************************************/
 void CFiniteElementStd::Assembly()
 {
@@ -2994,17 +3014,29 @@ void CFiniteElementStd::Assembly()
   nn = nnodes;
   if(pcs->type==41||pcs->type==4) nn = nnodesHQ; // ?2WW
   //----------------------------------------------------------------------
+  // For DDC WW
+  eqs_rhs = pcs->eqs->b;
+ 
   // EQS indices
-  for(i=0;i<nn;i++){
-    if(dom_vector.size()>0)
-    eqs_number[i] = MeshElement->domain_nodes[i];
-    else    
-      if(pcs->m_msh) {
-        eqs_number[i] = MeshElement->nodes[i]->GetEquationIndex();
-      }
-      else 
-        eqs_number[i] = GetNodeIndex(nodes[i]);
-    }
+  if(m_dom) //WW
+  {
+     eqs_rhs = m_dom->eqs->b;
+     for(i=0;i<nn;i++)
+		eqs_number[i] = element_nodes_dom[i]; //WW   
+  }
+  else
+  {
+     if(pcs->m_msh)
+	 {
+       for(i=0;i<nn;i++)
+          eqs_number[i] = MeshElement->nodes[i]->GetEquationIndex();         
+	 }
+	 else
+	 {
+       for(i=0;i<nn;i++)
+          eqs_number[i] = GetNodeIndex(nodes[i]);        
+	 }
+  }  
   //----------------------------------------------------------------------
   // Get room in the memory for local matrices
   SetMemory();
@@ -3159,8 +3191,16 @@ void CFiniteElementStd::Assembly()
     Mass->Write(*pcs->matrix_file);
     (*pcs->matrix_file) << "---Laplacian matrix: " << endl;
     Laplace->Write(*pcs->matrix_file);
-    (*pcs->matrix_file) << "---Advective matrix: " << endl;//CMCD
-    Advection->Write(*pcs->matrix_file);
+    if(Advection)
+	{
+      (*pcs->matrix_file) << "---Advective matrix: " << endl;//CMCD
+      Advection->Write(*pcs->matrix_file);
+	}
+    if(StrainCoupling)
+	{
+      (*pcs->matrix_file) << "---Strain couping matrix: " << endl;
+      StrainCoupling->Write(*pcs->matrix_file);
+	}    
     (*pcs->matrix_file) << "---RHS: " <<endl;
     RHS->Write(*pcs->matrix_file);
     (*pcs->matrix_file) <<endl;
@@ -3364,7 +3404,7 @@ void CFiniteElementStd::AssembleParabolicEquationRHSVector()
   for (i=0;i<nnodes;i++)
   {
     eqs_number[i] = MeshElement->nodes[i]->GetEquationIndex();
-    pcs->eqs->b[eqs_number[i]] +=  NodalVal[i];
+    eqs_rhs[eqs_number[i]] +=  NodalVal[i];
   }
   //----------------------------------------------------------------------
 }
@@ -3388,7 +3428,7 @@ void  CFiniteElementStd::Assemble_Transfer()
       //---------------------------------------------------------
       fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
       // Material
-    fkt *= MediaProp->transfer_coefficient*MediaProp->unsaturated_hydraulic_conductivity  \
+      fkt *= MediaProp->transfer_coefficient*MediaProp->unsaturated_hydraulic_conductivity  \
 		/(pcs->continuum_vector[pcs->GetContinnumType()]*FluidProp->Density()*gravity_constant) ;
     		  
       // Calculate mass matrix
@@ -3397,12 +3437,12 @@ void  CFiniteElementStd::Assemble_Transfer()
             NodalVal[i] = fkt*NodalVal_P[i];
       }
   }
-      for (i=0;i<nnodes;i++)
-      {
-         pcs->eqs->b[NodeShift[problem_dimension_dm] + eqs_number[i]]
-	   	            += NodalVal[i];
-         (*RHS)(i+LocalShift) +=  NodalVal[i];
-       } 
+  for (i=0;i<nnodes;i++)
+  {
+     pcs->eqs->b[NodeShift[problem_dimension_dm] + eqs_number[i]]
+	        += NodalVal[i];
+     (*RHS)(i+LocalShift) +=  NodalVal[i];
+   } 
 
   //RHS->Write();
 }

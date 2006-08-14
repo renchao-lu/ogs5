@@ -71,6 +71,7 @@ int main ( int argc, char *argv[] )
       MPI_Init(&argc,&argv);
       MPI_Comm_size(MPI_COMM_WORLD,&size);
       MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
+      cout << "After MPI_Init myrank = " << myrank << '\n';
       time_ele_paral = 0.0;
 #endif
 /*---------- MPI Initialization ----------------------------------*/

@@ -4319,10 +4319,10 @@ if(m_tim->step_current>1) {
     saturation_gas = MRange(0.0,(1.0-saturation_liquid),1.0);
     NodeSetBoundaryConditions("SATURATION1",\
                               PCSGetNODValueIndex("SATURATION1",timelevel),\
-                              m_pcs->pcs_type_name);
+                              m_pcs); //WW
     NodeSetBoundaryConditions("SATURATION2",\
                               PCSGetNODValueIndex("SATURATION2",timelevel),\
-                              m_pcs->pcs_type_name);
+                              m_pcs);  //WW m_pcs->pcs_type_name);
     SetNodeVal(i,PCSGetNODValueIndex("SATURATION1",timelevel),saturation_gas);
     SetNodeVal(i,PCSGetNODValueIndex("SATURATION2",timelevel),saturation_liquid);
 }
@@ -4666,10 +4666,10 @@ void MPCSetICRichards(int dummy)
   timelevel=1;
   NodeSetBoundaryConditions("SATURATION1",\
                             PCSGetNODValueIndex("SATURATION1",timelevel),\
-                            m_pcs->pcs_type_name);
+                            m_pcs); //WWm_pcs->pcs_type_name);
   NodeSetBoundaryConditions("SATURATION2",\
                             PCSGetNODValueIndex("SATURATION2",timelevel),\
-                            m_pcs->pcs_type_name);
+                            m_pcs); //WW m_pcs->pcs_type_name);
 }
 
 /*************************************************************************
@@ -4697,21 +4697,21 @@ void MPCSetIC(int comp)
     timelevel=0;
     NodeSetBoundaryConditions("PRESSURE1",\
                               PCSGetNODValueIndex("PRESSURE1",timelevel),\
-                              m_pcs->pcs_type_name);
+                              m_pcs); //WW m_pcs->pcs_type_name);
     timelevel=1;
     NodeSetBoundaryConditions("PRESSURE1",\
                               PCSGetNODValueIndex("PRESSURE1",timelevel),\
-                              m_pcs->pcs_type_name);
+                              m_pcs); //WW m_pcs->pcs_type_name);
   }
   else if(comp==1) {
     timelevel=0;
     NodeSetBoundaryConditions("SATURATION2",\
                               PCSGetNODValueIndex("SATURATION2",timelevel),\
-                              m_pcs->pcs_type_name);
+                              m_pcs); //WW m_pcs->pcs_type_name);
     timelevel=1;
     NodeSetBoundaryConditions("SATURATION2",\
                               PCSGetNODValueIndex("SATURATION2",timelevel),\
-                              m_pcs->pcs_type_name);
+                              m_pcs);//WW m_pcs->pcs_type_name);
   }
 }
 

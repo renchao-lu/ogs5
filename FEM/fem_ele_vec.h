@@ -92,7 +92,6 @@ class CFiniteElementVec:public CElement
      int IntersectionPoint(const int O_edge, 
                            const double *NodeA, double *NodeB);
      //----------- End of enhanced element ----------------
-
   private:  
    
      process::CRFProcessDeformation *pcs;

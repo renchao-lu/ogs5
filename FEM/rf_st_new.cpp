@@ -731,6 +731,8 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
   CElem* elem = NULL;
   CNode* cnode = NULL; //WW
 
+  if(this_pv_name.size()!=0) //WW
+    pcs_pv_name = this_pv_name;
   //----------------------------------------------------------------------
   // Tests //OK
   if(!m_msh){
@@ -1401,7 +1403,7 @@ void CSourceTerm::EdgeIntegration(CRFProcess* m_pcs, vector<long>&nodes_on_ply,
                             radius = 0.0;
                             for(ii=0; ii<3; ii++) 
                                radius += Shfct[ii]*e_nodes[ii]->X();                             
-                            Weight *= 2.0*pai*radius;
+                            Weight *= radius; //2.0*pai*radius;
                          }
                          NVal[G2L[e_nodes[k]->GetIndex()]] += 
 							  0.5*(v1+v2+eta*(v2-v1))*Shfct[k]*Weight;         
@@ -1449,7 +1451,7 @@ void CSourceTerm::EdgeIntegration(CRFProcess* m_pcs, vector<long>&nodes_on_ply,
                             radius = 0.0;
                             for(ii=0; ii<2; ii++) 
                                radius += Shfct[ii]*e_nodes[ii]->X();                             
-                            Weight *= 2.0*pai*radius;
+                            Weight *= radius; //2.0*pai*radius;
                          }
                          NVal[G2L[e_nodes[k]->GetIndex()]] += 
 							  0.5*(v1+v2+eta*(v2-v1))*Shfct[k]*Weight;         

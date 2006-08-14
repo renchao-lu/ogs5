@@ -27,7 +27,7 @@ extern vector<long> ElementOnPath;  // Element on the discontinuity path
 
 namespace FiniteElement {class CFiniteElementVec; } 
 using FiniteElement::CFiniteElementVec;
-
+class CPARDomain;
 namespace process{
 
 // Elasto-platsic Deformation
@@ -91,6 +91,9 @@ private:
      double InitialNorm; 
      double InitialNormU; 
      double InitialNormU0; 
+
+     // Domain decompisition
+     inline void DomainAssembly(CPARDomain* m_dom);
 
      // For strong discontinuity approach
      void Trace_Discontinuity();

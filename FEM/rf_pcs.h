@@ -14,11 +14,34 @@ Programing:
 // PCSLib
 #include "rf_num_new.h"
 #include "rf_bc_new.h"
-#include "rf_pcs.h"
+//WW #include "rf_pcs.h" //Why this WW.
 #include "rf_tim_new.h"
 #include "rf_st_new.h"//CMCD 02_06
 // C++ STL
 #include <fstream>
+
+// This will be removed after new sparse matrix is ready
+// for solver. WW
+#ifdef USE_MPI
+extern double *buff_bc; 
+extern double *buff_global; 
+extern double *x_array_bc; 
+extern double *r_array; 
+extern double *r_array_bc; 
+extern double *r_zero;
+extern double *r_zero_bc;
+extern double *p_array;
+extern double *p_array_bc;
+extern double *v_array;
+extern double *v_array_bc;
+extern double *s_array;
+extern double *s_array_bc;
+extern double *t_array;
+extern double *t_array_bc;
+extern long  *overlapped_entry;
+extern long overlapped_entry_size;
+extern long overlapped_entry_sizeHQ;
+#endif
 
 // The follows are implicit declaration. WW
 //---------------------------------------------------------------------------
@@ -148,13 +171,21 @@ class CRFProcess {
 	// 4-IC
 	//....................................................................
 	// 5-BC
+	vector<CBoundaryConditionNode*> bc_node_value; //WW 
+	vector<CBoundaryCondition*> bc_node; //WW
+    vector<long> bc_node_value_in_dom; //WW for domain decomposition
+    vector<long> bc_local_index_in_dom; //WW for domain decomposition
+    vector<long> rank_bc_node_value_in_dom; //WW
 	//....................................................................
 	// 6-ST
     // Node values from sourse/sink or Neumann BC. WW
-	vector<CNodeValue*> st_node_value; //WW :: is for the strange sxc compiler
+	vector<CNodeValue*> st_node_value; //WW 
 	vector<CSourceTerm*> st_node; //WW
-    void RecordNodeVSize(const int Size) {orig_size = Size;}
-    int GetOrigNodeVSize () const {return orig_size;}
+    vector<long> st_node_value_in_dom; //WW for domain decomposition
+    vector<long> st_local_index_in_dom; //WW for domain decomposition
+    vector<long> rank_st_node_value_in_dom; //WW
+    void RecordNodeVSize(const int Size) {orig_size = Size;} //WW
+    int GetOrigNodeVSize () const {return orig_size;} //WW
 
 	//....................................................................
 	// 7-MFP
@@ -227,7 +258,7 @@ class CRFProcess {
     int mobile_nodes_flag;
     string pcs_type_name;
     int pcs_type_number;
-    vector<string>pcs_type_name_vector;
+    vector<string> pcs_type_name_vector;
     int type;
     int GetObjType() {return type;}
 	int pcs_component_number; //SB: counter for transport components
@@ -356,11 +387,12 @@ class CRFProcess {
     //  and it is related to ST, BC, IC, TIM and OUT. WW 
     void SetOBJNames(); 
     // ST
-    void IncorporateSourceTerms(const double Scaling=1.0);
+    void IncorporateSourceTerms(const int rank=-1);
     //WW void CheckSTGroup(); //OK
     // BC
-    void IncorporateBoundaryConditions(const double Scaling=1.0);
-    void CheckBCGroup(); //OK
+    void IncorporateBoundaryConditions(const int rank=-1);
+    void SetBoundaryConditionSubDomain(); //WW
+    //void CheckBCGroup(); //OK
     int ExecuteLinearSolver(void);
 	int ExecuteLinearSolver(LINEAR_SOLVER *eqs);
     //Time Control
@@ -371,9 +403,9 @@ class CRFProcess {
     void PCSDumpModelNodeValues(void);
     int GetNODValueIndex(string name,int timelevel); //WW
     // BC for dynamic problems. WW
-    void setBC_danymic_problems();
-    void setST_danymic_problems();
-    void setIC_danymic_problems();
+    inline void setBC_danymic_problems();
+    inline void setST_danymic_problems();
+    inline void setIC_danymic_problems();
     // USER
     //ToDo
     double *TempArry; //MX
@@ -496,6 +528,7 @@ extern bool FLUID_MOMENTUM_Process;
 extern bool RANDOM_WALK_Process;
 extern string project_title; //OK41
 extern bool pcs_created;
+extern vector<LINEAR_SOLVER *> PCS_Solver; //WW
 
 #endif
 

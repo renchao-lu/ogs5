@@ -12,7 +12,6 @@
 #include "rf_mmp_new.h"
 #include "rf_msp_new.h"
 #include "rf_out_new.h" //OK
-#include "par_ddc.h" //OK
 
 //-----------------------------------------------------
      // Process type
@@ -101,9 +100,11 @@ class CFiniteElementStd:public CElement
      int idx_vel_disp[3], idx_pres;
      // Material properties
      double mat[9];
+     double *eqs_rhs; //For DDC WW
      bool heat_phase_change;
      process::CRFProcessDeformation *dm_pcs;
      ::CRFProcess *cpl_pcs; // Pointer to coupled process. WW  
+     char pcsT;
      bool dynamic; 
 
      //-------------------------------------------------------
@@ -182,7 +183,6 @@ class CFiniteElementStd:public CElement
      bool check_matrices; //OK4104
    public:
      void AssembleParabolicEquationRHSVector(); //OK
-     CPARDomain *m_dom; //OK
 };
 
 

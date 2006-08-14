@@ -613,6 +613,7 @@ FEMLib-Method:
 Task: 
 Programing:CMCD 03/2006
 **************************************************************************/
+/*
 void CTimeDiscretization::CheckCourant(void)
 {
   long index; 
@@ -656,7 +657,7 @@ void CTimeDiscretization::CheckCourant(void)
   }
   cout<<"Courant time step control, critical element = "<<critical_element_no<<" Recomended time step "<<recommended_time_step<<endl;
 }
-
+*/
 /**************************************************************************
 FEMLib-Method: 
 Task: Neumann estimation
@@ -720,13 +721,6 @@ double CTimeDiscretization::ErrorControlAdaptiveTimeControl(void)
   double rmin = 0.5;
   //double error = 0.0;
   double safty_coe = 0.8;
-
-  if(repeat)
-  {
-    cout << "   TIM step is repeated" << endl;  
-    m_pcs = PCSGet(pcs_type_name);
-    m_pcs->PrimaryVariableReload();
-  }
   //----------------------------------------------------------------------
   for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++)
   {

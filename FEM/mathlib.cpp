@@ -151,6 +151,15 @@
 #include "nodes.h"
 #include "elements.h"
 #include "femlib.h"    //CMCD 03 2004
+//WW----------------------
+#include "par_ddc.h" 
+#undef SEEK_SET 
+#undef SEEK_END 
+#undef SEEK_CUR
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
+//WW----------------------
 double pai=4.0*atan(1.0);
 VoidFuncDXCDX ShapeFunction;
 VoidFuncDXCDX ShapeFunctionHQ;

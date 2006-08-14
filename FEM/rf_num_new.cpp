@@ -27,6 +27,14 @@ extern ios::pos_type GetNextSubKeyword(ifstream* file,string* line, bool* keywor
 // GeoSys-MSHLib
 #include "nodes.h"
 #include "elements.h" // Only for max_dim, remove this later. WW
+#ifdef USE_MPI //WW
+#include "par_ddc.h"
+#undef SEEK_SET 
+#undef SEEK_END 
+#undef SEEK_CUR 
+#include "mpi.h"
+#endif
+
 //==========================================================================
 vector<CNumerics*>num_vector;
 /**************************************************************************
@@ -369,22 +377,22 @@ void CNumerics::Write(fstream* num_file)
 // LINEAR_SOLVER
 //////////////////////////////////////////////////////////////////////////
 
-/**************************************************************************/
-/* ROCKFLOW - Funktion: NormOfUnkonwn
-                                                                          */
-/* Aufgabe:
+/**************************************************************************
+ ROCKFLOW - Funktion: NormOfUnkonwn
+                                                                         
+ Aufgabe:
    Compute the norm of RHS of a linear equation
-                                                                          */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+                                                                         
+ Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    E: LINEAR_SOLVER * ls: linear solver 
-                                                                          */
-/* Ergebnis:
+                                                                         
+ Ergebnis:
    - double - Eucleadian Norm
-                                                                          */
-/* Programmaenderungen:
+                                                                         
+ Programmaenderungen:
    12/2002   WW   Erste Version
-                                                                          */
-/**************************************************************************/
+                                                                         
+**************************************************************************/
 double CalcNormOfRHS(LINEAR_SOLVER*ls)
 {
     int i, j;
@@ -398,7 +406,7 @@ double CalcNormOfRHS(LINEAR_SOLVER*ls)
     for (i = 0; i < unknown_vector_dimension; i++)
     {   
         number_of_nodes=ls->unknown_node_numbers[i];
-		for(j=0; j<number_of_nodes; j++)
+        for(j=0; j<number_of_nodes; j++)
           NormW += ls->b[number_of_nodes*i+j]*ls->b[number_of_nodes*i+j];
 
     }
@@ -625,12 +633,15 @@ LINEAR_SOLVER *InitLinearSolver(LINEAR_SOLVER * ls)
     if (!ls)
         return NULL;
 
+    //#ifdef USE_MPI //WW
+    //    ls->matrix = NULL;
+    //#else
     if (ls->matrix) {
         MXSetMatrixPointer(ls->matrix);
         ls->matrix = MXDestroyMatrix();
     }
     ls->matrix = MXSetupMatrix(ls->dim, ls->store, 0l);
-
+    //#endif
     if (ls->dim == 0)
         return ls;
 
@@ -653,6 +664,49 @@ LINEAR_SOLVER *InitLinearSolver(LINEAR_SOLVER * ls)
 
     return ls;
 }
+
+#ifdef USE_MPI //WW
+/////////////////////////////////////////////////////////////////////
+/**************************************************************************
+FEMLib-Method:
+Task: 
+      Based on LINEAR_SOLVER *InitLinearSolver(LINEAR_SOLVER * ls)
+07/2006 WW
+last modified:
+**************************************************************************/
+
+LINEAR_SOLVER *InitVectorLinearSolver(LINEAR_SOLVER * ls)
+{
+    if (!ls)
+        return NULL;
+    if (ls->dim == 0)
+        return ls;
+
+    if (ls->b)
+        ls->b = (double *) Free(ls->b);
+    ls->b = (double *) Malloc(ls->dim * sizeof(double));
+    if (ls->x)
+        ls->x = (double *) Free(ls->x);
+    ls->x = (double *) Malloc(ls->dim * sizeof(double));
+    if (ls->r)
+        ls->r = (double *) Free(ls->r);
+    ls->r = (double *) Malloc(ls->dim * sizeof(double));
+
+    if (ls->xx)
+        ls->xx = (double *) Free(ls->xx);
+    ls->xx = (double *) Malloc(ls->dim * sizeof(double));
+    if (ls->memory)
+        ls->memory = (double *) Free(ls->memory);
+    ls->memory = (double *) Malloc(ls->dim * sizeof(double));
+
+    return ls;
+}
+
+#endif
+/////////////////////////////////////////////////////////////////////
+
+
+
 
 /*************************************************************************
  ROCKFLOW - Funktion: TransferNodeValues
@@ -841,7 +895,9 @@ void SetLinearSolverType(LINEAR_SOLVER* ls ,CNumerics *m_num) //WW
         ls->LinearSolver = SpGauss;
         break;
     case 2:
+#ifndef USE_MPI
         ls->LinearSolver = SpBICGSTAB;
+#endif
         break;
     case 3:
         ls->LinearSolver = SpBICG;
@@ -874,12 +930,17 @@ void SetLinearSolverType(LINEAR_SOLVER* ls ,CNumerics *m_num) //WW
         ls->LinearSolver = SpUMF;
         break;
     }
+
 }
 //WW
 LINEAR_SOLVER *InitializeLinearSolver(LINEAR_SOLVER* ls ,CNumerics *m_num)
 {
     SetLinearSolverType(ls,m_num);
+#ifdef USE_MPI //WW
+    InitVectorLinearSolver(ls);
+#else  
     InitLinearSolver(ls);
+#endif
     /* Internen Speicher allokieren */
     InitMemoryLinearSolver(ls,ls->memory_number);
     /* Speicher initialisieren */

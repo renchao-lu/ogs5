@@ -108,8 +108,8 @@ void Surface::output(FILE* geo_file, int &p_index, int &l_index,
     CGLLine *CGLn = NULL; 
 
 	//First entity: points
-   // list<CGLPolyline*>::const_iterator p  = polyline_of_surface_list.begin();//CC
-vector<CGLPolyline*>::iterator p = polyline_of_surface_vector.begin();
+    // list<CGLPolyline*>::const_iterator p  = polyline_of_surface_list.begin();//CC
+    vector<CGLPolyline*>::iterator p = polyline_of_surface_vector.begin();
 
     FilePrintString(geo_file, "// Points");
     LineFeed (geo_file);   
@@ -171,12 +171,12 @@ vector<CGLPolyline*>::iterator p = polyline_of_surface_vector.begin();
        while (pl!=p_pline->line_vector.end())//CC
 	   {
            CGLn = *pl;
-//OK test 11.09.2004
-if(!CGLn->m_point1&&!CGLn->m_point2){
-  cout << "Error in Surface::output: no line points" << endl;
-  FilePrintString(geo_file, "Error in Surface::output: no line points");
-  return;
-}
+           //OK test 11.09.2004
+            if(!CGLn->m_point1&&!CGLn->m_point2){
+              cout << "Error in Surface::output: no line points" << endl;
+              FilePrintString(geo_file, "Error in Surface::output: no line points");
+              return;
+            }
 		   if(CGLn->mesh_index<0)
 		   { 
 			   Size0 = (int)gli_lines_vector.size();
@@ -1684,14 +1684,16 @@ polygon_point_vector.resize()
 **************************************************************************/
 void Surface::PolygonPointVector()
 {
+  int LocalPlyIndex = 0;
+  if(type==100) // Cylinder surface WW
+    return;
   polygon_point_vector.clear();
   long i=0;
   CGLLine *gl_line = NULL;
   CGLPoint *gl_point = NULL;
   CGLPolyline* gl_polyline = NULL;
   //list<CGLPolyline*>::const_iterator p1 = polyline_of_surface_list.begin();     
-vector<CGLPolyline*>::iterator p1 = polyline_of_surface_vector.begin();
-  int LocalPlyIndex = 0;
+  vector<CGLPolyline*>::iterator p1 = polyline_of_surface_vector.begin();
   //----------------------------------------------------------------------
   while(p1!=polyline_of_surface_vector.end()){
     gl_polyline = *p1; 

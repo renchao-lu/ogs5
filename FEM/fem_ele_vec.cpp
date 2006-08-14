@@ -38,24 +38,24 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
     int i;
     h_pcs = NULL;
     t_pcs = NULL;
-
+    m_dom = NULL;
     for(i=0; i<4; i++)
        NodeShift[i] = pcs->Shift[i];
-    if(dm_pcs->pcs_type_name.find("DYNAMIC")!=string::npos)
+    if(dm_pcs->pcs_type_name_vector[0].find("DYNAMIC")!=string::npos)
     {
        // Indecex in nodal value table
        Idx_dm0[0] = pcs->GetNodeValueIndex("ACCELERATION_X1");
        Idx_dm0[1] = pcs->GetNodeValueIndex("ACCELERATION_Y1");
        Idx_dm1[0] = Idx_dm0[0]+1;
        Idx_dm1[1] = Idx_dm0[1]+1; 
-       Idx_Vel[0] = pcs->GetNodeValueIndex("VELOCITY_X1"); 
-       Idx_Vel[1] = pcs->GetNodeValueIndex("VELOCITY_Y1"); 
+       Idx_Vel[0] = pcs->GetNodeValueIndex("VELOCITY_DM_X"); 
+       Idx_Vel[1] = pcs->GetNodeValueIndex("VELOCITY_DM_Y"); 
        //     if(problem_dimension_dm==3)
        if(dim==3)
        {
           Idx_dm0[2] = pcs->GetNodeValueIndex("ACCELERATION_Z1");
           Idx_dm1[2] = Idx_dm1[2]+1;
-          Idx_Vel[2] = pcs->GetNodeValueIndex("VELOCITY_Z1"); 
+          Idx_Vel[2] = pcs->GetNodeValueIndex("VELOCITY_DM_Z"); 
        }   
        Mass = new SymMatrix(20);
        dAcceleration = new Vec(60); 
@@ -207,7 +207,7 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
        idx_P1 = h_pcs->GetNodeValueIndex("PRESSURE1")+1;
        if(dynamic)
        {
-          idx_P = h_pcs->GetNodeValueIndex("PRESSURE1")+1;
+          idx_P = h_pcs->GetNodeValueIndex("PRESSURE1");
           idx_P1 = h_pcs->GetNodeValueIndex("PRESSURE_RATE1");
        }
     }
@@ -694,6 +694,7 @@ void CFiniteElementVec::LocalAssembly(const int update)
     int i, j;
     double *a_n = NULL; 
 
+    Index = MeshElement->GetIndex();
     SetMemory();
     SetMaterial();
 
@@ -702,14 +703,18 @@ void CFiniteElementVec::LocalAssembly(const int update)
    	if(F_Flag)
     (*PressureC) = 0.0;
 
-    for(i=0;i<nnodesHQ;i++){
-#ifdef PARALLEL
-    eqs_number[i] = nodes[i];
-#else
-    eqs_number[i] = MeshElement->nodes[i]->GetEquationIndex();
-#endif
-  }
-
+    if(m_dom)
+    {
+       for(i=0; i<4; i++)
+         NodeShift[i]=m_dom->shift[i];
+       for(i=0;i<nnodesHQ;i++)
+         eqs_number[i] = element_nodes_dom[i]; 
+    }
+    else
+    {
+       for(i=0;i<nnodesHQ;i++)
+         eqs_number[i] =  MeshElement->nodes[i]->GetEquationIndex();
+    }
 
     // For strain and stress extropolation all element types
     // Number of elements associated to nodes
@@ -956,13 +961,14 @@ void CFiniteElementVec::GlobalAssembly_RHS()
       switch(Flow_Type)
       {
           case 0:  // Liquid flow
+             // For monolithic scheme and liquid flow, the limit of positive pressure must be removed
              for (i=0;i<nnodes;i++)
 			 {
                 val_n = h_pcs->GetNodeValue(nodes[i],idx_P1); 
-                if(val_n>0.0)
-                   AuxNodal[i] = LoadFactor*( val_n -Max(pcs->GetNodeValue(nodes[i],idx_P0),0.0));   
-				else
-                   AuxNodal[i] = 0.0;
+//                if(val_n>0.0)
+                AuxNodal[i] = LoadFactor*( val_n -Max(pcs->GetNodeValue(nodes[i],idx_P0),0.0));   
+//				else
+//                   AuxNodal[i] = 0.0;
 			 }
              break;
           case 1:  // Richards flow
@@ -995,12 +1001,12 @@ void CFiniteElementVec::GlobalAssembly_RHS()
          }
       }
       
-       // Coupling effect to RHS
-       for (i=0;i<dim*nnodesHQ;i++)
-           AuxNodal1[i] = 0.0;
-       PressureC->multi(AuxNodal, AuxNodal1);
-       for (i=0;i<dim*nnodesHQ;i++)
-           (*RHS)(i) -= AuxNodal1[i];
+      // Coupling effect to RHS
+      for (i=0;i<dim*nnodesHQ;i++)
+          AuxNodal1[i] = 0.0;
+      PressureC->multi(AuxNodal, AuxNodal1);
+      for (i=0;i<dim*nnodesHQ;i++)
+          (*RHS)(i) -= AuxNodal1[i];
    } // End if partioned
 
    // If dymanic
@@ -1020,12 +1026,24 @@ void CFiniteElementVec::GlobalAssembly_RHS()
    } 
 
 //RHS->Write();
+  if(m_dom)
+  {
+     for (i=0;i<dim;i++)
+     {
+         for (j=0;j<nnodesHQ;j++)
+            m_dom->eqs->b[eqs_number[j]+NodeShift[i]] -= (*RHS)(i*nnodesHQ+j); 
+     }
 
-   for (i=0;i<dim;i++)
-   {
-       for (j=0;j<nnodesHQ;j++)
-           pcs->eqs->b[eqs_number[j]+NodeShift[i]] -= (*RHS)(i*nnodesHQ+j); 
-   }
+  }
+  else
+  {
+     for (i=0;i<dim;i++)
+    {
+         for (j=0;j<nnodesHQ;j++)
+             pcs->eqs->b[eqs_number[j]+NodeShift[i]] -= (*RHS)(i*nnodesHQ+j); 
+     }
+
+  }
 
 }
 

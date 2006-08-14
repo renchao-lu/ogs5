@@ -44,15 +44,15 @@ CElement::CElement(int CoordFlag, const int order)
     int i;
 	//
     if(CoordFlag<0)  // Axisymmetry
-    {
+	{
        CoordFlag *= -1;
-       axisymmetry=true;
-    } 
-    else
-       axisymmetry=false;
+	   axisymmetry=true;
+	} 
+	else
+	   axisymmetry=false;
     //
     dim = CoordFlag/10;
-    coordinate_system = CoordFlag;
+	coordinate_system = CoordFlag;
     for(i=0; i<4; i++) unit[i] = 0.0;
     switch(dim)
     {
@@ -101,12 +101,12 @@ CElement::CElement(int CoordFlag, const int order)
 //  Destructor of class Element 
 CElement::~CElement()
 {
-   delete [] Jacobian;   
-   delete [] invJacobian;   
-   delete [] shapefct;
-   delete [] shapefctHQ;
-   delete [] dshapefct;
-   delete [] dshapefctHQ;
+   delete  [] Jacobian;   
+   delete  [] invJacobian;   
+   delete  [] shapefct;
+   delete  [] shapefctHQ;
+   delete  [] dshapefct;
+   delete  [] dshapefctHQ;
    Jacobian = NULL;   
    shapefct = NULL;
    dshapefct = NULL;
@@ -123,90 +123,90 @@ Last modified:
 **************************************************************************/
 void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
 {
-    int i; 
+	int i; 
     MeshElement = MElement;
-    Index = MeshElement->GetIndex();
+	Index = MeshElement->GetIndex();
     nnodes = MeshElement->nnodes;
-    nnodesHQ = MeshElement->nnodesHQ;
+	nnodesHQ = MeshElement->nnodesHQ;
 
-    ConfigNumerics(MeshElement->GetElementType());
-    if (MeshElement->quadratic) nNodes = nnodesHQ;
-    else nNodes = nnodes;
+	ConfigNumerics(MeshElement->GetElementType());
+	if (MeshElement->quadratic) nNodes = nnodesHQ;
+	else nNodes = nnodes;
     // Node indices    
     for(i=0; i<nNodes; i++)
        nodes[i] = MeshElement->nodes_index[i];
-    // Put coordinates of nodes to buffer to enhance the computation
+	// Put coordinates of nodes to buffer to enhance the computation
     if(coordinate_system%10==2&&!FaceIntegration) // Z has number
-    {
-       switch(dim)
-       {
-          case 1:
-            for(i=0; i<nNodes; i++)
-            {
-               X[i] = MeshElement->nodes[i]->Z();  
-               Y[i] = MeshElement->nodes[i]->Y();       
-               Z[i] = MeshElement->nodes[i]->X();        
-            }
-            break;
-          case 2:
-            for(i=0; i<nNodes; i++)
-            {
-               X[i] = MeshElement->nodes[i]->X();  
-               Y[i] = MeshElement->nodes[i]->Z();       
-               Z[i] = MeshElement->nodes[i]->Y();        
-            }
-            break;
-          case 3:
-            if(ele_dim==1||ele_dim==2)
-            {
-               for(i=0; i<nNodes; i++)
-               {
-                   X[i] =  (*MeshElement->tranform_tensor)(0,0)
-                            *(MeshElement->nodes[i]->X()-MeshElement->nodes[0]->X())
+	{
+        switch(dim)
+		{
+            case 1:
+              for(i=0; i<nNodes; i++)
+              {
+                 X[i] = MeshElement->nodes[i]->Z();  
+                 Y[i] = MeshElement->nodes[i]->Y();       
+                 Z[i] = MeshElement->nodes[i]->X();        
+	          }
+              break;
+            case 2:
+              for(i=0; i<nNodes; i++)
+              {
+                 X[i] = MeshElement->nodes[i]->X();  
+                 Y[i] = MeshElement->nodes[i]->Z();       
+                 Z[i] = MeshElement->nodes[i]->Y();        
+	          }
+              break;
+            case 3:
+              if(ele_dim==1||ele_dim==2)
+              {
+                 for(i=0; i<nNodes; i++)
+                 {
+                    X[i] =  (*MeshElement->tranform_tensor)(0,0)
+                             *(MeshElement->nodes[i]->X()-MeshElement->nodes[0]->X())
                             +(*MeshElement->tranform_tensor)(1,0)
-                            *(MeshElement->nodes[i]->Y()-MeshElement->nodes[0]->Y())
+                              *(MeshElement->nodes[i]->Y()-MeshElement->nodes[0]->Y())
                             +(*MeshElement->tranform_tensor)(2,0)
-                            *(MeshElement->nodes[i]->Z()-MeshElement->nodes[0]->Z());
-                   Y[i] =  (*MeshElement->tranform_tensor)(0,1)
-                            *(MeshElement->nodes[i]->X()-MeshElement->nodes[0]->X())
-                            +(*MeshElement->tranform_tensor)(1,1)
-                            *(MeshElement->nodes[i]->Y()-MeshElement->nodes[0]->Y())
-                            +(*MeshElement->tranform_tensor)(2,1)
-                            *(MeshElement->nodes[i]->Z()-MeshElement->nodes[0]->Z());
+                              *(MeshElement->nodes[i]->Z()-MeshElement->nodes[0]->Z());
+                    Y[i] =  (*MeshElement->tranform_tensor)(0,1)
+                             *(MeshElement->nodes[i]->X()-MeshElement->nodes[0]->X())
+                           +(*MeshElement->tranform_tensor)(1,1)
+                             *(MeshElement->nodes[i]->Y()-MeshElement->nodes[0]->Y())
+                           +(*MeshElement->tranform_tensor)(2,1)
+                             *(MeshElement->nodes[i]->Z()-MeshElement->nodes[0]->Z());
                     Z[i] =  MeshElement->nodes[i]->Z();
-                }               
-            }
-            else
-            {
+                 }               
+              }
+              else
+              {
                  for(i=0; i<nNodes; i++)
                  {
                     X[i] = MeshElement->nodes[i]->X();  
                     Y[i] = MeshElement->nodes[i]->Y();       
                     Z[i] = MeshElement->nodes[i]->Z();        
                  }
-             }
+              }
               break;
-           }
-	}
-	else
-	{
-           for(i=0; i<nNodes; i++)
-           {
-               X[i] = MeshElement->nodes[i]->X();  
-               Y[i] = MeshElement->nodes[i]->Y();       
-               Z[i] = MeshElement->nodes[i]->Z();        
-           }
-        }
+         }
+    }
+    else
+    {
+       for(i=0; i<nNodes; i++)
+       {
+           X[i] = MeshElement->nodes[i]->X();  
+           Y[i] = MeshElement->nodes[i]->Y();       
+           Z[i] = MeshElement->nodes[i]->Z();        
+       }
+    }
 
-        if(PT_Flag == 1)	// PCH
-        {
-           for(i=0; i<nNodes; i++)
-           {
-              X[i] = MeshElement->nodes[i]->X();  
-              Y[i] = MeshElement->nodes[i]->Y();       
-             Z[i] = MeshElement->nodes[i]->Z();        
-           }
+    if(PT_Flag == 1)	// PCH
+    {
+       for(i=0; i<nNodes; i++)
+       {
+           X[i] = MeshElement->nodes[i]->X();  
+           Y[i] = MeshElement->nodes[i]->Y();       
+           Z[i] = MeshElement->nodes[i]->Z();        
         }
+    }
 }
 
 /**************************************************************************
@@ -221,7 +221,7 @@ void CElement::CalculateRadius()
    Radius = 0.0;
    ComputeShapefct(1);
    for(int i=0; i<nnodes; i++)
-	   Radius += shapefct[i]*X[i];
+      Radius += shapefct[i]*X[i];
 }
 
 
@@ -430,11 +430,13 @@ double CElement::computeJacobian(const int order)
           Jacobian[0] = -0.5*dL; // -!
           invJacobian[0] = -2.0/dL; //-!
           DetJac = Jacobian[0];
-          DetJac*=MeshElement->GetFluxArea();//CMCD
+		  if(MeshElement->area>0)
+            DetJac*=MeshElement->area;
+          //WW          DetJac*=MeshElement->GetFluxArea();//CMCD
 		  if(axisymmetry)
           {
              CalculateRadius();
-             DetJac *= 2.0*pai*Radius;             
+             DetJac *= Radius;   //2.0*pai*Radius;             
 		  }
           break;
         //................................................................
@@ -459,11 +461,13 @@ double CElement::computeJacobian(const int order)
           for(i=0; i<ele_dim*ele_dim; i++)
              invJacobian[i] /= DetJac;
           //
-          DetJac*=MeshElement->GetFluxArea();//CMCD
+		  if(MeshElement->area>0)
+            DetJac*=MeshElement->area;
+          //WW          DetJac*=MeshElement->GetFluxArea();//CMCD
 		  if(axisymmetry)
           {
              CalculateRadius();
-             DetJac *= 2.0*pai*Radius;             
+             DetJac *= Radius;  //2.0*pai*Radius;             
 		  }
 		  break;
         //................................................................

@@ -3228,7 +3228,7 @@ void RandomWalk::SolveAnglesOfTheElment(CElem* E)
 	m_msh = fem_msh_vector[0];  
 
 	double Enorm[3];
-
+    E->AllocateMeomoryforAngle(); //WW 
 	// Get the norm of the element plane and do some initialization
 	if(m_msh->GetCoordinateFlag() != 32)
 	{
@@ -3369,7 +3369,8 @@ void PCTRead(string file_base_name)
     pct_file_name = file_base_name + PCT_FILE_EXTENSION;
 
     ifstream pct_file (pct_file_name.data(),ios::in);
-
+    if(!pct_file.good()) //WW
+        return;
     int End = 1;
     string strbuffer;    
     RandomWalk* RW = NULL;
@@ -3433,3 +3434,4 @@ void DATWritePCTFile(const char *file_name)
     fclose(pct_file);
 
 }
+

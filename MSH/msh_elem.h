@@ -37,10 +37,11 @@ class CElem:public CCore
       int ele_dim; // Dimension of element
       int nnodes;
       int nnodesHQ;
-      vec<CNode*>nodes;
+      //
+      vec<CNode*> nodes;
       int nedges;
-      vec<CEdge*>edges;
-      vec<int>edges_orientation;
+      vec<CEdge*> edges;
+      vec<int> edges_orientation;
       int nfaces;
       int no_faces_on_surface;
       int face_index; // Local face index for the instance for face
@@ -48,29 +49,34 @@ class CElem:public CCore
       double gravity_center[3];
       int grid_adaptation;  // Flag for grid adapting.
       int patch_index;
+      /*
+      // Since m_tim->CheckCourant() is deactivated, the following member are 
+      // put in comment.
       double representative_length;//For stability calculations
       double courant;
       double neumann;	  // MSH topology
+      */
       double area;//Flux area
-  public:
-      double normal_vector[3]; //OK
-  private:
+//  public:
+//WW      double normal_vector[3]; //OK
 	  // MSH topology
       Matrix* tranform_tensor;
-      vec<CElem*>neighbors;
+      vec<CElem*> neighbors;
       //vec<CElem*> sons;
-	  double angle[3];	// PCH, angle[0] rotation along y axis
+	  // double angle[3];	// PCH, angle[0] rotation along y axis
 						//	    angle[1] rotation along x' axis
 						//		angle[2] translation along z'' axis.		
-	  double MatT[9];
-   private: // Methods
+      double *angle; // Dymanic allocate memory.  WW	
+	 //WW double MatT[9];
+      // 
+	  // -- Methods
       int GetElementFaces1D(int *FaceNode);
       int GetElementFacesTri(const int Face, int *FaceNode);
       int GetElementFacesQuad(const int Face, int *FaceNode);
       int GetElementFacesHex(const int Face, int *FaceNode);
       int GetElementFacesTet(const int Face, int *FaceNode);
       int GetElementFacesPri(const int Face, int *FaceNode);
-   private: // Friends
+      //-- Friends
       friend class CFEMesh;
       // FEM
       friend class FiniteElement::CElement;  
@@ -98,11 +104,12 @@ class CElem:public CCore
       double GetFluxArea() {return area;}//CMCD for <3D elements with varying area
 	  double GetVolume() const {return volume;}
       void SetVolume(const double Vol) {volume = Vol;}
-      void SetCourant(double Cour) {courant = Cour;}//CMCD
-      double GetCourant() {return courant;}//CMCD
-      void SetNeumann(double Neum) {neumann = Neum;}//CMCD
-      double GetNeumann() {return neumann;}//CMCD
-      double GetRepLength() {return representative_length;}//CMCD
+// This will be activated after m_tim->CheckCourant() is ready to work
+//      void SetCourant(double Cour) {courant = Cour;}//CMCD
+//      double GetCourant() {return courant;}//CMCD
+//      void SetNeumann(double Neum) {neumann = Neum;}//CMCD
+//      double GetNeumann() {return neumann;}//CMCD
+//      double GetRepLength() {return representative_length;}//CMCD
       //------------------------------------------------------------------
       // ID
       int GetElementType() const {return geo_type;}
@@ -111,7 +118,7 @@ class CElem:public CCore
       string GetName() const;
       //------------------------------------------------------------------
       // Nodes
-      vec<long>nodes_index;      
+      vec<long> nodes_index;      
       void GetNodeIndeces(vec<long>&  node_index) const 
 	    {for (int i=0; i< (int) nodes_index.Size();i++)
            node_index[i]= nodes_index[i];} 
@@ -161,6 +168,7 @@ class CElem:public CCore
       void FillTransformMatrix();  
 	  void FillTransformMatrix(int noneed);
 	  double getTransformTensor(const int idx);
+	  void AllocateMeomoryforAngle() {if (!angle) angle = new double [3];}	// WW
 	  double GetAngle(const int i) const { return angle[i]; }	// PCH
 	  void SetAngle(const int i, const double value) 
 	  { 
@@ -181,14 +189,10 @@ class CElem:public CCore
       //------------------------------------------------------------------
       // Operator
       // virtual void operator = (const CElem& elem);
-     //-------------------------------------------------------------------
-     // DDC
-      //------------------------------------------------------------------
+      //-------------------------------------------------------------------
+      //GUI control variables 
+       int selected;
       void FaceNormal(const int index0, const int index1, double*);   //YD
-//     int domain; //OK
-     long domain_nodes [8]; //OK, dynamisch
-   public: //GUI control variables 
-   int selected;
 };
 
 } // namespace Mesh_Group

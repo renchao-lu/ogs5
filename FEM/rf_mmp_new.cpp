@@ -856,8 +856,8 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
              in >> capillary_pressure;
           break;
 		case 4: // van Genuchten
-			 in >> capillary_pressure_model_values[0];
-          break;
+		  in >> capillary_pressure_model_values[0];
+          break;  //WW
         default:
           cout << "Error in MMPRead: no valid permeability saturation model" << endl;
           break;
@@ -3373,7 +3373,7 @@ double CMediumProperties::PorosityEffectiveConstrainedSwellingConstantIonicStren
  // long group = ElGetElementGroupNumber(index);
   long group = m_pcs->m_msh->ele_vector[index]->GetPatchIndex();
   m_msp = msp_vector[group];
-  density_rock  = abs(m_msp->Density(1));
+  density_rock  = fabs(m_msp->Density(1));
   //--------------------------------------------------------------------
 
   /* Component Properties */

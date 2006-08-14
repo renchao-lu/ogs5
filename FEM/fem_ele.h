@@ -13,6 +13,8 @@
 using namespace std;
 // MSH
 #include "prototyp.h"
+#include "par_ddc.h" //OK //Moved from fem_ele_std.h. WW
+
 
 //#include "matrix_class.h"
 
@@ -85,9 +87,19 @@ class CElement
      void SetCenterGP();
      CElem* GetMeshElement() const {return MeshElement;} //OK 
 
+     // DDC 05/2006
+     void SetElementNodesDomain(long *ele_nodes) 
+         {element_nodes_dom = ele_nodes;} 
+
 	 void SetRWPT(const int idx) { PT_Flag = idx; } // PCH
    protected:    
      CElem* MeshElement; 
+     CPARDomain *m_dom; //OK
+     long *element_nodes_dom; //Only a pointer. For domain decomposition. WW
+
+     friend class ::CRFProcess;
+     friend class process::CRFProcessDeformation;
+
      // Coordinate indicator
      // 10:  X component only
      // 11: Y component only

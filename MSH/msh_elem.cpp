@@ -32,8 +32,9 @@ CElem::CElem(const long Index):CCore(Index)
    no_faces_on_surface = 0;   
    owner = NULL;
    tranform_tensor = NULL;
+   angle = NULL;
    gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
-   area = 1.0;
+   area = -1.0; //WW
 }
 /**************************************************************************
 MSHLib-Method: 
@@ -56,8 +57,9 @@ CElem::CElem():CCore(0)
    owner = NULL;
    nodes.resize(8); // Nodes of face   
    tranform_tensor = NULL;
+   angle = NULL;
    gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
-   area = 1.0;
+   area = -1.0; //WW area = 1.0
 }
 /**************************************************************************
 MSHLib-Method: 
@@ -75,6 +77,7 @@ CElem::CElem(const long Index,CElem* onwer, const int Face):CCore(Index),owner(o
    face_index = Face;
    gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
    tranform_tensor = NULL;
+   angle = NULL;
    switch(owner->geo_type)
    {
        case 1:  // 1-D bar element
@@ -172,6 +175,94 @@ CElem::CElem(const long Index,CElem* onwer, const int Face):CCore(Index),owner(o
        }
     } 
 }
+
+
+/**************************************************************************
+MSHLib-Method: 
+Task:
+Programing:
+06/2005 WW/OK Implementation
+**************************************************************************/
+CElem::CElem( const long Index, CElem* m_ele_parent):CCore(Index)
+{
+  int i; 
+  static int faceIndex_loc[10];
+  static int edgeIndex_loc[10];
+  gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
+  tranform_tensor = NULL;
+  angle = NULL;
+  switch(m_ele_parent->geo_type)
+  {
+      case 1:
+         nnodes = 2;
+         nnodesHQ = 3;    
+         ele_dim = 1;
+         geo_type = 1;
+         nfaces = 2;
+         nedges = 0;
+         break;
+      case 2:
+         nnodes = 4;
+         nnodesHQ = 9;      
+         ele_dim = 2;
+         geo_type = 2;
+         nfaces = 4;
+         nedges = 4;
+         break;
+      case 3:
+         nnodes = 8;
+         nnodesHQ = 20;
+         ele_dim = 3;
+         nfaces = 6;
+         nedges = 12;
+         geo_type = 3;
+         break;
+      case 4:
+         nnodes = 3;
+         nnodesHQ = 6;
+         ele_dim = 2;
+         geo_type = 4;
+         nfaces = 3;
+         nedges = 3;
+         break;
+      case 5:
+         nnodes = 4;
+         nnodesHQ = 10;
+         ele_dim = 3;
+         geo_type = 5;
+         nfaces = 4;
+         nedges = 6;
+         break;
+      case 6:
+         nnodes = 6;
+         nnodesHQ = 15;
+         ele_dim = 3;
+         geo_type = 6;
+         nfaces = 5;
+         nedges = 9;
+		 break;
+    }
+    patch_index =  m_ele_parent->patch_index;
+	quadratic = m_ele_parent->quadratic;
+    nodes_index.resize(nnodes);
+    nodes.resize(nnodes);
+
+	boundary_type='I';
+    //----------------------------------------------------------------------
+    // Initialize topological properties
+    neighbors.resize(nfaces);
+    for(i=0; i<nfaces; i++)
+      neighbors[i] = NULL;
+    edges.resize(nedges);    
+    edges_orientation.resize(nedges);
+    for(i=0; i<nedges; i++)
+    {
+      edges[i] = NULL;
+      edges_orientation[i] = 1;
+   }
+   area = -1.0; //WW
+}
+
 /**************************************************************************
 MSHLib-Method: 
 Task:
@@ -189,6 +280,9 @@ CElem::~CElem()
    owner=NULL;
    if(tranform_tensor) delete tranform_tensor;
    tranform_tensor = NULL;
+   if(angle) delete angle;
+   angle = NULL;
+   tranform_tensor = NULL;
 }
 /**************************************************************************
 MSHLib-Method: 
@@ -198,6 +292,7 @@ Programing:
 **************************************************************************/
 void CElem::FillTransformMatrix()
 {
+   if(tranform_tensor) return;
    int i;
    double xx[3];
    double yy[3];
@@ -254,14 +349,13 @@ void CElem::FillTransformMatrix()
        // y"_vec
        CrossProduction(zz,xx,yy);
        NormalizeVector(yy,3);
-       for(i=0; i<3; i++)
-	   {
-		  // PCH 	
-          MatT[i] = (*tranform_tensor)(i,0) = xx[i];          
-          MatT[3+i] = (*tranform_tensor)(i,1) = yy[i];         
-          MatT[6+i] = (*tranform_tensor)(i,2) = zz[i];        
-	   } 
    }
+   for(i=0; i<3; i++)
+   {
+     (*tranform_tensor)(i,0) = xx[i];          
+     (*tranform_tensor)(i,1) = yy[i];         
+     (*tranform_tensor)(i,2) = zz[i];        
+   } 
 }
 /**************************************************************************
 MSHLib-Method: 
@@ -271,7 +365,11 @@ Programing:
 **************************************************************************/
 double CElem::getTransformTensor(const int idx)
 {
-	return MatT[idx]; 
+    //WW
+    int i = idx%3;
+    int j = idx/3;
+    return (*tranform_tensor)(i,j);
+	//return MatT[idx]; 
 }
 /**************************************************************************
 MSHLib-Method: 
@@ -582,8 +680,11 @@ Programing:
 **************************************************************************/
 void CElem::WriteIndex(ostream& os) const
 {
+    int nn;
+    nn = nnodes; 
+	if(quadratic) nn = nnodesHQ;
     os<<index<<deli<<patch_index<<deli<<GetName()<<deli;
-    for(int i=0; i<nnodes; i++)
+    for(int i=0; i<nn; i++)
       os<<nodes_index[i]<<deli;
     os<<endl;
 }
@@ -1256,11 +1357,11 @@ void CElem::ComputeVolume()
          x2buff[1] = nodes[nnodes-1]->Y()-nodes[0]->Y();
          x2buff[2] = nodes[nnodes-1]->Z()-nodes[0]->Z();
          volume = sqrt(x2buff[0]*x2buff[0]+x2buff[1]*x2buff[1]+x2buff[2]*x2buff[2]) ;
-         representative_length = sqrt(x2buff[0]*x2buff[0]+x2buff[1]*x2buff[1]+x2buff[2]*x2buff[2]) ;//CMCD
+//         representative_length = sqrt(x2buff[0]*x2buff[0]+x2buff[1]*x2buff[1]+x2buff[2]*x2buff[2]) ;//CMCD
         break;
       case 4: // Triangle
          volume = ComputeDetTri(x1buff, x2buff, x3buff);
-         representative_length = sqrt(volume)*4.0;
+//         representative_length = sqrt(volume)*4.0;
         break;
       case 2:    // Quadralateral 
          x4buff[0] = nodes[3]->X();
@@ -1269,7 +1370,7 @@ void CElem::ComputeVolume()
 
          volume =  ComputeDetTri(x1buff, x2buff, x3buff)
                +ComputeDetTri(x3buff, x4buff, x1buff);
-         representative_length = sqrt(volume); 
+//         representative_length = sqrt(volume); 
         break;
       case 5:    // Tedrahedra 
          x4buff[0] = nodes[3]->X();
@@ -1277,7 +1378,7 @@ void CElem::ComputeVolume()
          x4buff[2] = nodes[3]->Z();
 
          volume =  ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
-         representative_length = sqrt(volume)*6.0; 
+//         representative_length = sqrt(volume)*6.0; 
          break;
       case 3:    // Hexehadra 
          x1buff[0] = nodes[4]->X();
@@ -1382,7 +1483,7 @@ void CElem::ComputeVolume()
          x4buff[2] = nodes[2]->Z();
 
          volume  += ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
-         representative_length = pow(volume,1./3.);
+//         representative_length = pow(volume,1./3.);
          break;
       case 6:    // Prism
          x4buff[0] = nodes[3]->X();
@@ -1423,7 +1524,7 @@ void CElem::ComputeVolume()
          x4buff[1] = nodes[3]->Y();
          x4buff[2] = nodes[3]->Z();
          volume  += ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
-         representative_length = pow(volume,1./3.);//Here the direction of flow needs to be taken into account, we need rep length in x,y,z direction
+//         representative_length = pow(volume,1./3.);//Here the direction of flow needs to be taken into account, we need rep length in x,y,z direction
          break;
     }
 }
@@ -1526,91 +1627,7 @@ void CElem::FaceNormal(int index0, int index1, double* face)
 	   {
          face[i] = yy[i];         
 	   } 
-}
-}
-
-/**************************************************************************
-MSHLib-Method: 
-Task:
-Programing:
-06/2005 WW Implementation
-**************************************************************************/
-CElem::CElem( const long Index, CElem* m_ele_parent):CCore(Index)
-{
-  int i, j, k, n, ne; 
-  static int faceIndex_loc[10];
-  static int edgeIndex_loc[10];
-  gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
-  tranform_tensor = NULL;
-  switch(m_ele_parent->geo_type)
-  {
-      case 1:
-         nnodes = 2;
-         nnodesHQ = 3;    
-         ele_dim = 1;
-         geo_type = 1;
-         nfaces = 2;
-         nedges = 0;
-         break;
-      case 2:
-         nnodes = 4;
-         nnodesHQ = 9;      
-         ele_dim = 2;
-         geo_type = 2;
-         nfaces = 4;
-         nedges = 4;
-         break;
-      case 3:
-         nnodes = 8;
-         nnodesHQ = 20;
-         ele_dim = 3;
-         nfaces = 6;
-         nedges = 12;
-         geo_type = 3;
-         break;
-      case 4:
-         nnodes = 3;
-         nnodesHQ = 6;
-         ele_dim = 2;
-         geo_type = 4;
-         nfaces = 3;
-         nedges = 3;
-         break;
-      case 5:
-         nnodes = 4;
-         nnodesHQ = 10;
-         ele_dim = 3;
-         geo_type = 5;
-         nfaces = 4;
-         nedges = 6;
-         break;
-      case 6:
-         nnodes = 6;
-         nnodesHQ = 15;
-         ele_dim = 3;
-         geo_type = 6;
-         nfaces = 5;
-         nedges = 9;
-		 break;
-    }
-    patch_index =  m_ele_parent->patch_index;
-	quadratic = m_ele_parent->quadratic;
-    nodes_index.resize(nnodes);
-    nodes.resize(nnodes);
-
-	boundary_type='I';
-   //----------------------------------------------------------------------
-  // Initialize topological properties
-  neighbors.resize(nfaces);
-  for(int i=0; i<nfaces; i++)
-    neighbors[i] = NULL;
-  edges.resize(nedges);    
-  edges_orientation.resize(nedges);
-  for(int i=0; i<nedges; i++)
-  {
-    edges[i] = NULL;
-	edges_orientation[i] = 1;
-  }
+   }
 }
 
 //--------------------------------

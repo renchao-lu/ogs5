@@ -691,9 +691,9 @@ void COutput::NODWriteDOMDataTEC()
   string tec_file_name;
 #ifdef USE_MPI //WW
   char tf_name[10];
+  std::cout << "Process " << myrank << " in WriteDOMDataTEC" << std::endl;
 #endif
 
-  std::cout << "Process " << myrank << " in WriteDOMDataTEC" << std::endl;
 
   //----------------------------------------------------------------------
   // Tests  

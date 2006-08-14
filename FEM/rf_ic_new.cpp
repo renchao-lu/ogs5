@@ -228,7 +228,7 @@ ios::pos_type CInitialCondition::Read(ifstream *ic_file)
               vector<string> tokens;
               stringstream buff;
               char *pch;
-              char seps[] = "+ \n";
+              char seps[] = "+\n";
               char seps1[] = "*";
               double f_buff;
               a0 = new double [SubNumber];
@@ -611,18 +611,18 @@ void CInitialCondition::SetDomain(int nidx)
     k=0;
     if(SubNumber==0) 
     {
-      //----------------------------------------------------------------------
-      if(dis_type_name.find("CONSTANT")!=string::npos) 
-      {
-        //....................................................................
-        if(m_pcs->pcs_type_name.compare("OVERLAND_FLOW")==0) 
+        //----------------------------------------------------------------------
+        if(dis_type_name.find("CONSTANT")!=string::npos) 
         {
-            if(m_pcs->m_msh)
-	        {
-	           for(i=0;i<m_pcs->m_msh->GetNodesNumber(false);i++){ //OK MSH
-	              node_val = node_value_vector[0]->node_value + m_pcs->m_msh->nod_vector[i]->Z();
-  	              m_pcs->SetNodeValue(i,nidx,node_val);
-                }
+           //....................................................................
+           if(m_pcs->pcs_type_name.compare("OVERLAND_FLOW")==0) 
+           {
+              if(m_pcs->m_msh)
+              {
+                 for(i=0;i<m_pcs->m_msh->GetNodesNumber(false);i++){ //OK MSH
+                   node_val = node_value_vector[0]->node_value + m_pcs->m_msh->nod_vector[i]->Z();
+                   m_pcs->SetNodeValue(i,nidx,node_val);
+              }
             }
             else{
               for(i=0;i<NodeListLength;i++){

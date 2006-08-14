@@ -135,7 +135,11 @@ typedef struct {
     int *unknown_update_methods; /* pointer of field unknown_update_methods[unknown_vector_dimension] */
 } LINEAR_SOLVER;
 
+#ifdef USE_MPI //WW
+extern LINEAR_SOLVER *InitVectorLinearSolver(LINEAR_SOLVER*);
+#endif
 extern LINEAR_SOLVER *InitLinearSolver(LINEAR_SOLVER*);
+//
 extern void SetLinearSolverType(LINEAR_SOLVER*,CNumerics*);
 extern LINEAR_SOLVER *InitializeLinearSolver(LINEAR_SOLVER*,CNumerics*);
 extern LINEAR_SOLVER *InitMemoryLinearSolver(LINEAR_SOLVER*,int);
@@ -147,7 +151,9 @@ extern LINEAR_SOLVER *SetLinearSolver(LINEAR_SOLVER*);
 extern LINEAR_SOLVER *CreateLinearSolver(long store, long dim);
 extern LINEAR_SOLVER *CreateLinearSolverDim(long store, int unknown_vector_dimension, long dim);
 extern void ConfigSolverProperties(void);
+//
 extern double CalcNormOfRHS(LINEAR_SOLVER*);
+//
 extern int GetUnknownVectorDimensionLinearSolver(LINEAR_SOLVER*);
 extern LINEAR_SOLVER *TransferNodeValues(LINEAR_SOLVER*,long);
 extern LINEAR_SOLVER *TransferNodeValuesToVectorLinearSolver(LINEAR_SOLVER*,long);

@@ -63,6 +63,7 @@ CFEMesh::CFEMesh(void)
 
 #ifdef RANDOM_WALK
   PT=NULL; // WW+TK
+  fm_pcs=NULL;  //WW
 #endif
 }
 
@@ -154,7 +155,7 @@ ios::pos_type CFEMesh::Read(ifstream *fem_file)
     }
     //....................................................................
     if(line_string.find("$GEO_TYPE")!=string::npos) { //OK9_4310
-      *fem_file >> geo_type_name >> geo_name >> ws; //WW
+      *fem_file >> geo_type_name >> geo_name >> ws; 
       continue;
     }
     //....................................................................
@@ -207,21 +208,43 @@ Task:
 Programing:
 04/2006 WW Cut from Construct grid
 **************************************************************************/
-void CFEMesh::ConnectedElements2Node()
+void CFEMesh::ConnectedElements2Node(bool quadratic)
 {
    long i, j, e, ni;
    CElem* thisElem0=NULL;
 //   CElem* thisElem=NULL;
    bool done = false;
+   long start, end;
+   start = end = 0;
+   if(!quadratic)
+   {
+      start = 0;
+      end = (long)nod_vector.size();
+   }
+   else
+   {
+      start = NodesNumber_Linear;
+      end = NodesNumber_Quadratic;
+   }
    // Set neighbors of node
-   for(i=0; i<(long)nod_vector.size(); i++)
-     nod_vector[i]->connected_elements.clear();
+   for(e=start; e<end; e++)
+     nod_vector[e]->connected_elements.clear();
    for(e=0; e<(long)ele_vector.size(); e++)
    {
       thisElem0 = ele_vector[e];   
       if(!thisElem0->GetMark()) continue;
-      for(i=0; i<thisElem0->nnodes; i++)
-       {
+      if(!quadratic)
+      {
+         start = 0;
+         end = thisElem0->nnodes;
+      }
+      else
+      {
+         start = thisElem0->nnodes;
+         end = thisElem0->nnodesHQ;
+      }
+      for(i=start; i<end; i++)
+      {
           done = false;
           ni = thisElem0->GetNodeIndex(i);
           for(j=0; j<(int)nod_vector[ni]->connected_elements.size(); j++)
@@ -284,10 +307,6 @@ void CFEMesh::ConstructGrid( const bool quadratic)
   ConnectedElements2Node();
   //----------------------------------------------------------------------
 
-//TEST WW
-//#ifdef PARALLEL
-  ConnectedNodes();
-//#endif
   //----------------------------------------------------------------------
    // Compute neighbors and edges
    for(e=0; e<e_size; e++)
@@ -300,7 +319,6 @@ void CFEMesh::ConstructGrid( const bool quadratic)
          e_nodes0[i] = nod_vector[node_index_glb0[i]];  
        m0 = thisElem0->GetFacesNumber();
 	   // neighbors
-       if(thisElem0->GetDimension()==2){     //YD
        for(i=0; i<m0; i++) // Faces
        {
           if(Neighbors0[i])
@@ -351,7 +369,6 @@ void CFEMesh::ConstructGrid( const bool quadratic)
           }
        }
        thisElem0->SetNeighbors(Neighbors0);						
-      }
 //------------neighbor of 1D line
       if(thisElem0->GetDimension()==1){    //YD
        ii = 0;
@@ -592,6 +609,12 @@ void CFEMesh::ConstructGrid( const bool quadratic)
      thisElem0->gravity_center[2] /= (double)nnodes0;
    }
    //----------------------------------------------------------------------
+
+//TEST WW
+   // For sparse matrix 
+   ConnectedNodes(quadratic);
+   if(quadratic) ConnectedElements2Node(true);
+
    e_nodes0.resize(0);
    node_index_glb.resize(0);
    node_index_glb0.resize(0);
@@ -2877,7 +2900,7 @@ Programing:
 10/2005 OK Implementation
 02/2006 WW Ordering and remove bugs
 **************************************************************************/
-void CFEMesh::ConnectedNodes()
+void CFEMesh::ConnectedNodes(bool quadratic)
 {
   int i, j,l, k, n;
   CNode* m_nod = NULL;
@@ -2889,7 +2912,7 @@ void CFEMesh::ConnectedNodes()
     m_nod = nod_vector[i];
     for(j=0;j<(int)m_nod->connected_elements.size();j++){
       m_ele = ele_vector[m_nod->connected_elements[j]];
-      for(l=0;l<m_ele->GetNodesNumber(false);l++){
+      for(l=0;l<m_ele->GetNodesNumber(quadratic);l++){
           exist = false;
           for(k=0;k<(int)m_nod->connected_nodes.size();k++) //WW
           {
@@ -3318,9 +3341,12 @@ void CFEMesh::CreateLineELEFromTri()
     x0 = m_nod->X();
     y0 = m_nod->Y();
     z0 = m_nod->Z();
-    x1 = x0 + m_tri_ele->normal_vector[0]*dl;
-    y1 = y0 + m_tri_ele->normal_vector[1]*dl;
-    z1 = z0 + m_tri_ele->normal_vector[2]*dl;
+//    x1 = x0 + m_tri_ele->normal_vector[0]*dl;
+//    y1 = y0 + m_tri_ele->normal_vector[1]*dl;
+//    z1 = z0 + m_tri_ele->normal_vector[2]*dl;
+	x1 = x0 + (*m_tri_ele->tranform_tensor)(2,0)*dl; //WW
+    y1 = y0 + (*m_tri_ele->tranform_tensor)(2,1)*dl; //WW
+    z1 = z0 + (*m_tri_ele->tranform_tensor)(2,2)*dl; //WW
     //....................................................................
     for(j=0;j<m_msh_line->no_msh_layer+1;j++)
     {
@@ -3386,10 +3412,12 @@ Programing:
 **************************************************************************/
 void CFEMesh::SetELENormalVectors()
 {
+  FillTransformMatrix();  //WW
+  /*
   //----------------------------------------------------------------------
   long i;
-  double v1[3],v2[3];
-//WW  double patch_area;
+  double v1[3],v2[3], v3[3];
+  double patch_area;
   CNode* m_nod = NULL;
   CNode* m_nod1 = NULL;
   CNode* m_nod2 = NULL;
@@ -3413,6 +3441,7 @@ void CFEMesh::SetELENormalVectors()
     NormalizeVector(m_tri_ele->normal_vector,3);
   }
   //----------------------------------------------------------------------
+  */
 }
 
 /**************************************************************************
@@ -3504,8 +3533,8 @@ Programing:
 void CFEMesh::SetNetworkIntersectionNodes()
 {
   long i,e;
-  int j;
-  double v3[3];
+  int j, k;
+  double v3[3], nr1[3], nr2[3];
 //WW  double* gravity_center;
   CNode* m_nod = NULL;
   CElem* m_ele = NULL;
@@ -3524,13 +3553,17 @@ void CFEMesh::SetNetworkIntersectionNodes()
     if((int)m_nod->connected_elements.size()==0)
       continue;
     m_ele = ele_vector[m_nod->connected_elements[0]];
+    for(k=0; k<3; k++)
+       nr1[k] = (*m_ele->tranform_tensor)(2,k);
     //....................................................................
     // Compare element normal vectors
     for(j=1;j<(int)m_nod->connected_elements.size();j++)
     {
       e = m_nod->connected_elements[j];
       m_ele1 = ele_vector[e];
-      CrossProduction(m_ele->normal_vector,m_ele1->normal_vector,v3);
+      for(k=0; k<3; k++)
+        nr2[k] = (*m_ele1->tranform_tensor)(2,k);
+      CrossProduction(nr1,nr2,v3);
       if(MBtrgVec(v3,3)>eps)
         m_nod->selected = true;
     }
@@ -3588,9 +3621,14 @@ void CFEMesh::CreateLineELEFromTriELE()
     x0 = gravity_center[0];
     y0 = gravity_center[1];
     z0 = gravity_center[2];
-    x1 = x0 + m_tri_ele->normal_vector[0]*dl;
-    y1 = y0 + m_tri_ele->normal_vector[1]*dl;
-    z1 = z0 + m_tri_ele->normal_vector[2]*dl;
+//    x1 = x0 + m_tri_ele->normal_vector[0]*dl;
+//    y1 = y0 + m_tri_ele->normal_vector[1]*dl;
+//    z1 = z0 + m_tri_ele->normal_vector[2]*dl;
+
+    x1 = x0 + (*m_tri_ele->tranform_tensor)(2,0)*dl; //WW
+    y1 = y0 + (*m_tri_ele->tranform_tensor)(2,1)*dl; //WW
+    z1 = z0 + (*m_tri_ele->tranform_tensor)(2,2)*dl; //WW
+
     //....................................................................
     for(j=0;j<m_msh_line->no_msh_layer+1;j++)
     {

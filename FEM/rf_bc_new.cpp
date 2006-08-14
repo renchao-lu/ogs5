@@ -35,7 +35,7 @@ extern void remove_white_space(string*);
 CBoundaryConditionNode::CBoundaryConditionNode()
 {
   conditional = false;
-  funct_name = "";
+//  funct_name = "";
 }
 //==========================================================================
 list<CBoundaryCondition*>bc_list;
@@ -873,7 +873,7 @@ CBoundaryConditionsGroup::~CBoundaryConditionsGroup(void)
   for(i=0;i<group_vector_length;i++)
     group_vector.pop_back();
 */
-  group_vector.clear();
+//  group_vector.clear();
 
 }
 
@@ -885,8 +885,9 @@ Programing:
 09/2004 WW Interpolation of piecewise linear BC
 02/2005 OK MSH types
 03/2005 OK MultiMSH, PNT
-08/2008 WW Changes due to the new goematry finite element.
+08/2005 WW Changes due to the new goematry finite element.
 12/2005 OK FCT
+04/2006 WW New storage
 last modification:
 **************************************************************************/
 void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, 
@@ -919,6 +920,8 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
      {
        if(pcs_pv_name.find("DISPLACEMENT")!=string::npos) //Deform 
           quadratic = true; 
+       else if(pcs_pv_name.find("VELOCITY_DM")!=string::npos) //Deform 
+          quadratic = true;  
        else quadratic = false;  
      }
      else if(m_pcs->type==4) quadratic = true; 
@@ -978,19 +981,21 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
 //             m_node_value->msh_node_number_subst = ShiftInNodeVector + m_msh->GetNODOnPNT(m_geo_point);
           }
         }
-		m_node_value->conditional = cont;
+        m_node_value->conditional = cont;
 		m_node_value->CurveIndex = m_bc->CurveIndex;
-    m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group
         m_node_value->node_value = m_bc->geo_node_value;
-        group_vector.push_back(m_node_value);
-        bc_group_vector.push_back(m_bc); //OK
+        m_node_value->geo_node_number = m_node_value->msh_node_number; //WW 
+		m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
+        m_node_value->msh_node_number_subst = msh_node_number_subst;
+        m_pcs->bc_node.push_back(m_bc);  //WW
+        m_pcs->bc_node_value.push_back(m_node_value);  //WW
       }
       //------------------------------------------------------------------
       // MHS node close (<=eps) to point 
       if(m_bc->geo_type_name.compare("POINTS")==0) {
         // Get MSH nodes numbers
         CGLPoint* m_geo_point = NULL;
-        vector<long>bc_group_msh_nodes_vector;
+        vector<long> bc_group_msh_nodes_vector;
         m_geo_point = GEOGetPointByName(m_bc->geo_name);//CC
         if(m_geo_point){
           m_bc->geo_node_number = m_geo_point->id;//CC
@@ -1003,8 +1008,11 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
             m_node_value->CurveIndex = m_bc->CurveIndex;
             m_node_value->msh_node_number = bc_group_msh_nodes_vector[i];
             m_node_value->node_value = m_bc->geo_node_value;
-            group_vector.push_back(m_node_value);
-            bc_group_vector.push_back(m_bc); //OK
+            m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
+         	m_pcs->bc_node.push_back(m_bc);  //WW
+            m_pcs->bc_node_value.push_back(m_node_value);  //WW
+            //WW group_vector.push_back(m_node_value);
+            //WW bc_group_vector.push_back(m_bc); //OK
           }
         }
         bc_group_msh_nodes_vector.clear(); // ? enough
@@ -1031,9 +1039,11 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
                 m_node_value->geo_node_number = nodes_vector[i];
                 m_node_value->node_value = m_bc->geo_node_value;  //dis_prop[0];
                 m_node_value->CurveIndex = m_bc->CurveIndex;
-                m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group
-                group_vector.push_back(m_node_value);
-                bc_group_vector.push_back(m_bc); //OK
+                m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
+                m_pcs->bc_node.push_back(m_bc);  //WW
+                m_pcs->bc_node_value.push_back(m_node_value);  //WW
+                //WW group_vector.push_back(m_node_value);
+                //WW bc_group_vector.push_back(m_bc); //OK
               }
             }
             else{
@@ -1048,9 +1058,9 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
                 m_node_value->geo_node_number = nodes[i];
                 m_node_value->node_value = m_bc->geo_node_value;  //dis_prop[0];
                 m_node_value->CurveIndex = m_bc->CurveIndex;
-                m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group
-                group_vector.push_back(m_node_value);
-                bc_group_vector.push_back(m_bc); //OK
+                m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
+                m_pcs->bc_node.push_back(m_bc);  //WW
+                m_pcs->bc_node_value.push_back(m_node_value);  //WW
               }
             }
           }
@@ -1068,9 +1078,11 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
                 m_node_value->geo_node_number = nodes_vector[i];
                 m_node_value->node_value = m_bc->geo_node_value;  //dis_prop[0];
                 m_node_value->CurveIndex = m_bc->CurveIndex;
-                m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group
-                group_vector.push_back(m_node_value);
-                bc_group_vector.push_back(m_bc); //OK
+                m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
+                m_pcs->bc_node.push_back(m_bc);  //WW
+                m_pcs->bc_node_value.push_back(m_node_value);  //WW
+                //WW group_vector.push_back(m_node_value);
+                //WW bc_group_vector.push_back(m_bc); //OK
             }
           }
 
@@ -1084,9 +1096,11 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
               //m_node_value->geo_node_number = m_bc->geo_node_number;
               m_node_value->node_value = m_bc->node_value_vector[i];
               m_node_value->CurveIndex = m_bc->CurveIndex;
-              m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group
-              group_vector.push_back(m_node_value);
-              bc_group_vector.push_back(m_bc); //OK
+              m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
+              m_pcs->bc_node.push_back(m_bc);  //WW
+              m_pcs->bc_node_value.push_back(m_node_value);  //WW
+              //WW group_vector.push_back(m_node_value);
+              //WW bc_group_vector.push_back(m_bc); //OK
             }
           }
           //................................................................
@@ -1113,10 +1127,12 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
               m_node_value->msh_node_number = nodes[i]+ShiftInNodeVector;
               m_node_value->geo_node_number = nodes[i];
               m_node_value->node_value = node_value[i];  
-              m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group 
+              m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
               m_node_value->CurveIndex = m_bc->CurveIndex;
-              group_vector.push_back(m_node_value);
-              bc_group_vector.push_back(m_bc); //OK
+              m_pcs->bc_node.push_back(m_bc);  //WW
+              m_pcs->bc_node_value.push_back(m_node_value);  //WW
+              //WW group_vector.push_back(m_node_value);
+              //WW bc_group_vector.push_back(m_bc); //OK
             }
 		    node_value.clear();
           }
@@ -1162,7 +1178,7 @@ abort();
           if(m_bc->dis_type_name.compare("LINEAR")==0){
             // Linear interpolation  polygon-wise. WW
            // list<CGLPolyline*>::const_iterator p = m_surface->polyline_of_surface_list.begin();
-vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin();
+            vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin();
             node_value.resize(nodes_vector_length);
             p = m_surface->polyline_of_surface_vector.begin();
             while(p!=m_surface->polyline_of_surface_vector.end())
@@ -1191,15 +1207,17 @@ vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin()
             m_node_value->msh_node_number = -1;
             m_node_value->msh_node_number = nodes_vector[i]+ShiftInNodeVector; //nodes[i];
             m_node_value->geo_node_number = nodes_vector[i]; //nodes[i];
+            m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
             if(m_bc->dis_type_name.compare("LINEAR")==0)
               m_node_value->node_value = node_value[i];  
             else
               m_node_value->node_value = m_bc->geo_node_value;  
             m_node_value->CurveIndex = m_bc->CurveIndex;
-            m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group
-            group_vector.push_back(m_node_value);
             m_bc->node_number_vector = nodes_vector; //OK
-            bc_group_vector.push_back(m_bc); //OK
+            m_pcs->bc_node.push_back(m_bc);  //WW
+            m_pcs->bc_node_value.push_back(m_node_value);  //WW
+              //WW group_vector.push_back(m_node_value);
+              //WW bc_group_vector.push_back(m_bc); //OK
           }
   		  node_value.clear();
         }
@@ -1214,10 +1232,12 @@ vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin()
           m_node_value->msh_node_number = nodes_vector[i]+ShiftInNodeVector; //nodes[i];
           m_node_value->geo_node_number = nodes_vector[i]; //nodes[i];
           m_node_value->node_value = m_bc->geo_node_value;  
+          m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
           m_node_value->CurveIndex = m_bc->CurveIndex;
-          m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group
-          group_vector.push_back(m_node_value);
-          bc_group_vector.push_back(m_bc); //OK
+          m_pcs->bc_node.push_back(m_bc);  //WW
+          m_pcs->bc_node_value.push_back(m_node_value);  //WW
+          //WW group_vector.push_back(m_node_value);
+          //WW bc_group_vector.push_back(m_bc); //OK
         }
       }
       //------------------------------------------------------------------
@@ -1226,14 +1246,22 @@ vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin()
         m_node_value = new CBoundaryConditionNode;
         m_node_value->msh_node_number = m_bc->msh_node_number;
         m_node_value->node_value = m_bc->geo_node_value;
-        m_node_value->funct_name = m_bc->fct_name;//CMCD..needed at node level to allow different functions in same group
-        group_vector.push_back(m_node_value);
-        bc_group_vector.push_back(m_bc); //OK
+        m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
+        m_pcs->bc_node.push_back(m_bc);  //WW
+        m_pcs->bc_node_value.push_back(m_node_value);  //WW
+        //WW group_vector.push_back(m_node_value);
+        //WW bc_group_vector.push_back(m_bc); //OK
       }
       //------------------------------------------------------------------
       // FCT types //OK
       if(m_bc->fct_name.size()>0){
-        fct_name = m_bc->fct_name;
+        //WW 
+        for(i=0;i<(long)m_pcs->bc_node_value.size();i++)
+		{
+			m_pcs->bc_node_value[i]->fct_name =  m_bc->fct_name;
+			m_pcs->bc_node_value[i]->msh_node_number_subst = msh_node_number_subst;
+		}
+       //WW fct_name = m_bc->fct_name;
       }
       //------------------------------------------------------------------
     } // PCS
@@ -1241,7 +1269,7 @@ vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin()
   } // list
   //======================================================================
   // Test
-  long no_bc = (long)group_vector.size();
+  long no_bc = (long)m_pcs->bc_node_value.size();
   if(no_bc<1)
     cout << "Warning: no boundary conditions specified for " << pcs_type_name << endl;
 }
@@ -1332,13 +1360,30 @@ Task:
 Programing:
 08/2004 OK Implementation
 06/2005 OK PCS
+05/2006 WW  
 last modification:
 **************************************************************************/
-int NodeSetBoundaryConditions(char *pv_name,int ndx,string pcs_type_name)
+//WW int NodeSetBoundaryConditions(char *pv_name,int ndx,string pcs_type_name)
+int NodeSetBoundaryConditions(char *pv_name,int ndx,CRFProcess* m_pcs)
 {
-  CBoundaryConditionsGroup *m_bc_group = NULL;
+  CBoundaryCondition *m_bc = NULL;
   CBoundaryConditionNode *m_node = NULL;
   long i;
+  //WW
+  long no_bc = (long)m_pcs->bc_node_value.size();
+  for(i=0;i<no_bc;i++){
+      m_node = m_pcs->bc_node_value[i];
+      m_bc = m_pcs->bc_node[i];
+	  if(m_bc->pcs_pv_name.compare(pv_name)==0)      
+        SetNodeVal(m_node->msh_node_number,ndx,m_node->node_value); //???
+  }
+  if(no_bc==0)
+    cout << "? Warning - NodeSetBoundaryConditions: m_bc_group not found" << endl;
+  return 1;
+
+  
+/* //WW
+
   //OK m_bc_group = m_bc_group->Get(name);
   m_bc_group = BCGetGroup(pcs_type_name,(string)pv_name); //OK
   if(m_bc_group){
@@ -1352,6 +1397,7 @@ int NodeSetBoundaryConditions(char *pv_name,int ndx,string pcs_type_name)
   else
     cout << "? Warning - NodeSetBoundaryConditions: m_bc_group not found" << endl;
   return 1;
+*/  
 }
 
 /**************************************************************************
@@ -1374,6 +1420,8 @@ void CBoundaryConditionsGroup::WriteTecplot()
   tec_file.setf(ios::scientific,ios::floatfield);
   tec_file.precision(12);
   // Write data
+  /*
+  // To be moved to pcs
   long i;
   long no_nodes = (long)group_vector.size();
   tec_file << "TITLE = Scatter Plot Types" << endl;
@@ -1384,6 +1432,7 @@ void CBoundaryConditionsGroup::WriteTecplot()
     tec_file << GetNodeZ(group_vector[i]->msh_node_number) << ", ";
     tec_file << group_vector[i]->node_value << endl;
   }  
+  */
 }
 
 /**************************************************************************
@@ -1434,6 +1483,7 @@ Programing:
 05/2005 OK Implementation
 last modification:
 **************************************************************************/
+/*
 double CBoundaryConditionsGroup::GetConditionalNODValue(int i,CBoundaryCondition* m_bc)
 {
   int j;
@@ -1474,7 +1524,7 @@ double CBoundaryConditionsGroup::GetConditionalNODValue(int i,CBoundaryCondition
     return m_bc->geo_node_value;
   }
 }
-
+*/
 /**************************************************************************
 FEMLib-Method:
 Task:

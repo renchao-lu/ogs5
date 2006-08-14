@@ -76,7 +76,7 @@ class CFEMesh
     int msh_max_dim;
     bool cross_section;
   //3D View Control
-  public:
+    //
     int ele_display_mode;
     int nod_display_mode;
     int patch_display_mode;
@@ -177,8 +177,8 @@ class CFEMesh
     void EdgeLengthMinMax(); //OK
     void SetMATGroupFromVOLLayer(CGLVolume*); //OK
     void SetMATGroupsFromVOLLayer(); //OK
-    void ConnectedNodes(); //OK
-    void ConnectedElements2Node(); //WW
+    void ConnectedNodes(bool quadratic); //OK
+    void ConnectedElements2Node(bool quadratic=false); //WW
     void CreateSurfaceTINfromTri(Surface*); //OK
     void CreateLayerSurfaceTINsfromPris(Surface*); //OK
     // MAT

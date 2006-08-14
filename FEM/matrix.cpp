@@ -3567,7 +3567,7 @@ void M5Vorkond(int aufgabe, double *x, double *b)
   09/2002   OK   besser > 0 als > MKleinsteZahl
 
 *** benutzt keine modellspezifischen Dinge ******************************/
-void MXDumpGLS(char *name, int modus, double *rechts, double *ergebnis)
+void MXDumpGLS(const char *name, int modus, double *rechts, double *ergebnis)
 {
   register long i, j;
   long NonZeroMatrix = 0, NonZeroRHS = 0;

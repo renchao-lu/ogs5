@@ -73,7 +73,7 @@ extern long MXGetDim ( void );
   /* liefert Dimension der zuvor mit MXSetMatrixPointer angegebenen
      Matrix-Struktur. */
 
-extern void MXDumpGLS ( char *, int, double *, double *);
+extern void MXDumpGLS ( const char *, int, double *, double *);
   /* Schreibt das durch die zuvor mit MXSetMatrixPointer angegebene
      Matrix und den Vektor gegebene GLeichungssystem eine Datei "GLS" */
 

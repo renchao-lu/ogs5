@@ -218,7 +218,6 @@ void RFPost_FEM(void)
   DestroyFileData();
   DestroyFiles();
   pcs_vector.clear();
-  STDelete(); //CMCD
 }
 /**************************************************************************/
 /* ROCKFLOW - Funktion: RFPre_Model

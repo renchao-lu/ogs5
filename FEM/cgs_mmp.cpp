@@ -1723,6 +1723,8 @@ void MMPCalcSecondaryVariables(void)
   phase=0;
   timelevel=0;
 //OK_BC
+ /*
+  // Commented by WW
   NodeSetBoundaryConditions("PRESSURE1",\
                             PCSGetNODValueIndex("PRESSURE1",timelevel),\
                             m_pcs->pcs_type_name);
@@ -1736,6 +1738,20 @@ void MMPCalcSecondaryVariables(void)
   NodeSetBoundaryConditions("SATURATION2",\
                             PCSGetNODValueIndex("SATURATION2",timelevel),\
                             m_pcs->pcs_type_name);
+  */
+  NodeSetBoundaryConditions("PRESSURE1",\
+                            PCSGetNODValueIndex("PRESSURE1",timelevel),\
+                            m_pcs);
+  NodeSetBoundaryConditions("SATURATION2",\
+                            PCSGetNODValueIndex("SATURATION2",timelevel),\
+                            m_pcs);
+  timelevel=1;
+  NodeSetBoundaryConditions("PRESSURE1",\
+                            PCSGetNODValueIndex("PRESSURE1",timelevel),\
+                            m_pcs);
+  NodeSetBoundaryConditions("SATURATION2",\
+                            PCSGetNODValueIndex("SATURATION2",timelevel),\
+                            m_pcs);
 
   /*---------------------------------------------------------------------*/
   /* 5.2 Anfangsbedingungen fuer zweite Phase berechnen */

@@ -640,14 +640,13 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 void FMRead(string file_base_name)
 {
     // Fluid_Momentum memory allocation is moved here. by PCH
-  //  CRFProcess* m_pcs = PCSGet("FLUID_MOMENTUM");
-  //  if(!m_pcs)
-  //  {
-  if(fem_msh_vector.size()==0) //OK
-    return;
-        CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
-        m_msh->fm_pcs = new CFluidMomentum ();
-  //  }
+  CRFProcess* m_pcs = PCSGet("FLUID_MOMENTUM");
+//WW  if(!m_pcs)
+  if(m_pcs) //WW
+  {
+     CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
+     m_msh->fm_pcs = new CFluidMomentum ();
+  }
 }
 
 /**************************************************************************

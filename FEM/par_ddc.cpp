@@ -5,6 +5,7 @@ Programing:
 07/2004 OK Implementation
 07/2004 OK Version 1 untill 3.9.17OK6
 07/2004 OK Version 2 from   3.9.17OK7
+07/2006 WW Local topology, High order nodes
 last modified:
 **************************************************************************/
 
@@ -28,13 +29,17 @@ extern void MakeElementEntryEQS_ASM(long,double*,double*,CPARDomain*,CRFProcess*
 #include "gs_project.h"
 
 vector<CPARDomain*>dom_vector;
+vector<double> node_connected_doms; //This will be removed after sparse class is finished WW
 
-/*---- MPI Parallel --------------*/
+//---- MPI Parallel --------------
+#ifdef USE_MPI //WW
 int size;
 int myrank;
 char t_fname[3];
 double time_ele_paral;
-/*---- MPI Parallel --------------*/
+#endif
+//---- MPI Parallel --------------
+
 
 
 /**************************************************************************
@@ -120,45 +125,76 @@ FEMLib-Method:
 Task: 
 Programing:
 07/2004 OK Implementation
+05/2006 WW Fix bugs and add the case of DOF>1 
+07/2006 WW Find nodes of all neighbors of each node 
 **************************************************************************/
-void DOMCreate()
+void DOMCreate(CRFProcess *m_pcs)
 {
   int no_domains = (int)dom_vector.size();
   if(no_domains==0)
     return;
   CPARDomain *m_dom = NULL;
+  bool quadr = false; //WW  
   int i;
+  long j; 
+  if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
+    quadr = true;
   //----------------------------------------------------------------------
   // Create domain nodes
   cout << "->Create DOM" << endl;
+  /* // Comment by WW
   for(i=0;i<no_domains;i++){
     m_dom = dom_vector[i];
     m_dom->m_msh = fem_msh_vector[0]; //OK:ToDo
   }
+  */
+
   //----------------------------------------------------------------------
   // Create domain nodes
-cout << "i  Create domain nodes" << endl;
+  cout << "Create domain nodes" << endl;
   for(i=0;i<no_domains;i++){
     m_dom = dom_vector[i];
-cout << "    Domain:" << m_dom->ID << endl;
+    m_dom->m_msh = m_pcs->m_msh;
+    cout << "    Domain:" << m_dom->ID << endl;
     m_dom->CreateNodes();
   }
   //----------------------------------------------------------------------
   // Create domain elements
-cout << "  Create domain elements" << endl;
+  cout << "  Create domain elements" << endl;
   for(i=0;i<no_domains;i++){
     m_dom = dom_vector[i];
-cout << "    Domain:" << m_dom->ID << endl;
-    m_dom->CreateElements();
+    cout << "    Domain:" << m_dom->ID << endl;
+    m_dom->CreateElements(quadr);
   }
+
+  //Average of nodal Neumann BCs contributed by nodes from different domains
+  long nsize = m_pcs->m_msh->GetNodesNumber(true);
+  node_connected_doms.resize(nsize);
+  for(j=0; j<nsize; j++)
+    node_connected_doms[j] = 0.0;
+  for(i=0;i<(int)dom_vector.size();i++)
+  {
+     m_dom = dom_vector[i];
+     for(j=0;j<(long)m_dom->nodes.size();j++)
+       node_connected_doms[m_dom->nodes[j]] += 1.0;
+  }
+  // Find nodes of all neighbors of each node. // WW
+  FindNodesOnInterface(m_pcs->m_msh, quadr);
+  // Local topology. WW
+  for(i=0;i<no_domains;i++){
+    m_dom = dom_vector[i];
+	m_dom->NodeConnectedNodes();
+  }
+
   //----------------------------------------------------------------------
   // Create domain EQS
-cout << "  Create domain EQS" << endl;
+  cout << "  Create domain EQS" << endl;
   for(i=0;i<no_domains;i++){
     m_dom = dom_vector[i];
-cout << "    Domain:" << m_dom->ID << endl;
-    m_dom->CreateEQS();
+    cout << "    Domain:" << m_dom->ID << endl;
+    m_dom->CreateEQS(m_pcs);
   }
+
   //----------------------------------------------------------------------
 }
 
@@ -175,6 +211,9 @@ Programing:
 CPARDomain::CPARDomain(void)
 {
   ID =(int)dom_vector.size();
+  for(int i=0; i<4; i++) //WW
+    shift[i] = 0;
+  quadratic = false; //WW
 }
 
 CPARDomain::~CPARDomain(void)
@@ -183,6 +222,18 @@ CPARDomain::~CPARDomain(void)
   nodes.clear();
   nodes_inner.clear();
   nodes_halo.clear();
+  // WW
+  for(long i=0; i< (long)element_nodes_dom.size(); i++)
+  {
+     delete element_nodes_dom[i];
+     element_nodes_dom[i] = NULL; 
+  }	  
+  for(long i=0; i< (long)node_conneted_nodes.size(); i++)
+  {
+     delete node_conneted_nodes[i];
+     node_conneted_nodes[i] = NULL; 
+  }	  
+  //
 }
 
 /**************************************************************************
@@ -208,7 +259,7 @@ ios::pos_type CPARDomain::Read(ifstream *ddc_file)
   string hash("#");
   ios::pos_type position;
   long i;
-  CElem* m_ele = NULL;
+//  CElem* m_ele = NULL;
   //======================================================================
   while (!new_keyword) {
     position = ddc_file->tellg();
@@ -302,6 +353,9 @@ void CPARDomain::CreateNodes()
     nodes.push_back(k);
 //cout << nodes[no_nodes_inner+j] << endl;
   }
+  nnodes_dom = no_nodes_halo+no_nodes_inner; //WW
+  nnodesHQ_dom = nnodes_dom;
+
   //----------------------------------------------------------------------
 }
 
@@ -310,17 +364,21 @@ PARLib-Method:
 Task: 
 Programing:
 07/2004 OK Implementation
+05/2006 WW Fix bugs and add the case of DOF>1 
 **************************************************************************/
-void CPARDomain::CreateElements()
+void CPARDomain::CreateElements(const bool quadr)
 {
   //----------------------------------------------------------------------
   if(!m_msh)
     return;
   //----------------------------------------------------------------------
-  long i;
-  int j;
+  long i,k;
+  int j, nNodes, nNodesHQ;
+  long *elem_nodes=NULL;
+  bool done = false;
   Mesh_Group::CElem* m_ele = NULL;
   Mesh_Group::CNode* m_nod = NULL;
+
   //----------------------------------------------------------------------
   for(i=0;i<(long)elements.size();i++){
     if(elements[i]>(long)m_msh->ele_vector.size()){
@@ -328,16 +386,89 @@ void CPARDomain::CreateElements()
       continue;
     }
     m_ele = m_msh->ele_vector[elements[i]];
+    nNodes = m_ele->GetNodesNumber(false); //WW
+    nNodesHQ = m_ele->GetNodesNumber(quadr);
     // cout << i << " " << elements[i] << ": ";
-    for(j=0;j<m_ele->GetNodesNumber(false);j++){
+    elem_nodes = new long[nNodesHQ]; //WW
+    element_nodes_dom.push_back(elem_nodes); //WW
+    for(j=0;j<nNodes;j++)
+    {
       m_nod = m_ele->GetNode(j);
-      m_ele->domain_nodes[j] = GetDOMNode(m_nod->GetEquationIndex());
-      // cout << m_nod->GetEquationIndex() << "->"  << m_ele->domain_nodes[j] << " ";
+      for(k=0; k<(long)nodes.size(); k++)
+      {
+        if(nodes[k]==m_nod->GetIndex())
+        {
+           elem_nodes[j] = k;
+           break;
+        }
+      }
     }
+    //------------------WW 
+    if(!quadr) continue; 
+    for(j=nNodes;j<nNodesHQ;j++)
+    {
+      done = false;
+      m_nod = m_ele->GetNode(j);
+      for(k=nnodes_dom; k<(long)nodes.size(); k++)
+      {
+        if(nodes[k]==m_nod->GetIndex())
+        {
+           elem_nodes[j] = k;
+           done = true;
+           break;
+        }
+      }
+      if(!done)
+      {
+          elem_nodes[j] = (long)nodes.size();         
+          nodes.push_back(m_nod->GetIndex());
+      }     
+    }
+    nnodesHQ_dom = (long) nodes.size();  
+    //------------------WW 
     // cout << endl;
+  }
+  // 
+  //----------------------------------------------------------------------
+}
+
+
+/**************************************************************************
+MSHLib-Method:
+Task:
+Programing:
+06/2006 WW Implementation
+**************************************************************************/
+void CPARDomain::NodeConnectedNodes()
+{
+  int k, i_buff;
+  long i, j, long_buff;
+  CNode* m_nod = NULL;
+  vector<long> nodes2node;
+  //----------------------------------------------------------------------
+  for(i=0;i<(long)nodes.size();i++)
+  {
+     m_nod = m_msh->nod_vector[nodes[i]];
+	 nodes2node.clear();
+     for(k=0; k<(int)m_nod->connected_nodes.size(); k++)
+	 { 
+         long_buff = m_nod->connected_nodes[k];
+         for(j=0;j<(long)nodes.size();j++)
+		 {
+            if(long_buff==nodes[j])
+               nodes2node.push_back(j);
+		 }         
+     }
+     i_buff = (int)nodes2node.size();
+     long  *nodes_to_node = new long[i_buff];
+     for(k=0; k<i_buff; k++)
+        nodes_to_node[k] = nodes2node[k];
+     node_conneted_nodes.push_back(nodes_to_node);
+	 num_nodes2_node.push_back(i_buff);
   }
   //----------------------------------------------------------------------
 }
+
 
 /**************************************************************************
 FEMLib-Method: 
@@ -361,11 +492,32 @@ PARLib-Method:
 Task: 
 Programing:
 07/2004 OK Implementation
+05/2006 WW Fix bugs and add the case of DOF>1 
 **************************************************************************/
-void CPARDomain::CreateEQS()
+void CPARDomain::CreateEQS(CRFProcess *m_pcs)
 {
   long no_nodes = (long)nodes.size();
-  eqs = CreateLinearSolver(0,no_nodes);
+  int dof = m_pcs->GetPrimaryVNumber(); 
+
+  if(m_pcs->type==4||m_pcs->type==41)
+  {
+     for(int i=0; i<m_pcs->GetPrimaryVNumber(); i++)
+        shift[i] = i*nnodesHQ_dom;
+     
+  }
+  if(m_pcs->type==4)
+  {
+     eqs = CreateLinearSolverDim(m_pcs->m_num->ls_storage_method,dof,dof*nnodesHQ_dom);
+ //    InitializeLinearSolver(eqs,m_num);
+  }
+  else if(m_pcs->type==41)    
+  {
+     eqs = CreateLinearSolverDim(m_pcs->m_num->ls_storage_method,dof,dof*nnodesHQ_dom+nnodes_dom);  
+
+  }
+  else
+    eqs = CreateLinearSolver(m_pcs->m_num->ls_storage_method, no_nodes); //WW.
+//  eqs = CreateLinearSolver(0,no_nodes);
   //InitializeLinearSolver(m_dom->eqs,NULL,NULL,NULL,m_dom->lsp_name);
   InitLinearSolver(eqs);
 }
@@ -600,3 +752,202 @@ void DOMWriteTecplot(string msh_name)
   }
 }
 
+/**************************************************************************
+FEMLib-Method: 
+Task: 
+Programing:
+07/2006 WW Implementation
+last modification:
+**************************************************************************/
+void FindNodesOnInterface(CFEMesh *m_msh, bool quadr)
+{
+  // int k;
+  long i, j, nnodes_gl, g_index, nnodes_l;
+  long l_buff = 0, l_buff1 = 0;
+
+  long *elem_nodes=NULL;
+  //
+  Mesh_Group::CElem* m_ele = NULL;
+  Mesh_Group::CNode* m_nod = NULL;
+  //
+  CPARDomain *m_dom = NULL;
+  vector<long> boundary_nodes;
+  vector<long> boundary_nodes_HQ;
+  vector<long> inner_nodes_HQ;
+  vector<long> inner_nodes;
+  vector<long> long_buffer;
+  vector<long> bc_buffer;
+  vector<long> dom_bc_buffer;
+  vector<long> dom_bc_bufferHQ;
+
+
+  nnodes_gl = m_msh->GetNodesNumber(true);
+  nnodes_l = m_msh->GetNodesNumber(false);
+
+  bc_buffer.resize(nnodes_gl);
+  for(i=0;i<nnodes_gl;i++)
+  {
+     if(node_connected_doms[i]>1.0)
+     {
+        // Mapp BC entry-->global node array
+        bc_buffer[i] = (long)long_buffer.size();   
+        long_buffer.push_back(m_msh->nod_vector[i]->GetIndex());
+#ifdef USE_MPI
+        if(m_msh->nod_vector[i]->GetIndex()<m_msh-> GetNodesNumber(false))
+           overlapped_entry_size = (long)long_buffer.size();
+#endif
+     }
+     else 
+         bc_buffer[i] = -1; 
+  }
+  
+#ifdef USE_MPI
+  overlapped_entry_sizeHQ = (long)long_buffer.size();
+  overlapped_entry = new long[overlapped_entry_sizeHQ];
+  for(i=0;i<overlapped_entry_sizeHQ;i++)
+      overlapped_entry[i] = long_buffer[i];
+#endif
+ 
+  // Sort
+#ifndef USE_MPI
+   for(int k=0;k<(int)dom_vector.size();k++)
+   {
+     int myrank = k;
+#endif
+     m_dom = dom_vector[myrank];
+     boundary_nodes.clear();     
+     inner_nodes.clear();  
+     boundary_nodes_HQ.clear();     
+     inner_nodes_HQ.clear();  
+     long_buffer.clear();
+     long_buffer.resize((long)m_dom->nodes.size());
+     dom_bc_buffer.clear();
+     dom_bc_bufferHQ.clear();
+
+     for(i=0;i<(long)m_dom->nodes.size();i++)
+     {
+         g_index = m_dom->nodes[i];
+         if(node_connected_doms[ g_index]>1.0)
+         {
+            if(g_index>=nnodes_l)
+            { 
+               boundary_nodes_HQ.push_back(i);
+               dom_bc_bufferHQ.push_back(bc_buffer[g_index]);
+               long_buffer[i] = -(long)boundary_nodes_HQ.size()-nnodes_gl;    
+            }
+            else
+            { 
+               boundary_nodes.push_back(i);
+               dom_bc_buffer.push_back(bc_buffer[g_index]);
+               long_buffer[i] = -(long)boundary_nodes.size();    
+            }
+         }
+         else
+         {
+            if(g_index>=nnodes_l)
+            { 
+               long_buffer[i] = (long)inner_nodes_HQ.size()+nnodes_gl;            
+               inner_nodes_HQ.push_back(i);
+            }
+            else
+            { 
+               long_buffer[i] = (long)inner_nodes.size();            
+               inner_nodes.push_back(i);
+            }
+         }
+     }
+     //
+     m_dom->num_inner_nodes = (long)inner_nodes.size();
+     m_dom->num_inner_nodesHQ = (long)inner_nodes_HQ.size();
+     m_dom->num_boundary_nodes = (long)boundary_nodes.size();
+     m_dom->num_boundary_nodesHQ = (long)boundary_nodes_HQ.size();
+     // Sort for high order nodes
+ 
+
+     m_dom->nodes_inner.clear();
+     m_dom->nodes_halo.clear();
+     for(i=0;i<m_dom->num_inner_nodes;i++)
+        m_dom->nodes_inner.push_back(m_dom->nodes[inner_nodes[i]]);
+     for(i=0;i<(long)inner_nodes_HQ.size();i++)
+        m_dom->nodes_inner.push_back(m_dom->nodes[inner_nodes_HQ[i]]);
+     //
+     for(i=0;i<m_dom->num_boundary_nodes;i++)
+         m_dom->nodes_halo.push_back(m_dom->nodes[boundary_nodes[i]]);
+     for(i=0;i<(long)boundary_nodes_HQ.size();i++)
+         m_dom->nodes_halo.push_back(m_dom->nodes[boundary_nodes_HQ[i]]);
+     //     
+     m_dom->nodes.clear();
+     m_dom->nodes.resize(m_dom->nnodesHQ_dom);
+     // First interior nodes, then interface nodes
+     j=0;
+     for(i=0;i<m_dom->num_inner_nodes;i++)
+	 {
+        m_dom->nodes[i] = m_dom->nodes_inner[i];
+ //       m_dom->nodes_inner[i] = i;        
+	 }
+     j += m_dom->num_inner_nodes;
+     for(i=0;i<m_dom->num_boundary_nodes;i++)
+	 {
+        m_dom->nodes[i+j] = m_dom->nodes_halo[i];
+  //      m_dom->nodes_halo[i] = i+j; 
+	 }
+     j += m_dom->num_boundary_nodes;
+     for(i=0;i<(long)inner_nodes_HQ.size();i++)
+     {
+        m_dom->nodes[i+j] = m_dom->nodes_inner[i+m_dom->num_inner_nodes];
+   //     m_dom->nodes_inner[i+m_dom->num_inner_nodes] = i+j;
+     }
+     j += (long)inner_nodes_HQ.size();
+     for(i=0;i<(long)boundary_nodes_HQ.size();i++)
+	 {
+         m_dom->nodes[i+j] = m_dom->nodes_halo[i+m_dom->num_boundary_nodes];
+   //      m_dom->nodes_halo[i+m_dom->num_boundary_nodes] = i+j;
+	 }
+     
+     for(i=0;i<(long)m_dom->nodes.size();i++)
+     {
+        l_buff = long_buffer[i];
+        if(l_buff<0)  //interface nodes
+        {
+           if(-l_buff-nnodes_gl>0) //HQ nodes
+             l_buff1 = m_dom->nnodes_dom+(long)inner_nodes_HQ.size()-l_buff-nnodes_gl-1;
+		   else 
+             l_buff1 = (long)inner_nodes.size()-l_buff-1;
+//             l_buff1 = m_dom->num_inner_nodesHQ-l_buff-1;
+        }
+		else
+        {
+           if(l_buff-nnodes_gl>=0) //HQ nodes
+             l_buff1 = m_dom->nnodes_dom +l_buff-nnodes_gl;
+		   else 
+             l_buff1 = l_buff;
+            
+        }
+        long_buffer[i] = l_buff1;
+     }
+
+     m_dom->nodes_inner.clear();
+     m_dom->nodes_halo.clear();  
+     // Mapping the local index to global BC array, overlapped_entry.
+     for(i=0;i<m_dom->num_boundary_nodes;i++)
+         m_dom->nodes_halo.push_back(dom_bc_buffer[i]);
+     for(i=0;i<(long)boundary_nodes_HQ.size();i++)
+         m_dom->nodes_halo.push_back(dom_bc_bufferHQ[i]);
+    
+     //----------------------------------------------------------------------
+     for(i=0;i<(long)m_dom->elements.size();i++)
+     {
+         m_ele = m_msh->ele_vector[m_dom->elements[i]];
+         elem_nodes = m_dom->element_nodes_dom[i]; 
+         for(j=0;j<m_ele->GetNodesNumber(quadr);j++)
+         {
+             l_buff = elem_nodes[j];
+             elem_nodes[j]=long_buffer[l_buff];
+         }
+     }
+
+#ifndef USE_MPI
+   }
+#endif  
+}
+//

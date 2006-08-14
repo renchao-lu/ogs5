@@ -431,15 +431,18 @@ CubicSpline::CubicSpline(vector<double>&s, vector<double>&val)
    bb = new double[n];
    cc = new double[n];
    dd = new double[n];
-
-    ComputeCoefficents();
+   //
+   ComputeCoefficents();
 }
 
 CubicSpline::~CubicSpline()
 {
-   delete [] bb;
-   delete [] cc;
-   delete [] dd;
+    delete [] bb;
+    delete [] cc;
+    delete [] dd;
+    bb = NULL;
+	cc = NULL;
+    dd = NULL;
 }
 
 double CubicSpline::interpolation(const double x)

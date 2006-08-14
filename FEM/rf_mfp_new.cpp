@@ -986,17 +986,17 @@ double CFluidProperties::SpecificHeatCapacity()
 	    specific_heat_capacity = MATCalcFluidHeatCapacityMethod2(primary_variable[0],primary_variable[1],primary_variable[2]);
 	    break;
 	  case 3: // phase change c = f(x)
-		  T_1 = primary_variable_t1[1];
-      if(T_1 <= T_Latent1 || T_1 >= T_Latent2)
-        specific_heat_capacity = GetCurveValue(heat_phase_change_curve,0,temperature_buffer,&gueltig);
+        T_1 = primary_variable_t1[1];
+        if(T_1 <= T_Latent1 || T_1 >= T_Latent2)
+          specific_heat_capacity = GetCurveValue(heat_phase_change_curve,0,temperature_buffer,&gueltig);
   		else{
-        heat_capacity_model = 5;
+            heat_capacity_model = 5;
 		    H1 = CalcEnthalpy(T1);
 		    T0 = primary_variable_t0[1];
-        if(fabs(T_1-T0)<1.0e-8) T_1 +=1.0e-8;
-			    H0 = CalcEnthalpy(T0); 
-		      specific_heat_capacity = (H1-H0)/(T_1-T_0);
-		    }
+            if(fabs(T_1-T0)<1.0e-8) T_1 +=1.0e-8;
+              H0 = CalcEnthalpy(T0); 
+              specific_heat_capacity = (H1-H0)/(T_1-T_0);
+        }
         heat_capacity_model = 3;
 	    break;
 	  case 4: // improved phase change (Richards model)

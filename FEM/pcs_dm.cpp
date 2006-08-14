@@ -450,8 +450,13 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
 
         //Test 
         //if(counter==6&&ite_steps==2) 	{MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x); abort();  }
-  
-       if(!elasticity)  Norm = CalcNormOfRHS(eqs);                               
+
+#ifdef USE_MPI  
+       dom_vector[myrank]->quadratic = true; 
+       if(!elasticity)  Norm = CalcNormOfRHS(eqs->dim);    
+#else
+       if(!elasticity)  Norm = CalcNormOfRHS(eqs);    
+#endif                           
         // 	
         if(monolithic == 0)
             SetInitialGuess_EQS_VEC();
@@ -460,6 +465,11 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
         m_str.Format("Time step: t=%e sec, %s, Load step: %i, NR-Iteration: %i, Solve equation system",\
                       aktuelle_zeit,pcs_type_name.c_str(),l,ite_steps);
         pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
+#endif
+#ifdef USE_MPI //WW
+       // No initial guess for deformation. 
+       for(long ll=0; ll<eqs->dim; ll++)
+          eqs->x[ll] = 0.0;
 #endif
 
         ExecuteLinearSolver();
@@ -600,7 +610,7 @@ void CRFProcessDeformation::InitGauss(void)
   int j, k, gp, NGS, NGSS, MatGroup, n_dom;
   int PModel = 1;
   int gp_r=0, gp_s=0, gp_t=0;
-//  double z=0.0;
+  double z=0.0;
   double xyz[3];
   static double Strs[6];
   ElementValue_DM *eleV_DM = NULL;
@@ -1842,58 +1852,149 @@ long CRFProcessDeformation::MarkBifurcatedNeighbor(const int PathIndex)
 
 /**************************************************************************
 FEMLib-Method: 
-Task: Assemble local matrices and RHS for each element
+Task: Assembly in the sense of sub-domains
 Programing:
-02/2005 WW
+04/2006 WW
 **************************************************************************/
-void CRFProcessDeformation:: GlobalAssembly()
+void CRFProcessDeformation:: DomainAssembly(CPARDomain* m_dom)
 {
-   long i;
-   // 1.
-   // Assemble deformation eqs
-   CElem* elem = NULL;
-   m_msh->SwitchOnQuadraticNodes(true);
-   for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
-   {
-       elem = m_msh->ele_vector[i];
+    long i;
+    CElem* elem = NULL;
+    SetLinearSolver(m_dom->eqs);
+    SetZeroLinearSolver(m_dom->eqs);
+    for (i = 0; i < (long)m_dom->elements.size(); i++)
+    {
+       elem = m_msh->ele_vector[m_dom->elements[i]];
        if (elem->GetMark()) // Marked for use
 	   {
-             elem->SetOrder(true);
-	         fem_dm->ConfigElement(elem);
-	         fem_dm->LocalAssembly(0);
+           elem->SetOrder(true);
+           fem_dm->SetElementNodesDomain(m_dom->element_nodes_dom[i]); //WW         
+		   fem_dm->ConfigElement(elem);
+           fem_dm->m_dom = m_dom;
+		   fem_dm->LocalAssembly(0);
 	   } 
-   }
-   if(type==41) // p-u monolithic scheme
-   {
+    }
+    if(type==41) // p-u monolithic scheme
+    {
       if(!fem_dm->dynamic)
           RecoverSolution(1);  // p_i-->p_0
       // 2.
       // Assemble pressure eqs
       for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
       {
-          elem = m_msh->ele_vector[i];
+          elem = m_msh->ele_vector[m_dom->elements[i]];
           if (elem->GetMark()) // Marked for use
           {
+            elem->SetOrder(false);
+            fem->SetElementNodesDomain(m_dom->element_nodes_dom[i]); //WW         
             fem->ConfigElement(elem);
+            fem->m_dom = m_dom;
             fem->Assembly();
          }
       }
       if(!fem_dm->dynamic)
          RecoverSolution(2);  // p_i-->p_0
-   }
-
-#ifdef PARALLEL
-   // DomainDecomposition();
+    }
+    
+}
+/**************************************************************************
+FEMLib-Method: 
+Task: Assemble local matrices and RHS for each element
+Programing:
+02/2005 WW
+**************************************************************************/
+void CRFProcessDeformation:: GlobalAssembly()
+{
+   //----------------------------------------------------------------------
+  long i;
+  CElem* elem = NULL;
+  m_msh->SwitchOnQuadraticNodes(true);
+#ifdef USE_MPI
+  if(dom_vector.size()>0){
+    cout << "      Domain Decomposition " << myrank  << '\n';
+    CPARDomain* m_dom = NULL;
+    m_dom = dom_vector[myrank];
+    DomainAssembly(m_dom);
+    // Apply Neumann BC
+    IncorporateSourceTerms(myrank);
+    // Apply Dirchlete bounday condition
+    IncorporateBoundaryConditions(myrank);
+    //....................................................................
+    // Assemble global system
+    // DDCAssembleGlobalMatrix();
+//MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);
+  }
+#else
+  //----------------------------------------------------------------------
+  // DDC
+  if(dom_vector.size()>0){
+    cout << "      Domain Decomposition" << '\n';
+    CPARDomain* m_dom = NULL;
+    for(int j=0;j<(int)dom_vector.size();j++)
+    {
+      m_dom = dom_vector[j];
+      DomainAssembly(m_dom);
+      // Apply Neumann BC
+      IncorporateSourceTerms(j);
+      // Apply Dirchlete bounday condition
+      IncorporateBoundaryConditions(j);
+    }
+    //....................................................................
+    // Assemble global system
+    DDCAssembleGlobalMatrix();
+    // MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); abort();
+  }
 #endif
-   // Apply Neumann BC
-   IncorporateSourceTerms();
+  //----------------------------------------------------------------------
+  // STD
+  else
+  {
+     for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
+     {
+         elem = m_msh->ele_vector[i];
+         if (elem->GetMark()) // Marked for use
+	     {
+             elem->SetOrder(true);
+		     fem_dm->ConfigElement(elem);
+		     fem_dm->LocalAssembly(0);
+	     } 
+     }
+     if(type==41) // p-u monolithic scheme
+     {
+        if(!fem_dm->dynamic)
+            RecoverSolution(1);  // p_i-->p_0
+        // 2.
+        // Assemble pressure eqs
+        for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
+        {
+            elem = m_msh->ele_vector[i];
+            if (elem->GetMark()) // Marked for use
+            {
+              fem->ConfigElement(elem);
+              fem->Assembly();
+           }
+        }
+        if(!fem_dm->dynamic)
+           RecoverSolution(2);  // p_i-->p_0
+     }
+     //----------------------------------------------------------------------
 
-   //     {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
-   // Apply Dirchlete bounday condition
-   IncorporateBoundaryConditions();
-  //{MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
-   if(fem_dm->dynamic)
-      CalcBC_or_SecondaryVariable_Dynamics(true);
+     //
+	 
+	 //	 {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
+
+     // Apply Neumann BC
+     IncorporateSourceTerms();
+     // Apply Dirchlete bounday condition
+     if(!fem_dm->dynamic)
+        IncorporateBoundaryConditions();
+	 else
+        CalcBC_or_SecondaryVariable_Dynamics(true);
+     //  	 {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
+
+     //
+   }
+  
 }
 
 /**************************************************************************
@@ -2060,7 +2161,7 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
    SetZeroLinearSolver(eqs);
    PreLoad = 11;
    LoadFactor = 1.0;
-  for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
+   for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
    {
       elem = m_msh->ele_vector[i];
       if (elem->GetMark()) // Marked for use
@@ -2222,7 +2323,7 @@ void CRFProcessDeformation::ExcavationSimulating()
        for (long e = 0; e < (long)m_msh->ele_vector.size(); e++)
        {
           eleV_DM = ele_value_dm[e];
-          eleV_DM->Stress = eleV_DM->Stress_i;                                                        
+          eleV_DM->Stress = eleV_DM->Stress_i;   
           (*eleV_DM->Stress0) = 0.0;                                                        
        }
     }
@@ -2230,7 +2331,7 @@ void CRFProcessDeformation::ExcavationSimulating()
     {
        // If an initial stress state is given, skip this
        // Establishing gravity force profile 
-       if (m_num&&m_num->GravityProfile==1)
+       if (m_num&&(m_num->GravityProfile==1)&&(reload!=1000))
        { 
           GravityForce = true;
           cout<<"1. Establish gravity force profile..."<<endl;
@@ -2351,7 +2452,8 @@ bool CRFProcessDeformation::CalcBC_or_SecondaryVariable_Dynamics(bool BC)
   int nv, k;
   
   int Size = m_msh->GetNodesNumber(true)+ m_msh->GetNodesNumber(false);
-
+  CBoundaryConditionNode *m_bc_node=NULL;
+  CBoundaryCondition *m_bc=NULL;
   bc_type.resize(Size);
 
   v = 0.0;
@@ -2368,13 +2470,13 @@ bool CRFProcessDeformation::CalcBC_or_SecondaryVariable_Dynamics(bool BC)
   {
     function_name[0] = "DISPLACEMENT_X1";
     function_name[1] = "DISPLACEMENT_Y1";
-    function_name[2] = "VELOCITY_X1";
-    function_name[3] = "VELOCITY_Y1";
+    function_name[2] = "VELOCITY_DM_X";
+    function_name[3] = "VELOCITY_DM_Y";
     function_name[4] = "PRESSURE1"; 
     idx_disp[0] = GetNodeValueIndex("DISPLACEMENT_X1");
     idx_disp[1] = GetNodeValueIndex("DISPLACEMENT_Y1");
-    idx_vel[0] = GetNodeValueIndex("VELOCITY_X1");
-    idx_vel[1] = GetNodeValueIndex("VELOCITY_Y1");
+    idx_vel[0] = GetNodeValueIndex("VELOCITY_DM_X");
+    idx_vel[1] = GetNodeValueIndex("VELOCITY_DM_Y");
     idx_acc0[0] = GetNodeValueIndex("ACCELERATION_X1");
     idx_acc0[1] = GetNodeValueIndex("ACCELERATION_Y1");
     idx_acc[0] =  idx_acc0[0]+1;
@@ -2385,16 +2487,16 @@ bool CRFProcessDeformation::CalcBC_or_SecondaryVariable_Dynamics(bool BC)
     function_name[0] = "DISPLACEMENT_X1";
     function_name[1] = "DISPLACEMENT_Y1";
     function_name[2] = "DISPLACEMENT_Z1";
-    function_name[3] = "VELOCITY_X1";
-    function_name[4] = "VELOCITY_Y1";
-    function_name[5] = "VELOCITY_Z1";
+    function_name[3] = "VELOCITY_DM_X";
+    function_name[4] = "VELOCITY_DM_Y";
+    function_name[5] = "VELOCITY_DM_Z";
     function_name[6] = "PRESSURE1"; 
     idx_disp[0] = GetNodeValueIndex("DISPLACEMENT_X1");
     idx_disp[1] = GetNodeValueIndex("DISPLACEMENT_Y1");
     idx_disp[2] = GetNodeValueIndex("DISPLACEMENT_Z1");
-    idx_vel[0] = GetNodeValueIndex("VELOCITY_X1");
-    idx_vel[1] = GetNodeValueIndex("VELOCITY_Y1");
-    idx_vel[2] = GetNodeValueIndex("VELOCITY_Z1");
+    idx_vel[0] = GetNodeValueIndex("VELOCITY_DM_X");
+    idx_vel[1] = GetNodeValueIndex("VELOCITY_DM_Y");
+    idx_vel[2] = GetNodeValueIndex("VELOCITY_DM_Z");
     idx_acc0[0] = GetNodeValueIndex("ACCELERATION_X1");
     idx_acc0[1] = GetNodeValueIndex("ACCELERATION_Y1");
     idx_acc0[2] = GetNodeValueIndex("ACCELERATION_Z1");
@@ -2402,82 +2504,79 @@ bool CRFProcessDeformation::CalcBC_or_SecondaryVariable_Dynamics(bool BC)
       idx_acc[k] = idx_acc0[k]+1;
   }
   
-  
-
-
-  //-----------------------------------------------------------------------
-  CBoundaryConditionsGroup *m_bc_group = NULL;
-  for(j=0; j<nv; j++)
-  {
-     m_bc_group = m_bc_group->Get((string)function_name[j]);
-     if(!m_bc_group) continue;
-
-     //-----------------------------------------------------------------------
-     // Dirichlet-Randbedingungen eintragen
-     long bc_group_vector_length = (long)m_bc_group->group_vector.size();
-     for(i=0;i<bc_group_vector_length;i++) {
-       bc_msh_node = m_bc_group->group_vector[i]->msh_node_number-Shift[j];
-       if(!m_msh->nod_vector[bc_msh_node]->GetMark()) 
-            continue;
-       if(bc_msh_node>=0) {
-          curve =  m_bc_group->group_vector[i]->CurveIndex;
-          if(curve>0) {
-             time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
-             if(!valid)
-               continue;
-	      }
-	      else
-             time_fac = 1.0;
-           bc_value = time_fac*m_bc_group->group_vector[i]->node_value; 
-		   bc_eqs_index = m_msh->nod_vector[bc_msh_node]->GetEquationIndex();
+  //  
+  for(i=0;i<(long)bc_node_value.size();i++) {
+     m_bc_node = bc_node_value[i];
+	 m_bc = bc_node[i];
+     for(j=0; j<nv; j++)
+     { 
+		if(m_bc->pcs_pv_name.compare(function_name[j])==0)
+          break;
+	 }
+     if(j==nv)
+	 {
+        cout<<"No such primary variable found in CalcBC_or_SecondaryVariable_Dynamics."<<endl;
+        abort();
+	 }
+     bc_msh_node = m_bc_node->geo_node_number;
+     if(!m_msh->nod_vector[bc_msh_node]->GetMark()) 
+          continue;
+     if(bc_msh_node>=0) {
+        curve =  m_bc_node->CurveIndex;
+        if(curve>0) {
+           time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
+           if(!valid)
+             continue;
+        }
+        else
+           time_fac = 1.0;
+        bc_value = time_fac*m_bc_node->node_value; 
+        bc_eqs_index = m_msh->nod_vector[bc_msh_node]->GetEquationIndex();
            
-           if(BC)
+        if(BC)
+        {
+           if(j<problem_dimension_dm) // da 
            {
-              if(j<problem_dimension_dm) // da 
-              {
-                 bc_eqs_index += Shift[j]; 
-                 // da = v = 0.0;                      
-                 MXRandbed(bc_eqs_index,0.0,eqs->b);
-              }
-              else if(j==nv-1) // P
-              {
-                 bc_eqs_index += Shift[problem_dimension_dm]; 
-                 // da = v = 0.0;                      
-                 MXRandbed(bc_eqs_index,0.0,eqs->b);
-                  
-              }
-           } 
-           else
+              bc_eqs_index += Shift[j]; 
+              // da = v = 0.0;                      
+              MXRandbed(bc_eqs_index,0.0,eqs->b);
+           }
+           else if(j==nv-1) // P
            {
-              // Bit operator
-              if(!(bc_type[bc_eqs_index]&(int)pow(2.0, (double)j)))
-                 bc_type[bc_eqs_index] += (int)pow(2.0, (double)j);                   
-              if(j<problem_dimension_dm) // Disp 
-              {
-                  SetNodeValue(bc_eqs_index, idx_disp[j], bc_value);
-                  SetNodeValue(bc_eqs_index, idx_vel[j], 0.0);
-                  SetNodeValue(bc_eqs_index, idx_acc[j], 0.0);
-              }
-              else if(j>=problem_dimension_dm&&j<nv-1) // Vel  
-              {
-                  v = GetNodeValue(bc_eqs_index, idx_disp[j]);
-                  v += bc_value*dt
-                       +0.5*dt*dt*(ARRAY[bc_eqs_index+Shift[j]]
-                       +m_num->GetDynamicDamping_beta2()
-                        *GetNodeValue(bc_eqs_index, idx_acc0[j]));
-                  SetNodeValue(bc_eqs_index, idx_disp[j], v);
-                  SetNodeValue(bc_eqs_index, idx_vel[j], bc_value);
-
-              }
-              else if(j==nv-1) // Vel  
-              {  //p
-                  SetNodeValue(bc_eqs_index, idx_pre, bc_value);
-                  SetNodeValue(bc_eqs_index, idx_dpre, 0.0);
-              }                  
-           } 
-
-         }
-      }
+              bc_eqs_index += Shift[problem_dimension_dm]; 
+              // da = v = 0.0;                      
+              MXRandbed(bc_eqs_index,0.0,eqs->b);
+               
+           }
+        } 
+        else
+        {
+           // Bit operator
+           if(!(bc_type[bc_eqs_index]&(int)pow(2.0, (double)j)))
+              bc_type[bc_eqs_index] += (int)pow(2.0, (double)j);                   
+           if(j<problem_dimension_dm) // Disp 
+           {
+               SetNodeValue(bc_eqs_index, idx_disp[j], bc_value);
+               SetNodeValue(bc_eqs_index, idx_vel[j], 0.0);
+               SetNodeValue(bc_eqs_index, idx_acc[j], 0.0);
+           }
+           else if(j>=problem_dimension_dm&&j<nv-1) // Vel  
+           {
+               v = GetNodeValue(bc_eqs_index, idx_disp[j]);
+               v += bc_value*dt
+                    +0.5*dt*dt*(ARRAY[bc_eqs_index+Shift[j]]
+                    +m_num->GetDynamicDamping_beta2()
+                     *GetNodeValue(bc_eqs_index, idx_acc0[j]));
+               SetNodeValue(bc_eqs_index, idx_disp[j], v);
+               SetNodeValue(bc_eqs_index, idx_vel[j], bc_value);
+           }
+           else if(j==nv-1) // Vel  
+           {  //p
+               SetNodeValue(bc_eqs_index, idx_pre, bc_value);
+               SetNodeValue(bc_eqs_index, idx_dpre, 0.0);
+           }                  
+        } 
+     }
   }
   if(BC) return BC;
  

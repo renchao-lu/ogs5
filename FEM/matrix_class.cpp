@@ -44,12 +44,12 @@ Matrix::Matrix()
 }
 Matrix::Matrix(const Matrix& m)
 {
-    Sym = m.Sym;
-    nrows = m.nrows;
-    ncols = m.ncols;
-    nrows0 = m.nrows0;
-    ncols0 = m.ncols0;
-    size = m.size;
+	Sym = m.Sym;
+	nrows = m.nrows;
+	ncols = m.ncols;
+	nrows0 = m.nrows0;
+	ncols0 = m.ncols0;
+	size = m.size;
     data = new double[size];
     for(int i=0; i<size; i++) data[i] = 0.0;
 }
@@ -352,7 +352,7 @@ void SymMatrix::resize(const int dim)
  
    if(size>0)
    {
-	  delete data;
+	  delete [] data;
       data = NULL;
    }
      

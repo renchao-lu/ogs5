@@ -11,7 +11,7 @@
   /* Schutz gegen mehrfaches Einfuegen */
 
 #include "prototyp.h" /* Prototypen */
-
+#include "rf_num_new.h"
 /*-----------------------------------------------------------------------*/
 /* Objekt-Eigenschaften*/
 
@@ -78,7 +78,16 @@ extern void LU_Decomposition (double *matrix, double *vecb, double *vecx, int g)
 extern int SpBICG ( double *b, double *x, long n );
   /* BICG-Loeser */
 extern int SpBICGSTAB_old ( double *b, double *x, long n );
-extern int SpBICGSTAB ( double *b, double *x, long n );
+#ifdef SX
+int SpBICGSTAB(double *restrict b, double *restrict x, long n);
+#else
+int SpBICGSTAB(double *b, double *x,  long n);
+#endif
+#ifdef USE_MPI //WW
+class CPARDomain;
+extern double CalcNormOfRHS(const long n);
+extern int SpBICGSTAB_Parallel(CPARDomain* m_dom, double *x,  long n); 
+#endif
   /* BICGSTAB-Loeser */
 extern int SpQMRCGSTAB ( double *b, double *x, long n );
   /* QMRCGSTAB-Loeser */
@@ -106,6 +115,5 @@ extern int SpPICARD ( double *b, double *x, long n, void (*)(double *,double *,d
   /* PICARD-Loeser */
 extern int SpNEWTON ( double *b, double *x, long n, void (*)(double *,double *,double), long );
   /* mod-NEWTON-Loeser */
-
 
 #endif

@@ -160,6 +160,7 @@ Programing:
  05/2003 OK TH processes
  08/2004 OK PCS2
  08/2004 WW The new creation of the deformation process
+ 07/2006 WW Adjust things for DDC
 last modified:
 ***************************************************************************/
 int LOPPreTimeLoop_PCS(void)
@@ -213,6 +214,7 @@ int LOPPreTimeLoop_PCS(void)
       #endif
       }
     }
+//  delete rc;
   }
   #ifdef CHEMAPP
 	CEqlink *eq=NULL;
@@ -226,8 +228,81 @@ int LOPPreTimeLoop_PCS(void)
   #endif
 //  delete rc;
   //----------------------------------------------------------------------
+  
   // DDC
-  DOMCreate();
+  if(dom_vector.size()>0)
+  {
+     //WW ----- Domain decomposition ------------------
+     int i;
+     int no_processes =(int)pcs_vector.size();
+     CRFProcess* m_pcs = NULL;
+     bool DOF_gt_one = false;
+     CPARDomain *m_dom = NULL;
+     //----------------------------------------------------------------------
+     for(i=0;i<no_processes;i++){
+       m_pcs = pcs_vector[i];
+       if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
+       {
+           DOF_gt_one = true;
+           break;
+       } 
+     }
+     if(!DOF_gt_one)
+        m_pcs = pcs_vector[0];
+
+     // -----------------------
+     DOMCreate(m_pcs);
+     //
+     for(i=0;i<no_processes;i++){
+       m_pcs = pcs_vector[i];
+       // Config boundary conditions for domain decomposition 
+       m_pcs->SetBoundaryConditionSubDomain(); //WW
+     }
+
+// This will be removed after new sparse matrix is ready. WW
+// for solver
+#ifdef USE_MPI
+     
+     long max_edim; 
+     max_edim = 0;
+     int dof = 1;
+    
+     for(i=0;i<(int)dom_vector.size();i++)
+     {
+       if(dom_vector[i]->eqs->dim>max_edim)
+         max_edim = dom_vector[i]->eqs->dim;
+        dof  = GetUnknownVectorDimensionLinearSolver(dom_vector[i]->eqs);    
+     }
+     
+     //
+     p_array = new double[max_edim];
+     v_array = new double[max_edim];
+     s_array = new double[max_edim];
+     t_array = new double[max_edim];
+     r_zero = new double[max_edim]; 
+     r_array = new double[max_edim]; 
+     //
+     dof *= overlapped_entry_sizeHQ;
+     buff_bc    = new double[dof];
+     p_array_bc = new double[dof];
+     v_array_bc = new double[dof];
+     s_array_bc = new double[dof];
+     t_array_bc = new double[dof];
+     r_zero_bc  = new double[dof]; 
+     r_array_bc = new double[dof]; 
+     x_array_bc = new double[dof]; 
+     //
+     max_edim = 0;
+     for(i=0;i<(int)PCS_Solver.size();i++)
+     {
+       if(PCS_Solver[i]->dim>max_edim)
+         max_edim = PCS_Solver[i]->dim;
+     }
+     buff_global =  new double[max_edim];    
+#endif
+     //
+     node_connected_doms.clear();
+   }
   //----------------------------------------------------------------------
   PCSRestart(); //SB
   //----------------------------------------------------------------------
@@ -323,10 +398,10 @@ int LOPTimeLoop_PCS(double*dt_sum)
         }
         PCSCalcSecondaryVariables(); // PCS member function
 
-        if (CalcVelocities){ 
-        m_pcs->CalIntegrationPointValue(); //WW
-        }
-			  if(m_pcs->tim_type_name.compare("STEADY")==0){//CMCD 05/2006
+        if (CalcVelocities) 
+           m_pcs->CalIntegrationPointValue(); //WW
+       
+        if(m_pcs->tim_type_name.compare("STEADY")==0){//CMCD 05/2006
           LOPCalcNODResultants();
           LOPCalcELEResultants();
 				  m_pcs->selected = false;
