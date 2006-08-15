@@ -105,7 +105,7 @@ extern DATABASE *RewindProtDataBase(DATABASE *db);
 
 typedef struct {
     char *name;
-    List *db_list;
+    LList *db_list;
     long count_of_db;
     char **names_of_db;
     long count_of_db_names;

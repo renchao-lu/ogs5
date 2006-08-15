@@ -116,7 +116,7 @@ long get_st_type(SYSTEM_TIME *st);
 
 typedef struct {
     char *name;
-    List *st_list;
+    LList *st_list;
     long count_of_system_time;
     char **names_of_system_time;
     long count_of_system_time_name;

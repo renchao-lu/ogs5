@@ -191,7 +191,7 @@ double get_im_radius(INVERSE_METHOD *im);
 
 typedef struct {
     char *name;
-    List *im_list;
+    LList *im_list;
     long count_of_inverse_method;
     char **names_of_inverse_method;
     long count_of_inverse_method_name;

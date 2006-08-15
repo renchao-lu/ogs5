@@ -277,7 +277,7 @@ List_Item *create_list_item(void)
 /* item loeschen
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *destroy_list_item(List *list, List_Item *item)
+List_Item *destroy_list_item(LList *list, List_Item *item)
 {
   if ( item == NULL ) {
      printf("\nItem ist ein Nullzeiger (destroy_list_item)\n");
@@ -301,7 +301,7 @@ List_Item *destroy_list_item(List *list, List_Item *item)
 /* current-item loeschen
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *destroy_list_item_current(List *list)
+List_Item *destroy_list_item_current(LList *list)
 {
   return destroy_list_item(list,list->current);
 }
@@ -316,11 +316,11 @@ List_Item *destroy_list_item_current(List *list)
 /* Liste: Konstruktor
                                                                   */
 /* -------------------------------------------------------------- */
-List  *create_list(void)
+LList  *create_list(void)
 {
-  List *list;
+  LList *list;
 
-  list = (List *) malloc(sizeof(List));
+  list = (LList *) malloc(sizeof(LList));
 
   if ( list == NULL ) {
      printf("\nNicht genug Speicher um eine neue Liste zu erstellen\n");
@@ -340,7 +340,7 @@ List  *create_list(void)
 /* Liste: Destruktor
                                                                   */
 /* -------------------------------------------------------------- */
-List  *destroy_list(List *list)
+LList  *destroy_list(LList *list)
 {
   if ( !list_empty(list) ) {
      printf("\nWarning: Liste nicht leer (destroy_list)\n");
@@ -360,7 +360,7 @@ List  *destroy_list(List *list)
 /* Listengroesse
                                                                   */
 /* -------------------------------------------------------------- */
-long list_size(List *list)
+long list_size(LList *list)
 {
   return  list->size;
 }
@@ -371,7 +371,7 @@ long list_size(List *list)
 /* Leere Liste
                                                                   */
 /* -------------------------------------------------------------- */
-int list_empty(List *list)
+int list_empty(LList *list)
 {
   return  !list->size;
 }
@@ -381,7 +381,7 @@ int list_empty(List *list)
 /* Liste leeren
                                                                   */
 /* -------------------------------------------------------------- */
-void delete_list(List *list, void (*_delete_function)(void *))
+void delete_list(LList *list, void (*_delete_function)(void *))
 {
   List_Item *item,*temp;
 
@@ -405,7 +405,7 @@ void delete_list(List *list, void (*_delete_function)(void *))
    geaendert am 17.11.98
                                                                   */
 /* -------------------------------------------------------------- */
-void destroy_list_item_member(List *list, List_Item *item,
+void destroy_list_item_member(LList *list, List_Item *item,
                  void (*_delete_function)(void *))
 {
   List_Item *temp;
@@ -433,7 +433,7 @@ void destroy_list_item_member(List *list, List_Item *item,
 /* Liefert niedigsten freien Feldindex
                                                                   */
 /* -------------------------------------------------------------- */
-long get_lowest_free (List *list)
+long get_lowest_free (LList *list)
 {
   List_Item *temp;
   long pos=-1;
@@ -459,7 +459,7 @@ long get_lowest_free (List *list)
 /* Item und Member loeschen und aus der Liste entfernen
                                                                   */
 /* -------------------------------------------------------------- */
-void destroy_list_member_pos(List *list, long pos,
+void destroy_list_member_pos(LList *list, long pos,
                  void (*_delete_function)(void *))
 {
   List_Item *temp;
@@ -487,7 +487,7 @@ void destroy_list_member_pos(List *list, long pos,
                                  (direction= 1 --> nach item)
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *put_list_member(List *list, List_Item *item, int direction,
+List_Item *put_list_member(LList *list, List_Item *item, int direction,
                               void *member)
 {
 /*  List_Item *temp; */
@@ -523,7 +523,7 @@ List_Item *put_list_member(List *list, List_Item *item, int direction,
 /* item aus der Liste holen (Suchen)
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *get_list_member(List *list, void *member)
+List_Item *get_list_member(LList *list, void *member)
 {
   List_Item *temp;
 
@@ -543,7 +543,7 @@ List_Item *get_list_member(List *list, void *member)
    ( pos von 0 bis size-1 ) (Suchen)
                                                                   */
 /* -------------------------------------------------------------- */
-void *get_list_member_pos(List *list, long pos)
+void *get_list_member_pos(LList *list, long pos)
 {
   return get_list_item_content(list,get_list_item_pos(list,pos));
 }
@@ -555,7 +555,7 @@ void *get_list_member_pos(List *list, long pos)
 /* member am Ende der Liste einfuegen
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *append_list_member(List *list, void *member)
+List_Item *append_list_member(LList *list, void *member)
 {
   List_Item *temp;
   int direction=1;
@@ -572,7 +572,7 @@ List_Item *append_list_member(List *list, void *member)
    Returnwert ist die Position in der Liste (Hier: Size-1)
                                                                   */
 /* -------------------------------------------------------------- */
-long append_listV0(List *list, void *member)
+long append_listV0(LList *list, void *member)
 {
   List_Item *temp;
   long pos=-1;
@@ -588,7 +588,7 @@ long append_listV0(List *list, void *member)
    Returnwert ist die Laenge der Liste (Hier: size)
                                                                   */
 /* -------------------------------------------------------------- */
-long append_list(List *list, void *member)
+long append_list(LList *list, void *member)
 {
   List_Item *temp;
   long pos=-1;
@@ -606,7 +606,7 @@ long append_list(List *list, void *member)
 /* member am Anfang der Liste einfuegen
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *insert_list_member(List *list, void *member)
+List_Item *insert_list_member(LList *list, void *member)
 {
   List_Item *temp;
   int direction=1;
@@ -624,7 +624,7 @@ List_Item *insert_list_member(List *list, void *member)
 /* new_member hinter member in der Liste einfuegen
                                                                   */
 /* -------------------------------------------------------------- */
-void insert_list_after(List *list, void *member, void *new_member)
+void insert_list_after(LList *list, void *member, void *new_member)
 {
   int direction=1;
 
@@ -640,7 +640,7 @@ void insert_list_after(List *list, void *member, void *new_member)
 /* new_member vor member in der Liste einfuegen
                                                                   */
 /* -------------------------------------------------------------- */
-void insert_list_bevor(List *list, void *member, void *new_member)
+void insert_list_bevor(LList *list, void *member, void *new_member)
 {
   put_list_member(list,get_list_member(list,member),
                        -1, new_member);
@@ -654,7 +654,7 @@ void insert_list_bevor(List *list, void *member, void *new_member)
 /* member an der Position pos in der Liste einfuegen
                                                                   */
 /* -------------------------------------------------------------- */
-void insert_list_pos(List *list, long pos, void *member)
+void insert_list_pos(LList *list, long pos, void *member)
 {
   int direction=1;
 
@@ -675,7 +675,7 @@ void insert_list_pos(List *list, long pos, void *member)
 /* member an der Position pos in der Liste eintragen
                                                                   */
 /* -------------------------------------------------------------- */
-void put_list_pos(List *list, long pos, void *member)
+void put_list_pos(LList *list, long pos, void *member)
 {
   List_Item *temp;
   long i=0;
@@ -702,7 +702,7 @@ void put_list_pos(List *list, long pos, void *member)
 /* member aus der Liste entfernen
                                                                   */
 /* -------------------------------------------------------------- */
-void delete_list_member(List *list, void *member)
+void delete_list_member(LList *list, void *member)
 {
   List_Item *temp;
 
@@ -726,7 +726,7 @@ void delete_list_member(List *list, void *member)
 /* member aus der Liste entfernen mit Destruktor
                                                                   */
 /* -------------------------------------------------------------- */
-long remove_list_member(List *list, void *member,void (*_delete_function)(void *))
+long remove_list_member(LList *list, void *member,void (*_delete_function)(void *))
 {
   List_Item *temp;
 
@@ -752,7 +752,7 @@ long remove_list_member(List *list, void *member,void (*_delete_function)(void *
 /* member suchen mit Vergleichsfunktion  (Suchen)
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *search_list_member(List *list, void *member,
+List_Item *search_list_member(LList *list, void *member,
                                 int (*_compare_function)(void *, void *))
 {
   List_Item *item;
@@ -774,7 +774,7 @@ List_Item *search_list_member(List *list, void *member,
    Hier mit Vorsicht benutzen (kein Destruktor)
                                                                   */
 /* -------------------------------------------------------------- */
-void *search_list(List *list, void *member,
+void *search_list(LList *list, void *member,
                 int (*_compare_function)(void *, void *))
 {
   return get_list_item_content(list,
@@ -789,7 +789,7 @@ void *search_list(List *list, void *member,
 /* Item-Inhalt aus der Liste holen
                                                                   */
 /* -------------------------------------------------------------- */
-void *get_list_item_content(List *list, List_Item *item)
+void *get_list_item_content(LList *list, List_Item *item)
 {
   if ( item == NULL || item == list->start ) return NULL;
   else return item->member;
@@ -802,7 +802,7 @@ void *get_list_item_content(List *list, List_Item *item)
 /* Item-Position aus der Liste holen ( von 0 bis size-1 ) (Suchen)
                                                                   */
 /* -------------------------------------------------------------- */
-long get_list_item_pos_list(List *list, List_Item *item)
+long get_list_item_pos_list(LList *list, List_Item *item)
 {
   List_Item *temp;
   long pos=0;
@@ -826,7 +826,7 @@ long get_list_item_pos_list(List *list, List_Item *item)
    ( pos von 0 bis size-1 ) (Suchen) Version 0
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *get_list_item_pos_V0(List *list, long pos)
+List_Item *get_list_item_pos_V0(LList *list, long pos)
 {
   List_Item *temp;
   long i=0;
@@ -850,7 +850,7 @@ List_Item *get_list_item_pos_V0(List *list, long pos)
    ( pos von 0 bis size-1 ) (Suchen)
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *get_list_item_pos_V1(List *list, long pos)
+List_Item *get_list_item_pos_V1(LList *list, long pos)
 {
   List_Item *temp;
   long i=0;
@@ -869,7 +869,7 @@ List_Item *get_list_item_pos_V1(List *list, long pos)
    ( pos von 0 bis size-1 ) (Suchen)
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *get_list_item_pos(List *list, long pos)
+List_Item *get_list_item_pos(LList *list, long pos)
 {
   List_Item *temp;
   long i=0;
@@ -897,7 +897,7 @@ List_Item *get_list_item_pos(List *list, long pos)
 /* Erstes Item der Liste holen
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *list_item_first(List *list)
+List_Item *list_item_first(LList *list)
 {
   List_Item *temp;
 
@@ -916,7 +916,7 @@ List_Item *list_item_first(List *list)
 /* Letztes Item der Liste holen
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *list_item_last(List *list)
+List_Item *list_item_last(LList *list)
 {
   List_Item *temp;
 
@@ -935,7 +935,7 @@ List_Item *list_item_last(List *list)
 /* Item in der Position pos loeschen ( pos von 0 bis size-1 )
                                                                   */
 /* -------------------------------------------------------------- */
-void delete_list_item_pos(List *list, long pos)
+void delete_list_item_pos(LList *list, long pos)
 {
   List_Item *temp;
   long i=0;
@@ -960,7 +960,7 @@ void delete_list_item_pos(List *list, long pos)
 /* Item in der Position pos loeschen ( pos von 0 bis size-1 )
                                                                   */
 /* -------------------------------------------------------------- */
-void destroy_list_item_pos(List *list, long pos)
+void destroy_list_item_pos(LList *list, long pos)
 {
   List_Item *temp;
   long i=0;
@@ -986,7 +986,7 @@ void destroy_list_item_pos(List *list, long pos)
 /* Item in der Position pos loeschen ( pos von 0 bis size-1 )
                                                                   */
 /* -------------------------------------------------------------- */
-void delete_list_item_last(List *list)
+void delete_list_item_last(LList *list)
 {
   List_Item *temp;
 
@@ -1011,7 +1011,7 @@ void delete_list_item_last(List *list)
 /* Iterator initialisierren
                                                                   */
 /* -------------------------------------------------------------- */
-void list_iterator_init(List *list)
+void list_iterator_init(LList *list)
 {
   list->iterator=list->start;
   return;
@@ -1023,7 +1023,7 @@ void list_iterator_init(List *list)
 /* aktueller Iterator
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *list_iterator_current(List *list)
+List_Item *list_iterator_current(LList *list)
 {
   if (list->iterator == list->start) return NULL;
   else return list->iterator;
@@ -1035,7 +1035,7 @@ List_Item *list_iterator_current(List *list)
 /* Iterator nach vorne bewegen
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *list_iterator_next(List *list)
+List_Item *list_iterator_next(LList *list)
 {
   list->iterator=list->iterator->next;
   return list_iterator_current(list);
@@ -1047,7 +1047,7 @@ List_Item *list_iterator_next(List *list)
 /* Iterator zurueck bewegen
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *list_iterator_preview(List *list)
+List_Item *list_iterator_preview(LList *list)
 {
   list->iterator=list->iterator->last;
   return list_iterator_current(list);
@@ -1059,7 +1059,7 @@ List_Item *list_iterator_preview(List *list)
 /* Iterator am Anfang positionieren
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *list_iterator_first(List *list)
+List_Item *list_iterator_first(LList *list)
 {
   list->iterator=list->start->next;
   return list_iterator_current(list);
@@ -1071,7 +1071,7 @@ List_Item *list_iterator_first(List *list)
 /* Iterator am Ende positionieren
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *list_iterator_last(List *list)
+List_Item *list_iterator_last(LList *list)
 {
   list->iterator=list->start->last;
   return list_iterator_current(list);
@@ -1085,7 +1085,7 @@ List_Item *list_iterator_last(List *list)
 /* current initialisieren
                                                                   */
 /* -------------------------------------------------------------- */
-void list_current_init(List *list)
+void list_current_init(LList *list)
 {
   list->current=list->start;
   return;
@@ -1097,7 +1097,7 @@ void list_current_init(List *list)
 /* current auf naechstes item bewegen
                                                                   */
 /* -------------------------------------------------------------- */
-void *list_current_next(List *list)
+void *list_current_next(LList *list)
 {
   list->current=list->current->next;
   if (list->current == list->start) return NULL;
@@ -1110,7 +1110,7 @@ void *list_current_next(List *list)
 /* current auf vorheriges item bewegen
                                                                   */
 /* -------------------------------------------------------------- */
-void *list_current_preview(List *list)
+void *list_current_preview(LList *list)
 {
   list->current=list->current->last;
   if (list->current == list->start) return NULL;
@@ -1123,7 +1123,7 @@ void *list_current_preview(List *list)
 /* Aktuelles member in der Liste holen
                                                                   */
 /* -------------------------------------------------------------- */
-void *get_list_current(List *list)
+void *get_list_current(LList *list)
 {
 
   return get_list_item_content(list,list->current);
@@ -1135,7 +1135,7 @@ void *get_list_current(List *list)
 /* Naechstes member in der Liste holen
                                                                   */
 /* -------------------------------------------------------------- */
-void *get_list_next(List *list)
+void *get_list_next(LList *list)
 {
   if ( list_current_next(list) != NULL )
     return get_list_item_content(list,list->current);
@@ -1149,7 +1149,7 @@ void *get_list_next(List *list)
 /* Vorheriges member in der Liste holen
                                                                   */
 /* -------------------------------------------------------------- */
-void *get_list_preview(List *list)
+void *get_list_preview(LList *list)
 {
   if ( list_current_preview(list) != NULL )
     return get_list_item_content(list,list->current);
@@ -1163,7 +1163,7 @@ void *get_list_preview(List *list)
 /* Kopfelement der Liste holen
                                                                   */
 /* -------------------------------------------------------------- */
-void *get_list_head(List *list)
+void *get_list_head(LList *list)
 {
   List_Item *temp;
   void *member;
@@ -1187,7 +1187,7 @@ void *get_list_head(List *list)
 /* Schwanzelement der Liste holen
                                                                   */
 /* -------------------------------------------------------------- */
-void *get_list_tail(List *list)
+void *get_list_tail(LList *list)
 {
   List_Item *temp;
   void *member;
@@ -1212,7 +1212,7 @@ void *get_list_tail(List *list)
 /* Liste ausgeben
                                                                   */
 /* -------------------------------------------------------------- */
-void print_list(List *list, void (*_print_function)(void *))
+void print_list(LList *list, void (*_print_function)(void *))
 {
   List_Item *item;
 
@@ -1231,7 +1231,7 @@ void print_list(List *list, void (*_print_function)(void *))
 /*
                                                                   */
 /* -------------------------------------------------------------- */
-void write_list(List *list, FILE *fp, void (*_write_function)(FILE *fp, void *))
+void write_list(LList *list, FILE *fp, void (*_write_function)(FILE *fp, void *))
 {
   List_Item *item;
 
@@ -1250,7 +1250,7 @@ void write_list(List *list, FILE *fp, void (*_write_function)(FILE *fp, void *))
 /*
                                                                   */
 /* -------------------------------------------------------------- */
-void load_list(List *list, FILE *fp, void (*_load_function)(FILE *fp, void *))
+void load_list(LList *list, FILE *fp, void (*_load_function)(FILE *fp, void *))
 {
   List_Item *item;
 
@@ -1444,7 +1444,7 @@ void *get_queue_member(Queue *queue)
 /* Noch nicht getestet (noch nicht fertig) */
 /* -------------------------------------------------------------- */
 
-List_Item *merge_sort_list(List *list, int (*_compare_function)(void *, void *));
+List_Item *merge_sort_list(LList *list, int (*_compare_function)(void *, void *));
 List_Item *merge_sort_algo_list(List_Item *rest, List_Item *item_NULL,
                                                 long lenght, int (*_compare_function)(void *, void *));
 List_Item *merge_list(List_Item *item1, List_Item *item2, List_Item *item_NULL,
@@ -1456,7 +1456,7 @@ List_Item *merge_list(List_Item *item1, List_Item *item2, List_Item *item_NULL,
 /* Liste sortieren
                                                                   */
 /* -------------------------------------------------------------- */
-List_Item *merge_sort_list(List *list, int (*_compare_function)(void *, void *))
+List_Item *merge_sort_list(LList *list, int (*_compare_function)(void *, void *))
 {
 
   return merge_sort_algo_list(list->start->next,list->start,

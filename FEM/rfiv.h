@@ -126,7 +126,7 @@ double get_iv_value(INVERSE_VARIABLE *iv, long index);
 
 typedef struct {
     char *name;
-    List *iv_list;
+    LList *iv_list;
     long count_of_inverse_variable;
     char **names_of_inverse_variable;
     long count_of_inverse_variable_name;

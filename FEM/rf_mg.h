@@ -37,7 +37,7 @@ extern MESH_GENERATION *delete_mesh_generation(MESH_GENERATION *sosi);
 
 typedef struct {
         char *name;
-        List *mg_list;
+        LList *mg_list;
         long count_of_mesh_generations;
         char **names_of_mesh_generations;
         long count_of_mesh_generations_name;

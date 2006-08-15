@@ -232,7 +232,7 @@ long get_ii_nodes(INVERSE_ITERATION *ii, long index);
 
 typedef struct {
     char *name;
-    List *ii_list;
+    LList *ii_list;
     long count_of_inverse_iteration;
     char **names_of_inverse_iteration;
     long count_of_inverse_iteration_name;

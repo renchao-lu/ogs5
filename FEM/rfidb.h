@@ -117,7 +117,7 @@ extern char *get_idb_file_name(INPUT_DATABASE *idb);
 
 typedef struct {
     char *name;
-    List *idb_list;
+    LList *idb_list;
     long count_of_idb_database;
     char **names_of_idb_database;
     long count_of_idb_database_name;

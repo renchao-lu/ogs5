@@ -182,7 +182,7 @@ long get_od_nodes(OBSERVATION_DATA *od, long index);
 
 typedef struct {
     char *name;
-    List *od_list;
+    LList *od_list;
     long count_of_observation_data;
     char **names_of_observation_data;
     long count_of_observation_data_name;

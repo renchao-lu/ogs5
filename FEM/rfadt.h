@@ -83,179 +83,179 @@ typedef struct _List{
   struct _List_Item *start;
   struct _List_Item *iterator;
   struct _List_Item *current;
-} List;
+} LList;
 
 
 /* item erzeugen */
 List_Item *create_list_item(void);
 /* item loeschen */
-List_Item *destroy_list_item(List *RFlist, List_Item *item);
+List_Item *destroy_list_item(LList *RFlist, List_Item *item);
 /* current-item loeschen */
-List_Item *destroy_list_item_current(List *RFlist);
+List_Item *destroy_list_item_current(LList *RFlist);
 
 
 
 /* Liste erzeugen */
-List  *create_list(void);
+LList  *create_list(void);
 /* Liste loeschen */
-List  *destroy_list(List *RFlist);
+LList  *destroy_list(LList *RFlist);
 /* Listengroesse */
-long list_size(List *RFlist);
+long list_size(LList *RFlist);
 /* Leere Liste */
-int list_empty(List *RFlist);
+int list_empty(LList *RFlist);
 /* Liste leeren */
-void delete_list(List *RFlist, void (*_delete_function)(void *));
+void delete_list(LList *RFlist, void (*_delete_function)(void *));
 /* Liefert niedigsten freien Feldindex */
-long get_lowest_free (List *RFlist);
+long get_lowest_free (LList *RFlist);
 
 /* =========  Member-Funktionen  ========= */
 
 /* Item und Member loeschen und aus der Liste entfernen */
-void destroy_list_member_pos(List *RFlist, long pos,
+void destroy_list_member_pos(LList *RFlist, long pos,
                  void (*_delete_function)(void *));
 
 
 /* member in der Liste einfuegen (direction=-1 --> vor  item)
                                  (direction= 1 --> nach item) */
-List_Item *put_list_member(List *RFlist, List_Item *item,
+List_Item *put_list_member(LList *RFlist, List_Item *item,
                                      int direction,void *member);
 
 /* item aus der Liste holen (Suchen) */
-List_Item *get_list_member(List *RFlist, void *member);
+List_Item *get_list_member(LList *RFlist, void *member);
 
 
 /* Member in der Position pos aus der Liste holen
    ( pos von 0 bis size-1 ) (Suchen) */
-void *get_list_member_pos(List *RFList, long pos);
+void *get_list_member_pos(LList *RFList, long pos);
 
 /* member am Ende der Liste einfuegen */
-List_Item *append_list_member(List *RFList, void *member);
+List_Item *append_list_member(LList *RFList, void *member);
 
 /* member am Ende der Liste einfuegen
    Returnwert ist die Position in der Liste (Hier: Size-1) */
-long append_list(List *RFList, void *member);
+long append_list(LList *RFList, void *member);
 
 
 /* member am Anfang der Liste einfuegen */
-List_Item *insert_list_member(List *RFList, void *member);
+List_Item *insert_list_member(LList *RFList, void *member);
 
 /* new_member hinter member in der Liste einfuegen */
-void insert_list_after(List *RFList, void *member, void *new_member);
+void insert_list_after(LList *RFList, void *member, void *new_member);
 
 /* new_member vor member in der Liste einfuegen */
-void insert_list_bevor(List *RFList, void *member, void *new_member);
+void insert_list_bevor(LList *RFList, void *member, void *new_member);
 
 /* member an der Position pos in der Liste einfuegen */
-void insert_list_pos(List *RFList, long pos, void *member);
+void insert_list_pos(LList *RFList, long pos, void *member);
 
 /* member an der Position pos in der Liste eintragen */
-void put_list_pos(List *RFList, long pos, void *member);
+void put_list_pos(LList *RFList, long pos, void *member);
 
 /* member aus der Liste entfernen */
-void delete_list_member(List *RFList, void *member);
-long remove_list_member(List *RFList, void *member,void (*_delete_function)(void *));
+void delete_list_member(LList *RFList, void *member);
+long remove_list_member(LList *RFList, void *member,void (*_delete_function)(void *));
 
 /* member suchen mit Vergleichsfunktion  (Suchen) */
-List_Item *search_list_member(List *RFList, void *member,
+List_Item *search_list_member(LList *RFList, void *member,
                                int (*_compare_function)(void *, void *));
 
 /* Element suchen mit Vergleichsfunktion  (Suchen) */
-void *search_list(List *RFList, void *member,
+void *search_list(LList *RFList, void *member,
                 int (*_compare_function)(void *, void *));
 
 
 /* =========  Item-Funktionen  ========= */
 
 /* Item-Inhalt aus der Liste holen */
-void *get_list_item_content(List *RFList, List_Item *item);
+void *get_list_item_content(LList *RFList, List_Item *item);
 
 /* Item-Position aus der Liste holen ( von 0 bis size-1 ) (Suchen) */
-long get_list_item_pos_list(List *RFList, List_Item *item);
+long get_list_item_pos_list(LList *RFList, List_Item *item);
 
 /* Item in der Position pos aus der Liste holen
    ( pos von 0 bis size-1 ) (Suchen) */
-List_Item *get_list_item_pos(List *RFList, long pos);
+List_Item *get_list_item_pos(LList *RFList, long pos);
 
 /* Erstes Item der Liste holen */
-List_Item *list_item_first(List *RFList);
+List_Item *list_item_first(LList *RFList);
 
 /* Letztes Item der Liste holen */
-List_Item *list_item_last(List *RFList);
+List_Item *list_item_last(LList *RFList);
 
 /* Item in der Position pos loeschen ( pos von 0 bis size-1 ) */
-void delete_list_item_pos(List *RFList, long pos);
+void delete_list_item_pos(LList *RFList, long pos);
 
 
 /* =========  Iterator-Funktionen  ========= */
 
 /* Iterator initialisierren */
-void list_iterator_init(List *RFList);
+void list_iterator_init(LList *RFList);
 
 /* aktueller Iterator */
-List_Item *list_iterator_current(List *RFList);
+List_Item *list_iterator_current(LList *RFList);
 
 /* Iterator nach vorne bewegen */
-List_Item *list_iterator_next(List *RFList);
+List_Item *list_iterator_next(LList *RFList);
 
 /* Iterator zurueck bewegen */
-List_Item *list_iterator_preview(List *RFList);
+List_Item *list_iterator_preview(LList *RFList);
 
 /* Iterator am Anfang positionieren */
-List_Item *list_iterator_first(List *RFList);
+List_Item *list_iterator_first(LList *RFList);
 
 /* Iterator am Ende positionieren */
-List_Item *list_iterator_last(List *RFList);
+List_Item *list_iterator_last(LList *RFList);
 
 
 /* =========  Current-Funktionen  ========= */
 
 /* current initialisieren */
-void list_current_init(List *RFList);
+void list_current_init(LList *RFList);
 
 /* current auf naechstes item bewegen */
-void *list_current_next(List *RFList);
+void *list_current_next(LList *RFList);
 
 /* current auf vorheriges item bewegen */
-void *list_current_preview(List *RFList);
+void *list_current_preview(LList *RFList);
 
 /* Aktuelles member in der Liste holen */
-void *get_list_current(List *RFList);
+void *get_list_current(LList *RFList);
 
 /* Naechstes member in der Liste holen */
-void *get_list_next(List *RFList);
+void *get_list_next(LList *RFList);
 
 /* Vorheriges member in der Liste holen */
-void *get_list_preview(List *RFList);
+void *get_list_preview(LList *RFList);
 
 
 
 /* =========  Listen-Funktionen  ========= */
 
 /* Kopfelement der Liste holen */
-void *get_list_head(List *RFList);
+void *get_list_head(LList *RFList);
 
 /* Schwanzelement der Liste holen */
-void *get_list_tail(List *RFList);
+void *get_list_tail(LList *RFList);
 
 
 
 /* =========  Ein- Ausgabe-Funktionen  ========= */
 
 /* Liste ausgeben */
-void print_list(List *RFList, void (*_print_function)(void *));
+void print_list(LList *RFList, void (*_print_function)(void *));
 
 /* Liste in eine Datei schreiben */
-void write_list(List *RFList, FILE *fp, void (*_write_function)(FILE *, void *));
+void write_list(LList *RFList, FILE *fp, void (*_write_function)(FILE *, void *));
 
 /* Liste aus einer Datei lesen (noch nicht fertig !!!) */
-void load_list(List *RFList, FILE *fp, void (*_load_function)(FILE *, void *));
+void load_list(LList *RFList, FILE *fp, void (*_load_function)(FILE *, void *));
 
 
 /*==================== Stack List ====================*/
 
 /* Datentyp Stack */
 typedef struct {
-  List *list;
+  LList *list;
 } Stack;
 
 
@@ -283,7 +283,7 @@ void print_stack(Stack *stack, void (*_print_function)(void *));
 
 /* Datentyp Queue */
 typedef struct {
-  List *list;
+  LList *list;
 } Queue;
 
 

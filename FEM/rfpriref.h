@@ -138,7 +138,7 @@ void set_ar_base_value(APRIORI_REFINE *ar, double base_value);
 
 typedef struct {
         char *name;
-        List *ar_list;
+        LList *ar_list;
         long count_of_refine_elements;
         char **names_of_refine_elements;
         long count_of_refine_elements_name;

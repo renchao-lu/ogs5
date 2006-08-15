@@ -269,7 +269,7 @@ long get_ip_nodes(ITERATION_PROPERTIES *ip, long index);
 
 typedef struct {
     char *name;
-    List *ip_list;
+    LList *ip_list;
     long count_of_iteration_properties;
     char **names_of_iteration_properties;
     long count_of_iteration_properties_name;
