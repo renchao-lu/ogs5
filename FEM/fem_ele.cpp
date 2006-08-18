@@ -273,7 +273,7 @@ void CElement::ConfigNumerics(const int EleType)
 	   break;    
      case 3: // Hexahedra 
        ele_dim =3;
-       nGauss = 3;
+       nGauss = 2; //3;
 	   nGaussPoints = nGauss*nGauss*nGauss;
        ShapeFunction = ShapeFunctionHex;
        ShapeFunctionHQ = ShapeFunctionHexHQ;
