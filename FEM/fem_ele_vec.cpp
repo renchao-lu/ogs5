@@ -975,10 +975,10 @@ void CFiniteElementVec::GlobalAssembly_RHS()
              for (i=0;i<nnodes;i++)
 			 {
                 val_n = h_pcs->GetNodeValue(nodes[i],idx_P1);
-                if(val_n>0.0)                  
+//TEST                if(val_n>0.0)                  
                   AuxNodal[i] = LoadFactor*(val_n-Max(pcs->GetNodeValue(nodes[i],idx_P0),0.0));
-				else
-                   AuxNodal[i] = 0.0;
+//				else
+//                   AuxNodal[i] = 0.0;
 			 }
              break;
           case 2:  // Multi-phase-flow
