@@ -557,7 +557,7 @@ void OUTData(double time_current, const int time_step_number)
           if(OutputBySteps)
 	      {
             m_out->NODWritePLYDataTEC(time_step_number);
-            if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
+            //WW if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
             OutputBySteps = false;
           } 
 		  else
@@ -939,7 +939,7 @@ void COutput::WriteTECNodeData(fstream& tec_file)
       m_pcs = PCSGet(nod_value_vector[k],true);
       if(m_pcs != NULL){
       NodeIndex[k] = m_pcs->GetNodeValueIndex(nod_value_vector[k]);
-      //??????????????????????????????????????????????????????????????????
+      //WW 
 	  if(nod_value_vector[k].find("SATURATION")!=string::npos)
 	  {
         NodeIndex[k]++;
@@ -1340,9 +1340,9 @@ void COutput::NODWritePLYDataTEC(int number)
   if(msh_type_name.size()>0)
     tec_file_name += "_" + msh_type_name;
   tec_file_name += TEC_FILE_EXTENSION;
-  if(!new_file_opened) remove(tec_file_name.c_str()); //WW
+  //WW if(!new_file_opened) remove(tec_file_name.c_str()); //WW
   //......................................................................
-  fstream tec_file (tec_file_name.data(),ios::app|ios::out);
+  fstream tec_file (tec_file_name.data(),ios::trunc|ios::out); //WW
   tec_file.setf(ios::scientific,ios::floatfield);
   tec_file.precision(12);
   if(!tec_file.good()) return;
