@@ -722,7 +722,7 @@ void CInitialCondition::SetDomain(int nidx)
     while(!rfr_file.eof()) { //TODO Implementation/Manual Correction of Keyword #STOP: TK
       rfr_file >> dddummy;
         ldummy  = (long)dddummy;
-        cout << ldummy << endl;
+//WW        cout << ldummy << endl;
       for(i=0;i<no_var;i++){ // HEAD, m ...
          rfr_file >> ddummy;
           m_pcs->SetNodeValue(ldummy,nidx,ddummy);      
