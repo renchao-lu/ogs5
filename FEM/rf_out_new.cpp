@@ -557,7 +557,7 @@ void OUTData(double time_current, const int time_step_number)
           if(OutputBySteps)
 	      {
             m_out->NODWritePLYDataTEC(time_step_number);
-            //WW if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
+            if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
             OutputBySteps = false;
           } 
 		  else
@@ -1334,15 +1334,16 @@ void COutput::NODWritePLYDataTEC(int number)
   char number_char[10];
   sprintf(number_char,"%i",number);
   string number_string = number_char;
-  string tec_file_name = file_base_name + "_ply_" + geo_name + "_t" + number_string;
+//WW  string tec_file_name = file_base_name + "_ply_" + geo_name + "_t" + number_string;
+  string tec_file_name = file_base_name + "_ply_" + geo_name + "_t0" ;
   if(pcs_type_name.size()>0)
     tec_file_name += "_" + pcs_type_name;
   if(msh_type_name.size()>0)
     tec_file_name += "_" + msh_type_name;
   tec_file_name += TEC_FILE_EXTENSION;
-  //WW if(!new_file_opened) remove(tec_file_name.c_str()); //WW
+  if(!new_file_opened) remove(tec_file_name.c_str()); //WW
   //......................................................................
-  fstream tec_file (tec_file_name.data(),ios::trunc|ios::out); //WW
+  fstream tec_file (tec_file_name.data(),ios::app|ios::out); //WW
   tec_file.setf(ios::scientific,ios::floatfield);
   tec_file.precision(12);
   if(!tec_file.good()) return;
