@@ -1127,6 +1127,14 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
         Sw = interpolate(NodalVal_Sat);
 //		cout << " Index, Sw: " << Index << ", " << Sw << endl;
         tensor = MediaProp->PermeabilityTensor(Index);
+		if(m_pcs && ip == 1)
+		{
+		  for(i=0;i<dim*dim;i++)
+			mat[i] = tensor[i];
+
+		  break;
+		}
+
         mat_fac = time_unit_factor* MediaProp->PermeabilitySaturationFunction(Sw,0) \
                 / FluidProp->Viscosity();
         for(i=0; i<dim*dim; i++)
@@ -2056,16 +2064,20 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
 	
 	// Initialize Pressure from the value already computed previously.
     CRFProcess* m_pcs = NULL;
+	int idxNodVal = 0;
 	for(int i=0; i< (int)pcs_vector.size(); ++i)
     {
         m_pcs = pcs_vector[i];
         if(m_pcs->pcs_type_name.find("FLOW")!=string::npos)
+		{
+			idxNodVal = i;
             break;
+		}
     }
 	// Update the process for proper coefficient calculation.
 	pcs = m_pcs;
 
-	int nidx1 = m_pcs->GetNodeValueIndex("PRESSURE1")+1;
+	int nidx1 = m_pcs->GetNodeValueIndex(m_pcs->nod_val_name_vector[idxNodVal])+1;
 	for (int i = 0; i < nnodes; ++i)
 	{
 		NodalVal[i] = 0.0;
@@ -2089,7 +2101,10 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
 		ComputeShapefct(1); // Linear interpolation function
 
 		// Material
-		CalCoefLaplace(true);
+		if(m_pcs->nod_val_name_vector[idxNodVal].find("HEAD")!=string::npos)
+		  CalCoefLaplace(true, 1);
+		else
+		  CalCoefLaplace(true);
 
 		// Calculate vector that computes dNj/dx*Ni*Pressure(j)
 		// These index are very important. 

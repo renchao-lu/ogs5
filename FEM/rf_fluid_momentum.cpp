@@ -114,11 +114,12 @@ double CFluidMomentum::Execute()
 			SolveDarcyVelocityOnNode();
 	}
 
+
 	// Just one time execution. Needs improvement later on.
 	m_pcs = PCSGet("RANDOM_WALK");
 	if(m_pcs && RWPTSwitch == 0)
 	{
-		ConstructFractureNetworkTopology();
+//		ConstructFractureNetworkTopology();
 		RWPTSwitch = 1;
 	}
 
@@ -166,7 +167,7 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 	}
 	else if(coordinateflag == 32)
 	{
-		dimension = 3;	axis = 2;	// x, y, z only
+		dimension = 3;	axis = 3;	// x, y, z only
 	}
 
 	// Loop over three dimension to solve three velocity components
@@ -211,6 +212,43 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
      		
 			for(int j=0;j<m_pcs->eqs->dim;j++)
                m_pcs->SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,m_pcs->eqs->x[j]);	
+		}
+
+		// Do the coordinate transform for 2d elements in 3D space
+		ConstructFractureNetworkTopology();
+		
+		for(i = 0; i < (long)m_msh->nod_vector.size(); i++)
+		{
+			// Let's get the norm of the first connected element plane.
+			double norm[3];
+			if(m_msh->GetCoordinateFlag() != 32 && m_msh->GetCoordinateFlag() != 22)
+			{
+				norm[0] = 0.0; norm[1] = 0.0; norm[2] = 1.0;
+			}
+			else
+			{
+				// I assume that all the element stay on the same plane. 
+				// So, I use element No.1 as the reference element or plane
+				for(int j=0; j<3; ++j)
+					norm[j] = m_msh->ele_vector[0]->getTransformTensor(j+6);	
+			}	
+			// Do some proper projection of velocity computed from Fluid Momentum.
+			// Get the fluid velocity for this node
+			double V[3];
+			V[0] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);  
+			V[1] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);  
+			V[2] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);  
+		
+			// Let's solve the projected velocity on the element plane
+			// by  Vp = norm X (V X norm) assuming norm is a unit vector
+			double VxNorm[3], Vp[3];
+			CrossProduction(V,norm,VxNorm);
+			CrossProduction(norm,VxNorm, Vp);
+
+			// Store the projected velocity back to the node velocity
+			m_pcs->SetNodeValue(i,m_pcs->GetNodeValueIndex("VELOCITY1_X")+1,Vp[0]);
+			m_pcs->SetNodeValue(i,m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1,Vp[1]);
+			m_pcs->SetNodeValue(i,m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1,Vp[2]);	
 		}
     
         // Obtain element-based velocity
@@ -317,7 +355,7 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 		// Let's store the index of the reference element 
 		// to the connected_planes of thisNode
 		thisNode->connected_planes.push_back(index);
-		if(m_msh->GetCoordinateFlag() != 32)
+		if(m_msh->GetCoordinateFlag() != 32 && m_msh->GetCoordinateFlag() != 22)
 		{
 			norm[0] = 0.0; norm[1] = 0.0; norm[2] = 1.0;
 		}
@@ -333,7 +371,7 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 			double normOther[3];
 			// Let's get the element one by one.
 			int indexOther = thisNode->connected_elements[j];
-			if(m_msh->GetCoordinateFlag() != 32)
+			if(m_msh->GetCoordinateFlag() != 32 && m_msh->GetCoordinateFlag() != 22)
 			{
 				normOther[0] = 0.0; normOther[1] = 0.0; normOther[2] = 1.0;
 			}
@@ -368,7 +406,7 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 				double normOther[3];
 				// Let's get the element one by one.
 				int indexOther = thisNode->connected_planes[j];
-				if(m_msh->GetCoordinateFlag() != 32)
+				if(m_msh->GetCoordinateFlag() != 32 && m_msh->GetCoordinateFlag() != 22)
 				{
 					normOther[0] = 0.0; normOther[1] = 0.0; normOther[2] = 1.0;
 				}
@@ -381,7 +419,7 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 					double normAnother[3];
 					// Let's get the element one by one.
 					int indexAnother = thisNode->connected_planes[l];
-					if(m_msh->GetCoordinateFlag() != 32)
+					if(m_msh->GetCoordinateFlag() != 32 && m_msh->GetCoordinateFlag() != 22)
 					{
 						normAnother[0] = 0.0; normAnother[1] = 0.0; normAnother[2] = 1.0;
 					}
@@ -445,7 +483,7 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 				double norm[3], VxNorm[3], Vp[3];
 				// Solve for the norm of this plane.	
 				int index = thisNode->connected_planes[j];
-				if(m_msh->GetCoordinateFlag() != 32)
+				if(m_msh->GetCoordinateFlag() != 32 && m_msh->GetCoordinateFlag() != 22)
 				{
 					thisCross->plane[j].norm[0]=norm[0] = 0.0; 
 					thisCross->plane[j].norm[1]=norm[1] = 0.0; 
@@ -565,7 +603,7 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 				double norm[3], VxNorm[3], Vp[3];
 				// Solve for the norm of this plane.	
 				int index = m_msh->edge_vector[i]->connected_elements[j];
-				if(m_msh->GetCoordinateFlag() != 32)
+				if(m_msh->GetCoordinateFlag() != 32 && m_msh->GetCoordinateFlag() != 22)
 				{
 					norm[0] = 0.0; norm[1] = 0.0; norm[2] = 1.0;
 				}

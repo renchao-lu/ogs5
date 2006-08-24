@@ -3242,7 +3242,7 @@ END
 
 STRINGTABLE 
 BEGIN
-    IDR_MAINFRAME           "GeoSys  -  4.3.08(PCH)"
+    IDR_MAINFRAME           "GeoSys  -  4.3.22(PCH)"
     IDR_GEOSYSTYPE          "\nGeoSys\nGeoSys\nGeoSys project file (*.gsp)\n.gsp\nGeoSys.Document\nGeoSys Document"
 END
 
