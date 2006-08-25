@@ -3696,6 +3696,7 @@ void CRFProcess::GlobalAssembly()
 	//MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); abort();
 
     IncorporateSourceTerms();
+    SetCPL();      
     IncorporateBoundaryConditions();
 //  
 //
