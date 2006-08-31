@@ -93,4 +93,20 @@ extern void GEOWritePolylines(char* file_name);//CC
 //RF
 extern void InterpolationAlongPolyline(CGLPolyline *plyL, vector<double>& bcNodalValue);  
 
+class CColumn : public CGLPolyline //OK
+{
+  private:
+    CGLLine* m_lin;
+  public:
+    ~CColumn();
+    double geo_area;
+    double center_point[3];
+};
+
+extern void COLDeleteLines();
+extern void COLDelete();
+extern CColumn* COLGet(int);
+extern CColumn* COLGet(string);
+
+extern vector<CColumn*>column_vector;
 #endif

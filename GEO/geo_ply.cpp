@@ -17,6 +17,9 @@
 CGLPolyline *m_polyline = NULL;
 vector<CGLPolyline*> polyline_vector;
 int ply_max = -1;
+
+vector<CColumn*>column_vector;
+
 /*----------------------------------------------------------------------*/
 // constructor
 CGLPolyline::CGLPolyline(void)
@@ -1080,3 +1083,84 @@ void CGLPolyline::CalcMinimumPointDistance()
   }
   minDis = m_dXMin;
 }
+
+/**************************************************************************
+GeoSys-GUI-Method:
+Programing:
+12/2005 OK Implementation
+**************************************************************************/
+CColumn::~CColumn()
+{
+  for(int i=0;i<(int)line_vector.size();i++){
+    m_lin = line_vector[i];
+    delete m_lin;
+  }
+  line_vector.clear();
+}
+
+/**************************************************************************
+GeoSys-GUI-Method:
+Programing:
+12/2005 OK Implementation
+**************************************************************************/
+void COLDelete()
+{
+  CColumn* m_col = NULL;
+  for(int i=0;i<(int)column_vector.size();i++){
+    m_col = column_vector[i];
+    delete m_col;
+  }
+  column_vector.clear();
+}
+/**************************************************************************
+GeoSys-GUI-Method:
+Programing:
+12/2005 OK Implementation
+**************************************************************************/
+void COLDeleteLines()
+{
+  int j;
+  CColumn* m_col = NULL;
+  CGLLine* m_lin = NULL;
+  for(int i=0;i<(int)column_vector.size();i++){
+    m_col = column_vector[i];
+    for(j=0;j<(int)m_col->line_vector.size();j++){
+      m_lin = m_col->line_vector[j];
+      delete m_lin;
+    } 
+    m_col->line_vector.clear();
+  }
+}
+
+/**************************************************************************
+GEOLib-Method:
+Programing:
+12/2005 OK Implementation
+**************************************************************************/
+CColumn* COLGet(int col_id)
+{
+  CColumn* m_col = NULL;
+  for(int i=0;i<(int)column_vector.size();i++){
+    m_col = column_vector[i];
+    if(m_col->mat_group==col_id)
+      return m_col;
+  }
+  return NULL;
+}
+
+/**************************************************************************
+GEOLib-Method:
+Programing:
+12/2005 OK Implementation
+**************************************************************************/
+CColumn* COLGet(string col_name)
+{
+  CColumn* m_col = NULL;
+  for(int i=0;i<(int)column_vector.size();i++){
+    m_col = column_vector[i];
+    if(m_col->name.compare(col_name)==0)
+      return m_col;
+  }
+  return m_col;
+}
+
