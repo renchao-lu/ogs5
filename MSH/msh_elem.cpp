@@ -176,93 +176,6 @@ CElem::CElem(const long Index,CElem* onwer, const int Face):CCore(Index),owner(o
     } 
 }
 
-
-/**************************************************************************
-MSHLib-Method: 
-Task:
-Programing:
-06/2005 WW/OK Implementation
-**************************************************************************/
-CElem::CElem( const long Index, CElem* m_ele_parent):CCore(Index)
-{
-  int i; 
-  static int faceIndex_loc[10];
-  static int edgeIndex_loc[10];
-  gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
-  tranform_tensor = NULL;
-  angle = NULL;
-  switch(m_ele_parent->geo_type)
-  {
-      case 1:
-         nnodes = 2;
-         nnodesHQ = 3;    
-         ele_dim = 1;
-         geo_type = 1;
-         nfaces = 2;
-         nedges = 0;
-         break;
-      case 2:
-         nnodes = 4;
-         nnodesHQ = 9;      
-         ele_dim = 2;
-         geo_type = 2;
-         nfaces = 4;
-         nedges = 4;
-         break;
-      case 3:
-         nnodes = 8;
-         nnodesHQ = 20;
-         ele_dim = 3;
-         nfaces = 6;
-         nedges = 12;
-         geo_type = 3;
-         break;
-      case 4:
-         nnodes = 3;
-         nnodesHQ = 6;
-         ele_dim = 2;
-         geo_type = 4;
-         nfaces = 3;
-         nedges = 3;
-         break;
-      case 5:
-         nnodes = 4;
-         nnodesHQ = 10;
-         ele_dim = 3;
-         geo_type = 5;
-         nfaces = 4;
-         nedges = 6;
-         break;
-      case 6:
-         nnodes = 6;
-         nnodesHQ = 15;
-         ele_dim = 3;
-         geo_type = 6;
-         nfaces = 5;
-         nedges = 9;
-		 break;
-    }
-    patch_index =  m_ele_parent->patch_index;
-	quadratic = m_ele_parent->quadratic;
-    nodes_index.resize(nnodes);
-    nodes.resize(nnodes);
-
-	boundary_type='I';
-    //----------------------------------------------------------------------
-    // Initialize topological properties
-    neighbors.resize(nfaces);
-    for(i=0; i<nfaces; i++)
-      neighbors[i] = NULL;
-    edges.resize(nedges);    
-    edges_orientation.resize(nedges);
-    for(i=0; i<nedges; i++)
-    {
-      edges[i] = NULL;
-      edges_orientation[i] = 1;
-   }
-   area = -1.0; //WW
-}
-
 /**************************************************************************
 MSHLib-Method: 
 Task:
@@ -1628,6 +1541,120 @@ void CElem::FaceNormal(int index0, int index1, double* face)
          face[i] = yy[i];         
 	   } 
    }
+}
+
+/**************************************************************************
+MSHLib-Method: 
+Task:
+Programing:
+06/2005 WW/OK Implementation
+**************************************************************************/
+CElem::CElem( const long Index, CElem* m_ele_parent):CCore(Index)
+{
+  int i; 
+  static int faceIndex_loc[10];
+  static int edgeIndex_loc[10];
+  gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
+  tranform_tensor = NULL;
+  angle = NULL;
+  switch(m_ele_parent->geo_type)
+  {
+      case 1:
+         nnodes = 2;
+         nnodesHQ = 3;    
+         ele_dim = 1;
+         geo_type = 1;
+         nfaces = 2;
+         nedges = 0;
+         break;
+      case 2:
+         nnodes = 4;
+         nnodesHQ = 9;      
+         ele_dim = 2;
+         geo_type = 2;
+         nfaces = 4;
+         nedges = 4;
+         break;
+      case 3:
+         nnodes = 8;
+         nnodesHQ = 20;
+         ele_dim = 3;
+         nfaces = 6;
+         nedges = 12;
+         geo_type = 3;
+         break;
+      case 4:
+         nnodes = 3;
+         nnodesHQ = 6;
+         ele_dim = 2;
+         geo_type = 4;
+         nfaces = 3;
+         nedges = 3;
+         break;
+      case 5:
+         nnodes = 4;
+         nnodesHQ = 10;
+         ele_dim = 3;
+         geo_type = 5;
+         nfaces = 4;
+         nedges = 6;
+         break;
+      case 6:
+         nnodes = 6;
+         nnodesHQ = 15;
+         ele_dim = 3;
+         geo_type = 6;
+         nfaces = 5;
+         nedges = 9;
+		 break;
+    }
+    patch_index =  m_ele_parent->patch_index;
+	quadratic = m_ele_parent->quadratic;
+    nodes_index.resize(nnodes);
+    nodes.resize(nnodes);
+
+	boundary_type='I';
+    //----------------------------------------------------------------------
+    // Initialize topological properties
+    neighbors.resize(nfaces);
+    for(i=0; i<nfaces; i++)
+      neighbors[i] = NULL;
+    edges.resize(nedges);    
+    edges_orientation.resize(nedges);
+    for(i=0; i<nedges; i++)
+    {
+      edges[i] = NULL;
+      edges_orientation[i] = 1;
+   }
+   area = -1.0; //WW
+}
+
+/**************************************************************************
+MSHLib-Method: 
+06/2006 OK Implementation
+**************************************************************************/
+void CElem::SetNormalVector()
+{
+  double v1[3],v2[3];
+  //----------------------------------------------------------------------
+  switch(GetElementType())
+  {
+    case 1: // line
+      break;
+    case 2: // quad
+      break;
+    case 4: // tri
+      v1[0] = nodes[1]->X() - nodes[0]->X();
+      v1[1] = nodes[1]->Y() - nodes[0]->Y();
+      v1[2] = nodes[1]->Z() - nodes[0]->Z();
+      v2[0] = nodes[2]->X() - nodes[0]->X();
+      v2[1] = nodes[2]->Y() - nodes[0]->Y();
+      v2[2] = nodes[2]->Z() - nodes[0]->Z();
+      CrossProduction(v1,v2,normal_vector);
+      NormalizeVector(normal_vector,3);
+      break;
+  }
+  //----------------------------------------------------------------------
 }
 
 //--------------------------------

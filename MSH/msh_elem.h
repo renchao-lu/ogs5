@@ -57,8 +57,9 @@ class CElem:public CCore
       double neumann;	  // MSH topology
       */
       double area;//Flux area
-//  public:
-//WW      double normal_vector[3]; //OK
+  public:
+      double normal_vector[3]; //OK
+  private:
 	  // MSH topology
       Matrix* tranform_tensor;
       vec<CElem*> neighbors;
@@ -118,7 +119,7 @@ class CElem:public CCore
       string GetName() const;
       //------------------------------------------------------------------
       // Nodes
-      vec<long> nodes_index;      
+      vec<long>nodes_index;      
       void GetNodeIndeces(vec<long>&  node_index) const 
 	    {for (int i=0; i< (int) nodes_index.Size();i++)
            node_index[i]= nodes_index[i];} 
@@ -193,6 +194,7 @@ class CElem:public CCore
       //GUI control variables 
        int selected;
       void FaceNormal(const int index0, const int index1, double*);   //YD
+      void SetNormalVector(); //OK
 };
 
 } // namespace Mesh_Group

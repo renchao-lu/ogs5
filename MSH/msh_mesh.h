@@ -127,6 +127,7 @@ class CFEMesh
     void CreateLineELEFromPLY(CGLPolyline*,int,CFEMesh*);
     void CreateLineELEFromPLY(CGLPolyline*);
     void CreateLayerPolylines(CGLPolyline*); //OK
+    void GetELEOnPLY(CGLPolyline*,vector<long>&); //OK
     // GEO-SFC
     void GetNODOnSFC(Surface*,vector<long>&);
     void GetNODOnSFC_PLY(Surface*,vector<long>&);
@@ -138,6 +139,7 @@ class CFEMesh
     void CopySelectedNodes(vector<long>&msh_nod_vector); //TK
     void GetELEOnSFC(Surface*,vector<long>&); //OK
     void GetELEOnSFC_TIN(Surface*,vector<long>&); //OK
+    void CreateLineELEFromSFC(); //OK
     // GEO-VOL
     void ELEVolumes(); //OK
 

@@ -10,6 +10,7 @@ last modified
 #include <cmath>
 // MSHLib
 #include "msh_edge.h"
+#include "mathlib.h" //OK
 //========================================================================
 namespace Mesh_Group
 {
@@ -101,6 +102,7 @@ bool CEdge::operator == (CEdge& ed)
 
    return false;
 }
+
 /**************************************************************************
 MSHLib-Method: 
 Task:
@@ -116,6 +118,49 @@ void CEdge::Write(ostream& osm) const
        nodes_of_edges[i]->Write(osm);        
     }
    	osm<<endl;
+}
+
+/**************************************************************************
+MSHLib-Method: 
+08/2006 OK Implementation
+**************************************************************************/
+void CEdge::SetNormalVector(double*ele_normal_vector,double*normal_vector)
+{
+  // Element normal vector
+  // Edge vector
+  double edge_vector[3];
+  GetEdgeVector(edge_vector);
+  // Edge normal vector
+  CrossProduction(edge_vector,ele_normal_vector,normal_vector);
+  NormalizeVector(normal_vector,3);
+}
+
+/**************************************************************************
+MSHLib-Method: 
+08/2006 OK Implementation
+**************************************************************************/
+void CEdge::GetEdgeVector(double*edge_vector)
+{
+  // Edge vector
+  //double edge_vector[3];
+  edge_vector[0] = nodes_of_edges[1]->X()-nodes_of_edges[0]->X();
+  edge_vector[1] = nodes_of_edges[1]->Y()-nodes_of_edges[0]->Y();
+  edge_vector[2] = nodes_of_edges[1]->Z()-nodes_of_edges[0]->Z();
+  //return edge_vector;
+}
+
+/**************************************************************************
+MSHLib-Method: 
+08/2006 OK Implementation
+**************************************************************************/
+void CEdge::GetEdgeMidPoint(double*edge_vector)
+{
+  // Edge vector
+  //double edge_vector[3];
+  edge_vector[0] = 0.5*(nodes_of_edges[1]->X()+nodes_of_edges[0]->X());
+  edge_vector[1] = 0.5*(nodes_of_edges[1]->Y()+nodes_of_edges[0]->Y());
+  edge_vector[2] = 0.5*(nodes_of_edges[1]->Z()+nodes_of_edges[0]->Z());
+  //return edge_vector;
 }
 
 } // namespace Mesh_Group

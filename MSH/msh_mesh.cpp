@@ -40,6 +40,8 @@ long msh_no_tris = 0;
 long msh_no_tets = 0;
 long msh_no_pris = 0;
 
+#define noMSH_CHECK
+
 //========================================================================
 namespace Mesh_Group
 {
@@ -1018,6 +1020,15 @@ void CFEMesh::GetNODOnPLY(CGLPolyline*m_ply,vector<long>&msh_nod_vector)
 
   //WW
   m_ply->GetPointOrderByDistance();
+  //----------------------------------------------------------------------
+#ifdef MSH_CHECK
+  cout << "MSH nodes at polyline:" << endl;
+  for(j=0;j<(int)msh_nod_vector.size();j++)
+  {
+    cout << msh_nod_vector [j] << endl;
+  }
+#endif
+  //----------------------------------------------------------------------
 }
 
 /**************************************************************************
@@ -3679,6 +3690,229 @@ void CFEMesh::CreateLineELEFromTriELE()
     FEMWrite(m_gsp->path + "test");
   else
     FEMWrite("test");
+}
+
+/**************************************************************************
+MSHLib-Method: 
+08/2006 OK Implementation
+**************************************************************************/
+void CFEMesh::GetELEOnPLY(CGLPolyline*m_ply,vector<long>&ele_vector_ply)
+{
+#ifdef MSH_CHECK
+  cout << "CFEMesh::GetELEOnPLY" << endl;
+#endif
+  long i;
+  int j;
+  int k;
+  CElem* m_ele = NULL;
+  CEdge* m_edg = NULL;
+  CNode* m_nod = NULL;
+  vec<CEdge*> ele_edges_vector(15);
+  vector<long>nodes_vector_ply;
+  vec<long>ele_nodes(8);
+  //int edge_node_numbers[2];
+  vec<CNode*>edge_nodes(3);    
+  long edge_node_0,edge_node_1;
+  long nn;
+  //----------------------------------------------------------------------
+  GetNODOnPLY(m_ply,nodes_vector_ply);
+  //----------------------------------------------------------------------
+#ifdef MSH_CHECK
+  cout << "Elements at polyline: " << endl;
+#endif
+  switch(m_ply->type) 
+  {
+    //....................................................................
+    case 0: // PNT-TOP
+    //....................................................................
+    case 2: // PNT-TOP CC!!!
+      //..................................................................
+      // All elements having 2 points in common with m_ply
+/*
+      for(i=0;i<(long)ele_vector.size();i++)
+      {
+        m_ele = ele_vector[i];
+        m_ele->selected = 0;
+        m_ele->GetNodeIndeces(ele_nodes);
+        for(j=0;j<(int)m_ele->GetNodesNumber(false);j++)
+        {
+          for(k=0;k<(long)nodes_vector_ply.size();k++)
+          {
+            if(ele_nodes[j]==nodes_vector_ply[k])
+            {
+              m_ele->selected++;
+            }
+          }
+        }
+        if(m_ele->selected==2)
+          m_ele->SetMark(true);
+      }
+*/
+      //..................................................................
+      // All elements having an edge in common with m_ply
+      for(i=0;i<(long)ele_vector.size();i++)
+      {
+        m_ele = ele_vector[i];
+        m_ele->SetMark(false);
+        m_ele->selected = 0;
+        m_ele->GetEdges(ele_edges_vector);
+        for(j=0;j<(int)m_ele->GetEdgesNumber();j++)
+        {
+          m_edg = ele_edges_vector[j];
+          m_edg->SetMark(false);
+        }
+      }
+      for(i=0;i<(long)ele_vector.size();i++)
+      {
+        m_ele = ele_vector[i];
+        m_ele->SetMark(false);
+        m_ele->GetEdges(ele_edges_vector);
+        for(j=0;j<(int)m_ele->GetEdgesNumber();j++)
+        {
+          m_edg = ele_edges_vector[j];
+          //m_ele->GetLocalIndicesOfEdgeNodes(j,edge_node_numbers);
+          m_edg->GetNodes(edge_nodes);
+          m_ele->selected = 0;
+          for(k=0;k<(long)nodes_vector_ply.size();k++)
+          {
+            nn = nodes_vector_ply[k];
+            //if(edge_node_numbers[0]==nodes_vector_ply[k])
+            edge_node_0 = edge_nodes[0]->GetIndex();
+            if(edge_nodes[0]->GetIndex()==nodes_vector_ply[k])
+              m_ele->selected++;
+            //if(edge_node_numbers[1]==nodes_vector_ply[k])
+            edge_node_1 = edge_nodes[1]->GetIndex();
+            if(edge_nodes[1]->GetIndex()==nodes_vector_ply[k])
+              m_ele->selected++;
+          }
+          if(m_ele->selected==2)
+          {
+            m_ele->SetMark(true);
+            m_edg->SetMark(true);
+          }
+        }
+      }
+      break;
+    //....................................................................
+    case 1: // PLY-RAS
+      break;
+    default:
+      cout << "Warning in CFEMesh::GetELEOnPLY: case not implemented" << endl;
+  }
+  //----------------------------------------------------------------------
+  ele_vector_ply.clear();
+  vec<long>node_indeces(8);
+  for(i=0;i<(long)ele_vector.size();i++)
+  {
+    m_ele = ele_vector[i];
+    m_ele->GetEdges(ele_edges_vector);
+    if(m_ele->GetMark())
+    {
+      ele_vector_ply.push_back(m_ele->GetIndex());
+#ifdef MSH_CHECK
+      cout << "Element: " << m_ele->GetIndex() << ", Nodes:";
+#endif
+      m_ele->GetNodeIndeces(node_indeces);
+#ifdef MSH_CHECK
+      for(j=0;j<(int)m_ele->GetNodesNumber(false);j++)
+      {
+        cout << " " << node_indeces[j];
+      }
+#endif
+    }
+    for(j=0;j<(int)m_ele->GetEdgesNumber();j++)
+    {
+      m_edg = ele_edges_vector[j];
+      if(m_edg->GetMark())
+      {
+        m_edg->GetNodes(edge_nodes);
+#ifdef MSH_CHECK
+        cout << ", Edge nodes: " << edge_nodes[0]->GetIndex() << "," << edge_nodes[1]->GetIndex() << endl;
+#endif
+      }
+    }
+  }
+  //----------------------------------------------------------------------
+  nodes_vector_ply.clear();
+}
+
+/**************************************************************************
+MSHLib-Method:
+Programing:
+05/2006 OK Implementation
+**************************************************************************/
+void CFEMesh::CreateLineELEFromSFC()
+{
+  int j,k;
+  double x0,y0,z0;
+  double z,dz;
+  Surface* m_sfc = NULL;
+  CNode* m_nod = NULL;
+  CElem* m_ele = NULL;
+  CColumn* m_col = NULL;
+  CGLLine* m_lin = NULL;
+  //======================================================================
+  dz = -0.05;
+  long i_count = 0;
+  for(long i=0;i<(long)surface_vector.size();i++)
+  {
+    m_sfc = surface_vector[i];
+    m_sfc->CalcCenterPoint();
+    m_col = COLGet(m_sfc->name);
+    if(!m_col)
+      return;
+    //--------------------------------------------------------------------
+    // NOD
+    x0 = m_sfc->center_point[0];
+    y0 = m_sfc->center_point[1];
+    z0 = m_sfc->center_point[2];
+    for(j=0;j<no_msh_layer+1;j++)
+    {
+      z =  z0 + dz*(j);
+      m_nod = new CNode((long)nod_vector.size(),x0,y0,z);
+      nod_vector.push_back(m_nod);
+    }
+    //--------------------------------------------------------------------
+    // ELE
+    for(j=0;j<no_msh_layer;j++)
+    {
+      //..................................................................
+      m_ele = new Mesh_Group::CElem;
+      m_ele->SetIndex((long)ele_vector.size());
+      m_ele->SetElementType(1);
+      m_ele->nnodes = 2;
+      m_ele->nodes_index.resize(m_ele->nnodes);
+      m_ele->SetPatchIndex(-1);
+      m_ele->gravity_center[0] = 0.0;
+      m_ele->gravity_center[1] = 0.0;
+      m_ele->gravity_center[2] = 0.0;
+      //..................................................................
+      // Line element nodes
+      for(k=0;k<m_ele->nnodes;k++)
+      {
+        m_ele->nodes_index[k] = i_count*no_msh_layer + j + k + i_count;
+        m_ele->nodes[k] = nod_vector[m_ele->nodes_index[k]];
+        m_ele->gravity_center[0] += nod_vector[m_ele->nodes_index[k]]->X()/m_ele->nnodes;
+        m_ele->gravity_center[1] += nod_vector[m_ele->nodes_index[k]]->Y()/m_ele->nnodes;
+        m_ele->gravity_center[2] += nod_vector[m_ele->nodes_index[k]]->Z()/m_ele->nnodes;
+      }
+      //..................................................................
+      // MAT
+      for(k=0;k<(int)m_col->line_vector.size();k++)
+      {
+        m_lin = m_col->line_vector[k];
+        if((abs(m_ele->gravity_center[2])>m_lin->m_point1->z)&&(abs(m_ele->gravity_center[2])<m_lin->m_point2->z))
+        {
+          m_ele->SetPatchIndex(m_lin->mat_group);
+        }
+      }
+      //..................................................................
+      ele_vector.push_back(m_ele);
+      //..................................................................
+    }
+    i_count++;
+    //--------------------------------------------------------------------
+  }
 }
 
 } // namespace Mesh_Group
