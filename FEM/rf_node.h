@@ -40,10 +40,9 @@ class CNodeValue
     vector<double>history_value;
     long msh_node_number_conditional;
     string tim_type_name;
-
     void Write(ostream& os=cout) const; //WW
     void Read(istream& is=cin); //WW
-
+    bool check_me; //OK
 };
 
 //========================================================================

@@ -303,6 +303,11 @@ ios::pos_type CSourceTerm::Read(ifstream *st_file)
       in.clear(); 
       continue;
 	}
+    if(line_string.find("$FCT_TYPE")!=string::npos) { // subkeyword found
+	  in.str(GetLineFromFile1(st_file));
+      in >> fct_name; //sub_line
+      in.clear(); 
+    }
     //....................................................................
 //OK4108
     if(line_string.find("$DIS_TYPE_CONDITION")!=string::npos) { // subkeyword found
@@ -1216,10 +1221,15 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
       if(m_st->msh_type_name.compare("NODE")==0) {
         m_node_value = new CNodeValue();
         m_node_value->msh_node_number = m_st->msh_node_number;
-        m_node_value->node_value = 0.0;
+        m_node_value->node_value = m_st->geo_node_value;     //YD
         m_node_value->CurveIndex = m_st->CurveIndex;
         m_pcs->st_node_value.push_back(m_node_value);  //WW
         m_pcs->st_node.push_back(m_st); //WW
+        m_node_value->geo_node_number = m_st->msh_node_number; //WW
+      }
+      // FCT types //YD
+      if(m_st->fct_name.size()>0){
+        fct_name = m_st->fct_name;
       }
      //====================================================================
     }

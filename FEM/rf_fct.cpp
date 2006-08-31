@@ -547,3 +547,18 @@ double CFunction::GetValue(double point,bool*valid)
 }
 
 
+/**************************************************************************
+FEMLib-Method:
+Task: get instance by name
+Programing:
+08/2006 YD Implementation
+last modification:
+**************************************************************************/
+CFunction* FCTGet(long fct_number)
+{
+   CFunction* m_fct = NULL;
+   m_fct = fct_vector[fct_number];
+   return m_fct;
+  }
+
+

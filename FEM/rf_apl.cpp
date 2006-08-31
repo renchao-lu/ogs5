@@ -399,9 +399,7 @@ int ExecuteRFTimeLoop(void)
     /* Ausgabe fuer Bilanzobjekte */
     BalanceOverAllGeometryObjects();
     /* Ergebnisausgabe */
-
     OUTData(m_tim->time_current,aktueller_zeitschritt);
-
     // update current time step number
     m_tim->step_current++;
     if(m_tim->step_current==no_time_steps){

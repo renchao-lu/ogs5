@@ -10,10 +10,7 @@
 /**************************************************************************/
 
 #ifndef makros_INC
-
 #define makros_INC
-  /* Schutz gegen mehrfaches Einfuegen */
-
 
 /* Global benoetigte Header */
 #include <stdlib.h>
@@ -24,13 +21,10 @@
 #include <float.h>
   /* Floating-Point */
 
-
 /* ROCKFLOW-Version */
-#define ROCKFLOW_VERSION    "4.4.1"
-#define RF_SHELL_VERSION    "4.4.1"
+#define ROCKFLOW_VERSION    "4.4.02"
+#define RF_SHELL_VERSION    "4.3.13"
 #define ROCKFLOW_DATE       "25.08.2006"
-
-
 
 /* Definitionen von Makros zur Steuerung der bedingten Compilierung */
 #define SWITCHES

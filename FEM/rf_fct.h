@@ -40,6 +40,7 @@ extern void FCTWrite(string);
 extern void FCTRead(string);
 extern void FCTReadTIMData(string);
 extern CFunction* FCTGet(string);
+extern CFunction* FCTGet(long); //YD
 
 #define FCT_FILE_EXTENSION ".fct"
 

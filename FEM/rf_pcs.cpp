@@ -339,10 +339,18 @@ CRFProcess::~CRFProcess(void)
   nod_val_vector.clear();
   //----------------------------------------------------------------------
   // ST:
+  CNodeValue* m_nod_val = NULL;
   for(i=0;i<(int)st_node_value.size();i++)
   {
-    delete st_node_value[i];
-    st_node_value[i] = NULL;    
+    m_nod_val = st_node_value[i];
+    //OK delete st_node_value[i];
+    //OK st_node_value[i] = NULL;
+    if(m_nod_val->check_me) //OK
+    {
+      m_nod_val->check_me = false;
+      delete m_nod_val;
+      m_nod_val = NULL;
+    }
   }
   st_node_value.clear();
   //----------------------------------------------------------------------
@@ -814,6 +822,7 @@ void CRFProcess::Create()
   if(compute_domain_face_normal) //WW
      m_msh->FaceNormal();        
 }
+
 /**************************************************************************
 FEMLib-Method:
 Task: Write the contribution of ST or Neumann BC to RHS to a file after
@@ -1817,12 +1826,10 @@ void CRFProcess::ConfigLiquidFlow()
 
 /**************************************************************************
 FEMLib-Method: 
-Task: 
-Programing:
 03/2003 OK Implementation
         WW Splitted for processes
-last modified:
 02/2005 MB head version for GroundwaterFlow
+08/2006 OK FLUX
 **************************************************************************/
 void CRFProcess::ConfigGroundwaterFlow()
 {
@@ -1884,19 +1891,13 @@ void CRFProcess::ConfigGasFlow()
   pcs_secondary_function_unit[0] = "kg/s";
   //----------------------------------------------------------------------
   // ELE values
-  pcs_number_of_evals = 6;
+  pcs_number_of_evals = 3;
   pcs_eval_name[0] = "VELOCITY1_X";
   pcs_eval_unit[0] = "m/s";
   pcs_eval_name[1] = "VELOCITY1_Y";
   pcs_eval_unit[1] = "m/s";
   pcs_eval_name[2] = "VELOCITY1_Z";
   pcs_eval_unit[2] = "m/s";
-  pcs_eval_name[3] = "MASS_FLUX1_X";
-  pcs_eval_unit[3] = "kg/s";
-  pcs_eval_name[4] = "MASS_FLUX1_Y";
-  pcs_eval_unit[4] = "kg/s";
-  pcs_eval_name[5] = "MASS_FLUX1_Z";
-  pcs_eval_unit[5] = "kg/s";
   //----------------------------------------------------------------------
   // NUM
   pcs_num_name[0] = "PRESSURE0";
@@ -2242,7 +2243,8 @@ Task:
 Programing:
 03/2004 SB Implementation
         WW Splitted for processes
-01/2006 OK Tests        
+01/2006 OK Tests    
+08/2006 OK FLUX    
 **************************************************************************/
 void CRFProcess::ConfigMassTransport()
 {
@@ -3293,7 +3295,6 @@ double CRFProcess::Execute()
   // System matrix
   SetLinearSolverType(eqs, m_num); //WW
   SetZeroLinearSolver(eqs);
-
   // Solution vector
   //......................................................................
   if(m_msh){ // MSH data
@@ -3304,12 +3305,14 @@ double CRFProcess::Execute()
 	  for(j=0;j<eqs->dim;j++)
 		  eqs->x[j] = GetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1);
 	}
-	else{
-    for(i=0;i<pcs_number_of_primary_nvals;i++){
-      nidx1 = GetNodeValueIndex(pcs_primary_function_name[i]) + 1; //new time
-	  for(j=0;j<eqs->dim;j++)
+	else
+    {
+      for(i=0;i<pcs_number_of_primary_nvals;i++)
+      {
+        nidx1 = GetNodeValueIndex(pcs_primary_function_name[i]) + 1; //new time
+	    for(j=0;j<eqs->dim;j++)
 		  eqs->x[j] = GetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1);
-    }
+      }
 	}
   }
   //......................................................................
@@ -3320,7 +3323,6 @@ double CRFProcess::Execute()
       TransferNodeValuesToVectorLinearSolver(eqs,nidx1);
     }
   }
-
   /*---------------------------------------------------------------------*/
   /* 1 Calc element matrices */
 if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
@@ -3349,11 +3351,9 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
 #endif
   if(num_type_name.find("NEW")!=string::npos) //WWToDo Will be removed
     //  cout<< "Before GlobalAssembly myrank="<<myrank<<'\n';
-     GlobalAssembly();
-
+    GlobalAssembly();
   else
     AssembleSystemMatrixNew();
-
   //----------------------------------------------------------------------
   /* 5 Solve EQS */
 //orig  cout << "      Solve equation system" << endl;
@@ -3600,7 +3600,6 @@ void CRFProcess::GlobalAssembly()
 //    }
       IncorporateSourceTerms(myrank);
       IncorporateBoundaryConditions(myrank);
-
       /*
       //TEST
  string test = "rank";
@@ -3611,8 +3610,6 @@ void CRFProcess::GlobalAssembly()
    MXDumpGLS(test1.data(),1,m_dom->eqs->b, m_dom->eqs->x); 
    //TEST
    */
-
-
       //....................................................................
       // Assemble global system
       // DDCAssembleGlobalMatrix(); //TEST to be removed
@@ -3649,10 +3646,7 @@ void CRFProcess::GlobalAssembly()
     //....................................................................
     // Assemble global system
     DDCAssembleGlobalMatrix();
-
 	//IncorporateBoundaryConditions();      
-
-	
 //	
 //	MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x); abort();
 //
@@ -3692,18 +3686,13 @@ void CRFProcess::GlobalAssembly()
 //------------------------------   
       } 
     }
- //   
 	//MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); abort();
-
     IncorporateSourceTerms();
-    SetCPL();      
+    SetCPL(); //OK
     IncorporateBoundaryConditions();
-//  
-//
 //	MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); abort();
   //ofstream Dum("rf_pcs.txt", ios::out); WW
   //Write_Matrix_M5(eqs->b, Dum); abort();
-
   }
   //----------------------------------------------------------------------
 #endif
@@ -4202,6 +4191,7 @@ last modification:
 03/2006 WW Re-arrange
 04/2006 OK CPL
 05/2006 WW DDC
+08/2006 YD FCT use
 **************************************************************************/
 void CRFProcess::IncorporateSourceTerms(const int rank)
 {
@@ -4212,165 +4202,202 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
   long bc_eqs_index=-1;
   int  EleType;
   double q_face=0.0; 
-  
   CElem* elem = NULL;
   CElem* face = NULL;
   ElementValue* gp_ele =NULL;
   CPARDomain *m_dom = NULL;
   double *eqs_rhs=NULL;
   double vel[3];   
-
-  //------------------------------------------------------------WW
-  // WW 
+  bool is_valid; //YD
+  CFunction* m_fct = NULL; //YD
   long i; //, group_vector_length; 
   fac = 1.0;
   double Scaling = 1.0;
   if(type==4) fac = Scaling;
-
   CNodeValue *cnodev = NULL;
   CSourceTerm *m_st = NULL;
-  //
   long begin = 0;
   long end = 0;
   long gindex=0;
+  //----------------------------------------------------------------------
   if(rank==-1)
   {
-	 begin = 0;
-	 end = (long)st_node_value.size();
-     eqs_rhs = eqs->b; 
+    begin = 0;
+	end = (long)st_node_value.size();
+    eqs_rhs = eqs->b; 
   } 
   else
   {
-     m_dom = dom_vector[rank];
-     eqs_rhs = m_dom->eqs->b; 
-     if(rank==0) 
-        begin = 0;
-	 else 
-        begin = rank_st_node_value_in_dom[rank-1];
-	 end = rank_st_node_value_in_dom[rank];
+    m_dom = dom_vector[rank];
+    eqs_rhs = m_dom->eqs->b; 
+    if(rank==0) 
+      begin = 0;
+	else 
+      begin = rank_st_node_value_in_dom[rank-1];
+	end = rank_st_node_value_in_dom[rank];
   }
-  
-  for(i=begin;i<end;i++) {
+  //======================================================================
+  for(i=begin;i<end;i++) 
+  {
     gindex = i;
+    //--------------------------------------------------------------------
     if(rank>-1)
       gindex = st_node_value_in_dom[i];
-
 	cnodev = st_node_value[gindex]; 
     shift = cnodev->msh_node_number-cnodev->geo_node_number;
     if(rank>-1)
 	{
-       msh_node = st_local_index_in_dom[i];
-       int dim_space = 0; 
-	   if(m_msh->NodesNumber_Linear==m_msh->NodesNumber_Quadratic)
-          dim_space = 0;  
-	   else
-       {
-          if(shift%m_msh->NodesNumber_Quadratic==0)
-            dim_space = shift/m_msh->NodesNumber_Quadratic; 
-		  else
-            dim_space = m_msh->msh_max_dim; 
-       }
-	   shift = m_dom->shift[dim_space];
+      msh_node = st_local_index_in_dom[i];
+      int dim_space = 0; 
+	  if(m_msh->NodesNumber_Linear==m_msh->NodesNumber_Quadratic)
+        dim_space = 0;  
+	  else
+      {
+        if(shift%m_msh->NodesNumber_Quadratic==0)
+          dim_space = shift/m_msh->NodesNumber_Quadratic; 
+		else
+          dim_space = m_msh->msh_max_dim; 
+      }
+	  shift = m_dom->shift[dim_space];
 	} 
 	else
 	{ 
-       msh_node = cnodev->msh_node_number;
-       msh_node -= shift;
+      msh_node = cnodev->msh_node_number;
+      msh_node -= shift;
 	} 
     value = cnodev->node_value;
-	//
-    //---------------------------------------------------------------WW
+    //--------------------------------------------------------------------
+    // Tests
     if(msh_node<0) continue; 
     if(st_node.size()>0&&(long)st_node.size()>i)
 	{
-       m_st = st_node[gindex]; 
-       //--------------------------------------------------------------------
-       if (cnodev->node_distype==7){      // system dependent YD
-         long no_st_ele = (long)m_st->element_st_vector.size();
-         for(long i_st=0;i_st<no_st_ele;i_st++){
-           long ele_index = m_st->element_st_vector[i_st];
-           elem = m_msh->ele_vector[ele_index];
-           if (elem->GetMark()){ 
-              fem->ConfigElement(elem);
-              fem->Cal_Velocity(); 
-           }
-           gp_ele = ele_gp_value[ele_index];
-           gp_ele->GetEleVelocity(vel);
-           EleType = elem->GetElementType();
-           if(EleType == 1)   //Line
-               cnodev->node_value += vel[0]; 
-        //
-           if(EleType == 4 || EleType == 2){   //Traingle & Qua
-              for(long i_face=0;i_face < (long)m_msh->face_vector.size();i_face++)
-              {
-                 face = m_msh->face_vector[i_face];
-                 if(m_st->element_st_vector[i_st] == face->GetOwner()->GetIndex())
-                     q_face = PointProduction(vel,m_msh->face_normal[i_face])*face->GetVolume();   //   
+      m_st = st_node[gindex]; 
+      //--------------------------------------------------------------------
+      // CPL
+      if(m_st->pcs_type_name_cond.size()>0) continue; // this is a CPL source term
+      //--------------------------------------------------------------------
+      // system dependent YD
+      if(cnodev->node_distype==7)
+      {      
+        long no_st_ele = (long)m_st->element_st_vector.size();
+        for(long i_st=0;i_st<no_st_ele;i_st++)
+        {
+          long ele_index = m_st->element_st_vector[i_st];
+          elem = m_msh->ele_vector[ele_index];
+          if (elem->GetMark())
+          { 
+            fem->ConfigElement(elem);
+            fem->Cal_Velocity(); 
+          }
+          gp_ele = ele_gp_value[ele_index];
+          gp_ele->GetEleVelocity(vel);
+          EleType = elem->GetElementType();
+          if(EleType==1)   //Line
+            cnodev->node_value += vel[0]; 
+          if(EleType==4||EleType==2) //Traingle & Qua
+          {   
+            for(long i_face=0;i_face < (long)m_msh->face_vector.size();i_face++)
+            {
+              face = m_msh->face_vector[i_face];
+              if(m_st->element_st_vector[i_st] == face->GetOwner()->GetIndex())
+                q_face = PointProduction(vel,m_msh->face_normal[i_face])*face->GetVolume();   //   
                      //for(i_node) 
-              }
-              cnodev->node_value =+ q_face/2;
-           }
-           // cout<<"  value  "<<m_st_group->group_vector[i]->node_value<<endl;
-         }
-       }
-       //--------------------------------------------------------------------
-       if(m_st->conditional && !m_st->river)
-           value = GetConditionalNODValue(m_st, cnodev); //MB
+            }
+            cnodev->node_value =+ q_face/2;
+          }
+          // cout<<"  value  "<<m_st_group->group_vector[i]->node_value<<endl;
+        }
+      }
+      //--------------------------------------------------------------------
+      // MB
+      if(m_st->conditional && !m_st->river)
+      {
+        value = GetConditionalNODValue(m_st, cnodev); //MB
+      }
       //--------------------------------------------------------------------
       // CMCD
-       else if(m_st->analytical){
+      else if(m_st->analytical)
+      {
 //WW      m_st_group->m_msh = m_msh;
          value = GetAnalyticalSolution(msh_node,m_st); //WW
 //WW         value = m_st_group->GetAnalyticalSolution(m_st,msh_node,(string)function_name[j]);
-       }
+      }
       //--------------------------------------------------------------------
       // MB
-       if(cnodev->node_distype==5)       // River Condition
-           value = GetRiverNODValue(cnodev, m_st, msh_node); //MB
-    
-       if(cnodev->node_distype==6)         // CriticalDepth Condition
-           value = GetCriticalDepthNODValue(cnodev, m_st, msh_node); //MB
-    
-       if(cnodev->node_distype == 8)      // NormalDepth Condition JOD
-           value = GetNormalDepthNODValue(m_st, msh_node); //MB        
-	}
+      if(cnodev->node_distype==5)       // River Condition
+        value = GetRiverNODValue(cnodev, m_st, msh_node); //MB
+      if(cnodev->node_distype==6)         // CriticalDepth Condition
+        value = GetCriticalDepthNODValue(cnodev, m_st, msh_node); //MB
+      if(cnodev->node_distype == 8)      // NormalDepth Condition JOD
+        value = GetNormalDepthNODValue(m_st, msh_node); //MB        
+//OK	}
       //--------------------------------------------------------------------
-      // FCT
-    curve = cnodev->CurveIndex;
-    if(curve>0) {
-       time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
-       if (!valid)  {
+      // FCT-OLD
+      curve = cnodev->CurveIndex;
+      if(curve>0) 
+      {
+        time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
+        if(!valid)  
+        {
           cout<<"\n!!! Time dependent curve is not found. Results are not guaranteed "<<endl;
           cout<<" in void CRFProcess::IncorporateSourceTerms(const double Scaling)"<<endl;
           time_fac = 1.0;
-       }
-    }
-    else time_fac = 1.0;
-    //             
-       
-    value *= time_fac* fac;
-       
-    if(m_msh) //WW
-	{
+        }
+      }
+      else time_fac = 1.0;
+      //--------------------------------------------------------------------
+      // Time dependencies - FCT    //YD
+      if(m_msh&&m_msh->geo_name.compare("REGIONAL")) //OK
+      {
+        if(m_st->fct_name.length()>0)
+        {
+          m_fct = FCTGet(pcs_number);
+          if(m_fct)
+            time_fac = m_fct->GetValue(aktuelle_zeit,&is_valid);
+          else
+            cout << "Warning in CRFProcess::IncorporateSourceTerms - no FCT data" << endl;
+        }
+      }
+      else 
+      {
+        if(m_st->fct_name.length()>0)
+        {
+          m_fct = FCTGet(m_st->fct_name);
+          if(m_fct)
+          {
+            time_fac = m_fct->GetValue(aktuelle_zeit,&is_valid);
+          }
+          else
+          {
+            cout << "Warning in CRFProcess::IncorporateSourceTerms - no FCT data" << endl;
+          }
+        }
+      }
+      value *= time_fac*fac; // * 1e-3 YDToDo
+      //------------------------------------------------------------------
+      // EQS->RHS
+      if(m_msh) //WW
+	  {
         if(rank>-1)
           bc_eqs_index = msh_node+shift;   
 		else
-           bc_eqs_index = m_msh->nod_vector[msh_node]->GetEquationIndex()+shift;   
-	} 
-    else 
+          bc_eqs_index = m_msh->nod_vector[msh_node]->GetEquationIndex()+shift;   
+	  } 
+      else 
         bc_eqs_index = GetNodeIndex(msh_node)+shift;
-     //   
-    if((int)continuum_vector.size() > 1)
-    {
+      //------------------------------------------------------------------
+      if((int)continuum_vector.size() > 1)
+      {
         //YD/WW
         if(m_st->pcs_pv_name.find(pcs_primary_function_name[continuum]) == string::npos)
-           continue;
+          continue;
+      }
+      eqs_rhs[bc_eqs_index] += value;
     }
-    eqs_rhs[bc_eqs_index] += value;
   }
- 
-  //-----------------------------------------------------------------------
+  //====================================================================
 }
+
 /**************************************************************************
 FEMLib-Method: 
 Task: 
@@ -4828,34 +4855,6 @@ string PCSProblemType()
     }
   }
   return pcs_problem_type;
-}
-
-/**************************************************************************
-FEMLib-Method: 
-Task: 
-Programing:
-11/2004 OK Implementation
-**************************************************************************/
-void CRFProcess::CalcELEVelocities(void)
-{
-  long e;
-  double theta = 1.0;
-  if(m_msh){
-     CElem* elem = NULL;
-     for (e = 0; e < (long)m_msh->ele_vector.size(); e++)
-     {
-        elem = m_msh->ele_vector[e];
-        if (elem->GetMark()) // Marked for use
-        {
-           //ToDo VELCalcElementVelocity(e,theta,pcs_type_number);
-        }
-	 }
-  }
-  else{
-    for(e=0;e<ElementListLength;e++){
-      VELCalcElementVelocity(e,theta,pcs_type_number);
-    }
-  }
 }
 
 /**************************************************************************
@@ -5866,7 +5865,7 @@ double CRFProcess::ExecuteNonLinear()
   {
     for(i=0;i<(int)continuum_vector.size();i++) //OK???YD
     {
-      cout << " PCS continuum type: " << i << endl;
+      //OK cout << " PCS continuum type: " << i << endl;
       continuum = i;
       //..................................................................
       for(iter=0;iter<pcs_nonlinear_iterations;iter++)
@@ -6462,6 +6461,7 @@ void CRFProcess::AssembleParabolicEquationRHSVector()
   }
   //----------------------------------------------------------------------
 }
+
 /*************************************************************************
 GeoSys-FEM Function:
 06/2006 YD Implementation
@@ -6779,4 +6779,369 @@ void CRFProcess::CreateSTGroup()
      delete oSourceNBC_RHS_file;
      oSourceNBC_RHS_file = NULL; 
   }
+}
+
+/**************************************************************************
+PCSLib-Method: 
+08/2006 OK Implementation
+**************************************************************************/
+void CRFProcess::CalcELEFluxes(CGLPoint*m_pnt)
+{
+  m_pnt = NULL;
+}
+
+/**************************************************************************
+PCSLib-Method: 
+08/2006 OK Implementation
+**************************************************************************/
+double CRFProcess::CalcELEFluxes(CGLPolyline*m_ply)
+{
+  long i;
+  int f_eidx[3];
+  f_eidx[0] = GetElementValueIndex("FLUX_X");
+  f_eidx[1] = GetElementValueIndex("FLUX_Y");
+  f_eidx[2] = GetElementValueIndex("FLUX_Z");
+  for(i=0;i<3;i++)
+  {
+    if(f_eidx[i]<0)
+    {
+      //cout << "Fatal error in CRFProcess::CalcELEFluxes(CGLPolyline*m_ply) - abort"; abort();
+      cout << "Warning in CRFProcess::CalcELEFluxes(CGLPolyline*m_ply) - return" << endl; 
+      return 0.0;
+    }
+  }
+  double f[3];
+  int v_eidx[3];
+  CRFProcess* m_pcs_flow = NULL;
+  if(pcs_type_name.find("FLOW")!=string::npos)
+  {
+    m_pcs_flow = this;
+  }
+  else
+  {
+    m_pcs_flow = PCSGet("GROUNDWATER_FLOW");
+  }
+  v_eidx[0] = m_pcs_flow->GetElementValueIndex("VELOCITY1_X");
+  v_eidx[1] = m_pcs_flow->GetElementValueIndex("VELOCITY1_Y");
+  v_eidx[2] = m_pcs_flow->GetElementValueIndex("VELOCITY1_Z");
+  for(i=0;i<3;i++)
+  {
+    if(v_eidx[i]<0)
+    {
+      cout << "Fatal error in CRFProcess::CalcELEFluxes(CGLPolyline*m_ply) - abort"; abort();
+    }
+  }
+  double v[3];
+  //----------------------------------------------------------------------
+  // Get elements at GEO
+  vector<long>ele_vector_at_geo;
+  m_msh->GetELEOnPLY(m_ply,ele_vector_at_geo);
+  //----------------------------------------------------------------------
+  CElem* m_ele = NULL;
+  CEdge* m_edg = NULL;
+  vec<CEdge*>ele_edges_vector(15);
+  int j;
+  double edg_normal_vector[3];
+  double vn;
+  double edg_length;
+  double vn_vec[3];  
+  double edge_vector[3];
+  double f_n_sum = 0.0;
+  double C_ele = 0.0;
+  vec<long>element_nodes(20);
+  int nidx;
+  //======================================================================
+  for(i=0;i<(long)ele_vector_at_geo.size();i++)
+  {
+    m_ele = m_msh->ele_vector[ele_vector_at_geo[i]];
+    m_ele->SetNormalVector();
+    m_ele->GetNodeIndeces(element_nodes);
+    for(j=0;j<3;j++)
+    {
+      SetElementValue(m_ele->GetIndex(),f_eidx[j],0.0);
+    }
+    //--------------------------------------------------------------------
+    // velocity vector
+    for(j=0;j<3;j++)
+    {
+      v[j] = m_pcs_flow->GetElementValue(m_ele->GetIndex(),v_eidx[j]);
+    }
+    // edge projection // edge marked
+    m_ele->GetEdges(ele_edges_vector);
+    for(j=0;j<(int)m_ele->GetEdgesNumber();j++)
+    {
+      m_edg = ele_edges_vector[j];
+      if(m_edg->GetMark())
+      {
+        m_edg->SetNormalVector(m_ele->normal_vector,edg_normal_vector);
+        edg_length = m_edg->Length();
+        m_edg->GetEdgeVector(edge_vector);
+      }
+    }
+    vn = MSkalarprodukt(v,edg_normal_vector,3);
+    for(j=0;j<3;j++)
+    {
+      vn_vec[j] = vn * edg_normal_vector[j];
+    }
+    //--------------------------------------------------------------------
+    switch(pcs_type_name[0])
+    {
+      //..................................................................
+      case 'L': // Liquid flow
+        break;
+      case 'G': // Groundwater flow
+        // Volume flux = v_n * l^e * z^e
+        for(j=0;j<3;j++)
+        {
+          f[j] = vn_vec[j] * edg_length * m_ele->GetFluxArea();
+        }
+        break;
+      case 'T': // Two-phase flow
+        break;
+      case 'C': // Componental flow
+        break;
+      case 'H': // heat transport
+        break;
+      case 'M': // Mass transport
+        // Mass flux = v_n * l^e * z^e * C^e
+        C_ele = 0.0;
+        for(j=0;j<m_ele->GetNodesNumber(false);j++)
+        {
+          nidx = GetNodeValueIndex(pcs_primary_function_name[0])+1;
+          C_ele =+ GetNodeValue(element_nodes[j],nidx);
+        }
+        C_ele /=(double)m_ele->GetNodesNumber(false);
+        for(j=0;j<3;j++)
+        {
+          f[j] = vn_vec[j] * edg_length * m_ele->GetFluxArea() * C_ele;
+        }
+        break;
+      case 'O': // Overland flow
+        break;
+      case 'R': //OK4104 Richards flow
+        break;
+      case 'A': // Air (gas) flow
+        break;
+	  case 'F':	// Fluid Momentum Process
+        break;
+    }
+    //--------------------------------------------------------------------
+    // set
+    for(j=0;j<3;j++)
+    {
+      SetElementValue(m_ele->GetIndex(),f_eidx[j],f[j]);
+    }
+    // overall flux across polyline
+    f_n_sum += MBtrgVec(f,3);
+  }
+  //======================================================================
+  ele_vector_at_geo.clear();
+  //----------------------------------------------------------------------
+  return f_n_sum;
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Task: 
+Programing:
+11/2004 OK Implementation
+08/2006 OK new
+**************************************************************************/
+void CRFProcess::CalcELEVelocities(void)
+{
+  long i;
+  //----------------------------------------------------------------------
+  int eidx[3];
+  eidx[0] = GetElementValueIndex("VELOCITY1_X");
+  eidx[1] = GetElementValueIndex("VELOCITY1_Y");
+  eidx[2] = GetElementValueIndex("VELOCITY1_Z");
+  for(i=0;i<3;i++)
+  {
+    if(eidx[i]<0)
+    {
+      cout << "Fatal error in CRFProcess::CalcELEVelocities - abort"; abort();
+    }
+  }
+  //----------------------------------------------------------------------
+  CElem* m_ele = NULL;
+  FiniteElement::ElementValue* gp_ele = NULL;
+  double vx,vy,vz;
+  for(i=0l;i<(long)m_msh->ele_vector.size();i++){
+    m_ele = m_msh->ele_vector[i];
+    gp_ele = ele_gp_value[i];
+    vx = gp_ele->Velocity(0,0);
+    SetElementValue(i,eidx[0],vx);
+    SetElementValue(i,eidx[0]+1,vx);
+    vy = gp_ele->Velocity(1,0);
+    SetElementValue(i,eidx[1],vy);
+    SetElementValue(i,eidx[1]+1,vy);
+    vz = gp_ele->Velocity(2,0);
+    SetElementValue(i,eidx[2],vz);
+    SetElementValue(i,eidx[2]+1,vz);
+  }
+  //----------------------------------------------------------------------
+}
+
+/*************************************************************************
+GeoSys-FEM Function:
+08/2006 OK Implementation
+**************************************************************************/
+void CRFProcess::AssembleParabolicEquationRHSVector(CNode*m_nod)//(vector<long>&ele_number_vector)
+{
+  //cout << "CRFProcess::AssembleParabolicEquationRHSVector" << endl;
+  int i;
+  long ldummy;
+  double ddummy;
+  //----------------------------------------------------------------------
+  // Init
+  for(i=0;i<(int)m_nod->connected_elements.size();i++)
+  {
+    eqs->b[m_nod->connected_elements[i]] = 0.0;
+  }
+  //----------------------------------------------------------------------
+  CElem* m_ele = NULL;
+  CEdge* m_edg = NULL;
+  double edg_normal_vector[3];
+  double edge_mid_point[3];
+  vec<CEdge*>ele_edges_vector(15);
+  int j;
+  double aux_vector[3];
+  double* gravity_center = NULL;
+  double check_sign;
+  //----------------------------------------------------------------------
+  // Element velocity
+  int v_eidx[3];
+  v_eidx[0] = GetElementValueIndex("VELOCITY1_X");
+  v_eidx[1] = GetElementValueIndex("VELOCITY1_Y");
+  v_eidx[2] = GetElementValueIndex("VELOCITY1_Z");
+  for(i=0;i<3;i++)
+  {
+    if(v_eidx[i]<0)
+    {
+      cout << "Warning in CRFProcess::AssembleParabolicEquationRHSVector - no PCS-VEL data" << endl;
+      return;
+    }
+  }
+  double v[3];
+  //======================================================================
+  // Topology
+  for(i=0;i<(int)m_nod->connected_elements.size();i++)
+  {
+    m_ele = m_msh->ele_vector[m_nod->connected_elements[i]];
+    v[0] = GetElementValue(m_ele->GetIndex(),v_eidx[0]);
+    v[1] = GetElementValue(m_ele->GetIndex(),v_eidx[1]);
+    v[2] = GetElementValue(m_ele->GetIndex(),v_eidx[2]);
+    m_ele->SetMark(false);
+    switch(m_ele->GetElementType())
+    {
+      //------------------------------------------------------------------
+      // line elements
+      case 1:
+v[1] = GetElementValue(m_ele->GetIndex(),v_eidx[0]);
+v[0] = GetElementValue(m_ele->GetIndex(),v_eidx[1]);
+        if(m_nod->connected_elements.size()==1)
+        {
+          m_ele->SetMark(true);
+          break;
+        }
+        gravity_center = m_ele->GetGravityCenter();
+        aux_vector[0] = gravity_center[0] - m_nod->X();
+        aux_vector[1] = gravity_center[1] - m_nod->Y();
+        aux_vector[2] = gravity_center[2] - m_nod->Z();
+        check_sign = MSkalarprodukt(v,aux_vector,3);
+        if(check_sign<0.0)
+          m_ele->SetMark(true);
+        break;
+      //------------------------------------------------------------------
+      // tri elements
+      case 4:
+        m_ele->GetEdges(ele_edges_vector);
+        for(j=0;j<(int)m_ele->GetEdgesNumber();j++)
+        {
+          m_edg = ele_edges_vector[j];
+          if(m_edg->GetMark())
+          {
+            m_edg->SetNormalVector(m_ele->normal_vector,edg_normal_vector);
+            break;
+/*
+            m_edg->GetEdgeMidPoint(edge_mid_point);
+           gravity_center = m_ele->GetGravityCenter();
+           aux_vector[0] = gravity_center[0] - edge_mid_point[0];
+           aux_vector[1] = gravity_center[1] - edge_mid_point[1];
+           aux_vector[2] = gravity_center[2] - edge_mid_point[2];
+           check_sign = MSkalarprodukt(edg_normal_vector,aux_vector,3);
+           if(check_sign<0.0) break;
+*/
+          }
+        }
+        if(m_edg->GetMark()) break;
+      //----------------------------------------------------------------
+      // ToDo
+      default:
+        cout << "Warning in CRFProcess::AssembleParabolicEquationRHSVector - not implemented for this element type" << endl;
+        break;
+    } // switch
+  }
+  //======================================================================
+  for(i=0;i<(int)m_nod->connected_elements.size();i++)
+  {
+    m_ele = m_msh->ele_vector[m_nod->connected_elements[i]];
+    switch(m_ele->GetElementType())
+    {
+      //------------------------------------------------------------------
+      // line elements
+      case 1:
+        if(m_ele->GetMark())
+        {
+          cout << m_ele->GetIndex() << endl;
+ldummy = m_nod->GetIndex();
+ddummy = eqs->b[m_nod->GetIndex()];
+          fem->ConfigElement(m_ele,false);
+          fem->AssembleParabolicEquationRHSVector();
+ddummy = eqs->b[m_nod->GetIndex()];
+        } 
+        break;
+      //------------------------------------------------------------------
+      // tri elements
+      case 4:
+        m_edg->GetEdgeMidPoint(edge_mid_point);
+        gravity_center = m_ele->GetGravityCenter();
+        aux_vector[0] = gravity_center[0] - edge_mid_point[0];
+        aux_vector[1] = gravity_center[1] - edge_mid_point[1];
+        aux_vector[2] = gravity_center[2] - edge_mid_point[2];
+        check_sign = MSkalarprodukt(edg_normal_vector,aux_vector,3);
+        if(check_sign<0.0) continue;
+        {
+          //cout << m_ele->GetIndex() << endl;
+          fem->ConfigElement(m_ele,false);
+          fem->AssembleParabolicEquationRHSVector();
+        } 
+        break;
+      //----------------------------------------------------------------
+      // ToDo
+      default:
+        cout << "Warning in CRFProcess::AssembleParabolicEquationRHSVector - not implemented for this element type" << endl;
+        break;
+    } // switch
+  }
+  //======================================================================
+}
+
+/**************************************************************************
+PCSLib-Method:
+08/2006 OK Implementation
+compare with CMCDs PCSGetFluxProcess
+**************************************************************************/
+CRFProcess* PCSGetFlow()
+{
+  CRFProcess *m_pcs = NULL;
+  for(int i=0;i<(int)pcs_vector.size();i++)
+  {
+    m_pcs = pcs_vector[i];
+    if(m_pcs->pcs_type_name.find("FLOW")!=string::npos)
+    {
+      return m_pcs;
+    }
+  }
+  return NULL;
 }

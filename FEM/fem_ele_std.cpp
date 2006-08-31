@@ -70,7 +70,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
     idx0 = idx1 = 0; // column index in the node value data
 	  LocalShift = 0; 
     pcsT = pcs->pcs_type_name[0];
-    if(pcs->pcs_type_name.find("GAS")!=string::npos)
+    if(pcs->pcs_type_name.find("AIR")!=string::npos) //OK
        pcsT = 'A';
     switch(pcsT){
       default:
@@ -157,6 +157,8 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
         break;
       case 'A': // Air (gas) flow
         PcsType = A;
+        idx0 = pcs->GetNodeValueIndex("PRESSURE1"); //OK
+        idx1 = idx0+1; //OK
         break;
 	  case 'F':	// Fluid Momentum Process
 		PcsType = R;	// R should include L if the eqn of R is written right.
@@ -325,7 +327,7 @@ void  CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bo
 
   char pcsT; 
   pcsT = pcs->pcs_type_name[0];
- if(pcs->pcs_type_name.find("GAS")!=string::npos)
+ if(pcs->pcs_type_name.find("AIR")!=string::npos) //OK
     pcsT = 'A';
 
 
@@ -1492,8 +1494,6 @@ void CFiniteElementStd::CalcLaplace()
       //---------------------------------------------------------
       // Material
       CalCoefLaplace(false,gp); 
-
-      
       //---------------------------------------------------------
       // Calculate mass matrix
       //this->pcs->m_msh

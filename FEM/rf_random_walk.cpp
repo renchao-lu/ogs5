@@ -3419,7 +3419,8 @@ void DATWritePCTFile(const char *file_name)
 #ifdef RANDOM_WALK	//WW
     RW = m_msh->PT;
 #endif
-    
+    if(!RW) //OK
+      return;
     sprintf(pct_file_name,"%s.%s",file_name,"pct");
     pct_file = fopen(pct_file_name,"w+t");
     
@@ -3429,9 +3430,7 @@ void DATWritePCTFile(const char *file_name)
         fprintf(pct_file, "%d %17.12e %17.12e %17.12e\n",
             RW->X[i].Now.elementIndex, RW->X[i].Now.x, RW->X[i].Now.y, RW->X[i].Now.z);
     }
-
     // Let's close it, now
     fclose(pct_file);
-
 }
 

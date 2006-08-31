@@ -773,6 +773,7 @@ void CElement::ComputeShapefct(const int order)
 **************************************************************************/
 void CElement::ComputeGradShapefct(const int order)
 {
+//OK dim = 1;
 	int i, j, k;
     static double Var[3]; 
     double *dN = dshapefct;

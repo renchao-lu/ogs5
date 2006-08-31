@@ -72,6 +72,8 @@ class CSourceTerm
     bool conditional;
     bool river;
     bool critical_depth;
+    //FCT
+    string fct_name;
     // TIM
     int curve;
     string tim_type_name;
@@ -141,17 +143,18 @@ class CSourceTermGroup
 	 //WW Changed from the above
 //    double GetAnalyticalSolution(CSourceTerm *m_st,long node_number, string process);//CMCD
     // TRANSFER OF DUAL RICHARDS
+    string fct_name; //YD
   private:
     void SetPLY(CSourceTerm*); //OK
 };
 
 extern CSourceTermGroup* STGetGroup(string pcs_type_name,string pcs_pv_name);
-extern list<CSourceTermGroup*> st_group_list;
+extern list<CSourceTermGroup*>st_group_list;
 extern bool STRead(string);
 extern void STWrite(string);
 #define ST_FILE_EXTENSION ".st"
 extern void STCreateFromPNT();
-extern vector<CSourceTerm*> st_vector;
+extern vector<CSourceTerm*>st_vector;
 extern void STDelete();
 void STCreateFromLIN(vector<CGLLine*>);
 CSourceTerm* STGet(string);

@@ -29,7 +29,7 @@ CNodeValue::CNodeValue()
   node_parameterE = 0.;
   CurveIndex = -1;
   conditional = -1;
- 
+  check_me = true; //OK
 }
 
 /**************************************************************************
@@ -41,7 +41,9 @@ last modification:
 **************************************************************************/
 CNodeValue::~CNodeValue()
 {
+  check_me = false; //OK
 }
+
 /**************************************************************************
 FEMLib-Method:
 Task: destructor

@@ -143,7 +143,9 @@ class CRFProcess {
 	//....................................................................
 	// OUT
 	// Element matrices output
+  public: //OK
     bool Write_Matrix;
+  protected: //WW
     fstream *matrix_file;
     // Write RHS from source or Neumann BC terms to file
     // 0: Do nothing
@@ -186,7 +188,6 @@ class CRFProcess {
     vector<long> rank_st_node_value_in_dom; //WW
     void RecordNodeVSize(const int Size) {orig_size = Size;} //WW
     int GetOrigNodeVSize () const {return orig_size;} //WW
-
 	//....................................................................
 	// 7-MFP
 	//....................................................................
@@ -250,6 +251,9 @@ class CRFProcess {
 	//....................................................................
 	// 14-CPL
     void SetCPL(); //OK8 OK4310
+	//....................................................................
+	// 15-EQS
+    void AssembleParabolicEquationRHSVector(CNode*); //(vector<long>&); //OK
 	//....................................................................
 	int Shift[10];
     // Construction / destruction
@@ -428,6 +432,9 @@ class CRFProcess {
     void PrimaryVariableReloadRichards(); //YD
     void PrimaryVariableStorageRichards(); //YD
     bool adaption; 
+    // FLX
+    void CalcELEFluxes(CGLPoint*); //OK
+    double CalcELEFluxes(CGLPolyline*); //OK
   private:
       int continuum;
 	  bool continuum_ic;
@@ -448,6 +455,7 @@ extern void PCSCreate();
 extern CRFProcess *PCSGet(string,string); //SB
 extern CRFProcess *PCSGet(string,bool); //OK
 extern CRFProcess *PCSGetFluxProcess();//CMCD
+extern CRFProcess *PCSGetFlow(); //OK
 // NOD
 extern int PCSGetNODValueIndex(string,int);
 extern double PCSGetNODValue(long,char*,int);

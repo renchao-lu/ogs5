@@ -36,6 +36,7 @@ class COutput
     string pcs_pv_name;//CMCD
     CRFProcess* GetPCS(string); //OK
     CRFProcess* GetPCS_ELE(string); //OK
+    CRFProcess* m_pcs; //OK
     // NOD values
     string nod_value_name;
     vector<string>nod_value_vector;
@@ -82,7 +83,7 @@ class COutput
     void WriteTECHeader(fstream& ,int,string);
     void WriteTECNodeData(fstream&);
     void WriteTECElementData(fstream&  ,int);
-    void NODWritePLYDataTEC(int);
+    double NODWritePLYDataTEC(int);
     void NODWritePNTDataTEC(double,int);
     void ELEWriteDOMDataTEC();
     void WriteELEValuesTECHeader(fstream&);
@@ -100,6 +101,15 @@ class COutput
     void WriteRFOElements(fstream&); //OK
     void WriteRFOValues(fstream&); //OK
     void NODWriteLAYDataTEC(int); //OK
+    void ELEWriteSFC_TEC(); //OK
+    void ELEWriteSFC_TECHeader(fstream&); //OK
+    void ELEWriteSFC_TECData(fstream&); //OK
+    void CalcELEFluxes(); //OK
+    void ELEWritePLY_TEC(); //OK
+    void ELEWritePLY_TECHeader(fstream&); //OK
+    void ELEWritePLY_TECData(fstream&); //OK
+    void TIMValue_TEC(double); //OK
+    double NODFlux(long); //OK
 };
 extern vector<COutput*>out_vector;
 extern bool OUTRead(string);
