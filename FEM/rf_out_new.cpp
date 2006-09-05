@@ -2481,12 +2481,18 @@ FEMLib-Method:
 Task: 
 Programing:
 04/2006 KG44 Implementation
+09/2006 KG44 Output for MPI - correct OUTPUT not yet implemented
 **************************************************************************/
 void COutput::WriteDataVTK(int number)
 {
   char number_char[10];
   sprintf(number_char,"%i",number);
   string number_string = number_char;
+
+#ifdef USE_MPI //KG44
+  char tf_name[10];
+  std::cout << "Process " << myrank << " in WriteDataVTK" << std::endl;
+#endif
 
   m_msh = FEMGet(pcs_type_name);
   if(!m_msh){
@@ -2496,7 +2502,18 @@ void COutput::WriteDataVTK(int number)
   //--------------------------------------------------------------------
   // File handling
   string vtk_file_name;
-  vtk_file_name = file_base_name + number_string + "." + "vtk";
+  vtk_file_name = file_base_name + number_string ;
+
+#ifdef USE_MPI //KG44
+    sprintf(tf_name, "%d", myrank);
+    vtk_file_name += "_" + string(tf_name);
+    std::cout << "VTK filename: " << vtk_file_name << endl;
+#endif
+    vtk_file_name += ".vtk";
+
+    if(!new_file_opened) remove(vtk_file_name.c_str()); //KG44
+
+
   fstream vtk_file (vtk_file_name.data(),ios::app|ios::out);
   vtk_file.setf(ios::fixed,ios::floatfield);
   vtk_file.precision(6);
