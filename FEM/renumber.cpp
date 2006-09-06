@@ -724,7 +724,7 @@ long gpsKern(long NumSav[], long nn, long NListe[], long iStart, long MaxIt)
     nl1 = gpsLevel(iStart, NListe, nn,
                    &Hilf[lev1], &Hilf[ih1], &ml1);      /* vorwaerts */
     if (nl1 <= 0) {
-        printf("\n\n *** GPS: System h„ngt nicht zusammen\n\n");
+        printf("\n\n *** GPS: System hngt nicht zusammen\n\n");
         Free(Hilf);
         Free(NumAlt);
         return ((long) -1);

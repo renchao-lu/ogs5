@@ -45,9 +45,10 @@ class CEdge:public CCore
       bool operator == (CEdge& edg);
       // Output
       void Write(ostream& osm=cout) const;
-      void SetNormalVector(double*,double*); //OK
-      void GetEdgeVector(double*); //OK
-      void GetEdgeMidPoint(double*); //OK
+      //
+      void SetNormalVector(double *ele_normal_vector, double *normal_vector); //OK
+      void GetEdgeVector(double *edge_vector); //OK
+      void GetEdgeMidPoint(double *edge_vector); //OK
 };
 
 } // namespace Mesh_Group

@@ -36,17 +36,17 @@ class CCore
       bool quadratic; // higher order
       string deli; // delimitor
       // Finite element objects
-	  friend class FiniteElement::CElement;  
-	  friend class FiniteElement::CFiniteElementStd; 
-	  friend class FiniteElement::CFiniteElementVec; 
+      friend class FiniteElement::CElement;  
+      friend class FiniteElement::CFiniteElementStd; 
+      friend class FiniteElement::CFiniteElementVec; 
       friend class FiniteElement::ElementMatrix; 
-	  friend class FiniteElement::ElementMatrix_DM;
+      friend class FiniteElement::ElementMatrix_DM;
    public: // Methods
       CCore(const int id);
-      virtual ~CCore() {}
+      ~CCore() {}
       // Operator
-      virtual void operator = (CCore & g) {g=g;}
-      virtual bool operator == (CCore & g) {g=g; return false;}
+      void operator = (CCore & g) {g=g;}
+      bool operator == (CCore & g) {g=g; return false;}
       // Get members
       long GetIndex() const {return index;} 
       bool GetMark() const {return mark;}
@@ -61,7 +61,7 @@ class CCore
       void SetMark(const bool state) {mark = state;}
       void SetIndex(const long lvalue){index=lvalue;} //OK
       // Output
-      virtual void Write(ostream& os=cout) const {os<<endl;};
+      void Write(ostream& os=cout) const {os<<endl;};
 };
 
 } // namespace Mesh_Group

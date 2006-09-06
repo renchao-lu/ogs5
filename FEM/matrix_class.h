@@ -39,12 +39,12 @@ class Matrix
 #endif     
 //----------------------------------------------
      // Operators
-     virtual void operator = (const double a);
-     virtual void operator *= (const double a);
-     virtual void operator += (const double a);
-     virtual void operator = (const Matrix& m);
-     virtual void operator += (const Matrix& m);
-     virtual void operator -= (const Matrix& m);
+     void operator = (const double a);
+     void operator *= (const double a);
+     void operator += (const double a);
+     void operator = (const Matrix& m);
+     void operator += (const Matrix& m);
+     void operator -= (const Matrix& m);
 
      void GetTranspose(Matrix& m);
 
@@ -56,8 +56,8 @@ class Matrix
      void multi(const Matrix& m1, const Matrix& m2, Matrix& m_result);
 
      // Access to members     
-     virtual double& operator() (const int i, const int j=0) const;  
-	 virtual void LimitSize(const int nRows, const int nCols=1);  
+     double& operator() (const int i, const int j=0) const;  
+     void LimitSize(const int nRows, const int nCols=1);  
 
      int Rows() const {return nrows;}
      int Cols() const {return ncols;}
@@ -95,13 +95,13 @@ class SymMatrix:public Matrix
 //----------------------------------------------
 
      // Operators
-     virtual void operator = (const double a);
-     virtual void operator *= (const double a);
-     virtual void operator += (const double a);
-     virtual void operator = (const SymMatrix& m);
-     virtual void operator += (const SymMatrix& m);
-     virtual void operator -= (const SymMatrix& m);
-	 virtual void LimitSize(const int dim);  
+     void operator = (const double a);
+     void operator *= (const double a);
+     void operator += (const double a);
+     void operator = (const SymMatrix& m);
+     void operator += (const SymMatrix& m);
+     void operator -= (const SymMatrix& m);
+     void LimitSize(const int dim);  
 
      // Access to members     
      double& operator() (const int i, const int j) const;  

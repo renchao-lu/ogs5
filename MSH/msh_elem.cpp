@@ -34,6 +34,7 @@ CElem::CElem(const long Index):CCore(Index)
    tranform_tensor = NULL;
    angle = NULL;
    gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
+   normal_vector = NULL;
    area = -1.0; //WW
 }
 /**************************************************************************
@@ -60,6 +61,7 @@ CElem::CElem():CCore(0)
    angle = NULL;
    gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
    area = -1.0; //WW area = 1.0
+   normal_vector = NULL;
 }
 /**************************************************************************
 MSHLib-Method: 
@@ -78,6 +80,8 @@ CElem::CElem(const long Index,CElem* onwer, const int Face):CCore(Index),owner(o
    gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
    tranform_tensor = NULL;
    angle = NULL;
+   normal_vector = NULL;
+   //
    switch(owner->geo_type)
    {
        case 1:  // 1-D bar element
@@ -193,9 +197,12 @@ CElem::~CElem()
    owner=NULL;
    if(tranform_tensor) delete tranform_tensor;
    tranform_tensor = NULL;
-   if(angle) delete angle;
+   if(angle) delete [] angle;
    angle = NULL;
    tranform_tensor = NULL;
+   if(normal_vector) 
+     delete [] normal_vector; 
+   normal_vector = NULL; 
 }
 /**************************************************************************
 MSHLib-Method: 
@@ -1557,6 +1564,7 @@ CElem::CElem( const long Index, CElem* m_ele_parent):CCore(Index)
   gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
   tranform_tensor = NULL;
   angle = NULL;
+  normal_vector = NULL;
   switch(m_ele_parent->geo_type)
   {
       case 1:
@@ -1636,6 +1644,8 @@ MSHLib-Method:
 void CElem::SetNormalVector()
 {
   double v1[3],v2[3];
+  if(!normal_vector) 
+     normal_vector = new double[3]; //WW
   //----------------------------------------------------------------------
   switch(GetElementType())
   {

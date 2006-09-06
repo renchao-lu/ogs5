@@ -610,7 +610,7 @@ void CRFProcessDeformation::InitGauss(void)
   int j, k, gp, NGS, NGSS, MatGroup, n_dom;
   int PModel = 1;
   int gp_r=0, gp_s=0, gp_t=0;
-  double z=0.0;
+//  double z=0.0;
   double xyz[3];
   static double Strs[6];
   ElementValue_DM *eleV_DM = NULL;
@@ -1981,7 +1981,7 @@ void CRFProcessDeformation:: GlobalAssembly()
 
      //
 	 
-	 //	 {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
+	 //	 	 {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
 
      // Apply Neumann BC
      IncorporateSourceTerms();
@@ -1990,7 +1990,7 @@ void CRFProcessDeformation:: GlobalAssembly()
         IncorporateBoundaryConditions();
 	 else
         CalcBC_or_SecondaryVariable_Dynamics(true);
-     //  	 {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
+     //  {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
 
      //
    }
@@ -2221,7 +2221,8 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
       number_of_nodes = (int)nodes_vector.size();
       for(j=0;j<problem_dimension_dm;j++)
       {		 
-          for(i=0;i<number_of_nodes;i++){
+          for(i=0;i<number_of_nodes;i++)
+          {
              m_node_value = new CNodeValue();
              m_node_value->msh_node_number = nodes_vector[i]+Shift[j];
              m_node_value->geo_node_number = nodes_vector[i];
@@ -2257,7 +2258,7 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
    PreLoad = 1;
 
 //TEST OUTPUT
-//{MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
+//   {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
 }
 
 

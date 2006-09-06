@@ -3337,9 +3337,10 @@ Programing:
 05/2005 MX Implementation
 last modification:
 **************************************************************************/
-double CMediumProperties::PorosityEffectiveConstrainedSwellingConstantIonicStrength(long index,double saturation,double temperature, double *porosity_sw)
+double CMediumProperties::PorosityEffectiveConstrainedSwellingConstantIonicStrength(long index, 
+				double saturation,double temperature, double *porosity_sw)
 {
-
+porosity_sw = porosity_sw; // WW Remove this argument
  /*  Soil Properties */
 
   double mat_mp_m, beta;

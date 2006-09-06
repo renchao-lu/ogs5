@@ -236,7 +236,6 @@ int LOPPreTimeLoop_PCS(void)
      int no_processes =(int)pcs_vector.size();
      CRFProcess* m_pcs = NULL;
      bool DOF_gt_one = false;
-     CPARDomain *m_dom = NULL;
      //----------------------------------------------------------------------
      for(i=0;i<no_processes;i++){
        m_pcs = pcs_vector[i];
@@ -426,9 +425,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
           pcs_flow_error = m_pcs->ExecuteNonLinear();
         PCSCalcSecondaryVariables(); // PCS member function
         if (CalcVelocities)
-        { 
           m_pcs->CalIntegrationPointValue(); //WW
-        }
       }
 #ifdef _FEMPCHDEBUG_
 	// PCH Let's monitor what's going on in the FEM
@@ -1090,7 +1087,6 @@ void LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
   int idxS  = m_pcs_global->GetNodeValueIndex("SATURATION1") + timelevel;
   CElem* m_ele_local = NULL;
   CNode* m_nod_local = NULL;
-  CNodeValue* m_nod_value = NULL;
   //======================================================================
   if(aktueller_zeitschritt==1)
   {
@@ -1154,7 +1150,6 @@ void LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
       m_pcs_local->st_node_value.push_back(m_nod_value);
     }
 */
-    CSourceTerm* m_st_local = NULL;
     m_pcs_local->st_node_value.clear();
     m_pcs_local->st_node.clear();
     for(j=0;j<(int)m_pcs_global->st_node_value.size();j++)             

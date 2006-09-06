@@ -196,7 +196,7 @@ class CRFProcess {
 	// 9-MMP
 	int GetContinnumType() {return continuum;}
    // const int number_continuum=1;
-	vector<double> continuum_vector;
+    vector<double> continuum_vector;
 	//....................................................................
 	// 10-MCP
 	//....................................................................
@@ -213,7 +213,7 @@ class CRFProcess {
     // Construction / destruction
     CRFProcess(void);
     void Create(void);
-	void CreateFDMProcess();
+    void CreateFDMProcess();
     virtual ~CRFProcess();
     void DestroyFDMProcess();
 	//....................................................................
@@ -381,7 +381,7 @@ class CRFProcess {
     void CalIntegrationPointValue();
     bool cal_integration_point_value; //WW
     //---
-    virtual double Execute();
+    double Execute();
     double ExecuteNonLinear();
     void InitEQS();
     virtual void CalculateElementMatrices(void) ;

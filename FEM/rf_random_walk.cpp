@@ -1842,6 +1842,10 @@ Programing:
 **************************************************************************/
 void RandomWalk::RandomlyDriftAway(Particle* A, double dt, double* delta, int type)
 {
+
+	type = type; //WW
+	A = A; //WW
+
     CElem* m_ele = m_msh->ele_vector[A->elementIndex];
 
     // Let's generate three random components N(0,1) and use it to compute deltaOfX
@@ -3346,6 +3350,7 @@ int RandomWalk::Select(double* roulette, int numOfCases)
 	for(int i=0; i<numOfCases; ++i)
 		if(probability < roulette[i])
 			return (i);
+        return 0; //WW
 }
 
 /**************************************************************************

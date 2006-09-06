@@ -496,7 +496,7 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
   switch(m_pcs->pcs_type_name[0]){
     case 'R': // Richards
       idxS  = m_pcs->GetNodeValueIndex("SATURATION1");
-      no_time_steps = int(1e10);
+      no_time_steps = (int)(1.0e10);
 	  time_step_length = 1.e10;
 	  for(int m=0;m< mmp_vector_size;m++) m_mmp = mmp_vector[m];
 	  for (i=0;i< (long)m_pcs->m_msh->ele_vector.size();i++){  
@@ -684,7 +684,7 @@ double CTimeDiscretization::AdaptiveFirstTimeStepEstimate(void)
   switch(m_pcs->pcs_type_name[0]){
     case 'R': // Richards
       idxp  = m_pcs->GetNodeValueIndex("PRESSURE1")+1;
-      no_time_steps = int(1e10);
+      no_time_steps = (int)(1e10);
 	  time_step_length = 1.e10;
 	  for (i=0;i< (long)m_pcs->m_msh->ele_vector.size();i++){  
         elem = m_pcs->m_msh->ele_vector[i];

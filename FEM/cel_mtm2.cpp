@@ -3025,6 +3025,7 @@ void *MTM2DestroyELEMatricesPointer ( void *data )
 **************************************************************************/
 double MTM2GetSaturation(int phase, long index, double r, double s, double t, double theta)
 {
+phase = phase;
   static double satu_old, satu_new, satu = -1.0;
   string saturation_name = "SATURATION";
   char char_phase[1];

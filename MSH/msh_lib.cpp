@@ -451,7 +451,7 @@ bool FEMRead(string file_base_name)
     msh_file_ascii.open(msh_file_name_ascii.data(),ios::in);
     if (!msh_file_ascii.good()){
 #ifdef MFC
-      AfxMessageBox("Reading MSH file failed");
+      AfxMessageBox("Opening MSH file failed");
 #endif
       return false;
     }

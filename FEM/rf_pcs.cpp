@@ -476,6 +476,18 @@ void CRFProcess::Create()
     if(pcs_type_name.compare("GROUNDWATER_FLOW")==0)
       MSHDefineMobile(this);
   }
+
+  //----------------------------------------------------------------------
+  // Element matrix output. WW
+  if(Write_Matrix)
+  {
+    cout << "->Write Matrix" << '\n';
+     string m_file_name = FileName +"_"+pcs_type_name+"_element_matrix.txt";
+     matrix_file = new fstream(m_file_name.c_str(),ios::trunc|ios::out);
+     if (!matrix_file->good())
+       cout << "Warning in GlobalAssembly: Matrix files are not found" << endl;
+  }
+
   //----------------------------------------------------------------------------
   int DOF = GetPrimaryVNumber(); //OK should be PCS member variable
   //----------------------------------------------------------------------------
@@ -808,16 +820,6 @@ void CRFProcess::Create()
   CalcSecondaryVariables(time_level);
   if(pcs_type_name.find("RICHARD")!=string::npos)    //YD
       continuum_ic = false;
-  //----------------------------------------------------------------------
-  // Element matrix output. WW
-  if(Write_Matrix)
-  {
-    cout << "->Write Matrix" << '\n';
-     string m_file_name = FileName +"_"+pcs_type_name+"_element_matrix.txt";
-     matrix_file = new fstream(m_file_name.c_str(),ios::trunc|ios::out);
-     if (!matrix_file->good())
-       cout << "Warning in GlobalAssembly: Matrix files are not found" << endl;
-  }
 
   if(compute_domain_face_normal) //WW
      m_msh->FaceNormal();        
@@ -4331,20 +4333,7 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
       if(cnodev->node_distype == 8)      // NormalDepth Condition JOD
         value = GetNormalDepthNODValue(m_st, msh_node); //MB        
 //OK	}
-      //--------------------------------------------------------------------
-      // FCT-OLD
-      curve = cnodev->CurveIndex;
-      if(curve>0) 
-      {
-        time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
-        if(!valid)  
-        {
-          cout<<"\n!!! Time dependent curve is not found. Results are not guaranteed "<<endl;
-          cout<<" in void CRFProcess::IncorporateSourceTerms(const double Scaling)"<<endl;
-          time_fac = 1.0;
-        }
-      }
-      else time_fac = 1.0;
+
       //--------------------------------------------------------------------
       // Time dependencies - FCT    //YD
       if(m_msh&&m_msh->geo_name.compare("REGIONAL")) //OK
@@ -4373,27 +4362,41 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
           }
         }
       }
-      value *= time_fac*fac; // * 1e-3 YDToDo
-      //------------------------------------------------------------------
-      // EQS->RHS
-      if(m_msh) //WW
-	  {
-        if(rank>-1)
-          bc_eqs_index = msh_node+shift;   
-		else
-          bc_eqs_index = m_msh->nod_vector[msh_node]->GetEquationIndex()+shift;   
-	  } 
-      else 
-        bc_eqs_index = GetNodeIndex(msh_node)+shift;
-      //------------------------------------------------------------------
-      if((int)continuum_vector.size() > 1)
+    }	    
+    //--------------------------------------------------------------------
+    // FCT-OLD
+    curve = cnodev->CurveIndex;
+    if(curve>0) 
+    {
+      time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
+      if(!valid)  
       {
-        //YD/WW
-        if(m_st->pcs_pv_name.find(pcs_primary_function_name[continuum]) == string::npos)
-          continue;
+        cout<<"\n!!! Time dependent curve is not found. Results are not guaranteed "<<endl;
+        cout<<" in void CRFProcess::IncorporateSourceTerms(const double Scaling)"<<endl;
+        time_fac = 1.0;
       }
-      eqs_rhs[bc_eqs_index] += value;
     }
+    else time_fac = 1.0;
+    value *= time_fac*fac; // * 1e-3 YDToDo
+    //------------------------------------------------------------------
+    // EQS->RHS
+    if(m_msh) //WW
+    {
+      if(rank>-1)
+        bc_eqs_index = msh_node+shift;   
+      else
+        bc_eqs_index = m_msh->nod_vector[msh_node]->GetEquationIndex()+shift;   
+    } 
+    else 
+      bc_eqs_index = GetNodeIndex(msh_node)+shift;
+    //------------------------------------------------------------------
+    if((int)continuum_vector.size() > 1)
+    {
+      //YD/WW
+     if(m_st->pcs_pv_name.find(pcs_primary_function_name[continuum]) == string::npos)
+        continue;
+    }
+    eqs_rhs[bc_eqs_index] += value;
   }
   //====================================================================
 }
@@ -6537,7 +6540,7 @@ FEMLib-Method:
 void CRFProcess::SetCPL()
 {
   int i;
-  double value;
+  double value=0.0;
   //----------------------------------------------------------------------
   // Nothing to do
   if((cpl_type_name.size()==0)||(cpl_type_name.compare("PARTITIONED")==0))
@@ -6843,7 +6846,7 @@ double CRFProcess::CalcELEFluxes(CGLPolyline*m_ply)
   int j;
   double edg_normal_vector[3];
   double vn;
-  double edg_length;
+  double edg_length=0.0;
   double vn_vec[3];  
   double edge_vector[3];
   double f_n_sum = 0.0;

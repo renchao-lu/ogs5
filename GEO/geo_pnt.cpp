@@ -435,7 +435,7 @@ void GEOReadPointProperties(string file_name_base)
     line_string = line;
     if(line_string.empty())
       return;
-    sprintf(pnt_name,"PNT_PROPERTY_%i",gli_points_vector.size());
+    sprintf(pnt_name,"PNT_PROPERTY_%i",(int)gli_points_vector.size());
     m_pnt = new CGLPoint();
     m_pnt->name = (string)pnt_name;
     m_pnt->highlighted = false; //CC

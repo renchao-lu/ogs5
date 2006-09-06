@@ -3706,7 +3706,7 @@ void CFEMesh::GetELEOnPLY(CGLPolyline*m_ply,vector<long>&ele_vector_ply)
   int k;
   CElem* m_ele = NULL;
   CEdge* m_edg = NULL;
-  CNode* m_nod = NULL;
+//WW  CNode* m_nod = NULL;
   vec<CEdge*> ele_edges_vector(15);
   vector<long>nodes_vector_ply;
   vec<long>ele_nodes(8);
