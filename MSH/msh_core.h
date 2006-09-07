@@ -61,7 +61,7 @@ class CCore
       void SetMark(const bool state) {mark = state;}
       void SetIndex(const long lvalue){index=lvalue;} //OK
       // Output
-      void Write(ostream& os=cout) const {os<<endl;};
+      virtual void Write(ostream& os=cout) const {os<<endl;};
 };
 
 } // namespace Mesh_Group

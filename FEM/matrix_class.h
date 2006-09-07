@@ -39,9 +39,9 @@ class Matrix
 #endif     
 //----------------------------------------------
      // Operators
-     void operator = (const double a);
-     void operator *= (const double a);
-     void operator += (const double a);
+     virtual void operator = (const double a);
+     virtual void operator *= (const double a);
+     virtual void operator += (const double a);
      void operator = (const Matrix& m);
      void operator += (const Matrix& m);
      void operator -= (const Matrix& m);
@@ -56,7 +56,7 @@ class Matrix
      void multi(const Matrix& m1, const Matrix& m2, Matrix& m_result);
 
      // Access to members     
-     double& operator() (const int i, const int j=0) const;  
+     virtual double& operator() (const int i, const int j=0) const;  
      void LimitSize(const int nRows, const int nCols=1);  
 
      int Rows() const {return nrows;}
@@ -83,7 +83,7 @@ class SymMatrix:public Matrix
      SymMatrix();
      explicit SymMatrix(const SymMatrix& m);
      
-	 void resize(const int dim);
+     void resize(const int dim);
 
      ~SymMatrix() {}
 
@@ -124,17 +124,17 @@ template<class T> class vec
 
       virtual ~vec();
       // Operator
-      void operator = (T v) { for (int i=0; i<size; i++) entry[i] = v; }
-      void operator = (const vec<T>&);
-	  void resize(const int newh);
-      T& operator[] (int i) { return (T&) entry[i]; } 
-      const T& operator[] (int i) const {return (const T&) entry[i]; }
-      int Size() const { return size; } 
+      virtual void operator = (T v) { for (int i=0; i<size; i++) entry[i] = v; }
+      virtual void operator = (const vec<T>&);
+	  virtual void resize(const int newh);
+      virtual T& operator[] (int i) { return (T&) entry[i]; } 
+      virtual const T& operator[] (int i) const {return (const T&) entry[i]; }
+      virtual int Size() const { return size; } 
  
       T* Entry()        { return entry; }
       T* Entry()  const { return entry; }
  
-      void Write(ostream& os=cout) const;
+      virtual void Write(ostream& os=cout) const;
     protected:	      
       T* entry;						 
       int size;
@@ -159,9 +159,9 @@ template<> class vec<void*>
       void** Entry()          { return entry; }
       const void** Entry()  const { return (const void**)entry; }
 
-	  void resize(const int newh);
-      int Size() const { return size; }           
-      void Write(ostream& os=cout) const;
+	  virtual void resize(const int newh);
+      virtual int Size() const { return size; }           
+      virtual void Write(ostream& os=cout) const;
 
     protected:	      
       void** entry;						 

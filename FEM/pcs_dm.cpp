@@ -1894,8 +1894,7 @@ void CRFProcessDeformation:: DomainAssembly(CPARDomain* m_dom)
       }
       if(!fem_dm->dynamic)
          RecoverSolution(2);  // p_i-->p_0
-    }
-    
+    }   
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -1942,7 +1941,7 @@ void CRFProcessDeformation:: GlobalAssembly()
     //....................................................................
     // Assemble global system
     DDCAssembleGlobalMatrix();
-    // MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); abort();
+    // 	MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
   }
 #endif
   //----------------------------------------------------------------------

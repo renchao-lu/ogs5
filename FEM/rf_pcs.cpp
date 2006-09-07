@@ -3648,16 +3648,8 @@ void CRFProcess::GlobalAssembly()
     //....................................................................
     // Assemble global system
     DDCAssembleGlobalMatrix();
-	//IncorporateBoundaryConditions();      
 //	
-//	MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x); abort();
-//
-//	 MXDumpGLS("rf_pcs.txt",1,m_dom->eqs->b,m_dom->eqs->x); abort();
-//    IncorporateSourceTerms();
-//    IncorporateBoundaryConditions();   
- //  
-//	  MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x); abort();
-//
+//		MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x); //abort();
   }
   //----------------------------------------------------------------------
   // STD

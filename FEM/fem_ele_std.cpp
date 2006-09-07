@@ -1316,11 +1316,11 @@ void CFiniteElementStd::CalcMass()
          for (j = 0; j < nnodes; j++)
          {
              if(j>i) continue;
-             (*Mass)(i,j) += fkt *shapefct[i]*shapefct[j];
+              (*Mass)(i,j) += fkt *shapefct[i]*shapefct[j];
          }
   }
    //TEST OUTPUT
-//  if(Index == 195){cout << "Mass Matrix: " << endl; Mass->Write(); }
+//   {cout << "Mass Matrix: " << endl; Mass->Write(); }
 }
 /***************************************************************************
    GeoSys - Funktion: 
@@ -3136,12 +3136,12 @@ void CFiniteElementStd::Assembly()
         for(i=0;i<nnodes;i++)
           NodalVal_Sat[i] = m_pcs->GetNodeValue(nodes[i], idxS);
 	  }
-        AssembleMixedHyperbolicParabolicEquation(); //CMCD4213 
+      AssembleMixedHyperbolicParabolicEquation(); //CMCD4213 
 	  break;
     //....................................................................
-      case M: // Mass transport
-        AssembleMixedHyperbolicParabolicEquation(); //SB4200
-        break;
+    case M: // Mass transport
+      AssembleMixedHyperbolicParabolicEquation(); //SB4200
+      break;
     //....................................................................
     case O: // Overland flow
       if(pcs->m_num->nls_method == 0) //PICARD

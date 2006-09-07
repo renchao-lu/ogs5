@@ -2856,7 +2856,8 @@ void COutput::CalcELEFluxes()
   CRFProcess* m_pcs = PCSGet(pcs_type_name);
   if(!m_pcs)
   {
-    cout << "Warning in COutput::CalcELEFluxes(): no PCS data" << endl;
+    // 
+    // cout << "Warning in COutput::CalcELEFluxes(): no PCS data" << endl;
     return;
   }
   //----------------------------------------------------------------------
