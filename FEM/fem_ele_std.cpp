@@ -2205,7 +2205,8 @@ void CFiniteElementStd::AssembleParabolicEquation()
   // Laplace matrix.......................................................
   CalcLaplace();
 
-  pcs->timebuffer /= mat[0]; //YD
+  if(pcs->Tim->time_control_name.find("NEUMANN")!=string::npos)
+    pcs->timebuffer /= mat[0]; //YD
   //======================================================================
   // Assemble global matrix
   //----------------------------------------------------------------------
