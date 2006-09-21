@@ -671,8 +671,10 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 
 	// Compute the angles of the element for rotation.
 	// This process can be embedded into CElem class when in need.
+#ifdef RANDOM_WALK
 	for(int i=0; i< (int)m_msh->ele_vector.size(); ++i)
 		m_msh->PT->SolveAnglesOfTheElment(m_msh->ele_vector[i]);
+#endif
 }
 
 void FMRead(string file_base_name)

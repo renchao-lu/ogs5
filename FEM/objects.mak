@@ -94,7 +94,7 @@ balance.o\
 adaptiv.o\
 ../gs_project.o
 
-ifndef RANDOM_WALK
+ifndef NO_RANDOM_WALK
 FEMOBJS += rf_random_walk.o
 endif
 

@@ -29,8 +29,9 @@ using process::CRFProcessDeformation;
 //WW
 namespace Mesh_Group {class CFEMesh;}
 using  Mesh_Group::CFEMesh;
-void FindNodesOnInterface( CFEMesh *m_msh, bool quadr);
 #endif
+void FindNodesOnInterface( CFEMesh *m_msh, bool quadr);
+
 
 //-----------------------------------------------
 class CPARDomain

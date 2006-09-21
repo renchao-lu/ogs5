@@ -5,6 +5,7 @@ Programing:
 08/2005 WW/OK Encapsulation from rf_ele_msh
 last modified
 **************************************************************************/
+#include "rf_mmp_new.h"
 #include "stdafx.h" // MFC
 #ifdef MFC
 #include "afxpriv.h"    // For WM_SETMESSAGESTRING
