@@ -36,6 +36,7 @@ class CSolidProperties
     // Material parameters
     double PoissonRatio;
     double ThermalExpansion;
+    double biot_const;
     Matrix *data_Density;
     Matrix *data_Youngs;
     Matrix *data_Plasticity;

@@ -3669,10 +3669,10 @@ Last modified:
 void ShapeFunctionLine(double *N1, const double *u)
 {
   int i;
-//  N1[0] = 1.0 - u[0];
-//  N1[1] = 1.0 + u[0];
-  N1[0] = 1.0 + u[0];
-  N1[1] = 1.0 - u[0];
+  N1[0] = 1.0 - u[0];
+  N1[1] = 1.0 + u[0];
+//  N1[0] = 1.0 + u[0];
+//  N1[1] = 1.0 - u[0];
   for (i = 0; i < 2; i++)
     N1[i] *= 0.5;
 }
@@ -3702,8 +3702,8 @@ Last modified:
 void GradShapeFunctionLine(double *dN1, const double *u)
 {
   u = u;
-  dN1[0] = 0.5;	// PCH switched this for having positive sign of velocity
-  dN1[1] = -0.5;		// and have WW in agreement.
+  dN1[0] = -0.5;	
+  dN1[1] = 0.5;	
 }
 
 /***************************************************************************

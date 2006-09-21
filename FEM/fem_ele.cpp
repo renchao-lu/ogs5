@@ -393,6 +393,7 @@ double CElement::elemnt_average (const int idx, CRFProcess* m_pcs, const int ord
    06/2006     WW
    02/2005 OK case 1, line elements                                                                          
    01/2006 WW Axisymmtry                                                                         
+   09/2006 WW 1D element in 3D                                                                         
 **************************************************************************/
 double CElement::computeJacobian(const int order)
 {
@@ -401,7 +402,6 @@ double CElement::computeJacobian(const int order)
 	double DetJac = 0.0;
     double *dN = dshapefct;
 //    double *sh = shapefct;
-    double dL;
     double dx,dy,dz;
     dx=dy=dz=0.0;
 
@@ -421,14 +421,11 @@ double CElement::computeJacobian(const int order)
 	{
         //................................................................
         case 1: 
-          dx = X[0]-X[1];
-          dy = Y[1]-Y[0];
-          // We assume that line element always lies in 2D space
-          // If it is in 3D, a transform of 3D to 2D is applied  
-          dz = Z[1]-Z[0];
-          dL = sqrt(dx*dx+dy*dy+dz*dz);
-          Jacobian[0] = -0.5*dL; // -!
-          invJacobian[0] = -2.0/dL; //-!
+         // If Line in X or Z direction, coordinate is saved in local X
+         // If Line in 3D space, a transform is applied and cast coordinate in local X
+          dx = X[1]-X[0]+Y[1]-Y[0];
+          Jacobian[0] = 0.5*dx; 
+          invJacobian[0] = 2.0/dx;
           DetJac = Jacobian[0];
 		  if(MeshElement->area>0)
             DetJac*=MeshElement->area;
@@ -773,7 +770,6 @@ void CElement::ComputeShapefct(const int order)
 **************************************************************************/
 void CElement::ComputeGradShapefct(const int order)
 {
-//OK dim = 1;
 	int i, j, k;
     static double Var[3]; 
     double *dN = dshapefct;

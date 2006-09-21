@@ -2044,7 +2044,6 @@ void M2MatVek(double *vektor, double *ergebnis)
 /*--------------------------------------------------------------------
  * Matrxi-Vektor Multiply with Jagged Diagonal Format (Modell 5)
  PA Initial version
- WW Reimplementation 09/02/2006
  ---------------------------------------------------------------------*/
 #ifdef SX
 void M5MatVek(double *restrict b, double *restrict erg)
@@ -2065,24 +2064,6 @@ void M5MatVek(double *b, double *erg)
 #endif
     for (i=0;i<dim1;i++)
     	erg[i]=0.0;
-    /*
-    // WW   //////
-    long k, ii,jj, nod_c, counter;
-    counter=0;
-    for (k = 0; k < jd_ptr_max; k++)
-    {
-       for (i = 0; i < jd_ptr[k]; i++)
-       {          
-          ii = jd_ptr2[i];  // Row index
-          nod_c=col_ind[counter];
-          jj= m_msh->nod_vector[nod_c]-> GetEquationIndex();
-		  erg[ii] += jdiag[counter]*b[jj];		  
-		  counter++;
-       }         
-    }
-	*/
-    ///////////////////////////////////////////////// 
-
 
     for (i=0;i<dim1;i++)
     	temp_ergebnis[i]=0.0;

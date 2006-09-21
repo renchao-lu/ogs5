@@ -372,29 +372,30 @@ void CFEMesh::ConstructGrid( const bool quadratic)
        }
        thisElem0->SetNeighbors(Neighbors0);						
 //------------neighbor of 1D line
-      if(thisElem0->GetDimension()==1){    //YD
-       ii = 0;
-       for(i=0; i<m0; i++)
-       {
-          n0 = thisElem0->GetElementFaceNodes(i, faceIndex_loc0);
-          for(k=0;k<n0;k++)
-          {
-           e_size_l = (long)e_nodes0[faceIndex_loc0[k]]->connected_elements.size();  
-             for(ei=0; ei<e_size_l; ei++)
-             {
-                ee = e_nodes0[faceIndex_loc0[k]]->connected_elements[ei];  
-                thisElem = ele_vector[ee]; 
-                if(e_size_l == 2 && thisElem->GetIndex() != thisElem0->GetIndex()){
-                       Neighbors0[i] = thisElem;
-                       Neighbors[ii] = thisElem;
-                      // thisElem->SetNeighbor(ii, thisElem0);   //?? Todo YD
-                       ii++;
-                }
-             }
-          }  
+	   if(thisElem0->geo_type==1) //YD
+       {   
+         ii = 0;
+         for(i=0; i<m0; i++)
+         {
+            n0 = thisElem0->GetElementFaceNodes(i, faceIndex_loc0);
+            for(k=0;k<n0;k++)
+            {
+               e_size_l = (long)e_nodes0[faceIndex_loc0[k]]->connected_elements.size();  
+               for(ei=0; ei<e_size_l; ei++)
+               {
+                  ee = e_nodes0[faceIndex_loc0[k]]->connected_elements[ei];  
+                  thisElem = ele_vector[ee]; 
+                  if(e_size_l == 2 && thisElem->GetIndex() != thisElem0->GetIndex()){
+                     Neighbors0[i] = thisElem;
+                     Neighbors[ii] = thisElem;
+                    // thisElem->SetNeighbor(ii, thisElem0);   //?? Todo YD
+                     ii++;
+                 }
+               }
+            }  
+         }
+         thisElem0->SetNeighbors(Neighbors0);	
        }
-       thisElem0->SetNeighbors(Neighbors0);	
-      }
 
        // --------------------------------
        // Edges
@@ -593,6 +594,14 @@ void CFEMesh::ConstructGrid( const bool quadratic)
       coordinate_system = 22;
    else if(x_sum>0.0&&y_sum>0.0&&z_sum>0.0)
       coordinate_system = 32;
+   // 1D in 2D
+   if(msh_no_line>0)
+   {
+     if(x_sum>0.0&&y_sum>0.0&&z_sum<MKleinsteZahl)
+        coordinate_system = 32;
+     if(x_sum>0.0&&z_sum>0.0&&y_sum<MKleinsteZahl)  
+        coordinate_system = 32;
+   }
    max_dim = coordinate_system/10-1;
    //----------------------------------------------------------------------
    // Gravity center
@@ -638,7 +647,10 @@ Programing:
 void CFEMesh::FillTransformMatrix()  
 {
    CElem* elem = NULL;
-   if(coordinate_system!=32) 
+   //
+   if((msh_no_hexs+msh_no_tets+msh_no_pris)==(long)ele_vector.size())
+       return;
+   else if(coordinate_system!=32) 
       return;
    for (long i = 0; i < (long)ele_vector.size(); i++)
    {

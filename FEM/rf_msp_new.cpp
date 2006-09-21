@@ -259,7 +259,13 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
            in_sd.clear();           
         }
     }
-
+    //....................................................................
+    if(line_string.find("$BIOT_CONSTANT")!=string::npos)
+    {  
+       in_sd.str(GetLineFromFile1(msp_file));
+       in_sd>>biot_const;
+       in_sd.clear();
+	}
     //....................................................................
     if(line_string.find("$PLASTICITY")!=string::npos) { // subkeyword found
        in_sd.str(GetLineFromFile1(msp_file));
@@ -373,7 +379,7 @@ CSolidProperties::CSolidProperties()
 {
     PoissonRatio = 0.2;
     ThermalExpansion = 0.0;
-
+    biot_const = 1.0;
     // Default, all data are constant
     Density_mode = -1;
     Youngs_mode = -1;

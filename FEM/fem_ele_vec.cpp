@@ -617,7 +617,9 @@ void CFiniteElementVec::ComputeMatrix_RHS(const double fkt,
 								   const Matrix *p_D)
 {
    int i, j, k, l;
-   double rho;
+   double rho, fac, dN_dx;
+   fac = 0.0;
+   dN_dx=0.0;
    rho = CalDensity();
    for (i = 0; i < nnodesHQ; i++)
    {
@@ -657,12 +659,34 @@ void CFiniteElementVec::ComputeMatrix_RHS(const double fkt,
 
   if(F_Flag&&!PreLoad)
   {
-    for (k=0;k<nnodesHQ;k++) {   
-       for (l=0;l<nnodes;l++) {   
-         for(j=0; j<ele_dim; j++)
-            (*PressureC)(nnodesHQ*j+k,l) += S_Water* LoadFactor* dshapefctHQ[nnodesHQ*j+k] * shapefct[l] * fkt;
-       }
+    fac = S_Water* LoadFactor* fkt;
+    if(axisymmetry)
+    {
+      for (k=0;k<nnodesHQ;k++)
+      {   
+        for (l=0;l<nnodes;l++)
+        {   
+          for(j=0; j<ele_dim; j++)
+          {
+             dN_dx = dshapefctHQ[nnodesHQ*j+k];
+             if(j==0) dN_dx += shapefctHQ[k]/Radius;
+             (*PressureC)(nnodesHQ*j+k,l) += fac*dshapefctHQ[nnodesHQ*j+k] * shapefct[l]; 
+          }
+        }
+      }
     }
+    else
+    {
+      for (k=0;k<nnodesHQ;k++)
+      {   
+        for (l=0;l<nnodes;l++)
+        {   
+          for(j=0; j<ele_dim; j++)
+            (*PressureC)(nnodesHQ*j+k,l) += fac*dshapefctHQ[nnodesHQ*j+k] * shapefct[l];
+        }
+      }
+    }
+	
   }	  
   //---------------------------------------------------------
   // Assemble gravity force vector
@@ -673,7 +697,7 @@ void CFiniteElementVec::ComputeMatrix_RHS(const double fkt,
       // 3D, in z-direction
       i = (ele_dim-1)*nnodesHQ;
       for (k = 0; k < nnodesHQ; k++) 
-          (*RHS)(i+k) += LoadFactor * rho * gravity_constant * shapefctHQ[k] * fkt;
+        (*RHS)(i+k) += LoadFactor * rho * gravity_constant * shapefctHQ[k] * fkt;
   }
 }
 /***************************************************************************
@@ -779,6 +803,11 @@ void CFiniteElementVec::LocalAssembly(const int update)
            Stiffness->Write(*pcs->matrix_file);
            (*pcs->matrix_file) << "---RHS: " <<endl;
            RHS->Write(*pcs->matrix_file);
+           if(PressureC) 
+		   {
+              (*pcs->matrix_file) << "Pressue coupling matrix: " <<endl;
+              PressureC->Write(*pcs->matrix_file);
+           }
         }
     }
 
@@ -816,6 +845,8 @@ void CFiniteElementVec::GlobalAssembly_Stiffness()
    double f1,f2;
    f1=1.0;
    f2=-1.0;
+   double biot = 1.0;
+   biot = smat->biot_const;
    
    if(dynamic)
    {
@@ -856,6 +887,7 @@ void CFiniteElementVec::GlobalAssembly_Stiffness()
    // Assemble coupling matrix
    if(Flow_Type>=0&&D_Flag == 41) // Monolithic scheme
    {   // Add pressure coupling matrix to the stifness matrix
+       f2 *= biot;
        for (i=0;i<nnodesHQ;i++) {   
           for (j=0;j<nnodes;j++) {   
             for(k=0; k<ele_dim; k++)
@@ -928,12 +960,13 @@ void CFiniteElementVec::GlobalAssembly_RHS()
    int i, j, k;
    double fact, val_n=0.0;
    double *a_n = NULL; 
-
+   double biot = 1.0;
    bool Residual;  
    Residual = false;
    fact = 1.0;  
    k=0;
 
+   biot = smat->biot_const;
    if(Flow_Type>=0)
    {
       if(D_Flag==41) // Monolithic scheme
@@ -1006,7 +1039,7 @@ void CFiniteElementVec::GlobalAssembly_RHS()
           AuxNodal1[i] = 0.0;
       PressureC->multi(AuxNodal, AuxNodal1);
       for (i=0;i<dim*nnodesHQ;i++)
-          (*RHS)(i) -= AuxNodal1[i];
+          (*RHS)(i) -= biot*AuxNodal1[i];
    } // End if partioned
 
    // If dymanic
@@ -1024,7 +1057,6 @@ void CFiniteElementVec::GlobalAssembly_RHS()
           }
       } 
    } 
-
 //RHS->Write();
   if(m_dom)
   {
@@ -1037,17 +1069,13 @@ void CFiniteElementVec::GlobalAssembly_RHS()
   }
   else
   {
-     for (i=0;i<dim;i++)
+    for (i=0;i<dim;i++)
     {
-         for (j=0;j<nnodesHQ;j++)
-             pcs->eqs->b[eqs_number[j]+NodeShift[i]] -= (*RHS)(i*nnodesHQ+j); 
-     }
-
+       for (j=0;j<nnodesHQ;j++)
+          pcs->eqs->b[eqs_number[j]+NodeShift[i]] -= (*RHS)(i*nnodesHQ+j); 
+    }
   }
-
 }
-
-
 /***************************************************************************
    GeoSys - Funktion: 
            CFiniteElementVec:: LocalAssembly_continuum()
