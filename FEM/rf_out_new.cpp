@@ -35,7 +35,7 @@ using namespace std;
 // Specific outoup for deformation 
 #include "rf_msp_new.h"
 // MPI Parallel
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 #include "par_ddc.h"
 #endif
 using Mesh_Group::CFEMesh;
@@ -712,7 +712,7 @@ void COutput::NODWriteDOMDataTEC()
   int te=0;
   string eleType;
   string tec_file_name;
-#ifdef USE_MPI //WW
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
   char tf_name[10];
   std::cout << "Process " << myrank << " in WriteDOMDataTEC" << std::endl;
 #endif
@@ -777,7 +777,7 @@ void COutput::NODWriteDOMDataTEC()
       eleType = "BRICK"; 
 	  te=6;
 	}
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
     sprintf(tf_name, "%d", myrank);
     tec_file_name += "_" + string(tf_name);
     std::cout << "Tecplot filename: " << tec_file_name << endl;
@@ -866,7 +866,7 @@ void COutput::NODWriteDOMDataTEC()
 
       string tec_file_name = file_base_name + "_" + "domain" + "_tet";
 
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
       sprintf(tf_name, "%d", myrank);
       tec_file_name += "_" + string(tf_name);
 #endif
@@ -2489,7 +2489,7 @@ void COutput::WriteDataVTK(int number)
   sprintf(number_char,"%i",number);
   string number_string = number_char;
 
-#ifdef USE_MPI //KG44
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
   char tf_name[10];
   std::cout << "Process " << myrank << " in WriteDataVTK" << std::endl;
 #endif
@@ -2504,7 +2504,7 @@ void COutput::WriteDataVTK(int number)
   string vtk_file_name;
   vtk_file_name = file_base_name + number_string ;
 
-#ifdef USE_MPI //KG44
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
     sprintf(tf_name, "%d", myrank);
     vtk_file_name += "_" + string(tf_name);
     std::cout << "VTK filename: " << vtk_file_name << endl;

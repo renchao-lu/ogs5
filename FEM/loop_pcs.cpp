@@ -149,6 +149,23 @@ void PCSCreate(void)
   }
 }
 
+void
+PCSProcessDependencies()
+{
+// pcs_primary_function_name
+	std::vector<CRFProcess*> :: iterator it;
+	
+	for(it=pcs_vector.begin(); it != pcs_vector.end(); it++) {
+		std::cout << "Process " << (*it)->pcs_name << std::endl;
+		for(int j=0; j<4; j++) {
+			if((*it)->pcs_primary_function_name[j] != NULL) {
+				 std::cout << "  Function " << j << ": " << (*it)->pcs_primary_function_name[j] << std::endl;					
+			}
+		}
+	}
+}
+
+
 /**************************************************************************
 ROCKFLOW - Function: LOPPreTimeLoop_PCS
 Task: 
@@ -256,6 +273,7 @@ int LOPPreTimeLoop_PCS(void)
        m_pcs->SetBoundaryConditionSubDomain(); //WW
      }
 
+	
 // This will be removed after new sparse matrix is ready. WW
 // for solver
 #ifdef USE_MPI
@@ -297,6 +315,9 @@ int LOPPreTimeLoop_PCS(void)
      //
      node_connected_doms.clear();
    }
+  	
+  // PA PCSProcessDependencies();
+
   //----------------------------------------------------------------------
   PCSRestart(); //SB
   //----------------------------------------------------------------------
@@ -368,19 +389,19 @@ int LOPTimeLoop_PCS(double*dt_sum)
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       // Flow processes
       //------------------------------------------------------------------
-      m_pcs = PCSGet("LIQUID_FLOW");
-      if(m_pcs&&m_pcs->selected){
-        pcs_flow_error = m_pcs->Execute();
-        PCSCalcSecondaryVariables(); // PCS member function
-        if(!m_pcs->m_msh) //OK
-          VELCalcAll(m_pcs);
-		else
-          m_pcs->CalIntegrationPointValue(); //WW
-        if(m_pcs->tim_type_name.compare("STEADY")==0)
-            m_pcs->selected = false;
-      }
-      //------------------------------------------------------------------
-      m_pcs = PCSGet("GROUNDWATER_FLOW");
+		m_pcs = PCSGet("LIQUID_FLOW");
+		if(m_pcs&&m_pcs->selected){
+			pcs_flow_error = m_pcs->Execute();
+			PCSCalcSecondaryVariables(); // PCS member function
+			if(!m_pcs->m_msh) //OK
+				VELCalcAll(m_pcs);
+			else
+        m_pcs->CalIntegrationPointValue(); //WW
+      if(m_pcs->tim_type_name.compare("STEADY")==0)
+				m_pcs->selected = false;
+    }
+    //------------------------------------------------------------------
+    m_pcs = PCSGet("GROUNDWATER_FLOW");
       if(m_pcs&&m_pcs->selected)
       {
         //................................................................

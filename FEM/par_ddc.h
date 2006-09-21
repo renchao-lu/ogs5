@@ -25,13 +25,12 @@ namespace process { class CRFProcessDeformation;}
 using process::CRFProcessDeformation;
 
 
-#ifdef USE_MPI 
+#if defined(USE_MPI) 
 //WW
 namespace Mesh_Group {class CFEMesh;}
 using  Mesh_Group::CFEMesh;
 #endif
 void FindNodesOnInterface( CFEMesh *m_msh, bool quadr);
-
 
 //-----------------------------------------------
 class CPARDomain
@@ -89,7 +88,7 @@ class CPARDomain
     long GetDomainNodes() const  //WW
         {if(quadratic) return nnodesHQ_dom;
 	  else  return  nnodes_dom;  }
-#ifdef USE_MPI //WW
+#if defined(USE_MPI) //WW
     long GetNumInnerNodes(bool quadr)
        {if(quadr) return num_inner_nodesHQ;
        else  return num_inner_nodes; }   
@@ -106,7 +105,7 @@ extern vector<double> node_connected_doms; // WW
 extern void DOMRead(string);
 extern void DOMCreate( CRFProcess *m_pcs);
 //---- MPI Parallel --------------
-#ifdef USE_MPI //WW
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) //WW
 extern int size;
 extern int myrank;
 extern char t_fname[3];

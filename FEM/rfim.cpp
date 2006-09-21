@@ -1940,6 +1940,8 @@ int ExecuteInverseMethodNew (char *name, TimeLoopFunction time_loop_function)
     else if ( strcmp(StrUp(get_im_group_name(im)),StrUp(name)) ) continue;
     set_im_time_loop_function(im,time_loop_function);
 
+		std::cout << "Executing inverse method " << get_im_type(im) << std::endl;
+
     switch (get_im_type(im)) {
             case 0:
               ExecuteInverseMethodMethod0(im);
@@ -1979,7 +1981,7 @@ int ExecuteInverseMethodNew (char *name, TimeLoopFunction time_loop_function)
                                                                           */
 /* Aufgabe:
    Methode 1 
-   Vorwärtsrechnen mit den Start-Variablen.
+   Vorwï¿½tsrechnen mit den Start-Variablen.
                                                                           */
 /* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    E INVERSE_METHOD *im: Zeiger auf die Datenstruktur im.

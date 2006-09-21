@@ -14,7 +14,7 @@
                                                                           */
 /**************************************************************************/
 
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 #include <mpi.h>
 #include "par_ddc.h"
 #endif
@@ -66,8 +66,7 @@ int main ( int argc, char *argv[] )
   char *dateiname;
   long rockflow_id_timer;
 /*---------- MPI Initialization ----------------------------------*/
-#ifdef USE_MPI
-      printf("Before MPI_Init\n");
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
       MPI_Init(&argc,&argv);
       MPI_Comm_size(MPI_COMM_WORLD,&size);
       MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
@@ -153,7 +152,7 @@ int main ( int argc, char *argv[] )
   /* Ctrl-C wieder normal */
   StandardBreak();
 /*--------- MPI Finalize ------------------*/
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 
       MPI_Finalize();
 

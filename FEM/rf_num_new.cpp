@@ -5,6 +5,10 @@ Programing:
 11/2004 OK Implementation
 last modified:
 **************************************************************************/
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
+#include <mpi.h>
+#include "par_ddc.h"
+#endif
 #include "stdafx.h"
 #include "makros.h"
 // C++ STL
@@ -27,13 +31,6 @@ extern ios::pos_type GetNextSubKeyword(ifstream* file,string* line, bool* keywor
 // GeoSys-MSHLib
 #include "nodes.h"
 #include "elements.h" // Only for max_dim, remove this later. WW
-#ifdef USE_MPI //WW
-#include "par_ddc.h"
-#undef SEEK_SET 
-#undef SEEK_END 
-#undef SEEK_CUR 
-#include "mpi.h"
-#endif
 
 //==========================================================================
 vector<CNumerics*>num_vector;

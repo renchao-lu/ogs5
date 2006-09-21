@@ -9,7 +9,7 @@ Programing:
 **************************************************************************/
 
 /*--------------------- MPI Parallel  -------------------*/
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 #include <mpi.h>
 #endif
 /*--------------------- MPI Parallel  -------------------*/

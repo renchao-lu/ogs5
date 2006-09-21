@@ -32,7 +32,7 @@ vector<CPARDomain*>dom_vector;
 vector<double> node_connected_doms; //This will be removed after sparse class is finished WW
 
 //---- MPI Parallel --------------
-#ifdef USE_MPI //WW
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 int size;
 int myrank;
 char t_fname[3];
