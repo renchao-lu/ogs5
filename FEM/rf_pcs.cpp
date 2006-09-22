@@ -2321,6 +2321,8 @@ void CRFProcess::ConfigHeatTransport()
   pcs_sol_name    = "LINEAR_SOLVER_PROPERTIES_TEMPERATURE1";
 //WW  ConfigELEMatrices = PCSConfigELEMatricesHTM;
   // NOD
+  if((int)continuum_vector.size() == 1)
+  {
   pcs_number_of_primary_nvals = 1;
   pcs_primary_function_name[0] = "TEMPERATURE1";
   pcs_primary_function_unit[0] = "K";
@@ -2330,6 +2332,17 @@ void CRFProcess::ConfigHeatTransport()
   pcs_eval_name[0] = "TEMPERATURE1";
   pcs_eval_unit[0] = "K";
 #endif
+  }
+  if((int)continuum_vector.size() == 2)
+  {
+  pcs_number_of_primary_nvals = 2;
+  pcs_primary_function_name[0] = "TEMPERATURE1";
+  pcs_primary_function_unit[0] = "K";
+  pcs_number_of_primary_nvals = 2;
+  pcs_primary_function_name[1] = "TEMPERATURE2";
+  pcs_primary_function_unit[1] = "K";
+  pcs_number_of_secondary_nvals = 0;
+  } 
 }
 
 /**************************************************************************
@@ -2628,7 +2641,7 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_primary_function_unit[1] = "Pa";
    // 1.2 secondary variables
   //OK LOPCalcSecondaryVariables_USER = MMPCalcSecondaryVariablesRichards; // p_c and S^l
-  pcs_number_of_secondary_nvals = 10;
+  pcs_number_of_secondary_nvals = 12;
   pcs_secondary_function_name[0] = "SATURATION1";
   pcs_secondary_function_unit[0] = "m3/m3";
   pcs_secondary_function_timelevel[0] = 0;
@@ -2659,6 +2672,12 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_secondary_function_name[9] = "TOTAL_SATURATION";
   pcs_secondary_function_unit[9] = "m3/m3";
   pcs_secondary_function_timelevel[9] = 0;
+  pcs_secondary_function_name[10] = "STORAGE_P"; 
+  pcs_secondary_function_unit[10] = "Pa";
+  pcs_secondary_function_timelevel[10] = 0;
+  pcs_secondary_function_name[11] = "STORAGE_P"; 
+  pcs_secondary_function_unit[11] = "Pa";
+  pcs_secondary_function_timelevel[11] = 0;
   }
   // 2 ELE values
   pcs_number_of_evals = 8; 
@@ -4325,8 +4344,22 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
       if(cnodev->node_distype == 8)      // NormalDepth Condition JOD
         value = GetNormalDepthNODValue(m_st, msh_node); //MB        
 //OK	}
+    //--------------------------------------------------------------------
+    // FCT-OLD
+    curve = cnodev->CurveIndex;
+    if(curve>0) 
+    {
+      time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
+      if(!valid)  
+      {
+        cout<<"\n!!! Time dependent curve is not found. Results are not guaranteed "<<endl;
+        cout<<" in void CRFProcess::IncorporateSourceTerms(const double Scaling)"<<endl;
+        time_fac = 1.0;
+      }
+    }
+    else time_fac = 1.0;
 
-      //--------------------------------------------------------------------
+    //--------------------------------------------------------------------
       // Time dependencies - FCT    //YD
       if(m_msh&&m_msh->geo_name.compare("REGIONAL")) //OK
       {
@@ -4355,21 +4388,7 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
         }
       }
     }	    
-    //--------------------------------------------------------------------
-    // FCT-OLD
-    curve = cnodev->CurveIndex;
-    if(curve>0) 
-    {
-      time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
-      if(!valid)  
-      {
-        cout<<"\n!!! Time dependent curve is not found. Results are not guaranteed "<<endl;
-        cout<<" in void CRFProcess::IncorporateSourceTerms(const double Scaling)"<<endl;
-        time_fac = 1.0;
-      }
-    }
-    else time_fac = 1.0;
-    value *= time_fac*fac; // * 1e-3 YDToDo
+    value *= time_fac*fac; // * YD 
     //------------------------------------------------------------------
     // EQS->RHS
     if(m_msh) //WW
@@ -5881,24 +5900,6 @@ double CRFProcess::ExecuteNonLinear()
         else
           Tim->repeat = true; //OK/YD
       }
-      //..................................................................
-/*
-//OK???YD why here, should be in TIM
-      if(Tim->time_control_name.find("ADAPTIVE")!=string::npos)
-      { 
-        if(nonlinear_iteration_error > pcs_nonlinear_iteration_tolerance)
-        {
-          cout << "   PCS repeat " << endl;  
-if(aktueller_zeitschritt==2&&pcs_number==167)
-{
-value = GetNodeValue(0,1);
-}
-          PrimaryVariableReload();
-          Recalculate = true; 
-        }
-      }
-      //..................................................................
-*/
     }
   //----------------------------------------------------------------------
   }
@@ -6924,7 +6925,7 @@ double CRFProcess::CalcELEFluxes(CGLPolyline*m_ply)
     // set
     for(j=0;j<3;j++)
     {
-      SetElementValue(m_ele->GetIndex(),f_eidx[j],f[j]);
+      SetElementValue(m_ele->GetIndex(),f_eidx[j],f[j]);   
     }
     // overall flux across polyline
     f_n_sum += MBtrgVec(f,3);
