@@ -423,7 +423,7 @@ double CElement::computeJacobian(const int order)
         case 1: 
          // If Line in X or Z direction, coordinate is saved in local X
          // If Line in 3D space, a transform is applied and cast coordinate in local X
-          dx = X[1]-X[0]+Y[1]-Y[0];
+          dx = X[1]-X[0]; //+Y[1]-Y[0];
           Jacobian[0] = 0.5*dx; 
           invJacobian[0] = 2.0/dx;
           DetJac = Jacobian[0];
