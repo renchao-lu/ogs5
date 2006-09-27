@@ -92,7 +92,7 @@ class CFiniteElementStd:public CElement
      long index;
 	 // Column index in the node value table
      int idx0, idx1, idxS, idx3; 
-     int idxp0,idxp1;   //YD
+     int idxp0,idxp1, idxSm, idxSf;   //YD
      int phase; 
      int comp; // Component
 	   int LocalShift; // For RHS
@@ -106,6 +106,7 @@ class CFiniteElementStd:public CElement
      ::CRFProcess *cpl_pcs; // Pointer to coupled process. WW  
      char pcsT;
      bool dynamic; 
+     CMediumProperties *Media_Matrix;  //YD
 
      //-------------------------------------------------------
      // Auxillarary matrices
