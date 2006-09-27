@@ -1,0 +1,15 @@
+MPI              = yes
+
+
+CXX_LIBS         = -lstdc++
+
+
+CXX_LDFLAGS      = -g
+CXX_LD           = mpicxx
+
+CXX_OPT_FLAGS    = 
+CXX_DEBUG_FLAGS  = -g -DTRACE
+CXX_WARN_FLAGS   =
+CXX_FLAGS        = -DUSE_MPI_REGSOIL -DGCC $(CXX_OPT_FLAGS) $(CXX_DEBUG_FLAGS) -DRANDOM_WALK
+CXX              = mpicxx
+
