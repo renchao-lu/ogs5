@@ -22,6 +22,7 @@ using namespace std;
 // GEOLib
 #include "geo_pnt.h"
 #include "geo_lin.h"
+#include "geo_ply.h"
 #include "geo_sfc.h"
 // MSHLib
 #include "elements.h"
@@ -3853,10 +3854,11 @@ void CFEMesh::GetELEOnPLY(CGLPolyline*m_ply,vector<long>&ele_vector_ply)
 MSHLib-Method:
 Programing:
 05/2006 OK Implementation
+08/2006 YD
 **************************************************************************/
 void CFEMesh::CreateLineELEFromSFC()
 {
-  int j,k;
+  int j,k,i_k;
   double x0,y0,z0;
   double z,dz;
   Surface* m_sfc = NULL;
@@ -3864,6 +3866,7 @@ void CFEMesh::CreateLineELEFromSFC()
   CElem* m_ele = NULL;
   CColumn* m_col = NULL;
   CGLLine* m_lin = NULL;
+  CSoilProfile* m_prf = NULL;  //YD
   //======================================================================
   dz = -0.05;
   long i_count = 0;
@@ -3874,6 +3877,7 @@ void CFEMesh::CreateLineELEFromSFC()
     m_col = COLGet(m_sfc->name);
     if(!m_col)
       return;
+    m_prf = profile_vector[m_sfc->profile_code-1];
     //--------------------------------------------------------------------
     // NOD
     x0 = m_sfc->center_point[0];
@@ -3903,7 +3907,9 @@ void CFEMesh::CreateLineELEFromSFC()
       // Line element nodes
       for(k=0;k<m_ele->nnodes;k++)
       {
-        m_ele->nodes_index[k] = i_count*no_msh_layer + j + k + i_count;
+       // if(k == 0) i_k=1;           //YD: Right habd rule
+       // if(k == 1) i_k=0;
+        m_ele->nodes_index[k] = i_count*no_msh_layer + j + i_k + i_count;
         m_ele->nodes[k] = nod_vector[m_ele->nodes_index[k]];
         m_ele->gravity_center[0] += nod_vector[m_ele->nodes_index[k]]->X()/m_ele->nnodes;
         m_ele->gravity_center[1] += nod_vector[m_ele->nodes_index[k]]->Y()/m_ele->nnodes;
@@ -3911,6 +3917,7 @@ void CFEMesh::CreateLineELEFromSFC()
       }
       //..................................................................
       // MAT
+/*
       for(k=0;k<(int)m_col->line_vector.size();k++)
       {
         m_lin = m_col->line_vector[k];
@@ -3918,6 +3925,13 @@ void CFEMesh::CreateLineELEFromSFC()
         {
           m_ele->SetPatchIndex(m_lin->mat_group);
         }
+      }
+*/    
+
+      for(k=0;k<(int)m_prf->soil_layer_thickness.size()-1;k++)
+      {
+       if((abs(m_ele->gravity_center[2])> m_prf->soil_layer_thickness[k])&&(abs(m_ele->gravity_center[2])<m_prf->soil_layer_thickness[k+1]))  
+       m_ele->SetPatchIndex(m_prf->soil_type[k]);
       }
       //..................................................................
       ele_vector.push_back(m_ele);
