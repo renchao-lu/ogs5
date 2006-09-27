@@ -14,6 +14,10 @@ Programing:
 ***************************************************************************/
 /* Includes */
 /*========================================================================*/
+#if defined(USE_MPI_REGSOIL)
+#include <mpi.h>
+#include "par_ddc.h"
+#endif
 #include "stdafx.h"
 #include <iostream>
 using namespace std;
@@ -1102,12 +1106,23 @@ void LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
   CRFProcess* m_pcs_local = NULL;
   vec<CNode*>ele_nodes(20);
   double value;
+#if defined(USE_MPI_REGSOIL)
+  double *values;
+  int rp;
+  int num_parallel_blocks;
+  int l;
+#endif
   int timelevel = 1;
   int idxp  = m_pcs_global->GetNodeValueIndex("PRESSURE1") + timelevel;
   int idxcp = m_pcs_global->GetNodeValueIndex("PRESSURE_CAP") + timelevel;
   int idxS  = m_pcs_global->GetNodeValueIndex("SATURATION1") + timelevel;
   CElem* m_ele_local = NULL;
   CNode* m_nod_local = NULL;
+  
+#if defined(USE_MPI_REGSOIL)
+  values      = new double[no_local_nodes];   // Should be more sophisticated
+#endif
+
   //======================================================================
   if(aktueller_zeitschritt==1)
   {
@@ -1179,6 +1194,7 @@ void LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
       m_pcs_local->st_node.push_back(m_pcs_global->st_node[j]); 
     //....................................................................
     pcs_vector.push_back(m_pcs_local);
+
   }
   //======================================================================
   else
@@ -1197,6 +1213,7 @@ void LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
   cout << "    ->Process " << m_pcs_global->pcs_number << ": " \
        << "REGIONAL_" << m_pcs_global->pcs_type_name << endl;
   int no_richards_problems = (int)(m_pcs_global->m_msh->ele_vector.size()/no_local_elements);
+#ifndef USE_MPI_REGSOIL
   for(i=0;i<no_richards_problems;i++)
   //for(i=0;i<2;i++)
   {
@@ -1279,7 +1296,134 @@ void LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
     //m_pcs->m_msh = FEMGet("RICHARDS_FLOW");
     // pcs->m_msh->RenumberNodesForGlobalAssembly(); related to Comment 1  // MB/WW
   }
+#else
+  num_parallel_blocks = no_richards_problems / size;
+  
+#ifdef TRACE
+  std::cout << "Num parallel blocks: " << num_parallel_blocks << std::endl;
+#endif
+
+  for(i=0; i<num_parallel_blocks+1; i++)
+  //for(i=0;i<2;i++)
+  {
+    if(i*size + myrank < no_richards_problems) {   // Do a parallel block
+      rp = i*size + myrank;
+      m_pcs_local = pcs_vector[(int)pcs_vector.size()-1];
+      m_pcs_local->pcs_number = rp;
+      m_msh_local = fem_msh_vector[(int)fem_msh_vector.size()-1];
+      //....................................................................
+      // Set local NODs
+      for(j=0;j<no_local_nodes;j++)
+      {
+        g_node_number = j+(rp*no_local_nodes);
+        m_nod = m_pcs_global->m_msh->nod_vector[g_node_number];
+        m_nod_local = m_msh_local->nod_vector[j];
+        //m_nod_local = m_nod;
+        m_nod_local->connected_elements.push_back(rp);  // ????
+      }
+      //....................................................................
+      // Set local ELEs
+      for(j=0;j<no_local_elements;j++)
+      {
+        g_element_number = j+(rp*no_local_elements);
+        m_ele = m_pcs_global->m_msh->ele_vector[g_element_number];
+        m_ele_local = m_msh_local->ele_vector[j];
+        m_ele_local->SetPatchIndex(m_ele->GetPatchIndex());
+      }
+      //....................................................................
+      // Set ICs
+      if(aktueller_zeitschritt==1)   //YD
+      {
+        for(j=0;j<no_local_nodes;j++)
+        {
+          g_node_number = j+(rp*no_local_nodes);
+          value = m_pcs_global->GetNodeValue(g_node_number,idxp);
+          m_pcs_local->SetNodeValue(j,idxp-1,value);
+          m_pcs_local->SetNodeValue(j,idxp,value);       
+          value = m_pcs_global->GetNodeValue(g_node_number,idxcp);
+          m_pcs_local->SetNodeValue(j,idxcp-1,value);
+          m_pcs_local->SetNodeValue(j,idxcp,value);     
+          value = m_pcs_global->GetNodeValue(g_node_number,idxS);
+          m_pcs_local->SetNodeValue(j,idxS-1,value);
+          m_pcs_local->SetNodeValue(j,idxS,value);     
+        }
+      }
+      else
+      {
+        for(j=0;j<no_local_nodes;j++)
+        {
+          g_node_number = j+(rp*no_local_nodes);
+          value = m_pcs_global->GetNodeValue(g_node_number,idxp);
+          m_pcs_local->SetNodeValue(j,idxp-1,value);
+          value = m_pcs_global->GetNodeValue(g_node_number,idxcp);
+          m_pcs_local->SetNodeValue(j,idxcp-1,value);
+          value = m_pcs_global->GetNodeValue(g_node_number,idxS);
+          m_pcs_local->SetNodeValue(j,idxS-1,value);
+        }
+      }
+      //....................................................................
+      // Set local BCs
+      m_pcs_local->CreateBCGroup();
+      //....................................................................
+      // Set local STs
+      // m_pcs_local->CreateSTGroup();
+      // look for corresponding OF-triangle
+      // m_ele_of = m_msh_of->GetElement(m_pnt_sf);
+      //....................................................................
+#ifdef TRACE
+      std::cout << "Executing local process." << std::endl;
+#endif
+      m_pcs_local->ExecuteNonLinear();
+    }  // End of parallel block
+    //....................................................................
+    // Store results in global PCS tables
+    for(int k=0; k<size; k++) {
+      rp = i*size + k;
+      if(rp < no_richards_problems) {
+        if(myrank == k) {
+          // idxp
+          for(l=0; l<no_local_nodes; l++) 
+            values[l] = m_pcs_local->GetNodeValue(l, idxp);
+          MPI_Bcast((void *)values, no_local_nodes, MPI_DOUBLE, k, MPI_COMM_WORLD);
+          for(l=0; l<no_local_nodes; l++)
+            m_pcs_global->SetNodeValue(l+rp*no_local_nodes, idxp, values[l]);
+          // idxcp
+          for(l=0; l<no_local_nodes; l++) 
+            values[l] = m_pcs_local->GetNodeValue(l, idxcp);
+          MPI_Bcast((void *)values, no_local_nodes, MPI_DOUBLE, k, MPI_COMM_WORLD);
+          for(l=0; l<no_local_nodes; l++)
+            m_pcs_global->SetNodeValue(l+rp*no_local_nodes, idxcp, values[l]);
+          // idxS
+          for(l=0; l<no_local_nodes; l++) 
+            values[l] = m_pcs_local->GetNodeValue(l, idxS);
+          MPI_Bcast((void *)values, no_local_nodes, MPI_DOUBLE, k, MPI_COMM_WORLD);
+          for(l=0; l<no_local_nodes; l++)
+            m_pcs_global->SetNodeValue(l+rp*no_local_nodes, idxS, values[l]);
+        }
+        else {
+          // idxp
+          MPI_Bcast((void *)values, no_local_nodes, MPI_DOUBLE, k, MPI_COMM_WORLD);
+          for(l=0; l<no_local_nodes; l++)
+            m_pcs_global->SetNodeValue(l+rp*no_local_nodes, idxp, values[l]);
+          // idxcp
+          MPI_Bcast((void *)values, no_local_nodes, MPI_DOUBLE, k, MPI_COMM_WORLD);
+          for(l=0; l<no_local_nodes; l++)
+            m_pcs_global->SetNodeValue(l+rp*no_local_nodes, idxcp, values[l]);
+          // idxS
+          MPI_Bcast((void *)values, no_local_nodes, MPI_DOUBLE, k, MPI_COMM_WORLD);
+          for(l=0; l<no_local_nodes; l++)
+            m_pcs_global->SetNodeValue(l+rp*no_local_nodes, idxS, values[l]);
+        }
+      }
+    }
+  }
+#endif
   //----------------------------------------------------------------------
+
+#if defined(USE_MPI_REGSOIL)
+  delete[] values;
+#endif
+
 }
 
 /**************************************************************************

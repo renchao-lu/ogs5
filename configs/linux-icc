@@ -1,4 +1,4 @@
-CXX_LIBS         = 
+CXX_LIBS         = -lpthread
 
 
 CXX_LDFLAGS      = -O3

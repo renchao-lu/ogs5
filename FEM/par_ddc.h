@@ -105,7 +105,7 @@ extern vector<double> node_connected_doms; // WW
 extern void DOMRead(string);
 extern void DOMCreate( CRFProcess *m_pcs);
 //---- MPI Parallel --------------
-#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) //WW
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) //MH
 extern int size;
 extern int myrank;
 extern char t_fname[3];
