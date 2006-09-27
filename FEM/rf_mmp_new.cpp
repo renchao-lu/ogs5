@@ -869,7 +869,7 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
     if(line_string.find("$TRANSFER_COEFFICIENT")!=string::npos) { //Dual Richards
       in.str(GetLineFromFile1(mmp_file));
       in >> transfer_coefficient;      //(-)
-      in >> unsaturated_hydraulic_conductivity;      //(L/T)
+   //   in >> unsaturated_hydraulic_conductivity;      //(L/T)
       in.clear();
       continue;
     }

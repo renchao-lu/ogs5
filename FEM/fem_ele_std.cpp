@@ -309,6 +309,8 @@ void CFiniteElementStd::SetVariable()
   if((int)pcs->continuum_vector.size()== 2){
     idxp0 = pcs->GetNodeValueIndex(pcs->pcs_primary_function_name[1-pcs->GetContinnumType()]);  
     idxp1 = idxp0+1;      
+    idxSm = pcs->GetNodeValueIndex(pcs->pcs_secondary_function_name[0])+1;  //matrix   
+    idxSf = pcs->GetNodeValueIndex(pcs->pcs_secondary_function_name[2])+1;  //fracture 
   }
 }
 
@@ -460,6 +462,7 @@ void CFiniteElementStd::SetMaterial(int phase)
   else{
 	long multi_mmp = (long)mmp_vector.size()/(long)pcs->continuum_vector.size();
 	group = MeshElement->GetPatchIndex()+multi_mmp*pcs->GetContinnumType();   
+    Media_Matrix = mmp_vector[MeshElement->GetPatchIndex()]; 
   }
   //group = MeshElement->GetPatchIndex();
   MediaProp = mmp_vector[group];
@@ -1122,8 +1125,8 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
       //------------------------------------------------------------------
       case R: // Richards flow
 		// The following line only applies when Fluid Momentum is on
-		if(m_pcs)
-			idxS = pcs->GetNodeValueIndex("SATURATION1")+1;	// PCH FM needs this.
+		//if(m_pcs)
+		//	idxS = pcs->GetNodeValueIndex("SATURATION1")+1;	// PCH FM needs this.   //YD idxS may be the Index of second continuum, and it exists
 		for(i=0;i<nnodes;i++) //SB 4209 - otherwise saturations are nonsense
               NodalVal_Sat[i] = pcs->GetNodeValue(nodes[i], idxS);
         Sw = interpolate(NodalVal_Sat);
@@ -3435,7 +3438,22 @@ void  CFiniteElementStd::Assemble_Transfer()
   double fkt;
   int gp, gp_r=0, gp_s=0, gp_t;
   gp_t = 0;
-  
+  double Sm, Sf, matrix_conductivity;
+  double* permeability;
+  double NodalVal_Sm[20]; 
+  double NodalVal_Sf[20];
+  //---------------------------------------------------------
+  for(i=0;i<nGaussPoints;i++){ 
+     NodalVal_Sm[i] = pcs->GetNodeValue(nodes[i], idxSm); 
+     NodalVal_Sf[i] = pcs->GetNodeValue(nodes[i], idxSf); 
+  } 
+     Sm = interpolate(NodalVal_Sm);
+     Sf = interpolate(NodalVal_Sf);
+     permeability = Media_Matrix->PermeabilityTensor(Index); 
+     matrix_conductivity = time_unit_factor* Media_Matrix->PermeabilitySaturationFunction(Sm,0)*permeability[0] \
+                *FluidProp->Density()*gravity_constant/FluidProp->Viscosity();  //k*ro*g/u
+      matrix_conductivity*= 0.001; //temp
+  //---------------------------------------------------------
   for (gp = 0; gp < nGaussPoints; gp++)
   {
       //---------------------------------------------------------
@@ -3444,8 +3462,8 @@ void  CFiniteElementStd::Assemble_Transfer()
       //---------------------------------------------------------
       fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
       // Material
-      fkt *= MediaProp->transfer_coefficient*MediaProp->unsaturated_hydraulic_conductivity  \
-		/(pcs->continuum_vector[pcs->GetContinnumType()]*FluidProp->Density()*gravity_constant) ;
+      fkt *= MediaProp->transfer_coefficient*matrix_conductivity*Sf  \
+		/(pcs->continuum_vector[pcs->GetContinnumType()]) ;
     		  
       // Calculate mass matrix
       for (i = 0; i < nnodes; i++)

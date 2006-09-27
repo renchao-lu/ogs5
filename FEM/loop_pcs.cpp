@@ -1016,7 +1016,7 @@ void LOPCalcELEResultants(void)
         m_pcs->CalcELEVelocities();
         break;
       case 'R': // Richards flow
-        m_pcs->CalcELEVelocities();
+        m_pcs->CalcELEVelocities();   
         break;
 	  case 'F': // Fluid Momentum
         break;

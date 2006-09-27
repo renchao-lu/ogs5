@@ -165,7 +165,7 @@ class CMediumProperties
   double argument; //OK
   //Dual Richards transfer coefficient  YD
   double transfer_coefficient;
-  double unsaturated_hydraulic_conductivity;
+ // double unsaturated_hydraulic_conductivity;
   double specific_storage;
 };
 
