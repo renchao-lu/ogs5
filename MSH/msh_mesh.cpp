@@ -3868,6 +3868,7 @@ void CFEMesh::CreateLineELEFromSFC()
   CGLLine* m_lin = NULL;
   CSoilProfile* m_prf = NULL;  //YD
   //======================================================================
+  i_k=0;
   dz = -0.05;
   long i_count = 0;
   for(long i=0;i<(long)surface_vector.size();i++)
