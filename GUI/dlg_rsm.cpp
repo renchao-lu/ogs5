@@ -7,8 +7,8 @@
 #include ".\dlg_rsm.h"
 #include "gs_project.h"
 #include "geo_strings.h"
-
-vector<CColumn*>column_vector;
+#include "geo_ply.h"
+//vector<CColumn*>column_vector;
 
 // CRegionalSoilModel dialog
 
@@ -121,6 +121,7 @@ void CRegionalSoilModel::UpdateList()
 GeoSys-GUI-Method:
 Programing:
 12/2005 OK Implementation
+08/2006 YD 
 **************************************************************************/
 void CRegionalSoilModel::OnBnClickedReadProfileCode()
 {
@@ -132,6 +133,7 @@ void CRegionalSoilModel::OnBnClickedReadProfileCode()
   int idummy;
   double ddummy;
   double area;
+  long profile = 0;
   std::stringstream in;
   Surface* m_sfc = NULL;
   CColumn* m_col = NULL;
@@ -209,16 +211,21 @@ void CRegionalSoilModel::OnBnClickedReadProfileCode()
       sub_string = get_sub_string(line_string,delimiter,pos1,&pos2);
       sub_string = line_string.substr(pos1,pos2-pos1);
       if(sub_string.size()==0){
-        AfxMessageBox("Warning: no data");
-        continue;
+        //AfxMessageBox("Warning: no data");
+        //profile;
+        //continue;
       }
+      else
+      {
       in.str(sub_string);
-      in >> idummy;
+      in >> profile;
 	  in.clear();
-      m_col = COLGet(idummy);
+      }
+      m_sfc->profile_code = profile;
+      m_col = COLGet(profile);
       if(!m_col){
         m_col = new CColumn();
-        m_col->mat_group = idummy;
+        m_col->mat_group = profile;
         m_col->geo_area = area;
         m_col->name = m_sfc->name;
         m_col->center_point[0] = m_sfc->center_point[0];
@@ -226,7 +233,7 @@ void CRegionalSoilModel::OnBnClickedReadProfileCode()
         m_col->center_point[2] = m_sfc->center_point[2];
         column_vector.push_back(m_col);
       }
-      m_sfc->mat_group = idummy;
+      m_sfc->mat_group = profile;
       m_str.Format("%i",m_col->mat_group);
       m_sfc->mat_group_name = "PROFILE";
       m_sfc->mat_group_name += m_str;
@@ -241,6 +248,7 @@ void CRegionalSoilModel::OnBnClickedReadProfileCode()
 GeoSys-GUI-Method:
 Programing:
 12/2005 OK Implementation
+08/2006 YD
 **************************************************************************/
 void CRegionalSoilModel::OnBnClickedReadStructure()
 {
@@ -257,15 +265,16 @@ void CRegionalSoilModel::OnBnClickedReadStructure()
   string sub_string;
   string line_string;
   string delimiter(";");
-  int idummy;
+  long idummy;
   double ddummy;
   string sdummy;
   std::stringstream in;
   CColumn* m_col = NULL;
-  CGLLine* m_lin = NULL;
-  CGLPoint* m_pnt1 = NULL;
-  CGLPoint* m_pnt2 = NULL;
+  //CGLLine* m_lin = NULL;  //YD
+  //CGLPoint* m_pnt1 = NULL;   //YD
+  //CGLPoint* m_pnt2 = NULL;
   CMediumProperties* m_mmp = NULL;
+  CSoilProfile* m_prf = NULL;
   //======================================================================
   CFileDialog fileDlg(TRUE,"csv", NULL, OFN_ENABLESIZING," EXCEL files (*.csv)|*.csv|| ");
   if (fileDlg.DoModal()==IDOK) {
@@ -283,6 +292,7 @@ void CRegionalSoilModel::OnBnClickedReadStructure()
       csv_file.getline(line,MAX_ZEILE);
       line_string = line;
       if(line_string.empty()){
+        if(m_prf) profile_vector.push_back(m_prf);   //YD
         UpdateList();
         return;
       }
@@ -308,15 +318,24 @@ void CRegionalSoilModel::OnBnClickedReadStructure()
       in.str(sub_string);
       in >> idummy; // Profile code
 	  in.clear();
+
+      if(!m_prf){
+      m_prf = new CSoilProfile();   //YD
+      }
+      else if(m_prf->profile_type != idummy){
+      profile_vector.push_back(m_prf);
+      m_prf = new CSoilProfile();   //
+      }
+      m_prf->profile_type=idummy;  //
       m_col = COLGet(idummy);
-      if(!m_col){
+      //if(!m_col){
         //AfxMessageBox("Warning in CRegionalSoilModel::OnBnClickedReadStructure - no COL data");
         //return;
-        continue;
-      }
+       // continue;
+      //}
       //------------------------------------------------------------------
-      m_lin = new CGLLine();
-      m_col->line_vector.push_back(m_lin);
+      //m_lin = new CGLLine();
+      //m_col->line_vector.push_back(m_lin);
       //..................................................................
       pos1 = pos2+1;
       sub_string = get_sub_string(line_string,delimiter,pos1,&pos2);
@@ -324,9 +343,11 @@ void CRegionalSoilModel::OnBnClickedReadStructure()
       in.str(sub_string);
       in >> sdummy; // Soil code name
 	  in.clear();
-      m_lin->name = sdummy;
+      //m_lin->name = sdummy;
+      m_prf->soil_name = sdummy;
       //..................................................................
-      m_mmp = MMPGet(m_lin->name);
+      m_mmp = MMPGet(m_prf->soil_name);
+      //m_mmp = MMPGet(m_lin->name);
       if(!m_mmp){
 /*
         m_mmp = new CMediumProperties();
@@ -342,7 +363,7 @@ void CRegionalSoilModel::OnBnClickedReadStructure()
       }
       m_mmp->geo_type_name = "LINE";
       m_mmp->geo_dimension = 1;
-      m_mmp->geo_area = m_col->geo_area;
+     // m_mmp->geo_area = m_col->geo_area;
       //..................................................................
       pos1 = pos2+1;
       sub_string = get_sub_string(line_string,delimiter,pos1,&pos2);
@@ -350,10 +371,11 @@ void CRegionalSoilModel::OnBnClickedReadStructure()
       in.str(sub_string);
       in >> idummy; // Soil code number
 	  in.clear();
-      m_lin->mat_group = idummy;
+      //m_lin->mat_group = idummy;
+      m_prf->soil_type.push_back(idummy);
       //------------------------------------------------------------------
-      m_pnt1 = new CGLPoint();
-      m_lin->m_point1 = m_pnt1;
+      //m_pnt1 = new CGLPoint();
+      //m_lin->m_point1 = m_pnt1;
       //..................................................................
       pos1 = pos2+1;
       sub_string = get_sub_string(line_string,delimiter,pos1,&pos2);
@@ -361,10 +383,12 @@ void CRegionalSoilModel::OnBnClickedReadStructure()
       in.str(sub_string);
       in >> ddummy; // Depth1
 	  in.clear();
-      m_pnt1->z = ddummy;
+      //m_pnt1->z = ddummy;
+      if(ddummy == 0)
+      m_prf->soil_layer_thickness.push_back(ddummy);  //
       //------------------------------------------------------------------
-      m_pnt2 = new CGLPoint();
-      m_lin->m_point2 = m_pnt2;
+      // m_pnt2 = new CGLPoint();
+      // m_lin->m_point2 = m_pnt2;
       //..................................................................
       pos1 = pos2+1;
       sub_string = get_sub_string(line_string,delimiter,pos1,&pos2);
@@ -372,7 +396,8 @@ void CRegionalSoilModel::OnBnClickedReadStructure()
       in.str(sub_string);
       in >> ddummy; // Depth2
 	  in.clear();
-      m_pnt2->z = ddummy;
+      //m_pnt2->z = ddummy;
+      m_prf->soil_layer_thickness.push_back(ddummy);  //
       //..................................................................
     }
     //--------------------------------------------------------------------
@@ -402,9 +427,14 @@ void CRegionalSoilModel::OnBnClickedCreateProfiles()
 /**************************************************************************
 GeoSys-GUI-Method:
 Programing:
-12/2005 OK Implementation
+12/2005 OK Implementation (COL version)
+06/2006 OK Regional PCS version
 **************************************************************************/
 void CRegionalSoilModel::OnBnClickedCreateMSH()
+{
+  bool COL = false;
+  CFEMesh* m_msh = NULL;
+if(COL)
 {
   int i,j,k;
   CGLPoint* m_pnt = NULL;
@@ -471,10 +501,28 @@ void CRegionalSoilModel::OnBnClickedCreateMSH()
       }
     }
     //--------------------------------------------------------------------
+    for(j=0;j<(int)m_msh->nod_vector.size();j++)
+    {
+      m_nod = m_msh->nod_vector[j];
+      m_nod->SetZ(-m_nod->Z());
+    }
+    //--------------------------------------------------------------------
     fem_msh_vector.push_back(m_msh);
     //--------------------------------------------------------------------
   }
   //======================================================================
+}
+  else
+  {
+    MSHDelete("REGIONAL_SOIL");
+    m_msh = new CFEMesh();
+    m_msh->pcs_name = "REGIONAL_SOIL";
+    m_msh->ele_type = 1;
+    m_msh->geo_name = "REGIONAL";
+    m_msh->no_msh_layer = 40;
+    m_msh->CreateLineELEFromSFC();
+    fem_msh_vector.push_back(m_msh);
+  }
 }
 
 /**************************************************************************
@@ -576,6 +624,7 @@ GeoSys-GUI-Method:
 Programing:
 12/2005 OK Implementation
 **************************************************************************/
+/*
 CColumn::~CColumn()
 {
   for(int i=0;i<(int)line_vector.size();i++){
@@ -584,12 +633,13 @@ CColumn::~CColumn()
   }
   line_vector.clear();
 }
-
+*/
 /**************************************************************************
 GeoSys-GUI-Method:
 Programing:
 12/2005 OK Implementation
 **************************************************************************/
+/*
 void COLDelete()
 {
   CColumn* m_col = NULL;
@@ -598,12 +648,13 @@ void COLDelete()
     delete m_col;
   }
   column_vector.clear();
-}
+}*/
 /**************************************************************************
 GeoSys-GUI-Method:
 Programing:
 12/2005 OK Implementation
 **************************************************************************/
+/*
 void COLDeleteLines()
 {
   int j;
@@ -618,12 +669,13 @@ void COLDeleteLines()
     m_col->line_vector.clear();
   }
 }
-
+*/
 /**************************************************************************
 GEOLib-Method:
 Programing:
 12/2005 OK Implementation
 **************************************************************************/
+/*
 CColumn* COLGet(int col_id)
 {
   CColumn* m_col = NULL;
@@ -634,12 +686,13 @@ CColumn* COLGet(int col_id)
   }
   return NULL;
 }
-
+*/
 /**************************************************************************
 GEOLib-Method:
 Programing:
 12/2005 OK Implementation
 **************************************************************************/
+/*
 CColumn* COLGet(string col_name)
 {
   CColumn* m_col = NULL;
@@ -650,4 +703,4 @@ CColumn* COLGet(string col_name)
   }
   return m_col;
 }
-
+*/
