@@ -19,6 +19,7 @@ vector<CGLPolyline*> polyline_vector;
 int ply_max = -1;
 
 vector<CColumn*>column_vector;
+vector<CSoilProfile*>profile_vector;  //YD
 
 /*----------------------------------------------------------------------*/
 // constructor
@@ -1163,4 +1164,27 @@ CColumn* COLGet(string col_name)
   }
   return m_col;
 }
-
+/**************************************************************************
+GEOLib-Method:
+Programing:
+08/2006 YD Implementation
+**************************************************************************/
+CSoilProfile::CSoilProfile()  //YD
+{
+}
+/**************************************************************************
+GEOLib-Method:
+Programing:
+08/2006 YD Implementation
+**************************************************************************/
+CSoilProfile::~CSoilProfile()  //YD
+{
+  for (int i = 0; i < (int) soil_type.size(); i++){
+  soil_type[i]=NULL;
+  }
+  for (int i = 0; i < (int) soil_layer_thickness.size(); i++){
+  soil_layer_thickness[i]=NULL;
+  }
+  soil_type.clear();
+  soil_layer_thickness.clear();
+}

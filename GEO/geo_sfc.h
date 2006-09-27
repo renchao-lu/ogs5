@@ -86,6 +86,8 @@ public:
     //Tecplot
     void WriteTecplot(fstream*);
     bool PointInSurface(CGLPoint*); //OK
+    //material
+    long profile_code;  //YD
   private:
     friend class CGLLine; //WW
    

@@ -103,10 +103,23 @@ class CColumn : public CGLPolyline //OK
     double center_point[3];
 };
 
+
+class CSoilProfile : public CGLPolyline  //YD
+{
+public:
+   CSoilProfile();
+    ~CSoilProfile();
+   long profile_type;
+   string soil_name;
+   vector<long>soil_type;
+   vector<double>soil_layer_thickness;
+};
+
 extern void COLDeleteLines();
 extern void COLDelete();
 extern CColumn* COLGet(int);
 extern CColumn* COLGet(string);
 
 extern vector<CColumn*>column_vector;
+extern vector<CSoilProfile*>profile_vector;  //YD
 #endif
