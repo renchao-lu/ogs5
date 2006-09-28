@@ -661,7 +661,6 @@ void CElem::Read(TokenBuf* tokenbuf, int fileType)
           for(int j=0; j<nnodes; j++) {
             sscanf(remains, "%ld %[0-9] ", &nodes_index[j], remains);
           }
-          printf("\n");
           break;
         }
       }

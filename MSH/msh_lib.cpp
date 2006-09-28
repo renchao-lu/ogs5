@@ -520,7 +520,7 @@ if(!msh_file_binary){
       line_string = line;
       if(line_string.find("#STOP") != string::npos)
         return true;
-        
+
       if(line_string.find("#FEM_MSH") != string::npos) { // mesh
         m_fem_msh = new CFEMesh();
         m_fem_msh->Read(tokenbuf);
