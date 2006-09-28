@@ -29,7 +29,7 @@ endif
 export CHOSEN_TARGET
 
 
-SUBDIRS = FEM GEO MSH
+SUBDIRS = FEM GEO MSH UTL
 
 OBJS_PATTERN = $(foreach subdir,$(SUBDIRS),$(subdir)/*.o)
 

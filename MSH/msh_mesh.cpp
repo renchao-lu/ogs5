@@ -28,6 +28,9 @@ using namespace std;
 #include "elements.h"
 #include "nodes.h"
 #include "msh_mesh.h"
+#ifdef BENCHMARKING
+#include "benchtimer.h"
+#endif
 #ifdef RANDOM_WALK
 #include "rf_random_walk.h"
 #endif
@@ -205,6 +208,116 @@ ios::pos_type CFEMesh::Read(ifstream *fem_file)
   //========================================================================
   return position;
 }
+
+#ifdef USE_TOKENBUF
+int
+CFEMesh::Read(TokenBuf *tokenbuf)
+{
+  string sub_line;
+  string line_string;
+  char line_buf[LINE_MAX];
+  char str1[LINE_MAX], str2[LINE_MAX];
+  bool new_keyword = false;
+  string hash("#");
+  ios::pos_type position;
+  string sub_string,sub_string1;
+  long i, ibuff;
+  long no_elements;
+  long no_nodes;
+  double x,y,z;
+  CNode* newNode = NULL;
+  CElem* newElem = NULL;
+#ifdef BENCHMARKING
+  BenchTimer read_timer;
+
+  read_timer.start();
+#endif
+
+  //========================================================================
+  // Keyword loop
+  while (!new_keyword && !tokenbuf->done()) {
+    tokenbuf->get_non_empty_line(line_buf, LINE_MAX); 
+    if(tokenbuf->done()) break;
+    line_string = std::string(line_buf);
+    if(line_string.find(hash)!=string::npos)
+    {
+      new_keyword = true;
+      break;
+    }
+    //....................................................................
+    if(line_string.find("$PCS_TYPE")!=string::npos) { // subkeyword found
+      tokenbuf->get_non_empty_line(line_buf, LINE_MAX);
+      pcs_name = std::string(line_buf);
+      continue;
+    }
+    //....................................................................
+    if(line_string.find("$GEO_NAME")!=string::npos) { // subkeyword found
+      tokenbuf->get_non_empty_line(line_buf, LINE_MAX);
+      geo_name = std::string(line_buf);
+      continue;
+    }
+    //....................................................................
+    if(line_string.find("$GEO_TYPE")!=string::npos) { //OK9_4310
+      tokenbuf->get_non_empty_line(line_buf, LINE_MAX);
+      sscanf(line_buf, "%s %s", str1, str2);
+      geo_type_name = std::string(str1);
+      geo_name      = std::string(str2); 
+      continue;
+    }
+    //....................................................................
+    if(line_string.find("$AXISYMMETRY")!=string::npos) { // subkeyword found
+      axisymmetry=true;
+      continue;
+    }
+    //....................................................................
+    if(line_string.find("$CROSS_SECTION")!=string::npos) { // subkeyword found
+      cross_section=true;
+      continue;
+    }
+    //....................................................................
+    if(line_string.find("$NODES")!=string::npos) { // subkeyword found
+      tokenbuf->get_non_empty_line(line_buf, LINE_MAX);
+      sscanf(line_buf, "%ld", &no_nodes);
+      for(i=0;i<no_nodes;i++){
+        tokenbuf->get_non_empty_line(line_buf, LINE_MAX);
+        sscanf(line_buf, "%ld %lf %lf %lf", &ibuff, &x, &y, &z);
+        newNode = new CNode(ibuff,x,y,z);
+        nod_vector.push_back(newNode);
+      }
+      continue;
+    }
+    //....................................................................
+    if(line_string.find("$ELEMENTS")!=string::npos) { // subkeyword found
+      tokenbuf->get_non_empty_line(line_buf, LINE_MAX);
+      sscanf(line_buf, "%ld", &no_elements);
+      for(i=0;i<no_elements;i++){
+        newElem = new CElem(i);
+        newElem->Read(tokenbuf);
+        ele_type = newElem->geo_type ;//CC02/2006
+        if(newElem->GetPatchIndex()>max_mmp_groups)
+          max_mmp_groups = newElem->GetPatchIndex();
+        ele_vector.push_back(newElem);
+      }
+      continue;
+    }
+    //....................................................................
+    if(line_string.find("$LAYER")!=string::npos) { // subkeyword found
+      tokenbuf->get_non_empty_line(line_buf, LINE_MAX);
+      sscanf(line_buf, "%ld", &no_msh_layer);
+      continue;
+    }
+    //....................................................................
+  }
+  //========================================================================
+  
+#ifdef BENCHMARKING
+  read_timer.stop();
+  std::cout << "Reading mesh took " << read_timer.time_s() << " s." << std::endl;
+#endif
+  return 0;
+}
+#endif
+
 
 /**************************************************************************
 FEMLib-Method: ConnectedElements2Node

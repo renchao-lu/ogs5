@@ -13,6 +13,9 @@ last modified
 using namespace std;
 // MSHLib
 #include "msh_edge.h"
+#ifdef USE_TOKENBUF
+#include "tokenbuf.h"
+#endif
 // PCSLib
 namespace process{class CRFProcessDeformation;}
 namespace Math_Group{class Matrix;}
@@ -176,6 +179,9 @@ class CElem:public CCore
       //------------------------------------------------------------------
       // I/O
       void Read(istream& is=cin, int fileType=0);
+#ifdef USE_TOKENBUF
+      void Read(TokenBuf* tokenbuf, int fileType=0);
+#endif
       void WriteIndex(ostream& os=cout) const;
       void WriteIndex_TEC(ostream& os=cout) const;
       void WriteAll(ostream& os=cout) const;

@@ -21,6 +21,11 @@ using namespace std;
 #include "mathlib.h"
 #include "nodes.h"
 #include "elements.h"
+
+#ifdef USE_TOKENBUF
+#include "tokenbuf.h"
+#endif
+
 extern void RFConfigRenumber(void);
 extern void ConfigRenumberProperties(void);
 extern int CreateEdgeList(void);
@@ -419,6 +424,10 @@ bool FEMRead(string file_base_name)
   string msh_file_name_ascii = file_base_name + FEM_FILE_EXTENSION;
   ifstream msh_file_bin;
   ifstream msh_file_ascii;
+#ifdef USE_TOKENBUF
+  TokenBuf *tokenbuf;
+#endif
+
   msh_file_bin.open(msh_file_name_bin.c_str(),ios::binary|ios::in);
   if(msh_file_bin.good()){ 
     msh_file_binary = true;
@@ -466,13 +475,21 @@ if(!msh_file_binary){
   if(line_string.find("GeoSys-MSH")!=string::npos) //OK
     rfiMesh = false;
   msh_file_ascii.seekg(0L,ios::beg);
+  
+#ifdef USE_TOKENBUF
+  tokenbuf = new TokenBuf(msh_file_ascii, 10485760);
+#endif
+
   if (rfiMesh) 
   {
+#ifdef TRACE
+    std::cout << "RFI MESH" << std::endl;
+#endif
      m_fem_msh = new CFEMesh();
      Read_RFI(msh_file_ascii, m_fem_msh);
      fem_msh_vector.push_back(m_fem_msh);
-	 msh_file_ascii.close();
-	 return true;
+     msh_file_ascii.close();
+     return true;
   }
 }
   //========================================================================
@@ -497,6 +514,23 @@ if(!msh_file_binary){
   }
   //----------------------------------------------------------------------
   else{
+#ifdef USE_TOKENBUF
+    std::cout << "Reading with token buffer." << std::endl;
+    while(!tokenbuf->done()) {
+      tokenbuf->get_non_empty_line(line, MAX_ZEILE);
+      line_string = line;
+      if(line_string.find("#STOP") != string::npos)
+        return true;
+        
+      if(line_string.find("#FEM_MSH") != string::npos) { // mesh
+        m_fem_msh = new CFEMesh();
+        m_fem_msh->Read(tokenbuf);
+        fem_msh_vector.push_back(m_fem_msh);
+      }
+    }
+    delete tokenbuf;
+#else
+    std::cout << "Reading conventionally." << std::endl;
     while(!msh_file_ascii.eof()){
       msh_file_ascii.getline(line,MAX_ZEILE);
       line_string = line;
@@ -510,8 +544,11 @@ if(!msh_file_binary){
         msh_file_ascii.seekg(position,ios::beg);
       } // keyword found
     } // eof
+#endif
+
     msh_file_ascii.close();
   }
+
   //========================================================================
   return true;
 }

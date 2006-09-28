@@ -10,6 +10,11 @@ last modified
 // MSHLib
 #include "msh_mesh.h"
 #include "moveGEOtoMSH.h"//CC
+
+#ifdef USE_TOKENBUF
+#include "tokenbuf.h"
+#endif
+
 using Mesh_Group::CFEMesh;
 using Mesh_Group::CElem;
 using Mesh_Group::CNode;

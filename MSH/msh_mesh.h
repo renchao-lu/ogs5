@@ -90,6 +90,9 @@ class CFEMesh
     CFEMesh(void);
     ~CFEMesh(void);
     ios::pos_type Read(ifstream*);
+#ifdef USE_TOKENBUF
+    int Read(TokenBuf* tokenbuf);
+#endif
     ios::pos_type ReadBIN(ifstream*); //OK
     void Write(fstream*);
     void WriteBIN(fstream*,fstream*); //OK
