@@ -515,7 +515,6 @@ if(!msh_file_binary){
   //----------------------------------------------------------------------
   else{
 #ifdef USE_TOKENBUF
-    std::cout << "Reading with token buffer." << std::endl;
     while(!tokenbuf->done()) {
       tokenbuf->get_non_empty_line(line, MAX_ZEILE);
       line_string = line;
@@ -530,7 +529,6 @@ if(!msh_file_binary){
     }
     delete tokenbuf;
 #else
-    std::cout << "Reading conventionally." << std::endl;
     while(!msh_file_ascii.eof()){
       msh_file_ascii.getline(line,MAX_ZEILE);
       line_string = line;
