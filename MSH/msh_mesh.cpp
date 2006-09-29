@@ -511,7 +511,6 @@ void CFEMesh::ConstructGrid( const bool quadratic)
          }
          thisElem0->SetNeighbors(Neighbors0);	
        }
-
        // --------------------------------
        // Edges
        nedges0 = thisElem0->GetEdgesNumber();
