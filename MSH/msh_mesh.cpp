@@ -3977,7 +3977,7 @@ void CFEMesh::CreateLineELEFromSFC()
   CNode* m_nod = NULL;
   CElem* m_ele = NULL;
   CColumn* m_col = NULL;
-  CGLLine* m_lin = NULL;
+//  CGLLine* m_lin = NULL;
   CSoilProfile* m_prf = NULL;  //YD
   //======================================================================
   i_k=0;
