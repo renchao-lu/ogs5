@@ -112,6 +112,9 @@ int memory_opt = 0;
 int problem_2d_plane_dm; 
 int anz_nval = 0;
 int anz_nval0 = 0; //WW
+//
+int size_eval=0; //WW
+
 NvalInfo *nval_data = NULL;
 int anz_eval = 0;
 EvalInfo *eval_data = NULL;
@@ -476,18 +479,6 @@ void CRFProcess::Create()
     if(pcs_type_name.compare("GROUNDWATER_FLOW")==0)
       MSHDefineMobile(this);
   }
-
-  //----------------------------------------------------------------------
-  // Element matrix output. WW
-  if(Write_Matrix)
-  {
-    cout << "->Write Matrix" << '\n';
-     string m_file_name = FileName +"_"+pcs_type_name+"_element_matrix.txt";
-     matrix_file = new fstream(m_file_name.c_str(),ios::trunc|ios::out);
-     if (!matrix_file->good())
-       cout << "Warning in GlobalAssembly: Matrix files are not found" << endl;
-  }
-
   //----------------------------------------------------------------------------
   int DOF = GetPrimaryVNumber(); //OK should be PCS member variable
   //----------------------------------------------------------------------------
@@ -598,6 +589,15 @@ void CRFProcess::Create()
     else if(Tim->time_unit.find("YEAR")!=string::npos) time_unit_factor=31536000;
   }
   //----------------------------------------------------------------------------
+  //
+  if(m_msh)
+  {
+    if(type==4||type==41) m_msh->SwitchOnQuadraticNodes(true); 
+	else  m_msh->SwitchOnQuadraticNodes(false); 
+    CheckMarkedElement();
+   //    m_msh->RenumberNodesForGlobalAssembly();
+  } 
+
   if(pcs_type_name_vector.size()&&pcs_type_name_vector[0].find("DYNAMIC")!=string::npos) //WW
   {
      setBC_danymic_problems();
@@ -677,7 +677,7 @@ void CRFProcess::Create()
   double* nod_values = NULL;
   double* ele_values = NULL;    // PCH
   long j;
-  size_t size;
+//  size_t size;
   if(m_msh){
     number_of_nvals = 2*DOF + pcs_number_of_secondary_nvals;
     for(i=0;i<pcs_number_of_primary_nvals;i++){
@@ -697,7 +697,7 @@ void CRFProcess::Create()
     // Create element values - PCH
     int number_of_evals = 2*pcs_number_of_evals;  //PCH, increase memory
     if(number_of_evals>0) // WW added this "if" condition
-	{
+    {
        for(i=0;i<pcs_number_of_evals;i++)
        {
          ele_val_name_vector.push_back(pcs_eval_name[i]); // new time
@@ -709,6 +709,7 @@ void CRFProcess::Create()
          for(j=0;j<m_msh_ele_vector_size;j++)
          {
            ele_values =  new double[number_of_evals];
+           size_eval += number_of_evals; //WW
            for(i=0;i<number_of_evals;i++) 
              ele_values[i] = 0.0;
              ele_val_vector.push_back(ele_values);
@@ -718,14 +719,19 @@ void CRFProcess::Create()
         {
           for(j=0;j<m_msh_ele_vector_size;j++){
             ele_values = ele_val_vector[j];
+/* //Comment by WW
 #ifndef SX
 #ifdef GCC
             size = malloc_usable_size( ele_values )/sizeof(double); 
-#else
+#elif HORIZON
+	    //KG44: malloc_usable_size and _msize are not available
+#else 
             size= _msize( ele_values )/sizeof(double);
 #endif
 #endif
-            ele_values = resize(ele_values, size, size+ number_of_evals);
+*/
+            ele_values = resize(ele_values, size_eval, size_eval+ number_of_evals);
+            size_eval += number_of_evals; 
             ele_val_vector[j] = ele_values;
           }
         }
@@ -777,14 +783,6 @@ void CRFProcess::Create()
   }
   if(pcs_type_name_vector.size()&&pcs_type_name_vector[0].find("DYNAMIC")!=string::npos) //WW
      setIC_danymic_problems();
-  if(m_msh)
-  {
-    if(type==4||type==41) m_msh->SwitchOnQuadraticNodes(true); 
-	else  m_msh->SwitchOnQuadraticNodes(false); 
-    CheckMarkedElement();
-   //    m_msh->RenumberNodesForGlobalAssembly();
-  } 
-
 
   //----------------------------------------------------------------------------
   if(!OldFEM) //WW This condition will be removed is new FEM is ready
@@ -820,6 +818,16 @@ void CRFProcess::Create()
   CalcSecondaryVariables(time_level);
   if(pcs_type_name.find("RICHARD")!=string::npos)    //YD
       continuum_ic = false;
+  //----------------------------------------------------------------------
+  // Element matrix output. WW
+  if(Write_Matrix)
+  {
+    cout << "->Write Matrix" << '\n';
+     string m_file_name = FileName +"_"+pcs_type_name+"_element_matrix.txt";
+     matrix_file = new fstream(m_file_name.c_str(),ios::trunc|ios::out);
+     if (!matrix_file->good())
+       cout << "Warning in GlobalAssembly: Matrix files are not found" << endl;
+  }
 
   if(compute_domain_face_normal) //WW
      m_msh->FaceNormal();        
@@ -4344,20 +4352,6 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
       if(cnodev->node_distype == 8)      // NormalDepth Condition JOD
         value = GetNormalDepthNODValue(m_st, msh_node); //MB        
 //OK	}
-    //--------------------------------------------------------------------
-    // FCT-OLD
-    curve = cnodev->CurveIndex;
-    if(curve>0) 
-    {
-      time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
-      if(!valid)  
-      {
-        cout<<"\n!!! Time dependent curve is not found. Results are not guaranteed "<<endl;
-        cout<<" in void CRFProcess::IncorporateSourceTerms(const double Scaling)"<<endl;
-        time_fac = 1.0;
-      }
-    }
-    else time_fac = 1.0;
 
     //--------------------------------------------------------------------
       // Time dependencies - FCT    //YD
@@ -4388,6 +4382,20 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
         }
       }
     }	    
+    //--------------------------------------------------------------------
+    // FCT-OLD
+    curve = cnodev->CurveIndex;
+    if(curve>0) 
+    {
+      time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
+      if(!valid)  
+      {
+        cout<<"\n!!! Time dependent curve is not found. Results are not guaranteed "<<endl;
+        cout<<" in void CRFProcess::IncorporateSourceTerms(const double Scaling)"<<endl;
+        time_fac = 1.0;
+      }
+    }
+    else time_fac = 1.0;
     value *= time_fac*fac; // * YD 
     //------------------------------------------------------------------
     // EQS->RHS
