@@ -1,5 +1,4 @@
  #ifdef CHEMAPP
-
 /* ----------------------------------------------------------------------
  *  System      : ChemApp
  * ----------------------------------------------------------------------
@@ -7,8 +6,8 @@
  *
  * ----------------------------------------------------------------------
  *  File        : $RCSfile: cacint.c,v $ 	
- *  Revision    : $Revision: 1.27 $	
- *  Last Change : $Date: 2003/01/23 11:17:23 $ by $Author: sp $  
+ *  Revision    : $Revision: 1.32 $	
+ *  Last Change : $Date: 2006/06/02 09:21:53 $ by $Author: sp $  
  *
  *  Language    : C
  * ----------------------------------------------------------------------
@@ -24,7 +23,6 @@ form, also in parts, is prohibited.
 */
 #include "stdafx.h" /* MFC */
 
-
 #include <string.h>
 #include "cacint.h"
 
@@ -32,7 +30,7 @@ form, also in parts, is prohibited.
 extern "C" {
 #endif
 
-static char *cacint_RevisionID="$Id: cacint.c,v 1.27 2003/01/23 11:17:23 sp Exp $";
+static char *cacint_RevisionID="$Id: cacint.c,v 1.32 2006/06/02 09:21:53 sp Exp $";
 
 
 #ifdef UNIX
@@ -120,7 +118,7 @@ CMT tqgopn_(CHP FILE,LIP LUN,CHP FFORM,CHP FSTAT,CHP FACC,LIP RECL,
 */
 
 CMT tqbond_(LIP INDEXP, LIP INDEXA, LIP INDEXB, LIP INDEXC, LIP INDEXD, 
-	    LIP INDEXE, LIP INDEXF, DBP VAL, LIP NOERR);
+	    DBP VAL, LIP NOERR);
 
 
 /* Added for ChemApp V340 */
@@ -155,6 +153,27 @@ CMT tqgted_(LIP EDMON, LIP EDYEAR, LIP NOERR);
 CMT tqgthi_(CHP HASPT, LIP HASPID, LIP NOERR,ftnlen);
 CMT tqcen_ (CHP OPTION, LIP INDEXP, LIP INDEXC, DBP VALS, LIP NOERR,ftnlen);
 CMT tqcenl_(CHP OPTION, LIP INDEXP, LIP INDEXC, DBP VALS, LIP NOERR,ftnlen);
+
+/* Added for ChemApp V540 */
+
+CMT tqgdat_(LIP INDEXP, LIP INDEXC, CHP OPTION, LIP INDEXR, LIP NVALV, DBP VALV, LIP NOERR,ftnlen);
+
+
+/*
+********************************
+Still missing:
+TQLPAR
+TQGPAR
+********************************
+*/
+/*CMT tqlpar_(LIP INDEXP, CHP OPTION, LIP NOPAR, CHP CHRPAR, LIP NOERR,ftnlen,ftnlen);*/
+CMT tqcdat_(LIP I1, LIP I2, LIP I3, LIP I4, LIP I5, DBP VAL, LIP NOERR);
+CMT tqwasc_(CHP FILE, LIP NOERR,ftnlen);
+CMT tqchar_(LIP INDEXP, LIP INDEXC, DBP VAL, LIP NOERR);
+
+/* Added for ChemApp V544 */
+
+CMT tqcnsc_ (LIP INDEXS, CHP NAME, LIP NOERR,ftnlen);
 
 
 #else
@@ -243,7 +262,7 @@ CMT TQGOPN(CHP FILE,LNT FILELEN,LIP LUN,CHP FFORM,LNT FFORMLEN,
 */
 
 CMT TQBOND(LIP INDEXP, LIP INDEXA, LIP INDEXB, LIP INDEXC, LIP INDEXD, 
-	    LIP INDEXE, LIP INDEXF, DBP VAL, LIP NOERR);
+	   DBP VAL, LIP NOERR);
 
 
 /* Added for ChemApp V340 */
@@ -279,6 +298,24 @@ CMT TQGTHI(CHP HASPT, LNT OPTIONLEN, LIP HASPID, LIP NOERR);
 CMT TQCEN (CHP OPTION, LNT OPTIONLEN, LIP INDEXP, LIP INDEXC, DBP VALS, LIP NOERR);
 CMT TQCENL(CHP OPTION, LNT OPTIONLEN, LIP INDEXP, LIP INDEXC, DBP VALS, LIP NOERR);
 
+/* Added for ChemApp V540 */
+
+CMT TQGDAT(LIP INDEXP, LIP INDEXC, CHP OPTION, LNT OPTIONLEN, LIP INDEXR, LIP NVALV, DBP VALV, LIP NOERR);
+/*
+********************************
+Still missing:
+TQLPAR
+TQGPAR
+********************************
+*/
+/*CMT TQLPAR(LIP INDEXP, CHP OPTION, LNT OPTIONLEN, LIP NOPAR, CHP CHRPAR, LNT CHRPARLEN, LIP NOERR);*/
+CMT TQCDAT(LIP I1, LIP I2, LIP I3, LIP I4, LIP I5, DBP VAL, LIP NOERR);
+CMT TQWASC(CHP FILE, LNT FILELEN, LIP NOERR);
+CMT TQCHAR(LIP INDEXP, LIP INDEXC, DBP VAL, LIP NOERR);
+
+/* Added for ChemApp V544 */
+
+CMT TQCNSC (LIP INDEXS, CHP NAME, LNT NAMELEN, LIP NOERR);
 
 #endif
 
@@ -941,19 +978,17 @@ int tqgopn (CHP FILE,LI LUN,CHP FFORM,CHP FSTAT,CHP FACC,LI RECL,
 */
 
 int tqbond(LI INDEXP, LI INDEXA, LI INDEXB, LI INDEXC, LI INDEXD, 
-	   LI INDEXE, LI INDEXF, DBP VAL, LIP NOERR)
+	   DBP VAL, LIP NOERR)
 {
   LI i1=INDEXP;
   LI i2=INDEXA;    
   LI i3=INDEXB;    
   LI i4=INDEXC;    
   LI i5=INDEXD;    
-  LI i6=INDEXE;    
-  LI i7=INDEXF;    
 #if defined(UNIX) && !defined(CRAY)
-  tqbond_(&i1,&i2,&i3,&i4,&i5,&i6,&i7,VAL,NOERR);
+  tqbond_(&i1,&i2,&i3,&i4,&i5,VAL,NOERR);
 #else
-  TQBOND(&i1,&i2,&i3,&i4,&i5,&i6,&i7,VAL,NOERR);
+  TQBOND(&i1,&i2,&i3,&i4,&i5,VAL,NOERR);
 #endif
   return(*NOERR);
 }
@@ -1135,4 +1170,61 @@ int tqcenl (CHP OPTION, LI INDEXP, LI INDEXC, DBP VALS, LIP NOERR)
   return(*NOERR);
 }
 
+
+int tqwasc(CHP FILE, LIP NOERR)
+{
+#if defined(UNIX) && !defined(CRAY)
+  tqwasc_(FILE,NOERR,(ftnlen)strlen(FILE));
+#else
+  TQWASC(FILE,strlen(FILE),NOERR);
+#endif
+  return(*NOERR);
+}
+
+int tqgdat(LI INDEXP, LI INDEXC, CHP OPTION, LI INDEXR, LIP NVALV, DBP VALV, LIP NOERR)
+{
+  LI i1=INDEXP,i2=INDEXC,i3=INDEXR;
+#if defined(UNIX) && !defined(CRAY)
+  tqgdat_(&i1,&i2,OPTION,&i3,NVALV,VALV,NOERR,(ftnlen)strlen(OPTION));
+#else
+  TQGDAT(&i1,&i2,OPTION,strlen(OPTION),&i3,NVALV,VALV,NOERR);
+#endif
+  return(*NOERR);
+}
+
+int tqcdat(LI I1, LI I2, LI I3, LI I4, LI I5, DB VAL, LIP NOERR)
+{
+  LI i1=I1,i2=I2,i3=I3,i4=I4,i5=I5;
+  DB d1=VAL;     
+#if defined(UNIX) && !defined(CRAY)
+  tqcdat_(&i1,&i2,&i3,&i4,&i5,&d1,NOERR);
+#else
+  TQCDAT(&i1,&i2,&i3,&i4,&i5,&d1,NOERR);
+#endif
+  return(*NOERR);
+}
+
+int tqchar(LI INDEXP, LI INDEXC, DBP VAL, LIP NOERR)
+{
+  LI i1=INDEXP;
+  LI i2=INDEXC;
+#if defined(UNIX) && !defined(CRAY)
+  tqchar_(&i1,&i2,VAL,NOERR);
+#else
+  TQCHAR(&i1,&i2,VAL,NOERR);
+#endif
+  return(*NOERR);
+}
+
+int tqcnsc (LI INDEXS, CHP NAME, LIP NOERR)
+{
+  LI i1=INDEXS;
+#if defined(UNIX) && !defined(CRAY)
+  tqcnsc_ (&i1,NAME,NOERR,(ftnlen)strlen(NAME));
+#else
+  TQCNSC (&i1,NAME,strlen(NAME),NOERR);
+#endif
+  return(*NOERR);
+}
  #endif
+

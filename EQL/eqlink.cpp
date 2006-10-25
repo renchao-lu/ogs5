@@ -15,7 +15,7 @@
 
 vector <CEqlink*> Eqlink_vec;
 
-#define DEBUG_CHEMAPP  //for debug
+#define _DEBUG_CHEMAPP  //for debug
  static double lambda=0.001;
 
 /**************************************************************************
@@ -36,7 +36,7 @@ CEqlink::CEqlink(void){
 	flowflag = 0;
 	action = 1;
     option = new int [5];
-	option[1] = 3;  //gas, 1=ENTERED, 2=DORMANT, 3=ELIMINATED
+	option[1] = 2;  //gas, 1=ENTERED, 2=DORMANT, 3=ELIMINATED
 	option[2] = 1;  //enforced new calculation
 	option[3] = 0;  //system volume is not considered a target
 	option[4] = 0;  //No estimate allowed
@@ -380,7 +380,7 @@ void CEqlink::prepare(string file_base_name){
 		  PCNAME_AQ[j] = new char [25];
 		  strcpy(PCNAME_AQ[j], strpcon);
 	    } else {
-		  PCNAME_SOLIDS[i][j] = new char [25];
+		  PCNAME_SOLIDS[i][j] = new char [35];
 		  strcpy(PCNAME_SOLIDS[i][j], strpcon);
 	    }
 
@@ -574,7 +574,8 @@ void CEqlink::initEQLINK(void){
 		  m_pcs = PCSGet("GROUNDWATER_FLOW");
 		  indx0 = m_pcs->GetNodeValueIndex("HEAD")+timelevel;
 		  for(i=0;i<this->nodenumber;i++){
-			sysP[i] = m_pcs->GetNodeValue(i, indx0); 
+//MX test			sysP[i] = m_pcs->GetNodeValue(i, indx0);
+			sysP[i] = 1.0e5;  //m_pcs->GetNodeValue(i, indx0); 
 			if (sysP[i]<1.0e5) sysP[i] = 1.0e5;
 		  }
           break;
@@ -626,7 +627,7 @@ void CEqlink::initEQLINK(void){
 						memEQ_mol_scom_aq[i][k] =  \
 							m_pcs->GetNodeValue(i,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]) \
 							+timelevel);
-						memEQ_mol_scom_aq[i][k] = 0.0;  //pow(10.0, -memEQ_mol_scom_aq[i][k]);
+						memEQ_mol_scom_aq[i][k] += 0.0;  //pow(10.0, -memEQ_mol_scom_aq[i][k]);
 					  } //for i
 					  break;
 					}  //if
@@ -674,8 +675,81 @@ void CEqlink::initEQLINK(void){
 	  }	//processes
 	}  //KIND_OF_PFILE ==1
 	else if (KIND_OF_PFILE == 2) {
-	  DisplayErrorMsg("Warning: The function for current chm file is not implemented now!!");
-	  exit(1);
+
+      for(i=0;i<nodenumber;i++){
+		for (m =0; m<NSCOM;m++){
+		  memEQ_mol_scom_gas[i][m]= 0.0;
+          memEQ_mol_scom_aq[i][m]=0.0;
+          memEQ_mol_scom_solids[i][m]=0.0;
+		}
+	  }
+
+	  for(j=0;j<(int)pcs_vector.size();j++){ // for all processes
+		m_pcs = pcs_vector[j];
+		if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0){ // if it is a mass transport process
+			comp = m_pcs->pcs_component_number; // get component number
+			str=m_pcs->pcs_primary_function_name[0];
+			if (cp_vec[comp]->mobil){
+				for (k=0; k<NPCON[1];k++){   //pH  -> H+
+				    if (strcmp(m_pcs->pcs_primary_function_name[0],"pH") ==0 && strcmp(PCNAME_AQ[k],"H") ==0){
+					  for(i=0;i<nodenumber;i++){
+						memEQ_mol_pcon_aq[i][k] =  \
+							m_pcs->GetNodeValue(i,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]) \
+							+timelevel);
+						memEQ_mol_pcon_aq[i][k] = 0.0;  //pow(10.0, -memEQ_mol_scom_aq[i][k]);
+					  } //for i
+					  break;
+					}  //if
+					else if (strcmp(m_pcs->pcs_primary_function_name[0],PCNAME_AQ[k]) ==0) {
+					  for(i=0;i<nodenumber;i++){
+						memEQ_mol_pcon_aq[i][k] =  \
+							m_pcs->GetNodeValue(i,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]) \
+							+timelevel);
+                        for (m =0; m<NSCOM;m++){
+							  memEQ_mol_scom_aq[i][m]+= memEQ_mol_pcon_aq[i][k]*PCSTOI_AQ[k][m];
+					    }
+					  }
+					  break;
+					}  //else if
+				}  //for k
+				for(i=0;i<nodenumber;i++){
+				// get concentration values
+				  if((memEQ_mol_pcon_aq[i][j] < 0.0)  ) {  //MX, 01.2005 val_in[comp][i]&& (strcmp(name[comp],"pe")!= 0)
+					if(abs(memEQ_mol_scom_aq[i][j]) > MKleinsteZahl) {
+					  DisplayMsg(" Neg. conc for component "); DisplayLong((long) comp);
+					  DisplayMsg(" at node "); DisplayLong((long)i);
+					  DisplayMsg("; conc = "); DisplayDouble(memEQ_mol_scom_aq[i][j],0,0);
+					  DisplayMsgLn(" ");
+				    }
+				    memEQ_mol_pcon_aq[i][j] = 0.0 ;
+				  }
+				}  //for i
+			}  //if mobile
+			else if (cp_vec[comp]->mobil==0){ //immobile
+				for (k=2; k<NPHAS;k++){  //0 -gas, 1-aq
+					for (n =0;n<NPCON[k]; n++){
+					  str1 = PCNAME_SOLIDS[k][n];
+//For debug only                        if (str.find("MgSO4_OW")!=string::npos)
+//                          k=k;
+					  if (str1.find(str)!=string::npos){
+						for(i=0;i<nodenumber;i++){
+						    temp =  \
+							  m_pcs->GetNodeValue(i,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]) \
+							  +timelevel);
+                            memEQ_mol_pcon_solids[i][k-2][n]= temp;  //unit [mol/l soil]
+						    for (m =0; m<NSCOM;m++){
+							  memEQ_mol_scom_solids[i][m]+= temp *PCSTOI_SOLIDS[k][n][m];
+							}
+						}
+					    break;
+					  } //if
+					}  //for n
+				}	//for k		
+			}//if immobile
+		}//if pcs = mass transport
+	  }	//processes
+	  //DisplayErrorMsg("Warning: The function for current chm file is not implemented now!!");
+	 // exit(1);
 	}
 	else {
 	  DisplayErrorMsg("Warning: No valid database file (.chm)!!");
@@ -683,7 +757,8 @@ void CEqlink::initEQLINK(void){
 	}
 
 	// water 
-	for(i=0;i<nodenumber;i++) molH2O_in[i]=55.5083491;  //TODO MX, 1kg water, gas?
+    if (KIND_OF_PFILE == 1)
+	  for(i=0;i<nodenumber;i++) molH2O_in[i]=55.5083491;  //TODO MX, 1kg water, gas?
 
 	//total system component amount in each node
 	for(i=0;i<nodenumber;i++){
@@ -1020,8 +1095,13 @@ void CEqlink::callEQCHECK(long node){
 
 void CEqlink::callEQCALC(long node){
 
+  if (node ==40 && aktueller_zeitschritt==4 ){
+  node =node;
+  cout<<"    Timestep: "<< aktueller_zeitschritt<<endl;
+}
+
     int i,j,k,m,n;
-    long numerr=0,numcon=0;
+    long numerr=0,numcon=0, numvers=0;
     double dtemp=0.0,*vals;  //,act_H2O, act_H, act_OH, kw;
     double esum =0.0, sumsolutescharge=0.0;
     bool OnceMore=true;
@@ -1032,6 +1112,9 @@ void CEqlink::callEQCALC(long node){
 //    if (aktueller_zeitschritt==0) AllocateMemory_EQCalc(); //Moved to CallEQLINK, only once
     #ifdef _DEBUG_CHEMAPP 
 		DisplayErrorMsg("******Report from callEQCALC--Start******");
+        tqvers(&numvers, &numerr); 
+        cout<<"ChemApp version is: "<<numvers<<endl;
+        cout<<"Node : "<<node<<endl;
     #endif
 //        printf("\nCurrent time and node was: %d %ld. \n",aktuelle_zeit, node);
 
@@ -1055,6 +1138,7 @@ void CEqlink::callEQCALC(long node){
         molH2O_out[node] = 0.0;  
         kgH2O_out[node] = 0.0;
         pH_out[node] = 0.0;
+        Eh_out[node] = 0.0;
 
 	    sysP_out[node] = 0.0;
 	    sysV_out[node] = 0.0;
@@ -1075,7 +1159,17 @@ void CEqlink::callEQCALC(long node){
       if (memEQ_mol_scom_total[node][i] !=0.0)
         tqsetc("ia",0,i+1,memEQ_mol_scom_total[node][i],&numcon, &numerr);
     }
-//MX    tqshow(&numerr);
+    #ifdef _DEBUG_CHEMAPP
+      tqshow(&numerr); //MX
+      cout << " " <<endl;
+      for (i=0;i<NSCOM;i++){
+        tqgetr("A ",0,i+1,&dtemp, &numerr);
+        if (dtemp != 0.0)
+       //   cout<<"400 |  "<<i+1<<"|IA"<<"|"<<scientific<<dtemp<<"          <<"<<SCNAME[i]<<endl;
+          cout<<"400 |  "<<i+1<<" |"<<scientific<<dtemp<<"           <<"<<SCNAME[i]<<endl;
+      }
+
+    #endif 
 
   //Set status of gas phase
     m=0;
@@ -1232,6 +1326,11 @@ void CEqlink::callEQCALC(long node){
         if (PMASS_out[node][1]>0.0) {
             tqgetr("AC",2,2,&dtemp, &numerr);
             pH_out[node] = - log10(dtemp);
+            if (pstat[1]==2){
+              dtemp =0.0;
+              tqgetr("Eh",2,0,&dtemp, &numerr);   //for Eh output 
+              Eh_out[node] = dtemp;
+            }
         }
         else pH_out[node] = - 999.00;  //no water
       action=0;
@@ -1259,6 +1358,7 @@ void CEqlink::AllocateMemory_EQCalc(void){
     molH2O_out = new double [nodenumber]();
     kgH2O_out = new double [nodenumber]();
     pH_out = new double [nodenumber]();
+    Eh_out = new double [nodenumber]();
 
 	sysP_out = new double [nodenumber]();
 	sysV_out = new double [nodenumber]();
@@ -1306,6 +1406,7 @@ void CEqlink::DeleteMemory_EQCalc(void){
     delete [] molH2O_out;
     delete [] kgH2O_out;
     delete [] pH_out;
+    delete [] Eh_out;
 
 	delete [] sysP_out;
 	delete [] sysV_out;
@@ -1362,7 +1463,9 @@ void CEqlink::SetResultsBackMassTransport(void){
     double temp=0.0;
     string str,str1;
 
-	for(j=0;j<(int)pcs_vector.size();j++){ // for all processes
+    if (KIND_OF_PFILE == 1) {
+
+	  for(j=0;j<(int)pcs_vector.size();j++){ // for all processes
 		m_pcs = pcs_vector[j];
 		if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0){ // if it is a mass transport process
 			comp = m_pcs->pcs_component_number; // get component number
@@ -1410,6 +1513,12 @@ void CEqlink::SetResultsBackMassTransport(void){
 					  } //for i
 					  continue;
 					}  //if
+				    if (strcmp(m_pcs->pcs_primary_function_name[0],"Eh") ==0){
+					  for(i=0;i<nodenumber;i++){
+                        m_pcs->SetNodeValue(i, idx1,Eh_out[i]);
+					  } //for i
+					  break;
+					}  //if
                 } //for k
 				for (k=2; k<NPHAS;k++){  //0 -gas, 1-aq
 					for (n =0;n<NPCON[k]; n++){
@@ -1428,6 +1537,80 @@ void CEqlink::SetResultsBackMassTransport(void){
 			}//if immobile
 		}//if pcs = mass transport
 	  }	//processes
+    } //if (KIND_OF_PFILE == 1)
+    else if (KIND_OF_PFILE == 2) {
+	  for(j=0;j<(int)pcs_vector.size();j++){ // for all processes
+		m_pcs = pcs_vector[j];
+		if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0){ // if it is a mass transport process
+			comp = m_pcs->pcs_component_number; // get component number
+			str=m_pcs->pcs_primary_function_name[0];
+            idx0=m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]);
+            idx1 = idx0+1;
+			if (cp_vec[comp]->mobil){
+				for (k=0; k<NPCON[1];k++){   //pH  -> H+
+				    if (strcmp(m_pcs->pcs_primary_function_name[0],"pH") ==0 && strcmp(PCNAME_AQ[k],"H<+>") ==0){
+					  for(i=0;i<nodenumber;i++){
+                        m_pcs->SetNodeValue(i, idx1,pH_out[i]);
+					  } //for i
+					  break;
+					}  //if
+					else if (strcmp(m_pcs->pcs_primary_function_name[0],PCNAME_AQ[k]) ==0) {
+					  for(i=0;i<nodenumber;i++){
+                        m_pcs->SetNodeValue(i, idx1, mol_pcon_aq_out[i][k]); //  mol_scom_aq_out[i][k]);
+						temp =  \
+							m_pcs->GetNodeValue(i,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]) \
+							+timelevel);
+					  }
+					  break;
+					}  //else if
+				}  //for k
+				for(i=0;i<nodenumber;i++){
+				// get concentration values
+				  if((m_pcs->GetNodeValue(i,idx1) < 0.0)  ) {  //MX, 01.2005 val_in[comp][i]&& (strcmp(name[comp],"pe")!= 0)
+					if(abs(m_pcs->GetNodeValue(i,idx1)) > MKleinsteZahl) {
+					  DisplayMsg(" Neg. conc for component "); DisplayLong((long) comp);
+					  DisplayMsg(" at node "); DisplayLong((long)i);
+					  DisplayMsg("; conc = "); DisplayDouble(m_pcs->GetNodeValue(i,idx1),0,0);
+					  DisplayMsgLn(" ");
+				    }
+				    memEQ_mol_scom_aq[i][j] = 0.0 ;
+				  }
+				}  //for i
+			}  //if mobile
+			else if (cp_vec[comp]->mobil==0){ //immobile
+                for (k=0; k<NSCOM;k++){  
+				    if (strcmp(m_pcs->pcs_primary_function_name[0],"pH") ==0 && strcmp(SCNAME[k],"H") ==0){
+					  for(i=0;i<nodenumber;i++){
+                        m_pcs->SetNodeValue(i, idx1,pH_out[i]);
+					  } //for i
+					  continue;
+					}  //if
+				    if (strcmp(m_pcs->pcs_primary_function_name[0],"Eh") ==0){
+					  for(i=0;i<nodenumber;i++){
+                        m_pcs->SetNodeValue(i, idx1,Eh_out[i]);
+					  } //for i
+					  break;
+					}  //if
+                } //for k
+				for (k=2; k<NPHAS;k++){  //0 -gas, 1-aq
+					for (n =0;n<NPCON[k]; n++){
+					  str1 = PCNAME_SOLIDS[k][n];
+					  if (str1.find(str)!=string::npos){
+						for(i=0;i<nodenumber;i++){
+                            m_pcs->SetNodeValue(i, idx1,mol_pcon_solids_out[i][k-2][n]);
+						    temp =  \
+							  m_pcs->GetNodeValue(i,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]) \
+							  +1);
+						}
+					    break;
+					  } //if
+					}  //for n
+				}	//for k		
+			}//if immobile
+		}//if pcs = mass transport
+	  }	//processes
+
+    }
 
 /*for(comp=0; comp<this->number_of_comp;comp++){
 	name = this->name[comp];

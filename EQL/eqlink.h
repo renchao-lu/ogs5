@@ -334,7 +334,7 @@ C                  3: eliminated (= phase is excluded from calculation
 	 double *mol_scom_total,
             *molH2O_in, 
             *molH2O_out, *kgH2O_out,
-            *pH_out,
+            *pH_out, *Eh_out,
             *sysP_out, *sysV_out,
             **PVOL_out, 
             **PMASS_out,

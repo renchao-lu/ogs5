@@ -1,5 +1,4 @@
- #ifdef CHEMAPP
-
+#ifdef CHEMAPP
 /* ----------------------------------------------------------------------
  *  System      : ChemApp
  * ----------------------------------------------------------------------
@@ -7,8 +6,8 @@
  *
  * ----------------------------------------------------------------------
  *  File        : $RCSfile: cacint.h,v $ 	
- *  Revision    : $Revision: 1.23 $	
- *  Last Change : $Date: 2003/01/23 11:17:23 $ by $Author: sp $  
+ *  Revision    : $Revision: 1.28 $	
+ *  Last Change : $Date: 2006/06/02 09:21:45 $ by $Author: sp $  
  *
  *  Language    : C
  * ----------------------------------------------------------------------
@@ -56,7 +55,7 @@ form, also in parts, is prohibited.
 #define TQSTRING(x) char x[TQSTRLEN]
 /* TQ Error Message Buffer */
 extern char TQERRMSG[3][80]; 
-//#define __cplusplus
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -120,7 +119,7 @@ int tqgopn (CHP FILE,LI LUN,CHP FFORM,CHP FSTAT,CHP FACC,LI RECL,
 	    LIP IOSTAT,LIP NOERR);
 */
 int tqbond(LI INDEXP, LI INDEXA, LI INDEXB, LI INDEXC, LI INDEXD, 
-	   LI INDEXE, LI INDEXF, DBP VAL, LIP NOERR);
+	   DBP VAL, LIP NOERR);
 int tqused(LIP NA,LIP NB,LIP NC,LIP ND,LIP NE,LIP NF,LIP NG,LIP NH,LIP NI,
 	   LIP NJ,LIP NK,LIP NOERR);
 int tqgtrh(LIP TFHVER,
@@ -144,10 +143,13 @@ int tqgted(LIP EDMON, LIP EDYEAR, LIP NOERR);
 int tqgthi(CHP HASPT, LIP HASPID, LIP NOERR);
 int tqcen (CHP OPTION, LI INDEXP, LI INDEXC, DBP VALS, LIP NOERR);
 int tqcenl(CHP OPTION, LI INDEXP, LI INDEXC, DBP VALS, LIP NOERR);
+int tqwasc(CHP FILE, LIP NOERR);
+int tqcdat(LI I1, LI I2, LI I3, LI I4, LI I5, DB VAL, LIP NOERR);
+int tqchar(LI INDEXP, LI INDEXC, DBP VAL, LIP NOERR);
+int tqcnsc (LI INDEXS, CHP NAME, LIP NOERR);
 
 #ifdef __cplusplus
 };
 #endif          /* __cplusplus        */
 #endif 		/* _cacint */
-
-  #endif
+#endif
