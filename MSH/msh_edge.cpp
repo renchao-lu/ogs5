@@ -124,7 +124,7 @@ void CEdge::Write(ostream& osm) const
 MSHLib-Method: 
 08/2006 OK Implementation
 **************************************************************************/
-void CEdge::SetNormalVector(double *ele_normal_vector,double *normal_vector)
+void CEdge::SetNormalVector(double*ele_normal_vector,double*normal_vector)
 {
   // Element normal vector
   // Edge vector
@@ -139,7 +139,7 @@ void CEdge::SetNormalVector(double *ele_normal_vector,double *normal_vector)
 MSHLib-Method: 
 08/2006 OK Implementation
 **************************************************************************/
-void CEdge::GetEdgeVector(double *edge_vector)
+void CEdge::GetEdgeVector(double*edge_vector)
 {
   // Edge vector
   //double edge_vector[3];
@@ -153,7 +153,7 @@ void CEdge::GetEdgeVector(double *edge_vector)
 MSHLib-Method: 
 08/2006 OK Implementation
 **************************************************************************/
-void CEdge::GetEdgeMidPoint(double *edge_vector)
+void CEdge::GetEdgeMidPoint(double*edge_vector)
 {
   // Edge vector
   //double edge_vector[3];
