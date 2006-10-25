@@ -393,19 +393,19 @@ int LOPTimeLoop_PCS(double*dt_sum)
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       // Flow processes
       //------------------------------------------------------------------
-		m_pcs = PCSGet("LIQUID_FLOW");
-		if(m_pcs&&m_pcs->selected){
-			pcs_flow_error = m_pcs->Execute();
-			PCSCalcSecondaryVariables(); // PCS member function
-			if(!m_pcs->m_msh) //OK
-				VELCalcAll(m_pcs);
-			else
-        m_pcs->CalIntegrationPointValue(); //WW
-      if(m_pcs->tim_type_name.compare("STEADY")==0)
-				m_pcs->selected = false;
-    }
-    //------------------------------------------------------------------
-    m_pcs = PCSGet("GROUNDWATER_FLOW");
+      m_pcs = PCSGet("LIQUID_FLOW");
+      if(m_pcs&&m_pcs->selected){
+        pcs_flow_error = m_pcs->Execute();
+        PCSCalcSecondaryVariables(); // PCS member function
+        if(!m_pcs->m_msh) //OK
+          VELCalcAll(m_pcs);
+		else
+          m_pcs->CalIntegrationPointValue(); //WW
+        if(m_pcs->tim_type_name.compare("STEADY")==0)
+            m_pcs->selected = false;
+      }
+      //------------------------------------------------------------------
+      m_pcs = PCSGet("GROUNDWATER_FLOW");
       if(m_pcs&&m_pcs->selected)
       {
         //................................................................

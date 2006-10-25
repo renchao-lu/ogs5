@@ -1400,6 +1400,7 @@ double COutput::NODWritePLYDataTEC(int number)
     m_msh->SwitchOnQuadraticNodes(false); //WW
   //......................................................................
   // PCS
+  m_pcs = PCSGet(pcs_type_name);
   CRFProcess* dm_pcs = NULL; //WW
   for(i=0;i<(int)pcs_vector.size();i++)
   {
@@ -2856,8 +2857,7 @@ void COutput::CalcELEFluxes()
   CRFProcess* m_pcs = PCSGet(pcs_type_name);
   if(!m_pcs)
   {
-    // 
-    // cout << "Warning in COutput::CalcELEFluxes(): no PCS data" << endl;
+    cout << "Warning in COutput::CalcELEFluxes(): no PCS data" << endl;
     return;
   }
   //----------------------------------------------------------------------
@@ -2873,7 +2873,8 @@ void COutput::CalcELEFluxes()
         cout << "Warning in COutput::CalcELEFluxes - no GEO data" << endl;
       f_n_sum = m_pcs->CalcELEFluxes(m_ply);
       ELEWritePLY_TEC();
-      //TIMValue_TEC(f_n_sum);
+//BUGFIX_4402_OK_1
+      TIMValue_TEC(f_n_sum);
       break;
     case 'F': //surFace
       m_sfc = GEOGetSFCByName(geo_name);

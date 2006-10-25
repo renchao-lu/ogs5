@@ -2649,7 +2649,7 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_primary_function_unit[1] = "Pa";
    // 1.2 secondary variables
   //OK LOPCalcSecondaryVariables_USER = MMPCalcSecondaryVariablesRichards; // p_c and S^l
-  pcs_number_of_secondary_nvals = 12;
+  pcs_number_of_secondary_nvals = 13; //OK
   pcs_secondary_function_name[0] = "SATURATION1";
   pcs_secondary_function_unit[0] = "m3/m3";
   pcs_secondary_function_timelevel[0] = 0;
@@ -2686,6 +2686,9 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_secondary_function_name[11] = "STORAGE_P"; 
   pcs_secondary_function_unit[11] = "Pa";
   pcs_secondary_function_timelevel[11] = 0;
+  pcs_secondary_function_name[12] = "VAPOUR_FLUX"; 
+  pcs_secondary_function_unit[12] = "m3/s";
+  pcs_secondary_function_timelevel[12] = 1;
   }
   // 2 ELE values
   pcs_number_of_evals = 8; 
@@ -6799,6 +6802,7 @@ PCSLib-Method:
 double CRFProcess::CalcELEFluxes(CGLPolyline*m_ply)
 {
   long i;
+/*BUGFIX_4402_OK_2
   int f_eidx[3];
   f_eidx[0] = GetElementValueIndex("FLUX_X");
   f_eidx[1] = GetElementValueIndex("FLUX_Y");
@@ -6812,6 +6816,7 @@ double CRFProcess::CalcELEFluxes(CGLPolyline*m_ply)
       return 0.0;
     }
   }
+*/
   double f[3];
   int v_eidx[3];
   CRFProcess* m_pcs_flow = NULL;
@@ -6858,10 +6863,12 @@ double CRFProcess::CalcELEFluxes(CGLPolyline*m_ply)
     m_ele = m_msh->ele_vector[ele_vector_at_geo[i]];
     m_ele->SetNormalVector();
     m_ele->GetNodeIndeces(element_nodes);
+/*BUGFIX_4402_OK_3
     for(j=0;j<3;j++)
     {
       SetElementValue(m_ele->GetIndex(),f_eidx[j],0.0);
     }
+*/
     //--------------------------------------------------------------------
     // velocity vector
     for(j=0;j<3;j++)
@@ -6929,11 +6936,13 @@ double CRFProcess::CalcELEFluxes(CGLPolyline*m_ply)
     }
     //--------------------------------------------------------------------
     // set
+/*BUGFIX_4402_OK_4
     for(j=0;j<3;j++)
     {
-      SetElementValue(m_ele->GetIndex(),f_eidx[j],f[j]);   
+      SetElementValue(m_ele->GetIndex(),f_eidx[j],f[j]);
     }
     // overall flux across polyline
+*/
     f_n_sum += MBtrgVec(f,3);
   }
   //======================================================================
@@ -7030,6 +7039,7 @@ void CRFProcess::AssembleParabolicEquationRHSVector(CNode*m_nod)//(vector<long>&
   for(i=0;i<(int)m_nod->connected_elements.size();i++)
   {
     m_ele = m_msh->ele_vector[m_nod->connected_elements[i]];
+    m_ele->SetNormalVector(); //OK_BUGFIX
     v[0] = GetElementValue(m_ele->GetIndex(),v_eidx[0]);
     v[1] = GetElementValue(m_ele->GetIndex(),v_eidx[1]);
     v[2] = GetElementValue(m_ele->GetIndex(),v_eidx[2]);
