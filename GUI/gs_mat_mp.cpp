@@ -126,7 +126,11 @@ BOOL CMATGroupEditor::OnInitDialog()
   //----------------------------------------------------------------------
   // MAT data
   dataremove = false;
-  switch(mat_type)
+
+  FillTable();
+
+/*-------case sensitive todo-----  
+switch(mat_type)
   {
     case 0: //MMP
       FillTable();
@@ -141,6 +145,8 @@ BOOL CMATGroupEditor::OnInitDialog()
       //MCPFillTable();
       break;
   }
+-------case sensitive todo-----*/
+
   //----------------------------------------------------------------------
   CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
 
