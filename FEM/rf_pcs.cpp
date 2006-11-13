@@ -4355,18 +4355,6 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
       if(cnodev->node_distype == 8)      // NormalDepth Condition JOD
         value = GetNormalDepthNODValue(m_st, msh_node); //MB        
 //OK	}
-    curve = cnodev->CurveIndex;
-    if(curve>0) 
-    {
-      time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
-      if(!valid)  
-      {
-        cout<<"\n!!! Time dependent curve is not found. Results are not guaranteed "<<endl;
-        cout<<" in void CRFProcess::IncorporateSourceTerms(const double Scaling)"<<endl;
-        time_fac = 1.0;
-      }
-    }
-    else time_fac = 1.0;
 
     //--------------------------------------------------------------------
       // Time dependencies - FCT    //YD
@@ -4397,6 +4385,20 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
         }
       }
     }	    
+    //--------------------------------------------------------------------
+    // FCT-OLD
+    curve = cnodev->CurveIndex;
+    if(curve>0) 
+    {
+      time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
+      if(!valid)  
+      {
+        cout<<"\n!!! Time dependent curve is not found. Results are not guaranteed "<<endl;
+        cout<<" in void CRFProcess::IncorporateSourceTerms(const double Scaling)"<<endl;
+        time_fac = 1.0;
+      }
+    }
+    else time_fac = 1.0;
     value *= time_fac*fac; // * YD 
     //------------------------------------------------------------------
     // EQS->RHS
@@ -6835,7 +6837,10 @@ double CRFProcess::CalcELEFluxes(CGLPolyline*m_ply)
   {
     if(v_eidx[i]<0)
     {
-      cout << "Fatal error in CRFProcess::CalcELEFluxes(CGLPolyline*m_ply) - abort"; abort();
+      //cout << "Fatal error in CRFProcess::CalcELEFluxes(CGLPolyline*m_ply) - abort";
+      cout << "Velocity output is not specified"<<endl;
+      return 0.0;
+      //  abort();
     }
   }
   double v[3];
