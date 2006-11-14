@@ -457,7 +457,10 @@ int LOPTimeLoop_PCS(double*dt_sum)
 	// This messagebox is for debugging the primary variables at every time step.
 	// Should combine with the picking...
 	CWnd * pWnd = NULL;
-	pWnd->MessageBox("Richard's Flow is just solved!!!","Debug help", MB_ICONINFORMATION);
+	
+	//Disabled by Haibing 07112006
+	//pWnd->MessageBox("Richard's Flow is just solved!!!","Debug help", MB_ICONINFORMATION);
+	//--------------------------------------------------------
 #endif
 	  //--------------------------------------------------------------------
       m_pcs = PCSGet("TWO_PHASE_FLOW");
@@ -538,7 +541,10 @@ int LOPTimeLoop_PCS(double*dt_sum)
 	// This messagebox is for debugging the primary variables at every time step.
 	// Should combine with the picking...
 //	CWnd * pWnd = NULL;
-	pWnd->MessageBox("Velocity is just solved!!!","Debug help", MB_ICONINFORMATION);
+	
+	  //Disabled by Haibing 07112006-----------------------------
+	  //pWnd->MessageBox("Velocity is just solved!!!","Debug help", MB_ICONINFORMATION);
+	  //---------------------------------------------------------
 #endif
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       // PCH Random Walk Particle Tracking starts here.

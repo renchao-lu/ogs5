@@ -135,7 +135,45 @@ CGeoSysDoc::CGeoSysDoc()
 CGeoSysDoc::~CGeoSysDoc()
 {
   //if (m_strFileNameBase != "new") ID_FILE_CLOSE;
+
+  //Haibing reclaim the memory -----
+  long i;
+  for (i=0; i<(long)material_groups_vector.size();i++)delete material_groups_vector[i];
+  material_groups_vector.clear();
+  for (i=0; i<(long)gsp_vector.size();i++)delete gsp_vector[i];
   gsp_vector.clear();
+  /*
+  list<CBoundaryConditionsGroup*>::iterator ii;
+  for (ii=bc_group_list.begin();ii != bc_group_list.end();ii++)delete *ii;
+  bc_group_list.clear();*/
+  /*list<CSourceTermGroup*>::iterator jj;
+  for (jj=st_group_list.begin();jj != st_group_list.end();jj++)delete *jj;
+  st_group_list.clear();*/
+
+
+  list<CMediumPropertiesGroup*>::iterator kk;
+  for (kk=mmp_group_list.begin();kk != mmp_group_list.end();kk++)delete *kk;
+  mmp_group_list.clear();
+
+  //OnRemoveFEM(); can not be called here, otherwise the files will be modified.
+  GEOLIB_Clear_GeoLib_Data();
+
+  PCSDelete();
+  NUMDelete();
+  TIMDelete();
+  OUTDelete();
+  ICDelete();
+  BCDelete();
+  STDelete();
+  MFPDelete();
+  MSPDelete();
+  MMPDelete();
+  MCPDelete();
+  PCSDestroyAllProcesses();//Do not put this before PCSDelete, it will cause crash
+  //--------------------------------------------------
+
+
+
 }
 
 void CGeoSysDoc::InitDocument() //CC 

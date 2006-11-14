@@ -66,6 +66,11 @@ Programing:
 **************************************************************************/
 COutput::~COutput(void) 
 {
+	//added by Haibing 08112006--------
+	long i;
+	for (i=0;i<(long)out_line_vector.size();i++)delete[] out_line_vector[i];
+	out_line_vector.clear();
+	//---------------------------------
 }
 /**************************************************************************
 FEMLib-Method: 

@@ -130,6 +130,7 @@ extern void BCReadDataBase(string);
 extern void BCExecuteDataBase(void);
 extern void BCDelete();
 extern void BCGroupDelete(string,string);
+extern void BCGroupDelete(void);
 
 //ToDo
 extern long IsNodeBoundaryCondition(char *name, long node);

@@ -159,6 +159,7 @@ extern void STDelete();
 void STCreateFromLIN(vector<CGLLine*>);
 CSourceTerm* STGet(string);
 extern void STGroupDelete(string pcs_type_name,string pcs_pv_name);
+extern void STGroupsDelete(void);//Haibing;
 extern long aktueller_zeitschritt;
 extern double aktuelle_zeit;
 extern vector<string>analytical_processes;
