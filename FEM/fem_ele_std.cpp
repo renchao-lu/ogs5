@@ -993,7 +993,7 @@ Programing:
 03/2005 WW Heat transport
 06/2005 OK Overland flow based on CalcEle2DQuad_OF by MB
 07/2005 WW Change for geometry element object
-08/2005 Air (gas) flow
+08/2005 OK Air (gas) flow
 last modification:
 **************************************************************************/
 inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip) 
@@ -1165,7 +1165,7 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
         mat_fac = FluidProp->Viscosity();
         tensor = MediaProp->PermeabilityTensor(Index);
         // Pressure
-        nidx1 = pcs->GetNodeValueIndex("PRESSURE1");
+        nidx1 = pcs->GetNodeValueIndex("PRESSURE1")+1; //OK
         Hav = 0.0;
         for(i=0;i<nnodes;i++){
 		    Hav += pcs->GetNodeValue(MeshElement->nodes_index[i],nidx1);
@@ -1977,7 +1977,6 @@ void  CFiniteElementStd::Cal_Velocity()
   int gp, gp_r=0, gp_s=0, gp_t;
   double coef = 0.0;
   gp_t = 0;
-
   // Get room in the memory for local matrices
   SetMemory();
   // Set material
