@@ -145,6 +145,22 @@ public:
     bool dataupdate;//JG
     bool datanew;//JG
 //---------------------------
+
+//---IsoLines/Surfaces by Haibing------
+	double IsoValueArray[1000];
+	COLORREF IsoColorArray[1000];
+	COLORREF IsoFrameColorArray[1000];
+	double IsoWidthArray[1000];
+	bool Iso_If_Show_Iso;
+	bool Iso_If_SwitchOff_ContourPlot;
+	int Iso_Type;//0-static, 1-dynamic
+	int Iso_Form;//0-lines, 1-surfaces
+	int Iso_Count;
+	double Iso_Max_Value;
+	double Iso_Min_Value;
+	double Iso_Step_Value;
+
+//-------------------------------------
 };
 /////////////////////////////////////////////////////////////////////////////
 

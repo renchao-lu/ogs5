@@ -92,7 +92,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../gui; ../fem; ../lib; ../msh; ../msh/tm;../msh/delaunay;../geo; ../; ../gui/splitter"
+				AdditionalIncludeDirectories="../gui; ../fem; ../lib; ../msh; ../msh/tm;../msh/delaunay;../geo; ../; ../gui/splitter;../gui/iso"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;MFC;_FEMPCHDEBUG_;RANDOM_WALK"
 				RuntimeLibrary="3"
 				DisableLanguageExtensions="FALSE"
@@ -245,6 +245,18 @@
 			</File>
 			<File
 				RelativePath="ChildFrm.h">
+			</File>
+			<File
+				RelativePath=".\DlgIsoFrameWidth.cpp">
+			</File>
+			<File
+				RelativePath=".\DlgIsoFrameWidth.h">
+			</File>
+			<File
+				RelativePath=".\DlgIsoListValue.cpp">
+			</File>
+			<File
+				RelativePath=".\DlgIsoListValue.h">
 			</File>
 			<File
 				RelativePath=".\GeoSys.cpp">
@@ -870,6 +882,25 @@
 				</File>
 				<File
 					RelativePath=".\ViewControl.h">
+				</File>
+			</Filter>
+			<Filter
+				Name="Iso"
+				Filter="">
+				<File
+					RelativePath=".\Iso\IsoControl.cpp">
+				</File>
+				<File
+					RelativePath=".\IsoControl.h">
+				</File>
+				<File
+					RelativePath=".\Iso\IsoControl.h">
+				</File>
+				<File
+					RelativePath=".\Iso\IsoSurface.cpp">
+				</File>
+				<File
+					RelativePath=".\Iso\IsoSurface.h">
 				</File>
 			</Filter>
 		</Filter>

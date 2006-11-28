@@ -50,6 +50,10 @@
 #define IDD_PTVALUES                    172
 #define IDR_MATGROUP_POPUP              172
 #define IDD_SOIL                        173
+#define IDD_ISO_CONTROL                 174
+#define IDD_DIALOG_IsoValue             175
+#define IDD_DIALOG3                     176
+#define IDD_DIALOG_IsoFrameWidth        176
 #define IDD_BOUNDARY_CONDITIONS         220
 #define IDD_ST                          220
 #define IDD_MAT_FP_DENSITY              237
@@ -712,6 +716,7 @@
 #define IDC_BUTTON_CREATE_SFC           1235
 #define IDC_SHOWALL                     1235
 #define IDC_NODBYPARTICLE               1235
+#define IDC_CHECK_If_Show_Iso           1235
 #define IDC_LIST_BC_SURFACES            1236
 #define IDC_LIST_TIM                    1236
 #define IDC_COMBO_VOL_MAT               1236
@@ -719,6 +724,7 @@
 #define IDC_CREATE                      1236
 #define IDC_ELEFROMNODE                 1236
 #define IDC_POLYLINE_REMOVEALL          1236
+#define IDC_EDIT_Num                    1236
 #define IDC_RADIO_BC_TYPE8              1237
 #define IDC_BUTTON_BC_CREATE_GROUP      1237
 #define IDC_BUTTON_VOL_MAT              1237
@@ -728,6 +734,7 @@
 #define IDC_ELEFROMEDGE                 1237
 #define IDC_POLYLINE_REMOVE             1237
 #define IDC_PCS_MAX_EDIT                1237
+#define IDC_STATIC_MinValue             1237
 #define IDC_BUTTON_BC_ADD2              1238
 #define IDC_EDIT_MAT                    1238
 #define IDC_COMBO_GEO_PLY               1238
@@ -735,6 +742,7 @@
 #define IDC_PICKCROSSROADS              1238
 #define IDC_POLYLINE_ADD                1238
 #define IDC_PCS_MIN_EDIT                1238
+#define IDC_STATIC_Max_Value            1238
 #define IDC_BUTTON_BC_REMOVE2           1239
 #define IDC_BUTTON_BC_READ              1239
 #define IDC_LIST_MAT_GEO_TYPE           1239
@@ -742,10 +750,12 @@
 #define IDC_POLYLINE_ADD_LAYER          1239
 #define IDC_VALUE_POINTS_BUTTON         1239
 #define IDC_PICKPLANE                   1239
+#define IDC_Iso_Refresh                 1239
 #define IDC_BUTTON_SELECTED_NODES       1240
 #define IDC_COMBO_GEO_VOL               1240
 #define IDC_COMBO_PLY_MSH               1240
 #define IDC_MSH                         1240
+#define IDC_Iso_AddListItem             1240
 #define IDC_LIST_BC                     1241
 #define IDC_BUTTON_BC_WRITE             1241
 #define IDC_GEO_NUMBER                  1241
@@ -754,21 +764,26 @@
 #define IDC_COMBO_PLY_MSH2              1241
 #define IDC_SLIDER1                     1241
 #define IDC_PERM                        1241
+#define IDC_LIST6                       1241
 #define IDC_BUTTON_BC_READ_CSV          1242
 #define IDC_BUTTON_GEO_WRITE            1242
 #define IDC_LIST_MAT_GEO_FAKE           1242
 #define IDC_SPARTICLE                   1242
 #define IDC_SURFACE_ADD                 1242
 #define IDC_SLIDER2                     1242
+#define IDC_Iso_DelListItem             1242
 #define IDC_BUTTON_BC_WRITE2            1243
 #define IDC_BUTTON_WRITE_TEC            1243
 #define IDC_SAVEASTXT                   1243
 #define IDC_SURFACE_REMOVE              1243
 #define IDC_ATBYPOLYLINE                1243
 #define IDC_SURFACE_REMOVEALL           1244
+#define IDC_Max                         1244
 #define IDC_UNSELECT_SFC                1245
+#define IDC_Min                         1245
 #define IDC_SURFACE_WRITE_TEC           1246
 #define IDC_SETPATCH                    1246
+#define IDC_Step                        1246
 #define IDC_CREATE_SURFACE              1247
 #define IDC_PATCHNO                     1247
 #define IDC_PLY2SFC                     1248
@@ -1140,9 +1155,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        170
+#define _APS_NEXT_RESOURCE_VALUE        177
 #define _APS_NEXT_COMMAND_VALUE         33084
-#define _APS_NEXT_CONTROL_VALUE         1235
+#define _APS_NEXT_CONTROL_VALUE         1245
 #define _APS_NEXT_SYMED_VALUE           104
 #endif
 #endif

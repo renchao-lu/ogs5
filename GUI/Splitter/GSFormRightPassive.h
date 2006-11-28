@@ -1,5 +1,8 @@
 #pragma once
 #include "afxcmn.h"
+#include "afxcmn.h"
+#include "GeoSysDoc.h"
+#include "IsoControl.h"
 
 
 
@@ -98,6 +101,9 @@ public:
     CSliderCtrl m_slider2;
     afx_msg void OnNMCustomdrawSlider1(NMHDR *pNMHDR, LRESULT *pResult);
     afx_msg void OnNMCustomdrawSlider2(NMHDR *pNMHDR, LRESULT *pResult);
+    afx_msg void OnBnClickedButton1();
+
+    CIsoControl* m_pmodeless;
 };
 
 

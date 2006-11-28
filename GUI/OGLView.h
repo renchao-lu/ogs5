@@ -11,6 +11,7 @@
 
 #include "geo_pnt.h" 
 #include "geo_lin.h" 
+#include "IsoSurface.h"
 
 
 class COGLView : public COGLEnabledView
@@ -228,6 +229,7 @@ private:
     double Get_Green_Value(double value_norm);
     double Get_Blue_Value(double value_norm);
     void UpdatePcsMinmax();
+    void Arrange_and_Display();
 
 private:
 	CGLDispList anothercube;
@@ -238,6 +240,13 @@ public:
 	int sceneselect;
 	GLUnurbsObj *m_ogl_surface;
 
+// IsoLines/Surfaces----by Haibing 09-2006-------
+	void SetIsoSurfaceCol(COLORREF m_color);
+	void drawIsoSurface(std::vector<CIsoSurfaceTriangle*>* mTriangles);
+	void drawIsoSurfaceFrame(std::vector<CIsoSurfaceTriangle*>* mTriangles);
+	void drawIsoLine(std::vector<CIsoSurfaceLine*>* mIsoLines);
+	void SetIsoLineWidth(float Width);
+//-----------------------------------------------
 
 };
 

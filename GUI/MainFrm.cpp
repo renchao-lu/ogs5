@@ -87,6 +87,24 @@ CMainFrame::CMainFrame()
   m_bIsVolumeEditorOn = 0; //OK
   dist_geo_object = -1;//TK
   m_bIsControlPanelOpen = false; //OK
+
+//IsoLines/Surfaces----by haibing
+for (int i=0;i<1000;i++)
+{
+	IsoValueArray[i] = 0;
+	IsoColorArray[i] = RGB(0,0,0);
+	IsoWidthArray[i] = 1.0;
+	IsoFrameColorArray[i] = RGB(0,0,0);
+}
+	Iso_If_Show_Iso = false;
+	Iso_If_SwitchOff_ContourPlot = false;
+	Iso_Type = 0;//0-static, 1-dynamic
+	Iso_Form = 0;//0-lines, 1-surfaces
+	Iso_Count = 0;
+	Iso_Max_Value = 0.0;
+	Iso_Min_Value = 0.0;
+	Iso_Step_Value = 0.0;
+ //-------------------------------
 }
 
 CMainFrame::~CMainFrame()

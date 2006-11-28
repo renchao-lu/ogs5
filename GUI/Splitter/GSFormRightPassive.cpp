@@ -32,6 +32,9 @@
 #include "gs_project.h"
 #include ".\gsformrightpassive.h"
 
+//Iso function
+#include "IsoControl.h"
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -62,7 +65,8 @@ CGSFormRightPassive::CGSFormRightPassive()
 	//{{AFX_DATA_INIT(CGSFormRightPassive)
 		// NOTE: the ClassWizard will add member initialization here
 	//}}AFX_DATA_INIT
-
+    //HS, Iso function
+    m_pmodeless = NULL;
 }
 
 CGSFormRightPassive::~CGSFormRightPassive()
@@ -109,6 +113,7 @@ BEGIN_MESSAGE_MAP(CGSFormRightPassive, CFormView)
     ON_BN_CLICKED(IDC_VALUE_POINTS_BUTTON, OnBnClickedValuePointsButton)
     ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLIDER1, OnNMCustomdrawSlider1)
     ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLIDER2, OnNMCustomdrawSlider2)
+    ON_BN_CLICKED(IDC_BUTTON1, OnBnClickedButton1)
 END_MESSAGE_MAP()
 
 
@@ -161,6 +166,9 @@ void CGSFormRightPassive::OnInitialUpdate()
   m_List.AddString(_T(" "));
   m_List.AddString(_T(" "));
   m_List.AddString(_T("UNDER CONSTRUCTION!"));
+
+  //HS
+  m_pmodeless = NULL;
 }
 
 
@@ -870,4 +878,16 @@ void CGSFormRightPassive::OnNMCustomdrawSlider2(NMHDR *pNMHDR, LRESULT *pResult)
     *pResult = 0;
 
 
+}
+
+void CGSFormRightPassive::OnBnClickedButton1()
+{
+	if(m_pmodeless)
+		m_pmodeless->SetForegroundWindow();
+	else
+	{
+		m_pmodeless = new CIsoControl(this);
+		m_pmodeless->Create(CIsoControl::IDD,GetDesktopWindow());
+		m_pmodeless->ShowWindow(SW_SHOW);
+	}
 }
