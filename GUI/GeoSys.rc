@@ -1743,24 +1743,28 @@ BEGIN
     PUSHBUTTON      "Select plane",IDC_SELECT_PLANE,141,16,50,14
 END
 
-IDD_PICKEDPROPERTY DIALOGEX 0, 0, 361, 111
+IDD_PICKEDPROPERTY DIALOGEX 0, 0, 361, 172
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
     WS_SYSMENU
 CAPTION "Selected Properties "
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "Close",IDCLOSE,304,95,50,14
+    DEFPUSHBUTTON   "Close",IDCLOSE,304,152,50,14
     CONTROL         "",IDC_PICKEDLIST,"SysListView32",LVS_REPORT | WS_BORDER | 
-                    WS_TABSTOP,4,7,349,86
+                    WS_TABSTOP,4,7,349,126
     CONTROL         "Both or current",IDC_BOTHORONE,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,96,65,10
+                    WS_TABSTOP,7,153,65,10
     CONTROL         "BC and ST",IDC_BCNST,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,75,97,49,10
+                    WS_TABSTOP,75,154,49,10
     CONTROL         "Node index",IDC_NODEINDEX,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,125,97,52,10
-    PUSHBUTTON      "Save as txt",IDC_SAVEASTXT,251,95,50,14
+                    WS_TABSTOP,125,154,52,10
+    PUSHBUTTON      "Save as txt",IDC_SAVEASTXT,251,152,50,14
     CONTROL         "Show all",IDC_SHOWALL,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,178,97,42,10
+                    WS_TABSTOP,178,154,42,10
+    PUSHBUTTON      "Permeability",IDC_PERM,7,137,50,14
+    EDITTEXT        IDC_PATCHNO,59,137,16,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Set patch",IDC_SETPATCH,79,137,50,14
+    PUSHBUTTON      ".msh",IDC_MSH,217,152,32,14
 END
 
 IDD_MSH_SURFACES DIALOGEX 0, 0, 418, 167
@@ -1915,24 +1919,33 @@ BEGIN
     PUSHBUTTON      "Simulate",IDC_BUTTON4,11,18,94,15
     PUSHBUTTON      "Display properties",IDC_BUTTON5,11,36,94,15
     GROUPBOX        "Picking",IDC_STATIC,7,7,102,49
-    GROUPBOX        "Particle Tracking",IDC_STATIC,7,58,102,93
+    GROUPBOX        "Particle Tracking",IDC_STATIC,7,58,102,127
     PUSHBUTTON      "Assign PT Values",IDC_PTVALUE,13,70,72,14
     CONTROL         "Velocity Vector",IDC_VELOCITYVECTOR,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,158,63,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,8,192,63,10
     CONTROL         "Show particles",IDC_SHOWPARTICLE,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,15,91,62,10
-    PUSHBUTTON      "In or out",IDC_INOROUT,8,187,50,14
-    PUSHBUTTON      "Read .pct",IDC_READPCT,12,106,45,14
-    PUSHBUTTON      "C in Ele",IDC_CINELE,60,106,45,14
-    CONTROL         "Select by particles",IDC_SPARTICLE,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,14,132,73,10
-    PUSHBUTTON      "Pick ele's from a node",IDC_ELEFROMNODE,9,206,84,14
-    PUSHBUTTON      "Pick ele's from an edge",IDC_ELEFROMEDGE,9,224,83,14
-    PUSHBUTTON      "Pick crossroads",IDC_PICKCROSSROADS,9,243,63,14
+                    BS_AUTOCHECKBOX | WS_TABSTOP,15,121,62,10
+    PUSHBUTTON      "In or out",IDC_INOROUT,9,221,50,14
+    PUSHBUTTON      "Read .pct",IDC_READPCT,12,136,45,14
+    PUSHBUTTON      "C in Ele",IDC_CINELE,60,136,45,14
+    CONTROL         "Select ele's by particles",IDC_SPARTICLE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,12,155,89,10
+    PUSHBUTTON      "Pick ele's from a node",IDC_ELEFROMNODE,10,240,84,14
+    PUSHBUTTON      "Pick ele's from an edge",IDC_ELEFROMEDGE,10,258,83,14
+    PUSHBUTTON      "Pick crossroads",IDC_PICKCROSSROADS,10,277,63,14
     CONTROL         "Crossroad Velocity",IDC_CROSSROADVEC,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,173,74,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,8,207,74,10
     CONTROL         "XY Plane",IDC_TOXYPLANE,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,10,263,45,10
+                    WS_TABSTOP,11,297,45,10
+    PUSHBUTTON      "Pick a plane",IDC_PICKPLANE,10,310,50,14
+    PUSHBUTTON      "P's outside",IDC_POUTSIDE,10,330,46,14
+    PUSHBUTTON      "P's inside",IDC_PINSIDE,62,330,42,14
+    PUSHBUTTON      "Assign P's by polyline",IDC_ATBYPOLYLINE,13,86,78,14
+    EDITTEXT        IDC_PID,25,105,26,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Change ID",IDC_CID,59,105,40,14
+    LTEXT           "ID:",IDC_STATIC,15,108,10,8
+    CONTROL         "Select nodes by particles",IDC_NODBYPARTICLE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,12,168,95,10
 END
 
 IDD_MSH_EDITOR DIALOGEX 0, 0, 372, 210
@@ -2599,7 +2612,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 354
         TOPMARGIN, 7
-        BOTTOMMARGIN, 104
+        BOTTOMMARGIN, 165
     END
 
     IDD_MSH_SURFACES, DIALOG
@@ -3242,7 +3255,7 @@ END
 
 STRINGTABLE 
 BEGIN
-    IDR_MAINFRAME           "GeoSys  -  4.3.22(PCH)"
+    IDR_MAINFRAME           "GeoSys  -  4.4.06(PCH)"
     IDR_GEOSYSTYPE          "\nGeoSys\nGeoSys\nGeoSys project file (*.gsp)\n.gsp\nGeoSys.Document\nGeoSys Document"
 END
 

@@ -9,6 +9,9 @@ Programing:
 #include "mathlib.h"
 #include "fem_ele.h"
 #include "rf_mmp_new.h"
+#include "rfmat_cp.h"
+
+#define ALLOW_PARTICLES_GO_OUTSIDE
 
 class Particle
 {
@@ -23,6 +26,9 @@ public:
     double Vy;
     double Vz;
 
+	// Konductivity
+	double K;
+
 	// Dispersion coefficient tensor
 	double D[9];
 
@@ -36,7 +42,9 @@ public:
     double t;
 
     // the element it belongs to
-    int elementIndex;    
+    int elementIndex;   
+	// particle identity
+	int identity; 
 
     // Constructor
     Particle(void);
@@ -46,7 +54,9 @@ public:
     {
         x = B.x; y = B.y; z = B.z;
         Vx = B.Vx; Vy = B.Vy; Vz = B.Vz;
+		K=B.K;
         t = B.t; elementIndex = B.elementIndex;
+		identity = B.identity;
 		dVxdx = B.dVxdx; dVydy = B.dVydy; dVzdz = B.dVzdz;
 
 		for(int i=0; i<9; ++i)
@@ -79,37 +89,42 @@ public:
     // For now, I just created here. 
     int numOfParticles;  
 	int UniformOrNormal;
+	int RWPTMode;	// 0: Advection and dispersion for homogeneous media 
+					// 1: Advection and dispersion for heterogeneous media
+					// 2: Advection only for homogeneous media
+					// 3: Advection only for heterogeneous media
+					// 4: Dispersion only for homogeneous media
+					// 5: Dispersion only for heterogeneous media
+	int PURERWPT;	// 0: Defualt - Velocity solved by GeoSys
+					// 1: Velocity fields on nodes are given in a separate file.
+
+	double CurrentTime;
 
     // This will keep current and future particles only.
     Trace* X;   
 
     void CreateParticles(int HowManyParticles);
     double Marsaglia(void); // N(0,1) sample generator
-    int IsTheParticleInThisElement(Particle* A, CElem* m_ele);
 	int IsTheParticleInThisElement(Particle* A);
-    void InterpolateVelocityOfTheParticle(Particle* A, CElem* m_ele);
+
 	void InterpolateVelocityOfTheParticleByInverseDistance(Particle* A);
-    void GetVelocityFromTriangle(Particle* A, CElem* m_ele, double* x1buff,
-        double* x2buff,  double* x3buff);
-    void GetVelocityFromTetrahedra(Particle* A, CElem* m_ele, double* x1buff,
-        double* x2buff,  double* x3buff, double* x4buff);
+    
     double randomMinusOneToOne(void);   // create uniform random number between -1 and 1
     double randomZeroToOne(void);   // create uniform random number between 0 and 1
 
-    void AdvanceParticles(double dt);
+
 	void AdvanceParticlesLaBolle(double dt);
-	void AdvanceByAdvection(double dt);
-	void AdvanceByAdvectionNDispersion(double dt);
-	void AdvanceByAdvectionNDispersionSplitTime(double dt, int numOfSplit);
-    int SearchTheElementThatHasTheDisplacedParticle(Particle* A, CElem* m_ele);
+
+	void AdvanceToNextTimeStep(double dt);
+	void AdvanceBySplitTime(double dt, int numOfSplit);
+	void GetDisplacement(Particle* B, double* Z, double* V, double* dD, double time, double* dsp);
+
     void RandomlyDriftAway(Particle* A, double dt, double* delta, int type);
 	int RandomWalkDrift(double* Z, int type);
-    void SetElementBasedConcentration(void);
+    void SetElementBasedConcentration(double dt);
 	void SolveDispersionCoefficient(Particle* A);
-	int SolveForDiffusionWithEdge(Particle* A, Particle* B, double* n);
-	int SolveForAdvectionWithEdge(Particle* A, Particle* B, double* delta);
-	int SolveForPureAdvectionWithEdge(Particle* A, Particle* B);
-	int SolveForAdvectionNDispersionWithEdge(Particle* A, Particle* B);
+	
+	int SolveForNextPosition(Particle* A, Particle* B);
 
 	int SolveForTwoIntersectionsInTheElement(Particle* A, double* p1, double* p2, int axis);
 	int SolveForDerivativeOfVelocity(Particle* A);
@@ -117,7 +132,7 @@ public:
 	double SolveDistanceBetweenTwoPoints(double* p1, double* p2);
 
 	int GetTheElementOfTheParticleFromNeighbor(Particle* A);
-	int GetTheElementOfTheParticleFromNeighborAggressive(Particle* A);
+
 	// Fracture Network
 	void DoJointEffectOfElementInitially(void);
 	void MakeRoulette(double* fit, double* roulette, int numOfCases);
@@ -130,6 +145,8 @@ public:
 	void ToTheRealPlane(CElem* E, double* X);
 	void ToTheRealPlane(int idx, double* X);
 	void SolveAnglesOfTheElment(CElem* E);
+
+	int ReadInVelocityFieldOnNodes(string file_base_name); // Read in velocity fields from an separate file
 
 protected:
 	FiniteElement::CFiniteElementStd *fem;

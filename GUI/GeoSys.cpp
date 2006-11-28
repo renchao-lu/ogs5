@@ -84,6 +84,7 @@ CGeoSysApp::CGeoSysApp()
   pSurfacenew = NULL; //CC03/2006
   pSurface = NULL;
   pVolume = NULL;
+  PID = 0;	// Initialize the PID switch
   m_bPickPLYPoints = false;
   ActiveDialogIndex = 0; // CC
   //......................................................................

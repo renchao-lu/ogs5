@@ -16,10 +16,14 @@ PTValue::PTValue(CWnd* pParent /*=NULL*/)
     fem = NULL;
     m_pcs = NULL;
     m_ele = NULL;
+
+	// To produce a different pseudo-random series each time your program is run.
+    srand((int)time(0));
 }
 
 PTValue::~PTValue()
 {
+
    delete fem;
 }
 
@@ -27,6 +31,7 @@ void PTValue::DoDataExchange(CDataExchange* pDX)
 {
     CDialog::DoDataExchange(pDX);
     DDX_Text(pDX, IDC_NUMOFPARTICLES, m_NumOfParticles);
+	DDX_Text(pDX, IDC_PID, m_PID);
     DDV_MinMaxInt(pDX, m_NumOfParticles, 0, 1000000);
     DDX_Control(pDX, IDC_PICKEDINFO, m_PickedInfo);
 }
@@ -63,60 +68,172 @@ void PTValue::OnBnClickedOk()
 {
     UpdateData(TRUE);
 
-    int naturalNum = 0, naturalNumPlusOne = 0;
+	if(theApp.ElementSwitch == 1)
+	{
+		int naturalNum = 0, naturalNumPlusOne = 0;
    
-    // Check the element type first
-    m_msh = fem_msh_vector[0];      // This is because FEM is not executed. Something should be done later.
-    // Allocate memory for the new version
-    fem = new CElement(m_msh->GetCoordinateFlag());  
+	    // Check the element type first
+		m_msh = fem_msh_vector[0];      // This is because FEM is not executed. Something should be done later.
+	    // Allocate memory for the new version
+		fem = new CElement(m_msh->GetCoordinateFlag());  
     
-    m_msh->PT->numOfParticles = m_NumOfParticles;
-    // Allocate memory for number of particle objects
-    m_msh->PT->CreateParticles(m_msh->PT->numOfParticles);
+		m_msh->PT->numOfParticles = m_NumOfParticles;
+
+		// Allocate memory for number of particle objects
+		m_msh->PT->CreateParticles(m_msh->PT->numOfParticles);
     
-    // Get the natural number obtained by dividing the number of elements
-    // picked by the number of particles
+		// Get the natural number obtained by dividing the number of elements
+		// picked by the number of particles
 
-    // I am starting with the number and the indeces of the elements
-    // These can be configured later on in the file like .pct 
-    // I need to discuss this with Olaf.
+		// I am starting with the number and the indeces of the elements
+		// These can be configured later on in the file like .pct 
+		// I need to discuss this with Olaf.
     
-    // This may look weired. But it makes sense. 
-    if( (m_msh->PT->numOfParticles / theApp.hitsElementTotal) * theApp.hitsElementTotal 
-        < m_msh->PT->numOfParticles )
-    {
-        naturalNum = m_msh->PT->numOfParticles / theApp.hitsElementTotal; 
-        naturalNumPlusOne = naturalNum + 1;
-    }
-    else
-        naturalNumPlusOne = naturalNum = m_msh->PT->numOfParticles / theApp.hitsElementTotal; 
+		// This may look weired. But it makes sense. 
+		if( (m_msh->PT->numOfParticles / theApp.hitsElementTotal) * theApp.hitsElementTotal 
+			< m_msh->PT->numOfParticles )
+		{
+			naturalNum = m_msh->PT->numOfParticles / theApp.hitsElementTotal; 
+			naturalNumPlusOne = naturalNum + 1;
+		}
+		else
+			naturalNumPlusOne = naturalNum = m_msh->PT->numOfParticles / theApp.hitsElementTotal; 
 
+		int count = 0;
 
-    int count = 0;
+		// Loop over the number of the picked elements
+		for(int i=0; i<theApp.hitsElementTotal; ++i)
+		{
+			m_ele = m_msh->ele_vector[theApp.elementPickedTotal[i]];
+			if(i != (theApp.hitsElementTotal -1) )
+			{
+				// Assign N number of particles in this element;
+				for(int j=0; j<naturalNumPlusOne; ++j)
+				{
+					AssignAParticleToTheElement(count, m_ele);
+					m_msh->PT->X[count].Past.identity = m_msh->PT->X[count].Now.identity = m_PID;
+					++count;
+				}
+			}
+			else
+			{
+				// Assign N number of particles in this element;  
+				for(int j=0; j<naturalNum; ++j)
+				{
+					AssignAParticleToTheElement(count, m_ele); 
+					m_msh->PT->X[count].Past.identity = m_msh->PT->X[count].Now.identity = m_PID;  
+					++count;
+				} 
+			}     
+		}
+	}
+	else if(theApp.PolylineSwitch == 1)
+	{
+		CGLPolyline* thisPolyline = NULL;
+	
+//		if(theApp.hitsPolylineTotal < 3)
+//		{
+			// Let's create the particles and solve each number of particles to be assigned to each segment.
+			m_msh = fem_msh_vector[0];      // This is because FEM is not executed. Something should be done later.
+			// Check if this is the first polyline assigned by particles.
+			m_msh->PT->numOfParticles = m_NumOfParticles;
+			// Allocate memory for number of particle objects
+			m_msh->PT->CreateParticles(m_msh->PT->numOfParticles);
 
-    // Loop over the number of the picked elements
-    for(int i=0; i<theApp.hitsElementTotal; ++i)
-    {
-        m_ele = m_msh->ele_vector[theApp.elementPickedTotal[i]];
-        if(i != (theApp.hitsElementTotal -1) )
-        {
-            // Assign N number of particles in this element;
-            for(int j=0; j<naturalNumPlusOne; ++j)
-            {
-                AssignAParticleToTheElement(count, m_ele);
-                ++count;
-            }
-        }
-        else
-        {
-            // Assign N number of particles in this element;  
-            for(int j=0; j<naturalNum; ++j)
-            {
-                AssignAParticleToTheElement(count, m_ele);   
-                ++count;
-            } 
-        }     
-    }
+			int numOfParticlesInThisPolyline = 0;
+
+			numOfParticlesInThisPolyline = m_msh->PT->numOfParticles / theApp.hitsPolylineTotal;
+		
+			for(int p=0; p < theApp.hitsPolylineTotal;++p)
+			{		
+				int count = numOfParticlesInThisPolyline*p;
+				// Mount the polyline picked.
+				thisPolyline = polyline_vector[theApp.polylinePickedTotal[p]];
+
+				// Get the number of geo points and the number of line segments
+				int numOfGeoPoints = (int)thisPolyline->point_vector.size();
+				int numOfLineSegments = numOfGeoPoints - 1;
+
+				double lenthOfthisPolyline = 0.0;
+				double* line = NULL; int* particles = NULL;
+				line = new double [numOfLineSegments] (); particles = new int [numOfLineSegments] ();
+				// Let's solve for the length of each segment
+				for(int i=0; i<numOfLineSegments; ++i)
+				{
+					double x[2], y[2], z[2];
+					x[0] = thisPolyline->point_vector[i]->x; x[1] = thisPolyline->point_vector[i+1]->x;
+					y[0] = thisPolyline->point_vector[i]->y; y[1] = thisPolyline->point_vector[i+1]->y;
+					z[0] = thisPolyline->point_vector[i]->z; z[1] = thisPolyline->point_vector[i+1]->z;
+					line[i] = sqrt((x[0]-x[1])*(x[0]-x[1])+(y[0]-y[1])*(y[0]-y[1])+(z[0]-z[1])*(z[0]-z[1]));
+					lenthOfthisPolyline += line[i];
+				}
+
+				// Since I am dealing with int, the following logic is needed to have all the particles
+				// properly assigned.
+				for(int i=0; i<numOfLineSegments-1; ++i)
+					particles[i] = numOfParticlesInThisPolyline * line[i] / lenthOfthisPolyline;
+				particles[numOfLineSegments-1] = numOfParticlesInThisPolyline;
+				for(int i=0; i<numOfLineSegments-1; ++i)
+					particles[numOfLineSegments-1] -= particles[i];
+			
+				// Let's assign particles randomly segment by segment.
+				// Let's have the global number of particles
+				int no = count;
+				for(int i=0; i<numOfLineSegments; ++i)
+				{
+					// Mount two points of each segment and solve vector of 10.
+					double x[2], y[2], z[2], seg10[3];
+					x[0] = thisPolyline->point_vector[i]->x; x[1] = thisPolyline->point_vector[i+1]->x;
+					y[0] = thisPolyline->point_vector[i]->y; y[1] = thisPolyline->point_vector[i+1]->y;
+					z[0] = thisPolyline->point_vector[i]->z; z[1] = thisPolyline->point_vector[i+1]->z;
+					seg10[0] = x[1] - x[0]; seg10[1] = y[1] - y[0]; seg10[2] = z[1] - z[0];
+					double lengthOfseq10 = sqrt(seg10[0]*seg10[0] + seg10[1]*seg10[1] + seg10[2]*seg10[2]); 
+				
+					for(int j=0; j< particles[i]; ++j)
+					{
+						// Get the random distance from 0 to line[i]
+						double distance = (double)(1.0*rand()/(RAND_MAX+1.0))*line[i];	
+					
+						// Let's solve for the position of particle No. j
+						// First the constant to be multiplied by the vector 10
+						double mag = distance / lengthOfseq10;
+						double p[3];
+						// Don't forget to translate to the 0 point of the segment
+						p[0] = mag*seg10[0] + x[0]; p[1] = mag*seg10[1] + y[0]; p[2] = mag*seg10[2] + z[0];
+						m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = p[0];
+						m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = p[1];
+						m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = p[2];
+						// Element index just chosen to be 0 initially.
+						m_msh->PT->X[no].Past.elementIndex = m_msh->PT->X[no].Now.elementIndex = 0;
+						// Now we successfully assign the position.
+						// But, we don't know the element index of particle yet.
+						// This is a bit tricky because all the particles assigned lie 
+						// exactly along the edges of elements. i.e., the boundary.
+						// Let's stop here for now.
+					
+						// Let's search the element index
+						m_msh->PT->X[no].Past.elementIndex = m_msh->PT->X[no].Now.elementIndex =
+							m_msh->PT->GetTheElementOfTheParticleFromNeighbor(&(m_msh->PT->X[no].Now));
+
+						m_msh->PT->X[no].Past.identity = m_msh->PT->X[no].Now.identity = m_PID; 
+
+						// Right, increase the particle number 
+						++no;
+					}
+				}			
+
+				delete [] line; delete [] particles;
+			}
+/*
+		}
+		else	// Error message
+		{
+			CWnd * pWnd = NULL;
+			pWnd->MessageBox("Please pick only one polyline!","Info", MB_ICONINFORMATION);
+		} 
+*/
+
+	}
     
     OnOK();
 }

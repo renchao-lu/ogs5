@@ -57,6 +57,8 @@ CGSFormRightPicking::~CGSFormRightPicking()
 void CGSFormRightPicking::DoDataExchange(CDataExchange* pDX)
 {
 	CFormView::DoDataExchange(pDX);
+
+	DDX_Text(pDX, IDC_PID, m_PID);
 }
 
 BEGIN_MESSAGE_MAP(CGSFormRightPicking, CFormView)
@@ -74,6 +76,13 @@ BEGIN_MESSAGE_MAP(CGSFormRightPicking, CFormView)
 	ON_BN_CLICKED(IDC_CROSSROADVEC, OnBnClickedCrossroadvec)
 	ON_BN_CLICKED(IDC_TOXYPLANE, OnBnClickedToxyplane)
 	ON_BN_CLICKED(IDC_SPARTICLE, OnBnClickedSparticle)
+	ON_BN_CLICKED(IDC_NODBYPARTICLE, OnBnClickedNodbyparticle)
+	ON_BN_CLICKED(IDC_PICKPLANE, OnBnClickedPickplane)
+	ON_BN_CLICKED(IDC_ATBYPOLYLINE, OnBnClickedAtbypolyline)
+	ON_BN_CLICKED(IDC_POUTSIDE, OnBnClickedPoutside)
+	ON_BN_CLICKED(IDC_PINSIDE, OnBnClickedPinside)
+	ON_BN_CLICKED(IDC_CID, OnBnClickedCid)
+	ON_EN_CHANGE(IDC_PID, OnEnChangePid)
 END_MESSAGE_MAP()
 
 
@@ -127,6 +136,7 @@ void CGSFormRightPicking::OnSimulateUnderDeveloperMode()
 	for(int i=0; i<= (int)m_gsp->base.size(); ++i)
 		argv[1][i] = m_gsp->base[i];
 
+	FileName = m_gsp->base;
 	mainPCH ( numOfArguments, argv );
 
 	delete m_gsp;
@@ -185,7 +195,7 @@ void CGSFormRightPicking::OnBnClickedInorout()
     int count = 0;
     for(int i=0; i< m_msh->PT->numOfParticles; ++i)
     {
-        InOrOut = m_msh->PT->IsTheParticleInThisElement(&(m_msh->PT->X[i].Now), m_ele); 
+        InOrOut = m_msh->PT->IsTheParticleInThisElement(&(m_msh->PT->X[i].Now)); 
 
         if(InOrOut==1)
             ++count;
@@ -210,7 +220,7 @@ void CGSFormRightPicking::OnBnClickedInorout()
     fem->UnitCoordinates(p);
 */
   
-    m_msh->PT->InterpolateVelocityOfTheParticle(&(m_msh->PT->X[0].Now), m_ele);
+    m_msh->PT->InterpolateVelocityOfTheParticleByInverseDistance(&(m_msh->PT->X[0].Now));
     double vx = m_msh->PT->X[0].Now.Vx; double vy = m_msh->PT->X[0].Now.Vy; double vz = m_msh->PT->X[0].Now.Vz;
     
 
@@ -230,26 +240,10 @@ void CGSFormRightPicking::OnBnClickedReadpct()
 
 	if(pFlg.DoModal() == IDOK)
 	{	
-		FILE *pct_file;
-
-		pct_file = fopen(pFlg.GetPathName(), "r");
-
-		// Later on from this line, I can put which mesh I am dealing with. 
-		fscanf(pct_file,"%d", &(RW->numOfParticles));
-
-		for(int i=0; i< RW->numOfParticles; ++i)
-		{
-			int index = 0; 
-			double x = 0.0, y=0.0, z = 0.0;
-			fscanf(pct_file, "%d %lf %lf %lf", &index, &x, &y, &z);
-			RW->X[i].Now.elementIndex = index;
-			RW->X[i].Now.x = x; RW->X[i].Now.y = y; RW->X[i].Now.z = z; 
-
-			RW->X[i].Past = RW->X[i].Now;
-		}
-
-		fflush(pct_file);
-		fclose(pct_file);	
+		string pct_file_name = pFlg.GetPathName();
+		
+		pct_file_name.erase(pct_file_name.find(".pct",0), 4);	// Getting rid of .pct
+		PCTRead(pct_file_name);
 	}
 }
 
@@ -465,7 +459,7 @@ void CGSFormRightPicking::OnBnClickedSparticle()
 			for(int i=0; i<m_msh->ele_vector.size(); ++i)
 			{
 				if(m_msh->PT->X[theApp.ParticlePickedTotal[p]].Now.elementIndex 
-					== m_msh->ele_vector[i]->GetIndex())
+					== i)
 				{
 					++theApp.hitsElementTotal;
 					theApp.elementPickedTotal = (int *)realloc(theApp.elementPickedTotal, 
@@ -476,9 +470,167 @@ void CGSFormRightPicking::OnBnClickedSparticle()
 				}
 			}
 		}
+
+		// Let's get rid of duplicates by doing so called compression.
+		for(int j=0; j<theApp.hitsElementTotal; ++j)
+		{
+			for(int l=j+1; l<theApp.hitsElementTotal; ++l)
+			{
+				// Check two indeces are same.
+				if( theApp.elementPickedTotal[j] == theApp.elementPickedTotal[l] )
+				{
+					// Two elements stay on the same plane
+					for(int m = l; m < (theApp.hitsElementTotal - 1); ++m)
+						theApp.elementPickedTotal[m] = theApp.elementPickedTotal[m+1];
+					
+					// delete the duplicates.
+					--theApp.hitsElementTotal;
+					--l;	// Very important. Huh.
+				}
+			} 	
+		}
 	}
 	else 
 		;
 
     showChange();
+}
+
+void CGSFormRightPicking::OnBnClickedNodbyparticle()
+{
+	if(IsDlgButtonChecked(IDC_NODBYPARTICLE))
+	{
+		CFEMesh* m_msh = fem_msh_vector[0]; 
+
+		theApp.hitsRFINodeTotal = 0;
+		for(int p=0; p<theApp.hitsParticleTotal; ++p)
+		{
+			for(int i=0; i<m_msh->ele_vector.size(); ++i)
+			{
+				if(m_msh->PT->X[theApp.ParticlePickedTotal[p]].Now.elementIndex 
+					== m_msh->ele_vector[i]->GetIndex())
+				{
+					for(int j=0; j<m_msh->ele_vector[i]->GetFacesNumber(); ++j)
+					{
+						++theApp.hitsRFINodeTotal;
+						theApp.RFInodePickedTotal = (int *)realloc(theApp.RFInodePickedTotal, 
+							theApp.hitsRFINodeTotal*sizeof(int));
+
+						// Let's get the node one by one
+						theApp.RFInodePickedTotal[theApp.hitsRFINodeTotal-1] = 
+							m_msh->nod_vector[m_msh->ele_vector[i]->GetNodeIndex(j)]->GetIndex();
+					}
+				}
+			}
+		}
+	}
+	else 
+		;
+
+    showChange();
+}
+#define PATCH
+void CGSFormRightPicking::OnBnClickedPickplane()
+{
+	double tolerance = 1e-1;
+	// Mount the mesh and the picked element
+	CFEMesh* m_msh = fem_msh_vector[0];
+	CElem* theEle = NULL;
+	if(theApp.hitsElementTotal == 1)
+		theEle = m_msh->ele_vector[theApp.elementPickedTotal[0]];
+	else
+		;	// Please select one representive element.
+
+#ifdef PLANE	
+	// We are going to compare the norm vector of each element
+	double NtheEle[3];
+	for(int k=0; k<3; ++k) NtheEle[k] = theEle->getTransformTensor(k+6);
+#endif
+
+	// Initialize picking
+	theApp.hitsElementTotal = 0;
+	// Loop over the elements
+	for(int i=0; i< m_msh->ele_vector.size(); ++i)
+	{
+		CElem* anEle = m_msh->ele_vector[i];
+#ifdef PLANE
+		double NanEle[3];
+		for(int k=0; k<3; ++k) NanEle[k] = anEle->getTransformTensor(k+6);
+		double xx = NtheEle[0] - NanEle[0], yy = NtheEle[1] - NanEle[1], zz = NtheEle[2] - NanEle[2];
+		double distance = xx*xx + yy*yy + zz*zz;
+
+		// If the normal vectors are same and the translation is the same, then pick
+		if( fabs(xx) < tolerance && fabs(yy) < tolerance && fabs(zz) < tolerance &&
+			fabs(theEle->GetAngle(2) - anEle->GetAngle(2)) < tolerance )
+#endif			
+#ifdef PATCH
+		// Select by patch number
+		int patch = anEle->GetPatchIndex();
+		if(anEle->GetPatchIndex() == 2)
+#endif
+		{
+			++theApp.hitsElementTotal;
+			theApp.elementPickedTotal = (int *)realloc(theApp.elementPickedTotal, 
+										theApp.hitsElementTotal*sizeof(int));
+
+			// Let's get the element one by one.
+			theApp.elementPickedTotal[theApp.hitsElementTotal-1] = i;
+		}
+	}
+}
+
+void CGSFormRightPicking::OnBnClickedAtbypolyline()
+{
+	theApp.pPTValue.DoModal();	
+}
+
+void CGSFormRightPicking::OnBnClickedPoutside()
+{
+	// This is termperary measure only for single mesh cass
+    CFEMesh* m_msh = fem_msh_vector[0];
+	theApp.hitsParticleTotal = 0;
+	for(int i=0; i < m_msh->PT->numOfParticles ; ++i)        
+	{
+		if(m_msh->PT->X[i].Now.elementIndex == -10)
+		{
+			++theApp.hitsParticleTotal;
+			theApp.ParticlePickedTotal = (int *)realloc(theApp.ParticlePickedTotal, theApp.hitsParticleTotal*sizeof(int));
+			theApp.ParticlePickedTotal[theApp.hitsParticleTotal-1] = i;
+		}
+	}	
+}
+
+void CGSFormRightPicking::OnBnClickedPinside()
+{
+	// This is termperary measure only for single mesh cass
+    CFEMesh* m_msh = fem_msh_vector[0];
+	theApp.hitsParticleTotal = 0;
+	for(int i=0; i < m_msh->PT->numOfParticles ; ++i)        
+	{
+		if(m_msh->PT->X[i].Now.elementIndex != -10)
+		{
+			++theApp.hitsParticleTotal;
+			theApp.ParticlePickedTotal = (int *)realloc(theApp.ParticlePickedTotal, theApp.hitsParticleTotal*sizeof(int));
+			theApp.ParticlePickedTotal[theApp.hitsParticleTotal-1] = i;
+		}
+	}	
+}
+
+void CGSFormRightPicking::OnBnClickedCid()
+{
+	UpdateData(TRUE);
+
+	CFEMesh* m_msh = fem_msh_vector[0]; 
+
+	for(int p=0; p<theApp.hitsParticleTotal; ++p)
+	{
+		m_msh->PT->X[theApp.ParticlePickedTotal[p]].Past.identity = m_msh->PT->X[theApp.ParticlePickedTotal[p]].Now.identity = m_PID;
+	}
+		
+}
+
+void CGSFormRightPicking::OnEnChangePid()
+{
+	UpdateData(TRUE);
+	theApp.PID = m_PID;
 }

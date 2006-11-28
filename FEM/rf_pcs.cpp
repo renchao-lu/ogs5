@@ -6978,7 +6978,7 @@ void CRFProcess::CalcELEVelocities(void)
   {
     if(eidx[i]<0)
     {
-      cout << "Fatal error in CRFProcess::CalcELEVelocities - abort"; abort();
+      cout << "Fatal error in CRFProcess::CalcELEVelocities - abort"; //abort();	// PCH commented abort() out for FM.
     }
   }
   //----------------------------------------------------------------------

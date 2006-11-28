@@ -60,12 +60,14 @@ private:
 	int numOfItemsEle;
 	int numOfItemsNode;
 
+	int m_NoOfPatch;
+
     CFEMesh* m_msh;
     CElem* m_ele;
 	char** CreateWordMemory(int numOfItems);
 	int GetNumberOfNodesInElement(int index);
 
-    int IsThisPointBCIfYesStoryValue(int index, CRFProcess* m_pcs, double& value);
+	int IsThisPointBCIfYesStoryValue(int index, CRFProcess* m_pcs, double& value);
     int IsThisPointSTIfYesStoryValue(int index, CRFProcess* m_pcs, double& value);
 //WW	int IsThisPointBCIfYesStoryValue(int index, CBoundaryConditionsGroup* m_bc_group, double* value);
 //WW	int IsThisPointSTIfYesStoryValue(int index, CSourceTermGroup* m_st_group, double* value);
@@ -85,4 +87,7 @@ public:
 	afx_msg void OnBnClickedNodeindex();
 	afx_msg void OnBnClickedShowall();
 	afx_msg void OnBnClickedSaveastxt();
+	afx_msg void OnBnClickedMsh();
+	afx_msg void OnBnClickedPerm();
+	afx_msg void OnBnClickedSetpatch();
 };

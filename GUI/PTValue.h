@@ -27,6 +27,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
     int m_NumOfParticles;
+	int m_PID;
     afx_msg void OnBnClickedOk();
     
 private:

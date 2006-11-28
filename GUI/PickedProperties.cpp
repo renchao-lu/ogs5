@@ -11,7 +11,6 @@
 #include "MainFrm.h"
 #include "rf_fluid_momentum.h"
 
-
 // PickedProperties dialog
 
 IMPLEMENT_DYNAMIC(PickedProperties, CDialog)
@@ -22,6 +21,7 @@ PickedProperties::PickedProperties(CWnd* pParent /*=NULL*/)
 	widthOfCell = 80;
 	PCSSwitch = 0;
 	BCnSTSwitch = 0;
+	m_NoOfPatch = 0;
 }
 
 PickedProperties::~PickedProperties()
@@ -32,6 +32,7 @@ void PickedProperties::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_PICKEDLIST, m_SmallList);
+	DDX_Text(pDX, IDC_PATCHNO, m_NoOfPatch);
 }
 
 
@@ -43,6 +44,9 @@ BEGIN_MESSAGE_MAP(PickedProperties, CDialog)
 	ON_BN_CLICKED(IDC_NODEINDEX, OnBnClickedNodeindex)
 	ON_BN_CLICKED(IDC_SHOWALL, OnBnClickedShowall)
 	ON_BN_CLICKED(IDC_SAVEASTXT, OnBnClickedSaveastxt)
+	ON_BN_CLICKED(IDC_MSH, OnBnClickedMsh)
+	ON_BN_CLICKED(IDC_PERM, OnBnClickedPerm)
+	ON_BN_CLICKED(IDC_SETPATCH, OnBnClickedSetpatch)
 END_MESSAGE_MAP()
 
 
@@ -226,7 +230,6 @@ void PickedProperties::ListGLINodeSelected()
 {
 	CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
 	LV_ITEM lvitem;
-    CGLPoint* thisGLIPoint = NULL;
 
     int numOfItems = 7;
 
@@ -258,19 +261,18 @@ void PickedProperties::ListGLINodeSelected()
 		// Get the active view attached to the active MDI child window.
 		COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
 		
-		CGLPoint aPoint = pView->GetGLIPointByIndex(theApp->GLInodePickedTotal[i]);
+		CGLPoint thisGLIPoint = pView->GetGLIPointByIndex(theApp->GLInodePickedTotal[i]);
 
-		sprintf(tempNum[2], "%f", aPoint.x);
-        sprintf(tempNum[3], "%f", aPoint.y);
-        sprintf(tempNum[4], "%f", aPoint.z);
+		sprintf(tempNum[2], "%f", thisGLIPoint.x);
+        sprintf(tempNum[3], "%f", thisGLIPoint.y);
+        sprintf(tempNum[4], "%f", thisGLIPoint.z);
 
-		thisGLIPoint = GEOGetPointById(theApp->GLInodePickedTotal[i]);//CC
-        for(int k=0; k <= (int)thisGLIPoint->name.size(); ++k)
+        for(int k=0; k <= (int)thisGLIPoint.name.size(); ++k)
         {
-            tempNum[5][k] = thisGLIPoint->name[k];
+            tempNum[5][k] = thisGLIPoint.name[k];
         }
 
-		sprintf(tempNum[6], "%f", thisGLIPoint->epsilon);
+		sprintf(tempNum[6], "%f", thisGLIPoint.epsilon);
 
 		for (int j = 0; j < numOfItems; ++j)
 		{
@@ -509,35 +511,14 @@ void PickedProperties::ListRFINodeSelected(int PCSSwitch)
 			{
 				m_pcs = pcs_vector[j];
 
-		        // ST printing
-                if ((int)m_pcs->st_node_value.size() > 0)
-                {
-                   double STValue = 0;
-                   if( IsThisPointSTIfYesStoryValue(theApp->RFInodePickedTotal[i], m_pcs, STValue) )
-                   {
-                      sprintf(tempNum[currentPosition], "%e", STValue);
-                      ++currentPosition;
-                   }
-                   else
-                   {
-                       sprintf(tempNum[currentPosition], "Not assigned");
-                 		++currentPosition;
-						}
-					}
-                else
-		        {
-                    sprintf(tempNum[currentPosition], "No source term used");	
-                   	++currentPosition;
-                }
-                //
 				for(int k=0; k<m_pcs->pcs_number_of_primary_nvals; ++k)
 				{
 					// Let's print BC and ST values
 					CBoundaryConditionsGroup *m_bc_group = NULL;
-					// CSourceTermGroup *m_st_group = NULL;
+					CSourceTermGroup *m_st_group = NULL;
 
                     m_bc_group = BCGetGroup(m_pcs->pcs_type_name,m_pcs->pcs_primary_function_name[k]);
-					//WW m_st_group = STGetGroup(m_pcs->pcs_type_name,m_pcs->pcs_primary_function_name[k]);
+					m_st_group = STGetGroup(m_pcs->pcs_type_name,m_pcs->pcs_primary_function_name[k]);
 				
 					// BC printing
 					double BCValue = 0.0;
@@ -551,12 +532,12 @@ void PickedProperties::ListRFINodeSelected(int PCSSwitch)
 						sprintf(tempNum[currentPosition], "Not assigned");
 						++currentPosition;
 					}
-/*
+
 					// ST printing
 					if (st_group_list.size() > 0)
 					{
 						double STValue = 0;
-						if( IsThisPointSTIfYesStoryValue(theApp->RFInodePickedTotal[i], m_st_group, &STValue) )
+						if( IsThisPointSTIfYesStoryValue(theApp->RFInodePickedTotal[i], m_pcs, STValue) )
 						{
 							sprintf(tempNum[currentPosition], "%e", STValue);
 							++currentPosition;
@@ -572,7 +553,6 @@ void PickedProperties::ListRFINodeSelected(int PCSSwitch)
 						sprintf(tempNum[currentPosition], "No source term used");	
 						++currentPosition;
 					}
-*/
 				}
 			}
 			numOfItems = currentPosition;
@@ -601,10 +581,10 @@ void PickedProperties::ListParticleSelected()
 {
 	LV_ITEM lvitem;
 
-	int numOfItems = 9;
+	int numOfItems = 11;
 
 	// Open the gate to processes 
-//	CRFProcess* m_pcs = NULL;
+	CRFProcess* m_pcs = NULL;
     m_msh = fem_msh_vector[0];
 
     m_SmallList.InsertColumn (0, "Count");
@@ -616,6 +596,8 @@ void PickedProperties::ListParticleSelected()
 	m_SmallList.InsertColumn (6, "Vy");
 	m_SmallList.InsertColumn (7, "Vz");
 	m_SmallList.InsertColumn (8, "EleIndex");
+	m_SmallList.InsertColumn (9, "Identity");
+	m_SmallList.InsertColumn (10, "K");
 	
     for(int i=0; i < numOfItems; ++i)
         m_SmallList.SetColumnWidth (i, widthOfCell);
@@ -637,6 +619,8 @@ void PickedProperties::ListParticleSelected()
 		sprintf(tempNum[6], "%e", m_msh->PT->X[theApp.ParticlePickedTotal[i]].Now.Vy);
 		sprintf(tempNum[7], "%e", m_msh->PT->X[theApp.ParticlePickedTotal[i]].Now.Vz);
 		sprintf(tempNum[8], "%d", m_msh->PT->X[theApp.ParticlePickedTotal[i]].Now.elementIndex);
+		sprintf(tempNum[9], "%d", m_msh->PT->X[theApp.ParticlePickedTotal[i]].Now.identity);
+		sprintf(tempNum[10], "%e", m_msh->PT->X[theApp.ParticlePickedTotal[i]].Now.K);	
 	
 		for (int j = 0; j < numOfItems; ++j)
 		{
@@ -804,14 +788,26 @@ void PickedProperties::ListRFINodeAll(int PCSSwitch)
 				{
 					// Let's print BC and ST values
 					CBoundaryConditionsGroup *m_bc_group = NULL;
-					//CSourceTermGroup *m_st_group = NULL;
+					CSourceTermGroup *m_st_group = NULL;
 
                     m_bc_group = BCGetGroup(m_pcs->pcs_type_name,m_pcs->pcs_primary_function_name[k]);
-					//m_st_group = STGetGroup(m_pcs->pcs_type_name,m_pcs->pcs_primary_function_name[k]);
+					m_st_group = STGetGroup(m_pcs->pcs_type_name,m_pcs->pcs_primary_function_name[k]);
+				
+					// BC printing
+					double BCValue = 0.0;
+					if( IsThisPointBCIfYesStoryValue(i, m_pcs, BCValue) )
+					{
+						sprintf(tempNum[currentPosition], "%e", BCValue);
+						++currentPosition;
+					}
+					else
+					{
+						sprintf(tempNum[currentPosition], "Not assigned");
+						++currentPosition;
+					}
 
-					//
 					// ST printing
-					if ((int)m_pcs->st_node_value.size() > 0)
+					if (st_group_list.size() > 0)
 					{
 						double STValue = 0;
 						if( IsThisPointSTIfYesStoryValue(i, m_pcs, STValue) )
@@ -830,41 +826,6 @@ void PickedProperties::ListRFINodeAll(int PCSSwitch)
 						sprintf(tempNum[currentPosition], "No source term used");	
 						++currentPosition;
 					}
-				
-					// BC printing
-					double BCValue = 0.0;
-					if( IsThisPointBCIfYesStoryValue(i, m_pcs, BCValue) )
-					{
-						sprintf(tempNum[currentPosition], "%e", BCValue);
-						++currentPosition;
-					}
-					else
-					{
-						sprintf(tempNum[currentPosition], "Not assigned");
-						++currentPosition;
-					}
-/*
-					// ST printing
-					if (st_group_list.size() > 0)
-					{
-						double STValue = 0;
-						if( IsThisPointSTIfYesStoryValue(i, m_st_group, &STValue) )
-						{
-							sprintf(tempNum[currentPosition], "%e", STValue);
-							++currentPosition;
-						}
-						else
-						{
-							sprintf(tempNum[currentPosition], "Not assigned");
-							++currentPosition;
-						}
-					}
-					else
-					{
-						sprintf(tempNum[currentPosition], "No source term used");	
-						++currentPosition;
-					}
-*/
 				}
 			}
 			numOfItems = currentPosition;
@@ -896,7 +857,7 @@ void PickedProperties::ListElementSelected(int PCSSwitch)
     static long *element_nodes;
 
 	int numOfItems = 0;
-	int numOfDefaultItems = 5;
+	int numOfDefaultItems = 6;
 	int MaximumNumberOfNodesInAnElement = 8;
 	int numOfElementValues = 0;
 
@@ -927,6 +888,7 @@ void PickedProperties::ListElementSelected(int PCSSwitch)
 	m_SmallList.InsertColumn (2, "x");
 	m_SmallList.InsertColumn (3, "y");
 	m_SmallList.InsertColumn (4, "z");
+	m_SmallList.InsertColumn (5, "Patch No");
 
 	if(theApp->NodeIndexOfElementSwitch == 1)	
 	{
@@ -985,6 +947,7 @@ void PickedProperties::ListElementSelected(int PCSSwitch)
 		sprintf(tempNum[2], "%e", centerX);
 		sprintf(tempNum[3], "%e", centerY);
 		sprintf(tempNum[4], "%e", centerZ);
+		sprintf(tempNum[5], "%d", m_ele->GetPatchIndex());
 	
 		// If node index switch is on,
 		if(theApp->NodeIndexOfElementSwitch == 1)	
@@ -1045,7 +1008,7 @@ void PickedProperties::ListElementAll(int PCSSwitch)
     static long *element_nodes;
 
 	int numOfItems = 0;
-	int numOfDefaultItems = 5;
+	int numOfDefaultItems = 6;
 	int MaximumNumberOfNodesInAnElement = 8;
 	int numOfElementValues = 0;
 
@@ -1076,6 +1039,7 @@ void PickedProperties::ListElementAll(int PCSSwitch)
 	m_SmallList.InsertColumn (2, "x");
 	m_SmallList.InsertColumn (3, "y");
 	m_SmallList.InsertColumn (4, "z");
+	m_SmallList.InsertColumn (5, "Patch No");
 
 	if(theApp->NodeIndexOfElementSwitch == 1)	
 	{
@@ -1134,6 +1098,7 @@ void PickedProperties::ListElementAll(int PCSSwitch)
 		sprintf(tempNum[2], "%e", centerX);
 		sprintf(tempNum[3], "%e", centerY);
 		sprintf(tempNum[4], "%e", centerZ);
+		sprintf(tempNum[5], "%d", m_ele->GetPatchIndex());
 	
 		// If node index switch is on,
 		if(theApp->NodeIndexOfElementSwitch == 1)	
@@ -1194,13 +1159,25 @@ void PickedProperties::ListPolylineSelected()
 
     CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
 	LV_ITEM lvitem;
-    CGLPolyline* thisPolyline = NULL;
 
     int numOfItems = 3;     // This should be changed dynamically depending on the element type.
 
     m_SmallList.InsertColumn (0, "count");
 	m_SmallList.InsertColumn (1, "No.");
     m_SmallList.InsertColumn (2, "Name");
+
+	int numOfPointsInThisPolyline = 0;
+
+	// Let's solve the maximum number of points in all the polylines picked.
+	for (int i = 0; i < theApp->hitsPolylineTotal; ++i)
+	{
+		CGLPolyline thisPolyline = *(polyline_vector[theApp->polylinePickedTotal[i]]);
+		if(numOfPointsInThisPolyline < thisPolyline.point_vector.size())
+			numOfPointsInThisPolyline = thisPolyline.point_vector.size();
+	}
+	numOfItems += numOfPointsInThisPolyline;
+	for(int i=0; i<numOfPointsInThisPolyline; ++i)
+		m_SmallList.InsertColumn (3+i, "Point");
 
     for(int i=0; i < numOfItems; ++i)
         m_SmallList.SetColumnWidth (i, widthOfCell);
@@ -1213,12 +1190,29 @@ void PickedProperties::ListPolylineSelected()
 	
 		sprintf(tempNum[0], "%d", i+1);
         sprintf(tempNum[1], "%d", theApp->polylinePickedTotal[i]);
-        thisPolyline = GEOGetPLYById(theApp->polylinePickedTotal[i]);//CC
-        for(int k=0; k <= (int)thisPolyline->name.size(); ++k)
-        {
-            tempNum[2][k] = thisPolyline->name[k];
-        }
+
+		// Let's open the door to COGLPickingView
+		// Update the change by redrawing
+		CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+		// Get the active MDI child window.
+		CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+		// Get the active view attached to the active MDI child window.
+		COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
+		
+		CGLPolyline thisPolyline = pView->GetGLIPolylineByIndex(theApp->polylinePickedTotal[i]);
+        for(int k=0; k <= (int)thisPolyline.name.size(); ++k)
+            tempNum[2][k] = thisPolyline.name[k];
         
+        // Let's put the point info.
+		for(int j=0; j < numOfPointsInThisPolyline; ++j)
+		{
+			if(thisPolyline.point_vector.size() > j)
+				for(int k=0; k <= (int)thisPolyline.point_vector[j]->name.size(); ++k)
+					tempNum[3+j][k] = thisPolyline.point_vector[j]->name[k];
+			else
+				sprintf(tempNum[3+j],"NA");
+		}
+
         for (int j = 0; j < numOfItems; ++j)
 		{
 			// Inserting the first column
@@ -1592,7 +1586,7 @@ int PickedProperties::IsThisPointBCIfYesStoryValue(int index, CRFProcess* m_pcs,
      }
    }
 
-	return 0;
+        return 0;
 }
 
 //WW int PickedProperties::IsThisPointSTIfYesStoryValue(int index, CSourceTermGroup* m_st_group, double* value)
@@ -1647,6 +1641,7 @@ void PickedProperties::OnBnClickedShowall()
 	mainframe->OnPickedProperty();	
 }
 
+#define PICKED_PROPERTIES
 void PickedProperties::OnBnClickedSaveastxt()
 {
 	static char BASED_CODE szFilter[] = "Mesh Configuration File (*.txt)|*.txt|All Files (*.*)|*.*||";
@@ -1718,24 +1713,382 @@ void PickedProperties::OnBnClickedSaveastxt()
 				fprintf(Mesh, "\n");
 			}
 		}
-
-/* Modify accordingly later 
 		else if (theApp.RFINodeSwitch == 1) 
 		{
-			if (PCSSwitch > 0)
+			// Mount the process of interests.
+			CRFProcess* m_pcs = NULL;
+
+#ifdef GLI_FILE
+			// Writing baskic gli files.
+			// Headers.
+			fprintf(Mesh, "#POINTS\n");
+
+			// Write the point info
+			for (int i = 0; i < theApp.hitsRFINodeTotal; ++i)
 			{
-				// if 1, show variables solved
-				// if 0, just show properties with the solved variables.
-				ListRFINodeSelected(1);
+				fprintf(Mesh, "%d %e %e %e $MD 0.05 $ID $POINT%d\n",
+					i+1, m_msh->nod_vector[theApp.RFInodePickedTotal[i]]->X(),
+					m_msh->nod_vector[theApp.RFInodePickedTotal[i]]->Y(),
+					m_msh->nod_vector[theApp.RFInodePickedTotal[i]]->Z(),
+					i+1);
 			}
-			else
-				ListRFINodeSelected(0);
+
+			// Write the footer
+			fprintf(Mesh, "#STOP\n");
+#endif			
+
+
+#ifdef PICKED_PROPERTIES
+			for (int i = 0; i < theApp.hitsRFINodeTotal; ++i)
+			{	
+				fprintf(Mesh, "%d ",i+1);
+				fprintf(Mesh, "%d ", theApp.RFInodePickedTotal[i]);
+		
+				// Real coordinate conversion
+				fprintf(Mesh, "%e ", m_msh->nod_vector[theApp.RFInodePickedTotal[i]]->X());
+				fprintf(Mesh, "%e ", m_msh->nod_vector[theApp.RFInodePickedTotal[i]]->Y());
+				fprintf(Mesh, "%e ", m_msh->nod_vector[theApp.RFInodePickedTotal[i]]->Z());
+				// To check the number of elements associated with this node.
+				fprintf(Mesh, "%d ", m_msh->nod_vector[theApp.RFInodePickedTotal[i]]->connected_elements.size());
+				fprintf(Mesh, "%d ", m_msh->nod_vector[theApp.RFInodePickedTotal[i]]->connected_planes.size());
+
+				if(PCSSwitch)	// if Processes created,
+				{
+					for(int j=0;j<(int)pcs_vector.size();++j)
+					{
+						m_pcs = pcs_vector[j];
+		
+						for(int k=0; k<m_pcs->pcs_number_of_primary_nvals; ++k)
+						{
+							string pcs_primary = m_pcs->pcs_primary_function_name[k];
+				
+							if(theApp.BothPrimaryVariable)
+							{
+								int idxOld = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[k]);
+						        int idxNew = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[k])+1;
+								fprintf(Mesh, "%e ", m_pcs->GetNodeValue(theApp.RFInodePickedTotal[i],idxOld) );
+								fprintf(Mesh, "%e ", m_pcs->GetNodeValue(theApp.RFInodePickedTotal[i],idxNew) );
+							}
+							else
+							{
+						      int idx = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[k])+1;
+                        
+						      fprintf(Mesh, "%e ", m_pcs->GetNodeValue(theApp.RFInodePickedTotal[i],idx) );
+							}
+						}
+					}
+				}
+
+				if(BCnSTSwitch && theApp.BCAndST == 1)
+				{
+					for(int j=0;j<(int)pcs_vector.size();++j)
+					{
+						m_pcs = pcs_vector[j];
+
+						for(int k=0; k<m_pcs->pcs_number_of_primary_nvals; ++k)
+						{
+							// Let's print BC and ST values
+							CBoundaryConditionsGroup *m_bc_group = NULL;
+							CSourceTermGroup *m_st_group = NULL;
+
+						    m_bc_group = BCGetGroup(m_pcs->pcs_type_name,m_pcs->pcs_primary_function_name[k]);
+							m_st_group = STGetGroup(m_pcs->pcs_type_name,m_pcs->pcs_primary_function_name[k]);
+						
+							// BC printing
+							double BCValue = 0.0;
+							if( IsThisPointBCIfYesStoryValue(theApp.RFInodePickedTotal[i], m_pcs, BCValue) )
+								fprintf(Mesh, "%e ", BCValue);
+							else
+								fprintf(Mesh, "Not assigned ");
+
+							// ST printing
+							if (st_group_list.size() > 0)
+							{
+								double STValue = 0;
+								if( IsThisPointSTIfYesStoryValue(theApp.RFInodePickedTotal[i], m_pcs, STValue) )
+									fprintf(Mesh, "%e ", STValue);
+								else
+									fprintf(Mesh, "Not assigned ");
+							}
+							else
+								fprintf(Mesh, "No source term used ");	
+						}
+					}
+				}
+				fprintf(Mesh, "\n");
+			}
+#endif			
+
 		}
-		*/
 		
 
 		fflush(Mesh);
 		fclose(Mesh);
 	}
 	
+}
+
+void PickedProperties::OnBnClickedMsh()
+{
+	static char BASED_CODE szFilter[] = "Mesh Configuration File (*.msh)|*.msh|All Files (*.*)|*.*||";
+	CFileDialog pFlg(FALSE, "slt", NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, NULL );	
+
+	// I am going to use temperary class that only works in this function
+	class Ele
+	{
+	public:
+		int nodes[8];
+		Ele&operator=(const Ele& B) 
+		{
+			for(int i=0; i<8; ++i)
+				nodes[i] = B.nodes[i];
+
+			return *this;
+		}
+	};
+
+	if(pFlg.DoModal() == IDOK)
+	{	
+		FILE *Mesh;
+		Mesh = fopen(pFlg.GetPathName(), "w");
+
+		// Let's renumber the index of the node by using the temperary class	
+		Ele* elements = NULL;
+		elements = new Ele [theApp.hitsElementTotal] ();
+
+		// Let's count the number of nodes
+		int numOfNodes = 0;
+		int* nodes = NULL;
+		for(int i=0; i< theApp.hitsElementTotal; ++i)
+		{
+			CElem* anEle = m_msh->ele_vector[theApp.elementPickedTotal[i]];
+			Ele ele;
+			for(int j=0; j< anEle->GetFacesNumber(); ++j)
+			{	
+				++numOfNodes;
+				nodes = (int *)realloc(nodes, numOfNodes*sizeof(int));
+				nodes[numOfNodes - 1] = anEle->GetNodeIndex(j);
+				ele.nodes[j] = anEle->GetNodeIndex(j);
+			}
+			elements[i] = ele;
+		}
+		// Let's get rid of duplicates by doing so called compression.
+		for(int j=0; j<numOfNodes; ++j)
+		{
+			for(int l=j+1; l<numOfNodes; ++l)
+			{
+				// Check two indeces are same.
+				if( nodes[j] == nodes[l] )
+				{
+					// Two elements stay on the same plane
+					for(int m = l; m < (numOfNodes - 1); ++m)
+						nodes[m] = nodes[m+1];
+					
+					// delete the duplicates.
+					--numOfNodes;
+					--l;	// Very important. Huh.
+				}
+			} 	
+		}
+
+		for(int i=0; i< theApp.hitsElementTotal; ++i)
+		{
+			CElem* anEle = m_msh->ele_vector[theApp.elementPickedTotal[i]];
+			int numOfNodesInanEle = anEle->GetFacesNumber();
+			for(int j=0; j< numOfNodes; ++j)
+			{
+				for(int k=0; k<numOfNodesInanEle; ++k)
+				{
+					if(anEle->GetNodeIndex(k) == nodes[j])
+					{
+						elements[i].nodes[k] = j;
+						break;
+					}
+				}		
+			}
+		}
+
+		// Header
+		fprintf(Mesh, "#FEM_MSH\n");
+		fprintf(Mesh, " $PCS_TYPE\n"); fprintf(Mesh, "  LIQUID_FLOW\n");	// LIQUID_FLOW by default
+		fprintf(Mesh, " $NODES\n"); fprintf(Mesh, "  %d\n",numOfNodes);
+		// Print the node info
+		for(int j=0; j<numOfNodes; ++j)
+		{
+			// Mount a node
+			CNode* aNode = m_msh->nod_vector[nodes[j]];
+			fprintf(Mesh, "%d %e %e %e\n", j, aNode->X(), aNode->Y(), aNode->Z()); 
+	//		fprintf(Mesh, "%d %e %e %e\n", j, 0.25, aNode->Y(), aNode->Z()); 
+		}
+
+		// Element header
+		fprintf(Mesh, " $ELEMENTS\n"); fprintf(Mesh, "  %d\n", theApp.hitsElementTotal);
+		// Print the element info
+		for(int i=0; i< theApp.hitsElementTotal; ++i)
+		{
+			CElem* anEle = m_msh->ele_vector[theApp.elementPickedTotal[i]];		
+			
+			fprintf(Mesh, "%d 0 ", i);	// index and patch number by default 0.
+			int numOfNodesInanEle = anEle->GetFacesNumber();
+			int eleType = anEle->GetElementType();
+			// Now multiple cases for the type of the element
+			if(eleType == 1)	// Line
+				fprintf(Mesh, "line ");
+			else if(eleType == 2)	// quad
+				fprintf(Mesh, "quad ");
+			else if(eleType == 3)	// Hex
+				fprintf(Mesh, "hex ");
+			else if(eleType == 4)	// tri
+				fprintf(Mesh, "tri ");
+			else if(eleType == 5)	// tet
+				fprintf(Mesh, "tet ");
+			else if(eleType == 6)	// prism
+				fprintf(Mesh, "pri ");
+			else;	// Is there anything else? No.
+
+			for(int j=0; j<numOfNodesInanEle; ++j)
+				fprintf(Mesh, "%d ", elements[i].nodes[j]);
+			fprintf(Mesh, "\n");
+		}
+
+		// Print the footer
+		fprintf(Mesh, " $LAYER\n"); fprintf(Mesh, "  0\n");
+		fprintf(Mesh, "#STOP\n");
+	
+		// Release the memory
+		delete(nodes);
+		delete(elements);
+
+		fflush(Mesh);
+		fclose(Mesh);
+	}		
+}
+
+void PickedProperties::OnBnClickedPerm()
+{
+	static char BASED_CODE szFilter[] = "Mesh Configuration File (*.txt)|*.txt|All Files (*.*)|*.*||";
+	CFileDialog pFlg(FALSE, "slt", NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, NULL );	
+
+	// I am going to use temperary class that only works in this function
+	class Ele
+	{
+	public:
+		int nodes[8];
+		Ele&operator=(const Ele& B) 
+		{
+			for(int i=0; i<8; ++i)
+				nodes[i] = B.nodes[i];
+
+			return *this;
+		}
+	};
+
+	if(pFlg.DoModal() == IDOK)
+	{	
+		FILE *Mesh;
+		Mesh = fopen(pFlg.GetPathName(), "w");
+
+		// Let's renumber the index of the node by using the temperary class	
+		Ele* elements = NULL;
+		elements = new Ele [theApp.hitsElementTotal] ();
+
+		// Let's count the number of nodes
+		int numOfNodes = 0;
+		int* nodes = NULL;
+		for(int i=0; i< theApp.hitsElementTotal; ++i)
+		{
+			CElem* anEle = m_msh->ele_vector[theApp.elementPickedTotal[i]];
+			Ele ele;
+			for(int j=0; j< anEle->GetFacesNumber(); ++j)
+			{	
+				++numOfNodes;
+				nodes = (int *)realloc(nodes, numOfNodes*sizeof(int));
+				nodes[numOfNodes - 1] = anEle->GetNodeIndex(j);
+				ele.nodes[j] = anEle->GetNodeIndex(j);
+			}
+			elements[i] = ele;
+		}
+		// Let's get rid of duplicates by doing so called compression.
+		for(int j=0; j<numOfNodes; ++j)
+		{
+			for(int l=j+1; l<numOfNodes; ++l)
+			{
+				// Check two indeces are same.
+				if( nodes[j] == nodes[l] )
+				{
+					// Two elements stay on the same plane
+					for(int m = l; m < (numOfNodes - 1); ++m)
+						nodes[m] = nodes[m+1];
+					
+					// delete the duplicates.
+					--numOfNodes;
+					--l;	// Very important. Huh.
+				}
+			} 	
+		}
+
+		for(int i=0; i< theApp.hitsElementTotal; ++i)
+		{
+			CElem* anEle = m_msh->ele_vector[theApp.elementPickedTotal[i]];
+			int numOfNodesInanEle = anEle->GetFacesNumber();
+			for(int j=0; j< numOfNodes; ++j)
+			{
+				for(int k=0; k<numOfNodesInanEle; ++k)
+				{
+					if(anEle->GetNodeIndex(k) == nodes[j])
+					{
+						elements[i].nodes[k] = j;
+						break;
+					}
+				}		
+			}
+		}
+
+		// Header
+		fprintf(Mesh, "#MEDIUM_PROPERTIES_DISTRIBUTED\n");
+		fprintf(Mesh, " $MSH_TYPE\n"); fprintf(Mesh, "  LIQUID_FLOW\n");	// LIQUID_FLOW by default
+		fprintf(Mesh, " $MMP_TYPE\n"); fprintf(Mesh, "  PERMEABILITY\n");
+		fprintf(Mesh, " $DIS_TYPE\n"); fprintf(Mesh, "  ELEMENT\n");
+		fprintf(Mesh, " $DATA\n");
+		
+		// Print the permeability info
+		for(int i=0; i< theApp.hitsElementTotal; ++i)
+		{
+			CElem* anEle = m_msh->ele_vector[theApp.elementPickedTotal[i]];		
+			
+			// Element index and permeability
+			// for permeability, the index for mat_vector seems to be 0 from the search in other codes.
+			// I need the detail of this mat_vector table.
+			double permeability = anEle->mat_vector(0);	
+			fprintf(Mesh, "   %d\t%e\n", i, permeability);	
+		}
+
+		// Print the footer
+		fprintf(Mesh, "#STOP\n");
+	
+		// Release the memory
+		delete(nodes);
+		delete(elements);
+
+		fflush(Mesh);
+		fclose(Mesh);
+	}		
+}
+
+void PickedProperties::OnBnClickedSetpatch()
+{
+	UpdateData(TRUE);
+	if(theApp.ElementSwitch == 1)
+	{
+		for(int i=0; i< theApp.hitsElementTotal; ++i)
+		{
+			CElem* anEle = m_msh->ele_vector[theApp.elementPickedTotal[i]];
+			anEle->SetPatchIndex(m_NoOfPatch);
+		}
+		
+	}
+	else
+	{
+		// Some error message box here.
+	}
 }

@@ -15,6 +15,8 @@ protected:
  
 // Form Data
 public:
+	int m_PID;
+
 	//{{AFX_DATA(CGSFormRightPicking)
 	enum { IDD = IDD_CONTROL_RIGHT_PICKING_FORM };
 
@@ -53,6 +55,13 @@ public:
 	afx_msg void OnBnClickedCrossroadvec();
 	afx_msg void OnBnClickedToxyplane();
 	afx_msg void OnBnClickedSparticle();
+	afx_msg void OnBnClickedNodbyparticle();
+	afx_msg void OnBnClickedPickplane();
+	afx_msg void OnBnClickedAtbypolyline();
+	afx_msg void OnBnClickedPoutside();
+	afx_msg void OnBnClickedPinside();
+	afx_msg void OnBnClickedCid();
+	afx_msg void OnEnChangePid();
 };
 
 

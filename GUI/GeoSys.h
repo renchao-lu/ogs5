@@ -98,6 +98,7 @@ public:
 	int CrossroadSwitch;
     int ParticleSwitch;
 	int GDebugSwitch;
+	int PID;
 
     double mouseX, mouseY; // This can be done better way later. But for now, keep this way.
     double zoomRatio;

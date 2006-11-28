@@ -2066,20 +2066,23 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
 	
 	// Initialize Pressure from the value already computed previously.
     CRFProcess* m_pcs = NULL;
-	int idxNodVal = 0;
 	for(int i=0; i< (int)pcs_vector.size(); ++i)
     {
         m_pcs = pcs_vector[i];
         if(m_pcs->pcs_type_name.find("FLOW")!=string::npos)
-		{
-			idxNodVal = i;
             break;
-		}
     }
 	// Update the process for proper coefficient calculation.
 	pcs = m_pcs;
-
-	int nidx1 = m_pcs->GetNodeValueIndex(m_pcs->nod_val_name_vector[idxNodVal])+1;
+	int nidx1;
+	if(!(m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos))
+		nidx1 = m_pcs->GetNodeValueIndex("PRESSURE1")+1;
+	else	// then, this is GROUNDWATER_FLOW
+	{
+		nidx1 = m_pcs->GetNodeValueIndex("HEAD")+1;
+		HEAD_Flag = 1;
+		PcsType = G;
+	}
 	for (int i = 0; i < nnodes; ++i)
 	{
 		NodalVal[i] = 0.0;
@@ -2103,29 +2106,33 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
 		ComputeShapefct(1); // Linear interpolation function
 
 		// Material
-		if(m_pcs->nod_val_name_vector[idxNodVal].find("HEAD")!=string::npos)
-		  CalCoefLaplace(true, 1);
-		else
-		  CalCoefLaplace(true);
+		CalCoefLaplace(true);
 
 		// Calculate vector that computes dNj/dx*Ni*Pressure(j)
 		// These index are very important. 
         rho = FluidProp->Density();
+		// Let's get the viscosity too.
+		CFluidProperties *FluidProp = mfp_vector[0];
         if(gravity_constant<MKleinsteZahl) // HEAD version
             rho = 1.0;
-        else if(HEAD_Flag) rho = 1.0;
+        else if(HEAD_Flag)
+		{
+			fkt = fkt*rho * gravity_constant/FluidProp->Viscosity();
+			rho = 1.0;
+		}
         else
             rho *= gravity_constant; 
+//			rho *= gravity_constant/FluidProp->Viscosity();		// This seems to divide viscosity two times. Thus, wrong.
 
         fktG *= rho;		  
 		for (int i = 0; i < nnodes; i++)
 			for (int j = 0; j < nnodes; j++)
-				for (int k = 0; k < ele_dim; k++)
+				for (int k = 0; k < dim; k++)
                 {
 					NodalVal[i]  -= fkt*dshapefct[dimension*nnodes+j]
-							    *mat[ele_dim*dimension+k]* shapefct[i] * NodalVal1[j];
+							    *mat[dim*dimension+k]* shapefct[i] * NodalVal1[j];
                     NodalVal2[i] += fktG*dshapefct[dimension*nnodes+j]
-                                 *mat[ele_dim*dimension+k]* shapefct[i] * MeshElement->nodes[j]->Z();
+                                 *mat[dim*dimension+k]* shapefct[i] * MeshElement->nodes[j]->Z();
                 }
     }
 

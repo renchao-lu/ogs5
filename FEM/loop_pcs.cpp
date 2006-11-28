@@ -456,10 +456,10 @@ int LOPTimeLoop_PCS(double*dt_sum)
 	// PCH Let's monitor what's going on in the FEM
 	// This messagebox is for debugging the primary variables at every time step.
 	// Should combine with the picking...
-	CWnd * pWnd = NULL;
+//	CWnd * pWnd = NULL;
 	
 	//Disabled by Haibing 07112006
-	//pWnd->MessageBox("Richard's Flow is just solved!!!","Debug help", MB_ICONINFORMATION);
+//	pWnd->MessageBox("Liquid Flow is just solved!!!","Debug help", MB_ICONINFORMATION);
 	//--------------------------------------------------------
 #endif
 	  //--------------------------------------------------------------------
@@ -525,15 +525,35 @@ int LOPTimeLoop_PCS(double*dt_sum)
       }
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       if(k==0) pcs_flow_error0 = pcs_flow_error;
-	  m_pcs = PCSGet("FLUID_MOMENTUM");
-      if(m_pcs&&m_pcs->selected)
-      {
+	m_pcs = PCSGet("FLUID_MOMENTUM");
+    if(m_pcs&&m_pcs->selected){
 		CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
+
 		if(m_pcs->tim_type_name.compare("STEADY")==0)
-		  m_pcs->selected = false;
+			m_pcs->selected = false;
+
 		fm_pcs = m_msh->fm_pcs;
 		fm_pcs->Execute();
-      }
+
+		// Switch off rechard flow if 
+		if(m_pcs->num_type_name.compare("STEADY")==0)
+		{
+			// Turn off FLUID_MOMENTUM
+			m_pcs->selected = false;
+			// Turn off RICHARDS_FLOW
+			m_pcs = PCSGet("RICHARDS_FLOW");
+			if(m_pcs)
+				m_pcs->selected = false;
+			// Turn off LIQUID_FLOW
+			m_pcs = PCSGet("LIQUID_FLOW");
+			if(m_pcs)
+				m_pcs->selected = false;
+			// Turn off GROUNDWATER_FLOW
+			m_pcs = PCSGet("GROUNDWATER_FLOW");
+			if(m_pcs)
+				m_pcs->selected = false;
+		}
+    }
       //--------------------------------------------------------------------
 	  // PCH The velocity process ends here.
 #ifdef _FEMPCHDEBUG_
@@ -543,7 +563,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
 //	CWnd * pWnd = NULL;
 	
 	  //Disabled by Haibing 07112006-----------------------------
-	  //pWnd->MessageBox("Velocity is just solved!!!","Debug help", MB_ICONINFORMATION);
+//	pWnd->MessageBox("Velocity is just solved!!!","Debug help", MB_ICONINFORMATION);
 	  //---------------------------------------------------------
 #endif
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -556,11 +576,40 @@ int LOPTimeLoop_PCS(double*dt_sum)
 		CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
 #ifdef RANDOM_WALK
 		rw_pcs = m_msh->PT;		
-		//	rw_pcs->AdvanceParticlesLaBolle(dt); 	
-		//rw_pcs->AdvanceByAdvection(dt); 
-//		rw_pcs->AdvanceByAdvectionNDispersion(dt);
-		rw_pcs->AdvanceByAdvectionNDispersionSplitTime(dt, 20);
-		rw_pcs->SetElementBasedConcentration();  
+
+		// Do I need velocity fileds solved by the FEM?
+		if(m_pcs->tim_type_name.compare("PURERWPT")==0)
+		{
+			rw_pcs->PURERWPT = 1;
+			char *dateiname = NULL;
+			int sizeOfWord = 100;
+			dateiname = (char *)malloc(sizeOfWord * sizeof(char ));
+    
+			string filename = FileName;
+			for(int i=0; i<= (int)filename.size(); ++i)
+				dateiname[i] = filename[i];
+
+			rw_pcs->ReadInVelocityFieldOnNodes(dateiname);
+
+			delete [] dateiname;
+		}
+		
+		// Set the mode of the RWPT method
+		if(m_pcs->num_type_name.compare("HETERO")==0)
+			rw_pcs->RWPTMode = 1;	// Set it for heterogeneous media
+		else if(m_pcs->num_type_name.compare("HOMO_ADVECTION")==0)
+			rw_pcs->RWPTMode = 2;	 
+		else if(m_pcs->num_type_name.compare("HETERO_ADVECTION")==0)
+			rw_pcs->RWPTMode = 3;
+		else if(m_pcs->num_type_name.compare("HOMO_DISPERSION")==0)
+			rw_pcs->RWPTMode = 4;
+		else if(m_pcs->num_type_name.compare("HETERO_DISPERSION")==0)
+			rw_pcs->RWPTMode = 5;
+		else	// HOMO Advection + Dispersion
+			rw_pcs->RWPTMode = 0;
+
+		rw_pcs->AdvanceBySplitTime(dt, 10);
+		rw_pcs->SetElementBasedConcentration(dt);  
 #endif
 	  }
 #ifdef OLD

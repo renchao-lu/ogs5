@@ -12,7 +12,8 @@
 #include "GeoSysDoc.h"
 #include "CGLBaseView.h"
 
-#define BUFSIZE 4095
+//#define BUFSIZE 4095
+#define BUFSIZE 50000
 
 class COGLPickingView : public CGLBaseView
 {
@@ -191,6 +192,7 @@ public:
     CGLPoint ConvertScaleToOpenGL(double x, double y, double z);
 	int numberOfGLIPoints();
 	CGLPoint GetGLIPointByIndex(int i);
+	CGLPolyline GetGLIPolylineByIndex(int i);
 
 	afx_msg void OnSelectInPicking();
 	afx_msg void OnDeselectInPicking();

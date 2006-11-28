@@ -179,6 +179,27 @@ void COGLPickingView::OnCreateGL()
 	// prepare a bunch of line segments (carthesian axes arrows)
 	StartStockDListDef();
 
+	double xT = -0.8f, yT = -0.9f;
+	
+	glBegin(GL_LINES);
+		// Red x axis arrow
+		glColor3f(1.f,0.f,0.f);
+		glVertex3f(-1.4f,-1.4f,0.0f);
+		glVertex3f(-1.3f,-1.4f,0.0f);
+
+		// Green y axis arrow
+		glColor3f(0.f,1.f,0.f);
+		glVertex3f(-1.4f,-1.4f,0.0f);
+		glVertex3f(-1.4f,-1.3f,0.0f);
+
+		// Blue z axis arrow
+		glColor3f(1.f,0.f,1.f);         // Color setting
+		glVertex3f(-1.4f,-1.4f,0.0f);     // the Start point of z-axis line
+		glVertex3f(-1.4f,-1.4f,0.1f);     // the End point of z-axis line
+
+	glEnd();
+
+/*
 	glBegin(GL_LINES);
 		// yellow x axis arrow
 		glColor3f(1.f,1.f,0.f);
@@ -228,6 +249,7 @@ void COGLPickingView::OnCreateGL()
 		glVertex3f(+0.025f,0.0f,1.10f);   // z letter for axis .jwy
 
 	glEnd();
+*/
 	EndStockListDef();
 	
 	// Chanhee introduced this for reference wireframe sphere
@@ -874,6 +896,9 @@ void COGLPickingView::DrawParticleScene(GLenum mode)
     
     for(int i=0; i < m_msh->PT->numOfParticles; ++i)
     {
+		if(theApp.PID == m_msh->PT->X[i].Now.identity)
+		{
+
         // Again, point id (index) is also taken from geo_pnt.h
         if (mode == GL_SELECT)
             glPushName(i); 
@@ -893,6 +918,8 @@ void COGLPickingView::DrawParticleScene(GLenum mode)
 
 		glPopMatrix() ;
 		glPopName();
+	
+		}
     }
 }
 
@@ -1477,7 +1504,6 @@ void COGLPickingView::DrawBoundary()
 	CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
     CGLPolyline* thisPolyline = NULL;
     // Getting the number of polylines
-    //GEOPolylinesNumber();//CC
 
     for(int k=0; k < theApp->hitsPolylineTotal; ++k)
     {
@@ -1489,8 +1515,8 @@ void COGLPickingView::DrawBoundary()
 		glColor3f(0.0, 1.0, 0.0) ;
 			
         //draw the object
-        glBegin(GL_LINE_LOOP);
-            for(int j=0; j< howManyPointInThisPolyline; ++j)
+		glBegin(GL_LINES);
+            for(int j=0; j< howManyPointInThisPolyline-1; ++j)
             {
                 CGLPoint real, gl;
 
@@ -1498,15 +1524,15 @@ void COGLPickingView::DrawBoundary()
                 real.y = thisPolyline->point_vector[j]->y;
                 real.z = thisPolyline->point_vector[j]->z;
 
-/*  BY OK, The lines can be on when gli points and rfi points are different.
-                double distance;
-                long msh_node_number = real.MSHGetNodeNumberClose(&distance);
-                real.x = GetNodeX(msh_node_number); real.y = GetNodeY(msh_node_number); real.z = GetNodeZ(msh_node_number);      
-*/
+                gl = ConvertScaleToOpenGL(real);
+                glVertex3f(gl.x, gl.y, gl.z);     
+
+				real.x = thisPolyline->point_vector[j+1]->x;
+                real.y = thisPolyline->point_vector[j+1]->y;
+                real.z = thisPolyline->point_vector[j+1]->z;
 
                 gl = ConvertScaleToOpenGL(real);
-
-                glVertex3f(gl.x, gl.y, gl.z);     
+                glVertex3f(gl.x, gl.y, gl.z);  
             }
 		glEnd();	
     }
@@ -1538,7 +1564,6 @@ void COGLPickingView::DrawBoundary()
 
 void COGLPickingView::drawBoundaryScene(GLenum mode)
 {
-	//CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
 	int i;
 	
 	glInitNames();
@@ -1561,30 +1586,35 @@ void COGLPickingView::drawBoundaryScene(GLenum mode)
 
 		glPopMatrix() ;
 		glPopName();
-
 	}
 }
 
 void COGLPickingView::drawUnitBoundary(int i)
 {
-	//CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
     CGLPolyline* thisPolyline = NULL;
-    glBegin(GL_LINE_LOOP);
+
+	glBegin(GL_LINES);
         // Get the polyline by index to take care of.
        thisPolyline = polyline_vector[i];
         int howManyPointInThisPolyline = (int)thisPolyline->point_vector.size();
-        for(int j=0; j< howManyPointInThisPolyline; ++j)
-            {
-                CGLPoint real, gl;
+        for(int j=0; j< howManyPointInThisPolyline-1; ++j)
+        {
+			CGLPoint real, gl;
 
-                real.x = thisPolyline->point_vector[j]->x;
-                real.y = thisPolyline->point_vector[j]->y;
-                real.z = thisPolyline->point_vector[j]->z;
+            real.x = thisPolyline->point_vector[j]->x;
+            real.y = thisPolyline->point_vector[j]->y;
+            real.z = thisPolyline->point_vector[j]->z;
 
-                gl = ConvertScaleToOpenGL(real);
+            gl = ConvertScaleToOpenGL(real);
+            glVertex3f(gl.x, gl.y, gl.z);     
 
-                glVertex3f(gl.x, gl.y, gl.z);     
-            }
+			real.x = thisPolyline->point_vector[j+1]->x;
+            real.y = thisPolyline->point_vector[j+1]->y;
+            real.z = thisPolyline->point_vector[j+1]->z;
+
+            gl = ConvertScaleToOpenGL(real);
+            glVertex3f(gl.x, gl.y, gl.z);     
+        }
 	glEnd();
 }
 
@@ -1645,13 +1675,12 @@ void COGLPickingView::DrawSurface()
 
 void COGLPickingView::drawSurfaceScene(GLenum mode)
 {
-	//CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
 	int i;
 	
 	glInitNames();
     
     // Getting the number of polylines
-    int numberOfSurfaces =  (int)surface_vector.size();//CC
+    int numberOfSurfaces =  (int)surface_vector.size();
 
     for (i = 0 ; i < numberOfSurfaces ; i++)
 	{	
@@ -1823,10 +1852,6 @@ void COGLPickingView::drawUnitVolume(int i)
 
 void COGLPickingView::DrawPostprocess()
 {
-	//CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
-
-	// Compute color
-	//double color;
     double Cmax;
 
 	Cmax = computeCmax();
@@ -1892,9 +1917,7 @@ void COGLPickingView::DrawReference(void)
 }
 
 void COGLPickingView::drawReferenceScene(GLenum mode)
-{
-	//CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
-	
+{	
 	int i=0;//TK
 
 	glInitNames();
@@ -2011,8 +2034,6 @@ void COGLPickingView::drawColoredElement(int index)
 
 double COGLPickingView::computeCmax(void)
 {
-	//CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
-
 	double Cmax = -1000.;
 
 #ifdef PCH
@@ -3201,18 +3222,25 @@ CGLPoint COGLPickingView::ConvertScaleToOpenGL(double x, double y, double z)
 
 int COGLPickingView::numberOfGLIPoints()
 {
-	return (int)gli_points_vector_view.size();
+	return (int)gli_points_vector.size();
 }
 
 CGLPoint COGLPickingView::GetGLIPointByIndex(int i)
 {
 	CGLPoint AGLIPoint;
 
-	AGLIPoint.x = gli_points_vector[i]->x;
-	AGLIPoint.y = gli_points_vector[i]->y;
-	AGLIPoint.z = gli_points_vector[i]->z;
+	AGLIPoint = *(gli_points_vector[i]);
 
 	return AGLIPoint;
+}
+
+CGLPolyline COGLPickingView::GetGLIPolylineByIndex(int i)
+{
+	CGLPolyline AGLIPolyline;
+
+	AGLIPolyline = *(polyline_vector[i]);
+
+	return AGLIPolyline;
 }
 
 void COGLPickingView::OnSelectInPicking()
@@ -3304,7 +3332,6 @@ void COGLPickingView::OnSelectAllInPicking()
 		CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
 		// Get the active view attached to the active MDI child window.
 		COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
-        pView=pView;//TK
 
         // This is termperary measure only for single mesh cass
         m_msh = fem_msh_vector[0];
@@ -3318,6 +3345,14 @@ void COGLPickingView::OnSelectAllInPicking()
 	if(theApp.PolylineSwitch == 1)
 	{
 		theApp.hitsPolylineTotal = 0;
+
+		// Let's open the door to COGLPickingView
+		// Update the change by redrawing
+		CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+		// Get the active MDI child window.
+		CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+		// Get the active view attached to the active MDI child window.
+		COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
 
         // Getting the number of polylines
         int numberOfPolylines = (int)polyline_vector.size();//CC

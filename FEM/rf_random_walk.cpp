@@ -15,7 +15,6 @@ using namespace std;
 
 #define PCT_FILE_EXTENSION ".pct"
 #define OUTSIDEOFDOMAIN -10
-//#define SWAP(x,y) {int t; t=x; x=y; y=t;};
 #define SWAP(x,y) {double t; t=x; x=y; y=t;}; //WW data type is change to double
 
 /**************************************************************************
@@ -28,14 +27,16 @@ last modification:
 RandomWalk::RandomWalk(void)
 {
 	m_pcs = NULL;
-//    m_msh = fem_msh_vector[0];  // This gotta be done better way later on need base.
     fem = NULL;
 
     // This is going to be reset by user input.
     // Further, used for allocating dynamic memory.
     numOfParticles = 0;
 	UniformOrNormal = 1;	// Uniform random number generation
+	RWPTMode = 0;	// Initialized to be homogeneous media
+	PURERWPT = 0;
     X = NULL;
+	CurrentTime = 0.0;
 
     // To produce a different pseudo-random series each time your program is run.
     srand((int)time(0));
@@ -50,12 +51,16 @@ Particle::Particle(void)
 
     // Velocity Vector
     Vx = Vy = Vz = 0.0;
+	K = 0.0;
 
 	dVxdx = dVydy = dVzdz = 0.0;
 
-   
+	for(int i=0; i<9; ++i)
+		D[i] = 0.0;
+
     // Time
     t = 0.0;
+	identity = 0;
 }
 
 
@@ -125,34 +130,6 @@ double RandomWalk::randomZeroToOne(void)
 
 /**************************************************************************
 Class: RandomWalk
-Task: This function checks if a particle is inside of outside of the element
-Programing:
-08/2005 PCH Implementation
-last modification:
-**************************************************************************/
-int RandomWalk::IsTheParticleInThisElement(Particle* A, CElem* m_ele)
-{
-    int InOrOut = 0; // If 1, yes it is inside. If 0, no it is outside.
-    double tolerance = 1.e-6;
-
-    // First solve the length or the area or the volume for the element
-    m_ele->ComputeVolume();
-    double volume = m_ele->GetVolume();
-    
-    // Solve the volume of the element from the particle location
-    double NVolume = ComputeVolume(A, m_ele);
-
-    // Check if two volumes are same
-    if(fabs(volume - NVolume) < tolerance)
-        InOrOut = 1;    // Yes it is inside of the element
-    else
-        InOrOut = 0;    // No, it is outside of the element
-    
-    return InOrOut;
-}
-
-/**************************************************************************
-Class: RandomWalk
 Task: This function interpolates velocity of the particle 
 	  based on the inverse distance method
 	  RWPT-IM This function should OK with the real plane.
@@ -160,6 +137,7 @@ Programing:
 10/2005 PCH Implementation
 02/2006 PCH The function is updated to solve for velocity in the element
 			that has a joint or crossroads.
+05/2006 PCH This one gets hydraulic conductivity as well.
 last modification:
 **************************************************************************/
 void RandomWalk::InterpolateVelocityOfTheParticleByInverseDistance(Particle* A)
@@ -169,6 +147,15 @@ void RandomWalk::InterpolateVelocityOfTheParticleByInverseDistance(Particle* A)
 	CElem* m_ele = m_msh->ele_vector[A->elementIndex];	
 	// Set the pointer that leads to the nodes of element
 	CNode* node = NULL;
+
+	// Let's get the hydraulic conductivity first.
+	CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];	
+	int phase = 0;
+	CFluidProperties *FluidProp = mfp_vector[0];
+	double* kTensor = MediaProp->PermeabilityTensor(A->elementIndex);
+	double k = kTensor[0];
+
+	A->K = k*FluidProp->Density()*9.81/FluidProp->Viscosity();
 
 	// Get the number of nodes
 	int nnodes = m_ele->GetVertexNumber();
@@ -239,10 +226,23 @@ void RandomWalk::InterpolateVelocityOfTheParticleByInverseDistance(Particle* A)
 		}
 		else
 		{
-
 			vx = m_pcs->GetNodeValue(m_ele->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);
 			vy = m_pcs->GetNodeValue(m_ele->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);
 			vz = m_pcs->GetNodeValue(m_ele->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);
+
+			// Let's solve pore velocity.
+			// It is simple because Sw stuff automatically handles in Richards Flow.
+			// Thus, I only divide Darcy velocity by porosity only to get pore velocity.
+			CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];	
+			double porosity = 0.0;
+			if(MediaProp->porosity > 10-6)
+				porosity = MediaProp->porosity;	// This is for simple one.
+			else
+				porosity = MediaProp->porosity_model_values[0];		// This will get you porosity.
+																	// I guess for Dual Porocity stuff, 
+																	// this code should be revisited.
+
+			vx /= porosity; vy /= porosity; vz /= porosity;
 		}
 
 		A->Vx += w[i]*vx; A->Vy += w[i]*vy; A->Vz += w[i]*vz;
@@ -432,8 +432,8 @@ int RandomWalk::SolveForDisplacementByDerivativeOfDispersion(Particle* A, double
  	
 	// Solve the three displacement by the tensor of dispersion derivative.
 	dD[0] = TensorOfdD[0] + TensorOfdD[1] + TensorOfdD[2];
-	dD[1] = TensorOfdD[0] + TensorOfdD[1] + TensorOfdD[2];
-	dD[2] = TensorOfdD[0] + TensorOfdD[1] + TensorOfdD[2];
+	dD[1] = TensorOfdD[3] + TensorOfdD[4] + TensorOfdD[5];
+	dD[2] = TensorOfdD[6] + TensorOfdD[7] + TensorOfdD[8];
 
 	return 1; 	
 }
@@ -522,330 +522,6 @@ int RandomWalk::SolveForDerivativeOfVelocity(Particle* A)
 	return 1;
 }
 
-/**************************************************************************
-Class: RandomWalk
-Task: This function interpolates velocity of the particle
-Programing:
-10/2005 PCH Implementation
-last modification:
-**************************************************************************/
-void RandomWalk::InterpolateVelocityOfTheParticle(Particle* A, CElem* m_ele)
-{
-    double x1buff[3];
-    double x2buff[3];
-    double x3buff[3];
-    double x4buff[3];
-    double volume = 0.0;
-    double* PieceOfVolume = NULL;
-
-    CNode* node = NULL;
-
-    double A2buff[3];
-
-    A2buff[0] = A->x; A2buff[1] = A->y; A2buff[2] = A->z;
-
-    // If this is not a line element, get three verteces.
-    if(m_ele->GetElementType()!=1)
-    {
-        node = m_ele->GetNode(0);
-        x1buff[0] = node->X();
-        x1buff[1] = node->Y();
-        x1buff[2] = node->Z();
- 
-        node = m_ele->GetNode(1);
-        x2buff[0] = node->X();
-        x2buff[1] = node->Y();
-        x2buff[2] = node->Z();
-
-        node = m_ele->GetNode(2);
-        x3buff[0] = node->X();
-        x3buff[1] = node->Y();
-        x3buff[2] = node->Z();
-    }
-
-    //LINES = 1 
-    if (m_ele->GetElementType() == 1)
-	{
-        PieceOfVolume = new double[2]();
-        for(int i=0; i<2; ++i)
-        {
-            node = m_ele->GetNode(i);
-            x2buff[0] = node->X() - A2buff[0];
-            x2buff[1] = node->Y() - A2buff[1];
-            x2buff[2] = node->Z() - A2buff[2];
-            PieceOfVolume[i] = sqrt(x2buff[0]*x2buff[0]+x2buff[1]*x2buff[1]+x2buff[2]*x2buff[2]) ;
-            volume += PieceOfVolume[i];
-        }
-        double slope = PieceOfVolume[0] / volume;
-        double V2 = m_pcs->GetNodeValue(m_ele->GetNodeIndex(1),m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);
-        double V1 = m_pcs->GetNodeValue(m_ele->GetNodeIndex(0),m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);
-        A->Vx = slope * (V2-V1) + V1;
-        
-        V2 = m_pcs->GetNodeValue(m_ele->GetNodeIndex(1),m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);
-        V1 = m_pcs->GetNodeValue(m_ele->GetNodeIndex(0),m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);
-        A->Vy = slope * (V2-V1) + V1;
-
-        V2 = m_pcs->GetNodeValue(m_ele->GetNodeIndex(1),m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);
-        V1 = m_pcs->GetNodeValue(m_ele->GetNodeIndex(0),m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);
-        A->Vz = slope * (V2-V1) + V1;
-    }
-    //RECTANGLES = 2 
-	if (m_ele->GetElementType() == 2)
-	{
-        double tolerance = 1e-6;
-
-        Particle* Tri1 = NULL;
-        Particle* Tri2 = NULL;
-                
-        Tri1 = new Particle[3](); Tri2 = new Particle[3]();
-
-        // Make two triangles from one quadlateral element
-        // Tri1 : 1,2, and 4 nodes
-        node = m_ele->GetNode(0);
-        Tri1[0].x = node->X(); Tri1[0].y = node->Y(); Tri1[0].z = node->Z();
-        node = m_ele->GetNode(1);
-        Tri1[1].x = node->X(); Tri1[1].y = node->Y(); Tri1[1].z = node->Z();
-        node = m_ele->GetNode(3);
-        Tri1[2].x = node->X(); Tri1[2].y = node->Y(); Tri1[2].z = node->Z();
-        // Tri1 : 2,3, and 4 nodes
-        node = m_ele->GetNode(1);
-        Tri2[0].x = node->X(); Tri2[0].y = node->Y(); Tri2[0].z = node->Z();
-        node = m_ele->GetNode(2);
-        Tri2[1].x = node->X(); Tri2[1].y = node->Y(); Tri2[1].z = node->Z();
-        node = m_ele->GetNode(3);
-        Tri2[2].x = node->X(); Tri2[2].y = node->Y(); Tri2[2].z = node->Z();
-
-        // Compute the volume using Particle A in the triangle. 
-        double VolumeOfTri1ViaParticle = ComputeVolume(A, Tri1, m_ele);
-        double VolumeOfTri2ViaParticle = ComputeVolume(A, Tri2, m_ele);
-        // Compute volume of each triangle
-        node = m_ele->GetNode(3);
-        x4buff[0] = node->X();
-        x4buff[1] = node->Y();
-        x4buff[2] = node->Z();
-
-        double VolumeOfTri1 = ComputeDetTri(x1buff, x2buff, x4buff);
-        double VolumeOfTri2 = ComputeDetTri(x2buff, x3buff, x4buff);
-
-        // If Particle A belongs to Tri1,
-        if( fabs(VolumeOfTri1 - VolumeOfTri1ViaParticle) < tolerance)
-            GetVelocityFromTriangle(A, m_ele, x1buff, x2buff, x4buff);
-        // If Particle A belongs to Tri1,
-        else if( fabs(VolumeOfTri2 - VolumeOfTri2ViaParticle) < tolerance)
-            GetVelocityFromTriangle(A, m_ele, x2buff, x3buff, x4buff);
-        else
-		{
-			printf("The program aborts because a particle stays none of two triangles that consist of rectangle.\n");
-            abort();
-		}
-
-        delete [] Tri1;
-        delete [] Tri2;
-    }
-    //HEXAHEDRA = 3 
-	if (m_ele->GetElementType() == 3)
-	{
-        double tolerance = 1e-6;
-
-        Particle* Tet1 = NULL; Particle* Tet2 = NULL; Particle* Tet3 = NULL;
-        Particle* Tet4 = NULL; Particle* Tet5 = NULL; Particle* Tet6 = NULL;
-                
-        Tet1 = new Particle[4](); Tet2 = new Particle[4](); Tet3 = new Particle[4]();
-        Tet4 = new Particle[4](); Tet5 = new Particle[4](); Tet6 = new Particle[4]();
-
-        // Make six tetrahedras from one hexahedra element
-        // Tet1 : 8,5, 4, and 6 nodes
-        node = m_ele->GetNode(7);
-        Tet1[0].x = node->X(); Tet1[0].y = node->Y(); Tet1[0].z = node->Z();
-        node = m_ele->GetNode(4);
-        Tet1[1].x = node->X(); Tet1[1].y = node->Y(); Tet1[1].z = node->Z();
-        node = m_ele->GetNode(3);
-        Tet1[2].x = node->X(); Tet1[2].y = node->Y(); Tet1[2].z = node->Z();
-        node = m_ele->GetNode(5);
-        Tet1[3].x = node->X(); Tet1[3].y = node->Y(); Tet1[3].z = node->Z();
-        // Tet2 : 4, 7, 8, and 6 nodes
-        node = m_ele->GetNode(3);
-        Tet2[0].x = node->X(); Tet2[0].y = node->Y(); Tet2[0].z = node->Z();
-        node = m_ele->GetNode(6);
-        Tet2[1].x = node->X(); Tet2[1].y = node->Y(); Tet2[1].z = node->Z();
-        node = m_ele->GetNode(7);
-        Tet2[2].x = node->X(); Tet2[2].y = node->Y(); Tet2[2].z = node->Z();
-        node = m_ele->GetNode(5);
-        Tet2[3].x = node->X(); Tet2[3].y = node->Y(); Tet2[3].z = node->Z();
-        // Tet3 : 4, 5, 1, and 6 nodes
-        node = m_ele->GetNode(3);
-        Tet3[0].x = node->X(); Tet3[0].y = node->Y(); Tet3[0].z = node->Z();
-        node = m_ele->GetNode(4);
-        Tet3[1].x = node->X(); Tet3[1].y = node->Y(); Tet3[1].z = node->Z();
-        node = m_ele->GetNode(0);
-        Tet3[2].x = node->X(); Tet3[2].y = node->Y(); Tet3[2].z = node->Z();
-        node = m_ele->GetNode(5);
-        Tet3[3].x = node->X(); Tet3[3].y = node->Y(); Tet3[3].z = node->Z();
-        // Tet4 : 3, 7, 4, and 6 nodes
-        node = m_ele->GetNode(2);
-        Tet4[0].x = node->X(); Tet4[0].y = node->Y(); Tet4[0].z = node->Z();
-        node = m_ele->GetNode(6);
-        Tet4[1].x = node->X(); Tet4[1].y = node->Y(); Tet4[1].z = node->Z();
-        node = m_ele->GetNode(3);
-        Tet4[2].x = node->X(); Tet4[2].y = node->Y(); Tet4[2].z = node->Z();
-        node = m_ele->GetNode(5);
-        Tet4[3].x = node->X(); Tet4[3].y = node->Y(); Tet4[3].z = node->Z();
-        // Tet5 : 2, 3, 4, and 6 nodes
-        node = m_ele->GetNode(1);
-        Tet5[0].x = node->X(); Tet5[0].y = node->Y(); Tet5[0].z = node->Z();
-        node = m_ele->GetNode(2);
-        Tet5[1].x = node->X(); Tet5[1].y = node->Y(); Tet5[1].z = node->Z();
-        node = m_ele->GetNode(3);
-        Tet5[2].x = node->X(); Tet5[2].y = node->Y(); Tet5[2].z = node->Z();
-        node = m_ele->GetNode(5);
-        Tet5[3].x = node->X(); Tet5[3].y = node->Y(); Tet5[3].z = node->Z();
-        // Tet6 : 2, 4, 1, and 6 nodes
-        node = m_ele->GetNode(1);
-        Tet6[0].x = node->X(); Tet6[0].y = node->Y(); Tet6[0].z = node->Z();
-        node = m_ele->GetNode(3);
-        Tet6[1].x = node->X(); Tet6[1].y = node->Y(); Tet6[1].z = node->Z();
-        node = m_ele->GetNode(0);
-        Tet6[2].x = node->X(); Tet6[2].y = node->Y(); Tet6[2].z = node->Z();
-        node = m_ele->GetNode(5);
-        Tet6[3].x = node->X(); Tet6[3].y = node->Y(); Tet6[3].z = node->Z();
-
-        // Compute the volume using Particle A in the teterahedra. 
-        double VolumeOfTet1ViaParticle = ComputeVolume(A, Tet1, m_ele);
-        double VolumeOfTet2ViaParticle = ComputeVolume(A, Tet2, m_ele);
-        double VolumeOfTet3ViaParticle = ComputeVolume(A, Tet3, m_ele);
-        double VolumeOfTet4ViaParticle = ComputeVolume(A, Tet4, m_ele);
-        double VolumeOfTet5ViaParticle = ComputeVolume(A, Tet5, m_ele);
-        double VolumeOfTet6ViaParticle = ComputeVolume(A, Tet6, m_ele);
-
-        // Compute volume of each tetrahedera
-        CopyParticleCoordToArray(Tet1, x1buff, x2buff, x3buff, x4buff);
-        double VolumeOfTet1 = ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
-        CopyParticleCoordToArray(Tet2, x1buff, x2buff, x3buff, x4buff);
-        double VolumeOfTet2 = ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
-        CopyParticleCoordToArray(Tet3, x1buff, x2buff, x3buff, x4buff);
-        double VolumeOfTet3 = ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
-        CopyParticleCoordToArray(Tet4, x1buff, x2buff, x3buff, x4buff);
-        double VolumeOfTet4 = ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
-        CopyParticleCoordToArray(Tet5, x1buff, x2buff, x3buff, x4buff);
-        double VolumeOfTet5 = ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
-        CopyParticleCoordToArray(Tet6, x1buff, x2buff, x3buff, x4buff);
-        double VolumeOfTet6 = ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
-
-
-        // If Particle A belongs to Tet1,
-        if( fabs(VolumeOfTet1 - VolumeOfTet1ViaParticle) < tolerance)
-            CopyParticleCoordToArray(Tet1, x1buff, x2buff, x3buff, x4buff);
-        // If Particle A belongs to Tet2,
-        else if( fabs(VolumeOfTet2 - VolumeOfTet2ViaParticle) < tolerance)
-            CopyParticleCoordToArray(Tet2, x1buff, x2buff, x3buff, x4buff);
-        // If Particle A belongs to Tet3,
-        else if( fabs(VolumeOfTet3 - VolumeOfTet3ViaParticle) < tolerance)
-            CopyParticleCoordToArray(Tet3, x1buff, x2buff, x3buff, x4buff);
-        // If Particle A belongs to Tet4,
-        else if( fabs(VolumeOfTet4 - VolumeOfTet4ViaParticle) < tolerance)
-            CopyParticleCoordToArray(Tet4, x1buff, x2buff, x3buff, x4buff);
-        // If Particle A belongs to Tet5,
-        else if( fabs(VolumeOfTet5 - VolumeOfTet5ViaParticle) < tolerance)
-            CopyParticleCoordToArray(Tet5, x1buff, x2buff, x3buff, x4buff);
-        // If Particle A belongs to Tet6,
-        else if( fabs(VolumeOfTet6 - VolumeOfTet6ViaParticle) < tolerance)
-            CopyParticleCoordToArray(Tet6, x1buff, x2buff, x3buff, x4buff);
-        else
-            abort();
-
-        // Update velocity
-        GetVelocityFromTetrahedra(A, m_ele, x1buff, x2buff, x3buff, x4buff);
-
-        delete [] Tet1; delete [] Tet2; delete [] Tet3; delete [] Tet4; delete [] Tet5; delete [] Tet6;   
-    }
-    //TRIANGLES = 4 
-	if (m_ele->GetElementType() == 4)
-        GetVelocityFromTriangle(A, m_ele, x1buff, x2buff, x3buff);
-    //TETRAHEDRAS = 5 
-	if (m_ele->GetElementType() == 5)
-	{
-        node = m_ele->GetNode(3);
-        x4buff[0] = node->X(); x4buff[1] = node->Y(); x4buff[2] = node->Z();
-
-        GetVelocityFromTetrahedra(A, m_ele, x1buff, x2buff, x3buff, x4buff);
-    }
-    //PRISMS = 6 
-	if (m_ele->GetElementType() == 6)
-	{
-        double tolerance = 1e-6;
-
-        Particle* Pri1 = NULL; Particle* Pri2 = NULL; Particle* Pri3 = NULL;
-                
-        Pri1 = new Particle[4](); Pri2 = new Particle[4](); Pri3 = new Particle[4]();
-
-        // Make six tetrahedras from one hexahedra element
-        // Tet1 : 6, 4, 3, and 5 nodes
-        node = m_ele->GetNode(5);
-        Pri1[0].x = node->X(); Pri1[0].y = node->Y(); Pri1[0].z = node->Z();
-        node = m_ele->GetNode(3);
-        Pri1[1].x = node->X(); Pri1[1].y = node->Y(); Pri1[1].z = node->Z();
-        node = m_ele->GetNode(2);
-        Pri1[2].x = node->X(); Pri1[2].y = node->Y(); Pri1[2].z = node->Z();
-        node = m_ele->GetNode(4);
-        Pri1[3].x = node->X(); Pri1[3].y = node->Y(); Pri1[3].z = node->Z();
-        // Tet1 : 3, 4, 1, and 5 nodes
-        node = m_ele->GetNode(2);
-        Pri2[0].x = node->X(); Pri2[0].y = node->Y(); Pri2[0].z = node->Z();
-        node = m_ele->GetNode(3);
-        Pri2[1].x = node->X(); Pri2[1].y = node->Y(); Pri2[1].z = node->Z();
-        node = m_ele->GetNode(0);
-        Pri2[2].x = node->X(); Pri2[2].y = node->Y(); Pri2[2].z = node->Z();
-        node = m_ele->GetNode(4);
-        Pri2[3].x = node->X(); Pri2[3].y = node->Y(); Pri2[3].z = node->Z();
-        // Tet1 : 2, 3, 1, and 5 nodes
-        node = m_ele->GetNode(1);
-        Pri3[0].x = node->X(); Pri3[0].y = node->Y(); Pri3[0].z = node->Z();
-        node = m_ele->GetNode(2);
-        Pri3[1].x = node->X(); Pri3[1].y = node->Y(); Pri3[1].z = node->Z();
-        node = m_ele->GetNode(0);
-        Pri3[2].x = node->X(); Pri3[2].y = node->Y(); Pri3[2].z = node->Z();
-        node = m_ele->GetNode(4);
-        Pri3[3].x = node->X(); Pri3[3].y = node->Y(); Pri3[3].z = node->Z();
-
-        // Compute the volume using Particle A in the teterahedra. 
-        double VolumeOfPri1ViaParticle = ComputeVolume(A, Pri1, m_ele);
-        double VolumeOfPri2ViaParticle = ComputeVolume(A, Pri2, m_ele);
-        double VolumeOfPri3ViaParticle = ComputeVolume(A, Pri3, m_ele);
-        
-        // Compute volume of each tetrahedera
-        CopyParticleCoordToArray(Pri1, x1buff, x2buff, x3buff, x4buff);
-        double VolumeOfPri1 = ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
-        CopyParticleCoordToArray(Pri2, x1buff, x2buff, x3buff, x4buff);
-        double VolumeOfPri2 = ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
-        CopyParticleCoordToArray(Pri3, x1buff, x2buff, x3buff, x4buff);
-        double VolumeOfPri3 = ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
-
-        // If Particle A belongs to Tet1,
-        if( fabs(VolumeOfPri1 - VolumeOfPri1ViaParticle) < tolerance)
-            CopyParticleCoordToArray(Pri1, x1buff, x2buff, x3buff, x4buff);
-        // If Particle A belongs to Tet2,
-        else if( fabs(VolumeOfPri2 - VolumeOfPri2ViaParticle) < tolerance)
-            CopyParticleCoordToArray(Pri2, x1buff, x2buff, x3buff, x4buff);
-        // If Particle A belongs to Tet3,
-        else if( fabs(VolumeOfPri3 - VolumeOfPri3ViaParticle) < tolerance)
-            CopyParticleCoordToArray(Pri3, x1buff, x2buff, x3buff, x4buff);
-        else
-            abort();
-
-        // Update velocity
-        GetVelocityFromTetrahedra(A, m_ele, x1buff, x2buff, x3buff, x4buff);
-
-        delete [] Pri1; delete [] Pri2; delete [] Pri3; 
-       
-    }
-
-    // Release the memory
-    delete [] PieceOfVolume;
-
-
-    
-}
-
 void RandomWalk::CopyParticleCoordToArray(Particle* A, double* x1buff, 
     double* x2buff, double* x3buff, double* x4buff)
 {
@@ -853,68 +529,6 @@ void RandomWalk::CopyParticleCoordToArray(Particle* A, double* x1buff,
     x2buff[0] = A[1].x; x2buff[1] = A[1].y; x2buff[2] = A[1].z;
     x3buff[0] = A[2].x; x3buff[1] = A[2].y; x3buff[2] = A[2].z;
     x4buff[0] = A[3].x; x4buff[1] = A[3].y; x4buff[2] = A[3].z;
-}
-
-void RandomWalk::GetVelocityFromTriangle(Particle* A, CElem* m_ele, double* x1buff,
-     double* x2buff,  double* x3buff)
-{
-    double volume = 0.0;
-    double A2buff[3];
-    double* PieceOfVolume = NULL;
-    PieceOfVolume = new double[3]();
-
-    A2buff[0] = A->x; A2buff[1] = A->y; A2buff[2] = A->z;
-
-    PieceOfVolume[0] = ComputeDetTri(x2buff, x3buff, A2buff) ;
-    PieceOfVolume[1] = ComputeDetTri(x3buff, x1buff, A2buff) ;
-    PieceOfVolume[2] = ComputeDetTri(x1buff, x2buff, A2buff) ;
-
-    for(int i=0; i<3; ++i)
-        volume += PieceOfVolume[i];    
-    // Make sure v's initialized. 
-    A->Vx = A->Vy = A->Vz = 0.0; 
-    for(int i=0; i<3; ++i)
-    {
-        double vx = m_pcs->GetNodeValue(m_ele->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);
-        double vy = m_pcs->GetNodeValue(m_ele->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);
-        double vz = m_pcs->GetNodeValue(m_ele->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);
-        double weight = PieceOfVolume[i] / volume;
-        A->Vx += weight * vx; A->Vy += weight * vy; A->Vz += weight * vz;
-    }  
-
-	delete [] PieceOfVolume;   
-}
-
-
-void RandomWalk::GetVelocityFromTetrahedra(Particle* A, CElem* m_ele, double* x1buff,
-     double* x2buff,  double* x3buff, double* x4buff)
-{
-    double volume = 0.0;
-    double A2buff[3];
-    double* PieceOfVolume = NULL;
-    PieceOfVolume = new double[4]();
-
-    A2buff[0] = A->x; A2buff[1] = A->y; A2buff[2] = A->z;
-
-    PieceOfVolume[0] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
-    PieceOfVolume[1] = ComputeDetTex(A2buff, x1buff, x4buff, x3buff) ;
-    PieceOfVolume[2] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
-    PieceOfVolume[3] = ComputeDetTex(A2buff, x1buff, x3buff, x2buff) ;
-
-    for(int i=0; i<4; ++i)
-        volume += PieceOfVolume[i];    
-    // Make sure v's initialized. 
-    A->Vx = A->Vy = A->Vz = 0.0; 
-    for(int i=0; i<4; ++i)
-    {
-        double vx = m_pcs->GetNodeValue(m_ele->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);
-        double vy = m_pcs->GetNodeValue(m_ele->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);
-        double vz = m_pcs->GetNodeValue(m_ele->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);
-        double weight = PieceOfVolume[i] / volume;
-        A->Vx += weight * vx; A->Vy += weight * vy; A->Vz += weight * vz;
-    } 
-
-	delete [] PieceOfVolume;    
 }
 
 /**************************************************************************
@@ -1330,119 +944,6 @@ double RandomWalk::ComputeVolume(Particle* A, Particle* element, CElem* m_ele)
     return volume;
 }
 
-
-/**************************************************************************
-MSHLib-Method: 
-Task:Compute the next positions of particles from the previous positions.
-Programing:
-10/2005 PCH Implementation
-**************************************************************************/
-void RandomWalk::AdvanceParticles(double dt)
-{
-    // Loop over all the particles
-    for(int i=0; i< numOfParticles; ++i)
-    {
-		Particle Y; // the displaced particle
-		double V[3];
-		double delta[3];
-        CElem* m_ele = m_msh->ele_vector[X[i].Now.elementIndex];
-		
-		// Let's record the current to the past
-		InterpolateVelocityOfTheParticle(&(X[i].Now), m_ele);
-		V[0] = X[i].Now.Vx; V[1] = X[i].Now.Vy; V[2] = X[i].Now.Vz;
-		SolveDispersionCoefficient(&(X[i].Now));
-        X[i].Past = X[i].Now; 
-
-
-		do
-		{
-			// Initialize
-			X[i].Now = X[i].Past;
-
-
-//			do{
-				// Compute the random drift for the particle by 
-				// solving the dispersion tensor at the particle location
-				RandomlyDriftAway(&(X[i].Now), dt, delta, 0);
-				// These delta should be transformed to locate on the plane that the element stays
-				//	TransformRandomDriftToTheElementPlane(m_ele, delta);
-
-/*
-				// Now we need the dispersion tensor at the position 
-				// where the particle drifted randomly by delta Of X.
-				// For this I need velocity at the displaced position meaning some smart searching technique.
-				// First let's assign one particle for the displaced position.
-				Y.x = X[i].Now.x + delta[0]; Y.y = X[i].Now.y + delta[1]; Y.z = X[i].Now.z + delta[2];
-				// Next I need to know which element has this particle.
-				// This is very important since this element index is the key for extension of 
-				// transport by velocity and dispersion.
-				Y.elementIndex = SearchTheElementThatHasTheDisplacedParticle(&Y, m_ele);
-			}while (Y.elementIndex == OUTSIDEOFDOMAIN);
-            		
-            // Solve the random drift for the displaced location
-			if(X[i].Now.elementIndex != Y.elementIndex &&
-				 -0.5 < X[i].Now.x && X[i].Now.x < 0.5 )
-			{
-				double dt1 = 0.0, dt2 = 0.0;
-				
-				// Search the boundary point
-				CElem* ele1 = NULL; CElem* ele2 = NULL;
-				ele1 = m_msh->ele_vector[X[i].Now.elementIndex];
-				ele2 = m_msh->ele_vector[Y.elementIndex];
-				CNode* commonNode = NULL;
-				for(int p = 0; p < 2; ++p)
-				{
-					for(int q = 0; q < 2; ++q)
-					{
-						if(ele1->GetNodeIndex(p) == ele2->GetNodeIndex(q))
-						{
-							commonNode = m_msh->nod_vector[ele1->GetNodeIndex(p)];
-							break;
-						}
-						
-					}
-				}
-				
-				double difference = X[i].Now.x - commonNode->X();
-				double dx1 = sqrt(difference * difference);
-				double Z = delta[0] / sqrt(6.0*X[i].Now.D[0] *dt); 
-				dt1 = dx1*dx1 / (6.0*X[i].Now.D[0]*Z*Z);
-				dt2 = dt - dt1;
-
-				if(dt2 < 0.0) 
-					abort();
-				
-				// Solve for the dispersion coefficients of Y
-				SolveDispersionCoefficient(&Y);
-
-				double D1 = X[i].Now.D[0]; double D2 = Y.D[0];
-				
-				double odds = sqrt(D1) / (sqrt(D1) + sqrt(D2));
-				double R = randomZeroToOne();
-				if(R < odds)
-					RandomlyDriftAway(&(X[i].Now), dt2, delta, 0, i);	
-				else
-					RandomlyDriftAway(&Y, dt2, delta, 0, i);
-
-				// Let's adjust X[i].Now location to the interface.
-				X[i].Now.x = commonNode->X();
-			}
-	*/		
-          
-            // Now advance the particle by advection and dispersion
-            // Advection: V[i]*dt, Dispersion: delta[i];
-            X[i].Now.x += V[0]*dt + delta[0]; 
-            X[i].Now.y += V[1]*dt + delta[1];
-            X[i].Now.z += V[2]*dt + delta[2];
-            X[i].Now.t += dt;   // Update the current time
-
-            // Now update the current element index
-            X[i].Now.elementIndex = SearchTheElementThatHasTheDisplacedParticle(&(X[i].Now), m_ele);
-        }while(X[i].Now.elementIndex == OUTSIDEOFDOMAIN);
-    }
-}
-
-
 /**************************************************************************
 MSHLib-Method: 
 Task:Compute the next positions of particles from the previous positions.
@@ -1462,7 +963,7 @@ void RandomWalk::AdvanceParticlesLaBolle(double dt)
 
 		// Let's record the current to the past
 		printf("Velocity for X will be computed...\n");
-		InterpolateVelocityOfTheParticle(&(X[i].Now), m_ele);
+		InterpolateVelocityOfTheParticleByInverseDistance(&(X[i].Now));
 		V[0] = X[i].Now.Vx; V[1] = X[i].Now.Vy; V[2] = X[i].Now.Vz;
 		SolveDispersionCoefficient(&(X[i].Now));
         X[i].Past = X[i].Now; 
@@ -1480,7 +981,7 @@ void RandomWalk::AdvanceParticlesLaBolle(double dt)
 			Y.x = X[i].Now.x + delta[0]; Y.y = X[i].Now.y + delta[1]; Y.z = X[i].Now.z + delta[2];
 
 			// Solve for the edge from this vector of delta
-			Dstatus = SolveForDiffusionWithEdge(&(X[i].Now), &Y, delta);
+//			Dstatus = SolveForDiffusionWithEdge(&(X[i].Now), &Y, delta);
 
 			if(Dstatus == -1 || Dstatus == -2)
 				printf("Dstatus = %d\n", Dstatus);
@@ -1496,7 +997,7 @@ void RandomWalk::AdvanceParticlesLaBolle(double dt)
 			{		
 				RandomlyDriftAway(&Y, Y.t, delta, 0);
 				
-				Astatus = SolveForAdvectionWithEdge(&(X[i].Now), &Y, delta);
+//				Astatus = SolveForAdvectionWithEdge(&(X[i].Now), &Y, delta);
 			
 				if(Astatus == 2) Y.t = dt;
 
@@ -1515,83 +1016,18 @@ void RandomWalk::AdvanceParticlesLaBolle(double dt)
 
 /**************************************************************************
 MSHLib-Method: 
-Task:The function advances the set of particles by pure advection
-Programing:
-10/2005 PCH Implementation
-**************************************************************************/
-void RandomWalk::AdvanceByAdvection(double dt)
-{
-	double tolerance = 1e-18;
-	// Loop over all the particles
-    for(int i=0; i< numOfParticles; ++i)
-    {
-		Particle Y; // the displaced particle
-		int Astatus = 100;	// Set to be meaningless
-  //      CElem* m_ele = m_msh->ele_vector[X[i].Now.elementIndex];
-
-		// Let's record the current to the past
-		InterpolateVelocityOfTheParticleByInverseDistance(&(X[i].Now));
-		
-		// Initialize the reference and past particles
-        Y=X[i].Past = X[i].Now; 
-
-		// Initialize
-		Y.t = dt;
-
-		do
-		{	
-			// Let's record the current to the past
-			InterpolateVelocityOfTheParticleByInverseDistance(&Y);
-		
-			Astatus = SolveForPureAdvectionWithEdge(&(X[i].Now), &Y);
-			
-			// If particle stays in the element, Y.t = dt.
-			if(Y.t < tolerance) 
-				Y.t = dt;
-
-			// Update the current info
-			// where the advected particle is in either the element or 
-			// the neighboring element. 
-			X[i].Now = Y;
-
-			// Boundary and the function error check
-			if(Astatus == -1 || Astatus == -2)
-			{
-				printf("Astatus = %d\n", Astatus);
-				abort();
-			}
-
-		// Keep looping if the time is not spent all or
-		// if the particle is outside of the domain or
-		// if the function fails
-		}while ( Y.t < dt );
-			
-		// Update the correct dt
-		X[i].Now.t = X[i].Past.t + dt;
-
-		// Keep looping 
-		// if the particle is outside of the domain or
-		// if the function fails
-	
-		printf("No %d particle is done.\n", i);
-    }
-}
-
-
-/**************************************************************************
-MSHLib-Method: 
 Task:The function advances the set of particles by advection
 	 and dispersion
 Programing:
 10/2005 PCH Implementation
 **************************************************************************/
-void RandomWalk::AdvanceByAdvectionNDispersionSplitTime(double dt, int numOfSplit)
+void RandomWalk::AdvanceBySplitTime(double dt, int numOfSplit)
 {
 	double subdt = dt / (double)numOfSplit;
 
 	for(int i=0; i< numOfSplit; ++i)
 	{
-		AdvanceByAdvectionNDispersion(subdt);
+		AdvanceToNextTimeStep(subdt);
 #ifdef _FEMPCHDEBUG_
 	// PCH Let's monitor what's going on in the FEM
 	// This messagebox is for debugging the primary variables at every time step.
@@ -1610,7 +1046,7 @@ Task:The function advances the set of particles by advection
 Programing:
 10/2005 PCH Implementation
 **************************************************************************/
-void RandomWalk::AdvanceByAdvectionNDispersion(double dt)
+void RandomWalk::AdvanceToNextTimeStep(double dt)
 {
 	double tolerance = 1e-18;
 	// Loop over all the particles
@@ -1619,35 +1055,55 @@ void RandomWalk::AdvanceByAdvectionNDispersion(double dt)
 		Particle Y; // the displaced particle
 		int Astatus = 100;	// Set to be meaningless
 
+		// In case that the initial element index from .pct is wrong
+		// But this line makes significant lagging in computation.
+		// Must be avoided if possible.
+//		X[i].Now.elementIndex = GetTheElementOfTheParticleFromNeighbor(&(X[i].Now));
+		
 		if(X[i].Now.elementIndex != -10)
 		{
-
-		// Let's record the current to the past
-		InterpolateVelocityOfTheParticleByInverseDistance(&(X[i].Now));
-#ifdef HETERO
-		SolveForDerivativeOfVelocity(&(X[i].Now));
-#endif
-		SolveDispersionCoefficient(&(X[i].Now));
+			// Let's record the current to the past
+			InterpolateVelocityOfTheParticleByInverseDistance(&(X[i].Now));
+			// If the mode is for heterogeneous media 
+			if(RWPTMode == 0 || RWPTMode == 1 || RWPTMode == 3)
+				SolveForDerivativeOfVelocity(&(X[i].Now));
+			if(RWPTMode < 2 || RWPTMode > 3)	// 0 or 1 for advection and dispersion cases.
+				SolveDispersionCoefficient(&(X[i].Now));
 		
-		// Initialize the reference and past particles
-        Y=X[i].Past = X[i].Now; 
+			// Initialize the reference and past particles
+			Y=X[i].Past = X[i].Now; 
 
-		// Initialize
-		Y.t = dt;
+			// Initialize
+			Y.t = dt;
 
-		do
-		{	
-			// Let's update the info of Particle Y.
-			InterpolateVelocityOfTheParticleByInverseDistance(&Y);
-#ifdef HETERO
-			SolveForDerivativeOfVelocity(&Y);
-#endif
-			SolveDispersionCoefficient(&Y);
+			do
+			{	
+				// Let's update the info of Particle Y.
+				InterpolateVelocityOfTheParticleByInverseDistance(&Y);
+				if(RWPTMode < 4)
+					SolveForDerivativeOfVelocity(&Y);
+				if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on
+					SolveDispersionCoefficient(&Y);
 		
 				if(Astatus == -1)
 					Y.t = dt;
-			Astatus = SolveForAdvectionNDispersionWithEdge(&(X[i].Now), &Y);
-			
+				Astatus = SolveForNextPosition(&(X[i].Now), &Y);
+				// Just get the element index after this movement
+				// if not Homogeneous aquifer
+				if(RWPTMode%2 == 1)
+					Y.elementIndex = GetTheElementOfTheParticleFromNeighbor(&Y);
+
+#ifdef ALLOW_PARTICLES_GO_OUTSIDE
+				// We let the particle go outside of the domain
+				if(Y.elementIndex == -10) 
+				{	
+					// Before letting this particle outside of the domain,
+					// record the particle postion that includes the element index = -10.
+					X[i].Now = Y;
+					break;
+				}
+#endif
+
 				// The result of the function is unknown error.
 				if(Astatus == -2)
 				{
@@ -1669,17 +1125,39 @@ void RandomWalk::AdvanceByAdvectionNDispersion(double dt)
 
 					// Update the current info
 					// where the advected particle is in either the element or 
-					// the neighboring element. 
+					// the neighboring element. 		
 					X[i].Now = Y;
+
+/*
+					// Check the stagnation point when transport is advective. 
+					double xx = X[i].Past.x - Y.x; double yy = X[i].Past.y - Y.y; double zz = X[i].Past.z - Y.z;
+					double difference = sqrt(xx*xx + yy*yy + zz*zz);
+
+					double tolerance = 10-6;
+					if(difference < tolerance)
+					{
+						X[i].Now = Y;
+						// Set the particle outside of the domain.
+						// This will bypass the particle for further particle tracking.
+						X[i].Now.elementIndex = -10;	
+					}
+					else
+					{
+						// Update the current info
+						// where the advected particle is in either the element or 
+						// the neighboring element. 		
+						X[i].Now = Y;
+					}
+*/
 				}			
 
-		// Keep looping if the time is not spent all or
-		// if the particle is outside of the domain or
-		// if the function fails
-		}while ( Y.t < dt );
+			// Keep looping if the time is not spent all or
+			// if the particle is outside of the domain or
+			// if the function fails
+			}while ( Y.t < dt );
 			
-		// Update the correct dt
-		X[i].Now.t = X[i].Past.t + dt;
+			// Update the correct dt
+			X[i].Now.t = X[i].Past.t + dt;
 		}			
     }
 }
@@ -1692,7 +1170,7 @@ Task:The function solves normalized concentration of element
 Programing:
 10/2005 PCH Implementation
 **************************************************************************/
-void RandomWalk::SetElementBasedConcentration(void)
+void RandomWalk::SetElementBasedConcentration(double dt)
 {
 /*
     double UnitConcentration = 0.0;
@@ -1718,7 +1196,7 @@ void RandomWalk::SetElementBasedConcentration(void)
 */
 
 /*
-	if( ((int)(X[0].Now.t*1000)%100)== 0)
+	if( ((int)(X[0].Now.t*1000))== 5)
 	{
 		char now[100];
 		sprintf(now, "%f", X[0].Now.t);
@@ -1727,7 +1205,8 @@ void RandomWalk::SetElementBasedConcentration(void)
 */	
 	
 	char now[100];
-	sprintf(now, "%f", X[0].Now.t);
+	CurrentTime += dt;
+	sprintf(now, "%f", CurrentTime);
 	DATWritePCTFile(now);
 }
 
@@ -1773,63 +1252,14 @@ void RandomWalk::ConcPTFile(const char *file_name)
 			if( (X[j].Now.x >= seg_start) && (X[j].Now.x<seg_end) )
 				++count;
 		}
-		fprintf(pct_file, "%f 0.0 0.0 %f\n", (seg_start+seg_end)/2.0, count / numOfParticles);
+	//	fprintf(pct_file, "%f 0.0 0.0 %f\n", (seg_start+seg_end)/2.0, count / numOfParticles);
+		fprintf(pct_file, "%f 0.0 0.0 %f\n", (seg_start+seg_end)/2.0, count);
 	}
 
     // Let's close it, now
     fclose(pct_file);	
 }
 
-
-/**************************************************************************
-MSHLib-Method: 
-Task:Search the index of the element in the neighber elements 
-     that contains the displaced particle and return the index
-Programing:
-10/2005 PCH Implementation
-**************************************************************************/
-int RandomWalk::SearchTheElementThatHasTheDisplacedParticle(Particle* A, CElem* m_ele)
-{
-    int index = -10; // I intentionally set this number -10 
-
-    // If the diplaced postion still belongs to this element
-    if(IsTheParticleInThisElement(A, m_ele) == 1)
-        return m_ele->GetIndex();    
-    else
-    {
-        // Now I'm searching neighbor
-        for(int i=0; i<m_ele->GetFacesNumber(); ++i)
-        {
-            CElem* thisNeighbor = m_ele->GetNeighbor(i);
-            
-            // If this neighbor is not NULL,
-            if(thisNeighbor)
-            {
-                if(IsTheParticleInThisElement(A, thisNeighbor) == 1)
-                    return thisNeighbor->GetIndex();
-            }
-            // This should only be the case that the line element is located
-            // at the boundary after talk with WW.
-            else
-            {
-                // I am not doing anything here. Because this is one end of the line domain.
-            }
-        }
-        // If the code pases the following loop, it means I am not lucky in this neighbor search.
-        int numberOfElements = (int)m_msh->ele_vector.size();
-        for(int i=0; i< numberOfElements; ++i)
-        {
-            CElem* thisElement = m_msh->ele_vector[i];
-            if(IsTheParticleInThisElement(A, thisElement) == 1)
-                return thisElement->GetIndex();
-        }
-    }
-
-    // If none of the cases above satisfies, 
-    // it means the displaced particle is outside of the domain. 
-    // Thus, index = -10 is never changed. 
-    return index;
-}
 
 
 /**************************************************************************
@@ -1842,10 +1272,6 @@ Programing:
 **************************************************************************/
 void RandomWalk::RandomlyDriftAway(Particle* A, double dt, double* delta, int type)
 {
-
-	type = type; //WW
-	A = A; //WW
-
     CElem* m_ele = m_msh->ele_vector[A->elementIndex];
 
     // Let's generate three random components N(0,1) and use it to compute deltaOfX
@@ -1967,6 +1393,24 @@ void RandomWalk::SolveDispersionCoefficient(Particle* A)
     m_mat_mp = mmp_vector[group];
     alphaL = m_mat_mp->mass_dispersion_longitudinal;
     alphaT = m_mat_mp->mass_dispersion_transverse;
+	
+	// Let's solve pore velocity.
+	// It is simple because Sw stuff automatically handles in Richards Flow.
+	// Thus, I only divide Darcy velocity by porosity only to get pore velocity.
+	CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];	
+	double porosity = 0.0;
+	if(MediaProp->porosity > 10-6)
+		porosity = MediaProp->porosity;	// This is for simple one.
+	else
+		porosity = MediaProp->porosity_model_values[0];		// This will get you porosity.
+																	// I guess for Dual Porocity stuff, 
+																	// this code should be revisited.
+	double molecular_diffusion_value = 0.0;
+	CompProperties *m_cp = cp_vec[0];	// This should be expanded later on to cover multiple components.
+	double g[3]={0.,0.,0.};
+	double theta = 1.0;		// I'll just set it to be unity for moment.
+	molecular_diffusion_value = m_cp->CalcDiffusionCoefficientCP(A->elementIndex) * MediaProp->TortuosityFunction(A->elementIndex,g,theta);
+	molecular_diffusion_value /= porosity;	// This should be divided by porosity in this RWPT method.
 
     // Just solve for the magnitude of the velocity to compute the dispersion tensor
 	V[0] = A->Vx; V[1] = A->Vy; V[2] = A->Vz;
@@ -1982,12 +1426,12 @@ void RandomWalk::SolveDispersionCoefficient(Particle* A)
     // If the magnitude of velocity is not zero.
     if(Vmagnitude > tolerance)
     {
-        A->D[0] = (alphaT*(V[1]*V[1]+ V[2]*V[2]) + alphaL*V[0]*V[0]) / Vmagnitude; // Dxx
-        A->D[1] = A->D[3] = (alphaL- alphaT)*V[0]*V[1]/Vmagnitude;    // Dxy = Dyz
-        A->D[2] = A->D[6] = (alphaL- alphaT)*V[0]*V[2]/Vmagnitude;    // Dxz = Dzx
-        A->D[4] = (alphaT*(V[0]*V[0]+ V[2]*V[2]) + alphaL*V[1]*V[1]) / Vmagnitude; // Dyy
-        A->D[5] = A->D[7] = (alphaL- alphaT)*V[1]*V[2]/Vmagnitude;    // Dyz = Dzy
-        A->D[8] = (alphaT*(V[0]*V[0]+ V[1]*V[1]) + alphaL*V[2]*V[2]) / Vmagnitude; // Dzz
+        A->D[0] = (alphaT*(V[1]*V[1]+ V[2]*V[2]) + alphaL*V[0]*V[0]) / Vmagnitude + molecular_diffusion_value; // Dxx
+        A->D[1] = A->D[3] = (alphaL- alphaT)*V[0]*V[1]/Vmagnitude + molecular_diffusion_value;    // Dxy = Dyz
+        A->D[2] = A->D[6] = (alphaL- alphaT)*V[0]*V[2]/Vmagnitude + molecular_diffusion_value;    // Dxz = Dzx
+        A->D[4] = (alphaT*(V[0]*V[0]+ V[2]*V[2]) + alphaL*V[1]*V[1]) / Vmagnitude + molecular_diffusion_value; // Dyy
+        A->D[5] = A->D[7] = (alphaL- alphaT)*V[1]*V[2]/Vmagnitude + molecular_diffusion_value;    // Dyz = Dzy
+        A->D[8] = (alphaT*(V[0]*V[0]+ V[1]*V[1]) + alphaL*V[2]*V[2]) / Vmagnitude + molecular_diffusion_value; // Dzz
     }
     else
     {
@@ -1995,243 +1439,6 @@ void RandomWalk::SolveDispersionCoefficient(Particle* A)
 		A->D[1] =  A->D[2] =  A->D[3] =  A->D[5] =  A->D[6] =  A->D[7] =  A->D[8] = 0.0;
     }	
 }
-
-
-/**************************************************************************
-MSHLib-Method: 
-Task:This function solves the next info of the particle by diffusion
-	 1: The particle moved to the neighbor element
-	 0: Particle stays in the same element.
-	-1: Particle displaced outside of the domain
-	-2: The function failed
-Programing:
-09/2005 PCH Implementation
-**************************************************************************/
-int RandomWalk::SolveForDiffusionWithEdge(Particle* A, Particle* B, double* delta)
-{
-	CElem* theElement = m_msh->ele_vector[A->elementIndex];
-	int count = 0;
-
-	// Looping over the edges of the element, A
-	int nEdges = theElement->GetEdgesNumber();
-	for(int i=0; i< nEdges; ++i)
-	{
-		// Get the edges of the element
-		vec<CEdge*> theEdges(nEdges);
-		theElement->GetEdges(theEdges);
-		
-		// Get the nodes of the edge
-		vec<CNode*> theNodes(3);
-		theEdges[i]->GetNodes(theNodes);
-
-		double p1[3], p2[3], p3[3], p4[3];			
-		p1[0] = theNodes[0]->X(); p1[1] = theNodes[0]->Y(); p1[2] = theNodes[0]->Z();
-		p2[0] = theNodes[1]->X(); p2[1] = theNodes[1]->Y(); p2[2] = theNodes[1]->Z();
-		p3[0] = A->x; p3[1] = A->y; p3[2] = A->z;
-		// Intentionally make the segment of p3 and p4 big.
-		p4[0] = p3[0] + delta[0]; p4[1] = p3[1] + delta[1]; p4[2] = p3[2] + delta[2];
-		
-		double x = 0.0, y = 0.0, ra = 0.0, rb = 0.0;
-		
-		int status = G_intersect_line_segments (p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], p4[0], p4[1],
-							&ra, &rb, &x, &y); 
-		
-		// If intersection is a sinle point
-		if(status == 1)
-		{
-			// Find the neighbor element and update
-			// Find the common edge
-			// The common edge is theEdges[i]
-			
-			// Now I'm searching neighbor
-			int countBoundary = 0;	// Set to be outside of boundary
-			for(int j=0; j<theElement->GetFacesNumber(); ++j)
-			{
-				CElem* thisNeighbor = theElement->GetNeighbor(j);
-
-				// Get the edges of each neighbor
-				int neighborEdgesNumber = thisNeighbor->GetEdgesNumber();
-				vec<CEdge*> theNeighborEdges(neighborEdgesNumber);
-				thisNeighbor->GetEdges(theNeighborEdges);	
-				for(int k=0; k< neighborEdgesNumber; ++k)
-				{
-					if(theEdges[i] == theNeighborEdges[k])	
-					{
-						B->elementIndex = thisNeighbor->GetIndex(); 
-				//		B->x += delta[0]; B->y += delta[1]; B->z += delta[2];
-						countBoundary = 1;
-
-						return 1;	// The element index switched to the neighbor element
-					}
-				}	
-			}
-			// Check if there is no neighboring element
-			// meaning outside of the boundary
-			if(countBoundary == 0)
-			{
-				B->elementIndex = -10;	// Outside of the domain	
-				return -1;	// Particle displaced outside of the domain
-			}			
-		}
-		// no intersection but the extension has one.
-		else if(status == 0)
-			++count;
-		else
-		{
-			printf("The program aborts because status of intersection search is not 1 or 0.\n");
-			abort();
-		}
-	}
-
-	// If none of the edges intersect by this delta vector
-	if(count == nEdges)
-	{
-		// Just record the element index of the original particle position
-		B->elementIndex = A->elementIndex;
-//		B->x += delta[0]; B->y += delta[1]; B->z += delta[2];
-
-		return 0; // Particle stays in the same element.
-	}
-
-	return -2;	// The function failed
-}
-
-/**************************************************************************
-MSHLib-Method: 
-Task:This function solves the next info of the particle by advection 
-	 and dispersion
-	 2: The particle is at the intersection
-	 1: The particle moved to the neighbor element
-	 0: Particle stays in the same element. 
-	-1: Particle displaced outside of the domain
-	-2: The function failed
-Programing:
-09/2005 PCH Implementation
-**************************************************************************/
-int RandomWalk::SolveForAdvectionWithEdge(Particle* A, Particle* B, double* delta)
-{
-	CElem* theElement = m_msh->ele_vector[B->elementIndex];
-	int count = 0; 
-
-	int nEdges = theElement->GetEdgesNumber();
-	for(int i=0; i< nEdges; ++i)
-	{
-		// Get the edges of the element
-		vec<CEdge*> theEdges(nEdges);
-		theElement->GetEdges(theEdges);
-		
-		// Get the nodes of the edge
-		vec<CNode*> theNodes(3);
-		theEdges[i]->GetNodes(theNodes);
-
-		double p1[3], p2[3], p3[3], p4[3];			
-		// Two points in the edge
-		p1[0] = theNodes[0]->X(); p1[1] = theNodes[0]->Y(); p1[2] = theNodes[0]->Z();
-		p2[0] = theNodes[1]->X(); p2[1] = theNodes[1]->Y(); p2[2] = theNodes[1]->Z();
-		// The starting point displaced by diffusion as in LaBolle
-		p3[0] = B->x; p3[1] = B->y; p3[2] = B->z;
-		// Intentionally make the segment of p3 and p4 big.
-		printf("Velocity for Y will be computed...\n");
-		printf("The element index of Y is %d.\n", B->elementIndex);
-		InterpolateVelocityOfTheParticle(B, theElement);
-		
-		SolveDispersionCoefficient(B);
-		p4[0] = p3[0] + B->Vx * B->t + delta[0]; 
-		p4[1] = p3[1] + B->Vy * B->t + delta[1]; 
-		p4[2] = p3[2] + B->Vz * B->t + delta[2];
-
-		double dtt = B->t;
-		
-		double x = 0.0, y = 0.0, ra = 0.0, rb = 0.0;
-		
-		int status = G_intersect_line_segments( p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], p4[0], p4[1],
-							&ra, &rb, &x, &y); 
-
-		if( (B->x != x) && (B->y != y) )
-		{
-		
-			// If intersection is a sinle point
-			if(status == 1)
-			{
-				// Find the neighbor element and update
-				// Find the common edge
-				// The common edge is theEdges[i]
-			
-				// Now I'm searching neighbor
-				int countBoundary = 0;	// Set to be outside of boundary
-				for(int j=0; j<theElement->GetFacesNumber(); ++j)
-				{
-					CElem* thisNeighbor = theElement->GetNeighbor(j);
-
-					// Get the edges of each neighbor
-					int neighborEdgesNumber = thisNeighbor->GetEdgesNumber();
-					vec<CEdge*> theNeighborEdges(neighborEdgesNumber);
-					thisNeighbor->GetEdges(theNeighborEdges);
-		
-					for(int k=0; k< neighborEdgesNumber; ++k)
-					{
-						if(theEdges[i] == theNeighborEdges[k])	
-						{
-							B->elementIndex = thisNeighbor->GetIndex(); 
-							countBoundary = 1;
-						
-							// Compute the time left over.
-							double dt1 = (dtt*ra)/(ra+1.0);
-							double dt2 = dtt - dt1;
-
-							if(dt2 < 0.0)
-							{ 
-								printf("The program aborts because dt2 < 0.0\n");
-								abort();
-							}
-							// Record the time left and update the position to be the intersection
-							B->t = dt2; 
-							B->x = x; B->y = y; B->z = 0.0; 
-
-							return 1;	// The element index switched to the neighbor element
-						}
-					}	
-				}		
-				// Check if there is no neighboring element
-				// meaning outside of the boundary
-				if(countBoundary == 0)
-				{
-					B->elementIndex = -10;	// Outside of the domain
-					return -1;	// Particle displaced outside of the domain	
-				}		
-			}
-			// It couldn't reach to the edge
-			else if(status == 0)
-				++count;
-			else
-			{
-				printf("The program aborts because status of intersection search is not 1 or 0.\n");
-				abort();
-			}
-		}
-		else
-		{
-			B->x += B->Vx * B->t + delta[0];
-			B->y += B->Vy * B->t + delta[1]; 
-			B->y += B->Vz * B->t + delta[2];
-			
-			return 2;	//The particle is at the intersection
-		}
-	}
-
-	// If none of the edges intersect by this delta vector
-	if(count == nEdges)
-	{
-		B->elementIndex = A->elementIndex;
-		B->x += B->Vx * B->t + delta[0];
-		B->y += B->Vy * B->t + delta[1]; 
-		B->y += B->Vz * B->t + delta[2];
-		return 0; // Particle stays in the same element.
-	}
-	
-	return -2;	// The function failed
-}
-
 
 /**************************************************************************
 MSHLib-Method: 
@@ -2242,8 +1449,9 @@ Task:This function solves the next info of the particle by advection only
 	-2: The function failed
 Programing:
 09/2005 PCH Implementation
+03/2006 PCH Upgraded as one.
 **************************************************************************/
-int RandomWalk::SolveForAdvectionNDispersionWithEdge(Particle* A, Particle* B)
+int RandomWalk::SolveForNextPosition(Particle* A, Particle* B)
 {
 	m_msh = fem_msh_vector[0]; 
 	CElem* theElement = m_msh->ele_vector[B->elementIndex];
@@ -2253,12 +1461,14 @@ int RandomWalk::SolveForAdvectionNDispersionWithEdge(Particle* A, Particle* B)
 	int countNoIntersection = 0;
 
 	// The estimated position advected for the given B->t
-	double dD[3]; 
-	double Z[3];
+	double dD[3]; dD[0] = dD[1] = dD[2] = 0.0;
+	double Z[3]; Z[0] = Z[1] = Z[2] = 0.0;
 	int ele_dim = theElement->GetDimension(); 
 
-	for(int i=0; i < 3; ++i)
-		dD[i] = 0.0;
+	// Initialize some variables.
+	double dtt = 0.0, dt1 = 0.0, dt2 = 0.0, d1 = 0.0, d = 0.0;
+	double tolerance = 1e-6; 
+	double timeSplit = 100; // Important: This timeSplit is a bit sensitive. 
 
 	// Loop over the edges
 	for(int i=0; i< nEdges; ++i)
@@ -2285,18 +1495,21 @@ int RandomWalk::SolveForAdvectionNDispersionWithEdge(Particle* A, Particle* B)
 		// The starting point displaced by pure advection
 		p3[0] = B->x; p3[1] = B->y; p3[2] = B->z;
 		ToTheXYPlane(theElement, p3);
+		p3[2] = theElement->GetAngle(2);
 
 		int dDStatus = 1;
-#ifdef HETERO		
-		// This currently only return TRUE (1)
-		dDStatus = SolveForDisplacementByDerivativeOfDispersion(A, dD);
-#endif
+	
+		// If the mode is for heterogeneous media 
+		if(RWPTMode%2 == 1)	
+			// This currently only return TRUE (1)
+			dDStatus = SolveForDisplacementByDerivativeOfDispersion(A, dD);
 
 		// Let's get the local vector for particle velocity
 		double V[3];
 
 		// Create random drift according to the element dimension
-		RandomWalkDrift(Z, ele_dim);
+		if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on	
+			RandomWalkDrift(Z, ele_dim);
 		if(dDStatus == 1)
 		{
 			if(ele_dim == 2)
@@ -2309,10 +1522,11 @@ int RandomWalk::SolveForAdvectionNDispersionWithEdge(Particle* A, Particle* B)
 				// OK. Just velocity left.
 				V[0] = B->Vx;	V[1] = B->Vy;	V[2] = B->Vz;	// In fact, V[2] gotta be zero.
 				ToTheXYPlane(B->elementIndex, V);
-				p4[0] = p3[0] + V[0] * B->t + dD[0]*B->t + sqrt(6.0*B->D[0]*B->t) * Z[0] + sqrt(6.0*fabs(B->D[1])*B->t) * Z[1]; 
-				p4[1] = p3[1] + V[1] * B->t + dD[1]*B->t + sqrt(6.0*fabs(B->D[3])*B->t) * Z[0] + sqrt(6.0*B->D[4]*B->t) * Z[1]; 
+				double dsp[3];
+				GetDisplacement(B, Z, V, dD, B->t, dsp);
+
 				// Fix for translation
-				p4[2] = theElement->GetAngle(2);
+				p4[0] = p3[0]+dsp[0]; p4[1] = p3[1]+dsp[1]; p4[2] = theElement->GetAngle(2);
 			}
 			else
 			{
@@ -2328,7 +1542,7 @@ int RandomWalk::SolveForAdvectionNDispersionWithEdge(Particle* A, Particle* B)
 		}
 
 		// Initialize the values for getting the intersection
-		double dtt = B->t;
+		dtt = B->t;
 		double x = 0.0, y = 0.0, ra = 0.0, rb = 0.0;
 		
 		int status = G_intersect_line_segments( p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], p4[0], p4[1],
@@ -2337,60 +1551,63 @@ int RandomWalk::SolveForAdvectionNDispersionWithEdge(Particle* A, Particle* B)
 		// If intersection is a sinle point
 		if(status == 1)
 		{
-			// Find the neighbor element and update
-			// Find the common edge
-			// The common edge is theEdges[i]
-			
-			// Now I'm searching neighbor
-			for(int j=0; j<theElement->GetFacesNumber(); ++j)
-			{
-				// Compute the time left over.
-				double I[3];
-				// Fix for translation
-				I[0] = x; I[1] = y; I[2] = theElement->GetAngle(2);
+			// Compute the time left over.
+			double I[3];
+			// Fix for translation
+			I[0] = x; I[1] = y; I[2] = theElement->GetAngle(2);		
+			d1 = SolveDistanceBetweenTwoPoints(p3, I);
+			d = SolveDistanceBetweenTwoPoints(p3, p4);
+			dt1 = dtt*d1/d;
+			dt2 = dtt - dt1;
 
-				double d1 = SolveDistanceBetweenTwoPoints(p3, I);
-				double d = SolveDistanceBetweenTwoPoints(p3, p4);
-				double dt1 = dtt*d1/d;
-				double dt2 = dtt - dt1;
-
-						// dt2 should be positive
-						if(dt2 < 0.0)
-						{ 
-							printf("The program aborts because dt2 < 0.0\n");
-							abort();
-						}
-				else;	// keep going.
-
-				// Update the record.
-				B->t = dt2; 
-				// Adjust the position for the obtained dt1.
-				double Dxx = sqrt(6.0*B->D[0]*dt1) * Z[0]; double Dxy = sqrt(6.0*fabs(B->D[1])*dt1) * Z[1];
-				double Dyx = sqrt(6.0*fabs(B->D[3])*dt1) * Z[0]; double Dyy = sqrt(6.0*B->D[4]*dt1) * Z[1];
-				double dsp[3];
-				dsp[0] = dD[0]*dt1 + Dxx + Dxy; 
-				dsp[1] = dD[1]*dt1 + Dyx + Dyy;
-				// Fix for translation
-				dsp[2] = theElement->GetAngle(2);
-
-				double IC[3];
-				// Fix for translation
-				IC[0] = x + dsp[0]; IC[1] = y + dsp[1]; IC[2] = theElement->GetAngle(2);
-				// Let's convert these XY plance coordinates to the real plane coordinates.
-				ToTheRealPlane(B->elementIndex, IC); 							
-				B->x = IC[0]; B->y = IC[1]; B->z = IC[2]; 
-				// The difference is that I need to update the element index.
-				B->elementIndex = GetTheElementOfTheParticleFromNeighbor(B);
-
-				if(B->elementIndex == -10)
-				{
-					printf("There's single intersection.\n But, it's going outside of the domain.");
-					return -1;
-				}
-
-				return 1;	// The element index switched to the neighbor element
+			// dt2 should be positive
+			if(dt2 < 0.0)
+			{ 
+/*
+				printf("The program aborts because dt2 < 0.0\n");
+				abort();
+*/
+				// I and P4 are almost identical. 
+				++countNoIntersection;
 			}
+			else
+			{
+				double dsp[3];	dsp[0] = dsp[1] = dsp[2] = 0.0;
+				if(d1 > tolerance)
+				{
+					// Update the record.
+					B->t = dt2; 	
+					// Adjust the position for the obtained dt1.
+					// But, keep in mind in this displacement there is no advective displament.
+					double Vzero[3]; Vzero[0] = Vzero[1] = Vzero[2] = 0.0;
+					GetDisplacement(B, Z, Vzero, dD, dt1, dsp);
 
+					double IC[3];
+					// Fix for translation
+					IC[0] = x + dsp[0]; IC[1] = y + dsp[1]; IC[2] = theElement->GetAngle(2);
+					// Let's convert these XY plance coordinates to the real plane coordinates.
+					ToTheRealPlane(B->elementIndex, IC); 							
+					B->x = IC[0]; B->y = IC[1]; B->z = IC[2]; 
+
+					return 1;	// The element index switched to the neighbor element
+				}
+				else	// It finds the wrong intersection.
+				{
+					// Just advance a little	
+					dt1 = dtt/timeSplit;
+					dt2 = dtt - dt1;
+					B->t = dt2; 
+					double IC[3];
+					GetDisplacement(B, Z, V, dD, dt1, dsp);
+
+					IC[0] = x + dsp[0]; IC[1] = y + dsp[1]; IC[2] = theElement->GetAngle(2);
+					// Let's convert these XY plance coordinates to the real plane coordinates.
+					ToTheRealPlane(B->elementIndex, IC); 							
+					B->x = IC[0]; B->y = IC[1]; B->z = IC[2]; 
+				
+					return 1;
+				}
+			}
 		}
 		// It couldn't reach to the edge
 		else if(status == 0)
@@ -2405,13 +1622,15 @@ int RandomWalk::SolveForAdvectionNDispersionWithEdge(Particle* A, Particle* B)
 		else if(status == 2)
 		{
 			printf("The program aborts because two segments are colinear.\n");
-			abort();
+			++countNoIntersection;
+			// keep going.
 		}
 		else
 		{
 			printf("The program aborts because status of intersection search is not 1 or 0 or -1.\n");
 			abort();
 		}
+		
 	}
 	// Check if the time left advances the particle within this element
 	if(countNoIntersection == nEdges)
@@ -2422,47 +1641,81 @@ int RandomWalk::SolveForAdvectionNDispersionWithEdge(Particle* A, Particle* B)
 			V[0] = B->Vx;	V[1] = B->Vy;	V[2] = B->Vz;	// In fact, V[2] gotta be zero.
 			ToTheXYPlane(B->elementIndex, V);	// V XY planed.
 
-			double Dxx = sqrt(6.0*B->D[0]*B->t) * Z[0]; double Dxy = sqrt(6.0*fabs(B->D[1])*B->t) * Z[1];
-			double Dyx = sqrt(6.0*fabs(B->D[3])*B->t) * Z[0]; double Dyy = sqrt(6.0*B->D[4]*B->t) * Z[1];
-
-			double dsp[3];
-			dsp[0] = V[0]*B->t + dD[0]*B->t + Dxx + Dxy; 
-			dsp[1] = V[1]*B->t + dD[1]*B->t + Dyx + Dyy;
-			// Fix for translation
-			//	dsp[2] = 0.0;	// This gotta be zero all the times in fracture networks.
-			dsp[2] = theElement->GetAngle(2);
+			double dsp[3];	dsp[0] = dsp[1] = dsp[2] = 0.0;
+			GetDisplacement(B, Z, V, dD, B->t, dsp);
 								
 			// Assigning the next postion of the particle. The index of element in this if condition
 			// should be one of the connected planes randomly chosen.
-			// Now just solve the real plane coordinates for the particle at the next position.
-			double DspInNextEle[3];
-			for(int p=0; p<3; ++p) DspInNextEle[p] = dsp[p]; 
-			
+			// Now just solve the real plane coordinates for the particle at the next position.			
 			double P[3];
 			P[0] = B->x; P[1] = B->y; P[2] = B->z;
 			ToTheXYPlane(B->elementIndex, P);
-			P[0] += DspInNextEle[0]; P[1] += DspInNextEle[1]; P[2] = theElement->GetAngle(2);
+			P[0] += dsp[0]; P[1] += dsp[1]; P[2] = theElement->GetAngle(2);
 			ToTheRealPlane(B->elementIndex, P);
 			B->x = P[0]; B->y = P[1]; B->z = P[2];
-			
-			// Now, for the index of the element that this moved particle stays, 
-			// we have no idea. Thus, need to search.
-			// But, this is very costly process. I should think about this
-			// for speeding up later on.
-			B->elementIndex = GetTheElementOfTheParticleFromNeighbor(B);
 		}
 		else
 		{
 			printf("Other dimensions are not implemented yet.\n");
 			abort();
 		}
-
 		B->t = 0.0;
 
 		return 0; // Particle stays in the same element.	
 	}
 	else
 		return -2;	// The function failed
+}
+
+/**************************************************************************
+MSHLib-Method: 
+Task:The function solves four different types of displacement.
+Programing:
+03/2006 PCH Implementation
+**************************************************************************/
+void RandomWalk::GetDisplacement(Particle* B, double* Z, double* V, double* dD, double time, double* dsp)
+{
+	m_msh = fem_msh_vector[0]; 
+	CElem* theElement = m_msh->ele_vector[B->elementIndex];
+	double Dxx = 0.0, Dxy = 0.0, Dyx = 0.0, Dyy = 0.0;
+
+	// If the mode is for heterogeneous media 
+	if(RWPTMode%2 == 1)	
+	{
+		if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on
+		{
+			Dxx = sqrt(6.0*B->D[0]*time) * Z[0]; Dxy = sqrt(6.0*fabs(B->D[1])*time) * Z[1];
+			Dyx = sqrt(6.0*fabs(B->D[3])*time) * Z[0]; Dyy = sqrt(6.0*B->D[4]*time) * Z[1];
+
+			dsp[0] = V[0]*time + dD[0]*time + Dxx + Dxy;
+			dsp[1] = V[1]*time + dD[1]*time + Dyx + Dyy;
+		}
+		else	// advection only
+		{
+			// Do nothing for dipsersive transport.
+			dsp[0] = V[0]*time + dD[0]*time; 
+			dsp[1] = V[1]*time + dD[1]*time;
+		}
+	}
+	else	// Homogeneous case
+	{
+		if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on
+		{
+			// Homo and hetero in this case are the same.
+			Dxx = sqrt(6.0*B->D[0]*time) * Z[0]; Dxy = sqrt(6.0*fabs(B->D[1])*time) * Z[1];
+			Dyx = sqrt(6.0*fabs(B->D[3])*time) * Z[0]; Dyy = sqrt(6.0*B->D[4]*time) * Z[1];
+					
+			dsp[0] = V[0]*time + Dxx + Dxy; 
+			dsp[1] = V[1]*time + Dyx + Dyy;
+		}
+		else	// advection only
+		{
+			dsp[0] = V[0]*time;
+			dsp[1] = V[1]*time;
+		}
+	}
+	// Fix for translation
+	dsp[2] = theElement->GetAngle(2);
 }
 
 
@@ -2479,6 +1732,12 @@ int RandomWalk::GetTheElementOfTheParticleFromNeighbor(Particle* A)
 	int index = -10;
 
 	m_msh = fem_msh_vector[0]; 
+
+#ifdef ALLOW_PARTICLES_GO_OUTSIDE
+	if(A->elementIndex != -10)
+	{
+#endif
+
 	CElem* theElement = m_msh->ele_vector[A->elementIndex];
 	// Let's check this element first.
 	index = IsTheParticleInThisElement(A);
@@ -2490,63 +1749,46 @@ int RandomWalk::GetTheElementOfTheParticleFromNeighbor(Particle* A)
 	{
 		CElem* thisNeighbor = theElement->GetNeighbor(i);
 				
-		if(thisNeighbor) 
+		// If element type has more dimension than line.
+		if(thisNeighbor->GetElementType() !=1) 
 		{
 			// If the particle belongs to this element
 			A->elementIndex = thisNeighbor->GetIndex();
 			index = IsTheParticleInThisElement(A);
 			if(index != -1)	
 				return index;
-		}
-		else
-		{
-			printf("Searching the first loop of neighbor failed.\n");
-			abort();
-		}
-		
-		// Second, search the neighbor's neighbor
-		for(int j=0; j<thisNeighbor->GetFacesNumber(); ++j)
-		{
-			CElem* theNeighborsNeighbor = thisNeighbor->GetNeighbor(j);	
 
-			if(theNeighborsNeighbor)
+			// Second, search the neighbor's neighbor
+			for(int j=0; j<thisNeighbor->GetFacesNumber(); ++j)
 			{
-				// If the particle belongs to this element
-				A->elementIndex = theNeighborsNeighbor->GetIndex();
-				index = IsTheParticleInThisElement(A);
-				if(index != -1)	
-					return index;	
-			}
-			else
-			{
-				printf("Searching the second loop of neighbor failed.\n");
-				abort();
-			}
-
-			// Third, search the neighbor's neighbor's neighbor
-			for(int k=0; k< theNeighborsNeighbor->GetFacesNumber(); ++k)
-			{
-				CElem* theNeighborsNeighborsNeighbor = theNeighborsNeighbor->GetNeighbor(k);
-
-				if(theNeighborsNeighborsNeighbor)
+				CElem* theNeighborsNeighbor = thisNeighbor->GetNeighbor(j);
+			
+				if(theNeighborsNeighbor->GetElementType() !=1)
 				{
 					// If the particle belongs to this element
-					A->elementIndex = theNeighborsNeighborsNeighbor->GetIndex();
+					A->elementIndex = theNeighborsNeighbor->GetIndex();
 					index = IsTheParticleInThisElement(A);
 					if(index != -1)	
-						return index;
-				}
-				else
-				{
-					printf("Searching the third loop of neighbor failed.\n");
-					abort();
-				}
+						return index;	
+
+					// Third, search the neighbor's neighbor's neighbor
+					for(int k=0; k< theNeighborsNeighbor->GetFacesNumber(); ++k)
+					{
+						CElem* theNeighborsNeighborsNeighbor = theNeighborsNeighbor->GetNeighbor(k);
+
+						if(theNeighborsNeighborsNeighbor->GetElementType() !=1)
+						{
+							// If the particle belongs to this element
+							A->elementIndex = theNeighborsNeighborsNeighbor->GetIndex();
+							index = IsTheParticleInThisElement(A);
+							if(index != -1)	
+								return index;
+						}
+					}
+				}	
 			}
-		}	
+		}
 	}
-
-
-
 
 	// If the code pases the following loop, it means I am not lucky in this neighbor search.
     int numberOfElements = (int)m_msh->ele_vector.size();
@@ -2554,86 +1796,29 @@ int RandomWalk::GetTheElementOfTheParticleFromNeighbor(Particle* A)
     {
         CElem* thisElement = m_msh->ele_vector[i];
        
-		if(thisElement) 
+		if(thisElement->GetElementType() !=1) 
 		{
 			// If the particle belongs to this element
 			A->elementIndex = thisElement->GetIndex();
 			index = IsTheParticleInThisElement(A);
 			if(index != -1)	
 				return index;
-		}
-		else
-		{
-			printf("The exhaustive search failed.\n");
-			abort();
 		}
     }
 	
 	// The search failed
-	if(index == -1)	index = -10;
-	printf("Searching the index from the neighbor failed\n");
+	if(index == -1)	
+	{
+		index = -10;
+		printf("Searching the index from the neighbor failed\n");
+		printf("The particle should be outside of the domain.\n");
+	}
+
+#ifdef ALLOW_PARTICLES_GO_OUTSIDE
+}
+#endif
 	return index;
 	
-}
-
-/**************************************************************************
-MSHLib-Method: 
-Task:Search the index of the element in the neighber elements 
-     that contains the displaced particle and return the index
-Programing:
-10/2005 PCH Implementation
-**************************************************************************/
-int RandomWalk::GetTheElementOfTheParticleFromNeighborAggressive(Particle* A)
-{
-    int index = -10; // I intentionally set this number -10 
-
-	CElem* theElement = m_msh->ele_vector[A->elementIndex];
-	
-	// First meighbor's search around the main element
-	for(int i=0; i<theElement->GetFacesNumber(); ++i)
-	{
-		CElem* thisNeighbor = theElement->GetNeighbor(i);
-				
-		if(thisNeighbor) 
-		{
-			// If the particle belongs to this element
-			A->elementIndex = thisNeighbor->GetIndex();
-			index = IsTheParticleInThisElement(A);
-			if(index != -1)	
-				return index;
-		}
-		else
-		{
-			printf("Searching the first loop of neighbor failed.\n");
-			abort();
-		}
-	}
-        
-	// If the code pases the following loop, it means I am not lucky in this neighbor search.
-    int numberOfElements = (int)m_msh->ele_vector.size();
-    for(int i=0; i< numberOfElements; ++i)
-    {
-        CElem* thisElement = m_msh->ele_vector[i];
-       
-		if(thisElement) 
-		{
-			// If the particle belongs to this element
-			A->elementIndex = thisElement->GetIndex();
-			index = IsTheParticleInThisElement(A);
-			if(index != -1)	
-				return index;
-		}
-		else
-		{
-			printf("Searching exhastively failed.\n");
-			abort();
-		}
-    }
-
-    // If none of the cases above satisfies, 
-    // it means the displaced particle is outside of the domain. 
-    // Thus, index = -10 is never changed. 
-    return index;
 }
 
 /**************************************************************************
@@ -2697,11 +1882,8 @@ int RandomWalk::IsTheParticleInThisElement(Particle* A)
 			parallel = 1;
 		else if(status == 1)
 			++countOfInterception; // single intersection
-		else if(status == 2)	// Overlap (this should be impossible)
-		{
-			printf("Overlapping in IsThisInElement is impossible.\n");
-			abort();
-		}
+		else if(status == 2)	// Overlap just do nothing 
+			;	// This should indicate the particle in this element, then.
 		else
 		{
 			printf("Not making any sense.\n");
@@ -2733,175 +1915,6 @@ double RandomWalk::SolveDistanceBetweenTwoPoints(double* p1, double* p2)
 	return sqrt(x*x + y*y + z*z);
 }
 
-
-/**************************************************************************
-MSHLib-Method: 
-Task:This function solves the next info of the particle by advection only
-	 1: The particle moved to the neighbor element
-	 0: Particle stays in the same element. 
-	-1: Particle displaced outside of the domain
-	-2: The function failed
-Programing:
-09/2005 PCH Implementation
-**************************************************************************/
-int RandomWalk::SolveForPureAdvectionWithEdge(Particle* A, Particle* B)
-{
-	CElem* theElement = m_msh->ele_vector[B->elementIndex];
-	
-	// Getting the number of the edges in the element that Particle P belongs
-	int nEdges = theElement->GetEdgesNumber();
-	int countNoIntersection = 0;
-	// Loop over the edges
-	for(int i=0; i< nEdges; ++i)
-	{
-		// Get the edges of the element
-		vec<CEdge*> theEdges(nEdges);
-		theElement->GetEdges(theEdges);
-		
-		// Get the nodes of the edge
-		vec<CNode*> theNodes(3);
-		theEdges[i]->GetNodes(theNodes);
-
-		double p1[3], p2[3], p3[3], p4[3];			
-		// Two points in the edge
-		p1[0] = theNodes[0]->X(); p1[1] = theNodes[0]->Y(); p1[2] = theNodes[0]->Z();
-		p2[0] = theNodes[1]->X(); p2[1] = theNodes[1]->Y(); p2[2] = theNodes[1]->Z();
-		// The starting point displaced by pure advection
-		p3[0] = B->x; p3[1] = B->y; p3[2] = B->z;
-		
-		// The estimated position advected for the given B->t
-		p4[0] = p3[0] + B->Vx * B->t; 
-		p4[1] = p3[1] + B->Vy * B->t; 
-		p4[2] = p3[2] + B->Vz * B->t;
-
-		// Initialize the values for getting the intersection
-		double dtt = B->t;
-		double x = 0.0, y = 0.0, ra = 0.0, rb = 0.0;
-		
-		int status = G_intersect_line_segments( p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], p4[0], p4[1],
-							&ra, &rb, &x, &y); 
-
-		// If intersection is a sinle point
-		if(status == 1)
-		{
-			// Find the neighbor element and update
-			// Find the common edge
-			// The common edge is theEdges[i]
-			
-			// Now I'm searching neighbor
-			int countOutside = 0;
-			for(int j=0; j<theElement->GetFacesNumber(); ++j)
-			{
-				CElem* thisNeighbor = theElement->GetNeighbor(j);
-				
-				if(thisNeighbor) ++countOutside;
-
-				// Get the edges of each neighbor
-				int neighborEdgesNumber = thisNeighbor->GetEdgesNumber();
-				vec<CEdge*> theNeighborEdges(neighborEdgesNumber);
-				thisNeighbor->GetEdges(theNeighborEdges);
-		
-				for(int k=0; k< neighborEdgesNumber; ++k)
-				{
-					// If the edge is shared by two elements
-					if(theEdges[i] == theNeighborEdges[k])	
-					{
-						// Compute the time left over.
-						double xx = p3[0] - x; double yy = p3[1] - y; double zz = p3[2] - 0.0;
-						double distance = sqrt(xx*xx + yy*yy + zz*zz);
-						double VV = sqrt(B->Vx*B->Vx + B->Vy*B->Vy + B->Vz*B->Vz);
-						double dt1 = distance/VV;
-						double dt2 = dtt - dt1;
-
-						// dt2 should be positive
-						if(dt2 < 0.0)
-						{ 
-							printf("The program aborts because dt2 < 0.0\n");
-							abort();
-						}
-						else;	// keep going.
-
-						// Check if the edge is the right edge by comparing the direction 
-						// of two vectors 
-						double OVec[3];	double EVec[3];
-						OVec[0] = p4[0] - p3[0]; OVec[1] = p4[1] - p3[1]; OVec[2] = p4[2] - p3[2];
-						EVec[0] = x - p3[0]; EVec[1] = y - p3[1]; EVec[2] = 0.0;
-						double dotProduct = OVec[0]*EVec[0] + OVec[1]*EVec[1] + OVec[2]*EVec[2]; 
-						double tolerance = 1e-18;
-
-						// If the direction of two vectors is same,
-						if(dotProduct > 0.0)
-						{
-							// Update the record.
-							B->elementIndex = thisNeighbor->GetIndex(); 
-							B->t = dt2; 
-							B->x = x; B->y = y; B->z = 0.0; 
-					
-							return 1;	// The element index switched to the neighbor element
-						}
-						else if(fabs(dotProduct) < tolerance) // The crossing segment is the point of the intersection
-						{	
-							return 0;	// The element index switched to the neighbor element	
-						}
-						else if(dotProduct < 0.0) ; // The direction of two vectors is opposite.
-					}
-					else;	// No intersection.
-						
-				}	
-		
-			}
-
-			// Check if the particle is outside of the domain
-			if(countOutside == nEdges)
-			{
-				// Particle steps outside of the problem domain	
-				B->elementIndex = -10;	// Outside of the domain
-						
-				return -1;	// Particle displaced outside of the domain	
-			}
-			else
-			{
-				// Something wrong.
-				printf("There must be something wrong in this algorithm\n");
-				abort();
-			}
-		}
-		// It couldn't reach to the edge
-		else if(status == 0)
-			++countNoIntersection;
-		// If two segments are parallel
-		else if(status == -1)
-		{
-			++countNoIntersection;
-			// keep going.
-		}
-		// If two segments are colinear
-		else if(status == 2)
-		{
-			printf("The program aborts because two segments are colinear.\n");
-			abort();
-		}
-		else
-		{
-			printf("The program aborts because status of intersection search is not 1 or 0 or -1.\n");
-			abort();
-		}
-	}
-
-	// Check if the time left advances the particle within this element
-	if(countNoIntersection == nEdges)
-	{
-		B->elementIndex = A->elementIndex;
-		B->x += B->Vx * B->t;
-		B->y += B->Vy * B->t; 
-		B->y += B->Vz * B->t;
-		B->t = 0.0;
-
-		return 0; // Particle stays in the same element.
-	}
-	else
-		return -2;	// The function failed
-}
 
 /**************************************************************
 * find interesection between two lines defined by points on the lines
@@ -3231,10 +2244,14 @@ void RandomWalk::SolveAnglesOfTheElment(CElem* E)
 		return;
 	m_msh = fem_msh_vector[0];  
 
-	double Enorm[3];
-    E->AllocateMeomoryforAngle(); //WW 
+	double tolerance = 1e-20, Enorm[3];
+	// Allocate angle memory dynamically.
+	E->AllocateMeomoryforAngle();
+
 	// Get the norm of the element plane and do some initialization
-	if(m_msh->GetCoordinateFlag() != 32)
+	int coordinate_system = m_msh->GetCoordinateFlag();
+	// If the coordinate system is xz plane or xyz, solve the angles.
+	if( coordinate_system != 32 && coordinate_system != 22 )
 	{
 			Enorm[0] = 0.0; Enorm[1] = 0.0; Enorm[2] = 1.0;
 	}
@@ -3244,7 +2261,12 @@ void RandomWalk::SolveAnglesOfTheElment(CElem* E)
 
 	// solve for two angles for two rotation transformation.
 	// Solving alpha that will be used for rotation along y axis.
-	double alpha = acos(Enorm[2]/sqrt(Enorm[0]*Enorm[0]+Enorm[2]*Enorm[2]));
+	double alpha = 0.0;
+
+	if(Enorm[0]*Enorm[0]+Enorm[2]*Enorm[2] < tolerance)
+	; // have alpha to be zero. No need to rotate.
+	else
+		alpha = acos(Enorm[2]/sqrt(Enorm[0]*Enorm[0]+Enorm[2]*Enorm[2]));
 	// The following if condition is required because
 	// the acos function is not distintive in the case that Enorm[0]'s of  
 	// the two planes are opposite each other. 
@@ -3253,15 +2275,19 @@ void RandomWalk::SolveAnglesOfTheElment(CElem* E)
 	else
 		E->SetAngle(0, alpha + 2.0*(PI - alpha) );
 	
-	// Solving beta that will be used for rotation along x axis
+	// Solving beta that will be used for rotation along x' axis
 	double beta = 0.0, BB[3], TranZ;
 	// Let's rotate the original Enorm to this coordinate system.
 	BB[0] = cos(E->GetAngle(0))*Enorm[0] + sin(E->GetAngle(0))*Enorm[2];
 	BB[1] = Enorm[1];
-	BB[2] = -sin(E->GetAngle(0))*Enorm[0] + cos(E->GetAngle(0))*Enorm[2];	
-	beta = atan(BB[1]/BB[2]);
+	BB[2] = -sin(E->GetAngle(0))*Enorm[0] + cos(E->GetAngle(0))*Enorm[2];
+	if(BB[2] > tolerance)	
+		beta = atan(BB[1]/BB[2]);
+	else // if BB[2] is zero
+		beta = 0.5*PI;
+	
 	E->SetAngle(1, beta );
-
+	
 	// Solve for the translation.
 	// I'll use the center of the element for this translation.
 	double* center = E->GetGravityCenter();
@@ -3350,7 +2376,49 @@ int RandomWalk::Select(double* roulette, int numOfCases)
 	for(int i=0; i<numOfCases; ++i)
 		if(probability < roulette[i])
 			return (i);
-        return 0; //WW
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Task: ReadInVelocityFieldOnNodes(string file_base_name)
+Programing: This function gets velocity fields from a seprate file.
+			A COMPLETE bypass of the FEM.
+05/2006 PCH 
+**************************************************************************/
+int RandomWalk::ReadInVelocityFieldOnNodes(string file_base_name)
+{
+	CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
+	CRFProcess* m_pcs = PCSGet("FLUID_MOMENTUM");
+
+	// File handling
+    string vel_file_name;
+    ios::pos_type position;
+    vel_file_name = file_base_name + ".vel";
+
+	ifstream vel_file (vel_file_name.data(),ios::in);
+
+    int End = 1;
+    string strbuffer;  
+
+	while(End)
+    {
+        for(int i=0; i< m_msh->nod_vector.size(); ++i)
+        {
+            double v[3];
+			for(int p=0; p<3; ++p)	v[p] = 0.0;
+			vel_file>>v[0]>>v[1]>>v[2]>>ws;
+			
+			// Let's assign the velocity
+			for(int j=0; j<3; ++j)
+			{
+				int nidx1 = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[j])+1;
+				m_pcs->SetNodeValue(m_msh->Eqs2Global_NodeIndex[i],nidx1,v[j]);	
+			}   
+        }
+        End = 0;
+    }   
+	 
+	return 1;
 }
 
 /**************************************************************************
@@ -3374,8 +2442,7 @@ void PCTRead(string file_base_name)
     pct_file_name = file_base_name + PCT_FILE_EXTENSION;
 
     ifstream pct_file (pct_file_name.data(),ios::in);
-    if(!pct_file.good()) //WW
-        return;
+
     int End = 1;
     string strbuffer;    
     RandomWalk* RW = NULL;
@@ -3386,26 +2453,39 @@ void PCTRead(string file_base_name)
  
     while(End)
     {
-        // Later on from this line, I can put which mesh I am dealing with. 
-        //getline(pct_file, strbuffer); 
+        // Later on from this line, I can put which mesh I am dealing with.  
         pct_file>>RW->numOfParticles>>ws;
         // Now allocate memory
-        RW->CreateParticles(RW->numOfParticles);
+		if(RW->numOfParticles != 0)
+			RW->CreateParticles(RW->numOfParticles);
+
         for(int i=0; i< RW->numOfParticles; ++i)
         {
             // Assign the number to the particle
-            int idx = 0;
-            double x = 0.0, y=0.0, z=0.0;
-            pct_file>>idx>>x>>y>>z>>ws;
+            int idx = 0, identity = 0;
+            double x = 0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0, K=0.0;
+
+			pct_file>>idx>>x>>y>>z>>identity>>vx>>vy>>vz>>K>>ws;
             RW->X[i].Past.elementIndex = RW->X[i].Now.elementIndex = idx;
             RW->X[i].Past.x = RW->X[i].Now.x = x;
             RW->X[i].Past.y = RW->X[i].Now.y = y;
             RW->X[i].Past.z = RW->X[i].Now.z = z;
+			RW->X[i].Past.identity = RW->X[i].Now.identity = identity;
+			RW->X[i].Past.Vx = RW->X[i].Now.Vx = vx;
+			RW->X[i].Past.Vy = RW->X[i].Now.Vy = vy;
+			RW->X[i].Past.Vz = RW->X[i].Now.Vz = vz;
+			RW->X[i].Past.K = RW->X[i].Now.K = K;
         }
 
         End = 0;
     }   
 }
+
+
+
+
+
+
 /**************************************************************************
 ROCKFLOW - Funktion: DATWriteFile
 Task: Write PCT file
@@ -3424,18 +2504,22 @@ void DATWritePCTFile(const char *file_name)
 #ifdef RANDOM_WALK	//WW
     RW = m_msh->PT;
 #endif
-    if(!RW) //OK
-      return;
+    
     sprintf(pct_file_name,"%s.%s",file_name,"pct");
     pct_file = fopen(pct_file_name,"w+t");
     
     fprintf(pct_file, "%d\n", RW->numOfParticles);
     for(int i=0; i< RW->numOfParticles; ++i)
     {
-        fprintf(pct_file, "%d %17.12e %17.12e %17.12e\n",
-            RW->X[i].Now.elementIndex, RW->X[i].Now.x, RW->X[i].Now.y, RW->X[i].Now.z);
+        fprintf(pct_file, "%d %17.12e %17.12e %17.12e %d %17.12e %17.12e %17.12e %17.12e\n",
+            RW->X[i].Now.elementIndex, RW->X[i].Now.x, RW->X[i].Now.y, RW->X[i].Now.z, RW->X[i].Now.identity,
+			RW->X[i].Now.Vx, RW->X[i].Now.Vy, RW->X[i].Now.Vz, RW->X[i].Now.K);
+//		fprintf(pct_file, "%d %17.12e %17.12e %17.12e\n",
+//			RW->/X[i].Now.elementIndex, RW->X[i].Now.x, RW->X[i].Now.y, RW->X[i].Now.z);
     }
     // Let's close it, now
     fclose(pct_file);
+
 }
+
 
