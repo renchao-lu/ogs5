@@ -305,24 +305,24 @@ int TriTable_Hexahedron[256][16] = {
 	{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 };
 int EdgeTable_Tetrahedron[16]={
-0x0,0x0d,0x13,0x1e,
+0x0,0xd,0x13,0x1e,
 0x32,0x2b,0x35,0x38,
-0x38,0x35,0x2d,0x26,
-0x1e,0x0b,0x0d,0x0
+0x38,0x35,0x2b,0x32,
+0x1e,0x13,0xd,0x0
 };
 int TriTable_Tetrahedron[16][7]={
 	{-1,-1,-1,-1,-1,-1,-1},
 	{0,2,3,-1,-1,-1,-1},
 	{0,1,4,-1,-1,-1,-1},
 	{2,1,4,2,3,4,-1},
-	{1,5,4,-1,-1,-1,-1},
+	{1,4,5,-1,-1,-1,-1},
 	{0,1,3,1,3,5,-1},
 	{0,2,4,2,4,5,-1},
 	{3,4,5,-1,-1,-1,-1},
 	{3,4,5,-1,-1,-1,-1},
 	{0,2,4,2,4,5,-1},
-	{0,2,3,2,3,5,-1},
-	{1,2,5,-1,-1,-1,-1},
+	{0,1,3,1,3,5,-1},
+	{1,4,5,-1,-1,-1,-1},
 	{1,2,4,2,3,4,-1},
 	{0,1,4,-1,-1,-1,-1},
 	{0,2,3,-1,-1,-1,-1},
@@ -667,37 +667,33 @@ int CIsoSurface::PolygoniseAndInsert(double isoLevel, CIsoTetrahedron* tetrahedr
 		return 0;
 	}
 
-	CIsoSurfaceNode vertices[4];
+	CIsoSurfaceNode vertices[6];
 	if (EdgeTable_Tetrahedron[Index] & 1) {
-		vertices[0] = interpolate(isoLevel, tetrahedron->point[0], tetrahedron->point[1]);
+		vertices[0] = interpolate(isoLevel, tetrahedron->point[1], tetrahedron->point[0]);
 	}
 	if (EdgeTable_Tetrahedron[Index] & 2) {
-		vertices[1] = interpolate(isoLevel, tetrahedron->point[1], tetrahedron->point[2]);
+		vertices[1] = interpolate(isoLevel, tetrahedron->point[2], tetrahedron->point[1]);
 	}
 	if (EdgeTable_Tetrahedron[Index] & 4) {
-		vertices[2] = interpolate(isoLevel, tetrahedron->point[2], tetrahedron->point[3]);
+		vertices[2] = interpolate(isoLevel, tetrahedron->point[2], tetrahedron->point[0]);
 	}
 	if (EdgeTable_Tetrahedron[Index] & 8) {
-		vertices[3] = interpolate(isoLevel, tetrahedron->point[3], tetrahedron->point[0]);
+		vertices[3] = interpolate(isoLevel, tetrahedron->point[0], tetrahedron->point[3]);
 	}
-	int index_old = Index;
 	if (EdgeTable_Tetrahedron[Index] & 16) {
-
-		vertices[4] = interpolate(isoLevel, tetrahedron->point[3], tetrahedron->point[1]);
+		vertices[4] = interpolate(isoLevel, tetrahedron->point[1], tetrahedron->point[3]);
 	}
-	if (EdgeTable_Tetrahedron[index_old] & 32) {
-		vertices[5] = interpolate(isoLevel, tetrahedron->point[3], tetrahedron->point[2]);
+	if (EdgeTable_Tetrahedron[Index] & 32) {
+		vertices[5] = interpolate(isoLevel, tetrahedron->point[2], tetrahedron->point[3]);
 	}
-	Index = index_old;
-
 
 	int triCount = 0;
-	for (int i = 0; TriTable_Hexahedron[Index][i] != -1; i+=3) {
+	for (int i = 0; TriTable_Tetrahedron[Index][i] != -1; i+=3) {
 		CIsoSurfaceTriangle* tri;
 		tri = new CIsoSurfaceTriangle();
-		tri->point[0] = vertices[TriTable_Hexahedron[Index][i  ]];
-		tri->point[1] = vertices[TriTable_Hexahedron[Index][i+1]];
-		tri->point[2] = vertices[TriTable_Hexahedron[Index][i+2]];
+		tri->point[0] = vertices[TriTable_Tetrahedron[Index][i  ]];
+		tri->point[1] = vertices[TriTable_Tetrahedron[Index][i+1]];
+		tri->point[2] = vertices[TriTable_Tetrahedron[Index][i+2]];
 		calculateNormal(tri);
 		mIsoSurface->push_back(tri);
 		triCount++;
