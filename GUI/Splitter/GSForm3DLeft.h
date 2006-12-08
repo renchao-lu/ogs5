@@ -118,7 +118,8 @@ public:
 
   // TREE CONTROL
   void SetTree();
-  void UpdateTree();
+  void UpdateViewbyTree();
+  void DeactivateAll();
 
 };
 

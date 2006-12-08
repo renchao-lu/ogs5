@@ -46,6 +46,8 @@ public:
     int m_3dcontrol_point_numbers;
     int m_selected_wire_frame;
     int m_pcs_values_mesh;
+    int m_element_numbers;
+    int m_node_numbers;
     CString m_pcs_name;
 
     double m_tolerancefactor;
@@ -63,6 +65,7 @@ public:
     double pre_time;
     int move_distance;
     int df;
+
 
 
      
@@ -209,10 +212,8 @@ public:
 	afx_msg void OnMeshTest_Tetra_Volume_Graph();
 	afx_msg void OnMeshTest_Tetra_Angle();
 	afx_msg void OnMeshTest_Tetra_Angle_Graph();
-	afx_msg void OnMeshGenerator_GMSH_Tri_Mesh();
    	afx_msg void OnMeshGenerator_Delaunay();
 	afx_msg void COGLView::OnMeshImprovement();
-	afx_msg void COGLView::OnMeshStructured2d();   
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
@@ -225,7 +226,9 @@ private:
     void Draw_PrismWireFrame(int msh_vector_position, int element_vector_position);
     void Draw_SelectedTriangles(int msh_vector_position, int element_vector_position);
     void Draw_SelectedQuads(int msh_vector_position, int element_vector_position);
-    double Get_Red_Value(double value_norm);
+	void Draw_Element_Numbers(int msh_vector_position, int element_vector_position); 
+    void Draw_Node_Numbers(int msh_vector_position, int node_vector_position);
+	double Get_Red_Value(double value_norm);
     double Get_Green_Value(double value_norm);
     double Get_Blue_Value(double value_norm);
     void UpdatePcsMinmax();

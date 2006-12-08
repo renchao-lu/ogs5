@@ -28,6 +28,8 @@
 #include "GeoSysEditView.h"
 #include "GSForm3DLeft.h"
 #include "GeoSysFCTView.h"
+#include "GSPropertyRight.h"
+#include "PropPgFormView.h"
 // PCH
 #include "COGLPickingView.h"
 // PCSLib
@@ -254,11 +256,18 @@ BOOL CGeoSysApp::InitInstance()
     pDocTemplate = new CMultiDocTemplate(
 		IDR_GEOSYSTYPE,
 		RUNTIME_CLASS(CGeoSysDoc),
-        //RUNTIME_CLASS(CChildFrame), // PCH I'll try CChildFrame first.
 		RUNTIME_CLASS(CTabSplitterFrame),
 		RUNTIME_CLASS(COGLPickingView));
-	//AddDocTemplate(pDocTemplate);
     m_pMDTGLPICKINGWIN = pDocTemplate;
+    //-------------------------------------------------------------------------------
+    // FormView
+    pDocTemplate = new CMultiDocTemplate(
+        IDR_GEOSYSTYPE,
+        RUNTIME_CLASS(CPropPgFormDoc),
+        RUNTIME_CLASS(CChildFrame),
+        RUNTIME_CLASS(CGSPropertyRight));      
+    m_pMDT_FORM = pDocTemplate; 
+
 	// create main MDI Frame window
 	CMainFrame* pMainFrame = new CMainFrame;
 	if (!pMainFrame->LoadFrame(IDR_MAINFRAME))
@@ -436,6 +445,10 @@ CMultiDocTemplate * CGeoSysApp::GetDocTemplate(UINT uTemplate)
 		case DOCTEMPLATE_PICKING_VIEW :
 			pDocTemplate = m_pMDTGLPICKINGWIN ;
 			break ;
+		case DOCTEMPLATE_FORM_VIEW :
+			pDocTemplate = m_pMDT_FORM;
+			break ;
+            
 	}
 
 	return pDocTemplate ;
@@ -457,7 +470,7 @@ int CGeoSysApp::ExitInstance()
     delete m_pMDTOGL_GRAPH;
 	delete m_pMDT_FCT ;
 	delete m_pMDTGLPICKINGWIN ;
-	
+	delete m_pMDT_FORM;
 	return CWinApp::ExitInstance();
 }
 
@@ -512,18 +525,18 @@ int DocView_Interaction()
 GeoSys-Method: DocView_Interaction
 Task: Gibt ein den Zugriff auf OpenGL
 02/2004 TK project related file handling
+11/2006 TK OpenGL Window Size setting
 **************************************************************************/
 TVisualObject *TVisualFramework:: OGLView_Access(CCreateContext* pContext, int pos) 
 {	
-    TVisualObject *OGLView = new TVisualObject(pos,0,1,pContext, RUNTIME_CLASS(COGLView),CSize((::GetSystemMetrics(SM_CXVIRTUALSCREEN)-215-215),0));
+    TVisualObject *OGLView = new TVisualObject(pos,0,1,pContext, RUNTIME_CLASS(COGLView),CSize((::GetSystemMetrics(SM_CXVIRTUALSCREEN)-215-445),0));
 
     return (OGLView);
-
 }
 
 TVisualObject *TVisualFramework:: PickingGLView_Access(CCreateContext* pContext, int pos) 
 {	
-    TVisualObject *PickingGLView = new TVisualObject(pos,0,1,pContext, RUNTIME_CLASS(COGLPickingView),CSize((::GetSystemMetrics(SM_CXVIRTUALSCREEN)-215-215),0));
+    TVisualObject *PickingGLView = new TVisualObject(pos,0,1,pContext, RUNTIME_CLASS(COGLPickingView),CSize((::GetSystemMetrics(SM_CXVIRTUALSCREEN)-200-215),0));
 
     return (PickingGLView);
 

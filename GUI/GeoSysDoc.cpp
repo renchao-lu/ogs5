@@ -2058,7 +2058,7 @@ void CGeoSysDoc::OnImportSHPNew()
   //....................................................................
   // Open GEOView
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
-  m_frame->OnViewGEOCreate();
+  //m_frame->OnViewGEOCreate();
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   UpdateAllViews(NULL);
 }

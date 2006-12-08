@@ -27,6 +27,7 @@
 #include "glu.h"
 #include <gl\glut.h>
 #include <afxdhtml.h>
+#include <afxdlgs.h>
 #else
 // MS openGL libraries (link with OPENGL32.LIB and GLU32.LIB)
 #include "gl\gl.h"

@@ -120,6 +120,9 @@ public:
     int move_distance;
     int pcs_value_distort_factor;
     int m_pcs_values_mesh;
+    int m_element_numbers;
+    int m_node_numbers;
+    int zoom_control;
     // View control
     bool m_bIsGEOViewOpen; //OK
     bool m_bIsMSHViewOpen; //OK

@@ -1046,7 +1046,7 @@ void CMainFrame::UpdateSpecificView(char *view_class_name, CDocument *m_pDoc)
         CView* pView = m_pDoc->GetNextView(position);
         CRuntimeClass* prt = pView->GetRuntimeClass();
         prt->m_lpszClassName;
-        if ( strcmp( prt->m_lpszClassName, "COGLView" )  == 0 )
+        if ( strcmp( prt->m_lpszClassName, view_class_name)  == 0 )
         {
             pView->Invalidate(TRUE);
             

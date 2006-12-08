@@ -12,7 +12,7 @@ public:
 	virtual ~CDlgIsoFrameWidth();
 
 // Dialog Data
-	enum { IDD = IDD_DIALOG_IsoFrameWidth };
+	enum { IDD = IDD_ISO_FRAMEWIDTH};
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support

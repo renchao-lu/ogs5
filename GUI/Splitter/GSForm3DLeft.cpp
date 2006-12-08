@@ -90,7 +90,7 @@ void CGSForm3DLeft::OnDraw(CDC* pDC)
     CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
     if (m_frame->m_rebuild_formtree == 1)
     {
-        UpdateTree();
+        UpdateViewbyTree();
         SetTree();
         m_frame->m_rebuild_formtree = 0;
 
@@ -142,15 +142,11 @@ void CGSForm3DLeft::SetTree()
     CString item_name;
     CRFProcess* m_process = NULL;
 
-
 pCtrl = (CTreeCtrl*) GetDlgItem(IDC_TREE1);
 pCtrl_copy = pCtrl;
 ASSERT(pCtrl != NULL);
-
 pCtrl->DeleteAllItems();
-
 pCtrl->SetImageList(&m_TreeImages, TVSIL_NORMAL ); 
-
 TVINSERTSTRUCT tvInsert;
 tvInsert.hParent = NULL;
 tvInsert.hInsertAfter = NULL;
@@ -160,7 +156,7 @@ tvInsert.item.pszText = _T("GEO");
 hGEOMETRY = pCtrl->InsertItem("GEO",9,9);
 
 /*Point TREE*/ 
-hPOINTS = pCtrl->InsertItem(_T("Points"), 0, 1,hGEOMETRY);
+    hPOINTS = pCtrl->InsertItem(_T("Points"), 0, 1,hGEOMETRY);
     point_list_length = (int)gli_points_vector.size();
     list_length = point_list_length;
     for (i=0;i<list_length;i++)
@@ -171,7 +167,7 @@ hPOINTS = pCtrl->InsertItem(_T("Points"), 0, 1,hGEOMETRY);
         gli_points_vector[i]->display_mode = 0;
     }
 /*Polyline TREE*/ 
-    HTREEITEM hPOLYLINES = pCtrl->InsertItem(_T("Polylines"),0, 1, hGEOMETRY);
+	HTREEITEM hPOLYLINES = pCtrl->InsertItem(_T("Polylines"),0, 1, hGEOMETRY);
     pp = polyline_vector.begin(); //CC
     list_length = (int)polyline_vector.size();//CC
     for (i=0;i<list_length;i++)
@@ -181,7 +177,7 @@ hPOINTS = pCtrl->InsertItem(_T("Points"), 0, 1,hGEOMETRY);
         pp++;
     }
 
-/*Surface TREE*/ 
+/*Surface TREE*/
     HTREEITEM hSURFACES = pCtrl->InsertItem(_T("Surfaces"), 0, 1, hGEOMETRY);
     Surface *gl_surface = NULL;
     vector<Surface*>::iterator ps = surface_vector.begin();
@@ -193,7 +189,8 @@ hPOINTS = pCtrl->InsertItem(_T("Points"), 0, 1,hGEOMETRY);
         ps++;
     }
 
-/*Volume TREE*/ 
+/*Volume TREE 
+m_3dcontrol_volumes=0;     
     HTREEITEM hVOLUMES = pCtrl->InsertItem(_T("Volumes"),0, 1, hGEOMETRY);
     CGLVolume *gl_volume = NULL;
       vector<CGLVolume*>::iterator p_vol = volume_vector.begin();//CC
@@ -204,11 +201,11 @@ hPOINTS = pCtrl->InsertItem(_T("Points"), 0, 1,hGEOMETRY);
      pCtrl->InsertItem(gl_volume->name.data(),0,1, hVOLUMES, TVI_LAST);
      ++p_vol;
     }
+*/
 
 /*MSH TREE - MSH TREE - MSH TREE*/
 tvInsert.item.pszText = _T("MSH");
 HTREEITEM hMESH = pCtrl->InsertItem("MSH",9,9);
-
     /*PCS TREE*/ 
     list_length  =  (int)fem_msh_vector.size();
     for (i=0;i<list_length;i++)
@@ -258,7 +255,7 @@ HTREEITEM hMESH = pCtrl->InsertItem("MSH",9,9);
 
     int pcs_i=0;
     int pcs_j=0;
-    for(pcs_j=0;pcs_j<(int)pcs_vector.size();pcs_j++)
+    for(pcs_j=0;pcs_j<(long)pcs_vector.size();pcs_j++)
     {
       m_process = pcs_vector[pcs_j];
         for(pcs_i=0;pcs_i<(int)m_process->m_msh->mat_names_vector.size();pcs_i++)
@@ -272,15 +269,12 @@ HTREEITEM hMESH = pCtrl->InsertItem("MSH",9,9);
     _tprintf(_T("%s"), (LPCTSTR) item_name);
     item_name = "Patch Areas (" + item_name + ")";
     pCtrl->InsertItem(item_name, 0, 1, hMESH);
-
-
     }
 
 
-/*FEM TREE - FEM TREE - FEM TREE*/
+/*PCS TREE - PCS TREE - PCS TREE*/
 tvInsert.item.pszText = _T("PCS");
 HTREEITEM hFEM = pCtrl->InsertItem("PCS",9,9);
-
     /*PCS TREE*/   
     list_length = (int)pcs_vector.size();
     for(j=0;j<list_length;j++)
@@ -314,7 +308,7 @@ HTREEITEM hFEM = pCtrl->InsertItem("PCS",9,9);
         }
 
       }
-/*Material Group TREE*/
+/*Material Group TREE
 HTREEITEM hMAT = pCtrl->InsertItem("MAT",9,9);
 
     HTREEITEM hMATGROUPS = pCtrl->InsertItem(_T("Material Groups"), 0, 1, hMAT);
@@ -340,8 +334,9 @@ HTREEITEM hMAT = pCtrl->InsertItem("MAT",9,9);
         pCtrl->InsertItem(item_name,0,1, hMATGROUPS, TVI_LAST);
 
     }
-
-
+*/
+ DeactivateAll();
+ OnDataChange();
 }
 
 void CGSForm3DLeft::OnDataChange()
@@ -377,16 +372,18 @@ void CGSForm3DLeft::OnDataChange()
 
 void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
 {
+  /*Back to first view*/         
+  CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+  if (m_frame->zoom_control !=0) m_frame->zoom_control = 8;
+
   int nImage;
   int nSelectedImage;
   long size;
   int i=0;
   int j=0;
   long id;
-  CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();   
   CString item_name;
   CString pcs_item_name;
-  Cgs_pcs_oglcontrol* m_modelessDlg=NULL;
   LPNMTREEVIEW pNMTreeView = reinterpret_cast<LPNMTREEVIEW>(pNMHDR);
   pNMTreeView=pNMTreeView;//TK
   pCtrl = (CTreeCtrl*) GetDlgItem(IDC_TREE1);
@@ -407,8 +404,8 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
   point = GetCurrentMessage()->pt;
   
   ScreenToClient(&point);
-  point.x = point.x -13;
-  point.y = point.y -13;
+  point.x = point.x ;
+  point.y = point.y ;
   hItem = pCtrl->HitTest(point, &uFlags);
 
   if ((uFlags & TVHT_ONITEM) || (uFlags & TVHT_ONITEMINDENT) || (uFlags & TVHT_ONITEMRIGHT))
@@ -1388,9 +1385,6 @@ BOOL CGSForm3DLeft::GetCheckBoxEnable(HTREEITEM hItem, BOOL& bEnable)
   return bSuccess;  
 }
 
-
-
-
 void CGSForm3DLeft::showChange()
 {
 	// Update the change by redrawing
@@ -1454,13 +1448,10 @@ void CGSForm3DLeft::DoThisPolyline(CString item_name, HTREEITEM hItem, HTREEITEM
 
 
 
-void CGSForm3DLeft::UpdateTree()
+void CGSForm3DLeft::UpdateViewbyTree()
 {
 // TREE CONTROL
 
-int list_length = 0;
-int i=0;
-int j=0;
 CString item_name;
 
 BOOL CheckBoxOn;
@@ -1529,8 +1520,8 @@ bSuccess = pCtrl->GetItemImage(First_Level_Item, nImage, nSelectedImage);
 if ((nImage==0 || nImage==1) && First_Level_Item != NULL) GetCheckBox(First_Level_Item, CheckBoxOn);
 while (pCtrl->GetNextItem(First_Level_Item, TVGN_NEXT))
 {
-  First_Level_Item = pCtrl->GetNextItem(First_Level_Item, TVGN_NEXT);
   item_text = pCtrl->GetItemText(First_Level_Item);
+  if (nImage == 0 && item_text == "Points") m_3dcontrol_points = 0;
   bSuccess = pCtrl->GetItemImage(First_Level_Item, nImage, nSelectedImage);
 
   Second_Level_Item = pCtrl->GetNextItem(First_Level_Item, TVGN_CHILD);
@@ -1543,7 +1534,19 @@ while (pCtrl->GetNextItem(First_Level_Item, TVGN_NEXT))
     item_text = pCtrl->GetItemText(Second_Level_Item);
     bSuccess = pCtrl->GetItemImage(Second_Level_Item, nImage, nSelectedImage);
   }
+    First_Level_Item = pCtrl->GetNextItem(First_Level_Item, TVGN_NEXT);
+
+//m_3dcontrol_points = 0;
+//m_3dcontrol_polylines = 1;
+//m_3dcontrol_surfaces = 1;
+
 }
+ CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+ CGeoSysDoc *m_pDoc = GetDocument();
+ m_frame->m_something_changed = 1;
+ m_pDoc->UpdateAllViews(NULL);
+ Invalidate(TRUE);
+
 
 /*MSH TREE - MSH TREE - MSH TREE*/
 MSHItem = pCtrl->GetNextItem(GEOItem, TVGN_NEXT);
@@ -1617,6 +1620,113 @@ while (pCtrl->GetNextItem(First_Level_Item, TVGN_NEXT))
     bSuccess = pCtrl->GetItemImage(Second_Level_Item, nImage, nSelectedImage);
   }
 }
+}
 
+void CGSForm3DLeft::DeactivateAll()
+{
+	int i=0, j=0;
+	int size=0;
+
+	m_3dcontrol_points=0;
+	m_3dcontrol_lines=0;
+	m_3dcontrol_polylines=0;
+	m_3dcontrol_surfaces=0;     
+	m_3dcontrol_volumes=0;     
+	m_3dcontrol_nodes=0;     
+	m_3dcontrol_elements=0;
+	m_3dcontrol_matgroups=0;   
+	m_3dcontrol_bc=0;
+	m_3dcontrol_pcs=0;
+	m_3dcontrol_sourcesink=0;
+	m_selected_wire_frame=0;   
+	m_x_value_color=0;
+	m_y_value_color=0;
+	m_z_value_color=0;
+	m_permeability_value_color=0;
+
+/*PARENT*/         
+
+        /*POINTS*/   
+             m_3dcontrol_points = 0;
+             size = (int)gli_points_vector.size();
+             for (i=0; i<size; i++)
+             {
+               gli_points_vector[i]->display_mode = 0;
+             }
+        /*POLYLINES*/   
+             m_3dcontrol_polylines = 0;
+             pp = polyline_vector.begin();
+             size = (int)polyline_vector.size();
+             for (i=0; i<size; i++)
+             {
+               geo_polyline = *pp;
+               geo_polyline ->display_mode = 0;
+               ++pp;
+             }
+        /*SURFACES*/   
+             m_3dcontrol_surfaces = 0;
+             ps = surface_vector.begin();
+             size = (long)surface_vector.size();//CC
+             for (i=0; i<size; i++)
+             {
+               geo_surface = *ps;
+               geo_surface ->display_mode_3d = 0;
+               ++ps;
+             }
+        /*VOLUMES*/   
+             m_3dcontrol_volumes = 0;
+             pv = volume_vector.begin();
+             size = (int)volume_vector.size();
+             for (i=0; i<size; i++)
+             {
+               geo_volume = *pv;
+               geo_volume ->display_mode = 0;
+               ++pv;
+             }
+        /*NODES*/ 
+			 //m_3dcontrol_nodes = 0;
+             size = (long)fem_msh_vector.size();
+             for (i=0; i<size; i++)
+             {
+                   fem_msh_vector[i]->nod_display_mode = 0;
+             }
+        /*ELEMENTS*/   
+             //m_3dcontrol_elements = 0;
+			 size = (long)fem_msh_vector.size();
+             for (i=0; i<size; i++)
+             {
+                   fem_msh_vector[i]->ele_display_mode= 0;
+             }
+        /*Material Groups*/   
+             for (j=0; j<(long)fem_msh_vector.size(); j++)
+             {
+                    fem_msh_vector[j]->ele_mat_display_mode = 0;
+                    for (i=0; i<(int)fem_msh_vector[j]->ele_vector.size(); i++)
+                    {
+                      fem_msh_vector[j]->ele_vector[i]->matgroup_view = 0;
+                    }
+             }
+       /*PATCH AREA*/      
+             size = (long)fem_msh_vector.size();
+             for (i=0; i<size; i++)
+             {
+                   fem_msh_vector[i]->patch_display_mode = 0;
+             }
+        /*MATERIAL PROPERTIES*/   
+             m_3dcontrol_matgroups = 0;           
+             size = (int)material_groups_vector.size();
+             for (i=0; i<size; i++)
+             {
+               material_groups_vector[i]->display_mode = 0;              
+             }
+        /*SourceSinkTerms*/   
+             m_3dcontrol_sourcesink = 1;
+             size = (int)st_vector.size();
+             for (i=0; i<size; i++)
+             {
+               st_vector[i]->display_mode = 0;
+             }
+        /*Boundary Conditions*/         
+            m_3dcontrol_bc = 0;
 
 }

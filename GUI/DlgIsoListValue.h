@@ -1,6 +1,6 @@
 
 #pragma once
-#include ".\gsformrightpassive.h"
+#include "GSPropertyRightResults.h"
 
 // CDlgIsoListValue dialog
 
@@ -13,7 +13,7 @@ public:
 	virtual ~CDlgIsoListValue();
 
 // Dialog Data
-	enum { IDD = IDD_DIALOG_IsoValue };
+	enum { IDD = IDD_ISO_VALUE };
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support

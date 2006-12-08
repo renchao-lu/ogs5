@@ -568,7 +568,7 @@ void CMSHEditor::OnBnClickedButtonMATConnectAll()
       OnBnClickedButtonMatConnectLayer();
       //..................................................................
       mainframe->OnDrawFromToolbar();
-AfxMessageBox("Pause");
+      AfxMessageBox("MAT data connected");
     }
   }
   else{

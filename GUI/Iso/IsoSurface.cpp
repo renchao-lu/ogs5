@@ -680,12 +680,15 @@ int CIsoSurface::PolygoniseAndInsert(double isoLevel, CIsoTetrahedron* tetrahedr
 	if (EdgeTable_Tetrahedron[Index] & 8) {
 		vertices[3] = interpolate(isoLevel, tetrahedron->point[3], tetrahedron->point[0]);
 	}
+	int index_old = Index;
 	if (EdgeTable_Tetrahedron[Index] & 16) {
+
 		vertices[4] = interpolate(isoLevel, tetrahedron->point[3], tetrahedron->point[1]);
 	}
-	if (EdgeTable_Tetrahedron[Index] & 32) {
+	if (EdgeTable_Tetrahedron[index_old] & 32) {
 		vertices[5] = interpolate(isoLevel, tetrahedron->point[3], tetrahedron->point[2]);
 	}
+	Index = index_old;
 
 
 	int triCount = 0;

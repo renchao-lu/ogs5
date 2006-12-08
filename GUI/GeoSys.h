@@ -46,7 +46,7 @@
 #define DOCTEMPLATE_FCT_VIEW	12
 #define DOCTEMPLATE_PICKING_VIEW	13
 #define DOCTEMPLATE_OGLGRAPH_VIEW   14
-
+#define DOCTEMPLATE_FORM_VIEW 15
 class CGeoSysApp : public CWinApp
 {
 public:
@@ -65,6 +65,7 @@ public:
 	CMultiDocTemplate * m_pMDTOGL_NOSPLIT;
     CMultiDocTemplate * m_pMDTOGL_GRAPH;
 	CMultiDocTemplate * m_pMDT_FCT;
+    CMultiDocTemplate * m_pMDT_FORM;
     //PCH 4105 I'm adding one window pointer here for a window that is going to be used for picking
     CMultiDocTemplate * m_pMDTGLPICKINGWIN;
 

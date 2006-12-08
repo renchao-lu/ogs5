@@ -820,22 +820,70 @@
 					RelativePath=".\Splitter\GSForm3DLeft.h">
 				</File>
 				<File
-					RelativePath=".\Splitter\GSFormRightMeshing.cpp">
-				</File>
-				<File
-					RelativePath=".\Splitter\GSFormRightMeshing.h">
-				</File>
-				<File
-					RelativePath=".\Splitter\GSFormRightPassive.cpp">
-				</File>
-				<File
-					RelativePath=".\Splitter\GSFormRightPassive.h">
-				</File>
-				<File
 					RelativePath=".\Splitter\GSFormRightPicking.cpp">
 				</File>
 				<File
 					RelativePath=".\Splitter\GSFormRightPicking.h">
+				</File>
+				<File
+					RelativePath=".\Splitter\GSPropertyRight.cpp">
+				</File>
+				<File
+					RelativePath=".\Splitter\GSPropertyRight.h">
+				</File>
+				<File
+					RelativePath=".\Splitter\GSPropertyRightCamera.cpp">
+				</File>
+				<File
+					RelativePath=".\Splitter\GSPropertyRightCamera.h">
+				</File>
+				<File
+					RelativePath=".\Splitter\GSPropertyRightGeometry.cpp">
+				</File>
+				<File
+					RelativePath=".\Splitter\GSPropertyRightGeometry.h">
+				</File>
+				<File
+					RelativePath=".\Splitter\GSPropertyRightMesh.cpp">
+				</File>
+				<File
+					RelativePath=".\Splitter\GSPropertyRightMesh.h">
+				</File>
+				<File
+					RelativePath=".\Splitter\GSPropertyRightResults.cpp">
+				</File>
+				<File
+					RelativePath=".\Splitter\GSPropertyRightResults.h">
+				</File>
+				<File
+					RelativePath=".\Splitter\GSPropertyRightTemplate.cpp">
+				</File>
+				<File
+					RelativePath=".\Splitter\GSPropertyRightTemplate.h">
+				</File>
+				<File
+					RelativePath=".\Splitter\PropPgFormDoc.cpp">
+				</File>
+				<File
+					RelativePath=".\Splitter\PropPgFormDoc.h">
+				</File>
+				<File
+					RelativePath=".\Splitter\PropPgFormView.cpp">
+				</File>
+				<File
+					RelativePath=".\Splitter\PropPgFormView.h">
+				</File>
+				<File
+					RelativePath=".\Splitter\ViewPropertyPage.cpp">
+				</File>
+				<File
+					RelativePath=".\Splitter\ViewPropertyPage.h">
+				</File>
+				<File
+					RelativePath=".\Splitter\ViewPropertySheet.cpp">
+				</File>
+				<File
+					RelativePath=".\Splitter\ViewPropertySheet.h">
 				</File>
 			</Filter>
 			<Filter
@@ -887,15 +935,6 @@
 			<Filter
 				Name="Iso"
 				Filter="">
-				<File
-					RelativePath=".\Iso\IsoControl.cpp">
-				</File>
-				<File
-					RelativePath=".\IsoControl.h">
-				</File>
-				<File
-					RelativePath=".\Iso\IsoControl.h">
-				</File>
 				<File
 					RelativePath=".\Iso\IsoSurface.cpp">
 				</File>

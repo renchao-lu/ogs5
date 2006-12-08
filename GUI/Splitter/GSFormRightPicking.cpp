@@ -1,4 +1,4 @@
-// GSFormRightPassive.cpp : implementation file
+// GSFormRightPicking.cpp : implementation file
 //
 #include "stdafx.h"
 #include "Windowsx.h"

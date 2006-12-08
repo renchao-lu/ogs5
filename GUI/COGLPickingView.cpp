@@ -3593,9 +3593,11 @@ void COGLPickingView::AssiginSymbolLength()
 {
     // This is termperary measure only for single mesh cass
 
-    if (fem_msh_vector.size()>0) //TK: 21.11.05
+    if ((int)fem_msh_vector.size()>0) //TK: 11.06 // further bugfix if there is no ele_vector
     {
     m_msh = fem_msh_vector[0];
+	if ((int)m_msh->ele_vector.size()>0)
+	{
 	m_ele = m_msh->ele_vector[0];
     
     CGLPoint gl[2];
@@ -3613,4 +3615,5 @@ void COGLPickingView::AssiginSymbolLength()
 
     LengthOfSideOfelement = distance;   // This is in OpenGL scale.
     }
+	}
 }

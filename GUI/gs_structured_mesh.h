@@ -17,6 +17,7 @@ public:
     double m_edit_y_min;
     double m_edit_x_max;
     double m_edit_y_max;
+    double slope_x, slope_y;
     long   m_delta_x, m_delta_y;
     BOOL m_do_structured_triangle_mesh;
     BOOL m_do_structured_rectangle_mesh;

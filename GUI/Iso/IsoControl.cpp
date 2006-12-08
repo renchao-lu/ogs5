@@ -2,19 +2,15 @@
 // Author: HS Control for Isosurface function
 
 #include "stdafx.h"
+#include "afxpriv.h"
+#include "Windowsx.h"
 #include "GeoSys.h"
 #include "IsoControl.h"
 #include "DlgIsoListValue.h"
 #include "DlgIsoFrameWidth.h"
-#include ".\isocontrol.h"
-
-
-
-#include "afxpriv.h"
-#include "Windowsx.h"
 #include "GeoSysDoc.h"
 #include "MainFrm.h"
-#include "GSFormRightPassive.h"
+#include "GSPropertyRightResults.h"
 #include "GSForm3DLeft.h"
 #include "GeoSysTreeView.h"
 #include "COGLPickingView.h"
@@ -102,7 +98,7 @@ END_MESSAGE_MAP()
 // CIsoControl message handlers
 void CIsoControl::OnBnClickedCheck2()
 {
-    ((CGSFormRightPassive*)m_pParent)->OnBnClickedGetPcsMinmaxButton3();
+    ((CGSPropertyRightResults*)m_pParent)->OnBnClickedGetPcsMinmaxButton3();
 	UpdateData(true);
 	if (Control_Show_Iso.GetCheck() == BST_CHECKED)
 	{
@@ -182,9 +178,9 @@ void CIsoControl::OnBnClickedIsoRefresh()
 	UpdateData(true);
 	CString str;
 
-	((CGSFormRightPassive*)m_pParent)->GetPcsMinmax();
-	Iso_Min_Value = ((CGSFormRightPassive*)m_pParent)->m_pcs_min;
-	Iso_Max_Value = ((CGSFormRightPassive*)m_pParent)->m_pcs_max;
+	((CGSPropertyRightResults*)m_pParent)->GetPcsMinmax();
+	Iso_Min_Value = ((CGSPropertyRightResults*)m_pParent)->m_pcs_min_r;
+	Iso_Max_Value = ((CGSPropertyRightResults*)m_pParent)->m_pcs_max_r;
 	Iso_Step_Value = (Iso_Max_Value-Iso_Min_Value)/Iso_Num;
 
 	str.Format("%f",Iso_Min_Value);
@@ -269,8 +265,10 @@ void CIsoControl::OnBnClickedIsoApply()
 			m_frame->IsoWidthArray[i] = atof(str.GetBuffer());
 		}
 
-		CGeoSysDoc *m_pDoc = ((CGSFormRightPassive*)m_pParent)->GetDocument();
-	//here add the funciton to call the redaw of the view
+        CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+        CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+        CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+ 	//here add the funciton to call the redaw of the view
 		m_pDoc->UpdateAllViews(NULL);
 	}
 	else
@@ -648,7 +646,7 @@ void CIsoControl::PostNcDestroy()
 	CDialog::PostNcDestroy();
 	if(m_pParent)
 	{		
-		((CGSFormRightPassive*)m_pParent)->m_pmodeless = NULL;		
+		((CGSPropertyRightResults*)m_pParent)->m_pmodeless_r = NULL;		
 	}
 	delete this;
 }

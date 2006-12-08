@@ -6,8 +6,7 @@
 #include "DlgIsoListValue.h"
 #include ".\dlgisolistvalue.h"
 #include "MainFrm.h"
-#include ".\gsformrightpassive.h"
-
+#include "GSPropertyRightResults.h"
 // CDlgIsoListValue dialog
 
 IMPLEMENT_DYNAMIC(CDlgIsoListValue, CDialog)

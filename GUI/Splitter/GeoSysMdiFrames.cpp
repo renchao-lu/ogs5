@@ -12,9 +12,8 @@
 #include "GeoSysListView.h"
 #include "GeoSysEditView.h"
 #include "GSForm3DLeft.h"
-#include "GSFormRightPassive.h"
+#include "GSPropertyRight.h"
 #include "GSFormRightPicking.h"
-#include "GSFormRightMeshing.h"
 #include "GeoSysGEOView.h"
 #include "GeoSysMSHView.h"
 #include "GeoSysMATView.h"
@@ -70,16 +69,25 @@ BOOL CTabSplitterFrame::OnCreateClient(LPCREATESTRUCT lpcs, CCreateContext* pCon
   TVisualObject *pTab = new TVisualObject(i++,"",pContext,RUNTIME_CLASS(TTabWnd));
 
   TVisualObject *pTab2 = new TVisualObject(i++,"3D-Views", pContext,RUNTIME_CLASS(TTabWnd));
-
-  TVisualObject *pTab2View1 = new TVisualObject(i++,"3D-PASSIVE", 1,3,pContext);
+  
+  //------------------------------------------------------------------------ 
+  //TVisualObject *pTab2View1 = new TVisualObject(i++,"3D-PASSIVE", 1,3,pContext);
+  //TVisualObject *pView14 = new TVisualObject(i++,0,0,pContext, RUNTIME_CLASS(CGSForm3DLeft),CSize(215,0));
+  //TVisualObject *pView15 = pWndTrans->OGLView_Access(pContext,i++);
+  //TVisualObject *pView16 = new TVisualObject(i++,0,2,pContext, RUNTIME_CLASS(CGSFormRightPassive),CSize(0,0));
+  //TVisualObject *pView17 = new TVisualObject(i++,pContext, RUNTIME_CLASS(CGeoSysEdit)); 
+   //------------------------------------------------------------------------
+  TVisualObject *pTab2View6 = new TVisualObject(i++,"Objects & Tools", 1,3,pContext);
   TVisualObject *pView5 = new TVisualObject(i++,0,0,pContext, RUNTIME_CLASS(CGSForm3DLeft),CSize(215,0));
   TVisualObject *pView6 = pWndTrans->OGLView_Access(pContext,i++);
-  TVisualObject *pView12 = new TVisualObject(i++,0,2,pContext, RUNTIME_CLASS(CGSFormRightPassive),CSize(0,0));
-  
+  TVisualObject *pView12 = new TVisualObject(i++,0,2,pContext, RUNTIME_CLASS(CGSPropertyRight),CSize(0,0));
+  //------------------------------------------------------------------------
   TVisualObject *pTab2View2 = new TVisualObject(i++,"3D-PICKING", 1,3,pContext);
   TVisualObject *pView7 = new TVisualObject(i++,0,0,pContext, RUNTIME_CLASS(CGSForm3DLeft),CSize(215,0));
   TVisualObject *pView8 = pWndTrans->PickingGLView_Access(pContext,i++);
   TVisualObject *pView13 = new TVisualObject(i++,0,2,pContext, RUNTIME_CLASS(CGSFormRightPicking),CSize(0,0));
+  //------------------------------------------------------------------------
+
 
   TVisualObject *pTabView3 = new TVisualObject(i++,"Graph", 1,2,pContext);
   TVisualObject *pView3 = new TVisualObject(i++,0,0,pContext, RUNTIME_CLASS(CGeoSysList),CSize(215,0));
@@ -89,16 +97,10 @@ BOOL CTabSplitterFrame::OnCreateClient(LPCREATESTRUCT lpcs, CCreateContext* pCon
   TVisualObject *pTabView5 = new TVisualObject(i++,"MSH", pContext, RUNTIME_CLASS(CGeoSysMSHView));
   //TVisualObject *pTabView6 = new TVisualObject(i++,"MAT", pContext, RUNTIME_CLASS(CGeoSysMATView));
   //TVisualObject *pTabView7 = new TVisualObject(i++,"OUT", pContext, RUNTIME_CLASS(CGeoSysOUTView));
-  TVisualObject *pTabView8 = new TVisualObject(i++,"TIM", pContext, RUNTIME_CLASS(CGeoSysTIMView));
-  TVisualObject *pTabView9 = new TVisualObject(i++,"FCT", pContext, RUNTIME_CLASS(CGeoSysFCTView));
+  //TVisualObject *pTabView8 = new TVisualObject(i++,"TIM", pContext, RUNTIME_CLASS(CGeoSysTIMView));
+  //TVisualObject *pTabView9 = new TVisualObject(i++,"FCT", pContext, RUNTIME_CLASS(CGeoSysFCTView));
   TVisualObject *pTabView10 = new TVisualObject(i++,"PCS", pContext, RUNTIME_CLASS(CGeoSysView));
 
-
-
-  TVisualObject *pTab2View5 = new TVisualObject(i++,"Mesh Tools", 1,3,pContext);
-  TVisualObject *pView9 = new TVisualObject(i++,0,0,pContext, RUNTIME_CLASS(CGSForm3DLeft),CSize(215,0));
-  TVisualObject *pView10 = pWndTrans->OGLView_Access(pContext,i++);
-  TVisualObject *pView11 = new TVisualObject(i++,0,2,pContext, RUNTIME_CLASS(CGSFormRightMeshing),CSize(0,0));
 
   /*Define TABS*/ 
   m_Framework.Add(pTab);
@@ -113,16 +115,18 @@ BOOL CTabSplitterFrame::OnCreateClient(LPCREATESTRUCT lpcs, CCreateContext* pCon
   m_Framework.Add(pTab, pTabView10);
   
   /*Define VIEW*/ 
- 
-  m_Framework.Add(pTab2, pTab2View1);
-  m_Framework.Add(pTab2View1, pView5);
-  m_Framework.Add(pTab2View1, pView6);
-  m_Framework.Add(pTab2View1, pView12);
 
-  m_Framework.Add(pTab2, pTab2View5);
-  m_Framework.Add(pTab2View5, pView9);
-  m_Framework.Add(pTab2View5, pView10);
-  m_Framework.Add(pTab2View5, pView11);
+  //m_Framework.Add(pTab2, pTab2View1);
+  //m_Framework.Add(pTab2View1, pView14);
+  //m_Framework.Add(pTab2View1, pView15);
+  //m_Framework.Add(pTab2View1, pView16);
+  //m_Framework.Add(pTab2View1, pView17);
+
+
+  m_Framework.Add(pTab2, pTab2View6);
+  m_Framework.Add(pTab2View6, pView5);
+  m_Framework.Add(pTab2View6, pView6);
+  m_Framework.Add(pTab2View6, pView12); 
 
   m_Framework.Add(pTab2, pTab2View2);
   m_Framework.Add(pTab2View2, pView7);
@@ -165,7 +169,7 @@ void CTabSplitterFrame::ActivateFrame(int nCmdShow)
 {
     //Maximize the childview
     //if (nCmdShow == -1)
-        //nCmdShow = SW_SHOWMAXIMIZED;
+        nCmdShow = SW_SHOWMAXIMIZED;
 
     CMDIChildWnd::ActivateFrame(nCmdShow);
 } 

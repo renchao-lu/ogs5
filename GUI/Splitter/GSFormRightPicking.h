@@ -23,7 +23,7 @@ public:
     //}}AFX_DATA
 
 public:
-	//enum { IDD = IDD_GSFORMRIGHTPASSIVE };
+	//enum { IDD = IDD_GSFORMRIGHTPicking};
 #ifdef _DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;

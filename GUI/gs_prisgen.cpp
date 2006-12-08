@@ -143,7 +143,7 @@ else{   //Kann raus komplett raus, bei Umstellung auf msh
       CString m_strFileNamePath = fileDlg.GetPathName().Left(pos);
 	  CString m_strMSHFileName = fileDlg.GetFileName();
 	  UpdateData(FALSE);
-	  MSH_OverWriteMSH((string)m_strMSHFileName);
+	  MSH_OverWriteMSH((string)m_strMSHFileName,m_numberofprismlayers);
       GEOWriteSurfaceTINs((string)m_strFileNamePath);
       GEOWriteSurfaceTINsTecplot((string)m_strFileNamePath);
 	  //CDialog::OnOK(); do not leave dialog

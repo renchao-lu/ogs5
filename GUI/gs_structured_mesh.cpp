@@ -20,6 +20,8 @@ CStructured_Mesh::CStructured_Mesh(CWnd* pParent /*=NULL*/)
     m_edit_y_max = 1.0;
     m_delta_x = 0;
     m_delta_y = 0;
+    slope_x = 0.0;
+    slope_y = 0.0;
     m_do_structured_triangle_mesh = false;
     m_do_structured_rectangle_mesh = false;
 
@@ -40,6 +42,8 @@ void CStructured_Mesh::DoDataExchange(CDataExchange* pDX)
     DDX_Text(pDX, IDC_EDIT_SQUARE_DELTA_Y, m_delta_y);
     DDX_Check(pDX, IDC_CHECK_TRIANGLE_MESH, m_do_structured_triangle_mesh);
     DDX_Check(pDX, IDC_CHECK_RECTANGLE_MESH, m_do_structured_rectangle_mesh);
+    DDX_Text(pDX, IDC_EDIT_SLOPE_X, slope_x);
+    DDX_Text(pDX, IDC_EDIT_SLOPE_Y, slope_y);
 
 }
 
