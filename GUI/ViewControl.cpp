@@ -4,7 +4,6 @@
 #include "stdafx.h"
 #include "GeoSys.h"
 #include "ViewControl.h"
-#include ".\viewcontrol.h"
 #include "COGLPickingView.h"
 
 // Declare the static variables for combo box

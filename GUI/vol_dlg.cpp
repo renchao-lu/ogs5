@@ -417,8 +417,6 @@ void CDialogVolume::OnCancel()
 #include "stdafx.h"
 #include "GeoSys.h"
 #include "vol_dlg.h"
-#include ".\vol_dlg.h"
-
 
 // CDialogVolumeNew dialog
 
@@ -558,6 +556,8 @@ Programing:
 **************************************************************************/
 void CDialogVolumeNew::OnBnClickedButtonCreate()
 {
+  UpdateData(TRUE);
+  UpdateData(FALSE);
   string sub_string;
   //
   m_vol = new CGLVolume();
@@ -695,6 +695,8 @@ Programing:
 **************************************************************************/
 void CDialogVolumeNew::OnBnClickedButtonVolMat()
 {
+  UpdateData(TRUE);
+  UpdateData(FALSE);
   //......................................................................
   POSITION p = m_LC.GetFirstSelectedItemPosition();
   int m_iSel = m_LC.GetNextSelectedItem(p);
@@ -706,7 +708,8 @@ void CDialogVolumeNew::OnBnClickedButtonVolMat()
     m_vol->mat_group_name = (string)m_strMATName;
   }
 
-//CC 11/05
+  if (m_iSel!=-1)
+  {
   LV_ITEM lvitem;
   lvitem.mask = LVIF_STATE;		
   lvitem.stateMask = LVIS_DROPHILITED;
@@ -715,6 +718,12 @@ void CDialogVolumeNew::OnBnClickedButtonVolMat()
   lvitem.pszText = (LPSTR)m_vol->name.data();
   m_LC.SetItemText(m_iSel,3,m_vol->mat_group_name.data());
   m_LC.SetHotItem(8);
+  }
+  else
+  {
+   CWnd * pWnd = NULL;
+   pWnd->MessageBox("Please select at first a volume to assign material properties!","Info", MB_ICONINFORMATION);
+  }
   //......................................................................
   //UpdateList();
   //......................................................................
