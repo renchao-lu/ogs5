@@ -178,10 +178,21 @@ ios::pos_type CFEMesh::Read(ifstream *fem_file)
     //....................................................................
     if(line_string.find("$NODES")!=string::npos) { // subkeyword found
       *fem_file  >> no_nodes>>ws;
-      for(i=0;i<no_nodes;i++){
-         *fem_file>>ibuff>>x>>y>>z>>ws;
-         newNode = new CNode(ibuff,x,y,z);
-         nod_vector.push_back(newNode);            
+      string s;
+      for(i=0;i<no_nodes;i++)
+      {
+        *fem_file>>ibuff>>x>>y>>z;
+        newNode = new CNode(ibuff,x,y,z);
+        nod_vector.push_back(newNode);  
+        position = fem_file->tellg();
+        *fem_file>>s;
+        if(s.find("$AREA")!=string::npos)
+        {
+          *fem_file>>newNode->patch_area;
+        }
+        else
+          fem_file->seekg(position,ios::beg);
+        *fem_file>>ws;
       }
       continue;
     }

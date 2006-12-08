@@ -354,7 +354,7 @@ void MSH_CopyFirstPrismlayer (long nb_prism_layers)
           m_msh_elements->rfi_element_id = i+((k+1)*nb_ele_1stlayer);
 		  m_msh_elements->elementtype = 6;
           m_msh_elements->layernumber = k+1;
-		  m_msh_elements->materialnumber= 0;  	
+		  m_msh_elements->materialnumber= k+1;  	
 		  m_msh_elements->node1 = msh_pris_elements_vector[i+((k)*nb_ele_1stlayer)]->node4;
 		  m_msh_elements->node2 = msh_pris_elements_vector[i+((k)*nb_ele_1stlayer)]->node5;
 		  m_msh_elements->node3 = msh_pris_elements_vector[i+((k)*nb_ele_1stlayer)]->node6; 
@@ -405,7 +405,7 @@ void MSH_CopyFirstLayer (long nb_prism_layers)
           m_msh_elements->rfi_element_id = i+((k+1)*nb_ele_1stlayer);
 		  m_msh_elements->elementtype = 6;
           m_msh_elements->layernumber = k+1;
-		  m_msh_elements->materialnumber= 0;  	
+		  m_msh_elements->materialnumber= k+1;  	
 		  m_msh_elements->node1 = msh_pris_elements_vector[i+((k)*nb_ele_1stlayer)]->node5;
 		  m_msh_elements->node2 = msh_pris_elements_vector[i+((k)*nb_ele_1stlayer)]->node6;
 		  m_msh_elements->node3 = msh_pris_elements_vector[i+((k)*nb_ele_1stlayer)]->node7; 
@@ -429,7 +429,7 @@ void MSH_CopyFirstLayer (long nb_prism_layers)
    10/2003     TK        Erste Version
    10/2005     TK        Changed to MSH
 **************************************************************************/
-void MSH_OverWriteMSH (string m_filepath)
+void MSH_OverWriteMSH (string m_filepath, long numberofprismlayers)
 {
     long i=0; 
     long nb_prismnodes;
@@ -552,7 +552,9 @@ void MSH_OverWriteMSH (string m_filepath)
     }
 
     //Write STOP
-	   	fprintf( msh_file, "%s\n", "#STOP");
+   	fprintf( msh_file, "%s\n", " $LAYER");
+   	fprintf( msh_file, "%  d\n", numberofprismlayers);
+    fprintf( msh_file, "%s\n", "#STOP");
 
 	/*Datei Schlieﬂen*/ 
 	fclose(msh_file);

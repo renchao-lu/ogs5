@@ -1373,11 +1373,11 @@ void Mesh_Single_Surface(string surface_name, const char *file_name_const_char)
             fprintf(geo_file,"%s","Point(");
 		    fprintf(geo_file,"%li",id);
 		    fprintf(geo_file,"%s",") = {");
-		    fprintf(geo_file,"%g",surface_points_searchvector[k]->x);
+		    fprintf(geo_file,"%20.14f",surface_points_searchvector[k]->x);
 		    fprintf(geo_file,"%s",", ");
-		    fprintf(geo_file,"%g",surface_points_searchvector[k]->y);
+		    fprintf(geo_file,"%20.14f",surface_points_searchvector[k]->y);
 		    fprintf(geo_file,"%s",", ");
-		    fprintf(geo_file,"%g",surface_points_searchvector[k]->z);
+		    fprintf(geo_file,"%20.14f",surface_points_searchvector[k]->z);
 		    fprintf(geo_file,"%s",", ");
 		    fprintf(geo_file,"%g",density/4);
 		    fprintf(geo_file,"%s\n","};");
@@ -1479,12 +1479,13 @@ void Mesh_Single_Surface(string surface_name, const char *file_name_const_char)
 
 
 //
-  #endif
  
 
   const char *m_strExecute=0;
   m_strExecute = m_strExecuteGEO.data();
-  system(m_strExecute); 
+  WinExec(m_strExecute,SW_HIDE);
+  #endif
+  //system(m_strExecute); 
   //remove(file_name_const_char);
   //END Meshing
        break;
@@ -1655,7 +1656,8 @@ void Select_Nodes_Elements_by_TINFile(const char *file_name_const_char)
         // Loop over all mesh elements
         for(i=0;i<(long)fem_msh_vector[temp_mesh-2]->ele_vector.size();i++)
         {
-            if (fem_msh_vector[temp_mesh-2]->ele_vector[i]->GetElementType() == 2) /*Quad*/ 
+            if (fem_msh_vector[temp_mesh-2]->ele_vector[i]->GetElementType() == 2 ||
+                fem_msh_vector[temp_mesh-2]->ele_vector[i]->GetElementType() == 4) /*Quad or Tri*/ 
             {
             double* xyz;
             xyz = fem_msh_vector[temp_mesh-2]->ele_vector[i]->GetGravityCenter();
@@ -1711,7 +1713,7 @@ void Select_Nodes_Elements_by_TINFile(const char *file_name_const_char)
                     fem_msh_vector[j]->ele_vector[i]->selected = 1;   
             }
 
-            if (fem_msh_vector[j]->ele_vector[i]->GetElementType() == 4) /*TRI*/ 
+            if (fem_msh_vector[j]->ele_vector[i]->GetElementType() == 0) /*TRI*/ 
             {
                 if (fem_msh_vector[j]->nod_vector[node_index[0]]->selected == 1 &&
                     fem_msh_vector[j]->nod_vector[node_index[1]]->selected == 1 &&
@@ -1825,7 +1827,7 @@ void GMSH2TIN(const char *file_name_const_char)
    int i=0, k=0;
 //READ GMSH-File and fill local Element Vector
   vector<Mesh_Group::CFEMesh*>check_msh_vector;
-  Mesh_Group::CFEMesh* m_check_elements;
+  Mesh_Group::CFEMesh* m_check_elements;  
   char text[1024];
   long nbnod, nbelm;
   long node_id;
@@ -1888,9 +1890,9 @@ void GMSH2TIN(const char *file_name_const_char)
          tri_point3[2] = m_check_elements->nod_vector[pnt]->Z();
          
 		    fprintf(tin_file,"%li ",k);
-            fprintf(tin_file,"%lg %lg %lg ",tri_point1[0], tri_point1[1], tri_point1[2]);
-            fprintf(tin_file,"%lg %lg %lg ",tri_point2[0], tri_point2[1], tri_point2[2]);
-            fprintf(tin_file,"%lg %lg %lg\n",tri_point3[0], tri_point3[1], tri_point3[2]);
+            fprintf(tin_file,"%20.14f %20.14f %20.14f ",tri_point1[0], tri_point1[1], tri_point1[2]);
+            fprintf(tin_file,"%20.14f %20.14f %20.14f ",tri_point2[0], tri_point2[1], tri_point2[2]);
+            fprintf(tin_file,"%20.14f %20.14f %20.14f\n",tri_point3[0], tri_point3[1], tri_point3[2]);
     
   }
   fclose(tin_file);  

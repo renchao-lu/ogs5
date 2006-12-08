@@ -50,7 +50,7 @@ class CMSHElementsPrisGen
 extern void Create_Quads2Tri(CFEMesh*m_msh);
 extern void Create_Triangles2Prisms(long nb_prism_layers,double thickness_prism_layers,CFEMesh*m_msh);  
 extern void Create_Quads2Hex(long nb_layers,double thickness_layers,CFEMesh*m_msh);
-extern void MSH_OverWriteMSH (string m_filepath);
+extern void MSH_OverWriteMSH (string m_filepath,long numberofprismlayers);
 extern void MSH_Destroy_PrismDataConstructs(void);
 extern void MSH_Tri_from_Quads();
 
