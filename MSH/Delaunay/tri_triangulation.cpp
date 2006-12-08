@@ -214,7 +214,7 @@ bool bSaveTriFile_TRI( char* szTriFile, vector<Cp_dtri> *TriList,  vector<Cp_dbl
 	FILE *fp = NULL;
 	int i, nTri, nPnt;
    	static char kopf[81];
-	long output_nr=0,output_geom=0;
+	//long output_nr=0,output_geom=0;
 	char rf_version_string[16];
 
 
