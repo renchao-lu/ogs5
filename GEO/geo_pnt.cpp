@@ -105,11 +105,12 @@ Task:two points distance calculation
 Programing:
 11/2003 CC Implementation
 04/2006 CC z = 0
+11/2006 TK Sorry but we can't delete one dimension here
 **************************************************************************/
 double CGLPoint::PointDis(CGLPoint *m_p2)
 {
-	//return sqrt((x-m_p2->x)*(x-m_p2->x)+(y-m_p2->y)*(y-m_p2->y)+(z-m_p2->z)*(z-m_p2->z));
-    return sqrt((x-m_p2->x)*(x-m_p2->x)+(y-m_p2->y)*(y-m_p2->y));
+	return sqrt((x-m_p2->x)*(x-m_p2->x)+(y-m_p2->y)*(y-m_p2->y)+(z-m_p2->z)*(z-m_p2->z));
+    //return sqrt((x-m_p2->x)*(x-m_p2->x)+(y-m_p2->y)*(y-m_p2->y)); //CC
 }
 /**************************************************************************
 GeoLib-Method: Get

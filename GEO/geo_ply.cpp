@@ -133,6 +133,13 @@ void GEORemoveAllPolylines()
   polyline_vector[i]=NULL;
   }
   polyline_vector.clear();//CC
+
+  for (i=0; i < (int) gli_lines_vector.size(); i++){
+  delete gli_lines_vector[i];
+  gli_lines_vector[i]=NULL;
+  }
+  gli_lines_vector.clear();
+  
 }
 /**************************************************************************
 GeoLib-Method: 
