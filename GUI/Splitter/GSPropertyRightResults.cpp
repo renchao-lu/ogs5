@@ -33,6 +33,7 @@
 #include "DlgIsoListValue.h"
 #include "DlgIsoFrameWidth.h"
 #include ".\gspropertyrightresults.h"
+#include "IsoColArrangement.h"
 
 // CGSPropertyRightResults dialog
 
@@ -611,7 +612,7 @@ void CGSPropertyRightResults::OnKillFocusIsoValueEdit()
 {
     CWnd* pwndCtrl = GetFocus();
     // get the control ID which is presently having the focus
-	int ctrl_ID = pwndCtrl->GetDlgCtrlID();
+	//int ctrl_ID = pwndCtrl->GetDlgCtrlID();
 	CString str;
 	//get the text from the EditBox
 	GetDlgItemText(IDC_EDIT1,str);
@@ -717,31 +718,71 @@ void CGSPropertyRightResults::OnItemclickIsoListCtrl(NMHDR* pNMHDR, LRESULT* pRe
 			}
 		case 2:
 			{
-				CColorDialog dlg;
-				if ( dlg.DoModal() == IDOK )
+				CIsoColArrangement dlg;
+				if (dlg.DoModal() == IDOK)
 				{
-					int count;
-					count =  m_Iso_List_1.GetItemCount();
-					for (int i=0;i < count ;i++)
+					if (dlg.UsingUniformCol == TRUE )
 					{
-						IsoColor[i]=dlg.GetColor();
+						int count;
+						count =  m_Iso_List_1.GetItemCount();
+						for (int i=0;i < count ;i++)
+						{
+							IsoColor[i]=dlg.UniformCol;
+						}
+						m_Iso_List_1.RedrawItems(0,count);
 					}
-					m_Iso_List_1.RedrawItems(0,count);
+					else
+					{
+						double value_norm;
+						double value;
+						int count;
+						count =  m_Iso_List_1.GetItemCount();
+						HWND hWnd2 =  ::GetDlgItem (m_hWnd,IDC_LIST7);
+						CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+						for (int i=0;i < count ;i++)
+						{
+							CString str = GetItemText(hWnd2,i,1);
+							value = atof(str.GetBuffer());
+							value_norm = (value-m_frame->m_pcs_min)/(m_frame->m_pcs_max - m_frame->m_pcs_min);
+							IsoColor[i] = RGB((double)(Get_Red_Value(value_norm)*255),(double)(Get_Green_Value(value_norm)*255),(double)(Get_Blue_Value(value_norm)*255));
+						}
+						m_Iso_List_1.RedrawItems(0,count);
+					}
 				}
 			break;
 			}
 		case 3:
 			{
-				CColorDialog dlg;
-				if ( dlg.DoModal() == IDOK )
+				CIsoColArrangement dlg;
+				if (dlg.DoModal() == IDOK)
 				{
-					int count;
-					count =  m_Iso_List_1.GetItemCount();
-					for (int i=0;i < count ;i++)
+					if (dlg.UsingUniformCol == TRUE )
 					{
-						IsoFrameColor[i]=dlg.GetColor();
+						int count;
+						count =  m_Iso_List_1.GetItemCount();
+						for (int i=0;i < count ;i++)
+						{
+							IsoFrameColor[i]=dlg.UniformCol;
+						}
+						m_Iso_List_1.RedrawItems(0,count);
 					}
-					m_Iso_List_1.RedrawItems(0,count);
+					else
+					{
+						double value_norm;
+						double value;
+						int count;
+						count =  m_Iso_List_1.GetItemCount();
+						HWND hWnd2 =  ::GetDlgItem (m_hWnd,IDC_LIST7);
+						CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+						for (int i=0;i < count ;i++)
+						{
+							CString str = GetItemText(hWnd2,i,1);
+							value = atof(str.GetBuffer());
+							value_norm = (value-m_frame->m_pcs_min)/(m_frame->m_pcs_max - m_frame->m_pcs_min);
+							IsoFrameColor[i] = RGB((double)(Get_Red_Value(value_norm)*255),(double)(Get_Green_Value(value_norm)*255),(double)(Get_Blue_Value(value_norm)*255));
+						}
+						m_Iso_List_1.RedrawItems(0,count);
+					}
 				}
 			break;
 			}
@@ -879,4 +920,33 @@ void CGSPropertyRightResults::OnBnClickedIsoDellistitem2()
 void CGSPropertyRightResults::OnBnClickedIsoDeleteall()
 {
     m_Iso_List_1.DeleteAllItems();
+}
+double CGSPropertyRightResults::Get_Red_Value(double value_norm) 
+{
+   	double Red=0.0;
+	if (value_norm<0.25)                    Red   =0.0;
+	if (value_norm>=0.25 && value_norm<0.5) Red   =0.0;
+	if (value_norm>=0.5 && value_norm<0.75) Red   = (value_norm-0.5)*4;
+	if (value_norm>=0.75)                   Red   =1.0;
+    return Red;
+}
+
+double CGSPropertyRightResults::Get_Green_Value(double value_norm) 
+{
+	double Green=0.0;
+	if (value_norm<0.25)                    Green =value_norm*4;
+	if (value_norm>=0.25 && value_norm<0.5) Green =1.0;
+	if (value_norm>=0.5 && value_norm<0.75) Green =1.0;
+	if (value_norm>=0.75)                   Green = 1.0-((value_norm-0.75)*4);
+    return Green;
+}
+
+double CGSPropertyRightResults::Get_Blue_Value(double value_norm) 
+{
+	double Blue=1.0;
+	if (value_norm<0.25)                    Blue  =1.0;
+	if (value_norm>=0.25 && value_norm<0.5) Blue  =1.0-((value_norm-0.25)*4);
+	if (value_norm>=0.5 && value_norm<0.75) Blue  =0.0;
+	if (value_norm>=0.75)                   Blue  =0.0;
+    return Blue;
 }

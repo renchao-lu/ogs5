@@ -50,6 +50,7 @@
 #define IDD_PTVALUES                    172
 #define IDR_MATGROUP_POPUP              172
 #define IDD_SOIL                        173
+#define IDD_ISO_COL                     174
 #define IDD_ISO_VALUE                   175
 #define IDD_ISO_FRAMEWIDTH              176
 #define IDD_BOUNDARY_CONDITIONS         220
@@ -785,6 +786,7 @@
 #define IDC_PCS_EDITOR_BUTTON           1241
 #define IDC_LIST6                       1241
 #define IDC_PERM                        1241
+#define IDC_RADIO_UsingContourPlotCol   1241
 #define IDC_BUTTON_BC_READ_CSV          1242
 #define IDC_BUTTON_GEO_WRITE            1242
 #define IDC_LIST_MAT_GEO_FAKE           1242
@@ -793,6 +795,7 @@
 #define IDC_SLIDER2                     1242
 #define IDC_RFE_EDITOR_BUTTON           1242
 #define IDC_Iso_DelListItem             1242
+#define IDC_RADIO_Uniform               1242
 #define IDC_BUTTON_BC_WRITE2            1243
 #define IDC_BUTTON_WRITE_TEC            1243
 #define IDC_SAVEASTXT                   1243
@@ -1192,9 +1195,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        170
+#define _APS_NEXT_RESOURCE_VALUE        175
 #define _APS_NEXT_COMMAND_VALUE         33084
-#define _APS_NEXT_CONTROL_VALUE         1241
+#define _APS_NEXT_CONTROL_VALUE         1243
 #define _APS_NEXT_SYMED_VALUE           104
 #endif
 #endif

@@ -82,6 +82,9 @@ public:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	void OnItemclickIsoListCtrl(NMHDR* pNMHDR, LRESULT* pResult);
     virtual BOOL OnInitDialog();
+	double Get_Blue_Value(double value_norm);
+	double Get_Red_Value(double value_norm);
+	double Get_Green_Value(double value_norm);
 
 	afx_msg void OnBnClickedIsoRefresh2();
 	afx_msg void OnBnClickedIsoAddlistitem2();

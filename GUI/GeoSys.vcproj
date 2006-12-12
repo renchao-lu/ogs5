@@ -936,6 +936,12 @@
 				Name="Iso"
 				Filter="">
 				<File
+					RelativePath=".\Iso\IsoColArrangement.cpp">
+				</File>
+				<File
+					RelativePath=".\Iso\IsoColArrangement.h">
+				</File>
+				<File
 					RelativePath=".\Iso\IsoSurface.cpp">
 				</File>
 				<File
@@ -1843,6 +1849,9 @@
 		</File>
 		<File
 			RelativePath="..\gs_project.h">
+		</File>
+		<File
+			RelativePath=".\IsoColArrangement.h">
 		</File>
 		<File
 			RelativePath=".\resource.hm">
