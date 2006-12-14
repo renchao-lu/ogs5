@@ -2420,7 +2420,7 @@ double GetAnalyticalSolution(long location, CSourceTerm *m_st)
   m_pcs = PCSGet(m_st->pcs_type_name, m_st->pcs_pv_name);
   CFEMesh* m_msh = m_pcs->m_msh;  //WW
   CElem* Ele = NULL; 
-  long node_number = m_pcs->st_node_value[location]->msh_node_number;
+  long node_number = location; //WW m_pcs->st_node_value[location]->msh_node_number;
   CNode* Node = m_msh->nod_vector[node_number]; 
   double area = m_pcs->st_node_value[location]->node_area;
   vector<double>time_history;
