@@ -264,22 +264,22 @@ void CElement::ConfigNumerics(const int EleType)
 	 case 2: // Quadrilateral 
 	   ele_dim =2;
        nGauss = 3;
+       if(Order==1) nGauss = GetNumericsGaussPoints(EleType);
 	   nGaussPoints = nGauss*nGauss;
        ShapeFunction = ShapeFunctionQuad;
        ShapeFunctionHQ = ShapeFunctionQuadHQ;
 	   GradShapeFunction = GradShapeFunctionQuad;
 	   GradShapeFunctionHQ = GradShapeFunctionQuadHQ;
-       if(Order==1) nGauss = GetNumericsGaussPoints(EleType);
 	   break;    
      case 3: // Hexahedra 
        ele_dim =3;
        nGauss = 2; //3;
+       if(Order==1) nGauss = GetNumericsGaussPoints(EleType);
 	   nGaussPoints = nGauss*nGauss*nGauss;
        ShapeFunction = ShapeFunctionHex;
        ShapeFunctionHQ = ShapeFunctionHexHQ;
 	   GradShapeFunction = GradShapeFunctionHex;
 	   GradShapeFunctionHQ = GradShapeFunctionHexHQ;
-       if(Order==1) nGauss = GetNumericsGaussPoints(EleType);
 	   break;
      case 4: // Triangle 
        ele_dim =2;
