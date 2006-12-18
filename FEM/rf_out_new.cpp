@@ -2895,7 +2895,7 @@ void COutput::CalcELEFluxes()
     default:
       cout << "Warning in COutput::CalcELEFluxes(): no GEO type data" << endl;
   }
-  if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
+  if(new_file_opened)  new_file_opened=true; //WW
 }
 
 /**************************************************************************
