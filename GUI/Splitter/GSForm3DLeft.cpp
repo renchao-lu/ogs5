@@ -914,7 +914,7 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
         }
         if (nSelectedImage == 0 && item_name == "SST")
         {
-              m_3dcontrol_sourcesink = 1;
+              m_3dcontrol_sourcesink = 0;
 
              /*---------------------------------------*/ 
              size = (int)st_vector.size();
@@ -1720,7 +1720,7 @@ void CGSForm3DLeft::DeactivateAll()
                material_groups_vector[i]->display_mode = 0;              
              }
         /*SourceSinkTerms*/   
-             m_3dcontrol_sourcesink = 1;
+             m_3dcontrol_sourcesink = 0;
              size = (int)st_vector.size();
              for (i=0; i<size; i++)
              {
