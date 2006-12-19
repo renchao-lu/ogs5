@@ -3986,6 +3986,7 @@ int COGLView::ZoomAndMove(int switcher)
 		     glPopMatrix();
 		     Invalidate(TRUE);
 			 zoom_control=0;
+             m_frame->zoom_control = zoom_control;
              return 1;
 			 
 		 } 
@@ -4013,6 +4014,7 @@ int COGLView::ZoomAndMove(int switcher)
 		     glPopMatrix();
 		     Invalidate(TRUE);
 			 zoom_control=0;
+             m_frame->zoom_control = zoom_control;
              return 1;
 		 } 
 
@@ -4039,6 +4041,7 @@ int COGLView::ZoomAndMove(int switcher)
 		     glPopMatrix();
 		     Invalidate(TRUE);
 			 zoom_control=0;
+             m_frame->zoom_control = zoom_control;
              return 1;
 		 } 
  
@@ -4065,6 +4068,7 @@ int COGLView::ZoomAndMove(int switcher)
 		     glPopMatrix();
 		     Invalidate(TRUE);
 			 zoom_control=0;
+             m_frame->zoom_control = zoom_control;
              return 1;
 		 }  	
 		 
@@ -4087,6 +4091,7 @@ int COGLView::ZoomAndMove(int switcher)
 		     glPopMatrix();
 		     Invalidate(TRUE);
 			 zoom_control=0;
+             m_frame->zoom_control = zoom_control;
              return 1;
 		 } 
  
@@ -4111,6 +4116,7 @@ int COGLView::ZoomAndMove(int switcher)
 		     glPopMatrix();
 		     Invalidate(TRUE);
 			 zoom_control=0;
+             m_frame->zoom_control = zoom_control;
              return 1;
 		 } 
 
@@ -4139,6 +4145,7 @@ int COGLView::ZoomAndMove(int switcher)
 			 glMatrixMode(GL_MODELVIEW);
 		     glPopMatrix();
 		     Invalidate(TRUE);
+
              return 1;
 		 } 
 
