@@ -3060,7 +3060,6 @@ if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
 				{
 					pIsoTetrahedron->point[k]->x     = m_image_distort_factor_x*(-x_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->X()));
 					pIsoTetrahedron->point[k]->y     = m_image_distort_factor_y*(-y_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->Y()));
-					double zzz = fem_msh_vector[j]->ele_vector[i]->GetNode(k)->Z();
 					pIsoTetrahedron->point[k]->z     = m_image_distort_factor_z*(-z_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->Z()));
 					pIsoTetrahedron->point[k]->value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(k),nidx);
 				}
@@ -3959,7 +3958,9 @@ void COGLView::On3DViewRFIElementNumbers()
 
 int COGLView::ZoomAndMove(int switcher) 
 {
-			 ClipSize=1.00;
+   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+	ClipSize=1.00;
+
  if (switcher==1)
  {
          if (zoom_control==1) /*Move UP (not used for mouse move)*/ 
@@ -4180,12 +4181,12 @@ int COGLView::ZoomAndMove(int switcher)
 			 glMatrixMode(GL_MODELVIEW);
 		     glPopMatrix();
 			 zoom_control=0;
-	 		 CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
              m_frame->zoom_control = zoom_control;
  		     Invalidate(TRUE);
 			 view_counter++;
              return 1;
 		 }
+          m_frame->zoom_control = zoom_control;
           return 0;
  }
   else 
@@ -6113,6 +6114,8 @@ void COGLView::drawIsoSurface(std::vector<CIsoSurfaceTriangle*>* mTriangles)
 		}	
 	glEnd();
 
+
+
   glEnable(GL_POLYGON_OFFSET_FILL); 
   glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
   glPolygonOffset(1.0,1.0); 
@@ -6123,7 +6126,6 @@ void COGLView::drawIsoSurfaceFrame(std::vector<CIsoSurfaceTriangle*>* mTriangles
   glBegin(GL_LINE_LOOP);
 	for (long i=0; i < (long)mTriangles->size(); i++) {
 			for (int j = 0; j < 3; j++) {
-				//double xx = mTriangles->at(i)->point[j].x;
 				glVertex3d(mTriangles->at(i)->point[j].x,mTriangles->at(i)->point[j].y,mTriangles->at(i)->point[j].z);
 			}
 		}
