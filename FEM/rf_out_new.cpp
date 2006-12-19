@@ -2860,6 +2860,10 @@ void COutput::CalcELEFluxes()
   double f_n_sum = 0.0;
   //----------------------------------------------------------------------
   CRFProcess* m_pcs = PCSGet(pcs_type_name);
+  if( pcs_type_name.find("DEFORMATION")!=string::npos
+   ||pcs_type_name.find("FLOW")==string::npos
+   ||m_pcs->m_msh->geo_name.find("REGIONAL")!=string::npos)
+    return;
   if(!m_pcs)
   {
     cout << "Warning in COutput::CalcELEFluxes(): no PCS data" << endl;

@@ -4382,7 +4382,7 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
     // Time dependencies - FCT    //YD
     if(m_st) //WW
 	{
-      if(m_msh&&m_msh->geo_name.compare("REGIONAL")==0) //WW//OK
+      if(m_msh&&m_msh->geo_name.find("LOCAL")!=string::npos) //WW/YD //OK
       {
         if(m_st->fct_name.length()>0)
         {
