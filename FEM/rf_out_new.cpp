@@ -2862,7 +2862,7 @@ void COutput::CalcELEFluxes()
   CRFProcess* m_pcs = PCSGet(pcs_type_name);
   if( pcs_type_name.find("DEFORMATION")!=string::npos
    ||pcs_type_name.find("FLOW")==string::npos
-   ||m_pcs->m_msh->geo_name.find("REGIONAL")!=string::npos)
+   ||m_pcs->m_msh->geo_name.find("REGIONAL")!=string::npos) //WW
     return;
   if(!m_pcs)
   {
