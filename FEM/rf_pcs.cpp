@@ -4298,6 +4298,7 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
     //--------------------------------------------------------------------
     // Tests
     if(msh_node<0) continue; 
+    m_st = NULL;
     if(st_node.size()>0&&(long)st_node.size()>i)
 	{
       m_st = st_node[gindex]; 
@@ -4360,49 +4361,56 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
       if(cnodev->node_distype == 8)      // NormalDepth Condition JOD
         value = GetNormalDepthNODValue(m_st, msh_node); //MB        
 //OK	}
-    curve = cnodev->CurveIndex;
-    if(curve>0) 
-    {
+//YD Pls check! Yanliang.
+    }	
+   //----------------------------------------------------------------------------------------
+   //--------------------------------------------------------------------
+   // Please do not move the this section
+   curve = cnodev->CurveIndex;
+   if(curve>0) 
+   {
       time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
       if(!valid)  
       {
-        cout<<"\n!!! Time dependent curve is not found. Results are not guaranteed "<<endl;
-        cout<<" in void CRFProcess::IncorporateSourceTerms(const double Scaling)"<<endl;
-        time_fac = 1.0;
-      }
+          cout<<"\n!!! Time dependent curve is not found. Results are not guaranteed "<<endl;
+          cout<<" in void CRFProcess::IncorporateSourceTerms(const double Scaling)"<<endl;
+          time_fac = 1.0;
+       }
     }
     else time_fac = 1.0;
-//YD Pls check! Yanliang.
-    //--------------------------------------------------------------------
-      // Time dependencies - FCT    //YD
-      if(m_msh&&m_msh->geo_name.compare("REGIONAL")) //OK
+
+    // Time dependencies - FCT    //YD
+    if(m_st) //WW
+	{
+      if(m_msh&&m_msh->geo_name.compare("REGIONAL")==0) //WW//OK
       {
         if(m_st->fct_name.length()>0)
         {
           m_fct = FCTGet(pcs_number);
           if(m_fct)
-            time_fac = m_fct->GetValue(aktuelle_zeit,&is_valid);
-          else
-            cout << "Warning in CRFProcess::IncorporateSourceTerms - no FCT data" << endl;
-        }
-      }
-      else 
+             time_fac = m_fct->GetValue(aktuelle_zeit,&is_valid);
+           else
+             cout << "Warning in CRFProcess::IncorporateSourceTerms - no FCT data" << endl;
+         }
+       }
+       else 
       {
         if(m_st->fct_name.length()>0)
         {
-          m_fct = FCTGet(m_st->fct_name);
-          if(m_fct)
-          {
-            time_fac = m_fct->GetValue(aktuelle_zeit,&is_valid);
-          }
-          else
-          {
-            cout << "Warning in CRFProcess::IncorporateSourceTerms - no FCT data" << endl;
-          }
-        }
-      }
-    }	    
-    value *= time_fac*fac; // * YD 
+           m_fct = FCTGet(m_st->fct_name);
+           if(m_fct)
+           {
+             time_fac = m_fct->GetValue(aktuelle_zeit,&is_valid);
+           }
+           else
+           {
+             cout << "Warning in CRFProcess::IncorporateSourceTerms - no FCT data" << endl;
+           }
+         }
+	  }
+    }
+    //----------------------------------------------------------------------------------------
+    value *= time_fac*fac; 
     //------------------------------------------------------------------
     // EQS->RHS
     if(m_msh) //WW
