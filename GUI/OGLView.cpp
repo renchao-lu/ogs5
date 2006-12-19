@@ -4180,14 +4180,13 @@ int COGLView::ZoomAndMove(int switcher)
 			 glMatrixMode(GL_MODELVIEW);
 		     glPopMatrix();
 			 zoom_control=0;
+	 		 CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+             m_frame->zoom_control = zoom_control;
  		     Invalidate(TRUE);
 			 view_counter++;
              return 1;
 		 }
- 
-		 CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
-         m_frame->zoom_control = zoom_control;
-         return 0;
+          return 0;
  }
   else 
   {
@@ -6120,11 +6119,7 @@ void COGLView::drawIsoSurface(std::vector<CIsoSurfaceTriangle*>* mTriangles)
 }
 void COGLView::drawIsoSurfaceFrame(std::vector<CIsoSurfaceTriangle*>* mTriangles)
 {
-  //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-  glEnable(GL_POLYGON_OFFSET_FILL);
-  glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
-  glPolygonOffset(1.0,1.0);
-  glDisable(GL_BLEND);
+  glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
   glBegin(GL_LINE_LOOP);
 	for (long i=0; i < (long)mTriangles->size(); i++) {
 			for (int j = 0; j < 3; j++) {
