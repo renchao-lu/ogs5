@@ -671,6 +671,7 @@
 #define IDC_ADD_POLYGON_BUTTON          1226
 #define IDC_PATCH_INDEX                 1226
 #define IDC_EDIT_SLOPE_Y                1226
+#define IDC_LIST_STATIONDATA            1226
 #define IDC_VELOCITYVECTOR              1227
 #define IDC_COMBO_VOL_LAYER_SFC         1227
 #define IDC_ADD_NEXT_POLYGON_BUTTON     1227
@@ -787,6 +788,7 @@
 #define IDC_LIST6                       1241
 #define IDC_PERM                        1241
 #define IDC_RADIO_UsingContourPlotCol   1241
+#define IDC_BUTTON_FILEOPEN             1241
 #define IDC_BUTTON_BC_READ_CSV          1242
 #define IDC_BUTTON_GEO_WRITE            1242
 #define IDC_LIST_MAT_GEO_FAKE           1242
@@ -796,6 +798,7 @@
 #define IDC_RFE_EDITOR_BUTTON           1242
 #define IDC_Iso_DelListItem             1242
 #define IDC_RADIO_Uniform               1242
+#define IDC_TEXT_STATNAME               1242
 #define IDC_BUTTON_BC_WRITE2            1243
 #define IDC_BUTTON_WRITE_TEC            1243
 #define IDC_SAVEASTXT                   1243
@@ -803,19 +806,23 @@
 #define IDC_ST_EDITOR_BUTTON            1243
 #define IDC_ATBYPOLYLINE                1243
 #define IDC_STATIC_MinValue2            1243
+#define IDC_FILENAME_EDIT               1243
 #define IDC_SURFACE_REMOVEALL           1244
 #define IDC_TIM_EDITOR_BUTTON           1244
 #define IDC_Max                         1244
 #define IDC_STATIC_Max_Value2           1244
+#define IDC_TEXT_DATAFROMSTATION        1244
 #define IDC_UNSELECT_SFC                1245
 #define IDC_TEC_EDITOR_BUTTON           1245
 #define IDC_Min                         1245
 #define IDC_LIST7                       1245
+#define IDC_EDIT_STATIONNAME            1245
 #define IDC_SURFACE_WRITE_TEC           1246
 #define IDC_GEO_EDITOR_BUTTON2          1246
 #define IDC_Step                        1246
 #define IDC_SETPATCH                    1246
 #define IDC_Iso_Refresh2                1246
+#define IDC_BUTTON_STATDATA             1246
 #define IDC_CREATE_SURFACE              1247
 #define IDC_PATCHNO                     1247
 #define IDC_Iso_AddListItem2            1247
@@ -940,6 +947,7 @@
 #define IDC_COMBO2                      1625
 #define IDC_EDIT_POLYLINE_6             1625
 #define IDC_EDIT_MAT_FP_DENSITY_12      1625
+#define IDC_COMBO_STATION               1625
 #define IDC_COMBO8                      1626
 #define IDC_EDIT_POLYLINE_7             1626
 #define IDC_EDIT_MAT_FP_DENSITY_11      1626
@@ -984,6 +992,7 @@
 #define IDD_CONTROL_RIGHT_TEMPLATE      2245
 #define IDD_CONTROL_RIGHT_MESH          2246
 #define IDD_CONTROL_RIGHT_GEO           2247
+#define IDD_CONTROL_RIGHT_IMPORT_DATA   2248
 #define ID_HELP_OGLINFO                 32771
 #define ID_BUTTON_DRAW                  32773
 #define ID_CHANGE_SCENE                 32779

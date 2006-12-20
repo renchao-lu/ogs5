@@ -2651,6 +2651,28 @@ BEGIN
     PUSHBUTTON      "Col",IDC_BUTTON1,114,48,78,14
 END
 
+IDD_CONTROL_RIGHT_IMPORT_DATA DIALOGEX 0, 0, 196, 949
+STYLE DS_SETFONT | WS_CHILD | WS_CAPTION
+CAPTION "Import Data"
+FONT 8, "MS Sans Serif", 0, 0, 0x0
+BEGIN
+    GROUPBOX        "SMART Station Data Jordan",IDC_STATIC,0,3,192,940,
+                    WS_TABSTOP
+    CONTROL         "",IDC_LIST_STATIONDATA,"SysListView32",LVS_REPORT | 
+                    LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,4,108,183,222
+    LTEXT           "Open File:",IDC_STATIC,7,22,33,8
+    EDITTEXT        IDC_FILENAME_EDIT,42,19,120,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BUTTON_FILEOPEN,168,19,16,12
+    LTEXT           "Name of Station:",IDC_TEXT_STATNAME,7,42,54,8
+    COMBOBOX        IDC_COMBO_STATION,7,53,177,42,CBS_DROPDOWNLIST | 
+                    WS_DISABLED | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Data from Station:",IDC_TEXT_DATAFROMSTATION,7,95,58,8,
+                    WS_DISABLED
+    EDITTEXT        IDC_EDIT_STATIONNAME,67,95,118,12,ES_AUTOHSCROLL | 
+                    ES_READONLY | NOT WS_BORDER
+    PUSHBUTTON      "Show Data",IDC_BUTTON_STATDATA,63,76,58,12
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -2936,6 +2958,14 @@ BEGIN
         RIGHTMARGIN, 225
         TOPMARGIN, 7
         BOTTOMMARGIN, 88
+    END
+
+    IDD_CONTROL_RIGHT_IMPORT_DATA, DIALOG
+    BEGIN
+        RIGHTMARGIN, 192
+        VERTGUIDE, 192
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 947
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -3446,7 +3476,7 @@ END
 
 STRINGTABLE 
 BEGIN
-    IDR_MAINFRAME           "GeoSys  -  4.4.05(TK)"
+    IDR_MAINFRAME           "GeoSys  -  4.4.09(JG)"
     IDR_GEOSYSTYPE          "\nGeoSys\nGeoSys\nGeoSys project file (*.gsp)\n.gsp\nGeoSys.Document\nGeoSys Document"
 END
 

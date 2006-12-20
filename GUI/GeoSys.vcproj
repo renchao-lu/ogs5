@@ -844,6 +844,12 @@
 					RelativePath=".\Splitter\GSPropertyRightGeometry.h">
 				</File>
 				<File
+					RelativePath=".\Splitter\GSPropertyRightImportData.cpp">
+				</File>
+				<File
+					RelativePath=".\Splitter\GSPropertyRightImportData.h">
+				</File>
+				<File
 					RelativePath=".\Splitter\GSPropertyRightMesh.cpp">
 				</File>
 				<File

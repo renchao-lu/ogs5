@@ -73,6 +73,8 @@ BOOL CGSPropertyRight::Create(LPCTSTR lpszClassName, LPCTSTR lpszWindowName, DWO
 	m_PropSheet.AddPage(&m_Page3);
 	m_PropSheet.AddPage(&m_Page9);
 	m_PropSheet.AddPage(&m_Page10);
+	m_PropSheet.AddPage(&m_Page11);
+
 
 	// create a modeless property sheet
 	if (!m_PropSheet.Create(this)) {
