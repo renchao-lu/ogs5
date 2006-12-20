@@ -125,14 +125,15 @@ CCToDo Polyline destructor
 **************************************************************************/
 void GEORemoveAllPolylines()
 {
+    int i;  
   //CGLPolyline * m_ply = NULL;
-  for (int i = 0; i < (int) polyline_vector.size(); i++){
+  for (i = 0; i < (int) polyline_vector.size(); i++){
      //m_ply = polyline_vector[0]; //TK: What's that Cui?
      //delete m_ply;
   delete polyline_vector[i];
   polyline_vector[i]=NULL;
   }
-  polyline_vector.clear();//CC
+  polyline_vector.clear(); //CC
 
   for (i=0; i < (int) gli_lines_vector.size(); i++){
   delete gli_lines_vector[i];
