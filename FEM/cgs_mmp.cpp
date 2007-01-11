@@ -1714,6 +1714,8 @@ void MMPCalcSecondaryVariables(void)
   //----------------------------------------------------------------------
   CRFProcess* m_pcs = NULL;
   m_pcs = PCSGet("TWO_PHASE_FLOW");
+  if(m_pcs->num_type_name.find("NEW")!=string::npos)
+    return;
   if(!m_pcs){
     cout << "MMPCalcSecondaryVariables: no PCS data" << endl;
     return;
