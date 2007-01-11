@@ -3662,10 +3662,6 @@ PCSLib-Method:
 void CFiniteElementStd::AssembleRHSVector()
 {
   int i;
-if(aktueller_zeitschritt==2&&pcs->pcs_type_number==1&&Index==0)
-{
-i=i;
-}
   int idx_fv;
   double NodalVal_FV[20]; 
   double FV;
