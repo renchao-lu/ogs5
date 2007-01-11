@@ -209,6 +209,7 @@ int LOPPreTimeLoop_PCS(void)
   // Calculate secondary variables
   if(LOPCalcSecondaryVariables_USER)
     LOPCalcSecondaryVariables_USER();
+  PCSCalcSecondaryVariables(); //OK
   //----------------------------------------------------------------------
   // REACTIONS 
   // Initialization of REACT structure for rate exchange between MTM2 and Reactions
@@ -318,10 +319,8 @@ int LOPPreTimeLoop_PCS(void)
 #endif
      //
      node_connected_doms.clear();
-   }
-  	
+  }
   // PA PCSProcessDependencies();
-
   //----------------------------------------------------------------------
   PCSRestart(); //SB
   //----------------------------------------------------------------------
@@ -464,7 +463,8 @@ int LOPTimeLoop_PCS(double*dt_sum)
 #endif
 	  //--------------------------------------------------------------------
       m_pcs = PCSGet("TWO_PHASE_FLOW");
-      if(m_pcs&&m_pcs->selected){
+      if(m_pcs&&m_pcs->selected)
+      {
         for(i=0;i<no_processes;i++){
           m_pcs = pcs_vector[i];
           if(m_pcs->pcs_type_name.compare("TWO_PHASE_FLOW")==0)
@@ -1079,64 +1079,85 @@ void LOPCalcELEResultants(void)
   }
 }
 
-/**************************************************************************/
-/* ROCKFLOW - Funktion: PCSCalcSecondaryVariables
-                                                                          */
-/* Aufgabe:
-   Berechung von secondary variables w?rend der Zeitschleife
-   Abfrage je nach Prozess, der aktiv ist
-                                                                          */
-/* Programmaenderungen:
-   08/2003   SB   Implementation
-   01/2006   YD   add dual porosity                                                                          */
-/**************************************************************************/
-void PCSCalcSecondaryVariables(void){
-
-  int i, ptype;
+/**************************************************************************
+ROCKFLOW - Funktion: PCSCalcSecondaryVariables
+Berechung von secondary variables w?rend der Zeitschleife
+Abfrage je nach Prozess, der aktiv ist
+08/2003   SB   Implementation
+01/2006   YD   add dual porosity
+**************************************************************************/
+void PCSCalcSecondaryVariables(void)
+{
+  long j;
   CRFProcess *m_pcs=NULL;
-  /* go through all processes */
-  int no_processes =(int)pcs_vector.size();
-  for(i=0;i<no_processes;i++){
-	/* get process */
-	//pcs = pcs->GetProcessByNumber(i+1);
+  CRFProcess* m_pcs_phase_1 = NULL;
+  CRFProcess* m_pcs_phase_2 = NULL;
+  int ndx_p_gas_old,ndx_p_gas_new,ndx_p_liquid_old,ndx_p_liquid_new,ndx_p_cap_old;
+  //----------------------------------------------------------------------
+  bool pcs_cpl = true; 
+  //----------------------------------------------------------------------
+  for(int i=0;i<(int)pcs_vector.size();i++)
+  {
     m_pcs = pcs_vector[i]; //JOD
-	if(m_pcs != NULL){
-	ptype = m_pcs->GetObjType();
-	switch (ptype) {
-    case 1: /* Flow process */
-      // do nothing
-      break;
-    case 66:
-      //Temp mit pcs, only for test MB
-      ASMCalcNodeWDepth(m_pcs);
-      break;
-    case 11: /* Non-isothermal flow process */
-      MPCCalcSecondaryVariables();
-      break;
-    case 13: /* Non-isothermal flow process */
-      MPCCalcSecondaryVariablesRichards();
-      break;
-    case 2: /* Mass transport process */
-      MTM2CalcSecondaryVariables();
-      break;
-    case 3: /* Heat transport */
-      // do nothing 
-      break;
-    case 4: /* Deformation */
-      // do nothing
-      break;
-    case 41: /* Deformation-flow coupled system in monolithic scheme */
-      // do nothing
-      break;
-    case 12: /* Multi-phase flow process */
-      MMPCalcSecondaryVariables();
-      break;
-	default:
-		//DisplayMsgLn(" Error: Unknown PCS type in PCSCalcSecondaryVariables");
+	switch (m_pcs->GetObjType()) 
+    {
+      case 66:
+        //Temp mit pcs, only for test MB
+        ASMCalcNodeWDepth(m_pcs);
+        break;
+      case 11: /* Non-isothermal flow process */
+        MPCCalcSecondaryVariables();
+        break;
+      case 13: /* Non-isothermal flow process */
+        MPCCalcSecondaryVariablesRichards();
+        break;
+      case 2: /* Mass transport process */
+        MTM2CalcSecondaryVariables();
+        break;
+      case 12: /* Multi-phase flow process */
+        if(m_pcs->num_type_name.find("NEW")!=0)
+        {
+          MMPCalcSecondaryVariables();
+          break;
+        }
+        double p_gas,p_liquid,p_cap;
+        MMPCalcSecondaryVariablesNew(m_pcs);
+        if(pcs_cpl)
+        {
+          m_pcs_phase_1 = pcs_vector[0]; // "PRESSURE1"
+          m_pcs_phase_2 = pcs_vector[1]; // "SATURATION2"
+          //--------------------------------------------------------------
+          // 5.3.2 Phasendruck fuer 2. Phase: p^l = p^g - p_c(S)
+          ndx_p_gas_old = m_pcs_phase_1->GetNodeValueIndex("PRESSURE1");
+          ndx_p_gas_new = ndx_p_gas_old + 1;
+          ndx_p_liquid_old = m_pcs_phase_1->GetNodeValueIndex("PRESSURE2");
+          ndx_p_liquid_new = ndx_p_liquid_old + 1;
+          ndx_p_cap_old = m_pcs_phase_1->GetNodeValueIndex("PRESSURE_CAP");
+          //ndx_sg_old = m_pcs_phase_2->GetNodeValueIndex("SATURATION1");
+          for(j=0;j<(long)m_pcs_phase_1->m_msh->nod_vector.size();j++) 
+          {
+            p_gas = m_pcs_phase_1->GetNodeValue(j,ndx_p_gas_old);
+            p_cap = m_pcs_phase_1->GetNodeValue(j,ndx_p_cap_old);
+            p_liquid = p_gas - p_cap;
+            m_pcs_phase_2->SetNodeValue(j,ndx_p_liquid_old,p_liquid);
+            m_pcs_phase_2->SetNodeValue(j,ndx_p_liquid_new,p_liquid);
+          }
+          pcs_cpl = false;
+        }
+if(aktueller_zeitschritt<1)
+{
+  int ndx_sl_old = m_pcs_phase_2->GetNodeValueIndex("SATURATION2");
+  int ndx_sl_new = ndx_sl_old+1;
+  m_pcs_phase_2->SetNodeValue(0,ndx_sl_old,0.2);
+  m_pcs_phase_2->SetNodeValue(0,ndx_sl_new,0.2);
+}
+        m_pcs->WriteAllVariables();
+        break;
+	  default:
+		cout << "PCSCalcSecondaryVariables - nothing to do" << endl;
 		break;
 	}
-	} //If
- } // while
+  }
 }
 
 

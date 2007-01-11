@@ -201,8 +201,6 @@ class CRFProcess {
 	// 10-MCP
 	//....................................................................
 	// 11-OUT
-    void  WriteSolution();  //WW
-    void  ReadSolution();   //WW
 	//....................................................................
 	// 12-NUM
 	//....................................................................
@@ -231,6 +229,7 @@ class CRFProcess {
 	//....................................................................
 	// 5-BC
     void CreateBCGroup();
+    void SetBC(); //OK
 	//....................................................................
 	// 6-ST
     void CreateSTGroup();
@@ -244,6 +243,9 @@ class CRFProcess {
 	// 10-MCP
 	//....................................................................
 	// 11-OUT
+    void WriteSolution(); //WW
+    void ReadSolution();  //WW
+    void WriteAllVariables(); //OK
 	//....................................................................
 	// 12-NUM
 	//....................................................................
@@ -537,6 +539,8 @@ extern bool RANDOM_WALK_Process;
 extern string project_title; //OK41
 extern bool pcs_created;
 extern vector<LINEAR_SOLVER *> PCS_Solver; //WW
+extern void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs); //OK
+extern void MMPCalcSecondaryVariablesNew(); //OK
 
 #endif
 

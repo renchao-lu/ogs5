@@ -748,12 +748,9 @@ void CRFProcess::Create()
     ConfigNODValues2();
     CreateNODValues();
   }
-
-
-  if(reload==2&&type!=4&&type!=41) 
-     ReadSolution(); //WW
   //----------------------------------------------------------------------------
-  //SelectData(0);
+  if(reload==2&&type!=4&&type!=41) 
+    ReadSolution(); //WW
   //----------------------------------------------------------------------------
   // IC
   cout << "->Assign IC" << '\n';
@@ -788,7 +785,6 @@ void CRFProcess::Create()
   }
   if(pcs_type_name_vector.size()&&pcs_type_name_vector[0].find("DYNAMIC")!=string::npos) //WW
      setIC_danymic_problems();
-
   //----------------------------------------------------------------------------
   if(!OldFEM) //WW This condition will be removed is new FEM is ready
   {
@@ -803,12 +799,11 @@ void CRFProcess::Create()
     }
     else  // Initialize FEM calculator
     {
-         int Axisymm = 1; // ani-axisymmetry
-         if(m_msh->isAxisymmetry()) Axisymm = -1; // Axisymmetry is true
-         fem = new CFiniteElementStd(this, Axisymm*m_msh->GetCoordinateFlag()); 
+      int Axisymm = 1; // ani-axisymmetry
+      if(m_msh->isAxisymmetry()) Axisymm = -1; // Axisymmetry is true
+      fem = new CFiniteElementStd(this, Axisymm*m_msh->GetCoordinateFlag()); 
     }
   }
-
   //----------------------------------------------------------------------
   // Initialize the system equations 
   if(PCSSetIC_USER)
@@ -833,7 +828,6 @@ void CRFProcess::Create()
      if (!matrix_file->good())
        cout << "Warning in GlobalAssembly: Matrix files are not found" << endl;
   }
-
   if(compute_domain_face_normal) //WW
      m_msh->FaceNormal();        
 }
@@ -3405,7 +3399,6 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
   string eqs_name = pcs_type_name + "_EQS.txt";
   MXDumpGLS((char*)eqs_name.c_str(),1,eqs->b,eqs->x);
 #endif
-
 //.....................................................................
    ExecuteLinearSolver();
 //PCSDumpModelNodeValues();
@@ -7172,4 +7165,245 @@ CRFProcess* PCSGetFlow()
     }
   }
   return NULL;
+}
+
+/**************************************************************************
+PCSLib-Method:
+based on MMPCalcSecondaryVariables
+01/2007 OK Implementation
+**************************************************************************/
+void MMPCalcSecondaryVariablesNew()
+{
+  int phase;
+  long i;
+  double p_cap,p_liquid,p_gas;
+  double s_liquid,s_gas;
+  //----------------------------------------------------------------------
+  // 5.1 Anfangsbedingungen mit vorhandenen Randbedingungen ueberschreiben
+  CRFProcess* m_pcs_phase_1 = pcs_vector[0]; // "PRESSURE1"
+  m_pcs_phase_1->SetBC();
+  CRFProcess* m_pcs_phase_2 = pcs_vector[1]; // "SATURATION2"
+  m_pcs_phase_2->SetBC();
+  //----------------------------------------------------------------------
+  // 5.2 Anfangsbedingungen fuer zweite Phase berechnen
+   // Calc secondary variable saturation S^g=1-S^l
+  int ndx_sl_old = m_pcs_phase_2->GetNodeValueIndex("SATURATION2");
+  int ndx_sg_old = m_pcs_phase_2->GetNodeValueIndex("SATURATION1");
+  int ndx_sg_new = ndx_sg_old+1;
+  for(i=0;i<(long)m_pcs_phase_2->m_msh->nod_vector.size();i++) 
+  {
+    s_liquid = m_pcs_phase_2->GetNodeValue(i,ndx_sl_old);
+    s_gas = MRange(0.0,1.0-s_liquid,1.0);
+    m_pcs_phase_2->SetNodeValue(i,ndx_sg_old,s_gas);
+    m_pcs_phase_2->SetNodeValue(i,ndx_sg_new,s_gas);
+  }
+  m_pcs_phase_2->WriteAllVariables();
+  //----------------------------------------------------------------------
+  // 5.3.1 Capillary pressure - p_c (S)
+  CMediumProperties *m_mmp = NULL;
+  int ndx_p_cap_old = m_pcs_phase_1->GetNodeValueIndex("PRESSURE_CAP");
+  int ndx_p_cap_new = m_pcs_phase_2->GetNodeValueIndex("PRESSURE_CAP");
+  for(i=0;i<(long)m_pcs_phase_1->m_msh->nod_vector.size();i++) 
+  {
+    m_mmp = mmp_vector[0];
+    m_mmp->mode = 1;
+    p_cap = 0.0; //m_mmp->CapillaryPressure(i,NULL,theta,phase); //MATCalcNodeCapillaryPressure(phase,index,i,theta);
+    m_mmp->mode = 0;
+    m_pcs_phase_1->SetNodeValue(i,ndx_p_cap_old,p_cap);
+    m_pcs_phase_2->SetNodeValue(i,ndx_p_cap_new,p_cap);
+  }
+  //----------------------------------------------------------------------
+  // 5.3.2 Phasendruck fuer 2. Phase: p^l = p^g - p_c(S)
+  int ndx_p_gas_old = m_pcs_phase_1->GetNodeValueIndex("PRESSURE1");
+  int ndx_p_gas_new = ndx_p_gas_old + 1;
+  int ndx_p_liquid_old = m_pcs_phase_1->GetNodeValueIndex("PRESSURE2");
+  int ndx_p_liquid_new = ndx_p_liquid_old + 1;
+  for(i=0;i<(long)m_pcs_phase_1->m_msh->nod_vector.size();i++) 
+  {
+    p_gas = m_pcs_phase_1->GetNodeValue(i,ndx_sg_old);
+    p_cap = m_pcs_phase_1->GetNodeValue(i,ndx_p_cap_old);
+    p_liquid = p_gas - p_cap;
+    m_pcs_phase_2->SetNodeValue(i,ndx_p_liquid_old,p_liquid);
+    m_pcs_phase_2->SetNodeValue(i,ndx_p_liquid_new,p_liquid);
+  }
+  //----------------------------------------------------------------------
+  // Fluid properties
+  double density;
+  double viscosity;
+  int timelevel=1;
+  CFluidProperties* m_mfp = NULL;
+  //......................................................................
+  phase=0;
+  m_mfp = mfp_vector[phase];
+  m_mfp->mode = 1;
+  int ndx_density_gas = m_pcs_phase_1->GetNodeValueIndex("DENSITY1");
+  int ndx_viscosity_gas = m_pcs_phase_1->GetNodeValueIndex("VISCOSITY1");
+  for(i=0;i<(long)m_pcs_phase_1->m_msh->nod_vector.size();i++) 
+  {
+    density = m_mfp->Density();
+    m_pcs_phase_1->SetNodeValue(i,ndx_density_gas,density);
+    viscosity = m_mfp->Viscosity();
+    m_pcs_phase_1->SetNodeValue(i,ndx_viscosity_gas,viscosity);
+  }
+  m_mfp->mode = 0;
+  //......................................................................
+  phase=1;
+  m_mfp = mfp_vector[phase];
+  m_mfp->mode = 1;
+  int ndx_density_liquid = m_pcs_phase_2->GetNodeValueIndex("DENSITY2");
+  int ndx_viscosity_liquid = m_pcs_phase_2->GetNodeValueIndex("VISCOSITY2");
+  for(i=0;i<(long)m_pcs_phase_2->m_msh->nod_vector.size();i++) 
+  {
+    density = m_mfp->Density();
+    m_pcs_phase_1->SetNodeValue(i,ndx_density_liquid,density);
+    viscosity = m_mfp->Viscosity();
+    m_pcs_phase_1->SetNodeValue(i,ndx_viscosity_liquid,viscosity);
+  }
+  m_mfp->mode = 0;
+  //----------------------------------------------------------------------
+  m_pcs_phase_1->WriteAllVariables();
+  m_pcs_phase_2->WriteAllVariables();
+/*
+  CalcElementsGeometry();
+  CRFProcess* m_pcs = NULL;
+  for(i=0;i<(int)pcs_vector.size();i++){
+    m_pcs = pcs_vector[i];
+    if(m_pcs->pcs_type_name.compare("TWO_PHASE_FLOW")==0)
+      m_pcs->CalculateElementMatrices();
+  }
+*/
+}
+
+/**************************************************************************
+PCSLib-Method:
+based on MMPCalcSecondaryVariables
+01/2007 OK Implementation
+**************************************************************************/
+void CRFProcess::SetBC()
+{
+  CBoundaryCondition *m_bc = NULL;
+  CBoundaryConditionNode *m_node = NULL;
+  int nidx = GetNodeValueIndex(pcs_primary_function_name[0]);
+  for(long i=0;i<(long)bc_node_value.size();i++){
+      m_node = bc_node_value[i];
+      m_bc = bc_node[i];
+      SetNodeValue(m_node->msh_node_number,nidx,m_node->node_value); // old time
+      SetNodeValue(m_node->msh_node_number,nidx+1,m_node->node_value); // new time
+  }
+}
+
+/**************************************************************************
+PCSLib-Method:
+based on WriteSolution by WW
+01/2007 OK Implementation
+**************************************************************************/
+void CRFProcess::WriteAllVariables()
+{
+  string m_file_name = FileName +"_"+pcs_type_name + "_" + pcs_primary_function_name[0] + ".asc";
+  ofstream os(m_file_name.c_str(), ios::trunc|ios::out);     	
+  if (!os.good())
+  {
+    cout << "Failure to open file: "<<m_file_name << endl;
+    abort();
+  }
+  //
+  int j;
+  int idx[20];
+  for(j=0;j<pcs_number_of_primary_nvals;j++) 
+  {
+    os << pcs_primary_function_name[j] << " ";
+    idx[j] = GetNodeValueIndex(pcs_primary_function_name[j]);
+    os << pcs_primary_function_name[j] << " ";
+    idx[j+pcs_number_of_primary_nvals] = idx[j]+1;
+  }
+  for(j=0;j<pcs_number_of_secondary_nvals;j++) 
+  {
+    os << pcs_secondary_function_name[j] << " ";
+    idx[2*pcs_number_of_primary_nvals+j] = GetNodeValueIndex(pcs_secondary_function_name[j]);
+  }
+  os << endl;
+  long i;
+  for(i=0;i<m_msh->GetNodesNumber(false);i++)
+  {
+    for(j=0;j<2*pcs_number_of_primary_nvals;j++)
+      os<<GetNodeValue(i,idx[j]) <<"  ";
+    for(j=0;j<pcs_number_of_secondary_nvals;j++)
+      os<<GetNodeValue(i,idx[2*pcs_number_of_primary_nvals+j]) <<"  ";
+    os<<endl;
+  }  
+  os.close();
+}
+
+/**************************************************************************
+PCSLib-Method:
+based on MMPCalcSecondaryVariables
+01/2007 OK Implementation
+**************************************************************************/
+void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs)
+{
+  long i;
+  double p_cap;
+  double s_liquid,s_gas;
+  //----------------------------------------------------------------------
+  int ndx_density_phase;
+  int ndx_viscosity_phase;
+  //----------------------------------------------------------------------
+  m_pcs->SetBC();
+  //======================================================================
+  switch(m_pcs->pcs_type_number)
+  {
+    case 0:
+      //..................................................................
+      ndx_density_phase = m_pcs->GetNodeValueIndex("DENSITY1");
+      ndx_viscosity_phase = m_pcs->GetNodeValueIndex("VISCOSITY1");
+      break;
+
+    case 1:
+      //..................................................................
+      // Initial conditions
+      // Calc secondary variable saturation S^g=1-S^l
+      int ndx_sl_old = m_pcs->GetNodeValueIndex("SATURATION2");
+      int ndx_sg_old = m_pcs->GetNodeValueIndex("SATURATION1");
+      int ndx_sg_new = ndx_sg_old+1;
+      for(i=0;i<(long)m_pcs->m_msh->nod_vector.size();i++) 
+      {
+        s_liquid = m_pcs->GetNodeValue(i,ndx_sl_old);
+        s_gas = MRange(0.0,1.0-s_liquid,1.0);
+        m_pcs->SetNodeValue(i,ndx_sg_old,s_gas);
+        m_pcs->SetNodeValue(i,ndx_sg_new,s_gas);
+      }
+      //......................................................................
+      ndx_density_phase = m_pcs->GetNodeValueIndex("DENSITY2");
+      ndx_viscosity_phase = m_pcs->GetNodeValueIndex("VISCOSITY2");
+      break;
+  }
+  //======================================================================
+  //----------------------------------------------------------------------
+  // Capillary pressure - p_c (S)
+  int ndx_p_cap = m_pcs->GetNodeValueIndex("PRESSURE_CAP");
+  CMediumProperties *m_mmp = NULL;
+  for(i=0;i<(long)m_pcs->m_msh->nod_vector.size();i++) 
+  {
+    m_mmp = mmp_vector[0];
+    m_mmp->mode = 1;
+    p_cap = 0.0; //m_mmp->CapillaryPressure(i,NULL,theta,phase); //MATCalcNodeCapillaryPressure(phase,index,i,theta);
+    m_mmp->mode = 0;
+    m_pcs->SetNodeValue(i,ndx_p_cap,p_cap);
+  }
+  //----------------------------------------------------------------------
+  // Fluid properties
+  double density;
+  double viscosity;
+  CFluidProperties* m_mfp = NULL;
+  m_mfp = mfp_vector[m_pcs->pcs_type_number];
+  m_mfp->mode = 1;
+  for(i=0;i<(long)m_pcs->m_msh->nod_vector.size();i++) 
+  {
+    density = m_mfp->Density();
+    m_pcs->SetNodeValue(i,ndx_density_phase,density);
+    viscosity = m_mfp->Viscosity();
+    m_pcs->SetNodeValue(i,ndx_viscosity_phase,viscosity);
+  }
+  m_mfp->mode = 0;
+  //----------------------------------------------------------------------
 }

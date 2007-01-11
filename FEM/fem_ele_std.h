@@ -107,7 +107,7 @@ class CFiniteElementStd:public CElement
      char pcsT;
      bool dynamic; 
      CMediumProperties *Media_Matrix;  //YD
-
+     bool flag_cpl_pcs; //OK
      //-------------------------------------------------------
      // Auxillarary matrices
      Matrix *StiffMatrix;
@@ -182,6 +182,8 @@ class CFiniteElementStd:public CElement
 	 void AssembleRHS(int dimension); // PCH
      void Assemble_Transfer();
      bool check_matrices; //OK4104
+     void AssembleGP_RHSVector(); //OK
+     void AssembleRHSVector(); //OK
    public:
      void AssembleParabolicEquationRHSVector(); //OK
 };

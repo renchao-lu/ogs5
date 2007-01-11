@@ -1353,53 +1353,6 @@ node = node;
     return 0;
 }
 
-
-/**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-08/2004 OK Implementation
-06/2005 OK PCS
-05/2006 WW  
-last modification:
-**************************************************************************/
-//WW int NodeSetBoundaryConditions(char *pv_name,int ndx,string pcs_type_name)
-int NodeSetBoundaryConditions(char *pv_name,int ndx,CRFProcess* m_pcs)
-{
-  CBoundaryCondition *m_bc = NULL;
-  CBoundaryConditionNode *m_node = NULL;
-  long i;
-  //WW
-  long no_bc = (long)m_pcs->bc_node_value.size();
-  for(i=0;i<no_bc;i++){
-      m_node = m_pcs->bc_node_value[i];
-      m_bc = m_pcs->bc_node[i];
-	  if(m_bc->pcs_pv_name.compare(pv_name)==0)      
-        SetNodeVal(m_node->msh_node_number,ndx,m_node->node_value); //???
-  }
-  if(no_bc==0)
-    cout << "? Warning - NodeSetBoundaryConditions: m_bc_group not found" << endl;
-  return 1;
-
-  
-/* //WW
-
-  //OK m_bc_group = m_bc_group->Get(name);
-  m_bc_group = BCGetGroup(pcs_type_name,(string)pv_name); //OK
-  if(m_bc_group){
-    long no_bc = (long)m_bc_group->group_vector.size();
-    for(i=0;i<no_bc;i++){
-      m_node = m_bc_group->group_vector[i];
-      //SetNodeVal(NodeNumber[m_node->msh_node_number],ndx,m_node->node_value);
-      SetNodeVal(m_node->msh_node_number,ndx,m_node->node_value); //???
-    }
-  }
-  else
-    cout << "? Warning - NodeSetBoundaryConditions: m_bc_group not found" << endl;
-  return 1;
-*/  
-}
-
 /**************************************************************************
 FEMLib-Method:
 Task: write function based on CBoundaryCondition::WriteTecplot
@@ -1546,4 +1499,51 @@ void BCGroupDelete(string pcs_type_name,string pcs_pv_name)
     }
     ++p;
   }
+}
+
+
+/**************************************************************************
+FEMLib-Method:
+Task:
+Programing:
+08/2004 OK Implementation
+06/2005 OK PCS
+05/2006 WW  
+last modification:
+**************************************************************************/
+//WW int NodeSetBoundaryConditions(char *pv_name,int ndx,string pcs_type_name)
+int NodeSetBoundaryConditions(char *pv_name,int ndx,CRFProcess* m_pcs)
+{
+  CBoundaryCondition *m_bc = NULL;
+  CBoundaryConditionNode *m_node = NULL;
+  long i;
+  //WW
+  long no_bc = (long)m_pcs->bc_node_value.size();
+  for(i=0;i<no_bc;i++){
+      m_node = m_pcs->bc_node_value[i];
+      m_bc = m_pcs->bc_node[i];
+	  if(m_bc->pcs_pv_name.compare(pv_name)==0)      
+        SetNodeVal(m_node->msh_node_number,ndx,m_node->node_value); //???
+  }
+  if(no_bc==0)
+    cout << "? Warning - NodeSetBoundaryConditions: m_bc_group not found" << endl;
+  return 1;
+
+  
+/* //WW
+
+  //OK m_bc_group = m_bc_group->Get(name);
+  m_bc_group = BCGetGroup(pcs_type_name,(string)pv_name); //OK
+  if(m_bc_group){
+    long no_bc = (long)m_bc_group->group_vector.size();
+    for(i=0;i<no_bc;i++){
+      m_node = m_bc_group->group_vector[i];
+      //SetNodeVal(NodeNumber[m_node->msh_node_number],ndx,m_node->node_value);
+      SetNodeVal(m_node->msh_node_number,ndx,m_node->node_value); //???
+    }
+  }
+  else
+    cout << "? Warning - NodeSetBoundaryConditions: m_bc_group not found" << endl;
+  return 1;
+*/  
 }
