@@ -24,7 +24,7 @@
 /* ROCKFLOW-Version */
 #define ROCKFLOW_VERSION    "4.4.10"
 #define RF_SHELL_VERSION    "4.4.08TK"
-#define ROCKFLOW_DATE       "09.01.2007"
+#define ROCKFLOW_DATE       "19.01.2007"
 
 /* Definitionen von Makros zur Steuerung der bedingten Compilierung */
 #define SWITCHES
@@ -326,6 +326,9 @@ enum DIS_TYPES {CONSTANT,LINEAR};
   /* Funktions-Prototypen*/
 
 extern std::string FileName;
+
+#define RESET_4410 // H2_ELE test
+
 #endif
 
 

@@ -209,7 +209,10 @@ int LOPPreTimeLoop_PCS(void)
   // Calculate secondary variables
   if(LOPCalcSecondaryVariables_USER)
     LOPCalcSecondaryVariables_USER();
+#ifdef RESET_4410
+if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
   PCSCalcSecondaryVariables(); //OK
+#endif
   //----------------------------------------------------------------------
   // REACTIONS 
   // Initialization of REACT structure for rate exchange between MTM2 and Reactions
@@ -463,8 +466,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
 #endif
 	  //--------------------------------------------------------------------
       m_pcs = PCSGet("TWO_PHASE_FLOW");
-      if(m_pcs&&m_pcs->selected)
-      {
+      if(m_pcs&&m_pcs->selected){
         for(i=0;i<no_processes;i++){
           m_pcs = pcs_vector[i];
           if(m_pcs->pcs_type_name.compare("TWO_PHASE_FLOW")==0)
@@ -1079,47 +1081,73 @@ void LOPCalcELEResultants(void)
   }
 }
 
-/**************************************************************************
-ROCKFLOW - Funktion: PCSCalcSecondaryVariables
-Berechung von secondary variables w?rend der Zeitschleife
-Abfrage je nach Prozess, der aktiv ist
-08/2003   SB   Implementation
-01/2006   YD   add dual porosity
-**************************************************************************/
-void PCSCalcSecondaryVariables(void)
-{
+/**************************************************************************/
+/* ROCKFLOW - Funktion: PCSCalcSecondaryVariables
+                                                                          */
+/* Aufgabe:
+   Berechung von secondary variables w?rend der Zeitschleife
+   Abfrage je nach Prozess, der aktiv ist
+                                                                          */
+/* Programmaenderungen:
+   08/2003   SB   Implementation
+   01/2006   YD   add dual porosity                                       
+   01/2007 OK Two-phase flow
+                                                                          */
+/**************************************************************************/
+void PCSCalcSecondaryVariables(void){
   long j;
+
+  int i, ptype;
   CRFProcess *m_pcs=NULL;
+#ifdef RESET_4410
   CRFProcess* m_pcs_phase_1 = NULL;
   CRFProcess* m_pcs_phase_2 = NULL;
   int ndx_p_gas_old,ndx_p_gas_new,ndx_p_liquid_old,ndx_p_liquid_new,ndx_p_cap_old;
   //----------------------------------------------------------------------
   bool pcs_cpl = true; 
   //----------------------------------------------------------------------
-  for(int i=0;i<(int)pcs_vector.size();i++)
-  {
+#endif
+  /* go through all processes */
+  int no_processes =(int)pcs_vector.size();
+  for(i=0;i<no_processes;i++){
+	/* get process */
+	//pcs = pcs->GetProcessByNumber(i+1);
     m_pcs = pcs_vector[i]; //JOD
-	switch (m_pcs->GetObjType()) 
-    {
-      case 66:
-        //Temp mit pcs, only for test MB
-        ASMCalcNodeWDepth(m_pcs);
-        break;
-      case 11: /* Non-isothermal flow process */
-        MPCCalcSecondaryVariables();
-        break;
-      case 13: /* Non-isothermal flow process */
-        MPCCalcSecondaryVariablesRichards();
-        break;
-      case 2: /* Mass transport process */
-        MTM2CalcSecondaryVariables();
-        break;
-      case 12: /* Multi-phase flow process */
+	if(m_pcs != NULL){
+	ptype = m_pcs->GetObjType();
+	switch (ptype) {
+    case 1: /* Flow process */
+      // do nothing
+      break;
+    case 66:
+      //Temp mit pcs, only for test MB
+      ASMCalcNodeWDepth(m_pcs);
+      break;
+    case 11: /* Non-isothermal flow process */
+      MPCCalcSecondaryVariables();
+      break;
+    case 13: /* Non-isothermal flow process */
+      MPCCalcSecondaryVariablesRichards();
+      break;
+    case 2: /* Mass transport process */
+      MTM2CalcSecondaryVariables();
+      break;
+    case 3: /* Heat transport */
+      // do nothing 
+      break;
+    case 4: /* Deformation */
+      // do nothing
+      break;
+    case 41: /* Deformation-flow coupled system in monolithic scheme */
+      // do nothing
+      break;
+    case 12: /* Multi-phase flow process */
         if(m_pcs->num_type_name.find("NEW")!=0)
         {
           MMPCalcSecondaryVariables();
           break;
         }
+#ifdef RESET_4410
         double p_gas,p_liquid,p_cap;
         MMPCalcSecondaryVariablesNew(m_pcs);
         if(pcs_cpl)
@@ -1152,12 +1180,14 @@ if(aktueller_zeitschritt<1)
   m_pcs_phase_2->SetNodeValue(0,ndx_sl_new,0.2);
 }
         m_pcs->WriteAllVariables();
+#endif
         break;
-	  default:
+	default:
 		cout << "PCSCalcSecondaryVariables - nothing to do" << endl;
 		break;
 	}
-  }
+	} //If
+ } // while
 }
 
 

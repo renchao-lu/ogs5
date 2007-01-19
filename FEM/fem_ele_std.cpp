@@ -793,6 +793,7 @@ inline double CFiniteElementStd::CalCoefMass()
         val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta);
       break;
     case T: // Two-phase flow
+#ifdef RESET_4410
       // val = (1/rho*n*d_rho/d_p*S + Se*S )
       if(pcs->pcs_type_number==0)
       {
@@ -810,6 +811,7 @@ inline double CFiniteElementStd::CalCoefMass()
         val = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta) \
             * MediaProp->geo_area;
       }
+#endif
       break;
     case C: // Componental flow
       //OK comp = m_pcs->pcs_type_number;
@@ -1054,6 +1056,7 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
         break;
       //..................................................................
       case T: // Two-phase flow
+#ifdef RESET_4410
         //fkt = A / L * permeability_rel * permeability[0] / viscosity_gp;
         if(pcs->pcs_type_number==1&&(!flag_cpl_pcs))
         {
@@ -1142,6 +1145,7 @@ shapefct[1] = 0.; //OK
               mat[i] = tensor[i] * mat_fac;
           }
         }
+#endif
         break;
       //..................................................................
       case C: // Componental flow
@@ -3215,6 +3219,7 @@ void CFiniteElementStd::Assembly()
       break;
     //....................................................................
     case T: // Two-phase flow
+#ifdef RESET_4410
       idxS = pcs_vector[1]->GetNodeValueIndex("SATURATION1");
       for(i=0;i<nnodes;i++)
         NodalVal_Sat[i] = pcs_vector[1]->GetNodeValue(nodes[i],idxS+1);
@@ -3229,6 +3234,7 @@ void CFiniteElementStd::Assembly()
         //MMSMakeFluxMatrixEntry()
         AssembleRHSVector();
       }
+#endif
       break;
     //....................................................................
     case C: // Componental flow
@@ -3597,63 +3603,6 @@ void  CFiniteElementStd::Assemble_Transfer()
 PCSLib-Method: 
 01/2007 OK Implementation
 **************************************************************************/
-void CFiniteElementStd::AssembleGP_RHSVector()
-{
-  int i,k;
-  int gp,gp_r=0,gp_s=0,gp_t=0;
-  double fkt;
-  //----------------------------------------------------------------------
-  // Initializations
-  for(i=0;i<nnodes;i++)
-  {
-    NodalVal[i] = 0.0;
-  }
-  //(*Laplace) = 0.0;
-  //----------------------------------------------------------------------
-  // Field variables
-  double NodalVal_FV[20]; 
-  double FV;
-  int idx_fv = 0; //OKToDo
-  for(gp=0;gp<nGaussPoints;gp++)
-  {
-    NodalVal_FV[gp] = pcs->GetNodeValue(nodes[gp],idx_fv); 
-  } 
-  FV = interpolate(NodalVal_FV);
-  //----------------------------------------------------------------------
-  // Gaussian integration
-  for(gp=0;gp<nGaussPoints;gp++)
-  {
-    fkt = GetGaussData(gp,gp_r,gp_s,gp_t); // Gaussian coefficients ans Jacobian
-    ComputeGradShapefct(1); // grad N
-    //....................................................................
-    // Calculate mass matrix parts
-    fkt *= 1.;
-    for(i=0;i<nnodes;i++)
-	{
-      NodalVal[i] += fkt*NodalVal_P[i];
-    }
-    //....................................................................
-    // Calculate Laplace matrix parts
-    CalCoefLaplace(true);
-    for(i=0;i<nnodes;i++)
-	{
-      for(k=0;k<dim;k++)
-      {
-        NodalVal[i] -= fkt * dshapefct[k*nnodes+i] * mat[dim*k+dim-1];
-      }
-    }
-    //StiffMatrix->multi(NodalVal1, NodalVal);
-  }
-  //----------------------------------------------------------------------
-  // Store RHS contribution
-  for(i=0;i<nnodes;i++)
-  {
-    pcs->eqs->b[NodeShift[problem_dimension_dm]+eqs_number[i]] += NodalVal[i];
-    (*RHS)(i+LocalShift) += NodalVal[i];
-  } 
-  //----------------------------------------------------------------------
-  //RHS->Write();
-}
 
 /**************************************************************************
 PCSLib-Method: 
@@ -3734,44 +3683,3 @@ void CFiniteElementStd::AssembleRHSVector()
 
 using FiniteElement::ElementValue;
 vector<ElementValue*> ele_gp_value;
-
-/*
-  switch(PcsType)
-  {
-    //....................................................................
-    case L: // Liquid flow
-      break;
-    //....................................................................
-    case G: // Groundwater flow
-      break;
-    //....................................................................
-    case T: // Two-phase flow
-      break;
-    //....................................................................
-    case C: // Componental flow
-      break;
-    //....................................................................
-    case H: // Heat transport
-	  break;
-    //....................................................................
-    case M: // Mass transport
-      break;
-    //....................................................................
-    case O: // Overland flow
-      break;
-    //....................................................................
-    case R: // Richards flow
-      break;
-    //....................................................................
-	case F: // Fluid Momentum - Assembly handled in Assembly in Fluid_Momentum file
-	  break;
-    //....................................................................
-    case A: // Air (gas) flow
-      break;
-    //....................................................................
-    default:
-      cout << "Fatal error: No valid PCS type" << endl;
-      break;
-  }
-*/
-

@@ -182,7 +182,6 @@ class CFiniteElementStd:public CElement
 	 void AssembleRHS(int dimension); // PCH
      void Assemble_Transfer();
      bool check_matrices; //OK4104
-     void AssembleGP_RHSVector(); //OK
      void AssembleRHSVector(); //OK
    public:
      void AssembleParabolicEquationRHSVector(); //OK
