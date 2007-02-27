@@ -357,6 +357,7 @@ void CGeoSysView::OnDraw(CDC* pDC)
   // PCSLib
   CRFProcess* m_pcs = NULL;
   m_pcs = PCSGet((string)theApp->g_graphics_modeless_dlg->m_strPCSName);
+  if (pcs_vector.size()>1)
   m_pcs = pcs_vector[theApp->g_graphics_modeless_dlg->pcs_vector_number];// CC
   //--------------------------------------------------------------------
   // MAT groups
