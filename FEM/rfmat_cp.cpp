@@ -101,7 +101,6 @@ bool CPRead(string file_base_name)
   string sub_line;
   string line_string;
   ios::pos_type position;
-
   //========================================================================
   // File handling
   string cp_file_name = file_base_name + CP_FILE_EXTENSION;
@@ -115,6 +114,7 @@ bool CPRead(string file_base_name)
 	cout << "CPRead" << endl;
   // Schleife ueber alle Phasen bzw. Komponenten 
   while (!cp_file.eof()) {
+    
     cp_file.getline(line,MAX_ZEILE);
     line_string = line;
 	if(line_string.find("#STOP")!=string::npos) 
@@ -124,6 +124,7 @@ bool CPRead(string file_base_name)
       m_cp = new CompProperties((long) cp_vec.size());
 	  m_cp->file_base_name = file_base_name;
       position = m_cp->Read(&cp_file);
+//-----------------------------
       cp_vec.push_back(m_cp);
 	  cp_file.seekg(position,ios::beg);
     } // keyword found

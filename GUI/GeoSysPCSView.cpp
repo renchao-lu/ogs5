@@ -242,6 +242,7 @@ void CGeoSysView::OnProperties()
 GeoSys-GUI: CGeoSysView()
 Programing:
 09/2003 OK/CC Implementation
+02/2007 CC Modification
 **************************************************************************/
 void CGeoSysView::OnDraw(CDC* pDC)
 {
@@ -356,6 +357,7 @@ void CGeoSysView::OnDraw(CDC* pDC)
   // PCSLib
   CRFProcess* m_pcs = NULL;
   m_pcs = PCSGet((string)theApp->g_graphics_modeless_dlg->m_strPCSName);
+  m_pcs = pcs_vector[theApp->g_graphics_modeless_dlg->pcs_vector_number];// CC
   //--------------------------------------------------------------------
   // MAT groups
   if(theApp->g_graphics_modeless_dlg->m_bDisplayMaterialGroups){

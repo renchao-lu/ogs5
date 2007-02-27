@@ -89,6 +89,7 @@ CGraphics::CGraphics(CWnd* pParent /*=NULL*/)
     , m_bDisplayDOM(FALSE)
     , m_bDisplaySFC_MAT(FALSE)
     , m_bDisplaySFCValues(FALSE)
+    , pcs_vector_number(0)
 {
 	//{{AFX_DATA_INIT(CGraphics)
 	m_dXmin = 0.0;
@@ -370,6 +371,7 @@ BOOL CGraphics::OnInitDialog()
     if(m_pcs){
       for(j=0;j<(int)m_pcs->nod_val_name_vector.size();j++){ //OKMB
         m_CB_Quantities.AddString((CString)m_pcs->nod_val_name_vector[j].data());
+        CString CC = (CString)m_pcs->nod_val_name_vector[j].data();
         m_CB_Quantities.SetCurSel(0);
       }
       OnCbnSelchangeComboQuantities();
@@ -2835,6 +2837,7 @@ GUILib-Function:
 Task:
 Programing:
 04/2005 OK Implementation
+02/2007 CC Modification
 **************************************************************************/
 void CGraphics::OnCbnSelchangeComboPCS()
 {
@@ -2842,6 +2845,8 @@ void CGraphics::OnCbnSelchangeComboPCS()
   CRFProcess* m_pcs = NULL;
   m_CB_PCS.GetLBText(m_CB_PCS.GetCurSel(),m_strPCSName);
   m_pcs = PCSGet((string)m_strPCSName);
+  m_pcs = pcs_vector[m_CB_PCS.GetCurSel()];// CC
+  pcs_vector_number = m_CB_PCS.GetCurSel();//CC
   if(m_pcs){
 /*OK
     //....................................................................
@@ -3193,6 +3198,7 @@ GUILib-Function:
 Task:
 Programing:
 06/2005 OK Implementation
+03/2007 CC Modification
 **************************************************************************/
 void CGraphics::OnCbnSelchangeComboQuantities()
 {
@@ -3206,6 +3212,7 @@ void CGraphics::OnCbnSelchangeComboQuantities()
     m_CB_Quantities.GetLBText(m_CB_Quantities.GetCurSel(),m_strQuantityName);
   //----------------------------------------------------------------------
   m_pcs = PCSGet((string)m_strPCSName);
+  m_pcs = pcs_vector[m_CB_PCS.GetCurSel()];//CC
   if(!m_pcs){ //OK
     AfxMessageBox("No PCS data");
     return;

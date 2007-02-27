@@ -227,6 +227,7 @@ GeoSys-GUI-Method:
 Task:
 Programing:
 05/2005 OK Implementation
+02/2007 CC Modification
 **************************************************************************/
 void CDialogOUT::OnCbnSelchangeComboPCSType()
 {
@@ -241,6 +242,9 @@ void CDialogOUT::OnCbnSelchangeComboPCSType()
   CRFProcess* m_pcs = NULL;
   m_CB_PCSType.GetLBText(m_CB_PCSType.GetCurSel(),m_strPCSType);
   m_pcs = PCSGet((string)m_strPCSType);
+  m_pcs = pcs_vector[m_CB_PCSType.GetCurSel()];//CC
+  pcs_vector_number = m_CB_PCSType.GetCurSel();
+  pcs_vector_number = m_CB_PCSType.GetCurSel();//CC
   if(m_pcs){
     //--------------------------------------------------------------------
     // NOD variables
@@ -468,6 +472,7 @@ GeoSys-GUI-Method:
 Task:
 Programing:
 05/2005 OK Implementation
+02/2007 CC Modification
 **************************************************************************/
 void CDialogOUT::OnBnClickedButtonCreate()
 {
@@ -485,6 +490,7 @@ void CDialogOUT::OnBnClickedButtonCreate()
   }
   //----------------------------------------------------------------------
   m_obj = new COutput();
+  m_obj->pcs_vector_number = pcs_vector_number;//CC
   m_obj->pcs_type_name = m_strPCSType;
   m_obj->geo_type_name = m_strGEOType;
   m_obj->geo_name = m_strGEOName;

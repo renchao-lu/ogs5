@@ -98,6 +98,7 @@ Programing:
 12/2003 OK Implementation
 05/2004 CC Modification
 05/2005 OK OUT,MSH,PCS concept
+02/2007 CC pcs_vector_number
 **************************************************************************/
 void CGeoSysOUTProfileView::OnDraw(CDC* pDC)
 {
@@ -115,6 +116,7 @@ void CGeoSysOUTProfileView::OnDraw(CDC* pDC)
     return;
   CRFProcess* m_pcs = NULL;
   m_pcs = PCSGet(m_out->pcs_type_name);
+  m_pcs = pcs_vector[m_out->pcs_vector_number];//CC
   if(!m_pcs)
     return;
   //----------------------------------------------------------------------

@@ -240,6 +240,7 @@ public:
     BOOL m_Displaylegend;    
     CComboBox m_CB_MSH;
     CComboBox m_CB_PCS;
+    int pcs_vector_number;//CC
     afx_msg void OnCbnSelchangeComboMSH();
     afx_msg void OnCbnSelchangeComboPCS();
     CListBox m_LB_FCT;

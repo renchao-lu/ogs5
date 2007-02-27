@@ -35,6 +35,7 @@ public:
     vector<double> order;
     COutput* m_obj;
     CString m_strPCSType;
+    int pcs_vector_number;
     CString m_strGEOType;
     CString m_strTIMType;
     CString	m_strGEOName;
