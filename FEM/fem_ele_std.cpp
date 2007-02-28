@@ -310,8 +310,10 @@ void CFiniteElementStd::SetVariable()
   if((int)pcs->continuum_vector.size()== 2){
     idxp0 = pcs->GetNodeValueIndex(pcs->pcs_primary_function_name[1-pcs->GetContinnumType()]);  
     idxp1 = idxp0+1;      
-    idxSm = pcs->GetNodeValueIndex(pcs->pcs_secondary_function_name[0])+1;  //matrix   
-    idxSf = pcs->GetNodeValueIndex(pcs->pcs_secondary_function_name[2])+1;  //fracture 
+    idxpm = pcs->GetNodeValueIndex(pcs->pcs_primary_function_name[0])+1;  //matrix   
+    idxpf = pcs->GetNodeValueIndex(pcs->pcs_primary_function_name[1])+1;  //fracture       
+    //idxSm = pcs->GetNodeValueIndex(pcs->pcs_secondary_function_name[0])+1;  //matrix   
+    //idxSf = pcs->GetNodeValueIndex(pcs->pcs_secondary_function_name[2])+1;  //fracture 
   }
 }
 
@@ -464,6 +466,7 @@ void CFiniteElementStd::SetMaterial(int phase)
 	long multi_mmp = (long)mmp_vector.size()/(long)pcs->continuum_vector.size();
 	group = MeshElement->GetPatchIndex()+multi_mmp*pcs->GetContinnumType();   
     Media_Matrix = mmp_vector[MeshElement->GetPatchIndex()]; 
+    mmp_Fracture = mmp_vector[MeshElement->GetPatchIndex()+multi_mmp]; 
   }
   //group = MeshElement->GetPatchIndex();
   MediaProp = mmp_vector[group];
@@ -771,6 +774,7 @@ inline double CFiniteElementStd::CalCoefMass()
   double rhov = 0.0;
   double rhow = 0.0; 
   double S_P = 0.0;
+
   CompProperties *m_cp = NULL;
 
   if(pcs->m_num->ele_mass_lumping)
@@ -834,7 +838,10 @@ inline double CFiniteElementStd::CalCoefMass()
       val = 1.0; 
       break;
     case R: // Richards
-      Sw = interpolate(NodalVal_Sat);
+		//for(i=0;i<nnodes;i++)   //YD
+        //      NodalVal_P[i] = pcs->GetNodeValue(nodes[i], idx1); 
+      // pw = interpolate(NodalVal_P);
+      Sw = MediaProp->SaturationCapillaryPressureFunction(-interpolate(NodalVal1),(int)mfp_vector.size()-1);
       rhow = FluidProp->Density(); 
       S_P = MediaProp->SaturationPressureDependency(Sw,pcs->m_num->ls_theta);
 	    poro = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
@@ -856,12 +863,6 @@ inline double CFiniteElementStd::CalCoefMass()
          val -= poro * rhov*S_P/rhow;                  
          val += (1.0-Sw)*poro*rhov/(rhow*rhow*GAS_CONSTANT_V*TG);
       }	  
-     if(RD_Flag)
-     {
-      //val += MediaProp->transfer_coefficient*MediaProp->unsaturated_hydraulic_conductivity  \
-      //      /(pcs->preferential_factor*FluidProp->Density()*gravity_constant);
-      val += Sw*MediaProp->specific_storage;  
-     }
       break;
     case F:	// Fluid Momentum
   		val = 1.0;
@@ -1017,6 +1018,7 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
   static double Hn[9],z[9];
   double GradH[3],Gradz[3],w[3],v1[3],v2[3];
   int nidx1;
+  double pw;
   int Index = MeshElement->GetIndex();
   CRFProcess* m_pcs = PCSGet("FLUID_MOMENTUM"); // PCH
   // For nodal value interpolation
@@ -1228,8 +1230,11 @@ shapefct[1] = 0.; //OK
 		//if(m_pcs)
 		//	idxS = pcs->GetNodeValueIndex("SATURATION1")+1;	// PCH FM needs this.   //YD idxS may be the Index of second continuum, and it exists
 		for(i=0;i<nnodes;i++) //SB 4209 - otherwise saturations are nonsense
-          NodalVal_Sat[i] = pcs->GetNodeValue(nodes[i], idxS);
-        Sw = interpolate(NodalVal_Sat);
+              NodalVal_P[i] = pcs->GetNodeValue(nodes[i], idx1); 
+            //  NodalVal_Sat[i] = pcs->GetNodeValue(nodes[i], idxS);
+       // Sw = interpolate(NodalVal_Sat);
+         pw = interpolate(NodalVal_P);
+         Sw = MediaProp->SaturationCapillaryPressureFunction(-pw,(int)mfp_vector.size()-1);
 //		cout << " Index, Sw: " << Index << ", " << Sw << endl;
         tensor = MediaProp->PermeabilityTensor(Index);
 		if(m_pcs && ip == 1)
@@ -3556,21 +3561,24 @@ void  CFiniteElementStd::Assemble_Transfer()
   double fkt;
   int gp, gp_r=0, gp_s=0, gp_t;
   gp_t = 0;
-  double Sm, Sf, matrix_conductivity;
+  double Sm, Sf, matrix_conductivity,Sf_e,pm,pf;
   double* permeability;
-  double NodalVal_Sm[20]; 
-  double NodalVal_Sf[20];
+  double NodalVal_pm[20]; 
+  double NodalVal_pf[20];
   //---------------------------------------------------------
-  for(i=0;i<nGaussPoints;i++){ 
-     NodalVal_Sm[i] = pcs->GetNodeValue(nodes[i], idxSm); 
-     NodalVal_Sf[i] = pcs->GetNodeValue(nodes[i], idxSf); 
+  for(i=0;i<nnodes;i++){ 
+     NodalVal_pm[i] = pcs->GetNodeValue(nodes[i], idxpm); 
+     NodalVal_pf[i] = pcs->GetNodeValue(nodes[i], idxpf); 
+     NodalVal[i] = 0.0;
   } 
-     Sm = interpolate(NodalVal_Sm);
-     Sf = interpolate(NodalVal_Sf);
+  pm = interpolate(NodalVal_pm);
+  pf = interpolate(NodalVal_pf);
+     Sm = Media_Matrix->SaturationCapillaryPressureFunction(-pm,(int)mfp_vector.size()-1);
+     Sf = mmp_Fracture->SaturationCapillaryPressureFunction(-pf,(int)mfp_vector.size()-1);
      permeability = Media_Matrix->PermeabilityTensor(Index); 
      matrix_conductivity = time_unit_factor* Media_Matrix->PermeabilitySaturationFunction(Sm,0)*permeability[0] \
-                *FluidProp->Density()*gravity_constant/FluidProp->Viscosity();  //k*ro*g/u
-      matrix_conductivity*= 0.001; //temp
+                /FluidProp->Viscosity();  //k*r/u   *FluidProp->Density()*gravity_constant
+      matrix_conductivity*= Sf_e; //temp
   //---------------------------------------------------------
   for (gp = 0; gp < nGaussPoints; gp++)
   {
@@ -3580,13 +3588,13 @@ void  CFiniteElementStd::Assemble_Transfer()
       //---------------------------------------------------------
       fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
       // Material
-      fkt *= MediaProp->transfer_coefficient*matrix_conductivity*Sf  \
+      fkt *= MediaProp->transfer_coefficient*matrix_conductivity  \
 		/(pcs->continuum_vector[pcs->GetContinnumType()]) ;
-    		  
+      ComputeShapefct(1); // Linear interpolation function    		  
       // Calculate mass matrix
       for (i = 0; i < nnodes; i++)
 	  {
-            NodalVal[i] = fkt*NodalVal_P[i]*shapefct[i];
+         NodalVal[i] += fkt*NodalVal_P[i]*shapefct[i];
       }
   }
   for (i=0;i<nnodes;i++)

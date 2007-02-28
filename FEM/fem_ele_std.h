@@ -92,7 +92,7 @@ class CFiniteElementStd:public CElement
      long index;
 	 // Column index in the node value table
      int idx0, idx1, idxS, idx3; 
-     int idxp0,idxp1, idxSm, idxSf;   //YD
+     int idxp0,idxp1, idxpm, idxpf;   //YD
      int phase; 
      int comp; // Component
 	   int LocalShift; // For RHS
@@ -107,6 +107,7 @@ class CFiniteElementStd:public CElement
      char pcsT;
      bool dynamic; 
      CMediumProperties *Media_Matrix;  //YD
+     CMediumProperties *mmp_Fracture;  //YD
      bool flag_cpl_pcs; //OK
      //-------------------------------------------------------
      // Auxillarary matrices
