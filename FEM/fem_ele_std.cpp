@@ -3586,7 +3586,7 @@ void  CFiniteElementStd::Assemble_Transfer()
       // Calculate mass matrix
       for (i = 0; i < nnodes; i++)
 	  {
-            NodalVal[i] = fkt*NodalVal_P[i];
+            NodalVal[i] = fkt*NodalVal_P[i]*shapefct[i];
       }
   }
   for (i=0;i<nnodes;i++)
