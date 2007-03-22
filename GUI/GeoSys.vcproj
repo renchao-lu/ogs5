@@ -25,7 +25,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				OptimizeForProcessor="1"
-				AdditionalIncludeDirectories="..\FEM;..\GEO;..\GUI;..\LIB;..\MSH"
+				AdditionalIncludeDirectories="../gui;../fem;../lib;../msh;../msh/tm;../msh/delaunay;../geo;../;../gui/splitter;../gui/iso;..\MSH\NW"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
 				StringPooling="TRUE"
 				RuntimeLibrary="2"
@@ -44,7 +44,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="OPENGL32.LIB GLU32.LIB"
+				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib fdelaun3d.lib fdelaun2d-msvc.lib"
 				OutputFile=".\Release/TestGL.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
@@ -92,7 +92,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../gui; ../fem; ../lib; ../msh; ../msh/tm;../msh/delaunay;../geo; ../; ../gui/splitter;../gui/iso"
+				AdditionalIncludeDirectories="../gui;../fem;../lib;../msh;../msh/tm;../msh/delaunay;../geo;../;../gui/splitter;../gui/iso;..\MSH\NW"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;MFC;_FEMPCHDEBUG_;RANDOM_WALK"
 				RuntimeLibrary="3"
 				DisableLanguageExtensions="FALSE"
@@ -111,7 +111,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib"
+				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib fdelaun3d.lib fdelaun2d-msvc.lib"
 				OutputFile=".\Debug/GeoSys.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
@@ -119,6 +119,7 @@
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\Debug/GeoSys.pdb"
 				SubSystem="2"
+				StackReserveSize="83886080"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"
@@ -160,6 +161,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="../gui;../fem;../lib;../msh;../msh/tm;../msh/delaunay;../geo;../;../gui/splitter;../gui/iso;..\MSH\NW"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_SGI_OGL"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="3"
@@ -175,7 +177,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="OPENGL.LIB GLU.LIB OPENGL32.LIB GLU32.LIB shapelib.lib"
+				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib fdelaun3d.lib fdelaun2d-msvc.lib"
 				OutputFile=".\Debug_SGI/GeoSys.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
@@ -1189,6 +1191,22 @@
 				</File>
 				<File
 					RelativePath="..\Msh\Delaunay\tricommon.h">
+				</File>
+			</Filter>
+			<Filter
+				Name="NW"
+				Filter="">
+				<File
+					RelativePath="..\MSH\NW\delaunay2D.cpp">
+				</File>
+				<File
+					RelativePath="..\MSH\NW\delaunay2D.h">
+				</File>
+				<File
+					RelativePath="..\MSH\NW\delaunay3D.cpp">
+				</File>
+				<File
+					RelativePath="..\MSH\NW\delaunay3D.h">
 				</File>
 			</Filter>
 		</Filter>

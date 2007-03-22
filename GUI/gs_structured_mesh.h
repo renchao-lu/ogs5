@@ -21,6 +21,8 @@ public:
     long   m_delta_x, m_delta_y;
     BOOL m_do_structured_triangle_mesh;
     BOOL m_do_structured_rectangle_mesh;
+	BOOL m_do_structured_only_equi_triangle_mesh;
+
 
 
 

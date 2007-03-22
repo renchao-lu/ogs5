@@ -623,12 +623,16 @@
 #define IDC_RADIO_BC_TYPE2              1210
 #define IDC_EDIT_TIME_END               1210
 #define IDC_EDIT_TIM_VALUE              1210
+#define IDC_MSH_TEST_DELAUNAY3DLIB      1210
 #define IDC_RADIO_BC_TYPE4              1211
 #define IDC_LIST_VAL_ELE                1211
+#define IDC_CREATE_ELLIPSE2D            1211
 #define IDC_RADIO_BC_TYPE3              1212
 #define IDC_RADIO_TIM_TYPE1             1212
+#define IDC_MSHNODES_ALONG_POLYLINE     1212
 #define IDC_RADIO_BC_TYPE5              1213
 #define IDC_RADIO_TIM_TYPE2             1213
+#define IDC_MSH_TEST_DELAUNAY2DLIB      1213
 #define ID_ADD_OUT_TIME                 1214
 #define IDC_RADIO_DAT_TYPE1             1215
 #define IDC_RADIO_DAT_TYPE2             1216
@@ -676,6 +680,7 @@
 #define IDC_COMBO_VOL_LAYER_SFC         1227
 #define IDC_ADD_NEXT_POLYGON_BUTTON     1227
 #define IDC_BUTTON_UNSELECTPOINT        1227
+#define IDC_CHECK_ONLY_EQUI_TRI_MESH    1227
 #define IDC_RADIO_BC_TYPE7              1228
 #define IDC_NUMOFPARTICLES              1228
 #define IDC_INOROUT                     1228

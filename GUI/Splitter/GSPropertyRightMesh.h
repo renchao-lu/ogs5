@@ -75,4 +75,10 @@ public:
     afx_msg void OnBnClickedMappingRight();
     afx_msg void OnBnClickedCreateEllipsoid();
     afx_msg void OnBnClickedNewMeshfromMATMesh();
+	afx_msg void OnBnClickedMshTestDelaunay3DLib();
+	afx_msg void OnBnClickedCreateEllipse2d();
+	afx_msg void OnBnClickedMshTestDelaunay2dlib();
+
+	afx_msg void OnBnClickedMshnodesAlongPolyline();
 };
+

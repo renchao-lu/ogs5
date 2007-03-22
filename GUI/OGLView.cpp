@@ -42,8 +42,8 @@
 using namespace Mesh_Group;
 
 //FEM
-#include "elements.h"
-#include "nodes.h"
+//#include "elements.h"
+//#include "nodes.h"
 #include "rf_pcs.h"
 #include "rf_tim_new.h"
 #include "rf_bc_new.h"
@@ -393,6 +393,16 @@ void COGLView::OnDrawGL()
     /*DISPLAY*/ 
     Arrange_and_Display(); 
     }
+
+/*Ellipse around selceted points*/ 
+    if (m_bounding_box == 1) {
+
+        GetMSHMinMax();   
+        DrawEllipseAroundSelection();
+    /*DISPLAY*/ 
+    Arrange_and_Display(); 
+    }
+
 
 
 /*POINTS*/ 
@@ -3227,7 +3237,9 @@ if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
 			 {
 			 glColor3d(1.00-(msh_elements_vector[j]->quality_factor),msh_elements_vector[j]->quality_factor,0.0);
 
-             if (msh_elements_vector[j]->quality_factor < 0.3)
+             //OUtput for distorted Elements //TODO: Not stable
+             /*
+             if (msh_elements_vector[j]->quality_factor < 0.1)
              {
                 double* xyz = NULL;
                 xyz[0]= m_image_distort_factor_x* (-x_mid +   (msh_elements_vector[j]->x1));
@@ -3252,8 +3264,7 @@ if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
                 glRasterPos3d(xyz[0],xyz[1],xyz[2]);
                 sprintf(number,"%ld",msh_elements_vector[j]->element_id);
                 Text2D(number);
-
-              }
+              }*/
              //glColor3d(1-msh_elements_vector[j]->quality_factor,msh_elements_vector[j]->quality_factor,0.0);
              glEnable(GL_BLEND);
 			 glBegin(GL_TRIANGLES); /*Linien lesen aus View-Linien-Vektor und darstellen*/
@@ -6163,4 +6174,63 @@ void COGLView::drawIsoLine(std::vector<CIsoSurfaceLine*>* mIsoLines)
 void COGLView::SetIsoLineWidth(float Width)
 {
 	glLineWidth(Width);
+}
+
+void COGLView::DrawEllipseAroundSelection()
+{
+ int i=0, j=0;
+ double x_elepsoid_min=0,y_elepsoid_min=0,z_elepsoid_min=0;
+ double x_elepsoid_max=0,y_elepsoid_max=0,z_elepsoid_max=0;
+ double x_elepsoid_dist=0,y_elepsoid_dist=0,z_elepsoid_dist=0;
+ BOOL DRAW_ON_OFF = FALSE;
+    for(j=0;j<(long)fem_msh_vector.size();j++)
+    {
+      if (fem_msh_vector[j]->ele_display_mode == 1 || fem_msh_vector[j]->nod_display_mode == 1)
+      { 
+        /*Calculate Max&Midpoints*/ 
+        for(i=0;i<(long)fem_msh_vector[j]->nod_vector.size();i++)
+        {
+			if (fem_msh_vector[j]->nod_vector[i]->selected == 1)
+			DRAW_ON_OFF = TRUE;
+            if(i==0)
+            {
+            x_elepsoid_min = fem_msh_vector[j]->nod_vector[i]->X();
+            y_elepsoid_min = fem_msh_vector[j]->nod_vector[i]->Y();
+            z_elepsoid_min = fem_msh_vector[j]->nod_vector[i]->Z();
+            x_elepsoid_max = fem_msh_vector[j]->nod_vector[i]->X();
+            y_elepsoid_max = fem_msh_vector[j]->nod_vector[i]->Y();
+            z_elepsoid_max = fem_msh_vector[j]->nod_vector[i]->Z();
+            }
+            else
+            {
+            if (x_elepsoid_min > fem_msh_vector[j]->nod_vector[i]->X())
+                x_elepsoid_min = fem_msh_vector[j]->nod_vector[i]->X();
+            if (y_elepsoid_min > fem_msh_vector[j]->nod_vector[i]->Y())
+                y_elepsoid_min = fem_msh_vector[j]->nod_vector[i]->Y();
+            if (z_elepsoid_min > fem_msh_vector[j]->nod_vector[i]->Z())
+                z_elepsoid_min = fem_msh_vector[j]->nod_vector[i]->Z();
+            if (x_elepsoid_max < fem_msh_vector[j]->nod_vector[i]->X())
+                x_elepsoid_max = fem_msh_vector[j]->nod_vector[i]->X();
+            if (y_elepsoid_max < fem_msh_vector[j]->nod_vector[i]->Y())
+                y_elepsoid_max = fem_msh_vector[j]->nod_vector[i]->Y();
+            if (z_elepsoid_max < fem_msh_vector[j]->nod_vector[i]->Z())
+                z_elepsoid_max = fem_msh_vector[j]->nod_vector[i]->Z();
+            }
+        }     
+        x_elepsoid_dist = x_elepsoid_max - x_mid;
+        y_elepsoid_dist = y_elepsoid_max - y_mid;
+        z_elepsoid_dist = z_elepsoid_max - z_mid;
+
+	  }
+	}
+ const float DEG2RAD = 3.14159/180;
+ if (DRAW_ON_OFF == TRUE){
+ glBegin(GL_LINE_LOOP);
+ for (i=0; i < 360; i++)
+ {
+  float degInRad = i*DEG2RAD;
+  glVertex3d(m_image_distort_factor_x*(cos(degInRad)*x_elepsoid_dist),m_image_distort_factor_y*(sin(degInRad)*y_elepsoid_dist),m_image_distort_factor_z*(-z_mid + z_elepsoid_dist));
+ }
+ glEnd();
+}
 }

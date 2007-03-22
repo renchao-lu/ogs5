@@ -233,6 +233,7 @@ private:
     double Get_Blue_Value(double value_norm);
     void UpdatePcsMinmax();
     void Arrange_and_Display();
+	void DrawEllipseAroundSelection();
 
 private:
 	CGLDispList anothercube;

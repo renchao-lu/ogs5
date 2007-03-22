@@ -27,6 +27,9 @@
 #include "tricommon.h"
 #include "mathlib.h"
 #include "gs_prisgen.h"
+#include "msh_mesh.h"
+#include "delaunay3D.h"
+#include "delaunay2D.h"
 //FEM
 #include "rf_pcs.h"
 #include "rf_tim_new.h"
@@ -129,6 +132,11 @@ BEGIN_MESSAGE_MAP(CGSPropertyRightMesh, CViewPropertyPage)
     ON_BN_CLICKED(IDC_MAPPING_RIGHT, OnBnClickedMappingRight)
     ON_BN_CLICKED(IDC_CREATE_ELLIPSOID, OnBnClickedCreateEllipsoid)
     ON_BN_CLICKED(IDC_NEW_MSH_FROM_MATMESH, OnBnClickedNewMeshfromMATMesh)
+	ON_BN_CLICKED(IDC_MSH_TEST_DELAUNAY2DLIB, OnBnClickedMshTestDelaunay2dlib)
+
+	ON_BN_CLICKED(IDC_MSH_TEST_DELAUNAY3DLIB, OnBnClickedMshTestDelaunay3DLib)
+	ON_BN_CLICKED(IDC_CREATE_ELLIPSE2D, OnBnClickedCreateEllipse2d)
+	ON_BN_CLICKED(IDC_MSHNODES_ALONG_POLYLINE, OnBnClickedMshnodesAlongPolyline)
 END_MESSAGE_MAP()
 
 
@@ -321,7 +329,7 @@ void CGSPropertyRightMesh::OnBnClickedStruc2dButton()
       double origin = 0.0;
       double x_min = dlg.m_edit_x_min;
       double y_min = dlg.m_edit_y_min;
-      double x=0.0,y=0.0,z=0.0;
+      double x=0.0,y=0.0,z=0.0, y2=0.0;
       double x_max = dlg.m_edit_x_max;
       double y_max = dlg.m_edit_y_max;
       double slope_x = dlg.slope_x;
@@ -332,8 +340,8 @@ void CGSPropertyRightMesh::OnBnClickedStruc2dButton()
       double y_length = y_max - y_min;
       double x_step = x_length/delta_x;
       double y_step = y_length/delta_y;
-      long point1,point2,point3,point4;
-
+      long point1,point2,point3,point4,point5;
+      int number_of_x_points=0;
       
       double z_origin    = origin;
       double z_origin_x  = z_origin + (slope_x*(x_max-x_min));
@@ -428,7 +436,9 @@ void CGSPropertyRightMesh::OnBnClickedStruc2dButton()
   //write msh file
     int i=0, j=0, nEle=0, nNod=0;
 
-    if (dlg.m_do_structured_triangle_mesh == FALSE && dlg.m_do_structured_rectangle_mesh == FALSE) return;  
+    if (dlg.m_do_structured_triangle_mesh == FALSE && 
+		dlg.m_do_structured_rectangle_mesh == FALSE &&
+		dlg.m_do_structured_only_equi_triangle_mesh == FALSE) return;  
 
        FILE *msh_file=NULL;
        msh_file = fopen(msh_file_name_const_char, "w+t");
@@ -441,12 +451,24 @@ void CGSPropertyRightMesh::OnBnClickedStruc2dButton()
     //Write Nodes
 	   	fprintf( msh_file, "%s\n", " $NODES");
         nNod = (delta_x +1)* (delta_y +1);
+	    if (dlg.m_do_structured_only_equi_triangle_mesh == TRUE)
+		{
+		 x_step = (y_step/2)*(sqrt(3.0));
+    	 number_of_x_points = ((int)((x_max-x_min)/x_step))+2;
+		 if(number_of_x_points%2==0) number_of_x_points = number_of_x_points;
+		 else number_of_x_points++;
+         nNod = number_of_x_points* (delta_y +1);
+		}
         fprintf(msh_file,"% ld\n",nNod);
     //write Geometry    
     m_ProgressBar.SetRange((short)0,(short)nNod+(short)nEle);
     m_ProgressBar.SetStep(1); 
         pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"MESH GENERATION: Creating Nodes");  
         int nnb=0;
+
+    if (dlg.m_do_structured_triangle_mesh == TRUE || 
+		dlg.m_do_structured_rectangle_mesh == TRUE)
+	{
    	for(j=0 ;j<=delta_y;j++) 
     {
         y = y_min + (j*y_step);
@@ -461,10 +483,42 @@ void CGSPropertyRightMesh::OnBnClickedStruc2dButton()
         m_ProgressBar.StepIt();
 	    }
     }
+	}
+    if (dlg.m_do_structured_only_equi_triangle_mesh == TRUE)
+	{
+   	for(j=0 ;j<=delta_y;j++) 
+    {
+        y = y_min + (j*y_step);
+		y2 = y + (0.5*y_step);
+        z_origin_y  = z_origin + (slope_y*y);
+		x_step = (y_step/2)*(sqrt(3.0));
+        for(i=0 ;i<number_of_x_points;i++) 
+        {
+		if(i%2==0)
+		{
+        x = x+(y_step/2)*(sqrt(3.0));
+		if (i==0)x =  x_min;
+        z  = z_origin_y + (slope_x*x);
+        fprintf( msh_file, "%d ", nnb);
+        fprintf( msh_file, "%20.14f %20.14f %20.14f\n", x, y, z);
+        nnb++;
+        x = x+(y_step/2)*(sqrt(3.0));
+        z  = z_origin_y + (slope_x*x);
+        fprintf( msh_file, "%d ", nnb);
+        fprintf( msh_file, "%20.14f %20.14f %20.14f\n", x, y2, z);
+        nnb++;
+        m_ProgressBar.StepIt();
+	    }
+		}
+
+    }
+	}
+
     //Write Elements
 	   	fprintf( msh_file, "%s\n", " $ELEMENTS");
         if (dlg.m_do_structured_rectangle_mesh == TRUE) nEle = delta_x * delta_y;
         if (dlg.m_do_structured_triangle_mesh == TRUE)  nEle = delta_x * delta_y * 2;
+        if (dlg.m_do_structured_only_equi_triangle_mesh == TRUE)  nEle = ((number_of_x_points-1) *delta_y*2);
 		fprintf(msh_file,"% ld\n",nEle);
     //write Topology
     int nel=0;
@@ -515,6 +569,48 @@ void CGSPropertyRightMesh::OnBnClickedStruc2dButton()
 	    }
         }
 
+    }
+    if (dlg.m_do_structured_only_equi_triangle_mesh == TRUE)
+    { 
+    	for(j=0;j<(delta_y);j++) 
+        {
+             y_jump = number_of_x_points*j;
+
+        for(i=0 ;i<=number_of_x_points-2;i++) 
+        {
+            point1 = y_jump+i;
+            point2 = y_jump+i+1;
+            point3 = y_jump+i+number_of_x_points;
+            point4 = y_jump+i+2;
+			point5 = y_jump+i+number_of_x_points+1;
+
+            if(i%2==0)
+			{
+			fprintf( msh_file, "%d ", nel);
+            fprintf( msh_file, " 0 -1 tri ");     
+		    fprintf( msh_file, "%d  %d  %d\n",point1, point2, point3);
+            nel++;
+            fprintf( msh_file, "%d ", nel);
+            fprintf( msh_file, " 0 -1 tri ");     
+		    fprintf( msh_file, "%d  %d  %d\n",point2, point3, point5);
+            nel++;
+            m_ProgressBar.StepIt();
+			}
+			else
+			{
+            fprintf( msh_file, "%d ", nel);
+            fprintf( msh_file, " 0 -1 tri ");     
+		    fprintf( msh_file, "%d  %d  %d\n",point1, point2, point5);
+            nel++;
+            fprintf( msh_file, "%d ", nel);
+            fprintf( msh_file, " 0 -1 tri ");     
+		    fprintf( msh_file, "%d  %d  %d\n",point1, point3, point5);
+            nel++;
+            m_ProgressBar.StepIt();
+		    }
+
+	    }
+        }
     }
 
     //Write STOP
@@ -2841,3 +2937,310 @@ void CGSPropertyRightMesh::OnBnClickedMappingRight()
 }
 
 
+
+void CGSPropertyRightMesh::OnBnClickedMshTestDelaunay3DLib()
+{
+  //========================================================================
+  CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+  CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
+  //========================================================================
+  //File handling
+  //========================================================================
+  CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+  CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+  CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+  CString m_strFileNameBase = m_pDoc->m_strGSPFilePathBase;
+  CString m_strFileNamePoints = m_strFileNameBase + ".pnt";
+  CString m_strFileNameTetMSH = m_strFileNameBase + ".msh";
+  CString m_strFileNameGSP = m_strFileNameBase + ".gsp";
+  const char *d3dgeo_file_name_const_char = 0;
+  const char *d3dmsh_file_name_const_char = 0;
+  d3dgeo_file_name_const_char = m_strFileNamePoints;
+  d3dmsh_file_name_const_char = m_strFileNameTetMSH;
+  FILE *d3d_input_file = NULL;
+  d3d_input_file = fopen(d3dgeo_file_name_const_char, "w+t"); 
+  char input_file [1024];
+  char output_file [1024];
+  strcpy(input_file,d3dgeo_file_name_const_char);
+  strcpy(output_file,d3dmsh_file_name_const_char);
+  //========================================================================
+
+  int i=0;
+  vector<CGLPoint*> gli_points_vector;
+  gli_points_vector = GetPointsVector();
+  fprintf( d3d_input_file, "%d\n", (int)gli_points_vector.size());
+  for (i=0;i<(long)gli_points_vector.size();i++)  { 	
+   fprintf(d3d_input_file,"%20.14f %20.14f %20.14f \n",gli_points_vector[i]->x,  gli_points_vector[i]->y,gli_points_vector[i]->z);
+  }
+   fclose(d3d_input_file);
+   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Starting 3D Delaunay ");  
+   ExecuteDelaunay3D(input_file, output_file);
+
+  FEMRead((string)m_strFileNameBase);
+  CompleteMesh(); 
+
+  m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
+  m_pDoc->UpdateAllViews(NULL);
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)" ");  
+  Invalidate(TRUE);
+  OnPaint();
+  // Add MSH member to GSP vector
+  GSPAddMember((string)m_pDoc->m_strGSPFileBase + ".msh");
+
+
+  remove(d3dgeo_file_name_const_char);
+}
+void CGSPropertyRightMesh::OnBnClickedMshTestDelaunay2dlib()
+{
+  //========================================================================
+  CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+  CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
+  //========================================================================
+  //File handling
+  //========================================================================
+  CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+  CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+  CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+  CString m_strFileNameBase = m_pDoc->m_strGSPFilePathBase;
+  CString m_strFileNameTetMSH = m_strFileNameBase + ".msh";
+  CString m_strFileNameGSP = m_strFileNameBase + ".gsp";
+
+  const char *d3dmsh_file_name_const_char = 0;
+  d3dmsh_file_name_const_char = m_strFileNameTetMSH;
+  char output_file [1024];
+  strcpy(output_file,d3dmsh_file_name_const_char);
+  //========================================================================
+
+  int ready2mesh = 0;
+  int i=0;
+
+  for (i=0;i<(int)surface_vector.size();i++)
+  {
+      if (surface_vector[i]->display_mode_3d == 1)
+      {
+          surface_vector[i]->meshing_allowed = 1;
+          ready2mesh = 1;
+      }
+      else
+      {
+          surface_vector[i]->meshing_allowed = 0;
+          surface_vector[i]->display_mode_3d = 0;
+      }
+  }
+
+  if (ready2mesh == 0) {
+	  return;
+  }
+
+  CFEMesh*m_msh = NULL;
+  m_msh = new CFEMesh();
+
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Starting 2D Delaunay");  
+  int errorCode = ExecuteDelaunay2D(output_file);	/* Meshing */
+  if (errorCode != 0) {
+	  char buff[128];
+	  sprintf(buff, "ERROR 2D Delaunay - ERROR CODE = %d", errorCode);
+	  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)buff);  
+	  return;
+  }
+
+  FEMRead((string)m_strFileNameBase);
+  CompleteMesh(); 
+
+  // Add MSH member to GSP vector
+  GSPAddMember((string)m_pDoc->m_strGSPFileBase + ".msh");
+
+  // Update View
+  m_frame->m_something_changed = 1;
+  m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
+  m_pDoc->UpdateAllViews(NULL);
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)" ");  
+  Invalidate(TRUE);
+  OnPaint();
+
+}
+
+void CGSPropertyRightMesh::OnBnClickedCreateEllipse2d()
+{
+ int i=0, j=0;
+ double x_mid=0,y_mid=0,z_mid=0;
+ double x_elepsoid_min=0,y_elepsoid_min=0,z_elepsoid_min=0;
+ double x_elepsoid_max=0,y_elepsoid_max=0,z_elepsoid_max=0;
+ double x_elepsoid_dist=0,y_elepsoid_dist=0,z_elepsoid_dist=0;
+ double a=0,b=0,c=0;
+ double x=0,y=0,z=0,r=0;
+    for(j=0;j<(long)fem_msh_vector.size();j++)
+    {
+      if (fem_msh_vector[j]->ele_display_mode == 1 || fem_msh_vector[j]->nod_display_mode == 1)
+      { 
+        /*Calculate Max&Midpoints*/ 
+        for(i=0;i<(long)fem_msh_vector[j]->nod_vector.size();i++)
+        {
+            if(i==0)
+            {
+            x_elepsoid_min = fem_msh_vector[j]->nod_vector[i]->X();
+            y_elepsoid_min = fem_msh_vector[j]->nod_vector[i]->Y();
+            z_elepsoid_min = fem_msh_vector[j]->nod_vector[i]->Z();
+            x_elepsoid_max = fem_msh_vector[j]->nod_vector[i]->X();
+            y_elepsoid_max = fem_msh_vector[j]->nod_vector[i]->Y();
+            z_elepsoid_max = fem_msh_vector[j]->nod_vector[i]->Z();
+            }
+            else
+            {
+            if (x_elepsoid_min > fem_msh_vector[j]->nod_vector[i]->X())
+                x_elepsoid_min = fem_msh_vector[j]->nod_vector[i]->X();
+            if (y_elepsoid_min > fem_msh_vector[j]->nod_vector[i]->Y())
+                y_elepsoid_min = fem_msh_vector[j]->nod_vector[i]->Y();
+            if (z_elepsoid_min > fem_msh_vector[j]->nod_vector[i]->Z())
+                z_elepsoid_min = fem_msh_vector[j]->nod_vector[i]->Z();
+            if (x_elepsoid_max < fem_msh_vector[j]->nod_vector[i]->X())
+                x_elepsoid_max = fem_msh_vector[j]->nod_vector[i]->X();
+            if (y_elepsoid_max < fem_msh_vector[j]->nod_vector[i]->Y())
+                y_elepsoid_max = fem_msh_vector[j]->nod_vector[i]->Y();
+            if (z_elepsoid_max < fem_msh_vector[j]->nod_vector[i]->Z())
+                z_elepsoid_max = fem_msh_vector[j]->nod_vector[i]->Z();
+            }
+            x_mid = x_mid + fem_msh_vector[j]->nod_vector[i]->X();
+            y_mid = y_mid + fem_msh_vector[j]->nod_vector[i]->Y();
+            z_mid = z_mid + fem_msh_vector[j]->nod_vector[i]->Z();
+        }     
+        x_mid = x_mid/(long)fem_msh_vector[j]->nod_vector.size();
+        y_mid = y_mid/(long)fem_msh_vector[j]->nod_vector.size();
+        z_mid = z_mid/(long)fem_msh_vector[j]->nod_vector.size();
+        x_elepsoid_dist = x_elepsoid_max - x_mid;
+        y_elepsoid_dist = y_elepsoid_max - y_mid;
+        z_elepsoid_dist = z_elepsoid_max - z_mid;
+
+
+        /*Select Points inside triangle*/ 
+        a = x_elepsoid_dist;
+        b = y_elepsoid_dist;
+        c = z_elepsoid_dist;
+        r = 0.0;
+        for(i=0;i<(long)fem_msh_vector[j]->nod_vector.size();i++)
+        {
+          x = fem_msh_vector[j]->nod_vector[i]->X()-x_mid;
+          y = fem_msh_vector[j]->nod_vector[i]->Y()-y_mid;
+          r = ((x*x)/(a*a))+((y*y)/(b*b));
+          if (r <= 1) fem_msh_vector[j]->nod_vector[i]->selected = 1;
+
+        }     
+
+        for(i=0;i<(long)fem_msh_vector[j]->ele_vector.size();i++)
+        {
+            double* xyz;
+            xyz = fem_msh_vector[j]->ele_vector[i]->GetGravityCenter();
+            x = xyz[0]-x_mid;
+            y = xyz[1]-y_mid;
+            z = xyz[2]-z_mid;
+            r = ((x*x)/(a*a))+((y*y)/(b*b));
+            if (r <= 1) fem_msh_vector[j]->ele_vector[i]->selected = 1;
+        }     
+      }
+    }
+  CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+  CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+  CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+  m_pDoc->UpdateAllViews(NULL);
+  Invalidate(TRUE);
+}
+
+void CGSPropertyRightMesh::OnBnClickedMshnodesAlongPolyline()
+{
+  CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Searching Nodes:");
+  CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+  CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+  CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+  CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+  CString m_strFileNameBase = m_pDoc->m_strGSPFilePathBase + "_temp";
+  CString m_strFileNameGLI = m_strFileNameBase + ".gli";
+  CString m_strFileNameGEO = m_strFileNameBase + ".geo";
+  CString m_strFileNameTIN = m_strFileNameBase + ".tin";
+  const char *file_name_const_char = 0;
+  file_name_const_char = m_strFileNameBase; 
+  int i=0, j=0;
+  double checkpoint[3];
+  double tolerance = 0.001;
+  double min_mesh_dist = 0.0;
+  int tri_node[3];
+  double tri_ele_coor[3][3]; 
+
+  vector<CGLPolyline*>::iterator p = polyline_vector.begin();  CGLPolyline *polyline;
+  for (i=0;i<(int)(int)polyline_vector.size();i++)
+  {
+	  polyline = *p;
+      if (polyline->display_mode == 1)
+      {
+       /*Polyline Search*/ 
+       pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Searching Nodes:.......please wait");
+
+
+ //Loop over all meshes
+    for(j=0;j<(long)fem_msh_vector.size()-1;j++)
+    {
+    //Loop over all edges
+        for(i=0;i<(long)fem_msh_vector[j]->edge_vector.size();i++)
+        {
+            if (j==0 && i==0){
+              min_mesh_dist = fem_msh_vector[j]->edge_vector[i]->Length();
+            }
+            else{
+              if (min_mesh_dist  > fem_msh_vector[j]->edge_vector[i]->Length())
+                  min_mesh_dist = fem_msh_vector[j]->edge_vector[i]->Length();
+            }
+        }
+        tolerance = min_mesh_dist;
+    //Loop over all mesh nodes
+        for(i=0;i<(long)fem_msh_vector[j]->nod_vector.size();i++)
+        {
+            checkpoint[0] = fem_msh_vector[j]->nod_vector[i]->X();
+            checkpoint[1] = fem_msh_vector[j]->nod_vector[i]->Y(); 
+            checkpoint[2] = fem_msh_vector[j]->nod_vector[i]->Z();
+        }
+
+    //Loop over all mesh elements
+		for(i=0;i<(long)fem_msh_vector[j]->ele_vector.size();i++)
+        {
+          if (fem_msh_vector[j]->ele_vector[i]->GetElementType() == 4) /*TRI*/ 
+          {
+		   tri_node[0] = fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(0);
+		   tri_node[1] = fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(1);
+		   tri_node[2] = fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(2);
+           tri_ele_coor[0][0] = fem_msh_vector[j]->nod_vector[tri_node[0]]->X();
+		   tri_ele_coor[0][1] = fem_msh_vector[j]->nod_vector[tri_node[0]]->Y();
+		   tri_ele_coor[0][2] = fem_msh_vector[j]->nod_vector[tri_node[0]]->Z();
+           tri_ele_coor[1][0] = fem_msh_vector[j]->nod_vector[tri_node[1]]->X();
+		   tri_ele_coor[1][1] = fem_msh_vector[j]->nod_vector[tri_node[1]]->Y();
+		   tri_ele_coor[1][2] = fem_msh_vector[j]->nod_vector[tri_node[1]]->Z();
+           tri_ele_coor[2][0] = fem_msh_vector[j]->nod_vector[tri_node[2]]->X();
+		   tri_ele_coor[2][1] = fem_msh_vector[j]->nod_vector[tri_node[2]]->Y();
+		   tri_ele_coor[2][2] = fem_msh_vector[j]->nod_vector[tri_node[2]]->Z();
+
+		   /*Calculate Intersection Points*/ 
+		   polyline->point_vector.size();
+
+
+		  }
+		}
+
+    }
+
+
+
+
+	   break;
+      }
+
+  }
+       /*Node and Element Selection*/ 
+
+
+ pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)" ");
+
+ m_frame->dist_geo_object = 0.001;
+ UpdateData(TRUE);
+ m_frame->m_something_changed = 1;
+ m_pDoc->UpdateAllViews(NULL);
+ Invalidate(TRUE);
+}
