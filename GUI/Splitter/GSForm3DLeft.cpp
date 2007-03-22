@@ -402,10 +402,11 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
   DWORD dwpos = GetMessagePos();
   dwpos=dwpos;
   point = GetCurrentMessage()->pt;
+  int scroll  = GetScrollPos(SB_VERT); 
   
   ScreenToClient(&point);
   point.x = point.x ;
-  point.y = point.y ;
+  point.y = point.y + scroll;
   hItem = pCtrl->HitTest(point, &uFlags);
 
   if ((uFlags & TVHT_ONITEM) || (uFlags & TVHT_ONITEMINDENT) || (uFlags & TVHT_ONITEMRIGHT))
