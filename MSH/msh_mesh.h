@@ -207,6 +207,9 @@ extern long msh_no_tris;
 extern long msh_no_tets;
 extern long msh_no_pris;
 
-extern "C" __declspec (dllexport) void TETGEN(void*,void*,void*,void*, void*,void*,void*,void*,void*,void*);
+ // Okayama LIBS and DLL'S Entrance here!!!
+#ifdef MFC
+  extern "C" __declspec (dllexport) void TETGEN(void*,void*,void*,void*, void*,void*,void*,void*,void*,void*);
+#endif
 
 #endif
