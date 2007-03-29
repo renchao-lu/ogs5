@@ -98,6 +98,7 @@ CMediumProperties::CMediumProperties(void)
   heat_diffusion_model = -1; //WW
   geo_area = 1.0;
   geo_type_name = "DOMAIN"; //OK
+  saturation_max[0] = saturation_max[1] = saturation_max[2] = 1.0; //WW
 }
 
 /**************************************************************************
@@ -5234,40 +5235,63 @@ Programing:
 05/2001 OK Verallgemeinerung
 02/2005 OK CMediumProperties function
 08/2005 WW Remove interpolation
+03/2007 WW Analytical solution: 
 Last modified:
 **************************************************************************/
-double CMediumProperties::SaturationPressureDependency(const double saturation,double theta)
+double CMediumProperties::SaturationPressureDependency
+         (double saturation, double density_fluid, double theta)
 //(int phase, long index, double r, double s, double t, double theta)
 {
-  static double capillary_pressure,capillary_pressure1,capillary_pressure2;
+   
+ static double capillary_pressure,capillary_pressure1,capillary_pressure2;
   static double saturation1,saturation2;
   static double dS,dS_dp,dpc;
-  int phase = (int)mfp_vector.size()-1; 
+ // 01.3.2007 WW
+  double S_e, m, n, alpha;
+  int phase = 0;
+  S_e=m=n=alpha=0.0;
   //----------------------------------------------------------------------
   // Vollsaettigung? 
   mode = 2;
-  phase = (int)mfp_vector.size()-1; 
+  phase = 0; //WW (int)mfp_vector.size()-1; 
+  // Althogh p_c is known, we need to calculate it again just to fit the range of p_c>0.0
+  // for this derivative calculation
   capillary_pressure = CapillaryPressureFunction(number,NULL,theta,phase, saturation);
   if(capillary_pressure < MKleinsteZahl)
     return 0.;
-  //----------------------------------------------------------------------
- // Wenn wir nah an der Vollsaettigung, ggf. Schrittweite verkleinern 
-  dS = 1.e-2;
-  do{
-    dS /= 10.;
-    saturation1 = saturation - dS;
-    capillary_pressure1 = CapillaryPressureFunction(number,NULL,theta,phase,saturation1);
-    saturation2 = saturation + dS;
-    capillary_pressure2 = CapillaryPressureFunction(number,NULL,theta,phase,saturation2);
-    dpc = capillary_pressure1 - capillary_pressure2; //OK4105
-  }
-  while((dS > MKleinsteZahl) && (capillary_pressure2 < MKleinsteZahl / 100.));
-  if ( ((capillary_pressure1 > MKleinsteZahl)||(capillary_pressure2 > MKleinsteZahl)) \
-      && (dpc > MKleinsteZahl) )
-    dS_dp = 2. * dS / (capillary_pressure1 - capillary_pressure2);
-  else{
-    dS_dp = 0.;
-    //cout << "Warning in CMediumProperties::SaturationPressureDependency: dS_dp = 0" << endl; //OK4105
+  switch(capillary_pressure_model) // 01.3.2007 WW
+  { 
+    default:  // k = f(x) user-defined function  
+      //----------------------------------------------------------------------
+      // Wenn wir nah an der Vollsaettigung, ggf. Schrittweite verkleinern 
+      dS = 1.e-2;
+      do{
+        dS /= 10.;
+        saturation1 = saturation - dS;
+        capillary_pressure1 = CapillaryPressureFunction(number,NULL,theta,phase,saturation1);
+        saturation2 = saturation + dS;
+        capillary_pressure2 = CapillaryPressureFunction(number,NULL,theta,phase,saturation2);
+        dpc = capillary_pressure1 - capillary_pressure2; //OK4105
+      }
+      while((dS > MKleinsteZahl) && (capillary_pressure2 < MKleinsteZahl / 100.));
+      if ( ((capillary_pressure1 > MKleinsteZahl)||(capillary_pressure2 > MKleinsteZahl)) \
+        && (dpc > MKleinsteZahl) )
+        dS_dp = 2. * dS / (capillary_pressure1 - capillary_pressure2);
+      else{
+        dS_dp = 0.;
+        //cout << "Warning in CMediumProperties::SaturationPressureDependency: dS_dp = 0" << endl; //OK4105
+      }
+      break;
+    case 44:  // Van Genuchten: 01.3.2007 WW
+      m = saturation_exp[phase]; 
+      n = 1./(1.0-m);
+      alpha = capillary_pressure_model_values[0]/(density_fluid*gravity_constant);      
+      // saturation is p_c
+      // dS_dp = dS_d/p_c * dp_c/dp = -dS_d/p_c
+	  dS_dp = m*n*(saturation_max[phase]-saturation_res[phase])*
+              pow(1.0+pow(alpha*capillary_pressure,n),-m-1.0)
+              *pow(alpha, n)*pow(capillary_pressure, n-1.0);
+      break;
   }
   //----------------------------------------------------------------------
   mode = 0;

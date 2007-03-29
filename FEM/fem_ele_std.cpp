@@ -768,13 +768,8 @@ inline double CFiniteElementStd::CalCoefMass()
 {
   int Index = MeshElement->GetIndex();
   double val = 0.0;
-  double poro = 0.0;
-  double Sw = 0.0;
-  double humi = 0.0;
+  double humi = 1.0;
   double rhov = 0.0;
-  double rhow = 0.0; 
-  double S_P = 0.0;
-
   CompProperties *m_cp = NULL;
 
   if(pcs->m_num->ele_mass_lumping)
@@ -838,29 +833,28 @@ inline double CFiniteElementStd::CalCoefMass()
       val = 1.0; 
       break;
     case R: // Richards
-		//for(i=0;i<nnodes;i++)   //YD
-        //      NodalVal_P[i] = pcs->GetNodeValue(nodes[i], idx1); 
-      // pw = interpolate(NodalVal_P);
-      Sw = MediaProp->SaturationCapillaryPressureFunction(-interpolate(NodalVal1),(int)mfp_vector.size()-1);
+      PG = interpolate(NodalVal1); //12.02.2007.  Important! WW
+      Sw = MediaProp->SaturationCapillaryPressureFunction(-PG,0); //WW
+ //     Sw = interpolate(NodalVal_Sat);
       rhow = FluidProp->Density(); 
-      S_P = MediaProp->SaturationPressureDependency(Sw,pcs->m_num->ls_theta);
-	    poro = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
+      dSdp = MediaProp->SaturationPressureDependency(Sw, rhow, pcs->m_num->ls_theta);
+      poro = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
       // Storativity
       val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) *Sw;
 
       // Fluid compressibility
       val += poro  *Sw* FluidProp->drho_dp / rhow;
       // Capillarity
-      val += poro * S_P;
+      val += poro * dSdp;
       if(MediaProp->heat_diffusion_model==273) //WW
       {
-  	     PG = fabs(interpolate(NodalVal1));                      
+//  	     PG = fabs(interpolate(NodalVal1));                      
          TG = interpolate(NodalValC)+273.15; 
          //Rv = GAS_CONSTANT;
-         humi = exp(PG/(GAS_CONSTANT_V*TG*rhow));
+         humi = exp(fabs(PG)/(GAS_CONSTANT_V*TG*rhow));
          rhov = humi*FluidProp->vaporDensity(TG); 
          //
-         val -= poro * rhov*S_P/rhow;                  
+         val -= poro * rhov*dSdp/rhow;                  
          val += (1.0-Sw)*poro*rhov/(rhow*rhow*GAS_CONSTANT_V*TG);
       }	  
       break;
@@ -1011,18 +1005,16 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
   double Dpv = 0.0;
   double poro = 0.0;
   double tort = 0.0;
-  double humi = 0.0;
+  double humi = 1.0;
   double rhow = 0.0; 
   double *tensor = NULL;
   double Hav,manning,chezy,expp,chezy4,Ss,arg;
   static double Hn[9],z[9];
   double GradH[3],Gradz[3],w[3],v1[3],v2[3];
   int nidx1;
-  double pw;
   int Index = MeshElement->GetIndex();
   CRFProcess* m_pcs = PCSGet("FLUID_MOMENTUM"); // PCH
   // For nodal value interpolation
-  ComputeShapefct(1);
   //======================================================================
   switch(PcsType)
   {
@@ -1153,7 +1145,14 @@ shapefct[1] = 0.; //OK
       case C: // Componental flow
         break;
       case H: // heat transport
-        if(SolidProp->GetCapacityModel()==3) // DECOVALEX THM1  //MX
+		if(SolidProp->GetCapacityModel()==2) // Boiling model. DECOVALEX THM2
+		{
+            TG = interpolate(NodalVal1); 
+            for(i=0; i<dim*dim; i++) mat[i] = 0.0; 
+			for(i=0; i<dim; i++) 
+	           mat[i*dim+i] = SolidProp->Heat_Conductivity(TG);
+		}
+        else if(SolidProp->GetCapacityModel()==3) // DECOVALEX THM1  //MX
 		{
             Sw = interpolate(NodalVal_Sat); 
             for(i=0; i<dim*dim; i++) mat[i] = 0.0; 
@@ -1169,7 +1168,7 @@ shapefct[1] = 0.; //OK
         {
           tensor = MediaProp->HeatDispersionTensorNew(ip);
           for(i=0;i<dim*dim;i++) 
-            mat[i] = tensor[i];  //MX *time_unit_factor; //mat[i*dim+i] = tensor[i];
+            mat[i] = tensor[i];  
  
        }      
         break;
@@ -1227,15 +1226,9 @@ shapefct[1] = 0.; //OK
       //------------------------------------------------------------------
       case R: // Richards flow
 		// The following line only applies when Fluid Momentum is on
-		//if(m_pcs)
-		//	idxS = pcs->GetNodeValueIndex("SATURATION1")+1;	// PCH FM needs this.   //YD idxS may be the Index of second continuum, and it exists
-		for(i=0;i<nnodes;i++) //SB 4209 - otherwise saturations are nonsense
-              NodalVal_P[i] = pcs->GetNodeValue(nodes[i], idx1); 
-            //  NodalVal_Sat[i] = pcs->GetNodeValue(nodes[i], idxS);
-       // Sw = interpolate(NodalVal_Sat);
-         pw = interpolate(NodalVal_P);
-         Sw = MediaProp->SaturationCapillaryPressureFunction(-pw,(int)mfp_vector.size()-1);
-//		cout << " Index, Sw: " << Index << ", " << Sw << endl;
+        PG = interpolate(NodalVal1); //05.01.07 WW
+        Sw = MediaProp->SaturationCapillaryPressureFunction(-PG,0); //05.01.07 WW
+
         tensor = MediaProp->PermeabilityTensor(Index);
 		if(m_pcs && ip == 1)
 		{
@@ -1244,7 +1237,6 @@ shapefct[1] = 0.; //OK
 
 		  break;
 		}
-
         mat_fac = time_unit_factor* MediaProp->PermeabilitySaturationFunction(Sw,0) \
                 / FluidProp->Viscosity();
         for(i=0; i<dim*dim; i++)
@@ -1252,12 +1244,12 @@ shapefct[1] = 0.; //OK
         if(MediaProp->heat_diffusion_model==273&&!Gravity)
 		{
             rhow = FluidProp->Density(); 
-			PG = fabs(interpolate(NodalVal1));                      
 			TG = interpolate(NodalValC)+273.15; 
 			poro = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
 			tort = MediaProp->TortuosityFunction(Index,unit,pcs->m_num->ls_theta);
             //Rv = GAS_CONSTANT;
-            humi = exp(PG/(GAS_CONSTANT_V*TG*rhow));
+            humi = exp(fabs(PG)/(GAS_CONSTANT_V*TG*rhow));
+            //
             Dpv = 2.16e-5*tort*(1-Sw)*poro*pow(TG/273.15, 1.8);
 
 			Dpv *= time_unit_factor*FluidProp->vaporDensity(TG)*humi/(GAS_CONSTANT_V*rhow*TG);
@@ -1315,7 +1307,7 @@ inline double CFiniteElementStd::CalCoefAdvection()
     case C: // Componental flow
       break;
     case H: // heat transport
-      val = FluidProp->SpecificHeatCapacity()*FluidProp->Density();  //MX *time_unit_factor;
+      val = FluidProp->SpecificHeatCapacity()*FluidProp->Density();  
       break;
     case M: // Mass transport //SB4200
 		// Get velocity(Gausspoint)/porosity(element)
@@ -1602,6 +1594,7 @@ void CFiniteElementStd::CalcLaplace()
       //---------------------------------------------------------
       // Material
       CalCoefLaplace(false,gp); 
+      ComputeShapefct(1);   // Moved from CalCoefLaplace(). 12.3.2007 WW
       //---------------------------------------------------------
       // Calculate mass matrix
       //this->pcs->m_msh
@@ -1763,7 +1756,7 @@ void CFiniteElementStd::CalcRHS_by_ThermalDiffusion()
          double rhow = FluidProp->Density(); 
   	     PG = fabs(interpolate(NodalVal1));                      
          TG = interpolate(NodalValC)+273.15; 
-         Sw = interpolate(NodalVal_Sat);
+         Sw = MediaProp->SaturationCapillaryPressureFunction(PG,0); //WW
          poro = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
          tort = MediaProp->TortuosityFunction(Index,unit,pcs->m_num->ls_theta);
          beta = poro*MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) *Sw;
@@ -1832,7 +1825,7 @@ void CFiniteElementStd::CalcStrainCoupling()
 
 
    int i,k,l,kl, gp, gp_r, gp_s, gp_t;
-   double fkt;
+   double fkt, du = 0.0;
    setOrder(2);
    // Swap cordinates in case of (x, 0.0, z) only for 2D problem 
    if(coordinate_system%10==2) // Z has number
@@ -1886,6 +1879,7 @@ void CFiniteElementStd::CalcStrainCoupling()
 
          ComputeGradShapefct(2);
          ComputeShapefct(1);
+         ComputeShapefct(2);
 
          fkt *= CalCoefStrainCouping();
 
@@ -1893,7 +1887,9 @@ void CFiniteElementStd::CalcStrainCoupling()
 		 {
             for (l=0;l<nnodesHQ;l++) {    
                 kl = nnodesHQ*i+l;       
-               (*StrainCoupling)(k, kl) += shapefct[k] * dshapefctHQ[kl] * fkt;  
+                  du  = dshapefctHQ[kl];
+                  if(i==0&&axisymmetry) du += shapefctHQ[l]/Radius;
+                  (*StrainCoupling)(k, kl) += shapefct[k] * du * fkt;  
             }
         }
      }
@@ -1951,7 +1947,7 @@ void  CFiniteElementStd::Assemble_Gravity()
 	  // Compute geometry
       //---------------------------------------------------------
       ComputeGradShapefct(1); // Linear interpolation function
-
+      ComputeShapefct(1);   // Moved from CalCoefLaplace(). 12.3.2007 WW
       // Material
       CalCoefLaplace(true);
       rho = FluidProp->Density();            //Index,unit,pcs->m_num->ls_theta
@@ -2106,7 +2102,7 @@ void  CFiniteElementStd::Cal_Velocity()
   	  // Compute geometry
       //---------------------------------------------------------
       ComputeGradShapefct(1); // Linear interpolation function
-
+      ComputeShapefct(1);   // Moved from CalCoefLaplace(). 12.3.2007 WW
       // Material
       CalCoefLaplace(true);
 
@@ -3278,8 +3274,6 @@ void CFiniteElementStd::Assembly()
       break;
     //....................................................................
     case R: // Richards flow
-      for(i=0;i<nnodes;i++)
-        NodalVal_Sat[i] = pcs->GetNodeValue(nodes[i], idxS);
       if(MediaProp->heat_diffusion_model==273)
         CalcRHS_by_ThermalDiffusion(); 
       AssembleParabolicEquation(); //OK

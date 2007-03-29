@@ -134,7 +134,8 @@ class CFiniteElementStd:public CElement
      double NodalVal_P[20]; 
   private: //OK
      // Gauss point value. Buffers.
-     double TG, PG, Sw;    
+     double TG, PG;    
+     double Sw, rhow, poro, dSdp; //02:2007 WW   
      double edlluse[16];
      double edttuse[16];
 

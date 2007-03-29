@@ -30,7 +30,6 @@ using namespace std;
 #include "nodes.h"
 #include "elements.h"           /* für ElGetElementGroupNumber */
 #include "edges.h"              /* für GetEdge */
-#include "cgs_asm.h" 
  /* Tools */
 #include "mathlib.h"            /* für MAngleVectors */
 #include "tools.h"

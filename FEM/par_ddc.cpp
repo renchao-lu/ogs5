@@ -20,8 +20,6 @@ using namespace std;
 
 // FEM-Makros
 #include "makros.h"
-#include "cel_asm.h" // to removed
-extern void MakeElementEntryEQS_ASM(long,double*,double*,CPARDomain*,CRFProcess*);
 #include "elements.h"
 #include "matrix.h"
 #include "geo_strings.h"
@@ -550,7 +548,7 @@ void CPARDomain::AssembleMatrix(CRFProcess* m_pcs)
   for(i=0;i<no_elements;i++){
     // virtual function PCSAssembleMatrix(i)
     //MakeElementEntryEQS_ASM(elements[i]->global_number,eqs->b,NULL,this);
-    MakeElementEntryEQS_ASM(i,eqs->b,NULL,this,m_pcs);
+    // WW MakeElementEntryEQS_ASM(i,eqs->b,NULL,this,m_pcs);
 //MXDumpGLS("AssembleMatrix1.txt",1,eqs->b,eqs->x);
   }
 }

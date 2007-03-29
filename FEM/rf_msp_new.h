@@ -37,6 +37,7 @@ class CSolidProperties
     double PoissonRatio;
     double ThermalExpansion;
     double biot_const;
+    double grav_const; //WW
     Matrix *data_Density;
     Matrix *data_Youngs;
     Matrix *data_Plasticity;
@@ -192,7 +193,7 @@ class CSolidProperties
           const ElementValue_DM *ele_val, double *dStrain,  Matrix *Dep, const int Update);
 
     // Strain inrement by creep
-    void AddStain_by_Creep(const int ns, double *stress_n, double *dstrain);
+    void AddStain_by_Creep(const int ns, double *stress_n, double *dstrain, double temperature=0.0);
 
     // Plasticity
     // 1. Drucker-Prager
@@ -203,7 +204,8 @@ class CSolidProperties
     double Hard;
     double Hard_Loc;
 
-    vector<string>  capacity_pcs_name_vector;
+    vector<string>  capacity_pcs_name_vector; //WW
+    vector<string>  conductivity_pcs_name_vector; //WW  
 
 
 };

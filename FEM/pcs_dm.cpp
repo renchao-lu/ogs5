@@ -129,7 +129,8 @@ void CRFProcessDeformation::Initialization()
 
    if(m_msh->isAxisymmetry()) Axisymm = -1; // Axisymmetry is true
    fem_dm = new CFiniteElementVec(this, Axisymm*m_msh->GetCoordinateFlag());
-
+   fem_dm->SetGaussPointNumber(m_num->ele_gauss_points);
+   //
    // Monolithic scheme
    if(type==41) fem =  new CFiniteElementStd(this, Axisymm*m_msh->GetCoordinateFlag());
    //
@@ -836,8 +837,11 @@ void CRFProcessDeformation::ResetCouplingStep()
      ElementValue_DM* eleV_DM = NULL;
      for (e = 0; e < (long)m_msh->ele_vector.size(); e++)
      {
-        eleV_DM = ele_value_dm[e];
-		eleV_DM->ResetStress(true);                                                        
+       if(m_msh->ele_vector[e]->GetMark())
+	   {
+         eleV_DM = ele_value_dm[e];
+         eleV_DM->ResetStress(true);
+	   } 
      }
      shift = 0;
      for (i = 0; i < GetUnknownVectorDimensionLinearSolver(eqs); i++)
@@ -860,8 +864,11 @@ void CRFProcessDeformation::ResetTimeStep()
      ElementValue_DM* eleV_DM = NULL;
      for (e = 0; e < (long)m_msh->ele_vector.size(); e++)
      {
-        eleV_DM = ele_value_dm[e];
-		eleV_DM->ResetStress(false);                                                        
+       if(m_msh->ele_vector[e]->GetMark())
+	   {
+          eleV_DM = ele_value_dm[e];
+          eleV_DM->ResetStress(false);      
+	   }
      }
 }
 
@@ -1441,7 +1448,6 @@ void CRFProcessDeformation::Extropolation_GaussValue()
   long i = 0;
   int Idx_Stress[7];
   const long LowOrderNodes= m_msh->GetNodesNumber(false);
-  ElementValue_DM *eval_DM;
   Mesh_Group::CElem* elem = NULL;
 
   // Clean nodal stresses
@@ -1472,7 +1478,6 @@ void CRFProcessDeformation::Extropolation_GaussValue()
      {
          fem_dm->ConfigElement(elem);
 		 fem_dm->SetMaterial();
-         eval_DM = ele_value_dm[i];
  //TEST        (*eval_DM->Stress) += (*eval_DM->Stress0);
          fem_dm->ExtropolateGuassStress();
  //TEST        if(!update)
@@ -1866,13 +1871,13 @@ void CRFProcessDeformation:: DomainAssembly(CPARDomain* m_dom)
     {
        elem = m_msh->ele_vector[m_dom->elements[i]];
        if (elem->GetMark()) // Marked for use
-	   {
+       {
            elem->SetOrder(true);
            fem_dm->SetElementNodesDomain(m_dom->element_nodes_dom[i]); //WW         
-		   fem_dm->ConfigElement(elem);
+           fem_dm->ConfigElement(elem);
            fem_dm->m_dom = m_dom;
-		   fem_dm->LocalAssembly(0);
-	   } 
+           fem_dm->LocalAssembly(0);
+       } 
     }
     if(type==41) // p-u monolithic scheme
     {
@@ -1882,9 +1887,9 @@ void CRFProcessDeformation:: DomainAssembly(CPARDomain* m_dom)
       // Assemble pressure eqs
       for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
       {
-          elem = m_msh->ele_vector[m_dom->elements[i]];
-          if (elem->GetMark()) // Marked for use
-          {
+         elem = m_msh->ele_vector[m_dom->elements[i]];
+         if (elem->GetMark()) // Marked for use
+         {
             elem->SetOrder(false);
             fem->SetElementNodesDomain(m_dom->element_nodes_dom[i]); //WW         
             fem->ConfigElement(elem);
@@ -1894,7 +1899,8 @@ void CRFProcessDeformation:: DomainAssembly(CPARDomain* m_dom)
       }
       if(!fem_dm->dynamic)
          RecoverSolution(2);  // p_i-->p_0
-    }   
+    }
+    
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -2002,22 +2008,57 @@ Task: Update stresses and straines at each Gauss points
 Argument: 
 Programing:
 02/2005 WW
+06/2005 WW  Parallelization
 **************************************************************************/
 void CRFProcessDeformation::UpdateStress()
 {
    long i;
    CElem* elem = NULL;
-   ElementValue_DM* eleV_DM = NULL;
-   for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
+   /*
+   long j, irank;
+   j = 0;
+   if(dom_vector.size()>0)
    {
-      elem = m_msh->ele_vector[i];
-      eleV_DM = ele_value_dm[i];
-      if (elem->GetMark()) // Marked for use
-	  { 
-          fem_dm->ConfigElement(elem);
-          fem_dm->LocalAssembly(1);
-	  }
+      CPARDomain* m_dom = NULL;
+#ifdef USE_MPI
+         irank = myrank;
+#else 
+      for(int j=0;j<(int)dom_vector.size();j++)
+      {
+         irank = j;
+#endif
+         m_dom = dom_vector[irank];
+         for (i = 0; i < (long)m_dom->elements.size(); i++)
+         {
+           elem = m_msh->ele_vector[m_dom->elements[i]];
+           if (elem->GetMark()) // Marked for use
+           {
+              elem->SetOrder(true);
+              fem_dm->SetElementNodesDomain(m_dom->element_nodes_dom[i]); //WW         
+              fem_dm->ConfigElement(elem);
+              fem_dm->m_dom = m_dom;
+              fem_dm->LocalAssembly(1);
+	        } 
+         }
+#ifndef USE_MPI
+      }
+#endif
    }
+   else
+   {
+   */
+     for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
+     {
+        elem = m_msh->ele_vector[i];
+        if (elem->GetMark()) // Marked for use
+        { 
+           elem->SetOrder(true);
+           fem_dm->m_dom = NULL;
+           fem_dm->ConfigElement(elem);
+           fem_dm->LocalAssembly(1);
+        }
+     }
+   //}
 }
 
 // Coupling
@@ -2094,6 +2135,7 @@ void CRFProcessDeformation::ReadGaussPointStress()
         file_stress.read((char*)(&index), sizeof(index));
         eleV_DM = ele_value_dm[index];
         eleV_DM->Read_BIN(file_stress); 
+        (*eleV_DM->Stress0) = (*eleV_DM->Stress);
         if(eleV_DM->Stress_j)       
            (*eleV_DM->Stress_j) = (*eleV_DM->Stress);
     }  
@@ -2424,7 +2466,7 @@ void CRFProcessDeformation::ExcavationSimulating()
         InitEQS();     
     } 
     */
-    //if(reload>0) reload=1; // Writing Gauss point stress in binary file.  
+    if(reload>0) reload=1; // Writing Gauss point stress in binary file.  
     cout<<"*** End of excavation"<<endl;
     cout<<"------------------------------------------"<<endl;
 }

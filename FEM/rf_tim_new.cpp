@@ -488,7 +488,10 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
   int no_time_steps;
 //WW  int no_processes =(int)pcs_vector.size();
   int mmp_vector_size = (int)mmp_vector.size(); 
-
+  CFluidProperties *m_mfp = NULL;
+  m_mfp = MFPGet("LIQUID");  //WW
+  double density_fluid = m_mfp->Density(); //WW
+  // 
   for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
   m_pcs = pcs_vector[n_p];
   CFiniteElementStd* fem = m_pcs->GetAssembler();
@@ -520,7 +523,7 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
             }
 		   for(j=0; j<elem->GetVertexNumber(); j++)
               Node_Sat[j] =  m_pcs->GetNodeValue(elem->GetNodeIndex(j),idxS);
-			  buffer = m_mmp->SaturationPressureDependency(fem->interpolate(Node_Sat),m_pcs->m_num->ls_theta);
+			  buffer = m_mmp->SaturationPressureDependency(fem->interpolate(Node_Sat),  density_fluid, m_pcs->m_num->ls_theta);
 			  buffer *= 0.5*elem->GetVolume()*elem->GetVolume();
 			  buffer *=m_mmp->porosity_model_values[0]*mfp_vector[0]->Viscosity()/m_mmp->permeability_tensor[0];
               buffer /=m_pcs->time_unit_factor;

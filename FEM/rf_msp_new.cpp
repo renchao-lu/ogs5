@@ -35,6 +35,7 @@ using namespace std;
 //structure element. To be romoved
 #include"elements.h"
 
+//
 vector<SolidProp::CSolidProperties*> msp_vector;
 
 namespace SolidProp{
@@ -172,6 +173,7 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
                in_sd >>(*data_Conductivity)(i,0)>>(*data_Conductivity)(i,1);
                in_sd.clear();
 			}
+            conductivity_pcs_name_vector.push_back("TEMPERATURE1"); //WW
             break;
 		 case 1: //  = const
             data_Conductivity = new Matrix(1);        
@@ -252,10 +254,31 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
         if(line_string.find("NORTON")!=string::npos)
         {
            Creep_mode=1;
+           /*! \subsection Norton creep model */
+           /*! \f$\dot\epsilon_s=A \left(\dfrac{\sigma_v}{\sigma^\ast}\right)^n\f$ */
+           // data_Creep: 
+           //  0: A,   coefficient
+           //  1: n,   exponential
            data_Creep = new Matrix(2);
            in_sd.str(GetLineFromFile1(msp_file));
            in_sd>>(*data_Creep)(0);
            in_sd>>(*data_Creep)(1);
+           in_sd.clear();           
+        }
+        if(line_string.find("BGRA")!=string::npos)
+        {
+           Creep_mode=2;
+           /*! \subsection Temperature dependent creep model by BGR */
+           /*! \f$\dot\epsilon_s=A\exp^{-Q/RT}\left(\dfrac{\sigma_v}{\sigma^\ast}\right)^n\f$ */
+           // data_Creep: 
+           //  0: A,   coefficient
+           //  1: n,   exponential
+           //  2: Q,   activation energy
+           data_Creep = new Matrix(3);
+           in_sd.str(GetLineFromFile1(msp_file));
+           in_sd>>(*data_Creep)(0);
+           in_sd>>(*data_Creep)(1);
+           in_sd>>(*data_Creep)(2);
            in_sd.clear();           
         }
     }
@@ -264,6 +287,17 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
     {  
        in_sd.str(GetLineFromFile1(msp_file));
        in_sd>>biot_const;
+       in_sd.clear();
+	}
+    if(line_string.find("$STRESS_UNIT")!=string::npos)
+    {  
+       
+       in_sd.str(GetLineFromFile1(msp_file));
+       in_sd>>sub_line;
+       if(sub_line.compare("MegaPascal")==0)
+         grav_const = 9.81e-6;
+       else if(sub_line.find("KiloPascal")==0)
+         grav_const = 9.81e-3;
        in_sd.clear();
 	}
     //....................................................................
@@ -375,7 +409,7 @@ Programing:
 **************************************************************************/
 CSolidProperties::CSolidProperties()
       :data_Density(NULL), data_Youngs(NULL),data_Plasticity(NULL),
-       data_Capacity(NULL),data_Conductivity(NULL), data_Creep(NULL)                          
+       data_Capacity(NULL), data_Conductivity(NULL), data_Creep(NULL)                          
 {
     PoissonRatio = 0.2;
     ThermalExpansion = 0.0;
@@ -386,6 +420,7 @@ CSolidProperties::CSolidProperties()
     Capacity_mode = -1;
     Conductivity_mode = -1;
     Creep_mode = -1; 
+    grav_const = 9.81; //WW
 
     SwellingPressureType = -1; 
 	Max_SwellingPressure = 0.0;
@@ -721,23 +756,30 @@ ToDo: geo_dimension
 void CSolidProperties::HeatConductivityTensor(const int dim, double* tensor, int group)
 {
   //static double tensor[9];
-  int heat_capacity_model;
   double temperature = 0.0;
   double saturation = 0.0;
   int i = 0;
-  CalPrimaryVariable(capacity_pcs_name_vector);
+  CalPrimaryVariable(conductivity_pcs_name_vector); //WW
   //--------------------------------------------------------------------
   // MMP medium properties
-  CMediumProperties *m_mmp = NULL;
-  m_mmp = mmp_vector[group];  //MX
-  thermal_conductivity_tensor[0] = Heat_Conductivity(); //WW
+  //WW CMediumProperties *m_mmp = NULL;
+  //WW m_mmp = mmp_vector[group];  //MX
   // Test for DECOVALEX
   // thermal_conductivity_tensor[0] =0.5+0.8*PCSGetELEValue(number,NULL,theta,"SATURATION1"); 
 
   //There are a number of cases where the heat conductivity tensor is defined by the capacity model;
-  heat_capacity_model = GetCapacityModel();
-  switch (heat_capacity_model){
-	  case 2: // Boiling model. DECOVALEX THM2
+  switch (Conductivity_mode){
+	case 0:
+      thermal_conductivity_tensor[0] = Heat_Conductivity(primary_variable[0]); //WW 
+      for(i=0; i<dim; i++) 
+         tensor[i*dim+i] =  thermal_conductivity_tensor[0]; 
+       break;
+    case 1:
+      thermal_conductivity_tensor[0] = Heat_Conductivity(0); //WW 
+      for(i=0; i<dim; i++) 
+         tensor[i*dim+i] =  thermal_conductivity_tensor[0]; 
+       break;
+    case 2: // Boiling model. DECOVALEX THM2
       temperature = primary_variable[0];
       //for(i=0; i<dim*dim; i++) mat[i] = 0.0; 
       for(i=0; i<dim; i++) 
@@ -749,7 +791,8 @@ void CSolidProperties::HeatConductivityTensor(const int dim, double* tensor, int
       for(i=0; i<dim; i++) 
          tensor[i*dim+i] = Heat_Conductivity(saturation);
       break;
-    default: //Normal case
+    default: //Normal case     
+      thermal_conductivity_tensor[0] = Heat_Conductivity(); //WW 
       thermal_conductivity_tensor_type = 0;
       switch(dim){
         case 1: // 1-D
@@ -1001,10 +1044,10 @@ bool CSolidProperties::StressIntegrationDP(const int GPiGPj,
   double I1 = 0.0;
   double ep, ep0;
   double F = 0.0, F0 = 0.0; //, yl;
-  double RF0 = 0.0;
+  //  double RF0 = 0.0;
   double sqrtJ2 = 0.0;
   double Beta = 0.0;
-  double p3, normXi, Jac, err;
+  double p3, normXi, Jac; //, err;
   int max_ite = 10;
   int ite=0;
   // double dstrs[6];
@@ -1054,10 +1097,10 @@ bool CSolidProperties::StressIntegrationDP(const int GPiGPj,
     //   If non-perfect plasticity, the below line has to be change
     Jac = -2.0*G-9.0*K*Al*Xi
              -MSqrt2Over3*BetaN*Hard*sqrt(1.0+3.0*Xi*Xi);
-    err = 1.0e+5;
+    //err = 1.0e+5;
            
     ep0 = ep;
-    RF0 = F;
+    // RF0 = F;
     while(isLoop)
     {
       ite++;
@@ -3514,19 +3557,32 @@ Programing:
 12/2005 WW 
 last modified:
 **************************************************************************/
-void CSolidProperties::AddStain_by_Creep(const int ns, double *stress_n, double *dstrain)
+void CSolidProperties::AddStain_by_Creep(const int ns, double *stress_n,
+                                         double *dstrain, double temperature)
 {
   int i, dim;
-  double norn_S, fac;
+  double norn_S, fac=0.0;
   DeviatoricStress(stress_n);
   dim = 2;
   if(ns>4) dim =3;
-  norn_S = sqrt(TensorMutiplication2(stress_n, stress_n, dim));
-//  fac = pow(1.5, (*data_Creep)(1)+1.0)*(*data_Creep)(0)*pow(norn_S, (*data_Creep)(1)-1.0)*dt;
-  fac = pow(2.0/3.0, (*data_Creep)(1))*(*data_Creep)(0)*pow(norn_S, (*data_Creep)(1)-2.0)*dt;
-//  fac = (*data_Creep)(0)*pow(norn_S, (*data_Creep)(1)-1.0)*dt;
+  norn_S = sqrt(3.0*TensorMutiplication2(stress_n, stress_n, dim)/2.0);
+  if(norn_S< DBL_MIN) return;
+  switch(Creep_mode)
+  { 
+    case 1:
+      //  fac = pow(1.5, (*data_Creep)(1)+1.0)*(*data_Creep)(0)*pow(norn_S, (*data_Creep)(1)-1.0)*dt;
+     // fac = pow(2.0/3.0, (*data_Creep)(1))*(*data_Creep)(0)*pow(norn_S, (*data_Creep)(1))*dt;
+       fac = (*data_Creep)(0)*pow(norn_S, (*data_Creep)(1))*dt;
+      break;
+	case 2:
+      // gas constant = R = 8.314472(15) J · K-1 · mol-1
+      // ec= A*exp(-G/RT)s^n
+      fac = 1.5*dt*(*data_Creep)(0)*exp(-(*data_Creep)(2)/(8.314472*(temperature+273.0)))*
+                     pow(norn_S, (*data_Creep)(1));
+      break;
+  }
   for(i=0; i<ns; i++)
-    dstrain[i] -= fac*stress_n[i];    
+    dstrain[i] -= fac*stress_n[i]/norn_S;    
 }
 
 /**************************************************************************

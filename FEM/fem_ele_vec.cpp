@@ -14,7 +14,6 @@
 #include "rf_msp_new.h"
 //Time step
 #include "rf_tim_new.h"
-extern double gravity_constant;
 // MSHLib
 #include "msh_elem.h"
 // FEMLib
@@ -113,6 +112,7 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
          AuxMatrix = new Matrix(2,2);
 		 Disp = new double[18];
 		 Temp = new double[9];
+		 T1 = new double[9];
 
 		 Sxx = new double[9];
 		 Syy = new double[9];
@@ -146,6 +146,7 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
          AuxMatrix = new Matrix(3,3);
 		 Disp = new double[60];
 		 Temp = new double[20];
+		 T1 = new double[20];
 
 		 Sxx = new double[20];
 		 Syy = new double[20];
@@ -255,6 +256,7 @@ CFiniteElementVec::~CFiniteElementVec()
 	delete AuxMatrix;
     delete Disp;
     delete Temp;
+    delete T1;
     delete Sxx;
     delete Syy;
     delete Szz;
@@ -309,6 +311,7 @@ CFiniteElementVec::~CFiniteElementVec()
 	AuxMatrix = NULL;
     Disp = NULL;
     Temp = NULL;
+    T1 = NULL;
     Sxx = NULL;
     Syy = NULL;
     Szz = NULL;
@@ -343,7 +346,7 @@ void CFiniteElementVec::SetMaterial()
 
    if(F_Flag)
       m_mfp = MFPGet("LIQUID"); // YD
-
+   //
    m_mmp = mmp_vector[MatGroup];
 }
 
@@ -670,7 +673,7 @@ void CFiniteElementVec::ComputeMatrix_RHS(const double fkt,
           {
              dN_dx = dshapefctHQ[nnodesHQ*j+k];
              if(j==0) dN_dx += shapefctHQ[k]/Radius;
-             (*PressureC)(nnodesHQ*j+k,l) += fac*dshapefctHQ[nnodesHQ*j+k] * shapefct[l]; 
+             (*PressureC)(nnodesHQ*j+k,l) += fac*dN_dx * shapefct[l]; 
           }
         }
       }
@@ -697,7 +700,7 @@ void CFiniteElementVec::ComputeMatrix_RHS(const double fkt,
       // 3D, in z-direction
       i = (ele_dim-1)*nnodesHQ;
       for (k = 0; k < nnodesHQ; k++) 
-        (*RHS)(i+k) += LoadFactor * rho * gravity_constant * shapefctHQ[k] * fkt;
+        (*RHS)(i+k) += LoadFactor * rho * smat->grav_const * shapefctHQ[k] * fkt;
   }
 }
 /***************************************************************************
@@ -1116,6 +1119,7 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
  
   double ThermalExpansion=0.0;
   double Tem=0.0;
+  double t1=0.0;
   bool Strain_TCS = false;
   //
   ThermalExpansion=0.0;
@@ -1138,7 +1142,10 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
   if(T_Flag)
   { 
     for (i = 0; i < nnodes; i++) 
-      Temp[i] =  t_pcs->GetNodeValue(nodes[i],idx_T1)-t_pcs->GetNodeValue(nodes[i],idx_T0);
+	{
+       T1[i] =  t_pcs->GetNodeValue(nodes[i],idx_T1);
+       Temp[i] =  t_pcs->GetNodeValue(nodes[i],idx_T1)-t_pcs->GetNodeValue(nodes[i],idx_T0);
+	}
   }
 
 
@@ -1236,16 +1243,20 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
         if(T_Flag) // Contribution by thermal expansion 
         {
             Tem=0.0; 
+            t1=0.0; 
             for(i = 0; i< nnodes; i++)
+            {
                Tem += shapefct[i]* Temp[i];
+               t1 += shapefct[i]* T1[i];
+            } 
             for (i = 0; i < 3; i++)
-                strain_ne[i] -= ThermalExpansion*Tem;
+               strain_ne[i] -= ThermalExpansion*Tem;
         } 
-        if(smat->Creep_mode==1) // Strain increment by creep
+        if(smat->Creep_mode>0) // Strain increment by creep
 	    {
            for (i = 0; i < ns; i++)
              stress_ne[i] = (*eleV_DM->Stress)(i, gp);
-		   smat->AddStain_by_Creep(ns,stress_ne, strain_ne);           
+           smat->AddStain_by_Creep(ns,stress_ne, strain_ne, t1);           
 	    }
         // Stress deduced by thermal or swelling strain incremental: 
         De->multi(strain_ne, dstress);
@@ -1446,12 +1457,12 @@ bool CFiniteElementVec::RecordGuassStrain(const int gp,
 void CFiniteElementVec::ExtropolateGuassStrain()
 {
   int i, j, gp=0;
-  int l1,l2,l3,l4; //, counter;
+  //  int l1,l2,l3,l4; //, counter;
   double ESxx, ESyy, ESzz, ESxy, ESxz, ESyz;
   double r=0.0, Xi_p = 0.0;
   //double Area1, Area2, Tol=10e-9;
 
-  l1=l2=l3=l4=0;
+  // l1=l2=l3=l4=0;
 
   if(MeshElement->GetElementType()==2||MeshElement->GetElementType()==3)
   {
@@ -1477,20 +1488,20 @@ void CFiniteElementVec::ExtropolateGuassStrain()
          case 4: // Traingle
            // Compute values at verteces  
            switch(i)
-	       {
-		      case 0:
-	             unit[0] = -0.1666666666667;
-	             unit[1] = -0.1666666666667;
-                 break;
-		      case 1:
-	             unit[0] = 1.6666666666667;
-	             unit[1] = -0.1666666666667;
-                 break;
-		      case 2:
-	             unit[0] = -0.1666666666667;
-	             unit[1] = 1.6666666666667;
-                 break;
-		   }
+           {
+              case 0:
+                unit[0] = -0.1666666666667;
+                unit[1] = -0.1666666666667;
+                break;
+              case 1:
+                unit[0] = 1.6666666666667;
+                unit[1] = -0.1666666666667;
+                break;
+              case 2:
+                unit[0] = -0.1666666666667;
+                unit[1] = 1.6666666666667;
+                break;
+           }
            ComputeShapefct(1); // Linear interpolation function
            for(j=0; j<nnodes; j++)
            {
@@ -1499,42 +1510,41 @@ void CFiniteElementVec::ExtropolateGuassStrain()
               ESxy += Sxy[j]*shapefct[j]; 
               ESzz += Szz[j]*shapefct[j]; 
            }
-	       break;
-	     case 2: // Quadralateral element 
- 
-	       // Extropolation over nodes
+           break;
+         case 2: // Quadralateral element 
+           // Extropolation over nodes
            switch(i)
-	       {
-	          case 0:
+           {
+               case 0:
                  unit[0] = Xi_p;
                  unit[1] = Xi_p;
-		         break;
-	          case 1:
+                 break;
+               case 1:
                  unit[0] = -Xi_p;
                  unit[1] = Xi_p;
-	             break;
-	          case 2:
+                 break;
+               case 2:
                  unit[0] = -Xi_p;
                  unit[1] = -Xi_p;
-		         break;
-	          case 3:
+                 break;
+               case 3:
                  unit[0] = Xi_p;
                  unit[1] = -Xi_p;
                  break;
            }
 
-           ComputeShapefct(2); // High order interpolation function
+           ComputeShapefct(1); //2 High order interpolation function
 
            // Strain
-           for(j=0; j<nnodesHQ; j++)
+           for(j=0; j<nnodes; j++)
            {
-              ESxx += Sxx[j]*shapefctHQ[j]; 
-              ESyy += Syy[j]*shapefctHQ[j]; 
-              ESxy += Sxy[j]*shapefctHQ[j]; 
-              ESzz += Szz[j]*shapefctHQ[j]; 
+              ESxx += Sxx[j]*shapefct[j]; 
+              ESyy += Syy[j]*shapefct[j]; 
+              ESxy += Sxy[j]*shapefct[j]; 
+              ESzz += Szz[j]*shapefct[j]; 
            }
            break;                              
-        case 3: // Hexahedra 
+         case 3: // Hexahedra 
            if(i<4)
            {  
               j = i;
@@ -1545,48 +1555,47 @@ void CFiniteElementVec::ExtropolateGuassStrain()
               j = i-4; 
               unit[2] = -Xi_p;
            }
-
            switch(j)
-	       {
-	          case 0:
+           {
+              case 0:
                  unit[0] = Xi_p;
                  unit[1] = Xi_p;
-		         break;
-	          case 1:
+                 break;
+              case 1:
                  unit[0] = -Xi_p;
                  unit[1] = Xi_p;
-	             break;
-	          case 2:
+                 break;
+              case 2:
                  unit[0] = -Xi_p;
                  unit[1] = -Xi_p;
-		         break;
-	          case 3:
+                 break;
+              case 3:
                  unit[0] = Xi_p;
                  unit[1] = -Xi_p;
                  break;
            }
 
-           ComputeShapefct(2); // High order interpolation function
+           ComputeShapefct(1); // 2 High order interpolation function
            // Strain
-           for(j=0; j<nnodesHQ; j++)
+           for(j=0; j<nnodes; j++) // for(j=0; j<nnodesHQ; j++)
            {
-              ESxx += Sxx[j]*shapefctHQ[j]; 
-              ESyy += Syy[j]*shapefctHQ[j]; 
-              ESxy += Sxy[j]*shapefctHQ[j]; 
-              ESzz += Szz[j]*shapefctHQ[j]; 
-              ESxz += Sxz[j]*shapefctHQ[j]; 
-              ESyz += Syz[j]*shapefctHQ[j]; 
+              ESxx += Sxx[j]*shapefct[j]; //shapefctHQ[j]; 
+              ESyy += Syy[j]*shapefct[j]; 
+              ESxy += Sxy[j]*shapefct[j]; 
+              ESzz += Szz[j]*shapefct[j]; 
+              ESxz += Sxz[j]*shapefct[j]; 
+              ESyz += Syz[j]*shapefct[j]; 
            }
            break;                               
          case 5: // Tedrahedra 
            // Compute values at verteces  
            switch(i)
-	       {
+           {
              case 0:
                unit[0] = -0.166666666666667;
                unit[1] = -0.166666666666667;
                unit[2] = -0.166666666666667;   
-                break;        
+               break;        
              case 1:
                unit[0] = 1.5;
                unit[1] = -0.166666666666667 ;
@@ -1601,7 +1610,7 @@ void CFiniteElementVec::ExtropolateGuassStrain()
                unit[0] = -0.166666666666667;
                unit[1] = -0.166666666666667;
                unit[2] = 1.5;   
- 		   }
+           }
            ComputeShapefct(1); // Linear interpolation function
            for(j=1; j<=nnodes; j++)
            {
@@ -1612,94 +1621,8 @@ void CFiniteElementVec::ExtropolateGuassStrain()
               ESxz += Sxz[j]*shapefct[j-1]; 
               ESyz += Syz[j]*shapefct[j-1]; 
            }
-           /*
-           switch(i)
-           {
-              case 0:
-                  l1 = 4;
-                  l2 = 9;
-                  l3 = 6;
-                  l4 = 0;
-                  break;
-               case 1:
-                  l1 = 4;
-                  l2 = 5;
-                  l3 = 7;
-                  l4 = 1;
-                  break;
-               case 2:
-                  l1 = 6;
-                  l2 = 8;
-                  l3 = 5;
-                  l4 = 2;
-                  break;
-               case 3:
-                  l1 = 7;
-                  l2 = 8;
-                  l3 = 9;
-                  l4 = 3;
-                  break;
-            }
-
-            x1buff[0] = X[l1];
-            x2buff[0] = X[l2];
-            x3buff[0] = X[l3];
-            x4buff[0] = X[l4];
-            //
-			x1buff[1] = Y[l1];
-            x2buff[1] = Y[l2];
-            x3buff[1] = Y[l3];
-            x4buff[1] = Y[l4];
-			//
-            x1buff[2] = Z[l1];
-            x2buff[2] = Z[l2];
-            x3buff[2] = Z[l3];
-            x4buff[2] = Z[l4];
-
-			// Volume of the corner tet to node i 
-            Area1 = ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
-            counter = 0;
-            for (gp = 0; gp < nGauss; gp++)
-            {
-//To be flexible               SamplePointTet15(gp, unit);
-               SamplePointTet5(gp, unit);
-               ComputeShapefct(2);
-               // Real coorinates of this Guass point
-               RealCoordinates(X0);
-               Area2 = ComputeDetTex(x1buff, x2buff, x3buff, X0)
-                      +ComputeDetTex(x1buff, x4buff, x2buff, X0)
-                      +ComputeDetTex(x3buff, x4buff, x1buff, X0)
-                      +ComputeDetTex(x2buff, x4buff, x3buff, X0);
-               
-               if(fabs(Area1-Area2)<Tol)
-               {
-                   // This point is within the corner
-                   counter++;
-                   ESxx += Sxx[gp]; 
-                   ESyy += Syy[gp]; 
-                   ESxy += Sxy[gp]; 
-                   ESzz += Szz[gp]; 
-                   ESxz += Sxz[gp]; 
-                   ESyz += Syz[gp]; 
-               }
-            }
-#ifdef gDEBUG
-            if(counter==0)
-            {
-                cout<<" No gauss point close to vertex "<<i<<endl;
-               abort();
-            }
-#endif
-            ESxx /= (double)counter; 
-            ESyy /= (double)counter; 
-            ESxy /= (double)counter; 
-            ESzz /= (double)counter; 
-            ESxz /= (double)counter; 
-            ESyz /= (double)counter; 
-        */    
         break;    
       }
-
       // Average value of the contribution of ell neighbor elements 
       ESxx /= dbuff[i]; 
       ESyy /= dbuff[i]; 
@@ -1745,7 +1668,7 @@ void CFiniteElementVec::ExtropolateGuassStrain()
 void CFiniteElementVec::ExtropolateGuassStress()
 {
   int i, j, gp, gp_r, gp_s, gp_t;
-  int l1,l2,l3,l4; //, counter;
+  // int l1,l2,l3,l4; //, counter;
   double ESxx, ESyy, ESzz, ESxy, ESxz, ESyz, Pls;
   double r=0.0, Xi_p = 0.0;
 //  double Area1, Area2, Tol=10e-9;
@@ -1767,7 +1690,7 @@ void CFiniteElementVec::ExtropolateGuassStress()
   }
 */
 
-  l1=l2=l3=l4=0;
+  // l1=l2=l3=l4=0;
   gp_r=gp_s=gp_t=gp=0;
   eleV_DM = ele_value_dm[MeshElement->GetIndex()];
   // 
@@ -1838,26 +1761,25 @@ void CFiniteElementVec::ExtropolateGuassStress()
    for(i=0; i<nnodes; i++)
    { 
       ESxx = ESyy = ESzz = ESxy = ESxz = ESyz = Pls = 0.0;
-
       switch(ElementType) 
       {
          case 4: // Triangle
            // Compute values at verteces  
            switch(i)
-	       {
-		      case 0:
-	             unit[0] = -0.1666666666667;
-	             unit[1] = -0.1666666666667;
-                 break;
-		      case 1:
-	             unit[0] = 1.6666666666667;
-	             unit[1] = -0.1666666666667;
-                 break;
-		      case 2:
-	             unit[0] = -0.1666666666667;
-	             unit[1] = 1.6666666666667;
-                 break;
-		   }
+           {
+              case 0:
+                unit[0] = -0.1666666666667;
+                unit[1] = -0.1666666666667;
+                break;
+              case 1:
+                unit[0] = 1.6666666666667;
+                unit[1] = -0.1666666666667;
+                break;
+             case 2:
+                unit[0] = -0.1666666666667;
+                unit[1] = 1.6666666666667;
+                break;
+           }
            ComputeShapefct(1); // Linear interpolation function
            for(j=0; j<nnodes; j++)
            {
@@ -1867,39 +1789,39 @@ void CFiniteElementVec::ExtropolateGuassStress()
               ESzz += Szz[j]*shapefct[j]; 
               Pls += shapefct[j]*pstr[j];
            }
-	       break;
-	     case 2: // Quadralateral element  
-	       // Extropolation over nodes
+           break;
+         case 2: // Quadralateral element  
+          // Extropolation over nodes
            switch(i)
-	       {
-	          case 0:
+           {
+              case 0:
                  unit[0] = Xi_p;
                  unit[1] = Xi_p;
-		         break;
-	          case 1:
+                 break;
+              case 1:
                  unit[0] = -Xi_p;
                  unit[1] = Xi_p;
-	             break;
-	          case 2:
+                 break;
+              case 2:
                  unit[0] = -Xi_p;
                  unit[1] = -Xi_p;
-		         break;
-	          case 3:
+                 break;
+              case 3:
                  unit[0] = Xi_p;
                  unit[1] = -Xi_p;
                  break;
            }
 
-           ComputeShapefct(2); // High order interpolation function
+           ComputeShapefct(1); // 2 High order interpolation function
 
            // Strain
-           for(j=0; j<nnodesHQ; j++)
+           for(j=0; j<nnodes; j++)  //for(j=0; j<nnodesHQ; j++)
            {
-              ESxx += Sxx[j]*shapefctHQ[j]; 
-              ESyy += Syy[j]*shapefctHQ[j]; 
-              ESxy += Sxy[j]*shapefctHQ[j]; 
-              ESzz += Szz[j]*shapefctHQ[j]; 
-              Pls += pstr[j]*shapefctHQ[j]; 
+              ESxx += Sxx[j]*shapefct[j]; //shapefctHQ[j]; 
+              ESyy += Syy[j]*shapefct[j]; 
+              ESxy += Sxy[j]*shapefct[j]; 
+              ESzz += Szz[j]*shapefct[j]; 
+              Pls += pstr[j]*shapefct[j]; 
            }
            break;                              
         case 3: // Hexahedra 
@@ -1915,42 +1837,42 @@ void CFiniteElementVec::ExtropolateGuassStress()
            }
 
            switch(j)
-	       {
-	          case 0:
+           {
+              case 0:
                  unit[0] = Xi_p;
                  unit[1] = Xi_p;
-		         break;
-	          case 1:
+                 break;
+              case 1:
                  unit[0] = -Xi_p;
                  unit[1] = Xi_p;
-	             break;
-	          case 2:
+                 break;
+              case 2:
                  unit[0] = -Xi_p;
                  unit[1] = -Xi_p;
-		         break;
-	          case 3:
+                 break;
+              case 3:
                  unit[0] = Xi_p;
                  unit[1] = -Xi_p;
                  break;
            }
 
-           ComputeShapefct(2); // High order interpolation function
+           ComputeShapefct(1); // 2 High order interpolation function
            // Strain
-           for(j=0; j<nnodesHQ; j++)
+           for(j=0; j<nnodes; j++) //for(j=0; j<nnodesHQ; j++)
            {
-              ESxx += Sxx[j]*shapefctHQ[j]; 
-              ESyy += Syy[j]*shapefctHQ[j]; 
-              ESxy += Sxy[j]*shapefctHQ[j]; 
-              ESzz += Szz[j]*shapefctHQ[j]; 
-              ESxz += Sxz[j]*shapefctHQ[j]; 
-              ESyz += Syz[j]*shapefctHQ[j]; 
-              Pls += pstr[j]*shapefctHQ[j]; 
+              ESxx += Sxx[j]*shapefct[j]; // shapefctHQ[j]
+              ESyy += Syy[j]*shapefct[j]; 
+              ESxy += Sxy[j]*shapefct[j]; 
+              ESzz += Szz[j]*shapefct[j]; 
+              ESxz += Sxz[j]*shapefct[j]; 
+              ESyz += Syz[j]*shapefct[j]; 
+              Pls += pstr[j]*shapefct[j]; 
            }
            break;                               
          case 5: // Tedrahedra 
            // Compute values at verteces  
            switch(i)
-	       {
+           {
              case 0:
                unit[0] = -0.166666666666667;
                unit[1] = -0.166666666666667;
@@ -1970,7 +1892,7 @@ void CFiniteElementVec::ExtropolateGuassStress()
                unit[0] = -0.166666666666667;
                unit[1] = -0.166666666666667;
                unit[2] = 1.5;   
- 		   }
+           }
            ComputeShapefct(1); // Linear interpolation function
            for(j=1; j<=nnodes; j++)
            {

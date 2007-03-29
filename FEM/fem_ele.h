@@ -63,7 +63,8 @@ class CElement
      // Finite element matrices and vectors
      // Compute the local finite element matrices
      void LocalAssembly(const long, const int) {}
-
+     // Set the number of Gauss points
+     void SetGaussPointNumber(const int nGuassP) {nGauss =nGuassP;} //26.03.2007 WW
      // Get values;
      int GetNumGaussPoints() const {return nGaussPoints;}
      int GetNumGaussSamples() const {return nGauss;}

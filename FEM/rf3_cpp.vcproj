@@ -231,12 +231,6 @@
 				RelativePath="cel_agm.h">
 			</File>
 			<File
-				RelativePath=".\cel_asm.cpp">
-			</File>
-			<File
-				RelativePath=".\cel_asm.h">
-			</File>
-			<File
 				RelativePath="cel_mmp.cpp">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -345,12 +339,6 @@
 			</File>
 			<File
 				RelativePath="cgs_agm.h">
-			</File>
-			<File
-				RelativePath=".\cgs_asm.cpp">
-			</File>
-			<File
-				RelativePath=".\cgs_asm.h">
 			</File>
 			<File
 				RelativePath="cgs_ge.cpp">
@@ -775,28 +763,6 @@
 			</File>
 			<File
 				RelativePath="int_agm.h">
-			</File>
-			<File
-				RelativePath="int_asm.cpp">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="int_asm.h">
 			</File>
 			<File
 				RelativePath="int_ge.cpp">

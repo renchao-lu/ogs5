@@ -42,6 +42,8 @@ CElement::CElement(int CoordFlag, const int order)
          T_Flag(false), F_Flag(false), D_Flag(0), RD_Flag(false)
 {
     int i;
+    //
+    nGauss = 3;
 	//
     if(CoordFlag<0)  // Axisymmetry
 	{
@@ -263,8 +265,6 @@ void CElement::ConfigNumerics(const int EleType)
 	   break;    
 	 case 2: // Quadrilateral 
 	   ele_dim =2;
-       nGauss = 3;
-       if(Order==1) nGauss = GetNumericsGaussPoints(EleType);
 	   nGaussPoints = nGauss*nGauss;
        ShapeFunction = ShapeFunctionQuad;
        ShapeFunctionHQ = ShapeFunctionQuadHQ;
@@ -273,8 +273,6 @@ void CElement::ConfigNumerics(const int EleType)
 	   break;    
      case 3: // Hexahedra 
        ele_dim =3;
-       nGauss = 2; //3;
-       if(Order==1) nGauss = GetNumericsGaussPoints(EleType);
 	   nGaussPoints = nGauss*nGauss*nGauss;
        ShapeFunction = ShapeFunctionHex;
        ShapeFunctionHQ = ShapeFunctionHexHQ;
@@ -366,15 +364,15 @@ Last modified:
 //double CElement::elemnt_average (const int idx, const int order)
 double CElement::elemnt_average (const int idx, CRFProcess* m_pcs, const int order )
 {
-	int i;  
-	int nn = nnodes;
-	double val = 0.0;
-    double* inTerpo = shapefct;
+    int i;  
+    int nn = nnodes;
+    double val = 0.0;
+    //WW    double* inTerpo = shapefct;
     if(order==2)
-	{
-		nn = nnodes;
-        inTerpo = shapefctHQ;
-	}
+    {
+        nn = nnodes;
+	//WW       inTerpo = shapefctHQ;
+    }
     //
     for(i=0; i<nn; i++) 
       node_val[i] = m_pcs->GetNodeValue(nodes[i], idx);
@@ -397,9 +395,9 @@ double CElement::elemnt_average (const int idx, CRFProcess* m_pcs, const int ord
 **************************************************************************/
 double CElement::computeJacobian(const int order)
 {
-	int i, j=0, k=0;
-	int nodes_number = nnodes;
-	double DetJac = 0.0;
+    int i, j=0, k=0;
+    int nodes_number = nnodes;
+    double DetJac = 0.0;
     double *dN = dshapefct;
 //    double *sh = shapefct;
     double dx,dy,dz;
@@ -418,7 +416,7 @@ double CElement::computeJacobian(const int order)
        Jacobian[i] = 0.0;
     //--------------------------------------------------------------------
     switch(ele_dim)
-	{
+    {
         //................................................................
         case 1: 
          // If Line in X or Z direction, coordinate is saved in local X
@@ -427,50 +425,50 @@ double CElement::computeJacobian(const int order)
           Jacobian[0] = 0.5*dx; 
           invJacobian[0] = 2.0/dx;
           DetJac = Jacobian[0];
-		  if(MeshElement->area>0)
+          if(MeshElement->area>0)
             DetJac*=MeshElement->area;
           //WW          DetJac*=MeshElement->GetFluxArea();//CMCD
-		  if(axisymmetry)
+          if(axisymmetry)
           {
              CalculateRadius();
              DetJac *= Radius;   //2.0*pai*Radius;             
-		  }
+          }
           break;
         //................................................................
         case 2:
-		  for(i=0; i<nodes_number; i++)
-	      {  
+          for(i=0; i<nodes_number; i++)
+          {  
              Jacobian[0] += X[i]*dN[i];
              Jacobian[1] += Y[i]*dN[i];
              Jacobian[2] += X[i]*dN[nodes_number+i];
              Jacobian[3] += Y[i]*dN[nodes_number+i];
-	      }
+          }
 
     	  DetJac =  Jacobian[0]*Jacobian[3]-Jacobian[1]*Jacobian[2];
           if (fabs(DetJac)<MKleinsteZahl) { 
             cout << "\n*** Jacobian: Det == 0 " << DetJac << "\n"; 
             abort(); 
           }
-		  invJacobian[0] = Jacobian[3];
-		  invJacobian[1] = -Jacobian[1];
-		  invJacobian[2] = -Jacobian[2];
-		  invJacobian[3] = Jacobian[0];
+          invJacobian[0] = Jacobian[3];
+          invJacobian[1] = -Jacobian[1];
+          invJacobian[2] = -Jacobian[2];
+          invJacobian[3] = Jacobian[0];
           for(i=0; i<ele_dim*ele_dim; i++)
              invJacobian[i] /= DetJac;
           //
-		  if(MeshElement->area>0)
+          if(MeshElement->area>0)
             DetJac*=MeshElement->area;
           //WW          DetJac*=MeshElement->GetFluxArea();//CMCD
-		  if(axisymmetry)
+          if(axisymmetry)
           {
              CalculateRadius();
              DetJac *= Radius;  //2.0*pai*Radius;             
-		  }
-		  break;
-        //................................................................
-		case 3:
-		  for(i=0; i<nodes_number; i++)
-	      {
+          }
+          break;
+         //................................................................
+       case 3:
+         for(i=0; i<nodes_number; i++)
+         {
              j = i+nodes_number;
              k = i+2*nodes_number;
 
@@ -478,43 +476,42 @@ double CElement::computeJacobian(const int order)
              Jacobian[1] += Y[i]*dN[i];
              Jacobian[2] += Z[i]*dN[i];
              
-			 Jacobian[3] += X[i]*dN[j];
+             Jacobian[3] += X[i]*dN[j];
              Jacobian[4] += Y[i]*dN[j];
              Jacobian[5] += Z[i]*dN[j];
 
-			 Jacobian[6] += X[i]*dN[k];
+             Jacobian[6] += X[i]*dN[k];
              Jacobian[7] += Y[i]*dN[k];
              Jacobian[8] += Z[i]*dN[k];
-	      }
-
+          }
      	  DetJac = Jacobian[0]*
-			         (Jacobian[4]*Jacobian[8]-Jacobian[7]*Jacobian[5])
+                  (Jacobian[4]*Jacobian[8]-Jacobian[7]*Jacobian[5])
                   +Jacobian[6]*
-			         (Jacobian[1]*Jacobian[5]-Jacobian[4]*Jacobian[2])
+                  (Jacobian[1]*Jacobian[5]-Jacobian[4]*Jacobian[2])
                   +Jacobian[3]*
-			         (Jacobian[2]*Jacobian[7]-Jacobian[8]*Jacobian[1]);
+                  (Jacobian[2]*Jacobian[7]-Jacobian[8]*Jacobian[1]);
           if (fabs(DetJac)<MKleinsteZahl) { 
             cout << "\n*** Jacobian: DetJac == 0 " << DetJac << "\n"; 
             abort(); 
           }
-		  invJacobian[0] =  Jacobian[4]*Jacobian[8]-Jacobian[7]*Jacobian[5];
-		  invJacobian[1] =  Jacobian[2]*Jacobian[7]-Jacobian[1]*Jacobian[8];
-		  invJacobian[2] =  Jacobian[1]*Jacobian[5]-Jacobian[2]*Jacobian[4];
+          invJacobian[0] =  Jacobian[4]*Jacobian[8]-Jacobian[7]*Jacobian[5];
+          invJacobian[1] =  Jacobian[2]*Jacobian[7]-Jacobian[1]*Jacobian[8];
+          invJacobian[2] =  Jacobian[1]*Jacobian[5]-Jacobian[2]*Jacobian[4];
           //  
-		  invJacobian[3] =  Jacobian[5]*Jacobian[6]-Jacobian[8]*Jacobian[3];
-		  invJacobian[4] =  Jacobian[0]*Jacobian[8]-Jacobian[6]*Jacobian[2];
-		  invJacobian[5] =  Jacobian[2]*Jacobian[3]-Jacobian[5]*Jacobian[0];
+          invJacobian[3] =  Jacobian[5]*Jacobian[6]-Jacobian[8]*Jacobian[3];
+          invJacobian[4] =  Jacobian[0]*Jacobian[8]-Jacobian[6]*Jacobian[2];
+          invJacobian[5] =  Jacobian[2]*Jacobian[3]-Jacobian[5]*Jacobian[0];
           //  
-		  invJacobian[6] =  Jacobian[3]*Jacobian[7]-Jacobian[6]*Jacobian[4];
-		  invJacobian[7] =  Jacobian[1]*Jacobian[6]-Jacobian[7]*Jacobian[0];
-		  invJacobian[8] =  Jacobian[0]*Jacobian[4]-Jacobian[3]*Jacobian[1];          
+          invJacobian[6] =  Jacobian[3]*Jacobian[7]-Jacobian[6]*Jacobian[4];
+          invJacobian[7] =  Jacobian[1]*Jacobian[6]-Jacobian[7]*Jacobian[0];
+          invJacobian[8] =  Jacobian[0]*Jacobian[4]-Jacobian[3]*Jacobian[1];          
           for(i=0; i<ele_dim*ele_dim; i++)
              invJacobian[i] /= DetJac;
           break;
 	}
     //--------------------------------------------------------------------
     // Use absolute value (for grids by gmsh, whose orientation is clockwise)
-	return fabs(DetJac);
+    return fabs(DetJac);
 }
 /***************************************************************************
    GeoSys - Funktion: CElement::RealCoordinates
@@ -534,10 +531,10 @@ double CElement::computeJacobian(const int order)
 **************************************************************************/
 void CElement::RealCoordinates(double* realXYZ)
 {
-	int i;
+    int i;
     double* df=shapefct;
-	if(Order==2) df=shapefctHQ;
-	for(i=0; i<3; i++)
+    if(Order==2) df=shapefctHQ;
+    for(i=0; i<3; i++)
        realXYZ[i] = 0.0;
    
     for(i=0; i<nNodes; i++)
@@ -564,17 +561,17 @@ void CElement::UnitCoordinates(double *realXYZ)
 {
     int i,j;
 	
-	setOrder(Order);
+    setOrder(Order);
    
     for(i=0; i<3; i++)
        x1buff[i] = 0.0;
 
-	for(i=0; i<nNodes; i++)
-	{  
-		x1buff[0] += X[i];
-		x1buff[1] += Y[i];
-		x1buff[2] += Z[i];
-	}
+    for(i=0; i<nNodes; i++)
+    {  
+       x1buff[0] += X[i];
+       x1buff[1] += Y[i];
+       x1buff[2] += Z[i];
+    }
     for(i=0; i<3; i++)    
        x1buff[i] /= (double)nNodes; 
 

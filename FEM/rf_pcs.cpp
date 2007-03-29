@@ -78,7 +78,6 @@ extern void transM2toM5(void);
 extern VoidFuncVoid LOPCalcSecondaryVariables_USER;
 /*-----------------------------------------------------------------------*/
 /* Kernels */
-#include "int_asm.h"
 #include "cel_mpc.h"
 #include "cgs_mpc.h"
 #include "cgs_mmp.h"
@@ -93,7 +92,7 @@ extern VoidFuncVoid LOPCalcSecondaryVariables_USER;
 VoidXFuncVoidX PCSDestroyELEMatrices[PCS_NUMBER_MAX];
 void PCSConfigELEMatricesMTM(int);
 void PCSConfigELEMatricesMPC(int);
-void PCSConfigELEMatricesSM(int);
+//WW void PCSConfigELEMatricesSM(int);
 //void PCSConfigELEMatricesHTM(int);
 void PCSConfigELEMatricesMMP(int);
 //------------------------------------------------------------------------
@@ -802,6 +801,7 @@ void CRFProcess::Create()
       int Axisymm = 1; // ani-axisymmetry
       if(m_msh->isAxisymmetry()) Axisymm = -1; // Axisymmetry is true
       fem = new CFiniteElementStd(this, Axisymm*m_msh->GetCoordinateFlag()); 
+         fem->SetGaussPointNumber(m_num->ele_gauss_points);
     }
   }
   //----------------------------------------------------------------------
@@ -1812,7 +1812,7 @@ void CRFProcess::ConfigLiquidFlow()
   pcs_primary_function_name[0] = "PRESSURE1";
   pcs_primary_function_unit[0] = "Pa";
   // ELE values
-  ConfigELEMatrices = PCSConfigELEMatricesSM;
+  // WW ConfigELEMatrices = PCSConfigELEMatricesSM;
   pcs_number_of_evals = 5;
   pcs_eval_name[0] = "VOLUME";
   pcs_eval_unit[0] = "m3";
@@ -1849,7 +1849,7 @@ void CRFProcess::ConfigGroundwaterFlow()
   pcs_primary_function_name[0] = "HEAD";
   pcs_primary_function_unit[0] = "m";
   // ELE values
-  ConfigELEMatrices = PCSConfigELEMatricesSM;
+  //WW ConfigELEMatrices = PCSConfigELEMatricesSM;
   PCSDestroyELEMatrices[pcs_type_number] = NULL; //OK
   pcs_number_of_evals = 6;
   pcs_eval_name[0] = "VOLUME";
@@ -3128,22 +3128,6 @@ void CRFProcess::CreateELEMatricesPointer(void)
   }
 }
 
-/*************************************************************************
-ROCKFLOW - Function: PCSConfigELEMatricesSM
-Task: Config element matrices: data access functions
-Programming: 
-05/2003 OK Implementation
-08/2004 OK EM pointer removed
-last modified:
-todo: direct access possible !
-**************************************************************************/
-void PCSConfigELEMatricesSM(int pcs_type_number)
-{
-  // Matrices pointer, allgemein  
-  InitInternElementData = SMCreateELEMatricesPointer;
-  ELEDestroyElementMatrices = SMDestroyELEMatricesPointer;
-  PCSDestroyELEMatrices[pcs_type_number] = SMDestroyELEMatricesPointer;
-}
 
 /*************************************************************************
 ROCKFLOW - Function: PCSConfigELEMatricesMMP
@@ -3480,7 +3464,7 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
   } // END PICARD
   //----------------------------------------------------------------------
   // 8 Calculate secondary variables
-  CalcSecondaryVariables(1); // timelevel
+  //WW CalcSecondaryVariables(1); // timelevel
   //----------------------------------------------------------------------
   return pcs_error;
 }
@@ -3528,7 +3512,7 @@ void CRFProcess::CalculateElementMatrices(void)
 {
   switch(this->type) {
     case 1:
-      SMCalcElementMatrices(this);
+      //WW SMCalcElementMatrices(this);
       break;
     case 2:
 	  MakeStatMat_MTM2(this);
@@ -3555,7 +3539,7 @@ void CRFProcess::CalculateElementMatrices(void)
       //OK MPCCalculateElementMatricesRichards();
       break;
     case 66:
-      OFCalcElementMatrices(this);
+     //WW OFCalcElementMatrices(this);
       break;
     default:
       DisplayMsgLn("CalculateElementMatrices: no CalculateElementMatrices specified");
@@ -3921,7 +3905,7 @@ void CRFProcess::AssembleSystemMatrixNew(void)
   switch(type) {
     case 1:
       //MakeGS_ASM_NEW(eqs->b,eqs->x,ddummy);
-      SMAssembleMatrix(eqs->b,eqs->x,ddummy,this);
+      // SMAssembleMatrix(eqs->b,eqs->x,ddummy,this);
       break;
     case 2:
 //		  MakeGS_MTM2_old(this->eqs->b,this->eqs->x,this->pcs_component_number-1);
@@ -3946,7 +3930,7 @@ void CRFProcess::AssembleSystemMatrixNew(void)
       break;
     case 66:
       //MakeGS_ASM_NEW(eqs->b,eqs->x,ddummy);
-      SMAssembleMatrix(eqs->b,eqs->x,ddummy,this);
+      // SMAssembleMatrix(eqs->b,eqs->x,ddummy,this);
       break;
     default:
       DisplayMsgLn("CalculateElementMatrices: no CalculateElementMatrices specified");

@@ -72,19 +72,19 @@ class CFiniteElementVec:public CElement
      // Set memory for local matrices
      void SetMemory();
 	 
-     // Compute the local finite element matrices and vectors    
+	 // Compute the local finite element matrices and vectors    
      void LocalAssembly(const int update);
-     // Assemble local matrics and vectors to the global system    
+	 // Assemble local matrics and vectors to the global system    
      bool GlobalAssembly();
 
-     // Compute strains     
+	 // Compute strains     
      void ComputeStrain();
 
      // Set material data
      void SetMaterial();
 
-      // Get strain
-     double *GetStrain() const {return dstrain; }
+	 // Get strain
+	 double *GetStrain() const {return dstrain; }
 
      //----------- Enhanced element -----------------------
      // Geometry related
@@ -105,7 +105,7 @@ class CFiniteElementVec:public CElement
      // Primary value indeces
      // Column index in the node value table
      int idx_P, idx_P0, idx_P1, idx_P1_0, idx_P2;
-     int idx_T0,idx_T1;
+	 int idx_T0,idx_T1;
      int idx_S0, idx_S; 
      int idx_pls;  
      // Displacement column indeces in the node value table
@@ -116,7 +116,7 @@ class CFiniteElementVec:public CElement
      Matrix *B_matrix;
      Matrix *B_matrix_T;
 
-     //------ Material -------
+	 //------ Material -------
      CSolidProperties* smat;
      CFluidProperties *m_mfp; // Fluid coupling
      // Medium property
@@ -125,22 +125,22 @@ class CFiniteElementVec:public CElement
  
 
     // Elastic constitutive matrix
-     Matrix *De;
-     // Consistent tangential matrix
-     Matrix *ConsistDep;
+	 Matrix *De;
+	 // Consistent tangential matrix
+	 Matrix *ConsistDep;
 	 
      // Local matricies and vectors 
-     Matrix *AuxMatrix;
-     Matrix *Stiffness;
+	 Matrix *AuxMatrix;
+	 Matrix *Stiffness;
      Matrix *PressureC;
      SymMatrix *Mass; // For dynamic analysis
      Vec *RHS;
 
-     //  Stresses:
-     //  s11, s22, s33, s12, s13, s23
+	 //  Stresses:
+	 //  s11, s22, s33, s12, s13, s23
      double *dstress;
      //  Straines:
-     //  s11, s22, s33, s12, s13, s23
+	 //  s11, s22, s33, s12, s13, s23
      double *dstrain;
      double strain_ne[6];
      double stress_ne[6];
@@ -149,10 +149,11 @@ class CFiniteElementVec:public CElement
      //  u_x1, u_x2, u_x3, ..., u_xn,
      //  u_y1, u_y2, u_y3, ..., u_yn,
      //  u_z1, u_z2, u_z3, ..., u_zn
-     double *Disp;
+	 double *Disp;
 
-     // Temperatures of nodes
-     double *Temp;
+	 // Temperatures of nodes
+	 double *Temp;
+	 double *T1;
      double S_Water; 
 
 
@@ -160,49 +161,48 @@ class CFiniteElementVec:public CElement
      ElementValue_DM *eleV_DM;
 
      //------ Enhanced element ------
-     // Jump flag of element nodes
+	 // Jump flag of element nodes
      bool *NodesInJumpedA;
-     // Regular enhanced strain matrix 
+	 // Regular enhanced strain matrix 
      Matrix *Ge ;
-     // Singular enhanced strain matrix 
+	 // Singular enhanced strain matrix 
      Matrix *Pe;	 
-     // Additional node. Normally, the gravity center
-     double X0[3];
-     // Normal to the discontinuity surface
+	 // Additional node. Normally, the gravity center
+	 double X0[3];
+	 // Normal to the discontinuity surface
      double n_jump[3];
-     // principle stresses
+	 // principle stresses
      double pr_stress[3];
-     // Compute principle stresses
+	 // Compute principle stresses
      double ComputePrincipleStresses(const double *Stresses);
-     // Compute principle stresses
+	 // Compute principle stresses
      double ComputeJumpDirectionAngle(const double *Mat);
      //------ End of enhanced element ------
 
-     // Form B matric     
+	 // Form B matric     
      void setB_Matrix(const int LocalIndex);
-     // Form the tanspose of B matric     
+	 // Form the tanspose of B matric     
      void setTransB_Matrix(const int LocalIndex);
-     //
-     void ComputeMatrix_RHS(const double fkt, const Matrix *p_D);
+	 //
+	 void ComputeMatrix_RHS(const double fkt, const Matrix *p_D);
 
 
-     // Temporarily used variables  
-     // 1. For extropolating gauss value to node
-     int GetLocalIndex(const int gp_r, const int gp_s, int gp_t);
+	 // Temporarily used variables  
      double *Sxx, *Syy, *Szz, *Sxy, *Sxz, *Syz, *pstr;
      // 2. For enhanced strain approach
      Matrix *BDG, *PDB, *DtD, *PeDe ; // For enhanced strain element
 
      /// Extropolation
-     bool RecordGuassStrain(const int gp, const int gp_r, 
+	 bool RecordGuassStrain(const int gp, const int gp_r, 
 		                    const int gp_s, int gp_t);
      void ExtropolateGuassStrain();
      void ExtropolateGuassStress();
+     int GetLocalIndex(const int gp_r, const int gp_s, int gp_t);
 
 
-     // Compute the local finite element matrices     
+   	 // Compute the local finite element matrices     
      void LocalAssembly_continuum(const int update);
-     void LocalAssembly_EnhancedStrain(const int update);
+	 void LocalAssembly_EnhancedStrain(const int update);
 
      // Assembly local stiffness matrix
      void GlobalAssembly_Stiffness();
@@ -210,9 +210,9 @@ class CFiniteElementVec:public CElement
 
      //----------- Enhanced element ----------------
      void CheckNodesInJumpedDomain();
-     // Compute the regular enhanced strain matrix 
+	 // Compute the regular enhanced strain matrix 
      void ComputeRESM(const double *tangJump = NULL);
-     // Compute the singular enhanced strain matrix 
+	 // Compute the singular enhanced strain matrix 
      void ComputeSESM(const double *tangJump = NULL);
 
      friend class process::CRFProcessDeformation;

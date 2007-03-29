@@ -48,7 +48,6 @@ using namespace std;
 #include "cel_mmp.h"
 #include "cgs_mpc.h"
 #include "cgs_mmp.h"
-#include "cgs_asm.h"
 #include "rf_fluid_momentum.h"	// By PCH
 #include "rf_random_walk.h"     // By PCH
 void LOPCalcNodeFluxes(void);
@@ -450,7 +449,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
           LOPExecuteRegionalRichardsFlow(m_pcs);
         else
           pcs_flow_error = m_pcs->ExecuteNonLinear();
-        PCSCalcSecondaryVariables(); // PCS member function
+        m_pcs->CalcSecondaryVariablesRichards(1,false);  //WW
         if (CalcVelocities)
           m_pcs->CalIntegrationPointValue(); //WW
       }
@@ -1080,6 +1079,62 @@ void LOPCalcELEResultants(void)
     }
   }
 }
+
+
+/**************************************************************************
+ ROCKFLOW - Funktion: ASMCalcNodeWDepth
+                                                                          
+ Task:
+   Berechnung und Speichern der Knotenflüsse
+ Parameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+   E: long i: node index
+ Result:
+   - void -
+                                                                          
+ Programmaenderungen:
+   11/2002   MB/OK  Implementation
+   10/2004   MB     PCS                                                   
+**************************************************************************/
+void ASMCalcNodeWDepth(CRFProcess *m_pcs)
+{
+int nidx, nidy;
+int timelevel = 1; 
+int i;
+double WDepth;
+
+if(m_pcs->m_msh){
+//  nidx = GetNodeValueIndex("HEAD")+1;
+//  nidy = GetNodeValueIndex("WDEPTH")+1;
+  nidx = m_pcs->GetNodeValueIndex("HEAD")+1;
+  nidy = m_pcs->GetNodeValueIndex("WDEPTH");
+  
+  //for (i=0;i<NodeListLength;i++) {
+  for(long nn=0;nn<(long)m_pcs->m_msh->nod_vector.size();nn++){
+    //if (GetNode(i)!=NULL) {  /* wenn Knoten existiert */
+      WDepth = m_pcs->GetNodeValue(nn, nidx) - m_pcs->m_msh->nod_vector[nn]->Z();
+      if (WDepth < 0.0) {
+        WDepth  = 0.0;
+      }
+      m_pcs->SetNodeValue(nn, nidy, WDepth);
+    
+  }
+}
+else{
+  nidx = PCSGetNODValueIndex("HEAD",timelevel);
+  nidy = PCSGetNODValueIndex("WDEPTH",timelevel);
+
+  for (i=0;i<NodeListLength;i++) {
+    if (GetNode(i)!=NULL) {  /* wenn Knoten existiert */
+      WDepth = GetNodeVal(i,nidx) - GetNodeZ(i);
+      if (WDepth < 0.0) {
+        WDepth  = 0.0;
+      }
+      SetNodeVal(i,nidy,WDepth);
+    }
+  }
+}
+}
+
 
 /**************************************************************************/
 /* ROCKFLOW - Funktion: PCSCalcSecondaryVariables

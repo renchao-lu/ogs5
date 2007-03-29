@@ -15,7 +15,6 @@
 #include "fem_ele_std.h"
 #include "fem_ele.h"
 
-#include "cgs_asm.h"
 #include "matrix.h"
 #include "mathlib.h"
 

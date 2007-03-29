@@ -78,7 +78,7 @@ class CMediumProperties
   double SaturationCapillaryPressureFunction(long number,double*gp,double theta,int phase); //OK4104
   double SaturationPressureDependency(long number,double*gp,double theta); //OK4104
 	double SaturationCapillaryPressureFunction(const double capillary_pressure, const int phase); //WW
-  double SaturationPressureDependency(const double saturation,double theta); // WW
+  double SaturationPressureDependency(double saturation, double density_fluid, double theta); // WW
   double PermeabilitySaturationFunction(const double Saturation, int phase); //WW
 	double PorosityVolumetricChemicalReaction(long);  //MX 1/2005
 	double Porosity(long number,double*gp,double theta);//CMCD 9/2004 GeoSys 4
