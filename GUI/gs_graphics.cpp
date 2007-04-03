@@ -294,7 +294,7 @@ BEGIN_MESSAGE_MAP(CGraphics, CDialog)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
-// Behandlungsroutinen f¸r Nachrichten CGraphics 
+// Behandlungsroutinen fÅE Nachrichten CGraphics 
 
 /**************************************************************************
 GeoSys-GUI-Method:
@@ -686,7 +686,7 @@ int CGraphics::ypixel(double y)
    xx/1999   OK   First version
    xx/2001   MK   Extension
    01/2002   OK   Bugfix for triangles
-   04/2002   OK   von 3.8.03 ¸bernommen
+   04/2002   OK   von 3.8.03 ÅEernommen
    04/2004 OK Labels
    04/2005 CC draw double elements                                                                       */
 /**************************************************************************/
@@ -976,14 +976,14 @@ void CGraphics::MFC_FillElement1(int nn,double *nx,double *ny,CDC *dc,int r,int 
 void CGraphics::ChooseContourColours(double farbwert)
 {
   if (farbwert <=127) {
-  /* Dunkelblau bis Dunkelgr¸n */
+  /* Dunkelblau bis DunkelgrÅE */
     ContourColourRed  =0;
     ContourColourGreen=(int)(farbwert/127.0*170);
     ContourColourBlue =(int)((127.0-farbwert)/127.0*180.0); 
   }  
 //   MFC_FillElement1(nn,px,py,dc,0.0,(rstep/127.0*170),((127.0-rstep)/127.0*180.0));
   else {
-  /* Dunkegr¸n - Hellgelb */
+  /* DunkegrÅE - Hellgelb */
     ContourColourRed  =(int)((farbwert-128)/127.0*255.0);
     ContourColourGreen=(int)(170+(farbwert-128.0)/127.0*85.0);
     ContourColourBlue =(int)((farbwert-128)/127.0*200.0); 
@@ -1347,7 +1347,7 @@ void CGraphics::iso4k (long el4[4], double h[], double x[], double y[],
               h1      : Wert der kleinsten Hîhenschichtlinie
               hd      : Abstand der Hîhenlinien
               h2      : Wert der grî·ten Hîhenschichtlinie
-   es wird nichts verÑndert in den Feldern!
+   es wird nichts verÅEdert in den Feldern!
 */
 {     
   double r4[2][4] ={{1., -1., -1.,  1.},  // Formfunktionen bzw.
@@ -3157,6 +3157,8 @@ void CGraphics::DrawMATFunction(CDC*dc,CMediumProperties*m_mmp,CString m_strMATP
   //----------------------------------------------------------------------
   int m_iNX = 100;
   double m_dDX = (m_dXmax-m_dXmin)/double(m_iNX);
+  //04/2007 NW compilation
+  /*
   m_mmp->mode = 2;
   for(i=0;i<m_iNX-1;i++){
     x1 = m_dXmin + i*m_dDX;
@@ -3191,6 +3193,7 @@ void CGraphics::DrawMATFunction(CDC*dc,CMediumProperties*m_mmp,CString m_strMATP
     m_pnt.y = y2;
     DrawPointOffset(dc,&m_pnt);
   }
+	*/
 }
 
 /**************************************************************************

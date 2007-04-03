@@ -561,6 +561,7 @@ GUI-Method:
 Task: 
 Programing:
 05/2005 OK Implementation
+04/2007 NW Compilation
 **************************************************************************/
 void COUTMaterialProperties::OnCbnSelchangeComboMMP()
 {
@@ -586,10 +587,13 @@ void COUTMaterialProperties::OnCbnSelchangeComboMMP()
       m_dUmax = m_mmp->SaturationCapillaryPressureFunction(m_mmp->number,NULL,0.0,phase);
     }
     else if(m_strMATPropertyName.Compare("D_SATURATION_D_CAPILLARY_PRESSURE")==0){
-      m_mmp->argument = m_dXmin;
+	//04/2007 NW compilation
+/*
+   	  m_mmp->argument = m_dXmin;
       m_dUmin = m_mmp->SaturationPressureDependency(m_mmp->number,NULL,0.0);
       m_mmp->argument = m_dXmax;
       m_dUmax = m_mmp->SaturationPressureDependency(m_mmp->number,NULL,0.0);
+*/
     }
   }
   UpdateData(FALSE);
