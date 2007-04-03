@@ -44,7 +44,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib fdelaun3d.lib fdelaun2d-msvc.lib"
+				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib fdelaun2d-msvc.lib"
 				OutputFile=".\Release/TestGL.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
@@ -111,7 +111,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib fdelaun3d.lib fdelaun2d-msvc.lib"
+				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib fdelaun2d-msvc.lib"
 				OutputFile=".\Debug/GeoSys.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
@@ -119,7 +119,7 @@
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\Debug/GeoSys.pdb"
 				SubSystem="2"
-				StackReserveSize="83886080"
+				StackReserveSize="0"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"
@@ -177,7 +177,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib fdelaun3d.lib fdelaun2d-msvc.lib"
+				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib fdelaun2d-msvc.lib"
 				OutputFile=".\Debug_SGI/GeoSys.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"

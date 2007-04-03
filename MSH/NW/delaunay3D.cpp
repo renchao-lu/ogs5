@@ -3,8 +3,17 @@
 
 #include "stdafx.h"
 #include <stdio.h>
-#include <windows.h>
 #include "delaunay3D.h"
+#include "fdelaun3d.h"
+
+#ifdef MFC
+#include <process.h>	//thread
+#endif
+
+#pragma comment(lib, "fdelaun3d-msvc.lib")
+
+volatile static int returnCodeForThread;	//thread
+
 
 /**************************************************************************/
 /* MSH - Function: Start_Delaunay3D
@@ -38,6 +47,7 @@ int Start_Delaunay3D (int argc, char** argv)
     ExecuteDelaunay3D(infilepath,outfilepath);
     return 0;
 }
+
 /**************************************************************************/
 /* MSH - Function: ReadInputFile
                                                                           */
@@ -56,7 +66,7 @@ int ReadInputFile(char* filepath, int *node, double *x, double *y, double *z)
 	FILE *fp;
 	fp = fopen(filepath, "r");
 	if (fp == NULL) {
-		printf("ERROR: INPUT FILE OPEN ERROR - %s\n",filepath);
+		//MyOutputDebugString("ERROR: INPUT FILE OPEN ERROR - %s\n",filepath);
         return 0;
 	}
 	if (fscanf(fp, "%d", node) != EOF) {
@@ -72,9 +82,6 @@ int ReadInputFile(char* filepath, int *node, double *x, double *y, double *z)
 		}	
 	}
 	fclose(fp);
-	printf("\n[INPUT DATA]\n");
-	printf("NUMBER OF NODE = %d\n",*node);
-	printf("\n");
 	return -1;
 }
 /**************************************************************************/
@@ -99,7 +106,7 @@ int WriteOutputFile(char* filepath, int *node, double *x, double *y, double *z, 
 	jac=jac;
 	msh_file = fopen(filepath, "w");
 	if (msh_file == NULL) {
-		printf("ERROR: OUTPUT FILE OPEN ERROR - %s\n",filepath);
+		//MyOutputDebugString("ERROR: OUTPUT FILE OPEN ERROR - %s\n",filepath);
         return 0;
 	}
     //write MSH Head
@@ -139,6 +146,71 @@ int WriteOutputFile(char* filepath, int *node, double *x, double *y, double *z, 
 }
 
 /**************************************************************************/
+/* MSH - Function: ExecuteDelaunay3DThread
+                                                                          */
+/* Task: Starts the 3D Delaunay mesh generator process
+/* History:
+   03/2007     NW        Implementation
+**************************************************************************/
+unsigned __stdcall ExecuteDelaunay3DThread(void* arg)
+{
+	void **args = (void**)arg;
+	char* infilepath = (char*) args[0];
+	char* outfilepath = (char*) args[1];
+
+	returnCodeForThread = ExecuteDelaunay3DProcess(infilepath, outfilepath);
+
+	return 0;
+}
+
+/**************************************************************************/
+/* MSH - Function: ExecuteDelaunay3DProcess
+                                                                          */
+/* Task: Executes the 3D Delaunay mesh generator   
+		 This function shouldn't be called from outside.
+/* History:
+   03/2007     NW        Implementation
+**************************************************************************/
+int ExecuteDelaunay3DProcess(char* infilepath, char* outfilepath)
+{
+	int ireturnCode = 0;
+	int node = 0;
+	double *x = (double*)malloc(sizeof(double)*(NODE_MAX+4));
+	double *y = (double*)malloc(sizeof(double)*(NODE_MAX+4));
+	double *z = (double*)malloc(sizeof(double)*(NODE_MAX+4));
+	int nelm = 0;
+	int *mtj = (int*)malloc(sizeof(int)*(ELEM_MAX*4));
+	int *jac = (int*)malloc(sizeof(int)*(ELEM_MAX*4));
+	int maxelm = ELEM_MAX;
+	int maxnode = NODE_MAX;
+	//printf("\n[AVAILABLE MEMORY]\n");
+	//printf("X: %x\nY: %x\nZ: %x\n", x, y, z);
+	//printf("MTJ: %x\nJAC: %x\n\n", mtj, jac);
+	if (x==NULL || y==NULL || z==NULL || mtj==NULL || jac==NULL) {
+		//MyOutputDebugString("ERROR: Fail to malloc()");
+		return 999;
+	}
+	if(ReadInputFile(infilepath, &node, x, y, z)) {
+		generate_tetrahedra_mesh(&ireturnCode,&maxnode,&maxelm,&node,x,y,z,&nelm,mtj,jac);
+
+		if (ireturnCode == 0) {
+			WriteOutputFile(outfilepath, &node,x,y,z,&nelm,mtj,jac,&maxelm);
+		}
+	} else {
+		//MyOutputDebugString("ERROR: input()\n");
+		return 999;
+	}
+	free(x);
+	free(y);
+	free(z);
+	free(mtj);
+	free(jac);
+
+	return ireturnCode;
+}
+
+
+/**************************************************************************/
 /* MSH - Function: ExecuteDelaunay3D
                                                                           */
 /* Task: Starts and Executes the 3D Delaunay mesh generator   
@@ -147,85 +219,89 @@ int WriteOutputFile(char* filepath, int *node, double *x, double *y, double *z, 
 /* History:
    12/2006     NW        1st Coding
    12/2007     TK        Implementation
+   03/2007     NW        Modification for static link dll
 **************************************************************************/
-void ExecuteDelaunay3D(char* infilepath, char* outfilepath)
+int ExecuteDelaunay3D(char* infilepath, char* outfilepath)
 {
-	int node = 0;
-	double *x = (double*)malloc(sizeof(double)*(NODE_MAX+4));
-	double *y = (double*)malloc(sizeof(double)*(NODE_MAX+4));
-	double *z = (double*)malloc(sizeof(double)*(NODE_MAX+4));
-	int nelm = 0;
-	int *mtj = (int*)malloc(sizeof(int)*(ELEM_MAX*4));
-	int *jac = (int*)malloc(sizeof(int)*(ELEM_MAX*4));
-	int err = 0;
-	int maxelm = ELEM_MAX;
-	int maxnode = NODE_MAX;
-	printf("\n[AVAILABLE MEMORY]\n");
-	printf("X: %x\nY: %x\nZ: %x\n", x, y, z);
-	printf("MTJ: %x\nJAC: %x\n\n", mtj, jac);
-	if (x==NULL || y==NULL || z==NULL || mtj==NULL || jac==NULL) {
-		printf("ERROR: Fail to malloc()");
-	}
-	if(ReadInputFile(infilepath, &node, x, y, z)) {
-		if (ExecuteDLL_Delaunay3D(&node,x,y,z,&nelm,mtj,jac,&err,&maxnode,&maxelm)) {
-			if (err == 0) {
-				WriteOutputFile(outfilepath, &node,x,y,z,&nelm,mtj,jac,&maxelm);
-			}
-		}
-	} else {
-		printf("ERROR: input()\n");
-	}
-	free(x);
-	free(y);
-	free(z);
-	free(mtj);
-	free(jac);
-}
-/**************************************************************************/
-/* MSH - Function: ExecuteDLL_Delaunay3D
-                                                                          */
-/* Task: Calls and Executes the 3D Okayama DLL (Fortran based)
-	
-	int *node:		??
-	double *x *y *z:??
-	int *nelm:		??
-	int *mtj:		??
-	int *jac:		??
-	int *err:		??
-	int *maxnode:	??
-	int *maxelm:	??
-/* History:
-   12/2006     NW        1st Coding
-   12/2007     TK        Implementation
-**************************************************************************/
-int ExecuteDLL_Delaunay3D(int *node, double *x, double *y, double *z, int *nelm, int *mtj, int *jac, int *err, int *maxnode, int *maxelm)
-{
-    HINSTANCE   hInstDLL;
-    TFUNC       DllFunction;
-	hInstDLL=LoadLibrary(DELAUN3D_DLL);
-	printf("\n[DLL LOAD]\n",hInstDLL);
-	printf("DLL NAME: %s\n",DELAUN3D_DLL);
-	printf("FUNCTION NAME: %s\n",DLL_FUNC_NAME);
-	printf("Lib: %x\n",hInstDLL);
-    if (hInstDLL==NULL) {
-		printf("ERROR: LoadLibrary()\n");
-        return 0;
-    }
-    DllFunction=(TFUNC)GetProcAddress(hInstDLL, DLL_FUNC_NAME);
-	printf("Func: %x\n",DllFunction);
-    if (DllFunction != NULL) {
-		printf("\n-EXECUTE ""%s""()\n",DLL_FUNC_NAME);
-		DllFunction(err,node,x,y,z,nelm,mtj,jac,maxnode,maxelm);	
-	    printf("\n[RESULT]\n");
-	    printf("NELM = %d\n",*nelm);
-	    printf("ERR = %d\n\n",*err);
-	} else {
-		printf("ERROR: GetProcAddress()\n");
-	}
+#ifdef MFC
+	HANDLE hThread;
+    unsigned int dwThreadId;
+	void* args[2];
+	//Set parameters
+	args[0] = (void*) infilepath;
+	args[1] = (void*) outfilepath;
 
-    if (!FreeLibrary(hInstDLL)) {
-		printf("ERROR: FreeLibrary()\n");
-        return 0;
-     }    
-	return -1;
+	//Initialize return code
+	returnCodeForThread = 0;
+
+    //Begin thread for mesh generation process
+    hThread = (HANDLE)_beginthreadex(
+							NULL,					/* Security data structure */ 
+							DELAUN3D_STACK_SIZE,	/* Stack size */ 
+							ExecuteDelaunay3DThread,/* start function address */
+							args,					/* arglist */
+							0,						/* initflag */
+							&dwThreadId				/* thread id (OUTPUT) */
+							);
+
+	//Wait until mesh generation process ends
+    WaitForSingleObject(hThread,INFINITE);  
+	//Close thread handle
+    CloseHandle(hThread);
+
+	return returnCodeForThread;
+#else
+	return ExecuteDelaunay3DProcess(infilepath, outfilepath);
+#endif
+
+
 }
+
+///**************************************************************************/
+///* MSH - Function: ExecuteDLL_Delaunay3D
+//                                                                          */
+///* Task: Calls and Executes the 3D Okayama DLL (Fortran based)
+//	
+//	int *node:		??
+//	double *x *y *z:??
+//	int *nelm:		??
+//	int *mtj:		??
+//	int *jac:		??
+//	int *err:		??
+//	int *maxnode:	??
+//	int *maxelm:	??
+///* History:
+//   12/2006     NW        1st Coding
+//   12/2007     TK        Implementation
+//**************************************************************************/
+//int ExecuteDLL_Delaunay3D(int *node, double *x, double *y, double *z, int *nelm, int *mtj, int *jac, int *err, int *maxnode, int *maxelm)
+//{
+//    HINSTANCE   hInstDLL;
+//    TFUNC       DllFunction;
+//	hInstDLL=LoadLibrary(DELAUN3D_DLL);
+//	printf("\n[DLL LOAD]\n",hInstDLL);
+//	printf("DLL NAME: %s\n",DELAUN3D_DLL);
+//	printf("FUNCTION NAME: %s\n",DLL_FUNC_NAME);
+//	printf("Lib: %x\n",hInstDLL);
+//    if (hInstDLL==NULL) {
+//		printf("ERROR: LoadLibrary()\n");
+//        return 0;
+//    }
+//    DllFunction=(TFUNC)GetProcAddress(hInstDLL, DLL_FUNC_NAME);
+//	printf("Func: %x\n",DllFunction);
+//    if (DllFunction != NULL) {
+//		printf("\n-EXECUTE ""%s""()\n",DLL_FUNC_NAME);
+//		DllFunction(err,node,x,y,z,nelm,mtj,jac,maxnode,maxelm);	
+//	    printf("\n[RESULT]\n");
+//	    printf("NELM = %d\n",*nelm);
+//	    printf("ERR = %d\n\n",*err);
+//	} else {
+//		printf("ERROR: GetProcAddress()\n");
+//	}
+//
+//    if (!FreeLibrary(hInstDLL)) {
+//		printf("ERROR: FreeLibrary()\n");
+//        return 0;
+//     }    
+//	return -1;
+//}

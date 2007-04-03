@@ -3,7 +3,6 @@
 
 #include "stdafx.h"
 #include <stdio.h>
-#include <windows.h>
 #include <string>
 #include <algorithm>
 #include <cctype>
@@ -13,28 +12,38 @@
 #include "geo_ply.h"
 #include "geo_sfc.h"
 
+#ifdef MFC
+//#include <windows.h>
+#include <process.h>	//thread
+#endif
+
 #pragma comment(lib, "fdelaun2d-msvc.lib")
 
-#define MYDEBUG
+volatile static int returnCodeForThread;	//thread
 
-void MyOutputDebugString( LPCSTR pszFormat, ...)
-{
-#if defined (MYDEBUG) && (_DEBUG)
-    va_list	argp;
-    char pszBuf[ 256];
-    va_start(argp, pszFormat);
-    vsprintf( pszBuf, pszFormat, argp);
-    va_end(argp);
-    OutputDebugString( pszBuf);
-#else
-	return;
-#endif
-}
+//#define MYDEBUG
+//
+//void MyOutputDebugString( LPCSTR pszFormat, ...)
+//{
+//#if defined (MYDEBUG) && (_DEBUG)
+//    va_list	argp;
+//    char pszBuf[ 256];
+//    va_start(argp, pszFormat);
+//    vsprintf( pszBuf, pszFormat, argp);
+//    va_end(argp);
+//    OutputDebugString( pszBuf);
+//#else
+//	return;
+//#endif
+//}
 
 
-/*
- *
- */
+/**************************************************************************/
+/* MSH - Function: getIndexInList
+/* Task:
+/* History:
+   03/2007     NW        Implementation
+**************************************************************************/
 int getIndexInList(vector<CGLPoint*> &vct_points, int vertexId) 
 {
 	for (unsigned int i=0; i<vct_points.size(); i++) {
@@ -45,9 +54,12 @@ int getIndexInList(vector<CGLPoint*> &vct_points, int vertexId)
 	return -1;
 }
 
-/*
- *
- */
+/**************************************************************************/
+/* MSH - Function: calcTriangleSignedArea
+/* Task:
+/* History:
+   03/2007     NW        Implementation
+**************************************************************************/
 double calcTriangleSignedArea(CGLPoint* p1, CGLPoint* p2)
 {
 	double area = (p1->x * p2->y) - (p2->x * p1->y);
@@ -55,42 +67,47 @@ double calcTriangleSignedArea(CGLPoint* p1, CGLPoint* p2)
 	return area;
 }
 
-/*
- *
- */
+/**************************************************************************/
+/* MSH - Function: calcPolylineSignedArea
+/* Task:
+/* History:
+   03/2007     NW        Implementation
+**************************************************************************/
 double calcPolylineSignedArea(vector<CGLPoint*> &polyline)
 {
 	double area = 0.0;
-	int n = polyline.size();
-	for (unsigned int i=0; i<n; i++) {
+	int n = (int)polyline.size();
+	for (int i=0; i<n; i++) {
 		area += calcTriangleSignedArea(polyline[i], polyline[(i+1)%n]);
 	}
 	return area;
 }
 
-/*
- *
- */
+/**************************************************************************/
+/* MSH - Function: isPolylineClockwise
+/* Task:
+/* History:
+   03/2007     NW        Implementation
+**************************************************************************/
 bool isPolylineClockwise(vector<CGLPoint*> &polyline)
 {
 	double dSignedArea = calcPolylineSignedArea(polyline);
-
-	if (dSignedArea < 0) {
-		return true;
-	}
-	return false;
-
+	return dSignedArea < 0;
 }
 
-/*
- *
- */
+/**************************************************************************/
+/* MSH - Function: isPolylineClockwise
+/* Task:
+/* History:
+   03/2007     NW        Implementation
+**************************************************************************/
 bool isClosedSurface(Surface* psurface)
 {
 	int beginVertexID = psurface->polyline_of_surface_vector.at(0)->point_vector.front()->id;
 	int endVertexID = psurface->polyline_of_surface_vector.at(0)->point_vector.back()->id;
 
-	for (int i=1;i<psurface->polyline_of_surface_vector.size(); i++) {
+	int n = (int)psurface->polyline_of_surface_vector.size();
+	for (int i=1;i<n; i++) {
 		if (psurface->polyline_of_surface_vector.at(i)->point_vector.front()->id == endVertexID) {
 			endVertexID = psurface->polyline_of_surface_vector.at(i)->point_vector.back()->id;
 		} else if (psurface->polyline_of_surface_vector.at(i)->point_vector.back()->id == endVertexID) {
@@ -103,6 +120,24 @@ bool isClosedSurface(Surface* psurface)
 	return (beginVertexID == endVertexID);
 }
 
+/**************************************************************************/
+/* MSH - Function: isOpenBoundary
+/* Task:
+/* History:
+   03/2007     NW        Implementation
+**************************************************************************/
+bool isOpenBoundary(CGLPolyline *polyline)
+{
+	string polyline_name = polyline->name;
+	std::transform(polyline_name.begin(), polyline_name.end(), polyline_name.begin(), std::toupper);
+
+	const unsigned int postfix_size = (unsigned int)strlen(OPEN_BOUNDARY_POSTFIX);
+	if (polyline_name.length() < postfix_size
+		|| polyline_name.substr(polyline_name.length() - postfix_size, postfix_size).compare(OPEN_BOUNDARY_POSTFIX)!=0) {
+		return false;
+	}
+	return true;
+}
 
 /**************************************************************************/
 /* MSH - Function: ReadInputData
@@ -115,27 +150,25 @@ bool isClosedSurface(Surface* psurface)
 int ReadInputData(int *nex, int *nbk, int *nob, int *nib, int *ibex, int *ibno, int *nidm, int *ibreak, int *nbreak, 
 				  double *px, double *py, double *pd)
 {
-	MyOutputDebugString( "#### INPUT DATA ############################\n");
-
 	vector<CGLPoint*> vct_points;
 
 	Surface* psurface = NULL;
 	*nex = 0;
 	*nbk = 0;
-	for (unsigned int i=0; i<surface_vector.size(); i++) {
+	for (int i=0; i<(int)surface_vector.size(); i++) {
 		psurface = surface_vector.at(i);
 		if (psurface->meshing_allowed == 0) {
 			continue;
 		}
 
-		int numberOfpolyline = psurface->polyline_of_surface_vector.size();
+		int numberOfpolyline = (int)psurface->polyline_of_surface_vector.size();
 		if (numberOfpolyline == 0) {
 			continue;
 		}
 
 		if (isClosedSurface(psurface)) {
 			//#CLOSED BOUNDARY
-			ibex[*nex] = psurface->polygon_point_vector.size();
+			ibex[*nex] = (int)psurface->polygon_point_vector.size();
 			nidm[*nex] = i+1;
 			bool clockwise = isPolylineClockwise(psurface->polygon_point_vector);
 			for (int j=0; j<ibex[*nex]; j++) {
@@ -152,30 +185,15 @@ int ReadInputData(int *nex, int *nbk, int *nob, int *nib, int *ibex, int *ibno, 
 			}
 
 			*nex = *nex + 1;
-		} else {
-			////#OPEN BOUNDARY
-			//ibreak[*nbk] = psurface->polygon_point_vector.size();
-			//for (int j=0; j<ibex[*nbk]; j++) {
-			//	int vertexId = psurface->polygon_point_vector.at(ibreak[*nbk]-j-1)->id;
-			//	if (getIndexInList(vct_points, vertexId) == -1) {
-			//		vct_points.push_back(psurface->polygon_point_vector.at(ibreak[*nbk]-j-1));
-			//	}
-			//	*(nbreak+KBD*j+*nbk) = vertexId;
-			//}
-			//
-			//*nbk = *nbk + 1;
 		}
 	}
-	for (int i=0; i<polyline_vector.size(); i++) {
-		string polyline_name = polyline_vector.at(i)->name;
-		std::transform(polyline_name.begin(), polyline_name.end(), polyline_name.begin(), std::toupper);
 
-		if (polyline_name.length() < 6 
-			|| polyline_name.substr(polyline_name.length() - 6, 6).compare("_OPENB")!=0) {
+	for (int i=0; i<(int)polyline_vector.size(); i++) {
+		if (!isOpenBoundary(polyline_vector.at(i))) {
 			continue;
 		}
 		//#OPEN BOUNDARY
-		ibreak[*nbk] = polyline_vector.at(i)->point_vector.size();
+		ibreak[*nbk] = (int)polyline_vector.at(i)->point_vector.size();
 		for (int j=0; j<ibreak[*nbk]; j++) {
 			CGLPoint* pt = polyline_vector.at(i)->point_vector.at(j);
 			if (getIndexInList(vct_points, pt->id) == -1) {
@@ -202,7 +220,7 @@ int ReadInputData(int *nex, int *nbk, int *nob, int *nib, int *ibex, int *ibno, 
 	}
 	
 	//#POINT
-	*nob = vct_points.size();
+	*nob = (int)vct_points.size();
 	*nib = 0;
 
 	for (unsigned int i=0; i<vct_points.size(); i++) {
@@ -211,59 +229,13 @@ int ReadInputData(int *nex, int *nbk, int *nob, int *nib, int *ibex, int *ibno, 
 		pd[i] = vct_points.at(i)->mesh_density;
 	}
 
-	//CLOSED BOUNDARY
-	MyOutputDebugString("NEX = %d\n", *nex);
-	MyOutputDebugString("IBEX = ");
-	for (int i=0; i<*nex; i++) {
-		MyOutputDebugString("%d ", ibex[i]);
-	}
-	MyOutputDebugString("\n");
-	MyOutputDebugString("NIDM = ");
-	for (int i=0; i<*nex; i++) {
-		MyOutputDebugString("%d ", nidm[i]);
-	}
-	MyOutputDebugString("\n");
-	MyOutputDebugString("IBNO = ");
-	for (int i=0; i<*nex; i++) {
-		for (int j=0; j<ibex[i]; j++) {
-			MyOutputDebugString("%d ", *(ibno+KBD*j+i));
-		}
-		MyOutputDebugString("\n");
-	}
-	MyOutputDebugString("\n");
-
-	MyOutputDebugString("NBK = %d\n", *nbk);
-	MyOutputDebugString("IBREAK = ");
-	for (int i=0; i<*nbk; i++) {
-		MyOutputDebugString("%d ", ibreak[i]);
-	}
-	MyOutputDebugString("\n");
-	MyOutputDebugString("NBREAK = ");
-	for (int i=0; i<*nbk; i++) {
-		for (int j=0; j<ibreak[i]; j++) {
-			MyOutputDebugString("%d ", *(nbreak+KBD*j+i));
-		}
-	}
-	MyOutputDebugString("\n");
-
-	MyOutputDebugString("NOB = %d\n", *nob);
-	MyOutputDebugString("NIB = %d\n", *nib);
-
-	MyOutputDebugString("POINT = \n");
-	for (unsigned int i=0; i<*nob+*nib; i++) {
-		MyOutputDebugString("%15.7lf %15.7lf %15.7lf\n", px[i], py[i], pd[i]);
-	}
-	MyOutputDebugString("\n");
-
-	MyOutputDebugString( "############################################\n");
-
 	return -1;
 }
 
 /**************************************************************************/
 /* MSH - Function: WriteOutputFile
                                                                           */
-/* Task: 
+/* Task: Output function
 
 	 
 /* History:
@@ -317,8 +289,20 @@ int WriteOutputFile(char* filepath, int *node, double *x, double *y, int *nelm, 
 /**************************************************************************/
 /* MSH - Function: ExecuteDelaunay2D
                                                                           */
+/* Task: Interface function for thread  
+/* History:
+   03/2007     NW        Implementation
+**************************************************************************/
+unsigned __stdcall ExecuteDelaunay2DThread(void* outfilepath)
+{
+	returnCodeForThread = ExecuteDelaunay2DProcess((char*)outfilepath);
+	return 0;
+}
+
+/**************************************************************************/
+/* MSH - Function: ExecuteDelaunay2DProcess
+                                                                          */
 /* Task: Starts and Executes the 2D Delaunay mesh generator   
-   char* infilepath:  pointer of input path
    char* outfilepath:  pointer of output path
 
 /* fdelaun2d input data	                                                  
@@ -351,8 +335,7 @@ int WriteOutputFile(char* filepath, int *node, double *x, double *y, int *nelm, 
 /* History:
    02/2007     NW        1st Coding
 **************************************************************************/
-//void ExecuteDelaunay2D(char* infilepath, char* outfilepath)
-int ExecuteDelaunay2D(char* outfilepath)
+int ExecuteDelaunay2DProcess(char* outfilepath)
 {
 	int nex, nbk, nob, nib, node, nelm, ierrcode;
 	int *ibex, **ibno, *nidm, *ibreak, **nbreak;
@@ -418,17 +401,8 @@ int ExecuteDelaunay2D(char* outfilepath)
 					px, py, pd, &dpp, &stl, &node, &nelm, mtj, jac, idm, &ierrcode);
 
 		if (ierrcode == 0) {
-			MyOutputDebugString("\n\n");
-			MyOutputDebugString("NODE=%d\n",node);
-			MyOutputDebugString("NELM=%d\n",nelm);
-
 			WriteOutputFile(outfilepath, &node,px,py,&nelm,(int*)mtj,idm);
-
-		} else {
-			MyOutputDebugString("ERROR: triangulate() - %d\n", ierrcode);
 		}
-	} else {
-		MyOutputDebugString("ERROR: input()\n");
 	}
 
 	free(ibex);
@@ -447,5 +421,40 @@ int ExecuteDelaunay2D(char* outfilepath)
 }
 
 
+/**************************************************************************/
+/* MSH - Function: ExecuteDelaunay2D
+                                                                          */
+/* Task: Interface for outside   
+
+/* History:
+   03/2007     NW        Implementation
+**************************************************************************/
+int ExecuteDelaunay2D(char* outfilepath)
+{
+#ifdef MFC
+	HANDLE hThread;
+    unsigned int dwThreadId;
+
+	returnCodeForThread = 0;
+
+    //Begin thread for mesh generation process
+    hThread = (HANDLE)_beginthreadex(
+							NULL,/* Security data structure */ 
+							DELAUN2D_STACK_SIZE,/* Stack size */ 
+							ExecuteDelaunay2DThread, /* start function address */
+							(void*)outfilepath,/* arglist */
+							0,/* initflag */
+							&dwThreadId /* thread id */
+							);
+
+    WaitForSingleObject(hThread,INFINITE);  
+    CloseHandle(hThread);
+
+	return returnCodeForThread;
+#else
+	return ExecuteDelaunay2DProcess(outfilepath);
+#endif
+
+}
 
 
