@@ -1324,12 +1324,6 @@
 				RelativePath="..\Fem\cel_agm.h">
 			</File>
 			<File
-				RelativePath="..\Fem\cel_asm.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\cel_asm.h">
-			</File>
-			<File
 				RelativePath="..\Fem\cel_mmp.cpp">
 			</File>
 			<File
@@ -1358,12 +1352,6 @@
 			</File>
 			<File
 				RelativePath="..\Fem\cgs_agm.h">
-			</File>
-			<File
-				RelativePath="..\Fem\cgs_asm.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\cgs_asm.h">
 			</File>
 			<File
 				RelativePath="..\Fem\cgs_ge.cpp">
@@ -1484,12 +1472,6 @@
 			</File>
 			<File
 				RelativePath="..\Fem\int_agm.h">
-			</File>
-			<File
-				RelativePath="..\Fem\int_asm.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\int_asm.h">
 			</File>
 			<File
 				RelativePath="..\Fem\int_ge.cpp">
