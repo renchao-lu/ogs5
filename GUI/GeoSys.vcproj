@@ -1300,106 +1300,16 @@
 			Name="FEM"
 			Filter="">
 			<File
-				RelativePath="..\Fem\adaptiv.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\adaptiv.h">
-			</File>
-			<File
-				RelativePath="..\Fem\balance.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\balance.h">
-			</File>
-			<File
 				RelativePath="..\Fem\break.cpp">
 			</File>
 			<File
 				RelativePath="..\Fem\break.h">
 			</File>
 			<File
-				RelativePath="..\Fem\cel_agm.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\cel_agm.h">
-			</File>
-			<File
-				RelativePath="..\Fem\cel_mmp.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\cel_mmp.h">
-			</File>
-			<File
-				RelativePath="..\Fem\cel_mms.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\cel_mms.h">
-			</File>
-			<File
-				RelativePath="..\Fem\cel_mpc.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\cel_mpc.h">
-			</File>
-			<File
-				RelativePath="..\Fem\cel_mtm2.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\cel_mtm2.h">
-			</File>
-			<File
-				RelativePath="..\Fem\cgs_agm.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\cgs_agm.h">
-			</File>
-			<File
-				RelativePath="..\Fem\cgs_ge.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\cgs_ge.h">
-			</File>
-			<File
-				RelativePath="..\Fem\cgs_mmp.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\cgs_mmp.h">
-			</File>
-			<File
-				RelativePath="..\Fem\cgs_mms.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\cgs_mms.h">
-			</File>
-			<File
-				RelativePath="..\Fem\cgs_mpc.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\cgs_mpc.h">
-			</File>
-			<File
-				RelativePath="..\Fem\cgs_mtm2.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\cgs_mtm2.h">
-			</File>
-			<File
-				RelativePath="..\Fem\cvel.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\cvel.h">
-			</File>
-			<File
 				RelativePath="..\Fem\display.cpp">
 			</File>
 			<File
 				RelativePath="..\Fem\display.h">
-			</File>
-			<File
-				RelativePath="..\Fem\edges.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\edges.h">
 			</File>
 			<File
 				RelativePath="..\Fem\elements.cpp">
@@ -1432,70 +1342,10 @@
 				RelativePath="..\Fem\femlib.h">
 			</File>
 			<File
-				RelativePath="..\Fem\file_rfr.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\file_rfr.h">
-			</File>
-			<File
 				RelativePath="..\Fem\files.h">
 			</File>
 			<File
 				RelativePath="..\Fem\files0.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\files1.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\files2.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\gridadap.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\gridadap.h">
-			</File>
-			<File
-				RelativePath="..\Fem\indicat1.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\indicat2.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\indicatr.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\indicatr.h">
-			</File>
-			<File
-				RelativePath="..\Fem\int_agm.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\int_agm.h">
-			</File>
-			<File
-				RelativePath="..\Fem\int_ge.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\int_ge.h">
-			</File>
-			<File
-				RelativePath="..\Fem\int_mmp.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\int_mmp.h">
-			</File>
-			<File
-				RelativePath="..\Fem\int_mms.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\int_mms.h">
-			</File>
-			<File
-				RelativePath="..\Fem\int_mtm2.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\int_mtm2.h">
 			</File>
 			<File
 				RelativePath="..\Fem\intrface.cpp">
@@ -1511,12 +1361,6 @@
 			</File>
 			<File
 				RelativePath="..\Fem\makros.h">
-			</File>
-			<File
-				RelativePath="..\Fem\masscont.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\masscont.h">
 			</File>
 			<File
 				RelativePath="..\Fem\mathlib.cpp">
@@ -1561,18 +1405,6 @@
 				RelativePath="..\Fem\pcs_dm.h">
 			</File>
 			<File
-				RelativePath="..\Fem\plains.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\plains.h">
-			</File>
-			<File
-				RelativePath="..\Fem\plot.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\plot.h">
-			</File>
-			<File
 				RelativePath="..\Fem\prototyp.h">
 			</File>
 			<File
@@ -1580,24 +1412,6 @@
 			</File>
 			<File
 				RelativePath="..\Fem\ptrarr.h">
-			</File>
-			<File
-				RelativePath="..\Fem\refine.h">
-			</File>
-			<File
-				RelativePath="..\Fem\refine1.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\refine2.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\refine3.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\relax.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\relax.h">
 			</File>
 			<File
 				RelativePath="..\Fem\renumber.cpp">
@@ -1649,12 +1463,6 @@
 			</File>
 			<File
 				RelativePath="..\Fem\rf_mfp_new.h">
-			</File>
-			<File
-				RelativePath="..\Fem\rf_mg.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\rf_mg.h">
 			</File>
 			<File
 				RelativePath="..\Fem\rf_mmp_new.cpp">
@@ -1729,46 +1537,10 @@
 				RelativePath="..\Fem\rfadt.h">
 			</File>
 			<File
-				RelativePath="..\Fem\rfdb.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\rfdb.h">
-			</File>
-			<File
-				RelativePath="..\Fem\rfhgm.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\rfhgm.h">
-			</File>
-			<File
-				RelativePath="..\Fem\rfidb.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\rfidb.h">
-			</File>
-			<File
-				RelativePath="..\Fem\rfii.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\rfii.h">
-			</File>
-			<File
-				RelativePath="..\Fem\rfim.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\rfim.h">
-			</File>
-			<File
 				RelativePath="..\Fem\rfiter.cpp">
 			</File>
 			<File
 				RelativePath="..\Fem\rfiter.h">
-			</File>
-			<File
-				RelativePath="..\Fem\rfiv.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\rfiv.h">
 			</File>
 			<File
 				RelativePath="..\Fem\rfmat_cp.cpp">
@@ -1777,28 +1549,10 @@
 				RelativePath="..\Fem\rfmat_cp.h">
 			</File>
 			<File
-				RelativePath="..\Fem\rfod.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\rfod.h">
-			</File>
-			<File
-				RelativePath="..\Fem\rfpriref.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\rfpriref.h">
-			</File>
-			<File
 				RelativePath="..\Fem\rfstring.cpp">
 			</File>
 			<File
 				RelativePath="..\Fem\rfstring.h">
-			</File>
-			<File
-				RelativePath="..\Fem\rfsystim.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\rfsystim.h">
 			</File>
 			<File
 				RelativePath="..\Fem\solver.cpp">
@@ -1814,12 +1568,6 @@
 			</File>
 			<File
 				RelativePath="..\Fem\steam67.h">
-			</File>
-			<File
-				RelativePath="..\Fem\testvar.cpp">
-			</File>
-			<File
-				RelativePath="..\Fem\testvar.h">
 			</File>
 			<File
 				RelativePath="..\Fem\timer.cpp">
