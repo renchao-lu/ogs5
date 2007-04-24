@@ -28,8 +28,6 @@ using namespace std;
 
 extern void RFConfigRenumber(void);
 extern void ConfigRenumberProperties(void);
-extern int CreateEdgeList(void);
-extern int CreatePlainList(void);
 extern int ReadRFIFile(string g_strFileNameBase);
 #include "rf_pcs.h"
 #include "gs_project.h"
@@ -77,8 +75,8 @@ void MSHOpen(string file_name_base)
     CreateNodeList();
   if(!ELEListExists())
     ElCreateElementList();
-  CreateEdgeList();
-  CreatePlainList();
+//OK  CreateEdgeList();
+//OK  CreatePlainList();
   ReadRFIFile(file_name_base);
   ConfigRenumberProperties();
   RFConfigRenumber();

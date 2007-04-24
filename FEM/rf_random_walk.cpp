@@ -2402,7 +2402,7 @@ int RandomWalk::ReadInVelocityFieldOnNodes(string file_base_name)
 
 	while(End)
     {
-        for(int i=0; i< m_msh->nod_vector.size(); ++i)
+        for(int i=0; i< (int)m_msh->nod_vector.size(); ++i)
         {
             double v[3];
 			for(int p=0; p<3; ++p)	v[p] = 0.0;

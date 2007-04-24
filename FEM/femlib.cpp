@@ -23,11 +23,9 @@
 /* Preprozessor-Definitionen */
 #include "makros.h"
 /* Intern benutzte Module */
-#include "edges.h"
 #include "femlib.h"
 #include "mathlib.h"
 #include "intrface.h"
-#include "adaptiv.h"
 #include "rf_pcs.h" //OK_MOD"
 #include "matrix.h"
 /* Intern benutzte Objekte */
@@ -1460,65 +1458,7 @@ void Calc2DElement_ab2rs_Coord(long index, double *vec, double a, double b)
    20.02.1998     R.Kaiser     Erste Version
  */
 /**************************************************************************/
-void Calc2DEdgeUnitNormalVec(long index, long side, double *n)
-{
-  static int i, k;
-  static long *edges;
-  static long nd1[2], nd2[2], kn1, kn2;
-  static double side1[3], side2[3];
-  static double vec[3];
-
-  edges = ElGetElementEdges(index);    /* Kanten des betrachteten
-                                          Elements holen */
-
-  k = 0;
-  for (i = 0; i < 4; i++)
-    if (edges[i] == side)
-      {
-        k = k + i;
-        break;
-      }
-
-  for (i = 0; i < 2; i++)
-    {
-      /* Knotennummern von zwei Kanten holen */
-      nd1[i] = GetEdge(edges[k]) -> knoten[i];
-      nd2[i] = GetEdge(edges[(k + 1) % 4]) -> knoten[i];
-    }
-
-  /* Knotennummern fuer weitere Rechnungen umsortieren */
-  if ((nd1[0] != nd2[0]) && (nd1[1] != nd2[1]))
-    {
-      kn2 = nd2[0];
-      nd2[0] = nd2[1];
-      nd2[1] = kn2;
-    }
-  if (nd1[1] == nd2[1])
-    {
-      kn1 = nd1[0];
-      kn2 = nd2[0];
-      nd1[0] = nd1[1];
-      nd2[0] = nd2[1];
-      nd1[1] = kn1;
-      nd2[1] = kn2;
-    }
-
-  /* Zwei Elementseiten (Vektoren) berechnen */
-  side1[0] = GetNode(nd1[1]) -> x - GetNode(nd1[0]) -> x;
-  side1[1] = GetNode(nd1[1]) -> y - GetNode(nd1[0]) -> y;
-  side1[2] = GetNode(nd1[1]) -> z - GetNode(nd1[0]) -> z;
-  side2[0] = GetNode(nd2[1]) -> x - GetNode(nd2[0]) -> x;
-  side2[1] = GetNode(nd2[1]) -> y - GetNode(nd2[0]) -> y;
-  side2[2] = GetNode(nd2[1]) -> z - GetNode(nd2[0]) -> z;
-
-  /* Normalenvektor der Elementflaeche berechnen */
-  M3KreuzProdukt(side1, side2, vec);
-
-  /* Nach aussen gerichteten Normaleneinheitsvektor berechnen */
-  M3KreuzProdukt(side1, vec, n);
-  MNormiere(n, 3);
-}
-
+//OK void Calc2DEdgeUnitNormalVec(long index, long side, double *n)
 
 /**************************************************************************/
 /* ROCKFLOW - Funktion: Calc2DElement_xyz2ab_Vector
@@ -1935,23 +1875,7 @@ void IncorporateMatrix(long element, double *left_matrix, double *right_vector, 
      als Eintraege im Gesamtgleichungssystem finden lassen */
   for (i = 0; i < nn; i++)
     element_node_index[i] = GetNodeIndex(ElGetElementNodes(element)[i]);
-
   /* irregulaere Knoten eliminieren */
-  if (GetRFControlGridAdapt())
-    {
-      if (AdaptGetMethodIrrNodes() == 1)
-        {
-          if (ElGetElementType(element) == 2)
-            {
-              DelIrrNodes2D(element, element_node_index, left_matrix, right_vector);
-            }                          /* endif */
-          if (ElGetElementType(element) == 3)
-            {
-              DelIrrNodes3D(element, element_node_index, left_matrix, right_vector);
-            }                          /* endif */
-        }
-    }
-
   /* Einspeichern in linke Seite */
   for (i = 0; i < nn; i++)
     for (j = 0; j < nn; j++)
@@ -2068,27 +1992,7 @@ void Calc2DElementCoordinatesTriangle(long index, double *vec1, double *vec2, do
    02.02.2001  C. Thorenz    Erste Version
 
 *************************************************************************/
-void FEMCorrectFluxesOverIrregularNodes(int ndx)
-{
-  long j, k, node, nachbarn[4];
-  int anz_nachbarn;
-  double wert;
-
-  for (j = 0l; j < NodeListLength; j++)
-    {
-      node = NodeNumber[j];
-      anz_nachbarn = IrrNodeGetRegularNeighbors(node, nachbarn);
-      if (anz_nachbarn)
-        {
-          wert = GetNodeVal(node, ndx) / (double) anz_nachbarn;
-          for (k = 0l; k < anz_nachbarn; k++)
-            {
-              SetNodeVal(nachbarn[k], ndx, GetNodeVal(nachbarn[k], ndx) + wert);
-            }
-          SetNodeVal(node, ndx, 0.);
-        }
-    }
-}
+//OK void FEMCorrectFluxesOverIrregularNodes(int ndx)
 
 /*************************************************************************
  ROCKFLOW - Funktion: FEMCorrectFluxesOverIrregularNodesOnVector
@@ -2105,28 +2009,7 @@ void FEMCorrectFluxesOverIrregularNodes(int ndx)
    2.1.2001   C. Thorenz    Erste Version
 
 *************************************************************************/
-void FEMCorrectFluxesOverIrregularNodesOnVector(double *flux)
-{
-  long i, k, node, nachbarn[4];
-  int anz_nachbarn;
-  double wert;
-
-  for (i = 0l; i < NodeListLength; i++)
-    {
-      node = NodeNumber[i];
-      anz_nachbarn = IrrNodeGetRegularNeighbors(node, nachbarn);
-      if (anz_nachbarn)
-        {
-          wert = flux[i] / (double) anz_nachbarn;
-          for (k = 0l; k < anz_nachbarn; k++)
-            {
-              flux[GetNodeIndex(nachbarn[k])] += wert;
-              flux[i] = 0.;
-            }
-        }
-    }
-}
-
+//OK void FEMCorrectFluxesOverIrregularNodesOnVector(double *flux)
 
 /***************************************************************************
    ROCKFLOW - Funktion: MXPGaussPktTri

@@ -12,7 +12,6 @@
 // RF Objects
 extern long NodeListLength;
 extern long ElListSize();
-#include "rfpriref.h"
 #include "solver.h"
 extern void RFConfigRenumber(void);
 #include "rf_pcs.h"

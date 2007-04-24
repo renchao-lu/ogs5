@@ -26,15 +26,12 @@
 #include "tools.h"
 #include "elements.h"
 #include "nodes.h"
-#include "edges.h"
 #include "mathlib.h"
 #include "femlib.h"
 #include "intrface.h"
-#include "rfsystim.h"
 #include "rf_tim_new.h"
 #include "rf_mmp_new.h"
 #include "rf_num_new.h"
-/* Tools */
 // GEOLib
 #include "geo_pnt.h"
 #include "geo_strings.h"
@@ -93,8 +90,8 @@ void ConstructElemsToNodesList ( void )
   static long cen_list_id_timer=-1;
 
   /* Systemzeit fuer Element-zu-Knoten-Liste setzen und ausfuehren */
-  SetSystemTime(TIMER_CEN_LIST,"ROCKFLOW","ROCKFLOW: ElemsToNodesList",&cen_list_id_timer);
-  RunSystemTime(TIMER_CEN_LIST);
+//OK  SetSystemTime(TIMER_CEN_LIST,"ROCKFLOW","ROCKFLOW: ElemsToNodesList",&cen_list_id_timer);
+//OK  RunSystemTime(TIMER_CEN_LIST);
 
   for (i=0;i<start_new_elems;i++) {
       switch (ElGetElementType(i)) {
@@ -126,11 +123,9 @@ void ConstructElemsToNodesList ( void )
           }
       }
   }
-
   /* Systemzeit fuer Element-zu-Knoten-Liste anhalten */
-  StopSystemTime(TIMER_CEN_LIST);
+//OK  StopSystemTime(TIMER_CEN_LIST);
 }
-
 
 /**************************************************************************/
 /* ROCKFLOW - Funktion: Restart1DElementNodes
@@ -1592,185 +1587,7 @@ Alles_leer: n=n;
    07/2002   CT   Erste Version
 
   **************************************************************************/
-long DampOscillations(int ndx1, int oscil_damp_method, double *oscil_damp_parameter, double (*NodeCalcLumpedMass) (long))
-{
-  long i, j, nn, go_on, node, *nodes, *edges;
-  double val_min, val_max, val_min_max, val_max_diff, val_soll, val, m1, m2, val_max_neu, val_min_neu;
-  double val_min_abs, val_max_abs, val_min_ele, val_max_ele; 
-  long val_min_node, val_max_node, damping=0;
-  int anz_edge;
-  double mass_sum, ml, sum_dist=0.;
-
-  /* Vorbelegen der Steuerparameter */
-  switch(oscil_damp_method) {
-    default:
-      DisplayMsg("!!!   Error: Unknown damping method.");
-      DisplayMsgLn("!!!  Terminating.");
-      exit(1);
-    case 0:
-      val_min=-1.e99;
-      val_max=1.e99;
-      val_max_diff=1.e99;
-      break;
-    case 1:
-      val_min=oscil_damp_parameter[0];
-      val_max=oscil_damp_parameter[1];
-      val_max_diff=1.e99;
-      break;
-    case 2:
-      val_min=-1.e99;
-      val_max=1.e99;
-      val_max_diff=oscil_damp_parameter[0];
-      break;
-    case 3:
-      val_min=-1.e99;
-      val_max=1.e99;
-      val_max_diff=oscil_damp_parameter[0];
-      break;
-    case 4:
-      val_min=oscil_damp_parameter[0];
-      val_max=oscil_damp_parameter[1];
-      val_max_diff=oscil_damp_parameter[2];
-      break;
-    case 5:
-      val_min=oscil_damp_parameter[0];
-      val_max=oscil_damp_parameter[1];
-      val_max_diff=oscil_damp_parameter[2];
-      break;
-  }
-
-
-  do {
-    go_on = 0; 
-
-    if (oscil_damp_method==0)
-         /* Nix tun */ 
-         return 0;
-
-    if ((oscil_damp_method==1)||(oscil_damp_method==4)||(oscil_damp_method==5)) {
-        /* Min-Max-Begrenzung der Werte */
-
-        for (i = 0; i < NodeListLength; i++) {
-          node = NodeNumber[i];
-          val = GetNodeVal(node, ndx1);
-          val_soll=val;
-   
-          /* Liegt der Wert ausserhalb des MinMax-Intervalls? */
-          if ((val < val_min)||(val > val_max)) {
-            /* Alle Konten an diesem Knoten holen */
-            edges = GetNodeEdges(node, &anz_edge);
-            /* Speicher fuer alle Knoten an den Kanten */
-            nodes = (long *) Malloc(anz_edge*sizeof(long));
-
-            go_on = 1; 
-             
-            if (val < val_min) val_soll = val_min;
-            if (val > val_max) val_soll = val_max;
-      
-            /* Alle Nachbarknoten holen */
-            for (j = 0; j < anz_edge; j++) {
-              if(GetEdge(edges[j])->knoten[0]!=node) nodes[j]=GetEdge(edges[j])->knoten[0]; 
-              if(GetEdge(edges[j])->knoten[1]!=node) nodes[j]=GetEdge(edges[j])->knoten[1]; 
-            }
-
-            /* Massenspeicherung der Knoten bestimmen */
-            ml = mass_sum = NodeCalcLumpedMass(node);
-            for (j = 0; j < anz_edge; j++) 
-              mass_sum += NodeCalcLumpedMass(nodes[j]);
-     
-            /* Umverteilen der Masse */
-            for (j = 0; j < anz_edge; j++) 
-              SetNodeVal(nodes[j], ndx1, GetNodeVal(nodes[j], ndx1)+ml/mass_sum*(val_soll+val));
-
-            /* Setzen des Sollwertes */
-            SetNodeVal(node, ndx1, val_soll);
- 
-            /* Protokollieren der Aenderung */
-            sum_dist += fabs(val_soll - val) * ml;
-            damping++;
-
-            /* Speicher freigeben */
-            nodes = (long *) Free(nodes);
-          }
-        }
-     }
-
-     if ((oscil_damp_method==2)||(oscil_damp_method==3)||(oscil_damp_method==4)||(oscil_damp_method==5)) {
-        /* Begrenzung der (relativen) Differenz im Element */
-        val_min_max = 1.;
-
-        if ((oscil_damp_method==3)||(oscil_damp_method==5)) {
-          /* Relativ zur maximalen Differenz */
-          val_min_abs =  1.e99;
-          val_max_abs = -1.e99;
-
-          /* Feststellen der Maximaldifferenz im System */
-          for (i = 0; i < NodeListLength; i++) {
-             val = GetNodeVal(NodeNumber[i], ndx1);
-             if(val<val_min_abs) val_min_abs = val; 
-             if(val>val_max_abs) val_max_abs = val;
-          }   
-          val_min_max = val_max_abs-val_min_abs;
-        }
-
-        for (i = 0; i < anz_active_elements; i++) {
-           /* Anzahl der Knoten am Element */
-           nn = ElNumberOfNodes[ElGetElementType(ActiveElements[i]) - 1];
-           /* Alle Knoten am Element */
-           nodes = ElGetElementNodes(ActiveElements[i]);
-
-           val_min_ele =  1.e99;
-           val_max_ele = -1.e99;
-           val_min_node = -1; 
-           val_max_node = -1; 
-
-           /* Bestimmen der Knoten mit den Extremwerten im Element */
-           for (j = 0; j < nn; j++) {
-             val = GetNodeVal(nodes[j], ndx1);
-             if(val<val_min_ele) {
-                val_min_ele = val;
-                val_min_node = nodes[j];
-             } 
-             if(val>val_max_ele) {
-                val_max_ele = val;
-                val_max_node = nodes[j];
-             } 
-           }
-
-           /* Bei zu grossen Differenzen eingreifen */ 
-           if ((val_max_ele-val_min_ele)/val_min_max > val_max_diff*1.0001) {
-             /* Weitere Iterationen noetig */
-             go_on = 1; 
-
-             /* Gelumpte Masse fuer die Extremknoten holen */
-             m1 = NodeCalcLumpedMass(val_max_node);
-             m2 = NodeCalcLumpedMass(val_min_node);
-             
-             /* Verteilung ausrechnen */
-             val_max_neu = (val_max_ele*m1+val_min_ele*m2+val_min_max*val_max_diff*m2)/(m1+m2);
-             val_min_neu = val_max_neu-val_min_max*val_max_diff;
-
-             /* Neue Werte setzen */
-             SetNodeVal(val_max_node, ndx1, val_max_neu);
-             SetNodeVal(val_min_node, ndx1, val_min_neu);
-
-             /* Protokoll */
-             sum_dist += fabs(val_max_ele - val_max_neu) * m1;
-             damping++;
-          }
-        }
-     }
-  } while(go_on==1);
-
-  if(damping) {
-      DisplayMsg("   Warning: Damping performed ");
-      DisplayLong(damping);
-      DisplayMsg(" times. Distributed: ");
-      DisplayDouble(sum_dist,0,0);
-      DisplayMsgLn("");
-  }
-  return damping;
-}
+//OK long DampOscillations(int ndx1, int oscil_damp_method, double *oscil_damp_parameter, double (*NodeCalcLumpedMass) (long))
 
 //SB:
 /**************************************************************************/

@@ -51,15 +51,12 @@ using namespace std;
 #include "mathlib.h"
 #include "matrix.h"
 #include "geo_strings.h"
-#include "rfsystim.h"
 #include "tools.h"
 #include "rf_tim_new.h"
-
 /* AMG-Solver */
 #ifdef AMG1R5
   #include "amg1r5.h"
 #endif
-
 /* UMFPACK-Solver */
 #ifdef UMFPACK
   #include <umfpack.h>

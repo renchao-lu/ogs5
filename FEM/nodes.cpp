@@ -40,8 +40,6 @@
 #include "rf_pcs.h" 
 #include "nodes.h"
 #include "ptrarr.h"
-#include "edges.h"
-#include "plains.h"
 #include "elements.h"
 #include "loop_pcs.h"
 #include "mathlib.h"
@@ -1039,43 +1037,7 @@ void IncAllNodeVals ( int idx0, int idx1, double *zwischenspeicher )
    08.11.1999  RK         Kapselung Gitteradaption
                                                                           */
 /**************************************************************************/
-void ConstructStatusEntries ( void )
-{
-  long *elem;
-  int anz;
-  int i, j;  /* Laufvariable */
-  Kante *kante;  /* Zeiger auf Kantenstruktur */
-  Flaeche *flaeche;  /* Zeiger auf Flaechenstruktur */
-
-  /* Randknoten ermitteln */
-  if (max_dim==2) {  /* 3D-Netz; alle Knoten auf Flaechen */
-    for (i=0l;i<PlainListLength;i++) {  /* Schleife ueber alle Kanten */
-      flaeche = GetPlain(i);
-      if ( ((flaeche->nachbarn_3D[0]>=0l) && (flaeche->nachbarn_3D[1]<0l)) ||
-           ((flaeche->nachbarn_3D[0]<0l) && (flaeche->nachbarn_3D[1]>=0l)) ) {
-        /* Nur ein 2D-Nachbar an Flaeche ==> Randflaeche
-           ==> Knoten sind Randknoten */
-        for (j=0;j<4;j++)
-          SetNodeState(flaeche->knoten[j],-3);
-       }
-     }
-   }
-   else {  /* 1D- oder 2D-Netz; alle Knoten auf Kanten */
-     for (i=0l;i<EdgeListLength;i++) {  /* Schleife ueber alle Kanten */
-       kante = GetEdge(i);
-       elem = GetEdge2DElems(i,&anz);
-       if (anz == 1) {
-         /* Nur ein 2D-Nachbar an Kante ==> Randkante
-            ==> Knoten sind Randknoten */
-         SetNodeState(kante->knoten[0],-3);
-         SetNodeState(kante->knoten[1],-3);
-       }
-     }
-   }
-
-}
-
-
+//OK void ConstructStatusEntries ( void )
 
 /**************************************************************************/
 /* ROCKFLOW - Funktion: GetNodeElements

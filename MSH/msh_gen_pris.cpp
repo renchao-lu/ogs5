@@ -591,9 +591,6 @@ void MSHCreatePrismsFromTriangles(void)
   long *nodes = NULL;
   long i;
   int mat_group = 0;
-  int elementtyp = 6;
-  long vorgaenger = -1;
-  int level = 0;
   long no_prisms = (long)msh_pris_elements_vector.size();
   for(i=0;i<no_prisms;i++) {
       nodes = (long*) Malloc(sizeof(long)*ElNumberOfNodes[5]);
@@ -603,7 +600,7 @@ void MSHCreatePrismsFromTriangles(void)
       nodes[3] = msh_pris_elements_vector[i]->node4;
       nodes[4] = msh_pris_elements_vector[i]->node5;
       nodes[5] = msh_pris_elements_vector[i]->node6;
-      ELECreateTopology(elementtyp,vorgaenger,level,ElementListLength);
+//OK      ELECreateTopology(elementtyp,vorgaenger,level,ElementListLength);
       ElSetElementNodes(ElementListLength-1,nodes);
       ElSetElementGroupNumber(ElementListLength-1,mat_group);
       anz_3D++;

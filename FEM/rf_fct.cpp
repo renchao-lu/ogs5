@@ -526,7 +526,7 @@ double CFunction::GetValue(double point,bool*valid)
     long np = 0;
     for (j=0; j <anz; j+=2){
       double temp1 = variable_data_vector[j][0];
-      double temp2 = variable_data_vector[j][1];
+//OK      double temp2 = variable_data_vector[j][1];
       if(point>temp1)index++;
     }
     if (index%2==1){

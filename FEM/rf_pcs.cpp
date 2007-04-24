@@ -13,7 +13,6 @@ Programing:
 #include <mpi.h>
 #endif
 /*--------------------- MPI Parallel  -------------------*/
-
 // MFC
 #include "stdafx.h" 
 #ifdef MFC
@@ -37,7 +36,6 @@ Programing:
 #include "rf_pcs.h"
 #include "pcs_dm.h"
 #include "files.h"    // FIL
-#include "file_rfr.h" // FIL
 #include "solver.h"    // ConfigRenumberProperties
 #include "rf_st_new.h" // ST
 #include "rf_bc_new.h" // ST
@@ -56,6 +54,7 @@ Programing:
 #include "rf_num_new.h"
 #include "gs_project.h"
 #include "rf_fct.h"
+#include "femlib.h"
 /*-----------------------------------------------------------------------*/
 /* Tools */
 #include "matrix.h"
@@ -76,25 +75,9 @@ extern void transM2toM5(void);
 #include "rf_apl.h" // Loop...
 #include "loop_pcs.h"
 extern VoidFuncVoid LOPCalcSecondaryVariables_USER;
-/*-----------------------------------------------------------------------*/
-/* Kernels */
-#include "cel_mpc.h"
-#include "cgs_mpc.h"
-#include "cgs_mmp.h"
-#include "int_mmp.h"
-#include "int_mms.h"
-#include "cel_mtm2.h"
-#include "cgs_mtm2.h"
-#include "cel_agm.h"
-#include "cgs_agm.h"
 //------------------------------------------------------------------------
 // PCS
 VoidXFuncVoidX PCSDestroyELEMatrices[PCS_NUMBER_MAX];
-void PCSConfigELEMatricesMTM(int);
-void PCSConfigELEMatricesMPC(int);
-//WW void PCSConfigELEMatricesSM(int);
-//void PCSConfigELEMatricesHTM(int);
-void PCSConfigELEMatricesMMP(int);
 //------------------------------------------------------------------------
 // Globals, to be checked
 int pcs_no_fluid_phases = 0;
@@ -2028,9 +2011,6 @@ void CRFProcess::ConfigMultiphaseFlow()
       pcs_eval_unit[6] = "-";
       break;
   }
-  ConfigELEMatrices = PCSConfigELEMatricesMMP;
-  // USER
-  LOPCalcSecondaryVariables_USER = MMPCalcSecondaryVariables;
 }
 
 /**************************************************************************
@@ -2137,10 +2117,6 @@ void CRFProcess::ConfigNonIsothermalFlow()
   pcs_eval_unit[11] = "-";
   pcs_eval_unit[12] = "-";
   pcs_eval_unit[13] = "-";
-  ConfigELEMatrices = PCSConfigELEMatricesMPC;
-  /* USER */
-  PCSSetIC_USER = MPCSetIC;
-  LOPCalcSecondaryVariables_USER = MPCCalcSecondaryVariables;
 }
 
 /**************************************************************************
@@ -2151,100 +2127,7 @@ Programing:
         WW Splitted for processes
 last modified:
 **************************************************************************/
-void CRFProcess::ConfigNonIsothermalFlowRichards()
-{
-  switch(pcs_type_number){
-    case 0:
-      pcs_num_name[0]= "PRESSURE0";
-      pcs_sol_name   = "LINEAR_SOLVER_PROPERTIES_PRESSURE1";
-      break;
-    case 1:
-      pcs_num_name[0]= "SATURATION0";
-      pcs_sol_name   = "LINEAR_SOLVER_PROPERTIES_SATURATION1";
-      break;
-  }
-  // 1.1 primary variables
-  pcs_number_of_primary_nvals = 1;
-  pcs_primary_function_name[0] = "PRESSURE2";
-  pcs_primary_function_unit[0] = "Pa";
-   // 1.2 secondary variables
-  LOPCalcSecondaryVariables_USER = MPCCalcSecondaryVariablesRichards;
-  pcs_number_of_secondary_nvals = 14;
-  pcs_secondary_function_name[0] = "SATURATION2";
-  pcs_secondary_function_unit[0] = "m3/m3";
-  pcs_secondary_function_timelevel[0] = 0;
-  pcs_secondary_function_name[1] = "SATURATION2";
-  pcs_secondary_function_unit[1] = "m3/m3";
-  pcs_secondary_function_timelevel[1] = 1;
-  pcs_secondary_function_name[2] = "SATURATION1";
-  pcs_secondary_function_unit[2] = "m3/m3";
-  pcs_secondary_function_timelevel[2] = 0;
-  pcs_secondary_function_name[3] = "SATURATION1";
-  pcs_secondary_function_unit[3] = "m3/m3";
-  pcs_secondary_function_timelevel[3] = 1;
-  pcs_secondary_function_name[4] = "PRESSURE_CAP";
-  pcs_secondary_function_unit[4] = "Pa";
-  pcs_secondary_function_timelevel[4] = 0;
-  pcs_secondary_function_name[5] = "PRESSURE_CAP";
-  pcs_secondary_function_unit[5] = "Pa";
-  pcs_secondary_function_timelevel[5] = 1;
-  pcs_secondary_function_name[6] = "MASS_FRACTION1";
-  pcs_secondary_function_unit[6] = "kg/m3";
-  pcs_secondary_function_timelevel[6] = 0;
-  pcs_secondary_function_name[7] = "MASS_FRACTION1";
-  pcs_secondary_function_unit[7] = "kg/m3";
-  pcs_secondary_function_timelevel[7] = 1;
-  pcs_secondary_function_name[8] = "MASS_FRACTION2";
-  pcs_secondary_function_unit[8] = "kg/m3";
-  pcs_secondary_function_timelevel[8] = 0;
-  pcs_secondary_function_name[9] = "MASS_FRACTION2";
-  pcs_secondary_function_unit[9] = "kg/m3";
-  pcs_secondary_function_timelevel[9] = 1;
-  pcs_secondary_function_name[10] = "PRESSURE1";
-  pcs_secondary_function_unit[10] = "Pa";
-  pcs_secondary_function_timelevel[10] = 0;
-  pcs_secondary_function_name[11] = "PRESSURE1";
-  pcs_secondary_function_unit[11] = "Pa";
-  pcs_secondary_function_timelevel[11] = 1;
-//SB:3912
-  pcs_secondary_function_name[12] = "DENSITY1";
-  pcs_secondary_function_unit[12] = "kg/m3";
-  pcs_secondary_function_timelevel[12] = 1;
-  pcs_secondary_function_name[13] = "DENSITY2";
-  pcs_secondary_function_unit[13] = "kg/m3";
-  pcs_secondary_function_timelevel[13] = 1;
-  // 2 ELE values
-  pcs_number_of_evals = 13; //WW
-  pcs_eval_name[0] = "COMP_FLUX";
-  pcs_eval_name[1] = "POROSITY";
-  pcs_eval_name[2] = "PERMEABILITY";
-  pcs_eval_name[3] = "VELOCITY1_X";
-  pcs_eval_name[4] = "VELOCITY1_Y";
-  pcs_eval_name[5] = "VELOCITY1_Z";
-  pcs_eval_name[6] = "VELOCITY2_X";
-  pcs_eval_name[7] = "VELOCITY2_Y";
-  pcs_eval_name[8] = "VELOCITY2_Z";
-  pcs_eval_name[9] = "POROSITY_IL";
-  pcs_eval_name[10] = "VoidRatio";
-  pcs_eval_name[11] = "PorosityChange";
-  pcs_eval_name[12] = "n_sw_Rate";
-  pcs_eval_unit[0]  = "kg/s";
-  pcs_eval_unit[1]  = "m3/m3";
-  pcs_eval_unit[2]  = "m2";
-  pcs_eval_unit[3]  = "m/s";
-  pcs_eval_unit[4]  = "m/s";
-  pcs_eval_unit[5]  = "m/s";
-  pcs_eval_unit[6]  = "m/s";
-  pcs_eval_unit[7]  = "m/s";
-  pcs_eval_unit[8]  = "m/s";
-  pcs_eval_unit[9]  = "-";
-  pcs_eval_unit[10] = "-";
-  pcs_eval_unit[11] = "-";
-  pcs_eval_unit[12] = "-";
-  // 3 ELE matrices
-  ConfigELEMatrices = PCSConfigELEMatricesMPC;
-  PCSSetIC_USER = MPCSetICRichards;
-}
+//void CRFProcess::ConfigNonIsothermalFlowRichards()
 
 /**************************************************************************
 FEMLib-Method: 
@@ -2295,7 +2178,7 @@ void CRFProcess::ConfigMassTransport()
   sprintf(pcs_secondary_function_name[1], "%s%li","MASS_FLUX_",comp);
   pcs_secondary_function_unit[1] = "kg/m3/s";
   pcs_secondary_function_timelevel[1] = 1;
-  LOPCalcSecondaryVariables_USER = MTM2CalcSecondaryVariables;  //SB:todo
+//OK  LOPCalcSecondaryVariables_USER = MTM2CalcSecondaryVariables;  //SB:todo
   // 2 ELE values
   pcs_number_of_evals = 0;
 //	  pcs_eval_name[0] = "Darcy velocity";
@@ -2305,13 +2188,10 @@ void CRFProcess::ConfigMassTransport()
       pcs_eval_unit[0] = "mol/kgH2O";
 #endif
   // 3 ELE matrices
-  ConfigELEMatrices = PCSConfigELEMatricesMTM;
   // NUM
   pcs_num_name[0] = "CONCENTRATION0";
   /* SB: immer solver properties der ersten Komponente nehmen */
   pcs_sol_name = "LINEAR_SOLVER_PROPERTIES_CONCENTRATION1"; //SB ??
-
-
 }
 
 /**************************************************************************
@@ -3128,56 +3008,6 @@ void CRFProcess::CreateELEMatricesPointer(void)
   }
 }
 
-
-/*************************************************************************
-ROCKFLOW - Function: PCSConfigELEMatricesMMP
-Task: Config element matrices: data access functions
-Programming: 05/2003 OK Implementation
-last modified:
-todo: direct access possible !
-**************************************************************************/
-void PCSConfigELEMatricesMMP(int pcs_type_number)
-{
-  // Matrices pointer, allgemein
-  if(pcs_type_number==0)
-    InitInternElementData = MMPCreateELEMatricesPointer;
-  if(pcs_type_number==1)
-    InitInternElementData = MMSCreateELEMatricesPointer;
-  //ELEDestroyElementMatrices = NULL; //MMPDestroyELEMatricesPointer;
-  PCSDestroyELEMatrices[pcs_type_number] = MMPDestroyELEMatricesPointer;
-  if(pcs_type_number==1)
-    PCSDestroyELEMatrices[pcs_type_number] = MMSDestroyELEMatricesPointer;
-  // Matrices access functions
-    /* Kernel - MMP */
-  MMPGetElementConductivityMatrix    = MMPGetElementConductivityMatrixPhase_MMP;
-  MMPSetElementConductivityMatrix    = MMPSetElementConductivityMatrixPhase_MMP;
-  MMPGetElementCapacitanceMatrix     = MMPGetElementCapacitanceMatrixPhase_MMP;
-  MMPSetElementCapacitanceMatrix     = MMPSetElementCapacitanceMatrixPhase_MMP;
-  MMPGetElementGravityVector         = MMPGetElementGravityVectorPhase_MMP;
-  MMPSetElementGravityVector         = MMPSetElementGravityVectorPhase_MMP;
-  MMPGetElementCapillarityVector     = MMPGetElementCapillarityVectorPhase_MMP;
-  MMPSetElementCapillarityVector     = MMPSetElementCapillarityVectorPhase_MMP;
-//  MMPGetElementSaturationMassMatrix  = MMPGetElementSaturationMassMatrix_MMP;
-    /* Kernel - MMS */
-  MMSGetElementConductivityMatrix   = MMSGetElementConductivityMatrixPhase_MMS;
-  MMSGetElementCapillarityVector    = MMSGetElementCapillarityVector_MMS;
-  MMSGetElementGravityVector        = MMSGetElementGravityVector_MMS;
-  MMSGetElementSaturationMassMatrix = MMSGetElementSaturationMassMatrix_MMS;
-  MMSSetElementSaturationMassMatrix = MMSSetElementSaturationMassMatrix_MMS;
-  MMSGetElementCapacitanceMatrix    = MMSGetElementCapacitanceMatrix_MMS;
-
-  /* Initialisiert die durch ein Modell benutzten Matrizentypen */
-  int phase;
-    for (phase = 0; phase < GetRFProcessNumPhases(); phase++) {
-       InitializeMatrixtype_MMP("MMPCONDUCTIVITY0", phase, -1);
-       InitializeMatrixtype_MMP("MMPCAPACITANCE0", phase, -1);
-       InitializeMatrixtype_MMP("MMPGRAVITYVECTOR0", phase, -1);
-       InitializeMatrixtype_MMP("MMPCAPILLARPRESSURE0", phase, -1); /* war auskommentiert */
-       InitializeMatrixtype_MMP("MMPDEFORMATION0", phase, -1);
-    }
-
-}
-
 /*************************************************************************
 ROCKFLOW - Function: PCSConfigELEMatricesMPC
 Task: Config element matrices: data access functions
@@ -3185,12 +3015,6 @@ Programming: 04/2003 OK Implementation
 last modified:
 todo: direct access possible !
 **************************************************************************/
-//void CRFProcess::PCSConfigELEMatricesMPC(void)
-void PCSConfigELEMatricesMPC(int pcs_type_number)
-{
-  InitInternElementData = MPCCreateELEMatricesPointer;
-  PCSDestroyELEMatrices[pcs_type_number] = MPCDestroyELEMatricesPointer;
-}
 
 /*************************************************************************
 ROCKFLOW - Function: CRFProcess::PCSConfigELEMatricesMTM
@@ -3198,12 +3022,6 @@ Task: Config elementa matrix pointer
 Programming:	02/2003 OK Implementation
 last modified:	08/2003 SB  Adapted to MTM2
 **************************************************************************/
-void PCSConfigELEMatricesMTM(int pcs_type_number)
-{
-  /* Element matrices */
-  InitInternElementData = MTM2CreateELEMatricesPointer; //SB: InitInternElementDataMTM2;
-  PCSDestroyELEMatrices[pcs_type_number] = MTM2DestroyELEMatricesPointer; //SB: von OK
-}
 
 /*************************************************************************
 ROCKFLOW - Function: PCSConfigELEMatricesHTM
@@ -3511,35 +3329,21 @@ last modified:
 void CRFProcess::CalculateElementMatrices(void) 
 {
   switch(this->type) {
-    case 1:
-      //WW SMCalcElementMatrices(this);
+    case 1: //SM
       break;
-    case 2:
-	  MakeStatMat_MTM2(this);
+    case 2: //MTM2
       break;
-    case 3:
-//      HTMCalcElementMatrices(this);
+    case 3: //HTM
       break;
     case 5: // Gas flow
       break;
     case 11:
-      MPCCalculateElementMatrices(this);
       break;
-    case 12:
-      if (pcs_type_number==0)
-        if(aktueller_zeitschritt==0) 
-          MMPCalcElementMatrices(this);
-        else
-          MMPCalcElementMatricesTypes(this);
-      if (pcs_type_number==1) {
-        MMSCalcElementMatrices(this);
-      }
+    case 12: //MMP
       break;
-    case 13:
-      //OK MPCCalculateElementMatricesRichards();
+    case 13: //MPC
       break;
-    case 66:
-     //WW OFCalcElementMatrices(this);
+    case 66: //OF
       break;
     default:
       DisplayMsgLn("CalculateElementMatrices: no CalculateElementMatrices specified");
@@ -3900,33 +3704,22 @@ last modified:
 **************************************************************************/
 void CRFProcess::AssembleSystemMatrixNew(void) 
 {
-  double ddummy=0.0;
-  int no_phases = (int)mfp_vector.size();
   switch(type) {
     case 1:
       //MakeGS_ASM_NEW(eqs->b,eqs->x,ddummy);
       // SMAssembleMatrix(eqs->b,eqs->x,ddummy,this);
       break;
-    case 2:
-//		  MakeGS_MTM2_old(this->eqs->b,this->eqs->x,this->pcs_component_number-1);
-		MakeGS_MTM2(eqs->b, this);
+    case 2: //MTM2
       break;
-    case 3:
-//WW      HTMAssembleMatrix(this);
+    case 3: //HTM
       break;
     case 5: // Gas flow
       break;
     case 11:
-      MPCAssembleSystemMatrix(pcs_type_number,eqs->b);
       break;
     case 12:
-      if (pcs_type_number==0)
-        MMPAssembleMatrices(no_phases,eqs->x,eqs->b);
-      if (pcs_type_number==1)
-        MakeGS_MMSV1(eqs->b,eqs->x,ddummy);
       break;
     case 13:
-      MPCAssembleSystemMatrix(1,eqs->b);
       break;
     case 66:
       //MakeGS_ASM_NEW(eqs->b,eqs->x,ddummy);
@@ -4548,10 +4341,10 @@ void PCSRestart()
   int no_processes =(int)pcs_vector.size();
   if(no_processes==0)
     return; //OK41
-  int ok;
+  int ok = 0;
   //----------------------------------------------------------------------
   string file_name_base = pcs_vector[0]->file_name_base;
-  ok = ReadRFRRestartData(file_name_base);
+//OK  ok = ReadRFRRestartData(file_name_base);
   if(ok==0){
     cout << "RFR: no restart data" << endl;
     return;
@@ -5087,64 +4880,6 @@ string GetPFNamebyCPName(string inname){
 // Inname is not from a mass transport process, therefore return inname
  return inname;
 } //SB:namepatch
-
-/*************************************************************************
-ROCKFLOW - Function: CRFProcess::PCSOutputNODValues(FILE *f)
-Task: 
-Programming: 11/2003 OK Implementation
-last modified:
-**************************************************************************/
-void CRFProcess::PCSOutputNODValues(void)
-{
-  int i;
-  long j;
-  //
-  FILE *f=NULL;
-  f = fopen("pcs_out.rfo","a");
-  // Kopf schreiben
-  fprintf(f,"%-ld ",(long)1);
-  fprintf(f,"%-ld ",(long)danz_sum_n);
-  fprintf(f,"%-ld\n",(long)danz_sum_e);
-  // loop over all PCS
-  CRFProcess *m_process=NULL;
-  int no_processes =(int)pcs_vector.size();
-  for(i=0;i<no_processes;i++){
-    m_process = pcs_vector[i];
-	for(i=0;i<m_process->number_of_nvals;i++) {
-	  if(m_process->pcs_nval_data[i].speichern) {
-	    fprintf(f,"%s, ",GetCompNamehelp(m_process->pcs_nval_data[i].name)); //SB: namepatch
-	    fprintf(f,"%s \n",m_process->pcs_nval_data[i].einheit);
-	  }
-    }
-  }
-  for (j=0l;j<NodeListSize();j++) {
-    if (GetNode(j)!=NULL) {
-      fprintf(f,"%-ld ",j);
-      // loop over all PCS
-      for(i=0;i<no_processes;i++){
-        m_process = pcs_vector[i];
-	    for(i=0;i<m_process->number_of_nvals;i++) {
-	      if(m_process->pcs_nval_data[i].speichern)
-  	        fprintf(f,"%-#*.*g ",FPD_GESAMT,FPD_NACHKOMMA,GetNodeVal(j,m_process->pcs_nval_data[i].nval_index));
-		}
-	  }
-    }
-    fprintf(f,"\n");
-  }
-  //fclose(f);
-}
-
-/*************************************************************************
-ROCKFLOW - Function: MTM2CalcSecondaryVariables
-Task: Calculate secondary variables for Transport Process MTM2
-Programming: 08/2003 SB Implementation
-ToDo: 
-last modified:
-**************************************************************************/
-void MTM2CalcSecondaryVariables(void)
-{
-	/* SB: todo */
-}
 
 /**************************************************************************
 FEMLib-Method: 

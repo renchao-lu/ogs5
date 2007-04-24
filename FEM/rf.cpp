@@ -20,25 +20,17 @@
 #endif
 
 #include "stdafx.h" /* MFC */
-
 /* Preprozessor-Definitionen */
 #include "makros.h"
-
 #define TEST
-
-
 /* Benutzte Module */
 #include "break.h"
 #include "timer.h"
 #include "rf_apl.h"
-#include "rfsystim.h"
 #include "geo_strings.h"
-
-
 /* Deklarationen */
 int main ( int argc, char *argv[] );
 void ShowSwitches ( void );
-
 string FileName; //WW
 
 /* Definitionen */
@@ -64,7 +56,6 @@ string FileName; //WW
 int main ( int argc, char *argv[] )
 {
   char *dateiname;
-  long rockflow_id_timer;
 /*---------- MPI Initialization ----------------------------------*/
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
       MPI_Init(&argc,&argv);
@@ -117,8 +108,8 @@ int main ( int argc, char *argv[] )
   /* Allgemeine FEM-Datenstrukturen anlegen */
   CreateObjectLists();
   /* Systemzeit fuer Rockflow setzen */
-  SetSystemTime("RF-MAIN","ROCKFLOW","ROCKFLOW: Total time",&rockflow_id_timer);
-  RunSystemTime("RF-MAIN");
+//OK  SetSystemTime("RF-MAIN","ROCKFLOW","ROCKFLOW: Total time",&rockflow_id_timer);
+//OK  RunSystemTime("RF-MAIN");
   /* Ctrl-C abfangen und interpretieren */
   SaveBreak();
   /* FEM-Applikation: ROCKFLOW */
@@ -130,9 +121,9 @@ int main ( int argc, char *argv[] )
   /* Ctrl-C erzeugt keinen Abbruch mehr */
   NoBreak();
   /* Systemzeit fuer Rockflow anhalten */
-  StopSystemTime("RF-MAIN");
+//OK  StopSystemTime("RF-MAIN");
   /* Systemzeit fuer Rockflow-Gruppe ausgeben */
-  StatisticsSystemTime("ROCKFLOW");
+//OK  StatisticsSystemTime("ROCKFLOW");
   /* Allgemeine FEM-Datenstrukturen freigeben */
   DestroyObjectLists();
 #ifdef TEST
@@ -167,8 +158,6 @@ int main ( int argc, char *argv[] )
 int mainPCH ( int argc, char *argv[] )
 {
   char *dateiname;
-  long rockflow_id_timer;
-
 
 /*========================================================================*/
 /* Kommunikation mit Betriebssystem */
@@ -226,8 +215,8 @@ int mainPCH ( int argc, char *argv[] )
 #endif
 
   /* Systemzeit fuer Rockflow setzen */
-  SetSystemTime("RF-MAIN","ROCKFLOW","ROCKFLOW: Total time",&rockflow_id_timer);
-  RunSystemTime("RF-MAIN");
+//OK  SetSystemTime("RF-MAIN","ROCKFLOW","ROCKFLOW: Total time",&rockflow_id_timer);
+//OK  RunSystemTime("RF-MAIN");
 
   /* Ctrl-C abfangen und interpretieren */
   SaveBreak();
@@ -241,12 +230,10 @@ int mainPCH ( int argc, char *argv[] )
 
   /* Ctrl-C erzeugt keinen Abbruch mehr */
   NoBreak();
-
   /* Systemzeit fuer Rockflow anhalten */
-  StopSystemTime("RF-MAIN");
+//OK  StopSystemTime("RF-MAIN");
   /* Systemzeit fuer Rockflow-Gruppe ausgeben */
-  StatisticsSystemTime("ROCKFLOW");
-
+//OK  StatisticsSystemTime("ROCKFLOW");
   /* Allgemeine FEM-Datenstrukturen freigeben */
   DestroyObjectLists();
 #ifdef TEST

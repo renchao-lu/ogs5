@@ -49,7 +49,6 @@
 #include "admin.h"
 //OK_4023 using dtm::Dtmesh;
 //OK_4023 Dtmesh* gs_dtm;
-#include "rfpriref.h"
 
 //For _getcwd(). WW
 #include <direct.h>

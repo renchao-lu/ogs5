@@ -990,7 +990,6 @@ int ReadRFIFile(string g_strFileNameBase)
   ExecuteString.append(g_strFileNameBAK);
   const char *str_file_rfi = 0; 
   str_file_rfi = g_strFileNameRFI.data();
-  FILE *prot=NULL;
   // Anlegen einer Sicherheitskopie
   const char *ExecuteChar = 0; 
   ExecuteChar = ExecuteString.data();
@@ -1000,18 +999,8 @@ int ReadRFIFile(string g_strFileNameBase)
   ElDestroyElementList();
   CreateNodeList();
   ElCreateElementList();
-
-
   /****************************************************************************/
   /* Read geometry RFI file */
-  /* RF-Eingabedatei lesen */
-  if (!ReadRFInputFile((char*)str_file_rfi,prot)) {
-      DisplayErrorMsg("Fehler: RF-Eingabedatei konnte nicht gelesen werden !");
-	  //OK AfxMessageBox("Errors in RFI file");
-      return 0;
-  }
-
-   
   /*--------------------------------------------------------------------*/
   /* Jakobian und Element-Volumen berechnen */
   //CalcElementsGeometry();

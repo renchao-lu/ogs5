@@ -39,19 +39,14 @@
 /* Preprozessor-Definitionen */
 #include "makros.h"
 #define CRITICAL_ELEMENT_VOLUME MKleinsteZahl
-
 #ifndef  ENABLE_ADT
-
 /* Objekte */
 #include "elements.h"
 #include "nodes.h"
 #include "rf_pcs.h"
-#include "gridadap.h" /* anz_adapt */
-
 #ifdef PCS_OBJECTS
 #include "rf_pcs.h"
 #endif
-
 /* Tools */
 #include "mathlib.h" /* MKleinsteZahl */
 #include "ptrarr.h"
@@ -355,12 +350,9 @@ long ElCreateElement ( int elementtyp, long vorgaenger, int level )
 {
   static long pos;
   pos = GetLowestFree(elementlist, lowest_free_element);
-  CreateElementTopology( elementtyp, vorgaenger, level , pos);
+  //OK CreateElementTopology( elementtyp, vorgaenger, level , pos);
   return pos;
 }
-
-
-
 
 /**************************************************************************/
 /* ROCKFLOW - Funktion: CreateElementTopology
@@ -393,119 +385,7 @@ long ElCreateElement ( int elementtyp, long vorgaenger, int level )
    04/2002     OK         Tetraeder
                                                                           */
 /**************************************************************************/
-void CreateElementTopology ( int elementtyp, long vorgaenger, int level, long pos )
-{
-  static int i, phases=1, anz, NumGauss;
-
-  static Element *elem;
-
-  elem = (Element *) Malloc(sizeof(Element));
-
-  if (vorgaenger >= 0) {   /* CT */
-      elem->group_number = ElGetElementGroupNumber(vorgaenger);
-      if (level==-1)
-          elem->level = ((Element *)elementlist->elements[vorgaenger])->level + 1;
-      else
-          elem->level = /* 0 msr 0596 */ level;
-  }  else  {
-      elem->group_number = -1;
-      if (level==-1)
-          elem->level = 0;
-      else
-          elem->level = /* 0 msr 0596 */ level;
-  }
-
-  elem->element_start_number = -1;  /* ah */
-  elem->elementtyp = elementtyp;
-  elem->aktiv = 1;
-  elem->count_verf = 0;
-  elem->count_vergr = 0;
-  elem->verfeinern = 0;
-  elem->elementknoten = NULL;
-  elem->ele_edge_nodes2d = NULL;
-  elem->anz_ele_edge_nodes2d = 4;
-  elem->vorgaenger = vorgaenger;
-  elem->kanten = NULL;
-  elem->anz_flaechen = ElNumberOfPlains[elementtyp-1];
-  elem->kinder = NULL;
-  if(InitInternElementData)
-    elem->eval_intern = InitInternElementData();
-  else //OK
-    elem->eval_intern = NULL;
-  elem->eval = (double *)Malloc(anz_eval*sizeof(double));
-  for (i=0;i<anz_eval;i++)
-      elem->eval[i] = eval_data[i].vorgabe;
-
-  elem->global_verf = (int *)Malloc(AdaptGetTotalNumInd()*sizeof(int));
-  for (i=0;i<AdaptGetTotalNumInd();i++)
-      elem->global_verf[i] = 0;
-
-  /* Speicher fuer Geschw. in Gausspunkten */
-  anz = -1;
-
-  NumGauss = GetNumericsGaussPoints(elementtyp);
-  switch (elementtyp) {
-     case 1:
-       anz = 3;
-       break;
-     case 2:
-       anz = 2 * NumGauss * NumGauss;
-       break;
-     case 3:
-       anz = 3 * NumGauss * NumGauss * NumGauss;
-       break;
-     case 4:
-       anz = 3;
-       NumGauss = 3;
-       break;
-     case 5: /* Tetraeder */
-       anz = 3;
-       break;
-     case 6: /* Prism MB */
-       //anz = 3;
-       anz = 3 * 2 * 3; //3D * 2(Linear) / 3(Triangle) 
-       NumGauss = 18;
-       break;
-     default:
-    DisplayMsgLn("Unsupported element-type in CreateElementTopology");
-    exit(1);
-  }
-
-  if (GetRFProcessNumPhases() > phases) phases = GetRFProcessNumPhases();
-
-  elem->gauss_velo = (double **) Malloc(phases * sizeof(double *));
-  for (i=0;i<phases;i++)
-      elem->gauss_velo[i] = (double *) Malloc(anz * sizeof(double));
-
-
-  elem->art_diff = 0.0;
-  elem->verf = 0;
-  elem->dirty_bit = 65535;
-  elem->volume = 0.0;
-
-
-  elem->invjac = NULL;
-
-//OKnew
-  for(i=0;i<PCS_NUMBER_MAX;i++)
-    elem->element_matrices[i] = NULL;
-
-  elem->Neighbors = NULL; //SB/MB
-  elem->element_midpoint = NULL; //SB
-  elem->hetfields = NULL; //SB
-  
-  /*----------------------------------------------------------------------------*/
-#ifdef ERROR_CONTROL
-    if (ElGetElement(pos)!=NULL) {
-        DisplayErrorMsg("ElPlaceNewElement: Element existiert bereits !!!");
-        abort();
-    }
-#endif
-  SetPtrArrayElement(elementlist, pos, (void *) elem);
-  lowest_free_element = GetLowestFree(elementlist, lowest_free_element);
-  ElementListLength++;
-}
-
+//OK void CreateElementTopology ( int elementtyp, long vorgaenger, int level, long pos )
 
 /**************************************************************************/
 /* ROCKFLOW - Funktion: ElDeleteElement
@@ -2288,77 +2168,13 @@ int ELEListExists(void)
     return 1;
 }
 
-
 /**************************************************************************
 GeoSys-FEM-Method: ELECreateTopology
 Task: create element topology
 Programing:
 12/2003 OK Implementation based on CreateElementTopology
 **************************************************************************/
-void ELECreateTopology ( int elementtyp, long vorgaenger, int level, long pos )
-{
-  int i;
-  static Element *elem;
-
-  elem = (Element *) Malloc(sizeof(Element));
-
-  if (vorgaenger >= 0) {   /* CT */
-      elem->group_number = ElGetElementGroupNumber(vorgaenger);
-      if (level==-1)
-          elem->level = ((Element *)elementlist->elements[vorgaenger])->level + 1;
-      else
-          elem->level = /* 0 msr 0596 */ level;
-  }  else  {
-      elem->group_number = -1;
-      if (level==-1)
-          elem->level = 0;
-      else
-          elem->level = /* 0 msr 0596 */ level;
-  }
-
-  elem->element_start_number = -1;  /* ah */
-  elem->elementtyp = elementtyp;
-  elem->aktiv = 1;
-  elem->count_verf = 0;
-  elem->count_vergr = 0;
-  elem->verfeinern = 0;
-  elem->elementknoten = NULL;
-  elem->ele_edge_nodes2d = NULL;
-  elem->Neighbors = NULL;
-  elem->anz_ele_edge_nodes2d = 4;
-  elem->vorgaenger = vorgaenger;
-  elem->kanten = NULL;
-  elem->anz_flaechen = ElNumberOfPlains[elementtyp-1];
-  elem->kinder = NULL;
-
-  elem->global_verf = (int *)Malloc(AdaptGetTotalNumInd()*sizeof(int));
-  for (i=0;i<AdaptGetTotalNumInd();i++)
-      elem->global_verf[i] = 0;
-
-  elem->art_diff = 0.0;
-  elem->verf = 0;
-  elem->dirty_bit = 65535;
-  elem->volume = 0.0;
-
-  elem->invjac = NULL;
-  elem->eval = NULL;
-  elem->element_midpoint = NULL; //SB
-  elem->hetfields = NULL;
-  elem->gauss_velo = NULL;
-
-  elem->eval_intern = NULL; //SB:3912
-#ifdef ERROR_CONTROL
-    if (ElGetElement(pos)!=NULL) {
-        DisplayErrorMsg("ElPlaceNewElement: Element existiert bereits !!!");
-        abort();
-    }
-#endif
-
-  SetPtrArrayElement(elementlist, pos, (void *) elem);
-  lowest_free_element = GetLowestFree(elementlist, lowest_free_element);
-  ElementListLength++;
-}
-
+//OK void ELECreateTopology ( int elementtyp, long vorgaenger, int level, long pos )
 
 /**************************************************************************
 GeoSys-FEM-Method: ELECreateMatricesPointer

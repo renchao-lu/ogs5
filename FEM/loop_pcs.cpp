@@ -43,18 +43,13 @@ using namespace std;
 #include "rf_tim_new.h"
 #include "rfmat_cp.h"
 #include "elements.h"
-#include "cvel.h"
 #include "rf_vel_new.h"
-#include "cel_mmp.h"
-#include "cgs_mpc.h"
-#include "cgs_mmp.h"
 #include "rf_fluid_momentum.h"	// By PCH
 #include "rf_random_walk.h"     // By PCH
 void LOPCalcNodeFluxes(void);
 void SetCriticalDepthSourceTerms(void);
 // Finite element
 #include "fem_ele_std.h"
-extern void MTM2CalcSecondaryVariables (void);
 #include "rf_bc_new.h"
 #include "rf_out_new.h"
 #include "tools.h"
@@ -1179,13 +1174,10 @@ void PCSCalcSecondaryVariables(void){
       ASMCalcNodeWDepth(m_pcs);
       break;
     case 11: /* Non-isothermal flow process */
-      MPCCalcSecondaryVariables();
       break;
     case 13: /* Non-isothermal flow process */
-      MPCCalcSecondaryVariablesRichards();
       break;
     case 2: /* Mass transport process */
-      MTM2CalcSecondaryVariables();
       break;
     case 3: /* Heat transport */
       // do nothing 
@@ -1197,11 +1189,6 @@ void PCSCalcSecondaryVariables(void){
       // do nothing
       break;
     case 12: /* Multi-phase flow process */
-        if(m_pcs->num_type_name.find("NEW")!=0)
-        {
-          MMPCalcSecondaryVariables();
-          break;
-        }
 #ifdef RESET_4410
         double p_gas,p_liquid,p_cap;
         MMPCalcSecondaryVariablesNew(m_pcs);

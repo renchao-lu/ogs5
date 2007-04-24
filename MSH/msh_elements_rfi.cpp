@@ -30,8 +30,6 @@ using namespace std;
 //FEMLib
 #include "rf_mmp_new.h"
 #include "files.h"
-#include "edges.h"
-#include "plains.h"
 extern void RFConfigRenumber(void);
 #include "gs_project.h"
 #include "mathlib.h"

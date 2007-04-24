@@ -70,7 +70,7 @@ void MSHCreateQuadsFromLine(CGLLine *m_line)
       nodes[1] = matrix[i+1][k];
       nodes[2] = matrix[i+1][k+1];
       nodes[3] = matrix[i][k+1];
-      ELECreateTopology(2,-1,0,ElementListLength);
+//OK      ELECreateTopology(2,-1,0,ElementListLength);
       ElSetElementNodes(ElementListLength-1,nodes);
       ElSetElementGroupNumber(ElementListLength-1,m_line->mat_group);
       anz_2D++;
@@ -268,7 +268,7 @@ void PrismRefine(const int NLayers, const int Layer, const int NSubLayers)
              /* neues Element ganz unten */
              NumElementNew++;
              vorgaenger=-1; 
-             CreateElementTopology(element_type,vorgaenger,0,NumElementNew); 
+             //OK CreateElementTopology(element_type,vorgaenger,0,NumElementNew); 
              group = ElGetElementGroupNumber(NumElementNew - NElementsPerLayer);
              ElSetElementGroupNumber(NumElementNew,group);
                
@@ -992,7 +992,7 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
         m_line->msh_nodes[0] = m_line->m_point1->gli_point_id;
         m_line->msh_nodes[1] = m_line->m_point2->gli_point_id;
         //m_line->CreateMSHLines();
-      ELECreateTopology(1,-1,0,ElementListLength);
+//OK      ELECreateTopology(1,-1,0,ElementListLength);
       ElSetElementNodes(ElementListLength-1,m_line->msh_nodes);
       ElSetElementGroupNumber(ElementListLength-1,m_line->mat_group);
       anz_1D++;

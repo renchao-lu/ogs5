@@ -29,26 +29,13 @@
 #include "makros.h"
 #define TEST_RF_APL
 #include "renumber.h"
-#include "balance.h"
 /* Object Lists */
 #include "rf_out_new.h"
 #include "rfiter.h"   /* Construction: Iteration process list */
-#include "gridadap.h" /* Construction: Adaptation data */
 #include "tools.h"    /* Construction: Functions data */
 #include "nodes.h"    /* Construction: Node array */
 #include "elements.h" /* Construction: Element array */
-#include "edges.h"    /* Construction: Edges array */
-#include "plains.h"   /* Construction: Plains array */
-#include "rfsystim.h" /* Construction: System time list */
-#include "rfpriref.h" /* Construction: Pre-refinement list */
-#include "rf_mg.h"    /* Construction: Mesh generation list */
-#include "rfdb.h"     /* Construction: Data base list */
-#include "rfidb.h"    /* Construction: Input data base list */
 #include "rf_pcs.h" //OK_MOD"  /* Construction: Model list */
-#include "rfod.h"     /* Construction: Observation data list */
-#include "rfiv.h"     /* Construction: Inverse variable list */
-#include "rfii.h"     /* Construction: Inverse iteration list */
-#include "rfim.h"     /* Construction: Inverse method list */
 #include "rf_tim_new.h"
 #include "rfmat_cp.h"
 
@@ -59,7 +46,6 @@
 
 /* Objects */
 #include "files.h"    /* Construction: ReadData - from file */
-#include "plot.h"     /* ConfigGrafics */
 #include "solver.h"   /* Renumber */
 #include "femlib.h"   /* CalcElementsGeometry */
 #include "loop_pcs.h"
@@ -122,7 +108,6 @@ int mshType=0;  //WW To be removed
 /**************************************************************************/
 int RF_FEM (char *dateiname)
 {
-	int inv_flag;
     /*--------------------------------------------------------------------*/
     /* 1 Objekte und Verknüpfungen für RF-FEM Applikation konstruieren */
     RFPre_FEM(dateiname);
@@ -130,7 +115,8 @@ int RF_FEM (char *dateiname)
       /* 2.1 RF-Objekte konfigurieren, Verknüpfungen zwischen RF-Objekten */
       RFPre_Model();
       /* 2.2 Zeitschleife */ 
-      inv_flag=ExecuteInverseMethodNew ("ROCKFLOW",ExecuteRFTimeLoop);
+      //OK-INV inv_flag=ExecuteInverseMethodNew ("ROCKFLOW",ExecuteRFTimeLoop);
+      ExecuteRFTimeLoop(); //OK
       /* 2.3 RF-Objekte destruieren */
       RFPost_Model();
     /*--------------------------------------------------------------------*/
@@ -164,11 +150,9 @@ int RFPre_FEM(char* dateiname)
   /*-----------------------------------------------------------------------*/
   /* Initialisierungen und Konstruktionen vor Einlesen */
    /* Initialisierung 'globaler' Variablen - ToDo */
-//OK_OUT  InitOutputData();
    /* Adaptation */
-  CreateAdaptationData();
    /* Datenstruktur fuer Dateizugriff */
-  CreateFileData(dateiname);
+//OK  CreateFileData(dateiname);
   /*-----------------------------------------------------------------------*/
   /* RF-Objekte aus RFD- und RFI-Eingabedateien erzeugen.                  */
   /* Dateien fuer Inverses Modellieren lesen und auswerten falls vorhanden.*/
@@ -214,9 +198,9 @@ int RFPre_FEM(char* dateiname)
 /**************************************************************************/
 void RFPost_FEM(void)
 {
-  DestroyAdaptationData();
-  DestroyFileData();
-  DestroyFiles();
+//OK  DestroyAdaptationData();
+//OK  DestroyFileData();
+//OK  DestroyFiles();
   pcs_vector.clear();
 }
 /**************************************************************************/
@@ -243,7 +227,7 @@ void RFPre_Model()
   // Set LOP function pointer
   LOPConfig_PCS();
   //
-  if(mshType!=100&&mshType!=0) InitGridAdaptation();   
+//OK  if(mshType!=100&&mshType!=0) InitGridAdaptation();   
   /* RF-Objekte konfigurieren, Verknüpfungen zwischen RF-Objekten */
   RFConfigObjects();
   /* RF-Objekte konfigurieren */
@@ -277,7 +261,7 @@ void RFPre_Model()
 void RFPost_Model(void)
 {
   /* Datenbank schliessen */
-  CloseDataBase("INVERSE-ROCKFLOW");
+//OK  CloseDataBase("INVERSE-ROCKFLOW");
   /* Objekte destruieren */
   DestroyRFObjects();
 }
@@ -300,11 +284,13 @@ int ExecuteRFTimeLoop(void)
   int i = 0;
   double ct = 0.0;
   //----------------------------------------------------------------------
+/*OK
   if(mshType!=100&&mshType!=0)  //WW
   {
     GetHeterogeneousFields(); //SB:todo Fallunterscheidung
     CalcElementsGeometry(); // WW moved this here This will be removed is fem_geo is ready
   }
+*/
   //======================================================================
   // Creation of processes
   cout << "---------------------------------------------" << endl;
@@ -312,7 +298,7 @@ int ExecuteRFTimeLoop(void)
   if (!PreTimeLoop())
     DisplayMsgLn("Error in ConfigModel: PreTimeLoop");
   /* modellspezifische Ergebnisse fuer Inverses Modellieren speichern */
-  SaveAllModelObservationData();
+//OK  SaveAllModelObservationData();
   //------------------------------------------------------------------------
 //OK_Please put this to PCS configuration
   // Set flags for which stability processes should be checked   CMCD GEOSYS4
@@ -395,9 +381,9 @@ int ExecuteRFTimeLoop(void)
     //----------------------------------------------------------------------
     // Data output
     /* modellspezifische Ergebnisse fuer Inverses Modellieren speichern */
-    SaveAllModelObservationData();
+//OK    SaveAllModelObservationData();
     /* Ausgabe fuer Bilanzobjekte */
-    BalanceOverAllGeometryObjects();
+//OK    BalanceOverAllGeometryObjects();
     /* Ergebnisausgabe */
     OUTData(m_tim->time_current,aktueller_zeitschritt);
     // update current time step number
@@ -443,23 +429,23 @@ int ExecuteRFTimeLoop(void)
 void CreateObjectLists(void)
 {
   /* Data base */
-  CreateDataBaseList();
-  CreateInputDataBaseList();
+//OK  CreateDataBaseList();
+//OK  CreateInputDataBaseList();
   /* Inverse Data */
-  CreateInverseMethodList();
-  CreateObservationDataList();
-  CreateInverseVariableList();
-  CreateInverseIterationList();
+//OK  CreateInverseMethodList();
+//OK  CreateObservationDataList();
+//OK  CreateInverseVariableList();
+//OK  CreateInverseIterationList();
   /* RFD Objekte */
   CreateIterationPropertiesList();
-  CreateSystemTimeList();
+//OK  CreateSystemTimeList();
   /* RFI Objekte - Geometrie und Topologie */
   CreateNodeList();
   ElCreateElementList();
-  CreateRefineElementList();
-  CreateMeshGenerationList();
-  CreateEdgeList();
-  CreatePlainList();
+//OK  CreateRefineElementList();
+//OK  CreateMeshGenerationList();
+//OK  CreateEdgeList();
+//OK  CreatePlainList();
 }
 
 
@@ -491,22 +477,22 @@ void DestroyObjectLists(void)
 {
   /* RFD Objekte */
   DestroyIterationPropertiesList();
-  DestroySystemTimeList();
+//OK  DestroySystemTimeList();
   /* RFI Objekte - Geometrie und Topologie */
   DestroyNodeList();
   ElDestroyElementList();
-  DestroyRefineElementList();
-  DestroyMeshGenerationList();
-  DestroyEdgeList();
-  DestroyPlainList();
+//OK  DestroyRefineElementList();
+//OK  DestroyMeshGenerationList();
+//OK  DestroyEdgeList();
+//OK  DestroyPlainList();
   /* Inverse Data */
-  DestroyInverseMethodList();
-  DestroyObservationDataList();
-  DestroyInverseVariableList();
-  DestroyInverseIterationList();
+//OK  DestroyInverseMethodList();
+//OK  DestroyObservationDataList();
+//OK  DestroyInverseVariableList();
+//OK  DestroyInverseIterationList();
   /* Data base */
-  DestroyDataBaseList();
-  DestroyInputDataBaseList();
+//OK  DestroyDataBaseList();
+//OK  DestroyInputDataBaseList();
   // only if transport is calculated:
   if(GetRFProcessProcessingAndActivation("MT") && GetRFProcessNumComponents()>0) {
     DestroyREACT(); //SB
@@ -519,10 +505,8 @@ void DestroyObjectLists(void)
     Eqlink_vec[0]->DestroyMemory();
     Eqlink_vec.clear();
   }
-
 #endif
 }
-
 
 /**************************************************************************/
 /* ROCKFLOW - Funktion: ConfigObjects
@@ -547,7 +531,6 @@ void RFConfigObjects(void)
 {
   ConfigSolverProperties();
   ConfigIterationProperties();
-  ConfigGrafics();
 }
 
 void RFConfigRenumber(void)
@@ -582,13 +565,8 @@ void ConfigRFFiles(char *dateiname)
     str_length = (int)strlen(dateiname) + 5;
     file_name = (char *) Malloc(str_length);
     strcpy(file_name,dateiname);
-
     /* Bilanzobjekte initialisieren, Files oeffnen, Header schreiben */
-    BalanceInitAllObjects(dateiname);
-
 }
-
-
 
 /**************************************************************************/
 /* ROCKFLOW - Funktion: DestroyObjects
@@ -614,7 +592,6 @@ void DestroyRFObjects(void)
 {
   DestroyFunctionsData();
   RenumberEnd();
-  BalanceDestroyAllObjects();
 }
 
 /**************************************************************************
@@ -626,22 +603,22 @@ Programing:
 void RFCreateObjectListsNew(void)
 {
     /* Data base */
-    CreateDataBaseList();
-    CreateInputDataBaseList();
+//OK    CreateDataBaseList();
+//OK    CreateInputDataBaseList();
     /* Inverse Data */
-    CreateInverseMethodList();
-    CreateObservationDataList();
-    CreateInverseVariableList();
-    CreateInverseIterationList();
+//OK    CreateInverseMethodList();
+//OK    CreateObservationDataList();
+//OK    CreateInverseVariableList();
+//OK    CreateInverseIterationList();
     /* RFD Objekte */
     CreateIterationPropertiesList();
-    CreateSystemTimeList();
+//OK    CreateSystemTimeList();
     /* RFI Objekte - Geometrie und Topologie */
     CreateNodeList();
     ElCreateElementList();
-    CreateRefineElementList();
-    CreateEdgeList();
-    CreatePlainList();
+//OK    CreateRefineElementList();
+//OK    CreateEdgeList();
+//OK    CreatePlainList();
 }
 
 /**************************************************************************

@@ -14,9 +14,7 @@
 // Sytem matrix
 #include "matrix.h"
 // Geometry
-//#include "elements.h"
 #include "nodes.h"
-#include "adaptiv.h"
 // Parallel computing
 #include "par_ddc.h"
 // MSHLib
@@ -3131,7 +3129,7 @@ Programing:
 **************************************************************************/
 void CFiniteElementStd::Assembly()
 {
-  int i,j, nn;
+  int i,nn;
   CRFProcess *m_pcs=NULL;  //MX
   //----------------------------------------------------------------------
   //OK index = m_dom->elements[e]->global_number;
@@ -3301,23 +3299,6 @@ void CFiniteElementStd::Assembly()
   }
   //----------------------------------------------------------------------
   // Irregulaere Knoten eliminieren 
-  if(GetRFControlGridAdapt()){
-    if(AdaptGetMethodIrrNodes() == 1)
-    {
-      for(i=0;i<nnodes;i++)
-      {
-        NodalVal[i] = (*RHS)(i+LocalShift);
-        for (j = 0; j < nnodes; j++)
-          OldMatrix[i*nnodes+j] = (*StiffMatrix)(i,j);
-      }
-      switch (ElGetElementType(index)) {
-        case 2: DelIrrNodes2D(index,nodes,OldMatrix,NodalVal);
-          break;
-        case 3: DelIrrNodes3D(index,nodes,OldMatrix,NodalVal);
-          break;
-	  }
-    }
-  }
   //----------------------------------------------------------------------
   // Output matrices
   if(pcs->Write_Matrix)
@@ -3359,7 +3340,7 @@ last modification:
 **************************************************************************/
 void  CFiniteElementStd::Assembly(int dimension)
 {
-    int i,j, nn;
+  int i,nn;
   //----------------------------------------------------------------------
 #ifdef PARALLEL
     index = m_dom->elements[e]->global_number;
@@ -3401,32 +3382,12 @@ void  CFiniteElementStd::Assembly(int dimension)
 	// Fluid Momentum
 	AssembleMassMatrix();		// This is exactly same with CalcMass().
 	AssembleRHS(dimension); 
-
-   // Irregulaere Knoten eliminieren 
-   if (GetRFControlGridAdapt())
-     if (AdaptGetMethodIrrNodes() == 1)
-     {
-        for (i = 0; i < nnodes; i++)
-        {
-           NodalVal[i] = (*RHS)(i+LocalShift);
-           for (j = 0; j < nnodes; j++)
-               OldMatrix[i*nnodes+j] = (*StiffMatrix)(i,j);
-        }
-
-         switch (ElGetElementType(index)) {
-           case 2: DelIrrNodes2D(index,nodes,OldMatrix,NodalVal);
-              break;
-           case 3: DelIrrNodes3D(index,nodes,OldMatrix,NodalVal);
-              break;
-	    }
-     }
-      
+    // Irregulaere Knoten eliminieren 
      //Output matrices
      if(pcs->Write_Matrix)
      {
         for (i = 0; i < nnodes; i++)
            (*RHS)(i) = NodalVal[i];
-
         (*pcs->matrix_file) << "### Element: " << Index << endl;
         (*pcs->matrix_file) << "---Mass matrix: " << endl;
          Mass->Write(*pcs->matrix_file);

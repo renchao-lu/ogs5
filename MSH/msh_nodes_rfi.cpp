@@ -29,7 +29,6 @@ using namespace std;
 /* FEMLib */
 #include "nodes.h"
 #include "elements.h"           /* für ElGetElementGroupNumber */
-#include "edges.h"              /* für GetEdge */
  /* Tools */
 #include "mathlib.h"            /* für MAngleVectors */
 #include "tools.h"
@@ -101,39 +100,7 @@ long MSHGetNextNode (long startnode, CFEMesh* m_msh)
    Programming:
    09/2002   MB   First Version
  **************************************************************************/
-long* MSHGetNeighborNodes(long startnode)
-{
-  long *kanten=NULL;
-  int anz_alle_kanten;
-  long nd1[2];  
-  int i;
-  int j =0;
-  long* neighbor_nodes =NULL;
-
-  kanten = EDGGetNodeVerticalEdges(startnode, &anz_alle_kanten);
-
-
-  /* Alle benachbarten Knoten holen */
-  for (i = 0; i< anz_alle_kanten; i++)  {
-    /* Knotennummern von Kante holen */
-    nd1[0] = GetEdge(kanten[i]) -> knoten[0];
-    nd1[1] = GetEdge(kanten[i]) -> knoten[1];
-    
-    j++;
-    neighbor_nodes=(long*)Realloc(neighbor_nodes, j*sizeof(long));
-    /* Aber nicht den Startknoten nehmen */
-    if (nd1[0] == startnode) {
-      neighbor_nodes[i] = nd1[1];
-    } 
-    else {
-      neighbor_nodes[i] = nd1[0];
-    }
-  } /* end for i */
-  kanten = (long*) Free(kanten);
-  return neighbor_nodes;
-}
-
-
+//OK long* MSHGetNeighborNodes(long startnode)
 
 /**************************************************************************
    ROCKFLOW - Function: MSHGetNodesInColumn
@@ -742,59 +709,9 @@ double MSHGetNodeArea (long node)
    03/2003     MB       First Version (based on ConstructEdgeList)
                                                                           */
 /**************************************************************************/
-void MSHConstructVerticalEdgeListHex ( void )
-{
-  long i, j, k, l;  /* Laufvariablen */
-  int typ;  /* Elementtyp - 1 */
-  long *knoten = NULL;  /* Zeiger auf Elementknoten */
-  long *kanten = NULL;  /* Zeiger auf Elementkanten */
-  Kante *kante = NULL;  /* Zeiger auf Kante */
-  /* Schleife ueber alle Ausgangselemente */
-  for (i=0;i<start_new_elems;i++) {
-      if(i==132){
-         i = i;
-      }
-      typ = ElGetElementType(i) - 1;
-      knoten = ElGetElementNodes(i);
-      kanten = (long *) Malloc(4*sizeof(long));
-      for (j=0l;j<4;j++) {  /* Schleife ueber alle Kanten */
-          k = 0l;
-          l = EdgeListLength;
-          while (k<l) {  /* Kante suchen */
-              kante = GetEdge(k);
-              if (((kante->knoten[0]==knoten[j]) && (kante->knoten[1]==knoten[j+4])) ||
-                  ((kante->knoten[1]==knoten[j]) && (kante->knoten[0]==knoten[j+4]))  )
-                  l = -20l;  /* Kante gefunden, Abbruchkriterium */
-              else
-                  k++;
-          }
-          if (l==EdgeListLength) {  /* Kante existiert noch nicht */
-              k = AddEdge(kante=NewEdge());  /* Kante erzeugen */
-              kante->knoten[0] = knoten[j];
-              kante->knoten[1] = knoten[j+4];
-              kante->knoten[2] = -1;
-              if (typ)   /* 2D-Element ( oder 3D ... ) */
-                  /*Traegt 2D-Element ele bei Kante number ein */
-                  Assign2DElementEdges(k,i);
-              else /* 1D-Element */
-                  kante->nachbar_1D = i;
-          }
-          else {  /* Kante existiert bereits mit Index k */
-              if (typ)    /* 2D-Element ( oder 3D ... ) */
-                  Assign2DElementEdges(k,i);
-              else  /* 1D-Element */
-                  kante->nachbar_1D = i;
-          }
-          /* Kante bei Element eintragen */
-          kanten[j] = k;
-      }
-      /* Kantenverweise bei Element i eintragen */
-      ElSetElementEdges(i,kanten);
-  }
-  start_new_edges = EdgeListLength;
-    /* Alle Knoten und Elemente sollten jetzt im Kantenverzeichnis
-       vermerkt sein */
-}
+//OK void MSHConstructVerticalEdgeListHex ( void )
+
+/**************************************************************************/
 /* ROCKFLOW - Function: ConstructVerticalEdgeListPrism
                                                                           */
 /* Task:
@@ -810,57 +727,7 @@ void MSHConstructVerticalEdgeListHex ( void )
    03/2003     MB       First Version (based on ConstructEdgeList)
                                                                           */
 /**************************************************************************/
-void MSHConstructVerticalEdgeListPrism ( void )
-{
-  long i, j, k, l;  /* Laufvariablen */
-  int typ;  /* Elementtyp - 1 */
-  long *knoten = NULL;  /* Zeiger auf Elementknoten */
-  long *kanten = NULL;  /* Zeiger auf Elementkanten */
-  Kante *kante = NULL;  /* Zeiger auf Kante */
-  /* Schleife ueber alle Ausgangselemente */
-  for (i=0;i<start_new_elems;i++) {
-      typ = ElGetElementType(i) - 1;
-      knoten = ElGetElementNodes(i);
-      kanten = (long *) Malloc(3*sizeof(long));
-      for (j=0l;j<3;j++) {  /* Schleife ueber alle Kanten */
-          k = 0l;
-          l = EdgeListLength;
-          while (k<l) {  /* Kante suchen */
-              kante = GetEdge(k);
-              if (((kante->knoten[0]==knoten[j]) && (kante->knoten[1]==knoten[j+3%4])) ||
-                  ((kante->knoten[1]==knoten[j]) && (kante->knoten[0]==knoten[j+3%4]))  )
-                  l = -20l;  /* Kante gefunden, Abbruchkriterium */
-              else
-                  k++;
-          }
-          if (l==EdgeListLength) {  /* Kante existiert noch nicht */
-              k = AddEdge(kante=NewEdge());  /* Kante erzeugen */
-              kante->knoten[0] = knoten[j];
-              kante->knoten[1] = knoten[j+3%4];
-              kante->knoten[2] = -1;
-              if (typ)   /* 2D-Element ( oder 3D ... ) */
-                  /*Traegt 2D-Element ele bei Kante number ein */
-                  Assign2DElementEdges(k,i);
-              else /* 1D-Element */
-                  kante->nachbar_1D = i;
-          }
-          else {  /* Kante existiert bereits mit Index k */
-              if (typ)    /* 2D-Element ( oder 3D ... ) */
-                  Assign2DElementEdges(k,i);
-              else  /* 1D-Element */
-                  kante->nachbar_1D = i;
-          }
-          /* Kante bei Element eintragen */
-          kanten[j] = k;
-      }
-      /* Kantenverweise bei Element i eintragen */
-      ElSetElementEdges(i,kanten);
-  }
-  start_new_edges = EdgeListLength;
-    /* Alle Knoten und Elemente sollten jetzt im Kantenverzeichnis
-       vermerkt sein */
-}
-
+//OK void MSHConstructVerticalEdgeListPrism ( void )
 
 /**************************************************************************/
 /* ROCKFLOW - Function: ConstructVerticalEdgeListRectangle
@@ -878,64 +745,7 @@ void MSHConstructVerticalEdgeListPrism ( void )
    03/2003     MB       First Version (based on ConstructEdgeList)
                                                                           */
 /**************************************************************************/
-void MSHConstructVerticalEdgeListRectangle ( void )
-{
-  long i, j, k, l;  /* Laufvariablen */
-  int typ;  /* Elementtyp - 1 */
-  long *knoten = NULL;  /* Zeiger auf Elementknoten */
-  long *kanten = NULL;  /* Zeiger auf Elementkanten */
-  Kante *kante = NULL;  /* Zeiger auf Kante */
-  /* Schleife ueber alle Ausgangselemente */
-  for (i=0;i<start_new_elems;i++) {
-      typ = ElGetElementType(i) - 1;
-      knoten = ElGetElementNodes(i);
-      kanten = (long *) Malloc(2*sizeof(long));
-      for (j=0l;j<2;j++) {  /* Schleife ueber alle Kanten */
-          k = 0l;
-          l = EdgeListLength;
-          while (k<l) {  /* Kante suchen */
-              kante = GetEdge(k);
-              if (((kante->knoten[0]==knoten[j]) && (kante->knoten[1]==knoten[j+3%4])) ||
-                  ((kante->knoten[1]==knoten[j]) && (kante->knoten[0]==knoten[j+1%4]))  )
-                  l = -20l;  /* Kante gefunden, Abbruchkriterium */
-              else
-                  k++;
-          }
-          if (l==EdgeListLength) {  /* Kante existiert noch nicht */
-              k = AddEdge(kante=NewEdge());  /* Kante erzeugen */
-              if (j == 0) {
-                  kante->knoten[0] = knoten[j];
-                  kante->knoten[1] = knoten[j+3%4];
-                  kante->knoten[2] = -1;
-              }
-              if (j == 1) {
-                  kante->knoten[0] = knoten[j];
-                  kante->knoten[1] = knoten[j+1%4];
-                  kante->knoten[2] = -1;
-              }
-              if (typ)   /* 2D-Element ( oder 3D ... ) */
-                  /*Traegt 2D-Element ele bei Kante number ein */
-                  Assign2DElementEdges(k,i);
-              else /* 1D-Element */
-                  kante->nachbar_1D = i;
-          }
-          else {  /* Kante existiert bereits mit Index k */
-              if (typ)    /* 2D-Element ( oder 3D ... ) */
-                  Assign2DElementEdges(k,i);
-              else  /* 1D-Element */
-                  kante->nachbar_1D = i;
-          }
-          /* Kante bei Element eintragen */
-          kanten[j] = k;
-      }
-      /* Kantenverweise bei Element i eintragen */
-      ElSetElementEdges(i,kanten);
-  }
-  start_new_edges = EdgeListLength;
-    /* Alle Knoten und Elemente sollten jetzt im Kantenverzeichnis
-       vermerkt sein */
-}
-
+//OK void MSHConstructVerticalEdgeListRectangle ( void )
 
 /**************************************************************************
    ROCKFLOW - Funktion: GEOIsNodeAMovingNode                              */

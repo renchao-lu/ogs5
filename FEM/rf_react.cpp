@@ -14,8 +14,6 @@ Reaction package to go with MTM2
 #include "nodes.h"
 #include "rf_pcs.h"
 #include "mathlib.h"
-#include "cel_mtm2.h"
-//#include "rfmat_tp.h"
 #include "rfmat_cp.h"
 #include "rf_react.h"
 #include "rf_ic_new.h"
@@ -25,7 +23,6 @@ Reaction package to go with MTM2
 #include "files.h"
 #include "nodes.h"
 #include "elements.h"           /* für ElGetElementGroupNumber */
-#include "edges.h"              /* für GetEdge */
 #include <iostream>
 #include <fstream>
 #include "rf_tim_new.h"

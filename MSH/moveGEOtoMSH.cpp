@@ -24,11 +24,6 @@ using namespace std;
 //FEMLib
 #include "rf_mmp_new.h"
 #include "files.h"
-#include "edges.h"
-#include "plains.h"
-//extern void RFConfigRenumber(void);
-//#include "rf_ele_msh.h"
-
 #include "gs_project.h"
 #include "mathlib.h"
 #include "tools.h"
@@ -293,7 +288,7 @@ void MSHCreateLines(CGLPolyline* m_ply)
     nodes[0] = m_ply->msh_nodes_vector[j];
     nodes[1] = m_ply->msh_nodes_vector[j+1];
     if((nodes[0]>-1)&&(nodes[1]>-1)) {
-      ELECreateTopology(1,-1,0,ElementListLength);
+//OK      ELECreateTopology(1,-1,0,ElementListLength);
       ElSetElementNodes(ElementListLength-1,nodes);
       ElSetElementGroupNumber(ElementListLength-1,m_ply->mat_group);
       anz_1D++;
@@ -1520,7 +1515,7 @@ void CreateMSHLines(CGLLine* m_lin)
     nodes[0] = m_lin->msh_nodes[j];
     nodes[1] = m_lin->msh_nodes[j+1];
     if((nodes[0]>-1)&&(nodes[1]>-1)) {
-      ELECreateTopology(1,-1,0,ElementListLength);
+//OK      ELECreateTopology(1,-1,0,ElementListLength);
       ElSetElementNodes(ElementListLength-1,nodes);
       ElSetElementGroupNumber(ElementListLength-1,m_lin->mat_group);
       anz_1D++;

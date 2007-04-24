@@ -16,25 +16,17 @@
    
  
 **************************************************************************/
-
 #include "stdafx.h" /* MFC */
-
 /* Preprozessor-Definitionen */
 #include "makros.h"
-
 #define noTESTRENUM
-
-
 /* Header / Andere intern benutzte Module */
 #include "renumber.h"
 #include "nodes.h"
-#include "edges.h"
 #include "elements.h"
-#include "rfsystim.h"
 #include "tools.h"
 #include "mathlib.h"
 #include "geo_strings.h"
-
 /* Interne (statische) Deklarationen */
 /* #RENUMBER */
 int umnummerierer = 0;
@@ -44,7 +36,6 @@ static long NodeNumberVectorSize = 0l, esize = 0l;     /* Groessen der Felder --
 static short int *elementkennung = NULL;
 static int anz_elkno;           /* Knotenanzahl der massgebenden Elementdimension */
 static long startknoten;
-
 
 /* Gibbs, Pole Stockmeyer */
 typedef struct {                /* iListeN */
@@ -100,7 +91,7 @@ void CompressNodes(void)
     static long i, j, laenge;
 
     /* Systemzeit fuer den Umnummerierer ausfuehren */
-    RunSystemTime(TIMER_RENUMBER);
+//OK    RunSystemTime(TIMER_RENUMBER);
 
     if (NodeNumberVectorSize < NodeListLength) {
         NodeNumberVectorSize = NodeListLength;
@@ -125,11 +116,9 @@ void CompressNodes(void)
     if (j != NodeListLength)
         DisplayErrorMsg("CompressNodes: FEHLER IM KNOTENVERZEICHNIS !!!!!");
 #endif
-
     /* Systemzeit fuer den Umnummerierer anhalten */
-    StopSystemTime(TIMER_RENUMBER);
+//OK    StopSystemTime(TIMER_RENUMBER);
 }
-
 
 void CompressStart(void)
 {
@@ -171,7 +160,7 @@ void CuthillStart(void)
     static long *knoten;
 
     /* Systemzeit fuer den Start-Umnummerierer ausfuehren */
-    RunSystemTime(TIMER_RENUMBER_START);
+//OK    RunSystemTime(TIMER_RENUMBER_START);
 
     anz_elkno = ElNumberOfNodes[max_dim];
     /* Startknoten ermitteln */
@@ -208,9 +197,8 @@ void CuthillStart(void)
         }
     }
     startknoten = bester;
-
     /* Systemzeit fuer den Start-Umnummerierer anhalten */
-    StopSystemTime(TIMER_RENUMBER_START);
+//OK    StopSystemTime(TIMER_RENUMBER_START);
 }
 
 
@@ -240,7 +228,7 @@ void Cuthill(void)
     static long *knoten, *elems;
 
     /* Systemzeit fuer den Umnummerierer ausfuehren */
-    RunSystemTime(TIMER_RENUMBER);
+//OK    RunSystemTime(TIMER_RENUMBER);
 
     if (NodeNumberVectorSize < NodeListLength) {
         NodeNumberVectorSize = NodeListLength;
@@ -299,14 +287,9 @@ void Cuthill(void)
     }
     if (i == j)                 /* weil oben weggelassen */
         SetNodeIndex(NodeNumber[i], i);
-
     /* Systemzeit fuer den Umnummerierer anhalten */
-    StopSystemTime(TIMER_RENUMBER);
+//OK    StopSystemTime(TIMER_RENUMBER);
 }
-
-
-
-
 
 /**************************************************************************/
 /* ROCKFLOW - Funktion: CuthillEnde
@@ -1206,24 +1189,24 @@ void ConfigRenumberProperties(void)
         RenumberNodes = CompressNodes;
         RenumberEnd = CompressEnde;
         /* Systemzeit fuer den Umnummerierer setzen */
-        SetSystemTime(TIMER_RENUMBER_START, "ROCKFLOW", "(Compress:0)", &renumber_start_id_timer);
-        SetSystemTime(TIMER_RENUMBER, "ROCKFLOW", "(Compress:0)", &renumber_id_timer);
+//OK        SetSystemTime(TIMER_RENUMBER_START, "ROCKFLOW", "(Compress:0)", &renumber_start_id_timer);
+//OK        SetSystemTime(TIMER_RENUMBER, "ROCKFLOW", "(Compress:0)", &renumber_id_timer);
         break;
     case 1:
         RenumberStart = CuthillStart;
         RenumberNodes = Cuthill;
         RenumberEnd = CuthillEnde;
         /* Systemzeit fuer den Umnummerierer setzen */
-        SetSystemTime(TIMER_RENUMBER_START, "ROCKFLOW", "(Cuthill:0)", &renumber_start_id_timer);
-        SetSystemTime(TIMER_RENUMBER, "ROCKFLOW", "(Cuthill:1)", &renumber_id_timer);
+//OK        SetSystemTime(TIMER_RENUMBER_START, "ROCKFLOW", "(Cuthill:0)", &renumber_start_id_timer);
+//OK        SetSystemTime(TIMER_RENUMBER, "ROCKFLOW", "(Cuthill:1)", &renumber_id_timer);
         break;
     case 2:
         RenumberStart = GibbsStart;
         RenumberNodes = Gibbs;
         RenumberEnd = GibbsEnde;
         /* Systemzeit fuer den Umnummerierer setzen */
-        SetSystemTime(TIMER_RENUMBER_START, "ROCKFLOW", "(Gibbs:0)", &renumber_start_id_timer);
-        SetSystemTime(TIMER_RENUMBER, "ROCKFLOW", "(Gibbs:1)", &renumber_id_timer);
+//OK        SetSystemTime(TIMER_RENUMBER_START, "ROCKFLOW", "(Gibbs:0)", &renumber_start_id_timer);
+//OK        SetSystemTime(TIMER_RENUMBER, "ROCKFLOW", "(Gibbs:1)", &renumber_id_timer);
         break;
     }
 }
