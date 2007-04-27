@@ -128,10 +128,13 @@ void PCSCreate(void)
   for(i=0;i<no_processes;i++){
     cout << "............................................." << endl;
     m_pcs = pcs_vector[i];
-    cout << "Create: " << m_pcs->pcs_type_name << endl;
+    cout << "Create: " << m_pcs->pcs_type_name ;
     m_pcs->pcs_type_number = i;
     m_pcs->Config(); //OK
-    if(!m_pcs->pcs_type_name.compare("MASS_TRANSPORT")) cout << " for " << m_pcs->pcs_primary_function_name[0] << " ";
+	if(!m_pcs->pcs_type_name.compare("MASS_TRANSPORT")){
+		cout << " for " << m_pcs->pcs_primary_function_name[0] << " ";
+	    cout << " pcs_component_number " << m_pcs->pcs_component_number;       
+	}
     cout << endl;
     m_pcs->Create();
   }
@@ -227,7 +230,8 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
       #else
         rc->CreateREACT();//SB
         rc->InitREACT();
-        rc->ExecuteReactions();
+//SB4501        rc->ExecuteReactions();
+		rc->ExecuteReactionsPHREEQCNew();
 	    REACT_vec.clear();
 	    REACT_vec.push_back(rc);
       #endif
@@ -669,7 +673,8 @@ int LOPTimeLoop_PCS(double*dt_sum)
                     #ifdef REACTION_ELEMENT
                       REACT_vec[0]->ExecuteReactionsPHREEQC0();
                     #else
-                      REACT_vec[0]->ExecuteReactions();
+//                      REACT_vec[0]->ExecuteReactions();
+					  REACT_vec[0]->ExecuteReactionsPHREEQCNew();
                     #endif
                 }
 #ifdef CHEMAPP
@@ -1662,7 +1667,8 @@ void LOPCalcNODResultants(void)
         cout << "LOPCalcNODResultants: not implemented for this process" << endl;
         break;
       case 'M': // Mass transport
-        cout << "LOPCalcNODResultants: not implemented for this process" << endl;
+		if(m_pcs->pcs_component_number == 0)
+			cout << "LOPCalcNODResultants: not implemented for transport process" << endl;
         break;
       case 'D': // Deformation
         cout << "LOPCalcNODResultants: not implemented for this process" << endl;

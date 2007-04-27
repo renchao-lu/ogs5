@@ -15,7 +15,7 @@
 
 vector <CEqlink*> Eqlink_vec;
 
-#define _DEBUG_CHEMAPP  //for debug
+#define no_DEBUG_CHEMAPP  //for debug
  static double lambda=0.001;
 
 /**************************************************************************

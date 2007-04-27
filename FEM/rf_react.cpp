@@ -184,6 +184,85 @@ void REACT::ExecuteReactionsPHREEQC(void){
 
 }/* End of ExecuteReactionsPHREEQC */
 
+/**************************************************************************
+   ROCKFLOW - Funktion: ExecuteReactionsPHREEQCNew
+
+   Aufgabe:
+   Berechnet chemische Reaktionen zwischen den einzelnen Komponenten
+   allererste Version
+   
+   Programmaenderungen:
+   06/2003     SB         Erste Version
+   06/2003     MX         Read and Reaction functions
+   09/2003     SB         Included temperature
+   11/2003     SB         included time step fro PHEEQC kinetics
+						  bugfix for many species (large files)
+						  adapted to faster output file setup
+   01/2006     SB         ReImplementation as Class, IO streaming, bugfixes
+
+**************************************************************************/
+void REACT::ExecuteReactionsPHREEQCNew(void){
+ 
+    long i,  ok = 0;
+
+    cout << "ExecuteReactionsPHREEQCNew: " << "\n";
+
+    /* File handling - GeoSys input file */
+    ifstream pqc_file (this->file_name_pqc.data(),ios::in);
+    if (!pqc_file.good()){
+         cout << "! Error in ReadReactionModelNew: no File found !" << endl;
+//         exit(0);
+    } 
+    //	File handling - data exchange file to phreeqc, input to PHREEQC
+    ofstream outfile (this->outfile_name.data(),ios::out);
+    if(!outfile.is_open()){
+        cout << "Error: Outfile phinp.dat could not be opened for writing " << endl;
+//        exit(0);
+    }
+ 
+    // Set up reaction model
+    if((int)this->pqc_names.size()==0){
+        ok = this->ReadReactionModelNew(&pqc_file);
+        if(!ok) cout << "Error setting up reaction model" << endl;
+    }
+
+    /* Read the input file (*.pqc) and set up the input file for PHREEQC ("phinp.dat")*/
+    // Write input data block to PHREEQC for each node
+    for(i=0;i<this->nodenumber;i++)
+    	if(this->rateflag[i] > 0){
+            pqc_file.seekg(0L,ios_base::beg);
+            ok = WriteInputPhreeqc(i, &pqc_file, &outfile);
+		}
+    
+//  Close *.pqc input file
+    pqc_file.close();
+//  Close phinp.dat file with input for phreeqc.exe
+    outfile.close();
+
+	/* Extern Program call to PHREEQC */
+    if(ok) ok = Call_Phreeqc();
+	if(ok ==0) {
+        cout << " Error executing PHREEQC.exe - Stopping "<< endl;
+        cout.flush();
+//        exit(0);
+    }
+ 
+    if(ok){
+      ok = ReadOutputPhreeqcNew();
+      if(!ok) cout << " Error in call to PHREEQC !!!" << endl;
+	}
+ 
+ /* Calculate Rates */
+ // CalculateReactionRates();
+ 
+ /* determine where to calculate the chemistry */
+ // CalculateReactionRateFlag();
+
+ /* pH and pe constant or variable */
+ // ResetpHpe(rc, rcml);
+ 
+}/* End of ExecuteReactionsPHREEQCNew */
+
 
 /**************************************************************************/
 /* Constructor */
@@ -204,8 +283,12 @@ REACT::REACT(void){
   rcml_pH_flag=1;
   rcml_pe_flag=1;
   rcml_heat_flag = 0;
+  rcml_pH_charge = 0;
   rcml_number_of_pqcsteps = 1; //standard = 1;
   outfile = NULL;
+  outfile_name = "phinp.dat";
+  results_file_name = "phout_sel.dat";
+  gamma_Hplus=-1.0;
 	}
 /* Destructor */
 REACT::~REACT(void){
@@ -805,6 +888,196 @@ int REACT::ReadReactionModel( FILE *File){
     return 1;
 }
 
+/**************************************************************************
+   ROCKFLOW - Funktion: ReadReactionModelNew
+
+   Aufgabe:
+   Liest die Eingabedatei *.pqc und gibt die Parameter der Schnittstelle zurück
+
+    indices of vectors pqc_name, pqc_index and pqc_process
+    n1 = number_of_master_species
+    | master species 1   | <- 0
+    |      ...           |
+    |master species n1   | <- n1-1
+    |       pH           | <- n1
+    |       H+           | <- n1+1
+    |       pe           | <- n1+2
+    |equilibrium phase 1 | <- n1+3
+    |      ...           |
+    |equilibrium phase n2| <- n1+3+n2-1
+    |exchange species 1  | <- n1+3+n2
+    |      ...           |
+    |exchange species n3 | <- n1+3+n2+n3-1
+                                                                                                                                           
+   Programmaenderungen:
+   01/2006     SB         Erste Version
+**************************************************************************/
+int REACT::ReadReactionModelNew( ifstream *pqc_infile){
+
+  int n_master_species=0;
+  int n_equi_phases=0;
+  int n_ion_exchange=0;
+  int idx;
+  int nj;
+  char line[MAX_ZEILE];
+  string line_string, dummy, speciesname;
+  CRFProcess* m_pcs = NULL;
+  std::stringstream in;
+  int no_processes = (int)pcs_vector.size();
+  int pH_found = 0, Hplus_found = 0, count = -1;
+
+
+  /* File handling */
+  pqc_infile->seekg(0L,ios::beg);
+  
+  /* zeilenweise lesen */
+   while(!pqc_infile->eof()){
+    pqc_infile->getline(line,MAX_ZEILE);
+    line_string = line;
+    if(line_string.find("#STOP")!=string::npos)
+      break;
+
+      /* Schleife ueber Keyword Solution */
+      if(line_string.find("SOLUTION")!=string::npos) { // keyword found
+
+        while(line_string.find("#ende")==string::npos){
+            pqc_infile->getline(line,MAX_ZEILE);
+            line_string = line;
+            if (line_string.find("# comp")!=string::npos)
+                if (line_string.find("pH") == string::npos && line_string.find("pe") == string::npos){
+                    n_master_species +=1; // this excludes now pH and pe
+                    in.str(line_string);
+                    in >> speciesname ;
+                    m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
+					if(m_pcs == NULL){
+							cout << " PHREEQC SOLUTION SPECIES not in GeoSys components - Stopping" << endl;
+							cout.flush(); exit(0);
+					}
+                    idx = m_pcs->GetNodeValueIndex(speciesname)+1; // old timelevel
+                    in.clear();
+                    pqc_names.push_back(speciesname); //store species name in vector names
+                    pqc_process.push_back(m_pcs->pcs_number); // store process name in vector processes
+                    pqc_index.push_back(idx);
+/*                    if(speciesname.compare("H+") == 0){ 
+                        Hplus_found = 1;
+                        cout << "H+ found in GeoSys species" << endl;
+                        this->pqc_Hplus_index = n_master_species-1; // Store index for H+ in vectors
+                    } */
+                }
+                else if (line_string.find("pH") != string::npos){
+                    pH_found = 1;
+//                    cout << " pH found in GeoSys species" << endl;
+                    if (line_string.find("charge") != string::npos) this->rcml_pH_charge=1;
+                }
+		   if (line_string.find("# temp")!=string::npos){
+             // check if heat transport process is calculated in GeoSys 
+			 for(int i=0;i<no_processes;i++){
+				m_pcs = pcs_vector[i];
+				if(m_pcs->pcs_type_name.find("HEAT_TRANSPORT")!=string::npos){
+					this->rcml_heat_flag=1;
+					break;
+                 }
+			 }
+           }
+        }
+		this->rcml_number_of_master_species = n_master_species;
+
+        // Handle pH, H+ and pe
+        speciesname = "pH";
+        m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
+        idx = m_pcs->GetNodeValueIndex(speciesname)+1; // old timelevel
+        pqc_names.push_back(speciesname); //store species name in vector names
+        pqc_process.push_back(m_pcs->pcs_number); // store process name in vector processes
+        pqc_index.push_back(idx);
+        // check, if H+ is a GEoSys transport process
+        speciesname = "H+";
+        m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
+        if(m_pcs != NULL){
+            idx = m_pcs->GetNodeValueIndex(speciesname)+1; // old timelevel
+            pqc_names.push_back(speciesname); //store species name in vector names
+            pqc_process.push_back(m_pcs->pcs_number); // store process name in vector processes
+            pqc_index.push_back(idx);
+            this->gamma_Hplus =1.0;
+        }
+        else{
+            // Store dummy values anyway, as otherwise indexing in Write becomes too complicated
+            pqc_names.push_back(speciesname); 
+            pqc_process.push_back(-1); 
+            pqc_index.push_back(-1);
+        }
+        // Treat pe
+        speciesname = "pe";
+        m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
+        idx = m_pcs->GetNodeValueIndex(speciesname)+1; // old timelevel
+        pqc_names.push_back(speciesname); //store species name in vector names
+        pqc_process.push_back(m_pcs->pcs_number); // store process name in vector processes
+        pqc_index.push_back(idx);
+      }
+      /* Schleife ueber Keyword EQUILIBRIUM PHASES */
+      if(line_string.find("EQUILIBRIUM_PHASES")!=string::npos) { // keyword found
+        while(line_string.find("#ende")==string::npos){
+            pqc_infile->getline(line,MAX_ZEILE);
+            line_string = line;
+            if (line_string.find("# comp")!=string::npos){
+                n_equi_phases +=1;
+                in.str(line_string);
+                in >> speciesname ;
+                in.clear();
+                m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
+                idx = m_pcs->GetNodeValueIndex(speciesname)+1; // old timelevel
+                pqc_names.push_back(speciesname); //store species name in vector names
+                pqc_process.push_back(m_pcs->pcs_number); // store process name in vector processes
+                pqc_index.push_back(idx);
+
+            }
+        }
+		this->rcml_number_of_equi_phases = n_equi_phases;
+       } 
+
+      /* Schleife ueber Keyword EXCHANGE */
+      if(line_string.find("EXCHANGE")!=string::npos) { // keyword found
+
+        while(line_string.find("#ende")==string::npos){
+            pqc_infile->getline(line,MAX_ZEILE);
+            line_string = line;
+            if (line_string.find("# comp") !=string::npos){
+                n_ion_exchange +=1;
+                in.str(line_string);
+                in >> speciesname ;
+                in.clear();
+                m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
+                idx = m_pcs->GetNodeValueIndex(speciesname)+1; // old timelevel
+                pqc_names.push_back(speciesname); //store species name in vector names
+                pqc_process.push_back(m_pcs->pcs_number); // store process name in vector processes
+                pqc_index.push_back(idx);
+            }
+        }
+		this->rcml_number_of_ion_exchanges = n_ion_exchange;
+       } 
+      /* Schleife ueber Keyword SELECTED_OUTPUT */
+      if(line_string.find("SELECTED_OUTPUT")!=string::npos) { // keyword found
+        while(line_string.find("#ende")==string::npos){
+            pqc_infile->getline(line,MAX_ZEILE);
+            line_string = line;
+            if (line_string.find("-file") !=string::npos){
+                in.str(line_string);
+                in >> dummy >> this->results_file_name;
+            }
+        }
+       }
+
+     }/*end while */
+
+    if((this->gamma_Hplus > 0)) cout << " pH found and H+ found, pH for PHREEQC input is calculated using gamma_H+ and [H+] " << gamma_Hplus << endl;
+
+    nj=rcml_number_of_master_species+rcml_number_of_equi_phases+rcml_number_of_ion_exchanges;
+    cout << " Found in *.pqc file: " << rcml_number_of_master_species << " master species (excluding pH, H+ and pe), " ;
+    cout << rcml_number_of_equi_phases << " equilibrium phases and " << rcml_number_of_ion_exchanges << " ion exchangers" << endl;
+//    for(i=0; i< (int) pqc_names.size();i++)
+//        cout << pqc_names[i] << ", " << pqc_index[i] << ", " << pqc_process[i] << endl;
+ 
+    return 1;
+}
 
 /**************************************************************************
    ROCKFLOW - Funktion: ReadInputPhreeqc
@@ -1305,6 +1578,295 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
     return 1;
 }   /* end-if */
 
+/**************************************************************************
+   ROCKFLOW - Funktion: WriteInputPhreeqc
+
+   Aufgabe:
+   Liest die Eingabedatei *.pqc und erstellt aktuelles PHREEQC-Eingabefile
+                                                                          */
+/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+   E char *dateiname: Dateiname ohne Extension
+                                                                          */
+/* Ergebnis:
+   0 bei Fehler oder Ende aufgrund Dateitest, sonst 1
+                                                                       
+   Programmaenderungen:
+   06/2003     SB         Erste Version 
+   06/2003     MX         Read function realisation
+   01/2006     SB         Reimplementation, C++ class, IO, bugfixes
+**************************************************************************/
+int REACT::WriteInputPhreeqc(long index, ifstream *pqc_iinfile, ofstream *out_file){
+
+  char line[MAX_ZEILE];
+  std::stringstream in;
+  string name, line_string, speciesname, dummy;
+  CRFProcess* m_pcs = NULL;
+  int i, idx, n1, n2, n3, count=-1;
+  double dval, dval1;
+ 
+//  cout << " WriteInputPhreeqc for node " << index << endl;
+  cout.flush();
+ /* File handling - rewind file */
+  // pqc_infile->seekg(0L,ios_base::beg);
+//  pqc_infile->close();
+  ifstream pqc_infile (this->file_name_pqc.data(),ios::in);
+  pqc_infile.seekg(0L,ios::beg);
+
+  // precision output file
+  out_file->setf(ios::scientific,ios::floatfield);
+  out_file->precision(12);
+
+  /* zeilenweise lesen */
+   while(!pqc_infile.eof()){
+    pqc_infile.getline(line,MAX_ZEILE);
+    line_string = line;
+    if(line_string.find("#STOP")!=string::npos)
+      break;
+//-------------------------------------------------------------------------------------------------------------
+      /* Schleife ueber Keyword Solution */
+      if(line_string.find("SOLUTION")!=string::npos) { // keyword found
+        *out_file << "SOLUTION " << index+1 << " #New Version " << endl;
+        *out_file << "#GRID " << index+1 << endl;
+        while(line_string.find("#ende")==string::npos){
+            pqc_infile.getline(line,MAX_ZEILE);
+            line_string = line;
+            if (line_string.find("# comp")!=string::npos){
+              if (line_string.find("pH") == string::npos && line_string.find("pe") == string::npos){
+                // Component found; write name and concentration of component
+                count++;
+/*                in.str(line_string);
+                in >> speciesname ;
+                m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
+                idx = m_pcs->GetNodeValueIndex(speciesname)+1; // old timelevel
+                dval = m_pcs->GetNodeValue(index,idx);
+*/
+                speciesname = pqc_names[count];
+                dval = pcs_vector[pqc_process[count]]->GetNodeValue(index,pqc_index[count]);
+/*                cout << "Testing index vectors: " << speciesname << ", " << m_pcs->pcs_number << ", "<< idx <<",  With vectors: " << pqc_names[count] << ", " << pcs_vector[pqc_process[count]]->pcs_number << ", " << pqc_index[count];
+                cout << " Values: " << dval << ", " << dval1 << endl;
+*/
+                if(speciesname.compare("pe")) // if this is not pe
+                    if(dval < 1.0e-19) dval = 0.0;
+//                if(speciesname.compare("pH"))
+			        *out_file << speciesname << "       " << dval << "     # comp " <<endl;
+//					if(index <2) cout << speciesname << " " << dval << endl;
+//                else
+//                    *out_file << speciesname << "       " << dval << " charge " << "       # comp " <<endl;
+//                in.clear();
+              }
+            }		    
+            else if (line_string.find("# temp")!=string::npos){
+             // check if heat transport process is calculated in GeoSys 
+                if(this->rcml_heat_flag > 0){
+                    m_pcs = PCSGet("HEAT_TRANSPORT");
+                    idx = m_pcs->GetNodeValueIndex("TEMPERATURE1");
+                    dval = m_pcs->GetNodeValue(index,idx);
+					if (dval<273.0) dval += 273.15; //change from °C to Kelvin if necessary
+                    dval -=273.15; // Input to PHREEQC is in °C
+                    *out_file << "temp " << dval << "  # temp " << endl;
+                }                
+            }
+            else { // Write units and temperature in the standard case
+              if (line_string.find("pH") == string::npos && line_string.find("pe") == string::npos && line_string.find("#ende") == string::npos)
+                    *out_file << line_string << endl; 
+            }
+        }// end while
+        
+        // special treat pH, and pe
+        n1 = this->rcml_number_of_master_species;
+        count++;
+        if(count != n1) cout << "Error in index of pqc_vectors !" << endl;
+        dval = pcs_vector[pqc_process[count]]->GetNodeValue(index,pqc_index[count]);
+//		if(index <2)         cout << " pH: " << dval;
+        // H+
+        count++;
+        if(this->gamma_Hplus > 0){ // pH and H+ in GeoSys species, calculate pH from H+
+            dval1 = pcs_vector[pqc_process[n1+1]]->GetNodeValue(index,pqc_index[n1+1]);
+            dval = -log10(dval1*gamma_Hplus);
+//            if(index<2) cout << " .  Resetting pH to: " << dval << "; MOL[H+]= " << dval1 << ", gamma_H+ = " << gamma_Hplus;
+        }
+        if(this->rcml_pH_charge > 0)
+            *out_file << "pH" << "       " << dval << " charge " << "       # comp " <<endl;
+        else
+            *out_file << "pH" << "       " << dval << "       # comp " <<endl;
+//SB to do screen output				if(index <2) cout << "  pH: " << dval << ", " << pcs_vector[pqc_process[count]]->pcs_number << endl;
+        // write pe
+        count++;
+        dval = pcs_vector[pqc_process[n1+2]]->GetNodeValue(index,pqc_index[n1+2]);
+        *out_file << "pe" << "       " << dval << "       # comp " <<endl;
+//SB to do screen output		if(index <2)  cout << "  pe: " << dval << ", " << pcs_vector[pqc_process[count]]->pcs_number << endl;
+
+		*out_file << line_string << endl; 
+      } // end SOLUTION
+//-------------------------------------------------------------------------------------------------------------
+      /* Schleife ueber Keyword EQUILIBRIUM PHASES */
+      if(line_string.find("EQUILIBRIUM_PHASES")!=string::npos) { // keyword found
+            *out_file << endl << "EQUILIBRIUM_PHASES   " << index+1 << endl;
+        while(line_string.find("#ende")==string::npos){
+            pqc_infile.getline(line,MAX_ZEILE);
+            line_string = line;
+            if (line_string.find("# comp")!=string::npos){
+                count++;
+/*                in.str(line_string);
+                in >> speciesname ;
+                m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
+                idx = m_pcs->GetNodeValueIndex(speciesname)+1; // old timelevel
+                dval = m_pcs->GetNodeValue(index,idx);                
+*/
+//                if(count != (n1+3)) cout << " Error in index pqc " << endl;
+                speciesname = pqc_names[count];
+                dval = pcs_vector[pqc_process[count]]->GetNodeValue(index,pqc_index[count]);
+                if(dval < 1.0e-19) dval = 0.0;
+
+//                cout << "Testing index vectors: " << speciesname << ", " << m_pcs->pcs_number << ", "<< idx <<",  With vectors: " << pqc_names[count] << ", " << pcs_vector[pqc_process[count]]->pcs_number << ", " << pqc_index[count];
+//                if(index <2) cout << " EQ-Species " << speciesname << " " << dval << endl;
+			    *out_file << speciesname << "       0.0  " << dval << "       # comp " <<endl;
+//                in.clear();
+            }
+            else
+                *out_file << line_string << endl;
+        }
+       } // end EQUILIBRIUM PHASES
+//-------------------------------------------------------------------------------------------------------------
+      /* Schleife ueber Keyword EXCHANGE */
+      if(line_string.find("EXCHANGE")!=string::npos) { // keyword found
+        *out_file << endl << "EXCHANGE   " <<  index+1 << endl;
+        while(line_string.find("#ende")==string::npos){
+            pqc_infile.getline(line,MAX_ZEILE);
+            line_string = line;
+            if (line_string.find("# comp") !=string::npos){
+                count++;
+/*
+                in.str(line_string);
+                in >> speciesname ;
+                m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
+                idx = m_pcs->GetNodeValueIndex(speciesname)+1; // old timelevel
+                dval = m_pcs->GetNodeValue(index,idx);
+*/
+                speciesname = pqc_names[count];
+                dval = pcs_vector[pqc_process[count]]->GetNodeValue(index,pqc_index[count]);
+                if(dval < 1.0e-19) dval = 0.0;
+/*                cout << "Testing index vectors: " << speciesname << ", " << m_pcs->pcs_number << ", "<< idx <<",  With vectors: " << pqc_names[count] << ", " << pcs_vector[pqc_process[count]]->pcs_number << ", " << pqc_index[count];
+                cout << " Values: " << dval << ", " << dval1 << endl;
+*/
+			    *out_file << speciesname << "       " << dval << "       # comp " <<endl;
+//                in.clear();
+            }
+            else
+                *out_file << line_string << endl;
+        }
+       } // end EXCHANGE
+//-------------------------------------------------------------------------------------------------------------
+      /* Schleife ueber Keyword SELECTED_OUTPUT */
+      if(line_string.find("SELECTED_OUTPUT")!=string::npos) { // keyword found
+        if(index < 1){
+            *out_file << endl << "SELECTED_OUTPUT" << endl;
+            while(line_string.find("#ende")==string::npos){
+                pqc_infile.getline(line,MAX_ZEILE);
+                line_string = line;
+                if (line_string.find("-file") !=string::npos)
+                    *out_file << "-file " << this->results_file_name << endl;
+                else
+                    *out_file << line_string << endl;
+            }
+         }
+       } // end SELECTED OUTPUT
+//-------------------------------------------------------------------------------------------------------------
+      /* Schleife ueber Keyword PRINT */
+      if(line_string.find("PRINT")!=string::npos) { // keyword found
+        if(index < 1){
+            *out_file << endl << "PRINT" << endl;
+            while(line_string.find("#ende")==string::npos){
+                pqc_infile.getline(line,MAX_ZEILE);
+                line_string = line;
+                *out_file << line_string << endl;
+            }
+        }
+       } // end PRINT
+//-------------------------------------------------------------------------------------------------------------
+      /* Schleife ueber Keyword USER_PUNCH */
+      if(line_string.find("USER_PUNCH")!=string::npos) { // keyword found
+        if(index < 1){
+            *out_file << endl << "USER_PUNCH" << endl;
+            // Write Header
+            n1 = this->rcml_number_of_master_species;
+            n2 = this->rcml_number_of_equi_phases;
+            n3 = this->rcml_number_of_ion_exchanges;
+            *out_file << "-head ";
+            for(i=0;i<n1; i++) *out_file << " " << pqc_names[i];
+            *out_file << " pH ";
+            *out_file << " H+ ";
+            *out_file << " pe ";
+            for(i=n1+3; i<n1+3+n2; i++) *out_file << " " << pqc_names[i];
+            for(i=n1+3+n2;i<n1+3+n2+n3; i++) *out_file << " " << pqc_names[i];
+            *out_file << endl;
+            // Write master species
+            *out_file << " 10 PUNCH ";
+            for(i=0;i<n1;i++){
+                if(pqc_names[i].compare("H+")==0)
+                    *out_file << " MOL(\"" << pqc_names[i] << "\"),"; // extra treat H+
+                else
+                    *out_file << " TOT(\"" << pqc_names[i] << "\"),"; // without pH and pe here
+            }
+            *out_file << endl;
+            // Write pH and pe
+            *out_file << " 20 PUNCH " << " -LA(\"H+\"), ";
+            *out_file << " MOL(\"H+\"), ";
+            *out_file << "  -LA(\"e-\")" << endl;
+            // Write equilibrium phases
+            if(n2 > 0){
+                *out_file << " 40 PUNCH ";
+                for(i=n1+3;i<n1+3+n2;i++) *out_file << " EQUI(\"" << pqc_names[i] << "\"),";
+                *out_file << endl;
+            }
+            // Write ion exchangers
+            if(n3 > 0){
+                *out_file << " 60 PUNCH ";
+                for(i=n1+3+n2;i<n1+3+n2+n3;i++) *out_file << " MOL(\"" << pqc_names[i] << "\"),";
+                *out_file << endl;
+            }
+        }// end if index < 1
+
+		// search for end of USER_PUNCH data block in *.pqc input file
+		while(!pqc_infile.eof()){
+			pqc_infile.getline(line,MAX_ZEILE);
+			line_string = line;
+			if((line_string.find("#ende")!=string::npos) || (line_string.find("END")!=string::npos))
+				break;
+		}
+      } // end USER_PUNCH
+//-------------------------------------------------------------------------------------------------------------
+      if(line_string.find("-steps")!=string::npos) { // keyword found
+        in.str(line_string);
+        in >> dummy >> dval >> this->rcml_number_of_pqcsteps >> dummy;
+        CTimeDiscretization *m_tim = NULL;
+        if(time_vector.size()>0)
+            m_tim = time_vector[0];
+        else
+            cout << "Error in WriteInputPhreeqc: no time discretization data !" << endl;
+	    dval = m_tim->CalcTimeStep();
+        *out_file << "-steps " << dval << " in " << this->rcml_number_of_pqcsteps << " steps" << endl;
+    } // end -steps
+//-------------------------------------------------------------------------------------------------------------
+	  if(line_string.find("KNOBS")!=string::npos){
+		 if(index < 1){
+            *out_file << endl << "KNOBS" << endl;
+            while(line_string.find("#ende")==string::npos){
+                pqc_infile.getline(line,MAX_ZEILE);
+                line_string = line;
+                *out_file << line_string << endl;
+            }
+        }
+	  }
+
+     }/*end while zeilenweises lesen */
+    *out_file << "END" << endl << endl;
+ 
+    pqc_infile.close();   
+//    out_file.close();
+
+    return 1;
+}
 
 /**************************************************************************
    ROCKFLOW - Funktion: Call_Phreeqc
@@ -1427,6 +1989,147 @@ int REACT::ReadOutputPhreeqc(char* fout){
     return ok; 
 }
 
+/**************************************************************************
+   ROCKFLOW - Funktion: ReadOutputPhreeqcNew
+
+   Aufgabe:
+   Liest Ergebnisse der PHREEQC-Berechnungen aus PHREEQC-Ausdgabedatei
+  
+  Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+   E char *File: Dateiname der PHREEQC-Ausdgabedatei
+   R char **val_out: Zeiger für chemische Conzentration 
+   E char **name: Componentnamen 
+
+  Ergebnis:
+   0 bei Fehler oder Ende aufgrund Dateitest, sonst 1
+
+   Programmaenderungen:
+   06/2003     MX/SB         Erste Version
+   11/2003     SB            Bugfix for large files, read long lines 
+							 switched to iostreams
+   01/2006     SB            ReImplementation, C++ classes, IO, bugfixes
+************************************************************************************************/
+int REACT::ReadOutputPhreeqcNew(void){
+
+    int ok = 0;
+    int ntot;
+    int index, j, ii, zeilenlaenge=10000, anz;
+    char str[4000];
+    double dval, dval1;
+    string speciesname;
+    CRFProcess* m_pcs = NULL;
+    int n1, n2, n3, dix=0;
+    CTimeDiscretization *m_tim = NULL;
+ 
+    // Get time step number   
+    if(time_vector.size()>0){
+        m_tim = time_vector[0];
+	    if(m_tim->step_current == 0) dix = -1;
+    }
+
+    ifstream ein (this->results_file_name.data(),ios::in);
+	if (!ein){
+        cout << "The selected output file doesn't exist!!!" << endl;
+        return 0;
+    }
+    n1 = this->rcml_number_of_master_species;
+    n2 = this->rcml_number_of_equi_phases;
+    n3 = this->rcml_number_of_ion_exchanges;
+  
+	/* get total number of species in PHREEQC output file */
+	ntot = rcml_number_of_master_species + 3 + rcml_number_of_equi_phases + rcml_number_of_ion_exchanges; 
+	/* get lines to skip */
+	anz = this->rcml_number_of_pqcsteps;
+
+	ein.getline(str,zeilenlaenge);	 /* lies header-Zeile */
+
+    for (index=0; index<this->nodenumber; index++){
+	 if(this->rateflag[index] > 0){
+		/* skip one line, if keyword steps larger than 1 even more lines */
+		for(j=0;j<anz;j++){
+			for(ii=0;ii<ntot;ii++){
+				ein >> dval;
+			}
+		}
+//		if(1 == 1){
+/*-----------Read the concentration of all master species and pH pe values-------*/
+           for (j=0; j<n1; j++){
+				 if(ein >> dval){
+//					this->val_out[j][i] = dval;
+//                    speciesname = pqc_names[j];
+//                    m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
+//                	idx = m_pcs->GetNodeValueIndex(speciesname)+1;
+//        			m_pcs->SetNodeValue(index,idx,dval);
+                    pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
+//					if(index <2) cout << " Read aqu. for " << pqc_names[j] << " " << dval << endl;
+                  }
+           }
+            /* Read pH and pe */
+           if(ein >> dval){ // read pH
+                j = n1;
+                pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
+//				if(index <2) cout << " Read for pH: " << dval << ", ";
+            }
+            if(ein >> dval){ // read H+
+                j++;
+                if(this->gamma_Hplus > 0){
+                m_pcs = pcs_vector[pqc_process[j]];
+//				if(index<2) cout << " H+: " <<  dval << ", ";
+                pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
+                }
+            }     
+            if(ein >> dval){ // read pe
+                j++;
+                m_pcs = pcs_vector[pqc_process[j]];
+//				if(index <2) cout << " pe: " <<  dval << endl;
+                pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
+            }     
+/*--------------------Read the concentration of all equilibrium phases -------*/
+           for (j=n1+3; j<n1+3+n2; j++){
+             if(ein >> dval){
+/*
+                speciesname = pqc_names[j];
+                m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
+               	idx = m_pcs->GetNodeValueIndex(speciesname)+1;
+       			m_pcs->SetNodeValue(index,idx,dval);
+*/
+                pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
+//				if(index <2)  cout << " Read equi. for " << pqc_names[j] << " " << dval << endl;
+             }
+           }
+/*--------------------Read the concentration of all ion exchangers -------*/
+           for (j=n1+3+n2; j<n1+3+n2+n3; j++){
+             if(ein >> dval){
+/*                speciesname = pqc_names[j];
+                m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
+               	idx = m_pcs->GetNodeValueIndex(speciesname)+1;
+       			m_pcs->SetNodeValue(index,idx,dval);
+*/
+                pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
+//                cout << " Read ex. for " << pqc_names[j] << " " << dval << endl;
+             }
+
+           }
+
+	 } //if rateflag
+     // Determine new gamma_Hplus
+     if(this->gamma_Hplus > 0){
+        // Calculate new gamma_Hplus
+        dval =  pcs_vector[pqc_process[n1+1]]->GetNodeValue(index,pqc_index[n1+1]+dix); // molality H+
+        dval1 = pcs_vector[pqc_process[n1]]->GetNodeValue(index,pqc_index[n1]+dix); //pH
+        dval1 = pow(10.0,-dval1); // activity H+ from pH
+        this->gamma_Hplus = dval1/dval;
+//        cout << " New gamma_Hplus: " << gamma_Hplus << endl;
+     }
+
+     } // end for(index...
+
+
+
+	ok=1;
+    ein.close();
+    return ok; 
+}
 
 
 
@@ -1443,8 +2146,8 @@ int REACT::ReadOutputPhreeqc(char* fout){
 **************************************************************************/
 void REACT::TestPHREEQC(string file_base_name){
  
-string pqc_file_name = file_base_name + CHEM_REACTION_EXTENSION;
-ifstream pqc_file (pqc_file_name.data(),ios::in);
+file_name_pqc = file_base_name + CHEM_REACTION_EXTENSION;
+ifstream pqc_file (file_name_pqc.data(),ios::in);
 if (pqc_file.good()) 
 	flag_pqc = true;
 pqc_file.close();

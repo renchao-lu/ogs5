@@ -37,7 +37,15 @@ class REACT{
     int rcml_pe_flag;   /* =0, pe constant; =1 (default), pe will change  */
 	int rcml_heat_flag; /* =0, temp constant (default); =1 , temp will change  */
 	int rcml_number_of_pqcsteps; /* Anzahl der Reaktionsschritte in PHREEQC aus dem Befehl: -steps "time" in "pqcsteps" steps */
+    int rcml_pH_charge; /* =0, no charge balance for pH; =1, used for charge balance (keyword charge in line with pH*/
 	char * outfile; /* Ausgabefile von PHREEQC */
+    string file_name_pqc; // Name of pqc file in GeoSys project (*.pqc)
+    string outfile_name;
+    string results_file_name;
+    vector < string > pqc_names; // species names in *-pqc input file
+    vector < int > pqc_index; // index in process array
+    vector < int > pqc_process; // process number in pcs_vector
+    double gamma_Hplus; //activity coefficent of H+ ion
 
 // Member functions
 	REACT* GetREACT(void);
@@ -45,12 +53,16 @@ class REACT{
 	void InitREACT(void);
 	void ExecuteReactions(void);
 	void ExecuteReactionsPHREEQC(void);
+	void ExecuteReactionsPHREEQCNew(void);
 	void TestPHREEQC(string);
 	int  Call_Phreeqc(void);
 	void GetTransportResults(void);
 	int  ReadReactionModel(FILE *File);
+	int  ReadReactionModelNew(ifstream *);
 	int  ReadInputPhreeqc( long index, FILE *fpqc, FILE *Fphinp); //fsout removed 3912
+    int  WriteInputPhreeqc(long, ifstream*, ofstream*);
 	int  ReadOutputPhreeqc(char* fout);
+	int  ReadOutputPhreeqcNew(void);
 	void ResetpHpe(void);
 	void CalculateReactionRates(void);
 	void SetConcentrationResults(void);
