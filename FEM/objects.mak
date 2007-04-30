@@ -1,50 +1,34 @@
 # GeoSys - Makefile for LINUX
 # Last modification 26/08/2005 WW
-FEMOBJS = tools.o\
-         timer.o\
-         testvar.o\
-         steam.o\
-         solver.o\
-         rfsystim.o\
-         rfstring.o\
-         rfpriref.o\
-         rfod.o\
-         rfmat_cp.o\
-         rfiv.o\
-         rfiter.o\
-         rfim.o\
-         rfii.o\
-         rfidb.o\
-         rfhgm.o\
-         rfdb.o\
-         rfadt.o\
-         rf_vel_new.o\
-         rf_tim_new.o\
-         rf_st_new.o\
-         rf_react.o\
-         rf_pcs.o\
-         rf_out_new.o\
-         rf_num_new.o\
-         rf_node.o\
-         rf_msp_new.o\
-         rf_mmp_new.o\
-         rf_mg.o\
-         rf_mfp_new.o\
-         rf_ic_new.o\
-         rf_fct.o\
-         rf_db.o\
-         rf_bc_new.o\
-         rf_apl.o\
+FEMOBJS =tools.o\
+timer.o\
+steam.o\
+solver.o\
+rfstring.o\
+rfmat_cp.o\
+rfiter.o\
+rfadt.o\
+rf_vel_new.o\
+rf_tim_new.o\
+rf_st_new.o\
+rf_react.o\
+rf_random_walk.o\
+rf_pcs.o\
+rf_out_new.o\
+rf_num_new.o\
+rf_node.o\
+rf_msp_new.o\
+rf_mmp_new.o\
+rf_mfp_new.o\
+rf_ic_new.o\
 rf_fluid_momentum.o\
+rf_fct.o\
+rf_db.o\
+rf_bc_new.o\
+rf_apl.o\
 rf.o\
 renumber.o\
-relax.o\
-refine3.o\
-refine2.o\
-refine1.o\
 ptrarr.o\
-plot.o\
-plains.o\
 pcs_dm.o\
 par_ddc.o\
 nodes.o\
@@ -52,43 +36,15 @@ memory.o\
 matrix_class.o\
 matrix.o\
 mathlib.o\
-masscont.o\
 loop_pcs.o\
-int_mtm2.o\
-int_mms.o\
-int_mmp.o\
-int_ge.o\
-int_agm.o\
-indicatr.o\
-indicat2.o\
-indicat1.o\
-gridadap.o\
-files2.o\
-files1.o\
 files0.o\
-file_rfr.o\
 femlib.o\
 fem_ele_vec.o\
 fem_ele_std.o\
 fem_ele.o\
 elements.o\
-edges.o\
 display.o\
-cvel.o\
-cgs_mtm2.o\
-cgs_mpc.o\
-cgs_mms.o\
-cgs_mmp.o\
-cgs_ge.o\
-cgs_agm.o\
-cel_mtm2.o\
-cel_mpc.o\
-cel_mms.o\
-cel_mmp.o\
-cel_agm.o\
 break.o\
-balance.o\
-adaptiv.o\
 ../gs_project.o
 
 ifndef NO_RANDOM_WALK
