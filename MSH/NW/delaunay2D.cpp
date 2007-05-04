@@ -11,6 +11,9 @@
 #include "geo_pnt.h"
 #include "geo_ply.h"
 #include "geo_sfc.h"
+#include <fstream>
+
+using namespace std;
 
 #ifdef MFC
 //#include <windows.h>
@@ -20,22 +23,6 @@
 #pragma comment(lib, "fdelaun2d-msvc.lib")
 
 volatile static int returnCodeForThread;	//thread
-
-//#define MYDEBUG
-//
-//void MyOutputDebugString( LPCSTR pszFormat, ...)
-//{
-//#if defined (MYDEBUG) && (_DEBUG)
-//    va_list	argp;
-//    char pszBuf[ 256];
-//    va_start(argp, pszFormat);
-//    vsprintf( pszBuf, pszFormat, argp);
-//    va_end(argp);
-//    OutputDebugString( pszBuf);
-//#else
-//	return;
-//#endif
-//}
 
 
 /**************************************************************************/
@@ -168,6 +155,9 @@ int ReadInputData(int *nex, int *nbk, int *nob, int *nib, int *ibex, int *ibno, 
 
 		if (isClosedSurface(psurface)) {
 			//#CLOSED BOUNDARY
+			if(*nex == KBD){
+				return 0;
+			}
 			ibex[*nex] = (int)psurface->polygon_point_vector.size();
 			nidm[*nex] = i+1;
 			bool clockwise = isPolylineClockwise(psurface->polygon_point_vector);
@@ -193,6 +183,9 @@ int ReadInputData(int *nex, int *nbk, int *nob, int *nib, int *ibex, int *ibno, 
 			continue;
 		}
 		//#OPEN BOUNDARY
+		if(*nbk == KBD){
+			return 0;
+		}
 		ibreak[*nbk] = (int)polyline_vector.at(i)->point_vector.size();
 		for (int j=0; j<ibreak[*nbk]; j++) {
 			CGLPoint* pt = polyline_vector.at(i)->point_vector.at(j);
@@ -240,6 +233,7 @@ int ReadInputData(int *nex, int *nbk, int *nob, int *nib, int *ibex, int *ibno, 
 	 
 /* History:
    02/2007     NW        1st Coding
+   05/2007     NW        Modified how to set the material no.
 **************************************************************************/
 int WriteOutputFile(char* filepath, int *node, double *x, double *y, int *nelm, int *mtj, int *idm)
 {
@@ -269,7 +263,7 @@ int WriteOutputFile(char* filepath, int *node, double *x, double *y, int *nelm, 
     //write Topology
     for (i=0; i<*nelm; i++) {
         fprintf( msh_file, "%d ", i);
-        fprintf( msh_file, " %d tri ", idm[i]);     
+        fprintf( msh_file, " %d tri ", idm[i]-1);	//NW Marerial No. starts zero 
     	fprintf(msh_file, "%d %d %d\n",*(mtj+i)-1,*(mtj+KTE+i)-1,*(mtj+KTE*2+i)-1);	
 		/*
 		//Prepared for Neighbourhood write out but no read function for this yet
@@ -283,6 +277,71 @@ int WriteOutputFile(char* filepath, int *node, double *x, double *y, int *nelm, 
 	fprintf( msh_file, "%s\n", "#STOP");
 	
 	fclose(msh_file);
+	return -1;
+}
+
+/**************************************************************************/
+/* MSH - Function: WriteOutputFileBIN
+                                                                          */
+/* Task: Output binary mesh file
+
+	 
+/* History:
+   04/2007     NW        1st Coding
+**************************************************************************/
+int WriteOutputFileBIN(char* filepath, int *node, double *x, double *y, int *nelm, int *mtj, int *idm)
+{
+	fstream *fem_msh_file = new fstream(filepath, ios::binary|ios::out);
+	if( fem_msh_file->fail() ) {
+		printf("ERROR: OUTPUT FILE OPEN ERROR - %s\n",filepath);
+        return 0;
+	}
+	//KEYWORD
+	char binary_char_9[9] = "#FEM_MSH";
+	fem_msh_file->write((char*)(&binary_char_9),sizeof(char[9]));
+	//--------------------------------------------------------------------
+	// TYPE
+	char binary_char_10[10] = "$PCS_TYPE";
+	fem_msh_file->write((char*)(&binary_char_10),sizeof(char[10]));
+    char dyn_char_G[17] = "GROUNDWATER_FLOW";
+    fem_msh_file->write((char*)(&dyn_char_G),sizeof(char[17]));
+	//--------------------------------------------------------------------
+	// NODES
+	char binary_char_7[7] = "$NODES";
+	fem_msh_file->write((char*)(&binary_char_7),sizeof(char[7]));
+	long binary_long = (long)(*node);
+	fem_msh_file->write((char*)(&binary_long),sizeof(binary_long));
+	double binary_double = 0.0;
+	for(int i=0;i<(long)*node;i++){
+		fem_msh_file->write((char*)(&i),sizeof(long));
+		fem_msh_file->write((char*)(&x[i]),sizeof(double));
+		fem_msh_file->write((char*)(&y[i]),sizeof(double));
+		binary_double = 0.0;
+		fem_msh_file->write((char*)(&binary_double),sizeof(double));
+	}
+	//--------------------------------------------------------------------
+	// ELEMENTS
+	char binary_char[10] = "$ELEMENTS";
+	fem_msh_file->write((char*)(&binary_char),sizeof(binary_char));
+	binary_long = (long)(*nelm);
+	fem_msh_file->write((char*)(&binary_long),sizeof(binary_long));
+	int binary_int=0;
+	for(int i=0; i<(*nelm); i++){
+		fem_msh_file->write((char*)(&i),sizeof(long));
+		binary_int = idm[i] -1;
+		fem_msh_file->write((char*)(&binary_int),sizeof(int));
+		binary_long = -1;
+		fem_msh_file->write((char*)(&binary_long),sizeof(binary_long));
+		fem_msh_file->write((char*)("tri"),sizeof(char[4]));
+		for(int j=0;j<3;j++){
+			long node_id = *(mtj+KTE*j+i)-1;
+			fem_msh_file->write((char*)(&node_id),sizeof(long));
+		}
+	}
+
+	fem_msh_file->flush();
+	fem_msh_file->close();
+
 	return -1;
 }
 
@@ -396,12 +455,19 @@ int ExecuteDelaunay2DProcess(char* outfilepath)
 		return 999;
 	}
 	if(ReadInputData(&nex, &nbk, &nob, &nib, ibex, (int*)ibno, nidm, ibreak, (int*)nbreak, px, py, pd)) {
-
 		triangulate(&kbd, &ktj, &kcm, &nex, ibex, ibno, nidm, &nbk, ibreak, nbreak, &nob, &nib, 
 					px, py, pd, &dpp, &stl, &node, &nelm, mtj, jac, idm, &ierrcode);
 
 		if (ierrcode == 0) {
-			WriteOutputFile(outfilepath, &node,px,py,&nelm,(int*)mtj,idm);
+			if (nelm < 1E6) {
+				WriteOutputFile(outfilepath, &node,px,py,&nelm,(int*)mtj,idm);
+			} else {
+				char bin_out_file_path[256];
+				strncpy(bin_out_file_path, outfilepath, sizeof(bin_out_file_path));
+				char* retbuf = strstr(bin_out_file_path, ".msh");
+				strcpy(retbuf, "_binary.msh");
+				WriteOutputFileBIN(bin_out_file_path, &node,px,py,&nelm,(int*)mtj,idm);
+			}
 		}
 	}
 
