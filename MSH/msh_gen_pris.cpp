@@ -160,6 +160,7 @@ void MSH_GetRFIElements (CFEMesh*m_msh)
 {
   // Not used: static long *element_nodes;
   int i=0;
+  int first_ele_type = 0;
   CElem* m_ele = NULL; //OKWW
   for (i=0;i<(int)msh_pris_elements_vector.size();i++)
   {
@@ -167,8 +168,12 @@ void MSH_GetRFIElements (CFEMesh*m_msh)
   }
   msh_pris_elements_vector.clear();
 
+  if ((int)m_msh->ele_vector.size() > 0)
+  first_ele_type =  m_msh->ele_vector[0]->GetElementType();
+
     for (i=0;i<(long)m_msh->ele_vector.size();i++)
-    {
+    {  
+        if(m_msh->ele_vector[i]->GetElementType() == first_ele_type){
         m_ele = m_msh->ele_vector[i];
         //OKWW element_nodes = m_ele->nodes;
         m_msh_elements = new CMSHElementsPrisGen;
@@ -185,8 +190,9 @@ void MSH_GetRFIElements (CFEMesh*m_msh)
         m_msh_elements->layernumber = 0;
 	    m_msh_elements->materialnumber= 0;  
 	    msh_pris_elements_vector.push_back(m_msh_elements);
+        }
     }
-  }
+}
 /*************************************************************************
  PRISGEN - Funktion: MSH_CreateFirstPrismlayer
                                                                           
