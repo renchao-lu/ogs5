@@ -127,7 +127,12 @@ class CElem:public CCore
       long GetNodeIndex(const int index) const  {return  nodes_index[index];} 
       void SetNodeIndex(const int index, const long g_index) {nodes_index[index]= g_index;} 
       void GetNodes(vec<CNode*>&ele_nodes)
-        {for (int i=0; i< (int) nodes.Size();i++) ele_nodes[i]= nodes[i];}
+        {
+#ifdef RFW_FRACTURE
+        ele_nodes.resize((int)nodes.Size());
+#endif
+        for (int i=0; i< (int) nodes.Size();i++) ele_nodes[i]= nodes[i];}
+        
       CNode* GetNode(const int index) { return nodes[index]; }
       void SetNodes(vec<CNode*>&  ele_nodes, const bool ReSize=false);
 	  int GetNodesNumber_H() const  {return nnodesHQ;}
@@ -199,6 +204,21 @@ class CElem:public CCore
        int selected;
       void FaceNormal(const int index0, const int index1, double*);   //YD
       //
+#ifdef RFW_FRACTURE
+     public:
+     //for now I will store element specific variables here, until I find something better to do with it
+     //If the aperture of the element is not stored, the CalculateFracAperture and PermeabilityFracAperture
+     //will have to be called many more times during each timestep.
+     bool Aperture_is_set;
+     bool Permeability_is_set;
+     double Aperture;
+     double Permeability;
+     bool in_frac;  //shows whether an element is in a fracture, this is slightly redundant given the next variable
+     long frac_number;   //shows which fracture a frac element belongs to
+     double dx, dy; //related to fracture segment orientation
+     double weight; 
+     void CalcDispGravityCenter(vector<double>&);
+#endif
 	  double *normal_vector; //WW normal_vector[3]; //OK
       void SetNormalVector(); //OK
 };

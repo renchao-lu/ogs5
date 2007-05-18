@@ -10,6 +10,10 @@ last modified
 // MSHLib
 #include "msh_elem.h"
 
+#ifdef RFW_FRACTURE
+#include "rf_pcs.h" //RFW 06/2006
+#endif
+
 #ifdef USE_TOKENBUF
 #include "tokenbuf.h"
 
@@ -62,6 +66,17 @@ CElem::CElem(const long Index):CCore(Index)
    gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
    normal_vector = NULL;
    area = -1.0; //WW
+
+#ifdef RFW_FRACTURE
+   Aperture_is_set=false;
+   Permeability_is_set=false;
+   Aperture=-1;
+   Permeability=-1;
+   in_frac=false; 
+   frac_number=-1;
+   dx=0; dy=0;
+   weight=0;
+#endif
 }
 /**************************************************************************
 MSHLib-Method: 
@@ -1757,7 +1772,73 @@ void CElem::SetNormalVector()
   }
   //----------------------------------------------------------------------
 }
+#ifdef RFW_FRACTURE
+/**************************************************************************
+MSHLib-Method: 
+Task:
+Programing:
+05/2006 RFW Implementation
+**************************************************************************/
+void CElem::CalcDispGravityCenter(vector<double>& disp_gravity_center)
+{
+    
+    int nidx_dm[3];
+    CRFProcess* m_pcs = NULL;
+    disp_gravity_center.resize(3);
+     //reset the value
+    disp_gravity_center[0] = 0.0;
+    disp_gravity_center[1] = 0.0;
+    disp_gravity_center[2] = 0.0;
 
+    // getting nodal indices for displacement values
+    if(M_Process||MH_Process)
+    {
+      m_pcs = PCSGet("DISPLACEMENT_X1",true);
+      nidx_dm[0] = m_pcs->GetNodeValueIndex("DISPLACEMENT_X1")+1;   //what is the +1 for? 
+      nidx_dm[1] = m_pcs->GetNodeValueIndex("DISPLACEMENT_Y1")+1;  
+      //This could be improved, in the newer versions there is a function called GetCoordinateFlag in the class CFEMesh.
+      //The function is useful to tell which coordinate axes are being used. 
+    }
+    vector<double> x_vec, y_vec /*, z_vec*/;  //vectors storing nodal coodinates
+
+    int size = 0;
+    // 1 Line, 2 Quad, 3 Hex, 4 Tri, 5 Tet, 6 Pris 
+    if(geo_type == 1) {size = 2;}
+    else if(geo_type == 2) {size = 4;}
+    else if(geo_type == 3) {size = 6;  cout<<"Function CElem::CalcDispGravityCenter does not handle type 3 elements\n"; abort();}
+    else if(geo_type == 4) {size = 3;}
+    else if(geo_type == 5) {size = 4;  cout<<"Function CElem::CalcDispGravityCenter does not handle type 5 elements\n"; abort();}
+    else if(geo_type == 6) {size = 6;  cout<<"Function CElem::CalcDispGravityCenter does not handle type 6 elements\n"; abort();}
+    else
+        cout << "ERROR1 in CElem::CalcDispGravityCenter.\n";
+    
+    //loop over element nodes
+    for(int i=0; i<size; ++i)
+    {
+        //getting nodal coordinates
+        x_vec.push_back(nodes[i]->X());
+        y_vec.push_back(nodes[i]->Y());
+        //z_vec.push_back(nodes[i]->Z());
+
+        //getting displacements
+        if(M_Process||MH_Process)
+        {
+            x_vec[i] += m_pcs->GetNodeValue(nodes[i]->GetIndex(), nidx_dm[0]);
+            y_vec[i] += m_pcs->GetNodeValue(nodes[i]->GetIndex(), nidx_dm[1]);
+            // if(max_dim>1) //once again, max_dim?  NEED TO CHECK THIS!!!!
+            // z_vec[i] += m_pcs->GetNodeValue(nodes[i]->GetIndex(), nidx_dm[2]);
+        }
+        //calculating displaced gravity center
+        disp_gravity_center[0] += x_vec[i];
+        disp_gravity_center[1] += y_vec[i];
+        //disp_gravity_center[2] += z_vec[i];
+    }
+    //calculating displaced gravity center
+    disp_gravity_center[0] /= (double)size;
+    disp_gravity_center[1] /= (double)size;
+    //disp_gravity_center[2] /= (double)nodes.Size();           
+}
+#endif
 //--------------------------------
 } // namespace Mesh_Group
 //========================================================================

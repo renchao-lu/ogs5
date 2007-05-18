@@ -139,7 +139,13 @@ class CSolidProperties
     void HeatConductivityTensor(const int dim, double* tensor, int group);
 	//   int GetCapacityMode() {return Capacity_mode;};  ??
     // 3. Elasticity
-    double Youngs_Modulus(double refence = 0.0);
+	#ifdef RFW_FRACTURE
+      double Youngs_Modulus(CElem* elem, double refence = 0.0);
+      double Get_Youngs_Min_Aperture(CElem *elem); //RFW, for fracture calc
+    #endif
+    #ifndef RFW_FRACTURE
+      double Youngs_Modulus(double refence = 0.0); 
+    #endif 
     double Poisson_Ratio() const {return PoissonRatio;}
     double Thermal_Expansion() const {return ThermalExpansion;}
     // 4. Plasticity
@@ -153,7 +159,12 @@ class CSolidProperties
     // Manipulators of data
     //-------------------------------------------------------------
     // 1. Elasticity
+    #ifndef RFW_FRACTURE
     void Calculate_Lame_Constant();
+    #endif
+    #ifdef RFW_FRACTURE
+    void  Calculate_Lame_Constant(CElem* elem);
+    #endif
     void ElasticConsitutive(const int Dimension, Matrix *D_e) const;
     // 2. Plasticity
     // 2.1 Drucker-Prager

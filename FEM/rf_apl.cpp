@@ -164,6 +164,15 @@ int RFPre_FEM(char* dateiname)
   }
   //......................................................................
   DOMRead(dateiname);
+  #ifdef RFW_FRACTURE
+  for(int i=0; i<mmp_vector.size(); ++i)
+    {
+      if( mmp_vector[i]->frac_num >0)
+      {
+        MSHSetFractureElements();
+      }
+    }
+  #endif
   if(mshType==100) return 1;
   /*-----------------------------------------------------------------------*/
   /* RF-Objekte konfigurieren, Verknüpfungen zwischen RF-Objekten */
@@ -386,6 +395,15 @@ int ExecuteRFTimeLoop(void)
 //OK    BalanceOverAllGeometryObjects();
     /* Ergebnisausgabe */
     OUTData(m_tim->time_current,aktueller_zeitschritt);
+    #ifdef RFW_FRACTURE 
+      for(int i=0; i<mmp_vector.size(); ++i)
+        {
+          if( mmp_vector[i]->frac_num >0)
+          {
+            MSHResetFractureElements(); // cout << "MSHResetFractureElements\n";
+          }
+        }
+    #endif
     // update current time step number
     m_tim->step_current++;
     if(m_tim->step_current==no_time_steps){

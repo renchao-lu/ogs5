@@ -31,6 +31,9 @@ using SolidProp::CSolidProperties;
 #include "rf_mmp_new.h"
 #include "rf_react.h"
 #include "elements.h"
+#ifdef RFW_FRACTURE
+#include "fem_ele.h"
+#endif
 #include "gs_project.h"
 // Gauss point veclocity
 #include "fem_ele_std.h"
@@ -99,6 +102,10 @@ CMediumProperties::CMediumProperties(void)
   geo_area = 1.0;
   geo_type_name = "DOMAIN"; //OK
   saturation_max[0] = saturation_max[1] = saturation_max[2] = 1.0; //WW
+  #ifdef RFW_FRACTURE
+   frac_num = 0;
+   fracs_set = 0;
+  #endif
 }
 
 /**************************************************************************
@@ -619,6 +626,9 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 //12.1 PERMEABILITY_FUNCTION_DEFORMATION
 //------------------------------------------------------------------------
     if(line_string.find("$PERMEABILITY_FUNCTION_DEFORMATION")!=string::npos) { //subkeyword found
+      #ifdef RFW_FRACTURE
+      relative_permeability_function.push_back("PERMEABILITY_FUNCTION_DEFORMATION");
+      #endif
       in.str(GetLineFromFile1(mmp_file));
       in >> permeability_model;
       switch(permeability_model) {
@@ -638,6 +648,9 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 //12.2 PERMEABILITY_FUNCTION_PRESSURE
 //------------------------------------------------------------------------ 
    if(line_string.find("$PERMEABILITY_FUNCTION_PRESSURE")!=string::npos) { //subkeyword found
+     #ifdef RFW_FRACTURE
+     relative_permeability_function.push_back("PERMEABILITY_FUNCTION_PRESSURE");
+     #endif
      in.str(GetLineFromFile1(mmp_file));
      in >> permeability_pressure_model;
      switch(permeability_pressure_model) {
@@ -718,7 +731,10 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 //------------------------------------------------------------------------ 
     //....................................................................
     if(line_string.find("$PERMEABILITY_SATURATION")!=string::npos) { //subkeyword found
-     int no_fluid_phases =(int)mfp_vector.size();
+      #ifdef RFW_FRACTURE
+      relative_permeability_function.push_back("PERMEABILITY_SATURATION");
+      #endif
+      int no_fluid_phases =(int)mfp_vector.size();
        for(i=0;i<no_fluid_phases;i++){
          in.str(GetLineFromFile1(mmp_file));
          in >> permeability_saturation_model[i];
@@ -784,6 +800,9 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 //12.4 PERMEABILITY_FUNCTION_STRESS
 //------------------------------------------------------------------------ 
    if(line_string.find("$PERMEABILITY_FUNCTION_STRESS")!=string::npos) { //subkeyword found
+     #ifdef RFW_FRACTURE
+     relative_permeability_function.push_back("PERMEABILITY_FUNCTION_STRESS");
+     #endif
      in.str(GetLineFromFile1(mmp_file));
      in >> permeability_model;
       switch(permeability_model) {
@@ -803,6 +822,9 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 //12.5 PERMEABILITY_FUNCTION_VELOCITY
 //------------------------------------------------------------------------ 
    if(line_string.find("$PERMEABILITY_FUNCTION_STRESS")!=string::npos) { //subkeyword found
+     #ifdef RFW_FRACTURE
+     relative_permeability_function.push_back("PERMEABILITY_FUNCTION_STRESS");
+     #endif
      in.str(GetLineFromFile1(mmp_file));
      in >> permeability_model;
       switch(permeability_model) {
@@ -823,6 +845,9 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 //------------------------------------------------------------------------
 	
 	if(line_string.find("$PERMEABILITY_FUNCTION_POROSITY")!=string::npos) { //subkeyword found
+	  #ifdef RFW_FRACTURE
+      relative_permeability_function.push_back("PERMEABILITY_FUNCTION_POROSITY");
+      #endif
       in.str(GetLineFromFile1(mmp_file));
       in >> permeability_porosity_model;
       switch(permeability_porosity_model) {
@@ -844,6 +869,20 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
       in.clear();
       continue;
     }
+
+#ifdef RFW_FRACTURE
+    //------------------------------------------------------------------------
+    //12.7 PERMEABILITY_FRAC_APERTURE
+    //------------------------------------------------------------------------
+	
+	if(line_string.find("$PERMEABILITY_FRAC_APERTURE")!=string::npos) { //subkeyword found
+      relative_permeability_function.push_back("PERMEABILITY_FRAC_APERTURE");
+      in.str(GetLineFromFile1(mmp_file));
+      in >> frac_perm_average_type >>roughness;
+      in.clear();
+      continue;
+    }
+#endif
 
     //....................................................................
     if(line_string.find("$CAPILLARY_PRESSURE")!=string::npos) { //subkeyword found
@@ -1000,6 +1039,30 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
       continue;
     }
 //------------------------------------------------------------------------
+#ifdef RFW_FRACTURE
+//------------------------------------------------------------------------
+//FRACTURE DATA, namely how many fractures, what are their names? RFW 11/2005
+//------------------------------------------------------------------------
+    if(line_string.find("$FRACTURE_DATA")!=string::npos) { //subkeyword found
+      in.str(GetLineFromFile1(mmp_file));
+      in >> frac_num;  
+       frac_names.clear();
+      for(long i=0; i!=frac_num; ++i)
+      {
+          string read_frac;
+          in >> read_frac;
+         
+          frac_names.push_back(read_frac);
+      }
+      frac_perm.resize(frac_names.size());
+      avg_aperture.resize(frac_names.size());
+      closed_fraction.resize(frac_names.size());
+      in.clear();
+
+      continue;
+     }
+//------------------------------------------------------------------------- 
+#endif
   }
   return position;
 }
@@ -4305,8 +4368,39 @@ if(permeability_model==2)
       }
       break;
   }
+#ifdef RFW_FRACTURE
+  double Krel = RelativePermeability(index); // rfw cmcd
+
+  for (int i = 0; i< geo_dimension*geo_dimension;i++)  
+      tensor[i]*=Krel;
+
+#endif
   return tensor;
 }
+#ifdef RFW_FRACTURE
+double CMediumProperties::RelativePermeability (long index) //rfw cmcd
+{
+    double Krel = 1.0;
+    string name;
+    int size = (int)relative_permeability_function.size();
+    for(int i=0; i<size; ++i)
+    {
+        string name = relative_permeability_function[i];
+        //if (name == "PERMEABILITY_FUNCTION_DEFORMATION") Krel *= Call to function not yet in existence;
+        //if (name == "PERMEABILITY_FUNCTION_PRESSURE") Krel *= PermeabilityPressureFunction(index,double *gp,double theta);
+        //NOTE: the function PermeabilitySaturationFunction is overloaded, this must be dealt with somehow
+        //if (name == "PERMEABILITY_SATURATION") Krel *= PermeabilitySaturationFunction(long number,double*gp,double theta, int phase);
+        //if (name == "PERMEABILITY_FUNCTION_STRESS") Krel *= Call to function not yet in existence;
+        //if (name == "PERMEABILITY_FUNCTION_VELOCITY") Krel *= Call to function not yet in existence;
+        //if (name == "PERMEABILITY_FUNCTION_POROSITY") Krel *= PermeabilityPorosityFunction(index,double *gp,double theta);
+#ifdef RFW_FRACTURE
+        if (name == "PERMEABILITY_FRAC_APERTURE") Krel *= PermeabilityFracAperture(index);
+        
+#endif
+    }
+    return Krel;
+}
+#endif
 //------------------------------------------------------------------------
 //12.(i) PERMEABILITY_FUNCTION_DEFORMATION
 //------------------------------------------------------------------------
@@ -4942,6 +5036,493 @@ double CMediumProperties::PermeabilityPorosityFunction(long number,double *gp,do
 	return k_rel;
 }
 
+//---------------------------------------------------------------------------------
+//12.(vii) PERMEABILITY_FUNCTION_FRAC_APERTURE
+//RFW 07/2005
+//---------------------------------------------------------------------------------
+#ifdef RFW_FRACTURE
+double CMediumProperties::PermeabilityFracAperture(long index)
+{
+  // if(index==0)
+  //  cout<<"PermeabilityFracAperture.\n";
+    
+  CElem *elem = NULL;
+  CElem *elem2 = NULL;
+  CFEMesh* m_msh = NULL;
+  CSolidProperties* mat_pointer;
+  CMediumProperties *m_mmp = NULL;
+  double ApertureSum=0,ApertureAvg=0, normalised_perm, min_aperture,
+              permeability, c /*c is the fraction of fracture that is closed*/, WeightSum=0;
+  double Sum_Squared_Diffs=0, Std_Dev =0, closed=0, total_count=0;
+  vector<double> aperture_list; 
+  int i;
+  
+  m_msh = fem_msh_vector[0];  // Something must be done later on here.
+  elem = m_msh->ele_vector[index]; 
+  int group = elem->GetPatchIndex();
+  m_mmp = mmp_vector[group];
+
+  double mini=100, roughness_corr=1, tortuosity_corr=1; 
+
+  if(elem->in_frac)// RFW 18/11/2005
+  {
+        if(!elem->Permeability_is_set) //if 1 
+        {
+            mat_pointer = msp_vector[group];
+            min_aperture = mat_pointer->Get_Youngs_Min_Aperture(elem);
+
+        if(m_mmp->fracs_set!=1) //if 2
+        {
+          m_mmp->fracs_set=1;
+          switch(frac_perm_average_type[0]) {
+          //******************************************************************************************************
+              case 'A': // -------------------arithmetic average----------------------
+                  for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
+                  {  
+                      elem2 = m_msh->ele_vector[i];
+                      if(elem->frac_number == elem2->frac_number )  //are they part of the same fracture?
+                      {
+                          if (elem2->Aperture_is_set) {  //change this to simply calling CalculateFracAperture, it will check if aperture has been set
+
+                              if( (elem2->Aperture-min_aperture) >= 0.00000001){
+                                  ApertureSum += (elem2->Aperture-min_aperture)*elem2->weight;
+                                  aperture_list.push_back( (elem2->Aperture-min_aperture) );
+                                  WeightSum += elem2->weight;
+                              }
+                              else{
+                                  closed = closed + elem2->weight;
+                              }
+                              total_count = total_count + elem2->weight;
+                          }
+                      }
+                  }
+                   
+                  ApertureAvg = (ApertureSum / WeightSum);
+
+                  //roughness correction, after Zimmerman and Bovarsson 1996
+                  if(roughness[0]=='C' || roughness[0]=='c')
+                  {
+                      for(i=0; i!=(int)aperture_list.size(); ++i)
+                      {
+                          Sum_Squared_Diffs += pow((aperture_list[i] - ApertureAvg),2);
+                      }
+                      Std_Dev = pow((Sum_Squared_Diffs/(double)aperture_list.size()),0.5);
+                  }
+                  else Std_Dev = 0;
+
+                  //calculating the peremability, permeability is the average fracture perm, normalised_perm is the perm of the current frac element
+                  c = closed/total_count; //closed fractioncorrection afer Z and B 1996, and Walsh 1981
+                  if(index==1)
+                      cout<<"\nTotal weight = "<< total_count<<endl;
+                  
+                  tortuosity_corr = (1-c)/(1+c);  
+                  if(Std_Dev < 0.73*ApertureAvg)
+                  {
+                      roughness_corr = 1 - 1.5*pow(Std_Dev,2.0)/pow(ApertureAvg, 2.0);
+                  }
+                  else
+                  {
+                      roughness_corr = 0.2;
+                  }
+                  //permeability = (  pow(ApertureAvg, 2.0) / 12  ) * tortuosity_corr * roughness_corr;
+                  //normalised_perm = permeability * ApertureAvg / (elem->Aperture);
+              break;
+          //******************************************************************************************************
+              case 'G': // -------------------geometric average----------------------
+              for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
+                  {  
+                      elem2 = m_msh->ele_vector[i];
+                      if(elem->frac_number == elem2->frac_number )//are they part of the same fracture?
+                      {
+                          if (elem2->Aperture_is_set) {
+                              if( (elem2->Aperture-min_aperture) > 0.0000001){
+                                  ApertureSum = ApertureSum + elem2->weight*log(elem2->Aperture-min_aperture);
+                                  aperture_list.push_back( (elem2->Aperture-min_aperture));
+                                  WeightSum += elem2->weight;
+                              }
+                              else
+                                  closed = closed + elem2->weight;
+
+                              total_count = total_count + elem2->weight;
+	                      }
+                      }
+                  }
+                  ApertureAvg = exp(ApertureSum/WeightSum);   
+                  
+                  //roughness correction, after Zimmerman and Bovarsson 1996
+                  //This roughness correction may not really be appropriate here, as this is and arithmetic standard deviation; I'm
+                  //not very confident about the math here.
+                  if(roughness[0]=='C' || roughness[0]=='c')
+                  {
+                      for(i=0; i!=(int)aperture_list.size(); ++i)
+                      {
+                          Sum_Squared_Diffs += pow((aperture_list[i] - ApertureAvg),2);
+                      }
+                      Std_Dev = pow((Sum_Squared_Diffs/(double)aperture_list.size()),0.5);
+                  }
+
+                  //calculating the peremability, permeability is the average fracture perm, normalised_perm is the perm of the current frac element
+                  c = closed/total_count; //closed fraction
+                  if(Std_Dev < 0.73*ApertureAvg)
+                  {
+                      roughness_corr = 1 - 1.5*pow(Std_Dev,2.0)/pow(ApertureAvg, 2.0);
+                  }
+                  else
+                  {
+                      roughness_corr = 0.2;
+                  }
+                  //permeability = (  pow(ApertureAvg, 2.0) / 12  ) * tortuosity_corr * roughness_corr;
+                  //normalised_perm = permeability * ApertureAvg / (elem->Aperture);
+              break;
+          //******************************************************************************************************
+              case 'H': // -------------------harmonic average----------------------
+              for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
+                  {  
+                      elem2 = m_msh->ele_vector[i];
+                      if(elem->frac_number == elem2->frac_number )
+                      {
+                          if (elem2->Aperture_is_set) {
+                              if( (elem2->Aperture-min_aperture) > 0.0000001){
+                                  ApertureSum = ApertureSum + ( elem2->weight/((elem2->Aperture-min_aperture)) );
+                                  WeightSum += elem2->weight;
+                              }
+                              else
+                                  closed = closed + elem2->weight;
+
+                              total_count = total_count + elem2->weight;
+	                      }
+                      }
+                  }
+                   
+                  ApertureAvg = WeightSum / ApertureSum;    
+             
+                  //no roughness correction is available here, the harmonic mean is already an extreme case
+                  if( (roughness[0]=='C' || roughness[0]=='c') && index==0) //error message should print once
+                  {
+                      cout<<"Error in CMediumProperties:: Roughness correction not implemented for harmonic mean.\n";
+                  }
+
+                  //calculating the peremability, permeability is the average fracture perm, normalised_perm is the perm of the current frac element
+                  c = closed/total_count; //closed fraction, also not used for perm calculation with harmonic mean
+
+              break;
+          //******************************************************************************************************
+              default: // ---------------------------error------------------------------
+                  cout << "Error in CMediumProperties::PermeabilityFracAperture.  No averaging type is set.\n";
+                  abort();
+              break;
+          //******************************************************************************************************
+          }   //end of switch case
+          //the values are stored in the mmp
+
+          permeability = (  pow(ApertureAvg, 2.0) / 12  ) * tortuosity_corr * roughness_corr;
+          normalised_perm = permeability * ApertureAvg / (elem->Aperture);
+
+          m_mmp->frac_perm[elem->frac_number] = permeability;
+          m_mmp->avg_aperture[elem->frac_number] = ApertureAvg;
+          m_mmp->closed_fraction[elem->frac_number] = c;
+        }  //end if 2
+        else
+        {
+          permeability = m_mmp->frac_perm[elem->frac_number];
+          ApertureAvg = m_mmp->avg_aperture[elem->frac_number];
+          
+          normalised_perm = permeability * ApertureAvg / (elem->Aperture);
+        }
+
+        //the values stored in elem are used for flow calculation... actually, maybe not??  Check this!
+        elem->Permeability = normalised_perm;
+        elem->Permeability_is_set = true;
+
+        if(index==0){
+            cout <<"Some numbers from PermeabilityFracAperture:\n";
+            cout << " \nAvg Aper = "<<ApertureAvg<<"   \nk= " << permeability <<"   \nk_norm= " << normalised_perm<<"\n";
+            cout << " \nRoughness_corr = "<<roughness_corr<<"   \nTortuosity_corr = " << tortuosity_corr <<"\n";
+            cout << " \nStd_Dev = "<<Std_Dev<<"   \nAvg Aper = " << ApertureAvg <<"\n";
+        }
+    }//end if 1
+    else  // if the permeability has aleady been set for this timestep
+    {
+        normalised_perm = elem->Permeability;
+    }
+    return normalised_perm;
+ }
+ else // RFW 18/11/2005
+ {
+    normalised_perm = 1e-9; //this is a kind of default value but will rarely be used, need to fix this in the future
+    elem->Permeability = normalised_perm;
+    return normalised_perm;
+ }
+}
+
+/*************************************************************************
+ ROCKFLOW - Funktion: CSolidProperties::CalculateFracAperture
+ Aufgabe:
+   Calculate the aperture of the fracture at a given element, currently
+   aperture size is only in y-direction, and only for 2D triangles.
+ Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+   E: const long index   :  element index
+   E: const double dy    :  step size for search for frac boundary 
+ Ergebnis:
+   Returns the aperture as a double
+ Programmaenderungen:
+   04/2005 RFW Implementierung
+*************************************************************************/
+double CMediumProperties::CalculateFracAperture(CElem* elem, double delta_y)
+{
+// TEST *************
+//cout << "ELEMENT: "<<index <<endl;
+// TEST *************
+
+vector<double> intercept;
+double aperture=0, dy, dx;
+vector<double> centroid;
+CElem *last_elem=NULL, *current_elem=NULL;
+
+vec<CElem*> neighbor_last, neighbor_current, neighbor_neighbor_last;
+//the next line is here because Wenqings vec class destructor does not like empty vec's, and there is no guarantee these vecs will be filled in any given call to this function
+neighbor_last.resize(1); neighbor_current.resize(1); neighbor_neighbor_last.resize(1);
+long num_face1, num_face2;
+bool at_frac_bound;
+long step, current_index, last_index=elem->GetIndex(), group, index = elem->GetIndex();
+vector<CElem*> neighbor_vec;
+bool neighbors, shared_neighbors, neighbors_neighbor;
+CFEMesh* msh_pointer = NULL;
+msh_pointer = fem_msh_vector[0];  // Something must be done later on here.
+        
+if(index==0)
+  cout<<"CalculateFracAperture.\n";
+
+
+if(elem->in_frac) // RFW 18/11/2005  
+{
+    if(!elem->Aperture_is_set) //if the aperture has not already been set for this timestep
+    {       
+        elem->CalcDispGravityCenter(centroid);
+
+        for(int k=-1; k!=3; k=k+2  )  //start big for
+        {
+        //assigning search directions
+        dx = elem->dx*delta_y*k;
+        dy = elem->dy*delta_y*k;
+ 
+        at_frac_bound = false;
+        current_index=index;
+        step = 1;
+        group=0;
+        neighbors=false;  shared_neighbors=false;  neighbors_neighbor=false;
+        at_frac_bound=false;
+        neighbor_vec.clear();
+
+        while(!at_frac_bound && step<10000) //second condition to avoid infinite loop
+        {
+
+            last_index = current_index;
+
+
+            current_index = MSHWhatElemIsPointIn(centroid[0]+(step*dx), centroid[1]+(step*dy), current_index);
+            step = step + 1;
+            //************************
+            if(current_index >= 0)
+            {
+            if(msh_pointer->ele_vector[current_index]->in_frac && current_index >=0)
+            { }
+            else if(current_index >= 0)  //else 1, current element is outside fracture
+            {
+            at_frac_bound = true;
+
+            if(last_index == current_index)
+                cout << "PROBLEM IN: CalculateFracAperture, ~line 5280 of rf_mmp_new.\n";
+
+                last_elem = msh_pointer->ele_vector[last_index];
+                num_face1 = last_elem->GetFacesNumber();
+                neighbor_last.resize(num_face1);
+                last_elem->GetNeighbors(neighbor_last);
+
+                current_elem = msh_pointer->ele_vector[current_index];
+                num_face2 = current_elem->GetFacesNumber();
+                neighbor_current.resize(num_face2);
+                current_elem->GetNeighbors(neighbor_current);               
+            
+                for(long i =0; i!=num_face1; ++i)
+                { 
+                    if(neighbor_last[i] ==current_elem){
+                    neighbors = true;
+                    neighbor_vec.push_back(last_elem);
+                    neighbor_vec.push_back(current_elem);
+                    }
+                }
+         
+                if(!neighbors)
+                { //else 2
+                    for(long i =0; i!=num_face1; ++i)
+                    {
+                        for(long j =0; j!=num_face2; ++j)
+                        {
+                            //one of the neighbours of the elements borders one of the neighbors of the other
+                            if( neighbor_last[i]==neighbor_current[j] && (neighbor_last[i]!=NULL && neighbor_current[j]!=NULL) )
+                            {
+                                shared_neighbors = true;
+                                
+                                if(neighbor_current[j]->in_frac)
+                                {  
+                                    neighbor_vec.push_back(neighbor_current[j]);
+                                    neighbor_vec.push_back(current_elem);
+                                }
+                                else
+                                {
+                                    neighbor_vec.push_back(last_elem);
+                                    neighbor_vec.push_back(neighbor_current[j]);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if(!neighbors)
+                {
+                bool match = false;
+	            vector<CNode*> matching_nodes;
+	            for(long i =0; i!=num_face1; ++i){
+	                for(long j =0; j!=num_face2; ++j){
+                        if(neighbor_last[i]!=NULL && neighbor_current[j]!=NULL)
+                        {
+                            match = MSHGetCommonNodes(neighbor_last[i], neighbor_current[j], matching_nodes);
+                            //one of the neighbours of the elements borders one of the neighbors of the other
+                            if(match && matching_nodes.size()>1 ){
+                                neighbors_neighbor = true;
+                                if( neighbor_current[j]->in_frac && neighbor_last[i]->in_frac ) {
+                                    neighbor_vec.push_back(neighbor_current[j]);
+                                    neighbor_vec.push_back(current_elem);
+                                    }
+                                else if( !neighbor_current[j]->in_frac && !neighbor_last[i]->in_frac) {
+                                    neighbor_vec.push_back(last_elem);
+                                    neighbor_vec.push_back(neighbor_last[i]);
+                                    }
+                                else if( !neighbor_current[j]->in_frac && neighbor_last[i]->in_frac ) {
+                                    neighbor_vec.push_back(neighbor_last[i]);
+                                    neighbor_vec.push_back(neighbor_current[j]);
+                                    }
+                                else
+                                    cout << "ERROR 4 in CalculateFracAperture, element: "<<index<<endl ;               
+                            }
+                        }
+                    }
+                }
+                }
+        	    
+                vector<double> xnode, ynode, xstep, ystep;
+                xnode.resize(2); ynode.resize(2);  
+                xstep.resize(2); ystep.resize(2); 
+                if(neighbors || shared_neighbors || neighbors_neighbor)
+                {
+                    bool good_intersect = false, match = false;
+                    CElem *neighbor_0, *neighbor_1;
+                    neighbor_0 = neighbor_vec[0];
+                    neighbor_1 = neighbor_vec[1];
+                    vector<CNode*> matching_nodes;
+                    for(long r=0; r!=(long)neighbor_vec.size(); r=r+2)
+                    {
+                    match = MSHGetCommonNodes(neighbor_vec[r], neighbor_vec[r+1], matching_nodes);
+                    if(match && !good_intersect) //this if startement looks rather strange
+                    {
+                        for(int m=0; m!=(int)matching_nodes.size(); ++m)
+                        {
+                          //in order to let this function run when there is no deformation  
+                          //IMPORTANT NOTE: this has not been tested properly
+                            for(int i=0;i<(int)pcs_vector.size();i++){ 
+                              m_pcs = pcs_vector[i];
+                              if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
+                              {
+                                xnode[m] = matching_nodes[m]->X_displaced();  
+                                ynode[m] = matching_nodes[m]->Y_displaced();                                     
+                              }
+                              else
+                              {
+                                xnode[m] = matching_nodes[m]->X();  
+                                ynode[m] = matching_nodes[m]->Y(); 
+                              }
+                            } 
+                        }
+                        xstep[0] = centroid[0]+(step*dx)-3*dx;//2 steps back
+                        xstep[1] = centroid[0]+(step*dx);         //2 steps forward
+                        ystep[0] = centroid[1]+(step*dy)-3*dy; //2 steps back
+                        ystep[1] = centroid[1]+(step*dy);         //2 steps forward
+                        good_intersect = LineSegmentIntersection(xnode, ynode, xstep, ystep, intercept); 
+                    }
+                    }
+                    if(!good_intersect) 
+                    {
+                        cout<< "ERROR2 in CalculateFracAperture, element: " <<index<<endl;
+                        intercept.push_back( centroid[0]+(step*dx)-1.5*dx );
+                        intercept.push_back( centroid[1]+(step*dy)-1.5*dy );
+                    }
+                }
+                else
+                { //else 3
+
+                intercept.push_back( centroid[0]+(step*dx)-1.5*dx );
+                intercept.push_back( centroid[1]+(step*dy)-1.5*dy );
+                cout<< "ERROR3 in CalculateFracAperture, element: " <<index<<".  INSTABILITY??"<<endl;
+
+                }//end else 3
+                //  //end else 2
+                
+            }//end else 1
+            }
+            else // else 4, point has jumped outside of model boundaries
+            {
+                at_frac_bound = true;
+                intercept.push_back( centroid[0]+(step*dx)-1.5*dx );
+                intercept.push_back( centroid[1]+(step*dy)-1.5*dy );
+                cout<< "ERROR5 in CalculateFracAperture, element: " <<index<<"  current_index: "<<current_index<<endl;
+                cout<< "  Intersection with model boundary."<<endl;
+            }//end else 4
+        } // end while
+    }//end big for
+    double xtop, xbot, ytop,ybot;
+    xtop = intercept[0];
+    xbot = intercept[2];
+    ytop = intercept[1];
+    ybot = intercept[3];
+
+    aperture = sqrt(  pow( (intercept[3]-intercept[1]),2 )  +  pow( (intercept[2]-intercept[0]),2 )  );
+    //just for testing****************
+    if(index ==0) 
+    {
+        cout << "Some numbers from CalculateFracAperture:\n";
+        cout << "index"<<"\t "<< "dx"<<"\t\t "<< "dy"<<"\t "<<"centroid[0]" <<"\t "<<"centroid[1]"<<"\t "<<"aperture"<<"\t "<<"intercept[0]"<<"\t "<<"intercept[1]"
+            <<"\t "<<"intercept[2]"<<"\t "<<"intercept[3]"<<endl;
+    }
+        if(index==0 || index==1 || index == 531)
+    {
+    cout << index<<"\t "<< dx<<"\t "<< dy<<"\t "<<centroid[0] <<"\t "<<centroid[1]<<"\t "<<aperture<<"\t "<<intercept[0]<<"\t "<<intercept[1]
+            <<"\t "<<intercept[2]<<"\t "<<intercept[3]<<endl;
+    }
+    if(index==1983){ 
+        cout<< "I'm here.\n";}
+    //just for testing****************
+
+    elem->Aperture = aperture;
+    elem->Aperture_is_set = true;
+    //cout << "Element "<<index<<"\n";
+    return aperture;
+    }
+    else  // if the aperture has already been set for this timestep
+    {
+    aperture = elem->Aperture;
+    return aperture;
+    }
+}
+else  // RFW 18/11/2005
+{
+    cout << "Element "<<index<<"neglected from fracture calculations.\n";
+    aperture = -10;
+    return aperture;
+}
+}
+
+#endif
 //------------------------------------------------------------------------
 //13. CAPILLARY_PRESSURE_FUNCTION
 //------------------------------------------------------------------------

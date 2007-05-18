@@ -69,4 +69,10 @@ extern CFEMesh* MSHGet(string mat_type_name); //OK
 extern CFEMesh* MSHGet(string pcs_type_name,string mat_type_name); //OK
 extern CFEMesh* MSHGetGEO(string); //OK
 extern int MSHSetMaxMMPGroups(); //OK
+#ifdef RFW_FRACTURE
+extern bool MSHGetCommonNodes(CElem*, CElem*, vector<CNode*>&);
+extern void MSHSetFractureElements(void);
+extern void MSHResetFractureElements(void);
+extern long MSHWhatElemIsPointIn(double x, double y, long index); //RFW
+#endif
 #endif

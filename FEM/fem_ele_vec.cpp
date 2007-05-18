@@ -1151,8 +1151,14 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
 
   if(PModel==1||PModel==10) smat->CalulateCoefficent_DP();
   if(PModel!=3)
-  {
-      smat->Calculate_Lame_Constant();
+  {	  
+	  #ifdef RFW_FRACTURE
+      smat->Calculate_Lame_Constant(GetMeshElement());
+      #endif
+      #ifndef RFW_FRACTURE
+      smat->Calculate_Lame_Constant(); 
+      #endif
+
       smat->ElasticConsitutive(ele_dim, De);  
   }
   //
@@ -2286,7 +2292,12 @@ bool CFiniteElementVec::LocalAssembly_CheckLocalization(CElem* MElement)
 
      if(!eleV_DM->Localized)
      {
-        smat->Calculate_Lame_Constant();
+        #ifdef RFW_FRACTURE
+        smat->Calculate_Lame_Constant(MeshElement);
+        #endif
+        #ifndef RFW_FRACTURE
+        smat->Calculate_Lame_Constant(); 
+        #endif
         smat->CalulateCoefficent_DP();
         
 		MatGroup = MeshElement->GetPatchIndex();
@@ -2542,7 +2553,13 @@ void CFiniteElementVec::LocalAssembly_EnhancedStrain(const int update)
   }
 
   // Elastic modulus
+  #ifdef RFW_FRACTURE
+  smat->Calculate_Lame_Constant(MeshElement);
+  #endif
+  #ifndef RFW_FRACTURE
   smat->Calculate_Lame_Constant(); 
+  #endif
+  
   smat->ElasticConsitutive(ele_dim, De);  
      
   // Plasticity

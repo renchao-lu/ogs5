@@ -1648,10 +1648,27 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
     for(k=0;k<no_variables;k++)
       tec_file << nod_value_vector[k] << " ";
     //
+    #ifdef RFW_FRACTURE
+    for(int i=0; i<mmp_vector.size(); ++i)
+    {
+      if( mmp_vector[i]->frac_num >0)
+      {
+        for(int j=0; j<mmp_vector[i]->frac_num; ++j)
+        {
+          tec_file << mmp_vector[i]->frac_names[j]<<"_k "<< mmp_vector[i]->frac_names[j] <<"_aper " 
+                    <<mmp_vector[i]->frac_names[j] <<"_closed ";
+        }
+      }
+    }
+    #endif
+    
     if(dm_pcs) //WW
        tec_file<< " p_(1st_Invariant) "<<" q_(2nd_Invariant)  "<<" Effective_Strain";
     tec_file << endl;
     tec_file << "ZONE T=\"POINT=" << geo_name << "\"" << endl; //, I=" << anz_zeitschritte << ", J=1, K=1, F=POINT" << endl;
+  
+
+  
   }
   // For deformation
   int ns = 4;
@@ -1747,6 +1764,20 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
         //OK cout << gnode << " " << flux_nod << " " << flux_sum << endl;
       }
     }
+    //....................................................................    
+    #ifdef RFW_FRACTURE
+    for(int i=0; i<mmp_vector.size(); ++i)
+    {
+      if( mmp_vector[i]->frac_num >0)
+      {
+        for(int j=0; j<mmp_vector[i]->frac_num; ++j)
+        {
+          tec_file << mmp_vector[i]->frac_perm[j]<<" "<< mmp_vector[i]->avg_aperture[j] <<" " 
+            <<mmp_vector[i]->closed_fraction[j] <<" ";
+        }
+      }
+    }
+    #endif
     //....................................................................
     if(dm_pcs) //WW
     {

@@ -61,12 +61,19 @@ class CMediumProperties
   void Write(fstream*);
   void WriteTecplot(string);
 	double* PermeabilityTensor(long index);
+#ifdef RFW_FRACTURE
+    double RelativePermeability (long index); //RW/CMCD03/06
+#endif
 	double Porosity(CFiniteElementStd* assem=NULL);//CMCD 9/2004 GeoSys 4
 	double TortuosityFunction(long number,double*gp,double theta, CFiniteElementStd* assem=NULL);//CMCD 9/2004 GeoSys 4
 	double NonlinearFlowFunction(long number, double *gp, double theta);//CMCD 9/2004 GeoSys 4
 	double PermeabilityPressureFunction(long index,double *gp,double theta);//CMCD 9/2004 GeoSys 4
   double PermeabilitySaturationFunction(long number,double*gp,double theta,int phase);//CMCD 9/2004 GeoSys 4
 	double PermeabilityPorosityFunction(long index,double *gp,double theta);//CMCD 9/2004 GeoSys 4
+#ifdef RFW_FRACTURE
+    double PermeabilityFracAperture(long index); //RFW 07/2005
+    double CalculateFracAperture(CElem* elem, double search_step); //RFW 04/2005
+#endif
   double CapillaryPressureFunction(long number,double*gp,double theta,int phase,double saturation);//CMCD 9/2004 GeoSys 4
   double StorageFunction(long number,double*gp,double theta);//CMCD 9/2004 GeoSys 4
   double HeatCapacity(long number, double*gp,double theta, CFiniteElementStd* assem=NULL);
@@ -126,6 +133,22 @@ class CMediumProperties
   double permeability_tensor[9];
   string permeability_tensor_type_name;
   int permeability_tensor_type;
+#ifdef RFW_FRACTURE
+  vector<string > relative_permeability_function;//RW/CMCD 03/06
+#endif
+
+#ifdef RFW_FRACTURE
+    //---------------------------  RFW 07/2005
+    string frac_perm_average_type; 
+    string roughness; 
+   //---------------------------  RFW 11/2005
+    long frac_num, fracs_set;
+    vector<string> frac_names;
+    vector<double> frac_perm;
+    vector<double> avg_aperture;
+    vector<double> closed_fraction;
+    //---------------------------  RFW 11/2005
+#endif
 	int permeability_pressure_model;
 	double permeability_pressure_model_values[10];
 	double permeability_pressure_rel;

@@ -22,6 +22,9 @@ using namespace std;
 #include "nodes.h"
 #include "elements.h"
 
+#ifdef RFW_FRACTURE
+#include"rf_mmp_new.h"
+#endif
 #ifdef USE_TOKENBUF
 #include "tokenbuf.h"
 #endif
@@ -1252,3 +1255,488 @@ CFEMesh* MSHGetGEO(string geo_name)
   //----------------------------------------------------------------------
   return NULL;
 }
+#ifdef RFW_FRACTURE
+/**************************************************************************************
+ ROCKFLOW - Funktion: ELEGetCommonNodes
+ Aufgabe:
+   Get the nodes shared by 2 elements
+ Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+   E: const CElem* elem1 and elem2  :  element pointers
+   R: vec<CNode*> nodes  :  a vector containing pointers to the matching (i.e. common) nodes
+ Ergebnis:
+   Returns the value true if elements are actually neighbors(i.e. have nodes in common),
+   otherwise returns false
+ Programmaenderungen:
+   05/2005 RFW Implementierung
+   05/2006 RFW Änderung
+***************************************************************************************/
+bool MSHGetCommonNodes(CElem* elem1, CElem* elem2, vector<CNode*>& nodes)
+{
+nodes.clear();
+bool neighbor = false;
+vec<CNode*> nodes1, nodes2; 
+int numnodes1, numnodes2;
+if(elem1!=NULL && elem2!=NULL)//RFW 19/05/2005
+{
+    elem1->GetNodes(nodes1);
+    elem2->GetNodes(nodes2);
+    numnodes1 = elem1->GetVertexNumber();
+    numnodes2 = elem2->GetVertexNumber();
+
+    for(int i=0; i!=numnodes1; ++i)
+    {
+    for(int j=0; j!=numnodes2; ++j)
+    {
+        if(nodes1[i] == nodes2[j])
+            nodes.push_back(nodes1[i]);
+    }
+    }
+    if(nodes.size() == 0)
+    return neighbor;
+    else{
+    neighbor = true;
+    return neighbor;
+    }
+}
+else
+    return neighbor;
+}
+
+/*************************************************************************
+ ROCKFLOW - Funktion: MSHSetFractureElements
+ Aufgabe:
+   This function gives each fracture element a weight and an aperture direction.  It
+   does this by using polylines that define the top and bottom of the 2D fracture.  For
+   the function to work properly, the points defining the polyline must be evenly spaced.
+   Function should only be called once, after configuration.
+ Formalparameter: 
+ Ergebnis:
+ Programmaenderungen:
+   11/2005 RFW Implementierung
+***************************************************************************/
+void MSHSetFractureElements(void)
+{
+                //** TEST *************
+cout << "Location 0 MSHSetFractureElements\n";
+                //** TEST *************
+int group, frac_exists=0;
+CElem *elem = NULL;
+CGLPolyline *frac_top = NULL, *frac_bot = NULL;
+CMediumProperties *m_mmp = NULL;
+CFEMesh* m_msh = NULL;
+
+vector<long> bound_elements;
+vector<double> node_x, node_y; 
+double x, y, tri[6], dx_avg, dy_avg, d_max, *gravity_center;
+//The following vector is a strange beast.  The first index indicates the fracture being considered, the second
+//index indicates the segment of the fracture being considered, and the final index contains the element numbers
+//of those elements making up the given fracture segment.
+vector<vector<vector<int> > > segment_elements;
+vector<vector<bool> > segment_on_boundary;
+vector<vector<double> > segment_dx;
+vector<vector<double> > segment_dy;
+vector<int> fractures;
+
+//finding the material group for the fractures, there should only be 1
+for(int i=0; i<(int)mmp_vector.size(); ++i)
+{
+    m_mmp = mmp_vector[i];
+    //for(int j=0; j<(int)m_mmp->relative_permeability_function.size(); ++j)
+    //{
+        if (m_mmp->frac_num != 0) 
+        {
+            group = i;
+            frac_exists = 1;
+        }
+    //}
+}
+
+if(frac_exists)
+{
+    m_mmp = mmp_vector[group];
+    //frac_segments.resize(m_mmp->frac_num);
+    segment_elements.resize(m_mmp->frac_num);
+    segment_on_boundary.resize(m_mmp->frac_num);
+    segment_dx.resize(m_mmp->frac_num);
+    segment_dy.resize(m_mmp->frac_num);
+
+    //grabbing the nodes of the boundary polyline, will be used later---------------------START
+    CGLPolyline *bound_ply = NULL;
+    vector<long> poly_nodes;
+
+    bound_ply = GEOGetPLYByName("BOUNDARY");
+    m_msh = fem_msh_vector[0]; //this isn't great
+
+
+    if(bound_ply)
+    {
+        m_msh->GetNODOnPLY(bound_ply, poly_nodes);
+    }
+    else
+    {
+        cout <<"Error 1 in ELESetBoundaryElements, no BOUNDARY polyline.\n";
+        abort();
+    }
+    //grabbing the nodes of the boundary polyline-------------------------------------------------END
+
+    for(long j=0; j<m_mmp->frac_num; ++j) //loop1, over all fractures
+    {
+        string polyname_top = m_mmp->frac_names[j] + "_top";
+        string polyname_bot = m_mmp->frac_names[j] + "_bot";
+        frac_top = GEOGetPLYByName(polyname_top); 
+        frac_bot = GEOGetPLYByName(polyname_bot); 
+        //frac_segments[j].resize((long)frac_top->point_vector.size()-1);
+        segment_elements[j].resize((long)frac_top->point_vector.size()-1);
+        segment_on_boundary[j].resize((long)frac_top->point_vector.size()-1);
+        segment_dx[j].resize((long)frac_top->point_vector.size()-1);
+        segment_dy[j].resize((long)frac_top->point_vector.size()-1);
+
+        if(!frac_top || !frac_bot)
+        {
+            cout << "Error 1 in MSHSetFractureElements: fracture polyline "<<m_mmp->frac_names[j]<<" not found.\n";
+            abort();
+        }
+        for(long k=0; k<((long)frac_top->point_vector.size()-1); ++k) //loop2, over fracture segments
+        {                     
+            node_x.resize(4); //of course, these are not really nodes, but I'm using code from ELEWhatElemIsPointIn
+            node_y.resize(4);
+            //4 points defining the fracture segment
+            node_x[0]=frac_bot->point_vector[k]->x;        node_y[0]=frac_bot->point_vector[k]->y;
+            node_x[1]=frac_bot->point_vector[k+1]->x;    node_y[1]=frac_bot->point_vector[k+1]->y;
+            node_x[2]=frac_top->point_vector[k+1]->x;    node_y[2]=frac_top->point_vector[k+1]->y;
+            node_x[3]=frac_top->point_vector[k]->x;        node_y[3]=frac_top->point_vector[k]->y;
+
+            //2 trangular subareas defining the fracture segment
+            double Area1, Area2;
+            Area1 = ( (node_x[1]*node_y[2] - node_x[2]*node_y[1])
+                + (node_x[2]*node_y[0] - node_x[0]*node_y[2])
+                + (node_x[0]*node_y[1] - node_x[1]*node_y[0]) )/2;
+            Area2 = ( (node_x[3]*node_y[2] - node_x[2]*node_y[3])
+                + (node_x[2]*node_y[0] - node_x[0]*node_y[2])
+                + (node_x[0]*node_y[3] - node_x[3]*node_y[0]) )/2;
+
+            for (int l = 0; l < (int)m_msh->ele_vector.size(); l++)//loop 3, all elements
+            {
+                elem = m_msh->ele_vector[l];
+                if(elem->GetPatchIndex()==group) //this is simply to make things go faster
+                {
+                    
+                    gravity_center = elem->GetGravityCenter();
+                    x = gravity_center[0]; //x = ELEGetEleMidPoint(l,0);
+                    y = gravity_center[1]; //y = ELEGetEleMidPoint(l,1);
+                               
+                    //calculate triangular coordinates for both triangles making up fracture segment
+                    //first triangle
+                    tri[0] = ( (node_x[1]*node_y[2]-node_x[2]*node_y[1]) + (node_y[1]-node_y[2])*x + (node_x[2]-node_x[1])*y )/(2*Area1);
+                    tri[1] = ( (node_x[2]*node_y[0]-node_x[0]*node_y[2])+ (node_y[2]-node_y[0])*x + (node_x[0]-node_x[2])*y )/(2*Area1);
+                    tri[2] = ( (node_x[0]*node_y[1]-node_x[1]*node_y[0]) + (node_y[0]-node_y[1])*x + (node_x[1]-node_x[0])*y )/(2*Area1);
+                    //second triangle
+                    tri[3] = ( (node_x[3]*node_y[2]-node_x[2]*node_y[3]) + (node_y[3]-node_y[2])*x + (node_x[2]-node_x[3])*y )/(2*Area2);
+                    tri[4] = ( (node_x[2]*node_y[0]-node_x[0]*node_y[2])+ (node_y[2]-node_y[0])*x + (node_x[0]-node_x[2])*y )/(2*Area2);
+                    tri[5] = ( (node_x[0]*node_y[3]-node_x[3]*node_y[0]) + (node_y[0]-node_y[3])*x + (node_x[3]-node_x[0])*y )/(2*Area2);
+                    
+                    if((tri[0]>=-0.00000001 && tri[1]>=-0.00000001 && tri[2]>=-0.00000001)
+                    || (tri[3]>=-0.00000001 && tri[4]>=-0.00000001 && tri[5]>=-0.00000001))
+                    {     
+                        elem->frac_number = j;
+                       
+                        //what is the appropriate search dirction for aperture searches?
+                        dx_avg = ( (node_x[1]-node_x[0]) + (node_x[2]-node_x[3]) )/2;
+                        dy_avg = ( (node_y[1]-node_y[0]) + (node_y[2]-node_y[3]) )/2;
+                        d_max = max(abs(dx_avg), abs(dy_avg));
+                        elem->dx = -1*dy_avg/d_max;
+                        elem->dy = dx_avg/d_max;
+
+                        //increment the number of elements in the fracture segment, for weight calculations
+                        //frac_segments[j][k] += 1;
+                        segment_elements[j][k].push_back( l );
+
+                        //check if element is on boundary, if so, the segment_on_boundary gets a value of true, otherwise false
+                        vector<CNode*> match_nodes; 
+                        vec<CNode*> elem_nodes; 
+                        elem->GetNodes(elem_nodes); 
+                        int elem_num_nodes = elem->GetVertexNumber();
+                    
+                        for(long m=0; m!=(long)poly_nodes.size(); ++m)
+                        {
+                            for(int n=0; n!=elem_num_nodes; ++n)
+                            {
+                                if(elem_nodes[n] == m_msh->nod_vector[poly_nodes[m]])  //NOT SURE THIS WILL WORK!, probably will
+                                {
+                                    match_nodes.push_back(elem_nodes[n]);
+                                }
+                            }
+                        }
+                        if(match_nodes.size()==2)
+                        {
+                            segment_on_boundary[j][k] = true;
+                            dx_avg = match_nodes[0]->X() - match_nodes[1]->X();
+                            dy_avg = match_nodes[0]->Y() - match_nodes[1]->Y();
+                            d_max = max(abs(dx_avg), abs(dy_avg));
+                            segment_dx[j][k] = dx_avg/d_max; //no longer the inverese of the average slope as above, rather the orientation of the boundary
+                            segment_dy[j][k] = dy_avg/d_max;
+                        }                       
+
+                    }
+                }//if GroupNumber
+            }//loop 3, all elements
+        }//loop2, over fracture segments
+    }//loop1, over all fractures
+
+
+
+    for(long j=0; j<m_mmp->frac_num; ++j)//loop4, over all fractures
+    {
+        double weight=0, seg_length=0;
+        vector<double> point_x, point_y;
+        point_x.resize(2); point_y.resize(2);
+        string polyname_top = m_mmp->frac_names[j] + "_top";
+        string polyname_bot = m_mmp->frac_names[j] + "_bot";
+        frac_top = GEOGetPLYByName(polyname_top); 
+        frac_bot = GEOGetPLYByName(polyname_bot);
+
+        //calculating polyline length
+	    double top_poly_length = frac_top->CalcPolylineLength(); 
+
+        for(long k=0; k<((long)frac_top->point_vector.size()-1); ++k) //loop5, over fracture segments
+        {
+            //calculating segment length
+            point_x[0]=frac_top->point_vector[k+1]->x;    point_y[0]=frac_top->point_vector[k+1]->y;
+            point_x[1]=frac_top->point_vector[k]->x;        point_y[1]=frac_top->point_vector[k]->y;
+            seg_length = sqrt(   pow( (point_x[1]-point_x[0]), 2 ) + pow( (point_y[1]-point_y[0]), 2 )   );
+
+            for(long l=0; l<(long)segment_elements[j][k].size(); ++l)//loop6, over elements in segment
+            {
+                //the weight that each element gets is the total weight of 1, divided by the number of segments
+                //in which the fracture is divided, and further divided by the number of elements in the given segment
+                long test1 = ((long)frac_top->point_vector.size()-1);
+                long test2 = (long)segment_elements[j][k].size();
+                weight = seg_length / top_poly_length / (double)segment_elements[j][k].size();
+                
+                elem = m_msh->ele_vector[segment_elements[j][k][l]];
+                elem->in_frac = true; // RFW 18/11/2005
+                elem->weight = weight;
+                //if element is part of boundary segment, reassign it's search directions appropriately
+                if(segment_on_boundary[j][k] == true)
+                {
+                    elem->dx = segment_dx[j][k];
+                    elem->dy = segment_dy[j][k];
+                }
+
+            }//loop6, over elements in segment
+        }//loop5, over fracture segments
+    }//loop4, over all fractures
+}//if frac_exists
+
+}
+
+/*************************************************************************
+ ROCKFLOW - Funktion: MSHResetFractureElements
+ Aufgabe:
+  Resets the aperture calculation for the next time, this means that CalculateFracAperture
+  function will not be called multiple times each timestep
+ Formalparameter: 
+ Ergebnis:
+ Programmaenderungen:
+   11/2005 RFW Implementierung
+***************************************************************************/
+void MSHResetFractureElements(void)
+{
+CElem *elem = NULL;
+CFEMesh* m_msh = NULL;
+m_msh = fem_msh_vector[0]; //this isn't great
+
+for (int i = 0; i < (int)m_msh->ele_vector.size(); i++)//loop 3, all elements
+{
+     elem = m_msh->ele_vector[i];
+     elem->Aperture_is_set = false;
+     elem->Permeability_is_set = false;
+}
+
+for(int i = 0; i<(int)mmp_vector.size(); i++)
+{
+  mmp_vector[i]->fracs_set=0;
+}
+
+}
+
+/**************************************************************************
+GeoSys-FEM-Method: 
+Task: Find what element a set of given coords is in.  Works for triangles and quadrilatera in a 2d system.
+Programming: 
+      RFW 04.2005 index is an initial guess of an element close to
+      the one containing the given point.
+**************************************************************************/
+long MSHWhatElemIsPointIn(double x, double y, long index)
+{
+    CElem* elem = NULL;  //PointElementNow
+    vec<CElem*> neighbors(10);
+    CFEMesh* m_msh = NULL;
+    m_msh = fem_msh_vector[0];  // Something must be done later on here.
+    //need a pointer for node
+    bool inside = false, in_domain = false;
+    int num_face, num_nodes;
+    double Area1, Area2, tri[6];
+    vector<double> node_x, node_y; 
+    long return_value=0, count=0;//perhaps return_value shouldn't be initialized
+    vector<long> index_guess;
+    index_guess.push_back(index);
+    long number_of_elem = (long)m_msh->ele_vector.size();
+
+    //----------------------------------------------point in model domain?-------------------------------------------------------START
+    //boundary polyline defining the model boundaries, used to check if point is inside or outside model domain
+    //this is not a very elegant solution, needs to be improved.  Current assumption, quadratisch model domain.
+    CGLPolyline *bound_ply = NULL;
+    vector<double> bnode_x, bnode_y;
+    bnode_x.resize(4);  bnode_y.resize(4); //of course, these are not really nodes, rather points
+    bound_ply = GEOGetPLYByName("BOUNDARY");
+    bnode_x[0]=bound_ply->point_vector[0]->x;       bnode_y[0]=bound_ply->point_vector[0]->y;
+    bnode_x[1]=bound_ply->point_vector[1]->x;        bnode_y[1]=bound_ply->point_vector[1]->y;
+    bnode_x[2]=bound_ply->point_vector[2]->x;        bnode_y[2]=bound_ply->point_vector[2]->y;
+    bnode_x[3]=bound_ply->point_vector[3]->x;        bnode_y[3]=bound_ply->point_vector[3]->y;    
+   
+    Area1 = ( (bnode_x[1]*bnode_y[2] - bnode_x[2]*bnode_y[1])
+        + (bnode_x[2]*bnode_y[0] - bnode_x[0]*bnode_y[2])
+        + (bnode_x[0]*bnode_y[1] - bnode_x[1]*bnode_y[0]) )/2;
+    Area2 = ( (bnode_x[3]*bnode_y[2] - bnode_x[2]*bnode_y[3])
+        + (bnode_x[2]*bnode_y[0] - bnode_x[0]*bnode_y[2])
+        + (bnode_x[0]*bnode_y[3] - bnode_x[3]*bnode_y[0]) )/2;
+    //calculate triangular coordinates for both triangles making up the element
+    //first triangle
+    tri[0] = ( (bnode_x[1]*bnode_y[2]-bnode_x[2]*bnode_y[1]) + (bnode_y[1]-bnode_y[2])*x + (bnode_x[2]-bnode_x[1])*y )/(2*Area1);
+    tri[1] = ( (bnode_x[2]*bnode_y[0]-bnode_x[0]*bnode_y[2])+ (bnode_y[2]-bnode_y[0])*x + (bnode_x[0]-bnode_x[2])*y )/(2*Area1);
+    tri[2] = ( (bnode_x[0]*bnode_y[1]-bnode_x[1]*bnode_y[0]) + (bnode_y[0]-bnode_y[1])*x + (bnode_x[1]-bnode_x[0])*y )/(2*Area1);
+    //second triangle
+    tri[3] = ( (bnode_x[3]*bnode_y[2]-bnode_x[2]*bnode_y[3]) + (bnode_y[3]-bnode_y[2])*x + (bnode_x[2]-bnode_x[3])*y )/(2*Area2);
+    tri[4] = ( (bnode_x[2]*bnode_y[0]-bnode_x[0]*bnode_y[2])+ (bnode_y[2]-bnode_y[0])*x + (bnode_x[0]-bnode_x[2])*y )/(2*Area2);
+    tri[5] = ( (bnode_x[0]*bnode_y[3]-bnode_x[3]*bnode_y[0]) + (bnode_y[0]-bnode_y[3])*x + (bnode_x[3]-bnode_x[0])*y )/(2*Area2);
+    
+    if((tri[0]>=-0.0000001 && tri[1]>=-0.0000001 && tri[2]>=-0.0000001)
+        || (tri[3]>=-0.0000001 && tri[4]>=-0.0000001 && tri[5]>=-0.0000001)) //perhaps this should be +ve??
+    {
+        in_domain = true;
+    }
+    else //point is not in model domain
+    {
+        return_value = -100;
+    }
+        
+    //----------------------------------------------point in model domain?---------------------------------------------------------END
+
+    //----------------------------------------------which element is point in?----------------------------------------------------START
+    while (!inside && count < (number_of_elem+2) && in_domain)
+    {
+    count++;
+    CNode* node;
+    if ((long)index_guess.size() > number_of_elem) //check to avoid infinite loops
+    {
+        cout<<"Error in ELEWhatElemIsPointIn, point not in any element";
+        return_value = -100;
+        break;
+    }
+    for (long i=0; i!=(long)index_guess.size(); ++i)
+    {
+        elem = m_msh->ele_vector[index_guess[i]];
+        num_nodes = elem->GetVertexNumber();
+        node_x.resize(num_nodes);
+        node_y.resize(num_nodes);
+        for(int j=0; j!=num_nodes; ++j)
+        {
+            node = elem->GetNode(j);
+			node_x[j] = node->X_displaced();
+			node_y[j] = node->Y_displaced();
+        }
+        //----------------------------------------------triangles------------------------------------------------------------
+        if(num_nodes==3)
+        {
+           //calculate area of triangle
+           Area1 = ( (node_x[1]*node_y[2] - node_x[2]*node_y[1])
+               + (node_x[2]*node_y[0] - node_x[0]*node_y[2])
+               + (node_x[0]*node_y[1] - node_x[1]*node_y[0]) )/2;
+          //calculate triangular coordinates
+           tri[0] = ( (node_x[1]*node_y[2]-node_x[2]*node_y[1]) + (node_y[1]-node_y[2])*x + (node_x[2]-node_x[1])*y )/(2*Area1);
+           tri[1] = ( (node_x[2]*node_y[0]-node_x[0]*node_y[2])+ (node_y[2]-node_y[0])*x + (node_x[0]-node_x[2])*y )/(2*Area1);
+           tri[2] = ( (node_x[0]*node_y[1]-node_x[1]*node_y[0]) + (node_y[0]-node_y[1])*x + (node_x[1]-node_x[0])*y )/(2*Area1);
+
+          if(tri[0]>=-0.0000001 && tri[1]>=-0.0000001 && tri[2]>=-0.0000001 ) //perhaps this should be +ve??
+          {
+              inside = true;
+              return_value = index_guess[i];
+              break;
+          }
+        }
+        //----------------------------------------------quadrilaterals------------------------------------------------------------
+        else if(num_nodes == 4)
+        {
+           Area1 = ( (node_x[1]*node_y[2] - node_x[2]*node_y[1])
+               + (node_x[2]*node_y[0] - node_x[0]*node_y[2])
+               + (node_x[0]*node_y[1] - node_x[1]*node_y[0]) )/2;
+           Area2 = ( (node_x[3]*node_y[2] - node_x[2]*node_y[3])
+               + (node_x[2]*node_y[0] - node_x[0]*node_y[2])
+               + (node_x[0]*node_y[3] - node_x[3]*node_y[0]) )/2;
+           //calculate triangular coordinates for both triangles making up the element
+           //first triangle
+           tri[0] = ( (node_x[1]*node_y[2]-node_x[2]*node_y[1]) + (node_y[1]-node_y[2])*x + (node_x[2]-node_x[1])*y )/(2*Area1);
+           tri[1] = ( (node_x[2]*node_y[0]-node_x[0]*node_y[2])+ (node_y[2]-node_y[0])*x + (node_x[0]-node_x[2])*y )/(2*Area1);
+           tri[2] = ( (node_x[0]*node_y[1]-node_x[1]*node_y[0]) + (node_y[0]-node_y[1])*x + (node_x[1]-node_x[0])*y )/(2*Area1);
+          //second triangle
+           tri[3] = ( (node_x[3]*node_y[2]-node_x[2]*node_y[3]) + (node_y[3]-node_y[2])*x + (node_x[2]-node_x[3])*y )/(2*Area2);
+           tri[4] = ( (node_x[2]*node_y[0]-node_x[0]*node_y[2])+ (node_y[2]-node_y[0])*x + (node_x[0]-node_x[2])*y )/(2*Area2);
+           tri[5] = ( (node_x[0]*node_y[3]-node_x[3]*node_y[0]) + (node_y[0]-node_y[3])*x + (node_x[3]-node_x[0])*y )/(2*Area2);
+           
+           if((tri[0]>=-0.0000001 && tri[1]>=-0.0000001 && tri[2]>=-0.0000001)
+               || (tri[3]>=-0.0000001 && tri[4]>=-0.0000001 && tri[5]>=-0.0000001)) //perhaps this should be +ve??
+          {
+              inside = true;
+              return_value = index_guess[i];
+              break;
+          }
+        }
+    } //end of for loop over i
+        
+    if(!inside) //Add the neighboring elements to the search
+    {
+        bool already_there;
+	    vector<long> index_guess_old;
+        index_guess_old.resize(index_guess.size());
+        //for (long j=0; j!=(long)index_guess.size(); ++j)
+        //    index_guess_old[j] = index_guess[j];
+        index_guess_old = index_guess; //not quite sure this works
+         //CLEAR OLD VALUES FROM INDEX_GUESS AT THIS POINT? 
+	    for (long j=0; j!=(long)index_guess_old.size(); ++j)
+        {
+
+            elem = m_msh->ele_vector[index_guess_old[j]];
+            elem->GetNeighbors(neighbors);
+            num_face = elem->GetFacesNumber();
+            
+            for(long k =0; k!=num_face; ++k)
+            {
+                if(neighbors[k]->GetIndex() >= 0){
+                already_there = false;
+            	for(long l=0; l!=(long)index_guess.size(); ++l)
+            	{
+                    if(index_guess[l] == neighbors[k]->GetIndex())
+        			already_there = true;
+	            }
+        		if(!already_there)
+                    index_guess.push_back(neighbors[k]->GetIndex());
+                }
+    		}
+    		   
+        }                
+    } // end of if !inside
+   
+    } //end of while
+    //----------------------------------------------which element is point in?------------------------------------------------------END
+
+    if(count<=number_of_elem)
+        return return_value;
+    else
+    {
+        cout<<"Error 1 in ELEWhatElemIsPointIn. Starting element: "<<index<<"\n";
+        abort();
+    }
+}
+
+#endif

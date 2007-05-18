@@ -74,6 +74,12 @@ class CNode:public CCore
       //GUI control variables 
       int selected;
       double patch_area; //OK4310
+      #ifdef RFW_FRACTURE
+	  //function returns displaced nodal coordinates
+      double X_displaced(void);
+      double Y_displaced(void);
+      double Z_displaced(void);
+      #endif
 };
 
 } // namespace Mesh_Group

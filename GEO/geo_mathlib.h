@@ -33,6 +33,9 @@ extern double MCalcProjectionOfPointOnPlane(double *pt, double *e1, double *e2, 
 extern double MCalcDistancePointToPoint(double *pt1,double *pt2);
 extern long* TOLSortNodes1(long*, double*, int);
 extern int MPhi2D(double *vf,double r, double s);
+#ifdef RFW_FRACTURE
+extern bool LineSegmentIntersection(vector<double>, vector<double>, vector<double>, vector<double>, vector<double>&); //RFW 04/2005
+#endif
 
 class CubicSpline
 {

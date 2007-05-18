@@ -1195,4 +1195,34 @@ CSoilProfile::~CSoilProfile()  //YD
   }
   soil_type.clear();
   soil_layer_thickness.clear();
+
 }
+#ifdef RFW_FRACTURE
+/**************************************************************************
+GeoLib-Method: CalcPolylineLength(); 
+
+Task: Calculate the length of a polyline, not from end-to-end, but rather from CGLPoint-to-CGLPoint
+along the entire polyline.  
+Argument:
+Ergebnis:
+          double poly_length : Length of the polyline, along the points, not from end to end        
+Programing:
+05/2005 RFW Implementierung
+05/2006 RFW Änderung
+**************************************************************************/
+double CGLPolyline::CalcPolylineLength()
+{
+	double dx, dy, dz, dist=0, poly_length=0;
+   
+	for(int j=0; j<point_vector.size()-1; j++)
+	{
+		dx = point_vector[j]->x - point_vector[j+1]->x;
+		dy = point_vector[j]->y - point_vector[j+1]->y;
+		dz = point_vector[j]->z - point_vector[j+1]->z;
+
+		dist = sqrt(dx*dx+dy*dy+dz*dz);
+		poly_length = poly_length + dist;
+	}
+	return poly_length;
+}
+#endif

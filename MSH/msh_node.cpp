@@ -14,6 +14,9 @@ using namespace std;
 #include "msh_elements_rfi.h"
 #include "msh_node.h"
 // PCSLib
+#ifdef RFW_FRACTURE
+#include "rf_pcs.h" //RFW 06/2006
+#endif
 //========================================================================
 namespace Mesh_Group
 {
@@ -100,6 +103,68 @@ void CNode::SetCoordinates(const double* argCoord)
   	coordinate[1] = argCoord[1];
   	coordinate[2] = argCoord[2];
 }
+
+#ifdef RFW_FRACTURE
+/**************************************************************************
+MSHLib-Method: 
+Task: Returns displaced coordinates
+Programing:
+05/2006 RFW Implementation
+**************************************************************************/
+double CNode::X_displaced()
+{
+	int nidx_dm;
+	CRFProcess* m_pcs = NULL;
+	double x_displaced=0;
+	if(M_Process||MH_Process)
+	{
+		m_pcs = PCSGet("DISPLACEMENT_X1",true);
+		nidx_dm = m_pcs->GetNodeValueIndex("DISPLACEMENT_X1")+1;
+	}
+	x_displaced = X() + m_pcs->GetNodeValue(GetIndex(), nidx_dm);
+	return x_displaced;
+}
+
+/**************************************************************************
+MSHLib-Method: 
+Task: Returns displaced coordinates
+Programing:
+05/2006 RFW Implementation
+**************************************************************************/
+double CNode::Y_displaced()
+{
+	int nidx_dm;
+	CRFProcess* m_pcs = NULL;
+	double y_displaced=0;
+	if(M_Process||MH_Process)
+	{
+		m_pcs = PCSGet("DISPLACEMENT_Y1",true);
+		nidx_dm = m_pcs->GetNodeValueIndex("DISPLACEMENT_Y1")+1; 
+	}
+	y_displaced = Y() + m_pcs->GetNodeValue(GetIndex(), nidx_dm);
+	return y_displaced;
+}
+
+/**************************************************************************
+MSHLib-Method: 
+Task: Returns displaced coordinates
+Programing:
+05/2006 RFW Implementation
+**************************************************************************/
+double CNode::Z_displaced()
+{
+	int nidx_dm;
+	CRFProcess* m_pcs = NULL;
+	double z_displaced=0;
+	if(M_Process||MH_Process)
+	{
+		m_pcs = PCSGet("DISPLACEMENT_Z1",true);
+		nidx_dm = m_pcs->GetNodeValueIndex("DISPLACEMENT_Z1")+1;
+	}
+	z_displaced = Z() + m_pcs->GetNodeValue(GetIndex(), nidx_dm);
+	return z_displaced;
+}
+#endif
 
 } // namespace Mesh_Group
 //========================================================================

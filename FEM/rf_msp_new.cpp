@@ -247,6 +247,13 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
          in_sd >> (*data_Youngs)(0);
          in_sd.clear();
       }
+      #ifdef RFW_FRACTURE
+      else if(Youngs_mode==2){ // = f(aperture), for fracture material groups, RFW 04/2005,  RFW 09/12/2005
+  	     data_Youngs = new Matrix(3);
+         in_sd >> (*data_Youngs)(0) >> (*data_Youngs)(1) >> (*data_Youngs)(2);
+         in_sd.clear();
+      }
+      #endif
     }
    //....................................................................
     if(line_string.find("$CREEP")!=string::npos)
@@ -864,6 +871,7 @@ Task: Get density
 Programing:
 08/2004 WW Implementation 
 **************************************************************************/
+#ifndef RFW_FRACTURE
 double CSolidProperties::Youngs_Modulus(double refence)
 { 
     double val = 0.0;
@@ -878,7 +886,67 @@ double CSolidProperties::Youngs_Modulus(double refence)
     }
     return val;   
 }
+#endif
 
+#ifdef RFW_FRACTURE
+double CSolidProperties::Youngs_Modulus(CElem* elem, double refence) //RFW changed
+{ 
+    double val = 0.0;
+
+	switch(Youngs_mode)
+	{
+	  case 0:  
+        val = CalulateValue(data_Youngs, refence);
+        break;
+	  case 1:
+        val = (*data_Youngs)(0);
+        break;
+      case 2:
+         double E1 = (*data_Youngs)(0);
+         double E2 = (*data_Youngs)(1);
+         double min_aperture = (*data_Youngs)(2);
+         double step_size = min_aperture/10;
+         
+         CMediumProperties *m_mmp = NULL;
+         m_mmp = mmp_vector[elem->GetPatchIndex()];
+         double aperture = m_mmp->CalculateFracAperture(elem, step_size);
+
+         if (  (aperture > (min_aperture+0.00000001))  ||  (aperture == -10) )
+         {
+            val=E1;
+          }
+         else
+         {
+            val = E2;
+         }
+         
+         break;
+
+    }
+    return val;   
+}
+#endif
+
+#ifdef RFW_FRACTURE
+/**************************************************************************
+FEMLib-Method: CSolidProperties::Youngs_Min_Aper(const double refence = 0.0) const
+Task: Get minimum aperture value for fracture deformation
+Programing:
+07/2005 RFW Implementation 
+**************************************************************************/
+ double CSolidProperties::Get_Youngs_Min_Aperture(CElem *elem) { //RFW 07/2005
+
+ int group = elem->GetPatchIndex();
+ CSolidProperties* mat_pointer;
+ Matrix* data; 
+ double min_aperture;
+ 
+ mat_pointer = msp_vector[group];
+ data = mat_pointer->data_Youngs;
+ min_aperture = (*data)(2);
+ return min_aperture;
+ }
+#endif
 
 //-------------------------------------------------------------------------
 // Kronecker function
@@ -898,6 +966,7 @@ Task: Get density
 Programing:
 08/2004 WW Implementation 
 **************************************************************************/
+#ifndef RFW_FRACTURE
 void  CSolidProperties::Calculate_Lame_Constant()
 {
    E = Youngs_Modulus();  // Constant at present
@@ -906,6 +975,18 @@ void  CSolidProperties::Calculate_Lame_Constant()
    G = 0.5 * E / (1. + Poisson_Ratio());
    K=(3.0*Lambda+2.0*G)/3.0;
 }
+#endif
+#ifdef RFW_FRACTURE
+//with a CElem pointer, for the fracture deformation Youngs Modulus is element specific, not material specific
+void  CSolidProperties::Calculate_Lame_Constant( CElem* elem) //RFW changed
+{
+   E = Youngs_Modulus(elem);  // RFW 06/2006
+   Lambda = E * Poisson_Ratio() / 
+        ((1. + Poisson_Ratio()) * (1. - 2. * Poisson_Ratio()));
+   G = 0.5 * E / (1. + Poisson_Ratio());
+   K=(3.0*Lambda+2.0*G)/3.0;
+}
+#endif
 
 
 
