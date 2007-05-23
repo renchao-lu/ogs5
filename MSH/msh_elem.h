@@ -70,6 +70,22 @@ class CElem:public CCore
 						//		angle[2] translation along z'' axis.		
       double *angle; // Dymanic allocate memory.  WW	
 	 //WW double MatT[9];
+
+      #ifdef RFW_FRACTURE
+     //public:
+     //for now I will store element specific variables here, until I find something better to do with it
+     //If the aperture of the element is not stored, the CalculateFracAperture and PermeabilityFracAperture
+     //will have to be called many more times during each timestep.
+     bool Aperture_is_set;
+     bool Permeability_is_set;
+     double Aperture;
+     double Permeability;
+     bool in_frac;  //shows whether an element is in a fracture, this is slightly redundant given the next variable
+     long frac_number;   //shows which fracture a frac element belongs to
+     double f_dx;
+     double f_dy; //related to fracture segment orientation
+     double f_weight; 
+     #endif
       // 
 	  // -- Methods
       int GetElementFaces1D(int *FaceNode);
@@ -202,25 +218,31 @@ class CElem:public CCore
       //-------------------------------------------------------------------
       //GUI control variables 
        int selected;
-      void FaceNormal(const int index0, const int index1, double*);   //YD
+       void FaceNormal(const int index0, const int index1, double*);   //YD
+       double *normal_vector; //WW normal_vector[3]; //OK
+       void SetNormalVector(); //OK
       //
-#ifdef RFW_FRACTURE
-     public:
-     //for now I will store element specific variables here, until I find something better to do with it
-     //If the aperture of the element is not stored, the CalculateFracAperture and PermeabilityFracAperture
-     //will have to be called many more times during each timestep.
-     bool Aperture_is_set;
-     bool Permeability_is_set;
-     double Aperture;
-     double Permeability;
-     bool in_frac;  //shows whether an element is in a fracture, this is slightly redundant given the next variable
-     long frac_number;   //shows which fracture a frac element belongs to
-     double dx, dy; //related to fracture segment orientation
-     double weight; 
-     void CalcDispGravityCenter(vector<double>&);
-#endif
-	  double *normal_vector; //WW normal_vector[3]; //OK
-      void SetNormalVector(); //OK
+      #ifdef RFW_FRACTURE
+      bool ApertureIsSet() {return Aperture_is_set;}
+      void ApertureIsNotSet() {Aperture_is_set = false; } 
+      double GetAperture() {return Aperture;}
+      void SetAperture(double value) {Aperture = value; Aperture_is_set=true;} 
+      bool PermeabilityIsSet() {return Permeability_is_set;}
+      void PermeabilityIsNotSet() {Permeability_is_set = false; } 
+      double GetPermeability() {return Permeability;}
+      void SetPermeability(double value) {Permeability = value; Permeability_is_set=true;} 
+      bool InFrac() {return in_frac;}
+      double GetWeight() {return f_weight;}
+      void SetFrac(double value) {f_weight = value; in_frac=true;}
+      long GetFracNum() {return frac_number;}
+      void SetFracNum(long value) {frac_number = value; } 
+      double GetFracDx() {return f_dx;}
+      void SetFracDx(double value) {f_dx = value;}
+      double GetFracDy() {return f_dy;}
+      void SetFracDy(double value) {f_dy = value;} 
+      void CalcDispGravityCenter(vector<double>&);
+      #endif
+
 };
 
 } // namespace Mesh_Group

@@ -5064,9 +5064,9 @@ double CMediumProperties::PermeabilityFracAperture(long index)
 
   double mini=100, roughness_corr=1, tortuosity_corr=1; 
 
-  if(elem->in_frac)// RFW 18/11/2005
+  if(elem->InFrac())// RFW 18/11/2005
   {
-        if(!elem->Permeability_is_set) //if 1 
+        if(!elem->PermeabilityIsSet()) //if 1 
         {
             mat_pointer = msp_vector[group];
             min_aperture = mat_pointer->Get_Youngs_Min_Aperture(elem);
@@ -5080,19 +5080,19 @@ double CMediumProperties::PermeabilityFracAperture(long index)
                   for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
                   {  
                       elem2 = m_msh->ele_vector[i];
-                      if(elem->frac_number == elem2->frac_number )  //are they part of the same fracture?
+                      if(elem->GetFracNum() == elem2->GetFracNum() )  //are they part of the same fracture?
                       {
-                          if (elem2->Aperture_is_set) {  //change this to simply calling CalculateFracAperture, it will check if aperture has been set
+                          if (elem2->ApertureIsSet()) {  //change this to simply calling CalculateFracAperture, it will check if aperture has been set
 
-                              if( (elem2->Aperture-min_aperture) >= 0.00000001){
-                                  ApertureSum += (elem2->Aperture-min_aperture)*elem2->weight;
-                                  aperture_list.push_back( (elem2->Aperture-min_aperture) );
-                                  WeightSum += elem2->weight;
+                            if( (elem2->GetAperture()-min_aperture) >= 0.00000001){
+                              ApertureSum += (elem2->GetAperture()-min_aperture)*elem2->GetWeight();
+                              aperture_list.push_back( (elem2->GetAperture()-min_aperture) );
+                                  WeightSum += elem2->GetWeight();
                               }
                               else{
-                                  closed = closed + elem2->weight;
+                                  closed = closed + elem2->GetWeight();
                               }
-                              total_count = total_count + elem2->weight;
+                              total_count = total_count + elem2->GetWeight();
                           }
                       }
                   }
@@ -5124,26 +5124,24 @@ double CMediumProperties::PermeabilityFracAperture(long index)
                   {
                       roughness_corr = 0.2;
                   }
-                  //permeability = (  pow(ApertureAvg, 2.0) / 12  ) * tortuosity_corr * roughness_corr;
-                  //normalised_perm = permeability * ApertureAvg / (elem->Aperture);
               break;
           //******************************************************************************************************
               case 'G': // -------------------geometric average----------------------
               for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
                   {  
                       elem2 = m_msh->ele_vector[i];
-                      if(elem->frac_number == elem2->frac_number )//are they part of the same fracture?
+                      if(elem->GetFracNum() == elem2->GetFracNum() )//are they part of the same fracture?
                       {
-                          if (elem2->Aperture_is_set) {
-                              if( (elem2->Aperture-min_aperture) > 0.0000001){
-                                  ApertureSum = ApertureSum + elem2->weight*log(elem2->Aperture-min_aperture);
-                                  aperture_list.push_back( (elem2->Aperture-min_aperture));
-                                  WeightSum += elem2->weight;
+                          if (elem2->ApertureIsSet()) {
+                            if( (elem2->GetAperture()-min_aperture) > 0.0000001){
+                              ApertureSum = ApertureSum + elem2->GetWeight()*log(elem2->GetAperture()-min_aperture);
+                              aperture_list.push_back( (elem2->GetAperture()-min_aperture));
+                                  WeightSum += elem2->GetWeight();
                               }
                               else
-                                  closed = closed + elem2->weight;
+                                  closed = closed + elem2->GetWeight();
 
-                              total_count = total_count + elem2->weight;
+                              total_count = total_count + elem2->GetWeight();
 	                      }
                       }
                   }
@@ -5171,25 +5169,23 @@ double CMediumProperties::PermeabilityFracAperture(long index)
                   {
                       roughness_corr = 0.2;
                   }
-                  //permeability = (  pow(ApertureAvg, 2.0) / 12  ) * tortuosity_corr * roughness_corr;
-                  //normalised_perm = permeability * ApertureAvg / (elem->Aperture);
               break;
           //******************************************************************************************************
               case 'H': // -------------------harmonic average----------------------
               for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
                   {  
                       elem2 = m_msh->ele_vector[i];
-                      if(elem->frac_number == elem2->frac_number )
+                      if(elem->GetFracNum() == elem2->GetFracNum() )
                       {
-                          if (elem2->Aperture_is_set) {
-                              if( (elem2->Aperture-min_aperture) > 0.0000001){
-                                  ApertureSum = ApertureSum + ( elem2->weight/((elem2->Aperture-min_aperture)) );
-                                  WeightSum += elem2->weight;
+                          if (elem2->ApertureIsSet()) {
+                            if( (elem2->GetAperture()-min_aperture) > 0.0000001){
+                              ApertureSum = ApertureSum + ( elem2->GetWeight()/((elem2->GetAperture()-min_aperture)) );
+                                  WeightSum += elem2->GetWeight();
                               }
                               else
-                                  closed = closed + elem2->weight;
+                                  closed = closed + elem2->GetWeight();
 
-                              total_count = total_count + elem2->weight;
+                              total_count = total_count + elem2->GetWeight();
 	                      }
                       }
                   }
@@ -5216,23 +5212,23 @@ double CMediumProperties::PermeabilityFracAperture(long index)
           //the values are stored in the mmp
 
           permeability = (  pow(ApertureAvg, 2.0) / 12  ) * tortuosity_corr * roughness_corr;
-          normalised_perm = permeability * ApertureAvg / (elem->Aperture);
+          normalised_perm = permeability * ApertureAvg / (elem->GetAperture());
 
-          m_mmp->frac_perm[elem->frac_number] = permeability;
-          m_mmp->avg_aperture[elem->frac_number] = ApertureAvg;
-          m_mmp->closed_fraction[elem->frac_number] = c;
+          m_mmp->frac_perm[elem->GetFracNum()] = permeability;
+          m_mmp->avg_aperture[elem->GetFracNum()] = ApertureAvg;
+          m_mmp->closed_fraction[elem->GetFracNum()] = c;
         }  //end if 2
         else
         {
-          permeability = m_mmp->frac_perm[elem->frac_number];
-          ApertureAvg = m_mmp->avg_aperture[elem->frac_number];
+          permeability = m_mmp->frac_perm[elem->GetFracNum()];
+          ApertureAvg = m_mmp->avg_aperture[elem->GetFracNum()];
           
-          normalised_perm = permeability * ApertureAvg / (elem->Aperture);
+          normalised_perm = permeability * ApertureAvg / (elem->GetAperture());
         }
 
-        //the values stored in elem are used for flow calculation... actually, maybe not??  Check this!
-        elem->Permeability = normalised_perm;
-        elem->Permeability_is_set = true;
+        //the values stored in elem are used for flow calculation
+        elem->SetPermeability(normalised_perm);
+        //elem->Permeability_is_set = true;
 
         if(index==0){
             cout <<"Some numbers from PermeabilityFracAperture:\n";
@@ -5243,14 +5239,14 @@ double CMediumProperties::PermeabilityFracAperture(long index)
     }//end if 1
     else  // if the permeability has aleady been set for this timestep
     {
-        normalised_perm = elem->Permeability;
+      normalised_perm = elem->GetPermeability();
     }
     return normalised_perm;
  }
  else // RFW 18/11/2005
  {
     normalised_perm = 1e-9; //this is a kind of default value but will rarely be used, need to fix this in the future
-    elem->Permeability = normalised_perm;
+    elem->SetPermeability(normalised_perm);
     return normalised_perm;
  }
 }
@@ -5294,17 +5290,17 @@ if(index==0)
   cout<<"CalculateFracAperture.\n";
 
 
-if(elem->in_frac) // RFW 18/11/2005  
+if(elem->InFrac()) // RFW 18/11/2005  
 {
-    if(!elem->Aperture_is_set) //if the aperture has not already been set for this timestep
+    if(!elem->ApertureIsSet()) //if the aperture has not already been set for this timestep
     {       
         elem->CalcDispGravityCenter(centroid);
 
         for(int k=-1; k!=3; k=k+2  )  //start big for
         {
         //assigning search directions
-        dx = elem->dx*delta_y*k;
-        dy = elem->dy*delta_y*k;
+          dx = elem->GetFracDx()*delta_y*k;
+          dy = elem->GetFracDy()*delta_y*k;
  
         at_frac_bound = false;
         current_index=index;
@@ -5325,7 +5321,7 @@ if(elem->in_frac) // RFW 18/11/2005
             //************************
             if(current_index >= 0)
             {
-            if(msh_pointer->ele_vector[current_index]->in_frac && current_index >=0)
+              if(msh_pointer->ele_vector[current_index]->InFrac() && current_index >=0)
             { }
             else if(current_index >= 0)  //else 1, current element is outside fracture
             {
@@ -5364,7 +5360,7 @@ if(elem->in_frac) // RFW 18/11/2005
                             {
                                 shared_neighbors = true;
                                 
-                                if(neighbor_current[j]->in_frac)
+                                if(neighbor_current[j]->InFrac())
                                 {  
                                     neighbor_vec.push_back(neighbor_current[j]);
                                     neighbor_vec.push_back(current_elem);
@@ -5391,15 +5387,15 @@ if(elem->in_frac) // RFW 18/11/2005
                             //one of the neighbours of the elements borders one of the neighbors of the other
                             if(match && matching_nodes.size()>1 ){
                                 neighbors_neighbor = true;
-                                if( neighbor_current[j]->in_frac && neighbor_last[i]->in_frac ) {
+                                if( neighbor_current[j]->InFrac() && neighbor_last[i]->InFrac()) {
                                     neighbor_vec.push_back(neighbor_current[j]);
                                     neighbor_vec.push_back(current_elem);
                                     }
-                                else if( !neighbor_current[j]->in_frac && !neighbor_last[i]->in_frac) {
+                                else if( !neighbor_current[j]->InFrac() && !neighbor_last[i]->InFrac()) {
                                     neighbor_vec.push_back(last_elem);
                                     neighbor_vec.push_back(neighbor_last[i]);
                                     }
-                                else if( !neighbor_current[j]->in_frac && neighbor_last[i]->in_frac ) {
+                                else if( !neighbor_current[j]->InFrac() && neighbor_last[i]->InFrac() ) {
                                     neighbor_vec.push_back(neighbor_last[i]);
                                     neighbor_vec.push_back(neighbor_current[j]);
                                     }
@@ -5503,14 +5499,14 @@ if(elem->in_frac) // RFW 18/11/2005
         cout<< "I'm here.\n";}
     //just for testing****************
 
-    elem->Aperture = aperture;
-    elem->Aperture_is_set = true;
+    elem->SetAperture(aperture);
+    //elem->Aperture_is_set = true;
     //cout << "Element "<<index<<"\n";
     return aperture;
     }
     else  // if the aperture has already been set for this timestep
     {
-    aperture = elem->Aperture;
+      aperture = elem->GetAperture();
     return aperture;
     }
 }

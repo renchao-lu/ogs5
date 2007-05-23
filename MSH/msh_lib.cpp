@@ -1438,14 +1438,14 @@ if(frac_exists)
                     if((tri[0]>=-0.00000001 && tri[1]>=-0.00000001 && tri[2]>=-0.00000001)
                     || (tri[3]>=-0.00000001 && tri[4]>=-0.00000001 && tri[5]>=-0.00000001))
                     {     
-                        elem->frac_number = j;
+                      elem->SetFracNum(j);
                        
                         //what is the appropriate search dirction for aperture searches?
                         dx_avg = ( (node_x[1]-node_x[0]) + (node_x[2]-node_x[3]) )/2;
                         dy_avg = ( (node_y[1]-node_y[0]) + (node_y[2]-node_y[3]) )/2;
                         d_max = max(abs(dx_avg), abs(dy_avg));
-                        elem->dx = -1*dy_avg/d_max;
-                        elem->dy = dx_avg/d_max;
+                        elem->SetFracDx(-1*dy_avg/d_max);
+                        elem->SetFracDy(dx_avg/d_max);
 
                         //increment the number of elements in the fracture segment, for weight calculations
                         //frac_segments[j][k] += 1;
@@ -1487,7 +1487,7 @@ if(frac_exists)
 
     for(long j=0; j<m_mmp->frac_num; ++j)//loop4, over all fractures
     {
-        double weight=0, seg_length=0;
+        double Weight=0, seg_length=0;
         vector<double> point_x, point_y;
         point_x.resize(2); point_y.resize(2);
         string polyname_top = m_mmp->frac_names[j] + "_top";
@@ -1511,16 +1511,16 @@ if(frac_exists)
                 //in which the fracture is divided, and further divided by the number of elements in the given segment
                 long test1 = ((long)frac_top->point_vector.size()-1);
                 long test2 = (long)segment_elements[j][k].size();
-                weight = seg_length / top_poly_length / (double)segment_elements[j][k].size();
+                Weight = seg_length / top_poly_length / (double)segment_elements[j][k].size();
                 
                 elem = m_msh->ele_vector[segment_elements[j][k][l]];
-                elem->in_frac = true; // RFW 18/11/2005
-                elem->weight = weight;
+                //elem->in_frac = true; // RFW 18/11/2005
+                elem->SetFrac(Weight);
                 //if element is part of boundary segment, reassign it's search directions appropriately
                 if(segment_on_boundary[j][k] == true)
                 {
-                    elem->dx = segment_dx[j][k];
-                    elem->dy = segment_dy[j][k];
+                  elem->SetFracDx(segment_dx[j][k]);
+                  elem->SetFracDy(segment_dy[j][k]);
                 }
 
             }//loop6, over elements in segment
@@ -1549,8 +1549,8 @@ m_msh = fem_msh_vector[0]; //this isn't great
 for (int i = 0; i < (int)m_msh->ele_vector.size(); i++)//loop 3, all elements
 {
      elem = m_msh->ele_vector[i];
-     elem->Aperture_is_set = false;
-     elem->Permeability_is_set = false;
+     elem->ApertureIsNotSet();
+     elem->PermeabilityIsNotSet();
 }
 
 for(int i = 0; i<(int)mmp_vector.size(); i++)

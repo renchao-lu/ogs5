@@ -86,7 +86,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="../FEM;../MSH;../GEO; ../"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;; RANDOM_WALK; RFW_FRACTURE "
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;RANDOM_WALK;RFW_FRACTURE"
 				StringPooling="TRUE"
 				RuntimeLibrary="4"
 				EnableFunctionLevelLinking="TRUE"

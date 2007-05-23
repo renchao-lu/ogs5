@@ -74,8 +74,8 @@ CElem::CElem(const long Index):CCore(Index)
    Permeability=-1;
    in_frac=false; 
    frac_number=-1;
-   dx=0; dy=0;
-   weight=0;
+   f_dx=0; f_dy=0;
+   f_weight=0;
 #endif
 }
 /**************************************************************************
@@ -1799,7 +1799,7 @@ void CElem::CalcDispGravityCenter(vector<double>& disp_gravity_center)
       //This could be improved, in the newer versions there is a function called GetCoordinateFlag in the class CFEMesh.
       //The function is useful to tell which coordinate axes are being used. 
     }
-    vector<double> x_vec, y_vec /*, z_vec*/;  //vectors storing nodal coodinates
+    vector<double> x_vec, y_vec; //, z_vec/;  //vectors storing nodal coodinates
 
     int size = 0;
     // 1 Line, 2 Quad, 3 Hex, 4 Tri, 5 Tet, 6 Pris 
