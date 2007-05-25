@@ -45,6 +45,7 @@ extern char *crdat; /* MX */
 
 vector <REACT*> REACT_vec;
 
+
 /**************************************************************************
    ROCKFLOW - Funktion: ExecuteReactions
 
@@ -1889,6 +1890,7 @@ int REACT::Call_Phreeqc(void){
   char *m_phreeqc;
 //  m_phreeqc="phrqc phinp.dat  phinp.out  phreeqc.dat";
    m_phreeqc="phreeqc phinp.dat  phinp.out  phreeqc.dat";
+   
 
 #ifdef PHREEQC
   if (!system(m_phreeqc)){

@@ -228,12 +228,20 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
 	    REACT_vec.clear();
 	    REACT_vec.push_back(rc);        
       #else
+        //-------------------------------------------------- 
+		// HB, for the GEM chemical reaction engine 05.2007
+        #ifdef REAC_GEM
+          REACT_GEM *p_REACT_GEM = NULL;  
+          p_REACT_GEM->REACT_GEM();
+        #else
+	    //--------------------------------------------------
         rc->CreateREACT();//SB
         rc->InitREACT();
 //SB4501        rc->ExecuteReactions();
 		rc->ExecuteReactionsPHREEQCNew();
 	    REACT_vec.clear();
 	    REACT_vec.push_back(rc);
+        #endif
       #endif
       }
     }
