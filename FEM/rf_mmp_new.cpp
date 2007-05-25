@@ -5043,8 +5043,6 @@ double CMediumProperties::PermeabilityPorosityFunction(long number,double *gp,do
 #ifdef RFW_FRACTURE
 double CMediumProperties::PermeabilityFracAperture(long index)
 {
-  // if(index==0)
-  //  cout<<"PermeabilityFracAperture.\n";
     
   CElem *elem = NULL;
   CElem *elem2 = NULL;
@@ -5064,7 +5062,7 @@ double CMediumProperties::PermeabilityFracAperture(long index)
 
   double mini=100, roughness_corr=1, tortuosity_corr=1; 
 
-  if(elem->InFrac())// RFW 18/11/2005
+  if(elem->InFrac())
   {
         if(!elem->PermeabilityIsSet()) //if 1 
         {
@@ -5228,13 +5226,13 @@ double CMediumProperties::PermeabilityFracAperture(long index)
 
         //the values stored in elem are used for flow calculation
         elem->SetPermeability(normalised_perm);
-        //elem->Permeability_is_set = true;
 
         if(index==0){
-            cout <<"Some numbers from PermeabilityFracAperture:\n";
-            cout << " \nAvg Aper = "<<ApertureAvg<<"   \nk= " << permeability <<"   \nk_norm= " << normalised_perm<<"\n";
-            cout << " \nRoughness_corr = "<<roughness_corr<<"   \nTortuosity_corr = " << tortuosity_corr <<"\n";
-            cout << " \nStd_Dev = "<<Std_Dev<<"   \nAvg Aper = " << ApertureAvg <<"\n";
+          cout <<"\n************************************************************\n";      
+          cout <<"Some numbers from PermeabilityFracAperture:\n";
+          cout << " \nAvg Aperture =\t"<<ApertureAvg<<"\nStdDev Aperture =\t"<<Std_Dev<<"   \nAvg Permeability =\t" << permeability <<"\n";
+          cout << " \nClosure ratio =\t"<<c<<" \nRoughness_corr =\t"<<roughness_corr<<"   \nTortuosity_corr =\t" << tortuosity_corr <<"\n";
+          cout <<"\n************************************************************\n";       
         }
     }//end if 1
     else  // if the permeability has aleady been set for this timestep
@@ -5286,10 +5284,6 @@ bool neighbors, shared_neighbors, neighbors_neighbor;
 CFEMesh* msh_pointer = NULL;
 msh_pointer = fem_msh_vector[0];  // Something must be done later on here.
         
-if(index==0)
-  cout<<"CalculateFracAperture.\n";
-
-
 if(elem->InFrac()) // RFW 18/11/2005  
 {
     if(!elem->ApertureIsSet()) //if the aperture has not already been set for this timestep
@@ -5420,7 +5414,7 @@ if(elem->InFrac()) // RFW 18/11/2005
                     for(long r=0; r!=(long)neighbor_vec.size(); r=r+2)
                     {
                     match = MSHGetCommonNodes(neighbor_vec[r], neighbor_vec[r+1], matching_nodes);
-                    if(match && !good_intersect) //this if startement looks rather strange
+                    if(match && !good_intersect)
                     {
                         for(int m=0; m!=(int)matching_nodes.size(); ++m)
                         {
@@ -5483,25 +5477,9 @@ if(elem->InFrac()) // RFW 18/11/2005
     ybot = intercept[3];
 
     aperture = sqrt(  pow( (intercept[3]-intercept[1]),2 )  +  pow( (intercept[2]-intercept[0]),2 )  );
-    //just for testing****************
-    if(index ==0) 
-    {
-        cout << "Some numbers from CalculateFracAperture:\n";
-        cout << "index"<<"\t "<< "dx"<<"\t\t "<< "dy"<<"\t "<<"centroid[0]" <<"\t "<<"centroid[1]"<<"\t "<<"aperture"<<"\t "<<"intercept[0]"<<"\t "<<"intercept[1]"
-            <<"\t "<<"intercept[2]"<<"\t "<<"intercept[3]"<<endl;
-    }
-        if(index==0 || index==1 || index == 531)
-    {
-    cout << index<<"\t "<< dx<<"\t "<< dy<<"\t "<<centroid[0] <<"\t "<<centroid[1]<<"\t "<<aperture<<"\t "<<intercept[0]<<"\t "<<intercept[1]
-            <<"\t "<<intercept[2]<<"\t "<<intercept[3]<<endl;
-    }
-    if(index==1983){ 
-        cout<< "I'm here.\n";}
-    //just for testing****************
 
     elem->SetAperture(aperture);
-    //elem->Aperture_is_set = true;
-    //cout << "Element "<<index<<"\n";
+
     return aperture;
     }
     else  // if the aperture has already been set for this timestep
@@ -5510,7 +5488,7 @@ if(elem->InFrac()) // RFW 18/11/2005
     return aperture;
     }
 }
-else  // RFW 18/11/2005
+else  
 {
     cout << "Element "<<index<<"neglected from fracture calculations.\n";
     aperture = -10;
