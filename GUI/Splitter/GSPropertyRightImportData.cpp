@@ -269,7 +269,7 @@ void CGSPropertyRightImportData::OnBnClickedButtonStatdata()
         LVITEM lvi;
 
     for (int colCounter = 1; colCounter <= TNCols; colCounter++){
-	    for (int rowCounter=2, int i=0; rowCounter <= TNRows; rowCounter++, i++) {
+	    for (int rowCounter=2, /*int*//*HS 15.06.2007*/ i=0; rowCounter <= TNRows; rowCounter++, i++) {
 	        index[0]=rowCounter;
 	        index[1]=colCounter;
 	        COleVariant vData;
@@ -403,7 +403,7 @@ void CGSPropertyRightImportData::OnBnClickedButtonStatdata()
         LVITEM lvi;
 
     for (int rowCounter = 1; rowCounter <= TNRows; rowCounter++){
-	    for (int colCounter = 1, int i=0; colCounter <= TNCols; colCounter++, i++) {
+	    for (int colCounter = 1, /*int*//*HS 15.06.2007*/ i=0; colCounter <= TNCols; colCounter++, i++) {
 	        index[0]=rowCounter;
 	        index[1]=colCounter;
 	        COleVariant vDataMAX, vDataMEAN, vDataMIN;

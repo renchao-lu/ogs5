@@ -40,13 +40,13 @@ static char THIS_FILE[] = __FILE__;
 
 
 CGLPolyline *geo_polyline = NULL;
-vector<CGLPolyline*>::iterator pp = NULL;
+vector<CGLPolyline*>::iterator pp /*= NULL*/;//HS 15.06.2007
 
 Surface *geo_surface = NULL;
-vector<Surface*>::iterator ps = NULL;//CC
+vector<Surface*>::iterator ps /*= NULL*/;//CC//HS 15.06.2007
 
 CGLVolume *geo_volume = NULL;
-vector<CGLVolume*>::iterator pv = NULL;
+vector<CGLVolume*>::iterator pv /*= NULL*/;//HS 15.06.2007
 
 CBoundaryCondition *m_bc = NULL;
 list<CBoundaryCondition*>::const_iterator p_bc = NULL;
