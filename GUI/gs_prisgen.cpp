@@ -385,7 +385,7 @@ BOOL CPrisGenMap::OnInitDialog()
     CString m_str;
     CString m_strLayer;
     m_CB_LAY.ResetContent();
-    for(i=0;i<(int)m_msh->no_msh_layer;i++){
+    for(int /*HS 15.06.2007*/i=0;i<(int)m_msh->no_msh_layer;i++){
       m_str = "LAYER";
       m_strLayer.Format("%i",i);
       m_str += m_strLayer;

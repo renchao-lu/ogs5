@@ -706,7 +706,7 @@ void Tetgen::removeSuperTetra()
 	}
 	removeTetrahedra();
 
-	for(i=0;i<4;i++) {
+	for(int i=0;i<4;i++) {
 		delete sptet_nd[i];
 		sptet_nd[i] = NULL;
 	}
@@ -1179,7 +1179,7 @@ int Tetgen::isPossibleMerge(Node *po_nd,Node *ne_nd,deque<Tetra*>&pohang,
 		pst_vol += vol;
 	}
 	n = (int)nehang.size();
-	for(i=0;i<n;i++) {
+	for(int i=0;i<n;i++) {
 		ptet = nehang[i];
 		pre_vol += ptet->getVolume();
 	}

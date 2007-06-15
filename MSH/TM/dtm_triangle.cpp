@@ -546,7 +546,7 @@ void Triangle::view()
 	}
 	
 	cout << "  JAC";
-	for(i=0;i<3;i++) {
+	for(int i=0;i<3;i++) {
 		int n = getNumberOfNeighborElement(i);
 		cout << " [";
 		for(int j=0;j<n;j++) {

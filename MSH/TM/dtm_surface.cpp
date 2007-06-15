@@ -873,7 +873,7 @@ int Surface::remeshOppositeSide(Neighbor &neib,
 		nb_tri_buff.push_back(op_nw_tri);
 
 		int nn = op_rs_nb.getNumberOfElement();
-		for(j=0;j<nn;j++) {
+		for(int j=0;j<nn;j++) {
 			nn_tri = op_rs_nb.getElement(j);
 			nnedge = nn_tri->getConection(op_cr_tri);
 			nn_tri->eraseNeighborElement(nnedge,op_cr_tri);
@@ -1388,7 +1388,7 @@ void Surface::selectDomain(Tetgen *tetgen)
 		}
 
 		nn = (int)focus.size();
-		for(j=0;j<nn;j++) {
+		for(int j=0;j<nn;j++) {
 			focus[j]->setState(0);
 		}
 	}
@@ -1911,7 +1911,7 @@ int Surface::isPossibleMerge(Node *po_nd,Node *ne_nd,deque<Triangle*>&pohang,
 		pst_area += area;
 	}
 	n = (int)nehang.size();
-	for(i=0;i<n;i++) {
+	for(int i=0;i<n;i++) {
 		ptri = nehang[i];
 		pre_area += ptri->getArea();
 	}

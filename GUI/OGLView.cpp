@@ -77,7 +77,7 @@ vector<CViewPolylines*> view_polylines_vector;
 CViewPolylines *m_view_polylines = NULL;
 CGLPolyline *ogl_polyline = NULL;
 CGLPoint *m_polyline_points = NULL;
-vector<CGLPolyline*>::iterator p = NULL;
+vector<CGLPolyline*>::iterator p /*= NULL*/;//HS: 15.06.2007 make it compatible with VS2005
 
 vector<CViewSurfaces*> view_surfaces_vector;
 CViewSurfaces *m_view_surfaces = NULL;
@@ -690,7 +690,7 @@ void COGLView::OnDrawGL()
         CGLVolume *gl_volume = NULL;
         Surface * gl_surface = NULL;
          vector<CGLVolume*>::iterator p_vol = volume_vector.begin();//CC 
-        vector<Surface*>::iterator p_sfc = NULL;
+        vector<Surface*>::iterator p_sfc /*= NULL*/;//HS 15.06.2007
         volume_vectorlength  = (int)volume_vector.size();  //CC
             for(i=0;i<volume_vectorlength;i++)
             {

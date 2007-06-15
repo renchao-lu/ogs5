@@ -301,7 +301,7 @@ void Tetra::view()
 		cout << " " << getNode(i)->getId();
 	}
 	cout << "  JAC";
-	for(i=0;i<4;i++) {
+	for(int i=0;i<4;i++) {
 		ptet = getNeighborElement(i);
 		if(!ptet) {
 			cout << " 0";

@@ -6033,14 +6033,26 @@ void CVirtualGridCtrl::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar
 
 
 //  ------------------------------------------------------------------------------
+// HB: 15.06.2007 changed this to LRESULT in order to compile it on VS2005
+// for vs2003 and lower version, it should be UINT
+
+#if _MSC_VER >= 1400
+LRESULT CVirtualGridCtrl::OnNcHitTest(CPoint point)
+{
+	m_hitTest = point;
+	ScreenToClient(&m_hitTest);
+
+	return CWnd::OnNcHitTest(point);	
+}
+#else
 UINT CVirtualGridCtrl::OnNcHitTest(CPoint point) 
 {
 	m_hitTest = point;
 	ScreenToClient(&m_hitTest);
 
 	return CWnd::OnNcHitTest(point);
-}
-
+}	 
+#endif 
 
 
 //  -----------------------------------------------------------------------------

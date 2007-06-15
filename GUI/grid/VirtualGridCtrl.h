@@ -841,7 +841,20 @@ protected:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
-	afx_msg UINT OnNcHitTest(CPoint point);
+
+//-------------------------------------------------------
+// HB: 15.06.2007----------------------------------------
+// Add this change in order to compile it with VS2005----
+// Microsoft changed the type of OnNcHitTest to LRESULT 
+// in VS 2003, for VS 2003, the type should be UINT
+	#if _MSC_VER >= 1400
+	 afx_msg LRESULT OnNcHitTest(CPoint point);
+	#else
+	 afx_msg UINT OnNcHitTest(CPoint point);
+	#endif 
+	//afx_msg UINT OnNcHitTest(CPoint point);
+//-------------------------------------------------------
+
 	afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);

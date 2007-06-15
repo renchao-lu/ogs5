@@ -125,7 +125,7 @@ int Neighbor::pushElement(Triangle *elm)
 		for(int i=0;i<n;i++) {
 			tmp[i] = element_array[i];
 		}
-		for(i=nn;i<nn*2;i++) {
+		for(int i=nn;i<nn*2;i++) {
 			tmp[i] = NULL;
 		}
 		delete [] element_array;

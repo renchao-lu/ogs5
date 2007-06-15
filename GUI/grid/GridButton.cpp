@@ -128,7 +128,7 @@ void CGridButton::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		ASSERT(bSuccess);
 
 		nFlags = (lpDrawItemStruct->rcItem.right - lpDrawItemStruct->rcItem.left) / 2 - 1 + m_bPressed;
-		dx = div(lpDrawItemStruct->rcItem.right - lpDrawItemStruct->rcItem.left, 2).rem - 1;
+		dx = div(lpDrawItemStruct->rcItem.right - lpDrawItemStruct->rcItem.left, (long)/*HS 15.06.2007*/2).rem - 1;
 
 		bSuccess = pDC->PatBlt(
 			lpDrawItemStruct->rcItem.left + nFlags - 2 + dx,
