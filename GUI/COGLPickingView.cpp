@@ -847,7 +847,9 @@ char* COGLPickingView::string2CharArrary(string aString)
 	char *charArrary = NULL;
 
 	charArrary = (char *)malloc((aString.size()+1) * sizeof (char));
-	for(int p=0; p < (int)aString.size(); ++p)
+	int p;
+	for(/*int*//*HS moved outside of the loop 15.06.2007*/
+		p=0; p < (int)aString.size(); ++p)
 	{
 		charArrary[p] = aString[p];
 	}
@@ -2360,7 +2362,7 @@ void COGLPickingView::processhitsGLINode(GLint hits, GLuint buffer[])
 		theApp->hitsGLINodeTotal += hits;
 
 		// Eliminate the duplicates
-		for(i=0; i < theApp->hitsGLINodeTotal; ++i)
+		for(int /*HS 15.06.2007*/i=0; i < theApp->hitsGLINodeTotal; ++i)
 			for(int j=i+1; j < theApp->hitsGLINodeTotal; ++j)
 				if(theApp->GLInodePickedTotal[i] == theApp->GLInodePickedTotal[j])
 				{
@@ -2377,7 +2379,7 @@ void COGLPickingView::processhitsGLINode(GLint hits, GLuint buffer[])
 		
 		// Search the same node and delete it
 		for(int j=0; j < hits; ++j)
-			for(i=0; i < theApp->hitsGLINodeTotal; ++i)
+			for(int /*HS 15.06.2007*/i=0; i < theApp->hitsGLINodeTotal; ++i)
 				if (theApp->GLInodePickedTotal[i] == theApp->GLInodePicked[j])
 				{
 					for(int k = i; k < (theApp->hitsGLINodeTotal - 1); ++k)
@@ -2409,7 +2411,7 @@ void COGLPickingView::processhitsRFINode(GLint hits, GLuint buffer[])
 		theApp->hitsRFINodeTotal += hits;
 
 		// Eliminate the duplicates
-		for(i=0; i < theApp->hitsRFINodeTotal; ++i)
+		for(int /*HS 15.06.2007*/i=0; i < theApp->hitsRFINodeTotal; ++i)
 			for(int j=i+1; j < theApp->hitsRFINodeTotal; ++j)
 				if(theApp->RFInodePickedTotal[i] == theApp->RFInodePickedTotal[j])
 				{
@@ -2426,7 +2428,7 @@ void COGLPickingView::processhitsRFINode(GLint hits, GLuint buffer[])
 		
 		// Search the same node and delete it
 		for(int j=0; j < hits; ++j)
-			for(i=0; i < theApp->hitsRFINodeTotal; ++i)
+			for(int /*HS 15.06.2007*/i=0; i < theApp->hitsRFINodeTotal; ++i)
 				if (theApp->RFInodePickedTotal[i] == theApp->RFInodePicked[j])
 				{
 					for(int k = i; k < (theApp->hitsRFINodeTotal - 1); ++k)
@@ -2454,7 +2456,7 @@ void COGLPickingView::processhitsParticle(GLint hits, GLuint buffer[])
 		theApp.hitsParticleTotal += hits;
 
 		// Eliminate the duplicates
-		for(i=0; i < theApp.hitsParticleTotal; ++i)
+		for(int /*HS 15.06.2007*/i=0; i < theApp.hitsParticleTotal; ++i)
 			for(int j=i+1; j < theApp.hitsParticleTotal; ++j)
 				if(theApp.ParticlePickedTotal[i] == theApp.ParticlePickedTotal[j])
 				{
@@ -2471,7 +2473,7 @@ void COGLPickingView::processhitsParticle(GLint hits, GLuint buffer[])
 		
 		// Search the same node and delete it
 		for(int j=0; j < hits; ++j)
-			for(i=0; i < theApp.hitsParticleTotal; ++i)
+			for(int /*HS 15.06.2007*/i=0; i < theApp.hitsParticleTotal; ++i)
 				if (theApp.ParticlePickedTotal[i] == theApp.ParticlePicked[j])
 				{
 					for(int k = i; k < (theApp.hitsParticleTotal - 1); ++k)
@@ -2504,7 +2506,7 @@ void COGLPickingView::processHitsElement(GLint hits, GLuint buffer[])
 		theApp->hitsElementTotal += hits;
 
 		// Eliminate the duplicates
-		for(i=0; i < theApp->hitsElementTotal; ++i)
+		for(int /*HS 15.06.2007*/i=0; i < theApp->hitsElementTotal; ++i)
 			for(int j=i+1; j < theApp->hitsElementTotal; ++j)
 				if(theApp->elementPickedTotal[i] == theApp->elementPickedTotal[j])
 				{
@@ -2524,7 +2526,7 @@ void COGLPickingView::processHitsElement(GLint hits, GLuint buffer[])
 		
 		// Search the same node and delete it
 		for(int j=0; j < hits; ++j)
-			for(i=0; i < theApp->hitsElementTotal; ++i)
+			for(int /*HS 15.06.2007*/i=0; i < theApp->hitsElementTotal; ++i)
 				if (theApp->elementPickedTotal[i] == theApp->elementPicked[j])
 				{
 					for(int k = i; k < (theApp->hitsElementTotal - 1); ++k)
@@ -2557,7 +2559,7 @@ void COGLPickingView::processHitsBoundary(GLint hits, GLuint buffer[])
 		theApp->hitsPolylineTotal += hits;
 
 		// Eliminate the duplicates
-		for(i=0; i < theApp->hitsPolylineTotal; ++i)
+		for(int /*HS 15.06.2007*/i=0; i < theApp->hitsPolylineTotal; ++i)
 			for(int j=i+1; j < theApp->hitsPolylineTotal; ++j)
 				if(theApp->polylinePickedTotal[i] == theApp->polylinePickedTotal[j])
 				{
@@ -2574,7 +2576,7 @@ void COGLPickingView::processHitsBoundary(GLint hits, GLuint buffer[])
 		
 		// Search the same node and delete it
 		for(int j=0; j < hits; ++j)
-			for(i=0; i < theApp->hitsPolylineTotal; ++i)
+			for(int /*HS 15.06.2007*/i=0; i < theApp->hitsPolylineTotal; ++i)
 				if (theApp->polylinePickedTotal[i] == theApp->boundaryPicked[j])
 				{
 					for(int k = i; k < (theApp->hitsPolylineTotal - 1); ++k)
@@ -2605,7 +2607,7 @@ void COGLPickingView::processHitsSurface(GLint hits, GLuint buffer[])
 		theApp->hitsSurfaceTotal += hits;
 
 		// Eliminate the duplicates
-		for(i=0; i < theApp->hitsSurfaceTotal; ++i)
+		for(int /*HS 15.06.2007*/i=0; i < theApp->hitsSurfaceTotal; ++i)
 			for(int j=i+1; j < theApp->hitsSurfaceTotal; ++j)
 				if(theApp->surfacePickedTotal[i] == theApp->surfacePickedTotal[j])
 				{
@@ -2622,7 +2624,7 @@ void COGLPickingView::processHitsSurface(GLint hits, GLuint buffer[])
 		
 		// Search the same node and delete it
 		for(int j=0; j < hits; ++j)
-			for(i=0; i < theApp->hitsSurfaceTotal; ++i)
+			for(int /*HS 15.06.2007*/i=0; i < theApp->hitsSurfaceTotal; ++i)
 				if (theApp->surfacePickedTotal[i] == theApp->surfacePicked[j])
 				{
 					for(int k = i; k < (theApp->hitsSurfaceTotal - 1); ++k)
@@ -2653,7 +2655,7 @@ void COGLPickingView::processHitsVolume(GLint hits, GLuint buffer[])
 		theApp->hitsVolumeTotal += hits;
 
 		// Eliminate the duplicates
-		for(i=0; i < theApp->hitsVolumeTotal; ++i)
+		for(int /*HS 15.06.2007*/i=0; i < theApp->hitsVolumeTotal; ++i)
 			for(int j=i+1; j < theApp->hitsVolumeTotal; ++j)
 				if(theApp->volumePickedTotal[i] == theApp->volumePickedTotal[j])
 				{
@@ -2670,7 +2672,7 @@ void COGLPickingView::processHitsVolume(GLint hits, GLuint buffer[])
 		
 		// Search the same node and delete it
 		for(int j=0; j < hits; ++j)
-			for(i=0; i < theApp->hitsVolumeTotal; ++i)
+			for(int /*HS 15.06.2007*/i=0; i < theApp->hitsVolumeTotal; ++i)
 				if (theApp->volumePickedTotal[i] == theApp->volumePicked[j])
 				{
 					for(int k = i; k < (theApp->hitsVolumeTotal - 1); ++k)
