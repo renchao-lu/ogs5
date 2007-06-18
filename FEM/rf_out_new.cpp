@@ -2552,8 +2552,8 @@ void COutput::WriteDataVTK(int number)
 
 
   fstream vtk_file (vtk_file_name.data(),ios::app|ios::out);
-  vtk_file.setf(ios::fixed,ios::floatfield);
-  vtk_file.precision(6);
+  vtk_file.setf(ios::scientific,ios::floatfield);
+  vtk_file.precision(12);
   if (!vtk_file.good()) return;
   vtk_file.seekg(0L,ios::beg);
   //--------------------------------------------------------------------
