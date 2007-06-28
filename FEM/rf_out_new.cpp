@@ -1588,11 +1588,11 @@ Programing:
 **************************************************************************/
 void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
 {
-  int k,i;
+  int k;
   double flux_nod, flux_sum = 0.0;
   //----------------------------------------------------------------------
   CRFProcess* dm_pcs = NULL;
-  for(i=0;i<(int)pcs_vector.size();i++){
+  for(int i=0;i<(int)pcs_vector.size();i++){
 	if(pcs_vector[i]->pcs_type_name.find("DEFORMATION")!=string::npos){
        dm_pcs = pcs_vector[i];
        break;
@@ -1649,7 +1649,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
       tec_file << nod_value_vector[k] << " ";
     //
     #ifdef RFW_FRACTURE
-    for(int i=0; i<mmp_vector.size(); ++i)
+    for(int i=0; i<(int)mmp_vector.size(); ++i)
     {
       if( mmp_vector[i]->frac_num >0)
       {
@@ -1708,7 +1708,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
   //..................................................................
   // Mass transport
   if(pcs_type_name.compare("MASS_TRANSPORT")==0){
-    for(i=0;i<(int)nod_value_vector.size();i++){
+    for(int i=0;i<(int)nod_value_vector.size();i++){
       nod_value_name = nod_value_vector[i];
       for(l=0;l<(int)pcs_vector.size();l++){
         m_pcs = pcs_vector[l];
@@ -1731,11 +1731,11 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
   //..................................................................
   else
   {
-    for(i=0;i<(int)nod_value_vector.size();i++)
+    for(int i=0;i<(int)nod_value_vector.size();i++)
     {
       //..................................................................
       // PCS
-      if(!(nod_value_vector[i].compare("FLUX")==0))  //OK
+      if(!(nod_value_vector[i].compare("FLUX")==0)   ||  pcs_type_name == "OVERLAND_FLOW")  //JOD separate infiltration flux output in overland flow 
       {
         m_pcs = GetPCS(nod_value_vector[i]);
       }
@@ -1751,7 +1751,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
       }
       //..................................................................
       // PCS
-      if(!(nod_value_vector[i].compare("FLUX")==0))  //OK
+      if(!(nod_value_vector[i].compare("FLUX")==0)  || pcs_type_name == "OVERLAND_FLOW") // JOD separate infiltration flux output in overland flow 
       {
         tec_file << m_pcs->GetNodeValue(msh_node_number,NodeIndex[i]) << " ";
       }
@@ -1766,7 +1766,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
     }
     //....................................................................    
     #ifdef RFW_FRACTURE
-    for(int i=0; i<mmp_vector.size(); ++i)
+    for(int i=0; i<(int)mmp_vector.size(); ++i)
     {
       if( mmp_vector[i]->frac_num >0)
       {
@@ -1781,11 +1781,11 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
     //....................................................................
     if(dm_pcs) //WW
     {
-         for(i=0;i<ns;i++)
+         for(int i=0;i<ns;i++)
            ss[i] = dm_pcs->GetNodeValue(msh_node_number,stress_i[i]);
          tec_file<<-DeviatoricStress(ss)/3.0<<" ";
          tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0)<<"  ";
-         for(i=0;i<ns;i++)
+         for(int i=0;i<ns;i++)
            ss[i] = dm_pcs->GetNodeValue(msh_node_number,strain_i[i]);
          DeviatoricStress(ss);
          tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0);        
@@ -2322,6 +2322,11 @@ void COutput::GetNodeIndexVector(vector<int>&NodeIndex)
       for(i=0;i<m_pcs->GetPrimaryVNumber();i++) 
       {
         if(nod_value_vector[k].compare(m_pcs->pcs_primary_function_name[i])==0)
+        {
+          NodeIndex[k]++;
+          break;
+        }
+        if(nod_value_vector[k].compare("COUPLING")==0)  // JOD
         {
           NodeIndex[k]++;
           break;

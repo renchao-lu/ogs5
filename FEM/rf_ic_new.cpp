@@ -453,9 +453,9 @@ void CInitialCondition::SetPolyline(int nidx)
         //msh_nodes = MSHGetNodesClose(&no_nodes, m_polyline);//CC
         for(i=0;i<(long)nodes_vector.size();i++)
         {
-          //SetNodeVal(msh_nodes[i],nidx,node_value_vector[0]->node_value);
           value = node_value_vector[0]->node_value;
-          m_pcs->SetNodeValue(nodes_vector[i],nidx,node_value_vector[0]->node_value);
+       
+		  m_pcs->SetNodeValue(nodes_vector[i],nidx, value);
         }
       }
       else

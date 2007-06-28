@@ -371,7 +371,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
   double pcs_dm_error = 1.0e8;
   double pcs_dm_error0 = 1.0e8;
   double pcs_dm_cp_error = 1.0e8;
-  int lop_coupling_iterations = 10; 
+  int lop_coupling_iterations; 
 //  int lop_nonlinear_iterations = 15; //OK_OUT 2;
   double pcs_coupling_error = 1000; //MB
   bool CalcVelocities = false;
@@ -450,15 +450,28 @@ int LOPTimeLoop_PCS(double*dt_sum)
       //------------------------------------------------------------------
       m_pcs = PCSGet("RICHARDS_FLOW");
       if(m_pcs&&m_pcs->selected){
+
+		lop_coupling_iterations = m_pcs->m_num->cpl_iterations;  // JOD coupling
+        if(pcs_vector.size()>1 && lop_coupling_iterations > 1) {
+          m_pcs->CopyCouplingNODValues();
+         TolCoupledF = m_pcs->m_num->cpl_tolerance;
+        }
+
         if(m_pcs->adaption) PCSStorage();
         CFEMesh* m_msh = FEMGet("RICHARDS_FLOW");
         if(m_msh->geo_name.compare("REGIONAL")==0)
           LOPExecuteRegionalRichardsFlow(m_pcs);
         else
           pcs_flow_error = m_pcs->ExecuteNonLinear();
-        m_pcs->CalcSecondaryVariablesRichards(1,false);  //WW
+		if(m_pcs->saturation_switch == true)
+			m_pcs->CalcSaturationRichards(1, false); // JOD
+		else
+          m_pcs->CalcSecondaryVariablesRichards(1,false);  //WW
         if (CalcVelocities)
           m_pcs->CalIntegrationPointValue(); //WW
+		
+		if(lop_coupling_iterations > 1) // JOD  coupling
+          pcs_coupling_error = m_pcs->CalcCouplingNODError();
       }
 #ifdef _FEMPCHDEBUG_
 	// PCH Let's monitor what's going on in the FEM
@@ -719,13 +732,15 @@ int LOPTimeLoop_PCS(double*dt_sum)
       //if(!H_Process) break;
       if(k>0)
       {
-        if(pcs_flow_error<TolCoupledF)
-        //    ||pcs_flow_error/pcs_flow_error0<TolCoupledF)
-        break;
+       //if(pcs_flow_error<TolCoupledF)  // JOD what is this???
+       //    break;         
+			//||pcs_flow_error/pcs_flow_error0<TolCoupledF)
+		if(pcs_coupling_error<TolCoupledF)  // JOD  
+          break;
       }
       if(H_Process&&M_Process&&k>0) 
         cout << "\t    P-U coupling iteration: " << k 
-             <<" Error: " <<pcs_flow_error<<endl;
+             <<" Error: " <<pcs_coupling_error<<endl;
   } // coupling iterations
   //======================================================================
   // Extropolate the Gauss values to element nodes for deformation process
@@ -1105,7 +1120,7 @@ void LOPCalcELEResultants(void)
 **************************************************************************/
 void ASMCalcNodeWDepth(CRFProcess *m_pcs)
 {
-int nidx, nidy;
+int nidx, nidy, nidz;
 int timelevel = 1; 
 int i;
 double WDepth;
@@ -1115,11 +1130,12 @@ if(m_pcs->m_msh){
 //  nidy = GetNodeValueIndex("WDEPTH")+1;
   nidx = m_pcs->GetNodeValueIndex("HEAD")+1;
   nidy = m_pcs->GetNodeValueIndex("WDEPTH");
-  
+  nidz = m_pcs->GetNodeValueIndex("COUPLING");
   //for (i=0;i<NodeListLength;i++) {
   for(long nn=0;nn<(long)m_pcs->m_msh->nod_vector.size();nn++){
     //if (GetNode(i)!=NULL) {  /* wenn Knoten existiert */
       WDepth = m_pcs->GetNodeValue(nn, nidx) - m_pcs->m_msh->nod_vector[nn]->Z();
+	  m_pcs->SetNodeValue(nn,nidz, m_pcs->GetNodeValue(nn,nidz+1) ); // JOD only needed for GREEN_AMPT source term 
       if (WDepth < 0.0) {
         WDepth  = 0.0;
       }

@@ -50,7 +50,16 @@ class CSourceTerm
     int pcs_number;
     string pcs_type_name_cond; //OK
     string pcs_pv_name_cond; //OK
-    // GEO
+	// fluid process coupling JOD
+	double coup_leakance, rill_height; 
+	double sorptivity, constant, rainfall, rainfall_duration, moistureDeficit;
+    bool conditional;
+    bool river;
+  	bool COUPLING_SWITCH;
+	// overland flow  JOD
+	double normaldepth_slope;
+    bool critical_depth;
+	// GEO
     string geo_prop_name;
     long geo_node_number;
     double geo_node_value; //Maxium three points
@@ -69,9 +78,6 @@ class CSourceTerm
     vector<long>node_renumber_vector;
     string delimiter_type;
     string geo_name;
-    bool conditional;
-    bool river;
-    bool critical_depth;
     //FCT
     string fct_name;
     // TIM
@@ -171,6 +177,11 @@ extern  double GetRiverNODValue(CNodeValue* cnodev,CSourceTerm* m_st, long msh_n
 extern	double GetConditionalNODValue(CSourceTerm* m_st, CNodeValue* cnodev); 
 extern  double GetCriticalDepthNODValue(CNodeValue* cnodev,CSourceTerm*, long msh_node); //MB
 extern  double GetNormalDepthNODValue(CSourceTerm*, long msh_node); //MB JOD
-
-
+extern  double GetCouplingNODValue(CSourceTerm* m_st, CNodeValue* cnodev, long msh_node); // JOD
+extern  double GetCouplingNODValueNewton(CSourceTerm* m_st, CNodeValue* cnodev, long msh_node); // JOD
+extern  double GetCouplingNODValuePicard(CSourceTerm* m_st, CNodeValue* cnodev, long msh_node); // JOD
+extern  double GetCouplingNODValueMixed(CSourceTerm* m_st, CNodeValue* cnodev, long msh_node); // JOD
+extern  double GetRelativeCouplingPermeability(CRFProcess* m_pcs, double head, double rillDepth, long msh_node); // JOD
+extern  double GetPhilipNODValue(CNodeValue* cnodev,CSourceTerm* m_st); // JOD
+extern  double GetGreenAmptNODValue(CNodeValue* cnodev,CSourceTerm* m_st, long msh_node); // JOD
 #endif

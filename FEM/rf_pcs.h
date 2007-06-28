@@ -313,6 +313,7 @@ class CRFProcess {
     CNumerics* m_num;
     //
     bool selected; //OK
+	bool saturation_switch; // JOD
     // MSH
     CFEMesh* m_msh; //OK
     string msh_type_name; //OK
@@ -424,6 +425,7 @@ class CRFProcess {
     void CalcSecondaryVariables(int);
     void MMPCalcSecondaryVariablesRichards(int timelevel, bool update);
     void CalcSecondaryVariablesRichards(int timelevel, bool update); //OK
+	void CalcSaturationRichards(int timelevel, bool update); // JOD
     bool non_linear; //OK/CMCD
     void SetNODFlux(); //OK
     void AssembleParabolicEquationRHSVector(); //OK

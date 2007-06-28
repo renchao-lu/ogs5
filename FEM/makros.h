@@ -22,9 +22,9 @@
   /* Floating-Point */
 
 /* ROCKFLOW-Version */
-#define ROCKFLOW_VERSION    "4.5.02"
+#define ROCKFLOW_VERSION    "4.5.03"
 #define RF_SHELL_VERSION    "4.4.11TK"
-#define ROCKFLOW_DATE       "18.05.2007"
+#define ROCKFLOW_DATE       "27.06.2007"
 
 /* Definitionen von Makros zur Steuerung der bedingten Compilierung */
 #define SWITCHES
@@ -263,7 +263,9 @@
 #ifndef PI
 #define PI 3.14159265358979323846
 #endif
-
+#ifndef GRAVITY_CONSTANT
+#define GRAVITY_CONSTANT 9.81
+#endif
 /* Feste Zahlen fuer Genauigkeitspruefungen etc. */
 #define Mdrittel  (1.0/3.0)
 #define MKleinsteZahl DBL_EPSILON  

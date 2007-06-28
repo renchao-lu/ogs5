@@ -92,7 +92,6 @@ CMediumProperties::CMediumProperties(void)
   unconfined_flow_group = -1;
   // surface flow
   friction_coefficient = -1;
-  friction_model = -1;
   // mass transport
   // heat transport
   heat_dispersion_model = -1; //WW
@@ -766,6 +765,12 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
             in >> saturation_max[i];
             in >> saturation_exp[i];
             break;
+		  case 16: // van Genuchten/Mualem for light oil (B.R. Thoms Masters Thesis 2003) JOD
+            in >> saturation_res[i];
+            in >> saturation_max[i];
+            in >> saturation_exp[i];
+			in >> saturation_alpha[i];
+            break;
           default:
             cout << "Error in MMPRead: no valid permeability saturation model" << endl;
             break;
@@ -898,6 +903,10 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 		case 4: // van Genuchten
 		  in >> capillary_pressure_model_values[0];
           break;  //WW
+		 case 16: // van Genuchten, separate fit (thoms) JOD
+			 in >> permeability_exp[0];
+			 in >> permeability_alpha[0]; 
+          break; 
         default:
           cout << "Error in MMPRead: no valid permeability saturation model" << endl;
           break;
@@ -964,42 +973,38 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
       in.clear();
       continue;
 	}
-//------------------------------------------------------------------------
-//16. Surface water
-//------------------------------------------------------------------------
-    if(line_string.find("$MANNING_COEFFICIENT")!=string::npos) { //subkeyword found
-      in.str(GetLineFromFile1(mmp_file));
-      in >> friction_coefficient;
-      friction_model = 1;
-      in.clear();
-      continue;
-    }
-
-    if(line_string.find("$CHEZY_COEFFICIENT")!=string::npos) { //subkeyword found
-      in.str(GetLineFromFile1(mmp_file));
-      in >> friction_coefficient;
-      friction_model = 2;
-      in.clear();
-      continue;
-    }
-  
-   if(line_string.find("$DARCY_WEISBACH_COEFFICIENT")!=string::npos) { //subkeyword found
-      in.str(GetLineFromFile1(mmp_file));
-      in >> friction_coefficient;
-      friction_model = 3;
-      in.clear();
-      continue;
-    }
-    if(line_string.find("$DIFFUSION")!=string::npos) { //subkeyword found
+	if(line_string.find("$DIFFUSION")!=string::npos) { //subkeyword found
       in.str(GetLineFromFile1(mmp_file));
 	  in >> heat_diffusion_model;
       in.clear();
       continue;
     }
+//------------------------------------------------------------------------
+//16. Surface water
+//------------------------------------------------------------------------
+    if(line_string.find("$SURFACE_FRICTION")!=string::npos) { //subkeyword found
+      in.str(GetLineFromFile1(mmp_file));
+      in >> friction_coefficient >> friction_exp_slope >> friction_exp_depth;
+       in.clear();
+      continue;
+    }
+ 
 	if(line_string.find("$WIDTH")!=string::npos) { //subkeyword found
       in.str(GetLineFromFile1(mmp_file));
-      in >> channel_width;
+      in >> overland_width;
       in.clear();
+      continue;
+    }
+
+	if(line_string.find("$RILL")!=string::npos) { //subkeyword found
+      in.str(GetLineFromFile1(mmp_file));
+      in >> rill_height >> rill_epsilon;
+      in.clear();
+      continue;
+    }
+
+	if(line_string.find("$CHANNEL")!=string::npos) { //subkeyword found
+      channel = 1;
       continue;
     }
 
@@ -1278,20 +1283,7 @@ if(mass_dispersion_model>-1){
       break;
   }
 }
-  //....................................................................
-  //Surface flow
-if(friction_model==3){
-   *mmp_file << " $DARCY_WEISBACH_COEFFICIENT" << endl; //OK
-   *mmp_file << "  " << friction_coefficient << endl;
-}
-if(friction_model==2){
-   *mmp_file << " $CHEZY_COEFFICIENT" << endl; //OK
-   *mmp_file << "  " << friction_coefficient << endl;
-}
-if(friction_model==1){
-   *mmp_file << " $MANNING_COEFFICIENT" << endl; //OK
-   *mmp_file << "  " << friction_coefficient << endl;
-}
+
   //----------------------------------------------------------------------
 }
 
@@ -1630,6 +1622,23 @@ else{
                                 * pow((1.-pow(saturation_eff,1./saturation_exp[phase])),2.0*saturation_exp[phase]);
         permeability_saturation = MRange(0.,permeability_saturation,1.);
       break;
+   case 16: // like 4  JOD vanGebuchten: Thoms MastersThesis 2003
+
+	
+        if (saturation > (saturation_max[phase] - MKleinsteZahl))
+            saturation = saturation_max[phase] - MKleinsteZahl;  /* Mehr als Vollsaettigung mit Wasser */
+        if (saturation < (saturation_res[phase] + MKleinsteZahl))
+            saturation = saturation_res[phase] + MKleinsteZahl;   /* Weniger als Residualsaettigung Wasser */
+        //
+        saturation_eff = (saturation - saturation_res[phase]) / (saturation_max[phase] - saturation_res[phase]);
+        //SB relperm[1] = pow(s_eff, 2.) * pow((1 - pow((1 - pow(s_eff, 1. / m)), m)),2.0); //SB:todo added ^2N1
+        //permeability_saturation = pow(saturation_eff,2.) 
+        //                        * (1.-pow((1.- pow(saturation_eff,1./saturation_exp[phase])),saturation_exp[phase]));	
+     
+        permeability_saturation = pow(saturation_eff,0.5) \
+           * pow(1.-pow(1-pow(saturation_eff,1./permeability_exp[phase]),permeability_exp[phase]),2.0);
+        permeability_saturation = MRange(0.,permeability_saturation,1.);
+      break;
     default:
       cout << "Error in CFluidProperties::PermeabilitySaturationFunction: no valid material model" << endl;
       break;
@@ -1744,6 +1753,23 @@ double CMediumProperties::PermeabilitySaturationFunction(const double Saturation
                                 * pow((1.-pow(saturation_eff,1./saturation_exp[phase])),2.0*saturation_exp[phase]);
         permeability_saturation = MRange(0.,permeability_saturation,1.);
       break;
+	case 16: // JOD
+
+      if (saturation > (saturation_max[phase] - MKleinsteZahl))
+           saturation = saturation_max[phase] - MKleinsteZahl;  /* Mehr als Vollsaettigung mit Wasser */
+        if (saturation < (saturation_res[phase] + MKleinsteZahl))
+           saturation = saturation_res[phase] + MKleinsteZahl;   /* Weniger als Residualsaettigung Wasser */
+        //
+        saturation_eff = (saturation - saturation_res[phase]) / (saturation_max[phase] - saturation_res[phase]);
+        //SB relperm[1] = pow(s_eff, 2.) * pow((1 - pow((1 - pow(s_eff, 1. / m)), m)),2.0); //SB:todo added ^2N1
+		//permeability_saturation = pow(saturation_eff,2.) 
+        //                        * (1.-pow((1.- pow(saturation_eff,1./saturation_exp[phase])),saturation_exp[phase]));
+		// YD Advances in Water Resource 19 (1995) 25-38 
+        permeability_saturation = pow(saturation_eff,0.5) \
+                     * pow(1.-pow(1-pow(saturation_eff,1./permeability_exp[phase]),permeability_exp[phase]),2.0);
+        permeability_saturation = MRange(0.,permeability_saturation,1.);
+
+	  break;
     default:
       cout << "Error in CFluidProperties::PermeabilitySaturationFunction: no valid material model" << endl;
       break;
@@ -5589,6 +5615,21 @@ double CMediumProperties::CapillaryPressureFunction(long number,double*gp,double
       break;
     case 8: // 3Phasen ueber Kurven 
       break;
+	case 16:  // JOD
+    if (saturation > (saturation_max[phase] - MKleinsteZahl))
+            saturation = saturation_max[phase] - MKleinsteZahl;  /* Mehr als Vollsaettigung mit Wasser */
+      if (saturation < (saturation_res[phase] + MKleinsteZahl))
+            saturation = saturation_res[phase] + MKleinsteZahl;   /* Weniger als Residualsaettigung Wasser */
+      m_mfp = MFPGet("LIQUID");  //YD
+      density_fluid = m_mfp->Density();
+	  van_beta = 1./(1-saturation_exp[phase]);
+	  van_saturation =(saturation - saturation_res[phase])/(saturation_max[phase]-saturation_res[phase]);
+	  capillary_pressure =density_fluid*gravity_constant/saturation_alpha[phase]  \
+		                  *pow(pow(van_saturation,-1./saturation_exp[phase])-1.,1./van_beta);
+
+      if (capillary_pressure < (0. + MKleinsteZahl))
+          capillary_pressure = 0. + MKleinsteZahl;   /* Weniger als Residualsaettigung Wasser */
+      break;
     default:
       cout << "Error in CFluidProperties::CapillaryPressure: no valid material model" << endl;
       break;
@@ -5668,6 +5709,21 @@ double CMediumProperties::SaturationCapillaryPressureFunction
     case 7:  // Van Genuchten: Wasser/Gas aus SOIL SIC. SOC. AM. J. VOL. 44, 1980 Page 894 Equation 21 
       break;
     case 8: // 3Phasen ueber Kurven 
+      break;
+	case 16: // VanGenuchten/Mualem for light oil: R.B. Thoms MastersThesis 2003    JOD
+	  m_mfp = mfp_vector[phase];
+      density_fluid = m_mfp->Density();
+	  van_beta = 1/(1-saturation_exp[phase]) ;
+	  if(capillary_pressure < MKleinsteZahl)
+      saturation = saturation_max[phase];
+	  else
+   	  saturation = pow((pow(capillary_pressure * saturation_alpha[phase]\
+	                     /density_fluid/gravity_constant,van_beta)+1),-1.*saturation_exp[phase]) \
+		           *(saturation_max[phase]-saturation_res[phase]) + saturation_res[phase];  
+	    if (saturation > (saturation_max[phase] - MKleinsteZahl))
+            saturation = saturation_max[phase] - MKleinsteZahl;  /* Mehr als Vollsaettigung mit Wasser */
+        if (saturation < (saturation_res[phase] + MKleinsteZahl))
+            saturation = saturation_res[phase] + MKleinsteZahl;   /* Weniger als Residualsaettigung Wasser */
       break;
     default:
       cout << "Error in CMediumProperties::SaturationCapillaryPressureFunction: no valid material model" << endl;
@@ -5773,6 +5829,20 @@ else{
     case 7:  // Van Genuchten: Wasser/Gas aus SOIL SIC. SOC. AM. J. VOL. 44, 1980 Page 894 Equation 21 
       break;
     case 8: // 3Phasen ueber Kurven 
+      break;
+	case 16:  // JOD not needed??
+		     m_mfp = mfp_vector[phase];
+      density_fluid = m_mfp->Density();
+	  van_beta = 1/(1-saturation_exp[phase]) ;
+	  if(capillary_pressure < MKleinsteZahl)
+      saturation = saturation_max[phase];
+	  else
+   	  saturation = pow((pow(capillary_pressure*saturation_alpha[phase]/density_fluid/gravity_constant,van_beta)+1),-1.*saturation_exp[phase]) \
+		           *(saturation_max[phase]-saturation_res[phase]) + saturation_res[phase];  
+	    if (saturation > (saturation_max[phase] - MKleinsteZahl))
+            saturation = saturation_max[phase] - MKleinsteZahl;  /* Mehr als Vollsaettigung mit Wasser */
+        if (saturation < (saturation_res[phase] + MKleinsteZahl))
+            saturation = saturation_res[phase] + MKleinsteZahl;   /* Weniger als Residualsaettigung Wasser */
       break;
     default:
       cout << "Error in CMediumProperties::SaturationCapillaryPressureFunction: no valid material model" << endl;

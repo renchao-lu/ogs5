@@ -165,7 +165,7 @@ int RFPre_FEM(char* dateiname)
   //......................................................................
   DOMRead(dateiname);
   #ifdef RFW_FRACTURE
-  for(int i=0; i<mmp_vector.size(); ++i)
+  for(int i=0; i<(int)mmp_vector.size(); ++i)
     {
       if( mmp_vector[i]->frac_num >0)
       {
@@ -396,7 +396,7 @@ int ExecuteRFTimeLoop(void)
     /* Ergebnisausgabe */
     OUTData(m_tim->time_current,aktueller_zeitschritt);
     #ifdef RFW_FRACTURE 
-      for(int i=0; i<mmp_vector.size(); ++i)
+      for(int i=0; i<(int)mmp_vector.size(); ++i)
         {
           if( mmp_vector[i]->frac_num >0)
           {

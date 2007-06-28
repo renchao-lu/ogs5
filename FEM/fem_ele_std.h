@@ -79,10 +79,22 @@ class CFiniteElementStd:public CElement
 	 void Assembly(int dimension);	// PCH for Fluid Momentum
      void Cal_Velocity();
 
-     // MB only temporary
-     void Get_Matrix_Quad();
-     void CalcNLTERMS(int nn, double* H, double* HaaOld, double power, double* swval, double* swold, double* krwval);
-     void CalcCKWR(int nn, double* haa, double* z, double power, double* test, int* iups);
+     // CVFEM functions for overland flow   JOD
+ 	 void GetOverlandBasisFunctionMatrix_Line(); // to move
+     void GetOverlandBasisFunctionMatrix_Quad(); // to move
+	 void CalcOverlandCoefficients(double* head, double* axx, double* ayy, double* ast);
+	 void CalcOverlandCoefficientsLine(double* head, double* axx, double* ast );
+	 void CalcOverlandCoefficientsQuad(double* head, double* axx, double* ayy, double* ast );
+	 void CalcOverlandCoefficientsTri(double* head, double* axx, double* ayy, double* ast );
+     void CalcOverlandNLTERMS(double* H, double* HaaOld, double* swval, double* swold);
+     void CalcOverlandNLTERMSRills(double* H, double* HaaOld, double* swval, double* swold);
+     void CalcOverlandNLTERMSChannel(double* H, double* HaaOld, double* swval, double* swold);
+     void CalcOverlandCKWR(double* head, double* ckwr, int* iups);
+     void CalcOverlandCKWRatNodes(int i, int j, double* depth, double* ckwr, int* iups);
+	 void CalcOverlandResidual(double* head, double* depth, double* swval, double* swold, double ast, double* residual, double** amat);
+     double CalcOverlandJacobiNodes(int i, int j, double *depth, double *depth_keep, double* Z, double akrw, double axx, double ayy, double** amatij, double* sumjac);
+   	 double** CalcOverlandUpwindedCoefficients(double* ckwr, double axx, double ayy); 
+
      CRFProcess *pcs;
      CSolidProperties *SolidProp;
      CFluidProperties *FluidProp;
@@ -177,6 +189,7 @@ class CFiniteElementStd:public CElement
      void AssembleParabolicEquation(); //OK4104
      void AssembleMixedHyperbolicParabolicEquation(); //SB4200
      void AssembleParabolicEquationNewton();
+	 double** AssembleParabolicEquationNewtonJacobian(double* Haa, double* HaaOld, double* Z, double axx, double ayy, double** amat, double ast, double* swold, double* residual, int* iups);// JOD
      inline void Assemble_strainCPL(); // Assembly of strain coupling
 	 void AssembleMassMatrix(); // PCH
      // Assembly of RHS by Darcy's gravity term

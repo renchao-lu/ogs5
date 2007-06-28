@@ -1400,6 +1400,7 @@ ios::pos_type CRFProcess::Read(ifstream *pcs_file)
   ios::pos_type position;
   ios::pos_type position_subkeyword;
   std::stringstream line_stream;
+  saturation_switch = false; // JOD for Richards
   //----------------------------------------------------------------------
   while (!new_keyword) {
     position = pcs_file->tellg();
@@ -1569,6 +1570,11 @@ ios::pos_type CRFProcess::Read(ifstream *pcs_file)
       }
       continue;
     }
+	if(line_string.find("$SATURATION_SWITCH")!=string::npos) { //OK
+      saturation_switch = true;;
+      continue;
+    }
+    //....................................................................
     //....................................................................
   }
   //----------------------------------------------------------------------
@@ -1849,13 +1855,21 @@ void CRFProcess::ConfigGroundwaterFlow()
   pcs_eval_unit[5] = "-";
   //----------------------------------------------------------------------
   // Secondary variables
-  pcs_number_of_secondary_nvals = 2;
+  pcs_number_of_secondary_nvals = 4;
   pcs_secondary_function_name[0] = "FLUX";
   pcs_secondary_function_unit[0] = "m3/s";
   pcs_secondary_function_timelevel[0] = 1;
   pcs_secondary_function_name[1] = "WDEPTH";
   pcs_secondary_function_unit[1] = "m";
   pcs_secondary_function_timelevel[1] = 1;
+  pcs_secondary_function_name[2] = "COUPLING"; //JOD 
+  pcs_secondary_function_unit[2] = "m/s";
+  pcs_secondary_function_timelevel[2] = 0;
+  pcs_secondary_function_name[3] = "COUPLING"; //JOD
+  pcs_secondary_function_unit[3] = "m/s";
+  pcs_secondary_function_timelevel[3] = 1;
+
+
   //----------------------------------------------------------------------
   if(m_msh)
     m_msh->DefineMobileNodes(this);
@@ -2493,7 +2507,7 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_primary_function_unit[0] = "Pa";
    // 1.2 secondary variables
   //OK LOPCalcSecondaryVariables_USER = MMPCalcSecondaryVariablesRichards; // p_c and S^l
-  pcs_number_of_secondary_nvals = 8;
+  pcs_number_of_secondary_nvals = 10;
   pcs_secondary_function_name[0] = "SATURATION1";
   pcs_secondary_function_unit[0] = "m3/m3";
   pcs_secondary_function_timelevel[0] = 0;
@@ -2518,6 +2532,12 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_secondary_function_name[7] = "STORAGE_P"; 
   pcs_secondary_function_unit[7] = "Pa";
   pcs_secondary_function_timelevel[7] = 0;
+  pcs_secondary_function_name[8] = "COUPLING"; //JOD 
+  pcs_secondary_function_unit[8] = "m/s";
+  pcs_secondary_function_timelevel[8] = 0;
+  pcs_secondary_function_name[9] = "COUPLING"; //JOD
+  pcs_secondary_function_unit[9] = "m/s";
+  pcs_secondary_function_timelevel[9] = 1;
   }
   else if((int)continuum_vector.size() == 2){
   // 1.1 primary variables
@@ -4074,7 +4094,7 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
       m_st = st_node[gindex]; 
       //--------------------------------------------------------------------
       // CPL
-      if(m_st->pcs_type_name_cond.size()>0) continue; // this is a CPL source term
+      //if(m_st->pcs_type_name_cond.size()>0) continue; // this is a CPL source term, JOD removed
       //--------------------------------------------------------------------
       // system dependent YD
       if(cnodev->node_distype==7)
@@ -4110,10 +4130,14 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
       }
       //--------------------------------------------------------------------
       // MB
-      if(m_st->conditional && !m_st->river)
-      {
-        value = GetConditionalNODValue(m_st, cnodev); //MB
-      }
+      //if(m_st->conditional && !m_st->river)
+      //{
+      //  value = GetConditionalNODValue(m_st, cnodev); //MB
+      //}
+
+	  if(m_st->conditional) 
+         value = GetCouplingNODValue(m_st, cnodev, msh_node); 
+		// GetCouplingNODValue(m_st, cnodev, msh_node); //JOD
       //--------------------------------------------------------------------
       // CMCD
       else if(m_st->analytical)
@@ -4130,6 +4154,11 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
         value = GetCriticalDepthNODValue(cnodev, m_st, msh_node); //MB
       if(cnodev->node_distype == 8)      // NormalDepth Condition JOD
         value = GetNormalDepthNODValue(m_st, msh_node); //MB        
+	  //if(cnodev->node_distype == 10)      // Philip infiltration JOD
+      if(m_st->dis_type_name.compare("PHILIP")==0) 
+        value = GetPhilipNODValue(cnodev, m_st);  
+	  if(m_st->dis_type_name.compare("GREEN_AMPT")==0) // Green_Ampt infiltration JOD
+        value = GetGreenAmptNODValue(cnodev, m_st, msh_node);     
 //OK	}
 //YD Pls check! Yanliang.
     }	
@@ -6110,6 +6139,102 @@ void CRFProcess::CalcSecondaryVariablesRichards(int timelevel, bool update)
       SetNodeValue(i,idx_tS, total_S);
 	  }
   }
+
+}
+
+/*************************************************************************
+GeoSys-FEM Function:
+Task: Calculates saturation for richards flow,
+      alternative to CRFProcess::CalcSecondaryVariablesRichards
+      uses pressure of only one node
+	  evoked by switch case in pcs-file: SATURATION_SWITCH = true
+Programming: 
+06/2007 JOD Implementation
+**************************************************************************/
+void CRFProcess::CalcSaturationRichards(int timelevel, bool update)
+{
+  int j;
+  long i;
+  long group;
+  double p_cap, saturation;
+  double volume_sum;
+  long  elemsCnode, elem_index;
+  static double Node_Cap[8];
+  int idxp,idxcp,idxS,idx_tS=-1; 
+  int number_continuum;
+  double total_S;
+  int i_pv,i_s,i_e;
+
+  CMediumProperties* m_mmp = NULL;
+  CElem* elem =NULL;
+  CFiniteElementStd* fem = GetAssembler();
+  number_continuum = (int)continuum_vector.size();
+  //----------------------------------------------------------------------
+  if(continuum_ic){  //Create IC: for both continua
+     i_s = 0;
+     i_e = number_continuum;
+  }
+  else{
+	 i_s = continuum;
+	 i_e = continuum+1;
+  }
+//----------------------------------------------------------------------
+  for(i_pv=i_s;i_pv<i_e;i_pv++)
+  {
+     idxp = GetNodeValueIndex(pcs_primary_function_name[i_pv])+ timelevel;
+     idxS = GetNodeValueIndex(pcs_secondary_function_name[i_pv*number_continuum])+ timelevel;
+	 idxcp = GetNodeValueIndex(pcs_secondary_function_name[i_pv*number_continuum+number_continuum*2])+ timelevel;
+	 if((int)continuum_vector.size()>1)
+		 idx_tS = GetNodeValueIndex("TOTAL_SATURATION")+ timelevel;
+  //----------------------------------------------------------------------
+ 
+  for (i = 0; i <(long)m_msh->GetNodesNumber(false); i++)
+  {  	 
+  // Capillary pressure
+   
+      p_cap = -GetNodeValue(i,idxp);
+      if(timelevel==1&&update) 
+		  SetNodeValue(i,idxcp-1,GetNodeValue(i,idxcp));
+      SetNodeValue(i,idxcp,p_cap);
+	  if(timelevel==1&&update) 
+		  SetNodeValue(i,idxS-1,GetNodeValue(i,idxS));
+  //----------------------------------------------------------------------
+  // Liquid saturation
+  	  if((int)continuum_vector.size()>1)
+          SetNodeValue(i,idx_tS, 0.0);  
+  // 
+
+	 
+        saturation = 0., volume_sum  = 0.;
+        elemsCnode = (long)m_msh->nod_vector[i]->connected_elements.size();
+
+	    for (j = 0; j < elemsCnode; j++) {
+           elem_index = m_msh->nod_vector[i]->connected_elements[j];
+		   elem = m_msh->ele_vector[elem_index];
+		   group = elem->GetPatchIndex();
+		   m_mmp = mmp_vector[group];
+		   volume_sum += elem->volume;
+           saturation += m_mmp->SaturationCapillaryPressureFunction(p_cap,(int)mfp_vector.size()-1) * elem->volume; 
+	    }
+	  saturation /= volume_sum;
+	  SetNodeValue(i,idxS, saturation);
+  
+  }
+
+}
+  //----------
+
+  if(continuum > 0){
+	for (i = 0; i <(long)m_msh->GetNodesNumber(false); i++){
+      total_S = 0;
+	  for(j = 0; j< (int)continuum_vector.size(); j++){
+        idxS = GetNodeValueIndex(pcs_secondary_function_name[j*number_continuum])+ timelevel;
+	    total_S += GetNodeValue(i, idxS)*continuum_vector[j];
+      }
+      SetNodeValue(i,idx_tS, total_S);
+	  }
+  }
+
 
 }
 

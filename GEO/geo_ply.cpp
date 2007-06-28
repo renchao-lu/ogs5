@@ -1214,7 +1214,7 @@ double CGLPolyline::CalcPolylineLength()
 {
 	double dx, dy, dz, dist=0, poly_length=0;
    
-	for(int j=0; j<point_vector.size()-1; j++)
+	for(int j=0; j<(int)point_vector.size()-1; j++)
 	{
 		dx = point_vector[j]->x - point_vector[j+1]->x;
 		dy = point_vector[j]->y - point_vector[j+1]->y;

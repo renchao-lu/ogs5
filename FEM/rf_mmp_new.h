@@ -164,6 +164,7 @@ class CMediumProperties
   double saturation_max[3];
   double saturation_eff[3];
   double saturation_exp[3];
+  double saturation_alpha[3]; // JOD
   double heat_capacity; // thermal properties
 	int mass_dispersion_model;
 	double mass_dispersion_longitudinal;
@@ -175,6 +176,8 @@ class CMediumProperties
   int fct_number; // functions
   double permeability_saturation_model_values[2];
   double capillary_pressure_model_values[1];
+  double permeability_exp[1]; // JOD
+  double permeability_alpha[1]; // JOD
 	int heat_diffusion_model;
   //aux
   int m_color[3];
@@ -182,9 +185,9 @@ class CMediumProperties
   int mode;
 	string het_file_name; //SB
   // surface water
-  double friction_coefficient;  // MB
-  double friction_model;
-  double channel_width;
+  double friction_coefficient, friction_exp_slope, friction_exp_depth;  // JOD
+  double overland_width, rill_height, rill_epsilon; // JOD
+  bool channel;
   double argument; //OK
   //Dual Richards transfer coefficient  YD
   double transfer_coefficient;
