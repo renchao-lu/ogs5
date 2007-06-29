@@ -2366,6 +2366,7 @@ void RandomWalk::MakeRoulette(double* fit, double* roulette, int numOfCases)
 FEMLib-Method: 
 Task: Select(double* roulette)
 Programing: This function select a choice out of the roulette
+			Return -1 means failure
 02/2006 PCH 
 **************************************************************************/
 int RandomWalk::Select(double* roulette, int numOfCases)
@@ -2376,6 +2377,8 @@ int RandomWalk::Select(double* roulette, int numOfCases)
 	for(int i=0; i<numOfCases; ++i)
 		if(probability < roulette[i])
 			return (i);
+
+	return -1; // This means failure
 }
 
 /**************************************************************************

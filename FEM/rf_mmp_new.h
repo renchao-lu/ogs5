@@ -132,7 +132,10 @@ class CMediumProperties
   double permeability;
   double permeability_tensor[9];
   string permeability_tensor_type_name;
+  string tortuosity_tensor_type_name;
   int permeability_tensor_type;
+  int tortuosity_tensor_type;
+
 #ifdef RFW_FRACTURE
   vector<string > relative_permeability_function;//RW/CMCD 03/06
 #endif
@@ -155,6 +158,7 @@ class CMediumProperties
   int permeability_saturation_model[3];
   double permeability_saturation;
 	string permeability_file; //SB //OK/MB string permeability_dis_type_file; 
+	string tortuosity_file;	// PCH
   int capillary_pressure_model;
   double capillary_pressure;
 	int permeability_porosity_model;

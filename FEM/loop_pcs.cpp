@@ -576,17 +576,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
 		}
     }
       //--------------------------------------------------------------------
-	  // PCH The velocity process ends here.
-#ifdef _FEMPCHDEBUG_
-	// PCH Let's monitor what's going on in the FEM
-	// This messagebox is for debugging the primary variables at every time step.
-	// Should combine with the picking...
-//	CWnd * pWnd = NULL;
-	
-	  //Disabled by Haibing 07112006-----------------------------
-//	pWnd->MessageBox("Velocity is just solved!!!","Debug help", MB_ICONINFORMATION);
-	  //---------------------------------------------------------
-#endif
+
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       // PCH Random Walk Particle Tracking starts here.
       m_pcs = PCSGet("RANDOM_WALK"); 
@@ -710,6 +700,19 @@ int LOPTimeLoop_PCS(double*dt_sum)
        }
     }
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+// PCH The velocity process ends here.
+#ifdef _FEMPCHDEBUG_
+	// PCH Let's monitor what's going on in the FEM
+	// This messagebox is for debugging the primary variables at every time step.
+	// Should combine with the picking...
+//	CWnd * pWnd = NULL;
+	
+	  //Disabled by Haibing 07112006-----------------------------
+//	pWnd->MessageBox("Check pressure, velocity, and concentration or particle distribution!!!","Debug help", MB_ICONINFORMATION);
+	  //---------------------------------------------------------
+#endif
+
       //if(H_Process&&aktueller_zeitschritt==1) break;
       // Deformation process
       for(i=0;i<no_processes;i++)
@@ -789,6 +792,9 @@ int LOPTimeLoop_PCS(double*dt_sum)
   //----------------------------------------------------------------------
   return 1;
 }
+
+
+
 #ifdef LOOP_TO_DO
 /*
   //WW  LOPCalcElementResultants1();
@@ -1108,7 +1114,7 @@ void LOPCalcELEResultants(void)
  ROCKFLOW - Funktion: ASMCalcNodeWDepth
                                                                           
  Task:
-   Berechnung und Speichern der Knotenflüsse
+   Berechnung und Speichern der Knotenfl?se
  Parameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    E: long i: node index
  Result:

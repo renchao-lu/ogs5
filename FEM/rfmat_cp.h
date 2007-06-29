@@ -43,6 +43,7 @@ class CompProperties
     int diffusion_model;						/* Zerfallsmodell in geloester Phase */
     int count_of_diffusion_model_values;        /* Anzahl der Parameter zur Spezifikation des Diffusionsmodells */
     double diffusion_model_values[10];				/* Parameter fuer das Diffusionsmodell */
+	double diffusion_anisotropy_ratio[3];		/* Ratio of three diffusion coefficients */ // PCH
 	int diffusion_function_name;
 	int GetNumberDiffusionValuesCompProperties(int ); /* Zugriff auf Number of Parameters */
 
@@ -60,8 +61,8 @@ class CompProperties
 	int isotherm_function_name;
 	int GetNumberIsothermValuesCompProperties(int); /* Zugriff auf Number of Parameters */
 
-    ios::pos_type Read(ifstream*);						/* Lesefunktion für eine Instanz von CompProperties */
-    void Write(ofstream*);						/* Schreibfunktion für eine Instanz von CompProperties */
+    ios::pos_type Read(ifstream*);						/* Lesefunktion f? eine Instanz von CompProperties */
+    void Write(ofstream*);						/* Schreibfunktion f? eine Instanz von CompProperties */
 
 	/* Member - Functions */
 	double CalcDiffusionCoefficientCP(long index);

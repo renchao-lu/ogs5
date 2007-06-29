@@ -138,6 +138,7 @@ FEMLib-Method:
 Task: CompProperties read function
 Programing:
 02/2004 SB Implementation - adapted from OK rf_bc_new
+05/2007 PCH: Anisotropic diffusion coefficient added
 **************************************************************************/
  ios::pos_type CompProperties::Read(ifstream *rfd_file)
 {
@@ -230,6 +231,7 @@ Programing:
 //		diffusion_model_values = read_help;
 
 	  }
+
 	  if (diffusion_model<0)
 		DisplayMsgLn("Error: Diffusion model must be larger than or 0");
 	  }
@@ -628,7 +630,7 @@ double CompProperties::CalcDiffusionCoefficientCP_Method1(long index, double T, 
                 return 0.0;
             m = k[0];
             V = k[1];
-            Vg = 20.1;          /* Molares Volumen von Luft [cm°3/mol] */
+            Vg = 20.1;          /* Molares Volumen von Luft [cm?/mol] */
             Dg = (0.001 * pow(T, 1.75) * sqrt(1. / mg + 1. / m)) / (p * pow(pow(Vg, 1. / 3.) + pow(V, 1. / 3.), 2.)) * 1.e-4;
         }
     }
@@ -1276,7 +1278,7 @@ int CPGetMobil(long comp)
 
 /* Kommentar:
 
-Eingabe for Schlüsselwörter:
+Eingabe for Schl?selw?ter:
 
 	DECAY
 	

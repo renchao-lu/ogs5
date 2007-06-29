@@ -82,6 +82,7 @@ CMediumProperties::CMediumProperties(void)
   storage_model_values[0]= 0.;
   permeability_model = -1;
   permeability_tensor_type = 0;
+  tortuosity_tensor_type = 0;
   permeability_tensor[0] = 1.e-13;
   conductivity_model = -1;
   flowlinearity_model = 0;
@@ -182,6 +183,7 @@ Programing:
 07/2005 MB porosity_file, permeability_file, GEO_TYPE layer
 10/2005 OK GEO_TYPE geo_name_vector
 01/2006 YD PCS_TYPE
+05/2007 PCH Tortuosity tensor 
 last modification:
 **************************************************************************/
 // Order of Key Words
@@ -409,21 +411,71 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 //4..TORTUOSITY
 //------------------------------------------------------------------------
    if(line_string.find("$TORTUOSITY")!=string::npos) { //subkeyword found
-     in.str(GetLineFromFile1(mmp_file));
-     in >> tortuosity_model;
-      switch(tortuosity_model) {
-        case 0: // n=f(x)
+        in.str(GetLineFromFile1(mmp_file));
+        in >> tortuosity_tensor_type_name;
+        switch(tortuosity_tensor_type_name[0]) {
+		 case '0': // n=f(x) <- Case zero
+           break;
+		 case '1': // n=const
+		   tortuosity_model = 1;
+           in >> tortuosity_model_values[0];
+           break;
+         case 'I': // isotropic
+           tortuosity_tensor_type = 0;
+           tortuosity_model = 1;
+           in >> tortuosity_model_values[0];
+		   tortuosity_model_values[1]=tortuosity_model_values[2]=tortuosity_model_values[0];//CMCD to pick up 2D and 3D Isotropic case.
           break;
-        case 1: // n=const
-          in >> tortuosity_model_values[0];
-          break;
-        default:
-          cout << "Error in MMPRead: no valid tortuosity model" << endl;
-          break;
-      }
-      in.clear();
-      continue;
-    }
+         case 'O': // orthotropic  <- Case Alphabet O
+		   tortuosity_model = 1;
+           tortuosity_tensor_type = 1;
+           if(geo_dimension==0)
+             cout << "Error in CMediumProperties::Read: no geometric dimension" << endl;
+           if(geo_dimension==2){
+             in >> tortuosity_model_values[0];
+             in >> tortuosity_model_values[1];
+           }
+           if(geo_dimension==3){
+             in >> tortuosity_model_values[0];
+             in >> tortuosity_model_values[1];
+             in >> tortuosity_model_values[2];
+           }
+           break;
+         case 'A': // anisotropic
+		   tortuosity_model = 1;
+           tortuosity_tensor_type = 2;
+           if(geo_dimension==0)
+             cout << "Error in CMediumProperties::Read: no geometric dimension" << endl;
+           if(geo_dimension==2){
+             in >> tortuosity_model_values[0];
+             in >> tortuosity_model_values[1];
+             in >> tortuosity_model_values[2];
+             in >> tortuosity_model_values[3];
+           }
+           if(geo_dimension==3){
+             in >> tortuosity_model_values[0];
+             in >> tortuosity_model_values[1];
+             in >> tortuosity_model_values[2];
+             in >> tortuosity_model_values[3];
+             in >> tortuosity_model_values[4];
+             in >> tortuosity_model_values[5];
+             in >> tortuosity_model_values[6];
+             in >> tortuosity_model_values[7];
+             in >> tortuosity_model_values[8];
+           }
+           break;
+		 case 'F': //SB: read from file
+            tortuosity_model = 2; //OK
+		    in >> permeability_file;
+		   break;
+         default:
+           cout << "Error in MMPRead: no valid tortuosity tensor type" << endl;
+           break;
+       }
+       in.clear();
+       continue;
+     }
+	 
 //------------------------------------------------------------------------
 //5..MOBILE_IMOBILE_MODEL
 //------------------------------------------------------------------------
@@ -2185,6 +2237,8 @@ Programing:
 09/2004 OK MMP implementation 
 10/2004 SB Adapted to mass dispersion
 11/2005 CMCD
+05/2007 PCH Diffusion Coefficient corrected and Anisotropic diffusion
+			coeefient computed with tortuosity added
 ToDo:
 **************************************************************************/
 double* CMediumProperties::MassDispersionTensorNew(int ip)
@@ -2215,6 +2269,35 @@ double* CMediumProperties::MassDispersionTensorNew(int ip)
     molecular_diffusion[i*Dim+i] = molecular_diffusion_value;
   //----------------------------------------------------------------------
 
+  //Anisotropic diffusion coefficient 
+  if(tortuosity_tensor_type_name[0] == 'A')
+  {
+  switch (Dim) {
+      //--------------------------------------------------------------------
+      case 1: // line elements
+  	    ;	// Do nothing 
+        break;
+      //--------------------------------------------------------------------
+      case 2:  
+        molecular_diffusion[0] = molecular_diffusion_value*tortuosity_model_values[0];
+        molecular_diffusion[1] = molecular_diffusion_value*tortuosity_model_values[1];
+        molecular_diffusion[2] = molecular_diffusion_value*tortuosity_model_values[2];
+        molecular_diffusion[3] = molecular_diffusion_value*tortuosity_model_values[3];
+        break;
+      //--------------------------------------------------------------------
+      case 3: 
+        molecular_diffusion[0] = molecular_diffusion_value*tortuosity_model_values[0];
+        molecular_diffusion[1] = molecular_diffusion_value*tortuosity_model_values[1];
+        molecular_diffusion[2] = molecular_diffusion_value*tortuosity_model_values[2];
+        molecular_diffusion[3] = molecular_diffusion_value*tortuosity_model_values[3];
+		molecular_diffusion[4] = molecular_diffusion_value*tortuosity_model_values[4];
+		molecular_diffusion[5] = molecular_diffusion_value*tortuosity_model_values[5];
+		molecular_diffusion[6] = molecular_diffusion_value*tortuosity_model_values[6];
+		molecular_diffusion[7] = molecular_diffusion_value*tortuosity_model_values[7];
+		molecular_diffusion[8] = molecular_diffusion_value*tortuosity_model_values[8];
+  }
+  }
+
   //Global Velocity
   double velocity[3]={0.,0.,0.};
   gp_ele->getIPvalue_vec(ip, velocity);//gp velocities
@@ -2239,8 +2322,17 @@ double* CMediumProperties::MassDispersionTensorNew(int ip)
         D[1] = ((alpha_l - alpha_t)*(velocity[0]*velocity[1]))/vg;
         D[2] = ((alpha_l - alpha_t)*(velocity[1]*velocity[0]))/vg;
         D[3] = (alpha_t * vg) + (alpha_l - alpha_t)*(velocity[1]*velocity[1])/vg;
-        for (i = 0; i<4; i++)
-          advection_dispersion_tensor[i] = molecular_diffusion[i] + D[i];
+       
+		if(tortuosity_tensor_type_name[0] == 'A')
+		{
+			for (i = 0; i<Dim*Dim; i++)
+				 advection_dispersion_tensor[i] = molecular_diffusion[i] + D[i];
+		}
+		else
+		{
+			advection_dispersion_tensor[0] = molecular_diffusion[0] + D[0];
+			advection_dispersion_tensor[3] = molecular_diffusion[3] + D[3];
+		}
         break;
       //--------------------------------------------------------------------
       case 3: 
@@ -2253,9 +2345,17 @@ double* CMediumProperties::MassDispersionTensorNew(int ip)
         D[6] = ((alpha_l - alpha_t)*(velocity[2]*velocity[0]))/vg;
         D[7] = ((alpha_l - alpha_t)*(velocity[2]*velocity[1]))/vg;
         D[8] = (alpha_t * vg) + (alpha_l - alpha_t)*(velocity[2]*velocity[2])/vg;
-        for (i = 0; i<9; i++)
-          advection_dispersion_tensor[i] = molecular_diffusion[i] + D[i];
-        break;
+		if(tortuosity_tensor_type_name[0] == 'A')
+		{
+			for (i = 0; i<Dim*Dim; i++)
+				 advection_dispersion_tensor[i] = molecular_diffusion[i] + D[i];
+		}
+		else
+		{
+			advection_dispersion_tensor[0] = molecular_diffusion[0] + D[0];
+			advection_dispersion_tensor[4] = molecular_diffusion[4] + D[4];
+			advection_dispersion_tensor[8] = molecular_diffusion[8] + D[8];
+		}
     }
   }
   else {
@@ -3625,6 +3725,14 @@ double CMediumProperties::PorosityVolumetricChemicalReaction(long index)
 //------------------------------------------------------------------------
 //4..TORTUOSITY
 //------------------------------------------------------------------------
+/**************************************************************************
+FEMLib-Method: TortuosityFunction
+Task: 
+Programing:
+05/2007 PCH Diffusion tensor is handled by tortuosity tensor as in 
+		permeability. Agreed with GK
+last modification:
+**************************************************************************/
 double CMediumProperties::TortuosityFunction(long number, double *gp, double theta,CFiniteElementStd* assem)
 {
   static int nidx0,nidx1;
