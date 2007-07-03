@@ -160,6 +160,8 @@ class CElem:public CCore
       // Edges
       void GetEdges(vec<CEdge*>&  ele_edges) 
         {for (int i=0; i<nedges; i++) ele_edges[i]= edges[i];} 
+      CEdge* GetEdge(const int index) 
+        {return edges[index];} 
       void SetEdges(vec<CEdge*>&  ele_edges) 
         {for (int i=0; i<nedges; i++) edges[i]= ele_edges[i];} 
       int FindFaceEdges(const int LocalFaceIndex, vec<CEdge*>&  face_edges);

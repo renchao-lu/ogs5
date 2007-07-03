@@ -1137,15 +1137,7 @@ void GMSH2MSH(char* filename,CFEMesh* m_msh)
 
   bool quad=false;
   CRFProcess* m_pcs = NULL;
-  for(i=0;i<(int)pcs_vector.size();i++){
-    m_pcs = pcs_vector[i];
-	if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos){
-      quad=true;
-      break;
-	}
-  }
-
-  CNode* node = NULL;
+   CNode* node = NULL;
   CElem* elem = NULL;
   ifstream msh_file(filename,ios::in);
   //----------------------------------------------------------------------
@@ -1211,7 +1203,7 @@ void GMSH2MSH(char* filename,CFEMesh* m_msh)
   }/*End while*/ 
 
   //----------------------------------------------------------------------
-  m_msh->ConstructGrid(quad);
+  m_msh->ConstructGrid();
   
   msh_file.close();
 }

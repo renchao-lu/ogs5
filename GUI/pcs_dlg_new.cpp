@@ -6,6 +6,7 @@
 #include "pcs_dlg_new.h"
 
 #include "rf_pcs.h"
+#include "pcs_dm.h"
 #include "gs_project.h"
 #include "rf_out_new.h"
 #include "rf_tim_new.h"
@@ -191,7 +192,6 @@ void CDialogPCS::OnBnClickedCreate()
   for(int i=0;i<(int)m_LB_PCS.GetCount();i++){
     m_LB_PCS.GetText(i,m_strPCSName);
     m_pcs = new CRFProcess();
-    pcs_vector.push_back(m_pcs);    
     m_pcs->pcs_number = i;
     m_pcs->pcs_type_number = i;
     m_pcs->pcs_type_name = m_strPCSName;
@@ -216,7 +216,19 @@ void CDialogPCS::OnBnClickedCreate()
       string msp_base_type = m_gsp->base + ".msp";
       GSPAddMember(msp_base_type);
     }
+    // PCS-M-ToDo
+    if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
+    {
+      m_pcs->pcs_type_name_vector.push_back(m_pcs->pcs_type_name);
+      pcs_vector.push_back(m_pcs->CopyPCStoDM_PCS());
+      delete m_pcs;
+    }
     //....................................................................
+    else
+      pcs_vector.push_back(m_pcs);    
+    //....................................................................
+    // Due to  delete m_pcs  in  if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
+    m_pcs = pcs_vector[(int)pcs_vector.size()-1]; 
     m_pcs->Config();
     m_pcs->PCSSetIC_USER = NULL;
     m_pcs->Create();

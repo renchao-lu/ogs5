@@ -97,8 +97,10 @@ class CFEMesh
     void Write(fstream*);
     void WriteBIN(fstream*,fstream*); //OK
     ios::pos_type GMSReadTIN(ifstream*);
-
-    void ConstructGrid( const bool quadratic=false);
+    // 
+    void ConstructGrid();
+    void GenerateHighOrderNodes();
+    //
     void RenumberNodesForGlobalAssembly();
     // For number of nodes
 	int GetMaxElementDim() {return max_ele_dim;}

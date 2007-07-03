@@ -1277,11 +1277,7 @@ bool PCSRead(string file_base_name)
   //----------------------------------------------------------------------
   PCSDelete();  
   CRFProcess *m_pcs = NULL;
-  CRFProcessDeformation *dm_pcs = NULL;
-
   char line[MAX_ZEILE];
-  int Inctive_SubDomain[20];
-  pcs_deformation = -1;
   int indexCh1a, indexCh2a;
   //basic_string <char>::size_type indexCh1a, indexCh2a;
   //  static const basic_string <char>::size_type npos = -1;
@@ -1330,53 +1326,67 @@ bool PCSRead(string file_base_name)
 		}         
       }
       //..................................................................
+      m_pcs->pcs_number =(int)pcs_vector.size();
       //RelocateDeformationProcess(m_pcs);
-	  if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos){
-//...
-         string pcs_name_dm = m_pcs->pcs_type_name; 
-         string num_type_name_dm = m_pcs->num_type_name;
-		 string pname = m_pcs->pcs_type_name_vector[0].data();
-         bool m_output = false;
-		 int rhs_out = m_pcs->WriteSourceNBC_RHS;
-		 int r_load = m_pcs->reload;
-         int m_memory = 0;
-         int i = 0;
-         int m_inactive = m_pcs->NumDeactivated_SubDomains;
-         for(i=0; i<m_inactive; i++)
-            Inctive_SubDomain[i] = m_pcs->Deactivated_SubDomain[i];
-
-         m_output = m_pcs->Write_Matrix;
-         m_memory = m_pcs->Memory_Type;
-         // Numerics
-         if(m_pcs->num_type_name.compare("STRONG_DISCONTINUITY")==0) 
-            enhanced_strain_dm=1;
+	  if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
+      {
+         pcs_vector.push_back(m_pcs->CopyPCStoDM_PCS());
          delete m_pcs;
-
-         dm_pcs = new CRFProcessDeformation();
-         m_pcs = dynamic_cast<CRFProcess *> (dm_pcs);
-
-         m_pcs->pcs_type_name = pcs_name_dm;
-         m_pcs->pcs_type_name_vector.push_back(pname);
-         m_pcs->Write_Matrix=m_output;
-		 m_pcs->WriteSourceNBC_RHS = rhs_out;
-         m_pcs->num_type_name = num_type_name_dm;
-		 m_pcs->Memory_Type = m_memory;
-         m_pcs->NumDeactivated_SubDomains = m_inactive;
-         m_pcs->reload = r_load;
-         for(i=0; i<m_inactive; i++)
-            m_pcs->Deactivated_SubDomain[i] = Inctive_SubDomain[i];
-         pcs_deformation = 1;
-//...
       }
       //..................................................................
-      m_pcs->pcs_number =(int)pcs_vector.size();
-      pcs_vector.push_back(m_pcs);
+      else
+        pcs_vector.push_back(m_pcs);
 
       pcs_file.seekg(position,ios::beg);
     } // keyword found
   } // eof
   ///OK LOPPreTimeLoop_PCS();
   return true;
+}
+/**************************************************************************
+FEMLib-Method: 
+Task: Copy data to dm_pcs from PCS read function
+Programing:
+06/2007 OK/WW Implementation
+**************************************************************************/
+CRFProcess* CRFProcess::CopyPCStoDM_PCS()
+{
+   CRFProcessDeformation *dm_pcs = NULL;
+   string pcs_name_dm = pcs_type_name; 
+   string num_type_name_dm = num_type_name;
+   string pname = pcs_type_name_vector[0].data();
+   bool m_output = false;
+   int rhs_out = WriteSourceNBC_RHS;
+   int r_load = reload;
+   int m_memory = 0;
+   int i = 0;
+   int m_inactive = NumDeactivated_SubDomains;
+   int Inctive_SubDomain[20];
+   pcs_deformation = -1;
+   for(i=0; i<m_inactive; i++)
+      Inctive_SubDomain[i] = Deactivated_SubDomain[i];
+
+   m_output = Write_Matrix;
+   m_memory = Memory_Type;
+   // Numerics
+   if(num_type_name.compare("STRONG_DISCONTINUITY")==0) 
+      enhanced_strain_dm=1;
+
+   dm_pcs = new CRFProcessDeformation();
+
+   dm_pcs->pcs_type_name = pcs_name_dm;
+   dm_pcs->pcs_type_name_vector.push_back(pname);
+   dm_pcs->Write_Matrix=m_output;
+   dm_pcs->WriteSourceNBC_RHS = rhs_out;
+   dm_pcs->num_type_name = num_type_name_dm;
+   dm_pcs-> Memory_Type = m_memory;
+   dm_pcs->NumDeactivated_SubDomains = m_inactive;
+   dm_pcs->reload = r_load;
+   for(i=0; i<m_inactive; i++)
+      dm_pcs->Deactivated_SubDomain[i] = Inctive_SubDomain[i];
+   pcs_deformation = 1;
+   //
+   return dynamic_cast<CRFProcess *> (dm_pcs);
 }
 
 /**************************************************************************
@@ -2257,6 +2267,8 @@ void CRFProcess::ConfigDeformation()
 {
   int i;
   CNumerics* num=NULL;
+  // Generate high order nodes for all elements.
+  m_msh->GenerateHighOrderNodes(); //WW
   type = 4;
   if(  pcs_type_name.find("DEFORMATION")!=string::npos
      &&pcs_type_name.find("FLOW")!=string::npos)

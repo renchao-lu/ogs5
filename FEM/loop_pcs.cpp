@@ -371,7 +371,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
   double pcs_dm_error = 1.0e8;
   double pcs_dm_error0 = 1.0e8;
   double pcs_dm_cp_error = 1.0e8;
-  int lop_coupling_iterations; 
+  int lop_coupling_iterations=1; 
 //  int lop_nonlinear_iterations = 15; //OK_OUT 2;
   double pcs_coupling_error = 1000; //MB
   bool CalcVelocities = false;
@@ -1346,7 +1346,7 @@ void LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
    	  m_msh_local->nod_vector[j]->SetEquationIndex(j);
       m_msh_local->Eqs2Global_NodeIndex[j] = m_msh_local->nod_vector[j]->GetIndex();
     }
-    m_msh_local->ConstructGrid(false);
+    m_msh_local->ConstructGrid();
     m_msh_local->FillTransformMatrix();
     m_msh_local->FaceNormal();
     //....................................................................

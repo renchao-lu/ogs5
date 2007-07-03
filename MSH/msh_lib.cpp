@@ -603,17 +603,9 @@ void CompleteMesh()
    int i;
    bool quad=false;
    CRFProcess* m_pcs = NULL;
-   for(i=0;i<(int)pcs_vector.size();i++){
-     m_pcs = pcs_vector[i];
-     if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
-     {
-       quad=true;
-       break;
-     }
-   }
-   for(i=0;i<(int)fem_msh_vector.size(); i++)
+    for(i=0;i<(int)fem_msh_vector.size(); i++)
    {
-      fem_msh_vector[i]->ConstructGrid(quad);
+      fem_msh_vector[i]->ConstructGrid();
       fem_msh_vector[i]->FillTransformMatrix();
    }      
 }

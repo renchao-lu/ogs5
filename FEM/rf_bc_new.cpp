@@ -1104,9 +1104,14 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
             }
           }
           //................................................................
-          if(m_bc->dis_type_name.compare("LINEAR")==0){
-            nodes = MSHGetNodesClose(&number_of_nodes, m_polyline);//CC
-  		    node_value.resize(number_of_nodes);
+          if(m_bc->dis_type_name.compare("LINEAR")==0){ //WW
+            if(m_polyline->type==100) //WW
+                m_msh->GetNodesOnArc(m_polyline,nodes_vector);
+            else
+                m_msh->GetNODOnPLY(m_polyline,nodes_vector);
+
+            //            nodes = MSHGetNodesClose(&number_of_nodes, m_polyline);//CC
+			node_value.resize(nodes_vector.size());
             // Piecewise linear distributed. WW
             for(i=0;i<(int)m_bc->DistribedBC.size(); i++)
             {              
@@ -1121,11 +1126,11 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
               }  
             }
  		    InterpolationAlongPolyline(m_polyline, node_value);
-            for(i=0;i<number_of_nodes;i++){
+            for(i=0;i<(int)nodes_vector.size();i++){
               m_node_value = new CBoundaryConditionNode();
               m_node_value->msh_node_number = -1;
-              m_node_value->msh_node_number = nodes[i]+ShiftInNodeVector;
-              m_node_value->geo_node_number = nodes[i];
+              m_node_value->msh_node_number = nodes_vector[i]+ShiftInNodeVector;
+              m_node_value->geo_node_number = nodes_vector[i];
               m_node_value->node_value = node_value[i];  
               m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
               m_node_value->CurveIndex = m_bc->CurveIndex;

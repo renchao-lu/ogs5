@@ -194,7 +194,6 @@ void CRFProcessDeformation::InitialMBuffer()
     int bufferSize;
     bool HM_Stagered = false;
     bufferSize = 0;
-
     if(!msp_vector.size())
     {
        cout<<"No .msp file.   "<<endl;
@@ -238,7 +237,8 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
 #ifdef MFC
   CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
 #endif
-  DisplayMsg("\n->Process: "); DisplayLong(pcs_number); 
+  DisplayMsg("\n->Process: "); 
+  //DisplayLong(pcs_number); 
   DisplayMsg(", "); cout << pcs_type_name << endl; 
 
   clock_t start, finish;
@@ -1957,7 +1957,7 @@ void CRFProcessDeformation:: GlobalAssembly()
     //....................................................................
     // Assemble global system
     DDCAssembleGlobalMatrix();
-    // 	MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
+    //	MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
   }
 #endif
   //----------------------------------------------------------------------

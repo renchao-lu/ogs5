@@ -439,6 +439,7 @@ class CRFProcess {
     // FLX
     void CalcELEFluxes(CGLPoint*); //OK
     double CalcELEFluxes(CGLPolyline*); //OK
+    CRFProcess* CopyPCStoDM_PCS();
   private:
       int continuum;
 	  bool continuum_ic;

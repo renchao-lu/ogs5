@@ -39,6 +39,8 @@ class CEdge:public CCore
       // Set functions
       void SetNodes( vec<CNode*>& Nodes)
         { for(int i=0; i<3; i++)  nodes_of_edges[i] = Nodes[i]; }
+      void SetNode(const int index,  CNode *aNode)
+        { nodes_of_edges[index] = aNode; }
 	  void SetJoint(const int i) { joint = i; }	// PCH
       // Operator
       void operator = (CEdge& edg);

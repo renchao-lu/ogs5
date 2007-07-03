@@ -396,14 +396,13 @@ Programing:
 05/2005 WW Implementation
 02/2006 YD Add 1D line neighbor element set
 **************************************************************************/
-void CFEMesh::ConstructGrid( const bool quadratic)
+void CFEMesh::ConstructGrid()
 {
    int counter;	 
    int i, j, k, ii, jj, m0, m, n0, n;
-			int nnodes0, nedges0, nedges;
+   int nnodes0, nedges0, nedges;
    long e, ei, ee,  e_size,  e_size_l;
    bool done;
-   double x0,y0,z0;
    double x_sum,y_sum,z_sum;
 
    int edgeIndex_loc0[2];
@@ -558,12 +557,6 @@ void CFEMesh::ConstructGrid( const bool quadratic)
                             if(  node_index_glb0[edgeIndex_loc0[0]]==e_edgeNodes[1]->GetIndex()
                              && node_index_glb0[edgeIndex_loc0[1]]==e_edgeNodes[0]->GetIndex())
 			                             Edge_Orientation[i] = -1; 
-                            if(quadratic)  // Get middle node
-                            {
-                               node_index_glb0[nnodes0] = e_edgeNodes[2]->GetIndex();
-                               e_nodes0[nnodes0] = e_edgeNodes[2];
-                               nnodes0++;
-                            }
                             done = true;
                             break;
                         }
@@ -576,47 +569,17 @@ void CFEMesh::ConstructGrid( const bool quadratic)
           if(!done) // new edges and new node
           {
               Edges0[i] = new CEdge((long)edge_vector.size()); 
-              Edges0[i]->SetOrder(quadratic); 
+              Edges0[i]->SetOrder(false); 
               e_edgeNodes0[0] = e_nodes0[edgeIndex_loc0[0]];
               e_edgeNodes0[1] = e_nodes0[edgeIndex_loc0[1]];
-              if(quadratic)  // new node: middle point of edges
-              {
-                  e_edgeNodes0[2] = new CNode((long)nod_vector.size());
-                  e_edgeNodes0[2]->SetX(0.5*(e_edgeNodes0[0]->X()+e_edgeNodes0[1]->X()));                
-                  e_edgeNodes0[2]->SetY(0.5*(e_edgeNodes0[0]->Y()+e_edgeNodes0[1]->Y()));                
-                  e_edgeNodes0[2]->SetZ(0.5*(e_edgeNodes0[0]->Z()+e_edgeNodes0[1]->Z()));    
-                  nod_vector.push_back(e_edgeNodes0[2]);
-                  node_index_glb0[nnodes0] = e_edgeNodes0[2]->GetIndex();
-                  e_nodes0[nnodes0] = e_edgeNodes0[2];
-                  nnodes0++;
-              }
+              e_edgeNodes0[2] = NULL;
              Edges0[i]->SetNodes(e_edgeNodes0); 
              edge_vector.push_back(Edges0[i]);		               
           } // new edges
    	  } //  for(i=0; i<nedges0; i++)
       //
-      if(quadratic&&thisElem0->GetElementType()==2) // Quadrilateral
-      {
-         x0=y0=z0=0.0;
-         CNode* newNode = new CNode((long)nod_vector.size());
-         e_nodes0[nnodes0] = newNode;
-         nnodes0 = thisElem0->nnodes;
-         for(i=0; i<nnodes0; i++) // Nodes
-         {
-            x0 += e_nodes0[i]->X();	
-            y0 += e_nodes0[i]->Y();	
-            z0 += e_nodes0[i]->Z();	
-         }         
-         x0 /= (double)nnodes0;
-         y0 /= (double)nnodes0;
-         z0 /= (double)nnodes0;
-         newNode->SetX(x0);
-         newNode->SetY(y0);
-         newNode->SetZ(z0);
-         nod_vector.push_back(newNode);         
-      }     
       // Set edges and nodes
-      thisElem0->SetOrder(quadratic);
+      thisElem0->SetOrder(false);
       thisElem0->SetEdgesOrientation(Edge_Orientation); 
       thisElem0->SetEdges(Edges0); 
       // Resize is true
@@ -667,30 +630,6 @@ void CFEMesh::ConstructGrid( const bool quadratic)
    if((msh_no_hexs+msh_no_tets+msh_no_pris)>0) max_ele_dim=3;
    else if((msh_no_quad+msh_no_tris)>0) max_ele_dim=2;
    else max_ele_dim=1;
-   // For high order element
-   if(quadratic) 
-   {
-      for(e=0; e<e_size; e++)
-      {
-         thisElem0 = ele_vector[e];   
-         thisElem0->GetNodeIndeces(node_index_glb0);
-         for(i=thisElem0->nnodes; i<thisElem0->nnodesHQ; i++)
-         {
-            done = false;
-            for(j=0; j<(int)nod_vector[node_index_glb0[i]]->connected_elements.size(); j++)
-            {
-              if(e==nod_vector[node_index_glb0[i]]
-                         ->connected_elements[j])
-              {
-                  done = true;
-                  break;
-			  }
-            }
-            if(!done)  
-            nod_vector[node_index_glb0[i]]->connected_elements.push_back(e);
-        }
-     }
-   }
    //----------------------------------------------------------------------
    // Node information 
    // 1. Default node index <---> eqs index relationship
@@ -748,9 +687,8 @@ void CFEMesh::ConstructGrid( const bool quadratic)
 
 //TEST WW
    // For sparse matrix 
-   ConnectedNodes(quadratic);
-   if(quadratic) ConnectedElements2Node(true);
-
+   ConnectedNodes(false);
+   //
    e_nodes0.resize(0);
    node_index_glb.resize(0);
    node_index_glb0.resize(0);
@@ -761,6 +699,148 @@ void CFEMesh::ConstructGrid( const bool quadratic)
    Neighbors0.resize(0);
    e_edgeNodes0.resize(0);
    e_edgeNodes.resize(0);
+}
+/**************************************************************************
+FEMLib-Method: GenerateHighOrderNodes()
+Task: 
+Programing:
+07/2007 WW Implementation
+**************************************************************************/
+void CFEMesh::GenerateHighOrderNodes()
+{
+   int i, k, ii;
+   int nnodes0, nedges0, nedges;
+   long e, ei, ee,  e_size,  e_size_l;
+   int edgeIndex_loc0[2];
+   bool done;
+   double x0,y0,z0;
+   //
+   CNode *aNode=NULL;
+   vec<CNode*> e_nodes0(20);
+   CElem *thisElem0=NULL;
+   CElem *thisElem=NULL;
+   CEdge *thisEdge0=NULL;
+   CEdge *thisEdge=NULL;
+   //----------------------------------------------------------------------
+   // Loop over elements
+   e_size = (long)ele_vector.size();  
+   for(e=0; e<e_size; e++)
+   {
+      thisElem0 = ele_vector[e];   
+      nnodes0 = thisElem0->nnodes; // Number of nodes for linear element
+//      thisElem0->GetNodeIndeces(node_index_glb0);
+      for(i=0; i<nnodes0; i++) // Nodes
+        e_nodes0[i] = thisElem0->GetNode(i);  
+      // --------------------------------
+      // Edges
+      nedges0 = thisElem0->GetEdgesNumber();
+      // Check if there is any neighbor that has new middle points
+      for(i=0; i<nedges0; i++)
+      { 
+          thisEdge0 = thisElem0->GetEdge(i);    
+          thisElem0->GetLocalIndicesOfEdgeNodes(i, edgeIndex_loc0);    
+          // Check neighbors 
+          done = false; 
+          for(k=0;k<2;k++)
+          {    
+             e_size_l = (long)e_nodes0[edgeIndex_loc0[k]]->connected_elements.size();         
+             for(ei=0; ei<e_size_l; ei++)
+             {
+                ee = e_nodes0[edgeIndex_loc0[k]]->connected_elements[ei];   
+                if(ee==e) continue;
+                thisElem = ele_vector[ee];                   
+                nedges = thisElem->GetEdgesNumber();
+                // Edges of neighbors
+                for(ii=0; ii<nedges; ii++)
+                { 
+                   thisEdge = thisElem->GetEdge(ii);
+                   if(*thisEdge0==*thisEdge)
+                   {
+                      aNode = thisEdge->GetNode(2); 
+                      if(aNode) // The middle point does not exist
+                      {
+                         e_nodes0[nnodes0] = aNode;
+                         nnodes0++;
+                         done = true; 
+                         break;                   
+                      }  
+                   }
+                } //  for(ii=0; ii<nedges; ii++)
+                if(done) break;
+             } // for(ei=0; ei<e_size_l; ei++)
+             if(done) break;
+          }//for(k=0;k<2;k++)
+         if(!done)
+         {
+            aNode = new CNode((long)nod_vector.size());
+            aNode->SetX(0.5*(thisEdge0->GetNode(0)->X()+thisEdge0->GetNode(1)->X()));                
+            aNode->SetY(0.5*(thisEdge0->GetNode(0)->Y()+thisEdge0->GetNode(1)->Y()));                
+            aNode->SetZ(0.5*(thisEdge0->GetNode(0)->Z()+thisEdge0->GetNode(1)->Z()));    
+            e_nodes0[nnodes0] = aNode;
+            thisEdge0->SetNode(2, aNode);
+            nnodes0++; 
+            nod_vector.push_back(aNode);
+         }
+   	  } //  for(i=0; i<nedges0; i++)
+      // No neighors or no neighbor has new middle point     
+      //
+      if(thisElem0->GetElementType()==2) // Quadrilateral
+      {
+         x0=y0=z0=0.0;
+         aNode = new CNode((long)nod_vector.size());
+         e_nodes0[nnodes0] = aNode;
+         nnodes0 = thisElem0->nnodes;
+         for(i=0; i<nnodes0; i++) // Nodes
+         {
+            x0 += e_nodes0[i]->X();	
+            y0 += e_nodes0[i]->Y();	
+            z0 += e_nodes0[i]->Z();	
+         }         
+         x0 /= (double)nnodes0;
+         y0 /= (double)nnodes0;
+         z0 /= (double)nnodes0;
+         aNode->SetX(x0);
+         aNode->SetY(y0);
+         aNode->SetZ(z0);
+         nod_vector.push_back(aNode);         
+      }     
+      // Set edges and nodes
+      thisElem0->SetOrder(true);
+      // Resize is true
+      thisElem0->SetNodes(e_nodes0, true);		
+   }// Over elements
+   //
+   NodesNumber_Quadratic= (long)nod_vector.size();
+   for(e=NodesNumber_Linear; e<NodesNumber_Quadratic; e++)
+   {
+	   nod_vector[e]->SetEquationIndex(e);
+	   Eqs2Global_NodeIndex.push_back(nod_vector[e]->GetIndex());
+   }
+   for(e=0; e<e_size; e++)
+   {
+      thisElem0 = ele_vector[e];   
+      for(i=thisElem0->nnodes; i<thisElem0->nnodesHQ; i++)
+      {
+         done = false;
+         aNode = thisElem0->GetNode(i);
+         for(k=0; k<(int)aNode->connected_elements.size(); k++)
+         {
+            if(e==aNode->connected_elements[k])
+            {
+               done = true;
+               break;
+            }
+         }
+         if(!done)  
+            aNode->connected_elements.push_back(e);
+     }
+  }
+
+   // For sparse matrix 
+   ConnectedNodes(true);
+   ConnectedElements2Node(true);
+   //  
+   e_nodes0.resize(0);
 }
 
 /**************************************************************************
