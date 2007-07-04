@@ -12,7 +12,8 @@
 	Designed and programmed: WW
 	Last modification: WW  01-2004
 */
-
+namespace SolidProp{ class CSolidProperties; };
+using SolidProp::CSolidProperties;
 class Mat_Mech_Grid  {
 public:
 	Mat_Mech_Grid(LPCTSTR lpParaName = _T(""), double paraVal = 0, 
@@ -52,26 +53,6 @@ public:
 
 class MAT_Mech_dlg : public CDialog
 {
-// Construction
-public:
-	MAT_Mech_dlg(CWnd* pParent = NULL);   // standard constructor
-
-// Dialog Data
-	//{{AFX_DATA(MAT_Mech_dlg)
-	enum { IDD = IDD_MAT_SP };
-	CComboBox	Combo_plastity;
-	//}}AFX_DATA
-
-	CVirtualGridCtrl m_grid;
-	CArray<Mat_Mech_Grid, Mat_Mech_Grid> m_Data;
-
-// Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(MAT_Mech_dlg)
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	//}}AFX_VIRTUAL
-
 // Implementation
 protected:
 
@@ -90,25 +71,58 @@ protected:
 private:
     int NumRows;
 	// Three items: Thermal, Elasticity and Plasticity
-	bool Type[3];
-	int  ParaNum[3];
+	bool Type[4];
+	int  ParaNum[4];
 	////
-     
+    CSolidProperties *m_msp;    
 	int PlastModel; 
+	int creep_model; 
 
 	double Thermal[2];
 	double Elast[3];
-	double DruckP[4];
-	double CamC[9];
-	double RotH[23];
+	double *plastic_data;
+	double *creep_data;
     
 	void AddThermal(); 
     void AddElasticity(); 
     void AddPL_DP();
     void AddPL_CM();
     void AddPL_RH();
+    void AddCRP_Norton();
+    void AddCRP_BGRa();
     void Refresh(); 
 
+// Dialog Data
+	//{{AFX_DATA(MAT_Mech_dlg)
+	enum { IDD = IDD_MAT_SP };
+	CComboBox	Combo_plastity;
+	// // Select material group
+	CComboBox mat_group;
+	// For creep data
+	CComboBox combox_creep;
+	//}}AFX_DATA
+public:
+	MAT_Mech_dlg(CWnd* pParent = NULL);   // standard constructor
+	~MAT_Mech_dlg();  
+
+
+	CVirtualGridCtrl m_grid;
+	CArray<Mat_Mech_Grid, Mat_Mech_Grid> m_Data;
+
+// Overrides
+	// ClassWizard generated virtual function overrides
+	//{{AFX_VIRTUAL(MAT_Mech_dlg)
+	protected:
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	//}}AFX_VIRTUAL
+	afx_msg void OnCbnSelchangeComboMatGroup();
+    //
+	afx_msg void OnBnClickedMspUpdate();
+	afx_msg void OnBnClickedMspNew();
+	afx_msg void OnCbnSelchangeComcreep();
+	afx_msg void OnBnClickedCreep();
+public:
+	afx_msg void OnCbnSelchangeCreep1();
 };
 
 

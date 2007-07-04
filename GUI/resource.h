@@ -812,16 +812,19 @@
 #define IDC_ATBYPOLYLINE                1243
 #define IDC_STATIC_MinValue2            1243
 #define IDC_FILENAME_EDIT               1243
+#define IDC_CREEP                       1243
 #define IDC_SURFACE_REMOVEALL           1244
 #define IDC_TIM_EDITOR_BUTTON           1244
 #define IDC_Max                         1244
 #define IDC_STATIC_Max_Value2           1244
 #define IDC_TEXT_DATAFROMSTATION        1244
+#define ID_MSP_NEW                      1244
 #define IDC_UNSELECT_SFC                1245
 #define IDC_TEC_EDITOR_BUTTON           1245
 #define IDC_Min                         1245
 #define IDC_LIST7                       1245
 #define IDC_EDIT_STATIONNAME            1245
+#define ID_MSP_UPDATE                   1245
 #define IDC_SURFACE_WRITE_TEC           1246
 #define IDC_GEO_EDITOR_BUTTON2          1246
 #define IDC_Step                        1246
@@ -927,6 +930,7 @@
 #define IDC_RADIO_MAT_FP_DENSITY9       1619
 #define IDC_COMBO_MSH                   1619
 #define IDC_COMBO_MAT_Lay               1619
+#define IDC_COMCREEP                    1619
 #define IDC_COMBO_PROCESS_PHASES        1620
 #define IDC_LIST_POLYLINE               1620
 #define IDC_EDIT_MAT_FP_DENSITY_7       1620
@@ -1211,7 +1215,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        175
 #define _APS_NEXT_COMMAND_VALUE         33084
-#define _APS_NEXT_CONTROL_VALUE         1243
+#define _APS_NEXT_CONTROL_VALUE         1247
 #define _APS_NEXT_SYMED_VALUE           104
 #endif
 #endif

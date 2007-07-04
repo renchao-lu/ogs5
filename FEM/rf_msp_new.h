@@ -150,7 +150,10 @@ class CSolidProperties
     double Thermal_Expansion() const {return ThermalExpansion;}
     // 4. Plasticity
     int Plastictity() const {return Plasticity_type;}
-
+    double GetPlasticParameter(const int index) {return (*data_Plasticity)(index);} 
+    // 5. Creep 
+   int CreepModel() const {return Creep_mode;}
+    double GetCreepParameter(const int index) {return (*data_Creep)(index);} 
     // Initilize density
     void NullDensity(); 
 
