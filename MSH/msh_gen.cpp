@@ -701,7 +701,7 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
 {
   CGLLine *m_line=NULL;
   list<CGLLine*>::const_iterator pl;
-  int hits;
+//  int hits;
   long i,j,k;
   long *nodes_unsorted = NULL;
   double *node_distances = NULL;
@@ -711,9 +711,9 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
   list<CGLLine*>::iterator pl3;
   long m_point11,m_point12,m_point21,m_point22;
   CGLLine *m_line1,*m_line2;
-  bool hitP0,hitP1,hitP2;
-  double v1[3],v2[3];
-  double angle;
+//  bool hitP0,hitP1,hitP2;
+//  double v1[3],v2[3];
+//  double angle;
   double eps_angle = 1.;
 //OK
   vector<long>nodes_vector;
@@ -1016,7 +1016,7 @@ AfxMessageBox("Method inactive");
             for (j=0; j<m_ele->GetNodesNumber(false); j++)
             {
               if (m_msh_ply->NodeExists(m_ele->nodes_index[j])) {
-                for (k=0; k<m_msh_ply->nod_vector.size(); k++)
+                for (k=0; k<(long)m_msh_ply->nod_vector.size(); k++)
                 {
                   if(m_msh_ply->nod_vector[k]->GetIndex() == m_ele->nodes_index[j])
                   {
