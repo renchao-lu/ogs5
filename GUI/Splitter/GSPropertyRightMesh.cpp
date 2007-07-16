@@ -137,6 +137,7 @@ BEGIN_MESSAGE_MAP(CGSPropertyRightMesh, CViewPropertyPage)
 	ON_BN_CLICKED(IDC_MSH_TEST_DELAUNAY3DLIB, OnBnClickedMshTestDelaunay3DLib)
 	ON_BN_CLICKED(IDC_CREATE_ELLIPSE2D, OnBnClickedCreateEllipse2d)
 	ON_BN_CLICKED(IDC_MSHNODES_ALONG_POLYLINE, OnBnClickedMshnodesAlongPolyline)
+    ON_BN_CLICKED(IDC_CREATE_LINES_ALONG_POLYLINE, OnBnClickedCreateLinesAlongPolyline)
 END_MESSAGE_MAP()
 
 
@@ -1945,8 +1946,33 @@ void CGSPropertyRightMesh::OnBnClickedMergeMeshes()
           {
           m_msh = new CFEMesh();
           m_msh->pcs_name = m_msh_o->pcs_name + "_test";
+/* NW
           m_msh->nod_vector = m_msh_o->nod_vector;
+*/
+          m_msh->nod_vector.resize(m_msh_o->nod_vector.size());
+          CNode *tmp_node;
+          for (j=0;j<(long)m_msh_o->nod_vector.size();j++) 
+          {
+            tmp_node = new CNode(m_msh_o->nod_vector[j]->GetIndex(), m_msh_o->nod_vector[j]->X(), m_msh_o->nod_vector[j]->Y(), m_msh_o->nod_vector[j]->Z());
+            m_msh->nod_vector[j] = tmp_node;
+          }
+/* NW
           m_msh->ele_vector = m_msh_o->ele_vector;
+*/
+          m_msh->ele_vector.resize(m_msh_o->ele_vector.size());
+          CElem *tmp_elem;
+          vec<CNode*> vec_nodes;
+          for (j=0;j<(long)m_msh_o->ele_vector.size();j++) 
+          {
+            tmp_elem = new CElem(j, m_msh_o->ele_vector[j]);
+            vec_nodes.resize(m_msh_o->ele_vector[j]->GetNodesNumber(false));
+            for (k=0;k<(int)vec_nodes.Size();k++)
+            {
+              vec_nodes[k] = m_msh->nod_vector[m_msh_o->ele_vector[j]->GetNodeIndex(k)];
+            }
+            tmp_elem->SetNodes(vec_nodes);
+            m_msh->ele_vector[j] = tmp_elem;
+          }
           fem_msh_vector.push_back(m_msh);        
           m_msh_o->ele_display_mode = 0;
           m_msh_o->nod_display_mode = 0;
@@ -1963,9 +1989,34 @@ void CGSPropertyRightMesh::OnBnClickedMergeMeshes()
           ele_vec_size = (int)m_msh->ele_vector.size();
           m_msh_temp = new CFEMesh();
           m_msh_temp->pcs_name = m_msh_o->pcs_name + "_temp";
+/* NW
           m_msh_temp->nod_vector = m_msh_o->nod_vector;
+*/
+          m_msh_temp->nod_vector.resize(m_msh_o->nod_vector.size());
+          CNode *tmp_node;
+          for (j=0;j<(long)m_msh_o->nod_vector.size();j++) 
+          {
+            tmp_node = new CNode(m_msh_o->nod_vector[j]->GetIndex(), m_msh_o->nod_vector[j]->X(), m_msh_o->nod_vector[j]->Y(), m_msh_o->nod_vector[j]->Z());
+            m_msh_temp->nod_vector[j] = tmp_node;
+          }
+/* NW
           m_msh_temp->ele_vector = m_msh_o->ele_vector;
-          
+*/
+          m_msh_temp->ele_vector.resize(m_msh_o->ele_vector.size());
+          CElem *tmp_elem;
+          vec<CNode*> vec_nodes;
+          for (j=0;j<(long)m_msh_o->ele_vector.size();j++) 
+          {
+            tmp_elem = new CElem(j, m_msh_o->ele_vector[j]);
+            vec_nodes.resize(m_msh_o->ele_vector[j]->GetNodesNumber(false));
+            for (k=0;k<(int)vec_nodes.Size();k++)
+            {
+              vec_nodes[k] = m_msh_temp->nod_vector[m_msh_o->ele_vector[j]->GetNodeIndex(k)];
+            }
+            tmp_elem->SetNodes(vec_nodes);
+            m_msh_temp->ele_vector[j] = tmp_elem;
+          }
+
            for (j=0;j<(int)m_msh_temp->nod_vector.size();j++)
            m_msh_temp->nod_vector[j]->SetIndex(j + (int)m_msh->nod_vector.size());
 
@@ -2120,8 +2171,14 @@ void CGSPropertyRightMesh::OnBnClickedDeletedoublenodes()
           m_msh_temp->ele_vector = fem_msh_vector[i]->ele_vector;
           m_msh_temp->edge_vector = fem_msh_vector[i]->edge_vector;
 
-          GetMinMaxEdgeLength(m_msh_temp);
-          search_tolerance = m_msh_temp->min_edge_length;
+          if (m_msh_temp->edge_vector.size() > 0) //NW
+          {
+            GetMinMaxEdgeLength(m_msh_temp);
+            search_tolerance = m_msh_temp->min_edge_length;
+          } else {
+            search_tolerance = 1.0e-10;
+          }
+
            /*Check&Mark*/ 
            for (j=0;j<(int)fem_msh_vector[i]->nod_vector.size();j++)
            {
@@ -2219,6 +2276,7 @@ void CGSPropertyRightMesh::OnBnClickedDeletedoublenodes()
   
   //========================================================================
  m_frame->m_something_changed = 1;
+  m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
  m_pDoc->UpdateAllViews(NULL);
  Invalidate(TRUE);
 }
@@ -3243,4 +3301,86 @@ void CGSPropertyRightMesh::OnBnClickedMshnodesAlongPolyline()
  m_frame->m_something_changed = 1;
  m_pDoc->UpdateAllViews(NULL);
  Invalidate(TRUE);
+}
+
+/**************************************************************************
+Task:   Create line elements along the polylines using existing edges
+Programing:
+07/2007 NW implementation
+**************************************************************************/
+void CGSPropertyRightMesh::OnBnClickedCreateLinesAlongPolyline()
+{
+  //========================================================================
+  CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+  CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
+  //========================================================================
+  //File handling
+  //========================================================================
+  CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+  CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+  CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+  CString m_strFileNameBase = m_pDoc->m_strGSPFilePathBase;
+  CString m_strFileNameTetMSH = m_strFileNameBase + ".msh";
+  CString m_strFileNameGSP = m_strFileNameBase + ".gsp";
+  //========================================================================
+
+  if (fem_msh_vector.size() == 0) {
+    pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"BASE MESH NOT FOUND.");  
+    return;
+  }
+
+  //========================================================================
+  //Make a list of the user-specified polylines 
+  vector<CGLPolyline*> vct_target_polylines;
+  for (int i=0;i<(int)polyline_vector.size();i++)
+  {
+    if (polyline_vector[i]->display_mode == 1)
+    {
+      vct_target_polylines.push_back(polyline_vector[i]);
+    }
+  }
+  if (vct_target_polylines.size() == 0) {
+    pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"CHECKED POLYLINE NOT FOUND.");  
+    return;
+  }
+
+  //========================================================================
+  //Create Line Elements
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Creating Line Elements");  
+  ////DEBUG CODE: Remove extra mesh
+  //while (fem_msh_vector.size() > 1) {
+  //  fem_msh_vector.pop_back();
+  //}
+  //// DEBUG CODE: unhighlight all elements
+  //for(int i=0;i<(long)fem_msh_vector[0]->ele_vector.size();i++) {
+  //  fem_msh_vector[0]->ele_vector[i]->selected = 0;
+  //}
+
+  CFEMesh* m_msh_ply = new CFEMesh();
+  m_msh_ply->pcs_name = "POLYLINES";
+
+  CGLPolyline* m_ply = NULL;
+  for (int i=0;i<(int)vct_target_polylines.size();i++)
+  {
+    m_ply = vct_target_polylines[i];
+    fem_msh_vector[0]->CreateLineELEFromPLY(m_ply, 4, m_msh_ply);
+  }
+  if (m_msh_ply->ele_vector.size() > 0) {
+    fem_msh_vector.push_back(m_msh_ply);
+  } else {
+    delete m_msh_ply;
+  }
+
+  //========================================================================
+  //FEMWrite((string)m_strFileNameBase);
+  //FEMRead((string)m_strFileNameBase);
+  //CompleteMesh(); 
+
+  // Update View
+  m_frame->m_something_changed = 1;
+  m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
+  m_pDoc->UpdateAllViews(NULL);
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)" ");  
+  Invalidate(TRUE);
+  OnPaint();
 }

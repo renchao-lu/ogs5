@@ -54,6 +54,12 @@ class CFEMesh
 	// 3:  X, Y, Z component
     int coordinate_system; 
     int max_ele_dim; 
+
+    // LINE
+    void CheckMarkedEdgesOnPolyLine(CGLPolyline*m_polyline, vector<long> &ele_vector_at_ply); //NW
+    void CreateLineElementsFromMarkedEdges(CFEMesh*m_msh_ply, vector<long> &ele_vector_at_ply); //NW
+    bool HasSameCoordinatesNode(CNode* nod, long &node_no); //NW
+
  public:	
     string pcs_name;
     string geo_name; //MB

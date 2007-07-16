@@ -711,6 +711,7 @@ Programing:
 03/2005 OK MultiMSH
 08/2005 WW Changes for MultiMSH
 12/2005 OK VAR,MSH,PCS concept
+07/2007 NW Multi Mesh Type
 **************************************************************************/
 void COutput::NODWriteDOMDataTEC()
 {
@@ -736,6 +737,25 @@ void COutput::NODWriteDOMDataTEC()
     cout << "Warning in COutput::NODWriteDOMDataTEC() - no MSH data" << endl;
     return;
   }
+  //======================================================================
+  vector<int> mesh_type_list; //NW
+  if(m_msh->msh_no_line>0)
+    mesh_type_list.push_back(1);
+	if (m_msh->msh_no_quad>0)
+    mesh_type_list.push_back(2);
+	if (m_msh->msh_no_hexs>0)
+    mesh_type_list.push_back(3);
+	if (m_msh->msh_no_tris>0)
+    mesh_type_list.push_back(4);
+	if (m_msh->msh_no_tets>0)
+    mesh_type_list.push_back(5);
+	if (m_msh->msh_no_pris>0)
+    mesh_type_list.push_back(6);
+
+  // Output files for each mesh type
+  for (int i=0; i<(int)mesh_type_list.size(); i++) //NW
+  {
+    te = mesh_type_list[i];
   //----------------------------------------------------------------------
   // File name handling
   tec_file_name = file_base_name + "_" + "domain";
@@ -745,7 +765,35 @@ void COutput::NODWriteDOMDataTEC()
     tec_file_name += "_" + pcs_type_name;
   //======================================================================
   if(m_msh){//WW
-    if(m_msh->msh_no_line>0)
+    switch (te) //NW
+    {
+    case 1:
+      tec_file_name += "_line";
+      eleType = "QUADRILATERAL"; 
+      break;
+    case 2:
+      tec_file_name += "_quad";
+      eleType = "QUADRILATERAL"; 
+      break;
+    case 3:
+      tec_file_name += "_hex";
+      eleType = "BRICK"; 
+      break;
+    case 4:
+      tec_file_name += "_tri";
+      eleType = "QUADRILATERAL";
+      break;
+    case 5:
+      tec_file_name += "_tet";
+  	  eleType = "TETRAHEDRON"; 
+      break;
+    case 6:
+      tec_file_name += "_pris";
+      eleType = "BRICK"; 
+      break;
+    }
+/*
+  if(m_msh->msh_no_line>0)
 	{
       tec_file_name += "_line";
       eleType = "QUADRILATERAL"; 
@@ -782,6 +830,7 @@ void COutput::NODWriteDOMDataTEC()
       eleType = "BRICK"; 
 	  te=6;
 	}
+*/
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
     sprintf(tf_name, "%d", myrank);
     tec_file_name += "_" + string(tf_name);
@@ -927,6 +976,7 @@ void COutput::NODWriteDOMDataTEC()
       WriteTECNodeData(tec_file);
       WriteTECElementData(tec_file,3);
     }
+  }
   }
 }
 
@@ -1080,6 +1130,7 @@ Programing:
 03/2005 OK MultiMSH
 08/2005 WW Wite for MultiMSH
 12/2005 OK GetMSH
+07/2007 NW Multi Mesh Type 
 **************************************************************************/
 void COutput::WriteTECElementData(fstream& tec_file,int e_type)
 {
@@ -1090,10 +1141,12 @@ void COutput::WriteTECElementData(fstream& tec_file,int e_type)
   m_msh = GetMSH();
   if(m_msh){
     for(i=0l;i<(long)m_msh->ele_vector.size();i++)
-	{
-       if(!m_msh->ele_vector[i]->GetMark()) continue;       
-      m_msh->ele_vector[i]->WriteIndex_TEC(tec_file);
-	}
+	  {
+      if(!m_msh->ele_vector[i]->GetMark()) continue;       
+      if(m_msh->ele_vector[i]->GetElementType() == e_type) {  //NW
+        m_msh->ele_vector[i]->WriteIndex_TEC(tec_file);
+      }
+	  }
   }
   //----------------------------------------------------------------------
   else{

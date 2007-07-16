@@ -80,5 +80,6 @@ public:
 	afx_msg void OnBnClickedMshTestDelaunay2dlib();
 
 	afx_msg void OnBnClickedMshnodesAlongPolyline();
+  afx_msg void OnBnClickedCreateLinesAlongPolyline();
 };
 

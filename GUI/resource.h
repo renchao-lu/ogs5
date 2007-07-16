@@ -634,6 +634,8 @@
 #define IDC_RADIO_TIM_TYPE2             1213
 #define IDC_MSH_TEST_DELAUNAY2DLIB      1213
 #define ID_ADD_OUT_TIME                 1214
+#define IDC_CREATE_ELLIPSE2D2           1214
+#define IDC_CREATE_LINES_ALONG_POLYLINE 1214
 #define IDC_RADIO_DAT_TYPE1             1215
 #define IDC_RADIO_DAT_TYPE2             1216
 #define IDC_UNSELECT                    1216

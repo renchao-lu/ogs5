@@ -18,7 +18,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// German (Germany) resources
+// ドイツ語 (ドイツ) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_DEU)
 #ifdef _WIN32
@@ -1348,12 +1348,12 @@ BEGIN
     END
 END
 
-#endif    // German (Germany) resources
+#endif    // ドイツ語 (ドイツ) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// 英語 (米国) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 #ifdef _WIN32
@@ -2535,6 +2535,8 @@ BEGIN
                     IDC_MSHNODES_ALONG_POLYLINE,0,569,192,18
     PUSHBUTTON      "2D Delaunay (Okayama/Watanabe) / TEST",
                     IDC_MSH_TEST_DELAUNAY2DLIB,0,542,192,14
+    PUSHBUTTON      "Create Line mesh from Tri along Polyline / TEST",
+                    IDC_CREATE_LINES_ALONG_POLYLINE,0,612,192,14
 END
 
 IDD_CONTROL_RIGHT_GEO DIALOGEX 0, 0, 196, 949
@@ -3667,12 +3669,12 @@ BEGIN
     ID_VIEW_ZOOMFULL        "zoom full\nzoom full"
 END
 
-#endif    // English (U.S.) resources
+#endif    // 英語 (米国) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Italian (Italy) resources
+// イタリア語 (イタリア) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ITA)
 #ifdef _WIN32
@@ -3716,12 +3718,12 @@ END
 
 #endif    // APSTUDIO_INVOKED
 
-#endif    // Italian (Italy) resources
+#endif    // イタリア語 (イタリア) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// English (Ireland) resources
+// 英語 (アイルランド) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENI)
 #ifdef _WIN32
@@ -3735,7 +3737,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_EIRE
 //
 
 IDB_TREE_CTRL_OPTIONS   BITMAP                  "res\\tree_ctrl.bmp"
-#endif    // English (Ireland) resources
+#endif    // 英語 (アイルランド) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

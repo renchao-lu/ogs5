@@ -281,7 +281,7 @@ void PrismRefine(const int NLayers, const int Layer, const int NSubLayers)
              ElSetElementActiveState(NumElementNew,1);
 
              /* "rowx hochziehen"   */
-             /* loop ¸ber die betroffenen rows   */
+             /* loop ÅEer die betroffenen rows   */
              NRowsToShift = NRows - Layer;
              count = 0;
 
@@ -694,24 +694,16 @@ Task: Create linear 1-D elements from triangulated meshes
 Programing:
 01/2004 OK Implementation
 04/2005 OK MSH method for case 1
+04/2007 OK OO-FEM
+07/2007 NW MSH method for case 3,4
 **************************************************************************/
 void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_msh_ply)
 {
-  m_polyline = m_polyline;
-  type = type;
-  m_msh_ply = m_msh_ply;
-//WWW
-#ifdef TODO 
-  long no_points;
-  long *nodes = NULL;
   CGLLine *m_line=NULL;
   list<CGLLine*>::const_iterator pl;
-  long *element_nodes = NULL;
   int hits;
   long i,j,k;
-  double pt1[3],pt2[3];
   long *nodes_unsorted = NULL;
-  long no_nodes;
   double *node_distances = NULL;
   list<CGLLine*>msh_line_list;
   list<CGLLine*>::iterator pl1;
@@ -723,11 +715,56 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
   double v1[3],v2[3];
   double angle;
   double eps_angle = 1.;
-  CMSHNodes* m_nod = NULL;
+//OK
+  vector<long>nodes_vector;
+  CNode* m_nod = NULL;
+  CElem* m_ele = NULL;
+  CEdge* m_edg = NULL;
+  vec<long>node_indeces(3);
+  long no_elements;
+  long no_nodes;
+  double m_nod_x,m_nod_y,m_nod_z;
+  vector<long>elements_vector;
+  vec<CNode*>edge_nodes(3);    
+  vec<CEdge*>ele_edges_vector(15);
+  vector<long>ele_vector_at_ply;
+  vector<long>nod_vector_at_ply;
 
-  switch(type) {
+  //======================================================================
+  switch(type) 
+  {
     //--------------------------------------------------------------------
     case 0: // simply sort by distance
+      GetNODOnPLY(m_polyline,nod_vector_at_ply);
+      //------------------------------------------------------------------
+      // Create nodes
+      if(m_msh_ply)
+      {
+        for(i=0;i<(long)nod_vector_at_ply.size();i++)
+        {
+          m_nod = nod_vector[i];
+          no_nodes = (long)m_msh_ply->nod_vector.size();
+          m_nod_x = nod_vector[nod_vector_at_ply[i]]->X();
+          m_nod_y = nod_vector[nod_vector_at_ply[i]]->Y();
+          m_nod_z = nod_vector[nod_vector_at_ply[i]]->Z();
+          m_nod = new CNode(no_nodes,m_nod_x,m_nod_y,m_nod_z);
+          m_msh_ply->nod_vector.push_back(m_nod);
+        }
+      }
+      //------------------------------------------------------------------
+      // Create elements
+      for(i=0;i<(long)nod_vector_at_ply.size();i++)
+      {
+        no_elements = (long)m_msh_ply->ele_vector.size();
+        m_ele = new CElem(no_elements);
+        m_ele->geo_type = 1;
+        m_ele->Config();
+        m_ele->nodes_index[0] = i;
+        m_ele->nodes_index[1] = i+1;
+        m_ele->SetPatchIndex((int)mmp_vector.size());
+        m_msh_ply->ele_vector.push_back(m_ele);
+      }
+/*OK
       // 1 - sort by distance
       nodes_unsorted = m_polyline->MSHGetNodesClose(&no_nodes);
       pt1[0] = m_polyline->point_vector[0]->x;
@@ -749,9 +786,14 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
       }
       // 3 - create line elements
       m_polyline->MSHCreateLines();
+*/
+#ifdef MFC
+AfxMessageBox("Method inactive");
+#endif
       break;
     //--------------------------------------------------------------------
     case 1: // based on lines
+/*OK
       // 0 - create polyline lines, if necessary
       if(m_polyline->line_list.size()==0)
         m_polyline->ComputeLines(m_polyline);
@@ -807,162 +849,63 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
         m_ele->nodes_index[0] = i;
         m_ele->nodes_index[1] = i+1;
       }
+*/
+#ifdef MFC
+AfxMessageBox("Method inactive");
+#endif
       break;
     //--------------------------------------------------------------------
     case 2: // based on triangles
       msh_line_list.clear();
-      // 1 - get MSH nodes close to polyline
-      nodes = m_polyline->MSHGetNodesClose(&no_points);
-      // 2 - determine triangle edges along polyline
-      for(i=0;i<ElementListLength;i++){
-        if(ElGetElementType(i)==4){
-          element_nodes = ElGetElementNodes(i);
-          hits=0;
-          m_line = new CGLLine();
-          m_line->m_point1 = new CGLPoint();
-          m_line->m_point2 = new CGLPoint();
-          hitP0 = hitP1 = hitP2 = false;
-          for(j=0;j<no_points;j++){
-            if(nodes[j]==element_nodes[0]){
-/*
-              if(hits==0)
-                m_line->m_point1->gli_point_id = element_nodes[0];
-              if(hits==1)
-                m_line->m_point2->gli_point_id = element_nodes[0];
-              hits++; 
-*/
-              hitP0 = true;
-              hits++;
-            }
-            if(nodes[j]==element_nodes[1]){
-/*
-              if(hits==0)
-                m_line->m_point1->gli_point_id = element_nodes[1];
-              if(hits==1)
-                m_line->m_point2->gli_point_id = element_nodes[1];
-              hits++;
-*/
-              hitP1 = true;
-              hits++;
-            }
-            if(nodes[j]==element_nodes[2]){
-/*
-              if(hits==0)
-                m_line->m_point1->gli_point_id = element_nodes[2];
-              if(hits==1)
-                m_line->m_point2->gli_point_id = element_nodes[2];
-              hits++;
-*/
-              hitP2 = true;
-              hits++;
-            }
-/*
-            if(hits==2){
-              msh_line_list.push_back(m_line);
-              m_line->gli_line_id = i;
-              break;
-            }
-*/
-            if(hitP0&&hitP1&&!hitP2){
-              v1[0] = GetNodeX(element_nodes[0])-GetNodeX(element_nodes[1]);
-              v1[1] = GetNodeY(element_nodes[0])-GetNodeY(element_nodes[1]);
-              v1[2] = GetNodeZ(element_nodes[0])-GetNodeZ(element_nodes[1]);
-              long point_vector_length = (long)m_polyline->point_vector.size();
-              for(k=0;k<point_vector_length-1;k++){
-                v2[0] = m_polyline->point_vector[k+1]->x - m_polyline->point_vector[k]->x;
-                v2[1] = m_polyline->point_vector[k+1]->y - m_polyline->point_vector[k]->y;
-                v2[2] = m_polyline->point_vector[k+1]->z - m_polyline->point_vector[k]->z;
-                angle  = MAngleVectors(v1,v2);
-                if(angle<eps_angle){
-                  m_line->m_point1->gli_point_id = element_nodes[0];
-                  m_line->m_point2->gli_point_id = element_nodes[1];
-                  msh_line_list.push_back(m_line);
-                  m_line->gli_line_id = i;
-                }
-              }
-              hitP0 = hitP1 = false;
-            }
-            if(hitP1&&hitP2&&!hitP0){
-              v1[0] = GetNodeX(element_nodes[1])-GetNodeX(element_nodes[2]);
-              v1[1] = GetNodeY(element_nodes[1])-GetNodeY(element_nodes[2]);
-              v1[2] = GetNodeZ(element_nodes[1])-GetNodeZ(element_nodes[2]);
-              long point_vector_length = (long)m_polyline->point_vector.size();
-              for(k=0;k<point_vector_length-1;k++){
-                v2[0] = m_polyline->point_vector[k+1]->x - m_polyline->point_vector[k]->x;
-                v2[1] = m_polyline->point_vector[k+1]->y - m_polyline->point_vector[k]->y;
-                v2[2] = m_polyline->point_vector[k+1]->z - m_polyline->point_vector[k]->z;
-                angle  = MAngleVectors(v1,v2);
-                if(angle<eps_angle){
-                  m_line->m_point1->gli_point_id = element_nodes[1];
-                  m_line->m_point2->gli_point_id = element_nodes[2];
-                  msh_line_list.push_back(m_line);
-                  m_line->gli_line_id = i;
-                }
-              }
-              hitP1 = hitP2 = false;
-            }
-            if(hitP2&&hitP0&&!hitP1){
-              v1[0] = GetNodeX(element_nodes[2])-GetNodeX(element_nodes[0]);
-              v1[1] = GetNodeY(element_nodes[2])-GetNodeY(element_nodes[0]);
-              v1[2] = GetNodeZ(element_nodes[2])-GetNodeZ(element_nodes[0]);
-              long point_vector_length = (long)m_polyline->point_vector.size();
-              for(k=0;k<point_vector_length-1;k++){
-                v2[0] = m_polyline->point_vector[k+1]->x - m_polyline->point_vector[k]->x;
-                v2[1] = m_polyline->point_vector[k+1]->y - m_polyline->point_vector[k]->y;
-                v2[2] = m_polyline->point_vector[k+1]->z - m_polyline->point_vector[k]->z;
-                angle  = MAngleVectors(v1,v2);
-                if(angle<eps_angle){
-                  m_line->m_point1->gli_point_id = element_nodes[2];
-                  m_line->m_point2->gli_point_id = element_nodes[0];
-                  msh_line_list.push_back(m_line);
-                  m_line->gli_line_id = i;
-                }
-              }
-              hitP0 = hitP2 = false;
-            }
+      m_polyline->line_vector.clear();
+      ele_vector_at_ply.clear();
+      GetELEOnPLY(m_polyline,ele_vector_at_ply);
+      for(i=0;i<(long)ele_vector_at_ply.size();i++)
+      {
+        cout << ele_vector_at_ply[i] << endl;
+        m_ele = ele_vector[ele_vector_at_ply[i]];
+        m_line = new CGLLine();
+        m_line->m_point1 = new CGLPoint();
+        m_line->m_point2 = new CGLPoint();
+        m_ele->GetEdges(ele_edges_vector);
+        for(j=0;j<(int)m_ele->GetEdgesNumber();j++)
+        {
+          m_edg = ele_edges_vector[j];
+          if(m_edg->GetMark())
+          {
+            m_edg->GetNodes(edge_nodes);
+            m_line->m_point1->id = edge_nodes[0]->GetIndex();
+            m_line->m_point2->id = edge_nodes[1]->GetIndex();
           }
-          if(hits<2) {
-            delete m_line->m_point1;
-            delete m_line->m_point2;
-            delete m_line;
-          }
-        } // Triangles
-      }
-      // 3 - remove double lines
-/*
-      pl1=msh_line_list.begin();
-      while(pl1!=msh_line_list.end()) {
-        node1 = *pl1;
-        ++pl1;
-*/
-/*
-        while(pl1!=msh_line_list.end()) {
-          node2 = *pl1;
-          if( ((node1[0]==node2[0])&&(node1[1]==node2[1])) || \
-              ((node1[0]==node2[1])&&(node1[1]==node2[0])) ) {
-            msh_line_list.remove(node2);
-          }
-          ++pl1;
         }
+        m_line->gli_line_id = i;
+        msh_line_list.push_back(m_line);
       }
-*/
-      m_polyline->line_list.clear();
-      pl1=msh_line_list.begin();
-      while(pl1!=msh_line_list.end()) {
+      //------------------------------------------------------------------
+      //OK m_polyline->line_list.clear();
+      pl1 = msh_line_list.begin();
+      while(pl1!=msh_line_list.end())
+      {
         m_line = *pl1;
-        m_line->m_point1->x = GetNodeX(m_line->m_point1->gli_point_id);
-        m_line->m_point1->y = GetNodeY(m_line->m_point1->gli_point_id);
-        m_line->m_point2->x = GetNodeX(m_line->m_point2->gli_point_id);
-        m_line->m_point2->y = GetNodeY(m_line->m_point2->gli_point_id);
-        m_polyline->line_list.push_back(m_line);
+        //OK m_line->m_point1->x = GetNodeX(m_line->m_point1->id);
+        m_line->m_point1->x = nod_vector[m_line->m_point1->id]->X();
+        //OK m_line->m_point1->y = GetNodeY(m_line->m_point1->id);
+        m_line->m_point1->y = nod_vector[m_line->m_point1->id]->Y();
+        //OK m_line->m_point2->x = GetNodeX(m_line->m_point2->id);
+        m_line->m_point2->x = nod_vector[m_line->m_point2->id]->X();
+        //OK m_line->m_point2->y = GetNodeY(m_line->m_point2->id);
+        m_line->m_point2->y = nod_vector[m_line->m_point2->id]->Y();
+        m_polyline->line_vector.push_back(m_line);
         ++pl1;
       }
+      //------------------------------------------------------------------
       // Remove double elements
-      pl1=msh_line_list.begin();
-      while(pl1!=msh_line_list.end()) {
+      pl1 = msh_line_list.begin();
+      while(pl1!=msh_line_list.end()) 
+      {
         m_line1 = *pl1;
-        m_point11 = m_line1->m_point1->gli_point_id;
-        m_point12 = m_line1->m_point2->gli_point_id;
+        m_point11 = m_line1->m_point1->id;
+        m_point12 = m_line1->m_point2->id;
         pl2=msh_line_list.begin();
         while(pl2!=msh_line_list.end()) {
           m_line2 = *pl2;
@@ -970,8 +913,8 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
             pl2++;
             continue;
           }
-          m_point21 = m_line2->m_point1->gli_point_id;
-          m_point22 = m_line2->m_point2->gli_point_id;
+          m_point21 = m_line2->m_point1->id;
+          m_point22 = m_line2->m_point2->id;
           if( ( (m_point11==m_point21)&&(m_point12==m_point22) ) \
             ||( (m_point11==m_point22)&&(m_point12==m_point21) ) ) {
            pl3 = msh_line_list.erase(pl2);
@@ -982,26 +925,189 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
         }
         pl1++;
       }
+      //------------------------------------------------------------------
       // Create elements
       pl1=msh_line_list.begin();
-      while(pl1!=msh_line_list.end()) {
+      while(pl1!=msh_line_list.end()) 
+      {
         m_line = *pl1;
         m_line->mat_group = m_polyline->mat_group;
         m_line->no_msh_nodes = 2;
         m_line->msh_nodes = new long[2];
-        m_line->msh_nodes[0] = m_line->m_point1->gli_point_id;
-        m_line->msh_nodes[1] = m_line->m_point2->gli_point_id;
+        m_line->msh_nodes[0] = m_line->m_point1->id;
+        m_line->msh_nodes[1] = m_line->m_point2->id;
         //m_line->CreateMSHLines();
-//OK      ELECreateTopology(1,-1,0,ElementListLength);
-      ElSetElementNodes(ElementListLength-1,m_line->msh_nodes);
-      ElSetElementGroupNumber(ElementListLength-1,m_line->mat_group);
-      anz_1D++;
+//OK    ELECreateTopology(1,-1,0,ElementListLength);
+        if(m_msh_ply)
+          no_elements = (long)m_msh_ply->ele_vector.size();
+        else
+          no_elements = (long)ele_vector.size();
+        m_ele = new CElem(no_elements);
+        m_ele->geo_type = 1;
+        m_ele->Config();
+//OK        ElSetElementNodes(ElementListLength-1,m_line->msh_nodes);
+        m_ele->nodes_index[0] = m_line->m_point1->id;
+        m_ele->nodes_index[1] = m_line->m_point2->id;
+//OK        ElSetElementGroupNumber(ElementListLength-1,m_line->mat_group);
+        m_ele->SetPatchIndex(m_line->mat_group);
+        if(m_msh_ply)
+          m_msh_ply->ele_vector.push_back(m_ele);
+        else
+          ele_vector.push_back(m_ele);
+//OK        anz_1D++;
         pl1++;
       }
+      //------------------------------------------------------------------
+      // Create nodes
+      if(m_msh_ply)
+      {
+        for(i=0;i<(long)m_msh_ply->ele_vector.size();i++)
+        {
+          m_ele = m_msh_ply->ele_vector[i];
+          for(k=0;k<m_ele->GetNodesNumber(false);k++)
+          {
+            if(m_msh_ply->NodeExists(m_ele->nodes_index[k]))
+              continue;
+            no_nodes = (long)m_msh_ply->nod_vector.size();
+            m_nod_x = nod_vector[m_ele->nodes_index[k]]->X();
+            m_nod_y = nod_vector[m_ele->nodes_index[k]]->Y();
+            m_nod_z = nod_vector[m_ele->nodes_index[k]]->Z();
+            m_nod = new CNode(no_nodes,m_nod_x,m_nod_y,m_nod_z);
+   	        //m_msh_local->nod_vector[j]->SetEquationIndex(j);
+            //m_msh_local->Eqs2Global_NodeIndex[j] = m_msh_local->nod_vector[j]->GetIndex();
+            m_msh_ply->nod_vector.push_back(m_nod);
+            m_ele->nodes_index[k] = no_nodes; // renumber
+          }
+        }
+      }
       break;
-    //--------------------------------------------------------------------
+    //====================================================================
+    case 3: // based on triangles / create new mesh (NW)
+      {
+        m_polyline->line_vector.clear();
+        ele_vector_at_ply.clear();
+
+        //------------------------------------------------------------------
+        // Search elements that locate on the polyline
+        GetELEOnPLY(m_polyline, ele_vector_at_ply);
+
+        //// DEBUG CODE: highlight collected elements
+        //for(i=0;i<(long)ele_vector_at_ply.size();i++) {
+        //  ele_vector[ele_vector_at_ply[i]]->selected=1;
+        //}
+
+        //------------------------------------------------------------------
+        // Check marked edges: really necessary or not
+        this->CheckMarkedEdgesOnPolyLine(m_polyline, ele_vector_at_ply);
+
+        //------------------------------------------------------------------
+        // Create line elements
+        this->CreateLineElementsFromMarkedEdges(m_msh_ply, ele_vector_at_ply);
+        
+        //------------------------------------------------------------------
+        // Create nodes into new mesh
+        if(m_msh_ply)
+        {
+          for (i=0; i<(long)m_msh_ply->ele_vector.size(); i++)
+          {
+            m_ele = m_msh_ply->ele_vector[i];
+            m_ele->nodes.resize(m_ele->GetNodesNumber(false));
+
+            for (j=0; j<m_ele->GetNodesNumber(false); j++)
+            {
+              if (m_msh_ply->NodeExists(m_ele->nodes_index[j])) {
+                for (k=0; k<m_msh_ply->nod_vector.size(); k++)
+                {
+                  if(m_msh_ply->nod_vector[k]->GetIndex() == m_ele->nodes_index[j])
+                  {
+                    m_ele->nodes[j] = m_msh_ply->nod_vector[k];
+                    m_ele->nodes_index[j] = k;
+                    break;
+                  }
+                }
+              } else {
+                no_nodes = (long)m_msh_ply->nod_vector.size();
+                m_nod_x = nod_vector[m_ele->nodes_index[j]]->X();
+                m_nod_y = nod_vector[m_ele->nodes_index[j]]->Y();
+                m_nod_z = nod_vector[m_ele->nodes_index[j]]->Z();
+                m_nod = new CNode(no_nodes,m_nod_x,m_nod_y,m_nod_z);
+                m_nod->SetIndex(m_ele->nodes_index[j]);
+                m_msh_ply->nod_vector.push_back(m_nod);
+
+                m_ele->nodes_index[j] = no_nodes; // renumber
+                m_ele->nodes[j] = m_nod;
+              }
+            }
+          }
+          for (i=0; i<(long)m_msh_ply->nod_vector.size(); i++)
+          {
+            m_msh_ply->nod_vector[i]->SetIndex(i);
+          }
+        }
+      }
+
+      break;
+    //====================================================================
+    case 4: // based on triangles / existing mesh (NW)
+      {
+        m_polyline->line_vector.clear();
+        ele_vector_at_ply.clear();
+
+        //------------------------------------------------------------------
+        // Search elements on the polyline
+        this->GetELEOnPLY(m_polyline, ele_vector_at_ply);
+
+        //// DEBUG CODE: highlight the collected elements
+        //for(i=0;i<(long)ele_vector_at_ply.size();i++) {
+        //  this->ele_vector[ele_vector_at_ply[i]]->selected=1;
+        //}
+
+        //------------------------------------------------------------------
+        // Check edge if it's really necessary or not
+        this->CheckMarkedEdgesOnPolyLine(m_polyline, ele_vector_at_ply);
+
+        //------------------------------------------------------------------
+        // Create line elements
+        long old_element_size = (long) m_msh_ply->ele_vector.size();
+        this->CreateLineElementsFromMarkedEdges(m_msh_ply, ele_vector_at_ply);
+        
+        //------------------------------------------------------------------
+        // Create nodes into existing mesh
+        if(m_msh_ply)
+        {
+          for(i=old_element_size; i<(long)m_msh_ply->ele_vector.size(); i++)
+          {
+            m_ele = m_msh_ply->ele_vector[i];
+            m_ele->nodes.resize(m_ele->GetNodesNumber(false));
+
+            for(j=0; j<m_ele->GetNodesNumber(false); j++)
+            {
+              m_nod_x = nod_vector[m_ele->nodes_index[j]]->X();
+              m_nod_y = nod_vector[m_ele->nodes_index[j]]->Y();
+              m_nod_z = nod_vector[m_ele->nodes_index[j]]->Z();
+
+              long exist_node_no = 0;
+              if (m_msh_ply->HasSameCoordinatesNode(nod_vector[m_ele->nodes_index[j]], exist_node_no)) {
+                CNode* exist_node = m_msh_ply->nod_vector[exist_node_no];
+                m_ele->nodes[j] = exist_node;
+                m_ele->nodes_index[j] = exist_node->GetIndex();
+              } else {
+                no_nodes = (long)m_msh_ply->nod_vector.size();
+                m_nod = new CNode(no_nodes,m_nod_x,m_nod_y,m_nod_z);
+                m_nod->SetIndex(no_nodes);
+                m_msh_ply->nod_vector.push_back(m_nod);
+
+                m_ele->nodes_index[j] = no_nodes; // renumber
+                m_ele->nodes[j] = m_nod;
+              }
+            }
+          }
+        }
+      }
+
+      break;
+    //====================================================================
   }
-#endif
 }
 
 
@@ -1888,4 +1994,255 @@ void GMSH2TIN(const char *file_name_const_char)
     
   }
   fclose(tin_file);  
+}
+
+/**************************************************************************
+MSHLib-Method: 
+Task:   CheckMarkedEdgesOnPolyLine
+Programing:
+05/2007 NW implementation
+**************************************************************************/
+void CFEMesh::CheckMarkedEdgesOnPolyLine(CGLPolyline*m_polyline, vector<long> &ele_vector_at_ply)
+{
+  CElem* m_ele = NULL;
+  CEdge* m_edg = NULL;
+  vec<CEdge*>ele_edges_vector(15);
+  vec<CNode*>edge_nodes(3);    
+
+  //------------------------------------------------------------------
+  // Make a list of elements to check
+  vector<int> chk_ele_list;
+  for (int i=0;i<(long)ele_vector_at_ply.size();i++)
+  {
+    m_ele = ele_vector[ele_vector_at_ply[i]];
+    m_ele->GetEdges(ele_edges_vector);
+
+    int marked_count = 0;
+    for(int j=0;j<(int)m_ele->GetEdgesNumber();j++)
+    {
+      m_edg = ele_edges_vector[j];
+      if(m_edg->GetMark()) marked_count++;
+    }
+    
+    if (marked_count == m_ele->GetEdgesNumber()) 
+    {
+      //if all edges of one element are marked, those edges need to be checked.
+      chk_ele_list.push_back(i);
+    }
+  }
+
+  //------------------------------------------------------------------
+  // Check continuity of node indexes that compose one edge 
+  const double search_tolerance = 1.0e-10;
+  for (int i=0; i<(int)chk_ele_list.size(); i++)
+  {
+    m_ele = ele_vector[ele_vector_at_ply[chk_ele_list[i]]];
+    m_ele->GetEdges(ele_edges_vector);
+    for(int j=0; j<(int)m_ele->GetEdgesNumber(); j++)
+    {
+      m_edg = ele_edges_vector[j];
+      if(!m_edg->GetMark()) continue;
+
+      int index[2] = {-2,-2};
+      for (int k=0;k<(int)m_polyline->point_vector.size();k++)
+      {
+        double distance1 = EuklVek3dDistCoor(m_edg->GetNode(0)->X(), m_edg->GetNode(0)->Y(), m_edg->GetNode(0)->Z(),
+                                              m_polyline->point_vector[k]->x, m_polyline->point_vector[k]->y, m_polyline->point_vector[k]->z);
+        double distance2 = EuklVek3dDistCoor(m_edg->GetNode(1)->X(), m_edg->GetNode(1)->Y(), m_edg->GetNode(1)->Z(),
+                                              m_polyline->point_vector[k]->x, m_polyline->point_vector[k]->y, m_polyline->point_vector[k]->z);
+
+        if (search_tolerance > distance1) {
+          index[0] = k;
+        } else if (search_tolerance > distance2) {
+          index[1] = k;
+        }
+      }
+      if (index[0] >= 0 && index[1] >= 0) {
+        if (abs(index[0]-index[1]) != 1) { // not continuity
+          m_edg->SetMark(false); //remove
+        }
+      }
+    }
+  }
+
+  //------------------------------------------------------------------
+  //Check the connectivity of marked edge with others
+  for (int i=0; i<(int)chk_ele_list.size(); i++)
+  {
+    m_ele = ele_vector[ele_vector_at_ply[chk_ele_list[i]]];
+    m_ele->GetEdges(ele_edges_vector);
+
+    int marked_count = 0;
+    for(int j=0; j<(int)m_ele->GetEdgesNumber(); j++)
+    {
+      m_edg = ele_edges_vector[j];
+      if(m_edg->GetMark()) marked_count++;
+    }
+    if (marked_count < m_ele->GetEdgesNumber()) {
+      continue;
+    }
+
+    vec<CNode*>n_edge_nodes(3);    
+    vec<CEdge*>n_ele_edges_vector(15);
+    int node_use[3] = {0,0,0};
+    for (int j=0;j<(long)ele_vector_at_ply.size();j++)
+    {
+      if (i==j) continue;
+      CElem* n_ele = ele_vector[ele_vector_at_ply[j]];
+      n_ele->GetEdges(n_ele_edges_vector);
+      CEdge* n_edg;
+
+      for(int k=0;k<(int)n_ele->GetEdgesNumber();k++)
+      {
+        n_edg = n_ele_edges_vector[k];
+        if(!n_edg->GetMark()) continue;
+
+        //exclude the elements sharing the marked edge
+        bool ret=true;
+        for (int l=0;l<(int)m_ele->GetEdgesNumber();l++) {
+          if (!ele_edges_vector[l]->GetMark()) continue;
+          if (n_edg == ele_edges_vector[l]) {
+            ret = false;
+            break;
+          }
+        }
+        if (!ret) continue;
+
+        n_edg->GetNodes(n_edge_nodes);
+        for (int l=0;l<3;l++) {
+          if (n_edge_nodes[0]->GetIndex() == m_ele->nodes_index[l] 
+              || n_edge_nodes[1]->GetIndex() == m_ele->nodes_index[l]) {
+            node_use[l]+=1;
+          }
+        }
+      }
+
+      long node1 = -1;
+      long node2 = -1;
+      for (int j=0;j<3;j++)
+      {
+        if (node_use[j] == 0) continue;
+        if (node1 < 0) {
+          node1 = m_ele->nodes_index[j];
+        } else {
+          node2 = m_ele->nodes_index[j];
+        }
+      }
+
+      if (node1 >= 0 && node2 >= 0) {
+        for (int j=0;j<m_ele->GetEdgesNumber();j++)
+        {
+          m_edg = ele_edges_vector[j];
+          m_edg->GetNodes(edge_nodes);
+          if (edge_nodes[0]->GetIndex() == node1 &&  edge_nodes[1]->GetIndex() == node2
+            || edge_nodes[1]->GetIndex() == node1 &&  edge_nodes[0]->GetIndex() == node2)
+          {
+            m_edg->SetMark(false);
+          }
+        }
+      }
+    }
+  }
+}
+
+/**************************************************************************
+MSHLib-Method: 
+Task:   CreateLineElementsFromMarkedEdges
+Programing:
+05/2007 NW implementation
+**************************************************************************/
+void CFEMesh::CreateLineElementsFromMarkedEdges(CFEMesh*m_msh_ply, vector<long> &ele_vector_at_ply)
+{
+  CElem* m_ele = NULL;
+  CEdge* m_edg = NULL;
+  vec<CEdge*>ele_edges_vector(15);
+  vec<CNode*>edge_nodes(3);    
+  long no_elements;
+
+  // Create line elements
+  vector<CEdge*> vct_used_edge;
+  for (int i=0;i<(long)ele_vector_at_ply.size();i++)
+  {
+    m_ele = ele_vector[ele_vector_at_ply[i]];
+    m_ele->GetEdges(ele_edges_vector);
+
+    for(int j=0;j<(int)m_ele->GetEdgesNumber();j++)
+    {
+      m_edg = ele_edges_vector[j];
+      if(!m_edg->GetMark()){
+        continue;
+      }
+      bool done = false;
+      for (int k=0;k<(int)vct_used_edge.size();k++)
+      {
+        if (vct_used_edge[k] == m_edg) {
+          done = true;
+          break;
+        }
+      }
+      if (done) {
+        continue;
+      } else {
+        vct_used_edge.push_back(m_edg);
+      }
+
+      if(m_msh_ply) {
+        no_elements = (long)m_msh_ply->ele_vector.size();
+      } else { 
+        no_elements = (long)ele_vector.size();
+      }
+      CElem* new_ele = new CElem(no_elements);
+      new_ele->geo_type = 1;
+      new_ele->Config();
+      m_edg->GetNodes(edge_nodes);
+      new_ele->nodes_index.resize(new_ele->GetNodesNumber(false));
+      new_ele->nodes_index[0] = edge_nodes[0]->GetIndex();
+      new_ele->nodes_index[1] = edge_nodes[1]->GetIndex();
+      new_ele->SetPatchIndex(m_ele->GetPatchIndex()+1);
+
+      if(m_msh_ply) {
+        m_msh_ply->ele_vector.push_back(new_ele);
+      } else {
+        ele_vector.push_back(new_ele);
+      }
+    }
+  }
+}
+
+/**************************************************************************
+MSHLib-Method: 
+Task:   HasSameCoordinateNode
+Programing:
+05/2007 NW implementation
+**************************************************************************/
+bool CFEMesh::HasSameCoordinatesNode(CNode* src_nod, long &nod_no)
+{
+  double dist,distmin;
+  double pnt_src[3];
+  double pnt_nod[3];
+  long number;
+  const double search_tolerance = 1.e-10;
+
+  pnt_src[0] = src_nod->X(); 
+  pnt_src[1] = src_nod->Y(); 
+  pnt_src[2] = src_nod->Z();
+  number = -1;
+  distmin = 1.e+300;
+
+  for(long i=0; i<(long)this->nod_vector.size(); i++) {
+    pnt_nod[0] = nod_vector[i]->X();
+    pnt_nod[1] = nod_vector[i]->Y();
+    pnt_nod[2] = nod_vector[i]->Z();
+    dist = EuklVek3dDist(pnt_src,pnt_nod);
+    if(dist < distmin) {
+      distmin = dist;
+      number = i;
+    }
+  }
+
+  if (distmin < search_tolerance) {
+    nod_no = number;
+    return true;
+  }
+  return false;
 }
