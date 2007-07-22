@@ -1369,7 +1369,7 @@ void GEOGetNodesInMaterialDomain(CFEMesh* m_msh, const int MatIndex, vector<long
               exist = false;
               for(j=0; j<Size; j++)
               {
-				  if(elem->GetNodeIndex(i)==Nodes[j])
+				 if(elem->GetNodeIndex(i)==Nodes[j])
                  {
                     exist = true;
                     break;

@@ -24,12 +24,10 @@ class Matrix
      Matrix(const int rows, const int cols=1);
      Matrix();
      explicit Matrix(const Matrix& m);
-     
+     //     
      void resize(const int rows, const int cols=1);
-
-
+     //
      virtual ~Matrix();
-
 //----------------------------------------------
 #ifdef OverLoadNEW_DELETE
      // Allocate memory
@@ -192,6 +190,78 @@ template<class T> class vec<T*> : public vec<void*>
 // Cross production x^y. WW 12.01.2005
 //const Vec& operator ^ (Vec& x,  Vec& y);	 
 
+#ifdef NewSparseMatrix
+//WW
+// Class definition
+namespace Mesh_Group {class CFEMesh;}
+using Mesh_Group::CFEMesh;
+class SparseTable
+{
+    public:
+      SparseTable(CFEMesh *a_mesh, bool symmetry);
+      ~CSparseMatrix();   
+      void Write(ostream& os=cout);    
+    private:
+      bool symmetry;
+      // Topology mapping from data array to matrix
+      long *entry_column;
+      long *diag_entry_column;
+      long *column_size; // in sparse table
+      long *row_index;   // in sparse table 
+      // long *row_size; // In sparse table
+      long *row_index_o2new; // Real row index in the position of row_index
+      long size_entry_column;
+      long size_diag_entry_column;
+      long max_column;
+      long dimension;
+      friend class CSparseMatrix;
+}
+class CSparseMatrix:public CMatrix
+{
+   public:
+     CSparseMatrix(const SparseTable& sparse_table);
+     ~CSparseMatrix();
+     void operator = (const double a);
+     void operator *= (const double a);
+     void operator += (const double a);
+     void operator = (const CSparseMatrix& m);
+     void operator += (const CSparseMatrix& m);
+     void operator -= (const CSparseMatrix& m);
+
+	 // vec_result = This*vec. vec_result must be initialized
+     void multiVec(const double *vec_aug, double *vec_result, const double fac=1.0);
+     // Vector pass through augment and bring results back.
+     void multiVec(double *vec_aug, const double fac=1.0);
+     //
+     // Access to members     
+     double& operator() (const long i, const long j=0) const;  
+
+     long Size() const;
+     double Tr() const;
+     double Norm2() const;
+     // Print
+     void Write(ostream& os=cout);    
+   private:
+     // Data
+     double *entry;     
+     double *vec_buffer; // Same size as the matrix dimension.     
+     // 
+     bool symmetry; // Initialize by SparseTable
+     // Topology mapping from data array to matrix.
+     // These are only pointers point to corresponding SparseTable members.
+     // Memory allocation is forbidden for them.
+     long *entry_column;
+     long *diag_entry_column;
+     long *column_size;
+     long *row_index;
+     // long *row_size; // In sparse table
+     long *row_index_o2new;
+     //
+     long size_entry_column;
+     long max_column;
+     long dimension;
+}
+#endif
 // End of class Matrix
 }
 //==========================================================================

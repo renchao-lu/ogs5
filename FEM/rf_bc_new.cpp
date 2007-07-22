@@ -888,6 +888,7 @@ Programing:
 08/2005 WW Changes due to the new goematry finite element.
 12/2005 OK FCT
 04/2006 WW New storage
+09/2006 WW Move linear interpolation to new MSH strcuture
 last modification:
 **************************************************************************/
 void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, 
@@ -962,7 +963,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
         m_node_value->geo_node_number = m_bc->geo_node_number;//CC
           if(m_geo_point){
              if(m_msh)
-                m_node_value->msh_node_number = ShiftInNodeVector + m_msh->GetNODOnPNT(m_geo_point);
+                m_node_value->geo_node_number = m_msh->GetNODOnPNT(m_geo_point);
 			 else
 			 { 
                  m_node_value->msh_node_number = ShiftInNodeVector+
@@ -976,7 +977,8 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
           m_node_value->conditional = true;
           m_geo_point = GEOGetPointByName(m_bc->geo_name);   //YD
           if(m_geo_point){
-             m_node_value->msh_node_number = ShiftInNodeVector + m_msh->GetNODOnPNT(m_geo_point);
+             m_node_value->geo_node_number =  m_msh->GetNODOnPNT(m_geo_point); 
+             m_node_value->msh_node_number = ShiftInNodeVector + m_node_value->geo_node_number;
                                       //    + GetNodeNumberClose(m_geo_point->x,m_geo_point->y,m_geo_point->z);
 //             m_node_value->msh_node_number_subst = ShiftInNodeVector + m_msh->GetNODOnPNT(m_geo_point);
           }
@@ -984,7 +986,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
         m_node_value->conditional = cont;
 		m_node_value->CurveIndex = m_bc->CurveIndex;
         m_node_value->node_value = m_bc->geo_node_value;
-        m_node_value->geo_node_number = m_node_value->msh_node_number; //WW 
+        m_node_value->msh_node_number = m_node_value->geo_node_number +ShiftInNodeVector; //WW 
 		m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
         m_node_value->msh_node_number_subst = msh_node_number_subst;
         m_pcs->bc_node.push_back(m_bc);  //WW
@@ -1070,7 +1072,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
                  m_msh->GetNodesOnArc(m_polyline,nodes_vector);
 	         else
                  m_msh->GetNODOnPLY(m_polyline,nodes_vector);
-              for(i=0;i<(long)nodes_vector.size();i++){
+             for(i=0;i<(long)nodes_vector.size();i++){
                 m_node_value = new CBoundaryConditionNode();
 				m_node_value->conditional = cont;
                 m_node_value->msh_node_number = -1;
@@ -1079,11 +1081,12 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
                 m_node_value->node_value = m_bc->geo_node_value;  //dis_prop[0];
                 m_node_value->CurveIndex = m_bc->CurveIndex;
                 m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
+                m_node_value->msh_node_number_subst = msh_node_number_subst; //WW
                 m_pcs->bc_node.push_back(m_bc);  //WW
                 m_pcs->bc_node_value.push_back(m_node_value);  //WW
                 //WW group_vector.push_back(m_node_value);
                 //WW bc_group_vector.push_back(m_bc); //OK
-            }
+             }
           }
 
           //................................................................

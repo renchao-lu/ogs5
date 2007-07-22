@@ -231,6 +231,7 @@ CRFProcess::CRFProcess(void)
   cpl_type_name = "PARTITIONED"; //OK
   num_type_name = "FEM"; //OK
   eqs = NULL; //WW
+  dof = 1; //WW
   //----------------------------------------------------------------------
   // ELE
   ConfigELEMatrices = NULL;
@@ -264,6 +265,8 @@ CRFProcess::CRFProcess(void)
   continuum = 0;
   adaption = false;
   compute_domain_face_normal = false; //WW
+  //
+  additioanl2ndvar_print = -1; //WW
 }
 
 /**************************************************************************
@@ -457,9 +460,18 @@ CREATE
 void CRFProcess::Create()
 {
   int i=0;
-  int phase;
-  int timelevel=0;
+  //WW  int phase;
   CRFProcess *m_pcs = NULL; //
+  //----------------------------------------------------------------------
+  // Element matrix output. WW
+  if(Write_Matrix)
+  {
+    cout << "->Write Matrix" << '\n';
+     string m_file_name = FileName +"_"+pcs_type_name+"_element_matrix.txt";
+     matrix_file = new fstream(m_file_name.c_str(),ios::trunc|ios::out);
+     if (!matrix_file->good())
+       cout << "Warning in GlobalAssembly: Matrix files are not found" << endl;
+  }
   //----------------------------------------------------------------------------
   if(m_msh) //OK->MB please shift to Config()
   {
@@ -472,7 +484,9 @@ void CRFProcess::Create()
   // MMP - create mmp groups for each process   //YD
   cout << "->Create MMP" << '\n';
   CMediumPropertiesGroup *m_mmp_group = NULL;
-  for(i=0;i<DOF;i++)
+  int continua = 1; //WW
+  if(RD_Process) continua = 2;
+  for(i=0;i<continua;i++)
   {
     m_mmp_group = MMPGetGroup(pcs_type_name);
     if(!m_mmp_group) {
@@ -508,12 +522,14 @@ void CRFProcess::Create()
   else{
     pcs_nonlinear_iterations = m_num->nls_max_iterations;
     pcs_nonlinear_iteration_tolerance = m_num->nls_error_tolerance;
+    if(pcs_nonlinear_iterations>1) //WW
+      non_linear = true; 
   }
   //----------------------------------------------------------------------------
   // EQS - create equation system
 //WW CreateEQS();
   cout << "->Create EQS" << '\n';
-  phase=1;
+  //WW  phase=1;
   // create EQS
   if(type==4)
   {
@@ -552,7 +568,7 @@ void CRFProcess::Create()
 	else
 	{
        if(m_msh)
-         eqs = CreateLinearSolver(m_num->ls_storage_method,m_msh->GetNodesNumber(false));
+         eqs = CreateLinearSolver(m_num->ls_storage_method,m_msh->GetNodesNumber(false)*DOF);
        else
          eqs = CreateLinearSolver(m_num->ls_storage_method,NodeListLength);
        InitializeLinearSolver(eqs,m_num);
@@ -606,6 +622,8 @@ void CRFProcess::Create()
          bc_group_list.push_back(m_bc_group); //Useless, to be removed. WW
        //OK}
      } 
+     if((long)bc_node_value.size()<1) //WW
+        cout << "Warning: no boundary conditions specified for " << pcs_type_name << endl;
      //----------------------------------------------------------------------------
      // ST - create ST groups for each process
      cout << "->Create ST" << '\n';
@@ -730,50 +748,24 @@ void CRFProcess::Create()
     ConfigNODValues2();
     CreateNODValues();
   }
-  //----------------------------------------------------------------------------
-  if(reload==2&&type!=4&&type!=41) 
-    ReadSolution(); //WW
+
+
+  if(reload>=2&&type!=4&&type!=41) 
+     ReadSolution(); //WW
   //----------------------------------------------------------------------------
   // IC
   cout << "->Assign IC" << '\n';
-  CInitialCondition *m_ic = NULL;
-  int nidx;
-  if(m_msh){
-    SetIC();
-  }
-  else{
-    for(i=0;i<DOF;i++){
-      timelevel = 0;
-      nidx = PCSGetNODValueIndex(pcs_primary_function_name[i],timelevel);
-      for(j=0;j<(long)ic_vector.size();j++){
-        m_ic = ic_vector[j];
-        if((m_ic->pcs_pv_name.compare(pcs_primary_function_name[i])==0)&&\
-           (m_ic->pcs_type_name.compare(pcs_type_name)==0)){
-          m_ic->m_pcs = this;
-          m_ic->Set(nidx);
-        }
-      }
-      timelevel = 1;
-      nidx = PCSGetNODValueIndex(pcs_primary_function_name[i],timelevel);
-      for(j=0;j<(long)ic_vector.size();j++){
-        m_ic = ic_vector[j];
-        if((m_ic->pcs_pv_name.compare(pcs_primary_function_name[i])==0)&&\
-           (m_ic->pcs_type_name.compare(pcs_type_name)==0)){
-          m_ic->m_pcs = this;
-          m_ic->Set(nidx);
-        }
-      }
-    }
-  }
+  //
+  SetIC();
+  //
   if(pcs_type_name_vector.size()&&pcs_type_name_vector[0].find("DYNAMIC")!=string::npos) //WW
      setIC_danymic_problems();
+
   //----------------------------------------------------------------------------
-  if(!OldFEM) //WW This condition will be removed is new FEM is ready
-  {
-    // Keep all local matrices in the memory
-    if(Memory_Type!=0)  
-      AllocateLocalMatrixMemory();
-    if(type==4||type==41)
+  // Keep all local matrices in the memory
+  if(Memory_Type!=0)  
+    AllocateLocalMatrixMemory();
+  if(type==4||type==41)
     {
       // Set initialization function
       CRFProcessDeformation *dm_pcs = (CRFProcessDeformation *) this;
@@ -781,40 +773,22 @@ void CRFProcess::Create()
     }
     else  // Initialize FEM calculator
     {
-      int Axisymm = 1; // ani-axisymmetry
-      if(m_msh->isAxisymmetry()) Axisymm = -1; // Axisymmetry is true
-      fem = new CFiniteElementStd(this, Axisymm*m_msh->GetCoordinateFlag()); 
+         int Axisymm = 1; // ani-axisymmetry
+         if(m_msh->isAxisymmetry()) Axisymm = -1; // Axisymmetry is true
+         fem = new CFiniteElementStd(this, Axisymm*m_msh->GetCoordinateFlag()); 
          fem->SetGaussPointNumber(m_num->ele_gauss_points);
     }
-  }
+
   //----------------------------------------------------------------------
   // Initialize the system equations 
   if(PCSSetIC_USER)
     PCSSetIC_USER(pcs_type_number);
-//OKRichards  if(pcs_type_name.find("RICHARD")!=string::npos)
-//OKRichards    MMPSetICRichards(pcs_type_number);
-  if(pcs_type_name.find("RICHARD")!=string::npos)    //YD
-      continuum_ic = true;
-  int time_level = 0;
-  CalcSecondaryVariables(time_level);
-  time_level = 1;
-  CalcSecondaryVariables(time_level);
-  if(pcs_type_name.find("RICHARD")!=string::npos)    //YD
-      continuum_ic = false;
-  //----------------------------------------------------------------------
-  // Element matrix output. WW
-  if(Write_Matrix)
-  {
-    cout << "->Write Matrix" << '\n';
-     string m_file_name = FileName +"_"+pcs_type_name+"_element_matrix.txt";
-     matrix_file = new fstream(m_file_name.c_str(),ios::trunc|ios::out);
-     if (!matrix_file->good())
-       cout << "Warning in GlobalAssembly: Matrix files are not found" << endl;
-  }
+  //
+  CalcSecondaryVariables(true); //WW
+  //
   if(compute_domain_face_normal) //WW
      m_msh->FaceNormal();        
 }
-
 /**************************************************************************
 FEMLib-Method:
 Task: Write the contribution of ST or Neumann BC to RHS to a file after
@@ -917,7 +891,7 @@ last modified:
 **************************************************************************/
 void CRFProcess:: WriteSolution()
 {
-    if(reload!=1) return;	 
+    if(reload==2||reload<0) return;	 
     string m_file_name = FileName +"_"+pcs_type_name+"_primary_value.asc";
     ofstream os(m_file_name.c_str(), ios::trunc|ios::out);     	
     if (!os.good())
@@ -1573,8 +1547,11 @@ ios::pos_type CRFProcess::Read(ifstream *pcs_file)
           break;
         }
         if(line_string.find("CONTINUUM")!=string::npos) {
-        *pcs_file >> line_string;
-          continuum_vector.push_back(strtod(line_string.data(),NULL));
+          *pcs_file >> line_string;
+          double w_m = strtod(line_string.data(),NULL); //WW
+          continuum_vector.push_back(w_m);
+          continuum_vector.push_back(1.0-w_m);  //WW
+          break;          //WW
         }
         pcs_file->ignore(MAX_ZEILE,'\n');
       }
@@ -1738,8 +1715,8 @@ void CRFProcess::Config(void)
     continuum_vector.push_back(1.0);
   if(!m_msh)
     cout << "Error in CRFProcess::Config - no MSH data" << endl;
-  CRFProcessDeformation *dm_pcs;
-  dm_pcs = NULL;
+  //  CRFProcessDeformation *dm_pcs;
+  //  dm_pcs = NULL;
   if(pcs_type_name.compare("LIQUID_FLOW")==0)  {
     type = 1; 
     ConfigLiquidFlow();
@@ -1754,7 +1731,7 @@ void CRFProcess::Config(void)
 		type = 22;
       }
 	  else
-          type = 14;
+        type = 14;
     ConfigUnsaturatedFlow();
   }
   if(pcs_type_name.compare("OVERLAND_FLOW")==0)  {
@@ -1790,6 +1767,11 @@ void CRFProcess::Config(void)
   if(pcs_type_name.find("RANDOM_WALK")!=string::npos) {
 	ConfigRandomWalk();
   }
+  if(pcs_type_name.find("MULTI_PHASE_FLOW")!=string::npos) //24.02.2007 WW
+  {
+     type = 1212;
+     ConfigMultiPhaseFlow();
+  }
 }
 
 /**************************************************************************
@@ -1811,7 +1793,6 @@ void CRFProcess::ConfigLiquidFlow()
   pcs_primary_function_name[0] = "PRESSURE1";
   pcs_primary_function_unit[0] = "Pa";
   // ELE values
-  // WW ConfigELEMatrices = PCSConfigELEMatricesSM;
   pcs_number_of_evals = 5;
   pcs_eval_name[0] = "VOLUME";
   pcs_eval_unit[0] = "m3";
@@ -1825,10 +1806,90 @@ void CRFProcess::ConfigLiquidFlow()
   pcs_eval_unit[4] = "-";
   //----------------------------------------------------------------------
   // Secondary variables
-  pcs_number_of_secondary_nvals = 1;
-  pcs_secondary_function_name[0] = "HEAD";
-  pcs_secondary_function_unit[0] = "m";
-  pcs_secondary_function_timelevel[0] = 1;
+  pcs_number_of_secondary_nvals = 0; //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "HEAD";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; //WW
+  //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; //WW
+  //WW
+  // Output material parameters
+  //WW
+  COutput *m_out = NULL;
+  for(int i=0;i<(int)out_vector.size();i++)
+  {
+     m_out = out_vector[i];
+     for(int k=0; k<(int)m_out->nod_value_vector.size(); k++)
+     {
+        if(m_out->nod_value_vector[k].find("PERMEABILITY_X1")!=string::npos)
+        {
+           additioanl2ndvar_print = 1;
+           break; 
+        }   
+     }
+     if(additioanl2ndvar_print == 1)
+        break;    
+  }
+  for(int i=0;i<(int)out_vector.size();i++)
+  {
+     m_out = out_vector[i];
+     for(int k=0; k<(int)m_out->nod_value_vector.size(); k++)
+     {
+        if(m_out->nod_value_vector[k].find("POROSITY")!=string::npos) 
+        { 
+          if(additioanl2ndvar_print>0)
+            additioanl2ndvar_print = 2;
+          else
+            additioanl2ndvar_print = 3; 
+        } 
+        if(additioanl2ndvar_print>1)
+          break;    
+     }
+     if(additioanl2ndvar_print>1)
+        break;    
+  }
+
+  if(additioanl2ndvar_print>0) //WW
+  {
+    if(additioanl2ndvar_print<3)
+    {
+      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PERMEABILITY_X1";
+      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "1/m^2";
+      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+      pcs_number_of_secondary_nvals++;     
+      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PERMEABILITY_Y1";
+      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "1/m^2";
+      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+      pcs_number_of_secondary_nvals++;     
+      if(max_dim==2) // 3D
+      {
+        pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PERMEABILITY_Z1";
+        pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "1/m^2";
+        pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+        pcs_number_of_secondary_nvals++;
+      }
+    }
+    if(additioanl2ndvar_print>1) //WW
+    {
+       pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "POROSITY";
+       pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
+       pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+       pcs_number_of_secondary_nvals++;          
+    }             
+  }
+
 }
 
 
@@ -2349,53 +2410,66 @@ void CRFProcess::VariableStaticProblem()
   }	  
   //----------------------------------------------------------------------
   // NOD Secondary functions
-  pcs_number_of_secondary_nvals = 10;
-  pcs_secondary_function_name[0] = "STRESS_XX"; 
-  pcs_secondary_function_name[1] = "STRESS_XY"; 
-  pcs_secondary_function_name[2] = "STRESS_YY"; 
-  pcs_secondary_function_name[3] = "STRESS_ZZ"; 
-  pcs_secondary_function_name[4] = "STRAIN_XX"; 
-  pcs_secondary_function_name[5] = "STRAIN_XY"; 
-  pcs_secondary_function_name[6] = "STRAIN_YY"; 
-  pcs_secondary_function_name[7] = "STRAIN_ZZ";
-  pcs_secondary_function_name[8] = "STRAIN_PLS"; 
-  pcs_secondary_function_name[9] = "POROPRESSURE0"; 
-  pcs_secondary_function_unit[0] = "Pa"; 
-  pcs_secondary_function_unit[1] = "Pa"; 
-  pcs_secondary_function_unit[2] = "Pa"; 
-  pcs_secondary_function_unit[3] = "Pa"; 
-  pcs_secondary_function_unit[4] = "-"; 
-  pcs_secondary_function_unit[5] = "-"; 
-  pcs_secondary_function_unit[6] = "-"; 
-  pcs_secondary_function_unit[7] = "-"; 
-  pcs_secondary_function_unit[8] = "-"; 
-  pcs_secondary_function_unit[9] = "Pa"; 
-  pcs_secondary_function_timelevel[0] = 1; 
-  pcs_secondary_function_timelevel[1] = 1; 
-  pcs_secondary_function_timelevel[2] = 1; 
-  pcs_secondary_function_timelevel[3] = 1; 
-  pcs_secondary_function_timelevel[4] = 1; 
-  pcs_secondary_function_timelevel[5] = 1; 
-  pcs_secondary_function_timelevel[6] = 1; 
-  pcs_secondary_function_timelevel[7] = 1; 
-  pcs_secondary_function_timelevel[8] = 1; 
-  pcs_secondary_function_timelevel[9] = 1; 
+  pcs_number_of_secondary_nvals = 0;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XX"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XY"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_YY"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_ZZ"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XX"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XY"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_YY"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_ZZ";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_PLS"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+//  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "POROPRESSURE0"; 
+//  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa"; 
+//  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+//  pcs_number_of_secondary_nvals++;
   
   if(max_dim==2) // 3D
   {  
-     pcs_number_of_secondary_nvals = 14;
-     pcs_secondary_function_name[10] = "STRESS_XZ"; 
-     pcs_secondary_function_name[11] = "STRESS_YZ"; 
-     pcs_secondary_function_name[12] = "STRAIN_XZ"; 
-     pcs_secondary_function_name[13] = "STRAIN_YZ"; 
-     pcs_secondary_function_unit[10] = "Pa"; 
-     pcs_secondary_function_unit[11] = "Pa"; 
-     pcs_secondary_function_unit[12] = "Pa"; 
-     pcs_secondary_function_unit[13] = "Pa"; 
-     pcs_secondary_function_timelevel[10] = 1; 
-     pcs_secondary_function_timelevel[11] = 1; 
-     pcs_secondary_function_timelevel[12] = 1; 
-     pcs_secondary_function_timelevel[13] = 1; 
+     pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XZ"; 
+     pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa"; 
+     pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+     pcs_number_of_secondary_nvals++;
+     pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_YZ"; 
+     pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa"; 
+     pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+     pcs_number_of_secondary_nvals++;
+     pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XZ"; 
+     pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "--"; 
+     pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+     pcs_number_of_secondary_nvals++;
+     pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_YZ"; 
+     pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "--"; 
+     pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+     pcs_number_of_secondary_nvals++;
   }
 
 }
@@ -2429,76 +2503,94 @@ void CRFProcess::VariableDynamics()
 
   //----------------------------------------------------------------------
   // NOD Secondary functions
-  pcs_number_of_secondary_nvals = 15;
-  pcs_secondary_function_name[0] = "STRESS_XX"; 
-  pcs_secondary_function_name[1] = "STRESS_XY"; 
-  pcs_secondary_function_name[2] = "STRESS_YY"; 
-  pcs_secondary_function_name[3] = "STRESS_ZZ"; 
-  pcs_secondary_function_name[4] = "STRAIN_XX"; 
-  pcs_secondary_function_name[5] = "STRAIN_XY"; 
-  pcs_secondary_function_name[6] = "STRAIN_YY"; 
-  pcs_secondary_function_name[7] = "STRAIN_ZZ";
-  pcs_secondary_function_name[8] = "STRAIN_PLS"; 
-  pcs_secondary_function_name[9] = "POROPRESSURE0"; 
-  pcs_secondary_function_name[10] = "DISPLACEMENT_X1";
-  pcs_secondary_function_name[11] = "DISPLACEMENT_Y1";
-  pcs_secondary_function_name[12] = "VELOCITY_DM_X";
-  pcs_secondary_function_name[13] = "VELOCITY_DM_Y";
-  pcs_secondary_function_name[14] = "PRESSURE1"; 
-  pcs_secondary_function_unit[0] = "Pa"; 
-  pcs_secondary_function_unit[1] = "Pa"; 
-  pcs_secondary_function_unit[2] = "Pa"; 
-  pcs_secondary_function_unit[3] = "Pa"; 
-  pcs_secondary_function_unit[4] = "-"; 
-  pcs_secondary_function_unit[5] = "-"; 
-  pcs_secondary_function_unit[6] = "-"; 
-  pcs_secondary_function_unit[7] = "-"; 
-  pcs_secondary_function_unit[8] = "-"; 
-  pcs_secondary_function_unit[9] = "Pa"; 
-  pcs_secondary_function_unit[10] = "m"; 
-  pcs_secondary_function_unit[11] = "m"; 
-  pcs_secondary_function_unit[12] = "m/s"; 
-  pcs_secondary_function_unit[13] = "m/s"; 
-  pcs_secondary_function_unit[14] = "Pa"; 
-  pcs_secondary_function_timelevel[0] = 1; 
-  pcs_secondary_function_timelevel[1] = 1; 
-  pcs_secondary_function_timelevel[2] = 1; 
-  pcs_secondary_function_timelevel[3] = 1; 
-  pcs_secondary_function_timelevel[4] = 1; 
-  pcs_secondary_function_timelevel[5] = 1; 
-  pcs_secondary_function_timelevel[6] = 1; 
-  pcs_secondary_function_timelevel[7] = 1; 
-  pcs_secondary_function_timelevel[8] = 1; 
-  pcs_secondary_function_timelevel[9] = 1; 
-  pcs_secondary_function_timelevel[10] = 1; 
-  pcs_secondary_function_timelevel[11] = 1; 
-  pcs_secondary_function_timelevel[12] = 1; 
-  pcs_secondary_function_timelevel[13] = 1; 
-  pcs_secondary_function_timelevel[14] = 1; 
-
+  pcs_number_of_secondary_nvals = 0;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XX"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XY"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_YY"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_ZZ"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+//  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "POROPRESSURE0"; 
+//  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa"; 
+//  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+//  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XX"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XY"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_YY"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_ZZ";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_PLS"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "DISPLACEMENT_X1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "DISPLACEMENT_Y1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_DM_X";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_DM_Y";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE1"; 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa"; 
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+  pcs_number_of_secondary_nvals++;
   // 3D
   if(max_dim==2) // 3D
   {  
-     pcs_number_of_secondary_nvals = 21;
-     pcs_secondary_function_name[15] = "STRESS_XZ"; 
-     pcs_secondary_function_name[16] = "STRESS_YZ"; 
-     pcs_secondary_function_name[17] = "STRAIN_XZ"; 
-     pcs_secondary_function_name[18] = "STRAIN_YZ"; 
-     pcs_secondary_function_name[19] = "DISPLACEMENT_Z1";
-     pcs_secondary_function_name[20] = "VELOCITY_DM_Z";
-   
-     pcs_secondary_function_unit[15] = "Pa"; 
-     pcs_secondary_function_unit[16] = "Pa"; 
-     pcs_secondary_function_unit[17] = "Pa"; 
-     pcs_secondary_function_unit[18] = "Pa"; 
-     pcs_secondary_function_unit[19] = "m"; 
-     pcs_secondary_function_unit[20] = "m/s"; 
-     pcs_secondary_function_timelevel[15] = 1; 
-     pcs_secondary_function_timelevel[16] = 1; 
-     pcs_secondary_function_timelevel[17] = 1; 
-     pcs_secondary_function_timelevel[18] = 1; 
-     pcs_secondary_function_timelevel[19] = 1; 
-     pcs_secondary_function_timelevel[20] = 1; 
+     pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XZ"; 
+     pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa"; 
+     pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+     pcs_number_of_secondary_nvals++;
+     pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_YZ"; 
+     pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa"; 
+     pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+     pcs_number_of_secondary_nvals++;
+     pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XZ"; 
+     pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-"; 
+     pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+     pcs_number_of_secondary_nvals++;
+     pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_YZ"; 
+     pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-"; 
+     pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+     pcs_number_of_secondary_nvals++;
+     pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "DISPLACEMENT_Z1";
+     pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m"; 
+     pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+     pcs_number_of_secondary_nvals++;
+     pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_DM_Z";
+     pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s"; 
+     pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1; 
+     pcs_number_of_secondary_nvals++;
   }
 }
 
@@ -2519,39 +2611,58 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_primary_function_unit[0] = "Pa";
    // 1.2 secondary variables
   //OK LOPCalcSecondaryVariables_USER = MMPCalcSecondaryVariablesRichards; // p_c and S^l
-  pcs_number_of_secondary_nvals = 10;
-  pcs_secondary_function_name[0] = "SATURATION1";
-  pcs_secondary_function_unit[0] = "m3/m3";
-  pcs_secondary_function_timelevel[0] = 0;
-  pcs_secondary_function_name[1] = "SATURATION1";
-  pcs_secondary_function_unit[1] = "m3/m3";
-  pcs_secondary_function_timelevel[1] = 1;
-  pcs_secondary_function_name[2] = "PRESSURE_CAP";
-  pcs_secondary_function_unit[2] = "Pa";
-  pcs_secondary_function_timelevel[2] = 0;
-  pcs_secondary_function_name[3] = "PRESSURE_CAP";
-  pcs_secondary_function_unit[3] = "Pa";
-  pcs_secondary_function_timelevel[3] = 1;
-  pcs_secondary_function_name[4] = "FLUX"; //MB
-  pcs_secondary_function_unit[4] = "m/s";
-  pcs_secondary_function_timelevel[4] = 0;
-  pcs_secondary_function_name[5] = "FLUX"; //MB
-  pcs_secondary_function_unit[5] = "m/s";
-  pcs_secondary_function_timelevel[5] = 1;
-  pcs_secondary_function_name[6] = "STORAGE_P"; 
-  pcs_secondary_function_unit[6] = "Pa";
-  pcs_secondary_function_timelevel[6] = 0;
-  pcs_secondary_function_name[7] = "STORAGE_P"; 
-  pcs_secondary_function_unit[7] = "Pa";
-  pcs_secondary_function_timelevel[7] = 0;
-  pcs_secondary_function_name[8] = "COUPLING"; //JOD 
-  pcs_secondary_function_unit[8] = "m/s";
-  pcs_secondary_function_timelevel[8] = 0;
-  pcs_secondary_function_name[9] = "COUPLING"; //JOD
-  pcs_secondary_function_unit[9] = "m/s";
-  pcs_secondary_function_timelevel[9] = 1;
+  pcs_number_of_secondary_nvals = 0;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SATURATION1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SATURATION1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE_CAP1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "FLUX"; //MB
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "FLUX"; //MB
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++;
+  if(adaption) //WW
+  {
+    pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STORAGE_P"; 
+    pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+    pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+    pcs_number_of_secondary_nvals++;
+  }
+  // Nodal velocity. WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "COUPLING"; //JOD 
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "COUPLING"; //JOD
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++;
   }
   else if((int)continuum_vector.size() == 2){
+  dof = 2; //WW
   // 1.1 primary variables
   pcs_number_of_primary_nvals = 2;     //YD
   pcs_primary_function_name[0] = "PRESSURE1";
@@ -2560,47 +2671,123 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_primary_function_unit[1] = "Pa";
    // 1.2 secondary variables
   //OK LOPCalcSecondaryVariables_USER = MMPCalcSecondaryVariablesRichards; // p_c and S^l
-  pcs_number_of_secondary_nvals = 13; //OK
-  pcs_secondary_function_name[0] = "SATURATION1";
-  pcs_secondary_function_unit[0] = "m3/m3";
-  pcs_secondary_function_timelevel[0] = 0;
-  pcs_secondary_function_name[1] = "SATURATION1";
-  pcs_secondary_function_unit[1] = "m3/m3";
-  pcs_secondary_function_timelevel[1] = 1;
-  pcs_secondary_function_name[2] = "SATURATION2";
-  pcs_secondary_function_unit[2] = "m3/m3";
-  pcs_secondary_function_timelevel[2] = 1;
-  pcs_secondary_function_name[3] = "SATURATION2";
-  pcs_secondary_function_unit[3] = "m3/m3";
-  pcs_secondary_function_timelevel[3] = 1;
-  pcs_secondary_function_name[4] = "PRESSURE_CAP1";
-  pcs_secondary_function_unit[4] = "Pa";
-  pcs_secondary_function_timelevel[4] = 0;
-  pcs_secondary_function_name[5] = "PRESSURE_CAP1";
-  pcs_secondary_function_unit[5] = "Pa";
-  pcs_secondary_function_timelevel[5] = 1;
-  pcs_secondary_function_name[6] = "PRESSURE_CAP2";
-  pcs_secondary_function_unit[6] = "Pa";
-  pcs_secondary_function_timelevel[6] = 0;
-  pcs_secondary_function_name[7] = "PRESSURE_CAP2";
-  pcs_secondary_function_unit[7] = "Pa";
-  pcs_secondary_function_timelevel[7] = 1;
-  pcs_secondary_function_name[8] = "TOTAL_SATURATION";
-  pcs_secondary_function_unit[8] = "m3/m3";
-  pcs_secondary_function_timelevel[8] = 0;
-  pcs_secondary_function_name[9] = "TOTAL_SATURATION";
-  pcs_secondary_function_unit[9] = "m3/m3";
-  pcs_secondary_function_timelevel[9] = 0;
-  pcs_secondary_function_name[10] = "STORAGE_P"; 
-  pcs_secondary_function_unit[10] = "Pa";
-  pcs_secondary_function_timelevel[10] = 0;
-  pcs_secondary_function_name[11] = "STORAGE_P"; 
-  pcs_secondary_function_unit[11] = "Pa";
-  pcs_secondary_function_timelevel[11] = 0;
-  pcs_secondary_function_name[12] = "VAPOUR_FLUX"; 
-  pcs_secondary_function_unit[12] = "m3/s";
-  pcs_secondary_function_timelevel[12] = 1;
+  pcs_number_of_secondary_nvals = 0;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SATURATION1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+  pcs_number_of_secondary_nvals++; //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SATURATION1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SATURATION2";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+  pcs_number_of_secondary_nvals++; //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SATURATION2";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE_CAP1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+  pcs_number_of_secondary_nvals++; //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE_CAP2";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+  pcs_number_of_secondary_nvals++; //WW
+  // Nodal velocity. WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X2";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y2";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z2";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; //WW
+ }
+
+  // Output material parameters
+  //WW
+  COutput *m_out = NULL;
+  for(int i=0;i<(int)out_vector.size();i++)
+  {
+     m_out = out_vector[i];
+     for(int k=0; k<(int)m_out->nod_value_vector.size(); k++)
+     {
+        if(m_out->nod_value_vector[k].find("PERMEABILITY_X1")!=string::npos)
+        {
+           additioanl2ndvar_print = 1;
+           break; 
+        }   
+     }
+     if(additioanl2ndvar_print == 1)
+        break;    
   }
+  for(int i=0;i<(int)out_vector.size();i++)
+  {
+     m_out = out_vector[i];
+     for(int k=0; k<(int)m_out->nod_value_vector.size(); k++)
+     {
+        if(m_out->nod_value_vector[k].find("POROSITY")!=string::npos) 
+        { 
+          if(additioanl2ndvar_print>0)
+            additioanl2ndvar_print = 2;
+          else
+            additioanl2ndvar_print = 3; 
+        } 
+        if(additioanl2ndvar_print>1)
+          break;    
+     }
+     if(additioanl2ndvar_print>1)
+        break;    
+  }
+
+  if(additioanl2ndvar_print>0) //WW
+  {
+    if(additioanl2ndvar_print<3)
+    {
+      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PERMEABILITY_X1";
+      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "1/m^2";
+      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+      pcs_number_of_secondary_nvals++;     
+      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PERMEABILITY_Y1";
+      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "1/m^2";
+      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+      pcs_number_of_secondary_nvals++;     
+      if(max_dim==2) // 3D
+      {
+        pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PERMEABILITY_Z1";
+        pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "1/m^2";
+        pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+        pcs_number_of_secondary_nvals++;
+      }
+    }
+    if(additioanl2ndvar_print>1) //WW
+    {
+       pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "POROSITY";
+       pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
+       pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+       pcs_number_of_secondary_nvals++;          
+    }             
+  }
+
   // 2 ELE values
   pcs_number_of_evals = 8; 
   pcs_eval_name[0] = "VELOCITY1_X";
@@ -2669,6 +2856,64 @@ void CRFProcess::ConfigRandomWalk()
   pcs_number_of_evals = 1;  
   pcs_eval_name[0] = "CONCENTRATION0";
   pcs_eval_unit[0]  = "kg/m3";
+}
+
+
+
+/**************************************************************************
+FEMLib-Method: For non-isothermal multi-phase flow
+Task: 
+Programing:
+02/2007 WW Implementation
+**************************************************************************/
+void CRFProcess::ConfigMultiPhaseFlow()
+{
+  dof = 2; 
+  // 1.1 primary variables
+  pcs_number_of_primary_nvals = 2;     
+  pcs_primary_function_name[0] = "PRESSURE1"; 
+  pcs_primary_function_unit[0] = "Pa";
+  pcs_primary_function_name[1] = "PRESSURE2";
+  pcs_primary_function_unit[1] = "Pa";
+   // 1.2 secondary variables
+  pcs_number_of_secondary_nvals = 0;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SATURATION1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+  pcs_number_of_secondary_nvals++; 
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SATURATION1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; 
+  // Nodal velocity. 
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; 
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; 
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; 
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X2";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; 
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y2";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; 
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z2";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; 
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE_W";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; 
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3082,7 +3327,8 @@ void CRFProcess::CheckMarkedElement()
   int i, j;
   long l;  
   bool done;
-  CElem* elem = NULL;
+  CElem *elem = NULL;
+  CNode *node = NULL;
   for (l = 0; l < (long)m_msh->ele_vector.size(); l++)
   {
      elem = m_msh->ele_vector[l];
@@ -3096,7 +3342,8 @@ void CRFProcess::CheckMarkedElement()
            break;
         } 
      } 
-     if(done) continue;
+     if(done)
+        continue;
 	 else 
         elem->MarkingAll(true);
 
@@ -3113,16 +3360,17 @@ void CRFProcess::CheckMarkedElement()
   	 for(i=0; i<elem->GetNodesNumber(m_msh->getOrder()); i++)
      {
         done = false;
-		for(j=0; j<(int)elem->GetNode(i)->connected_elements.size(); j++)
+        node = elem->GetNode(i);
+		for(j=0; j<(int)node->connected_elements.size(); j++)
         {
-            if(l==elem->GetNode(i)->connected_elements[j])
+            if(l==node->connected_elements[j])
 			{
                done = true;
                break;
 			}
         }
         if(!done)  
-           elem->GetNode(i)->connected_elements.push_back(l);
+           node->connected_elements.push_back(l);
      }
 
   }  //
@@ -3143,16 +3391,16 @@ Programming:
 01/2005 WW new ELE concept
 03/2005 OK MultiMSH concept 
 06/2005 MB NEWTON error calculation
-01/2006 YD Initialize mmp for dual porosity
+05/2007 WW DOF>1, unerrelaxation for Picard, and removing the old or spurious stuff
 last modified:
 **************************************************************************/
 double CRFProcess::Execute()
 {
-  int timelevel;
-  int nidx0,nidx1;
+  int nidx1;
   double pcs_error;
+  double relax; //WW
   int i;
-  long j;
+  long j, k=0, g_nnodes = 0; //07.01.07 WW
   //----------------------------------------------------------------------
   cout << "    ->Process " << pcs_number << ": " << pcs_type_name << endl;
   //----------------------------------------------------------------------
@@ -3160,34 +3408,23 @@ double CRFProcess::Execute()
   // System matrix
   SetLinearSolverType(eqs, m_num); //WW
   SetZeroLinearSolver(eqs);
+  //
   // Solution vector
   //......................................................................
-  if(m_msh){ // MSH data
-    CheckMarkedElement();
-    m_msh->SwitchOnQuadraticNodes(false);
-	if(type == 22){
-      nidx1 = GetNodeValueIndex(pcs_primary_function_name[continuum]) + 1; //new time
-	  for(j=0;j<eqs->dim;j++)
-		  eqs->x[j] = GetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1);
-	}
-	else
-    {
-      for(i=0;i<pcs_number_of_primary_nvals;i++)
-      {
-        nidx1 = GetNodeValueIndex(pcs_primary_function_name[i]) + 1; //new time
-	    for(j=0;j<eqs->dim;j++)
-		  eqs->x[j] = GetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1);
-      }
-	}
-  }
-  //......................................................................
-  else{ // RFI data
-    for(i=0;i<pcs_number_of_primary_nvals;i++) {
-      timelevel=1;
-      nidx1 = PCSGetNODValueIndex(pcs_primary_function_name[i],timelevel);
-      TransferNodeValuesToVectorLinearSolver(eqs,nidx1);
-    }
-  }
+  relax = 0.0;
+  if(m_num->nls_relaxation<DBL_MIN)
+    relax = 0.0;
+  else
+    relax = 1.0-m_num->nls_relaxation; //WW
+  CheckMarkedElement();
+  m_msh->SwitchOnQuadraticNodes(false);
+  for(i=0;i<pcs_number_of_primary_nvals;i++)
+  {
+    nidx1 = GetNodeValueIndex(pcs_primary_function_name[i]) + 1; //new time
+    g_nnodes = m_msh->GetNodesNumber(false); //WW 
+    for(j=0;j<g_nnodes;j++) //WW
+      eqs->x[j+i*g_nnodes] = GetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1); 
+  } 
   /*---------------------------------------------------------------------*/
   /* 1 Calc element matrices */
 if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
@@ -3200,8 +3437,6 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
   CString m_str = m_str_time + ", " + m_str_pcs + ", Calculate element matrices";
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
 #endif
-  if(num_type_name.find("NEW")!=0) // Will be removed. WW
-     CalculateElementMatrices();
 }
   /*---------------------------------------------------------------------*/
   /* 2 Assemble EQS */
@@ -3214,11 +3449,10 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
   CString m_str = m_str_time + ", " + m_str_pcs + ", Assemble equation system";
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
 #endif
-  if(num_type_name.find("NEW")!=string::npos) //WWToDo Will be removed
-    //  cout<< "Before GlobalAssembly myrank="<<myrank<<'\n';
-    GlobalAssembly();
-  else
-    AssembleSystemMatrixNew();
+  // 
+  // Assembly
+  GlobalAssembly();
+  //
   //----------------------------------------------------------------------
   /* 5 Solve EQS */
 //orig  cout << "      Solve equation system" << endl;
@@ -3244,77 +3478,37 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
     double Val;
     pcs_error = 0.0;
 
-    if(m_msh){  // MSH data
-      nidx1 = GetNodeValueIndex("HEAD")+1;
-      //for(long nn=0;nn<NodeListSize(); nn++)  {
-        for(long nn=0;nn<(long)m_msh->nod_vector.size();nn++){
-        Val = GetNodeValue(nn,nidx1)+ eqs->x[nn];
-	       pcs_error = max(pcs_error, fabs(Val - GetNodeValue(nn,nidx1)));
-	       SetNodeValue(nn,nidx1, Val);
-      }
-    }
-    else{  // RFI data
-      nidx1 = 1;
-      for(long nn=0;nn<NodeListSize(); nn++)  {
-        Val = GetNodeVal(nn,nidx1)+ eqs->x[nn];
-	       pcs_error = max(pcs_error, fabs(Val - GetNodeVal(nn,nidx1)));
-	       SetNodeVal(nn,nidx1, Val);
-      }
+    // MSH data
+    nidx1 = GetNodeValueIndex("HEAD")+1;
+    //for(long nn=0;nn<NodeListSize(); nn++)  {
+    for(long nn=0;nn<(long)m_msh->nod_vector.size();nn++){
+       Val = GetNodeValue(nn,nidx1)+ eqs->x[nn];
+	   pcs_error = max(pcs_error, fabs(Val - GetNodeValue(nn,nidx1)));
+	   SetNodeValue(nn,nidx1, Val);
     }
 	cout << "      PCS error: " << pcs_error << endl; //OK7
   } // NEWTON
   //----------------------------------------------------------------------
   else{ //PICARD
-    pcs_error=0.0;
     //......................................................................
-    if(m_msh){ // MSH data
-      for(i=0; i<pcs_number_of_primary_nvals; i++){  
-		 pcs_error += CalcIterationNODError(1); //OK4105//WW4117
-      }
-    }
-    //......................................................................
-    else{ // RFI data
-      for(i=0; i<pcs_number_of_primary_nvals; i++){  
-        nidx0 = PCSGetNODValueIndex(pcs_primary_function_name[i],0);
-        nidx1 = PCSGetNODValueIndex(pcs_primary_function_name[i],1);
-        pcs_error += CalcIterationErrorVectorAgainstNodes(eqs->x,nidx1,nidx0,1);
-      }
-    }
+    pcs_error = CalcIterationNODError(1); //OK4105//WW4117    
     cout << "      PCS error: " << pcs_error << endl;
     //--------------------------------------------------------------------
     // 7 Store solution vector in model node values table
     //....................................................................
-  if(m_msh) // MSH data
-  {
-	if(type == 22)
-    {
-      nidx1 = GetNodeValueIndex(pcs_primary_function_name[continuum]) + 1; //new time
-	  for(j=0;j<eqs->dim;j++)
-           SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,eqs->x[j]);
-	}
-	else
-    {
-      for(i=0; i<pcs_number_of_primary_nvals; i++)
-      {  
-        nidx1 = GetNodeValueIndex(pcs_primary_function_name[i])+1;
-		for(j=0;j<eqs->dim;j++)
-        {
-          SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,eqs->x[j]);
-        }
-	  }
-	}
-  }
-    //....................................................................
-    else{ // RFI data
-      for(i=0; i<pcs_number_of_primary_nvals; i++){  
-        nidx1 = PCSGetNODValueIndex(pcs_primary_function_name[i],1);
-        TransferNodeValues(eqs,nidx1); 
-      }
+    for(i=0; i<pcs_number_of_primary_nvals; i++)
+    {  
+      nidx1 = GetNodeValueIndex(pcs_primary_function_name[i])+1;
+      g_nnodes =m_msh->GetNodesNumber(false);  //DOF>1, WW
+      for(j=0;j<g_nnodes;j++)
+      {
+         k = m_msh->Eqs2Global_NodeIndex[j];
+         SetNodeValue(k,nidx1,relax*GetNodeValue(k,nidx1)+(1.0-relax)*eqs->x[j+i*g_nnodes]);
+      } 
     }
+    //....................................................................
   } // END PICARD
   //----------------------------------------------------------------------
-  // 8 Calculate secondary variables
-  //WW CalcSecondaryVariables(1); // timelevel
   //----------------------------------------------------------------------
   return pcs_error;
 }
@@ -3450,8 +3644,10 @@ void CRFProcess::GlobalAssembly()
 //    }
       IncorporateSourceTerms(myrank);
       IncorporateBoundaryConditions(myrank);
-      /*
+
+      /*      
       //TEST
+	{
  string test = "rank";
  char stro[1028];  
  // itoa(myrank,stro, 10);
@@ -3459,7 +3655,9 @@ void CRFProcess::GlobalAssembly()
  string test1 = test+(string)stro+"Assemble.txt";
    MXDumpGLS(test1.data(),1,m_dom->eqs->b, m_dom->eqs->x); 
    //TEST
-   */
+	}
+      */
+
       //....................................................................
       // Assemble global system
       // DDCAssembleGlobalMatrix(); //TEST to be removed
@@ -3502,33 +3700,33 @@ void CRFProcess::GlobalAssembly()
   //----------------------------------------------------------------------
   // STD
   else
-  {
-    for(i=0;i<(long)m_msh->ele_vector.size();i++)
-    {
-      elem = m_msh->ele_vector[i];
-      if (elem->GetMark()) // Marked for use
+  {   
+    for(int ii=0;ii<(int)continuum_vector.size();ii++)   //YDTEST. Changed to DOF 15.02.2007 WW
+	{
+      continuum = ii;
+      for(i=0;i<(long)m_msh->ele_vector.size();i++)
       {
-         elem->SetOrder(false);
-        fem->ConfigElement(elem,Check2D3D);
-/*
-        for(i=0;i<fem->nnodes;i++){
-          //eqs_number[i] = MeshElement->domain_nodes[i];
-          fem->eqs_number[i] = fem->MeshElement->nodes[i]->GetEquationIndex();
-        }
-*/
-        fem->Assembly();
-//-----------------------NEUMANN CONTROL---------
-	    if(Tim->time_control_name.compare("NEUMANN")==0)
+        elem = m_msh->ele_vector[i];
+        if (elem->GetMark()) // Marked for use
         {
-	      Tim->time_step_length_neumann = MMin(Tim->time_step_length_neumann,timebuffer);
-          Tim->time_step_length_neumann *= 0.5*elem->GetVolume()*elem->GetVolume();
-	      if(Tim->time_step_length_neumann < MKleinsteZahl)
-            Tim->time_step_length_neumann = 1.0e-5;
-	    }
+           elem->SetOrder(false);
+           fem->ConfigElement(elem,Check2D3D);
+           fem->Assembly();
+//-----------------------NEUMANN CONTROL---------
+           if(Tim->time_control_name.compare("NEUMANN")==0)
+           {
+	         Tim->time_step_length_neumann = MMin(Tim->time_step_length_neumann,timebuffer);
+             Tim->time_step_length_neumann *= 0.5*elem->GetVolume()*elem->GetVolume();
+	         if(Tim->time_step_length_neumann < MKleinsteZahl)
+               Tim->time_step_length_neumann = 1.0e-5;
+	       }
 //------------------------------   
-      } 
-    }
-	//MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); abort();
+         } 
+       }
+	}
+	//
+//MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
+
     IncorporateSourceTerms();
     SetCPL(); //OK
     IncorporateBoundaryConditions();
@@ -3551,7 +3749,16 @@ void CRFProcess::CalIntegrationPointValue()
 {
   long i;
   CElem* elem = NULL;
-  cal_integration_point_value = true;
+  cal_integration_point_value = false;
+  continuum = 0; //15.02.2007/
+//  cal_integration_point_value = true;
+// Currently, extropolation only valid for liquid and Richards flow.
+  if(pcs_type_name.find("LIQUID")!=string::npos
+     ||pcs_type_name.find("RICHARD")!=string::npos
+     ||pcs_type_name.find("MULTI_PHASE_FLOW")!=string::npos)
+     cal_integration_point_value = true;
+  if(!cal_integration_point_value)
+     return;
   for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
   {
     elem = m_msh->ele_vector[i];
@@ -3616,7 +3823,7 @@ Programming:
 **************************************************************************/
 void CRFProcess::DDCAssembleGlobalMatrix()
 {
-  int k, ii,jj, dof;
+  int ii,jj, dof;
   long i,j,j0,ig,jg, ncol;
   CPARDomain *m_dom = NULL;
   long *nodes2node = NULL; //WW
@@ -3627,6 +3834,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
   dof = pcs_number_of_primary_nvals; //WW
   ncol = 0; //WW
 #ifndef USE_MPI
+  int k;
   for(k=0;k<no_domains;k++){
     m_dom = dom_vector[k];
 #else
@@ -3849,11 +4057,11 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
 {
   static long i;
   static double bc_value, fac = 1.0, time_fac = 1.0;
-  long bc_msh_node;
+  long bc_msh_node=-1;
   long bc_eqs_index, shift;
   int interp_method=0;
   int curve, valid=0;
-  int idx0, idx1; 
+  int ii, idx0, idx1; 
   CBoundaryConditionNode* m_bc_node; //WW 
   CBoundaryCondition* m_bc; //WW
   CPARDomain *m_dom = NULL;
@@ -3870,8 +4078,8 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
   long gindex=0;
   if(rank==-1)
   {
-	 begin = 0;
-	 end = (long)bc_node_value.size();
+     begin = 0;
+     end = (long)bc_node_value.size();
      eqs_rhs = eqs->b;
   } 
   else
@@ -3880,9 +4088,9 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
      eqs_rhs = m_dom->eqs->b;
      if(rank==0) 
         begin = 0;
-	 else 
+     else 
         begin = rank_bc_node_value_in_dom[rank-1];
-	 end = rank_bc_node_value_in_dom[rank];
+        end = rank_bc_node_value_in_dom[rank];
   }
 
   for(i=begin;i<end;i++) {
@@ -3894,21 +4102,21 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
      shift = m_bc_node->msh_node_number-m_bc_node->geo_node_number;     
      //
      if(rank>-1)
-	 {
+     {
         bc_msh_node = bc_local_index_in_dom[i];
-       int dim_space = 0; 
-	   if(m_msh->NodesNumber_Linear==m_msh->NodesNumber_Quadratic)
-          dim_space = 0;  
-	   else
-       {
+        int dim_space = 0; 
+        if(m_msh->NodesNumber_Linear==m_msh->NodesNumber_Quadratic)
+           dim_space = 0;  
+        else
+        {
           if(shift%m_msh->NodesNumber_Quadratic==0)
             dim_space = shift/m_msh->NodesNumber_Quadratic; 
-		  else
+          else
             dim_space = m_msh->msh_max_dim; 
-       }
-	   shift = m_dom->shift[dim_space];
-	 } 
-	 else
+        }
+        shift = m_dom->shift[dim_space];
+      } 
+      else
         bc_msh_node = m_bc_node->geo_node_number;
   //------------------------------------------------------------WW
      if(m_msh) //OK
@@ -3933,15 +4141,24 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
             time_fac = m_fct->GetValue(aktuelle_zeit,&is_valid);
             //if(!valid) continue;
           }
-          else{
+          else
             cout << "Warning in CRFProcess::IncorporateBoundaryConditions - no FCT data" << endl;
-          }
-	    }
+        }
         //................................................................
         // Conditions
-        if(m_bc_node->conditional){  
-           bc_value = time_fac*fac* GetNodeValue(m_bc_node->msh_node_number_subst,
-                      GetNodeValueIndex(pcs_primary_function_name[0])+1); //WW  bc_value = time_fac*fac* GetNodeVal(bc_msh_node+1,GetNODValueIndex(pcs_primary_function_name[0])+1); // YD-----TEST---
+        if(m_bc_node->conditional)
+        {  
+           int idx_1 = -1;    //28.2.2007 WW       
+           for(ii=0;ii<dof;ii++)  //28.2.2007 WW    
+           {
+              if(m_bc->pcs_pv_name.find(pcs_primary_function_name[ii]) != string::npos)
+              {                     
+                 idx_1 = GetNodeValueIndex(pcs_primary_function_name[ii])+1;
+                 break;
+              }
+           }           
+           bc_value = time_fac*fac* GetNodeValue(m_bc_node->msh_node_number_subst, idx_1);
+                      //WW  bc_value = time_fac*fac* GetNodeVal(bc_msh_node+1,GetNODValueIndex(pcs_primary_function_name[0])+1); // YD-----TEST---
         }
         else
           bc_value = time_fac*fac*m_bc_node->node_value; // time_fac*fac*PCSGetNODValue(bc_msh_node,"PRESSURE1",0);
@@ -3950,7 +4167,7 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
         if(m_msh){//OK  
           if(rank>-1)
              bc_eqs_index = bc_msh_node;
-		  else
+          else
              bc_eqs_index = m_msh->nod_vector[bc_msh_node]->GetEquationIndex();  //WW#
           //..............................................................
           // NEWTON WW
@@ -3962,11 +4179,11 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
               idx1 = idx0+1;
               bc_value -=  GetNodeValue(m_bc_node->geo_node_number, idx0)
                          + GetNodeValue(m_bc_node->geo_node_number, idx1);               
-		    }
+            }
             else
               bc_value = bc_value - GetNodeValue(m_bc_node->geo_node_number, idx0);
-		  }
-		}
+         }
+       }
         //----------------------------------------------------------------
         // RFI
         else {
@@ -3979,18 +4196,26 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
             {
               idx1 = PCSGetNODValueIndex(m_bc->pcs_pv_name.c_str(),1);
               bc_value -= GetNodeVal(bc_eqs_index, idx0) + GetNodeVal(bc_eqs_index, idx1);               
-		    }
+            }
             else
               bc_value = bc_value - GetNodeVal(bc_eqs_index, idx0);
-		  }
+            }
         }
         //----------------------------------------------------------------
         bc_eqs_index += shift;
-        if((int)continuum_vector.size() > 1){
-           //YD/WW
-           if(m_bc_node->pcs_pv_name.find(pcs_primary_function_name[continuum]) == string::npos)
-              continue;
-		}
+        //YD dual 
+        if(dof>1) //WW
+        { 
+          for(ii=0;ii<dof;ii++)
+          {
+            if(m_bc->pcs_pv_name.find(pcs_primary_function_name[ii]) != string::npos)
+            {    
+               //YD/WW
+               bc_eqs_index += ii*(long)eqs->dim/dof;   //YD dual //DOF>1 WW 
+               break;
+            }
+          }
+        }
         MXRandbed(bc_eqs_index,bc_value,eqs_rhs);
       }
   }
@@ -4031,7 +4256,7 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
   int curve, valid=0;
   long msh_node, shift;
   long bc_eqs_index=-1;
-  int  EleType;
+  int  ii, EleType;
   double q_face=0.0; 
   CElem* elem = NULL;
   CElem* face = NULL;
@@ -4045,56 +4270,57 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
   fac = 1.0;
   double Scaling = 1.0;
   if(type==4) fac = Scaling;
+
   CNodeValue *cnodev = NULL;
   CSourceTerm *m_st = NULL;
+  //
   long begin = 0;
   long end = 0;
   long gindex=0;
-  //----------------------------------------------------------------------
   if(rank==-1)
   {
-    begin = 0;
-	end = (long)st_node_value.size();
-    eqs_rhs = eqs->b; 
+	 begin = 0;
+	 end = (long)st_node_value.size();
+     eqs_rhs = eqs->b; 
   } 
   else
   {
-    m_dom = dom_vector[rank];
-    eqs_rhs = m_dom->eqs->b; 
-    if(rank==0) 
-      begin = 0;
-	else 
-      begin = rank_st_node_value_in_dom[rank-1];
-	end = rank_st_node_value_in_dom[rank];
+     m_dom = dom_vector[rank];
+     eqs_rhs = m_dom->eqs->b; 
+     if(rank==0) 
+        begin = 0;
+	 else 
+        begin = rank_st_node_value_in_dom[rank-1];
+	 end = rank_st_node_value_in_dom[rank];
   }
-  //======================================================================
+  
   for(i=begin;i<end;i++) 
   {
     gindex = i;
-    //--------------------------------------------------------------------
     if(rank>-1)
       gindex = st_node_value_in_dom[i];
+
 	cnodev = st_node_value[gindex]; 
     shift = cnodev->msh_node_number-cnodev->geo_node_number;
     if(rank>-1)
 	{
-      msh_node = st_local_index_in_dom[i];
-      int dim_space = 0; 
-	  if(m_msh->NodesNumber_Linear==m_msh->NodesNumber_Quadratic)
-        dim_space = 0;  
-	  else
-      {
-        if(shift%m_msh->NodesNumber_Quadratic==0)
-          dim_space = shift/m_msh->NodesNumber_Quadratic; 
-		else
-          dim_space = m_msh->msh_max_dim; 
-      }
-	  shift = m_dom->shift[dim_space];
+       msh_node = st_local_index_in_dom[i];
+       int dim_space = 0; 
+	   if(m_msh->NodesNumber_Linear==m_msh->NodesNumber_Quadratic)
+          dim_space = 0;  
+	   else
+       {
+          if(shift%m_msh->NodesNumber_Quadratic==0)
+            dim_space = shift/m_msh->NodesNumber_Quadratic; 
+		  else
+            dim_space = m_msh->msh_max_dim; 
+       }
+	   shift = m_dom->shift[dim_space];
 	} 
 	else
 	{ 
-      msh_node = cnodev->msh_node_number;
-      msh_node -= shift;
+       msh_node = cnodev->msh_node_number;
+       msh_node -= shift;
 	} 
     value = cnodev->node_value;
     //--------------------------------------------------------------------
@@ -4233,12 +4459,16 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
     } 
     else 
       bc_eqs_index = GetNodeIndex(msh_node)+shift;
-    //------------------------------------------------------------------
-    if((int)continuum_vector.size() > 1)
-    {
-      //YD/WW
-     if(m_st->pcs_pv_name.find(pcs_primary_function_name[continuum]) == string::npos)
-        continue;
+    if(dof>1) // 07.2.2007 WW
+    { 
+      for(ii=0;ii<dof;ii++)
+      {
+         if(m_st->pcs_pv_name.find(pcs_primary_function_name[ii]) != string::npos)
+	     {
+            bc_eqs_index += ii*(long)eqs->dim/dof;   //dual  YDTEST
+            break;
+	     }
+      }
     }
     eqs_rhs[bc_eqs_index] += value;
   }
@@ -4258,14 +4488,14 @@ int CRFProcess::ExecuteLinearSolver(void)
 {
   long iter_count;
   long iter_sum = 0;
-  int found = 0;
+  //WW  int found = 0;
   //-----------------------------------------------------------------------
   // Set EQS
   //cout << "Before SetLinearSolver(eqs) myrank = "<< myrank<< '\n'; 
   SetLinearSolver(eqs);
   //--------------------------------------------------------------------
   // NUM
-  found = 1;
+  //WW  found = 1;
   cg_maxiter        = m_num->ls_max_iterations; //OK lsp->maxiter;
   cg_eps            = m_num->ls_error_tolerance; //OK lsp->eps;
   //cg_repeat = lsp->repeat;
@@ -4757,11 +4987,13 @@ Task:
 Programing:
 02/2005 OK Implementation
 02/2006 YD Dual Richards
+02/2007 WW General function for all unsaturated flow
 **************************************************************************/
-void CRFProcess::CalcSecondaryVariables(int time_level)
+void CRFProcess::CalcSecondaryVariables(const bool initial)
 {
   char pcsT;
   pcsT = pcs_type_name[0];
+  if(type==1212) pcsT = 'V'; //WW
   switch(pcsT){
     case 'L':
       break;
@@ -4775,9 +5007,12 @@ void CRFProcess::CalcSecondaryVariables(int time_level)
       break;
     case 'R': // Richards flow
 	  if(pcs_type_name[1] == 'I')	// PCH To make a distinction with RANDOM WALK.
-		CalcSecondaryVariablesRichards(time_level,false);
+        CalcSecondaryVariablesUnsaturatedFlow(initial); // WW
       break;
     case 'D':
+      break;
+    case 'V':
+      CalcSecondaryVariablesUnsaturatedFlow(initial); //WW
       break;
   }
 }
@@ -4788,17 +5023,6 @@ void CRFProcess::CalcSecondaryVariables(int time_level)
 
 /*****************************************************/
 
-/*****************************************************/
-/*  Function: GetStartPositionInUnknownArray_Pressure
-    Means as the name.
-    For monolithic scheme of p-u coupled equation
-    08/2003  WW 
-*/  
-
-long GetStartPositionInUnknownArray_Pressure(void)
-{
-  return problem_dimension_dm*GetHighOrderNodeNumber(); 
-}
 
 /**************************************************************************
  ROCKFLOW - Funktion: DumpModelNodeValues
@@ -4859,11 +5083,11 @@ superseded by GetPFNamebyCPName() but left here, as not all files are already in
 	wenn dar Name "CONCENTRATIONx" ist, wird er durch den enstprechenden Komponentennamen ersetzt, sonst bleibts */
 
 char *GetCompNamehelp(char *inname){
- int comp, phase;
+  int comp; //WW, phase;
  char * outname, help[MAX_ZEILE];
  CRFProcess *m_pcs=NULL;
  outname = inname;
- phase = 0;
+ //WW phase = 0;
  for(comp=0;comp<GetRFProcessNumComponents();comp++) {
 	sprintf(help,"%s%d","CONCENTRATION",comp+1);
 	/*  help has to be a part of inname (strstr) and also have the same length (strcmp) */
@@ -5568,16 +5792,19 @@ Programing:
 01/2005 OK NUM implementation
 05/2005 OK MSH
 08/2005 WW Re-implememtation based on NUMCalcIterationError
+01/2007 WW For DOF>1
 last modification:
 **************************************************************************/
 double CRFProcess::CalcIterationNODError(int method)
 {
 
-    static long i, k;
+    static long i, k, g_nnodes;
     static double error, change, max_c, min_c;
-    int ndx0 = GetNodeValueIndex(pcs_primary_function_name[continuum]);
-    int ndx1 = GetNodeValueIndex(pcs_primary_function_name[continuum])+1;
-
+    //-----------------------------------------------------WW
+    int nidx1; 
+    int ii;
+    g_nnodes = m_msh->GetNodesNumber(false); //WW 
+    //-----------------------------------------------------WW
     error = 0.;
     change = 0.;
 
@@ -5590,47 +5817,71 @@ double CRFProcess::CalcIterationNODError(int method)
           return 0.;
        // Maximum error
        case 1:
-	     for (i = 0l; i < eqs->dim; i++)
-		 {
-			 k = m_msh->Eqs2Global_NodeIndex[i];
-             error = max(error, fabs(GetNodeValue(k, ndx1) - eqs->x[i]));
-		 }
+         for(ii=0;ii<pcs_number_of_primary_nvals;ii++) //WW
+         {
+            nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1; //new time
+            for (i = 0l; i < g_nnodes; i++) //WW
+            {
+               k = m_msh->Eqs2Global_NodeIndex[i];
+               error = max(error, fabs(GetNodeValue(k, nidx1) - eqs->x[i+ii*g_nnodes]));
+	        }
+         }
          return error;
        case 2:
-	     for (i = 0l; i < eqs->dim; i++)
-		 {
-			 k = m_msh->Eqs2Global_NodeIndex[i];
-             error = max(error, fabs(eqs->x[i] - GetNodeValue(k, ndx1))
-				 /(fabs(eqs->x[i]) + fabs(GetNodeValue(k, ndx1))+ MKleinsteZahl) );
+         for(ii=0;ii<pcs_number_of_primary_nvals;ii++)//WW
+         {
+            nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1; //new time
+            for (i = 0l; i < g_nnodes; i++) //WW
+            {
+               k = m_msh->Eqs2Global_NodeIndex[i];
+               error = max(error, fabs(eqs->x[i+ii*g_nnodes] - GetNodeValue(k, nidx1))
+                       /(fabs(eqs->x[i+ii*g_nnodes]) + fabs(GetNodeValue(k, nidx1))+ MKleinsteZahl) );
+            }
 		 }
 		 return error;
        case 3:
-         for (i = 0l; i < eqs->dim; i++) {
-            k = m_msh->Eqs2Global_NodeIndex[i];
-            error = max(error, fabs(eqs->x[i] - GetNodeValue(k, ndx1)));
-            max_c = max(max(max_c, fabs(fabs(eqs->x[i]))),fabs(GetNodeValue(k, ndx1)));
+         for(ii=0;ii<pcs_number_of_primary_nvals;ii++)//WW
+         {
+             nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1; //new time
+             for (i = 0l; i < g_nnodes; i++) { //WW
+               k = m_msh->Eqs2Global_NodeIndex[i];
+               error = max(error, fabs(eqs->x[i+ii*g_nnodes] - GetNodeValue(k, nidx1)));
+               max_c = max(max(max_c, fabs(fabs(eqs->x[i+ii*g_nnodes]))),fabs(GetNodeValue(k, nidx1)));
+            }
          }
          return error / (max_c + MKleinsteZahl);
        case 4:
-         for (i = 0l; i < eqs->dim; i++) {
-            k = m_msh->Eqs2Global_NodeIndex[i];
-            error = max(error, fabs(eqs->x[i] - GetNodeValue(k, ndx1)));
-            min_c = min(min_c, fabs(eqs->x[i]));
-            max_c = max(max_c, fabs(eqs->x[i]));
+         for(ii=0;ii<pcs_number_of_primary_nvals;ii++)//WW
+         {
+            nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1; //new time
+            for (i = 0l; i < g_nnodes; i++) { //WW
+              k = m_msh->Eqs2Global_NodeIndex[i];
+              error = max(error, fabs(eqs->x[i+ii*g_nnodes] - GetNodeValue(k, nidx1)));
+              min_c = min(min_c, fabs(eqs->x[i+ii*g_nnodes]));
+              max_c = max(max_c, fabs(eqs->x[i+ii*g_nnodes]));
+            }
          }
          return error / (max_c - min_c + MKleinsteZahl);
        case 5:
-         for (i = 0l; i < eqs->dim; i++) {
-	        k = m_msh->Eqs2Global_NodeIndex[i];
-            error = max(error, fabs(eqs->x[i] -  GetNodeValue(k, ndx1)) 
-  				/ (fabs(eqs->x[i] - GetNodeValue(k, ndx0)) + MKleinsteZahl));
+         for(ii=0;ii<pcs_number_of_primary_nvals;ii++)//WW
+         {
+            nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1; //new time
+            for (i = 0l; i < g_nnodes; i++) { //WW
+              k = m_msh->Eqs2Global_NodeIndex[i];
+              error = max(error, fabs(eqs->x[i+ii*g_nnodes] -  GetNodeValue(k, nidx1)) 
+  				/ (fabs(eqs->x[i+ii*g_nnodes] - GetNodeValue(k, nidx1-1)) + MKleinsteZahl));
+            }
 		 }
          return error;
        case 6:
-         for (i = 0l; i < eqs->dim; i++) {
-            k = m_msh->Eqs2Global_NodeIndex[i];
-            error = max(error, fabs(eqs->x[i] -  GetNodeValue(k, ndx1)));
-            change = max(change, fabs(eqs->x[i] - GetNodeValue(k, ndx0)));
+         for(ii=0;ii<pcs_number_of_primary_nvals;ii++)//WW
+         {
+            nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1; //new time
+            for (i = 0l; i < g_nnodes; i++) { //WW
+               k = m_msh->Eqs2Global_NodeIndex[i];
+               error = max(error, fabs(eqs->x[i+ii*g_nnodes] -  GetNodeValue(k, nidx1)));
+               change = max(change, fabs(eqs->x[i+ii*g_nnodes] - GetNodeValue(k, nidx1-1)));
+            }
          }
          return error / (change + MKleinsteZahl);
 	}
@@ -5642,43 +5893,137 @@ Task:
 Programing:
 05/2005 OK Implementation
 04/2006 YD Add contiuum coupling OK???Why ere
+04/2007 WW Remove the spurious stuff
 **************************************************************************/
 double CRFProcess::ExecuteNonLinear()
 {
-  int i, j, iterations_continuum_couple = 1;
   double nonlinear_iteration_error=0.0;
-  if((int)continuum_vector.size()>1) iterations_continuum_couple = 3;       // m_num->cpl_iterations;
-  //----------------------------------------------------------------------
-  // Multi-Continua
-  for(j=0;j<iterations_continuum_couple;j++) //OK???YD two processes with exchange
+
+  //..................................................................
+  for(iter=0;iter<pcs_nonlinear_iterations;iter++)
   {
-    for(i=0;i<(int)continuum_vector.size();i++) //OK???YD
+    cout << "    PCS non-linear iteration: " << iter << "/"   
+         << pcs_nonlinear_iterations << endl;
+    nonlinear_iteration_error = Execute();
+    if(mobile_nodes_flag ==1)
+      PCSMoveNOD();
+    if(!Tim) //OK
+      continue;
+    if(nonlinear_iteration_error < pcs_nonlinear_iteration_tolerance)
     {
-      //OK cout << " PCS continuum type: " << i << endl;
-      continuum = i;
-      //..................................................................
-      for(iter=0;iter<pcs_nonlinear_iterations;iter++)
-      {
-        cout << "    PCS non-linear iteration: " << iter << "/"   
-             << pcs_nonlinear_iterations << endl;
-        nonlinear_iteration_error = Execute();
-        if(mobile_nodes_flag ==1)
-          PCSMoveNOD();
-        if(!Tim) //OK
-          continue;
-        if(nonlinear_iteration_error < pcs_nonlinear_iteration_tolerance)
-        {
-          Tim->repeat = false; //OK/YD
-          Tim->nonlinear_iteration_error = nonlinear_iteration_error; //OK/YD
-          break;
-        }
-        else
-          Tim->repeat = true; //OK/YD
-      }
+      Tim->repeat = false; //OK/YD
+      Tim->nonlinear_iteration_error = nonlinear_iteration_error; //OK/YD
+      break;
     }
-  //----------------------------------------------------------------------
+    else
+      Tim->repeat = true; //OK/YD
   }
-  return nonlinear_iteration_error;
+  // 8 Calculate secondary variables
+  CalcSecondaryVariables(); // Moved here from Execute() WW
+  return nonlinear_iteration_error; 
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Task:
+Programing:
+02/2007 WW Implementation
+**************************************************************************/
+void CRFProcess::Extropolation_GaussValue() 
+{
+  int k, NS;
+  long i = 0;
+  int idx[3];
+ // const long LowOrderNodes= m_msh->GetNodesNumber(false);
+  Mesh_Group::CElem* elem = NULL;
+
+  // 
+  NS =m_msh->GetCoordinateFlag()/10;
+  idx[0] = GetNodeValueIndex("VELOCITY_X1");
+  idx[1] = GetNodeValueIndex("VELOCITY_Y1");
+  idx[2] = GetNodeValueIndex("VELOCITY_Z1");
+  for (i = 0; i <(long)m_msh->GetNodesNumber(false); i++)
+  {
+     for(k=0; k<NS; k++)
+       SetNodeValue(i, idx[k], 0.0);
+  }
+  if(type==1212)  // Multi-phase flow
+  {
+     idx[0] = GetNodeValueIndex("VELOCITY_X2");
+     idx[1] = GetNodeValueIndex("VELOCITY_Y2");
+     idx[2] = GetNodeValueIndex("VELOCITY_Z2");
+     for (i = 0; i <(long)m_msh->GetNodesNumber(false); i++)
+     {
+        for(k=0; k<NS; k++)
+           SetNodeValue(i, idx[k], 0.0);
+     }
+  }
+  //
+  for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
+  {
+     elem = m_msh->ele_vector[i];
+     if (elem->GetMark()) // Marked for use
+     {
+         fem->ConfigElement(elem);
+         for(k=0; k<NS; k++)
+           fem->ExtropolateGauss(this, k);
+      }
+   }
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Task:    Calculate the material values at Gauss points and extropolate them
+         to element node
+Programing:
+04/2007 WW Implementation
+**************************************************************************/
+void CRFProcess::Extropolation_MatValue() 
+{
+  int k, NS;
+  long i = 0;
+  int idx[3], idxp;
+  if(pcs_type_name.find("FLOW")==string::npos)
+    return;
+  if(additioanl2ndvar_print<0)
+    return;
+ // const long LowOrderNodes= m_msh->GetNodesNumber(false);
+  Mesh_Group::CElem* elem = NULL;
+
+  // 
+  NS =m_msh->GetCoordinateFlag()/10;
+  // 
+  if((additioanl2ndvar_print>0)&&(additioanl2ndvar_print<3))
+  {
+     idx[0] = GetNodeValueIndex("PERMEABILITY_X1");
+     idx[1] = GetNodeValueIndex("PERMEABILITY_Y1");
+     if(NS>2)
+       idx[2] = GetNodeValueIndex("PERMEABILITY_Z1");
+     for (i = 0; i <(long)m_msh->GetNodesNumber(false); i++)
+     {
+        for(k=0; k<NS; k++)
+           SetNodeValue(i, idx[k], 0.0);
+     }
+  }
+  if(additioanl2ndvar_print>1)
+  {
+     idxp = GetNodeValueIndex("POROSITY");
+     for (i = 0; i <(long)m_msh->GetNodesNumber(false); i++)
+       SetNodeValue(i, idxp, 0.0);
+  }
+  //
+  continuum = 0;
+  if(continuum_vector.size()==2)
+    continuum = 1;
+  for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
+  {
+     elem = m_msh->ele_vector[i];
+     if (elem->GetMark()) // Marked for use
+     {
+         fem->ConfigElement(elem);
+         fem->CalcNodeMatParatemer();
+      }
+   }
 }
 
 
@@ -5926,21 +6271,26 @@ void CRFProcess::CopyTimestepNODValues()
   bool Quadr = false;  //WW
   if(type==4||type==41) Quadr = true;
 
-  for(j=0;j<pcs_number_of_primary_nvals;j++){
+  for(j=0;j<pcs_number_of_primary_nvals;j++)
+  {
     nidx0 = GetNodeValueIndex(pcs_primary_function_name[j]);
     nidx1 = GetNodeValueIndex(pcs_primary_function_name[j])+1;
     for(l=0;l<(long)m_msh->GetNodesNumber(Quadr);l++)
       SetNodeValue(l,nidx0,GetNodeValue(l,nidx1));
-    }
-   if(pcs_type_name.compare("RICHARDS_FLOW")==0)
-	  for(j=0;j<pcs_number_of_secondary_nvals;j++){
-		 nidx0 = GetNodeValueIndex(pcs_secondary_function_name[j]);
-         nidx1 = GetNodeValueIndex(pcs_secondary_function_name[j])+1;
-         for(l=0;l<(long)m_msh->GetNodesNumber(false);l++)
-              SetNodeValue(l,nidx0,GetNodeValue(l,nidx1));
-	 }
+    //WW 
+    if(pcs_type_name.find("RICHARDS")!=string::npos
+       ||type==1212) //Multiphase. WW
+    {
+       if(j==1&&type==1212)  // Multiphase. WW
+         continue;
+       if(j==0) nidx0 = GetNodeValueIndex("SATURATION1");
+       else if(j==1) nidx0 = GetNodeValueIndex("SATURATION2");
+       nidx1 = nidx0+1;
+       for(l=0;l<(long)m_msh->GetNodesNumber(false);l++)
+         SetNodeValue(l,nidx0,GetNodeValue(l,nidx1));
+    }    
+  }
 }
-
 /**************************************************************************
 FEMLib-Method:
 Task:
@@ -6023,136 +6373,94 @@ CRFProcess* PCSGetFluxProcess()
 /*************************************************************************
 GeoSys-FEM Function:
 Task: 
+For Richards, dual-Richards and multi-phase flow.
 Programming: 
-02/2005 OK/YD Implementation
-05/2005 WW  Generalization for all element types
-05/2005 OK MSH
-08/2005 WW Changes for new mesh
-04/2006 YD Changes for Dual Richards
-last modified:
+02/2007 WW Implementation
 **************************************************************************/
-//using FiniteElement::CFiniteElementStd;
-void CRFProcess::CalcSecondaryVariablesRichards(int timelevel, bool update)
+void CRFProcess::CalcSecondaryVariablesUnsaturatedFlow(const bool initial)
 {
-  int j, EleType;
-  long i, enode;
-  long group,multi_mmp;
+  int ii;
+  long i;
   double p_cap;
-  double saturation,saturation_sum = 0.0;
-  double GP[3];
-  static double Node_Cap[8];
-  int idxp,idxcp,idxS,idx_tS=-1; 
-  int number_continuum;
-  double total_S;
-  int i_pv,i_s,i_e;
+  int idxp,idxcp,idxS; 
+  //----------------------------------------------
+  vector<string> secondSNames; 
+  vector<string> secondCPNames; 
+  secondSNames.push_back("SATURATION1"); 
+  if(type==1212)  // Multiphase flow 
+    secondCPNames.push_back("PRESSURE1"); 
+  else
+    secondCPNames.push_back("PRESSURE_CAP1"); 
+  if(continuum_vector.size()==2)
+  {
+    secondSNames.push_back("SATURATION2"); 
+    secondCPNames.push_back("PRESSURE_CAP2");       
+  }   
 
-  CMediumProperties* m_mmp = NULL;
+  //
   CElem* elem =NULL;
   CFiniteElementStd* fem = GetAssembler();
-  number_continuum = (int)continuum_vector.size();
-//----------------------------------------------------------------------
-  if(continuum_ic){  //Create IC: for both continua
-     i_s = 0;
-     i_e = number_continuum;
-  }
-  else{
-	 i_s = continuum;
-	 i_e = continuum+1;
-  }
-//----------------------------------------------------------------------
-  for(i_pv=i_s;i_pv<i_e;i_pv++)
-  {
-     idxp = GetNodeValueIndex(pcs_primary_function_name[i_pv])+ timelevel;
-     idxS = GetNodeValueIndex(pcs_secondary_function_name[i_pv*number_continuum])+ timelevel;
-	 idxcp = GetNodeValueIndex(pcs_secondary_function_name[i_pv*number_continuum+number_continuum*2])+ timelevel;
-	 if((int)continuum_vector.size()>1)
-		 idx_tS = GetNodeValueIndex("TOTAL_SATURATION")+ timelevel;
   //----------------------------------------------------------------------
-  // Capillary pressure
-     for(i=0;i<(long)m_msh->GetNodesNumber(false);i++){
-        p_cap = -GetNodeValue(i,idxp);
-        if(timelevel==1&&update)  SetNodeValue(i,idxcp-1,GetNodeValue(i,idxcp));
-        SetNodeValue(i,idxcp,p_cap);
-	    if(timelevel==1&&update) SetNodeValue(i,idxS-1,GetNodeValue(i,idxS));
-     }
-  //----------------------------------------------------------------------
- // Liquid saturation
-	 for (i = 0; i < m_msh->GetNodesNumber(false); i++){
-      SetNodeValue(i,idxS, 0.0);
-	 if((int)continuum_vector.size()>1)
-      SetNodeValue(i,idx_tS, 0.0);  
-     }
-  // 
-  for (i = 0; i < (long)m_msh->ele_vector.size(); i++)  
+  for(ii=0;ii<(int)secondSNames.size();ii++) 
   {
-     elem = m_msh->ele_vector[i];
-     if (elem->GetMark())     // Element selected
+     idxS = GetNodeValueIndex(secondSNames[ii].c_str())+1;
+     if(type==1212)  // Multiphase flow
      {
-         if((int)continuum_vector.size() == 1) 
-		  group = elem->GetPatchIndex();
-		 else{
-		  multi_mmp = (long)mmp_vector.size()/(long)continuum_vector.size();
-		  group = elem->GetPatchIndex()+multi_mmp*(long)i_pv;   //YD
-		 }
-          m_mmp = mmp_vector[group];
-          m_mmp->m_pcs = this;
-
-          // Activated Element 
-          EleType = elem->GetElementType();
-          if(EleType==4) // Triangle
-          {
-             GP[0] = GP[1] = 0.1/0.3; 
-             GP[2] = 0.0;
-          }
-          else if(EleType==5) 
-		     GP[0] = GP[1] = GP[2] = 0.25;
-          else
-		     GP[0] = GP[1] = GP[2] = 0.0;  
-
-          fem->ConfigElement(elem);
-		  fem->setUnitCoordinates(GP);
-          fem->ComputeShapefct(1); // Linear
-		  for(j=0; j<elem->GetVertexNumber(); j++)
-		  {
-             enode = elem->GetNodeIndex(j);
-             Node_Cap[j] =  GetNodeValue(enode,idxcp);
-		  }
-		  p_cap = fem->interpolate(Node_Cap);
-          saturation = m_mmp->SaturationCapillaryPressureFunction(p_cap,(int)mfp_vector.size()-1);  //YD
-		  for(j=0; j<elem->GetVertexNumber(); j++)
-          {
-			  enode = elem->GetNodeIndex(j);
-              saturation_sum = GetNodeValue(enode, idxS);
-			  SetNodeValue(enode,idxS, saturation_sum+saturation);
-
-          }
-
-      }
+       idxcp = GetNodeValueIndex(pcs_primary_function_name[ii])+1;
+       idxp = GetNodeValueIndex("PRESSURE_W");
+     }
+     else
+     {
+       idxp = GetNodeValueIndex(pcs_primary_function_name[ii])+1;
+       idxcp = GetNodeValueIndex(secondCPNames[ii].c_str());
+     }
+     //----------------------------------------------------------------------
+     // Capillary pressure
+     for(i=0;i<(long)m_msh->GetNodesNumber(false);i++)
+     {
+        // Copy the new saturation to the old level
+        // 
+        if(type==1212)  // Multiphase flow 
+        {
+           // p_w = p_g-p_c
+           p_cap = GetNodeValue(i,idxcp+2)-GetNodeValue(i,idxcp);  
+           SetNodeValue(i,idxp,p_cap);
+        }
+        else
+        {
+           p_cap = -GetNodeValue(i,idxp);
+           SetNodeValue(i,idxcp,p_cap);
+        }
+        SetNodeValue(i,idxS, 0.0);
+     }
   }
-  // Average 
-  for (i = 0; i <(long)m_msh->GetNodesNumber(false); i++)
-  {       	  
-	  saturation_sum = GetNodeValue(i, idxS);
-      p_cap = m_msh->nod_vector[i]->connected_elements.size();
-      if(p_cap==0) p_cap =1;
-	  saturation_sum /= (double)p_cap;
-      SetNodeValue(i,idxS, saturation_sum);
+  // Cal S
+  for(ii=0;ii<(int)secondSNames.size();ii++)  
+  {
+    continuum = ii;
+    for(i=0;i<(long)m_msh->ele_vector.size();i++)
+    {
+       elem = m_msh->ele_vector[i];
+       if (elem->GetMark()) // Marked for use
+       {
+          elem->SetOrder(false);
+          fem->ConfigElement(elem,false);
+          fem->CalcSatution();
+       }
+    }
   }
-  }
+  //
+  if(!initial)
+    return;  
   //----------
-
-  if(continuum > 0){
-	for (i = 0; i <(long)m_msh->GetNodesNumber(false); i++){
-      total_S = 0;
-	  for(j = 0; j< (int)continuum_vector.size(); j++){
-        idxS = GetNodeValueIndex(pcs_secondary_function_name[j*number_continuum])+ timelevel;
-	    total_S += GetNodeValue(i, idxS)*continuum_vector[j];
-      }
-      SetNodeValue(i,idx_tS, total_S);
-	  }
-  }
-
+  for(ii=0;ii<(int)secondSNames.size();ii++)  
+  {
+    idxS = GetNodeValueIndex(secondSNames[ii].c_str())+1;
+    for(i=0;i<(long)m_msh->GetNodesNumber(false);i++)
+      SetNodeValue(i,idxS-1,  GetNodeValue(i, idxS));     
+  }   
 }
+
 
 /*************************************************************************
 GeoSys-FEM Function:
@@ -6179,7 +6487,7 @@ void CRFProcess::CalcSaturationRichards(int timelevel, bool update)
 
   CMediumProperties* m_mmp = NULL;
   CElem* elem =NULL;
-  CFiniteElementStd* fem = GetAssembler();
+//WW  CFiniteElementStd* fem = GetAssembler();
   number_continuum = (int)continuum_vector.size();
   //----------------------------------------------------------------------
   if(continuum_ic){  //Create IC: for both continua
@@ -7102,6 +7410,8 @@ void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs)
   //----------------------------------------------------------------------
   int ndx_density_phase;
   int ndx_viscosity_phase;
+  ndx_density_phase = -1; //WW
+  ndx_viscosity_phase = -1; //WW
   //----------------------------------------------------------------------
   m_pcs->SetBC();
   //======================================================================

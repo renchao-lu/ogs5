@@ -281,7 +281,7 @@ void PrismRefine(const int NLayers, const int Layer, const int NSubLayers)
              ElSetElementActiveState(NumElementNew,1);
 
              /* "rowx hochziehen"   */
-             /* loop ÅEer die betroffenen rows   */
+             /* loop ¸ber die betroffenen rows   */
              NRowsToShift = NRows - Layer;
              count = 0;
 
@@ -703,8 +703,8 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
   list<CGLLine*>::const_iterator pl;
 //  int hits;
   long i,j,k;
-  long *nodes_unsorted = NULL;
-  double *node_distances = NULL;
+//WW  long *nodes_unsorted = NULL;
+//WW  double *node_distances = NULL;
   list<CGLLine*>msh_line_list;
   list<CGLLine*>::iterator pl1;
   list<CGLLine*>::iterator pl2;
@@ -714,7 +714,7 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
 //  bool hitP0,hitP1,hitP2;
 //  double v1[3],v2[3];
 //  double angle;
-  double eps_angle = 1.;
+//WW  double eps_angle = 1.;
 //OK
   vector<long>nodes_vector;
   CNode* m_nod = NULL;
@@ -1241,8 +1241,8 @@ void GMSH2MSH(char* filename,CFEMesh* m_msh)
   double x,y,z;
   string strbuffer;
 
-  bool quad=false;
-  CRFProcess* m_pcs = NULL;
+//WW  bool quad=false;
+//WW  CRFProcess* m_pcs = NULL;
    CNode* node = NULL;
   CElem* elem = NULL;
   ifstream msh_file(filename,ios::in);
@@ -1925,7 +1925,7 @@ void GMSH2TIN(const char *file_name_const_char)
    int i=0, k=0;
 //READ GMSH-File and fill local Element Vector
   vector<Mesh_Group::CFEMesh*>check_msh_vector;
-  Mesh_Group::CFEMesh* m_check_elements;  
+  Mesh_Group::CFEMesh* m_check_elements;
   char text[1024];
   long nbnod, nbelm;
   long node_id;

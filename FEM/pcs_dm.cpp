@@ -120,8 +120,8 @@ last modified: WW
 **************************************************************************/
 void CRFProcessDeformation::Initialization()
 {
-   long i;
-   int j;
+//   long i;
+//   int j;
    // Local assembliers
    // An instaniate of CFiniteElementVec 
    int Axisymm = 1; // ani-axisymmetry
@@ -151,7 +151,7 @@ void CRFProcessDeformation::Initialization()
    if(H_Process||MH_Process)
    {
       // Initial pressure
-      j =  fem_dm->idx_P0;
+      // j =  fem_dm->idx_P0;
       h_pcs = fem_dm->h_pcs;
       int idxP = -1;
       if(fem_dm->Flow_Type<=1)
@@ -162,6 +162,7 @@ void CRFProcessDeformation::Initialization()
       }
       else
           idxP = fem_dm->idx_P2;
+      /*
       for (i = 0; i < m_msh->GetNodesNumber(false); i++)
 	  {
 //TEST for Richard
@@ -170,6 +171,7 @@ void CRFProcessDeformation::Initialization()
 //		  else
 //             SetNodeValue(i,j, 0.0);
 	  }
+      */
    } 
    
    if(fem_dm->dynamic)
@@ -194,6 +196,7 @@ void CRFProcessDeformation::InitialMBuffer()
     int bufferSize;
     bool HM_Stagered = false;
     bufferSize = 0;
+
     if(!msp_vector.size())
     {
        cout<<"No .msp file.   "<<endl;
@@ -208,20 +211,22 @@ void CRFProcessDeformation::InitialMBuffer()
     else if(GetObjType()==41) 
        bufferSize = (GetPrimaryVNumber()-1)*m_msh->GetNodesNumber(true)+
                      m_msh->GetNodesNumber(false);
-    
-    AllocateTempArrary(bufferSize);
-    
+    //
+    //Allocate memory for  temporily array
+    ARRAY = (double*) Malloc(bufferSize*sizeof(double));
+    //    
     // Allocate memory for element variables
     Mesh_Group::CElem* elem = NULL;
     for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
     {
        elem = m_msh->ele_vector[i];
-       if (elem->GetMark()) // Marked for use
-        {
-              ElementValue_DM *ele_val = new  ElementValue_DM(elem, HM_Stagered);
- 		      ele_value_dm.push_back(ele_val);
-         }
-    }
+//       if (elem->GetMark()) // Marked for use
+//       {
+           ElementValue_DM *ele_val = 
+              new  ElementValue_DM(elem, m_num->ele_gauss_points, HM_Stagered);
+           ele_value_dm.push_back(ele_val);
+//       }
+   }
 }
 
 /*************************************************************************
@@ -237,8 +242,7 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
 #ifdef MFC
   CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
 #endif
-  DisplayMsg("\n->Process: "); 
-  //DisplayLong(pcs_number); 
+  DisplayMsg("\n->Process: "); DisplayLong(pcs_number); 
   DisplayMsg(", "); cout << pcs_type_name << endl; 
 
   clock_t start, finish;
@@ -264,12 +268,12 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
   int MaxIteration=m_num->nls_max_iterations;
   int elasticity=0; 
   int monolithic=0;
-
+  // 
   string delim = " | ";
-
-  
   //----------------------------------------------------------
   start = clock();
+  // 
+  m_msh->SwitchOnQuadraticNodes(true);
   //
   if(num_type_name.find("EXCAVATION")!=0)
      CheckMarkedElement();
@@ -578,11 +582,6 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
   return Error;
 }
 
-// Allocate memory for temporily used array
-void CRFProcessDeformation::AllocateTempArrary(const int dims)
-{
-    ARRAY = (double*) Malloc(dims*sizeof(double));
-} 
 
 
 /**************************************************************************
@@ -660,7 +659,8 @@ void CRFProcessDeformation::InitGauss(void)
   int counter = 0;
   for(j=0; j<NS; j++)
     if(stress_ic[j]) counter++;  
-  if(counter>0) reload=1000;
+  if(counter>0) 
+     reload = -1000;
 
 
   for (i = 0; i < m_msh->GetNodesNumber(false); i++)
@@ -722,7 +722,7 @@ void CRFProcessDeformation::InitGauss(void)
 	   	   NGS = fem_dm->GetNumGaussPoints();
 	       NGSS = fem_dm->GetNumGaussSamples();
 
-           if(reload==1000)
+           if(counter>0)
 		   {
              for (gp = 0; gp < NGS; gp++)
              {
@@ -738,15 +738,15 @@ void CRFProcessDeformation::InitGauss(void)
                    {
                      if(MatGroup!=m_ic->GetDomain(k)) continue;
                      (*eleV_DM->Stress)(j, gp) = 
-                          m_ic->DistributionFuntion(k, xyz[0],xyz[1], xyz[2]); 
+                        m_ic->DistributionFuntion(k, xyz[0],xyz[1], xyz[2]); 
 				   }
 				}   
                 if(eleV_DM->Stress_j)
                   (*eleV_DM->Stress_j) = (*eleV_DM->Stress);
 			 }
            }
-		   else
-		   {
+           else
+           {
              for (gp = 0; gp < NGS; gp++)
 		     {
                 /*  // For setting soil profile
@@ -819,7 +819,8 @@ void CRFProcessDeformation::InitGauss(void)
 		 }
     }
 //2. Closure simulation
-	if(reload==2) ReadGaussPointStress();
+   if(reload>=2) ReadGaussPointStress();
+   Extropolation_GaussValue(); 
 }
 
 
@@ -834,24 +835,23 @@ void CRFProcessDeformation::ResetCouplingStep()
     int j;
     long number_of_nodes;
     long shift=0;
-     ElementValue_DM* eleV_DM = NULL;
-     for (e = 0; e < (long)m_msh->ele_vector.size(); e++)
-     {
+    ElementValue_DM* eleV_DM = NULL;
+    for (e = 0; e < (long)m_msh->ele_vector.size(); e++)
+    {
        if(m_msh->ele_vector[e]->GetMark())
 	   {
          eleV_DM = ele_value_dm[e];
          eleV_DM->ResetStress(true);
 	   } 
-     }
-     shift = 0;
-     for (i = 0; i < GetUnknownVectorDimensionLinearSolver(eqs); i++)
-     {   
-        number_of_nodes=eqs->unknown_node_numbers[i];
-		for(j=0; j<number_of_nodes; j++)
-           SetNodeValue(m_msh->Eqs2Global_NodeIndex[j], eqs->unknown_vector_indeces[i], ARRAY[shift+j]);
-        shift += number_of_nodes;
     }
-
+    shift = 0;
+    for (i = 0; i < GetUnknownVectorDimensionLinearSolver(eqs); i++)
+    {   
+       number_of_nodes=eqs->unknown_node_numbers[i];
+       for(j=0; j<number_of_nodes; j++)
+          SetNodeValue(m_msh->Eqs2Global_NodeIndex[j], eqs->unknown_vector_indeces[i], ARRAY[shift+j]);
+       shift += number_of_nodes;
+    }
 }
 /*************************************************************************
 ROCKFLOW - Function: CRFProcess::InitializeStress_EachCouplingStep()
@@ -1488,6 +1488,7 @@ void CRFProcessDeformation::Extropolation_GaussValue()
      {
          fem_dm->ConfigElement(elem);
 		 fem_dm->SetMaterial();
+//         eval_DM = ele_value_dm[i];
  //TEST        (*eval_DM->Stress) += (*eval_DM->Stress0);
          fem_dm->ExtropolateGuassStress();
  //TEST        if(!update)
@@ -1923,7 +1924,6 @@ void CRFProcessDeformation:: GlobalAssembly()
    //----------------------------------------------------------------------
   long i;
   CElem* elem = NULL;
-  m_msh->SwitchOnQuadraticNodes(true);
 #ifdef USE_MPI
   if(dom_vector.size()>0){
     cout << "      Domain Decomposition " << myrank  << '\n';
@@ -1957,7 +1957,7 @@ void CRFProcessDeformation:: GlobalAssembly()
     //....................................................................
     // Assemble global system
     DDCAssembleGlobalMatrix();
-    //	MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
+    //MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); abort();
   }
 #endif
   //----------------------------------------------------------------------
@@ -1968,11 +1968,11 @@ void CRFProcessDeformation:: GlobalAssembly()
      {
          elem = m_msh->ele_vector[i];
          if (elem->GetMark()) // Marked for use
-	     {
+         {
              elem->SetOrder(true);
-		     fem_dm->ConfigElement(elem);
-		     fem_dm->LocalAssembly(0);
-	     } 
+             fem_dm->ConfigElement(elem);
+             fem_dm->LocalAssembly(0);
+         } 
      }
      if(type==41) // p-u monolithic scheme
      {
@@ -1996,7 +1996,7 @@ void CRFProcessDeformation:: GlobalAssembly()
 
      //
 	 
-	 //	 	 {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
+	 //	 {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
 
      // Apply Neumann BC
      IncorporateSourceTerms();
@@ -2005,8 +2005,7 @@ void CRFProcessDeformation:: GlobalAssembly()
         IncorporateBoundaryConditions();
 	 else
         CalcBC_or_SecondaryVariable_Dynamics(true);
-     //  {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
-
+     // 	 {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
      //
    }
   
@@ -2170,6 +2169,7 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
 {
    long i, actElements;
    int j, k, l, SizeSt, SizeSubD;
+   ElementValue_DM *ele_val=NULL;
 
    vector<int> ExcavDomainIndex;
    vector<long> NodesOnCaveSurface;
@@ -2219,6 +2219,12 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
 	  {
 		  fem_dm->ConfigElement(elem);
           fem_dm->LocalAssembly(0);
+          ele_val = ele_value_dm[i];
+          // Clear stresses in excavated domain
+          (*ele_val->Stress0) = 0.0;
+          (*ele_val->Stress) =0.0;
+          if(ele_val->Stress_j)       
+            (*ele_val->Stress_j) = 0.0;
 	  }       
    }
 
@@ -2383,7 +2389,7 @@ void CRFProcessDeformation::ExcavationSimulating()
     {
        // If an initial stress state is given, skip this
        // Establishing gravity force profile 
-       if (m_num&&(m_num->GravityProfile==1)&&(reload!=1000))
+       if (m_num&&(m_num->GravityProfile==1)&&(reload!=-1000))
        { 
           GravityForce = true;
           cout<<"1. Establish gravity force profile..."<<endl;
@@ -2403,6 +2409,7 @@ void CRFProcessDeformation::ExcavationSimulating()
               m_out->new_file_opened=true; 
          }    
       }
+      if(reload==-1000)  reload*= -1;
       if(reload==1)
          return;
     } // Else

@@ -45,6 +45,7 @@ CTimeDiscretization::CTimeDiscretization(void)
   max_time_step = 1.e10;   //YD 
   min_time_step = 0;   //YD 
   repeat = false; //OK/YD
+  step_current = 0;
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -752,4 +753,28 @@ double CTimeDiscretization::ErrorControlAdaptiveTimeControl(void)
     }
   }
   return time_step_length;
+}
+/**************************************************************************
+FEMLib-Method: 
+Task:  Check the time of the process in the case: different process has
+       different time step size   
+Return boolean value: skip or execute the process                                                             
+Programing:
+06/2007 WW Implementation
+**************************************************************************/
+bool CTimeDiscretization::CheckTime(double const c_time) //WW
+{
+   bool exe_pcs = false;
+   double pcs_step = time_step_vector[step_current+1];
+   double time_forward;  
+   //
+   time_forward = c_time - time_current-pcs_step; 
+  
+   if(time_forward>0.0||fabs(time_forward)<DBL_MIN)
+   {
+      exe_pcs = true;
+      time_current += pcs_step;
+      step_current++; 
+   }
+   return exe_pcs;   
 }

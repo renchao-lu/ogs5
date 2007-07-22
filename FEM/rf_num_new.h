@@ -40,6 +40,7 @@ class CNumerics
     // LS - Linear Solver
     string nls_method_name;
     int nls_method; // Picard or Newton
+    int nls_error_method; //WW
     int nls_max_iterations;
     double nls_error_tolerance;
     double nls_error_tolerance_local;

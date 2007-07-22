@@ -5,10 +5,6 @@ Programing:
 11/2004 OK Implementation
 last modified:
 **************************************************************************/
-#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
-#include <mpi.h>
-#include "par_ddc.h"
-#endif
 #include "stdafx.h"
 #include "makros.h"
 // C++ STL
@@ -31,6 +27,13 @@ extern ios::pos_type GetNextSubKeyword(ifstream* file,string* line, bool* keywor
 // GeoSys-MSHLib
 #include "nodes.h"
 #include "elements.h" // Only for max_dim, remove this later. WW
+#ifdef USE_MPI //WW
+#include "par_ddc.h"
+#undef SEEK_SET 
+#undef SEEK_END 
+#undef SEEK_CUR 
+#include "mpi.h"
+#endif
 
 //==========================================================================
 vector<CNumerics*>num_vector;
@@ -56,7 +59,7 @@ CNumerics::CNumerics(string pcs_type_name)
   // NLS - Nonlinear Solver
   nls_method_name = "PICARD";
   nls_method = 0; // Default, Picard. 1: Newton
-  nls_max_iterations = 10;
+  nls_max_iterations = 1;
   nls_error_tolerance = 1.0e-4;
   nls_error_tolerance_local = 1.0e-10; //For element level
   nls_relaxation = 0.0;

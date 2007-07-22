@@ -27,8 +27,10 @@ namespace SolidProp{
   using FiniteElement::CFiniteElementVec;
   using FiniteElement::ElementValue_DM;
   using FiniteElement::CFiniteElementStd;
+  using FiniteElement::ElementValue;
   using Math_Group::Matrix;
   using process::CRFProcessDeformation;
+  using ::CRFProcess;
 /*---------------------------------------------------------------*/
 class CSolidProperties
 {
@@ -72,7 +74,8 @@ class CSolidProperties
     double Lambda;
     double G;      // Shear stress modulus
     double K;      // Bulk modulus
-
+    // Plasticity
+    double dl2; 
     // 2. Single yield surface
     Matrix *d2G_dSdS;     
     Matrix *d2G_dSdM;
@@ -108,8 +111,13 @@ class CSolidProperties
     // Friends that can access to this data explicitly
     friend bool MSPRead(string file_base_name);
     friend void MSPWrite(string);    
+    //WW
     friend class FiniteElement::CFiniteElementVec;
+    friend class FiniteElement::CFiniteElementStd;
+    friend class FiniteElement::ElementValue;
     friend class process::CRFProcessDeformation;
+    friend class ::CRFProcess;
+    //WW
   public:    
     //
     CSolidProperties();
@@ -131,7 +139,7 @@ class CSolidProperties
     // 2. Thermal
     double Heat_Capacity(double refence = 0.0);
     // Boiling model
-    double Heat_Capacity(double temperature, const double latent_factor);
+    double Heat_Capacity(double temperature, double porosity, double Sat);
 	int GetCapacityModel() const {return Capacity_mode;}
 	bool CheckTemperature_in_PhaseChange(const double T0, const double T1);
     double Enthalpy(double temperature, const double latent_factor );

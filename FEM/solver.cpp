@@ -53,10 +53,12 @@ using namespace std;
 #include "geo_strings.h"
 #include "tools.h"
 #include "rf_tim_new.h"
+
 /* AMG-Solver */
 #ifdef AMG1R5
   #include "amg1r5.h"
 #endif
+
 /* UMFPACK-Solver */
 #ifdef UMFPACK
   #include <umfpack.h>
@@ -1591,7 +1593,7 @@ inline void global2local(CPARDomain* m_dom, double *globalr, const long n )
    }
    for(i=0;i<n;i++)
      globalr[i] = buff_global[i];
- }
+}
 /*************************************************************************
 GeoSys-Function:
 Task: Parallel BiCGStab solver 
@@ -1614,7 +1616,7 @@ inline void i_local2global(CPARDomain* m_dom, double *globalr, double *localr, c
    if( m_dom->quadratic)
    {
       dof  = GetUnknownVectorDimensionLinearSolver(m_dom->eqs);   
-	  nq = 2;
+      nq = 2;
       i_start[1] = i_end[0]+m_dom->GetNumHaloNodes(false);
       i_end[1] = i_start[1]+m_dom->GetNumInnerNodes(true); //Number of interior nodes
    } 
@@ -1743,6 +1745,231 @@ inline double ScalarProduction(const double *array0, const double *array1, const
 
 /*************************************************************************
 GeoSys-Function:
+Task: Parallel Jacobi solver 
+Argument: CPARDomain* m_dom
+          double *x,   // Global unknowns
+          long n
+
+  HM monolithic case is to be considered. 
+Programming: 
+09/2006 WW Implementation
+**************************************************************************/
+void Preconditioner_Jacobi_Parallel(CPARDomain *m_dom) 
+{
+  long i, j, j0, l, n_loc, ig,  n_bc, ncol;
+   long b_start[2], b_end[2], n_shift[2];
+   int ii, jj, dof, k, kk, nq;   
+   long *nodes2node = NULL; 
+
+   double fac=0.0, entry=0.0; 
+   //
+   LINEAR_SOLVER *dom_eqs = NULL;
+   dom_eqs = m_dom->eqs;
+   //
+   SetLinearSolver(dom_eqs);  
+   n_loc = m_dom->GetDomainNodes();
+   dof = 1;
+   n_bc = overlapped_entry_size;
+   nq=1;
+   b_start[0] =0;
+   b_end[0] = m_dom->GetNumHaloNodes(false);
+   n_shift[0] = m_dom->GetNumInnerNodes(false);
+   //
+   if( m_dom->quadratic)
+   {
+      dof  = GetUnknownVectorDimensionLinearSolver(m_dom->eqs); 
+      n_bc = overlapped_entry_sizeHQ;
+      nq = 2;	   
+      b_start[1] = b_end[0];
+      b_end[1] = b_start[1]+m_dom->GetNumHaloNodes(true);
+      n_shift[1] =  n_shift[0]+ m_dom->GetNumInnerNodes(true);
+   }
+   /*
+   
+   //TEST
+  char tf_name[10];
+  sprintf(tf_name,"%d",myrank);
+  string fname = FileName+tf_name+".r";
+  // fstream oss(fname.c_str(), ios::app|ios::out);
+  fstream oss(fname.c_str(), ios::trunc|ios::out);
+  oss<<"dof "<<dof<<" n_bc  "<<n_bc<<"n_loc  "<<n_loc<<endl;
+  for(i=0;i<n_loc;i++)
+    oss<<m_dom->nodes[i]<<"  ";
+
+
+   
+ string test = "rank";
+ char stro[1028];  
+ // itoa(myrank,stro, 10);
+ sprintf(stro, "%d",myrank);
+ string test1 = test+(string)stro+"Assemble0.txt";
+   MXDumpGLS(test1.data(),0,m_dom->eqs->b, m_dom->eqs->x);
+   */
+   
+
+   //--------------------------------------------------------------
+   // Proconditioning: entries related to bonder nodes
+   for(i=0;i<dof*n_bc;i++)
+      buff_bc[i] = 0.0;
+   //
+   for(k=0; k<nq; k++)
+   {     
+      for(i=b_start[k];i<b_end[k];i++)
+      {
+        ig = m_dom->nodes_halo[i];  // ig: index in blobal BC buffer
+        for(ii=0; ii<dof; ii++) 
+        {
+           l = i+n_shift[k]+n_loc*ii;
+           buff_bc[ig+n_bc*ii] = MXGet(l,l);
+        }
+      }
+   }
+   // Summarize diagonal entries related to border nodes 
+   MPI_Allreduce(buff_bc, r_array_bc, n_bc*dof, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+   //
+   //
+   for(k=0; k<nq; k++)
+   {     
+      for(i=b_start[k];i<b_end[k];i++)
+      {
+        ig = m_dom->nodes_halo[i];  
+        ncol = m_dom->num_nodes2_node[i+n_shift[k]]; 
+        nodes2node = m_dom->node_conneted_nodes[i+n_shift[k]];
+        for(ii=0; ii<dof; ii++) 
+        {
+           l =  i+n_shift[k]+n_loc*ii;; 
+           fac =  r_array_bc[ig+n_bc*ii];
+           //TEST    oss<<"row "<<l<<"  "<<dom_eqs->b[l]<<"  "<<endl;
+           if(fabs(fac)>DBL_MIN)
+           {
+              dom_eqs->b[l] /= fac;    
+              for(j0=0;j0<ncol;j0++)
+              {
+                 j=nodes2node[j0];
+                 // if linear interpolation and L/Q coupled, j may greater than domain linear nodes.
+                 if(j>n_loc) continue;  
+                 for(jj=0; jj<dof; jj++)
+                 {
+                    //TEST  oss<<" "<< j+n_loc*jj;
+                    entry = MXGet(l, j+n_loc*jj);
+                    entry /= fac;
+                    MXSet(l, j+n_loc*jj, entry);
+                }
+             }
+           }
+           //    oss<<endl;
+           //
+        }
+      }
+   }
+   for(i=0;i<dof*n_bc;i++)
+       r_array_bc[i] = 0.0;  
+   //--------------------------------------------------------------
+   // Interior node related
+   b_start[0] = 0;
+   b_end[0] = m_dom->GetNumInnerNodes(false); //Number of interior nodes
+   if( m_dom->quadratic)
+   {
+      b_start[1] = b_end[0]+m_dom->GetNumHaloNodes(false);
+      b_end[1] = b_start[1]+m_dom->GetNumInnerNodes(true); //Number of interior nodes
+   }    
+   for(k=0; k<nq; k++)
+   {
+      for(i=b_start[k];i<b_end[k];i++)
+      {
+         ncol = m_dom->num_nodes2_node[i]; 
+         nodes2node = m_dom->node_conneted_nodes[i];    
+         for(ii=0; ii<dof; ii++) 
+         {
+            l = i+n_loc*ii;
+            fac = MXGet(l,l);  
+            //TEST    oss<<"row i "<<l<<endl;
+            if(fabs(fac)>DBL_MIN)   
+            {
+               dom_eqs->b[l] /= fac;
+               for(j0=0;j0<ncol;j0++)
+               {
+                  j=nodes2node[j0];  
+                  //  if linear interpolation and L/Q coupled, j may greater than domain linear nodes 
+                  if(j>n_loc) continue;
+                  /////
+                  for(jj=0; jj<dof; jj++)
+                  {
+                     entry = MXGet(l, j+n_loc*jj);
+                    //TEST    oss<<" "<< j+n_loc*jj;
+                     entry /= fac;
+                     MXSet(l, j+n_loc*jj, entry);
+                  }
+               }    
+            }
+         }
+      }
+   }
+   //
+    
+   /*
+   /////////////////
+   //TEST
+   
+     for(i=0;i<n_loc;i++)
+      {
+         ncol = m_dom->num_nodes2_node[i]; 
+         nodes2node = m_dom->node_conneted_nodes[i];    
+         for(ii=0; ii<dof; ii++) 
+         {
+            l = i+n_loc*ii;
+            fac = MXGet(l,l);  
+            //TEST    oss<<"row i "<<l<<endl;
+            if(fabs(fac)>DBL_MIN)   
+            {
+               dom_eqs->b[l] /= fac;
+               for(j0=0;j0<ncol;j0++)
+               {
+                  j=nodes2node[j0];  
+                  //  if linear interpolation and L/Q coupled, j may greater than domain linear nodes 
+                  if(j>n_loc) continue;
+                  /////
+                  for(jj=0; jj<dof; jj++)
+                  {
+                     entry = MXGet(l, j+n_loc*jj);
+                    //TEST    oss<<" "<< j+n_loc*jj;
+                     entry /= fac;
+                     MXSet(l, j+n_loc*jj, entry);
+                  }
+               }    
+            }
+         }
+      }
+   */
+   //////////////////
+
+   
+  ///TEST
+   
+   //  string test2 = test+(string)stro+"Assemble1.txt";
+   //MXDumpGLS(test2.data(),0,m_dom->eqs->b, m_dom->eqs->x);
+   /*  
+  char tf_name[10];
+  sprintf(tf_name,"%d",myrank);
+  string fname = FileName+tf_name+".r";
+  // fstream oss(fname.c_str(), ios::app|ios::out);
+  fstream oss(fname.c_str(), ios::trunc|ios::out);
+   oss.width(20);
+    oss.precision(15);
+    oss.setf(ios::scientific);
+ 
+    oss<<"Local X   n_loc"<<n_loc<<endl;
+  for(i=0;i<n_loc*dof;i++)
+    oss<< x[i]<<"  "<< dom_eqs->b[i]<<endl;
+
+   oss<<"Border X   "<<endl;
+  for(i=0;i<n_bc*dof;i++)
+    oss<< x_array_bc[i]<<endl;
+   */
+  //abort();
+}
+/*************************************************************************
+GeoSys-Function:
 Task: Parallel BiCGStab solver 
 Argument: CPARDomain* m_dom
           double *x,   // Global unknowns
@@ -1752,6 +1979,7 @@ Argument: CPARDomain* m_dom
 Programming: 
 06/2006 WW/PA Implementation
 07/2006 WW  Reprogramm
+09/2006 WW  Jacobi proconditioner
 **************************************************************************/
 int SpBICGSTAB_Parallel(CPARDomain *m_dom, double *x,  long n) 
 {
@@ -1769,6 +1997,17 @@ int SpBICGSTAB_Parallel(CPARDomain *m_dom, double *x,  long n)
   //
   SetLinearSolver(dom_eqs); 
   //
+  /*
+  //TEST
+  char tf_name[10];
+  sprintf(tf_name,"%d",myrank);
+  string fname = FileName+tf_name+".r";
+  // fstream oss(fname.c_str(), ios::app|ios::out);
+  fstream oss(fname.c_str(), ios::trunc|ios::out);
+   oss.width(20);
+    oss.precision(15);
+    oss.setf(ios::scientific);
+  */
   dof = 1;
   nq = 1;
   n_bc = overlapped_entry_size;
@@ -1794,6 +2033,9 @@ int SpBICGSTAB_Parallel(CPARDomain *m_dom, double *x,  long n)
   // r_0
   // local_r
   //  ...Set local x---->precondition
+  if(vorkond)
+     Preconditioner_Jacobi_Parallel(m_dom);
+  //      
   for(i=0;i<n_bc;i++)
   {
      k = overlapped_entry[i];  
@@ -1801,6 +2043,8 @@ int SpBICGSTAB_Parallel(CPARDomain *m_dom, double *x,  long n)
         x_array_bc[i+n_bc*ii]= x[k+nnodes_g*ii];
   }
   global2local(m_dom, x, n );    
+  // 
+  //
   MXResiduum(x, dom_eqs->b, r_zero);
   // update bc entries:    
   local2bc(m_dom, buff_bc, r_zero);
@@ -1812,7 +2056,7 @@ int SpBICGSTAB_Parallel(CPARDomain *m_dom, double *x,  long n)
   MPI_Allreduce(&f_buff, &normr0, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
   normr0 += ScalarProduction(r_zero_bc, r_zero_bc, bc_size);
 
-
+  //TEST   oss<<" |r_0|= "<<sqrt(normr0)<<endl;
   //
   max_iter = cg_maxiter;
   counter = 0;
@@ -1837,7 +2081,7 @@ int SpBICGSTAB_Parallel(CPARDomain *m_dom, double *x,  long n)
      p_array_bc[i] = r_zero_bc[i];       
      v_array_bc[i] = 0.0;       
   }
-
+  //
   for(;;)
   {
      //    
@@ -1848,10 +2092,11 @@ int SpBICGSTAB_Parallel(CPARDomain *m_dom, double *x,  long n)
      f_buff =ScalarProduction_Interior(m_dom, r_zero, r_array);
      MPI_Allreduce(&f_buff, &rho1, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
      rho1 += ScalarProduction(r_zero_bc, r_array_bc, bc_size);
+     //TEST     oss<<" rho1= "<<rho1<<endl;
      //
-     
-     // if(counter>1)
-     // {
+     //     
+     if(counter>1)
+     {
         beta = rho1*alpha1/rho0/omega0;
         // p = r+beta*(p-omega*v)
         for (i = 0; i < bc_size; i++)
@@ -1869,8 +2114,9 @@ int SpBICGSTAB_Parallel(CPARDomain *m_dom, double *x,  long n)
                }
            }
         }
-    // }     
+     }     
      //
+     
      // v=A*p  
      bc2local(m_dom, p_array_bc, p_array);
      MXMatVek(p_array, v_array);
@@ -1881,13 +2127,14 @@ int SpBICGSTAB_Parallel(CPARDomain *m_dom, double *x,  long n)
      f_buff =ScalarProduction_Interior(m_dom, v_array, r_zero);
      MPI_Allreduce(&f_buff, &rv, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
      rv += ScalarProduction(r_zero_bc, v_array_bc, bc_size);
-
-
+     //
+     //
      //
      alpha1 = rho1 / rv;
+     //TEST      oss<<" alpha1 = "<< alpha1 <<endl;
      // s=... ////// 
      for (i = 0; i < bc_size; i++)
-         s_array_bc[i] = r_array_bc[i] -alpha1 * v_array_bc[i];    
+       s_array_bc[i] = r_array_bc[i] -alpha1 * v_array_bc[i];    
      //
      for(kk=0; kk<nq; kk++)
      {
@@ -1901,11 +2148,36 @@ int SpBICGSTAB_Parallel(CPARDomain *m_dom, double *x,  long n)
             }
         }
      }
-
+     // Norm of s, ||s||
+     f_buff =ScalarProduction_Interior(m_dom, s_array, s_array);
+     MPI_Allreduce(&f_buff, &st, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+     st += ScalarProduction(s_array_bc, s_array_bc, bc_size);
+     if(sqrt(st)<cg_eps)
+     {
+        // x
+        for (i = 0; i < bc_size; i++)
+           x_array_bc[i] += alpha1 * p_array_bc[i];
+        //
+        for(kk=0; kk<nq; kk++)
+        {
+          for(i=i_start[kk];i<i_end[kk];i++)
+          {
+            for(ii=0; ii<dof; ii++) 
+            {
+               //
+               k = i+n_loc*ii;
+               x[k] += alpha1 * p_array[k];
+            }   
+         }
+       }
+       break;
+     }
+     //
      //t=A*s
      bc2local(m_dom, s_array_bc, s_array);
      MXMatVek(s_array, t_array);
-
+     // 
+     //
      // update bc entries:    
      local2bc(m_dom, buff_bc, t_array);
      MPI_Allreduce(buff_bc, t_array_bc, bc_size, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
@@ -1917,10 +2189,17 @@ int SpBICGSTAB_Parallel(CPARDomain *m_dom, double *x,  long n)
      f_buff =ScalarProduction_Interior(m_dom, t_array, t_array);
      MPI_Allreduce(&f_buff, &tt, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
      tt += ScalarProduction(t_array_bc, t_array_bc, bc_size);
-     // Omega1 
-     omega1 = st/tt;
-
-
+     // Omega1
+     if (fabs(tt) > DBL_MIN) 
+     {
+       if ((log(fabs(st))-log(tt)) < log(DBL_MAX)) 
+         omega1 = st / tt;
+       else
+         omega1 = (double)Signum(st) / (double)Signum(tt) / MKleinsteZahl ;
+     }
+     else 
+       omega1 = 1.;
+     //TEST      oss<<" omega = "<< omega1 <<endl;
      //// 
      //     Norm_x0 = ScalarProduction(x, x, n );
      // x
@@ -1940,23 +2219,35 @@ int SpBICGSTAB_Parallel(CPARDomain *m_dom, double *x,  long n)
        }
      }
      //     Norm_x1 = ScalarProduction(x, x, n );
-    
-     // 
+     //
      // Real residual: r=b-Ax
      bc2local(m_dom, x_array_bc, x);
-     MXMatVek(x, r_array);
+     MXResiduum(x, dom_eqs->b, r_array);
+     //  MXMatVek(x, r_array);
+     /*
+     //TEST
+     oss<<" x  "<<endl;
+     for (i = 0; i <n_loc*dof; i++)
+       oss<<x[i]<<endl;
+     oss<<" r  "<<endl;
+     for (i = 0; i <n_loc*dof; i++)
+       oss<<r_array[i]<<endl;
+     */
+
+
      // update bc entries: 
      local2bc(m_dom, buff_bc, r_array);
      MPI_Allreduce(buff_bc, r_array_bc, bc_size, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-     // ||r|| 
+     // ||r|| = tt
      f_buff =ScalarProduction_Interior(m_dom, r_array, r_array);
      MPI_Allreduce(&f_buff, &tt, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
      tt += ScalarProduction(r_array_bc, r_array_bc, bc_size);
-
-
+     //
+     //     
+     //TEST      oss<<" |r| = "<< sqrt(tt) <<endl<<endl;
      if(sqrt(tt)<cg_eps)
        break;
- 
+     //
      // update r
      for (i = 0; i < bc_size; i++)
          r_array_bc[i] = s_array_bc[i] - omega1 * t_array_bc[i];
@@ -1977,28 +2268,27 @@ int SpBICGSTAB_Parallel(CPARDomain *m_dom, double *x,  long n)
      rho0 = rho1;
      alpha0 = alpha1;
      omega0 = omega1;
-
+     /*
      f_buff =ScalarProduction_Interior(m_dom, r_array, r_array);
      MPI_Allreduce(&f_buff, &normr1, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
      normr1 += ScalarProduction(r_array_bc, r_array_bc, bc_size);
-     if(fabs(sqrt(normr1/normr0))<cg_eps)
+     if(sqrt(normr1/normr0)<cg_eps)
        break;
+     */
   }
-
+  //
   // Mapping to global;
   NullArray(buff_global, n);
   i_local2global(m_dom, buff_global, x, n);
   MPI_Allreduce(buff_global, x, n, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-
+  //
   for(i=0;i<n_bc;i++)
   {
      k = overlapped_entry[i];  
      for(ii=0; ii<dof; ii++) 
         x[k+nnodes_g*ii] = x_array_bc[i+n_bc*ii];
   }
-
-  
-
+  //
   cout<<"BiCGStab iterations: "<<counter<<endl;
   return counter;
 }
@@ -2101,6 +2391,7 @@ int SpBICGSTAB(double *b, double *x, long n)
     int k = 0, max_iter = 0, repeat = 0;
     double r0norm = 0., b0norm = 0., x0norm = 0., tt, ts, rsv;
     double error_rel;
+//MXDumpGLS("rf_pcs.txt",1,b,x); abort();
     /* Ggf. starten der Vorkonditionierung */
     if (vorkond){
 //WW      cout << "        Preconditioning" << endl;

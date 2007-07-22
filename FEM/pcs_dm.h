@@ -42,10 +42,9 @@ class CRFProcessDeformation:public CRFProcess
      // Assemble system equation 
      void GlobalAssembly();
 
-     virtual double Execute(const int CouplingIterations=0); // overloaded  
+     double Execute(const int CouplingIterations=0); // overloaded  
 
      // Aux. Memory
-     void AllocateTempArrary(const int dims);
      double* GetAuxArray() const {return ARRAY;};
  
      void ScalingNodeForce(const double SFactor);

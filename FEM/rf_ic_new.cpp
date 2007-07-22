@@ -747,7 +747,7 @@ void CInitialCondition::SetDomain(int nidx)
        }
        else if(m_pcs->type==4) quadratic = true; 
        else quadratic = false; 
-    if (m_msh){   
+       if (m_msh){   
        for(k=0; k<SubNumber; k++)
        {
           GEOGetNodesInMaterialDomain(m_msh, subdom_index[k], nodes_vector, quadratic);
@@ -759,17 +759,18 @@ void CInitialCondition::SetDomain(int nidx)
                    m_pcs->SetNodeValue(nodes_vector[i],nidx, subdom_ic[k]);
              }
              else
-             for(i=0;i<(int)nodes_vector.size();i++)
-	         {
-                if(max_dim==1) //2D 
-                    node_depth =  m_msh->nod_vector[nodes_vector[i]]->Y();
-                if(max_dim==2) //3D
-		            node_depth =  m_msh->nod_vector[nodes_vector[i]]->Z();
-	            node_val = ((gradient_ref_depth_gradient)*(gradient_ref_depth-node_depth))+
+             {
+               for(i=0;i<(int)nodes_vector.size();i++)
+	           {
+                  if(onZ==1) //2D 
+                      node_depth =  m_msh->nod_vector[nodes_vector[i]]->Y();
+                  if(onZ==2) //2D 
+		              node_depth =  m_msh->nod_vector[nodes_vector[i]]->Z();
+	              node_val = ((gradient_ref_depth_gradient)*(gradient_ref_depth-node_depth))+
                         gradient_ref_depth_value;
-                m_pcs->SetNodeValue(nodes_vector[i],nidx,node_val);
-             }
-             
+                  m_pcs->SetNodeValue(nodes_vector[i],nidx,node_val);
+               }
+             }            
            }
            else
            {

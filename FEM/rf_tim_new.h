@@ -57,6 +57,7 @@ class CTimeDiscretization
 	double ErrorControlAdaptiveTimeControl();
     double NeumannTimeControl();
     double SelfAdaptiveTimeControl();
+    bool  CheckTime(double const c_time); //WW
    // void CheckCourant();//CMCD
 };
 

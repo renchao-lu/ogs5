@@ -58,6 +58,7 @@ int main ( int argc, char *argv[] )
   char *dateiname;
 /*---------- MPI Initialization ----------------------------------*/
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
+      printf("Before MPI_Init\n");
       MPI_Init(&argc,&argv);
       MPI_Comm_size(MPI_COMM_WORLD,&size);
       MPI_Comm_rank(MPI_COMM_WORLD,&myrank);

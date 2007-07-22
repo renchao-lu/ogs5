@@ -734,9 +734,9 @@ void InterpolationAlongPolyline(CGLPolyline *plyL,
        xp = CGPb->x-CGPa->x;
 	   yp = CGPb->y-CGPa->y;
 	   zp = CGPb->z-CGPa->z;
-    if(fabs(plyL->point_vector[i]->property)> MKleinsteZahlen)
+       if(fabs(plyL->point_vector[i]->property)> MKleinsteZahlen)
        {
-	  bVal.push_back(plyL->point_vector[i]->property);
+          bVal.push_back(plyL->point_vector[i]->property);
           ss0.push_back(sl);
        } 
        sl += sqrt(xp*xp+yp*yp+zp*zp);
@@ -746,7 +746,7 @@ void InterpolationAlongPolyline(CGLPolyline *plyL,
   if(fabs(plyL->point_vector[SizeCGLPoint-1]->property)> MKleinsteZahlen)
    {
        ss0.push_back(sl);
-    bVal.push_back(plyL->point_vector[SizeCGLPoint-1]->property);
+       bVal.push_back(plyL->point_vector[SizeCGLPoint-1]->property);
    }
 
    // Spline interpolation

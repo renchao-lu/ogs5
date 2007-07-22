@@ -6,6 +6,7 @@ Programing:
 **************************************************************************/
 #include "stdafx.h"             /* MFC */
 /* Preprozessor-Definitionen */
+#include <cstdio>  
 #include "geo_mathlib.h"  
 /**************************************************************************/
 /* GEO MATHLIB - Funktion: EuklVek3dDist
@@ -548,11 +549,11 @@ void CubicSpline::ComputeCoefficents()
 
   nm1 = n-1;
   if ( n<2 ) 
-    {
+  {
       printf("Dimension can not be less than 3 in spline");
       abort();
 
-    }
+  }
   if ( n==2 ) 
     {
       bb[0] = (yy[1]-yy[0])/(xx[1]-xx[0]);
@@ -720,7 +721,7 @@ bool LineSegmentIntersection(vector<double> xline1, vector<double> yline1,
                                                 vector<double> xline2, vector<double> yline2, 
                                                 vector<double>& intercept)
 {
-double determinant, t1, t2;
+double determinant, t1; //WW, t2;
 bool crosses=false;
 
 determinant = (  (yline2[1]-yline2[0])*(xline1[1]-xline1[0]) 

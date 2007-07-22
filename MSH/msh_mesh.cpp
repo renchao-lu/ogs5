@@ -848,6 +848,7 @@ FEMLib-Method:
 Task:  Renumbering nodes corresponding to the activiate of elements
 Programing:
 09/2005 WW Implementation
+05/2007 WW 1D in 2D
 **************************************************************************/
 void CFEMesh::FillTransformMatrix()  
 {
@@ -855,17 +856,28 @@ void CFEMesh::FillTransformMatrix()
    //
    if((msh_no_hexs+msh_no_tets+msh_no_pris)==(long)ele_vector.size())
        return;
-   else if(coordinate_system!=32) 
+   bool tilted = false;
+   if(coordinate_system==32||coordinate_system==21||coordinate_system==22) 
+     tilted = true;
+   if(!tilted)
       return;
    for (long i = 0; i < (long)ele_vector.size(); i++)
    {
       elem = ele_vector[i];
       if (elem->GetMark()) // Marked for use
 	  {
-         if(  elem->GetElementType()==1
-            ||elem->GetElementType()==2 			 
-            ||elem->GetElementType()==4 )
-           elem->FillTransformMatrix();
+         if(coordinate_system==21||coordinate_system==22)
+         { 
+            if(elem->GetElementType()==1)
+               elem->FillTransformMatrix();
+         }
+         else
+         {
+           if(  elem->GetElementType()==1
+              ||elem->GetElementType()==2 			 
+              ||elem->GetElementType()==4 )
+             elem->FillTransformMatrix();
+         }
 	  } 
    }
 }

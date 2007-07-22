@@ -37,7 +37,7 @@ using namespace std;
 
 //
 vector<SolidProp::CSolidProperties*> msp_vector;
-
+using FiniteElement::ElementValue_DM;
 namespace SolidProp{
 
 /**************************************************************************
@@ -437,7 +437,7 @@ CSolidProperties::CSolidProperties()
     E = Lambda = G = K = 0.0;
     devS = NULL;
     axisymmetry = false;
-
+    dl2 = 0.0;
     // SYS
     d2G_dSdS=NULL;     
     d2G_dSdM=NULL;
@@ -457,7 +457,7 @@ CSolidProperties::CSolidProperties()
     // 1: ...   
     CurveVariableType_Conductivity=-1;
     mode = 0; // Gauss point values //OK
-
+    //
 }
 CSolidProperties::~CSolidProperties()
 {
@@ -501,7 +501,7 @@ CSolidProperties::~CSolidProperties()
     sumA_Matrix=NULL;  
     rhs_l=NULL;         
     x_l=NULL;           
-    Li=NULL;              
+    Li=NULL;   
 }
 //----------------------------------------------------------------------------
 
@@ -633,36 +633,38 @@ Task: Get heat capacity with boiling model
 Programing:
 09/2005 WW Implementation 
 **************************************************************************/
-double CSolidProperties::Heat_Capacity(double temperature, 
-                                  const double latent_factor)
+double CSolidProperties::Heat_Capacity(double temperature, double porosity, double Sat)
 {  
     double val = 0.0;
     double sign = 1;
+    double dens = fabs(Density());
     // If sign =1, temperature increases in evolution. Otherwise, decrease.
     if(fabs(temperature)>1.e-9) sign = fabs(temperature)/temperature;
     temperature *= sign;  
-
+    CFluidProperties *m_mfp = NULL;
+    m_mfp = mfp_vector[0];
+   
     // 0. Wet capacity
     // 1. Dry capacity
     // 2. Boiling temperature
     // 3. Boiling temperature range
     // 4. Latent of vaporization 
     if(temperature< (*data_Capacity)(2)) // Wet
-       val =  (*data_Capacity)(0);
+       val =  dens*(*data_Capacity)(0);
     else if((temperature>=(*data_Capacity)(2))&&
        (temperature<((*data_Capacity)(2)+(*data_Capacity)(3))))
     {
        if(sign>0.0) // Temperature increase
-         val =  (*data_Capacity)(0)+((*data_Capacity)(1)-(*data_Capacity)(0))
+         val =  dens*(*data_Capacity)(0)+dens*((*data_Capacity)(1)-(*data_Capacity)(0))
                      *(temperature-(*data_Capacity)(2))/(*data_Capacity)(3)
-                + latent_factor*(*data_Capacity)(4)/(*data_Capacity)(3)/Density();
+                + porosity*Sat*m_mfp->Density()*(*data_Capacity)(4)/(*data_Capacity)(3) ;
 	   else
-         val =  (*data_Capacity)(0)+((*data_Capacity)(1)-(*data_Capacity)(0))
+         val =  dens*(*data_Capacity)(0)+dens*((*data_Capacity)(1)-(*data_Capacity)(0))
                    *(temperature-(*data_Capacity)(2))/(*data_Capacity)(3);
     }
 	else
          val =  (*data_Capacity)(1);
-    return val*fabs(Density());
+    return val;
 }
 
 
@@ -744,8 +746,8 @@ double CSolidProperties::Heat_Conductivity(double refence)
            val =  (*data_Conductivity)(1);
         break;
 	  case 3: // refence: saturation
-           //val = 1.28-0.71/(1+10.0*exp(refence-0.65));  //MX
-           val = 1.28-0.71/(1+exp(10.0*(refence-0.65)));  
+        //val = 1.28-0.71/(1+10.0*exp(refence-0.65));  //MX
+        val = 1.28-0.71/(1+exp(10.0*(refence-0.65)));  
         break;
     }
     return val;
@@ -1050,6 +1052,7 @@ double CSolidProperties::GetAngleCoefficent_DP(const double Angle)
      double D_Angle = Angle*PI/180.0; 
      double sinA = sin(D_Angle); 
 //     val = sinA/sqrt(9.0+4.0*sinA*sinA);
+//     val = 2.0*MSqrt2Over3*sinA/(3.0+sinA); 
      val = 2.0*MSqrt2Over3*sinA/(3.0+sinA); //(3.0-sinA)
 //     val = 2.0*MSqrt2Over3*sinA/(3.0-sinA);
    }
@@ -1082,6 +1085,7 @@ void CSolidProperties::CalulateCoefficent_DP()
      Xi = GetAngleCoefficent_DP((*data_Plasticity)(3));
      BetaN = GetYieldCoefficent_DP((*data_Plasticity)(2));
      if(fabs(Al)<MKleinsteZahl&&fabs(Xi)< MKleinsteZahl) BetaN = 1.0;
+     BetaN *= sqrt(2.0/3.0);
      Hard_Loc = (*data_Plasticity)(4);
 }
 
@@ -1116,6 +1120,7 @@ void CSolidProperties::CalulateCoefficent_DP()
      09/2002   WW  Erste Version
      02/2004   WW  Modify for the 3D case 
      08/2004   WW  Set As a member of material class
+     03/2007   WW  Multi-yield surface
 **************************************************************************/
 bool CSolidProperties::StressIntegrationDP(const int GPiGPj, 
                const ElementValue_DM *ele_val, double *TryStress, 
@@ -1128,7 +1133,7 @@ bool CSolidProperties::StressIntegrationDP(const int GPiGPj,
   //  double RF0 = 0.0;
   double sqrtJ2 = 0.0;
   double Beta = 0.0;
-  double p3, normXi, Jac; //, err;
+  double p3, normXi, Jac, err_corner=0.0, fac=0.0;
   int max_ite = 10;
   int ite=0;
   // double dstrs[6];
@@ -1151,17 +1156,17 @@ bool CSolidProperties::StressIntegrationDP(const int GPiGPj,
      TryStress[i] += (*ele_val->Stress)(i, GPiGPj);
      devS[i] = TryStress[i];
   }
-
+  // I_tr
   I1 = DeviatoricStress(devS);
-  
+  // s_tr  
   sqrtJ2 = sqrt(TensorMutiplication2(devS, devS, Dim));
-
+  //
   normXi = sqrtJ2;
   p3 = I1;
   /* If yield, compute plastic multiplier dPhi */
   dPhi = 0.0;
   F0 = sqrtJ2 + Al*I1; 
-  F = F0 - MSqrt2Over3*BetaN*(Y0+Hard*ep);
+  F = F0 - BetaN*(Y0+Hard*ep);
   //if(pcs_deformation==1) F=-1.0;
   // yl = sqrt(TensorMutiplication2(devS, dstrs, Dim))/sqrtJ2;
   // yl += (dstrs[0]+dstrs[1]+dstrs[2])*Al; 
@@ -1174,45 +1179,76 @@ bool CSolidProperties::StressIntegrationDP(const int GPiGPj,
   if(F>0.0&&(!PreLoad)) // in yield status 
   {
     ploading = true;
-    // Local Newton-Raphson procedure
-    //   If non-perfect plasticity, the below line has to be change
-    Jac = -2.0*G-9.0*K*Al*Xi
-             -MSqrt2Over3*BetaN*Hard*sqrt(1.0+3.0*Xi*Xi);
-    //err = 1.0e+5;
-           
+    //err = 1.0e+5;           
     ep0 = ep;
-    // RF0 = F;
-    while(isLoop)
+    
+    //TEST
+    // Check the corner region
+    err_corner = 4.5*Xi*K*normXi/G+BetaN*
+                 (0.5*Hard*sqrt(1.0+3.0*Xi*Xi)*normXi/G +Y0+Hard*ep )/Al;
+    // Multi-surface
+    if(p3>err_corner)
     {
-      ite++;
-	  if(ite>max_ite) break;
-      if(F<0.0||fabs(F)<10.0*Tolerance_Local_Newton) break;
-      //if(err<TolLocalNewT) break; 
-      dPhi -= F/Jac;
-
-      p3 = I1 - 9.0*dPhi*Xi*K;
-      normXi = sqrtJ2 - 2.0*G*dPhi;
-      ep = ep0 + dPhi*sqrt(1.0+3.0*Xi*Xi);
-	  F0 =  normXi+ Al*p3 ;
-      F = F0 - MSqrt2Over3*BetaN*(Y0+Hard*ep);
-      /*Jac = fun(); if non-linear hardening is involved*/	
-      //err = fabs(F)/RF0;		
+       // RF0 = F;
+       dl2 = 0.0;
+       while(isLoop)
+       {
+         ite++; 
+         // dl1
+         dPhi = 0.5*normXi/G;
+         fac = sqrt(dPhi*dPhi+3.0*Xi*Xi*(dPhi+dl2)*(dPhi+dl2)); 
+         Jac = 9.0*Xi*K+3.0*Xi*Xi*BetaN*Hard*(dPhi+dl2)/(fac*Al);
+         F = 9.0*Xi*K*(dPhi+dl2)+BetaN*(Y0+Hard*(ep0+fac))/Al-p3;
+         dl2 -= F/Jac;   
+         if(fabs(F)<1000.0*Tolerance_Local_Newton) break;   
+         if(ite>max_ite) break;  
+       }
+       ep = ep0 + fac;   
+       for(i=0; i<3; i++)
+          TryStress[i] =  I1/3.0-3.0*(dPhi+dl2)*K*Xi;    
+       for(i=3; i<Size; i++)
+         TryStress[4] = 0.0;   
+    }
+    else
+    {
+       // Local Newton-Raphson procedure
+       // If non-perfect plasticity, the below line has to be change
+       Jac = -2.0*G-9.0*K*Al*Xi
+             -BetaN*Hard*sqrt(1.0+3.0*Xi*Xi);
+       // RF0 = F;
+       while(isLoop)
+       {
+         ite++;
+         if(ite>max_ite) break;
+         if(F<0.0||fabs(F)<10.0*Tolerance_Local_Newton) break;
+         //if(err<TolLocalNewT) break; 
+         dPhi -= F/Jac;
+         // 
+         p3 = I1 - 9.0*dPhi*Xi*K;
+         normXi = sqrtJ2 - 2.0*G*dPhi;
+         ep = ep0 + dPhi*sqrt(1.0+3.0*Xi*Xi);
+         F0 =  normXi + Al*p3;
+         F = F0 - BetaN*(Y0+Hard*ep);
+         /* Jac = fun(); if non-linear hardening is involved */	
+         //err = fabs(F)/RF0;		
+       }
+       // update stress 
+       Beta = 1.0-2.0*dPhi*G/sqrtJ2;
+       for(i=0; i<Size; i++)
+         TryStress[i] = Beta*devS[i];
+       for(i=0; i<3; i++)
+         TryStress[i] += I1/3.0-3.0*dPhi*K*Xi;       
     }
   }
-  
-
-  if(sqrtJ2>0.0)
-    Beta = 1.0-2.0*dPhi*G/sqrtJ2;
   else
-    Beta = 1.0;
-  
-  for(i=0; i<Size; i++)
-     TryStress[i] = Beta*devS[i];
-
-  for(i=0; i<3; i++)
-     TryStress[i] += I1/3.0-3.0*dPhi*K*Xi;
-
-   
+  {
+     //  
+     for(i=0; i<Size; i++)
+        TryStress[i] = devS[i];
+     //  
+     for(i=0; i<3; i++)
+        TryStress[i] += I1/3.0;
+  }
   // Save the current stresses 
   if(Update>0)
   {
@@ -1282,7 +1318,7 @@ bool CSolidProperties::DirectStressIntegrationDP(const int GPiGPj,
   sqrtJ2 = sqrt(TensorMutiplication2(devS, devS, Dim));
   //
   sy = sqrtJ2 + Al*I1; 
-  yy = MSqrt2Over3*BetaN*(Y0+Hard*ep);
+  yy = BetaN*(Y0+Hard*ep);
   F = sy - yy;
   sy0 = (*ele_val->y_surface)(GPiGPj);
   //yl = sqrt(TensorMutiplication2(devS, dstrs, Dim))/sqrtJ2;
@@ -1307,7 +1343,7 @@ bool CSolidProperties::DirectStressIntegrationDP(const int GPiGPj,
      while(m>0)
      {
         // Compute dlamda
-        A_H = MSqrt2Over3*BetaN*Hard*sqrt(1+3.0*Xi*Xi); // Hard: if it is not constant....
+        A_H = BetaN*Hard*sqrt(1+3.0*Xi*Xi); // Hard: if it is not constant....
         for(i=0; i<Size; i++)
           devS[i] = TryStress[i];
         I1 = DeviatoricStress(devS);
@@ -1340,7 +1376,7 @@ bool CSolidProperties::DirectStressIntegrationDP(const int GPiGPj,
      I1 = DeviatoricStress(devS);
      sqrtJ2 = sqrt(TensorMutiplication2(devS, devS, Dim));
      sy = sqrtJ2 + Al*I1; 
-     yy = MSqrt2Over3*BetaN*(Y0+Hard*ep);
+     yy = BetaN*(Y0+Hard*ep);
      R=1.0;
      if(sy>yy)
        R = yy/sy;
@@ -1387,7 +1423,7 @@ void CSolidProperties::TangentialDP(Matrix *Dep)
    double domA;
    //
    Size=Dep->Rows();
-   domA = MSqrt2Over3*BetaN*Hard*sqrt(1+3.0*Xi*Xi); // Hard: if it is not constant....
+   domA = BetaN*Hard*sqrt(1+3.0*Xi*Xi); // Hard: if it is not constant....
    //   
    for(i=0; i<Size; i++)
    {
@@ -1431,85 +1467,123 @@ void CSolidProperties::TangentialDP(Matrix *Dep)
  Programmaenderungen:
    10/2002   WW  Erste Version
    02/2004   WW  Modification for the 3D case 
+   03/2007   WW  Multi-phase yield surface 
 **************************************************************************/
 void CSolidProperties::ConsistentTangentialDP(Matrix *Dep, const double dPhi, const int Dim)
 {
    double s11, s22, s12, s33, s13, s23;
    double NormX = 0.0;   
    double d = 0.0;
-   double c1,c2,c3,c4;   
-    
-
+   double c1,c2,c3,c4;
+   //   
    s11 = devS[0];
    s22 = devS[1];
    s33 = devS[2];
    s12 = devS[3];
    s13 = 0.0;
    s23 = 0.0;
-
    if(Dim==3)
    {
       s13 =  devS[4];
       s23 =  devS[5];
       NormX = sqrt(s11*s11+s22*s22+s33*s33
-                   +2.0*s12*s12+2.0*s13*s13+2.0*s23*s23);
+                 +2.0*s12*s12+2.0*s13*s13+2.0*s23*s23);
    }
    else
       NormX = sqrt(s11*s11+s22*s22+s33*s33+2.0*s12*s12);
-				
-   d=9.0*K*Al*Xi+2.0*G+sqrt(2.0/3.0)*BetaN*Hard*
-                               sqrt(1.0+3.0*Xi*Xi);
-
-   c1 = 2.0*G*(1.0-2.0*G*dPhi/NormX);
-   c2 = (1.0-9.0*Al*Xi*K/d)*K;
-   c3 = -6.0*G*K/(NormX*d);
-   c4 = -4.0*G*G*(1.0/d-dPhi/NormX)/(NormX*NormX);
-
-   switch(Dim)
+   //
+   if(dl2>0.0) // Multi-surface
    {
-      case 2:  // 2D   
-        // Row 1
-        (*Dep)(0,0) 
-           =  2.0*c1/3.0+c2+c3*(Al+Xi)*s11+c4*s11*s11;		
-        (*Dep)(0,1) 
-           = -c1/3.0+c2+c3*(Xi*s22+Al*s11)+c4*s11*s22;		
-        (*Dep)(0,2) 
-           = 0.0; //-c1/3.0+c2+c3*(Xi*s33+Al*s11)+c4*s11*s33;
-        (*Dep)(0,3) 
-           = c3*Xi*s12+c4*s11*s12;
+      c1 = Xi*BetaN*Hard*(dPhi+dl2);
+      c3 = K*c1/(c1+3.0*Al*K*sqrt(dPhi*dPhi+3.0*Xi*Xi*(dPhi+dl2)*(dPhi+dl2)));
+      c2 = 0.5*c3/(Xi*G*(dPhi+dl2));
+      (*Dep) = 0.0;
+      //
+      // Row 1
+      (*Dep)(0,0) = c3+c2*s11;		
+      (*Dep)(0,1) = c3+c2*s22;		
+      (*Dep)(0,3) = c2*s12;
+      // Row 2		  
+      (*Dep)(1,0) = c3+c2*s11;		
+      (*Dep)(1,1) = c3+c2*s22;	
+      (*Dep)(1,3) = c2*s12;
+      // Row 3		  
+      (*Dep)(2,0) = c3+c2*s11;		
+      (*Dep)(2,1) = c3+c2*s22;	
+      (*Dep)(2,3) = c2*s12;
+      // Row 4		    
+      if(axisymmetry||Dim==3)
+      {
+         (*Dep)(0,2) = c3+c2*s33;
+         (*Dep)(1,2) = c3+c2*s33;
+         (*Dep)(2,2) = c3+c2*s33;
+      }
+      if(Dim==3)
+      {
+        (*Dep)(0,4) = c2*s13;
+        (*Dep)(0,5) = c2*s23;
+        (*Dep)(1,4) = c2*s13;
+        (*Dep)(1,5) = c2*s23;
+        (*Dep)(2,4) = c2*s13;
+        (*Dep)(2,5) = c2*s23;   
+      }
+   }
+   else
+   {       
+     //				
+     d=9.0*K*Al*Xi+2.0*G+BetaN*Hard*
+                              sqrt(1.0+3.0*Xi*Xi);
+
+     c1 = 2.0*G*(1.0-2.0*G*dPhi/NormX);
+     c2 = (1.0-9.0*Al*Xi*K/d)*K;
+     c3 = -6.0*G*K/(NormX*d);
+     c4 = -4.0*G*G*(1.0/d-dPhi/NormX)/(NormX*NormX);
+
+     switch(Dim)
+     {
+        case 2:  // 2D   
+          // Row 1
+          (*Dep)(0,0) 
+             =  2.0*c1/3.0+c2+c3*(Al+Xi)*s11+c4*s11*s11;		
+          (*Dep)(0,1) 
+             = -c1/3.0+c2+c3*(Xi*s22+Al*s11)+c4*s11*s22;		
+          (*Dep)(0,2) 
+             = 0.0; //-c1/3.0+c2+c3*(Xi*s33+Al*s11)+c4*s11*s33;
+          (*Dep)(0,3) 
+             = c3*Xi*s12+c4*s11*s12;
   
-        // Row 2		  
-        (*Dep)(1,0) 
-           = -c1/3.0+c2+c3*(Xi*s11+Al*s22)+c4*s11*s22;		
-        (*Dep)(1,1) 
-           =  2.0*c1/3.0+c2+c3*(Al+Xi)*s22+c4*s22*s22;		
-        (*Dep)(1,2) 
-           = 0.0; //-c1/3.0+c2+c3*(Xi*s33+Al*s22)+c4*s33*s22;		
-        (*Dep)(1,3) 
-           = c3*Xi*s12+c4*s22*s12;
+          // Row 2		  
+          (*Dep)(1,0) 
+            = -c1/3.0+c2+c3*(Xi*s11+Al*s22)+c4*s11*s22;		
+          (*Dep)(1,1) 
+             =  2.0*c1/3.0+c2+c3*(Al+Xi)*s22+c4*s22*s22;		
+          (*Dep)(1,2) 
+             = 0.0; //-c1/3.0+c2+c3*(Xi*s33+Al*s22)+c4*s33*s22;		
+          (*Dep)(1,3) 
+             = c3*Xi*s12+c4*s22*s12;
 
-        // Row 3		  
-        (*Dep)(2,0) 
-           = 0.0; //-c1/3.0+c2+c3*(Xi*s11+Al*s33)+c4*s11*s33;		
-        (*Dep)(2,1) 
-           = 0.0; // -c1/3.0+c2+c3*(Xi*s22+Al*s33)+c4*s22*s33;		
-        (*Dep)(2,2) 
-           = 0.0; // 2.0*c1/3.0+c2+c3*(Al+Xi)*s33+c4*s33*s33;		
-        (*Dep)(2,3) 
-           = 0.0; // c3*Xi*s12+c4*s33*s12;
+          // Row 3		  
+          (*Dep)(2,0) 
+             = 0.0; //-c1/3.0+c2+c3*(Xi*s11+Al*s33)+c4*s11*s33;		
+          (*Dep)(2,1) 
+             = 0.0; // -c1/3.0+c2+c3*(Xi*s22+Al*s33)+c4*s22*s33;		
+          (*Dep)(2,2) 
+             = 0.0; // 2.0*c1/3.0+c2+c3*(Al+Xi)*s33+c4*s33*s33;		
+          (*Dep)(2,3) 
+             = 0.0; // c3*Xi*s12+c4*s33*s12;
 
-        // Row 4		    
-        (*Dep)(3,0) 
-           = c3*Al*s12+c4*s12*s11;		
-        (*Dep)(3,1) 
-           = c3*Al*s12+c4*s12*s22;		
-        (*Dep)(3,2) 
-           = 0.0; //c3*Al*s12+c4*s12*s33;		
-        (*Dep)(3,3) 
-           =  c1/2.0+c4*s12*s12;
+          // Row 4		    
+          (*Dep)(3,0) 
+             = c3*Al*s12+c4*s12*s11;		
+          (*Dep)(3,1) 
+             = c3*Al*s12+c4*s12*s22;		
+          (*Dep)(3,2) 
+             = 0.0; //c3*Al*s12+c4*s12*s33;		
+          (*Dep)(3,3) 
+             =  c1/2.0+c4*s12*s12;
 
-        if(axisymmetry)
-		{
+          if(axisymmetry)
+          {
             (*Dep)(0,2) 
                 = -c1/3.0+c2+c3*(Xi*s33+Al*s11)+c4*s11*s33;  
             // Row 2		  
@@ -1527,93 +1601,89 @@ void CSolidProperties::ConsistentTangentialDP(Matrix *Dep, const double dPhi, co
             // Row 4		    
             (*Dep)(3,2) 
               = c3*Al*s12+c4*s12*s33;		
-		}
-        break;
-      case 3: // 3D
-        // Row 1
-        (*Dep)(0,0) 
-           =  2.0*c1/3.0+c2+c3*(Al+Xi)*s11+c4*s11*s11;		
-        (*Dep)(0,1) 
-           = -c1/3.0+c2+c3*(Xi*s22+Al*s11)+c4*s11*s22;		
-        (*Dep)(0,2) 
-           = -c1/3.0+c2+c3*(Xi*s33+Al*s11)+c4*s11*s33;
-        (*Dep)(0,3) 
-           = c3*Xi*s12+c4*s11*s12;
-        (*Dep)(0,4) 
-           = c3*Xi*s13+c4*s11*s13;
-        (*Dep)(0,5) 
-           = c3*Xi*s23+c4*s11*s23;
-  
-        // Row 2		  
-        (*Dep)(1,0) 
-           = -c1/3.0+c2+c3*(Xi*s11+Al*s22)+c4*s11*s22;		
-        (*Dep)(1,1) 
-           =  2.0*c1/3.0+c2+c3*(Al+Xi)*s22+c4*s22*s22;		
-        (*Dep)(1,2) 
-           = -c1/3.0+c2+c3*(Xi*s33+Al*s22)+c4*s33*s22;		
-        (*Dep)(1,3) 
-           = c3*Xi*s12+c4*s22*s12;
-        (*Dep)(1,4) 
-           = c3*Xi*s13+c4*s22*s13;
-        (*Dep)(1,5) 
-           = c3*Xi*s23+c4*s22*s23;
-
-        // Row 3		  
-        (*Dep)(2,0) 
-           = -c1/3.0+c2+c3*(Xi*s11+Al*s33)+c4*s11*s33;		
-        (*Dep)(2,1) 
-           =  -c1/3.0+c2+c3*(Xi*s22+Al*s33)+c4*s22*s33;		
-        (*Dep)(2,2) 
-           =  2.0*c1/3.0+c2+c3*(Al+Xi)*s33+c4*s33*s33;		
-        (*Dep)(2,3) 
-           =  c3*Xi*s12+c4*s33*s12;
-        (*Dep)(2,4) 
-           =  c3*Xi*s13+c4*s33*s23;
-        (*Dep)(2,5) 
-           =  c3*Xi*s23+c4*s33*s23;
-
-        // Row 4		    
-        (*Dep)(3,0) 
-           = c3*Al*s12+c4*s12*s11;		
-        (*Dep)(3,1) 
-           = c3*Al*s12+c4*s12*s22;		
-        (*Dep)(3,2) 
-           = c3*Al*s12+c4*s12*s33;		
-        (*Dep)(3,3) 
-           =  c1/2.0+c4*s12*s12;
-        (*Dep)(3,4) 
-           =  c4*s12*s13;
-        (*Dep)(3,5) 
-           =  c4*s12*s23;
-
-        // Row 5		    
-        (*Dep)(4,0) 
-           = c3*Al*s13+c4*s13*s11;		
-        (*Dep)(4,1) 
-           = c3*Al*s13+c4*s13*s22;		
-        (*Dep)(4,2) 
-           = c3*Al*s13+c4*s13*s33;		
-        (*Dep)(4,3) 
-           =  c4*s13*s12;
-        (*Dep)(4,4) 
-           =  c1/2.0+c4*s13*s13;
-        (*Dep)(4,5) 
-           =  c4*s13*s23;
-
-        // Row 6		    
-        (*Dep)(5,0) 
-           = c3*Al*s23+c4*s23*s11;		
-        (*Dep)(5,1) 
-           = c3*Al*s23+c4*s23*s22;		
-        (*Dep)(5,2) 
-           = c3*Al*s23+c4*s23*s33;		
-        (*Dep)(5,3) 
-           =  c4*s23*s12;
-        (*Dep)(5,4) 
-           =  c4*s23*s13;
-        (*Dep)(5,5) 
-           =  c1/2.0+c4*s23*s23;
-        break;
+          }
+          break;
+        case 3: // 3D
+          // Row 1
+          (*Dep)(0,0) 
+             =  2.0*c1/3.0+c2+c3*(Al+Xi)*s11+c4*s11*s11;		
+          (*Dep)(0,1) 
+             = -c1/3.0+c2+c3*(Xi*s22+Al*s11)+c4*s11*s22;		
+          (*Dep)(0,2) 
+             = -c1/3.0+c2+c3*(Xi*s33+Al*s11)+c4*s11*s33;
+          (*Dep)(0,3) 
+             = c3*Xi*s12+c4*s11*s12;
+          (*Dep)(0,4) 
+             = c3*Xi*s13+c4*s11*s13;
+          (*Dep)(0,5) 
+             = c3*Xi*s23+c4*s11*s23;  
+          // Row 2		  
+          (*Dep)(1,0) 
+             = -c1/3.0+c2+c3*(Xi*s11+Al*s22)+c4*s11*s22;		
+          (*Dep)(1,1) 
+             =  2.0*c1/3.0+c2+c3*(Al+Xi)*s22+c4*s22*s22;		
+          (*Dep)(1,2) 
+             = -c1/3.0+c2+c3*(Xi*s33+Al*s22)+c4*s33*s22;		
+          (*Dep)(1,3) 
+             = c3*Xi*s12+c4*s22*s12;
+          (*Dep)(1,4) 
+             = c3*Xi*s13+c4*s22*s13;
+          (*Dep)(1,5) 
+             = c3*Xi*s23+c4*s22*s23;
+          // Row 3		  
+          (*Dep)(2,0) 
+             = -c1/3.0+c2+c3*(Xi*s11+Al*s33)+c4*s11*s33;		
+          (*Dep)(2,1) 
+             =  -c1/3.0+c2+c3*(Xi*s22+Al*s33)+c4*s22*s33;		
+          (*Dep)(2,2) 
+             =  2.0*c1/3.0+c2+c3*(Al+Xi)*s33+c4*s33*s33;		
+          (*Dep)(2,3) 
+             =  c3*Xi*s12+c4*s33*s12;
+          (*Dep)(2,4) 
+             =  c3*Xi*s13+c4*s33*s23;
+          (*Dep)(2,5) 
+             =  c3*Xi*s23+c4*s33*s23;
+          // Row 4		    
+          (*Dep)(3,0) 
+             = c3*Al*s12+c4*s12*s11;		
+          (*Dep)(3,1) 
+             = c3*Al*s12+c4*s12*s22;		
+          (*Dep)(3,2) 
+             = c3*Al*s12+c4*s12*s33;		
+          (*Dep)(3,3) 
+             =  c1/2.0+c4*s12*s12;
+          (*Dep)(3,4) 
+             =  c4*s12*s13;
+          (*Dep)(3,5) 
+             =  c4*s12*s23;
+          // Row 5		    
+          (*Dep)(4,0) 
+             = c3*Al*s13+c4*s13*s11;		
+          (*Dep)(4,1) 
+             = c3*Al*s13+c4*s13*s22;		
+          (*Dep)(4,2) 
+             = c3*Al*s13+c4*s13*s33;		
+          (*Dep)(4,3) 
+             =  c4*s13*s12;
+          (*Dep)(4,4) 
+             =  c1/2.0+c4*s13*s13;
+          (*Dep)(4,5) 
+             =  c4*s13*s23;
+          // Row 6		    
+          (*Dep)(5,0) 
+             = c3*Al*s23+c4*s23*s11;		
+          (*Dep)(5,1) 
+             = c3*Al*s23+c4*s23*s22;		
+          (*Dep)(5,2) 
+             = c3*Al*s23+c4*s23*s33;		
+          (*Dep)(5,3) 
+             =  c4*s23*s12;
+          (*Dep)(5,4) 
+             =  c4*s23*s13;
+          (*Dep)(5,5) 
+             =  c1/2.0+c4*s23*s23;
+          break;
+      }
    }
 }
 //-------------------------------------------------------------------------
@@ -3656,9 +3726,9 @@ void CSolidProperties::AddStain_by_Creep(const int ns, double *stress_n,
        fac = (*data_Creep)(0)*pow(norn_S, (*data_Creep)(1))*dt;
       break;
 	case 2:
-      // gas constant = R = 8.314472(15) J · K-1 · mol-1
+      // gas constant = R = 8.314472(15) J ?K-1 ?mol-1
       // ec= A*exp(-G/RT)s^n
-      fac = 1.5*dt*(*data_Creep)(0)*exp(-(*data_Creep)(2)/(8.314472*(temperature+273.0)))*
+      fac = 1.5*dt*(*data_Creep)(0)*exp(-(*data_Creep)(2)/(8.314472*(temperature+273.15)))*
                      pow(norn_S, (*data_Creep)(1));
       break;
   }

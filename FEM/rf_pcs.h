@@ -119,10 +119,12 @@ class CRFProcess {
   protected: //WW
     friend class FiniteElement::CFiniteElementStd;
     friend class FiniteElement::CFiniteElementVec;
+    friend class FiniteElement::ElementValue;
 	friend class ::CSourceTermGroup;
 	// Assembler
 	CFiniteElementStd *fem;   
     //
+    int dof;   //WW    
 	long orig_size; // Size of source term nodes 
 	// ELE
     std::vector<FiniteElement::ElementMatrix*> Ele_Matrices;
@@ -132,6 +134,7 @@ class CRFProcess {
     // 1. Keep them to vector Ele_Matrices
     int Memory_Type;
 	//....................................................................
+    int additioanl2ndvar_print; //WW
     // TIM
 	friend class CTimeDiscretization;      
     CTimeDiscretization *Tim;    //time
@@ -143,9 +146,6 @@ class CRFProcess {
 	//....................................................................
 	// OUT
 	// Element matrices output
-  public: //OK
-    bool Write_Matrix;
-  protected: //WW
     fstream *matrix_file;
     // Write RHS from source or Neumann BC terms to file
     // 0: Do nothing
@@ -163,101 +163,103 @@ class CRFProcess {
 	//....................................................................
 	// 1-GEO
   public:
+    bool Write_Matrix;
     string geo_type; //OK
     string geo_type_name; //OK
 	//....................................................................
     // 2-MSH
 	//....................................................................
     // 3-TIM
-	//....................................................................
-	// 4-IC
-	//....................................................................
-	// 5-BC
-	vector<CBoundaryConditionNode*> bc_node_value; //WW 
-	vector<CBoundaryCondition*> bc_node; //WW
+    //....................................................................
+    // 4-IC
+    //....................................................................
+    // 5-BC
+    vector<CBoundaryConditionNode*> bc_node_value; //WW 
+    vector<CBoundaryCondition*> bc_node; //WW
     vector<long> bc_node_value_in_dom; //WW for domain decomposition
     vector<long> bc_local_index_in_dom; //WW for domain decomposition
     vector<long> rank_bc_node_value_in_dom; //WW
-	//....................................................................
-	// 6-ST
+    //....................................................................
+    // 6-ST
     // Node values from sourse/sink or Neumann BC. WW
-	vector<CNodeValue*> st_node_value; //WW 
-	vector<CSourceTerm*> st_node; //WW
+    vector<CNodeValue*> st_node_value; //WW 
+    vector<CSourceTerm*> st_node; //WW
     vector<long> st_node_value_in_dom; //WW for domain decomposition
     vector<long> st_local_index_in_dom; //WW for domain decomposition
     vector<long> rank_st_node_value_in_dom; //WW
     void RecordNodeVSize(const int Size) {orig_size = Size;} //WW
     int GetOrigNodeVSize () const {return orig_size;} //WW
-	//....................................................................
-	// 7-MFP
-	//....................................................................
-	// 8-MSP
-	//....................................................................
-	// 9-MMP
-	int GetContinnumType() {return continuum;}
-   // const int number_continuum=1;
+
+    //....................................................................
+    // 7-MFP
+    //....................................................................
+    // 8-MSP
+    //....................................................................
+    // 9-MMP
+    int GetContinnumType() {return continuum;}
+    // const int number_continuum=1;
     vector<double> continuum_vector;
-	//....................................................................
-	// 10-MCP
-	//....................................................................
-	// 11-OUT
+    //....................................................................
+    // 10-MCP
+    //....................................................................
+    // 11-OUT
     void  WriteSolution();  //WW
     void  ReadSolution();   //WW
-	//....................................................................
-	// 12-NUM
-	//....................................................................
-	// 13-ELE
-  //----------------------------------------------------------------------
-  // Methods
-	//....................................................................
+    //....................................................................
+    // 12-NUM
+    //....................................................................
+    // 13-ELE
+    //----------------------------------------------------------------------
+    // Methods
+    //....................................................................
     // Construction / destruction
     CRFProcess(void);
     void Create(void);
     void CreateFDMProcess();
     virtual ~CRFProcess();
     void DestroyFDMProcess();
-	//....................................................................
+    //....................................................................
     // IO
     ios::pos_type Read(ifstream*);
     void Write(fstream*);
-	//....................................................................
-	// 1-GEO
-	//....................................................................
+    //....................................................................
+    // 1-GEO
+    //....................................................................
     // 2-MSH
-	//....................................................................
+    //....................................................................
     // 3-TIM
-	//....................................................................
-	// 4-IC
-	//....................................................................
-	// 5-BC
+    //....................................................................
+    // 4-IC
+    //....................................................................
+    // 5-BC
     void CreateBCGroup();
     void SetBC(); //OK
-	//....................................................................
-	// 6-ST
+    //....................................................................
+    // 6-ST
     void CreateSTGroup();
-	//....................................................................
-	// 7-MFP
-	//....................................................................
-	// 8-MSP
-	//....................................................................
-	// 9-MMP
-	//....................................................................
-	// 10-MCP
-	//....................................................................
-	// 11-OUT
+    //....................................................................
+    // 7-MFP
+    //....................................................................
+    // 8-MSP
+    //....................................................................
+    // 9-MMP
+    //....................................................................
+    // 10-MCP
+    //....................................................................
+    // 11-OUT
     void WriteAllVariables(); //OK
-	//....................................................................
-	// 12-NUM
-	//....................................................................
-	// 13-ELE
-	//....................................................................
-	// 14-CPL
+    //....................................................................
+    // 12-NUM
+    //....................................................................
+    // 13-ELE
+    //....................................................................
+    // 14-CPL
     void SetCPL(); //OK8 OK4310
 	//....................................................................
 	// 15-EQS
     void AssembleParabolicEquationRHSVector(CNode*); //(vector<long>&); //OK
 	//....................................................................
-	int Shift[10];
+    int Shift[10];
     // Construction / destruction
     char pcs_name[MAX_ZEILE]; //string pcs_name;
     int pcs_number;
@@ -267,7 +269,7 @@ class CRFProcess {
     vector<string> pcs_type_name_vector;
     int type;
     int GetObjType() {return type;}
-	int pcs_component_number; //SB: counter for transport components
+    int pcs_component_number; //SB: counter for transport components
     int GetProcessComponentNumber() const { return pcs_component_number;} //SB:namepatch
     string file_name_base; //OK
     // Access to PCS
@@ -334,7 +336,7 @@ class CRFProcess {
     // Access to PCS
     CRFProcess *GetProcessByFunctionName(char* name);
     CRFProcess *GetProcessByNumber(int);
-	CFiniteElementStd* GetAssembler() {return fem; }    
+    CFiniteElementStd* GetAssembler() {return fem; }    
     // CRFProcess *Get(string); // WW Removed
     // Configuration
     void Config();
@@ -350,13 +352,14 @@ class CRFProcess {
     void ConfigUnsaturatedFlow(); //OK4104
 	void ConfigFluidMomentum();
     void ConfigRandomWalk();
+    void ConfigMultiPhaseFlow();
     // Configuration 1 - NOD
     void ConfigNODValues1(void);
     void ConfigNODValues2(void);
     void CreateNODValues(void);
-	void SetNODValues(); //OK
+    void SetNODValues(); //OK
     //
-	double CalcIterationNODError(int method); //OK
+    double CalcIterationNODError(int method); //OK
     void CopyTimestepNODValues();
     //Coupling
     double CalcCouplingNODError(); //MB
@@ -376,11 +379,11 @@ class CRFProcess {
     VoidFuncInt ConfigELEMatrices;
     void CreateELEMatricesPointer(void);
     // Equation system
-	//---WW
-	CFiniteElementStd* GetAssember () { return fem; }   
+    //---WW
+    CFiniteElementStd* GetAssember () { return fem; }   
     void AllocateLocalMatrixMemory(); 
     void GlobalAssembly(); //NEW 
-	void ConfigureCouplingForLocalAssemblier();
+    void ConfigureCouplingForLocalAssemblier();
     void CalIntegrationPointValue();
     bool cal_integration_point_value; //WW
     //---
@@ -399,13 +402,13 @@ class CRFProcess {
     // BC
     void IncorporateBoundaryConditions(const int rank=-1);
     void SetBoundaryConditionSubDomain(); //WW
-    //void CheckBCGroup(); //OK
+    //WW void CheckBCGroup(); //OK
     int ExecuteLinearSolver(void);
-	int ExecuteLinearSolver(LINEAR_SOLVER *eqs);
+    int ExecuteLinearSolver(LINEAR_SOLVER *eqs);
     //Time Control
     double timebuffer; //YD
     int iter;  //YD
-	// Specials
+    // Specials
     void PCSMoveNOD();
     void PCSDumpModelNodeValues(void);
     int GetNODValueIndex(string name,int timelevel); //WW
@@ -413,18 +416,22 @@ class CRFProcess {
     inline void setBC_danymic_problems();
     inline void setST_danymic_problems();
     inline void setIC_danymic_problems();
+    // Extropolate Gauss point values to node values. WW
+    void Extropolation_GaussValue(); 
+    void Extropolation_MatValue();  //WW
     // USER
     //ToDo
     double *TempArry; //MX
-	void PCSOutputNODValues(void);
+    void PCSOutputNODValues(void);
     void PCSSetTempArry(void);  //MX
     double GetTempArryVal(int index)  {return TempArry[index];} //MX
     void LOPCopySwellingStrain(CRFProcess *m_pcs);
     VoidFuncInt PCSSetIC_USER;
     void SetIC();
-    void CalcSecondaryVariables(int);
+    void CalcSecondaryVariables(const bool initial = false); // Remove argument. WW
     void MMPCalcSecondaryVariablesRichards(int timelevel, bool update);
-    void CalcSecondaryVariablesRichards(int timelevel, bool update); //OK
+    //WW Reomve int timelevel, bool update
+    void CalcSecondaryVariablesUnsaturatedFlow(const bool initial = false); //WW
 	void CalcSaturationRichards(int timelevel, bool update); // JOD
     bool non_linear; //OK/CMCD
     void SetNODFlux(); //OK

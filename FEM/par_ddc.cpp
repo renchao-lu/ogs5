@@ -177,13 +177,18 @@ void DOMCreate(CRFProcess *m_pcs)
        node_connected_doms[m_dom->nodes[j]] += 1.0;
   }
   // Find nodes of all neighbors of each node. // WW
-  FindNodesOnInterface(m_pcs->m_msh, quadr);
   // Local topology. WW
+  FindNodesOnInterface(m_pcs->m_msh, quadr);
+#ifndef USE_MPI //WW
   for(i=0;i<no_domains;i++){
+#else
+    i = myrank;//WW  
+#endif  
     m_dom = dom_vector[i];
 	m_dom->NodeConnectedNodes();
+#ifndef USE_MPI //WW
   }
-
+#endif
   //----------------------------------------------------------------------
   // Create domain EQS
   cout << "  Create domain EQS" << endl;
@@ -537,6 +542,7 @@ Task:
 Programing:
 07/2004 OK Implementation
 **************************************************************************/
+/* //WW
 void CPARDomain::AssembleMatrix(CRFProcess* m_pcs)
 {
   long i;
@@ -548,11 +554,11 @@ void CPARDomain::AssembleMatrix(CRFProcess* m_pcs)
   for(i=0;i<no_elements;i++){
     // virtual function PCSAssembleMatrix(i)
     //MakeElementEntryEQS_ASM(elements[i]->global_number,eqs->b,NULL,this);
-    // WW MakeElementEntryEQS_ASM(i,eqs->b,NULL,this,m_pcs);
+//WW    MakeElementEntryEQS_ASM(i,eqs->b,NULL,this,m_pcs);
 //MXDumpGLS("AssembleMatrix1.txt",1,eqs->b,eqs->x);
   }
 }
-
+*/
 /**************************************************************************
 FEMLib-Method: 
 Task:
@@ -766,6 +772,7 @@ void FindNodesOnInterface(CFEMesh *m_msh, bool quadr)
   long *elem_nodes=NULL;
   //
   Mesh_Group::CElem* m_ele = NULL;
+  Mesh_Group::CNode* m_nod = NULL;
   //
   CPARDomain *m_dom = NULL;
   vector<long> boundary_nodes;

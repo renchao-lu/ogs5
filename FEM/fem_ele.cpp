@@ -121,6 +121,7 @@ FEMLib-Method:
 Task: 
 Programing:
 06/2004 WW Implementation
+05/2007 WW 1D in 2D
 Last modified:
 **************************************************************************/
 void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
@@ -138,68 +139,76 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
     for(i=0; i<nNodes; i++)
        nodes[i] = MeshElement->nodes_index[i];
 	// Put coordinates of nodes to buffer to enhance the computation
-    if(coordinate_system%10==2&&!FaceIntegration) // Z has number
-	{
-        switch(dim)
-		{
-            case 1:
-              for(i=0; i<nNodes; i++)
-              {
-                 X[i] = MeshElement->nodes[i]->Z();  
-                 Y[i] = MeshElement->nodes[i]->Y();       
-                 Z[i] = MeshElement->nodes[i]->X();        
-	          }
-              break;
-            case 2:
-              for(i=0; i<nNodes; i++)
-              {
-                 X[i] = MeshElement->nodes[i]->X();  
-                 Y[i] = MeshElement->nodes[i]->Z();       
-                 Z[i] = MeshElement->nodes[i]->Y();        
-	          }
-              break;
-            case 3:
-              if(ele_dim==1||ele_dim==2)
-              {
-                 for(i=0; i<nNodes; i++)
-                 {
-                    X[i] =  (*MeshElement->tranform_tensor)(0,0)
-                             *(MeshElement->nodes[i]->X()-MeshElement->nodes[0]->X())
-                            +(*MeshElement->tranform_tensor)(1,0)
-                              *(MeshElement->nodes[i]->Y()-MeshElement->nodes[0]->Y())
-                            +(*MeshElement->tranform_tensor)(2,0)
-                              *(MeshElement->nodes[i]->Z()-MeshElement->nodes[0]->Z());
-                    Y[i] =  (*MeshElement->tranform_tensor)(0,1)
-                             *(MeshElement->nodes[i]->X()-MeshElement->nodes[0]->X())
-                           +(*MeshElement->tranform_tensor)(1,1)
-                             *(MeshElement->nodes[i]->Y()-MeshElement->nodes[0]->Y())
-                           +(*MeshElement->tranform_tensor)(2,1)
-                             *(MeshElement->nodes[i]->Z()-MeshElement->nodes[0]->Z());
-                    Z[i] =  MeshElement->nodes[i]->Z();
-                 }               
-              }
-              else
-              {
-                 for(i=0; i<nNodes; i++)
-                 {
-                    X[i] = MeshElement->nodes[i]->X();  
-                    Y[i] = MeshElement->nodes[i]->Y();       
-                    Z[i] = MeshElement->nodes[i]->Z();        
-                 }
-              }
-              break;
-         }
-    }
-    else
+    if(!FaceIntegration)
     {
-       for(i=0; i<nNodes; i++)
+       if((dim==ele_dim)&(coordinate_system%10==2))
        {
+         switch(dim)
+         {
+           case 1:
+             for(i=0; i<nNodes; i++)
+             {
+                X[i] = MeshElement->nodes[i]->Z();  
+                Y[i] = MeshElement->nodes[i]->Y();       
+                Z[i] = MeshElement->nodes[i]->X();        
+	         }
+             break;
+           case 2:
+             for(i=0; i<nNodes; i++)
+             {
+                X[i] = MeshElement->nodes[i]->X();  
+                Y[i] = MeshElement->nodes[i]->Z();       
+                Z[i] = MeshElement->nodes[i]->Y();        
+	         }
+             break;
+           case 3:
+             for(i=0; i<nNodes; i++)
+             {
+                X[i] = MeshElement->nodes[i]->X();  
+                Y[i] = MeshElement->nodes[i]->Y();       
+                Z[i] = MeshElement->nodes[i]->Z();        
+             }
+              break;          
+         }
+       }
+       else if(dim!=ele_dim)
+       {
+           for(i=0; i<nNodes; i++)
+           {
+               X[i] =  (*MeshElement->tranform_tensor)(0,0)
+                       *(MeshElement->nodes[i]->X()-MeshElement->nodes[0]->X())
+                      +(*MeshElement->tranform_tensor)(1,0)
+                       *(MeshElement->nodes[i]->Y()-MeshElement->nodes[0]->Y())
+                      +(*MeshElement->tranform_tensor)(2,0)
+                       *(MeshElement->nodes[i]->Z()-MeshElement->nodes[0]->Z());
+               Y[i] =  (*MeshElement->tranform_tensor)(0,1)
+                        *(MeshElement->nodes[i]->X()-MeshElement->nodes[0]->X())
+                      +(*MeshElement->tranform_tensor)(1,1)
+                        *(MeshElement->nodes[i]->Y()-MeshElement->nodes[0]->Y())
+                      +(*MeshElement->tranform_tensor)(2,1)
+                        *(MeshElement->nodes[i]->Z()-MeshElement->nodes[0]->Z());
+               Z[i] =  MeshElement->nodes[i]->Z();
+           }                      
+       }
+       else if(coordinate_system%10==1)
+       {
+         for(i=0; i<nNodes; i++)
+         {
            X[i] = MeshElement->nodes[i]->X();  
            Y[i] = MeshElement->nodes[i]->Y();       
            Z[i] = MeshElement->nodes[i]->Z();        
+         }
        }
     }
-
+    else
+    {
+      for(i=0; i<nNodes; i++)
+      {
+         X[i] = MeshElement->nodes[i]->X();  
+         Y[i] = MeshElement->nodes[i]->Y();       
+         Z[i] = MeshElement->nodes[i]->Z();        
+      }
+    }   
     if(PT_Flag == 1)	// PCH
     {
        for(i=0; i<nNodes; i++)
@@ -588,8 +597,50 @@ void CElement::UnitCoordinates(double *realXYZ)
         realXYZ[i] = unit[i];
    
 }
+/***************************************************************************
 
-
+   08/2005     WW        Prism element
+**************************************************************************/
+void CElement::SetGaussPoint(const int gp, int& gp_r, int& gp_s, int& gp_t)
+{
+    switch(MeshElement->GetElementType())
+    {
+       case 1:    // Line
+          gp_r = gp;
+          unit[0] = MXPGaussPkt(nGauss, gp_r);
+          break;
+       case 2:    // Quadralateral 
+          gp_r = (int)(gp/nGauss);
+          gp_s = gp%nGauss;
+          unit[0] = MXPGaussPkt(nGauss, gp_r);
+          unit[1] = MXPGaussPkt(nGauss, gp_s);
+          break;
+       case 3:    // Hexahedra 
+          gp_r = (int)(gp/(nGauss*nGauss));
+          gp_s = (gp%(nGauss*nGauss));
+          gp_t = gp_s%nGauss;
+          gp_s /= nGauss;
+          unit[0] = MXPGaussPkt(nGauss, gp_r);
+          unit[1] = MXPGaussPkt(nGauss, gp_s);
+          unit[2] = MXPGaussPkt(nGauss, gp_t);
+          break;
+       case 4: // Triangle 
+          SamplePointTriHQ(gp, unit);
+          break;
+       case 5: // Tedrahedra
+//To be flexible          SamplePointTet15(gp, unit);
+          SamplePointTet5(gp, unit);
+          break;
+       case 6: // Prism 
+          gp_r = gp%nGauss; 
+          gp_s = (int)(gp/nGauss);
+          gp_t = (int)(nGaussPoints/nGauss);
+          unit[0] = MXPGaussPktTri(nGauss,gp_r,0);
+          unit[1] = MXPGaussPktTri(nGauss,gp_r,1);
+          unit[2] = MXPGaussPkt(gp_t,gp_s);
+          break;
+    }
+}
 /***************************************************************************
    GeoSys - Funktion: 
            CElement:: GetGaussData(const int gp)
@@ -603,56 +654,37 @@ void CElement::UnitCoordinates(double *realXYZ)
    Programming:
    06/2004     WW        Erste Version
    08/2005     WW        Prism element
-02/2005 OK case 1
+   02/2005 OK case 1
+   02/2007 WW Abstract the calcultion of Gauss point in one function
 **************************************************************************/
 double CElement::GetGaussData(const int gp, int& gp_r, int& gp_s, int& gp_t)
 {
     double fkt = 0.0;
-	switch(MeshElement->GetElementType())
+    SetGaussPoint(gp, gp_r, gp_s, gp_t);
+    switch(MeshElement->GetElementType())
     {
        case 1:    // Line
-          gp_r = gp;
-          unit[0] = MXPGaussPkt(nGauss, gp_r);
           fkt = computeJacobian(Order)*MXPGaussFkt(nGauss, gp_r);
           break;
        case 2:    // Quadralateral 
-          gp_r = (int)(gp/nGauss);
-          gp_s = gp%nGauss;
-          unit[0] = MXPGaussPkt(nGauss, gp_r);
-          unit[1] = MXPGaussPkt(nGauss, gp_s);
           fkt = computeJacobian(Order);
           fkt *= MXPGaussFkt(nGauss, gp_r) * MXPGaussFkt(nGauss, gp_s);
           break;
        case 3:    // Hexahedra 
-          gp_r = (int)(gp/(nGauss*nGauss));
-          gp_s = (gp%(nGauss*nGauss));
-          gp_t = gp_s%nGauss;
-          gp_s /= nGauss;
-          unit[0] = MXPGaussPkt(nGauss, gp_r);
-          unit[1] = MXPGaussPkt(nGauss, gp_s);
-          unit[2] = MXPGaussPkt(nGauss, gp_t);
           fkt = computeJacobian(Order);
           fkt *=   MXPGaussFkt(nGauss, gp_r) * MXPGaussFkt(nGauss, gp_s)
                  * MXPGaussFkt(nGauss, gp_t);
           break;
        case 4: // Triangle 
-          SamplePointTriHQ(gp, unit);
           fkt = computeJacobian(Order);
           fkt *= unit[2];      // Weights
           break;
        case 5: // Tedrahedra
 //To be flexible          SamplePointTet15(gp, unit);
-          SamplePointTet5(gp, unit);
           fkt = computeJacobian(Order);
           fkt *= unit[3];      // Weights
           break;
        case 6: // Prism 
-          gp_r = gp%nGauss; 
-          gp_s = (int)(gp/nGauss);
-          gp_t = (int)(nGaussPoints/nGauss);
-          unit[0] = MXPGaussPktTri(nGauss,gp_r,0);
-          unit[1] = MXPGaussPktTri(nGauss,gp_r,1);
-          unit[2] = MXPGaussPkt(gp_t,gp_s);
 		  fkt = computeJacobian(Order);
           fkt *= MXPGaussFktTri(nGauss,gp_r)*MXPGaussFkt(gp_t, gp_s);      // Weights
           break;
@@ -764,6 +796,7 @@ void CElement::ComputeShapefct(const int order)
    Programming:
    06/2004     WW        Erste Version
    10/2005     WW        2D element transform in 3D space
+   06/2007     WW        1D in 2D
 **************************************************************************/
 void CElement::ComputeGradShapefct(const int order)
 {
@@ -774,45 +807,44 @@ void CElement::ComputeGradShapefct(const int order)
         dN = dshapefctHQ;
  
     setOrder(order);
-	for(i=0; i<nNodes; i++)
-	{
+    for(i=0; i<nNodes; i++)
+    {
        for(j=0; j<ele_dim; j++)
-	   {
+       {
           Var[j] = dN[j*nNodes+i];
 		  dN[j*nNodes+i] = 0.0;
-	   }
+       }
        for(j=0; j<ele_dim; j++)
-	   {
+       {
           for(k=0; k<ele_dim; k++)
               dN[j*nNodes+i] += invJacobian[j*ele_dim+k]*Var[k]; 
-	   }
-	}
+       }
+    }
     // 1D element in 3D
-    if(dim==3&&ele_dim==1)
-	{
+    if((dim==3&&ele_dim==1)||(dim==2&&ele_dim==1))
+    {
        for(i=0; i<nNodes; i++)
        {
           for(j=1; j<dim; j++)
-			  dN[j*nNodes+i] = (*MeshElement->tranform_tensor)(j)*dN[i];                          
-          dN[i] *= (*MeshElement->tranform_tensor)(0);                          
-	   }
-	}
+            dN[j*nNodes+i] = (*MeshElement->tranform_tensor)(j)*dN[i];
+            dN[i] *= (*MeshElement->tranform_tensor)(0);                          
+       }
+    }
     // 2D element in 3D
     if(dim==3&&ele_dim==2)
-	{
+    {
        for(i=0; i<nNodes*ele_dim; i++)     
           dShapefct[i] = dN[i];
        for(i=0; i<nNodes; i++)
        {
           for(j=0; j<dim; j++)
-		  { 
+          { 
              dN[j*nNodes+i] = 0.0;
              for(k=0; k<ele_dim; k++)          
-			    dN[j*nNodes+i] += (*MeshElement->tranform_tensor)(j, k)*dShapefct[k*nNodes+i];   
-		  }
-	   }
-	}
-  
+               dN[j*nNodes+i] += (*MeshElement->tranform_tensor)(j, k)*dShapefct[k*nNodes+i];   
+          }
+       }
+    }
 }
 /***************************************************************************
   Center of reference element
@@ -827,6 +859,193 @@ void CElement::SetCenterGP()
     unit[0] = unit[1] = 1.0/3.0;
   else if(MeshElement->GetElementType()==5)
     unit[0] = unit[1] = unit[2] = 0.25;
+}
+/***************************************************************************
+   GeoSys - Funktion: 
+           CFiniteElementVec::GetLocalIndex()
+           For quadralateral and hexahedra element on the assumption that
+           selected Gauss points form a quadralateral or hexahedra
+   Aufgabe:
+           Accumulate stress at each nodes      
+   Formalparameter:
+ 
+   Programming:
+   06/2004   WW  
+**************************************************************************/
+int CElement::GetLocalIndex(const int gp_r, const int gp_s, int gp_t)
+{
+   int LoIndex = -1;
+   double r,s,t;
+
+   //---------------------------------------------------------
+   // Accumulate strains
+   //---------------------------------------------------------
+   switch(MeshElement->GetElementType())
+   { 
+     case 2:  // Quadralateral
+         r = MXPGaussPkt(nGauss, gp_r);
+         s = MXPGaussPkt(nGauss, gp_s);
+         if(r>0.0&&s>0.0)  LoIndex = 0;
+         else if(r<0.0&&s>0.0) LoIndex = 1;
+         else if(r<0.0&&s<0.0) LoIndex = 2;
+         else if(r>0.0&&s<0.0) LoIndex = 3;
+         else if(fabs(r)<MKleinsteZahl&&s>0.0) LoIndex = 4;
+         else if(r<0.0&&fabs(s)<MKleinsteZahl) LoIndex = 5;
+         else if(fabs(r)<MKleinsteZahl&&s<0.0) LoIndex = 6;
+         else if(r>0.0&&fabs(s)<MKleinsteZahl) LoIndex = 7;
+         else if(fabs(r)<MKleinsteZahl&&fabs(s)<MKleinsteZahl) LoIndex = 8;
+         break;
+     case 3:  // Hexahedra
+         r = MXPGaussPkt(nGauss, gp_r);
+         s = MXPGaussPkt(nGauss, gp_s);
+         t = MXPGaussPkt(nGauss, gp_t);
+ 
+         if(t>0.0)
+         {
+            if(r>0.0&&s>0.0)  LoIndex = 0;
+            else if(r<0.0&&s>0.0) LoIndex = 1;
+            else if(r<0.0&&s<0.0) LoIndex = 2;
+            else if(r>0.0&&s<0.0) LoIndex = 3;
+            else if(fabs(r)<MKleinsteZahl&&s>0.0) LoIndex = 8;       
+            else if(r<0.0&&fabs(s)<MKleinsteZahl) LoIndex = 9;
+            else if(fabs(r)<MKleinsteZahl&&s<0.0) LoIndex = 10;
+            else if(r>0.0&&fabs(s)<MKleinsteZahl) LoIndex = 11;
+            else if(fabs(r)<MKleinsteZahl&&fabs(s)<MKleinsteZahl) return -1;
+         }
+         else if(fabs(t)<MKleinsteZahl)
+         {
+            if(fabs(r)<MKleinsteZahl||fabs(s)<MKleinsteZahl) return -1;
+            if(r>0.0&&s>0.0)  LoIndex = 16;
+            else if(r<0.0&&s>0.0) LoIndex = 17;
+            else if(r<0.0&&s<0.0) LoIndex = 18;
+            else if(r>0.0&&s<0.0) LoIndex = 19;
+         }
+         if(t<0.0)
+         {
+            if(r>0.0&&s>0.0)  LoIndex = 4;
+            else if(r<0.0&&s>0.0) LoIndex = 5;
+            else if(r<0.0&&s<0.0) LoIndex = 6;
+            else if(r>0.0&&s<0.0) LoIndex = 7;
+            else if(fabs(r)<MKleinsteZahl&&s>0.0) LoIndex = 12;       
+            else if(r<0.0&&fabs(s)<MKleinsteZahl) LoIndex = 13;
+            else if(fabs(r)<MKleinsteZahl&&s<0.0) LoIndex = 14;
+            else if(r>0.0&&fabs(s)<MKleinsteZahl) LoIndex = 15;
+            else if(fabs(r)<MKleinsteZahl&&fabs(s)<MKleinsteZahl) return -1;
+         }
+      break;
+   }
+   return LoIndex;
+}
+/***************************************************************************
+   GeoSys - Funktion:  
+   Programming:
+   02/2007   WW  
+**************************************************************************/
+void CElement::SetExtropoGaussPoints(const int i)
+{
+  int j = 0;
+  int ElementType = MeshElement->GetElementType();
+  //
+  switch(ElementType) 
+  {
+      case 4: // Triangle
+        // Compute values at verteces  
+        // Compute values at verteces  
+        switch(i)
+        {
+           case 0:
+             unit[0] = -0.1666666666667;
+             unit[1] = -0.1666666666667;
+             break;
+           case 1:
+             unit[0] = 1.6666666666667;
+             unit[1] = -0.1666666666667;
+             break;
+           case 2:
+             unit[0] = -0.1666666666667;
+             unit[1] = 1.6666666666667;
+             break;
+        }
+        break;
+      case 2: // Quadralateral element  
+        // Extropolation over nodes
+        switch(i)
+        {
+           case 0:
+             unit[0] = Xi_p;
+             unit[1] = Xi_p;
+             break;
+           case 1:
+             unit[0] = -Xi_p;
+             unit[1] = Xi_p;
+             break;
+           case 2:
+             unit[0] = -Xi_p;
+             unit[1] = -Xi_p;
+             break;
+           case 3:
+             unit[0] = Xi_p;
+             unit[1] = -Xi_p;
+             break;
+        }
+        break;                              
+     case 3: // Hexahedra 
+       if(i<4)
+       {  
+          j = i;
+          unit[2] = Xi_p;
+       }
+       else
+       {
+          j = i-4; 
+          unit[2] = -Xi_p;
+       }
+       switch(j)
+       {
+          case 0:
+            unit[0] = Xi_p;
+            unit[1] = Xi_p;
+            break;
+          case 1:
+            unit[0] = -Xi_p;
+            unit[1] = Xi_p;
+            break;
+          case 2:
+            unit[0] = -Xi_p;
+            unit[1] = -Xi_p;
+            break;
+          case 3:
+            unit[0] = Xi_p;
+            unit[1] = -Xi_p;
+            break;
+       }
+       break;                               
+     case 5: // Tedrahedra 
+       // Compute values at verteces  
+       switch(i)
+       {
+         case 0:
+           unit[0] = -0.166666666666667;
+           unit[1] = -0.166666666666667;
+           unit[2] = -0.166666666666667;   
+           break;        
+         case 1:
+           unit[0] = 1.5;
+           unit[1] = -0.166666666666667 ;
+           unit[2] = -0.166666666666667 ;   
+           break;        
+         case 2:
+           unit[0] = -0.166666666666667;
+           unit[1] = 1.5;
+           unit[2] = -0.166666666666667;   
+           break;        
+         case 3:
+           unit[0] = -0.166666666666667;
+           unit[1] = -0.166666666666667;
+           unit[2] = 1.5;   
+       }
+       break;    
+   }
 }
 
 /************************************************************************** 

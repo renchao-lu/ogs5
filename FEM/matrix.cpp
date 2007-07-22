@@ -1097,7 +1097,8 @@ int M34Set(long i1, long k1, double aik)
     }
 
   /* Das Element ist noch nicht vorhanden */
-  if (fabs(aik)< MKleinsteZahl)
+//WW  if (fabs(aik)< MKleinsteZahl)
+  if (fabs(aik)< DBL_MIN)
     return 0;
 
   if (Sp34(k).anz == Sp34(k).max_anz)
@@ -3268,7 +3269,9 @@ void M34Vorkond(int aufgabe, double *x, double *b)
                 b[k] *= h;
                 for (l = 0; l < dim; l++)
                   M34Mul(k, l, h);
-              } else {
+              }
+			  /*
+			  else {
                 DisplayMsg("!!! Equation system: Line: ");
                 DisplayLong(k);
                 DisplayMsg(" Value: ");
@@ -3276,7 +3279,7 @@ void M34Vorkond(int aufgabe, double *x, double *b)
                 DisplayMsgLn("");
                 DisplayMsgLn("!!! Diagonal near zero! Disable diagonal preconditioner!");
                 exit(1);
-              }
+              }*/
             }
 
 #ifdef geht_nicht

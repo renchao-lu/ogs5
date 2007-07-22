@@ -292,6 +292,7 @@ int ExecuteRFTimeLoop(void)
   bool heat_flag = false;
   int i = 0;
   double ct = 0.0;
+  double dt_sum = 0.0; // WW
   //----------------------------------------------------------------------
 /*OK
   if(mshType!=100&&mshType!=0)  //WW
@@ -340,6 +341,9 @@ int ExecuteRFTimeLoop(void)
   }*/
   //----------------------------------------------------------------------
   int no_time_steps = (int)m_tim->time_step_vector.size();
+  // Output initial values. WW
+  OUTData(0.0,aktueller_zeitschritt); 
+  // 
   cout << "*********************************************" << endl;
   cout << "Start of simulation" << endl;
   //======================================================================
@@ -385,8 +389,9 @@ int ExecuteRFTimeLoop(void)
     cout << "TIME step " << m_tim->step_current+1 << ": " << m_tim->time_current << endl;
     //----------------------------------------------------------------------
     // Time step excution 
+    //
     dt_sum += dt;
-    LOPTimeLoop_PCS(&dt_sum);
+    LOPTimeLoop_PCS(dt_sum);  // &dt_sum. WW
     //----------------------------------------------------------------------
     // Data output
     /* modellspezifische Ergebnisse fuer Inverses Modellieren speichern */
@@ -394,7 +399,9 @@ int ExecuteRFTimeLoop(void)
     /* Ausgabe fuer Bilanzobjekte */
 //OK    BalanceOverAllGeometryObjects();
     /* Ergebnisausgabe */
-    OUTData(m_tim->time_current,aktueller_zeitschritt);
+
+    if(dt_sum<DBL_MIN) //WW
+      OUTData(m_tim->time_current,aktueller_zeitschritt);
     #ifdef RFW_FRACTURE 
       for(int i=0; i<(int)mmp_vector.size(); ++i)
         {

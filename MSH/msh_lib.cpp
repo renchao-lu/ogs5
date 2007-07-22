@@ -601,9 +601,7 @@ Programing:
 void CompleteMesh()
 {
    int i;
-   bool quad=false;
-   CRFProcess* m_pcs = NULL;
-    for(i=0;i<(int)fem_msh_vector.size(); i++)
+   for(i=0;i<(int)fem_msh_vector.size(); i++)
    {
       fem_msh_vector[i]->ConstructGrid();
       fem_msh_vector[i]->FillTransformMatrix();
@@ -1316,7 +1314,7 @@ CElem *elem = NULL;
 CGLPolyline *frac_top = NULL, *frac_bot = NULL;
 CMediumProperties *m_mmp = NULL;
 CFEMesh* m_msh = NULL;
-
+group = -1; //WW
 vector<long> bound_elements;
 vector<double> node_x, node_y; 
 double x, y, tri[6], dx_avg, dy_avg, d_max, *gravity_center;
@@ -1501,8 +1499,8 @@ if(frac_exists)
             {
                 //the weight that each element gets is the total weight of 1, divided by the number of segments
                 //in which the fracture is divided, and further divided by the number of elements in the given segment
-                long test1 = ((long)frac_top->point_vector.size()-1);
-                long test2 = (long)segment_elements[j][k].size();
+//WW                long test1 = ((long)frac_top->point_vector.size()-1);
+//WW                long test2 = (long)segment_elements[j][k].size();
                 Weight = seg_length / top_poly_length / (double)segment_elements[j][k].size();
                 
                 elem = m_msh->ele_vector[segment_elements[j][k][l]];

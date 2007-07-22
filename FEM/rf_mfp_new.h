@@ -81,8 +81,7 @@ class CFluidProperties
     // FCT
     string fct_pcs_name;
     string fct_name;
-
-  public:
+    //
     CFluidProperties(void);
     ~CFluidProperties(void);
     ios::pos_type Read(ifstream*);
@@ -100,8 +99,8 @@ class CFluidProperties
     double DensityTemperatureDependence(long number,int comp,double*gp,double theta);
     double vaporDensity(const double T); //WW
     double vaporDensity_derivative(const double T); //WW
-	  bool CheckGravityCalculation() const {return cal_gravity;}
-	  int GetHeatCapacityModel() const {return heat_capacity_model;}//YD
+    bool CheckGravityCalculation() const {return cal_gravity;}
+    int GetHeatCapacityModel() const {return heat_capacity_model;}//YD
   private:
     double GasViscosity_Reichenberg_1971(double,double);
 	  double MATCalcFluidDensityMethod8(double p, double T, double C);
@@ -117,7 +116,7 @@ extern bool MFPRead(string);
 extern void MFPWrite(string);
 #define MFP_FILE_EXTENSION ".mfp"
 extern double MFPCalcVapourPressure(double);
-extern double MFPCalcFluidsHeatCapacity(long index,double*gp,double theta, CFiniteElementStd* assem=NULL);
+extern double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem=NULL); //WW
 extern double MFPCalcFluidsHeatConductivity(long index,double*gp,double theta, CFiniteElementStd* assem=NULL);
 extern void MFPDelete();
 extern CFluidProperties* MFPGet(string);    //OK/YD

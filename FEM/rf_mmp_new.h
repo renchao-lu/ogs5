@@ -27,6 +27,7 @@ class CMediumProperties
  public:
     CFiniteElementStd *Fem_Ele_Std;
  private:
+    friend class FiniteElement::CFiniteElementStd; //WW
     // Data base
 	void SetMediumPropertiesDefaultsClay(void);//CMCD 9/2004 GeoSys 4
 	void SetMediumPropertiesDefaultsSilt(void);//CMCD 9/2004 GeoSys 4
@@ -35,12 +36,16 @@ class CMediumProperties
 	void SetMediumPropertiesDefaultsCrystalline(void);//CMCD 9/2004 GeoSys 4
 	void SetMediumPropertiesDefaultsBordenAquifer(void);//CMCD 9/2004 GeoSys 4
     // Porosity
-  double PorosityEffectiveStress(long,double );//CMCD 9/2004 GeoSys 4
-  double PorosityVolumetricFreeSwellingConstantIonicstrength(long,double,double);
-  double PorosityEffectiveConstrainedSwelling(long,double,double, double*); //MX 1/2005
+    double PorosityEffectiveStress(long,double );//CMCD 9/2004 GeoSys 4
+    double PorosityVolumetricFreeSwellingConstantIonicstrength(long,double,double);
+    double PorosityEffectiveConstrainedSwelling(long,double,double, double*); //MX 1/2005
 	double PorosityVolumetricFreeSwelling(long,double,double); //MX 1/2005
 	double PorosityEffectiveConstrainedSwellingConstantIonicStrength(long,double,double, double*); //MX 1/2005
     // Permeability
+    // Permeabilty stress corrector WW
+    int permeability_stress_mode;
+    double *c_coefficient; 
+    //
 	double PermeabilityPressureFunctionMethod1(long ,double );//CMCD 9/2004 GeoSys 4
 	double PermeabilityPressureFunctionMethod2(long ,double );//CMCD 9/2004 GeoSys 4
 	double PermeabilityPressureFunctionMethod3(long ,double );//CMCD 9/2004 GeoSys 4
@@ -64,12 +69,16 @@ class CMediumProperties
 #ifdef RFW_FRACTURE
     double RelativePermeability (long index); //RW/CMCD03/06
 #endif
-	double Porosity(CFiniteElementStd* assem=NULL);//CMCD 9/2004 GeoSys 4
-	double TortuosityFunction(long number,double*gp,double theta, CFiniteElementStd* assem=NULL);//CMCD 9/2004 GeoSys 4
-	double NonlinearFlowFunction(long number, double *gp, double theta);//CMCD 9/2004 GeoSys 4
-	double PermeabilityPressureFunction(long index,double *gp,double theta);//CMCD 9/2004 GeoSys 4
+  double Porosity(CElement* assem=NULL);//CMCD 9/2004 GeoSys 4
+  double TortuosityFunction(long number,double*gp,double theta, CFiniteElementStd* assem=NULL);//CMCD 9/2004 GeoSys 4
+  double NonlinearFlowFunction(long number, double *gp, double theta);//CMCD 9/2004 GeoSys 4
+  double PermeabilityPressureFunction(long index,double *gp,double theta);//CMCD 9/2004 GeoSys 4
   double PermeabilitySaturationFunction(long number,double*gp,double theta,int phase);//CMCD 9/2004 GeoSys 4
-	double PermeabilityPorosityFunction(long index,double *gp,double theta);//CMCD 9/2004 GeoSys 4
+  double PermeabilityPorosityFunction(long index,double *gp,double theta);//CMCD 9/2004 GeoSys 4
+  void CalStressPermeabilityFactor(double *kfac, const double T = 273.0); //WW
+  void CalStressPermeabilityFactor2(double *kfac, const double T = 273.0); //WW
+  void CalStressPermeabilityFactor3(double *kfac); //WW
+  void CalStressPermeabilityFactor3_Coef(); //WW
 #ifdef RFW_FRACTURE
     double PermeabilityFracAperture(long index); //RFW 07/2005
     double CalculateFracAperture(CElem* elem, double search_step); //RFW 04/2005
@@ -79,50 +88,50 @@ class CMediumProperties
   double HeatCapacity(long number, double*gp,double theta, CFiniteElementStd* assem=NULL);
   double* HeatConductivityTensor(int number); //MX
   double* HeatDispersionTensorNew(int ip);//CMCD
-	double* MassDispersionTensor(long number,double*gp,double theta,long component); //SB:GS4
-	double* MassDispersionTensorNew(int ip); //CMCD
-	double Density(long number,double*gp,double theta); //OK
+  double* MassDispersionTensor(long number,double*gp,double theta,long component); //SB:GS4
+  double* MassDispersionTensorNew(int ip); //CMCD
+  double Density(long number,double*gp,double theta); //OK
   double SaturationCapillaryPressureFunction(long number,double*gp,double theta,int phase); //OK4104
   double SaturationPressureDependency(long number,double*gp,double theta); //OK4104
-	double SaturationCapillaryPressureFunction(const double capillary_pressure, const int phase); //WW
+  double SaturationCapillaryPressureFunction(const double capillary_pressure, const int phase); //WW
   double SaturationPressureDependency(double saturation, double density_fluid, double theta); // WW
   double PermeabilitySaturationFunction(const double Saturation, int phase); //WW
-	double PorosityVolumetricChemicalReaction(long);  //MX 1/2005
-	double Porosity(long number,double*gp,double theta);//CMCD 9/2004 GeoSys 4
-    void SetConstantELEarea(double area, int group);//CMCD 4/2005
-    void SetDistributedELEProperties(string); //OK
-    void WriteTecplotDistributedProperties(); //OK
+  double PorosityVolumetricChemicalReaction(long);  //MX 1/2005
+  double Porosity(long number,double*gp,double theta);//CMCD 9/2004 GeoSys 4
+  void SetConstantELEarea(double area, int group);//CMCD 4/2005
+  void SetDistributedELEProperties(string); //OK
+  void WriteTecplotDistributedProperties(); //OK
   //-------------------------------------------
   // Properties
-    // PCS
-    string pcs_type_name;   //YD
+  // PCS
+  string pcs_type_name;   //YD
   CRFProcess*m_pcs; //OK
   vector<string>pcs_name_vector;
-	vector<string>porosity_pcs_name_vector;
+  vector<string>porosity_pcs_name_vector;
   //....................................................................
   //GEO
   string geo_type_name;
   string geo_name;
   vector<string>geo_name_vector; //OK
   int geo_dimension;
-	double geo_area;
-    string geo_area_file; //OK
-    CFEMesh* m_msh; //OK
-    //....................................................................
-	double density;
+  double geo_area;
+  string geo_area_file; //OK
+  CFEMesh* m_msh; //OK
+  //....................................................................
+  double density;
   string name;
   int number;
   int porosity_model; // porosity
-	int porosity_curve;
-	double porosity_model_values[15];
+  int porosity_curve;
+  double porosity_model_values[15];
   double porosity;
   string porosity_file; //OK/MB
-	int tortuosity_model;
-	double tortuosity_model_values[10];
-	double tortuosity;
-	int flowlinearity_model;
-	double flowlinearity_model_values[10];
-	int storage_model; // storativity
+  int tortuosity_model;
+  double tortuosity_model_values[10];
+  double tortuosity;
+  int flowlinearity_model;
+  double flowlinearity_model_values[10];
+  int storage_model; // storativity
   double storage_model_values[10];
   double storage;
   int conductivity_model;
@@ -152,17 +161,17 @@ class CMediumProperties
     vector<double> closed_fraction;
     //---------------------------  RFW 11/2005
 #endif
-	int permeability_pressure_model;
-	double permeability_pressure_model_values[10];
-	double permeability_pressure_rel;
+  int permeability_pressure_model;
+  double permeability_pressure_model_values[10];
+  double permeability_pressure_rel;
   int permeability_saturation_model[3];
   double permeability_saturation;
-	string permeability_file; //SB //OK/MB string permeability_dis_type_file; 
-	string tortuosity_file;	// PCH
+  string permeability_file; //SB //OK/MB string permeability_dis_type_file; 
+  string tortuosity_file;	// PCH
   int capillary_pressure_model;
   double capillary_pressure;
-	int permeability_porosity_model;
-	double permeability_porosity_model_values[10];
+  int permeability_porosity_model;
+  double permeability_porosity_model_values[10];
   double storativity;
   double saturation_res[3]; // saturation max 3 phases
   double saturation_max[3];
@@ -171,23 +180,23 @@ class CMediumProperties
   double saturation_alpha[3]; // JOD
   double heat_capacity; // thermal properties
 	int mass_dispersion_model;
-	double mass_dispersion_longitudinal;
-	double mass_dispersion_transverse;
-	int heat_dispersion_model;
-	double heat_dispersion_longitudinal;
-	double heat_dispersion_transverse;
+  double mass_dispersion_longitudinal;
+  double mass_dispersion_transverse;
+  int heat_dispersion_model;
+  double heat_dispersion_longitudinal;
+  double heat_dispersion_transverse;
   double heat_conductivity_tensor[9];
   int fct_number; // functions
   double permeability_saturation_model_values[2];
   double capillary_pressure_model_values[1];
   double permeability_exp[1]; // JOD
   double permeability_alpha[1]; // JOD
-	int heat_diffusion_model;
+  int heat_diffusion_model;
   //aux
   int m_color[3];
   bool selected;
   int mode;
-	string het_file_name; //SB
+  string het_file_name; //SB
   // surface water
   double friction_coefficient, friction_exp_slope, friction_exp_depth;  // JOD
   double overland_width, rill_height, rill_epsilon; // JOD

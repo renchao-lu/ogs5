@@ -48,8 +48,9 @@ using Mesh_Group::CElem;
 using Mesh_Group::CEdge;
 using Mesh_Group::CNode;
 using Math_Group::vec;
-
-
+#ifndef GRAVITY_CONSTANT
+#define GRAVITY_CONSTANT 9.81
+#endif
 
 //==========================================================================
 vector<CSourceTerm*> st_vector;
@@ -106,6 +107,13 @@ CSourceTerm::~CSourceTerm(void) {
     PointsHaveDistribedBC.clear();
     DistribedBC.clear();
     element_st_vector.clear();
+    //WW----------22.02.2007-------------------
+    int i, size; 
+    size = (int)normal2surface.size(); 
+    for(i=0; i<size; i++) delete normal2surface[i];
+    size = (int)pnt_parameter_vector.size(); 
+    for(i=0; i<size; i++) delete pnt_parameter_vector[i];
+    //WW---------------------------------------
 }
 
 /**************************************************************************
@@ -2066,7 +2074,7 @@ Programing:
 double GetCouplingNODValue(CSourceTerm* m_st, CNodeValue* cnodev, long msh_node)
 {
 
-	double value;
+	double value = 0.;
 	if(m_st->COUPLING_SWITCH == true) { // alternatively mixed boundary cond/ source term coupling
       value = GetCouplingNODValueMixed(m_st, cnodev, msh_node);  
       return value;
@@ -2103,7 +2111,7 @@ double GetCouplingNODValuePicard(CSourceTerm* m_st, CNodeValue* cnodev, long msh
   CRFProcess* m_pcs_this = NULL;
   double h_this, h_cond, z_this, z_cond;
   double leakance, rillDepth, gamma;
-
+  value = 0.0;
   leakance = m_st->coup_leakance;
   rillDepth = m_st->rill_height;
   if( m_st->dis_type_name == "CONSTANT_NEUMANN")
@@ -2176,7 +2184,7 @@ double GetCouplingNODValueNewton(CSourceTerm* m_st, CNodeValue* cnodev, long msh
   double leakance, rillDepth, gamma;
   double epsilon = 1.e-7; // like in pcs->assembleParabolicEquationNewton
   double  value_jacobi, h_this_epsilon, relPerm_epsilon, condArea_epsilon;
-
+  relPerm_epsilon = 0.0;
   leakance = m_st->coup_leakance;
   rillDepth = m_st->rill_height;
   if( m_st->dis_type_name == "CONSTANT_NEUMANN")
@@ -2303,13 +2311,12 @@ double GetCouplingNODValueMixed(CSourceTerm* m_st, CNodeValue* cnodev, long msh_
      leakance = m_st->coup_leakance;
      deltaZ = m_st->rill_height;
      gamma =  mfp_vector[0]->Density() * GRAVITY_CONSTANT;  // phase  = 0 !!!!
-
      long  msh_node_2nd;
 	 double x_this = m_pcs_this->m_msh->nod_vector[msh_node]->X();
      double y_this = m_pcs_this->m_msh->nod_vector[msh_node]->Y();
      double z_this = m_pcs_this->m_msh->nod_vector[msh_node]->Z();
  
-
+     msh_node_2nd = -1; //WW
 
      cond0 =  leakance *  deltaZ; 
      cond1 = cond0;

@@ -35,7 +35,6 @@ using namespace std;
 //TODO by PCH #include "rf_fluid_momentum.h"	// By PCH
 #include "loop_pcs.h"
 #include "rf_pcs.h" //OK_MOD"
-#include "rf_pcs.h"
 #include "rf_apl.h"
 #include "rf_react.h"
 #include "par_ddc.h"
@@ -81,7 +80,6 @@ void LOPCalcNODResultants(void);
 #include "math.h" /* pow() */
 #include "matrix.h" /*MXDumpGLS*/
 
-double dt_sum = 0.0;
 /**************************************************************************
 ROCKFLOW - Function: LOPConfig_PCS
 Task: 
@@ -128,7 +126,7 @@ void PCSCreate(void)
   for(i=0;i<no_processes;i++){
     cout << "............................................." << endl;
     m_pcs = pcs_vector[i];
-    cout << "Create: " << m_pcs->pcs_type_name ;
+    cout << "Create: " << m_pcs->pcs_type_name << endl;
     m_pcs->pcs_type_number = i;
     m_pcs->Config(); //OK
 	if(!m_pcs->pcs_type_name.compare("MASS_TRANSPORT")){
@@ -144,28 +142,13 @@ void PCSCreate(void)
     MMP2PCSRelation(m_pcs);
   }
   //----------------------------------------------------------------------
-  for(i=0;i<no_processes;i++){
+  for(i=0;i<no_processes;i++){ //WW
     m_pcs = pcs_vector[i];
     m_pcs->ConfigureCouplingForLocalAssemblier();
+    m_pcs->Extropolation_MatValue();  //WW
+
   }
 }
-
-void
-PCSProcessDependencies()
-{
-// pcs_primary_function_name
-	std::vector<CRFProcess*> :: iterator it;
-	
-	for(it=pcs_vector.begin(); it != pcs_vector.end(); it++) {
-		std::cout << "Process " << (*it)->pcs_name << std::endl;
-		for(int j=0; j<4; j++) {
-			if((*it)->pcs_primary_function_name[j] != NULL) {
-				 std::cout << "  Function " << j << ": " << (*it)->pcs_primary_function_name[j] << std::endl;					
-			}
-		}
-	}
-}
-
 
 /**************************************************************************
 ROCKFLOW - Function: LOPPreTimeLoop_PCS
@@ -259,6 +242,7 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
   #endif
 //  delete rc;
   //----------------------------------------------------------------------
+  
   // DDC
   if(dom_vector.size()>0)
   {
@@ -278,6 +262,7 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
      }
      if(!DOF_gt_one)
         m_pcs = pcs_vector[0];
+
      // -----------------------
      DOMCreate(m_pcs);
      //
@@ -287,19 +272,21 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
        m_pcs->SetBoundaryConditionSubDomain(); //WW
      }
 
-	
 // This will be removed after new sparse matrix is ready. WW
 // for solver
 #ifdef USE_MPI
+     
      long max_edim; 
      max_edim = 0;
      int dof = 1;
+    
      for(i=0;i<(int)dom_vector.size();i++)
      {
        if(dom_vector[i]->eqs->dim>max_edim)
          max_edim = dom_vector[i]->eqs->dim;
         dof  = GetUnknownVectorDimensionLinearSolver(dom_vector[i]->eqs);    
      }
+     
      //
      p_array = new double[max_edim];
      v_array = new double[max_edim];
@@ -328,8 +315,7 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
 #endif
      //
      node_connected_doms.clear();
-  }
-  // PA PCSProcessDependencies();
+   }
   //----------------------------------------------------------------------
   PCSRestart(); //SB
   //----------------------------------------------------------------------
@@ -349,18 +335,20 @@ Programing:
  01/2005 OK H unsaturated process
  03/2005 WW Global process coupling indicators
  05/2005 OK MSH
+ 02/2007 WW Multi-phase flow
+ 06/2007 WW Mixed time step 
 last modified:
 ***************************************************************************/
-int LOPTimeLoop_PCS(double*dt_sum)
+int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
 {
   int i,j,k;
   //----------------------------------------------------------------------
   int nidx0,nidx1;
-  int timelevel;
   int no_processes =(int)pcs_vector.size();
   CRFProcess *m_pcs = NULL;
   CRFProcessDeformation *dm_pcs = NULL;
   CFluidMomentum *fm_pcs = NULL; // by PCH
+  CTimeDiscretization *m_tim = NULL;
 #ifdef RANDOM_WALK
   RandomWalk* rw_pcs = NULL; // By PCH
 #endif
@@ -371,10 +359,13 @@ int LOPTimeLoop_PCS(double*dt_sum)
   double pcs_dm_error = 1.0e8;
   double pcs_dm_error0 = 1.0e8;
   double pcs_dm_cp_error = 1.0e8;
-  int lop_coupling_iterations=1; 
+  int lop_coupling_iterations = 10; 
 //  int lop_nonlinear_iterations = 15; //OK_OUT 2;
   double pcs_coupling_error = 1000; //MB
-  bool CalcVelocities = false;
+  bool CalcVelocities = false;  //WW
+  bool time_step_sum = true;
+  // Mixed time step WW
+  double dt0 = dt; // Save the original time step size
   //----------------------------------------------------------------------
   //
   if(pcs_vector.size()==1) 
@@ -388,7 +379,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
   string pcs_problem_type = PCSProblemType();
   //----------------------------------------------------------------------
   // Need velocities ? //MB
-  if(T_Process||M_Process||MASS_TRANSPORT_Process){
+  if(T_Process||MH_Process||MASS_TRANSPORT_Process){
     cout << "  VELOCITIES " << endl;
     CalcVelocities = true;
   }
@@ -466,9 +457,9 @@ int LOPTimeLoop_PCS(double*dt_sum)
 		if(m_pcs->saturation_switch == true)
 			m_pcs->CalcSaturationRichards(1, false); // JOD
 		else
-          m_pcs->CalcSecondaryVariablesRichards(1,false);  //WW
-        if (CalcVelocities)
-          m_pcs->CalIntegrationPointValue(); //WW
+          m_pcs->CalcSecondaryVariablesUnsaturatedFlow();  //WW
+        CalcVelocities = true;
+        m_pcs->CalIntegrationPointValue(); //WW
 		
 		if(lop_coupling_iterations > 1) // JOD  coupling
           pcs_coupling_error = m_pcs->CalcCouplingNODError();
@@ -499,6 +490,19 @@ int LOPTimeLoop_PCS(double*dt_sum)
           }
         }
       }
+      // 24.02.2004 WW
+      // TH coupling ---------------------------------
+      int th_counter = 0;  
+      TH_COUPLING:
+    //    cout<<" TH couping iteration  "<<endl; 
+      th_counter++;  
+      m_pcs = PCSGet("MULTI_PHASE_FLOW");
+      if(m_pcs&&m_pcs->selected)
+      {
+         pcs_flow_error = m_pcs->ExecuteNonLinear();
+         m_pcs->CalIntegrationPointValue(); //WW
+      }
+      // End: MULTI_PHASE_FLOW -----------------------
       //--------------------------------------------------------------------
       m_pcs = PCSGet("COMPONENTAL_FLOW");
       if(m_pcs&&m_pcs->selected){
@@ -531,18 +535,35 @@ int LOPTimeLoop_PCS(double*dt_sum)
           VELCalcAll(m_pcs);
 		else
           m_pcs->CalIntegrationPointValue(); //WW
-        m_pcs->CalcELEVelocities(); //OK
       }
-      //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      //--------------------------------------------------------------------     
 	  m_pcs = PCSGet("HEAT_TRANSPORT"); //WW
+      m_tim = TIMGet("HEAT_TRANSPORT"); //WW
+      if(m_tim&&k==0) //WW
+      {
+         time_step_sum = m_tim->CheckTime(aktuelle_zeit); 
+         if(m_tim==time_vector[0]) time_step_sum = true; 
+      }
+      if(!time_step_sum) m_pcs = false;  //WW
       if(m_pcs&&m_pcs->selected){
-        if(m_pcs->non_linear){
-          m_pcs->ExecuteNonLinear();
+        dt = dt_sum; //WW
+        double err_T = 0.0; //WW 
+        if(m_pcs->non_linear)
+          err_T = m_pcs->ExecuteNonLinear();
+        else
+        {
+     //     lop_coupling_iterations = 1;
+          err_T = m_pcs->Execute();
         }
-        else{
-          lop_coupling_iterations = 1;
-          m_pcs->Execute();
+        // Check TH coupling iteration WW
+        if(m_pcs->m_num->cpl_variable.find("TH")!=string::npos) 
+        {
+           err_T = max(pcs_flow_error, err_T); 
+           if(  (err_T>m_pcs->m_num->cpl_tolerance)
+              &&(th_counter<m_pcs->m_num->cpl_iterations))
+              goto TH_COUPLING;
         }
+        dt = dt0; //WW
       }
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       if(k==0) pcs_flow_error0 = pcs_flow_error;
@@ -665,7 +686,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
             //WW/OK  if(m_tim->time_control_name.compare("COURANT_MANIPULATE")==0) m_tim->CheckCourant();
             //WW/OK  if (aktueller_zeitschritt == 1) m_tim->CheckCourant();//CMCD 03/2006
             dt_pcs = m_tim->time_step_vector[0];
-            if(*dt_sum>=dt_pcs){
+            if(dt_sum>=dt_pcs){
               for(i=0;i<no_processes;i++){
                 m_pcs = pcs_vector[i];
                 if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0)
@@ -692,7 +713,7 @@ int LOPTimeLoop_PCS(double*dt_sum)
               if(Eqlink_vec.size()>0) 
                 Eqlink_vec[0]->ExecuteEQLINK();
 #endif
-	         *dt_sum = 0.0;
+	          dt_sum = 0.0;
             }
           }
           else
@@ -720,8 +741,25 @@ int LOPTimeLoop_PCS(double*dt_sum)
         m_pcs = pcs_vector[i];
         if(m_pcs->num_type_name.find("EXCAVATION")!=string::npos)
           continue;
- 	    if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
-        {
+ 	  if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
+      {
+          m_tim = NULL; //WW
+          for(int ii=0;ii<(int)time_vector.size();ii++)
+          {
+             if(time_vector[ii]->pcs_type_name.find("DEFORMATION")!=string::npos)
+             {
+                m_tim = time_vector[ii];
+                break;
+             }
+          }          
+          if(m_tim&&k==0)  //WW
+          {
+             time_step_sum = (time_step_sum&&m_tim->CheckTime(aktuelle_zeit))?true:false; 
+             // In case that the first time discretization entry is for the deformation process
+             if(m_tim==time_vector[0]) time_step_sum = true; 
+          }
+          if(!time_step_sum) break;
+          dt = dt_sum; //WW
           dm_pcs = (CRFProcessDeformation *)(m_pcs);
           pcs_dm_error=dm_pcs->Execute(k);
           //Error
@@ -730,38 +768,49 @@ int LOPTimeLoop_PCS(double*dt_sum)
              pcs_dm_cp_error = fabs(pcs_dm_error-pcs_dm_error0)/pcs_dm_error0;
           pcs_dm_error0 = pcs_dm_error;
           pcs_flow_error = max(pcs_flow_error, pcs_dm_cp_error);
-        }
+		  if (dm_pcs->type==41)
+		  {
+              m_pcs->cal_integration_point_value = true;
+              dm_pcs->CalIntegrationPointValue(); 
+		  }
+          dt = dt0;
+          break;
       }
+    }
       //if(!H_Process) break;
       if(k>0)
       {
-       //if(pcs_flow_error<TolCoupledF)  // JOD what is this???
-       //    break;         
-			//||pcs_flow_error/pcs_flow_error0<TolCoupledF)
 		if(pcs_coupling_error<TolCoupledF)  // JOD  
           break;
+        if(pcs_flow_error<TolCoupledF)
+        //    ||pcs_flow_error/pcs_flow_error0<TolCoupledF)
+        break;
       }
       if(H_Process&&M_Process&&k>0) 
         cout << "\t    P-U coupling iteration: " << k 
-             <<" Error: " <<pcs_coupling_error<<endl;
+             <<" Error: " <<min(pcs_coupling_error, pcs_flow_error)<<endl;
   } // coupling iterations
   //======================================================================
   // Extropolate the Gauss values to element nodes for deformation process
   //----------------------------------------------------------------------
   if(dm_pcs)
   {
-    if(H_Process&&dm_pcs->type!=41) // HM partitioned scheme
-       dm_pcs->ResetTimeStep(); 
-     dm_pcs->Extropolation_GaussValue();
+      if(H_Process&&dm_pcs->type!=41) // HM partitioned scheme
+         dm_pcs->ResetTimeStep(); 
+      dm_pcs->Extropolation_GaussValue();
   }
   //----------------------------------------------------------------------
+  //  
   //  Update the results
+  if(time_step_sum) dt_sum = 0.0; //WW
   for(i=0;i<no_processes;i++)
   {
-    m_pcs = pcs_vector[i];
-    m_pcs->WriteSolution();
-    if(m_pcs->m_msh) // MSH
-    { 
+     m_pcs = pcs_vector[i];
+     m_pcs->WriteSolution(); //WW
+     m_pcs->CheckMarkedElement();
+     m_pcs->Extropolation_MatValue();  //WW
+	 if(m_pcs->cal_integration_point_value) //WW
+        m_pcs->Extropolation_GaussValue();
       m_pcs->CopyTimestepNODValues(); //MB
 #define SWELLING
 #ifdef SWELLING
@@ -772,29 +821,17 @@ int LOPTimeLoop_PCS(double*dt_sum)
              m_pcs->SetElementValue(l,nidx0, m_pcs->GetElementValue(l,nidx1));
 		}
 #endif
-    }
-    else
-    {
-      for(j=0;j<m_pcs->pcs_number_of_primary_nvals;j++)
-      {
-        timelevel=0;
-        nidx0 = PCSGetNODValueIndex(m_pcs->pcs_primary_function_name[j],timelevel);
-        timelevel=1;
-        nidx1 = PCSGetNODValueIndex(m_pcs->pcs_primary_function_name[j],timelevel);
-        CopyNodeVals(nidx1,nidx0);
-      }
-    }
   }
+  //
+
   //----------------------------------------------------------------------
   LOPCalcELEResultants();
   cout << "Calculation of NOD resultants" << endl;
   LOPCalcNODResultants(); //OK
   //----------------------------------------------------------------------
+  cout<<"CPU time elapsed until this time step  "<<TGetTimer(0)<<"s"<<endl; //WW
   return 1;
 }
-
-
-
 #ifdef LOOP_TO_DO
 /*
   //WW  LOPCalcElementResultants1();
@@ -1206,7 +1243,6 @@ void PCSCalcSecondaryVariables(void){
       break;
     case 66:
       //Temp mit pcs, only for test MB
-      ASMCalcNodeWDepth(m_pcs);
       break;
     case 11: /* Non-isothermal flow process */
       break;

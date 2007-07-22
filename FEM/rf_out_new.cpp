@@ -655,7 +655,7 @@ void OUTData(double time_current, const int time_step_number)
 		  {
 		    OutputBySteps = false;
             m_out->WriteDataVTK(time_step_number); //OK
-
+            if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
 		  }
 		  else
 		  {
@@ -663,6 +663,7 @@ void OUTData(double time_current, const int time_step_number)
               if(time_current>=m_out->time_vector[j]){
                 m_out->WriteDataVTK(time_step_number); //OK
                 m_out->time_vector.erase(m_out->time_vector.begin()+j);
+                if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
 		        break;	 
               }
 		    } 
@@ -764,7 +765,6 @@ void COutput::NODWriteDOMDataTEC()
   if(pcs_type_name.size()>0) // PCS
     tec_file_name += "_" + pcs_type_name;
   //======================================================================
-  if(m_msh){//WW
     switch (te) //NW
     {
     case 1:
@@ -845,30 +845,6 @@ void COutput::NODWriteDOMDataTEC()
     WriteTECHeader(tec_file,te,eleType);
     WriteTECNodeData(tec_file);
     WriteTECElementData(tec_file,te);
-  }
-  //======================================================================
-  // RFI
-  else{
-    //--------------------------------------------------------------------
-    // line elements
-    if(msh_no_line>0){
-    //string tec_file_name = file_base_name + "_" + out_type_name + "_line" + TEC_FILE_EXTENSION;
-    //string tec_file_name = pcs_type_name + "_" + "domain" + "_line" + TEC_FILE_EXTENSION;
-#ifdef SX
-      char sxbuffer[4096*4096];
-#endif
-      string tec_file_name = file_base_name + "_" + "domain" + "_line" + TEC_FILE_EXTENSION;
-      fstream tec_file (tec_file_name.data(),ios::app|ios::out);
-#ifdef SX
-      tec_file.rdbuf()->pubsetbuf(sxbuffer,4096*4096);
-#endif
-      tec_file.setf(ios::scientific,ios::floatfield);
-      tec_file.precision(12);
-      if (!tec_file.good()) return;
-      WriteTECHeader(tec_file,1,"QUADRILATERAL");
-      WriteTECNodeData(tec_file);
-      WriteTECElementData(tec_file,1);
-    }
     //--------------------------------------------------------------------
     // tri elements
     if(msh_no_tris>0){
@@ -977,7 +953,7 @@ void COutput::NODWriteDOMDataTEC()
       WriteTECElementData(tec_file,3);
     }
   }
-  }
+
 }
 
 /**************************************************************************
@@ -1015,12 +991,6 @@ void COutput::WriteTECNodeData(fstream& tec_file)
       m_pcs = PCSGet(nod_value_vector[k],true);
       if(m_pcs != NULL){
       NodeIndex[k] = m_pcs->GetNodeValueIndex(nod_value_vector[k]);
-      //WW 
-	  if(nod_value_vector[k].find("SATURATION")!=string::npos)
-	  {
-        NodeIndex[k]++;
-        continue;           
-	  }
       for(i=0; i<m_pcs->GetPrimaryVNumber(); i++) 
       {
         if(nod_value_vector[k].compare(m_pcs->pcs_primary_function_name[i])==0)
@@ -1139,7 +1109,6 @@ void COutput::WriteTECElementData(fstream& tec_file,int e_type)
   CFEMesh* m_msh = NULL;
   //m_msh = FEMGet(pcs_type_name);
   m_msh = GetMSH();
-  if(m_msh){
     for(i=0l;i<(long)m_msh->ele_vector.size();i++)
 	  {
       if(!m_msh->ele_vector[i]->GetMark()) continue;       
@@ -1147,45 +1116,7 @@ void COutput::WriteTECElementData(fstream& tec_file,int e_type)
         m_msh->ele_vector[i]->WriteIndex_TEC(tec_file);
       }
 	  }
-  }
   //----------------------------------------------------------------------
-  else{
-    long *nodes = NULL;
-    for(i=0;i<ElementListLength;i++) {
-      if (!ElGetElementActiveState(i)) continue; //WW
-      nodes = ElGetElementNodes(i);
-      if(ElGetElementType(i)==e_type){
-        switch(ElGetElementType(i)){
-          case 1:
-            tec_file \
-              << nodes[0]+1 << " " << nodes[1]+1 << " " << nodes[1]+1 << " " << nodes[0]+1 << endl;
-            break;
-          case 2:
-            tec_file \
-              << nodes[0]+1 << " " << nodes[1]+1 << " " << nodes[2]+1 << " " << nodes[3]+1 << endl;
-            break;
-          case 3:
-            tec_file \
-              << nodes[0]+1 << " " << nodes[1]+1 << " " << nodes[2]+1 << " " << nodes[3]+1 << " " \
-              << nodes[4]+1 << " " << nodes[5]+1 << " " << nodes[6]+1 << " " << nodes[7]+1 << endl;
-            break;
-          case 4:
-            tec_file \
-              << nodes[0]+1 << " " << nodes[1]+1 << " " << nodes[2]+1 << endl;
-            break;
-          case 5:
-            tec_file \
-              << nodes[0]+1 << " " << nodes[1]+1 << " " << nodes[2]+1 << " " << nodes[3]+1 << endl;
-            break;
-          case 6:
-            tec_file \
-              << nodes[0]+1 << " " << nodes[0]+1 << " " << nodes[1]+1 << " " << nodes[2]+1 << " " \
-              << nodes[3]+1 << " " << nodes[3]+1 << " " << nodes[4]+1 << " " << nodes[5]+1 << endl;
-            break;
-        }
-      }
-    }
-  }
 }
 
 /**************************************************************************
@@ -1333,12 +1264,14 @@ void COutput::WriteELEValuesTECData(fstream& tec_file)
   bool out_element_vel = false;
   for(j=0; j<no_ele_values; j++) //WW
   {
-    if(ele_value_vector[j].find("VELOCITY")!=string::npos)
-	{
-      out_element_vel = true;
-      break;
-	}
+      if(ele_value_vector[j].find("VELOCITY")!=string::npos)
+	  {
+           out_element_vel = true;
+           break;
+	  }
+            
   }
+
   vector<int>ele_value_index_vector(no_ele_values);
   GetELEValuesIndexVector(ele_value_index_vector);
   //--------------------------------------------------------------------
@@ -1399,7 +1332,7 @@ Programing:
 double COutput::NODWritePLYDataTEC(int number)
 {
   int i,k;
-  int nidx;
+//WW  int nidx;
   long j, gnode;
   bool bdummy = false;
   int ns = 4;
@@ -1608,24 +1541,6 @@ double COutput::NODWritePLYDataTEC(int number)
     //OK cout << "Flux averall: " << flux_sum << endl;
   }
   //======================================================================
-  // RFI ToBeRemoved
-  else
-  {
-    long *nodes = NULL;
-    long no_nodes = 0;
-    nodes = MSHGetNodesClose(&no_nodes, m_ply);//CC
-    m_ply->GetPointOrderByDistance();
-    for(j=0;j<no_nodes;j++){
-      tec_file << m_ply->sbuffer[j] << " ";
-      for(k=0;k<no_variables;k++){
-//SB        nidx = PCSGetNODValueIndex(pcs_name_vector[k],1);
-//SB: namepatch
-	    nidx = PCSGetNODValueIndex(GetPFNamebyCPName(nod_value_vector[k]),1);
-		tec_file << GetNodeVal(nodes[m_ply->OrderedPoint[j]],nidx) << " ";
-      }
-      tec_file << endl;
-    }
-  }
   //======================================================================
   return flux_sum;
 }
@@ -1641,11 +1556,11 @@ Programing:
 **************************************************************************/
 void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
 {
-  int k;
+  int i, k; //WW
   double flux_nod, flux_sum = 0.0;
   //----------------------------------------------------------------------
   CRFProcess* dm_pcs = NULL;
-  for(int i=0;i<(int)pcs_vector.size();i++){
+  for(i=0;i<(int)pcs_vector.size();i++){
 	if(pcs_vector[i]->pcs_type_name.find("DEFORMATION")!=string::npos){
        dm_pcs = pcs_vector[i];
        break;
@@ -1694,7 +1609,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
   GetNodeIndexVector(NodeIndex);
   //--------------------------------------------------------------------
   // Write header
-  if(time_step_number==1){
+  if(time_step_number==0){ //WW  Old: if(time_step_number==1)
     string project_title_string = "Time curves in points"; //project_title;
     tec_file << "TITLE = \"" << project_title_string << "\"" << endl;
     tec_file << "VARIABLES = Time ";
@@ -1702,7 +1617,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
       tec_file << nod_value_vector[k] << " ";
     //
     #ifdef RFW_FRACTURE
-    for(int i=0; i<(int)mmp_vector.size(); ++i)
+    for(i=0; i<(int)mmp_vector.size(); ++i)
     {
       if( mmp_vector[i]->frac_num >0)
       {
@@ -1761,7 +1676,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
   //..................................................................
   // Mass transport
   if(pcs_type_name.compare("MASS_TRANSPORT")==0){
-    for(int i=0;i<(int)nod_value_vector.size();i++){
+    for(i=0;i<(int)nod_value_vector.size();i++){
       nod_value_name = nod_value_vector[i];
       for(l=0;l<(int)pcs_vector.size();l++){
         m_pcs = pcs_vector[l];
@@ -1784,7 +1699,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
   //..................................................................
   else
   {
-    for(int i=0;i<(int)nod_value_vector.size();i++)
+    for(i=0;i<(int)nod_value_vector.size();i++)
     {
       //..................................................................
       // PCS
@@ -1819,7 +1734,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
     }
     //....................................................................    
     #ifdef RFW_FRACTURE
-    for(int i=0; i<(int)mmp_vector.size(); ++i)
+    for(i=0; i<(int)mmp_vector.size(); ++i)
     {
       if( mmp_vector[i]->frac_num >0)
       {
@@ -1834,11 +1749,11 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
     //....................................................................
     if(dm_pcs) //WW
     {
-         for(int i=0;i<ns;i++)
+         for(i=0;i<ns;i++)
            ss[i] = dm_pcs->GetNodeValue(msh_node_number,stress_i[i]);
          tec_file<<-DeviatoricStress(ss)/3.0<<" ";
          tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0)<<"  ";
-         for(int i=0;i<ns;i++)
+         for(i=0;i<ns;i++)
            ss[i] = dm_pcs->GetNodeValue(msh_node_number,strain_i[i]);
          DeviatoricStress(ss);
          tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0);        
@@ -2259,7 +2174,7 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
   //--------------------------------------------------------------------
   // Write header
   int i,j;
-  if(time_step_number==1){
+  if(time_step_number==0){ // WW Old:  if(time_step_number==1)
     string project_title_string = "Time curve at surface"; //project_title;
     tec_file << "TITLE = \"" << project_title_string << "\"" << endl;
     tec_file << "VARIABLES = Time ";
@@ -2649,10 +2564,12 @@ Programing:
 void COutput::WriteVTKNodeData(fstream& vtk_file)
 {
 // header for node data 
-      vtk_file << "POINTS "<< (long)m_msh->nod_vector.size() << " float" << endl;
+   CFEMesh* m_msh = GetMSH(); //WW
+   vtk_file << "POINTS "<< m_msh->GetNodesNumber(false) << " float" << endl;
+
 
   CNode* m_nod = NULL;
-  for(long i=0;i<(long)m_msh->nod_vector.size();i++){
+  for(long i=0;i<m_msh->GetNodesNumber(false) ;i++){
     m_nod = m_msh->nod_vector[i];
     vtk_file << " " << m_nod->X() << " " << m_nod->Y() << " " << m_nod->Z() << " " << endl;
   }
@@ -2672,6 +2589,7 @@ void COutput::WriteVTKElementData(fstream& vtk_file)
   int j;
   long no_all_elements =0;
   CElem* m_ele = NULL;
+  CFEMesh* m_msh = GetMSH(); //WW
 
 // count overall length of element vector 
   for(long i=0;i<(long)m_msh->ele_vector.size();i++){
@@ -2766,28 +2684,49 @@ FEMLib-Method:
 Task:
 Programing:
 04/2006 kg44 Implementation
+10/2006 WW Output secondary variables
 **************************************************************************/
 void COutput::WriteVTKValues(fstream&vtk_file)
 {
-  int p,nidx;
   CRFProcess* m_pcs = NULL;
-  int no_processes = (int)pcs_vector.size();
+  const int nName = (int)nod_value_vector.size();
+  long j;
+  int i, k;
+  vector<int> NodeIndex(nName);
+//WW  int no_processes = (int)pcs_vector.size();
 
+  CFEMesh* m_msh = GetMSH();
 // node data first
-    vtk_file << "POINT_DATA " << (long)m_msh->nod_vector.size() << endl;
+    vtk_file << "POINT_DATA " <<m_msh->GetNodesNumber(false) << endl;
 // Each process gets its own field
-  for(p=0;p<no_processes;p++){
-    m_pcs = pcs_vector[p];
-    vtk_file << "SCALARS " << m_pcs->pcs_primary_function_name[0] << " float 1" << endl;
+
+  //======================================================================
+  //--------------------------------------------------------------------
+  //WW 
+  for(k=0;k<nName;k++)
+  {
+    m_pcs = PCSGet(nod_value_vector[k],true);
+    if(!m_pcs) continue;
+    NodeIndex[k] = m_pcs->GetNodeValueIndex(nod_value_vector[k]);
+    //   if(nod_value_vector[k].find("SATURATION")!=string::npos)
+    //   NodeIndex[k]++;
+    for(i=0; i<m_pcs->GetPrimaryVNumber(); i++) 
+    {
+      if(nod_value_vector[k].compare(m_pcs->pcs_primary_function_name[i])==0)
+      { 
+         NodeIndex[k]++;
+         break;
+       }
+    }
+    vtk_file << "SCALARS " << nod_value_vector[k] << " float 1" << endl;
     vtk_file << "LOOKUP_TABLE default" <<endl;
-
-  for(long i=0;i<(long)m_msh->nod_vector.size();i++){
-      nidx = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0])+1;
-      vtk_file << " " << m_pcs->GetNodeValue(i,nidx) << endl;
-  } // end nodes
-
-  } // end processes
-
+    //....................................................................
+    for(j=0l;j<m_msh->GetNodesNumber(false);j++)
+    {
+       if(NodeIndex[k]>-1)
+          vtk_file <<" "<< m_pcs->GetNodeValue( m_msh->nod_vector[j]->GetIndex(),NodeIndex[k]) << endl;
+    }
+  }
 // element data
   if(ele_value_vector.size()>0)
     m_pcs = GetPCS_ELE(ele_value_vector[0]);
@@ -2798,7 +2737,6 @@ void COutput::WriteVTKValues(fstream&vtk_file)
   vector<int>ele_value_index_vector(no_ele_values);
   GetELEValuesIndexVector(ele_value_index_vector);
   //--------------------------------------------------------------------
-  int j;
 //  double* xyz;
 //WW  CElem* m_ele = NULL;
   FiniteElement::ElementValue* gp_ele = NULL;

@@ -37,8 +37,6 @@ class CPARDomain
 {
   private:
     vector<long*> element_nodes_dom; //WW
-    vector<long*> node_conneted_nodes; //WW
-    vector<int> num_nodes2_node; //WW
     long nnodes_dom;
     long nnodesHQ_dom;
 //#ifdef USE_MPI //WW
@@ -76,7 +74,7 @@ class CPARDomain
     //
     void CreateEQS(CRFProcess *m_pcs);
     void CalcElementMatrices(CRFProcess*);
-    void AssembleMatrix(CRFProcess*);
+ //WW   void AssembleMatrix(CRFProcess*);
     void WriteMatrix();
     void SolveEQS();
     long GetDOMNode(long);
@@ -85,6 +83,9 @@ class CPARDomain
     
     bool selected; //OK
     bool quadratic; //WW
+    vector<long*> node_conneted_nodes; //WW
+    vector<int> num_nodes2_node; //WW
+    // 
     long GetDomainNodes() const  //WW
         {if(quadratic) return nnodesHQ_dom;
 	  else  return  nnodes_dom;  }

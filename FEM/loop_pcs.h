@@ -21,6 +21,5 @@ extern int pcs_dimension;
 */
 extern int pcs_number_of_fluid_phases;
 extern int LOPPreTimeLoop_PCS();
-extern int LOPTimeLoop_PCS(double*);
-extern double dt_sum;
+extern int LOPTimeLoop_PCS(double& dt_sum);  // (double*) WW
 #endif

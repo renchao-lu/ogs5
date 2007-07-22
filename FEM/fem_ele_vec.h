@@ -22,6 +22,7 @@ namespace FiniteElement{
     using Math_Group::SymMatrix;
     using Math_Group::Vec;
     using ::CRFProcess;
+    using ::CMediumProperties;
     using process::CRFProcessDeformation;
 	using Mesh_Group::CElem; 
 
@@ -29,15 +30,19 @@ namespace FiniteElement{
 class ElementValue_DM
 {
   public:
-      ElementValue_DM(CElem* ele, bool HM_Staggered);       
+      ElementValue_DM(CElem* ele,  const int NGP, bool HM_Staggered);       
       ~ElementValue_DM(); 
       void ResetStress(bool cpl_loop);
       void Write_BIN(fstream& os);
       void Read_BIN(fstream& is);
+      double MeanStress(const int gp)
+                {return (*Stress)(0, gp)
+                         +(*Stress)(1, gp)+(*Stress)(2, gp);}
   private:
     // Friend class 
     friend class SolidProp::CSolidProperties;
     friend class process::CRFProcessDeformation;
+    friend class ::CMediumProperties;
     friend class CFiniteElementVec;
     Matrix *Stress0; // Initial stress
     Matrix *Stress;
@@ -152,7 +157,7 @@ class CFiniteElementVec:public CElement
 	 double *Disp;
 
 	 // Temperatures of nodes
-	 double *Temp;
+	 double *Temp, Tem;
 	 double *T1;
      double S_Water; 
 
@@ -197,7 +202,6 @@ class CFiniteElementVec:public CElement
 		                    const int gp_s, int gp_t);
      void ExtropolateGuassStrain();
      void ExtropolateGuassStress();
-     int GetLocalIndex(const int gp_r, const int gp_s, int gp_t);
 
 
    	 // Compute the local finite element matrices     

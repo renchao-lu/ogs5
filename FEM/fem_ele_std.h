@@ -26,11 +26,15 @@
      //R: Richards flow
 //F: Fluid momentum
 //A: Gas flow
-enum ProcessType { L, U, G, T, C, H, M, O, R, F, A };
+enum ProcessType { L, U, G, T, C, H, M, O, R, F, A, V};
 //-----------------------------------------------------
 
 namespace process {class CRFProcessDeformation;}
 using SolidProp::CSolidProperties;
+// Predeclared classes  01/07, WW
+class CMediumProperties;
+class CSolidProperties;
+class CFluidProperties;    
 
 class CRFProcess;
 namespace FiniteElement{
@@ -58,8 +62,10 @@ class CFiniteElementStd:public CElement
      // Element claculation
      // 1. Mass matrix
      void CalcMass();
+     void CalcMass2();
      // 2. Lumped mass matrix
      void CalcLumpedMass();
+     void CalcLumpedMass2();
      // 3. Laplace matrix
      void CalcLaplace();
      // 4. Gravity term
@@ -68,16 +74,22 @@ class CFiniteElementStd:public CElement
      void CalcStrainCoupling(); 
      // 6. Thermal coupling
      void CalcRHS_by_ThermalDiffusion();
-	   // 7. Advection matrix
-	   void CalcAdvection();
-	   // 8. Storage matrix
-	   void CalcStorage();
+     // 7. Advection matrix
+     void CalcAdvection();
+     // 8. Storage matrix
+     void CalcStorage();
 	 // 9. Content matrix
 	 void CalcContent();
+     // 
+     void CalcSatution(); //WW
+     // 
+     void CalcNodeMatParatemer(); //WW
      // Assembly
      void Assembly(); 
 	 void Assembly(int dimension);	// PCH for Fluid Momentum
      void Cal_Velocity();
+     //
+     void AssembleParabolicEquationRHSVector(); //OK
 
      // CVFEM functions for overland flow   JOD
  	 void GetOverlandBasisFunctionMatrix_Line(); // to move
@@ -94,22 +106,25 @@ class CFiniteElementStd:public CElement
 	 void CalcOverlandResidual(double* head, double* depth, double* swval, double* swold, double ast, double* residual, double** amat);
      double CalcOverlandJacobiNodes(int i, int j, double *depth, double *depth_keep, double* Z, double akrw, double axx, double ayy, double** amatij, double* sumjac);
    	 double** CalcOverlandUpwindedCoefficients(double* ckwr, double axx, double ayy); 
+     //
+     // Gauss value
+     void ExtropolateGauss(CRFProcess *m_pcs, const int idof);
+     //
 
-     CRFProcess *pcs;
-     CSolidProperties *SolidProp;
-     CFluidProperties *FluidProp;
-     CFluidProperties *GasProp;
-     CMediumProperties *MediaProp;
   private:  
+     bool newton_raphson;  //24.05.2007 WW
      long index;
+     int dof_index; //24.02.2007 WW
 	 // Column index in the node value table
      int idx0, idx1, idxS, idx3; 
-     int idxp0,idxp1, idxpm, idxpf;   //YD
+     int idxp0,idxp1, idxp20, idxp21; 
      int phase; 
      int comp; // Component
-	   int LocalShift; // For RHS
+     int LocalShift; // For RHS
      // Danymic
      int idx_vel_disp[3], idx_pres;
+     // Velocity
+     int idx_vel[3]; //WW
      // Material properties
      double mat[9];
      double *eqs_rhs; //For DDC WW
@@ -118,8 +133,13 @@ class CFiniteElementStd:public CElement
      ::CRFProcess *cpl_pcs; // Pointer to coupled process. WW  
      char pcsT;
      bool dynamic; 
-     CMediumProperties *Media_Matrix;  //YD
-     CMediumProperties *mmp_Fracture;  //YD
+     CRFProcess *pcs;
+     CSolidProperties *SolidProp;
+     CFluidProperties *FluidProp;
+     CFluidProperties *GasProp;
+     CMediumProperties *MediaProp;
+     CMediumProperties *MediaProp1; // Matrix for the dual model. YD/WW
+     CSolidProperties *SolidProp1;  // Matrix for the dual model. YD/WW
      bool flag_cpl_pcs; //OK
      //-------------------------------------------------------
      // Auxillarary matrices
@@ -127,32 +147,18 @@ class CFiniteElementStd:public CElement
      Matrix *AuxMatrix;
      Matrix *AuxMatrix1;
      // Gravity matrix;
-     SymMatrix *GravityMatrix;
-
-     // Auxillarary vectors for node values
-     // Vector of local node values, e.g. pressure, temperature.
-     // Assume maximium element nodes is 20
-     double OldMatrix[64]; // For grid adapting     
-  public: //OK // to be removed WW
-     double NodalVal0[20]; //?? NodalValueSaturation, NodalValueTemperature; ...
-     double NodalVal[20];     
-     double NodalVal1[20];
-     double NodalVal2[20]; 
-     double NodalVal3[20]; 
-     double NodalVal4[20]; 
-     double NodalValC[20]; 
-     double NodalValC1[20]; 
-     double NodalVal_Sat[20]; 
-     double NodalVal_P[20]; 
-  private: //OK
-     // Gauss point value. Buffers.
-     double TG, PG;    
-     double Sw, rhow, poro, dSdp; //02:2007 WW   
+     //25.2.2007.WW  SymMatrix *GravityMatrix;
+     // Gauss point value. Buffers. // Some changes. 27.2.2007 WW
+     double TG, TG0, PG, PG2, drho_gw_dT;
+     double Sw, rhow, poro, dSdp;    
+     double rho_gw, rho_ga, rho_g, p_gw, M_g, tort;
+     //
      double edlluse[16];
      double edttuse[16];
 
      // Local matrices
      SymMatrix *Mass;
+     Matrix *Mass2;
      Matrix *Laplace;
      Matrix *Advection; //SB4200
      Matrix *Storage; //SB4200
@@ -160,14 +166,22 @@ class CFiniteElementStd:public CElement
      Matrix *StrainCoupling;
      Vec       *RHS;      
      //-------------------------------------------------------
+     void SetHighOrderNodes();  // 25.2.2007 WW 
      // Primary as water head
      bool HEAD_Flag; 
      inline double CalCoefMass();
+     inline double CalCoefMass2(int dof_index); // 25.2.2007 WW 
      inline void CalCoefLaplace(bool Gravity, int ip=0);
+     inline void CalCoefLaplace2(bool Gravity, int dof_index);
      inline double CalCoefAdvection(); //SB4200 OK/CMCD
      inline double CalCoefStorage(); //SB4200
 	 inline double CalCoefContent();
      inline double CalCoefStrainCouping();
+     inline double  CalcCoefDualTransfer();
+     inline double CalCoef_RHS_T_MPhase(int dof_index); // 27.2.2007 WW  
+     inline double CalCoef_RHS_M_MPhase(int dof_index); // 27.2.2007 WW  
+
+     //
      inline void CalNodalEnthalpy();
      //-----------------------------------------------------
      // Process type
@@ -194,31 +208,56 @@ class CFiniteElementStd:public CElement
 	 void AssembleMassMatrix(); // PCH
      // Assembly of RHS by Darcy's gravity term
      void Assemble_Gravity();
+     // Assembly of RHS by temperature for m-phase flow 27.2.2007 WW
+     void Assemble_RHS_T_MPhaseFlow();
+     // Assembly of RHS by deformation. 27.2.2007 WW
+     void Assemble_RHS_M();
 	 void AssembleRHS(int dimension); // PCH
-     void Assemble_Transfer();
+     void Assemble_DualTransfer();
      bool check_matrices; //OK4104
      void AssembleRHSVector(); //OK
-   public:
-     void AssembleParabolicEquationRHSVector(); //OK
+     // Friend classes, 01/07, WW
+     friend class ::CMediumProperties;
+     friend class ::CSolidProperties;
+     friend class ::CFluidProperties;
+     // Friend functions. WW
+     friend double ::MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem);
+
+     // Auxillarary vectors for node values
+     // Vector of local node values, e.g. pressure, temperature.
+     // Assume maximium element nodes is 20
+     //double OldMatrix[64]; // For grid adapting     
+     double *NodalVal;
+     double *NodalVal0; //?? NodalValueSaturation, NodalValueTemperature; ...
+     double *NodalVal1;
+     double *NodalVal2; 
+     double *NodalVal3; 
+     double *NodalVal4; 
+     double *NodalValC; 
+     double *NodalValC1; 
+     double *NodalVal_Sat; 
+     double *NodalVal_p2; 
 };
 
 
-// Vector for storing element values
+// Vector for storing element values WW
 class ElementValue
 {
   public:
     ElementValue(CRFProcess* m_pcs, CElem* ele);
     ~ElementValue(); 
     void getIPvalue_vec(const int IP, double * vec);
-    Matrix Velocity;
-      void GetEleVelocity(double * vec);
+    void GetEleVelocity(double * vec);
   private:
     // Friend class 
     friend class ::CRFProcess;
     friend class FiniteElement::CFiniteElementStd;
+    friend class ::COutput; //OK
     // Process
     CRFProcess *pcs;
-    friend class ::COutput; //OK
+	// Data
+    Matrix Velocity;
+    Matrix Velocity_g;
 }; 
 } // end namespace
 

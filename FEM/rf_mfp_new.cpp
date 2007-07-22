@@ -34,10 +34,10 @@ extern double GetCurveValue(int,int,double,int*);
 #include "steam67.h"
 #define PSI2PA 6895.
 #define PA2PSI 1.4503263234227701232777374909355e-4
-#define GAS_CONSTANT        8314.51
-#define COMP_MOL_MASS_AIR   28.96
-#define COMP_MOL_MASS_WATER 18.016
-#define GAS_CONSTANT_V  461.5
+#define GAS_CONSTANT    8314.51
+#define COMP_MOL_MASS_AIR    28.96
+#define COMP_MOL_MASS_WATER  18.016
+#define GAS_CONSTANT_V  461.5 //WW
 double gravity_constant = 9.81; //TEST for FEBEX OK 9.81;
 
 //==========================================================================
@@ -1045,73 +1045,37 @@ double CFluidProperties::SpecificHeatCapacity()
 FEMLib-Method:
 Task: Master calc function
 Programing:
-08/2004 OK MFP implementation based on MATCalcFluidHeatCapacity (OK)
-10/2005 YD/OK: general concept for heat capacity
+02/2007 WW MFP implementation based on MATCalcFluidHeatCapacity (OK)
 **************************************************************************/
-double MFPCalcFluidsHeatCapacity(long index,double*gp,double theta, CFiniteElementStd* assem)
+double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem)
 {
-  double saturation_phase;
   double heat_capacity_fluids=0.0;
-  int nidx0,nidx1;
-  //--------------------------------------------------------------------
-  // MMP medium properties
-  bool New = false; // To be removed. WW
-  if(fem_msh_vector.size()>0) New = true;
-  //----------------------------------------------------------------------
+  double PG=0.0, Sw = 0.0;
+  //
   CFluidProperties *m_mfp = NULL;
-  int no_fluids =(int)mfp_vector.size();
-  //YD----------- ?? OK efficiency
-  CRFProcess* m_pcs = NULL;
-  for(int i=0;i<(int)pcs_vector.size();i++){
-    m_pcs = pcs_vector[i];
-	if(m_pcs->pcs_type_name.find("RICHARDS_FLOW"))no_fluids =1;
-  }
-  //YD-----------
-  switch(no_fluids){
-    //....................................................................
-    case 1:
-      m_mfp = mfp_vector[0]; //YD
-      if(New) //WW
-	  {
-          heat_capacity_fluids = m_mfp->Density() \
-                              * m_mfp->SpecificHeatCapacity();
-	  }
-	  else
-          heat_capacity_fluids = m_mfp->Density() \
-                               * m_mfp->SpecificHeatCapacity();
-
-      break;
-    //....................................................................
-    case 2:
-      if(New) //WW
-	  {
-         nidx0 = m_pcs->GetNodeValueIndex("SATURATION1");
-         nidx1 = nidx0+1;
-		 saturation_phase = (1.-theta)*assem->interpolate(nidx0,m_pcs)
-                                + theta*assem->interpolate(nidx1,m_pcs);
-	  }
-	  else
-	  {
-         nidx0 = PCSGetNODValueIndex("SATURATION1",0);
-         nidx1 = PCSGetNODValueIndex("SATURATION1",1);	  
-         saturation_phase = (1.-theta)*InterpolValue(index,nidx0,gp[0],gp[1],gp[2]) \
-                       + theta*InterpolValue(index,nidx1,gp[0],gp[1],gp[2]);
-	  }
-      m_mfp = mfp_vector[0];
-      heat_capacity_fluids = saturation_phase \
-                           * m_mfp->Density() \
-                           * m_mfp->SpecificHeatCapacity();
-      m_mfp = mfp_vector[1];
-      heat_capacity_fluids += (1.0-saturation_phase) \
-                           * m_mfp->Density() \
-                           * m_mfp->SpecificHeatCapacity();
-      break;
-    //....................................................................
-    case 3: // Entropy based
-      break;
-    //....................................................................
-    default:
-      cout << "Error in MFPCalcFluidsHeatCapacity: no fluid phase data" << endl;
+  CRFProcess* m_pcs = assem->cpl_pcs;
+  //
+  if (m_pcs->pcs_type_name.find("MULTI_PHASE_FLOW")!=string::npos)
+  {
+     PG = assem->interpolate(assem->NodalValC1); // Capillary pressure
+     Sw = assem->MediaProp->SaturationCapillaryPressureFunction(PG,0); 
+     double PG2 = assem->interpolate(assem->NodalVal_p2);   
+     double rho_g = PG2*COMP_MOL_MASS_AIR/(GAS_CONSTANT*(assem->TG+273.15));
+     //
+     m_mfp = mfp_vector[0];
+     heat_capacity_fluids = Sw * m_mfp->Density() * m_mfp->SpecificHeatCapacity();
+     m_mfp = mfp_vector[1];
+     heat_capacity_fluids += (1.0-Sw) * rho_g * m_mfp->SpecificHeatCapacity();      
+  }  
+  else
+  {
+     PG = assem->interpolate(assem->NodalValC1); // Capillary pressure
+     if(PG<0.0)
+       Sw = assem->MediaProp->SaturationCapillaryPressureFunction(-PG,0); 
+     else
+       Sw = 1.0;
+     m_mfp = mfp_vector[0]; 
+     heat_capacity_fluids = Sw*m_mfp->Density() * m_mfp->SpecificHeatCapacity();     
   }
   return heat_capacity_fluids;
 }

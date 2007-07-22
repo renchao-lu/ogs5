@@ -127,6 +127,7 @@ void ConstructElemsToNodesList ( void )
 //OK  StopSystemTime(TIMER_CEN_LIST);
 }
 
+
 /**************************************************************************/
 /* ROCKFLOW - Funktion: Restart1DElementNodes
                                                                           */
@@ -1776,9 +1777,9 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
   /* initialize element values in element list; this is for the case, if not for all
   elements values are given in the input file */
  
- double test1;
- double test2;
- double test;
+  //WW double test1;
+  //WW double test2;
+  //WW double test;
  if(m_msh){
     for(i=EleStart;i<EleEnd;i++){
       m_ele = m_msh->ele_vector[i];
@@ -1799,8 +1800,8 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
   }
 
   m_ele = m_msh->ele_vector[0];
-  test1 = m_ele->mat_vector(0);
-  test2 = m_ele->mat_vector(1);
+  //WW test1 = m_ele->mat_vector(0);
+  //WW test2 = m_ele->mat_vector(1);
   
   
 
@@ -1952,7 +1953,7 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
       if(m_msh){
         m_ele = m_msh->ele_vector[i];
         m_ele->mat_vector(material_properties_index) = values[0];
-        test = m_ele->mat_vector(material_properties_index);
+	//WW  test = m_ele->mat_vector(material_properties_index);
       }
       else{
 	    ELESetHetFieldValues(i, nof, values);
@@ -1989,11 +1990,11 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
 long GetNearestElement(double x,double y,double z, int * help){
 	
 	long i, nextele;
-	double ex, ey, ez, dist, dist1, dist2;
+	double ex, ey, ez, dist, dist1; //, dist2;
 	
-	dist = 10000000.0; //Startwert
-	dist2 = 0.01;	// Abstand zwischen eingelesenen Knoten und Geometrieknoten-RF; 
-					// Achtung, doppelbelegung möglich bei kleinen Gitterabständen
+        dist = 10000000.0; //Startwert
+	//WW        dist2 = 0.01;	// Abstand zwischen eingelesenen Knoten und Geometrieknoten-RF; 
+        // Achtung, doppelbelegung möglich bei kleinen Gitterabständen
 	nextele = -1;
 	if(help[0] == 0) nextele = -1;
 
@@ -2028,7 +2029,7 @@ double GetAverageHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double **
   double xp[3],yp[3];
   double value;
   double NumberOfValues;
-  double InvNumberOfValues;
+  //  double InvNumberOfValues;
   CGLPoint *m_point = NULL;
   Mesh_Group::CElem* m_ele = NULL;
   
@@ -2046,7 +2047,7 @@ double GetAverageHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double **
   //-----------------------------------------------------------------------
   //Find data points in the element
   NumberOfValues = 0;
-  InvNumberOfValues = 0; 
+  //WW  InvNumberOfValues = 0; 
   m_point = new CGLPoint;
  
   average = -1;
@@ -2095,7 +2096,7 @@ Programing:
 long GetNearestHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double ** invals){
 	
   long i, nextele;
-  double ex, ey, ez, dist, dist1, dist2;
+  double ex, ey, ez, dist, dist1; //WW, dist2;
   double x, y, z;
   double* center = NULL;
   Mesh_Group::CElem* m_ele = NULL;
@@ -2108,7 +2109,7 @@ long GetNearestHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double ** i
 
   x=0.0; y=0.0; z=0.0;
   dist = 10000000.0; //Startwert
-  dist2 = 0.01;	    // Abstand zwischen eingelesenen Knoten und Geometrieknoten-RF; 
+  //WW  dist2 = 0.01;	    // Abstand zwischen eingelesenen Knoten und Geometrieknoten-RF; 
 					// Achtung, doppelbelegung möglich bei kleinen Gitterabständen
   nextele = -1;
 

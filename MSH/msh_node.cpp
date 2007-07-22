@@ -113,7 +113,7 @@ Programing:
 **************************************************************************/
 double CNode::X_displaced()
 {
-	int nidx_dm;
+	int nidx_dm=0;
 	CRFProcess* m_pcs = NULL;
 	double x_displaced=0;
 	if(M_Process||MH_Process)
@@ -133,7 +133,7 @@ Programing:
 **************************************************************************/
 double CNode::Y_displaced()
 {
-	int nidx_dm;
+	int nidx_dm=0;
 	CRFProcess* m_pcs = NULL;
 	double y_displaced=0;
 	if(M_Process||MH_Process)
@@ -153,7 +153,7 @@ Programing:
 **************************************************************************/
 double CNode::Z_displaced()
 {
-	int nidx_dm;
+	int nidx_dm=0;
 	CRFProcess* m_pcs = NULL;
 	double z_displaced=0;
 	if(M_Process||MH_Process)

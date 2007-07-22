@@ -36,6 +36,7 @@ class CSourceTerm
     vector<double> DistBC_WRiverBed;
     vector<double> DistBC_TRiverBed;
     vector<double> DistBC_BRiverBed;
+    vector<double*> normal2surface; //WW
     vector<double*>pnt_parameter_vector; //OK
     vector<long>element_st_vector;   //YD
   private: 

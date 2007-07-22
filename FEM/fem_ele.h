@@ -40,6 +40,8 @@ class CElement
      void ConfigNumerics(const int EleType);
      void ConfigElement(CElem* MElement, bool FaceIntegration=false);
      void setOrder(const int order);
+     // Set Gauss point 
+     void SetGaussPoint(const int gp, int& gp_r, int& gp_s, int& gp_t);
      // Get Gauss integration information
      double GetGaussData(const int gp, int& gp_r, int& gp_s, int& gp_t);
 
@@ -58,7 +60,7 @@ class CElement
      void CalculateRadius();
      //
      void setUnitCoordinates(double* u) 
-        { for(int i=0; i<3; i++) unit[i] = u[i];    }
+       { for(int i=0; i<3; i++) unit[i] = u[i];    }
 
      // Finite element matrices and vectors
      // Compute the local finite element matrices
@@ -86,13 +88,17 @@ class CElement
      double elemnt_average (const int idx,  CRFProcess* m_pcs, const int order =1);
 
      void SetCenterGP();
+     int GetGPindex() const {return gp;}
+     int GetElementIndex() const {return Index;}
      CElem* GetMeshElement() const {return MeshElement;} //OK 
+     // For extropolating gauss value to node
+     int GetLocalIndex(const int gp_r, const int gp_s, int gp_t);
 
      // DDC 05/2006
      void SetElementNodesDomain(long *ele_nodes) 
          {element_nodes_dom = ele_nodes;} 
 
-     void SetRWPT(const int idx) { PT_Flag = idx; } // PCH
+	 void SetRWPT(const int idx) { PT_Flag = idx; } // PCH
    protected:    
      CElem* MeshElement; 
      CPARDomain *m_dom; //OK
@@ -117,6 +123,7 @@ class CElement
      int dim;             // Dimension of real dimension  
      int nGaussPoints;    // Number of Gauss points
      int nGauss;          // Number of sample points for Gauss integration
+     int gp; // Gauss point index.   
      mutable double unit[4];      // Local coordintes
      double *Jacobian;    // Jacobian matrix
      double *invJacobian; // Inverse of Jacobian matrix.
@@ -150,8 +157,10 @@ class CElement
      int D_Flag; // Deformation
 	 int PT_Flag;	// Particle Tracking Random Walk 
      bool RD_Flag; // Dual Richards
-  
-     // Buffer
+     // For extropolation  
+     double Xi_p;
+     void SetExtropoGaussPoints(const int i); // 25.2.2007 WW 
+	 // Buffer
      int Index;
      int nNodes;
      int nnodes;
@@ -164,8 +173,8 @@ class CElement
      double X[20];
      double Y[20];
      double Z[20];	 
-     double node_val[20];
-     double dbuff[20];
+	 double node_val[20];
+	 double dbuff[20];
 };
 
 /*------------------------------------------------------------------
@@ -186,8 +195,8 @@ class ElementMatrix
       void SetMass(SymMatrix *mass) { Mass = mass;}
       void SetLaplace(Matrix *laplace) { Laplace = laplace;}
       void SetStiffness(Matrix *x) { Stiffness = x;}
-      void SetAdvection(Matrix *x) { Advection = x;}
-      void SetStorage(Matrix *x) { Storage = x;}
+	  void SetAdvection(Matrix *x) { Advection = x;}
+	  void SetStorage(Matrix *x) { Storage = x;}
       void SetCouplingMatrixA(Matrix *cplM) {CouplingA = cplM;}
       void SetCouplingMatrixB(Matrix *cplM) {CouplingB = cplM;}
       void SetRHS(Vec *rhs) {RHS = rhs;}
@@ -195,8 +204,8 @@ class ElementMatrix
       SymMatrix *GetMass() {return Mass;}
       Matrix *GetLaplace() {return Laplace;}
       Matrix *GetStiffness() {return Stiffness;}
-      Matrix *GetAdvection() {return Advection;}//SB4200
-      Matrix *GetStorage() {return Storage;}//SB4200
+	  Matrix *GetAdvection() {return Advection;}//SB4200
+	  Matrix *GetStorage() {return Storage;}//SB4200
       Matrix *GetCouplingMatrixA() {return CouplingA;}
       Matrix *GetCouplingMatrixB() {return CouplingB;}
       Vec *GetRHS() {return RHS;}
@@ -205,8 +214,8 @@ class ElementMatrix
 //      SymMatrix *Laplace;
       SymMatrix *Mass;
       Matrix *Laplace;
-      Matrix *Advection;
-      Matrix *Storage;
+	  Matrix *Advection;
+	  Matrix *Storage;
       Matrix *CouplingA; // Pressure coupling for M_Process
       Matrix *CouplingB; // Strain coupling gor H_Process
       Matrix *Stiffness;
