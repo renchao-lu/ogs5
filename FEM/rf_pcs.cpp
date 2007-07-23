@@ -1302,9 +1302,10 @@ bool PCSRead(string file_base_name)
       //..................................................................
       m_pcs->pcs_number =(int)pcs_vector.size();
       //RelocateDeformationProcess(m_pcs);
-	  if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
+	  if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos) 
       {
          pcs_vector.push_back(m_pcs->CopyPCStoDM_PCS());
+         pcs_vector[(int)pcs_vector.size()-1]->pcs_number = (int)pcs_vector.size();
          delete m_pcs;
       }
       //..................................................................

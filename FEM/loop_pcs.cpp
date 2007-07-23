@@ -440,29 +440,41 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
       }
       //------------------------------------------------------------------
       m_pcs = PCSGet("RICHARDS_FLOW");
-      if(m_pcs&&m_pcs->selected){
-
-		lop_coupling_iterations = m_pcs->m_num->cpl_iterations;  // JOD coupling
-        if(pcs_vector.size()>1 && lop_coupling_iterations > 1) {
-          m_pcs->CopyCouplingNODValues();
-         TolCoupledF = m_pcs->m_num->cpl_tolerance;
+      if(m_pcs&&m_pcs->selected)
+      {
+        //-------  WW
+        bool twoflowcpl = false;  
+        if(PCSGet("GROUNDWATER_FLOW")|| PCSGet("OVERLAND_FLOW"))
+           twoflowcpl = true;
+        if(twoflowcpl)
+        {  //-------  WW            
+           lop_coupling_iterations = m_pcs->m_num->cpl_iterations;  // JOD coupling      
+           if(pcs_vector.size()>1 && lop_coupling_iterations > 1)
+           {
+              m_pcs->CopyCouplingNODValues();
+              TolCoupledF = m_pcs->m_num->cpl_tolerance;
+           }
+           if(m_pcs->adaption) PCSStorage();
+           CFEMesh* m_msh = FEMGet("RICHARDS_FLOW");
+           if(m_msh->geo_name.compare("REGIONAL")==0)
+             LOPExecuteRegionalRichardsFlow(m_pcs);
+           else
+             pcs_flow_error = m_pcs->ExecuteNonLinear();
+	       if(m_pcs->saturation_switch == true)
+             m_pcs->CalcSaturationRichards(1, false); // JOD
+           else
+             m_pcs->CalcSecondaryVariablesUnsaturatedFlow();  //WW
+           if(lop_coupling_iterations > 1) // JOD  coupling
+              pcs_coupling_error = m_pcs->CalcCouplingNODError();
         }
-
-        if(m_pcs->adaption) PCSStorage();
-        CFEMesh* m_msh = FEMGet("RICHARDS_FLOW");
-        if(m_msh->geo_name.compare("REGIONAL")==0)
-          LOPExecuteRegionalRichardsFlow(m_pcs);
-        else
-          pcs_flow_error = m_pcs->ExecuteNonLinear();
-		if(m_pcs->saturation_switch == true)
-			m_pcs->CalcSaturationRichards(1, false); // JOD
-		else
-          m_pcs->CalcSecondaryVariablesUnsaturatedFlow();  //WW
-        CalcVelocities = true;
-        m_pcs->CalIntegrationPointValue(); //WW
-		
-		if(lop_coupling_iterations > 1) // JOD  coupling
-          pcs_coupling_error = m_pcs->CalcCouplingNODError();
+        else  //WW
+        {
+           pcs_flow_error = m_pcs->ExecuteNonLinear();
+           m_pcs->CalcSecondaryVariablesUnsaturatedFlow();  //WW
+           CalcVelocities = true;
+        } 
+        if (CalcVelocities) 
+          m_pcs->CalIntegrationPointValue(); //WW		
       }
 #ifdef _FEMPCHDEBUG_
 	// PCH Let's monitor what's going on in the FEM
@@ -567,8 +579,8 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
       }
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       if(k==0) pcs_flow_error0 = pcs_flow_error;
-	m_pcs = PCSGet("FLUID_MOMENTUM");
-    if(m_pcs&&m_pcs->selected){
+      m_pcs = PCSGet("FLUID_MOMENTUM");
+      if(m_pcs&&m_pcs->selected){
 		CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
 
 		if(m_pcs->tim_type_name.compare("STEADY")==0)
@@ -741,8 +753,8 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
         m_pcs = pcs_vector[i];
         if(m_pcs->num_type_name.find("EXCAVATION")!=string::npos)
           continue;
- 	  if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
-      {
+        if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
+        {
           m_tim = NULL; //WW
           for(int ii=0;ii<(int)time_vector.size();ii++)
           {
@@ -775,8 +787,8 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
 		  }
           dt = dt0;
           break;
+        }
       }
-    }
       //if(!H_Process) break;
       if(k>0)
       {
