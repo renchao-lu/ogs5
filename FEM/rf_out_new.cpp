@@ -1436,7 +1436,7 @@ double COutput::NODWritePLYDataTEC(int number)
   GetNodeIndexVector(NodeIndex);
   //--------------------------------------------------------------------
   // Write header
-  if(number==1)
+  if(number==0) //WW if(number==1)
   {
     string project_title_string = "Profiles along polylines"; //project_title;
     tec_file << "TITLE = \"" << project_title_string << "\"" << endl;

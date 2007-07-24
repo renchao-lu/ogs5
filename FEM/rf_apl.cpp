@@ -412,10 +412,12 @@ int ExecuteRFTimeLoop(void)
         }
     #endif
     // update current time step number
-    m_tim->step_current++;
-    if(m_tim->step_current==no_time_steps){
-      break;
+    if(m_tim->time_control_name.find("ADAPTIVE")==string::npos) //WW
+    {
+      if(m_tim->step_current==no_time_steps)
+        break;
     }
+    m_tim->step_current++; // Moved here by WW
   }
   //========================================================================
   /* modellspezifische Voreinstellungen aufheben */
