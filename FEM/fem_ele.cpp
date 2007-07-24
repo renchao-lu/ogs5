@@ -131,7 +131,7 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
 	Index = MeshElement->GetIndex();
     nnodes = MeshElement->nnodes;
 	nnodesHQ = MeshElement->nnodesHQ;
-
+    bool done = false;
 	ConfigNumerics(MeshElement->GetElementType());
 	if (MeshElement->quadratic) nNodes = nnodesHQ;
 	else nNodes = nnodes;
@@ -141,37 +141,7 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
 	// Put coordinates of nodes to buffer to enhance the computation
     if(!FaceIntegration)
     {
-       if((dim==ele_dim)&(coordinate_system%10==2))
-       {
-         switch(dim)
-         {
-           case 1:
-             for(i=0; i<nNodes; i++)
-             {
-                X[i] = MeshElement->nodes[i]->Z();  
-                Y[i] = MeshElement->nodes[i]->Y();       
-                Z[i] = MeshElement->nodes[i]->X();        
-	         }
-             break;
-           case 2:
-             for(i=0; i<nNodes; i++)
-             {
-                X[i] = MeshElement->nodes[i]->X();  
-                Y[i] = MeshElement->nodes[i]->Z();       
-                Z[i] = MeshElement->nodes[i]->Y();        
-	         }
-             break;
-           case 3:
-             for(i=0; i<nNodes; i++)
-             {
-                X[i] = MeshElement->nodes[i]->X();  
-                Y[i] = MeshElement->nodes[i]->Y();       
-                Z[i] = MeshElement->nodes[i]->Z();        
-             }
-              break;          
-         }
-       }
-       else if(dim!=ele_dim)
+       if(dim!=ele_dim)
        {
            for(i=0; i<nNodes; i++)
            {
@@ -188,28 +158,52 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
                       +(*MeshElement->tranform_tensor)(2,1)
                         *(MeshElement->nodes[i]->Z()-MeshElement->nodes[0]->Z());
                Z[i] =  MeshElement->nodes[i]->Z();
-           }                      
+           }    
+           done = true;                  
        }
-       else if(coordinate_system%10==1)
+       else
        {
-         for(i=0; i<nNodes; i++)
+         switch(dim)
          {
-           X[i] = MeshElement->nodes[i]->X();  
-           Y[i] = MeshElement->nodes[i]->Y();       
-           Z[i] = MeshElement->nodes[i]->Z();        
-         }
+           case 1:
+             if(coordinate_system%10==1)
+             {
+                for(i=0; i<nNodes; i++)
+                {
+                   X[i] = MeshElement->nodes[i]->Y();  
+                   Y[i] = MeshElement->nodes[i]->X();       
+                   Z[i] = MeshElement->nodes[i]->Z();        
+	            }
+                done = true;
+             }
+             else if(coordinate_system%10==2)
+             {
+                for(i=0; i<nNodes; i++)
+                {
+                   X[i] = MeshElement->nodes[i]->Z();  
+                   Y[i] = MeshElement->nodes[i]->Y();       
+                   Z[i] = MeshElement->nodes[i]->X();        
+	            }
+                done = true;
+             }
+             break;
+           case 2:
+             if(coordinate_system%10==2)
+             {
+                for(i=0; i<nNodes; i++)
+                {
+                   X[i] = MeshElement->nodes[i]->X();  
+                   Y[i] = MeshElement->nodes[i]->Z();       
+                   Z[i] = MeshElement->nodes[i]->Y();        
+	            }
+                done = true;
+             }
+             break;
+          }           
        }
     }
-    else
-    {
-      for(i=0; i<nNodes; i++)
-      {
-         X[i] = MeshElement->nodes[i]->X();  
-         Y[i] = MeshElement->nodes[i]->Y();       
-         Z[i] = MeshElement->nodes[i]->Z();        
-      }
-    }   
-    if(PT_Flag == 1)	// PCH
+    //
+    if(!done)
     {
        for(i=0; i<nNodes; i++)
        {
