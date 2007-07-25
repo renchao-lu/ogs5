@@ -1070,7 +1070,7 @@ double CSolidProperties::GetYieldCoefficent_DP(const double Angle)
    {
      double D_Angle = Angle*PI/180.0; 
      double sinA = sin(D_Angle); 
-     val = 6.0*sqrt(3.0)*cos(D_Angle)/(3.0+sinA); // (3.0-sinA)
+     val = 6.0*cos(D_Angle)/(3.0+sinA); // (3.0-sinA)
 //     val = 2.0*sqrt(3.0)*cos(D_Angle)/sqrt(9.0+4.0*sinA*sinA);
    }
    return val;
