@@ -652,30 +652,10 @@ void CRFProcess::Create()
   //----------------------------------------------------------------------------
   // ELE - config and create element values
   cout << "->Config ELE values" << '\n';
-  if(!m_msh)
-  {
-    ConfigELEValues1();
-    ConfigELEValues2();
-    CreateELEValues();
-    CreateELEGPValues();
-  } 
-  else AllocateMemGPoint();
-
+  AllocateMemGPoint();
   //----------------------------------------------------------------------------
   // ELE - config element matrices
   //-------------------------------------------------------
-  // Will be removed is new FEM is ready
-  bool OldFEM = true;
-  if(num_type_name.find("NEW")!=string::npos)
-     OldFEM = false;
-  if(pcs_type_name.find("DEFORMATION")!=string::npos) // TEST
-     OldFEM = false;
-  if(OldFEM) // TEST
-  {
-    if(ConfigELEMatrices)
-      ConfigELEMatrices(pcs_type_number);
-    CreateELEMatricesPointer();
-  }
   //----------------------------------------------------------------------------
   // NOD - config and create node values
   cout << "->Config NOD values" << '\n';
@@ -683,47 +663,48 @@ void CRFProcess::Create()
   double* ele_values = NULL;    // PCH
   long j;
 //  size_t size;
-  if(m_msh){
-    number_of_nvals = 2*DOF + pcs_number_of_secondary_nvals;
-    for(i=0;i<pcs_number_of_primary_nvals;i++){
-      nod_val_name_vector.push_back(pcs_primary_function_name[i]); // new time
-      nod_val_name_vector.push_back(pcs_primary_function_name[i]); // old time //need this MB!
-    }
-    for(i=0;i<pcs_number_of_secondary_nvals;i++)
-      nod_val_name_vector.push_back(pcs_secondary_function_name[i]); // new time
-    //
-    long m_msh_nod_vector_size = m_msh->NodesNumber_Quadratic;
-    for(j=0;j<m_msh_nod_vector_size;j++){
-       nod_values =  new double[number_of_nvals];
-       for(i=0;i<number_of_nvals;i++) nod_values[i] = 0.0;
-          nod_val_vector.push_back(nod_values);
-    } 
-
-    // Create element values - PCH
-    int number_of_evals = 2*pcs_number_of_evals;  //PCH, increase memory
-    if(number_of_evals>0) // WW added this "if" condition
-    {
-       for(i=0;i<pcs_number_of_evals;i++)
+ 
+  number_of_nvals = 2*DOF + pcs_number_of_secondary_nvals;
+  for(i=0;i<pcs_number_of_primary_nvals;i++)
+  {
+    nod_val_name_vector.push_back(pcs_primary_function_name[i]); // new time
+    nod_val_name_vector.push_back(pcs_primary_function_name[i]); // old time //need this MB!
+  }
+  for(i=0;i<pcs_number_of_secondary_nvals;i++)
+    nod_val_name_vector.push_back(pcs_secondary_function_name[i]); // new time
+  //
+  long m_msh_nod_vector_size = m_msh->NodesNumber_Quadratic;
+  for(j=0;j<m_msh_nod_vector_size;j++)
+  {
+     nod_values =  new double[number_of_nvals];
+     for(i=0;i<number_of_nvals;i++) nod_values[i] = 0.0;
+        nod_val_vector.push_back(nod_values);
+  } 
+  // Create element values - PCH
+  int number_of_evals = 2*pcs_number_of_evals;  //PCH, increase memory
+  if(number_of_evals>0) // WW added this "if" condition
+  {
+     for(i=0;i<pcs_number_of_evals;i++)
+     {
+       ele_val_name_vector.push_back(pcs_eval_name[i]); // new time
+       ele_val_name_vector.push_back(pcs_eval_name[i]); // old time
+     }
+     long m_msh_ele_vector_size = (long)m_msh->ele_vector.size();
+     if(ele_val_vector.size()==0)
+     {
+       for(j=0;j<m_msh_ele_vector_size;j++)
        {
-         ele_val_name_vector.push_back(pcs_eval_name[i]); // new time
-         ele_val_name_vector.push_back(pcs_eval_name[i]); // old time
-       }
-       long m_msh_ele_vector_size = (long)m_msh->ele_vector.size();
-       if(ele_val_vector.size()==0)
-       {
-         for(j=0;j<m_msh_ele_vector_size;j++)
-         {
-           ele_values =  new double[number_of_evals];
-           size_eval += number_of_evals; //WW
-           for(i=0;i<number_of_evals;i++) 
-             ele_values[i] = 0.0;
-             ele_val_vector.push_back(ele_values);
-           }
-        } 
-        else
-        {
-          for(j=0;j<m_msh_ele_vector_size;j++){
-            ele_values = ele_val_vector[j];
+         ele_values =  new double[number_of_evals];
+         size_eval += number_of_evals; //WW
+         for(i=0;i<number_of_evals;i++) 
+           ele_values[i] = 0.0;
+           ele_val_vector.push_back(ele_values);
+         }
+      } 
+      else
+      {
+        for(j=0;j<m_msh_ele_vector_size;j++){
+          ele_values = ele_val_vector[j];
 /* //Comment by WW
 #ifndef SX
 #ifdef GCC
@@ -735,21 +716,13 @@ void CRFProcess::Create()
 #endif
 #endif
 */
-            ele_values = resize(ele_values, size_eval, size_eval+ number_of_evals);
-            size_eval += number_of_evals; 
-            ele_val_vector[j] = ele_values;
-          }
+          ele_values = resize(ele_values, size_eval, size_eval+ number_of_evals);
+          size_eval += number_of_evals; 
+          ele_val_vector[j] = ele_values;
         }
      }
   }
-  else
-  {
-    ConfigNODValues1(); 
-    ConfigNODValues2();
-    CreateNODValues();
-  }
-
-
+  // 
   if(reload>=2&&type!=4&&type!=41) 
      ReadSolution(); //WW
   //----------------------------------------------------------------------------
@@ -763,9 +736,11 @@ void CRFProcess::Create()
 
   //----------------------------------------------------------------------------
   // Keep all local matrices in the memory
-  if(Memory_Type!=0)  
-    AllocateLocalMatrixMemory();
-  if(type==4||type==41)
+  if(type != 55) //Not for fluid momentum. WW
+  {
+    if(Memory_Type!=0)  
+      AllocateLocalMatrixMemory();
+    if(type==4||type==41)
     {
       // Set initialization function
       CRFProcessDeformation *dm_pcs = (CRFProcessDeformation *) this;
@@ -778,7 +753,7 @@ void CRFProcess::Create()
          fem = new CFiniteElementStd(this, Axisymm*m_msh->GetCoordinateFlag()); 
          fem->SetGaussPointNumber(m_num->ele_gauss_points);
     }
-
+  }
   //----------------------------------------------------------------------
   // Initialize the system equations 
   if(PCSSetIC_USER)
@@ -1763,9 +1738,13 @@ void CRFProcess::Config(void)
   if(pcs_type_name.find("DEFORMATION")!=string::npos)
     ConfigDeformation();
   if(pcs_type_name.find("FLUID_MOMENTUM")!=string::npos) 
-	ConfigFluidMomentum();
-  
-  if(pcs_type_name.find("RANDOM_WALK")!=string::npos) {
+  {
+     type = 55; //WW
+     ConfigFluidMomentum();
+  }  
+  if(pcs_type_name.find("RANDOM_WALK")!=string::npos)
+  {
+    type = 55; //WW
 	ConfigRandomWalk();
   }
   if(pcs_type_name.find("MULTI_PHASE_FLOW")!=string::npos) //24.02.2007 WW
@@ -6619,7 +6598,7 @@ void CRFProcess::AssembleParabolicEquationRHSVector()
   long i;
   //----------------------------------------------------------------------
   // Init
-  for(i=0;i<(long)m_msh->nod_vector.size();i++)
+  for(i=0;i<eqs->dim;i++)
   {
     eqs->b[i] = 0.0;
   }

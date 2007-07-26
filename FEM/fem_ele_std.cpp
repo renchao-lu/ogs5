@@ -4602,6 +4602,7 @@ void CFiniteElementStd::AssembleParabolicEquationRHSVector()
   //----------------------------------------------------------------------
   StiffMatrix->multi(NodalVal1, NodalVal);
   //----------------------------------------------------------------------
+  eqs_rhs = pcs->eqs->b; //WW
   for (i=0;i<nnodes;i++)
   {
     eqs_number[i] = MeshElement->nodes[i]->GetEquationIndex();
@@ -4887,7 +4888,7 @@ PCSLib-Method:
 void CFiniteElementStd::AssembleRHSVector()
 {
   int i;
-  int idx_fv;
+  int idx_fv=0;
   double NodalVal_FV[20]; 
   double FV;
   CRFProcess* m_pcs_cpl = NULL;
