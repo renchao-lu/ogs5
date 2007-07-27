@@ -2520,7 +2520,7 @@ double GetCriticalDepthNODValue(CNodeValue* cnodev,CSourceTerm* m_st, long msh_n
   double width, flowdepth, flowdepth3, flowdepth3_epsilon;
   long msh_ele;
   double epsilon = 1.e-7; // like in pcs->assembleParabolicEquationNewton
-
+  value=0.0;  //WW
 
   CRFProcess* m_pcs_this = NULL;
   m_pcs_this = PCSGet(m_st->pcs_type_name);
