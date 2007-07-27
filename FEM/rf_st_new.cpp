@@ -2052,6 +2052,7 @@ double GetGreenAmptNODValue(CNodeValue* cnodev,CSourceTerm* m_st, long msh_node)
    infiltration = H / timestep ;
    F = infiltration * timestep + Fold;
    }*/
+
    m_pcs_this->SetNodeValue(msh_node, m_pcs_this->GetNodeValueIndex("COUPLING") +1, F); // output is cumulative infiltration
  
    //thickness = F / moistureDeficit; 
@@ -2526,8 +2527,10 @@ double GetCriticalDepthNODValue(CNodeValue* cnodev,CSourceTerm* m_st, long msh_n
   long nidx1 = m_pcs_this->GetNodeValueIndex("HEAD")+1;
   flowdepth = m_pcs_this->GetNodeValue(msh_node,nidx1) - m_pcs_this->m_msh->nod_vector[msh_node]->Z()-  m_st->rill_height; 
 
-  if (flowdepth < 0.0)  
+  if (flowdepth < 0.0) { 
+	  m_pcs_this->SetNodeValue(msh_node,m_pcs_this->GetNodeValueIndex("FLUX")+0,-value); 
 	  return 0;
+  }
   else {
     flowdepth3 = pow(flowdepth,3.);
     flowdepth3_epsilon = pow(flowdepth+epsilon,3.);

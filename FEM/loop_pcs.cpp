@@ -1255,6 +1255,7 @@ void PCSCalcSecondaryVariables(void){
       break;
     case 66:
       //Temp mit pcs, only for test MB
+     ASMCalcNodeWDepth(m_pcs);
       break;
     case 11: /* Non-isothermal flow process */
       break;
