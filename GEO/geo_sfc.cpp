@@ -16,6 +16,8 @@ Programing:
 #include "geosys.h"
 #include "mainfrm.h"
 #include "afxpriv.h" // For WM_SETMESSAGESTRING
+#else //WW/JOD
+#include "makros.h"
 #endif
 //GEOLib
 #include "geo_pnt.h"
@@ -1229,7 +1231,12 @@ void Surface::ReadTIN(string tin_file_name)
   CGSProject *m_gsp = GSPGetMember("gli");
   tin_file_name_path = m_gsp->path + tin_file_name;
 #else
-  tin_file_name_path = tin_file_name;
+  tin_file_name_path = FileName;  //WW/JOD
+  basic_string <char>::size_type indexCh1a;
+  indexCh1a = tin_file_name_path.find_last_of("\\");
+  string stra = tin_file_name_path.substr (0, indexCh1a);
+  tin_file_name_path.clear();
+  tin_file_name_path = stra+"\\"+tin_file_name;
 #endif
   ifstream tin_file (tin_file_name_path.data(),ios::in);
   if (!tin_file.good()) return;
