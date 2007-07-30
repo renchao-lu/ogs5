@@ -218,7 +218,7 @@ class CFiniteElementStd:public CElement
      void AssembleRHSVector(); //OK
      // Friend classes, 01/07, WW
      friend class ::CMediumProperties;
-     friend class ::CSolidProperties;
+     friend class SolidProp::CSolidProperties;
      friend class ::CFluidProperties;
      // Friend functions. WW
      friend double ::MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem);
