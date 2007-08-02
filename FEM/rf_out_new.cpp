@@ -482,6 +482,7 @@ Programing:
 12/2005 OK VAR,MSH,PCS concept
 03/2006 WW Flag to remove exsiting files
 08/2006 OK FLX calculations
+08/2007 WW Output initial values of variables
 **************************************************************************/
 void OUTData(double time_current, const int time_step_number)
 {
@@ -521,7 +522,9 @@ void OUTData(double time_current, const int time_step_number)
     no_times = (int)m_out->time_vector.size();
     //--------------------------------------------------------------------
     if(no_times==0&&(m_out->nSteps>0)&&(time_step_number%m_out->nSteps==0))
-    OutputBySteps = true; 
+      OutputBySteps = true; 
+    if(time_step_number==0) //WW
+      OutputBySteps = true; 
     //======================================================================
     // TECPLOT    
     if(m_out->dat_type_name.compare("TECPLOT")==0)
@@ -985,110 +988,89 @@ void COutput::WriteTECNodeData(fstream& tec_file)
   CRFProcess* m_pcs_out = NULL;
   //======================================================================
   // MSH
-  if(m_msh){
-    //--------------------------------------------------------------------
-    for(k=0;k<nName;k++){
-      m_pcs = PCSGet(nod_value_vector[k],true);
-      if(m_pcs != NULL){
-      NodeIndex[k] = m_pcs->GetNodeValueIndex(nod_value_vector[k]);
-      for(i=0; i<m_pcs->GetPrimaryVNumber(); i++) 
-      {
-        if(nod_value_vector[k].compare(m_pcs->pcs_primary_function_name[i])==0)
-        { 
-          NodeIndex[k]++;
-          break;
-        }
-      }
-      }
-    }
-    //--------------------------------------------------------------------
-    //????????????????????????????????????????????????????????????????????
-    if(M_Process||MH_Process)  //WW
-    {
-      m_pcs = PCSGet("DISPLACEMENT_X1",true);
-      nidx_dm[0] = m_pcs->GetNodeValueIndex("DISPLACEMENT_X1")+1;  
-      nidx_dm[1] = m_pcs->GetNodeValueIndex("DISPLACEMENT_Y1")+1;  
-      if(max_dim>1)
-        nidx_dm[2] = m_pcs->GetNodeValueIndex("DISPLACEMENT_Z1")+1;
-      else  
-        nidx_dm[2] = -1;
-    }
-    //....................................................................
-    for(j=0l;j<m_msh->GetNodesNumber(false);j++)
-    {
-      //..................................................................
-      // XYZ
-      x[0] = m_msh->nod_vector[j]->X();
-      x[1] = m_msh->nod_vector[j]->Y();
-      x[2] = m_msh->nod_vector[j]->Z();
-      // Amplifying DISPLACEMENTs
-      if(M_Process||MH_Process)  //WW
-      {
-        for(k=0;k<max_dim+1;k++)
-          x[k] += out_amplifier*m_pcs->GetNodeValue(m_msh->nod_vector[j]->GetIndex(), nidx_dm[k]);
-      }
-      for(i=0;i<3;i++)
-        tec_file << x[i] << " ";
-      //..................................................................
-      // NOD values
-      //..................................................................
-      // Mass transport
-      if(pcs_type_name.compare("MASS_TRANSPORT")==0){
-        for(i=0;i<(int)nod_value_vector.size();i++){
-          nod_value_name = nod_value_vector[i];
-          for(int l=0;l<(int)pcs_vector.size();l++){
-            m_pcs = pcs_vector[l];
-            if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0){
-              timelevel = 0;
-              for(m=0;m<(int)m_pcs->nod_val_name_vector.size();m++){
-                if(m_pcs->nod_val_name_vector[m].compare(nod_value_name)==0){
-                  m_pcs_out = PCSGet(pcs_type_name,nod_value_name);
-                  if(!m_pcs_out)
-                    continue;
-                  if(timelevel==1){
-                    nidx = m_pcs_out->GetNodeValueIndex(nod_value_name)+timelevel;
-                    tec_file << m_pcs_out->GetNodeValue(m_msh->nod_vector[j]->GetIndex(),nidx) << " ";
-                  }
-                  timelevel++;
-                }
-              }
-            }
-          }
-        }
-      }
-      //..................................................................
-      else{
-        for(k=0;k<nName;k++){
-          m_pcs = GetPCS(nod_value_vector[k]);
-          if(m_pcs != NULL)
-           if(NodeIndex[k]>-1)
-            tec_file << m_pcs->GetNodeValue( m_msh->nod_vector[j]->GetIndex(),NodeIndex[k]) << " ";
-        }
-      }
-      tec_file << endl;
-      //..................................................................
-    }
-  }
-  //======================================================================
-  // RFI
-  else{
-    for(j=0l;j<NodeListSize();j++)
-	{
-      if((node=GetNode(j))!=NULL)
-	  {
-        x[0] = node->x;
-        x[1] = node->y;
-        x[2] = node->z;
-        tec_file << node->x << " "<< node->y << " "<< node->z << " ";
-        for(k=0;k<nName;k++){
-          //SB - namepatch        nidx = PCSGetNODValueIndex(pcs_name_vector[k],1);
-  		  nidx = PCSGetNODValueIndex(GetPFNamebyCPName(nod_value_vector[k]),1);
-		  tec_file << GetNodeVal(j,nidx) << " ";
-        }
-      }
-      tec_file << endl;
-    }
-  } 
+   //--------------------------------------------------------------------
+   for(k=0;k<nName;k++){
+     m_pcs = PCSGet(nod_value_vector[k],true);
+     if(m_pcs != NULL){
+     NodeIndex[k] = m_pcs->GetNodeValueIndex(nod_value_vector[k]);
+     for(i=0; i<m_pcs->GetPrimaryVNumber(); i++) 
+     {
+       if(nod_value_vector[k].compare(m_pcs->pcs_primary_function_name[i])==0)
+       { 
+         NodeIndex[k]++;
+         break;
+       }
+     }
+     }
+   }
+   //--------------------------------------------------------------------
+   //????????????????????????????????????????????????????????????????????
+   if(M_Process||MH_Process)  //WW
+   {
+     m_pcs = PCSGet("DISPLACEMENT_X1",true);
+     nidx_dm[0] = m_pcs->GetNodeValueIndex("DISPLACEMENT_X1")+1;  
+     nidx_dm[1] = m_pcs->GetNodeValueIndex("DISPLACEMENT_Y1")+1;  
+     if(max_dim>1)
+       nidx_dm[2] = m_pcs->GetNodeValueIndex("DISPLACEMENT_Z1")+1;
+     else  
+       nidx_dm[2] = -1;
+   }
+   //....................................................................
+   for(j=0l;j<m_msh->GetNodesNumber(false);j++)
+   {
+     //..................................................................
+     // XYZ
+     x[0] = m_msh->nod_vector[j]->X();
+     x[1] = m_msh->nod_vector[j]->Y();
+     x[2] = m_msh->nod_vector[j]->Z();
+     // Amplifying DISPLACEMENTs
+     if(M_Process||MH_Process)  //WW
+     {
+       for(k=0;k<max_dim+1;k++)
+         x[k] += out_amplifier*m_pcs->GetNodeValue(m_msh->nod_vector[j]->GetIndex(), nidx_dm[k]);
+     }
+     for(i=0;i<3;i++)
+       tec_file << x[i] << " ";
+     //..................................................................
+     // NOD values
+     //..................................................................
+     // Mass transport
+     if(pcs_type_name.compare("MASS_TRANSPORT")==0){
+       for(i=0;i<(int)nod_value_vector.size();i++){
+         nod_value_name = nod_value_vector[i];
+         for(int l=0;l<(int)pcs_vector.size();l++){
+           m_pcs = pcs_vector[l];
+           if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0){
+             timelevel = 0;
+             for(m=0;m<(int)m_pcs->nod_val_name_vector.size();m++){
+               if(m_pcs->nod_val_name_vector[m].compare(nod_value_name)==0){
+                 m_pcs_out = PCSGet(pcs_type_name,nod_value_name);
+                 if(!m_pcs_out)
+                   continue;
+                 if(timelevel==1){
+                   nidx = m_pcs_out->GetNodeValueIndex(nod_value_name)+timelevel;
+                   tec_file << m_pcs_out->GetNodeValue(m_msh->nod_vector[j]->GetIndex(),nidx) << " ";
+                 }
+                 timelevel++;
+               }
+             }
+           }
+         }
+       }
+     }
+     //..................................................................
+     else{
+       for(k=0;k<nName;k++){
+         m_pcs = GetPCS(nod_value_vector[k]);
+         if(m_pcs != NULL)
+          if(NodeIndex[k]>-1)
+           tec_file << m_pcs->GetNodeValue( m_msh->nod_vector[j]->GetIndex(),NodeIndex[k]) << " ";
+       }
+     }
+     tec_file << endl;
+     //..................................................................
+   }
+   //======================================================================
   //----------------------------------------------------------------------
 }
 
@@ -1436,7 +1418,7 @@ double COutput::NODWritePLYDataTEC(int number)
   GetNodeIndexVector(NodeIndex);
   //--------------------------------------------------------------------
   // Write header
-  if(number==0) //WW if(number==1)
+  if(number==0||number==1) //WW if(number==1)
   {
     string project_title_string = "Profiles along polylines"; //project_title;
     tec_file << "TITLE = \"" << project_title_string << "\"" << endl;
@@ -1483,63 +1465,61 @@ double COutput::NODWritePLYDataTEC(int number)
   //======================================================================
   double flux_sum = 0.0; //OK
   double flux_nod;
-  if(m_msh)
+ 
+  //....................................................................
+  m_msh->SwitchOnQuadraticNodes(false); //WW
+  // NOD at PLY
+  vector<long>nodes_vector;
+  m_msh->GetNODOnPLY(m_ply,nodes_vector);
+  //....................................................................
+  // ELE at PLY
+  if((int)ele_value_vector.size()>0)
   {
-    //....................................................................
-    m_msh->SwitchOnQuadraticNodes(false); //WW
-    // NOD at PLY
-    vector<long>nodes_vector;
-    m_msh->GetNODOnPLY(m_ply,nodes_vector);
-    //....................................................................
-    // ELE at PLY
-    if((int)ele_value_vector.size()>0)
-    {
-      vector<long>ele_vector_at_geo;
-      m_msh->GetELEOnPLY(m_ply,ele_vector_at_geo);
-    }
-    //--------------------------------------------------------------------
-    for(j=0;j<(long)nodes_vector.size();j++)
-    {
-      tec_file << m_ply->sbuffer[j] << " ";
-      gnode = nodes_vector[m_ply->OrderedPoint[j]]; //WW
-      //------------------------------------------------------------------
-      for(k=0;k<no_variables;k++)
-      {
-        if(!(nod_value_vector[k].compare("FLUX")==0))
-          m_pcs = PCSGet(nod_value_vector[k],bdummy);
-        if(!m_pcs)
-        {
-          cout << "Warning in COutput::NODWritePLYDataTEC - no PCS data" << endl;
-          tec_file << "Warning in COutput::NODWritePLYDataTEC - no PCS data" << endl;
-          return 0.0;
-        }
-        tec_file << m_pcs->GetNodeValue(gnode, NodeIndex[k]) << " ";
-        //................................................................
-        if(nod_value_vector[k].compare("FLUX")==0)
-        {
-          flux_nod = NODFlux(gnode);
-          tec_file << flux_nod << " ";
-          //flux_sum += abs(m_pcs->eqs->b[gnode]);
-          flux_sum += abs(flux_nod);
-          //OK cout << gnode << " " << flux_nod << " " << flux_sum << endl;
-        }
-        //................................................................
-      }
-      if(dm_pcs) //WW
-	  {
-        for(i=0;i<ns;i++)
-          ss[i] = dm_pcs->GetNodeValue(gnode,stress_i[i]);
-        tec_file<<-DeviatoricStress(ss)/3.0<<" ";
-        tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0)<<"  ";
-        for(i=0;i<ns;i++)
-          ss[i] = dm_pcs->GetNodeValue(gnode,strain_i[i]);
-        DeviatoricStress(ss);
-        tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0);        
-	  }
-      tec_file << endl;
-    }
-    //OK cout << "Flux averall: " << flux_sum << endl;
+    vector<long>ele_vector_at_geo;
+    m_msh->GetELEOnPLY(m_ply,ele_vector_at_geo);
   }
+  //--------------------------------------------------------------------
+  for(j=0;j<(long)nodes_vector.size();j++)
+  {
+    tec_file << m_ply->sbuffer[j] << " ";
+    gnode = nodes_vector[m_ply->OrderedPoint[j]]; //WW
+    //------------------------------------------------------------------
+    for(k=0;k<no_variables;k++)
+    {
+      if(!(nod_value_vector[k].compare("FLUX")==0))
+        m_pcs = PCSGet(nod_value_vector[k],bdummy);
+      if(!m_pcs)
+      {
+        cout << "Warning in COutput::NODWritePLYDataTEC - no PCS data" << endl;
+        tec_file << "Warning in COutput::NODWritePLYDataTEC - no PCS data" << endl;
+        return 0.0;
+      }
+      tec_file << m_pcs->GetNodeValue(gnode, NodeIndex[k]) << " ";
+      //................................................................
+      if(nod_value_vector[k].compare("FLUX")==0)
+      {
+        flux_nod = NODFlux(gnode);
+        tec_file << flux_nod << " ";
+        //flux_sum += abs(m_pcs->eqs->b[gnode]);
+        flux_sum += abs(flux_nod);
+        //OK cout << gnode << " " << flux_nod << " " << flux_sum << endl;
+      }
+      //................................................................
+    }
+    if(dm_pcs) //WW
+    {
+      for(i=0;i<ns;i++)
+        ss[i] = dm_pcs->GetNodeValue(gnode,stress_i[i]);
+      tec_file<<-DeviatoricStress(ss)/3.0<<" ";
+      tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0)<<"  ";
+      for(i=0;i<ns;i++)
+        ss[i] = dm_pcs->GetNodeValue(gnode,strain_i[i]);
+      DeviatoricStress(ss);
+      tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0);        
+    }
+    tec_file << endl;
+  }
+  //OK cout << "Flux averall: " << flux_sum << endl;
   //======================================================================
   //======================================================================
   return flux_sum;
