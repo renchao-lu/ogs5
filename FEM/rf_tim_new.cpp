@@ -500,7 +500,7 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
   switch(m_pcs->pcs_type_name[0]){
     case 'R': // Richards
       idxS  = m_pcs->GetNodeValueIndex("SATURATION1");
-      no_time_steps = (int)(1.0e10);
+      no_time_steps = 1000000000; //OK (int)(1.0e10);
 	  time_step_length = 1.e10;
 	  for(int m=0;m< mmp_vector_size;m++) m_mmp = mmp_vector[m];
 	  for (i=0;i< (long)m_pcs->m_msh->ele_vector.size();i++){  
@@ -688,7 +688,7 @@ double CTimeDiscretization::AdaptiveFirstTimeStepEstimate(void)
   switch(m_pcs->pcs_type_name[0]){
     case 'R': // Richards
       idxp  = m_pcs->GetNodeValueIndex("PRESSURE1")+1;
-      no_time_steps = (int)(1e10);
+      no_time_steps = 1000000000; //OK (int)(1e10);
 	  time_step_length = 1.e10;
 	  for (i=0;i< (long)m_pcs->m_msh->ele_vector.size();i++){  
         elem = m_pcs->m_msh->ele_vector[i];
@@ -764,19 +764,21 @@ Programing:
 **************************************************************************/
 bool CTimeDiscretization::CheckTime(double const c_time) //WW
 {
-   bool exe_pcs = false;
+  bool exe_pcs = false;
+  double pcs_step;
+  double time_forward;  
 //WW please check +1
 //OK   double pcs_step = time_step_vector[step_current+1];
-   double pcs_step = time_step_vector[step_current]; //OK
-   double time_forward;  
-   //
-   time_forward = c_time - time_current-pcs_step; 
-  
-   if(time_forward>0.0||fabs(time_forward)<DBL_MIN)
-   {
-      exe_pcs = true;
-      time_current += pcs_step;
-      step_current++; 
-   }
-   return exe_pcs;   
+  if(step_current>=(int)time_step_vector.size()) //OK
+    pcs_step = time_step_vector[(int)time_step_vector.size()-1]; //OK
+  else
+    pcs_step = time_step_vector[step_current]; //OK
+  time_forward = c_time - time_current-pcs_step; 
+  if(time_forward>0.0||fabs(time_forward)<DBL_MIN)
+  {
+    exe_pcs = true;
+    time_current += pcs_step;
+    step_current++; 
+  }
+  return exe_pcs;   
 }
