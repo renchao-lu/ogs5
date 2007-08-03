@@ -23,7 +23,6 @@ using namespace std;
 #include "msh_lib.h"
 // FEMLib
 #include "rf_ic_new.h"
-
 #include "rf_pcs.h"
 #include "nodes.h"
 #include "elements.h"
@@ -908,4 +907,20 @@ void CInitialCondition::SetDomainEle(int nidx)
          }
        }  //if
     }
+}
+
+/**************************************************************************
+FEMLib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+CInitialCondition* ICGet(string ic_name)
+{
+  CInitialCondition *m_ic = NULL;
+  for(int i=0;i<(int)ic_vector.size();i++)
+  {
+    m_ic = ic_vector[i];
+    if(m_ic->pcs_type_name.compare(ic_name)==0)
+      return m_ic;
+  }
+  return NULL;
 }

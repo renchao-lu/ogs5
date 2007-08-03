@@ -78,5 +78,6 @@ extern vector<CInitialCondition*>ic_vector;
 extern bool ICRead(string);
 extern void ICWrite(string);
 extern void ICDelete();
+extern CInitialCondition* ICGet(string); //OK
 
 #endif

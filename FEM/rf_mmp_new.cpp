@@ -144,7 +144,7 @@ last modification:
 bool MMPRead(string base_file_name)
 {
   //----------------------------------------------------------------------
-  MMPDelete();  
+//OK  MMPDelete();  
   //----------------------------------------------------------------------
   cout << "MMPRead" << endl;
   CMediumProperties *m_mat_mp = NULL;

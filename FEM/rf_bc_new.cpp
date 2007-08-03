@@ -18,8 +18,8 @@ using namespace std;
 #include "geo_vol.h"
 //include "geo_strings.h"
 #include "geo_dom.h"
-
 #include "rfstring.h"
+// MSHLib
 //#include "mshlib.h"
 // FEMLib
 extern void remove_white_space(string*);
@@ -56,6 +56,7 @@ CBoundaryCondition::CBoundaryCondition(void)
   CurveIndex = -1;
   // FCT
   conditional = false;
+  display_mode = false; //OK
 }
 
 /**************************************************************************
@@ -87,7 +88,6 @@ CBoundaryCondition::~CBoundaryCondition(void) {
     msh_node_number = -1;
     PointsHaveDistribedBC.clear();
     DistribedBC.clear();
-    
 }
 
 /**************************************************************************
@@ -326,10 +326,8 @@ ios::pos_type CBoundaryCondition::Read(ifstream *bc_file)
 
 /**************************************************************************
 FEMLib-Method: CBoundaryCondition::Write
-Task: write function
-Programing:
 02/2004 OK Implementation
-last modification:
+07/2007 OK LINEAR
 **************************************************************************/
 void CBoundaryCondition::Write(fstream* rfd_file)
 {
@@ -359,12 +357,21 @@ void CBoundaryCondition::Write(fstream* rfd_file)
   *rfd_file << " $DIS_TYPE" << endl;
   *rfd_file << "  ";
   *rfd_file << dis_type_name;
-  switch(dis_type) {
-    case 0:
+  switch(dis_type_name[0]) 
+  {
+    case 'C': // Constant
       *rfd_file << delimiter_type << geo_node_value;
+      *rfd_file << endl;
+      break;
+    case 'L': // Linear
+	  *rfd_file << " " << (int)PointsHaveDistribedBC.size() << endl;
+      for(long i=0;i<(long)PointsHaveDistribedBC.size();i++)
+      {
+	    *rfd_file << "  " << PointsHaveDistribedBC[i] << " ";
+	    *rfd_file << "  " << DistribedBC[i] << endl;
+      }
       break;
   }
-  *rfd_file << endl;
   //--------------------------------------------------------------------
   //FCT
   if(fct_name.length()>0){ //OK4108
@@ -530,8 +537,6 @@ void InterpolateValues(vector<CNodeValue*>node_value_vector)
   delete distance_vector;
 }
 
-
-
 /**************************************************************************
 FEMLib-Method: 
 Task: BC DB function
@@ -642,7 +647,6 @@ void BCExecuteDataBase(void)
   } // while BC
 }
 
-
 /**************************************************************************
 FEMLib-Method: 
 Task: BC read function
@@ -654,7 +658,7 @@ Programing:
 bool BCRead(string file_base_name)
 {
   //----------------------------------------------------------------------
-  BCDelete();  
+//OK  BCDelete();  
   //----------------------------------------------------------------------
   CBoundaryCondition *m_bc = NULL;
   char line[MAX_ZEILE];
@@ -734,17 +738,18 @@ void BCWrite(string base_file_name)
 
 /**************************************************************************
 FEMLib-Method: 
-Task: BC read function
-Programing:
 01/2004 OK Implementation
+07/2007 OK V2, global function
 **************************************************************************/
-CBoundaryCondition* CBoundaryCondition::Get(string pcs_name,string geo_name)
+CBoundaryCondition* BCGet(string pcs_name,string geo_type_name,string geo_name)
 {
   CBoundaryCondition *m_bc = NULL;
   list<CBoundaryCondition*>::const_iterator p_bc = bc_list.begin();
-  while(p_bc!=bc_list.end()) {
+  while(p_bc!=bc_list.end()) 
+  {
     m_bc = *p_bc;
-    if((m_bc->pcs_type_name.compare(pcs_name)==0)&& //OK4108
+    if((m_bc->pcs_type_name.compare(pcs_name)==0)&&
+       (m_bc->geo_type_name.compare(geo_type_name)==0)&&
        (m_bc->geo_name.compare(geo_name)==0))
        return m_bc;
     ++p_bc;
@@ -1554,4 +1559,22 @@ void BCGroupDelete(string pcs_type_name,string pcs_pv_name)
     }
     ++p;
   }
+}
+
+/**************************************************************************
+FEMLib-Method: 
+07/2007 OK Implementation
+**************************************************************************/
+CBoundaryCondition* BCGet(string pcs_type_name)
+{
+  CBoundaryCondition *m_bc = NULL;
+  list<CBoundaryCondition*>::const_iterator p_bc = bc_list.begin();
+  while(p_bc!=bc_list.end()) 
+  {
+    m_bc = *p_bc;
+    if(m_bc->pcs_type_name.compare(pcs_type_name)==0)
+      return m_bc;
+    ++p_bc;
+  }
+  return NULL;
 }

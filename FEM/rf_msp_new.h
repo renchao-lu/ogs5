@@ -36,21 +36,27 @@ class CSolidProperties
 {
   private:
     // Material parameters
+public: //OK
     double PoissonRatio;
+    int Youngs_mode;
+    Matrix *data_Youngs;
     double ThermalExpansion;
+private:
     double biot_const;
     double grav_const; //WW
     Matrix *data_Density;
-    Matrix *data_Youngs;
-    Matrix *data_Plasticity;
+public: //OK
     Matrix *data_Capacity;
     Matrix *data_Conductivity;
+private:
+    Matrix *data_Plasticity;
     Matrix *data_Creep;
     //
     int Density_mode;
-    int Youngs_mode;
+public: //OK
     int Capacity_mode;
     int Conductivity_mode;
+private:
     int Plasticity_type;
     double primary_variable[10]; //CMCD
     double primary_variable_t0[10];//CMCD
@@ -124,7 +130,7 @@ class CSolidProperties
     ~CSolidProperties();
     ios::pos_type Read(ifstream*);
     FiniteElement::CFiniteElementStd *Fem_Ele_Std;//CMCD
-
+    string name;
     // IO
     string file_base_name;
     // Output
@@ -237,6 +243,9 @@ extern vector<SolidProp::CSolidProperties*> msp_vector;
 extern bool MSPRead(string file_base_name);
 extern void MSPWrite(string);
 extern void MSPDelete();
+extern vector<string> msp_key_word_vector; //OK
+extern void MSPStandardKeywords(); //OK
+extern SolidProp::CSolidProperties* MSPGet(string); //OK
 
 extern double TensorMutiplication2(const double *s1, const double *s2, const int Dim);
 extern double TensorMutiplication3(const double *s1, const double *s2, const double *s3, const int Dim);

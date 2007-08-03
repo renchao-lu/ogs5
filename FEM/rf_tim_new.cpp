@@ -266,7 +266,7 @@ Programing:
 bool TIMRead(string file_base_name)
 {
   //----------------------------------------------------------------------
-  TIMDelete();  
+//OK  TIMDelete();  
   //----------------------------------------------------------------------
   CTimeDiscretization *m_tim = NULL;
   char line[MAX_ZEILE];
@@ -765,7 +765,9 @@ Programing:
 bool CTimeDiscretization::CheckTime(double const c_time) //WW
 {
    bool exe_pcs = false;
-   double pcs_step = time_step_vector[step_current+1];
+//WW please check +1
+//OK   double pcs_step = time_step_vector[step_current+1];
+   double pcs_step = time_step_vector[step_current]; //OK
    double time_forward;  
    //
    time_forward = c_time - time_current-pcs_step; 

@@ -37,6 +37,8 @@ using namespace std;
 
 //
 vector<SolidProp::CSolidProperties*> msp_vector;
+vector<string> msp_key_word_vector; //OK
+
 using FiniteElement::ElementValue_DM;
 namespace SolidProp{
 
@@ -78,7 +80,15 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
       new_keyword = true;
       break;
     }
-
+    //....................................................................
+    //NAME //OK
+    if(line_string.find("$NAME")!=string::npos) { //subkeyword found
+      in_sd.str(GetLineFromFile1(msp_file));
+      in_sd >> name; //sub_line
+	  in_sd.clear();
+      continue;
+    }
+    //....................................................................
     if(line_string.find("$SWELLING_PRESSURE_TYPE")!=string::npos) { // subkeyword found
       in_sd.str(GetLineFromFile1(msp_file));
 	  in_sd>>SwellingPressureType;
@@ -3780,13 +3790,50 @@ FEMLib-Method:
 void CSolidProperties::Write(fstream* msp_file)
 {
   //----------------------------------------------------------------------
-  //KEYWORD
+  // KEYWORD
   *msp_file << "#SOLID_PROPERTIES" << endl;
-  //----------------------------------------------------------------------
-  // Density
-  *msp_file << " $DENSITY" << endl;
-  *msp_file << "  " << 2000. << endl;
-  //----------------------------------------------------------------------
+  //-----------------------------------------------------------------------
+  //NAME
+  if(name.length()>0)
+  {
+    *msp_file << " $NAME" << endl;
+    *msp_file << "  ";
+    *msp_file << name << endl;
+  }
+  //-----------------------------------------------------------------------
+  // GEO_TYPE
+  //-----------------------------------------------------------------------
+  // DIMENSION
+  //-----------------------------------------------------------------------
+  // PROPERTIES
+  //.......................................................................
+  // Elasticity properties
+  *msp_file << " $ELASTICITY" << endl;
+  *msp_file << "  POISSION " << Poisson_Ratio() << endl;  
+  *msp_file << "  YOUNGS_MODULUS" << endl;
+  *msp_file << "  " << Youngs_mode;
+  *msp_file << " " << (*data_Youngs)(0) << endl;
+  //.......................................................................
+  // Thermal properties
+  *msp_file << " $THERMAL" << endl;
+  if(ThermalExpansion>=0)
+  {
+    *msp_file << "  EXPANSION" << endl;  
+    *msp_file << "  " << ThermalExpansion << endl;  
+  }
+  if(Capacity_mode>0)
+  {
+    *msp_file << "  CAPACITY" << endl;  
+    *msp_file << "  " << Capacity_mode;  
+    *msp_file << " " << (*data_Capacity)(0) << endl;  
+  }
+  if(Capacity_mode>0)
+  {
+    *msp_file << "  CONDUCTIVITY" << endl;  
+    *msp_file << "  " << Conductivity_mode;  
+    *msp_file << " " << (*data_Conductivity)(0) << endl;  
+  }
+  //-----------------------------------------------------------------------
 }
 
 }// end namespace
@@ -3805,7 +3852,7 @@ Programing:
 bool MSPRead(string file_base_name)
 {
   //----------------------------------------------------------------------
-  MSPDelete();  
+//OK  MSPDelete();  
   //----------------------------------------------------------------------
   SolidProp::CSolidProperties *m_msp = NULL;
   char line[MAX_ZEILE];
@@ -4001,3 +4048,32 @@ void MSPWrite(string base_file_name)
   //----------------------------------------------------------------------
 }
 
+/**************************************************************************
+FEMLib-Method: 
+07/2007 OK Implementation
+**************************************************************************/
+void MSPStandardKeywords()
+{
+  msp_key_word_vector.clear();
+  string in;
+  in = "POISSON_RATIO";
+    msp_key_word_vector.push_back(in);
+  in = "YOUNGS_MODULUS";
+    msp_key_word_vector.push_back(in);
+}
+
+/**************************************************************************
+FEMLib-Method: 
+07/2007 OK Implementation
+**************************************************************************/
+CSolidProperties* MSPGet(string mat_name)
+{
+  CSolidProperties *m_msp = NULL;
+  for(int i=0;i<(int)msp_vector.size();i++)
+  {
+    m_msp = msp_vector[i];
+    if(mat_name.compare(m_msp->name)==0)
+      return m_msp;
+  }
+  return NULL;
+}

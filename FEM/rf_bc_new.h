@@ -28,8 +28,10 @@ class CBoundaryCondition
   private:
     string tim_type_name; // Time function type
 	int CurveIndex; // Time funtion index
+  public: //OK
     vector<int> PointsHaveDistribedBC;
     vector<double> DistribedBC;
+  private: //OK
     friend class CBoundaryConditionsGroup;
   public:
     // PCS
@@ -55,22 +57,22 @@ class CBoundaryCondition
     double node_value_cond; //OK
     double condition; //OK
     string geo_node_substitute; //OK
-    //FCT
+    // FCT
     string fct_name;
     bool conditional;
-    //DB
+    // DB
     string db_file_name;
     void ExecuteDataBasePolyline(CGLPolyline*);
     // MSH
     long msh_node_number;
-
     string msh_type_name; //OK4105
+    // GUI
+    bool display_mode;
 
 	CBoundaryCondition(void);
     ~CBoundaryCondition(void);
     ios::pos_type Read(ifstream*);
     void Write(fstream*);
-    CBoundaryCondition* Get(string,string);
     void SetDISType(void);
     void SetGEOType(void);
     void WriteTecplot(fstream*);
@@ -130,6 +132,9 @@ extern void BCReadDataBase(string);
 extern void BCExecuteDataBase(void);
 extern void BCDelete();
 extern void BCGroupDelete(string,string);
+extern void BCGroupDelete(void);
+extern CBoundaryCondition* BCGet(string,string,string); //OK
+extern CBoundaryCondition* BCGet(string); //OK
 
 //ToDo
 extern long IsNodeBoundaryCondition(char *name, long node);

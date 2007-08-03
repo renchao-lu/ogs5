@@ -103,7 +103,7 @@ typedef struct {
 } LINEAR_SOLVER_PROPERTIES;
 
 typedef struct {
-    char *name;
+    char pcs_type_name[80];
     void *matrix;
     double *b;
     double *x;

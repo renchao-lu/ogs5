@@ -84,8 +84,8 @@ class CSourceTerm
     // TIM
     int curve;
     string tim_type_name;
-    // DISPLAY
-    int display_mode;
+    // GUI
+    bool display_mode;
     //Analytical term for matrix diffusion
     bool analytical;
     int analytical_material_group;
@@ -170,7 +170,7 @@ extern void STGroupsDelete(void);//Haibing;
 extern long aktueller_zeitschritt;
 extern double aktuelle_zeit;
 extern vector<string>analytical_processes;
-
+extern CSourceTerm* STGet(string,string,string); //OK
 
 // WW moved here
 extern  double GetAnalyticalSolution(long node_number, CSourceTerm *m_st);//CMCD, WW

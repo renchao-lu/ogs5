@@ -43,9 +43,11 @@ Task: constructor
 Programing:
 11/2004 OK Implementation
 10/2005 OK pcs_type_name
+07/2007 OK DEFORMATION
 **************************************************************************/
-CNumerics::CNumerics(string pcs_type_name)
+CNumerics::CNumerics(string name)
 {
+  pcs_type_name = name; //OK
   // GLOBAL
   renumber_method = 0;
   // LS - Linear Solver
@@ -59,7 +61,7 @@ CNumerics::CNumerics(string pcs_type_name)
   // NLS - Nonlinear Solver
   nls_method_name = "PICARD";
   nls_method = 0; // Default, Picard. 1: Newton
-  nls_max_iterations = 1;
+  nls_max_iterations = 1; //OK
   nls_error_tolerance = 1.0e-4;
   nls_error_tolerance_local = 1.0e-10; //For element level
   nls_relaxation = 0.0;
@@ -71,10 +73,22 @@ CNumerics::CNumerics(string pcs_type_name)
   ele_gauss_points = 3;
   ele_mass_lumping = 0;
   ele_upwinding = 0;
+  //----------------------------------------------------------------------
   // Deformation
   GravityProfile = 0;
   DynamicDamping = NULL; //WW
-  if(pcs_type_name.compare("RICHARDS_FLOW")==0){
+  if(pcs_type_name.compare("DEFORMATION")==0)
+  {
+    ls_method = 2;
+    ls_error_method = 2;
+    ls_error_tolerance = 1e-12;
+    ls_max_iterations = 2000;
+    ls_precond = 100;
+    ls_storage_method = 4;
+  }
+  //----------------------------------------------------------------------
+  if(pcs_type_name.compare("RICHARDS_FLOW")==0)
+  {
     ele_mass_lumping = 1;
     ele_upwinding = 0.5;
     ls_max_iterations = 2000;
@@ -107,7 +121,7 @@ Programing:
 bool NUMRead(string file_base_name)
 {
   //----------------------------------------------------------------------
-  NUMDelete();  
+//OK  NUMDelete();  
   //----------------------------------------------------------------------
   CNumerics *m_num = NULL;
   char line[MAX_ZEILE];
@@ -331,6 +345,7 @@ void CNumerics::Write(fstream* num_file)
   //KEYWORD
   *num_file  << "#NUMERICS" << endl;
   //--------------------------------------------------------------------
+/*OK
   *num_file << " $METHOD" << endl;
   *num_file << method_name << endl;
   if(method_name.find("LAGRANGE")!=string::npos){
@@ -339,6 +354,8 @@ void CNumerics::Write(fstream* num_file)
     *num_file << lag_use_matrix << " " << lag_vel_method;
     *num_file << endl;
   }
+*/
+  //--------------------------------------------------------------------
   *num_file << " $PCS_TYPE" << endl;
   *num_file << "  " << pcs_type_name << endl;
   //--------------------------------------------------------------------
@@ -532,8 +549,8 @@ LINEAR_SOLVER *DestroyLinearSolver(LINEAR_SOLVER * ls)
     if (ls->system_time_assemble_function_name)
         ls->system_time_assemble_function_name = (char *) Free(ls->system_time_assemble_function_name);
 
-    if (ls->name)
-        ls->name = (char *) Free(ls->name);
+//OK    if (ls->name)
+//OK        ls->name = (char *) Free(ls->name);
     if (ls->b)
         ls->b = (double *) Free(ls->b);
     if (ls->x)
@@ -1049,7 +1066,7 @@ LINEAR_SOLVER *CreateLinearSolver(long store, long dim)
     if (ls == NULL)
         return NULL;
 
-    ls->name = NULL;
+//OK    ls->name = NULL;
     ls->store = store;
     ls->dim = dim;
     ls->matrix = NULL;
@@ -1126,7 +1143,7 @@ LINEAR_SOLVER *CreateLinearSolverDim(long store, int unknown_vector_dimension, l
     if (ls == NULL)
         return NULL;
 
-    ls->name = NULL;
+//OK    ls->name = NULL;
     ls->store = store;
     ls->dim = dim;
     ls->matrix = NULL;

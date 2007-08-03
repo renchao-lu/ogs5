@@ -76,6 +76,7 @@ CSourceTerm::CSourceTerm(void)
   plyST = NULL; //OK
   nodes = NULL; //OK
   analytical = false;//CMCD
+  display_mode = false; //OK
 }
 
 /**************************************************************************
@@ -428,7 +429,7 @@ Programing:
 bool STRead(string file_base_name)
 {
   //----------------------------------------------------------------------
-  STDelete();  
+//OK  STDelete();  
   //----------------------------------------------------------------------
   CSourceTerm *m_st = NULL;
   char line[MAX_ZEILE];
@@ -671,9 +672,12 @@ if(tim_type_name.size()>0){ //OK
       *st_file << endl;
       break;
     case 'L': // Linear
-		/*
-		*st_file << delimiter_type << geo_node_value[0]
-		         << delimiter_type << geo_node_value[1];*/
+	  *st_file << " " << (int)PointsHaveDistribedBC.size() << endl;
+      for(long i=0;i<(long)PointsHaveDistribedBC.size();i++)
+      {
+	    *st_file << "  " << PointsHaveDistribedBC[i] << " ";
+	    *st_file << "  " << DistribedBC[i] << endl;
+      }
       break;
     case 'R': // RIVER
 	  *st_file << " " << (int)PointsHaveDistribedBC.size() << endl;
@@ -2052,7 +2056,6 @@ double GetGreenAmptNODValue(CNodeValue* cnodev,CSourceTerm* m_st, long msh_node)
    infiltration = H / timestep ;
    F = infiltration * timestep + Fold;
    }*/
-
    m_pcs_this->SetNodeValue(msh_node, m_pcs_this->GetNodeValueIndex("COUPLING") +1, F); // output is cumulative infiltration
  
    //thickness = F / moistureDeficit; 
@@ -3166,4 +3169,22 @@ void CSourceTerm::DeleteHistoryNodeMemory()
     }
     node_history_vector.clear();
   }
+}
+
+/**************************************************************************
+FEMLib-Method: 
+07/2007 OK Implementation
+**************************************************************************/
+CSourceTerm* STGet(string pcs_name,string geo_type_name,string geo_name)
+{
+  CSourceTerm *m_st = NULL;
+  for(int i=0;i<(int)st_vector.size();i++)
+  {
+    m_st = st_vector[i];
+    if((m_st->pcs_type_name.compare(pcs_name)==0)&&
+       (m_st->geo_type_name.compare(geo_type_name)==0)&&
+       (m_st->geo_name.compare(geo_name)==0))
+      return m_st;
+  }
+  return NULL;
 }

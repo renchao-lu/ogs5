@@ -374,7 +374,7 @@ Programing:
 bool MFPRead(string file_base_name)
 {
   //----------------------------------------------------------------------
-  MFPDelete();  
+//OK  MFPDelete();  
   //----------------------------------------------------------------------
   CFluidProperties *m_mfp = NULL;
   char line[MAX_ZEILE];
