@@ -39,6 +39,7 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
  :CElement(C_Sys_Flad, order), pcs(dm_pcs)
 {
     int i;
+    S_Water = 1.0;
     Tem = 273.15+23.0;
     h_pcs = NULL;
     t_pcs = NULL;
@@ -205,6 +206,8 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
             Flow_Type = 1;
          else if  (GetRFProcessNumPhases()==2) Flow_Type = 2;
          // WW idx_P0 = pcs->GetNodeValueIndex("POROPRESSURE0");
+         if(h_pcs->pcs_type_name.find("GROUND")!=string::npos)
+            Flow_Type = 10;
          break;
       }
     }
@@ -217,6 +220,8 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
           idx_P1 = h_pcs->GetNodeValueIndex("PRESSURE_RATE1");
        }
     }
+    if(Flow_Type==10)
+      idx_P1 = h_pcs->GetNodeValueIndex("HEAD")+1;
     else if(Flow_Type==1)
     {
        idx_P1 = h_pcs->GetNodeValueIndex("PRESSURE1")+1;
@@ -341,18 +346,26 @@ CFiniteElementVec::~CFiniteElementVec()
 **************************************************************************/
 void CFiniteElementVec::SetMaterial()
 {
-   // Get material properties
-   //
-   int MatGroup = MeshElement->GetPatchIndex();
-   smat = msp_vector[MatGroup];
-   smat->axisymmetry = pcs->m_msh->isAxisymmetry();
-   // Single yield surface model   
-   if(smat->Plasticity_type==2)  smat->ResizeMatricesSYS(ele_dim); 
-
-   if(F_Flag)
-      m_mfp = MFPGet("LIQUID"); // YD
-   //
-   m_mmp = mmp_vector[MatGroup];
+  //......................................................................
+  // MAT group
+  int MatGroup = MeshElement->GetPatchIndex();
+  //......................................................................
+  // MSP
+  smat = msp_vector[MatGroup];
+  smat->axisymmetry = pcs->m_msh->isAxisymmetry();
+  // Single yield surface model   
+  if(smat->Plasticity_type==2)  smat->ResizeMatricesSYS(ele_dim); 
+  //......................................................................
+  // MFP
+  if(F_Flag)
+  {
+    m_mfp = MFPGet("LIQUID"); // YD
+    if(!m_mfp) m_mfp = mfp_vector[0]; //OK
+  }
+  //......................................................................
+  // MMP
+  m_mmp = mmp_vector[MatGroup];
+  //......................................................................
 }
 
 
@@ -795,7 +808,7 @@ void CFiniteElementVec::LocalAssembly(const int update)
     }
 
     // Get saturation of element nodes
-   	if(Flow_Type>0)
+   	if(Flow_Type>0&&Flow_Type!=10)
    	{
        for(i=0; i<nnodes; i++)
 	   {
@@ -984,6 +997,7 @@ void CFiniteElementVec::GlobalAssembly_RHS()
    double fact, val_n=0.0;
    double *a_n = NULL; 
    double biot = 1.0;
+   double dent_w = 1000.0;
    bool Residual;  
    Residual = false;
    fact = 1.0;  
@@ -1024,6 +1038,11 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 //                AuxNodal[i] = LoadFactor*( val_n -Max(pcs->GetNodeValue(nodes[i],idx_P0),0.0));   
                 AuxNodal[i] = LoadFactor*val_n;
 			 }
+             break;
+          case 10:  // Ground_flow. Will be merged to case 0
+             dent_w =  m_mfp->Density();
+             for (i=0;i<nnodes;i++)
+                AuxNodal[i] = LoadFactor*h_pcs->GetNodeValue(nodes[i],idx_P1);   
              break;
           case 1:  // Richards flow
              for (i=0;i<nnodes;i++)
@@ -1294,7 +1313,7 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
       } 
       // Fluid coupling;
       S_Water=1.0;
-      if(Flow_Type>0)
+      if(Flow_Type>0&&Flow_Type!=10)
          S_Water=interpolate(AuxNodal_S,1);
       // Decovalex. Swelling pressure
       if(smat->SwellingPressureType==1)

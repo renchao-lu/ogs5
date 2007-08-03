@@ -145,9 +145,12 @@ void CRFProcessDeformation::Initialization()
 
    // Initialize linear solver
    InitEQS();
+   if(!msp_vector.size()) //OK
+     return;
    InitialMBuffer();
    InitGauss();
    //
+   /*
    if(H_Process||MH_Process)
    {
       // Initial pressure
@@ -162,7 +165,6 @@ void CRFProcessDeformation::Initialization()
       }
       else
           idxP = fem_dm->idx_P2;
-      /*
       for (i = 0; i < m_msh->GetNodesNumber(false); i++)
 	  {
 //TEST for Richard
@@ -171,9 +173,8 @@ void CRFProcessDeformation::Initialization()
 //		  else
 //             SetNodeValue(i,j, 0.0);
 	  }
-      */
    } 
-   
+   */
    if(fem_dm->dynamic)
       CalcBC_or_SecondaryVariable_Dynamics();
 

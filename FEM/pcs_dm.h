@@ -80,10 +80,9 @@ class CRFProcessDeformation:public CRFProcess
      // Write stresses
      void WriteGaussPointStress();
      void ReadGaussPointStress();
-private:
-
+public: //OK
      CFiniteElementVec *fem_dm;
-
+private:
      void InitialMBuffer();
      double *ARRAY;
      int counter; 
