@@ -316,7 +316,7 @@ Programing:
 bool OUTRead(string file_base_name)
 {
   //----------------------------------------------------------------------
-  OUTDelete();  
+//OK  OUTDelete();  
   //----------------------------------------------------------------------
   COutput *m_out = NULL;
   char line[MAX_ZEILE];
@@ -1246,14 +1246,12 @@ void COutput::WriteELEValuesTECData(fstream& tec_file)
   bool out_element_vel = false;
   for(j=0; j<no_ele_values; j++) //WW
   {
-      if(ele_value_vector[j].find("VELOCITY")!=string::npos)
-	  {
-           out_element_vel = true;
-           break;
-	  }
-            
+    if(ele_value_vector[j].find("VELOCITY")!=string::npos)
+	{
+      out_element_vel = true;
+      break;
+	}
   }
-
   vector<int>ele_value_index_vector(no_ele_values);
   GetELEValuesIndexVector(ele_value_index_vector);
   //--------------------------------------------------------------------
