@@ -25,9 +25,8 @@ using namespace std;
 /* Pre-processor definitions */
 #include "makros.h"
 /*------------------------------------------------------------------------*/
+// MSHLib
 #include "msh_node.h"
-
-/* MshLib */
 #include "msh_lib.h"
 /*------------------------------------------------------------------------*/
 /* PCS */
@@ -547,8 +546,9 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
           VELCalcAll(m_pcs);
 		else
           m_pcs->CalIntegrationPointValue(); //WW
+        m_pcs->CalcELEVelocities(); //OK
       }
-      //--------------------------------------------------------------------     
+      //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	  m_pcs = PCSGet("HEAT_TRANSPORT"); //WW
       m_tim = TIMGet("HEAT_TRANSPORT"); //WW
       if(m_tim&&k==0) //WW
@@ -1731,7 +1731,7 @@ void LOPCalcNODResultants(void)
       case 'G': // Groundwater flow
         m_pcs->AssembleParabolicEquationRHSVector();
         //m_pcs->GlobalAssembly();
-        m_pcs->SetNODFlux();
+        //OK m_pcs->SetNODFlux();
         break;
       case 'A': // Gas flow
         cout << "LOPCalcNODResultants: not implemented for this process" << endl;

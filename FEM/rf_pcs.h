@@ -146,6 +146,9 @@ class CRFProcess {
 	//....................................................................
 	// OUT
 	// Element matrices output
+  public: //OK
+    bool Write_Matrix;
+  protected: //WW
     fstream *matrix_file;
     // Write RHS from source or Neumann BC terms to file
     // 0: Do nothing
@@ -163,7 +166,6 @@ class CRFProcess {
 	//....................................................................
 	// 1-GEO
   public:
-    bool Write_Matrix;
     string geo_type; //OK
     string geo_type_name; //OK
 	//....................................................................
@@ -215,6 +217,7 @@ class CRFProcess {
     // Construction / destruction
     CRFProcess(void);
     void Create(void);
+    void CreateNew(void);
     void CreateFDMProcess();
     virtual ~CRFProcess();
     void DestroyFDMProcess();
@@ -446,7 +449,23 @@ class CRFProcess {
     // FLX
     void CalcELEFluxes(CGLPoint*); //OK
     double CalcELEFluxes(CGLPolyline*); //OK
+    // NEW
     CRFProcess* CopyPCStoDM_PCS();
+    bool OBJRelations(); //OK
+    void OBJRelationsDelete(); //OK
+    bool NODRelations(); //OK
+    bool ELERelations(); //OK
+    bool CreateEQS(); //OK
+    bool Check(); //OK
+    void NODRelationsDelete(); //OK
+    void ELERelationsDelete(); //OK
+    bool m_bCheckOBJ; //OK
+    bool m_bCheckNOD; //OK
+    bool m_bCheckELE; //OK
+    bool m_bCheckEQS; //OK
+    void Delete(); //OK
+    bool m_bCheck; //OK
+    void EQSDelete(); //OK
   private:
       int continuum;
 	  bool continuum_ic;
@@ -550,6 +569,8 @@ extern string project_title; //OK41
 extern bool pcs_created;
 extern vector<LINEAR_SOLVER *> PCS_Solver; //WW
 extern void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs); //OK
+extern void PCSCreateNew(); //OK
+extern bool PCSCheck(); //OK
 
 #endif
 

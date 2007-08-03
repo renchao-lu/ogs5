@@ -267,6 +267,12 @@ CRFProcess::CRFProcess(void)
   compute_domain_face_normal = false; //WW
   //
   additioanl2ndvar_print = -1; //WW
+  //----------------------------------------------------------------------
+  m_bCheck = false; //OK
+  m_bCheckOBJ = false; //OK
+  m_bCheckNOD = false; //OK
+  m_bCheckELE = false; //OK
+  m_bCheckEQS = false; //OK
 }
 
 /**************************************************************************
@@ -442,9 +448,7 @@ void CRFProcess::SetOBJNames()
 }
 
 /**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
+PCSLib-Method:
 10/2002 OK Implementation
 04/2004 WW Modification for 3D problems 
 02/2005 WW New fem calculator
@@ -1197,19 +1201,6 @@ void PCSDestroyAllProcesses(void)
   overlapped_entry=NULL;
 #endif
   //----------------------------------------------------------------------
-
-  // Knoten-Daten
-  for (i=0;i<NodeListSize();i++) {
-    if (GetNode(i) != NULL) {                            
-	  DestroyModelNodeData(i);   //SB:todo
-    }
-  }
-  // Element-Daten
-  for (i=0;i<ElListSize();i++) {
-    if (ElGetElement(i) != NULL) {
-      DestroyModelElementData(i);
-    }
-  }
 }
 
 /**************************************************************************
@@ -1224,7 +1215,8 @@ last modified:
 bool PCSRead(string file_base_name)
 {
   //----------------------------------------------------------------------
-  PCSDelete();  
+//OK  PCSDelete();  
+  //----------------------------------------------------------------------
   CRFProcess *m_pcs = NULL;
   char line[MAX_ZEILE];
   int indexCh1a, indexCh2a;
@@ -1687,10 +1679,12 @@ void CRFProcess::Config(void)
   //----------------------------------------------------------------------
   // Set mesh pointer to corresponding mesh
   m_msh = FEMGet(pcs_type_name);
-  if((int)continuum_vector.size()== 0)  // YD
-    continuum_vector.push_back(1.0);
   if(!m_msh)
     cout << "Error in CRFProcess::Config - no MSH data" << endl;
+  //......................................................................
+  if((int)continuum_vector.size()== 0)  // YD
+    continuum_vector.push_back(1.0);
+  //......................................................................
   //  CRFProcessDeformation *dm_pcs;
   //  dm_pcs = NULL;
   if(pcs_type_name.compare("LIQUID_FLOW")==0)  {
@@ -1889,8 +1883,6 @@ void CRFProcess::ConfigGroundwaterFlow()
   pcs_primary_function_name[0] = "HEAD";
   pcs_primary_function_unit[0] = "m";
   // ELE values
-  //WW ConfigELEMatrices = PCSConfigELEMatricesSM;
-  PCSDestroyELEMatrices[pcs_type_number] = NULL; //OK
   pcs_number_of_evals = 6;
   pcs_eval_name[0] = "VOLUME";
   pcs_eval_unit[0] = "m3";
@@ -1919,8 +1911,6 @@ void CRFProcess::ConfigGroundwaterFlow()
   pcs_secondary_function_name[3] = "COUPLING"; //JOD
   pcs_secondary_function_unit[3] = "m/s";
   pcs_secondary_function_timelevel[3] = 1;
-
-
   //----------------------------------------------------------------------
   if(m_msh)
     m_msh->DefineMobileNodes(this);
@@ -7452,3 +7442,750 @@ void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs)
   m_mfp->mode = 0;
   //----------------------------------------------------------------------
 }
+
+/**************************************************************************
+PCSLib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+bool CRFProcess::OBJRelations()
+{
+  bool succeed = true;
+  //----------------------------------------------------------------------------
+  cout << "OBJ->PCS relations" << '\n';
+  //----------------------------------------------------------------------------
+  // NUM
+  cout << " - NUM->PCS" << '\n';
+  m_num = NUMGet(pcs_type_name);
+  if(!m_num)
+  {
+    cout << "Warning in CRFProcess::Create() - no NUM data - default" << endl;
+    succeed = false;
+  }
+  else
+  {
+    pcs_nonlinear_iterations = m_num->nls_max_iterations;
+    pcs_nonlinear_iteration_tolerance = m_num->nls_error_tolerance;
+    num_type_name = "NEW"; //OK
+  }
+  //----------------------------------------------------------------------------
+  // TIM
+  cout << " - TIM->PCS" << '\n';
+  Tim = TIMGet(pcs_type_name);
+  if(Tim)
+  {
+    // Time unit factor //WW OK: -> TIM
+    if(Tim->time_unit.find("MINUTE")!=string::npos) time_unit_factor=60.0;
+    else if(Tim->time_unit.find("HOUR")!=string::npos) time_unit_factor=3600.0;
+    else if(Tim->time_unit.find("DAY")!=string::npos) time_unit_factor=86400.0;
+    else if(Tim->time_unit.find("MONTH")!=string::npos) time_unit_factor=2592000.0;
+    else if(Tim->time_unit.find("YEAR")!=string::npos) time_unit_factor=31536000;
+  }
+  else
+  {
+    cout << "Warning in CRFProcess::Create() - no TIM data - default" << endl;
+  }
+  //----------------------------------------------------------------------------
+  // OUT
+  //----------------------------------------------------------------------------
+  // MSH
+  if((int)fem_msh_vector.size()==1)
+    m_msh = fem_msh_vector[0];
+  else 
+    m_msh = MSHGet(pcs_type_name);
+  if(!m_msh)
+  {
+    cout << "Warning in CRFProcess::Create() - no MSH data" << endl;
+    succeed = false;
+  }
+  else
+    m_msh->m_bCheckMSH = true;
+  //----------------------------------------------------------------------------
+  return succeed;
+}
+
+/**************************************************************************
+PCSLib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+bool CRFProcess::NODRelations()
+{
+  int i;
+  bool succeed = true;
+  int DOF = GetPrimaryVNumber(); //OK should be PCS member variable
+  //----------------------------------------------------------------------------
+  cout << "NOD->PCS relations" << '\n';
+  //----------------------------------------------------------------------
+  // BC
+  cout << " - BC->PCS" << '\n';
+  if(pcs_type_name_vector.size()&&pcs_type_name_vector[0].find("DYNAMIC")!=string::npos) //WW
+  {
+    setBC_danymic_problems();
+  }
+  else
+  {
+    //.....................................................................
+    // create BC groups for each process
+    CBoundaryConditionsGroup *m_bc_group = NULL;
+    for(i=0;i<DOF;i++)
+    {
+      BCGroupDelete(pcs_type_name,pcs_primary_function_name[i]);
+      m_bc_group = new CBoundaryConditionsGroup();
+      m_bc_group->pcs_type_name = pcs_type_name; //OK
+      m_bc_group->pcs_pv_name = pcs_primary_function_name[i]; //OK
+      m_bc_group->Set(this,Shift[i]);
+    }
+  }
+  //----------------------------------------------------------------------
+  // ST
+  if(pcs_type_name_vector.size()&&pcs_type_name_vector[0].find("DYNAMIC")!=string::npos) //WW
+  {
+    setST_danymic_problems();
+  }
+  //......................................................................
+  CSourceTermGroup *m_st_group = NULL;
+  if(WriteSourceNBC_RHS==2) // Read from file
+    ReadRHS_of_ST_NeumannBC();
+  else // WW
+  {  // Calculate directly
+    for(i=0;i<DOF;i++)
+    {
+      m_st_group = STGetGroup(pcs_type_name,pcs_primary_function_name[i]);
+      if(!m_st_group) 
+      {
+        m_st_group = new CSourceTermGroup();
+        m_st_group->pcs_type_name = pcs_type_name; //OK
+        m_st_group->pcs_pv_name = pcs_primary_function_name[i]; //OK
+        m_st_group->Set(this,Shift[i]);
+      }
+    }
+    if(WriteSourceNBC_RHS==1)// WW
+      WriteRHS_of_ST_NeumannBC();
+  }
+  //----------------------------------------------------------------------
+  // NOD values
+  cout << "->Config NOD values" << '\n';
+  //......................................................................
+  // Names
+  nod_val_name_vector.clear();
+  //
+  for(i=0;i<pcs_number_of_primary_nvals;i++)
+  {
+    nod_val_name_vector.push_back(pcs_primary_function_name[i]); // new time
+    nod_val_name_vector.push_back(pcs_primary_function_name[i]); // old time //need this MB!
+  }
+  for(i=0;i<pcs_number_of_secondary_nvals;i++)
+    nod_val_name_vector.push_back(pcs_secondary_function_name[i]); // new time
+  if((int)nod_val_name_vector.size()!=(2*pcs_number_of_primary_nvals+pcs_number_of_secondary_nvals))
+    succeed = false;
+  //......................................................................
+  // Values
+  double* nod_values = NULL;
+  for(i=0;i<(int)nod_val_vector.size();i++)
+  {
+    delete nod_val_vector[i];
+    nod_val_vector[i] = NULL;
+  }
+  nod_val_vector.clear();
+  //
+  //OK m_msh->NodesNumber_Quadratic;
+  number_of_nvals = 2*DOF + pcs_number_of_secondary_nvals;
+  for(long j=0;j<(long)m_msh->nod_vector.size();j++)
+  {
+    nod_values =  new double[number_of_nvals];
+    for(i=0;i<number_of_nvals;i++) nod_values[i] = 0.0;
+      nod_val_vector.push_back(nod_values);
+  }
+  if((long)nod_val_vector.size()!=(long)m_msh->nod_vector.size())
+    succeed = false;
+  //-----------------------------------------------------------------------
+  // IC
+  //-----------------------------------------------------------------------
+  cout << "->Assign IC" << '\n';
+  //.......................................................................
+  if(reload==2&&type!=4&&type!=41) 
+    ReadSolution(); //WW
+  //.......................................................................
+  SetIC();
+  //.......................................................................
+  if(pcs_type_name_vector.size()&&pcs_type_name_vector[0].find("DYNAMIC")!=string::npos) //WW
+    setIC_danymic_problems();
+  //-----------------------------------------------------------------------
+  return succeed;
+}
+
+/**************************************************************************
+PCSLib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+bool CRFProcess::ELERelations()
+{
+  int i;
+  long j;
+  bool succeed = true;
+  //----------------------------------------------------------------------
+  //OK->MB please shift to Config()
+  if(pcs_type_name.compare("GROUNDWATER_FLOW")==0)
+    MSHDefineMobile(this);
+  //
+  if(type==4||type==41) m_msh->SwitchOnQuadraticNodes(true); 
+  else  m_msh->SwitchOnQuadraticNodes(false); 
+  CheckMarkedElement();
+  //m_msh->RenumberNodesForGlobalAssembly();
+  //----------------------------------------------------------------------
+  // ELE - GP values
+  AllocateMemGPoint();
+  //if((long)ele_gp_value.size()!=(long)m_msh->ele_vector.size())
+    //succeed = false;
+  //----------------------------------------------------------------------
+  // ELE values
+  double* ele_values = NULL;    // PCH
+  int number_of_evals = 2*pcs_number_of_evals;  //PCH, increase memory
+  if(number_of_evals>0) // WW added this "if" condition
+  {
+    //....................................................................
+    // Names
+    for(i=0;i<pcs_number_of_evals;i++)
+    {
+      ele_val_name_vector.push_back(pcs_eval_name[i]); // new time
+      ele_val_name_vector.push_back(pcs_eval_name[i]); // old time
+    }
+    if(ele_val_name_vector.size()==0)
+      succeed = false;
+    //....................................................................
+    // Values
+    long m_msh_ele_vector_size = (long)m_msh->ele_vector.size();
+    if(ele_val_vector.size()==0)
+    {
+      for(j=0;j<m_msh_ele_vector_size;j++)
+      {
+        ele_values =  new double[number_of_evals];
+        size_eval += number_of_evals; //WW
+        for(i=0;i<number_of_evals;i++) 
+          ele_values[i] = 0.0;
+        ele_val_vector.push_back(ele_values);
+      }
+    } 
+    else
+    {
+      for(j=0;j<m_msh_ele_vector_size;j++)
+      {
+        ele_values = ele_val_vector[j];
+/* //Comment by WW
+#ifndef SX
+#ifdef GCC
+            size = malloc_usable_size( ele_values )/sizeof(double); 
+#elif HORIZON
+	    //KG44: malloc_usable_size and _msize are not available
+#else 
+            size= _msize( ele_values )/sizeof(double);
+#endif
+#endif
+*/
+        ele_values = resize(ele_values, size_eval, size_eval+ number_of_evals);
+        size_eval += number_of_evals; 
+        ele_val_vector[j] = ele_values;
+      }
+    }
+    if((long)ele_val_vector.size()!=(long)m_msh->ele_vector.size())
+      succeed = false;
+  }
+  //----------------------------------------------------------------------------
+  // ELE matrices
+  if(Memory_Type!=0)
+  {
+    AllocateLocalMatrixMemory();
+    if((long)Ele_Matrices.size()!=(long)m_msh->ele_vector.size())
+      succeed = false;
+  }
+  //----------------------------------------------------------------------
+  // Element matrix output. WW
+  if(Write_Matrix)
+  {
+    cout << "->Write Matrix" << '\n';
+    string m_file_name = FileName +"_"+pcs_type_name+"_element_matrix.txt";
+    matrix_file = new fstream(m_file_name.c_str(),ios::trunc|ios::out);
+    if(!matrix_file->good())
+      cout << "Warning in GlobalAssembly: Matrix files are not found" << endl;
+  }
+  //----------------------------------------------------------------------------
+  // FEM
+  if(type==4||type==41)
+  {
+    // Set initialization function
+    CRFProcessDeformation *dm_pcs = (CRFProcessDeformation *) this;
+    dm_pcs->Initialization(); 
+    if(!dm_pcs->fem_dm)
+      succeed = false;
+  }
+  else  // Initialize FEM calculator
+  {
+    int Axisymm = 1; // ani-axisymmetry
+    if(m_msh->isAxisymmetry()) Axisymm = -1; // Axisymmetry is true
+    fem = new CFiniteElementStd(this, Axisymm*m_msh->GetCoordinateFlag()); 
+    fem->SetGaussPointNumber(m_num->ele_gauss_points);
+    if(!fem)
+      succeed = false;
+  }
+  //----------------------------------------------------------------------------
+  return succeed;
+}
+
+/**************************************************************************
+PCSLib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+bool CRFProcess::CreateEQS()
+{
+  bool succeed = true;
+  //----------------------------------------------------------------------------
+  if(eqs)
+    return false;
+  //----------------------------------------------------------------------------
+  int DOF = GetPrimaryVNumber(); //OK should be PCS member variable
+  //----------------------------------------------------------------------------
+  // EQS - create equation system
+  cout << "->Create EQS" << '\n';
+  //----------------------------------------------------------------------------
+  if(type==4)
+  {
+    eqs = CreateLinearSolverDim(m_num->ls_storage_method,DOF,DOF*m_msh->GetNodesNumber(true));
+    InitializeLinearSolver(eqs,m_num);
+    PCS_Solver.push_back(eqs); //WW
+  }
+  //----------------------------------------------------------------------------
+  else if(type==41)    
+  {
+    if(num_type_name.find("EXCAVATION")!=string::npos)
+      eqs = CreateLinearSolverDim(m_num->ls_storage_method,DOF-1,DOF*m_msh->GetNodesNumber(true));
+    else
+      eqs = CreateLinearSolverDim(m_num->ls_storage_method,DOF, 
+		    (DOF-1)*m_msh->GetNodesNumber(true)+m_msh->GetNodesNumber(false));  
+    InitializeLinearSolver(eqs,m_num);
+    PCS_Solver.push_back(eqs); //WW
+  }
+  //----------------------------------------------------------------------------
+  else
+  { 
+/*
+    // If there is a solver exsiting. WW 
+    CRFProcess* m_pcs = NULL; 
+    for(int i=0; i<(int)pcs_vector.size(); i++)
+	{
+      m_pcs = pcs_vector[i];
+      if(m_pcs&&m_pcs->eqs)
+	  {
+        if(m_pcs->pcs_type_name.find("DEFORMATION")==string::npos)
+          break;
+	  }
+	}
+    // If unique mesh
+	if(m_pcs&&m_pcs->eqs&&(fem_msh_vector.size()==1))
+      eqs = m_pcs->eqs;
+    //
+	else
+	{
+*/
+      eqs = CreateLinearSolver(m_num->ls_storage_method,m_msh->GetNodesNumber(false));
+      InitializeLinearSolver(eqs,m_num);
+      PCS_Solver.push_back(eqs); 
+	//}
+  }
+  //----------------------------------------------------------------------------
+  strcpy(eqs->pcs_type_name,pcs_type_name.data());
+  //----------------------------------------------------------------------------
+  if((int)PCS_Solver.size()==0)
+    succeed = false;
+  //----------------------------------------------------------------------------
+  return succeed;
+}
+
+/**************************************************************************
+PCSLib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+void PCSCreateNew()
+{
+  int i;
+  CRFProcess* m_pcs = NULL;
+  //----------------------------------------------------------------------
+  for(i=0;i<(int)pcs_vector.size();i++)
+  {
+    m_pcs = pcs_vector[i];
+    m_pcs->CreateNew();
+  //----------------------------------------------------------------------
+  }
+}
+
+/**************************************************************************
+PCSLib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+void CRFProcess::CreateNew()
+{
+  pcs_type_number = (int)pcs_vector.size();
+  Config();
+  m_bCheckOBJ = OBJRelations();
+  m_bCheckEQS = CreateEQS();
+  m_bCheckNOD = NODRelations();
+  m_bCheckELE = ELERelations();
+  MMP2PCSRelation(this);
+  ConfigureCouplingForLocalAssemblier();
+}
+
+/**************************************************************************
+PCSLib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+bool CRFProcess::Check()
+{
+#ifdef MFC
+  CString m_strMessage(pcs_type_name.data());
+  m_strMessage += " -> ";
+  //-----------------------------------------------------------------------
+  // MSH
+  if(!m_msh)
+  {
+    m_strMessage += "Error: no MSH data";
+    AfxMessageBox(m_strMessage);
+    return false;
+  }
+  //-----------------------------------------------------------------------
+  // TIM
+  CTimeDiscretization* m_tim = TIMGet(pcs_type_name);
+  if(!m_tim)
+  {
+    m_strMessage += "Error: no TIM data";
+    AfxMessageBox(m_strMessage);
+    return false;
+  }
+  //-----------------------------------------------------------------------
+  // NUM
+  CNumerics* m_num = NUMGet(pcs_type_name);
+  if(!m_num)
+  {
+    AfxMessageBox("Error: no NUM data");
+    m_strMessage += "Error: no TIM data";
+    AfxMessageBox(m_strMessage);
+    return false;
+  }
+  //-----------------------------------------------------------------------
+  // OUT
+  COutput* m_out = OUTGet(pcs_type_name);
+  if(!m_out)
+  {
+    m_strMessage += "Warning: no OUT data";
+    AfxMessageBox(m_strMessage);
+    return false;
+  }
+  //-----------------------------------------------------------------------
+  // IC
+  CInitialCondition* m_ic = ICGet(pcs_type_name);
+  if(!m_ic)
+  {
+    m_strMessage += "Warning: no IC data";
+    AfxMessageBox(m_strMessage);
+  }
+  //-----------------------------------------------------------------------
+  // BC
+  CBoundaryCondition* m_bc = BCGet(pcs_type_name);
+  if(!m_bc)
+  {
+    m_strMessage += "Error: no BC data";
+    AfxMessageBox(m_strMessage);
+    return false;
+  }
+  //-----------------------------------------------------------------------
+  // ST
+  CSourceTerm* m_st = STGet(pcs_type_name);
+  if(!m_st)
+  {
+    m_strMessage += "Warning: no ST data";
+    AfxMessageBox(m_strMessage);
+  }
+  //-----------------------------------------------------------------------
+  // MFP
+  if((pcs_type_name.find("FLOW")!=string::npos)&&((int)mfp_vector.size()==0))
+  {
+    m_strMessage += "Error: no MFP data";
+    AfxMessageBox(m_strMessage);
+    return false;
+  }
+  //-----------------------------------------------------------------------
+  // MSP
+  if((pcs_type_name.find("DEFORMATION")!=string::npos)&&((int)msp_vector.size()==0))
+  {
+    m_strMessage += "Error: no MSP data";
+    AfxMessageBox(m_strMessage);
+    return false;
+  }
+  if((pcs_type_name.find("HEAT")!=string::npos)&&((int)msp_vector.size()==0))
+  {
+    m_strMessage += "Error: no MSP data";
+    AfxMessageBox(m_strMessage);
+    return false;
+  }
+  //-----------------------------------------------------------------------
+  // MCP
+  if((pcs_type_name.find("MASS")!=string::npos)&&((int)msp_vector.size()==0))
+  {
+    m_strMessage += "Error: no MCP data";
+    AfxMessageBox(m_strMessage);
+    return false;
+  }
+#endif
+  //-----------------------------------------------------------------------
+  // MMP
+  MSHTestMATGroups();
+  //-----------------------------------------------------------------------
+  return true;
+}
+
+/**************************************************************************
+PCSLib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+bool PCSCheck()
+{
+  if((int)pcs_vector.size()==0)
+    return false;
+  CRFProcess* m_pcs = NULL;
+  for(int i=0;i<(int)pcs_vector.size();i++)
+  {
+    m_pcs = pcs_vector[i];
+    //if(m_pcs->m_bCheck)
+      if(!m_pcs->Check())
+        return false;
+  }
+  return true;
+}
+
+/**************************************************************************
+PCSLib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+void EQSDelete()
+{
+  LINEAR_SOLVER *eqs = NULL;
+  CRFProcess* m_pcs = NULL;
+  //----------------------------------------------------------------------
+  for(int i=0;i<(int)PCS_Solver.size();i++)
+  {
+    eqs = PCS_Solver[i]; 
+    m_pcs = PCSGet(eqs->pcs_type_name);
+    if(eqs->unknown_vector_indeces)
+       eqs->unknown_vector_indeces = \
+        (int*) Free(eqs->unknown_vector_indeces);
+    if(eqs->unknown_node_numbers)
+      eqs->unknown_node_numbers = \
+        (long*) Free(eqs->unknown_node_numbers);
+    if(eqs->unknown_update_methods)
+       eqs->unknown_update_methods = \
+        (int*) Free(eqs->unknown_update_methods); 
+    eqs = DestroyLinearSolver(eqs);
+    if(m_pcs)
+      m_pcs->eqs = NULL;
+    PCS_Solver.erase((PCS_Solver.begin()+i));
+  }
+}
+
+/**************************************************************************
+PCSLib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+void CRFProcess::NODRelationsDelete()
+{
+  int i;
+  int DOF = GetPrimaryVNumber(); //OK should be PCS member variable
+  //----------------------------------------------------------------------
+  // BC
+  for(i=0;i<DOF;i++)
+  {
+    BCGroupDelete(pcs_type_name,pcs_primary_function_name[i]);
+  }
+  //......................................................................
+  for(i=0;i<(int)bc_node_value.size(); i++)
+  {
+     delete bc_node_value[i];
+     bc_node_value[i] = NULL;    
+  }
+  bc_node_value.clear();
+  //----------------------------------------------------------------------
+  // ST
+  for(i=0;i<DOF;i++)
+  {
+    STGroupDelete(pcs_type_name,pcs_primary_function_name[i]);
+  }
+  //......................................................................
+  CNodeValue* m_nod_val = NULL;
+  for(i=0;i<(int)st_node_value.size();i++)
+  {
+    m_nod_val = st_node_value[i];
+    //OK delete st_node_value[i];
+    //OK st_node_value[i] = NULL;
+    if(m_nod_val->check_me) //OK
+    {
+      m_nod_val->check_me = false;
+      delete m_nod_val;
+      m_nod_val = NULL;
+    }
+  }
+  st_node_value.clear();
+  //----------------------------------------------------------------------
+  // NOD values
+  nod_val_name_vector.clear();
+  for(i=0;i<(int)nod_val_vector.size();i++)
+  {
+    delete nod_val_vector[i];
+    nod_val_vector[i] = NULL;
+  }
+  nod_val_vector.clear();
+}
+
+/**************************************************************************
+PCSLib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+void CRFProcess::ELERelationsDelete()
+{
+  long i;
+  //----------------------------------------------------------------------
+  // FEM element
+  if(fem) delete fem; //WW
+  fem = NULL;
+  //----------------------------------------------------------------------
+  // ELE matrices
+  ElementMatrix *eleMatrix = NULL;
+  ElementValue* gp_ele = NULL;
+  if(Ele_Matrices.size()>0)
+  {
+    for (i=0;i<(long)Ele_Matrices.size();i++)
+    {
+      eleMatrix = Ele_Matrices[i];
+      delete eleMatrix;
+      eleMatrix = NULL;
+    }
+    Ele_Matrices.clear();
+  }
+  //----------------------------------------------------------------------
+  // ELE - GP values
+  if(ele_gp_value.size()>0)
+  {
+    for(i=0;i<(long)ele_gp_value.size();i++)
+    {
+      gp_ele = ele_gp_value[i];
+      delete gp_ele;
+      gp_ele = NULL;
+    }
+    ele_gp_value.clear();
+  }
+  //----------------------------------------------------------------------
+  // ELE values
+  ele_val_name_vector.clear();
+  for(i=0;i<(long)ele_val_vector.size();i++)
+  {
+    delete ele_val_vector[i];
+    //delete[] ele_val_vector[i];
+    ele_val_vector[i] = NULL;
+  }
+  ele_val_vector.clear();
+  //----------------------------------------------------------------------
+}
+
+/**************************************************************************
+PCSLib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+void CRFProcess::OBJRelationsDelete()
+{
+  //----------------------------------------------------------------------------
+  cout << "OBJ->PCS relations delete" << '\n';
+  //----------------------------------------------------------------------------
+  m_num = NULL;
+  Tim =  NULL;
+  m_msh = NULL;
+  //----------------------------------------------------------------------------
+}
+
+/**************************************************************************
+PCSLib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+void CRFProcess::Delete()
+{
+  //----------------------------------------------------------------------------
+  cout << "PCS  delete" << '\n';
+  //----------------------------------------------------------------------------
+  ELERelationsDelete();
+  NODRelationsDelete();
+  EQSDelete();
+  OBJRelationsDelete();
+  //MMP2PCSRelation(this);
+  //ConfigureCouplingForLocalAssemblier();
+  //----------------------------------------------------------------------------
+}
+
+/**************************************************************************
+PCSLib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+void CRFProcess::EQSDelete()
+{
+  LINEAR_SOLVER *eqs = NULL;
+  //----------------------------------------------------------------------
+  for(int i=0;i<(int)PCS_Solver.size();i++)
+  {
+    eqs = PCS_Solver[i]; 
+    if(pcs_type_name.compare(eqs->pcs_type_name)==0)
+    {
+      if(eqs->unknown_vector_indeces)
+         eqs->unknown_vector_indeces = \
+          (int*) Free(eqs->unknown_vector_indeces);
+      if(eqs->unknown_node_numbers)
+        eqs->unknown_node_numbers = \
+          (long*) Free(eqs->unknown_node_numbers);
+      if(eqs->unknown_update_methods)
+         eqs->unknown_update_methods = \
+          (int*) Free(eqs->unknown_update_methods); 
+      eqs = DestroyLinearSolver(eqs);
+      eqs = NULL;
+    }
+  }
+  //----------------------------------------------------------------------
+  for(int i=0;i<(int)PCS_Solver.size();i++)
+  {
+    eqs = PCS_Solver[i]; 
+    if(pcs_type_name.compare(eqs->pcs_type_name)==0)
+      PCS_Solver.erase((PCS_Solver.begin()+i));
+  }
+}
+
+/*
+void CRFProcess::CreateYD()
+{
+  //----------------------------------------------------------------------------
+  // MMP - create mmp groups for each process   //YD
+  cout << "->Create MMP" << '\n';
+  CMediumPropertiesGroup *m_mmp_group = NULL;
+  for(i=0;i<DOF;i++)
+  {
+    m_mmp_group = MMPGetGroup(pcs_type_name);
+    if(!m_mmp_group) {
+      m_mmp_group = new CMediumPropertiesGroup();
+      m_mmp_group->pcs_type_name = pcs_type_name; 
+      m_mmp_group->Set(this);
+      mmp_group_list.push_back(m_mmp_group);
+    }
+  }
+
+  if(pcs_type_name.find("RICHARD")!=string::npos)    //YD
+    continuum_ic = true;
+  int time_level = 0;
+  CalcSecondaryVariables(time_level);
+  time_level = 1;
+  CalcSecondaryVariables(time_level);
+  if(pcs_type_name.find("RICHARD")!=string::npos)    //YD
+      continuum_ic = false;
+  if(compute_domain_face_normal) //WW
+     m_msh->FaceNormal();        
+}
+*/

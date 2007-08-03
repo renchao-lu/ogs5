@@ -116,6 +116,7 @@ extern double time_ele_paral;
 
 
 #define DDC_FILE_EXTENSION ".ddc"
-void DOMWriteTecplot(string);
+extern void DOMWriteTecplot(string);
+extern void DDCCreate(); //OK
 
 #endif
