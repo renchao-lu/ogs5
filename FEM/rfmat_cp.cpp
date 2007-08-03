@@ -94,7 +94,7 @@ Programing:
 bool CPRead(string file_base_name)
 {
   //----------------------------------------------------------------------
-  MCPDelete();  
+//OK  MCPDelete();  
   //----------------------------------------------------------------------
   CompProperties *m_cp = NULL;
   char line[MAX_ZEILE];
