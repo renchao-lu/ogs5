@@ -154,20 +154,24 @@ double TGetTimerDouble(int speicher)
    07/1994     MSR        Erste Version
    6/1997      C.Thorenz  Komplett neue zweite Version
    1/1999      C.Thorenz  Dritte Version: CPU-Zeit auf POSIX-Rechner
+08/2007 OK Test
 **************************************************************************/
 long TGetTimer(int speicher)
 {
-    long time_gone_by;
-
-    if (!running[speicher]) {
-        /* Der Timer war angehalten */
-        time_gone_by = (long) (zeit[speicher] / TGetTicksPerSecond());
-    } else {
-        /* Der Timer lief */
-        time_gone_by = (long) ((TGetTime() - zeit[speicher]) / TGetTicksPerSecond());
-    }
-
-    return time_gone_by;
+  if(!running) //OK
+    return -1.0;
+  long time_gone_by;
+  if (!running[speicher]) 
+  {
+    /* Der Timer war angehalten */
+    time_gone_by = (long) (zeit[speicher] / TGetTicksPerSecond());
+  } 
+  else 
+  {
+    /* Der Timer lief */
+    time_gone_by = (long) ((TGetTime() - zeit[speicher]) / TGetTicksPerSecond());
+  }
+  return time_gone_by;
 }
 
 
