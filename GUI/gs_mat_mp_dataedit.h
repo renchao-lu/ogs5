@@ -22,6 +22,8 @@ extern vector<CString> key_word_vector;
 using Math_Group::Matrix;
 extern Math_Group::Matrix* p_matrix;
 
+//OK namespace SolidProp{ class CSolidProperties; };
+//OK using SolidProp::CSolidProperties;
 class CMATGroupEditorDataEdit : public CDialog
 {
 	DECLARE_DYNAMIC(CMATGroupEditorDataEdit)
@@ -38,9 +40,8 @@ protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	DECLARE_MESSAGE_MAP()
 private:
-    CMediumProperties* m_mmp;
-public:
 
+public:
     // ---- Handling Excel-Files ----
     CApplication oExcel;
     CWorkbooks oBooks;    
@@ -70,6 +71,10 @@ public:
     void MMP2UpdateListCtrl(void);
     void Keywords2NewListCtrl(void);
     void SafeArray2MMP(CMediumProperties* m_mmp0=NULL);
-
+    void SafeArray2MSP(CSolidProperties*); //OK
+    CMediumProperties* m_mmp;
+    CSolidProperties* m_msp;
+    void MSP2UpdateListCtrl();
+    void MSPStandardKeywords();
 };
 

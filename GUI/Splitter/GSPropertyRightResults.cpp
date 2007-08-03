@@ -153,35 +153,36 @@ void CGSPropertyRightResults::OnBnClickedGetPcsMinmaxButton3()
  Invalidate(TRUE);
 }
 
+/**************************************************************************
+GUILib-Method:
+??/200? ?? Implementation
+07/2007 OK PV vector
+**************************************************************************/
 void CGSPropertyRightResults::GetPcsMinmax()
 {
   CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
-  long i=0, j=0;
+  CRFProcess* m_pcs = NULL;
+  if(pcs_vector.size()==0)
+    return;
+  m_pcs = PCSGet((string)mainframe->m_pcs_name);
+  if(!m_pcs)
+  {
+    AfxMessageBox("CGSPropertyRightResults::GetPcsMinmax() - no PCS data");
+    return;
+  }
   double value;
-  int nb_processes = 0;
-  CString pcs_name;
-  CString pcs_value_name;
   m_pcs_min_r = 1.e+19;
   m_pcs_max_r = -1.e+19;
-  CRFProcess* m_process = NULL;
-  nb_processes = (int)pcs_vector.size();
-  for(i=0;i<nb_processes;i++)
+  int nidx = m_pcs->GetNodeValueIndex((string)mainframe->m_variable_name);
+  for(long j=0;j<(long)m_pcs->nod_val_vector.size();j++)
   {
-      m_process = pcs_vector[i];
-      pcs_name = m_process->pcs_type_name.data();
-      if (m_process->pcs_primary_function_name[0]== mainframe->m_pcs_name)
-      {
-        int nidx = m_process->GetNodeValueIndex((string)mainframe->m_pcs_name);
-        for(j=0;j<(long)m_process->nod_val_vector.size();j++){
-        value = m_process->GetNodeValue(j,nidx);
-        if(value<m_pcs_min_r) m_pcs_min_r = value;
-        if(value>m_pcs_max_r) m_pcs_max_r = value;
-        }
-      }  
-  }
-    mainframe->m_pcs_min = m_pcs_min_r;
-    mainframe->m_pcs_max = m_pcs_max_r;
-    mainframe->m_something_changed = 1;
+    value = m_pcs->GetNodeValue(j,nidx);
+    if(value<m_pcs_min_r) m_pcs_min_r = value;
+    if(value>m_pcs_max_r) m_pcs_max_r = value;
+  }  
+  mainframe->m_pcs_min = m_pcs_min_r;
+  mainframe->m_pcs_max = m_pcs_max_r;
+  mainframe->m_something_changed = 1;
 }
 
 void CGSPropertyRightResults::OnBnClickedSetPcsMinmaxButton2()

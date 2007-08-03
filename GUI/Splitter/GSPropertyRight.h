@@ -8,8 +8,8 @@
 #include "GSPropertyRightMesh.h"
 #include "GSPropertyRightGeometry.h"
 #include "GSPropertyRightTemplate.h"
+#include "GSPropertyRightPCS.h" //OK_PCS
 #include "GSPropertyRightImportData.h"
-
 
 // CGSPropertyRight form view
 
@@ -39,8 +39,7 @@ public:
 	CGSPropertyRightResults	m_Page9;	
 	CGSPropertyRightImportData m_Page10;
 	CGSPropertyRightTemplate m_Page11;	
-	
-
+	CGSPropertyRightPCS m_Page8; //OK_PCS
     
 // Implementation
 protected:

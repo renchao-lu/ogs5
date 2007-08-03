@@ -431,3 +431,8 @@ void CDialogInitialConditions::FillTable()
     listip++;
   }
 }
+
+void CDialogInitialConditions::OnOK()
+{
+  CDialog::OnOK();
+}

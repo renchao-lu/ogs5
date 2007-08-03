@@ -11,7 +11,7 @@ class CDialogInitialConditionsNew : public CDialog
 public:
 	CDialogInitialConditionsNew(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDialogInitialConditionsNew();
-
+    virtual void OnOK(); //OK
 // Dialog Data
 	enum { IDD = IDD_DIALOG_IC };
 

@@ -112,7 +112,6 @@ BOOL CMATGroupEditor::OnInitDialog()
   if(m_fileopen == ""){//invalid typename, new filename selection
     m_fileopen = "C:\\";
   }
-
   //----------------------------------------------------------------------
   // GEO data
   m_CB_GEO_TYPE.ResetContent();
@@ -126,17 +125,13 @@ BOOL CMATGroupEditor::OnInitDialog()
   //----------------------------------------------------------------------
   // MAT data
   dataremove = false;
-
-  FillTable();
-
-/*-------case sensitive todo-----  
-switch(mat_type)
+  switch(mat_type)
   {
     case 0: //MMP
       FillTable();
       break;
     case 1: //MSP
-      //MSPFillTable();
+      FillTableMSP();
       break;
     case 2: //MFP
       //MFPFillTable();
@@ -145,17 +140,12 @@ switch(mat_type)
       //MCPFillTable();
       break;
   }
--------case sensitive todo-----*/
-
   //----------------------------------------------------------------------
   CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
-
   mainframe->dataedit = false;//zurücksetzen
   mainframe->dataupdate = false;//setzen zu Initialisierung
   mainframe->datanew = false;//zurücksetzen
-
   m_newgroup = "";
-  
   UpdateData(FALSE);
   //----------------------------------------------------------------------
   if(strlen(m_strDBTypeName) == 0){  
@@ -242,29 +232,35 @@ void CMATGroupEditor::OnFileopen()
 // GEO Types
 
 /**************************************************************************
-GeoLibGUI-Method: 
-Task: 
-Programing:
+GUI-Method: 
 03/2005 JG Implementation
-last modified:
+07/2007 OK 
 **************************************************************************/
 void CMATGroupEditor::OnBnClickedGetvalues()
 {
   if (oExcel.m_lpDispatch != NULL){
     oExcel.Quit();
   }
-
   GetTypenamefromComboBox();
-
   CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+//OK
+  mainframe->m_iSelectedMMPGroup = m_iSelectedMMPGroup;
+  mainframe->dataupdate = true;
+//OK
   //--- open DataEdit Dialog ---
   CMATGroupEditorDataEdit dlg;
-    if(dlg.DoModal() == IDCANCEL){
-      if (oExcel.m_lpDispatch != NULL){
+//OK
+  dlg.m_mmp = m_mmp;
+  dlg.m_msp = m_msp;
+//OK
+  if(dlg.DoModal() == IDCANCEL)
+  {
+    if (oExcel.m_lpDispatch != NULL)
+    {
       oExcel.Quit();
-      }
-      mainframe->dataedit = false;
     }
+    mainframe->dataedit = false;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -287,8 +283,8 @@ last modified:
 void CMATGroupEditor::OnButtonCreate()
 {
   int i;
-  bool EmptyName = false;
-  bool Created = false;
+  EmptyName = false;
+  Created = false;
   CGLPolyline *m_polyline=NULL;
   Surface *m_surface=NULL;
   CGLVolume *m_volume = NULL;
@@ -300,10 +296,10 @@ void CMATGroupEditor::OnButtonCreate()
   }
   //----------------------------------------------------------------------
   CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
-
   //----if data have NOT been edited-------------
-  if(mainframe->dataedit == false && mainframe->datanew == false){
-  GetTypenamefromComboBox();
+  if(mainframe->dataedit == false && mainframe->datanew == false) 
+  {
+    GetTypenamefromComboBox();
     //CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
     //----excel------------------------------------
     if(mainframe->m_fileopen.Find(".xls")!= -1){
@@ -320,41 +316,50 @@ void CMATGroupEditor::OnButtonCreate()
   }
   //---------------------------------------------
   //----if data are new-------------
-    if(mainframe->datanew == true){
-        if(strlen(m_strDBTypeName) == 0){
-        m_strDBTypeName = mainframe->m_strDBTypeName;
-        }
+  if(mainframe->datanew == true)
+  {
+    if(strlen(m_strDBTypeName) == 0)
+    {
+      m_strDBTypeName = mainframe->m_strDBTypeName;
     }
-  //MMP-stuff-------------------------------------------------------------
+  }
+  //======================================================================
+  // MAT
+  //======================================================================
+  // MMP
   //----------------------------------------------------------------------
+if(mat_type==0)
+{
   // Check existing MMP
   for(i=0;i<(int)mmp_vector.size();i++){
     m_mmp = mmp_vector[i];
-    if(m_strDBTypeName.Compare(m_mmp->name.data())==0){
+    if(m_strDBTypeName.Compare(m_mmp->name.data())==0)
+    {
       AfxMessageBox(m_strDBTypeName+" already exists.");
       Created = true;
       return;
     }
   }
-  //----------------------------------------------------------------------
+  //......................................................................
   if(strlen(m_strDBTypeName)){
     EmptyName = false;
     }
   else{
     EmptyName = true;
     }
-  //----------------------------------------------------------------------
-  //if((!Created)&&(!EmptyName)){
-  if((Created)||(EmptyName)){
+  //......................................................................
+  if((Created)||(EmptyName))
+  {
     return;
   }
+  //----------------------------------------------------------------------
   m_mmp = new CMediumProperties();
   m_mmp->geo_type_name = m_strGEOTypeName;
   m_mmp->geo_name = m_strGEOName;
   m_mmp->number = (int)mmp_vector.size();
   m_mmp->name = m_strDBTypeName;
   //----------------------------------------------------------------------
-    dataeditdirect->SafeArray2MMP(m_mmp);//Copy parameter-data to MMP in CMediumProperties class (edited AND not edited)
+  dataeditdirect->SafeArray2MMP(m_mmp);//Copy parameter-data to MMP in CMediumProperties class (edited AND not edited)
   //----------------------------------------------------------------------
   // GEO
   //.....................................................................
@@ -389,7 +394,18 @@ void CMATGroupEditor::OnButtonCreate()
   if(m_gsp){
     GSPAddMember(m_gsp->base + ".mmp");
   }
-  //--------------------------------------------------------------------
+}
+  //=======================================================================
+else if (mat_type==1)
+{
+    CreateMSP();
+    CGSProject* m_gsp = GSPGetMember("gli");
+    if(m_gsp&&(int)msp_vector.size()>0)
+    {
+      GSPAddMember(m_gsp->base + ".msp");
+    }
+}
+  //=======================================================================
   dataeditdirect->EmptytnkwVectors();//Empty typename- and keywordvector
   if(dataeditdirect)
   {
@@ -458,30 +474,28 @@ void CMATGroupEditor::OnBnClickedButtonMATUpdate()
 
 }*/
 /**************************************************************************
-GeoLibGUI-Method: 
-Task: 
-Programing:
+GUI-Method: 
 11/2003 OK Implementation
 10/2005 OK GSP
-last modified:
+07/2007 OK MMP/MSP
 **************************************************************************/
 void CMATGroupEditor::OnBnClickedButtonWriteMP()
 {
   CGSProject* m_gsp = NULL;
-  m_gsp = GSPGetMember("pcs");
-  if(m_gsp){
-    MMPWrite(m_gsp->path+m_gsp->base);
-    return;
-  }
   m_gsp = GSPGetMember("gli");
-  if(m_gsp){
-    MMPWrite(m_gsp->path+m_gsp->base);
-    return;
-  }
-  m_gsp = GSPGetMember("msh");
-  if(m_gsp){
-    MMPWrite(m_gsp->path+m_gsp->base);
-    return;
+  if(!m_gsp)
+    m_gsp = GSPGetMember("msh");
+  if(!m_gsp)
+    m_gsp = GSPGetMember("pcs");
+  if(m_gsp)
+  {
+    switch(mat_type)
+    {
+      case 0: MMPWrite(m_gsp->path+m_gsp->base);
+              break;
+      case 1: MSPWrite(m_gsp->path+m_gsp->base);
+              break;
+    }
   }
 }
 
@@ -818,75 +832,103 @@ void CMATGroupEditor::OnCbnSelchangeComboMATNames()
 
 
 /**************************************************************************
-GeoLibGUI-Method: 
-Task: 
-Programing:
+GUI-Method: 
 07/2005 OK Implementation
-last modified:
 **************************************************************************/
 void CMATGroupEditor::OnLvnItemchangedListcontrolMMP(NMHDR *pNMHDR, LRESULT *pResult)
 {
-  if (0 >= m_LC_MMP.GetSelectedCount()){
-  GetDlgItem(IDC_BUTTON_MAT_UPDATE) -> EnableWindow(FALSE);
-  GetDlgItem(IDC_GRID_REMOVE_BUTTON) -> EnableWindow(FALSE);
+  CString m_str;
+  int i;
+  //-----------------------------------------------------------------------
+  if(0>=m_LC_MMP.GetSelectedCount())
+  {
+    GetDlgItem(IDC_BUTTON_MAT_UPDATE) -> EnableWindow(FALSE);
+    GetDlgItem(IDC_GRID_REMOVE_BUTTON) -> EnableWindow(FALSE);
   }
-  else{
-  GetDlgItem(IDC_BUTTON_MAT_UPDATE) -> EnableWindow(TRUE);
-  GetDlgItem(IDC_GRID_REMOVE_BUTTON) -> EnableWindow(TRUE);
+  else
+  {
+    GetDlgItem(IDC_BUTTON_MAT_UPDATE) -> EnableWindow(TRUE);
+    GetDlgItem(IDC_GRID_REMOVE_BUTTON) -> EnableWindow(TRUE);
   }
   LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
   // TODO: Add your control notification handler code here
   pResult = pResult;
   POSITION p = m_LC_MMP.GetFirstSelectedItemPosition();
-  int m_mmp_group;
-  m_mmp_group = m_LC_MMP.GetNextSelectedItem(p);
-  m_mmp_group = pNMLV->iItem;
-  m_mmp = NULL;
-  if((m_mmp_group>-1)&&(m_mmp_group<(int)mmp_vector.size())){
-    m_mmp = mmp_vector[m_mmp_group];
-    m_iSelectedMMPGroup = m_mmp_group;
-    m_strMATName = m_mmp->name.data();
-  }
-  else
-    AfxMessageBox("no MMP data");
-  //----------------------------------------------------------------------
+  int mat_group = m_LC_MMP.GetNextSelectedItem(p);
+  mat_group = pNMLV->iItem;
   m_CB_MMP_PROPERTIES.ResetContent();
   m_CB_MMP_PROPERTIES.InitStorage(20,80);
-  if(m_mmp){
-    if(m_mmp->porosity_model>-1)
-      m_CB_MMP_PROPERTIES.AddString("POROSITY");
-    if(m_mmp->conductivity_model>-1)
-      m_CB_MMP_PROPERTIES.AddString("CONDUCTIVITY");
-    if(m_mmp->storage_model>-1)
-      m_CB_MMP_PROPERTIES.AddString("STORAGE");
-    if(m_mmp->permeability_tensor_type>-1)
-      m_CB_MMP_PROPERTIES.AddString("PERMEABILITY_TENSOR");
-    if(m_mmp->permeability_saturation_model[0]>-1)
-      m_CB_MMP_PROPERTIES.AddString("PERMEABILITY_SATURATION");
-    if(m_mmp->capillary_pressure_model>-1)
-      m_CB_MMP_PROPERTIES.AddString("CAPILLARY_PRESSURE");
-    if(m_mmp->heat_dispersion_model>-1)
-      m_CB_MMP_PROPERTIES.AddString("HEAT_DISPERSION");
-    if(m_mmp->mass_dispersion_model>-1)
-      m_CB_MMP_PROPERTIES.AddString("MASS_DISPERSION");
-    if(m_mmp->friction_coefficient>-1)
-      m_CB_MMP_PROPERTIES.AddString("DARCY_WEISBACH_COEFFICIENT");
-    if(m_mmp->friction_coefficient>-1)
-      m_CB_MMP_PROPERTIES.AddString("CHEZY_COEFFICIENT");
-    if(m_mmp->friction_coefficient>-1)
-      m_CB_MMP_PROPERTIES.AddString("MANNING_COEFFICIENT");
+  //=======================================================================
+  // MAT types
+  //-----------------------------------------------------------------------
+  switch(mat_type)
+  {
+    case 0: // MMP
+      m_mmp = NULL;
+      if((mat_group>-1)&&(mat_group<(int)mmp_vector.size()))
+      {
+        m_mmp = mmp_vector[mat_group];
+        m_iSelectedMMPGroup = mat_group;
+        m_strMATName = m_mmp->name.data();
+      }
+      else
+        AfxMessageBox("no MMP data");
+      //...................................................................
+      if(m_mmp)
+      {
+        if(m_mmp->porosity_model>-1)
+          m_CB_MMP_PROPERTIES.AddString("POROSITY");
+        if(m_mmp->conductivity_model>-1)
+          m_CB_MMP_PROPERTIES.AddString("CONDUCTIVITY");
+        if(m_mmp->storage_model>-1)
+          m_CB_MMP_PROPERTIES.AddString("STORAGE");
+        if(m_mmp->permeability_tensor_type>-1)
+          m_CB_MMP_PROPERTIES.AddString("PERMEABILITY_TENSOR");
+        if(m_mmp->permeability_saturation_model[0]>-1)
+          m_CB_MMP_PROPERTIES.AddString("PERMEABILITY_SATURATION");
+        if(m_mmp->capillary_pressure_model>-1)
+          m_CB_MMP_PROPERTIES.AddString("CAPILLARY_PRESSURE");
+        if(m_mmp->heat_dispersion_model>-1)
+          m_CB_MMP_PROPERTIES.AddString("HEAT_DISPERSION");
+        if(m_mmp->mass_dispersion_model>-1)
+          m_CB_MMP_PROPERTIES.AddString("MASS_DISPERSION");
+        if(m_mmp->friction_coefficient>-1)
+          m_CB_MMP_PROPERTIES.AddString("DARCY_WEISBACH_COEFFICIENT");
+        if(m_mmp->friction_coefficient>-1)
+          m_CB_MMP_PROPERTIES.AddString("CHEZY_COEFFICIENT");
+        if(m_mmp->friction_coefficient>-1)
+         m_CB_MMP_PROPERTIES.AddString("MANNING_COEFFICIENT");
+      }
+      m_CB_MMP_PROPERTIES.SetCurSel(0);
+      //...................................................................
+      m_LB_GEO.ResetContent();
+      for(int i=0;i<(int)m_mmp->geo_name_vector.size();i++)
+      {
+        m_str = m_mmp->geo_type_name.data();
+        m_str += ": ";
+        m_str += m_mmp->geo_name_vector[i].data();
+        m_LB_GEO.AddString(m_str);
+      }
+      break;
+      //-------------------------------------------------------------------
+    case 1: // MSP
+      m_msp = NULL;
+      if((mat_group>-1)&&(mat_group<(int)msp_vector.size()))
+      {
+        m_msp = msp_vector[mat_group];
+        m_iSelectedMMPGroup = mat_group;
+        m_strMATName = m_msp->name.data();
+      }
+      else
+        AfxMessageBox("no MSP data");
+      //...................................................................
+      for(i=0;i<(int)msp_key_word_vector.size();i++)
+      {
+        m_str = msp_key_word_vector[i].data();
+        m_CB_MMP_PROPERTIES.AddString(m_str);
+      }
+      break;
   }
-  m_CB_MMP_PROPERTIES.SetCurSel(0);
-  //----------------------------------------------------------------------
-  m_LB_GEO.ResetContent();
-  CString m_str;
-  for(int i=0;i<(int)m_mmp->geo_name_vector.size();i++){
-    m_str = m_mmp->geo_type_name.data();
-    m_str += ": ";
-    m_str += m_mmp->geo_name_vector[i].data();
-    m_LB_GEO.AddString(m_str);
-  }
-  //----------------------------------------------------------------------
   UpdateData(FALSE);
 }
 
@@ -1108,7 +1150,7 @@ void CMATGroupEditor::FillTable()
     int nColInterval = rect.Width()/2;
   // create columns
   if(strlen(m_strDBTypeName) == 0){  
-      m_LC_MMP.InsertColumn(0,_T("MMP Name"),LVCFMT_LEFT, nColInterval);
+      m_LC_MMP.InsertColumn(0,_T("MAT Name"),LVCFMT_LEFT, nColInterval);
       m_LC_MMP.InsertColumn(1,_T("Geo Dimension"),LVCFMT_LEFT, nColInterval);
     }
   }
@@ -1118,7 +1160,8 @@ void CMATGroupEditor::FillTable()
   CString temp;
   CMediumProperties* m_mmp = NULL;
   LVITEM lvi;
-  for(int i=0;i<(int)mmp_vector.size();i++){
+  for(int i=0;i<(int)mmp_vector.size();i++)
+  {
     m_mmp = mmp_vector[i];
     lvi.mask =  LVIF_TEXT;
     // 1 column
@@ -1310,7 +1353,26 @@ void CMATGroupEditor::OnDblclick_LC_MMP(NMHDR* pNMHDR, LRESULT* pResult)
     //AfxMessageBox("Select a Material Group!");
     return;
   }
-  m_iSelectedMMPGroup = m_LC_MMP.GetSelectedCount();
+  m_iSelectedMMPGroup = m_LC_MMP.GetSelectedCount()-1;
+  m_mmp = NULL; //OK
+  m_msp = NULL; //OK
+// OK
+  switch(mat_type)
+  {
+    case 0: //MMP
+      m_mmp = MMPGet((string)m_strDBTypeName); //OK
+      m_mmp = mmp_vector[m_iSelectedMMPGroup];
+      if(!m_mmp) return;
+      break;
+    case 1: //MSP
+      m_msp = MSPGet((string)m_strDBTypeName); //OK
+      m_msp = msp_vector[m_iSelectedMMPGroup];
+      if(!m_msp) return;
+      break;
+  }
+OnBnClickedGetvalues();
+return;
+// OK
   OnBnClickedMATUpdateButton();
   *pResult = 0;
 }
@@ -1336,6 +1398,7 @@ void CMATGroupEditor::OnKillfocus_LC_MMP(NMHDR* pNMHDR, LRESULT* pResult)
 /**************************************************************************
 GeoLibGUI-Method: 
 01/2006 JG Implementation
+07/2007 OK MSP
 **************************************************************************/
 void CMATGroupEditor::OnBnClickedMATUpdateButton() 
 {
@@ -1347,16 +1410,28 @@ void CMATGroupEditor::OnBnClickedMATUpdateButton()
   }
   CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
   mainframe->m_iSelectedMMPGroup = m_LC_MMP.GetNextSelectedItem(p);
-
   mainframe->dataupdate = true;
   //--- open DataEdit Dialog ---
   CMATGroupEditorDataEdit dlg;
-    if(dlg.DoModal() == IDCANCEL){
-      if (oExcel.m_lpDispatch != NULL){
-        oExcel.Quit();
-      }
-      mainframe->dataupdate = false;
+  switch(mat_type) //OK
+  {
+    case 0: // MMP
+      dlg.m_mmp = m_mmp;
+      dlg.m_msp = NULL;
+      break;
+    case 1: // MSP
+      dlg.m_msp = m_msp;
+      dlg.m_mmp = NULL;
+      break;
+  }
+  if(dlg.DoModal() == IDCANCEL)
+  {
+    if (oExcel.m_lpDispatch != NULL)
+    {
+      oExcel.Quit();
     }
+    mainframe->dataupdate = false;
+  }
 }
 
 /**************************************************************************
@@ -1427,4 +1502,101 @@ void CMATGroupEditor::OnEnSetfocusNewname()
   mainframe->m_strDBTypeName = m_strDBTypeName;
   GetDlgItem(IDC_GETVALUES) -> EnableWindow(FALSE);
   UpdateData(FALSE);
+}
+
+/**************************************************************************
+GUI-Method: 
+07/2007 OK Implementation
+**************************************************************************/
+void CMATGroupEditor::OnOK()
+{
+  CDialog::OnOK();
+}
+
+/**************************************************************************
+GUI-Method: 
+07/2007 OK Implementation
+**************************************************************************/
+void CMATGroupEditor::CreateMSP()
+{
+  EmptyName = false;
+  Created = false;
+  CSolidProperties* m_msp = NULL;
+  // Check existing MSP
+  for(int i=0;i<(int)msp_vector.size();i++){
+    m_msp = msp_vector[i];
+    if(m_strDBTypeName.Compare(m_msp->name.data())==0)
+    {
+      AfxMessageBox(m_strDBTypeName+" already exists.");
+      Created = true;
+      return;
+    }
+  }
+  //......................................................................
+  if(strlen(m_strDBTypeName))
+    EmptyName = false;
+  else
+    EmptyName = true;
+  //......................................................................
+  if((Created)||(EmptyName))
+    return;
+  //----------------------------------------------------------------------
+  m_msp = new CSolidProperties();
+  //m_mmp->geo_type_name = m_strGEOTypeName;
+  //m_mmp->geo_name = m_strGEOName;
+  //m_msp->number = (int)msp_vector.size();
+  m_msp->name = m_strDBTypeName;
+  //----------------------------------------------------------------------
+  //Copy parameter-data to MMP in CMediumProperties class (edited AND not edited)
+  dataeditdirect->SafeArray2MSP(m_msp);
+  //----------------------------------------------------------------------
+  // GEO ???
+  //-----------------------------------------------------------------------
+  msp_vector.push_back(m_msp);
+  //-----------------------------------------------------------------------
+}
+
+/**************************************************************************
+GUI-Method: 
+07/2007 OK Implementation
+**************************************************************************/
+void CMATGroupEditor::FillTableMSP()
+{
+  //-----------------------------------------------------------------------
+  // Table header
+  if(dataremove == FALSE)
+  {
+    CRect rect;
+    m_LC_MMP.GetClientRect(&rect);
+    m_LC_MMP.SetExtendedStyle (LVS_EX_GRIDLINES|LVS_EX_FULLROWSELECT);
+    int nColInterval = rect.Width()/2;
+    // create columns
+    if(strlen(m_strDBTypeName) == 0)
+    {  
+      m_LC_MMP.InsertColumn(0,_T("MAT Name"),LVCFMT_LEFT, nColInterval);
+      m_LC_MMP.InsertColumn(1,_T("Geo Dimension"),LVCFMT_LEFT, nColInterval);
+    }
+  }
+  m_LC_MMP.DeleteAllItems(); // Delete the current contents
+  //-----------------------------------------------------------------------
+  CString strItem;
+  CString temp;
+  CSolidProperties* m_msp = NULL;
+  LVITEM lvi;
+  for(int i=0;i<(int)msp_vector.size();i++)
+  {
+    m_msp = msp_vector[i];
+    lvi.mask =  LVIF_TEXT;
+    // 1 column
+	strItem.Format("%i",i);
+	lvi.iItem = i;
+	lvi.iSubItem = 0;
+	lvi.pszText = (LPTSTR)(LPCTSTR)(m_msp->name.c_str());
+    m_LC_MMP.InsertItem(&lvi);
+    // 2 column
+    //OK strItem.Format("%i",m_msp->geo_dimension);
+    lvi.iSubItem = 1;
+	lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+	m_LC_MMP.SetItem(&lvi);
+  }
 }

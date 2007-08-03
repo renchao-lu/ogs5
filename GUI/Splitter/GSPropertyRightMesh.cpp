@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "afxpriv.h"
 #include "Windowsx.h"
-#include "Msctf.h"
+//OK#include "Msctf.h"
 #include "GeoSys.h"
 #include "GeoSysDoc.h"
 #include "MainFrm.h"

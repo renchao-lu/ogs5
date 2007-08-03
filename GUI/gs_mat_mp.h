@@ -30,7 +30,7 @@ public:
     afx_msg void OnButtonNewMatGroup();
     afx_msg void OnBnClickedButtonWriteMP();
     afx_msg void OnBnClickedCreateFields();
-
+    virtual void OnOK(); //OK
 // Dialog Data
 	enum { IDD = IDD_MAT_GROUP_EDITOR };
 protected:
@@ -45,8 +45,8 @@ private:
 	int MarkedRow;
     CString m_fileopen;
     CString m_newgroup;
-
     CMediumProperties* m_mmp;
+    CSolidProperties* m_msp; //OK
 public:
     CString m_strFileNameBase;
     afx_msg void OnBnClickedButtonWriteTec();
@@ -107,4 +107,8 @@ public:
     // Buffer
     CMATGroupEditorDataEdit *dataeditdirect;
     int mat_type; //OKJG
+    void CreateMSP(); //OK
+    bool EmptyName;
+    bool Created;
+    void FillTableMSP(); //OK
 };

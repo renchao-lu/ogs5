@@ -11,7 +11,7 @@ class CDialogPCS : public CDialog
 public:
 	CDialogPCS(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDialogPCS();
-
+    virtual void OnOK(); //OK
 // Dialog Data
 	enum { IDD = IDD_PCS_EDITOR };
 
@@ -37,4 +37,6 @@ protected:
     afx_msg void OnBnClickedButtonAdd();
     afx_msg void OnBnClickedButtonClear();
     afx_msg void OnBnClickedWrite();
+public:
+    afx_msg void OnBnClickedButtonPcsRead();
 };

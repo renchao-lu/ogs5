@@ -9,8 +9,10 @@
 #pragma once
 #endif // _MSC_VER >= 1000
 
+// GEOLib
 #include "geo_pnt.h" 
 #include "geo_lin.h" 
+
 #include "IsoSurface.h"
 
 
@@ -213,7 +215,8 @@ public:
 	afx_msg void OnMeshTest_Tetra_Angle();
 	afx_msg void OnMeshTest_Tetra_Angle_Graph();
    	afx_msg void OnMeshGenerator_Delaunay();
-	afx_msg void COGLView::OnMeshImprovement();
+	afx_msg void OnMeshImprovement();
+    void DrawPoint(int,double*); //OK
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 

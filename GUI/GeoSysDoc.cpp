@@ -46,6 +46,7 @@ extern string GetLineFromFile1(ifstream*);
 extern bool RFDOpen(string file_name_base);
 #include "rf_fct.h"
 #include "par_ddc.h"
+#include "rf_react.h" //OK
 // GeoSys-LIB
 #include "shp.h"
 #include "dlg_shp.h"
@@ -171,9 +172,6 @@ CGeoSysDoc::~CGeoSysDoc()
   MCPDelete();
   PCSDestroyAllProcesses();//Do not put this before PCSDelete, it will cause crash
   //--------------------------------------------------
-
-
-
 }
 
 void CGeoSysDoc::InitDocument() //CC 
@@ -351,21 +349,27 @@ void CGeoSysDoc::Serialize(CArchive& ar)
     pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read data");
     //--------------------------------------------------------------------
     // GSP project
-	if(m_strGSPFileExt==".gsp"){
+	if(m_strGSPFileExt==".gsp")
+    {
       // Read GSP file
       GSPReadWIN(ar);
-      CompleteMesh(); //WW
-      // Config GSP data
-      if(m_bDataMSH){
-        pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Config data");
-        RFPre_Model();
-        //OKMB start_new_elems = ElListSize();
-        ConfigTopology(); // max_dim for solver, elements to nodes relationships
+      if(m_bDataMSH)
+      {
+        pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Config MSH data");
+        CompleteMesh(); //WW
+        GetHeterogeneousFields(); //OK/MB
+        MSHTestMATGroups(); //OK Test MSH-MMP
+        DDCCreate(); //OK
+        ConfigSolverProperties();
+        //ConfigTopology(); // max_dim for solver, elements to nodes relationships
       }
       // Create PCS data
-      if(pcs_created){
+      if(pcs_created)
+      {
         pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Create PCS data");
-        LOPPreTimeLoop_PCS();
+        PCSCreateNew(); //OK Create PCS
+        //REACTInit(); //OK Initialization of REACT structure for rate exchange between MTM2 and Reactions
+        //PCSRestart(); //SB
         m_bDataPCS = true;
         m_bDataFEM = true;
       }
@@ -626,6 +630,29 @@ void CGeoSysDoc::GSPWriteWIN(CArchive& ar)
   }
   m_strLine = "#STOP";
   ar << m_strLine;
+  //----------------------------------------------------------------------
+  // Write GSP ASCII file
+  //----------------------------------------------------------------------
+  // File handling
+  CString gsp_file_name_ar = ar.m_strFileName;
+  int pos = gsp_file_name_ar.ReverseFind('.');
+  CString m_strARFilePathBase = gsp_file_name_ar.Left(pos);
+  string gsp_file_name = (string)m_strARFilePathBase;
+  gsp_file_name += "_ascii.gsp";
+  fstream gsp_file (gsp_file_name.data(),ios::trunc|ios::out);
+  gsp_file.clear();
+  //......................................................................
+  gsp_file << "#PROJECT_MEMBER" << endl;
+  for(i=0;i<gsp_vector_size;i++)
+  {
+    m_gsp = gsp_vector[i];
+    m_strLine  = m_gsp->base.data();
+    m_strLine += ".";
+    m_strLine += m_gsp->type.data();
+    gsp_file << m_strLine << endl;
+  }
+  gsp_file << "#STOP";
+  //----------------------------------------------------------------------
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -856,78 +883,89 @@ void CGeoSysDoc::OnUpdateAddMSH(CCmdUI *pCmdUI)
 
 /**************************************************************************
 GeoSys-Method: OnAddFEM
-Task: 
-Programing:
 01/2005 OK Implementation
-ToDo: Destroy functions
+07/2007 OK Add MODEL
 **************************************************************************/
 void CGeoSysDoc::OnAddFEM()
 {
   CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
-  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Add FEM data");
-  CFileDialog fileDlg(TRUE,"pcs",NULL,OFN_ENABLESIZING," FEM Files (*.pcs)|*.pcs||");
-  if(fileDlg.DoModal()==IDOK){
-    if(fileDlg.GetFileExt()=="pcs"){
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Add GSP data");
+  CFileDialog fileDlg(TRUE,"gsp",NULL,OFN_ENABLESIZING," GSP Files (*.gsp)|*.gsp||");
+  if(fileDlg.DoModal()==IDOK)
+  {
+    if(fileDlg.GetFileExt()=="gsp")
+    {
       m_bDataFEM = TRUE;
       CString m_strPCSFilePathBaseExt = fileDlg.GetPathName();
       int pos = m_strPCSFilePathBaseExt.ReverseFind('.');
       CString m_strPCSFilePathBase = m_strPCSFilePathBaseExt.Left(pos);
-      if(PCSRead((string)m_strPCSFilePathBase)) //PCSDestroy();
-        GSPAddMemberNew((string)m_strPCSFilePathBase,(string)m_strGSPFilePathBase,"pcs");
-      else
+      //..................................................................
+      if(!PCSRead((string)m_strPCSFilePathBase))
         AfxMessageBox("No PCS file");
-      if(NUMRead((string)m_strPCSFilePathBase))
-        GSPAddMemberNew((string)m_strPCSFilePathBase,(string)m_strGSPFilePathBase,"num");
       else
+      {
+        GSPAddMember((string)m_strGSPFileBase + ".pcs");
+        m_strPCSTypeName = pcs_vector[pcs_vector.size()-1]->pcs_type_name.data();
+      }
+      //..................................................................
+      if(!NUMRead((string)m_strPCSFilePathBase))
         AfxMessageBox("No NUM file");
-      if(TIMRead((string)m_strPCSFilePathBase))
-        GSPAddMemberNew((string)m_strPCSFilePathBase,(string)m_strGSPFilePathBase,"tim");
       else
+        GSPAddMember((string)m_strGSPFileBase + ".num");
+      //..................................................................
+      if(!TIMRead((string)m_strPCSFilePathBase))
         AfxMessageBox("No TIM file");
-      if(OUTRead((string)m_strPCSFilePathBase))
-        GSPAddMemberNew((string)m_strPCSFilePathBase,(string)m_strGSPFilePathBase,"out");
       else
+        GSPAddMember((string)m_strGSPFileBase + ".tim");
+      //..................................................................
+      if(!OUTRead((string)m_strPCSFilePathBase))
         AfxMessageBox("No OUT file");
-      if(ICRead((string)m_strPCSFilePathBase))
-        GSPAddMemberNew((string)m_strPCSFilePathBase,(string)m_strGSPFilePathBase,"ic");
       else
+        GSPAddMember((string)m_strGSPFileBase + ".out");
+      //..................................................................
+      if(!ICRead((string)m_strPCSFilePathBase))
         AfxMessageBox("No IC file");
-      if(BCRead((string)m_strPCSFilePathBase))
-        GSPAddMemberNew((string)m_strPCSFilePathBase,(string)m_strGSPFilePathBase,"bc");
       else
+        GSPAddMember((string)m_strGSPFileBase + ".ic");
+      //..................................................................
+      if(!BCRead((string)m_strPCSFilePathBase))
         AfxMessageBox("No BC file");
-      if(STRead((string)m_strPCSFilePathBase))
-        GSPAddMemberNew((string)m_strPCSFilePathBase,(string)m_strGSPFilePathBase,"st");
       else
+        GSPAddMember((string)m_strGSPFileBase + ".bc");
+      //..................................................................
+      if(!STRead((string)m_strPCSFilePathBase))
         AfxMessageBox("No ST file");
-      if(MFPRead((string)m_strPCSFilePathBase))
-        GSPAddMemberNew((string)m_strPCSFilePathBase,(string)m_strGSPFilePathBase,"mfp");
       else
+        GSPAddMember((string)m_strGSPFileBase + ".st");
+      //..................................................................
+      if(!MFPRead((string)m_strPCSFilePathBase))
         AfxMessageBox("No MFP file");
-      if(MSPRead((string)m_strPCSFilePathBase))
-        GSPAddMemberNew((string)m_strPCSFilePathBase,(string)m_strGSPFilePathBase,"msp");
       else
+        GSPAddMember((string)m_strGSPFileBase + ".mfp");
+      //..................................................................
+      if(!MSPRead((string)m_strPCSFilePathBase))
         AfxMessageBox("No MSP file");
-      if(MMPRead((string)m_strPCSFilePathBase))
-        GSPAddMemberNew((string)m_strPCSFilePathBase,(string)m_strGSPFilePathBase,"mmp");
       else
+        GSPAddMember((string)m_strGSPFileBase + ".msp");
+      //..................................................................
+      if(!MMPRead((string)m_strPCSFilePathBase))
         AfxMessageBox("No MMP file");
-      if(CPRead((string)m_strPCSFilePathBase))
-        GSPAddMemberNew((string)m_strPCSFilePathBase,(string)m_strGSPFilePathBase,"mcp");
       else
+        GSPAddMember((string)m_strGSPFileBase + ".mmp");
+      //..................................................................
+      if(!CPRead((string)m_strPCSFilePathBase))
         AfxMessageBox("No MCP file");
-      if(RFDOpen((string)m_strPCSFilePathBase)) //OK4104
-        GSPAddMemberNew((string)m_strPCSFilePathBase,(string)m_strGSPFilePathBase,"rfd");
       else
-        AfxMessageBox("No RFD file");
+        GSPAddMember((string)m_strGSPFileBase + ".mcp");
+      //..................................................................
     }
     // Serialize: Write GSP file
     pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Write GSP file");
-    OnFileSave();
+    //OK OnFileSave();
   }
   // Create PCS data
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Create PCS data");
-  LOPPreTimeLoop_PCS();
+  //OK LOPPreTimeLoop_PCS();
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Ready");
 }
 
@@ -1544,6 +1582,12 @@ void CGeoSysDoc::OnSimulatorForward()
     AfxMessageBox("No PCS data ! Create in -> Simulator -> Processes");
     return;
   }
+  //........................................................................
+  if(!PCSCheck()) //OK
+  {
+    AfxMessageBox("Incorrect MOD data !");
+    return;
+  }
   //========================================================================
   // Calculate Jakobian und Element-Volumen
   CalcElementsGeometry();
@@ -1642,7 +1686,7 @@ void CGeoSysDoc::OnSimulatorForward()
     m_str.Format("Execute time step: t=%e",m_tim->time_current);
     pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
     dt_sum += dt;
-    LOPTimeLoop_PCS(&dt_sum);
+    LOPTimeLoop_PCS(dt_sum);
     //----------------------------------------------------------------------
     // Data output
     pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Data output");

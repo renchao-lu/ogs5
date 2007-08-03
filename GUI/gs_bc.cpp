@@ -37,6 +37,7 @@ static char THIS_FILE[] = __FILE__;
 CBoundaryConditions::CBoundaryConditions(CWnd* pParent /*=NULL*/)
 	: CDialog(CBoundaryConditions::IDD, pParent)
 {
+  m_strValues.Format("%g",0.0); //OK
 }
 
 void CBoundaryConditions::DoDataExchange(CDataExchange* pDX)
@@ -45,7 +46,7 @@ void CBoundaryConditions::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_COMBO_GEO_TYPE, m_CB_GEOType);
     DDX_Control(pDX, IDC_LIST_GEO, m_LB_GEO);
     DDX_Control(pDX, IDC_COMBO_DIS_TYPE, m_CB_DISType);
-    DDX_Text(pDX, IDC_EDIT_VALUE, m_dValue);
+    DDX_Text(pDX, IDC_EDIT_VALUE, m_strValues);
     DDX_Control(pDX, IDC_LIST_BC_NEW, m_LC_BC);
     DDX_Control(pDX, IDC_COMBO_PCS_TYPE, m_CB_PCSType);
     DDX_Control(pDX, IDC_COMBO_TIM_TYPE, m_CB_TIMType);
@@ -290,11 +291,13 @@ Task:
 Programing:
 04/2004 OK Implementation
 11/2004 OK new Table
+07/2007 OK LINEAR
 last modified:
 **************************************************************************/
 void CBoundaryConditions::OnBnClickedButtonCreate()
 {
   CString m_str;
+  std::stringstream in;
   UpdateData(true);
   if(m_strPCSTypeName.IsEmpty()) {
     AfxMessageBox("No PCS Type selected"); return; 
@@ -302,30 +305,52 @@ void CBoundaryConditions::OnBnClickedButtonCreate()
   if(m_strGEOName.IsEmpty()) {
     AfxMessageBox("No GEO Name selected"); return; 
   }
-  if(m_strGEOName.IsEmpty()) {
+  if(m_strDISTypeName.IsEmpty()) {
     AfxMessageBox("No DIS Type selected"); return;
   }
-  if(!m_strPCSTypeName.IsEmpty()&&!m_strGEOName.IsEmpty()&&!m_strDISTypeName.IsEmpty()) {
-    m_bc = new CBoundaryCondition();
-    m_bc->pcs_type_name = m_strPCSTypeName;
-    m_bc->pcs_pv_name = m_strPVName;
-    m_bc->geo_type_name = m_strGEOTypeName;
-    m_bc->SetGEOType();
-    m_bc->geo_name = m_strGEOName;
-    if(m_bc->geo_type_name.compare("POINT")==0){
-      m_str = m_strGEOName.GetAt(5); //OK
-  
-      CGLPoint *m_point  = NULL; //CC
-      m_point = GEOGetPointByName(m_bc->geo_name);//CC
-      if(m_point)
+  //----------------------------------------------------------------------
+  m_bc = new CBoundaryCondition();
+  m_bc->pcs_type_name = m_strPCSTypeName;
+  m_bc->pcs_pv_name = m_strPVName;
+  //----------------------------------------------------------------------
+  // GEO type
+  m_bc->geo_type_name = m_strGEOTypeName;
+  m_bc->SetGEOType();
+  m_bc->geo_name = m_strGEOName;
+  if(m_bc->geo_type_name.compare("POINT")==0)
+  {
+    m_str = m_strGEOName.GetAt(5); //OK
+    CGLPoint *m_point  = NULL; //CC
+    m_point = GEOGetPointByName(m_bc->geo_name);//CC
+    if(m_point)
       m_bc->geo_node_number = m_point->id;//CC
-    }
-    m_bc->dis_type_name = m_strDISTypeName;
-    m_bc->SetDISType();
-    m_bc->geo_node_value = atof(m_dValue);
-    m_bc->fct_name = m_strFCTName;
-    bc_list.push_back(m_bc);
   }
+  //----------------------------------------------------------------------
+  // DIS type
+  m_bc->dis_type_name = m_strDISTypeName;
+  m_bc->SetDISType();
+  //......................................................................
+  if(m_bc->dis_type_name.compare("CONSTANT")==0)
+  {
+    m_bc->geo_node_value = atof(m_strValues);
+  }
+  //......................................................................
+  if(m_bc->dis_type_name.compare("LINEAR")==0)
+  {
+    m_bc->dis_type = 2;
+    long ldummy; double ddummy;
+    in.str((string)m_strValues);
+    in >> ldummy >> ddummy;
+    m_bc->PointsHaveDistribedBC.push_back(ldummy);
+    m_bc->DistribedBC.push_back(ddummy);
+    in >> ldummy >> ddummy;
+    m_bc->PointsHaveDistribedBC.push_back(ldummy);
+    m_bc->DistribedBC.push_back(ddummy);
+    in.clear(); 
+  }
+  m_bc->fct_name = m_strFCTName;
+  //----------------------------------------------------------------------
+  bc_list.push_back(m_bc);
   //----------------------------------------------------------------------
   CGSProject* m_gsp = NULL;
   m_gsp = GSPGetMember("pcs");
@@ -532,12 +557,25 @@ void CBoundaryConditions::FillTable()
     m_LC_BC.SetItemText(listip,1,m_bc->geo_type_name.c_str());
     m_LC_BC.SetItemText(listip,2,m_bc->geo_name.c_str());
     m_LC_BC.SetItemText(listip,3,m_bc->dis_type_name.c_str());
-    m_strItem.Format("%g",m_bc->geo_node_value);
+    switch(m_bc->dis_type_name[0]) 
+    {
+      case 'C': // Constant
+        m_strItem.Format("%g",m_bc->geo_node_value);
+        break;
+      case 'L': // Linear
+        m_strItem.Format("%i",(int)m_bc->PointsHaveDistribedBC.size());
+        break;
+    }
     m_LC_BC.SetItemText(listip,4,m_strItem);
     m_LC_BC.SetItemText(listip,5,m_bc->fct_name.c_str());
     ++p_bc;
     listip++;
   }
+}
+
+void CBoundaryConditions::OnOK()
+{
+  CDialog::OnOK();
 }
 
 /////////////////////////////////////////////////////////////////////////////

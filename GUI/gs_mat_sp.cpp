@@ -70,7 +70,7 @@ BEGIN_MESSAGE_MAP(MAT_Mech_dlg, CDialog)
 	ON_BN_CLICKED(ID_MSP_NEW, OnBnClickedMspNew)
 	ON_CBN_SELCHANGE(IDC_COMCREEP, OnCbnSelchangeComcreep)
 	ON_BN_CLICKED(IDC_CREEP, OnBnClickedCreep)
-//	ON_CBN_SELCHANGE(IDC_CREEP1, OnCbnSelchangeCreep1)
+//OK->WW please check:	ON_CBN_SELCHANGE(IDC_CREEP1, OnCbnSelchangeCreep1)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////

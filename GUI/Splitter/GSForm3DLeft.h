@@ -25,10 +25,6 @@ class CGSForm3DLeft : public CFormView
 public:
 	CGSForm3DLeft();           // protected constructor used by dynamic creation
 
-    
-    
-   
-
 // Form Data
 public:
 	//{{AFX_DATA(CGSForm3DLeft)
@@ -50,8 +46,10 @@ public:
     int m_y_value_color;
     int m_z_value_color;
     int m_permeability_value_color;
-
     CString m_pcs_name;
+    CString geo_type_name; //OK
+    CString geo_name; //OK
+
     CTreeCtrl* pCtrl;
     CTreeCtrl* pCtrl_copy;
 
@@ -120,7 +118,7 @@ public:
   void SetTree();
   void UpdateViewbyTree();
   void DeactivateAll();
-
+  CString PCSGetName(HTREEITEM); //OK
 };
 
 /////////////////////////////////////////////////////////////////////////////

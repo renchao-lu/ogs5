@@ -48,6 +48,7 @@ BEGIN_MESSAGE_MAP(CDialogPCS, CDialog)
     ON_BN_CLICKED(IDC_BUTTON_PCS_CREATE, OnBnClickedCreate)
     ON_BN_CLICKED(IDC_BUTTON_PCS, OnBnClickedButtonAdd)
     ON_BN_CLICKED(IDC_BUTTON_CLEAR, OnBnClickedButtonClear)
+    ON_BN_CLICKED(IDC_BUTTON_PCS_READ, &CDialogPCS::OnBnClickedButtonPcsRead)
 END_MESSAGE_MAP()
 
 // CDialogPCS message handlers
@@ -164,37 +165,94 @@ Programing:
 01/2006 OK MCP,MSP
 **************************************************************************/
 void CDialogPCS::OnBnClickedCreate()
+//void CDialogPCS::OnOK()
 {
-  int j;
-  //----------------------------------------------------------------------
-  // GSP
-  CGSProject* m_gsp = NULL;
-  m_gsp = GSPGetMember("msh");
-  if(!m_gsp){
-    AfxMessageBox("Error: No MSH member");
-    return;
-  }
   //----------------------------------------------------------------------
   // Delete existing PCS
-  PCSDelete();
-  //----------------------------------------------------------------------
-  // Check MSH
-  CFEMesh* m_msh = NULL;
-  m_msh = FEMGet((string)m_strPCSName);
-  if(!m_msh){
-    AfxMessageBox("Error: no MSH data");
-    return;
-  }
-  //----------------------------------------------------------------------
-  ConfigSolverProperties();
+//OK  PCSDelete();
   //----------------------------------------------------------------------
   // Create PCS
-  for(int i=0;i<(int)m_LB_PCS.GetCount();i++){
+  for(int i=0;i<(int)m_LB_PCS.GetCount();i++)
+  {
     m_LB_PCS.GetText(i,m_strPCSName);
+    m_pcs = NULL; //OK
+    m_pcs = PCSGet((string)m_strPCSName); //OK
+    if(m_pcs)
+      continue;
     m_pcs = new CRFProcess();
     m_pcs->pcs_number = i;
     m_pcs->pcs_type_number = i;
     m_pcs->pcs_type_name = m_strPCSName;
+    // PCS-M-ToDo
+    if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
+    {
+      m_pcs->pcs_type_name_vector.push_back(m_pcs->pcs_type_name);
+      pcs_vector.push_back(m_pcs->CopyPCStoDM_PCS());
+      delete m_pcs;
+    }
+    //....................................................................
+    else
+      pcs_vector.push_back(m_pcs);    
+    //....................................................................
+    // Due to  delete m_pcs  in  if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
+    m_pcs = pcs_vector[(int)pcs_vector.size()-1]; 
+    //OK m_pcs->Config();
+    //....................................................................
+  }
+  //----------------------------------------------------------------------
+  // GSP entry
+  CGSProject* m_gsp = NULL;
+  m_gsp = GSPGetMember("msh");
+  if(!m_gsp)
+  {
+    AfxMessageBox("Error: No MSH member");
+    return;
+  }
+  else
+  {
+    string pcs_base_type = m_gsp->base + ".pcs";
+    GSPAddMember(pcs_base_type);
+  }
+  //----------------------------------------------------------------------
+  // Display selected processes in PCSView
+  CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
+  if(theApp->g_graphics_modeless_dlg->GetSafeHwnd())
+    theApp->g_graphics_modeless_dlg->OnInitDialog();
+  //----------------------------------------------------------------------
+}
+
+/**************************************************************************
+GUILib-Method: 
+Task:
+Programing:
+11/2004 OK Implementation
+**************************************************************************/
+void CDialogPCS::OnBnClickedWrite()
+{
+  CGSProject* m_gsp = NULL;
+  m_gsp = GSPGetMember("pcs");
+  if(m_gsp)
+    PCSWrite(m_gsp->base);
+  else
+    AfxMessageBox("Error: No GSP data");
+}
+
+/**************************************************************************
+GUILib-Method: 
+07/2007 OK Implementation
+**************************************************************************/
+/*
+void CDialogPCS::OnBnClickedCreateGSP()
+{
+  //----------------------------------------------------------------------
+  // GSP
+  CGSProject* m_gsp = NULL;
+  m_gsp = GSPGetMember("msh");
+  if(!m_gsp)
+  {
+    AfxMessageBox("Error: No MSH member");
+    return;
+  }
     // MCP ...............................................................
     if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0)
     {
@@ -216,26 +274,6 @@ void CDialogPCS::OnBnClickedCreate()
       string msp_base_type = m_gsp->base + ".msp";
       GSPAddMember(msp_base_type);
     }
-    // PCS-M-ToDo
-    if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
-    {
-      m_pcs->pcs_type_name_vector.push_back(m_pcs->pcs_type_name);
-      pcs_vector.push_back(m_pcs->CopyPCStoDM_PCS());
-      delete m_pcs;
-    }
-    //....................................................................
-    else
-      pcs_vector.push_back(m_pcs);    
-    //....................................................................
-    // Due to  delete m_pcs  in  if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
-    m_pcs = pcs_vector[(int)pcs_vector.size()-1]; 
-    m_pcs->Config();
-    m_pcs->PCSSetIC_USER = NULL;
-    m_pcs->Create();
-    m_pcs->num_type_name = "NEW"; //OK
-    m_gsp = GSPGetMember("msh");
-    string pcs_base_type = m_gsp->base + ".pcs";
-    GSPAddMember(pcs_base_type);
     //NUM ................................................................
     CNumerics* m_num = NULL;
     m_num = NUMGet(m_pcs->pcs_type_name);
@@ -266,37 +304,39 @@ void CDialogPCS::OnBnClickedCreate()
       for(j=0;j<m_pcs->pcs_number_of_primary_nvals;j++){
         m_out->nod_value_vector.push_back(m_pcs->pcs_primary_function_name[j]);
       }
-/*OK
       for(j=0;j<m_pcs->pcs_number_of_secondary_nvals;j++)
       {
         m_out->nod_value_vector.push_back(m_pcs->pcs_secondary_function_name[j]);
       }
-*/
       out_vector.push_back(m_out);
       string out_base_type = m_gsp->base + ".out";
       GSPAddMember(out_base_type);
     }
-    //....................................................................
-  }
-  //----------------------------------------------------------------------
-  // Display selected processes in PCSView
-  CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
-  if(theApp->g_graphics_modeless_dlg->GetSafeHwnd())
-    theApp->g_graphics_modeless_dlg->OnInitDialog();
+
+//PCS
+    m_gsp = GSPGetMember("msh");
+    string pcs_base_type = m_gsp->base + ".pcs";
+    GSPAddMember(pcs_base_type);
 }
+*/
 
 /**************************************************************************
 GUILib-Method: 
-Task:
-Programing:
-11/2004 OK Implementation
+07/2007 OK Implementation
 **************************************************************************/
-void CDialogPCS::OnBnClickedWrite()
+/*
+void CDialogPCS::OnBnClickedCheckGSP()
 {
-  CGSProject* m_gsp = NULL;
-  m_gsp = GSPGetMember("pcs");
-  if(m_gsp)
-    PCSWrite(m_gsp->base);
-  else
-    AfxMessageBox("Error: No GSP data");
+}
+*/
+
+void CDialogPCS::OnOK()
+{
+  //----------------------------------------------------------------------
+  CDialog::OnOK();
+  //----------------------------------------------------------------------
+}
+void CDialogPCS::OnBnClickedButtonPcsRead()
+{
+    // TODO: Add your control notification handler code here
 }

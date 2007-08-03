@@ -49,6 +49,7 @@ public:
     FEMNodesElements *m_nodes_elements;
     // TIM
     CTimeDiscretization *m_doc_tim;
+    CString m_strPCSTypeName; //OK
 // Operations
 public:
     // Implementation CC 04/2004

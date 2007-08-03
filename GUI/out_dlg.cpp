@@ -110,7 +110,7 @@ BOOL CDialogOUT::OnInitDialog()
     for(i=0;i<m_pcs->pcs_number_of_primary_nvals;i++){
       m_strNODName = (CString)m_pcs->pcs_primary_function_name[i];
       m_CB_NODType.AddString(m_strNODName);
-      m_CB_NODType.SetCurSel(0);
+      m_CB_NODType.SetCurSel(i);
     }
     for(i=0;i<m_pcs->pcs_number_of_secondary_nvals;i++){
       m_CB_NODType.AddString((CString)m_pcs->pcs_secondary_function_name[i]);
@@ -715,4 +715,9 @@ void CDialogOUT::OnBnClickedAddNodValue()
   else{
     m_LB_VAL_NOD.AddString(m_strNODName);
   }
+}
+
+void CDialogOUT::OnOK()
+{
+  CDialog::OnOK();
 }

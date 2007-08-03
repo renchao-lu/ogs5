@@ -75,6 +75,7 @@ protected:
 	// Generierte Nachrichtenzuordnungsfunktionen
 	//{{AFX_MSG(CBoundaryConditions)
 	virtual BOOL OnInitDialog();
+    virtual void OnOK(); //OK
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
     CString m_strThis;
@@ -94,7 +95,7 @@ protected:
 	CComboBox	m_CB_GEOType;
 	CListBox	m_LB_GEO;
 	CComboBox	m_CB_DISType;
-	CString	    m_dValue;
+	CString	    m_strValues;
 public:
     afx_msg void OnCbnSelchangeComboGEOType();
     afx_msg void OnLbnSelchangeListGEO();

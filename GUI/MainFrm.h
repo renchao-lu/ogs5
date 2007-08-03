@@ -107,6 +107,7 @@ public:
     int m_z_value_color;
     int m_permeability_value_color;
     CString m_pcs_name;
+    CString m_variable_name; //OK
     int m_3dcontrol_bc;
     double m_tolerancefactor;
     double m_image_distort_factor_x;

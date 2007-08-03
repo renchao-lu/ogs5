@@ -1,5 +1,9 @@
 // GSPropertyRight.cpp : implementation file
 //
+/**************************************************************************
+        TK Implementation
+07/2007 OK PCS properties
+**************************************************************************/
 
 #include "stdafx.h"
 #include "GeoSys.h"
@@ -71,10 +75,10 @@ BOOL CGSPropertyRight::Create(LPCTSTR lpszClassName, LPCTSTR lpszWindowName, DWO
 	m_PropSheet.AddPage(&m_Page1);
 	m_PropSheet.AddPage(&m_Page2);
 	m_PropSheet.AddPage(&m_Page3);
+	m_PropSheet.AddPage(&m_Page8); //OK_PCS
 	m_PropSheet.AddPage(&m_Page9);
 	m_PropSheet.AddPage(&m_Page10);
 	m_PropSheet.AddPage(&m_Page11);
-
 
 	// create a modeless property sheet
 	if (!m_PropSheet.Create(this)) {

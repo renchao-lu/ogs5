@@ -277,10 +277,6 @@ void COGLView:: On3DControl()
         CGeoSysDoc* pdoc = GetDocument();
         pdoc->UpdateAllViews(this);
     }
-
-    
-    
-
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -383,6 +379,7 @@ void COGLView::OnDrawGL()
 	x_mid=y_mid=z_mid=x_total=y_total=z_total=0.0;
 	ClipSize=1.0;
 	if (1==DocView_Interaction()) sceneselect = 0;
+    double xyz[3]; //OK
     
 /*BoundingBox*/ 
     if (m_bounding_box == 1) {
@@ -586,7 +583,6 @@ void COGLView::OnDrawGL()
                     delete addGLdouble[l];
                 addGLdouble.clear();
 			 
-
 		 }
 		 			 glDisable(GL_BLEND);
 
@@ -785,69 +781,105 @@ void COGLView::OnDrawGL()
     /*DISPLAY*/ 
     Arrange_and_Display(); 
     }
-
-/*Boundary Conditions*/ 
-    if (m_3dcontrol_bc == 1 ) { 
-
-     //   CBoundaryConditionsGroup *m_bc_group = NULL;
-     //   list<CBoundaryConditionsGroup*>::const_iterator p_bc_group = bc_group_list.begin();
-        //GetMSHMinMax();
-        GetMidPoint();
-        //
-        for(j=0;j<(long)fem_msh_vector.size();j++) //WW/TK
-        {   
-           CRFProcess* m_pcs = NULL;   
-           for(i=0;i<(int)pcs_vector.size();i++){
-             m_pcs = pcs_vector[i];
-             if ((long)fem_msh_vector.size()>1)
-               m_pcs = PCSGet((string)fem_msh_vector[j]->pcs_name);
-               if( m_pcs){
-                  for (k=0;k<(long)m_pcs->bc_node_value.size();k++) {
-                  CBoundaryConditionNode *m_node = m_pcs->bc_node_value[k];
-                  if(m_node->msh_node_number>=0) {
-                     glPointSize(6.0);
-                     glColor3d(1.0,0.0,0.0);
-                     glBegin(GL_POINTS);
-                     bc_x = -x_mid + fem_msh_vector[j]->nod_vector[m_node->msh_node_number]->X();
-                     bc_y = -y_mid + fem_msh_vector[j]->nod_vector[m_node->msh_node_number]->Y();
-                     bc_z = -z_mid + fem_msh_vector[j]->nod_vector[m_node->msh_node_number]->Z();
-                     glVertex3d(m_image_distort_factor_x*bc_x,m_image_distort_factor_y*bc_y,m_image_distort_factor_z*bc_z);   		   
-                     glEnd();
-                  }
-                }
-              }
-		   }
-		}
-
-        /* Comment by WW
-        while(p_bc_group!=bc_group_list.end()) {
-            m_bc_group = *p_bc_group;
-            if(m_bc_group->m_display_mode_bc == 1)
-            {
-            for(j=0;j<(long)fem_msh_vector.size();j++)
-            { 
-             if (m_bc_group->pcs_type_name.find(fem_msh_vector[j]->pcs_name.data())==0 || fem_msh_vector.size() == 1)
-             {
-             glPointSize(6.0);
-			 glColor3d(1.0,0.0,0.0);
-             glBegin(GL_POINTS);
-             for (i=0;i<(long)m_bc_group->group_vector.size();i++) 
-             {
-             bc_x = -x_mid + fem_msh_vector[j]->nod_vector[m_bc_group->group_vector[i]->msh_node_number]->X();
-             bc_y = -y_mid + fem_msh_vector[j]->nod_vector[m_bc_group->group_vector[i]->msh_node_number]->Y();
-             bc_z = -z_mid + fem_msh_vector[j]->nod_vector[m_bc_group->group_vector[i]->msh_node_number]->Z();
-             glVertex3d(m_image_distort_factor_x*bc_x,m_image_distort_factor_y*bc_y,m_image_distort_factor_z*bc_z);   		   
-             }
-             glEnd();                   
-             }
-            }
-            }       
-            ++p_bc_group;
+    //--------------------------------------------------------------------
+    // BC
+    if(m_3dcontrol_bc==1) 
+    { 
+//OK
+      GetMidPoint();
+      CBoundaryCondition* m_bc = NULL;
+      CFEMesh* m_msh = fem_msh_vector[0]; //ToDo
+      vector<long>nodes_vector;
+      CGLPoint* m_pnt = NULL;
+      list<CBoundaryCondition*>::const_iterator p_bc = bc_list.begin();
+      while(p_bc!=bc_list.end()) 
+      {
+        m_bc = *p_bc;
+        if(m_bc->display_mode)
+        {
+          m_msh->GetNODOnGEO(m_bc->geo_type_name,m_bc->geo_name,nodes_vector);
+          for(j=0;j<nodes_vector.size();j++)
+          {
+            xyz[0] = m_msh->nod_vector[nodes_vector[j]]->X();
+            xyz[1] = m_msh->nod_vector[nodes_vector[j]]->Y();
+            xyz[2] = m_msh->nod_vector[nodes_vector[j]]->Z();
+            DrawPoint(0,xyz);
+          }
+          CGLPolyline* m_ply = GEOGetPLYByName(m_bc->geo_name);
+          if(m_ply) m_pnt = m_ply->CenterPoint();
+	      if(m_pnt) 
+          {  
+            glRasterPos3d(m_pnt->x-x_mid,m_pnt->y-y_mid,m_pnt->z-z_mid);
+ 		    Text2D(m_bc->dis_type_name.data());
+          }
         }
-		*/
+        ++p_bc;
+      }
+/*OK
+      GetMidPoint();
+      //
+      for(j=0;j<(long)fem_msh_vector.size();j++) //WW/TK
+      {   
+        CRFProcess* m_pcs = NULL;   
+        for(i=0;i<(int)pcs_vector.size();i++)
+        {
+          m_pcs = pcs_vector[i];
+          if ((long)fem_msh_vector.size()>1)
+            m_pcs = PCSGet((string)fem_msh_vector[j]->pcs_name);
+          if( m_pcs)
+          {
+            for (k=0;k<(long)m_pcs->bc_node_value.size();k++) 
+            {
+              CBoundaryConditionNode *m_node = m_pcs->bc_node_value[k];
+              if(m_node->msh_node_number>=0) 
+              {
+                glPointSize(6.0);
+                glColor3d(1.0,0.0,0.0);
+                glBegin(GL_POINTS);
+                bc_x = -x_mid + fem_msh_vector[j]->nod_vector[m_node->msh_node_number]->X();
+                bc_y = -y_mid + fem_msh_vector[j]->nod_vector[m_node->msh_node_number]->Y();
+                bc_z = -z_mid + fem_msh_vector[j]->nod_vector[m_node->msh_node_number]->Z();
+                glVertex3d(m_image_distort_factor_x*bc_x,m_image_distort_factor_y*bc_y,m_image_distort_factor_z*bc_z);   		   
+                glEnd();
+              }
+            }
+          }
+	    }
+	  }
+*/
     }
-
-
+    //--------------------------------------------------------------------
+    // ST
+    if(m_3dcontrol_sourcesink==1) 
+    { 
+      GetMidPoint();
+      CSourceTerm* m_st = NULL;
+      CFEMesh* m_msh = fem_msh_vector[0]; //ToDo
+      vector<long>nodes_vector;
+      CGLPoint* m_pnt = NULL;
+      for(i=0;i<(int)st_vector.size();i++)
+      {
+        m_st = st_vector[i];
+        if(m_st->display_mode)
+        {
+          m_msh->GetNODOnGEO(m_st->geo_type_name,m_st->geo_name,nodes_vector);
+          for(j=0;j<nodes_vector.size();j++)
+          {
+            xyz[0] = m_msh->nod_vector[nodes_vector[j]]->X();
+            xyz[1] = m_msh->nod_vector[nodes_vector[j]]->Y();
+            xyz[2] = m_msh->nod_vector[nodes_vector[j]]->Z();
+            DrawPoint(2,xyz);
+          }
+          CGLPolyline* m_ply = GEOGetPLYByName(m_st->geo_name);
+          if(m_ply) m_pnt = m_ply->CenterPoint();
+	      if(m_pnt) 
+          {  
+            glRasterPos3d(m_pnt->x-x_mid,m_pnt->y-y_mid,m_pnt->z-z_mid);
+ 		    Text2D(m_st->dis_type_name.data());
+          }
+        }
+      }
+    }
 /*NODES*/ 
 
   for(j=0;j<(long)fem_msh_vector.size();j++)
@@ -2277,164 +2309,121 @@ void COGLView::OnDrawGL()
     }
   }
 
-/*SOURCE SINK TERMS*/ 
-    if(m_3dcontrol_sourcesink == 1)
-    {
-/*
-      glPointSize(2.0);
-	  glBegin(GL_POINTS);
-	  for (k=0;k<(int)m_surface->nodes_coor_vector.size();k++)
-	  {
-           glColor3d(0.0,0.9,0.0);	 
-		   bc_x = -x_mid + m_surface->nodes_coor_vector[k][0];
-		   bc_y = -y_mid + m_surface->nodes_coor_vector[k][1];
-		   bc_z = -z_mid + m_surface->nodes_coor_vector[k][2];
-		   glVertex3d(m_image_distort_factor_x*bc_x,m_image_distort_factor_y*bc_y,m_image_distort_factor_z*bc_z);   		   
-   	  }
-      glEnd();
-*/
-
-         GetMSHMinMax();
-         GetMidPoint(); 
-         CSourceTerm* m_st = NULL;
-		 for (j=0;j<(int)st_vector.size();j++)
-         {
-             m_st = st_vector[j];
-             if (m_st->display_mode == 1)
-             {
-             if (m_st->geo_type_name.compare("LINE") == 0)
-             {
-                CGLLine* m_lin = NULL;
-                m_lin = m_lin->GEOGetLine(m_st->geo_id);
-                glColor3d(0.9,0.0,0.0);
-                glPointSize(3.0);
-	            glBegin(GL_POINTS);
-	            for (k=0;k<(int)m_lin->nodes_coor_vector.size();k++)
-	            {
-		            bc_x = -x_mid + m_lin->nodes_coor_vector[k][0];
-		            bc_y = -y_mid + m_lin->nodes_coor_vector[k][1];
-		            bc_z = -z_mid + m_lin->nodes_coor_vector[k][2];
-		            glVertex3d(m_image_distort_factor_x*bc_x,m_image_distort_factor_y*bc_y,m_image_distort_factor_z*bc_z);   		   
-   	            }
-                glEnd();
-             }
-             }
-         }
-
-    /*DISPLAY*/ 
-    Arrange_and_Display(); 
-    }
-
+//////////////////////////////////////////////////////////////////////////
  CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
 /*PCS-FEM-ContourPlot*/ 
+int n;
+int nidx;
 if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
- {
-  for(j=0;j<(long)fem_msh_vector.size();j++)
-  {   
+  {
     CRFProcess* m_pcs = NULL;   
-    for(i=0;i<(int)pcs_vector.size();i++){
-        m_pcs = pcs_vector[i];
-    if ((long)fem_msh_vector.size()>1)
-        m_pcs = PCSGet((string)fem_msh_vector[j]->pcs_name);
-
-    if (m_pcs)
+    CFEMesh* m_msh = NULL;
+    m_pcs = PCSGet((string)m_frame->m_pcs_name);
+    if(!m_pcs)
     {
-      if (m_pcs->pcs_primary_function_name[0]== m_pcs_name)
+      AfxMessageBox("DrawIso - no PCS data");
+      return;
+    }
+    m_msh = m_pcs->m_msh;
+    if(!m_msh)
+    {
+      AfxMessageBox("no MSH data");
+      return;
+    }
+    int nidx = m_pcs->GetNodeValueIndex((string)m_frame->m_variable_name);
+    if(nidx<0)
+    {
+      AfxMessageBox("no VAL data");
+      return;
+    }
+    if(boundingbox == 1)
+    {
+      ShowMeshBoundingBox();         
+    }	
+    else
+    {
+      GetMidPoint();
+      glDisable(GL_BLEND);
+      glEnable(GL_POLYGON_OFFSET_FILL); 
+      glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+      glPolygonOffset(1.0,1.0); 
+      value_min = m_pcs_min;
+      value_max = m_pcs_max;        
+      for(i=0;i<(long)m_msh->ele_vector.size();i++)
       {
-        int nidx = m_pcs->GetNodeValueIndex((string)m_pcs_name);
-
-       if (boundingbox == 1)
-       {
-           ShowMeshBoundingBox();         
-       }	
-       else
-       {
-        GetMidPoint();
-        glDisable(GL_BLEND);
-        glEnable(GL_POLYGON_OFFSET_FILL); 
-        glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
-        glPolygonOffset(1.0,1.0); 
-        value_min = m_pcs_min;
-        value_max = m_pcs_max;        
-        for(i=0;i<(long)fem_msh_vector[j]->ele_vector.size();i++)
+        switch(m_msh->ele_vector[i]->GetElementType())
         {
-           switch(fem_msh_vector[j]->ele_vector[i]->GetElementType()){
-            case 4: // triangle
-
-             if (m_selected_wire_frame == 1) //TODO: Not Active
-             {
-               Draw_TriWireFrame(j,i);
-             }             
-	          glBegin(GL_TRIANGLES) ;
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(0),nidx);
-              value_norm = (value-value_min)/(value_max-value_min);
-                Red =   Get_Red_Value(value_norm);
-                Green = Get_Green_Value(value_norm);
-                Blue =  Get_Blue_Value(value_norm);
-                glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(1),nidx);
-              value_norm = (value-value_min)/(value_max-value_min);
-                Red =   Get_Red_Value(value_norm);
-                Green = Get_Green_Value(value_norm);
-                Blue =  Get_Blue_Value(value_norm);
-                glColor3f(Red,Green,Blue) ;
-			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(2),nidx);
-              value_norm = (value-value_min)/(value_max-value_min);
-                Red =   Get_Red_Value(value_norm);
-                Green = Get_Green_Value(value_norm);
-                Blue =  Get_Blue_Value(value_norm);
-                glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Z())));
-              glEnd() ;
-
-
-
-              if (m_pcs_values_mesh==1)
-              {
+          //........................................................
+          case 4: // triangle
+            if (m_selected_wire_frame == 1) //TODO: Not Active
+            {
+              Draw_TriWireFrame(j,i);
+            }             
+	      glBegin(GL_TRIANGLES) ;
+            value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(0),nidx);
+            value_norm = (value-value_min)/(value_max-value_min);
+            Red =   Get_Red_Value(value_norm);
+            Green = Get_Green_Value(value_norm);
+            Blue =  Get_Blue_Value(value_norm);
+            glColor3f(Red,Green,Blue) ;
+            glVertex3d(m_image_distort_factor_x*(-x_mid + (m_msh->ele_vector[i]->GetNode(0)->X())),m_image_distort_factor_y*(-y_mid + (m_msh->ele_vector[i]->GetNode(0)->Y())),m_image_distort_factor_z*(-z_mid +(m_msh->ele_vector[i]->GetNode(0)->Z())));
+            value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(1),nidx);
+            value_norm = (value-value_min)/(value_max-value_min);
+            Red =   Get_Red_Value(value_norm);
+            Green = Get_Green_Value(value_norm);
+            Blue =  Get_Blue_Value(value_norm);
+            glColor3f(Red,Green,Blue) ;
+		glVertex3d(m_image_distort_factor_x*(-x_mid + (m_msh->ele_vector[i]->GetNode(1)->X())),m_image_distort_factor_y*(-y_mid +(m_msh->ele_vector[i]->GetNode(1)->Y())),m_image_distort_factor_z*(-z_mid + (m_msh->ele_vector[i]->GetNode(1)->Z())));
+            value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(2),nidx);
+            value_norm = (value-value_min)/(value_max-value_min);
+            Red =   Get_Red_Value(value_norm);
+            Green = Get_Green_Value(value_norm);
+            Blue =  Get_Blue_Value(value_norm);
+            glColor3f(Red,Green,Blue) ;
+            glVertex3d(m_image_distort_factor_x*(-x_mid +(m_msh->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +(m_msh->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid + (m_msh->ele_vector[i]->GetNode(2)->Z())));
+            glEnd() ;
+            if(m_pcs_values_mesh==1)
+            {
               //ValueMesh
               glLineWidth(0.5);
               glBegin(GL_TRIANGLES);
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(0),nidx);
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(0),nidx);
               ele_node_values[0]= value;
               value_norm = (value-value_min)/(value_max-value_min);
-                Red =   Get_Red_Value(value_norm);
-                Green = Get_Green_Value(value_norm);
-                Blue =  Get_Blue_Value(value_norm);
-                glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->X())),
-                           m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Y())),
-                           (move_distance*dist/100) + (m_image_distort_factor_z*(-z_mid + (df*value_norm) + (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Z()))));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(1),nidx);
+              Red =   Get_Red_Value(value_norm);
+              Green = Get_Green_Value(value_norm);
+              Blue =  Get_Blue_Value(value_norm);
+              glColor3f(Red,Green,Blue) ;
+              glVertex3d(m_image_distort_factor_x*(-x_mid + (m_msh->ele_vector[i]->GetNode(0)->X())),
+                         m_image_distort_factor_y*(-y_mid + (m_msh->ele_vector[i]->GetNode(0)->Y())),
+                         (move_distance*dist/100) + (m_image_distort_factor_z*(-z_mid + (df*value_norm) + (m_msh->ele_vector[i]->GetNode(0)->Z()))));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(1),nidx);
               ele_node_values[1]= value;
               value_norm = (value-value_min)/(value_max-value_min);
-                Red =   Get_Red_Value(value_norm);
-                Green = Get_Green_Value(value_norm);
-                Blue =  Get_Blue_Value(value_norm);
-                glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->X())),
-                           m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Y())),
-                           (move_distance*dist/100) + (m_image_distort_factor_z*(-z_mid + (df*value_norm) + (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Z()))));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(2),nidx);
+              Red =   Get_Red_Value(value_norm);
+              Green = Get_Green_Value(value_norm);
+              Blue =  Get_Blue_Value(value_norm);
+              glColor3f(Red,Green,Blue) ;
+              glVertex3d(m_image_distort_factor_x*(-x_mid + (m_msh->ele_vector[i]->GetNode(1)->X())),
+                         m_image_distort_factor_y*(-y_mid + (m_msh->ele_vector[i]->GetNode(1)->Y())),
+                         (move_distance*dist/100) + (m_image_distort_factor_z*(-z_mid + (df*value_norm) + (m_msh->ele_vector[i]->GetNode(1)->Z()))));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(2),nidx);
               ele_node_values[2]= value;
               value_norm = (value-value_min)/(value_max-value_min);
-                Red =   Get_Red_Value(value_norm);
-                Green = Get_Green_Value(value_norm);
-                Blue =  Get_Blue_Value(value_norm);
-                glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->X())),
-                           m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Y())),
-                           (move_distance*dist/100) + (m_image_distort_factor_z*(-z_mid + (df*value_norm) + (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Z()))));
-               glEnd() ;
+              Red =   Get_Red_Value(value_norm);
+              Green = Get_Green_Value(value_norm);
+              Blue =  Get_Blue_Value(value_norm);
+              glColor3f(Red,Green,Blue) ;
+              glVertex3d(m_image_distort_factor_x*(-x_mid + (m_msh->ele_vector[i]->GetNode(2)->X())),
+                         m_image_distort_factor_y*(-y_mid + (m_msh->ele_vector[i]->GetNode(2)->Y())),
+                         (move_distance*dist/100) + (m_image_distort_factor_z*(-z_mid + (df*value_norm) + (m_msh->ele_vector[i]->GetNode(2)->Z()))));
+              glEnd() ;
+              //calculate point
+              //glCopyPixels(0,0,1,1,GL_COLOR);
+            }
+            break;
 
-                //calculate point
-                //glCopyPixels(0,0,1,1,GL_COLOR);
-
-
-              }
-              break;
-
+                //........................................................
             case 2: // rectangle
  
              if (m_selected_wire_frame == 1)
@@ -2457,14 +2446,14 @@ if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
 			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(2),nidx);
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(2),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
                 glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(3),nidx);
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(3),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
@@ -2930,91 +2919,89 @@ if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
        
         } 
        }
-      }        
+     
     /*DISPLAY*/ 
     Arrange_and_Display(); 
-    }
-   }
-  }
 
     }
 //-------------------------------------------------------------------------
 /*PCS_FEM ISOSURFACES Haibing 2006*/ 
 //-------------------------------------------------------------------------
- if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_Show_Iso)
- {
-  for(j=0;j<(long)fem_msh_vector.size();j++)
-  {   
+  if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_Show_Iso)
+  {
     CRFProcess* m_pcs = NULL;   
-    for(i=0;i<(int)pcs_vector.size();i++){
-        m_pcs = pcs_vector[i];
-    if ((long)fem_msh_vector.size()>1)
-        m_pcs = PCSGet((string)fem_msh_vector[j]->pcs_name);
-
-    if (m_pcs)
+    CFEMesh* m_msh = NULL;
+    m_pcs = PCSGet((string)m_frame->m_pcs_name);
+    if(!m_pcs)
     {
-      if (m_pcs->pcs_primary_function_name[0]== m_pcs_name)
+      AfxMessageBox("DrawIso - no PCS data");
+      return;
+    }
+    m_msh = m_pcs->m_msh;
+    if(!m_msh)
+    {
+      AfxMessageBox("no MSH data");
+      return;
+    }
+    int nidx = m_pcs->GetNodeValueIndex((string)m_frame->m_variable_name);
+    if(nidx<0)
+    {
+      AfxMessageBox("no VAL data");
+      return;
+    }
+    if (boundingbox == 1)
+    {
+      ShowMeshBoundingBox();         
+    }	
+    else
+    {
+      GetMidPoint();
+      glDisable(GL_BLEND);
+      value_min = m_pcs_min;
+      value_max = m_pcs_max;        
+      for(i=0;i<(long)m_msh->ele_vector.size();i++)
       {
-        int nidx = m_pcs->GetNodeValueIndex((string)m_pcs_name);
-
-       if (boundingbox == 1)
-       {
-           ShowMeshBoundingBox();         
-       }	
-       else
-       {
-        GetMidPoint();
-        glDisable(GL_BLEND);
-        value_min = m_pcs_min;
-        value_max = m_pcs_max;        
-        for(i=0;i<(long)fem_msh_vector[j]->ele_vector.size();i++)
+	  switch(m_msh->ele_vector[i]->GetElementType())
         {
-		switch(fem_msh_vector[j]->ele_vector[i]->GetElementType())
-		{
-            case 4: // triangle
-				if (m_frame->Iso_Count != 0){
-
-					CIsoTriangle* pIsoTriangle;
-					pIsoTriangle = new CIsoTriangle();
-
-					// reading the data
-					for (int k=0; k < 3; k++)
-					{
-						pIsoTriangle->point[k]->x     = m_image_distort_factor_x*(-x_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->X()));
-						pIsoTriangle->point[k]->y     = m_image_distort_factor_y*(-y_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->Y()));
-						pIsoTriangle->point[k]->z     = m_image_distort_factor_z*(-z_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->Z()));
-						pIsoTriangle->point[k]->value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(k),nidx);
-					}
-
-					// iso_static
-					for (int iso_count=0; iso_count < m_frame->Iso_Count ; iso_count++)
-					{	
-
-						CIsoSurface* pIsoSurface;
-						pIsoSurface = new CIsoSurface(/*here give the isovalue*/m_frame->IsoValueArray[iso_count]);
-
-						//polygonize and insert
-						if (pIsoSurface->PolygoniseAndInsert(pIsoSurface->iso_value, pIsoTriangle, &(pIsoSurface->vector_IsoLine)))
-						{
-							//draw isoline
-							value_min = m_pcs_min;
-							value_max = m_pcs_max; 
-							SetIsoSurfaceCol(m_frame->IsoColorArray[iso_count]);
-							SetIsoLineWidth((float)m_frame->IsoWidthArray[iso_count]);
-							drawIsoLine(&(pIsoSurface->vector_IsoLine));
-							SetIsoLineWidth((float)1.0);
-						}
-						//clear memory
-
-						// here end the loop of all the isolines.
-						pIsoSurface->~CIsoSurface();
-						delete pIsoSurface;
-						pIsoSurface = NULL;
-					}
-					delete pIsoTriangle;
-				}
-              break;
-            case 2: // rectangle
+          case 4: // triangle
+	      if (m_frame->Iso_Count != 0)
+            {
+		  CIsoTriangle* pIsoTriangle;
+		  pIsoTriangle = new CIsoTriangle();
+		  // reading the data
+              for (int k=0; k < 3; k++)
+              {
+                pIsoTriangle->point[k]->x     = m_image_distort_factor_x*(-x_mid +(m_msh->ele_vector[i]->GetNode(k)->X()));
+                pIsoTriangle->point[k]->y     = m_image_distort_factor_y*(-y_mid +(m_msh->ele_vector[i]->GetNode(k)->Y()));
+                pIsoTriangle->point[k]->z     = m_image_distort_factor_z*(-z_mid +(m_msh->ele_vector[i]->GetNode(k)->Z()));
+                pIsoTriangle->point[k]->value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(k),nidx);
+              }
+              // iso_static
+              for (int iso_count=0; iso_count < m_frame->Iso_Count ; iso_count++)
+              {	
+                CIsoSurface* pIsoSurface;
+                pIsoSurface = new CIsoSurface(/*here give the isovalue*/m_frame->IsoValueArray[iso_count]);
+                //polygonize and insert
+                if (pIsoSurface->PolygoniseAndInsert(pIsoSurface->iso_value, pIsoTriangle, &(pIsoSurface->vector_IsoLine)))
+                {
+                  //draw isoline
+                  value_min = m_pcs_min;
+                  value_max = m_pcs_max; 
+                  SetIsoSurfaceCol(m_frame->IsoColorArray[iso_count]);
+                  SetIsoLineWidth((float)m_frame->IsoWidthArray[iso_count]);
+                  drawIsoLine(&(pIsoSurface->vector_IsoLine));
+                  SetIsoLineWidth((float)1.0);
+                }
+                //clear memory
+                // here end the loop of all the isolines.
+                pIsoSurface->~CIsoSurface();
+                delete pIsoSurface;
+                pIsoSurface = NULL;
+              }
+              delete pIsoTriangle;
+            }
+            break;
+          case 2: // rectangle
 				if (m_frame->Iso_Count != 0){
 
 				CIsoQuad* pIsoQuad;
@@ -3194,17 +3181,13 @@ if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
 				delete pIsoHexahedron;
 				}
     		  break;	
-           }      
-        } 
-       }
-      }        
+        }      
+      } 
+    }
+     
     /*DISPLAY*/ 
     Arrange_and_Display(); 
-    }
-   }
-  }
-
-    }
+}
 
 
 //-------------------------------------------------------------------------
@@ -6233,4 +6216,36 @@ void COGLView::DrawEllipseAroundSelection()
  }
  glEnd();
 }
+}
+
+/**************************************************************************
+GUILib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+void COGLView::DrawPoint(int mode, double*x) 
+{
+  switch(mode)
+  {
+    case 0: //R
+      glPointSize(3.0);
+      glColor3d(1.0,0.0,0.0);
+      break;
+    case 1: //G
+      glPointSize(3.0);
+      glColor3d(0.0,1.0,0.0);
+      break;
+    case 2: //B
+      glPointSize(3.0);
+      glColor3d(0.0,0.0,1.0);
+      break;
+    default:
+      glPointSize(6.0);
+      glColor3d(1.0,0.0,0.0);
+  }
+  glBegin(GL_POINTS);
+  bc_x = -x_mid + x[0];
+  bc_y = -y_mid + x[1];
+  bc_z = -z_mid + x[2];
+  glVertex3d(m_image_distort_factor_x*bc_x,m_image_distort_factor_y*bc_y,m_image_distort_factor_z*bc_z);   		   
+  glEnd();
 }

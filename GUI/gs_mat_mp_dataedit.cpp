@@ -31,11 +31,10 @@ CMATGroupEditorDataEdit::~CMATGroupEditorDataEdit()
 
 void CMATGroupEditorDataEdit::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
-    DDX_Control(pDX, IDC_LISTCONTROL_DATA, m_listctrldata);
-    DDX_Control(pDX, IDC_TYPENAMEDISPL, m_typenamedispl);
-    DDX_Text (pDX, IDC_TYPENAMEDISPL, m_tndisplstr);
-
+  CDialog::DoDataExchange(pDX);
+  DDX_Control(pDX, IDC_LISTCONTROL_DATA, m_listctrldata);
+  DDX_Control(pDX, IDC_TYPENAMEDISPL, m_typenamedispl);
+  DDX_Text (pDX, IDC_TYPENAMEDISPL, m_tndisplstr);
 }
 
 BEGIN_MESSAGE_MAP(CMATGroupEditorDataEdit, CDialog)
@@ -45,93 +44,90 @@ END_MESSAGE_MAP()
 
 // CMATGroupEditorDataEdit message handlers
 
+/**************************************************************************
+GUI-Method: 
+01/2006 JG Implementation
+07/2007 OK MSP
+**************************************************************************/
 BOOL CMATGroupEditorDataEdit::OnInitDialog()
 {
   CDialog::OnInitDialog();
-
-    CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
-
-    //--- ListControl for editing data ---
-    CRect rect;
-    
-    GetClientRect(&rect);
-    m_listctrldata.SetExtendedStyle (LVS_EX_TRACKSELECT|LVS_EX_GRIDLINES);
-    // Delete the current contents
-	m_listctrldata.DeleteAllItems();   
-    // create columns
-    m_listctrldata.InsertColumn(0, _T("Parameter"),  LVCFMT_LEFT, rect.Width()/2, 0);
-    m_listctrldata.InsertColumn(1, _T("Value"),  LVCFMT_LEFT, rect.Width()/2, 0);
-
-    EmptytnkwVectors();
-    //Excel2matrix();
-    //matrix2ListCtrl();
-
-    //CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
-    if(mainframe->m_fileopen.Find(".xls")!= -1 && mainframe->dataupdate == false && mainframe->datanew == false){
-        
-        m_typenamedispl.SetReadOnly();
-
-        SafeArray2ListCtrl();
-
-        //prompt: "Import Materialgroup:......"
-        CString rr = "Import Materialgroup: ";
-        m_tndisplstr = rr + mainframe->m_strDBTypeName;
-        UpdateData(FALSE);
-
+  CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+  //--- ListControl for editing data ---
+  CRect rect;
+  GetClientRect(&rect);
+  m_listctrldata.SetExtendedStyle (LVS_EX_TRACKSELECT|LVS_EX_GRIDLINES);
+  // Delete the current contents
+  m_listctrldata.DeleteAllItems();   
+  // create columns
+  m_listctrldata.InsertColumn(0, _T("Parameter"),  LVCFMT_LEFT, rect.Width()/2, 0);
+  m_listctrldata.InsertColumn(1, _T("Value"),  LVCFMT_LEFT, rect.Width()/2, 0);
+  EmptytnkwVectors();
+  //Excel2matrix();
+  //matrix2ListCtrl();
+  //-----------------------------------------------------------------------
+  if(mainframe->m_fileopen.Find(".xls")!= -1 && mainframe->dataupdate == false && mainframe->datanew == false)
+  {
+    m_typenamedispl.SetReadOnly();
+    SafeArray2ListCtrl();
+    //prompt: "Import Materialgroup:......"
+    CString rr = "Import Materialgroup: ";
+    m_tndisplstr = rr + mainframe->m_strDBTypeName;
+    UpdateData(FALSE);
+  }
+  //-----------------------------------------------------------------------
+  if(mainframe->m_fileopen.Find(".csv")!= -1 &&  mainframe->dataupdate == false && mainframe->datanew == false)
+  {
+    m_typenamedispl.SetReadOnly();//Typenameanzeige
+    CSVtext2ListCtrl();
+    //Anzeige "Import Materialgroup:......"
+    CString rr = "Import Materialgroup: ";
+    m_tndisplstr = rr + mainframe->m_strDBTypeName;
+    UpdateData(FALSE);
+  }
+  //---Update einer Materialgruppe (keine neue Materialgruppe)-------
+  if(mainframe->m_iSelectedMMPGroup>=0 &&  mainframe->dataupdate == true)
+  {
+    m_typenamedispl.SetReadOnly();
+    // get selected m_mmp pointer
+    //....................................................
+    //OK if((mainframe->m_iSelectedMMPGroup>-1)&&(mainframe->m_iSelectedMMPGroup<(int)mmp_vector.size()))
+    if(m_mmp) //OK
+    {
+      //OK m_mmp = mmp_vector[mainframe->m_iSelectedMMPGroup];
+      //fill key_word_vector with standartkeywords
+      StandardKeywords();
+      //fill ListControl with values from mmp_vector
+      MMP2UpdateListCtrl();    
     }
-    if(mainframe->m_fileopen.Find(".csv")!= -1 &&  mainframe->dataupdate == false && mainframe->datanew == false){
-        
-        m_typenamedispl.SetReadOnly();//Typenameanzeige
-
-        CSVtext2ListCtrl();
-
-        //Anzeige "Import Materialgroup:......"
-        CString rr = "Import Materialgroup: ";
-        m_tndisplstr = rr + mainframe->m_strDBTypeName;
-        UpdateData(FALSE);
-
+    else if (m_msp)
+    {
+      MSPStandardKeywords();
+      MSP2UpdateListCtrl();     
     }
-
-    //---Update einer Materialgruppe (keine neue Materialgruppe)-------
-    if(mainframe->m_iSelectedMMPGroup>=0 &&  mainframe->dataupdate == true){
-
-        m_typenamedispl.SetReadOnly();
-
-        // get selected m_mmp pointer
-        if((mainframe->m_iSelectedMMPGroup>-1)&&(mainframe->m_iSelectedMMPGroup<(int)mmp_vector.size())){
-            m_mmp = mmp_vector[mainframe->m_iSelectedMMPGroup];
-
-            //fill key_word_vector with standartkeywords
-            StandardKeywords();
-
-            //fill ListControl with values from mmp_vector
-            MMP2UpdateListCtrl();    
-        }
-
-        //prompt: "Update Materialgroup:......"
-        CString rr = "Update Materialgroup: ";
-        m_tndisplstr = rr + (m_mmp->name.c_str());
-        UpdateData(FALSE);//display Typename
-
-    }
-    //---Neue Materialgruppe erstellen durch Eingabe-------
-    if(mainframe->datanew == true &&  mainframe->dataupdate == false){
-
+    //prompt: "Update Materialgroup:......"
+    CString rr = "Update Materialgroup: ";
+    if(m_mmp) //OK
+      m_tndisplstr = rr + (m_mmp->name.c_str());
+    else if (m_msp)
+      m_tndisplstr = rr + (m_msp->name.c_str());
+    UpdateData(FALSE);//display Typename
+  }
+  //---Neue Materialgruppe erstellen durch Eingabe-------
+  if(mainframe->datanew == true &&  mainframe->dataupdate == false)
+  {
     //fill key_word_vector with standartkeywords
     StandardKeywords();
-
     //fill keywords to ListControl
     Keywords2NewListCtrl();
-
-    
     //prompt: "New Materialgroup:......"
     CString rr = "New Materialgroup: ";
     m_tndisplstr = rr + mainframe->m_strDBTypeName;
     UpdateData(FALSE);//display Typename
-
-    }
-    return TRUE;  // return TRUE unless you set the focus to a control
+  }
+  return TRUE;  // return TRUE unless you set the focus to a control
 }
+
 void CMATGroupEditorDataEdit::OnBnClickedOK()
 {
   CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
@@ -754,7 +750,7 @@ void CMATGroupEditorDataEdit::SafeArray2MMP(CMediumProperties* m_mmp0)
       if (vData.vt == VT_R8){
         double szdata = vData.dblVal; 
         m_mmp->porosity_model_values[0] = szdata;
-        if(m_mmp->porosity_model_values[0]>0.0)
+        if(m_mmp->porosity_model_values[0]>=0.0) //OK
           m_mmp->porosity_model = 1;
       }
       if(vData.vt == VT_BSTR){ //if string
@@ -797,14 +793,14 @@ void CMATGroupEditorDataEdit::SafeArray2MMP(CMediumProperties* m_mmp0)
           m_mmp->conductivity_model = 1;
       }
     }
-    if(key_word.compare("PERMEABILITY_TENSOR")==0)
+    if(key_word.compare("PERMEABILITY")==0) //OK
     {
       double szdata = vData.dblVal; 
       m_mmp->permeability_tensor_type_name = "ISOTROPIC";
       m_mmp->permeability_tensor[0] = szdata;
       m_mmp->permeability_tensor[1] = szdata;
       m_mmp->permeability_tensor[2] = szdata;
-      if(m_mmp->permeability_tensor[0]>0.0){
+      if(m_mmp->permeability_tensor[0]>=0.0){ //OK
         m_mmp->permeability_model = 1;
         m_mmp->permeability_tensor_type = 0; //OK
       }
@@ -1220,7 +1216,7 @@ void CMATGroupEditorDataEdit::MMP2UpdateListCtrl(void)
         //}
       }
      //--------------------------------------------------------------
-      if(strItem == "MASSDISPERSION_TRANS"){
+      if(strItem == "HEATDISPERSION_TRANS"){ //OK
         if(m_mmp->heat_dispersion_model == 1){//double value
           strItem.Format(_T("%g"), m_mmp->heat_dispersion_transverse);
           lvi.iSubItem =1;
@@ -1339,4 +1335,164 @@ void CMATGroupEditorDataEdit::StandardKeywords(void)
     in = "MANNING_COEFFICIENT";
        key_word_vector.push_back(in);
 
+}
+
+///////////////////////////////////////////////////////////////////////////
+// MSP
+//1. Funktion zum Keywordabgleich - Einlesen in den mmp_vector 
+
+/**************************************************************************
+GUI-Method: 
+07/2007 OK Implementation
+**************************************************************************/
+void CMATGroupEditorDataEdit::SafeArray2MSP(CSolidProperties* m_msp)
+{
+  long index[2];
+  for(int i=0;i<(int)key_word_vector.size();i++)
+  {
+    index[0]=i;//typename-row
+    index[1]=0;
+    COleVariant vData;
+    string key_word = key_word_vector[i];
+    CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+    mainframe->saEdt.GetElement(index,vData);
+    //.....................................................................
+    if(key_word.compare("POISSON_RATIO")==0)
+    {
+      if (vData.vt == VT_R8)
+      {
+        double szdata = vData.dblVal; 
+        m_msp->PoissonRatio = szdata;
+      }
+    }
+    //.....................................................................
+    if(key_word.compare("YOUNGS_MODULUS")==0)
+    {
+      if (vData.vt == VT_R8)
+      {
+        m_msp->Youngs_mode=1;
+        double szdata = vData.dblVal; 
+        m_msp->data_Youngs = new Matrix(1);  
+        m_msp->data_Youngs[0] = szdata;
+      }
+    }
+    //.....................................................................
+    if(key_word.compare("HEAT_CAPACITY")==0)
+    {
+      if (vData.vt == VT_R8)
+      {
+        m_msp->Capacity_mode = 1;
+        double szdata = vData.dblVal; 
+        m_msp->data_Capacity = new Matrix(1);  
+        m_msp->data_Capacity[0] = szdata;
+      }
+    }
+    //.....................................................................
+    if(key_word.compare("HEAT_CONDUCTIVITY")==0)
+    {
+      if (vData.vt == VT_R8)
+      {
+        m_msp->Conductivity_mode = 1;
+        double szdata = vData.dblVal; 
+        m_msp->data_Conductivity = new Matrix(1);  
+        m_msp->data_Conductivity[0] = szdata;
+      }
+    }
+    //.....................................................................
+    if(key_word.compare("THERMAL_EXPANSION")==0)
+    {
+      if (vData.vt == VT_R8)
+      {
+        double szdata = vData.dblVal; 
+        m_msp->ThermalExpansion = szdata;
+      }
+    }
+    //.....................................................................
+  }
+}
+
+/**************************************************************************
+GUI-Method: 
+07/2007 OK Implementation
+**************************************************************************/
+void CMATGroupEditorDataEdit::MSP2UpdateListCtrl(void)
+{
+  //-----------------------------------------------------------------------
+  for(int i=0;i<(int)key_word_vector.size();i++)
+  {
+    // Fill listcontrol with data
+    LVITEM lvi;
+    CString strItem;
+    //Set first item (keywords)
+    lvi.mask =  LVIF_TEXT;
+    strItem = key_word_vector.at(i);
+    lvi.iItem = i;
+    lvi.iSubItem = 0;
+    lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+    m_listctrldata.InsertItem(&lvi);
+    //.....................................................................
+    if(strItem == "POISSON_RATIO")
+    {
+      strItem.Format(_T("%g"), m_msp->PoissonRatio);
+      lvi.iSubItem = 1;
+      lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+      m_listctrldata.SetItem(&lvi);
+    }
+    //.....................................................................
+    // Set Subitem
+    if(strItem == "YOUNGS_MODULUS")
+    {
+      strItem.Format(_T("%g"),(*m_msp->data_Youngs)(0));
+      lvi.iSubItem = 1;
+      lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+      m_listctrldata.SetItem(&lvi);
+    }
+    //.....................................................................
+    // Set Subitem
+    if(strItem == "HEAT_CAPACITY")
+    {
+      strItem.Format(_T("%g"),(*m_msp->data_Capacity)(0));
+      lvi.iSubItem = 1;
+      lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+      m_listctrldata.SetItem(&lvi);
+    }
+    //.....................................................................
+    // Set Subitem
+    if(strItem == "HEAT_CONDUCTIVITY")
+    {
+      strItem.Format(_T("%g"),(*m_msp->data_Conductivity)(0));
+      lvi.iSubItem = 1;
+      lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+      m_listctrldata.SetItem(&lvi);
+    }
+    //.....................................................................
+    // Set Subitem
+    if(strItem == "THERMAL_EXPANSION")
+    {
+      strItem.Format(_T("%g"),m_msp->ThermalExpansion);
+      lvi.iSubItem = 1;
+      lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+      m_listctrldata.SetItem(&lvi);
+    }
+    //.....................................................................
+  }
+}
+
+/**************************************************************************
+GUILib-Method: 
+07/2007 OK Implementation
+**************************************************************************/
+void CMATGroupEditorDataEdit::MSPStandardKeywords(void)
+{
+  CString in;
+  in = "POISSON_RATIO";
+    key_word_vector.push_back(in);
+  in = "YOUNGS_MODULUS";
+    key_word_vector.push_back(in);
+  in = "HEAT_CONDUCTIVITY";
+    key_word_vector.push_back(in);
+  in = "HEAT_CAPACITY";
+    key_word_vector.push_back(in);
+  in = "THERMAL_EXPANSION";
+    key_word_vector.push_back(in);
 }

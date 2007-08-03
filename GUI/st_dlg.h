@@ -10,6 +10,7 @@ class CDialogSourceTerms : public CDialog
 public:
 	CDialogSourceTerms(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDialogSourceTerms();
+    virtual void OnOK(); //OK
 // Dialog Data
 	enum { IDD = IDD_ST };
 protected:
@@ -29,6 +30,7 @@ public:
     CString m_strGEOName;
     CListCtrl m_LC;
     double m_dValue;
+    CString m_strValues;
     CSourceTerm* m_obj;
     CString m_strTIMTypeName;
     CComboBox m_CB_TIMType;

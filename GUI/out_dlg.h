@@ -14,7 +14,7 @@ class CDialogOUT : public CDialog
 public:
 	CDialogOUT(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDialogOUT();
-
+    virtual void OnOK(); //OK
 // Dialog Data
 	enum { IDD = IDD_OUT };
 

@@ -75,13 +75,7 @@ CGSForm3DLeft::~CGSForm3DLeft()
 void CGSForm3DLeft::DoDataExchange(CDataExchange* pDX)
 {
 	CFormView::DoDataExchange(pDX);
-	//{{AFX_DATA_MAP(CGSForm3DLeft)
-    
     //DDX_Text(pDX,IDC_EDIT_TOLERANCE, m_tolerancefactor);
-	
-    //}}AFX_DATA_MAP
-
-  
 }
 
 void CGSForm3DLeft::OnDraw(CDC* pDC)
@@ -93,15 +87,10 @@ void CGSForm3DLeft::OnDraw(CDC* pDC)
         UpdateViewbyTree();
         SetTree();
         m_frame->m_rebuild_formtree = 0;
-
     }
-   
 }
 
 BEGIN_MESSAGE_MAP(CGSForm3DLeft, CFormView)
-	//{{AFX_MSG_MAP(CGSForm3DLeft)
-
-	//}}AFX_MSG_MAP
     ON_NOTIFY(NM_CLICK, IDC_TREE1, OnTvnSelchangedTree1) //NM_CLICK, TVN_SELCHANGED
 END_MESSAGE_MAP()
 
@@ -125,17 +114,14 @@ void CGSForm3DLeft::Dump(CDumpContext& dc) const
 
 void CGSForm3DLeft::OnInitialUpdate() 
 {
- CFormView::OnInitialUpdate();
-
- // TREE CONTROL
+  CFormView::OnInitialUpdate();
+  // TREE CONTROL
   SetTree();
-
 }
 
 void CGSForm3DLeft::SetTree()
 {
 // TREE CONTROL
-
     int list_length = 0;
     int i=0;
     int j=0;
@@ -258,10 +244,11 @@ HTREEITEM hMESH = pCtrl->InsertItem("MSH",9,9);
     for(pcs_j=0;pcs_j<(long)pcs_vector.size();pcs_j++)
     {
       m_process = pcs_vector[pcs_j];
+      if(m_process->m_msh) //OK
         for(pcs_i=0;pcs_i<(int)m_process->m_msh->mat_names_vector.size();pcs_i++)
-            if(m_process->m_msh->mat_names_vector[pcs_i].compare("PERMEABILITY")==0)
-                 pCtrl->InsertItem("Permeability",0,1, hMATGROUPNB, TVI_LAST);
-                 break;
+          if(m_process->m_msh->mat_names_vector[pcs_i].compare("PERMEABILITY")==0)
+            pCtrl->InsertItem("Permeability",0,1, hMATGROUPNB, TVI_LAST);
+      break;
     }
 
     /*Patch Areas */ 
@@ -271,42 +258,65 @@ HTREEITEM hMESH = pCtrl->InsertItem("MSH",9,9);
     pCtrl->InsertItem(item_name, 0, 1, hMESH);
     }
 
-
+//////////////////////////////////////////////////////////////////////////
 /*PCS TREE - PCS TREE - PCS TREE*/
-tvInsert.item.pszText = _T("PCS");
-HTREEITEM hFEM = pCtrl->InsertItem("PCS",9,9);
+    tvInsert.item.pszText = _T("PCS");
+    HTREEITEM hPCS = pCtrl->InsertItem("PCS",9,9);
     /*PCS TREE*/   
     list_length = (int)pcs_vector.size();
     for(j=0;j<list_length;j++)
     {
+      //...................................................................
+      // PCS
       m_process = pcs_vector[j];
       item_name = m_process->pcs_type_name.data();
-      pCtrl->InsertItem(item_name,10,10, hFEM, TVI_LAST);
-
-          item_name = (CString)m_process->pcs_primary_function_name[0];
-          pCtrl->InsertItem(item_name,0,1, hFEM, TVI_LAST);          
-  
-
-        /*BC TREE*/ 
-        CBoundaryConditionsGroup *m_bc_group = NULL;
-        m_bc_group = m_bc_group->Get(m_process->pcs_type_name.data());
-//WW        item_name.Format(_T("%d"),m_bc_group->group_vector.size());
-        item_name.Format(_T("%d"),m_process->bc_node_value.size());
-        _tprintf(_T("%s"), (LPCTSTR) item_name);
-        item_name = "BC (" + item_name + " nodes)";
-        pCtrl->InsertItem(item_name, 0, 1, hFEM);
-
-        /*ST TREE*/ 
-        HTREEITEM hSST = pCtrl->InsertItem(_T("SST"),0,1, hFEM);
-        int st_list_length  =  (int)st_vector.size();       
-        for (i=0;i<st_list_length;i++)
-        {         
-            item_name.Format(_T("%d"),st_vector[i]->geo_id);
-            _tprintf(_T("%s"), (LPCTSTR) item_name);
-            item_name = "LIN:" + item_name; 
-            pCtrl->InsertItem(item_name,0,1, hSST, TVI_LAST);      
+      pCtrl->InsertItem(item_name,10,10,hPCS,TVI_LAST);
+      //...................................................................
+      // PV
+//OK
+      for(int k=0;k<m_process->GetPrimaryVNumber();k++)
+      {
+        item_name = (CString)m_process->pcs_primary_function_name[k];
+        pCtrl->InsertItem(item_name,0,1,hPCS,TVI_LAST);    
+      }   
+//OK
+      //...................................................................
+      // BC 
+      HTREEITEM hBC = pCtrl->InsertItem(_T("BC"),0,1,hPCS);
+      list<CBoundaryCondition*>::const_iterator p_bc = bc_list.begin();
+      while(p_bc!=bc_list.end()) 
+      {
+        m_bc = *p_bc;
+        if(m_bc->pcs_type_name.compare(m_process->pcs_type_name)==0)
+        {
+          item_name = m_bc->geo_type_name.data();
+          item_name += ": ";
+          item_name += m_bc->geo_name.data();
+          pCtrl->InsertItem(item_name,0,1,hBC,TVI_LAST);
         }
-
+        ++p_bc;
+      }
+      //...................................................................
+      // SV
+      for(int k=0;k<m_process->GetSecondaryVNumber();k++)
+      {
+        item_name = (CString)m_process->pcs_secondary_function_name[k];
+        pCtrl->InsertItem(item_name,0,1,hPCS,TVI_LAST);    
+      }   
+      //...................................................................
+      // ST
+      HTREEITEM hST = pCtrl->InsertItem(_T("ST"),0,1,hPCS);
+      CSourceTerm* m_st = NULL;
+      for(i=0;i<(int)st_vector.size();i++)
+      {
+        m_st = st_vector[i];
+        if(m_st->pcs_type_name.compare(m_process->pcs_type_name)==0)
+        {
+          item_name = m_st->geo_type_name.data();
+          item_name += ": ";
+          item_name += m_st->geo_name.data();
+          pCtrl->InsertItem(item_name,0,1,hST,TVI_LAST);
+        }
       }
 /*Material Group TREE
 HTREEITEM hMAT = pCtrl->InsertItem("MAT",9,9);
@@ -335,14 +345,15 @@ HTREEITEM hMAT = pCtrl->InsertItem("MAT",9,9);
 
     }
 */
+  }
  DeactivateAll();
  OnDataChange();
 }
 
 void CGSForm3DLeft::OnDataChange()
 {
-    	if (!UpdateData())
-		return;
+    if(!UpdateData())
+	  return;
 
     CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();    
     mainframe->m_3dcontrol_points = m_3dcontrol_points;
@@ -362,8 +373,8 @@ void CGSForm3DLeft::OnDataChange()
     mainframe->m_y_value_color = m_y_value_color;
     mainframe->m_z_value_color = m_z_value_color;
     mainframe->m_permeability_value_color = m_permeability_value_color;
-
     mainframe->m_something_changed = 1;
+
     CGeoSysDoc* pdoc = GetDocument();
     pdoc->UpdateAllViews(this);
 
@@ -388,7 +399,8 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
   pNMTreeView=pNMTreeView;//TK
   pCtrl = (CTreeCtrl*) GetDlgItem(IDC_TREE1);
   ASSERT(pCtrl != NULL);
-
+  CString this_item_name; //OK
+  int pos; //OK
    
   HTREEITEM hItem=NULL ;
   HTREEITEM hChildItem=NULL;
@@ -889,108 +901,126 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
              /*---------------------------------------*/ 
               OnDataChange();       
         }
-        /*SourceSinkTerms*/   
-        if (nSelectedImage == 1 && item_name == "SST")
+        //----------------------------------------------------------------
+        // ST parents on  
+        if (nSelectedImage == 1 && item_name == "ST")
         {
-             m_3dcontrol_sourcesink = 1;
-             /*---------------------------------------*/ 
-             size = (int)st_vector.size();
-             for (i=0; i<size; i++)
-             {
-               st_vector[i]->display_mode = 1;
-
-               if (i==0 && pCtrl->ItemHasChildren(hItem)) 
-               {
-                   hChildItem = pCtrl->GetChildItem(hItem);
-                   SetCheckBox(hChildItem, TRUE);
-               }
-               if (i>0 && pCtrl->ItemHasChildren(hItem)) 
-               {
-                   hChildItem = pCtrl->GetNextItem(hChildItem, TVGN_NEXT);
-                   SetCheckBox(hChildItem, TRUE);
-               }
-             }
-             /*---------------------------------------*/ 
-             OnDataChange();       
+          pcs_item_name = PCSGetName(hItem); //OK
+          m_3dcontrol_sourcesink = 1;
+          CSourceTerm* m_st = NULL;
+          int li = 0;
+          for(i=0;i<(int)st_vector.size();i++)
+          {
+            m_st = st_vector[i];
+            if(m_st->pcs_type_name.compare(pcs_item_name)==0)
+            {
+              m_st->display_mode = true;
+              if (li==0 && pCtrl->ItemHasChildren(hItem)) 
+              {
+                hChildItem = pCtrl->GetChildItem(hItem);
+                SetCheckBox(hChildItem, TRUE);
+              }
+              if (li>0 && pCtrl->ItemHasChildren(hItem)) 
+              {
+                hChildItem = pCtrl->GetNextItem(hChildItem, TVGN_NEXT);
+                SetCheckBox(hChildItem, TRUE);
+              }
+              li++;
+            }
+          }
+          OnDataChange();       
         }
-        if (nSelectedImage == 0 && item_name == "SST")
+        // ST parents off  
+        if (nSelectedImage == 0 && item_name == "ST")
         {
-              m_3dcontrol_sourcesink = 0;
-
-             /*---------------------------------------*/ 
-             size = (int)st_vector.size();
-             for (i=0; i<size; i++)
-             {
-               st_vector[i]->display_mode = 0;
-
-               if (i==0 && pCtrl->ItemHasChildren(hItem)) 
-               {
-                   hChildItem = pCtrl->GetChildItem(hItem);
-                   SetCheckBox(hChildItem, FALSE);
-               }
-               if (i>0 && pCtrl->ItemHasChildren(hItem)) 
-               {
-                   hChildItem = pCtrl->GetNextItem(hChildItem, TVGN_NEXT);
-                   SetCheckBox(hChildItem, FALSE);
-               }
-             }
-             /*---------------------------------------*/ 
-              OnDataChange();       
+          pcs_item_name = PCSGetName(hItem); //OK
+          m_3dcontrol_sourcesink = 0;
+          CSourceTerm* m_st = NULL;
+          int li=0;
+          for(i=0;i<(int)st_vector.size();i++)
+          {
+            m_st = st_vector[i];
+            if(m_st->pcs_type_name.compare(pcs_item_name)==0)
+            {
+              m_st->display_mode = true;
+              if (li==0 && pCtrl->ItemHasChildren(hItem)) 
+              {
+                hChildItem = pCtrl->GetChildItem(hItem);
+                SetCheckBox(hChildItem, FALSE);
+              }
+              if (li>0 && pCtrl->ItemHasChildren(hItem)) 
+              {
+                hChildItem = pCtrl->GetNextItem(hChildItem, TVGN_NEXT);
+                SetCheckBox(hChildItem, FALSE);
+              }
+              li++;
+            }
+          }
+          OnDataChange();        
         }
-        /*Boundary Conditions*/         
-        if (nSelectedImage == 1 && item_name.Find("BC ") == 0)
+        //----------------------------------------------------------------
+        // BC parents on     
+        if (nSelectedImage == 1 && item_name.Find("BC") == 0)
         {
-            hPCSItem = pCtrl->GetNextItem(hItem, TVGN_PREVIOUS);
-            hPCSItem = pCtrl->GetNextItem(hPCSItem, TVGN_PREVIOUS);
-            pcs_item_name = pCtrl->GetItemText(hPCSItem);
-
-            CBoundaryConditionsGroup *m_bc_group = NULL;
-            m_bc_group = m_bc_group->Get((string)pcs_item_name);
-            m_bc_group->m_display_mode_bc = 1;
-            m_3dcontrol_bc = 1; 
-             /*---------------------------------------*/ 
-               if (i==0 && pCtrl->ItemHasChildren(hItem)) 
-               {
-                   hChildItem = pCtrl->GetChildItem(hItem);
-                   SetCheckBox(hChildItem, TRUE);
-               }
-               if (i>0 && pCtrl->ItemHasChildren(hItem)) 
-               {
-                   hChildItem = pCtrl->GetNextItem(hChildItem, TVGN_NEXT);
-                   SetCheckBox(hChildItem, TRUE);
-               }
-             /*---------------------------------------*/ 
-             OnDataChange();       
+          pcs_item_name = PCSGetName(hItem); //OK
+          m_3dcontrol_bc = 1; 
+          CBoundaryCondition* m_bc = NULL;
+          list<CBoundaryCondition*>::const_iterator p_bc = bc_list.begin();
+          int li = 0;
+          while(p_bc!=bc_list.end()) 
+          {
+            m_bc = *p_bc;
+            if(m_bc->pcs_type_name.compare(pcs_item_name)==0)
+            {
+              m_bc->display_mode = true;
+              if (li==0 && pCtrl->ItemHasChildren(hItem)) 
+              {
+                hChildItem = pCtrl->GetChildItem(hItem);
+                SetCheckBox(hChildItem, TRUE);
+              }
+              if (li>0 && pCtrl->ItemHasChildren(hItem)) 
+              {
+                hChildItem = pCtrl->GetNextItem(hChildItem, TVGN_NEXT);
+                SetCheckBox(hChildItem, TRUE);
+              } 
+              li++;
+            }
+            ++p_bc;
+          }
+          OnDataChange();      
         }
-        if (nSelectedImage == 0 && item_name.Find("BC ") == 0)
+        // BC parents off
+        if (nSelectedImage == 0 && item_name.Find("BC") == 0)
         {
-            hPCSItem = pCtrl->GetNextItem(hItem, TVGN_PREVIOUS);
-            hPCSItem = pCtrl->GetNextItem(hPCSItem, TVGN_PREVIOUS);
-            pcs_item_name = pCtrl->GetItemText(hPCSItem);
-
-            CBoundaryConditionsGroup *m_bc_group = NULL;
-            m_bc_group = m_bc_group->Get((string)pcs_item_name);
-            m_bc_group->m_display_mode_bc = 0;
-            m_3dcontrol_bc = 0;
-             /*---------------------------------------*/          
-               if (i==0 && pCtrl->ItemHasChildren(hItem)) 
-               {
-                   hChildItem = pCtrl->GetChildItem(hItem);
-                   SetCheckBox(hChildItem, FALSE);
-               }
-               if (i>0 && pCtrl->ItemHasChildren(hItem)) 
-               {
-                   hChildItem = pCtrl->GetNextItem(hChildItem, TVGN_NEXT);
-                   SetCheckBox(hChildItem, FALSE);
-               }
-             /*---------------------------------------*/ 
-              OnDataChange();       
+          pcs_item_name = PCSGetName(hItem); //OK
+          m_3dcontrol_bc = 0;
+          int li = 0;
+          list<CBoundaryCondition*>::const_iterator p_bc = bc_list.begin();
+          while(p_bc!=bc_list.end()) 
+          {
+            m_bc = *p_bc;
+            if(m_bc->pcs_type_name.compare(pcs_item_name)==0)
+            {
+              m_bc->display_mode = false;
+              if (li==0 && pCtrl->ItemHasChildren(hItem)) 
+              {
+                hChildItem = pCtrl->GetChildItem(hItem);
+                SetCheckBox(hChildItem, FALSE);
+              }
+              if (li>0 && pCtrl->ItemHasChildren(hItem)) 
+              {
+                hChildItem = pCtrl->GetNextItem(hChildItem, TVGN_NEXT);
+                SetCheckBox(hChildItem, FALSE);
+              }
+              li++;
+            }
+            ++p_bc;
+          }
+          OnDataChange();       
         }
-
-
 
 /*CHILDREN*/         
-
+      //==================================================================
       if (nSelectedImage == 1)
         {
             hParentItem = pCtrl->GetParentItem(hItem);
@@ -1102,8 +1132,7 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
              }
                 OnDataChange();
             }
-
-
+            //------------------------------------------------------------
             /*MATERIAL GROUPS*/      
             if (item_name == "M-Groups")//TODO
             {
@@ -1115,34 +1144,61 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
 
                 OnDataChange();
             }
-
-            /*PCS*/      
+            //------------------------------------------------------------
+            // PCS      
             if (item_name == "PCS")
             {
-                CString parent_item_name = pCtrl->GetItemText(hItem);
-                if (parent_item_name.Find("BC ")!=0 && parent_item_name != "SST")
-                {
-                    m_3dcontrol_pcs = 1;
-                    m_pcs_name = parent_item_name;
-                    OnDataChange();                   
-                }              
-            }                   
-
-
-            /*Source Sink Terms*/      
-            if (item_name == "SST")
-            {
-                m_3dcontrol_sourcesink = 1;
-
-                item_name = pCtrl->GetItemText(hItem);
-                int string_length = item_name.GetLength();
-                item_name = item_name.Right(string_length-4);
-                id = atol(item_name);
-                st_vector[id]->display_mode = 1;
-
+              CString pv_name = pCtrl->GetItemText(hItem);
+              CRFProcess* m_pcs = PCSGet((string)pv_name,true);
+              if(m_pcs)
+              {
+                m_3dcontrol_pcs = 1;
+	          m_frame->Iso_If_Show_Iso = true;
+                m_pcs_name = m_pcs->pcs_type_name.data();
+                m_frame->m_variable_name = pv_name;
                 OnDataChange();
+              }
+/*
+              hPCSItem = pCtrl->GetNextItem(hItem,TVGN_NEXT);
+              hPCSItem = pCtrl->GetNextItem(hParentItem,TVGN_PREVIOUS);
+              hPCSItem = pCtrl->GetNextItem(hChildItem, TVGN_PREVIOUS);
+              hPCSItem = pCtrl->GetNextItem(hPCSItem, TVGN_PREVIOUS);
+              if(parent_item_name.Find("BC ")!=0 && parent_item_name != "ST")
+*/
+            }        
+            //------------------------------------------------------------
+            // BC      
+            if (item_name == "BC")
+            {
+              item_name = pCtrl->GetItemText(hItem);
+              pos = item_name.Find(":");
+              geo_type_name = item_name.Left(pos);
+              geo_name = item_name.Right(pos+1);
+              CBoundaryCondition* m_bc = BCGet("DEFORMATION",(string)geo_type_name,(string)geo_name);
+              if(m_bc)
+              {
+                m_3dcontrol_bc = 1;
+                m_bc->display_mode = true;
+                OnDataChange();
+              } 
+            }            
+            //------------------------------------------------------------
+            // ST   
+            if (item_name == "ST")
+            {
+              item_name = pCtrl->GetItemText(hItem);
+              pos = item_name.Find(":");
+              geo_type_name = item_name.Left(pos);
+              geo_name = item_name.Right(pos+1);
+              CSourceTerm* m_st = STGet("DEFORMATION",(string)geo_type_name,(string)geo_name);
+              if(m_st)
+              {
+                m_3dcontrol_sourcesink = 1;
+                m_st->display_mode = true;
+                OnDataChange();
+              } 
             }
-
+      //==================================================================
         }
         if (nSelectedImage == 0)
         {
@@ -1268,39 +1324,54 @@ void CGSForm3DLeft::OnTvnSelchangedTree1(NMHDR *pNMHDR, LRESULT *pResult)
                 OnDataChange();
             }
 
-            /*PCS*/      
+            //------------------------------------------------------------
+            // PCS 
             if (item_name == "PCS")
             {
-                CString parent_item_name = pCtrl->GetItemText(hItem);
-                if (parent_item_name.Find("BC ")!=0 )
-                {
-                    m_3dcontrol_pcs = 0;
-                    m_pcs_name = parent_item_name;
-                    OnDataChange();
-                }
-              
-            }               
-
-            /*SOURCE SINK TERMS*/      
-            if (item_name == "SST")
-            {
-                m_3dcontrol_sourcesink = 1;
-
-                item_name = pCtrl->GetItemText(hItem);
-                int string_length = item_name.GetLength();
-                item_name = item_name.Right(string_length-4);
-                id = atol(item_name);
-                st_vector[id]->display_mode = 0;
-
+              CString pv_name = pCtrl->GetItemText(hItem);
+              CRFProcess* m_pcs = PCSGet((string)pv_name,true);
+              if(m_pcs)
+              {
+                m_3dcontrol_pcs = 0;
+                m_frame->m_pcs_name = m_pcs->pcs_type_name.data();
+                m_frame->m_variable_name = pv_name;
                 OnDataChange();
+              }
+            }               
+            //------------------------------------------------------------
+            // BC //OK
+            if (item_name == "BC")
+            {
+              item_name = pCtrl->GetItemText(hItem);
+              pos = item_name.Find(":");
+              geo_type_name = item_name.Left(pos);
+              geo_name = item_name.Right(pos+1);
+              CBoundaryCondition* m_bc = BCGet("DEFORMATION",(string)geo_type_name,(string)geo_name);
+              if(m_bc)
+              {
+                m_3dcontrol_bc = 1;
+                m_bc->display_mode = false;
+                OnDataChange();
+              } 
             }
-
+            //------------------------------------------------------------
+            // ST
+            if (item_name == "ST")
+            {
+              item_name = pCtrl->GetItemText(hItem);
+              pos = item_name.Find(":");
+              geo_type_name = item_name.Left(pos);
+              geo_name = item_name.Right(pos+1);
+              CSourceTerm* m_st = STGet("DEFORMATION",(string)geo_type_name,(string)geo_name);
+              if(m_st)
+              {
+                m_3dcontrol_sourcesink = 1;
+                m_st->display_mode = false;
+                OnDataChange();
+              } 
+            }
         }
-
-
          item_name = pCtrl->GetItemText(hItem);
-
-
     }    
    pResult=0;
 }
@@ -1730,4 +1801,30 @@ void CGSForm3DLeft::DeactivateAll()
         /*Boundary Conditions*/         
             m_3dcontrol_bc = 0;
 
+}
+
+/**************************************************************************
+GUILib-Method:
+07/2007 OK Implementation
+**************************************************************************/
+CString CGSForm3DLeft::PCSGetName(HTREEITEM hItem)
+{
+  HTREEITEM hPreviousItem=NULL;
+  CString item_name;
+  CRFProcess* m_pcs = NULL;
+  hPreviousItem = pCtrl->GetNextItem(hItem, TVGN_PREVIOUS);
+  int counter = 0;
+  while(counter<100)
+  {
+    item_name = pCtrl->GetItemText(hPreviousItem);
+    for(int i=0;i<(int)pcs_vector.size();i++)
+    {
+      m_pcs = pcs_vector[i];
+      if(item_name.Compare(m_pcs->pcs_type_name.data())==0)
+          return item_name;
+    }
+    hPreviousItem = pCtrl->GetNextItem(hPreviousItem,TVGN_PREVIOUS);
+    counter++;
+  }
+  return item_name;
 }

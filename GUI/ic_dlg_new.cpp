@@ -169,3 +169,7 @@ void CDialogInitialConditionsNew::OnBnClickedButtonWriteTEC()
 {
 }
 
+void CDialogInitialConditionsNew::OnOK()
+{
+  CDialog::OnOK();
+}

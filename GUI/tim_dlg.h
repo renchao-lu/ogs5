@@ -13,7 +13,7 @@ class CDialogTimeDiscretization : public CDialog
 public:
 	CDialogTimeDiscretization(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CDialogTimeDiscretization();
-
+    virtual void OnOK(); //OK
 // Dialog Data
 	enum { IDD = IDD_TIM };
 

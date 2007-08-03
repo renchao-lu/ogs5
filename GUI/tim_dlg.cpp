@@ -15,10 +15,10 @@ IMPLEMENT_DYNAMIC(CDialogTimeDiscretization, CDialog)
 CDialogTimeDiscretization::CDialogTimeDiscretization(CWnd* pParent /*=NULL*/)
 	: CDialog(CDialogTimeDiscretization::IDD, pParent)
     , m_iTIMType(FALSE)
-    , m_iNT(0)
-    , m_dDT(0)
-    , m_dTIMStart(0)
-    , m_dTIMEnd(0)
+    , m_iNT(1)
+    , m_dDT(1)
+    , m_dTIMStart(0.0)
+    , m_dTIMEnd(1.0)
 {
   m_strTIMUnitName = "SECOND";
 }
@@ -78,11 +78,13 @@ BOOL CDialogTimeDiscretization::OnInitDialog()
     m_CB_PCSType.SetCurSel(i);
     //....................................................................
     m_tim = TIMGet(m_pcs->pcs_type_name);
-    if(m_tim){
+    if(m_tim)
+    {
       m_dTIMStart = m_tim->time_start;
       m_dTIMEnd = m_tim->time_end;
       m_LB_TIM.ResetContent();
-      for(j=0;j<(int)m_tim->time_step_vector.size();j++){
+      for(j=0;j<(int)m_tim->time_step_vector.size();j++)
+      {
         m_str.Format("%g",m_tim->time_step_vector[j]);
         m_LB_TIM.AddString(m_str);
       }
@@ -252,7 +254,13 @@ void CDialogTimeDiscretization::OnBnClickedButtonTIMCreate()
   m_obj->time_end = m_dTIMEnd;
   m_obj->time_unit = m_strTIMUnitName;
   time_sum = 0.0;
-  for(int i=0;i<m_LB_TIM.GetCount();i++){
+  if(m_LB_TIM.GetCount()==0) //OK
+  {
+    m_str.Format("%g",1.0);
+    m_LB_TIM.AddString(m_str);
+  }
+  for(int i=0;i<m_LB_TIM.GetCount();i++)
+  {
     m_LB_TIM.GetText(i,m_str);
     time = strtod(m_str,NULL);
     while(time_sum<m_obj->time_end){
@@ -271,11 +279,6 @@ void CDialogTimeDiscretization::OnBnClickedButtonTIMCreate()
   }
   //......................................................................
   time_vector.push_back(m_obj);
-  //----------------------------------------------------------------------
-  CGSProject* m_gsp = NULL;
-  m_gsp = GSPGetMember("pcs");
-  if(m_gsp)
-    GSPAddMember(m_gsp->base + ".tim");
   //----------------------------------------------------------------------
   UpdateList();
   OnInitDialog();
@@ -335,4 +338,9 @@ void CDialogTimeDiscretization::UpdateList()
 void CDialogTimeDiscretization::OnCbnSelchangeComboTimUnit()
 {
   m_CB_TIM_UNIT.GetLBText(m_CB_TIM_UNIT.GetCurSel(),m_strTIMUnitName);
+}
+
+void CDialogTimeDiscretization::OnOK()
+{
+  CDialog::OnOK();
 }

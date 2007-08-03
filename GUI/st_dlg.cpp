@@ -20,7 +20,7 @@ IMPLEMENT_DYNAMIC(CDialogSourceTerms, CDialog)
 CDialogSourceTerms::CDialogSourceTerms(CWnd* pParent /*=NULL*/)
 	: CDialog(CDialogSourceTerms::IDD, pParent)
 {
-  m_dValue = 0.0;
+  m_strValues.Format("%g",0.0); //OK
 }
 
 CDialogSourceTerms::~CDialogSourceTerms()
@@ -34,7 +34,8 @@ void CDialogSourceTerms::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_COMBO_GEO_TYPE, m_CB_GEOType);
     DDX_Control(pDX, IDC_COMBO_DIS_TYPE, m_CB_DISType);
     DDX_Control(pDX, IDC_LIST_GEO, m_LB_GEO);
-    DDX_Text(pDX, IDC_EDIT_VALUE, m_dValue);
+    //DDX_Text(pDX, IDC_EDIT_VALUE, m_dValue);
+    DDX_Text(pDX, IDC_EDIT_VALUE, m_strValues);
     DDX_Control(pDX, IDC_LIST, m_LC);
     DDX_Control(pDX, IDC_COMBO_PCS_PV_NAME, m_CB_PV);
     DDX_Control(pDX, IDC_COMBO_TIM_TYPE, m_CB_TIMType);
@@ -115,6 +116,7 @@ BOOL CDialogSourceTerms::OnInitDialog()
   m_strDISTypeName = "CONSTANT";
   m_CB_DISType.AddString(m_strDISTypeName);
   m_CB_DISType.AddString("LINEAR");
+  m_CB_DISType.AddString("LINEAR_NEUMANN");
   m_CB_DISType.AddString("DATA_BASE");
   m_CB_DISType.AddString("RIVER");
   m_CB_DISType.AddString("PRECIPITATION [mm/a]");
@@ -305,6 +307,7 @@ void CDialogSourceTerms::OnBnClickedButtonCreate()
 {
   CString m_str;
   CGLPoint* m_pnt = NULL;
+  std::stringstream in;
   //CNodeValue* m_nod_val = NULL;
   UpdateData(true);
   //----------------------------------------------------------------------
@@ -323,6 +326,10 @@ void CDialogSourceTerms::OnBnClickedButtonCreate()
   m_obj->pcs_pv_name = m_strPVName;
   m_obj->geo_type_name = m_strGEOTypeName;
   m_obj->geo_name = m_strGEOName;
+  //----------------------------------------------------------------------
+  in.str((string)m_strValues); //OK
+  in >> m_dValue;
+  in.clear(); 
   //----------------------------------------------------------------------
   // GEO type
   //......................................................................
@@ -372,6 +379,19 @@ void CDialogSourceTerms::OnBnClickedButtonCreate()
   if(m_obj->dis_type_name.find("PRECIPITATION")!=string::npos){
     m_obj->dis_type_name = "CONSTANT_NEUMANN ";
     m_obj->geo_node_value = m_dValue * 1e-3 / (365.*86400.);
+  }
+  //......................................................................
+  if(m_obj->dis_type_name.find("LINEAR_NEUMANN")!=string::npos)
+  {
+    long ldummy; double ddummy;
+    in.str((string)m_strValues);
+    in >> ldummy >> ddummy;
+    m_obj->PointsHaveDistribedBC.push_back(ldummy);
+    m_obj->DistribedBC.push_back(ddummy);
+    in >> ldummy >> ddummy;
+    m_obj->PointsHaveDistribedBC.push_back(ldummy);
+    m_obj->DistribedBC.push_back(ddummy);
+    in.clear(); 
   }
   //----------------------------------------------------------------------
   // TIM type
@@ -561,4 +581,9 @@ void CDialogSourceTerms::FillTable()
     m_LC.SetItemText(listip,5,m_obj->tim_type_name.c_str());
     listip++;
   }
+}
+
+void CDialogSourceTerms::OnOK()
+{
+  CDialog::OnOK();
 }

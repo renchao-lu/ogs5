@@ -403,6 +403,8 @@ BOOL CMSHEditor::OnInitDialog()
   m_CB_MSH_NEW.AddString("OVERLAND_FLOW");
   m_CB_MSH_NEW.AddString("RICHARDS_FLOW");
   m_CB_MSH_NEW.AddString("GROUNDWATER_FLOW");
+  m_CB_MSH_NEW.AddString("DEFORMATION"); //OK
+  m_CB_MSH_NEW.AddString("HEAT_TRANSPORT"); //OK
   m_CB_MSH_NEW.SetCurSel(0);
   m_strMSHNameNew = "OVERLAND_FLOW";
   //----------------------------------------------------------------------
@@ -1025,17 +1027,21 @@ Programing:
 **************************************************************************/
 void CMSHEditor::OnBnClickedButtonMSHName()
 {
-  CRFProcess* m_pcs = NULL;
+  //CRFProcess* m_pcs = NULL;
   //CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
   m_msh = FEMGet((string)m_strMSHName);
-  if(m_msh){
+  if(m_msh)
+  {
     m_msh->pcs_name = (string)m_strMSHNameNew;
+/*OK
     //theApp->g_graphics_modeless_dlg->OnInitDialog();
     m_pcs = PCSGet(m_msh->pcs_name); //OK
-    if(m_pcs){
+    if(m_pcs)
+    {
       m_pcs->m_msh = m_msh;
       m_pcs->Create(); // Resize existing process //OK
     }
+*/
   }
   OnInitDialog();
 }

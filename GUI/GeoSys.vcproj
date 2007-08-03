@@ -1,218 +1,309 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="8,00"
 	Name="GeoSys"
 	ProjectGUID="{A55509E7-0142-4424-B24F-4BD977C2FC26}"
-	SccProjectName=""
-	SccLocalPath=""
-	Keyword="MFCProj">
+	Keyword="MFCProj"
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory=".\Release"
 			IntermediateDirectory=".\Release"
 			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
 			UseOfATL="2"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName=".\Release/TestGL.tlb"
+				HeaderFileName=""
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				OptimizeForProcessor="1"
 				AdditionalIncludeDirectories="../gui;../fem;../lib;../msh;../msh/tm;../msh/delaunay;../geo;../;../gui/splitter;../gui/iso;..\MSH\NW"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
-				StringPooling="TRUE"
+				StringPooling="true"
 				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="3"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="stdafx.h"
 				PrecompiledHeaderFile=".\Release/TestGL.pch"
 				AssemblerListingLocation=".\Release/"
 				ObjectFile=".\Release/"
 				ProgramDataBaseFileName=".\Release/"
 				WarningLevel="3"
-				WarnAsError="FALSE"
-				SuppressStartupBanner="TRUE"
-				Detect64BitPortabilityProblems="TRUE"/>
+				WarnAsError="false"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1040"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib fdelaun2d-msvc.lib"
 				OutputFile=".\Release/TestGL.exe"
 				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				TypeLibraryFile="..\lib"
 				ProgramDatabaseFile=".\Release/TestGL.pdb"
 				SubSystem="2"
-				TargetMachine="1"/>
+				TargetMachine="1"
+			/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\Release/TestGL.tlb"
-				HeaderFileName=""/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1040"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCAppVerifierTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCWebDeploymentTool"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory=".\Debug"
 			IntermediateDirectory=".\Debug"
 			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="2"
 			UseOfATL="2"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="_DEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName=".\Debug/TestGL.tlb"
+				HeaderFileName=""
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../gui;../fem;../lib;../msh;../msh/tm;../msh/delaunay;../geo;../;../gui/splitter;../gui/iso;..\MSH\NW"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;MFC;_FEMPCHDEBUG_;RANDOM_WALK"
 				RuntimeLibrary="3"
-				DisableLanguageExtensions="FALSE"
-				UsePrecompiledHeader="3"
+				DisableLanguageExtensions="false"
+				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="stdafx.h"
 				PrecompiledHeaderFile=".\Debug/GeoSys.pch"
 				AssemblerListingLocation=".\Debug/"
 				ObjectFile=".\Debug/"
 				ProgramDataBaseFileName=".\Debug/"
 				WarningLevel="4"
-				WarnAsError="FALSE"
-				SuppressStartupBanner="TRUE"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="4"/>
+				WarnAsError="false"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="4"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="1031"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib fdelaun2d-msvc.lib"
 				OutputFile=".\Debug/GeoSys.exe"
 				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="..\LIB"
-				GenerateDebugInformation="TRUE"
+				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/GeoSys.pdb"
 				SubSystem="2"
 				StackReserveSize="0"
-				TargetMachine="1"/>
+				TargetMachine="1"
+			/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\Debug/TestGL.tlb"
-				HeaderFileName=""/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1031"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCAppVerifierTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCWebDeploymentTool"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Debug SGI|Win32"
 			OutputDirectory=".\Debug_SGI"
 			IntermediateDirectory=".\Debug_SGI"
 			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
 			UseOfATL="2"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="_DEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName=".\Debug_SGI/TestGL.tlb"
+				HeaderFileName=""
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../gui;../fem;../lib;../msh;../msh/tm;../msh/delaunay;../geo;../;../gui/splitter;../gui/iso;..\MSH\NW"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;USE_SGI_OGL"
 				RuntimeLibrary="3"
-				UsePrecompiledHeader="3"
+				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="stdafx.h"
 				PrecompiledHeaderFile=".\Debug_SGI/TestGL.pch"
 				AssemblerListingLocation=".\Debug_SGI/"
 				ObjectFile=".\Debug_SGI/"
 				ProgramDataBaseFileName=".\Debug_SGI/"
 				WarningLevel="4"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="4"/>
+				SuppressStartupBanner="true"
+				DebugInformationFormat="4"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="1040"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib fdelaun2d-msvc.lib"
 				OutputFile=".\Debug_SGI/GeoSys.exe"
 				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
-				GenerateDebugInformation="TRUE"
+				SuppressStartupBanner="true"
+				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug_SGI/TestGL.pdb"
 				SubSystem="2"
-				TargetMachine="1"/>
+				TargetMachine="1"
+			/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\Debug_SGI/TestGL.tlb"
-				HeaderFileName=""/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1040"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCAppVerifierTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCWebDeploymentTool"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -220,1400 +311,1870 @@
 	<Files>
 		<Filter
 			Name="GUI"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+			>
 			<File
-				RelativePath="ChildFrm.cpp">
+				RelativePath="ChildFrm.cpp"
+				>
 				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug SGI|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="ChildFrm.h">
-			</File>
-			<File
-				RelativePath=".\DlgIsoFrameWidth.cpp">
-			</File>
-			<File
-				RelativePath=".\DlgIsoFrameWidth.h">
-			</File>
-			<File
-				RelativePath=".\DlgIsoListValue.cpp">
-			</File>
-			<File
-				RelativePath=".\DlgIsoListValue.h">
-			</File>
-			<File
-				RelativePath=".\GeoSys.cpp">
-			</File>
-			<File
-				RelativePath=".\GeoSys.h">
-			</File>
-			<File
-				RelativePath=".\GeoSys.rc">
-			</File>
-			<File
-				RelativePath=".\GeoSysDoc.cpp">
-			</File>
-			<File
-				RelativePath=".\GeoSysDoc.h">
-			</File>
-			<File
-				RelativePath=".\GeoSysFCTView.cpp">
-			</File>
-			<File
-				RelativePath=".\GeoSysFCTView.h">
-			</File>
-			<File
-				RelativePath=".\GeoSysGEOView.cpp">
-			</File>
-			<File
-				RelativePath=".\GeoSysGEOView.h">
-			</File>
-			<File
-				RelativePath=".\GeoSysMATGroupsView.cpp">
-			</File>
-			<File
-				RelativePath=".\GeoSysMATGroupsView.h">
-			</File>
-			<File
-				RelativePath=".\GeoSysMATView.cpp">
-			</File>
-			<File
-				RelativePath=".\GeoSysMATView.h">
-			</File>
-			<File
-				RelativePath=".\GeoSysMSHView.cpp">
-			</File>
-			<File
-				RelativePath=".\GeoSysMSHView.h">
-			</File>
-			<File
-				RelativePath=".\GeoSysOUT2DView.cpp">
-			</File>
-			<File
-				RelativePath=".\GeoSysOUT2DView.h">
-			</File>
-			<File
-				RelativePath=".\GeoSysOUTProfileView.cpp">
-			</File>
-			<File
-				RelativePath=".\GeoSysOUTProfileView.h">
-			</File>
-			<File
-				RelativePath=".\GeoSysOUTView.cpp">
-			</File>
-			<File
-				RelativePath=".\GeoSysOUTView.h">
-			</File>
-			<File
-				RelativePath=".\GeoSysPCSView.cpp">
-			</File>
-			<File
-				RelativePath=".\GeoSysPCSView.h">
-			</File>
-			<File
-				RelativePath=".\GeoSysTIMView.cpp">
-			</File>
-			<File
-				RelativePath=".\GeoSysTIMView.h">
-			</File>
-			<File
-				RelativePath=".\GeoSysZoomView.cpp">
-			</File>
-			<File
-				RelativePath=".\GeoSysZoomView.h">
-			</File>
-			<File
-				RelativePath="MainFrm.cpp">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug SGI|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="MainFrm.h">
-			</File>
-			<File
-				RelativePath=".\OGLControl.cpp">
-			</File>
-			<File
-				RelativePath=".\OGLControl.h">
-			</File>
-			<File
-				RelativePath=".\OGLEnabledView.cpp">
-			</File>
-			<File
-				RelativePath=".\OGLEnabledView.h">
-			</File>
-			<File
-				RelativePath=".\OGLGraphView.cpp">
-			</File>
-			<File
-				RelativePath=".\OGLGraphView.h">
-			</File>
-			<File
-				RelativePath="OGLInfoDlg.cpp">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug SGI|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="OGLInfoDlg.h">
-			</File>
-			<File
-				RelativePath=".\OGLMath.cpp">
-			</File>
-			<File
-				RelativePath=".\OGLMath.h">
-			</File>
-			<File
-				RelativePath=".\OGLView.cpp">
-			</File>
-			<File
-				RelativePath=".\OGLView.h">
-			</File>
-			<File
-				RelativePath="Resource.h">
-			</File>
-			<File
-				RelativePath=".\rf_p.cpp">
-			</File>
-			<File
-				RelativePath=".\rf_p.h">
-			</File>
-			<File
-				RelativePath="StdAfx.cpp">
-				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="1"/>
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="1"/>
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug SGI|Win32">
+					Name="Debug SGI|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="1"/>
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="StdAfx.h">
+				RelativePath="ChildFrm.h"
+				>
 			</File>
 			<File
-				RelativePath=".\TreeOptionsCtrl.cpp">
+				RelativePath=".\DlgIsoFrameWidth.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\TreeOptionsCtrl.h">
+				RelativePath=".\DlgIsoFrameWidth.h"
+				>
 			</File>
 			<File
-				RelativePath="C:\Programme\Microsoft Visual Studio\VC98\Include\USEOLDIO.H">
+				RelativePath=".\DlgIsoListValue.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgIsoListValue.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSys.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSys.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSys.rc"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysDoc.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysDoc.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysFCTView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysFCTView.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysGEOView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysGEOView.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysMATGroupsView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysMATGroupsView.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysMATView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysMATView.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysMSHView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysMSHView.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysOUT2DView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysOUT2DView.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysOUTProfileView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysOUTProfileView.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysOUTView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysOUTView.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysPCSView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysPCSView.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysTIMView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysTIMView.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysZoomView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GeoSysZoomView.h"
+				>
+			</File>
+			<File
+				RelativePath="MainFrm.cpp"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug SGI|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="MainFrm.h"
+				>
+			</File>
+			<File
+				RelativePath=".\OGLControl.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\OGLControl.h"
+				>
+			</File>
+			<File
+				RelativePath=".\OGLEnabledView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\OGLEnabledView.h"
+				>
+			</File>
+			<File
+				RelativePath=".\OGLGraphView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\OGLGraphView.h"
+				>
+			</File>
+			<File
+				RelativePath="OGLInfoDlg.cpp"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug SGI|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="OGLInfoDlg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\OGLMath.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\OGLMath.h"
+				>
+			</File>
+			<File
+				RelativePath=".\OGLView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\OGLView.h"
+				>
+			</File>
+			<File
+				RelativePath="Resource.h"
+				>
+			</File>
+			<File
+				RelativePath=".\rf_p.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\rf_p.h"
+				>
+			</File>
+			<File
+				RelativePath="StdAfx.cpp"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug SGI|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="1"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="StdAfx.h"
+				>
+			</File>
+			<File
+				RelativePath=".\TreeOptionsCtrl.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\TreeOptionsCtrl.h"
+				>
+			</File>
+			<File
+				RelativePath="C:\Programme\Microsoft Visual Studio\VC98\Include\USEOLDIO.H"
+				>
 			</File>
 			<Filter
 				Name="DLG"
-				Filter="">
+				>
 				<File
-					RelativePath=".\dlg_rsm.cpp">
+					RelativePath=".\dlg_rsm.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\dlg_rsm.h">
+					RelativePath=".\dlg_rsm.h"
+					>
 				</File>
 				<File
-					RelativePath=".\dlg_shp.cpp">
+					RelativePath=".\dlg_shp.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\dlg_shp.h">
+					RelativePath=".\dlg_shp.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_bc.cpp">
+					RelativePath=".\gs_bc.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_bc.h">
+					RelativePath=".\gs_bc.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_graphics.cpp">
+					RelativePath=".\gs_graphics.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_graphics.h">
+					RelativePath=".\gs_graphics.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_idw.cpp">
+					RelativePath=".\gs_idw.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_idw.h">
+					RelativePath=".\gs_idw.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_interpolate.cpp">
+					RelativePath=".\gs_interpolate.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_interpolate.h">
+					RelativePath=".\gs_interpolate.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_kriging.cpp">
+					RelativePath=".\gs_kriging.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_kriging.h">
+					RelativePath=".\gs_kriging.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_legend.cpp">
+					RelativePath=".\gs_legend.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_legend.h">
+					RelativePath=".\gs_legend.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_mat_fp.cpp">
+					RelativePath=".\gs_mat_fp.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_mat_fp.h">
+					RelativePath=".\gs_mat_fp.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_mat_mp.cpp">
+					RelativePath=".\gs_mat_mp.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_mat_mp.h">
+					RelativePath=".\gs_mat_mp.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_mat_mp_dataedit.cpp">
+					RelativePath=".\gs_mat_mp_dataedit.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_mat_mp_dataedit.h">
+					RelativePath=".\gs_mat_mp_dataedit.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_mat_sp.cpp">
+					RelativePath=".\gs_mat_sp.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_mat_sp.h">
+					RelativePath=".\gs_mat_sp.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_mesh_imp.cpp">
+					RelativePath=".\gs_mesh_imp.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_mesh_imp.h">
+					RelativePath=".\gs_mesh_imp.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_meshing.cpp">
+					RelativePath=".\gs_meshing.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_meshing.h">
+					RelativePath=".\gs_meshing.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_meshtypechange.cpp">
+					RelativePath=".\gs_meshtypechange.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_meshtypechange.h">
+					RelativePath=".\gs_meshtypechange.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_newproject.cpp">
+					RelativePath=".\gs_newproject.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_newproject.h">
+					RelativePath=".\gs_newproject.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_ogl_tetra_view.cpp">
+					RelativePath=".\gs_ogl_tetra_view.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_ogl_tetra_view.h">
+					RelativePath=".\gs_ogl_tetra_view.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_output.cpp">
+					RelativePath=".\gs_output.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_output.h">
+					RelativePath=".\gs_output.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_pcs_oglcontrol.cpp">
+					RelativePath=".\gs_pcs_oglcontrol.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_pcs_oglcontrol.h">
+					RelativePath=".\gs_pcs_oglcontrol.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_plot.cpp">
+					RelativePath=".\gs_plot.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_plot.h">
+					RelativePath=".\gs_plot.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_pnt.cpp">
+					RelativePath=".\gs_pnt.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_pnt.h">
+					RelativePath=".\gs_pnt.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_point_new.cpp">
+					RelativePath=".\gs_point_new.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_point_new.h">
+					RelativePath=".\gs_point_new.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_polyline.cpp">
+					RelativePath=".\gs_polyline.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_polyline.h">
+					RelativePath=".\gs_polyline.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_polyline_new.cpp">
+					RelativePath=".\gs_polyline_new.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_polyline_new.h">
+					RelativePath=".\gs_polyline_new.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_prisgen.cpp">
+					RelativePath=".\gs_prisgen.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_prisgen.h">
+					RelativePath=".\gs_prisgen.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_rbf.cpp">
+					RelativePath=".\gs_rbf.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_rbf.h">
+					RelativePath=".\gs_rbf.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_sfc.cpp">
+					RelativePath=".\gs_sfc.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_sfc.h">
+					RelativePath=".\gs_sfc.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_sfc_new.cpp">
+					RelativePath=".\gs_sfc_new.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_sfc_new.h">
+					RelativePath=".\gs_sfc_new.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_st_new.cpp">
+					RelativePath=".\gs_st_new.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_st_new.h">
+					RelativePath=".\gs_st_new.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_structured_mesh.cpp">
+					RelativePath=".\gs_structured_mesh.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_structured_mesh.h">
+					RelativePath=".\gs_structured_mesh.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_tolerance.cpp">
+					RelativePath=".\gs_tolerance.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_tolerance.h">
+					RelativePath=".\gs_tolerance.h"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_welltable.cpp">
+					RelativePath=".\gs_welltable.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gs_welltable.h">
+					RelativePath=".\gs_welltable.h"
+					>
 				</File>
 				<File
-					RelativePath=".\ic_dlg.cpp">
+					RelativePath=".\ic_dlg.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\ic_dlg.h">
+					RelativePath=".\ic_dlg.h"
+					>
 				</File>
 				<File
-					RelativePath=".\ic_dlg_new.cpp">
+					RelativePath=".\ic_dlg_new.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\ic_dlg_new.h">
+					RelativePath=".\ic_dlg_new.h"
+					>
 				</File>
 				<File
-					RelativePath=".\mfp_dlg.cpp">
+					RelativePath=".\mfp_dlg.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\mfp_dlg.h">
+					RelativePath=".\mfp_dlg.h"
+					>
 				</File>
 				<File
-					RelativePath=".\out_dlg.cpp">
+					RelativePath=".\mod_dlg.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\out_dlg.h">
+					RelativePath=".\mod_dlg.h"
+					>
 				</File>
 				<File
-					RelativePath=".\pcs_dlg_new.cpp">
+					RelativePath=".\num_dlg.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\pcs_dlg_new.h">
+					RelativePath=".\num_dlg.h"
+					>
 				</File>
 				<File
-					RelativePath=".\sim_dlg.cpp">
+					RelativePath=".\out_dlg.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\sim_dlg.h">
+					RelativePath=".\out_dlg.h"
+					>
 				</File>
 				<File
-					RelativePath=".\st_dlg.cpp">
+					RelativePath=".\pcs_dlg_new.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\st_dlg.h">
+					RelativePath=".\pcs_dlg_new.h"
+					>
 				</File>
 				<File
-					RelativePath=".\tim_dlg.cpp">
+					RelativePath=".\sim_dlg.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\tim_dlg.h">
+					RelativePath=".\sim_dlg.h"
+					>
 				</File>
 				<File
-					RelativePath=".\vol_dlg.cpp">
+					RelativePath=".\st_dlg.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\vol_dlg.h">
+					RelativePath=".\st_dlg.h"
+					>
+				</File>
+				<File
+					RelativePath=".\tim_dlg.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\tim_dlg.h"
+					>
+				</File>
+				<File
+					RelativePath=".\vol_dlg.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\vol_dlg.h"
+					>
 				</File>
 			</Filter>
 			<Filter
 				Name="grid"
-				Filter="">
+				>
 				<File
-					RelativePath=".\grid\GridButton.cpp">
+					RelativePath=".\grid\GridButton.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\grid\GridButton.h">
+					RelativePath=".\grid\GridButton.h"
+					>
 				</File>
 				<File
-					RelativePath=".\grid\GridEdit.cpp">
+					RelativePath=".\grid\GridEdit.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\grid\GridEdit.h">
+					RelativePath=".\grid\GridEdit.h"
+					>
 				</File>
 				<File
-					RelativePath=".\grid\GridListBox.cpp">
+					RelativePath=".\grid\GridListBox.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\grid\GridListBox.h">
+					RelativePath=".\grid\GridListBox.h"
+					>
 				</File>
 				<File
-					RelativePath=".\grid\MemDC.h">
+					RelativePath=".\grid\MemDC.h"
+					>
 				</File>
 				<File
-					RelativePath=".\grid\TitleTip.cpp">
+					RelativePath=".\grid\TitleTip.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\grid\TitleTip.h">
+					RelativePath=".\grid\TitleTip.h"
+					>
 				</File>
 				<File
-					RelativePath=".\grid\VirtualGridCtrl.cpp">
+					RelativePath=".\grid\VirtualGridCtrl.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\grid\VirtualGridCtrl.h">
+					RelativePath=".\grid\VirtualGridCtrl.h"
+					>
 				</File>
 			</Filter>
 			<Filter
 				Name="ListEdit"
-				Filter="">
+				>
 				<File
-					RelativePath=".\EditCell.cpp">
+					RelativePath=".\EditCell.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\EditCell.h">
+					RelativePath=".\EditCell.h"
+					>
 				</File>
 				<File
-					RelativePath=".\ListCtrl.cpp">
+					RelativePath=".\ListCtrl.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\ListCtrl.h">
+					RelativePath=".\ListCtrl.h"
+					>
 				</File>
 			</Filter>
 			<Filter
 				Name="Splitter"
-				Filter="">
+				>
 				<File
-					RelativePath=".\Splitter\GeoSysEditView.cpp">
+					RelativePath=".\Splitter\GeoSysEditView.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GeoSysEditView.h">
+					RelativePath=".\Splitter\GeoSysEditView.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GeoSysListView.cpp">
+					RelativePath=".\Splitter\GeoSysListView.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GeoSysListView.h">
+					RelativePath=".\Splitter\GeoSysListView.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GeoSysMdiFrames.cpp">
+					RelativePath=".\Splitter\GeoSysMdiFrames.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GeoSysMdiFrames.h">
+					RelativePath=".\Splitter\GeoSysMdiFrames.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GeoSysSplitterWnd.cpp">
+					RelativePath=".\Splitter\GeoSysSplitterWnd.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GeoSysSplitterWnd.h">
+					RelativePath=".\Splitter\GeoSysSplitterWnd.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GeoSysTreeView.cpp">
+					RelativePath=".\Splitter\GeoSysTreeView.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GeoSysTreeView.h">
+					RelativePath=".\Splitter\GeoSysTreeView.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GeoSysVisualFx.cpp">
+					RelativePath=".\Splitter\GeoSysVisualFx.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GeoSysVisualFx.h">
+					RelativePath=".\Splitter\GeoSysVisualFx.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSForm3DLeft.cpp">
+					RelativePath=".\Splitter\GSForm3DLeft.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSForm3DLeft.h">
+					RelativePath=".\Splitter\GSForm3DLeft.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSFormRightPicking.cpp">
+					RelativePath=".\Splitter\GSFormRightPicking.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSFormRightPicking.h">
+					RelativePath=".\Splitter\GSFormRightPicking.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSPropertyRight.cpp">
+					RelativePath=".\Splitter\GSPropertyRight.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSPropertyRight.h">
+					RelativePath=".\Splitter\GSPropertyRight.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSPropertyRightCamera.cpp">
+					RelativePath=".\Splitter\GSPropertyRightCamera.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSPropertyRightCamera.h">
+					RelativePath=".\Splitter\GSPropertyRightCamera.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSPropertyRightGeometry.cpp">
+					RelativePath=".\Splitter\GSPropertyRightGeometry.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSPropertyRightGeometry.h">
+					RelativePath=".\Splitter\GSPropertyRightGeometry.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSPropertyRightImportData.cpp">
+					RelativePath=".\Splitter\GSPropertyRightImportData.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSPropertyRightImportData.h">
+					RelativePath=".\Splitter\GSPropertyRightImportData.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSPropertyRightMesh.cpp">
+					RelativePath=".\Splitter\GSPropertyRightMesh.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSPropertyRightMesh.h">
+					RelativePath=".\Splitter\GSPropertyRightMesh.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSPropertyRightResults.cpp">
+					RelativePath=".\Splitter\GSPropertyRightPCS.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSPropertyRightResults.h">
+					RelativePath=".\Splitter\GSPropertyRightPCS.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSPropertyRightTemplate.cpp">
+					RelativePath=".\Splitter\GSPropertyRightResults.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\GSPropertyRightTemplate.h">
+					RelativePath=".\Splitter\GSPropertyRightResults.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\PropPgFormDoc.cpp">
+					RelativePath=".\Splitter\GSPropertyRightTemplate.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\PropPgFormDoc.h">
+					RelativePath=".\Splitter\GSPropertyRightTemplate.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\PropPgFormView.cpp">
+					RelativePath=".\Splitter\PropPgFormDoc.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\PropPgFormView.h">
+					RelativePath=".\Splitter\PropPgFormDoc.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\ViewPropertyPage.cpp">
+					RelativePath=".\Splitter\PropPgFormView.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\ViewPropertyPage.h">
+					RelativePath=".\Splitter\PropPgFormView.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\ViewPropertySheet.cpp">
+					RelativePath=".\Splitter\ViewPropertyPage.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Splitter\ViewPropertySheet.h">
+					RelativePath=".\Splitter\ViewPropertyPage.h"
+					>
+				</File>
+				<File
+					RelativePath=".\Splitter\ViewPropertySheet.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Splitter\ViewPropertySheet.h"
+					>
 				</File>
 			</Filter>
 			<Filter
 				Name="PICKING"
-				Filter="">
+				>
 				<File
-					RelativePath=".\CGLBaseView.cpp">
+					RelativePath=".\CGLBaseView.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\CGLBaseView.h">
+					RelativePath=".\CGLBaseView.h"
+					>
 				</File>
 				<File
-					RelativePath=".\COGLPickingView.cpp">
+					RelativePath=".\COGLPickingView.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\COGLPickingView.h">
+					RelativePath=".\COGLPickingView.h"
+					>
 				</File>
 				<File
-					RelativePath=".\PickedProperties.cpp">
+					RelativePath=".\PickedProperties.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\PickedProperties.h">
+					RelativePath=".\PickedProperties.h"
+					>
 				</File>
 				<File
-					RelativePath=".\PickingHandle.cpp">
+					RelativePath=".\PickingHandle.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\PickingHandle.h">
+					RelativePath=".\PickingHandle.h"
+					>
 				</File>
 				<File
-					RelativePath=".\ProgressBar.cpp">
+					RelativePath=".\ProgressBar.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\ProgressBar.h">
+					RelativePath=".\ProgressBar.h"
+					>
 				</File>
 				<File
-					RelativePath=".\PTValue.cpp">
+					RelativePath=".\PTValue.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\PTValue.h">
+					RelativePath=".\PTValue.h"
+					>
 				</File>
 				<File
-					RelativePath=".\ViewControl.cpp">
+					RelativePath=".\ViewControl.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\ViewControl.h">
+					RelativePath=".\ViewControl.h"
+					>
 				</File>
 			</Filter>
 			<Filter
 				Name="Iso"
-				Filter="">
+				>
 				<File
-					RelativePath=".\Iso\IsoColArrangement.cpp">
+					RelativePath=".\Iso\IsoColArrangement.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Iso\IsoColArrangement.h">
+					RelativePath=".\Iso\IsoColArrangement.h"
+					>
 				</File>
 				<File
-					RelativePath=".\Iso\IsoSurface.cpp">
+					RelativePath=".\Iso\IsoSurface.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\Iso\IsoSurface.h">
+					RelativePath=".\Iso\IsoSurface.h"
+					>
 				</File>
 			</Filter>
 		</Filter>
 		<Filter
 			Name="MSH"
-			Filter="">
+			>
 			<File
-				RelativePath="..\Msh\admin.h">
+				RelativePath="..\Msh\admin.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\moveGEOtoMSH.cpp">
+				RelativePath="..\Msh\moveGEOtoMSH.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\moveGEOtoMSH.h">
+				RelativePath="..\Msh\moveGEOtoMSH.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_core.cpp">
+				RelativePath="..\Msh\msh_core.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_core.h">
+				RelativePath="..\Msh\msh_core.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_edge.cpp">
+				RelativePath="..\Msh\msh_edge.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_edge.h">
+				RelativePath="..\Msh\msh_edge.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_elem.cpp">
+				RelativePath="..\Msh\msh_elem.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_elem.h">
+				RelativePath="..\Msh\msh_elem.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_elements_rfi.cpp">
+				RelativePath="..\Msh\msh_elements_rfi.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_elements_rfi.h">
+				RelativePath="..\Msh\msh_elements_rfi.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_gen.cpp">
+				RelativePath="..\Msh\msh_gen.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_gen_pris.cpp">
+				RelativePath="..\Msh\msh_gen_pris.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_gen_pris.h">
+				RelativePath="..\Msh\msh_gen_pris.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_lib.cpp">
+				RelativePath="..\MSH\msh_geo.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_lib.h">
+				RelativePath="..\Msh\msh_lib.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_lin.cpp">
+				RelativePath="..\Msh\msh_lib.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_mat.cpp">
+				RelativePath="..\Msh\msh_lin.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_mesh.cpp">
+				RelativePath="..\Msh\msh_mat.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_mesh.h">
+				RelativePath="..\Msh\msh_mesh.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_node.cpp">
+				RelativePath="..\Msh\msh_mesh.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_node.h">
+				RelativePath="..\Msh\msh_node.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_nodes_rfi.cpp">
+				RelativePath="..\Msh\msh_node.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_nodes_rfi.h">
+				RelativePath="..\Msh\msh_nodes_rfi.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_pnt.cpp">
+				RelativePath="..\Msh\msh_nodes_rfi.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_quality.cpp">
+				RelativePath="..\Msh\msh_pnt.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_quality.h">
+				RelativePath="..\Msh\msh_quality.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_rfi.cpp">
+				RelativePath="..\Msh\msh_quality.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Msh\msh_rfi.cpp"
+				>
 			</File>
 			<Filter
 				Name="TM"
-				Filter="">
+				>
 				<File
-					RelativePath="..\Msh\Tm\dtm_calculate.cpp">
+					RelativePath="..\Msh\Tm\dtm_calculate.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_calculate.h">
+					RelativePath="..\Msh\Tm\dtm_calculate.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_crowd.cpp">
+					RelativePath="..\Msh\Tm\dtm_crowd.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_crowd.h">
+					RelativePath="..\Msh\Tm\dtm_crowd.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_element.h">
+					RelativePath="..\Msh\Tm\dtm_element.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_error.cpp">
+					RelativePath="..\Msh\Tm\dtm_error.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_error.h">
+					RelativePath="..\Msh\Tm\dtm_error.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_figure.cpp">
+					RelativePath="..\Msh\Tm\dtm_figure.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_figure.h">
+					RelativePath="..\Msh\Tm\dtm_figure.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_fixed.h">
+					RelativePath="..\Msh\Tm\dtm_fixed.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_gpnode.cpp">
+					RelativePath="..\Msh\Tm\dtm_gpnode.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_gpnode.h">
+					RelativePath="..\Msh\Tm\dtm_gpnode.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_gptetra.cpp">
+					RelativePath="..\Msh\Tm\dtm_gptetra.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_gptetra.h">
+					RelativePath="..\Msh\Tm\dtm_gptetra.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_gptriangle.cpp">
+					RelativePath="..\Msh\Tm\dtm_gptriangle.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_gptriangle.h">
+					RelativePath="..\Msh\Tm\dtm_gptriangle.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_group.h">
+					RelativePath="..\Msh\Tm\dtm_group.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_laplas.cpp">
+					RelativePath="..\Msh\Tm\dtm_laplas.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_laplas.h">
+					RelativePath="..\Msh\Tm\dtm_laplas.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_neighbor.cpp">
+					RelativePath="..\Msh\Tm\dtm_neighbor.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_neighbor.h">
+					RelativePath="..\Msh\Tm\dtm_neighbor.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_node.cpp">
+					RelativePath="..\Msh\Tm\dtm_node.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_node.h">
+					RelativePath="..\Msh\Tm\dtm_node.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_plane.cpp">
+					RelativePath="..\Msh\Tm\dtm_plane.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_plane.h">
+					RelativePath="..\Msh\Tm\dtm_plane.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_point.cpp">
+					RelativePath="..\Msh\Tm\dtm_point.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_point.h">
+					RelativePath="..\Msh\Tm\dtm_point.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_stdio.cpp">
+					RelativePath="..\Msh\Tm\dtm_stdio.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_stdio.h">
+					RelativePath="..\Msh\Tm\dtm_stdio.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_surface.cpp">
+					RelativePath="..\Msh\Tm\dtm_surface.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_surface.h">
+					RelativePath="..\Msh\Tm\dtm_surface.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_tetgen.cpp">
+					RelativePath="..\Msh\Tm\dtm_tetgen.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_tetgen.h">
+					RelativePath="..\Msh\Tm\dtm_tetgen.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_tetra.cpp">
+					RelativePath="..\Msh\Tm\dtm_tetra.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_tetra.h">
+					RelativePath="..\Msh\Tm\dtm_tetra.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_timer.h">
+					RelativePath="..\Msh\Tm\dtm_timer.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_triangle.cpp">
+					RelativePath="..\Msh\Tm\dtm_triangle.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtm_triangle.h">
+					RelativePath="..\Msh\Tm\dtm_triangle.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtmesh.cpp">
+					RelativePath="..\Msh\Tm\dtmesh.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Tm\dtmesh.h">
+					RelativePath="..\Msh\Tm\dtmesh.h"
+					>
 				</File>
 			</Filter>
 			<Filter
 				Name="Delaunay"
-				Filter="">
+				>
 				<File
-					RelativePath="..\Msh\Delaunay\DT_Matrix.h">
+					RelativePath="..\Msh\Delaunay\DT_Matrix.h"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Delaunay\tri_algebra.cpp">
+					RelativePath="..\Msh\Delaunay\tri_algebra.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Delaunay\tri_geometry.cpp">
+					RelativePath="..\Msh\Delaunay\tri_geometry.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Delaunay\tri_main.cpp">
+					RelativePath="..\Msh\Delaunay\tri_main.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Delaunay\tri_triangulation.cpp">
+					RelativePath="..\Msh\Delaunay\tri_triangulation.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Delaunay\tri_utility.cpp">
+					RelativePath="..\Msh\Delaunay\tri_utility.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\Msh\Delaunay\tricommon.h">
+					RelativePath="..\Msh\Delaunay\tricommon.h"
+					>
 				</File>
 			</Filter>
 			<Filter
 				Name="NW"
-				Filter="">
+				>
 				<File
-					RelativePath="..\MSH\NW\delaunay2D.cpp">
+					RelativePath="..\MSH\NW\delaunay2D.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\MSH\NW\delaunay2D.h">
+					RelativePath="..\MSH\NW\delaunay2D.h"
+					>
 				</File>
 				<File
-					RelativePath="..\MSH\NW\delaunay3D.cpp">
+					RelativePath="..\MSH\NW\delaunay3D.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\MSH\NW\delaunay3D.h">
+					RelativePath="..\MSH\NW\delaunay3D.h"
+					>
 				</File>
 			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"
-			Filter="ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe">
+			Filter="ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe"
+			>
 			<File
-				RelativePath=".\Res\cursordraw.cur">
+				RelativePath=".\Res\cursordraw.cur"
+				>
 			</File>
 			<File
-				RelativePath=".\Res\GeoSys.ico">
+				RelativePath=".\Res\GeoSys.ico"
+				>
 			</File>
 			<File
-				RelativePath=".\Res\GeoSys.rc2">
+				RelativePath=".\Res\GeoSys.rc2"
+				>
 			</File>
 			<File
-				RelativePath=".\Res\GeoSysDoc.ico">
+				RelativePath=".\Res\GeoSysDoc.ico"
+				>
 			</File>
 			<File
-				RelativePath=".\Res\mainfram.bmp">
+				RelativePath=".\Res\mainfram.bmp"
+				>
 			</File>
 			<File
-				RelativePath="res\Toolbar.bmp">
+				RelativePath="res\Toolbar.bmp"
+				>
 			</File>
 			<File
-				RelativePath=".\Res\tree_ctrl.bmp">
+				RelativePath=".\Res\tree_ctrl.bmp"
+				>
 			</File>
 			<File
-				RelativePath=".\Res\zoomcurs.cur">
+				RelativePath=".\Res\zoomcurs.cur"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="GEO"
-			Filter="">
+			>
 			<File
-				RelativePath="..\Geo\geo_dom.cpp">
+				RelativePath="..\Geo\geo_dom.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_dom.h">
+				RelativePath="..\Geo\geo_dom.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_lib.cpp">
+				RelativePath="..\Geo\geo_lib.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_lib.h">
+				RelativePath="..\Geo\geo_lib.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_lin.cpp">
+				RelativePath="..\Geo\geo_lin.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_lin.h">
+				RelativePath="..\Geo\geo_lin.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_mathlib.cpp">
+				RelativePath="..\Geo\geo_mathlib.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_mathlib.h">
+				RelativePath="..\Geo\geo_mathlib.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_ply.cpp">
+				RelativePath="..\Geo\geo_ply.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_ply.h">
+				RelativePath="..\Geo\geo_ply.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_pnt.cpp">
+				RelativePath="..\Geo\geo_pnt.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_pnt.h">
+				RelativePath="..\Geo\geo_pnt.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_sfc.cpp">
+				RelativePath="..\Geo\geo_sfc.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_sfc.h">
+				RelativePath="..\Geo\geo_sfc.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_strings.cpp">
+				RelativePath="..\Geo\geo_strings.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_strings.h">
+				RelativePath="..\Geo\geo_strings.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_vol.cpp">
+				RelativePath="..\Geo\geo_vol.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_vol.h">
+				RelativePath="..\Geo\geo_vol.h"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="FEM"
-			Filter="">
+			>
 			<File
-				RelativePath="..\Fem\break.cpp">
+				RelativePath="..\Fem\break.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\break.h">
+				RelativePath="..\Fem\break.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\display.cpp">
+				RelativePath="..\Fem\display.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\display.h">
+				RelativePath="..\Fem\display.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\elements.cpp">
+				RelativePath="..\Fem\elements.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\elements.h">
+				RelativePath="..\Fem\elements.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\fem_ele.cpp">
+				RelativePath="..\Fem\fem_ele.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\fem_ele.h">
+				RelativePath="..\Fem\fem_ele.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\fem_ele_std.cpp">
+				RelativePath="..\Fem\fem_ele_std.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\fem_ele_std.h">
+				RelativePath="..\Fem\fem_ele_std.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\fem_ele_vec.cpp">
+				RelativePath="..\Fem\fem_ele_vec.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\fem_ele_vec.h">
+				RelativePath="..\Fem\fem_ele_vec.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\femlib.cpp">
+				RelativePath="..\Fem\femlib.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\femlib.h">
+				RelativePath="..\Fem\femlib.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\files.h">
+				RelativePath="..\Fem\files.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\files0.cpp">
+				RelativePath="..\Fem\files0.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\intrface.cpp">
+				RelativePath="..\Fem\intrface.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\intrface.h">
+				RelativePath="..\Fem\intrface.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\loop_pcs.cpp">
+				RelativePath="..\Fem\loop_pcs.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\loop_pcs.h">
+				RelativePath="..\Fem\loop_pcs.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\makros.h">
+				RelativePath="..\Fem\makros.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\mathlib.cpp">
+				RelativePath="..\Fem\mathlib.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\mathlib.h">
+				RelativePath="..\Fem\mathlib.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\matrix.cpp">
+				RelativePath="..\Fem\matrix.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\matrix.h">
+				RelativePath="..\Fem\matrix.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\matrix_class.cpp">
+				RelativePath="..\Fem\matrix_class.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\matrix_class.h">
+				RelativePath="..\Fem\matrix_class.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\memory.cpp">
+				RelativePath="..\Fem\memory.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\memory.h">
+				RelativePath="..\Fem\memory.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\nodes.cpp">
+				RelativePath="..\Fem\nodes.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\nodes.h">
+				RelativePath="..\Fem\nodes.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\par_ddc.cpp">
+				RelativePath="..\Fem\par_ddc.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\par_ddc.h">
+				RelativePath="..\Fem\par_ddc.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\pcs_dm.cpp">
+				RelativePath="..\Fem\pcs_dm.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\pcs_dm.h">
+				RelativePath="..\Fem\pcs_dm.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\prototyp.h">
+				RelativePath="..\Fem\prototyp.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\ptrarr.cpp">
+				RelativePath="..\Fem\ptrarr.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\ptrarr.h">
+				RelativePath="..\Fem\ptrarr.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\renumber.cpp">
+				RelativePath="..\Fem\renumber.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\renumber.h">
+				RelativePath="..\Fem\renumber.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf.cpp">
+				RelativePath="..\Fem\rf.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_apl.cpp">
+				RelativePath="..\Fem\rf_apl.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_apl.h">
+				RelativePath="..\Fem\rf_apl.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_bc_new.cpp">
+				RelativePath="..\Fem\rf_bc_new.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_bc_new.h">
+				RelativePath="..\Fem\rf_bc_new.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_db.cpp">
+				RelativePath="..\Fem\rf_db.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_db.h">
+				RelativePath="..\Fem\rf_db.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_fct.cpp">
+				RelativePath="..\Fem\rf_fct.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_fct.h">
+				RelativePath="..\Fem\rf_fct.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_fluid_momentum.cpp">
+				RelativePath="..\Fem\rf_fluid_momentum.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_fluid_momentum.h">
+				RelativePath="..\Fem\rf_fluid_momentum.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_ic_new.cpp">
+				RelativePath="..\Fem\rf_ic_new.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_ic_new.h">
+				RelativePath="..\Fem\rf_ic_new.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_mfp_new.cpp">
+				RelativePath="..\Fem\rf_mfp_new.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_mfp_new.h">
+				RelativePath="..\Fem\rf_mfp_new.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_mmp_new.cpp">
+				RelativePath="..\Fem\rf_mmp_new.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_mmp_new.h">
+				RelativePath="..\Fem\rf_mmp_new.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_msp_new.cpp">
+				RelativePath="..\Fem\rf_msp_new.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_msp_new.h">
+				RelativePath="..\Fem\rf_msp_new.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_node.cpp">
+				RelativePath="..\Fem\rf_node.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_node.h">
+				RelativePath="..\Fem\rf_node.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_num_new.cpp">
+				RelativePath="..\Fem\rf_num_new.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_num_new.h">
+				RelativePath="..\Fem\rf_num_new.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_out_new.cpp">
+				RelativePath="..\Fem\rf_out_new.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_out_new.h">
+				RelativePath="..\Fem\rf_out_new.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_pcs.cpp">
+				RelativePath="..\Fem\rf_pcs.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_pcs.h">
+				RelativePath="..\Fem\rf_pcs.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_random_walk.cpp">
+				RelativePath="..\Fem\rf_random_walk.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_random_walk.h">
+				RelativePath="..\Fem\rf_random_walk.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_react.cpp">
+				RelativePath="..\Fem\rf_react.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_react.h">
+				RelativePath="..\Fem\rf_react.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_st_new.cpp">
+				RelativePath="..\Fem\rf_st_new.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_st_new.h">
+				RelativePath="..\Fem\rf_st_new.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_tim_new.cpp">
+				RelativePath="..\Fem\rf_tim_new.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_tim_new.h">
+				RelativePath="..\Fem\rf_tim_new.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_vel_new.cpp">
+				RelativePath="..\Fem\rf_vel_new.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rf_vel_new.h">
+				RelativePath="..\Fem\rf_vel_new.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rfadt.cpp">
+				RelativePath="..\Fem\rfadt.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rfadt.h">
+				RelativePath="..\Fem\rfadt.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rfiter.cpp">
+				RelativePath="..\Fem\rfiter.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rfiter.h">
+				RelativePath="..\Fem\rfiter.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rfmat_cp.cpp">
+				RelativePath="..\Fem\rfmat_cp.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rfmat_cp.h">
+				RelativePath="..\Fem\rfmat_cp.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rfstring.cpp">
+				RelativePath="..\Fem\rfstring.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\rfstring.h">
+				RelativePath="..\Fem\rfstring.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\solver.cpp">
+				RelativePath="..\Fem\solver.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\solver.h">
+				RelativePath="..\Fem\solver.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\stdafx.h">
+				RelativePath="..\Fem\stdafx.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\steam.cpp">
+				RelativePath="..\Fem\steam.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\steam67.h">
+				RelativePath="..\Fem\steam67.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\timer.cpp">
+				RelativePath="..\Fem\timer.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\timer.h">
+				RelativePath="..\Fem\timer.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\tools.cpp">
+				RelativePath="..\Fem\tools.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\tools.h">
+				RelativePath="..\Fem\tools.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Fem\version.h">
+				RelativePath="..\Fem\version.h"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="LIB"
-			Filter="">
+			>
 			<File
-				RelativePath="..\Lib\shp.cpp">
+				RelativePath="..\Lib\shp.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Lib\shp.h">
+				RelativePath="..\Lib\shp.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Lib\test.h">
+				RelativePath="..\Lib\test.h"
+				>
 			</File>
 		</Filter>
 		<File
-			RelativePath="..\gs_project.cpp">
+			RelativePath="..\gs_project.cpp"
+			>
 		</File>
 		<File
-			RelativePath="..\gs_project.h">
+			RelativePath="..\gs_project.h"
+			>
 		</File>
 		<File
-			RelativePath=".\IsoColArrangement.h">
+			RelativePath=".\IsoColArrangement.h"
+			>
 		</File>
 		<File
-			RelativePath=".\resource.hm">
+			RelativePath=".\resource.hm"
+			>
 		</File>
 	</Files>
 	<Globals>
 		<Global
 			Name="RESOURCE_FILE"
-			Value="GeoSys.rc"/>
+			Value="GeoSys.rc"
+		/>
 	</Globals>
 </VisualStudioProject>
