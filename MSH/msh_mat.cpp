@@ -551,3 +551,20 @@ int MSHSetMaxMMPGroups()
   return g_msh_max_mmp_groups;
 }
 
+/**************************************************************************
+MSHLib-Method: 
+07/2007 OK Implementation 
+**************************************************************************/
+bool MSHTestMATGroups()
+{
+  int g_max_mmp_groups;
+  g_max_mmp_groups = MSHSetMaxMMPGroups();
+  if(g_max_mmp_groups>(int)mmp_vector.size()){
+    cout << "Error: not enough MMP data";
+#ifdef MFC
+    AfxMessageBox( "Fatal error: not enough MMP data");
+#endif
+    return false; //abort();
+  }
+  return true;
+}

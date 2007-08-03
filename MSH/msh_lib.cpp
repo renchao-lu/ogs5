@@ -593,20 +593,18 @@ void Read_RFI(istream& msh_file,CFEMesh* m_msh)
 
 
 /**************************************************************************
-FEMLib-Method: 
-Task:
-Programing:
+MSHLib-Method: 
 02/2006 WW Implementation
 **************************************************************************/
 void CompleteMesh()
 {
-   int i;
-   for(i=0;i<(int)fem_msh_vector.size(); i++)
-   {
-      fem_msh_vector[i]->ConstructGrid();
-      fem_msh_vector[i]->FillTransformMatrix();
-   }      
+  for(int i=0;i<(int)fem_msh_vector.size(); i++)
+  {
+    fem_msh_vector[i]->ConstructGrid();
+    fem_msh_vector[i]->FillTransformMatrix();
+  }      
 }
+
 /**************************************************************************
 FEMLib-Method:
 Task: Master write functionn
@@ -1189,17 +1187,22 @@ for(k=0;k<m_msh->no_msh_layer;k++){
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task:
-Programing:
+MSHLib-Method: 
 12/2005 OK Implementation
+07/2007 OK PCS
 **************************************************************************/
 CFEMesh* MSHGet(string geo_name)
 {
   CFEMesh* m_msh = NULL;
-  for(int i=0;i<(int)fem_msh_vector.size();i++){
+  for(int i=0;i<(int)fem_msh_vector.size();i++)
+  {
     m_msh = fem_msh_vector[i];
-    if(m_msh->geo_name.compare(geo_name)==0){
+    if(m_msh->geo_name.compare(geo_name)==0)
+    {
+      return m_msh;
+    }
+    if(m_msh->pcs_name.compare(geo_name)==0)
+    {
       return m_msh;
     }
   }
@@ -1730,3 +1733,24 @@ long MSHWhatElemIsPointIn(double x, double y, long index)
 }
 
 #endif
+
+/**************************************************************************
+MSHLib-Method: 
+07/2007 OK Implementation
+**************************************************************************/
+bool CompleteMesh(string pcs_name)
+{
+  bool succeed = false;
+  for(int i=0;i<(int)fem_msh_vector.size(); i++)
+  {
+    if(fem_msh_vector[i]->pcs_name.compare(pcs_name)==0)
+    {
+      fem_msh_vector[i]->ConstructGrid();
+      fem_msh_vector[i]->FillTransformMatrix();
+      succeed = true;
+    }
+  }   
+  return succeed;
+}
+
+

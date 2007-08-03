@@ -67,7 +67,7 @@ CFEMesh::CFEMesh(void)
   no_msh_layer = 0; //OK
   min_edge_length = 1e-3; //OK
   max_mmp_groups = 0; //OKCC
-
+  m_bCheckMSH = false; //OK
 #ifdef RANDOM_WALK
   PT=NULL; // WW+TK
   fm_pcs=NULL;  //WW
@@ -4159,4 +4159,5 @@ void CFEMesh::CreateLineELEFromSFC()
 }
 
 } // namespace Mesh_Group
+
 //========================================================================

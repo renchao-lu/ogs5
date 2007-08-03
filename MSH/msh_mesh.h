@@ -88,7 +88,7 @@ class CFEMesh
     int patch_display_mode;
     int ele_mat_display_mode;
     int highest_mat_group_nb;
-
+    bool m_bCheckMSH; //OK
 #ifdef RANDOM_WALK
     RandomWalk* PT; // PCH
 #endif
@@ -125,6 +125,7 @@ class CFEMesh
     int GetCoordinateFlag () const {return coordinate_system;}
     void FillTransformMatrix();  
 	//....................................................................
+    void GetNODOnGEO(string,string,vector<long>&); //OK
     // GEO-PNT
     long GetNODOnPNT(CGLPoint*);
     long GetNearestELEOnPNT(CGLPoint*);

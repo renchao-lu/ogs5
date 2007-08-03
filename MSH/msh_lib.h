@@ -24,6 +24,7 @@ extern void MSHCreateNOD2ELERelations(Mesh_Group::CFEMesh*); //OK
 extern bool FEMRead(string);
 extern void FEMWrite(string);
 extern void CompleteMesh(); //WW
+extern bool CompleteMesh(string); //OK
 extern void FEMDeleteAll();
 extern void MSHTopology(); //OK
 extern void MSHCalcMinMaxMidCoordinates(); //OK
@@ -69,10 +70,12 @@ extern CFEMesh* MSHGet(string mat_type_name); //OK
 extern CFEMesh* MSHGet(string pcs_type_name,string mat_type_name); //OK
 extern CFEMesh* MSHGetGEO(string); //OK
 extern int MSHSetMaxMMPGroups(); //OK
+extern bool MSHTestMATGroups(); //OK
 #ifdef RFW_FRACTURE
 extern bool MSHGetCommonNodes(CElem*, CElem*, vector<CNode*>&);
 extern void MSHSetFractureElements(void);
 extern void MSHResetFractureElements(void);
 extern long MSHWhatElemIsPointIn(double x, double y, long index); //RFW
 #endif
+
 #endif
