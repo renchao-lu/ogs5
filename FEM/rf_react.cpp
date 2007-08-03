@@ -2548,3 +2548,57 @@ void REACT::GetTransportResults2Element(void){
 
   }	
 }
+
+/**************************************************************************
+PCSLib-Method: 
+        SB Initialization of REACT structure for rate exchange between MTM2 and Reactions
+07/2007 OK Encapsulation 
+**************************************************************************/
+void REACTInit()
+{ 
+  REACT *rc = NULL; //SB
+//  rc->TestPHREEQC(); // Test if *.pqc file is present
+  rc = rc->GetREACT();
+  if(rc) //OK
+  {  
+    if(rc->flag_pqc){
+      if(cp_vec.size()>0)
+      { //OK
+      #ifdef REACTION_ELEMENT
+        rc->CreateREACT();//SB
+        rc->InitREACT0();
+        rc->ExecuteReactionsPHREEQC0();
+	    REACT_vec.clear();
+	    REACT_vec.push_back(rc);        
+      #else
+        //-------------------------------------------------- 
+		// HB, for the GEM chemical reaction engine 05.2007
+        #ifdef REAC_GEM
+          REACT_GEM *p_REACT_GEM = NULL;  
+          p_REACT_GEM->REACT_GEM();
+        #else
+	    //--------------------------------------------------
+        rc->CreateREACT();//SB
+        rc->InitREACT();
+//SB4501        rc->ExecuteReactions();
+		rc->ExecuteReactionsPHREEQCNew();
+	    REACT_vec.clear();
+	    REACT_vec.push_back(rc);
+        #endif
+      #endif
+      }
+    }
+//  delete rc;
+  }
+  #ifdef CHEMAPP
+	CEqlink *eq=NULL;
+	eq = eq->GetREACTION();
+  if(cp_vec.size()>0  && eq){ //MX
+    eq->TestCHEMAPPParameterFile(pcs_vector[0]->file_name_base); 
+	if (eq->flag_chemapp){
+		eq->callCHEMAPP(pcs_vector[0]->file_name_base);
+	}
+  }
+  #endif
+//  delete rc;
+}

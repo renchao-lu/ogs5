@@ -80,5 +80,6 @@ extern vector <REACT*> REACT_vec;
 extern void DestroyREACT(void);
 extern void RCRead(string);
 extern double MATCalcIonicStrengthNew(long index);
+extern void REACTInit(); //OK
 
 #endif
