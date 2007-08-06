@@ -525,7 +525,7 @@ template<class T>  vec<T>:: vec(const vec<T>& v)
 }
 
 
-template<class T> vec<T>:: ~vec<T> ()
+template<class T> vec<T>:: ~vec()
 {		
    delete[] entry;
    entry = 0;

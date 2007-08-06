@@ -159,7 +159,7 @@ double TGetTimerDouble(int speicher)
 long TGetTimer(int speicher)
 {
   if(!running) //OK
-    return -1.0;
+    return -1;
   long time_gone_by;
   if (!running[speicher]) 
   {

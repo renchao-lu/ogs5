@@ -780,5 +780,7 @@ bool CTimeDiscretization::CheckTime(double const c_time) //WW
     time_current += pcs_step;
     step_current++; 
   }
+  if(pcs_step>=time_end)
+    exe_pcs = true;	   
   return exe_pcs;   
 }

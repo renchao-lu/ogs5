@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="rf3_cpp"
-	ProjectGUID="{A0962184-BE1E-4FE9-AD42-0D7E0DA51B79}"
+	ProjectGUID="{4F159AF7-FF53-410E-A9A7-2C500A4EF55E}"
 	>
 	<Platforms>
 		<Platform
@@ -44,7 +44,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../FEM;../MSH;../GEO; ../EQL;../"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MSVCPP6;RANDOM_WALK;RFW_FRACTURE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MSVCPP6;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;RFW_FRACTURE"
 				RuntimeLibrary="1"
 				DisableLanguageExtensions="false"
 				UsePrecompiledHeader="0"
@@ -137,7 +137,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="../FEM;../MSH;../GEO; ../"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;RANDOM_WALK;RFW_FRACTURE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;RFW_FRACTURE"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
