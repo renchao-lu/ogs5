@@ -1055,7 +1055,8 @@ double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem)
   CFluidProperties *m_mfp = NULL;
   CRFProcess* m_pcs = assem->cpl_pcs;
   //
-  if (m_pcs->pcs_type_name.find("MULTI_PHASE_FLOW")!=string::npos)
+  //if (m_pcs->pcs_type_name.find("MULTI_PHASE_FLOW")!=string::npos)
+  if (m_pcs->type==1212) // non-isothermal multi-phase flow
   {
      PG = assem->interpolate(assem->NodalValC1); // Capillary pressure
      Sw = assem->MediaProp->SaturationCapillaryPressureFunction(PG,0); 
@@ -1069,11 +1070,13 @@ double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem)
   }  
   else
   {
-     PG = assem->interpolate(assem->NodalValC1); // Capillary pressure
-     if(PG<0.0)
-       Sw = assem->MediaProp->SaturationCapillaryPressureFunction(-PG,0); 
-     else
-       Sw = 1.0;
+     Sw = 1.0;
+     if(m_pcs->type!=1) // Not liquid and ground water flow. 07/08/07. WW
+	 {		  
+       PG = assem->interpolate(assem->NodalValC1); // Capillary pressure
+       if(PG<0.0)
+         Sw = assem->MediaProp->SaturationCapillaryPressureFunction(-PG,0); 
+	 }   
      m_mfp = mfp_vector[0]; 
      heat_capacity_fluids = Sw*m_mfp->Density() * m_mfp->SpecificHeatCapacity();     
   }
