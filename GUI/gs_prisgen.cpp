@@ -121,7 +121,7 @@ void CPRISGEN::OnButtonCreatePrisms()
     CString m_strFileNamePath = fileDlg.GetPathName().Left(pos);
 	CString m_strMSHFileName = fileDlg.GetFileName();
 	UpdateData(FALSE);
-    FEMWrite((string)m_strMSHFileName);
+    MSHWrite((string)m_strMSHFileName);
 	//MSH_WritePrisms2RFI((string)m_strMSHFileName);
     GEOWriteSurfaceTINs((string)m_strFileNamePath);
     GEOWriteSurfaceTINsTecplot((string)m_strFileNamePath);

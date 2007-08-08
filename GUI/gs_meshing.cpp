@@ -1059,7 +1059,7 @@ void CMSHEditor::OnBnClickedButtonMSHWrite()
   CGSProject* m_gsp = NULL;
   m_gsp = GSPGetMember("msh");
   if(m_gsp)
-    FEMWrite(m_gsp->path + m_gsp->base);
+    MSHWrite(m_gsp->path + m_gsp->base);
 }
 
 /**************************************************************************

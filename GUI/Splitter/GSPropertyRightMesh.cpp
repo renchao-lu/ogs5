@@ -3372,7 +3372,7 @@ void CGSPropertyRightMesh::OnBnClickedCreateLinesAlongPolyline()
   }
 
   //========================================================================
-  //FEMWrite((string)m_strFileNameBase);
+  //MSHWrite((string)m_strFileNameBase);
   //FEMRead((string)m_strFileNameBase);
   //CompleteMesh(); 
 

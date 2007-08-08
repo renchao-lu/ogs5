@@ -632,7 +632,7 @@ void CGeoSysMSHView::OnMshLibTriangulation()
       fem_msh_vector.push_back(m_msh);
       //..................................................................
       // Write MSH data
-      //OK FEMWrite((string)m_strFileNameBase);
+      //OK MSHWrite((string)m_strFileNameBase);
       //..................................................................
       // GSP data //OK
       string msh_base_type = m_gsp->base + ".msh"; //OK

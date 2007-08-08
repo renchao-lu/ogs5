@@ -902,7 +902,7 @@ void CMATGroupEditor::OnLvnItemchangedListcontrolMMP(NMHDR *pNMHDR, LRESULT *pRe
       m_CB_MMP_PROPERTIES.SetCurSel(0);
       //...................................................................
       m_LB_GEO.ResetContent();
-      for(int i=0;i<(int)m_mmp->geo_name_vector.size();i++)
+      for(i=0;i<(int)m_mmp->geo_name_vector.size();i++)
       {
         m_str = m_mmp->geo_type_name.data();
         m_str += ": ";
