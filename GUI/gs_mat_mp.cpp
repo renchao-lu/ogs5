@@ -128,6 +128,8 @@ BOOL CMATGroupEditor::OnInitDialog()
   switch(mat_type)
   {
     case 0: //MMP
+      if(MMPExist())
+        AfxMessageBox("Multiple MMP objects - to be merged");
       FillTable();
       break;
     case 1: //MSP

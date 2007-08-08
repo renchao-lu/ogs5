@@ -24,6 +24,7 @@ CDialogMOD::CDialogMOD(CWnd* pParent /*=NULL*/)
     , m_bCheckELE_H(FALSE)
     , m_bCheckPCS(FALSE)
     , m_bCheckMOD_M(FALSE)
+    , m_bCheckMOD_T(FALSE)
 {
   m_bUseExistingMSH = true;
 }
@@ -49,6 +50,7 @@ void CDialogMOD::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_COMBO_MOD_C, m_CB_MOD_C);
     DDX_Check(pDX, IDC_CHECK_PCS, m_bCheckPCS);
     DDX_Check(pDX, IDC_CHECK_MOD_M, m_bCheckMOD_M);
+    DDX_Check(pDX, IDC_CHECK_MOD_T, m_bCheckMOD_T);
 }
 
 
@@ -119,6 +121,10 @@ BOOL CDialogMOD::OnInitDialog()
     //....................................................................
     if(m_pcs->pcs_type_name.find("HEAT")!=string::npos)
     {
+      if(m_pcs->selected) 
+        m_bCheckMOD_T = true;
+      else
+        m_bCheckMOD_T = false;
       m_CB_MOD_T.AddString(m_strPCSTypeName);
       m_CB_MOD_T.SetCurSel(0);
     }

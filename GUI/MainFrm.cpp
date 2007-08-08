@@ -64,6 +64,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_COMMAND(ID_DESELECT, OnDeselectInPicking)
 	ON_COMMAND(ID_SELECTALL, OnSelectAllInPicking)
 	ON_COMMAND(ID_DESELECTALL, OnDeselectAllInPicking)
+	ON_COMMAND(ID_RUN, OnRUN) //OK
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -1052,4 +1053,16 @@ void CMainFrame::UpdateSpecificView(char *view_class_name, CDocument *m_pDoc)
             
         }
     }
+}
+
+/**************************************************************************
+GeoSysGUI-Method: 
+08/2007 OK Implementation
+**************************************************************************/
+void CMainFrame::OnRUN()
+{
+  CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+  CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+  CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+  m_pDoc->OnSimulatorForward();
 }

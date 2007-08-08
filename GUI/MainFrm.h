@@ -80,7 +80,7 @@ public:
     afx_msg void OnPCSView(); //OK
     afx_msg void OnControlPanel(); //OK
     afx_msg void UpdateSpecificView(char *view_class_name, CDocument *m_pDoc); //TK
- 
+    void OnRUN(); //OK
     //PCH ends
     void OnProgressBar();
     int m_rebuild_formtree;

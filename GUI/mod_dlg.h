@@ -49,4 +49,5 @@ public:
     BOOL m_bCheckMOD_M;
     bool m_bUseExistingMSH;
     afx_msg void OnBnClickedButtonMODReadT();
+    BOOL m_bCheckMOD_T;
 };
