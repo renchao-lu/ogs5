@@ -766,7 +766,6 @@ void FindNodesOnInterface(CFEMesh *m_msh, bool quadr)
   long *elem_nodes=NULL;
   //
   Mesh_Group::CElem* m_ele = NULL;
-  Mesh_Group::CNode* m_nod = NULL;
   //
   CPARDomain *m_dom = NULL;
   vector<long> boundary_nodes;

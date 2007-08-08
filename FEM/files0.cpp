@@ -153,7 +153,7 @@ int ReadData ( char *dateiname )
      CompleteMesh(); //WW
      MSH = true;
   }
-//SBOK4209 FEMWrite(dateiname);
+//SBOK4209 MSHWrite(dateiname);
 #ifdef RANDOM_WALK
   // PCTRead is bounded by msh
   PCTRead(dateiname);   // PCH

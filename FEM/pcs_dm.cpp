@@ -125,8 +125,7 @@ void CRFProcessDeformation::Initialization()
    // Local assembliers
    // An instaniate of CFiniteElementVec 
    int Axisymm = 1; // ani-axisymmetry
-   CRFProcess *h_pcs = NULL;
-
+   //
    if(m_msh->isAxisymmetry()) Axisymm = -1; // Axisymmetry is true
    fem_dm = new CFiniteElementVec(this, Axisymm*m_msh->GetCoordinateFlag());
    fem_dm->SetGaussPointNumber(m_num->ele_gauss_points);

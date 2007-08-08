@@ -613,7 +613,7 @@ Programing:
 10/2005 OK BINARY
 last modification:
 **************************************************************************/
-void FEMWrite(string file_base_name)
+void MSHWrite(string file_base_name)
 {
   int i;
   CFEMesh* m_fem_msh = NULL;

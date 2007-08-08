@@ -972,7 +972,6 @@ OK ??? too many specifics
 void COutput::WriteTECNodeData(fstream& tec_file)
 {
   const int nName = (int)nod_value_vector.size();
-  Knoten *node = NULL;
   long j;
   double x[3];
   int i, k;

@@ -22,7 +22,7 @@ extern vector<Mesh_Group::CFEMesh*>fem_msh_vector;
 extern CFEMesh* FEMGet(string msh_name);
 extern void MSHCreateNOD2ELERelations(Mesh_Group::CFEMesh*); //OK
 extern bool FEMRead(string);
-extern void FEMWrite(string);
+extern void MSHWrite(string);
 extern void CompleteMesh(); //WW
 extern bool CompleteMesh(string); //OK
 extern void FEMDeleteAll();

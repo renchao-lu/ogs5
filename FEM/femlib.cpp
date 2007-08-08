@@ -62,8 +62,8 @@ void Calc3DPrismElementVolume(long index, double *volume);
 /**************************************************************************/
 void InitElementGeometry(long index)
 {
-  double *invjac, dj, volume;
-
+  double *invjac=NULL, dj, volume;
+  
 
   /* Determinante und Inverse der Jacobi-Matrix berechnen */
   switch (ElGetElementType(index))

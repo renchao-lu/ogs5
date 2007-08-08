@@ -394,7 +394,7 @@ GeoSys-Method:
 Task: 
 Programing:
 01/2005 OK Implementation
-05/2005 OK FEMWrite
+05/2005 OK MSHWrite
 last modification:
 **************************************************************************/
 void GSPWriteData()
@@ -418,7 +418,7 @@ void GSPWriteData()
     }
     if(m_gsp->type.compare("msh")==0){
       path_base = g_gsp_path + m_gsp->base;
-      FEMWrite(path_base);
+      MSHWrite(path_base);
 #ifdef RANDOM_WALK
 //	  DATWritePCTFile(path_base.data());    // PCH Again, this is a temperary solution. Should be changed later on.
 #endif

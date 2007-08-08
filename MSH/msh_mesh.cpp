@@ -978,9 +978,9 @@ void CFEMesh::Write(fstream*fem_msh_file)
   // NODES
   *fem_msh_file << " $NODES" << endl;
   *fem_msh_file << "  ";
-  *fem_msh_file << (long)nod_vector.size() << endl;
+  *fem_msh_file << GetNodesNumber(false) << endl; //WW
   for(i=0;i<(long)nod_vector.size();i++)
-	 nod_vector[i]->Write(*fem_msh_file); //WW
+	 nod_vector[i]->Write(*fem_msh_file); 
   //--------------------------------------------------------------------
   // ELEMENTS
   *fem_msh_file << " $ELEMENTS" << endl;
@@ -2451,7 +2451,8 @@ void CFEMesh::WriteBIN(fstream*fem_msh_file,fstream*msh_file_test)
   fem_msh_file->write((char*)(&binary_long),sizeof(binary_long));
   *msh_file_test << binary_long << endl;
   CNode* m_nod = NULL;
-  for(i=0;i<(long)nod_vector.size();i++){
+  for(i=0;i<GetNodesNumber(false);i++) //WW
+  {
     m_nod = nod_vector[i];
     fem_msh_file->write((char*)(&i),sizeof(long));
     *msh_file_test << i << " ";
@@ -3640,9 +3641,9 @@ void CFEMesh::CreateLineELEFromTri()
   CGSProject* m_gsp = NULL;
   m_gsp = GSPGetMember("gli");
   if(m_gsp)
-    FEMWrite(m_gsp->path + "test");
+    MSHWrite(m_gsp->path + "test");
   else
-    FEMWrite("test");
+    MSHWrite("test");
 }
 
 /**************************************************************************
@@ -3916,9 +3917,9 @@ void CFEMesh::CreateLineELEFromTriELE()
   CGSProject* m_gsp = NULL;
   m_gsp = GSPGetMember("gli");
   if(m_gsp)
-    FEMWrite(m_gsp->path + "test");
+    MSHWrite(m_gsp->path + "test");
   else
-    FEMWrite("test");
+    MSHWrite("test");
 }
 
 /**************************************************************************
