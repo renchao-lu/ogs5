@@ -272,7 +272,7 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
       in.clear();
       continue;
     }
-
+    //--------------------------------------------------------------------
     //NAME
     if(line_string.find("$NAME")!=string::npos) { //subkeyword found
       in.str(GetLineFromFile1(mmp_file));
@@ -7156,3 +7156,57 @@ void MMPGroupDelete(string pcs_type_name)
   }
 }
 
+/**************************************************************************
+FEMLib-Method:
+08/2007 OK Implementation
+**************************************************************************/
+bool MMPExist(ifstream *mmp_file)
+{
+  string line_string;
+  std::stringstream in;
+  string name;
+  //======================================================================
+  while(!mmp_file->eof()) 
+  {
+	line_string = GetLineFromFile1(mmp_file);
+    //--------------------------------------------------------------------
+    //NAME
+    if(line_string.find("$NAME")!=string::npos) 
+    {
+      in.str(GetLineFromFile1(mmp_file));
+      in >> name; //sub_line
+      // Test whether MMP already exists
+      for(int i=0;i<(int)mmp_vector.size();i++)
+      {
+        if(name.compare(mmp_vector[i]->name)==0)
+        {
+          return true;
+        }
+      }
+	  in.clear();
+      continue;
+    }
+    //--------------------------------------------------------------------
+  }
+  //======================================================================
+  return false;
+}
+
+/**************************************************************************
+FEMLib-Method:
+08/2007 OK Implementation
+**************************************************************************/
+bool MMPExist()
+{
+  for(int i=0;i<(int)mmp_vector.size();i++)
+  {
+    for(int j=0;j<(int)mmp_vector.size();j++)
+    {
+      if(mmp_vector[i]->name.compare(mmp_vector[j]->name)==0)
+      {
+        return true;
+      }
+    }
+  }
+  return false;
+}

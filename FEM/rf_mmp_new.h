@@ -65,7 +65,7 @@ class CMediumProperties
   ios::pos_type Read(ifstream*);
   void Write(fstream*);
   void WriteTecplot(string);
-	double* PermeabilityTensor(long index);
+  double* PermeabilityTensor(long index);
 #ifdef RFW_FRACTURE
     double RelativePermeability (long index); //RW/CMCD03/06
 #endif
@@ -204,7 +204,7 @@ class CMediumProperties
   double argument; //OK
   //Dual Richards transfer coefficient  YD
   double transfer_coefficient;
- // double unsaturated_hydraulic_conductivity;
+  //double unsaturated_hydraulic_conductivity;
   double specific_storage;
 };
 
@@ -241,6 +241,9 @@ extern void MMP2PCSRelation(CRFProcess*);
 extern void GetHeterogeneousFields(); //SB
 extern long GetNearestHetVal2(long EleIndex, CFEMesh *m_msh, vector <double> xvals,  vector <double> yvals,  vector <double> zvals,  vector <double> mmpvals);
 double GetAverageHetVal2(long EleIndex, CFEMesh *m_msh, vector <double> xvals,  vector <double> yvals,  vector <double> zvals,  vector <double> mmpvals);
+extern bool MMPExist(ifstream *mmp_file); //OK
+extern bool MMPExist(); //OK
+
 #define MMP_FILE_EXTENSION ".mmp"
 
 #endif
