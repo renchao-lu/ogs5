@@ -1495,7 +1495,10 @@ double COutput::NODWritePLYDataTEC(int number)
       //................................................................
       if(nod_value_vector[k].compare("FLUX")==0)
       {
-        flux_nod = NODFlux(gnode);
+        if(aktueller_zeitschritt==0) //OK
+          flux_nod = 0.0; 
+        else
+          flux_nod = NODFlux(gnode);
         tec_file << flux_nod << " ";
         //flux_sum += abs(m_pcs->eqs->b[gnode]);
         flux_sum += abs(flux_nod);
