@@ -82,8 +82,9 @@ CRFProcessDeformation::~CRFProcessDeformation()
    // alle stationaeren Matrizen etc. berechnen 
    long i;
    // Write Gauss stress // TEST for excavation analysis
-   if(reload==1)   
-       WriteGaussPointStress();
+   //   if(reload==1)   
+   if(reload==1||reload==3)   
+      WriteGaussPointStress();
    //
    Mesh_Group::CElem* elem = NULL;
    for (i = 0; i < (long)m_msh->ele_vector.size(); i++)

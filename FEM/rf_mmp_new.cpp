@@ -272,7 +272,7 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
       in.clear();
       continue;
     }
-    //--------------------------------------------------------------------
+
     //NAME
     if(line_string.find("$NAME")!=string::npos) { //subkeyword found
       in.str(GetLineFromFile1(mmp_file));
@@ -591,6 +591,14 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
         default:
           cout << "Error in MMPRead: no valid storativity model" << endl;
           break;
+		case 7: //RW/WW
+		  in >> storage_model_values[0];//Biot's alpha
+		  in >> storage_model_values[1];//Skempton's B coefficient
+		  in >> storage_model_values[2];//macroscopic drained bulk modulus
+          double val_l = storage_model_values[0]* (1.-storage_model_values[0]*storage_model_values[1])
+                         /storage_model_values[1]/storage_model_values[2];
+          storage_model_values[1] = val_l;
+		  break;
       }
       in.clear();
       continue;
@@ -4612,7 +4620,9 @@ double CMediumProperties::StorageFunction(long index,double *gp,double theta)
 		else S=storage_model_values[2];
 		storage = S;
 		break;    
-
+    case 7: // poroelasticity RW
+        storage = storage_model_values[1];
+        break;		 
 	default:
         storage = 0.0;//OK DisplayMsgLn("The requested storativity model is unknown!!!");
  	break;

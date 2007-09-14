@@ -450,16 +450,23 @@ void  CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bo
     case 'H': // heat transport
       //SB CMCD this needs to be fixed
       cpl_pcs = PCSGet("GROUNDWATER_FLOW"); 
-      if(cpl_pcs == NULL) 
-        cpl_pcs = PCSGet("LIQUID_FLOW"); 
-      if(cpl_pcs == NULL) 
-        cpl_pcs = PCSGet("RICHARDS_FLOW"); //OK
-      if(cpl_pcs == NULL) 
-        cpl_pcs = PCSGet("MULTI_PHASE_FLOW"); //24.042.2004 WW
-      if (cpl_pcs){  //MX
-        idx_c0 = cpl_pcs->GetNodeValueIndex("PRESSURE1");
+      if(cpl_pcs) //WW
+	  {
+        idx_c0 = cpl_pcs->GetNodeValueIndex("HEAD");
         idx_c1 = idx_c0+1;
-      }
+	  }
+	  else
+	  {
+         cpl_pcs = PCSGet("LIQUID_FLOW"); 
+         if(cpl_pcs == NULL) 
+           cpl_pcs = PCSGet("RICHARDS_FLOW"); //OK
+         if(cpl_pcs == NULL) 
+           cpl_pcs = PCSGet("MULTI_PHASE_FLOW"); //24.042.2004 WW
+         if (cpl_pcs){  //MX
+           idx_c0 = cpl_pcs->GetNodeValueIndex("PRESSURE1");
+           idx_c1 = idx_c0+1;
+         }
+	  }
       break;
     case 'M': // Mass transport
       if(T_Flag)
@@ -3679,7 +3686,7 @@ void CFiniteElementStd::Assemble_strainCPL()
     else // Mono
     {
        if(pcs_deformation>100) // Pls
-         Residual = 1;       
+         Residual = 1;   
     } 
     if(dynamic)
     { 
@@ -3687,6 +3694,8 @@ void CFiniteElementStd::Assemble_strainCPL()
        fac = pcs->m_num->GetDynamicDamping_beta1()*dt;  
        u_n = dm_pcs->GetAuxArray();     
     }  
+    if(MediaProp->storage_model==7) //RW/WW
+      fac *= MediaProp->storage_model_values[0];
     //
     for (i=nnodes;i<nnodesHQ;i++)
        nodes[i] = MeshElement->nodes_index[i];

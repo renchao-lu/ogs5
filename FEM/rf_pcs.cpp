@@ -1911,6 +1911,7 @@ void CRFProcess::ConfigGroundwaterFlow()
   pcs_secondary_function_name[3] = "COUPLING"; //JOD
   pcs_secondary_function_unit[3] = "m/s";
   pcs_secondary_function_timelevel[3] = 1;
+
   //----------------------------------------------------------------------
   if(m_msh)
     m_msh->DefineMobileNodes(this);
@@ -3725,7 +3726,8 @@ void CRFProcess::CalIntegrationPointValue()
 // Currently, extropolation only valid for liquid and Richards flow.
   if(pcs_type_name.find("LIQUID")!=string::npos
      ||pcs_type_name.find("RICHARD")!=string::npos
-     ||pcs_type_name.find("MULTI_PHASE_FLOW")!=string::npos)
+     ||pcs_type_name.find("MULTI_PHASE_FLOW")!=string::npos
+     ||pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos )
      cal_integration_point_value = true;
   if(!cal_integration_point_value)
      return;

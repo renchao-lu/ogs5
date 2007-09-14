@@ -423,10 +423,11 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
         cout << "      Calculation of secondary NOD values" << endl;
         PCSCalcSecondaryVariables(); // PCS member function
         // GP values
-        if(CalcVelocities)
+        //if(CalcVelocities)
         { 
           cout << "      Calculation of secondary GP values" << endl;
           m_pcs->CalIntegrationPointValue(); //WW
+          m_pcs->cal_integration_point_value = false; //WW Do not extropolate Gauss velocity
         }
         // ELE values
 		if(m_pcs->tim_type_name.compare("STEADY")==0) //CMCD 05/2006

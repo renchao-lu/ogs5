@@ -795,7 +795,7 @@ void CElem::WriteIndex(ostream& os) const
 {
     int nn;
     nn = nnodes; 
-	if(quadratic) nn = nnodesHQ;
+	//Comment for GUI WW if(quadratic) nn = nnodesHQ;
     os<<index<<deli<<patch_index<<deli<<GetName()<<deli;
     for(int i=0; i<nn; i++)
       os<<nodes_index[i]<<deli;
