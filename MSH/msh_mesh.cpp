@@ -334,7 +334,7 @@ CFEMesh::Read(TokenBuf *tokenbuf)
 FEMLib-Method: ConnectedElements2Node
 Task: 
 Programing:
-04/2006 WW Cut from Construct grid
+04/2007 WW Cut from Construct grid
 **************************************************************************/
 void CFEMesh::ConnectedElements2Node(bool quadratic)
 {
@@ -342,36 +342,14 @@ void CFEMesh::ConnectedElements2Node(bool quadratic)
    CElem* thisElem0=NULL;
 //   CElem* thisElem=NULL;
    bool done = false;
-   long start, end;
-   start = end = 0;
-   if(!quadratic)
-   {
-      start = 0;
-      end = (long)nod_vector.size();
-   }
-   else
-   {
-      start = NodesNumber_Linear;
-      end = NodesNumber_Quadratic;
-   }
    // Set neighbors of node
-   for(e=start; e<end; e++)
+   for(e=0; e<(long)nod_vector.size(); e++)
      nod_vector[e]->connected_elements.clear();
    for(e=0; e<(long)ele_vector.size(); e++)
    {
       thisElem0 = ele_vector[e];   
       if(!thisElem0->GetMark()) continue;
-      if(!quadratic)
-      {
-         start = 0;
-         end = thisElem0->nnodes;
-      }
-      else
-      {
-         start = thisElem0->nnodes;
-         end = thisElem0->nnodesHQ;
-      }
-      for(i=start; i<end; i++)
+      for(i=0; i<thisElem0->GetNodesNumber(quadratic); i++)
       {
           done = false;
           ni = thisElem0->GetNodeIndex(i);
