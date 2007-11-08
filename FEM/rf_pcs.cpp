@@ -6978,7 +6978,7 @@ double CRFProcess::CalcELEFluxes(CGLPolyline*m_ply)
     if(v_eidx[i]<0)
     {
       //cout << "Fatal error in CRFProcess::CalcELEFluxes(CGLPolyline*m_ply) - abort";
-      cout << "Velocity output is not specified"<<endl;
+      cout << i << v_eidx[i] << "Velocity output is not specified"<<endl;
       return 0.0;
       //  abort();
     }
@@ -7167,14 +7167,26 @@ void CRFProcess::AssembleParabolicEquationRHSVector(CNode*m_nod)//(vector<long>&
   //----------------------------------------------------------------------
   // Element velocity
   int v_eidx[3];
-  v_eidx[0] = GetElementValueIndex("VELOCITY1_X");
-  v_eidx[1] = GetElementValueIndex("VELOCITY1_Y");
-  v_eidx[2] = GetElementValueIndex("VELOCITY1_Z");
+//kg44  v_eidx[0] = GetElementValueIndex("VELOCITY1_X");
+//kg44  v_eidx[1] = GetElementValueIndex("VELOCITY1_Y");
+//kg44  v_eidx[2] = GetElementValueIndex("VELOCITY1_Z");
+  CRFProcess* m_pcs_flow = NULL;
+  if(pcs_type_name.find("FLOW")!=string::npos)
+  {
+    m_pcs_flow = this;
+  }
+  else
+  {
+    m_pcs_flow = PCSGet("GROUNDWATER_FLOW");
+  }
+  v_eidx[0] = m_pcs_flow->GetElementValueIndex("VELOCITY1_X");
+  v_eidx[1] = m_pcs_flow->GetElementValueIndex("VELOCITY1_Y");
+  v_eidx[2] = m_pcs_flow->GetElementValueIndex("VELOCITY1_Z");
   for(i=0;i<3;i++)
   {
     if(v_eidx[i]<0)
     {
-      cout << "Warning in CRFProcess::AssembleParabolicEquationRHSVector - no PCS-VEL data" << endl;
+      cout << v_eidx[i] << i << " Warning in CRFProcess::AssembleParabolicEquationRHSVector - no PCS-VEL data" << endl;
       return;
     }
   }
@@ -7185,17 +7197,17 @@ void CRFProcess::AssembleParabolicEquationRHSVector(CNode*m_nod)//(vector<long>&
   {
     m_ele = m_msh->ele_vector[m_nod->connected_elements[i]];
     m_ele->SetNormalVector(); //OK_BUGFIX
-    v[0] = GetElementValue(m_ele->GetIndex(),v_eidx[0]);
-    v[1] = GetElementValue(m_ele->GetIndex(),v_eidx[1]);
-    v[2] = GetElementValue(m_ele->GetIndex(),v_eidx[2]);
+    v[0] = m_pcs_flow->GetElementValue(m_ele->GetIndex(),v_eidx[0]);
+    v[1] = m_pcs_flow->GetElementValue(m_ele->GetIndex(),v_eidx[1]);
+    v[2] = m_pcs_flow->GetElementValue(m_ele->GetIndex(),v_eidx[2]);
     m_ele->SetMark(false);
     switch(m_ele->GetElementType())
     {
       //------------------------------------------------------------------
       // line elements
       case 1:
-v[1] = GetElementValue(m_ele->GetIndex(),v_eidx[0]);
-v[0] = GetElementValue(m_ele->GetIndex(),v_eidx[1]);
+         v[1] = GetElementValue(m_ele->GetIndex(),v_eidx[0]);
+         v[0] = GetElementValue(m_ele->GetIndex(),v_eidx[1]);
         if(m_nod->connected_elements.size()==1)
         {
           m_ele->SetMark(true);
