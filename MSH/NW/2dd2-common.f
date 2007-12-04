@@ -1159,3 +1159,54 @@ C     == temp
 
       RETURN
       END
+C     -------   FUNCTION THETA   ---------------------------
+C
+C     PURPOSE : COMPUTATION OF ANGLE
+C     LAST MODIFIED : 11 JUN 1990
+C
+      FUNCTION THETA(X0,Y0,X1,Y1,X2,Y2)
+      IMPLICIT REAL*8(A-H,O-Z)
+
+      PI=3.141592653589793D0
+      ERROR=1.0D-15
+      XA=X1-X0
+      YA=Y1-Y0
+      XB=X2-X0
+      YB=Y2-Y0
+      PRDIN=XA*XB+YA*YB
+      DA=DSQRT(XA*XA+YA*YA)
+      DB=DSQRT(XB*XB+YB*YB)
+
+      S=PRDIN/(DA*DB)
+      THETA=DACOS(S)
+*      WRITE(*,*) '[THETA]',THETA
+
+      RETURN
+      END
+
+      FUNCTION THETA2(X0,Y0,X1,Y1,X2,Y2)
+      IMPLICIT REAL*8(A-H,O-Z)
+
+      PI=3.141592653589793D0
+      ERROR=1.0D-15
+      XA=X1-X0
+      YA=Y1-Y0
+      XB=X2-X0
+      YB=Y2-Y0
+      PRDIN=XA*XB+YA*YB
+      PRDEX=XA*YB-XB*YA
+      IF(DABS(PRDIN).LT.ERROR)THEN
+        THETA=PI/2.D0
+      ELSE
+        THETA=DATAN(PRDEX/PRDIN)
+*        WRITE(*,*) '[THETA]',THETA
+        IF(THETA.LT.0)THEN
+          THETA=THETA+PI
+        END IF
+        IF(THETA.GT.PI)THEN
+          THETA=THETA-PI
+        END IF
+        END IF
+      RETURN
+      END
+

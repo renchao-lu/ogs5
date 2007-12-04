@@ -81,6 +81,7 @@ C       作成した領域に含まれる要素に領域番号を設定
 *        CALL OUTEX(50,NELM,MTJ,JAC,IDM,PX,PY,KTJ)
 
    10 CONTINUE
+
 C
 C     OPENED BOUDNARIES
 C
@@ -104,7 +105,7 @@ C
      &               DPP,ISTACK,IONL,KV,IBR,MAP,NODE,KBD,KTE,KTJ,KCM,PD,
      &               IERR)
         IF(IERR.NE.0)RETURN
-*        CALL OUTEX(50,NELM,MTJ,JAC,IDM,PX,PY,KTJ)
+*          CALL OUTEX(200,NELM,MTJ,JAC,IDM,PX,PY,KTJ)
   200 CONTINUE
 
 C     SET POINT DENSITY ON OPEN BOUNDARY
@@ -826,10 +827,11 @@ C     ==args==
 C     ==functions==
       INTEGER IVERT
 C     ==tmp==
-      INTEGER I,J
+      INTEGER I,J,II,II1,II2
       INTEGER MSTK,NBR,JA,JB,IA,IB,IDF,MS,IELM,JELM,KELM,IMIN,JR
       INTEGER NEI(KCM),NEICNT,LASTELM
       REAL*8 DMAXX,DMINX,DMAXY,DMINY,DLMAXX,DLMINX,DLMAXY,DLMINY
+      REAL*8 TH0,TH1,TH2,THETA
       LOGICAL FLAG
 
 C     INITIALIZATION
@@ -852,6 +854,11 @@ C     INITIALIZATION
       IMIN=0
       JR=0
       NEICNT=0
+
+      DLMAXX=DMAX1(PX(IP),PX(IQ))
+      DLMINX=DMIN1(PX(IP),PX(IQ))
+      DLMAXY=DMAX1(PY(IP),PY(IQ))
+      DLMINY=DMIN1(PY(IP),PY(IQ))
 
 *      WRITE(*,*) '[SEARCH] IZ=',IZ,' IP=',IP,' IQ=',IQ
 
@@ -908,6 +915,7 @@ C        IF(MTJ(JELM,3).EQ.IP)GO TO 80
 
 C     点Iの周辺要素の隣接要素で点I+1が見つからなかった場合、さらにその
 C     隣接要素を探す
+*      WRITE(*,*) '[SEARCH] SEARCH NEIGHBOR'
    50 CONTINUE
       IF(MSTK.EQ.0)THEN
         IERR = 203
@@ -923,7 +931,7 @@ C        STOP
         ISTACK(I)=ISTACK(I+1)
    60 CONTINUE
       ISTACK(MSTK+1)=0
-*      WRITE(*,*) '[SEARCH] IELM=',IELM
+*      WRITE(*,*) '[SEARCH] IELM=',IELM,':',(MTJ(IELM,J),J=1,3)
       DO 70 J=1,3
         JA=MOD(J,3)+1
         IA=MTJ(IELM,J)
@@ -933,7 +941,7 @@ C        STOP
         MS=IADRES(IA)*IADRES(IB)
         IF((IDF.EQ.1).AND.(MS.NE.0))GO TO 70
         JELM=JAC(IELM,J)
-*        WRITE(*,*) '[SEARCH] JELM=',JELM
+*        WRITE(*,*) '[SEARCH] JELM=',JELM,':',(MTJ(JELM,K),K=1,3)
         IF(JELM.EQ.0)GO TO 70
         IF(IBR(JELM).NE.0)GO TO 70
         NBR=NBR+1
@@ -942,8 +950,35 @@ C       分岐情報を作成
         IF(MTJ(JELM,1).EQ.IP 
      &      .OR. MTJ(JELM,2).EQ.IP 
      &      .OR. MTJ(JELM,3).EQ.IP)THEN
-          LASTELM=JELM  
-          GO TO 80
+          IF(MTJ(JELM,1).EQ.IP) II=1
+          IF(MTJ(JELM,2).EQ.IP) II=2
+          IF(MTJ(JELM,3).EQ.IP) II=3
+          II1=MTJ(JELM,MOD(II,3)+1)
+          II2=MTJ(JELM,MOD(MOD(II,3)+1,3)+1)
+
+C== add by watanabe 07/08/29
+C         該当三角形と線分PQの交差チェック 
+          TH0 = THETA(PX(IP),PY(IP)
+     &        ,PX(II1),PY(II1),PX(II2),PY(II2))
+          TH1 = THETA(PX(IP),PY(IP)
+     &        ,PX(IQ),PY(IQ),PX(II1),PY(II1))
+          TH2 = THETA(PX(IP),PY(IP)
+     &        ,PX(IQ),PY(IQ),PX(II2),PY(II2))
+
+*          WRITE(*,*) '[SEARCH] ',IP,II1,II2,IQ
+*          WRITE(*,*) '[SEARCH] TH0=',TH0,' TH1=',TH1,' TH2=',TH2
+          IF(TH1.LT.1E-10 .OR. TH2.LT.1E-10)THEN
+C           辺と重なる場合
+            GO TO 70
+          ELSEIF(TH1.GT.TH0 .OR. TH2.GT.TH0)THEN
+C           交差していない場合
+            GO TO 70
+          ELSE
+C           交差している場合
+            LASTELM=JELM  
+            GO TO 80
+          ENDIF
+C==
         ENDIF
 C        IF(MTJ(JELM,1).EQ.IP)GO TO 80
 C        IF(MTJ(JELM,2).EQ.IP)GO TO 80
@@ -966,10 +1001,6 @@ C     利用して計算する
 *      ENDDO
 *      WRITE(*,*) '[SEARCH] POINT HAS BEEN FOUND'
 
-      DLMAXX=DMAX1(PX(IP),PX(IQ))
-      DLMINX=DMIN1(PX(IP),PX(IQ))
-      DLMAXY=DMAX1(PY(IP),PY(IQ))
-      DLMINY=DMIN1(PY(IP),PY(IQ))
       JELM=LASTELM
 
    85 CONTINUE
@@ -1132,6 +1163,8 @@ C       点iと点i+1の間に要素が3つ以上ある場合、関係する三角形群を
 C       点i、i+1を結ぶ
 C       線で領域A,Bの2つに分け、それぞれの領域で三角形分割をし直す。
 C       
+*        CALL OUTEX(200,NELM,MTJ,JAC,IDM,PX,PY,KTJ)
+
         LTJ=LTE+2
         LHN=2*LTE+1
         NPA=0
@@ -1297,7 +1330,6 @@ C     ==temp==
       INTEGER JELM,IED,JED,IV,NEI(KCM),NEICNT
       REAL*8 XS,YS
 
-
 C     INITIALIZATION
       CALL ARRAYSET(IFIX, KTJ, 0)
       CALL ARRAYSET(IADRES, KTJ+3, 0)
@@ -1368,6 +1400,7 @@ C     LOOP OVER EACH POINT AND CONSTRUCT BOUNDARY EDGES
         XS=PX(IP)
         YS=PY(IP)
 *        WRITE(*,*)'[BREAKLINE] IP=',IP,' IQ=',IQ,' I=',I
+
 *        IF(IP.EQ.19.AND.IQ.EQ.18)THEN
 *          CALL OUTEX(100,NELM,MTJ,JAC,IDM,PX,PY,KTJ)
 *        ENDIF
@@ -1385,10 +1418,12 @@ C       点Pを含む三角形を探す
 *        IF(I.EQ.8) THEN
 *          WRITE(*,*) '[BREAKLINE] LOC=',LOC
 *        ENDIF
+        IF(ICHECK(IP).NE.1)THEN
 C       追加点が既存辺に近い場合は、既存辺上に移動
 *        WRITE(*,*) '[BREAKLINE] CALL DISTANCE'
         CALL DISTANCE(NEX,LOC,IP,XS,YS,PX,PY,PD,IBEX,IBNO,
      &              IONL,DPP,MTJ,KBD,KTE,KTJ)
+        ENDIF
         IN=I
         IFI=NEX
         IW=0
@@ -1457,6 +1492,7 @@ C       追加点が既存辺に近い場合は、既存辺上に移動
 *        ENDIF
 
 *        WRITE(*,*) '[BREAKLINE] 40 LOOP - ',JNB(IQ)
+
         CALL NEIGH(IERR,KTJ,KTE,KCM,MTJ,JAC,NER,IQ,NEI,NEICNT)
         DO 40 J=1,NEICNT
           DO 40 K=1,3
@@ -1581,7 +1617,7 @@ C     ==temp==
       XX=0.0D0
       YY=0.0D0
 
-C     要素LOCの3辺のうち、点Pに一番違い辺を探し、距離を計算する
+C     要素LOCの3辺のうち、点Pに一番近い辺を探し、距離を計算する
 C     辺ABと点Pの距離を計算
       CALL MEA(DIS,IA,IB,XP,YP,XX,YY,PX,PY,KTJ)
       IF(DIS.LT.DNEA)THEN

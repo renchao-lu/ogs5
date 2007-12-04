@@ -280,7 +280,9 @@ C==
                   IF(KELM.NE.0) THEN
                     JAC(KELM,L)=MOD(JAC(KELM,L),KTE+1)
                   END IF
-                  JAC(LELM,L)=MOD(JAC(LELM,L),KTE+1)
+                  IF(LELM.NE.0) THEN
+                    JAC(LELM,L)=MOD(JAC(LELM,L),KTE+1)
+                  END IF
    70           CONTINUE
    60         CONTINUE
 
@@ -388,13 +390,19 @@ C
           MA=IADRES(MTJ(L,1))
           MB=IADRES(MTJ(L,2))
           MC=IADRES(MTJ(L,3))
+*          IF(L.EQ.46)THEN
+*            WRITE(*,*) 'L=',L,':',(MTJ(L,K),K=1,3)
+*            WRITE(*,*) 'MABC=',MA,MB,MC
+*          ENDIF
           IF((MA-MB).EQ.1 .OR. (MB-MC).EQ.1 .OR. (MC-MA).EQ.1)THEN
+*            WRITE(*,*) L
             ISTA(L)=1
             IDM(L)=NB
             ICTOP=ICTOP+1
             ICSTACK(ICTOP)=L
           ELSE IF((MA.EQ.NP+1.AND.MC.EQ.2).OR.
      &      (MB.EQ.NP+1.AND.MA.EQ.2).OR.(MC.EQ.NP+1.AND.MB.EQ.2))THEN
+*            WRITE(*,*) L
             ISTA(L)=1
             IDM(L)=NB
             ICTOP=ICTOP+1
@@ -405,11 +413,14 @@ C
         DO 60 J=1,ICTOP
           ITOP=0
           IS=ICSTACK(J)
+*          WRITE(*,*) '[DOMAIN] IS=',IS,':',(MTJ(IS,K),K=1,3)
           MA=IADRES(MTJ(IS,1))
           MB=IADRES(MTJ(IS,2))
           MC=IADRES(MTJ(IS,3))
+*          WRITE(*,*) '[DOMAIN] MABC=',MA,MB,MC
           IA=JAC(IS,1)
           MS=MA*MB
+*          WRITE(*,*) '[DOMAIN] IA=',IA,':',(MTJ(IA,K),K=1,3)
           IF((MA-MB).NE.1.AND.(MA.NE.2.AND.MB.NE.NP+1).AND.
      &                                         ISTA(IA).NE.1)THEN
             ISTA(IA)=1
@@ -418,6 +429,7 @@ C
           END IF
           IB=JAC(IS,2)
           MS=MB*MC
+*          WRITE(*,*) '[DOMAIN] IB=',IB,':',(MTJ(IB,K),K=1,3)
           IF((MB-MC).NE.1.AND.(MB.NE.2.AND.MC.NE.NP+1).AND.
      &                                         ISTA(IB).NE.1)THEN
             ISTA(IB)=1
@@ -426,6 +438,7 @@ C
           END IF
           IC=JAC(IS,3)
           MS=MC*MA
+*          WRITE(*,*) '[DOMAIN] IC=',IC,':',(MTJ(IC,K),K=1,3)
           IF((MC-MA).NE.1.AND.(MC.NE.2.AND.MA.NE.NP+1).AND.
      &                                         ISTA(IC).NE.1)THEN
             ISTA(IC)=1
@@ -434,11 +447,15 @@ C
           END IF
 
    70     IF(ITOP.GT.0)THEN
+*            WRITE(*,*) '[DOMAIN] ITOP=',ITOP
             IT=ISTACK(ITOP)
             ITOP=ITOP-1
             IA=JAC(IT,1)
             IB=JAC(IT,2)
             IC=JAC(IT,3)
+*            WRITE(*,*) '[DOMAIN] IT=',IT,'-',ISTA(IA),ISTA(IB),ISTA(IC)
+*            WRITE(*,*) '[DOMAIN] IT=',IT,':',(MTJ(IT,K),K=1,3)
+*            WRITE(*,*) '[DOMAIN] ',IA,IB,IC
             IF(ISTA(IA).NE.1)THEN
               ISTA(IA)=1
               ITOP=ITOP+1
