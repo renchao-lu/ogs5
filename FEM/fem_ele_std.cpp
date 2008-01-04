@@ -1292,8 +1292,8 @@ last modification:
 **************************************************************************/
 inline double CFiniteElementStd::CalCoefStorage() 
 {
-/*
   int Index = MeshElement->GetIndex();
+/*
   double poro = 0.0;
   double Sw = 0.0;
   double humi = 0.0;
@@ -1323,12 +1323,11 @@ inline double CFiniteElementStd::CalCoefStorage()
       val = 0.0;
       break;
     case M: // Mass transport //SB4200
-    m_cp = cp_vec[pcs->pcs_component_number];//CMCD
+		m_cp = cp_vec[pcs->pcs_component_number];//CMCD
 		val = MediaProp->Porosity(Index, unit,pcs->m_num->ls_theta); //Porosity
         val *= PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
-//		val *= FluidProp->Density();
-//		val *= m_cp->CalcElementDecayRate(Index); // Decay rate
 		val *= m_cp->CalcElementDecayRateNew(Index, pcs); // Decay rate
+		val *= m_cp->CalcElementRetardationFactorNew(Index, unit, pcs); //Retardation Factor
       break;
     case O: // Liquid flow
       break;
@@ -1378,10 +1377,10 @@ inline double CFiniteElementStd::CalCoefContent()
       break;
 	case M:{ // Mass transport //SB4200
 		val = MediaProp->Porosity(Index, unit,pcs->m_num->ls_theta); // Porosity
-//		val *= PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
-//		val *= FluidProp->Density(Index, unit,pcs->m_num->ls_theta); // fluid density
+		/*
 		m_cp = cp_vec[pcs->pcs_component_number]; 
 		val *= m_cp->CalcElementRetardationFactorNew(Index, unit, pcs); // Retardation factor
+		*/
 		// Get saturation change:
 		nodeval0 = PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 0);
 		nodeval1 = PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
@@ -1605,7 +1604,7 @@ shapefct[1] = 0.; //OK
         break;
       case M: // Mass transport
 		    tensor = MediaProp->MassDispersionTensorNew(ip);
-		    mat_fac = 1.0; //MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta); // porosity now included in MassDispersionTensorNew()
+		    mat_fac = 1.0; //MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta); 
             if(PCSGet("RICHARDS_FLOW"))
      		    mat_fac *= PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
 		for(i=0;i<dim*dim;i++) 
@@ -1850,7 +1849,7 @@ last modification:
 inline double CFiniteElementStd::CalCoefAdvection() 
 {
   double val = 0.0;
-  //OK long Index = MeshElement->GetIndex();
+  long Index = MeshElement->GetIndex();
   //----------------------------------------------------------------------
   switch(PcsType){
     default:
@@ -1871,7 +1870,8 @@ inline double CFiniteElementStd::CalCoefAdvection()
       break;
     case M: // Mass transport //SB4200
 		// Get velocity(Gausspoint)/porosity(element)
-	  val = 1.0*time_unit_factor; //FluidProp->Density();
+
+	  val = 1.0*time_unit_factor; //*MediaProp->Porosity(Index, unit,pcs->m_num->ls_theta); // Porosity; 
       break;
     case O: // Liquid flow
       val = 1.0; 

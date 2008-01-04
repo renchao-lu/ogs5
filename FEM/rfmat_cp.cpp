@@ -938,6 +938,7 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double*gp, C
 	 break;
  case 1: /* linear isotherm   */
 	isotherm = isotherm_model_values[0];
+ //  retard = 1. + density_rock*isotherm/porosity;//CMCD moved here
    retard = 1. + (1.-porosity)*density_rock*isotherm/porosity;//CMCD moved here
 	break;
 /* rausgenommen, solange der PRozess linear ist */
