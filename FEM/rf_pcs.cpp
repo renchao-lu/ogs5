@@ -4342,36 +4342,11 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
       // MB
       //if(m_st->conditional && !m_st->river)
       //{
-      //  value = GetConditionalNODValue(m_st, cnodev); //MB
-      //}
 
-	  if(m_st->conditional) 
-         value = GetCouplingNODValue(m_st, cnodev, msh_node); 
-		// GetCouplingNODValue(m_st, cnodev, msh_node); //JOD
-      //--------------------------------------------------------------------
-      // CMCD
-      else if(m_st->analytical)
-      {
-//WW      m_st_group->m_msh = m_msh;
-         value = GetAnalyticalSolution(msh_node,m_st); //WW
-//WW         value = m_st_group->GetAnalyticalSolution(m_st,msh_node,(string)function_name[j]);
-      }
-      //--------------------------------------------------------------------
-      // MB
-      if(cnodev->node_distype==5)       // River Condition
-        value = GetRiverNODValue(cnodev, m_st, msh_node); //MB
-      if(cnodev->node_distype==6)         // CriticalDepth Condition
-        value = GetCriticalDepthNODValue(cnodev, m_st, msh_node); //MB
-      if(cnodev->node_distype == 8)      // NormalDepth Condition JOD
-        value = GetNormalDepthNODValue(m_st, msh_node); //MB        
-	  //if(cnodev->node_distype == 10)      // Philip infiltration JOD
-      if(m_st->dis_type_name.compare("PHILIP")==0) 
-        value = GetPhilipNODValue(cnodev, m_st);  
-	  if(m_st->dis_type_name.compare("GREEN_AMPT")==0) // Green_Ampt infiltration JOD
-        value = GetGreenAmptNODValue(cnodev, m_st, msh_node);     
-//OK	}
-//YD Pls check! Yanliang.
-    }	
+        GetNODValue(value, cnodev, m_st, msh_node);
+
+
+    }	// st_node.size()>0&&(long)st_node.size()>i
    //----------------------------------------------------------------------------------------
    //--------------------------------------------------------------------
    // Please do not move the this section

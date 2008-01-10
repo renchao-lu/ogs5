@@ -102,10 +102,10 @@ class CFiniteElementStd:public CElement
      void CalcOverlandNLTERMSRills(double* H, double* HaaOld, double* swval, double* swold);
      void CalcOverlandNLTERMSChannel(double* H, double* HaaOld, double* swval, double* swold);
      void CalcOverlandCKWR(double* head, double* ckwr, int* iups);
-     void CalcOverlandCKWRatNodes(int i, int j, double* depth, double* ckwr, int* iups);
-	 void CalcOverlandResidual(double* head, double* depth, double* swval, double* swold, double ast, double* residual, double** amat);
-     double CalcOverlandJacobiNodes(int i, int j, double *depth, double *depth_keep, double* Z, double akrw, double axx, double ayy, double** amatij, double* sumjac);
-   	 double** CalcOverlandUpwindedCoefficients(double* ckwr, double axx, double ayy); 
+     void CalcOverlandCKWRatNodes(int i, int j, double* head, double* ckwr, int* iups);
+	 void CalcOverlandResidual(double* head, double* swval, double* swold, double ast, double* residual, double** amat);
+     double CalcOverlandJacobiNodes(int i, int j, double *depth, double *depth_keep, double akrw, double axx, double ayy, double** amatij, double* sumjac);
+   	 void CalcOverlandUpwindedCoefficients(double** amat, double* ckwr, double axx, double ayy); 
      //
      // Gauss value
      void ExtropolateGauss(CRFProcess *m_pcs, const int idof);
@@ -203,7 +203,7 @@ class CFiniteElementStd:public CElement
      void AssembleParabolicEquation(); //OK4104
      void AssembleMixedHyperbolicParabolicEquation(); //SB4200
      void AssembleParabolicEquationNewton();
-	 double** AssembleParabolicEquationNewtonJacobian(double* Haa, double* HaaOld, double* Z, double axx, double ayy, double** amat, double ast, double* swold, double* residual, int* iups);// JOD
+	 void AssembleParabolicEquationNewtonJacobian(double** jacob, double* Haa, double* HaaOld, double axx, double ayy, double** amat, double ast, double* swold, double* residual, int* iups);// JOD
      inline void Assemble_strainCPL(); // Assembly of strain coupling
 	 void AssembleMassMatrix(); // PCH
      // Assembly of RHS by Darcy's gravity term

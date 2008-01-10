@@ -36,6 +36,15 @@ class CSourceTerm
     vector<double> DistBC_WRiverBed;
     vector<double> DistBC_TRiverBed;
     vector<double> DistBC_BRiverBed;
+	
+	vector<double> node_value_vectorA; // JOD
+    vector<double> node_value_vectorB;
+    vector<double> node_value_vectorC;
+    vector<double> node_value_vectorD;
+    vector<double> node_value_vectorE;    	
+    vector<double> node_value_vectorArea;
+
+
     vector<double*> normal2surface; //WW
     vector<double*>pnt_parameter_vector; //OK
     vector<long>element_st_vector;   //YD
@@ -54,12 +63,13 @@ class CSourceTerm
 	// fluid process coupling JOD
 	double coup_leakance, rill_height; 
 	double sorptivity, constant, rainfall, rainfall_duration, moistureDeficit;
-    bool conditional;
+    bool conditional, area_assembly;
     bool river;
   	bool COUPLING_SWITCH;
 	// overland flow  JOD
 	double normaldepth_slope;
-    bool critical_depth;
+    bool critical_depth, channel;
+	double channel_width;
 	// GEO
     string geo_prop_name;
     long geo_node_number;
@@ -110,11 +120,11 @@ class CSourceTerm
     void Write(fstream*);
     void SetDISType(void);
     void SetGEOType(void);
-    void EdgeIntegration(CRFProcess* m_pcs, vector<long>&nodes_on_ply, 
+    void EdgeIntegration(CFEMesh* m_msh, vector<long>&nodes_on_ply, 
                         vector<double>&node_value_vector);
-    void FaceIntegration(CRFProcess* m_pcs, vector<long>&nodes_on_sfc, 
+    void FaceIntegration(CFEMesh* m_msh, vector<long>&nodes_on_sfc, 
                         vector<double>&node_value_vector);
-    void DomainIntegration(CRFProcess* m_pcs, vector<long>&nodes_in_dom, 
+    void DomainIntegration(CFEMesh* m_msh, vector<long>&nodes_in_dom, 
                         vector<double>&node_value_vector);
     // Set Members. WW
     void SetPolyline(CGLPolyline *Polyline) {plyST = Polyline;}  //OK ???
@@ -128,6 +138,15 @@ class CSourceTerm
     double GetNodePastValueReference ( long n, int idx );//CMCD
     void CreateHistoryNodeMemory(NODE_HISTORY* nh );//CMCD
     void DeleteHistoryNodeMemory();//CMCD
+void SetSurfaceNodeVectorConditional(vector<long>&sfc_nod_vector, vector<long>&sfc_nod_vector_cond);
+
+void SetPolylineRiverNodeValueVectors(CGLPolyline* m_ply, int number_of_nodes);
+//void SetPolylineNodeValueVectors(CGLPolyline* m_ply, vector<long>& ply_nod_vector);
+void InterpolatePolylineRiverNodeValueVector(CGLPolyline* m_ply, vector<double>& Distribed, vector<double>& ply_nod_vector);
+void SetNodeValues(vector<long>&nodes, vector<long>&nodes_cond, vector<double>&node_values, const int ShiftInNodeVector);
+void SetNOD(); 
+ios::pos_type ReadDistributionType(ifstream *st_file);
+ios::pos_type CSourceTerm::ReadGeoType(ifstream *st_file);
 };
 
 //========================================================================
@@ -142,6 +161,7 @@ class CSourceTermGroup
     string pcs_type_name; //OK
     string pcs_pv_name; //OK
     CFEMesh* m_msh;
+    CFEMesh* m_msh_cond;
 //WW    vector<CSourceTerm*>st_group_vector; //OK
     //WW double GetConditionalNODValue(int,CSourceTerm*); //OK
     //WW double GetRiverNODValue(int,CSourceTerm*, long msh_node); //MB
@@ -152,7 +172,20 @@ class CSourceTermGroup
     // TRANSFER OF DUAL RICHARDS
     string fct_name; //YD
   private:
-    void SetPLY(CSourceTerm*); //OK
+	void SetPNT(CRFProcess* m_pcs, CSourceTerm* m_st, const int ShiftInNodeVector); // JOD
+	void SetLIN(CRFProcess* m_pcs, CSourceTerm* m_st, const int ShiftInNodeVector);  // JOD
+    void SetPLY(CSourceTerm* m_st, const int ShiftInNodeVector); //OK
+	void SetDMN(CSourceTerm* m_st, const int ShiftInNodeVector);  // JOD
+	void SetSFC(CSourceTerm* m_st, const int ShiftInNodeVector);  // JOD
+	void SetPolylineNodeVector(CGLPolyline* m_ply, vector<long>&ply_nod_vector); // JOD
+	void SetPolylineNodeVectorConditional(CSourceTerm* m_st, CGLPolyline* m_ply, 
+		vector<long>&ply_nod_vector, vector<long>&ply_nod_vector_cond);
+    void SetPolylineNodeValueVector(CSourceTerm* m_st, CGLPolyline* m_ply, vector<long>&ply_nod_vector, vector<long>&ply_nod_vector_cond
+										  , vector<double>&ply_nod_val_vector);
+    void SetSurfaceNodeVector(Surface* m_sfc, vector<long>&sfc_nod_vector); // JOD
+	void SetSurfaceNodeValueVector( CSourceTerm* m_st, Surface* m_sfc, vector<long>&sfc_nod_vector, vector<double>&sfc_nod_val_vector);
+    void AreaAssembly(CSourceTerm* m_st,  vector<long>&ply_nod_vector_cond, 
+									vector<double>& ply_nod_val_vector);
 };
 
 extern CSourceTermGroup* STGetGroup(string pcs_type_name,string pcs_pv_name);
@@ -170,19 +203,20 @@ extern void STGroupsDelete(void);//Haibing;
 extern long aktueller_zeitschritt;
 extern double aktuelle_zeit;
 extern vector<string>analytical_processes;
-extern CSourceTerm* STGet(string,string,string); //OK
+
 
 // WW moved here
 extern  double GetAnalyticalSolution(long node_number, CSourceTerm *m_st);//CMCD, WW
-extern  double GetRiverNODValue(CNodeValue* cnodev,CSourceTerm* m_st, long msh_node);
+extern  void GetRiverNODValue(double& value, CNodeValue* cnodev,CSourceTerm* m_st, long msh_node);
 extern	double GetConditionalNODValue(CSourceTerm* m_st, CNodeValue* cnodev); 
-extern  double GetCriticalDepthNODValue(CNodeValue* cnodev,CSourceTerm*, long msh_node); //MB
-extern  double GetNormalDepthNODValue(CSourceTerm*, long msh_node); //MB JOD
-extern  double GetCouplingNODValue(CSourceTerm* m_st, CNodeValue* cnodev, long msh_node); // JOD
-extern  double GetCouplingNODValueNewton(CSourceTerm* m_st, CNodeValue* cnodev, long msh_node); // JOD
-extern  double GetCouplingNODValuePicard(CSourceTerm* m_st, CNodeValue* cnodev, long msh_node); // JOD
-extern  double GetCouplingNODValueMixed(CSourceTerm* m_st, CNodeValue* cnodev, long msh_node); // JOD
+extern  void GetCriticalDepthNODValue(double& value, CSourceTerm*, long msh_node); //MB
+extern  void GetNormalDepthNODValue(double& value, CSourceTerm*, long msh_node); //MB JOD
+extern  void GetCouplingNODValue(double& value, CSourceTerm* m_st, CNodeValue* cnodev, long msh_node); // JOD
+extern  void GetCouplingNODValueNewton(double& value, CSourceTerm* m_st, CNodeValue* cnodev, long msh_node); // JOD
+extern  void GetCouplingNODValuePicard(double& value, CSourceTerm* m_st, CNodeValue* cnodev, long msh_node); // JOD
+extern  void GetCouplingNODValueMixed(double& value, CSourceTerm* m_st, CNodeValue* cnodev, long msh_node); // JOD
 extern  double GetRelativeCouplingPermeability(CRFProcess* m_pcs, double head, double rillDepth, long msh_node); // JOD
-extern  double GetPhilipNODValue(CNodeValue* cnodev,CSourceTerm* m_st); // JOD
-extern  double GetGreenAmptNODValue(CNodeValue* cnodev,CSourceTerm* m_st, long msh_node); // JOD
+extern  void GetPhilipNODValue(double& value,CSourceTerm* m_st); // JOD
+extern  void GetGreenAmptNODValue(double& value, CSourceTerm* m_st, long msh_node); // JOD
+extern  void GetNODValue(double& value, CNodeValue* cnodev,CSourceTerm* m_st, long msh_node); // JOD
 #endif
