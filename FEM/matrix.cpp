@@ -1458,7 +1458,7 @@ double M5Get(long i, long j)
   {
      if(m_nod_i->connected_nodes[k]==jj)
 	 {          
-		return  jdiag[m_nod_i->m5_index[k]];
+//TEST WW		return  jdiag[m_nod_i->m5_index[k]];
         break;
 	 }
   }   
@@ -1491,7 +1491,7 @@ int M5Set(long i, long j, double e_val)
   {
      if(m_nod_i->connected_nodes[k]==jj)
 	 {          
-		jdiag[m_nod_i->m5_index[k]] = e_val;
+//TEST WW			jdiag[m_nod_i->m5_index[k]] = e_val;
         break;
 	 }
   }   
@@ -1722,7 +1722,7 @@ int M5Inc(long i, long j, double aij_inc)
   {
      if(m_nod_i->connected_nodes[k]==jj)
 	 {          
-		 jdiag[m_nod_i->m5_index[k]] += aij_inc; 
+//TEST WW			 jdiag[m_nod_i->m5_index[k]] += aij_inc; 
          break;
 	 }
   }   
@@ -1879,7 +1879,7 @@ void *M5CreateMatrix(long param1, long param2, long param3)
              col_i = m_msh->nod_vector[index]->connected_nodes[k];
 			 col_ind[count1] = m_msh->nod_vector[col_i]->GetEquationIndex();   
              jj = col_ind[count1] ;
-			 m_msh->nod_vector[index]->m5_index[k]=count1;
+//TEST WW				 m_msh->nod_vector[index]->m5_index[k]=count1;
              if(ii==jj)
                 diag5_i[ii] = count1;
 //TEST WW OUT
@@ -1912,14 +1912,14 @@ void insertionSort1_des(int *numbers,int *numbers1, int array_size)
 	index = numbers[i];
 	index1 = numbers1[i];
 	j = i;
-	  while ((j > 0) && (numbers[j-1] < index))
-		  {
-			  numbers[j] = numbers[j-1];
-			    numbers1[j] = numbers1[j-1];
-				  j = j - 1;
-				    }
-	  numbers[j] = index;
-	  numbers1[j] = index1;
+    while ((j > 0) && (numbers[j-1] < index))
+    {
+       numbers[j] = numbers[j-1];
+       numbers1[j] = numbers1[j-1];
+       j = j - 1;
+    }
+    numbers[j] = index;
+    numbers1[j] = index1;
   }
 }/*End of insertionSort1_des.*/
 /****** Transforming from Modell2 to Modell 6 ITPACKV ********/

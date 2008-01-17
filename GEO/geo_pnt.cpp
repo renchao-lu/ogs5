@@ -38,7 +38,7 @@ CGLPoint::CGLPoint(void)
   circle_pix = 3; //CC
   mesh_density = 100.;
   value = 0.0;
-  property = 0;
+  propert = 0;
   x = 0.0;
   y = 0.0;
   z = 0.0;

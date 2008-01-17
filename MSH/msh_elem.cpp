@@ -544,6 +544,7 @@ void CElem::Read(istream& is, int fileType)
    //fileType=2: gmsh
    //fileType=3: GMS
    //fileType=4: SOL
+   //fileType=5: FLAC 3D. WW
    int idummy, et;
    string buffer, name;
    idummy=et=-1;
@@ -614,6 +615,10 @@ void CElem::Read(istream& is, int fileType)
     //....................................................................
     case 4: // gmsh
       geo_type = 4;
+      break;
+    //....................................................................
+    case 5: // FLAC 3D. 14.01.2008 WW
+      geo_type = 3;
       break;
   }
   //----------------------------------------------------------------------
@@ -705,6 +710,14 @@ void CElem::Read(istream& is, int fileType)
       }
       is >> patch_index;
       break;
+    //....................................................................
+    case 5: // FLAC 3D. 14.01.2008. WW
+      for(int i=0; i<nnodes; i++)
+      {
+        is>>nodes_index[i];
+        nodes_index[i] -= 1;
+      }
+      break;
   }
   is>>ws;
   //----------------------------------------------------------------------
@@ -717,7 +730,7 @@ void CElem::Read(istream& is, int fileType)
   for(int i=0; i<nedges; i++)
   {
     edges[i] = NULL;
-        edges_orientation[i] = 1;
+    edges_orientation[i] = 1;
   }
 }
 
@@ -791,9 +804,10 @@ Task:
 Programing:
 06/2005 WW Implementation
 **************************************************************************/
-void CElem::WriteIndex(ostream& os) const
+void CElem::WriteIndex(ostream &os) const
 {
     int nn;
+    string deli = "  ";
     nn = nnodes; 
 	//Comment for GUI WW if(quadratic) nn = nnodesHQ;
     os<<index<<deli<<patch_index<<deli<<GetName()<<deli;
@@ -807,8 +821,9 @@ Task:
 Programing:
 06/2005 WW Implementation
 **************************************************************************/
-void CElem::WriteIndex_TEC(ostream& os) const
+void CElem::WriteIndex_TEC(ostream &os) const
 {
+    string deli = "  ";
     if(geo_type==1)
        os<<nodes_index[0]+1<<deli<<nodes_index[1]+1<<deli
 	     <<nodes_index[1]+1<<deli<<nodes_index[0]+1;
@@ -829,7 +844,7 @@ void CElem::WriteIndex_TEC(ostream& os) const
        for(int i=0; i<nnodes; i++)
          os<<nodes_index[i]+1<<deli;
 	}
-    os<<endl;
+    os<<'\n';  // GK44 for io performance do not flush buffer with endl...
 }
 /**************************************************************************
 MSHLib-Method: 
@@ -837,8 +852,9 @@ Task:
 Programing:
 06/2005 WW Implementation
 **************************************************************************/
-void CElem::WriteAll(ostream& os) const
+void CElem::WriteAll(ostream &os) const
 {
+    string deli = "  ";
     os<<index<<deli<<patch_index<<deli<<GetName()<<deli;
     //if(index==0) 
     os<<"Index X Y Z: "<<endl;
@@ -857,7 +873,7 @@ Task:
 Programing:
 06/2005 WW Implementation
 **************************************************************************/
-void CElem::WriteNeighbors(ostream& os) const
+void CElem::WriteNeighbors(ostream &os) const
 {
     os<<"Neighbors of "<<index<<endl;
     for(int i=0; i<nfaces; i++)

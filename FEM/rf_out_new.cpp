@@ -341,6 +341,13 @@ bool OUTRead(string file_base_name)
     line_string = line;
     if(line_string.find("#STOP")!=string::npos)
       return true;
+    // Give version in file name 
+    if(line_string.find("#VERSION")!=string::npos) //15.01.2008. WW
+    {
+       file_base_name.append("(V");
+       file_base_name.append(ROCKFLOW_VERSION);
+       file_base_name.append(")");
+    }
     //----------------------------------------------------------------------
     if(line_string.find("#OUTPUT")!=string::npos) { // keyword found
       m_out = new COutput();
@@ -1388,7 +1395,7 @@ double COutput::NODWritePLYDataTEC(int number)
   m_pcs_flow = PCSGetFlow(); //OK
   if(!m_pcs_flow)
   {
-    cout << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data" << endl;
+    // cout << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data" << endl;
     //tec_file << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data " << endl;
     //tec_file.close();
     //return 0.0;
@@ -1403,7 +1410,7 @@ double COutput::NODWritePLYDataTEC(int number)
   {
     if(v_eidx[i]<0)
     {
-      cout << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data" << endl;
+      // cout << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data" << endl;
       //tec_file << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data " << endl;
       //tec_file.close();
     }
@@ -1434,27 +1441,27 @@ double COutput::NODWritePLYDataTEC(int number)
     }
     tec_file << endl;
   }
-    //....................................................................
-    // WW: M specific data
-    if(dm_pcs)  //WW
-    {
-      stress_i[0] = dm_pcs->GetNodeValueIndex("STRESS_XX");      
-      stress_i[1] = dm_pcs->GetNodeValueIndex("STRESS_YY");      
-      stress_i[2] = dm_pcs->GetNodeValueIndex("STRESS_ZZ");      
-      stress_i[3] = dm_pcs->GetNodeValueIndex("STRESS_XY"); 
-      strain_i[0] = dm_pcs->GetNodeValueIndex("STRAIN_XX"); 
-      strain_i[1] = dm_pcs->GetNodeValueIndex("STRAIN_YY");
-      strain_i[2] = dm_pcs->GetNodeValueIndex("STRAIN_ZZ");
-      strain_i[3] = dm_pcs->GetNodeValueIndex("STRAIN_XY");
-	  if(max_dim==2) // 3D
-	  {
-        ns = 6;
-        stress_i[4] = dm_pcs->GetNodeValueIndex("STRESS_XZ");
-        stress_i[5] = dm_pcs->GetNodeValueIndex("STRESS_YZ");        
-        strain_i[4] = dm_pcs->GetNodeValueIndex("STRAIN_XZ");
-        strain_i[5] = dm_pcs->GetNodeValueIndex("STRAIN_YZ");
-	  }
+  //....................................................................
+  // WW: M specific data
+  if(dm_pcs)  //WW
+  {
+    stress_i[0] = dm_pcs->GetNodeValueIndex("STRESS_XX");      
+    stress_i[1] = dm_pcs->GetNodeValueIndex("STRESS_YY");      
+    stress_i[2] = dm_pcs->GetNodeValueIndex("STRESS_ZZ");      
+    stress_i[3] = dm_pcs->GetNodeValueIndex("STRESS_XY"); 
+    strain_i[0] = dm_pcs->GetNodeValueIndex("STRAIN_XX"); 
+    strain_i[1] = dm_pcs->GetNodeValueIndex("STRAIN_YY");
+    strain_i[2] = dm_pcs->GetNodeValueIndex("STRAIN_ZZ");
+    strain_i[3] = dm_pcs->GetNodeValueIndex("STRAIN_XY");
+    if(max_dim==2) // 3D
+ 	{
+      ns = 6;
+      stress_i[4] = dm_pcs->GetNodeValueIndex("STRESS_XZ");
+      stress_i[5] = dm_pcs->GetNodeValueIndex("STRESS_YZ");        
+      strain_i[4] = dm_pcs->GetNodeValueIndex("STRAIN_XZ");
+      strain_i[5] = dm_pcs->GetNodeValueIndex("STRAIN_YZ");
     }
+  }
   //......................................................................
   tec_file << "ZONE T=\"TIME=" << time << "\"" << endl; // , I=" << NodeListLength << ", J=1, K=1, F=POINT" << endl;
   //----------------------------------------------------------------------

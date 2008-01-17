@@ -18,7 +18,10 @@ using namespace std;
 class CTimeDiscretization
 {
   private:
-	double safty_coe;
+   	double safty_coe;
+    double dt_sum; // 17.09.2007 WW
+    double this_stepsize; //17.09.2007
+    friend bool IsSynCron(); //WW
   public:
     string file_base_name;
     // TIM
@@ -54,17 +57,19 @@ class CTimeDiscretization
     double CalcTimeStep();
     double FirstTimeStepEstimate();
     double AdaptiveFirstTimeStepEstimate();
-	double ErrorControlAdaptiveTimeControl();
+    double GetTimeStep() const {return this_stepsize;} //WW
+   	double ErrorControlAdaptiveTimeControl();
     double NeumannTimeControl();
     double SelfAdaptiveTimeControl();
-    bool  CheckTime(double const c_time); //WW
+    double CheckTime(double const c_time, const double dt0); //WW
    // void CheckCourant();//CMCD
 };
 
-extern vector<CTimeDiscretization*>time_vector;
+extern vector<CTimeDiscretization*> time_vector;
 extern bool TIMRead(string);
 extern CTimeDiscretization* TIMGet(string);
 extern void TIMWrite(string);
+extern bool IsSynCron(); //WW
 extern void TIMDelete();
 extern void TIMDelete(string);
 #define TIM_FILE_EXTENSION ".tim"

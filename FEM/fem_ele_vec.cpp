@@ -615,8 +615,11 @@ double CFiniteElementVec::CalDensity()
      if(smat->Density()>0.0)
      {
         Sw = 0.0;
-        for(i = 0; i< nnodes; i++)
-          Sw += shapefct[i]*AuxNodal_S[i];         
+        if(Flow_Type>0&&Flow_Type!=10)
+        {
+          for(i = 0; i< nnodes; i++)
+            Sw += shapefct[i]*AuxNodal_S[i]; 
+        }         
         rho = (1. - porosity) * fabs(smat->Density())+porosity * Sw* density_fluid;
         if(Flow_Type==2)
         {
@@ -1107,8 +1110,8 @@ void CFiniteElementVec::GlobalAssembly_RHS()
   {
      for (i=0;i<dim;i++)
      {
-         for (j=0;j<nnodesHQ;j++)
-            m_dom->eqs->b[eqs_number[j]+NodeShift[i]] -= (*RHS)(i*nnodesHQ+j); 
+       for (j=0;j<nnodesHQ;j++)
+         m_dom->eqs->b[eqs_number[j]+NodeShift[i]] -= (*RHS)(i*nnodesHQ+j); 
      }
 
   }
@@ -1116,8 +1119,8 @@ void CFiniteElementVec::GlobalAssembly_RHS()
   {
     for (i=0;i<dim;i++)
     {
-       for (j=0;j<nnodesHQ;j++)
-          pcs->eqs->b[eqs_number[j]+NodeShift[i]] -= (*RHS)(i*nnodesHQ+j); 
+      for (j=0;j<nnodesHQ;j++)
+        pcs->eqs->b[eqs_number[j]+NodeShift[i]] -= (*RHS)(i*nnodesHQ+j); 
     }
   }
 }

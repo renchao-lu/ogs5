@@ -45,7 +45,9 @@ CTimeDiscretization::CTimeDiscretization(void)
   max_time_step = 1.e10;   //YD 
   min_time_step = 0;   //YD 
   repeat = false; //OK/YD
-  step_current = 0;
+  step_current = 0;		//WW
+  this_stepsize = 0.; //WW
+  dt_sum = .0;			//WW
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -761,12 +763,16 @@ Task:  Check the time of the process in the case: different process has
 Return boolean value: skip or execute the process                                                             
 Programing:
 06/2007 WW Implementation
+09/2007 WW The varable of the time step accumulation as a  member
 **************************************************************************/
-bool CTimeDiscretization::CheckTime(double const c_time) //WW
+double CTimeDiscretization::CheckTime(double const c_time, const double dt0) 
 {
-  bool exe_pcs = false;
   double pcs_step;
-  double time_forward;  
+  double time_forward; 
+  bool ontime = false;
+  this_stepsize = 0.;
+  if((int)time_vector.size()==1)
+    return dt0;
 //WW please check +1
 //OK   double pcs_step = time_step_vector[step_current+1];
   if(step_current>=(int)time_step_vector.size()) //OK
@@ -776,11 +782,43 @@ bool CTimeDiscretization::CheckTime(double const c_time) //WW
   time_forward = c_time - time_current-pcs_step; 
   if(time_forward>0.0||fabs(time_forward)<DBL_MIN)
   {
-    exe_pcs = true;
     time_current += pcs_step;
     step_current++; 
+   	this_stepsize = dt_sum+dt0; 
+    ontime = true;
+    dt_sum = 0.0;
   }
-  if(pcs_step>=time_end)
-    exe_pcs = true;	   
-  return exe_pcs;   
+  if((fabs(pcs_step-time_end)<DBL_MIN)&&fabs(c_time-time_end)<DBL_MIN)
+  {
+    this_stepsize = dt_sum+dt0;
+    ontime = true;
+    dt_sum = 0.0;
+  }
+  if(!ontime)
+    dt_sum += dt0; 
+  if(pcs_step>time_end)   // make output for other processes
+  {
+     dt_sum = 0.0; 
+     this_stepsize = 0.0;
+  }
+  return this_stepsize;   
 }
+/**************************************************************************
+FEMLib-Method: 
+Programing:
+09/2007 WW Implementation
+**************************************************************************/
+bool IsSynCron()
+{
+   int i, count = 0;
+   for(i=0; i<(int)time_vector.size(); i++)
+   {
+      if(time_vector[i]->dt_sum<DBL_MIN) 
+      count++; 
+   }
+   if(count==(int)time_vector.size())
+     return true;
+   else
+     return false;   
+}
+

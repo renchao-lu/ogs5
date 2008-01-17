@@ -79,6 +79,7 @@ MSHLib-Method:
 void CNode::Write(ostream& osm) const
 {
   osm.setf(ios::scientific, ios::floatfield);
+  string deli(" ");
   setw(14);
   osm.precision(14);
   osm<<index<<deli

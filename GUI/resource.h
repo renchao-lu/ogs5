@@ -1289,8 +1289,8 @@
 #define ID_SHADING_COLOREDELEVATION     33080
 #define ID_IMPORT_SHP_NEW               33082
 #define ID_LINEGEN_SURFACE              33083
-#define ID_BUTTON33084                  33084
 #define ID_RUN                          33084
+#define ID_IMPORT_FLAC                  33085
 
 // Next default values for new objects
 // 
@@ -1298,7 +1298,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        175
-#define _APS_NEXT_COMMAND_VALUE         33085
+#define _APS_NEXT_COMMAND_VALUE         33086
 #define _APS_NEXT_CONTROL_VALUE         1259
 #define _APS_NEXT_SYMED_VALUE           104
 #endif

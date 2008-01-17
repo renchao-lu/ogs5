@@ -32,7 +32,11 @@
 int main ( int argc, char *argv[] );
 void ShowSwitches ( void );
 string FileName; //WW
-
+// ------  12.09.2007 WW:
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
+double elapsed_time_mpi; 
+// ------  
+#endif
 /* Definitionen */
 
 /**************************************************************************/
@@ -60,6 +64,8 @@ int main ( int argc, char *argv[] )
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
       printf("Before MPI_Init\n");
       MPI_Init(&argc,&argv);
+      MPI_Barrier (MPI_COMM_WORLD); // 12.09.2007 WW
+      elapsed_time_mpi = -MPI_Wtime(); // 12.09.2007 WW
       MPI_Comm_size(MPI_COMM_WORLD,&size);
       MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
       cout << "After MPI_Init myrank = " << myrank << '\n';
@@ -145,9 +151,9 @@ int main ( int argc, char *argv[] )
   StandardBreak();
 /*--------- MPI Finalize ------------------*/
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
-
-      MPI_Finalize();
-
+   elapsed_time_mpi += MPI_Wtime(); // 12.09.2007 WW
+   cout<<"\n *** Total CPU time of parallel modeling: "<< elapsed_time_mpi<<endl; 
+   MPI_Finalize();
 #endif
 /*--------- MPI Finalize ------------------*/
   return 0;

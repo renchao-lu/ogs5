@@ -63,6 +63,8 @@ class CBoundaryCondition
     // DB
     string db_file_name;
     void ExecuteDataBasePolyline(CGLPolyline*);
+    void SurfaceIntepolation(CRFProcess* m_pcs, vector<long>&nodes_on_sfc, 
+                                vector<double>&node_value_vector); //WW
     // MSH
     long msh_node_number;
     string msh_type_name; //OK4105

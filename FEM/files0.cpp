@@ -107,10 +107,16 @@ void CURWrite(); //OK
 int ReadData ( char *dateiname )
 {
   bool MSH = false;
-
+#if defined(USE_MPI) //WW
+  if(myrank==0)
+  {
+#endif
   cout << endl;
   cout << "---------------------------------------------" << endl;
   cout << "Data input:" << endl;
+#if defined(USE_MPI) //WW
+  }
+#endif
   /* Dateinamen generieren */
 //OK  DATCreateFileNames(dateiname);
   static int datlen;
@@ -147,7 +153,7 @@ int ReadData ( char *dateiname )
 #ifdef CHEMAPP
   CHMRead(dateiname); //MX for CHEMAPP
 #endif
-  NUMRead(dateiname);
+  NUMRead(dateiname);   
   if(FEMRead(dateiname)) //OK4108//WW4107
   {
      CompleteMesh(); //WW

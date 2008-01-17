@@ -592,7 +592,8 @@ double CSolidProperties::Heat_Capacity(double refence)
         val = (*data_Capacity)(0);
         break;
 	  case 3:
-        val=1.38*(273.15+refence)+732.5;
+//WW        val=1.38*(273.15+refence)+732.5;
+        val=1.38*refence+732.5;
         break;
 	  default:
         val = (*data_Capacity)(0);
@@ -3741,6 +3742,7 @@ void CSolidProperties::AddStain_by_Creep(const int ns, double *stress_n,
       fac = 1.5*dt*(*data_Creep)(0)*exp(-(*data_Creep)(2)/(8.314472*(temperature+273.15)))*
                      pow(norn_S, (*data_Creep)(1));
       break;
+
   }
   for(i=0; i<ns; i++)
     dstrain[i] -= fac*stress_n[i]/norn_S;    

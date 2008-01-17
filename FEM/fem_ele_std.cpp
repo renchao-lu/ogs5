@@ -76,6 +76,9 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
     m_dom = NULL;
     eqs_rhs = NULL; //08.2006 WW
     //
+    // 12.12.2007 WW
+    for(i=0; i<4; i++) NodeShift[i] = 0;
+    //
     dynamic = false;
     if(pcs->pcs_type_name_vector.size()&&pcs->pcs_type_name_vector[0].find("DYNAMIC")!=string::npos)
       dynamic = true;
@@ -189,7 +192,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
         idx_vel[0] =  pcs->GetNodeValueIndex("VELOCITY_X1");
         idx_vel[1] =  pcs->GetNodeValueIndex("VELOCITY_Y1");
         idx_vel[2] =  pcs->GetNodeValueIndex("VELOCITY_Z1");
-        if((int)pcs->dof>1) //WW
+        if((int)pcs->dof>1) //Dual porosity model. WW
         {
            idxp20 = pcs->GetNodeValueIndex("PRESSURE2");
            idxp21 = idxp20+1;  
@@ -1190,23 +1193,14 @@ inline double CFiniteElementStd::CalCoefMass()
       val = 1.0; 
       break;
     case R: // Richards
-      /* PG = interpolate(NodalVal1); //12.02.2007.  Important! WW
+      PG = interpolate(NodalVal1); //12.02.2007.  Important! WW
       Sw = MediaProp->SaturationCapillaryPressureFunction(-PG,0); //WW
+ //     Sw = interpolate(NodalVal_Sat);
       rhow = FluidProp->Density(); 
       dSdp = MediaProp->SaturationPressureDependency(Sw, rhow, pcs->m_num->ls_theta);
       poro = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
       // Storativity
-      val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) *Sw;*/
- 	  double NodalVal_dSdp[8];  // JOD, interpolate saturation instead of pressure
-	  for(int i = 0; i < nnodes; i++) {
-         NodalVal_Sat[i] = MediaProp->SaturationCapillaryPressureFunction(-NodalVal1[i],0);
-         rhow = FluidProp->Density(); 
-         NodalVal_dSdp[i] = MediaProp->SaturationPressureDependency( NodalVal_Sat[i], rhow, pcs->m_num->ls_theta);		
-   	  }
-      dSdp = interpolate(NodalVal_dSdp); 
-	  poro = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
-	  Sw =  interpolate(NodalVal_Sat);
-	  val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) *Sw;
+      val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) *Sw;
 
       // Fluid compressibility
       if(rhow>0.0)
@@ -1308,15 +1302,6 @@ last modification:
 inline double CFiniteElementStd::CalCoefStorage() 
 {
   int Index = MeshElement->GetIndex();
-/*
-  double poro = 0.0;
-  double Sw = 0.0;
-  double humi = 0.0;
-  double rhov = 0.0;
-  double rhow = 0.0; 
-  double S_P = 0.0;
-  double retard, lambda, dS;
-*/
   double val = 0.0;
   CompProperties *m_cp =NULL; //CMCD
   //CompProperties *m_cp = cp_vec[pcs->pcs_component_number]; //SB4200
@@ -1584,15 +1569,15 @@ shapefct[1] = 0.; //OK
       case C: // Componental flow
         break;
       case H: // heat transport
-		if(SolidProp->GetCapacityModel()==2) // Boiling model. DECOVALEX THM2
-		{
-            TG = interpolate(NodalVal1); 
-            for(i=0; i<dim*dim; i++) mat[i] = 0.0; 
-			for(i=0; i<dim; i++) 
-	           mat[i*dim+i] = SolidProp->Heat_Conductivity(TG);
-		}
+        if(SolidProp->GetCapacityModel()==2) // Boiling model. DECOVALEX THM2
+        {
+           TG = interpolate(NodalVal1); 
+           for(i=0; i<dim*dim; i++) mat[i] = 0.0; 
+           for(i=0; i<dim; i++) 
+             mat[i*dim+i] = SolidProp->Heat_Conductivity(TG);
+        }
         else if(SolidProp->GetCapacityModel()==3) // DECOVALEX THM1 
-		{
+        {
             // WW
             PG = interpolate(NodalValC1); 
             if(cpl_pcs->type!=1212)
@@ -1600,10 +1585,11 @@ shapefct[1] = 0.; //OK
             Sw = MediaProp->SaturationCapillaryPressureFunction(PG,0); 
             for(i=0; i<dim*dim; i++) mat[i] = 0.0; 
             mat_fac = SolidProp->Heat_Conductivity(Sw); 
-			for(i=0; i<dim; i++) 
-	           mat[i*dim+i] = mat_fac; 
-		}  
+            for(i=0; i<dim; i++) 
+              mat[i*dim+i] = mat_fac; 
+        }  
         else if(SolidProp->GetCapacityModel()==1 && MediaProp->heat_diffusion_model == 273){
+//        else if(SolidProp->GetCapacityModel()==1){
           tensor = MediaProp->HeatConductivityTensor(Index);
           for(i=0; i<dim*dim; i++) 
             mat[i] = tensor[i]; //mat[i*dim+i] = tensor[i];
@@ -1618,11 +1604,11 @@ shapefct[1] = 0.; //OK
        }      
         break;
       case M: // Mass transport
-		    tensor = MediaProp->MassDispersionTensorNew(ip);
-		    mat_fac = 1.0; //MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta); 
-            if(PCSGet("RICHARDS_FLOW"))
-     		    mat_fac *= PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
-		for(i=0;i<dim*dim;i++) 
+        tensor = MediaProp->MassDispersionTensorNew(ip);
+        mat_fac = 1.0; //MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta); // porosity now included in MassDispersionTensorNew()
+        if(PCSGet("RICHARDS_FLOW"))
+           mat_fac *= PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
+        for(i=0;i<dim*dim;i++) 
           mat[i] = tensor[i]*mat_fac*time_unit_factor; 
         break;
       //------------------------------------------------------------------
@@ -1671,21 +1657,12 @@ shapefct[1] = 0.; //OK
       //------------------------------------------------------------------
       case R: // Richards flow
 		// The following line only applies when Fluid Momentum is on
-        /*PG = interpolate(NodalVal1); //05.01.07 WW
+        PG = interpolate(NodalVal1); //05.01.07 WW
         Sw = MediaProp->SaturationCapillaryPressureFunction(-PG,0); //05.01.07 WW
 
         tensor = MediaProp->PermeabilityTensor(Index);
         mat_fac = time_unit_factor* MediaProp->PermeabilitySaturationFunction(Sw,0) \
-                / FluidProp->Viscosity(); */
-		tensor = MediaProp->PermeabilityTensor(Index);
-		double NodalVal_Perm[8];  // JOD, interpolate saturation, permeability instead of pressure
-		for( i = 0; i < nnodes; i++) {
-           NodalVal_Sat[i] = MediaProp->SaturationCapillaryPressureFunction(-NodalVal1[i],0); 
-           NodalVal_Perm[i] = MediaProp->PermeabilitySaturationFunction( NodalVal_Sat[i],0);
-		}
-		mat_fac = interpolate(NodalVal_Perm);
-        mat_fac *= time_unit_factor / FluidProp->Viscosity();
-	
+                / FluidProp->Viscosity();
         if(MediaProp->permeability_stress_mode>1) // Modified LBNL model WW
         {
            if(cpl_pcs)
@@ -1873,7 +1850,7 @@ last modification:
 inline double CFiniteElementStd::CalCoefAdvection() 
 {
   double val = 0.0;
-  long Index = MeshElement->GetIndex();
+  //OK long Index = MeshElement->GetIndex();
   //----------------------------------------------------------------------
   switch(PcsType){
     default:
@@ -1894,7 +1871,6 @@ inline double CFiniteElementStd::CalCoefAdvection()
       break;
     case M: // Mass transport //SB4200
 		// Get velocity(Gausspoint)/porosity(element)
-
 	  val = 1.0*time_unit_factor; //*MediaProp->Porosity(Index, unit,pcs->m_num->ls_theta); // Porosity; 
       break;
     case O: // Liquid flow
@@ -2043,9 +2019,7 @@ void CFiniteElementStd::CalcMass2()
            for (i = 0; i < nnodes; i++)
            {
              for (j = 0; j < nnodes; j++)
-             {
                 (*Mass2)(i+in*nnodes,j+jn*nnodes) += mat_fac *shapefct[i]*shapefct[j];
-             }
            }
          }
       }
@@ -2253,8 +2227,6 @@ void CFiniteElementStd::CalcContent()
              (*Content)(i,j) += fkt *shapefct[i]*shapefct[j];
 
   }
-  //TEST OUTPUT
-//  if(Index == 195){cout << "COntent Matrix: " << endl; Content->Write(); }
 }
 
 /***************************************************************************
@@ -2987,7 +2959,7 @@ void  CFiniteElementStd::Cal_Velocity()
          for(j=0; j<nnodes; j++)         
             vel[i] += NodalVal[j]*dshapefct[i*nnodes+j];
 //			 vel[i] += fabs(NodalVal[j])*dshapefct[i*nnodes+j];
-	  }     
+      }     
       if(PcsType==V)
       {
          for (i = 0; i < dim; i++)
@@ -2996,15 +2968,15 @@ void  CFiniteElementStd::Cal_Velocity()
            for(j=0; j<nnodes; j++)         
              vel_g[i] += NodalVal1[j]*dshapefct[i*nnodes+j];
          }  
-	  }     
+      }     
       // Gravity term
       if(k==2&&(!HEAD_Flag))
-	  {
+      {
          coef  =  gravity_constant*FluidProp->Density();
          if(dim==3&&ele_dim==2)
-		 {
+         {
             for(i=0; i<dim; i++)
-		    { 
+            { 
                for(j=0; j<ele_dim; j++)     
                {     
                   vel[i] += coef*(*MeshElement->tranform_tensor)(i, k)
@@ -3014,9 +2986,9 @@ void  CFiniteElementStd::Cal_Velocity()
                               *(*MeshElement->tranform_tensor)(2, k);
                   
                }   
-		    }
-		 } // To be correctted   
-		 else
+            }
+         } // To be correctted   
+         else
          {
             if(PcsType==V)
             {
@@ -3026,7 +2998,7 @@ void  CFiniteElementStd::Cal_Velocity()
             else
                vel[dim-1] += coef;
          }
-	  }
+      }
       for (i = 0; i < dim; i++)
       {
          for(j=0; j<dim; j++)
@@ -3956,12 +3928,12 @@ void CFiniteElementStd::Assembly()
   if(cpl_pcs) // ?2WW: flags are necessary
   {
     for(i=0;i<nnodes;i++)
-	{
+    {
       NodalValC[i] = cpl_pcs->GetNodeValue(nodes[i],idx_c0); 
       NodalValC1[i] = cpl_pcs->GetNodeValue(nodes[i],idx_c1); 
       if(cpl_pcs->type==1212)
         NodalVal_p2[i] = cpl_pcs->GetNodeValue(nodes[i],idx_c1+2);        
-	}
+    }
   }
   //======================================================================
   switch(PcsType){
@@ -4053,6 +4025,7 @@ void CFiniteElementStd::Assembly()
       cout << "Fatal error: No valid PCS type" << endl;
       break;
   }
+
   //----------------------------------------------------------------------
   // Irregulaere Knoten eliminieren 
   //----------------------------------------------------------------------
@@ -4068,15 +4041,15 @@ void CFiniteElementStd::Assembly()
     (*pcs->matrix_file) << "---Laplacian matrix: " << endl;
     Laplace->Write(*pcs->matrix_file);
     if(Advection)
-	{
+    {
       (*pcs->matrix_file) << "---Advective matrix: " << endl;//CMCD
       Advection->Write(*pcs->matrix_file);
-	}
+    }
     if(StrainCoupling)
-	{
+    {
       (*pcs->matrix_file) << "---Strain couping matrix: " << endl;
       StrainCoupling->Write(*pcs->matrix_file);
-	}    
+    }    
     (*pcs->matrix_file) << "---RHS: " <<endl;
     RHS->Write(*pcs->matrix_file);
     (*pcs->matrix_file) <<endl;
@@ -4461,9 +4434,10 @@ void CFiniteElementStd::CalcNodeMatParatemer()
      // 
      if(i>nnodes) continue;
      ComputeShapefct(1);
+     //PG = interpolate(NodalVal1);     
      //
-    if((pcs->additioanl2ndvar_print>0)&&(pcs->additioanl2ndvar_print<3))
-    {
+     if((pcs->additioanl2ndvar_print>0)&&(pcs->additioanl2ndvar_print<3))
+     {
        double* tensor = MediaProp->PermeabilityTensor(Index);
        if( MediaProp->permeability_stress_mode==2||MediaProp->permeability_stress_mode==3) // Modified LBNL model
        {

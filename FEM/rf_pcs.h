@@ -113,39 +113,41 @@ class CRFProcess {
   //----------------------------------------------------------------------
   // Properties
   private:
-      void VariableStaticProblem();
-      void VariableDynamics();      
-	  bool compute_domain_face_normal; //WW
+    void VariableStaticProblem();
+    void VariableDynamics();      
+    bool compute_domain_face_normal; //WW
   protected: //WW
     friend class FiniteElement::CFiniteElementStd;
     friend class FiniteElement::CFiniteElementVec;
     friend class FiniteElement::ElementValue;
-	friend class ::CSourceTermGroup;
-	// Assembler
-	CFiniteElementStd *fem;   
+    friend class ::CSourceTermGroup; 
+    // Assembler
+    CFiniteElementStd *fem;   
     //
     int dof;   //WW    
-	long orig_size; // Size of source term nodes 
-	// ELE
+    long orig_size; // Size of source term nodes 
+    // ELE
     std::vector<FiniteElement::ElementMatrix*> Ele_Matrices;
-	// Storage type for all element matrices and vectors
+    // Storage type for all element matrices and vectors
     // Case:  
     // 0. Do not keep them in the memory
     // 1. Keep them to vector Ele_Matrices
     int Memory_Type;
-	//....................................................................
+    //....................................................................
     int additioanl2ndvar_print; //WW
     // TIM
-	friend class CTimeDiscretization;      
+    friend class CTimeDiscretization;      
     CTimeDiscretization *Tim;    //time
-	// Time unit factor 
-	double time_unit_factor; 
+    // Time unit factor 
+    double time_unit_factor; 
     int NumDeactivated_SubDomains;
-	int Deactivated_SubDomain[20];
+    int *Deactivated_SubDomain;
     // Position of unkowns from different DOFs in the system equation  
-	//....................................................................
-	// OUT
-	// Element matrices output
+    //....................................................................
+    // OUT
+    // Write indices of the nodes with boundary conditons 
+    bool write_boundary_condition; //15.01.2008. WW 
+    // Element matrices output
   public: //OK
     bool Write_Matrix;
   protected: //WW
@@ -163,8 +165,8 @@ class CRFProcess {
     inline void  WriteRHS_of_ST_NeumannBC();  
     inline void  ReadRHS_of_ST_NeumannBC();  
     friend bool PCSRead(string);
-	//....................................................................
-	// 1-GEO
+    //....................................................................
+    // 1-GEO
   public:
     string geo_type; //OK
     string geo_type_name; //OK
@@ -237,6 +239,7 @@ class CRFProcess {
     // 5-BC
     void CreateBCGroup();
     void SetBC(); //OK
+    void WriteBC(); //15.01.2008. WW
     //....................................................................
     // 6-ST
     void CreateSTGroup();
@@ -467,8 +470,8 @@ class CRFProcess {
     bool m_bCheck; //OK
     void EQSDelete(); //OK
   private:
-      int continuum;
-	  bool continuum_ic;
+    int continuum;
+    bool continuum_ic;
 }; 
 
 //========================================================================

@@ -147,7 +147,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../gui;../fem;../lib;../msh;../msh/tm;../msh/delaunay;../geo;../;../gui/splitter;../gui/iso;..\MSH\NW"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;MFC;_FEMPCHDEBUG_;;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;MFC;_FEMPCHDEBUG_;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK"
 				RuntimeLibrary="3"
 				DisableLanguageExtensions="false"
 				UsePrecompiledHeader="2"

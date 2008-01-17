@@ -23,7 +23,7 @@ using namespace std;
 #include "gs_project.h"
 
 vector<CPARDomain*>dom_vector;
-vector<double> node_connected_doms; //This will be removed after sparse class is finished WW
+vector<long> node_connected_doms; //This will be removed after sparse class is finished WW
 
 //---- MPI Parallel --------------
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
@@ -111,7 +111,67 @@ void DOMRead(string file_base_name)
   cout << (int)dom_vector.size() << " domains" << endl;
   //----------------------------------------------------------------------
 }
-
+/**************************************************************************
+FEMLib-Method: 
+Task: 
+Programing:
+09/2007 WW Implementation
+**************************************************************************/
+void CountDoms2Nodes(CRFProcess *m_pcs)
+{
+  int i,k;
+  long j, n_index=0;
+  CPARDomain *m_dom = NULL;
+  CNode *anode = NULL;
+  CElem *elem = NULL;
+  CFEMesh *a_msh = m_pcs->m_msh; 
+  
+  //Average of nodal Neumann BCs contributed by nodes from different domains
+  bool	quad = false;
+  quad = false;
+  if(m_pcs->type==4||m_pcs->type==41)	quad = true;
+  long nsize = m_pcs->m_msh->GetNodesNumber(quad);
+  node_connected_doms.resize(nsize);
+    
+  for(j=0; j<nsize; j++)
+    node_connected_doms[j] = 0;
+  for(i=0;i<(int)dom_vector.size();i++)
+  {
+     m_dom = dom_vector[i];
+     for(j=0; j<nsize; j++)
+       a_msh->nod_vector[j]->SetMark(false);
+     for(j=0;j<(long)m_dom->elements.size();j++)
+     {  
+        elem = a_msh->ele_vector[m_dom->elements[j]];
+        if(elem->GetMark())
+        {
+           for(k=0; k<elem->GetNodesNumber(quad); k++)
+           {
+              n_index = elem->GetNodeIndex(k);
+			  anode = elem->GetNode(k); 
+              if(!anode->GetMark())
+              {
+                 node_connected_doms[n_index] += 1;
+                 anode->SetMark(true);
+              }
+           }
+        }
+     }		  
+  }
+  //
+  for(j=0; j<(long)a_msh->ele_vector.size(); j++)
+  { 
+     elem = a_msh->ele_vector[j]; 
+     if(elem->GetMark())
+     {
+       for(k=0; k<elem->GetNodesNumber(quad); k++)
+       {
+		 anode = elem->GetNode(k); 
+         anode->SetMark(true);
+       }        
+     }
+  }  
+}
 /**************************************************************************
 FEMLib-Method: 
 Task: 
@@ -119,6 +179,7 @@ Programing:
 07/2004 OK Implementation
 05/2006 WW Fix bugs and add the case of DOF>1 
 07/2006 WW Find nodes of all neighbors of each node 
+09/2007 WW Check the nodes whether it is belong to the deactivated elements
 **************************************************************************/
 void DOMCreate(CRFProcess *m_pcs)
 {
@@ -128,9 +189,9 @@ void DOMCreate(CRFProcess *m_pcs)
   CPARDomain *m_dom = NULL;
   bool quadr = false; //WW  
   int i;
-  long j; 
   if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
     quadr = true;
+
   //----------------------------------------------------------------------
   // Create domain nodes
   cout << "->Create DOM" << endl;
@@ -143,7 +204,7 @@ void DOMCreate(CRFProcess *m_pcs)
 
   //----------------------------------------------------------------------
   // Create domain nodes
-  cout << "Create domain nodes" << endl;
+  cout << "  Create domain nodes" << endl;
   for(i=0;i<no_domains;i++){
     m_dom = dom_vector[i];
     m_dom->m_msh = m_pcs->m_msh;
@@ -156,23 +217,26 @@ void DOMCreate(CRFProcess *m_pcs)
   for(i=0;i<no_domains;i++){
     m_dom = dom_vector[i];
     cout << "    Domain:" << m_dom->ID << endl;
-    m_dom->CreateElements(quadr);
+    m_dom->CreateElements(quadr); 
   }
 
-  //Average of nodal Neumann BCs contributed by nodes from different domains
+  // For find nodes connected to node WW
+  long j;
   long nsize = m_pcs->m_msh->GetNodesNumber(true);
-  node_connected_doms.resize(nsize);
+  //node_connected_doms.resize(nsize);
   for(j=0; j<nsize; j++)
-    node_connected_doms[j] = 0.0;
+    node_connected_doms[j] = 0;
   for(i=0;i<(int)dom_vector.size();i++)
   {
      m_dom = dom_vector[i];
      for(j=0;j<(long)m_dom->nodes.size();j++)
-       node_connected_doms[m_dom->nodes[j]] += 1.0;
+       node_connected_doms[m_dom->nodes[j]] += 1;
   }
   // Find nodes of all neighbors of each node. // WW
   // Local topology. WW
+  cout << "  Find nodes on borders" << endl;
   FindNodesOnInterface(m_pcs->m_msh, quadr);
+  cout << "  Find the connected nodes for each node" << endl;
 #ifndef USE_MPI //WW
   for(i=0;i<no_domains;i++){
 #else
@@ -362,6 +426,7 @@ Task:
 Programing:
 07/2004 OK Implementation
 05/2006 WW Fix bugs and add the case of DOF>1 
+09/2007 WW Improve the extremly slow performance of the old code
 **************************************************************************/
 void CPARDomain::CreateElements(const bool quadr)
 {
@@ -372,10 +437,19 @@ void CPARDomain::CreateElements(const bool quadr)
   long i,k;
   int j, nNodes, nNodesHQ;
   long *elem_nodes=NULL;
-  bool done = false;
   Mesh_Group::CElem* m_ele = NULL;
   Mesh_Group::CNode* m_nod = NULL;
-
+  //*** Buffer for acceleration. 14.09.2007 WW:
+  node_connected_doms.resize((long)m_msh->nod_vector.size()); // As long buffer  
+  for(k=0; k<(long)m_msh->nod_vector.size(); k++)
+    node_connected_doms[k] = -1;
+  for(k=0; k<(long)nodes.size(); k++)
+  {
+     i = nodes[k];
+     m_nod = m_msh->nod_vector[i];
+     node_connected_doms[m_nod->GetIndex()] = k;
+  }
+  //***   
   //----------------------------------------------------------------------
   for(i=0;i<(long)elements.size();i++){
     if(elements[i]>(long)m_msh->ele_vector.size()){
@@ -391,33 +465,21 @@ void CPARDomain::CreateElements(const bool quadr)
     for(j=0;j<nNodes;j++)
     {
       m_nod = m_ele->GetNode(j);
-      for(k=0; k<(long)nodes.size(); k++)
-      {
-        if(nodes[k]==m_nod->GetIndex())
-        {
-           elem_nodes[j] = k;
-           break;
-        }
-      }
+      elem_nodes[j] = node_connected_doms[m_nod->GetIndex()]; //14.09.2007 WW
     }
     //------------------WW 
     if(!quadr) continue; 
     for(j=nNodes;j<nNodesHQ;j++)
     {
-      done = false;
       m_nod = m_ele->GetNode(j);
-      for(k=nnodes_dom; k<(long)nodes.size(); k++)
+      //14.09.2007 WW
+      k = m_nod->GetIndex(); 
+      if(node_connected_doms[k]>-1)
+         elem_nodes[j] = node_connected_doms[k];
+	  else
       {
-        if(nodes[k]==m_nod->GetIndex())
-        {
-           elem_nodes[j] = k;
-           done = true;
-           break;
-        }
-      }
-      if(!done)
-      {
-          elem_nodes[j] = (long)nodes.size();         
+          elem_nodes[j] = (long)nodes.size();  
+          node_connected_doms[k] = elem_nodes[j];
           nodes.push_back(m_nod->GetIndex());
       }     
     }
@@ -435,6 +497,7 @@ MSHLib-Method:
 Task:
 Programing:
 06/2006 WW Implementation
+09/2007 WW Improve computational efficiency
 **************************************************************************/
 void CPARDomain::NodeConnectedNodes()
 {
@@ -442,6 +505,17 @@ void CPARDomain::NodeConnectedNodes()
   long i, j, long_buff;
   CNode* m_nod = NULL;
   vector<long> nodes2node;
+  // node_connected_doms as buffer to accelarate the computation
+  // 14.09.2007 WW 
+  for(i=0; i<(long)m_msh->nod_vector.size(); i++)
+    node_connected_doms[i] = -1;
+  for(j=0; j<(long)nodes.size(); j++)
+  {
+     i = nodes[j];
+     m_nod = m_msh->nod_vector[i];
+     node_connected_doms[m_nod->GetIndex()] = j;
+  }
+
   //----------------------------------------------------------------------
   for(i=0;i<(long)nodes.size();i++)
   {
@@ -450,11 +524,9 @@ void CPARDomain::NodeConnectedNodes()
      for(k=0; k<(int)m_nod->connected_nodes.size(); k++)
 	 { 
          long_buff = m_nod->connected_nodes[k];
-         for(j=0;j<(long)nodes.size();j++)
-		 {
-            if(long_buff==nodes[j])
-               nodes2node.push_back(j);
-		 }         
+         j = node_connected_doms[long_buff]; 
+         if(j>-1)
+            nodes2node.push_back(j);
      }
      i_buff = (int)nodes2node.size();
      long  *nodes_to_node = new long[i_buff];

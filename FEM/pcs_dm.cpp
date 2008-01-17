@@ -149,37 +149,26 @@ void CRFProcessDeformation::Initialization()
      return;
    InitialMBuffer();
    InitGauss();
-   //
-   /*
-   if(H_Process||MH_Process)
+   ////////////////////////////////////
+
+#ifdef DECOVALEX
+   // DECOVALEX test 
+   long i;
+   int idv0=0, idv1=0;
+   CRFProcess *h_pcs = NULL;
+   h_pcs = fem_dm->h_pcs;
+   if(h_pcs->type==14) // Richards
    {
-      // Initial pressure
-      // j =  fem_dm->idx_P0;
-      h_pcs = fem_dm->h_pcs;
-      int idxP = -1;
-      if(fem_dm->Flow_Type<=1)
-      {
-          idxP = fem_dm->idx_P1;
-          if(fem_dm->dynamic)
-            idxP = fem_dm->idx_P;
-      }
-      else
-          idxP = fem_dm->idx_P2;
+     idv0 = h_pcs->GetNodeValueIndex("PRESSURE_I");
+     idv1 = h_pcs->GetNodeValueIndex("PRESSURE1");
       for (i = 0; i < m_msh->GetNodesNumber(false); i++)
-	  {
-//TEST for Richard
-//		  if(GetNodeValue(i,idxP)>0.0) // Test for Richard flow
-             SetNodeValue(i,j, h_pcs->GetNodeValue(i,idxP));
-//		  else
-//             SetNodeValue(i,j, 0.0);
-	  }
-   } 
-   */
+        h_pcs->SetNodeValue(i,idv0, h_pcs->GetNodeValue(i,idv1));  
+   }
+#endif
+   ///////////////////////////
    if(fem_dm->dynamic)
       CalcBC_or_SecondaryVariable_Dynamics();
 
-   if(num_type_name.find("EXCAVATION")!=string::npos)
-     ExcavationSimulating();
   //TEST
   //   De_ActivateElement(false);
 
@@ -246,7 +235,7 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
   DisplayMsg("\n->Process: "); DisplayLong(pcs_number); 
   DisplayMsg(", "); cout << pcs_type_name << endl; 
 
-  clock_t start, finish;
+  clock_t dm_time;
 
   //-------------------------------------------------------
   // Controls for Newton-Raphson steps 
@@ -272,11 +261,12 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
   // 
   string delim = " | ";
   //----------------------------------------------------------
-  start = clock();
+  dm_time = clock();
   // 
   m_msh->SwitchOnQuadraticNodes(true);
   //
-  if(num_type_name.find("EXCAVATION")!=0)
+  //TEST if(num_type_name.find("EXCAVATION")!=0)
+  if(NumDeactivated_SubDomains>0||num_type_name.find("EXCAVATION")!=string::npos)
      CheckMarkedElement();
   // MarkNodesForGlobalAssembly();
 
@@ -571,10 +561,10 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
   if(enhanced_strain_dm>0)
      Trace_Discontinuity();
   //
-  finish = clock();
+  dm_time -= clock();
  
   cout<<"CPU time elapsed in deformation process: "
-      <<(double)(finish - start) / CLOCKS_PER_SEC<<"s"<<endl;
+      <<(double)dm_time / CLOCKS_PER_SEC<<"s"<<endl;
   cout<<"=================================================== "<<endl;         
 
   // Recovery the old solution.  Temp --> u_n	for flow proccess
@@ -600,9 +590,8 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
 
  Programmaenderungen:
    01/2003  WW  Erste Version
-
+   09/2007  WW  Parallelize the released load for the excavation modeling
    letzte Aenderung:
-
 **************************************************************************/
 void CRFProcessDeformation::InitGauss(void) 
 {
@@ -819,11 +808,80 @@ void CRFProcessDeformation::InitGauss(void)
 ////////////////////////////////////////////////////////
 		 }
     }
-//2. Closure simulation
+   // Reload the stress results of the previous simulation
    if(reload>=2) ReadGaussPointStress();
-   Extropolation_GaussValue(); 
+   // For excavation simulation. Moved here on 05.09.2007 WW
+   if (num_type_name.find("EXCAVATION")!=0)
+     Extropolation_GaussValue(); 
+   // 
 }
+/*************************************************************************
+ROCKFLOW - Function: Calculations of initial stress and released load 
+Programming: 
+ 09/2007 WW 
+**************************************************************************/
+void CRFProcessDeformation::CreateInitialState4Excavation()
+{
+  long i;
+  int j; 
+  int Idx_Strain[9];   
+  int NS =4;
+  if (num_type_name.find("EXCAVATION")!=0) 
+    return;     
+  //
+  Idx_Strain[0] = GetNodeValueIndex("STRAIN_XX");
+  Idx_Strain[1] = GetNodeValueIndex("STRAIN_YY");
+  Idx_Strain[2] = GetNodeValueIndex("STRAIN_ZZ");
+  Idx_Strain[3] = GetNodeValueIndex("STRAIN_XY");
 
+  if(problem_dimension_dm==3)
+  {
+     NS = 6;
+     Idx_Strain[4] = GetNodeValueIndex("STRAIN_XZ");
+     Idx_Strain[5] = GetNodeValueIndex("STRAIN_YZ");
+  }
+  Idx_Strain[NS] = GetNodeValueIndex("STRAIN_PLS");
+  // For excavation simulation. Moved here on 05.09.2007 WW
+  if(reload<2) 
+  {
+    GravityForce = true;
+    cout<<"\n ***Excavation simulation: 1. Establish initial stress profile..."<<endl;
+    counter = 0;
+    Execute();
+  }
+  else
+    UpdateInitialStress(true); // s0 = 0
+  //   
+  Extropolation_GaussValue(); 
+  // 
+  cout<<"\n ***Excavation simulation: 2. Excavating..."<<endl;
+  counter = 0;
+  InitializeNewtonSteps(0);
+  InitializeNewtonSteps(2);
+  GravityForce = false;
+  //
+  ReleaseLoadingByExcavation();
+  //GravityForce = true;	
+  UpdateInitialStress(false); // s-->s0
+  m_msh->ConnectedElements2Node();
+  for (i = 0; i < m_msh->GetNodesNumber(false); i++)
+  {
+    for(j=0; j<NS+1; j++)
+      SetNodeValue(i, Idx_Strain[j], 0.0);
+  }
+  if(dom_vector.size()>0)
+  {
+    bc_node_value_in_dom.clear();
+    bc_local_index_in_dom.clear();
+    rank_bc_node_value_in_dom.clear();
+    st_node_value_in_dom.clear();
+    st_local_index_in_dom.clear();
+    rank_st_node_value_in_dom.clear();
+    CountDoms2Nodes(this);
+    SetBoundaryConditionSubDomain();
+  }
+  if(reload==-1000) reload = 1;
+}
 
 /*************************************************************************
 ROCKFLOW - Function: CRFProcess::InitializeStress_EachCouplingStep()
@@ -1994,20 +2052,18 @@ void CRFProcessDeformation:: GlobalAssembly()
            RecoverSolution(2);  // p_i-->p_0
      }
      //----------------------------------------------------------------------
-
      //
-	 
-	 //	 {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
-
+	    // {		MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
      // Apply Neumann BC
      IncorporateSourceTerms();
      // Apply Dirchlete bounday condition
      if(!fem_dm->dynamic)
         IncorporateBoundaryConditions();
-	 else
+     else
         CalcBC_or_SecondaryVariable_Dynamics(true);
-     // 	 {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
+     // 	 {				MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  //abort();}
      //
+
    }
   
 }
@@ -2163,6 +2219,7 @@ void CRFProcessDeformation::ReadGaussPointStress()
 
  Programmaenderungen:
    04/2005  WW  Erste Version
+   09/2007  WW  Set as a boundary condition 
    letzte Aenderung:
 
 **************************************************************************/
@@ -2188,6 +2245,7 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
       }                     
    }
    SizeSubD = (int)ExcavDomainIndex.size();
+   if(SizeSubD==0) return; //05.09.2007 WW
 
    // 1. De-active host domain to be exvacated
    actElements = 0;
@@ -2208,9 +2266,12 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
        cout<<"No element specified for excavation. Please check data in .st file "<<endl;
        abort();
    }
-   
    // 2. Compute the released node loading
+   SetLinearSolver(eqs);
    SetZeroLinearSolver(eqs);
+   for(i=0; i<4; i++) // In case the domain decomposition is employed
+     fem_dm->NodeShift[i] = Shift[i];
+   //
    PreLoad = 11;
    LoadFactor = 1.0;
    for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
@@ -2286,8 +2347,8 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
              m_node_value->geo_node_number = nodes_vector[i];
              m_node_value->node_value = -eqs->b[m_msh->nod_vector[m_node_value->geo_node_number] 
                                                  ->GetEquationIndex()+Shift[j]];
-             m_node_value->CurveIndex = -1;
-             
+             m_node_value->CurveIndex = m_st->CurveIndex;
+             // Each node only take once              
              exist = false;
              for(l=0; l<(int)st_node_value.size(); l++)
              {
@@ -2304,17 +2365,22 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
       }
       
    }
-
-
+   //
+   // Deactivate the subdomains to be excavated
+   if(Deactivated_SubDomain) delete [] Deactivated_SubDomain;
+   Deactivated_SubDomain = new int[SizeSubD];
+   NumDeactivated_SubDomains = SizeSubD; 
+   for(j=0; j<SizeSubD; j++)
+     Deactivated_SubDomain[j] = ExcavDomainIndex[j];
+   
    // Activate the host domain for excavtion analysis
    for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
    {
       elem = m_msh->ele_vector[i];
-      j=elem->GetMark();
-      elem->SetMark(!j);
+      if(!elem->GetMark())
+      elem->SetMark(true);
    }
    PreLoad = 1;
-
 //TEST OUTPUT
 //   {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
 }
@@ -2346,149 +2412,6 @@ void CRFProcessDeformation::UpdateInitialStress(bool ZeroInitialS)
      }
   }
 }
-
-
-/**************************************************************************
- ROCKFLOW - Funktion: ExcavationSimulating()
-
- Aufgabe:
-   Exacavation simulating
-
- Programmaenderungen:
-   04/2005  WW  Erste Version
-   letzte Aenderung:
-
-**************************************************************************/
-void CRFProcessDeformation::ExcavationSimulating()
-{
-    cout<<"------------------------------------------"<<endl;
-    cout<<"*** Simulating excavation"<<endl;
-    int Idx_Strain[6];
-    int i; //, j;
-    int no_out =(int)out_vector.size();
-//    const int OrigType = type;
-//    const int Orig_pcs_deformation = pcs_deformation;
-//    const int Orig_pcs_number_of_primary_nvals = pcs_number_of_primary_nvals;
-    COutput *m_out = NULL;
-  
-    if(type==41)  pcs_number_of_primary_nvals--;
-    type = 4;
-    pcs_deformation = 1; //Elasticity excavation
-    //
-    if(reload==2) 
-    {
-       cout<<"1. Reading intial stress..."<<endl;
-       ElementValue_DM* eleV_DM = NULL; 
-       for (long e = 0; e < (long)m_msh->ele_vector.size(); e++)
-       {
-          eleV_DM = ele_value_dm[e];
-          eleV_DM->Stress = eleV_DM->Stress_i;   
-          (*eleV_DM->Stress0) = 0.0;                                                        
-       }
-    }
-    else
-    {
-       // If an initial stress state is given, skip this
-       // Establishing gravity force profile 
-       if (m_num&&(m_num->GravityProfile==1)&&(reload!=-1000))
-       { 
-          GravityForce = true;
-          cout<<"1. Establish gravity force profile..."<<endl;
-          counter = 0;
-          Execute();
-       }
-       Extropolation_GaussValue();
-       // Write the results
-       for(i=0;i<no_out;i++){
-         m_out = out_vector[i];
-         m_out->time = -1.0;
-         if(m_out->geo_type_name.find("DOMAIN")!=string::npos)
-         {
-            cout << "Data output" << endl;
-            m_out->NODWriteDOMDataTEC(); //OK
-            if(!m_out->new_file_opened)  
-              m_out->new_file_opened=true; 
-         }    
-      }
-      if(reload==-1000)  reload*= -1;
-      if(reload==1)
-         return;
-    } // Else
-
-    // Excavating  
-    cout<<"2. Excavating..."<<endl;
-    counter = 0;
-    InitializeNewtonSteps(0);
-    InitializeNewtonSteps(2);
-    GravityForce = false;	
-    ReleaseLoadingByExcavation();
-
-    //GravityForce = true;	
-    UpdateInitialStress(false); // s-->s0
-    m_msh->ConnectedElements2Node();
-
-    if(reload<0)
-	{
-       // Initial stress
-       int k, ns = 4;		  
-       Idx_Strain[0] = GetNodeValueIndex("STRAIN_XX");
-       Idx_Strain[1] = GetNodeValueIndex("STRAIN_YY");
-       Idx_Strain[2] = GetNodeValueIndex("STRAIN_ZZ");
-       Idx_Strain[3] = GetNodeValueIndex("STRAIN_XY"); 
-       if(m_msh->GetCoordinateFlag()/10==3)
-       {
-          ns = 6;
-          Idx_Strain[4] = GetNodeValueIndex("STRAIN_XZ");
-          Idx_Strain[5] = GetNodeValueIndex("STRAIN_YZ");
-       }
-       for(long i=0; i<m_msh->GetNodesNumber(false); i++)
-       {
-          for(k=0; k<ns; k++)
-            SetNodeValue(i, Idx_Strain[k], 0.0);
-       }
-	}
-
-    Execute(); // s+s0-->s
-    Extropolation_GaussValue(); 
-
-    UpdateInitialStress(true);  // s0 = 0;
-    //InitializeNewtonSteps(2);
-
-    // Remove boundary loading by excavated domain   
-    /*
-    //TEST
-    for(i=(int)st_node_value.size();i>GetOrigNodeVSize();i--)
-    {
-       delete st_node_value[i-1];
-       st_node_value.pop_back();
-    }
-	*/
-    //
-    /* // For simulation of excavation + operation
-    type = OrigType;
-    pcs_deformation = Orig_pcs_deformation;
-    pcs_number_of_primary_nvals = Orig_pcs_number_of_primary_nvals;
-    PreLoad = 0;
-	GravityForce = true;
- 
-    // If monlithic scheme, relocate memory for linear solver
-    if(type==41)
-    {
-       (int*) Free(eqs->unknown_vector_indeces);
-       (long*) Free(eqs->unknown_node_numbers);
-       (int*) Free(eqs->unknown_update_methods);
-        DestroyLinearSolver(eqs);
-        j = Shift[pcs_number_of_primary_nvals-1]+m_msh->GetNodesNumber(false);
-        eqs = CreateLinearSolverDim(m_num->ls_storage_method,pcs_number_of_primary_nvals,j);    
-        InitializeLinearSolver(eqs,m_num);  
-        InitEQS();     
-    } 
-    */
-    if(reload>0) reload=1; // Writing Gauss point stress in binary file.  
-    cout<<"*** End of excavation"<<endl;
-    cout<<"------------------------------------------"<<endl;
-}
-
 /**************************************************************************
  GEOSYS - Funktion: CalcBC_or_SecondaryVariable_Dynamics(bool BC);
  Programmaenderungen:

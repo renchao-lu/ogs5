@@ -22,7 +22,6 @@ CCore::CCore(const int id)
   index = id;
   mark = true;
   quadratic = false;
-  deli = "  ";
   boundary_type = 'I';
 }
 

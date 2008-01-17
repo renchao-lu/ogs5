@@ -97,6 +97,7 @@ BEGIN_MESSAGE_MAP(CGeoSysDoc, CDocument)
     ON_COMMAND(ID_IMPORT_EXCEL_FCT,OnImportEXCEL_FCT) //OK
     ON_COMMAND(ID_DEM_ASC, OnImportASC) //CC
 	ON_COMMAND(ID_IMPORT_SHP_NEW, OnImportSHPNew) //OK
+	ON_COMMAND(ID_IMPORT_FLAC, OnImportFLAC) //OK
     // Export data data
     ON_COMMAND(ID_EXPORT_TEC, OnExportTecFile)
     // Simulator
@@ -1568,7 +1569,7 @@ Programing:
 void CGeoSysDoc::OnSimulatorForward()
 {
   short no_steps, no_all_steps;
-  double dt_sum = 0.0;
+  //WW double dt_sum = 0.0;
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   CStatusBar* pStatus = &m_frame->m_wndStatusBar;
   CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
@@ -1685,8 +1686,9 @@ void CGeoSysDoc::OnSimulatorForward()
     // Time step excution 
     m_str.Format("Execute time step: t=%e",m_tim->time_current);
     pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
-    dt_sum += dt;
-    LOPTimeLoop_PCS(dt_sum);
+    //dt_sum += dt;
+    LOPTimeLoop_PCS(); //WW (dt_sum);
+    IsSynCron();   //WW
     //----------------------------------------------------------------------
     // Data output
     pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Data output");
@@ -2105,4 +2107,256 @@ void CGeoSysDoc::OnImportSHPNew()
   //m_frame->OnViewGEOCreate();
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
   UpdateAllViews(NULL);
+}
+
+/**************************************************************************
+GeoSys-Method:
+Task: 
+Programing:
+12/2007 OK Implementation
+**************************************************************************/
+bool FLACReadNOD(string file_name, CFEMesh* m_msh)
+{
+  char buffer[MAX_ZEILE];
+  string line;
+  std::stringstream in;
+  string sub_line;
+  double x,y,z; 
+  CNode* m_nod = NULL;
+  CString m_strSubLine;
+#ifdef MFC
+  CString m_strInfo = "Read FLAC nod data";
+  CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
+#endif
+  //----------------------------------------------------------------------
+#ifdef MFC
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
+#endif
+  //----------------------------------------------------------------------
+  // File handling
+  ifstream flac_file;
+  flac_file.open(file_name.c_str());
+  if(!flac_file.good()){
+    return false;
+  }
+  flac_file.seekg(0L,ios::beg); // spool to begin
+  //----------------------------------------------------------------------
+  // Read data from file
+  //----------------------------------------------------------------------
+  flac_file.getline(buffer,MAX_ZEILE); //;****************************************
+  flac_file.getline(buffer,MAX_ZEILE); //;Log File Started 18:08:08 Mon Dec 03 2007
+  flac_file.getline(buffer,MAX_ZEILE); //Flac3D>pr gp pos
+  flac_file.getline(buffer,MAX_ZEILE); //Gridpoint Position ...
+  flac_file.getline(buffer,MAX_ZEILE); //   id          X             Y             Z
+  flac_file.getline(buffer,MAX_ZEILE); // ------  ------------- ------------- -------------
+//  line = buffer;
+  //----------------------------------------------------------------------
+  while (!flac_file.eof()) 
+  {
+//  1 (  1.0270e+000,  2.0427e-001, -1.1150e+003)
+    line = GetLineFromFile1(&flac_file);
+    if(line.find("log off")!=string::npos) 
+      return true;
+    in.str(line);
+    in >> sub_line >> sub_line >> x >> sub_line >> y >> sub_line >> z >>ws;
+    in.clear();
+    m_nod = new CNode((long)m_msh->nod_vector.size(),x,y,z);
+    //m_nod->SetCoordinates(xyz);     
+    m_msh->nod_vector.push_back(m_nod);
+    //....................................................................
+  } // eof
+  //----------------------------------------------------------------------
+  return false;
+}
+
+/**************************************************************************
+GeoSys-Method:
+Task: 
+Programing:
+12/2007 OK Implementation
+**************************************************************************/
+bool FLACReadELE(string file_name, CFEMesh* m_msh)
+{
+  char buffer[MAX_ZEILE];
+  string line;
+  std::stringstream in;
+  string sub_line;
+  long i;
+  CElem* m_ele = NULL;
+  CString m_strSubLine;
+#ifdef MFC
+  CString m_strInfo = "Read FLAC data: ";
+  CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
+#endif
+  //----------------------------------------------------------------------
+#ifdef MFC
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
+#endif
+  //----------------------------------------------------------------------
+  // File handling
+  ifstream flac_file;
+  flac_file.open(file_name.c_str());
+  if(!flac_file.good()){
+    return false;
+  }
+  flac_file.seekg(0L,ios::beg); // spool to begin
+  //----------------------------------------------------------------------
+  // Read data from file
+  //----------------------------------------------------------------------
+  flac_file.getline(buffer,MAX_ZEILE); //;****************************************
+  flac_file.getline(buffer,MAX_ZEILE); //;Log File Started 15:56:36 Tue Dec 04 2007
+  flac_file.getline(buffer,MAX_ZEILE); //Flac3D>pr zone gp
+  flac_file.getline(buffer,MAX_ZEILE); //Zone Gp Connections ...
+  flac_file.getline(buffer,MAX_ZEILE); //   id     g0     g1     g2     g3     g4     g5     g6     g7
+  flac_file.getline(buffer,MAX_ZEILE); //------ ------ ------ ------ ------ ------ ------ ------ ------
+//  line = buffer;
+  //----------------------------------------------------------------------
+//CElem::Read(istream& is, int fileType)
+  while (!flac_file.eof()) 
+  {
+//      1      1      2      3      4      5      6      4      6 
+    line = GetLineFromFile1(&flac_file);
+    if(line.find("log off")!=string::npos) 
+      return true;
+    in.str(line);
+    in >> i;
+    m_ele = new CElem(i-1);
+    m_ele->Read(in,5);
+    in.clear();
+    m_msh->ele_vector.push_back(m_ele);
+    //....................................................................
+  } // eof
+  //----------------------------------------------------------------------
+  return false;
+}
+/**************************************************************************
+GeoSys-Method:
+Task: 
+Programing:
+01/2008 WW Implemented bases on FLACReadELE(string file_name, CFEMesh* m_msh)
+**************************************************************************/
+bool FLACReadMat(string file_name, CFEMesh* m_msh)
+{
+  char buffer[MAX_ZEILE];
+  string line;
+  std::stringstream in;
+  string sub_line, str_e;
+  long i;
+  CString m_strSubLine;
+#ifdef MFC
+  CString m_strInfo = "Read FLAC data: ";
+  CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
+#endif
+  //----------------------------------------------------------------------
+#ifdef MFC
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
+#endif
+  //----------------------------------------------------------------------
+  // File handling
+  ifstream flac_file;
+  flac_file.open(file_name.c_str());
+  if(!flac_file.good()){
+    return false;
+  }
+  flac_file.seekg(0L,ios::beg); // spool to begin
+  //----------------------------------------------------------------------
+  // Read data from file
+  //----------------------------------------------------------------------
+  flac_file.getline(buffer,MAX_ZEILE); //;****************************************
+  flac_file.getline(buffer,MAX_ZEILE); //;Log File Started 15:56:36 Tue Dec 04 2007
+  flac_file.getline(buffer,MAX_ZEILE); //Flac3D>pr zone gp
+  flac_file.getline(buffer,MAX_ZEILE); //Zone Information ...
+  flac_file.getline(buffer,MAX_ZEILE); //    ID   Type  Model       Group               Centroid
+  flac_file.getline(buffer,MAX_ZEILE); //------ ------ ------ ------ ------ ------ ------ ------ ------
+//  line = buffer;
+  //----------------------------------------------------------------------
+//CElem::Read(istream& is, int fileType)
+  vector<string> orig_mat;
+  int ii = 0, imat=-1; 
+  bool done = false;
+  while (!flac_file.eof()) 
+  {
+//   1 Wedge elastic     Steins ( 6.980e-001, 6.874e-002,-1.115e+003)
+    line = GetLineFromFile1(&flac_file);
+    if(line.find("log off")!=string::npos) 
+      return true;
+    in.str(line);
+    in >> i;
+    in >> str_e; // Type 
+    in >> str_e; // Model 
+    in >> str_e; // Group
+    //
+    done = false;
+    for(ii=0; ii<(int)orig_mat.size(); ii++)
+    {
+      if(orig_mat[ii].find(str_e)!=string::npos)
+      {
+         imat = ii;
+         done = true;
+         break;
+      }
+    }
+    if(!done)
+    {
+       imat++;
+       orig_mat.push_back(str_e);
+    }   
+    in.clear();
+    //
+    m_msh->ele_vector[i-1]->SetPatchIndex(imat);
+    //....................................................................
+  } // eof
+  //----------------------------------------------------------------------
+  return false;
+}
+
+/**************************************************************************
+GeoSys-Method: OnImportSHP
+Task: 
+Programing:
+12/2007 OK Implementation
+**************************************************************************/
+void CGeoSysDoc::OnImportFLAC()
+{
+  CFEMesh* m_msh = NULL;
+  m_msh = new CFEMesh();
+  CString file_name;
+  CString m_strFileExtension;
+  // Clean MSH. WW
+  for(long i=0; i<(long)fem_msh_vector.size(); i++ )
+  {
+     delete fem_msh_vector[i];
+     fem_msh_vector[i] = NULL;
+  }
+  fem_msh_vector.clear();
+  //----------------------------------------------------------------------
+  // NOD data
+  CFileDialog fileDlg1(TRUE,"txt",NULL,OFN_ENABLESIZING,"FLAC nod files (*.txt)|*.txt|");
+  if (fileDlg1.DoModal()==IDOK) 
+  {
+    file_name = fileDlg1.GetPathName();
+    m_strFileExtension = file_name.Right(FILE_EXTENSION_LENGTH);
+    FLACReadNOD((string)file_name,m_msh);
+    m_msh->InitialNodesNumber(); // Only for output. WW
+  }
+  //----------------------------------------------------------------------
+  // ELE data
+  CFileDialog fileDlg2(TRUE,"txt",NULL,OFN_ENABLESIZING,"FLAC ele files (*.txt)|*.txt|");
+  CFileDialog fileDlg3(TRUE,"txt",NULL,OFN_ENABLESIZING,"FLAC mat files (*.txt)|*.txt|");
+  if (fileDlg2.DoModal()==IDOK&&fileDlg3.DoModal()==IDOK) 
+  {
+    file_name = fileDlg2.GetPathName();
+    m_strFileExtension = file_name.Right(FILE_EXTENSION_LENGTH);
+    FLACReadELE((string)file_name,m_msh);
+    // Read material index
+    file_name = fileDlg3.GetPathName();  //WW
+    m_strFileExtension = file_name.Right(FILE_EXTENSION_LENGTH);
+    FLACReadMat((string)file_name,m_msh);
+  }
+//  m_msh->ConstructGrid();
+  fem_msh_vector.push_back(m_msh);
+  //----------------------------------------------------------------------
+  if((int)fem_msh_vector.size()>0)
+    GSPAddMember((string)m_strGSPFileBase + ".msh");
+  //----------------------------------------------------------------------
 }

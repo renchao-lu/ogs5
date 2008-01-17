@@ -23,6 +23,7 @@ Programing:
 #include <malloc.h>
 // C++
 #include <iostream>
+#include <iomanip>  //WW
 //#include <algorithm> // header of transform. WW
 // GEOLib
 #include "geo_ply.h"
@@ -237,6 +238,7 @@ CRFProcess::CRFProcess(void)
   ConfigELEMatrices = NULL;
   pcs_number_of_evals = 0;
   NumDeactivated_SubDomains = 0;
+  Deactivated_SubDomain = NULL;
   //----------------------------------------------------------------------
   // 
   mobile_nodes_flag = -1;
@@ -273,6 +275,8 @@ CRFProcess::CRFProcess(void)
   m_bCheckNOD = false; //OK
   m_bCheckELE = false; //OK
   m_bCheckEQS = false; //OK
+  //
+  write_boundary_condition = false; //15.01.2008. WW
 }
 
 /**************************************************************************
@@ -364,6 +368,11 @@ CRFProcess::~CRFProcess(void)
     delete[] ele_val_vector[i];
   ele_val_vector.clear();
   //----------------------------------------------------------------------
+  if(Deactivated_SubDomain) //05.09.2007 WW
+  {
+     delete [] Deactivated_SubDomain;
+     Deactivated_SubDomain = NULL;
+  }
 }
 
 /**************************************************************************
@@ -504,7 +513,7 @@ void CRFProcess::Create()
   // NUM_NEW
   cout << "->Create NUM" << '\n';
   int no_numerics = (int)num_vector.size();
-  CNumerics* m_num_tmp = NULL;
+  CNumerics *m_num_tmp = NULL;
   if(pcs_type_name.compare("RANDOM_WALK"))	// PCH RWPT does not need this.
   {
 	for(i=0;i<no_numerics;i++){
@@ -600,8 +609,7 @@ void CRFProcess::Create()
   if(m_msh)
   {
     if(type==4||type==41) m_msh->SwitchOnQuadraticNodes(true); 
-	else  m_msh->SwitchOnQuadraticNodes(false); 
-    CheckMarkedElement();
+	   else  m_msh->SwitchOnQuadraticNodes(false); 
    //    m_msh->RenumberNodesForGlobalAssembly();
   } 
 
@@ -653,6 +661,9 @@ void CRFProcess::Create()
           WriteRHS_of_ST_NeumannBC();
      }
   }
+  // Write BC/ST nodes for vsualization.WW
+  if(write_boundary_condition)
+    WriteBC();
   //----------------------------------------------------------------------------
   // ELE - config and create element values
   cout << "->Config ELE values" << '\n';
@@ -1145,6 +1156,14 @@ void PCSDestroyAllProcesses(void)
   }
   fem_msh_vector.clear();
   //----------------------------------------------------------------------
+  // DOM WW
+  for(i=0;i<(long)dom_vector.size();i++)
+  {
+      if(dom_vector[i]) delete dom_vector[i];
+      dom_vector[i] = NULL; 
+  }
+  dom_vector.clear();
+  //----------------------------------------------------------------------
   // ELE
   for(i=0;i<(long)ele_val_vector.size();i++)
     delete ele_val_vector[i];
@@ -1309,6 +1328,7 @@ CRFProcess* CRFProcess::CopyPCStoDM_PCS()
       Inctive_SubDomain[i] = Deactivated_SubDomain[i];
 
    m_output = Write_Matrix;
+   bool write_bc_st = write_boundary_condition; //WW
    m_memory = Memory_Type;
    // Numerics
    if(num_type_name.compare("STRONG_DISCONTINUITY")==0) 
@@ -1324,6 +1344,9 @@ CRFProcess* CRFProcess::CopyPCStoDM_PCS()
    dm_pcs-> Memory_Type = m_memory;
    dm_pcs->NumDeactivated_SubDomains = m_inactive;
    dm_pcs->reload = r_load;
+   dm_pcs->write_boundary_condition =  write_bc_st; //WW
+   if(!dm_pcs->Deactivated_SubDomain)
+     dm_pcs->Deactivated_SubDomain = new int[m_inactive];
    for(i=0; i<m_inactive; i++)
       dm_pcs->Deactivated_SubDomain[i] = Inctive_SubDomain[i];
    pcs_deformation = 1;
@@ -1466,6 +1489,12 @@ ios::pos_type CRFProcess::Read(ifstream *pcs_file)
       continue;
     }
     //....................................................................
+    if(line_string.find("$BOUNDARY_CONDITION_OUTPUT")!=string::npos)  //WW
+    {
+      write_boundary_condition = true;
+      continue;
+    }
+    //....................................................................
     if(line_string.find("$ST_RHS")!=string::npos) { // subkeyword found
 		*pcs_file >> WriteSourceNBC_RHS; //WW
         pcs_file->ignore(MAX_ZEILE,'\n');
@@ -1485,6 +1514,7 @@ ios::pos_type CRFProcess::Read(ifstream *pcs_file)
     }
     if(line_string.find("$DEACTIVATED_SUBDOMAIN")!=string::npos) { // subkeyword found
         *pcs_file >> NumDeactivated_SubDomains>>ws; //WW
+        Deactivated_SubDomain = new int[NumDeactivated_SubDomains];
         for(int i=0; i<NumDeactivated_SubDomains; i++)
            *pcs_file >> Deactivated_SubDomain[i]>>ws;
         continue;
@@ -1681,6 +1711,7 @@ void CRFProcess::Config(void)
   m_msh = FEMGet(pcs_type_name);
   if(!m_msh)
     cout << "Error in CRFProcess::Config - no MSH data" << endl;
+  CheckMarkedElement();	 //WW
   //......................................................................
   if((int)continuum_vector.size()== 0)  // YD
     continuum_vector.push_back(1.0);
@@ -1911,7 +1942,6 @@ void CRFProcess::ConfigGroundwaterFlow()
   pcs_secondary_function_name[3] = "COUPLING"; //JOD
   pcs_secondary_function_unit[3] = "m/s";
   pcs_secondary_function_timelevel[3] = 1;
-
   //----------------------------------------------------------------------
   if(m_msh)
     m_msh->DefineMobileNodes(this);
@@ -3387,7 +3417,8 @@ double CRFProcess::Execute()
     relax = 0.0;
   else
     relax = 1.0-m_num->nls_relaxation; //WW
-  CheckMarkedElement();
+  if(NumDeactivated_SubDomains>0)
+    CheckMarkedElement();
   m_msh->SwitchOnQuadraticNodes(false);
   for(i=0;i<pcs_number_of_primary_nvals;i++)
   {
@@ -3399,6 +3430,9 @@ double CRFProcess::Execute()
   /*---------------------------------------------------------------------*/
   /* 1 Calc element matrices */
 if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
+#ifdef USE_MPI //WW
+  if(myrank==0)
+#endif
   cout << "      Calculate element matrices" << endl;
 #ifdef MFC
   CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
@@ -3411,6 +3445,9 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
 }
   /*---------------------------------------------------------------------*/
   /* 2 Assemble EQS */
+#ifdef USE_MPI //WW
+  if(myrank==0)
+#endif
   cout << "      Assemble equation system" << endl;
 #ifdef MFC
   CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
@@ -3963,7 +4000,6 @@ void CRFProcess::SetBoundaryConditionSubDomain()
   CPARDomain *m_dom = NULL;
   CBoundaryConditionNode *m_bc_nv = NULL;
   CNodeValue *m_st_nv = NULL;
-
   //
   for(k=0;k<(int)dom_vector.size();k++)
   {
@@ -3999,14 +4035,12 @@ void CRFProcess::SetBoundaryConditionSubDomain()
 	  }
       rank_st_node_value_in_dom.push_back((long)st_node_value_in_dom.size());
   }  
-
-
   long Size = (long)st_node_value.size();
   long l_index;
   for(i=0; i<Size; i++)
   {
      l_index = st_node_value[i]->geo_node_number;
-	 st_node_value[i]->node_value /= node_connected_doms[l_index];
+	 st_node_value[i]->node_value /= (long)node_connected_doms[l_index];
   }
 
 }
@@ -8178,3 +8212,48 @@ void CRFProcess::CreateYD()
      m_msh->FaceNormal();        
 }
 */
+
+
+/*************************************************************************
+ROCKFLOW - Function: CRFProcess::
+Task:
+Programming: 
+01/2008 WW Implementation
+**************************************************************************/
+void CRFProcess::WriteBC()
+{
+  long i = 0;
+  long size_bc = (long)bc_node_value.size();
+  long size_st = (long)st_node_value.size();
+  //
+  if(size_bc==0&&size_st==0)
+    return; 
+  //
+  string m_file_name = FileName +"_"+pcs_type_name+"_BC_ST.asc";
+  ofstream os(m_file_name.c_str(), ios::trunc|ios::out);     	
+  if (!os.good())
+  {
+    cout << "Failure to open file: "<<m_file_name << endl;
+    abort();
+  }
+  os.setf(ios::scientific,ios::floatfield);
+  os.precision(12);
+  if(size_bc>0)
+  {
+     os<<"#Dirchelet BC  (from "<<m_file_name<<".bc file) "<<endl;
+     os<<"#Total BC nodes  " <<size_bc<<endl;
+     os<<"#Node index     value: "<<endl;
+     for(i=0; i<size_bc; i++)
+        os<<bc_node_value[i]->geo_node_number<<"  "<<setw(14)<<bc_node_value[i]->node_value<<endl;
+  } 
+  if(size_st>0)
+  {
+     os<<"#Source term or Neumann BC  (from "<<m_file_name<<".st file) "<<endl;
+     os<<"#Total ST nodes  " <<size_st<<endl;
+     os<<"#Node index     value: "<<endl;
+     for(i=0; i<size_st; i++)
+        os<<st_node_value[i]->geo_node_number<<"  "<<setw(14)<<st_node_value[i]->node_value<<endl;
+  } 
+  os<<"#STOP"<<endl; 
+  os.close();
+}

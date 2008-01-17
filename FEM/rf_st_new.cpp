@@ -601,7 +601,7 @@ m_volume = GEOGetVOL(m_st->geo_prop_name);
         //if(!(st_point_number==geo_point_number)) Warning !
         for(i=0;i<geo_point_number;i++) {
           m_point = m_polyline->point_vector[i];
-          st_value = m_point->property; // i.e. node property
+          st_value = m_point->propert; // i.e. node property
           m_st->node_value_vector.push_back(st_value);
         }
         break;
@@ -1161,7 +1161,7 @@ void CSourceTerm::FaceIntegration(CFEMesh* msh, vector<long>&nodes_on_sfc,
                gC[1] += m_polyline->point_vector[i]->y;
                gC[2] += m_polyline->point_vector[i]->z;
 
-               vn[2] += m_polyline->point_vector[i]->property;
+               vn[2] += m_polyline->point_vector[i]->propert;
            } 
            for(i=0; i<3; i++) gC[i] /= (double)nPointsPly;
            // BC value at center is an average of all point values of polygon
@@ -1180,8 +1180,8 @@ void CSourceTerm::FaceIntegration(CFEMesh* msh, vector<long>&nodes_on_sfc,
                p2[1] = m_polyline->point_vector[k]->y;
                p2[2] = m_polyline->point_vector[k]->z;
 
-               vn[0] =  m_polyline->point_vector[i]->property;
-               vn[1] =  m_polyline->point_vector[k]->property;
+               vn[0] =  m_polyline->point_vector[i]->propert;
+               vn[1] =  m_polyline->point_vector[k]->propert;
 
                Area1 = fabs(ComputeDetTri(p1, gC, p2));
 
@@ -2844,7 +2844,7 @@ void CSourceTerm::InterpolatePolylineRiverNodeValueVector(CGLPolyline* m_ply, ve
        for(long l = 0 ; l < (long)m_ply->point_vector.size(); l++) {
          if(PointsHaveDistribedBC[k]== m_ply->point_vector[l]->id)  {
 		   if(fabs(DistribedBC[k]) < MKleinsteZahl) DistribedBC[k] = 1.0e-20;
-              m_ply->point_vector[l]->property = Distribed[k];
+              m_ply->point_vector[l]->propert = Distribed[k];
             break;
           }
        } 
@@ -2966,7 +2966,7 @@ void CSourceTermGroup::SetSurfaceNodeValueVector(CSourceTerm* m_st, Surface* m_s
         for(long l = 0; l < (long)m_ply->point_vector.size(); l++) {
           if( m_st->PointsHaveDistribedBC[k]==m_ply->point_vector[l]->id) {
             if(fabs( m_st->DistribedBC[k])<MKleinsteZahl)  m_st->DistribedBC[k] = 1.0e-20;
-              m_ply->point_vector[l]->property =  m_st->DistribedBC[k];
+              m_ply->point_vector[l]->propert =  m_st->DistribedBC[k];
             break;
           } // end l
         } // end k
@@ -3350,4 +3350,22 @@ void CSourceTerm::DeleteHistoryNodeMemory()
     }
     node_history_vector.clear();
   }
+}
+
+/**************************************************************************
+FEMLib-Method: 
+07/2007 OK Implementation
+**************************************************************************/
+CSourceTerm* STGet(string pcs_name,string geo_type_name,string geo_name)
+{
+  CSourceTerm *m_st = NULL;
+  for(int i=0;i<(int)st_vector.size();i++)
+  {
+    m_st = st_vector[i];
+    if((m_st->pcs_type_name.compare(pcs_name)==0)&&
+       (m_st->geo_type_name.compare(geo_type_name)==0)&&
+       (m_st->geo_name.compare(geo_name)==0))
+      return m_st;
+  }
+  return NULL;
 }

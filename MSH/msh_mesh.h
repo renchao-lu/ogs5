@@ -119,6 +119,8 @@ class CFEMesh
     long NodesInUsage() const 
       {if (useQuadratic) return NodesNumber_Quadratic;
          else return NodesNumber_Linear;}
+    void InitialNodesNumber()//WW
+      { NodesNumber_Quadratic = NodesNumber_Linear = (long)nod_vector.size();}
   
 	//....................................................................
     // Coordinate system

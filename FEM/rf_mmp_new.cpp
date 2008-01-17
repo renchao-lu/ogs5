@@ -5410,7 +5410,7 @@ double CMediumProperties::PermeabilityFracAperture(long index)
   CSolidProperties* mat_pointer;
   CMediumProperties *m_mmp = NULL;
   double ApertureSum=0,ApertureAvg=0, normalised_perm, min_aperture,
-              permeability, c /*c is the fraction of fracture that is closed*/, WeightSum=0;
+              permeability, c =0./*c is the fraction of fracture that is closed*/, WeightSum=0;
   double Sum_Squared_Diffs=0, Std_Dev =0, closed=0, total_count=0;
   vector<double> aperture_list; 
   int i;
@@ -6060,7 +6060,7 @@ double CMediumProperties::SaturationCapillaryPressureFunction
             saturation = saturation_res[phase] + MKleinsteZahl;   /* Weniger als Residualsaettigung Wasser */
       break;
     default:
-	  cout << "Error in CMediumProperties::SaturationCapillaryPressureFunction: no valid material model" << endl;
+      cout << "Error in CMediumProperties::SaturationCapillaryPressureFunction: no valid material model" << endl;
       break;
   }
   return saturation;
@@ -6179,7 +6179,7 @@ else{
             saturation = saturation_res[phase] + MKleinsteZahl;   /* Weniger als Residualsaettigung Wasser */
       break;
     default:
-	  cout << "Error in CMediumProperties::SaturationCapillaryPressureFunction: no valid material model" << endl;
+      cout << "Error in CMediumProperties::SaturationCapillaryPressureFunction: no valid material model" << endl;
       break;
   }
   return saturation;
@@ -7068,15 +7068,15 @@ void CMediumProperties::CalStressPermeabilityFactor3(double *kfac)
       //
       c_coefficient[21+i] = ah[i]/pow(JRC,2.5);
    }
-   kfac[0] = ah[0]*ah[0]/ah0_h*ah0_h;
+   kfac[0] = ah[0]*ah[0]/(ah0_h*ah0_h);
    if(geo_dimension==2)
    {
-      fy = ah[2]*ah[2]/ah0_H*ah0_H;
+      fy = ah[2]*ah[2]/(ah0_H*ah0_H);
       kfac[1] = 0.5*(fy+kfac[0]); 
    }
    else if (geo_dimension==3)
    {
-      fy = ah[1]*ah[1]/ah0_H*ah0_H;
+      fy = ah[1]*ah[1]/(ah0_H*ah0_H);
       kfac[1] = fy;        
       kfac[2] = 0.5*(kfac[0]+kfac[1]);        
    }    
@@ -7090,7 +7090,7 @@ Programing:
 void CMediumProperties::CalStressPermeabilityFactor3_Coef() 
 {
    int i;
-   double d_max;
+   double d_max=0.0;
    double a[4], delta[4], Kni[4];
    double A[] = {-0.296, -0.1005, -0.1031, -0.1031 };
    double B[] = {-0.0056, -0.0073, -0.0074, -0.0074 };

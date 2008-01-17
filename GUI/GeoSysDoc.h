@@ -130,6 +130,7 @@ public:
     afx_msg void OnImportGMS();
     afx_msg void OnOpenOGL();
 	afx_msg void OnImportSHPNew();
+	afx_msg void OnImportFLAC(); //OK
 };
 
 /////////////////////////////////////////////////////////////////////////////

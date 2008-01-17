@@ -27,9 +27,8 @@ typedef struct {
 //========================================================================
 class CSourceTerm
 {
-  private:
-    int CurveIndex; // Time funtion index
   public: //OK
+    int CurveIndex; // Time funtion index
     vector<int> PointsHaveDistribedBC;
     vector<double> DistribedBC;
     vector<double> DistBC_KRiverBed;
@@ -138,15 +137,15 @@ class CSourceTerm
     double GetNodePastValueReference ( long n, int idx );//CMCD
     void CreateHistoryNodeMemory(NODE_HISTORY* nh );//CMCD
     void DeleteHistoryNodeMemory();//CMCD
-void SetSurfaceNodeVectorConditional(vector<long>&sfc_nod_vector, vector<long>&sfc_nod_vector_cond);
+    void SetSurfaceNodeVectorConditional(vector<long>&sfc_nod_vector, vector<long>&sfc_nod_vector_cond);
 
-void SetPolylineRiverNodeValueVectors(CGLPolyline* m_ply, int number_of_nodes);
-//void SetPolylineNodeValueVectors(CGLPolyline* m_ply, vector<long>& ply_nod_vector);
-void InterpolatePolylineRiverNodeValueVector(CGLPolyline* m_ply, vector<double>& Distribed, vector<double>& ply_nod_vector);
-void SetNodeValues(vector<long>&nodes, vector<long>&nodes_cond, vector<double>&node_values, const int ShiftInNodeVector);
-void SetNOD(); 
-ios::pos_type ReadDistributionType(ifstream *st_file);
-ios::pos_type CSourceTerm::ReadGeoType(ifstream *st_file);
+    void SetPolylineRiverNodeValueVectors(CGLPolyline* m_ply, int number_of_nodes);
+   //void SetPolylineNodeValueVectors(CGLPolyline* m_ply, vector<long>& ply_nod_vector);
+   void InterpolatePolylineRiverNodeValueVector(CGLPolyline* m_ply, vector<double>& Distribed, vector<double>& ply_nod_vector);
+   void SetNodeValues(vector<long>&nodes, vector<long>&nodes_cond, vector<double>&node_values, const int ShiftInNodeVector);
+   void SetNOD(); 
+   ios::pos_type ReadDistributionType(ifstream *st_file);
+   ios::pos_type ReadGeoType(ifstream *st_file);
 };
 
 //========================================================================
@@ -189,12 +188,12 @@ class CSourceTermGroup
 };
 
 extern CSourceTermGroup* STGetGroup(string pcs_type_name,string pcs_pv_name);
-extern list<CSourceTermGroup*>st_group_list;
+extern list<CSourceTermGroup*> st_group_list;
 extern bool STRead(string);
 extern void STWrite(string);
 #define ST_FILE_EXTENSION ".st"
 extern void STCreateFromPNT();
-extern vector<CSourceTerm*>st_vector;
+extern vector<CSourceTerm*> st_vector;
 extern void STDelete();
 void STCreateFromLIN(vector<CGLLine*>);
 CSourceTerm* STGet(string);
@@ -203,7 +202,7 @@ extern void STGroupsDelete(void);//Haibing;
 extern long aktueller_zeitschritt;
 extern double aktuelle_zeit;
 extern vector<string>analytical_processes;
-
+extern CSourceTerm* STGet(string,string,string); //OK
 
 // WW moved here
 extern  double GetAnalyticalSolution(long node_number, CSourceTerm *m_st);//CMCD, WW

@@ -46,7 +46,7 @@ class CGLPoint
     double mesh_density;
     // Properties
     double value;
-    double property;
+    double propert;
     // Display
     bool highlighted;
     int x_pix, y_pix;

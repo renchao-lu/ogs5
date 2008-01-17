@@ -61,6 +61,11 @@
 #ifdef CHEMAPP
   #include "eqlink.h"
 #endif
+#if defined(USE_MPI) //12.09.2007 WW
+#include <mpi.h>
+#endif
+
+
 /* Interne (statische) Deklarationen */
 void RFPost_FEM(void);
 void RFPost_Model(void);
@@ -292,7 +297,6 @@ int ExecuteRFTimeLoop(void)
   bool heat_flag = false;
   int i = 0;
   double ct = 0.0;
-  double dt_sum = 0.0; // WW
   //----------------------------------------------------------------------
 /*OK
   if(mshType!=100&&mshType!=0)  //WW
@@ -342,10 +346,19 @@ int ExecuteRFTimeLoop(void)
   //----------------------------------------------------------------------
   int no_time_steps = (int)m_tim->time_step_vector.size();
   // Output initial values. WW
-  OUTData(0.0,aktueller_zeitschritt); 
-  // 
+#if defined(USE_MPI)  //12.09.2007 WW
+  if(myrank==0) 
+#endif
+    OUTData(0.0,aktueller_zeitschritt); 
+#if defined(USE_MPI)  //12.09.2007 WW
+  if(myrank==0) 
+  {
+#endif
   cout << "*********************************************" << endl;
   cout << "Start of simulation" << endl;
+#ifdef USE_MPI //WW
+  }
+#endif
   //======================================================================
   while(m_tim->time_current < m_tim->time_end) 
   {
@@ -360,7 +373,7 @@ int ExecuteRFTimeLoop(void)
         aktuelle_zeit = m_tim->time_current; 
       }
     }
-	ct = 1.0;
+   	ct = 1.0;
     // Time step calculation
     dt = m_tim->CalcTimeStep();
     //----------------------------------------------------------------------
@@ -385,13 +398,19 @@ int ExecuteRFTimeLoop(void)
     m_tim->time_current += dt;
     aktueller_zeitschritt++; // ToDo
     aktuelle_zeit = m_tim->time_current; // ToDo
+#if defined(USE_MPI)  //12.09.2007 WW
+  if(myrank==0) 
+  {
+#endif
     cout << "*********************************************" << endl;
     cout << "TIME step " << m_tim->step_current+1 << ": " << m_tim->time_current << endl;
+#ifdef USE_MPI //WW
+  }
+#endif
     //----------------------------------------------------------------------
     // Time step excution 
     //
-    dt_sum += dt;
-    LOPTimeLoop_PCS(dt_sum);  // &dt_sum. WW
+    LOPTimeLoop_PCS();  // &dt_sum. WW
     //----------------------------------------------------------------------
     // Data output
     /* modellspezifische Ergebnisse fuer Inverses Modellieren speichern */
@@ -399,9 +418,16 @@ int ExecuteRFTimeLoop(void)
     /* Ausgabe fuer Bilanzobjekte */
 //OK    BalanceOverAllGeometryObjects();
     /* Ergebnisausgabe */
-
-    if(dt_sum<DBL_MIN) //WW
+    if(IsSynCron())			//17.09.2007 WW
+#if defined(USE_MPI)  //12.09.2007 WW
+    {
+      if(myrank==0) 
+#endif
       OUTData(m_tim->time_current,aktueller_zeitschritt);
+#if defined(USE_MPI)  //12.09.2007 WW
+      // MPI_Barrier (MPI_COMM_WORLD); //WW
+    }
+#endif
     #ifdef RFW_FRACTURE 
       for(int i=0; i<(int)mmp_vector.size(); ++i)
         {
@@ -414,9 +440,11 @@ int ExecuteRFTimeLoop(void)
     // update current time step number
     if(m_tim->time_control_name.find("ADAPTIVE")==string::npos) //WW
     {
-      if(m_tim->step_current==no_time_steps)
+      if(m_tim->step_current+1==no_time_steps)
         break;
     }
+    if(aktuelle_zeit>=m_tim->time_end)		//WW
+      break;
     m_tim->step_current++; // Moved here by WW
   }
   //========================================================================

@@ -47,7 +47,7 @@ class CNode:public CCore
 	  // Establishing this vector is done in the Fluid Momentum
 	  // since this is bounded by velocity.
       vector<long> connected_planes;	// PCH 
-      vector<long>  m5_index; //WW
+ //     vector<long>  m5_index; //WW
       CNode(const int Index):CCore(Index), eqs_index(-1) {}
       CNode(const int Index, const double x, const double y, const double z=0.0);
       ~CNode() {}

@@ -894,6 +894,7 @@ Programing:
 12/2005 OK FCT
 04/2006 WW New storage
 09/2006 WW Move linear interpolation to new MSH strcuture
+12/2007 WW Linear distributed BC in a surface
 last modification:
 **************************************************************************/
 void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, 
@@ -1128,7 +1129,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
                 if(m_bc->PointsHaveDistribedBC[i]==m_polyline->point_vector[j]->id)
                 {
                   if(fabs(m_bc->DistribedBC[i])< MKleinsteZahl) m_bc->DistribedBC[i] = 1.0e-20;
-                  m_polyline->point_vector[j]->property = m_bc->DistribedBC[i];
+                  m_polyline->point_vector[j]->propert = m_bc->DistribedBC[i];
                   break;
                 }
               }  
@@ -1160,32 +1161,8 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
         m_surface = GEOGetSFCByName(m_bc->geo_name);//CC10/05
         if(m_surface){
           //..............................................................
-          if(m_msh){ //MSH
+          if(m_msh) //MSH
             m_msh->GetNODOnSFC(m_surface,nodes_vector);
-          }
-          else{ //RFI
-            switch(m_surface->type){
-              case 0: // WW Nodes on plane surface //OKRW
-                GetMSHNodesOnSurface(m_surface,nodes_vector);//CC
-                break;
-              case 1: // TINs //OKRW
-cout << "Error in CBoundaryConditionsGroup::Set - TIN case to be implemented" << endl;
-abort();
-                break;
-              case 100: // WW Cylindrical surface
-                GetMSHNodesOnCylindricalSurface(m_surface,nodes_vector);//CC
-                break;
-/* OKRW
-              default: // OK
-                nodes = GetPointsIn(m_surface,&number_of_nodes);//CC
-                if(m_surface->type==2) 
-                  nodes_vector = GetMSHNodesClose(m_surface); //CC
-                else
-                  GetMSHNodesCloseAH(m_surface,nodes_vector);//CC
-                break;
-*/
-            }
-          }
           long nodes_vector_length = (long)nodes_vector.size();
           //..............................................................
           if(m_bc->dis_type_name.compare("LINEAR")==0){
@@ -1205,7 +1182,7 @@ abort();
                   {
                     if(fabs(m_bc->DistribedBC[i])< MKleinsteZahl) 
                       m_bc->DistribedBC[i] = 1.0e-20;
-                    m_polyline->point_vector[j]->property = m_bc->DistribedBC[i];
+                    m_polyline->point_vector[j]->propert = m_bc->DistribedBC[i];
                     break;
                   }
                 }
@@ -1213,6 +1190,8 @@ abort();
               //InterpolationAlongPolyline(m_polyline, node_value);
               p++;
             }
+            node_value.resize(nodes_vector_length); //WW 
+            m_bc->SurfaceIntepolation(m_pcs, nodes_vector, node_value); //WW
           }
           //..............................................................
           for(i=0;i<nodes_vector_length;i++){
@@ -1221,7 +1200,7 @@ abort();
             m_node_value->msh_node_number = nodes_vector[i]+ShiftInNodeVector; //nodes[i];
             m_node_value->geo_node_number = nodes_vector[i]; //nodes[i];
             m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-            if(m_bc->dis_type_name.compare("LINEAR")==0)
+            if(m_bc->dis_type_name.compare("LINEAR")==0)  //WW
               m_node_value->node_value = node_value[i];  
             else
               m_node_value->node_value = m_bc->geo_node_value;  
@@ -1578,3 +1557,100 @@ CBoundaryCondition* BCGet(string pcs_type_name)
   }
   return NULL;
 }
+
+
+/**************************************************************************
+ROCKFLOW - Funktion: 
+Programming:
+ 11/2007 WW Implementation
+**************************************************************************/
+void CBoundaryCondition::SurfaceIntepolation(CRFProcess* m_pcs, vector<long>&nodes_on_sfc, 
+                                vector<double>&node_value_vector)
+{
+
+  long i, j, k, l;
+
+  //----------------------------------------------------------------------
+  // Interpolation of polygon values to nodes_on_sfc
+  int nPointsPly = 0;
+  double Area1, Area2;
+  double Tol = 1.0e-9;
+  bool Passed;
+  const int Size = (int)nodes_on_sfc.size();
+  double gC[3],p1[3],p2[3], pn[3], vn[3],unit[3], NTri[3];
+  //
+  CGLPolyline* m_polyline = NULL;
+  Surface *m_surface = NULL;
+  m_surface = GEOGetSFCByName(geo_name);//CC
+
+  // list<CGLPolyline*>::const_iterator p = m_surface->polyline_of_surface_list.begin();
+  vector<CGLPolyline*>::iterator p = m_surface->polyline_of_surface_vector.begin();
+
+  for(j=0; j<Size; j++)
+  {
+     pn[0] = m_pcs->m_msh->nod_vector[nodes_on_sfc[j]]->X(); 
+     pn[1] = m_pcs->m_msh->nod_vector[nodes_on_sfc[j]]->Y(); 
+     pn[2] = m_pcs->m_msh->nod_vector[nodes_on_sfc[j]]->Z(); 
+     node_value_vector[j] = 0.0;  
+     Passed = false;
+     // nodes close to first polyline 
+     p = m_surface->polyline_of_surface_vector.begin();
+     while(p!=m_surface->polyline_of_surface_vector.end()) {
+        m_polyline = *p;
+        // Grativity center of this polygon
+        for(i=0; i<3; i++) gC[i] = 0.0;
+        vn[2] = 0.0;
+        nPointsPly = (int)m_polyline->point_vector.size();
+        for(i=0; i<nPointsPly; i++)
+        { 
+            gC[0] += m_polyline->point_vector[i]->x;
+            gC[1] += m_polyline->point_vector[i]->y;
+            gC[2] += m_polyline->point_vector[i]->z;
+            vn[2] += m_polyline->point_vector[i]->propert;
+        } 
+        for(i=0; i<3; i++) gC[i] /= (double)nPointsPly;
+        // BC value at center is an average of all point values of polygon
+        vn[2] /= (double)nPointsPly; 
+        // Area of this polygon by the grativity center
+        for(i=0; i<nPointsPly; i++)
+        { 
+            p1[0] = m_polyline->point_vector[i]->x;
+            p1[1] = m_polyline->point_vector[i]->y;
+            p1[2] = m_polyline->point_vector[i]->z;
+            k = i+1;
+            if(i==nPointsPly-1)
+               k = 0;
+            p2[0] = m_polyline->point_vector[k]->x;
+            p2[1] = m_polyline->point_vector[k]->y;
+            p2[2] = m_polyline->point_vector[k]->z;
+            vn[0] =  m_polyline->point_vector[i]->propert;
+            vn[1] =  m_polyline->point_vector[k]->propert;
+
+            Area1 = fabs(ComputeDetTri(p1, gC, p2));
+
+            Area2 = 0.0;
+            // Check if pn is in the triangle by points (p1, gC, p2)
+            Area2 = fabs(ComputeDetTri(p2, gC, pn));
+            unit[0] = fabs(ComputeDetTri(gC, p1, pn));
+            unit[1] = fabs(ComputeDetTri(p1, p2, pn));
+            Area2 += unit[0]+unit[1];
+            if(fabs(Area1-Area2)<Tol) 
+            {
+                // Intopolation whin triangle (p1,p2,gC)
+                // Shape function
+                for(l=0; l<2; l++)
+                   unit[l] /= Area1;
+                ShapeFunctionTri(NTri, unit);
+                for(l=0; l<3; l++)
+                  node_value_vector[j] += vn[l]*NTri[l];
+                Passed = true;
+                break;
+            }
+        
+        }  
+        //
+        p++;
+        if(Passed) break;
+     }// while
+  }//j
+}   

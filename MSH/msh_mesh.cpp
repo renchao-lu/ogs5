@@ -68,6 +68,7 @@ CFEMesh::CFEMesh(void)
   min_edge_length = 1e-3; //OK
   max_mmp_groups = 0; //OKCC
   m_bCheckMSH = false; //OK
+  pcs_name = "Not given"; //WW
 #ifdef RANDOM_WALK
   PT=NULL; // WW+TK
   fm_pcs=NULL;  //WW
@@ -735,7 +736,7 @@ void CFEMesh::GenerateHighOrderNodes()
                    if(*thisEdge0==*thisEdge)
                    {
                       aNode = thisEdge->GetNode(2); 
-                      if(aNode) // The middle point does not exist
+                      if(aNode) // The middle point exist
                       {
                          e_nodes0[nnodes0] = aNode;
                          nnodes0++;
@@ -958,7 +959,7 @@ void CFEMesh::Write(fstream*fem_msh_file)
   *fem_msh_file << "  ";
   *fem_msh_file << GetNodesNumber(false) << endl; //WW
   for(i=0;i<(long)nod_vector.size();i++)
-	 nod_vector[i]->Write(*fem_msh_file); 
+	 nod_vector[i]->Write(*fem_msh_file); //WW
   //--------------------------------------------------------------------
   // ELEMENTS
   *fem_msh_file << " $ELEMENTS" << endl;
@@ -3192,13 +3193,7 @@ void CFEMesh::ConnectedNodes(bool quadratic)
           }
        }     
     }
-    
-//    for(k=0; k<j; k++)
-//      cout<<m_nod->connected_nodes[k]<<"  ";
-//    cout<<endl;
-
-
-    m_nod->m5_index.resize(j);
+        
   }
   //----------------------------------------------------------------------
 #ifdef TestConnectedNodes

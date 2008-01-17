@@ -243,12 +243,12 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
   //----------------------------------------------------------------------
   
   // DDC
+  int i;
+  int no_processes =(int)pcs_vector.size();
+  CRFProcess* m_pcs = NULL;
   if(dom_vector.size()>0)
   {
      //WW ----- Domain decomposition ------------------
-     int i;
-     int no_processes =(int)pcs_vector.size();
-     CRFProcess* m_pcs = NULL;
      bool DOF_gt_one = false;
      //----------------------------------------------------------------------
      for(i=0;i<no_processes;i++){
@@ -267,6 +267,8 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
      //
      for(i=0;i<no_processes;i++){
        m_pcs = pcs_vector[i];
+       m_pcs->CheckMarkedElement();
+       CountDoms2Nodes(m_pcs);
        // Config boundary conditions for domain decomposition 
        m_pcs->SetBoundaryConditionSubDomain(); //WW
      }
@@ -321,6 +323,20 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
   // Characteristic numbers
 // CalcNeumannNumber();
   //----------------------------------------------------------------------
+  // Calculation of the initial stress and released load for excavation simulation
+  // 07.09.2007  WW
+  CRFProcessDeformation *dm_pcs = NULL;
+  for(i=0;i<no_processes;i++)
+  {
+     m_pcs = pcs_vector[i];
+     if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
+     {
+       dm_pcs = (CRFProcessDeformation *)(m_pcs);
+       dm_pcs->CreateInitialState4Excavation();
+       break;
+	 }
+  }
+  //
   return 1;
 }
 
@@ -338,7 +354,7 @@ Programing:
  06/2007 WW Mixed time step 
 last modified:
 ***************************************************************************/
-int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
+int LOPTimeLoop_PCS()  //(double*dt_sum) WW
 {
   int i,j,k;
   //----------------------------------------------------------------------
@@ -362,7 +378,6 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
 //  int lop_nonlinear_iterations = 15; //OK_OUT 2;
   double pcs_coupling_error = 1000; //MB
   bool CalcVelocities = false;  //WW
-  bool time_step_sum = true;
   // Mixed time step WW
   double dt0 = dt; // Save the original time step size
   //----------------------------------------------------------------------
@@ -422,8 +437,8 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
         // NOD values
         cout << "      Calculation of secondary NOD values" << endl;
         PCSCalcSecondaryVariables(); // PCS member function
-        // GP values
-        //if(CalcVelocities)
+        // GP values 
+        //if(CalcVelocities) // This flag may activate late on. WW
         { 
           cout << "      Calculation of secondary GP values" << endl;
           m_pcs->CalIntegrationPointValue(); //WW
@@ -545,21 +560,22 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
         PCSCalcSecondaryVariables(); // PCS member function
         if(!m_pcs->m_msh) //OK
           VELCalcAll(m_pcs);
-		else
+    		else
           m_pcs->CalIntegrationPointValue(); //WW
         m_pcs->CalcELEVelocities(); //OK
       }
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	  m_pcs = PCSGet("HEAT_TRANSPORT"); //WW
+	     m_pcs = PCSGet("HEAT_TRANSPORT"); //WW
       m_tim = TIMGet("HEAT_TRANSPORT"); //WW
-      if(m_tim&&k==0) //WW
+      if(m_tim)  // Different time step for different process. WW
       {
-         time_step_sum = m_tim->CheckTime(aktuelle_zeit); 
-         if(m_tim==time_vector[0]) time_step_sum = true; 
-      }
-      if(!time_step_sum) m_pcs = false;  //WW
-      if(m_pcs&&m_pcs->selected){
-        dt = dt_sum; //WW
+        if(k==0&&th_counter==1) 
+          dt = m_tim->CheckTime(aktuelle_zeit, dt0);
+        else 
+          dt = m_tim->GetTimeStep();  
+      }         
+      //WW  Old: if(m_pcs&&m_pcs->selected)
+      if((m_pcs&&m_pcs->selected)&&(dt>DBL_MIN)){
         double err_T = 0.0; //WW 
         if(m_pcs->non_linear)
           err_T = m_pcs->ExecuteNonLinear();
@@ -568,6 +584,7 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
      //     lop_coupling_iterations = 1;
           err_T = m_pcs->Execute();
         }
+        dt = dt0; //WW
         // Check TH coupling iteration WW
         if(m_pcs->m_num->cpl_variable.find("TH")!=string::npos) 
         {
@@ -576,39 +593,37 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
               &&(th_counter<m_pcs->m_num->cpl_iterations))
               goto TH_COUPLING;
         }
-        dt = dt0; //WW
       }
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       if(k==0) pcs_flow_error0 = pcs_flow_error;
       m_pcs = PCSGet("FLUID_MOMENTUM");
       if(m_pcs&&m_pcs->selected){
-		CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
+      		CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
+	      	if(m_pcs->tim_type_name.compare("STEADY")==0)
+		     	m_pcs->selected = false;
 
-		if(m_pcs->tim_type_name.compare("STEADY")==0)
-			m_pcs->selected = false;
+	      	fm_pcs = m_msh->fm_pcs;
+	      	fm_pcs->Execute();
 
-		fm_pcs = m_msh->fm_pcs;
-		fm_pcs->Execute();
-
-		// Switch off rechard flow if 
-		if(m_pcs->num_type_name.compare("STEADY")==0)
-		{
-			// Turn off FLUID_MOMENTUM
-			m_pcs->selected = false;
-			// Turn off RICHARDS_FLOW
-			m_pcs = PCSGet("RICHARDS_FLOW");
-			if(m_pcs)
-				m_pcs->selected = false;
-			// Turn off LIQUID_FLOW
-			m_pcs = PCSGet("LIQUID_FLOW");
-			if(m_pcs)
-				m_pcs->selected = false;
-			// Turn off GROUNDWATER_FLOW
-			m_pcs = PCSGet("GROUNDWATER_FLOW");
-			if(m_pcs)
-				m_pcs->selected = false;
-		}
-    }
+	     	// Switch off rechard flow if 
+	     	if(m_pcs->num_type_name.compare("STEADY")==0)
+     		{
+	      		// Turn off FLUID_MOMENTUM
+	      		m_pcs->selected = false;
+		      	// Turn off RICHARDS_FLOW
+	      		m_pcs = PCSGet("RICHARDS_FLOW");
+		     	if(m_pcs)
+	       			m_pcs->selected = false;
+     			// Turn off LIQUID_FLOW
+	     		m_pcs = PCSGet("LIQUID_FLOW");
+	     		if(m_pcs)
+	      			m_pcs->selected = false;
+		     	// Turn off GROUNDWATER_FLOW
+	     		m_pcs = PCSGet("GROUNDWATER_FLOW");
+		     	if(m_pcs)
+		      		m_pcs->selected = false;
+	     	}
+      }
       //--------------------------------------------------------------------
 
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -690,7 +705,6 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
         //----------------------------------------------------------------------
         //SB:GS4   Mass transport processes
         // Calculate conservative transport
-        double dt_pcs;
         CTimeDiscretization *m_tim = NULL;
         m_pcs = PCSGet("MASS_TRANSPORT");
         if(m_pcs){
@@ -698,8 +712,18 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
           if(m_tim){
             //WW/OK  if(m_tim->time_control_name.compare("COURANT_MANIPULATE")==0) m_tim->CheckCourant();
             //WW/OK  if (aktueller_zeitschritt == 1) m_tim->CheckCourant();//CMCD 03/2006
-            dt_pcs = m_tim->time_step_vector[0];
-            if(dt_sum>=dt_pcs){
+            //WW dt_pcs = m_tim->time_step_vector[0];
+
+            if(m_tim)  //Differet time step for different process. WW
+            {
+              if(k==0)             
+                dt = m_tim->CheckTime(aktuelle_zeit, dt0); 
+              else
+                dt = m_tim->GetTimeStep();  
+										  }
+
+            if(dt>DBL_MIN) //WW if(dt_sum>=dt_pcs)
+            {
               for(i=0;i<no_processes;i++){
                 m_pcs = pcs_vector[i];
                 if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0)
@@ -726,7 +750,7 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
               if(Eqlink_vec.size()>0) 
                 Eqlink_vec[0]->ExecuteEQLINK();
 #endif
-	          dt_sum = 0.0;
+	          dt = dt0; //WW
             }
           }
           else
@@ -752,8 +776,6 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
       for(i=0;i<no_processes;i++)
       {
         m_pcs = pcs_vector[i];
-        if(m_pcs->num_type_name.find("EXCAVATION")!=string::npos)
-          continue;
         if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
         {
           m_tim = NULL; //WW
@@ -765,14 +787,14 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
                 break;
              }
           }          
-          if(m_tim&&k==0)  //WW
+          if(m_tim)  //WW
           {
-             time_step_sum = (time_step_sum&&m_tim->CheckTime(aktuelle_zeit))?true:false; 
-             // In case that the first time discretization entry is for the deformation process
-             if(m_tim==time_vector[0]) time_step_sum = true; 
+            if(k==0)             
+              dt = m_tim->CheckTime(aktuelle_zeit, dt0); 
+            else
+              dt = m_tim->GetTimeStep();  
           }
-          if(!time_step_sum) break;
-          dt = dt_sum; //WW
+          if(dt<DBL_MIN) break;
           dm_pcs = (CRFProcessDeformation *)(m_pcs);
           pcs_dm_error=dm_pcs->Execute(k);
           //Error
@@ -815,24 +837,22 @@ int LOPTimeLoop_PCS(double& dt_sum)  //(double*dt_sum) WW
   //----------------------------------------------------------------------
   //  
   //  Update the results
-  if(time_step_sum) dt_sum = 0.0; //WW
   for(i=0;i<no_processes;i++)
   {
      m_pcs = pcs_vector[i];
      m_pcs->WriteSolution(); //WW
-     m_pcs->CheckMarkedElement();
      m_pcs->Extropolation_MatValue();  //WW
 	 if(m_pcs->cal_integration_point_value) //WW
         m_pcs->Extropolation_GaussValue();
      m_pcs->CopyTimestepNODValues(); //MB
 #define SWELLING
 #ifdef SWELLING
-		for(j=0;j<m_pcs->pcs_number_of_evals;j++){  //MX ToDo//CMCD here is a bug in j=7
-          nidx0 =  m_pcs->GetElementValueIndex(m_pcs->pcs_eval_name[j]);
-          nidx1 =  m_pcs->GetElementValueIndex(m_pcs->pcs_eval_name[j])+1;
-		  for(long l=0;l<(long)m_pcs->m_msh->ele_vector.size();l++)
-             m_pcs->SetElementValue(l,nidx0, m_pcs->GetElementValue(l,nidx1));
-		}
+     for(j=0;j<m_pcs->pcs_number_of_evals;j++){  //MX ToDo//CMCD here is a bug in j=7
+        nidx0 =  m_pcs->GetElementValueIndex(m_pcs->pcs_eval_name[j]);
+        nidx1 =  m_pcs->GetElementValueIndex(m_pcs->pcs_eval_name[j])+1;
+        for(long l=0;l<(long)m_pcs->m_msh->ele_vector.size();l++)
+            m_pcs->SetElementValue(l,nidx0, m_pcs->GetElementValue(l,nidx1));
+     }
 #endif
   }
   //

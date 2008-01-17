@@ -70,7 +70,7 @@ class CRFProcessDeformation:public CRFProcess
 
      // Excavation computation
      void ReleaseLoadingByExcavation();
-     void ExcavationSimulating();
+     void CreateInitialState4Excavation();
 
      // Dynamic
      bool CalcBC_or_SecondaryVariable_Dynamics(bool BC = false);

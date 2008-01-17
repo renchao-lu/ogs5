@@ -34,7 +34,6 @@ class CCore
       char boundary_type;
       bool mark; // e.g. marked to be refined or active 
       bool quadratic; // higher order
-      string deli; // delimitor
       // Finite element objects
       friend class FiniteElement::CElement;  
       friend class FiniteElement::CFiniteElementStd; 

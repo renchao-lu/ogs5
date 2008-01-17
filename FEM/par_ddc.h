@@ -64,12 +64,13 @@ class CPARDomain
     char* lsp_name;
     // MSH
     CFEMesh* m_msh;
-  public:
+  // public:
     CPARDomain(void);
     ~CPARDomain(void);
     ios::pos_type Read(ifstream*);
     void CreateNodes();
-    void CreateElements(const bool quadr); // const bool quadr. WW
+    // const long *longbuff, const bool quadr. WW
+    void CreateElements(const bool quadr); 
     void NodeConnectedNodes(); //WW
     //
     void CreateEQS(CRFProcess *m_pcs);
@@ -88,7 +89,7 @@ class CPARDomain
     // 
     long GetDomainNodes() const  //WW
         {if(quadratic) return nnodesHQ_dom;
-	  else  return  nnodes_dom;  }
+            else  return  nnodes_dom;  }
 #if defined(USE_MPI) //WW
     long GetNumInnerNodes(bool quadr)
        {if(quadr) return num_inner_nodesHQ;
@@ -101,8 +102,8 @@ class CPARDomain
 
 extern vector<CPARDomain*> dom_vector;
 
-extern vector<double> node_connected_doms; // WW
-
+extern vector<long> node_connected_doms; // WW
+extern void CountDoms2Nodes(CRFProcess *m_pcs); //WW
 extern void DOMRead(string);
 extern void DOMCreate( CRFProcess *m_pcs);
 //---- MPI Parallel --------------

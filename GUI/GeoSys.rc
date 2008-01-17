@@ -2810,6 +2810,7 @@ BEGIN
             MENUITEM "GMS (SOL/TIN files)",         33077
             MENUITEM "RFO (Output file)",           ID_IMPORT_RFO
             MENUITEM "SHP (ArcView file)",          ID_IMPORT_SHP, INACTIVE
+            MENUITEM "FLAC - nodes",                ID_IMPORT_FLAC
         END
         POPUP "&Export...\tCtrl+O"
         BEGIN
