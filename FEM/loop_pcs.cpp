@@ -565,7 +565,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
         m_pcs->CalcELEVelocities(); //OK
       }
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	     m_pcs = PCSGet("HEAT_TRANSPORT"); //WW
+      m_pcs = PCSGet("HEAT_TRANSPORT"); //WW
       m_tim = TIMGet("HEAT_TRANSPORT"); //WW
       if(m_tim)  // Different time step for different process. WW
       {
@@ -824,6 +824,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
       if(H_Process&&M_Process&&k>0) 
         cout << "\t    P-U coupling iteration: " << k 
              <<" Error: " <<min(pcs_coupling_error, pcs_flow_error)<<endl;
+      if(dt<DBL_MIN) break;
   } // coupling iterations
   //======================================================================
   // Extropolate the Gauss values to element nodes for deformation process

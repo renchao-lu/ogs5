@@ -1588,8 +1588,8 @@ shapefct[1] = 0.; //OK
             for(i=0; i<dim; i++) 
               mat[i*dim+i] = mat_fac; 
         }  
-        else if(SolidProp->GetCapacityModel()==1 && MediaProp->heat_diffusion_model == 273){
-//        else if(SolidProp->GetCapacityModel()==1){
+//WW        else if(SolidProp->GetCapacityModel()==1 && MediaProp->heat_diffusion_model == 273){
+        else if(SolidProp->GetCapacityModel()==1){
           tensor = MediaProp->HeatConductivityTensor(Index);
           for(i=0; i<dim*dim; i++) 
             mat[i] = tensor[i]; //mat[i*dim+i] = tensor[i];
@@ -3243,7 +3243,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
   double dt_inverse = 0.0;
   if(dt<MKleinsteZahl){
     cout<<"\n Zeitschritt ist Null ! Abbruch !"<<endl;
-    return;
+    abort(); //WW. return;
   }
   else 
     dt_inverse = 1.0 / dt; 
@@ -4434,7 +4434,7 @@ void CFiniteElementStd::CalcNodeMatParatemer()
      // 
      if(i>nnodes) continue;
      ComputeShapefct(1);
-     //PG = interpolate(NodalVal1);     
+     PG = interpolate(NodalVal1);     
      //
      if((pcs->additioanl2ndvar_print>0)&&(pcs->additioanl2ndvar_print<3))
      {
