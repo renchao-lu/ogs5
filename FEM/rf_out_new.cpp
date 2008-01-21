@@ -2914,6 +2914,14 @@ void COutput::CalcELEFluxes()
       cout << "Warning in COutput::CalcELEFluxes(): no GEO type data" << endl;
   }
   if(new_file_opened)  new_file_opened=true; //WW
+  // WW   m_pcs->CalcELEFluxes(m_ply) changed 'mark' of elements
+  for(long i=0;i<(long)fem_msh_vector.size();i++)
+  {
+    for(long j=0;j<(long)fem_msh_vector[i]->ele_vector.size();j++)
+     fem_msh_vector[i]->ele_vector[j]->MarkingAll(true);
+  }
+
+
 }
 
 /**************************************************************************
