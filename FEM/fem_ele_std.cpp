@@ -165,14 +165,6 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
         PcsType = H;
         idx0 = pcs->GetNodeValueIndex("TEMPERATURE1");
         idx1 = idx0+1;
-//SB4218        idxS = pcs->GetNodeValueIndex("SATURATION1")+1;
-        for (i=0; i<(int) pcs_vector.size(); i++){  //MX
-	      m_pcs = pcs_vector[i];
-	      if(m_pcs->pcs_type_name.compare("RICHARDS_FLOW") == 0){
-            idxS = m_pcs->GetNodeValueIndex("SATURATION1")+1; //MX
-            break;
-          }
-        }
         break;
       case 'M': // Mass transport
         PcsType = M;
@@ -378,9 +370,9 @@ void  CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bo
 
   char pcsT; 
   pcsT = pcs->pcs_type_name[0];
- if(pcs->pcs_type_name.find("AIR")!=string::npos) //OK
+  if(pcs->pcs_type_name.find("AIR")!=string::npos) //OK
     pcsT = 'A';
- if(pcs->pcs_type_name.find("MULTI")!=string::npos) //24.2.2007 WW
+  if(pcs->pcs_type_name.find("MULTI")!=string::npos) //24.2.2007 WW
     pcsT = 'V';
 
 
@@ -462,9 +454,17 @@ void  CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bo
 	  {
          cpl_pcs = PCSGet("LIQUID_FLOW"); 
          if(cpl_pcs == NULL) 
+         {
            cpl_pcs = PCSGet("RICHARDS_FLOW"); //OK
+           if(cpl_pcs)
+             idxS = cpl_pcs->GetNodeValueIndex("SATURATION1")+1; //WW
+         } 
          if(cpl_pcs == NULL) 
+         {
            cpl_pcs = PCSGet("MULTI_PHASE_FLOW"); //24.042.2004 WW
+           if(cpl_pcs)
+             idxS = cpl_pcs->GetNodeValueIndex("SATURATION1")+1; //WW
+         }
          if (cpl_pcs){  //MX
            idx_c0 = cpl_pcs->GetNodeValueIndex("PRESSURE1");
            idx_c1 = idx_c0+1;

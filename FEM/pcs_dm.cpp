@@ -2053,7 +2053,8 @@ void CRFProcessDeformation:: GlobalAssembly()
      }
      //----------------------------------------------------------------------
      //
-	    // {		MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
+	    // {		MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x); // abort();}
+
      // Apply Neumann BC
      IncorporateSourceTerms();
      // Apply Dirchlete bounday condition
@@ -2061,7 +2062,7 @@ void CRFProcessDeformation:: GlobalAssembly()
         IncorporateBoundaryConditions();
      else
         CalcBC_or_SecondaryVariable_Dynamics(true);
-     // 	 {				MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  //abort();}
+     // 	 {		MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  //abort();}
      //
 
    }

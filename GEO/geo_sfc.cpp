@@ -45,7 +45,7 @@ Surface::Surface(void):Radius(0.0)
   mat_group = -1;
   TIN = NULL;
   createtins = false;
-  epsilon = 1e-3; //OK
+  epsilon = 1e-5; //OK
   highlighted = false; // CC
   meshing_allowed = 0; //OK
   data_name = "DOMAIN";
