@@ -1188,10 +1188,10 @@ Programing:
 CSoilProfile::~CSoilProfile()  //YD
 {
   for (int i = 0; i < (int) soil_type.size(); i++){
-  soil_type[i]=NULL;
+    soil_type[i]=0; 
   }
   for (int i = 0; i < (int) soil_layer_thickness.size(); i++){
-  soil_layer_thickness[i]=NULL;
+    soil_layer_thickness[i]=0.; 
   }
   soil_type.clear();
   soil_layer_thickness.clear();

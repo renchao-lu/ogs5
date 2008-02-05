@@ -1,10 +1,9 @@
 /*========================================================================
- GeoSys - class Matrix (Declaration)
+ GeoSys - class Matrix, Sparse matrix (Declaration)   
  Task:       Matrix object for full matrices.  If the size of matrix is
              small, this class can do efficient matrix operation. 
  Function:   See the declaration below
- programming:
-  22/08/2004  WW  
+ Design and programm WW
 ==========================================================================*/
 #ifndef matrix_class_INC
 
@@ -13,6 +12,12 @@
 #include<iostream>
 #include<fstream>
 
+#ifdef NEW_EQS
+namespace Mesh_Group {class CFEMesh;}
+//08.2007 WW
+class CPARDomain;
+using Mesh_Group::CFEMesh;
+#endif
 //#define OverLoadNEW_DELETE
 
 namespace Math_Group{
@@ -187,81 +192,87 @@ template<class T> class vec<T*> : public vec<void*>
 
 };
   
-// Cross production x^y. WW 12.01.2005
-//const Vec& operator ^ (Vec& x,  Vec& y);	 
 
-#ifdef NewSparseMatrix
-//WW
-// Class definition
-namespace Mesh_Group {class CFEMesh;}
-using Mesh_Group::CFEMesh;
+#ifdef NEW_EQS
+//
 class SparseTable
 {
     public:
-      SparseTable(CFEMesh *a_mesh, bool symmetry);
-      ~CSparseMatrix();   
-      void Write(ostream& os=cout);    
+      SparseTable(CFEMesh *a_mesh, bool quadratic, bool symm=false);
+      SparseTable(CPARDomain &m_dom, bool quadratic, bool symm=false);      
+      ~SparseTable();   
+      void Write(ostream &os=cout);    
     private:
       bool symmetry;
       // Topology mapping from data array to matrix
       long *entry_column;
-      long *diag_entry_column;
-      long *column_size; // in sparse table
-      long *row_index;   // in sparse table 
-      // long *row_size; // In sparse table
-      long *row_index_o2new; // Real row index in the position of row_index
+      long *num_column_entries;     // number of entries of each columns in sparse table
+      long *row_index_mapping_n2o;  // Row index of sparse table to row index of matrix 
+      long *row_index_mapping_o2n;  // Inverse of last 
+      long *diag_entry;             // Global index to the index of  entry_column
       long size_entry_column;
-      long size_diag_entry_column;
-      long max_column;
-      long dimension;
+      long max_columns;  
+      long rows;
       friend class CSparseMatrix;
-}
-class CSparseMatrix:public CMatrix
+};
+//08.2007 WW
+//
+class CSparseMatrix
 {
    public:
-     CSparseMatrix(const SparseTable& sparse_table);
+     CSparseMatrix(const SparseTable &sparse_table, const int dof);
      ~CSparseMatrix();
+     // Preconditioner
+     void Precond_Jacobi(double *vec_s, double *vec_r);
+     void Precond_ILU(double *vec_s, double *vec_r) { vec_s = vec_r = NULL; }//TEMP
+     // Operator
      void operator = (const double a);
      void operator *= (const double a);
      void operator += (const double a);
      void operator = (const CSparseMatrix& m);
      void operator += (const CSparseMatrix& m);
      void operator -= (const CSparseMatrix& m);
-
-	 // vec_result = This*vec. vec_result must be initialized
-     void multiVec(const double *vec_aug, double *vec_result, const double fac=1.0);
      // Vector pass through augment and bring results back.
-     void multiVec(double *vec_aug, const double fac=1.0);
+     void multiVec(double *vec_s, double *vec_r);
+     void Diagonize(const long idiag, const double b_given, double *b); 
      //
      // Access to members     
      double& operator() (const long i, const long j=0) const;  
-
-     long Size() const;
-     double Tr() const;
-     double Norm2() const;
+     //
+     long Dim() const {return DOF*rows;}
+     int Dof() const {return DOF;}
+     long Size() const {return rows;}
      // Print
-     void Write(ostream& os=cout);    
+     void Write(ostream &os=cout);   
+     // Domain decomposition
+#if defined(USE_MPI)
+     void DiagonalEntries(double *diag_e);
+#endif 
    private:
      // Data
-     double *entry;     
-     double *vec_buffer; // Same size as the matrix dimension.     
+     double *entry;  
+     mutable double zero_e;   
      // 
-     bool symmetry; // Initialize by SparseTable
-     // Topology mapping from data array to matrix.
-     // These are only pointers point to corresponding SparseTable members.
-     // Memory allocation is forbidden for them.
+     bool symmetry;
+     // Topology mapping from data array to matrix. All are only pointers to the 
+     // correpinding members in SparseTable, and no memory are allocated for them 
      long *entry_column;
-     long *diag_entry_column;
-     long *column_size;
-     long *row_index;
-     // long *row_size; // In sparse table
-     long *row_index_o2new;
-     //
+     long *num_column_entries;  // number of entries of each columns in sparse table
+     long *row_index_mapping_n2o;  // Row index of sparse table to row index of matrix 
+     long *row_index_mapping_o2n;  // Inverse of last 
+     long *diag_entry;
      long size_entry_column;
-     long max_column;
-     long dimension;
-}
+     long max_columns;  
+     long rows;
+     //
+     int DOF;
+};
+// Since the pointer to member funtions gives lower performance 
 #endif
+//
+// Cross production x^y. WW 12.01.2005
+//const Vec& operator ^ (Vec& x,  Vec& y);	 
+
 // End of class Matrix
 }
 //==========================================================================

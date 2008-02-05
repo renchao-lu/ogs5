@@ -37,5 +37,10 @@ void RFCreateObjectListsNew(void);
 
 int RFExecuteTimeLoop(void);
 
+#ifdef USE_MPI
+extern clock_t elapsed_time_preloop; 
+#endif
+
+
 #endif
 

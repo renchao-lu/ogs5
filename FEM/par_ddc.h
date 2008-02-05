@@ -19,11 +19,15 @@ using namespace std;
 #include "prototyp.h"
 #include "rf_pcs.h"
 
-namespace FiniteElement { class CFiniteElementVec;}
-using FiniteElement::CFiniteElementVec;
+//---------   Declaration ---------------------WW
+namespace FiniteElement { class CFiniteElementStd; class CFiniteElementVec;}
 namespace process { class CRFProcessDeformation;}
+namespace Math_Group{class SparseTable; class Linear_EQS;}
 using process::CRFProcessDeformation;
-
+using FiniteElement::CFiniteElementVec;
+using Math_Group::Linear_EQS;
+using Math_Group::SparseTable;
+//---------   Declaration ---------------------WW
 
 #if defined(USE_MPI) 
 //WW
@@ -46,11 +50,46 @@ class CPARDomain
     long num_boundary_nodesHQ;
     friend void FindNodesOnInterface(CFEMesh *m_msh, bool quadr);
 //#endif
+#if defined(USE_MPI)  // 13.12.2007 WW
+    // Store global indices of all border nodes to border_nodes of the whole mesh 
+    // 0-->border_nodes_size, nodes for linear interpolation
+    // border_nodes_size-->border_nodes_sizeH, nodes for quadratic interpolation
+    long *t_border_nodes;
+    long t_border_nodes_size;
+    long t_border_nodes_sizeH;
+    // For local EQS
+    // For index mapping from local to global
+    int dof, nq;
+    long n_loc, n_bc; //, max_dimen;   
+    long i_start[2], i_end[2];
+    long b_start[2], b_end[2], n_shift[2];
+    // Data for concatenate internal entries of domain vectors
+    int *receive_cnt_i;
+    int *receive_disp_i;
+#if defined(NEW_BREDUCE)
+    // Data for concatenate border entries of domain vectors
+    int *receive_cnt_b;
+    int *receive_disp_b;
+#endif
+    //
+    int *receive_cnt;
+    int *receive_disp;
+    //friend class Math_Group::Linear_EQS;
+    //
+#endif
+    //
     long shift[4]; //WW
+    // Equation
+#ifdef NEW_EQS  //WW
+    SparseTable *sparse_graph;
+    SparseTable *sparse_graph_H;
+    Linear_EQS *eqs; //WW
+    Linear_EQS *eqsH; //WW
+#endif
     friend class CRFProcess; //WW
-    friend class FiniteElement::CFiniteElementVec; //WW //process:: for SXC compiler
-    friend class process::CRFProcessDeformation; //WW //process:: for SXC compiler
-
+    friend class FiniteElement::CFiniteElementStd; //WW //:: for SXC compiler
+    friend class FiniteElement::CFiniteElementVec; //WW //:: for SXC compiler
+    friend class process::CRFProcessDeformation; //WW //:: for SXC compiler
   public:
     int ID;
     vector<long> elements;
@@ -59,9 +98,11 @@ class CPARDomain
     vector<long> nodes;
     //?vector<double>matrix;
     // EQS
+#ifndef NEW_EQS
     LINEAR_SOLVER *eqs;
     LINEAR_SOLVER_PROPERTIES *lsp;
     char* lsp_name;
+#endif
     // MSH
     CFEMesh* m_msh;
   // public:
@@ -73,11 +114,16 @@ class CPARDomain
     void CreateElements(const bool quadr); 
     void NodeConnectedNodes(); //WW
     //
+#ifdef NEW_EQS  //WW 
+    void CreateSparseTable(); //WW
+    void CreateEQS();         //WW
+    void InitialEQS(CRFProcess *m_pcs); //WW
+#else
     void CreateEQS(CRFProcess *m_pcs);
+#endif
     void CalcElementMatrices(CRFProcess*);
  //WW   void AssembleMatrix(CRFProcess*);
     void WriteMatrix();
-    void SolveEQS();
     long GetDOMNode(long);
     int m_color[3]; //OK
     void WriteTecplot(string); //OK
@@ -90,13 +136,30 @@ class CPARDomain
     long GetDomainNodes() const  //WW
         {if(quadratic) return nnodesHQ_dom;
             else  return  nnodes_dom;  }
+    long GetDomainNodes(bool quad) const  //WW
+        {if(quad) return nnodesHQ_dom;
+            else  return  nnodes_dom;  }
 #if defined(USE_MPI) //WW
-    long GetNumInnerNodes(bool quadr)
-       {if(quadr) return num_inner_nodesHQ;
-       else  return num_inner_nodes; }   
-    long GetNumHaloNodes(bool quadr)
-       {  if(quadr) return num_boundary_nodesHQ;
-          else  return num_boundary_nodes;}
+    // long MaxDim() const {return max_dimen;}   //WW
+    void ReleaseMemory();
+    long BSize() const {return n_bc;}       //WW
+    void ConfigEQS(CNumerics *m_num, const long n, bool quad = false); //WW
+    double Dot_Interior(const double *localr0,  const double *localr1=NULL); //WW
+    void Global2Local(const double *global_x, double *local_x, const long n ); //WW
+    void I_local2Global(const double *local_x, double *global_x, const long n ); //WW
+    void Global2Border(const double *x, double *local_x, const long n); //WW
+    void Border2Global(const double *local_x, double *x, const long n); //WW
+    void Local2Border(const double *local_x, double *border_x); //WW
+    void Border2Local(const double *border_x, double *local_x); //WW
+    //
+    void CatInnerX(double *global_x, const double *local_x, const long n); //WW
+    void PrintEQS_CPUtime(ostream &os=cout); //WW
+    
+ #if defined(NEW_BREDUCE)
+    void ReduceBorderV(double *local_x);
+ #endif
+    //
+    //
 #endif
 };
 
@@ -105,10 +168,10 @@ extern vector<CPARDomain*> dom_vector;
 extern vector<long> node_connected_doms; // WW
 extern void CountDoms2Nodes(CRFProcess *m_pcs); //WW
 extern void DOMRead(string);
-extern void DOMCreate( CRFProcess *m_pcs);
+extern void DOMCreate();
 //---- MPI Parallel --------------
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) //MH
-extern int size;
+extern int mysize; //WW
 extern int myrank;
 extern char t_fname[3];
 extern double time_ele_paral;

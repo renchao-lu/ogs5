@@ -73,6 +73,11 @@ CFEMesh::CFEMesh(void)
   PT=NULL; // WW+TK
   fm_pcs=NULL;  //WW
 #endif
+  // 1.11.2007 WW
+#ifdef NEW_EQS 
+  sparse_graph = NULL;
+  sparse_graph_H = NULL;
+#endif
 }
 
 /**************************************************************************
@@ -110,6 +115,14 @@ CFEMesh::~CFEMesh(void)
 #ifdef RANDOM_WALK
   delete PT; // PCH
 #endif
+  // 1.11.2007 WW
+#ifdef NEW_EQS 
+  if(sparse_graph) delete sparse_graph;
+  if(sparse_graph_H) delete sparse_graph_H;
+  sparse_graph = NULL;
+  sparse_graph_H = NULL;
+#endif
+
 }
 
 /**************************************************************************
@@ -820,6 +833,15 @@ void CFEMesh::GenerateHighOrderNodes()
    ConnectedElements2Node(true);
    //  
    e_nodes0.resize(0);
+
+   // Test	WW
+   /*
+   fstream n_out;
+   n_out.open("node.txt", ios::out );
+   for(e=0; e<NodesNumber_Quadratic; e++)
+					nod_vector[e]->Write(n_out);
+   n_out.close();
+		 */
 }
 
 /**************************************************************************
@@ -3182,7 +3204,7 @@ void CFEMesh::ConnectedNodes(bool quadratic)
     m_nod = nod_vector[i];
     j = (int)m_nod->connected_nodes.size();
     for(k=0; k<j; k++)
-    {     
+    {            
        for(l=k; l<j; l++)
        {
           if(m_nod->connected_nodes[l]<m_nod->connected_nodes[k])
@@ -4131,6 +4153,37 @@ void CFEMesh::CreateLineELEFromSFC()
     //--------------------------------------------------------------------
   }
 }
+
+#ifdef NEW_EQS   // 1.11.2007 WW     
+/**************************************************************************
+MSHLib-Method:
+Programing:
+11/2007 WW Implementation
+**************************************************************************/
+void CFEMesh::CreateSparseTable()
+{
+  // Symmetry case is skipped.
+  // 1. Sparse_graph_H for high order interpolation. Up to now, deformation
+  if(NodesNumber_Linear!=NodesNumber_Quadratic)   
+    sparse_graph_H = new SparseTable(this, true);
+  // 2. M coupled with other processes with linear element
+  if(sparse_graph_H)
+  { 
+     if((int)pcs_vector.size()>1)
+      sparse_graph = new SparseTable(this, false);
+  }
+  // 3. For process with linear elements
+  else
+    sparse_graph = new SparseTable(this, false);
+
+     
+  //sparse_graph->Write();
+  //  sparse_graph_H->Write();
+  //
+  //ofstream Dum("sparse.txt", ios::out); 
+  //sparse_graph_H->Write(Dum);
+} 
+#endif
 
 } // namespace Mesh_Group
 

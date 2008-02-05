@@ -19,6 +19,11 @@
 #include "par_ddc.h"
 // MSHLib
 #include "msh_elem.h"
+// Solver
+#ifdef NEW_EQS
+#include "equation_class.h"
+using Math_Group::CSparseMatrix;
+#endif
 
 #include "pcs_dm.h" // displacement coupled
 extern double gravity_constant;// TEST, must be put in input file
@@ -189,6 +194,8 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
            idxp20 = pcs->GetNodeValueIndex("PRESSURE2");
            idxp21 = idxp20+1;  
            Advection = new Matrix(size_m, size_m);    //WW        
+           for(i=0; i<pcs->pcs_number_of_primary_nvals; i++)  //12.12.2007 WW
+            NodeShift[i] = i*pcs->m_msh->GetNodesNumber(false);
         }
         PcsType = R;
         break;
@@ -202,6 +209,9 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
         break;
       case 'V': // 24.02.2007 WW
         // // 02.2.2007 GravityMatrix = new  SymMatrix(size_m);
+        for(i=0; i<pcs->pcs_number_of_primary_nvals; i++)  //12.12.2007 WW
+          NodeShift[i] = i*pcs->m_msh->GetNodesNumber(false);
+        // 
         idx0 = pcs->GetNodeValueIndex("PRESSURE1");
         idx1 = idx0+1;
         idxp20 = pcs->GetNodeValueIndex("PRESSURE2");
@@ -237,7 +247,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
     AuxMatrix1 = new Matrix(size_m, size_m);
 
    	time_unit_factor = pcs->time_unit_factor;
-    for(i=0; i<4; i++) NodeShift[i] = 0;
+    
     check_matrices = true;
     //
     SolidProp1 = NULL;
@@ -406,9 +416,11 @@ void  CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bo
           Idx_dm0[2] = dm_pcs->GetNodeValueIndex("DISPLACEMENT_Z1");
         Idx_dm1[2] = Idx_dm0[2]+1;
      }  
-
-     for(i=0; i<4; i++)
+     if(dm_pcs->type==41)
+     {
+       for(i=0; i<4; i++)
          NodeShift[i] = Shift[i];
+     }
   }
 
   switch(pcsT){
@@ -2316,6 +2328,14 @@ void CFiniteElementStd:: Assemble_DualTransfer()
   int i,j;
   int gp_r=0, gp_s=0, gp_t=0;
   double W, fkt,mat_fac = 0.;
+#if defined(NEW_EQS)
+   CSparseMatrix *A = NULL;  //WW
+   if(m_dom)
+     A = m_dom->eqs->A;
+   else
+     A = pcs->eqs_new->A;
+#endif 
+
   //Inintialize
   //-------------------------- WW
   W = pcs->continuum_vector[pcs->GetContinnumType()];
@@ -2347,7 +2367,7 @@ void CFiniteElementStd:: Assemble_DualTransfer()
   }
   // Add local matrix to global matrix
   // 15.02.2007 WW
-  long cshift = pcs->eqs->dim/pcs->dof;
+  long cshift = pcs->m_msh->GetNodesNumber(false);
   double fm = 1.0/W;
   //
   if(pcs->continuum == 0)
@@ -2359,8 +2379,13 @@ void CFiniteElementStd:: Assemble_DualTransfer()
       { 
 	     for(int j=0;j<nnodes;j++)
          {
+#ifdef NEW_EQS
+            (*A)(eqs_number[i], eqs_number[j]+cshift) += -fm*(*Advection)(i,j);
+            (*A)(eqs_number[i]+cshift, eqs_number[j]) += -ff*(*Advection)(i,j);
+#else
              MXInc(eqs_number[i], eqs_number[j]+cshift, -fm*(*Advection)(i,j));
              MXInc(eqs_number[i]+cshift, eqs_number[j], -ff*(*Advection)(i,j));
+#endif
          }
       }
    }
@@ -2448,7 +2473,7 @@ inline double  CFiniteElementStd::CalcCoefDualTransfer()
    01/2005   WW  
    02/2005   OK GEO factor
    09/2005   SB - adapted to advection
-   03/2007   WW - Fluid advetion with multiphase flow
+   03/2007   WW - Fluid advection with multiphase flow
 **************************************************************************/
 void CFiniteElementStd::CalcAdvection()
 {
@@ -2530,6 +2555,10 @@ void CFiniteElementStd::CalcRHS_by_ThermalDiffusion()
   double rhov = 0.0;
   double drdT = 0.0;
   double beta = 0.0;
+  // 12.12.2007 WW
+  long cshift = 0;
+  if(pcs->dof>1)
+    cshift = NodeShift[pcs->continuum];
  
   (*Laplace) = 0.0;
   (*Mass) = 0.0;
@@ -2589,6 +2618,7 @@ void CFiniteElementStd::CalcRHS_by_ThermalDiffusion()
         (*Laplace)(i,j) = (*Laplace)(j,i);
      }
   }
+  cshift += NodeShift[problem_dimension_dm];
   for (i = 0; i < nnodes; i++)
   {
       for (j = 0; j < nnodes; j++)
@@ -2596,7 +2626,7 @@ void CFiniteElementStd::CalcRHS_by_ThermalDiffusion()
          (*RHS)(i) -= (*Laplace)(i,j)*(NodalValC[j]+T_KILVIN_ZERO);
 		 (*RHS)(i) += (*Mass)(i,j)*(NodalValC1[j]-NodalValC[j])/dt;
       }
-      eqs_rhs[NodeShift[problem_dimension_dm] + eqs_number[i]]
+      eqs_rhs[cshift + eqs_number[i]]
            += (*RHS)(i);
   }
 
@@ -2737,13 +2767,15 @@ void  CFiniteElementStd::Assemble_Gravity()
   double geo_fac = MediaProp->geo_area;
   if(!FluidProp->CheckGravityCalculation()) return; 
   long cshift = 0; //WW 
+  //
+  //
   int dof_n = 1;  // 27.2.2007 WW 
   if(PcsType==V) dof_n = 2;
 
   //WW 05.01.07
   cshift = 0;
   if(pcs->dof>1)
-    cshift = pcs->continuum*pcs->eqs->dim/pcs->dof;
+    cshift = NodeShift[pcs->continuum];
 
   //rich_f = 1.0; 
   //if(PcsType==R) rich_f = -1.0; //WW
@@ -2796,7 +2828,7 @@ void  CFiniteElementStd::Assemble_Gravity()
   int ii_sh = 0;
   for(ii=0; ii<dof_n; ii++) // 07.02.07 WW
   {
-    cshift += ii*pcs->eqs->dim/pcs->dof; 
+    cshift += NodeShift[ii]; 
     ii_sh = ii*nnodes;
     for (i=0;i<nnodes;i++)
     {
@@ -3156,8 +3188,11 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
 	// Store the influence into the global vectors.
     m_pcs = PCSGet("FLUID_MOMENTUM");
 	for (int i=0;i<nnodes;i++)
-        m_pcs->eqs->b[eqs_number[i]] += NodalVal[i];    
-  	
+#if defined(NEW_EQS) //WW
+      m_pcs->eqs_new->b[eqs_number[i]] += NodalVal[i];    
+#else
+      m_pcs->eqs->b[eqs_number[i]] += NodalVal[i];    
+#endif  	
 	// OK. Let's add gravity term that incorporates the density coupling term.
 	// This is convenient. The function is already written in RF.	
 	//Assemble_Gravity();
@@ -3179,6 +3214,14 @@ void CFiniteElementStd::AssembleParabolicEquation()
   double relax0, relax1;
   //----------------------------------------------------------------------
   long cshift = 0; //WW 05.01.07
+#if defined(NEW_EQS)
+   CSparseMatrix *A = NULL;  //WW
+   if(m_dom)
+     A = m_dom->eqs->A;
+   else
+     A = pcs->eqs_new->A;
+#endif 
+
   //WW 05.01.07
   relax0 = pcs->m_num->nls_relaxation; //WW
   relax1 = 1.0;
@@ -3188,7 +3231,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
   //
   cshift = 0;
   if(pcs->dof>1)
-    cshift = pcs->continuum*pcs->eqs->dim/pcs->dof;
+    cshift = NodeShift[pcs->continuum];
   //----------------------------------------------------------------------
   // Dynamic
 // WW: is dynamic really parabolic equation type -> AssembleDynamicEquation
@@ -3278,21 +3321,25 @@ void CFiniteElementStd::AssembleParabolicEquation()
   {
      int ii_sh, jj_sh;
      long i_sh, j_sh=0;
-     long g_nodes = pcs->eqs->dim/pcs->dof; 
      for(ii=0;ii<pcs->dof;ii++)
      {
-       i_sh = ii*g_nodes+NodeShift[problem_dimension_dm];
+       i_sh = NodeShift[ii];
        ii_sh = ii*nnodes;
        for(jj=0;jj<pcs->dof;jj++)
        {
-         j_sh = jj*g_nodes+NodeShift[problem_dimension_dm];
+         j_sh = NodeShift[jj];
          jj_sh = jj*nnodes;
          for(i=0;i<nnodes;i++)
          {
            for(j=0;j<nnodes;j++)
            {
+#ifdef NEW_EQS
+              (*A)(i_sh+eqs_number[i], j_sh+eqs_number[j]) += \
+              (*StiffMatrix)(i+ii_sh,j+jj_sh);
+#else
               MXInc(i_sh+eqs_number[i], j_sh+eqs_number[j],\
               (*StiffMatrix)(i+ii_sh,j+jj_sh));
+#endif
            }
          }           
        }
@@ -3301,10 +3348,17 @@ void CFiniteElementStd::AssembleParabolicEquation()
   else
   {
     cshift += NodeShift[problem_dimension_dm]; //WW 05.01.07
-    for(i=0;i<nnodes;i++){
-      for(j=0;j<nnodes;j++){
+    for(i=0;i<nnodes;i++)
+    {
+      for(j=0;j<nnodes;j++)
+      {
+#ifdef NEW_EQS
+       (*A)(cshift+eqs_number[i], cshift+eqs_number[j]) += \
+	          (*StiffMatrix)(i,j);
+#else
         MXInc(cshift+eqs_number[i], cshift+eqs_number[j],\
            (*StiffMatrix)(i,j));
+#endif
       }
     }
   }
@@ -3372,10 +3426,9 @@ void CFiniteElementStd::AssembleParabolicEquation()
   {
     int ii_sh;
     long i_sh;
-    long g_nodes = pcs->eqs->dim/pcs->dof; 
     for(ii=0;ii<pcs->dof;ii++)
     {
-      i_sh = ii*g_nodes+NodeShift[problem_dimension_dm];
+      i_sh = NodeShift[ii];
       ii_sh = ii*nnodes;
       for (i=0;i<nnodes;i++)
       {
@@ -3392,7 +3445,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
       (*RHS)(i+LocalShift) +=  NodalVal[i];
     }
   } 
-  // 
+  //
 }
 
 //SB4200
@@ -3409,6 +3462,14 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
   int i,j;
   // NUM
   double theta = pcs->m_num->ls_theta; //OK
+#if defined(NEW_EQS)
+   CSparseMatrix *A = NULL;  //WW
+   if(m_dom)
+     A = m_dom->eqs->A;
+   else
+     A = pcs->eqs_new->A;
+#endif 
+
   //----------------------------------------------------------------------
   unit[0] = unit[1] = unit[2] = 0.0; 
   // Non-linearities
@@ -3485,9 +3546,14 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
   // Add local matrix to global matrix
   for(i=0;i<nnodes;i++){
     for(j=0;j<nnodes;j++){
+#ifdef NEW_EQS
+       (*A)(NodeShift[problem_dimension_dm]+eqs_number[i],  //WW
+            NodeShift[problem_dimension_dm]+eqs_number[j]) += (*StiffMatrix)(i,j);
+#else
        MXInc(NodeShift[problem_dimension_dm]+eqs_number[i],\
             NodeShift[problem_dimension_dm]+eqs_number[j],\
                (*StiffMatrix)(i,j));
+#endif
     }
   }
   //======================================================================
@@ -3598,9 +3664,18 @@ void CFiniteElementStd::AssembleParabolicEquationNewton()
   AssembleParabolicEquationNewtonJacobian(jacobian, haa, haaOld, axx, ayy, amat, ast, swold, residual, iups);
   /////////////////////////// store
    for(int i = 0; i < nnodes; i++) {
+#if defined(NEW_EQS)   //WW
+     pcs->eqs_new->b[NodeShift[problem_dimension_dm] + eqs_number[i]] -= residual[i];
+#else
      pcs->eqs->b[NodeShift[problem_dimension_dm] + eqs_number[i]] -= residual[i];
+#endif
      for(int j=0;j<nnodes;j++) 
+#if defined(NEW_EQS)   //WW
+       (*pcs->eqs_new->A)(NodeShift[problem_dimension_dm]+eqs_number[i], NodeShift[problem_dimension_dm]+eqs_number[j])
+          += jacobian[i][j] ;      //WW
+#else
 	   MXInc( NodeShift[problem_dimension_dm]+eqs_number[i], NodeShift[problem_dimension_dm]+eqs_number[j], jacobian[i][j] );
+#endif
    }
 
    for(int i = 0; i < nnodes; i++) {
@@ -3689,6 +3764,14 @@ void CFiniteElementStd::Assemble_strainCPL()
     double *u_n = NULL; // Dynamic
     double fac; 
     int Residual = -1;
+#if defined(NEW_EQS)
+    CSparseMatrix *A = NULL;
+    if(m_dom)
+      A = m_dom->eqsH->A;
+    else
+      A = pcs->eqs_new->A;
+#endif 
+
     fac = 1.0 / dt;
     if(D_Flag != 41)
        Residual = 0;
@@ -3779,8 +3862,19 @@ void CFiniteElementStd::Assemble_strainCPL()
      if(D_Flag == 41)
      { 
         // if Richard, StrainCoupling should be multiplied with -1.
-        for(i=0;i<nnodes;i++){
-           for(j=0;j<nnodesHQ;j++) {  
+        for(i=0;i<nnodes;i++)
+        {
+           for(j=0;j<nnodesHQ;j++) 
+           {  
+#ifdef NEW_EQS
+             (*A)(NodeShift[problem_dimension_dm] + eqs_number[i],
+                eqs_number[j]+NodeShift[0]) += (*StrainCoupling)(i,j)*fac;
+             (*A)(NodeShift[problem_dimension_dm] + eqs_number[i],
+                eqs_number[j]+NodeShift[1]) += (*StrainCoupling)(i,j+nnodesHQ)*fac;
+             if(problem_dimension_dm==3)
+                (*A)(NodeShift[problem_dimension_dm] + eqs_number[i],
+                    eqs_number[j]+NodeShift[2]) += (*StrainCoupling)(i,j+2*nnodesHQ)*fac;
+#else
              MXInc(NodeShift[problem_dimension_dm] + eqs_number[i],
                 eqs_number[j]+NodeShift[0],(*StrainCoupling)(i,j)*fac);
              MXInc(NodeShift[problem_dimension_dm] + eqs_number[i],
@@ -3788,6 +3882,7 @@ void CFiniteElementStd::Assemble_strainCPL()
              if(problem_dimension_dm==3)
                  MXInc(NodeShift[problem_dimension_dm] + eqs_number[i],
                     eqs_number[j]+NodeShift[2], (*StrainCoupling)(i,j+2*nnodesHQ)*fac);
+#endif
            } 
         }
     }
@@ -3835,7 +3930,11 @@ void CFiniteElementStd::AssembleMassMatrix()
 	// Add local matrix to global matrix
 	for(int i=0;i<nnodes;i++)
 		for(int j=0;j<nnodes;j++)
-			MXInc(eqs_number[i],eqs_number[j],(*Mass)(i,j));
+#ifdef NEW_EQS //WW
+        (*pcs->eqs_new->A)(eqs_number[i],eqs_number[j]) += (*Mass)(i,j);  //WW
+#else
+        MXInc(eqs_number[i],eqs_number[j],(*Mass)(i,j));
+#endif
 }
 
 /**************************************************************************
@@ -3865,27 +3964,35 @@ void CFiniteElementStd::Assembly()
   if(pcs->type==41||pcs->type==4) nn = nnodesHQ; // ?2WW
   //----------------------------------------------------------------------
   // For DDC WW
+#ifdef NEW_EQS
+  eqs_rhs = pcs->eqs_new->b;
+#else
   eqs_rhs = pcs->eqs->b;
- 
+#endif 
   // EQS indices
   if(m_dom) //WW
   {
      eqs_rhs = m_dom->eqs->b;
      for(i=0;i<nn;i++)
-		eqs_number[i] = element_nodes_dom[i]; //WW   
+       eqs_number[i] = element_nodes_dom[i]; //WW   
+     if(pcs->dof>1) //12.12.2007 WW
+     {
+       for(i=0; i<pcs->dof; i++)
+         NodeShift[i]=i*m_dom->nnodes_dom;
+     }     
   }
   else
   {
      if(pcs->m_msh)
-	 {
+     {
        for(i=0;i<nn;i++)
           eqs_number[i] = MeshElement->nodes[i]->GetEquationIndex();         
-	 }
-	 else
-	 {
+     }
+     else
+     {
        for(i=0;i<nn;i++)
           eqs_number[i] = GetNodeIndex(nodes[i]);        
-	 }
+     }
   }  
   //----------------------------------------------------------------------
   // Get room in the memory for local matrices
@@ -4622,7 +4729,13 @@ void CFiniteElementStd::AssembleParabolicEquationRHSVector()
   //----------------------------------------------------------------------
   StiffMatrix->multi(NodalVal1, NodalVal);
   //----------------------------------------------------------------------
+#ifdef NEW_EQS
+  eqs_rhs = pcs->eqs_new->b; //WW
+  if(m_dom)
+    eqs_rhs = m_dom->eqs->b; //WW
+#else
   eqs_rhs = pcs->eqs->b; //WW
+#endif
   for (i=0;i<nnodes;i++)
   {
     eqs_number[i] = MeshElement->nodes[i]->GetEquationIndex();
@@ -4763,10 +4876,9 @@ void CFiniteElementStd::Assemble_RHS_T_MPhaseFlow()
   }
   int ii_sh;
   long i_sh;
-  long g_nodes = pcs->eqs->dim/pcs->dof; 
   for(ii=0;ii<pcs->dof;ii++)
   {
-    i_sh = ii*g_nodes+NodeShift[problem_dimension_dm];
+    i_sh = NodeShift[ii];
     ii_sh = ii*nnodes;
     for (i=0;i<nnodes;i++)
     {
@@ -4840,10 +4952,9 @@ void CFiniteElementStd::Assemble_RHS_M()
   //
   int ii_sh;
   long i_sh;
-  long g_nodes = pcs->eqs->dim/pcs->dof; 
   for(ii=0;ii<pcs->dof;ii++)
   {
-    i_sh = ii*g_nodes+NodeShift[problem_dimension_dm];
+    i_sh = NodeShift[ii];
     ii_sh = ii*nnodes;
     for (i=0;i<nnodes;i++)
     {

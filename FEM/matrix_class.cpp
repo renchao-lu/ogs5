@@ -11,47 +11,51 @@
 
 /// Matrix
 #include <iomanip>
-
+#include <float.h>
+//
 #include "matrix_class.h"
-
+//
+#ifdef NEW_EQS
+#include "msh_mesh.h"
+#include "par_ddc.h"
+#endif
 
 namespace Math_Group{
 // Constructors
 Matrix::Matrix(const int rows, const int cols)
-{
-    
-    if(rows*cols>0)
-    {
-      Sym = false;
-      nrows = rows;
-      ncols = cols;
-      nrows0 = rows;
-      ncols0 = ncols;
-      size = nrows*ncols;
-      data = new double[size];
-      for(int i=0; i<size; i++) data[i] = 0.0;
-    }
+{    
+  if(rows*cols>0)
+  {
+    Sym = false;
+    nrows = rows;
+    ncols = cols;
+    nrows0 = rows;
+    ncols0 = ncols;
+    size = nrows*ncols;
+    data = new double[size];
+    for(int i=0; i<size; i++) data[i] = 0.0;
+  }
 }
 Matrix::Matrix()
 {
-     Sym = false;
-     nrows = 0;
-     ncols = 0;
-     nrows0 = 0;
-     ncols0 = 0;
-     size = 0;
-     data = 0;
+   Sym = false;
+   nrows = 0;
+   ncols = 0;
+   nrows0 = 0;
+   ncols0 = 0;
+   size = 0;
+   data = 0;
 }
 Matrix::Matrix(const Matrix& m)
 {
-	Sym = m.Sym;
-	nrows = m.nrows;
-	ncols = m.ncols;
-	nrows0 = m.nrows0;
-	ncols0 = m.ncols0;
-	size = m.size;
-    data = new double[size];
-    for(int i=0; i<size; i++) data[i] = 0.0;
+   Sym = m.Sym;
+   nrows = m.nrows;
+   ncols = m.ncols;
+   nrows0 = m.nrows0;
+   ncols0 = m.ncols0;
+   size = m.size;
+   data = new double[size];
+   for(int i=0; i<size; i++) data[i] = 0.0;
 }
 
 void Matrix::resize(const int rows, const int cols)
@@ -278,7 +282,7 @@ void Matrix::Write(ostream& os)
     os.precision(12);
 
     for(int i=0; i<nrows; i++)
-	{
+    {
        os<< "| ";
        for(int j=0; j<ncols; j++)
          os<<(*this)(i,j)<<" ";
@@ -327,24 +331,24 @@ SymMatrix::SymMatrix(const int dim):Matrix(0)
 
 SymMatrix::SymMatrix():Matrix(0)
 {
-     Sym = true;
-     nrows = 0;
-     ncols = 0;
-     nrows0 = 0;
-     ncols0 = 0;
-     size = 0;
-     data = 0;
+   Sym = true;
+   nrows = 0;
+   ncols = 0;
+   nrows0 = 0;
+   ncols0 = 0;
+   size = 0;
+   data = 0;
 }
 SymMatrix::SymMatrix(const SymMatrix& m):Matrix(0)
 {
-	Sym = m.Sym;
-	nrows = m.nrows;
-	ncols = m.ncols;
-	nrows0 = m.nrows0;
-	ncols0 = m.ncols0;
-	size = m.size;
-    data = new double[size];
-    for(int i=0; i<size; i++) data[i] = 0.0;
+   Sym = m.Sym;
+   nrows = m.nrows;
+   ncols = m.ncols;
+   nrows0 = m.nrows0;
+   ncols0 = m.ncols0;
+   size = m.size;
+   data = new double[size];
+   for(int i=0; i<size; i++) data[i] = 0.0;
 }
 
 void SymMatrix::resize(const int dim)
@@ -352,7 +356,7 @@ void SymMatrix::resize(const int dim)
  
    if(size>0)
    {
-	  delete [] data;
+      delete [] data;
       data = NULL;
    }
      
@@ -536,7 +540,7 @@ template<class T>  void vec<T>:: resize(const int argSize)
    if(size>0)
    {
 	   delete[] entry;
-       entry = NULL;
+       entry = NULL; 
    }
    size = argSize;
    entry = new T[argSize];
@@ -648,74 +652,743 @@ template<class T>  void vec<T*>:: operator = (const vec<T*>& v)
 }
 
 ////////////////////////////////////////////////////////////
-#ifdef NewSparseMatrix
+#ifdef NEW_EQS
 /*\!
+********************************************************************
    Create sparse matrix table
    01/2006 WW
+   08/2007 WW
+   10/2007 WW
+********************************************************************
 */
-SparseTable::SparseTable(CFEMesh *a_mesh, bool symmetry)
+SparseTable::SparseTable(CFEMesh *a_mesh, bool quadratic, bool symm):symmetry(symm)
 {
-         
+   long i=0, j=0, ii=0, jj=0;
+   long lbuff0=0, lbuff1=0; 
+   long **larraybuffer;
+   larraybuffer = NULL;
+   //
+   rows = a_mesh->GetNodesNumber(quadratic);  // In sparse table, = number of nodes
+   size_entry_column = 0;
+   //
+   row_index_mapping_n2o = new long[rows]; 
+   row_index_mapping_o2n = new long[rows]; 
+   diag_entry = new long[rows]; 
+   if(symmetry)
+   {
+     larraybuffer = new long *[rows];
+     for(i=0; i<rows; i++)
+     {
+        row_index_mapping_n2o[i] = i;   
+        // 'diag_entry' used as a temporary array 
+        // to store the number of nodes connected to this node
+        lbuff1 = (long)a_mesh->nod_vector[i]->connected_nodes.size();
+        larraybuffer[i] = new long[lbuff1+1]; 
+        //
+        larraybuffer[i][0] = lbuff1;
+        for(j=0; j<lbuff1; j++)
+           larraybuffer[i][j+1] = a_mesh->nod_vector[i]->connected_nodes[j];
+        a_mesh->nod_vector[i]->connected_nodes.clear();
+        for(j=0; j<lbuff1; j++)
+        {
+           jj = larraybuffer[i][j+1];
+           if(i<=jj) 
+             a_mesh->nod_vector[i]->connected_nodes.push_back(jj);
+        }
+        
+     }
+   }
+   //
+   //--- Sort, from that has maximum connect nodes to that has minimum connect nodes
+   //
+   for(i=0; i<rows; i++)
+   {
+      row_index_mapping_n2o[i] = i;   
+      // 'diag_entry' used as a temporary array 
+      // to store the number of nodes connected to this node
+      diag_entry[i] = (long)a_mesh->nod_vector[i]->connected_nodes.size();   
+      if(!quadratic)
+      {
+        lbuff0 = 0;
+        for(j=0; j<diag_entry[i]; j++)
+        {
+           if(a_mesh->nod_vector[i]->connected_nodes[j]<rows)
+             lbuff0++; 
+        }
+        diag_entry[i] = lbuff0;
+      }
+      size_entry_column += diag_entry[i];
+   }
+   //
+   for(i=0; i<rows; i++)
+   {
+      // 'diag_entry' used as a temporary array 
+      // to store the number of nodes connected to this node
+      lbuff0 = diag_entry[i];   // Nodes to this row
+      lbuff1 = row_index_mapping_n2o[i];   
+      j = i;
+      while((j>0)&&(diag_entry[j-1]<lbuff0)) 
+      {
+         diag_entry[j] = diag_entry[j-1];  
+         row_index_mapping_n2o[j] = row_index_mapping_n2o[j-1];
+         j = j-1;                       
+      }
+      diag_entry[j] = lbuff0;
+      row_index_mapping_n2o[j] = lbuff1;
+   }
+   // Old index to new one
+   for(i=0; i<rows; i++)
+     row_index_mapping_o2n[row_index_mapping_n2o[i]] = i;      
+   // Maximum number of columns in the sparse table  
+   max_columns = diag_entry[0]; 
+   //--- End of sorting  
+   //
+   //--- Create sparse table
+   //    
+   num_column_entries = new long[max_columns];
+   entry_column = new long[size_entry_column];  
+   // 1. Count entries in each column in sparse table  
+   for (i = 0; i < max_columns; i++)
+     num_column_entries[i] = 0;
+   for (i = 0; i < rows; i++)
+   {
+      // 'diag_entry' still is used as a temporary array
+      // it stores that numbers of nodes connect to this nodes    
+      for (j = 0; j < diag_entry[i]; j++)
+       num_column_entries[j]++;
+   } 
+   // 2. Fill the sparse table, i.e. store all its entries to   
+   //    entry_column  
+   lbuff0 = 0;
+   for (i = 0; i < max_columns; i++)
+   {
+      for (j = 0; j < num_column_entries[i]; j++)
+      {
+         ii = row_index_mapping_n2o[j];  // ii is the real row index of this entry in matrix
+         // jj is the real column index of this entry in matrix
+         jj = a_mesh->nod_vector[ii]->connected_nodes[i];   
+         entry_column[lbuff0] = jj;         
+         // Till to this stage, 'diag_entry' is really used to store indices of the diagonal entries.
+         // Hereby, 'index' refers to the index in entry_column array.
+         if(ii==jj)
+           diag_entry[ii] = lbuff0;
+         //   
+         lbuff0++;
+      } 
+   }
+   // For the case of symmetry matrix
+   if(symmetry)
+   {
+     for(i=0; i<rows; i++)
+     {
+        lbuff0 = larraybuffer[i][0];
+        a_mesh->nod_vector[i]->connected_nodes.resize(lbuff0); 
+        //
+        for(j=0; j<lbuff0; j++)
+           a_mesh->nod_vector[i]->connected_nodes[j] = larraybuffer[i][j+1];
+     }
+     for(i=0; i<rows; i++)
+     {
+        delete [] larraybuffer[i];
+        larraybuffer[i] = 0;
+     }
+     delete []larraybuffer;
+     larraybuffer = 0; 
+   }             
 }
+/*\!
+********************************************************************
+   Create sparse matrix table for each domain
+   12/2007 WW
+********************************************************************
+*/
+SparseTable::SparseTable(CPARDomain &m_dom, bool quadratic, bool symm):symmetry(symm) 
+{
+   long i=0, j=0, ii=0, jj=0;
+   long lbuff0=0, lbuff1=0; 
+   // 
+   rows = m_dom.GetDomainNodes(quadratic);
+   size_entry_column = 0;
+   //
+   row_index_mapping_n2o = new long[rows]; 
+   row_index_mapping_o2n = new long[rows]; 
+   diag_entry = new long[rows]; 
 
-// 06/2006 WW
+   if(symmetry)
+   {
+     vector<long> conc;
+     for(i=0; i<rows; i++)
+     {
+        row_index_mapping_n2o[i] = i;   
+        // 'diag_entry' used as a temporary array 
+        // to store the number of nodes connected to this node
+        lbuff1 = m_dom.num_nodes2_node[i];
+        //
+        for(j=0; j<lbuff1; j++)
+        {
+           jj = m_dom.node_conneted_nodes[i][j];
+           if(i<=jj)
+              conc.push_back(jj);
+           m_dom.node_conneted_nodes[i][j] = 0;
+        }
+        m_dom.num_nodes2_node[i] = (long)conc.size(); // Number of nodes connected to this node. 
+        // New
+        for(j=0; j<m_dom.num_nodes2_node[i]; j++)
+          m_dom.node_conneted_nodes[i][j] =  conc[j];
+            
+     }
+   }
+   //
+   //--- Sort, from that has maximum connect nodes to that has minimum connect nodes
+   //
+   for(i=0; i<rows; i++)
+   {
+      row_index_mapping_n2o[i] = i;   
+      // 'diag_entry' used as a temporary array 
+      // to store the number of nodes connected to this node
+      diag_entry[i] =  m_dom.num_nodes2_node[i];   
+      if(!quadratic)
+      {
+        lbuff0 = 0;
+        for(j=0; j<diag_entry[i]; j++)
+        {
+           if(m_dom.node_conneted_nodes[i][j]<rows)
+             lbuff0++; 
+        }
+        diag_entry[i] = lbuff0;
+      }
+      size_entry_column += diag_entry[i];
+   }
+   //
+   for(i=0; i<rows; i++)
+   {
+      // 'diag_entry' used as a temporary array 
+      // to store the number of nodes connected to this node
+      lbuff0 = diag_entry[i];   // Nodes to this row
+      lbuff1 = row_index_mapping_n2o[i];   
+      j = i;
+      while((j>0)&&(diag_entry[j-1]<lbuff0)) 
+      {
+         diag_entry[j] = diag_entry[j-1];  
+         row_index_mapping_n2o[j] = row_index_mapping_n2o[j-1];
+         j = j-1;                       
+      }
+      diag_entry[j] = lbuff0;
+      row_index_mapping_n2o[j] = lbuff1;
+   }
+   // Old index to new one
+   for(i=0; i<rows; i++)
+     row_index_mapping_o2n[row_index_mapping_n2o[i]] = i;      
+   // Maximum number of columns in the sparse table  
+   max_columns = diag_entry[0]; 
+   //--- End of sorting  
+   //
+   //--- Create sparse table
+   //    
+   num_column_entries = new long[max_columns];
+   entry_column = new long[size_entry_column];  
+   // 1. Count entries in each column in sparse table  
+   for (i = 0; i < max_columns; i++)
+     num_column_entries[i] = 0;
+   for (i = 0; i < rows; i++)
+   {
+      // 'diag_entry' still is used as a temporary array
+      // it stores that numbers of nodes connect to this nodes    
+      for (j = 0; j < diag_entry[i]; j++)
+       num_column_entries[j]++;
+   } 
+   // 2. Fill the sparse table, i.e. store all its entries to   
+   //    entry_column  
+   lbuff0 = 0;
+   for (i = 0; i < max_columns; i++)
+   {
+      for (j = 0; j < num_column_entries[i]; j++)
+      {
+         ii = row_index_mapping_n2o[j];  // ii is the real row index of this entry in matrix
+         // jj is the real column index of this entry in matrix
+         jj = m_dom.node_conneted_nodes[ii][i];   
+         entry_column[lbuff0] = jj;         
+         // Till to this stage, 'diag_entry' is really used to store indices of the diagonal entries.
+         // Hereby, 'index' refers to the index in entry_column array.
+         if(ii==jj)
+           diag_entry[ii] = lbuff0;
+         //   
+         lbuff0++;
+      } 
+   }       
+}  
+/*\!
+********************************************************************
+   Create sparse matrix table
+   08/2007 WW
+   10/2007 WW
+********************************************************************/
+void SparseTable::Write(ostream &os)
+{
+   long i, k, counter=0;
+   os<<"Symmetry: "<<symmetry<<endl;
+   os<<"\n*** Row index  "<<endl;
+   for (i = 0; i < rows; i++)
+    os<<row_index_mapping_n2o[i]+1<<endl;
+   // 
+   os<<"\n*** Sparse entry  "<<endl;
+   for (k = 0; k < max_columns; k++)
+   {
+     os<<"--Column: "<<k+1<<endl;
+     for (i = 0; i < num_column_entries[k]; i++)
+     {          
+        os<<entry_column[counter]+1<<endl;;
+        counter++;
+     } 
+     os<<endl;        
+  }  
+}    
+
+/*\!
+********************************************************************
+   Create sparse matrix table
+   08/2007 WW
+   10/2007 WW
+********************************************************************/
+SparseTable::~SparseTable()
+{
+  delete [] entry_column;
+  delete [] num_column_entries; 
+  delete [] row_index_mapping_n2o;    
+  delete [] row_index_mapping_o2n;    
+  delete [] diag_entry;
+  entry_column = NULL;
+  num_column_entries = NULL; 
+  row_index_mapping_n2o = NULL;    
+  row_index_mapping_o2n = NULL;    
+  diag_entry = NULL;
+}
+/*\!
+********************************************************************
+   Constructor of sparse matrix
+   Arguments:  
+      sparse_table: Sparse graph
+      dof:  Degree of freedom given by PDE        
+   08/2007 WW
+   10/2007 WW
+********************************************************************/
+CSparseMatrix::CSparseMatrix(const SparseTable &sparse_table, const int dof)
+               :DOF(dof)
+{
+  symmetry = sparse_table.symmetry;
+  size_entry_column = sparse_table.size_entry_column;
+  max_columns = sparse_table.max_columns;  
+  rows = sparse_table.rows;
+  // Topology mapping from data array to matrix
+  // Only refer address
+  entry_column = sparse_table.entry_column;
+  num_column_entries = sparse_table.num_column_entries;  
+  row_index_mapping_n2o = sparse_table.row_index_mapping_n2o;        
+  row_index_mapping_o2n = sparse_table.row_index_mapping_o2n;        
+  diag_entry = sparse_table.diag_entry;
+  // Values of all sparse entries    
+  entry = new double[dof*dof*size_entry_column+1];
+  entry[dof*dof*size_entry_column] = 0.;
+  zero_e = 0.;
+  //
+}
+/*\!
+********************************************************************
+   Desstructor of sparse matrix
+   08/2007 WW
+   10/2007 WW
+********************************************************************/
+CSparseMatrix::~CSparseMatrix()
+{
+  delete [] entry;
+  entry = NULL;
+}
+/*\!
+********************************************************************
+   Desstructor of sparse matrix
+   08/2007 WW
+   10/2007 WW
+********************************************************************/
 double& CSparseMatrix::operator() (const long i, const long j) const
 {
  #ifdef gDEBUG    
-    if(i>=Size_row_index||j>=Size_row_index)
-    {
-        cout<<"\n Index exceeds the dimension of the matrix"<<endl;
-        abort();
-    }
+  if(i>=rows*DOF||j>=rows*DOF)
+  {
+    cout<<"\n Index exceeds the dimension of the matrix"<<endl;
+    abort();
+  }
  #endif    
-    long ii, jj, k, new_id, ounter;
-    ii = i;
-    jj = j;
-    if(symmetry)
+  long ii, jj, ir, jr, k, row_in_parse_table, counter;
+  ii = i;
+  jj = j;
+  if(symmetry)
+  {
+    if(i>j)
     {
-       if(ii>jj)
-       {
-          k = ii;
-          ii = jj;
-          jj = k; 
-       }       
-    }
-    new_id = row_index_o2new[ii];
-    for (k = 0; k < max_column; k++)
-    {
-       count += new_id;
-       if(entry_column[count]==jj)
-          return entry[count];  // Found the entry  
-	   counter += column_size[k]; 
-	}
-    return 0.0; 
+      ii = j;
+      jj = i;
+    }       
+  }
+  ir = ii%rows;
+  jr = jj%rows;
+  ii /= rows;
+  jj /= rows;
+  // 
+  row_in_parse_table = row_index_mapping_o2n[ir];
+  counter = row_in_parse_table;
+  for (k = 0; k < max_columns; k++)
+  {
+    if(row_in_parse_table>=num_column_entries[k]) 
+      return zero_e;
+    if(entry_column[counter]==jr)
+      break;  // Found the entry  
+    counter += num_column_entries[k]; 
+  }
+  if(counter>=size_entry_column)
+    return zero_e;
+  //  Zero entry;  
+  k = (ii*DOF+jj)*size_entry_column+counter;
+  return entry[k]; // 
 } 
-
-// 06/2006 WW
-void CSparseMatrix:: multiVec(double *vec_aug, const double fac=1.0);
+/*\!
+********************************************************************
+   Desstructor of sparse matrix
+   08/2007 WW
+   10/2007 WW
+********************************************************************/
+void CSparseMatrix::operator = (const double a)
 {
-     
-    long i, k, ii, jj, counter;
-    for(i=0; i<dimension; i++)
+   long size = DOF*DOF*size_entry_column;
+   for(long i=0; i<size; i++)
+     entry[i] = a; 
+}
+/*\!
+********************************************************************
+   Desstructor of sparse matrix
+   08/2007 WW
+   10/2007 WW
+********************************************************************/
+void CSparseMatrix::operator *= (const double a)
+{
+   long size = DOF*DOF*size_entry_column;
+   for(long i=0; i<size; i++)
+     entry[i] *= a; 
+}
+/*\!
+********************************************************************
+   Desstructor of sparse matrix
+   08/2007 WW
+   10/2007 WW
+********************************************************************/
+void CSparseMatrix::operator += (const double a)
+{
+   long size = DOF*DOF*size_entry_column;
+   for(long i=0; i<size; i++)
+     entry[i] += a; 
+}
+/*\!
+********************************************************************
+   Desstructor of sparse matrix
+   08/2007 WW
+   10/2007 WW
+********************************************************************/
+void CSparseMatrix::operator = (const CSparseMatrix& m)
+{
+   long size = DOF*DOF*size_entry_column;
+ #ifdef gDEBUG    
+   if(size!=m.DOF*m.DOF*m.size_entry_column)
+   {
+    cout<<"\n Dimensions of two matrices do not match"<<endl;
+    abort();
+   }
+#endif
+   for(long i=0; i<size; i++)
+     entry[i] = m.entry[i]; 
+}
+/*\!
+********************************************************************
+   Desstructor of sparse matrix
+   08/2007 WW
+   10/2007 WW
+********************************************************************/
+void CSparseMatrix::operator += (const CSparseMatrix& m)
+{
+   long size = DOF*DOF*size_entry_column;
+ #ifdef gDEBUG    
+   if(size!=m.DOF*m.DOF*m.size_entry_column)
+   {
+    cout<<"\n Dimensions of two matrices do not match"<<endl;
+    abort();
+   }
+#endif
+   for(long i=0; i<size; i++)
+     entry[i] += m.entry[i]; 
+}
+/*\!
+********************************************************************
+   Desstructor of sparse matrix
+   08/2007 WW
+   10/2007 WW
+********************************************************************/
+void CSparseMatrix::operator -= (const CSparseMatrix& m)
+{
+   long size = DOF*DOF*size_entry_column;
+ #ifdef gDEBUG    
+   if(size!=m.DOF*m.DOF*m.size_entry_column)
+   {
+    cout<<"\n Dimensions of two matrices do not match"<<endl;
+    abort();
+   }
+#endif
+   for(long i=0; i<size; i++)
+     entry[i] -= m.entry[i]; 
+}
+/*\!
+********************************************************************
+   Output sparse matrix
+   08/2007 WW
+   10/2007 WW
+********************************************************************/
+void CSparseMatrix::Write(ostream &os)
+{
+  //
+  long i, k, ii, jj, row_in_parse_table, counter;
+  os<<"*** Non-zero entries of matrix:  "<<endl;
+  os.width(10);
+  os.precision(6); 
+  // 
+  for(ii=0; ii<DOF; ii++)
+  {
+    for(i=0; i<rows; i++)
     {
-        vec_buffer[i] = fac*vec_aug[i];
-        vec_aug[i] = 0.0;
+      row_in_parse_table = row_index_mapping_o2n[i];
+      for(jj=0; jj<DOF; jj++)
+      {
+        counter = row_in_parse_table;
+        for (k = 0; k < max_columns; k++)
+        {
+          if(row_in_parse_table<num_column_entries[k])
+          {
+//TEST
+            //if(fabs(entry[(ii*DOF+jj)*size_entry_column+counter])>DBL_EPSILON) //DBL_EPSILON)
+            os<<setw(10)<<ii*rows+i<<" "
+              <<setw(10)<< jj*rows+entry_column[counter]<<" "
+              <<setw(15)<<entry[(ii*DOF+jj)*size_entry_column+counter]<<endl;  
+            counter += num_column_entries[k];
+          }
+          else
+            break; 
+        }
+      }
     }
-    counter=0;
-    for (k = 0; k < column_size; k++)
+  }
+}
+
+/*\!
+********************************************************************
+   Perform A*x
+   Arguments:  
+      vec_sr: M*vec_s-->vec_r
+   01/2006 WW
+   08/2007 WW
+   10/2007 WW
+********************************************************************/
+void CSparseMatrix::multiVec(double *vec_s, double *vec_r)
+{
+  long i, j, k, ii, jj, kk,ll,idof, jdof, counter;
+  for(i=0; i<rows*DOF; i++)
+    vec_r[i] = 0.0;
+  //
+  counter=0;
+  if(DOF>1)
+  {
+    // Although this piece of code can deal with the case
+    // of DOF = 1, we also prepare a special piece of code for
+    // the case of DOF = 1 just for efficiency
+    for (k = 0; k < max_columns; k++)
     {
-       for (i = 0; i < column_size[k]; i++)
+       for (i = 0; i < num_column_entries[k]; i++)
        {          
-          ii = row_index[i];  
+          ii = row_index_mapping_n2o[i];  
           jj=entry_column[counter];
-		  vec_aug[ii] += entry[counter]*vec_buffer[jj];
-          if(symmetry&&(ii!=jj)))
-             vec_aug[jj] += entry[counter]*vec_buffer[ii];
-		  counter++;
+          for(idof=0; idof<DOF; idof++)
+          {
+             kk = idof*rows+ii;
+             for(jdof=0; jdof<DOF; jdof++)
+             {
+               ll = jdof*rows+jj; 
+               j = (idof*DOF+jdof)*size_entry_column+counter;
+               vec_r[kk] += entry[j]*vec_s[ll];
+               if(symmetry&(kk!=ll))
+                  vec_r[ll] += entry[j]*vec_s[kk];
+             }
+          }
+          counter++;
        }         
     }
+  }
+  else  // DOF = 1
+  {
+    for (k = 0; k < max_columns; k++)
+    {
+       for (i = 0; i < num_column_entries[k]; i++)
+       {          
+          ii = row_index_mapping_n2o[i];  
+          jj=entry_column[counter];
+          vec_r[ii] += entry[counter]*vec_s[jj];
+          if(symmetry&(ii!=jj))
+             vec_r[jj] += entry[counter]*vec_s[ii];
+          counter++;
+       }         
+    }
+  }
 }
-#endif
+/*\!
+********************************************************************
+   Set
+        A(ii,ii) = x_i, 
+        A(ii, j) = 0., j!=ii
+        A(i, ii) = 0., i!=ii
+        b_i -= A(i,k)b_k  // b_k is given
+   Programm:  
+   10/2007 WW
+********************************************************************/
+void CSparseMatrix::Diagonize(const long idiag, const double b_given, double *b)
+{
+  //
+  double vdiag = 0.;
+  long i, k, ii, jj, i0, j0, row_in_parse_table, counter;
+  long id = idiag%rows;
+  ii = idiag/rows;
+  // Row is zero
+  row_in_parse_table = row_index_mapping_o2n[id];
+  counter = row_in_parse_table;
+  for (k = 0; k < max_columns; k++)
+  {
+    if(row_in_parse_table<num_column_entries[k])
+    {
+      j0=entry_column[counter];
+      for(jj=0; jj<DOF; jj++)
+      {
+        if(id==j0&&jj==ii)   
+          vdiag = entry[(ii*DOF+jj)*size_entry_column+counter];
+        else  
+          entry[(ii*DOF+jj)*size_entry_column+counter] = 0.;
+      }
+      counter += num_column_entries[k];
+    }
+    else
+      break;
+  }
+  //
+  counter=0;
+  for (k = 0; k < max_columns; k++)
+  {
+    for (i = 0; i < num_column_entries[k]; i++)
+    {          
+      i0 = row_index_mapping_n2o[i]; 
+      /*
+      if(i0 == id)
+      {
+        counter++;
+        continue; 
+      }
+      */
+      j0=entry_column[counter];
+      if(j0 == id)
+      {
+        for(jj=0; jj<DOF; jj++)
+        {
+          if(i0 == j0&&ii==jj) continue;
+          b[jj*rows+i0] -= entry[(jj*DOF+ii)*size_entry_column+counter]*b_given; 
+          entry[(jj*DOF+ii)*size_entry_column+counter] = 0.; 
+          // Room for symmetry case
+        }           
+      } 
+      //
+      counter++;
+    }         
+  }
+  b[idiag] = vdiag*b_given;
+}
+
+/*\!
+********************************************************************
+   M^{-1}*A
+   
+          a_ij  i=j
+   M = { 
+          0     i!=j 
+   Programm:  
+   10/2007 WW
+********************************************************************/
+void CSparseMatrix::Precond_Jacobi(double *vec_s, double *vec_r)
+{
+  long i, idof;
+  double diag = 0.;
+  //
+  if(DOF>1)
+  {
+    // Although this piece of code can deal with the case
+    // of DOF = 1, we also prepare a special piece of code for
+    // the case of DOF = 1 just for efficiency
+    for(i=0; i<rows; i++)
+    {
+      for(idof=0; idof<DOF; idof++)
+      {
+        diag = entry[(idof*DOF+idof)*size_entry_column+diag_entry[i]];
+        if(fabs(diag)<DBL_EPSILON)
+          diag = 1.0;
+        //  cout<<"Diagonal entry is zero. Abort simulation!!  " <<endl;
+        vec_r[idof*rows+i] = vec_s[idof*rows+i]/diag;
+      }         
+   }
+    // 
+  }
+  else  // DOF = 1
+  {
+    for(i=0; i<rows; i++)
+    {
+       diag = entry[diag_entry[i]];
+       if(fabs(diag)<DBL_EPSILON)
+          diag = 1.0;
+       //   cout<<"Diagonal entry is zero. Abort simulation!!  " <<endl;
+       //
+       vec_r[i] = vec_s[i]/diag;
+    }
+  }
+}
+#if defined(USE_MPI)
+/*\!
+********************************************************************
+   Get diagonal entries of the matrix
+   Programm:  
+   12/2007 WW
+********************************************************************/
+void CSparseMatrix::DiagonalEntries(double *diag_e)
+{
+  long i, idof;
+  //
+  if(DOF>1)
+  {
+    // Although this piece of code can deal with the case
+    // of DOF = 1, we also prepare a special piece of code for
+    // the case of DOF = 1 just for efficiency
+    for(i=0; i<rows; i++)
+    {
+      for(idof=0; idof<DOF; idof++)
+        diag_e[idof*rows+i] = entry[(idof*DOF+idof)*size_entry_column+diag_entry[i]];
+    }
+    // 
+  }
+  else  // DOF = 1
+  {
+    for(i=0; i<rows; i++)
+      diag_e[i]  = entry[diag_entry[i]];
+  }  
+}
+#endif // USE_MPI
+#endif  //NEW_EQS
 ///////////////////////////////////////////////////////////
 
 

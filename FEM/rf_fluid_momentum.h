@@ -78,7 +78,7 @@ public:
 };
 
 
-class CFluidMomentum:public CRFProcess
+class CFluidMomentum: public CRFProcess
 {
 public:  
 	CFluidMomentum(void);

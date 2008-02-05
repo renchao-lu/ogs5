@@ -42,6 +42,7 @@ femlib.o\
 fem_ele_vec.o\
 fem_ele_std.o\
 fem_ele.o\
+equation_class.o\
 elements.o\
 display.o\
 break.o\

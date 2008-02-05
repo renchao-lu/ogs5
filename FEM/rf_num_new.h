@@ -12,6 +12,7 @@ last modified:
 #include <fstream>
 #include <string>
 #include <vector>
+#include "prototyp.h"
 using namespace std;
 // GEOLib
 // FEMLib

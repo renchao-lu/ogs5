@@ -19,35 +19,18 @@ Programing:
 #include "rf_st_new.h"//CMCD 02_06
 // C++ STL
 #include <fstream>
-
-// This will be removed after new sparse matrix is ready
-// for solver. WW
-#ifdef USE_MPI
-extern double *buff_bc; 
-extern double *buff_global; 
-extern double *x_array_bc; 
-extern double *r_array; 
-extern double *r_array_bc; 
-extern double *r_zero;
-extern double *r_zero_bc;
-extern double *p_array;
-extern double *p_array_bc;
-extern double *v_array;
-extern double *v_array_bc;
-extern double *s_array;
-extern double *s_array_bc;
-extern double *t_array;
-extern double *t_array_bc;
-extern long  *overlapped_entry;
-extern long overlapped_entry_size;
-extern long overlapped_entry_sizeHQ;
-#endif
-
+//
 // The follows are implicit declaration. WW
 //---------------------------------------------------------------------------
 namespace FiniteElement {class CFiniteElementStd; class CFiniteElementVec; 
                          class ElementMatrix; class ElementValue;} 
 namespace Mesh_Group {class CFEMesh;} 
+
+#ifdef NEW_EQS    //WW
+namespace Math_Group {class Linear_EQS;} 
+using Math_Group::Linear_EQS;
+#endif
+
 //
 class CSourceTermGroup; 
 class CSourceTerm;
@@ -142,6 +125,15 @@ class CRFProcess {
     double time_unit_factor; 
     int NumDeactivated_SubDomains;
     int *Deactivated_SubDomain;
+    //New equation and solver objects WW
+#ifdef NEW_EQS
+    Linear_EQS *eqs_new; 
+    bool configured_in_nonlinearloop; 
+#endif
+    //
+#ifdef USE_MPI //WW
+    clock_t cpu_time_assembly;  
+#endif
     // Position of unkowns from different DOFs in the system equation  
     //....................................................................
     // OUT
@@ -409,7 +401,11 @@ class CRFProcess {
     void IncorporateBoundaryConditions(const int rank=-1);
     void SetBoundaryConditionSubDomain(); //WW
     //WW void CheckBCGroup(); //OK
+#ifdef NEW_EQS //WW
+    void EQSInitialize(); 
+#else
     int ExecuteLinearSolver(void);
+#endif
     int ExecuteLinearSolver(LINEAR_SOLVER *eqs);
     //Time Control
     double timebuffer; //YD
@@ -469,9 +465,18 @@ class CRFProcess {
     void Delete(); //OK
     bool m_bCheck; //OK
     void EQSDelete(); //OK
+    // Dumping matrix and RHS. WW
+    void DumpEqs(string file_name);
+#ifdef USE_MPI //WW
+    void Print_CPU_time_byAssembly(ostream &os=cout)
+      {   os<<"\n***\nCPU time elapsed in the linear equation of "<<pcs_type_name<<"\n";
+          os<<"--Global assembly: "<<(double)cpu_time_assembly/CLOCKS_PER_SEC<<"\n"; 
+      }
+#endif
+
   private:
-    int continuum;
-    bool continuum_ic;
+   int continuum;
+   bool continuum_ic;
 }; 
 
 //========================================================================
@@ -574,6 +579,13 @@ extern vector<LINEAR_SOLVER *> PCS_Solver; //WW
 extern void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs); //OK
 extern void PCSCreateNew(); //OK
 extern bool PCSCheck(); //OK
+// New solvers WW
+// Create sparse graph for each mesh    //1.11.2007 WW
+#ifdef NEW_EQS    //1.11.2007 WW
+extern void CreateEQS_LinearSolver(); 
+#endif
+
+
 
 #endif
 

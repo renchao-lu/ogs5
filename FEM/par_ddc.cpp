@@ -21,14 +21,20 @@ using namespace std;
 #include "geo_strings.h"
 #include "rf_num_new.h"
 #include "gs_project.h"
-
+#ifdef NEW_EQS
+// Solver WW
+#include "matrix_class.h"
+#include "equation_class.h"
+#endif
 vector<CPARDomain*>dom_vector;
 vector<long> node_connected_doms; //This will be removed after sparse class is finished WW
 
 //---- MPI Parallel --------------
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
+#include<mpi.h>
 int size;
 int myrank;
+int mysize;
 char t_fname[3];
 double time_ele_paral;
 #endif
@@ -166,7 +172,7 @@ void CountDoms2Nodes(CRFProcess *m_pcs)
      {
        for(k=0; k<elem->GetNodesNumber(quad); k++)
        {
-		 anode = elem->GetNode(k); 
+         anode = elem->GetNode(k); 
          anode->SetMark(true);
        }        
      }
@@ -181,16 +187,28 @@ Programing:
 07/2006 WW Find nodes of all neighbors of each node 
 09/2007 WW Check the nodes whether it is belong to the deactivated elements
 **************************************************************************/
-void DOMCreate(CRFProcess *m_pcs)
+void DOMCreate()
 {
   int no_domains = (int)dom_vector.size();
   if(no_domains==0)
     return;
   CPARDomain *m_dom = NULL;
+  CRFProcess* m_pcs = NULL;
   bool quadr = false; //WW  
   int i;
-  if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
-    quadr = true;
+  //WW ----- D
+  //----------------------------------------------------------------------
+  for(i=0;i<(int)pcs_vector.size();i++)
+  {
+    m_pcs = pcs_vector[i];
+    if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
+    {
+       quadr = true;
+       break;
+    } 
+  }
+  if(!quadr)
+     m_pcs = pcs_vector[0];
 
   //----------------------------------------------------------------------
   // Create domain nodes
@@ -219,7 +237,6 @@ void DOMCreate(CRFProcess *m_pcs)
     cout << "    Domain:" << m_dom->ID << endl;
     m_dom->CreateElements(quadr); 
   }
-
   // For find nodes connected to node WW
   long j;
   long nsize = m_pcs->m_msh->GetNodesNumber(true);
@@ -243,19 +260,29 @@ void DOMCreate(CRFProcess *m_pcs)
     i = myrank;//WW  
 #endif  
     m_dom = dom_vector[i];
-	m_dom->NodeConnectedNodes();
+    m_dom->NodeConnectedNodes();
 #ifndef USE_MPI //WW
   }
 #endif
   //----------------------------------------------------------------------
   // Create domain EQS
   cout << "  Create domain EQS" << endl;
+#ifdef USE_MPI
+  i = myrank;  
+#else
   for(i=0;i<no_domains;i++){
+#endif
     m_dom = dom_vector[i];
     cout << "    Domain:" << m_dom->ID << endl;
+#ifdef NEW_EQS
+    m_dom->CreateEQS();
+#else
     m_dom->CreateEQS(m_pcs);
+#endif
+    //
+#ifndef USE_MPI
   }
-
+#endif
   //----------------------------------------------------------------------
 }
 
@@ -275,6 +302,25 @@ CPARDomain::CPARDomain(void)
   for(int i=0; i<4; i++) //WW
     shift[i] = 0;
   quadratic = false; //WW
+#ifdef NEW_EQS
+  sparse_graph = NULL;
+  sparse_graph_H = NULL;
+  eqs = NULL;
+  eqsH = NULL;
+#endif  
+#if defined(USE_MPI)  // 13.12.2007 WW
+  t_border_nodes = NULL;
+  t_border_nodes_size = t_border_nodes_sizeH = 0; 
+  // 
+#if defined(NEW_BREDUCE)
+  receive_cnt_b = new int[mysize];
+  receive_disp_b = new int[mysize];
+#endif
+  receive_cnt_i = new int[mysize];
+  receive_disp_i = new int[mysize]; 
+  receive_cnt = new int[mysize];
+  receive_disp = new int[mysize];
+#endif
 }
 
 CPARDomain::~CPARDomain(void)
@@ -283,20 +329,89 @@ CPARDomain::~CPARDomain(void)
   nodes.clear();
   nodes_inner.clear();
   nodes_halo.clear();
+  
   // WW
   for(long i=0; i< (long)element_nodes_dom.size(); i++)
   {
-     delete element_nodes_dom[i];
+     delete [] element_nodes_dom[i];
      element_nodes_dom[i] = NULL; 
   }	  
   for(long i=0; i< (long)node_conneted_nodes.size(); i++)
   {
-     delete node_conneted_nodes[i];
+     delete [] node_conneted_nodes[i];
      node_conneted_nodes[i] = NULL; 
-  }	  
+  } 
+    	  
   //
+#ifdef NEW_EQS  
+  if(eqs) delete eqs;
+  if(eqsH) delete eqsH;
+  if(sparse_graph) delete sparse_graph;
+  if(sparse_graph_H) delete sparse_graph_H;
+#endif
+  
+#if defined(USE_MPI)  // 13.12.2007 WW
+  if(t_border_nodes) delete [] t_border_nodes;
+  t_border_nodes = NULL;
+ #if defined(NEW_BREDUCE)
+  delete [] receive_cnt_b;
+  delete [] receive_disp_b;
+  receive_cnt_b = NULL;
+  receive_disp_b = NULL;
+ #endif
+  delete [] receive_cnt_i;
+  delete [] receive_disp_i;
+  delete [] receive_cnt;
+  delete [] receive_disp;
+  receive_cnt_i = NULL;
+  receive_disp_i = NULL;
+  receive_cnt = NULL;
+  receive_disp = NULL;
+#endif
 }
 
+/**************************************************************************
+FEMLib-Method: 
+Task: Release partial memory
+Programing:
+012/2007 WW Implementation
+**************************************************************************/
+#if defined(USE_MPI) 
+void CPARDomain::ReleaseMemory()
+{
+  // WW
+  for(long i=0; i< (long)element_nodes_dom.size(); i++)
+  {
+     delete [] element_nodes_dom[i];
+     element_nodes_dom[i] = NULL; 
+  }	  
+  for(long i=0; i< (long)node_conneted_nodes.size(); i++)
+  {
+     delete [] node_conneted_nodes[i];
+     node_conneted_nodes[i] = NULL; 
+  } 
+  if(eqs) delete eqs;
+  if(eqsH) delete eqsH;
+  if(sparse_graph) delete sparse_graph;
+  if(sparse_graph_H) delete sparse_graph_H;
+  if(t_border_nodes) delete [] t_border_nodes;
+  t_border_nodes = NULL;
+#if defined(NEW_BREDUCE)
+  delete [] receive_cnt_b;
+  delete [] receive_disp_b;
+  receive_cnt_b = NULL;
+  receive_disp_b = NULL;
+#endif
+  delete [] receive_cnt_i;
+  delete [] receive_disp_i;
+  delete [] receive_cnt;
+  delete [] receive_disp;
+  receive_cnt_i = NULL;
+  receive_disp_i = NULL;
+  receive_cnt = NULL;
+  receive_disp = NULL;
+}
+#endif
 /**************************************************************************
 FEMLib-Method: 
 Task: ST read function
@@ -451,8 +566,10 @@ void CPARDomain::CreateElements(const bool quadr)
   }
   //***   
   //----------------------------------------------------------------------
-  for(i=0;i<(long)elements.size();i++){
-    if(elements[i]>(long)m_msh->ele_vector.size()){
+  for(i=0;i<(long)elements.size();i++)
+  {
+    if(elements[i]>(long)m_msh->ele_vector.size())
+    {
       cout << "Warning: no ELE data" << '\n';
       continue;
     }
@@ -476,7 +593,7 @@ void CPARDomain::CreateElements(const bool quadr)
       k = m_nod->GetIndex(); 
       if(node_connected_doms[k]>-1)
          elem_nodes[j] = node_connected_doms[k];
-	  else
+      else
       {
           elem_nodes[j] = (long)nodes.size();  
           node_connected_doms[k] = elem_nodes[j];
@@ -520,20 +637,20 @@ void CPARDomain::NodeConnectedNodes()
   for(i=0;i<(long)nodes.size();i++)
   {
      m_nod = m_msh->nod_vector[nodes[i]];
-	 nodes2node.clear();
+     nodes2node.clear();
      for(k=0; k<(int)m_nod->connected_nodes.size(); k++)
-	 { 
-         long_buff = m_nod->connected_nodes[k];
-         j = node_connected_doms[long_buff]; 
-         if(j>-1)
-            nodes2node.push_back(j);
+     { 
+       long_buff = m_nod->connected_nodes[k];
+       j = node_connected_doms[long_buff]; 
+       if(j>-1)
+         nodes2node.push_back(j);
      }
      i_buff = (int)nodes2node.size();
      long  *nodes_to_node = new long[i_buff];
      for(k=0; k<i_buff; k++)
-        nodes_to_node[k] = nodes2node[k];
+       nodes_to_node[k] = nodes2node[k];
      node_conneted_nodes.push_back(nodes_to_node);
-	 num_nodes2_node.push_back(i_buff);
+       num_nodes2_node.push_back(i_buff);
   }
   //----------------------------------------------------------------------
 }
@@ -555,7 +672,108 @@ long CPARDomain::GetDOMNode(long global_node)
   }
   return -1;
 }
+#ifdef NEW_EQS
+/**************************************************************************
+PARLib-Method: 
+Task:      Create local subdomain sparse matrix
+Programing:
+12/2007 WW Implementation
+**************************************************************************/
+void CPARDomain::CreateSparseTable()
+{    
+  // Symmetry case is skipped.
+  // 1. Sparse_graph_H for high order interpolation. Up to now, deformation
+  if(nnodesHQ_dom!=nnodes_dom)   
+    sparse_graph_H = new SparseTable(*this, true);
+  // 2. M coupled with other processes with linear element
+  if(sparse_graph_H)
+  { 
+     if((int)pcs_vector.size()>1)
+      sparse_graph = new SparseTable(*this, false);
+  }
+  // 3. For process with linear elements
+  else
+    sparse_graph = new SparseTable(*this, false);
 
+     
+  //sparse_graph->Write();
+  //sparse_graph_H->Write();
+  //
+  //ofstream Dum("sparse.txt", ios::out); 
+  //sparse_graph_H->Write(Dum);}
+ 
+
+ /*
+
+   //TEST
+ string test = "rank";
+ char stro[1028];  
+ sprintf(stro, "%d",myrank);
+ string test1 = test+(string)stro+"sparse.txt";
+    ofstream Dum(test1.c_str(), ios::out); // WW
+    sparse_graph->Write(Dum);   Dum.close();
+
+ */
+
+}
+/**************************************************************************
+PARLib-Method: 
+Task:  Create local equation system
+Programing:
+12/2007 WW Implementation
+**************************************************************************/
+void CPARDomain::CreateEQS()
+{
+  int i, dof_nonDM=1;
+  int dof_DM=1;
+  CRFProcess *m_pcs = NULL;
+  //
+  for(i=0;i<(int)pcs_vector.size();i++)
+  {
+    m_pcs = pcs_vector[i];
+    if(m_pcs->type==22) // Monolithic TH2
+      dof_nonDM =  m_pcs->GetPrimaryVNumber();  
+    if(m_pcs->type==4||m_pcs->type==41)  // Deformation
+      dof_DM = m_pcs->GetPrimaryVNumber();   
+    else // Monolithic scheme for the process with linear elements
+    {
+      if(dof_nonDM < m_pcs->GetPrimaryVNumber())
+        dof_nonDM = m_pcs->GetPrimaryVNumber();
+    }          
+  }
+  //
+  CreateSparseTable();
+  //
+  if(sparse_graph) 
+    eqs = new Linear_EQS(*sparse_graph, dof_nonDM);
+  if(sparse_graph_H) 
+    eqsH = new Linear_EQS(*sparse_graph_H, dof_DM);
+  //  
+}
+/**************************************************************************
+PARLib-Method: 
+Task:  
+Programing:
+12/2007 WW Implementation
+**************************************************************************/
+void CPARDomain::InitialEQS(CRFProcess *m_pcs)
+{
+  long size = nnodes_dom;
+  Linear_EQS *this_eqs = NULL;
+  if(m_pcs->type==4||m_pcs->type==41)
+  {
+     size = nnodesHQ_dom;
+     this_eqs = eqsH;
+  }
+  else
+     this_eqs = eqs;
+  for(int i=0; i<m_pcs->GetPrimaryVNumber(); i++)
+    shift[i] = i*size;
+  //
+  this_eqs->Initialize();
+}
+//
+#else
 /**************************************************************************
 PARLib-Method: 
 Task: 
@@ -565,8 +783,10 @@ Programing:
 **************************************************************************/
 void CPARDomain::CreateEQS(CRFProcess *m_pcs)
 {
+      
   long no_nodes = (long)nodes.size();
   int dof = m_pcs->GetPrimaryVNumber(); 
+   
 
   if(m_pcs->type==4||m_pcs->type==41)
   {
@@ -590,7 +810,7 @@ void CPARDomain::CreateEQS(CRFProcess *m_pcs)
   //InitializeLinearSolver(m_dom->eqs,NULL,NULL,NULL,m_dom->lsp_name);
   InitLinearSolver(eqs);
 }
-
+#endif
 /**************************************************************************
 FEMLib-Method: 
 Task:
@@ -625,15 +845,6 @@ void CPARDomain::AssembleMatrix(CRFProcess* m_pcs)
   }
 }
 */
-/**************************************************************************
-FEMLib-Method: 
-Task:
-Programing:
-07/2004 OK Implementation
-**************************************************************************/
-void CPARDomain::SolveEQS(void)
-{
-}
 
 /**************************************************************************
 FEMLib-Method: 
@@ -848,12 +1059,15 @@ void FindNodesOnInterface(CFEMesh *m_msh, bool quadr)
   vector<long> bc_buffer;
   vector<long> dom_bc_buffer;
   vector<long> dom_bc_bufferHQ;
-
-
+  // 
   nnodes_gl = m_msh->GetNodesNumber(true);
   nnodes_l = m_msh->GetNodesNumber(false);
-
+  //
   bc_buffer.resize(nnodes_gl);
+  //
+#if defined(USE_MPI) //13.12.2007
+  long overlapped_entry_size = 0;
+#endif
   for(i=0;i<nnodes_gl;i++)
   {
      if(node_connected_doms[i]>1.0)
@@ -869,12 +1083,15 @@ void FindNodesOnInterface(CFEMesh *m_msh, bool quadr)
      else 
          bc_buffer[i] = -1; 
   }
-  
-#ifdef USE_MPI
-  overlapped_entry_sizeHQ = (long)long_buffer.size();
-  overlapped_entry = new long[overlapped_entry_sizeHQ];
-  for(i=0;i<overlapped_entry_sizeHQ;i++)
-      overlapped_entry[i] = long_buffer[i];
+  // 
+#if defined(USE_MPI) // 13.12.2007
+  // Total border nodes
+  m_dom = dom_vector[myrank];
+  m_dom->t_border_nodes_size = overlapped_entry_size;
+  m_dom->t_border_nodes_sizeH = (long)long_buffer.size();
+  m_dom->t_border_nodes = new long[m_dom->t_border_nodes_sizeH];
+  for(i=0;i<m_dom->t_border_nodes_sizeH;i++)
+    m_dom->t_border_nodes [i] = long_buffer[i];
 #endif
  
   // Sort
@@ -884,6 +1101,7 @@ void FindNodesOnInterface(CFEMesh *m_msh, bool quadr)
      int myrank = k;
 #endif
      m_dom = dom_vector[myrank];
+     //
      boundary_nodes.clear();     
      inner_nodes.clear();  
      boundary_nodes_HQ.clear();     
@@ -950,16 +1168,16 @@ void FindNodesOnInterface(CFEMesh *m_msh, bool quadr)
      // First interior nodes, then interface nodes
      j=0;
      for(i=0;i<m_dom->num_inner_nodes;i++)
-	 {
+     {
         m_dom->nodes[i] = m_dom->nodes_inner[i];
  //       m_dom->nodes_inner[i] = i;        
-	 }
+     }
      j += m_dom->num_inner_nodes;
      for(i=0;i<m_dom->num_boundary_nodes;i++)
-	 {
+     {
         m_dom->nodes[i+j] = m_dom->nodes_halo[i];
   //      m_dom->nodes_halo[i] = i+j; 
-	 }
+     }
      j += m_dom->num_boundary_nodes;
      for(i=0;i<(long)inner_nodes_HQ.size();i++)
      {
@@ -968,10 +1186,10 @@ void FindNodesOnInterface(CFEMesh *m_msh, bool quadr)
      }
      j += (long)inner_nodes_HQ.size();
      for(i=0;i<(long)boundary_nodes_HQ.size();i++)
-	 {
+     {
          m_dom->nodes[i+j] = m_dom->nodes_halo[i+m_dom->num_boundary_nodes];
    //      m_dom->nodes_halo[i+m_dom->num_boundary_nodes] = i+j;
-	 }
+     }
      
      for(i=0;i<(long)m_dom->nodes.size();i++)
      {
@@ -980,15 +1198,15 @@ void FindNodesOnInterface(CFEMesh *m_msh, bool quadr)
         {
            if(-l_buff-nnodes_gl>0) //HQ nodes
              l_buff1 = m_dom->nnodes_dom+(long)inner_nodes_HQ.size()-l_buff-nnodes_gl-1;
-		   else 
+           else 
              l_buff1 = (long)inner_nodes.size()-l_buff-1;
 //             l_buff1 = m_dom->num_inner_nodesHQ-l_buff-1;
         }
-		else
+       else
         {
            if(l_buff-nnodes_gl>=0) //HQ nodes
              l_buff1 = m_dom->nnodes_dom +l_buff-nnodes_gl;
-		   else 
+           else 
              l_buff1 = l_buff;
             
         }
@@ -1047,52 +1265,552 @@ void DDCCreate()
      if(!DOF_gt_one)
         m_pcs = pcs_vector[0];
      // -----------------------
-     DOMCreate(m_pcs);
+     DOMCreate();
      //
      for(i=0;i<no_processes;i++){
        m_pcs = pcs_vector[i];
        // Config boundary conditions for domain decomposition 
        m_pcs->SetBoundaryConditionSubDomain(); //WW
      }
-// This will be removed after new sparse matrix is ready. WW for solver
-#ifdef USE_MPI
-     long max_edim; 
-     max_edim = 0;
-     int dof = 1;
-     for(i=0;i<(int)dom_vector.size();i++)
-     {
-       if(dom_vector[i]->eqs->dim>max_edim)
-         max_edim = dom_vector[i]->eqs->dim;
-        dof  = GetUnknownVectorDimensionLinearSolver(dom_vector[i]->eqs);    
-     }
-     //
-     p_array = new double[max_edim];
-     v_array = new double[max_edim];
-     s_array = new double[max_edim];
-     t_array = new double[max_edim];
-     r_zero = new double[max_edim]; 
-     r_array = new double[max_edim]; 
-     //
-     dof *= overlapped_entry_sizeHQ;
-     buff_bc    = new double[dof];
-     p_array_bc = new double[dof];
-     v_array_bc = new double[dof];
-     s_array_bc = new double[dof];
-     t_array_bc = new double[dof];
-     r_zero_bc  = new double[dof]; 
-     r_array_bc = new double[dof]; 
-     x_array_bc = new double[dof]; 
-     //
-     max_edim = 0;
-     for(i=0;i<(int)PCS_Solver.size();i++)
-     {
-       if(PCS_Solver[i]->dim>max_edim)
-         max_edim = PCS_Solver[i]->dim;
-     }
-     buff_global =  new double[max_edim];    
-#endif
      //
      node_connected_doms.clear();
   }
   // PA PCSProcessDependencies();
 }
+#if defined(USE_MPI) //WW
+//------------------------For parallel solvers------------------------------
+/*************************************************************************
+GeoSys-Function:
+Task: 
+Programming: 
+12/2007 WW Implementation
+**************************************************************************/
+void CPARDomain::ConfigEQS(CNumerics *m_num, const long n, bool quad)
+{
+  int i;
+  long dim = 0;
+  i_start[0] = 0;
+  i_end[0] = num_inner_nodes; //Number of interior nodes
+  b_start[0] =0;
+  b_end[0] = num_boundary_nodes;
+  n_shift[0] = num_inner_nodes;
+  long inner_size = num_inner_nodes;
+  long border_size = num_boundary_nodes;
+  quadratic = quad;
+  //
+  double cpu_time_local = -MPI_Wtime();  
+
+
+  /*
+
+  //TEST_MPI
+  string test = "rank";
+ static char stro[102];  
+ 
+ sprintf(stro, "%d",myrank);
+ string test1 = test+(string)stro+"Assemble.txt";
+ ofstream Dum(test1.c_str(), ios::out); // WW
+ Dum<<"Mysize" <<mysize<<"  "<<quadratic<<endl;
+  
+ Dum.close();
+      MPI_Finalize();
+    exit(0);
+  */
+
+
+  if(quadratic)
+  { 
+    n_loc = nnodesHQ_dom;
+    nq = 2;
+    n_bc = t_border_nodes_sizeH;
+    i_start[1] = i_end[0]+num_boundary_nodes;
+    i_end[1] = i_start[1]+num_inner_nodesHQ; //Number of interior nodes
+    //
+    b_start[1] = b_end[0];
+    b_end[1] = b_start[1]+num_boundary_nodesHQ;
+    n_shift[1] =  n_shift[0]+ num_inner_nodesHQ;
+    //
+    dof = eqsH->DOF();
+    eqsH->SetDomain(this);
+    eqsH->ConfigNumerics(m_num, n);
+    inner_size += num_inner_nodesHQ;
+    border_size += num_boundary_nodesHQ;
+  }
+  else
+  {
+    n_loc = nnodes_dom; 
+    nq = 1; 
+    n_bc = t_border_nodes_size;
+    dof = eqs->DOF();
+    eqs->SetDomain(this);
+    eqs->ConfigNumerics(m_num, n);
+  }
+  //  Concatenate index
+  inner_size *= dof;
+  border_size *= dof;
+  for(i=0; i<mysize; i++) 
+  {
+    receive_cnt[i] = 1;
+    receive_disp[i] = i;
+  }
+  //
+  // receive_cnt_i[]: number of subdomain inner nodes in the concatenated array 
+  MPI_Allgatherv ( &inner_size, 1, MPI_INT, receive_cnt_i, receive_cnt, receive_disp, 
+                     MPI_INT, MPI_COMM_WORLD ); 
+  inner_size = 0;   
+  for(i=0; i<mysize; i++) 
+  {
+    receive_disp_i[i] = inner_size;
+    inner_size += receive_cnt_i[i]; 
+  }
+#if defined(NEW_BREDUCE)
+  // receive_cnt_b[]: number of subdomain border nodes in the concatenated array 
+  MPI_Allgatherv ( &border_size, 1, MPI_INT, receive_cnt_b, receive_cnt, receive_disp, 
+                    MPI_INT, MPI_COMM_WORLD ); 
+  border_size = 0;   
+  for(i=0; i<mysize; i++) 
+  {
+    receive_disp_b[i] = border_size;
+    border_size += receive_cnt_b[i]; 
+  }
+  //
+  cpu_time_local += MPI_Wtime();
+  if(quadratic)
+  {
+    eqsH->f_buffer[(int)eqsH->f_buffer.size()-3] = new double[border_size];
+    eqsH->cpu_time += cpu_time_local; 
+  }
+  else
+  {
+    eqs->f_buffer[(int)eqs->f_buffer.size()-3] = new double[border_size];
+    eqs->cpu_time += cpu_time_local;  
+  }
+#endif
+  // 
+  // dim = n_loc*dof;  
+  // MPI_Allreduce(&dim,  &max_dimen, 1, MPI_INT,  MPI_MAX, MPI_COMM_WORLD);
+}
+/*************************************************************************
+GeoSys-Function:
+Task: Parallel solver 
+
+  HM monolithic case is to be considered. 
+Programming: 
+07/2006 WW Implementation
+12/2007 WW Revise
+**************************************************************************/
+double CPARDomain::Dot_Interior(const double *localr0,  const double *localr1)
+{ 
+   long i;
+   int ii, k;   
+   double val;
+   // 
+
+   /*
+ if(dof>1)
+   {
+   //TEST
+   
+string test = "rank";
+ char stro[64];  
+ sprintf(stro, "%d",myrank);
+ string test1 = test+(string)stro+"dom.txt";
+   
+ ofstream Dum(test1.c_str(), ios::out);
+     Dum<<" nnodesHQ_dom  "<< nnodesHQ_dom<<endl;
+
+  Dum<<" nq "<<nq <<endl;
+
+      for(k=0; k<nq; k++)
+      {
+     Dum<<" i_start[k]  "<<i_start[k] <<endl;
+
+   Dum<<"  i_end[k] "<<i_end[k] <<endl;
+
+         for(i=i_start[k];i<i_end[k];i++)
+         {
+            for(ii=0; ii<dof; ii++) 
+	      {
+            //
+               val += localr0[i+n_loc*ii]*localr0[i+n_loc*ii];
+
+                 
+                 Dum<<"[i+n_loc*ii] "<< i+n_loc*ii <<" localr0[i+n_loc*ii] "<< localr0[i+n_loc*ii]<<endl;
+
+	      }
+         }
+      }
+      exit(0);
+
+  }
+   */
+
+
+
+
+
+
+   val = 0.0;
+   if(!localr1)
+   {    
+      for(k=0; k<nq; k++)
+      {
+         for(i=i_start[k];i<i_end[k];i++)
+         {
+            for(ii=0; ii<dof; ii++) 
+            //
+               val += localr0[i+n_loc*ii]*localr0[i+n_loc*ii];
+         }
+      }
+   }
+   else
+   {
+      for(k=0; k<nq; k++)
+      {
+         for(i=i_start[k];i<i_end[k];i++)
+         {
+            for(ii=0; ii<dof; ii++) 
+              val += localr0[i+n_loc*ii]*localr1[i+n_loc*ii];
+         }
+      }
+   }
+
+
+   /*
+   //TEST
+   Dum.close();
+ if(nq>1)
+    exit(0);
+   */
+
+
+   return val;
+}
+
+/*************************************************************************
+GeoSys-Function:
+Task: Parallel solver 
+    n: Dimension of the global EQS
+  HM monolithic case is to be considered. 
+Programming: 
+06/2006 WW Implementation
+12/2007 WW Revise
+**************************************************************************/
+void CPARDomain::Global2Local(const double *global_x, double *local_x, const long n )
+{ 
+  long i, ig;
+  int ii;   
+  //
+  //
+  long n_global = (long)n/dof;
+  for(i=0;i<n_loc*dof;i++)
+    local_x[i] = 0.;
+  for(i=0;i<n_loc;i++)
+  {
+     ig = nodes[i];  
+     for(ii=0; ii<dof; ii++) 
+       local_x[i+n_loc*ii] = global_x[ig+n_global*ii];
+  }
+}
+/*************************************************************************
+GeoSys-Function:
+Task: Parallel solver 
+      n: Dimension of the global EQS
+  HM monolithic case is to be considered. 
+Programming: 
+06/2006 WW Implementation
+12/2007 WW Revise
+**************************************************************************/
+void CPARDomain:: I_local2Global(const double *local_x, double *global_x, const long n )
+{ 
+  long i, ig; 
+  int ii, k;   
+  //
+  // 
+  long n_global = (long)n/dof;
+  // 
+  for(i=0; i<n; i++)
+    global_x[i] = 0.;
+  //
+  for(k=0; k<nq; k++)
+  {
+     for(i=i_start[k];i<i_end[k];i++)
+     {
+        ig = nodes[i];  
+        for(ii=0; ii<dof; ii++) 
+        {
+           global_x[ig+n_global*ii] = local_x[i+n_loc*ii];
+           //MPI_Bcast(&global_x[ig+n_global*ii], 1, MPI_DOUBLE, myrank, MPI_COMM_WORLD );
+        }
+     }
+  }
+   //    
+ }
+/*************************************************************************
+GeoSys-Function:
+Task: Parallel solver 
+
+  HM monolithic case is to be considered. 
+Programming: 
+12/2007 WW 
+**************************************************************************/
+void CPARDomain::Global2Border(const double *x, double *local_x, const long n )
+{ 
+   long i, ig;
+   int ii, k;   
+   //
+   long  nnodes_g = (long)n/dof;
+   // BC
+   for(i=0;i<dof*n_bc;i++)
+      local_x[i] = 0.0;
+   //
+   for(i=0;i<n_bc;i++)
+   {
+      k = t_border_nodes[i];  
+      for(ii=0; ii<dof; ii++) 
+        local_x[i+n_bc*ii]= x[k+nnodes_g*ii];
+   }
+}
+/*************************************************************************
+GeoSys-Function:
+Task: Parallel solver 
+
+  HM monolithic case is to be considered. 
+Programming: 
+12/2007 WW 
+**************************************************************************/
+void CPARDomain::Border2Global(const double *local_x, double *x, const long n)
+{ 
+   long i, ig;
+   int ii, k;   
+   //
+   long nnodes_g = (long)n/dof;
+   //
+   for(i=0;i<n_bc;i++)
+   {
+     k = t_border_nodes[i];  
+     for(ii=0; ii<dof; ii++) 
+       x[k+nnodes_g*ii] = local_x[i+n_bc*ii];
+   }
+}
+/*************************************************************************
+GeoSys-Function:
+Task: Parallel solver 
+
+  HM monolithic case is to be considered. 
+Programming: 
+07/2006 WW Implementation
+12/2007 WW Revise
+**************************************************************************/
+void CPARDomain::Local2Border(const double *local_x, double *border_x)
+{ 
+   long i, ig;
+   int ii, k;   
+   //
+   // BC
+   for(i=0;i<dof*n_bc;i++)
+      border_x[i] = 0.0;
+   //
+   for(k=0; k<nq; k++)
+   {     
+      for(i=b_start[k];i<b_end[k];i++)
+      {
+        ig = nodes_halo[i];  
+        for(ii=0; ii<dof; ii++) 
+          border_x[ig+n_bc*ii] = local_x[i+n_shift[k]+n_loc*ii];
+      }
+   }
+}
+
+
+/*************************************************************************
+GeoSys-Function:
+Task: Parallel solver 
+
+  HM monolithic case is to be considered. 
+Programming: 
+07/2006 WW Implementation
+12/2007 WW Revise
+**************************************************************************/
+void CPARDomain::Border2Local(const double *border_x, double *local_x)
+{ 
+  long i, ig;
+  int ii, k;   
+  //
+  //
+  for(k=0; k<nq; k++)
+  {
+    for(i=b_start[k];i<b_end[k];i++)
+    {
+      ig = nodes_halo[i];  
+      for(ii=0; ii<dof; ii++) 
+        local_x[i+n_shift[k]+n_loc*ii] = border_x[ig+n_bc*ii];
+    }
+  }
+}
+
+/*\!
+********************************************************************
+   Concatenate the inertanal entries of local subdomain solution
+   Programm:  
+   12/2007 WW  
+********************************************************************/
+//#define NEW_BREDUCE2
+void CPARDomain::CatInnerX(double *global_x, const double *local_x, const long n)
+{
+  long i, j, ig; 
+  int ii, k;   
+  long counter = 0;
+  double *x_i, *x_g;
+  Linear_EQS *eq = NULL;
+  if(quadratic) eq = eqsH;
+  else          eq = eqs;
+  //  
+  x_i = eq->f_buffer[0];
+  x_g = eq->f_buffer[(long)eq->f_buffer.size()-2];
+  //
+  long n_global = (long)n/dof;
+  //
+#if defined(NEW_BREDUCE2)
+  // Not finished
+  // Due to the parallel computing of dom topology, not all num_inner_node of 
+  //   dom_vector[j] is caculated.
+  // for(i=0; i<eq->A->Dim();i++)
+  //  x_i[i] = 0.;
+  // 
+  for(k=0; k<nq; k++)
+  {
+     for(i=i_start[k];i<i_end[k];i++)
+     {
+        for(ii=0; ii<dof; ii++) 
+        {
+           x_i[counter] = local_x[i+n_loc*ii];
+           counter++;   //
+        }
+     }
+  }
+  // Concatentate
+  MPI_Allgatherv (x_i, counter, MPI_DOUBLE, x_g, receive_cnt_i, receive_disp_i, 
+                    MPI_DOUBLE, MPI_COMM_WORLD ); 
+  //
+  // Mapping to the golbal x
+  CPARDomain * a_dom; 
+  for(j=0; j<mysize; j++)
+  {
+    counter = receive_disp_i[j];
+    // Problem from here
+    if(j==myrank)
+      a_dom = this;
+    else;
+      a_dom = dom_vector[j];
+    a_dom->nq = 1;
+    a_dom->i_start[0] = 0;
+    a_dom->i_end[0] =  a_dom->num_inner_nodes; //Number of interior nodes   
+    if(quadratic)
+    { 
+      a_dom->nq = 2;
+      a_dom->i_start[1] = a_dom->i_end[0]+a_dom->num_boundary_nodes;
+      a_dom->i_end[1] = a_dom->i_start[1]+a_dom->num_inner_nodesHQ; 
+    }
+
+    for(k=0; k<a_dom->nq; k++)  // This should come from different processors
+    {
+       for(i=a_dom->i_start[k];i<a_dom->i_end[k];i++)
+       {
+          ig = a_dom->nodes[i];  
+          for(ii=0; ii<dof; ii++) 
+          {
+             global_x[ig+n_global*ii] = x_g[counter];
+             counter++;
+          }
+       }
+    }
+  }
+
+
+#else
+  I_local2Global(local_x, x_g, n);
+  MPI_Allreduce( x_g, global_x, n, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+#endif 
+}
+#if defined(NEW_BREDUCE)
+/*\!
+********************************************************************
+   Reduce border entries by concatenating
+   Programm:  
+   12/2007 WW  
+********************************************************************/
+void CPARDomain::ReduceBorderV(double *local_x)
+{
+  long i, j, ig;
+  int ii, k;
+  long counter = 0;
+  double *x_b, *x_cat, *x_g;
+  Linear_EQS *eq = NULL;
+  if(quadratic) eq = eqsH;
+  else          eq = eqs;
+  //  
+  x_g = eq->f_buffer[(long)eq->f_buffer.size()-2];
+  x_cat = eq->f_buffer[(int)eq->f_buffer.size()-3];
+  x_b = &local_x[eq->Dim()];  
+  //
+  for(k=0; k<nq; k++)
+  {     
+     for(i=b_start[k];i<b_end[k];i++)
+     {
+       for(ii=0; ii<dof; ii++)
+       { 
+          x_g[counter] = local_x[i+n_shift[k]+n_loc*ii]; //;
+          counter++;
+       }
+     }
+  }
+  // Concatentate
+  MPI_Allgatherv (x_g, counter, MPI_DOUBLE, x_cat, receive_cnt_b, receive_disp_b, 
+                    MPI_DOUBLE, MPI_COMM_WORLD ); 
+  for(i=0;i<dof*n_bc;i++)
+    x_b[i] = 0.0;
+  //
+  CPARDomain * a_dom; 
+  for(j=0; j<mysize; j++)
+  {
+    a_dom = dom_vector[j];
+    counter = receive_disp_b[j];
+    for(k=0; k<a_dom->nq; k++)
+    {     
+       for(i=a_dom->b_start[k];i<a_dom->b_end[k];i++)
+       {
+         ig = a_dom->nodes_halo[i];  
+         for(ii=0; ii<dof; ii++)
+         { 
+            x_b[ig+n_bc*ii] += x_cat[counter];
+            counter++;
+         }
+       }
+    }
+  }
+}
+#endif //if defined(NEW_BREDUCE)
+/********************************************************************
+   As the title
+   Programm:  
+   12/2007 WW  
+********************************************************************/
+void CPARDomain::PrintEQS_CPUtime(ostream &os)
+{
+   if(eqs)
+   {
+     os<<"CPU time elapsed in linear solver for linear elements: "
+       <<eqs->GetCPUtime()<<endl;
+   }
+   if(eqsH)
+   {
+     os<<"CPU time elapsed in linear solver for quadratic elements: "
+       <<eqsH->GetCPUtime()<<endl;
+   }       
+}
+
+
+
+
+#endif //// if defined(USE_MPI)

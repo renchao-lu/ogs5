@@ -63,6 +63,7 @@
 #endif
 #if defined(USE_MPI) //12.09.2007 WW
 #include <mpi.h>
+clock_t elapsed_time_preloop ; 
 #endif
 
 
@@ -121,12 +122,28 @@ int RF_FEM (char *dateiname)
       RFPre_Model();
       /* 2.2 Zeitschleife */ 
       //OK-INV inv_flag=ExecuteInverseMethodNew ("ROCKFLOW",ExecuteRFTimeLoop);
+#if defined(USE_MPI) //WW
+      elapsed_time_preloop += clock();
+      //
+      cout<<" CPU Time elaspsed before time loop: "
+          <<(double)elapsed_time_preloop/CLOCKS_PER_SEC<<"\n"; 
+#endif
       ExecuteRFTimeLoop(); //OK
+#if defined(USE_MPI) //WW
+      // count CPU time after time loop
+      elapsed_time_preloop = -clock();
+#endif 
       /* 2.3 RF-Objekte destruieren */
       RFPost_Model();
     /*--------------------------------------------------------------------*/
     /* 3 Objekte der RF-FEM Applikation destruieren */
     RFPost_FEM();
+#if defined(USE_MPI)
+    elapsed_time_preloop += clock(); 
+    //
+    cout<<" CPU Time elaspsed after time loop: "
+      <<(double)elapsed_time_preloop/CLOCKS_PER_SEC<<"\n"; 
+#endif
     return 1;
 }
 
@@ -307,8 +324,16 @@ int ExecuteRFTimeLoop(void)
 */
   //======================================================================
   // Creation of processes
+#ifdef USE_MPI //WW
+  if(myrank==0)
+  {
+#endif
   cout << "---------------------------------------------" << endl;
   cout << "Data configuration: PreTimeLoop" << endl;
+#ifdef USE_MPI //WW
+  }
+#endif
+
   if (!PreTimeLoop())
     DisplayMsgLn("Error in ConfigModel: PreTimeLoop");
   /* modellspezifische Ergebnisse fuer Inverses Modellieren speichern */
@@ -440,10 +465,10 @@ int ExecuteRFTimeLoop(void)
     // update current time step number
     if(m_tim->time_control_name.find("ADAPTIVE")==string::npos) //WW
     {
-      if(m_tim->step_current+1==no_time_steps)
+      if(m_tim->step_current==no_time_steps)
         break;
     }
-    if(aktuelle_zeit>=m_tim->time_end)		//WW
+    if(aktuelle_zeit+1>=m_tim->time_end)		//WW
       break;
     m_tim->step_current++; // Moved here by WW
   }
@@ -531,11 +556,11 @@ void CreateObjectLists(void)
 void DestroyObjectLists(void)
 {
   /* RFD Objekte */
-  DestroyIterationPropertiesList();
+//WW  DestroyIterationPropertiesList();
 //OK  DestroySystemTimeList();
   /* RFI Objekte - Geometrie und Topologie */
-  DestroyNodeList();
-  ElDestroyElementList();
+//WW  DestroyNodeList();
+ //WW ElDestroyElementList();
 //OK  DestroyRefineElementList();
 //OK  DestroyMeshGenerationList();
 //OK  DestroyEdgeList();

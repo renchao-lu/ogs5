@@ -20,7 +20,11 @@
 #include "fem_ele.h"
 #include "fem_ele_vec.h"
 #include "rf_pcs.h"
-
+// Equation
+#if defined(NEW_EQS)
+#include "equation_class.h"
+using Math_Group::CSparseMatrix;
+#endif
 //
 #define COMP_MOL_MASS_AIR   28.96 // kg/kmol WW  28.96
 #define GAS_CONSTANT  8314.41 // J/(kmol*K) WW 
@@ -885,6 +889,13 @@ void CFiniteElementVec::GlobalAssembly_Stiffness()
    f2=-1.0;
    double biot = 1.0;
    biot = smat->biot_const;
+#if defined(NEW_EQS)
+   CSparseMatrix *A = NULL;
+   if(m_dom)
+     A = m_dom->eqsH->A;
+   else
+     A = pcs->eqs_new->A;
+#endif 
    
    if(dynamic)
    {
@@ -898,8 +909,13 @@ void CFiniteElementVec::GlobalAssembly_Stiffness()
              // Local assembly of stiffness matrix
              for (k = 0; k < ele_dim ; k++)
              {
+#ifdef NEW_EQS
+                 (*A)(eqs_number[i]+NodeShift[k],eqs_number[j]+NodeShift[k])
+                       +=  (*Mass)(i, j);
+#else
                  MXInc(eqs_number[i]+NodeShift[k],eqs_number[j]+NodeShift[k], 
                       (*Mass)(i, j));
+#endif
 	         }
          }  // loop j 	    
       } // loop i    
@@ -913,8 +929,13 @@ void CFiniteElementVec::GlobalAssembly_Stiffness()
           for (k = 0; k < ele_dim ; k++)
           {
               for (l = 0; l < ele_dim; l++)
+#ifdef NEW_EQS
+                (*A)(eqs_number[i]+NodeShift[k],eqs_number[j]+NodeShift[l])
+                   += f1*(*Stiffness)(i+k*nnodesHQ, j+l*nnodesHQ);
+#else
                  MXInc(eqs_number[i]+NodeShift[k],eqs_number[j]+NodeShift[l], 
                       f1*(*Stiffness)(i+k*nnodesHQ, j+l*nnodesHQ));
+#endif
 	      }
       }  // loop j 	    
    } // loop i    
@@ -929,8 +950,13 @@ void CFiniteElementVec::GlobalAssembly_Stiffness()
        for (i=0;i<nnodesHQ;i++) {   
           for (j=0;j<nnodes;j++) {   
             for(k=0; k<ele_dim; k++)
-                 MXInc(NodeShift[k]+eqs_number[i], NodeShift[dim]+eqs_number[j],\
-                       f2*(*PressureC)(nnodesHQ*k+i,j));
+#ifdef NEW_EQS
+               (*A)(NodeShift[k]+eqs_number[i], NodeShift[dim]+eqs_number[j])
+                   += f2*(*PressureC)(nnodesHQ*k+i,j);
+#else
+               MXInc(NodeShift[k]+eqs_number[i], NodeShift[dim]+eqs_number[j],\
+                     f2*(*PressureC)(nnodesHQ*k+i,j));
+#endif
           }
        }
    }
@@ -1026,7 +1052,6 @@ void CFiniteElementVec::GlobalAssembly_RHS()
       a_n = pcs->GetAuxArray();     
 
    } 
-
    // Assemble coupling matrix
    // If dynamic GetNodeValue(nodes[i],idx_P0) = 0;
    if(Residual) 
@@ -1048,14 +1073,23 @@ void CFiniteElementVec::GlobalAssembly_RHS()
                 AuxNodal[i] = LoadFactor*h_pcs->GetNodeValue(nodes[i],idx_P1);   
              break;
           case 1:  // Richards flow
+#ifdef DECOVALEX
+             int  idv0;
+             idv0 = h_pcs->GetNodeValueIndex("PRESSURE_I");   // DECOVALEX
+#endif
+             //
              for (i=0;i<nnodes;i++)
 			 {
                 val_n = h_pcs->GetNodeValue(nodes[i],idx_P1);
                 if(biot<0.0&&val_n<0.0)
                   AuxNodal[i] = 0.0;
-                else
-            //      AuxNodal[i] = LoadFactor*(val_n-Max(pcs->GetNodeValue(nodes[i],idx_P0),0.0));
+                else                                          
+                  // DECOVALEX
+#ifdef DECOVALEX
+                  AuxNodal[i] = LoadFactor*(val_n-Max(h_pcs->GetNodeValue(nodes[i],idv0),0.0));
+#else
                   AuxNodal[i] = LoadFactor*val_n;
+#endif
 			 }
              break;
           case 2:  // Multi-phase-flow: p_g-Sw*p_c
@@ -1106,22 +1140,24 @@ void CFiniteElementVec::GlobalAssembly_RHS()
       } 
    } 
 //RHS->Write();
+  double *b_rhs = NULL;
   if(m_dom)
-  {
-     for (i=0;i<dim;i++)
-     {
-       for (j=0;j<nnodesHQ;j++)
-         m_dom->eqs->b[eqs_number[j]+NodeShift[i]] -= (*RHS)(i*nnodesHQ+j); 
-     }
-
-  }
+#ifdef NEW_EQS
+    b_rhs = m_dom->eqsH->b;
+#else
+    b_rhs = m_dom->eqs->b;
+#endif
   else
+#ifdef NEW_EQS
+    b_rhs = pcs->eqs_new->b;
+#else
+    b_rhs = pcs->eqs->b;
+#endif
+ 
+  for (i=0;i<dim;i++)
   {
-    for (i=0;i<dim;i++)
-    {
-      for (j=0;j<nnodesHQ;j++)
-        pcs->eqs->b[eqs_number[j]+NodeShift[i]] -= (*RHS)(i*nnodesHQ+j); 
-    }
+     for (j=0;j<nnodesHQ;j++)
+       b_rhs[eqs_number[j]+NodeShift[i]] -= (*RHS)(i*nnodesHQ+j); 
   }
 }
 /***************************************************************************
@@ -1206,6 +1242,39 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
 
       smat->ElasticConsitutive(ele_dim, De);  
   }
+
+  /*
+  //TEST
+  fstream oss;
+  if(update)
+  {
+    char tf_name[10];
+   #ifdef USE_MPI
+    sprintf(tf_name,"%d",myrank);
+      string fname = FileName+tf_name+".stress";
+   #else
+      string fname = FileName+".stress"; 
+   #endif
+   oss.open(fname.c_str(), ios::app|ios::out);
+      //    oss.open(fname.c_str(), ios::trunc|ios::out);
+   oss<<"\nElement  "<<Index<<endl;
+   oss<<endl;
+
+    oss<<"Diaplacement "<<endl;
+    for(i=0;i<nnodesHQ;i++)
+    { 
+          oss<<nodes[i]<<"  ";
+       for(int ii=0; ii<dim; ii++)
+         oss<<Disp[ii*nnodesHQ+i]<<"  ";
+       oss<<endl;
+    }
+    oss<<"Temperature "<<endl;
+    for(i=0; i<nnodes;i++)
+      oss<<Temp[i]<<"  ";
+    oss<<endl;
+    oss.close();
+  }
+  */
   //
   if(PoroModel==4||T_Flag||smat->Creep_mode>0)
     Strain_TCS =true;
@@ -1237,6 +1306,23 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
             dstress[i] = 0.0;
           De->multi(dstrain, dstress);
       }
+
+      /*
+      //TEST
+      if(update&&Index==0)
+      {
+        oss<<" dstrain  "<<endl;
+        for (i = 0; i < ns; i++)
+          oss<<dstrain[i]<<"  ";
+        oss<<endl;
+        oss<<" dstress  "<<endl;
+        for (i = 0; i < ns; i++)
+          oss<<dstress[i]<<"  ";
+        oss<<endl;
+      }
+
+      */
+
       //---------------------------------------------------------
       // Integrate the stress by return mapping:
       //---------------------------------------------------------
@@ -1547,10 +1633,11 @@ void CFiniteElementVec::ExtropolateGuassStress()
   double r=0.0;
   int i_s, i_e, ish, k=0;
   int ElementType = MeshElement->GetElementType();
+  long node_i = 0;
   // For strain and stress extropolation all element types
   // Number of elements associated to nodes
   for(i=0; i<nnodes; i++)
-	 dbuff[i] = (double)MeshElement->nodes[i]->connected_elements.size();
+     dbuff[i] = (double)MeshElement->nodes[i]->connected_elements.size();
   //
   gp = gp_r=gp_s=gp_t=gp=0;
   eleV_DM = ele_value_dm[MeshElement->GetIndex()];
@@ -1643,30 +1730,31 @@ void CFiniteElementVec::ExtropolateGuassStress()
       ESzz /= dbuff[i];
       Pls /= dbuff[i];
 //
-      ESxx += pcs->GetNodeValue(nodes[i],Idx_Stress[0]); 
-      ESyy += pcs->GetNodeValue(nodes[i],Idx_Stress[1]);  
-      ESzz += pcs->GetNodeValue(nodes[i],Idx_Stress[2]);  
-      ESxy += pcs->GetNodeValue(nodes[i],Idx_Stress[3]);  
-      Pls  += pcs->GetNodeValue(nodes[i],idx_pls);  
+      node_i = nodes[i];
+      ESxx += pcs->GetNodeValue(node_i,Idx_Stress[0]); 
+      ESyy += pcs->GetNodeValue(node_i,Idx_Stress[1]);  
+      ESzz += pcs->GetNodeValue(node_i,Idx_Stress[2]);  
+      ESxy += pcs->GetNodeValue(node_i,Idx_Stress[3]);  
+      Pls  += pcs->GetNodeValue(node_i,idx_pls);  
  
-      pcs->SetNodeValue (nodes[i], Idx_Stress[0], ESxx);
-      pcs->SetNodeValue (nodes[i], Idx_Stress[1], ESyy);
-      pcs->SetNodeValue (nodes[i], Idx_Stress[2], ESzz);
-      pcs->SetNodeValue (nodes[i], Idx_Stress[3], ESxy);
-      pcs->SetNodeValue (nodes[i], idx_pls, fabs(Pls));
+      pcs->SetNodeValue (node_i, Idx_Stress[0], ESxx);
+      pcs->SetNodeValue (node_i, Idx_Stress[1], ESyy);
+      pcs->SetNodeValue (node_i, Idx_Stress[2], ESzz);
+      pcs->SetNodeValue (node_i, Idx_Stress[3], ESxy);
+      pcs->SetNodeValue (node_i, idx_pls, fabs(Pls));
    
       if(ele_dim==3)
       {
          ESxz /= dbuff[i]; 
          ESyz /= dbuff[i]; 
 
-         ESxz += pcs->GetNodeValue(nodes[i],Idx_Stress[4]);
-         ESyz += pcs->GetNodeValue(nodes[i],Idx_Stress[5]);
+         ESxz += pcs->GetNodeValue(node_i,Idx_Stress[4]);
+         ESyz += pcs->GetNodeValue(node_i,Idx_Stress[5]);
 
-         pcs->SetNodeValue (nodes[i], Idx_Stress[4], ESxz);
-         pcs->SetNodeValue (nodes[i], Idx_Stress[5], ESyz);
+         pcs->SetNodeValue (node_i, Idx_Stress[4], ESxz);
+         pcs->SetNodeValue (node_i, Idx_Stress[5], ESyz);
       }
-   }
+  }
 }
 
 //==========================================================================

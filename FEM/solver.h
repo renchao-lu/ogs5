@@ -83,11 +83,6 @@ int SpBICGSTAB(double *restrict b, double *restrict x, long n);
 #else
 int SpBICGSTAB(double *b, double *x,  long n);
 #endif
-#ifdef USE_MPI //WW
-class CPARDomain;
-extern double CalcNormOfRHS(const long n);
-extern int SpBICGSTAB_Parallel(CPARDomain* m_dom, double *x,  long n); 
-#endif
   /* BICGSTAB-Loeser */
 extern int SpQMRCGSTAB ( double *b, double *x, long n );
   /* QMRCGSTAB-Loeser */

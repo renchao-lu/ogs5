@@ -58,7 +58,7 @@ void DisplayStartMsg ( void )
   printf("          ##                                               ##\n");
   printf("          ##              GEOSYS - ROCKFLOW                ##\n");
   printf("          ##                                               ##\n");
-  printf("          ##     Version %s   Datum %s       ##\n",\
+  printf("          ##     Version %s   Datum %s            ##\n",\
                                       ROCKFLOW_VERSION,ROCKFLOW_DATE);
   printf("          ##                                               ##\n");
   printf("          ###################################################\n");

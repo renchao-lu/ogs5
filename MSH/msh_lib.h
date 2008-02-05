@@ -18,7 +18,7 @@ last modified
 using Mesh_Group::CFEMesh;
 using Mesh_Group::CElem;
 using Mesh_Group::CNode;
-extern vector<Mesh_Group::CFEMesh*>fem_msh_vector;
+extern vector<Mesh_Group::CFEMesh*> fem_msh_vector;
 extern CFEMesh* FEMGet(string msh_name);
 extern void MSHCreateNOD2ELERelations(Mesh_Group::CFEMesh*); //OK
 extern bool FEMRead(string);

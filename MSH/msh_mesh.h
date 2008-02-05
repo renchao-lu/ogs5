@@ -20,6 +20,11 @@ last modified
 class RandomWalk;
 #endif
 class CFluidMomentum;
+//
+#ifdef NEW_EQS    //1.11.2007 WW
+namespace Math_Group { class SparseTable;}
+using Math_Group::SparseTable;
+#endif
 //------------------------------------------------------------------------
 namespace Mesh_Group
 {
@@ -54,7 +59,11 @@ class CFEMesh
 	// 3:  X, Y, Z component
     int coordinate_system; 
     int max_ele_dim; 
-
+    // Sparse graph of this mesh. 1.11.2007 WW
+#ifdef NEW_EQS
+    SparseTable *sparse_graph;  
+    SparseTable *sparse_graph_H; // For high order interpolation  
+#endif
     // LINE
     void CheckMarkedEdgesOnPolyLine(CGLPolyline*m_polyline, vector<long> &ele_vector_at_ply); //NW
     void CreateLineElementsFromMarkedEdges(CFEMesh*m_msh_ply, vector<long> &ele_vector_at_ply); //NW
@@ -204,6 +213,13 @@ class CFEMesh
     void SetELENormalVectors(); //OK4310
     void SetNODPatchAreas(); //OK4310
     void SetNetworkIntersectionNodes(); //OK4319->PCH
+#ifdef NEW_EQS   // 1.11.2007 WW     
+    // Compute the graph of the sparse matrix related to this mesh. 1.11.2007 WW
+    void CreateSparseTable();  
+    // Get the sparse graph   1.11.2007 WW
+    SparseTable *GetSparseTable(bool quad = false) 
+      const { if(!quad) return sparse_graph; else return sparse_graph_H;}
+#endif
 };
 
 } // namespace Mesh_Group

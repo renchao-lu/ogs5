@@ -57,8 +57,9 @@ class CRFProcessDeformation:public CRFProcess
      void StoreLastSolution(const int ty=0);
      void RecoverSolution(const int ty=0);
      double NormOfDisp();
+#ifndef NEW_EQS
      double NormOfUnkonwn();
-
+#endif
 	 // Stress
      // For partitioned HM coupled scheme
      void ResetCouplingStep();
@@ -85,6 +86,8 @@ public: //OK
 private:
      void InitialMBuffer();
      double *ARRAY;
+     int *unknown_vector_indeces;
+     long *unknown_node_numbers;
      int counter; 
      double InitialNorm; 
      double InitialNormU; 

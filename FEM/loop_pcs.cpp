@@ -120,14 +120,25 @@ void PCSCreate(void)
   int i;
   int no_processes =(int)pcs_vector.size();
   CRFProcess* m_pcs = NULL;
+  //
   //----------------------------------------------------------------------
   //OK_MOD if(pcs_deformation>0) Init_Linear_Elements();
-  for(i=0;i<no_processes;i++){
+  for(i=0;i<no_processes;i++)
+  {
+    m_pcs = pcs_vector[i];
+    m_pcs->pcs_type_number = i;
+    m_pcs->Config(); //OK
+  }
+  //
+#ifdef NEW_EQS
+  CreateEQS_LinearSolver(); //WW 
+#endif
+  //
+  for(i=0;i<no_processes;i++)
+  {
     cout << "............................................." << endl;
     m_pcs = pcs_vector[i];
     cout << "Create: " << m_pcs->pcs_type_name << endl;
-    m_pcs->pcs_type_number = i;
-    m_pcs->Config(); //OK
 	if(!m_pcs->pcs_type_name.compare("MASS_TRANSPORT")){
 		cout << " for " << m_pcs->pcs_primary_function_name[0] << " ";
 	    cout << " pcs_component_number " << m_pcs->pcs_component_number;       
@@ -135,6 +146,7 @@ void PCSCreate(void)
     cout << endl;
     m_pcs->Create();
   }
+  //----------------------------------------------------------------------
   //----------------------------------------------------------------------
   for(i=0;i<no_processes;i++){
     m_pcs = pcs_vector[i];
@@ -163,6 +175,7 @@ Programing:
  07/2006 WW Adjust things for DDC
 last modified:
 ***************************************************************************/
+//#define NEW_BREDUCE2
 int LOPPreTimeLoop_PCS(void)
 {
   //----------------------------------------------------------------------
@@ -240,30 +253,17 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
   }
   #endif
 //  delete rc;
+                                     
   //----------------------------------------------------------------------
-  
   // DDC
   int i;
   int no_processes =(int)pcs_vector.size();
   CRFProcess* m_pcs = NULL;
   if(dom_vector.size()>0)
   {
-     //WW ----- Domain decomposition ------------------
-     bool DOF_gt_one = false;
-     //----------------------------------------------------------------------
-     for(i=0;i<no_processes;i++){
-       m_pcs = pcs_vector[i];
-       if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
-       {
-           DOF_gt_one = true;
-           break;
-       } 
-     }
-     if(!DOF_gt_one)
-        m_pcs = pcs_vector[0];
 
      // -----------------------
-     DOMCreate(m_pcs);
+     DOMCreate();
      //
      for(i=0;i<no_processes;i++){
        m_pcs = pcs_vector[i];
@@ -272,50 +272,27 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
        // Config boundary conditions for domain decomposition 
        m_pcs->SetBoundaryConditionSubDomain(); //WW
      }
-
-// This will be removed after new sparse matrix is ready. WW
-// for solver
-#ifdef USE_MPI
-     
-     long max_edim; 
-     max_edim = 0;
-     int dof = 1;
-    
-     for(i=0;i<(int)dom_vector.size();i++)
-     {
-       if(dom_vector[i]->eqs->dim>max_edim)
-         max_edim = dom_vector[i]->eqs->dim;
-        dof  = GetUnknownVectorDimensionLinearSolver(dom_vector[i]->eqs);    
-     }
-     
-     //
-     p_array = new double[max_edim];
-     v_array = new double[max_edim];
-     s_array = new double[max_edim];
-     t_array = new double[max_edim];
-     r_zero = new double[max_edim]; 
-     r_array = new double[max_edim]; 
-     //
-     dof *= overlapped_entry_sizeHQ;
-     buff_bc    = new double[dof];
-     p_array_bc = new double[dof];
-     v_array_bc = new double[dof];
-     s_array_bc = new double[dof];
-     t_array_bc = new double[dof];
-     r_zero_bc  = new double[dof]; 
-     r_array_bc = new double[dof]; 
-     x_array_bc = new double[dof]; 
-     //
-     max_edim = 0;
-     for(i=0;i<(int)PCS_Solver.size();i++)
-     {
-       if(PCS_Solver[i]->dim>max_edim)
-         max_edim = PCS_Solver[i]->dim;
-     }
-     buff_global =  new double[max_edim];    
-#endif
      //
      node_connected_doms.clear();
+     // Release some memory. WW
+#if defined(USE_MPI) //TEST_MPI WW
+     // Release memory of other domains. WW
+     for(i=0;i<(int)dom_vector.size();i++) 
+     {
+       if(i!=myrank)
+       {
+         // If shared memory, skip the following line 
+  #if defined(NEW_BREDUCE2)
+         dom_vector[i]->ReleaseMemory();
+  #else
+         // If MPI__Allreduce is used for all data conlection, activate following
+         delete dom_vector[i];
+         dom_vector[i] = NULL;
+  #endif
+       }
+     }
+#endif
+
    }
   //----------------------------------------------------------------------
   PCSRestart(); //SB
@@ -334,7 +311,7 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
        dm_pcs = (CRFProcessDeformation *)(m_pcs);
        dm_pcs->CreateInitialState4Excavation();
        break;
-	 }
+     }
   }
   //
   return 1;
@@ -410,10 +387,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
       if(m_pcs&&m_pcs->selected){
         pcs_flow_error = m_pcs->Execute();
         PCSCalcSecondaryVariables(); // PCS member function
-        if(!m_pcs->m_msh) //OK
-          VELCalcAll(m_pcs);
-		else
-          m_pcs->CalIntegrationPointValue(); //WW
+        m_pcs->CalIntegrationPointValue(); //WW
         if(m_pcs->tim_type_name.compare("STEADY")==0)
             m_pcs->selected = false;
       }
@@ -450,7 +424,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
           cout << "      Calculation of secondary ELE values" << endl;
           LOPCalcNODResultants();
           m_pcs->CalcELEVelocities();
-		  m_pcs->selected = false;
+          m_pcs->selected = false;
         }
       }
       //------------------------------------------------------------------
@@ -841,9 +815,13 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
   for(i=0;i<no_processes;i++)
   {
      m_pcs = pcs_vector[i];
+     m_pcs->CheckMarkedElement();
+#if defined(USE_MPI) // 18.10.2007 WW
+     if(myrank==0)
+#endif  
      m_pcs->WriteSolution(); //WW
      m_pcs->Extropolation_MatValue();  //WW
-	 if(m_pcs->cal_integration_point_value) //WW
+     if(m_pcs->cal_integration_point_value) //WW
         m_pcs->Extropolation_GaussValue();
      m_pcs->CopyTimestepNODValues(); //MB
 #define SWELLING
@@ -857,9 +835,11 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
 #endif
   }
   //
-
   //----------------------------------------------------------------------
   LOPCalcELEResultants();
+#ifdef USE_MPI //WW
+  if(myrank==0)
+#endif
   cout << "Calculation of NOD resultants" << endl;
   LOPCalcNODResultants(); //OK
   //----------------------------------------------------------------------
@@ -1817,3 +1797,4 @@ void PCSStorage(void){
     }
   }
 }
+

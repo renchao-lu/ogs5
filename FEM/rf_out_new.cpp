@@ -38,6 +38,11 @@ using namespace std;
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 #include "par_ddc.h"
 #endif
+#ifdef SUPERCOMPUTER
+// kg44 this is usefull for io-buffering as endl flushes the buffer 
+#define endl '\n'
+#define MY_IO_BUFSIZE 4096
+#endif
 using Mesh_Group::CFEMesh;
 //==========================================================================
 vector<COutput*>out_vector;
@@ -463,6 +468,12 @@ void OUTWrite(string base_file_name)
   out_file.precision(12);
   if (!out_file.good()) return;
   out_file.seekg(0L,ios::beg);
+#ifdef SUPERCOMPUTER
+// kg44 buffer the output
+  char   mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+  out_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+// 
+#endif
   //========================================================================
   out_file << "GeoSys-OUT: Output ------------------------------------------------\n";
   //========================================================================
@@ -731,7 +742,7 @@ void COutput::NODWriteDOMDataTEC()
   string tec_file_name;
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
   char tf_name[10];
-  std::cout << "Process " << myrank << " in WriteDOMDataTEC" << std::endl;
+  std::cout << "Process " << myrank << " in WriteDOMDataTEC" << "\n";
 #endif
 
 
@@ -852,56 +863,66 @@ void COutput::NODWriteDOMDataTEC()
     tec_file.setf(ios::scientific,ios::floatfield);
     tec_file.precision(12);
     if (!tec_file.good()) return;
+#ifdef SUPERCOMPUTER
+// kg44 buffer the output
+    char mybuf1 [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+    tec_file.rdbuf()->pubsetbuf(mybuf1,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+#endif
+// 
     WriteTECHeader(tec_file,te,eleType);
     WriteTECNodeData(tec_file);
     WriteTECElementData(tec_file,te);
+    tec_file.close(); // kg44 close file 
     //--------------------------------------------------------------------
     // tri elements
     if(msh_no_tris>0){
     //string tec_file_name = pcs_type_name + "_" + "domain" + "_tri" + TEC_FILE_EXTENSION;
-#ifdef SX
-      char sxbuffer[4096*4096];
+#ifdef SUPERCOMPUTER
+// buffer the output
+      char sxbuf1[MY_IO_BUFSIZE*MY_IO_BUFSIZE];
 #endif
       string tec_file_name = file_base_name + "_" + "domain" + "_tri" + TEC_FILE_EXTENSION;
       fstream tec_file1 (tec_file_name.data(),ios::app|ios::out);
-#ifdef SX
-      tec_file1.rdbuf()->pubsetbuf(sxbuffer,4096*4096);
-#endif
       tec_file1.setf(ios::scientific,ios::floatfield);
       tec_file1.precision(12);
       if (!tec_file1.good()) return;
+#ifdef SUPERCOMPUTER
+      tec_file1.rdbuf()->pubsetbuf(sxbuf1,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+#endif
       //OK  tec_file1.clear();
       //OK  tec_file1.seekg(0L,ios::beg);
       WriteTECHeader(tec_file1,4,"TRIANGLE");
       WriteTECNodeData(tec_file1);
       WriteTECElementData(tec_file1,4);
-      // tec_file1.close();
+      tec_file1.close(); // kg44 close file 
     }
     //--------------------------------------------------------------------
     // quad elements
     if(msh_no_quad>0){
       //string tec_file_name = pcs_type_name + "_" + "domain" + "_quad" + TEC_FILE_EXTENSION;
-#ifdef SX
-      char sxbuffer[4096*4096];
+#ifdef SUPERCOMPUTER
+      char sxbuf2[MY_IO_BUFSIZE*MY_IO_BUFSIZE];
 #endif
       string tec_file_name = file_base_name + "_" + "domain" + "_quad" + TEC_FILE_EXTENSION;
       fstream tec_file (tec_file_name.data(),ios::app|ios::out);
-#ifdef SX
-      tec_file.rdbuf()->pubsetbuf(sxbuffer,4096*4096);
-#endif
+
       tec_file.setf(ios::scientific,ios::floatfield);
       tec_file.precision(12);
       if (!tec_file.good()) return;
+#ifdef SUPERCOMPUTER
+      tec_file.rdbuf()->pubsetbuf(sxbuf2,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+#endif
       WriteTECHeader(tec_file,2,"QUADRILATERAL");
       WriteTECNodeData(tec_file);
       WriteTECElementData(tec_file,2);
+      tec_file.close(); // kg44 close file 
     }
     //--------------------------------------------------------------------
     // tet elements
     if(msh_no_tets>0){
       //string tec_file_name = pcs_type_name + "_" + "domain" + "_tet" + TEC_FILE_EXTENSION;
-#ifdef SX
-      char sxbuffer[4096*4096];
+#ifdef SUPERCOMPUTER
+      char sxbuf3[MY_IO_BUFSIZE*MY_IO_BUFSIZE];
 #endif
 
       string tec_file_name = file_base_name + "_" + "domain" + "_tet";
@@ -914,53 +935,63 @@ void COutput::NODWriteDOMDataTEC()
       tec_file_name += TEC_FILE_EXTENSION;
 
       fstream tec_file (tec_file_name.data(),ios::app|ios::out);
-#ifdef SX
-      tec_file.rdbuf()->pubsetbuf(sxbuffer,4096*4096);
-#endif
+
       tec_file.setf(ios::scientific,ios::floatfield);
       tec_file.precision(12);
       if (!tec_file.good()) return;
+#ifdef SUPERCOMPUTER
+      tec_file.rdbuf()->pubsetbuf(sxbuf3,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+#endif
+
       WriteTECHeader(tec_file,5,"TETRAHEDRON");
       WriteTECNodeData(tec_file);
       WriteTECElementData(tec_file,5);
+      tec_file.close(); // kg44 close file 
     }
     //--------------------------------------------------------------------
     // pris elements
     if(msh_no_pris>0){
       //string tec_file_name = pcs_type_name + "_" + "domain" + "_pris" + TEC_FILE_EXTENSION;
-#ifdef SX
-      char sxbuffer[4096*4096];
+#ifdef SUPERCOMPUTER
+        char sxbuf4[MY_IO_BUFSIZE*MY_IO_BUFSIZE];
 #endif
       string tec_file_name = file_base_name + "_" + "domain" + "_pris" + TEC_FILE_EXTENSION;
       fstream tec_file (tec_file_name.data(),ios::app|ios::out);
-#ifdef SX
-      tec_file.rdbuf()->pubsetbuf(sxbuffer,4096*4096);
-#endif
+
       tec_file.setf(ios::scientific,ios::floatfield);
       tec_file.precision(12);
       if (!tec_file.good()) return;
+#ifdef SUPERCOMPUTER
+      tec_file.rdbuf()->pubsetbuf(sxbuf4,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+#endif
+
       WriteTECHeader(tec_file,6,"BRICK");
       WriteTECNodeData(tec_file);
       WriteTECElementData(tec_file,6);
+      tec_file.close(); // kg44 close file 
     }
     //--------------------------------------------------------------------
     // hex elements
     if(msh_no_hexs>0){
       //string tec_file_name = pcs_type_name + "_" + "domain" + "_hex" + TEC_FILE_EXTENSION;
-#ifdef SX
-      char sxbuffer[4096*4096];
+#ifdef SUPERCOMPUTER
+        char sxbuf5[MY_IO_BUFSIZE*MY_IO_BUFSIZE];
 #endif
+
       string tec_file_name = file_base_name + "_" + "domain" + "_hex" + TEC_FILE_EXTENSION;
       fstream tec_file (tec_file_name.data(),ios::app|ios::out);
-#ifdef SX
-      tec_file.rdbuf()->pubsetbuf(sxbuffer,4096*4096);
-#endif
+
+
       tec_file.setf(ios::scientific,ios::floatfield);
       tec_file.precision(12);
       if (!tec_file.good()) return;
+#ifdef SUPERCOMPUTER
+      tec_file.rdbuf()->pubsetbuf(sxbuf5,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+#endif
       WriteTECHeader(tec_file,3,"BRICK");
       WriteTECNodeData(tec_file);
       WriteTECElementData(tec_file,3);
+      tec_file.close(); // kg44 close file 
     }
   }
 
@@ -976,7 +1007,7 @@ Programing:
 12/2005 OK Mass transport specifics
 OK ??? too many specifics
 **************************************************************************/
-void COutput::WriteTECNodeData(fstream& tec_file)
+void COutput::WriteTECNodeData(fstream &tec_file)
 {
   const int nName = (int)nod_value_vector.size();
   long j;
@@ -1090,7 +1121,7 @@ Programing:
 12/2005 OK GetMSH
 07/2007 NW Multi Mesh Type 
 **************************************************************************/
-void COutput::WriteTECElementData(fstream& tec_file,int e_type)
+void COutput::WriteTECElementData(fstream &tec_file,int e_type)
 {
   long i;
   //----------------------------------------------------------------------
@@ -1117,7 +1148,7 @@ Programing:
 08/2005 WW Output by MSH
 12/2005 OK GetMSH
 **************************************************************************/
-void COutput::WriteTECHeader(fstream& tec_file,int e_type, string e_type_name)
+void COutput::WriteTECHeader(fstream &tec_file,int e_type, string e_type_name)
 {
   int k;
   const int nName = (int)nod_value_vector.size(); 
@@ -1197,10 +1228,18 @@ void COutput::ELEWriteDOMDataTEC()
   tec_file.precision(12);
   if (!tec_file.good()) return;
   tec_file.seekg(0L,ios::beg);
+#ifdef SUPERCOMPUTER
+// kg44 buffer the output
+    char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+    tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+// 
+#endif
+
   //--------------------------------------------------------------------
   WriteELEValuesTECHeader(tec_file);
   WriteELEValuesTECData(tec_file);
   //--------------------------------------------------------------------
+   tec_file.close(); // kg44 close file 
 }
 
 /**************************************************************************
@@ -1210,7 +1249,7 @@ Programing:
 09/2004 OK Implementation
 last modification:
 **************************************************************************/
-void COutput::WriteELEValuesTECHeader(fstream& tec_file)
+void COutput::WriteELEValuesTECHeader(fstream &tec_file)
 {
   int i;
   //--------------------------------------------------------------------
@@ -1239,7 +1278,7 @@ Programing:
 11/2005 OK MSH
 01/2006 OK 
 **************************************************************************/
-void COutput::WriteELEValuesTECData(fstream& tec_file)
+void COutput::WriteELEValuesTECData(fstream &tec_file)
 {
   CRFProcess* m_pcs = NULL;
   if(ele_value_vector.size()>0)
@@ -1347,10 +1386,17 @@ double COutput::NODWritePLYDataTEC(int number)
   if(!new_file_opened) remove(tec_file_name.c_str()); //WW
   //......................................................................
   fstream tec_file (tec_file_name.data(),ios::app|ios::out); //WW
+
   tec_file.setf(ios::scientific,ios::floatfield);
   tec_file.precision(12);
   if(!tec_file.good()) return 0.0;
   tec_file.seekg(0L,ios::beg);
+#ifdef SUPERCOMPUTER
+// kg44 buffer the output
+    char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+    tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+// 
+#endif
   //----------------------------------------------------------------------
   // Tests  
   //......................................................................
@@ -1395,7 +1441,7 @@ double COutput::NODWritePLYDataTEC(int number)
   m_pcs_flow = PCSGetFlow(); //OK
   if(!m_pcs_flow)
   {
-    // cout << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data" << endl;
+    //WW cout << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data" << endl;
     //tec_file << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data " << endl;
     //tec_file.close();
     //return 0.0;
@@ -1410,7 +1456,7 @@ double COutput::NODWritePLYDataTEC(int number)
   {
     if(v_eidx[i]<0)
     {
-      // cout << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data" << endl;
+      //WW cout << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data" << endl;
       //tec_file << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data " << endl;
       //tec_file.close();
     }
@@ -1526,6 +1572,8 @@ double COutput::NODWritePLYDataTEC(int number)
     }
     tec_file << endl;
   }
+    tec_file.close(); // kg44 close file 
+
   //OK cout << "Flux averall: " << flux_sum << endl;
   //======================================================================
   //======================================================================
@@ -1565,10 +1613,17 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
   if(!new_file_opened) remove(tec_file_name.c_str()); //WW
   //......................................................................
   fstream tec_file (tec_file_name.data(),ios::app|ios::out);
+
   tec_file.setf(ios::scientific,ios::floatfield);
   tec_file.precision(12);
   if(!tec_file.good()) return;
   tec_file.seekg(0L,ios::beg);
+#ifdef SUPERCOMPUTER
+// kg44 buffer the output
+    char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+    tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+// 
+#endif
   //--------------------------------------------------------------------
   // Tests
   //......................................................................
@@ -1748,6 +1803,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
   }
   tec_file << endl;
   //----------------------------------------------------------------------
+   tec_file.close(); // kg44 close file 
 }
 
 /**************************************************************************
@@ -1811,16 +1867,25 @@ void OUTWriteNODValues(string base_file_name,FEMNodesElements *m_ne)
     out_extension += char_i;
     out_file_name = base_file_name + "." + out_extension;
     fstream out_file (out_file_name.data(),ios::trunc|ios::out);
+
     out_file.setf(ios::scientific,ios::floatfield);
     out_file.precision(12);
     if (!out_file.good()) return;
     out_file.seekg(0L,ios::beg);
+#ifdef SUPERCOMPUTER
+// kg44 buffer the output
+    char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+    out_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+// 
+#endif
     //--------------------------------------------------------------------
     // Header
     m_out->WriteTimeCurveHeader(out_file);
     //--------------------------------------------------------------------
     // Data
     m_out->WriteTimeCurveData(out_file);
+    out_file.close(); // kg44 close file 
+
   }
 }
 
@@ -1832,7 +1897,7 @@ Programing:
 07/2004 CC modification
 last modification:
 **************************************************************************/
-void COutput::WriteTimeCurveHeader(fstream& out_file)
+void COutput::WriteTimeCurveHeader(fstream &out_file)
 {
   out_file << "GeoSys-OUT: Output Time Curve ------------------------------------------------\n";
   out_file << msh_node_number << " " << GetNodeX(msh_node_number) << " " \
@@ -1854,7 +1919,7 @@ Programing:
 07/2004 OK Implementation for RFO data
 last modification:
 **************************************************************************/
-void COutput::WriteTimeCurveData(fstream& out_file)
+void COutput::WriteTimeCurveData(fstream &out_file)
 {
   int i,j;
   for(j=0;j<m_nodes_elements->number_of_times;j++){
@@ -1900,7 +1965,7 @@ Programing:
 03/2005 OK Implementation
 12/2005 OK MSH
 **************************************************************************/
-void COutput::WriteRFOHeader(fstream&rfo_file)
+void COutput::WriteRFOHeader(fstream &rfo_file)
 {
 //#0#0#0#1#0.00000000000000e+000#0#3915###########################################
   rfo_file << "#0#0#0#1#";
@@ -1918,7 +1983,7 @@ Programing:
 03/2005 OK Implementation
 12/2005 OK MSH
 **************************************************************************/
-void COutput::WriteRFONodes(fstream&rfo_file)
+void COutput::WriteRFONodes(fstream &rfo_file)
 {
 //0 101 100 
   rfo_file << 0 << " " << (long)m_msh->nod_vector.size() << " " << (long)m_msh->ele_vector.size() << endl;
@@ -1937,7 +2002,7 @@ Programing:
 03/2005 OK Implementation
 12/2005 OK MSH
 **************************************************************************/
-void COutput::WriteRFOElements(fstream&rfo_file)
+void COutput::WriteRFOElements(fstream &rfo_file)
 {
   int j;
   CElem* m_ele = NULL;
@@ -1961,7 +2026,7 @@ Programing:
 03/2005 OK Implementation
 12/2005 OK MSH
 **************************************************************************/
-void COutput::WriteRFOValues(fstream&rfo_file)
+void COutput::WriteRFOValues(fstream &rfo_file)
 {
   int p,nidx;
   CRFProcess* m_pcs = NULL;
@@ -2017,16 +2082,25 @@ void COutput::WriteRFO()
   rfo_file_name = file_base_name + "." + "rfo";
   if(!new_file_opened) remove(rfo_file_name.c_str()); //WW
   fstream rfo_file (rfo_file_name.data(),ios::app|ios::out);
+
   rfo_file.setf(ios::scientific,ios::floatfield);
   rfo_file.precision(12);
   if (!rfo_file.good()) return;
   rfo_file.seekg(0L,ios::beg);
+#ifdef SUPERCOMPUTER
+// kg44 buffer the output
+    char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+    rfo_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+// 
+#endif
   //--------------------------------------------------------------------
   WriteRFOHeader(rfo_file);
   WriteRFONodes(rfo_file);
   WriteRFOElements(rfo_file);
   WriteRFOValues(rfo_file);
 //  RFOWriteELEValues();
+  rfo_file.close(); // kg44 close file 
+
 }
 
 /**************************************************************************
@@ -2056,6 +2130,12 @@ void COutput::NODWriteSFCDataTEC(int number)
   tec_file.precision(12);
   if (!tec_file.good()) return;
   tec_file.seekg(0L,ios::beg);
+#ifdef SUPERCOMPUTER
+// kg44 buffer the output
+    char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+    tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+// 
+#endif
   //--------------------------------------------------------------------
   // Write header
   int k;
@@ -2090,6 +2170,7 @@ void COutput::NODWriteSFCDataTEC(int number)
   else{
     tec_file << "Error in NODWritePLYDataTEC: polyline " << geo_name << " not found" << endl;
   }
+      tec_file.close(); // kg44 close file 
 }
 
 /**************************************************************************
@@ -2158,6 +2239,12 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
   tec_file.precision(12);
   if (!tec_file.good()) return;
   tec_file.seekg(0L,ios::beg);
+#ifdef SUPERCOMPUTER
+// kg44 buffer the output
+    char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+  tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+// 
+#endif
   //--------------------------------------------------------------------
   // Write header
   int i,j;
@@ -2228,6 +2315,7 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
     }
     tec_file << endl;
   }
+      tec_file.close(); // kg44 close file 
 }
 
 /**************************************************************************
@@ -2488,7 +2576,7 @@ void COutput::WriteDataVTK(int number)
 
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
   char tf_name[10];
-  std::cout << "Process " << myrank << " in WriteDataVTK" << std::endl;
+  std::cout << "Process " << myrank << " in WriteDataVTK" << "\n";
 #endif
 
   m_msh = FEMGet(pcs_type_name);
@@ -2512,10 +2600,17 @@ void COutput::WriteDataVTK(int number)
 
 
   fstream vtk_file (vtk_file_name.data(),ios::app|ios::out);
+
   vtk_file.setf(ios::scientific,ios::floatfield);
   vtk_file.precision(12);
   if (!vtk_file.good()) return;
   vtk_file.seekg(0L,ios::beg);
+#ifdef SUPERCOMPUTER
+// kg44 buffer the output
+     char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+     vtk_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+// 
+#endif
   //--------------------------------------------------------------------
     WriteVTKHeader(vtk_file);
     WriteVTKNodeData(vtk_file);
@@ -2523,6 +2618,8 @@ void COutput::WriteDataVTK(int number)
     WriteVTKValues(vtk_file);
   //======================================================================
   // vtk
+      vtk_file.close(); // kg44 close file 
+
 }
 
 /**************************************************************************
@@ -2530,7 +2627,7 @@ FEMLib-Method:
 Programing:
 04/2006 KG44 Implementation
 **************************************************************************/
-void COutput::WriteVTKHeader(fstream& vtk_file)
+void COutput::WriteVTKHeader(fstream &vtk_file)
 {
   // Write Header 
   vtk_file << "# vtk DataFile Version 2.0" << endl;
@@ -2548,7 +2645,7 @@ FEMLib-Method:
 Programing:
 04/2006 KG44 Implementation
 **************************************************************************/
-void COutput::WriteVTKNodeData(fstream& vtk_file)
+void COutput::WriteVTKNodeData(fstream &vtk_file)
 {
 // header for node data 
    CFEMesh* m_msh = GetMSH(); //WW
@@ -2570,7 +2667,7 @@ Task:
 Programing:
 04/2006 KG44 Implementation
 **************************************************************************/
-void COutput::WriteVTKElementData(fstream& vtk_file)
+void COutput::WriteVTKElementData(fstream &vtk_file)
 {
 
   int j;
@@ -2673,7 +2770,7 @@ Programing:
 04/2006 kg44 Implementation
 10/2006 WW Output secondary variables
 **************************************************************************/
-void COutput::WriteVTKValues(fstream&vtk_file)
+void COutput::WriteVTKValues(fstream &vtk_file)
 {
   CRFProcess* m_pcs = NULL;
   const int nName = (int)nod_value_vector.size();
@@ -2786,6 +2883,12 @@ void COutput::ELEWriteSFC_TEC()
   tec_file.precision(12);
   if (!tec_file.good()) return;
   tec_file.seekg(0L,ios::beg);
+#ifdef SUPERCOMPUTER
+// kg44 buffer the output
+    char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+  tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+// 
+#endif
   //--------------------------------------------------------------------
   vector<long>tmp_ele_sfc_vector;
   tmp_ele_sfc_vector.clear();
@@ -2793,13 +2896,14 @@ void COutput::ELEWriteSFC_TEC()
   ELEWriteSFC_TECHeader(tec_file);
   ELEWriteSFC_TECData(tec_file);
   //--------------------------------------------------------------------
+      tec_file.close(); // kg44 close file 
 }
 
 /**************************************************************************
 FEMLib-Method: 
 06/2006 OK Implementation
 **************************************************************************/
-void COutput::ELEWriteSFC_TECHeader(fstream& tec_file)
+void COutput::ELEWriteSFC_TECHeader(fstream &tec_file)
 {
   int i;
   //--------------------------------------------------------------------
@@ -2823,7 +2927,7 @@ void COutput::ELEWriteSFC_TECHeader(fstream& tec_file)
 FEMLib-Method: 
 06/2006 OK Implementation
 **************************************************************************/
-void COutput::ELEWriteSFC_TECData(fstream& tec_file)
+void COutput::ELEWriteSFC_TECData(fstream &tec_file)
 {
 tec_file << "COutput::ELEWriteSFC_TECData - implementation not finished" << endl;
   long i;
@@ -2953,6 +3057,12 @@ void COutput::ELEWritePLY_TEC()
   tec_file.precision(12);
   if (!tec_file.good()) return;
   tec_file.seekg(0L,ios::beg);
+#ifdef SUPERCOMPUTER
+// kg44 buffer the output
+    char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+  tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+// 
+#endif
   //--------------------------------------------------------------------
   vector<long>tmp_ele_ply_vector;
   tmp_ele_ply_vector.clear();
@@ -2960,13 +3070,15 @@ void COutput::ELEWritePLY_TEC()
   ELEWritePLY_TECHeader(tec_file);
   ELEWritePLY_TECData(tec_file);
   //--------------------------------------------------------------------
+
+      tec_file.close(); // kg44 close file 
 }
 
 /**************************************************************************
 FEMLib-Method: 
 06/2006 OK Implementation
 **************************************************************************/
-void COutput::ELEWritePLY_TECHeader(fstream& tec_file)
+void COutput::ELEWritePLY_TECHeader(fstream &tec_file)
 {
   int i;
   //--------------------------------------------------------------------
@@ -2987,7 +3099,7 @@ void COutput::ELEWritePLY_TECHeader(fstream& tec_file)
 FEMLib-Method: 
 06/2006 OK Implementation
 **************************************************************************/
-void COutput::ELEWritePLY_TECData(fstream& tec_file)
+void COutput::ELEWritePLY_TECData(fstream &tec_file)
 {
   long i;
   int j;
@@ -3092,6 +3204,12 @@ void COutput::TIMValue_TEC(double tim_value)
   tec_file.precision(12);
   if (!tec_file.good()) return;
   tec_file.seekg(0L,ios::beg);
+#ifdef SUPERCOMPUTER
+// kg44 buffer the output
+    char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+    tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+// 
+#endif 
   //--------------------------------------------------------------------
   // Write Header I: variables
   if(aktueller_zeitschritt==1)
@@ -3107,6 +3225,8 @@ void COutput::TIMValue_TEC(double tim_value)
   //--------------------------------------------------------------------
   tec_file << aktuelle_zeit << " " << tim_value << endl;
   //--------------------------------------------------------------------
+      tec_file.close(); // kg44 close file 
+
 }
 
 /**************************************************************************
@@ -3167,9 +3287,17 @@ void COutput::NODWriteLAYDataTEC(int time_step_number)
   tec_file_name += char_time_step_number;
   tec_file_name += TEC_FILE_EXTENSION;
   fstream tec_file (tec_file_name.data(),ios::trunc|ios::out);
+
   tec_file.setf(ios::scientific,ios::floatfield);
   tec_file.precision(12);
   if (!tec_file.good()) return;
+#ifdef SUPERCOMPUTER
+// 
+// kg44 buffer the output
+    char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+  tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+// 
+#endif
   //--------------------------------------------------------------------
   // Write Header I: variables
   tec_file << "VARIABLES = X,Y,Z,N";
@@ -3203,6 +3331,8 @@ void COutput::NODWriteLAYDataTEC(int time_step_number)
       tec_file << endl;
     }
   }
+      tec_file.close(); // kg44 close file 
+
 }
 
 

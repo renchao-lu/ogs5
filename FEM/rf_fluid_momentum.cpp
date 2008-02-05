@@ -177,7 +177,11 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 		
 			/* Initializations */
 			/* System matrix */
+#ifdef NEW_EQS //WW
+            m_pcs->EQSInitialize(); 
+#else
 			SetZeroLinearSolver(m_pcs->eqs);
+#endif
   
             for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
             {

@@ -6,6 +6,8 @@ Programing:
 11/2003 OK re-organized
 07/2004 OK PCS2
 02/2005 WW/OK Element Assemblier and output 
+12/2007 WW Classes of sparse matrix (jagged diagonal storage) and linear solver 
+           and parellelisation of them 
 **************************************************************************/
 
 /*--------------------- MPI Parallel  -------------------*/
@@ -65,6 +67,11 @@ Programing:
 #include "tools.h"
 #include "rf_pcs.h"
 #include "rfstring.h"
+// New EQS
+#ifdef NEW_EQS
+#include "equation_class.h"   
+#endif
+
 /*-------------------- ITPACKV    ---------------------------*/
 extern void transM2toM6(void);
 /*-------------------- ITPACKV    ---------------------------*/
@@ -125,29 +132,6 @@ using Math_Group::vec;
 #define noCHECK_EQS
 #define noCHECK_ST_GROUP
 #define noCHECK_BC_GROUP
-//----------------------------------------------------------
-// This will be removed after new sparse matrix is ready. WW
-// for solver
-#ifdef USE_MPI
-double *buff_bc; 
-double *buff_global;  
-double *r_array; 
-double *r_zero;
-double *p_array;
-double *v_array;
-double *s_array;
-double *t_array;
-double *x_array_bc; 
-double *r_array_bc; 
-double *r_zero_bc;
-double *p_array_bc;
-double *v_array_bc;
-double *s_array_bc;
-double *t_array_bc;
-long  *overlapped_entry;
-long  overlapped_entry_size;
-long  overlapped_entry_sizeHQ;
-#endif
 //----------------------------------------------------------
 
 /*************************************************************************
@@ -277,6 +261,15 @@ CRFProcess::CRFProcess(void)
   m_bCheckEQS = false; //OK
   //
   write_boundary_condition = false; //15.01.2008. WW
+#ifdef USE_MPI //WW
+  cpu_time_assembly = 0;
+#endif
+  // New equation and solver WW
+#ifdef NEW_EQS
+  eqs_new = NULL;  
+  configured_in_nonlinearloop = false;
+#endif
+
 }
 
 /**************************************************************************
@@ -331,7 +324,7 @@ CRFProcess::~CRFProcess(void)
   // NOD: Release memory of node values
   for(i=0;i<(int)nod_val_vector.size();i++)
   {
-    delete nod_val_vector[i];
+    delete [] nod_val_vector[i];  // Add []. WW
     nod_val_vector[i] = NULL;
   }
   nod_val_vector.clear();
@@ -391,7 +384,7 @@ void CRFProcess::AllocateMemGPoint()
   { 
      elem = m_msh->ele_vector[i];
      ele_GP = new ElementValue(this, elem);
-	 ele_gp_value.push_back(ele_GP);
+     ele_gp_value.push_back(ele_GP);
   }
 
 }
@@ -479,8 +472,14 @@ void CRFProcess::Create()
   // Element matrix output. WW
   if(Write_Matrix)
   {
-    cout << "->Write Matrix" << '\n';
+     cout << "->Write Matrix" << '\n';
+#if defined(USE_MPI)
+     char stro[32];  
+     sprintf(stro, "%d",myrank); 
+     string m_file_name = FileName +"_"+pcs_type_name+(string)stro+"_element_matrix.txt";
+#else
      string m_file_name = FileName +"_"+pcs_type_name+"_element_matrix.txt";
+#endif
      matrix_file = new fstream(m_file_name.c_str(),ios::trunc|ios::out);
      if (!matrix_file->good())
        cout << "Warning in GlobalAssembly: Matrix files are not found" << endl;
@@ -542,6 +541,17 @@ void CRFProcess::Create()
   // EQS - create equation system
 //WW CreateEQS();
   cout << "->Create EQS" << '\n';
+#ifdef NEW_EQS
+  for(i=0; i<(int)fem_msh_vector.size(); i++)
+  {
+    if(m_msh==fem_msh_vector[i])
+      break;    
+  }
+  if(type==4||type==41)
+    eqs_new = EQS_Vector[2*i+1];
+  else
+    eqs_new = EQS_Vector[2*i];  
+#else  
   //WW  phase=1;
   // create EQS
   if(type==4)
@@ -588,6 +598,7 @@ void CRFProcess::Create()
        PCS_Solver.push_back(eqs); 
 	}
   }
+#endif // If NEW_EQS
      // Set solver properties: EQS<->SOL
      // Internen Speicher allokieren
      // Speicher initialisieren
@@ -606,13 +617,9 @@ void CRFProcess::Create()
   }
   //----------------------------------------------------------------------------
   //
-  if(m_msh)
-  {
-    if(type==4||type==41) m_msh->SwitchOnQuadraticNodes(true); 
-	   else  m_msh->SwitchOnQuadraticNodes(false); 
-   //    m_msh->RenumberNodesForGlobalAssembly();
-  } 
-
+  if(type==4||type==41) m_msh->SwitchOnQuadraticNodes(true); 
+  else  m_msh->SwitchOnQuadraticNodes(false); 
+  //
   if(pcs_type_name_vector.size()&&pcs_type_name_vector[0].find("DYNAMIC")!=string::npos) //WW
   {
      setBC_danymic_problems();
@@ -763,10 +770,10 @@ void CRFProcess::Create()
     }
     else  // Initialize FEM calculator
     {
-         int Axisymm = 1; // ani-axisymmetry
-         if(m_msh->isAxisymmetry()) Axisymm = -1; // Axisymmetry is true
-         fem = new CFiniteElementStd(this, Axisymm*m_msh->GetCoordinateFlag()); 
-         fem->SetGaussPointNumber(m_num->ele_gauss_points);
+       int Axisymm = 1; // ani-axisymmetry
+       if(m_msh->isAxisymmetry()) Axisymm = -1; // Axisymmetry is true
+       fem = new CFiniteElementStd(this, Axisymm*m_msh->GetCoordinateFlag()); 
+       fem->SetGaussPointNumber(m_num->ele_gauss_points);
     }
   }
   //----------------------------------------------------------------------
@@ -1112,9 +1119,23 @@ void PCSDestroyAllProcesses(void)
   CRFProcess *m_process = NULL;
   long i;
   int j;
-  LINEAR_SOLVER *eqs;
   //----------------------------------------------------------------------
+#ifdef NEW_EQS //WW
+ #if defined(USE_MPI)
+  for(j=0;j<(int)EQS_Vector.size();j+=2) //WW
+ #else 
+  for(j=0;j<(int)EQS_Vector.size();j++) //WW
+ #endif
+  {
+     if(EQS_Vector[j])  delete EQS_Vector[j];
+     EQS_Vector[j] = NULL;
+ #if defined(USE_MPI)
+     EQS_Vector[j+1] = NULL; 
+ #endif
+  }
+#else
   // SOLver
+  LINEAR_SOLVER *eqs;
   for(j=0;j<(int)PCS_Solver.size();j++)
   {
     eqs = PCS_Solver[j]; 
@@ -1129,10 +1150,16 @@ void PCSDestroyAllProcesses(void)
         (int*) Free(eqs->unknown_update_methods); 
      eqs = DestroyLinearSolver(eqs);
   }
+#endif
   //----------------------------------------------------------------------
   // PCS
   for(j=0;j<(int)pcs_vector.size();j++){
     m_process = pcs_vector[j];
+#ifdef USE_MPI //WW
+    //  if(myrank==0)
+      m_process->Print_CPU_time_byAssembly();
+#endif
+
     if(m_process->pcs_nval_data)
       m_process->pcs_nval_data = (PCS_NVAL_DATA *) Free(m_process->pcs_nval_data);
     if(m_process->pcs_eval_data)
@@ -1156,13 +1183,20 @@ void PCSDestroyAllProcesses(void)
   }
   fem_msh_vector.clear();
   //----------------------------------------------------------------------
+  
   // DOM WW
+#if defined(USE_MPI)
+  //if(myrank==0)
+  dom_vector[myrank]->PrintEQS_CPUtime(); //WW
+#endif
   for(i=0;i<(long)dom_vector.size();i++)
   {
-      if(dom_vector[i]) delete dom_vector[i];
-      dom_vector[i] = NULL; 
+    if(dom_vector[i]) delete dom_vector[i];
+    dom_vector[i] = NULL; 
   }
   dom_vector.clear();
+  
+  
   //----------------------------------------------------------------------
   // ELE
   for(i=0;i<(long)ele_val_vector.size();i++)
@@ -1179,46 +1213,6 @@ void PCSDestroyAllProcesses(void)
   STDelete();  //WW
   //----------------------------------------------------------------------
 
-// This will be removed after new sparse matrix is ready. WW
-// for solver
-#ifdef USE_MPI
-  
-  if(buff_bc) delete [] buff_bc;
-  if(buff_global) delete [] buff_global;
-  //
-  if(r_zero) delete [] r_zero;
-  if(r_array) delete [] r_array;
-  if(p_array) delete [] p_array;
-  if(v_array) delete [] v_array;
-  if(s_array) delete [] s_array;
-  if(t_array) delete [] t_array;
-  if(r_zero_bc) delete [] r_zero_bc;
-  if(r_array_bc) delete [] r_array_bc;
-  if(p_array_bc) delete [] p_array_bc;
-  if(v_array_bc) delete [] v_array_bc;
-  if(s_array_bc) delete [] s_array_bc;
-  if(t_array_bc) delete [] t_array_bc;
-  if(x_array_bc) delete [] x_array_bc;
-  if(overlapped_entry) delete [] overlapped_entry;
-  //
-  buff_bc=NULL;
-  buff_global=NULL;
-  //
-  r_zero=NULL;
-  r_array=NULL;
-  p_array=NULL;
-  v_array=NULL;
-  s_array=NULL;
-  t_array=NULL;
-  r_zero=NULL;
-  r_array_bc=NULL;
-  p_array_bc=NULL;
-  v_array_bc=NULL;
-  s_array_bc=NULL;
-  t_array_bc=NULL;
-  x_array_bc=NULL;
-  overlapped_entry=NULL;
-#endif
   //----------------------------------------------------------------------
 }
 
@@ -1727,12 +1721,12 @@ void CRFProcess::Config(void)
     ConfigGroundwaterFlow();
   }
   if(pcs_type_name.compare("RICHARDS_FLOW")==0)  {
-	  if((int)continuum_vector.size()>1){
-        RD_Process = true;
-		type = 22;
-      }
-	  else
-        type = 14;
+    if((int)continuum_vector.size()>1){
+      RD_Process = true;
+      type = 22;
+    }
+    else
+       type = 14;
     ConfigUnsaturatedFlow();
   }
   if(pcs_type_name.compare("OVERLAND_FLOW")==0)  {
@@ -2633,6 +2627,15 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
   pcs_number_of_secondary_nvals++;
+//TEST
+#define DECOVALEX
+#ifdef DECOVALEX
+  // DECOVALEX Test
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE_I";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+  pcs_number_of_secondary_nvals++;
+#endif
   if(adaption) //WW
   {
     pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STORAGE_P"; 
@@ -3344,9 +3347,9 @@ void CRFProcess::CheckMarkedElement()
         } 
      } 
      if(done)
-        continue;
-	 else 
-        elem->MarkingAll(true);
+       continue;
+     else 
+       elem->MarkingAll(true);
 
   }
   for (l = 0; l < (long)m_msh->nod_vector.size(); l++)
@@ -3357,18 +3360,18 @@ void CRFProcess::CheckMarkedElement()
   for (l = 0; l < (long)m_msh->ele_vector.size(); l++)
   {
      elem = m_msh->ele_vector[l];
-	 if(!elem->GetMark()) continue;
-  	 for(i=0; i<elem->GetNodesNumber(m_msh->getOrder()); i++)
+     if(!elem->GetMark()) continue;
+     for(i=0; i<elem->GetNodesNumber(m_msh->getOrder()); i++)
      {
         done = false;
         node = elem->GetNode(i);
-		for(j=0; j<(int)node->connected_elements.size(); j++)
+        for(j=0; j<(int)node->connected_elements.size(); j++)
         {
-            if(l==node->connected_elements[j])
-			{
-               done = true;
-               break;
-			}
+          if(l==node->connected_elements[j])
+          {
+             done = true;
+             break;
+          }
         }
         if(!done)  
            node->connected_elements.push_back(l);
@@ -3393,6 +3396,8 @@ Programming:
 03/2005 OK MultiMSH concept 
 06/2005 MB NEWTON error calculation
 05/2007 WW DOF>1, unerrelaxation for Picard, and removing the old or spurious stuff
+12/2007 WW Classes of sparse matrix (jagged diagonal storage) and linear solver 
+           and parellelisation of them 
 last modified:
 **************************************************************************/
 double CRFProcess::Execute()
@@ -3402,14 +3407,58 @@ double CRFProcess::Execute()
   double relax; //WW
   int i;
   long j, k=0, g_nnodes = 0; //07.01.07 WW
+
   //----------------------------------------------------------------------
-  cout << "    ->Process " << pcs_number << ": " << pcs_type_name << endl;
+#ifdef USE_MPI //WW
+  long global_eqs_dim = pcs_number_of_primary_nvals*m_msh->GetNodesNumber(false);
+  CPARDomain *dom = dom_vector[myrank];
+  if(myrank==0)
+#endif
+   cout << "    ->Process " << pcs_number << ": " << pcs_type_name << endl;
   //----------------------------------------------------------------------
-  // 0 Initializations
+  // 0 Initialize equations
+#ifdef NEW_EQS //WW
+  if(!configured_in_nonlinearloop)
+ #if defined(USE_MPI)
+    dom->ConfigEQS(m_num, global_eqs_dim);
+ #else  
+    // Also allocate temporary memory for linear solver. WW
+    eqs_new->ConfigNumerics(m_num);
+  eqs_new->Initialize(); 
+ #endif
+
+#else
   // System matrix
   SetLinearSolverType(eqs, m_num); //WW
   SetZeroLinearSolver(eqs);
+#endif
   //
+
+
+
+  /*
+
+
+    
+    //TEST_MPI
+ string test = "rank";
+ char stro[1028];  
+ sprintf(stro, "%d",myrank);
+ string test1 = test+(string)stro+"Assemble.txt";
+    ofstream Dum(test1.c_str(), ios::out); // WW
+    dom->eqs->Write(Dum);   Dum.close();
+    MPI_Finalize();
+    exit(0);
+
+
+  */
+
+
+
+
+
+
+
   // Solution vector
   //......................................................................
   relax = 0.0;
@@ -3425,7 +3474,12 @@ double CRFProcess::Execute()
     nidx1 = GetNodeValueIndex(pcs_primary_function_name[i]) + 1; //new time
     g_nnodes = m_msh->GetNodesNumber(false); //WW 
     for(j=0;j<g_nnodes;j++) //WW
-      eqs->x[j+i*g_nnodes] = GetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1); 
+#ifdef NEW_EQS
+      // New EQS  WW
+      eqs_new->x[j+i*g_nnodes] = GetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1);
+#else
+      eqs->x[j+i*g_nnodes] = GetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1);
+#endif 
   } 
   /*---------------------------------------------------------------------*/
   /* 1 Calc element matrices */
@@ -3459,7 +3513,16 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
 #endif
   // 
   // Assembly
+#ifdef USE_MPI //WW
+  clock_t cpu_time=0;  //WW
+  cpu_time = -clock();
+#endif
+  //
   GlobalAssembly();
+#ifdef USE_MPI
+  cpu_time += clock();
+  cpu_time_assembly += cpu_time;
+#endif
   //
   //----------------------------------------------------------------------
   /* 5 Solve EQS */
@@ -3476,7 +3539,18 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
   MXDumpGLS((char*)eqs_name.c_str(),1,eqs->b,eqs->x);
 #endif
 //.....................................................................
+   // Execute linnear solver
+   //
+#ifdef NEW_EQS //WW
+#if defined(USE_MPI)
+   dom->eqs->Solver(eqs_new->x, global_eqs_dim); //21.12.2007
+#else
+   eqs_new->Solver(); //27.11.2007
+#endif
+#else
    ExecuteLinearSolver();
+#endif
+   //
 //PCSDumpModelNodeValues();
   //----------------------------------------------------------------------
   // Error calculation 
@@ -3489,18 +3563,29 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
     // MSH data
     nidx1 = GetNodeValueIndex("HEAD")+1;
     //for(long nn=0;nn<NodeListSize(); nn++)  {
-    for(long nn=0;nn<(long)m_msh->nod_vector.size();nn++){
+    for(long nn=0;nn<(long)m_msh->nod_vector.size();nn++)
+    {
+#ifdef NEW_EQS
+       Val = GetNodeValue(nn,nidx1)+ eqs_new->x[nn];
+#else 
        Val = GetNodeValue(nn,nidx1)+ eqs->x[nn];
+#endif
 	   pcs_error = max(pcs_error, fabs(Val - GetNodeValue(nn,nidx1)));
 	   SetNodeValue(nn,nidx1, Val);
     }
+#ifdef USE_MPI //WW
+    if(myrank==0)
+#endif 
 	cout << "      PCS error: " << pcs_error << endl; //OK7
   } // NEWTON
   //----------------------------------------------------------------------
   else{ //PICARD
     //......................................................................
     pcs_error = CalcIterationNODError(1); //OK4105//WW4117    
-    cout << "      PCS error: " << pcs_error << endl;
+#ifdef USE_MPI //WW
+    if(myrank==0)
+#endif 
+       cout << "      PCS error: " << pcs_error << endl;
     //--------------------------------------------------------------------
     // 7 Store solution vector in model node values table
     //....................................................................
@@ -3511,12 +3596,25 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
       for(j=0;j<g_nnodes;j++)
       {
          k = m_msh->Eqs2Global_NodeIndex[j];
+#ifdef NEW_EQS
+         SetNodeValue(k,nidx1,relax*GetNodeValue(k,nidx1)+(1.0-relax)*eqs_new->x[j+i*g_nnodes]);
+#else
          SetNodeValue(k,nidx1,relax*GetNodeValue(k,nidx1)+(1.0-relax)*eqs->x[j+i*g_nnodes]);
+#endif
       } 
     }
     //....................................................................
   } // END PICARD
   //----------------------------------------------------------------------
+#ifdef NEW_EQS //WW
+  if(!configured_in_nonlinearloop)
+ #if defined(USE_MPI)
+    dom->eqs->Clean();
+ #else
+    // Also allocate temporary memory for linear solver. WW
+    eqs_new->Clean();
+ #endif
+#endif
   //----------------------------------------------------------------------
   return pcs_error;
 }
@@ -3595,6 +3693,7 @@ Programming:
 10/2005 OK DDC
 11/2005 YD time step control
 01/2006 OK/TK Tests
+12/2007 WW Spase matrix class and condensation sequential and parallel loop
 last modified:
 **************************************************************************/
 void CRFProcess::GlobalAssembly()
@@ -3625,63 +3724,26 @@ void CRFProcess::GlobalAssembly()
   Check2D3D = false;
   if(type == 66) //Overland flow
     Check2D3D = true;
-#ifdef USE_MPI
-  if(dom_vector.size()>0){
-    //cout << "      Domain Decomposition " << myrank  << '\n';
-    CPARDomain* m_dom = NULL;
-//    for(int j=0;j<(int)dom_vector.size();j++)
- //   {
-//orig      m_dom = dom_vector[j];
-//     cout <<"In GlobalAssembly myrank = "<<myrank<<'\n';
-      m_dom = dom_vector[myrank];
-      SetLinearSolver(m_dom->eqs);
-      SetZeroLinearSolver(m_dom->eqs);
-      for(i=0;i<(long)m_dom->elements.size();i++)
-      {
-        elem = m_msh->ele_vector[m_dom->elements[i]];
-        if(elem->GetMark())
-        {
-          elem->SetOrder(false);
-          fem->SetElementNodesDomain(m_dom->element_nodes_dom[i]); //WW  
-          fem->ConfigElement(elem,Check2D3D);
-          fem->m_dom = m_dom; //OK
-          fem->Assembly();
-        } 
-      }
-      // m_dom->WriteMatrix();
-//    }
-      IncorporateSourceTerms(myrank);
-      IncorporateBoundaryConditions(myrank);
-
-      /*      
-      //TEST
-	{
- string test = "rank";
- char stro[1028];  
- // itoa(myrank,stro, 10);
- sprintf(stro, "%d",myrank);
- string test1 = test+(string)stro+"Assemble.txt";
-   MXDumpGLS(test1.data(),1,m_dom->eqs->b, m_dom->eqs->x); 
-   //TEST
-	}
-      */
-
-      //....................................................................
-      // Assemble global system
-      // DDCAssembleGlobalMatrix(); //TEST to be removed
-//MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);
-  }
-#else
   //----------------------------------------------------------------------
   // DDC
   if(dom_vector.size()>0){
     cout << "      Domain Decomposition" << '\n';
     CPARDomain* m_dom = NULL;
-    for(int j=0;j<(int)dom_vector.size();j++)
+    int j = 0;
+#if defined(USE_MPI) //WW
+    j = myrank;
+#else
+    for(j=0;j<(int)dom_vector.size();j++)
     {
+#endif
       m_dom = dom_vector[j];
+      //
+#ifdef NEW_EQS
+      m_dom->InitialEQS(this); 
+#else
       SetLinearSolver(m_dom->eqs);
       SetZeroLinearSolver(m_dom->eqs);
+#endif
       for(i=0;i<(long)m_dom->elements.size();i++)
       {
         elem = m_msh->ele_vector[m_dom->elements[i]];
@@ -3696,12 +3758,33 @@ void CRFProcess::GlobalAssembly()
       }
       // m_dom->WriteMatrix();
       //MXDumpGLS("rf_pcs.txt",1,m_dom->eqs->b,m_dom->eqs->x);
-	  IncorporateSourceTerms(j);
-      IncorporateBoundaryConditions(j);      
+      //ofstream Dum("rf_pcs.txt", ios::out); // WW
+      //m_dom->eqs->Write(Dum);
+      //Dum.close();
+
+      IncorporateSourceTerms(j);
+      IncorporateBoundaryConditions(j);   
+
+      /* 
+      //TEST   
+      string test = "rank";
+      char stro[64];  
+      sprintf(stro, "%d",j);
+      string test1 = test+(string)stro+"Assemble.txt";
+      ofstream Dum(test1.c_str(), ios::out);
+      m_dom->eqs->Write(Dum);
+      Dum.close(); 
+      exit(0);
+      */
+
+
+
+#ifndef USE_MPI   
     }
     //....................................................................
     // Assemble global system
     DDCAssembleGlobalMatrix();
+#endif
 //	
 //		MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x); //abort();
   }
@@ -3710,7 +3793,7 @@ void CRFProcess::GlobalAssembly()
   else
   {   
     for(int ii=0;ii<(int)continuum_vector.size();ii++)   //YDTEST. Changed to DOF 15.02.2007 WW
-	{
+    {
       continuum = ii;
       for(i=0;i<(long)m_msh->ele_vector.size();i++)
       {
@@ -3731,19 +3814,22 @@ void CRFProcess::GlobalAssembly()
 //------------------------------   
          } 
        }
-	}
+    }
 	//
-//MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
+//  MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
+    //eqs_new->Write();
 
     IncorporateSourceTerms();
     SetCPL(); //OK
     IncorporateBoundaryConditions();
-//	MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); abort();
-  //ofstream Dum("rf_pcs.txt", ios::out); WW
-  //Write_Matrix_M5(eqs->b, Dum); abort();
+    //
+    // 
+    // ofstream Dum("rf_pcs.txt", ios::out); // WW
+    // eqs_new->Write(Dum);   Dum.close();
+    //
+    //    MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
   }
   //----------------------------------------------------------------------
-#endif
 }
 
 /*************************************************************************
@@ -3773,10 +3859,11 @@ void CRFProcess::CalIntegrationPointValue()
     elem = m_msh->ele_vector[i];
     if (elem->GetMark()) // Marked for use
     {
-       fem->ConfigElement(elem);
-	   fem->Cal_Velocity();
+      fem->ConfigElement(elem);
+      // fem->m_dom = NULL; // To be used for parallization 
+      fem->Cal_Velocity();
     } 
-  }
+  }  
 }
 
 
@@ -3829,6 +3916,7 @@ Programming:
 ??/???? WW Moved from AssembleSystemMatrixNew
 05/2006 WW Modified to enable dealing with the case of DOF>1
 06/2006 WW Take the advantege of sparse matrix to enhance simulation
+10/2007 WW Change for the new classes of sparse matrix and linear solver
 **************************************************************************/
 void CRFProcess::DDCAssembleGlobalMatrix()
 {
@@ -3836,6 +3924,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
   long i,j,j0,ig,jg, ncol;
   CPARDomain *m_dom = NULL;
   long *nodes2node = NULL; //WW
+  double *rhs = NULL, *rhs_dom = NULL;
   double a_ij;
   double b_i=0.0;
   int no_domains =(int)dom_vector.size();
@@ -3849,6 +3938,18 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 #else
     m_dom = dom_vector[myrank];
 #endif   
+    // RHS
+#if defined(NEW_EQS)
+    rhs = eqs_new->b;
+    if(type==4) 
+      rhs_dom = m_dom->eqsH->b;
+    else
+      rhs_dom = m_dom->eqs->b;
+#else
+    rhs = eqs->b;
+    rhs_dom = m_dom->eqs->b;
+#endif
+
     no_dom_nodes = m_dom->nnodes_dom; //WW
     if(type==4||type==41)
         no_dom_nodes = m_dom->nnodesHQ_dom; //WW
@@ -3871,21 +3972,26 @@ void CRFProcess::DDCAssembleGlobalMatrix()
           for(jj=0; jj<dof; jj++)
           {
             // get domain system matrix
+#ifdef  NEW_EQS  //WW
+            if(type==4)
+              a_ij = (*m_dom->eqsH->A)(i+no_dom_nodes*ii,j+no_dom_nodes*jj);
+            else 
+              a_ij = (*m_dom->eqs->A)(i+no_dom_nodes*ii,j+no_dom_nodes*jj);
+            (*eqs_new->A)(ig+Shift[ii],jg+Shift[jj]) += a_ij;
+#else
             SetLinearSolver(m_dom->eqs);
             a_ij = MXGet(i+no_dom_nodes*ii,j+no_dom_nodes*jj);
             // set global system matrix
             SetLinearSolver(eqs);
             MXInc(ig+Shift[ii],jg+Shift[jj],a_ij);
+#endif
           }
         }
         // DOF loop ---------------------------WW
       }
       // set global RHS vector //OK
       for(ii=0; ii<dof; ii++) //WW
-      {
-         b_i = m_dom->eqs->b[i+no_dom_nodes*ii];
-         eqs->b[ig+Shift[ii]] += b_i;
-      }
+         rhs[ig+Shift[ii]] += rhs_dom[i+no_dom_nodes*ii];
     }
 
     // Mono HM------------------------------------WW
@@ -3907,6 +4013,13 @@ void CRFProcess::DDCAssembleGlobalMatrix()
         jg = m_dom->nodes[j];
         for(ii=0; ii<dof; ii++) //ww
         { 
+#if defined(NEW_EQS)
+            // dom to global. WW
+            a_ij = (*m_dom->eqsH->A)(i+no_dom_nodesHQ*dof,j+no_dom_nodesHQ*ii);
+            a_ji = (*m_dom->eqsH->A)(j+no_dom_nodesHQ*ii, i+no_dom_nodesHQ*dof);
+            (*eqs_new->A)(ig+Shift[ii],jg+Shift[problem_dimension_dm]) += a_ij; 
+            (*eqs_new->A)(jg+Shift[problem_dimension_dm],ig+Shift[ii]) += a_ji; 
+#else 
             // get domain system matrix
             SetLinearSolver(m_dom->eqs);
             a_ij = MXGet(i+no_dom_nodesHQ*dof,j+no_dom_nodesHQ*ii);
@@ -3915,10 +4028,12 @@ void CRFProcess::DDCAssembleGlobalMatrix()
             SetLinearSolver(eqs);
             MXInc(ig+Shift[ii],jg+Shift[problem_dimension_dm],a_ij);
             MXInc(jg+Shift[problem_dimension_dm],ig+Shift[ii],a_ji);
+#endif
         }
       }
     }    
-    for(i=0;i<no_dom_nodes;i++){
+    for(i=0;i<no_dom_nodes;i++)
+    {
       ig = m_dom->nodes[i];
       ncol = m_dom->num_nodes2_node[i]; 
       nodes2node =  m_dom->node_conneted_nodes[i];
@@ -3927,14 +4042,21 @@ void CRFProcess::DDCAssembleGlobalMatrix()
         jg = m_dom->nodes[j];
         if(jg>=no_dom_nodes) continue;
         // get domain system matrix
+#if defined(NEW_EQS)
+        // dom to global. WW
+        a_ij = (*m_dom->eqsH->A)(i+no_dom_nodesHQ*dof,j+no_dom_nodesHQ*dof);
+        (*eqs_new->A)(ig+Shift[problem_dimension_dm],jg+Shift[problem_dimension_dm])
+           += a_ij;
+#else 
         SetLinearSolver(m_dom->eqs);
         a_ij = MXGet(i+no_dom_nodesHQ*dof,j+no_dom_nodesHQ*dof);
         // set global system matrix
         SetLinearSolver(eqs);
         MXInc(ig+Shift[problem_dimension_dm],jg+Shift[problem_dimension_dm],a_ij);
+#endif
       }
-      b_i = m_dom->eqs->b[i+no_dom_nodesHQ*dof];
-      eqs->b[ig+Shift[problem_dimension_dm]] += b_i;
+      //
+      rhs[ig+Shift[problem_dimension_dm]] += rhs_dom[i+no_dom_nodesHQ*dof];
     }    
     // Mono HM------------------------------------WW  
 #ifndef USE_MPI
@@ -4057,6 +4179,7 @@ Programing:
 04/2006 OK Conditions by PCS coupling OK
 05/2006 WW Re-implement
 05/2006 WW DDC
+10/2007 WW Changes for the new classes of sparse matrix and linear solver
 last modification:
 **************************************************************************/
 void CRFProcess::IncorporateBoundaryConditions(const int rank)
@@ -4074,6 +4197,9 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
   CFunction* m_fct = NULL; //OK
   double *eqs_rhs = NULL;
   bool is_valid = false; //OK
+#ifdef NEW_EQS
+  Linear_EQS *eqs_p = NULL;  
+#endif
   //------------------------------------------------------------WW
   // WW 
   double Scaling = 1.0; 
@@ -4086,12 +4212,28 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
   {
      begin = 0;
      end = (long)bc_node_value.size();
+#ifdef NEW_EQS       //WW
+     eqs_p = eqs_new;
+     eqs_rhs = eqs_new->b; //27.11.2007 WW   
+#else
      eqs_rhs = eqs->b;
+#endif
   } 
   else
   {
      m_dom = dom_vector[rank];
-     eqs_rhs = m_dom->eqs->b;
+#ifdef NEW_EQS
+     eqs_p = m_dom->eqs;     
+     if(type == 4 ) //WW
+     {
+       eqs_p = m_dom->eqsH;     
+       eqs_rhs = m_dom->eqsH->b;
+     }
+     else
+       eqs_rhs = m_dom->eqs->b; 
+#else
+     eqs_rhs = m_dom->eqs->b; 
+#endif
      if(rank==0) 
         begin = 0;
      else 
@@ -4217,12 +4359,18 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
             if(m_bc->pcs_pv_name.find(pcs_primary_function_name[ii]) != string::npos)
             {    
                //YD/WW
-               bc_eqs_index += ii*(long)eqs->dim/dof;   //YD dual //DOF>1 WW 
+               //WW   bc_eqs_index += ii*(long)eqs->dim/dof;   //YD dual //DOF>1 WW 
+               bc_eqs_index += fem->NodeShift[ii];   //DOF>1 WW 
+
                break;
             }
           }
         }
+#ifdef NEW_EQS       //WW
+        eqs_p->SetKnownX_i(bc_eqs_index, bc_value);
+#else
         MXRandbed(bc_eqs_index,bc_value,eqs_rhs);
+#endif
       }
   }
     //-----------------------------------------------------------------------
@@ -4287,12 +4435,23 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
   {
 	 begin = 0;
 	 end = (long)st_node_value.size();
-     eqs_rhs = eqs->b; 
+#ifdef NEW_EQS       //WW
+     eqs_rhs = eqs_new->b; //27.11.2007 WW   
+#else
+     eqs_rhs = eqs->b;
+#endif 
   } 
   else
   {
      m_dom = dom_vector[rank];
+#ifdef NEW_EQS
+     if(type == 4 )
+       eqs_rhs = m_dom->eqsH->b;
+     else
+       eqs_rhs = m_dom->eqs->b;  
+#else
      eqs_rhs = m_dom->eqs->b; 
+#endif
      if(rank==0) 
         begin = 0;
 	 else 
@@ -4446,7 +4605,8 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
       {
          if(m_st->pcs_pv_name.find(pcs_primary_function_name[ii]) != string::npos)
 	     {
-            bc_eqs_index += ii*(long)eqs->dim/dof;   //dual  YDTEST
+            //WW            bc_eqs_index += ii*(long)eqs->dim/dof;   //dual  YDTEST
+            bc_eqs_index += fem->NodeShift[ii];   //dual  YDTEST
             break;
 	     }
       }
@@ -4455,7 +4615,7 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
   }
   //====================================================================
 }
-
+#ifndef NEW_EQS //WW
 /**************************************************************************
 FEMLib-Method: 
 Task: 
@@ -4523,6 +4683,7 @@ int CRFProcess::ExecuteLinearSolver(void)
   //-----------------------------------------------------------------------
   return iter_sum;
 }
+#endif 
 /**************************************************************************
 FEMLib-Method: 
 Task: 
@@ -5774,6 +5935,7 @@ Programing:
 05/2005 OK MSH
 08/2005 WW Re-implememtation based on NUMCalcIterationError
 01/2007 WW For DOF>1
+11/2007 WW Changes for the new classes of sparse and linear solver
 last modification:
 **************************************************************************/
 double CRFProcess::CalcIterationNODError(int method)
@@ -5786,6 +5948,12 @@ double CRFProcess::CalcIterationNODError(int method)
     int ii;
     g_nnodes = m_msh->GetNodesNumber(false); //WW 
     //-----------------------------------------------------WW
+    double *eqs_x = NULL; // 11.2007. WW
+#ifdef NEW_EQS
+    eqs_x = eqs_new->x;
+#else
+    eqs_x = eqs->x; 
+#endif 
     error = 0.;
     change = 0.;
 
@@ -5804,7 +5972,7 @@ double CRFProcess::CalcIterationNODError(int method)
             for (i = 0l; i < g_nnodes; i++) //WW
             {
                k = m_msh->Eqs2Global_NodeIndex[i];
-               error = max(error, fabs(GetNodeValue(k, nidx1) - eqs->x[i+ii*g_nnodes]));
+               error = max(error, fabs(GetNodeValue(k, nidx1) - eqs_x[i+ii*g_nnodes]));
 	        }
          }
          return error;
@@ -5815,8 +5983,8 @@ double CRFProcess::CalcIterationNODError(int method)
             for (i = 0l; i < g_nnodes; i++) //WW
             {
                k = m_msh->Eqs2Global_NodeIndex[i];
-               error = max(error, fabs(eqs->x[i+ii*g_nnodes] - GetNodeValue(k, nidx1))
-                       /(fabs(eqs->x[i+ii*g_nnodes]) + fabs(GetNodeValue(k, nidx1))+ MKleinsteZahl) );
+               error = max(error, fabs(eqs_x[i+ii*g_nnodes] - GetNodeValue(k, nidx1))
+                       /(fabs(eqs_x[i+ii*g_nnodes]) + fabs(GetNodeValue(k, nidx1))+ MKleinsteZahl) );
             }
 		 }
 		 return error;
@@ -5826,8 +5994,8 @@ double CRFProcess::CalcIterationNODError(int method)
              nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1; //new time
              for (i = 0l; i < g_nnodes; i++) { //WW
                k = m_msh->Eqs2Global_NodeIndex[i];
-               error = max(error, fabs(eqs->x[i+ii*g_nnodes] - GetNodeValue(k, nidx1)));
-               max_c = max(max(max_c, fabs(fabs(eqs->x[i+ii*g_nnodes]))),fabs(GetNodeValue(k, nidx1)));
+               error = max(error, fabs(eqs_x[i+ii*g_nnodes] - GetNodeValue(k, nidx1)));
+               max_c = max(max(max_c, fabs(fabs(eqs_x[i+ii*g_nnodes]))),fabs(GetNodeValue(k, nidx1)));
             }
          }
          return error / (max_c + MKleinsteZahl);
@@ -5837,9 +6005,9 @@ double CRFProcess::CalcIterationNODError(int method)
             nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1; //new time
             for (i = 0l; i < g_nnodes; i++) { //WW
               k = m_msh->Eqs2Global_NodeIndex[i];
-              error = max(error, fabs(eqs->x[i+ii*g_nnodes] - GetNodeValue(k, nidx1)));
-              min_c = min(min_c, fabs(eqs->x[i+ii*g_nnodes]));
-              max_c = max(max_c, fabs(eqs->x[i+ii*g_nnodes]));
+              error = max(error, fabs(eqs_x[i+ii*g_nnodes] - GetNodeValue(k, nidx1)));
+              min_c = min(min_c, fabs(eqs_x[i+ii*g_nnodes]));
+              max_c = max(max_c, fabs(eqs_x[i+ii*g_nnodes]));
             }
          }
          return error / (max_c - min_c + MKleinsteZahl);
@@ -5849,8 +6017,8 @@ double CRFProcess::CalcIterationNODError(int method)
             nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1; //new time
             for (i = 0l; i < g_nnodes; i++) { //WW
               k = m_msh->Eqs2Global_NodeIndex[i];
-              error = max(error, fabs(eqs->x[i+ii*g_nnodes] -  GetNodeValue(k, nidx1)) 
-  				/ (fabs(eqs->x[i+ii*g_nnodes] - GetNodeValue(k, nidx1-1)) + MKleinsteZahl));
+              error = max(error, fabs(eqs_x[i+ii*g_nnodes] -  GetNodeValue(k, nidx1)) 
+  				/ (fabs(eqs_x[i+ii*g_nnodes] - GetNodeValue(k, nidx1-1)) + MKleinsteZahl));
             }
 		 }
          return error;
@@ -5860,8 +6028,8 @@ double CRFProcess::CalcIterationNODError(int method)
             nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1; //new time
             for (i = 0l; i < g_nnodes; i++) { //WW
                k = m_msh->Eqs2Global_NodeIndex[i];
-               error = max(error, fabs(eqs->x[i+ii*g_nnodes] -  GetNodeValue(k, nidx1)));
-               change = max(change, fabs(eqs->x[i+ii*g_nnodes] - GetNodeValue(k, nidx1-1)));
+               error = max(error, fabs(eqs_x[i+ii*g_nnodes] -  GetNodeValue(k, nidx1)));
+               change = max(change, fabs(eqs_x[i+ii*g_nnodes] - GetNodeValue(k, nidx1-1)));
             }
          }
          return error / (change + MKleinsteZahl);
@@ -5879,7 +6047,19 @@ Programing:
 double CRFProcess::ExecuteNonLinear()
 {
   double nonlinear_iteration_error=0.0;
-
+#ifdef NEW_EQS
+  configured_in_nonlinearloop = true;
+  // Also allocate temporary memory for linear solver. WW
+  //
+#if defined(USE_MPI)
+  CPARDomain *dom = dom_vector[myrank];
+  dom->ConfigEQS(m_num, pcs_number_of_primary_nvals
+                        *m_msh->GetNodesNumber(false));
+#else  
+  eqs_new->ConfigNumerics(m_num);
+#endif
+  //
+#endif
   //..................................................................
   for(iter=0;iter<pcs_nonlinear_iterations;iter++)
   {
@@ -5901,6 +6081,15 @@ double CRFProcess::ExecuteNonLinear()
   }
   // 8 Calculate secondary variables
   CalcSecondaryVariables(); // Moved here from Execute() WW
+  // Release temporary memory of linear solver. WW
+#ifdef NEW_EQS  //WW
+ #if defined(USE_MPI)
+  dom->eqs->Clean();
+ #else 
+  eqs_new->Clean(); // Release buffer momery WW
+ #endif
+  configured_in_nonlinearloop = false;  
+#endif
   return nonlinear_iteration_error; 
 }
 
@@ -8213,6 +8402,112 @@ void CRFProcess::CreateYD()
 }
 */
 
+/*************************************************************************
+ROCKFLOW - Function: CRFProcess::
+Task:
+Programming: 
+09/2007 WW Implementation
+**************************************************************************/
+
+// New solvers WW
+#ifdef NEW_EQS    //1.09.2007 WW
+
+void CreateEQS_LinearSolver()
+{ 
+  int i, dof_nonDM=1;
+  int dof_DM=1;
+  CRFProcess *m_pcs = NULL;
+  CFEMesh *a_msh = NULL;
+  SparseTable *sp = NULL;
+  SparseTable *spH = NULL;
+  Linear_EQS *eqs = NULL;
+  Linear_EQS *eqsH = NULL;
+  int dof = 1;
+  //
+  for(i=0;i<(int)pcs_vector.size();i++)
+  {
+    m_pcs = pcs_vector[i];
+    if(m_pcs->type==22) // Monolithic TH2
+    {
+      dof_nonDM =  m_pcs->GetPrimaryVNumber();
+      dof = dof_nonDM;
+    }  
+    if(m_pcs->type==4||m_pcs->type==41)  // Deformation
+    {
+      dof_DM = m_pcs->GetPrimaryVNumber(); 
+      dof = dof_DM;  
+    }
+    else // Monolithic scheme for the process with linear elements
+    {
+      if(dof_nonDM < m_pcs->GetPrimaryVNumber())
+        dof_nonDM = m_pcs->GetPrimaryVNumber();
+    }          
+  }
+  //
+  for(i=0; i<(int)fem_msh_vector.size(); i++)
+  {
+    a_msh = fem_msh_vector[i];
+#if defined(USE_MPI) 
+    eqs = new Linear_EQS(a_msh->GetNodesNumber(true)*dof); 
+    EQS_Vector.push_back(eqs);
+    EQS_Vector.push_back(eqs);
+#else  
+    a_msh->CreateSparseTable();
+    // sparse pattern with linear elements exists
+    sp = a_msh->GetSparseTable();
+    // sparse pattern with quadratic elements exists
+    spH = a_msh->GetSparseTable(true);
+    //
+    if(sp) 
+      eqs = new Linear_EQS(*sp, dof_nonDM);
+    if(spH) 
+      eqsH = new Linear_EQS(*spH, dof_DM);
+    EQS_Vector.push_back(eqs);
+    EQS_Vector.push_back(eqsH);
+#endif
+  }
+} 
+#endif
+
+/*************************************************************************
+ROCKFLOW - Function: CRFProcess::
+Task:
+Programming: 
+09/2007 WW Implementation
+**************************************************************************/
+#include <iomanip>
+void CRFProcess::DumpEqs(string file_name)
+{
+   int ii;
+   long i, j, k, m;
+   fstream eqs_out;
+   CNode *node;
+   eqs_out.open(file_name.c_str(), ios::out );
+   eqs_out.setf(ios::scientific, ios::floatfield);
+   setw(14);
+   eqs_out.precision(14);
+   // 
+   long nnode = eqs->dim/eqs->unknown_vector_dimension; 
+   for(i=0; i<eqs->dim; i++)
+   {
+      m = i%nnode;
+      node = m_msh->nod_vector[m];
+      for(ii=0; ii<eqs->unknown_vector_dimension; ii++)
+      { 
+        for(j=0; j<(long)node->connected_nodes.size(); j++)
+        {
+           k = node->connected_nodes[j];
+           k = ii*nnode+k;
+           if(k>=eqs->dim)	 continue;
+           eqs_out<<i<<"  "<<k<<"  "<<MXGet(i,k)<<endl;
+        } 
+      }    
+      eqs_out<<	i<<"  "<<	eqs->b[i]<<"  "<<eqs->x[i]<<endl;
+   }
+   eqs_out.close();
+}
+
+
 
 /*************************************************************************
 ROCKFLOW - Function: CRFProcess::
@@ -8238,22 +8533,54 @@ void CRFProcess::WriteBC()
   }
   os.setf(ios::scientific,ios::floatfield);
   os.precision(12);
+  CNode *anode = NULL;
+  long nindex = 0;
   if(size_bc>0)
   {
      os<<"#Dirchelet BC  (from "<<m_file_name<<".bc file) "<<endl;
      os<<"#Total BC nodes  " <<size_bc<<endl;
-     os<<"#Node index     value: "<<endl;
+     os<<"#Node index, name, x, y, z,   value: "<<endl;
      for(i=0; i<size_bc; i++)
-        os<<bc_node_value[i]->geo_node_number<<"  "<<setw(14)<<bc_node_value[i]->node_value<<endl;
+     {
+        nindex = bc_node_value[i]->geo_node_number;
+        anode = m_msh->nod_vector[nindex];
+        os<<nindex<<"  "
+          <<bc_node_value[i]->pcs_pv_name<<" "
+          <<setw(14)<<anode->X()<<" "
+          <<setw(14)<<anode->Y()<<" "
+          <<setw(14)<<anode->Z()<<" "
+          <<setw(14)<<bc_node_value[i]->node_value<<endl;
+     }
   } 
   if(size_st>0)
   {
      os<<"#Source term or Neumann BC  (from "<<m_file_name<<".st file) "<<endl;
      os<<"#Total ST nodes  " <<size_st<<endl;
-     os<<"#Node index     value: "<<endl;
+     os<<"#Node index, x, y, z, name    value: "<<endl;
      for(i=0; i<size_st; i++)
-        os<<st_node_value[i]->geo_node_number<<"  "<<setw(14)<<st_node_value[i]->node_value<<endl;
+     {
+        nindex = st_node_value[i]->geo_node_number;
+        anode = m_msh->nod_vector[nindex];
+        os<<nindex<<"  "
+          <<st_node[i]->pcs_pv_name<<" "
+          <<setw(14)<<anode->X()<<" "
+          <<setw(14)<<anode->Y()<<" "
+          <<setw(14)<<anode->Z()<<" "
+          <<setw(14)<<st_node_value[i]->node_value<<endl;
+     }
   } 
   os<<"#STOP"<<endl; 
   os.close();
 }
+
+
+#ifdef NEW_EQS //WW
+/*************************************************************************
+ROCKFLOW - Function: CRFProcess::
+Task:  //For fluid momentum, WW 
+Programming: 
+01/2008 WW Implementation
+**************************************************************************/
+void CRFProcess::EQSInitialize()
+ {eqs_new->Initialize();} 
+#endif
