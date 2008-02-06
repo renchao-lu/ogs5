@@ -468,7 +468,7 @@ int ExecuteRFTimeLoop(void)
       if(m_tim->step_current==no_time_steps)
         break;
     }
-    if(aktuelle_zeit+1>=m_tim->time_end)		//WW
+    if(aktuelle_zeit>=m_tim->time_end)		//WW
       break;
     m_tim->step_current++; // Moved here by WW
   }
