@@ -93,7 +93,7 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
        }  
     }
 
-    idx_pls =  pcs->GetNodeValueIndex("STRAIN_PLS");
+    // idx_pls =  pcs->GetNodeValueIndex("STRAIN_PLS");
     // Strain
     Idx_Strain[0] = pcs->GetNodeValueIndex("STRAIN_XX");
     Idx_Strain[1] = pcs->GetNodeValueIndex("STRAIN_YY");
@@ -1623,7 +1623,7 @@ void CFiniteElementVec::ExtropolateGuassStrain()
  
    Programming:
    06/2004   WW  
-   03/2007   WW  Generize for all 2dn variables  
+   03/2007   WW  Generize for all 2nd variables  
 **************************************************************************/
 void CFiniteElementVec::ExtropolateGuassStress()
 {
@@ -1641,6 +1641,8 @@ void CFiniteElementVec::ExtropolateGuassStress()
   //
   gp = gp_r=gp_s=gp_t=gp=0;
   eleV_DM = ele_value_dm[MeshElement->GetIndex()];
+  if(eleV_DM->pStrain)    //08.02.2008 WW 
+     idx_pls =  pcs->GetNodeValueIndex("STRAIN_PLS");
   // 
   for(gp=0; gp<nGaussPoints; gp++)
   {
@@ -1668,7 +1670,10 @@ void CFiniteElementVec::ExtropolateGuassStress()
       Syy[i] = (*eleV_DM->Stress)(1,gp);
       Szz[i] = (*eleV_DM->Stress)(2,gp);
       Sxy[i] = (*eleV_DM->Stress)(3,gp);
-      pstr[i] = (*eleV_DM->pStrain)(gp);
+      if(eleV_DM->pStrain)
+        pstr[i] = (*eleV_DM->pStrain)(gp);
+      else
+        pstr[i] = 0.0; //08.02.2008 WW 
       if(ele_dim==3)
       {
         Sxz[i] = (*eleV_DM->Stress)(4,gp);
@@ -1734,14 +1739,16 @@ void CFiniteElementVec::ExtropolateGuassStress()
       ESxx += pcs->GetNodeValue(node_i,Idx_Stress[0]); 
       ESyy += pcs->GetNodeValue(node_i,Idx_Stress[1]);  
       ESzz += pcs->GetNodeValue(node_i,Idx_Stress[2]);  
-      ESxy += pcs->GetNodeValue(node_i,Idx_Stress[3]);  
-      Pls  += pcs->GetNodeValue(node_i,idx_pls);  
+      ESxy += pcs->GetNodeValue(node_i,Idx_Stress[3]); 
+      if(eleV_DM->pStrain)    //08.02.2008 WW 
+        Pls  += pcs->GetNodeValue(node_i,idx_pls);  
  
       pcs->SetNodeValue (node_i, Idx_Stress[0], ESxx);
       pcs->SetNodeValue (node_i, Idx_Stress[1], ESyy);
       pcs->SetNodeValue (node_i, Idx_Stress[2], ESzz);
       pcs->SetNodeValue (node_i, Idx_Stress[3], ESxy);
-      pcs->SetNodeValue (node_i, idx_pls, fabs(Pls));
+      if(eleV_DM->pStrain)    //08.02.2008 WW 
+        pcs->SetNodeValue (node_i, idx_pls, fabs(Pls));
    
       if(ele_dim==3)
       {
@@ -2618,7 +2625,9 @@ ElementValue_DM::ElementValue_DM(CElem* ele,  const int NGP, bool HM_Staggered)
    if(ele_type==4)
       NGPoints=3;
    else if(ele_type==5)
-      NGPoints=15;
+      NGPoints=15; 
+   else if(ele_type==6)
+      NGPoints=6;   //9      
    else NGPoints = (int)pow((double)NGP, (double)ele_dim);
 
    Stress0 = new Matrix(LengthBS, NGPoints);
@@ -2628,17 +2637,17 @@ ElementValue_DM::ElementValue_DM(CElem* ele,  const int NGP, bool HM_Staggered)
       Stress_j = new Matrix(LengthBS, NGPoints);
    else
       Stress_j = NULL; // for HM coupling iteration   
-   pStrain = new Matrix(NGPoints);
    //
    if(Plastic>0)
    {           
+      pStrain = new Matrix(NGPoints);
       y_surface = new Matrix(NGPoints);
       *y_surface = 0.0;
+      *pStrain = 0.0;
    }  
    else
       y_surface = NULL;
    *Stress = 0.0;
-   *pStrain = 0.0;
 
    if(Plastic==2) // Rotational hardening model  
    {
@@ -2663,7 +2672,7 @@ void ElementValue_DM::Write_BIN(fstream& os)
 {
    Stress0->Write_BIN(os); 
    Stress_i->Write_BIN(os); 
-   pStrain->Write_BIN(os);  
+   if(pStrain) pStrain->Write_BIN(os);  
    if(y_surface) y_surface->Write_BIN(os);  
    if(xi) xi->Write_BIN(os);    		
    if(MatP) MatP->Write_BIN(os);    
@@ -2680,7 +2689,7 @@ void ElementValue_DM::Read_BIN(fstream& is)
 {
    Stress0->Read_BIN(is); 
    Stress_i->Read_BIN(is); 
-   pStrain->Read_BIN(is);    
+   if(pStrain) pStrain->Read_BIN(is);    
    if(y_surface) y_surface->Read_BIN(is);  
    if(xi) xi->Read_BIN(is);    		
    if(MatP) MatP->Read_BIN(is);    
@@ -2713,7 +2722,7 @@ ElementValue_DM::~ElementValue_DM()
     delete Stress0;
     if(Stress_i) delete Stress_i;
     if(Stress_j) delete Stress_j;
-    delete pStrain;
+    if(pStrain) delete pStrain;
     if(y_surface) delete y_surface;  
 
     // Preconsolidation pressure
