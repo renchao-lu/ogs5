@@ -2625,7 +2625,7 @@ ElementValue_DM::ElementValue_DM(CElem* ele,  const int NGP, bool HM_Staggered)
    if(ele_type==4)
       NGPoints=3;
    else if(ele_type==5)
-      NGPoints=15; 
+      NGPoints=5;   //15
    else if(ele_type==6)
       NGPoints=6;   //9      
    else NGPoints = (int)pow((double)NGP, (double)ele_dim);
