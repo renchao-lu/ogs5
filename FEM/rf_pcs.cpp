@@ -7948,6 +7948,7 @@ PCSLib-Method:
 **************************************************************************/
 bool CRFProcess::CreateEQS()
 {
+  if(!m_num) return false; //OK46
   bool succeed = true;
   //----------------------------------------------------------------------------
   if(eqs)
@@ -8087,7 +8088,6 @@ bool CRFProcess::Check()
   {
     m_strMessage += "Warning: no OUT data";
     AfxMessageBox(m_strMessage);
-    return false;
   }
   //-----------------------------------------------------------------------
   // IC
