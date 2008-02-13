@@ -49,7 +49,8 @@ Linear_EQS::Linear_EQS(const SparseTable &sparse_table,
     b[i] = 0.;
   }
   iter = 0;
-  bNorm = error = 1.0e10;  
+  bNorm = 1.0;
+  error = 1.0e10;  
   size_global = 0;
 
 }
@@ -70,7 +71,8 @@ Linear_EQS::Linear_EQS(const long size)
   for(i=0; i<size; i++)
     x[i] = 0.;
   iter = 0;
-  bNorm = error = 1.0e10;  
+  bNorm = 1.0;
+  error = 1.0e10;  
 }
 #endif
 /**************************************************************************
@@ -619,7 +621,7 @@ int Linear_EQS::BiCGStab()
   rho_0 = alpha = omega = 1.0;
   //
   double bNorm_new = Norm(b);
-  // Check if the norm of b is samll enough for convengence
+  // Check if the norm of b is small enough for convengence
   if(CheckNormRHS(bNorm_new))
     return 0;
   //

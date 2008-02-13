@@ -150,7 +150,7 @@ void CRFProcessDeformation::Initialization()
    }
    //
    unknown_vector_indeces = new int[pcs_number_of_primary_nvals];
-   unknown_node_numbers = new long[problem_dimension_dm];
+   unknown_node_numbers = new long[problem_dimension_dm+1]; //WW
    for(i=0;i<pcs_number_of_primary_nvals;i++) 
      unknown_vector_indeces[i] = GetNodeValueIndex(pcs_primary_function_name[i])+1;
    for(i=0;i<problem_dimension_dm;i++)
