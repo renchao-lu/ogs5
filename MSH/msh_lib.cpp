@@ -919,7 +919,8 @@ void MSHWriteTecplot()
     no_nodes = (long)m_msh->nod_vector.size();
     no_elements = (long)m_msh->ele_vector.size();
     // Test ele_type
-    if(no_elements>0){
+    if(no_elements>0)
+    {
       m_ele = m_msh->ele_vector[0];
       ele_type = m_ele->GetElementType();
     }
@@ -935,7 +936,8 @@ void MSHWriteTecplot()
              << "N = " << no_nodes << delimiter \
              << "E = " << no_elements << delimiter;
     msh_file << "F = FEPOINT" << delimiter;
-    switch(ele_type){
+    switch(ele_type)
+    {
       //..................................................................
       case 1:
         msh_file << "ET = QUADRILATERAL" << endl;
@@ -1020,14 +1022,26 @@ void MSHWriteTecplot()
           msh_file \
             << m_msh->nod_vector[i]->X() << " " << m_msh->nod_vector[i]->Y() << " " << m_msh->nod_vector[i]->Z() << endl;
         }
-        for(i=0;i<no_elements;i++) {
+        for(i=0;i<no_elements;i++) 
+        {
           m_ele = m_msh->ele_vector[i];
           m_ele->GetNodeIndeces(node_indeces);
-          msh_file \
-            << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " \
-            << node_indeces[2]+1 << " " << node_indeces[2]+1 << " " \
-            << node_indeces[3]+1 << " " << node_indeces[4]+1 << " " \
-            << node_indeces[5]+1 << " " << node_indeces[5]+1 << endl;
+          if(m_ele->GetElementType()==6)
+          {
+            msh_file \
+              << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " \
+              << node_indeces[2]+1 << " " << node_indeces[2]+1 << " " \
+              << node_indeces[3]+1 << " " << node_indeces[4]+1 << " " \
+              << node_indeces[5]+1 << " " << node_indeces[5]+1 << endl;
+          }
+          if(m_ele->GetElementType()==3)
+          {
+            msh_file \
+              << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " \
+              << node_indeces[2]+1 << " " << node_indeces[3]+1 << " " \
+              << node_indeces[4]+1 << " " << node_indeces[5]+1 << " " \
+              << node_indeces[6]+1 << " " << node_indeces[7]+1 << endl;
+          }
         }
         break;
     }

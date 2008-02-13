@@ -68,7 +68,7 @@ CFEMesh::CFEMesh(void)
   min_edge_length = 1e-3; //OK
   max_mmp_groups = 0; //OKCC
   m_bCheckMSH = false; //OK
-  pcs_name = "Not given"; //WW
+  pcs_name = "NotSpecified"; //WW
 #ifdef RANDOM_WALK
   PT=NULL; // WW+TK
   fm_pcs=NULL;  //WW
