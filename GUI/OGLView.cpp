@@ -2432,34 +2432,43 @@ if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
              }
 
 	          glBegin(GL_QUADS) ;
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(0),nidx);
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(0),nidx);
+              //OK value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(0),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(1),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid + (m_msh->ele_vector[i]->GetNode(0)->X())), \
+                           m_image_distort_factor_y*(-y_mid + (m_msh->ele_vector[i]->GetNode(0)->Y())), \
+                           m_image_distort_factor_z*(-z_mid + (m_msh->ele_vector[i]->GetNode(0)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(1),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Z())));
+			    glVertex3d(m_image_distort_factor_x*(-x_mid + (m_msh->ele_vector[i]->GetNode(1)->X())), \
+                           m_image_distort_factor_y*(-y_mid + (m_msh->ele_vector[i]->GetNode(1)->Y())), \
+                           m_image_distort_factor_z*(-z_mid + (m_msh->ele_vector[i]->GetNode(1)->Z())));
               value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(2),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Z())));
+                glVertex3d(m_image_distort_factor_x*(-x_mid + (m_msh->ele_vector[i]->GetNode(2)->X())), \
+                           m_image_distort_factor_y*(-y_mid + (m_msh->ele_vector[i]->GetNode(2)->Y())), \
+                           m_image_distort_factor_z*(-z_mid + (m_msh->ele_vector[i]->GetNode(2)->Z())));
               value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(3),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Z())));
+                glVertex3d(m_image_distort_factor_x*(-x_mid + (m_msh->ele_vector[i]->GetNode(3)->X())), \
+                           m_image_distort_factor_y*(-y_mid + (m_msh->ele_vector[i]->GetNode(3)->Y())), \
+                           m_image_distort_factor_z*(-z_mid + (m_msh->ele_vector[i]->GetNode(3)->Z())));
               glEnd() ;
 			  break;	
 
@@ -2576,144 +2585,150 @@ if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
              }
 
 	          glBegin(GL_TRIANGLES) ; /*TRI1 0-1-2*/ 
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(0),nidx);
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(0),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(1),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid + (m_msh->ele_vector[i]->GetNode(0)->X())), \
+                           m_image_distort_factor_y*(-y_mid + (m_msh->ele_vector[i]->GetNode(0)->Y())), \
+                           m_image_distort_factor_z*(-z_mid + (m_msh->ele_vector[i]->GetNode(0)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(1),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(2),nidx);
+			    glVertex3d(m_image_distort_factor_x*(-x_mid + (m_msh->ele_vector[i]->GetNode(1)->X())), \
+                           m_image_distort_factor_y*(-y_mid + (m_msh->ele_vector[i]->GetNode(1)->Y())), \
+                           m_image_distort_factor_z*(-z_mid + (m_msh->ele_vector[i]->GetNode(1)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(2),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Z())));
+                glVertex3d(m_image_distort_factor_x*(-x_mid + (m_msh->ele_vector[i]->GetNode(2)->X())), \
+                           m_image_distort_factor_y*(-y_mid + (m_msh->ele_vector[i]->GetNode(2)->Y())), \
+                           m_image_distort_factor_z*(-z_mid + (m_msh->ele_vector[i]->GetNode(2)->Z())));
               glEnd() ;
 
 	          glBegin(GL_TRIANGLES) ; /*TRI2 3-4-5*/ 
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(3),nidx);
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(3),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(4),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid + (m_msh->ele_vector[i]->GetNode(3)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(3)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(3)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(4),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(5),nidx);
+			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(4)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(4)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(4)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(5),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->Z())));
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(5)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(5)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(5)->Z())));
               glEnd() ;
 
               glBegin(GL_QUADS); /*QUAD1 0-2-5-3*/ 
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(0),nidx);
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(0),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(2),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(0)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(0)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(0)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(2),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(5),nidx);
+			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(2)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(5),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(3),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(5)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(5)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(5)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(3),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Z())));
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(3)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(3)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(3)->Z())));
               glEnd() ;
 
               glBegin(GL_QUADS); /*QUAD2 0-1-4-3*/ 
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(0),nidx);
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(0),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(1),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(0)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(0)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(0)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(1),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(4),nidx);
+			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(1)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(1)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(1)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(4),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(3),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(4)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(4)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(4)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(3),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Z())));
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(3)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(3)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(3)->Z())));
               glEnd() ;
 
               glBegin(GL_QUADS); /*QUAD3 2-1-4-5*/ 
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(2),nidx);
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(2),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(1),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(2)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(1),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(4),nidx);
+			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(1)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(1)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(1)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(4),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(5),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(4)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(4)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(4)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(5),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->Z())));
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(5)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(5)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(5)->Z())));
               glEnd() ;
 
     		  break;	
@@ -2726,189 +2741,189 @@ if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
              }
 
 	          glBegin(GL_QUADS) ; /*Quad1 0-1-2-3*/ 
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(0),nidx);
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(0),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(1),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(0)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(0)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(0)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(1),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(2),nidx);
+			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(1)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(1)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(1)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(2),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(3),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(2)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(3),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Z())));
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(3)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(3)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(3)->Z())));
               glEnd() ;
 
 	          glBegin(GL_QUADS) ; /*Quad2 4-5-6-7*/ 
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(4),nidx);
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(4),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(5),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(4)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(4)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(4)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(5),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(6),nidx);
+			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(5)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(5)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(5)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(6),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(6)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(6)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(6)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(7),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(6)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(6)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(6)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(7),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(7)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(7)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(7)->Z())));
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(7)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(7)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(7)->Z())));
               glEnd() ;
 
               glBegin(GL_QUADS); /*QUAD3 0-1-5-4*/ 
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(0),nidx);
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(0),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(1),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(0)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(0)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(0)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(1),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(5),nidx);
+			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(1)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(1)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(1)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(5),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(4),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(5)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(5)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(5)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(4),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->Z())));
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(4)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(4)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(4)->Z())));
               glEnd() ;
 
               glBegin(GL_QUADS); /*QUAD4 0-3-7-4*/ 
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(0),nidx);
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(0),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(3),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(0)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(0)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(0)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(3),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(7),nidx);
+			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(3)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(3)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(3)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(7),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(7)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(7)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(7)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(4),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(7)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(7)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(7)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(4),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->Z())));
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(4)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(4)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(4)->Z())));
               glEnd() ;
 
               glBegin(GL_QUADS); /*QUAD5 2-3-7-6*/
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(2),nidx);
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(2),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(3),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(2)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(3),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(7),nidx);
+			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(3)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(3)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(3)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(7),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(7)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(7)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(7)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(6),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(7)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(7)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(7)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(6),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(6)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(6)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(6)->Z())));
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(6)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(6)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(6)->Z())));
               glEnd() ;
 
               glBegin(GL_QUADS); /*QUAD6 2-1-5-6*/ 
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(2),nidx);
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(2),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(1),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(2)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(1),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(5),nidx);
+			    glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(1)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(1)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(1)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(5),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->Z())));
-              value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(6),nidx);
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(5)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(5)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(5)->Z())));
+              value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(6),nidx);
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
                 Green = Get_Green_Value(value_norm);
                 Blue =  Get_Blue_Value(value_norm);
                 glColor3f(Red,Green,Blue) ;
-                glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(6)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(6)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(6)->Z())));
+                glVertex3d(m_image_distort_factor_x*(-x_mid +   (m_msh->ele_vector[i]->GetNode(6)->X())),m_image_distort_factor_y*(-y_mid +   (m_msh->ele_vector[i]->GetNode(6)->Y())),m_image_distort_factor_z*(-z_mid +   (m_msh->ele_vector[i]->GetNode(6)->Z())));
               glEnd() ;
 
 
@@ -3010,10 +3025,10 @@ if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
 				// reading the data
 				for (int k=0; k < 4; k++)
 				{
-					pIsoQuad->point[k]->x     = m_image_distort_factor_x*(-x_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->X()));
-					pIsoQuad->point[k]->y     = m_image_distort_factor_y*(-y_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->Y()));
-					pIsoQuad->point[k]->z     = m_image_distort_factor_z*(-z_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->Z()));//0.0 ;// no z value, so set it to 0.
-					pIsoQuad->point[k]->value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(k),nidx);
+					pIsoQuad->point[k]->x     = m_image_distort_factor_x*(-x_mid +(m_msh->ele_vector[i]->GetNode(k)->X()));
+					pIsoQuad->point[k]->y     = m_image_distort_factor_y*(-y_mid +(m_msh->ele_vector[i]->GetNode(k)->Y()));
+					pIsoQuad->point[k]->z     = m_image_distort_factor_z*(-z_mid +(m_msh->ele_vector[i]->GetNode(k)->Z()));//0.0 ;// no z value, so set it to 0.
+					pIsoQuad->point[k]->value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(k),nidx);
 				}
 
 				// iso static
@@ -3055,10 +3070,10 @@ if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
 				// reading the data
 				for (int k=0; k < 4; k++)
 				{
-					pIsoTetrahedron->point[k]->x     = m_image_distort_factor_x*(-x_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->X()));
-					pIsoTetrahedron->point[k]->y     = m_image_distort_factor_y*(-y_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->Y()));
-					pIsoTetrahedron->point[k]->z     = m_image_distort_factor_z*(-z_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->Z()));
-					pIsoTetrahedron->point[k]->value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(k),nidx);
+					pIsoTetrahedron->point[k]->x     = m_image_distort_factor_x*(-x_mid +(m_msh->ele_vector[i]->GetNode(k)->X()));
+					pIsoTetrahedron->point[k]->y     = m_image_distort_factor_y*(-y_mid +(m_msh->ele_vector[i]->GetNode(k)->Y()));
+					pIsoTetrahedron->point[k]->z     = m_image_distort_factor_z*(-z_mid +(m_msh->ele_vector[i]->GetNode(k)->Z()));
+					pIsoTetrahedron->point[k]->value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(k),nidx);
 				}
 				// iso static
 				for (int iso_count=0; iso_count < m_frame->Iso_Count ; iso_count++)
@@ -3099,10 +3114,10 @@ if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
 				// reading the data
 				for (int k=0; k<6; k++)
 				{
-					pIsoPrism->point[k]->x     = m_image_distort_factor_x*(-x_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->X()));
-					pIsoPrism->point[k]->y     = m_image_distort_factor_y*(-y_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->Y()));
-					pIsoPrism->point[k]->z     = m_image_distort_factor_z*(-z_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->Z()));
-					pIsoPrism->point[k]->value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(k),nidx);
+					pIsoPrism->point[k]->x     = m_image_distort_factor_x*(-x_mid +(m_msh->ele_vector[i]->GetNode(k)->X()));
+					pIsoPrism->point[k]->y     = m_image_distort_factor_y*(-y_mid +(m_msh->ele_vector[i]->GetNode(k)->Y()));
+					pIsoPrism->point[k]->z     = m_image_distort_factor_z*(-z_mid +(m_msh->ele_vector[i]->GetNode(k)->Z()));
+					pIsoPrism->point[k]->value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(k),nidx);
 				}
 				// iso static
 				for (int iso_count=0; iso_count < m_frame->Iso_Count ; iso_count++)
@@ -3144,10 +3159,10 @@ if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
 				// reading the data
 				for (int k=0; k<8; k++)
 				{
-					pIsoHexahedron->point[k]->x     = m_image_distort_factor_x*(-x_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->X()));
-					pIsoHexahedron->point[k]->y     = m_image_distort_factor_y*(-y_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->Y()));
-					pIsoHexahedron->point[k]->z     = m_image_distort_factor_z*(-z_mid +(fem_msh_vector[j]->ele_vector[i]->GetNode(k)->Z()));
-					pIsoHexahedron->point[k]->value = m_pcs->GetNodeValue(fem_msh_vector[j]->ele_vector[i]->GetNodeIndex(k),nidx);
+					pIsoHexahedron->point[k]->x     = m_image_distort_factor_x*(-x_mid +(m_msh->ele_vector[i]->GetNode(k)->X()));
+					pIsoHexahedron->point[k]->y     = m_image_distort_factor_y*(-y_mid +(m_msh->ele_vector[i]->GetNode(k)->Y()));
+					pIsoHexahedron->point[k]->z     = m_image_distort_factor_z*(-z_mid +(m_msh->ele_vector[i]->GetNode(k)->Z()));
+					pIsoHexahedron->point[k]->value = m_pcs->GetNodeValue(m_msh->ele_vector[i]->GetNodeIndex(k),nidx);
 				}
 
 				// iso static
