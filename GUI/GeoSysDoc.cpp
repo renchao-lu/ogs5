@@ -2203,6 +2203,13 @@ bool FLACReadELE(string file_name, CFEMesh* m_msh)
   //----------------------------------------------------------------------
   // Read data from file
   //----------------------------------------------------------------------
+/*  
+  while(ok)
+  {
+    line = GetLineFromFile1(&flac_file);
+    if(line.find(";")!=string::npos) 
+  }
+*/
   flac_file.getline(buffer,MAX_ZEILE); //;****************************************
   flac_file.getline(buffer,MAX_ZEILE); //;Log File Started 15:56:36 Tue Dec 04 2007
   flac_file.getline(buffer,MAX_ZEILE); //Flac3D>pr zone gp
@@ -2231,11 +2238,10 @@ bool FLACReadELE(string file_name, CFEMesh* m_msh)
 }
 /**************************************************************************
 GeoSys-Method:
-Task: 
-Programing:
 01/2008 WW Implemented bases on FLACReadELE(string file_name, CFEMesh* m_msh)
+02/2008 OK Element types
 **************************************************************************/
-bool FLACReadMat(string file_name, CFEMesh* m_msh)
+bool FLACReadMAT(string file_name, CFEMesh* m_msh)
 {
   char buffer[MAX_ZEILE];
   string line;
@@ -2243,6 +2249,10 @@ bool FLACReadMat(string file_name, CFEMesh* m_msh)
   string sub_line, str_e;
   long i;
   CString m_strSubLine;
+  CElem* m_ele = NULL;
+  vec<CNode*>e_nodes0(8);
+  vec<CNode*>e_nodes1(8);
+  vec<long>node_indeces(8);
 #ifdef MFC
   CString m_strInfo = "Read FLAC data: ";
   CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
@@ -2270,22 +2280,49 @@ bool FLACReadMat(string file_name, CFEMesh* m_msh)
   flac_file.getline(buffer,MAX_ZEILE); //------ ------ ------ ------ ------ ------ ------ ------ ------
 //  line = buffer;
   //----------------------------------------------------------------------
-//CElem::Read(istream& is, int fileType)
   vector<string> orig_mat;
   int ii = 0, imat=-1; 
   bool done = false;
   while (!flac_file.eof()) 
   {
-//   1 Wedge elastic     Steins ( 6.980e-001, 6.874e-002,-1.115e+003)
     line = GetLineFromFile1(&flac_file);
     if(line.find("log off")!=string::npos) 
       return true;
     in.str(line);
+    //....................................................................
     in >> i;
+    m_ele = m_msh->ele_vector[i-1];
     in >> str_e; // Type 
+    //....................................................................
+    // ELE type
+    if(str_e.compare("Wedge")==0)
+    {
+      m_ele->GetNodeIndeces(node_indeces);
+      m_ele->SetElementType(6);
+      m_ele->Config();
+      m_ele->SetNodeIndex(0,node_indeces[0]);
+      m_ele->SetNodeIndex(1,node_indeces[1]);
+      m_ele->SetNodeIndex(2,node_indeces[3]);
+      m_ele->SetNodeIndex(3,node_indeces[2]);
+      m_ele->SetNodeIndex(4,node_indeces[4]);
+      m_ele->SetNodeIndex(5,node_indeces[5]);
+    }
+    if(str_e.compare("Brick")==0)
+    {
+      m_ele->GetNodeIndeces(node_indeces);
+      m_ele->SetNodeIndex(0,node_indeces[0]);
+      m_ele->SetNodeIndex(1,node_indeces[1]);
+      m_ele->SetNodeIndex(2,node_indeces[4]);
+      m_ele->SetNodeIndex(3,node_indeces[2]);
+      m_ele->SetNodeIndex(4,node_indeces[3]);
+      m_ele->SetNodeIndex(5,node_indeces[6]);
+      m_ele->SetNodeIndex(6,node_indeces[7]);
+      m_ele->SetNodeIndex(7,node_indeces[5]);
+    }
+    //....................................................................
+    // MAT type
     in >> str_e; // Model 
     in >> str_e; // Group
-    //
     done = false;
     for(ii=0; ii<(int)orig_mat.size(); ii++)
     {
@@ -2302,7 +2339,6 @@ bool FLACReadMat(string file_name, CFEMesh* m_msh)
        orig_mat.push_back(str_e);
     }   
     in.clear();
-    //
     m_msh->ele_vector[i-1]->SetPatchIndex(imat);
     //....................................................................
   } // eof
@@ -2311,10 +2347,9 @@ bool FLACReadMat(string file_name, CFEMesh* m_msh)
 }
 
 /**************************************************************************
-GeoSys-Method: OnImportSHP
-Task: 
-Programing:
+GeoSys-Method: OnImportFLAC
 12/2007 OK Implementation
+01/2008 WW Finishing
 **************************************************************************/
 void CGeoSysDoc::OnImportFLAC()
 {
@@ -2322,17 +2357,18 @@ void CGeoSysDoc::OnImportFLAC()
   m_msh = new CFEMesh();
   CString file_name;
   CString m_strFileExtension;
-  // Clean MSH. WW
+  // Clean MSH // WW
   for(long i=0; i<(long)fem_msh_vector.size(); i++ )
   {
-     delete fem_msh_vector[i];
-     fem_msh_vector[i] = NULL;
+    delete fem_msh_vector[i];
+    fem_msh_vector[i] = NULL;
   }
   fem_msh_vector.clear();
   //----------------------------------------------------------------------
   // NOD data
-  CFileDialog fileDlg1(TRUE,"txt",NULL,OFN_ENABLESIZING,"FLAC nod files (*.txt)|*.txt|");
-  if (fileDlg1.DoModal()==IDOK) 
+  AfxMessageBox("Read FLAC Geometry File");
+  CFileDialog fileDlg1(TRUE,"txt",NULL,OFN_ENABLESIZING,"FLAC NOD files (*.txt)|*.txt|");
+  if(fileDlg1.DoModal()==IDOK) 
   {
     file_name = fileDlg1.GetPathName();
     m_strFileExtension = file_name.Right(FILE_EXTENSION_LENGTH);
@@ -2341,22 +2377,32 @@ void CGeoSysDoc::OnImportFLAC()
   }
   //----------------------------------------------------------------------
   // ELE data
-  CFileDialog fileDlg2(TRUE,"txt",NULL,OFN_ENABLESIZING,"FLAC ele files (*.txt)|*.txt|");
-  CFileDialog fileDlg3(TRUE,"txt",NULL,OFN_ENABLESIZING,"FLAC mat files (*.txt)|*.txt|");
-  if (fileDlg2.DoModal()==IDOK&&fileDlg3.DoModal()==IDOK) 
+  AfxMessageBox("Read FLAC Element File");
+  CFileDialog fileDlg2(TRUE,"txt",NULL,OFN_ENABLESIZING,"FLAC ELE files (*.txt)|*.txt|");
+  if(fileDlg2.DoModal()==IDOK) 
   {
     file_name = fileDlg2.GetPathName();
     m_strFileExtension = file_name.Right(FILE_EXTENSION_LENGTH);
     FLACReadELE((string)file_name,m_msh);
-    // Read material index
+  }
+  //----------------------------------------------------------------------
+  // MAT data
+  AfxMessageBox("Read FLAC Material Group File");
+  CFileDialog fileDlg3(TRUE,"txt",NULL,OFN_ENABLESIZING,"FLAC MAT files (*.txt)|*.txt|");
+  if(fileDlg3.DoModal()==IDOK) 
+  {
     file_name = fileDlg3.GetPathName();  //WW
     m_strFileExtension = file_name.Right(FILE_EXTENSION_LENGTH);
-    FLACReadMat((string)file_name,m_msh);
+    FLACReadMAT((string)file_name,m_msh);
   }
-//  m_msh->ConstructGrid();
+  //----------------------------------------------------------------------
+  //m_msh->ConstructGrid();
   fem_msh_vector.push_back(m_msh);
   //----------------------------------------------------------------------
   if((int)fem_msh_vector.size()>0)
     GSPAddMember((string)m_strGSPFileBase + ".msh");
+  //----------------------------------------------------------------------
+  // Write TEC
+  MSHWriteTecplot();
   //----------------------------------------------------------------------
 }
