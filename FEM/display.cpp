@@ -50,19 +50,22 @@ void DisplayStartMsg ( void )
   printf("\n");
   printf("          ###################################################\n");
   printf("          ##                                               ##\n");
-  printf("          ##        Center for Applied Geosciences         ##\n");
-  printf("          ##         Chair of GeoSystemsResearch           ##\n");
-  printf("          ##        University of Tuebingen (ZAG)          ##\n");
-  printf("          ##   Institut fuer Stroemungsmechanik und ERiB   ##\n");
-  printf("          ##        Universitaet Hannover (ISEB)           ##\n");
+  printf("          ##               GEOSYS - ROCKFLOW               ##\n");
   printf("          ##                                               ##\n");
-  printf("          ##              GEOSYS - ROCKFLOW                ##\n");
+  printf("          ##  Helmholtz Center for Environmental Research  ##\n");
+  printf("          ##    UFZ Leipzig - Environmental Informatics    ##\n");
+  printf("          ##                  TU Dresden                   ##\n");
+  printf("          ##              University of Kiel               ##\n");
+  printf("          ##            University of Edinburgh            ##\n");
+  printf("          ##         University of Tuebingen (ZAG)         ##\n");
+  printf("          ##       Federal Institute for Geosciences       ##\n");
+  printf("          ##          and Natural Resources (BGR)          ##\n");
   printf("          ##                                               ##\n");
-  printf("          ##     Version %s   Datum %s            ##\n",\
+  printf("          ##      Version %s  Date %s      ##\n",\
                                       ROCKFLOW_VERSION,ROCKFLOW_DATE);
   printf("          ##                                               ##\n");
   printf("          ###################################################\n");
-  printf("\n          Dateiname (ohne Extension): ");
+  printf("\n          File name (without extension): ");
 }
 
 
