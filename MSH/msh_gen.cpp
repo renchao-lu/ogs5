@@ -1705,9 +1705,9 @@ void Select_Nodes_Elements_by_TINFile(const char *file_name_const_char)
             checkpoint[1] = fem_msh_vector[j]->nod_vector[i]->Y(); 
             checkpoint[2] = fem_msh_vector[j]->nod_vector[i]->Z();
             node = new CNode(i,checkpoint[0],checkpoint[1],checkpoint[2]);
-            if((checkpoint[0]>=sfc_min[0] && checkpoint[0]<=sfc_max[0] )&&
-               (checkpoint[1]>=sfc_min[1] && checkpoint[1]<=sfc_max[1] )&&
-               (checkpoint[2]>=sfc_min[2] && checkpoint[2]<=sfc_max[2] ) )
+            if((checkpoint[0]>=sfc_min[0]-tolerance && checkpoint[0]<=sfc_max[0]+tolerance )&&
+               (checkpoint[1]>=sfc_min[1]-tolerance && checkpoint[1]<=sfc_max[1]+tolerance )&&
+               (checkpoint[2]>=sfc_min[2]-tolerance && checkpoint[2]<=sfc_max[2]+tolerance ) )
             {              
                 fem_msh_vector[temp_mesh-1]->nod_vector.push_back(node);
             }
@@ -1988,9 +1988,9 @@ void GMSH2TIN(const char *file_name_const_char)
          tri_point3[2] = m_check_elements->nod_vector[pnt]->Z();
          
 		    fprintf(tin_file,"%li ",k);
-            fprintf(tin_file,"%20.14f %20.14f %20.14f ",tri_point1[0], tri_point1[1], tri_point1[2]);
-            fprintf(tin_file,"%20.14f %20.14f %20.14f ",tri_point2[0], tri_point2[1], tri_point2[2]);
-            fprintf(tin_file,"%20.14f %20.14f %20.14f\n",tri_point3[0], tri_point3[1], tri_point3[2]);
+            fprintf(tin_file,"%lf %lf %lf ",tri_point1[0], tri_point1[1], tri_point1[2]);
+            fprintf(tin_file,"%lf %lf %lf ",tri_point2[0], tri_point2[1], tri_point2[2]);
+            fprintf(tin_file,"%lf %lf %lf\n",tri_point3[0], tri_point3[1], tri_point3[2]);
     
   }
   fclose(tin_file);  
