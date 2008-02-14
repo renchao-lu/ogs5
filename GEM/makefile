@@ -5,16 +5,6 @@ ifneq ($(strip $(CHOSEN_TARGET)),)
 include $(TOPDIR)/configs/$(CHOSEN_TARGET)
 endif
 
-
-#### Only temporarliy until random walk compiles on every platform
-## Commented by WW. This option is already defined in source file
-#ifdef NO_RANDOM_WALK
-#CXX_FLAGS       += -URANDOM_WALK
-#else
-#CXX_FLAGS       += -DRANDOM_WALK
-#endif
-
-
 include objects.mak
 
 FEMINCLUDE     = ../FEM
@@ -22,9 +12,21 @@ GEMINCLUDE     = ../GEM
 GEOINCLUDE     = ../GEO
 MSHINCLUDE     = ../MSH
 UTLINCLUDE     = ../UTL
+MPIINCLUDE     = ../MPI
 ROOTINCLUDE    = ../
 
 CXX_INCS      += -I$(FEMINCLUDE) -I$(GEMINCLUDE) -I$(GEOINCLUDE) -I$(MSHINCLUDE) -I$(UTLINCLUDE) -I$(ROOTINCLUDE)
+ifdef MPI
+CXX_INCS      += -I$(MPIINCLUDE)
+endif
+
+#### Only temporarliy until random walk compiles on every platform
+## Commented by WW
+#ifdef NO_RANDOM_WALK
+#CXX_FLAGS       += -URANDOM_WALK
+#else
+#CXX_FLAGS       += -DRANDOM_WALK
+#endif
 
 
 .SUFFIXES: .o .cpp .h 
@@ -33,10 +35,11 @@ CXX_INCS      += -I$(FEMINCLUDE) -I$(GEMINCLUDE) -I$(GEOINCLUDE) -I$(MSHINCLUDE)
 
 
 .PHONY : $(CONFIG_NAMES)
-$(CONFIG_NAMES): $(MSHOBJS)
+$(CONFIG_NAMES): $(GEMOBJS)
 
 
 distclean clean:
 	rm -rf *.o
 	rm -rf *~
 	rm -rf *.ti
+

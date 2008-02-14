@@ -14,7 +14,7 @@
                                                                           */
 /**************************************************************************/
 
-#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)
 #include <mpi.h>
 #include "par_ddc.h"
 #endif
@@ -85,7 +85,7 @@ int main ( int argc, char *argv[] )
 //**********************************************************************
 #endif
 /*---------- MPI Initialization ----------------------------------*/
-#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)
       printf("Before MPI_Init\n");
       MPI_Init(&argc,&argv);
       MPI_Barrier (MPI_COMM_WORLD); // 12.09.2007 WW

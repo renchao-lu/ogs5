@@ -14,6 +14,10 @@ TARGET_NAMES      = $(CONFIG_NAMES) clean distclean
 
 CHOSEN_TARGET     = $(findstring $(MAKECMDGOALS),$(TARGET_NAMES))
 
+# HS 14.11.2007, adding the libs for GEMS
+ifdef GEM_REACT
+GEM_LIBS = LIB/libgems220.o
+endif
 
 ifneq ("x","x$(CHOSEN_TARGET)")
     REALGOAL = $(CHOSEN_TARGET)
@@ -29,7 +33,7 @@ endif
 export CHOSEN_TARGET
 
 
-SUBDIRS = FEM GEO MSH UTL
+SUBDIRS = FEM GEM GEO MSH UTL
 
 OBJS_PATTERN = $(foreach subdir,$(SUBDIRS),$(subdir)/*.o)
 
@@ -58,5 +62,5 @@ $(CONFIG_NAMES):
 	@ for i in $(SUBDIRS); do \
             $(MAKE) -C $$i $(CHOSEN_TARGET) || exit 1; \
         done
-	$(CXX_LD) $(CXX_LDFLAGS) -o $(TGT) $(OBJS_PATTERN) $(CXX_LIBS)
+	$(CXX_LD) $(CXX_LDFLAGS) -o $(TGT) $(OBJS_PATTERN) $(CXX_LIBS) $(GEM_LIBS)
 

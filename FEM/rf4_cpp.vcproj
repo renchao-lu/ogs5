@@ -43,8 +43,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../FEM;../MSH;../GEO; ../EQL;../"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MSVCPP6;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;"
+				AdditionalIncludeDirectories="../FEM; ../MSH; ../GEO;  ../GEM; ../EQL; ../"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MSVCPP6;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK"
 				RuntimeLibrary="1"
 				DisableLanguageExtensions="false"
 				UsePrecompiledHeader="0"
@@ -72,9 +72,12 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				UseLibraryDependencyInputs="false"
+				AdditionalDependencies="GEMS220_dbg.lib"
 				OutputFile=".\Debug/rf4.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="..\LIB"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/rf3_cpp.pdb"
 				SubSystem="1"
@@ -136,8 +139,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="../FEM;../MSH;../GEO; ../"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;"
+				AdditionalIncludeDirectories="../FEM;../MSH;../GEO;../GEM; ../"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -165,9 +168,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="GEMS220_rl.lib"
 				OutputFile=".\Release/rf4.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="..\LIB"
 				ProgramDatabaseFile=".\Release/rf3_cpp.pdb"
 				SubSystem="1"
 				TargetMachine="1"
@@ -1009,6 +1014,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\rf_REACT_GEM.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\rf_REACT_GEM.h"
+				>
+			</File>
+			<File
 				RelativePath="rf_st_new.cpp"
 				>
 				<FileConfiguration
@@ -1506,6 +1519,90 @@
 			</File>
 			<File
 				RelativePath="..\Eql\eqlink.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="GEM"
+			>
+			<File
+				RelativePath="..\GEM\array.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\databr.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\datach.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\gdatastream.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\gstring.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\io_arrays.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\jama_cholesky.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\jama_lu.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\m_const.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\m_param.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\ms_multi.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\node.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\num_methods.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\s_fgl.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\tnt.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\tnt_array1d.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\tnt_array2d.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\tnt_i_refvec.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\v_user.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GEM\verror.h"
 				>
 			</File>
 		</Filter>

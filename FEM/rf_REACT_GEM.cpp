@@ -11,6 +11,19 @@
 #include "node.h"
 #include "rf_pcs.h"
 #include "rfmat_cp.h"
+#include "msh_node.h"
+#include "msh_elem.h"
+
+#ifdef USE_MPI_GEMS
+#undef SEEK_SET
+#undef SEEK_CUR
+#undef SEEK_END
+#include "mpi.h"//Parallel Computing Support
+#include "par_ddc.h"
+// HS 07.01.2008: Comment the following 2 lines on LiClus.
+int size;
+int myrank;
+#endif
 
 REACT_GEM::REACT_GEM(void)
 {
@@ -18,78 +31,128 @@ REACT_GEM::REACT_GEM(void)
    REACT_GEM::dch_input_file_path = "calcite-dch.dat";
    REACT_GEM::ipm_input_file_path = "calcite-ipm.dat";
    REACT_GEM::dbr_input_file_path = "calcite-dbr-0-0000.dat";
+   REACT_GEM::dbr_bc_input_file_path = "calcite-dbr-0-0001.dat";
    REACT_GEM::init_input_file_path= "calcite-init.dat";
+   REACT_GEM::init_input_file_sig = "-init.dat";
 
    nIC = 0;
    nDC = 0;
    nPH = 0;
    nPS = 0;
    nNodes = 0;
+   nElems = 0;
    initialized_flag = 0;
+   heatflag = 0;
+   flowflag = 0;
+   flag_node_element_based = 0;//0-node based; 1-elem based;
+
+   flag_iterative_scheme = 0;
+   // flag for different iterative scheme
+   // 0 - sequential non-iterative scheme
+   // 1 - standard iterative scheme
+   // 2 - symetric iterative scheme
+   // 3 - strang splitting scheme
+
+   mp_nodeTypes = new int;
+   *(mp_nodeTypes) = 0;
+
+   m_FluidProp = NULL;
 }
 
 REACT_GEM::~REACT_GEM(void)
 {
-  delete m_Node;
-  for (long i=0 ; i < nNodes ; i++)
-  {
-	  /*delete m_xDC[i];
-	  delete m_gam[i];
-	  delete m_xPH[i];
-	  delete m_vPS[i];
-	  delete m_mPS[i];
-	  delete m_bPS[i];
-	  delete m_aPH[i];
-	  delete m_xPA[i];
-	  delete m_dul[i];
-	  delete m_dll[i];
-	  delete m_bIC[i];
-	  delete m_rMB[i];
-	  delete m_uIC[i];  */
-  }
+if (flag_node_element_based == 0)
+{
+	delete [] m_xDC;
+	delete [] m_gam;
+	delete [] m_xPH;
+	delete [] m_aPH;
+	delete [] m_vPS;
+	delete [] m_mPS;
+	delete [] m_bPS;
+	delete [] m_xPA;
+	delete [] m_dul;
+	delete [] m_dll;
+	delete [] m_uIC;
+	delete [] m_bIC;
+	delete [] m_bIC_dummy;
+	delete [] m_rMB;
+    delete [] m_xDC_pts;
+    delete [] m_xDC_MT_delta;
+    delete [] m_xDC_Chem_delta;
 
-  free ( m_xDC);
-  free ( m_gam);
-  free ( m_xPH);
-  free ( m_vPS);
-  free ( m_mPS);
-  free ( m_bPS);
-  free ( m_aPH);
-  free ( m_xPA);
-  free ( m_dul);
-  free ( m_dll);
-  free ( m_bIC);
-  free ( m_rMB);
-  free ( m_uIC); 
+    delete [] m_NodeHandle;
+    delete [] m_NodeStatusCH;
+    delete [] m_IterDone;
+    delete [] m_T;
+    delete [] m_P;
+    delete [] m_Vs;
+    delete [] m_Ms;
+    delete [] m_Gs;
+    delete [] m_Hs;
+    delete [] m_IC;
+    delete [] m_pH;
+    delete [] m_pe;
+    delete [] m_Eh;
+}
+else
+{
+	delete [] m_xDC_Elem;
+	delete [] m_gam_Elem;
+	delete [] m_xPH_Elem;
+	delete [] m_aPH_Elem;
+	delete [] m_vPS_Elem;
+	delete [] m_mPS_Elem;
+	delete [] m_bPS_Elem;
+	delete [] m_xPA_Elem;
+	delete [] m_dul_Elem;
+	delete [] m_dll_Elem;
+	delete [] m_uIC_Elem;
+	delete [] m_bIC_Elem;
+	delete [] m_bIC_dummy_Elem;
+	delete [] m_rMB_Elem;
+    delete [] m_xDC_pts_Elem;
 
-  m_NodeHandle.clear();
-  m_NodeStatusCH.clear();
-  m_IterDone.clear();
-  m_T.clear();
-  m_P.clear();
-  m_Vs.clear();
-  m_Ms.clear();
-  m_Gs.clear();
-  m_Hs.clear();
-  m_IC.clear();
-  m_pH.clear();
-  m_pe.clear();
-  m_Eh.clear();
+    delete [] m_ElemHandle;
+    delete [] m_ElemStatusCH;
+    delete [] m_IterDone_Elem;
+    delete [] m_T_Elem;
+    delete [] m_P_Elem;
+    delete [] m_Vs_Elem;
+    delete [] m_Ms_Elem;
+    delete [] m_Gs_Elem;
+    delete [] m_Hs_Elem;
+    delete [] m_IC_Elem;
+    delete [] m_pH_Elem;
+    delete [] m_pe_Elem;
+    delete [] m_Eh_Elem;
+} 
+    // delete MPI buffer--------
+	delete [] m_NodeHandle_buff;
+    delete [] m_NodeStatusCH_buff;
+    delete [] m_IterDone_buff;
 
-/*  m_xDC.clear();
-  m_gam.clear();
-  m_xPH.clear();
-  m_aPH.clear();
-  m_vPS.clear();
-  m_mPS.clear();
-  m_bPS.clear();
-  m_xPA.clear();
-  m_dul.clear();
-  m_dll.clear();
-  m_bIC.clear();
-  m_rMB.clear();
-  m_uIC.clear(); */
+	delete [] m_Vs_buff;
+    delete [] m_Ms_buff;
+    delete [] m_Gs_buff;
+    delete [] m_Hs_buff;
+    delete [] m_IC_buff;
+    delete [] m_pH_buff;
+    delete [] m_pe_buff;
+    delete [] m_Eh_buff;
 
+	delete [] m_rMB_buff;
+	delete [] m_uIC_buff;
+	delete [] m_xDC_buff;
+	delete [] m_gam_buff;
+	delete [] m_xPH_buff;
+	delete [] m_vPS_buff;
+	delete [] m_mPS_buff;
+	delete [] m_bPS_buff;
+	delete [] m_xPA_buff;
+    // -------------------------
+
+    delete m_Node;
 }
 
 // Initialization of the GEM TNode Class
@@ -119,58 +182,352 @@ short REACT_GEM::Init_Nodes(string Project_path)
 	   nPH = dCH->nPHb;//Num of Phases
 	   nPS = dCH->nPSb;//Num of multicomponent phases; ASSERT(nPS < nPH)
 
+       heatflag = GetHeatFlag_MT();// Get heatflag
+       flowflag = GetFlowType_MT();// Get flow flag
 	   // Get number of Nodes
-	   nNodes = REACT_GEM::GetNodeNumber_MT();
+       nNodes = GetNodeNumber_MT();
+       // Get number of Elems
+       nElems = GetElemNumber_MT();
 
-	   // Allocating work memory for FMT part (here only chemical variables)
-	   for (long in = 0; in < nNodes ; in++)
-	   {
-		   short tempCH,tempHD,tempID;
-		   m_NodeHandle.push_back(tempHD);
-		   m_NodeStatusCH.push_back(tempCH);
-		   m_IterDone.push_back(tempID);
+       // Allocating work memory for FMT part (here only chemical variables)
+	   m_NodeHandle = new short [nNodes];
+	   m_NodeStatusCH = new short [nNodes];
+	   m_IterDone = new short [nNodes];
 
-		   double tempT, tempP, tempVs, tempMs, tempGs, tempHs, tempIC, tempPH, tempPE, tempEh; 
-		   m_T.push_back(tempT);
-		   m_P.push_back(tempP);
-		   m_Vs.push_back(tempVs);
-		   m_Ms.push_back(tempMs);
-		   m_Gs.push_back(tempGs);
-		   m_Hs.push_back(tempHs);
-		   m_IC.push_back(tempIC);
-		   m_pH.push_back(tempPH);
-		   m_pe.push_back(tempPE);
-		   m_Eh.push_back(tempEh);
-	   }
+	   // MPI Buffer Variable---------------
+	   m_NodeHandle_buff = new short[nNodes];
+       m_NodeStatusCH_buff = new short[nNodes];
+       m_IterDone_buff = new short[nNodes];
 
-	   m_bIC = (double*)malloc( nNodes*nIC*sizeof(double) );
-	   m_rMB = (double*)malloc( nNodes*nIC*sizeof(double) );
-	   m_uIC = (double*)malloc( nNodes*nIC*sizeof(double) );
-	   m_xDC = (double*)malloc( nNodes*nDC*sizeof(double) );
-	   m_gam = (double*)malloc( nNodes*nDC*sizeof(double) );
-	   m_dul = (double*)malloc( nNodes*nDC*sizeof(double) );
-	   m_dll = (double*)malloc( nNodes*nDC*sizeof(double) );
-	   m_aPH = (double*)malloc( nNodes*nPH*sizeof(double) );
-	   m_xPH = (double*)malloc( nNodes*nPH*sizeof(double) );
-	   m_vPS = (double*)malloc( nNodes*nPS*sizeof(double) );
-	   m_mPS = (double*)malloc( nNodes*nPS*sizeof(double) );
-	   m_bPS = (double*)malloc( nNodes*nIC*nPS*sizeof(double) );
-	   m_xPA = (double*)malloc( nNodes*nPS*sizeof(double) );
+	   m_ElemHandle = new short [nElems];
+	   m_ElemStatusCH = new short [nElems];
+	   m_IterDone_Elem = new short [nElems];
 
-	   return 0;//successed
+
+	   m_T = new double [nNodes];
+	   m_P = new double [nNodes];
+	   m_Vs = new double [nNodes];
+	   m_Ms = new double [nNodes];
+	   m_Gs = new double [nNodes];
+	   m_Hs = new double [nNodes];
+	   m_IC = new double [nNodes];
+	   m_pH = new double [nNodes];
+	   m_pe = new double [nNodes];
+	   m_Eh = new double [nNodes];
+
+	   m_T_Elem = new double [nElems];
+	   m_P_Elem = new double [nElems];
+	   m_Vs_Elem = new double [nElems];
+	   m_Ms_Elem = new double [nElems];
+	   m_Gs_Elem = new double [nElems];
+	   m_Hs_Elem = new double [nElems];
+	   m_IC_Elem = new double [nElems];
+	   m_pH_Elem = new double [nElems];
+	   m_pe_Elem = new double [nElems];
+	   m_Eh_Elem = new double [nElems];
+
+       // MPI Buffer Variable---------------	   
+       m_Vs_buff = new double[nNodes];
+       m_Ms_buff = new double[nNodes];
+       m_Gs_buff = new double[nNodes];
+       m_Hs_buff = new double[nNodes];
+       m_IC_buff = new double[nNodes];
+       m_pH_buff = new double[nNodes];
+       m_pe_buff = new double[nNodes];
+       m_Eh_buff = new double[nNodes];
+
+	   m_bIC = new double [nNodes*nIC];
+	   m_bIC_dummy = new double [nNodes*nIC];
+	   m_rMB = new double [nNodes*nIC];
+	   m_uIC = new double [nNodes*nIC];
+	   m_xDC = new double [nNodes*nDC];
+	   m_gam = new double [nNodes*nDC];
+	   m_dul = new double [nNodes*nDC];
+	   m_dll = new double [nNodes*nDC];
+	   m_aPH = new double [nNodes*nPH];
+	   m_xPH = new double [nNodes*nPH];
+	   m_vPS = new double [nNodes*nPS];
+	   m_mPS = new double [nNodes*nPS];
+	   m_bPS = new double [nNodes*nIC*nPS];
+	   m_xPA = new double [nNodes*nPS];
+       m_xDC_pts = new double [nNodes*nDC];
+       m_xDC_MT_delta = new double [nNodes*nDC];
+       m_xDC_Chem_delta =  new double [nNodes*nDC];
+
+
+       m_rMB_buff = new double [nNodes*nIC];
+       m_uIC_buff = new double [nNodes*nIC];
+       m_xDC_buff = new double [nNodes*nDC];
+       m_gam_buff = new double [nNodes*nDC];
+       m_xPH_buff = new double [nNodes*nPH];
+       m_vPS_buff = new double [nNodes*nPS];
+       m_mPS_buff = new double [nNodes*nPS];
+       m_bPS_buff = new double [nNodes*nIC*nPS];
+       m_xPA_buff = new double [nNodes*nPS];
+       // ----------------------------------
+
+	   m_bIC_Elem = new double [nElems*nIC];
+	   m_bIC_dummy_Elem = new double [nElems*nIC];
+	   m_rMB_Elem = new double [nElems*nIC];
+	   m_uIC_Elem = new double [nElems*nIC];
+	   m_xDC_Elem = new double [nElems*nDC];
+	   m_gam_Elem = new double [nElems*nDC];
+	   m_dul_Elem = new double [nElems*nDC];
+	   m_dll_Elem = new double [nElems*nDC];
+	   m_aPH_Elem = new double [nElems*nPH];
+	   m_xPH_Elem = new double [nElems*nPH];
+	   m_vPS_Elem = new double [nElems*nPS];
+	   m_mPS_Elem = new double [nElems*nPS];
+	   m_bPS_Elem = new double [nElems*nIC*nPS];
+	   m_xPA_Elem = new double [nElems*nPS];
+       m_xDC_pts_Elem = new double [nElems*nDC];
+
+       for (long in = 0; in < nNodes ; in++)
+	       {
+		       m_NodeHandle[in] = 0;
+		       m_NodeStatusCH[in] = 0;
+		       m_IterDone[in] = 0;
+
+               m_NodeHandle_buff[in] = 0;
+               m_NodeStatusCH_buff[in] = 0;
+               m_IterDone_buff[in] = 0;
+		       
+		       m_T[in] = 0.0;
+		       m_P[in] = 0.0;
+		       m_Vs[in] = 0.0;
+		       m_Ms[in] = 0.0;
+		       m_Gs[in] = 0.0;
+		       m_Hs[in] = 0.0;
+		       m_IC[in] = 0.0;
+		       m_pH[in] = 0.0;
+		       m_pe[in] = 0.0;
+		       m_Eh[in] = 0.0;
+
+    	       m_Vs_buff[in] = 0.0;
+               m_Ms_buff[in] = 0.0;
+               m_Gs_buff[in] = 0.0;
+               m_Hs_buff[in] = 0.0;
+               m_IC_buff[in] = 0.0;
+               m_pH_buff[in] = 0.0;
+               m_pe_buff[in] = 0.0;
+               m_Eh_buff[in] = 0.0;
+
+		       int ii;
+		       for (ii = 0; ii < nIC ; ii++)
+		       {
+			       *(m_bIC+in*nIC + ii) = 0.0;
+			       *(m_bIC_dummy + in*nIC + ii) = 0.0;
+			       *(m_rMB+in*nIC + ii) = 0.0;
+			       *(m_uIC+in*nIC + ii) = 0.0;
+
+			       *(m_rMB_buff+in*nIC + ii) = 0.0;
+			       *(m_uIC_buff+in*nIC + ii) = 0.0;
+		       }
+
+		       for (ii = 0; ii < nDC ; ii++)
+		       {
+			       *(m_xDC+in*nDC+ii) = 0.0;
+			       *(m_gam+in*nDC+ii) = 0.0;
+			       *(m_dul+in*nDC+ii) = 0.0;
+			       *(m_dll+in*nDC+ii) = 0.0;
+                   *(m_xDC_pts+in*nDC+ii) = 0.0;
+                   *(m_xDC_MT_delta+in*nDC+ii) = 0.0;
+                   *(m_xDC_Chem_delta+in*nDC+ii) = 0.0;
+
+			       *(m_xDC_buff+in*nDC+ii) = 0.0;
+			       *(m_gam_buff+in*nDC+ii) = 0.0;
+		       }
+
+		       for (ii = 0; ii < nPH ; ii++)
+		       {
+			       *(m_aPH+in*nPH+ii) = 0.0;
+			       *(m_xPH+in*nPH+ii) = 0.0;
+
+			       *(m_xPH_buff+in*nPH+ii) = 0.0;
+		       }
+
+		       for (ii = 0; ii < nPS ; ii++)
+		       {
+			       *(m_vPS+in*nPS+ii) = 0.0;
+			       *(m_mPS+in*nPS+ii) = 0.0;
+			       *(m_xPA+in*nPS+ii) = 0.0;
+
+			       *(m_vPS_buff+in*nPS+ii) = 0.0;
+			       *(m_mPS_buff+in*nPS+ii) = 0.0;
+			       *(m_xPA_buff+in*nPS+ii) = 0.0;
+		       }
+    		   
+    	   
+		       for (ii = 0; ii < nIC ; ii++)
+		       {
+			       for (int jj = 0; jj < nPS ; jj++)
+			       {
+			       *(m_bPS+in*nIC*nPS+jj) = 0.0;
+
+			       *(m_bPS_buff+in*nIC*nPS+jj) = 0.0;
+			       }
+		       }
+           }
+
+	       for (long in = 0; in < nElems ; in++)
+	       {
+		       m_ElemHandle[in] = 0;
+		       m_ElemStatusCH[in] = 0;
+		       m_IterDone_Elem[in] = 0;
+
+		       double tempT, tempP, tempVs, tempMs, tempGs, tempHs, tempIC, tempPH, tempPE, tempEh; 
+		       tempT = 0; tempP = 0; tempVs = 0; tempMs = 0; tempGs = 0; tempHs = 0; tempIC = 0; tempPH = 0; tempPE = 0; tempEh = 0;
+
+		       m_T_Elem[in] = 0.0;
+		       m_P_Elem[in] = 0.0;
+		       m_Vs_Elem[in] = 0.0;
+		       m_Ms_Elem[in] = 0.0;
+		       m_Gs_Elem[in] = 0.0;
+		       m_Hs_Elem[in] = 0.0;
+		       m_IC_Elem[in] = 0.0;
+		       m_pH_Elem[in] = 0.0;
+		       m_pe_Elem[in] = 0.0;
+		       m_Eh_Elem[in] = 0.0;
+
+		       int ii;
+		       for (ii = 0; ii < nIC ; ii++)
+		       {
+			       *(m_bIC_Elem+in*nIC + ii) = 0.0;
+			       *(m_bIC_dummy_Elem + in*nIC + ii) = 0.0;
+			       *(m_rMB_Elem+in*nIC + ii) = 0.0;
+			       *(m_uIC_Elem+in*nIC + ii) = 0.0;
+		       }
+
+		       for (ii = 0; ii < nDC ; ii++)
+		       {
+			       *(m_xDC_Elem+in*nDC+ii) = 0.0;
+			       *(m_gam_Elem+in*nDC+ii) = 0.0;
+			       *(m_dul_Elem+in*nDC+ii) = 0.0;
+			       *(m_dll_Elem+in*nDC+ii) = 0.0;
+                   *(m_xDC_pts_Elem+in*nDC+ii) = 0.0;
+		       }
+
+		       for (ii = 0; ii < nPH ; ii++)
+		       {
+			       *(m_aPH_Elem+in*nPH+ii) = 0.0;
+			       *(m_xPH_Elem+in*nPH+ii) = 0.0;
+		       }
+
+		       for (ii = 0; ii < nPS ; ii++)
+		       {
+			       *(m_vPS_Elem+in*nPS+ii) = 0.0;
+			       *(m_mPS_Elem+in*nPS+ii) = 0.0;
+			       *(m_xPA_Elem+in*nPS+ii) = 0.0;
+		       }
+    		   
+    	   
+		       for (ii = 0; ii < nIC ; ii++)
+		       {
+			       for (int jj = 0; jj < nPS ; jj++)
+			       {
+			            *(m_bPS_Elem+in*nIC*nPS+jj) = 0.0;
+			       }
+		       }
+           }
+
+   return 0;//successed
    }
    else
    {
+#ifdef USE_MPI_GEMS
+      if ( myrank == 0 /*should be set to root*/)
+#endif
       cout << "Error loading initial files to GEMS" <<endl;
 	  return 1;   
-   };
+   }
 }
 
 short REACT_GEM::Init_RUN()
 {
-long StatusCheck = 0;
+int StatusCheck = 0;
+long in = 0;
+long it_num = 0;
 
-for (long in = 0; in < nNodes ; in++)
+    if ( flag_node_element_based == 0 )
+    {it_num = nNodes;}
+    else
+    {it_num = nElems;}
+	for (in = 0; in < it_num ; in++)
+	{
+		// Order GEM to run
+		dBR->NodeStatusCH = NEED_GEM_AIA;
+		
+        if ( flag_node_element_based == 0 )
+        {
+		    m_NodeStatusCH[in] = (short)m_Node->GEM_run();
+
+		    if ( !( m_NodeStatusCH[in] == OK_GEM_AIA || m_NodeStatusCH[in] == OK_GEM_PIA ) )
+		    {
+			    StatusCheck = 1;
+			    #ifdef USE_MPI_GEMS
+			    if ( myrank == 0 /*should be set to root*/)
+			    #endif
+			    cout << "Error!!! Initial Running GEM on Node #" << in <<  " failed. The retruned status code is:" << m_NodeStatusCH[in] << endl;
+			    return 5;
+		    }
+
+		    // Extracting chemical datat into my buffer
+		    m_Node->GEM_restore_MT( m_NodeHandle[in], m_NodeStatusCH[in], m_T[in],
+			    m_P[in], m_Vs[in], m_Ms[in], m_bIC+in*nIC, m_dul+in*nDC, m_dll+in*nDC, m_aPH+in*nPH );
+
+		    m_Node->GEM_to_MT( m_NodeHandle[in], m_NodeStatusCH[in], m_IterDone[in],
+			    m_Vs[in], m_Ms[in], m_Gs[in], m_Hs[in], m_IC[in], m_pH[in], m_pe[in],
+		       m_Eh[in], m_rMB+in*nIC, m_uIC+in*nIC, m_xDC+in*nDC, m_gam+in*nDC,
+		       m_xPH+in*nPH, m_vPS+in*nPS, m_mPS+in*nPS,
+		       m_bPS+in*nIC*nPS, m_xPA+in*nPS );
+        }
+        else
+        {
+            m_ElemStatusCH[in] = (short)m_Node->GEM_run();
+
+		    if ( !( m_ElemStatusCH[in] == OK_GEM_AIA || m_ElemStatusCH[in] == OK_GEM_PIA ) )
+		    {
+			    StatusCheck = 1;
+			    #ifdef USE_MPI_GEMS
+			    if ( myrank == 0 /*should be set to root*/)
+			    #endif
+			    cout << "Error!!! Initial Running GEM on Node #" << in <<  " failed. The retruned status code is:" << m_NodeStatusCH[in] << endl;
+			    return 5;
+		    }
+
+		    // Extracting chemical datat into my buffer
+		    m_Node->GEM_restore_MT( m_ElemHandle[in], m_ElemStatusCH[in], m_T_Elem[in],
+			    m_P_Elem[in], m_Vs_Elem[in], m_Ms_Elem[in], m_bIC_Elem+in*nIC, m_dul_Elem+in*nDC, m_dll_Elem+in*nDC, m_aPH_Elem+in*nPH );
+
+		    m_Node->GEM_to_MT( m_ElemHandle[in], m_ElemStatusCH[in], m_IterDone_Elem[in],
+			    m_Vs_Elem[in], m_Ms_Elem[in], m_Gs_Elem[in], m_Hs_Elem[in], m_IC_Elem[in], m_pH_Elem[in], m_pe_Elem[in],
+		       m_Eh_Elem[in], m_rMB_Elem+in*nIC, m_uIC_Elem+in*nIC, m_xDC_Elem+in*nDC, m_gam_Elem+in*nDC,
+		       m_xPH_Elem+in*nPH, m_vPS_Elem+in*nPS, m_mPS_Elem+in*nPS,
+		       m_bPS_Elem+in*nIC*nPS, m_xPA_Elem+in*nPS );
+        }
+		
+		//GetReactInfoFromGEM(in);// HS 11.07.2007
+		#ifdef USE_MPI_GEMS
+		if ( myrank == 0 /*should be set to root*/)
+		#endif
+		cout << "Initial Running GEM on Node #" << in <<  " successful. "  << endl;
+	}
+	
+
+
+//  Uncomment this to test variable pressures and temperatures
+        //  m_T[in] += (in-1)*5;
+        //  m_P[in] += (in-1)*20;
+        //  Here the file output for the initial conditions can be implemented
+
+// This section is for the boundary nodes
+    // Read DATABR structure from text file (read boundary condition)
+    // TNode::na->GEM_read_dbr( dbr_input_file_name );
+    // This is for BC data.
+//    m_Node->GEM_read_dbr(dbr_bc_input_file_path.c_str());
+    // end reading bc data
+//To do: in the future, the loop should make a difference btw boundary conditions and normal nodes.
+/*for (in = 0; in<1 ; in++)
 {
 	// Order GEM to run
 	dBR->NodeStatusCH = NEED_GEM_AIA;
@@ -184,24 +541,12 @@ for (long in = 0; in < nNodes ; in++)
 	}
 	
 	GetReactInfoFromGEM(in);
+	
+	cout << "Initial Running GEM on Boundary Node #" << in <<  " successful. "  << endl;
 
-	cout << "Initial Running GEM on Node #" << in <<  " successful. "  << endl;
-	//  Uncomment this to test variable pressures and temperatures
-    //  m_T[in] += (in-1)*5;
-    //  m_P[in] += (in-1)*20;
-    //  Here the file output for the initial conditions can be implemented
+}*/
 
-    // Initialization of GEMIPM and chemical data kept in the FMT part
-    // Can be done in a loop over boundary nodes
-    //   cout << "Begin Initialiation part" << endl;
-
-    // Read DATABR structure from text file (read boundary condition)
-    // TNode::na->GEM_read_dbr( dbr_input_file_name );//HB ? What is this?
-	// This is for BC and IC data, not set here.
-
-
-}	
-	return 0;
+return 0;
 }
 
 string REACT_GEM::Get_Init_File_Path(void)
@@ -252,16 +597,17 @@ bool REACT_GEM::Load_Init_File(string m_Project_path)
 	string init_path;
 
 	//Checking absolute path
-	if (init_input_file_path.find( m_Project_path ) != string::npos  )
+	/*if (init_input_file_path.find( m_Project_path ) != string::npos  )
 	{
 		init_path = init_input_file_path;
 	}
 	else
 	{
 		init_path = m_Project_path.append( init_input_file_path );
-	}
+	}*/
+	init_path = m_Project_path.append(init_input_file_sig);
 
-	if( m_Node->GEM_init( init_path.c_str() ) )
+	if( m_Node->GEM_init( init_path.c_str() , mp_nodeTypes , false) )
 	{
 	    return 0;  // error occured during reading the files
 	}
@@ -276,104 +622,260 @@ short REACT_GEM::GetReactInfoFromMassTransport(int timelevel)
 {
 	heatflag = GetHeatFlag_MT();
 	flowflag = GetFlowType_MT();
-	REACT_GEM::nNodes = GetNodeNumber_MT();
+    REACT_GEM::nNodes = GetNodeNumber_MT();
 
 	for (long node_i=0; node_i < nNodes ; node_i++)
 	{
-		//get temperature from MT
-		m_T[node_i] = REACT_GEM::GetTempValue_MT(node_i, timelevel);
 
-		//get pressure from MT
-		m_P[node_i] = REACT_GEM::GetPressureValue_MT(node_i, timelevel);
+		// Added for debugging---------	
+		/*cout << "The DC Concentrations before GetReactInfoFromMassTransport: " << endl;
+		for (int i = 0; i < nDC ; i++)
+		{
+			if(node_i = 0)
+			{cout << *(m_xDC+i) << " ";}
+			else
+			{cout << *(m_xDC+node_i*i) << " ";}
+		}
+		cout << endl;
+		//-----------------------------*/
+			
+        //get temperature from MT
+	    m_T[node_i] = REACT_GEM::GetTempValue_MT(node_i, timelevel);
 
-		//get Independent and dependent Component value from MT
-		REACT_GEM::GetAqComponentValue_MT(node_i, timelevel, m_bIC+node_i*nIC);
+	    //get pressure from MT
+	    m_P[node_i] = REACT_GEM::GetPressureValue_MT(node_i, timelevel);
 
-		// Setting Solid Phase Component // HS: Solid does not move with MT, so do not need to couple. 06.2007
-		// REACT_GEM::GetSoComponentValue_MT(node_i, timelevel, m_bIC[node_i]);
+	    //get Independent and dependent Component value from MT
+	    REACT_GEM::GetDCValue_MT(node_i, timelevel, m_xDC+node_i*nDC, m_xDC_pts+node_i*nDC, m_xDC_MT_delta+node_i*nDC);
 
-		//get PH value from MT
-		m_pH[node_i] = REACT_GEM::GetComponentValue_MT(node_i,"pH", timelevel);
+	    // Setting Solid Phase Component // HS: Solid does not move.
+	    REACT_GEM::GetSoComponentValue_MT(node_i, timelevel, m_xPH+node_i*nPH );
 
-		//get pe value from MT
-		m_pe[node_i] = REACT_GEM::GetComponentValue_MT(node_i,"pe", timelevel);
+	    //get PH value from MT
+	    m_pH[node_i] = REACT_GEM::GetComponentValue_MT(node_i,"pH", timelevel);
+
+	    //get pe value from MT
+	    m_pe[node_i] = REACT_GEM::GetComponentValue_MT(node_i,"pe", timelevel);
+        
+    
+		/*// Added for debugging---------	
+		cout << "The DC Concentrations after GetReactInfoFromMassTransport: " << endl;
+		for (int i = 0; i < nDC ; i++)
+		{
+			if(node_i = 0)
+			{cout << *(m_xDC+i) << " ";}
+			else
+			{cout << *(m_xDC+node_i*i) << " ";}
+		}
+		cout << endl;
+		//-----------------------------*/
+
+
 	}
+
+    if (flag_node_element_based == 1) ConvNodeValue2Elem();
 
 	return 0;
 }
+
 short REACT_GEM::SetReactInfoBackMassTransport(int timelevel)
 {
-	for (long in=0; in < nNodes ; in++)
+
+    if (flag_node_element_based == 1) ConvElemValue2Node();
+
+	for (long in=0; in < nNodes ; in++) 
 	{
-		// Setting Temperature
-		REACT_GEM::SetTempValue_MT(in,timelevel,m_T.at(in));
+            // Check if it is the boundary node
+            
+                // Setting Temperature
+		        REACT_GEM::SetTempValue_MT(in,timelevel,m_T[in]);
 
-		// Setting Pressure
-		REACT_GEM::SetPressureValue_MT(in,timelevel,m_P.at(in));
+		        // Setting Pressure
+		        // REACT_GEM::SetPressureValue_MT(in,timelevel,m_P[in]);
 
-		// Setting Independent Component
-		REACT_GEM::SetAqComponentValue_MT(in,timelevel,m_bPS+in*nIC*nPS);
+		        // Setting Independent Component
+		        REACT_GEM::SetDCValue_MT( in , timelevel , &(m_xDC[in*nDC]));
 
-		// Setting Solid Phase Component
-		// REACT_GEM::SetSoComponentValue_MT(in,timelevel,m_xPH+in*nPH);
+		        // Setting Solid Phase Component
+		        REACT_GEM::SetSoComponentValue_MT( in ,timelevel ,&( m_xPH[in*nPH]));
 
-		// Setting PH
-		REACT_GEM::SetPHValue_MT(in,timelevel,m_pH.at(in));
-		
-		// Setting pe
-		REACT_GEM::SetPeValue_MT(in,timelevel,m_pe.at(in));
+		        // Setting PH
+		        REACT_GEM::SetPHValue_MT(in,timelevel,m_pH[in]);
+        		
+		        // Setting pe
+		        REACT_GEM::SetPeValue_MT(in,timelevel,m_pe[in]);
+            
 	}
-	return 0;
+return 0;
 }
 
 void REACT_GEM::GetReactInfoFromGEM(long in)
 {
-    // Extracting chemical datat into FMT part
-	m_Node->GEM_restore_MT( m_NodeHandle.at(in), m_NodeStatusCH.at(in), m_T.at(in),
-		m_P.at(in), m_Vs.at(in), m_Ms.at(in),
-       m_bIC+in*nIC, m_dul+in*nDC, m_dll+in*nDC, m_aPH+in*nPH );
+	// Added for debugging---------	
+	//cout << "The DC Concentrations before GetReactInfoFromGEM: " << endl;
+	//for (int i = 0; i < nDC ; i++)
+	//{
+	//	cout << *(m_xDC+i) << " ";
+	//}
+	//cout << endl;
+	//----------------------------
+
+#ifdef USE_MPI_GEMS
+    // Extract the result from GEM
+	m_Node->GEM_to_MT( m_NodeHandle_buff[in], m_NodeStatusCH_buff[in], m_IterDone_buff[in],
+		m_Vs_buff[in], m_Ms_buff[in], m_Gs_buff[in], m_Hs_buff[in], m_IC_buff[in], m_pH_buff[in], m_pe_buff[in], m_Eh_buff[in],
+		m_rMB_buff+in*nIC, m_uIC_buff+in*nIC, m_xDC_buff+in*nDC, m_gam_buff+in*nDC, m_xPH_buff+in*nPH, m_vPS_buff+in*nPS, m_mPS_buff+in*nPS,
+		m_bPS_buff+in*nIC*nPS, m_xPA_buff+in*nPS );
+#else
+
 	// Extracting GEMIPM output data to FMT part
-	m_Node->GEM_to_MT( m_NodeHandle.at(in), m_NodeStatusCH.at(in), m_IterDone.at(in),
-		m_Vs.at(in), m_Ms.at(in), m_Gs.at(in), m_Hs.at(in), m_IC.at(in), m_pH.at(in), m_pe.at(in),
-       m_Eh.at(in), m_rMB+in*nIC, m_uIC+in*nIC, m_xDC+in*nDC, m_gam+in*nDC,
-       m_xPH+in*nPH, m_vPS+in*nPS, m_mPS+in*nPS,
-       m_bPS+in*nIC*nPS, m_xPA+in*nPS );
-	return;
+    if ( flag_node_element_based == 0 )
+    {
+	m_Node->GEM_to_MT( m_NodeHandle[in], m_NodeStatusCH[in], m_IterDone[in],
+		m_Vs[in], m_Ms[in], m_Gs[in], m_Hs[in], m_IC[in], m_pH[in], m_pe[in], m_Eh[in],
+		m_rMB+in*nIC, m_uIC+in*nIC, m_xDC+in*nDC, m_gam+in*nDC, m_xPH+in*nPH, m_vPS+in*nPS, m_mPS+in*nPS,
+		m_bPS+in*nIC*nPS, m_xPA+in*nPS );
+    }
+    else
+    {
+    m_Node->GEM_to_MT( m_ElemHandle[in], m_ElemStatusCH[in], m_IterDone_Elem[in],
+		m_Vs_Elem[in], m_Ms_Elem[in], m_Gs_Elem[in], m_Hs_Elem[in], m_IC_Elem[in], m_pH_Elem[in], m_pe_Elem[in], m_Eh_Elem[in],
+		m_rMB_Elem+in*nIC, m_uIC_Elem+in*nIC, m_xDC_Elem+in*nDC, m_gam_Elem+in*nDC, m_xPH_Elem+in*nPH, m_vPS_Elem+in*nPS, m_mPS_Elem+in*nPS,
+		m_bPS_Elem+in*nIC*nPS, m_xPA_Elem+in*nPS );
+    }
+#endif
+
+	// Added for debugging---------
+	//cout << "The DC Concentrations after GetReactInfoFromGEM: " << endl;
+	//for (int i = 0; i < nDC ; i++)
+	//{
+	//	cout << *(m_xDC+i) << " ";
+	//}
+	//cout << endl;
+	//-----------------------------
+
+return;
 }
+
 void REACT_GEM::SetReactInfoBackGEM(long in)
 {
-		// Setting input data for GEMIPM
-		m_Node->GEM_from_MT( m_NodeHandle.at(in), m_NodeStatusCH.at(in),
-				 m_T.at(in), m_P.at(in), m_Vs.at(in), m_Ms.at(in),
-				 m_bIC+in*nIC, m_dul+in*nDC, m_dll+in*nDC, m_aPH+in*nPH );
-	return;
+	// Setting input data for GEMIPM
+
+	// Added for debugging---------
+	//cout << "The DC Concentrations before SetReactInfoBackGEM: " << endl;
+	//for (int i = 0; i < nDC ; i++)
+	//{
+	//	cout << *(m_xDC+i+in*nDC) << " ";
+	//}
+	//cout << endl;
+	//-----------------------------
+
+
+	// Using the overloaded version of GEM_from_MT() to load the data	// HS 10.07.2007 
+    if ( flag_node_element_based == 0 )
+    {
+	m_Node->GEM_from_MT( m_NodeHandle[in], m_NodeStatusCH[in],
+			 m_T[in], m_P[in], m_Vs[in], m_Ms[in],
+			 m_bIC_dummy+in*nIC/*these values should be set to zero.*/, m_dul+in*nDC, m_dll+in*nDC, m_aPH+in*nPH  ,m_xDC+in*nDC);
+    }
+    else
+    {
+	m_Node->GEM_from_MT( m_ElemHandle[in], m_ElemStatusCH[in],
+			 m_T_Elem[in], m_P_Elem[in], m_Vs_Elem[in], m_Ms_Elem[in],
+			 m_bIC_dummy_Elem+in*nIC/*these values should be set to zero.*/, m_dul_Elem+in*nDC, m_dll_Elem+in*nDC, m_aPH_Elem+in*nPH  ,m_xDC_Elem+in*nDC);
+    }
+
+	// Added for debugging---------
+	//cout << "The DC Concentrations after SetReactInfoBackGEM: " << endl;
+	//for (int i = 0; i < nDC ; i++)
+	//{
+	//	cout << *(m_xDC+i+in*nDC) << " ";
+	//}
+	//cout << endl;
+	//-----------------------------
+
+return;
 }
 
 short REACT_GEM::Run_MainLoop()
 {
-	REACT_GEM::nNodes = GetNodeNumber_MT();
+	nNodes = GetNodeNumber_MT();
+    nElems = GetElemNumber_MT();
+	long in,it_num;
+    if ( flag_node_element_based == 0 )
+    {it_num = nNodes;}
+    else
+    {it_num = nElems;}
 
-	for (long in = 0; in < nNodes ; in++)
-	{
+#ifdef USE_MPI_GEMS
+	// MPI initialization.
+	// So here is going to distribute the task.
+	MPI_Bcast(&nNodes, 1, MPI_LONG, 0, MPI_COMM_WORLD );
+	// here "myrank" is the index of the CPU Processes, and "size" is the number of CPU Processes
+	for ( in = myrank; in < it_num ; in+= size )
+#else
+    for (in = 0; in < it_num ; in++)
+#endif	
+    {
 		//Get data
 		REACT_GEM::SetReactInfoBackGEM(in);
-
 		// Order GEM to run
 		dBR->NodeStatusCH = NEED_GEM_AIA;
 		
-		m_NodeStatusCH.at(in) = (short)m_Node->GEM_run();
+        if ( flag_node_element_based == 0 )
+        {
+		    m_NodeStatusCH[in] = (short)m_Node->GEM_run();
+		    if ( !( m_NodeStatusCH[in] == OK_GEM_AIA || m_NodeStatusCH[in] == OK_GEM_PIA ) )
+		    {
+			    // HS: Error information should be delivered regardless of myrank
+                // #ifdef USE_MPI_GEMS
+      			//    if ( myrank == 0 /*should be set to root*/)
+			    // #endif
+			    cout << "Error: Main Loop failed when running GEM on Node #" << in << "." << endl << "Returned Error Code: " << m_NodeStatusCH[in] << endl;
+			    //return 5;
+		    }
+		    else
+		    {
+                // HS: Success informaiton should be delivered regardless of myrank
+		        // #ifdef USE_MPI_GEMS
+      		    // if ( myrank == 0 /*should be set to root*/)
+		        // #endif
+		        // cout << "Main Loop Running GEM on Node #" << in <<  " successful. "  << endl;
+                // Put current result into m_xDC_pts;		        
+                
+                // Give Databack
+		        REACT_GEM::GetReactInfoFromGEM(in);
+		    }
+        }
+        else
+        {
+            m_ElemStatusCH[in] = (short)m_Node->GEM_run();
+		    if ( !( m_ElemStatusCH[in] == OK_GEM_AIA || m_ElemStatusCH[in] == OK_GEM_PIA ) )
+		    {
+			    #ifdef USE_MPI_GEMS
+      			    if ( myrank == 0 /*should be set to root*/)
+			    #endif
+			    cout << "Error: Main Loop failed when running GEM on Node #" << in << "." << endl << "Returned Error Code: " << m_NodeStatusCH[in] << endl;
+			    //return 5;
+		    }
+		    else
+		    {
+		        #ifdef USE_MPI_GEMS
+      		    if ( myrank == 0 /*should be set to root*/)
+		        #endif
+		        cout << "Main Loop Running GEM on Node #" << in <<  " successful. "  << endl;
+		        // Give Databack
+		        REACT_GEM::GetReactInfoFromGEM(in);
+		    }
+        }
+	}
 
-		if ( !( m_NodeStatusCH.at(in) == OK_GEM_AIA || m_NodeStatusCH.at(in) == OK_GEM_PIA ) )
-		{
-			cout << "Error: Main Loop failed when running GEM on Node #" << in << "." << endl;
-			//return 5;
-		}
-	
-		cout << "Main Loop Running GEM on Node #" << in <<  " successful. "  << endl;
-		// Give Databack
-		REACT_GEM::GetReactInfoFromGEM(in);
-	}	
-	return 0;
+    // For MPI scheme, gather the data here.
+    #ifdef USE_MPI_GEMS
+        REACT_GEM::GetGEMResult_MPI();
+        REACT_GEM::CleanMPIBuffer();
+    #endif	
+return 0;
 }
 
 
@@ -417,6 +919,11 @@ int REACT_GEM::GetFlowType_MT(void)
 	return 0;
 }
 
+void REACT_GEM::GetFluidProperty_MT(void)
+{
+	m_FluidProp = MFPGet("LIQUID");
+}
+
 long REACT_GEM::GetNodeNumber_MT(void)
 {
 	long number;
@@ -434,45 +941,60 @@ long REACT_GEM::GetNodeNumber_MT(void)
 	return 0;
 }
 
+long REACT_GEM::GetElemNumber_MT(void)
+{
+	long number;
+	//------------read number of elems--------------
+	for (int i=0; i < (int)pcs_vector.size(); i++)
+	{
+		m_pcs = pcs_vector[i];
+		if (m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0)
+		{
+			number = (long) m_pcs->m_msh->ele_vector.size();
+			return number;
+		}
+	}
+	//------------end of reading number of nodes---- 
+	return 0;
+}
+
 double REACT_GEM::GetTempValue_MT(long node_Index, int timelevel)
 {
-	int indx0,indx1;
+	int indx;
 	double temp;
 	
 	if (heatflag == 1)
 	{
 		m_pcs = PCSGet("HEAT_TRANSPORT");
 
-		indx0 = m_pcs->GetNodeValueIndex("TEMPERATURE1")+timelevel;
-		// timelevel =1;   //HS: 06.2007 no idea why MX set it to 1;
-		indx1 = indx0 +1;  //m_pcs->GetNodeValueIndex("TEMPERATURE1")+timelevel;
-		temp = m_pcs->GetNodeValue(node_Index, indx1); //HS 05.06.2007 Confusion here. why indx1???//13.06.2007, HS: 0-previous; 1-current?
+        indx = m_pcs->GetNodeValueIndex("TEMPERATURE1")+timelevel;
+        temp = m_pcs->GetNodeValue(node_Index, indx);
+        
         //sysT[i] = m_pcs->GetNodeValue(i, indx1); 
-		//if (sysT0[i] <273.15) sysT0[i] += 273.15;  //ToDo °C->K
-        //if (sysT[i] <273.15) sysT[i] += 273.15;  //ToDo °C->K
+		//if (sysT0[i] <273.15) sysT0[i] += 273.15;  //ToDo ï¿½C->K
+        //if (sysT[i] <273.15) sysT[i] += 273.15;  //ToDo ï¿½C->K
 	}
     else 
 	{
 		temp = 25.0;
 	 //HS: 04.06.2007 This might cause toubles. Better to set to a variable which could be modified from outside. 
 	}
-	return temp;
+return temp;
 }
 short REACT_GEM::SetTempValue_MT(long node_Index, int timelevel, double temp)
 {
-	int indx0,indx1;
+	int indx;
 		
 	if (heatflag == 1)
 	{
 		m_pcs = PCSGet("HEAT_TRANSPORT");
 
-		indx0 = m_pcs->GetNodeValueIndex("TEMPERATURE1")+timelevel;
-		// timelevel =1;   //HS: 06.2007 no idea why MX set it to 1;
-		indx1 = indx0 +1;  //m_pcs->GetNodeValueIndex("TEMPERATURE1")+timelevel;
-		m_pcs->SetNodeValue(node_Index, indx0, temp); // HS: why indx1? take care here.
+        indx = m_pcs->GetNodeValueIndex("TEMPERATURE1")+timelevel;
+        m_pcs->SetNodeValue(node_Index, indx, temp); 
+
 		//sysT[i] = m_pcs->GetNodeValue(i, indx1); 
-		//if (sysT0[i] <273.15) sysT0[i] += 273.15;  //ToDo °C->K
-		//if (sysT[i] <273.15) sysT[i] += 273.15;  //ToDo °C->K
+		//if (sysT0[i] <273.15) sysT0[i] += 273.15;  //ToDo ï¿½C->K
+		//if (sysT[i] <273.15) sysT[i] += 273.15;  //ToDo ï¿½C->K
 		return 1;
 	}
 	else
@@ -481,88 +1003,106 @@ short REACT_GEM::SetTempValue_MT(long node_Index, int timelevel, double temp)
 
 double REACT_GEM::GetPressureValue_MT(long node_Index, int timelevel)
 {
-//Get pressure value 
+  //Get pressure value 
   double pressure;
-  int indx0;
+  int indx;
+  pressure = 0.0;
+    
   if(flowflag > 0)
   {
-	  switch(flowflag)
-	  {
+	GetFluidProperty_MT();
+  	switch(flowflag)
+	{
         case 1:
 		  m_pcs = PCSGet("GROUNDWATER_FLOW");
-		  indx0 = m_pcs->GetNodeValueIndex("HEAD")+timelevel;
-		  pressure = m_pcs->GetNodeValue(node_Index, indx0); 
+
+          indx = m_pcs->GetNodeValueIndex("HEAD")+timelevel;
+          pressure = m_pcs->GetNodeValue(node_Index, indx); // The unit of HEAD is meters
+
 		  // change the pressure unit from meters of water to bar. 
-		  pressure = pressure / 1.0e5;
-		  if (pressure<1.0) pressure = 1.0;//HS 04.06.2007 Seems all the pressures are set to 1 bar.
-          break;
+		  pressure = Pressure_M_2_Bar( pressure , m_FluidProp->Density() );
+		  if (pressure<1.0) pressure = 1.0;//HS 18.07.2007 do not allow pressure lower than 1 bar.
+        break;
         case 2:
 		  m_pcs = PCSGet("LIQUID_FLOW");
-		  indx0 = m_pcs->GetNodeValueIndex("PRESSURE1")+timelevel;
-		  pressure = m_pcs->GetNodeValue(node_Index, indx0); 
-		  // change the pressure unit from meters of water to bar. 
-		  pressure = pressure / 1.0e5;
-		  if (pressure<1.0) pressure = 1.0;//HS 04.06.2007 Seems all the pressures are set to 1 bar.
-		  break;
+		  indx = m_pcs->GetNodeValueIndex("PRESSURE1")+timelevel;
+		  pressure = m_pcs->GetNodeValue(node_Index, indx); // The unit of PRESSURE1 is Pascal.
+		  // change the pressure unit from Pascal to bar. 
+		  pressure = Pressure_Pa_2_Bar( pressure );
+		  // if (pressure<1.0) pressure = 1.0;//HS 18.07.2007 do not allow pressure lower than 1 bar.
+	    break;
         case 3:
 		  m_pcs = PCSGet("RICHARDS_FLOW");
-		  indx0 = m_pcs->GetNodeValueIndex("PRESSURE1")+timelevel;
-  		  pressure = m_pcs->GetNodeValue(node_Index, indx0);
-		  // change the pressure unit from meters of water to bar. 
-		  pressure = pressure / 1.0e5;
-		  if (pressure<1.0) pressure = 1.0;//HS 04.06.2007 Seems all the pressures are set to 1 bar.
-          break;
+		  indx = m_pcs->GetNodeValueIndex("PRESSURE1")+timelevel;
+		  pressure = m_pcs->GetNodeValue(node_Index, indx); // The unit of PRESSURE1 is Pascal.
+		  // change the pressure unit from Pascal to bar. 
+		  pressure = Pressure_Pa_2_Bar( pressure );
+		  // if (pressure<1.0) pressure = 1.0;//HS 18.07.2007 do not allow pressure lower than 1 bar.
+        break;
         case 4:
+		  #ifdef USE_MPI_GEMS
+		  if ( myrank == 0 /*should be set to root*/)
+		  #endif
 		  DisplayErrorMsg("Error: Not implemented for the flow in GEM case!!!");
 		  pressure = 1.0;   //TODO  MX // HB: TODO
-          break;
+        break;
       }
   }
   else 
   {
-	  DisplayErrorMsg("Warning: Not valid flow process!!");
+	DisplayErrorMsg("Warning: No valid flow process!!");
   }
-  return pressure;
+return pressure;
 }
+
 short REACT_GEM::SetPressureValue_MT(long node_Index, int timelevel, double pressure)
 {
 //Set pressure value 
-  int indx0;
+  int indx;
+  indx = 0;
   if(flowflag > 0)
   {
-	  switch(flowflag)
-	  {
+	switch(flowflag)
+	{
         case 1:
 		  m_pcs = PCSGet("GROUNDWATER_FLOW");
-		  indx0 = m_pcs->GetNodeValueIndex("HEAD")+timelevel;
-		  if (pressure<1.0) pressure = 1.0;//HS 04.06.2007 Seems all the pressures are set to 1 bar.
-		  m_pcs->SetNodeValue(node_Index, indx0, pressure); 
-          break;
+          pressure = Pressure_Bar_2_M( pressure ,  m_FluidProp->Density() );
+         
+          indx = m_pcs->GetNodeValueIndex("HEAD")+timelevel;
+  		  m_pcs->SetNodeValue(node_Index, indx, pressure); 
+
+        break;
         case 2:
 		  m_pcs = PCSGet("LIQUID_FLOW");
-		  indx0 = m_pcs->GetNodeValueIndex("PRESSURE1")+timelevel;
-		  if (pressure<1.0) pressure = 1.0;//HS 04.06.2007 Seems all the pressures are set to 1 bar.
-		  m_pcs->SetNodeValue(node_Index, indx0, pressure); 
-		  break;
+		  indx = m_pcs->GetNodeValueIndex("PRESSURE1")+timelevel;
+		  pressure = Pressure_Bar_2_Pa( pressure );
+		  m_pcs->SetNodeValue(node_Index, indx, pressure); 
+	break;
         case 3:
 		  m_pcs = PCSGet("RICHARDS_FLOW");
-		  indx0 = m_pcs->GetNodeValueIndex("PRESSURE1")+timelevel;
-		  if (pressure<1.0) pressure = 1.0;//HS 04.06.2007 Seems all the pressures are set to 1 bar.
-		  m_pcs->SetNodeValue(node_Index, indx0, pressure); 
-          break;
+		  indx = m_pcs->GetNodeValueIndex("PRESSURE1")+timelevel;
+		  pressure = Pressure_Bar_2_Pa( pressure );
+		  m_pcs->SetNodeValue(node_Index, indx, pressure); 
+        break;
         case 4:
-		  if (pressure<1.0) pressure = 1.0;//HS 04.06.2007 Seems all the pressures are set to 1 bar.
-		  m_pcs->SetNodeValue(node_Index, indx0, pressure); 
-          break;
-      }
-	  return 1;
+		  pressure = Pressure_Bar_2_Pa( pressure );
+		  #ifdef USE_MPI_GEMS
+      		  if ( myrank == 0 /*should be set to root*/)
+		  #endif
+		  DisplayErrorMsg("Error: Not implemented for the flow in GEM case!!!");
+		  m_pcs->SetNodeValue(node_Index, indx, pressure); 
+        break;
+        }
   }
   else 
   {
-	  DisplayErrorMsg("Warning: Not valid flow process!!");
+	  #ifdef USE_MPI_GEMS
+	  if ( myrank == 0 /*should be set to root*/)
+	  #endif
+	  DisplayErrorMsg("Warning: No valid flow process!!");
 	  return 0;
   }
-
+return 1;
 }
 double REACT_GEM::GetComponentValue_MT(long node_Index, string m_component, int timelevel)
 {
@@ -574,52 +1114,61 @@ double REACT_GEM::GetComponentValue_MT(long node_Index, string m_component, int 
 		if (m_pcs->pcs_type_name.compare("MASS_TRANSPORT") == 0)
 		{
 			if (strcmp(m_pcs->pcs_primary_function_name[0],m_component.c_str()) == 0)
-			{m_comp_value = m_pcs->GetNodeValue(node_Index,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]+timelevel));}
+			{
+                m_comp_value = m_pcs->GetNodeValue(node_Index,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0])+timelevel);
+            }
 
 		}
 	}
 	if ( m_comp_value != -1.0 ){return m_comp_value;}
-	else{DisplayErrorMsg("Error: Corresponding Component NOT FOUND!!!");}
+	else
+	{
+	#ifdef USE_MPI_GEMS
+        if ( myrank == 0 /*should be set to root*/)
+	#endif
+	DisplayErrorMsg("Error: Corresponding Component NOT FOUND!!!");
+	return m_comp_value;
+	}
 }
 
-short REACT_GEM::GetAqComponentValue_MT(long node_Index, int timelevel, double* m_Component)
+short REACT_GEM::GetDCValue_MT(long node_Index, int timelevel, double* m_DC, double* m_DC_pts ,double* m_DC_MT_delta)
 {
-	for (int i=0; i < (int)pcs_vector.size() ; i++)
+string str;
+double DC_MT_pre, DC_MT_cur;
+
+	for (int i=0; i < nDC ; i++)
 	{
-		m_pcs = pcs_vector[i];
+		m_pcs = pcs_vector[i+1];
 		if (m_pcs->pcs_type_name.compare("MASS_TRANSPORT") == 0)
-		{	
-			string str;
-			int x_Component = -1;
-
-			str = m_pcs->pcs_primary_function_name[0];//get the name of compound from MT;
-
+		{
+			str = m_pcs->pcs_primary_function_name[0];
 			if (str.compare("pH") != 0 && str.compare("pe") != 0 )
 			{
-				x_Component = m_Node->IC_name_to_xDB(str.c_str());//get the index of certain compound, -1: no match
-				if ( x_Component != -1)
-				{
-					*(m_Component+x_Component) = m_pcs->GetNodeValue(node_Index,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]+timelevel));
-				}
-				else
-				{
-					x_Component = m_Node->DC_name_to_xDB(str.c_str());
-					if ( x_Component != -1 )
-					{
-						*(m_Component+x_Component) = m_pcs->GetNodeValue(node_Index,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]+timelevel));
-					}
-					else
-					{
-						DisplayErrorMsg("Error: Corresponding Component NOT FOUND in GEM part!!");
-						return 0;
-					}
-				}
-			}
+                // Get previous iteration mass transport concentration value
+                DC_MT_pre = m_pcs->GetNodeValue(node_Index,m_pcs->GetNodeValueIndex(str)+0);
+                // Get current iteration mass transport concentration value
+                DC_MT_cur = m_pcs->GetNodeValue(node_Index,m_pcs->GetNodeValueIndex(str)+timelevel);
+                
+                if ( flag_iterative_scheme > 0 ) // this means introduce delta_C from MT
+                {
+                    // Get delta_Concentration
+                    *(m_DC_MT_delta+i) = DC_MT_pre - DC_MT_cur;
+                    // Now introduce the change from MT into GEMS
+                    *(m_DC+i) -= *(m_DC_MT_delta+i);
+                }
+                else // meaning non-iterative scheme
+                {
+                    // Copy cocentration from MT to GEMS
+                    *(m_DC+i) = DC_MT_cur;
+                }
+            }
 		}
+
 	}
+
 	return 1;
 }
-short REACT_GEM::GetSoComponentValue_MT(long node_Index, int timelevel, double* m_Component)
+short REACT_GEM::GetSoComponentValue_MT(long node_Index, int timelevel, double* m_Phase)
 {
 	for (int i=0; i < (int)pcs_vector.size() ; i++)
 	{
@@ -627,32 +1176,59 @@ short REACT_GEM::GetSoComponentValue_MT(long node_Index, int timelevel, double* 
 		if (m_pcs->pcs_type_name.compare("MASS_TRANSPORT") == 0)
 		{	
 			string str;
-			double val;
+
 			int x_Component = 0;
 
 			str = m_pcs->pcs_primary_function_name[0];//get the name of compound from MT;
-			x_Component = m_Node->IC_name_to_xDB(str.c_str());//get the index of certain compound, -1: no match
-			if ( x_Component != -1)
+			x_Component = m_Node->Ph_name_to_xDB(str.c_str());//get the index of certain compound, -1: no match
+			if ( x_Component > -1)
 			{
-				*m_Component = m_pcs->GetNodeValue(node_Index,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]+timelevel));
-				return 1;
+			    *(m_Phase+x_Component) = m_pcs->GetNodeValue(node_Index,m_pcs->GetNodeValueIndex(str)+timelevel);
 			}
 			else
 			{
-				DisplayErrorMsg("Error: Corresponding Component NOT FOUND in GEM part!!");
-				return 0;
+				//DisplayErrorMsg("Error: Corresponding Component NOT FOUND in GEM part!!");
+				//return 0;
 			}
 		}
-		else
-		{
-			DisplayErrorMsg("Error: MASS TRANSPORT NOT FOUND!!");
-			return 0;
-		}
 	}
+	//DisplayErrorMsg("Error: MASS TRANSPORT NOT FOUND!!");
+	return 1;
 }
-short REACT_GEM::SetAqComponentValue_MT(long node_Index, int timelevel, double* m_Component)
+short REACT_GEM::SetDCValue_MT(long node_Index, int timelevel, double* m_DC)
 {
-	for (int i=0; i < (int)pcs_vector.size() ; i++)
+string str;
+	for (int i=0; i < nDC ; i++)
+	{
+		m_pcs = pcs_vector[i+1];
+
+		if (m_pcs->pcs_type_name.compare("MASS_TRANSPORT") == 0)
+		{
+			str = m_pcs->pcs_primary_function_name[0];
+			if (str.compare("pH") != 0 && str.compare("pe") != 0 )
+			{
+			    if ( flag_iterative_scheme > 0 )
+                {
+                    if ( CPGetMobil(m_pcs->GetProcessComponentNumber()) > 0)
+                    {
+                        m_pcs->eqs->b[node_Index] += m_xDC_Chem_delta[node_Index*nDC+i] ;
+                    }
+                    else
+                    {
+                        m_pcs->SetNodeValue(node_Index , m_pcs->GetNodeValueIndex(str)+timelevel , *(m_DC+i));
+                    }
+                }
+                else
+                {
+                    m_pcs->SetNodeValue(node_Index , m_pcs->GetNodeValueIndex(str)+timelevel , *(m_DC+i));
+                }
+			}
+		}
+
+	}
+
+
+	/*for (int i=0; i < (int)pcs_vector.size() ; i++)
 	{
 		m_pcs = pcs_vector[i];
 		if (m_pcs->pcs_type_name.compare("MASS_TRANSPORT") == 0)
@@ -664,31 +1240,23 @@ short REACT_GEM::SetAqComponentValue_MT(long node_Index, int timelevel, double* 
 
 			if (str.compare("pH") != 0 && str.compare("pe") != 0 )
 			{
-				x_Component = m_Node->IC_name_to_xDB(str.c_str());//get the index of certain compound, -1: no match
-				if ( x_Component != -1)
+				x_Component = m_Node->DC_name_to_xDB(str.c_str());
+				if ( x_Component > -1 )
 				{
-					m_pcs->SetNodeValue(node_Index,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]),*(m_Component+x_Component));	
+					m_pcs->SetNodeValue(node_Index , m_pcs->GetNodeValueIndex(str)+timelevel , *(m_DC+x_Component));
 				}
 				else
 				{
-					x_Component = m_Node->DC_name_to_xDB(str.c_str());
-					if ( x_Component != -1 )
-					{
-						m_pcs->SetNodeValue(node_Index,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]),*(m_Component+x_Component));
-					}
-					else
-					{
-						DisplayErrorMsg("Error: Corresponding Component NOT FOUND in MT part!!");
-						return 0;
-					}
+				//DisplayErrorMsg("Error: Corresponding Component NOT FOUND in MT part!!");
+				//return 0;
 				}
 			}
 		}
-	}
+	}*/
 	return 1;
 }
 
-short REACT_GEM::SetSoComponentValue_MT(long node_Index, int timelevel, double* m_Component)
+short REACT_GEM::SetSoComponentValue_MT(long node_Index, int timelevel, double* m_Phase)
 {
 	for (int i=0; i < (int)pcs_vector.size() ; i++)
 	{
@@ -705,12 +1273,12 @@ short REACT_GEM::SetSoComponentValue_MT(long node_Index, int timelevel, double* 
 				x_Component = m_Node->Ph_name_to_xDB(str.c_str());//get the index of certain compound, -1: no match
 				if ( x_Component != -1)
 				{
-					m_pcs->SetNodeValue(node_Index,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]),*(m_Component+x_Component));	
-				}
+                    m_pcs->SetNodeValue(node_Index,m_pcs->GetNodeValueIndex(str),*(m_Phase+x_Component));	
+           		}
 				else
 				{
-					DisplayErrorMsg("Error: Corresponding Component NOT FOUND in MTSo part!!");
-					return 0;
+					//DisplayErrorMsg("Error: Corresponding Component NOT FOUND in MTSo part!!");
+					//return 0;
 				}
 			}
 		}
@@ -731,12 +1299,15 @@ short REACT_GEM::SetPHValue_MT(long node_Index, int timelevel, double m_PH)
 			//x_Component = m_Node->Ph_name_to_xDB(str.c_str());//get the index of certain compound, -1: no match
 			if ( str.compare("pH") == 0)
 			{
-				m_pcs->SetNodeValue(node_Index,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]),m_PH);
+	    		m_pcs->SetNodeValue(node_Index,m_pcs->GetNodeValueIndex(str)+timelevel,m_PH);
 				return 1;
 			}
 		}
 	}
 	// Not found PH: 
+	#ifdef USE_MPI_GEMS
+	if ( myrank == 0 /*should be set to root*/)
+	#endif
 	DisplayErrorMsg("Error: PH NOT FOUND in MT part!!");
 	return 0;
 }
@@ -754,12 +1325,250 @@ short REACT_GEM::SetPeValue_MT(long node_Index, int timelevel, double m_PE)
 			//x_Component = m_Node->Ph_name_to_xDB(str.c_str());//get the index of certain compound, -1: no match
 			if ( str.compare("pe") == 0)
 			{
-				m_pcs->SetNodeValue(node_Index,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]),m_PE);
+  				m_pcs->SetNodeValue(node_Index,m_pcs->GetNodeValueIndex(str)+timelevel,m_PE);
 				return 1;
 			}
 		}
 	}
 	// Not found PE: 
+	#ifdef USE_MPI_GEMS
+	if ( myrank == 0 /*should be set to root*/)
+	#endif
 	DisplayErrorMsg("Error: PE NOT FOUND in MT part!!");
 	return 0;
 }
+
+double REACT_GEM::Pressure_Pa_2_Bar(double Pre_in_Pa)
+{
+return Pre_in_Pa / 1e+5;
+}
+
+double REACT_GEM::Pressure_Bar_2_Pa(double Pre_in_Bar)
+{
+return Pre_in_Bar * 1e+5;
+}
+
+double REACT_GEM::Pressure_M_2_Bar(double Pre_in_M, double flu_density )
+{return Pre_in_M * 9.8 * flu_density / 1e5 ;}
+
+double REACT_GEM::Pressure_Bar_2_M(double Pre_in_Bar, double flu_density )
+{return Pre_in_Bar * 1e5 / 9.8 / flu_density ;}
+
+double REACT_GEM::GetNodeAdjacentVolume(long Idx_Node)
+{
+    double volume;
+    long Idx_Ele;
+    int number_of_nodes;
+    volume = 0.0;
+    number_of_nodes = 0;
+    
+    CNode* m_Node;
+    CElem* m_Elem;
+
+    // get the pointer to current node;
+    m_Node =  m_pcs->m_msh->nod_vector[Idx_Node];
+
+    // loop over all the elements that adjacent to this node;
+    for ( int i=0 ; i < (long)m_Node->connected_elements.size() ; i++ )
+    {
+        // get the index of current element;
+        Idx_Ele = m_Node->connected_elements[i];
+
+        // get the pointer of this element;
+        m_Elem = m_pcs->m_msh->ele_vector[Idx_Ele];
+
+        // get the number of nodes in this element;
+        // given argument "false" means giving node number instead of Gauss points;
+        number_of_nodes = m_Elem->GetNodesNumber(false);
+        
+        // taking part of volume from this element;
+        volume += m_Elem->GetVolume() / number_of_nodes ;
+    }
+
+return volume;
+}
+
+void REACT_GEM::ConvElemValue2Node(void)
+{
+    long i ,idx_Elem;
+    int j,k,l, number_of_conn_elems;
+    
+    CNode* m_Node;
+    CElem* m_Elem;
+
+    for ( i=0 ; i < nNodes ; i++)
+    {
+        // first set the parameters to zero;
+        m_T[i] = 0.0;
+        m_P[i] = 0.0;
+        m_pH[i]= 0.0;
+        m_pe[i]= 0.0;
+        for ( k=0 ; k < nDC ; k++)
+        m_xDC[i*nDC+k] = 0.0;
+        for ( l=0 ; l < nPH ; l++)
+        m_xPH[i*nPH+l] = 0.0;
+
+        // then get the values from nodes
+        m_Node =  m_pcs->m_msh->nod_vector[i];
+        for ( j=0 ; j < (int)m_Node->connected_elements.size() ; j++ )
+        {
+            idx_Elem = m_Node->connected_elements[j];// get the connected element
+            m_Elem = m_pcs->m_msh->ele_vector[idx_Elem];
+            number_of_conn_elems = (int)m_Node->connected_elements.size();
+
+            m_T[i] += m_T_Elem[idx_Elem] / number_of_conn_elems;
+            m_P[i] += m_P_Elem[idx_Elem] / number_of_conn_elems;
+            m_pH[i] += m_pH_Elem[idx_Elem] / number_of_conn_elems;
+            m_pe[i] += m_pe_Elem[idx_Elem] / number_of_conn_elems;
+            for ( k=0 ; k < nDC ; k++)
+            m_xDC[i*nDC+k] += m_xDC_Elem[idx_Elem*nDC+k] / number_of_conn_elems;
+            for ( l=0 ; l < nPH ; l++)
+            m_xPH[i*nPH+l] += m_xPH_Elem[idx_Elem*nPH+l] / number_of_conn_elems;
+                
+        }
+    }
+}
+
+void REACT_GEM::ConvNodeValue2Elem(void)
+{
+    long i,idx_Node;
+    int j,k,l, number_of_nodes;
+    
+    CNode* m_Node;
+    CElem* m_Elem;
+
+    for ( i=0 ; i < nElems ; i++)
+    {
+        m_Elem =  m_pcs->m_msh->ele_vector[i];
+        
+        // first set the parameters to zero;
+        m_T_Elem[i] = 0.0;
+        m_P_Elem[i] = 0.0;
+        m_pH_Elem[i]= 0.0;
+        m_pe_Elem[i]= 0.0;
+        for ( k=0 ; k < nDC ; k++)
+        m_xDC_Elem[i*nDC+k] = 0.0;
+        for ( l=0 ; l < nPH ; l++)
+        m_xPH_Elem[i*nPH+l] = 0.0;
+
+        // then get the values from nodes
+        for ( j=0 ; j < m_Elem->GetNodesNumber(false) ; j++ )
+        {
+            idx_Node = m_Elem->GetNodeIndex( j ); // get the connected nodes;
+            m_Node = m_pcs->m_msh->nod_vector[idx_Node];
+            number_of_nodes = (int)m_Elem->GetNodesNumber(false);
+            
+            m_T_Elem[i] += m_T[idx_Node] / number_of_nodes;
+            m_P_Elem[i] += m_P[idx_Node] / number_of_nodes;
+            m_pH_Elem[i] += m_pH[idx_Node] / number_of_nodes;
+            m_pe_Elem[i] += m_pe[idx_Node] / number_of_nodes;
+            for ( k=0 ; k < nDC ; k++)
+            m_xDC_Elem[i*nDC+k] += m_xDC[idx_Node*nDC+k] / number_of_nodes;
+            for ( l=0 ; l < nPH ; l++)
+            m_xPH_Elem[i*nPH+l] += m_xPH[idx_Node*nPH+l] / number_of_nodes;
+                
+        }
+    }
+}
+void REACT_GEM::CopyCurXDCPre(void)
+{
+    long i;
+    for ( i=0 ; i < nNodes*nDC ; i++)
+    {
+        m_xDC_pts[i] = m_xDC[i];
+    }
+}
+
+void REACT_GEM::UpdateXDCChemDelta(void)
+{
+    long i;
+    for ( i=0 ; i < nNodes*nDC ; i++)
+    {
+        m_xDC_Chem_delta[i] = m_xDC[i] - m_xDC_pts[i];
+    }
+}
+
+#ifdef USE_MPI_GEMS
+void REACT_GEM::GetGEMResult_MPI(void)
+{
+	// Now gather the calculated values------------------------------------------------------------------------------
+	MPI_Allreduce( m_NodeHandle_buff, m_NodeHandle, nNodes, MPI_SHORT, MPI_SUM , MPI_COMM_WORLD);
+	MPI_Allreduce( m_NodeStatusCH_buff, m_NodeStatusCH, nNodes, MPI_SHORT, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce( m_IterDone_buff, m_IterDone, nNodes, MPI_SHORT, MPI_SUM, MPI_COMM_WORLD);
+
+	MPI_Allreduce( m_Vs_buff, m_Vs, nNodes, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce( m_Ms_buff, m_Ms, nNodes, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce( m_Gs_buff, m_Gs, nNodes, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce( m_Hs_buff, m_Hs, nNodes, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce( m_IC_buff, m_IC, nNodes, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce( m_pH_buff, m_pH, nNodes, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce( m_pe_buff, m_pe, nNodes, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce( m_Eh_buff, m_Eh, nNodes, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+	MPI_Allreduce( m_rMB_buff, m_rMB, nNodes*nIC, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce( m_uIC_buff, m_uIC, nNodes*nIC, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce( m_xDC_buff, m_xDC, nNodes*nDC, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce( m_gam_buff, m_gam, nNodes*nDC, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce( m_xPH_buff, m_xPH, nNodes*nPH, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce( m_vPS_buff, m_vPS, nNodes*nPS, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce( m_mPS_buff, m_mPS, nNodes*nPS, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce( m_bPS_buff, m_bPS, nNodes*nIC*nPS, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce( m_xPA_buff, m_xPA, nNodes*nPS, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    // --------------------------------------------------------------------------------------------------------------
+
+}
+
+void REACT_GEM::CleanMPIBuffer(void)
+{
+    for (long in = 0; in < nNodes ; in++)
+    {
+        m_NodeHandle_buff[in] = 0;
+        m_NodeStatusCH_buff[in] = 0;
+        m_IterDone_buff[in] = 0;
+
+        m_Vs_buff[in] = 0.0;
+        m_Ms_buff[in] = 0.0;
+        m_Gs_buff[in] = 0.0;
+        m_Hs_buff[in] = 0.0;
+        m_IC_buff[in] = 0.0;
+        m_pH_buff[in] = 0.0;
+        m_pe_buff[in] = 0.0;
+        m_Eh_buff[in] = 0.0;
+
+        int ii;
+        for (ii = 0; ii < nIC ; ii++)
+        {
+            *(m_rMB_buff+in*nIC + ii) = 0.0;
+            *(m_uIC_buff+in*nIC + ii) = 0.0;
+        }
+
+        for (ii = 0; ii < nDC ; ii++)
+        {
+            *(m_xDC_buff+in*nDC+ii) = 0.0;
+            *(m_gam_buff+in*nDC+ii) = 0.0;
+        }
+
+        for (ii = 0; ii < nPH ; ii++)
+        {
+            *(m_xPH_buff+in*nPH+ii) = 0.0;
+        }
+
+        for (ii = 0; ii < nPS ; ii++)
+        {
+            *(m_vPS_buff+in*nPS+ii) = 0.0;
+            *(m_mPS_buff+in*nPS+ii) = 0.0;
+            *(m_xPA_buff+in*nPS+ii) = 0.0;
+        }
+
+
+        for (ii = 0; ii < nIC ; ii++)
+        {
+            for (int jj = 0; jj < nPS ; jj++)
+            {
+            *(m_bPS_buff+in*nIC*nPS+jj) = 0.0;
+            }
+        }
+    }
+}
+#endif
+
