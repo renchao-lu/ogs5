@@ -54,7 +54,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
 	string name2;
 	char name1[MAX_ZEILE];
     cpl_pcs=NULL; 
-    CRFProcess *m_pcs=NULL;  //MX
+    //CRFProcess *m_pcs=NULL;  //MX
     //27.2.2007 WW
     newton_raphson = false;
     if(pcs->m_num->nls_method_name.compare("NEWTON_RAPHSON")==0) //WW
@@ -1113,7 +1113,7 @@ inline void CFiniteElementStd::CalNodalEnthalpy()
        NodalVal_Sat[i] = pcs->GetNodeValue(nodes[i], idxS);
        SetCenterGP();
        temp =  FluidProp->Density() 
-              *MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta)
+              *MediaProp->Porosity(Index,pcs->m_num->ls_theta)
 			  *NodalVal_Sat[i] ;
        // Enthalpy
        dT=0.0;
@@ -1159,7 +1159,7 @@ inline double CFiniteElementStd::CalCoefMass()
       break;
     case G: // MB now Groundwater flow
       if(MediaProp->unconfined_flow_group>0) //OK
-        val = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
+        val = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
       else
         val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta);
       break;
@@ -1170,7 +1170,7 @@ inline double CFiniteElementStd::CalCoefMass()
       {
         //saturation = PCSGetELEValue(ele,gp,theta,nod_val_name);
         Sw = interpolate(NodalVal_Sat);
-        val = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta) \
+        val = MediaProp->Porosity(Index,pcs->m_num->ls_theta) \
             * FluidProp->drho_dp \
             / FluidProp->Density() \
             * MMax(0.,Sw) \
@@ -1179,7 +1179,7 @@ inline double CFiniteElementStd::CalCoefMass()
       }
       if(pcs->pcs_type_number==1)
       {
-        val = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta) \
+        val = MediaProp->Porosity(Index,pcs->m_num->ls_theta) \
             * MediaProp->geo_area;
       }
 #endif
@@ -1191,12 +1191,12 @@ inline double CFiniteElementStd::CalCoefMass()
     //....................................................................
     case H: // Heat transport
       TG = interpolate(NodalVal1);   
-      val = MediaProp->HeatCapacity(Index,unit,pcs->m_num->ls_theta,this); 
+      val = MediaProp->HeatCapacity(Index,pcs->m_num->ls_theta,this); 
       val /=time_unit_factor;
       break;
     //....................................................................
     case M: // Mass transport //SB4200
-	  	val = MediaProp->Porosity(Index, unit,pcs->m_num->ls_theta); // Porosity
+	  	val = MediaProp->Porosity(Index,pcs->m_num->ls_theta); // Porosity
 		val *= PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
 	  	m_cp = cp_vec[pcs->pcs_component_number]; 
 	  	val *= m_cp->CalcElementRetardationFactorNew(Index, unit, pcs); //Retardation Factor
@@ -1210,7 +1210,7 @@ inline double CFiniteElementStd::CalCoefMass()
  //     Sw = interpolate(NodalVal_Sat);
       rhow = FluidProp->Density(); 
       dSdp = MediaProp->SaturationPressureDependency(Sw, rhow, pcs->m_num->ls_theta);
-      poro = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
+      poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
       // Storativity
       val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) *Sw;
 
@@ -1235,7 +1235,7 @@ inline double CFiniteElementStd::CalCoefMass()
   		val = 1.0;
       break;
     case A: // Air (gas) flow
-      val = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
+      val = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
       break;
   }
   return val;
@@ -1262,7 +1262,7 @@ inline double CFiniteElementStd::CalCoefMass2(int dof_index)
        Sw = MediaProp->SaturationCapillaryPressureFunction(PG,0); 
        rhow = FluidProp->Density(); 
        dSdp = -MediaProp->SaturationPressureDependency(Sw, rhow, pcs->m_num->ls_theta);
-       poro = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
+       poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
        // Storativity
        val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) *Sw;
        // Fluid compressibility
@@ -1336,7 +1336,7 @@ inline double CFiniteElementStd::CalCoefStorage()
       break;
     case M: // Mass transport //SB4200
 		m_cp = cp_vec[pcs->pcs_component_number];//CMCD
-		val = MediaProp->Porosity(Index, unit,pcs->m_num->ls_theta); //Porosity
+		val = MediaProp->Porosity(Index,pcs->m_num->ls_theta); //Porosity
         val *= PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
 		val *= m_cp->CalcElementDecayRateNew(Index, pcs); // Decay rate
 		val *= m_cp->CalcElementRetardationFactorNew(Index, unit, pcs); //Retardation Factor
@@ -1368,7 +1368,7 @@ inline double CFiniteElementStd::CalCoefContent()
   double val = 0.0;
   double dS = 0.0;
   double nodeval0, nodeval1;
-  CompProperties *m_cp = NULL; //SB4200
+  //CompProperties *m_cp = NULL; //SB4200
   string name;
 
   switch(PcsType){
@@ -1388,7 +1388,7 @@ inline double CFiniteElementStd::CalCoefContent()
     case H: // heat transport
       break;
 	case M:{ // Mass transport //SB4200
-		val = MediaProp->Porosity(Index, unit,pcs->m_num->ls_theta); // Porosity
+		val = MediaProp->Porosity(Index,pcs->m_num->ls_theta); // Porosity
 		/*
 		m_cp = cp_vec[pcs->pcs_component_number]; 
 		val *= m_cp->CalcElementRetardationFactorNew(Index, unit, pcs); // Retardation factor
@@ -1617,7 +1617,7 @@ shapefct[1] = 0.; //OK
         break;
       case M: // Mass transport
         tensor = MediaProp->MassDispersionTensorNew(ip);
-        mat_fac = 1.0; //MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta); // porosity now included in MassDispersionTensorNew()
+        mat_fac = 1.0; //MediaProp->Porosity(Index,pcs->m_num->ls_theta); // porosity now included in MassDispersionTensorNew()
         if(PCSGet("RICHARDS_FLOW"))
            mat_fac *= PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
         for(i=0;i<dim*dim;i++) 
@@ -1693,7 +1693,7 @@ shapefct[1] = 0.; //OK
             rhow = FluidProp->Density(); 
 			//PG = fabs(interpolate(NodalVal1));                      
 			TG = interpolate(NodalValC)+T_KILVIN_ZERO; 
-			poro = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
+			poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
 			tort = MediaProp->TortuosityFunction(Index,unit,pcs->m_num->ls_theta);
             //Rv = GAS_CONSTANT;
             humi = exp(PG/(GAS_CONSTANT_V*TG*rhow));
@@ -1764,7 +1764,7 @@ inline void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
         //
         PG2 = interpolate(NodalVal_p2);
         rhow = FluidProp->Density(); 
-        poro = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
+        poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
         tort = MediaProp->TortuosityFunction(Index,unit,pcs->m_num->ls_theta);
         tort *=(1.0-Sw)*poro*2.16e-5*pow(TG/T_KILVIN_ZERO, 1.8);
         expfactor = COMP_MOL_MASS_WATER/(rhow*GAS_CONSTANT*TG);
@@ -1883,7 +1883,7 @@ inline double CFiniteElementStd::CalCoefAdvection()
       break;
     case M: // Mass transport //SB4200
 		// Get velocity(Gausspoint)/porosity(element)
-	  val = 1.0*time_unit_factor; //*MediaProp->Porosity(Index, unit,pcs->m_num->ls_theta); // Porosity; 
+	  val = 1.0*time_unit_factor; //*MediaProp->Porosity(Index,pcs->m_num->ls_theta); // Porosity; 
       break;
     case O: // Liquid flow
       val = 1.0; 
@@ -2584,7 +2584,7 @@ void CFiniteElementStd::CalcRHS_by_ThermalDiffusion()
   	     PG = interpolate(NodalVal1);                      
          TG = interpolate(NodalValC)+T_KILVIN_ZERO; 
          Sw = MediaProp->SaturationCapillaryPressureFunction(-PG,0); //WW
-         poro = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
+         poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
          tort = MediaProp->TortuosityFunction(Index,unit,pcs->m_num->ls_theta);
          beta = poro*MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) *Sw;
          //Rv = GAS_CONSTANT;
@@ -4563,7 +4563,7 @@ void CFiniteElementStd::CalcNodeMatParatemer()
      }
      // Porosity
      if(pcs->additioanl2ndvar_print>1)
-        NodalVal0[i] = MediaProp->Porosity(MeshElement->index, NULL, 1.0);  //MediaProp->Porosity(this); 
+        NodalVal0[i] = MediaProp->Porosity(MeshElement->index, 1.0);  //MediaProp->Porosity(this); 
   }
   //
   if(ElementType==2||ElementType==3)
@@ -4769,7 +4769,7 @@ inline double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
       TG0 = interpolate(NodalValC)+T_KILVIN_ZERO; 
       PG2 = interpolate(NodalVal_p2);
       rhow = FluidProp->Density(); 
-      poro = MediaProp->Porosity(Index,unit,pcs->m_num->ls_theta);
+      poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
       expfactor = COMP_MOL_MASS_WATER/(rhow*GAS_CONSTANT*TG);
       rho_gw = FluidProp->vaporDensity(TG)*exp(-PG*expfactor);
       // 

@@ -85,7 +85,7 @@ class CMediumProperties
 #endif
   double CapillaryPressureFunction(long number,double*gp,double theta,int phase,double saturation);//CMCD 9/2004 GeoSys 4
   double StorageFunction(long number,double*gp,double theta);//CMCD 9/2004 GeoSys 4
-  double HeatCapacity(long number, double*gp,double theta, CFiniteElementStd* assem=NULL);
+  double HeatCapacity(long number,double theta, CFiniteElementStd* assem=NULL);
   double* HeatConductivityTensor(int number); //MX
   double* HeatDispersionTensorNew(int ip);//CMCD
   double* MassDispersionTensor(long number,double*gp,double theta,long component); //SB:GS4
@@ -97,7 +97,7 @@ class CMediumProperties
   double SaturationPressureDependency(double saturation, double density_fluid, double theta); // WW
   double PermeabilitySaturationFunction(const double Saturation, int phase); //WW
   double PorosityVolumetricChemicalReaction(long);  //MX 1/2005
-  double Porosity(long number,double*gp,double theta);//CMCD 9/2004 GeoSys 4
+  double Porosity(long number,double theta);//CMCD 9/2004 GeoSys 4
   void SetConstantELEarea(double area, int group);//CMCD 4/2005
   void SetDistributedELEProperties(string); //OK
   void WriteTecplotDistributedProperties(); //OK

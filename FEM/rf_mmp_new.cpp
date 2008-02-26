@@ -2021,7 +2021,7 @@ Programing:
 10/2005 YD/OK: general concept for heat capacity
 **************************************************************************/
 
-double CMediumProperties::HeatCapacity(long number, double*gp,double theta,
+double CMediumProperties::HeatCapacity(long number,double theta,
                                        CFiniteElementStd* assem)
 {
   CSolidProperties *m_msp = NULL;
@@ -2061,15 +2061,15 @@ double CMediumProperties::HeatCapacity(long number, double*gp,double theta,
       density_solid = fabs(m_msp->Density());
       if(FLOW)
       {
-	    porosity = assem->MediaProp->Porosity(number,gp,theta);
-        heat_capacity_fluids = porosity*MFPCalcFluidsHeatCapacity(assem);
+	    porosity = assem->MediaProp->Porosity(number,theta);
+    	  heat_capacity_fluids = MFPCalcFluidsHeatCapacity(assem);
       }
       else
       {   
         heat_capacity_fluids = 0.0;
         porosity = 0.0;
       }
-      heat_capacity = heat_capacity_fluids \
+      heat_capacity = porosity * heat_capacity_fluids \
                        + (1.-porosity) * specific_heat_capacity_solid * density_solid;
       break;
     case 2:  //boiling model for YD
@@ -2136,12 +2136,12 @@ double* CMediumProperties::HeatConductivityTensor(int number)
   CSolidProperties *m_msp = NULL;
   double heat_conductivity_fluids;
 //  double porosity =  this->porosity;  //MX
-  double porosity =  this->porosity_model_values[0];
+  double Sw, porosity =  this->porosity_model_values[0];
   bool FLOW = false; //WW
 //  int heat_capacity_model = 0;
-  CFluidProperties *m_mfp;
+ 
  // long group = Fem_Ele_Std->GetMeshElement()->GetPatchIndex();
-  m_mfp = Fem_Ele_Std->FluidProp;
+ 
 
   for(int ii=0;ii<(int)pcs_vector.size();ii++){
     if(pcs_vector[ii]->pcs_type_name.find("FLOW")!=string::npos)
@@ -2151,16 +2151,35 @@ double* CMediumProperties::HeatConductivityTensor(int number)
   {
     if (Fem_Ele_Std->cpl_pcs->type==1212)  // Multi-phase WW 
     {
+	   CFluidProperties *m_mfp;
+	   m_mfp = Fem_Ele_Std->FluidProp;
        double PG = Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalValC1); // Capillary pressure
-       double Sw = Fem_Ele_Std->MediaProp->SaturationCapillaryPressureFunction(PG,0); 
+       Sw = Fem_Ele_Std->MediaProp->SaturationCapillaryPressureFunction(PG,0); 
        //
        m_mfp = mfp_vector[0];
        heat_conductivity_fluids = Sw * m_mfp->HeatConductivity();
        m_mfp = mfp_vector[1];
        heat_conductivity_fluids += (1.0-Sw) * m_mfp->HeatConductivity();      
     }
-    else  
-      heat_conductivity_fluids = m_mfp->HeatConductivity();
+	else {  
+      heat_conductivity_fluids = Fem_Ele_Std->FluidProp->HeatConductivity();
+      Sw = 1;
+	  
+	  if(Fem_Ele_Std->cpl_pcs->type != 1) {
+        double PG = Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalValC1); // Capillary pressure
+       
+	  if(PG < 0.0){
+         Sw = Fem_Ele_Std->MediaProp->SaturationCapillaryPressureFunction(-PG,0); 
+	 	 heat_conductivity_fluids *= Sw;
+		 if(Fem_Ele_Std->GasProp != 0)
+		   heat_conductivity_fluids += (1.-Sw) * Fem_Ele_Std->GasProp->HeatConductivity(); 
+	  }
+
+
+
+	  }
+
+	}
   }
   else {
     heat_conductivity_fluids = 0.0;
@@ -2476,7 +2495,7 @@ double* CMediumProperties::MassDispersionTensorNew(int ip)
   //----------------------------------------------------------------------
   // Materials
   molecular_diffusion_value = m_cp->CalcDiffusionCoefficientCP(index) * TortuosityFunction(index,g,theta);
-  molecular_diffusion_value *= Porosity(index,g,theta);
+  molecular_diffusion_value *= Porosity(index,theta);
   if(PCSGet("RICHARDS_FLOW")) molecular_diffusion_value *= PCSGetEleMeanNodeSecondary(index, "RICHARDS_FLOW", "SATURATION1", 1);
   for (i = 0; i<Dim*Dim; i++)
     molecular_diffusion[i] = 0.0;
@@ -3080,7 +3099,7 @@ Programing:
 04/2007 WW Porosity by gauss stress value
 last modification:
 *************************************************************************/
-double CMediumProperties::Porosity(long number,double*gp,double theta) 
+double CMediumProperties::Porosity(long number,double theta) 
 {
   static int nidx0,nidx1;
   double primary_variable[PCS_NUMBER_MAX];
@@ -4136,7 +4155,7 @@ double CMediumProperties::NonlinearFlowFunction(long index, double *gp, double t
 				zgt[i] = GetNodeZ(element_nodes[i]);
 				}
 			//Input parameters
-			porosity = CMediumProperties::Porosity(index,gp,theta);
+			porosity = CMediumProperties::Porosity(index,theta);
 			alpha = flowlinearity_model_values[0];
 			apperture = porosity / flowlinearity_model_values[1]; /*Change equivalent porosity to individual fracture porosity */
 			Re = flowlinearity_model_values[2];
@@ -6365,18 +6384,18 @@ double CMediumProperties::Density(long element,double*gp,double theta)
   char saturation_name[15];
   if(no_phases==1){
     m_mfp = mfp_vector[0];
-    density = Porosity(element,gp,theta) * m_mfp->Density();
+    density = Porosity(element,theta) * m_mfp->Density();
   }
   else{
     for(i=0;i<no_phases;i++){
       m_mfp = mfp_vector[i];
       sprintf(saturation_name,"SATURATION%i",i+1);
-      density += Porosity(element,gp,theta) * m_mfp->Density() * PCSGetELEValue(element,gp,theta,saturation_name);
+      density += Porosity(element,theta) * m_mfp->Density() * PCSGetELEValue(element,gp,theta,saturation_name);
     }
   }
   long group = ElGetElementGroupNumber(element);
   m_msp = msp_vector[group];
-  density += (1.-Porosity(element,gp,theta))*fabs(m_msp->Density());
+  density += (1.-Porosity(element,theta))*fabs(m_msp->Density());
   return density;
 }
 

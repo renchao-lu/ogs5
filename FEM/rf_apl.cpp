@@ -435,8 +435,9 @@ int ExecuteRFTimeLoop(void)
     //----------------------------------------------------------------------
     // Time step excution 
     //
-    LOPTimeLoop_PCS();  // &dt_sum. WW
-    //----------------------------------------------------------------------
+    if(LOPTimeLoop_PCS())  // &dt_sum. WW
+      OUTData(m_tim->time_current,aktueller_zeitschritt);
+		//----------------------------------------------------------------------
     // Data output
     /* modellspezifische Ergebnisse fuer Inverses Modellieren speichern */
 //OK    SaveAllModelObservationData();
@@ -448,7 +449,7 @@ int ExecuteRFTimeLoop(void)
     {
       if(myrank==0) 
 #endif
-      OUTData(m_tim->time_current,aktueller_zeitschritt);
+    
 #if defined(USE_MPI)  //12.09.2007 WW
       // MPI_Barrier (MPI_COMM_WORLD); //WW
     }

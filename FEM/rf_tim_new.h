@@ -28,6 +28,7 @@ class CTimeDiscretization
     vector<double>time_step_vector;
 	vector<int> time_adapt_tim_vector;
     vector<double>time_adapt_coe_vector;
+	vector<double>fixed_point_vector;
     double time_start;
     double time_end;
     double time_current;
@@ -44,6 +45,7 @@ class CTimeDiscretization
 	double multiply_coef; //YD
     double max_time_step;  //YD
     double min_time_step; 
+	double minish; // JOD
 	bool Write_tim_discrete;  //YD
 	fstream *tim_discrete;  //YD
     double nonlinear_iteration_error; //OK/YD

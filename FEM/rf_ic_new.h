@@ -44,6 +44,7 @@ class CInitialCondition
     vector<CNodeValue*>node_value_vector;
     void SetDomain(int);
     void SetPolyline(int);
+	void SetSurface(int);
     double DistributionFuntion(const int dom_i, const double x, const double y, const double z) //WW
           { return a0[dom_i]+b0[dom_i]*x+c0[dom_i]*y+d0[dom_i]*z;}
     void SetPoint(int);  //MX

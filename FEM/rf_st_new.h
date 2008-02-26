@@ -176,6 +176,7 @@ class CSourceTermGroup
     void SetPLY(CSourceTerm* m_st, const int ShiftInNodeVector); //OK
 	void SetDMN(CSourceTerm* m_st, const int ShiftInNodeVector);  // JOD
 	void SetSFC(CSourceTerm* m_st, const int ShiftInNodeVector);  // JOD
+	void SetCOL(CSourceTerm *m_st, const int ShiftInNodeVector); // JOD
 	void SetPolylineNodeVector(CGLPolyline* m_ply, vector<long>&ply_nod_vector); // JOD
 	void SetPolylineNodeVectorConditional(CSourceTerm* m_st, CGLPolyline* m_ply, 
 		vector<long>&ply_nod_vector, vector<long>&ply_nod_vector_cond);
@@ -206,16 +207,16 @@ extern CSourceTerm* STGet(string,string,string); //OK
 
 // WW moved here
 extern  double GetAnalyticalSolution(long node_number, CSourceTerm *m_st);//CMCD, WW
-extern  void GetRiverNODValue(double& value, CNodeValue* cnodev,CSourceTerm* m_st, long msh_node);
+extern  void GetRiverNODValue(double& value, CNodeValue* cnodev,CSourceTerm* m_st);
 extern	double GetConditionalNODValue(CSourceTerm* m_st, CNodeValue* cnodev); 
 extern  void GetCriticalDepthNODValue(double& value, CSourceTerm*, long msh_node); //MB
 extern  void GetNormalDepthNODValue(double& value, CSourceTerm*, long msh_node); //MB JOD
-extern  void GetCouplingNODValue(double& value, CSourceTerm* m_st, CNodeValue* cnodev, long msh_node); // JOD
-extern  void GetCouplingNODValueNewton(double& value, CSourceTerm* m_st, CNodeValue* cnodev, long msh_node); // JOD
-extern  void GetCouplingNODValuePicard(double& value, CSourceTerm* m_st, CNodeValue* cnodev, long msh_node); // JOD
-extern  void GetCouplingNODValueMixed(double& value, CSourceTerm* m_st, CNodeValue* cnodev, long msh_node); // JOD
+extern  void GetCouplingNODValue(double& value, CSourceTerm* m_st, CNodeValue* cnodev); // JOD
+extern  void GetCouplingNODValueNewton(double& value, CSourceTerm* m_st, CNodeValue* cnodev); // JOD
+extern  void GetCouplingNODValuePicard(double& value, CSourceTerm* m_st, CNodeValue* cnodev); // JOD
+extern  void GetCouplingNODValueMixed(double& value, CSourceTerm* m_st, CNodeValue* cnodev); // JOD
 extern  double GetRelativeCouplingPermeability(CRFProcess* m_pcs, double head, double rillDepth, long msh_node); // JOD
 extern  void GetPhilipNODValue(double& value,CSourceTerm* m_st); // JOD
 extern  void GetGreenAmptNODValue(double& value, CSourceTerm* m_st, long msh_node); // JOD
-extern  void GetNODValue(double& value, CNodeValue* cnodev,CSourceTerm* m_st, long msh_node); // JOD
+extern  void GetNODValue(double& value, CNodeValue* cnodev,CSourceTerm* m_st); // JOD
 #endif

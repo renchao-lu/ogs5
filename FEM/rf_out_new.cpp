@@ -251,6 +251,19 @@ ios::pos_type COutput::Read(ifstream *out_file)
          *out_file >> nSteps;
           tim_type_name = "STEPS"; //OK
         }
+		if(line_string.find("STEPPING")!=string::npos) {
+		  double stepping_length, stepping_end;
+ 		  
+		  line.str(GetLineFromFile1(out_file));
+          line >> stepping_length;
+		  line >> stepping_end;
+		  line.clear();
+		  while(stepping_length <= stepping_end) {
+            time_vector.push_back(stepping_length);
+            stepping_length += stepping_length;
+		  }
+       
+        }
         else{
           time_vector.push_back(strtod(line_string.data(),NULL));
 		}
@@ -585,8 +598,8 @@ void OUTData(double time_current, const int time_step_number)
 		  else
 		  {
             for(j=0;j<no_times;j++){
-              if((time_current>m_out->time_vector[j])
-                 || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl
+              if((time_current>m_out->time_vector[j])  
+				  || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl
                 tim_value = m_out->NODWritePLYDataTEC(j+1); //OK
                 if(tim_value>0.0) m_out->TIMValue_TEC(tim_value);
                 m_out->time_vector.erase(m_out->time_vector.begin()+j);
@@ -1536,8 +1549,8 @@ double COutput::NODWritePLYDataTEC(int number)
     //------------------------------------------------------------------
     for(k=0;k<no_variables;k++)
     {
-      if(!(nod_value_vector[k].compare("FLUX")==0))
-        m_pcs = PCSGet(nod_value_vector[k],bdummy);
+      //if(!(nod_value_vector[k].compare("FLUX")==0))  // removed JOD, does not work for multiple flow processes
+      //  m_pcs = PCSGet(nod_value_vector[k],bdummy);
       if(!m_pcs)
       {
         cout << "Warning in COutput::NODWritePLYDataTEC - no PCS data" << endl;

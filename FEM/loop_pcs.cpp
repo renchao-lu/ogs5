@@ -466,7 +466,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
               m_pcs->CopyCouplingNODValues();
               TolCoupledF = m_pcs->m_num->cpl_tolerance;
            }
-           if(m_pcs->adaption) PCSStorage();
+           //if(m_pcs->adaption) PCSStorage();
            CFEMesh* m_msh = FEMGet("RICHARDS_FLOW");
            if(m_msh->geo_name.compare("REGIONAL")==0)
              LOPExecuteRegionalRichardsFlow(m_pcs);
@@ -855,6 +855,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
           break;
         }
       }
+ 
       //if(!H_Process) break;
       if(k>0)
       {
@@ -869,6 +870,38 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
              <<" Error: " <<min(pcs_coupling_error, pcs_flow_error)<<endl;
       if(dt<DBL_MIN) break;
   } // coupling iterations
+
+  //======================================================================
+  // restore primary variables JOD
+  //----------------------------------------------------------------------
+  if(!M_Process)
+  {
+  bool restore = false;
+ 
+  if(k>1 && pcs_coupling_error >= TolCoupledF)
+     restore = true; // coupling loop did not converge
+
+  for( int m=0; m < (int)time_vector.size(); m++)
+	  if(time_vector[m]->time_control_name == "SELF_ADAPTIVE") {
+         for( int n=0; n < (int)time_vector.size(); n++)
+			 if(time_vector[n]->repeat == true) {
+                restore = true; // nonlinear process iteration loop did not converge and time step is adactive
+			 }
+	  } 
+  ///////////////
+  if(restore) {
+     for(i=0;i<no_processes;i++) {
+        m_pcs = pcs_vector[i];
+		for(j=0;j<m_pcs->pcs_number_of_primary_nvals;j++) {
+           nidx0 = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[j]);
+           nidx1 = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[j])+1;
+          for(int l=0;l<(long)m_pcs->m_msh->GetNodesNumber(false);l++)
+            m_pcs->SetNodeValue(l,nidx1,m_pcs->GetNodeValue(l,nidx0)); 
+   		}
+     }
+     return 0; // repeat loop
+  }
+  }
   //======================================================================
   // Extropolate the Gauss values to element nodes for deformation process
   //----------------------------------------------------------------------
@@ -914,7 +947,9 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
   //----------------------------------------------------------------------
   cout<<"CPU time elapsed until this time step  "<<TGetTimer(0)<<"s"<<endl; //WW
   return 1;
+
 }
+
 #ifdef LOOP_TO_DO
 /*
   //WW  LOPCalcElementResultants1();
@@ -928,6 +963,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
   }
 */
 #endif
+
 
 /**************************************************************************
 ROCKFLOW - Function: LOPPostTimeLoop_PCS
@@ -1839,9 +1875,10 @@ void LOPCalcNODResultants(void)
 /**************************************************************************
 Task: 
 Programing:PCSStorage
-   06/2006   YD   Implementation                                                                         */
+   06/2006   YD   Implementation  
+   02/2008 JOD removed
 /**************************************************************************/
-void PCSStorage(void){
+/*void PCSStorage(void){  
   CRFProcess* m_pcs = NULL;
   for(int p=0;p<(int)pcs_vector.size();p++){
     m_pcs = pcs_vector[p];
@@ -1867,3 +1904,4 @@ void PCSStorage(void){
   }
 }
 
+*/

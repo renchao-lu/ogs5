@@ -249,7 +249,7 @@ CRFProcess::CRFProcess(void)
   non_linear = false; //OK/CMCD
   cal_integration_point_value = false; //WW
   continuum = 0;
-  adaption = false;
+  //adaption = false; JOD removed
   compute_domain_face_normal = false; //WW
   //
   additioanl2ndvar_print = -1; //WW
@@ -2636,13 +2636,13 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
   pcs_number_of_secondary_nvals++;
 #endif
-  if(adaption) //WW
+ /* if(adaption) //WW, JOD removed
   {
     pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STORAGE_P"; 
     pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
     pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
     pcs_number_of_secondary_nvals++;
-  }
+  }*/
   // Nodal velocity. WW
   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X1";
   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
@@ -3827,7 +3827,7 @@ void CRFProcess::GlobalAssembly()
     // ofstream Dum("rf_pcs.txt", ios::out); // WW
     // eqs_new->Write(Dum);   Dum.close();
     //
-    //    MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
+    //   MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); abort();
   }
   //----------------------------------------------------------------------
 }
@@ -3926,7 +3926,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
   long *nodes2node = NULL; //WW
   double *rhs = NULL, *rhs_dom = NULL;
   double a_ij;
-  double b_i=0.0;
+  //double b_i=0.0;
   int no_domains =(int)dom_vector.size();
   long no_dom_nodes;
   dof = pcs_number_of_primary_nvals; //WW
@@ -4310,6 +4310,9 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
         }
         else
           bc_value = time_fac*fac*m_bc_node->node_value; // time_fac*fac*PCSGetNODValue(bc_msh_node,"PRESSURE1",0);
+	    
+		if(m_bc->periodic) // JOD
+		   bc_value *= sin( 2 * 3.14159 * aktuelle_zeit / m_bc->periode_time_length  + m_bc->periode_phase_shift);
         //----------------------------------------------------------------
         // MSH
         if(m_msh){//OK  
@@ -4351,6 +4354,7 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
         }
         //----------------------------------------------------------------
         bc_eqs_index += shift;
+	
         //YD dual 
         if(dof>1) //WW
         { 
@@ -4536,7 +4540,7 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
       //if(m_st->conditional && !m_st->river)
       //{
 
-        GetNODValue(value, cnodev, m_st, msh_node);
+        GetNODValue(value, cnodev, m_st);
 
 
     }	// st_node.size()>0&&(long)st_node.size()>i
@@ -6810,9 +6814,10 @@ void CRFProcess::AssembleParabolicEquationRHSVector()
 /*************************************************************************
 GeoSys-FEM Function:
 06/2006 YD Implementation
+02/2008 JOD removed
 Reload primary variable
 **************************************************************************/
-void CRFProcess::PrimaryVariableReload()
+/*void CRFProcess::PrimaryVariableReload()
 {
   char pcsT;
   pcsT = pcs_type_name[0];
@@ -6831,13 +6836,14 @@ void CRFProcess::PrimaryVariableReload()
       PrimaryVariableReloadRichards();
       break;
   }
-}
+}*/
 /*************************************************************************
 GeoSys-FEM Function:
 06/2006 YD Implementation
+02/2008 JOD removed
 Reload primary variable of Richards Flow
 **************************************************************************/
-void CRFProcess::PrimaryVariableReloadRichards()
+/*void CRFProcess::PrimaryVariableReloadRichards()
 {
   int i;
   int idxp,idx_storage;
@@ -6852,14 +6858,15 @@ void CRFProcess::PrimaryVariableReloadRichards()
   }     
   CalcSecondaryVariables(0);
   CalcSecondaryVariables(1);
-}
+}*/
 
 /*************************************************************************
 GeoSys-FEM Function:
 06/2006 YD Implementation
+02/2008 JOD removed
 Reload primary variable of Richards Flow
 **************************************************************************/
-void CRFProcess::PrimaryVariableStorageRichards()
+/*void CRFProcess::PrimaryVariableStorageRichards()
 {
   int i;
   int idxp,idx_storage;
@@ -6872,8 +6879,7 @@ void CRFProcess::PrimaryVariableStorageRichards()
     SetNodeValue(i,idx_storage,pressure);
     SetNodeValue(i,idx_storage+1,pressure);
   }     
-}
-
+}*/
 /**************************************************************************
 FEMLib-Method: 
 11/2005 MB Implementation

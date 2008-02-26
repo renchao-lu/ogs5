@@ -1,139 +1,201 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
-	Name="rf3_cpp"
+	Version="8,00"
+	Name="rf3_cpp_2003"
 	ProjectGUID="{A0962184-BE1E-4FE9-AD42-0D7E0DA51B79}"
-	SccProjectName=""
-	SccLocalPath="">
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory=".\Debug"
 			IntermediateDirectory=".\Debug"
 			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TypeLibraryName=".\Debug/rf3_cpp.tlb"
+				HeaderFileName=""
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../FEM;../MSH;../GEO; ../EQL;../"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MSVCPP6;RANDOM_WALK;RFW_FRACTURE"
-				RuntimeLibrary="5"
-				DisableLanguageExtensions="FALSE"
-				UsePrecompiledHeader="2"
+				RuntimeLibrary="1"
+				DisableLanguageExtensions="false"
+				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=".\Debug/rf3_cpp.pch"
 				AssemblerListingLocation=".\Debug/"
 				ObjectFile=".\Debug/"
 				ProgramDataBaseFileName=".\Debug/"
 				BrowseInformation="1"
 				WarningLevel="3"
-				WarnAsError="FALSE"
-				SuppressStartupBanner="TRUE"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="4"/>
+				WarnAsError="false"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="4"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
 				OutputFile=".\Debug/rf4.exe"
 				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
-				GenerateDebugInformation="TRUE"
+				SuppressStartupBanner="true"
+				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/rf3_cpp.pdb"
 				SubSystem="1"
-				TargetMachine="1"/>
+				TargetMachine="1"
+			/>
 			<Tool
-				Name="VCMIDLTool"
-				TypeLibraryName=".\Debug/rf3_cpp.tlb"
-				HeaderFileName=""/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCAppVerifierTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCWebDeploymentTool"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory=".\Release"
 			IntermediateDirectory=".\Release"
 			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TypeLibraryName=".\Release/rf3_cpp.tlb"
+				HeaderFileName=""
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="../FEM;../MSH;../GEO; ../"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;RANDOM_WALK;RFW_FRACTURE"
-				StringPooling="TRUE"
-				RuntimeLibrary="4"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
+				StringPooling="true"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=".\Release/rf3_cpp.pch"
 				AssemblerListingLocation=".\Release/"
 				ObjectFile=".\Release/"
 				ProgramDataBaseFileName=".\Release/"
 				BrowseInformation="1"
 				WarningLevel="4"
-				WarnAsError="FALSE"
-				SuppressStartupBanner="TRUE"
-				Detect64BitPortabilityProblems="TRUE"/>
+				WarnAsError="false"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1031"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
 				OutputFile=".\Release/rf4.exe"
 				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				ProgramDatabaseFile=".\Release/rf3_cpp.pdb"
 				SubSystem="1"
-				TargetMachine="1"/>
+				TargetMachine="1"
+			/>
 			<Tool
-				Name="VCMIDLTool"
-				TypeLibraryName=".\Release/rf3_cpp.tlb"
-				HeaderFileName=""/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1031"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCAppVerifierTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCWebDeploymentTool"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -141,1024 +203,1311 @@
 	<Files>
 		<Filter
 			Name="FEM"
-			Filter="">
+			>
 			<File
-				RelativePath="break.cpp">
+				RelativePath="break.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="break.h">
+				RelativePath="break.h"
+				>
 			</File>
 			<File
-				RelativePath="display.cpp">
+				RelativePath="display.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="display.h">
+				RelativePath="display.h"
+				>
 			</File>
 			<File
-				RelativePath="elements.cpp">
+				RelativePath="elements.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="elements.h">
+				RelativePath="elements.h"
+				>
 			</File>
 			<File
-				RelativePath=".\fem_ele.cpp">
+				RelativePath=".\fem_ele.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\fem_ele.h">
+				RelativePath=".\fem_ele.h"
+				>
 			</File>
 			<File
-				RelativePath=".\fem_ele_std.cpp">
+				RelativePath=".\fem_ele_std.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\fem_ele_std.h">
+				RelativePath=".\fem_ele_std.h"
+				>
 			</File>
 			<File
-				RelativePath=".\fem_ele_vec.cpp">
+				RelativePath=".\fem_ele_vec.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\fem_ele_vec.h">
+				RelativePath=".\fem_ele_vec.h"
+				>
 			</File>
 			<File
-				RelativePath="femlib.cpp">
+				RelativePath="femlib.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="femlib.h">
+				RelativePath="femlib.h"
+				>
 			</File>
 			<File
-				RelativePath="files.h">
+				RelativePath="files.h"
+				>
 			</File>
 			<File
-				RelativePath="files0.cpp">
+				RelativePath="files0.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="loop_pcs.cpp">
+				RelativePath="loop_pcs.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="loop_pcs.h">
+				RelativePath="loop_pcs.h"
+				>
 			</File>
 			<File
-				RelativePath="makros.h">
+				RelativePath="makros.h"
+				>
 			</File>
 			<File
-				RelativePath=".\mathlib.cpp">
+				RelativePath=".\mathlib.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\mathlib.h">
+				RelativePath=".\mathlib.h"
+				>
 			</File>
 			<File
-				RelativePath="matrix.cpp">
+				RelativePath="matrix.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="matrix.h">
+				RelativePath="matrix.h"
+				>
 			</File>
 			<File
-				RelativePath="matrix_class.cpp">
+				RelativePath="matrix_class.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="matrix_class.h">
+				RelativePath="matrix_class.h"
+				>
 			</File>
 			<File
-				RelativePath="memory.cpp">
+				RelativePath="memory.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="memory.h">
+				RelativePath="memory.h"
+				>
 			</File>
 			<File
-				RelativePath="nodes.cpp">
+				RelativePath="nodes.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="nodes.h">
+				RelativePath="nodes.h"
+				>
 			</File>
 			<File
-				RelativePath="par_ddc.cpp">
+				RelativePath="par_ddc.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="par_ddc.h">
+				RelativePath="par_ddc.h"
+				>
 			</File>
 			<File
-				RelativePath="pcs_dm.cpp">
+				RelativePath="pcs_dm.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="pcs_dm.h">
+				RelativePath="pcs_dm.h"
+				>
 			</File>
 			<File
-				RelativePath="prototyp.h">
+				RelativePath="prototyp.h"
+				>
 			</File>
 			<File
-				RelativePath="ptrarr.cpp">
+				RelativePath="ptrarr.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="ptrarr.h">
+				RelativePath="ptrarr.h"
+				>
 			</File>
 			<File
-				RelativePath="renumber.cpp">
+				RelativePath="renumber.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="renumber.h">
+				RelativePath="renumber.h"
+				>
 			</File>
 			<File
-				RelativePath="rf.cpp">
+				RelativePath="rf.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rf_apl.cpp">
+				RelativePath="rf_apl.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rf_apl.h">
+				RelativePath="rf_apl.h"
+				>
 			</File>
 			<File
-				RelativePath="rf_bc_new.cpp">
+				RelativePath="rf_bc_new.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rf_bc_new.h">
+				RelativePath="rf_bc_new.h"
+				>
 			</File>
 			<File
-				RelativePath="rf_db.cpp">
+				RelativePath="rf_db.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rf_db.h">
+				RelativePath="rf_db.h"
+				>
 			</File>
 			<File
-				RelativePath="rf_fct.cpp">
+				RelativePath="rf_fct.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rf_fct.h">
+				RelativePath="rf_fct.h"
+				>
 			</File>
 			<File
-				RelativePath=".\rf_fluid_momentum.cpp">
+				RelativePath=".\rf_fluid_momentum.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\rf_fluid_momentum.h">
+				RelativePath=".\rf_fluid_momentum.h"
+				>
 			</File>
 			<File
-				RelativePath="rf_ic_new.cpp">
+				RelativePath="rf_ic_new.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rf_ic_new.h">
+				RelativePath="rf_ic_new.h"
+				>
 			</File>
 			<File
-				RelativePath="rf_mfp_new.cpp">
+				RelativePath="rf_mfp_new.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rf_mfp_new.h">
+				RelativePath="rf_mfp_new.h"
+				>
 			</File>
 			<File
-				RelativePath="rf_mmp_new.cpp">
+				RelativePath="rf_mmp_new.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rf_mmp_new.h">
+				RelativePath="rf_mmp_new.h"
+				>
 			</File>
 			<File
-				RelativePath="rf_msp_new.cpp">
+				RelativePath="rf_msp_new.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rf_msp_new.h">
+				RelativePath="rf_msp_new.h"
+				>
 			</File>
 			<File
-				RelativePath=".\rf_node.cpp">
+				RelativePath=".\rf_node.cpp"
+				>
 			</File>
 			<File
-				RelativePath="rf_node.h">
+				RelativePath="rf_node.h"
+				>
 			</File>
 			<File
-				RelativePath=".\rf_num_new.cpp">
+				RelativePath=".\rf_num_new.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\rf_num_new.h">
+				RelativePath=".\rf_num_new.h"
+				>
 			</File>
 			<File
-				RelativePath="rf_out_new.cpp">
+				RelativePath="rf_out_new.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rf_out_new.h">
+				RelativePath="rf_out_new.h"
+				>
 			</File>
 			<File
-				RelativePath="rf_pcs.cpp">
+				RelativePath="rf_pcs.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rf_pcs.h">
+				RelativePath="rf_pcs.h"
+				>
 			</File>
 			<File
-				RelativePath=".\rf_random_walk.cpp">
+				RelativePath=".\rf_random_walk.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\rf_random_walk.h">
+				RelativePath=".\rf_random_walk.h"
+				>
 			</File>
 			<File
-				RelativePath="rf_react.cpp">
+				RelativePath="rf_react.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rf_react.h">
+				RelativePath="rf_react.h"
+				>
 			</File>
 			<File
-				RelativePath="rf_st_new.cpp">
+				RelativePath="rf_st_new.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rf_st_new.h">
+				RelativePath="rf_st_new.h"
+				>
 			</File>
 			<File
-				RelativePath="rf_tim_new.cpp">
+				RelativePath="rf_tim_new.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rf_tim_new.h">
+				RelativePath="rf_tim_new.h"
+				>
 			</File>
 			<File
-				RelativePath=".\rf_vel_new.cpp">
+				RelativePath=".\rf_vel_new.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\rf_vel_new.h">
+				RelativePath=".\rf_vel_new.h"
+				>
 			</File>
 			<File
-				RelativePath="rfadt.cpp">
+				RelativePath="rfadt.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rfadt.h">
+				RelativePath="rfadt.h"
+				>
 			</File>
 			<File
-				RelativePath="rfiter.cpp">
+				RelativePath="rfiter.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rfiter.h">
+				RelativePath="rfiter.h"
+				>
 			</File>
 			<File
-				RelativePath="rfmat_cp.cpp">
+				RelativePath="rfmat_cp.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rfmat_cp.h">
+				RelativePath="rfmat_cp.h"
+				>
 			</File>
 			<File
-				RelativePath="rfstring.cpp">
+				RelativePath="rfstring.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="rfstring.h">
+				RelativePath="rfstring.h"
+				>
 			</File>
 			<File
-				RelativePath="solver.cpp">
+				RelativePath="solver.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="solver.h">
+				RelativePath="solver.h"
+				>
 			</File>
 			<File
-				RelativePath="stdafx.h">
+				RelativePath="stdafx.h"
+				>
 			</File>
 			<File
-				RelativePath="steam.cpp">
+				RelativePath="steam.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="steam67.h">
+				RelativePath="steam67.h"
+				>
 			</File>
 			<File
-				RelativePath="timer.cpp">
+				RelativePath="timer.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="timer.h">
+				RelativePath="timer.h"
+				>
 			</File>
 			<File
-				RelativePath="tools.cpp">
+				RelativePath="tools.cpp"
+				>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Release|Win32"
+					>
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="2"
 						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
+						BrowseInformation="1"
+					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="tools.h">
+				RelativePath="tools.h"
+				>
 			</File>
 			<File
-				RelativePath="version.h">
+				RelativePath="version.h"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="GEO"
-			Filter="">
+			>
 			<File
-				RelativePath="..\Geo\geo_dom.cpp">
+				RelativePath="..\Geo\geo_dom.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_dom.h">
+				RelativePath="..\Geo\geo_dom.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_lib.cpp">
+				RelativePath="..\Geo\geo_lib.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_lib.h">
+				RelativePath="..\Geo\geo_lib.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_lin.cpp">
+				RelativePath="..\Geo\geo_lin.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_lin.h">
+				RelativePath="..\Geo\geo_lin.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_mathlib.cpp">
+				RelativePath="..\Geo\geo_mathlib.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_mathlib.h">
+				RelativePath="..\Geo\geo_mathlib.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_ply.cpp">
+				RelativePath="..\Geo\geo_ply.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_ply.h">
+				RelativePath="..\Geo\geo_ply.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_pnt.cpp">
+				RelativePath="..\Geo\geo_pnt.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_pnt.h">
+				RelativePath="..\Geo\geo_pnt.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_sfc.cpp">
+				RelativePath="..\Geo\geo_sfc.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_sfc.h">
+				RelativePath="..\Geo\geo_sfc.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_strings.cpp">
+				RelativePath="..\Geo\geo_strings.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_strings.h">
+				RelativePath="..\Geo\geo_strings.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_vol.cpp">
+				RelativePath="..\Geo\geo_vol.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_vol.h">
+				RelativePath="..\Geo\geo_vol.h"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="MSH"
-			Filter="">
+			>
 			<File
-				RelativePath="..\Msh\moveGEOtoMSH.cpp">
+				RelativePath="..\Msh\moveGEOtoMSH.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\moveGEOtoMSH.h">
+				RelativePath="..\Msh\moveGEOtoMSH.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_core.cpp">
+				RelativePath="..\Msh\msh_core.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_core.h">
+				RelativePath="..\Msh\msh_core.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_edge.cpp">
+				RelativePath="..\Msh\msh_edge.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_edge.h">
+				RelativePath="..\Msh\msh_edge.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_elem.cpp">
+				RelativePath="..\Msh\msh_elem.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_elem.h">
+				RelativePath="..\Msh\msh_elem.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_elements_rfi.cpp">
+				RelativePath="..\Msh\msh_elements_rfi.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_elements_rfi.h">
+				RelativePath="..\Msh\msh_elements_rfi.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_gen.cpp">
+				RelativePath="..\Msh\msh_gen.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_gen_pris.cpp">
+				RelativePath="..\Msh\msh_gen_pris.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_gen_pris.h">
+				RelativePath="..\Msh\msh_gen_pris.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_lib.cpp">
+				RelativePath="..\Msh\msh_lib.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_lib.h">
+				RelativePath="..\Msh\msh_lib.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_lin.cpp">
+				RelativePath="..\Msh\msh_lin.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_mat.cpp">
+				RelativePath="..\Msh\msh_mat.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_mesh.cpp">
+				RelativePath="..\Msh\msh_mesh.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_mesh.h">
+				RelativePath="..\Msh\msh_mesh.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_node.cpp">
+				RelativePath="..\Msh\msh_node.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_node.h">
+				RelativePath="..\Msh\msh_node.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_nodes_rfi.cpp">
+				RelativePath="..\Msh\msh_nodes_rfi.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_nodes_rfi.h">
+				RelativePath="..\Msh\msh_nodes_rfi.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_pnt.cpp">
+				RelativePath="..\Msh\msh_pnt.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_rfi.cpp">
+				RelativePath="..\Msh\msh_rfi.cpp"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="EQL"
-			Filter="">
+			>
 			<File
-				RelativePath="..\Eql\ca_vc_e.lib">
+				RelativePath="..\Eql\ca_vc_e.lib"
+				>
 			</File>
 			<File
-				RelativePath="..\Eql\cacint.cpp">
+				RelativePath="..\Eql\cacint.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Eql\cacint.h">
+				RelativePath="..\Eql\cacint.h"
+				>
 			</File>
 			<File
-				RelativePath="..\Eql\eqlink.cpp">
+				RelativePath="..\Eql\eqlink.cpp"
+				>
 			</File>
 			<File
-				RelativePath="..\Eql\eqlink.h">
+				RelativePath="..\Eql\eqlink.h"
+				>
 			</File>
 		</Filter>
 		<File
-			RelativePath="..\gs_project.cpp">
+			RelativePath="..\gs_project.cpp"
+			>
 		</File>
 		<File
-			RelativePath="..\gs_project.h">
+			RelativePath="..\gs_project.h"
+			>
 		</File>
 	</Files>
 	<Globals>

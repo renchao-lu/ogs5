@@ -211,6 +211,7 @@ ios::pos_type CInitialCondition::Read(ifstream *ic_file)
       }
       if(geo_type_name.find("SURFACE")!=string::npos) {
         geo_type = 2;
+	    in >> geo_name;
       }
       if(geo_type_name.find("VOLUME")!=string::npos) {
         geo_type = 3;
@@ -364,7 +365,7 @@ void CInitialCondition::Set(int nidx)
       SetPolyline(nidx);
       break;
     case 2: // SFC
-      cout << "Warning CInitialCondition::Set - ToDo" << endl;
+      SetSurface(nidx);
       break;
     case 3: // VOL
       cout << "Warning CInitialCondition::Set - ToDo" << endl;
@@ -473,6 +474,64 @@ void CInitialCondition::SetPolyline(int nidx)
   if(dis_type_name.find("LINEAR")!=string::npos){
   }
   //----------------------------------------------------------------------
+}
+
+/**************************************************************************
+FEMLib-Method:
+Task: set surface values
+Programing:
+02/2008 JOD Implementation
+**************************************************************************/
+void CInitialCondition::SetSurface(int nidx)
+{
+ 
+  Surface* m_sfc = NULL;
+  double value, node_depth;
+  vector<long>sfc_nod_vector;
+
+  m_sfc = GEOGetSFCByName(geo_name);
+ 
+  if(m_sfc && m_msh)  {
+
+    m_msh->GetNODOnSFC(m_sfc, sfc_nod_vector);
+
+    if(dis_type_name.find("CONSTANT")!=string::npos) {
+        
+		for(long i = 0; i < (long)sfc_nod_vector.size(); i++) {
+          value = node_value_vector[0]->node_value;
+   		  m_pcs->SetNodeValue(sfc_nod_vector[i],nidx, value);
+        } // end surface nodes
+
+    } // end constant
+    if(dis_type_name.find("GRADIENT")!=string::npos) {
+ 
+      int onZ = m_msh->GetCoordinateFlag()%10;
+      long msh_node;
+
+	  for(long i = 0; i < (long)sfc_nod_vector.size(); i++) { 
+		 msh_node = sfc_nod_vector[i];
+         if(onZ == 1) //2D 
+           node_depth = m_msh->nod_vector[msh_node]->Y();
+         else if(onZ == 2) //3D
+           node_depth = m_msh->nod_vector[msh_node]->Z();
+		 else {
+		    cout << "Error in CInitialCondition::SetSurface - dis_type: " << dis_type_name << "don't know If 2D or 3D"<<  endl;
+			node_depth = 0;
+		 }
+	     value = ((gradient_ref_depth_gradient)*(gradient_ref_depth-node_depth))+ gradient_ref_depth_value;
+		 m_pcs->SetNodeValue(msh_node,nidx, value);
+      } // end surface nodes
+		
+	} // end gradient
+	else
+       cout << "Error in CInitialCondition::SetSurface - dis_type: " << dis_type_name << " not found" << endl;
+
+
+  }  // end m_sfc
+    else
+      cout << "Error in CInitialCondition::SetSurface - surface: " << geo_name << " not found" << endl;
+    
+ 
 }
 
 /**************************************************************************

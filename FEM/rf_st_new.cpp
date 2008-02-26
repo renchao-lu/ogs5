@@ -428,6 +428,12 @@ string sub_string;
         geo_type_name = "DOMAIN";
         in.clear();
       }
+	  if(geo_type_name.find("COLUMN")!=string::npos) {
+        geo_type = 0;
+        in >> geo_name;
+        geo_type_name = "COLUMN";
+        in.clear();
+      }
       if(pcs_pv_name.find("EXCAVATION")!=string::npos) //WW
       {
           in.str(GetLineFromFile1(st_file));
@@ -831,6 +837,8 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
 		   SetDMN(m_st, ShiftInNodeVector);
          if(m_st->geo_type_name.compare("SURFACE")==0)  // "SURFACE" has to be changed to "FACE". WW
            SetSFC(m_st, ShiftInNodeVector);
+		 if(m_st->geo_type_name.compare("COLUMN")==0)
+		   SetCOL(m_st, ShiftInNodeVector);
          // MSH types //OK4310
          if(m_st->msh_type_name.compare("NODE")==0) 
 			 m_st->SetNOD();
@@ -1629,19 +1637,18 @@ Programing:
 01/2007 JOD Implementation
 **************************************************************************/
 
-void GetCouplingNODValue(double &value, CSourceTerm* m_st, CNodeValue* cnodev, long msh_node)
+void GetCouplingNODValue(double &value, CSourceTerm* m_st, CNodeValue* cnodev)
 {
 
-
-	if(m_st->COUPLING_SWITCH == true) { // alternatively mixed boundary cond/ source term coupling
-      GetCouplingNODValueMixed(value, m_st, cnodev, msh_node);  
+  if(m_st->COUPLING_SWITCH == true) { // alternatively mixed boundary cond/ source term coupling
+      GetCouplingNODValueMixed(value, m_st, cnodev);  
       return;
 	}
 
   if( m_st->pcs_type_name == "GROUNDWATER_FLOW" ||  m_st->pcs_type_name == "RICHARDS_FLOW" )
-    GetCouplingNODValuePicard(value, m_st, cnodev, msh_node);
+    GetCouplingNODValuePicard(value, m_st, cnodev);
   else if( m_st->pcs_type_name == "OVERLAND_FLOW" )
-    GetCouplingNODValueNewton(value, m_st, cnodev, msh_node);
+    GetCouplingNODValueNewton(value, m_st, cnodev);
   else 
     cout << "Error in GetCouplingNODValue";
 
@@ -1655,7 +1662,7 @@ Programing:
 01/2007 JOD Implementation
 **************************************************************************/
 
-void GetCouplingNODValuePicard(double &value, CSourceTerm* m_st, CNodeValue* cnodev, long msh_node)
+void GetCouplingNODValuePicard(double &value, CSourceTerm* m_st, CNodeValue* cnodev)
 {
 
   int nidx;
@@ -1673,20 +1680,22 @@ void GetCouplingNODValuePicard(double &value, CSourceTerm* m_st, CNodeValue* cno
   m_pcs_this = PCSGet(m_st->pcs_type_name);
   m_pcs_cond = PCSGet(m_st->pcs_type_name_cond);
  
-  z_this = m_pcs_this->m_msh->nod_vector[msh_node]->Z();
+  z_this = m_pcs_this->m_msh->nod_vector[cnodev->msh_node_number]->Z();
   z_cond = m_pcs_cond->m_msh->nod_vector[cnodev->msh_node_number_conditional]->Z();
   if(m_st->area_assembly)
     z_this = z_cond;
   nidx = m_pcs_this->GetNodeValueIndex( m_st->pcs_pv_name)+1;
-  h_this = m_pcs_this->GetNodeValue(msh_node,nidx);
+  h_this = m_pcs_this->GetNodeValue(cnodev->msh_node_number,nidx);
   h_cond = GetConditionalNODValue(m_st,cnodev);
+  if(m_st->channel)  // Wetted perimeter, pcs_cond has to be overland flow 
+   area *= m_st->channel_width + (h_cond - z_cond);
   if( m_st->pcs_pv_name == "PRESSURE1") {
     h_this /= gamma;
     h_this += z_this;
   }
   /////////////////////////////////////////////// rel perm upwinding
   if(h_this > h_cond) 
-       relPerm = GetRelativeCouplingPermeability(m_pcs_this, h_this, rillDepth, msh_node); // groundwater or richards
+       relPerm = GetRelativeCouplingPermeability(m_pcs_this, h_this, rillDepth, cnodev->msh_node_number); // groundwater or richards
   else {
        relPerm = GetRelativeCouplingPermeability(m_pcs_cond, h_cond, rillDepth, cnodev->msh_node_number_conditional); // overland
 
@@ -1701,7 +1710,7 @@ void GetCouplingNODValuePicard(double &value, CSourceTerm* m_st, CNodeValue* cno
   /////////////////////////////////////////////////////
   if(m_st->pcs_type_name == "GROUNDWATER_FLOW")
   {  
-         if( h_this < z_cond)
+         if( h_this < z_cond && m_st->pcs_type_name_cond == "OVERLAND_FLOW")
 		   {//groundwater level does not reach overland flow bottom 
                value = condArea * (h_cond - z_cond); 
                       condArea = 0 ;
@@ -1717,10 +1726,10 @@ void GetCouplingNODValuePicard(double &value, CSourceTerm* m_st, CNodeValue* cno
   else 
     cout << "Error in GetCouplingNODValuePicard";
  
-  MXInc(msh_node,msh_node, condArea);
+  MXInc(cnodev->msh_node_number,cnodev->msh_node_number, condArea);
  
   nidx = m_pcs_this->GetNodeValueIndex( "COUPLING") +1; // update coupling variable for error estimation
-  m_pcs_this->SetNodeValue(msh_node,nidx, h_this);
+  m_pcs_this->SetNodeValue(cnodev->msh_node_number,nidx, h_this);
   
 }
 /**************************************************************************
@@ -1732,7 +1741,7 @@ Programing:
 01/2007 JOD Implementation
 **************************************************************************/
 
-void GetCouplingNODValueNewton(double &value, CSourceTerm* m_st, CNodeValue* cnodev, long msh_node)
+void GetCouplingNODValueNewton(double &value, CSourceTerm* m_st, CNodeValue* cnodev)
 {
   int nidx;
   double relPerm, area, factor, condArea;
@@ -1752,20 +1761,22 @@ void GetCouplingNODValueNewton(double &value, CSourceTerm* m_st, CNodeValue* cno
   m_pcs_this = PCSGet(m_st->pcs_type_name);
   m_pcs_cond = PCSGet(m_st->pcs_type_name_cond);
 
-  z_this = m_pcs_this->m_msh->nod_vector[msh_node]->Z();
+  z_this = m_pcs_this->m_msh->nod_vector[cnodev->msh_node_number]->Z();
   z_cond = m_pcs_cond->m_msh->nod_vector[cnodev->msh_node_number_conditional]->Z();
   if(m_st->area_assembly)
     z_cond = z_this; 
   nidx = m_pcs_this->GetNodeValueIndex( m_st->pcs_pv_name)+1;
-  h_this = m_pcs_this->GetNodeValue(msh_node,nidx);
+  h_this = m_pcs_this->GetNodeValue(cnodev->msh_node_number,nidx);
   h_cond = GetConditionalNODValue(m_st,cnodev);
+  if(m_st->channel)  // Wetted perimeter 
+   area *= m_st->channel_width + (h_this - z_this);
   if(m_st->pcs_pv_name_cond == "PRESSURE1") {
     h_cond /= gamma;
     h_cond += z_cond;
   }
   /////////////////////////////////////////////// rel perm upwinding
   if(h_this > h_cond) { 	
-    relPerm = GetRelativeCouplingPermeability(m_pcs_this, h_this, rillDepth, msh_node);        // overland
+    relPerm = GetRelativeCouplingPermeability(m_pcs_this, h_this, rillDepth, cnodev->msh_node_number);        // overland
     //relPerm_epsilon = GetRelativeCouplingPermeability(m_pcs_this, h_this + epsilon, rillDepth, msh_node);
   }
   else   
@@ -1777,7 +1788,7 @@ void GetCouplingNODValueNewton(double &value, CSourceTerm* m_st, CNodeValue* cno
 
  
  if(h_this_epsilon > h_cond) 
-   relPerm_epsilon = GetRelativeCouplingPermeability(m_pcs_this, h_this_epsilon, rillDepth, msh_node);
+   relPerm_epsilon = GetRelativeCouplingPermeability(m_pcs_this, h_this_epsilon, rillDepth, cnodev->msh_node_number);
  else   
    relPerm_epsilon = GetRelativeCouplingPermeability(m_pcs_cond, h_cond, rillDepth, cnodev->msh_node_number_conditional);// richards or groundwater
   if(m_st->pcs_type_name_cond == "GROUNDWATER_FLOW") 
@@ -1790,9 +1801,9 @@ void GetCouplingNODValueNewton(double &value, CSourceTerm* m_st, CNodeValue* cno
   value = condArea *( h_cond - h_this );  
   value_jacobi = - condArea_epsilon *( h_cond - h_this_epsilon) + value;
 	
-  MXInc(msh_node,msh_node, value_jacobi / epsilon);
+  MXInc(cnodev->msh_node_number,cnodev->msh_node_number, value_jacobi / epsilon);
  
-  m_pcs_this->SetNodeValue(msh_node, m_pcs_this->GetNodeValueIndex("COUPLING") + 1, -value / area);
+  m_pcs_this->SetNodeValue(cnodev->msh_node_number, m_pcs_this->GetNodeValueIndex("COUPLING") + 1, -value / area);
 
 }
 /**************************************************************************
@@ -1854,7 +1865,7 @@ Programing: prerequisites: constant precipitation with assigned duration,
             phase = 0 in mfp, soil data in mmp_vetor[1] !!!!!
 06/2007 JOD Implementation
 **************************************************************************/
-void GetCouplingNODValueMixed(double& value, CSourceTerm* m_st, CNodeValue* cnodev, long msh_node) 
+void GetCouplingNODValueMixed(double& value, CSourceTerm* m_st, CNodeValue* cnodev) 
 {
 
 	 double cond1, cond0, pressure1, pressure0, bc_value, depth, gamma, sat, area;
@@ -1874,9 +1885,9 @@ void GetCouplingNODValueMixed(double& value, CSourceTerm* m_st, CNodeValue* cnod
      deltaZ = m_st->rill_height;
      gamma =  mfp_vector[0]->Density() * GRAVITY_CONSTANT;  // phase  = 0 !!!!
      long  msh_node_2nd;
-	 double x_this = m_pcs_this->m_msh->nod_vector[msh_node]->X();
-     double y_this = m_pcs_this->m_msh->nod_vector[msh_node]->Y();
-     double z_this = m_pcs_this->m_msh->nod_vector[msh_node]->Z();
+	 double x_this = m_pcs_this->m_msh->nod_vector[cnodev->msh_node_number]->X();
+     double y_this = m_pcs_this->m_msh->nod_vector[cnodev->msh_node_number]->Y();
+     double z_this = m_pcs_this->m_msh->nod_vector[cnodev->msh_node_number]->Z();
  
      msh_node_2nd = -1; //WW
 
@@ -1920,7 +1931,7 @@ void GetCouplingNODValueMixed(double& value, CSourceTerm* m_st, CNodeValue* cnod
           
           value =   (pressure1 - pressure0 - deltaZ * gamma)* (cond0 + cond1) / (2* deltaZ * gamma);
 
-          m_pcs_this->SetNodeValue(msh_node, m_pcs_this->GetNodeValueIndex("COUPLING") +1, -value );
+          m_pcs_this->SetNodeValue(cnodev->msh_node_number, m_pcs_this->GetNodeValueIndex("COUPLING") +1, -value );
 	 
           value *=  area;
      } // end overland
@@ -1937,18 +1948,18 @@ void GetCouplingNODValueMixed(double& value, CSourceTerm* m_st, CNodeValue* cnod
 //////////////////////////
 
         double inf_cap, supplyRate, rainfall;			   
-        long bc_eqs_index = m_pcs_this->m_msh->nod_vector[msh_node]->GetEquationIndex();
+        long bc_eqs_index = m_pcs_this->m_msh->nod_vector[cnodev->msh_node_number]->GetEquationIndex();
         double z_cond = m_pcs_cond->m_msh->nod_vector[cnodev->msh_node_number_conditional]->Z();
         depth = max(0.,m_pcs_cond->GetNodeValue(cnodev->msh_node_number_conditional, m_pcs_cond->GetNodeValueIndex("HEAD")+1 )- z_cond );   
 		     
 
 	    nidx = m_pcs_this->GetNodeValueIndex("PRESSURE1")+1;
-	    pressure0 = m_pcs_this->GetNodeValue(msh_node,nidx); 
+	    pressure0 = m_pcs_this->GetNodeValue(cnodev->msh_node_number,nidx); 
         pressure1 = m_pcs_this->GetNodeValue(msh_node_2nd,nidx); 
 
        
           
-        msh_ele = m_pcs_this->m_msh->nod_vector[msh_node]->connected_elements[0]; 
+        msh_ele = m_pcs_this->m_msh->nod_vector[cnodev->msh_node_number]->connected_elements[0]; 
         m_ele = m_pcs_this->m_msh->ele_vector[msh_ele];
         group = m_pcs_this->m_msh->ele_vector[msh_ele]->GetPatchIndex();	    
   	   
@@ -1968,7 +1979,7 @@ void GetCouplingNODValueMixed(double& value, CSourceTerm* m_st, CNodeValue* cnod
 		inf_cap =  ( depth + deltaZ - pressure1 / gamma) * (cond0 + cond1) / (2 * deltaZ ); 
         supplyRate = m_st->rainfall;//+ (depth ) / dt; // dt = timeStep
        
-  	    m_pcs_this->SetNodeValue(msh_node, m_pcs_this->GetNodeValueIndex("COUPLING") + 1, inf_cap);// update coupling variable for error estimation
+  	    m_pcs_this->SetNodeValue(cnodev->msh_node_number, m_pcs_this->GetNodeValueIndex("COUPLING") + 1, inf_cap);// update coupling variable for error estimation
       
 	
 	    if(inf_cap > supplyRate)
@@ -2000,7 +2011,7 @@ Programing:
 02/2006 WW Change argument
 **************************************************************************/
 //double CSourceTermGroup::GetRiverNODValue(int i,CSourceTerm* m_st, long msh_node) //WW
-void GetRiverNODValue(double &value, CNodeValue* cnodev,CSourceTerm* m_st, long msh_node) //WW
+void GetRiverNODValue(double &value, CNodeValue* cnodev,CSourceTerm* m_st) //WW
 {
   double h;
   double paraA; //HRiver
@@ -2038,12 +2049,12 @@ void GetRiverNODValue(double &value, CNodeValue* cnodev,CSourceTerm* m_st, long 
   RiverConductance = paraB * paraC * NodeReachLength / (paraD - paraE);
    
   nidx1 = m_pcs_this->GetNodeValueIndex("HEAD")+1;
-  h = m_pcs_this->GetNodeValue(msh_node,nidx1);
+  h = m_pcs_this->GetNodeValue(cnodev->msh_node_number,nidx1);
         
   if(h > paraD)  {  //HAquiver > BRiverBed
     //q = (RiverConductance * HRiver)   -  (RiverConductance * HAquifer)  
     value = RiverConductance * paraA; 
-    MXInc(msh_node,msh_node,RiverConductance);
+    MXInc(cnodev->msh_node_number,cnodev->msh_node_number,RiverConductance);
   } 
   if(h < paraD)  {  //HAquiver < BRiverBed
     //q = (RiverConductance * HRiver)   - (RiverConductance * BRiverBed)  
@@ -2054,7 +2065,7 @@ void GetRiverNODValue(double &value, CNodeValue* cnodev,CSourceTerm* m_st, long 
   //Safe Flux values
   int nidxFLUX = m_pcs_this->GetNodeValueIndex("FLUX")+1;
   double flux = value / NodeReachLength  ;  //fluxes in m^2/s !!
-  m_pcs_this->SetNodeValue(msh_node, nidxFLUX, flux);
+  m_pcs_this->SetNodeValue(cnodev->msh_node_number, nidxFLUX, flux);
 
 }
 
@@ -2183,28 +2194,28 @@ Task:
 Programing:
 11/2007 JOD Implementation
 **************************************************************************/
-void GetNODValue(double& value, CNodeValue* cnodev,CSourceTerm* m_st, long msh_node) {
+void GetNODValue(double& value, CNodeValue* cnodev,CSourceTerm* m_st) {
 
 
 
  if(m_st->conditional) 
-    GetCouplingNODValue(value, m_st, cnodev, msh_node); 
+    GetCouplingNODValue(value, m_st, cnodev); 
  else if(m_st->analytical) {
     //WW      m_st_group->m_msh = m_msh;
-    value = GetAnalyticalSolution(msh_node,m_st); //WW
+    value = GetAnalyticalSolution(cnodev->msh_node_number,m_st); //WW
     //WW         value = m_st_group->GetAnalyticalSolution(m_st,msh_node,(string)function_name[j]);
   }
 
   if(cnodev->node_distype == 5)       // River Condition
-	GetRiverNODValue(value, cnodev, m_st, msh_node); //MB
+	GetRiverNODValue(value, cnodev, m_st); //MB
   if(cnodev->node_distype == 6)         // CriticalDepth Condition
-    GetCriticalDepthNODValue(value, m_st, msh_node); //MB
+    GetCriticalDepthNODValue(value, m_st, cnodev->msh_node_number); //MB
   if(cnodev->node_distype == 8)      // NormalDepth Condition JOD
-    GetNormalDepthNODValue(value, m_st, msh_node); //MB        
+    GetNormalDepthNODValue(value, m_st, cnodev->msh_node_number); //MB        
   if(cnodev->node_distype == 10)      // Philip infiltration JOD
     GetPhilipNODValue(value, m_st);  
   if(cnodev->node_distype == 11) // Green_Ampt infiltration JOD
-    GetGreenAmptNODValue(value, m_st, msh_node);   
+    GetGreenAmptNODValue(value, m_st, cnodev->msh_node_number);   
 
 }
 
@@ -2379,7 +2390,7 @@ void CSourceTermGroup::SetLIN(CRFProcess* m_pcs, CSourceTerm* m_st, const int Sh
 /**************************************************************************
 FEMLib-Method:
 Task:
-Programing:
+Programing
 07/2005 OK Implementation based on CSourceTermGroup::Set
 **************************************************************************/
 void CSourceTermGroup::SetPLY(CSourceTerm* m_st, const int ShiftInNodeVector) {
@@ -2631,7 +2642,40 @@ void CSourceTermGroup::SetDMN(CSourceTerm *m_st, const int ShiftInNodeVector)
  m_st->SetNodeValues(dmn_nod_vector, dmn_nod_vector_cond, dmn_nod_val_vector, ShiftInNodeVector);
 
 }
+/**************************************************************************
+FEMLib-Method:
+Task:
+Programing:
+02/2008 JOD Implementation 
+**************************************************************************/
+void CSourceTermGroup::SetCOL(CSourceTerm *m_st, const int ShiftInNodeVector)
+{
+ long number_of_nodes;
+ vector<long>col_nod_vector;
+ vector<double>col_nod_val_vector;
+ vector<long>col_nod_vector_cond;
+ 
+ 
+ long i = 0;
+ if(  m_st->geo_name == "BOTTOM")
+   i = m_msh->no_msh_layer - 1;
 
+ while(i < (long)m_msh->nod_vector.size()) {
+   col_nod_vector.push_back(i);
+   i += m_msh->no_msh_layer;
+ }
+ number_of_nodes = (long)col_nod_vector.size();
+ col_nod_val_vector.resize(number_of_nodes);
+
+ for(long i = 0; i < number_of_nodes; i++)
+   col_nod_val_vector[i] = 1;
+
+ m_st->SetSurfaceNodeVectorConditional(col_nod_vector, col_nod_vector_cond);
+    
+    
+ m_st->SetNodeValues(col_nod_vector, col_nod_vector_cond, col_nod_val_vector, ShiftInNodeVector);
+
+}
 /**************************************************************************
 FEMLib-Method:
 Task:
@@ -2704,6 +2748,8 @@ void CSourceTermGroup::SetPolylineNodeVector(CGLPolyline* m_ply, vector<long>&pl
   if(m_msh){ //MSH OK
       if(m_ply->type==100) //WW
 		m_msh->GetNodesOnArc(m_ply,ply_nod_vector);
+	  else if(m_ply->type==3) // JOD
+	    m_msh->GetNODOnPLY_XY(m_ply,ply_nod_vector);
 	  else
         m_msh->GetNODOnPLY(m_ply,ply_nod_vector);
       //number_of_nodes = (long)ply_nod_vector.size();

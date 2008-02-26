@@ -925,7 +925,7 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
   CRFProcess* m_pcs = NULL;
   std::stringstream in;
   int no_processes = (int)pcs_vector.size();
-  int pH_found = 0, Hplus_found = 0, count = -1;
+  int pH_found = 0;// Hplus_found = 0, count = -1;
 
 
   /* File handling */

@@ -6,7 +6,7 @@
 extern void LOPConfig_PCS(void);
 extern void PCSCalcSecondaryVariables(void);
 
-extern void PCSStorage(void);  //YD
+//extern void PCSStorage(void);  //YD, JOD removed
 //void LOPCalcNodeFluxes_PCS(void);   //CMCD 09/2004
 double Checkcourant_PCS(void);    //CMCD 09/2004
 /*

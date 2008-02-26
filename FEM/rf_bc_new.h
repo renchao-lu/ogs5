@@ -53,6 +53,7 @@ class CBoundaryCondition
     vector<long>node_renumber_vector;
     long geo_node_number;
     double geo_node_value;
+	double periode_time_length, periode_phase_shift; // JOD
     string delimiter_type;
     double node_value_cond; //OK
     double condition; //OK
@@ -60,6 +61,7 @@ class CBoundaryCondition
     // FCT
     string fct_name;
     bool conditional;
+	bool periodic; // JOD
     // DB
     string db_file_name;
     void ExecuteDataBasePolyline(CGLPolyline*);

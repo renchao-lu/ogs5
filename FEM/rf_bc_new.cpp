@@ -200,6 +200,7 @@ ios::pos_type CBoundaryCondition::Read(ifstream *bc_file)
     if(line_string.find("$DIS_TYPE")!=string::npos) { //PCH
 	  in.str(GetLineFromFile1(bc_file));
       in >> line_string; //sub_line
+	  periodic  = false; // JOD
       if(line_string.find("CONSTANT")!=string::npos) {
         dis_type_name = "CONSTANT";
         dis_type = 0;
@@ -254,7 +255,17 @@ ios::pos_type CBoundaryCondition::Read(ifstream *bc_file)
 	    in >> geo_node_substitute; //sub_line
     	in.clear();
       }
-    } // subkeyword found
+	  if(line_string.find("PERIODIC")!=string::npos) { // JOD
+       dis_type_name = "PERIODIC";
+	    periodic  = true;
+        dis_type = 0;
+	    in >> geo_node_value;
+		in.clear();
+	    in.str(GetLineFromFile1(bc_file));
+		in >> periode_time_length >> periode_phase_shift ; //sub_line
+    	in.clear();
+      } // subkeyword found
+	}
     // Time dependent function
     //..Time dependent curve ............................................
     if(line_string.find("$TIM_TYPE")!=string::npos) { // subkeyword found
@@ -962,7 +973,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
         //m_node_value->geo_node_number = m_bc->geo_node_number;//CC remove
         // Get MSH node number
         CGLPoint* m_geo_point = NULL;
-        if(m_bc->dis_type_name.compare("CONSTANT")==0){ //OK
+        if(m_bc->dis_type_name.compare("CONSTANT")==0 || m_bc->dis_type_name.compare("PERIODIC")==0){ //JOD
         m_geo_point = GEOGetPointByName(m_bc->geo_name);//CC
         if(m_geo_point)
         m_bc->geo_node_number = m_geo_point->id;//CC
@@ -995,7 +1006,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
         m_node_value->msh_node_number = m_node_value->geo_node_number +ShiftInNodeVector; //WW 
 		m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
         m_node_value->msh_node_number_subst = msh_node_number_subst;
-        m_pcs->bc_node.push_back(m_bc);  //WW
+	    m_pcs->bc_node.push_back(m_bc);  //WW
         m_pcs->bc_node_value.push_back(m_node_value);  //WW
       }
       //------------------------------------------------------------------
@@ -1017,7 +1028,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
             m_node_value->msh_node_number = bc_group_msh_nodes_vector[i];
             m_node_value->node_value = m_bc->geo_node_value;
             m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-         	m_pcs->bc_node.push_back(m_bc);  //WW
+		 	m_pcs->bc_node.push_back(m_bc);  //WW
             m_pcs->bc_node_value.push_back(m_node_value);  //WW
             //WW group_vector.push_back(m_node_value);
             //WW bc_group_vector.push_back(m_bc); //OK
@@ -1034,7 +1045,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
         //  else  
         //    m_polyline->type = 3;
           //..............................................................
-          if(m_bc->dis_type_name.compare("CONSTANT")==0){
+          if(m_bc->dis_type_name.compare("CONSTANT")==0 || m_bc->dis_type_name.compare("PERIODIC")==0){ // JOD
             if(m_msh){ //OK
               if(m_polyline->type==100) //WW
                    m_msh->GetNodesOnArc(m_polyline,nodes_vector);
@@ -1048,7 +1059,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
                 m_node_value->node_value = m_bc->geo_node_value;  //dis_prop[0];
                 m_node_value->CurveIndex = m_bc->CurveIndex;
                 m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-                m_pcs->bc_node.push_back(m_bc);  //WW
+			   m_pcs->bc_node.push_back(m_bc);  //WW
                 m_pcs->bc_node_value.push_back(m_node_value);  //WW
                 //WW group_vector.push_back(m_node_value);
                 //WW bc_group_vector.push_back(m_bc); //OK
@@ -1067,7 +1078,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
                 m_node_value->node_value = m_bc->geo_node_value;  //dis_prop[0];
                 m_node_value->CurveIndex = m_bc->CurveIndex;
                 m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-                m_pcs->bc_node.push_back(m_bc);  //WW
+			   m_pcs->bc_node.push_back(m_bc);  //WW
                 m_pcs->bc_node_value.push_back(m_node_value);  //WW
               }
             }
@@ -1088,7 +1099,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
                 m_node_value->CurveIndex = m_bc->CurveIndex;
                 m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
                 m_node_value->msh_node_number_subst = msh_node_number_subst; //WW
-                m_pcs->bc_node.push_back(m_bc);  //WW
+				m_pcs->bc_node.push_back(m_bc);  //WW
                 m_pcs->bc_node_value.push_back(m_node_value);  //WW
                 //WW group_vector.push_back(m_node_value);
                 //WW bc_group_vector.push_back(m_bc); //OK

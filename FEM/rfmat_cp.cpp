@@ -830,7 +830,7 @@ double CompProperties::CalcElementRetardationFactor( long index, double*gp, doub
  m_msp = msp_vector[group];
 
 // porosity = GetSoilPorosity(index);
- porosity = m_mat_mp->Porosity(index,gp,theta);
+ porosity = m_mat_mp->Porosity(index,theta);
 // density_rock = 2000.0; // GetSolidDensity(index);
  density_rock = fabs(m_msp->Density());
 
@@ -918,7 +918,7 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double*gp, C
  m_msp = msp_vector[group];
 
 // porosity = GetSoilPorosity(index);
- porosity = m_mat_mp->Porosity(index,gp,theta);
+ porosity = m_mat_mp->Porosity(index,theta);
 // porosity = 0.5; //SB- set porosity
 // density_rock = 2000.0; // GetSolidDensity(index);
  density_rock = fabs(m_msp->Density());

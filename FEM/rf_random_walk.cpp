@@ -150,7 +150,7 @@ void RandomWalk::InterpolateVelocityOfTheParticleByInverseDistance(Particle* A)
 
 	// Let's get the hydraulic conductivity first.
 	CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];	
-	int phase = 0;
+	//int phase = 0;
 	CFluidProperties *FluidProp = mfp_vector[0];
 	double* kTensor = MediaProp->PermeabilityTensor(A->elementIndex);
 	double k = kTensor[0];
@@ -959,7 +959,7 @@ void RandomWalk::AdvanceParticlesLaBolle(double dt)
 		double V[3];
 		double delta[3];
 		int Dstatus = 100; int Astatus = 100;	// Set to be meaningless
-        CElem* m_ele = m_msh->ele_vector[X[i].Now.elementIndex];
+        //CElem* m_ele = m_msh->ele_vector[X[i].Now.elementIndex];
 
 		// Let's record the current to the past
 		printf("Velocity for X will be computed...\n");

@@ -171,6 +171,21 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
       continue;
     }
     //....................................................................
+    if(line_string.find("$TIME_FIXED_POINTS")!=string::npos) { // subkeyword found
+	  int no_fixed_points;
+      double fixed_point;
+	  line.str(GetLineFromFile1(tim_file));
+      line >> no_fixed_points; 
+	  line.clear();
+	  for(i=0;i<no_fixed_points;i++) {
+        line.str(GetLineFromFile1(tim_file));
+        line >> fixed_point;
+		fixed_point_vector.push_back(fixed_point);
+        line.clear();
+	  }
+	  continue;
+    }
+    //....................................................................
     if(line_string.find("$TIME_STEPS")!=string::npos) { // subkeyword found
       while((!new_keyword)||(!new_subkeyword)||(!tim_file->eof())){
         position = tim_file->tellg();
@@ -214,12 +229,14 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
   	    if(time_control_name=="NEUMANN"){
           line.clear();
         }
-  	    if(time_control_name=="ERROR_CONTROL_ADAPTIVE"){
+  	    /*if(time_control_name=="ERROR_CONTROL_ADAPTIVE"){ JOD removed
           m_pcs->adaption = true;
           line.clear();
-        }
+        }*/
   	    if(time_control_name=="SELF_ADAPTIVE"){
-          m_pcs->adaption = true;
+          //m_pcs->adaption = true; JOD removed
+		  
+		  minish = 10;
           while((!new_keyword)||(!new_subkeyword)||(!tim_file->eof())){
           position = tim_file->tellg();
           line_string = GetLineFromFile1(tim_file);
@@ -234,20 +251,27 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
           *tim_file >> line_string;
           max_time_step = strtod(line_string.data(),NULL);
           line.clear();
-            break;
-          }
+		  }
           if(line_string.find("MIN_TIME_STEP")!=string::npos){
           *tim_file >> line_string;
           min_time_step = strtod(line_string.data(),NULL);
           line.clear();
-            break;
-          }
+		  }
+		  if(line_string.find("MINISH")!=string::npos){
+          *tim_file >> line_string;
+          minish = strtod(line_string.data(),NULL);
+          line.clear();
+		  }
+           
+    	  if(line_string.find("M")==string::npos){
           line.str(line_string);
           line >> iter_times;
           line >> multiply_coef;
-          time_adapt_tim_vector.push_back(iter_times);
+          
+		  time_adapt_tim_vector.push_back(iter_times);
           time_adapt_coe_vector.push_back(multiply_coef);
           line.clear();
+		  }
 		  }
         }
       }
@@ -395,7 +419,7 @@ double CTimeDiscretization::CalcTimeStep(void)
     // Time step controls
     if( time_control_name == "NEUMANN"||time_control_name == "SELF_ADAPTIVE")
     {
-      if(aktuelle_zeit < MKleinsteZahl) 
+	  if(aktuelle_zeit < MKleinsteZahl && repeat == false) 
         time_step_length = FirstTimeStepEstimate();
       else if( time_control_name == "NEUMANN" )
         time_step_length = NeumannTimeControl();
@@ -589,7 +613,7 @@ double CTimeDiscretization::SelfAdaptiveTimeControl(void)
   {
     cout << "   TIM step is repeated" << endl;  
     m_pcs = PCSGet(pcs_type_name);
-    m_pcs->PrimaryVariableReload();
+    //m_pcs->PrimaryVariableReload(); // JOD ?????
   }
 
   for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
@@ -599,14 +623,26 @@ double CTimeDiscretization::SelfAdaptiveTimeControl(void)
       cout << "Fatal error: No valid PCS type" << endl;
       break;
   case 'R': // Richards
-  if(m_pcs->iter <= time_adapt_tim_vector[0]) 
-    time_step_length = time_step_length*time_adapt_coe_vector[0];
-  else if(m_pcs->iter  >= time_adapt_tim_vector[time_adapt_tim_vector.size()-1])
-    time_step_length *= time_adapt_coe_vector[time_adapt_tim_vector.size()-1];
-  break;
+	  if(!repeat) {
+        if(m_pcs->iter <= time_adapt_tim_vector[0]) 
+          time_step_length = time_step_length*time_adapt_coe_vector[0];
+        else if(m_pcs->iter  >= time_adapt_tim_vector[time_adapt_tim_vector.size()-1])
+          time_step_length *= time_adapt_coe_vector[time_adapt_tim_vector.size()-1];
+        break;
+	  }
+      else
+    	  time_step_length /= minish;
+
  }
 }
   time_step_length = MMin(time_step_length,max_time_step);
+  for(int i = 0 ; i < (int)fixed_point_vector.size(); i++) {
+	  if(aktuelle_zeit + 1e-5 < fixed_point_vector[i] && aktuelle_zeit + time_step_length > fixed_point_vector[i]) {
+        time_step_length = fixed_point_vector[i] - aktuelle_zeit;
+        continue;
+	  }
+ 
+  }
   cout<<"Self_Adaptive Time Step: "<<time_step_length<<endl;
   if(Write_tim_discrete)
      *tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;

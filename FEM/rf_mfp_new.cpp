@@ -961,86 +961,96 @@ last modification:
 double CFluidProperties::SpecificHeatCapacity()
 {
   int gueltig = -1;
-  int group = -1;
-  double density_gas,density_liquid,density_vapor;
-  double specific_heat_capacity_gas,specific_heat_capacity_liquid, heat_capacity_liquid;
-  double pressure_liquid,saturation_liquid, temperature;
-  double porosity,latent_heat_liquid, heat_capacity_gas, humi;
-  double drdT, heat_capacity_phase_change;
-  double H1,H0,T0,T_1;//T1 defined at 662 in steam67???
-  CMediumProperties* m_mmp;
-  //......................................................................
+  double pressure, saturation, temperature;
+ 
   CalPrimaryVariable(specific_heat_capacity_pcs_name_vector);
-  pressure_liquid = primary_variable[0];  
+  pressure = primary_variable[0];  
   temperature =  primary_variable[1]; 
-  saturation_liquid = primary_variable[2]; 
+  saturation = primary_variable[2]; 
   //......................................................................
   //
   switch(heat_capacity_model){
-    case 0: // rho = f(x)
+    case 0: // c = f(x)
       specific_heat_capacity = GetCurveValue(0,0,temperature,&gueltig);
       break;
     case 1: // c = const, value already read in to specific_heat_capacity
       break;
 	  case 2: // c = f(p,T,Conc)
-	    specific_heat_capacity = MATCalcFluidHeatCapacityMethod2(primary_variable[0],primary_variable[1],primary_variable[2]);
+	    specific_heat_capacity = MATCalcFluidHeatCapacityMethod2(pressure, temperature, saturation);
 	    break;
-	  case 3: // phase change c = f(x)
-        T_1 = primary_variable_t1[1];
-        if(T_1 <= T_Latent1 || T_1 >= T_Latent2)
-          specific_heat_capacity = GetCurveValue(heat_phase_change_curve,0,temperature_buffer,&gueltig);
-  		else{
-            heat_capacity_model = 5;
-		    H1 = CalcEnthalpy(T1);
-		    T0 = primary_variable_t0[1];
-            if(fabs(T_1-T0)<1.0e-8) T_1 +=1.0e-8;
-              H0 = CalcEnthalpy(T0); 
-              specific_heat_capacity = (H1-H0)/(T_1-T_0);
-        }
-        heat_capacity_model = 3;
-	    break;
-	  case 4: // improved phase change (Richards model)
-		  T_1 = primary_variable_t1[1];
-      if(T_1 <= T_Latent1 || T_1 >= T_Latent2){
-        group = Fem_Ele_Std->GetMeshElement()->GetPatchIndex();
-        m_mmp = mmp_vector[group];
-        porosity = m_mmp->Porosity(Fem_Ele_Std); // 0,NULL,0.0,
-	    // Gas phase
-  	    density_gas = Fem_Ele_Std->GasProp->vaporDensity(temperature_buffer); 
-	      specific_heat_capacity_gas = Fem_Ele_Std->GasProp->specific_heat_capacity;    //0.0; // C_g  to do
-	    // Liquid phase
-        density_liquid = Fem_Ele_Std->FluidProp->Density();
-	      specific_heat_capacity_liquid = Fem_Ele_Std->FluidProp->specific_heat_capacity;    //0.0; // C_g  to do
-        latent_heat_liquid = Fem_Ele_Std->FluidProp->latent_heat;
-        // see formula in Manual
-		    heat_capacity_gas = porosity * (1.-saturation_liquid) * density_gas * specific_heat_capacity_gas;
-        heat_capacity_liquid = porosity * saturation_liquid * density_liquid * specific_heat_capacity_liquid;
-        humi = exp(pressure_liquid/(GAS_CONSTANT_V*temperature_buffer*density_liquid));   
-	      density_vapor = humi*density_liquid; 
-        drdT = (Fem_Ele_Std->FluidProp->vaporDensity_derivative(temperature_buffer)*humi \
-                    - density_vapor*pressure_liquid/(GAS_CONSTANT_V*density_liquid*pow(temperature_buffer,2.0)))/density_liquid;
-	      H1 = porosity*(1.0-saturation_liquid)*  \
-                     (latent_heat_liquid+specific_heat_capacity_liquid*(temperature_buffer-Fem_Ele_Std->FluidProp->T_Latent1));
-        heat_capacity_phase_change = H1*drdT;
-        specific_heat_capacity = heat_capacity_gas + heat_capacity_liquid + heat_capacity_phase_change;
-      }
-  		else {
-        heat_capacity_model = 5;
-		  	H1 = CalcEnthalpy(T1);
-		    T0 = primary_variable_t0[1];
-        if(fabs(T_1-T0)<1.0e-8) T_1 +=1.0e-8;
-			    H0 = CalcEnthalpy(T0); 
-		    specific_heat_capacity = (H1-H0)/(T_1-T0);
-		  } 
-      heat_capacity_model = 4;
-	    break;
-      case 5:
+     case 5:
         specific_heat_capacity = GetCurveValue(heat_phase_change_curve,0,temperature_buffer,&gueltig);
       break;
   }
   return specific_heat_capacity;
 }
+/**************************************************************************
+FEMLib-Method:
+Task: calculate heat capacity for phase change
+Programing:
+02/2008 JOD moved from CFluidProperties::SpecificHeatCapacity()
+last modification:
+**************************************************************************/
+double CFluidProperties::PhaseChange()
+{
+  int gueltig = -1;
+  double heat_capacity_phase_change = 0;
+  double pressure, saturation, temperature;
+  double density_vapor, humi, drdT;
+  double H1,H0,T0,T_1;//T1 defined at 662 in steam67???
+ 
+  //......................................................................
+  CalPrimaryVariable(specific_heat_capacity_pcs_name_vector);
+  pressure = primary_variable[0];  
+  temperature =  primary_variable[1]; 
+  saturation = primary_variable[2]; 
 
+  if(heat_capacity_model == 3){
+
+    T_1 = primary_variable_t1[1];
+    if(T_1 <= T_Latent1 || T_1 >= T_Latent2)
+      heat_capacity_phase_change = GetCurveValue(heat_phase_change_curve,0,temperature_buffer,&gueltig);
+  	else{
+      heat_capacity_model = 5; // ??? JOD
+      H1 = CalcEnthalpy(T1);
+	  T0 = primary_variable_t0[1];
+      if(fabs(T_1-T0)<1.0e-8) 
+		T_1 +=1.0e-8;
+      H0 = CalcEnthalpy(T0); 
+      heat_capacity_phase_change = (H1-H0)/(T_1-T_0);
+	  heat_capacity_model = 3;
+    }
+
+  }
+  else if(heat_capacity_model == 4) {
+
+    T_1 = primary_variable_t1[1];
+    if(T_1 <= T_Latent1 || T_1 >= T_Latent2){
+         
+	  humi = exp( pressure /( GAS_CONSTANT_V * temperature_buffer * Density() ) );   
+	  density_vapor = humi * Density(); 
+      drdT = ( vaporDensity_derivative( temperature_buffer )* humi \
+             - density_vapor * pressure / ( GAS_CONSTANT_V * Density() * pow( temperature_buffer, 2.0 ) ) ) / Density();
+	  H1 =  latent_heat + specific_heat_capacity * ( temperature_buffer - T_Latent1);
+      heat_capacity_phase_change = H1*drdT;
+    }
+  	else {
+      heat_capacity_model = 5;
+      H1 = CalcEnthalpy(T1);
+      T0 = primary_variable_t0[1];
+      if(fabs(T_1-T0)<1.0e-8) 
+		T_1 +=1.0e-8;
+      H0 = CalcEnthalpy(T0); 
+      heat_capacity_phase_change = (H1-H0)/(T_1-T0);
+	  heat_capacity_model = 4;
+	} 
+
+
+  }
+  
+  return heat_capacity_phase_change;
+
+}
 /**************************************************************************
 FEMLib-Method:
 Task: Master calc function
@@ -1068,17 +1078,26 @@ double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem)
      m_mfp = mfp_vector[1];
      heat_capacity_fluids += (1.0-Sw) * rho_g * m_mfp->SpecificHeatCapacity();      
   }  
-  else
+  else 
   {
-     Sw = 1.0;
-     if(m_pcs->type!=1) // Not liquid and ground water flow. 07/08/07. WW
-	 {		  
-       PG = assem->interpolate(assem->NodalValC1); // Capillary pressure
-       if(PG<0.0)
+    heat_capacity_fluids = assem->FluidProp->Density() * assem->FluidProp->SpecificHeatCapacity();
+   
+	if(m_pcs->type != 1) { // neither liquid nor ground water flow
+   
+	 
+
+      PG = assem->interpolate(assem->NodalValC1); //  pressure
+       
+	  if(PG < 0.0){
          Sw = assem->MediaProp->SaturationCapillaryPressureFunction(-PG,0); 
-	 }   
-     m_mfp = mfp_vector[0]; 
-     heat_capacity_fluids = Sw*m_mfp->Density() * m_mfp->SpecificHeatCapacity();     
+	 	 heat_capacity_fluids *= Sw;
+		 if( assem->GasProp != 0) 
+		   heat_capacity_fluids += (1.-Sw) * assem->GasProp->Density() * assem->GasProp->SpecificHeatCapacity(); 
+  		 heat_capacity_fluids += (1.-Sw) * assem->FluidProp->PhaseChange();
+	  }
+   
+	}
+
   }
   return heat_capacity_fluids;
 }

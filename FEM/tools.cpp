@@ -425,7 +425,7 @@ double CalcCourantTimeStep ( long index, long ndx, double dc )
  CMediumProperties *m_mat_mp = NULL;
  long group = ElGetElementGroupNumber(index);
  m_mat_mp = mmp_vector[group];
- porosity = m_mat_mp->Porosity(index,NULL,1.0);
+ porosity = m_mat_mp->Porosity(index,1.0);
  /* Betrag der mittleren Geschwindigkeit */
  et = ElGetElementType(index);
  if (et == 2)

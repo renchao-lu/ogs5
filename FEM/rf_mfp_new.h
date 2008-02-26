@@ -23,9 +23,9 @@ class CFluidProperties
     double primary_variable_t0[10];//CMCD
     double primary_variable_t1[10];//CMCD
     bool cal_gravity; //YD/WW
-	  int heat_capacity_model;  //YD 
-    double temperature_buffer; //YD
   public:
+    double temperature_buffer; //YD, shifted to public JOD
+	int heat_capacity_model;  //YD, shifted to public JOD 
     CFiniteElementStd *Fem_Ele_Std;
     string name;
     int phase;
@@ -90,6 +90,7 @@ class CFluidProperties
     double Density();
     double Viscosity();
     double SpecificHeatCapacity();
+	double PhaseChange(); // JOD 
     double HeatConductivity();
     double CalcEnthalpy(double temperature);
     double Enthalpy(int,double);

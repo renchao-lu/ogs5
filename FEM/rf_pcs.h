@@ -440,11 +440,11 @@ class CRFProcess {
     void AssembleParabolicEquationRHSVector(); //OK
     void InterpolateTempGP(CRFProcess *, string); //MX
     void ExtropolateTempGP(CRFProcess *, string); //MX
-    //Repeat Calculation
-    void PrimaryVariableReload();  //YD
-    void PrimaryVariableReloadRichards(); //YD
-    void PrimaryVariableStorageRichards(); //YD
-    bool adaption; 
+    //Repeat Calculation,    JOD removed
+    //void PrimaryVariableReload();  //YD
+    //void PrimaryVariableReloadRichards(); //YD
+    //void PrimaryVariableStorageRichards(); //YD
+    //bool adaption; 
     // FLX
     void CalcELEFluxes(CGLPoint*); //OK
     double CalcELEFluxes(CGLPolyline*); //OK
