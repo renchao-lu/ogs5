@@ -67,6 +67,12 @@ Programing:
 #include "tools.h"
 #include "rf_pcs.h"
 #include "rfstring.h"
+#ifdef GEM_REACT
+// GEMS chemical solver
+#include "rf_REACT_GEM.h"
+REACT_GEM *m_vec_GEM;
+#endif
+
 // New EQS
 #ifdef NEW_EQS
 #include "equation_class.h"   
@@ -3820,6 +3826,10 @@ void CRFProcess::GlobalAssembly()
     //eqs_new->Write();
 
     IncorporateSourceTerms();
+#ifdef GEM_REACT
+    if ( pcs_type_name.compare("MASS_TRANSPORT") == 0 && aktueller_zeitschritt > 1 && this->m_num->cpl_iterations > 1)
+    IncorporateSourceTerms_GEMS();    
+#endif
     SetCPL(); //OK
     IncorporateBoundaryConditions();
     //
@@ -8590,3 +8600,36 @@ Programming:
 void CRFProcess::EQSInitialize()
  {eqs_new->Initialize();} 
 #endif
+
+#ifdef GEM_REACT
+void CRFProcess::IncorporateSourceTerms_GEMS(void)
+{
+    // Initialization
+    long it;       // iterator
+    long N_Nodes;  // Number of Nodes
+    int nDC;       // Number of mass transport components.
+    int i =0 ;         // index of the component
+
+    // Get a vector pointing to the REACT_GEM class
+    if (m_vec_GEM)
+    {
+        // Get needed informations.----------------------------
+        // Number of Nodes
+        N_Nodes = (long) m_msh->GetNodesNumber(false);
+        // Number of DC
+        nDC = m_vec_GEM->nDC;
+        // Identify which PCS it is and its sequence in mcp.
+        i = this->pcs_component_number;
+        // ----------------------------------------------------
+
+        // Loop over all the nodes-----------------------------
+        for ( it=0 ; it <  N_Nodes/*Number of Nodes*/; it++ )
+        {
+            // Adding the rate of concentration change to the right hand side of the equation.
+            eqs->b[it] -= m_vec_GEM->m_xDC_Chem_delta[it*nDC+i] / dt ; 
+        }
+        // ----------------------------------------------------
+    }
+}
+#endif
+

@@ -51,12 +51,11 @@ void SetCriticalDepthSourceTerms(void);
 #include "rf_bc_new.h"
 #include "rf_out_new.h"
 #include "tools.h"
-#ifdef GEM_REACT
-#include "rf_REACT_GEM.h"
-vector <REACT_GEM*> m_vec_GEM;
-#endif
 #ifdef UDE_REACT
 #include "rf_REACT_ude.h"
+#endif
+#ifdef GEM_REACT
+#include "rf_REACT_GEM.h"
 #endif
 #ifdef CHEMAPP
   #include "eqlink.h"
@@ -224,47 +223,49 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
 	  //int pos;
 	  //pos = FileName.find_last_of('\\');
 	  project_path = FileName;
-	  REACT_GEM *p_REACT_GEM = NULL;  
-	  p_REACT_GEM = new REACT_GEM(); 
-	  m_vec_GEM.push_back(p_REACT_GEM);
-	  m_vec_GEM.at(0)->Init_Nodes(project_path);
-	  if (m_vec_GEM.at(0)->Init_RUN() == 0 )
+	  // REACT_GEM *p_REACT_GEM = NULL;  
+	  m_vec_GEM = new REACT_GEM(); 
+	  // m_vec_GEM.push_back(p_REACT_GEM);
+	  m_vec_GEM->Init_Nodes(project_path);
+	  if (m_vec_GEM->Init_RUN() == 0 )
 	  {
-		  m_vec_GEM.at(0)->initialized_flag = 1;
+		  m_vec_GEM->initialized_flag = 1;
 	  };
-	  // m_vec_GEM.at(0)->SetReactInfoBackMassTransport(1);// HS shut down 10.07.07, test.
+	  // HS: here do not overwrite the conc. values in GS/RF. 
+      // So that the BC and IC values can be automatically taken care of. 
 
     #else
 	//---------------------------------------------------
-  REACT *rc = NULL; //SB
-//  rc->TestPHREEQC(); // Test if *.pqc file is present
-  rc = rc->GetREACT();
-  if(rc) //OK
-  {  
-    if(rc->flag_pqc){
-      if(cp_vec.size()>0)
-      { //OK
-      #ifdef REACTION_ELEMENT
-        rc->CreateREACT();//SB
-        rc->InitREACT0();
-        rc->ExecuteReactionsPHREEQC0();
-	    REACT_vec.clear();
-	    REACT_vec.push_back(rc);        
-      #else
+		REACT *rc = NULL; //SB
+	//  rc->TestPHREEQC(); // Test if *.pqc file is present
+	  rc = rc->GetREACT();
+	  if(rc) //OK
+	  {  
+		if(rc->flag_pqc){
+		  if(cp_vec.size()>0)
+		  { //OK
+		  #ifdef REACTION_ELEMENT
+			rc->CreateREACT();//SB
+			rc->InitREACT0();
+			rc->ExecuteReactionsPHREEQC0();
+			REACT_vec.clear();
+			REACT_vec.push_back(rc);        
+		  #else
 
-        rc->CreateREACT();//SB
-        rc->InitREACT();
-//SB4501        rc->ExecuteReactions();
-		rc->ExecuteReactionsPHREEQCNew();
-	    REACT_vec.clear();
-	    REACT_vec.push_back(rc);
-      #endif
+			rc->CreateREACT();//SB
+			rc->InitREACT();
+	//SB4501        rc->ExecuteReactions();
+			rc->ExecuteReactionsPHREEQCNew();
+			REACT_vec.clear();
+			REACT_vec.push_back(rc);
+			#endif
+		  }
+		}
+	//  delete rc;
+	  }
 
-      }
-    }
-//  delete rc;
-  }
-  #endif
+	#endif
+
   #ifdef CHEMAPP
 	CEqlink *eq=NULL;
 	eq = eq->GetREACTION();
@@ -276,7 +277,6 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
   }
   #endif
 //  delete rc;
-                                     
   //----------------------------------------------------------------------
   // DDC
   int i;
@@ -761,31 +761,31 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
 			//--------------------------------------------------
 			  {
 			#ifdef GEM_REACT
-				  for (int id=0; id < (int)m_vec_GEM.size() ; id++)//loop over all the REACT_GEM vector
-				  {
-					  if (m_vec_GEM.at(id)->initialized_flag == 1)//when it was initialized. 
+                  // for (int id=0; id < (int)m_vec_GEM.size() ; id++)//loop over all the REACT_GEM vector
+				  // {
+					  if (m_vec_GEM->initialized_flag == 1)//when it was initialized. 
 					  {
 						  int m_time = 1; // 0-previous time step results; 1-current time step results
 					      
                           // Check if the Sequential Iterative Scheme needs to be intergrated
                           if (m_pcs->m_num->cpl_iterations > 1)
-                              	  m_vec_GEM[id]->flag_iterative_scheme = 1; // set to standard iterative scheme;
+                              	  m_vec_GEM->flag_iterative_scheme = 1; // set to standard iterative scheme;
                           // write time
                           cout << "CPU time elapsed before GEMIMP2K: " << TGetTimer(0) << " s" << endl;
                           // Move current xDC to previous xDC
-                          m_vec_GEM[id]->CopyCurXDCPre();
+                          m_vec_GEM->CopyCurXDCPre();
                           // Get info from MT
-						  m_vec_GEM[id]->GetReactInfoFromMassTransport(m_time);						  						  
+						  m_vec_GEM->GetReactInfoFromMassTransport(m_time);						  						  
                           // Run GEM
-						  m_vec_GEM[id]->Run_MainLoop();
+						  m_vec_GEM->Run_MainLoop();
 						  // Calculate the different of xDC
-                          m_vec_GEM[id]->UpdateXDCChemDelta();						  
+                          m_vec_GEM->UpdateXDCChemDelta();						  
 						  // Set info in MT
-						  m_vec_GEM[id]->SetReactInfoBackMassTransport(m_time);
+						  m_vec_GEM->SetReactInfoBackMassTransport(m_time);
                           // write time
                           cout << "CPU time elapsed after GEMIMP2K: " << TGetTimer(0) << " s" << endl;
 					  }
-				  }
+				  // }
 			#endif
 			  }
 			//-------------------------------------------------
@@ -855,7 +855,6 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
           break;
         }
       }
- 
       //if(!H_Process) break;
       if(k>0)
       {
@@ -975,6 +974,10 @@ last modified:
 int LOPPostTimeLoop_PCS(void)
 {
   PCSDestroyAllProcesses();
+
+  // HS:
+  delete m_vec_GEM; 
+
   return 1;
 }
 

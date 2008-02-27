@@ -13,6 +13,8 @@
 #include "rfmat_cp.h"
 #include "msh_node.h"
 #include "msh_elem.h"
+#include "direct.h"
+
 
 #ifdef USE_MPI_GEMS
 #undef SEEK_SET
@@ -512,39 +514,6 @@ long it_num = 0;
 		#endif
 		cout << "Initial Running GEM on Node #" << in <<  " successful. "  << endl;
 	}
-	
-
-
-//  Uncomment this to test variable pressures and temperatures
-        //  m_T[in] += (in-1)*5;
-        //  m_P[in] += (in-1)*20;
-        //  Here the file output for the initial conditions can be implemented
-
-// This section is for the boundary nodes
-    // Read DATABR structure from text file (read boundary condition)
-    // TNode::na->GEM_read_dbr( dbr_input_file_name );
-    // This is for BC data.
-//    m_Node->GEM_read_dbr(dbr_bc_input_file_path.c_str());
-    // end reading bc data
-//To do: in the future, the loop should make a difference btw boundary conditions and normal nodes.
-/*for (in = 0; in<1 ; in++)
-{
-	// Order GEM to run
-	dBR->NodeStatusCH = NEED_GEM_AIA;
-	
-	m_NodeStatusCH.at(in) = (short)m_Node->GEM_run();
-
-	if ( !( m_NodeStatusCH[in] == OK_GEM_AIA || m_NodeStatusCH[in] == OK_GEM_PIA ) )
-	{
-		StatusCheck = 1;
-		return 5;
-	}
-	
-	GetReactInfoFromGEM(in);
-	
-	cout << "Initial Running GEM on Boundary Node #" << in <<  " successful. "  << endl;
-
-}*/
 
 return 0;
 }
@@ -595,7 +564,9 @@ int REACT_GEM::Set_Init_File_Path(string m_path)
 bool REACT_GEM::Load_Init_File(string m_Project_path)
 {
 	string init_path;
-
+    char *buffer;
+    int max_len=256;
+    
 	//Checking absolute path
 	/*if (init_input_file_path.find( m_Project_path ) != string::npos  )
 	{
@@ -606,6 +577,17 @@ bool REACT_GEM::Load_Init_File(string m_Project_path)
 		init_path = m_Project_path.append( init_input_file_path );
 	}*/
 	init_path = m_Project_path.append(init_input_file_sig);
+    if (init_path.rfind("\\") == string::npos)
+    {
+        if( (buffer = _getcwd( NULL, 0 )) == NULL )
+            perror( "_getcwd error" );
+        else
+        {
+            init_path.insert( 0, "\\" );
+            init_path.insert( 0, buffer );
+        }
+
+    }
 
 	if( m_Node->GEM_init( init_path.c_str() , mp_nodeTypes , false) )
 	{
@@ -649,13 +631,13 @@ short REACT_GEM::GetReactInfoFromMassTransport(int timelevel)
 	    REACT_GEM::GetDCValue_MT(node_i, timelevel, m_xDC+node_i*nDC, m_xDC_pts+node_i*nDC, m_xDC_MT_delta+node_i*nDC);
 
 	    // Setting Solid Phase Component // HS: Solid does not move.
-	    REACT_GEM::GetSoComponentValue_MT(node_i, timelevel, m_xPH+node_i*nPH );
+	    // REACT_GEM::GetSoComponentValue_MT(node_i, timelevel, m_xPH+node_i*nPH );
 
 	    //get PH value from MT
-	    m_pH[node_i] = REACT_GEM::GetComponentValue_MT(node_i,"pH", timelevel);
+	    // m_pH[node_i] = REACT_GEM::GetComponentValue_MT(node_i,"pH", timelevel);
 
 	    //get pe value from MT
-	    m_pe[node_i] = REACT_GEM::GetComponentValue_MT(node_i,"pe", timelevel);
+	    // m_pe[node_i] = REACT_GEM::GetComponentValue_MT(node_i,"pe", timelevel);
         
     
 		/*// Added for debugging---------	
@@ -685,27 +667,30 @@ short REACT_GEM::SetReactInfoBackMassTransport(int timelevel)
 
 	for (long in=0; in < nNodes ; in++) 
 	{
-            // Check if it is the boundary node
-            
-                // Setting Temperature
-		        REACT_GEM::SetTempValue_MT(in,timelevel,m_T[in]);
+           // Check if it is the boundary node
+           // for the boundary nodes, the values should be fixed. 
+           if ( m_pcs->m_msh->nod_vector[in]->onBoundary() == false )
+           {
+                // Setting Temperature // disabled by HS. temperature is NOT the output from chemistry.
+		        // REACT_GEM::SetTempValue_MT(in,timelevel,m_T[in]);
 
-		        // Setting Pressure
+		        // Setting Pressure // disabled by HS. pressure is NOT the output from chemistry.
 		        // REACT_GEM::SetPressureValue_MT(in,timelevel,m_P[in]);
 
 		        // Setting Independent Component
 		        REACT_GEM::SetDCValue_MT( in , timelevel , &(m_xDC[in*nDC]));
 
 		        // Setting Solid Phase Component
-		        REACT_GEM::SetSoComponentValue_MT( in ,timelevel ,&( m_xPH[in*nPH]));
+		        // REACT_GEM::SetSoComponentValue_MT( in ,timelevel ,&( m_xPH[in*nPH]));
 
 		        // Setting PH
 		        REACT_GEM::SetPHValue_MT(in,timelevel,m_pH[in]);
         		
 		        // Setting pe
 		        REACT_GEM::SetPeValue_MT(in,timelevel,m_pe[in]);
-            
+            }            
 	}
+
 return 0;
 }
 
@@ -1149,6 +1134,7 @@ double DC_MT_pre, DC_MT_cur;
                 // Get current iteration mass transport concentration value
                 DC_MT_cur = m_pcs->GetNodeValue(node_Index,m_pcs->GetNodeValueIndex(str)+timelevel);
                 
+                /*
                 if ( flag_iterative_scheme > 0 ) // this means introduce delta_C from MT
                 {
                     // Get delta_Concentration
@@ -1157,6 +1143,7 @@ double DC_MT_pre, DC_MT_cur;
                     *(m_DC+i) -= *(m_DC_MT_delta+i);
                 }
                 else // meaning non-iterative scheme
+                */
                 {
                     // Copy cocentration from MT to GEMS
                     *(m_DC+i) = DC_MT_cur;
@@ -1211,7 +1198,8 @@ string str;
                 {
                     if ( CPGetMobil(m_pcs->GetProcessComponentNumber()) > 0)
                     {
-                        m_pcs->eqs->b[node_Index] += m_xDC_Chem_delta[node_Index*nDC+i] ;
+                        // m_pcs->eqs->b[node_Index] += m_xDC_Chem_delta[node_Index*nDC+i] / dt ;
+                        m_pcs->SetNodeValue(node_Index , m_pcs->GetNodeValueIndex(str)+timelevel , *(m_DC+i));
                     }
                     else
                     {

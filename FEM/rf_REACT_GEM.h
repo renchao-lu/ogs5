@@ -11,7 +11,7 @@
 #include <cmath>
 #include <string>
 #include "rf_pcs.h"
-#include "rfmat_cp.h"
+// #include "rfmat_cp.h"
 #include "node.h"
 #include "rf_mfp_new.h"
 
@@ -66,13 +66,17 @@ public:
 
     double *m_xDC_pts_Elem;
 
-	CFluidProperties* m_FluidProp;
-	CRFProcess* m_pcs;//pointer to the PCS Class.		
+	CFluidProperties *m_FluidProp;
+	CRFProcess *m_pcs;//pointer to the PCS Class.		
 
 	// functions
 	short Init_Nodes(string Project_path);	// Initialization of the GEM TNode Class
-	//  return: 0-ok;1-loading init file failure;3-dch problem;4-dbr problem;
-    short Init_RUN();                       // Run the node-GEM	
+	//  return: 0-ok;
+    //          1-loading init file failure;
+    //          3-dch problem;
+    //          4-dbr problem;
+
+    short Init_RUN();// Run the node-GEM                      	
 	//  return: 0-ok;5-GEM does not converge 
 	short Run_MainLoop();
 	//  return: 0-ok;5-GEM does not converge 
@@ -157,5 +161,3 @@ public:
 	double *m_rMB_buff, *m_uIC_buff, *m_xDC_buff, *m_gam_buff, *m_xPH_buff, *m_vPS_buff, *m_mPS_buff, *m_bPS_buff, *m_xPA_buff;
 
 };
-
-

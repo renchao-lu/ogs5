@@ -397,6 +397,9 @@ class CRFProcess {
     // ST
     void IncorporateSourceTerms(const int rank=-1);
     //WW void CheckSTGroup(); //OK
+#ifdef GEM_REACT
+    void IncorporateSourceTerms_GEMS(void);//HS: dC/dt from GEMS chemical solver. 
+#endif
     // BC
     void IncorporateBoundaryConditions(const int rank=-1);
     void SetBoundaryConditionSubDomain(); //WW
@@ -585,7 +588,9 @@ extern bool PCSCheck(); //OK
 extern void CreateEQS_LinearSolver(); 
 #endif
 
-
-
+#ifdef GEM_REACT
+class REACT_GEM;
+extern REACT_GEM *m_vec_GEM;
 #endif
 
+#endif
