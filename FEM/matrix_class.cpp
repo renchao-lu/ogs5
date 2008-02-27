@@ -659,6 +659,7 @@ template<class T>  void vec<T*>:: operator = (const vec<T*>& v)
    01/2006 WW
    08/2007 WW
    10/2007 WW
+   02/2008 PCH  Compressed Row Storage with LIS option
 ********************************************************************
 */
 SparseTable::SparseTable(CFEMesh *a_mesh, bool quadratic, bool symm):symmetry(symm)
@@ -670,10 +671,12 @@ SparseTable::SparseTable(CFEMesh *a_mesh, bool quadratic, bool symm):symmetry(sy
    //
    rows = a_mesh->GetNodesNumber(quadratic);  // In sparse table, = number of nodes
    size_entry_column = 0;
+
    //
    row_index_mapping_n2o = new long[rows]; 
    row_index_mapping_o2n = new long[rows]; 
    diag_entry = new long[rows]; 
+
    if(symmetry)
    {
      larraybuffer = new long *[rows];
@@ -698,6 +701,7 @@ SparseTable::SparseTable(CFEMesh *a_mesh, bool quadratic, bool symm):symmetry(sy
         
      }
    }
+
    //
    //--- Sort, from that has maximum connect nodes to that has minimum connect nodes
    //
@@ -718,7 +722,8 @@ SparseTable::SparseTable(CFEMesh *a_mesh, bool quadratic, bool symm):symmetry(sy
         diag_entry[i] = lbuff0;
       }
       size_entry_column += diag_entry[i];
-   }
+	}
+  
    //
    for(i=0; i<rows; i++)
    {
@@ -757,9 +762,31 @@ SparseTable::SparseTable(CFEMesh *a_mesh, bool quadratic, bool symm):symmetry(sy
       for (j = 0; j < diag_entry[i]; j++)
        num_column_entries[j]++;
    } 
+
+#ifdef LIS
+	int counter = 0;
+	ptr = new int [rows+1];
+	col_idx = new int [size_entry_column];
+	entry_index = new int [size_entry_column];
+
+	for(int i=0; i < rows; ++i)
+	{
+		ptr[i] = counter;
+		lbuff1 = (int)a_mesh->nod_vector[i]->connected_nodes.size();
+		for(int j=0; j< lbuff1; ++j)
+		{
+			col_idx[counter] = a_mesh->nod_vector[i]->connected_nodes[j];
+			++counter;
+		}
+	}
+	// ptr array has one more element than the number of nodes.
+	ptr[i] = counter;	
+#endif
+
    // 2. Fill the sparse table, i.e. store all its entries to   
    //    entry_column  
    lbuff0 = 0;
+
    for (i = 0; i < max_columns; i++)
    {
       for (j = 0; j < num_column_entries[i]; j++)
@@ -767,7 +794,8 @@ SparseTable::SparseTable(CFEMesh *a_mesh, bool quadratic, bool symm):symmetry(sy
          ii = row_index_mapping_n2o[j];  // ii is the real row index of this entry in matrix
          // jj is the real column index of this entry in matrix
          jj = a_mesh->nod_vector[ii]->connected_nodes[i];   
-         entry_column[lbuff0] = jj;         
+         entry_column[lbuff0] = jj;  
+
          // Till to this stage, 'diag_entry' is really used to store indices of the diagonal entries.
          // Hereby, 'index' refers to the index in entry_column array.
          if(ii==jj)
@@ -776,6 +804,7 @@ SparseTable::SparseTable(CFEMesh *a_mesh, bool quadratic, bool symm):symmetry(sy
          lbuff0++;
       } 
    }
+
    // For the case of symmetry matrix
    if(symmetry)
    {
@@ -794,7 +823,7 @@ SparseTable::SparseTable(CFEMesh *a_mesh, bool quadratic, bool symm):symmetry(sy
      }
      delete []larraybuffer;
      larraybuffer = 0; 
-   }             
+   }  
 }
 /*\!
 ********************************************************************
@@ -971,6 +1000,7 @@ SparseTable::~SparseTable()
       dof:  Degree of freedom given by PDE        
    08/2007 WW
    10/2007 WW
+   02/2008 PCH Compressed Row Storage
 ********************************************************************/
 CSparseMatrix::CSparseMatrix(const SparseTable &sparse_table, const int dof)
                :DOF(dof)
@@ -991,6 +1021,11 @@ CSparseMatrix::CSparseMatrix(const SparseTable &sparse_table, const int dof)
   entry[dof*dof*size_entry_column] = 0.;
   zero_e = 0.;
   //
+#ifdef LIS	// PCH
+  ptr = sparse_table.ptr;
+  col_idx = sparse_table.col_idx;
+  entry_index = sparse_table.entry_index;
+#endif
 }
 /*\!
 ********************************************************************
@@ -1002,6 +1037,11 @@ CSparseMatrix::~CSparseMatrix()
 {
   delete [] entry;
   entry = NULL;
+
+#ifdef LIS	// PCH
+  delete [] entry_index;
+  entry_index = NULL;
+#endif
 }
 /*\!
 ********************************************************************
@@ -1388,6 +1428,82 @@ void CSparseMatrix::DiagonalEntries(double *diag_e)
   }  
 }
 #endif // USE_MPI
+
+#ifdef LIS
+/********************************************************************
+   Get sparse matrix values in compressed row storage
+   Programm:  
+   02/2008 PCH
+********************************************************************/
+int CSparseMatrix::GetCRSValue(double* value)
+{
+	int success =1;
+	int i;
+
+#pragma omp parallel for 
+	for(i=0; i< size_entry_column; ++i)
+		value[i] = entry[entry_index[i]];
+
+	return success;
+}
+
+int CSparseMatrix::GetCRSIndex()
+{
+	int success =1;
+	int counter = 0;
+	int i, j;
+
+	// Indexing CRS index from Coordinate Index
+	for(i=0; i < rows; ++i)
+	{
+		for(j=0; j < ptr[i+1]-ptr[i]; ++j)
+		{
+			int ii = i;
+			int jj = col_idx[ptr[i]+j];
+			entry_index[counter] = CRSIndex(ii,jj);
+			++counter;
+		}
+	}
+
+	return success;
+
+} 
+int CSparseMatrix::CRSIndex(const int i, const int j)
+{
+	int k, ii, jj, ir, jr, row_in_parse_table, counter;
+	ii = i;
+	jj = j;
+	if(symmetry)
+	{
+		if(i>j)
+		{
+			ii = j;
+			jj = i;
+		}       
+	}
+	ir = ii%rows;
+	jr = jj%rows;
+	ii /= rows;
+	jj /= rows;
+	// 
+	row_in_parse_table = row_index_mapping_o2n[ir];
+	counter = row_in_parse_table;
+	for (k = 0; k < max_columns; k++)
+	{
+		if(entry_column[counter]==jr)
+			break;  // Found the entry  
+		counter += num_column_entries[k]; 
+	}
+	if(counter>=size_entry_column)
+		return 0;	// This should not happen
+	//  Zero entry;  
+	k = (ii*DOF+jj)*size_entry_column+counter;
+
+	return k;
+
+}
+
+#endif // LIS
 #endif  //NEW_EQS
 ///////////////////////////////////////////////////////////
 

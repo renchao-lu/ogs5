@@ -12,6 +12,9 @@ Programing:
 #include<cmath>
 //
 
+#ifdef LIS
+#include "lis.h"
+#endif
 class CNumerics;
 class CRFProcess;
 namespace process{class CRFProcessDeformation;}
@@ -89,12 +92,18 @@ class Linear_EQS
     void SetDomain(CPARDomain *a_dom) {dom = a_dom;} 
 #endif
     // Write
-    void Write(ostream &os=cout);    
-  private:
+    void Write(ostream &os=cout);   
+
     CSparseMatrix *A;
     double *b;
     double *x;
     //
+#ifdef LIS
+	// lis solver interface starts here
+	LIS_MATRIX AA;
+	LIS_VECTOR bb,xx;
+	LIS_SOLVER solver;
+#endif
 #if defined(USE_MPI)
     CPARDomain *dom;
     double *prec_M;

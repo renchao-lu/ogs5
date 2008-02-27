@@ -488,16 +488,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
         if (CalcVelocities) 
           m_pcs->CalIntegrationPointValue(); //WW		
       }
-#ifdef _FEMPCHDEBUG_
-	// PCH Let's monitor what's going on in the FEM
-	// This messagebox is for debugging the primary variables at every time step.
-	// Should combine with the picking...
-//	CWnd * pWnd = NULL;
-	
-	//Disabled by Haibing 07112006
-//	pWnd->MessageBox("Liquid Flow is just solved!!!","Debug help", MB_ICONINFORMATION);
-	//--------------------------------------------------------
-#endif
+
 	  //--------------------------------------------------------------------
       m_pcs = PCSGet("TWO_PHASE_FLOW");
       if(m_pcs&&m_pcs->selected){
@@ -622,7 +613,16 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
 	     	}
       }
       //--------------------------------------------------------------------
-
+#ifdef _FEMPCHDEBUG_
+	// PCH Let's monitor what's going on in the FEM
+	// This messagebox is for debugging the primary variables at every time step.
+	// Should combine with the picking...
+	CWnd * pWnd = NULL;
+	
+	//Disabled by Haibing 07112006
+	pWnd->MessageBox("Liquid Flow and Fluid Momentum just solved!!!","Debug help", MB_ICONINFORMATION);
+	//--------------------------------------------------------
+#endif
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       // PCH Random Walk Particle Tracking starts here.
       m_pcs = PCSGet("RANDOM_WALK"); 

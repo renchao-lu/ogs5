@@ -14,6 +14,11 @@ Programing:
 #include "par_ddc.h"
 #endif
 
+#if defined(LIS)	// 07.02.2008 PCH
+#include "lis.h"
+#include <omp.h>
+#endif
+
 #include"rf_num_new.h"
 #include"matrix_class.h"
 #include"equation_class.h"
@@ -53,6 +58,13 @@ Linear_EQS::Linear_EQS(const SparseTable &sparse_table,
   error = 1.0e10;  
   size_global = 0;
 
+#ifdef LIS
+  A->GetCRSIndex();
+  int argc=0;
+  char** argv = NULL;
+  // Initialization of the lis solver.
+  lis_initialize(&argc, &argv);
+#endif
 }
 #if defined(USE_MPI)
 /**************************************************************************
@@ -89,6 +101,10 @@ Linear_EQS::~Linear_EQS()
   A = NULL;
   x = NULL;
   b = NULL;
+
+#ifdef LIS
+	lis_finalize();
+#endif
   //
 }
 /**************************************************************************
@@ -255,6 +271,7 @@ void Linear_EQS::Write(ostream &os)
 Task: Linear equation::Solver
 Programing:
 11/2007 WW/
+02/2008 PCH OpenMP parallelization by LIS
 **************************************************************************/
 #if defined(USE_MPI)
 int Linear_EQS::Solver(double *xg, const long n)
@@ -284,6 +301,66 @@ int Linear_EQS::Solver(double *xg, const long n)
   return iter; 
 }
 
+#else
+#ifdef LIS	// PCH 02.2008 
+int Linear_EQS::Solver()
+{
+	int i, iter, ierr;
+	int size = A->Size();
+	// Creating a matrix.
+	ierr = lis_matrix_create(0,&AA);
+	ierr = lis_matrix_set_type(AA,LIS_MATRIX_CRS);
+	ierr = lis_matrix_set_size(AA,0,size);
+
+	// Assembling the matrix	
+	// Establishing CRS type matrix from GeoSys Matrix data storage type
+	int nonzero=A->nnz();
+	double *value;
+	value = new double [nonzero];
+
+	ierr = A->GetCRSValue(value);
+	ierr = lis_matrix_set_crs(nonzero,A->ptr,A->col_idx, value,AA);
+	ierr = lis_matrix_assemble(AA);
+
+	// Assemble the vector, b, x
+	int iflag = 0;
+	ierr = lis_vector_duplicate(AA,&bb);
+	ierr = lis_vector_duplicate(AA,&xx);
+#pragma omp parallel for
+	for(i=0; i < size; ++i)
+	{
+		ierr = lis_vector_set_value(LIS_INS_VALUE,i,x[i],xx);
+		ierr = lis_vector_set_value(LIS_INS_VALUE,i,b[i],bb);
+	}	
+
+	// Create solver 
+	ierr = lis_solver_create(&solver);
+	// Matrix solver and Precondition can be handled better way.
+	// Here for example, by default a solver is BiCG with a preconditioner jacobian
+	ierr = lis_solver_set_option("-i bicgstab -p jacobi",solver);
+	// tolerance and other setting parameters are same
+	ierr = lis_solver_set_option("-tol 1.0e-12",solver);
+	ierr = lis_solve(AA,bb,xx,solver);
+	ierr = lis_solver_get_iters(solver,&iter);
+//	lis_vector_print(xx);
+//	lis_vector_print(bb);
+
+	// Update the solution (answer) into the x vector
+#pragma omp parallel for
+    for(i=0; i<size; ++i)
+	{
+		lis_vector_get_value(xx,i,&(x[i]));
+	}
+
+	// Clear memory
+	delete [] value;
+//	lis_matrix_destroy(AA);
+	lis_vector_destroy(bb);
+	lis_vector_destroy(xx);
+	lis_solver_destroy(solver);
+
+	return -1;	// This right now is meaningless. 
+}
 #else
 int Linear_EQS::Solver()
 {
@@ -319,6 +396,7 @@ int Linear_EQS::Solver()
   }
   return -1; 
 }
+#endif
 #endif
 // Preconditioners
 /**************************************************************************

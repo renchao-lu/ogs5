@@ -196,7 +196,17 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 	//		MXDumpGLS("rf_pcs.txt",1,m_pcs->eqs->b,m_pcs->eqs->x); //abort();
 
 			// Solve for velocity
+#ifdef NEW_EQS
+			double* x;
+			int size = m_msh->nod_vector.size();
+			x = new double[size];
+			double xxx[402];
+			m_pcs->EQSSolver(x);
+			for(int i=0; i<402; ++i)
+				xxx[i] = x[i];
+#else
 			ExecuteLinearSolver(m_pcs->eqs);
+#endif
 
             /* Store solution vector in model node values table */
 			if(dimension == 1)
@@ -215,8 +225,17 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 			else
 				abort();	// Just stop something's wrong.
      		
+			
+			
+#ifdef NEW_EQS
+			for(int j=0;j<dimension;j++)
+				m_pcs->SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,x[j]);
+			
+			delete [] x;
+#else
 			for(int j=0;j<m_pcs->eqs->dim;j++)
                m_pcs->SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,m_pcs->eqs->x[j]);	
+#endif
 		}
 
 		if(m_msh->GetCoordinateFlag() == 32)

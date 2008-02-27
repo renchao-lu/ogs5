@@ -6079,7 +6079,7 @@ double CMediumProperties::SaturationCapillaryPressureFunction
             saturation = saturation_res[phase] + MKleinsteZahl;   /* Weniger als Residualsaettigung Wasser */
       break;
     default:
-      cout << "Error in CMediumProperties::SaturationCapillaryPressureFunction: no valid material model" << endl;
+//      cout << "Error in CMediumProperties::SaturationCapillaryPressureFunction: no valid material model" << endl;
       break;
   }
   return saturation;

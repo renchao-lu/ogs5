@@ -127,7 +127,12 @@ class CRFProcess {
     int *Deactivated_SubDomain;
     //New equation and solver objects WW
 #ifdef NEW_EQS
+#ifdef LIS
+public:
+	Linear_EQS *eqs_new; 
+#else
     Linear_EQS *eqs_new; 
+#endif // LIS endif for Fluid Momentum	// PCH
     bool configured_in_nonlinearloop; 
 #endif
     //
@@ -406,6 +411,7 @@ class CRFProcess {
     //WW void CheckBCGroup(); //OK
 #ifdef NEW_EQS //WW
     void EQSInitialize(); 
+	void EQSSolver(double* x);	// PCH
 #else
     int ExecuteLinearSolver(void);
 #endif

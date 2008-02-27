@@ -8,6 +8,7 @@ Programing:
 02/2005 WW/OK Element Assemblier and output 
 12/2007 WW Classes of sparse matrix (jagged diagonal storage) and linear solver 
            and parellelisation of them 
+02/2008 PCH OpenMP parallelization for Lis matrix solver
 **************************************************************************/
 
 /*--------------------- MPI Parallel  -------------------*/
@@ -15,6 +16,14 @@ Programing:
 #include <mpi.h>
 #endif
 /*--------------------- MPI Parallel  -------------------*/
+
+/*--------------------- OpenMP Parallel ------------------*/
+#if defined(LIS)
+#include "lis.h"
+#include <omp.h>
+#endif
+/*--------------------- OpenMP Parallel ------------------*/
+
 // MFC
 #include "stdafx.h" 
 #ifdef MFC
@@ -6802,6 +6811,7 @@ void CRFProcess::AssembleParabolicEquationRHSVector()
   long i;
   //----------------------------------------------------------------------
   // Init
+/*	PCH & WW
   for(i=0;i<eqs->dim;i++)
   {
     eqs->b[i] = 0.0;
@@ -6818,6 +6828,7 @@ void CRFProcess::AssembleParabolicEquationRHSVector()
       //fem->AssembleParabolicEquationLHSMatrix();
     } 
   }
+  */
   //----------------------------------------------------------------------
 }
 
@@ -8599,6 +8610,20 @@ Programming:
 **************************************************************************/
 void CRFProcess::EQSInitialize()
  {eqs_new->Initialize();} 
+
+/*************************************************************************
+ROCKFLOW - Function: CRFProcess::
+Task:  //For fluid momentum, 
+Programming: 
+02/2008 PCH Implementation
+**************************************************************************/
+void CRFProcess::EQSSolver(double* x)
+ {
+	 eqs_new->Solver();
+
+	 for(int i=0; i < m_msh->nod_vector.size(); ++i)
+		 x[i] = eqs_new->X(i);
+ } 
 #endif
 
 #ifdef GEM_REACT

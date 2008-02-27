@@ -33,7 +33,7 @@ endif
 export CHOSEN_TARGET
 
 
-SUBDIRS = FEM GEM GEO MSH UTL
+SUBDIRS = FEM GEO MSH UTL
 
 OBJS_PATTERN = $(foreach subdir,$(SUBDIRS),$(subdir)/*.o)
 
@@ -62,5 +62,5 @@ $(CONFIG_NAMES):
 	@ for i in $(SUBDIRS); do \
             $(MAKE) -C $$i $(CHOSEN_TARGET) || exit 1; \
         done
-	$(CXX_LD) $(CXX_LDFLAGS) -o $(TGT) $(OBJS_PATTERN) $(CXX_LIBS) $(GEM_LIBS)
+	$(CXX_LD) $(CXX_LDFLAGS) -o $(TGT) $(OBJS_PATTERN) $(CXX_LIBS) $(LIS_LIBS)
 

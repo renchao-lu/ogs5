@@ -214,6 +214,11 @@ class SparseTable
       long max_columns;  
       long rows;
       friend class CSparseMatrix;
+#ifdef LIS	// These two pointers are in need for Compressed Row Storage
+	 int *ptr;		
+	 int *col_idx;
+	 int* entry_index;
+#endif
 };
 //08.2007 WW
 //
@@ -242,8 +247,18 @@ class CSparseMatrix
      long Dim() const {return DOF*rows;}
      int Dof() const {return DOF;}
      long Size() const {return rows;}
+#ifdef LIS // These two pointers are in need for Compressed Row Storage
+	 int nnz() const {return size_entry_column;}	// PCH
+	 int *ptr;	
+	 int *col_idx;
+	 int* entry_index;
+	 int GetCRSValue(double* value);
+	 int GetCRSIndex();
+	 int CRSIndex(const int i, const int j);
+#endif
      // Print
      void Write(ostream &os=cout);   
+
      // Domain decomposition
 #if defined(USE_MPI)
      void DiagonalEntries(double *diag_e);
@@ -269,6 +284,7 @@ class CSparseMatrix
 };
 // Since the pointer to member funtions gives lower performance 
 #endif
+
 //
 // Cross production x^y. WW 12.01.2005
 //const Vec& operator ^ (Vec& x,  Vec& y);	 

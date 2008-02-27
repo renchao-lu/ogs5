@@ -1,0 +1,9 @@
+CXX_LDFLAGS      = -static -O4 -msse2
+CXX_LD           = g++
+#OPTIMIZING. WW
+CXX_OPT_FLAGS    =   
+CXX_DEBUG_FLAGS  = -O4 -funroll-loops -msse2 -static
+CXX_WARN_FLAGS   = 
+CXX_FLAGS        = -pedantic -fno-nonansi-builtins -DGCC -D_POSIX_SOURCE -DNO_ERROR_CONTROL $(CXX_OPT_FLAGS) $(CXX_DEBUG_FLAGS) -DRANDOM_WALK -DNEW_EQS
+CXX              = g++
+

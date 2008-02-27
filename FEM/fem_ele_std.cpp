@@ -3110,10 +3110,11 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
 		HEAD_Flag = 1;
 		PcsType = G;
 	}
+	double temp[4];
 	for (int i = 0; i < nnodes; ++i)
 	{
 		NodalVal[i] = 0.0;
-		NodalVal1[i] = m_pcs->GetNodeValue(nodes[i], nidx1);   
+		temp[i]=NodalVal1[i] = m_pcs->GetNodeValue(nodes[i], nidx1);   
         NodalVal2[i] = 0.0;
 	}
 
@@ -4191,6 +4192,12 @@ void  CFiniteElementStd::Assembly(int dimension)
    nn = nnodes;
 // PCH should check the following line carefully.
    if(pcs->type==41||pcs->type==4) nn = nnodesHQ;
+
+#ifdef NEW_EQS	//PCH
+  eqs_rhs = pcs->eqs_new->b;
+#else
+  eqs_rhs = pcs->eqs->b;
+#endif 
 
    for(i=0;i<nn;i++){
 #ifdef PARALLEL
