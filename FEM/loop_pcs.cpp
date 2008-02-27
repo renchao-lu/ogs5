@@ -974,10 +974,10 @@ last modified:
 int LOPPostTimeLoop_PCS(void)
 {
   PCSDestroyAllProcesses();
-
+#ifdef GEM_REACT
   // HS:
   delete m_vec_GEM; 
-
+#endif
   return 1;
 }
 
