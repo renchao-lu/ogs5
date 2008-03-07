@@ -1278,7 +1278,7 @@ void CFEMesh::GetNODOnSFC(Surface*m_sfc,vector<long>&msh_nod_vector)
       #ifdef MFC
           //TODO allow only TIN or selected and user-controlled Nodes
           //because it is more reliable
-          if(gsp_vector.size() > 0){
+       /*   if(gsp_vector.size() > 0){
           string path = gsp_vector[0]->path; 
           path = path + "temp_gmsh.msh";
           const char* file_name_const_char = 0;
@@ -1289,8 +1289,12 @@ void CFEMesh::GetNODOnSFC(Surface*m_sfc,vector<long>&msh_nod_vector)
           Select_Nodes_Elements_by_TINFile(file_name_const_char);
           CopySelectedNodes(msh_nod_vector);
           Clear_Selected_Nodes_Elements(); 
-          }
+          }*/
           //TK
+//CC----------------------------------------begin
+	GetNODOnSFC_PLY(m_sfc,msh_nod_vector);
+	break;
+//CC----------------------------------------end
       #else
         GetNODOnSFC_PLY(m_sfc,msh_nod_vector);
       #endif

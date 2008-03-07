@@ -4770,6 +4770,9 @@ void COGLView::GetGLISurfacesforView()
 		//list<CGLPolyline*>::const_iterator pp = m_surface->polyline_of_surface_list.begin();//CC
         vector<CGLPolyline*>::iterator pp = m_surface->polyline_of_surface_vector.begin();
 		surfacepolyline_vectorlength = (int)m_surface->polyline_of_surface_vector.size();
+		//CC 02/2008----------------------------------------------------------begin
+		if (surfacepolyline_vectorlength != 1){
+	    //CC -----------------------------------------------------------------end
 		for (k=0;k<surfacepolyline_vectorlength;k++)
         {
 		    sfc_polyline = *pp;
@@ -4843,6 +4846,48 @@ void COGLView::GetGLISurfacesforView()
 		m_view_surfaces->surface_polyline_vector.push_back(m_surface_polyline);
 			++pp;
 		}
+				//CC 02/2008----------------------------------------------------------begin
+		}
+			  else
+	  {
+       //add code for surface which consists of only one closed polyline
+            sfc_polyline = *pp;
+            m_surface_polyline = new CViewPolylines;
+			m_surface_polyline->polylinename = sfc_polyline->name.data();
+			m_surface_polyline->polyline_id = 0;
+
+			vector<CGLPoint*>::iterator pl0 = m_surface->polygon_point_vector.begin();//CC
+			surfacepolylinepoints_vectorlength = (int)m_surface->polygon_point_vector.size();
+			x_total=y_total=z_total=0.0;
+			for (l=0;l<surfacepolylinepoints_vectorlength-1;l++)
+			{
+                poly_points0 = *pl0;
+             	x = -x_mid + poly_points0->x;
+				y = -y_mid + poly_points0->y;
+				z = -z_mid + poly_points0->z;
+				x_total = x_total +x;
+				y_total = y_total +y;
+				z_total = z_total +z;
+				++pl0;
+			}
+				x_middle = x_total/(surfacepolylinepoints_vectorlength-1);
+				y_middle = y_total/(surfacepolylinepoints_vectorlength-1);
+				z_middle =	z_total/(surfacepolylinepoints_vectorlength-1);
+
+				for (l=0;l<surfacepolylinepoints_vectorlength;l++)
+			{
+				poly_view_points = new CGLPoint;
+                poly_view_points->id = m_surface->polygon_point_vector[l]->id;		
+				poly_view_points->x = -x_mid + m_surface->polygon_point_vector[l]->x;
+				poly_view_points->y = -y_mid + m_surface->polygon_point_vector[l]->y;
+				poly_view_points->z = -z_mid + m_surface->polygon_point_vector[l]->z;
+				m_surface_polyline->polyline_point_vector.push_back(poly_view_points);
+			}
+            m_view_surfaces->surface_polyline_vector.push_back(m_surface_polyline);
+			++pp;
+
+	  }
+	//CC 02/2008----------------------------------------------------------end
 		m_view_surfaces->surface_midpoint_x =x_middle;
 		m_view_surfaces->surface_midpoint_y =y_middle;
 		m_view_surfaces->surface_midpoint_z =z_middle;

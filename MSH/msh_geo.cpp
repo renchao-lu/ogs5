@@ -24,6 +24,7 @@ void CFEMesh::GetNODOnGEO(string geo_type_name,string geo_name,vector<long>&msh_
   long nod_number;
   CGLPoint* m_pnt = NULL;
   CGLPolyline* m_ply = NULL;
+  Surface* m_sfc = NULL;//CC
 
   switch(geo_type_name[3])
   {
@@ -39,6 +40,11 @@ void CFEMesh::GetNODOnGEO(string geo_type_name,string geo_name,vector<long>&msh_
       GetNODOnPLY(m_ply,msh_nod_vector);
       break;
     case 'F':
+	//CC------------------------begin
+		m_sfc = GEOGetSFCByName(geo_name);//CC
+    if(!m_sfc)return;
+     GetNODOnSFC(m_sfc,msh_nod_vector);
+	//CC---------------------------end
       break;
     case 'U':
       break;

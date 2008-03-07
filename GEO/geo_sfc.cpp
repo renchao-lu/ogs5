@@ -1699,7 +1699,24 @@ void Surface::PolygonPointVector()
   CGLLine *gl_line = NULL;
   CGLPoint *gl_point = NULL;
   CGLPolyline* gl_polyline = NULL;
-  //list<CGLPolyline*>::const_iterator p1 = polyline_of_surface_list.begin();     
+    //CC 02/2008-----------------------------------------------begin
+  vector<CGLPolyline*>::iterator p1 = polyline_of_surface_vector.begin();
+  if (polyline_of_surface_vector.size() == 1){
+//Closed polyline
+  gl_polyline = *p1; 
+  vector<CGLPoint*>::iterator pt = gl_polyline->point_vector.begin(); 
+  while(pt!=gl_polyline->point_vector.end()){
+    gl_point = *pt; 
+
+    polygon_point_vector.push_back(gl_point);
+	++pt;
+  }
+  vector<CGLPoint*>::iterator pn = gl_polyline->point_vector.begin(); 
+  gl_point = *pn;
+  polygon_point_vector.push_back(gl_point);
+  }
+  else{
+  //CC-------------------------------------------------------end     
   vector<CGLPolyline*>::iterator p1 = polyline_of_surface_vector.begin();
   //----------------------------------------------------------------------
   while(p1!=polyline_of_surface_vector.end()){
@@ -1742,7 +1759,9 @@ void Surface::PolygonPointVector()
     ++p1;
     LocalPlyIndex++; 
   }
-  //----------------------------------------------------------------------
+   //CC--------------------------------------------------------begin
+  }
+  //CC--------------------------------------------------------end
 }
 /**************************************************************************
 GeoLib-Method: 
