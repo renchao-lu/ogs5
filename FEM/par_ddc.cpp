@@ -27,7 +27,7 @@ using namespace std;
 #include "equation_class.h"
 #endif
 vector<CPARDomain*>dom_vector;
-vector<long> node_connected_doms; //This will be removed after sparse class is finished WW
+vector<int> node_connected_doms; //This will be removed after sparse class is finished WW
 
 //---- MPI Parallel --------------
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
@@ -249,6 +249,7 @@ void DOMCreate()
      for(j=0;j<(long)m_dom->nodes.size();j++)
        node_connected_doms[m_dom->nodes[j]] += 1;
   }
+  //
   // Find nodes of all neighbors of each node. // WW
   // Local topology. WW
   cout << "  Find nodes on borders" << endl;
@@ -329,9 +330,10 @@ CPARDomain::~CPARDomain(void)
   nodes.clear();
   nodes_inner.clear();
   nodes_halo.clear();
+  long i;
   
   // WW
-  for(long i=0; i< (long)element_nodes_dom.size(); i++)
+  for(i=0; i< (long)element_nodes_dom.size(); i++)
   {
      delete [] element_nodes_dom[i];
      element_nodes_dom[i] = NULL; 
@@ -351,6 +353,7 @@ CPARDomain::~CPARDomain(void)
 #endif
   
 #if defined(USE_MPI)  // 13.12.2007 WW
+  //   
   if(t_border_nodes) delete [] t_border_nodes;
   t_border_nodes = NULL;
  #if defined(NEW_BREDUCE)
@@ -1212,15 +1215,19 @@ void FindNodesOnInterface(CFEMesh *m_msh, bool quadr)
         }
         long_buffer[i] = l_buff1;
      }
-
+     //
+#ifdef USE_MPI //WW
+     m_dom->FillBorderNodeConnectDom(node_connected_doms);  
+#endif
+     //
      m_dom->nodes_inner.clear();
      m_dom->nodes_halo.clear();  
      // Mapping the local index to global BC array, overlapped_entry.
+     //
      for(i=0;i<m_dom->num_boundary_nodes;i++)
          m_dom->nodes_halo.push_back(dom_bc_buffer[i]);
      for(i=0;i<(long)boundary_nodes_HQ.size();i++)
          m_dom->nodes_halo.push_back(dom_bc_bufferHQ[i]);
-    
      //----------------------------------------------------------------------
      for(i=0;i<(long)m_dom->elements.size();i++)
      {
@@ -1279,6 +1286,55 @@ void DDCCreate()
 }
 #if defined(USE_MPI) //WW
 //------------------------For parallel solvers------------------------------
+/*************************************************************************
+GeoSys-Function:
+Task: 
+Programming: 
+02/2008 WW Implementation
+**************************************************************************/
+void CPARDomain::FillBorderNodeConnectDom(vector<int> allnodes_doms)
+{
+  long i, ig;
+  int k;   
+  b_start[0] = num_inner_nodes;
+  b_end[0] = num_inner_nodes+num_boundary_nodes;
+  nq = 1;
+  //
+  if(nnodesHQ_dom>nnodes_dom)
+  { 
+    //
+    nq = 2;
+    b_start[1] = b_end[0] + num_inner_nodesHQ;
+    b_end[1] = nnodesHQ_dom;
+  }  
+  //
+  //
+  for(k=0; k<nq; k++)
+  {
+    for(i=b_start[k]; i<b_end[k]; i++)
+    {
+      ig = nodes[i];
+      bnode_connected_dom.push_back(allnodes_doms[ig]);
+    }
+  }
+
+  /*
+  string test = "rank";
+ static char stro[102];  
+ 
+ sprintf(stro, "%d",myrank);
+ string test1 = test+(string)stro+"dom.txt";
+ ofstream Dum(test1.c_str(), ios::out); // WW
+ Dum<<b_start[0]<<endl;
+ Dum<<b_end[0]<<endl;
+ Dum<<b_start[1]<<endl;
+ Dum<<b_end[1]<<endl;
+  for(i=0;i<bnode_connected_dom.size();i++)
+    Dum<<bnode_connected_dom[i]<<endl;  
+  exit(0);
+  */
+}
+
 /*************************************************************************
 GeoSys-Function:
 Task: 
@@ -1389,6 +1445,36 @@ void CPARDomain::ConfigEQS(CNumerics *m_num, const long n, bool quad)
   // 
   // dim = n_loc*dof;  
   // MPI_Allreduce(&dim,  &max_dimen, 1, MPI_INT,  MPI_MAX, MPI_COMM_WORLD);
+}
+
+/*************************************************************************
+GeoSys-Function:
+Task: for parallel solver 
+  HM monolithic case is to be considered. 
+Programming: 
+02/2008 WW Implementation
+**************************************************************************/
+double CPARDomain::Dot_Border_Vec(const double *vec_x, const double *vec_y)
+{
+   long i, l_buff;
+   int ii, k;   
+   long b_shift[2];
+   double val, fac;
+   val = 0.;
+   //
+   for(k=0; k<nq; k++)
+   {
+      for(i=b_start[k];i<b_end[k];i++)
+      {
+         fac =  1.0/(double)bnode_connected_dom[i];        
+         for(ii=0; ii<dof; ii++) 
+         {
+            l_buff = i+n_loc*ii+n_shift[k];
+            val += fac*vec_x[l_buff]*vec_y[l_buff];
+         }
+      } 
+   }
+   return val;   
 }
 /*************************************************************************
 GeoSys-Function:
@@ -1520,11 +1606,13 @@ Task: Parallel solver
 Programming: 
 06/2006 WW Implementation
 12/2007 WW Revise
+02/2008 WW Revise
 **************************************************************************/
-void CPARDomain:: I_local2Global(const double *local_x, double *global_x, const long n )
+void CPARDomain:: Local2Global(const double *local_x, double *global_x, const long n )
 { 
-  long i, ig; 
-  int ii, k;   
+  long i, ig, b_index; 
+  int ii, k; 
+  double fac = 0.; 
   //
   // 
   long n_global = (long)n/dof;
@@ -1538,11 +1626,21 @@ void CPARDomain:: I_local2Global(const double *local_x, double *global_x, const 
      {
         ig = nodes[i];  
         for(ii=0; ii<dof; ii++) 
-        {
-           global_x[ig+n_global*ii] = local_x[i+n_loc*ii];
-           //MPI_Bcast(&global_x[ig+n_global*ii], 1, MPI_DOUBLE, myrank, MPI_COMM_WORLD );
-        }
+          global_x[ig+n_global*ii] = local_x[i+n_loc*ii];
      }
+  }
+  //
+  for(k=0; k<nq; k++)
+  {
+     for(i=b_start[k];i<b_end[k];i++)
+     {
+        b_index = i+n_shift[k];
+        fac =  1.0/(double)bnode_connected_dom[i];    
+        //
+        ig = nodes[b_index];  
+        for(ii=0; ii<dof; ii++) 
+          global_x[ig+n_global*ii] += fac*local_x[b_index+n_loc*ii];
+     } 
   }
    //    
  }
@@ -1667,7 +1765,7 @@ void CPARDomain::CatInnerX(double *global_x, const double *local_x, const long n
   else          eq = eqs;
   //  
   x_i = eq->f_buffer[0];
-  x_g = eq->f_buffer[(long)eq->f_buffer.size()-2];
+  x_g = eq->f_buffer[(long)eq->f_buffer.size()-1];
   //
   long n_global = (long)n/dof;
   //
@@ -1676,7 +1774,7 @@ void CPARDomain::CatInnerX(double *global_x, const double *local_x, const long n
   // Due to the parallel computing of dom topology, not all num_inner_node of 
   //   dom_vector[j] is caculated.
   // for(i=0; i<eq->A->Dim();i++)
-  //  x_i[i] = 0.;
+  //   x_i[i] = 0.;
   // 
   for(k=0; k<nq; k++)
   {
@@ -1729,7 +1827,7 @@ void CPARDomain::CatInnerX(double *global_x, const double *local_x, const long n
 
 
 #else
-  I_local2Global(local_x, x_g, n);
+  Local2Global(local_x, x_g, n); 
   MPI_Allreduce( x_g, global_x, n, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 #endif 
 }
@@ -1750,8 +1848,8 @@ void CPARDomain::ReduceBorderV(double *local_x)
   if(quadratic) eq = eqsH;
   else          eq = eqs;
   //  
-  x_g = eq->f_buffer[(long)eq->f_buffer.size()-2];
-  x_cat = eq->f_buffer[(int)eq->f_buffer.size()-3];
+  x_g = eq->f_buffer[(long)eq->f_buffer.size()-1];
+  x_cat = eq->f_buffer[(int)eq->f_buffer.size()-2];
   x_b = &local_x[eq->Dim()];  
   //
   for(k=0; k<nq; k++)

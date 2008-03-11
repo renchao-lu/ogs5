@@ -201,7 +201,9 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 			int size = m_msh->nod_vector.size();
 			x = new double[size];
 			double xxx[402];
+#if defined(LIS) //WW. 11.03.2008
 			m_pcs->EQSSolver(x);
+#endif
 			for(int i=0; i<402; ++i)
 				xxx[i] = x[i];
 #else

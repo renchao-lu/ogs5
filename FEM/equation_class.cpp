@@ -41,6 +41,9 @@ Linear_EQS::Linear_EQS(const SparseTable &sparse_table,
   prec_M =NULL;
   x = NULL;  
   cpu_time = 0.0; 
+  // WW
+  border_buffer0 = NULL;
+  border_buffer1 = NULL;
 #else
   x = new double[size];
 #endif
@@ -161,11 +164,13 @@ void Linear_EQS::ConfigNumerics(CNumerics *m_num, const long n)
       break;
   }
   // Buffer
+  /*
 #if defined(USE_MPI)
   long size = A->Dim()+A->Dof()*dom->BSize();
 #else
+  */
   long size = A->Dim();
-#endif
+//#endif
   for(i=0; i<nbuffer; i++) 
   {
     double *new_array = new double[size];
@@ -183,8 +188,9 @@ void Linear_EQS::ConfigNumerics(CNumerics *m_num, const long n)
   double *x_g_buffer = new double[n];
   f_buffer.push_back(x_g_buffer);
   // Buffer for border array
-  double *new_array_b = new double[A->Dof()*dom->BSize()];
-  f_buffer.push_back(new_array_b);
+  // Will be removed if topo is ready
+  border_buffer0 = new double[A->Dof()*dom->BSize()];
+  border_buffer1 = new double[A->Dof()*dom->BSize()];
   //
 #endif
   //---------------------------------------------
@@ -197,16 +203,16 @@ void Linear_EQS::ConfigNumerics(CNumerics *m_num, const long n)
 #endif
       break;
     case 100:
-     // precond_name = "ILU"; break;
-     // If ILU is ready, remove follows
-     // ---------------------------------------------- 
-     precond_name = "ILU not available. Use Jacobi"; 
-     precond_type = 1;
+      // precond_name = "ILU"; break;
+      // If ILU is ready, remove follows
+      // ---------------------------------------------- 
+      precond_name = "ILU not available. Use Jacobi"; 
+      precond_type = 1;
 #if defined(USE_MPI)
-     prec_M = new double[size];
+      prec_M = new double[size];
 #endif
-     // ---------------------------------------------- 
-     break;
+      // ---------------------------------------------- 
+      break;
     default:
       precond_name = "No preconditioner"; break;
   }
@@ -246,6 +252,12 @@ void Linear_EQS::Clean()
   f_buffer.clear();
 #if defined(USE_MPI)
   if(prec_M) delete [] prec_M; 
+  // 
+  if(border_buffer0) delete [] border_buffer0;
+  border_buffer0 = NULL;
+  if(border_buffer1) delete [] border_buffer1;
+  border_buffer1 = NULL;
+  //
   prec_M = NULL; 
   cpu_time_local += MPI_Wtime();
   cpu_time += cpu_time_local;     
@@ -457,11 +469,7 @@ void Linear_EQS::Precond(double *vec_s, double *vec_r)
   }
   if(!pre) 
   {
-#if defined(USE_MPI)
-     for(long i=0; i<A->Dim()+A->Dof()*dom->BSize(); i++)
-#else
      for(long i=0; i<A->Dim(); i++)
-#endif
        vec_r[i] = vec_s[i];
   } 
 }
@@ -479,11 +487,9 @@ double Linear_EQS::dot (const double *xx,  const double *yy)
 #if defined(USE_MPI)
    long size = A->Dim(); 
    double val_i = dom->Dot_Interior(xx,  yy);
+   val_i += dom->Dot_Border_Vec(xx,  yy);
+   //
    MPI_Allreduce(&val_i, &val, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-   const double *xx_b = &xx[size];
-   const double *yy_b = &yy[size];
-   for(i=0; i<A->Dof()*dom->BSize(); i++)
-     val += xx_b[i]*yy_b[i];   
 #else
    for(i=0; i<A->Dim(); i++)
      val += xx[i]*yy[i];
@@ -528,19 +534,16 @@ double Linear_EQS::dot (const double *xx,  const double *yy, const long n)
 ********************************************************************/
 inline void Linear_EQS::MatrixMulitVec(double *xx,  double *yy)
 {
-  long size = A->Dim(); 
+  long i, size = A->Dim(); 
   //
-  double *xx_b = &xx[size];
-  double *yy_b = &yy[size];
-  double *vec_b = f_buffer[(long)f_buffer.size()-1];
-  //
-  dom->Border2Local(xx_b, xx);
   A->multiVec(xx, yy);
 #if defined(NEW_BREDUCE)
   dom->ReduceBorderV(yy);
 #else
-  dom->Local2Border(yy, vec_b); // to buffer
-  MPI_Allreduce(vec_b, yy_b, A->Dof()*dom->BSize(), MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);   
+  dom->Local2Border(yy, border_buffer0); 
+  MPI_Allreduce(border_buffer0, border_buffer1, A->Dof()*dom->BSize(),
+                MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);  
+  dom->Border2Local(border_buffer1, yy);    
 #endif
 }
 
@@ -575,7 +578,7 @@ void Linear_EQS::Message()
       <<setw(11)<<bNorm<< "|"<<setw(11)<<error<<"|\n";          
   cout<<"================================================\n";         
   if (iter==max_iter) cout << " Maximum iteration reached !!! \n";
-	cout.flush();    
+    cout.flush();    
 //
 }
 /*\!
@@ -648,13 +651,13 @@ int Linear_EQS::CG()
   //
   for (iter=1; iter<=max_iter; ++iter)
   {
-	A->multiVec(p, s);
-	const double alpha = rr / dot(p,s);
+    A->multiVec(p, s);
+    const double alpha = rr / dot(p,s);
     // Update 
     for(i=0; i<size; i++)
     {
-	  x[i] += alpha*p[i];
-	  r[i] -= alpha*s[i];
+      x[i] += alpha*p[i];
+      r[i] -= alpha*s[i];
     }
     if ((error = Norm(r)/bNorm) < tol)
     {
@@ -664,9 +667,9 @@ int Linear_EQS::CG()
     //
     Precond(r, s);
     //
-	rrM1 = rr;
-	rr   = dot(s, r);
-	const double beta = rr / rrM1;
+    rrM1 = rr;
+    rr   = dot(s, r);
+    const double beta = rr / rrM1;
     for(i=0; i<size; i++)
       p[i] = s[i] + beta*p[i];
   }
@@ -899,18 +902,16 @@ Programming:
 **************************************************************************/
 void Linear_EQS::ComputePreconditioner_Jacobi()
 {
-  double *vec_b = f_buffer[(long)f_buffer.size()-1];
-  double *prec_b = &prec_M[A->Dim()];
   //
   A->DiagonalEntries(prec_M);
   //
 #if defined(NEW_BREDUCE)
   dom->ReduceBorderV(prec_M);
 #else
-  dom->Local2Border(prec_M, vec_b); // to buffer
-  MPI_Allreduce(vec_b, prec_b, A->Dof()*dom->BSize(), MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);   
+  dom->Local2Border(prec_M, border_buffer0); // to buffer
+  MPI_Allreduce(border_buffer0, border_buffer1, A->Dof()*dom->BSize(), MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);   
 #endif  
-  dom->Border2Local(prec_b, prec_M); 
+  dom->Border2Local(border_buffer1, prec_M); 
 }
 /*************************************************************************
 GeoSys-Function:
@@ -921,7 +922,7 @@ Programming:
 void Linear_EQS::Precond_Jacobi(const double *vec_s, double *vec_r)
 {
    double val;
-   for(long i=0; i<A->Dim()+A->Dof()*dom->BSize(); i++)
+   for(long i=0; i<A->Dim(); i++)
    {
       val = prec_M[i];
       if(val>DBL_EPSILON)
@@ -930,8 +931,211 @@ void Linear_EQS::Precond_Jacobi(const double *vec_s, double *vec_r)
         vec_r[i] = vec_s[i];
    }
 }
-
 #define TEST_MPII
+/**************************************************************************
+Task: Linear equation::CG
+Programing:
+01/2008 WW/
+**************************************************************************/
+int Linear_EQS::CG(double *xg, const long n)
+{
+  long i, size, size_b, size_t;
+  double rrM1;
+  double *p, *r, *s;
+  double *p_b, *r_b, *s_b;
+  double *x_b;
+  //
+  size = A->Dim();
+  size_b = dom->BSize()*A->Dof();
+  //size_t = size + size_b; //[0, size_i): internal; [size_i, size_i+size_b): border. 
+  //
+  p = f_buffer[0];
+  r = f_buffer[1];
+  s = f_buffer[2];
+  // 
+
+  //*** Norm b
+  double bNorm_new; 
+  double buff_fl = dom->Dot_Interior(b, b);  
+  MPI_Allreduce(&buff_fl, &bNorm_new, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  dom->Local2Border(b, border_buffer0); // p_b s_b as buffer
+  MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  buff_fl = bNorm_new + dot(border_buffer1, border_buffer1, size_b); // (rhs on border)
+  bNorm_new = sqrt(buff_fl);
+  // Check if the norm of b is samll enough for convengence
+  if(CheckNormRHS(bNorm_new))
+    return 0;
+  //*** r = b-Ax
+  //    A*x
+  dom->Global2Local(xg, x, n);
+  A->multiVec(x,s);   // s as buffer
+  for(i=0; i<size; i++)
+    r[i] = b[i]-s[i];	  // r = b-Ax
+  //   Collect border r
+  dom->Local2Border(r, border_buffer0);  // 
+  MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  dom->Border2Local(border_buffer1, r);  
+  //
+  // Preconditioning: M^{-1}r
+  Precond(r, s);
+  for(i=0; i<size; i++)
+    p[i] = s[i];	
+  // Check the convergence
+  if ((error = Norm(r)/bNorm) < tol)
+  {
+    Message();
+    return 1; 
+  }
+  //
+  double rr = dot(r , s);
+  //
+  for (iter=1; iter<=max_iter; ++iter)
+  {
+     MatrixMulitVec(p, s);
+     const double alpha = rr / dot(p,s);
+    // Update 
+    for(i=0; i<size; i++)
+    {
+      x[i] += alpha*p[i];
+      r[i] -= alpha*s[i];
+    }
+    if ((error = Norm(r)/bNorm) < tol)
+      break;
+    // Preconditioner
+    Precond(r, s);
+    //
+    rrM1 = rr;
+    rr   = dot(s, r);
+    //
+    const double beta = rr / rrM1;
+    for(i=0; i<size; i++)
+      p[i] = s[i] + beta*p[i];
+
+  }
+  //
+  // concancert internal x
+  dom->CatInnerX(xg, x, n);
+  //
+  Message();
+  return iter <= max_iter;
+}
+
+/*************************************************************************
+GeoSys-Function:
+Task: CGS solver 
+Programming: 
+02/2008 WW  
+**************************************************************************/
+int Linear_EQS::CGS(double *xg, const long n)  
+{
+  long i, size, size_b, size_t;
+  double rho_1, rho_2, alpha, beta;
+  double *r0, *r, *p, *p_h, *q, *q_h, *v, *u, *u_h;
+  double *r0_b, *r_b, *p_b, *p_h_b, *q_b, *q_h_b, *v_b, *u_b, *u_h_b;
+  double *x_b;
+  // 
+  size = A->Dim();
+  size_b = dom->BSize()*A->Dof();
+  //size_t = size + size_b; //[0, size_i): internal; [size_i, size_i+size_b): border. 
+  r0 = f_buffer[0];
+  r = f_buffer[1];
+  p = f_buffer[2];
+  p_h = f_buffer[3];
+  q = f_buffer[4];
+  q_h = f_buffer[5];
+  v = f_buffer[6];
+  u = f_buffer[7];
+  u_h = f_buffer[8];
+  //
+  //
+  rho_1 = rho_2 = 1.0;
+  //
+  //*** Norm b
+  double bNorm_new; 
+  double buff_fl = dom->Dot_Interior(b, b);  
+  MPI_Allreduce(&buff_fl, &bNorm_new, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  dom->Local2Border(b, border_buffer0); // 
+  MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  buff_fl = bNorm_new + dot(border_buffer1, border_buffer1, size_b); //  (rhs on border)
+  bNorm_new = sqrt(buff_fl);
+  // Check if the norm of b is samll enough for convengence
+  if(CheckNormRHS(bNorm_new))
+    return 0;
+  //*** r = b-Ax
+  //    A*x
+  dom->Global2Local(xg, x, n);
+  A->multiVec(x,v);   // v as buffer
+  for(i=0; i<size; i++)
+    r0[i] = b[i]-v[i];	  // r = b-Ax
+  //   Collect border r
+  dom->Local2Border(r0, border_buffer0);  //  buffer
+  MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  dom->Border2Local(border_buffer1, r0);   
+  //
+  for(i=0; i<size; i++)
+  {
+    r[i] = r0[i];	
+    v[i] = 0.;	
+  }
+  if ((error = Norm(r)/bNorm) < tol)
+  {
+    Message();
+    return 0; 
+  }
+  //  
+  for (iter = 1; iter <= max_iter; iter++)
+  {
+    rho_1 = dot(r0, r);
+    if (fabs(rho_1) < DBL_MIN) //  DBL_EPSILON
+      break;
+    //
+    if (iter == 1)
+    { 
+      for(i=0; i<size; i++)
+        p[i] = u[i] = r[i];
+    }
+    else
+    {
+      beta = rho_1/rho_2;
+      for(i=0; i<size; i++)
+      {
+        u[i] = r[i] + beta * q[i];
+        p[i] = u[i] + beta * (q[i] + beta * p[i]);
+      } 
+    }
+    // Preconditioner
+    Precond(p, p_h);  
+    // A M^{-1}p-->v
+    MatrixMulitVec(p_h, v);
+    //
+    alpha = rho_1 / dot(r0, v);
+    //
+    for(i=0; i<size; i++)
+    {
+       q[i] = u[i] - alpha * v[i];
+       q_h[i] = u[i] + q[i];
+    }
+     // Preconditioner
+    Precond(q_h, u_h);  
+    for(i=0; i<size; i++)
+      x[i] += alpha * u_h[i];
+    //
+    MatrixMulitVec(u_h, q_h);
+    //
+    for(i=0; i<size; i++)
+      r[i] -= alpha * q_h[i];
+    rho_2 = rho_1;
+    if ((error = Norm(r) / bNorm) < tol)
+      break;
+  }
+  // concancert internal x
+  dom->CatInnerX(xg, x, n);
+  //
+  Message(); 
+  //
+  return iter <= max_iter;
+}
+#define  TEST_MPII
 /*************************************************************************
 GeoSys-Function:
 Task: Parallel BiCGStab solver 
@@ -942,7 +1146,7 @@ Programming:
 **************************************************************************/
 int Linear_EQS::BiCGStab(double *xg, const long n) 
 {
-  long i, size, size_b, size_t;
+  long i, size, size_b; //, size_t;
   double rho_0, rho_1, alpha, beta, omega, tt=0., norm_v=0.;
   double *r0, *r, *s, *s_h, *t, *v, *p, *p_h;
   double *r0_b, *r_b, *s_b, *s_h_b, *t_b, *v_b, *p_b, *p_h_b;
@@ -951,7 +1155,7 @@ int Linear_EQS::BiCGStab(double *xg, const long n)
   size = A->Dim();
   //
   size_b = dom->BSize()*A->Dof();
-  size_t = size + size_b; //[0, size_i): internal; [size_i, size_i+size_b): border. 
+  // size_t = size + size_b; //[0, size_i): internal; [size_i, size_i+size_b): border. 
   r0 = f_buffer[0];      
   r = f_buffer[1];        
   s = f_buffer[2];
@@ -961,15 +1165,6 @@ int Linear_EQS::BiCGStab(double *xg, const long n)
   p = f_buffer[6];
   p_h = f_buffer[7];
   //
-  r0_b = &r0[size];
-  r_b = &r[size];
-  s_b = &s[size];
-  s_h_b = &s_h[size];
-  t_b = &t[size];
-  v_b = &v[size];
-  p_b = &p[size];
-  p_h_b = &p_h[size];
-  x_b = &x[size];
   //
   rho_0 = alpha = omega = 1.0;
 
@@ -981,12 +1176,13 @@ int Linear_EQS::BiCGStab(double *xg, const long n)
  char stro[64];  
  sprintf(stro, "%d",myrank);
  string test1 = test+(string)stro+"Assemble.txt";   
- ofstream Dum(test1.c_str(), ios::out|ios::app);
+ ofstream Dum(test1.c_str(), ios::out);
  Dum.width(20);
  Dum.precision(15);
  Dum.setf(ios::scientific);
 
  Dum<<"Time step: "<<aktueller_zeitschritt<<endl;
+ Dum<<"Norm b inner  " <<dom->Dot_Interior(b, b)<<endl;  
  //  if(A->Dof()==1)
  //  Dum.close();
  #endif
@@ -997,25 +1193,24 @@ int Linear_EQS::BiCGStab(double *xg, const long n)
   double bNorm_new; 
   double buff_fl = dom->Dot_Interior(b, b);  
   MPI_Allreduce(&buff_fl, &bNorm_new, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-  dom->Local2Border(b, s_b); // s_b s_h_b as buffer
-  MPI_Allreduce(s_b, s_h_b, size_b, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-  buff_fl = bNorm_new + dot(s_h_b, s_h_b, size_b); // s_h_b as b_b (rhs on border)
+  dom->Local2Border(b, border_buffer0); // buffer
+  MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  buff_fl = bNorm_new + dot(border_buffer1, border_buffer1, size_b); // (rhs on border)
   bNorm_new = sqrt(buff_fl);
+  
   // Check if the norm of b is samll enough for convengence
   if(CheckNormRHS(bNorm_new))
     return 0;
   //*** r = b-Ax
   //    A*x
   dom->Global2Local(xg, x, n);
-  dom->Global2Border(xg, x_b, n);
   A->multiVec(x,s);   // s as buffer
   for(i=0; i<size; i++)
     r0[i] = b[i]-s[i];	  // r = b-Ax
   //   Collect border r
-  dom->Local2Border(r0, s_b);  // s_b as buffer
-  MPI_Allreduce(s_b, r0_b, size_b, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-
-
+  dom->Local2Border(r0, border_buffer0);  // buffer
+  MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  dom->Border2Local(border_buffer1, r0);  
 
   
  #ifdef  TEST_MPI 
@@ -1054,7 +1249,7 @@ int Linear_EQS::BiCGStab(double *xg, const long n)
 
 
   // Initial. [0, size_i): internal; [size_i, size_i+size_b): border. 
-  for(i=0; i<size_t; i++)
+  for(i=0; i<size; i++)
   {
     r[i] = r0[i];	
     v[i] = 0.;	
@@ -1105,14 +1300,14 @@ int Linear_EQS::BiCGStab(double *xg, const long n)
     if (iter == 1)
     { 
       // p[0, size_i): internal; p[size_i, size_i+size_b)-->p_b: border. 
-      for(i=0; i<size_t; i++)
+      for(i=0; i<size; i++)
         p[i] = r[i];
     }
     else
     {
       beta = (rho_1/rho_0) * (alpha/omega);
       // [0, size_i): internal; [size_i, size_i+size_b): border. 
-      for(i=0; i<size_t; i++)
+      for(i=0; i<size; i++)
         p[i] = r[i] + beta * (p[i] - omega * v[i]);
     }
     // Preconditioner
@@ -1139,12 +1334,12 @@ int Linear_EQS::BiCGStab(double *xg, const long n)
 
 
     //
-    for(i=0; i<size_t; i++)
+    for(i=0; i<size; i++)
       s[i] = r[i] - alpha * v[i]; 
     norm_v = sqrt(dot(s,s));                     
     if ((error = norm_v/bNorm) < tol) 
     {
-      for(i=0; i<size_t; i++)
+      for(i=0; i<size; i++)
         x[i] += alpha * p_h[i];    
       break;
     }
@@ -1191,7 +1386,7 @@ int Linear_EQS::BiCGStab(double *xg, const long n)
     else
       omega = 1.0;
     // Update solution
-    for(i=0; i<size_t; i++)
+    for(i=0; i<size; i++)
     {
       x[i] += alpha * p_h[i] + omega * s_h[i];
       r[i] = s[i] - omega * t[i];
@@ -1238,7 +1433,7 @@ int Linear_EQS::BiCGStab(double *xg, const long n)
   // concancert internal x
   dom->CatInnerX(xg, x, n);
   // Form the local to global  
-  dom->Border2Global(x_b, xg, n); 
+  // dom->Border2Global(x_b, xg, n); 
 
 
 

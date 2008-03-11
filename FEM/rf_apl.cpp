@@ -444,16 +444,18 @@ int ExecuteRFTimeLoop(void)
     /* Ausgabe fuer Bilanzobjekte */
 //OK    BalanceOverAllGeometryObjects();
     /* Ergebnisausgabe */
+    /*
     if(IsSynCron())			//17.09.2007 WW
 #if defined(USE_MPI)  //12.09.2007 WW
     {
       if(myrank==0) 
 #endif
-    
+       OUTData(m_tim->time_current,aktueller_zeitschritt);
 #if defined(USE_MPI)  //12.09.2007 WW
       // MPI_Barrier (MPI_COMM_WORLD); //WW
     }
 #endif
+    */ 
     #ifdef RFW_FRACTURE 
       for(int i=0; i<(int)mmp_vector.size(); ++i)
         {

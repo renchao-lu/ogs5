@@ -56,10 +56,10 @@ class Linear_EQS
     // Solver
 #if defined(USE_MPI)
     int Solver(double *xg, const long n);
-    int CG(double *xg, const long n) {return -1;}
+    int CG(double *xg, const long n); 
     int BiCG(double *xg, const long n) {return -1;}
     int BiCGStab(double *xg, const long n);
-    int CGS(double *xg, const long n) {return -1;}
+    int CGS(double *xg, const long n);
     double GetCPUtime() const { return cpu_time;  }
 #else
     int Solver();
@@ -107,6 +107,9 @@ class Linear_EQS
 #if defined(USE_MPI)
     CPARDomain *dom;
     double *prec_M;
+    // WW
+    double *border_buffer0;
+    double *border_buffer1;
     double cpu_time;
     friend class ::CPARDomain;
     //

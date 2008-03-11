@@ -33,6 +33,7 @@ using Math_Group::SparseTable;
 //WW
 namespace Mesh_Group {class CFEMesh;}
 using  Mesh_Group::CFEMesh;
+
 #endif
 void FindNodesOnInterface( CFEMesh *m_msh, bool quadr);
 
@@ -40,7 +41,7 @@ void FindNodesOnInterface( CFEMesh *m_msh, bool quadr);
 class CPARDomain
 {
   private:
-    vector<long*> element_nodes_dom; //WW
+    vector<long*> element_nodes_dom; // Local DOM element nodes. WW
     long nnodes_dom;
     long nnodesHQ_dom;
 //#ifdef USE_MPI //WW
@@ -54,6 +55,7 @@ class CPARDomain
     // Store global indices of all border nodes to border_nodes of the whole mesh 
     // 0-->border_nodes_size, nodes for linear interpolation
     // border_nodes_size-->border_nodes_sizeH, nodes for quadratic interpolation
+    vector<int> bnode_connected_dom; // Connected doms of border nodes
     long *t_border_nodes;
     long t_border_nodes_size;
     long t_border_nodes_sizeH;
@@ -142,15 +144,20 @@ class CPARDomain
 #if defined(USE_MPI) //WW
     // long MaxDim() const {return max_dimen;}   //WW
     void ReleaseMemory();
+    void FillBorderNodeConnectDom(vector<int> allnodes_doms); //WW
     long BSize() const {return n_bc;}       //WW
     void ConfigEQS(CNumerics *m_num, const long n, bool quad = false); //WW
     double Dot_Interior(const double *localr0,  const double *localr1=NULL); //WW
+    //
     void Global2Local(const double *global_x, double *local_x, const long n ); //WW
-    void I_local2Global(const double *local_x, double *global_x, const long n ); //WW
+    void Local2Global(const double *local_x, double *global_x, const long n ); //WW
+    //
     void Global2Border(const double *x, double *local_x, const long n); //WW
     void Border2Global(const double *local_x, double *x, const long n); //WW
     void Local2Border(const double *local_x, double *border_x); //WW
     void Border2Local(const double *border_x, double *local_x); //WW
+    //
+    double Dot_Border_Vec(const double *vec_x, const double *vec_y);
     //
     void CatInnerX(double *global_x, const double *local_x, const long n); //WW
     void PrintEQS_CPUtime(ostream &os=cout); //WW
@@ -165,7 +172,7 @@ class CPARDomain
 
 extern vector<CPARDomain*> dom_vector;
 
-extern vector<long> node_connected_doms; // WW
+extern vector<int> node_connected_doms; // WW
 extern void CountDoms2Nodes(CRFProcess *m_pcs); //WW
 extern void DOMRead(string);
 extern void DOMCreate();

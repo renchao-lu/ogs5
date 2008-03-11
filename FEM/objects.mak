@@ -51,6 +51,8 @@ break.o\
 ifndef NO_RANDOM_WALK
 FEMOBJS += rf_random_walk.o
 endif
-ifndef LIS
-rf_REACT_GEM.o\
+#WW modified 
+ifdef GEM_REACT
+rf_REACT_GEM.o
 endif
+

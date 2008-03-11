@@ -106,8 +106,8 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
     Idx_Stress[3] = pcs->GetNodeValueIndex("STRESS_XY");
 
     idx_S = -1;
-	// Saturation;
-	S_Water = 1.0;
+    // Saturation;
+    S_Water = 1.0;
     //
 	switch(dim)
 	{
@@ -115,56 +115,56 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
          ns =4;
          B_matrix = new Matrix(4,2);
          B_matrix_T = new Matrix(2,4);
-		 dstress = new double[4];
-		 dstrain = new double[4];
+         dstress = new double[4];
+         dstrain = new double[4];
          De = new Matrix(4,4);
          ConsistDep = new Matrix(4,4);
          AuxMatrix = new Matrix(2,2);
-		 Disp = new double[18];
-		 Temp = new double[9];
-		 T1 = new double[9];
+         Disp = new double[18];
+         Temp = new double[9];
+         T1 = new double[9];
 
-		 Sxx = new double[9];
-		 Syy = new double[9];
-		 Szz = new double[9];
-		 Sxy = new double[9];
-		 pstr = new double[9];
+         Sxx = new double[9];
+         Syy = new double[9];
+         Szz = new double[9];
+         Sxy = new double[9];
+         pstr = new double[9];
 
          Sxz = NULL;
          Syz = NULL;
 
          if(enhanced_strain_dm)
-		 {
+         {
             NodesInJumpedA = new bool[9];
-			Ge = new Matrix(4,2);
-			Pe = new Matrix(2,4);
-			PeDe = new Matrix(2,4);   
+            Ge = new Matrix(4,2);
+            Pe = new Matrix(2,4);
+            PeDe = new Matrix(2,4);   
             
             BDG = new Matrix(2,18);
             PDB = new Matrix(18,2);
             DtD = new Matrix(2,2);
-		 }
+         }
          break;
-	   case 3:
+       case 3:
          ns = 6;
          B_matrix = new Matrix(6,3);
          B_matrix_T = new Matrix(3,6);
-		 dstress = new double[6];
-		 dstrain = new double[6];
+         dstress = new double[6];
+         dstrain = new double[6];
          De = new Matrix(6,6);
          ConsistDep = new Matrix(6,6);
          AuxMatrix = new Matrix(3,3);
-		 Disp = new double[60];
-		 Temp = new double[20];
-		 T1 = new double[20];
+         Disp = new double[60];
+         Temp = new double[20];
+         T1 = new double[20];
 
-		 Sxx = new double[20];
-		 Syy = new double[20];
-		 Szz = new double[20];
-		 Sxy = new double[20];
-		 Sxz = new double[20];
-		 Syz = new double[20];
-		 pstr = new double[20];
+         Sxx = new double[20];
+         Syy = new double[20];
+         Szz = new double[20];
+         Sxy = new double[20];
+         Sxz = new double[20];
+         Syz = new double[20];
+         pstr = new double[20];
    
          // Indecex in nodal value table
          Idx_Strain[4] = pcs->GetNodeValueIndex("STRAIN_XZ");
@@ -173,7 +173,7 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
          Idx_Stress[4] = pcs->GetNodeValueIndex("STRESS_XZ");
          Idx_Stress[5] = pcs->GetNodeValueIndex("STRESS_YZ");
          break;
-	}
+    }
     *B_matrix = 0.0;
     *B_matrix_T = 0.0;
 
@@ -261,23 +261,23 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
 //  Constructor of class Element_DM 
 CFiniteElementVec::~CFiniteElementVec()
 {
-	delete B_matrix;
-	delete B_matrix_T;
-    delete dstress;
-    delete dstrain;
-	delete De;
+    delete B_matrix;
+    delete B_matrix_T;
+    delete [] dstress;
+    delete [] dstrain;
+    delete De;
     delete ConsistDep;
-	delete AuxMatrix;
-    delete Disp;
-    delete Temp;
-    delete T1;
-    delete Sxx;
-    delete Syy;
-    delete Szz;
-    delete Sxy;
-    delete pstr;
-    if(Sxz) delete Sxz;
-	if(Syz) delete Syz;
+    delete AuxMatrix;
+    delete [] Disp;
+    delete [] Temp;
+    delete [] T1;
+    delete [] Sxx;
+    delete [] Syy;
+    delete [] Szz;
+    delete [] Sxy;
+    delete [] pstr;
+    if(Sxz) delete [] Sxz;
+    if(Syz) delete [] Syz;
 	
     if(dynamic) 
     {
@@ -308,10 +308,10 @@ CFiniteElementVec::~CFiniteElementVec()
         delete DtD;
 
         NodesInJumpedA = NULL;
-		Ge = NULL;
-		Pe = NULL;
-		PeDe = NULL;
-		BDG = NULL;
+        Ge = NULL;
+        Pe = NULL;
+        PeDe = NULL;
+        BDG = NULL;
         PDB = NULL;
         DtD = NULL;
     }
@@ -320,9 +320,9 @@ CFiniteElementVec::~CFiniteElementVec()
     B_matrix_T = NULL;
     dstress = NULL;
     dstrain = NULL;
-	De = NULL;
+    De = NULL;
     ConsistDep = NULL;
-	AuxMatrix = NULL;
+    AuxMatrix = NULL;
     Disp = NULL;
     Temp = NULL;
     T1 = NULL;
@@ -2707,13 +2707,13 @@ void ElementValue_DM::ResetStress(bool cpl_loop)
 {
    if(cpl_loop) // For coupling loop
    {
-	   (*Stress_j) = (*Stress_i);
+      (*Stress_j) = (*Stress_i);
        Stress = Stress_j;
    }
    else // Time loop
    {
-	   (*Stress_i) = (*Stress_j);
-       Stress = Stress_i;
+      (*Stress_i) = (*Stress_j);
+      Stress = Stress_i;
    }
 }
 

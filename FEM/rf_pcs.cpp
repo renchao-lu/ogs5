@@ -8611,6 +8611,7 @@ Programming:
 void CRFProcess::EQSInitialize()
  {eqs_new->Initialize();} 
 
+#if defined(LIS) //11.03.2008 WW
 /*************************************************************************
 ROCKFLOW - Function: CRFProcess::
 Task:  //For fluid momentum, 
@@ -8624,6 +8625,7 @@ void CRFProcess::EQSSolver(double* x)
 	 for(int i=0; i < m_msh->nod_vector.size(); ++i)
 		 x[i] = eqs_new->X(i);
  } 
+#endif
 #endif
 
 #ifdef GEM_REACT

@@ -273,16 +273,16 @@ CFiniteElementStd::~CFiniteElementStd()
        if(Mass) delete Mass;
        if(Mass2) delete Mass2;
        if(Laplace) delete Laplace;
-	   if(Advection) delete Advection;
-	   if(Storage) delete Storage;
-	   if(Content) delete Content;
+       if(Advection) delete Advection;
+       if(Storage) delete Storage;
+       if(Content) delete Content;
        if(StrainCoupling) delete StrainCoupling;
        if(RHS) delete RHS;
        Mass = NULL;
        Laplace = NULL;
-	   Advection = NULL;
-	   Storage = NULL;
-	   Content = NULL;
+       Advection = NULL;
+       Storage = NULL;
+       Content = NULL;
        StrainCoupling = NULL;
        RHS = NULL;
     }
