@@ -20,8 +20,10 @@ class CTimeDiscretization
   private:
    	double safty_coe;
     double dt_sum; // 17.09.2007 WW
-    double this_stepsize; //17.09.2007
+    double this_stepsize; //17.09.2007  WW
+    bool first_tim_entry; //13.3.08// WW
     friend bool IsSynCron(); //WW
+    friend bool TIMRead(string file_base_name); //13.03.2008
   public:
     string file_base_name;
     // TIM

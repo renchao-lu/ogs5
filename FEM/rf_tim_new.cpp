@@ -48,6 +48,7 @@ CTimeDiscretization::CTimeDiscretization(void)
   step_current = 0;		//WW
   this_stepsize = 0.; //WW
   dt_sum = .0;			//WW
+  first_tim_entry = false; //13.3.08// WW
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -330,6 +331,8 @@ bool TIMRead(string file_base_name)
        cout << "Warning : Time-Discrete files are not found" << endl;
   }
     //----------------------------------------------------------------------
+      if(time_vector.size()==0) 
+        m_tim->first_tim_entry = true; //13.03.2008 WW  
       time_vector.push_back(m_tim);
       tim_file.seekg(position,ios::beg);
     } // keyword found
@@ -807,8 +810,10 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
   double time_forward; 
   bool ontime = false;
   this_stepsize = 0.;
+  if(first_tim_entry) return dt0; //13.03.2008 WW
   if((int)time_vector.size()==1)
     return dt0;
+  //
 //WW please check +1
 //OK   double pcs_step = time_step_vector[step_current+1];
   if(step_current>=(int)time_step_vector.size()) //OK
