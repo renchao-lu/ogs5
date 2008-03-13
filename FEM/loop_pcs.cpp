@@ -378,6 +378,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
 //  int lop_nonlinear_iterations = 15; //OK_OUT 2;
   double pcs_coupling_error = 1000; //MB
   bool CalcVelocities = false;  //WW
+  bool conducted = false; //  for time check. WW
   // Mixed time step WW
   double dt0 = dt; // Save the original time step size
   //----------------------------------------------------------------------
@@ -409,6 +410,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
       m_pcs = PCSGet("LIQUID_FLOW");
       if(m_pcs&&m_pcs->selected){
         pcs_flow_error = m_pcs->Execute();
+        conducted = true; //WW 
         PCSCalcSecondaryVariables(); // PCS member function
         m_pcs->CalIntegrationPointValue(); //WW
         if(m_pcs->tim_type_name.compare("STEADY")==0)
@@ -432,6 +434,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
         //................................................................
         // Calculate secondary variables
         // NOD values
+        conducted = true; //WW 
         cout << "      Calculation of secondary NOD values" << endl;
         PCSCalcSecondaryVariables(); // PCS member function
         // GP values 
@@ -478,12 +481,14 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
              m_pcs->CalcSecondaryVariablesUnsaturatedFlow();  //WW
            if(lop_coupling_iterations > 1) // JOD  coupling
               pcs_coupling_error = m_pcs->CalcCouplingNODError();
+           conducted = true; //WW 
         }
         else  //WW
         {
            pcs_flow_error = m_pcs->ExecuteNonLinear();
            m_pcs->CalcSecondaryVariablesUnsaturatedFlow();  //WW
            CalcVelocities = true;
+           conducted = true; //WW 
         } 
         if (CalcVelocities) 
           m_pcs->CalIntegrationPointValue(); //WW		
@@ -497,6 +502,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
           if(m_pcs->pcs_type_name.compare("TWO_PHASE_FLOW")==0)
           {
             pcs_flow_error = m_pcs->ExecuteNonLinear();
+            conducted = true; //WW 
             PCSCalcSecondaryVariables(); // PCS member function
             if(!m_pcs->m_msh) //OK
               VELCalcAll(m_pcs);
@@ -515,6 +521,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
       if(m_pcs&&m_pcs->selected)
       {
          pcs_flow_error = m_pcs->ExecuteNonLinear();
+         conducted = true; //WW 
          m_pcs->CalIntegrationPointValue(); //WW
       }
       // End: MULTI_PHASE_FLOW -----------------------
@@ -526,6 +533,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
           if(m_pcs->pcs_type_name.compare("COMPONENTAL_FLOW")==0)
           {
             pcs_flow_error = m_pcs->ExecuteNonLinear();
+            conducted = true; //WW 
             if(!m_pcs->m_msh) //OK
               VELCalcAll(m_pcs);
 		    else
@@ -540,6 +548,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
         lop_coupling_iterations = m_pcs->m_num->cpl_iterations;
         pcs_flow_error = m_pcs->ExecuteNonLinear();
         PCSCalcSecondaryVariables(); // PCS member function
+        conducted = true; //WW 
       }
       //--------------------------------------------------------------------
       m_pcs = PCSGet("AIR_FLOW");
@@ -551,11 +560,12 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
     		else
           m_pcs->CalIntegrationPointValue(); //WW
         m_pcs->CalcELEVelocities(); //OK
+        conducted = true; //WW 
       }
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       m_pcs = PCSGet("HEAT_TRANSPORT"); //WW
       m_tim = TIMGet("HEAT_TRANSPORT"); //WW
-      if(m_tim&&m_tim!=time_vector[0])  // Different time step for different process. WW
+      if(m_tim&&conducted)  // Different time step for different process. WW
       {
         if(k==0&&th_counter==1) 
           dt = m_tim->CheckTime(aktuelle_zeit, dt0);
@@ -830,7 +840,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
                 break;
              }
           }          
-          if(m_tim)  //WW
+          if(m_tim&&(m_tim!=time_vector[0]))  //WW
           {
             if(k==0)             
               dt = m_tim->CheckTime(aktuelle_zeit, dt0); 
