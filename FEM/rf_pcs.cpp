@@ -684,7 +684,7 @@ void CRFProcess::Create()
      }
   }
   // Write BC/ST nodes for vsualization.WW
-  if(write_boundary_condition)
+  if(write_boundary_condition&&WriteSourceNBC_RHS!=2)
     WriteBC();
   //----------------------------------------------------------------------------
   // ELE - config and create element values

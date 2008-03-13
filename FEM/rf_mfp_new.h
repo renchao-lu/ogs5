@@ -23,6 +23,8 @@ class CFluidProperties
     double primary_variable_t0[10];//CMCD
     double primary_variable_t1[10];//CMCD
     bool cal_gravity; //YD/WW
+    double molar_mass; 
+    friend class  FiniteElement::CFiniteElementStd; //WW
   public:
     double temperature_buffer; //YD, shifted to public JOD
 	int heat_capacity_model;  //YD, shifted to public JOD 

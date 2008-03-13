@@ -83,6 +83,8 @@ CFluidProperties::CFluidProperties(void)
   // Data
   mode = 0; // Gauss point values
   Fem_Ele_Std = NULL;
+  // WW
+  molar_mass = COMP_MOL_MASS_AIR;
 }
 
 /**************************************************************************
@@ -227,6 +229,10 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
         in >> C_0;
 		density_pcs_name_vector.push_back("PRESSURE1");
         density_pcs_name_vector.push_back("TEMPERATURE1");
+      }
+	  if(density_model==9)     //WW
+      { // Molar mass
+        in >> molar_mass;
       }
 //      mfp_file->ignore(MAX_ZEILE,'\n');
       in.clear();

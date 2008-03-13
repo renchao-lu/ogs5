@@ -1290,13 +1290,13 @@ inline double CFiniteElementStd::CalCoefMass2(int dof_index)
               /(rhow*GAS_CONSTANT*TG*rhow);        
        p_gw = rho_gw*GAS_CONSTANT*TG/COMP_MOL_MASS_WATER;
        PG2 = interpolate(NodalVal_p2);   
-       rho_ga = (PG2-p_gw)*COMP_MOL_MASS_AIR/(GAS_CONSTANT*TG);
+       rho_ga = (PG2-p_gw)*FluidProp->molar_mass/(GAS_CONSTANT*TG);
        val -= rho_ga*dSdp/rhow;
        val *= poro;             
        break;
      case 3: //
        // Water vapour pressure
-       val = (1.0-Sw)*poro*COMP_MOL_MASS_AIR/(GAS_CONSTANT*TG*rhow);
+       val = (1.0-Sw)*poro*FluidProp->molar_mass/(GAS_CONSTANT*TG*rhow);
        break;
   }
   return val;
@@ -1770,11 +1770,11 @@ inline void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
         expfactor = COMP_MOL_MASS_WATER/(rhow*GAS_CONSTANT*TG);
         rho_gw = FluidProp->vaporDensity(TG)*exp(-PG*expfactor);
         p_gw = rho_gw*GAS_CONSTANT*TG/COMP_MOL_MASS_WATER;
-        rho_ga = (PG2-p_gw)*COMP_MOL_MASS_AIR/(GAS_CONSTANT*TG);
+        rho_ga = (PG2-p_gw)*FluidProp->molar_mass/(GAS_CONSTANT*TG);
         rho_g = rho_ga+rho_gw;
         // 1/Mg
-        M_g = (rho_gw/COMP_MOL_MASS_WATER+rho_ga/COMP_MOL_MASS_AIR)/rho_g;
-        D_gw = tort*rho_g*COMP_MOL_MASS_WATER*COMP_MOL_MASS_AIR*M_g*M_g/rhow;
+        M_g = (rho_gw/COMP_MOL_MASS_WATER+rho_ga/FluidProp->molar_mass)/rho_g;
+        D_gw = tort*rho_g*COMP_MOL_MASS_WATER*FluidProp->molar_mass*M_g*M_g/rhow;
         D_gw *= rho_gw/(rhow*PG2);
         for(i=0; i<dim; i++)
           mat[i*dim+i] -= D_gw*time_unit_factor;
@@ -1794,7 +1794,7 @@ inline void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
         expfactor = COMP_MOL_MASS_WATER/(rhow*GAS_CONSTANT*TG);
         rho_gw = FluidProp->vaporDensity(TG)*exp(-PG*expfactor);     
         p_gw = rho_gw*GAS_CONSTANT*TG/COMP_MOL_MASS_WATER;
-        rho_ga = (PG2-p_gw)*COMP_MOL_MASS_AIR/(GAS_CONSTANT*TG);
+        rho_ga = (PG2-p_gw)*FluidProp->molar_mass/(GAS_CONSTANT*TG);
         rho_g = rho_ga+rho_gw;      
       }
       tensor = MediaProp->PermeabilityTensor(Index);
@@ -1812,14 +1812,14 @@ inline void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
       //
       if(!Gravity)
       {
-        D_gw = tort*COMP_MOL_MASS_WATER*COMP_MOL_MASS_AIR*M_g*M_g*rho_g/rhow;
+        D_gw = tort*COMP_MOL_MASS_WATER*FluidProp->molar_mass*M_g*M_g*rho_g/rhow;
         D_gw *= p_gw/(PG2*PG2);
         for(i=0; i<dim; i++)
           mat[i*dim+i] -= D_gw*time_unit_factor;
       }
       break;
     case 2:
-      D_ga = tort*COMP_MOL_MASS_WATER*COMP_MOL_MASS_AIR*M_g*M_g*rho_g/rhow;
+      D_ga = tort*COMP_MOL_MASS_WATER*FluidProp->molar_mass*M_g*M_g*rho_g/rhow;
       D_ga *= rho_gw/(PG2*rhow);      
       for(i=0; i<dim; i++)
         mat[i*dim+i] = D_ga*time_unit_factor;
@@ -1837,7 +1837,7 @@ inline void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
         mat[i] = tensor[i] * mat_fac*time_unit_factor;
       if(!Gravity)
       {
-         D_ga = tort*rho_g*COMP_MOL_MASS_WATER*COMP_MOL_MASS_AIR*M_g*M_g/rhow;
+         D_ga = tort*rho_g*COMP_MOL_MASS_WATER*FluidProp->molar_mass*M_g*M_g/rhow;
          D_ga *= p_gw/(PG2*PG2);
          for(i=0; i<dim; i++)
            mat[i*dim+i] += D_ga*time_unit_factor;
@@ -2515,7 +2515,7 @@ void CFiniteElementStd::CalcAdvection()
     if(multiphase)  //02/2007 WW
     {
        PG2 = interpolate(NodalVal_p2);   
-       rho_g = PG2*COMP_MOL_MASS_AIR/(GAS_CONSTANT*(TG+273.15));
+       rho_g = PG2*FluidProp->molar_mass/(GAS_CONSTANT*(TG+273.15));
        mat_factor = rho_g*m_mfp_g->SpecificHeatCapacity();
        vel[0] += mat_factor*gp_ele->Velocity_g(0, gp);   
        vel[1] += mat_factor*gp_ele->Velocity_g(1, gp);
@@ -4808,17 +4808,17 @@ inline double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
       tort *=(1.0-Sw)*poro*2.16e-5*pow(TG/T_KILVIN_ZERO, 1.8);
       //
       p_gw = rho_gw*GAS_CONSTANT*TG/COMP_MOL_MASS_WATER;
-      rho_ga = (PG2-p_gw)*COMP_MOL_MASS_AIR/(GAS_CONSTANT*TG);
+      rho_ga = (PG2-p_gw)*FluidProp->molar_mass/(GAS_CONSTANT*TG);
       rho_g = rho_ga+rho_gw;
       // 1/Mg
-      M_g = (rho_gw/COMP_MOL_MASS_WATER+rho_ga/COMP_MOL_MASS_AIR)/rho_g;
-      D_gw = tort*rho_g*COMP_MOL_MASS_WATER*COMP_MOL_MASS_AIR*M_g*M_g/rhow;
+      M_g = (rho_gw/COMP_MOL_MASS_WATER+rho_ga/FluidProp->molar_mass)/rho_g;
+      D_gw = tort*rho_g*COMP_MOL_MASS_WATER*FluidProp->molar_mass*M_g*M_g/rhow;
       val = D_gw*drho_gw_dT*GAS_CONSTANT*TG/(COMP_MOL_MASS_WATER*PG2)*time_unit_factor;
       break;
     case 3:
       //---------------------------------------------------------------
       // 
-      D_ga = tort*rho_g*COMP_MOL_MASS_WATER*COMP_MOL_MASS_AIR*M_g*M_g/rhow;
+      D_ga = tort*rho_g*COMP_MOL_MASS_WATER*FluidProp->molar_mass*M_g*M_g/rhow;
       // From grad (p_gw/p_g)
       val = -D_ga*drho_gw_dT*GAS_CONSTANT*TG/(COMP_MOL_MASS_WATER*PG2)*time_unit_factor;
       
@@ -5001,7 +5001,7 @@ inline double CFiniteElementStd::CalCoef_RHS_M_MPhase(int dof_index)
       expfactor = COMP_MOL_MASS_WATER/(rhow*GAS_CONSTANT*TG);
       rho_gw = FluidProp->vaporDensity(TG)*exp(-PG*expfactor);
       p_gw = rho_gw*GAS_CONSTANT*TG/COMP_MOL_MASS_WATER;
-      rho_ga = (PG2-p_gw)*COMP_MOL_MASS_AIR/(GAS_CONSTANT*TG);
+      rho_ga = (PG2-p_gw)*FluidProp->molar_mass/(GAS_CONSTANT*TG);
       val = Sw+(1.0-Sw)*rho_gw/rhow;
       break;
     case 1:
