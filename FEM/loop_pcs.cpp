@@ -555,7 +555,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       m_pcs = PCSGet("HEAT_TRANSPORT"); //WW
       m_tim = TIMGet("HEAT_TRANSPORT"); //WW
-      if(m_tim)  // Different time step for different process. WW
+      if(m_tim&&m_tim!=time_vector[0])  // Different time step for different process. WW
       {
         if(k==0&&th_counter==1) 
           dt = m_tim->CheckTime(aktuelle_zeit, dt0);
