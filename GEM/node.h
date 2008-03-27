@@ -13,7 +13,7 @@
 // This file may be distributed under the licence terms
 // defined in GEMIPM2K.QAL
 //
-// See also http://les.web.psi.ch/Software/GEMS-PSI
+// See also http://gems.web.psi.ch/
 // E-mail: gems2.support@psi.ch
 //-------------------------------------------------------------------
 //
@@ -32,6 +32,8 @@ class QWidget;
 class TNode
 {
 
+  gstring dbr_file_name;
+  
 protected:
 
    MULTI* pmm;  // Pointer to GEMIPM work data structure (see ms_multi.h)
@@ -48,7 +50,12 @@ protected:
     DATABR* CNode;  // Pointer to a work node data bridge structure (node)
       // used for exchanging input data and results between FMT and GEMIPM
 
-    double CalcTime;  // GEMIPM2 calculation time (from the last GEM_run() call)
+    double CalcTime;  // GEMIPM2 calculation time (after the last GEM_run() call)
+    
+    int PrecLoops,    // Number of performed IPM-2 precision refinement loops
+        NumIterFIA,   // Total Number of performed FIA entry iterations
+        NumIterIPM;   // Total Number of performed IPM main iterations
+    
     // Checks if given Tc and P fit within interpolation intervals
     bool  check_TP( double& Tc, double& P );
 
@@ -85,11 +92,11 @@ protected:
 
     // Text i/o functions
       // writes CSD (DATACH structure) to a text file
-    void datach_to_text_file( fstream& ff );
+    void datach_to_text_file( fstream& ff, bool with_comments = true );
       // reads CSD (DATACH structure) from a text file
     void datach_from_text_file( fstream& ff);
       // writes work node (DATABR structure) to a text file
-    void databr_to_text_file(fstream& ff );
+    void databr_to_text_file(fstream& ff, bool with_comments = true );
       // reads work node (DATABR structure) from a text file
     void databr_from_text_file(fstream& ff );
 
@@ -183,7 +190,7 @@ static TNode* na;   // static pointer to this class
     double *p_dul,   // upper kinetic restrictions [nDCb]       +       -      -
     double *p_dll,   // lower kinetic restrictions [nDCb]       +       -      -
     double *p_aPH  // Specific surface areas of phases (m2/g)   +       -      -
-);
+   );
 
 // Overload - uses also xDC vector for bulk composition input to GEM
 // added by DK on 09.07.2007
@@ -241,19 +248,27 @@ void GEM_from_MT(
 // check the return code and retrieve chemical speciation etc.
 // using the GEM_to_MT() call
 //
-   int  GEM_run();   // calls GEM for a work node
+   int  GEM_run( bool uPrimalSol );   // calls GEM for a work node
 
 // Returns GEMIPM2 calculation time in sec after the last call to GEM_run()
    double GEM_CalcTime();
 
+// Returns total number of FIA + IPM iterations after the last call to GEM_run()
+// More detailed info is returned via parameters by reference:
+//    PrecLoops:  Number of performed IPM-2 precision refinement loops
+//    NumIterFIA: Total Number of performed FIA entry iterations
+//    NumIterIPM: Total Number of performed IPM main iterations
+   int GEM_Iterations( int& PrecLoops, int& NumIterFIA, int& NumIterIPM ); 
+   
 // (5) For interruption/debugging
 // Writes work node (DATABR structure) into a file path name fname
 // Parameter binary_f defines if the file is to be written in binary
 // format (true or 1, good for interruption of coupled modeling task
 // if called in loop for each node), or in text format
-// (false or 0, default)
+// (false or 0, default). Parameter with_comments, if true, tells that 
+// the text file will be written with comments for all data entries. 
 //
-   void  GEM_write_dbr( const char* fname, bool binary_f=false );
+   void  GEM_write_dbr( const char* fname,  bool binary_f=false, bool with_comments = true);
 
 // (5a) For detailed examination of GEM work data structure:
 // writes GEMIPM internal MULTI data structure into text file
@@ -385,7 +400,7 @@ void GEM_from_MT(
     // Data exchange methods between GEMIPM and work node DATABR structure
     // Are called inside of GEM_run()
     void packDataBr();   //  packs GEMIPM calculation results into work node structure
-    void unpackDataBr(); //  unpacks work node structure into GEMIPM data structure
+    void unpackDataBr( bool uPrimalSol ); //  unpacks work DATABR content into GEMIPM data structure
 
     // Access to interpolated thermodynamic data from DCH structure
     // Test Tc and P as grid point for the interpolation of thermodynamic data

@@ -20,7 +20,7 @@ class CTimeDiscretization
   private:
    	double safty_coe;
     double dt_sum; // 17.09.2007 WW
-    double this_stepsize; //17.09.2007  WW
+    double this_stepsize; //17.09.2007
     friend bool IsSynCron(); //WW
   public:
     string file_base_name;
@@ -29,6 +29,8 @@ class CTimeDiscretization
 	vector<int> time_adapt_tim_vector;
     vector<double>time_adapt_coe_vector;
 	vector<double>fixed_point_vector;
+
+    vector<double> time_step_target_vector; // kg44 for adaptive steps..intermediate time target that need to be reached
     double time_start;
     double time_end;
     double time_current;
@@ -49,6 +51,8 @@ class CTimeDiscretization
 	bool Write_tim_discrete;  //YD
 	fstream *tim_discrete;  //YD
     double nonlinear_iteration_error; //OK/YD
+    double max_adaptive_factor; // kg44
+    double max_adaptive_concentration_change; // kg44
   public:
     CTimeDiscretization(void);
     ~CTimeDiscretization(void);
@@ -64,6 +68,7 @@ class CTimeDiscretization
     double NeumannTimeControl();
     double SelfAdaptiveTimeControl();
     double CheckTime(double const c_time, const double dt0); //WW
+   bool GetTimeStepTargetVector(); // kg44
    // void CheckCourant();//CMCD
 };
 

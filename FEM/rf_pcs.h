@@ -449,11 +449,14 @@ public:
     void AssembleParabolicEquationRHSVector(); //OK
     void InterpolateTempGP(CRFProcess *, string); //MX
     void ExtropolateTempGP(CRFProcess *, string); //MX
-    //Repeat Calculation,    JOD removed
-    //void PrimaryVariableReload();  //YD
-    //void PrimaryVariableReloadRichards(); //YD
-    //void PrimaryVariableStorageRichards(); //YD
-    //bool adaption; 
+    //Repeat Calculation,    JOD removed // HS reactivated
+    void PrimaryVariableReload();  //YD
+    void PrimaryVariableReloadRichards(); //YD
+    void PrimaryVariableStorageRichards(); //YD
+    bool adaption; 
+    void PrimaryVariableReloadTransport(); //kg44
+    void PrimaryVariableStorageTransport(); //kg44
+    double GetNewTimeStepSizeTransport(double mchange); //kg44
     // FLX
     void CalcELEFluxes(CGLPoint*); //OK
     double CalcELEFluxes(CGLPolyline*); //OK

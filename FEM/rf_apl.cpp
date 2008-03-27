@@ -312,7 +312,7 @@ Programing:
 int ExecuteRFTimeLoop(void)
 {
   bool heat_flag = false;
-  int i = 0;
+  int i = 0, j;
   double ct = 0.0;
   //----------------------------------------------------------------------
 /*OK
@@ -396,16 +396,26 @@ int ExecuteRFTimeLoop(void)
         m_tim->time_current -= m_tim->time_step_length;
         aktueller_zeitschritt--; 
         aktuelle_zeit = m_tim->time_current; 
+        cout << "REPEAT TIME STEP" << endl;
+        for(j=0;j<no_processes;j++){
+                  m_pcs = pcs_vector[j];
+	          m_pcs->PrimaryVariableReload(); // kg44 should be done here, as repeat is changed before transport is executed again
+        }
       }
     }
    	ct = 1.0;
     // Time step calculation
     dt = m_tim->CalcTimeStep();
+     if ((m_tim->time_current + dt) > m_tim->time_end) {
+                         dt= m_tim->time_end - m_tim->time_current; // kg44 make sure we hit the last point
+     }
     //----------------------------------------------------------------------
      if(dt < m_tim->min_time_step){
-       cout << "TIME step is too small, calculation will be stopped" << endl;
-       break;
+       // cout << "TIME step is too small, calculation will be stopped" << endl; // HS/KG, changed for adaptive time step.
+       cout << "TIME step is set to the smallest time step. " << endl;
+       dt=m_tim->min_time_step;
      }
+     m_tim->time_step_length=dt; // kg44 for ADAPTIVE
     //----------------------------------------------------------------------
 	//Include stability check CMCD GEOSYS4
 	if ((heat_flag)&&(aktueller_zeitschritt > 0)) {

@@ -226,15 +226,14 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
 	  // REACT_GEM *p_REACT_GEM = NULL;  
 	  m_vec_GEM = new REACT_GEM(); 
 	  // m_vec_GEM.push_back(p_REACT_GEM);
-	  m_vec_GEM->Init_Nodes(project_path);
-	  if (m_vec_GEM->Init_RUN() == 0 )
+	  if ( m_vec_GEM->Init_Nodes(project_path) == 0 && m_vec_GEM->Init_RUN() == 0 )
 	  {
 		  m_vec_GEM->initialized_flag = 1;
-	  };
+	  }
 	  // HS: here do not overwrite the conc. values in GS/RF. 
       // So that the BC and IC values can be automatically taken care of. 
 
-    #else
+	#else
 	//---------------------------------------------------
 		REACT *rc = NULL; //SB
 	//  rc->TestPHREEQC(); // Test if *.pqc file is present
@@ -714,102 +713,151 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
         // Calculate conservative transport
         CTimeDiscretization *m_tim = NULL;
         m_pcs = PCSGet("MASS_TRANSPORT");
-        if(m_pcs){
-          m_tim = TIMGet("MASS_TRANSPORT");
-          if(m_tim){
-            //WW/OK  if(m_tim->time_control_name.compare("COURANT_MANIPULATE")==0) m_tim->CheckCourant();
-            //WW/OK  if (aktueller_zeitschritt == 1) m_tim->CheckCourant();//CMCD 03/2006
-            //WW dt_pcs = m_tim->time_step_vector[0];
 
+        double /*dt_pcs,*/ new_time_factor=1.0; // c_change: ..max change of concentration
+     	
+      
+        if(m_pcs)
+        {
+            if(m_pcs->adaption) // kg44 this is for adaptive time stepping
+            {
+				m_tim = TIMGet("GROUNDWATER_FLOW");
+				// kg44 because the main loop works only with the "first" time_vector I introduced this here...it is an source for mistakes...as this only works for the combination groundwater flow + mass transport and groundwater flow is defined first  as pcs[0]....
+				// Get time step number
+				if ( m_tim )
+				{
+					if(k==0)
+						dt = m_tim->CheckTime(aktuelle_zeit, dt0); 
+					else
+						dt = m_tim->GetTimeStep();
+					if( dt>DBL_MIN )
+					{
+						for(i=0;i<no_processes;i++)
+						{
+							m_pcs = pcs_vector[i];
+							if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0)
+							if(CPGetMobil(m_pcs->GetProcessComponentNumber())> 0) //Component Mobile ?
+							{ 
+								m_pcs->Execute();
+								// calculate max change of concentration : test for repeat
+								new_time_factor=m_pcs->GetNewTimeStepSizeTransport(m_tim->max_adaptive_concentration_change);
+								if (m_tim->repeat == false)  PCSStorage(); // kg44 added for adaptive time stepping ..must be after time step size factor
+							} // mobile component finished
+						} // loop over all PCSs
+						// final test if it needs to be repeated -> set repeat 
+						// cout << endl << "Transport: adaptive time stepping factor " << new_time_factor << endl;
+						m_tim->time_adapt_coe_vector[0]=new_time_factor;
+						// now 
+						if ((new_time_factor<1.) && (m_tim->time_step_length > m_tim->min_time_step) )
+						{
+							m_tim->repeat = true; // need to change the time step size!
+							cout << "  Transport: set repeat!!!!!!!"<<endl; 
+						}
+						else{ m_tim->repeat = false;}
+						// kg44 07/12/2007 it seems that the Phreeqc coupling also modifies the time stepping!! 
+						// I did not test if adaptive time stepping works!
+
+						if(REACT_vec.size()>0) //OK//
+						if(REACT_vec[0]->flag_pqc)
+						{ 
+							#ifdef REACTION_ELEMENT
+							 REACT_vec[0]->ExecuteReactionsPHREEQC0();
+							#else
+							  REACT_vec[0]->ExecuteReactionsPHREEQCNew();
+							#endif
+						}
+						dt = dt0;
+					}
+				} // end of if( m_tim )
+			} // end adaptive time stepping
+        else // now for non-adaptive time stepping part
+        {
+            m_tim = TIMGet("MASS_TRANSPORT");
             if(m_tim)  //Differet time step for different process. WW
             {
-              if(k==0)             
-                dt = m_tim->CheckTime(aktuelle_zeit, dt0); 
-              else
-                dt = m_tim->GetTimeStep();  
-										  }
-
-            if(dt>DBL_MIN) //WW if(dt_sum>=dt_pcs)
-            {
-              for(i=0;i<no_processes;i++){
-                m_pcs = pcs_vector[i];
-                if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0)
-	            {
-                    if(CPGetMobil(m_pcs->GetProcessComponentNumber())> 0) //Component Mobile ? 
-		            {
-                    	double PCSerr; 
-                        PCSerr = m_pcs->Execute();
-                        // HS: 05.02.2007: 
-                        if(lop_coupling_iterations > 1)
+                if(k==0)
+                    dt = m_tim->CheckTime(aktuelle_zeit, dt0); 
+                else
+                    dt = m_tim->GetTimeStep();  
+                if(dt>DBL_MIN) //WW if(dt_sum>=dt_pcs)
+                {
+                    for(i=0;i<no_processes;i++)
+                    {
+                        m_pcs = pcs_vector[i];
+                        if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0)
                         {
-                            m_pcs->m_num->cpl_variable = m_pcs->pcs_primary_function_name[0];
-                            pcs_coupling_error = max( pcs_coupling_error , PCSerr );
-                        }
+                            if(CPGetMobil(m_pcs->GetProcessComponentNumber())> 0) //Component Mobile ? 
+                            {
+                                double PCSerr; 
+                                PCSerr = m_pcs->Execute();
+                                // HS: 05.02.2007: 
+                                if(lop_coupling_iterations > 1)
+                                {
+                                    m_pcs->m_num->cpl_variable = m_pcs->pcs_primary_function_name[0];
+                                    pcs_coupling_error = max( pcs_coupling_error , PCSerr );
+                                }
+                            }// end of mobile components
+                        }// end of "MASS TRANSPORT"
+                    }// end of loop over all processes
+
+                    // Calculate Chemical reactions, after convergence of flow and transport 
+                    // Move inside iteration loop if couplingwith transport is implemented SB:todo
+                    // SB:todo move into Execute Reactions	  if((aktueller_zeitschritt % 1) == 0)  
+                    if(REACT_vec.size()>0) //OK
+                    {  
+                      if(REACT_vec[0]->flag_pqc)
+                      { 
+                        #ifdef REACTION_ELEMENT
+                            REACT_vec[0]->ExecuteReactionsPHREEQC0();
+                        #else
+                            // REACT_vec[0]->ExecuteReactions();
+                            REACT_vec[0]->ExecuteReactionsPHREEQCNew();
+                        #endif
+                      }
                     }
-                }
-              }
-              // Calculate Chemical reactions, after convergence of flow and transport 
-              // Move inside iteration loop if couplingwith transport is implemented SB:todo
-              //SB:todo move into Execute Reactions	  if((aktueller_zeitschritt % 1) == 0)  
-			  //REACT *rc = NULL; //OK
-			  //rc = REACT_vec[0]; //OK
-//				if(rc->flag_pqc) rc->ExecuteReactions();
-//				delete rc;
-              if(REACT_vec.size()>0) //OK
-			  {  if(REACT_vec[0]->flag_pqc){ 
-                    #ifdef REACTION_ELEMENT
-                      REACT_vec[0]->ExecuteReactionsPHREEQC0();
-                    #else
-//                      REACT_vec[0]->ExecuteReactions();
-					  REACT_vec[0]->ExecuteReactionsPHREEQCNew();
+                    else // of if(REACT_vec.size()>0)
+                    //-------------------------------------------------- 
+                    // HB, for the GEM chemical reaction engine 05.2007
+                    //--------------------------------------------------
+                    {
+                    #ifdef GEM_REACT
+		                      if (m_vec_GEM->initialized_flag == 1)//when it was initialized. 
+		                      {
+			                      int m_time = 1; // 0-previous time step results; 1-current time step results
+                			      
+                                  // Check if the Sequential Iterative Scheme needs to be intergrated
+                                  if (m_pcs->m_num->cpl_iterations > 1)
+                  	                      m_vec_GEM->flag_iterative_scheme = 1; // set to standard iterative scheme;
+                                  // write time
+                                  cout << "CPU time elapsed before GEMIMP2K: " << TGetTimer(0) << " s" << endl;
+                                  // Move current xDC to previous xDC
+                                  m_vec_GEM->CopyCurXDCPre();
+                                  // Get info from MT
+			                      m_vec_GEM->GetReactInfoFromMassTransport(m_time);						  						  
+                                  // Run GEM
+			                      m_vec_GEM->Run_MainLoop();
+			                      // Calculate the different of xDC
+                                  m_vec_GEM->UpdateXDCChemDelta();						  
+			                      // Set info in MT
+			                      m_vec_GEM->SetReactInfoBackMassTransport(m_time);
+                                  // write time
+                                  cout << "CPU time elapsed after GEMIMP2K: " << TGetTimer(0) << " s" << endl;
+		                      }
                     #endif
-                }
-			  }
-			  else
-			//-------------------------------------------------- 
-			// HB, for the GEM chemical reaction engine 05.2007
-			//--------------------------------------------------
-			  {
-			#ifdef GEM_REACT
-                  // for (int id=0; id < (int)m_vec_GEM.size() ; id++)//loop over all the REACT_GEM vector
-				  // {
-					  if (m_vec_GEM->initialized_flag == 1)//when it was initialized. 
-					  {
-						  int m_time = 1; // 0-previous time step results; 1-current time step results
-					      
-                          // Check if the Sequential Iterative Scheme needs to be intergrated
-                          if (m_pcs->m_num->cpl_iterations > 1)
-                              	  m_vec_GEM->flag_iterative_scheme = 1; // set to standard iterative scheme;
-                          // write time
-                          cout << "CPU time elapsed before GEMIMP2K: " << TGetTimer(0) << " s" << endl;
-                          // Move current xDC to previous xDC
-                          m_vec_GEM->CopyCurXDCPre();
-                          // Get info from MT
-						  m_vec_GEM->GetReactInfoFromMassTransport(m_time);						  						  
-                          // Run GEM
-						  m_vec_GEM->Run_MainLoop();
-						  // Calculate the different of xDC
-                          m_vec_GEM->UpdateXDCChemDelta();						  
-						  // Set info in MT
-						  m_vec_GEM->SetReactInfoBackMassTransport(m_time);
-                          // write time
-                          cout << "CPU time elapsed after GEMIMP2K: " << TGetTimer(0) << " s" << endl;
-					  }
-				  // }
-			#endif
-			  }
-			//-------------------------------------------------
-#ifdef CHEMAPP
-              if(Eqlink_vec.size()>0) 
-                Eqlink_vec[0]->ExecuteEQLINK();
-#endif
-	          dt = dt0; //WW
-            }
-          }
-          else
+                    }
+                    //-------------------------------------------------
+                #ifdef CHEMAPP
+                              if(Eqlink_vec.size()>0) 
+                                Eqlink_vec[0]->ExecuteEQLINK();
+                #endif
+                  dt = dt0; // WW
+                } // end of if(dt>DBL_MIN)
+            } // end of if(m_tim)
+            else
             cout << "Error in LOPTimeLoop_PCS: no time discretization" << endl;
-       }
-    }
+       } // end no adaption for time stepping 
+     }   // end m_pcs
+    } // end mass transport process
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 // PCH The velocity process ends here.
@@ -1888,10 +1936,11 @@ void LOPCalcNODResultants(void)
 /**************************************************************************
 Task: 
 Programing:PCSStorage
-   06/2006   YD   Implementation  
-   02/2008 JOD removed
+   06/2006 YD		Implementation  
+   02/2008 JOD		removed
+   03/2008 HS/KG	restored and add M case
 /**************************************************************************/
-/*void PCSStorage(void){  
+void PCSStorage(void){
   CRFProcess* m_pcs = NULL;
   for(int p=0;p<(int)pcs_vector.size();p++){
     m_pcs = pcs_vector[p];
@@ -1908,6 +1957,9 @@ Programing:PCSStorage
         break;
       case 'T':
         break;
+      case 'M':
+        m_pcs->PrimaryVariableStorageTransport();
+        break;
       case 'C':
         break;
       case 'R': // Richards flow
@@ -1916,5 +1968,3 @@ Programing:PCSStorage
     }
   }
 }
-
-*/

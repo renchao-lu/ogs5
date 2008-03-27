@@ -2273,6 +2273,14 @@ void CRFProcess::ConfigMassTransport()
   sprintf(pcs_secondary_function_name[1], "%s%li","MASS_FLUX_",comp);
   pcs_secondary_function_unit[1] = "kg/m3/s";
   pcs_secondary_function_timelevel[1] = 1;
+//KG44 added secondary function for adaptive time stepping
+if (adaption) {
+  pcs_number_of_secondary_nvals = 3;
+  pcs_secondary_function_name[2]= new char[80];
+  sprintf(pcs_secondary_function_name[2], "%s%li","CONC_BACK_",comp);
+  pcs_secondary_function_unit[2] = "kg/m3";
+  pcs_secondary_function_timelevel[2] = 0;
+}
 //OK  LOPCalcSecondaryVariables_USER = MTM2CalcSecondaryVariables;  //SB:todo
   // 2 ELE values
   pcs_number_of_evals = 0;
@@ -6836,9 +6844,10 @@ void CRFProcess::AssembleParabolicEquationRHSVector()
 GeoSys-FEM Function:
 06/2006 YD Implementation
 02/2008 JOD removed
+03/2008 HS/KG activated for adaptive time step
 Reload primary variable
 **************************************************************************/
-/*void CRFProcess::PrimaryVariableReload()
+void CRFProcess::PrimaryVariableReload()
 {
   char pcsT;
   pcsT = pcs_type_name[0];
@@ -6853,18 +6862,21 @@ Reload primary variable
       break;
     case 'C':
       break;
+    case 'M':
+      PrimaryVariableReloadTransport();
+      break;
     case 'R': // Richards flow
       PrimaryVariableReloadRichards();
       break;
   }
-}*/
+}
 /*************************************************************************
 GeoSys-FEM Function:
 06/2006 YD Implementation
 02/2008 JOD removed
 Reload primary variable of Richards Flow
 **************************************************************************/
-/*void CRFProcess::PrimaryVariableReloadRichards()
+void CRFProcess::PrimaryVariableReloadRichards()
 {
   int i;
   int idxp,idx_storage;
@@ -6879,15 +6891,74 @@ Reload primary variable of Richards Flow
   }     
   CalcSecondaryVariables(0);
   CalcSecondaryVariables(1);
-}*/
+}
 
 /*************************************************************************
 GeoSys-FEM Function:
+12/2007 kg44 Implementation
+Reload primary variable for Transport
+**************************************************************************/
+void CRFProcess::PrimaryVariableReloadTransport()
+{
+  long i;
+  int comp;
+  int idxp,idx_storage;
+  double conc_back;
+  char* mcomp_name;
+
+  idxp = GetNodeValueIndex(pcs_primary_function_name[0]); //kg44 test
+
+  comp = pcs_component_number; // get component number
+
+  mcomp_name = new char[80];
+  sprintf(mcomp_name, "%s%li","CONC_BACK_",comp);
+
+  idx_storage = GetNodeValueIndex(mcomp_name);
+
+  for(i=0;i<(long)m_msh->GetNodesNumber(false);i++){
+    conc_back = GetNodeValue(i,idx_storage);
+    SetNodeValue(i,idxp,conc_back);
+    SetNodeValue(i,idxp+1,conc_back);
+   
+  }     
+  
+  CalcSecondaryVariables(0);
+  CalcSecondaryVariables(1);
+}
+
+/*************************************************************************
+GeoSys-FEM Function:
+12/2007 kg44 Implementation
+Reload primary variable for Transport
+**************************************************************************/
+void CRFProcess::PrimaryVariableStorageTransport()
+{
+  long i;
+  int comp;
+  int idxp,idx_storage;
+  double concentration;
+  char* mcomp_name;
+
+  idxp = GetNodeValueIndex(pcs_primary_function_name[0]);
+  comp = pcs_component_number; // get component number
+//   cout << "comp number "<<comp<<endl;
+  mcomp_name= new char[80];
+  sprintf(mcomp_name, "%s%li","CONC_BACK_",comp);
+//   cout << "mcomp_name"<< mcomp_name<<endl;
+  idx_storage = GetNodeValueIndex(mcomp_name);
+
+  for(i=0;i<(long)m_msh->GetNodesNumber(false);i++){
+    concentration = GetNodeValue(i,idxp);
+    SetNodeValue(i,idx_storage,concentration);
+//    SetNodeValue(i,idx_storage+1,concentration);
+  }     
+}
+/*************************************************************************
+GeoSys-FEM Function:
 06/2006 YD Implementation
-02/2008 JOD removed
 Reload primary variable of Richards Flow
 **************************************************************************/
-/*void CRFProcess::PrimaryVariableStorageRichards()
+void CRFProcess::PrimaryVariableStorageRichards()
 {
   int i;
   int idxp,idx_storage;
@@ -6900,7 +6971,42 @@ Reload primary variable of Richards Flow
     SetNodeValue(i,idx_storage,pressure);
     SetNodeValue(i,idx_storage+1,pressure);
   }     
-}*/
+}
+
+//*************************************************************************
+//GeoSys-FEM Function:
+//12/2007 kg44 Implementation
+//check change of concentration and set new time step factor
+//**************************************************************************/
+double CRFProcess::GetNewTimeStepSizeTransport(double mchange)
+{
+  long i, mnode=-1; 
+  int comp;
+  int idxn,idxo;
+  double conc_new, conc_old,/*time_coeff,*/ max_change=1.0e-10, tchange=1.0;
+  char* mcomp_name;
+
+  idxo = GetNodeValueIndex(pcs_primary_function_name[0]);
+  comp = pcs_component_number; // get component number
+//   cout << "comp number "<<comp<<endl;
+  mcomp_name= new char[80];
+  sprintf(mcomp_name, "%s%li","CONC_BACK_",comp);
+//   cout << "mcomp_name"<< mcomp_name<<endl;
+  idxn = GetNodeValueIndex(mcomp_name);
+  for(i=0;i<(long)m_msh->GetNodesNumber(false);i++){
+    conc_old = abs(GetNodeValue(i,idxo));
+    conc_new = abs(GetNodeValue(i,idxn));
+    if (((conc_old) > MKleinsteZahl)&&((conc_new) > MKleinsteZahl)) {
+                 max_change=MMax(max_change,conc_new/conc_old); mnode=i;}
+  }     
+    tchange=mchange/max_change;  
+  if (tchange > 2.0) tchange=2.0;
+  cout << "Transport: max change of "<< max_change << " at node " << mnode << " factor " << tchange<< endl;
+  return tchange;
+}
+
+
+
 /**************************************************************************
 FEMLib-Method: 
 11/2005 MB Implementation

@@ -41,6 +41,7 @@ CTimeDiscretization::CTimeDiscretization(void)
   time_start = 0.0;
   time_end = 1.0;
   time_type_name = "CONSTANT"; //OK
+  time_control_name = "FIXED"; //kg44
   time_unit = "SECOND"; 
   max_time_step = 1.e10;   //YD 
   min_time_step = 0;   //YD 
@@ -104,51 +105,56 @@ Programing:
 **************************************************************************/
 ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
 {
-  string sub_line;
-  string line_string;
-  string delimiter(" ");
-  bool new_keyword = false;
-  string hash("#");
-  ios::pos_type position;
-  string sub_string;
-  bool new_subkeyword = false;
-  string dollar("$");
-  int no_time_steps = 0;
-  double time_step_length;
-  ios::pos_type position_subkeyword;
-  std::stringstream line;
-  string line_complete;
-  int iter_times;   //YD
-  double multiply_coef;    //YD
-  int i;
-  CRFProcess* m_pcs = NULL;
-  m_pcs = PCSGet("RICHARDS_FLOW");
-  //========================================================================
-  // Schleife ueber alle Phasen bzw. Komponenten 
-  while(!new_keyword) {
-    if(new_subkeyword)
-      tim_file->seekg(position,ios::beg);
-    new_subkeyword = false;
-    position = GetNextSubKeyword(tim_file,&line_string,&new_keyword);
-    if(new_keyword) 
-      return position;
-/*
-    position = tim_file->tellg();
-    if(new_subkeyword)
-      tim_file->seekg(position_subkeyword,ios::beg);
-    new_subkeyword = false;
-    tim_file->getline(buffer,MAX_ZEILE);
-    line_string = buffer;
-	if(line_string.size()<1) // empty line
-      continue; 
-    if(Keyword(line_string)) 
-      return position;
-*/
+    string sub_line;
+    string line_string;
+    string delimiter(" ");
+    bool new_keyword = false;
+    string hash("#");
+    ios::pos_type position;
+    string sub_string;
+    bool new_subkeyword = false;
+    string dollar("$");
+    int no_time_steps = 0;
+    double time_step_length;
+    ios::pos_type position_subkeyword;
+    std::stringstream line;
+    string line_complete;
+    int iter_times;   //YD
+    double multiply_coef;    //YD
+    int i;
+    CRFProcess* m_pcs = NULL;
+    m_pcs = PCSGet("RICHARDS_FLOW");
+
+    //========================================================================
+    // Schleife ueber alle Phasen bzw. Komponenten 
+    while(!new_keyword) 
+    {
+        if(new_subkeyword)
+            tim_file->seekg(position,ios::beg);
+        new_subkeyword = false;
+        position = GetNextSubKeyword(tim_file,&line_string,&new_keyword);
+        if(new_keyword) 
+          return position;
+        /*
+            position = tim_file->tellg();
+            if(new_subkeyword)
+              tim_file->seekg(position_subkeyword,ios::beg);
+            new_subkeyword = false;
+            tim_file->getline(buffer,MAX_ZEILE);
+            line_string = buffer;
+	        if(line_string.size()<1) // empty line
+              continue; 
+            if(Keyword(line_string)) 
+              return position;
+        */
     //....................................................................
+
     if(line_string.find("$PCS_TYPE")!=string::npos) { // subkeyword found
 	  line.str(GetLineFromFile1(tim_file));
       line >> pcs_type_name;
       line.clear();
+      m_pcs = PCSGet(pcs_type_name); // kg44 inserted to overwrite default Richards_flow
+                                    // this works only of pcs_type is read before adaption
       continue;
     }
     //....................................................................
@@ -207,77 +213,117 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
     }
     //....................................................................
     if(line_string.find("$TIME_CONTROL")!=string::npos) { // subkeyword found
-      while((!new_keyword)||(!new_subkeyword)||(!tim_file->eof())){
+    while((!new_keyword)||(!new_subkeyword)||(!tim_file->eof()))
+    {
+        position = tim_file->tellg();
+        line_string = GetLineFromFile1(tim_file);
+        if(line_string.find("#")!=string::npos)
+        {
+            return position;
+        }
+        if(line_string.find("$")!=string::npos){
+            new_subkeyword = true;
+            break;
+        }
+        line.str(line_string);
+
+  	    if(line_string.find("COURANT_MANIPULATE")!=string::npos)
+        {
+            line >> time_control_name;
+            line.clear();
+            line_string = GetLineFromFile1(tim_file);
+            line.str(line_string);
+            line >> time_control_manipulate;
+            line.clear();
+        }
+  	    if(line_string.find("NEUMANN")!=string::npos)
+        {
+            line >> time_control_name;
+            line.clear();
+        }
+  	    if(line_string.find("ERROR_CONTROL_ADAPTIVE")!=string::npos)
+        {
+            line >> time_control_name;
+            line.clear();
+              m_pcs->adaption = true;
+              line.clear();
+        }
+  	    if(line_string.find("SELF_ADAPTIVE")!=string::npos)
+        {
+            line >> time_control_name;
+            line.clear();
+		    minish = 10;
+            m_pcs->adaption = true;
+            cout << "TIME stepping set to adaptive" << endl;
+        while((!new_keyword)||(!new_subkeyword)||(!tim_file->eof())){
         position = tim_file->tellg();
         line_string = GetLineFromFile1(tim_file);
         if(line_string.find("#")!=string::npos){
-          return position;
+        return position;
         }
-        if(line_string.find("$")!=string::npos){
-          new_subkeyword = true;
-          break;
+        else if(line_string.find("$")!=string::npos){
+        new_subkeyword = true;
+        break;
         }
-        line.str(line_string);
-        line >> time_control_name;
-        line.clear();
-  	    if(time_control_name=="COURANT_MANIPULATE"){
-          line_string = GetLineFromFile1(tim_file);
-          line.str(line_string);
-          line >> time_control_manipulate;
-          line.clear();
-        }
-  	    if(time_control_name=="NEUMANN"){
-          line.clear();
-        }
-  	    /*if(time_control_name=="ERROR_CONTROL_ADAPTIVE"){ JOD removed
-          m_pcs->adaption = true;
-          line.clear();
-        }*/
-  	    if(time_control_name=="SELF_ADAPTIVE"){
-          //m_pcs->adaption = true; JOD removed
-		  
-		  minish = 10;
-          while((!new_keyword)||(!new_subkeyword)||(!tim_file->eof())){
-          position = tim_file->tellg();
-          line_string = GetLineFromFile1(tim_file);
-          if(line_string.find("#")!=string::npos){
-            return position;
-          }
-          if(line_string.find("$")!=string::npos){
-            new_subkeyword = true;
+        else if(line_string.find("MAX_TIME_STEP")!=string::npos)
+        {
+            *tim_file >> line_string;
+            max_time_step = strtod(line_string.data(),NULL);
+            line.clear();
+            line_string = GetLineFromFile1(tim_file); // now read next
+            if(line_string.find("MIN_TIME_STEP")!=string::npos)
+            {
+                *tim_file >> line_string;
+                min_time_step = strtod(line_string.data(),NULL);
+                line.clear();
+            }
+            else
+            {
+                cout << "something is wrong here ...MIN_TIME_STEP not found...plese check TIM-file" << endl;
+                break;
+            }
+
+            line_string = GetLineFromFile1(tim_file); // now read next
+            if(line_string.find("MAX_CHANGE")!=string::npos)
+            {
+                *tim_file >> line_string;
+                max_adaptive_concentration_change = strtod(line_string.data(),NULL);
+                line.clear();
+            }
+            else 
+            {
+                cout << "something is wrong here ...MAX_CHANGE not found...plese check TIM-file" << endl;
+                break;
+            }
             break;
-          }
-          if(line_string.find("MAX_TIME_STEP")!=string::npos){
-          *tim_file >> line_string;
-          max_time_step = strtod(line_string.data(),NULL);
-          line.clear();
-		  }
-          if(line_string.find("MIN_TIME_STEP")!=string::npos){
-          *tim_file >> line_string;
-          min_time_step = strtod(line_string.data(),NULL);
-          line.clear();
-		  }
-		  if(line_string.find("MINISH")!=string::npos){
-          *tim_file >> line_string;
-          minish = strtod(line_string.data(),NULL);
-          line.clear();
-		  }
-           
-    	  if(line_string.find("M")==string::npos){
-          line.str(line_string);
-          line >> iter_times;
-          line >> multiply_coef;
-          
-		  time_adapt_tim_vector.push_back(iter_times);
-          time_adapt_coe_vector.push_back(multiply_coef);
-          line.clear();
-		  }
-		  }
         }
-      }
-    }
+        else
+        {
+		    if(line_string.find("MINISH")!=string::npos)
+            {
+                *tim_file >> line_string;
+                minish = strtod(line_string.data(),NULL);
+                line.clear();
+		    }
+            else
+            {
+    	        if(line_string.find("M")==string::npos)
+                {
+                    line.str(line_string);
+                    line >> iter_times;
+                    line >> multiply_coef;
+		            time_adapt_tim_vector.push_back(iter_times);
+                    time_adapt_coe_vector.push_back(multiply_coef);
+                    line.clear();
+		        }
+            }
+        }
+          } // end of while loop adaptive
+        }// end of if "SELF_ADAPTIVE"
+      }// end of while
+    }// end of "TIME_CONTROL"
     //....................................................................
-  }
+  } // end of while(!new_keyword)
   return position;
 }
 
@@ -292,7 +338,7 @@ Programing:
 bool TIMRead(string file_base_name)
 {
   //----------------------------------------------------------------------
-//OK  TIMDelete();  
+  //OK  TIMDelete();  
   //----------------------------------------------------------------------
   CTimeDiscretization *m_tim = NULL;
   char line[MAX_ZEILE];
@@ -524,6 +570,12 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
   CFiniteElementStd* fem = m_pcs->GetAssembler();
 
   switch(m_pcs->pcs_type_name[0]){
+    case 'G': // groundwater flow
+        time_step_length = min_time_step;
+        break;
+    case 'M': // Mass transport
+        time_step_length = min_time_step;
+        break;
     case 'R': // Richards
       idxS  = m_pcs->GetNodeValueIndex("SATURATION1");
       no_time_steps = 1000000000; //OK (int)(1.0e10);
@@ -604,6 +656,7 @@ FEMLib-Method:
 Task: Self adaptive method
 Programing:
 10/2005 YD Implementation
+03/2008 HS KG Implementation for Groundwater flow and mass transport
 **************************************************************************/
 double CTimeDiscretization::SelfAdaptiveTimeControl(void) 
 {
@@ -611,30 +664,41 @@ double CTimeDiscretization::SelfAdaptiveTimeControl(void)
 
   if(repeat)
   {
-    cout << "   TIM step is repeated" << endl;  
+    cout << "TIM step is repeated" << endl;  
     m_pcs = PCSGet(pcs_type_name);
-    //m_pcs->PrimaryVariableReload(); // JOD ?????
+    m_pcs->PrimaryVariableReload();
   }
 
-  for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
-  m_pcs = pcs_vector[n_p];
-  switch(m_pcs->pcs_type_name[0]){
-  default:
-      cout << "Fatal error: No valid PCS type" << endl;
-      break;
-  case 'R': // Richards
-	  if(!repeat) {
-        if(m_pcs->iter <= time_adapt_tim_vector[0]) 
-          time_step_length = time_step_length*time_adapt_coe_vector[0];
-        else if(m_pcs->iter  >= time_adapt_tim_vector[time_adapt_tim_vector.size()-1])
-          time_step_length *= time_adapt_coe_vector[time_adapt_tim_vector.size()-1];
-        break;
-	  }
-      else
-    	  time_step_length /= minish;
+  for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++)
+  {
+	  m_pcs = pcs_vector[n_p];
+	  switch(m_pcs->pcs_type_name[0])
+	  {
+		  default:
+				cout << "Fatal error: No valid PCS type" << endl;
+				break;
+		  case 'R': // Richards
+				if(!repeat) 
+				{
+				  if(m_pcs->iter <= time_adapt_tim_vector[0]) 
+					  time_step_length = time_step_length*time_adapt_coe_vector[0];
+				  else if(m_pcs->iter  >= time_adapt_tim_vector[time_adapt_tim_vector.size()-1])
+					  time_step_length *= time_adapt_coe_vector[time_adapt_tim_vector.size()-1];
+				  break;
+				}
+				else
+				  time_step_length /= minish;
+		  case 'G': // kg44 groundwater flow 
+				time_step_length = time_step_length; 
+				// does not work, but gives a value...groundwater flow should be steady 
+				// due to pcs loop time_step_length will be multiplied twice for coupled flow and transport, therefore multiplication with time_adapt_coe_vector removed!
+				break;
+		  case 'M': // kg44 mass transport
+				time_step_length = time_step_length*time_adapt_coe_vector[0];
+				break;
+	  } // end of switch
+  } // end of for
 
- }
-}
   time_step_length = MMin(time_step_length,max_time_step);
   for(int i = 0 ; i < (int)fixed_point_vector.size(); i++) {
 	  if(aktuelle_zeit + 1e-5 < fixed_point_vector[i] && aktuelle_zeit + time_step_length > fixed_point_vector[i]) {
@@ -643,7 +707,7 @@ double CTimeDiscretization::SelfAdaptiveTimeControl(void)
 	  }
  
   }
-  cout<<"Self_Adaptive Time Step: "<<time_step_length<<endl;
+  cout<<"Self_Adaptive Time Step: "<<time_step_length << "Max time step: "<< max_time_step <<endl;
   if(Write_tim_discrete)
      *tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
 //}
@@ -745,6 +809,12 @@ double CTimeDiscretization::AdaptiveFirstTimeStepEstimate(void)
 	  if(Write_tim_discrete)
 		*tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
       break;
+      case 'M': // kg44 mass transport  
+        time_step_length = min_time_step; // take min time step as conservative best guess for testing
+      break;
+      case 'G': // kg44 groudnwater flow ---if steady state, time step should be greater zeor...transient flow does not work with adaptive stepping
+        time_step_length = min_time_step; // take min time step as conservative best guess for testing
+      break;
  }
 }
   return time_step_length;
@@ -807,9 +877,8 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
   double time_forward; 
   bool ontime = false;
   this_stepsize = 0.;
-  if((int)time_vector.size()==1)
+  if((int)time_vector.size()<=1 || (int)time_step_vector.size()<=1 )
     return dt0;
-  //
 //WW please check +1
 //OK   double pcs_step = time_step_vector[step_current+1];
   if(step_current>=(int)time_step_vector.size()) //OK
@@ -858,4 +927,29 @@ bool IsSynCron()
    else
      return false;   
 }
+/**************************************************************************
+FEMLib-Method: 
+Task:  construct time_step_target_vector from ic-/bc-curves (time curves) 
+Return boolean value:                                                              
+Programing:
+12/2007 KG44 Implementation
+**************************************************************************/
+/* bool CTimeDiscretization::GetTimeStepTargetVector() {
+
+  bool have_vector=false;
+  int no_times, i,j, anz;
+  StuetzStellen *s = NULL;
+
+   if (anz_kurven<=0) return have_vector;
+// first get the time curves
+    for (i;i<anz_kurven;i++) {
+       anz = kurven[i].anz_stuetzstellen;
+       s = kurven[i].stuetzstellen;
+       for (j;j<anz;j++){
+       time_step_target_vector.push_back(s[j].punkt);
+	}
+    }
+
+return have_vector;
+} */
 

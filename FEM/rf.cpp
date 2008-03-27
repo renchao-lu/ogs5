@@ -39,7 +39,7 @@ int main ( int argc, char *argv[] );
 void ShowSwitches ( void );
 string FileName; //WW
 // ------  12.09.2007 WW:
-#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)
 double elapsed_time_mpi; 
 // ------  
 #endif

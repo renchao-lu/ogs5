@@ -30,7 +30,7 @@ vector<CPARDomain*>dom_vector;
 vector<int> node_connected_doms; //This will be removed after sparse class is finished WW
 
 //---- MPI Parallel --------------
-#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)
 #include<mpi.h>
 int size;
 int myrank;

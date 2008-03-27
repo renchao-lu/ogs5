@@ -148,10 +148,8 @@ class CPARDomain
     long BSize() const {return n_bc;}       //WW
     void ConfigEQS(CNumerics *m_num, const long n, bool quad = false); //WW
     double Dot_Interior(const double *localr0,  const double *localr1=NULL); //WW
-    //
     void Global2Local(const double *global_x, double *local_x, const long n ); //WW
     void Local2Global(const double *local_x, double *global_x, const long n ); //WW
-    //
     void Global2Border(const double *x, double *local_x, const long n); //WW
     void Border2Global(const double *local_x, double *x, const long n); //WW
     void Local2Border(const double *local_x, double *border_x); //WW
@@ -177,7 +175,7 @@ extern void CountDoms2Nodes(CRFProcess *m_pcs); //WW
 extern void DOMRead(string);
 extern void DOMCreate();
 //---- MPI Parallel --------------
-#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) //MH
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)//MH//HS
 extern int mysize; //WW
 extern int myrank;
 extern char t_fname[3];

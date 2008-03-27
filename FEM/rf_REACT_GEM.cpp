@@ -1,6 +1,6 @@
 //-------------------------------------
 // rf_REACT_GEM.cpp
-// Haibing Shao 23.05.07
+// Haibing Shao 25.03.08
 // haibing.shao@ufz.de
 // GEM Reaction Package
 // based on the PSI node-GEM source code
@@ -13,7 +13,12 @@
 #include "rfmat_cp.h"
 #include "msh_node.h"
 #include "msh_elem.h"
-#include "direct.h"
+#ifdef _WIN32
+#include "direct.h" // on win32 and win64 platform
+#else
+#include "unistd.h" // on unix/linux platform
+#endif
+
 
 
 #ifdef USE_MPI_GEMS
@@ -23,8 +28,8 @@
 #include "mpi.h"//Parallel Computing Support
 #include "par_ddc.h"
 // HS 07.01.2008: Comment the following 2 lines on LiClus.
-int size;
-int myrank;
+// int size;
+// int myrank;
 #endif
 
 REACT_GEM::REACT_GEM(void)
@@ -63,97 +68,31 @@ REACT_GEM::REACT_GEM(void)
 
 REACT_GEM::~REACT_GEM(void)
 {
-if (flag_node_element_based == 0)
-{
-	delete [] m_xDC;
-	delete [] m_gam;
-	delete [] m_xPH;
-	delete [] m_aPH;
-	delete [] m_vPS;
-	delete [] m_mPS;
-	delete [] m_bPS;
-	delete [] m_xPA;
-	delete [] m_dul;
-	delete [] m_dll;
-	delete [] m_uIC;
-	delete [] m_bIC;
-	delete [] m_bIC_dummy;
-	delete [] m_rMB;
-    delete [] m_xDC_pts;
-    delete [] m_xDC_MT_delta;
-    delete [] m_xDC_Chem_delta;
+	if ( initialized_flag > 0 )
+	{
+		if (flag_node_element_based == 0)
+		{
+			delete [] m_xDC, m_gam,  m_xPH, m_aPH, m_vPS, m_mPS, m_bPS, m_xPA, m_dul,
+			 m_dll, m_uIC, m_bIC, m_bIC_dummy, m_rMB, m_xDC_pts, m_xDC_MT_delta, m_xDC_Chem_delta, m_NodeHandle;
 
-    delete [] m_NodeHandle;
-    delete [] m_NodeStatusCH;
-    delete [] m_IterDone;
-    delete [] m_T;
-    delete [] m_P;
-    delete [] m_Vs;
-    delete [] m_Ms;
-    delete [] m_Gs;
-    delete [] m_Hs;
-    delete [] m_IC;
-    delete [] m_pH;
-    delete [] m_pe;
-    delete [] m_Eh;
-}
-else
-{
-	delete [] m_xDC_Elem;
-	delete [] m_gam_Elem;
-	delete [] m_xPH_Elem;
-	delete [] m_aPH_Elem;
-	delete [] m_vPS_Elem;
-	delete [] m_mPS_Elem;
-	delete [] m_bPS_Elem;
-	delete [] m_xPA_Elem;
-	delete [] m_dul_Elem;
-	delete [] m_dll_Elem;
-	delete [] m_uIC_Elem;
-	delete [] m_bIC_Elem;
-	delete [] m_bIC_dummy_Elem;
-	delete [] m_rMB_Elem;
-    delete [] m_xDC_pts_Elem;
+			delete [] m_NodeStatusCH, m_IterDone, m_T, m_P, m_Vs, m_Ms, m_Gs, m_Hs, m_IC, m_pH, m_pe, m_Eh;
+		}
+		else
+		{
+			delete [] m_xDC_Elem, m_gam_Elem, m_xPH_Elem, m_aPH_Elem, m_vPS_Elem, m_mPS_Elem, m_bPS_Elem,
+			  m_xPA_Elem, m_dul_Elem, m_dll_Elem, m_uIC_Elem, m_bIC_Elem, m_bIC_dummy_Elem, m_rMB_Elem, m_xDC_pts_Elem;
 
-    delete [] m_ElemHandle;
-    delete [] m_ElemStatusCH;
-    delete [] m_IterDone_Elem;
-    delete [] m_T_Elem;
-    delete [] m_P_Elem;
-    delete [] m_Vs_Elem;
-    delete [] m_Ms_Elem;
-    delete [] m_Gs_Elem;
-    delete [] m_Hs_Elem;
-    delete [] m_IC_Elem;
-    delete [] m_pH_Elem;
-    delete [] m_pe_Elem;
-    delete [] m_Eh_Elem;
-} 
-    // delete MPI buffer--------
-	delete [] m_NodeHandle_buff;
-    delete [] m_NodeStatusCH_buff;
-    delete [] m_IterDone_buff;
+			delete [] m_ElemHandle, m_ElemStatusCH, m_IterDone_Elem, m_T_Elem, m_P_Elem, m_Vs_Elem, m_Ms_Elem,
+			  m_Gs_Elem, m_Hs_Elem, m_IC_Elem, m_pH_Elem, m_pe_Elem, m_Eh_Elem;
+		} 
+		// delete MPI buffer--------
+		delete [] m_NodeHandle_buff, m_NodeStatusCH_buff, m_IterDone_buff;
 
-	delete [] m_Vs_buff;
-    delete [] m_Ms_buff;
-    delete [] m_Gs_buff;
-    delete [] m_Hs_buff;
-    delete [] m_IC_buff;
-    delete [] m_pH_buff;
-    delete [] m_pe_buff;
-    delete [] m_Eh_buff;
+		delete [] m_Vs_buff, m_Ms_buff,  m_Gs_buff, m_Hs_buff, m_IC_buff, m_pH_buff, m_pe_buff, m_Eh_buff;
 
-	delete [] m_rMB_buff;
-	delete [] m_uIC_buff;
-	delete [] m_xDC_buff;
-	delete [] m_gam_buff;
-	delete [] m_xPH_buff;
-	delete [] m_vPS_buff;
-	delete [] m_mPS_buff;
-	delete [] m_bPS_buff;
-	delete [] m_xPA_buff;
-    // -------------------------
-
+		delete [] m_rMB_buff, m_uIC_buff, m_xDC_buff, m_gam_buff, m_xPH_buff, m_vPS_buff, m_mPS_buff, m_bPS_buff, m_xPA_buff;
+		// -------------------------
+	}
     delete m_Node;
 }
 
@@ -164,7 +103,7 @@ short REACT_GEM::Init_Nodes(string Project_path)
    // Creating TNode structure accessible trough node pointer
    // Here we read the files needed as input for initializing GEMIPM2K
    // The easiest way to prepare them is to use GEMS-PSI code (GEM2MT module)
-   if ( Load_Init_File(Project_path))
+  if ( Load_Init_File(Project_path))
    {
 	   // The init file is successfully loaded
 	   // Getting direct access to DataCH structure in GEMIPM2K memory
@@ -461,7 +400,7 @@ long it_num = 0;
 		
         if ( flag_node_element_based == 0 )
         {
-		    m_NodeStatusCH[in] = (short)m_Node->GEM_run();
+		    m_NodeStatusCH[in] = (short)m_Node->GEM_run(false);
 
 		    if ( !( m_NodeStatusCH[in] == OK_GEM_AIA || m_NodeStatusCH[in] == OK_GEM_PIA ) )
 		    {
@@ -485,7 +424,7 @@ long it_num = 0;
         }
         else
         {
-            m_ElemStatusCH[in] = (short)m_Node->GEM_run();
+            m_ElemStatusCH[in] = (short)m_Node->GEM_run(false);
 
 		    if ( !( m_ElemStatusCH[in] == OK_GEM_AIA || m_ElemStatusCH[in] == OK_GEM_PIA ) )
 		    {
@@ -567,36 +506,38 @@ bool REACT_GEM::Load_Init_File(string m_Project_path)
     char *buffer;
     int max_len=256;
     
-	//Checking absolute path
-	/*if (init_input_file_path.find( m_Project_path ) != string::npos  )
-	{
-		init_path = init_input_file_path;
-	}
-	else
-	{
-		init_path = m_Project_path.append( init_input_file_path );
-	}*/
 	init_path = m_Project_path.append(init_input_file_sig);
-    if (init_path.rfind("\\") == string::npos)
-    {
-        if( (buffer = _getcwd( NULL, 0 )) == NULL )
-            perror( "_getcwd error" );
-        else
-        {
-            init_path.insert( 0, "\\" );
-            init_path.insert( 0, buffer );
-        }
 
+	#ifdef _WIN32
+	if (init_path.rfind("\\") == string::npos) // keep this on windows
+	#else
+	if ( init_path.rfind("/") == string::npos) // keep this on linux
+	#endif
+	{
+		#ifdef _WIN32
+			if( (buffer = _getcwd( NULL, 0 )) == NULL )
+		#else
+			if( (buffer = getcwd( NULL, 0 )) == NULL )
+		#endif
+            perror( "_getcwd error" );
+		else
+        {
+		#ifdef _WIN32
+			  init_path.insert( 0, "\\" ); // keep this on window
+		#else
+			  init_path.insert( 0, "/" ); // keep this on linux
+		#endif
+          init_path.insert( 0, buffer );
+        }
     }
 
 	if( m_Node->GEM_init( init_path.c_str() , mp_nodeTypes , false) )
 	{
-	    return 0;  // error occured during reading the files
+	    return 0; // error occured during reading the files
 	}
 	else 
 	{
-		//read init file successed
-		return 1;
+		return 1; // read init file successed
 	}
 }
 
@@ -608,19 +549,7 @@ short REACT_GEM::GetReactInfoFromMassTransport(int timelevel)
 
 	for (long node_i=0; node_i < nNodes ; node_i++)
 	{
-
-		// Added for debugging---------	
-		/*cout << "The DC Concentrations before GetReactInfoFromMassTransport: " << endl;
-		for (int i = 0; i < nDC ; i++)
-		{
-			if(node_i = 0)
-			{cout << *(m_xDC+i) << " ";}
-			else
-			{cout << *(m_xDC+node_i*i) << " ";}
-		}
-		cout << endl;
-		//-----------------------------*/
-			
+		
         //get temperature from MT
 	    m_T[node_i] = REACT_GEM::GetTempValue_MT(node_i, timelevel);
 
@@ -637,23 +566,8 @@ short REACT_GEM::GetReactInfoFromMassTransport(int timelevel)
 	    // m_pH[node_i] = REACT_GEM::GetComponentValue_MT(node_i,"pH", timelevel);
 
 	    //get pe value from MT
-	    // m_pe[node_i] = REACT_GEM::GetComponentValue_MT(node_i,"pe", timelevel);
-        
-    
-		/*// Added for debugging---------	
-		cout << "The DC Concentrations after GetReactInfoFromMassTransport: " << endl;
-		for (int i = 0; i < nDC ; i++)
-		{
-			if(node_i = 0)
-			{cout << *(m_xDC+i) << " ";}
-			else
-			{cout << *(m_xDC+node_i*i) << " ";}
-		}
-		cout << endl;
-		//-----------------------------*/
-
-
-	}
+	    // m_pe[node_i] = REACT_GEM::GetComponentValue_MT(node_i,"pe", timelevel);   
+ 	}
 
     if (flag_node_element_based == 1) ConvNodeValue2Elem();
 
@@ -696,15 +610,6 @@ return 0;
 
 void REACT_GEM::GetReactInfoFromGEM(long in)
 {
-	// Added for debugging---------	
-	//cout << "The DC Concentrations before GetReactInfoFromGEM: " << endl;
-	//for (int i = 0; i < nDC ; i++)
-	//{
-	//	cout << *(m_xDC+i) << " ";
-	//}
-	//cout << endl;
-	//----------------------------
-
 #ifdef USE_MPI_GEMS
     // Extract the result from GEM
 	m_Node->GEM_to_MT( m_NodeHandle_buff[in], m_NodeStatusCH_buff[in], m_IterDone_buff[in],
@@ -730,31 +635,12 @@ void REACT_GEM::GetReactInfoFromGEM(long in)
     }
 #endif
 
-	// Added for debugging---------
-	//cout << "The DC Concentrations after GetReactInfoFromGEM: " << endl;
-	//for (int i = 0; i < nDC ; i++)
-	//{
-	//	cout << *(m_xDC+i) << " ";
-	//}
-	//cout << endl;
-	//-----------------------------
-
 return;
 }
 
 void REACT_GEM::SetReactInfoBackGEM(long in)
 {
 	// Setting input data for GEMIPM
-
-	// Added for debugging---------
-	//cout << "The DC Concentrations before SetReactInfoBackGEM: " << endl;
-	//for (int i = 0; i < nDC ; i++)
-	//{
-	//	cout << *(m_xDC+i+in*nDC) << " ";
-	//}
-	//cout << endl;
-	//-----------------------------
-
 
 	// Using the overloaded version of GEM_from_MT() to load the data	// HS 10.07.2007 
     if ( flag_node_element_based == 0 )
@@ -769,15 +655,6 @@ void REACT_GEM::SetReactInfoBackGEM(long in)
 			 m_T_Elem[in], m_P_Elem[in], m_Vs_Elem[in], m_Ms_Elem[in],
 			 m_bIC_dummy_Elem+in*nIC/*these values should be set to zero.*/, m_dul_Elem+in*nDC, m_dll_Elem+in*nDC, m_aPH_Elem+in*nPH  ,m_xDC_Elem+in*nDC);
     }
-
-	// Added for debugging---------
-	//cout << "The DC Concentrations after SetReactInfoBackGEM: " << endl;
-	//for (int i = 0; i < nDC ; i++)
-	//{
-	//	cout << *(m_xDC+i+in*nDC) << " ";
-	//}
-	//cout << endl;
-	//-----------------------------
 
 return;
 }
@@ -797,7 +674,7 @@ short REACT_GEM::Run_MainLoop()
 	// So here is going to distribute the task.
 	MPI_Bcast(&nNodes, 1, MPI_LONG, 0, MPI_COMM_WORLD );
 	// here "myrank" is the index of the CPU Processes, and "size" is the number of CPU Processes
-	for ( in = myrank; in < it_num ; in+= size )
+	for ( in = myrank; in < it_num ; in+= mysize )
 #else
     for (in = 0; in < it_num ; in++)
 #endif	
@@ -809,7 +686,7 @@ short REACT_GEM::Run_MainLoop()
 		
         if ( flag_node_element_based == 0 )
         {
-		    m_NodeStatusCH[in] = (short)m_Node->GEM_run();
+		    m_NodeStatusCH[in] = (short)m_Node->GEM_run(false);
 		    if ( !( m_NodeStatusCH[in] == OK_GEM_AIA || m_NodeStatusCH[in] == OK_GEM_PIA ) )
 		    {
 			    // HS: Error information should be delivered regardless of myrank
@@ -834,7 +711,7 @@ short REACT_GEM::Run_MainLoop()
         }
         else
         {
-            m_ElemStatusCH[in] = (short)m_Node->GEM_run();
+            m_ElemStatusCH[in] = (short)m_Node->GEM_run(false);
 		    if ( !( m_ElemStatusCH[in] == OK_GEM_AIA || m_ElemStatusCH[in] == OK_GEM_PIA ) )
 		    {
 			    #ifdef USE_MPI_GEMS
@@ -1215,32 +1092,6 @@ string str;
 
 	}
 
-
-	/*for (int i=0; i < (int)pcs_vector.size() ; i++)
-	{
-		m_pcs = pcs_vector[i];
-		if (m_pcs->pcs_type_name.compare("MASS_TRANSPORT") == 0)
-		{	
-			string str;
-			int x_Component = -1;
-
-			str = m_pcs->pcs_primary_function_name[0];//get the name of compound from MT;
-
-			if (str.compare("pH") != 0 && str.compare("pe") != 0 )
-			{
-				x_Component = m_Node->DC_name_to_xDB(str.c_str());
-				if ( x_Component > -1 )
-				{
-					m_pcs->SetNodeValue(node_Index , m_pcs->GetNodeValueIndex(str)+timelevel , *(m_DC+x_Component));
-				}
-				else
-				{
-				//DisplayErrorMsg("Error: Corresponding Component NOT FOUND in MT part!!");
-				//return 0;
-				}
-			}
-		}
-	}*/
 	return 1;
 }
 
