@@ -4,6 +4,7 @@ CXX_LD           = g++
 CXX_OPT_FLAGS    = -O3  
 CXX_DEBUG_FLAGS  = -g
 CXX_WARN_FLAGS   = 
+GEM_LIBS         = LIB/libgemipm2k.liclus.a
 CXX_FLAGS        = -pedantic -fno-nonansi-builtins -DGCC -DGEM_REACT -DIPMGEMPLUGIN -D_POSIX_SOURCE -DNO_ERROR_CONTROL $(CXX_OPT_FLAGS) $(CXX_DEBUG_FLAGS) -DRANDOM_WALK
 CXX              = g++
 

@@ -14,11 +14,6 @@ TARGET_NAMES      = $(CONFIG_NAMES) clean distclean
 
 CHOSEN_TARGET     = $(findstring $(MAKECMDGOALS),$(TARGET_NAMES))
 
-# HS 27.03.2008, adding the libs for GEMS
-ifdef GEM_REACT
-GEM_LIBS = LIB/libgemipm2k.liclus.a
-endif
-
 ifneq ("x","x$(CHOSEN_TARGET)")
     REALGOAL = $(CHOSEN_TARGET)
     ifneq (,$(findstring $(CHOSEN_TARGET),"clean distclean"))
