@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="rf4_cpp"
 	ProjectGUID="{4F159AF7-FF53-410E-A9A7-2C500A4EF55E}"
 	>
@@ -140,7 +140,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="../FEM;../MSH;../GEO;../GEM; ../"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;IPMGEMPLUGIN;GEM_REACT"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
