@@ -250,6 +250,7 @@ CRFProcess::CRFProcess(void)
   time_unit_factor = 1.0;
   timebuffer = 1.0e-5;  //WW
   //pcs_type_name.empty();
+  adaption = false; //HS 03.2008
   //----------------------------------------------------------------------
   // CPL
   for(int i=0; i<10; i++)
