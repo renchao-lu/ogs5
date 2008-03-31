@@ -3110,11 +3110,11 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
 		HEAD_Flag = 1;
 		PcsType = G;
 	}
-	double temp[4];
+
 	for (int i = 0; i < nnodes; ++i)
 	{
 		NodalVal[i] = 0.0;
-		temp[i]=NodalVal1[i] = m_pcs->GetNodeValue(nodes[i], nidx1);   
+		NodalVal1[i] = m_pcs->GetNodeValue(nodes[i], nidx1);   
         NodalVal2[i] = 0.0;
 	}
 
