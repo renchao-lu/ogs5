@@ -50,7 +50,7 @@ break.o\
 ../gs_project.o
 
 ifndef NO_RANDOM_WALK
-FEMOBJS += rf_random_walk.o
+FEMOBJS += rf_random_walk.o 
 endif
 
 

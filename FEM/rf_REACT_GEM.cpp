@@ -32,6 +32,7 @@
 // int myrank;
 #endif
 
+#ifdef GEM_REACT
 REACT_GEM::REACT_GEM(void)
 {
    m_Node = new TNode();
@@ -1411,3 +1412,4 @@ void REACT_GEM::CleanMPIBuffer(void)
 }
 #endif
 
+#endif // end of GEM_REACT
