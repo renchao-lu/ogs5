@@ -3231,7 +3231,8 @@ double GetAnalyticalSolution(long location, CSourceTerm *m_st)
     mass_solute_present = 1.e99; //Initially set value very high
  
    //Area for lines, triangles and quads in domain.
-    if (area < 0) {//set in set source terms function, domain area = -1 to start with
+   //  if (area < 0) {//set in set source terms function, domain area = -1 to start with
+	 if (area < DBL_MIN) { // HS 04.2008
       tvol = 0.0;
       tflux_area = 0.0;
       for (i = 0; i <  (int) Node->connected_elements.size(); i++){
