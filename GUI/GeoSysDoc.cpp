@@ -476,6 +476,7 @@ void CGeoSysDoc::GSPReadWIN(CArchive& ar)
     if(m_bIsASCII){
       gsp_file.getline(line,MAX_ZEILE);
       m_strLine = line;
+      m_strLine = m_strLine.Trim(); //NW
     }
     else
       ar >> m_strLine;
