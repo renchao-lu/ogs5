@@ -213,110 +213,70 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
     }
     //....................................................................
     if(line_string.find("$TIME_CONTROL")!=string::npos) { // subkeyword found
-    while((!new_keyword)||(!new_subkeyword)||(!tim_file->eof()))
-    {
-        position = tim_file->tellg();
-        line_string = GetLineFromFile1(tim_file);
-        if(line_string.find("#")!=string::npos)
-        {
-            return position;
-        }
-        if(line_string.find("$")!=string::npos){
-            new_subkeyword = true;
-            break;
-        }
-        line.str(line_string);
-
-  	    if(line_string.find("COURANT_MANIPULATE")!=string::npos)
-        {
-            line >> time_control_name;
-            line.clear();
-            line_string = GetLineFromFile1(tim_file);
-            line.str(line_string);
-            line >> time_control_manipulate;
-            line.clear();
-        }
-  	    if(line_string.find("NEUMANN")!=string::npos)
-        {
-            line >> time_control_name;
-            line.clear();
-        }
-  	    if(line_string.find("ERROR_CONTROL_ADAPTIVE")!=string::npos)
-        {
-            line >> time_control_name;
-            line.clear();
-              m_pcs->adaption = true;
-              line.clear();
-        }
-  	    if(line_string.find("SELF_ADAPTIVE")!=string::npos)
-        {
-            line >> time_control_name;
-            line.clear();
-		    minish = 10;
-            m_pcs->adaption = true;
-            cout << "TIME stepping set to adaptive" << endl;
-        while((!new_keyword)||(!new_subkeyword)||(!tim_file->eof())){
+      while((!new_keyword)||(!new_subkeyword)||(!tim_file->eof())){
         position = tim_file->tellg();
         line_string = GetLineFromFile1(tim_file);
         if(line_string.find("#")!=string::npos){
-        return position;
+          return position;
         }
-        else if(line_string.find("$")!=string::npos){
-        new_subkeyword = true;
-        break;
+        if(line_string.find("$")!=string::npos){
+          new_subkeyword = true;
+          break;
         }
-        else if(line_string.find("MAX_TIME_STEP")!=string::npos)
-        {
-            *tim_file >> line_string;
-            max_time_step = strtod(line_string.data(),NULL);
-            line.clear();
-            line_string = GetLineFromFile1(tim_file); // now read next
-            if(line_string.find("MIN_TIME_STEP")!=string::npos)
-            {
-                *tim_file >> line_string;
-                min_time_step = strtod(line_string.data(),NULL);
-                line.clear();
-            }
-            else
-            {
-                cout << "something is wrong here ...MIN_TIME_STEP not found...plese check TIM-file" << endl;
-                break;
-            }
-
-            line_string = GetLineFromFile1(tim_file); // now read next
-            if(line_string.find("MAX_CHANGE")!=string::npos)
-            {
-                *tim_file >> line_string;
-                max_adaptive_concentration_change = strtod(line_string.data(),NULL);
-                line.clear();
-            }
-            else 
-            {
-                cout << "something is wrong here ...MAX_CHANGE not found...plese check TIM-file" << endl;
-                break;
-            }
+        line.str(line_string);
+        line >> time_control_name;
+        line.clear();
+  	    if(time_control_name=="COURANT_MANIPULATE"){
+          line_string = GetLineFromFile1(tim_file);
+          line.str(line_string);
+          line >> time_control_manipulate;
+          line.clear();
+        }
+  	    if(time_control_name=="NEUMANN"){
+          line.clear();
+        }
+  	    /*if(time_control_name=="ERROR_CONTROL_ADAPTIVE"){ JOD removed
+          m_pcs->adaption = true;
+          line.clear();
+        }*/
+  	    if(time_control_name=="SELF_ADAPTIVE"){
+          //m_pcs->adaption = true; JOD removed
+		  
+		  minish = 10;
+          while((!new_keyword)||(!new_subkeyword)||(!tim_file->eof())){
+          position = tim_file->tellg();
+          line_string = GetLineFromFile1(tim_file);
+          if(line_string.find("#")!=string::npos){
+            return position;
+          }
+          if(line_string.find("$")!=string::npos){
+            new_subkeyword = true;
             break;
-        }
-        else
-        {
-		    if(line_string.find("MINISH")!=string::npos)
-            {
-                *tim_file >> line_string;
-                minish = strtod(line_string.data(),NULL);
-                line.clear();
-		    }
-            else
-            {
-    	        if(line_string.find("M")==string::npos)
-                {
-                    line.str(line_string);
-                    line >> iter_times;
-                    line >> multiply_coef;
-		            time_adapt_tim_vector.push_back(iter_times);
-                    time_adapt_coe_vector.push_back(multiply_coef);
-                    line.clear();
-		        }
-            }
+          }
+          if(line_string.find("MAX_TIME_STEP")!=string::npos){
+          *tim_file >> line_string;
+          max_time_step = strtod(line_string.data(),NULL);
+          line.clear();
+		  }
+          if(line_string.find("MIN_TIME_STEP")!=string::npos){
+          *tim_file >> line_string;
+          min_time_step = strtod(line_string.data(),NULL);
+          line.clear();
+		  }
+		  if(line_string.find("MINISH")!=string::npos){
+          *tim_file >> line_string;
+          minish = strtod(line_string.data(),NULL);
+          line.clear();
+		  }
+           
+    	  if(line_string.find("M")==string::npos){
+          line.str(line_string);
+          line >> iter_times;
+          line >> multiply_coef;
+          
+		  time_adapt_tim_vector.push_back(iter_times);
+          time_adapt_coe_vector.push_back(multiply_coef);
+          line.clear();
         }
           } // end of while loop adaptive
         }// end of if "SELF_ADAPTIVE"
@@ -573,6 +533,9 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
     case 'G': // groundwater flow
         time_step_length = min_time_step;
         break;
+    case 'O': // overland flow
+        time_step_length = min_time_step;
+        break;
     case 'M': // Mass transport
         time_step_length = min_time_step;
         break;
@@ -602,12 +565,12 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
             }
 		   for(j=0; j<elem->GetVertexNumber(); j++)
               Node_Sat[j] =  m_pcs->GetNodeValue(elem->GetNodeIndex(j),idxS);
-			  buffer = m_mmp->SaturationPressureDependency(fem->interpolate(Node_Sat),  density_fluid, m_pcs->m_num->ls_theta);
-			  buffer *= 0.5*elem->GetVolume()*elem->GetVolume();
-			  buffer *=m_mmp->porosity_model_values[0]*mfp_vector[0]->Viscosity()/m_mmp->permeability_tensor[0];
-              buffer /=m_pcs->time_unit_factor;
-			  time_step_length = MMin(time_step_length, buffer);  
-			  }
+		buffer = m_mmp->SaturationPressureDependency(fem->interpolate(Node_Sat),  density_fluid, m_pcs->m_num->ls_theta);
+	    buffer *= 0.5*elem->GetVolume()*elem->GetVolume();
+	    buffer *=m_mmp->porosity_model_values[0]*mfp_vector[0]->Viscosity()/m_mmp->permeability_tensor[0];
+        buffer /=m_pcs->time_unit_factor;
+	    time_step_length = MMin(time_step_length, buffer);  
+	  } // ele_vector
 			  if (time_step_length < MKleinsteZahl){
 				  cout<<"Waning : Time Control Step Wrong, dt = 0.0 "<<endl;
                   time_step_length = 1.e-6;
@@ -886,7 +849,7 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
   else
     pcs_step = time_step_vector[step_current]; //OK
   time_forward = c_time - time_current-pcs_step; 
-  if(time_forward>0.0||fabs(time_forward)<DBL_MIN)
+  if(time_forward>0.0||fabs(time_forward)<DBL_EPSILON)
   {
     time_current += pcs_step;
     step_current++; 
@@ -894,7 +857,7 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
     ontime = true;
     dt_sum = 0.0;
   }
-  if((fabs(pcs_step-time_end)<DBL_MIN)&&fabs(c_time-time_end)<DBL_MIN)
+  if((fabs(pcs_step-time_end)<DBL_EPSILON)&&fabs(c_time-time_end)<DBL_EPSILON)
   {
     this_stepsize = dt_sum+dt0;
     ontime = true;

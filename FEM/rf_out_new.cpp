@@ -1550,7 +1550,7 @@ double COutput::NODWritePLYDataTEC(int number)
     for(k=0;k<no_variables;k++)
     {
       //if(!(nod_value_vector[k].compare("FLUX")==0))  // removed JOD, does not work for multiple flow processes
-      m_pcs = PCSGet(nod_value_vector[k],bdummy); // HS 03.2008, re-activate, have to get m_pcs, benchmark: HM\hm_unsat
+      //  m_pcs = PCSGet(nod_value_vector[k],bdummy);
       if(!m_pcs)
       {
         cout << "Warning in COutput::NODWritePLYDataTEC - no PCS data" << endl;
