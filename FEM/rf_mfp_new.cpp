@@ -269,7 +269,8 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
       if(viscosity_model==6){ // my(C,T), 
       }
       if(viscosity_model==7){ // my(p,T,C)
-        *mfp_file >> C_0;
+//NW        *mfp_file >> C_0;
+        in >> C_0;
         viscosity_pcs_name_vector.push_back("PRESSURE1");
         viscosity_pcs_name_vector.push_back("TEMPERATURE1");
       }
