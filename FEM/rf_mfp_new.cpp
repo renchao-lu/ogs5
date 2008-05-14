@@ -182,7 +182,8 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
 		in >> rho_0;
         in >> C_0;
         in >> drho_dC;
-        density_pcs_name_vector.push_back("CONCENTRATION1");
+//        density_pcs_name_vector.push_back("CONCENTRATION1");
+		density_pcs_name_vector.push_back("Isochlor");	// PCH
       }
       if(density_model==4){ // rho(T) = rho_0*(1+beta_T*(T-T_0))
 //        *mfp_file >> rho_0;
@@ -521,6 +522,7 @@ Programing:
 09/2005 WW implementation 
 11/2005 YD modification
 11/2005 CMCD Inclusion current and previous time step quantities
+05/2007 PCH improvement for density-dependent flow
 last modification:
 **************************************************************************/
 void CFluidProperties::CalPrimaryVariable(vector<string>& pcs_name_vector)
@@ -530,9 +532,11 @@ void CFluidProperties::CalPrimaryVariable(vector<string>& pcs_name_vector)
   int nidx0,nidx1;
   if(!Fem_Ele_Std) //OK
     return;
+
   for(int i=0;i<(int)pcs_name_vector.size();i++){
     //MX  m_pcs = PCSGet("HEAT_TRANSPORT");
      m_pcs = PCSGet(pcs_name_vector[i],true);
+
 	 if (!m_pcs) return;  //MX
      nidx0 = m_pcs->GetNodeValueIndex(pcs_name_vector[i]);
 	 nidx1 = nidx0+1;
@@ -880,7 +884,7 @@ double CFluidProperties::GasViscosity_Reichenberg_1971(double p,double T)
 /**************************************************************************
 FEMLib-Method:
 Task: 
-   Dynamische Flüssigkeits-Viskositaet nach Yaws et al. (1976)
+   Dynamische Fl?sigkeits-Viskositaet nach Yaws et al. (1976)
    als Funktion von Temperatur
    in Reid et al. (1988), S. 441/455
    Eqn.(3): ln(my) = A + B/T + CT + DT^2
@@ -908,7 +912,7 @@ double CFluidProperties::LiquidViscosity_Yaws_1976(double T)
 /**************************************************************************
 FEMLib-Method:
 Task: 
-   Flüssigkeits-Viskositaet in Abhaengigkeit von der Temperatur
+   Fl?sigkeits-Viskositaet in Abhaengigkeit von der Temperatur
    (nach Marsily 1986)
 Programing:
 08/2004 OK MFP implementation 
@@ -1354,7 +1358,7 @@ double CFluidProperties::Enthalpy(int comp,double temperature)
       enthalpy = 733.0*temperature + (GAS_CONSTANT*(temperature+0.0))/COMP_MOL_MASS_AIR;
     }
     else if((phase==0)&&(comp==1)) { /* h_w^g: water species in gaseous phase */
-      pressure = 1.e-3; /*Vorgabe eines vernünftigen Wertes */
+      pressure = 1.e-3; /*Vorgabe eines vern?ftigen Wertes */
       pressure *= PA2PSI; /* Umrechnung Pa in psia */
       temperature -= 273.15; /* Kelvin -> Celsius */
       temperature_F = temperature*1.8+32.; /* Umrechnung Celsius in Fahrenheit*/
@@ -1622,7 +1626,7 @@ C = C;
 	/*CMcD end variables for 20 ALR*/
 	 /* //Prepared for introduction of solute transport in PCS version
 	    //Average Concentration 
-	    comp=0; // nur für Einkomponenten-Systeme 
+	    comp=0; // nur f? Einkomponenten-Systeme 
 		timelevel=1;
 		concentration_average = 0.0;
 		for (i = 0; i < count_nodes; i++)

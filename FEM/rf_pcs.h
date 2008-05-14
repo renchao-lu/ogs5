@@ -334,6 +334,8 @@ public:
     void SetElementValue(long,int,double); //PCH
     double GetElementValue(long,int); //PCH
     int GetElementValueIndex(string); //PCH
+    //CB-----------------------------
+    int flow_pcs_type;
     //----------------------------------------------------------------------
     // Methods
     // Access to PCS
@@ -529,6 +531,7 @@ extern double PCSGetNODConcentration(long index, long component, long timelevel)
 extern void PCSSetNODConcentration(long index, long component, long timelevel, double value); //SB
 extern char *GetCompNamehelp(char *name); //SB:namepatch - superseded by GetPFNamebyCPName
 extern double PCSGetEleMeanNodeSecondary(long index, string pcs_name, string var_name, int timelevel); //SB4218
+extern double PCSGetEleMeanNodeSecondary_2(long index, int pcsT, string var_name, int timelevel); //CB
 extern string GetPFNamebyCPName(string line_string);
 
 extern int memory_opt; 
@@ -589,6 +592,9 @@ extern string project_title; //OK41
 extern bool pcs_created;
 extern vector<LINEAR_SOLVER *> PCS_Solver; //WW
 extern void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs); //OK
+extern void CalcNewNAPLSat(CRFProcess*m_pcs); //CB 01/08
+extern void CalcInitialNAPLDens(CRFProcess*m_pcs); //CB 01/08
+extern void SetFlowProcessType();//CB 01/08
 extern void PCSCreateNew(); //OK
 extern bool PCSCheck(); //OK
 // New solvers WW

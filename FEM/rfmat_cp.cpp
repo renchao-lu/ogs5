@@ -818,7 +818,7 @@ int CompProperties::GetNumberIsothermValuesCompProperties(int isotherm)
 double CompProperties::CalcElementRetardationFactor( long index, double*gp, double theta)
 {
  static double porosity,density_rock,isotherm;
- static double conc, retard = 0.0;
+ static double conc, retard = 0.0, saturation = 1.0;
  int gueltig;
 
  long group = ElGetElementGroupNumber(index);
@@ -833,7 +833,8 @@ double CompProperties::CalcElementRetardationFactor( long index, double*gp, doub
  porosity = m_mat_mp->Porosity(index,theta);
 // density_rock = 2000.0; // GetSolidDensity(index);
  density_rock = fabs(m_msp->Density());
-
+ // get fluid saturation in element, if unsaturated flow
+ saturation = PCSGetEleMeanNodeSecondary(index, "RICHARDS_FLOW", "SATURATION1", 1);
  /* Get mean element concentration from last time step */
  conc = CalcElementMeanConc(index);
  /* DisplayMsg(" Mean conc: "); DisplayDouble(conc,0,0); DisplayMsgLn(" "); */
@@ -874,7 +875,7 @@ double CompProperties::CalcElementRetardationFactor( long index, double*gp, doub
 // DisplayMsg(" conc: "); DisplayDouble(conc,0,0);DisplayMsg(" isotherm: "); DisplayDouble(isotherm,0,0); DisplayMsgLn(" "); 
 // if(conc < 0.0) isotherm = 0.0;
  
-  retard = 1. + (1.-porosity)*density_rock*isotherm/porosity;
+  retard = 1. + (1.-porosity)*density_rock*isotherm/porosity/saturation;
 //  DisplayMsg(" Retardation factor: "); DisplayDouble(retard,0,0); DisplayMsgLn(" "); 
 
  return retard;
@@ -935,6 +936,7 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double*gp, C
  case 0: /* from curve */
 	 isotherm = 0.0;
 	 isotherm = GetCurveDerivative((int) isotherm_function_name, 0, fabs(conc), &gueltig);
+  retard = 1. + (1.-porosity)*density_rock*isotherm/porosity;//CB added here 31.10.07
 	 break;
  case 1: /* linear isotherm   */
 	isotherm = isotherm_model_values[0];

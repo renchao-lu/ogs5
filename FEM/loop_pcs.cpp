@@ -1,4 +1,4 @@
-/**************************************************************************
+/***************************************************************************
 ROCKFLOW - Source: loop_pcs.c
 Task: LOP Template of process-oriented version
 Programing:
@@ -210,6 +210,18 @@ int LOPPreTimeLoop_PCS(void)
 if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
   PCSCalcSecondaryVariables(); //OK
 #endif
+  //CB before the first time step
+  // 1) set the id variable flow_pcs_type for Saturation and velocity calculation
+  //    in mass transport element matrices
+  // 2) in case of Twophaseflow calculate NAPL- and the corresponding 
+  //    Water phase Saturation from the NAPL concentrations
+  if(MASS_TRANSPORT_Process) // if(MASS_TRANSPORT_Process&&NAPL_Dissolution) //CB Todo
+  {
+    SetFlowProcessType();
+    CRFProcess *m_pcs = NULL;
+    if (m_pcs = PCSGet("TWO_PHASE_FLOW"))     
+      CalcInitialNAPLDens(m_pcs);
+  }
   //----------------------------------------------------------------------
   // REACTIONS 
   // Initialization of REACT structure for rate exchange between MTM2 and Reactions
@@ -370,6 +382,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
   double TolCoupledF = 1.0e8;
   double pcs_flow_error = 1.0e8;
   double pcs_flow_error0 = 1.0e8;
+  double pcs_mass_error = 1.0e8;
   double pcs_dm_error = 1.0e8;
   double pcs_dm_error0 = 1.0e8;
   double pcs_dm_cp_error = 1.0e8;
@@ -378,6 +391,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
   double pcs_coupling_error = 1000; //MB
   bool CalcVelocities = false;  //WW
   bool conducted = false; //  for time check. WW
+  bool density_dependent = false;
   // Mixed time step WW
   double dt0 = dt; // Save the original time step size
   //----------------------------------------------------------------------
@@ -788,13 +802,12 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
                         {
                             if(CPGetMobil(m_pcs->GetProcessComponentNumber())> 0) //Component Mobile ? 
                             {
-                                double PCSerr; 
-                                PCSerr = m_pcs->Execute();
+                                pcs_mass_error = m_pcs->Execute();	// PCH
                                 // HS: 05.02.2007: 
                                 if(lop_coupling_iterations > 1)
                                 {
                                     m_pcs->m_num->cpl_variable = m_pcs->pcs_primary_function_name[0];
-                                    pcs_coupling_error = max( pcs_coupling_error , PCSerr );
+                                    pcs_coupling_error = max( pcs_coupling_error , pcs_mass_error );	// PCH
                                 }
                             }// end of mobile components
                         }// end of "MASS TRANSPORT"
@@ -868,7 +881,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
 //	CWnd * pWnd = NULL;
 	
 	  //Disabled by Haibing 07112006-----------------------------
-//	pWnd->MessageBox("Check pressure, velocity, and concentration or particle distribution!!!","Debug help", MB_ICONINFORMATION);
+	pWnd->MessageBox("Check pressure, velocity, and concentration or particle distribution!!!","Debug help", MB_ICONINFORMATION);
 	  //---------------------------------------------------------
 #endif
 
@@ -921,6 +934,12 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
         // if(pcs_flow_error<TolCoupledF)
         //    ||pcs_flow_error/pcs_flow_error0<TolCoupledF)
         // break;
+
+		if(pcs_flow_error<TolCoupledF && pcs_mass_error<TolCoupledF)	// PCH
+		{
+			density_dependent =true;
+			break;
+		}
       }
       if(H_Process&&M_Process&&k>0) 
         cout << "\t    P-U coupling iteration: " << k 
@@ -931,7 +950,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
   //======================================================================
   // restore primary variables JOD
   //----------------------------------------------------------------------
-  if(!M_Process)
+  if(!M_Process && density_dependent == false)
   {
   bool restore = false;
  
@@ -971,6 +990,12 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
   //----------------------------------------------------------------------
   //  
   //  Update the results
+  //CB determine new NAPL and Water Saturations for Two_Phase_Flow and NAPL-Dissolution
+  if(MASS_TRANSPORT_Process) // if(MASS_TRANSPORT_Process&&NAPL_Dissolution) //CB Todo
+  {
+    if (m_pcs = PCSGet("TWO_PHASE_FLOW"))     
+      CalcNewNAPLSat(m_pcs);
+  }
   for(i=0;i<no_processes;i++)
   {
      m_pcs = pcs_vector[i];
@@ -1461,18 +1486,21 @@ void PCSCalcSecondaryVariables(void){
             p_gas = m_pcs_phase_1->GetNodeValue(j,ndx_p_gas_old);
             p_cap = m_pcs_phase_1->GetNodeValue(j,ndx_p_cap_old);
             p_liquid = p_gas - p_cap;
-            m_pcs_phase_2->SetNodeValue(j,ndx_p_liquid_old,p_liquid);
-            m_pcs_phase_2->SetNodeValue(j,ndx_p_liquid_new,p_liquid);
+            //CB m_pcs_phase_2 is incorrect pcs, secondary variable with indices 2, 3: SATURATION1(0) SATURATION1(1)
+            //m_pcs_phase_2->SetNodeValue(j,ndx_p_liquid_old,p_liquid); 
+            //m_pcs_phase_2->SetNodeValue(j,ndx_p_liquid_new,p_liquid);  
+            m_pcs_phase_1->SetNodeValue(j,ndx_p_liquid_old,p_liquid); 
+            m_pcs_phase_1->SetNodeValue(j,ndx_p_liquid_new,p_liquid); 
           }
           pcs_cpl = false;
         }
-if(aktueller_zeitschritt<1)
-{
-  int ndx_sl_old = m_pcs_phase_2->GetNodeValueIndex("SATURATION2");
-  int ndx_sl_new = ndx_sl_old+1;
-  m_pcs_phase_2->SetNodeValue(0,ndx_sl_old,0.2);
-  m_pcs_phase_2->SetNodeValue(0,ndx_sl_new,0.2);
-}
+        //if(aktueller_zeitschritt<1)
+        //{
+        //  int ndx_sl_old = m_pcs_phase_2->GetNodeValueIndex("SATURATION2");
+        //  int ndx_sl_new = ndx_sl_old+1;
+        //  m_pcs_phase_2->SetNodeValue(0,ndx_sl_old,0.2);
+        //  m_pcs_phase_2->SetNodeValue(0,ndx_sl_new,0.2);
+        //}
         m_pcs->WriteAllVariables();
 #endif
         break;

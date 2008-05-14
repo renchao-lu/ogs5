@@ -72,6 +72,7 @@ CNumerics::CNumerics(string name)
   // ELE
   ele_gauss_points = 3;
   ele_mass_lumping = 0;
+  ele_upwind_method = 0; //CB
   ele_upwinding = 0;
   //----------------------------------------------------------------------
   // Deformation
@@ -245,7 +246,7 @@ ios::pos_type CNumerics::Read(ifstream *num_file)
     }
     if(line_string.find("$ELE_UPWINDING")!=string::npos) { // subkeyword found
 	  line.str(GetLineFromFile1(num_file));
-      line >> ele_upwinding;
+      line >> ele_upwinding >> ele_upwind_method  ; //CB now read also upwinding method
       line.clear();
       continue;
     }

@@ -269,6 +269,7 @@ CRFProcess::CRFProcess(void)
   compute_domain_face_normal = false; //WW
   //
   additioanl2ndvar_print = -1; //WW
+  flow_pcs_type=0; //CB default: liquid flow, Sat = 1
   //----------------------------------------------------------------------
   m_bCheck = false; //OK
   m_bCheckOBJ = false; //OK
@@ -3878,7 +3879,8 @@ void CRFProcess::CalIntegrationPointValue()
   if(pcs_type_name.find("LIQUID")!=string::npos
      ||pcs_type_name.find("RICHARD")!=string::npos
      ||pcs_type_name.find("MULTI_PHASE_FLOW")!=string::npos
-     ||pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos )
+     ||pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos 
+	 ||pcs_type_name.find("TWO_PHASE_FLOW")!=string::npos) //WW/CB
      cal_integration_point_value = true;
   if(!cal_integration_point_value)
      return;
@@ -3892,6 +3894,8 @@ void CRFProcess::CalIntegrationPointValue()
       fem->Cal_Velocity();
     } 
   }  
+  if(pcs_type_name.find("TWO_PHASE_FLOW")!=string::npos) //WW/CB
+    cal_integration_point_value = false;
 }
 
 
@@ -6764,6 +6768,70 @@ void CRFProcess::CalcSaturationRichards(int timelevel, bool update)
    GeoSys - Function: Get mean element value for element index from secondary node values
 				      of process pcs_name and for variable var_name; old and new timelevel
     01/2006   SB    Implementation
+    02/2008   CB    generalization
+**************************************************************************/
+double PCSGetEleMeanNodeSecondary_2(long index, int pcsT, string var_name, int timelevel){
+
+double val = 1.0; // As this returns saturation, default is fully saturated = 1.0;
+int idx, j;
+long enode;
+CRFProcess *m_pcs = NULL;
+CRFProcess *cplpcs = NULL;
+CElem* elem =NULL;
+ 
+  // Get index of secondary node value
+  switch(pcsT){
+    case 0: //Liquid_Flow
+      break;
+    case 1: //Groundwater Flow
+      break;
+    case 66: //Overland Flow
+      break;
+    case 5: //Air Flow
+      break;
+    case 11: //Componental Flow
+      break;
+    case 1212: //Multiphase Flow
+      break;
+    case 12: // Two_phase_Flow
+      m_pcs = PCSGet("TWO_PHASE_FLOW");
+      if(m_pcs){
+        if(m_pcs->pcs_type_number==0)
+          cplpcs = pcs_vector[m_pcs->pcs_number+1]; 
+        else if(m_pcs->pcs_type_number==1)
+          cplpcs = pcs_vector[m_pcs->pcs_number-1]; 
+        idx = cplpcs->GetNodeValueIndex(var_name)+timelevel; 
+      }
+      break;
+    case 22: // Richards flow
+      m_pcs = PCSGet("RICHARDS_FLOW");
+      if(m_pcs){
+        idx = m_pcs->GetNodeValueIndex(var_name)+timelevel; 
+      cplpcs = m_pcs;
+      }
+      break;
+    default:
+      break;
+  }
+
+  if(m_pcs){
+    // Get element with index index
+    elem = m_pcs->m_msh->ele_vector[index];
+    val = 0.0;
+    for(j=0; j<elem->GetVertexNumber(); j++){ // average all adjoining nodes
+      enode = elem->GetNodeIndex(j);
+      val +=  cplpcs->GetNodeValue(enode,idx);
+    }
+    val = val/((double)elem->GetVertexNumber());
+  }
+return val;
+}
+
+
+/**************************************************************************
+   GeoSys - Function: Get mean element value for element index from secondary node values
+				      of process pcs_name and for variable var_name; old and new timelevel
+    01/2006   SB    Implementation
 **************************************************************************/
 double PCSGetEleMeanNodeSecondary(long index, string pcs_name, string var_name, int timelevel){
 
@@ -7670,7 +7738,207 @@ void CRFProcess::SetBC()
       SetNodeValue(m_node->msh_node_number,nidx+1,m_node->node_value); // new time
   }
 }
+/**************************************************************************
+Task: Postprocessing function calculates the NAPL saturation after 
+      Flow, Transport and kkinetic NAPL dissolution
 
+This function is not yet complete and needs input from component properties
+
+Programing:
+   01/2008   CB   Implementation                                          */
+/**************************************************************************/
+void CalcNewNAPLSat(CRFProcess*m_pcs)
+{
+
+  long i, j, k;
+  int idx0, idx1, idx2;
+  long nnodes, nBlobs, nNAPLcomps;
+  double moldens, conc, rho_N_new, rho_N_old; 
+  double satu_N_new, satu_N_old ;
+
+//  CompProperties *m_cp = cp_vec[component];
+
+  i = j = k = 0;
+
+  nnodes = (long) fem_msh_vector[0]->nod_vector.size();
+  nBlobs = 0; //CB todo  
+//nBlobs = (int) KinBlob_vector.size();
+
+  nNAPLcomps = 0; //CB todo
+
+  moldens = conc = rho_N_new = 0;
+
+
+
+/*
+
+int nComps = (int)cp_vec.size();
+double *Concentration;
+Concentration = dvector(1,nComps); // Achtung! Speicher freigeben oder anders formulieren! in Kinreact_data
+int Sp1, sp, r;
+
+CKinReact *m_kr = NULL;
+CKinBlob *m_kb = NULL;
+CKinReactData *m_krd = NULL;
+m_krd = KinReactData_vector[0];
+
+int nreactions= m_krd->NumberReactions; 
+
+for(i = 0; i < nnodes; i++) { 
+  // Konzentrationen aller Substanzen aus Datenstruktur auslesen und in neuem Array speichern 
+  for(sp=0;sp<Number_of_Components;sp++) //CB: this???
+	   Concentration[sp+1] = pcs_vector[this->sp_pcsind[sp]]->GetNodeValue(i,this->sp_varind[sp]); 
+
+  rho_N_new = 0;
+
+  for(r=0; r<nreactions; r++){ //CB nreactions scheint die anzahl der NAPLSpezies zu sein, die am austausch teilnimmt
+    m_kr = KinReact_vector[r];
+	   if(m_kr->typeflag_napldissolution){     //dissolution reaction identified
+		    Sp1			= m_kr->ex_species[0]+1;        //Sp1 = NAPL-species //CB: warum hier +1? neues timelevel?
+		    moldens = m_kr->Density_NAPL;
+		    if(Concentration[Sp1] > 0.)
+         rho_N_new  += DMAX(Concentration[Sp1],0.) * moldens;
+	   }
+  } // end for nreactions
+  // und hier folgt dann die unten stehende Berechnung von
+  // new SATURATION2 and SATURATION1 and DENSITY2
+  // und setzen der GrÃ¶ÃŸen am aktuellen node
+
+} // for nnodes
+
+*/
+
+
+  // Get indices of node value variables
+  if(m_pcs->pcs_type_number==0)
+    m_pcs = pcs_vector[m_pcs->pcs_number+1]; 
+  idx0 = m_pcs->GetNodeValueIndex("SATURATION2"); // old timelevel
+  idx1 = m_pcs->GetNodeValueIndex("DENSITY2"); 
+  idx2 = m_pcs->GetNodeValueIndex("SATURATION1"); // old timelevel
+
+
+  for(i = 0; i < nnodes; i++) { 
+    // determine the new NAPL density rho_N_neu at current node
+    rho_N_new = 0;
+
+    // loop over NAPL geometries is not necessary, as each NAPL component 
+    // is defined individualy as an immobile component for each rescpectivie geometry 
+    //for(j = 0; j < nBlobs; j++) {  
+      for(k = 0; k < nNAPLcomps; k++) { 
+    //   moldens =   NAPLcomp[k]->molar_density; //CB todo
+    //   conc =   NAPLcomp[k]->concentration; //CB todo
+    //   if NAPLcomp[k] is  NAPL; // gehÃ¶rt zur NAPLphase //CB todo
+           rho_N_new += conc * moldens; 
+      }
+    //}
+      // get the old SATURATION2 of NAPL after flow / transport step
+      satu_N_old = m_pcs->GetNodeValue(i, idx0);
+      // get the old NAPL DENSITY after flow / transport step
+      rho_N_old = m_pcs->GetNodeValue(i, idx1);
+      // calculate new NAPL Saturation: dSatu = Satu(t+dt)-Satu(t) = Satu(t)*(1-rho(t)/rho(t+dt))
+      //satu_N_new = satu_N_old + satu_N_old * (1 - rho_N_old / rho_N_new); //fast  
+
+//CB for testing the saturation change
+rho_N_new=rho_N_old;//*1.05;
+//if (satu_N_old >0) 
+//  satu_N_new = satu_N_old + 0.02;
+//else 
+  satu_N_new = satu_N_old ;
+
+      //satu_N_new = satu_N_old + satu_N_old * (rho_N_new / rho_N_old - 1);   //slow
+      // set new 
+      // SATURATION2 
+      //m_pcs->SetNodeValue(i, idx0, satu_N_new); 
+      m_pcs->SetNodeValue(i, idx0+1, satu_N_new);
+      // DENSITY2
+      m_pcs->SetNodeValue(i, idx1, rho_N_new); 
+      // SATURATION1 
+      m_pcs->SetNodeValue(i, idx2, 1-satu_N_new); // idx2 for timelevel 0 ??
+      //m_pcs->SetNodeValue(i, idx2+1, 1-satu_N_new); // idx2+1 for timelevel 1 ??
+  }
+}
+
+
+/**************************************************************************
+Task: Preprocessing function calculates the initial 
+      NAPL and Water phase saturations 
+
+This function is not yet complete and needs input from component properties
+And what about the initial NAPL Saturation?
+
+Programing:
+   01/2008   CB   Implementation                                          */
+/**************************************************************************/
+void CalcInitialNAPLDens(CRFProcess*m_pcs)
+{
+  long i, j, k;
+  int idx1;
+  long nnodes, nBlobs, nNAPLcomps;
+  double moldens, conc, rho_N_new; 
+
+//  CompProperties *m_cp = cp_vec[component];
+
+  i = j = k = 0;
+
+  nnodes = (long) fem_msh_vector[0]->nod_vector.size();
+  nBlobs = 0; //CB todo
+  nNAPLcomps = 0; //CB todo
+
+  moldens = conc = rho_N_new = 0;
+
+  // Get indices of node value variables
+  if(m_pcs->pcs_type_number==0)
+    m_pcs = pcs_vector[m_pcs->pcs_number+1]; 
+  idx1 = m_pcs->GetNodeValueIndex("DENSITY2"); 
+
+
+  for(i = 0; i < nnodes; i++) { 
+    // determine the initial NAPL density rho_N_neu at current node
+    rho_N_new = 0;
+    // loop over NAPL geometries is not necessary, as each NAPL component 
+    // is defined individualy as an immobile component for each rescpectivie geometry 
+    //for(j = 0; j < nBlobs; j++) {  
+      for(k = 0; k < nNAPLcomps; k++) { 
+    //   moldens =   NAPLcomp[k]->molar_density; //CB todo
+    //   conc =   NAPLcomp[k]->concentration; //CB todo
+    //   if NAPLcomp[k] is  NAPL; // gehÃ¶rt zur NAPLphase //CB todo
+           rho_N_new += conc * moldens; 
+      }
+    //}
+
+    //set DENSITY2
+    //m_pcs->SetNodeValue(i, idx1, rho_N_new);
+    //for debugging until function is copmplete
+    m_pcs->SetNodeValue(i, idx1, 1000);
+  }
+}
+
+/**************************************************************************
+Task: Preprocessing function set flag pcs->flow_pcs_type for
+      calculation of velocity and Saturation in mass transport element 
+      matrices
+
+Programing:
+   01/2008   CB   Implementation                                          */
+/**************************************************************************/
+void SetFlowProcessType()
+{
+  int i;
+  int no_processes, flowtype;
+  CRFProcess *m_pcs = NULL;
+
+  m_pcs = PCSGetFlow();
+  flowtype = m_pcs->type;
+  no_processes =(int)pcs_vector.size();
+ 
+  for(i=0;i<no_processes;i++)
+  {
+     m_pcs = pcs_vector[i];
+     //if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0)
+     //m_pcs->twophaseflow=true; 
+     m_pcs->flow_pcs_type = flowtype; 
+  }
+}
 /**************************************************************************
 PCSLib-Method:
 based on WriteSolution by WW

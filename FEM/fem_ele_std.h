@@ -88,6 +88,7 @@ class CFiniteElementStd:public CElement
      void Assembly(); 
 	 void Assembly(int dimension);	// PCH for Fluid Momentum
      void Cal_Velocity();
+     void Cal_Velocity_2(); //CB this is to provide velocity only at the element center of gravity
      //
      void AssembleParabolicEquationRHSVector(); //OK
 
@@ -107,6 +108,9 @@ class CFiniteElementStd:public CElement
      double CalcOverlandJacobiNodes(int i, int j, double *depth, double *depth_keep, double akrw, double axx, double ayy, double** amatij, double* sumjac);
    	 void CalcOverlandUpwindedCoefficients(double** amat, double* ckwr, double axx, double ayy); 
      //
+     inline void UpwindAlphaMass(double *alpha); //CB added by CB: 090507
+     inline void UpwindUnitCoord(int p, int point, int ind); //CB added by CB: 090507
+     inline void UpwindSummandMass(const int gp, int& gp_r, int& gp_s, int& gp_t, double *alpha, double *summand); //CB added by CB: 090507
      // Gauss value
      void ExtropolateGauss(CRFProcess *m_pcs, const int idof);
      //
@@ -157,7 +161,7 @@ class CFiniteElementStd:public CElement
      double edttuse[16];
 
      // Local matrices
-     SymMatrix *Mass;
+     Matrix *Mass; //CB symMatrix *Mass; // unsymmetric in case of upwinding
      Matrix *Mass2;
      Matrix *Laplace;
      Matrix *Advection; //SB4200

@@ -53,6 +53,7 @@ class CNumerics
     // ELE
     int ele_gauss_points; // probably element-type-wise
     int ele_mass_lumping;
+    int ele_upwind_method; //CB
     double ele_upwinding;
     // Deformation
     int GravityProfile;

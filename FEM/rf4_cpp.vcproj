@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="rf4_cpp"
 	ProjectGUID="{4F159AF7-FF53-410E-A9A7-2C500A4EF55E}"
 	>
@@ -44,7 +44,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../FEM; ../MSH; ../GEO;  ../GEM; ../EQL; ../"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MSVCPP6;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MSVCPP6;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;GRAVITY"
 				RuntimeLibrary="1"
 				DisableLanguageExtensions="false"
 				UsePrecompiledHeader="0"

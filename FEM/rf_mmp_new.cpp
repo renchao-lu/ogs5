@@ -2496,7 +2496,9 @@ double* CMediumProperties::MassDispersionTensorNew(int ip)
   // Materials
   molecular_diffusion_value = m_cp->CalcDiffusionCoefficientCP(index) * TortuosityFunction(index,g,theta);
   molecular_diffusion_value *= Porosity(index,theta);
-  if(PCSGet("RICHARDS_FLOW")) molecular_diffusion_value *= PCSGetEleMeanNodeSecondary(index, "RICHARDS_FLOW", "SATURATION1", 1);
+  //CB 
+  molecular_diffusion_value *= PCSGetEleMeanNodeSecondary_2(index, Fem_Ele_Std->pcs->flow_pcs_type, "SATURATION1", 1);
+  //if(PCSGet("RICHARDS_FLOW")) molecular_diffusion_value *= PCSGetEleMeanNodeSecondary(index, "RICHARDS_FLOW", "SATURATION1", 1);
   for (i = 0; i<Dim*Dim; i++)
     molecular_diffusion[i] = 0.0;
   for (i = 0; i<Dim; i++)
