@@ -1542,6 +1542,7 @@ double COutput::NODWritePLYDataTEC(int number)
     m_msh->GetELEOnPLY(m_ply,ele_vector_at_geo);
   }
   //--------------------------------------------------------------------
+  bool b_specified_pcs = (m_pcs != NULL); //NW m_pcs = PCSGet(pcs_type_name);
   for(j=0;j<(long)nodes_vector.size();j++)
   {
     tec_file << m_ply->sbuffer[j] << " ";
@@ -1550,7 +1551,8 @@ double COutput::NODWritePLYDataTEC(int number)
     for(k=0;k<no_variables;k++)
     {
       //if(!(nod_value_vector[k].compare("FLUX")==0))  // removed JOD, does not work for multiple flow processes
-      //  m_pcs = PCSGet(nod_value_vector[k],bdummy);
+      if (!b_specified_pcs) //NW
+        m_pcs = PCSGet(nod_value_vector[k],bdummy);
       if(!m_pcs)
       {
         cout << "Warning in COutput::NODWritePLYDataTEC - no PCS data" << endl;
