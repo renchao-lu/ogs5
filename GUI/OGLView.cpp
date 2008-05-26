@@ -337,7 +337,8 @@ void COGLView::OnCreateGL()
 	PrepareCharset2D("Arial",20);
 // Set the background color for the first view
 	//SetClearCol(12632256);//Grey
-   	SetClearCol(00000000);//Black
+//   	SetClearCol(00000000);//Black
+   	SetClearCol(COLORREF_WHITE);//NW
 
 }
 

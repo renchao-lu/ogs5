@@ -46,8 +46,19 @@
 		int depth_bits;
 		int stencil_bits;
 	};
+  //Color list: NW add
+  const COLORREF COLORREF_WHITE = RGB(255, 255, 255);
+  const COLORREF COLORREF_BLACK = RGB(0, 0, 0);
+  const COLORREF COLORREF_RED = RGB(255,0,0);
+  const COLORREF COLORREF_GREEN = RGB(0,255,0);
+  const COLORREF COLORREF_BLUE = RGB(0,0,255);
+  const COLORREF COLORREF_PURPLE = RGB(255,0,255);
+  const COLORREF COLORREF_AQUA = RGB(0,255,255);
+  const COLORREF COLORREF_YELLOW = RGB(255,255,0);
+  const COLORREF COLORREF_DKGRAY = RGB(128, 128, 128);
+  const COLORREF COLORREF_LTGRAY = RGB(192, 192, 192);
 
-/////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
 // COGLEnabledView view
 
 class COGLEnabledView : public CView
