@@ -42,7 +42,8 @@ void CGSPropertyRight::OnDraw(CDC* pDC)
 	CPropPgFormView::OnDraw(pDC);
 }
 
-BEGIN_MESSAGE_MAP(CGSPropertyRight, CFormView)
+//NW BEGIN_MESSAGE_MAP(CGSPropertyRight, CFormView)  
+BEGIN_MESSAGE_MAP(CGSPropertyRight, CPropPgFormView) //NW
     //{{AFX_MSG_MAP(CGSPropertyRight)
 	
 

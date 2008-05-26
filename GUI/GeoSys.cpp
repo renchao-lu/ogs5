@@ -526,17 +526,26 @@ GeoSys-Method: DocView_Interaction
 Task: Gibt ein den Zugriff auf OpenGL
 02/2004 TK project related file handling
 11/2006 TK OpenGL Window Size setting
+05/2008 NW Use GetWindowRect() instead of GetSystemMetrics(SM_CXVIRTUALSCREEN) due to dual monitors 
 **************************************************************************/
 TVisualObject *TVisualFramework:: OGLView_Access(CCreateContext* pContext, int pos) 
 {	
-    TVisualObject *OGLView = new TVisualObject(pos,0,1,pContext, RUNTIME_CLASS(COGLView),CSize((::GetSystemMetrics(SM_CXVIRTUALSCREEN)-215-445),0));
+    CRect cRect;
+    AfxGetApp()->GetMainWnd()->GetWindowRect(&cRect);
+
+    //TVisualObject *OGLView = new TVisualObject(pos,0,1,pContext, RUNTIME_CLASS(COGLView),CSize((::GetSystemMetrics(SM_CXVIRTUALSCREEN)-215-445),0));
+    TVisualObject *OGLView = new TVisualObject(pos,0,1,pContext, RUNTIME_CLASS(COGLView),CSize((cRect.Width()-215-445),0)); //NW 
 
     return (OGLView);
 }
 
 TVisualObject *TVisualFramework:: PickingGLView_Access(CCreateContext* pContext, int pos) 
 {	
-    TVisualObject *PickingGLView = new TVisualObject(pos,0,1,pContext, RUNTIME_CLASS(COGLPickingView),CSize((::GetSystemMetrics(SM_CXVIRTUALSCREEN)-200-215),0));
+    CRect cRect;
+    AfxGetApp()->GetMainWnd()->GetWindowRect(&cRect);
+
+    //TVisualObject *PickingGLView = new TVisualObject(pos,0,1,pContext, RUNTIME_CLASS(COGLPickingView),CSize((::GetSystemMetrics(SM_CXVIRTUALSCREEN)-200-215),0));
+    TVisualObject *PickingGLView = new TVisualObject(pos,0,1,pContext, RUNTIME_CLASS(COGLPickingView),CSize((cRect.Width()-200-215),0)); //NW
 
     return (PickingGLView);
 
