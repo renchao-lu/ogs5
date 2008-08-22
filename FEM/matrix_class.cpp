@@ -1377,7 +1377,8 @@ void CSparseMatrix::Precond_Jacobi(double *vec_s, double *vec_r)
       for(idof=0; idof<DOF; idof++)
       {
         diag = entry[(idof*DOF+idof)*size_entry_column+diag_entry[i]];
-        if(fabs(diag)<DBL_EPSILON)
+        if(fabs(diag)<DBL_MIN)
+//        if(fabs(diag)<DBL_EPSILON)
           diag = 1.0;
         //  cout<<"Diagonal entry is zero. Abort simulation!!  " <<endl;
         vec_r[idof*rows+i] = vec_s[idof*rows+i]/diag;
@@ -1390,7 +1391,8 @@ void CSparseMatrix::Precond_Jacobi(double *vec_s, double *vec_r)
     for(i=0; i<rows; i++)
     {
        diag = entry[diag_entry[i]];
-       if(fabs(diag)<DBL_EPSILON)
+       //if(fabs(diag)<DBL_EPSILON)
+       if(fabs(diag)<DBL_MIN)
           diag = 1.0;
        //   cout<<"Diagonal entry is zero. Abort simulation!!  " <<endl;
        //
