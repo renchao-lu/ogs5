@@ -643,7 +643,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
 	CWnd * pWnd = NULL;
 	
 	//Disabled by Haibing 07112006
-	pWnd->MessageBox("Liquid Flow and Fluid Momentum just solved!!!","Debug help", MB_ICONINFORMATION);
+//	pWnd->MessageBox("Liquid Flow and Fluid Momentum just solved!!!","Debug help", MB_ICONINFORMATION);
 	//--------------------------------------------------------
 #endif
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
