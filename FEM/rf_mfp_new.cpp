@@ -34,7 +34,7 @@ extern double GetCurveValue(int,int,double,int*);
 #include "steam67.h"
 #define PSI2PA 6895.
 #define PA2PSI 1.4503263234227701232777374909355e-4
-#define GAS_CONSTANT    8314.51
+#define GAS_CONSTANT    8314.41
 #define COMP_MOL_MASS_AIR    28.96
 #define COMP_MOL_MASS_WATER  18.016
 #define GAS_CONSTANT_V  461.5 //WW
@@ -522,7 +522,6 @@ Programing:
 09/2005 WW implementation 
 11/2005 YD modification
 11/2005 CMCD Inclusion current and previous time step quantities
-05/2007 PCH improvement for density-dependent flow
 last modification:
 **************************************************************************/
 void CFluidProperties::CalPrimaryVariable(vector<string>& pcs_name_vector)
@@ -532,11 +531,9 @@ void CFluidProperties::CalPrimaryVariable(vector<string>& pcs_name_vector)
   int nidx0,nidx1;
   if(!Fem_Ele_Std) //OK
     return;
-
   for(int i=0;i<(int)pcs_name_vector.size();i++){
     //MX  m_pcs = PCSGet("HEAT_TRANSPORT");
      m_pcs = PCSGet(pcs_name_vector[i],true);
-
 	 if (!m_pcs) return;  //MX
      nidx0 = m_pcs->GetNodeValueIndex(pcs_name_vector[i]);
 	 nidx1 = nidx0+1;
@@ -565,51 +562,89 @@ Programing:
 08/2004 OK MFP implementation 
            based on MATCalcFluidDensity by OK/JdJ,AH,MB
 11/2005 YD Modification
+05/2008 WW Add an argument: double* variables: P, T, C
 last modification:
 **************************************************************************/
-double CFluidProperties::Density()
+double CFluidProperties::Density(double *variables)
 {
   static double density;
   static double air_gas_density,vapour_density,vapour_pressure;
   int fct_number = 0;
   int gueltig;
   //----------------------------------------------------------------------
-  CalPrimaryVariable(density_pcs_name_vector);
-  //----------------------------------------------------------------------
-  switch(density_model){
-    case 0: // rho = f(x)
-      density = GetCurveValue(fct_number,0,primary_variable[0],&gueltig);
-      break;
-    case 1: // rho = const
-      density = rho_0;
-      break;
-    case 2: // rho(p) = rho_0*(1+beta_p*(p-p_0))
-      density = rho_0*(1.+drho_dp*(max(primary_variable[0],0.0)-p_0));
-      break;
-    case 3: // rho(C) = rho_0*(1+beta_C*(C-C_0))
-      density = rho_0*(1.+drho_dC*(max(primary_variable[0],0.0)-C_0));
-      break;
-    case 4: // rho(T) = rho_0*(1+beta_T*(T-T_0))
-      density = rho_0*(1.+drho_dT*(max(primary_variable[0],0.0)-T_0));
-      break;
-    case 5: // rho(C,T) = rho_0*(1+beta_C*(C-C_0)+beta_T*(T-T_0))
-      density = rho_0*(1.+drho_dC*(max(primary_variable[0],0.0)-C_0)+drho_dT*(max(primary_variable[1],0.0)-T_0));
-      break;
-    case 6: // rho(p,T) = rho_0*(1+beta_p*(p-p_0)+beta_T*(T-T_0))
-      density = rho_0*(1.+drho_dp*(max(primary_variable[0],0.0)-p_0)+drho_dT*(max(primary_variable[1],0.0)-T_0));
-      break;
-    case 7: // rho_w^l(p,T) for gas phase
-      vapour_pressure = MFPCalcVapourPressure(primary_variable[0]);
-      air_gas_density = (COMP_MOL_MASS_AIR * (primary_variable[1]-vapour_pressure)) / (GAS_CONSTANT*(primary_variable[0]+0.0));
-      vapour_density = (COMP_MOL_MASS_WATER*vapour_pressure) / (GAS_CONSTANT*(primary_variable[0]+0.0));
-      density = vapour_density + air_gas_density;
-      break;
-    case 8: // M14 von JdJ
-	  density = MATCalcFluidDensityMethod8(primary_variable[0],primary_variable[1],primary_variable[2]);
-      break;
-    default:
-      cout << "Error in CFluidProperties::Density: no valid model" << endl;
-      break;
+  if(variables)  // This condition is added by WW
+  {
+    //----------------------------------------------------------------------
+    // Duplicate the following lines just to enhance computation. WW
+    switch(density_model){
+      case 0: // rho = f(x)
+        density = GetCurveValue(fct_number,0,variables[0],&gueltig);
+        break;
+      case 1: // rho = const
+        density = rho_0;
+        break;
+      case 2: // rho(p) = rho_0*(1+beta_p*(p-p_0))
+        density = rho_0*(1.+drho_dp*(max(variables[0],0.0)-p_0));
+        break;
+      case 3: // rho(C) = rho_0*(1+beta_C*(C-C_0))
+        density = rho_0*(1.+drho_dC*(max(variables[2],0.0)-C_0));
+        break;
+      case 4: // rho(T) = rho_0*(1+beta_T*(T-T_0))
+        density = rho_0*(1.+drho_dT*(max(variables[1],0.0)-T_0));
+        break;
+      case 5: // rho(C,T) = rho_0*(1+beta_C*(C-C_0)+beta_T*(T-T_0))
+        density = rho_0*(1.+drho_dC*(max(variables[2],0.0)-C_0)+drho_dT*(max(variables[1],0.0)-T_0));
+        break;
+      case 6: // rho(p,T) = rho_0*(1+beta_p*(p-p_0)+beta_T*(T-T_0))
+        density = rho_0*(1.+drho_dp*(max(variables[0],0.0)-p_0)+drho_dT*(max(variables[1],0.0)-T_0));
+        break;
+      case 7: // Pefect gas. WW
+        density = variables[0]*molar_mass/(GAS_CONSTANT*variables[1]);
+        break;
+      default:
+        cout << "Error in CFluidProperties::Density: no valid model" << endl;
+        break;
+    }      
+  }   
+  else
+  {
+    CalPrimaryVariable(density_pcs_name_vector);
+    //----------------------------------------------------------------------
+    switch(density_model){
+      case 0: // rho = f(x)
+        density = GetCurveValue(fct_number,0,primary_variable[0],&gueltig);
+        break;
+      case 1: // rho = const
+        density = rho_0;
+        break;
+      case 2: // rho(p) = rho_0*(1+beta_p*(p-p_0))
+        density = rho_0*(1.+drho_dp*(max(primary_variable[0],0.0)-p_0));
+        break;
+      case 3: // rho(C) = rho_0*(1+beta_C*(C-C_0))
+        density = rho_0*(1.+drho_dC*(max(primary_variable[0],0.0)-C_0));
+        break;
+      case 4: // rho(T) = rho_0*(1+beta_T*(T-T_0))
+        density = rho_0*(1.+drho_dT*(max(primary_variable[0],0.0)-T_0));
+        break;
+      case 5: // rho(C,T) = rho_0*(1+beta_C*(C-C_0)+beta_T*(T-T_0))
+        density = rho_0*(1.+drho_dC*(max(primary_variable[0],0.0)-C_0)+drho_dT*(max(primary_variable[1],0.0)-T_0));
+        break;
+      case 6: // rho(p,T) = rho_0*(1+beta_p*(p-p_0)+beta_T*(T-T_0))
+        density = rho_0*(1.+drho_dp*(max(primary_variable[0],0.0)-p_0)+drho_dT*(max(primary_variable[1],0.0)-T_0));
+        break;
+      case 7: // rho_w^l(p,T) for gas phase
+        vapour_pressure = MFPCalcVapourPressure(primary_variable[0]);
+        air_gas_density = (COMP_MOL_MASS_AIR * (primary_variable[1]-vapour_pressure)) / (GAS_CONSTANT*(primary_variable[0]+0.0));
+        vapour_density = (COMP_MOL_MASS_WATER*vapour_pressure) / (GAS_CONSTANT*(primary_variable[0]+0.0));
+        density = vapour_density + air_gas_density;
+        break;
+      case 8: // M14 von JdJ
+	    density = MATCalcFluidDensityMethod8(primary_variable[0],primary_variable[1],primary_variable[2]);
+        break;
+      default:
+        cout << "Error in CFluidProperties::Density: no valid model" << endl;
+        break;
+    }
   }
   return density;
 }
@@ -884,7 +919,7 @@ double CFluidProperties::GasViscosity_Reichenberg_1971(double p,double T)
 /**************************************************************************
 FEMLib-Method:
 Task: 
-   Dynamische Fl?sigkeits-Viskositaet nach Yaws et al. (1976)
+   Dynamische Flüssigkeits-Viskositaet nach Yaws et al. (1976)
    als Funktion von Temperatur
    in Reid et al. (1988), S. 441/455
    Eqn.(3): ln(my) = A + B/T + CT + DT^2
@@ -912,7 +947,7 @@ double CFluidProperties::LiquidViscosity_Yaws_1976(double T)
 /**************************************************************************
 FEMLib-Method:
 Task: 
-   Fl?sigkeits-Viskositaet in Abhaengigkeit von der Temperatur
+   Flüssigkeits-Viskositaet in Abhaengigkeit von der Temperatur
    (nach Marsily 1986)
 Programing:
 08/2004 OK MFP implementation 
@@ -1358,7 +1393,7 @@ double CFluidProperties::Enthalpy(int comp,double temperature)
       enthalpy = 733.0*temperature + (GAS_CONSTANT*(temperature+0.0))/COMP_MOL_MASS_AIR;
     }
     else if((phase==0)&&(comp==1)) { /* h_w^g: water species in gaseous phase */
-      pressure = 1.e-3; /*Vorgabe eines vern?ftigen Wertes */
+      pressure = 1.e-3; /*Vorgabe eines vernünftigen Wertes */
       pressure *= PA2PSI; /* Umrechnung Pa in psia */
       temperature -= 273.15; /* Kelvin -> Celsius */
       temperature_F = temperature*1.8+32.; /* Umrechnung Celsius in Fahrenheit*/
@@ -1626,7 +1661,7 @@ C = C;
 	/*CMcD end variables for 20 ALR*/
 	 /* //Prepared for introduction of solute transport in PCS version
 	    //Average Concentration 
-	    comp=0; // nur f? Einkomponenten-Systeme 
+	    comp=0; // nur für Einkomponenten-Systeme 
 		timelevel=1;
 		concentration_average = 0.0;
 		for (i = 0; i < count_nodes; i++)

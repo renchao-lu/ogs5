@@ -173,6 +173,9 @@ class CFiniteElementStd:public CElement
      void SetHighOrderNodes();  // 25.2.2007 WW 
      // Primary as water head
      bool HEAD_Flag; 
+     //
+     inline void Config(); //WW
+     //
      inline double CalCoefMass();
      inline double CalCoefMass2(int dof_index); // 25.2.2007 WW 
      inline void CalCoefLaplace(bool Gravity, int ip=0);

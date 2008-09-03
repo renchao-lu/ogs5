@@ -598,8 +598,8 @@ void OUTData(double time_current, const int time_step_number)
 		  else
 		  {
             for(j=0;j<no_times;j++){
-              if((time_current>m_out->time_vector[j])  
-				  || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl
+              if((time_current>m_out->time_vector[j])
+                 || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl
                 tim_value = m_out->NODWritePLYDataTEC(j+1); //OK
                 if(tim_value>0.0) m_out->TIMValue_TEC(tim_value);
                 m_out->time_vector.erase(m_out->time_vector.begin()+j);

@@ -198,6 +198,26 @@ ios::pos_type CInitialCondition::Read(ifstream *ic_file)
       continue;
     }
     //....................................................................
+    if(line_string.find("$DIS_TYPE")!=string::npos) { // subkeyword found
+      in.str(GetLineFromFile1(ic_file));
+      in >> dis_type_name;
+      if(dis_type_name.find("CONSTANT")!=string::npos) {
+        m_node = new CNodeValue();        
+        in >> m_node->node_value;
+        node_value_vector.push_back(m_node);
+      }
+      if(dis_type_name.find("GRADIENT")!=string::npos) {
+		in >> gradient_ref_depth;  //CMCD
+        in >> gradient_ref_depth_value; //CMCD
+		in >> gradient_ref_depth_gradient; //CMCD
+       }
+      if(dis_type_name.find("RESTART")!=string::npos) { //OK
+		in >> rfr_file_name;
+      }
+      in.clear();
+      continue;
+    }
+    //....................................................................
     if(line_string.find("$GEO_TYPE")!=string::npos) { //subkeyword found
       in.str(GetLineFromFile1(ic_file));
       in >> geo_type_name;
@@ -222,7 +242,8 @@ ios::pos_type CInitialCondition::Read(ifstream *ic_file)
         if(geo_type_name.find("SUB")!=string::npos) 
         {
            *ic_file>>SubNumber;
-           if(pcs_pv_name.find("STRESS")!=string::npos)
+           if(pcs_pv_name.find("STRESS")!=string::npos
+              ||dis_type_name.find("FUNCTION")!=string::npos) //01.07.2008 WW
 		   {
               string str_buff;
               vector<string> tokens;
@@ -278,26 +299,6 @@ ios::pos_type CInitialCondition::Read(ifstream *ic_file)
              }
 		   }
         }
-      }
-      in.clear();
-      continue;
-    }
-    //....................................................................
-    if(line_string.find("$DIS_TYPE")!=string::npos) { // subkeyword found
-      in.str(GetLineFromFile1(ic_file));
-      in >> dis_type_name;
-      if(dis_type_name.find("CONSTANT")!=string::npos) {
-        m_node = new CNodeValue();        
-        in >> m_node->node_value;
-        node_value_vector.push_back(m_node);
-      }
-      if(dis_type_name.find("GRADIENT")!=string::npos) {
-		in >> gradient_ref_depth;  //CMCD
-        in >> gradient_ref_depth_value; //CMCD
-		in >> gradient_ref_depth_gradient; //CMCD
-       }
-      if(dis_type_name.find("RESTART")!=string::npos) { //OK
-		in >> rfr_file_name;
       }
       in.clear();
       continue;
@@ -654,6 +655,7 @@ Programing:
 03/2005 WW By patches of domain //ToDo
 06/2005 OK OVERLAND_FLOW
 12/2005 OK RESTART
+07/2008 WW Patch-wise polynomal distribution
 **************************************************************************/
 void CInitialCondition::SetDomain(int nidx)
 {
@@ -693,47 +695,25 @@ void CInitialCondition::SetDomain(int nidx)
          {
            //................................................................
            node_val = node_value_vector[0]->node_value;
-           if(m_msh){
-              for(i=0;i<m_msh->GetNodesNumber(true);i++) //OK MSH
-                 m_pcs->SetNodeValue(i,nidx,node_val);
-           }
+           for(i=0;i<m_msh->GetNodesNumber(true);i++) //OK MSH
+               m_pcs->SetNodeValue(i,nidx,node_val);
            //................................................................
-           else{
-              for(i=0;i<NodeListLength;i++)
-                 SetNodeVal(i,nidx,node_val);
-           }
          }
       }
       //--------------------------------------------------------------------
       if(dis_type_name.find("GRADIENT")!=string::npos)
-	  {
-          if(m_msh)
-          {
-             for(i=0;i<m_msh->GetNodesNumber(true);i++) //WW
- 	         {
-                if(onZ==1) //2D 
-                 	node_depth = m_msh->nod_vector[i]->Y();
-                if(onZ==2) //3D
-                    node_depth = m_msh->nod_vector[i]->Z();
-	            node_val = ((gradient_ref_depth_gradient)*(gradient_ref_depth-node_depth))+
+	  {  // Remove unused stuff by WW
+         for(i=0;i<m_msh->GetNodesNumber(true);i++) //WW
+         {
+           if(onZ==1) //2D 
+            node_depth = m_msh->nod_vector[i]->Y();
+           if(onZ==2) //3D
+             node_depth = m_msh->nod_vector[i]->Z();
+           node_val = gradient_ref_depth_gradient*(gradient_ref_depth-node_depth)+
                         gradient_ref_depth_value;
-				m_pcs->SetNodeValue(m_msh->nod_vector[i]->GetIndex(),nidx,node_val);
-             }
-		  }
-		  else
-          {
-             for(i=0;i<NodeListLength;i++)
-	         {
-                if(max_dim==1) //2D 
-                     node_depth =  GetNodeY(i);
-                if(max_dim==2) //3D
-		        node_depth = GetNodeZ(i);
-	            node_val = ((gradient_ref_depth_gradient)*(gradient_ref_depth-node_depth))+
-                        gradient_ref_depth_value;
-             	SetNodeVal(i,nidx,node_val);
-             }
-		  }// If else if(m_pcs->m_msh)
-	   } //if(dis_type_name.find("GRADIENT")!=string::npos)
+           m_pcs->SetNodeValue(m_msh->nod_vector[i]->GetIndex(),nidx,node_val);
+         }
+     } //if(dis_type_name.find("GRADIENT")!=string::npos)
   //----------------------------------------------------------------------
   if(dis_type_name.compare("RESTART")==0)
   {
@@ -805,7 +785,7 @@ void CInitialCondition::SetDomain(int nidx)
        }
        else if(m_pcs->type==4) quadratic = true; 
        else quadratic = false; 
-       if (m_msh){   
+       //WW if (m_msh){   
        for(k=0; k<SubNumber; k++)
        {
           GEOGetNodesInMaterialDomain(m_msh, subdom_index[k], nodes_vector, quadratic);
@@ -830,14 +810,23 @@ void CInitialCondition::SetDomain(int nidx)
                }
              }            
            }
+           else if(dis_type_name.find("FUNCTION")!=string::npos) //01.07.2008 WW
+           {
+              for(i=0;i<(int)nodes_vector.size();i++)
+              {
+                 CNode *thisNode = m_msh->nod_vector[nodes_vector[i]];
+                 m_pcs->SetNodeValue(nodes_vector[i],nidx,DistributionFuntion(k, thisNode->X(),thisNode->Y(), thisNode->Z()));  
+              } 
+           }
            else
            {
               for(i=0;i<(int)nodes_vector.size();i++)
                  m_pcs->SetNodeValue(nodes_vector[i],nidx, subdom_ic[k]);
            }
         }
-        }
-    else {
+      //  }
+       /*  // Comment by WW
+      else {
        for(k=0; k<SubNumber; k++)
        {
            GEOGetNodesInMaterialDomain(subdom_index[k], nodes_vector);
@@ -867,24 +856,9 @@ void CInitialCondition::SetDomain(int nidx)
                  SetNodeVal(nodes_vector[i],nidx, subdom_ic[k]);
            }
 
-/*
-           if(dis_type_name.find("CONSTANT")!=string::npos) {
-              for(i=0;i<(int)nodes_vector.size();i++)
-		      {
-		          SetNodeVal(nodes_vector[i],nidx,node_val);
-              }
-           }
-          if(dis_type_name.find("GRADIENT")!=string::npos)
-             for(i=0;i<(int)nodes_vector.size();i++)
-	         {
-		        node_depth = GetNodeZ(nodes_vector[i]);
-	            node_val = ((gradient_ref_depth_gradient)*(gradient_ref_depth-node_depth))+
-                        gradient_ref_depth_value;
-                SetNodeVal(nodes_vector[i],nidx,node_val);
-             }
-*/
         }
       }
+       */
     }
 }
 /**************************************************************************

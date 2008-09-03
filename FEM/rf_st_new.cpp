@@ -172,7 +172,8 @@ ios::pos_type CSourceTerm::Read(ifstream *st_file)
       continue;
     }
     //....................................................................
-    if(line_string.compare("$DIS_TYPE")==0) { 
+    if(line_string.find("$DIS_TYPE")!=string::npos) { 
+    //10.04.2008. WW if(line_string.compare("$DIS_TYPE")==0) { 
       position = ReadDistributionType(st_file);
       continue;
     }

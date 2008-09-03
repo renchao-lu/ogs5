@@ -22,6 +22,9 @@ namespace FiniteElement{class element; class CFiniteElementVec;
 namespace Math_Group {class Matrix;} 
 namespace process{class CRFProcessDeformation;}
 
+#if defined(WIN32)
+class CMATGroupEditorDataEdit; //WW
+#endif
 namespace SolidProp{
 
   using FiniteElement::CFiniteElementVec;
@@ -36,27 +39,27 @@ class CSolidProperties
 {
   private:
     // Material parameters
-public: //OK
     double PoissonRatio;
     int Youngs_mode;
     Matrix *data_Youngs;
     double ThermalExpansion;
-private:
+    //
+    double s_tol;   //16.06.2008 WW
+    double f_tol;   //16.06.2008 WW
     double biot_const;
     double grav_const; //WW
     Matrix *data_Density;
-public: //OK
+    // 
     Matrix *data_Capacity;
     Matrix *data_Conductivity;
-private:
+    // 
     Matrix *data_Plasticity;
     Matrix *data_Creep;
     //
     int Density_mode;
-public: //OK
+    //
     int Capacity_mode;
     int Conductivity_mode;
-private:
     int Plasticity_type;
     double primary_variable[10]; //CMCD
     double primary_variable_t0[10];//CMCD
@@ -123,6 +126,9 @@ private:
     friend class FiniteElement::ElementValue;
     friend class process::CRFProcessDeformation;
     friend class ::CRFProcess;
+#if defined(WIN32)  //15.03.2008 WW
+    friend class ::CMATGroupEditorDataEdit;
+#endif
     //WW
   public:    
     //
@@ -166,7 +172,7 @@ private:
     int Plastictity() const {return Plasticity_type;}
     double GetPlasticParameter(const int index) {return (*data_Plasticity)(index);} 
     // 5. Creep 
-   int CreepModel() const {return Creep_mode;}
+    int CreepModel() const {return Creep_mode;}
     double GetCreepParameter(const int index) {return (*data_Creep)(index);} 
     // Initilize density
     void NullDensity(); 
@@ -182,6 +188,7 @@ private:
     #ifdef RFW_FRACTURE
     void  Calculate_Lame_Constant(CElem* elem);
     #endif
+    // For thermal elastic model
     void ElasticConsitutive(const int Dimension, Matrix *D_e) const;
     // 2. Plasticity
     // 2.1 Drucker-Prager
@@ -219,7 +226,12 @@ private:
     // 2.2 Cam-clay model
     void CalStress_and_TangentialMatrix_CC(const int GPiGPj,
           const ElementValue_DM *ele_val, double *dStrain,  Matrix *Dep, const int Update);
-
+    // Substep integration. 16.05.2008 WW  
+    void CalStress_and_TangentialMatrix_CC_SubStep(const int GPiGPj,
+          const ElementValue_DM *ele_val, double *dStrain,  Matrix *Dep, const int Update);
+    // Parameter function for thermal elatic model. Last modifed on 15.03.2008 //WW
+    double TEPSwellingParameter(const double mean_stress); 
+    void TEPSwellingParameter_kis(const double suction); 
     // Strain inrement by creep
     void AddStain_by_Creep(const int ns, double *stress_n, double *dstrain, double temperature=0.0);
 
@@ -247,6 +259,7 @@ extern vector<string> msp_key_word_vector; //OK
 extern void MSPStandardKeywords(); //OK
 extern SolidProp::CSolidProperties* MSPGet(string); //OK
 
+extern double StressNorm(const double *s, const int Dim);
 extern double TensorMutiplication2(const double *s1, const double *s2, const int Dim);
 extern double TensorMutiplication3(const double *s1, const double *s2, const double *s3, const int Dim);
 extern double DeviatoricStress(double *Stress);

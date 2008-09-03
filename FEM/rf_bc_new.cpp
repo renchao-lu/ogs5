@@ -995,7 +995,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
           m_geo_point = GEOGetPointByName(m_bc->geo_name);   //YD
           if(m_geo_point){
              m_node_value->geo_node_number =  m_msh->GetNODOnPNT(m_geo_point); 
-             m_node_value->msh_node_number = ShiftInNodeVector + m_node_value->geo_node_number;
+             m_node_value->msh_node_number = m_node_value->geo_node_number; // WW ShiftInNodeVector + 
                                       //    + GetNodeNumberClose(m_geo_point->x,m_geo_point->y,m_geo_point->z);
 //             m_node_value->msh_node_number_subst = ShiftInNodeVector + m_msh->GetNODOnPNT(m_geo_point);
           }
@@ -1006,7 +1006,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
         m_node_value->msh_node_number = m_node_value->geo_node_number +ShiftInNodeVector; //WW 
 		m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
         m_node_value->msh_node_number_subst = msh_node_number_subst;
-	    m_pcs->bc_node.push_back(m_bc);  //WW
+        m_pcs->bc_node.push_back(m_bc);  //WW
         m_pcs->bc_node_value.push_back(m_node_value);  //WW
       }
       //------------------------------------------------------------------
@@ -1028,7 +1028,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
             m_node_value->msh_node_number = bc_group_msh_nodes_vector[i];
             m_node_value->node_value = m_bc->geo_node_value;
             m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-		 	m_pcs->bc_node.push_back(m_bc);  //WW
+         	m_pcs->bc_node.push_back(m_bc);  //WW
             m_pcs->bc_node_value.push_back(m_node_value);  //WW
             //WW group_vector.push_back(m_node_value);
             //WW bc_group_vector.push_back(m_bc); //OK
@@ -1059,7 +1059,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
                 m_node_value->node_value = m_bc->geo_node_value;  //dis_prop[0];
                 m_node_value->CurveIndex = m_bc->CurveIndex;
                 m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-			   m_pcs->bc_node.push_back(m_bc);  //WW
+                m_pcs->bc_node.push_back(m_bc);  //WW
                 m_pcs->bc_node_value.push_back(m_node_value);  //WW
                 //WW group_vector.push_back(m_node_value);
                 //WW bc_group_vector.push_back(m_bc); //OK
@@ -1078,7 +1078,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
                 m_node_value->node_value = m_bc->geo_node_value;  //dis_prop[0];
                 m_node_value->CurveIndex = m_bc->CurveIndex;
                 m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-			   m_pcs->bc_node.push_back(m_bc);  //WW
+                m_pcs->bc_node.push_back(m_bc);  //WW
                 m_pcs->bc_node_value.push_back(m_node_value);  //WW
               }
             }
@@ -1099,7 +1099,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
                 m_node_value->CurveIndex = m_bc->CurveIndex;
                 m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
                 m_node_value->msh_node_number_subst = msh_node_number_subst; //WW
-				m_pcs->bc_node.push_back(m_bc);  //WW
+                m_pcs->bc_node.push_back(m_bc);  //WW
                 m_pcs->bc_node_value.push_back(m_node_value);  //WW
                 //WW group_vector.push_back(m_node_value);
                 //WW bc_group_vector.push_back(m_bc); //OK
@@ -1271,10 +1271,12 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
     ++p_bc;
   } // list
   //======================================================================
+  /* // Make the following as comment by WW
   // Test
   long no_bc = (long)m_pcs->bc_node_value.size();
   if(no_bc<1)
     cout << "Warning: no boundary conditions specified for " << pcs_type_name << endl;
+  */
 }
 
 /**************************************************************************

@@ -89,7 +89,8 @@ class CFluidProperties
     ios::pos_type Read(ifstream*);
     void Write(ofstream*);
     void CalPrimaryVariable(vector<string>& pcs_name_vector);
-    double Density();
+    // Add an argument: double* variables = NULL. 28.05.2008 WW
+    double Density(double *variables = NULL); 
     double Viscosity();
     double SpecificHeatCapacity();
 	double PhaseChange(); // JOD 

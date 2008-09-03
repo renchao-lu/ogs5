@@ -93,6 +93,8 @@ private:
      double InitialNormU; 
      double InitialNormU0; 
 
+     //
+     double error_k0;
      // Domain decompisition
      inline void DomainAssembly(CPARDomain* m_dom);
 

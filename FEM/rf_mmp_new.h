@@ -139,7 +139,7 @@ class CMediumProperties
   int unconfined_flow_group;
   int permeability_model; // permeability
   double permeability;
-  double permeability_tensor[9];
+  double permeability_tensor[10]; // permeability_tensor[9] is the minmum permeability. WW
   string permeability_tensor_type_name;
   string tortuosity_tensor_type_name;
   int permeability_tensor_type;

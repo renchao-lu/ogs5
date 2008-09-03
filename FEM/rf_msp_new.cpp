@@ -93,13 +93,37 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
       in_sd.str(GetLineFromFile1(msp_file));
 	  in_sd>>SwellingPressureType;
       if(SwellingPressureType==1||SwellingPressureType==2)
-	  {
+      {
          in_sd>>Max_SwellingPressure;
          in_sd.clear();
-	  } 
-      else
-         in_sd.clear();
-	}
+      } 
+      else if (SwellingPressureType==3||SwellingPressureType==4) //10.03.2008 WW
+      {
+         if(!PCSGet("MULTI_PHASE_FLOW")||!PCSGet("RICHARDS_FLOW"))
+         {
+            data_Youngs = new Matrix(9);
+            //! 0: \f$ \kapa_i0     \f$  
+            //! 1: \f$ \alpha_i     \f$  
+            //! 2: \f$ \kappa_{s0}  \f$  
+            //! 3: \f$ \alpha_{sp}  \f$  
+            //! 4: \f$ \alpha_{ss}  \f$  
+            //! 5: \f$ p_ref        \f$  
+            //! 6: \f$ buffer       \f$  
+            if (SwellingPressureType==3)
+              in_sd >> (*data_Youngs)(0) >> (*data_Youngs)(1) >> (*data_Youngs)(2)
+                    >> (*data_Youngs)(3) >> (*data_Youngs)(4)>> (*data_Youngs)(5);
+            else if (SwellingPressureType==4)
+              in_sd >> (*data_Youngs)(0) >> (*data_Youngs)(1) >> (*data_Youngs)(2);
+            in_sd.clear();
+         }
+         else
+         {
+            cout<<"No multi-phase flow coupled. The thermal elatic model can only be used in H2 coupled proccess."<<endl;
+            cout<<"Quit the simulation now!"<<endl;
+            abort(); 
+         }
+       }
+    }
     //....................................................................
     if(line_string.find("$DENSITY")!=string::npos) { // subkeyword found
       in_sd.str(GetLineFromFile1(msp_file));
@@ -118,7 +142,7 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
       else if(Density_mode==1){ // rho = const
          data_Density = new Matrix(1);        
          in_sd >> (*data_Density)(0);
-		 in_sd.clear();
+         in_sd.clear();
       }
     }
     //....................................................................
@@ -139,11 +163,11 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
            in_sd.clear();
            data_Capacity = new Matrix(Size, 2);
            for(i=0; i<Size; i++)
-		   {
+           {
               in_sd.str(GetLineFromFile1(msp_file));             
               in_sd >>(*data_Capacity)(i,0)>>(*data_Capacity)(i,1);
               in_sd.clear();
-		   }
+           }
            break;
          case 1:  //  = const
            data_Capacity = new Matrix(1);        
@@ -164,7 +188,7 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
 		 case 3:  // DECOVALEX THM1, Bentonite
            in_sd.clear();    
            break;                      
-	  }
+       }
     }
 
     //....................................................................
@@ -238,34 +262,38 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
        in_sd.clear();
 	}
     //....................................................................
-    if(line_string.find("YOUNGS_MODULUS")!=string::npos) { // subkeyword found
+    if(line_string.find("YOUNGS_MODULUS")!=string::npos)
+    { // subkeyword found
       in_sd.str(GetLineFromFile1(msp_file));
       in_sd >> Youngs_mode;
-      if(Youngs_mode==0){ //  = f(x)
+      switch(Youngs_mode) // 15.03.2008 WW
+      {
+        case 0:  //  = f(x)
           in_sd >> Size;
-		  in_sd.clear();
+          in_sd.clear();
           data_Youngs = new Matrix(Size, 2);
           for(i=0; i<Size; i++)
-		  {
-             in_sd.str(GetLineFromFile1(msp_file));
-             in_sd>>(*data_Youngs)(i,0)>>(*data_Youngs)(i,1);
-             in_sd.clear();
-		  }
-      }
-      else if(Youngs_mode==1){ //  = const
-         data_Youngs = new Matrix(1);        
-         in_sd >> (*data_Youngs)(0);
-         in_sd.clear();
-      }
+          {
+            in_sd.str(GetLineFromFile1(msp_file));
+            in_sd>>(*data_Youngs)(i,0)>>(*data_Youngs)(i,1);
+            in_sd.clear();
+          }
+          break;
+        case 1: //  = const
+          data_Youngs = new Matrix(1);        
+          in_sd >> (*data_Youngs)(0);
+          in_sd.clear();
+          break;
       #ifdef RFW_FRACTURE
-      else if(Youngs_mode==2){ // = f(aperture), for fracture material groups, RFW 04/2005,  RFW 09/12/2005
-  	     data_Youngs = new Matrix(3);
-         in_sd >> (*data_Youngs)(0) >> (*data_Youngs)(1) >> (*data_Youngs)(2);
-         in_sd.clear();
-      }
+          case 2: // = f(aperture), for fracture material groups, RFW 04/2005,  RFW 09/12/2005
+          data_Youngs = new Matrix(3);
+          in_sd >> (*data_Youngs)(0) >> (*data_Youngs)(1) >> (*data_Youngs)(2);
+          in_sd.clear();
+          break;
       #endif
+      }
     }
-   //....................................................................
+    //....................................................................
     if(line_string.find("$CREEP")!=string::npos)
     {
         if(line_string.find("NORTON")!=string::npos)
@@ -306,6 +334,13 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
        in_sd>>biot_const;
        in_sd.clear();
 	}
+    //....................................................................
+    if(line_string.find("$STRESS_INTEGRATION_TOLERANCE")!=string::npos)
+    {  
+       in_sd.str(GetLineFromFile1(msp_file));
+       in_sd>>f_tol>>s_tol;
+       in_sd.clear();
+	}
     if(line_string.find("$STRESS_UNIT")!=string::npos)
     {  
        
@@ -316,7 +351,7 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
        else if(sub_line.find("KiloPascal")==0)
          grav_const = 9.81e-3;
        in_sd.clear();
-	}
+   }
     //....................................................................
     if(line_string.find("$PLASTICITY")!=string::npos) { // subkeyword found
        in_sd.str(GetLineFromFile1(msp_file));
@@ -336,70 +371,70 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
            }            
            Size = 5;
            /*
-                   Material parameters for Cam-Clay model
-				   i : parameter
-				   0 : The initial yield stress  
-				   1 : Plastic hardening parameter
-				   2 : Internal frection angle
-				   3 : Dilatancy angle 
-				   4 : Localized softening modulus 
-		  */
+           Material parameters for Cam-Clay model
+           i : parameter
+           0 : The initial yield stress  
+           1 : Plastic hardening parameter
+           2 : Internal frection angle
+           3 : Dilatancy angle 
+           4 : Localized softening modulus 
+           */
        }
        else if(sub_line.find("SINGLE_YIELD_SURFACE")!=string::npos)
        {
            Plasticity_type=2;
            Size = 23;     
            AllocateMemoryforSYS();
-              /*
-			       Material parameters for Single yield surface model
-				   i: parameter
-				   0: alpha0
-				   1: beta0
-				   2: delta0
-				   3: epsilon0 
-				   4: kappa0 
-				   5: gamma0
-				   6: m0
+           /*
+           Material parameters for Single yield surface model
+             i: parameter
+             0: alpha0
+             1: beta0
+             2: delta0
+             3: epsilon0 
+             4: kappa0 
+             5: gamma0
+             6: m0
 
-				   7: alpha1
-				   8: beta1
-				   9: delta1
-				  10: epsilon1 
-				  11: kappa1
-				  12: gamma1
-				  13: m1
+             7: alpha1
+             8: beta1
+             9: delta1
+            10: epsilon1 
+            11: kappa1
+            12: gamma1
+            13: m1
                    
-				  14: Psi1
-				  15: Psi2
+            14: Psi1
+            15: Psi2
 
-                  16: Ch
-				  17: Cd
-				  18: br
-				  19: mr
+            16: Ch
+            17: Cd
+            18: br
+            19: mr
 
-				  20: Initial stress_xx 
-				  21: Initial stress_yy 
-				  22: Initial stress_zz 
-			  */
+            20: Initial stress_xx 
+            21: Initial stress_yy 
+            22: Initial stress_zz 
+            */
        }
        else if(sub_line.find("CAM-CLAY")!=string::npos)
        {
            Plasticity_type=3;
            Size = 10;         
-			  /*
-                   Material parameters for Cam-Clay model
-				   i: parameter
-				   0 : M: slope of the critical line 
-				   1 : Lamda, the virgin compression index
-				   2 : Kappa, swelling index
-				   3 : p0, preconsolidation pressure 
-				   4 : e0, initial void ratio  
-				   5 : OCR
-				   6 : Initial stress_xx 
-				   7 : Initial stress_yy 
-				   8 : Initial stress_zz
-                   9 : Mimimum p: ( stress_xx + stress_yy + stress_zz )/3
-			  */
+           /*
+           Material parameters for Cam-Clay model
+            i: parameter
+            0 : M: slope of the critical line 
+            1 : Lamda, the virgin compression index
+            2 : Kappa, swelling index
+            3 : p0, preconsolidation pressure 
+            4 : e0, initial void ratio  
+            5 : OCR
+            6 : Initial stress_xx 
+            7 : Initial stress_yy 
+            8 : Initial stress_zz
+            9 : Mimimum p: ( stress_xx + stress_yy + stress_zz )/3
+            */
 
        }    
        data_Plasticity = new Matrix(Size);
@@ -410,7 +445,7 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
            in_sd.clear();
        }  
     }
-	in_sd.clear();
+    in_sd.clear();
   }
   return position;
 }
@@ -468,6 +503,8 @@ CSolidProperties::CSolidProperties()
     CurveVariableType_Conductivity=-1;
     mode = 0; // Gauss point values //OK
     //
+    s_tol = 1e-9;
+    f_tol = 1e-9;
 }
 CSolidProperties::~CSolidProperties()
 {
@@ -477,7 +514,7 @@ CSolidProperties::~CSolidProperties()
     if(data_Capacity) delete data_Capacity;
     if(data_Conductivity) delete data_Conductivity;
     if(data_Creep) delete data_Creep;
-    if(devS) delete devS;
+    if(devS) delete [] devS;
 
     data_Density=NULL;
     data_Youngs=NULL;
@@ -492,14 +529,14 @@ CSolidProperties::~CSolidProperties()
     if(LocalJacobi) delete LocalJacobi;  // To store local Jacobi matrix 
     if(inv_Jac) delete inv_Jac;      // To store the inverse of the  Jacobi matrix 
     if(sumA_Matrix) delete sumA_Matrix;  
-    if(rhs_l) delete rhs_l;        // To store local unknowns of 15 
-    if(x_l) delete x_l;          // To store local unknowns of 15 
-    if(Li) delete Li;              
+    if(rhs_l) delete [] rhs_l;        // To store local unknowns of 15 
+    if(x_l) delete [] x_l;          // To store local unknowns of 15 
+    if(Li) delete [] Li;              
 
-    if(dFds) delete dFds;
-    if(dGds) delete dGds;
-    if(D_dFds) delete D_dFds;
-    if(D_dGds) delete D_dGds;
+    if(dFds) delete [] dFds;
+    if(dGds) delete [] dGds;
+    if(D_dFds) delete [] D_dFds;
+    if(D_dGds) delete [] D_dGds;
     dFds = NULL;
     dGds = NULL;
     D_dFds = NULL;
@@ -982,10 +1019,10 @@ Programing:
 #ifndef RFW_FRACTURE
 void  CSolidProperties::Calculate_Lame_Constant()
 {
+   double nv = Poisson_Ratio();
    E = Youngs_Modulus();  // Constant at present
-   Lambda = E * Poisson_Ratio() / 
-        ((1. + Poisson_Ratio()) * (1. - 2. * Poisson_Ratio()));
-   G = 0.5 * E / (1. + Poisson_Ratio());
+   Lambda = E * nv / ((1. + nv) * (1. - 2. * nv));
+   G = 0.5 * E / (1. + nv);
    K=(3.0*Lambda+2.0*G)/3.0;
 }
 #endif
@@ -1000,9 +1037,6 @@ void  CSolidProperties::Calculate_Lame_Constant( CElem* elem) //RFW changed
    K=(3.0*Lambda+2.0*G)/3.0;
 }
 #endif
-
-
-
 /*************************************************************************
  ROCKFLOW - Funktion: CSolidProperties::ElasticConsitutive
 
@@ -3323,14 +3357,20 @@ void CSolidProperties::CalStress_and_TangentialMatrix_CC(const int GPiGPj,
          +(*ele_val->Stress)(2,GPiGPj))/3.0;
 
   if(fabs(p)<pmin)
-     p = pmin;
+    p = pmin;
 
   // Volume strain increment
   dev = -(dStrain[0]+dStrain[1]+dStrain[2]); 
   vartheta=(1.0+e_0)/(CompressIndex-SwellIndex); //TEST. Sign?
 
  // if(fabs(dev)<MKleinsteZahl) 
-  K = (1.0+e_0)*fabs(p)/SwellIndex;
+  if(SwellingPressureType==3)
+  {
+    K = (1.0+e_0)*fabs(p)/(*data_Youngs)(6);
+    if(K<10.e6) K = 10.e6;  
+  }
+  else
+    K = (1.0+e_0)*fabs(p)/SwellIndex;
  // else
  //    K = (1.0+e_0)*fabs(p)*(exp(PoissonRatio*dev/SwellIndex)-1.0)/dev;
 
@@ -3372,6 +3412,9 @@ void CSolidProperties::CalStress_and_TangentialMatrix_CC(const int GPiGPj,
   if(pcs_deformation==1) F=-1.0;
   if((*data_Plasticity)(3)<MKleinsteZahl) // p_c0=0
      F=-1.0;
+  //TEST CAM-CLAY
+  if(p_tr<0)
+    F = -1.0;
   if(F>0.0&&!PreLoad) // in yield status 
   {
       
@@ -3712,6 +3755,431 @@ void CSolidProperties::CalStress_and_TangentialMatrix_CC(const int GPiGPj,
   //    dStrain[i] -= (*data_Plasticity)(6+i); // Initial stress
   //
 }
+
+/**************************************************************************
+  GeoSys - Function: Integration with substep for CAM-Clay like model
+  Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+   E :
+     double *TryStress                   :   Incremental straines as input
+                                             New stresses as output      
+     double *Dep                         :   The consist tangential matrix         
+     const int GPiGPj                    :   Local indeces of Gauss Points
+     const int Update                    :   Indicator. If true, update the gauss point 
+                                             values 
+ 
+  Ergebnis:
+   - double* - Deviatoric effetive stresses, s11,s22,s12,s33
+                                                                          
+  Programmaenderungen:
+   06/2008   WW  Programming 
+**************************************************************************/
+void CSolidProperties::CalStress_and_TangentialMatrix_CC_SubStep(const int GPiGPj,
+     const ElementValue_DM *ele_val, double *dStrain,  Matrix *Dep, const int Update)
+{
+  int i, ns;   
+  double p, q, p_tr, q_tr, p_c, p_cn;
+  double ep;
+  double e_0, dev;
+  double F0, F, vep, vep0;
+  double var1, alpha1, alpha2, beta1, beta2;
+  double gamma1, gamma2,gamma3,gamma4,gamma5;
+  double dfdp, dfdq, dampFac;
+  const double fac = sqrt(2.0/3.0);
+  double  alpha3, Jac;
+  static double DevStress[6], TryStress[6];
+  static double dStress0[6], dStress1[6];
+
+  const int MaxI = 400;
+  int NPStep; 
+  double sub_step = 0.5;
+  double sub_step_sum = 0.0;
+  //
+  const double SwellIndex = (*data_Plasticity)(2);
+  const double CompressIndex = (*data_Plasticity)(1); 
+  const double M_s = (*data_Plasticity)(0); 
+  const double M2 = M_s*M_s;
+  const double pmin = (*data_Plasticity)(9);
+  //
+  double vartheta=0.0;
+  double suc=0.0;
+  double dsuc=0.0;
+
+
+  int dim = 2;
+  ns =4;
+  if(Dep->Cols()>4)
+  {
+      dim = 3;
+      ns = 6;
+  }
+  bool isLoop = true; // Used only to avoid warnings with .net
+  
+
+  // Get the total effective plastic strain 
+  ep = (*ele_val->pStrain)(GPiGPj);
+
+  // Get the preconsolidation pressure of the previous time step 
+  p_cn = (*ele_val->prep0)(GPiGPj);
+  
+  // Get the void ratio of the previous time step 
+  e_0 = (*ele_val->e_i)(GPiGPj);
+  // Stress of previous load step
+  dev = -(dStrain[0]+dStrain[1]+dStrain[2]); 
+  for(i=0; i<ns; i++)
+  {
+     TryStress[i] = (*ele_val->Stress)(i,GPiGPj);
+     dStress0[i] = dStress1[i] = 0.;
+  }
+  //TEST
+  int test_c = 0;
+  // Begin substeps
+  while(1)
+  { 
+/*
+if(test_c>2)
+ test_c = test_c;
+*/   //TEST
+     test_c++;
+     //if(test_c>20)
+     //  test_c = test_c;
+     if(test_c>100)
+       break;
+
+     for(int kk=0; kk<2; kk++)
+     {  
+        double *dsig = NULL; 
+        double  de_vsw = 0.;
+        if(kk==0) 
+        {
+           dsig = dStress0;
+           for(i=0; i<ns; i++)
+             dsig[i] = TryStress[i];
+        } 
+        else
+        { 
+           dsig = dStress1;   
+           for(i=0; i<ns; i++)
+             dsig[i] = TryStress[i] + dStress0[0]; 
+        }
+        p = -( dsig[0]+dsig[1]+dsig[2])/3.0;
+        if(fabs(p)<pmin)
+          p = pmin;
+        // Volume strain increment
+        vartheta=(1.0+e_0)/(CompressIndex-SwellIndex); 
+        // if(fabs(dev)<MKleinsteZahl) 
+        if(SwellingPressureType==3)
+        {
+           suc = (*data_Youngs)(7);
+           dsuc = (*data_Youngs)(8);
+           de_vsw = TEPSwellingParameter(p)*dsuc/(suc+1.0e5);    //0: sign is nagive -
+           for(i=0; i<3; i++)
+             dStrain[i] += de_vsw; 
+           K = (1.0+e_0)*fabs(p)/(*data_Youngs)(6);
+           if(K<10.e6) K = 10.e6;  
+           vartheta=(1.0+e_0)/(CompressIndex-(*data_Youngs)(6));
+        }
+        else
+          K = (1.0+e_0)*fabs(p)/SwellIndex;
+        // else
+        //    K = (1.0+e_0)*fabs(p)*(exp(PoissonRatio*dev/SwellIndex)-1.0)/dev;
+
+        G = 1.5*K*(1-2.0*PoissonRatio)/(1+PoissonRatio); 
+        Lambda = K-2.0*G/3.0;        
+        ElasticConsitutive(dim, Dep);
+        //
+        for(i=0; i<ns; i++)
+           dsig[i] = 0.0;
+        Dep->multi(dStrain, dsig, sub_step);
+        // Recover strain increment
+        if(SwellingPressureType==3)
+        {
+           for(i=0; i<3; i++)
+             dStrain[i] -= de_vsw; 
+        }
+     }
+     // Stress estimation 
+     double norm_ds = 0.;
+     double norm_s = 0.;
+     for(i=0; i<ns; i++)
+     {
+        TryStress[i] += 0.5*(dStress0[i]+dStress1[i]);
+        DevStress[i] = dStress0[i]-dStress1[i];  //DevStress as temporary buffer 
+     } 
+     double norms = StressNorm(TryStress, dim);
+     double q_f = 1.0; 
+     double R_n = 1.0;
+     if(norms>DBL_EPSILON)
+     {
+       R_n = 0.5*StressNorm(DevStress, dim)/norms;
+       if(R_n>DBL_EPSILON)
+         q_f = 0.95*sqrt(s_tol/R_n);
+     }
+     else
+       R_n = 0.0;
+     if(q_f<0.2) q_f = 0.2;
+     if(q_f>1.2) q_f = 1.2;  
+     sub_step *= q_f;  
+     if((sub_step_sum+sub_step)>1.0)
+       sub_step = 1.0-sub_step_sum;      
+     // Ckeck convergence
+     if(R_n<s_tol)   //accepted
+        sub_step_sum += sub_step;
+     else
+     {
+        for(i=0; i<ns; i++)
+          TryStress[i] -= 0.5*(dStress0[i]+dStress1[i]);
+        continue;       
+     }   
+     //      
+    
+     for(i=0; i<ns; i++)
+	   DevStress[i] = TryStress[i];
+
+     p_tr = -DeviatoricStress(DevStress)/3.0;
+       
+     q_tr = sqrt(1.5*TensorMutiplication2(DevStress, DevStress, dim));
+
+
+     // If yield, integrate the stress 
+     F = q_tr*q_tr/M2 + p_tr*(p_tr-p_cn);
+
+     p = p_tr;
+     q = q_tr;
+     p_c = p_cn;
+     vep = 0.0;
+     vep0 = 0.0;
+
+     dampFac=1.0;
+     NPStep = 0;
+
+     F0 = F;
+     if(pcs_deformation==1) F=-1.0;
+     if((*data_Plasticity)(3)<MKleinsteZahl) // p_c0=0
+       F=-1.0;
+     //TEST CAM-CLAY
+     if(p_tr<0)
+      F = -1.0;
+   
+     if(F>f_tol&&!PreLoad) // in yield status 
+     {    
+       // Local Newton-Raphson procedure to compute the volume plastic strain   
+       vep = 0.0;
+       
+       //Associative flow rule
+       while(isLoop) // Newton step for the plastic multiplier
+       {
+         NPStep++;
+
+         alpha1 = (2.0*p-p_c)/(1.0+(2.0*K+vartheta*p_c)*vep);
+         alpha2 = -q/(vep+M2/(G*6.0));
+         alpha3 = vartheta*p_c*alpha1;
+         alpha1 *= -K;
+
+	     dfdp = 2.0*p-p_c;
+	     dfdq = 2.0*q/M2;
+       
+         Jac = alpha1*dfdp+dfdq*alpha2-p*alpha3;
+
+         while(isLoop) // Damp
+         {   
+   
+		    vep = vep0 - dampFac*F/Jac;   
+		    p_c = 0.0;
+
+            dampFac = 1.0;
+		    while(isLoop) // Newton step for p_c
+		    {
+               NPStep++;
+               if(NPStep>MaxI)
+			   {
+                 //    printf("\n Too much iteration in Newton step the integration of Cam-Clay \n");
+                 //TEST	abort();
+                 //test
+                  break;
+			   }
+
+               //
+               alpha1 = vartheta*vep/(1.0+2.0*vep*K);
+               alpha2 = p_cn*exp(alpha1*(2.0*p_tr-p_c));
+               beta1 = -alpha1*alpha2-1.0; //dG(p_c)
+               alpha2 -= p_c; //G(p_c)  
+               p_c -= alpha2/beta1;
+               if(fabs(alpha2)<s_tol) break;
+		       if(p_c<0.0) break;
+		    }
+
+            p = (p_tr+vep*K*p_c)/(1.0+2.0*vep*K); 
+            q = q_tr/(1.0+6.0*G*vep/M2);
+      
+            F = q*q/M2 + p*(p-p_c);
+            if(F>0.0) break;
+		    if(fabs(F/F0)<s_tol) break;
+            dampFac = 0.8;
+          }
+          vep0 = vep; 
+	      if(fabs(F/F0)<s_tol) break;
+       }
+     }
+    //End substep 
+	// Plastic strain
+//    alpha1 = 6.0*q*q/(M2*M2*(2.0*p-p_c)*(2.0*p-p_c));
+//    ep += fabs(vep)*sqrt(2.0*(1.0/9.0+alpha1)/3.0);
+     ep += 3.0*fabs(vep)*q/M2; 
+     if(fabs(sub_step_sum-1.0)<DBL_EPSILON)
+        break;
+  }
+  //-------------------------------------------------------------
+  // Consistent tangential matrix  
+	
+  if(Update<1&&NPStep>0)
+  {
+    alpha1 = 1.0+2.0*K*vep+p_c*vartheta*vep;    //a
+    double a1 = (1.0+p_c*vartheta*vep)/alpha1;     //a1
+    double a2 = -(2.0*p-p_c)/alpha1;               //a2   
+    double a3 = 2.0*p_c*vartheta*vep/alpha1;        //a3
+    double a4 = vartheta*p_c*(2.0*p-p_c)/(K*alpha1);  //a4 
+    double a5 = sqrt(1.5)/(1.0+6.0*G*vep/M2);       //a5
+    double a6 =  -3.0*q/(1.0+6.0*G*vep/M2)/M2;       //a6
+  
+    alpha1 = -4.0*G*q*a6/M2-K*((2.0*a2-a4)*p-a2*p_c);
+    double b1 = -K*((a3-2.0*a1)*p+a1*p_c)/alpha1;
+    double b2 = 4.0*G*a5*q/(alpha1*M2);
+
+    gamma1 = 2.0*G*q/q_tr;
+    gamma2 = K*(a1+a2*b1)-gamma1/3.0;
+    gamma3 = -K*a2*b2;
+    gamma4 = -2.0*fac*G*a6*b1;
+    gamma5 = 2.0*G*fac*(a5+a6*b2)-gamma1;
+    // 
+    // Normalize the stress 
+    for(i=0; i<ns; i++)
+    {
+      TryStress[i] = DevStress[i];
+      TryStress[i] /=q_tr*fac ;
+    }
+    
+    // Row 1
+    beta1 = gamma2+gamma4*TryStress[0];
+    beta2 = gamma3+gamma5*TryStress[0];
+    (*Dep)(0,0) = gamma1 + beta1 +beta2*TryStress[0];		
+    (*Dep)(0,1) =          beta1 +beta2*TryStress[1];
+    (*Dep)(0,2) =          beta1 +beta2*TryStress[2];
+    (*Dep)(0,3) =                 beta2*TryStress[3];
+    if(dim==3)
+    {
+       (*Dep)(0,4) =              beta2*TryStress[4];
+       (*Dep)(0,5) =              beta2*TryStress[5];
+    }
+
+ 
+    // Row 2	
+    beta1 = gamma2+gamma4*TryStress[1];
+    beta2 = gamma3+gamma5*TryStress[1];
+    (*Dep)(1,0) =         beta1 +beta2*TryStress[0];		
+    (*Dep)(1,1) = gamma1 +beta1 +beta2*TryStress[1];
+    (*Dep)(1,2) =         beta1 +beta2*TryStress[2];
+    (*Dep)(1,3) =                beta2*TryStress[3];
+    if(dim==3)
+    {
+       (*Dep)(1,4) =             beta2*TryStress[4];
+       (*Dep)(1,5) =             beta2*TryStress[5];
+    }
+
+    // Row 3
+    beta1 = gamma2+gamma4*TryStress[2];
+    beta2 = gamma3+gamma5*TryStress[2];
+    (*Dep)(2,0) =          beta1 +beta2*TryStress[0];		
+    (*Dep)(2,1) =          beta1 +beta2*TryStress[1];
+    (*Dep)(2,2) =   gamma1+beta1 +beta2*TryStress[2];
+    (*Dep)(2,3) =                 beta2*TryStress[3];
+    if(dim==3)
+    {
+       (*Dep)(2,4) =              beta2*TryStress[4];
+       (*Dep)(2,5) =              beta2*TryStress[5];
+    }
+
+    // Row 4
+    beta1 = gamma4*TryStress[3];
+    beta2 = gamma5*TryStress[3];
+    (*Dep)(3,0) = beta1 + beta2*TryStress[0];		
+    (*Dep)(3,1) = beta1 + beta2*TryStress[1];			
+    (*Dep)(3,2) = beta1 + beta2*TryStress[2];			
+    (*Dep)(3,3) =  gamma1+beta2*TryStress[3];
+    if(dim==3)
+    {
+       (*Dep)(3,4) =      beta2*TryStress[4];
+       (*Dep)(3,5) =      beta2*TryStress[5];
+       // End row 4
+
+       // Row 5
+       beta1 = gamma4*TryStress[4];
+       beta2 = gamma5*TryStress[4];
+       (*Dep)(4,0) = beta1 + beta2*TryStress[0];		
+       (*Dep)(4,1) = beta1 + beta2*TryStress[1];			
+       (*Dep)(4,2) = beta1 + beta2*TryStress[2];			
+       (*Dep)(4,3) =         beta2*TryStress[3];
+       (*Dep)(4,4) = gamma1+ beta2*TryStress[4];
+       (*Dep)(4,5) =         beta2*TryStress[5];
+
+       // Row 6
+       beta1 = gamma4*TryStress[5];
+       beta2 = gamma5*TryStress[5];
+       (*Dep)(5,0) = beta1 + beta2*TryStress[0];		
+       (*Dep)(5,1) = beta1 + beta2*TryStress[1];			
+       (*Dep)(5,2) = beta1 + beta2*TryStress[2];			
+       (*Dep)(5,3) =         beta2*TryStress[3];
+       (*Dep)(5,4) =         beta2*TryStress[4];
+       (*Dep)(5,5) = gamma1+ beta2*TryStress[5];
+
+	}		
+    //-------------------------------------------------------------
+   
+    // Update stresses 
+    for(i=0; i<ns; i++)
+	{
+       DevStress[i] /=1.0+6.0*G*vep/M2;
+       TryStress[i] = DevStress[i];   
+	}
+
+	// True stress  
+    for(i=0; i<3; i++)
+      TryStress[i] -= p;
+  }
+  else
+  {
+    if(Update<1)
+       ElasticConsitutive(dim, Dep);  
+  }
+
+  for(i=0; i<ns; i++)
+     dStrain[i] = TryStress[i];
+
+  // Save the current stresses 
+  if(Update>0)
+  {
+     if((*data_Plasticity)(3)<MKleinsteZahl) // p_c0=0
+	 { 
+         p_c = p+q*q/(M2*p);
+        (*ele_val->prep0)(GPiGPj) = p_c;
+	 }  
+     if(ep>0.0)
+     {
+         var1 = dev*(1.+e_0);
+         e_0 -= var1;
+        (*ele_val->pStrain)(GPiGPj) = ep;
+        (*ele_val->e_i)(GPiGPj) = e_0;
+        (*ele_val->prep0)(GPiGPj) = p_c;
+     }
+  }
+  
+  // For the case of the initial stress being given, the contribution of 
+  // the initial stress to the right hand side should be taken into account
+  // If the initial stress is not accounted into the final stress
+  //
+  //  for(i=0; i<3; i++)
+  //    dStrain[i] -= (*data_Plasticity)(6+i); // Initial stress
+  //
+}
 /**************************************************************************
 FEMLib-Method:
 Task: Caculate increment of strain deduced by creep
@@ -3837,6 +4305,50 @@ void CSolidProperties::Write(fstream* msp_file)
   }
   //-----------------------------------------------------------------------
 }
+/**************************************************************************
+FEMLib-Method: 
+03/2008 WW Implementation
+**************************************************************************/
+void CSolidProperties::TEPSwellingParameter_kis(const double suction)
+{
+  double val = 0.;
+  double alf_i = (*data_Youngs)(1);
+  // k_(s)
+ // if(suction<=-0.999*1e-6/alf_i)
+    val = 1.0+alf_i*suction;
+ // else
+ //   val = 0.001;
+  if(val<0.0) val = 0.001;
+  // Swelling index. Kappa
+  (*data_Youngs)(6)= val*(*data_Youngs)(0);   
+}
+
+/**************************************************************************
+FEMLib-Method: 
+03/2008 WW Implementation
+**************************************************************************/
+double CSolidProperties::TEPSwellingParameter(const double mean_stress)
+{
+  double val = 0.;
+  double alf_sp = (*data_Youngs)(3);
+  double pref = (*data_Youngs)(5);
+  double e0 = (*data_Plasticity)(4);
+  double suction = (*data_Youngs)(7);
+  // k_(s)
+  TEPSwellingParameter_kis(suction);
+  // 
+  if(mean_stress<1.0e-20)
+    val = 1.0 + alf_sp*log(1.0e-20/pref);
+  else if(mean_stress>=pref*exp(-1.0/alf_sp))
+  {
+    val = 0.; 
+    return val; 
+  }
+  else
+    val = 1. + alf_sp*log(mean_stress/pref);
+  return val*(*data_Youngs)(2)*exp((*data_Youngs)(4)*suction)/(3.+3.*e0);
+}
+
 
 }// end namespace
 /////////////////////////////////////////////////////////////////////////////
@@ -3921,6 +4433,25 @@ double TensorMutiplication2(const double *s1, const double *s2, const int Dim)
     }
     return 0.0; // To avoid warnings
 } 
+
+/**************************************************************************
+GeoSys: Norm of stress
+   06/2008   WW  Programming
+
+**************************************************************************/
+double StressNorm(const double *s, const int Dim)
+{
+  double val = 0.0;
+  double mean_s = (s[0]+s[1]+s[2])/3.0;
+  double s1 = s[0]-mean_s;
+  double s2 = s[1]-mean_s;
+  double s3 = s[2]-mean_s;
+  val = s1*s1+s2*s2+s3*s3+2.0*s[3]*s[3];
+  if(Dim==3)
+    val += +2.0*s[4]*s[4]+2.0*s[5]*s[5];
+  return val;
+} 
+
 
 /**************************************************************************
  ROCKFLOW - Funktion: TensorMutiplication3

@@ -112,7 +112,7 @@ class COutput
     void TIMValue_TEC(double); //OK
     double NODFlux(long); //OK
 };
-extern vector<COutput*>out_vector;
+extern vector<COutput*> out_vector;
 extern bool OUTRead(string);
 extern void OUTWrite(string);
 #define OUT_FILE_EXTENSION ".out"

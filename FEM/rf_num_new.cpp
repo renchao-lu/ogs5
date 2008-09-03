@@ -269,7 +269,7 @@ ios::pos_type CNumerics::Read(ifstream *num_file)
     }
     if(line_string.find("$COUPLING_ITERATIONS")!=string::npos) { // WW subkeyword found
       line.str(GetLineFromFile1(num_file));
-      line >> cpl_variable; //MB
+      line >> cpl_variable; //pcs_name. WW MB
       line >> cpl_iterations;
       line >> cpl_tolerance;
       line.clear();

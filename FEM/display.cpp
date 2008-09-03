@@ -294,6 +294,7 @@ void DisplayDoubleVector ( double *vec, long grad, char *text )
 /**************************************************************************/
 void DisplayDoubleMatrix ( double *mat, long m, long n, char *text )
 {
+  /* //WW
   FILE *f;
   long i, k;
   DisplayMsgLn("");
@@ -325,12 +326,13 @@ void DisplayDoubleMatrix ( double *mat, long m, long n, char *text )
               zwila[k]=mat[i+k*m];
           sprintf(raus,"%ld.Spalte (%s)",(i+1l),text);
           raus[(int)strlen(raus)]='\0';
-          /*sprintf(raus,"%ld.Spalte (%s)\0",(i+1l),text);*/
-          /* \0 gibt eine warning, ist aber sonst zu umstaendlich */
+         // sprintf(raus,"%ld.Spalte (%s)\0",(i+1l),text);
+  //  \0 gibt eine warning, ist aber sonst zu umstaendlich 
           DisplayDoubleVector(zwila,n,raus);
       }
       zwila = (double *) Free(zwila);
   }
+*/
 }
 
 

@@ -226,6 +226,7 @@ class CFiniteElementVec:public CElement
      double AuxNodal_S0[8];
      double AuxNodal_S[8];
      double AuxNodal1[60];
+     double *AuxNodal2;
 
      // Dynamic
      // Damping parameters

@@ -2750,6 +2750,8 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
   pcs_number_of_secondary_nvals++; //WW
+  for(int i=0; i<GetPrimaryVNumber(); i++)  // 03.03.2008. WW
+    Shift[i] = i*m_msh->GetNodesNumber(true);
  }
 
   // Output material parameters
@@ -2943,6 +2945,9 @@ void CRFProcess::ConfigMultiPhaseFlow()
   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
   pcs_number_of_secondary_nvals++; 
+  //
+  for(int i=0; i<GetPrimaryVNumber(); i++)  // 03.03.2008. WW
+    Shift[i] = i*m_msh->GetNodesNumber(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3958,7 +3963,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
   long *nodes2node = NULL; //WW
   double *rhs = NULL, *rhs_dom = NULL;
   double a_ij;
-  //double b_i=0.0;
+  double b_i=0.0;
   int no_domains =(int)dom_vector.size();
   long no_dom_nodes;
   dof = pcs_number_of_primary_nvals; //WW
@@ -4160,33 +4165,33 @@ void CRFProcess::SetBoundaryConditionSubDomain()
       m_dom = dom_vector[k];
       // BC
       for(i=0; i<(long)bc_node_value.size(); i++)
-	  {
+      {
          m_bc_nv = bc_node_value[i];
-		 for(j=0; j<(long)m_dom->nodes.size(); j++)
-		 {
+         for(j=0; j<(long)m_dom->nodes.size(); j++)
+         {
              if(m_bc_nv->geo_node_number==m_dom->nodes[j])
-			 {
+             {
                 bc_node_value_in_dom.push_back(i);
                 bc_local_index_in_dom.push_back(j);
                 break;
-			 } 
+              } 
          }
-	  }
+      }
       rank_bc_node_value_in_dom.push_back((long)bc_node_value_in_dom.size());
       // ST
       for(i=0; i<(long)st_node_value.size(); i++)
-	  {
+      {
          m_st_nv = st_node_value[i];
          for(j=0; j<(long)m_dom->nodes.size(); j++)
-		 {
+         {
              if(m_st_nv->geo_node_number==m_dom->nodes[j])
-			 {
+             {
                 st_node_value_in_dom.push_back(i);
                 st_local_index_in_dom.push_back(j);
                 break;
-			 } 
+              } 
          }
-	  }
+      }
       rank_st_node_value_in_dom.push_back((long)st_node_value_in_dom.size());
   }  
   long Size = (long)st_node_value.size();
@@ -4194,7 +4199,7 @@ void CRFProcess::SetBoundaryConditionSubDomain()
   for(i=0; i<Size; i++)
   {
      l_index = st_node_value[i]->geo_node_number;
-	 st_node_value[i]->node_value /= (long)node_connected_doms[l_index];
+     st_node_value[i]->node_value /= (double)node_connected_doms[l_index];
   }
 
 }
@@ -4235,8 +4240,12 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
   //------------------------------------------------------------WW
   // WW 
   double Scaling = 1.0; 
-  if(type==4||type==41) fac = Scaling;
-
+  bool quadr = false; //15.4.2008. WW
+  if(type==4||type==41) 
+  { 
+    fac = Scaling;
+    quadr = true;
+  }
   long begin = 0;
   long end = 0;
   long gindex=0;
@@ -4285,14 +4294,26 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
      {
         bc_msh_node = bc_local_index_in_dom[i];
         int dim_space = 0; 
-        if(m_msh->NodesNumber_Linear==m_msh->NodesNumber_Quadratic)
+        if(shift==0)
+        // 15.4.2008 WW if(m_msh->NodesNumber_Linear==m_msh->NodesNumber_Quadratic)
            dim_space = 0;  
         else
         {
-          if(shift%m_msh->NodesNumber_Quadratic==0)
-            dim_space = shift/m_msh->NodesNumber_Quadratic; 
+          // Following lines are changed since 15.4.2008 by WW 
+          if(quadr)
+          {
+             if(shift%m_msh->NodesNumber_Quadratic==0)
+               dim_space = shift/m_msh->NodesNumber_Quadratic; 
+             else
+               dim_space = m_msh->msh_max_dim; 
+          }
           else
-            dim_space = m_msh->msh_max_dim; 
+          {
+             if(shift%m_msh->NodesNumber_Linear==0)
+               dim_space = shift/m_msh->NodesNumber_Linear; 
+             else
+               dim_space = m_msh->msh_max_dim; 
+          }
         }
         shift = m_dom->shift[dim_space];
       } 
@@ -4386,7 +4407,7 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
         }
         //----------------------------------------------------------------
         bc_eqs_index += shift;
-	
+        /* // Make the follows as comment by WW. 04.03.2008
         //YD dual 
         if(dof>1) //WW
         { 
@@ -4402,6 +4423,7 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
             }
           }
         }
+        */ 
 #ifdef NEW_EQS       //WW
         eqs_p->SetKnownX_i(bc_eqs_index, bc_value);
 #else
@@ -4446,7 +4468,7 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
   int curve, valid=0;
   long msh_node, shift;
   long bc_eqs_index=-1;
-  int  ii, EleType;
+  int  EleType; //ii
   double q_face=0.0; 
   CElem* elem = NULL;
   CElem* face = NULL;
@@ -4635,6 +4657,8 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
     } 
     else 
       bc_eqs_index = GetNodeIndex(msh_node)+shift;
+    /*
+    // Make the follows by WW. 04.03.2008 
     if(dof>1) // 07.2.2007 WW
     { 
       for(ii=0;ii<dof;ii++)
@@ -4647,6 +4671,7 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
 	     }
       }
     }
+    */
     eqs_rhs[bc_eqs_index] += value;
   }
   //====================================================================
@@ -8490,6 +8515,7 @@ bool CRFProcess::Check()
   {
     m_strMessage += "Warning: no OUT data";
     AfxMessageBox(m_strMessage);
+    return false;
   }
   //-----------------------------------------------------------------------
   // IC

@@ -48,6 +48,7 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
     h_pcs = NULL;
     t_pcs = NULL;
     m_dom = NULL;
+    AuxNodal2 = NULL;
     for(i=0; i<4; i++)
        NodeShift[i] = pcs->Shift[i];
     if(dm_pcs->pcs_type_name_vector[0].find("DYNAMIC")!=string::npos)
@@ -205,13 +206,17 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
       if(pcs_vector[i]->pcs_type_name.find("FLOW")!=string::npos)
       {
          h_pcs = pcs_vector[i];
-         if(GetRFProcessNumPhases()==1) Flow_Type = 0; 
-         if(h_pcs->pcs_type_name.find("RICHARDS")!=string::npos)
+         if(h_pcs->type==1)    //25.04.2005.  WW 
+         {
+           if(h_pcs->pcs_type_name.find("GROUND")!=string::npos)
+              Flow_Type = 10;
+           else
+            Flow_Type = 0;  
+         }
+         else if(h_pcs->type==14||h_pcs->type==22) //25.04.2005.  WW 
             Flow_Type = 1;
-         else if  (GetRFProcessNumPhases()==2) Flow_Type = 2;
+         else if  (h_pcs->type==1212) Flow_Type = 2; //25.04.2005.  WW 
          // WW idx_P0 = pcs->GetNodeValueIndex("POROPRESSURE0");
-         if(h_pcs->pcs_type_name.find("GROUND")!=string::npos)
-            Flow_Type = 10;
          break;
       }
     }
@@ -239,6 +244,7 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
        idx_P2 = h_pcs->GetNodeValueIndex("PRESSURE2")+1;
        idx_S0 = h_pcs->GetNodeValueIndex("SATURATION1");
        idx_S = h_pcs->GetNodeValueIndex("SATURATION1")+1;
+       AuxNodal2 = new double[8];
     }
  
     for(int i=0;i<(int)pcs_vector.size();i++){
@@ -278,6 +284,7 @@ CFiniteElementVec::~CFiniteElementVec()
     delete [] pstr;
     if(Sxz) delete [] Sxz;
     if(Syz) delete [] Syz;
+    if(AuxNodal2) delete [] AuxNodal2;
 	
     if(dynamic) 
     {
@@ -629,7 +636,7 @@ double CFiniteElementVec::CalDensity()
         {
            p_g=0.0; 
            for(i = 0; i< nnodes; i++)
-             p_g += shapefct[i]*AuxNodal1[i];   
+             p_g += shapefct[i]*AuxNodal2[i];   
            rho += porosity * (1.0-Sw)*COMP_MOL_MASS_AIR*p_g/(GAS_CONSTANT*(Tem+273.15));         
         } 
      }
@@ -821,16 +828,29 @@ void CFiniteElementVec::LocalAssembly(const int update)
 	   {
            AuxNodal_S[i] = h_pcs->GetNodeValue(nodes[i], idx_S);
            AuxNodal_S0[i] = h_pcs->GetNodeValue(nodes[i], idx_S0);
-           if(Flow_Type==2)
-             AuxNodal1[i] = h_pcs->GetNodeValue(nodes[i], idx_P2);
 	   }
+       if(Flow_Type==2)   //12.03.2008 WW
+       {
+         for(i=0; i<nnodes; i++)
+           AuxNodal2[i] = h_pcs->GetNodeValue(nodes[i], idx_P2);
+       }
+       if((Flow_Type==1||Flow_Type==2)&&(smat->SwellingPressureType==3||smat->SwellingPressureType==4)) //12.03.2008 WW
+       {
+         double fac = 1.0;
+         if(Flow_Type==1) fac = -1.0;  
+         for(i=0; i<nnodes; i++)
+         {
+           AuxNodal1[i] = fac*h_pcs->GetNodeValue(nodes[i], idx_P1-1);  //Pc
+           AuxNodal[i] = fac*(h_pcs->GetNodeValue(nodes[i], idx_P1)-h_pcs->GetNodeValue(nodes[i], idx_P1-1));  //dPc            
+         }
+       } 
     }
     // 
 
     if(enhanced_strain_dm&&ele_value_dm[MeshElement->GetIndex()]->Localized)
-        LocalAssembly_EnhancedStrain(update);
+      LocalAssembly_EnhancedStrain(update);
     else 
-        LocalAssembly_continuum(update);
+      LocalAssembly_continuum(update);
 
     if(update==0)
     {
@@ -1095,12 +1115,12 @@ void CFiniteElementVec::GlobalAssembly_RHS()
           case 2:  // Multi-phase-flow: p_g-Sw*p_c
              for (i=0;i<nnodes;i++)
              {
-                val_n = LoadFactor*(h_pcs->GetNodeValue(nodes[i],idx_P2)
-                                         -AuxNodal_S[i]*h_pcs->GetNodeValue(nodes[i],idx_P1));
+                val_n = h_pcs->GetNodeValue(nodes[i],idx_P2) 
+                                         -AuxNodal_S[i]*h_pcs->GetNodeValue(nodes[i],idx_P1);
                 if(biot<0.0&&val_n<0.0)
                   AuxNodal[i] = 0.0;
                 else
-                  AuxNodal[i] = val_n;
+                  AuxNodal[i] = val_n*LoadFactor;
              }
              break;
       }
@@ -1228,20 +1248,22 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
        Temp[i] =  t_pcs->GetNodeValue(nodes[i],idx_T1)-t_pcs->GetNodeValue(nodes[i],idx_T0);
 	}
   }
-
-
-  if(PModel==1||PModel==10) smat->CalulateCoefficent_DP();
+  //
+  
+  if(PModel==1||PModel==10)
+    smat->CalulateCoefficent_DP();
+  //
   if(PModel!=3)
-  {	  
-	  #ifdef RFW_FRACTURE
-      smat->Calculate_Lame_Constant(GetMeshElement());
-      #endif
-      #ifndef RFW_FRACTURE
-      smat->Calculate_Lame_Constant(); 
-      #endif
-
-      smat->ElasticConsitutive(ele_dim, De);  
+  {
+    #ifdef RFW_FRACTURE
+    smat->Calculate_Lame_Constant(GetMeshElement());
+    #else
+    smat->Calculate_Lame_Constant(); 
+    #endif
+    //
+    smat->ElasticConsitutive(ele_dim, De);  
   }
+
 
   /*
   //TEST
@@ -1304,24 +1326,8 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
       {
          for (i = 0; i < ns; i++)
             dstress[i] = 0.0;
-          De->multi(dstrain, dstress);
+         De->multi(dstrain, dstress);
       }
-
-      /*
-      //TEST
-      if(update&&Index==0)
-      {
-        oss<<" dstrain  "<<endl;
-        for (i = 0; i < ns; i++)
-          oss<<dstrain[i]<<"  ";
-        oss<<endl;
-        oss<<" dstress  "<<endl;
-        for (i = 0; i < ns; i++)
-          oss<<dstress[i]<<"  ";
-        oss<<endl;
-      }
-
-      */
 
       //---------------------------------------------------------
       // Integrate the stress by return mapping:
@@ -1329,6 +1335,7 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
       switch(PModel)
       { 
          case -1:   // Pure elasticity
+           // Non-linear elasticity: TE model. 10.03.2008. WW
            for (i = 0; i < ns; i++)
              dstress[i] += (*eleV_DM->Stress)(i, gp);
            break;
@@ -1356,9 +1363,36 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
             break;
          case 3:  // Generalized Cam-Clay model 
             for (i = 0; i < ns; i++)
-               dstress[i] = dstrain[i];
-            smat->CalStress_and_TangentialMatrix_CC(gp, eleV_DM,
+              dstress[i] = dstrain[i];
+            // 
+            if(smat->SwellingPressureType==3)
+            {
+               double suc = interpolate(AuxNodal1);
+               double dsuc = interpolate(AuxNodal);
+               (*smat->data_Youngs)(7) = suc;
+               (*smat->data_Youngs)(8) = dsuc;
+               smat->CalStress_and_TangentialMatrix_CC_SubStep(gp, eleV_DM,
                            dstress,  ConsistDep, update);
+               //
+               //double pn = -((*eleV_DM->Stress)(0, gp)+(*eleV_DM->Stress)(1, gp)+
+               //             (*eleV_DM->Stress)(2, gp))/3.0;
+               //de_vsw = -smat->TEPSwellingParameter(pn,suc)*dsuc/(suc+1.0e5); 
+            }
+            /*
+            else if (smat->SwellingPressureType==4)  //Power. 07.05.2008 WW
+            {
+               double suc = interpolate(AuxNodal1);
+               double dsuc = interpolate(AuxNodal);
+               smat->TEPSwellingParameter_kis(suc);      
+               S_Water = m_mmp->SaturationCapillaryPressureFunction(suc,0);
+               dS = S_Water - m_mmp->SaturationCapillaryPressureFunction(suc-dsuc,0);
+               de_vsw = pow(S_Water, (*smat->data_Youngs)(2) )*dS;                
+            }
+            */
+            else
+              smat->CalStress_and_TangentialMatrix_CC(gp, eleV_DM,
+                           dstress,  ConsistDep, update);
+           
             dPhi = 1.0;
             break;    
       }
@@ -1403,7 +1437,7 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
       // Fluid coupling;
       S_Water=1.0;
       if(Flow_Type>0&&Flow_Type!=10)
-         S_Water=interpolate(AuxNodal_S,1);
+         S_Water = interpolate(AuxNodal_S,1);
       // Decovalex. Swelling pressure
       if(smat->SwellingPressureType==1)
       {
@@ -1419,6 +1453,17 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
         for (i = 0; i < 3; i++)
            dstress[i] -= dS*smat->Max_SwellingPressure;     
       }
+      /* 
+      else if(smat->SwellingPressureType==3||smat->SwellingPressureType==4) // TEP model
+      {
+         for (i = 0; i < 3; i++)
+            strain_ne[i] = -de_vsw;
+         for (i = 3; i < ns; i++)
+            strain_ne[i] = 0.; 
+         smat->ElasticConsitutive(ele_dim, De);         
+         De->multi(strain_ne, dstress);
+      }
+      */
       // Assemble matrices and RHS
       if(update<1)
       {
