@@ -3282,7 +3282,7 @@ void CFiniteElementStd::CalcAdvection()
   double vel[3], dens_aug[3];
   CFluidProperties *m_mfp_g = NULL;
   bool multiphase = false;
-  if(!cpl_pcs) return; //18.02.2008 WW
+  if(!cpl_pcs&&(pcs->type!=2)) return; //18.02.2008, 04.09.2008 WW
   if(cpl_pcs&&cpl_pcs->type==1212)
   {
      multiphase = true; 
