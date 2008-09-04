@@ -61,7 +61,7 @@ void DisplayStartMsg ( void )
   printf("          ##       Federal Institute for Geosciences       ##\n");
   printf("          ##          and Natural Resources (BGR)          ##\n");
   printf("          ##                                               ##\n");
-  printf("          ##      Version %s  Date %s ##\n",\
+  printf("          ##      Version %s  Date %s     ##\n",\
                                       ROCKFLOW_VERSION,ROCKFLOW_DATE);
   printf("          ##                                               ##\n");
   printf("          ###################################################\n");

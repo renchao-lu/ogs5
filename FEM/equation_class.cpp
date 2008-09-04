@@ -590,7 +590,7 @@ void Linear_EQS::Message()
 ********************************************************************/
 inline bool Linear_EQS::CheckNormRHS(const double normb_new)
 {
-  if(bNorm>DBL_EPSILON)
+  if(bNorm>0.0)
   {
     if((normb_new/bNorm)<tol)
     {

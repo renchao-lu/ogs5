@@ -206,16 +206,16 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
       if(pcs_vector[i]->pcs_type_name.find("FLOW")!=string::npos)
       {
          h_pcs = pcs_vector[i];
-         if(h_pcs->type==1)    //25.04.2005.  WW 
+         if(h_pcs->type==1||h_pcs->type==41)  //25.04.2008, 04.09.2008  WW 
          {
            if(h_pcs->pcs_type_name.find("GROUND")!=string::npos)
               Flow_Type = 10;
            else
             Flow_Type = 0;  
          }
-         else if(h_pcs->type==14||h_pcs->type==22) //25.04.2005.  WW 
+         else if(h_pcs->type==14||h_pcs->type==22) //25.08.2005.  WW 
             Flow_Type = 1;
-         else if  (h_pcs->type==1212) Flow_Type = 2; //25.04.2005.  WW 
+         else if  (h_pcs->type==1212) Flow_Type = 2; //25.04.2008.  WW 
          // WW idx_P0 = pcs->GetNodeValueIndex("POROPRESSURE0");
          break;
       }
