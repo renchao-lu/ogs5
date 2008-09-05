@@ -3758,22 +3758,44 @@ void  CFiniteElementStd::Cal_Velocity()
   SetMaterial();
 
   ElementValue* gp_ele = ele_gp_value[Index];
-    
 
-  gp_ele->Velocity = 0.0;
+  //gp_ele->Velocity = 0.0; // CB commented and inserted below due to conflict with transport calculation, needs velocities 
   // Loop over Gauss points
   k = (coordinate_system)%10;
-  for(i=0; i<nnodes; i++)
-     NodalVal[i] = pcs->GetNodeValue(nodes[i], idx1); 
+  if(PcsType==T) //WW/CB
+  {
+    if(pcs->pcs_type_number==0)
+    {
+       idx1 = pcs->GetNodeValueIndex("PRESSURE1")+1; // gas pressure
+       for(i=0; i<nnodes; i++)
+          NodalVal[i] = pcs->GetNodeValue(nodes[i], idx1); 
+    }
+    else if (pcs->pcs_type_number==1)
+    {
+       idxp21 = pcs->GetNodeValueIndex("PRESSURE_CAP");
+       idx1 = cpl_pcs->GetNodeValueIndex("PRESSURE1")+1; // gas pressure
+       gp_ele = ele_gp_value[Index+(long)pcs->m_msh->ele_vector.size()];
+       for(i=0; i<nnodes; i++)
+          // P_l = P_g - P_cap
+          NodalVal[i] = cpl_pcs->GetNodeValue(nodes[i], idx1) - pcs->GetNodeValue(nodes[i], idxp21); 
+    }
+  }
+  else
+  {
+    for(i=0; i<nnodes; i++)
+       NodalVal[i] = pcs->GetNodeValue(nodes[i], idx1); 
+  }
+  //
   if(PcsType==V)
   {
-    gp_ele->Velocity_g = 0.0;
+    gp_ele->Velocity_g = 0.0; //WW
     for(i=0; i<nnodes; i++)
     {
-       NodalVal[i] = pcs->GetNodeValue(nodes[i], idxp21) - NodalVal[i];
+       NodalVal[i] = pcs->GetNodeValue(nodes[i], idxp21) - NodalVal[i]; //WW
        NodalVal1[i] = pcs->GetNodeValue(nodes[i], idxp21);
     }
   }
+  gp_ele->Velocity = 0.0; // CB inserted here and commented above due to conflict with transport calculation, needs 
   for (gp = 0; gp < nGaussPoints; gp++)
   {
       //---------------------------------------------------------
@@ -3787,11 +3809,15 @@ void  CFiniteElementStd::Cal_Velocity()
       //---------------------------------------------------------
       ComputeGradShapefct(1); // Linear interpolation function
       ComputeShapefct(1);   // Moved from CalCoefLaplace(). 12.3.2007 WW
+      if((PcsType==T)&&(pcs->pcs_type_number==1)) //WW/CB
+        flag_cpl_pcs = true;
       // Material
       if(dof_n==1) 
         CalCoefLaplace(true);
       else if (dof_n==2)
         CalCoefLaplace2(true,0);       
+      if((PcsType==T)&&(pcs->pcs_type_number==1)) //WW/CB
+        flag_cpl_pcs = false;
       // Velocity
       for (i = 0; i < dim; i++)
       {
@@ -5068,6 +5094,7 @@ void CFiniteElementStd::Assembly()
       if(pcs->pcs_type_number==0)
       { 
         AssembleParabolicEquation();
+		Assemble_Gravity();
       }
       else if(pcs->pcs_type_number==1)
       {
