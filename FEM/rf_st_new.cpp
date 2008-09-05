@@ -172,25 +172,30 @@ ios::pos_type CSourceTerm::Read(ifstream *st_file)
       continue;
     }
     //....................................................................
-    if(line_string.find("$DIS_TYPE")!=string::npos) { 
-    //10.04.2008. WW if(line_string.compare("$DIS_TYPE")==0) { 
-      position = ReadDistributionType(st_file);
-      continue;
+    if(line_string.find("$DIS_TYPE")!=string::npos)  //05.09.2008 WW
+    { 
+    //10.04.2008. WW  if(line_string.compare("$DIS_TYPE")==0) { 
+      if(line_string.find("CONDITION")!=string::npos)  //05.09.2008 WW
+      {
+         conditional = true;
+         position = ReadDistributionType(st_file);
+         in.str(GetLineFromFile1(st_file)); //PCS type
+         in >> line_string >> pcs_type_name_cond;
+         in.clear();
+         in.str(GetLineFromFile1(st_file)); // 
+         in >> pcs_pv_name_cond;
+         in.clear();
+	     in.str(GetLineFromFile1(st_file));
+         in >> coup_leakance >> rill_height;
+         in.clear(); 
+      }
+      else   //05.09.2008 WW
+      { 
+        position = ReadDistributionType(st_file);
+        continue;
+      }
     }
 	//..............................................
-    if(line_string.find("$DIS_TYPE_CONDITION")!=string::npos) {
-	  conditional = true;
-      position = ReadDistributionType(st_file);
-      in.str(GetLineFromFile1(st_file)); //PCS type
-      in >> line_string >> pcs_type_name_cond;
-      in.clear();
-      in.str(GetLineFromFile1(st_file)); // 
-      in >> pcs_pv_name_cond;
-      in.clear();
-	  in.str(GetLineFromFile1(st_file));
-      in >> coup_leakance >> rill_height;
-      in.clear(); 
-    } 
     //..............................................
     if(line_string.find("$COUPLING_SWITCH")!=string::npos) { 
       COUPLING_SWITCH = true;  // switch case 
