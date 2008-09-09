@@ -32,6 +32,8 @@ class CFunction
     string dis_type_name;//CMCD
     vector<string>variable_names_vector;
     vector<double*>variable_data_vector;
+	int matrix_dimension_x; //NB4703
+	int matrix_dimension_y; //NB4703
     bool selected;
 };
 

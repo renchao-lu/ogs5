@@ -3,12 +3,11 @@ FEMLib-Object: FCT
 Task: Functions
 Programing:
 01/2005 OK Implementation
+09/2008 NB Function with multiple arguments
 **************************************************************************/
-
 #include "stdafx.h" /* MFC */
 #include "makros.h"
 #include "rf_fct.h"
-
 #include "geo_strings.h"
 extern void remove_white_space(string *buffer);
 extern string GetLineFromFile1(ifstream*);
@@ -65,15 +64,20 @@ FEMLib-Method:
 Task: read functionn
 Programing:
 03/2005 OK Implementation
+09/2008 NB, matrix functions
 last modification:
 **************************************************************************/
 ios::pos_type CFunction::Read(ifstream *fct_file)
 {
   bool ok_true = true;
   bool new_keyword = false;
-  int no_variable_names;
-  int i;
+  bool dim = false;
+  int unsigned no_variable_names;
+  int unsigned i;
   double* variable_data = NULL;
+  double* j=0;
+  double* k=0;
+  double* l=0;	
   char buffer[MAX_ZEILE];
   string hash("#");
   string line_string;
@@ -81,6 +85,9 @@ ios::pos_type CFunction::Read(ifstream *fct_file)
   string dollar("$");
   ios::pos_type position;
   std::stringstream line_stream;
+  vector<double*>dim_x; //OK memory release check
+  vector<double*>dim_y;
+  vector<double*>dim_z;
   //----------------------------------------------------------------------
   while (!new_keyword) {
     position = fct_file->tellg();
@@ -130,6 +137,64 @@ ios::pos_type CFunction::Read(ifstream *fct_file)
         test_string = line_string;
       }
     }
+	//....................................................................
+    //MATRIX_DIMENSION     NB
+	//... reads the number of colums and rows of the given matrix ........
+    if(line_string.find("$MATRIX_DIMENSION")!=string::npos) 
+    { //subkeyword found
+      while(ok_true)
+      {
+        line_string = GetLineFromFile1(fct_file);
+        line_stream.str(line_string);
+		if(line_string.find("$")!=string::npos)
+        {
+          line_stream.clear();
+          break; 
+        }
+		line_stream >> matrix_dimension_x >> matrix_dimension_y;
+        line_stream.clear();
+      }
+	}
+	//....................................................................
+	//MATRIX       NB
+	//...reads both arguments and depending function values in the given.. 
+	//...matrix and saves them consecutively in variable_data_vector......
+    if(line_string.find("$MATRIX")!=string::npos) 
+    { //subkeyword found
+	  i=0;
+      while(ok_true)
+      {
+        line_string = GetLineFromFile1(fct_file);
+        line_stream.str(line_string);
+        if((line_string.find("$")!=string::npos)||(line_string.find("#")!=string::npos))
+        {
+		  for (i=0;i<dim_x.size();i++) variable_data_vector.push_back(dim_x[i]);
+		  for (i=0;i<dim_y.size();i++) variable_data_vector.push_back(dim_y[i]);
+		  for (i=0;i<dim_z.size();i++) variable_data_vector.push_back(dim_z[i]);
+		}
+		if(line_string.find("$")!=string::npos)
+        {
+          line_stream.clear();
+          break;       
+        }
+        if(line_string.find("#")!=string::npos) 
+        {
+          line_stream.clear();
+          return position;    
+        }
+		j = new double; //OK
+		k = new double;
+		l = new double;
+		line_stream >> *j >> *k >> *l;
+		if ((int)dim_x.size()<matrix_dimension_x) 
+		  dim_x.push_back(j);
+		if ((dim_y.size()>0)&&((*k!=*dim_y[dim_y.size()-1]))) dim_y.push_back(k); 
+		else if (dim_y.size()==0) dim_y.push_back(k);
+		dim_z.push_back(l);
+		line_stream.clear();
+		i++;
+      }
+	}
     //--------------------------------------------------------------------
     //DATA
     if(line_string.find("$DATA")!=string::npos) { //subkeyword found
