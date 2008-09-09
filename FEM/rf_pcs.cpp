@@ -6910,7 +6910,7 @@ GeoSys-FEM Function:
 **************************************************************************/
 void CRFProcess::AssembleParabolicEquationRHSVector()
 {
-  long i;
+//OK  long i;
   //----------------------------------------------------------------------
   // Init
 /*	PCH & WW
