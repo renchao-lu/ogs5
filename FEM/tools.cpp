@@ -31,6 +31,7 @@
 #include "intrface.h"
 #include "rf_tim_new.h"
 #include "rf_mmp_new.h"
+#include "rf_fct.h" //NB
 #include "rf_num_new.h"
 // GEOLib
 #include "geo_pnt.h"
@@ -932,6 +933,9 @@ double GetCurveValueInverse(int kurve, int methode, double wert, int *gueltig)
         DisplayMsg("PANIC! Curve ");
         DisplayLong(kurve);
         DisplayMsgLn(" is requested but not defined!");
+#ifdef MFC //OK
+        AfxMessageBox("Fatal error in GetCurveValueInverse: no CURVE data ! Abort");
+#endif
         abort();
     }
 #endif
@@ -2342,5 +2346,120 @@ void TOLSortDataSet(double* set1, double* set2, double* criterium, int anz)
       } /* end if */
     } /* end for */
   } while (flag == 1);
+}
+/**********************************************************************
+Function for interpolation between two points P1(x1|z1) and P2(x2|z2)
+The function returns the value zn at the position xn. 
+function is used in GetMatrixValue();
+
+Programming: 
+08/2008 NB
+***********************************************************************/
+double interpol (double x1, double x2, double zx1, double zx2, double xn)
+{
+  if (x1==x2) return zx1;
+  else return zx1 + (xn-x1)*(zx2-zx1)/(x2-x1);
+}
+/**********************************************************************
+Function GetMatrixValue (double var1, double var2, int *gueltig)
+
+This function reads a data matrix with two independent arguments and 
+function values in an FCT-File and returns the value corresponding to 
+var1 and var2. If var1 and var2 are not in the matrix, the function 
+returns a value interpolated between both arguments.
+
+Programming:
+08/2008 NB
+***********************************************************************/
+double GetMatrixValue(double var1, double var2, int *gueltig)
+{
+  CFunction * matrix;
+  int anz_variables;
+  int anz_data, dim_x, dim_y;
+  int i1 = 0;
+  int i2 = 0;
+  int j1 = 0;
+  int j2 = 0;
+  int counter;
+  double x1,x2,y1,y2;
+  double zx1y1,zx2y1,zx1y2,zx2y2;
+  
+  matrix = FCTGet("EOS_DATA");
+  anz_variables = (int)matrix->variable_names_vector.size();
+  dim_x = matrix->matrix_dimension_x;
+  dim_y = matrix->matrix_dimension_y;
+  anz_data = (int)matrix->variable_data_vector.size()-dim_x-dim_y;
+  //----------------------------------------------------------------------
+  if (var1<*matrix->variable_data_vector[0]) //is var1 smaller then the smallest argument?
+  {
+    x1=x2=*matrix->variable_data_vector[0];
+    *gueltig=0;
+	i1=i2=0;
+  }
+	else 
+		if (var1>*matrix->variable_data_vector[dim_x-1]) //is var1 larger then largest argument?
+		{
+			x1=x2=*matrix->variable_data_vector[dim_x-1];
+			*gueltig=0;
+			i1=i2=dim_x-1;
+		}
+		else 
+			for (counter=0;counter<dim_x;counter++)
+			{
+				if (var1==*matrix->variable_data_vector[counter]) //does var1 fit an argument in the matrix exactly?
+				{
+					x1=x2=*matrix->variable_data_vector[counter];
+					i1=i2=counter;
+					break;
+				}
+				else
+					if (var1 < *matrix->variable_data_vector[counter]) //var1 is between two arguments in the matrix
+					{
+						x1=*matrix->variable_data_vector[counter-1];
+						x2=*matrix->variable_data_vector[counter];
+						i2=counter;
+						i1=i2-1;
+						break;
+					}
+			}
+    //same procedure for var2:
+	if (var2<*matrix->variable_data_vector[dim_x])
+	{
+		y1=y2=*matrix->variable_data_vector[dim_x];
+		*gueltig=0;
+		j1=j2=dim_x;
+	}
+	else 
+		if (var2>*matrix->variable_data_vector[dim_x+dim_y-1])
+		{
+			y1=y2=*matrix->variable_data_vector[dim_x+dim_y-1];
+			*gueltig=0;
+			j1=j2=dim_x+dim_y-1;
+		}
+		else 
+			for (counter=dim_x;counter<dim_x+dim_y;counter++)
+			{
+				if (var2==*matrix->variable_data_vector[counter])
+				{
+					y1=y2=*matrix->variable_data_vector[counter];
+					j1=j2=counter;
+					break;
+				}
+				else
+					if (var2 < *matrix->variable_data_vector[counter])
+					{
+						y1=*matrix->variable_data_vector[counter-1];
+						y2=*matrix->variable_data_vector[counter];
+						j2=counter;
+						j1=j2-1;
+						break;
+					}
+			}
+			//getting the corresponding Z values for the arguments from the data vector
+			zx1y1= *matrix->variable_data_vector[(j1-dim_x)*dim_x+(i1+dim_x+dim_y)];
+			zx2y1= *matrix->variable_data_vector[(j1-dim_x)*dim_x+(i2+dim_x+dim_y)];
+			zx1y2= *matrix->variable_data_vector[(j2-dim_x)*dim_x+(i1+dim_x+dim_y)];
+			zx2y2= *matrix->variable_data_vector[(j2-dim_x)*dim_x+(i2+dim_x+dim_y)];
+	return 	interpol (y1,y2,interpol (x1,x2,zx1y1,zx2y1,  var1),interpol (x1,y1,zx1y2,zx2y2,  var1),var2);
 }
 
