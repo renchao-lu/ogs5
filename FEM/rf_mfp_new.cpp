@@ -14,6 +14,7 @@ last modified:
 using namespace std;
 // FEM-Makros
 #include "mathlib.h"
+#include "eos.h" //NB
 // GeoSys-GeoLib
 #include "geo_strings.h"
 #include "rfstring.h"
@@ -132,8 +133,6 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
     }
     //....................................................................
     if(line_string.find("$FLUID_TYPE")!=string::npos) { // subkeyword found
-//      *mfp_file >> fluid_name;
-//       mfp_file->ignore(MAX_ZEILE,'\n');
 	  in.str(GetLineFromFile1(mfp_file));
       in >> name; //sub_line
 	  in.clear();
@@ -141,8 +140,6 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
     }
     //....................................................................
     if(line_string.find("$DAT_TYPE")!=string::npos) { // subkeyword found
-//      *mfp_file >> dat_name;
-//       mfp_file->ignore(MAX_ZEILE,'\n');
 	  in.str(GetLineFromFile1(mfp_file));
       in >> name; //sub_line
 	  in.clear();
@@ -155,30 +152,21 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
 	//....................................................................
     if(line_string.find("$DENSITY")!=string::npos) { // subkeyword found
       new_subkeyword = false;
-//      *mfp_file >> density_model;
 	  in.str(GetLineFromFile1(mfp_file));
       in >> density_model;
       if(density_model==0){ // rho = f(x)
-//        *mfp_file >> rho_fct_name;
 		  in >> rho_fct_name;
       }
       if(density_model==1){ // rho = const
-        //*mfp_file >> rho_0;
 		in >> rho_0;
       }
       if(density_model==2){ // rho(p) = rho_0*(1+beta_p*(p-p_0))
-//        *mfp_file >> rho_0;
-//        *mfp_file >> p_0;
-//        *mfp_file >> drho_dp;
 		in >> rho_0;
         in >> p_0;
         in >> drho_dp;
         density_pcs_name_vector.push_back("PRESSURE1");
       }
       if(density_model==3){ // rho(C) = rho_0*(1+beta_C*(C-C_0))
-//        *mfp_file >> rho_0;
-//        *mfp_file >> C_0;
-//        *mfp_file >> drho_dC;
 		in >> rho_0;
         in >> C_0;
         in >> drho_dC;
@@ -186,20 +174,12 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
 		density_pcs_name_vector.push_back("Isochlor");	// PCH
       }
       if(density_model==4){ // rho(T) = rho_0*(1+beta_T*(T-T_0))
-//        *mfp_file >> rho_0;
-//        *mfp_file >> T_0;
-//        *mfp_file >> drho_dT;
         in >> rho_0;
         in >> T_0;
         in >> drho_dT;
         density_pcs_name_vector.push_back("TEMPERATURE1");
       }
       if(density_model==5){ // rho(C,T) = rho_0*(1+beta_C*(C-C_0)+beta_T*(T-T_0))
-//        *mfp_file >> rho_0;
-//        *mfp_file >> C_0;
-//        *mfp_file >> drho_dC;
-//        *mfp_file >> T_0;
-//        *mfp_file >> drho_dT;
         in >> rho_0;
         in >> C_0;
         in >> drho_dC;
@@ -209,11 +189,6 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
         density_pcs_name_vector.push_back("TEMPERATURE1");
       }
       if(density_model==6){ // rho(p,T) = rho_0*(1+beta_p*(p-p_0)+beta_T*(T-T_0))
-//        *mfp_file >> rho_0;
-//        *mfp_file >> p_0;
-//        *mfp_file >> drho_dp;
-//        *mfp_file >> T_0;
-//        *mfp_file >> drho_dT;
         in >> rho_0;
         in >> p_0;
         in >> drho_dp;
@@ -226,7 +201,6 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
         // no input data required
       }
 	  if(density_model==8){ // rho(p,T,C)
-//        *mfp_file >> C_0;
         in >> C_0;
 		density_pcs_name_vector.push_back("PRESSURE1");
         density_pcs_name_vector.push_back("TEMPERATURE1");
@@ -235,27 +209,27 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
       { // Molar mass
         in >> molar_mass;
       }
+	  if(density_model==10)		//NB
+	  { // density read from matrix with rho-P-T values
+		in >> name;
+		density_pcs_name_vector.push_back("PRESSURE1");
+        density_pcs_name_vector.push_back("TEMPERATURE1");
+	  }
 //      mfp_file->ignore(MAX_ZEILE,'\n');
       in.clear();
       continue;
     }
     //....................................................................
     if(line_string.find("$VISCOSITY")!=string::npos) { // subkeyword found
-//      *mfp_file >> viscosity_model;
 	  in.str(GetLineFromFile1(mfp_file));
       in >> viscosity_model;
       if(viscosity_model==0){ // my = fct(x)
-//        *mfp_file >> my_fct_name;
         in >> my_fct_name;
       }
       if(viscosity_model==1){ // my = const
-//        *mfp_file >> my_0;
         in >> my_0;
       }
       if(viscosity_model==2){ // my(p) = my_0*(1+gamma_p*(p-p_0))
-//        *mfp_file >> my_0;
-//        *mfp_file >> p_0;
-//        *mfp_file >> dmy_dp;
         in >> my_0;
         in >> p_0;
         in >> dmy_dp;
@@ -270,32 +244,30 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
       if(viscosity_model==6){ // my(C,T), 
       }
       if(viscosity_model==7){ // my(p,T,C)
-//NW        *mfp_file >> C_0;
         in >> C_0;
         viscosity_pcs_name_vector.push_back("PRESSURE1");
         viscosity_pcs_name_vector.push_back("TEMPERATURE1");
       }
+	  if(viscosity_model==9){ // my(rho,T) (FENGHOUR et. al.; only for CO2) NB
+		  viscosity_pcs_name_vector.push_back("TEMPERATURE1");
+	  }
 //      mfp_file->ignore(MAX_ZEILE,'\n');
       in.clear();
       continue;
     }
     //....................................................................
     if(line_string.find("$SPECIFIC_HEAT_CAPACITY")!=string::npos) { // subkeyword found
-//      *mfp_file >> heat_capacity_model;
 	  in.str(GetLineFromFile1(mfp_file));
       in >> heat_capacity_model;
       if(heat_capacity_model==0){ // c = fct(x)
-//        *mfp_file >> heat_capacity_fct_name;
         in >> heat_capacity_fct_name;
       }
       if(heat_capacity_model==1){ // c = const
-//        *mfp_file >> specific_heat_capacity;//CMCD Change to specific heat capacity, as fluid mass content is f(T,P,n, density)
         in >> specific_heat_capacity;
         specific_heat_capacity_pcs_name_vector.push_back("PRESSURE1");
         specific_heat_capacity_pcs_name_vector.push_back("TEMPERATURE1");
       }
 	  if(heat_capacity_model==2){ // my(p,T,C)
-//        *mfp_file >> C_0;
         in >> C_0;
         specific_heat_capacity_pcs_name_vector.push_back("PRESSURE1");
         specific_heat_capacity_pcs_name_vector.push_back("TEMPERATURE1");
@@ -324,20 +296,15 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
     }
     //....................................................................
     if(line_string.find("$HEAT_CONDUCTIVITY")!=string::npos) { // subkeyword found
-//      *mfp_file >> heat_conductivity_model;
 	  in.str(GetLineFromFile1(mfp_file));
       in >> heat_conductivity_model;
-
       if(heat_conductivity_model==0){ // my = fct(x)
-//        *mfp_file >> heat_conductivity_fct_name;
         in >> heat_conductivity_fct_name;
       }
       if(heat_conductivity_model==1){ // my = const
-//        *mfp_file >> heat_conductivity;
         in >> heat_conductivity;
       }
 	  if(heat_conductivity_model==2){ // my = f(p,T,C)
-//        *mfp_file >> C_0;
         in >> C_0;
         heat_conductivity_pcs_name_vector.push_back("PRESSURE1");
         heat_conductivity_pcs_name_vector.push_back("TEMPERATURE1");
@@ -641,6 +608,9 @@ double CFluidProperties::Density(double *variables)
       case 8: // M14 von JdJ
 	    density = MATCalcFluidDensityMethod8(primary_variable[0],primary_variable[1],primary_variable[2]);
         break;
+    case 10: // Get density from temperature-pressure values from fct-file	NB
+		density = GetMatrixValue(primary_variable[1],primary_variable[0],&gueltig);
+		break;	
       default:
         cout << "Error in CFluidProperties::Density: no valid model" << endl;
         break;
@@ -863,6 +833,9 @@ double CFluidProperties::Viscosity()
     case 7: // my(p,C,T), 
       viscosity = LiquidViscosity_CMCD(primary_variable[0],primary_variable[1],primary_variable[2]);
       break;
+	case 9: // viscosity as function of density and temperature    NB
+		viscosity = co2_viscosity(Density(),primary_variable[0]);
+		break;
     default:
       cout << "Error in CFluidProperties::Viscosity: no valid model" << endl;
       break;
@@ -1583,7 +1556,7 @@ double CFluidProperties::InternalEnergy(long number,double*gp,double theta)
   energy = SpecificHeatCapacity() * temperature;  //YD
   //energy = HeatCapacity(temperature,m_ele_fem_std) * temperature;
 
-  //if(fluid_name.find("GAS")!=string::npos){
+  //if(name.find("GAS")!=string::npos){
   if(phase==0){
     nidx0 = PCSGetNODValueIndex("PRESSURE1",0);
     nidx1 = PCSGetNODValueIndex("PRESSURE1",1);
