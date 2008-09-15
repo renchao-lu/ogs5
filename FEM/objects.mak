@@ -1,5 +1,6 @@
 # GeoSys - Makefile for LINUX
 # 4.5.06 22/07/2007 WW
+# 4.7.06 15/09/2008 WW
 FEMOBJS =tools.o\
 timer.o\
 steam.o\
@@ -45,6 +46,7 @@ fem_ele_std.o\
 fem_ele.o\
 equation_class.o\
 elements.o\
+eos.o\
 display.o\
 break.o\
 ../gs_project.o

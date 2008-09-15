@@ -12,7 +12,7 @@ Programming: Norbert Böttcher
 #include <fstream>
 #include <iostream>
 #include <stdio.h>
-#include <EoS.h>
+#include <eos.h>
 #include <string>
 
 using namespace std;
@@ -689,7 +689,7 @@ double density (double P, double rho0, double T, double prec, int fluid)
 	thermal_properties (fluid, rhoc, Tc, R);
     
 	p0 = 0;
-	while (abs(P-p0) > prec) {
+	while (fabs(P-p0) > prec) {  //change to fabs. 15.09.2008 WW
 		rho = P/((1+(rho0/rhoc)*phi_r_d(rho0,rhoc,T,Tc,fluid))*R*T);
 		p0  = pressure(rho0,T,fluid);
 		rho0 = rho; 
