@@ -1,6 +1,7 @@
 /*
    The members of class Element definitions.
 */
+
 // MFC
 #include "stdafx.h"
 // C++ STL
