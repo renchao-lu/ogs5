@@ -295,6 +295,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\eos.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\eos.h"
+				>
+			</File>
+			<File
 				RelativePath=".\equation_class.cpp"
 				>
 			</File>
