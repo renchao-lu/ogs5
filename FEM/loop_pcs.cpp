@@ -950,7 +950,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
   //======================================================================
   // restore primary variables JOD
   //----------------------------------------------------------------------
-  if(!M_Process && density_dependent == false)
+  if(!M_Process && density_dependent == false && !PCSGet("LIQUID_FLOW")) // NW exclude Liquid flow
   {
   bool restore = false;
  
