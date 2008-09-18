@@ -459,8 +459,9 @@ double CElement::computeJacobian(const int order)
           for(i=0; i<ele_dim*ele_dim; i++)
              invJacobian[i] /= DetJac;
           //
-          //By WW if(MeshElement->area>0)
-          //  DetJac*=MeshElement->area;
+          //By WW 
+          if(MeshElement->area>0)
+            DetJac*=MeshElement->area;
           //WW          DetJac*=MeshElement->GetFluxArea();//CMCD
           if(axisymmetry)
           {
