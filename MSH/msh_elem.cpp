@@ -65,7 +65,7 @@ CElem::CElem(const long Index):CCore(Index)
    angle = NULL;
    gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
    normal_vector = NULL;
-   area = 1.0; //WW
+   area = -1.0; //WW
 
 #ifdef RFW_FRACTURE
    Aperture_is_set=false;
