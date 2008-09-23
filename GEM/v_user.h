@@ -1,9 +1,9 @@
 //-------------------------------------------------------------------
-// $Id: v_user.h 950 2007-12-05 10:07:12Z gems $
+// $Id: v_user.h 988 2007-12-19 09:32:52Z gems $
 //
-// Declaration of miscellaneous utility functions and classes
+// Declaration of platform-specific utility functions and classes
 //
-// Copyright (C) 1996-2001 A.Rysin, S.Dmytriyeva
+// Copyright (C) 1996,2001 A.Rysin, S.Dmytriyeva
 // Uses  gstring class (C) A.Rysin 1999
 //
 // This file is part of the GEM-Vizor library and the GEMIPM2K
@@ -12,7 +12,7 @@
 // This file may be distributed under the terms of the GEMS-PSI
 // QA Licence (GEMSPSI.QAL)
 //
-// See http://les.web.psi.ch/Software/GEMS-PSI/ for more information
+// See http://gems.web.psi.ch/ for more information
 // E-mail gems2.support@psi.ch
 //-------------------------------------------------------------------
 
@@ -50,14 +50,14 @@ typedef unsigned int uint;
 
 #endif //  __noborl
 
-
-#ifndef IPMGEMPLUGIN
-
 inline
 int ROUND(double x )
 {
     return int((x)+.5);
 }
+
+#ifndef IPMGEMPLUGIN
+
 
 inline
 bool

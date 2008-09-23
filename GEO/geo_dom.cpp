@@ -6,7 +6,9 @@ Programing:
 09/2005 CC GeoLib2
 **************************************************************************/
 // MFC
-#include "stdafx.h" 
+#include "stdafx.h"
+#include <stdio.h> 
+#include <string.h>
 // C++ STL
 // GeoLib
 #include "geo_dom.h"

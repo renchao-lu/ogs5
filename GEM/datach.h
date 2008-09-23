@@ -1,4 +1,6 @@
-//------------------------------------------------------------------------------
+//-------------------------------------------------------------------
+// $Id: datach.h 1066 2008-05-16 14:16:59Z gems $
+//
 // DataCHemistry - contains chemical system definitions common to all
 // nodes for the exchange between the GEM IPM and the FMT code parts.
 // Contains dimensions and index lists for ICs, DCs, Phases in DATABR structure.
@@ -8,7 +10,7 @@
 //      CH: chemical structure in GEM IPM
 //      FMT: fluid mass transport
 
-// Copyright (C) 2003-2006 by D.Kulik, S.Dmytriyeva, W.Pfingsten, F.Enzmann
+// Copyright (C) 2003,2008 by D.Kulik, S.Dmytriyeva, W.Pfingsten, F.Enzmann
 // This file is part of GEMIPM2K and GEMS-PSI codes for
 // thermodynamic modelling by Gibbs energy minimization
 // developed in the Laboratory for Waste Management, Paul Scherrer Institute
@@ -16,22 +18,22 @@
 // This file may be distributed together with GEMIPM2K source code
 // under the licence terms defined in GEMIPM2K.QAL
 //
-// See also http://les.web.psi.ch/Software/GEMS-PSI
+// See also http://gems.web.psi.ch/
 // E-mail: gems2.support@psi.ch
 //------------------------------------------------------------------------------
 //
 #ifndef _DataCh_H_
 #define _DataCh_H_
 
-const unsigned int
-    MaxICN =      6,
-    MaxDCN =      16,
-    MaxPHN =      16;
+const int
+    MaxICN =      6,      // IC name length
+    MaxDCN =      16,     // DC name length
+    MaxPHN =      16;     // PH name length
 
 typedef struct
 {  // Structure DataCH
 // Dimensionalities
-  short
+  int     // changed from short on 26.06.2008   DK
 //  These dimensionalities should be the same as in the GEMIPM work structure (MULTI)
     nIC,    // Total number of IC (independent components) in the reactive part
     nDC,    // Total number of DC (chemical species) in the reactive part
@@ -67,7 +69,7 @@ typedef struct
     *xPH;   // PH name indices in DATABR Phase vectors, [nPHb] elements
             // see below definitions of the ICNL, DCNL and PHNL lists
 
-  float
+  double  // changed from float on 26.06.2008   DK
     *TCval,   // discrete values of Temperature (C), [nTp] elements,
  // that correspond to grid arrays for the interpolation of thermodynamic data
     *Pval,   // discrete values of Pressure (bar), [nPp] elements,
@@ -89,7 +91,7 @@ typedef struct
     *DCmm,   // DC molar mass, g/mol, [nDC] elements
     *DD,     // Diffusition coefficients, [nDC][nPp][nTp] elements, for now constant
 
-// Grid arrays of thermodynamic data
+// Look-up grid arrays of thermodynamic data
 // Require a Lagrange interpolation subroutine to extract data
 // for a given P,T point (new interpolation is done when P or T differs
 // from the previous P,T by more than Ptol, Ttol)

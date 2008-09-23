@@ -9,6 +9,8 @@ last modified:
 -------------------------------------------------------------------------*/
 // MFC
 #include "stdafx.h"
+#include <stdio.h>
+#include <string.h>
 #ifdef MFC
 #include "afxpriv.h" // For WM_SETMESSAGESTRING
 #include "MainFrm.h"

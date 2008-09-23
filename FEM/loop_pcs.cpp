@@ -61,6 +61,11 @@ void SetCriticalDepthSourceTerms(void);
   #include "eqlink.h"
 #endif
 
+#ifdef BRNS
+// BRNS dll link; HB 02.11.2007
+#include "rf_REACT_BRNS.h"
+#endif
+
 namespace process{class CRFProcessDeformation;}
 using process::CRFProcessDeformation;
 
@@ -274,8 +279,15 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
 		}
 	//  delete rc;
 	  }
-
+  #endif
+#ifdef BRNS
+// Here to test BRNS; HB 02.11.2007
+// REACT_BRNS* pBRNS;
+// pBRNS = new REACT_BRNS();
+m_vec_BRNS = new REACT_BRNS();
+m_vec_BRNS->InitBRNS();
 	#endif
+
 
   #ifdef CHEMAPP
 	CEqlink *eq=NULL;
@@ -862,8 +874,13 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
                 #ifdef CHEMAPP
                               if(Eqlink_vec.size()>0) 
                                 Eqlink_vec[0]->ExecuteEQLINK();
-                #endif
-                  dt = dt0; // WW
+#endif
+#ifdef BRNS
+              if(m_vec_BRNS->init_flag == true)
+                {m_vec_BRNS->RUN(  dt  /*time value in seconds*/);} 
+                
+#endif
+	          dt = dt0; //WW
                 } // end of if(dt>DBL_MIN)
             } // end of if(m_tim)
             else
@@ -881,7 +898,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
 //	CWnd * pWnd = NULL;
 	
 	  //Disabled by Haibing 07112006-----------------------------
-	pWnd->MessageBox("Check pressure, velocity, and concentration or particle distribution!!!","Debug help", MB_ICONINFORMATION);
+//	pWnd->MessageBox("Check pressure, velocity, and concentration or particle distribution!!!","Debug help", MB_ICONINFORMATION);
 	  //---------------------------------------------------------
 #endif
 
@@ -1061,6 +1078,13 @@ int LOPPostTimeLoop_PCS(void)
   // HS:
   delete m_vec_GEM; 
 #endif
+
+    #ifdef BRNS
+    // Here to delete BRNS instance; HB 12.11.2007
+    // delete m_vec_BRNS.at(0);
+    delete m_vec_BRNS;
+    #endif
+
   return 1;
 }
 

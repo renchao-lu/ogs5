@@ -12,7 +12,7 @@
 // This file may be distributed under the terms of the GEMS-PSI
 // QA Licence (GEMSPSI.QAL)
 //
-// See http://les.web.psi.ch/Software/GEMS-PSI/ for more information
+// See http://gems.web.psi.ch/ for more information
 // E-mail gems2.support@psi.ch
 //-------------------------------------------------------------------
 //#include <iomanip>
@@ -28,13 +28,15 @@ public:
     TPrintArrays( fstream& fout ):
       ff( fout ){}
 
-    void writeArray( const char *name, char*   arr, int size, int arr_siz );
+    void writeArray( const char *name, char*   arr, int size, int arr_size );
     void writeArray( const char *name, short*  arr, int size, int l_size=-1  );
+    void writeArray( const char *name, int*  arr, int size, int l_size=-1  );
     void writeArray( const char *name, float*  arr, int size, int l_size=-1 );
     void writeArray( const char *name, double* arr, int size, int l_size=-1 );
-    void writeArray( const char *name, short*  arr, int size, short* selAr, int nColumns=1, int l_size=-1  );
-    void writeArray( const char *name, float*  arr, int size, short* selAr, int nColumns=1, int l_size=-1 );
-    void writeArray( const char *name, double* arr, int size, short* selAr, int nColumns=1, int l_size=-1 );
+    void writeArray( const char *name, short*  arr, int size, int* selAr, int nColumns=1, int l_size=-1  );
+    void writeArray( const char *name, int*  arr, int size, int* selAr, int nColumns=1, int l_size=-1  );
+    void writeArray( const char *name, float*  arr, int size, int* selAr, int nColumns=1, int l_size=-1 );
+    void writeArray( const char *name, double* arr, int size, int* selAr, int nColumns=1, int l_size=-1 );
 
 };
 
@@ -88,6 +90,7 @@ struct outField
     gstring testRead();   // test for reading all arrays
 
     void readArray( const char *name, short* arr, int size );
+    void readArray( const char *name, int* arr, int size );
     void readArray( const char *name, float* arr, int size );
     void readArray( const char *name, double* arr, int size );
     void readArray( const char *name, char* arr, int size, int el_size );

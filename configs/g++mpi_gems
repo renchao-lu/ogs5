@@ -1,0 +1,16 @@
+MPI              = yes
+
+
+CXX_LIBS         = -lstdc++
+
+
+CXX_LDFLAGS      = -O0 -v
+CXX_LD           = mpicxx
+
+CXX_OPT_FLAGS    = -O3
+CXX_DEBUG_FLAGS  = 
+CXX_WARN_FLAGS   =
+GEM_LIBS         = LIB/libgemipm2k.liclus.a
+CXX_FLAGS        = -DUSE_MPI -DGCC -DUSE_MPI_GEMS -DGEM_REACT -DIPMGEMPLUGIN $(CXX_OPT_FLAGS) $(CXX_DEBUG_FLAGS) -DNEW_EQS -DRANDOM_WALK
+CXX              = mpicxx
+

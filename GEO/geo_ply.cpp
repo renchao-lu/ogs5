@@ -1,4 +1,5 @@
 #include "stdafx.h" /* MFC */
+#include <stdlib.h>
 #ifdef MFC
 #include "afxpriv.h" // For WM_SETMESSAGESTRING
 #endif

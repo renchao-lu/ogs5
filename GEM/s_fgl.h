@@ -1,5 +1,5 @@
 //-------------------------------------------------------------------
-// $Id: s_fgl.h 894 2007-03-20 08:59:13Z gems $
+// $Id: s_fgl.h 1093 2008-06-21 10:52:41Z wagner $
 //
 // Copyright (C) 2003-2007  S.Churakov, Th.Wagner, D.Kulik, S.Dmitrieva
 //
@@ -13,7 +13,7 @@
 // This file may be distributed under the terms of the GEMS-PSI
 // QA Licence (GEMSPSI.QAL)
 //
-// See http://les.web.psi.ch/Software/GEMS-PSI for more information
+// See http://gems.web.psi.ch/ for more information
 // E-mail: gems2.support@psi.ch; chud@igc.irk.ru
 //-------------------------------------------------------------------
 //
@@ -233,13 +233,19 @@ public:
    double DENSITY(double *X,float *param, unsigned NN ,double Pbar, double T );
    int CGActivCoefRhoT(double *X,float *param, double *act, unsigned NN,
      double ro, double T );
-   double CGActivCoefPT(double *X,float *param,double *act, unsigned NN,
-     double Pbar, double T );
+   int CGActivCoefPT(double *X,float *param,double *act, unsigned NN,
+     double Pbar, double T, double &roro );
 
     int CGcalcFug( void );  // Calc. fugacity for 1 species at X=1
     int CGFugacityPT( float *EoSparam, float *EoSparPT, double &Fugacity,
-        double &Volume, double &DeltaH, double &DeltaS, double P, double T );
-
+        double &Volume, double P, double T, double &roro );
+    // Calculates residual enthalpy and entropy
+    int CGEnthalpy(double *X, float *param, float *param1, unsigned NN,
+         double ro, double T, double &H, double &S );
+    double GetDELTA( void )
+    {
+    	return DELTA;
+    }
 };
 
 
@@ -287,14 +293,15 @@ class TPRSVcalc // Peng-Robinson-Styjek-Vera EOS calculations
 protected:
 
 	int PureParam( double *params ); // calculates a and b arrays
-	double A(double Tcrit, double omg, double k1, double k2, double k3, double Pcrit);
-	double B(double Tcrit, double Pcrit);
+	int AB(double Tcrit, double omg, double k1, double k2, double k3, double Pcrit,
+			double &apure, double &bpure, double &sqrAL, double &ac, double &dALdT);
+//	int B(double Tcrit, double Pcrit, double &bpure);
 	int FugacityPure( void ); // Calculates the fugacity of pure species
 	int Cardano(double a2, double a1, double a0, double &z1, double &z2, double &z3);
 	int MixParam( double &amix, double &bmix);
 	int FugacityMix( double amix, double bmix,
      double &fugmix, double &zmix, double &vmix);
-	int FugacitySpec( double *fugpure, float *binpar, float *params  );
+	int FugacitySpec( double *fugpure, float *params  );
 
 	int GetEosParam( float *params ); // Loads EoS parameters for NComp species
 	int GetMoleFract( double *Wx ); // Loads mole fractions for NComp species
@@ -311,28 +318,31 @@ class TSolMod
 {
 
 private:
-        char ModCode;      // Code of the mixing model
-	double R_CONST;    // R constant
-	int NComp;    // Number of components in the solution phase
-        int NPar;     // Number of non-zero interaction parameters
-        int NPcoef;   // Number of coefs per parameter (cols in the aIPc table)
-        int MaxOrd;   // max. parameter order (or number pf columns in aIPx)
-        int NP_DC;    // Number of coeffs per one DC in the phase (cols in aDCc)
-        short *aIPx;  // Pointer to list of indexes of non-zero interaction parameters
-        float *aIPc;  // Table of interaction parameter coefficients
-        float *aDCc;  // End-member parameter coefficients
-        double Tk;    // Temperature, K
-        double Pbar;  // Pressure, bar
-        double *x;    // Pointer to mole fractions of end members (provided)
+        char ModCode;   // Code of the mixing model
+        double R_CONST; // R constant
+        int NComp;    	// Number of components in the solution phase
+        int NPar;     	// Number of non-zero interaction parameters
+        int NPcoef;   	// Number of coefs per parameter (cols in the aIPc table)
+        int MaxOrd;   	// max. parameter order (or number pf columns in aIPx)
+        int NP_DC;    	// Number of coeffs per one DC in the phase (cols in aDCc)
+        short *aIPx;  	// Pointer to list of indexes of non-zero interaction parameters
+        float *aIPc;  	// Table of interaction parameter coefficients
+        float *aDCc;  	// End-member parameter coefficients
+        double Tk;    	// Temperature, K
+        double Pbar;  	// Pressure, bar
+        double *x;    	// Pointer to mole fractions of end members (provided)
+        double RhoW;	// Density of liquid water, added 04.06.2008 (TW)
+        double EpsW;	// Dielectrical constant of liquid water
+        double IonStr;	// Ionic strength
 // Results
-        double Gam;   // work cell for activity coeff of end member
+        double Gam;   	// work cell for activity coeff of end member
         double lnGamRT;
         double lnGam;
-        double Gex;   // Molar excess Gibbs energy
-        double Vex;   // Excess molar volume
-        double Hex;   // Excess molar enthalpy
-        double Sex;   // Excess molar entropy
-        double CPex;  // Excess heat capacity
+        double Gex;   	// Molar excess Gibbs energy
+        double Vex;   	// Excess molar volume
+        double Hex;   	// Excess molar enthalpy
+        double Sex;   	// Excess molar entropy
+        double CPex;  	// Excess heat capacity
         double *lnGamma;   // Pointer to ln activity coefficients of end members
                            // (memory must be provided from the calling program)
 public:
@@ -340,7 +350,7 @@ public:
     TSolMod( int NSpecies, int NParams, int NPcoefs, int MaxOrder,
          int NPperDC, double T_k, double P_bar, char Mod_Code,
          short* arIPx, float* arIPc, float* arDCc,
-         double *arWx, double *arlnGam );
+         double *arWx, double *arlnGam, double dW, double eW, double iS );
     ~TSolMod();
 
 // Van Laar model for solid solutions
@@ -358,15 +368,25 @@ public:
 	int RedlichKisterMixMod( double &Gex_, double &Vex_, double &Hex_, double &Sex_,
 		 double &CPex_ );
 
-
+// NRTL model for liquid solutions
+	int NRTL_PT();
+	int NRTL_MixMod( double &Gex_, double &Vex_, double &Hex_, double &Sex_,
+	         double &CPex_ );
+	
+// Wilson model for liquid solutions
+	int Wilson_PT();
+	int Wilson_MixMod( double &Gex_, double &Vex_, double &Hex_, double &Sex_,
+	         double &CPex_ );
+	
+	
+	
 // Prototypes for other models to be added here
 // Redlich-Kister / Guggenheim ...
-// Margules ...
 // Darken ...
 // Pitzer ...
 // SIT ...
 // EUniquac ...
-// NRTL (Wilson) ...
+// UNIQUAC
 // PRSV can also be moved here
 
 

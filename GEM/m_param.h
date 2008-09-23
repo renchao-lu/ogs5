@@ -1,9 +1,9 @@
 //-------------------------------------------------------------------
-// $Id: m_param.h 947 2007-11-30 09:59:34Z gems $
+// $Id: m_param.h 1069 2008-05-27 12:46:35Z gems $
 //
-// Copyright (C) 2006-2007  S.Dmitrieva, D.Kulik
+// Copyright (C) 2006,2007  S.Dmitrieva, D.Kulik
 //
-// Base parameters and codes used in GEM IPM work structure
+// Basic codes and numerical settings used in GEM IPM-2 operation
 // (standalone version)
 //
 // This file is part of the standalone GEMIPM2K code
@@ -11,7 +11,7 @@
 // This file may be distributed under the terms of the GEMS-PSI
 // QA Licence (GEMSPSI.QAL)
 //
-// See http://les.web.psi.ch/Software/GEMS-PSI for more information
+// See http://gems.web.psi.ch/ for more information
 // E-mail: gems2.support@psi.ch; chud@igc.irk.ru
 //-------------------------------------------------------------------
 //

@@ -7,6 +7,7 @@ Programing:
 **************************************************************************/
 // MFC
 #include "stdafx.h" 
+#include <stdlib.h>
 // GEOLib
 #include "geo_pnt.h"
 #include "geo_lib.h"

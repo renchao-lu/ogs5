@@ -608,4 +608,9 @@ class REACT_GEM;
 extern REACT_GEM *m_vec_GEM;
 #endif
 
+#ifdef BRNS
+class REACT_BRNS;
+extern REACT_BRNS *m_vec_BRNS;
+#endif
+
 #endif

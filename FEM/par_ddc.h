@@ -175,7 +175,7 @@ extern void CountDoms2Nodes(CRFProcess *m_pcs); //WW
 extern void DOMRead(string);
 extern void DOMCreate();
 //---- MPI Parallel --------------
-#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)//MH//HS
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS) || defined(USE_MPI_BRNS)//MH//HS
 extern int mysize; //WW
 extern int myrank;
 extern char t_fname[3];

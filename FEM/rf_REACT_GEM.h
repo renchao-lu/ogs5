@@ -42,8 +42,8 @@ public:
 
 	// Data structure for each node to carry the chemical information (real FMT problems consider many nodes)
 	// Names are consistent with the DataBridge structure (also see "\GEM\databr.h")
-	short *m_NodeHandle, *m_NodeStatusCH, *m_IterDone;
-    short *m_ElemHandle, *m_ElemStatusCH, *m_IterDone_Elem;
+	int *m_NodeHandle, *m_NodeStatusCH, *m_IterDone;
+    int *m_ElemHandle, *m_ElemStatusCH, *m_IterDone_Elem;
 
 	double *m_T, *m_P, *m_Vs, *m_Ms,
           *m_Gs, *m_Hs, *m_IC, *m_pH, *m_pe,
@@ -156,8 +156,10 @@ public:
     void CleanMPIBuffer(void);
 
 	// Definition of buffer variables
-	short *m_NodeHandle_buff, *m_NodeStatusCH_buff, *m_IterDone_buff;
+	int *m_NodeHandle_buff, *m_NodeStatusCH_buff, *m_IterDone_buff;
 	double *m_Vs_buff, *m_Ms_buff, *m_Gs_buff, *m_Hs_buff, *m_IC_buff, *m_pH_buff, *m_pe_buff, *m_Eh_buff;
 	double *m_rMB_buff, *m_uIC_buff, *m_xDC_buff, *m_gam_buff, *m_xPH_buff, *m_vPS_buff, *m_mPS_buff, *m_bPS_buff, *m_xPA_buff;
 
 };
+
+

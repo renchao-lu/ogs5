@@ -1,12 +1,12 @@
 //-------------------------------------------------------------------
-// $Id: ms_multi.h 1000 2008-01-18 16:40:05Z gems $
+// $Id: ms_multi.h 1101 2008-07-10 15:43:13Z gems $
 //
 // Declaration of TMulti class, configuration, and related functions
 // based on the IPM work data structure MULTI that represents chemical
-// thermodynamic multisystem
+// thermodynamic multisystem work data for GEM IPM-2 algorithm
 //
 // Rewritten from C to C++ by S.Dmytriyeva
-// Copyright (C) 1995-2007 S.Dmytriyeva, D.Kulik
+// Copyright (C) 1995,2008 S.Dmytriyeva, D.Kulik
 //
 // This file is part of a GEM-Selektor library for thermodynamic
 // modelling by Gibbs energy minimization and of the
@@ -26,7 +26,7 @@
 
 #include "m_param.h"
 #include "v_ipnc.h"
-// Internal subroutine for ET_translate
+// Internal subroutine for ET_translate() to process Phase scripts
 typedef int (tget_ndx)( int nI, int nO, int Xplace );
 
 #else
@@ -75,7 +75,7 @@ typedef struct
     pFAG_,  // reserved SD
     pTPD,  // State of reloading thermod data: 0- all  1 - G0 only  2 - no
     pULR,  // Start recalc kinetic constraints (0-do not, 1-do )internal
-    pRR1,  // internal
+    ITaia,  // Number of IPM iterations completed in AIA mode (renamed from pRR1)
     FIat,   // max. number of surface site types
     MK,     // PM return code: 0 - continue;  1 - converged
     W1,     // internal IPM-2 indicator
@@ -124,6 +124,8 @@ typedef struct
     logYFk,     // work variable
     YFk,        // Current number of moles in a multicomponent phase
     FitVar[5];  // internal; FitVar[0] is T,P-dependent b_gamma parameter
+                //       FitVar[4] is the AG smoothing parameter; 
+                //       FitVar[3] is the actual smoothing coefficient
   short
     *L1,    // l_a vector - number of DCs included into each phase [Fi]
     *LsMod, // Number of interaction parameters, max. parameter order (cols in IPx),
@@ -141,17 +143,20 @@ typedef struct
     *DMc,    // Non-ideality coefficients f(TPX) for DC -> LsMdc[k]
     *A,      // DC stoichiometry matrix A composed of a_ji [0:N-1][0:L-1]
     *Awt,    // IC atomic (molar) mass, g/mole [0:N-1]
+// Reconsider usage 
     *Wb,     //Relative Born factors (HKF, reserved) [0:Ls-1]
     *Wabs,   // Absolute Born factors (HKF, reserved) [0:Ls-1]
     *Rion,   // Ionic or solvation radii, A (reserved) [0:Ls-1]
     *HYM,    // reserved
     *ENT,    // reserved no object
-    *H0,     // DC p-molar enthalpies, reserved [L]
-    *A0,     // DC p-molar Helmholtz energies, reserved [L]
-    *U0,     // DC p-molar internal energies, reserved [L]
-    *S0,     // DC p-molar entropies, reserved [L]
-    *Cp0,    // DC p-molar entropies, reserved [L]
-    *Cv0,    // DC p-molar Cv, reserved [L]
+// Convert H0, A0, U0, S0, Cp0 to double
+    *H0,     // DC pmolar enthalpies, reserved [L]
+    *A0,     // DC molar Helmholtz energies, reserved [L]
+    *U0,     // DC molar internal energies, reserved [L]
+    *S0,     // DC molar entropies, reserved [L]
+    *Cp0,    // DC molar heat capacity, reserved [L]
+    *Cv0,    // DC molar Cv, reserved [L]
+//
     *VL,     // ln mole fraction of end members in phases-solutions
     *Xcond, 	// conductivity of phase carrier, sm/m2   [0:FI-1], reserved
     *Xeps,  	// diel.permeability of phase carrier (solvent) [0:FI-1], reserved
@@ -183,7 +188,7 @@ typedef struct
   double
     *DUL,     // VG Vector of upper kinetic restrictions to x_j, moles [L]
     *DLL,     // NG Vector of lower kinetic restrictions to x_j, moles [L]
-    *GEX,     // Increments to molar G0 values of DCs, normalized [L]
+    *GEX,     // Increments to molar G0 values of DCs from pure fugacities or DQF terms, normalized [L]
     *PUL,  // Vector of upper restrictions to phases amounts X_a (reserved)[FIs]
     *PLL,  // Vector of lower restrictions to phases amounts X_a (reserved)[FIs]
     *YOF,     // Phase metastability parameter (spec.surf.energy), in J/g [FI !!!!]
@@ -191,18 +196,18 @@ typedef struct
     *MM,      // DC molar masses, g/mol [L]
     *Pparc,   // DC partial pressures/ pure fugacities, bar (Pc by default) [0:L-1]
     *Y_m,     // Molalities of aqueous species and sorbates [0:Ls-1]
-    *Y_la,    // log activity of DC in multi-component phases[0:Ls-1]
+    *Y_la,    // log activity of DC in multi-component phases (mju-mji0) [0:Ls-1]
     *Y_w,     // Mass concentrations of DC in multi-component phases,%(ppm)[Ls]
-    *Gamma,   // DC activity coefficients [0:L-1]
+    *Gamma,   // DC activity coefficients in molal or other phase-specific scale [0:L-1]
     *lnGmf,   // ln of initial DC activity coefficients [0:L-1]
-    *lnGmM,   // ln of DC pure gas fugacity (or metastability) coefficients [0:L-1]
+    *lnGmM,   // ln of DC pure gas fugacity (or metastability) coeffs or DDF correction [0:L-1]
     *EZ,      // Formula charge of DC in multi-component phases [0:Ls-1]
     *FVOL,    // phase volumes, cm3/mol                   [0:FI-1]
     *FWGT,    // phase (carrier) masses, g                [0:FI-1]
 //
     *G,    // Normalized DC energy function c(j), mole/mole [0:L-1]
     *G0,   // Input normalized g0_j(T,P) for DC at unified standard scale[L]
-    *lnGam, // ln of DC activity coefficients [0:L-1]
+    *lnGam, // ln of DC activity coefficients in unified (mole-fraction) scale [0:L-1]
     *lnGmo; // Copy of lnGam from previous IPM iteration (reserved)
   double  (*lnSAC)[4]; // former lnSAT ln surface activity coeff and Coulomb's term  [Lads][4]
   double  *B,  // Input bulk chem. compos. of the system - b vector, moles of IC[N]
@@ -219,6 +224,15 @@ typedef struct
     *XFA,   // Quantity of carrier in asymmetric phases Xwa, moles [FIs]
     *YFA,   // Copy of Xwa from previous IPM iteration [0:FIs-1]
     *Falp;  // Karpov phase stability criteria F_a [0:FI-1]
+/*  
+  double (*VPh)[MIXPHPROPS],     // Volume properties for mixed phases [FIs] 
+         (*GPh)[MIXPHPROPS],     // Gibbs energy properties for mixed phases [FIs]
+  		 (*HPh)[MIXPHPROPS],     // Enthalpy properties for mixed phases [FIs]
+         (*SPh)[MIXPHPROPS],     // Entropy properties for mixed phases [FIs]
+         (*CPh)[MIXPHPROPS],     // Heat capacity Cp properties for mixed phases [FIs]
+         (*APh)[MIXPHPROPS],     // Helmholtz energy properties for mixed phases [FIs]
+         (*UPh)[MIXPHPROPS];     // Internal energy properties for mixed phases [FIs]
+*/         
 // EDL models (data for electrostatic activity coefficients)
    double (*XetaA)[MST]; // Total EDL charge on A (0) EDL plane, moles [FIs][FIat]
    double (*XetaB)[MST]; // Total charge of surface species on B (1) EDL plane, moles[FIs][FIat]
@@ -299,8 +313,8 @@ class TMulti
     MULTI pm;
     MULTI *pmp;
 
-// Internal arrays for the optimization part (since version 2.0.0)
-   int sizeN;
+// Internal arrays for the performance optimization  (since version 2.0.0)
+   int sizeN, sizeL, sizeAN; 
    double *AA;
    double *BB;
    int *arrL;
@@ -313,7 +327,7 @@ class TMulti
    void Free_internal();
 
 #ifndef IPMGEMPLUGIN
-// This stuff is used only in GEMS-PSI
+// These pointers and methods are only used in GEMS-PSI
     SYSTEM *syp;
     MTPARM *tpp;
     RMULTS *mup;
@@ -362,7 +376,7 @@ class TMulti
     double FreeEnergyIncr(   double G,  double x,  double logXF,
                              double logXw,  char DCCW );
     double GX( double LM  );
-    double Cj_init_calc( double g0, int j, int k );
+//    double Cj_init_calc( double g0, int j, int k );
     void Mol_u( double Y[], double X[], double XF[], double XFA[] );
     void ConvertDCC();
     int  getXvolume();
@@ -375,24 +389,25 @@ class TMulti
     void ConCalcDC( double X[], double XF[], double XFA[],
                     double Factor, double MMC, double Dsur, int jb, int je, int k );
     void ConCalc( double X[], double XF[], double XFA[]);
-    void GouyChapman(  int jb, int je, int k );
+    int GouyChapman(  int jb, int je, int k );
 //  Surface activity coefficient terms
-    void SurfaceActivityCoeff( int jb, int je, int jpb, int jdb, int k );
-    void SurfaceActivityTerm( int jb, int je, int k );  // Obsolete / deleted
-
-// ipm_chemical2.cpp
+    int SurfaceActivityCoeff( int jb, int je, int jpb, int jdb, int k );
+//    void SurfaceActivityTerm( int jb, int je, int k );  // Obsolete / deleted
+    double PhaseSpecificGamma( int j, int jb, int je, int k, int DirFlag = 0 ); // Added 26.06.08
+// ipm_chemical3.cpp
     void IS_EtaCalc();
     void pm_GC_ods_link( int k, int jb, int jpb, int jdb, int ipb );
-    double TinkleSupressFactor( double ag, int ir);
+    double SmoothingFactor( );
+    void SetSmoothingFactor( ); 
 // Main call for calculation of activity coefficients on IPM iterations
-    void GammaCalc( int LinkMode );
+    int GammaCalc( int LinkMode );
 // Built-in activity coefficient models
 //  aqueous electrolyte
     void DebyeHueckel3Hel( int jb, int je, int jpb, int jdb, int k );
     void DebyeHueckel3Karp( int jb, int je, int jpb, int jdb, int k );
     void DebyeHueckel2Kjel( int jb, int je, int jpb, int jdb, int k );
     void DebyeHueckel1LL( int jb, int je, int k );
-    void Davies03temp( int jb, int je, int k );
+    void Davies03temp( int jb, int je, int jpb, int k );
     void SIT_aqac_PSI( int jb, int je, int jpb, int jdb, int k, int ipb );
 // fluid mixtures
     void ChurakovFluid( int jb, int je, int jpb, int jdb, int k );
@@ -407,19 +422,21 @@ class TMulti
 void SolModParPT ( int jb, int je, int jpb, int jdb, int k, int ipb, char ModCode );
 void SolModActCoeff( int jb, int je, int jpb, int jdb, int k, int ipb, char ModCode );
 
-// ipm_main.cpp - numerical part of GEM-IPM2
+// ipm_main.cpp - numerical part of GEM IPM-2
     void MultiCalcMain( int rLoop );
     int EnterFeasibleDomain( );
-    int InteriorPointsMethod( );
+    int InteriorPointsMethod( int &status, int rLoop );
     void SimplexInitialApproximation( );
 
-// ipm_main.cpp - miscellaneous fuctions of GEM-IPM2
+// ipm_main.cpp - miscellaneous fuctions of GEM IPM-2
    void MassBalanceResiduals( int N, int L, float *A, double *Y,
                                double *B, double *C );
+   int CheckMassBalanceResiduals(double *Y );
    double LMD( double LM );
    void ZeroDCsOff( int jStart, int jEnd, int k=-1 );
    void RaiseZeroedOffDCs( int jStart, int jEnd, double sfactor, int k=-1 );
-   void LagrangeMultiplier();
+//   void LagrangeMultiplier();
+   int MetastabilityLagrangeMultiplier(); 
    void WeightMultipliers( bool square );
    int SolverLinearEquations( int N, bool initAppr );
    double calcDikin(  int N, bool initAppr );
@@ -427,7 +444,8 @@ void SolModActCoeff( int jb, int je, int jpb, int jdb, int k, int ipb, char ModC
    void Restoring_Y_YF();
    double calcSfactor();
    int PhaseSelect( int &k_miss, int &k_unst, int rLoop );
-   // IPM_SIMPLEX.CPP Simplex method with two side constraints (Karpov ea 1997)
+   
+   // IPM_SIMPLEX.CPP Simplex method with two-sided constraints (Karpov ea 1997)
     void Simplex(int M, int N, int T, double GZ, double EPS,
                  double *UND, double *UP, double *B, double *U,
                  double *AA, int *STR, int *NMB );
@@ -479,10 +497,11 @@ public:
 
    class UserCancelException {};
 #else
-// this variant is used only in GEMIPM2K
+// this allocation is used only in standalone GEMIPM2K
    TMulti()
-   { pmp = &pm;
-     sizeN = 0;
+   { 
+	 pmp = &pm;
+     sizeN = 0; sizeL = 0; sizeAN = 0;
      AA = 0;
      BB = 0;
      arrL = 0;
@@ -491,8 +510,7 @@ public:
      pmp->Vuns = 0;
      pmp->tpp_G = 0;  
      pmp->tpp_S = 0; 
-     pmp->tpp_Vm = 0;
-     
+     pmp->tpp_Vm = 0;     
    }
 
     void multi_realloc( char PAalp, char PSigm );
@@ -506,7 +524,7 @@ public:
     const char* GetName() const
     {  return "Multi";  }
 
-   //mass transport
+   //connection to mass transport
     void to_file( GemDataStream& ff, gstring& path  );
     void to_text_file( const char *path );
     void from_file( GemDataStream& ff );
@@ -521,7 +539,9 @@ public:
     void MultiCalcIterations( int rLoop );
     void CompG0Load();
 
-    // connection to Unspace
+double Cj_init_calc( double g0, int j, int k ); // Moved here on 16.05.2008
+
+// connection to UnSpace
     double pb_GX( double *Gxx  );
 };
 

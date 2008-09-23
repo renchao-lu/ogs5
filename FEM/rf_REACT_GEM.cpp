@@ -132,18 +132,18 @@ short REACT_GEM::Init_Nodes(string Project_path)
        nElems = GetElemNumber_MT();
 
        // Allocating work memory for FMT part (here only chemical variables)
-	   m_NodeHandle = new short [nNodes];
-	   m_NodeStatusCH = new short [nNodes];
-	   m_IterDone = new short [nNodes];
+	   m_NodeHandle = new int [nNodes];
+	   m_NodeStatusCH = new int [nNodes];
+	   m_IterDone = new int [nNodes];
 
 	   // MPI Buffer Variable---------------
-	   m_NodeHandle_buff = new short[nNodes];
-       m_NodeStatusCH_buff = new short[nNodes];
-       m_IterDone_buff = new short[nNodes];
+	   m_NodeHandle_buff = new int[nNodes];
+       m_NodeStatusCH_buff = new int[nNodes];
+       m_IterDone_buff = new int[nNodes];
 
-	   m_ElemHandle = new short [nElems];
-	   m_ElemStatusCH = new short [nElems];
-	   m_IterDone_Elem = new short [nElems];
+	   m_ElemHandle = new int [nElems];
+	   m_ElemStatusCH = new int [nElems];
+	   m_IterDone_Elem = new int [nElems];
 
 
 	   m_T = new double [nNodes];
@@ -401,9 +401,9 @@ long it_num = 0;
 		
         if ( flag_node_element_based == 0 )
         {
-		    m_NodeStatusCH[in] = (short)m_Node->GEM_run(false);
+		    m_NodeStatusCH[in] = m_Node->GEM_run(1., false);
 
-		    if ( !( m_NodeStatusCH[in] == OK_GEM_AIA || m_NodeStatusCH[in] == OK_GEM_PIA ) )
+		    if ( !( m_NodeStatusCH[in] == OK_GEM_AIA || m_NodeStatusCH[in] == OK_GEM_SIA ) )
 		    {
 			    StatusCheck = 1;
 			    #ifdef USE_MPI_GEMS
@@ -425,9 +425,9 @@ long it_num = 0;
         }
         else
         {
-            m_ElemStatusCH[in] = (short)m_Node->GEM_run(false);
+            m_ElemStatusCH[in] = m_Node->GEM_run( 1., true);
 
-		    if ( !( m_ElemStatusCH[in] == OK_GEM_AIA || m_ElemStatusCH[in] == OK_GEM_PIA ) )
+		    if ( !( m_ElemStatusCH[in] == OK_GEM_AIA || m_ElemStatusCH[in] == OK_GEM_SIA ) )
 		    {
 			    StatusCheck = 1;
 			    #ifdef USE_MPI_GEMS
@@ -687,14 +687,27 @@ short REACT_GEM::Run_MainLoop()
 		
         if ( flag_node_element_based == 0 )
         {
-		    m_NodeStatusCH[in] = (short)m_Node->GEM_run(false);
-		    if ( !( m_NodeStatusCH[in] == OK_GEM_AIA || m_NodeStatusCH[in] == OK_GEM_PIA ) )
+		    m_NodeStatusCH[in] = m_Node->GEM_run( 1., true);
+		    if ( !( m_NodeStatusCH[in] == OK_GEM_AIA || m_NodeStatusCH[in] == OK_GEM_SIA ) )
 		    {
 			    // HS: Error information should be delivered regardless of myrank
                 // #ifdef USE_MPI_GEMS
       			//    if ( myrank == 0 /*should be set to root*/)
 			    // #endif
-			    cout << "Error: Main Loop failed when running GEM on Node #" << in << "." << endl << "Returned Error Code: " << m_NodeStatusCH[in] << endl;
+
+				// testing: using different scaling factor to run GEMS---------------------
+				m_NodeStatusCH[in] = m_Node->GEM_run( 0.1, true);
+				if ( !( m_NodeStatusCH[in] == OK_GEM_AIA || m_NodeStatusCH[in] == OK_GEM_SIA ) )
+				{
+					m_NodeStatusCH[in] = m_Node->GEM_run( 10.0, true);
+					if ( !( m_NodeStatusCH[in] == OK_GEM_AIA || m_NodeStatusCH[in] == OK_GEM_SIA ) )
+					{
+						cout << "Error: Main Loop failed when running GEM on Node #" << in << "." << endl << "Returned Error Code: " << m_NodeStatusCH[in] << endl;	
+					}
+				}
+				// end of testing----------------------------------------------------------
+
+			    //m_Node->na->GEM_write_dbr("dbr_for_crash_node.txt");
 			    //return 5;
 		    }
 		    else
@@ -712,8 +725,8 @@ short REACT_GEM::Run_MainLoop()
         }
         else
         {
-            m_ElemStatusCH[in] = (short)m_Node->GEM_run(false);
-		    if ( !( m_ElemStatusCH[in] == OK_GEM_AIA || m_ElemStatusCH[in] == OK_GEM_PIA ) )
+            m_ElemStatusCH[in] = m_Node->GEM_run( 1., true);
+		    if ( !( m_ElemStatusCH[in] == OK_GEM_AIA || m_ElemStatusCH[in] == OK_GEM_SIA ) )
 		    {
 			    #ifdef USE_MPI_GEMS
       			    if ( myrank == 0 /*should be set to root*/)
@@ -884,8 +897,8 @@ double REACT_GEM::GetPressureValue_MT(long node_Index, int timelevel)
 
 		  // change the pressure unit from meters of water to bar. 
 		  pressure = Pressure_M_2_Bar( pressure , m_FluidProp->Density() );
-		  if (pressure<1.0) pressure = 1.0;//HS 18.07.2007 do not allow pressure lower than 1 bar.
-        break;
+		  if (pressure<=0.0 || pressure>2.0) pressure = 1.0;//HS 18.07.2007 do not allow pressure lower than 1 bar.0        
+		  break;
         case 2:
 		  m_pcs = PCSGet("LIQUID_FLOW");
 		  indx = m_pcs->GetNodeValueIndex("PRESSURE1")+timelevel;

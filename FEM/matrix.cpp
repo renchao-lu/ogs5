@@ -1015,7 +1015,7 @@ int M1Set(long i, long j, double aij)
 #endif
 
   Aik1(i, j) = aij;
-  Maxim(w -> NumDif, abs(i - j));
+  Maxim(w -> NumDif, labs(i - j));
   return 0;
 }
 /**** Modell 2 ************************************************************/
@@ -1055,7 +1055,7 @@ int M2Set(long i, long j, double aij)
     }
   Ind2(i, k) = j;
   Aik2(i, k) = aij;
-  Maxim(w -> NumDif, abs(i - j));
+  Maxim(w -> NumDif, labs(i - j));
   return 0;
 }
 /**** Modell 3,4 **********************************************************/
@@ -1148,7 +1148,7 @@ int M1Inc(long i, long j, double aij_inc)
     MX_Exit("M1Inc", 2);
 #endif
 
-  Maxim(w -> NumDif, abs(i - j));
+  Maxim(w -> NumDif, labs(i - j));
   Aik1(i, j) += aij_inc;
   return 0;
 }
@@ -1174,7 +1174,7 @@ int M2Inc(long i, long j, double aij_inc)
         }                              /* gefunden! */
       k++;
     }
-  Maxim(w -> NumDif, abs(i - j));
+  Maxim(w -> NumDif, labs(i - j));
   return M2Set(i, j, aij_inc);         /* neuer Eintrag */
 }
 /**** Modell 3, 4 *********************************************************/

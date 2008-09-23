@@ -5,6 +5,8 @@ Programing:
 last modified:
 **************************************************************************/
 #include "stdafx.h"   
+#include <stdlib.h>
+#include <string.h>
 #include "geo_strings.h"
 #include "geo_mathlib.h"
 //C++

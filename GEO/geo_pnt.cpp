@@ -9,6 +9,7 @@ Programing:
 **************************************************************************/
 // C/C++/MFC
 #include "stdafx.h" 
+#include <stdlib.h>
 #ifdef MFC
 #include "afxpriv.h" // For WM_SETMESSAGESTRING
 #endif

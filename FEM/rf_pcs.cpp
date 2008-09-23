@@ -81,6 +81,11 @@ Programing:
 #include "rf_REACT_GEM.h"
 REACT_GEM *m_vec_GEM;
 #endif
+#ifdef BRNS
+// BRNS chemical solver
+#include "rf_REACT_BRNS.h"
+REACT_BRNS *m_vec_BRNS;
+#endif
 
 // New EQS
 #ifdef NEW_EQS
