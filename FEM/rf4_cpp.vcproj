@@ -73,7 +73,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				UseLibraryDependencyInputs="false"
-				AdditionalDependencies="GEMS220_dbg.lib"
+				AdditionalDependencies="GEMS224_dbg.lib"
 				OutputFile=".\Debug/rf4.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -168,7 +168,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="GEMS220_rl.lib"
+				AdditionalDependencies="GEMS224_rl.lib"
 				OutputFile=".\Release/rf4.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
