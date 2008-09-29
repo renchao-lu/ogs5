@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="rf4_cpp"
 	ProjectGUID="{4F159AF7-FF53-410E-A9A7-2C500A4EF55E}"
 	>
@@ -1019,6 +1019,14 @@
 			</File>
 			<File
 				RelativePath="rf_react.h"
+				>
+			</File>
+			<File
+				RelativePath=".\rf_REACT_BRNS.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\rf_REACT_BRNS.h"
 				>
 			</File>
 			<File
