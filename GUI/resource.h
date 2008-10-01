@@ -1291,6 +1291,7 @@
 #define ID_LINEGEN_SURFACE              33083
 #define ID_RUN                          33084
 #define ID_IMPORT_FLAC                  33085
+#define ID_IMPORT_FLAC_MESH             33086
 
 // Next default values for new objects
 // 

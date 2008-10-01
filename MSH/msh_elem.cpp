@@ -545,6 +545,7 @@ void CElem::Read(istream& is, int fileType)
    //fileType=3: GMS
    //fileType=4: SOL
    //fileType=5: FLAC 3D. WW
+   //fileType=5x: FLAC3D //MR
    int idummy, et;
    string buffer, name;
    idummy=et=-1;
@@ -620,6 +621,12 @@ void CElem::Read(istream& is, int fileType)
     case 5: // FLAC 3D. 14.01.2008 WW
       geo_type = 3;
       break;
+    case 53: // FLAC3D - hex (Brick)        //MR
+    case 55: // FLAC3D - tet (Tetrahedron)  //MR
+    case 56: // FLAC3D - pri (Wedge)        //MR
+      geo_type = fileType - 50;             //MR
+      fileType = 5;                         //MR
+      break;                                //MR
   }
   //----------------------------------------------------------------------
   // 2 Element configuration

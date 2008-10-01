@@ -1782,6 +1782,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\FEM\eos.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\FEM\eos.h"
+				>
+			</File>
+			<File
 				RelativePath="..\Fem\fem_ele.cpp"
 				>
 			</File>

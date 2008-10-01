@@ -2811,6 +2811,7 @@ BEGIN
             MENUITEM "RFO (Output file)",           ID_IMPORT_RFO
             MENUITEM "SHP (ArcView file)",          ID_IMPORT_SHP, INACTIVE
             MENUITEM "FLAC (NOD/ELE/MAT data)",     ID_IMPORT_FLAC
+            MENUITEM "FLAC (Export file)",          ID_IMPORT_FLAC_MESH
         END
         POPUP "&Export...\tCtrl+O"
         BEGIN
@@ -3190,7 +3191,7 @@ END
 
 STRINGTABLE 
 BEGIN
-    IDR_MAINFRAME           "GeoSys  -  4.6.01(OK)"
+    IDR_MAINFRAME           "GeoSys  -  4.7.08(MR)"
     IDR_GEOSYSTYPE          "\nGeoSys\nGeoSys\nGeoSys project file (*.gsp)\n.gsp\nGeoSys.Document\nGeoSys Document"
 END
 

@@ -98,6 +98,7 @@ BEGIN_MESSAGE_MAP(CGeoSysDoc, CDocument)
     ON_COMMAND(ID_DEM_ASC, OnImportASC) //CC
 	ON_COMMAND(ID_IMPORT_SHP_NEW, OnImportSHPNew) //OK
 	ON_COMMAND(ID_IMPORT_FLAC, OnImportFLAC) //OK
+    ON_COMMAND(ID_IMPORT_FLAC_MESH, OnImportFLACMesh) //MR
     // Export data data
     ON_COMMAND(ID_EXPORT_TEC, OnExportTecFile)
     // Simulator
@@ -2111,20 +2112,89 @@ void CGeoSysDoc::OnImportSHPNew()
 }
 
 /**************************************************************************
+GeoSys-Method: RearrangeFLACNodes
+Task: The node orders of FLAC3D zones and GS/RF elements are different from
+      each other; this method reorders the from FLAC3D imported nodes for
+      GS/RF.
+Programing:
+03/2008 MR Implementation, based on FLACReadMAT
+**************************************************************************/
+bool RearrangeFLACNodes(CElem* m_ele, string str_e)
+{
+  vec<long>node_indices(8);
+  if (str_e.compare("T4")*str_e.compare("Tetra")==0)      //MR
+  {                                                       //MR
+    m_ele->SetElementType(5);   // needed only for FLACReadMAT
+    m_ele->Config();            // needed only for FLACReadMAT
+  }                                                       //MR
+  else if (str_e.compare("W6")*str_e.compare("Wedge")==0)
+  {
+    m_ele->GetNodeIndeces(node_indices);
+    m_ele->SetElementType(6);   // needed only for FLACReadMAT
+    m_ele->Config();            // needed only for FLACReadMAT
+    m_ele->SetNodeIndex(0,node_indices[0]);
+    m_ele->SetNodeIndex(1,node_indices[1]);
+    m_ele->SetNodeIndex(2,node_indices[3]);
+    m_ele->SetNodeIndex(3,node_indices[2]);
+    m_ele->SetNodeIndex(4,node_indices[4]);
+    m_ele->SetNodeIndex(5,node_indices[5]);
+  }
+  else if (str_e.compare("B8")*str_e.compare("Brick")==0)
+  {
+    m_ele->GetNodeIndeces(node_indices);
+    m_ele->SetNodeIndex(0,node_indices[0]);
+    m_ele->SetNodeIndex(1,node_indices[1]);
+    m_ele->SetNodeIndex(2,node_indices[4]);
+    m_ele->SetNodeIndex(3,node_indices[2]);
+    m_ele->SetNodeIndex(4,node_indices[3]);
+    m_ele->SetNodeIndex(5,node_indices[6]);
+    m_ele->SetNodeIndex(6,node_indices[7]);
+    m_ele->SetNodeIndex(7,node_indices[5]);
+  }
+  else return false;  // m_ele contains no valid element type name
+  return true;
+}
+
+/**************************************************************************
+GeoSys-Method: ReassignFLACElementNodes
+Task: Because of possible gaps in the FLAC3D gridpoint list (due to e.g.
+      merged gridpoints) which have been closed in GS/RF during the
+      reading process, the corner node numbers of the elements have to be
+      reassigned. That's what this method does.
+Programing:
+07/2008 MR Implementation
+**************************************************************************/
+bool ReassignFLACElementNodes(CElem* m_ele, vector<long> nodmap)
+{
+  int i, j = 0;
+  j = m_ele->GetElementType();
+  if ((j-3)*(j-5)*(j-6) != 0) return false;  // m_ele of invalid geometry type
+
+  vec<long>node_indices(8);
+  m_ele->GetNodeIndeces(node_indices);
+  j = (4*j*j - 38*j + 102) / 3;   // 3 (hex) -> 8;  5 (tet) -> 4;  6 (pri) -> 6
+  for (i=0; i<j; i++) {
+    m_ele->SetNodeIndex(i,nodmap[node_indices[i]]);
+  }
+
+  return true;
+}
+
+/**************************************************************************
 GeoSys-Method:
-Task: 
+Task:
 Programing:
 12/2007 OK Implementation
 **************************************************************************/
 bool FLACReadNOD(string file_name, CFEMesh* m_msh)
 {
-  char buffer[MAX_ZEILE];
+  //char buffer[MAX_ZEILE];  //MR: obsolete
   string line;
   std::stringstream in;
   string sub_line;
-  double x,y,z; 
+  double x,y,z;
   CNode* m_nod = NULL;
-  CString m_strSubLine;
+  //CString m_strSubLine;    //MR: obsolete
 #ifdef MFC
   CString m_strInfo = "Read FLAC nod data";
   CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
@@ -2142,27 +2212,23 @@ bool FLACReadNOD(string file_name, CFEMesh* m_msh)
   }
   flac_file.seekg(0L,ios::beg); // spool to begin
   //----------------------------------------------------------------------
-  // Read data from file
+  // Read data from file (start reading after dashed line)
   //----------------------------------------------------------------------
-  flac_file.getline(buffer,MAX_ZEILE); //;****************************************
-  flac_file.getline(buffer,MAX_ZEILE); //;Log File Started 18:08:08 Mon Dec 03 2007
-  flac_file.getline(buffer,MAX_ZEILE); //Flac3D>pr gp pos
-  flac_file.getline(buffer,MAX_ZEILE); //Gridpoint Position ...
-  flac_file.getline(buffer,MAX_ZEILE); //   id          X             Y             Z
-  flac_file.getline(buffer,MAX_ZEILE); // ------  ------------- ------------- -------------
-//  line = buffer;
+  if (!flac_file.eof()) {line = GetLineFromFile1(&flac_file);}        //MR
+  while (!flac_file.eof() && line.find("------ -----")==string::npos) //MR
+    {line = GetLineFromFile1(&flac_file);}                            //MR
   //----------------------------------------------------------------------
-  while (!flac_file.eof()) 
+  while (!flac_file.eof())
   {
 //  1 (  1.0270e+000,  2.0427e-001, -1.1150e+003)
     line = GetLineFromFile1(&flac_file);
-    if(line.find("log off")!=string::npos) 
+    if(line.find("log off")!=string::npos)
       return true;
     in.str(line);
     in >> sub_line >> sub_line >> x >> sub_line >> y >> sub_line >> z >>ws;
     in.clear();
     m_nod = new CNode((long)m_msh->nod_vector.size(),x,y,z);
-    //m_nod->SetCoordinates(xyz);     
+    //m_nod->SetCoordinates(xyz);
     m_msh->nod_vector.push_back(m_nod);
     //....................................................................
   } // eof
@@ -2172,19 +2238,19 @@ bool FLACReadNOD(string file_name, CFEMesh* m_msh)
 
 /**************************************************************************
 GeoSys-Method:
-Task: 
+Task:
 Programing:
 12/2007 OK Implementation
 **************************************************************************/
 bool FLACReadELE(string file_name, CFEMesh* m_msh)
 {
-  char buffer[MAX_ZEILE];
+  //char buffer[MAX_ZEILE];  //MR: obsolete
   string line;
   std::stringstream in;
   string sub_line;
   long i;
   CElem* m_ele = NULL;
-  CString m_strSubLine;
+  //CString m_strSubLine;    //MR: obsolete
 #ifdef MFC
   CString m_strInfo = "Read FLAC data: ";
   CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
@@ -2202,29 +2268,18 @@ bool FLACReadELE(string file_name, CFEMesh* m_msh)
   }
   flac_file.seekg(0L,ios::beg); // spool to begin
   //----------------------------------------------------------------------
-  // Read data from file
+  // Read data from file (start reading after dashed line)
   //----------------------------------------------------------------------
-/*  
-  while(ok)
-  {
-    line = GetLineFromFile1(&flac_file);
-    if(line.find(";")!=string::npos) 
-  }
-*/
-  flac_file.getline(buffer,MAX_ZEILE); //;****************************************
-  flac_file.getline(buffer,MAX_ZEILE); //;Log File Started 15:56:36 Tue Dec 04 2007
-  flac_file.getline(buffer,MAX_ZEILE); //Flac3D>pr zone gp
-  flac_file.getline(buffer,MAX_ZEILE); //Zone Gp Connections ...
-  flac_file.getline(buffer,MAX_ZEILE); //   id     g0     g1     g2     g3     g4     g5     g6     g7
-  flac_file.getline(buffer,MAX_ZEILE); //------ ------ ------ ------ ------ ------ ------ ------ ------
-//  line = buffer;
+  if (!flac_file.eof()) {line = GetLineFromFile1(&flac_file);}        //MR
+  while (!flac_file.eof() && line.find("------ -----")==string::npos) //MR
+    {line = GetLineFromFile1(&flac_file);}                            //MR
   //----------------------------------------------------------------------
 //CElem::Read(istream& is, int fileType)
-  while (!flac_file.eof()) 
+  while (!flac_file.eof())
   {
-//      1      1      2      3      4      5      6      4      6 
+//      1      1      2      3      4      5      6      4      6
     line = GetLineFromFile1(&flac_file);
-    if(line.find("log off")!=string::npos) 
+    if(line.find("log off")!=string::npos)
       return true;
     in.str(line);
     in >> i;
@@ -2244,16 +2299,16 @@ GeoSys-Method:
 **************************************************************************/
 bool FLACReadMAT(string file_name, CFEMesh* m_msh)
 {
-  char buffer[MAX_ZEILE];
+  //char buffer[MAX_ZEILE];    //MR: obsolete
   string line;
   std::stringstream in;
   string sub_line, str_e;
   long i;
-  CString m_strSubLine;
+  //CString m_strSubLine;      //MR: obsolete
   CElem* m_ele = NULL;
-  vec<CNode*>e_nodes0(8);
-  vec<CNode*>e_nodes1(8);
-  vec<long>node_indeces(8);
+  //vec<CNode*>e_nodes0(8);    //MR: obsolete
+  //vec<CNode*>e_nodes1(8);    //MR: obsolete
+  //vec<long>node_indeces(8);  //MR: obsolete
 #ifdef MFC
   CString m_strInfo = "Read FLAC data: ";
   CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
@@ -2271,31 +2326,30 @@ bool FLACReadMAT(string file_name, CFEMesh* m_msh)
   }
   flac_file.seekg(0L,ios::beg); // spool to begin
   //----------------------------------------------------------------------
-  // Read data from file
+  // Read data from file (start reading after dashed line)
   //----------------------------------------------------------------------
-  flac_file.getline(buffer,MAX_ZEILE); //;****************************************
-  flac_file.getline(buffer,MAX_ZEILE); //;Log File Started 15:56:36 Tue Dec 04 2007
-  flac_file.getline(buffer,MAX_ZEILE); //Flac3D>pr zone gp
-  flac_file.getline(buffer,MAX_ZEILE); //Zone Information ...
-  flac_file.getline(buffer,MAX_ZEILE); //    ID   Type  Model       Group               Centroid
-  flac_file.getline(buffer,MAX_ZEILE); //------ ------ ------ ------ ------ ------ ------ ------ ------
-//  line = buffer;
+  if (!flac_file.eof()) {line = GetLineFromFile1(&flac_file);}        //MR
+  while (!flac_file.eof() && line.find("------ -----")==string::npos) //MR
+    {line = GetLineFromFile1(&flac_file);}                            //MR
   //----------------------------------------------------------------------
   vector<string> orig_mat;
-  int ii = 0, imat=-1; 
-  bool done = false;
-  while (!flac_file.eof()) 
+  int imat;
+  //int ii = 0, imat=-1;   //MR: obsolete
+  //bool done = false;     //MR: obsolete
+  while (!flac_file.eof())
   {
     line = GetLineFromFile1(&flac_file);
-    if(line.find("log off")!=string::npos) 
+    if(line.find("log off")!=string::npos)
       return true;
     in.str(line);
     //....................................................................
     in >> i;
     m_ele = m_msh->ele_vector[i-1];
-    in >> str_e; // Type 
+    in >> str_e; // Type
     //....................................................................
     // ELE type
+    RearrangeFLACNodes(m_ele,str_e);  //MR
+    /*
     if(str_e.compare("Wedge")==0)
     {
       m_ele->GetNodeIndeces(node_indeces);
@@ -2320,10 +2374,13 @@ bool FLACReadMAT(string file_name, CFEMesh* m_msh)
       m_ele->SetNodeIndex(6,node_indeces[7]);
       m_ele->SetNodeIndex(7,node_indeces[5]);
     }
+    */
     //....................................................................
     // MAT type
-    in >> str_e; // Model 
+    in >> str_e; // Model
     in >> str_e; // Group
+
+    /*
     done = false;
     for(ii=0; ii<(int)orig_mat.size(); ii++)
     {
@@ -2338,7 +2395,31 @@ bool FLACReadMAT(string file_name, CFEMesh* m_msh)
     {
        imat++;
        orig_mat.push_back(str_e);
-    }   
+    }
+    in.clear();
+    m_msh->ele_vector[i-1]->SetPatchIndex(imat);
+    */
+
+    /* 
+       Fehler:
+       - sieben verschiedene Materialien (0 bis 6) im Vektor orig_mat
+       - nächstes Element ist von Material 3, also imat = 3
+       - nächstes Element ist neu, aber imat = 4 statt 7!
+
+       //MR: korrigiert und etwas knapper formuliert:
+    */
+
+    //--------------------------------------------------------------------
+    // search vector of previously found material groups for str_e:
+    imat = 0;
+    while (imat < (int)orig_mat.size())
+    {
+      if (orig_mat[imat].find(str_e)!=string::npos)
+        break;      // index of str_e found: => lock index
+      imat++;       //            otherwise: => increase it
+    }
+    if (imat >= (int)orig_mat.size())  // i.e. str_e not in vector
+      orig_mat.push_back(str_e);
     in.clear();
     m_msh->ele_vector[i-1]->SetPatchIndex(imat);
     //....................................................................
@@ -2369,7 +2450,7 @@ void CGeoSysDoc::OnImportFLAC()
   // NOD data
   AfxMessageBox("Read FLAC Geometry File");
   CFileDialog fileDlg1(TRUE,"txt",NULL,OFN_ENABLESIZING,"FLAC NOD files (*.txt)|*.txt|");
-  if(fileDlg1.DoModal()==IDOK) 
+  if(fileDlg1.DoModal()==IDOK)
   {
     file_name = fileDlg1.GetPathName();
     m_strFileExtension = file_name.Right(FILE_EXTENSION_LENGTH);
@@ -2380,7 +2461,7 @@ void CGeoSysDoc::OnImportFLAC()
   // ELE data
   AfxMessageBox("Read FLAC Element File");
   CFileDialog fileDlg2(TRUE,"txt",NULL,OFN_ENABLESIZING,"FLAC ELE files (*.txt)|*.txt|");
-  if(fileDlg2.DoModal()==IDOK) 
+  if(fileDlg2.DoModal()==IDOK)
   {
     file_name = fileDlg2.GetPathName();
     m_strFileExtension = file_name.Right(FILE_EXTENSION_LENGTH);
@@ -2390,7 +2471,7 @@ void CGeoSysDoc::OnImportFLAC()
   // MAT data
   AfxMessageBox("Read FLAC Material Group File");
   CFileDialog fileDlg3(TRUE,"txt",NULL,OFN_ENABLESIZING,"FLAC MAT files (*.txt)|*.txt|");
-  if(fileDlg3.DoModal()==IDOK) 
+  if(fileDlg3.DoModal()==IDOK)
   {
     file_name = fileDlg3.GetPathName();  //WW
     m_strFileExtension = file_name.Right(FILE_EXTENSION_LENGTH);
@@ -2406,4 +2487,186 @@ void CGeoSysDoc::OnImportFLAC()
   // Write TEC
   MSHWriteTecplot();
   //----------------------------------------------------------------------
+}
+
+/**************************************************************************
+GeoSys-Method: OnImportFLACMesh
+Task: import a single .flac3d file instead of three separate files for
+      NOD, ELE and MAT data
+Programing:
+03/2008 MR Implementation, based on OnImportFLAC and FLACReadXXX
+**************************************************************************/
+void CGeoSysDoc::OnImportFLACMesh()
+{
+  CFEMesh* m_msh = NULL;
+  CString m_file_name;
+  string line, sub_line, str_e;
+  std::stringstream in, in2;
+  double x,y,z;
+  int i = 0;  // value irrelevant
+  long j, k = 0, map_index = 0;
+  bool split_ele;
+  CNode* m_nod = NULL;
+  CElem* m_ele = NULL;
+  CElem* m_ele2 = NULL;
+  vector <string> orig_mat;
+  vector <long> nodmap, elemap;  // maps FLAC gridpoint/zone no. to (start of) RF NOD/ELE no.
+#ifdef MFC
+  CString m_strInfo = "Read FLAC mesh data";
+  CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
+#endif
+  //----------------------------------------------------------------------
+  // Clean mesh vector and create a new mesh
+  //----------------------------------------------------------------------
+  for(j=0; j<(long)fem_msh_vector.size(); j++)
+  {
+    delete fem_msh_vector[j];
+    fem_msh_vector[j] = NULL;
+  }
+  fem_msh_vector.clear();
+  m_msh = new CFEMesh();
+  //----------------------------------------------------------------------
+  // Get filename via user interface, open file and get ready for reading
+  //----------------------------------------------------------------------
+  CFileDialog fileDlg1(TRUE,"txt",NULL,OFN_ENABLESIZING,"FLAC mesh data file (*.Flac3D)|*.flac3d|");
+  if(fileDlg1.DoModal()==IDOK)
+    m_file_name = fileDlg1.GetPathName();
+  ifstream flac_file;
+  string file_name = (string)m_file_name;
+  flac_file.open(file_name.c_str());
+  if(!flac_file.good()){
+    // Abbruchmeldung einbauen!
+    return;
+  }
+  flac_file.seekg(0L,ios::beg);  // spool to begin
+  if (!flac_file.eof()) {line = GetLineFromFile1(&flac_file);}
+  while (!flac_file.eof() && line.find("* GRIDPOINTS")==string::npos) {
+    line = GetLineFromFile1(&flac_file);
+  }
+  //----------------------------------------------------------------------
+  // Read NOD data
+  //----------------------------------------------------------------------
+  while (!flac_file.eof())
+  {
+    line = GetLineFromFile1(&flac_file);
+    if (line.find("* ZONES")!=string::npos)
+      break;
+    in.str(line);
+    in >> sub_line >> k >> x >> y >> z;
+    in.clear();
+    for (; map_index<k-1; map_index++)  // not in FLAC defined (e.g.
+      nodmap.push_back(-1);             // merged) gridpoints map to -1
+
+    j = (long)m_msh->nod_vector.size();
+    if (map_index == k-1) {
+      nodmap.push_back(j);  // FLAC gridpoint no. (= map_index) maps to
+      map_index++;          // RF node no. j (= new index of nod_vector)
+    }
+    m_nod = new CNode(j,x,y,z);
+    //m_nod->SetCoordinates(xyz);
+    m_msh->nod_vector.push_back(m_nod);
+  }
+  m_msh->InitialNodesNumber();  // Only for output. WW
+  //----------------------------------------------------------------------
+  // Read ELE data
+  //----------------------------------------------------------------------
+  map_index = 0;
+  while (!flac_file.eof())
+  {
+    line = GetLineFromFile1(&flac_file);
+    if (line.find("* GROUPS")!=string::npos)
+      break;
+    in.str(line);
+    in >> sub_line >> str_e >> k;
+    for (; map_index<k-1; map_index++)  // not in FLAC defined (e.g.
+      elemap.push_back(-1);             // excavated) zones map to -1
+    j = (long)m_msh->ele_vector.size();
+    if (map_index == k-1) {
+      elemap.push_back(j);  // FLAC zone no. (= map_index) maps to
+      map_index++;          // RF element no. j (= new index of ele_vector)
+    }
+    m_ele = new CElem(j);
+    split_ele = false;
+    if (str_e.compare("B8")==0)         // Brick ~> geo_type = 3 (hex)
+      i = 53;
+    else if (str_e.compare("T4")==0)    // Tetrahedron ~> geo_type = 5 (tet)
+      i = 55;
+    else if (str_e.compare("W6")==0)    // Wedge ~> geo_type = 6 (pri)
+      i = 56;
+    else if (str_e.compare("P5")==0) {  // Pyramid ~> geo_type = 5 (tet)
+      split_ele = true; str_e = "T4";   //    (split into two Tetrahedrons)
+      i = 55;
+    }
+    else
+      i = 5;
+    m_ele->Read(in,i);
+    in.clear();
+    RearrangeFLACNodes(m_ele,str_e);          // corner nodes of an element are numbered in different ways here & there
+    ReassignFLACElementNodes(m_ele,nodmap);   // nodes might have been renumbered while being read (gaps due to merged nodes in FLAC)
+    m_msh->ele_vector.push_back(m_ele);
+    if (split_ele) {   // add a second tetrahedral element
+      elemap.push_back(j+2);
+      map_index++;   // (value will once again be used below, don't change until then!)
+      in2.str(line);
+      in2 >> sub_line >> sub_line >> sub_line >> sub_line;
+      m_ele2 = new CElem(j+1);
+      m_ele2->Read(in2,i);
+      in2.clear();
+      RearrangeFLACNodes(m_ele2,str_e);
+      m_msh->ele_vector.push_back(m_ele2);
+    }
+  }
+  //----------------------------------------------------------------------
+  // Read MAT data
+  //----------------------------------------------------------------------
+  if (!flac_file.eof()) {line = GetLineFromFile1(&flac_file);}
+  while (!flac_file.eof() && line.find("ZGROUP")==string::npos) {line = GetLineFromFile1(&flac_file);}
+  while (true)
+  {
+    in.str(line);
+    while (line.find("ZGROUP")!=string::npos) {  // material group keyword
+      in >> sub_line >> str_e;
+      i = 0;
+      while (i < (int)orig_mat.size())
+      {
+        if (orig_mat[i].find(str_e)!=string::npos)
+          break;      // index of str_e found: => lock index
+        i++;          //            otherwise: => increase it
+      }
+      if (i >= (int)orig_mat.size())  // i.e. str_e not in vector
+        orig_mat.push_back(str_e);
+      // material group index determined, now go on with next line
+      line = GetLineFromFile1(&flac_file);
+      in.clear();
+      in.str(line);
+    }
+    //while (in.gcount() > 0)
+    j = 1;
+    while (j > 0)  // as long as there are element IDs left
+    {
+      j = 0;
+      in >> j;
+      if (j > 0) {
+        m_msh->ele_vector[elemap[j-1]]->SetPatchIndex(i);
+        // if FLAC zone has been splitted, also set material group index
+        // of the next RF element to i:
+        if (map_index>j && elemap[j]-elemap[j-1]==2)
+          m_msh->ele_vector[elemap[j]-1]->SetPatchIndex(i);
+      }
+    }
+    in.clear();
+    if (flac_file.eof())
+      break;
+    else
+      line = GetLineFromFile1(&flac_file);
+  }
+  //----------------------------------------------------------------------
+  // Store mesh
+  //----------------------------------------------------------------------
+  //m_msh->ConstructGrid();
+  fem_msh_vector.push_back(m_msh);
+  if((int)fem_msh_vector.size()>0)
+    GSPAddMember((string)m_strGSPFileBase + ".msh");
+  MSHWriteTecplot();
 }
