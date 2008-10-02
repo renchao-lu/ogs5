@@ -8,6 +8,9 @@ and temperature.
 Programming: Norbert Böttcher
 			 Aug 2008
 **********************************************************************/
+
+#include "stdafx.h" //MFC
+
 #include <math.h>
 #include <fstream>
 #include <iostream>
