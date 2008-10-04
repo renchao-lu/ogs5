@@ -174,8 +174,10 @@ class CFiniteElementStd:public CElement
      // Primary as water head
      bool HEAD_Flag; 
      //
+  public: //OK4709
      inline void Config(); //WW
      //
+  private:  
      inline double CalCoefMass();
      inline double CalCoefMass2(int dof_index); // 25.2.2007 WW 
      inline void CalCoefLaplace(bool Gravity, int ip=0);

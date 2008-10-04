@@ -19,19 +19,23 @@ using FiniteElement::CFiniteElementStd;
 class CFluidProperties
 {
   private:
+    // State variables
     double primary_variable[10]; //WW
     double primary_variable_t0[10];//CMCD
     double primary_variable_t1[10];//CMCD
+    // 
     bool cal_gravity; //YD/WW
     double molar_mass; 
+    // FEM
     friend class  FiniteElement::CFiniteElementStd; //WW
+    // PCS
+    CRFProcess *m_pcs; //OK4704
   public:
-    double temperature_buffer; //YD, shifted to public JOD
-	int heat_capacity_model;  //YD, shifted to public JOD 
-    CFiniteElementStd *Fem_Ele_Std;
     string name;
     int phase;
-    CFluidProperties* m_mfp; //OK
+    // FEM
+    CFiniteElementStd *Fem_Ele_Std;
+    long node; //OK4704
     // Density
     int density_model;
     double rho_0;
@@ -53,18 +57,20 @@ class CFluidProperties
     int heat_conductivity_model;
     double heat_conductivity;
     string heat_conductivity_fct_name;
+    double temperature_buffer; //YD, shifted to public JOD
+	int heat_capacity_model;  //YD, shifted to public JOD 
     // Electrical properties
     int electric_conductivity_model;
     int electric_conductivity_num_val;
     double *electric_conductivity_val; 
     // Chemical properties
-	  string dif_fct_name;
-	  int diffusion_model; /* SB:p2 */
-	  double diffusion; /*SB:2p */
+	string dif_fct_name;
+	int diffusion_model; /* SB:p2 */
+	double diffusion; /*SB:2p */
     // State variables
     double p_0;
-	  double T_0;
-	  double C_0;
+	double T_0;
+	double C_0;
     double Z;
     double T_Latent1, T_Latent2, latent_heat; 
     int heat_phase_change_curve; 
@@ -91,7 +97,7 @@ class CFluidProperties
     void CalPrimaryVariable(vector<string>& pcs_name_vector);
     // Add an argument: double* variables = NULL. 28.05.2008 WW
     double Density(double *variables = NULL); 
-    double Viscosity();
+    double Viscosity(double *variables = NULL); //OK4709
     double SpecificHeatCapacity();
 	double PhaseChange(); // JOD 
     double HeatConductivity();
@@ -107,14 +113,15 @@ class CFluidProperties
     int GetHeatCapacityModel() const {return heat_capacity_model;}//YD
   private:
     double GasViscosity_Reichenberg_1971(double,double);
-	  double MATCalcFluidDensityMethod8(double p, double T, double C);
+	double MATCalcFluidDensityMethod8(double p, double T, double C);
     double LiquidViscosity_Yaws_1976(double);
     double LiquidViscosity_Marsily_1986(double);
     double LiquidViscosity_NN(double,double);
     double LiquidViscosity_CMCD(double p,double T,double C);
-	  double MATCalcHeatConductivityMethod2(double p, double T, double C);
-	  double MATCalcFluidHeatCapacityMethod2(double p, double T, double C);
+	double MATCalcHeatConductivityMethod2(double p, double T, double C);
+	double MATCalcFluidHeatCapacityMethod2(double p, double T, double C);
 };
+
 extern vector<CFluidProperties*>mfp_vector;
 extern bool MFPRead(string);
 extern void MFPWrite(string);
@@ -124,4 +131,5 @@ extern double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem=NULL); //WW
 extern double MFPCalcFluidsHeatConductivity(long index,double*gp,double theta, CFiniteElementStd* assem=NULL);
 extern void MFPDelete();
 extern CFluidProperties* MFPGet(string);    //OK/YD
+double MFPGetNodeValue(long,string); //OK
 #endif

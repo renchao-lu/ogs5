@@ -3900,6 +3900,7 @@ void CRFProcess::CalIntegrationPointValue()
     if (elem->GetMark()) // Marked for use
     {
       fem->ConfigElement(elem);
+      fem->Config(); //OK4709
       // fem->m_dom = NULL; // To be used for parallization 
       fem->Cal_Velocity();
     } 

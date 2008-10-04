@@ -1476,6 +1476,8 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
   int upwind_method;  
   double k_rel, k_max;
   ComputeShapefct(1);   //  12.3.2007 WW
+  double variables[3]; //OK4709
+
 //WW  CRFProcess* m_pcs = PCSGet("FLUID_MOMENTUM"); // PCH
   // For nodal value interpolation
   //======================================================================
@@ -1485,7 +1487,10 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
         break;
       case L: // Liquid flow
         tensor = MediaProp->PermeabilityTensor(Index);
-        mat_fac = FluidProp->Viscosity();
+        variables[0] = interpolate(NodalVal1); //OK4709 pressure
+        variables[1] = interpolate(NodalValC); //OK4709 temperature
+        mat_fac = FluidProp->Viscosity(variables); //OK4709
+        //OK4709 mat_fac = FluidProp->Viscosity();
         if(gravity_constant<MKleinsteZahl) // HEAD version
           mat_fac = 1.0;
         if(HEAD_Flag) mat_fac=1.0;

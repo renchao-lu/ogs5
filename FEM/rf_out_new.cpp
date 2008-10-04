@@ -76,6 +76,8 @@ COutput::~COutput(void)
 	for (i=0;i<(long)out_line_vector.size();i++)delete[] out_line_vector[i];
 	out_line_vector.clear();
 	//---------------------------------
+  mmp_value_vector.clear(); //OK
+  //mfp_value_vector.clear(); //OK
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -87,6 +89,7 @@ Programing:
 03/2005 OK PCS_TYPE
 12/2005 OK DIS_TYPE
 12/2005 OK MSH_TYPE
+08/2008 OK MAT
 **************************************************************************/
 ios::pos_type COutput::Read(ifstream *out_file)
 {
@@ -317,6 +320,47 @@ ios::pos_type COutput::Read(ifstream *out_file)
       continue;
     }
     //--------------------------------------------------------------------
+    if(line_string.find("$MMP_VALUES")!=string::npos) { //OK
+      ok = true;
+      while(ok)
+      {
+        position_line = out_file->tellg();
+       *out_file >> line_string;
+        if(SubKeyword(line_string))
+        {
+          out_file->seekg(position_line,ios::beg);
+          ok = false;
+          continue;
+        }
+        if(Keyword(line_string))
+          return position;
+        mmp_value_vector.push_back(line_string);
+        out_file->ignore(MAX_ZEILE,'\n');
+      }
+      continue;
+    }
+    //--------------------------------------------------------------------
+    if(line_string.find("$MFP_VALUES")!=string::npos) { //OK
+      ok = true;
+      while(ok)
+      {
+        position_line = out_file->tellg();
+       *out_file >> line_string;
+        if(SubKeyword(line_string))
+        {
+          out_file->seekg(position_line,ios::beg);
+          ok = false;
+          continue;
+        }
+        if(Keyword(line_string))
+          return position;
+        mfp_value_vector.push_back(line_string);
+        out_file->ignore(MAX_ZEILE,'\n');
+      }
+
+      continue;
+    }
+    //--------------------------------------------------------------------
   }
   return position;
 }
@@ -341,7 +385,7 @@ bool OUTRead(string file_base_name)
   string sub_line;
   string line_string;
   ios::pos_type position;
-//  char number_char[3];
+  char number_char[3]; //OK4709
   string number_string;
   string tec_file_name;
   //========================================================================
@@ -372,6 +416,9 @@ bool OUTRead(string file_base_name)
       m_out->file_base_name = file_base_name;
       position = m_out->Read(&out_file);
       out_vector.push_back(m_out);
+      sprintf(number_char,"%i",(int)out_vector.size()-1); //OK4709
+      number_string = number_char; //OK4709
+      m_out->ID = number_string; //OK4709
       out_file.seekg(position,ios::beg);
       /*
       // Commented by WW
@@ -546,7 +593,7 @@ void OUTData(double time_current, const int time_step_number)
     if(!m_pcs)
     {
       cout << "Warning in OUTData - no PCS data" << endl;
-      continue;
+      //OK4704 continue;
     }
     //--------------------------------------------------------------------
     m_out->time = time_current;
@@ -757,11 +804,9 @@ void COutput::NODWriteDOMDataTEC()
   char tf_name[10];
   std::cout << "Process " << myrank << " in WriteDOMDataTEC" << "\n";
 #endif
-
-
   //----------------------------------------------------------------------
   // Tests  
-  if((int)nod_value_vector.size()==0)
+  if(((int)nod_value_vector.size()==0)&&((int)mfp_value_vector.size()==0)) //OK4704
     return;
   //......................................................................
   // MSH
@@ -1034,7 +1079,7 @@ void COutput::WriteTECNodeData(fstream &tec_file)
   //----------------------------------------------------------------------
   m_msh = GetMSH();
   //----------------------------------------------------------------------
-  CRFProcess* m_pcs = NULL;
+  //OK4704 CRFProcess* m_pcs = NULL;
   CRFProcess* m_pcs_out = NULL;
   //======================================================================
   // MSH
@@ -1109,12 +1154,18 @@ void COutput::WriteTECNodeData(fstream &tec_file)
        }
      }
      //..................................................................
-     else{
-       for(k=0;k<nName;k++){
+     else
+     {
+       for(k=0;k<nName;k++)
+       {
          m_pcs = GetPCS(nod_value_vector[k]);
          if(m_pcs != NULL)
           if(NodeIndex[k]>-1)
            tec_file << m_pcs->GetNodeValue( m_msh->nod_vector[j]->GetIndex(),NodeIndex[k]) << " ";
+       }
+       for(k=0;k<(int)mfp_value_vector.size();k++) //OK4704
+       {
+         tec_file << MFPGetNodeValue(m_msh->nod_vector[j]->GetIndex(),mfp_value_vector[k]) << " ";
        }
      }
      tec_file << endl;
@@ -1366,6 +1417,7 @@ Programing:
 12/2005 OK VAR,MSH,PCS concept
 12/2005 WW Output stress invariants
 08/2006 OK FLUX
+10/2008 OK MFP values
 **************************************************************************/
 double COutput::NODWritePLYDataTEC(int number)
 {
@@ -1379,18 +1431,13 @@ double COutput::NODWritePLYDataTEC(int number)
   //----------------------------------------------------------------------
   // Tests  
   // OUT
-  if((int)nod_value_vector.size()==0)
+  //OK4704 if((int)nod_value_vector.size()==0)
+  if(((int)nod_value_vector.size()==0)&&((int)mfp_value_vector.size()==0)) //OK4704
     return 0.0;
   //----------------------------------------------------------------------
   // File handling
   //......................................................................
-/*
-  char number_char[10];
-  sprintf(number_char,"%i",number);
-  string number_string = number_char;
-  string tec_file_name = file_base_name + "_ply_" + geo_name + "_t" + number_string;
-*/
-  string tec_file_name = file_base_name + "_ply_" + geo_name + "_t0" ;
+  string tec_file_name = file_base_name + "_ply_" + geo_name + "_t" + ID; //OK4709
   if(pcs_type_name.size()>0)
     tec_file_name += "_" + pcs_type_name;
   if(msh_type_name.size()>0)
@@ -1493,6 +1540,11 @@ double COutput::NODWritePLYDataTEC(int number)
         tec_file << "FLUX_INNER" << " ";
     }
     //....................................................................
+    for(k=0;k<(int)mfp_value_vector.size();k++) //OK4709
+    {
+      tec_file << mfp_value_vector[k] << " ";
+    }
+    //....................................................................
     // WW: M specific data
     if(dm_pcs)  //WW
     {
@@ -1528,7 +1580,6 @@ double COutput::NODWritePLYDataTEC(int number)
   //======================================================================
   double flux_sum = 0.0; //OK
   double flux_nod;
- 
   //....................................................................
   m_msh->SwitchOnQuadraticNodes(false); //WW
   // NOD at PLY
@@ -1585,6 +1636,13 @@ double COutput::NODWritePLYDataTEC(int number)
       DeviatoricStress(ss);
       tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0);        
     }
+    //....................................................................
+    // MFP //OK4704
+    for(k=0;k<(int)mfp_value_vector.size();k++) //OK4704
+    {
+      tec_file << MFPGetNodeValue(gnode,mfp_value_vector[k]) << " ";
+    }
+    //....................................................................
     tec_file << endl;
   }
     tec_file.close(); // kg44 close file 
@@ -2609,13 +2667,9 @@ void COutput::WriteDataVTK(int number)
     vtk_file_name += "_" + string(tf_name);
     std::cout << "VTK filename: " << vtk_file_name << endl;
 #endif
-    vtk_file_name += ".vtk";
-
-    if(!new_file_opened) remove(vtk_file_name.c_str()); //KG44
-
-
+  vtk_file_name += ".vtk";
+  if(!new_file_opened) remove(vtk_file_name.c_str()); //KG44
   fstream vtk_file (vtk_file_name.data(),ios::app|ios::out);
-
   vtk_file.setf(ios::scientific,ios::floatfield);
   vtk_file.precision(12);
   if (!vtk_file.good()) return;
@@ -2627,14 +2681,13 @@ void COutput::WriteDataVTK(int number)
 // 
 #endif
   //--------------------------------------------------------------------
-    WriteVTKHeader(vtk_file);
-    WriteVTKNodeData(vtk_file);
-    WriteVTKElementData(vtk_file);
-    WriteVTKValues(vtk_file);
+  WriteVTKHeader(vtk_file);
+  WriteVTKNodeData(vtk_file);
+  WriteVTKElementData(vtk_file);
+  WriteVTKValues(vtk_file);
   //======================================================================
   // vtk
-      vtk_file.close(); // kg44 close file 
-
+  vtk_file.close(); // kg44 close file 
 }
 
 /**************************************************************************
@@ -2784,6 +2837,7 @@ Task:
 Programing:
 04/2006 kg44 Implementation
 10/2006 WW Output secondary variables
+08/2008 OK MAT values
 **************************************************************************/
 void COutput::WriteVTKValues(fstream &vtk_file)
 {
@@ -2793,14 +2847,12 @@ void COutput::WriteVTKValues(fstream &vtk_file)
   int i, k;
   vector<int> NodeIndex(nName);
 //WW  int no_processes = (int)pcs_vector.size();
-
   CFEMesh* m_msh = GetMSH();
 // node data first
-    vtk_file << "POINT_DATA " <<m_msh->GetNodesNumber(false) << endl;
+  vtk_file << "POINT_DATA " <<m_msh->GetNodesNumber(false) << endl;
 // Each process gets its own field
-
   //======================================================================
-  //--------------------------------------------------------------------
+  // NOD data
   //WW 
   for(k=0;k<nName;k++)
   {
@@ -2826,11 +2878,13 @@ void COutput::WriteVTKValues(fstream &vtk_file)
           vtk_file <<" "<< m_pcs->GetNodeValue( m_msh->nod_vector[j]->GetIndex(),NodeIndex[k]) << endl;
     }
   }
-// element data
-  if(ele_value_vector.size()>0)
+  //======================================================================
+  // ELE data
+ if(ele_value_vector.size()>0)
+ {
     m_pcs = GetPCS_ELE(ele_value_vector[0]);
-  else
-    return;
+//OK  else
+//OK    return;
   //--------------------------------------------------------------------
   int no_ele_values = (int)ele_value_vector.size();
   vector<int>ele_value_index_vector(no_ele_values);
@@ -2843,8 +2897,8 @@ void COutput::WriteVTKValues(fstream &vtk_file)
   vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;
 // header for velocities
   vtk_file << "VECTORS velocity float " << endl;
-  
-  for(long i=0;i<(long)m_msh->ele_vector.size();i++){
+  for(long i=0;i<(long)m_msh->ele_vector.size();i++)
+  {
     //....................................................................
 //    m_ele = m_msh->ele_vector[i];
 //    xyz = m_ele->GetGravityCenter();
@@ -2857,20 +2911,46 @@ void COutput::WriteVTKValues(fstream &vtk_file)
     vtk_file << endl;
   }
 // now we write the rest
-
-    //....................................................................
-    for(j=0;j<(int)ele_value_index_vector.size();j++){
+  //....................................................................
+  for(j=0;j<(int)ele_value_index_vector.size();j++)
+  {
 // header now scalar data
     vtk_file << "SCALARS " << m_pcs->pcs_primary_function_name[0] << " float 1" << endl;
     vtk_file << "LOOKUP_TABLE default" <<endl;
-
-	for(long i=0;i<(long)m_msh->ele_vector.size();i++){
-	    vtk_file << m_pcs->GetElementValue(i,ele_value_index_vector[j]) << endl;
+	for(long i=0;i<(long)m_msh->ele_vector.size();i++)
+    {
+	  vtk_file << m_pcs->GetElementValue(i,ele_value_index_vector[j]) << endl;
 	}
-    }
-  
+  }
   //--------------------------------------------------------------------
   ele_value_index_vector.clear();
+ }
+  //======================================================================
+  // MAT data
+  double mat_value;
+  CMediumProperties* m_mmp = NULL;
+  CElem* m_ele = NULL;
+  int mmp_id = -1;
+  if(mmp_value_vector.size()>0)
+  {
+    // Identify MAT value
+    if(mmp_value_vector[0].compare("POROSITY")==0)
+      mmp_id = 0;
+      // Let's say porosity
+    // write header for cell data
+    vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;
+    for(long i=0;i<(long)m_msh->ele_vector.size();i++)
+    {
+      m_ele = m_msh->ele_vector[i];
+      m_mmp = mmp_vector[m_ele->GetPatchIndex()];
+      switch(mmp_id)
+      {
+        case 0: mat_value = m_mmp->Porosity(i,0.0); break;
+        default: cout << "COutput::WriteVTKValues: no MMP values specified" << endl;
+      }
+      vtk_file << mat_value << endl;
+    }
+  }
 }
 
 /**************************************************************************

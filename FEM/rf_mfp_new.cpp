@@ -236,6 +236,7 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
         viscosity_pcs_name_vector.push_back("PRESSURE1");
       }
       if(viscosity_model==3){ // my(T), Yaws et al. (1976)
+        viscosity_pcs_name_vector.push_back("TEMPERATURE1"); //OK4704
       }
       if(viscosity_model==4){ // my(T), ???
       }
@@ -489,6 +490,7 @@ Programing:
 09/2005 WW implementation 
 11/2005 YD modification
 11/2005 CMCD Inclusion current and previous time step quantities
+05/2007 PCH improvement for density-dependent flow
 last modification:
 **************************************************************************/
 void CFluidProperties::CalPrimaryVariable(vector<string>& pcs_name_vector)
@@ -795,9 +797,9 @@ Task: Master calc function
 Programing:
 08/2004 OK Implementation
 11/2005 YD Modification
-last modification:
+10/2008 OK Faster data access
 **************************************************************************/
-double CFluidProperties::Viscosity()
+double CFluidProperties::Viscosity(double* variables) //OK4709
 {
   static double viscosity;
   int fct_number = 0;
@@ -806,9 +808,19 @@ double CFluidProperties::Viscosity()
   bool New = false; // To be
   if(fem_msh_vector.size()>0) New = true;
   //----------------------------------------------------------------------
-  CalPrimaryVariable(viscosity_pcs_name_vector);
+  if(variables) //OK4709: faster data access
+  {
+    primary_variable[0] = variables[0]; //p (single phase)
+    primary_variable[1] = variables[1]; //T (temperature)
+    primary_variable[2] = variables[2]; //C (salinity)
+  }
+  else
+  {
+    CalPrimaryVariable(viscosity_pcs_name_vector);
+  }
   //----------------------------------------------------------------------
-  switch(viscosity_model){
+  switch(viscosity_model)
+  {
     case 0: // rho = f(x)
       viscosity = GetCurveValue(fct_number,0,primary_variable[0],&gueltig);
       break;
@@ -819,6 +831,12 @@ double CFluidProperties::Viscosity()
       viscosity = my_0*(1.+dmy_dp*(max(primary_variable[0],0.0)-p_0));
       break;
     case 3: // my^l(T), Yaws et al. (1976)
+      if(mode==1) //OK4704 for nodal output
+      {
+        m_pcs = PCSGet("HEAT_TRANSPORT");
+        //if(!m_pcs) return 0.0;
+        primary_variable[1] = m_pcs->GetNodeValue(node,m_pcs->GetNodeValueIndex("TEMPERATURE1")+1);
+      }
       viscosity = LiquidViscosity_Yaws_1976(primary_variable[1]); //ToDo pcs_name
       break;
     case 4: // my^g(T), Marsily (1986)
@@ -833,13 +851,14 @@ double CFluidProperties::Viscosity()
     case 7: // my(p,C,T), 
       viscosity = LiquidViscosity_CMCD(primary_variable[0],primary_variable[1],primary_variable[2]);
       break;
-	case 9: // viscosity as function of density and temperature    NB
-		viscosity = co2_viscosity(Density(),primary_variable[0]);
-		break;
+    case 9: // viscosity as function of density and temperature, NB
+      viscosity = co2_viscosity(Density(),primary_variable[1]); //OK4709
+      break;
     default:
       cout << "Error in CFluidProperties::Viscosity: no valid model" << endl;
       break;
   }
+  //----------------------------------------------------------------------
   return viscosity;
 }
 
@@ -2370,4 +2389,29 @@ double CFluidProperties::CalcEnthalpy(double temperature)
  //  case 5:
 }
    return val;
+}
+
+/**************************************************************************
+PCSLib-Method:
+08/2008 OK 
+**************************************************************************/
+double MFPGetNodeValue(long node,string mfp_name)
+{
+  double mfp_value;
+  int mfp_id = -1;
+  if(mfp_name.compare("VISCOSITY")==0)
+    mfp_id = 0;
+  //......................................................................
+  CFluidProperties *m_mfp = mfp_vector[0];
+  m_mfp->mode = 1;
+  m_mfp->node = node;
+  //......................................................................
+  switch(mfp_id)
+  {
+    case 0: mfp_value = m_mfp->Viscosity(); break;
+    default: cout << "MFPGetNodeValue: no MFP data" << endl;
+  }  
+  //......................................................................
+  m_mfp->mode = 0;
+  return mfp_value;
 }

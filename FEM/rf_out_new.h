@@ -28,6 +28,8 @@ class COutput
     friend void OUTData(double, const int step);
     CFEMesh* m_msh;
   public:
+    // ID 
+    string ID; //OK4709
     string file_base_name;
     string delimiter_type;
     // PCS
@@ -70,9 +72,12 @@ class COutput
     bool selected;
     // DIS
     string dis_type_name; //OK
-	//
+	// MAT values 
+    vector<string>mmp_value_vector; //OK
+    vector<string>mfp_value_vector; //OK
     // File status
     bool new_file_opened;   //WW
+    //--------------------------------------------------------------------
 	COutput(void);
     ~COutput(void);
     ios::pos_type Read(ifstream*);
@@ -112,7 +117,7 @@ class COutput
     void TIMValue_TEC(double); //OK
     double NODFlux(long); //OK
 };
-extern vector<COutput*> out_vector;
+extern vector<COutput*>out_vector;
 extern bool OUTRead(string);
 extern void OUTWrite(string);
 #define OUT_FILE_EXTENSION ".out"
