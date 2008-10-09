@@ -175,7 +175,7 @@ class CFiniteElementStd:public CElement
      bool HEAD_Flag; 
      //
   public: //OK4709
-     inline void Config(); //WW
+     void Config(); //WW
      //
   private:  
      inline double CalCoefMass();

@@ -4961,7 +4961,7 @@ Task: Config material and knowns for local assembly
 Programing:
 08/2008 WW Implementation
 **************************************************************************/
-inline void CFiniteElementStd::Config()
+void CFiniteElementStd::Config()
 {
   int i, nn;
   //----------------------------------------------------------------------
