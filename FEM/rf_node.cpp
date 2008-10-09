@@ -19,6 +19,7 @@ CNodeValue::CNodeValue()
 {
   geo_node_number = -1;
   msh_node_number = -1;
+  msh_node_number_conditional = -1;
   node_value = 0.;
   node_area = 0.;
   node_distype = -1;

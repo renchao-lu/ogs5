@@ -1234,9 +1234,15 @@ void Surface::ReadTIN(string tin_file_name)
   tin_file_name_path = FileName;  //WW/JOD
   basic_string <char>::size_type indexCh1a;
   indexCh1a = tin_file_name_path.find_last_of("\\");
-  string stra = tin_file_name_path.substr (0, indexCh1a);
-  tin_file_name_path.clear();
-  tin_file_name_path = stra+"\\"+tin_file_name;
+ 
+  if( indexCh1a < tin_file_name_path.size()) { // JOD 4.7.10,  \ exists in path, DEBUG case  
+    string stra = tin_file_name_path.substr (0, indexCh1a);
+    tin_file_name_path.clear();  
+	tin_file_name_path = stra+"\\"+tin_file_name;
+
+  }
+  else     //   \ does not exist, RELEASE case  
+    tin_file_name_path = tin_file_name;
 #endif
   ifstream tin_file (tin_file_name_path.data(),ios::in);
   if (!tin_file.good()) return;

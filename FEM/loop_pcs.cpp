@@ -571,10 +571,11 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
       m_pcs = PCSGet("OVERLAND_FLOW");
       if(m_pcs&&m_pcs->selected){
         lop_coupling_iterations = m_pcs->m_num->cpl_iterations;
-        pcs_flow_error = m_pcs->ExecuteNonLinear();
+        pcs_flow_error = stepping(m_pcs); // JOD 4.7.10
         PCSCalcSecondaryVariables(); // PCS member function
         conducted = true; //WW 
       }
+	  	
       //--------------------------------------------------------------------
       m_pcs = PCSGet("AIR_FLOW");
       if(m_pcs&&m_pcs->selected){
@@ -2019,4 +2020,42 @@ void PCSStorage(void){
         break;
     }
   }
+}
+
+/**************************************************************************
+Task:  overland flow time advancing 
+Programing: 
+   10/2008 JOD		Implementation  4.7.10
+/**************************************************************************/
+double stepping(CRFProcess* m_pcs ) {
+  
+	double flow_error;
+	CTimeDiscretization *m_tim = NULL;
+    m_tim = TIMGet(m_pcs->pcs_type_name);
+	double dt0 = dt; 		
+	
+	if( m_tim->sub_steps != 0 ) { // subtiming
+
+      aktuelle_zeit -= dt; 
+	  dt /= m_tim->sub_steps;
+      for(int l=0;l<(long)m_pcs->m_msh->GetNodesNumber(false);l++)
+         m_pcs->SetNodeValue(l, m_pcs->GetNodeValueIndex("STORE") , m_pcs->GetNodeValue(l, m_pcs->GetNodeValueIndex("HEAD") ) ) ; 
+
+      for( int l = 0; l < m_tim->sub_steps; l++ ) {
+	      cout << "substep: " << l << endl;
+	      aktuelle_zeit +=dt;
+          flow_error = m_pcs->ExecuteNonLinear();
+		  m_pcs->CopyTimestepNODValues(); 
+	  }
+              
+	  dt = dt0;
+      for(int l=0;l<(long)m_pcs->m_msh->GetNodesNumber(false);l++)
+		m_pcs->SetNodeValue(l, m_pcs->GetNodeValueIndex("HEAD") , m_pcs->GetNodeValue(l, m_pcs->GetNodeValueIndex("STORE") ) ) ;   
+			 
+	} // end subtiming			
+	else 
+      flow_error = m_pcs->ExecuteNonLinear();
+		
+ return flow_error;
+
 }

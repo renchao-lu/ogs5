@@ -1945,7 +1945,7 @@ void CRFProcess::ConfigGroundwaterFlow()
   pcs_eval_unit[5] = "-";
   //----------------------------------------------------------------------
   // Secondary variables
-  pcs_number_of_secondary_nvals = 4;
+  pcs_number_of_secondary_nvals = 5;
   pcs_secondary_function_name[0] = "FLUX";
   pcs_secondary_function_unit[0] = "m3/s";
   pcs_secondary_function_timelevel[0] = 1;
@@ -1958,6 +1958,9 @@ void CRFProcess::ConfigGroundwaterFlow()
   pcs_secondary_function_name[3] = "COUPLING"; //JOD
   pcs_secondary_function_unit[3] = "m/s";
   pcs_secondary_function_timelevel[3] = 1;
+  pcs_secondary_function_name[4] = "STORE"; //JOD  for subtiming 4.7.10
+  pcs_secondary_function_unit[4] = "m";
+  pcs_secondary_function_timelevel[4] = 1;
   //----------------------------------------------------------------------
   if(m_msh)
     m_msh->DefineMobileNodes(this);

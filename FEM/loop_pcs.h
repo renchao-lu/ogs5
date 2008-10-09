@@ -22,4 +22,5 @@ extern int pcs_dimension;
 extern int pcs_number_of_fluid_phases;
 extern int LOPPreTimeLoop_PCS();
 extern int LOPTimeLoop_PCS();  // (double*) WW
+double stepping( CRFProcess* m_pcs ); // JOD 4.7.10
 #endif

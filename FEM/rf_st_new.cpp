@@ -137,7 +137,7 @@ ios::pos_type CSourceTerm::Read(ifstream *st_file)
   bool new_keyword = false;
   string hash("#");
   std::stringstream in;
-  channel = 0, area_assembly = 0; // JOD
+  channel = 0, node_averaging = 0; // JOD
   ios::pos_type position;
   string sub_string,sub_string1;
   //========================================================================
@@ -204,9 +204,9 @@ ios::pos_type CSourceTerm::Read(ifstream *st_file)
       in.clear();
 	} 
 	//..............................................
-    if(line_string.find("$AREA_ASSEMBLY")!=string::npos) { 
+    if(line_string.find("$NODE_AVERAGING")!=string::npos) { 
       in.clear();
-      area_assembly = 1;
+      node_averaging = 1;
       continue;
     } 
     //..............................................
@@ -1615,20 +1615,9 @@ void GetGreenAmptNODValue(double &value, CSourceTerm* m_st, long msh_node)
   
    F = infiltration * dt + Fold;
    
-  /* double eps = 1.e-4; 
-   double rill_height = 1.e-3;
-   double H =  (wdepth + eps)*(wdepth + eps) / ( wdepth + eps + rill_height) - pow(eps, 2.) / (rill_height + eps);
-   if(H < 0)
-	   H = 0;
-  if( infiltration  >   H / timestep )  { // compare with available water
-   infiltration = H / timestep ;
-   F = infiltration * timestep + Fold;
-   }*/
+  
    m_pcs_this->SetNodeValue(msh_node, m_pcs_this->GetNodeValueIndex("COUPLING") +1, F); // output is cumulative infiltration
  
-   //thickness = F / moistureDeficit; 
-   //m_pcs_this->SetNodeValue(msh_node, m_pcs_this->GetNodeValueIndex("HELP"), thickness);
-
    infiltration *= -area;
    value = infiltration;
 
@@ -1663,81 +1652,47 @@ void GetCouplingNODValue(double &value, CSourceTerm* m_st, CNodeValue* cnodev)
 FEMLib-Method:
 Task: Calculate coupling flux for GetCouplingNODValue
       for the soil or groundwater flow case
-	  prerequisite: fluid data in mfp_vector[0]
+	  prerequisite: fluid data in mfp_vector[0] (2 times)
 Programing:
 01/2007 JOD Implementation
+10/2008 JOD overland node shifting for soil columns, averaging automatically 4.7.10
 **************************************************************************/
-
 void GetCouplingNODValuePicard(double &value, CSourceTerm* m_st, CNodeValue* cnodev)
 {
 
-  int nidx;
-  double relPerm, area, factor, condArea;
+  double relPerm, condArea, gamma;
   CRFProcess* m_pcs_cond = NULL;
   CRFProcess* m_pcs_this = NULL;
-  double h_this, h_cond, z_this, z_cond;
-  double leakance, rillDepth, gamma;
-  leakance = m_st->coup_leakance;
-  rillDepth = m_st->rill_height;
- 
-  area = value;
-  factor = leakance * area;
-  gamma =  mfp_vector[0]->Density() * GRAVITY_CONSTANT; // only one phase  
+  double h_this, h_cond, z_this, z_cond, h_cond_shifted, help;
+  
+  gamma =  mfp_vector[0]->Density() * GRAVITY_CONSTANT; // only one phase 
   m_pcs_this = PCSGet(m_st->pcs_type_name);
   m_pcs_cond = PCSGet(m_st->pcs_type_name_cond);
- 
-  z_this = m_pcs_this->m_msh->nod_vector[cnodev->msh_node_number]->Z();
-  z_cond = m_pcs_cond->m_msh->nod_vector[cnodev->msh_node_number_conditional]->Z();
-  if(m_st->area_assembly)
-    z_this = z_cond;
-  nidx = m_pcs_this->GetNodeValueIndex( m_st->pcs_pv_name)+1;
-  h_this = m_pcs_this->GetNodeValue(cnodev->msh_node_number,nidx);
-  h_cond = GetConditionalNODValue(m_st,cnodev);
-  if(m_st->channel)  // Wetted perimeter, pcs_cond has to be overland flow 
-   area *= m_st->channel_width + (h_cond - z_cond);
-  if( m_st->pcs_pv_name == "PRESSURE1") {
-    h_this /= gamma;
-    h_this += z_this;
-  }
-  /////////////////////////////////////////////// rel perm upwinding
-  if(h_this > h_cond) 
-       relPerm = GetRelativeCouplingPermeability(m_pcs_this, h_this, rillDepth, cnodev->msh_node_number); // groundwater or richards
-  else {
-       relPerm = GetRelativeCouplingPermeability(m_pcs_cond, h_cond, rillDepth, cnodev->msh_node_number_conditional); // overland
-
-
-  }
-	 condArea =  factor * relPerm; 
-	 //h_cond = z_cond;//+ 1.e-3;
-	 
-	 //h_this = z_this;
-  ///////////////// head shift
-  //h_cond = max(h_cond, z_cond+ rillDepth); // overland water depth might be below rill depth
-  /////////////////////////////////////////////////////
-  if(m_st->pcs_type_name == "GROUNDWATER_FLOW")
-  {  
-         if( h_this < z_cond && m_st->pcs_type_name_cond == "OVERLAND_FLOW")
-		   {//groundwater level does not reach overland flow bottom 
-               value = condArea * (h_cond - z_cond); 
-                      condArea = 0 ;
-		   }
-		 else
-       		value = condArea * h_cond; 
-  }
-  else if(m_st->pcs_type_name == "RICHARDS_FLOW")
-  { 
-	 value = condArea * (h_cond - z_cond); 
-     condArea /= gamma ;
-  }
+  GetCouplingFieldVariables(&h_this, &h_cond, &h_cond_shifted, &help, &z_this, &z_cond, m_st, cnodev); // z_cond shifted for soil columns
+  ////////   coupling factor
+  if( h_this > h_cond_shifted ) 
+       relPerm = GetRelativeCouplingPermeability(m_pcs_this, h_this, m_st, cnodev->msh_node_number); // groundwater or richards
   else 
-    cout << "Error in GetCouplingNODValuePicard";
- 
-  MXInc(cnodev->msh_node_number,cnodev->msh_node_number, condArea);
- 
-  nidx = m_pcs_this->GetNodeValueIndex( "COUPLING") +1; // update coupling variable for error estimation
-  m_pcs_this->SetNodeValue(cnodev->msh_node_number,nidx, h_this);
+       relPerm = GetRelativeCouplingPermeability(m_pcs_cond, h_cond, m_st, cnodev->msh_node_number_conditional); // overland
+
+  condArea =  value * relPerm; // leakance in relPerm
+  if(m_st->channel)  // wetted perimeter, pcs_cond has to be overland flow 
+     condArea *= m_st->channel_width + (h_cond - z_cond);
+  ///////   source term & matrix
+  value = CalcCouplingValue( condArea, h_this, h_cond_shifted, z_cond, m_st);  // hydrostatic overland pressure
+
+  if(m_st->pcs_type_name == "RICHARDS_FLOW")
+    condArea /= gamma ;
+
+  if(m_st->pcs_type_name == "GROUNDWATER_FLOW" && h_this < z_cond && m_st->pcs_type_name_cond == "OVERLAND_FLOW")
+    condArea = 0 ;
+    
+  MXInc(cnodev->msh_node_number,cnodev->msh_node_number, condArea);  // groundwater / soil pressure
+  /////  output
+  m_pcs_this->SetNodeValue(cnodev->msh_node_number, m_pcs_this->GetNodeValueIndex( "COUPLING") +1, h_this);// update coupling variable for error estimation
   
 }
+
 /**************************************************************************
 FEMLib-Method:
 Task: Calculate coupling flux for GetCouplingNODValue
@@ -1745,89 +1700,74 @@ Task: Calculate coupling flux for GetCouplingNODValue
 	  prerequisite: fluid data in mfp_vector[0]
 Programing:
 01/2007 JOD Implementation
+10/2008 JOD node shifting for soil columns 4.7.10
 **************************************************************************/
-
 void GetCouplingNODValueNewton(double &value, CSourceTerm* m_st, CNodeValue* cnodev)
 {
-  int nidx;
-  double relPerm, area, factor, condArea;
+  double relPerm, area, condArea;
   CRFProcess* m_pcs_cond = NULL;
   CRFProcess* m_pcs_this = NULL;
-  double h_this, h_cond, z_this, z_cond;
-  double leakance, rillDepth, gamma;
-  double epsilon = 1.e-7; // like in pcs->assembleParabolicEquationNewton
-  double  value_jacobi, h_this_epsilon, relPerm_epsilon, condArea_epsilon;
-  relPerm_epsilon = 0.0;
-  leakance = m_st->coup_leakance;
-  rillDepth = m_st->rill_height;
+  double h_this, h_cond, z_this, z_cond, h_this_shifted, h_this_averaged;
+  double epsilon = 1.e-7, value_jacobi, h_this_epsilon, relPerm_epsilon, condArea_epsilon;// epsilon as in pcs->assembleParabolicEquationNewton
  
-  area = value;
-  factor = leakance * area;
-  gamma =  mfp_vector[0]->Density() * GRAVITY_CONSTANT; // only one phase  
   m_pcs_this = PCSGet(m_st->pcs_type_name);
   m_pcs_cond = PCSGet(m_st->pcs_type_name_cond);
-
-  z_this = m_pcs_this->m_msh->nod_vector[cnodev->msh_node_number]->Z();
-  z_cond = m_pcs_cond->m_msh->nod_vector[cnodev->msh_node_number_conditional]->Z();
-  if(m_st->area_assembly)
-    z_cond = z_this; 
-  nidx = m_pcs_this->GetNodeValueIndex( m_st->pcs_pv_name)+1;
-  h_this = m_pcs_this->GetNodeValue(cnodev->msh_node_number,nidx);
-  h_cond = GetConditionalNODValue(m_st,cnodev);
-  if(m_st->channel)  // Wetted perimeter 
-   area *= m_st->channel_width + (h_this - z_this);
-  if(m_st->pcs_pv_name_cond == "PRESSURE1") {
-    h_cond /= gamma;
-    h_cond += z_cond;
-  }
-  /////////////////////////////////////////////// rel perm upwinding
-  if(h_this > h_cond) { 	
-    relPerm = GetRelativeCouplingPermeability(m_pcs_this, h_this, rillDepth, cnodev->msh_node_number);        // overland
-    //relPerm_epsilon = GetRelativeCouplingPermeability(m_pcs_this, h_this + epsilon, rillDepth, msh_node);
-  }
+  GetCouplingFieldVariables(&h_this, &h_cond, &h_this_shifted, &h_this_averaged, &z_this, &z_cond, m_st, cnodev);// z_this shifted for soil columns
+  ///// factor
+  if( h_this_shifted > h_cond )  	
+    relPerm = GetRelativeCouplingPermeability(m_pcs_this, h_this, m_st, cnodev->msh_node_number);  // overland
   else   
-    relPerm = GetRelativeCouplingPermeability(m_pcs_cond, h_cond, rillDepth, cnodev->msh_node_number_conditional);// richards or groundwater
-  /////////////////////////////////////////////////// head shifts
-  //h_this = max(h_this, z_this+ rillDepth); // water depth might be below rill depth
+    relPerm = GetRelativeCouplingPermeability(m_pcs_cond, h_cond, m_st, cnodev->msh_node_number_conditional);// richards or groundwater
 
-  h_this_epsilon = h_this + epsilon;
+  area  = value; // for condArea_epsilon
+  condArea = value * relPerm; // leakance in relPerm
+  if(m_st->channel)  // wetted perimeter 
+    condArea *= m_st->channel_width + (h_this - z_this);
+  //////  source term
+  value = CalcCouplingValue(condArea, h_this_averaged, h_cond, z_cond, m_st);
+  /////   epsilon shift for jacobian 
+  if( m_st->node_averaging ) {
+	for( long i = 0; i < (long)cnodev->msh_node_numbers_averaging.size(); i++)
+    	if( cnodev->msh_node_numbers_averaging[i] ==  cnodev->msh_node_number) 
+           h_this_epsilon = h_this_averaged + epsilon * cnodev->msh_node_weights_averaging[i];
+  }
+  else
+     h_this_epsilon = h_this + epsilon;
+  /////  factor 
+  if(h_this_shifted + epsilon > h_cond) 
+    relPerm_epsilon = GetRelativeCouplingPermeability(m_pcs_this, h_this + epsilon, m_st, cnodev->msh_node_number);
+  else   
+    relPerm_epsilon = GetRelativeCouplingPermeability(m_pcs_cond, h_cond, m_st, cnodev->msh_node_number_conditional);// richards or groundwater
 
- 
- if(h_this_epsilon > h_cond) 
-   relPerm_epsilon = GetRelativeCouplingPermeability(m_pcs_this, h_this_epsilon, rillDepth, cnodev->msh_node_number);
- else   
-   relPerm_epsilon = GetRelativeCouplingPermeability(m_pcs_cond, h_cond, rillDepth, cnodev->msh_node_number_conditional);// richards or groundwater
-  if(m_st->pcs_type_name_cond == "GROUNDWATER_FLOW") 
-	h_cond = max(h_cond, z_this);		//groundwater level might not reach overland flow bottom
-  //////////////////////////////////////////////////////////////
-
-  condArea =  factor * relPerm;	
-  condArea_epsilon =  factor * relPerm_epsilon;
-
-  value = condArea *( h_cond - h_this );  
-  value_jacobi = - condArea_epsilon *( h_cond - h_this_epsilon) + value;
-	
+  condArea_epsilon =  area * relPerm_epsilon;
+  if(m_st->channel)  // wetted perimeter 
+    condArea_epsilon *= m_st->channel_width + (h_this_epsilon - z_this);
+  /////  jacobian	
+  value_jacobi = - condArea_epsilon *( h_cond - h_this_epsilon) + value; 
   MXInc(cnodev->msh_node_number,cnodev->msh_node_number, value_jacobi / epsilon);
- 
-  m_pcs_this->SetNodeValue(cnodev->msh_node_number, m_pcs_this->GetNodeValueIndex("COUPLING") + 1, -value / area);
+  /////  output
+  m_pcs_this->SetNodeValue(cnodev->msh_node_number, m_pcs_this->GetNodeValueIndex("COUPLING") + 1, -value / area); // coupling flux (m/s)
 
 }
+
 /**************************************************************************
 FEMLib-Method:
 Task: Calculate relative coupling permeability for GetCouplingNODValue(***).
 Programing: prerequisites: phase 0 in mfp
 06/2007 JOD Implementation
+10/2008 JOD include leakance 4.7.10
 **************************************************************************/
 
-double GetRelativeCouplingPermeability(CRFProcess* m_pcs, double head, double rillDepth, long msh_node)
+double GetRelativeCouplingPermeability(CRFProcess* m_pcs, double head, CSourceTerm* m_st, long msh_node)
 {
   double relPerm , z, sat;
+  
 
   z = m_pcs->m_msh->nod_vector[msh_node]->Z();
 
 	if( m_pcs->pcs_type_name  == "OVERLAND_FLOW") { 
 	       
-   			sat =  (head - z) / max(1.e-6,rillDepth);
+   			sat =  (head - z) / max(1.e-6, m_st->rill_height);
 	       
 			 if( sat > 1 )
 				 relPerm = 1;
@@ -1858,9 +1798,7 @@ double GetRelativeCouplingPermeability(CRFProcess* m_pcs, double head, double ri
 	 }
 
 
-
-
-return relPerm;
+   return relPerm * m_st->coup_leakance;
 }
 /**************************************************************************
 FEMLib-Method:
@@ -2002,12 +1940,6 @@ void GetCouplingNODValueMixed(double& value, CSourceTerm* m_st, CNodeValue* cnod
 	
 
  }
-
-
-
-
-
-
 
 /**************************************************************************
 FEMLib-Method:
@@ -2417,213 +2349,8 @@ void CSourceTermGroup::SetPLY(CSourceTerm* m_st, const int ShiftInNodeVector) {
     SetPolylineNodeValueVector(m_st, m_ply, ply_nod_vector, ply_nod_vector_cond, ply_nod_val_vector);
     m_st->SetNodeValues(ply_nod_vector, ply_nod_vector_cond, ply_nod_val_vector, ShiftInNodeVector);
   } // end polyline 
+
 }
-
-
-
-	/* int i,k,l;
-  long ply_nod_vector_size;
-  double parameter;
-  vector<long>ply_nod_vector;
-  //OK vector<long>ply_nod_vector_ordered;
-  vector<double>ply_nod_val_vector;
-  CNodeValue *m_nod_val = NULL;
-  //----------------------------------------------------------------------
-  CGLPolyline* m_ply = NULL;
-  m_ply = GEOGetPLYByName(m_st->geo_name);//CC
-  //----------------------------------------------------------------------
-  CFEMesh* m_msh = NULL;
-  m_msh = FEMGet(m_st->pcs_type_name);
-  CRFProcess* m_pcs = NULL;
-  m_pcs = PCSGet(m_st->pcs_type_name);
-  //======================================================================
-  if(m_ply&&m_msh){
-    //--------------------------------------------------------------------
-    m_ply->GetPointOrderByDistance(); //WW ordering
-    m_msh->GetNODOnPLY(m_ply,ply_nod_vector);
-    //nodes = m_polyline->GetNodesOnArc(number_of_nodes); //WW
-    ply_nod_vector_size = (long)ply_nod_vector.size();
-    ply_nod_val_vector.resize(ply_nod_vector_size);
-    //--------------------------------------------------------------------
-    for(i=0;i<ply_nod_vector_size;i++){
-      m_nod_val = new CNodeValue();
-      m_nod_val->msh_node_number = -1; // constructor
-      m_nod_val->msh_node_number = m_ply->OrderedPoint[i]; //+ShiftInNodeVector; //WW
-      //m_nod_val->geo_node_number = nodes[i];
-      m_nod_val->node_distype = 0;
-      m_nod_val->node_value = ply_nod_val_vector[i];
-      m_nod_val->CurveIndex = m_st->CurveIndex;
-    }
-    //--------------------------------------------------------------------
-    // DIS type definition to read funcion
-    int dit_ply = -1;
-    if(m_st->dis_type_name.compare("CONSTANT")==0) dit_ply = 1;
-    if(m_st->dis_type_name.compare("LINEAR")==0) dit_ply = 2;
-    if(m_st->dis_type_name.compare("CONSTANT_NEUMANN")==0) dit_ply = 3;
-    if(m_st->dis_type_name.compare("LINEAR_NEUMANN")==0) dit_ply = 4;
-    if(m_st->dis_type_name.compare("RIVER")==0) dit_ply = 5;
-    if(m_st->dis_type_name.compare("CRITICALDEPTH")==0) dit_ply = 6;
-    if(m_st->dis_type_name.compare("SYSTEM_DEPENDENT")==0) dit_ply = 7;   //YD    
-    //--------------------------------------------------------------------
-    // CONSTANT
-    if(dit_ply==1){
-      for(i=0;i<ply_nod_vector_size;i++){
-        m_nod_val->node_value = m_st->geo_node_value;
-      }
-    }
-    //--------------------------------------------------------------------
-    // LINEAR distributed single parameter data
-    if(dit_ply==2||dit_ply==4){
-      for(k=0;k<(int)m_st->DistribedBC.size();k++)  {              
-        for(l=0;l<(int)m_ply->point_vector.size(); l++) {
-          if(m_st->PointsHaveDistribedBC[k]==m_ply->point_vector[l]->id){
-            if(fabs(m_st->DistribedBC[k]) < MKleinsteZahl) 
-              m_st->DistribedBC[k] = 1.0e-20;
-            m_ply->point_vector[l]->property = m_st->DistribedBC[k];
-            break;
-          }
-        } 
-      }
-      InterpolationAlongPolyline(m_ply,ply_nod_val_vector); //WWOK
-      //..................................................................
-      for(i=0;i<ply_nod_vector_size;i++){
-        m_nod_val->node_value = ply_nod_val_vector[i];
-      }
-    }
-    //--------------------------------------------------------------------
-    // LINEAR distributed multiple parameter data
-    if(dit_ply==5){
-      //..................................................................
-      // HRiver 
-      for(k=0;k<(int)m_st->DistribedBC.size();k++){              
-        for(l=0;l<(int)m_ply->point_vector.size();l++){
-          if(m_st->PointsHaveDistribedBC[k]==m_ply->point_vector[l]->id)  {
-            if(fabs(m_st->DistribedBC[k]) < MKleinsteZahl) 
-              m_st->DistribedBC[k] = 1.0e-20;
-            parameter = m_st->pnt_parameter_vector[k][0];
-            m_ply->point_vector[l]->property = parameter;
-            break;
-          }
-        } 
-      }
-      InterpolationAlongPolyline(m_ply,ply_nod_val_vector);
-      //..................................................................
-      for(i=0;i<ply_nod_vector_size;i++){
-        m_nod_val->node_value = ply_nod_val_vector[i];
-      }
-      //..................................................................
-      // KRiverBed
-      for(k=0;k<(int)m_st->DistribedBC.size();k++){              
-        for(l=0;l<(int)m_ply->point_vector.size();l++){
-          if(m_st->PointsHaveDistribedBC[k]==m_ply->point_vector[l]->id)  {
-            if(fabs(m_st->DistribedBC[k]) < MKleinsteZahl) 
-              m_st->DistribedBC[k] = 1.0e-20;
-            parameter = m_st->pnt_parameter_vector[k][1];
-            m_ply->point_vector[l]->property = parameter;
-            break;
-          }
-        } 
-      }
-      InterpolationAlongPolyline(m_ply,ply_nod_val_vector);
-      //..................................................................
-      for(i=0;i<ply_nod_vector_size;i++){
-        m_nod_val->node_value = ply_nod_val_vector[i];
-      }
-      //..................................................................
-      // WRiverBed
-      for(k=0;k<(int)m_st->DistribedBC.size();k++){              
-        for(l=0;l<(int)m_ply->point_vector.size();l++){
-          if(m_st->PointsHaveDistribedBC[k]==m_ply->point_vector[l]->id)  {
-            if(fabs(m_st->DistribedBC[k]) < MKleinsteZahl) 
-              m_st->DistribedBC[k] = 1.0e-20;
-            parameter = m_st->pnt_parameter_vector[k][2];
-            m_ply->point_vector[l]->property = parameter;
-            break;
-          }
-        } 
-      }
-      InterpolationAlongPolyline(m_ply,ply_nod_val_vector);
-      //..................................................................
-      for(i=0;i<ply_nod_vector_size;i++){
-        m_nod_val->node_value = ply_nod_val_vector[i];
-      }
-      //..................................................................
-      // TRiverBed
-      for(k=0;k<(int)m_st->DistribedBC.size();k++){              
-        for(l=0;l<(int)m_ply->point_vector.size();l++){
-          if(m_st->PointsHaveDistribedBC[k]==m_ply->point_vector[l]->id)  {
-            if(fabs(m_st->DistribedBC[k]) < MKleinsteZahl) 
-              m_st->DistribedBC[k] = 1.0e-20;
-            parameter = m_st->pnt_parameter_vector[k][3];
-            m_ply->point_vector[l]->property = parameter;
-            break;
-          }
-        } 
-      }
-      InterpolationAlongPolyline(m_ply,ply_nod_val_vector);
-      //..................................................................
-      for(i=0;i<ply_nod_vector_size;i++){
-        m_nod_val->node_value = ply_nod_val_vector[i];
-      }
-      //..................................................................
-      // BRiverBed
-      for(k=0;k<(int)m_st->DistribedBC.size();k++){              
-        for(l=0;l<(int)m_ply->point_vector.size();l++){
-          if(m_st->PointsHaveDistribedBC[k]==m_ply->point_vector[l]->id)  {
-            if(fabs(m_st->DistribedBC[k]) < MKleinsteZahl) 
-              m_st->DistribedBC[k] = 1.0e-20;
-            parameter = m_st->pnt_parameter_vector[k][4];
-            m_ply->point_vector[l]->property = parameter;
-            break;
-          }
-        } 
-      }
-      InterpolationAlongPolyline(m_ply,ply_nod_val_vector);
-      //..................................................................
-      for(i=0;i<ply_nod_vector_size;i++){
-        m_nod_val->node_value = ply_nod_val_vector[i];
-      }
-      //..................................................................
-      // NodeReachLength
-      for(i=0;i<ply_nod_vector_size;i++)  {
-        ply_nod_val_vector[i] =  1.0;
-      }
-      if(max_dim==1) 
-        if(m_pcs)
-          m_st->EdgeIntegration(m_pcs,ply_nod_vector,ply_nod_val_vector);
-      for(i=0;i<ply_nod_vector_size;i++)  {
-        ply_nod_val_vector[i] *= 12.5 * 0.2 / 2 ;
-      }
-      //..................................................................
-      for(i=0;i<ply_nod_vector_size;i++){
-        m_nod_val->node_area = ply_nod_val_vector[i];
-      }
-    }
-    //--------------------------------------------------------------------
-    // LINEAR distributed multiple parameter data
-    if(dit_ply==6){ // CriticalDepth
-      //..................................................................
-      // NodeReachLength
-      for(i=0;i<ply_nod_vector_size;i++)  {
-        ply_nod_val_vector[i] =  1.0;
-      }
-      //m_st->FaceIntegration(nodes,node_value_vectorArea);
-    }
-    //....................................................................
-    if(dit_ply==3||dit_ply==4){
-      //m_st->FaceIntegration(nodes, node_value_vector);   
-    }
-    //--------------------------------------------------------------------
-    //WW        group_vector.push_back(m_nod_val);
-    //WW        st_group_vector.push_back(m_st); //OK
-    m_pcs->st_node_value.push_back(m_nod_val);  //WW
-    m_pcs->st_node.push_back(m_st); //WW
-    //--------------------------------------------------------------------
-    // Memory
-    ply_nod_vector.clear();
-    ply_nod_val_vector.clear();
-    //--------------------------------------------------------------------
-  }*/
 
 /**************************************************************************
 FEMLib-Method:
@@ -2805,7 +2532,7 @@ void CSourceTermGroup::SetPolylineNodeVectorConditional(CSourceTerm* m_st, CGLPo
   long assembled_mesh_node, number_of_nodes;
   
   
-  if(m_st->area_assembly) {
+  if(m_st->node_averaging) {
 	if(m_msh_cond) {
       if(pcs_type_name == "RICHARDS_FLOW") {
 	    m_msh_cond->GetNODOnPLY(m_ply,ply_nod_vector_cond);
@@ -2960,7 +2687,7 @@ void CSourceTermGroup::SetPolylineNodeValueVector(CSourceTerm* m_st, CGLPolyline
     m_st->EdgeIntegration(m_msh, ply_nod_vector, m_st->node_value_vectorArea);   
  } 
  //.......................................................................................
- if(m_st->conditional && m_st->area_assembly) 
+ if(m_st->conditional && m_st->node_averaging) 
   AreaAssembly(m_st, ply_nod_vector_cond, ply_nod_val_vector);
  
 
@@ -3076,8 +2803,19 @@ void CSourceTerm::SetNodeValues(vector<long>&nodes, vector<long>&nodes_cond, vec
 	 m_nod_val->node_distype = dis_type;
      m_nod_val->node_value = node_values[i];
      m_nod_val->CurveIndex = CurveIndex;
-     if(conditional)
+	 if(conditional) { // JOD 4.7.10
        m_nod_val->msh_node_number_conditional = nodes_cond[i];
+	   if(pcs_type_name == "OVERLAND_FLOW" && node_averaging) {
+		   double weights = 0;
+		   for(long j = 0; j < number_of_nodes; j++) {
+			 m_nod_val->msh_node_numbers_averaging.push_back(nodes[j]);
+	            m_nod_val->msh_node_weights_averaging.push_back(node_values[j]);
+		       weights += node_values[j];
+		   }
+           for(long j = 0; j < number_of_nodes; j++) 
+              m_nod_val->msh_node_weights_averaging[j] /= weights;
+	   }
+	 }
      //WW        group_vector.push_back(m_node_value);
      //WW        st_group_vector.push_back(m_st); //OK
      if(dis_type == 5)  {// River  
@@ -3421,4 +3159,86 @@ CSourceTerm* STGet(string pcs_name,string geo_type_name,string geo_name)
       return m_st;
   }
   return NULL;
+}
+
+/**************************************************************************
+FEMLib-Method: 4.7.10 shift and average field variables
+10/2008 JOD Implementation
+**************************************************************************/
+void GetCouplingFieldVariables(double* h_this, double* h_cond, double* h_shifted, double* h_averaged, double* z_this, double* z_cond, CSourceTerm* m_st, CNodeValue* cnodev) {
+
+  int nidx, nidx_cond;
+  double gamma;
+  CRFProcess* m_pcs_this = NULL;
+  CRFProcess* m_pcs_cond = NULL;
+  
+  m_pcs_this = PCSGet(m_st->pcs_type_name);
+  m_pcs_cond = PCSGet(m_st->pcs_type_name_cond);
+  gamma =  mfp_vector[0]->Density() * GRAVITY_CONSTANT; // only one phase  
+  *z_this = m_pcs_this->m_msh->nod_vector[cnodev->msh_node_number]->Z();
+  *z_cond = m_pcs_cond->m_msh->nod_vector[cnodev->msh_node_number_conditional]->Z();
+  nidx = m_pcs_this->GetNodeValueIndex( m_st->pcs_pv_name)+1;
+  nidx_cond = m_pcs_cond->GetNodeValueIndex(m_st->pcs_pv_name_cond)+1;
+  *h_this = m_pcs_this->GetNodeValue(cnodev->msh_node_number,nidx);
+  *h_cond = m_pcs_cond->GetNodeValue(cnodev->msh_node_number_conditional,nidx_cond);
+  
+ if(m_st->pcs_type_name == "OVERLAND_FLOW")  {
+    if(m_st->node_averaging) { // shift overland node on soil column top, averaging over nodes
+      *h_shifted =  *h_this - *z_this + *z_cond; 
+	  *h_averaged = 0;
+	  for(long i = 0; i <  (long)cnodev->msh_node_numbers_averaging.size(); i++) 
+       *h_averaged += cnodev->msh_node_weights_averaging[i] * ( m_pcs_this->GetNodeValue(cnodev->msh_node_numbers_averaging[i],nidx)  - m_pcs_this->m_msh->nod_vector[cnodev->msh_node_numbers_averaging[i]]->Z() );
+	  
+	  *h_averaged += *z_cond;
+	  *z_this = *z_cond; 
+    } // end averaging
+    else { // no averaging
+      *h_shifted = *h_this;
+      *h_averaged = *h_this;
+    }   // end no averaging
+
+	if(m_st->pcs_pv_name_cond == "PRESSURE1") {
+      *h_cond /= gamma;
+      *h_cond += *z_cond;
+    }
+	if(m_st->pcs_type_name_cond == "GROUNDWATER_FLOW") 
+	  h_cond = max(h_cond, z_this);		//groundwater level might not reach overland flow bottom, than only hydrostatic overland pressure
+ } // end overland flow
+ else {   // richards & groundwater flow 
+    if(m_st->node_averaging) { // shift overland node on soil column top, averaging over nodes
+      *h_shifted= *h_cond - *z_cond;
+      *h_shifted += *z_this;
+      *z_cond = *z_this;
+    }  // end averaging
+    else 
+      *h_shifted = *h_cond;
+
+    if( m_st->pcs_pv_name == "PRESSURE1") {
+      *h_this /= gamma;
+      *h_this += *z_this;
+    }
+ } // end richards & groundwater flow 
+
+}
+
+/**************************************************************************
+FEMLib-Method: 4.7.10
+10/2008 JOD Implementation
+**************************************************************************/
+double CalcCouplingValue(double factor, double h_this, double h_cond, double z_cond, CSourceTerm* m_st) {
+ 
+  if(m_st->pcs_type_name == "OVERLAND_FLOW")  
+    return factor *( h_cond - h_this);  
+  else {  // richards & groundwater flow 
+    if(m_st->pcs_type_name == "GROUNDWATER_FLOW") {  
+      if( h_this < z_cond && m_st->pcs_type_name_cond == "OVERLAND_FLOW")
+         return factor * (h_cond - z_cond); 
+       else
+         return factor * h_cond; 
+     }
+     else // richards flow
+  	   return factor * (h_cond - z_cond); 
+    
+   }
+
 }

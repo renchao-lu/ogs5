@@ -62,7 +62,7 @@ class CSourceTerm
 	// fluid process coupling JOD
 	double coup_leakance, rill_height; 
 	double sorptivity, constant, rainfall, rainfall_duration, moistureDeficit;
-    bool conditional, area_assembly;
+    bool conditional, node_averaging;
     bool river;
   	bool COUPLING_SWITCH;
 	// overland flow  JOD
@@ -214,8 +214,10 @@ extern  void GetNormalDepthNODValue(double& value, CSourceTerm*, long msh_node);
 extern  void GetCouplingNODValue(double& value, CSourceTerm* m_st, CNodeValue* cnodev); // JOD
 extern  void GetCouplingNODValueNewton(double& value, CSourceTerm* m_st, CNodeValue* cnodev); // JOD
 extern  void GetCouplingNODValuePicard(double& value, CSourceTerm* m_st, CNodeValue* cnodev); // JOD
+extern  double CalcCouplingValue(double factor, double h_this, double h_cond, double z_cond, CSourceTerm* m_st); // JOD
 extern  void GetCouplingNODValueMixed(double& value, CSourceTerm* m_st, CNodeValue* cnodev); // JOD
-extern  double GetRelativeCouplingPermeability(CRFProcess* m_pcs, double head, double rillDepth, long msh_node); // JOD
+extern  void GetCouplingFieldVariables(double* h_this, double* h_cond, double* h_shifted, double* h_averaged, double* z_this, double* z_cond, CSourceTerm* m_st, CNodeValue* cnodev);// JOD
+extern  double GetRelativeCouplingPermeability(CRFProcess* m_pcs, double head, CSourceTerm* m_st, long msh_node); // JOD
 extern  void GetPhilipNODValue(double& value,CSourceTerm* m_st); // JOD
 extern  void GetGreenAmptNODValue(double& value, CSourceTerm* m_st, long msh_node); // JOD
 extern  void GetNODValue(double& value, CNodeValue* cnodev,CSourceTerm* m_st); // JOD

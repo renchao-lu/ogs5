@@ -48,6 +48,7 @@ class CTimeDiscretization
     double max_time_step;  //YD
     double min_time_step; 
 	double minish; // JOD
+	int sub_steps; // JOD 4.7.10
 	bool Write_tim_discrete;  //YD
 	fstream *tim_discrete;  //YD
     double nonlinear_iteration_error; //OK/YD

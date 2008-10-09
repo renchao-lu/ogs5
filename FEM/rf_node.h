@@ -37,8 +37,10 @@ class CNodeValue
     double node_parameterE;
     int CurveIndex;
     int conditional;
-    vector<double>history_value;
+    //vector<double>history_value;
     long msh_node_number_conditional;
+	vector<long> msh_node_numbers_averaging;  // JOD   st-coupling 4.7.10
+	vector<double> msh_node_weights_averaging; // JOD       
     string tim_type_name;
     void Write(ostream& os=cout) const; //WW
     void Read(istream& is=cin); //WW

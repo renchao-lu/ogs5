@@ -49,6 +49,7 @@ CTimeDiscretization::CTimeDiscretization(void)
   step_current = 0;		//WW
   this_stepsize = 0.; //WW
   dt_sum = .0;			//WW
+  sub_steps = 0; // JOD 4.7.10
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -282,6 +283,11 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
         }// end of if "SELF_ADAPTIVE"
       }// end of while
     }// end of "TIME_CONTROL"
+    //....................................................................
+	if(line_string.find("$SUBSTEPS")!=string::npos) { // subkeyword found JOD 4.7.10
+      *tim_file>>sub_steps>>ws; 
+      continue;
+    }
     //....................................................................
   } // end of while(!new_keyword)
   return position;
