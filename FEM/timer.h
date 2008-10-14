@@ -11,7 +11,10 @@
 #define timer_INC
 
 /* Andere oeffentlich benutzte Module */
+using namespace std;
 #include <time.h>
+#include <vector>
+#include <windows.h>
 
 /* Deklarationen */
 
@@ -49,4 +52,35 @@ extern void TDestroyTimers(void);
 extern void ctime_(float *time);
 
 
+//SB_time
+
+class CClockTime{
+	private:
+	public:
+		CClockTime(void);
+		~CClockTime(void);
+	vector <double> time_flow;
+	vector <double> time_transport;
+	vector <double> time_kinreact;
+	vector <double> time_equireact;
+	double time_total_flow;
+	double time_total_transport;
+	double time_total_kinreact;
+	double time_total_equireact;
+	double delta_clocktime;
+	clock_t start;
+	clock_t end;
+
+	void StopTime(string);
+	void StartTime(void);
+	void PrintTimes(void);
+
+	long time1;
+	long time2;
+	double difftime;
+	
+
+};
+extern void CreateClockTime(void);
+extern vector <CClockTime *> ClockTimeVec;
 #endif

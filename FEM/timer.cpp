@@ -21,6 +21,12 @@
 
 /* Header / Andere intern benutzte Module */
 #include "timer.h"
+#include <vector>
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+#include<windows.h>
+using namespace std;
 
 /* Auf POSIX-Rechern ist exaktere Zeitmessung vorhanden */
 #ifdef _POSIX_SOURCE
@@ -33,6 +39,7 @@
 static int max_zeitspeicher=-1;
 static long *zeit=NULL;
 static int *running=NULL;
+vector <CClockTime *> ClockTimeVec;
 
 /*************************************************************************
  ROCKFLOW - Funktion: TInitTimer
@@ -332,3 +339,118 @@ void ctime_(float *time)
     *time = (float)TGetTime()/(float)TGetTicksPerSecond();
 } 
 
+//New SB time
+
+
+CClockTime::CClockTime(void){
+	delta_clocktime=0.0;
+	time_flow.clear();
+	time_transport.clear();
+	time_kinreact.clear();
+	time_equireact.clear();
+	start = 0;
+	end=0;
+	time_total_flow = 0.0;
+	time_total_transport = 0.0;
+	time_total_kinreact = 0.0;
+	time_total_equireact = 0.0;
+	time1=0;
+	time2=0;
+	difftime=0;
+}
+
+CClockTime::~CClockTime(void){
+	delta_clocktime=0.0;
+	time_flow.clear();
+	time_transport.clear();
+	time_kinreact.clear();
+	time_equireact.clear();
+}
+
+void CClockTime::StartTime(void){
+	start = clock();
+	time1=GetTickCount();
+}
+
+void CClockTime::StopTime(string name){
+char name1;
+name1 = name[0];
+
+end = clock();
+this->delta_clocktime = (double)(end-start)/CLOCKS_PER_SEC;
+
+time2=GetTickCount();
+difftime=(time2-time1)/1000.0;
+// cout << " ClockTime: " << delta_clocktime << ", TickTime: " << difftime << endl;
+
+switch (name1){
+default:
+	break;
+case ('F'):
+	time_flow.push_back(delta_clocktime);
+	time_total_flow += delta_clocktime;
+	break;
+case ('T'):
+	this->time_transport.push_back(delta_clocktime);
+	time_total_transport += delta_clocktime;
+	break;
+case ('K'):
+	this->time_kinreact.push_back(delta_clocktime);
+	time_total_kinreact += delta_clocktime;
+	break;
+case ('E'):
+	this->time_equireact.push_back(delta_clocktime);
+	time_total_equireact += delta_clocktime;
+	break;
+}
+}
+
+void CClockTime::PrintTimes(void){
+int i,length;
+double tot=0., help=0.0, tot_zeitschritt=0.;
+string outname= "ClockTimes.txt";
+
+cout.precision(2);
+tot = time_total_flow + time_total_transport+time_total_kinreact+time_total_equireact;
+cout << "ClockTimes: " << endl << "Unit   Flow:  Transport:  KinReactions:  EquiReactions:  total: "<< endl;
+cout <<  "[sec] " << setw(6) << time_total_flow << "  " << setw(10) << time_total_transport << "  " << setw(13) << time_total_kinreact << "  " << setw(14) <<  time_total_equireact << "  " << setw(6) << tot << endl;
+cout <<  "[%]   " << setw(6) <<  time_total_flow/tot*100 << "  " <<  setw(10) << time_total_transport/tot*100 << "  " <<  setw(13) << time_total_kinreact/tot*100 << "  " <<  setw(14) << time_total_equireact/tot*100 << "  " <<  setw(6) << tot/tot*100 << endl;
+
+length = (int)this->time_flow.size();
+ofstream out_file (outname.data(),ios::out);
+out_file.precision(6);
+
+out_file << "Flow   Transport  KinReactions  EquiReactions "<< endl;
+for(i=0;i<length;i++) {
+ //flow
+ help = time_flow[i];
+ out_file << help << "  ";
+ tot_zeitschritt = help;
+ //transport
+ if((int)time_transport.size() > i) help = time_transport[i]; else help = 0.0;
+ out_file << help << "  ";
+ tot_zeitschritt += help;
+ //kinetic reactions
+ if((int)time_kinreact.size() > i) help = time_kinreact[i]; else help = 0.0;
+ out_file << help << "  ";
+ tot_zeitschritt += help;
+ //equilibrium reactions
+ if((int)time_equireact.size() > i) help = time_equireact[i]; else help = 0.0;
+ out_file << help << "  ";
+ tot_zeitschritt += help;
+
+ out_file << tot_zeitschritt << endl;
+}
+out_file << endl;
+ out_file << time_total_flow << "  " << time_total_transport << "  " << time_total_kinreact << "  " << time_total_equireact << "  " << endl;
+ out_file <<  time_total_flow/tot*100 << "  " << time_total_transport/tot*100 << "  " << time_total_kinreact/tot*100 << "  " << time_total_equireact/tot*100 << "  " << tot/tot*100 << endl;
+out_file.close();
+
+}
+
+void CreateClockTime(void){
+CClockTime *m_ct=NULL;
+m_ct = new CClockTime();
+m_ct->delta_clocktime=0.0;
+ClockTimeVec.push_back(m_ct);
+}
