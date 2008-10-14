@@ -93,7 +93,7 @@ Programing:
 **************************************************************************/
 ios::pos_type COutput::Read(ifstream *out_file)
 {
-  char buffer[MAX_ZEILE];
+//  char buffer[MAX_ZEILE];
   string sub_line;
   string line_string;
   string delimiter(" ");
@@ -107,6 +107,8 @@ ios::pos_type COutput::Read(ifstream *out_file)
   ios::pos_type position_line;
   bool ok = true;
   std::stringstream line;
+  std::stringstream in;
+  string name;
   ios::pos_type position_subkeyword;
   //========================================================================
   // Schleife ueber alle Phasen bzw. Komponenten 
@@ -115,17 +117,20 @@ ios::pos_type COutput::Read(ifstream *out_file)
     if(new_subkeyword)
       out_file->seekg(position_subkeyword,ios::beg);
     new_subkeyword = false;
-    out_file->getline(buffer,MAX_ZEILE);
-    line_string = buffer;
-	if(line_string.size()<1) // empty line
-      continue; 
+    // SB new input		out_file->getline(buffer,MAX_ZEILE);
+	// SB new input 	line_string = buffer;
+	line_string.clear();
+	line_string = GetLineFromFile1(out_file);
+	if(line_string.size() < 1) break;
+    
     if(Keyword(line_string)) 
       return position;
     //--------------------------------------------------------------------
     if(line_string.find("$NOD_VALUES")!=string::npos) { // subkeyword found
       while ((!new_keyword)&&(!new_subkeyword)) {
         position_subkeyword = out_file->tellg();
-        *out_file >> line_string>>ws;
+        //SB input with comments  *out_file >> line_string>>ws;
+		line_string = GetLineFromFile1(out_file);
         if(line_string.find(hash)!=string::npos) {
           return position;
         }
@@ -135,7 +140,10 @@ ios::pos_type COutput::Read(ifstream *out_file)
         }
 		if(line_string.size()==0) 
           break; //SB: empty line
-        nod_value_vector.push_back(line_string);
+		in.str(line_string);
+		in >> name;
+        nod_value_vector.push_back(name);
+		in.clear();
       }
       continue;
     }
@@ -1242,9 +1250,9 @@ void COutput::WriteTECHeader(fstream &tec_file,int e_type, string e_type_name)
   }
   //--------------------------------------------------------------------
   // Write Header I: variables
-  tec_file << "VARIABLES = X,Y,Z";
+  tec_file << "VARIABLES  = \"X\",\"Y\",\"Z\"";
   for(k=0;k<nName;k++){
-    tec_file << "," << nod_value_vector[k] << " ";
+    tec_file << ",\"" << nod_value_vector[k] << "\" ";
   }
   tec_file << endl;
   //--------------------------------------------------------------------
@@ -1532,10 +1540,10 @@ double COutput::NODWritePLYDataTEC(int number)
   {
     string project_title_string = "Profiles along polylines"; //project_title;
     tec_file << "TITLE = \"" << project_title_string << "\"" << endl;
-    tec_file << "VARIABLES = DIST ";
+  tec_file << "VARIABLES = \"DIST\" ";
     for(k=0;k<no_variables;k++)
     {
-      tec_file << nod_value_vector[k] << " ";
+    tec_file << "\""<< nod_value_vector[k] << "\" ";
       if(nod_value_vector[k].compare("FLUX")==0)
         tec_file << "FLUX_INNER" << " ";
     }
@@ -1727,9 +1735,9 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
   if(time_step_number==0){ //WW  Old: if(time_step_number==1)
     string project_title_string = "Time curves in points"; //project_title;
     tec_file << "TITLE = \"" << project_title_string << "\"" << endl;
-    tec_file << "VARIABLES = Time ";
+    tec_file << "VARIABLES = \"TIME \" ";
     for(k=0;k<no_variables;k++)
-      tec_file << nod_value_vector[k] << " ";
+      tec_file << "\""<< nod_value_vector[k] << "\" ";
     //
     #ifdef RFW_FRACTURE
     for(i=0; i<(int)mmp_vector.size(); ++i)

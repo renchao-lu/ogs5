@@ -24,6 +24,8 @@ class REACT{
 	int heatflag;      /* if 1, heat transport is active and passed to phreeqc */
 	long nodenumber;   /* number of nodes, on which reactions are calculated */
 	bool flag_pqc;     /* flag if *.pqc file exists */
+	bool check_no_reaction_nodes; /* flag if CheckNoReactionNodes has been performed */
+	double temperature; /* temperature of water at node as specified in input file */
     long elenumber;    //number of elements
 	/* hier später arrays of reactions reinhängen ?*/
 
@@ -32,6 +34,7 @@ class REACT{
 	int rcml_number_of_equi_phases; /* number of phases (in equilibrium) */
 	int rcml_number_of_kinetics; /* number of kinetic reactions  */
 	int rcml_number_of_ion_exchanges; /* number of phases (in equilibrium) */
+	int rcml_number_of_gas_species; /* number of species in gas phase */
 	/* hier später reaction models reinhängen ?*/
     int rcml_pH_flag;   /* =0, pH constant; =1 (default), pH will change  */
     int rcml_pe_flag;   /* =0, pe constant; =1 (default), pe will change  */
@@ -51,7 +54,6 @@ class REACT{
 	REACT* GetREACT(void);
 	void CreateREACT(void);
 	void InitREACT(void);
-	void ExecuteReactions(void);
 	void ExecuteReactionsPHREEQC(void);
 	void ExecuteReactionsPHREEQCNew(void);
 	void TestPHREEQC(string);
@@ -60,7 +62,7 @@ class REACT{
 	int  ReadReactionModel(FILE *File);
 	int  ReadReactionModelNew(ifstream *);
 	int  ReadInputPhreeqc( long index, FILE *fpqc, FILE *Fphinp); //fsout removed 3912
-    int  WriteInputPhreeqc(long, ifstream*, ofstream*);
+    int  WriteInputPhreeqc(long, /*ifstream*,*/ ofstream*);
 	int  ReadOutputPhreeqc(char* fout);
 	int  ReadOutputPhreeqcNew(void);
 	void ResetpHpe(void);
@@ -68,6 +70,7 @@ class REACT{
 	void SetConcentrationResults(void);
 	void CalculateReactionRateFlag(void);
 	void SetNeighborNodesActive(long startnode, long level, int* help);
+	int  CheckNoReactionNodes(void);
 // Reaction at elements //MX
 	void InitREACT0(void);
     void ExecuteReactionsPHREEQC0(void);

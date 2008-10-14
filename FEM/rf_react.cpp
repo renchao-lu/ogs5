@@ -27,6 +27,7 @@ Reaction package to go with MTM2
 #include <fstream>
 #include "rf_tim_new.h"
 #include "rf_mmp_new.h"
+#include "rf_kinreact.h"
 // Elem object
 #include "fem_ele_std.h"
 
@@ -42,31 +43,9 @@ int NR_MIN_EQU;
 extern char *file_name;
 extern char *crdat; /* MX */
 //REACTION_MODEL *rcml=NULL;
+extern double gravity_constant;
 
 vector <REACT*> REACT_vec;
-
-
-/**************************************************************************
-   ROCKFLOW - Funktion: ExecuteReactions
-
-   Aufgabe:
-   Calculates chemical reactions between components
-   first Version
-   
-   Programmaenderungen:
-   08/2003     SB         Erste Version
-**************************************************************************/
-void REACT::ExecuteReactions(void){
-
-	if(this->flag_pqc) this->ExecuteReactionsPHREEQC();
-//	if(use_chem_flag == 2) ExecuteReactionsV2();
-
-}
-
-
-
-
-
 
 /**************************************************************************
    ROCKFLOW - Funktion: ExecuteReactionsPHREEQC
@@ -204,14 +183,14 @@ void REACT::ExecuteReactionsPHREEQC(void){
 **************************************************************************/
 void REACT::ExecuteReactionsPHREEQCNew(void){
  
-    long i,  ok = 0;
+    long i, ii,  ok = 0;
 
-    cout << "ExecuteReactionsPHREEQCNew: " << "\n";
+    cout << "    ExecuteReactionsPHREEQCNew:" << "\n";
 
     /* File handling - GeoSys input file */
     ifstream pqc_file (this->file_name_pqc.data(),ios::in);
     if (!pqc_file.good()){
-         cout << "! Error in ReadReactionModelNew: no File found !" << endl;
+         cout << "! Error in ExecuteReactionsPHREEQCNew: no Input File (*.pqc) found !" << endl;
 //         exit(0);
     } 
     //	File handling - data exchange file to phreeqc, input to PHREEQC
@@ -227,12 +206,19 @@ void REACT::ExecuteReactionsPHREEQCNew(void){
         if(!ok) cout << "Error setting up reaction model" << endl;
     }
 
+	// Check for nodes without reactions
+	if((int)this->check_no_reaction_nodes == false){
+        ok = this->CheckNoReactionNodes();
+        if(!ok) cout << "Error when checking for nodes without reactions" << endl;
+    }
     /* Read the input file (*.pqc) and set up the input file for PHREEQC ("phinp.dat")*/
     // Write input data block to PHREEQC for each node
+		ii = 0;
     for(i=0;i<this->nodenumber;i++)
     	if(this->rateflag[i] > 0){
             pqc_file.seekg(0L,ios_base::beg);
-            ok = WriteInputPhreeqc(i, &pqc_file, &outfile);
+            ok = WriteInputPhreeqc(i, /*&pqc_file,*/ &outfile);
+			ii++;
 		}
     
 //  Close *.pqc input file
@@ -253,6 +239,7 @@ void REACT::ExecuteReactionsPHREEQCNew(void){
       if(!ok) cout << " Error in call to PHREEQC !!!" << endl;
 	}
  
+	cout << " Calculated equilibrium geochemistry at " << ii << " nodes." << endl;
  /* Calculate Rates */
  // CalculateReactionRates();
  
@@ -274,12 +261,15 @@ REACT::REACT(void){
 	rate=NULL;
 	rateflag = NULL;
 	heatflag = 0;
+	temperature = -1.0;
 	nodenumber = 0;
 	flag_pqc = false;
+	this->check_no_reaction_nodes = false;
 
   rcml_number_of_master_species=0;
   rcml_number_of_equi_phases=0;
   rcml_number_of_ion_exchanges=0;
+  rcml_number_of_gas_species=0;
   rcml_number_of_kinetics=0;
   rcml_pH_flag=1;
   rcml_pe_flag=1;
@@ -918,6 +908,7 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
   int n_master_species=0;
   int n_equi_phases=0;
   int n_ion_exchange=0;
+  int n_gas_species=0;
   int idx;
   int nj;
   char line[MAX_ZEILE];
@@ -944,7 +935,7 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
         while(line_string.find("#ende")==string::npos){
             pqc_infile->getline(line,MAX_ZEILE);
             line_string = line;
-            if (line_string.find("# comp")!=string::npos)
+			if (line_string.find("# comp")!=string::npos){
                 if (line_string.find("pH") == string::npos && line_string.find("pe") == string::npos){
                     n_master_species +=1; // this excludes now pH and pe
                     in.str(line_string);
@@ -970,6 +961,7 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
 //                    cout << " pH found in GeoSys species" << endl;
                     if (line_string.find("charge") != string::npos) this->rcml_pH_charge=1;
                 }
+                }
 		   if (line_string.find("# temp")!=string::npos){
              // check if heat transport process is calculated in GeoSys 
 			 for(int i=0;i<no_processes;i++){
@@ -979,6 +971,13 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
 					break;
                  }
 			 }
+           }
+			if(line_string.find("temp")!=string::npos){
+				if(this->rcml_heat_flag < 1){ // if no heat transport is calculated
+				   in.str(line_string);
+				   in >> speciesname >> this->temperature; // save temperature
+				   in.clear();
+				}
            }
         }
 		this->rcml_number_of_master_species = n_master_species;
@@ -1055,6 +1054,26 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
         }
 		this->rcml_number_of_ion_exchanges = n_ion_exchange;
        } 
+	  /* Scleife über Keyword GAS_PHASE */
+	  if(line_string.find("GAS_PHASE")!=string::npos) { // keyword found
+
+        while(line_string.find("#ende")==string::npos){
+            pqc_infile->getline(line,MAX_ZEILE);
+            line_string = line;
+            if (line_string.find("# comp") !=string::npos){
+                n_gas_species +=1;
+                in.str(line_string);
+                in >> speciesname ;
+                in.clear();
+                m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
+                idx = m_pcs->GetNodeValueIndex(speciesname)+1; // old timelevel
+                pqc_names.push_back(speciesname); //store species name in vector names
+                pqc_process.push_back(m_pcs->pcs_number); // store process name in vector processes
+                pqc_index.push_back(idx);
+            }
+        }
+		this->rcml_number_of_gas_species = n_gas_species;
+	  }
       /* Schleife ueber Keyword SELECTED_OUTPUT */
       if(line_string.find("SELECTED_OUTPUT")!=string::npos) { // keyword found
         while(line_string.find("#ende")==string::npos){
@@ -1071,9 +1090,10 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
 
     if((this->gamma_Hplus > 0)) cout << " pH found and H+ found, pH for PHREEQC input is calculated using gamma_H+ and [H+] " << gamma_Hplus << endl;
 
-    nj=rcml_number_of_master_species+rcml_number_of_equi_phases+rcml_number_of_ion_exchanges;
+    nj=rcml_number_of_master_species + rcml_number_of_equi_phases + rcml_number_of_ion_exchanges + rcml_number_of_gas_species;
     cout << " Found in *.pqc file: " << rcml_number_of_master_species << " master species (excluding pH, H+ and pe), " ;
-    cout << rcml_number_of_equi_phases << " equilibrium phases and " << rcml_number_of_ion_exchanges << " ion exchangers" << endl;
+    cout << rcml_number_of_equi_phases << " equilibrium phases,  " << rcml_number_of_ion_exchanges << " ion exchangers and " ;
+	cout << rcml_number_of_gas_species << " gas species " << endl;
 //    for(i=0; i< (int) pqc_names.size();i++)
 //        cout << pqc_names[i] << ", " << pqc_index[i] << ", " << pqc_process[i] << endl;
  
@@ -1596,14 +1616,15 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
    06/2003     MX         Read function realisation
    01/2006     SB         Reimplementation, C++ class, IO, bugfixes
 **************************************************************************/
-int REACT::WriteInputPhreeqc(long index, ifstream *pqc_iinfile, ofstream *out_file){
+int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *out_file){
 
   char line[MAX_ZEILE];
   std::stringstream in;
   string name, line_string, speciesname, dummy;
   CRFProcess* m_pcs = NULL;
-  int i, idx, n1, n2, n3, count=-1;
+  int i, ii, idx, n1, n2, n3, n4, count=-1;
   double dval, dval1;
+  double z, h, dens, press, partial_press, volume, temp=-1.0, mm;
  
 //  cout << " WriteInputPhreeqc for node " << index << endl;
   cout.flush();
@@ -1665,6 +1686,7 @@ int REACT::WriteInputPhreeqc(long index, ifstream *pqc_iinfile, ofstream *out_fi
 					if (dval<273.0) dval += 273.15; //change from °C to Kelvin if necessary
                     dval -=273.15; // Input to PHREEQC is in °C
                     *out_file << "temp " << dval << "  # temp " << endl;
+					temp = dval; // save for gas phase input
                 }                
             }
             else { // Write units and temperature in the standard case
@@ -1758,6 +1780,79 @@ int REACT::WriteInputPhreeqc(long index, ifstream *pqc_iinfile, ofstream *out_fi
         }
        } // end EXCHANGE
 //-------------------------------------------------------------------------------------------------------------
+      /* Schleife ueber Keyword GAS_PHASE */
+      if(line_string.find("GAS_PHASE")!=string::npos) { // keyword found
+        *out_file << endl << "GAS_PHASE   " <<  index+1 << endl;
+
+		// get necessary values for conversion of molar concentrations to partial pressures, and to calculate total pressure and total volume
+		
+		// get height of node z
+		CFEMesh* m_msh = fem_msh_vector[0]; //SB: ToDo hart gesetzt
+		Mesh_Group::CNode* m_nod = NULL;
+		m_nod = m_msh->nod_vector[index];
+		z = m_msh->nod_vector[index]->Z();
+		
+		// get piezometric hight h
+		m_pcs = PCSGet("GROUNDWATER_FLOW");
+		if(m_pcs == NULL) cout << "   Error - no flow process found!" << endl; 
+		idx = m_pcs->GetNodeValueIndex("HEAD")+1;
+		h = m_pcs->GetNodeValue(index,idx);
+		
+		// get fluid density
+		dens = mfp_vector[0]->Density();
+		
+		// calculate pressure in [Pa]
+		press = dens * gravity_constant * (h-z);
+		// cout << " Pressure: " << press << " = " << dens << " * " << gravity_constant << " * ( " << h << " - " << z << " ) " << endl;
+		
+
+		// get temperature in [°C]
+		if(rcml_heat_flag < 1) temp = this->temperature; 
+
+		// get molar masses of gas phase
+		mm=0.0; // mm is total molar mass of gas phase in [mol]
+		ii= rcml_number_of_master_species + 3 + rcml_number_of_ion_exchanges + rcml_number_of_equi_phases;
+		for(i=ii;i<ii+rcml_number_of_gas_species;i++){
+			speciesname = this->pqc_names[i];
+//			cout << "Testing index vectors: " << speciesname << ",   With vectors: " << pqc_names[i] << ", " << pcs_vector[pqc_process[i]]->pcs_number << ", " << pqc_index[i];
+			dval = pcs_vector[pqc_process[i]]->GetNodeValue(index,pqc_index[i]);
+//			cout << dval << endl;
+			mm += dval;
+		}
+
+		//  calculate Volume of gas phase in [mol * Pa * m^3 / K / mol * K / Pa = m^3 ]
+		volume = mm * 8.314472 * (273.15 + temp) /press;
+		
+        while(line_string.find("#ende")==string::npos){
+            pqc_infile.getline(line,MAX_ZEILE);
+            line_string = line;
+			if (line_string.find("-pressure") !=string::npos)
+				*out_file << "        -pressure       " << press/101325.0 << endl;  // pressure in atmospheres
+			else if (line_string.find("-volume") !=string::npos)
+				*out_file << "        -volume       " << volume*1000.0 << endl;     // volume in Liters
+			else if (line_string.find("-temperature") !=string::npos)
+				*out_file << "        -temperature       " << temp << endl;         // temperature in °Celsius
+            else if (line_string.find("# comp") !=string::npos){
+                count++;
+                speciesname = pqc_names[count];
+                dval = pcs_vector[pqc_process[count]]->GetNodeValue(index,pqc_index[count]);
+                if(dval < 1.0e-19) dval = 0.0;
+                // cout << "Testing index vectors: " << speciesname << " , with vectors: " << pqc_names[count] << ", " << pcs_vector[pqc_process[count]]->pcs_number << ", " << pqc_index[count];
+				// cout << " Molar mass: " << dval  << ", component / total mass: " << dval/mm << endl;
+				// dval is molar mass of gas component, convert to partial pressure [Pa]
+				if (mm > 0.0) 
+					partial_press = press * dval/mm;
+				else
+						partial_press = 0.0;
+				// cout << " partial pressure: " << partial_press  << ", partial/total press: " << (partial_press/press) << endl;
+
+			    *out_file << "        " << speciesname << "       " << partial_press/101325.0 << "       # comp " <<endl;
+            }
+            else
+                *out_file << line_string << endl; //write line unchanged
+        }
+       } // end GAS_PHASE
+//-------------------------------------------------------------------------------------------------------------
       /* Schleife ueber Keyword SELECTED_OUTPUT */
       if(line_string.find("SELECTED_OUTPUT")!=string::npos) { // keyword found
         if(index < 1){
@@ -1793,6 +1888,7 @@ int REACT::WriteInputPhreeqc(long index, ifstream *pqc_iinfile, ofstream *out_fi
             n1 = this->rcml_number_of_master_species;
             n2 = this->rcml_number_of_equi_phases;
             n3 = this->rcml_number_of_ion_exchanges;
+			n4 = this->rcml_number_of_gas_species;
             *out_file << "-head ";
             for(i=0;i<n1; i++) *out_file << " " << pqc_names[i];
             *out_file << " pH ";
@@ -1800,6 +1896,7 @@ int REACT::WriteInputPhreeqc(long index, ifstream *pqc_iinfile, ofstream *out_fi
             *out_file << " pe ";
             for(i=n1+3; i<n1+3+n2; i++) *out_file << " " << pqc_names[i];
             for(i=n1+3+n2;i<n1+3+n2+n3; i++) *out_file << " " << pqc_names[i];
+			for(i=n1+3+n2+n3; i<n1+3+n2+n3+n4; i++) *out_file << " " << pqc_names[i];
             *out_file << endl;
             // Write master species
             *out_file << " 10 PUNCH ";
@@ -1824,6 +1921,12 @@ int REACT::WriteInputPhreeqc(long index, ifstream *pqc_iinfile, ofstream *out_fi
             if(n3 > 0){
                 *out_file << " 60 PUNCH ";
                 for(i=n1+3+n2;i<n1+3+n2+n3;i++) *out_file << " MOL(\"" << pqc_names[i] << "\"),";
+                *out_file << endl;
+            }
+			// Write gas phase species
+			if(n4 > 0){
+                *out_file << " 70 PUNCH ";
+                for(i=n1+3+n2+n3; i<n1+3+n2+n3+n4; i++) *out_file << " GAS(\"" << pqc_names[i] << "\"),";
                 *out_file << endl;
             }
         }// end if index < 1
@@ -2020,7 +2123,7 @@ int REACT::ReadOutputPhreeqcNew(void){
     double dval, dval1;
     string speciesname;
     CRFProcess* m_pcs = NULL;
-    int n1, n2, n3, dix=0;
+    int n1, n2, n3, n4, dix=0;
     CTimeDiscretization *m_tim = NULL;
  
     // Get time step number   
@@ -2037,9 +2140,10 @@ int REACT::ReadOutputPhreeqcNew(void){
     n1 = this->rcml_number_of_master_species;
     n2 = this->rcml_number_of_equi_phases;
     n3 = this->rcml_number_of_ion_exchanges;
+	n4 = this->rcml_number_of_gas_species;
   
 	/* get total number of species in PHREEQC output file */
-	ntot = rcml_number_of_master_species + 3 + rcml_number_of_equi_phases + rcml_number_of_ion_exchanges; 
+	ntot = rcml_number_of_master_species + 3 + rcml_number_of_equi_phases + rcml_number_of_ion_exchanges + rcml_number_of_gas_species; 
 	/* get lines to skip */
 	anz = this->rcml_number_of_pqcsteps;
 
@@ -2111,6 +2215,14 @@ int REACT::ReadOutputPhreeqcNew(void){
 //                cout << " Read ex. for " << pqc_names[j] << " " << dval << endl;
              }
 
+           }
+
+/*--------------------Read the concentration of all gas phase species -------*/
+           for (j=n1+3+n2+n3; j<n1+3+n2+n3+n4; j++){
+             if(ein >> dval){
+                pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
+                if(index <2) cout << " Read gas phase for " << pqc_names[j] << " " << dval << endl;
+             }
            }
 
 	 } //if rateflag
@@ -2580,7 +2692,6 @@ void REACTInit()
 	    //--------------------------------------------------
         rc->CreateREACT();//SB
         rc->InitREACT();
-//SB4501        rc->ExecuteReactions();
 		rc->ExecuteReactionsPHREEQCNew();
 	    REACT_vec.clear();
 	    REACT_vec.push_back(rc);
@@ -2602,3 +2713,55 @@ void REACTInit()
   #endif
 //  delete rc;
 }
+/***********************************************************************************************
+   ROCKFLOW - Funktion: CheckNoReactionNodes
+
+   Aufgabe:
+   Checks, if in KinReactData (from kinetic reactions input file) geometries 
+   are defined, where no reactions are to be calculated. These are then 
+   transferred node wise to vector rateflag
+  
+   Ergebnis:
+   0 bei Fehler oder Ende aufgrund Dateitest, sonst 1
+
+   Programmaenderungen:
+   12/2007     SB	         Erste Version
+************************************************************************************************/
+int REACT::CheckNoReactionNodes(void){
+
+int ok = 0;
+long l;
+
+cout << " CheckNoReactionNodes " << endl;
+
+if(aktueller_zeitschritt < 2){ //do not in the very first calculation before first time step and in the first time step
+	this->check_no_reaction_nodes = false;
+	}
+else{
+	CKinReactData *m_krd = NULL;
+	if(KinReactData_vector.size()>0)
+		m_krd = KinReactData_vector[0];
+	if(m_krd == NULL){
+		// no KinReactData specified in *.krc file
+		cout << "No CKinReactData available in CheckNoReactionNodes" << endl;
+	}
+	else{
+		if(m_krd->is_a_CCBC.size() > 0){ // reaction nodes specified in krc input file
+			CFEMesh* m_msh = fem_msh_vector[0]; //SB: ToDo hart gesetzt
+			if(m_msh == NULL) {cout << "No mesh in CheckNoReactionNodes" << endl; exit(0);}
+			// Initialize vector is_a_CCBC
+			for(l=1; l< (long)m_msh->nod_vector.size();l++) { // node 1 needed for phreeqc-input
+				if(m_krd->is_a_CCBC[l] == true) this->rateflag[l] = 0;  // rateflag == 0 means no reactions calculated
+				// cout << " Node " << l << " is " << this->rateflag[l] << endl;
+			}
+		}
+	}
+
+	this->check_no_reaction_nodes = true;
+}
+
+ok=1;
+return ok; 
+}
+
+

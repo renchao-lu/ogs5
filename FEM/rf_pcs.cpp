@@ -3453,6 +3453,11 @@ double CRFProcess::Execute()
   if(myrank==0)
 #endif
    cout << "    ->Process " << pcs_number << ": " << pcs_type_name << endl;
+  if(!this->pcs_type_name.compare("MASS_TRANSPORT")) {
+	  cout << "      for " << this->pcs_primary_function_name[0];
+	  cout << " pcs_component_number " << this->pcs_component_number;       
+    cout << endl;
+  }
   //----------------------------------------------------------------------
   // 0 Initialize equations
 #ifdef NEW_EQS //WW
@@ -6535,6 +6540,35 @@ void CRFProcess::CopyTimestepNODValues()
 FEMLib-Method:
 Task:
 Programing:
+03/2006 SB Implementation
+last modified:
+**************************************************************************/
+int PCSGetPCSIndex(string pcs_type_name, string comp_name)
+{
+  CRFProcess *m_pcs = NULL;
+  int i, pcs_no;
+  int no_processes = (int)pcs_vector.size();
+  string testname;
+  pcs_no = -1;
+  for(i=0;i<no_processes;i++){
+    m_pcs = pcs_vector[i];
+    if(m_pcs->pcs_type_name.compare(pcs_type_name)==0){
+      testname = m_pcs->pcs_primary_function_name[0];
+      if(testname.compare(comp_name)==0){
+//        cout << " Found in PCSGetbyTypeandCompName for PCSType/Compname " << pcs_type_name << ", " << comp_name;
+//        cout << " Process number " << m_pcs->pcs_number << ", compnumber " << m_pcs->pcs_component_number << endl;
+		  pcs_no = i;
+          return pcs_no;
+      }
+    }
+  }
+  return pcs_no;
+}
+
+/**************************************************************************
+FEMLib-Method:
+Task:
+Programing:
 12/2005 SB Implementation
 last modified:
 **************************************************************************/
@@ -9069,4 +9103,60 @@ void CRFProcess::IncorporateSourceTerms_GEMS(void)
     }
 }
 #endif
-
+/*************************************************************************
+ROCKFLOW - Function: CRFProcess::
+Task:  
+Programming: 
+10/2008 //WW/CB Implementation
+**************************************************************************/
+void CRFProcess:: UpdateTransientBC()
+{
+  if((long)bc_transient_index.size()==0)
+   return;
+  bool valid=false;
+  long i, j, k, start_i, end_i=0;
+  double t_fac = 0.;
+  CGLPolyline *m_polyline = NULL;
+  CBoundaryCondition *m_bc = NULL;
+  CBoundaryConditionNode *m_node_value = NULL;
+  CFunction* m_fct = NULL;
+  vector<double> node_value;
+  //
+  for(i=0; i<(long)bc_transient_index.size(); i++)
+  {
+     m_bc = bc_node[bc_transient_index[i]];
+     m_polyline = GEOGetPLYByName(m_bc->geo_name);
+     start_i = bc_transient_index[i];
+     if(i==(long)bc_transient_index.size()-1)
+        end_i = (long)bc_node.size();
+     else
+        end_i = bc_transient_index[i+1];
+     node_value.resize(end_i-start_i);
+     // Piecewise linear distributed.
+     for(k=0;k<(int)m_bc->DistribedBC.size(); k++)
+     {              
+       for(j=0;j<(int)m_polyline->point_vector.size(); j++)
+       {
+         if(m_bc->PointsHaveDistribedBC[k]==m_polyline->point_vector[j]->id)
+         {
+           if(fabs(m_bc->DistribedBC[k])< MKleinsteZahl) m_bc->DistribedBC[k] = 1.0e-20;
+             m_polyline->point_vector[j]->propert = m_bc->DistribedBC[k];
+             m_fct = FCTGet(m_bc->PointsFCTNames[k]);
+             if(m_fct)
+                t_fac = m_fct->GetValue(aktuelle_zeit,&valid);
+             else
+                cout << "Warning in CBoundaryConditionsGroup - no FCT data" << endl;
+             if(valid) m_polyline->point_vector[j]->propert *= t_fac;
+             //
+             break;
+          }
+       }  
+     }
+     InterpolationAlongPolyline(m_polyline, node_value);
+     for(k=start_i; k<end_i; k++)
+     {
+       m_node_value = bc_node_value[k];
+       m_node_value->node_value = node_value[k-start_i];  
+     }
+  } 
+} 

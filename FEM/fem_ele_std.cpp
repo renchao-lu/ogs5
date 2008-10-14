@@ -1718,12 +1718,14 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
         tensor = MediaProp->MassDispersionTensorNew(ip);
         mat_fac = 1.0; //MediaProp->Porosity(Index,pcs->m_num->ls_theta); // porosity now included in MassDispersionTensorNew()
   	 	//CB 
-      mat_fac *= PCSGetEleMeanNodeSecondary_2(Index, pcs->flow_pcs_type, "SATURATION1", 1);
+      //SB->CB I think this does not belong here
+		// mat_fac *= PCSGetEleMeanNodeSecondary_2(Index, pcs->flow_pcs_type, "SATURATION1", 1);
       //if(PCSGet("RICHARDS_FLOW"))
      	//	    mat_fac *= PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
-        for(i=0;i<dim*dim;i++) 
+		for(i=0;i<dim*dim;i++) {
           mat[i] = tensor[i]*mat_fac*time_unit_factor; 
-        break;
+		}
+		break;
       //------------------------------------------------------------------
       case O: // Overland flow
 	    //................................................................
@@ -2420,8 +2422,8 @@ void CFiniteElementStd::CalcMass()
   // Material
   mat_fac = 1.0;
   double alpha[3], summand[8]; 
-  int indice = MeshElement->GetIndex();
-  int phase = pcs->pcs_type_number;
+//  int indice = MeshElement->GetIndex();
+//  int phase = pcs->pcs_type_number;
   int upwind_method = pcs->m_num->ele_upwind_method;
   MNulleVec(alpha,3);
   MNulleVec(summand,8);
@@ -3111,6 +3113,8 @@ void CFiniteElementStd::CalcLaplace()
                     {
 			           (*Laplace)(i+in*nnodes,j+jn*nnodes) += fkt * dshapefct[k*nnodes+i] \
                            * mat[dim*k+l] * dshapefct[l*nnodes+j];
+//					   if(Index < 10) {cout << " i, j, k, l, nnodes, dim: " << i << ", " << j << ", " << k << ", " << l << ", " << nnodes << ", " << dim << ". fkt, dshapefct[k*nnodes+i], mat[dim*k+l], dshapefct[l*nnodes+j]: ";
+//					   cout << fkt << ", " << dshapefct[k*nnodes+i] << ", " << mat[dim*k+l] << ", " << dshapefct[l*nnodes+j] << endl;}
 				    
    		            } 
                  }
@@ -4477,6 +4481,7 @@ Programing:
 void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
 {
   int i,j;
+  ElementMatrix * EleMat = NULL;     //SB-3
   // NUM
   double theta = pcs->m_num->ls_theta; //OK
 #if defined(NEW_EQS)
@@ -4493,6 +4498,7 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
 //  double non_linear_function_iter = 1.0; //OK MediaProp->NonlinearFlowFunction(Index,unit,theta);
 //  double non_linear_function_t0   = 1.0; //OK MediaProp->NonlinearFlowFunction(Index,unit,0.0);
   double fac_mass, fac_laplace, fac_advection, fac_storage, fac_content;
+  if(((aktueller_zeitschritt==1)||(pcs->tim_type_name.compare("TRANSIENT")==0))){   //SB-3
   // Initialize.
   (*Mass) = 0.0;
   (*Laplace) = 0.0;
@@ -4517,6 +4523,29 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
   CalcStorage();
    // Calc Content Matrix for  saturation changes
   CalcContent();
+
+  // Store matrices to memory for steady state element matrices     //SB-3
+  if(pcs->Memory_Type > 0){
+    EleMat = pcs->Ele_Matrices[Index];
+//    EleMat->SetMass(Mass);
+    EleMat->SetLaplace(Laplace);
+    EleMat->SetAdvection(Advection);
+    EleMat->SetStorage(Storage);
+//    EleMat->SetContent(Content);
+  }
+
+  }     //SB-3
+  else{
+	  if(Index < 1) cout << " Skipping calculation of element matrices " << endl;
+	  // Get Element Matrices
+	    EleMat = pcs->Ele_Matrices[Index];
+        Mass = EleMat->GetMass();
+        Laplace = EleMat->GetLaplace();
+		Advection = EleMat->GetAdvection();
+		Storage = EleMat->GetStorage();
+//		Content = EleMat->GetContent();
+
+  }//pcs->tim_type    //SB-3
   //======================================================================
   // Assemble global matrix
   //----------------------------------------------------------------------
@@ -4618,6 +4647,32 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
       (*RHS)(i+LocalShift) +=  NodalVal[i];
   }
   //----------------------------------------------------------------------
+  //Debug output 
+  /* 
+  	if(Index < 10){
+	cout << " Element Number " << Index << endl;
+	cout << " Mass matrix" << endl;
+	Mass->Write();
+	cout << " Advection matrix" << endl;
+	Advection->Write();
+	cout << " Dispersion matrix" << endl;
+	Laplace->Write();
+	cout << " Storage matrix" << endl;
+	Storage->Write();
+	cout << " Content matrix" << endl;
+	Content->Write();
+	cout << " Left matrix" << endl;
+	StiffMatrix->Write();
+	cout << " Right matrix" << endl;
+	AuxMatrix1->Write();
+	cout << "RHS: " << endl ;
+	for (i=0;i<nnodes; i++) cout << "| " << NodalVal[i] << " |" << endl;
+	cout << " initial concentrations" << endl;
+	for (i=0;i<nnodes; i++) cout << "| " << NodalVal1[i] << " |" << endl;
+//	cout << " RHS vector: " << endl;
+//	for (i=0;i<nnodes; i++) cout << "| " <<  (double)(*RHS)(i+LocalShift) << " |" << endl;
+	}
+	/* */
 
 }
 /**************************************************************************

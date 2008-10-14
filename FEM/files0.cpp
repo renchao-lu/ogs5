@@ -55,6 +55,7 @@
 #include "rf_num_new.h"
 #include "rf_random_walk.h" // PCH
 #include "rf_react.h"
+#include "rf_kinreact.h"
 #include "rf_fluid_momentum.h"  // PCH
 #include "rf_fct.h" //OK
 #include "rf_db.h" //OK
@@ -150,6 +151,8 @@ int ReadData ( char *dateiname )
   MMPRead(dateiname);
   CPRead(dateiname); //SB:GS4
   RCRead(dateiname);
+  KRRead(dateiname);
+  KRWrite(dateiname); 
 #ifdef CHEMAPP
   CHMRead(dateiname); //MX for CHEMAPP
 #endif

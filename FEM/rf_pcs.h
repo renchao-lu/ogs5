@@ -180,6 +180,8 @@ public:
     vector<long> bc_node_value_in_dom; //WW for domain decomposition
     vector<long> bc_local_index_in_dom; //WW for domain decomposition
     vector<long> rank_bc_node_value_in_dom; //WW
+    vector<long> bc_transient_index; //WW/CB
+    void UpdateTransientBC(); //WW/CB
     //....................................................................
     // 6-ST
     // Node values from sourse/sink or Neumann BC. WW
@@ -505,6 +507,7 @@ extern CRFProcess* PCSGet(string);
 extern void PCSDelete();
 extern void PCSDelete(string);
 extern void PCSCreate();
+extern int PCSGetPCSIndex(string,string); //SB
 extern CRFProcess *PCSGet(string,string); //SB
 extern CRFProcess *PCSGet(string,bool); //OK
 extern CRFProcess *PCSGetFluxProcess();//CMCD

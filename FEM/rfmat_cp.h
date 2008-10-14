@@ -60,6 +60,9 @@ class CompProperties
     double isotherm_model_values[10];				/* Isothermen-Koeffizienten */
 	int isotherm_function_name;
 	int GetNumberIsothermValuesCompProperties(int); /* Zugriff auf Number of Parameters */
+	/* bubble velocity */
+	int bubble_velocity_model;
+	double bubble_velocity[3];					/* velocity of rising bubbles */
 
     ios::pos_type Read(ifstream*);						/* Lesefunktion f? eine Instanz von CompProperties */
     void Write(ofstream*);						/* Schreibfunktion f? eine Instanz von CompProperties */

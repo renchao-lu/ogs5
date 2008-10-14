@@ -69,6 +69,8 @@ CompProperties::CompProperties(long n){
 	isotherm_model=-1;
 	count_of_isotherm_model_values=0;
 
+	bubble_velocity_model=-1;
+	bubble_velocity[0] = bubble_velocity[1] = bubble_velocity[2] = 0.0;
 	file_base_name = "nix";
 
 }
@@ -320,6 +322,13 @@ Programing:
       
 	} // subkeyword found
 
+	if(line_string.find("$BUBBLE_VELOCITY")!=string::npos) { // subkeyword found
+	  in.str(GetLineFromFile1(rfd_file));
+      in >> bubble_velocity_model;
+	  if(bubble_velocity_model == 1)
+		  in >> bubble_velocity[0] >> bubble_velocity[1] >> bubble_velocity[2];
+	  in.clear();
+	} // subkeyword found
 
 
   } //end while
@@ -330,7 +339,7 @@ Programing:
 
 /**************************************************************************
 CompProperties - Method: Write
-Task: KinReaction write function - echo of input values to rfe - file
+Task: ComponentProperties write function - echo of input values to rfe - file
 Programing:
 05/2004 SB Implementation
 **************************************************************************/
@@ -358,7 +367,7 @@ void CPWrite(string base_file_name,int flag){
 	rfe_file.seekp(0L,ios::end); // go to end
   //========================================================================
   rfe_file << endl << "; CompProperties ----------------------------------------------------------------- " << endl;
-  // Output all Reactions
+  // Output all components
   length = (int) cp_vec.size();
   for(i=0;i<length;i++){
 	m_kr = cp_vec[i];
@@ -371,8 +380,8 @@ void CPWrite(string base_file_name,int flag){
 }
 
 /**************************************************************************
-Reaction-Method: 
-Task: Reaction class read function
+Component Properties: 
+Task: Component class write function
 Programing:
 05/2004 SB Implementation - adapted from OK rf_bc_new
 **************************************************************************/
@@ -901,7 +910,7 @@ double CompProperties::CalcElementRetardationFactor( long index, double*gp, doub
    04/2003     SB         Erste Version
    09/2004	   SB		  Moved to Class CompProperties as member function
  **************************************************************************/
-double CompProperties::CalcElementRetardationFactorNew( long index, double*gp, CRFProcess* m_pcs)
+double CompProperties::CalcElementRetardationFactorNew( long index, double *gp, CRFProcess* m_pcs)
 {
  static double porosity,density_rock,isotherm;
  static double conc, retard = 0.0;
@@ -923,6 +932,7 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double*gp, C
 // porosity = 0.5; //SB- set porosity
 // density_rock = 2000.0; // GetSolidDensity(index);
  density_rock = fabs(m_msp->Density());
+//SB-todo: CHeck saturatiuon dependence
 
  /* Get mean element concentration from last time step */
  conc = CalcElementMeanConcNew(index, m_pcs);

@@ -29,6 +29,7 @@ extern void remove_white_space(string*);
 #include "rf_node.h"
 #include "rf_bc_new.h"
 #include "rf_pcs.h"
+#include "rf_fct.h"
 // MathLib
 #include "mathlib.h"
 
@@ -57,6 +58,7 @@ CBoundaryCondition::CBoundaryCondition(void)
   // FCT
   conditional = false;
   display_mode = false; //OK
+  time_dep_interpol = false;
 }
 
 /**************************************************************************
@@ -107,7 +109,7 @@ ios::pos_type CBoundaryCondition::Read(ifstream *bc_file)
   bool new_subkeyword = false;
   string hash("#");
   ios::pos_type position;
-  string sub_string;
+  string sub_string, strbuff;
   int  ibuff;  //pos,
   double dbuff; //WW
   ios::pos_type position_line;
@@ -232,12 +234,17 @@ ios::pos_type CBoundaryCondition::Read(ifstream *bc_file)
         for(int i=0; i<nLBC; i++)
         {
 		  in.str(GetLineFromFile1(bc_file));
-          in>>ibuff>>dbuff;
+          in >> ibuff >> dbuff >> strbuff;
           in.clear(); 
 
 //           *bc_file>>ibuff>>dbuff;
            PointsHaveDistribedBC.push_back(ibuff);
            DistribedBC.push_back(dbuff);
+           if(strbuff.size() > 0)
+           {
+              PointsFCTNames.push_back(strbuff);
+              time_dep_interpol = true;
+           }
         }
 //        bc_file->ignore(MAX_ZEILE,'\n');
       }
@@ -879,6 +886,7 @@ cut_string = tmp;
 CBoundaryConditionsGroup::CBoundaryConditionsGroup(void)
 {
 	msh_node_number_subst = -1; //
+    time_dep_bc = -1;
 }
 
 CBoundaryConditionsGroup::~CBoundaryConditionsGroup(void)
@@ -906,6 +914,7 @@ Programing:
 04/2006 WW New storage
 09/2006 WW Move linear interpolation to new MSH strcuture
 12/2007 WW Linear distributed BC in a surface
+10/2008 WW/CB SetTransientBCtoNodes  
 last modification:
 **************************************************************************/
 void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, 
@@ -951,6 +960,11 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
   list<CBoundaryCondition*>::const_iterator p_bc = bc_list.begin();
   while(p_bc!=bc_list.end()) {
     m_bc = *p_bc;
+    if(m_bc->time_dep_interpol)  //WW/CB
+    { 
+      ++p_bc;
+      continue; 
+    }
     //====================================================================
     //OK if(m_bc->pcs_type_name.compare(pcs_type_name)==0){ //OK/SB 4108
     if((m_bc->pcs_type_name.compare(pcs_type_name)==0)&&(m_bc->pcs_pv_name.compare(pcs_pv_name)==0)){
@@ -1271,6 +1285,58 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
     ++p_bc;
   } // list
   //======================================================================
+  // SetTransientBCtoNodes  10/2008 WW/CB Implementation
+  p_bc = bc_list.begin();
+  while(p_bc!=bc_list.end()) {
+    m_bc = *p_bc;
+    if(!m_bc->time_dep_interpol)  //WW/CB
+    { 
+      ++p_bc;
+      continue; 
+    }
+    //====================================================================
+    //OK if(m_bc->pcs_type_name.compare(pcs_type_name)==0){ //OK/SB 4108
+    if((m_bc->pcs_type_name.compare(pcs_type_name)==0)&&(m_bc->pcs_pv_name.compare(pcs_pv_name)==0))
+    {
+        //................................................................
+      if(m_bc->geo_type_name.compare("POLYLINE")==0) 
+      {
+        m_polyline = GEOGetPLYByName(m_bc->geo_name);//CC
+        if(m_polyline) 
+        {
+          //................................................................
+          if(m_bc->dis_type_name.compare("LINEAR")==0){ //WW
+            if(m_polyline->type==100) //WW
+                m_msh->GetNodesOnArc(m_polyline,nodes_vector);
+            else
+                m_msh->GetNODOnPLY(m_polyline,nodes_vector);
+
+			node_value.resize(nodes_vector.size());
+ 		    //InterpolationAlongPolyline(m_polyline, node_value);
+            m_pcs->bc_transient_index.push_back((long)m_pcs->bc_node.size());
+            for(i=0;i<(int)nodes_vector.size();i++)
+            {
+              m_node_value = new CBoundaryConditionNode();
+              m_node_value->msh_node_number = -1;
+              m_node_value->msh_node_number = nodes_vector[i]+ShiftInNodeVector;
+              m_node_value->geo_node_number = nodes_vector[i];
+              m_node_value->node_value = 0.0;  
+              m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
+              m_node_value->CurveIndex = m_bc->CurveIndex;
+              m_pcs->bc_node.push_back(m_bc);  //WW
+              m_pcs->bc_node_value.push_back(m_node_value);  //WW
+            }
+		    node_value.clear();
+          }
+          //................................................................
+          //delete(values);
+          Free(nodes);
+        } // if(m_ply) 
+      }
+      //------------------------------------------------------------------
+    } // PCS
+    ++p_bc;
+  } // list
   /* // Make the following as comment by WW
   // Test
   long no_bc = (long)m_pcs->bc_node_value.size();

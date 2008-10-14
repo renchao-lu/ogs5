@@ -182,6 +182,7 @@ class CMediumProperties
 	int mass_dispersion_model;
   double mass_dispersion_longitudinal;
   double mass_dispersion_transverse;
+	double lgpn; //local grid peclet number
   int heat_dispersion_model;
   double heat_dispersion_longitudinal;
   double heat_dispersion_transverse;
@@ -206,6 +207,9 @@ class CMediumProperties
   double transfer_coefficient;
   //double unsaturated_hydraulic_conductivity;
   double specific_storage;
+  double vol_mat; //SB
+  double vol_bio; //SB
+  double foc; // organic carbon content
 };
 
  class CMediumPropertiesGroup  //YD

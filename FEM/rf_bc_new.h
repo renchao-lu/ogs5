@@ -30,6 +30,8 @@ class CBoundaryCondition
 	int CurveIndex; // Time funtion index
   public: //OK
     vector<int> PointsHaveDistribedBC;
+    vector<int> PointsCurvesIndex;
+    vector<string> PointsFCTNames;
     vector<double> DistribedBC;
   private: //OK
     friend class CBoundaryConditionsGroup;
@@ -58,6 +60,7 @@ class CBoundaryCondition
     double node_value_cond; //OK
     double condition; //OK
     string geo_node_substitute; //OK
+    bool time_dep_interpol;
     // FCT
     string fct_name;
     bool conditional;
@@ -120,6 +123,7 @@ class CBoundaryConditionsGroup
     CFEMesh* m_msh; //OK
     //WW vector<CBoundaryCondition*>bc_group_vector; //OK
     //WW double GetConditionalNODValue(int,CBoundaryCondition*); //OK
+    int time_dep_bc;
 
    public: // TK display
      int m_display_mode_bc;

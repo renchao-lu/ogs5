@@ -36,6 +36,7 @@ using namespace std;
 #include "rf_pcs.h" //OK_MOD"
 #include "rf_apl.h"
 #include "rf_react.h"
+#include "rf_kinreact.h"
 #include "par_ddc.h"
 #include "rf_st_new.h"
 #include "rf_tim_new.h"
@@ -65,6 +66,7 @@ void SetCriticalDepthSourceTerms(void);
 // BRNS dll link; HB 02.11.2007
 #include "rf_REACT_BRNS.h"
 #endif
+#include "timer.h"
 
 namespace process{class CRFProcessDeformation;}
 using process::CRFProcessDeformation;
@@ -343,8 +345,15 @@ m_vec_BRNS->InitBRNS();
   //----------------------------------------------------------------------
   PCSRestart(); //SB
   //----------------------------------------------------------------------
+  KRConfig();
   // Characteristic numbers
 // CalcNeumannNumber();
+  //----------------------------------------------------------------------
+// Configure Data for Blobs (=>NAPL dissolution) 
+  KBlobConfig();
+  KBlobCheck();
+    //----------------------------------------------------------------------
+  CreateClockTime();
   //----------------------------------------------------------------------
   // Calculation of the initial stress and released load for excavation simulation
   // 07.09.2007  WW
@@ -424,6 +433,9 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
     CalcVelocities = true;
   }
   //======================================================================
+  for(k=0; k<(int)pcs_vector.size(); k++) //WW/CB
+    pcs_vector[k]-> UpdateTransientBC(); 
+  // 
   // Coupling loop
   for(k=0;k<lop_coupling_iterations;k++)
   {
@@ -443,6 +455,7 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
       }
       //------------------------------------------------------------------
       m_pcs = PCSGet("GROUNDWATER_FLOW");
+	  if((aktueller_zeitschritt==1)||(m_pcs && m_pcs->tim_type_name.compare("TRANSIENT")==0)) 	//SB-3 
       if(m_pcs&&m_pcs->selected)
       {
         //................................................................
@@ -732,6 +745,8 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
         }
 	  }
 #endif
+	ClockTimeVec[0]->StopTime("Flow");
+	ClockTimeVec[0]->StartTime();
       //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       if(MASS_TRANSPORT_Process) //WW
 	  {
@@ -825,10 +840,16 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
                             }// end of mobile components
                         }// end of "MASS TRANSPORT"
                     }// end of loop over all processes
+  			  ClockTimeVec[0]->StopTime("Transport");
+			  ClockTimeVec[0]->StartTime();
 
                     // Calculate Chemical reactions, after convergence of flow and transport 
                     // Move inside iteration loop if couplingwith transport is implemented SB:todo
-                    // SB:todo move into Execute Reactions	  if((aktueller_zeitschritt % 1) == 0)  
+            // First calculate kinetic reactions
+            if(KinReactData_vector.size() > 0) KinReactData_vector[0]->ExecuteKinReact();
+			ClockTimeVec[0]->StopTime("KinReactions");
+			ClockTimeVec[0]->StartTime();
+			// then equilibrium reactions
                     if(REACT_vec.size()>0) //OK
                     {  
                       if(REACT_vec[0]->flag_pqc)
@@ -881,6 +902,8 @@ int LOPTimeLoop_PCS()  //(double*dt_sum) WW
                 {m_vec_BRNS->RUN(  dt  /*time value in seconds*/);} 
                 
 #endif
+			 // equilibrium reactions finished - get time
+			  ClockTimeVec[0]->StopTime("EquiReact");
 	          dt = dt0; //WW
                 } // end of if(dt>DBL_MIN)
             } // end of if(m_tim)
@@ -1075,6 +1098,7 @@ last modified:
 int LOPPostTimeLoop_PCS(void)
 {
   PCSDestroyAllProcesses();
+  ClockTimeVec[0]->PrintTimes();
 #ifdef GEM_REACT
   // HS:
   delete m_vec_GEM; 

@@ -107,12 +107,18 @@ CMediumProperties::CMediumProperties(void)
   heat_dispersion_model = -1; //WW
   heat_dispersion_longitudinal = 0.;
   heat_dispersion_transverse = 0.;
+  lgpn = 0.0;
+  mass_dispersion_transverse = 0.0;
+  mass_dispersion_longitudinal = 0.0;
   heat_diffusion_model = -1; //WW
   geo_area = 1.0;
   geo_type_name = "DOMAIN"; //OK
   saturation_max[0] = saturation_max[1] = saturation_max[2] = 1.0; //WW
   saturation_res[0] = saturation_res[1] = saturation_res[2] = 0.0; //WW
   permeability_tensor[9] = 1.0e-9; // Minimum paermeability. 17.06.2008. WW
+  vol_mat = 0.0;
+  vol_bio = 0.0;
+  foc = 0.0;
   #ifdef RFW_FRACTURE
    frac_num = 0;
    fracs_set = 0;
@@ -240,7 +246,7 @@ last modification:
 */			
 ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 {
-  int i, j, k=0;
+  int i, idummy, j, k=0;
   string line_string;
   std::stringstream in;
   ios::pos_type position;
@@ -430,6 +436,18 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
       in.clear();
       continue;
     }
+	if(line_string.find("$VOL_MAT")!=string::npos) { //subkeyword found
+      in.str(GetLineFromFile1(mmp_file));
+	  in >> idummy >> this->vol_mat;
+      in.clear();
+      continue;
+    }
+	if(line_string.find("$VOL_BIO")!=string::npos) { //subkeyword found
+      in.str(GetLineFromFile1(mmp_file));
+	  in >> idummy >> this->vol_bio;
+      in.clear();
+      continue;
+    }
 //------------------------------------------------------------------------
 //4..TORTUOSITY
 //------------------------------------------------------------------------
@@ -537,7 +555,12 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 //------------------------------------------------------------------------
 //8..SORPTION_MODEL
 //------------------------------------------------------------------------
-//To do as necessary
+  if(line_string.find("$ORGANIC_CARBON")!=string::npos) { //subkeyword found
+     in.str(GetLineFromFile1(mmp_file));
+     in >> foc;
+     in.clear();
+     continue;
+    }
 
 //------------------------------------------------------------------------
 //9..STORAGE
@@ -1158,6 +1181,8 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
         case 1: // Constant value
          in >> mass_dispersion_longitudinal;
          in >> mass_dispersion_transverse;
+		 in >> lgpn;
+         if(lgpn > 0 ) cout << "      Limiting Grid Peclet Numbers to " << lgpn << endl;
           break;
         default:
           cout << "Error in CMediumProperties::Read: no valid mass dispersion model" << endl;
@@ -2517,6 +2542,8 @@ double* CMediumProperties::MassDispersionTensorNew(int ip)
   double alpha_l,alpha_t;
   double theta = Fem_Ele_Std->pcs->m_num->ls_theta;
   double g[3]={0.,0.,0.};
+  double l_char=0.0, volume=0.0;
+  int set=0;
   ElementValue* gp_ele = ele_gp_value[index]; 
   CompProperties *m_cp = cp_vec[component];
   eleType=m_pcs->m_msh->ele_vector[number]->GetElementType();
@@ -2530,8 +2557,9 @@ double* CMediumProperties::MassDispersionTensorNew(int ip)
   //if(PCSGet("RICHARDS_FLOW")) molecular_diffusion_value *= PCSGetEleMeanNodeSecondary(index, "RICHARDS_FLOW", "SATURATION1", 1);
   for (i = 0; i<Dim*Dim; i++)
     molecular_diffusion[i] = 0.0;
-  for (i = 0; i<Dim; i++)
+  for (i = 0; i<Dim; i++){
     molecular_diffusion[i*Dim+i] = molecular_diffusion_value;
+  }
   //----------------------------------------------------------------------
 
   //Anisotropic diffusion coefficient 
@@ -2567,12 +2595,39 @@ double* CMediumProperties::MassDispersionTensorNew(int ip)
   double velocity[3]={0.,0.,0.};
   gp_ele->getIPvalue_vec(ip, velocity);//gp velocities
   vg = MBtrgVec(velocity,3);
+//  if(index < 10) cout <<" Velocity in MassDispersionTensorNew(): "<<velocity[0]<<", "<<velocity[1]<<", "<<velocity[2]<<", "<<vg<<endl;
+  // test bubble velocity
+	if(m_cp->bubble_velocity_model == 1){
   if(index < 0) cout <<" Velocity in MassDispersionTensorNew(): "<<velocity[0]<<", "<<velocity[1]<<", "<<velocity[2]<<", "<<vg<<endl;
-
+		velocity[0] = m_cp->bubble_velocity[0];   
+		velocity[1] = m_cp->bubble_velocity[1];
+	    velocity[2] = m_cp->bubble_velocity[2];
+		vg = MBtrgVec(velocity,3);
+		if(index == 100) cout <<" Bubble velocity in MassDispersionTensorNew(): "<<velocity[0]<<", "<<velocity[1]<<", "<<velocity[2]<<", "<<vg<<endl;
+	}
+	// end bubble velocity
   //Dl in local coordinates
   alpha_l = mass_dispersion_longitudinal;
   alpha_t = mass_dispersion_transverse;
  
+  // hard stabilization
+  if(this->lgpn > 0.0){
+  CElem* m_ele = NULL;
+  m_ele = m_pcs->m_msh->ele_vector[index];
+  if(eleType == 2)	l_char = sqrt(m_ele->GetVolume());
+  if(eleType == 4)	l_char = sqrt(m_ele->GetVolume());
+  // cout << " Element number: " << index << ", Volume: " << m_ele->GetVolume() << ", l_char: " << l_char << endl;
+  set=0;
+  if(alpha_l < l_char/lgpn){
+  	  set = 1; //flag for output 
+	  alpha_l = l_char/lgpn;
+  }
+   if(alpha_t < l_char/lgpn){
+	  set = 1;
+	  alpha_t = l_char/lgpn;
+  }
+    if((set > 0)&(aktueller_zeitschritt==1)&(component<1)&(ip<1)) cout << "element " << index << " " << l_char << " " << alpha_l << " " << alpha_t <<  endl; //cout << " alpha_L = " << alpha_l << " < l_char/Pe; setting alpha_L = " << l_char/lgpn << " for element " << index << endl;
+  }
   //----------------------------------------------------------------------
 
   if (abs(vg) > MKleinsteZahl){ //For the case of diffusive transport only.
@@ -2596,6 +2651,8 @@ double* CMediumProperties::MassDispersionTensorNew(int ip)
 		else
 		{
 			advection_dispersion_tensor[0] = molecular_diffusion[0] + D[0];
+			advection_dispersion_tensor[1] = D[1]; //SB added - CHP, all parts of tensor required
+			advection_dispersion_tensor[2] = D[2]; //SB added - CHP, all parts of tensor required
 			advection_dispersion_tensor[3] = molecular_diffusion[3] + D[3];
 		}
         break;
@@ -2617,9 +2674,17 @@ double* CMediumProperties::MassDispersionTensorNew(int ip)
 		}
 		else
 		{
+			/* SB changed - CHP, check - aktually the main coordinate method should work
 			advection_dispersion_tensor[0] = molecular_diffusion[0] + D[0];
 			advection_dispersion_tensor[4] = molecular_diffusion[4] + D[4];
 			advection_dispersion_tensor[8] = molecular_diffusion[8] + D[8];
+			*/
+			for (i = 0; i<Dim*Dim; i++)
+				 advection_dispersion_tensor[i] =  D[i];
+			advection_dispersion_tensor[0] += molecular_diffusion[0];
+			advection_dispersion_tensor[4] += molecular_diffusion[4];
+			advection_dispersion_tensor[8] += molecular_diffusion[8];
+
 		}
     }
   }
