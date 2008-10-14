@@ -1420,7 +1420,7 @@ bool Keyword(string line)
 string GetLineFromFile1(ifstream *ein){
  
   string line, zeile = "";
-  int fertig=0, i, j;
+  int fertig=0, i=0, j=0;
   char zeile1[MAX_ZEILEN];
   line =""; //WW
   //----------------------------------------------------------------------
@@ -1432,6 +1432,13 @@ string GetLineFromFile1(ifstream *ein){
 	  if(j!=i)fertig = 1;						//Wenn das erste nicht-leerzeichen ein Kommentarzeichen ist, zeile überlesen. Sonst ist das eine Datenzeile
 	  if((i != -1))
 		zeile = line.substr(i,j-i);   //Ab erstem nicht-Leerzeichen bis Kommentarzeichen rauskopieren in neuen substring, falls Zeile nicht leer ist
+	  i = (int) zeile.find_last_not_of(" "); // Suche nach dem letzten Zeichen, dass kein Leerzeichen ist
+	  if(i>0){
+//		  line.clear(); // = "";
+		  line = zeile.substr(0,i+1); // Leerzeichen am Ende rausschneiden
+//		  zeile.clear(); // = "";
+		  zeile = line;
+	  }
     }
     else{//end of file found
        fertig=1;
