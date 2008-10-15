@@ -25,7 +25,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include<windows.h>
+//#include<windows.h>
 using namespace std;
 
 /* Auf POSIX-Rechern ist exaktere Zeitmessung vorhanden */
@@ -369,7 +369,7 @@ CClockTime::~CClockTime(void){
 
 void CClockTime::StartTime(void){
 	start = clock();
-	time1=GetTickCount();
+	//WW	time1=GetTickCount();
 }
 
 void CClockTime::StopTime(string name){
@@ -379,7 +379,7 @@ name1 = name[0];
 end = clock();
 this->delta_clocktime = (double)(end-start)/CLOCKS_PER_SEC;
 
-time2=GetTickCount();
+//WW time2=GetTickCount();
 difftime=(time2-time1)/1000.0;
 // cout << " ClockTime: " << delta_clocktime << ", TickTime: " << difftime << endl;
 

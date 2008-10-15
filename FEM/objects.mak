@@ -1,6 +1,7 @@
 # GeoSys - Makefile for LINUX
 # 4.5.06 22/07/2007 WW
 # 4.7.06 15/09/2008 WW
+#        15/10/2008 WW
 FEMOBJS =tools.o\
 timer.o\
 steam.o\
@@ -29,6 +30,8 @@ rf_fct.o\
 rf_db.o\
 rf_bc_new.o\
 rf_apl.o\
+rf_kinreact.o\
+Stiff_Bulirsch-Stoer.o\
 rf.o\
 renumber.o\
 ptrarr.o\

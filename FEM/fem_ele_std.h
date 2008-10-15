@@ -104,7 +104,7 @@ class CFiniteElementStd:public CElement
      void CalcOverlandNLTERMSChannel(double* H, double* HaaOld, double* swval, double* swold);
      void CalcOverlandCKWR(double* head, double* ckwr, int* iups);
      void CalcOverlandCKWRatNodes(int i, int j, double* head, double* ckwr, int* iups);
-	 void CalcOverlandResidual(double* head, double* swval, double* swold, double ast, double* residuall, double** amat);;
+     void CalcOverlandResidual(double* head, double* swval, double* swold, double ast, double* residuall, double** amat);
      double CalcOverlandJacobiNodes(int i, int j, double *depth, double *depth_keep, double akrw, double axx, double ayy, double** amatij, double* sumjac);
    	 void CalcOverlandUpwindedCoefficients(double** amat, double* ckwr, double axx, double ayy); 
      //

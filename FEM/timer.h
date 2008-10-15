@@ -14,7 +14,7 @@
 using namespace std;
 #include <time.h>
 #include <vector>
-#include <windows.h>
+//#include <windows.h>
 
 /* Deklarationen */
 
