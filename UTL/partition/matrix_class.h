@@ -165,7 +165,7 @@ template<> class vec<void*>
       void** entry;						 
       int size;
 };
-  
+
 template<class T> class vec<T*> : public vec<void*>
 {									 
    public:

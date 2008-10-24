@@ -11,8 +11,7 @@
 
 #include "matrix_class.h"
 #include "mesh.h"
-
-
+//#include "partition.h"
 
 #include <time.h>
 
@@ -48,8 +47,9 @@ int main(int argc, char* argv[])
   cout<<"\t|      0: Linear, do not convert      | \n"<<endl;
   cout<<"\t|      1: Quadratic, do not convert   | \n"<<endl;
   cout<<"\t|      2: Write METIS element data    | \n"<<endl;
-  cout<<"\t|     -n: Negative non-zero number    | \n"<<endl;
-  cout<<"\t|         Convert! n: number of parts.| \n"<<endl;
+  // TODO: "Error: cannot open .epart file . It may not exist !Aborted"
+  //cout<<"\t|     -n: Negative non-zero number    | \n"<<endl;
+  // cout<<"\t|         Convert! n: number of parts.| \n"<<endl;
   cout<<"\t|=====================================| \n"<<endl;
   cout<<"\tInput file name: ";
 

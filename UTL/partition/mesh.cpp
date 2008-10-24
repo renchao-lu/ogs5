@@ -2,6 +2,9 @@
 #include <limits>
 //#include <sstream>
 #include "mesh.h"
+#include "itoa.h"
+
+using namespace std;
 
 long NodesNumber_Linear =0;
 long NodesNumber_Quadratic =0;
