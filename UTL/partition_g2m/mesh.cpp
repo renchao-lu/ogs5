@@ -1507,7 +1507,7 @@ void ConstructDomain(char *fname, const int num_parts)
       } 
 	  */
       //TEST OUT
-      itoa(k,stro, 10);
+      _itoa(k,stro, 10);
       strcpy(str,fname);
       string aa = str;
       string bb= stro;
