@@ -12,8 +12,6 @@
 #include "matrix_class.h"
 #include "mesh.h"
 
-
-
 #include <time.h>
 
 using namespace std;

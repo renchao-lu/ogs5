@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="m2g"
 	ProjectGUID="{40238F9B-5E7C-4B37-81C5-B7AB8A4FFD32}"
+	RootNamespace="m2g"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -182,40 +183,12 @@
 				>
 			</File>
 			<File
-				RelativePath=".\matrix_class.h"
-				>
-			</File>
-			<File
 				RelativePath=".\mesh.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\mesh.h"
 				>
 			</File>
 			<File
 				RelativePath=".\partition.cpp"
 				>
-			</File>
-			<File
-				RelativePath=".\stdafx.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="1"
-					/>
-				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
@@ -224,7 +197,11 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\stdafx.h"
+				RelativePath=".\matrix_class.h"
+				>
+			</File>
+			<File
+				RelativePath=".\mesh.h"
 				>
 			</File>
 		</Filter>

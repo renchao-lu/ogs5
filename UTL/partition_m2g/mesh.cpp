@@ -2,7 +2,7 @@
 #include <limits>
 //#include <sstream>
 #include "mesh.h"
-#include "itoa.h"
+#include "itoa.h"  // Only for GCC
 
 using namespace std;
 

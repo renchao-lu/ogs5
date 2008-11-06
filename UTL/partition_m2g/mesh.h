@@ -215,8 +215,7 @@ class Elem:public Grain
       vec<Edge*>  edges;
       vec<int>  edges_orientation;
       vec<Elem*>  neighbors;
-      //vec<Elem*>  sons;
-
+ 
       // Private methods
       int GetElementFaces1D(int *FaceNode);
       int GetElementFacesTri(const int Face, int *FaceNode);

@@ -24,3 +24,4 @@ std::reverse( result, out );
 return result;
 }
 
+

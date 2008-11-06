@@ -1,5 +1,5 @@
 # By Wenqing Wang
-OPTFLAG = -O2
+OPTFLAG = -O3
 DEBFLAG = #-ggdb
 C++    =  g++ $(DEBFLAG)  -Wall 
 

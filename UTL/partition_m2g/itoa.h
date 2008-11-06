@@ -1,2 +1,2 @@
-char* _itoa( int, char*, int );
+char* _itoa( int, char*, int );   //Only for GCC. WW
 
