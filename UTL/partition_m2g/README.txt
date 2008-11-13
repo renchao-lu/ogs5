@@ -1,63 +1,69 @@
 
-PARTITION
-=========
+PACKAGE:
 
-Author: Wenqing Wang
-Licence: None yet
-Copyright:  Wenqing Wang
+	partition_m2g
 
-#TODO:
 
-  o  Add Windows install details
-  o  Default destination of output files should be the current working
-     directory, not the one where the .msh file starts from
-  o  Pipes for input and output
+AUTHORS:  Wenqing Wang, Myles English
+LICENCE: None and GPL
+COPYRIGHT:  Wenqing Wang, Myles English
 
 
 DESCRIPTION:
 
-A tool for converting a GeoSys mesh into a METIS format mesh.
-
-INSTALL:
-
-On Linux type:
-
-$: make
-
-On Windows: # TODO
+	Tools for partitioning a GeoSys mesh into domains.
 
 
 USAGE:
 
-    partion [filename without extension] [-][integer]
-
-Assuming you have a file called foo.msh :
-
-$: ./partition foo 2  # to write METIS format mesh file (foo.mesh)
-
-...then use METIS to (see documents in SEE ALSO)...
-
-$ ./partition foo -[n] # where n is the number of domains
+	See https://geosys.ufz.de/trac/wiki/DomainDecomposition
 
 
-Descriptions of the usage are given in the documents mentioned below
-under SEE ALSO.
+DETAILS:
+
+        Parallel processing of a simulation requires that the finite element
+        mesh be decomposed into domains so that each domain can be sent to a
+        separate cpu.
+
+	partition_m2g contains the following tools:
+
+	m2g - converts a GeoSys mesh into a METIS format mesh.
+
+	partition.sh - a wrapper script for m2g and a third party partitioning
+	executable
+
+	A third party finite element mesh partitioning tool will need to be
+	installed seperately (i.e. METIS).
+
+
+
+DOCUMENTATION:
+
+        See https://geosys.ufz.de/trac/wiki/DomainDecomposition
+
+	This directory contains the source code for the mesh partitioning
+	tool referred to in the attachment on the Wiki page (linked to from
+	the front page by the text "How to compile source code and run
+	simulation on Linux/UNIX", titled "A short description of how to
+	compile GeoSys and run benchmarks under UNIX/Linux").
+
+	The URL to the attachment "Parallel Simulation by
+	Rockflow/GeoSys:Howto" is:
+	https://geosys.ufz.de/trac/attachment/wiki/LinuxPage/Parallel%20simulation%20by%20GeoSys.pdf
 
 
 SEE ALSO:
 
-This directory contains the source code for the mesh partitioning tool
-referred to in the attachment on the Wiki page (linked to from the
-front page by the text "How to compile source code and run simulation
-on Linux/UNIX", titled "A short description of how to compile GeoSys
-and run benchmarks under UNIX/Linux").
-
-The URL to the attachment "Parallel Simulation by Rockflow/GeoSys:Howto" is:
-https://geosys.ufz.de/trac/attachment/wiki/LinuxPage/Parallel%20simulation%20by%20GeoSys.pdf
-
-Also referred to by the page at
-https://geosys.ufz.de/trac/wiki/DomainDecomposition
+    ./rungeosys.sh - a wrapper around partition.sh and a Sun Grid Engine
+    jobscript for parallel architectures
 
 
+TODO:
 
-Myles English, 2008-10-23
+	o  Add Windows install details
+	o  m2g - default destination of output files should be the current
+	   working directory, not the one where the .msh file starts from
+	o  Pipes for input and output
+
+
+Copyright Myles English, 2008-10-23

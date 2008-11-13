@@ -16,7 +16,8 @@ main: 	$(OFile)
 	$(C++) -o m2g $(OFile)
 
 clean:  
-	rm -f *.o 
+	rm -f *.o
+	rm m2g
 
 
 m2g: partition.h itoa.h matrix_class.h mesh.h 
