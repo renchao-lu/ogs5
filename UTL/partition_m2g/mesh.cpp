@@ -1,5 +1,7 @@
 #include <iomanip>
 #include <limits>
+#include <cstdlib> // For GCC 4.3.2
+#include <string.h>  // For GCC 4.3.2
 //#include <sstream>
 #include "mesh.h"
 #include "itoa.h"  // Only for GCC
