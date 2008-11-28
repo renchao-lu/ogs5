@@ -32,6 +32,7 @@ class CFluidProperties
     CRFProcess *m_pcs; //OK4704
   public:
     string name;
+    string caption;
     int phase;
     // FEM
     CFiniteElementStd *Fem_Ele_Std;
@@ -100,7 +101,7 @@ class CFluidProperties
     double Viscosity(double *variables = NULL); //OK4709
     double SpecificHeatCapacity();
 	double PhaseChange(); // JOD 
-    double HeatConductivity();
+    double HeatConductivity(double *variables = NULL);
     double CalcEnthalpy(double temperature);
     double Enthalpy(int,double);
     double EnthalpyPhase(long,int,double*,double);

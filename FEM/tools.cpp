@@ -2371,7 +2371,7 @@ returns a value interpolated between both arguments.
 Programming:
 08/2008 NB
 ***********************************************************************/
-double GetMatrixValue(double var1, double var2, int *gueltig)
+double GetMatrixValue(double var1, double var2, string caption, int *gueltig)
 {
   CFunction * matrix;
   int anz_variables;
@@ -2384,10 +2384,12 @@ double GetMatrixValue(double var1, double var2, int *gueltig)
   double x1,x2,y1,y2;
   double zx1y1,zx2y1,zx1y2,zx2y2;
   
-  matrix = FCTGet("EOS_DATA");
+  matrix = FCTGet(caption);
   anz_variables = (int)matrix->variable_names_vector.size();
-  dim_x = matrix->matrix_dimension_x;
-  dim_y = matrix->matrix_dimension_y;
+  //dim_x = matrix->matrix_dimension_x;
+  //dim_y = matrix->matrix_dimension_y;
+  dim_x = matrix->matrix_dimension[0];//NB 4.8.01
+  dim_y = matrix->matrix_dimension[1];//NB  
   anz_data = (int)matrix->variable_data_vector.size()-dim_x-dim_y;
   //----------------------------------------------------------------------
   if (var1<*matrix->variable_data_vector[0]) //is var1 smaller then the smallest argument?

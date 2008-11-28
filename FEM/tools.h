@@ -39,7 +39,7 @@ typedef struct {  /* fuer Kurven (Kurven) */
 /* Liefert Wert einer Kurve fuer die angegebene Stuetzstelle */
 extern double GetCurveValue ( int, int, double, int *);
 /* Liefert Punkt einer Kurve fuer den angegebenen Wert */
-extern double GetMatrixValue (double, double, int *); //NB
+extern double GetMatrixValue (double, double, string, int *); //NB
 extern double GetCurveValueInverse ( int, int, double, int *);
 /* Liefert die Ableitung einer Kurve fuer den angegebenen Punkt */
 extern double GetCurveDerivative(int kurve, int methode, double punkt, int *gueltig);

@@ -482,10 +482,11 @@ return 0-phi_d-phi_e;
 }
 /**********************************************************************
 A derivation of the free energy function phi
+last change: Nov 2008 NB 4.8.01
 ***********************************************************************/
 double phi_r_t (double rho, double rhoc, double T, double Tc, int fluid)
 {
-	double phi_a=0,phi_b=0,phi_c=0,phi_d=0;
+	double phi_a=0,phi_b=0,phi_c=0,phi_d=0,h;
 	int i;
 	double delta,tau;
 	double thetafn,deltafn,ddeltatau,phifn,dphitau;
@@ -516,14 +517,14 @@ double phi_r_t (double rho, double rhoc, double T, double Tc, int fluid)
 		thetafn = theta_fn(tau,K0(6,i,1,fluid),delta,K0(11,i,1,fluid));
 		deltafn = delta_fn(thetafn,K0(7,i,1,fluid),delta,K0(4,i,1,fluid));
 		ddeltatau = dDELTA_dtau(thetafn,K0(5,i,1,fluid),deltafn);
-		phifn = phi_fn(K0(3,i,1,fluid),delta,K0(9,i,1,fluid),tau);
+		phifn = phi_fn(K0(8,i,1,fluid),delta,K0(9,i,1,fluid),tau);
 		dphitau = dphi_dtau(K0(9,i,1,fluid),tau,phifn);
 
 		phi_d = phi_d + (K0(0,i,1,fluid)*delta*(ddeltatau*phifn+pow(deltafn,K0(5,i,1,fluid))*dphitau));
 
 	}
-
-	return phi_a+phi_b+phi_c+phi_d;
+    h = phi_a+phi_b+phi_c+phi_d;
+	return h;
 
 }
 /**********************************************************************
@@ -853,7 +854,153 @@ double co2_viscosity (double rho, double T)
 
   return eta;
 }
+/**********************************************************************
+Function for calculating heat conductivity of CO2 depending on density and Temperature.
+	(Vesovic&Wakeham)
+Programming: Norbert Böttcher 4.8.01
+			 Nov 2008
+***********************************************************************/
+double co2_heat_conductivity (double rho, double T)
+{
+double b[8],c[6],d[5];
+double G_fn=0,T_r,r,c_int_k,sum_c=0;
+int i;
+double lamda_0,delta_lamda=0,lamda;
+
+b[0]=0.4226159;
+b[1]=0.6280115;
+b[2]=-0.5387661;
+b[3]=0.6735941;
+b[4]=0;
+b[5]=0;
+b[6]=-0.4362677;
+b[7]=0.2255338;
+
+c[1]=0.02387869;
+c[2]=4.35079400;
+c[3]=-10.33404000;
+c[4]=7.98159000;
+c[5]=-1.94055800;
+
+d[1]=2.4471640E-02;
+d[2]=8.7056050E-05;
+d[3]=-6.5479500E-08;
+d[4]=6.5949190E-11;
 
 
+for (i=1;i<6;i++)
+    {
+    sum_c = sum_c + c[i]*pow((T/100),(2-i));
+    }
+
+c_int_k = (1 + exp(-183.5/T))*sum_c;
+
+r = pow((2*c_int_k/5),(0.5));
+
+T_r = T/251.196;
+
+for (i=0;i<8;i++) 
+    {
+    G_fn = G_fn + (b[i]/pow(T_r,i));
+    }
+
+r = 
+
+lamda_0 = (0.475598*pow(T,0.5)*(1+pow(r,2)))/G_fn;
+
+for (i=1;i<5;i++)
+{
+delta_lamda = delta_lamda + d[i]*pow(rho,i);
+}
+
+lamda = (lamda_0 + delta_lamda)/1000;
+
+return lamda;
+}
+
+/**********************************************************************
+Function for calculating viscosity of CH4 at 295K depending on pressure.
+	(Gulik,Mostert,Van den Berg)
+Programming: Norbert Böttcher 4.8.01
+			 Nov 2008
+***********************************************************************/
+double ch4_viscosity_295K (double p)
+{
+double h;
+
+p=p/100000;
+h=(-3.7091411E-14*pow(p,4)+9.1937114E-10*pow(p,3)-6.6099446E-06*pow(p,2)+4.8400147E-02*p+1.0934694E+01)/1.0e6;
+
+return h;
+}
 
 
+/**********************************************************************
+Viscosity for different Fluids
+
+Programming: Norbert Böttcher 4.8.01
+			 Nov 2008
+***********************************************************************/
+double Fluid_Viscosity (double rho, double T, double p, string caption)
+{
+double h;
+char c;
+
+c = caption[0];
+
+switch (c) {
+case 'C' :  // CARBON_DIOXIDE
+            h = co2_viscosity (rho,T);
+            break;
+case 'M' :  // METHANE
+            h = ch4_viscosity_295K(p);
+            break;
+case 'W' :  // WATER
+            h = 1E-3;
+            break;                        
+default :   h = 1E-3;}
+
+
+//if(caption.find("CARBON_DIOXIDE")!=string::npos)
+//      h = co2_viscosity (rho,T);
+//if(caption.find("METHANE")!=string::npos)      
+//      h = ch4_viscosity_295K(p);
+//if(caption.find("WATER")!=string::npos)         
+//      h = 1E-3;
+
+return h;}
+
+/**********************************************************************
+Heat conductivity for different Fluids
+
+Programming: Norbert Böttcher 4.8.01
+			 Nov 2008
+***********************************************************************/
+double Fluid_Heat_Conductivity (double rho, double T, string caption)
+{
+double h;
+char c;
+
+c = caption[0];
+
+switch (c) {
+case 'C' :  // CARBON_DIOXIDE
+            h = co2_heat_conductivity (rho,T);
+            break;
+case 'M' :  // METHANE
+            h = 0.0338; // [W/m/K] at 298K and 1 bar
+            break;
+case 'W' :  // WATER
+            h = 0.598; // [W/m/K] at 293K and 1 bar
+            break;                        
+default :   h = 0.5;}
+
+
+//if(caption.find("CARBON_DIOXIDE")!=string::npos)
+//     
+//if(caption.find("METHANE")!=string::npos)      
+//      h = 0.0338; // [W/m/K] at 298K and 1 bar
+//if(caption.find("WATER")!=string::npos)         
+//      h = 0.598; // [W/m/K] at 293K and 1 bar
+
+return h;}

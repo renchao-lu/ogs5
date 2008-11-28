@@ -137,64 +137,68 @@ ios::pos_type CFunction::Read(ifstream *fct_file)
         test_string = line_string;
       }
     }
+    
 	//....................................................................
     //MATRIX_DIMENSION     NB
 	//... reads the number of colums and rows of the given matrix ........
-    if(line_string.find("$MATRIX_DIMENSION")!=string::npos) 
-    { //subkeyword found
-      while(ok_true)
-      {
-        line_string = GetLineFromFile1(fct_file);
-        line_stream.str(line_string);
-		if(line_string.find("$")!=string::npos)
-        {
-          line_stream.clear();
-          break; 
-        }
-		line_stream >> matrix_dimension_x >> matrix_dimension_y;
+    if(line_string.find("$DIMENSION")!=string::npos) //subkeyword found
+    { 
+    line_stream.str(GetLineFromFile1(fct_file));
+
+     	line_stream >> i;
+     	matrix_dimension.push_back(i);
+       	line_stream >> i;
+     	matrix_dimension.push_back(i);     	
+
         line_stream.clear();
-      }
-	}
+        line_string = "";
+
+	}    
 	//....................................................................
 	//MATRIX       NB
 	//...reads both arguments and depending function values in the given.. 
 	//...matrix and saves them consecutively in variable_data_vector......
-    if(line_string.find("$MATRIX")!=string::npos) 
-    { //subkeyword found
-	  i=0;
-      while(ok_true)
-      {
-        line_string = GetLineFromFile1(fct_file);
-        line_stream.str(line_string);
-        if((line_string.find("$")!=string::npos)||(line_string.find("#")!=string::npos))
-        {
-		  for (i=0;i<dim_x.size();i++) variable_data_vector.push_back(dim_x[i]);
-		  for (i=0;i<dim_y.size();i++) variable_data_vector.push_back(dim_y[i]);
-		  for (i=0;i<dim_z.size();i++) variable_data_vector.push_back(dim_z[i]);
-		}
-		if(line_string.find("$")!=string::npos)
-        {
-          line_stream.clear();
-          break;       
-        }
-        if(line_string.find("#")!=string::npos) 
-        {
-          line_stream.clear();
-          return position;    
-        }
-		j = new double; //OK
-		k = new double;
-		l = new double;
-		line_stream >> *j >> *k >> *l;
-		if ((int)dim_x.size()<matrix_dimension_x) 
-		  dim_x.push_back(j);
-		if ((dim_y.size()>0)&&((*k!=*dim_y[dim_y.size()-1]))) dim_y.push_back(k); 
-		else if (dim_y.size()==0) dim_y.push_back(k);
-		dim_z.push_back(l);
-		line_stream.clear();
-		i++;
-      }
-	}
+    if(line_string.find("$MATRIX")!=string::npos) //subkeyword found
+    { 
+	  
+	  for (i=0;i<matrix_dimension[0]*matrix_dimension[1];i++)
+	  {
+	  line_stream.str(GetLineFromFile1(fct_file));
+	  line_string = line_stream.str();  
+	  
+	  j = new double; //OK
+	  k = new double;
+	  l = new double;
+	  
+	  line_stream >> *j >> *k >> *l;
+	  if ((int)dim_x.size()<matrix_dimension[0]) 
+	  dim_x.push_back(j);
+	  if ((dim_y.size()>0)&&((*k!=*dim_y[dim_y.size()-1]))) dim_y.push_back(k); 
+	  else if (dim_y.size()==0) dim_y.push_back(k);
+	  dim_z.push_back(l);
+	  line_stream.clear();
+  
+	  
+	  }
+	  
+	  for (i=0;i<dim_x.size();i++) variable_data_vector.push_back(dim_x[i]);
+	  for (i=0;i<dim_y.size();i++) variable_data_vector.push_back(dim_y[i]);
+	  for (i=0;i<dim_z.size();i++) variable_data_vector.push_back(dim_z[i]);
+	  
+	  if (variable_data_vector.size()!=matrix_dimension[0]*matrix_dimension[1]+matrix_dimension[0]+matrix_dimension[1])
+	  {
+	  cout << "FCT function: Error! The number of data does not correspond to the specified matrix size" << endl;
+	  break;
+	  } 
+      line_stream.clear();
+      line_string = "";	  
+    }
+	
+	
+	
+	
+	
+	
     //--------------------------------------------------------------------
     //DATA
     if(line_string.find("$DATA")!=string::npos) { //subkeyword found

@@ -139,6 +139,13 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
       continue;
     }
     //....................................................................
+    if(line_string.find("$CAPTION")!=string::npos) { // NB 4.8.01
+	  in.str(GetLineFromFile1(mfp_file));
+      in >> caption; //sub_line
+	  in.clear();
+      continue;
+    }
+    //....................................................................
     if(line_string.find("$DAT_TYPE")!=string::npos) { // subkeyword found
 	  in.str(GetLineFromFile1(mfp_file));
       in >> name; //sub_line
@@ -211,9 +218,16 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
       }
 	  if(density_model==10)		//NB
 	  { // density read from matrix with rho-P-T values
-		in >> name;
+	  if(!T_Process) 
+        {
+        in >> T_0;
 		density_pcs_name_vector.push_back("PRESSURE1");
+        }
+      else
+        {
+        density_pcs_name_vector.push_back("PRESSURE1");
         density_pcs_name_vector.push_back("TEMPERATURE1");
+        }
 	  }
 //      mfp_file->ignore(MAX_ZEILE,'\n');
       in.clear();
@@ -250,6 +264,7 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
         viscosity_pcs_name_vector.push_back("TEMPERATURE1");
       }
 	  if(viscosity_model==9){ // my(rho,T) (FENGHOUR et. al.; only for CO2) NB
+	      in >> caption;
 		  viscosity_pcs_name_vector.push_back("TEMPERATURE1");
 	  }
 //      mfp_file->ignore(MAX_ZEILE,'\n');
@@ -311,7 +326,12 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
         heat_conductivity_pcs_name_vector.push_back("TEMPERATURE1");
       }
 //      mfp_file->ignore(MAX_ZEILE,'\n');
+      if(heat_conductivity_model==3){ // my = f(p,T) NB
+        in >> caption;
+        heat_conductivity_pcs_name_vector.push_back("PRESSURE1");
+        heat_conductivity_pcs_name_vector.push_back("TEMPERATURE1");
       in.clear();
+      }
       continue;
     }
 	if(line_string.find("$PHASE_DIFFUSION")!=string::npos) { // subkeyword found
@@ -534,7 +554,7 @@ Programing:
 05/2008 WW Add an argument: double* variables: P, T, C
 last modification:
 **************************************************************************/
-double CFluidProperties::Density(double *variables)
+double CFluidProperties::Density(double* variables)
 {
   static double density;
   static double air_gas_density,vapour_density,vapour_pressure;
@@ -570,6 +590,15 @@ double CFluidProperties::Density(double *variables)
       case 7: // Pefect gas. WW
         density = variables[0]*molar_mass/(GAS_CONSTANT*variables[1]);
         break;
+      case 10: // Get density from temperature-pressure values from fct-file	NB 4.8.01
+
+		if(!T_Process) primary_variable[1]=T_0;
+		primary_variable[0]=variables[0];
+		primary_variable[1]=variables[1];
+//		density = GetMatrixValue(variables[1],variables[0],caption,&gueltig);
+		density = GetMatrixValue(primary_variable[1],primary_variable[0],caption,&gueltig);
+  
+		break;      
       default:
         cout << "Error in CFluidProperties::Density: no valid model" << endl;
         break;
@@ -611,7 +640,10 @@ double CFluidProperties::Density(double *variables)
 	    density = MATCalcFluidDensityMethod8(primary_variable[0],primary_variable[1],primary_variable[2]);
         break;
     case 10: // Get density from temperature-pressure values from fct-file	NB
-		density = GetMatrixValue(primary_variable[1],primary_variable[0],&gueltig);
+		
+		if(!T_Process) primary_variable[1]=T_0;
+	
+     	density = GetMatrixValue(primary_variable[1],primary_variable[0],caption,&gueltig);
 		break;	
       default:
         cout << "Error in CFluidProperties::Density: no valid model" << endl;
@@ -852,7 +884,10 @@ double CFluidProperties::Viscosity(double* variables) //OK4709
       viscosity = LiquidViscosity_CMCD(primary_variable[0],primary_variable[1],primary_variable[2]);
       break;
     case 9: // viscosity as function of density and temperature, NB
-      viscosity = co2_viscosity(Density(),primary_variable[1]); //OK4709
+    
+      if(!T_Process) primary_variable[1]=T_0;
+//	  viscosity = co2_viscosity(GetMatrixValue(primary_variable[1],primary_variable[0],caption,&gueltig),primary_variable[1]); //NB
+      viscosity = Fluid_Viscosity(GetMatrixValue(primary_variable[1],primary_variable[0],caption,&gueltig),primary_variable[1],primary_variable[0],caption); //NB
       break;
     default:
       cout << "Error in CFluidProperties::Viscosity: no valid model" << endl;
@@ -1216,12 +1251,20 @@ Programing:
 11/2005 YD Modification
 last modification:
 **************************************************************************/
-double CFluidProperties::HeatConductivity()
+double CFluidProperties::HeatConductivity(double *variables) //NB
 {
   int fct_number = 0;
   int gueltig;
 
-  CalPrimaryVariable(heat_conductivity_pcs_name_vector);
+  if(variables) //NB
+  {
+    primary_variable[0] = variables[0]; //p (single phase)
+    primary_variable[1] = variables[1]; //T (temperature)
+  }
+  else
+  {
+    CalPrimaryVariable(heat_conductivity_pcs_name_vector);
+  }
 
   switch(heat_conductivity_model){
     case 0: // rho = f(x)      
@@ -1232,6 +1275,11 @@ double CFluidProperties::HeatConductivity()
       break;
 	case 2:
 	  heat_conductivity = MATCalcHeatConductivityMethod2(primary_variable[0],primary_variable[1], primary_variable[2]);
+	  break;
+	case 3: // NB
+//	  heat_conductivity = co2_heat_conductivity(GetMatrixValue(primary_variable[1],primary_variable[0],caption,&gueltig),primary_variable[1]);
+      heat_conductivity = Fluid_Heat_Conductivity (GetMatrixValue(primary_variable[1],primary_variable[0],caption,&gueltig),primary_variable[1],caption);
+                        //Fluid_Heat_Donductivity (Density,Temperature,Fluid_Caption);
 	  break;
   }
   return heat_conductivity;
@@ -2394,21 +2442,38 @@ double CFluidProperties::CalcEnthalpy(double temperature)
 /**************************************************************************
 PCSLib-Method:
 08/2008 OK 
+last change: 11/2008 NB
 **************************************************************************/
 double MFPGetNodeValue(long node,string mfp_name)
 {
   double mfp_value;
+  char c;
+  double arguments[2]; //NB erster buchstabe zum vergleich
+  CRFProcess *tp;
+  c = mfp_name[0];
   int mfp_id = -1;
-  if(mfp_name.compare("VISCOSITY")==0)
-    mfp_id = 0;
+  switch (c) {
+  case 'V': mfp_id = 0; //VISCOSITY
+            break;
+  case 'D': mfp_id = 1; //DENSITY
+            break;
+  case 'H': mfp_id = 2; //HEAT_CAPACITY
+            break;
+  default:  mfp_id = -1;}  
   //......................................................................
   CFluidProperties *m_mfp = mfp_vector[0];
   m_mfp->mode = 1;
   m_mfp->node = node;
+    tp = PCSGet("PRESSURE1",true);           //NB 4.8.01
+    arguments[0] = tp->GetNodeValue(node,0);   
+    tp = PCSGet("TEMPERATURE1",true);       
+    arguments[1] = tp->GetNodeValue(node,0);   
   //......................................................................
   switch(mfp_id)
   {
-    case 0: mfp_value = m_mfp->Viscosity(); break;
+    case 0: mfp_value = m_mfp->Viscosity(arguments); break;
+    case 1: mfp_value = m_mfp->Density(arguments); break; //NB 4.8.01
+    case 2: mfp_value = m_mfp->HeatConductivity(arguments); break;
     default: cout << "MFPGetNodeValue: no MFP data" << endl;
   }  
   //......................................................................
