@@ -504,6 +504,7 @@ extern void PCSWrite(string);
 extern void RelocateDeformationProcess(CRFProcess *m_pcs);
 extern void PCSDestroyAllProcesses(void);
 extern CRFProcess* PCSGet(string);
+extern CRFProcess* PCSGetNew(string,string);
 extern void PCSDelete();
 extern void PCSDelete(string);
 extern void PCSCreate();

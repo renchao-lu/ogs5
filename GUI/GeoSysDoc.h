@@ -132,6 +132,7 @@ public:
 	afx_msg void OnImportSHPNew();
 	afx_msg void OnImportFLAC(); //OK
     afx_msg void OnImportFLACMesh(); //MR
+    afx_msg void OnImportFEFLOW(); //OK
 };
 
 /////////////////////////////////////////////////////////////////////////////

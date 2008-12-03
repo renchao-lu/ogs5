@@ -536,6 +536,7 @@ MSHLib-Method:
 Programing:
 06/2005 WW Implementation
 08/2005 WW/OK Extension for GMS/SOL files
+10/2008 OK FEFLOW
 **************************************************************************/
 void CElem::Read(istream& is, int fileType)
 { 
@@ -546,9 +547,15 @@ void CElem::Read(istream& is, int fileType)
    //fileType=4: SOL
    //fileType=5: FLAC 3D. WW
    //fileType=5x: FLAC3D //MR
+   //fileType=6: FEFLOW //OK
+   //fileType=7: GMSH 2008 Version//TK
    int idummy, et;
    string buffer, name;
    idummy=et=-1;
+   int j=0;
+   int gmsh_patch_index;//TKOK
+   int nb_tags;//TK
+
 //   is.ignore(numeric_limits<int>::max(), '\n');  
   //----------------------------------------------------------------------
   // 1 Reading element type data
@@ -595,7 +602,6 @@ void CElem::Read(istream& is, int fileType)
       break;
     //....................................................................
     case 2: // gmsh
-      int gmsh_patch_index; //OKCC
       is>>index>>et>>gmsh_patch_index>>idummy>>nnodes;
       patch_index = gmsh_patch_index-1; //OK
       switch(et)
@@ -606,6 +612,23 @@ void CElem::Read(istream& is, int fileType)
          case 4: geo_type = 5; break;
          case 5: geo_type = 3; break;
          case 6: geo_type = 6; break;
+      }
+	  index--;
+      break;
+    case 7: // GMSH 2008
+	  is>>index>>et>>nb_tags>>gmsh_patch_index;
+      patch_index = gmsh_patch_index;
+	  for (j=0;j<nb_tags-1;j++){
+      is>>idummy;   
+      }    
+      switch(et)
+      {
+         case 1: geo_type = 1; nnodes=2; break;
+         case 2: geo_type = 4; nnodes=3; break;
+         case 3: geo_type = 2; nnodes=4; break;
+         case 4: geo_type = 5; nnodes=4; break;
+         case 5: geo_type = 3; nnodes=8; break;
+         case 6: geo_type = 6; nnodes=6; break;
       }
 	  index--;
       break;
@@ -627,6 +650,10 @@ void CElem::Read(istream& is, int fileType)
       geo_type = fileType - 50;             //MR
       fileType = 5;                         //MR
       break;                                //MR
+    //....................................................................
+    case 6: // FEFLOW
+      // nothing todo
+      break;
   }
   //----------------------------------------------------------------------
   // 2 Element configuration
@@ -703,6 +730,13 @@ void CElem::Read(istream& is, int fileType)
       }
       break;
     //....................................................................
+    case 7: // GMSH 2008
+      for(int i=0; i<nnodes; i++){
+        is>>nodes_index[i];
+        nodes_index[i] -= 1;
+      }
+      break;
+    //....................................................................
     case 3: // GMS
       for(int i=0; i<nnodes; i++){
         is>>nodes_index[i];
@@ -719,6 +753,14 @@ void CElem::Read(istream& is, int fileType)
       break;
     //....................................................................
     case 5: // FLAC 3D. 14.01.2008. WW
+      for(int i=0; i<nnodes; i++)
+      {
+        is>>nodes_index[i];
+        nodes_index[i] -= 1;
+      }
+      break;
+    //....................................................................
+    case 6: // FEFLOLW
       for(int i=0; i<nnodes; i++)
       {
         is>>nodes_index[i];

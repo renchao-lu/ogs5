@@ -85,9 +85,16 @@ public:
 	double Get_Blue_Value(double value_norm);
 	double Get_Red_Value(double value_norm);
 	double Get_Green_Value(double value_norm);
+    string filepathname;
+    double activ_time;
 
 	afx_msg void OnBnClickedIsoRefresh2();
 	afx_msg void OnBnClickedIsoAddlistitem2();
 	afx_msg void OnBnClickedIsoDellistitem2();
 	afx_msg void OnBnClickedIsoDeleteall();
+	afx_msg void OnBnClickedLoadTecFileData();
+	afx_msg void OnBnClickedLoadTecFileDataAsMovie();
+	afx_msg void OnBnClickedLoadTecFileFirstTimData();
+	afx_msg void OnBnClickedLoadTecFilePreviousTimeStep();
+	afx_msg void OnBnClickedGetPcsNextTimeStep();
 };

@@ -2347,7 +2347,12 @@ void CRFProcessDeformation::WriteGaussPointStress()
 void CRFProcessDeformation::ReadGaussPointStress()
 {
     long i, index, ActiveElements;
-    string StressFileName = FileName+".sts";
+    string StressFileName;
+#ifdef MFC //WW 
+    StressFileName = ext_file_name+".sts";
+#else
+    StressFileName = FileName+".sts";    
+#endif
     fstream file_stress (StressFileName.data(),ios::binary|ios::in);    	
     ElementValue_DM *eleV_DM = NULL;
     //

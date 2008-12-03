@@ -77,7 +77,9 @@ char *file_name = NULL; /* dateiname */
 static char *msgdat = NULL;
 
 #define RFD_FILE_EXTENSION ".rfd" //OK
+#ifndef MFC    //WW
 void CURRead(string); //OK
+#endif
 ios::pos_type CURReadCurve(ifstream*); //OK
 void CURWrite(); //OK
 

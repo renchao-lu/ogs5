@@ -68,6 +68,9 @@ Programing:
 #include "rf_fct.h"
 #include "femlib.h"
 /*-----------------------------------------------------------------------*/
+#ifdef MFC //WW
+#include "rf_fluid_momentum.h"
+#endif
 /* Tools */
 #include "matrix.h"
 #include "mathlib.h"
@@ -806,7 +809,11 @@ void CRFProcess::Create()
   CalcSecondaryVariables(true); //WW
   //
   if(compute_domain_face_normal) //WW
-     m_msh->FaceNormal();        
+     m_msh->FaceNormal();   
+#ifdef MFC
+  m_bCheckOBJ =  m_bCheckEQS =  m_bCheckNOD =  m_bCheckELE = true;
+#endif
+     
 }
 /**************************************************************************
 FEMLib-Method:
@@ -945,7 +952,12 @@ last modified:
 **************************************************************************/
 void CRFProcess:: ReadSolution()
 {
-    string m_file_name = FileName +"_"+pcs_type_name+"_primary_value.asc";
+    string m_file_name; 
+#ifdef MFC //WW 
+    m_file_name = ext_file_name+ +"_"+pcs_type_name+"_primary_value.asc";
+#else
+    m_file_name = FileName +"_"+pcs_type_name+"_primary_value.asc";
+#endif
     ifstream is(m_file_name.c_str(), ios::in);     	
     if (!is.good())
     {
@@ -1664,6 +1676,37 @@ CRFProcess* PCSGet(string pcs_type_name)
   }
   return NULL;
 }
+
+/**************************************************************************
+FEMLib-Method:
+Task:
+Programing:
+11/2008 TK New Version with Primary Variable Comparision
+last modified:
+**************************************************************************/
+CRFProcess* PCSGetNew(string pcs_type_name,string primary_variable_name)
+{
+  int i;
+  int j;
+  CRFProcess *m_pcs = NULL;
+  CRFProcess *m_pcs_return = NULL;
+  int matches = 0;
+  for(i=0;i<(int)pcs_vector.size();i++){
+    m_pcs = pcs_vector[i];
+    if(m_pcs->pcs_type_name.compare(pcs_type_name)==0){
+       for(j=0;j<(int)m_pcs->GetPrimaryVNumber();j++){
+        if (primary_variable_name.compare(m_pcs->GetPrimaryVName(j))==0){
+          m_pcs_return = m_pcs;
+          matches++;
+          if (matches > 1) return NULL;
+        }
+       }
+    }
+  }
+  if(matches == 0) return NULL;
+  else return m_pcs_return;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Access
 //////////////////////////////////////////////////////////////////////////
@@ -1962,6 +2005,74 @@ void CRFProcess::ConfigGroundwaterFlow()
   pcs_secondary_function_unit[4] = "m";
   pcs_secondary_function_timelevel[4] = 1;
   //----------------------------------------------------------------------
+  //WW
+  // Output material parameters
+  pcs_number_of_secondary_nvals = 5; //WW
+  //WW
+  COutput *m_out = NULL;
+  for(int i=0;i<(int)out_vector.size();i++)
+  {
+     m_out = out_vector[i];
+     for(int k=0; k<(int)m_out->nod_value_vector.size(); k++)
+     {
+        if(m_out->nod_value_vector[k].find("PERMEABILITY_X1")!=string::npos)
+        {
+           additioanl2ndvar_print = 1;
+           break; 
+        }   
+     }
+     if(additioanl2ndvar_print == 1)
+        break;    
+  }
+  for(int i=0;i<(int)out_vector.size();i++)
+  {
+     m_out = out_vector[i];
+     for(int k=0; k<(int)m_out->nod_value_vector.size(); k++)
+     {
+        if(m_out->nod_value_vector[k].find("POROSITY")!=string::npos) 
+        { 
+          if(additioanl2ndvar_print>0)
+            additioanl2ndvar_print = 2;
+          else
+            additioanl2ndvar_print = 3; 
+        } 
+        if(additioanl2ndvar_print>1)
+          break;    
+     }
+     if(additioanl2ndvar_print>1)
+        break;    
+  }
+
+  if(additioanl2ndvar_print>0) //WW
+  {
+    if(additioanl2ndvar_print<3)
+    {
+      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PERMEABILITY_X1";
+      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "1/m^2";
+      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+      pcs_number_of_secondary_nvals++;     
+      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PERMEABILITY_Y1";
+      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "1/m^2";
+      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+      pcs_number_of_secondary_nvals++;     
+      if(max_dim==2) // 3D
+      {
+        pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PERMEABILITY_Z1";
+        pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "1/m^2";
+        pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+        pcs_number_of_secondary_nvals++;
+      }
+    }
+    if(additioanl2ndvar_print>1) //WW
+    {
+       pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "POROSITY";
+       pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
+       pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+       pcs_number_of_secondary_nvals++;          
+    }             
+  }
+
+
   if(m_msh)
     m_msh->DefineMobileNodes(this);
 }
@@ -2256,11 +2367,15 @@ void CRFProcess::ConfigMassTransport()
 //  sprintf(pcs_primary_function_name[0], "%s%li","CONCENTRATION",comp);
   //----------------------------------------------------------------------
   // Tests
+  int size = (int)cp_vec.size();
+  int comnb = pcs_component_number;
+
   if((int)cp_vec.size()<pcs_component_number+1){
     cout << "Error in CRFProcess::ConfigMassTransport - not enough MCP data" << endl;
 #ifdef MFC
     AfxMessageBox("Error in CRFProcess::ConfigMassTransport - not enough MCP data");
 #endif
+
     return;
   }
   //----------------------------------------------------------------------
@@ -3874,7 +3989,7 @@ void CRFProcess::GlobalAssembly()
     // ofstream Dum("rf_pcs.txt", ios::out); // WW
     // eqs_new->Write(Dum);   Dum.close();
     //
-    //   MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); abort();
+    //   MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
   }
   //----------------------------------------------------------------------
 }
@@ -5739,7 +5854,7 @@ Programing:
 **************************************************************************/
 int CRFProcess::GetNodeValueIndex(string var_name)
 {
-  int i;
+  int i=0;
   int nidx = -2;
   string help;
   for(i=0;i<(int)nod_val_name_vector.size();i++){
@@ -8403,7 +8518,7 @@ bool CRFProcess::ELERelations()
   {
     int Axisymm = 1; // ani-axisymmetry
     if(m_msh->isAxisymmetry()) Axisymm = -1; // Axisymmetry is true
-    fem = new CFiniteElementStd(this, Axisymm*m_msh->GetCoordinateFlag()); 
+    fem = new CFiniteElementStd(this, Axisymm*m_msh->GetCoordinateFlag()); //OK4801 needs NUM
     fem->SetGaussPointNumber(m_num->ele_gauss_points);
     if(!fem)
       succeed = false;
@@ -8523,6 +8638,8 @@ bool CRFProcess::Check()
 {
 #ifdef MFC
   CString m_strMessage(pcs_type_name.data());
+  if(type==55) 
+     return true; // If fluid momentum. WW
   m_strMessage += " -> ";
   //-----------------------------------------------------------------------
   // MSH
@@ -8538,8 +8655,10 @@ bool CRFProcess::Check()
   if(!m_tim)
   {
     m_strMessage += "Error: no TIM data";
+/*OK48
     AfxMessageBox(m_strMessage);
     return false;
+*/
   }
   //-----------------------------------------------------------------------
   // NUM
@@ -8547,7 +8666,7 @@ bool CRFProcess::Check()
   if(!m_num)
   {
     AfxMessageBox("Error: no NUM data");
-    m_strMessage += "Error: no TIM data";
+    m_strMessage += "Error: no NUM data";
     AfxMessageBox(m_strMessage);
     return false;
   }
@@ -8556,9 +8675,10 @@ bool CRFProcess::Check()
   COutput* m_out = OUTGet(pcs_type_name);
   if(!m_out)
   {
-    m_strMessage += "Warning: no OUT data";
-    AfxMessageBox(m_strMessage);
-    return false;
+    //m_strMessage += "Warning: no OUT data";
+    //AfxMessageBox(m_strMessage);
+    //TK 07.11.2008
+    //return false;
   }
   //-----------------------------------------------------------------------
   // IC
@@ -8580,10 +8700,12 @@ bool CRFProcess::Check()
   //-----------------------------------------------------------------------
   // ST
   CSourceTerm* m_st = STGet(pcs_type_name);
-  if(!m_st)
+  if(!m_st && !st_node.size()) //OK48
   {
-    m_strMessage += "Warning: no ST data";
-    AfxMessageBox(m_strMessage);
+    //m_strMessage += "Warning: no ST data";
+    //AfxMessageBox(m_strMessage);
+    //TK 07.11.2008
+    //return false;
   }
   //-----------------------------------------------------------------------
   // MFP
@@ -8609,12 +8731,14 @@ bool CRFProcess::Check()
   }
   //-----------------------------------------------------------------------
   // MCP
+  /*
   if((pcs_type_name.find("MASS")!=string::npos)&&((int)msp_vector.size()==0))
   {
     m_strMessage += "Error: no MCP data";
     AfxMessageBox(m_strMessage);
     return false;
   }
+  */
 #endif
   //-----------------------------------------------------------------------
   // MMP
@@ -8636,9 +8760,13 @@ bool PCSCheck()
   {
     m_pcs = pcs_vector[i];
     //if(m_pcs->m_bCheck)
-      if(!m_pcs->Check())
+      if(!m_pcs->Check()) 
         return false;
+#ifdef MFC
+    FMRead(); //WW
+#endif
   }
+
   return true;
 }
 
@@ -9008,7 +9136,7 @@ void CRFProcess::WriteBC()
   long nindex = 0;
   if(size_bc>0)
   {
-     os<<"#Dirchelet BC  (from "<<m_file_name<<".bc file) "<<endl;
+     os<<"#Dirchilet BC  (from "<<m_file_name<<".bc file) "<<endl;
      os<<"#Total BC nodes  " <<size_bc<<endl;
      os<<"#Node index, name, x, y, z,   value: "<<endl;
      for(i=0; i<size_bc; i++)

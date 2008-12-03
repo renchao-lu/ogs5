@@ -159,5 +159,8 @@ extern LMATRIX *CreateLongMatrix(long row, long col);
 /* Zerstoert die Instanz vom Typ LMATRIX */
 extern void DestroyLongMatrix(LMATRIX *lm);
 
-
+#ifdef MFC //WW
+extern void CURRead(string); //WW
+extern string ext_file_name;
+#endif
 #endif

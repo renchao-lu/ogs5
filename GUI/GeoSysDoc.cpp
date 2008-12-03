@@ -56,6 +56,8 @@ extern bool RFDOpen(string file_name_base);
 #include "gs_project.h"
 #include "sim_dlg.h"
 #include "gs_graphics.h"
+#include "feflow_dlg.h" //OK
+#include "rf_kinreact.h" //OK
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -66,6 +68,7 @@ static char THIS_FILE[] = __FILE__;
 //TK
 bool m_SHP = false;
 int p=0; //CGeoSysDoc::OnNewDocument
+string ext_file_name;   //WW
 
 /////////////////////////////////////////////////////////////////////////////
 // CGeoSysDoc
@@ -99,6 +102,7 @@ BEGIN_MESSAGE_MAP(CGeoSysDoc, CDocument)
 	ON_COMMAND(ID_IMPORT_SHP_NEW, OnImportSHPNew) //OK
 	ON_COMMAND(ID_IMPORT_FLAC, OnImportFLAC) //OK
     ON_COMMAND(ID_IMPORT_FLAC_MESH, OnImportFLACMesh) //MR
+    ON_COMMAND(ID_IMPORT_FEFLOW, OnImportFEFLOW) //OK
     // Export data data
     ON_COMMAND(ID_EXPORT_TEC, OnExportTecFile)
     // Simulator
@@ -369,8 +373,9 @@ void CGeoSysDoc::Serialize(CArchive& ar)
       if(pcs_created)
       {
         pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Create PCS data");
-        PCSCreateNew(); //OK Create PCS
-        //REACTInit(); //OK Initialization of REACT structure for rate exchange between MTM2 and Reactions
+        PCSCreate(); //WW
+        //PCSCreateNew(); //OK Create PCS
+		//REACTInit(); //OK Initialization of REACT structure for rate exchange between MTM2 and Reactions
         //PCSRestart(); //SB
         m_bDataPCS = true;
         m_bDataFEM = true;
@@ -493,6 +498,7 @@ void CGeoSysDoc::GSPReadWIN(CArchive& ar)
 	m_gsp->type = (string)m_strGSPFileNameType;
 	gsp_vector.push_back(m_gsp);
     string gsp_member_path_base = m_gsp->path + m_gsp->base;
+    ext_file_name = gsp_member_path_base;     //WW
     //....................................................................
     if(m_strGSPFileNameType=="gli"){
       pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read GEO data");
@@ -573,7 +579,7 @@ void CGeoSysDoc::GSPReadWIN(CArchive& ar)
     //....................................................................
     if(m_strGSPFileNameType=="rfd"){
       pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read RFD data");
-      RFDOpen(gsp_member_path_base);
+      CURRead(gsp_member_path_base); //WWRFDOpen(gsp_member_path_base);
     }
     //....................................................................
     if(m_strGSPFileNameType=="fct"){
@@ -584,6 +590,11 @@ void CGeoSysDoc::GSPReadWIN(CArchive& ar)
     if(m_strGSPFileNameType=="ddc"){
       pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read DOM data");
       DOMRead(gsp_member_path_base);
+    }
+    //....................................................................
+    if(m_strGSPFileNameType=="krc"){  //WW
+      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read KRC data");
+       KRRead(gsp_member_path_base);
     }
     //....................................................................
     if(m_strGSPFileNameType=="pct"){
@@ -968,7 +979,7 @@ void CGeoSysDoc::OnAddFEM()
   }
   // Create PCS data
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Create PCS data");
-  //OK LOPPreTimeLoop_PCS();
+  //LOPPreTimeLoop_PCS(); // TK
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Ready");
 }
 
@@ -1575,7 +1586,7 @@ void CGeoSysDoc::OnSimulatorForward()
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   CStatusBar* pStatus = &m_frame->m_wndStatusBar;
   CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
-  //----------------------------------------------------------------------
+  //========================================================================
   // Tests
   if((!NODListExists()||!ELEListExists())&&!GSPGetMember("msh")){//OK
     AfxMessageBox("No MSH data !");
@@ -1589,8 +1600,38 @@ void CGeoSysDoc::OnSimulatorForward()
   if(!PCSCheck()) //OK
   {
     AfxMessageBox("Incorrect MOD data !");
-    return;
+    return; // TK
   }
+  //========================================================================
+  // PreTimeLoop
+   // Create PCS processes
+  //PCSCreate();
+ 
+
+  //------------------------------------------------------------------------
+  // Reactions
+  //CB before the first time step
+  // 1) set the id variable flow_pcs_type for Saturation and velocity calculation
+  //    in mass transport element matrices
+  // 2) in case of Twophaseflow calculate NAPL- and the corresponding 
+  //    Water phase Saturation from the NAPL concentrations
+  if(MASS_TRANSPORT_Process) // if(MASS_TRANSPORT_Process&&NAPL_Dissolution) //CB Todo
+  {
+    SetFlowProcessType();
+    CRFProcess *m_pcs = NULL;
+    if (m_pcs = PCSGet("TWO_PHASE_FLOW"))     
+      CalcInitialNAPLDens(m_pcs);
+  }
+
+  PCSRestart(); //SB
+  KRConfig();
+  KBlobConfig();
+  KBlobCheck();
+
+  //------------------------------------------------------------------------
+  // Clock time  
+  CreateClockTime();
+
   //========================================================================
   // Calculate Jakobian und Element-Volumen
   CalcElementsGeometry();
@@ -1643,6 +1684,8 @@ void CGeoSysDoc::OnSimulatorForward()
   //======================================================================
   m_tim->step_current = 0;
   m_tim->time_current = m_tim->time_start;
+  OUTData(0.,0);
+  //
   while(m_tim->time_current < m_tim->time_end) {
     //----------------------------------------------------------------------
     // Time step calculation
@@ -1702,6 +1745,34 @@ void CGeoSysDoc::OnSimulatorForward()
       CView* pView = GetNextView(pos);
       pView->UpdateWindow();
     }
+	// 04.2008 HS: Update the min and max values------------------------------------
+	CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+	CRFProcess* m_pcs = NULL;
+	if(pcs_vector.size()==0)
+	return;
+	m_pcs = PCSGet((string)mainframe->m_pcs_name);
+	if(!m_pcs)
+	{
+	AfxMessageBox("CGSPropertyRightResults::GetPcsMinmax() - no PCS data");
+	return;
+	}
+	double value, m_pcs_min_r, m_pcs_max_r;
+	m_pcs_min_r = 1.e+19;
+	m_pcs_max_r = -1.e+19;
+	int nidx = m_pcs->GetNodeValueIndex((string)mainframe->m_variable_name);
+	for(long j=0;j<(long)m_pcs->nod_val_vector.size();j++)
+	{
+	value = m_pcs->GetNodeValue(j,nidx);
+	if(value<m_pcs_min_r) m_pcs_min_r = value;
+	if(value>m_pcs_max_r) m_pcs_max_r = value;
+	}  
+	mainframe->m_pcs_min = m_pcs_min_r;
+	mainframe->m_pcs_max = m_pcs_max_r;
+	mainframe->m_something_changed = 1;
+	//OKmainframe = NULL;
+	//OKm_pcs = NULL;
+	//OKdelete mainframe, m_pcs;
+	// -----------------------------------------------------------------------------
     SetModifiedFlag(1);
     UpdateAllViews(NULL,0L,NULL);
     //......................................................................
@@ -2669,4 +2740,24 @@ void CGeoSysDoc::OnImportFLACMesh()
   if((int)fem_msh_vector.size()>0)
     GSPAddMember((string)m_strGSPFileBase + ".msh");
   MSHWriteTecplot();
+}
+
+/**************************************************************************
+GeoSys-GUI-Method: OnImportFEFLOW
+10/2008 OK Implementation
+**************************************************************************/
+void CGeoSysDoc::OnImportFEFLOW()
+{
+  // Message to status bar
+  CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
+  CString m_strInfo;
+  // Message to status bar
+  m_strInfo = "Import FEFLOW data - start";
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
+  // Dialog
+  CDialogFEFLOW m_dlg; // creating an instance of CDialogFEFLOW
+  m_dlg.DoModal(); // showing the dialog
+  // Message to status bar
+  m_strInfo = "Import FEFLOW data - finished";
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
 }

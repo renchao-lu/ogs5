@@ -1241,15 +1241,19 @@ void GMSH2MSH(char* filename,CFEMesh* m_msh)
   double x,y,z;
   string strbuffer;
 
+
 //WW  bool quad=false;
 //WW  CRFProcess* m_pcs = NULL;
-   CNode* node = NULL;
+  CNode* node = NULL;
   CElem* elem = NULL;
   ifstream msh_file(filename,ios::in);
-  //----------------------------------------------------------------------
-  while (strbuffer != "$ENDELM") 
+  getline(msh_file, strbuffer);// Node keyword
+
+  // OLD GMSH  FORMAT----------------------------------------------------------------------
+  if (strbuffer.compare("$NOD")==0)
   {
-    getline(msh_file, strbuffer);// Node keyword
+  while (strbuffer.compare("$ENDELM")!=0) 
+  {
     msh_file>>NumNodes>>ws;
     //....................................................................
 	// Node data
@@ -1307,8 +1311,76 @@ void GMSH2MSH(char* filename,CFEMesh* m_msh)
 
 
   }/*End while*/ 
+  }
+  // END old GMSH Format----------------------------------------------------------------------
 
-  //----------------------------------------------------------------------
+  // NEW 2008 GMSH  FORMAT----------------------------------------------------------------------
+  if (strbuffer.compare("$MeshFormat")==0)
+  {
+  getline(msh_file, strbuffer);// version-number file-type data-size
+  getline(msh_file, strbuffer);//$EndMeshFormat
+  getline(msh_file, strbuffer);//$Nodes Keywords
+
+  while (strbuffer.compare("$EndElements")!=0) 
+  {
+    msh_file>>NumNodes>>ws;
+    //....................................................................
+	// Node data
+    for(i=0;i<NumNodes;i++){
+      msh_file>>id>>x>>y>>z>>ws;
+      node = new CNode(id,x,y,z);
+	  m_msh->nod_vector.push_back(node);
+    }
+	getline(msh_file, strbuffer); // End Node keyword $EndNodes
+    //....................................................................
+	// Element data
+    getline(msh_file, strbuffer); // Element keyword $Elements
+    msh_file>>NumElements>>ws; // number-of-elements
+    for(i=0;i<NumElements; i++)
+	{
+      elem = new CElem(i);
+	  elem->Read(msh_file, 7);
+      m_msh->ele_vector.push_back(elem);
+	}
+    getline(msh_file, strbuffer);// END keyword
+
+  // ordering nodes and closing gaps TK
+  vector<int> gmsh_id;
+  long new_node_id;
+  int counter=0;
+  int diff=0;
+  int j=0;
+    for(i=0;i<(int)m_msh->nod_vector.size();i++){
+        diff = m_msh->nod_vector[i]->GetIndex()-counter;
+        if (diff == 0){
+            gmsh_id.push_back(i);
+            counter++;
+        }
+        else {
+            for(j=0;j<diff;j++){
+            gmsh_id.push_back(i);
+            counter++;
+            }
+            i--;
+        }
+    }
+
+    for(i=0;i<(int)m_msh->ele_vector.size();i++){
+        for(j=0;j<(int)m_msh->ele_vector[i]->GetVertexNumber();j++){
+            new_node_id = gmsh_id[m_msh->ele_vector[i]->GetNodeIndex(j)+1];
+            //m_msh->ele_vector[i]->nodes[j]->SetIndex(new_node_id);/*global*/ 
+            m_msh->ele_vector[i]->nodes_index[j]=new_node_id;/*local*/ 
+        }
+    }
+    for(i=0;i<(int)m_msh->nod_vector.size();i++){
+        m_msh->nod_vector[i]->SetIndex(i);
+    }
+    // END OF: ordering nodes and closing gaps TK
+
+  }/*End while*/ 
+  }
+  // END New 2008 GMSH Format----------------------------------------------------------------------
+
   m_msh->ConstructGrid();
   
   msh_file.close();

@@ -25,15 +25,13 @@ class CGLPoint
   //----------------------------------------------------------------------
   // Properties 
     // ID
-   string name;
-  //  char* name;
+    string name;
     long id; //CC
     // Geometry
     double x;
     double y;
     double z;
     double epsilon;
-    int mat;//CC9999
     double length; //OK well bore depth in 2D modells
 	long first_identical_id; //TK
 	long old_id, new_id; //TK
@@ -45,6 +43,9 @@ class CGLPoint
     double max_seg_length;//TK
     double mesh_density;
     // Properties
+    int type; //OK4801
+    long node; //OK
+    int mat;//CC9999
     double value;
     double propert;
     // Display

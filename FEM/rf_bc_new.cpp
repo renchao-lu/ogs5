@@ -346,6 +346,7 @@ ios::pos_type CBoundaryCondition::Read(ifstream *bc_file)
 FEMLib-Method: CBoundaryCondition::Write
 02/2004 OK Implementation
 07/2007 OK LINEAR
+10/2008 OK NOD
 **************************************************************************/
 void CBoundaryCondition::Write(fstream* rfd_file)
 {
@@ -388,6 +389,10 @@ void CBoundaryCondition::Write(fstream* rfd_file)
 	    *rfd_file << "  " << PointsHaveDistribedBC[i] << " ";
 	    *rfd_file << "  " << DistribedBC[i] << endl;
       }
+      break;
+    case 'N': //OK4801 NOD
+      *rfd_file << delimiter_type << geo_node_value;
+      *rfd_file << endl;
       break;
   }
   //--------------------------------------------------------------------

@@ -513,6 +513,7 @@ GeoSys-GUI-Method:
 Task:
 Programing:
 01/2005 OK Implementation
+10/2008 OK node type
 **************************************************************************/
 void CBoundaryConditions::FillTable()
 {
@@ -564,6 +565,9 @@ void CBoundaryConditions::FillTable()
         break;
       case 'L': // Linear
         m_strItem.Format("%i",(int)m_bc->PointsHaveDistribedBC.size());
+        break;
+      case 'N': //OK4801 Node
+        m_strItem.Format("%g",m_bc->geo_node_value);
         break;
     }
     m_LC_BC.SetItemText(listip,4,m_strItem);

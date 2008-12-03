@@ -4307,7 +4307,8 @@ void CFiniteElementStd::AssembleParabolicEquation()
   double dt_inverse = 0.0;
   if(dt<MKleinsteZahl){
     cout<<"\n Zeitschritt ist Null ! Abbruch !"<<endl;
-    abort(); //WW. return;
+    //abort(); //WW. return;
+    return;//exit(NULL); //TK
   }
   else 
     dt_inverse = 1.0 / dt; 

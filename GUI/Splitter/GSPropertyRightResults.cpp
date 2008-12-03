@@ -107,6 +107,11 @@ BEGIN_MESSAGE_MAP(CGSPropertyRightResults, CViewPropertyPage)
 	ON_BN_CLICKED(IDC_Iso_AddListItem2, OnBnClickedIsoAddlistitem2)
 	ON_BN_CLICKED(IDC_Iso_DelListItem2, OnBnClickedIsoDellistitem2)
 	ON_BN_CLICKED(IDC_Iso_DeleteAll, OnBnClickedIsoDeleteall)
+	ON_BN_CLICKED(IDC_LOAD_TEC_FILE_DATA, &CGSPropertyRightResults::OnBnClickedLoadTecFileData)
+	ON_BN_CLICKED(IDC_LOAD_TEC_FILE_DATA_AS_MOVIE, &CGSPropertyRightResults::OnBnClickedLoadTecFileDataAsMovie)
+	ON_BN_CLICKED(IDC_LOAD_TEC_FILE_FIRST_TIM_DATA, &CGSPropertyRightResults::OnBnClickedLoadTecFileFirstTimData)
+	ON_BN_CLICKED(IDC_LOAD_TEC_FILE_NEXT_TIME_STEP, &CGSPropertyRightResults::OnBnClickedLoadTecFilePreviousTimeStep)
+	ON_BN_CLICKED(IDC_GET_PCS_NEXT_TIME, &CGSPropertyRightResults::OnBnClickedGetPcsNextTimeStep)
 END_MESSAGE_MAP()
 
 
@@ -164,7 +169,7 @@ void CGSPropertyRightResults::GetPcsMinmax()
   CRFProcess* m_pcs = NULL;
   if(pcs_vector.size()==0)
     return;
-  m_pcs = PCSGet((string)mainframe->m_pcs_name);
+  m_pcs = PCSGetNew((string)mainframe->m_pcs_name,(string)mainframe->m_variable_name);
   if(!m_pcs)
   {
     AfxMessageBox("CGSPropertyRightResults::GetPcsMinmax() - no PCS data");
@@ -950,4 +955,818 @@ double CGSPropertyRightResults::Get_Blue_Value(double value_norm)
 	if (value_norm>=0.5 && value_norm<0.75) Blue  =0.0;
 	if (value_norm>=0.75)                   Blue  =0.0;
     return Blue;
+}
+
+void CGSPropertyRightResults::OnBnClickedLoadTecFileData()
+{
+	CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+ CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
+ CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+ CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+ CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+ 
+ CFileDialog fileDlg(TRUE, "tec", NULL, OFN_ENABLESIZING," TEC Files (*.tec)|*.tec|| ");
+  if(fileDlg.DoModal()==IDOK){
+    if(fileDlg.GetFileExt()=="tec")
+    {
+      CString m_strFileNameXYZ = fileDlg.GetPathName();
+      const char *file_name_const_char = 0;
+      file_name_const_char = m_strFileNameXYZ;
+      char file_name__char [1024];
+      strcpy(file_name__char,file_name_const_char);
+      filepathname = file_name__char;
+      ifstream tec_file(file_name__char,ios::in);    
+      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"TEC-File: Reading data.......");
+    
+      /*Schnelles Lesen für einzelne Zeitschritte*/ 
+      int i=0;
+      int j=0;
+      string strbuffer = "EmptyBuffer";
+      int comp=0;
+      int length=0;
+      int pos =0;;
+      vector<string>keywords;
+      string numberstring;
+      double zeitschritt = -1.0;
+      long number_of_nodes = 0;
+      long number_of_elements = 0;
+      CRFProcess* m_pcs = NULL;
+      string teststring = "Test";
+           
+      /*1st Line*/ 
+      getline(tec_file, strbuffer);
+
+		  /*Cleaning/Removing of " and white space entries*/ 
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find(' ');
+		  while (pos >0)
+		  {
+		  strbuffer.erase(pos,1);
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find('"');
+		  if (pos <= 0)
+		  pos = (int)strbuffer.find(' ');
+	      }
+
+      comp = (int)strbuffer.compare("VARIABLES=");
+      while (comp > 0)
+      {
+      length = (int)strbuffer.length();
+      strbuffer = strbuffer.substr(10,length);
+      pos=0;
+       while (pos >=0)
+       {
+        length = (int)strbuffer.length();
+        pos = (int)strbuffer.find_first_of(',');
+        keywords.push_back(strbuffer.substr(0,pos));
+        strbuffer = strbuffer.substr(pos+1,length);
+       }
+       for(j=0;j<(int)keywords.size();j++)
+       {
+        length = (int)keywords[j].find(" ");
+        if (length > 0){
+         keywords[j] = keywords[j].substr(0,(int)keywords[j].length()-1);
+        }
+       }  
+
+      /*2nd Line (analyze only T and N and E)*/ 
+      getline(tec_file, strbuffer);
+      length = (int)strbuffer.length();     
+      pos = (int)strbuffer.find_first_of('T');
+      numberstring = strbuffer.substr(pos+3,length-(pos+3));
+      zeitschritt = strtod(numberstring.data(),NULL);
+      aktuelle_zeit = zeitschritt;
+      activ_time = aktuelle_zeit;
+      pos = (long)strbuffer.find("N=");
+      numberstring = strbuffer.substr(pos+2,length-(pos+2));
+      number_of_nodes = strtol(numberstring.data(),NULL,0);
+      pos = (long)strbuffer.find("E=");
+      numberstring = strbuffer.substr(pos+2,length-(pos+2));
+      number_of_elements = strtol(numberstring.data(),NULL,0);
+
+      /*Fill Data*/ 
+      for (i=0;i<(number_of_nodes+number_of_elements);i++)
+      { 
+        if (i<number_of_nodes)
+        {
+        getline(tec_file, strbuffer);
+
+			if(pcs_vector.size()==0)
+				return;
+			m_pcs = PCSGetNew((string)m_frame->m_pcs_name,(string)m_frame->m_variable_name);
+            
+			  if(!m_pcs)
+			  {
+				AfxMessageBox("No PCS data selected");
+				return;
+			  }
+			  double value;
+			  double new_value[100];
+			  int nidx = m_pcs->GetNodeValueIndex((string)m_frame->m_variable_name);
+			  value = m_pcs->GetNodeValue(i,nidx);
+              string prim_var_name; 
+			  for(j=0;j<(int)keywords.size();j++)
+ 			  {
+               prim_var_name = keywords[j].data();
+               nidx = m_pcs->GetNodeValueIndex(prim_var_name);
+			   length = (int)strbuffer.length();     
+			   numberstring = strbuffer.substr(0,length);
+			   new_value[j] = strtod(numberstring.data(),NULL);
+			   pos = (int)strbuffer.find_first_of(" ");
+			   strbuffer = strbuffer.substr(pos+1,length);  
+			   if (nidx >= 0)
+			   {
+				 value = m_pcs->GetNodeValue(i,nidx);
+				 m_pcs->SetNodeValue(i,nidx,new_value[j]);
+                 break;
+			   }
+			  }   
+
+        }
+        else
+        {
+        getline(tec_file, strbuffer);
+        }
+      } 
+      /*END Fill Data*/ 
+
+      getline(tec_file, strbuffer);
+		  /*Cleaning/Removing of " and white space entries*/ 
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find(' ');
+		  while (pos >0)
+		  {
+		  strbuffer.erase(pos,1);
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find('"');
+		  if (pos <= 0)
+		  pos = (int)strbuffer.find(' ');
+	      }
+      comp = (int)strbuffer.compare("VARIABLES=");
+      keywords.clear();
+      }
+      /*End Zeitschritt-Sprung*/ 
+    }
+  }
+       OnBnClickedSetPcsMinmaxButton2();
+       POSITION winpos = m_pDoc->GetFirstViewPosition();
+       while(winpos !=NULL) {
+       CView* pView = m_pDoc->GetNextView(winpos);
+       pView->UpdateWindow();
+       }
+       m_pDoc->SetModifiedFlag(1);
+       m_pDoc->UpdateAllViews(NULL,0L,NULL);
+       UpdateData(FALSE);
+       m_frame->m_something_changed = 1;
+       m_pDoc->UpdateAllViews(NULL);
+       Invalidate(TRUE);
+       OnBnClickedGetPcsMinmaxButton3();	
+       pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)".......");
+       OnBnClickedSetPcsMinmaxButton2();
+}
+
+void CGSPropertyRightResults::OnBnClickedLoadTecFileDataAsMovie()
+{
+CFileDialog fileDlg(TRUE, "tec", NULL, OFN_ENABLESIZING," TEC Files (*.tec)|*.tec|| ");
+  if(fileDlg.DoModal()==IDOK){
+    Sleep(1000);
+	 CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+	 CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
+	 CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+	 CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+	 CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+
+    if(fileDlg.GetFileExt()=="tec")
+    {
+      CString m_strFileNameXYZ = fileDlg.GetPathName();
+      const char *file_name_const_char = 0;
+      file_name_const_char = m_strFileNameXYZ;
+      char file_name__char [1024];
+      strcpy(file_name__char,file_name_const_char);
+      filepathname = file_name__char;
+      ifstream tec_file(file_name__char,ios::in);    
+      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"TEC-File: Reading data.......");
+    
+      
+      /*Schnelles Lesen für einzelne Zeitschritte*/ 
+      int i=0;
+      int j=0;
+      string strbuffer = "EmptyBuffer";
+      int comp=0;
+      int length=0;
+      int pos =0;;
+      vector<string>keywords;
+      string numberstring;
+      double zeitschritt = -1.0;
+      long number_of_nodes = 0;
+      long number_of_elements = 0;
+      CRFProcess* m_pcs = NULL;
+      clock_t start, finish;
+           
+      /*1st Line*/ 
+      start = clock();
+	  finish = clock();
+      getline(tec_file, strbuffer);
+      /*Cleaning/Removing of " and white space entries*/ 
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find(' ');
+		  while (pos >0)
+		  {
+		  strbuffer.erase(pos,1);
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find('"');
+		  if (pos <= 0)
+		  pos = (int)strbuffer.find(' ');
+	      }
+      comp = (int)strbuffer.compare("VARIABLES=");
+
+      while (comp > 0)
+      {
+      length = (int)strbuffer.length();
+      strbuffer = strbuffer.substr(10,length);
+      pos=0;
+       while (pos >=0)
+       {
+        length = (int)strbuffer.length();
+        pos = (int)strbuffer.find_first_of(',');
+        keywords.push_back(strbuffer.substr(0,pos));
+        strbuffer = strbuffer.substr(pos+1,length);
+       }
+       for(j=0;j<(int)keywords.size();j++)
+       {
+        length = (int)keywords[j].find(" ");
+        if (length > 0){
+         keywords[j] = keywords[j].substr(0,(int)keywords[j].length()-1);
+        }
+       }  
+
+      /*2nd Line (analyze only T and N and E)*/ 
+      getline(tec_file, strbuffer);
+      length = (int)strbuffer.length();     
+      pos = (int)strbuffer.find_first_of('T');
+      numberstring = strbuffer.substr(pos+3,length-(pos+3));
+      zeitschritt = strtod(numberstring.data(),NULL);
+      aktuelle_zeit = zeitschritt;
+      activ_time = aktuelle_zeit;
+      pos = (long)strbuffer.find("N=");
+      numberstring = strbuffer.substr(pos+2,length-(pos+2));
+      number_of_nodes = strtol(numberstring.data(),NULL,0);
+      pos = (long)strbuffer.find("E=");
+      numberstring = strbuffer.substr(pos+2,length-(pos+2));
+      number_of_elements = strtol(numberstring.data(),NULL,0);
+
+      /*Fill Data*/ 
+      for (i=0;i<(number_of_nodes+number_of_elements);i++)
+      { 
+        if (i<number_of_nodes)
+        {
+        getline(tec_file, strbuffer);
+
+			if(pcs_vector.size()==0)
+				return;
+        m_pcs = PCSGetNew((string)m_frame->m_pcs_name,(string)m_frame->m_variable_name);
+
+            
+			  if(!m_pcs)
+			  {
+				AfxMessageBox("No PCS data selected");
+				return;
+			  }
+			  double value;
+			  double new_value[100];
+			  int nidx = m_pcs->GetNodeValueIndex((string)m_frame->m_variable_name);
+			  value = m_pcs->GetNodeValue(i,nidx);
+			 
+			  for(j=0;j<(int)keywords.size();j++)
+			  {
+			   nidx = m_pcs->GetNodeValueIndex((string)keywords[j].data());
+			   length = (int)strbuffer.length();     
+			   numberstring = strbuffer.substr(0,length);
+			   new_value[j] = strtod(numberstring.data(),NULL);
+			   pos = (int)strbuffer.find_first_of(" ");
+			   strbuffer = strbuffer.substr(pos+1,length);  
+			   if (nidx >= 0)
+			   {
+				 value = m_pcs->GetNodeValue(i,nidx);
+				 m_pcs->SetNodeValue(i,nidx,new_value[j]);
+				 break;
+			   }
+			  }   
+
+        }
+        else
+        {
+        getline(tec_file, strbuffer);
+        }
+      } 
+      /*END Fill Data*/ 
+
+     getline(tec_file, strbuffer);
+     /*Cleaning/Removing of " and white space entries*/ 
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find(' ');
+		  while (pos >0)
+		  {
+		  strbuffer.erase(pos,1);
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find('"');
+		  if (pos <= 0)
+		  pos = (int)strbuffer.find(' ');
+	      }
+      comp = (int)strbuffer.compare("VARIABLES=");
+      keywords.clear();
+
+       OnBnClickedSetPcsMinmaxButton2();
+       POSITION winpos = m_pDoc->GetFirstViewPosition();
+       while(winpos !=NULL) {
+       CView* pView = m_pDoc->GetNextView(winpos);
+       pView->UpdateWindow();
+       }
+       m_pDoc->SetModifiedFlag(1);
+       m_pDoc->UpdateAllViews(NULL,0L,NULL);
+
+       start = clock();
+       finish= clock();
+       while (finish - start <= 300.0) {
+       finish= clock();
+     
+      }
+      /*End Zeitschritt-Sprung*/ 
+      
+      }
+    }
+  
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)".......");
+}
+    OnBnClickedSetPcsMinmaxButton2();
+}
+
+void CGSPropertyRightResults::OnBnClickedLoadTecFileFirstTimData()
+{
+	CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+ CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
+ CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+ CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+ CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+ 
+ CFileDialog fileDlg(TRUE, "tec", NULL, OFN_ENABLESIZING," TEC Files (*.tec)|*.tec|| ");
+  if(fileDlg.DoModal()==IDOK){
+    if(fileDlg.GetFileExt()=="tec")
+    {
+      CString m_strFileNameXYZ = fileDlg.GetPathName();
+      const char *file_name_const_char = 0;
+      file_name_const_char = m_strFileNameXYZ;
+      char file_name__char [1024];
+      strcpy(file_name__char,file_name_const_char);
+      filepathname = file_name__char;
+      ifstream tec_file(file_name__char,ios::in);    
+      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"TEC-File: Reading data.......");
+    
+      /*Schnelles Lesen für einzelne Zeitschritte*/ 
+      int i=0;
+      int j=0;
+      string strbuffer = "EmptyBuffer";
+      int comp=0;
+      int length=0;
+      int pos =0;;
+      vector<string>keywords;
+      string numberstring;
+      double zeitschritt = -1.0;
+      long number_of_nodes = 0;
+      long number_of_elements = 0;
+      CRFProcess* m_pcs = NULL;
+      string teststring = "Test";
+           
+      /*1st Line*/ 
+      getline(tec_file, strbuffer);
+
+		  /*Cleaning/Removing of " and white space entries*/ 
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find(' ');
+		  while (pos >0)
+		  {
+		  strbuffer.erase(pos,1);
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find('"');
+		  if (pos <= 0)
+		  pos = (int)strbuffer.find(' ');
+	      }
+
+      comp = (int)strbuffer.compare("VARIABLES=");
+      while (comp > 0)
+      {
+      length = (int)strbuffer.length();
+      strbuffer = strbuffer.substr(10,length);
+      pos=0;
+       while (pos >=0)
+       {
+        length = (int)strbuffer.length();
+        pos = (int)strbuffer.find_first_of(',');
+        keywords.push_back(strbuffer.substr(0,pos));
+        strbuffer = strbuffer.substr(pos+1,length);
+       }
+       for(j=0;j<(int)keywords.size();j++)
+       {
+        length = (int)keywords[j].find(" ");
+        if (length > 0){
+         keywords[j] = keywords[j].substr(0,(int)keywords[j].length()-1);
+        }
+       }  
+
+      /*2nd Line (analyze only T and N and E)*/ 
+      getline(tec_file, strbuffer);
+      length = (int)strbuffer.length();     
+      pos = (int)strbuffer.find_first_of('T');
+      numberstring = strbuffer.substr(pos+3,length-(pos+3));
+      zeitschritt = strtod(numberstring.data(),NULL);
+      aktuelle_zeit = zeitschritt;
+      activ_time = aktuelle_zeit;
+      pos = (long)strbuffer.find("N=");
+      numberstring = strbuffer.substr(pos+2,length-(pos+2));
+      number_of_nodes = strtol(numberstring.data(),NULL,0);
+      pos = (long)strbuffer.find("E=");
+      numberstring = strbuffer.substr(pos+2,length-(pos+2));
+      number_of_elements = strtol(numberstring.data(),NULL,0);
+
+      /*Fill Data*/ 
+      for (i=0;i<(number_of_nodes+number_of_elements);i++)
+      { 
+        if (i<number_of_nodes)
+        {
+        getline(tec_file, strbuffer);
+
+			if(pcs_vector.size()==0)
+				return;
+			m_pcs = PCSGetNew((string)m_frame->m_pcs_name,(string)m_frame->m_variable_name);
+            
+			  if(!m_pcs)
+			  {
+				AfxMessageBox("No PCS data selected");
+				return;
+			  }
+			  double value;
+			  double new_value[100];
+			  int nidx = m_pcs->GetNodeValueIndex((string)m_frame->m_variable_name);
+			  value = m_pcs->GetNodeValue(i,nidx);
+              string prim_var_name; 
+			  for(j=0;j<(int)keywords.size();j++)
+ 			  {
+               prim_var_name = keywords[j].data();
+               nidx = m_pcs->GetNodeValueIndex(prim_var_name);
+			   length = (int)strbuffer.length();     
+			   numberstring = strbuffer.substr(0,length);
+			   new_value[j] = strtod(numberstring.data(),NULL);
+			   pos = (int)strbuffer.find_first_of(" ");
+			   strbuffer = strbuffer.substr(pos+1,length);  
+			   if (nidx >= 0)
+			   {
+				 value = m_pcs->GetNodeValue(i,nidx);
+				 m_pcs->SetNodeValue(i,nidx,new_value[j]);
+                 break;
+			   }
+			  }   
+
+        }
+        else
+        {
+        getline(tec_file, strbuffer);
+        }
+      } 
+      /*END Fill Data*/ 
+      comp =-1;
+      keywords.clear();
+      }
+    }
+  }
+       OnBnClickedSetPcsMinmaxButton2();
+       POSITION winpos = m_pDoc->GetFirstViewPosition();
+       while(winpos !=NULL) {
+       CView* pView = m_pDoc->GetNextView(winpos);
+       pView->UpdateWindow();
+       }
+       m_pDoc->SetModifiedFlag(1);
+       m_pDoc->UpdateAllViews(NULL,0L,NULL);
+       UpdateData(FALSE);
+       m_frame->m_something_changed = 1;
+       m_pDoc->UpdateAllViews(NULL);
+       Invalidate(TRUE);
+       OnBnClickedSetPcsMinmaxButton2();	
+       pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)".......");
+       OnBnClickedSetPcsMinmaxButton2();
+
+
+}
+
+void CGSPropertyRightResults::OnBnClickedLoadTecFilePreviousTimeStep()
+{
+ CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+
+      const char *file_name_const_char = 0;
+      if (filepathname.length() == 0) return;
+      file_name_const_char = filepathname.data();
+      char file_name__char [1024];
+      strcpy(file_name__char,file_name_const_char);
+      filepathname = file_name__char;
+      ifstream tec_file(file_name__char,ios::in);    
+    
+      /*Schnelles Lesen für einzelne Zeitschritte*/ 
+      int i=0;
+      int j=0;
+      string strbuffer = "EmptyBuffer";
+      int comp=0;
+      int length=0;
+      int pos =0;;
+      vector<string>keywords;
+      string numberstring;
+      double zeitschritt = -1.0;
+      double vorgaengerzeit = -1.0;
+      long number_of_nodes = 0;
+      long number_of_elements = 0;
+      CRFProcess* m_pcs = NULL;
+      string teststring = "Test";
+      /*1st Line*/ 
+      getline(tec_file, strbuffer);
+
+		  /*Cleaning/Removing of " and white space entries*/ 
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find(' ');
+		  while (pos >0)
+		  {
+		  strbuffer.erase(pos,1);
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find('"');
+		  if (pos <= 0)
+		  pos = (int)strbuffer.find(' ');
+	      }
+
+      comp = (int)strbuffer.compare("VARIABLES=");
+      while (comp > 0)
+      {
+      length = (int)strbuffer.length();
+      strbuffer = strbuffer.substr(10,length);
+      pos=0;
+       while (pos >=0)
+       {
+        length = (int)strbuffer.length();
+        pos = (int)strbuffer.find_first_of(',');
+        keywords.push_back(strbuffer.substr(0,pos));
+        strbuffer = strbuffer.substr(pos+1,length);
+       }
+       for(j=0;j<(int)keywords.size();j++)
+       {
+        length = (int)keywords[j].find(" ");
+        if (length > 0){
+         keywords[j] = keywords[j].substr(0,(int)keywords[j].length()-1);
+        }
+       }  
+
+      /*2nd Line (analyze only T and N and E)*/ 
+      getline(tec_file, strbuffer);
+      vorgaengerzeit = aktuelle_zeit;
+      length = (int)strbuffer.length();     
+      pos = (int)strbuffer.find_first_of('T');
+      numberstring = strbuffer.substr(pos+3,length-(pos+3));
+      zeitschritt = strtod(numberstring.data(),NULL);
+      aktuelle_zeit = zeitschritt;
+      pos = (long)strbuffer.find("N=");
+      numberstring = strbuffer.substr(pos+2,length-(pos+2));
+      number_of_nodes = strtol(numberstring.data(),NULL,0);
+      pos = (long)strbuffer.find("E=");
+      numberstring = strbuffer.substr(pos+2,length-(pos+2));
+      number_of_elements = strtol(numberstring.data(),NULL,0);
+
+      if (activ_time == aktuelle_zeit){
+        activ_time = vorgaengerzeit;
+        //CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+        CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+        CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+        CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+        GetPcsMinmax();
+        UpdateData(FALSE);
+        m_frame->m_something_changed = 1;
+        m_pDoc->UpdateAllViews(NULL);
+        Invalidate(TRUE);
+        return;
+      }
+       
+
+
+      /*Fill Data*/ 
+      for (i=0;i<(number_of_nodes+number_of_elements);i++)
+      { 
+        if (i<number_of_nodes)
+        {
+        getline(tec_file, strbuffer);
+
+			if(pcs_vector.size()==0)
+				return;
+			m_pcs = PCSGetNew((string)m_frame->m_pcs_name,(string)m_frame->m_variable_name);
+            
+			  if(!m_pcs)
+			  {
+				AfxMessageBox("No PCS data selected");
+				return;
+			  }
+			  double value;
+			  double new_value[100];
+			  int nidx = m_pcs->GetNodeValueIndex((string)m_frame->m_variable_name);
+			  value = m_pcs->GetNodeValue(i,nidx);
+              string prim_var_name; 
+			  for(j=0;j<(int)keywords.size();j++)
+ 			  {
+               prim_var_name = keywords[j].data();
+               nidx = m_pcs->GetNodeValueIndex(prim_var_name);
+			   length = (int)strbuffer.length();     
+			   numberstring = strbuffer.substr(0,length);
+			   new_value[j] = strtod(numberstring.data(),NULL);
+			   pos = (int)strbuffer.find_first_of(" ");
+			   strbuffer = strbuffer.substr(pos+1,length);  
+			   if (nidx >= 0)
+			   {
+				 value = m_pcs->GetNodeValue(i,nidx);
+				 m_pcs->SetNodeValue(i,nidx,new_value[j]);
+                 break;
+			   }
+			  }   
+
+        }
+        else
+        {
+        getline(tec_file, strbuffer);
+        }
+      } 
+      /*END Fill Data*/ 
+
+      getline(tec_file, strbuffer);
+		  /*Cleaning/Removing of " and white space entries*/ 
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find(' ');
+		  while (pos >0)
+		  {
+		  strbuffer.erase(pos,1);
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find('"');
+		  if (pos <= 0)
+		  pos = (int)strbuffer.find(' ');
+	      }
+        comp = (int)strbuffer.compare("VARIABLES=");
+        keywords.clear();
+      }
+ 
+}
+
+void CGSPropertyRightResults::OnBnClickedGetPcsNextTimeStep()
+{
+ CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+
+      const char *file_name_const_char = 0;
+      if (filepathname.length() == 0) return;
+      file_name_const_char = filepathname.data();
+      char file_name__char [1024];
+      strcpy(file_name__char,file_name_const_char);
+      filepathname = file_name__char;
+      ifstream tec_file(file_name__char,ios::in);    
+    
+      /*Schnelles Lesen für einzelne Zeitschritte*/ 
+      int i=0;
+      int j=0;
+      string strbuffer = "EmptyBuffer";
+      int comp=0;
+      int length=0;
+      int pos =0;;
+      vector<string>keywords;
+      string numberstring;
+      double zeitschritt = -1.0;
+      long number_of_nodes = 0;
+      long number_of_elements = 0;
+      CRFProcess* m_pcs = NULL;
+      string teststring = "Test";
+      int readstop =0;
+      /*1st Line*/ 
+      getline(tec_file, strbuffer);
+
+		  /*Cleaning/Removing of " and white space entries*/ 
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find(' ');
+		  while (pos >0)
+		  {
+		  strbuffer.erase(pos,1);
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find('"');
+		  if (pos <= 0)
+		  pos = (int)strbuffer.find(' ');
+	      }
+
+      comp = (int)strbuffer.compare("VARIABLES=");
+      while (comp > 0)
+      {
+      length = (int)strbuffer.length();
+      strbuffer = strbuffer.substr(10,length);
+      pos=0;
+       while (pos >=0)
+       {
+        length = (int)strbuffer.length();
+        pos = (int)strbuffer.find_first_of(',');
+        keywords.push_back(strbuffer.substr(0,pos));
+        strbuffer = strbuffer.substr(pos+1,length);
+       }
+       for(j=0;j<(int)keywords.size();j++)
+       {
+        length = (int)keywords[j].find(" ");
+        if (length > 0){
+         keywords[j] = keywords[j].substr(0,(int)keywords[j].length()-1);
+        }
+       }  
+
+      /*2nd Line (analyze only T and N and E)*/ 
+      getline(tec_file, strbuffer);
+      length = (int)strbuffer.length();     
+      pos = (int)strbuffer.find_first_of('T');
+      numberstring = strbuffer.substr(pos+3,length-(pos+3));
+      zeitschritt = strtod(numberstring.data(),NULL);
+      aktuelle_zeit = zeitschritt;
+      pos = (long)strbuffer.find("N=");
+      numberstring = strbuffer.substr(pos+2,length-(pos+2));
+      number_of_nodes = strtol(numberstring.data(),NULL,0);
+      pos = (long)strbuffer.find("E=");
+      numberstring = strbuffer.substr(pos+2,length-(pos+2));
+      number_of_elements = strtol(numberstring.data(),NULL,0);
+
+      /*Fill Data*/ 
+      for (i=0;i<(number_of_nodes+number_of_elements);i++)
+      { 
+        if (i<number_of_nodes)
+        {
+        getline(tec_file, strbuffer);
+
+			if(pcs_vector.size()==0)
+				return;
+			m_pcs = PCSGetNew((string)m_frame->m_pcs_name,(string)m_frame->m_variable_name);
+            
+			  if(!m_pcs)
+			  {
+				AfxMessageBox("No PCS data selected");
+				return;
+			  }
+			  double value;
+			  double new_value[100];
+			  int nidx = m_pcs->GetNodeValueIndex((string)m_frame->m_variable_name);
+			  value = m_pcs->GetNodeValue(i,nidx);
+              string prim_var_name; 
+			  for(j=0;j<(int)keywords.size();j++)
+ 			  {
+               prim_var_name = keywords[j].data();
+               nidx = m_pcs->GetNodeValueIndex(prim_var_name);
+			   length = (int)strbuffer.length();     
+			   numberstring = strbuffer.substr(0,length);
+			   new_value[j] = strtod(numberstring.data(),NULL);
+			   pos = (int)strbuffer.find_first_of(" ");
+			   strbuffer = strbuffer.substr(pos+1,length);  
+			   if (nidx >= 0)
+			   {
+				 value = m_pcs->GetNodeValue(i,nidx);
+				 m_pcs->SetNodeValue(i,nidx,new_value[j]);
+                 break;
+			   }
+			  }   
+
+        }
+        else
+        {
+        getline(tec_file, strbuffer);
+        }
+      } 
+      /*END Fill Data*/ 
+
+      getline(tec_file, strbuffer);
+		  /*Cleaning/Removing of " and white space entries*/ 
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find(' ');
+		  while (pos >0)
+		  {
+		  strbuffer.erase(pos,1);
+		  length = (int)strbuffer.length();
+		  pos = (int)strbuffer.find('"');
+		  if (pos <= 0)
+		  pos = (int)strbuffer.find(' ');
+	      }
+      comp = (int)strbuffer.compare("VARIABLES=");
+      if (readstop==1) 
+      {
+       activ_time = aktuelle_zeit;
+        //CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+        CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+        CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+        CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+        GetPcsMinmax();
+        UpdateData(FALSE);
+        m_frame->m_something_changed = 1;
+        m_pDoc->UpdateAllViews(NULL);
+        Invalidate(TRUE);
+       return;
+      }
+      if (activ_time == aktuelle_zeit)
+        readstop = 1;
+        keywords.clear();
+      }
 }

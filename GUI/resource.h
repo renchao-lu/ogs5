@@ -592,15 +592,20 @@
 #define IDC_EDIT_MSH_DENSITY_J          1180
 #define IDC_TRI_LENGTH_BUTTON           1180
 #define IDC_BUTTON_MAT_GEO_CLEAR        1180
+#define IDC_LOAD_TEC_FILE_DATA          1180
 #define IDC_UPDATEVALUE                 1181
 #define IDC_LIST_SFC                    1181
 #define IDC_TRI_AREAI_BUTTON            1181
+#define IDC_LOAD_TEC_FILE_DATA_AS_MOVIE 1181
 #define IDC_SURFACES                    1182
 #define IDC_LIST_SFC_MSH                1182
 #define IDC_AUTOMATIC_MESH_DENSITY      1182
+#define IDC_LOAD_TEC_FILE_FIRST_TIM_DATA 1182
 #define IDC_VOLUMES                     1183
 #define IDC_COMBO_MMP                   1183
 #define IDC_GEOMETRIC_MESH_DENSITY2     1183
+#define IDC_LOAD_TEC_FILE_DATA2         1183
+#define IDC_LOAD_TEC_FILE_NEXT_TIME_STEP 1183
 #define IDC_SELECT_PLANE                1184
 #define IDC_COMBO_MSP                   1184
 #define IDC_GLOBAL_SPLIT_MESH_DENSITY3  1184
@@ -608,6 +613,8 @@
 #define IDC_BUTTON_READ_DATA            1185
 #define IDC_COMBO_MMP_GROUP             1185
 #define IDC_START_GMSH_MESHING          1185
+#define IDC_GET_PCS_MINMAX_BUTTON4      1185
+#define IDC_GET_PCS_NEXT_TIME           1185
 #define IDC_BUTTON_CREATE_GROUP         1186
 #define IDC_COMBO_MFP                   1186
 #define IDC_MSHNODES_IN_POLYGON         1186
@@ -759,6 +766,7 @@
 #define IDC_MSH_EDITOR_BUTTON           1232
 #define IDC_BUTTON_CREATE_PNT           1232
 #define IDC_STATIC_MSH                  1232
+#define IDC_FILE_FEFLOW_READ_ELE        1232
 #define IDC_BUTTON_BC_REMOVE            1233
 #define IDC_BUTTON_VOL_WRITE            1233
 #define IDC_MONTHCALENDAR1              1233
@@ -766,6 +774,7 @@
 #define IDC_READ1                       1233
 #define IDC_BUTTON_POLYLINE_WRITE       1233
 #define IDC_BC_EDITOR_BUTTON            1233
+#define IDC_FILE_FEFLOW_READ_MAT        1233
 #define IDC_BUTTON_BC_REMOVEALL         1234
 #define IDC_BUTTON_VOL_WRITE_TEC        1234
 #define IDC_TAB1                        1234
@@ -802,6 +811,7 @@
 #define IDC_PCS_MAX_EDIT                1237
 #define IDC_MMP_EDITOR_BUTTON           1237
 #define IDC_STATIC_MinValue             1237
+#define IDC_FILE_FEFLOW_READ_BC         1237
 #define IDC_BUTTON_BC_ADD2              1238
 #define IDC_EDIT_MAT                    1238
 #define IDC_COMBO_GEO_PLY               1238
@@ -811,6 +821,7 @@
 #define IDC_PCS_MIN_EDIT                1238
 #define IDC_MFP_EDITOR_BUTTON           1238
 #define IDC_STATIC_Max_Value            1238
+#define IDC_FILE_SHP5                   1238
 #define IDC_BUTTON_BC_REMOVE2           1239
 #define IDC_BUTTON_BC_READ              1239
 #define IDC_LIST_MAT_GEO_TYPE           1239
@@ -820,6 +831,7 @@
 #define IDC_NUM_EDITOR_BUTTON           1239
 #define IDC_Iso_Refresh                 1239
 #define IDC_PICKPLANE                   1239
+#define IDC_BUTTON_CREATE_BC            1239
 #define IDC_BUTTON_SELECTED_NODES       1240
 #define IDC_COMBO_GEO_VOL               1240
 #define IDC_COMBO_PLY_MSH               1240
@@ -827,6 +839,8 @@
 #define IDC_Iso_AddListItem             1240
 #define IDC_MSH                         1240
 #define IDC_ISOLINE_ISOSURFACE_BUTTON   1240
+#define IDC_BUTTON_CREATE_VOL3          1240
+#define IDC_BUTTON_CREATE_IC            1240
 #define IDC_LIST_BC                     1241
 #define IDC_BUTTON_BC_WRITE             1241
 #define IDC_GEO_NUMBER                  1241
@@ -839,6 +853,7 @@
 #define IDC_PERM                        1241
 #define IDC_RADIO_UsingContourPlotCol   1241
 #define IDC_BUTTON_FILEOPEN             1241
+#define IDC_FILE_FEFLOW_READ_ST         1241
 #define IDC_BUTTON_BC_READ_CSV          1242
 #define IDC_BUTTON_GEO_WRITE            1242
 #define IDC_LIST_MAT_GEO_FAKE           1242
@@ -859,6 +874,8 @@
 #define IDC_FILENAME_EDIT               1243
 #define IDC_BUTTON_TIM                  1243
 #define IDC_CREEP                       1243
+#define IDC_BUTTON_CREATE_BC2           1243
+#define IDC_BUTTON_CREATE_ST            1243
 #define IDC_SURFACE_REMOVEALL           1244
 #define IDC_TIM_EDITOR_BUTTON           1244
 #define IDC_Max                         1244
@@ -924,6 +941,10 @@
 #define IDC_COMBO_MOD_T                 1256
 #define IDC_COMBO_MOD_C                 1257
 #define IDC_CHECK_MOD_M                 1258
+#define IDC_FILE_FEFLOW_READ_NOD        1259
+#define IDC_BUTTON_CREATE_NOD           1260
+#define IDC_BUTTON_CREATE_ELE           1261
+#define IDC_BUTTON_CREATE_MMP           1262
 #define IDC_EDIT_TS_1                   1301
 #define IDC_EDIT_TS_2                   1302
 #define IDC_EDIT_TS_3                   1303
@@ -1084,6 +1105,7 @@
 #define IDD_CONTROL_RIGHT_PCS           2249
 #define IDD_NUM_EDITOR                  2250
 #define IDD_MOD_EDITOR                  2251
+#define IDD_FEFLOW                      2252
 #define ID_HELP_OGLINFO                 32771
 #define ID_BUTTON_DRAW                  32773
 #define ID_CHANGE_SCENE                 32779
@@ -1292,6 +1314,8 @@
 #define ID_RUN                          33084
 #define ID_IMPORT_FLAC                  33085
 #define ID_IMPORT_FLAC_MESH             33086
+#define ID_IMPORT_FEFLOW                33087
+#define ID_IMPORT_MIKE                  33088
 
 // Next default values for new objects
 // 
@@ -1299,8 +1323,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        178
-#define _APS_NEXT_COMMAND_VALUE         33086
-#define _APS_NEXT_CONTROL_VALUE         1259
+#define _APS_NEXT_COMMAND_VALUE         33089
+#define _APS_NEXT_CONTROL_VALUE         1263
 #define _APS_NEXT_SYMED_VALUE           104
 #endif
 #endif

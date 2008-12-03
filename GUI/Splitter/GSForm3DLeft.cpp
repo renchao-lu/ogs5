@@ -244,11 +244,23 @@ HTREEITEM hMESH = pCtrl->InsertItem("MSH",9,9);
     for(pcs_j=0;pcs_j<(long)pcs_vector.size();pcs_j++)
     {
       m_process = pcs_vector[pcs_j];
-      if(m_process->m_msh) //OK
-        for(pcs_i=0;pcs_i<(int)m_process->m_msh->mat_names_vector.size();pcs_i++)
-          if(m_process->m_msh->mat_names_vector[pcs_i].compare("PERMEABILITY")==0)
-            pCtrl->InsertItem("Permeability",0,1, hMATGROUPNB, TVI_LAST);
-      break;
+      bool isPermeabilityFound = false;
+      CFEMesh* tmp_msh = NULL;
+      if(m_process->m_msh) { //OK
+        tmp_msh = m_process->m_msh;
+      } else {
+        //NW
+        tmp_msh = fem_msh_vector[0];
+      }
+      for(pcs_i=0;pcs_i<(int)tmp_msh->mat_names_vector.size();pcs_i++) {
+        if(tmp_msh->mat_names_vector[pcs_i].compare("PERMEABILITY")==0) {
+          isPermeabilityFound = true;
+          pCtrl->InsertItem("Permeability",0,1, hMATGROUPNB, TVI_LAST);
+          break;
+        }
+      }
+      if (isPermeabilityFound) 
+        break;
     }
 
     /*Patch Areas */ 

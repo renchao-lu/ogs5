@@ -11,8 +11,8 @@ Programming:
 05/2007    Dirk Schaefer      Addition of NAPL-dissolution
 
 ***************************************************************************/
+#include "stdafx.h" // MFC
 #include "rf_kinreact.h"
-#include "stdafx.h" /* MFC */
 #include "stdio.h"
 #include "makros.h"
 #include "tools.h"

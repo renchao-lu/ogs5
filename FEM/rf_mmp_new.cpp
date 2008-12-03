@@ -1261,6 +1261,9 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 //------------------------------------------------------------------------
 //11..PERMEABILITY_DISTRIBUTION
 //------------------------------------------------------------------------
+    basic_string <char>::size_type indexChWin, indexChLinux; //WW
+    indexChWin = indexChLinux = 0;
+    string funfname; 
     if(line_string.find("$PERMEABILITY_DISTRIBUTION")!=string::npos) { //subkeyword found
       in.str(GetLineFromFile1(mmp_file));
       in >> permeability_file;
@@ -1271,7 +1274,24 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
       {
         file_name = m_gsp->path + permeability_file;
       }
-      ifstream mmp_file(file_name.data(),ios::in);
+      //-------WW
+      indexChWin = FileName.find_last_of('\\');
+      indexChLinux = FileName.find_last_of('/');
+      if(indexChWin==string::npos&&indexChLinux==string::npos)
+         funfname = file_name;
+      else if(indexChWin!=string::npos)
+      {
+         funfname = FileName.substr(0,indexChWin);
+         funfname = funfname+"\\"+file_name;
+      }
+      else if(indexChLinux!=string::npos)
+      {
+         funfname = FileName.substr(0,indexChLinux);
+         funfname = funfname+"/"+file_name;
+      } 
+      permeability_file = funfname;
+      //--------------------------------------
+      ifstream mmp_file(funfname.data(),ios::in); //WW
       if (!mmp_file.good()){
         cout << "Fatal error in MMPRead: no PERMEABILITY_DISTRIBUTION file" << endl;
 #ifdef MFC
@@ -6600,6 +6620,7 @@ void GetHeterogeneousFields()
   m_gsp = GSPGetMember("mmp");
   if(m_gsp)
     file_path = m_gsp->path;
+
   //----------------------------------------------------------------------
   // Tests
   if(mmp_vector.size()==0)
@@ -6614,8 +6635,9 @@ void GetHeterogeneousFields()
       //OK name_file = (char *) m_mmp->permeability_file.data();
       //OK if(name_file != NULL)
         //OK ok = FctReadHeterogeneousFields(name_file,m_mmp);
-      file_path_base_ext = file_path + m_mmp->permeability_file;
-      m_mmp->SetDistributedELEProperties(file_path_base_ext);
+
+      //WW file_path_base_ext = file_path + m_mmp->permeability_file;
+      m_mmp->SetDistributedELEProperties(m_mmp->permeability_file); //WW
       m_mmp->WriteTecplotDistributedProperties();
     }
     //....................................................................

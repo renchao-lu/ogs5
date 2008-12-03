@@ -102,7 +102,7 @@ private:
 	CRFProcess* m_pcs;
 };
 
-extern void FMRead(string);
+extern void FMRead(string pcs_name = "");
 extern void DATWriteHETFile(const char *file_name);
 
 
