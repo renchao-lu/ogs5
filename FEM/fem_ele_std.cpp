@@ -5017,7 +5017,7 @@ Task: Config material and knowns for local assembly
 Programing:
 08/2008 WW Implementation
 **************************************************************************/
-void CFiniteElementStd::Config()
+inline void CFiniteElementStd::Config()
 {
   int i, nn;
   //----------------------------------------------------------------------
