@@ -1,13 +1,10 @@
-#CXX_LIBS         = -lpthread
-CXX_LIBS         = ./LIB/liblis.a
-
-
+CXX_LIBS         = ./LIB/liblis.a.icc
 CXX_LDFLAGS      = -O3 -openmp -pthread -axP -ipo -hpo -static
 CXX_LD           = icpc
 
 CXX_OPT_FLAGS    = -O3 -openmp -axP -ipo -hpo -static
 CXX_DEBUG_FLAGS  = 
 
-CXX_FLAGS        = -DGCC -D_POSIX_SOURCE -DNO_ERROR_CONTROL $(CXX_OPT_FLAGS) $(CXX_DEBUG_FLAGS) -DRANDOM_WALK -DNEW_EQS -DLIS -D_OPENMP
+CXX_FLAGS        = -DGCC -D_POSIX_SOURCE -DNO_ERROR_CONTROL -I../LIB $(CXX_OPT_FLAGS) $(CXX_DEBUG_FLAGS) -DRANDOM_WALK -DNEW_EQS -DLIS -D_OPENMP
 CXX              = icc
 
