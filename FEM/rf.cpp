@@ -20,19 +20,26 @@
 #endif
 
 #include "stdafx.h" /* MFC */
+#include<iostream>
 /* Preprozessor-Definitionen */
 #include "makros.h"
 #define TEST
 /* Benutzte Module */
 #include "break.h"
 #include "timer.h"
-#include "rf_apl.h"
+//16.12.2008. WW #include "rf_apl.h"
 #include "geo_strings.h"
 #ifdef SUPERCOMPUTER
 // kg44 test for buffered output
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#endif
+#ifdef PROBLEM_CLASS //WW
+#include "problem.h"
+#ifndef MFC //16.12.2008. WW
+Problem *aproblem = NULL;
+#endif
 #endif
 /* Deklarationen */
 int main ( int argc, char *argv[] );
@@ -129,6 +136,12 @@ int main ( int argc, char *argv[] )
   //WW  DisplayMsgLn("");
   //WW  DisplayMsgLn("");
   FileName = dateiname;
+#ifdef PROBLEM_CLASS    //12.08.2008. WW
+  aproblem = new Problem(dateiname);
+  aproblem->Euler_TimeDiscretize();
+  delete aproblem;
+  aproblem = NULL;
+#else // of define PROBLEM_CLASS
   /* Schalterstellungen zeigen */
   //#ifdef SWITCHES
   //    ShowSwitches();
@@ -170,6 +183,7 @@ int main ( int argc, char *argv[] )
   /* Speichertest beenden */
   StopMemoryTest();
   /* Laufzeit ausgeben */
+#endif //of define PROBLEM_CLASS
 #ifdef TESTTIME
   cout << "Simulation time: " << TGetTimer(0) << "s" << endl;
 #endif
@@ -218,51 +232,46 @@ int mainPCH ( int argc, char *argv[] )
   /* Eingabe-Dateinamen ermitteln */
   if (argc>1) {
       dateiname = (char *) Malloc((int)strlen(argv[1])+1);
-      dateiname = StrDown(strcpy(dateiname,argv[1]));
+//WW      dateiname = StrDown(strcpy(dateiname,argv[1]));
+      dateiname = strcpy(dateiname,argv[1]);
       DisplayMsgLn(dateiname);
   }
   else {
-      dateiname = StrDown(ReadString());
+//WW      dateiname = StrDown(ReadString());
+      dateiname = ReadString();
   }
-
-  DisplayMsgLn("");
-  DisplayMsgLn("");
+  //WW  DisplayMsgLn("");
+  //WW  DisplayMsgLn("");
   FileName = dateiname;
-
+#ifdef PROBLEM_CLASS    //12.08.2008. WW
+  aproblem = new Problem(dateiname);
+  aproblem->Euler_TimeDiscretize();
+  delete aproblem;
+  aproblem = NULL;
+#else // of define PROBLEM_CLASS
   /* Schalterstellungen zeigen */
-#ifdef SWITCHES
-    //ShowSwitches();
-#endif
-
+  //#ifdef SWITCHES
+  //    ShowSwitches();
+  //#endif
   /* Konfiguration lesen */
 #ifdef ENABLE_ADT
     ReadRFConfigFile(dateiname);
 #endif
-
-
 /*========================================================================*/
 /* FEM-Applikation */
-
   /* Allgemeine FEM-Datenstrukturen anlegen */
-  CreateObjectLists();
-#ifdef TEST
-    DisplayMsgLn("main: Allgemeine FEM-Datenstrukturen anlegen");
-#endif
-
+//WW  CreateObjectLists();
   /* Systemzeit fuer Rockflow setzen */
 //OK  SetSystemTime("RF-MAIN","ROCKFLOW","ROCKFLOW: Total time",&rockflow_id_timer);
 //OK  RunSystemTime("RF-MAIN");
-
   /* Ctrl-C abfangen und interpretieren */
   SaveBreak();
-
   /* FEM-Applikation: ROCKFLOW */
   RF_FEM(dateiname);
 #ifdef TEST
   cout << "*********************************************" << endl;
-  DisplayMsgLn("main: FEM-Applikation - ROCKFLOW- ausgefuehrt");
+  cout << "End of simulation" << endl;
 #endif
-
   /* Ctrl-C erzeugt keinen Abbruch mehr */
   NoBreak();
   /* Systemzeit fuer Rockflow anhalten */
@@ -272,7 +281,7 @@ int mainPCH ( int argc, char *argv[] )
   /* Allgemeine FEM-Datenstrukturen freigeben */
   DestroyObjectLists();
 #ifdef TEST
-    DisplayMsgLn("main: Allgemeine FEM-Datenstrukturen freigeben");
+  cout << "Data destruction" << endl;
 #endif
 
 
@@ -284,14 +293,10 @@ int mainPCH ( int argc, char *argv[] )
 
   /* Speichertest beenden */
   StopMemoryTest();
-
   /* Laufzeit ausgeben */
+#endif //of define PROBLEM_CLASS
 #ifdef TESTTIME
-    DisplayMsgLn("");
-    DisplayMsg("Gesamtzeitaufwand: ");
-    DisplayLong(TGetTimer(0));
-    DisplayMsg("s");
-    DisplayMsgLn("");
+  cout << "Simulation time: " << TGetTimer(0) << "s" << endl;
 #endif
 
   /* Abspann ausgeben */
@@ -301,6 +306,7 @@ int mainPCH ( int argc, char *argv[] )
 
   return 0;
 }
+#ifndef PROBLEM_CLASS    //12.08.2008. WW
 /**************************************************************************/
 /* ROCKFLOW - Funktion: ShowSwitches
                                                                           */
@@ -384,3 +390,4 @@ void ShowSwitches ( void )
   DisplayMsgLn("");
 }
 
+#endif

@@ -12,8 +12,10 @@
 // Steps
 #include "rf_pcs.h"
 #include "rf_tim_new.h"
+#ifndef NEW_EQS //WW. 06.11.2008
 // Sytem matrix
 #include "matrix.h"
+#endif
 // Geometry
 #include "nodes.h"
 // Parallel computing
@@ -6198,6 +6200,224 @@ void CFiniteElementStd::AssembleRHSVector()
   } 
   //----------------------------------------------------------------------
   //RHS->Write();
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Task: Calculate the energy norm error
+Programing:
+25.08.2008 WW Implementation
+last modification:
+**************************************************************************/
+void CFiniteElementStd::CalcEnergyNorm(const double *x_n1, double &err_norm0, 
+                        double &err_normn)
+{
+  int i, dof_n = 1;
+  // NUM
+  double rtol, atol;
+  //----------------------------------------------------------------------
+  //
+  Config();
+  //  
+
+  //
+  rtol = pcs->Tim->GetRTol(); 
+  atol = pcs->Tim->GetATol();
+  //_new
+  for(i=0; i<pcs->dof; i++)
+    NodeShift[i]=i*pcs->m_msh->GetNodesNumber(false);
+
+  //----------------------------------------------------------------------
+  double beta1 = 0.0;
+  //----------------------------------------------------------------------
+  // Initialize.
+  // if (pcs->Memory_Type==2) skip the these initialization
+  if(PcsType==V) 
+    (*Mass2) = 0.0;
+  else 
+  (*Mass) = 0.0;
+  (*Laplace) = 0.0;
+  //----------------------------------------------------------------------
+  // GEO
+  // double geo_fac = MediaProp->geo_area;
+  //----------------------------------------------------------------------
+  // Calculate matrices
+  // Mass matrix..........................................................
+  if(PcsType==V) 
+  {
+    if(pcs->m_num->ele_mass_lumping)
+      CalcLumpedMass2();
+    else
+      CalcMass2();
+  }
+  else
+  {
+    if(pcs->m_num->ele_mass_lumping)
+      CalcLumpedMass();
+    else
+      CalcMass();
+  }
+  // Laplace matrix.......................................................
+  CalcLaplace();
+  if(PcsType==V)
+    *AuxMatrix1 = *Mass2;
+  else
+    *AuxMatrix1 = *Mass;
+  (*AuxMatrix1) *= 1.0/dt;
+  //Laplace - Diffusion
+  *AuxMatrix1   += *Laplace;
+  //
+  int idx = idx1;
+  if(pcs->continuum==1)
+    idx = idxp21;
+
+  //--------------------------------------------------------------
+  //1. Error epsilon
+  for (i=0;i<nnodes; i++)
+  {
+    NodalVal0[i] = fabs(pcs->GetNodeValue(nodes[i],idx)-x_n1[nodes[i]+NodeShift[pcs->continuum]]);
+    NodalVal[i] = 0.0;
+  }
+  if(PcsType==V) // 
+  {
+    dof_n = 2;
+    // 
+    // _new for(i=0; i<pcs->pcs_number_of_primary_nvals; i++)  
+    // _new NodeShift[i] = i*pcs->m_msh->GetNodesNumber(false);
+    //
+    for (i=0;i<nnodes; i++)
+    {
+      NodalVal0[i+nnodes] = fabs(pcs->GetNodeValue(nodes[i],idxp21)-x_n1[nodes[i]+NodeShift[1]]);
+      NodalVal[i+nnodes] = 0.0;
+    }      
+  }
+  // 
+  //
+  AuxMatrix1->multi(NodalVal0, NodalVal);
+
+  // Error epsilon
+  for (i=0;i<nnodes*dof_n; i++)
+    err_norm0 += NodalVal0[i]*NodalVal[i];
+  // 
+  //--------------------------------------------------------------
+  //2. Error e_n
+  for (i=0;i<nnodes; i++)
+  {
+    NodalVal0[i] = atol+rtol*max(fabs(pcs->GetNodeValue(nodes[i],idx)),fabs(x_n1[nodes[i]+NodeShift[pcs->continuum]]));
+    NodalVal[i] = 0.0;
+  }
+  if(PcsType==V) // 
+  {
+    for (i=0;i<nnodes; i++)
+    {
+      NodalVal0[i+nnodes] = atol+rtol*max(fabs(pcs->GetNodeValue(nodes[i],idxp21)), fabs(x_n1[nodes[i]+NodeShift[1]]));
+      NodalVal[i+nnodes] = 0.0;
+    }      
+  }
+  // 
+  //
+  AuxMatrix1->multi(NodalVal0, NodalVal);
+
+  // Error epsilon
+  for (i=0;i<nnodes*dof_n; i++)
+    err_normn += NodalVal0[i]*NodalVal[i];
+  //
+  //
+}
+
+
+/**************************************************************************
+FEMLib-Method: 
+Task: Calculate the energy norm error
+Programing:
+25.09.2008 WW Implementation
+last modification:
+**************************************************************************/
+void CFiniteElementStd::CalcEnergyNorm_Dual(const double *x_n1, double &err_norm0, 
+                        double &err_normn)
+{
+  double rtol, atol;
+  //----------------------------------------------------------------------
+  //
+  //
+  rtol = pcs->Tim->GetRTol(); 
+  atol = pcs->Tim->GetATol();
+  //
+  int i,j;
+  int gp_r=0, gp_s=0, gp_t=0;
+  double W, fkt,mat_fac = 0.;
+
+  //Inintialize
+  //-------------------------- WW
+  W = pcs->continuum_vector[pcs->GetContinnumType()];
+  //
+  for(i=0;i<nnodes;i++) 
+  {
+     NodalVal3[i] = pcs->GetNodeValue(nodes[i], idx1);  // Pressure 1 
+     NodalVal4[i] = pcs->GetNodeValue(nodes[i], idxp21);  // Pressure 2 
+  }
+  (*Advection) = 0.0;  
+  //---------------------------------------------------------
+  for (gp = 0; gp < nGaussPoints; gp++)
+  {
+      //---------------------------------------------------------
+      //  Get local coordinates and weights 
+ 	  //  Compute Jacobian matrix and its determination
+      //---------------------------------------------------------
+      fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+      mat_fac = CalcCoefDualTransfer();
+      mat_fac *= fkt;      
+      // Material
+      ComputeShapefct(1); // Linear interpolation function
+      // Calculate mass matrix
+      for (i = 0; i < nnodes; i++)
+      {
+	     for (j = 0; j < nnodes; j++)
+	         (*Advection)(i,j) += mat_fac*shapefct[i]*shapefct[j];
+	  }
+  }
+  // Add local matrix to global matrix
+  long cshift = pcs->m_msh->GetNodesNumber(false);
+  //
+  double fm = 1.0/W;
+  double ff = 1.0/(1.0-W);
+  if(MediaProp->transfer_coefficient<0.0) // for LBNL
+     ff = 1.0;      
+  // 
+  //--------------------------------------------------------------
+  //1. Error epsilon
+  for (i=0;i<nnodes; i++)
+  {
+    NodalVal0[i] = fabs(NodalVal3[i]-x_n1[nodes[i]])
+                  -fabs(NodalVal4[i]-x_n1[nodes[i]+cshift]);
+    NodalVal[i] = 0.0;
+  }
+  // 
+  //
+  AuxMatrix1->multi(NodalVal0, NodalVal);
+
+  // Error epsilon
+  for (i=0;i<nnodes; i++)
+     err_norm0 += (fm*(NodalVal3[i]-x_n1[nodes[i]])-
+                   ff*(NodalVal4[i]-x_n1[nodes[i]+cshift]))
+                      *NodalVal[i];
+  // 
+  //--------------------------------------------------------------
+  //2. Error e_n
+  for (i=0;i<nnodes; i++)
+  {
+    NodalVal0[i] = max(NodalVal3[i],x_n1[nodes[i]])
+                  -max(NodalVal4[i],x_n1[nodes[i]+cshift]);
+    NodalVal[i] = 0.0;
+  }
+  // 
+  AuxMatrix1->multi(NodalVal0, NodalVal);
+  for (i=0;i<nnodes; i++)
+    err_normn += (fm*(atol+rtol*max(NodalVal3[i],x_n1[nodes[i]]))-
+                  ff*(atol+rtol*max(NodalVal4[i],x_n1[nodes[i]+cshift])))
+                      *NodalVal[i];
+  //
+  //
 }
 
 }// end namespace

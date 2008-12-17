@@ -25,7 +25,9 @@
    sozusagen durchgeschleift: */
 /* #include "matrix.h" */
   /* Speichertechnik fuer Matrix des Gesamtgleichungssystems */
+#ifndef NEW_EQS //WW. 11.2008
 #include "solver.h"
+#endif
   /* Iterative GLS-Loeser auf Basis der Speichertechnik aus 'matrix.h' (herkoemmliche Verfahren) */
 
 // C++
@@ -52,8 +54,10 @@ extern int MOmega2D(double *vf,double r, double s);
 /*  Berechnet 2D Ansatzfunktionen */
 extern int MOmega3D(double *vf,double r, double s, double t);
 /*  Berechnet 3D Ansatzfunktionen */
+#ifdef obsolete //WW. 11.2008
 extern int MOmega3DTetrahedron(double *vf,double xx,double yy,double zz,long number);
 extern int MOmega2DTriangle(double *vf,double r, double s, long number);
+#endif
 /*  Berechnet 2D Ansatzfunktionen fuer Dreiecke */
 //extern int MPhi2D(double *vf,double r, double s);
 /*  Berechnet 2D Testfunktionen */

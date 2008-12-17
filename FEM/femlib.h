@@ -79,8 +79,9 @@ extern double CalcBaseAreaPrism(long index);
 
   /* Interpoliert Knotenwerte */
 extern double InterpolValue(long number, int ndx, double r, double s, double t);
+#ifdef obsolete //WW. 06.11.2008
 extern double InterpolValueVector(long number, double *werte, double r, double s, double t);
-
+#endif
 
 extern void Calc2DElement_ab2rs_Coord(long index, double *erg, double a, double b);
 extern void Calc2DElement_rs2ab_Coord(long index, double *erg, double r, double s);
@@ -93,7 +94,9 @@ extern void Calc2DElement_xyz2ab_Vector(long index, double *vec_xyz, double *vec
 extern void Calc2DEdgeUnitNormalVec(long index, long side, double *n);
 
 /* Weitere externe Objekte */
+#ifndef NEW_EQS //WW. 06.11.2008
 extern void IncorporateMatrix(long element, double *left_matrix, double *right_vector, double *rechts);
+#endif
 extern void FEMCorrectFluxesOverIrregularNodes(int ndx);
 extern void FEMCorrectFluxesOverIrregularNodesOnVector(double *flux);
 extern void FEMCalcElementCharacterisiticLength(long index); //CMCD 05.2004

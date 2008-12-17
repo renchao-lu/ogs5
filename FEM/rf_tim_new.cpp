@@ -21,7 +21,7 @@ using namespace std;
 #include "rf_mmp_new.h"
 #include "fem_ele_std.h"
 #include "mathlib.h"
-#include "elements.h" //set functions for stability criteria
+//WW #include "elements.h" //set functions for stability criteria
 // ToDo
 double aktuelle_zeit;
 long aktueller_zeitschritt = 0;
@@ -49,7 +49,13 @@ CTimeDiscretization::CTimeDiscretization(void)
   step_current = 0;		//WW
   this_stepsize = 0.; //WW
   dt_sum = .0;			//WW
-  sub_steps = 0; // JOD 4.7.10
+  relative_error = 1.e-4; //26.08.2008. WW
+  absolute_error = 1.e-10; //26.08.2008. WW
+  h_max = 6; //27.08.2008. WW
+  h_min = 0.2; //27.08.2008. WW
+  hacc = 0.; //27.08.2008. WW
+  erracc = 0.; //27.08.2008. WW
+  tsize_ctrl_type = -1;   //27.08.2008. WW
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -103,6 +109,7 @@ Programing:
 08/2004 OK Implementation
 11/2004 OK string streaming by SB for lines
 10/2005 YD Time Controls
+08/2008 WW General classic time step size control (PI control)
 **************************************************************************/
 ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
 {
@@ -178,6 +185,7 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
       continue;
     }
     //....................................................................
+    /* //WW
     if(line_string.find("$TIME_FIXED_POINTS")!=string::npos) { // subkeyword found
 	  int no_fixed_points;
       double fixed_point;
@@ -192,6 +200,7 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
 	  }
 	  continue;
     }
+    */
     //....................................................................
     if(line_string.find("$TIME_STEPS")!=string::npos) { // subkeyword found
       while((!new_keyword)||(!new_subkeyword)||(!tim_file->eof())){
@@ -209,6 +218,25 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
         line >> time_step_length;
         for(i=0;i<no_time_steps;i++)
           time_step_vector.push_back(time_step_length);
+        line.clear();
+      }
+    }
+    //....................................................................
+    if(line_string.find("$CRITICAL_TIME")!=string::npos) { // 25.08.2008. WW
+      while((!new_keyword)||(!new_subkeyword)||(!tim_file->eof())){
+        position = tim_file->tellg();
+        line_string = GetLineFromFile1(tim_file);
+        if(line_string.find("#")!=string::npos){
+          return position;
+        }
+        if(line_string.find("$")!=string::npos){
+          new_subkeyword = true;
+          break;
+        }
+        line.str(line_string);
+        double  crtime;
+        line >> crtime;
+        critical_time.push_back(crtime);
         line.clear();
       }
     }
@@ -233,17 +261,29 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
           line >> time_control_manipulate;
           line.clear();
         }
+        // 26.08.2008. WW
+  	    if(time_control_name=="PI_AUTO_STEP_SIZE"){
+          line.str(GetLineFromFile1(tim_file));
+          line >> tsize_ctrl_type>>relative_error>>absolute_error>>this_stepsize;
+          line.clear();
+        }
+        // 26.08.2008. WW
+  	    if(time_control_name=="STEP_SIZE_RESTRICTION"){
+          line.str(GetLineFromFile1(tim_file));
+          line >> h_min>>h_max;
+          line.clear();
+        }
   	    if(time_control_name=="NEUMANN"){
           line.clear();
         }
-  	    /*if(time_control_name=="ERROR_CONTROL_ADAPTIVE"){ JOD removed
+  	    if(time_control_name=="ERROR_CONTROL_ADAPTIVE"){
           m_pcs->adaption = true;
           line.clear();
-        }*/
+        }
   	    if(time_control_name=="SELF_ADAPTIVE"){
           //m_pcs->adaption = true; JOD removed
 		  
-		  minish = 10;
+		  //WW minish = 10;
           while((!new_keyword)||(!new_subkeyword)||(!tim_file->eof())){
           position = tim_file->tellg();
           line_string = GetLineFromFile1(tim_file);
@@ -264,12 +304,13 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
           min_time_step = strtod(line_string.data(),NULL);
           line.clear();
 		  }
+          /*  //WW
 		  if(line_string.find("MINISH")!=string::npos){
           *tim_file >> line_string;
           minish = strtod(line_string.data(),NULL);
           line.clear();
 		  }
-           
+          */ 
     	  if(line_string.find("M")==string::npos){
           line.str(line_string);
           line >> iter_times;
@@ -284,10 +325,12 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
       }// end of while
     }// end of "TIME_CONTROL"
     //....................................................................
+    /* //WW
 	if(line_string.find("$SUBSTEPS")!=string::npos) { // subkeyword found JOD 4.7.10
       *tim_file>>sub_steps>>ws; 
       continue;
     }
+    */
     //....................................................................
   } // end of while(!new_keyword)
   return position;
@@ -417,8 +460,10 @@ FEMLib-Method:
 Task: 
 Programing:
 08/2004 OK Implementation
+08/2008 WW Force t+dt be indentical to the time for output or other special time
+        WW Auto time step size control  
 **************************************************************************/
-double CTimeDiscretization::CalcTimeStep(void) 
+double CTimeDiscretization::CalcTimeStep(double crt_time) 
 {
     // time_step_length = 0.0;
     int no_time_steps = (int)time_step_vector.size();
@@ -445,8 +490,66 @@ double CTimeDiscretization::CalcTimeStep(void)
       else 
         time_step_length = ErrorControlAdaptiveTimeControl();
     }
-    //--------
+    if(time_control_name == "PI_AUTO_STEP_SIZE")  //WW
+      time_step_length = this_stepsize;
+
+
+  //--------
+  //WW. Force t+dt be indentical to the time for output or other special time
+  // 25.08.2008
+  for(int i=0; i<(int)critical_time.size(); i++)
+  {
+    if((crt_time<critical_time[i])&&(crt_time+time_step_length>critical_time[i]))
+    {
+       if(fabs( critical_time[i]-crt_time)>DBL_EPSILON) // _new, 23.09.2008.
+         time_step_length = critical_time[i]-crt_time;
+       break; 
+    }  
+  } 
+  //
   return time_step_length;
+}
+
+/**************************************************************************
+FEMLib-Method: Operator
+Task: 
+Programing:
+08/2008 WW Implementation
+**************************************************************************/
+CTimeDiscretization::CTimeDiscretization(const CTimeDiscretization& a_tim, string pcsname)
+{
+   int i;
+   safty_coe = a_tim.safty_coe;
+   dt_sum = a_tim.dt_sum; 
+   this_stepsize = a_tim.this_stepsize; 
+   file_base_name = a_tim.file_base_name;
+   time_start = a_tim.time_start;
+   time_end = a_tim.time_end;
+   time_current = a_tim.time_current;
+   time_control_manipulate = a_tim.time_control_manipulate; 
+   step_current = a_tim.step_current;
+   repeat = a_tim.repeat; 
+   pcs_type_name = pcsname; // by argument 
+   time_type_name = a_tim.time_type_name; 
+   time_control_name = a_tim.time_control_name;
+   time_unit = a_tim.time_unit;  
+   iter_times = a_tim.iter_times;  
+   multiply_coef = a_tim.multiply_coef; 
+   max_time_step = a_tim.max_time_step; 
+   min_time_step = a_tim.min_time_step; 
+   Write_tim_discrete = a_tim.Write_tim_discrete;  
+   tim_discrete = a_tim.tim_discrete;  
+   nonlinear_iteration_error = a_tim.nonlinear_iteration_error;
+   // 
+   time_step_vector.clear();
+   time_adapt_tim_vector.clear();
+   time_adapt_coe_vector.clear();
+   for(i=0; i<(int)a_tim.time_step_vector.size(); i++)
+     time_step_vector.push_back(a_tim.time_step_vector[i]);
+   for(i=0; i<(int)a_tim.time_adapt_tim_vector.size(); i++)
+     time_adapt_tim_vector.push_back(a_tim.time_adapt_tim_vector[i]);
+   for(i=0; i<(int)a_tim.time_adapt_coe_vector.size(); i++)
+     time_adapt_coe_vector.push_back(a_tim.time_adapt_coe_vector[i]);
 }
 
 /**************************************************************************
@@ -536,15 +639,6 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
   CFiniteElementStd* fem = m_pcs->GetAssembler();
 
   switch(m_pcs->pcs_type_name[0]){
-    case 'G': // groundwater flow
-        time_step_length = min_time_step;
-        break;
-    case 'O': // overland flow
-        time_step_length = min_time_step;
-        break;
-    case 'M': // Mass transport
-        time_step_length = min_time_step;
-        break;
     case 'R': // Richards
       idxS  = m_pcs->GetNodeValueIndex("SATURATION1");
       no_time_steps = 1000000000; //OK (int)(1.0e10);
@@ -625,7 +719,6 @@ FEMLib-Method:
 Task: Self adaptive method
 Programing:
 10/2005 YD Implementation
-03/2008 HS KG Implementation for Groundwater flow and mass transport
 **************************************************************************/
 double CTimeDiscretization::SelfAdaptiveTimeControl(void) 
 {
@@ -633,50 +726,27 @@ double CTimeDiscretization::SelfAdaptiveTimeControl(void)
 
   if(repeat)
   {
-    cout << "TIM step is repeated" << endl;  
+    cout << "   TIM step is repeated" << endl;  
     m_pcs = PCSGet(pcs_type_name);
     m_pcs->PrimaryVariableReload();
   }
 
-  for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++)
-  {
-	  m_pcs = pcs_vector[n_p];
-	  switch(m_pcs->pcs_type_name[0])
-	  {
-		  default:
-				cout << "Fatal error: No valid PCS type" << endl;
-				break;
-		  case 'R': // Richards
-				if(!repeat) 
-				{
-				  if(m_pcs->iter <= time_adapt_tim_vector[0]) 
-					  time_step_length = time_step_length*time_adapt_coe_vector[0];
-				  else if(m_pcs->iter  >= time_adapt_tim_vector[time_adapt_tim_vector.size()-1])
-					  time_step_length *= time_adapt_coe_vector[time_adapt_tim_vector.size()-1];
-				  break;
-				}
-				else
-				  time_step_length /= minish;
-		  case 'G': // kg44 groundwater flow 
-				time_step_length = time_step_length; 
-				// does not work, but gives a value...groundwater flow should be steady 
-				// due to pcs loop time_step_length will be multiplied twice for coupled flow and transport, therefore multiplication with time_adapt_coe_vector removed!
-				break;
-		  case 'M': // kg44 mass transport
-				time_step_length = time_step_length*time_adapt_coe_vector[0];
-				break;
-	  } // end of switch
-  } // end of for
-
+  for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
+  m_pcs = pcs_vector[n_p];
+  switch(m_pcs->pcs_type_name[0]){
+  default:
+      cout << "Fatal error: No valid PCS type" << endl;
+      break;
+  case 'R': // Richards
+  if(m_pcs->iter <= time_adapt_tim_vector[0]) 
+    time_step_length = time_step_length*time_adapt_coe_vector[0];
+  else if(m_pcs->iter  >= time_adapt_tim_vector[time_adapt_tim_vector.size()-1])
+    time_step_length *= time_adapt_coe_vector[time_adapt_tim_vector.size()-1];
+  break;
+ }
+}
   time_step_length = MMin(time_step_length,max_time_step);
-  for(int i = 0 ; i < (int)fixed_point_vector.size(); i++) {
-	  if(aktuelle_zeit + 1e-5 < fixed_point_vector[i] && aktuelle_zeit + time_step_length > fixed_point_vector[i]) {
-        time_step_length = fixed_point_vector[i] - aktuelle_zeit;
-        continue;
-	  }
- 
-  }
-  cout<<"Self_Adaptive Time Step: "<<time_step_length << "Max time step: "<< max_time_step <<endl;
+  cout<<"Self_Adaptive Time Step: "<<time_step_length<<endl;
   if(Write_tim_discrete)
      *tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
 //}
@@ -778,12 +848,6 @@ double CTimeDiscretization::AdaptiveFirstTimeStepEstimate(void)
 	  if(Write_tim_discrete)
 		*tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
       break;
-      case 'M': // kg44 mass transport  
-        time_step_length = min_time_step; // take min time step as conservative best guess for testing
-      break;
-      case 'G': // kg44 groudnwater flow ---if steady state, time step should be greater zeor...transient flow does not work with adaptive stepping
-        time_step_length = min_time_step; // take min time step as conservative best guess for testing
-      break;
  }
 }
   return time_step_length;
@@ -845,17 +909,22 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
   double pcs_step;
   double time_forward; 
   bool ontime = false;
-  this_stepsize = 0.;
-  if((int)time_vector.size()<=1 || (int)time_step_vector.size()<=1 )
+  if((int)time_vector.size()==1)
     return dt0;
+  //
 //WW please check +1
 //OK   double pcs_step = time_step_vector[step_current+1];
-  if(step_current>=(int)time_step_vector.size()) //OK
-    pcs_step = time_step_vector[(int)time_step_vector.size()-1]; //OK
+  if(time_step_vector.size()>0) // 16.09.2008. WW
+  {
+    if(step_current>=(int)time_step_vector.size()) //OK
+      pcs_step = time_step_vector[(int)time_step_vector.size()-1]; //OK
+    else
+      pcs_step = time_step_vector[step_current]; //OK
+  }
   else
-    pcs_step = time_step_vector[step_current]; //OK
+    pcs_step = this_stepsize;  // 16.09.2008. WW
   time_forward = c_time - time_current-pcs_step; 
-  if(time_forward>0.0||fabs(time_forward)<DBL_EPSILON)
+  if(time_forward>0.0||fabs(time_forward)<DBL_MIN)
   {
     time_current += pcs_step;
     step_current++; 
@@ -863,7 +932,7 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
     ontime = true;
     dt_sum = 0.0;
   }
-  if((fabs(pcs_step-time_end)<DBL_EPSILON)&&fabs(c_time-time_end)<DBL_EPSILON)
+  if((fabs(pcs_step-time_end)<DBL_MIN)&&fabs(c_time-time_end)<DBL_MIN)
   {
     this_stepsize = dt_sum+dt0;
     ontime = true;
@@ -877,6 +946,52 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
      this_stepsize = 0.0;
   }
   return this_stepsize;   
+}
+/**************************************************************************
+FEMLib-Method: 
+Task:  Used to force time steps matching the times requried by output or
+       boundary                                           
+Programing:
+08/2008 WW Implementation
+**************************************************************************/
+void CTimeDiscretization::FillCriticalTime()
+{
+   COutput *a_out = NULL;
+   double val;
+   int i, j, k;
+   bool done;
+   for(i=0; i<(int)out_vector.size(); i++)
+   {
+      a_out = out_vector[i];
+      for(j=0; j<(int) a_out->time_vector.size(); j++)
+      { 
+         done = false;
+         for(k=0; k<(int)critical_time.size(); k++)
+         {
+            if(fabs(critical_time[k]-a_out->time_vector[j])<DBL_MIN)
+            {
+               done = true;
+               break;
+            }
+           
+         }
+         if(!done)
+           critical_time.push_back(a_out->time_vector[j]);
+      } 
+   }
+   // Sort
+   for(i=0; i<(int)critical_time.size(); i++)
+   {
+      for(j=i; j<(int)critical_time.size(); j++)
+      {
+         if(critical_time[i]>critical_time[j])
+         {
+            val = critical_time[i];
+            critical_time[i] = critical_time[j];
+            critical_time[j] = val;
+         }
+      }
+   }       
 }
 /**************************************************************************
 FEMLib-Method: 

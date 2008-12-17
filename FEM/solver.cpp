@@ -43,7 +43,7 @@ using namespace std;
 #include "elements.h"           /* fuer Umnummerierer */
 #include "rf_pcs.h" //OK_MOD"            
 /* External methods */
-#include "renumber.h"
+//16.12.2008. WW #include "renumber.h"
 #include "mathlib.h"
 #include "matrix.h"
 #include "geo_strings.h"

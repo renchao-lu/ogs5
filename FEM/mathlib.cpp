@@ -149,7 +149,7 @@
 
 #include "mathlib.h"
 #include "nodes.h"
-#include "elements.h"
+//WW #include "elements.h"
 #include "femlib.h"    //CMCD 03 2004
 //WW----------------------
 #include "par_ddc.h" 
@@ -408,6 +408,7 @@ int MOmega3D(double *vf, double r, double s, double t)
    08/1995     cb        Erste Version
 
  **************************************************************************/
+#ifdef obsolete //WW. 06.11.2008
 int MOmega2DTriangle(double *vf, double xx, double yy, long number)
 {
   int i,nn=3,ok=0;
@@ -557,7 +558,7 @@ int ok=0;
 	return ok = 1;
 }
 
-
+#endif //#ifndef obsolete //WW. 06.11.2008
 
 /***************************************************************************
    ROCKFLOW - Funktion: MPhi3D

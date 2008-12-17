@@ -33,7 +33,7 @@ using namespace std;
 #include "tools.h" // GetLineFromFile
 
 //structure element. To be romoved
-#include"elements.h"
+//WW #include"elements.h"
 
 //
 vector<SolidProp::CSolidProperties*> msp_vector;
@@ -3804,7 +3804,9 @@ void CSolidProperties::CalStress_and_TangentialMatrix_CC_SubStep(const int GPiGP
   double suc=0.0;
   double dsuc=0.0;
 
-
+  p = q = q_tr = p_c = vep = 0.;
+  NPStep = 1;
+  // 
   int dim = 2;
   ns =4;
   if(Dep->Cols()>4)
@@ -3898,8 +3900,8 @@ if(test_c>2)
         }
      }
      // Stress estimation 
-     double norm_ds = 0.;
-     double norm_s = 0.;
+     // double norm_ds = 0.;
+     // double norm_s = 0.;
      for(i=0; i<ns; i++)
      {
         TryStress[i] += 0.5*(dStress0[i]+dStress1[i]);
@@ -3955,10 +3957,10 @@ if(test_c>2)
      F0 = F;
      if(pcs_deformation==1) F=-1.0;
      if((*data_Plasticity)(3)<MKleinsteZahl) // p_c0=0
-       F=-1.0;
+       F = -1.0;
      //TEST CAM-CLAY
      if(p_tr<0)
-      F = -1.0;
+       F = -1.0;
    
      if(F>f_tol&&!PreLoad) // in yield status 
      {    

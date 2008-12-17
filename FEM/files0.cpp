@@ -38,8 +38,10 @@
 /* Objekte */
 #include "files.h"
 #include "nodes.h"
-#include "elements.h"
+//WW #include "elements.h"
+#ifndef NEW_EQS //WW. 07.11.2008
 #include "solver.h"
+#endif
 #include "rf_pcs.h"
 #include "rf_mmp_new.h"
 #include "rfmat_cp.h"

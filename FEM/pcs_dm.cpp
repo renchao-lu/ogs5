@@ -20,7 +20,9 @@
 #include "rf_bc_new.h"
 #include "rf_pcs.h" //OK_MOD"
 // 
+#ifndef NEW_EQS //WW. 06.11.2008
 #include "matrix.h"
+#endif
 #include "pcs_dm.h"
 #include "rf_msp_new.h"
 #include "fem_ele_vec.h"
@@ -2434,8 +2436,10 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
        abort();
    }
    // 2. Compute the released node loading
+#ifndef NEW_EQS //WW. 06.11.2008
    SetLinearSolver(eqs);
    SetZeroLinearSolver(eqs);
+#endif
    for(i=0; i<4; i++) // In case the domain decomposition is employed
      fem_dm->NodeShift[i] = Shift[i];
    //

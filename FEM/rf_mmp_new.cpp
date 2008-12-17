@@ -4436,7 +4436,7 @@ double CMediumProperties::StorageFunction(long index,double *gp,double theta)
 
     case 2:
         /* Funktion der effektiven Spannung und des Drucks in Elementmitte */
-
+#ifdef obsolete //WW. 06.11.2008
         /* Den Druck holen */
  		p = primary_variable[0];
 
@@ -4455,12 +4455,13 @@ double CMediumProperties::StorageFunction(long index,double *gp,double theta)
         sigma -= p;
 
         storage = exp(storage_model_values[0] - storage_model_values[1] * log(sigma));
+#endif //#ifdef obsolete //WW. 06.11.2008
         break;
 
     case 3:
         /* Funktion der effektiven Spannung und des Drucks in Elementmitte
                    ueber Kurve */
-
+#ifdef obsolete //WW. 06.11.2008
         /* Den Druck holen */
 		p = primary_variable[0];
 
@@ -4478,6 +4479,7 @@ double CMediumProperties::StorageFunction(long index,double *gp,double theta)
         sigma -= p;
 
         storage = GetCurveValue((int)storage_model_values[0],0,sigma,&i);
+#endif
         break;
 
     case 4: /* McD Storage as function of effective stress read from curve */
@@ -4949,6 +4951,7 @@ double CMediumProperties::PermeabilityPressureFunction(long index,double *gp,dou
         break;
         /* Funktion der effektiven Spannung */
 	case 2:
+#ifdef obsolete //WW. 06.11.2008
         /* Den Druck holen */
         p = primary_variable[0];
         /* Mittlere Tiefe */
@@ -4961,6 +4964,7 @@ double CMediumProperties::PermeabilityPressureFunction(long index,double *gp,dou
         /* Auf effektive Spannung umrechnen */
         sigma -= p;
         k_rel = exp(permeability_pressure_model_values[0] - permeability_pressure_model_values[1] * log(sigma));
+#endif
         break;
      case 3: /* Turbulentes Fliessen */
         /* k_rel = max(min((grad(h)*alpha1)^(alpha2-1), alpha4),alpha3) */
@@ -4989,6 +4993,7 @@ double CMediumProperties::PermeabilityPressureFunction(long index,double *gp,dou
                k_rel = max(min(pow(gh,permeability_pressure_model_values[1]-1.0),permeability_pressure_model_values[3]),permeability_pressure_model_values[2]);
         }
      case 4:
+#ifdef obsolete //WW. 06.11.2008
         /* Funktion der effektiven Spannung ueber Kurve */
         /* Den Druck holen */
         p = primary_variable[0];
@@ -5002,6 +5007,7 @@ double CMediumProperties::PermeabilityPressureFunction(long index,double *gp,dou
         /* Auf effektive Spannung umrechnen */
         sigma -= p;
         k_rel = GetCurveValue((int)permeability_pressure_model_values[0], 0, sigma, &i);
+#endif
         break;
     case 5:
         /* Funktion der effektiven Spannung ueber Kurve CMCD 26.06.2003*/ 

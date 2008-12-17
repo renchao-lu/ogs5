@@ -83,6 +83,9 @@ class CFiniteElementStd:public CElement
      // 
      void CalcSatution(); //WW
      // 
+     void CalcEnergyNorm(const double *x_n1, double &err_norm0, double &err_normn); //25.08.2008. WW
+     void CalcEnergyNorm_Dual(const double *x_n1, double &err_norm0, double &err_normn); //25.09.2008. WW
+     // 
      void CalcNodeMatParatemer(); //WW
      // Assembly
      void Assembly(); 
@@ -174,10 +177,8 @@ class CFiniteElementStd:public CElement
      // Primary as water head
      bool HEAD_Flag; 
      //
-  public: //OK4709
-     void Config(); //WW
+     void Config();
      //
-  private:  
      inline double CalCoefMass();
      inline double CalCoefMass2(int dof_index); // 25.2.2007 WW 
      inline void CalCoefLaplace(bool Gravity, int ip=0);
@@ -246,6 +247,8 @@ class CFiniteElementStd:public CElement
      double *NodalValC1; 
      double *NodalVal_Sat; 
      double *NodalVal_p2; 
+     //                    
+     friend class ::CRFProcess;
 };
 
 

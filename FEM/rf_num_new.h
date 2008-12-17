@@ -141,6 +141,7 @@ typedef struct {
 #ifdef USE_MPI //WW
 extern LINEAR_SOLVER *InitVectorLinearSolver(LINEAR_SOLVER*);
 #endif
+#ifndef NEW_EQS //WW 07.11.2008
 extern LINEAR_SOLVER *InitLinearSolver(LINEAR_SOLVER*);
 //
 extern void SetLinearSolverType(LINEAR_SOLVER*,CNumerics*);
@@ -161,6 +162,7 @@ extern int GetUnknownVectorDimensionLinearSolver(LINEAR_SOLVER*);
 extern LINEAR_SOLVER *TransferNodeValues(LINEAR_SOLVER*,long);
 extern LINEAR_SOLVER *TransferNodeValuesToVectorLinearSolver(LINEAR_SOLVER*,long);
 extern void TransferNodeValuesToVectorLinearSolverVec_New(LINEAR_SOLVER*);
+#endif   //ifndef NEW_EQS //WW 07.11.2008
 
 //////////////////////////////////////////////////////////////////////////
 // NUM

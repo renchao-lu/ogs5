@@ -15,7 +15,7 @@ using namespace std;
 
 #include "rf_fluid_momentum.h"
 #include "rf_random_walk.h"
-#include "elements.h" //OK
+//WW #include "elements.h" //OK
 
 /**************************************************************************
 FEMLib-Method: ThreeComponet

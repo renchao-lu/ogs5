@@ -210,10 +210,12 @@ extern  double GetAnalyticalSolution(long node_number, CSourceTerm *m_st);//CMCD
 extern  void GetRiverNODValue(double& value, CNodeValue* cnodev,CSourceTerm* m_st);
 extern	double GetConditionalNODValue(CSourceTerm* m_st, CNodeValue* cnodev); 
 extern  void GetCriticalDepthNODValue(double& value, CSourceTerm*, long msh_node); //MB
-extern  void GetNormalDepthNODValue(double& value, CSourceTerm*, long msh_node); //MB JOD
 extern  void GetCouplingNODValue(double& value, CSourceTerm* m_st, CNodeValue* cnodev); // JOD
 extern  void GetCouplingNODValueNewton(double& value, CSourceTerm* m_st, CNodeValue* cnodev); // JOD
+#ifndef NEW_EQS //WW. 06.11.2008
+extern  void GetNormalDepthNODValue(double& value, CSourceTerm*, long msh_node); //MB JOD
 extern  void GetCouplingNODValuePicard(double& value, CSourceTerm* m_st, CNodeValue* cnodev); // JOD
+#endif
 extern  double CalcCouplingValue(double factor, double h_this, double h_cond, double z_cond, CSourceTerm* m_st); // JOD
 extern  void GetCouplingNODValueMixed(double& value, CSourceTerm* m_st, CNodeValue* cnodev); // JOD
 extern  void GetCouplingFieldVariables(double* h_this, double* h_cond, double* h_shifted, double* h_averaged, double* z_this, double* z_cond, CSourceTerm* m_st, CNodeValue* cnodev);// JOD

@@ -15,7 +15,7 @@ last modified
 using namespace std;
 
 #include "rfstring.h"
-#include "elements.h"
+//WW #include "elements.h"
 // FEM-Makros
 #include "geo_lib.h"
 #include "geo_strings.h"
@@ -29,7 +29,9 @@ using namespace std;
 
 #include "tools.h" //GetLineFromFile
 /* Tools */
+#ifndef NEW_EQS //WW. 06.11.2008
 #include "matrix.h"
+#endif
 
 // GeoSys-FEMLib
 //OK_IC #include "rfsousin.h"
@@ -1631,7 +1633,7 @@ Task: Calculate coupling flux
 Programing:
 01/2007 JOD Implementation
 **************************************************************************/
-
+#ifndef NEW_EQS //WW. 06.11.2008
 void GetCouplingNODValue(double &value, CSourceTerm* m_st, CNodeValue* cnodev)
 {
 
@@ -1648,6 +1650,7 @@ void GetCouplingNODValue(double &value, CSourceTerm* m_st, CNodeValue* cnodev)
     cout << "Error in GetCouplingNODValue";
 
 }
+#endif
 /**************************************************************************
 FEMLib-Method:
 Task: Calculate coupling flux for GetCouplingNODValue
@@ -1657,6 +1660,7 @@ Programing:
 01/2007 JOD Implementation
 10/2008 JOD overland node shifting for soil columns, averaging automatically 4.7.10
 **************************************************************************/
+#ifndef NEW_EQS //WW. 06.11.2008
 void GetCouplingNODValuePicard(double &value, CSourceTerm* m_st, CNodeValue* cnodev)
 {
 
@@ -1692,7 +1696,7 @@ void GetCouplingNODValuePicard(double &value, CSourceTerm* m_st, CNodeValue* cno
   m_pcs_this->SetNodeValue(cnodev->msh_node_number, m_pcs_this->GetNodeValueIndex( "COUPLING") +1, h_this);// update coupling variable for error estimation
   
 }
-
+#endif
 /**************************************************************************
 FEMLib-Method:
 Task: Calculate coupling flux for GetCouplingNODValue
@@ -1702,6 +1706,7 @@ Programing:
 01/2007 JOD Implementation
 10/2008 JOD node shifting for soil columns 4.7.10
 **************************************************************************/
+#ifndef NEW_EQS //WW. 06.11.2008
 void GetCouplingNODValueNewton(double &value, CSourceTerm* m_st, CNodeValue* cnodev)
 {
   double relPerm, area, condArea;
@@ -1749,7 +1754,7 @@ void GetCouplingNODValueNewton(double &value, CSourceTerm* m_st, CNodeValue* cno
   m_pcs_this->SetNodeValue(cnodev->msh_node_number, m_pcs_this->GetNodeValueIndex("COUPLING") + 1, -value / area); // coupling flux (m/s)
 
 }
-
+#endif
 /**************************************************************************
 FEMLib-Method:
 Task: Calculate relative coupling permeability for GetCouplingNODValue(***).
@@ -1809,6 +1814,7 @@ Programing: prerequisites: constant precipitation with assigned duration,
             phase = 0 in mfp, soil data in mmp_vetor[1] !!!!!
 06/2007 JOD Implementation
 **************************************************************************/
+#ifndef NEW_EQS //WW. 06.11.2008
 void GetCouplingNODValueMixed(double& value, CSourceTerm* m_st, CNodeValue* cnodev) 
 {
 
@@ -2126,6 +2132,7 @@ flowdepth_epsilon = flowdepth + epsilon;
 
 
 }
+#endif
 /**************************************************************************
 FEMLib-Method:
 Task:
@@ -2135,7 +2142,7 @@ Programing:
 void GetNODValue(double& value, CNodeValue* cnodev,CSourceTerm* m_st) {
 
 
-
+#ifndef NEW_EQS //WW. 06.11.2008
  if(m_st->conditional) 
     GetCouplingNODValue(value, m_st, cnodev); 
  else if(m_st->analytical) {
@@ -2150,6 +2157,7 @@ void GetNODValue(double& value, CNodeValue* cnodev,CSourceTerm* m_st) {
     GetCriticalDepthNODValue(value, m_st, cnodev->msh_node_number); //MB
   if(cnodev->node_distype == 8)      // NormalDepth Condition JOD
     GetNormalDepthNODValue(value, m_st, cnodev->msh_node_number); //MB        
+#endif  
   if(cnodev->node_distype == 10)      // Philip infiltration JOD
     GetPhilipNODValue(value, m_st);  
   if(cnodev->node_distype == 11) // Green_Ampt infiltration JOD

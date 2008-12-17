@@ -30,9 +30,9 @@ extern double GetCurveValue(int,int,double,int*);
 #include "tools.h" //GetLineFromFile
 
 // Structure element. To be removed
-#include"elements.h"
+//WW #include"elements.h"
 /* Umrechnungen SI - Amerikanisches System */
-#include "steam67.h"
+//WW #include "steam67.h"
 #define PSI2PA 6895.
 #define PA2PSI 1.4503263234227701232777374909355e-4
 #define GAS_CONSTANT    8314.41
@@ -631,10 +631,12 @@ double CFluidProperties::Density(double* variables)
         density = rho_0*(1.+drho_dp*(max(primary_variable[0],0.0)-p_0)+drho_dT*(max(primary_variable[1],0.0)-T_0));
         break;
       case 7: // rho_w^l(p,T) for gas phase
+        /* //WW
         vapour_pressure = MFPCalcVapourPressure(primary_variable[0]);
         air_gas_density = (COMP_MOL_MASS_AIR * (primary_variable[1]-vapour_pressure)) / (GAS_CONSTANT*(primary_variable[0]+0.0));
         vapour_density = (COMP_MOL_MASS_WATER*vapour_pressure) / (GAS_CONSTANT*(primary_variable[0]+0.0));
         density = vapour_density + air_gas_density;
+        */
         break;
       case 8: // M14 von JdJ
 	    density = MATCalcFluidDensityMethod8(primary_variable[0],primary_variable[1],primary_variable[2]);
@@ -1085,7 +1087,7 @@ double CFluidProperties::PhaseChange()
       heat_capacity_phase_change = GetCurveValue(heat_phase_change_curve,0,temperature_buffer,&gueltig);
   	else{
       heat_capacity_model = 5; // ??? JOD
-      H1 = CalcEnthalpy(T1);
+      H1 = CalcEnthalpy(T_1);
 	  T0 = primary_variable_t0[1];
       if(fabs(T_1-T0)<1.0e-8) 
 		T_1 +=1.0e-8;
@@ -1109,7 +1111,7 @@ double CFluidProperties::PhaseChange()
     }
   	else {
       heat_capacity_model = 5;
-      H1 = CalcEnthalpy(T1);
+      H1 = CalcEnthalpy(T_1);
       T0 = primary_variable_t0[1];
       if(fabs(T_1-T0)<1.0e-8) 
 		T_1 +=1.0e-8;
@@ -1347,7 +1349,7 @@ double MFPCalcFluidsHeatConductivity(long index,double*gp,double theta, CFiniteE
 
 ////////////////////////////////////////////////////////////////////////////
 // Fluid phase change properties
-
+#ifdef obsolete  //WW
 /**************************************************************************
 FEMLib-Method:
 Task: Vapour pressure from table
@@ -1680,7 +1682,7 @@ double CFluidProperties::DensityTemperatureDependence(long number,int comp,doubl
   }
   return drho_dT;
 }
-
+#endif // if define obsolete. WW
 
 /**************************************************************************
 FEMLib-Method:

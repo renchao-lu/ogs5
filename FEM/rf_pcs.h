@@ -35,6 +35,7 @@ using Math_Group::Linear_EQS;
 class CSourceTermGroup; 
 class CSourceTerm;
 class CNodeValue; 
+class Problem; //WW
 using FiniteElement::CFiniteElementStd;
 using FiniteElement::CFiniteElementVec;
 using FiniteElement::ElementMatrix;
@@ -99,13 +100,20 @@ class CRFProcess {
     void VariableStaticProblem();
     void VariableDynamics();      
     bool compute_domain_face_normal; //WW
+    int continuum;
+    bool continuum_ic;
   protected: //WW
     friend class FiniteElement::CFiniteElementStd;
     friend class FiniteElement::CFiniteElementVec;
     friend class FiniteElement::ElementValue;
     friend class ::CSourceTermGroup; 
+    friend class ::Problem;
     // Assembler
     CFiniteElementStd *fem;   
+    // Time step control 
+    bool accepted; //25.08.1008. WW
+    int accept_steps;  //27.08.1008. WW
+    int reject_steps;  //27.08.1008. WW
     //
     int dof;   //WW    
     long orig_size; // Size of source term nodes 
@@ -121,6 +129,7 @@ class CRFProcess {
     // TIM
     friend class CTimeDiscretization;      
     CTimeDiscretization *Tim;    //time
+    void CopyU_n(double *temp_v); //29.08.2008. WW
     // Time unit factor 
     double time_unit_factor; 
     int NumDeactivated_SubDomains;
@@ -218,10 +227,12 @@ public:
     // Construction / destruction
     CRFProcess(void);
     void Create(void);
+#ifndef NEW_EQS //WW. 07.11.2008
     void CreateNew(void);
     void CreateFDMProcess();
-    virtual ~CRFProcess();
     void DestroyFDMProcess();
+#endif
+    virtual ~CRFProcess();
     //....................................................................
     // IO
     ios::pos_type Read(ifstream*);
@@ -262,7 +273,7 @@ public:
     void SetCPL(); //OK8 OK4310
 	//....................................................................
 	// 15-EQS
-    void AssembleParabolicEquationRHSVector(CNode*); //(vector<long>&); //OK
+    //WW void AssembleParabolicEquationRHSVector(CNode*); //(vector<long>&); //OK
 	//....................................................................
     int Shift[10];
     // Construction / destruction
@@ -307,8 +318,10 @@ public:
     char *pcs_eval_unit[PCS_NUMBER_MAX];
     // Configuration 3 - ELE matrices
     // Execution
-    // NUM
+    // NUM 
+#ifndef NEW_EQS //WW 07.11.2008
     LINEAR_SOLVER *eqs;
+#endif
     string num_type_name; 
     char *pcs_num_name[2];  //For monolithic scheme
     double pcs_nonlinear_iteration_tolerance;
@@ -361,17 +374,25 @@ public:
     void ConfigRandomWalk();
     void ConfigMultiPhaseFlow();
     // Configuration 1 - NOD
+#ifndef NEW_EQS //WW. 07.11.2008
     void ConfigNODValues1(void);
     void ConfigNODValues2(void);
     void CreateNODValues(void);
     void SetNODValues(); //OK
-    //
-    double CalcIterationNODError(int method); //OK
-    void CopyTimestepNODValues();
-    //Coupling
-    double CalcCouplingNODError(); //MB
-    void CopyCouplingNODValues();
     void CalcFluxesForCoupling(); //MB
+    double CalcCouplingNODError(); //MB
+    void SetNODFlux(); //OK
+    //
+    void AssembleParabolicEquationRHSVector(); //OK
+	// 15-EQS
+    void AssembleParabolicEquationRHSVector(CNode*); //(vector<long>&); //OK
+#endif
+    double CalcIterationNODError(int method); //OK
+    void CopyTimestepNODValues(bool forward = true); // Add bool forward = true. WW
+    //Coupling
+    //WW double CalcCouplingNODError(); //MB
+    void CopyCouplingNODValues();
+    //WWvoid CalcFluxesForCoupling(); //MB
     // Configuration 2 - ELE
     void ConfigELEValues1(void);
     void ConfigELEValues2(void);
@@ -396,7 +417,6 @@ public:
     //---
     double Execute();
     double ExecuteNonLinear();
-    void InitEQS();
     virtual void CalculateElementMatrices(void) ;
     void DDCAssembleGlobalMatrix();
     virtual void AssembleSystemMatrixNew(void);
@@ -417,9 +437,10 @@ public:
     void EQSInitialize(); 
 	void EQSSolver(double* x);	// PCH
 #else
+    void InitEQS();
     int ExecuteLinearSolver(void);
-#endif
     int ExecuteLinearSolver(LINEAR_SOLVER *eqs);
+#endif
     //Time Control
     double timebuffer; //YD
     int iter;  //YD
@@ -434,6 +455,10 @@ public:
     // Extropolate Gauss point values to node values. WW
     void Extropolation_GaussValue(); 
     void Extropolation_MatValue();  //WW
+    // Auto time step size control. WW
+    void PI_TimeStepSize(double *u_n); //WW
+    bool TimeStepAccept() const { return accepted;}
+    void SetDefaultTimeStepAccepted() { accepted = true;}
     // USER
     //ToDo
     double *TempArry; //MX
@@ -449,8 +474,6 @@ public:
     void CalcSecondaryVariablesUnsaturatedFlow(const bool initial = false); //WW
 	void CalcSaturationRichards(int timelevel, bool update); // JOD
     bool non_linear; //OK/CMCD
-    void SetNODFlux(); //OK
-    void AssembleParabolicEquationRHSVector(); //OK
     void InterpolateTempGP(CRFProcess *, string); //MX
     void ExtropolateTempGP(CRFProcess *, string); //MX
     //Repeat Calculation,    JOD removed // HS reactivated
@@ -460,7 +483,7 @@ public:
     bool adaption; 
     void PrimaryVariableReloadTransport(); //kg44
     void PrimaryVariableStorageTransport(); //kg44
-    double GetNewTimeStepSizeTransport(double mchange); //kg44
+    //double GetNewTimeStepSizeTransport(double mchange); //kg44
     // FLX
     void CalcELEFluxes(CGLPoint*); //OK
     double CalcELEFluxes(CGLPolyline*); //OK
@@ -470,7 +493,12 @@ public:
     void OBJRelationsDelete(); //OK
     bool NODRelations(); //OK
     bool ELERelations(); //OK
+#ifndef NEW_EQS //WW 07.11.2008
     bool CreateEQS(); //OK
+    void EQSDelete(); //OK
+    // Dumping matrix and RHS. WW
+    void DumpEqs(string file_name);
+#endif
     bool Check(); //OK
     void NODRelationsDelete(); //OK
     void ELERelationsDelete(); //OK
@@ -480,9 +508,6 @@ public:
     bool m_bCheckEQS; //OK
     void Delete(); //OK
     bool m_bCheck; //OK
-    void EQSDelete(); //OK
-    // Dumping matrix and RHS. WW
-    void DumpEqs(string file_name);
 #ifdef USE_MPI //WW
     void Print_CPU_time_byAssembly(ostream &os=cout)
       {   os<<"\n***\nCPU time elapsed in the linear equation of "<<pcs_type_name<<"\n";
@@ -490,9 +515,6 @@ public:
       }
 #endif
 
-  private:
-   int continuum;
-   bool continuum_ic;
 }; 
 
 //========================================================================
@@ -599,7 +621,9 @@ extern void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs); //OK
 extern void CalcNewNAPLSat(CRFProcess*m_pcs); //CB 01/08
 extern void CalcInitialNAPLDens(CRFProcess*m_pcs); //CB 01/08
 extern void SetFlowProcessType();//CB 01/08
+#ifndef NEW_EQS //WW. 07.11.2008
 extern void PCSCreateNew(); //OK
+#endif
 extern bool PCSCheck(); //OK
 // New solvers WW
 // Create sparse graph for each mesh    //1.11.2007 WW

@@ -21,12 +21,14 @@ extern ios::pos_type GetNextSubKeyword(ifstream* file,string* line, bool* keywor
 // GeoSys-GeoLib
 // GeoSys-FEMLib
 #include "rf_num_new.h"
+#ifndef NEW_EQS //WW. 06.11.2008
 #include "matrix.h"
+#include "elements.h" // Only for max_dim, remove this later. WW
+#endif
 #include "mathlib.h"
 #include "rf_pcs.h"
 // GeoSys-MSHLib
 #include "nodes.h"
-#include "elements.h" // Only for max_dim, remove this later. WW
 #ifdef USE_MPI //WW
 #include "par_ddc.h"
 #undef SEEK_SET 
@@ -394,7 +396,7 @@ void CNumerics::Write(fstream* num_file)
 //////////////////////////////////////////////////////////////////////////
 // LINEAR_SOLVER
 //////////////////////////////////////////////////////////////////////////
-
+#ifndef NEW_EQS //WW. 06.11.2008
 /**************************************************************************
  ROCKFLOW - Funktion: NormOfUnkonwn
                                                                          
@@ -813,7 +815,7 @@ void ConfigSolverProperties(void)
         break;
     }
     /* Umnummerierer-Methode auswaehlen */
-    ConfigRenumberProperties();
+    //WW ConfigRenumberProperties();
     /* umnummerierer muss definiert sein ! */
 }
 
@@ -1214,27 +1216,6 @@ double GetNumericalTimeCollocation(char *name)
   return 1.0;
 }
 
-int GetNumericsGaussPoints(int element_dimension)
-{
-  int m_gaussian_points = 3;
-  int g_gaussian_points = 3;  
-  switch (element_dimension)
-    {
-    case 1:
-      m_gaussian_points = 1;
-      break;
-    case 2:
-      m_gaussian_points = g_gaussian_points;
-      break;
-    case 3:
-      m_gaussian_points = g_gaussian_points;
-      break;
-    case 4:
-      m_gaussian_points = g_gaussian_points;
-      break;
-    }
-  return m_gaussian_points;
-}
 /**************************************************************************
 FEMLib-Method:
 Task:
@@ -1345,6 +1326,29 @@ double NUMCalcIterationError(double *new_iteration, double *old_iteration, doubl
     case 8:
         return MVekDist(old_iteration, new_iteration, length) / (MVekDist(reference, new_iteration, length) + MKleinsteZahl);
     }
+}
+#endif //ifndef NEW_EQS //WW. 06.11.2008
+
+int GetNumericsGaussPoints(int element_dimension)
+{
+  int m_gaussian_points = 3;
+  int g_gaussian_points = 3;  
+  switch (element_dimension)
+    {
+    case 1:
+      m_gaussian_points = 1;
+      break;
+    case 2:
+      m_gaussian_points = g_gaussian_points;
+      break;
+    case 3:
+      m_gaussian_points = g_gaussian_points;
+      break;
+    case 4:
+      m_gaussian_points = g_gaussian_points;
+      break;
+    }
+  return m_gaussian_points;
 }
 
 /**************************************************************************

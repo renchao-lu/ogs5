@@ -125,7 +125,6 @@ class CPARDomain
 #endif
     void CalcElementMatrices(CRFProcess*);
  //WW   void AssembleMatrix(CRFProcess*);
-    void WriteMatrix();
     long GetDOMNode(long);
     int m_color[3]; //OK
     void WriteTecplot(string); //OK

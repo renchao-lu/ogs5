@@ -16,8 +16,10 @@ using namespace std;
 #include "par_ddc.h"
 // FEM-Makros
 #include "makros.h"
-#include "elements.h"
+//WW #include "elements.h"
+#ifndef NEW_EQS //WW. 11.2008
 #include "matrix.h"
+#endif
 #include "geo_strings.h"
 #include "rf_num_new.h"
 #include "gs_project.h"
@@ -31,6 +33,9 @@ vector<int> node_connected_doms; //This will be removed after sparse class is fi
 
 //---- MPI Parallel --------------
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)
+#undef SEEK_SET  //WW 
+#undef SEEK_END  //WW
+#undef SEEK_CUR  //WW
 #include<mpi.h>
 int size;
 int myrank;
@@ -848,36 +853,6 @@ void CPARDomain::AssembleMatrix(CRFProcess* m_pcs)
   }
 }
 */
-
-/**************************************************************************
-FEMLib-Method: 
-Task:
-Programing:
-07/2004 OK Implementation
-**************************************************************************/
-void CPARDomain::WriteMatrix()
-{
-  //----------------------------------------------------------------------
-  // File handling
-  string dom_file_name("egs.txt");
-  fstream dom_file(dom_file_name.data(),ios::out);
-  dom_file.setf(ios::scientific,ios::floatfield);
-  dom_file.precision(3);
-  if (!dom_file.good()) return;
-  dom_file.seekg(0L,ios::beg); // rewind?
-  //----------------------------------------------------------------------
-  // File handling
-  long i,j;
-  long no_nodes = (long)nodes.size();
-  for(i=0;i<no_nodes;i++){
-    for(j=0;j<no_nodes;j++){
-      dom_file << MXGet(i,j) << " " ;
-    }
-    dom_file << endl;
-  }
-  dom_file.close();
-}
-
 /**************************************************************************
 FEMLib-Method: 
 Task: 

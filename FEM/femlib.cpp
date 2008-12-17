@@ -27,7 +27,9 @@
 #include "mathlib.h"
 #include "intrface.h"
 #include "rf_pcs.h" //OK_MOD"
+#ifndef NEW_EQS //WW. 11.2008
 #include "matrix.h"
+#endif
 /* Intern benutzte Objekte */
 #include "nodes.h"
 #include "elements.h"
@@ -1015,6 +1017,7 @@ Programmaenderungen:
 06/2005 WW
 06/2005 OK ele_type
 **************************************************************************/
+#ifdef obsolete //WW. 11.2008
 double InterpolValueVector(long ele_type, double *vec, double r, double s, double t)
 {
   static double vf[8];
@@ -1072,6 +1075,7 @@ double InterpolValueVector(long ele_type, double *vec, double r, double s, doubl
 
 
 
+#endif
 /**************************************************************************/
 /* ROCKFLOW - Funktion: Calc2DElement_xyz2ab_Coord
  */
@@ -1844,7 +1848,7 @@ void Calc3DElementJacobiMatrix_20N(long index, double r, double s, double t, dou
   *dj = M3Determinante(erg);
   M3Invertiere(erg);
 }
-
+#ifndef NEW_EQS //WW. 11.2008
 /**************************************************************************/
 /* ROCKFLOW - Funktion: IncorporateMatrix
  */
@@ -1885,7 +1889,7 @@ void IncorporateMatrix(long element, double *left_matrix, double *right_vector, 
   for (i = 0; i < nn; i++)
     rechts[element_node_index[i]] += right_vector[i];
 }
-
+#endif
 
 /**************************************************************************/
 /* ROCKFLOW - Funktion: Calc2DElementCoordinatesTriangle

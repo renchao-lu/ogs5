@@ -3081,15 +3081,15 @@ void COutput::CalcELEFluxes()
   double f_n_sum = 0.0;
   //----------------------------------------------------------------------
   CRFProcess* m_pcs = PCSGet(pcs_type_name);
+  if(!m_pcs) // WW moved it here.
+  {
+    //WW cout << "Warning in COutput::CalcELEFluxes(): no PCS data" << endl;
+    return;
+  }
   if( pcs_type_name.find("DEFORMATION")!=string::npos
    ||pcs_type_name.find("FLOW")==string::npos
    ||m_pcs->m_msh->geo_name.find("REGIONAL")!=string::npos) //WW
     return;
-  if(!m_pcs)
-  {
-    cout << "Warning in COutput::CalcELEFluxes(): no PCS data" << endl;
-    return;
-  }
   //----------------------------------------------------------------------
   switch(geo_type_name[3])
   {
@@ -3345,10 +3345,14 @@ double COutput::NODFlux(long nod_number)
 */
   // All elements at node //OK
   CNode* m_nod = m_msh->nod_vector[nod_number];
+#ifdef NEW_EQS //WW. 07.11.2008
+  return 0.; //To do: m_pcs->eqs_new->b[nod_number];   
+#else
   // Element nodal RHS contributions
   m_pcs->eqs->b[nod_number] = 0.0;
   m_pcs->AssembleParabolicEquationRHSVector(m_nod);
-  return m_pcs->eqs->b[nod_number];
+  return m_pcs->eqs->b[nod_number];   
+#endif
 }
 
 /**************************************************************************

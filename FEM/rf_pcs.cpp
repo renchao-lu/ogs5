@@ -48,14 +48,16 @@ Programing:
 #include "rf_pcs.h"
 #include "pcs_dm.h"
 #include "files.h"    // FIL
+#ifndef NEW_EQS //WW. 07.11.2008
 #include "solver.h"    // ConfigRenumberProperties
+#endif
 #include "rf_st_new.h" // ST
 #include "rf_bc_new.h" // ST
 #include "rf_mmp_new.h" // MAT
 #include "rf_ic_new.h"  // IC
 #include "rf_tim_new.h"  // IC
-#include "rfiter.h"   // ITE
-#include "elements.h" // ELE
+//WW #include "rfiter.h"   // ITE
+//WW #include "elements.h" // ELE
 #include "fem_ele_std.h" // ELE
 #include "msh_lib.h" // ELE
 #include "nodes.h" 
@@ -68,11 +70,15 @@ Programing:
 #include "rf_fct.h"
 #include "femlib.h"
 /*-----------------------------------------------------------------------*/
+/*-----------------------------------------------------------------------*/
+/* Tools */
+#ifndef NEW_EQS //WW. 06.11.2008
+#include "matrix.h"
+#endif
 #ifdef MFC //WW
 #include "rf_fluid_momentum.h"
 #endif
 /* Tools */
-#include "matrix.h"
 #include "mathlib.h"
 #include "geo_strings.h"
 #include "par_ddc.h"
@@ -94,6 +100,9 @@ REACT_BRNS *m_vec_BRNS;
 #ifdef NEW_EQS
 #include "equation_class.h"   
 #endif
+#ifdef PROBLEM_CLASS //WW
+#include "problem.h"
+#endif
 
 /*-------------------- ITPACKV    ---------------------------*/
 extern void transM2toM6(void);
@@ -103,8 +112,8 @@ extern void transM2toM5(void);
 /*-------------------- JAD    ---------------------------*/
 /*-----------------------------------------------------------------------*/
 /* LOP */
-#include "rf_apl.h" // Loop...
-#include "loop_pcs.h"
+//16.12.2008. WW #include "rf_apl.h" // Loop...
+//16.12.2008. WW #include "loop_pcs.h"
 extern VoidFuncVoid LOPCalcSecondaryVariables_USER;
 //------------------------------------------------------------------------
 // PCS
@@ -238,7 +247,9 @@ CRFProcess::CRFProcess(void)
   m_num = NULL;
   cpl_type_name = "PARTITIONED"; //OK
   num_type_name = "FEM"; //OK
+#ifndef NEW_EQS //WW 07.11.2008
   eqs = NULL; //WW
+#endif
   dof = 1; //WW
   //----------------------------------------------------------------------
   // ELE
@@ -286,6 +297,9 @@ CRFProcess::CRFProcess(void)
   m_bCheckEQS = false; //OK
   //
   write_boundary_condition = false; //15.01.2008. WW
+  accepted = true;   //25.08.2008. WW
+  accept_steps = 0;  //27.08.1008. WW
+  reject_steps = 0;  //27.08.1008. WW
 #ifdef USE_MPI //WW
   cpu_time_assembly = 0;
 #endif
@@ -633,13 +647,16 @@ void CRFProcess::Create()
   cout << "->Create TIM" << '\n';
   //CTimeDiscretization* Tim = TIMGet(pcs_type_name);
     Tim = TIMGet(pcs_type_name);
-  if(Tim){
+  if(!Tim) 
+  {
+     Tim = new CTimeDiscretization(*time_vector[0],pcs_type_name); //21.08.2008. WW
+     time_vector.push_back(Tim);  //21.08.2008. WW
+  }
     if(Tim->time_unit.find("MINUTE")!=string::npos) time_unit_factor=60.0;
     else if(Tim->time_unit.find("HOUR")!=string::npos) time_unit_factor=3600.0;
     else if(Tim->time_unit.find("DAY")!=string::npos) time_unit_factor=86400.0;
     else if(Tim->time_unit.find("MONTH")!=string::npos) time_unit_factor=2592000.0;
     else if(Tim->time_unit.find("YEAR")!=string::npos) time_unit_factor=31536000;
-  }
   //----------------------------------------------------------------------------
   //
   if(type==4||type==41) m_msh->SwitchOnQuadraticNodes(true); 
@@ -806,7 +823,6 @@ void CRFProcess::Create()
   if(PCSSetIC_USER)
     PCSSetIC_USER(pcs_type_number);
   //
-  CalcSecondaryVariables(true); //WW
   //
   if(compute_domain_face_normal) //WW
      m_msh->FaceNormal();   
@@ -1208,6 +1224,7 @@ void PCSDestroyAllProcesses(void)
       m_process->TempArry = (double *) Free(m_process->TempArry);
 	delete(m_process);
   }
+  pcs_vector.clear(); //WW
   //----------------------------------------------------------------------
   // MSH
   for(i=0;i<(long)fem_msh_vector.size();i++)
@@ -3076,7 +3093,7 @@ void CRFProcess::ConfigMultiPhaseFlow()
 //////////////////////////////////////////////////////////////////////////
 // Configuration NOD
 //////////////////////////////////////////////////////////////////////////
-
+#ifndef NEW_EQS //WW. 07.11.2008
 /*************************************************************************
 ROCKFLOW - Function: 
 Task: Config node values 
@@ -3226,7 +3243,7 @@ void CRFProcess::CreateNODValues(void)
     }
   }
 }
-
+#endif //#ifndef NEW_EQS //WW. 07.11.2008
 /**************************************************************************
 FEMLib-Method: 
 Task: 
@@ -3776,7 +3793,29 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
   //----------------------------------------------------------------------
   return pcs_error;
 }
-
+/*************************************************************************
+GEOSYS - Function:
+Task: 
+Programming: 
+ 08/2008 WW Implementation
+ 11/2008 WW Update
+last modified: 
+**************************************************************************/
+void CRFProcess::CopyU_n(double *temp_v)
+{
+   int i, nidx1;
+   long g_nnodes, j, k;
+   for(i=0; i<pcs_number_of_primary_nvals; i++)
+   {  
+      nidx1 = GetNodeValueIndex(pcs_primary_function_name[i])+1;
+      g_nnodes =m_msh->GetNodesNumber(false);  //DOF>1, WW
+      for(j=0;j<g_nnodes;j++)
+      {
+         k = m_msh->Eqs2Global_NodeIndex[j];
+         temp_v[j+i*g_nnodes] = GetNodeValue(k,nidx1);
+      } 
+   }   
+}
 /*************************************************************************
 ROCKFLOW - Function:
 Task: Initialize the equation system
@@ -3785,6 +3824,7 @@ Programming:
  08/2003 WW    Changes for momolithic coupled equations    
 last modified: 
 **************************************************************************/
+#ifndef NEW_EQS //WW 07.11.2008
 void CRFProcess::InitEQS()
 {
     int i;
@@ -3808,6 +3848,7 @@ void CRFProcess::InitEQS()
     }
 }
 
+#endif
 /*************************************************************************
 ROCKFLOW - Function:
 Task: Calculate element matrices
@@ -3982,7 +4023,9 @@ void CRFProcess::GlobalAssembly()
     if ( pcs_type_name.compare("MASS_TRANSPORT") == 0 && aktueller_zeitschritt > 1 && this->m_num->cpl_iterations > 1)
     IncorporateSourceTerms_GEMS();    
 #endif
+#ifndef NEW_EQS //WW. 07.11.2008
     SetCPL(); //OK
+#endif
     IncorporateBoundaryConditions();
     //
     // 
@@ -4787,7 +4830,7 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
     else 
       bc_eqs_index = GetNodeIndex(msh_node)+shift;
     /*
-    // Make the follows by WW. 04.03.2008 
+    // Make the follows as comments by WW. 04.03.2008 
     if(dof>1) // 07.2.2007 WW
     { 
       for(ii=0;ii<dof;ii++)
@@ -4881,6 +4924,7 @@ Programing:
 06/2005 PCH Overriding
 last modification:
 **************************************************************************/
+#ifndef NEW_EQS //WW 07.11.2008
 int CRFProcess::ExecuteLinearSolver(LINEAR_SOLVER *eqs)
 {
   long iter_count;
@@ -4909,6 +4953,7 @@ int CRFProcess::ExecuteLinearSolver(LINEAR_SOLVER *eqs)
   return iter_sum;
 }
 
+#endif 
 //WW
 int CRFProcess::GetNODValueIndex(string name,int timelevel)
 {
@@ -4996,6 +5041,7 @@ Programming:
 06/2004 OK 1-D FDM
 last modified:
 **************************************************************************/
+#ifndef NEW_EQS //WW. 07.11.2008
 void CRFProcess::CreateFDMProcess()
 {
   long i;
@@ -5136,7 +5182,7 @@ if(m_polyline){
 void CRFProcess::DestroyFDMProcess()
 {
 }
-
+#endif
 /*************************************************************************
 ROCKFLOW - Function: CRFProcess::PCSMoveNOD
 Task: 
@@ -5947,6 +5993,7 @@ Programing:
 03/2005 OK Implementation
 last modified:
 **************************************************************************/
+#ifndef NEW_EQS //WW. 07.11.2008
 void CRFProcess::SetNODValues()
 {
   for(long i=0;i<(long)m_msh->nod_vector.size();i++){
@@ -5956,7 +6003,7 @@ void CRFProcess::SetNODValues()
     SetNodeValue(m_msh->Eqs2Global_NodeIndex[i],1,eqs->x[i]); //WW
   }
 }
-
+#endif
 /**************************************************************************
 FEMLib-Method:
 Task:
@@ -6233,6 +6280,8 @@ Programing:
 05/2005 OK Implementation
 04/2006 YD Add contiuum coupling OK???Why ere
 04/2007 WW Remove the spurious stuff
+08/2008 WW Time step size control (First)
+12/2008 WW Time step size control (Update)
 **************************************************************************/
 double CRFProcess::ExecuteNonLinear()
 {
@@ -6255,6 +6304,11 @@ double CRFProcess::ExecuteNonLinear()
   {
     cout << "    PCS non-linear iteration: " << iter << "/"   
          << pcs_nonlinear_iterations << endl;
+#if defined(PROBLEM_CLASS) //WW
+    // PI time step size control. 29.08.2008. WW
+    if(Tim->GetTimeStepCrtlType()>0)
+      CopyU_n(aproblem->GetBufferArray()); 
+#endif    
     nonlinear_iteration_error = Execute();
     if(mobile_nodes_flag ==1)
       PCSMoveNOD();
@@ -6269,8 +6323,14 @@ double CRFProcess::ExecuteNonLinear()
     else
       Tim->repeat = true; //OK/YD
   }
+#if defined(PROBLEM_CLASS) //WW
+  // PI time step size control. 27.08.2008. WW
+  if(Tim->GetTimeStepCrtlType()>0)
+    PI_TimeStepSize(aproblem->GetBufferArray()); 
+#endif // (PROBLEM_CLASS)  
   // 8 Calculate secondary variables
-  CalcSecondaryVariables(); // Moved here from Execute() WW
+  if(accepted) // 27.08.2008. WW
+    CalcSecondaryVariables(); // Moved here from Execute() WW
   // Release temporary memory of linear solver. WW
 #ifdef NEW_EQS  //WW
  #if defined(USE_MPI)
@@ -6428,6 +6488,7 @@ Task:
 Programing:
 11/2005 MB Implementation
 **************************************************************************/
+#ifndef NEW_EQS //WW. 07.11.2008
 void CRFProcess::CalcFluxesForCoupling(void)
 {
   int i,j;
@@ -6585,7 +6646,7 @@ double CRFProcess::CalcCouplingNODError()
   return error;
 
 }
-
+#endif
 /**************************************************************************
 FEMLib-Method:
 Task: 
@@ -6620,8 +6681,9 @@ Task:
 Programing:
 11/2005 MB implementation
 02/2006 WW Modified for the cases of high order element and saturation
+08/2008 WW Make it twofold copy: forward and backword
 **************************************************************************/
-void CRFProcess::CopyTimestepNODValues()
+void CRFProcess::CopyTimestepNODValues(bool forward)
 {
   int nidx0 = -1;
   int nidx1 = -1;
@@ -6635,6 +6697,11 @@ void CRFProcess::CopyTimestepNODValues()
   {
     nidx0 = GetNodeValueIndex(pcs_primary_function_name[j]);
     nidx1 = GetNodeValueIndex(pcs_primary_function_name[j])+1;
+    if(!forward) //08.2008. WW
+    {
+      nidx0++;
+      nidx1--;
+    }
     for(l=0;l<(long)m_msh->GetNodesNumber(Quadr);l++)
       SetNodeValue(l,nidx0,GetNodeValue(l,nidx1));
     //WW 
@@ -6646,6 +6713,12 @@ void CRFProcess::CopyTimestepNODValues()
        if(j==0) nidx0 = GetNodeValueIndex("SATURATION1");
        else if(j==1) nidx0 = GetNodeValueIndex("SATURATION2");
        nidx1 = nidx0+1;
+       if(!forward) //27.08.2008. WW
+       {
+         nidx0++;
+         nidx1--;
+       }
+       // 
        for(l=0;l<(long)m_msh->GetNodesNumber(false);l++)
          SetNodeValue(l,nidx0,GetNodeValue(l,nidx1));
     }    
@@ -7045,6 +7118,7 @@ return val;
 GeoSys-FEM Function:
 01/2006 OK Implementation
 **************************************************************************/
+#ifndef NEW_EQS //WW. 07.11.2008
 void CRFProcess::SetNODFlux()
 {
   long i;
@@ -7061,11 +7135,13 @@ void CRFProcess::SetNODFlux()
   }
   //----------------------------------------------------------------------
 }
+#endif
 
 /*************************************************************************
 GeoSys-FEM Function:
 01/2006 OK Implementation
 **************************************************************************/
+#ifndef NEW_EQS //WW. 07.11.2008
 void CRFProcess::AssembleParabolicEquationRHSVector()
 {
 //OK  long i;
@@ -7092,6 +7168,7 @@ void CRFProcess::AssembleParabolicEquationRHSVector()
   //----------------------------------------------------------------------
 }
 
+#endif //#ifndef NEW_EQS //WW. 07.11.2008
 /*************************************************************************
 GeoSys-FEM Function:
 06/2006 YD Implementation
@@ -7230,6 +7307,7 @@ void CRFProcess::PrimaryVariableStorageRichards()
 //12/2007 kg44 Implementation
 //check change of concentration and set new time step factor
 //**************************************************************************/
+#ifdef kg44 // WW
 double CRFProcess::GetNewTimeStepSizeTransport(double mchange)
 {
   long i, mnode=-1; 
@@ -7256,7 +7334,7 @@ double CRFProcess::GetNewTimeStepSizeTransport(double mchange)
   cout << "Transport: max change of "<< max_change << " at node " << mnode << " factor " << tchange<< endl;
   return tchange;
 }
-
+#endif
 
 
 /**************************************************************************
@@ -7264,6 +7342,7 @@ FEMLib-Method:
 11/2005 MB Implementation
 03/2006 OK 2nd version (binary coupling)
 **************************************************************************/
+#ifndef NEW_EQS //WW. 07.11.2008
 void CRFProcess::SetCPL()
 {
   int i;
@@ -7434,6 +7513,7 @@ if(gf_node_value>1e-13)
   }
 }
 
+#endif
 /**************************************************************************
 PCSLib-Method: 
 04/2006 OK Implementation
@@ -7725,6 +7805,7 @@ void CRFProcess::CalcELEVelocities(void)
 GeoSys-FEM Function:
 08/2006 OK Implementation
 **************************************************************************/
+#ifndef NEW_EQS //WW. 07.11.2008
 void CRFProcess::AssembleParabolicEquationRHSVector(CNode*m_nod)//(vector<long>&ele_number_vector)
 {
   //cout << "CRFProcess::AssembleParabolicEquationRHSVector" << endl;
@@ -7879,6 +7960,7 @@ ddummy = eqs->b[m_nod->GetIndex()];
   //======================================================================
 }
 
+#endif
 /**************************************************************************
 PCSLib-Method:
 08/2006 OK Implementation
@@ -8531,6 +8613,7 @@ bool CRFProcess::ELERelations()
 PCSLib-Method:
 07/2007 OK Implementation
 **************************************************************************/
+#ifndef NEW_EQS //WW 07.11.2008
 bool CRFProcess::CreateEQS()
 {
   if(!m_num) return false; //OK46
@@ -8596,11 +8679,12 @@ bool CRFProcess::CreateEQS()
   //----------------------------------------------------------------------------
   return succeed;
 }
-
+#endif
 /**************************************************************************
 PCSLib-Method:
 07/2007 OK Implementation
 **************************************************************************/
+#ifndef NEW_EQS //WW. 07.11.2008
 void PCSCreateNew()
 {
   int i;
@@ -8629,7 +8713,7 @@ void CRFProcess::CreateNew()
   MMP2PCSRelation(this);
   ConfigureCouplingForLocalAssemblier();
 }
-
+#endif
 /**************************************************************************
 PCSLib-Method:
 07/2007 OK Implementation
@@ -8774,6 +8858,7 @@ bool PCSCheck()
 PCSLib-Method:
 07/2007 OK Implementation
 **************************************************************************/
+#ifndef NEW_EQS //WW 07.11.2008
 void EQSDelete()
 {
   LINEAR_SOLVER *eqs = NULL;
@@ -8798,7 +8883,7 @@ void EQSDelete()
     PCS_Solver.erase((PCS_Solver.begin()+i));
   }
 }
-
+#endif
 /**************************************************************************
 PCSLib-Method:
 07/2007 OK Implementation
@@ -8928,7 +9013,9 @@ void CRFProcess::Delete()
   //----------------------------------------------------------------------------
   ELERelationsDelete();
   NODRelationsDelete();
+#ifndef NEW_EQS //WW. 07.11.2008
   EQSDelete();
+#endif
   OBJRelationsDelete();
   //MMP2PCSRelation(this);
   //ConfigureCouplingForLocalAssemblier();
@@ -8939,6 +9026,7 @@ void CRFProcess::Delete()
 PCSLib-Method:
 07/2007 OK Implementation
 **************************************************************************/
+#ifndef NEW_EQS //WW 07.11.2008
 void CRFProcess::EQSDelete()
 {
   LINEAR_SOLVER *eqs = NULL;
@@ -8970,6 +9058,7 @@ void CRFProcess::EQSDelete()
   }
 }
 
+#endif
 /*
 void CRFProcess::CreateYD()
 {
@@ -9066,8 +9155,7 @@ void CreateEQS_LinearSolver()
 #endif
   }
 } 
-#endif
-
+#else // NEW_EQS 
 /*************************************************************************
 ROCKFLOW - Function: CRFProcess::
 Task:
@@ -9105,7 +9193,7 @@ void CRFProcess::DumpEqs(string file_name)
    }
    eqs_out.close();
 }
-
+#endif //ifdef NEW_QES
 
 
 /*************************************************************************
@@ -9171,6 +9259,190 @@ void CRFProcess::WriteBC()
   os<<"#STOP"<<endl; 
   os.close();
 }
+/*************************************************************************
+GeoSys-Function:
+Task: PI time step contorl
+Programming: 
+08/2008 WW Implementation
+10/2008 WW Node value criteria (test)
+**************************************************************************/
+void CRFProcess::PI_TimeStepSize(double *u_n)
+{
+  //----------------------------------------------------------------------
+  //----------------------------------------------------------------------
+  // Time step control
+  double hmin;
+  double hmax;
+  double factor1; // 1/hmin
+  double factor2; // 1/hmax     
+  double sfactor = 0.9;
+  //  
+  //
+  hmax = Tim->GetMaximumTSizeRestric(); 
+  hmin = Tim->GetMinimumTSizeRestric(); 
+  //
+  if (hmin<DBL_MIN) factor1 = 5.0;
+  else factor1 = 1.0/hmin; 
+  if (hmax<DBL_MIN) factor2 = 0.166666666666666666667e+00; 
+  else  factor2 = 1.0/hmax;
+  if (factor1<1.0e0) factor1 = 5.0; 
+  if (factor2>1.0e0) factor2 = 0.166666666666666666667e+00; 
+  //
+  //
+  //esitmate the error
+  double hnew;
+  double err, fac;
+  double factorGus;
+  double hacc = Tim->GetHacc();
+  double erracc = Tim->GetErracc();
+  //
+#define E_NORM
+#ifdef E_NORM
+  //
+  long i;
+  CElem* elem = NULL;
+  bool Check2D3D;
+  double norm_e, norm_en;
+  double norm_e_rank, norm_en_rank;
+  norm_e = norm_en = norm_e_rank = norm_en_rank = 0.;
+
+  Check2D3D = false;
+  if(type == 66) //Overland flow
+    Check2D3D = true;
+  //----------------------------------------------------------------------
+  // DDC
+  if(dom_vector.size()>0){
+    cout << "      Domain Decomposition" << '\n';
+    CPARDomain* m_dom = NULL;
+    int j = 0;
+    //
+#if defined(USE_MPI)
+    j = myrank;
+#else
+    for(j=0;j<(int)dom_vector.size();j++)
+    {
+#endif
+      m_dom = dom_vector[j];
+      for(int ii=0;ii<(int)continuum_vector.size();ii++)  
+      {
+        continuum = ii;
+        //
+        for(i=0;i<(long)m_dom->elements.size();i++)
+        {
+          elem = m_msh->ele_vector[m_dom->elements[i]];
+          if(elem->GetMark())
+          {
+            elem->SetOrder(false);
+            fem->SetElementNodesDomain(m_dom->element_nodes_dom[i]);  
+            fem->ConfigElement(elem,Check2D3D);
+            fem->m_dom = m_dom; 
+            fem->CalcEnergyNorm(u_n, norm_e_rank, norm_en_rank);
+            // _new
+            if(ii==1) 
+              fem->CalcEnergyNorm_Dual(u_n, norm_e_rank, norm_en_rank);
+          } 
+        }
+      }
+#if defined(USE_MPI) 
+      MPI_Allreduce(&norm_e_rank, &norm_e, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+      MPI_Allreduce(&norm_en_rank, &norm_en, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+#else //USE_MPI  
+      norm_e += norm_e_rank; 
+      norm_en += norm_en_rank; 
+    }
+    //....................................................................
+#endif
+  }
+  //----------------------------------------------------------------------
+  // STD
+  else
+  {   
+    for(int ii=0;ii<(int)continuum_vector.size();ii++)  
+    {
+      continuum = ii;
+      for(i=0;i<(long)m_msh->ele_vector.size();i++)
+      {
+        elem = m_msh->ele_vector[i];
+        if (elem->GetMark()) // Marked for use
+        {
+           elem->SetOrder(false);
+           fem->ConfigElement(elem,Check2D3D);
+           fem->CalcEnergyNorm(u_n, norm_e, norm_en);
+           // _new
+           if(ii==1) 
+             fem->CalcEnergyNorm_Dual(u_n, norm_e, norm_en);
+         } 
+       }
+    }
+  }
+  //compute energy norm as the error
+  err = sqrt(fabs(norm_e/norm_en));
+#else
+  err = 0.0;
+  //	
+  int ii, nidx1;
+  long g_nnodes, j, k, size_x;
+  double x0, x1;
+  double Rtol = Tim->GetRTol(); 
+  double Atol = Tim->GetATol();
+  size_x = 0;
+  for(ii=0; ii<pcs_number_of_primary_nvals; ii++)
+  {  
+     nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii])+1;
+     g_nnodes =m_msh->GetNodesNumber(false);  //DOF>1, WW
+     size_x += g_nnodes;
+     for(j=0;j<g_nnodes;j++)
+     {
+        k = m_msh->Eqs2Global_NodeIndex[j];
+        x0 = u_n[j+ii*g_nnodes];
+        x1 = GetNodeValue(k,nidx1);
+        err += pow( (x1- x0)/(Atol+Rtol*max(fabs(x0),fabs(x1))),2);
+     } 
+  }   
+  err = sqrt(err/(double)size_x);
+#endif
+  //----------------------------------------------------------------------
+  //
+  //compute hnew with the resriction: 0.2<=hnew/h<=6.0;
+  fac = max(factor2,min(factor1,pow(err,0.25)/sfactor));
+  hnew = dt/fac;
+
+  //determine if the error is small enough
+  if(err<=1.0e0) //step is accept
+  {
+    accept_steps++;
+    if(Tim->GetTimeStepCrtlType()==2) //Mod. predictive step size controller (Gustafsson)
+    {
+      if(accept_steps>1) 
+      {
+        factorGus = (hacc/dt)*pow((pow(err,2)/erracc),0.25)/sfactor;
+        factorGus = max(factor2, min(factor1,factorGus));
+        fac = max(fac, factorGus);
+        hnew=dt/fac;			
+      }
+      hacc = dt;
+      erracc = max(1.0e-2,err);
+      Tim->SetHacc(hacc);
+      Tim->setErracc(erracc);
+    }
+    Tim->SetTimeStep(hnew);
+    accepted = true;
+  }//end if(err<=1.0e0)
+  else 
+  {
+    reject_steps++;
+    accepted = false;
+    Tim->SetTimeStep(hnew);
+    if(reject_steps>100&&accept_steps==0)
+    {
+       cout<<"!!! More than 100 steps rejected and none of steps accepted. Quit the simulation now"<<endl;
+       exit(0);
+    }
+    // Recover solutions
+  }
+    
+}
+
 
 
 #ifdef NEW_EQS //WW
@@ -9225,7 +9497,11 @@ void CRFProcess::IncorporateSourceTerms_GEMS(void)
         for ( it=0 ; it <  N_Nodes/*Number of Nodes*/; it++ )
         {
             // Adding the rate of concentration change to the right hand side of the equation.
+#ifdef NEW_EQS //15.12.2008. WW
+            eqs_new->b[it] -= m_vec_GEM->m_xDC_Chem_delta[it*nDC+i] / dt ; 
+#else
             eqs->b[it] -= m_vec_GEM->m_xDC_Chem_delta[it*nDC+i] / dt ; 
+#endif
         }
         // ----------------------------------------------------
     }

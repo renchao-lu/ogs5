@@ -41,7 +41,7 @@
 #include "nodes.h"
 #include "ptrarr.h"
 #include "elements.h"
-#include "loop_pcs.h"
+//16.12.2008.WW #include "loop_pcs.h"
 #include "mathlib.h"
 // GeoLib
 #include "geo_pnt.h"

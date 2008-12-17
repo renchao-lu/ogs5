@@ -103,11 +103,11 @@ class CFluidProperties
 	double PhaseChange(); // JOD 
     double HeatConductivity(double *variables = NULL);
     double CalcEnthalpy(double temperature);
-    double Enthalpy(int,double);
-    double EnthalpyPhase(long,int,double*,double);
-    double MassFraction(long number,int comp,double*gp,double theta, CFiniteElementStd* assem=NULL);
-    double InternalEnergy(long number,double*gp,double theta);
-    double DensityTemperatureDependence(long number,int comp,double*gp,double theta);
+    //WW double Enthalpy(int,double);
+    //WW double EnthalpyPhase(long,int,double*,double);
+    //WW double MassFraction(long number,int comp,double*gp,double theta, CFiniteElementStd* assem=NULL);
+    //WW double InternalEnergy(long number,double*gp,double theta);
+    //WW double DensityTemperatureDependence(long number,int comp,double*gp,double theta);
     double vaporDensity(const double T); //WW
     double vaporDensity_derivative(const double T); //WW
     bool CheckGravityCalculation() const {return cal_gravity;}
@@ -127,7 +127,7 @@ extern vector<CFluidProperties*>mfp_vector;
 extern bool MFPRead(string);
 extern void MFPWrite(string);
 #define MFP_FILE_EXTENSION ".mfp"
-extern double MFPCalcVapourPressure(double);
+//WW extern double MFPCalcVapourPressure(double);
 extern double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem=NULL); //WW
 extern double MFPCalcFluidsHeatConductivity(long index,double*gp,double theta, CFiniteElementStd* assem=NULL);
 extern void MFPDelete();

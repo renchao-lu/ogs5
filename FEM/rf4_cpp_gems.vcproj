@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
-	Name="rf4_cpp"
+	Version="8.00"
+	Name="rf4cpp"
 	ProjectGUID="{4F159AF7-FF53-410E-A9A7-2C500A4EF55E}"
 	>
 	<Platforms>
@@ -43,8 +43,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../FEM; ../MSH; ../GEO;  ../GEM; ../EQL; ../"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MSVCPP6;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;IPMGEMPLUGIN;GEM_REACT"
+				AdditionalIncludeDirectories="../FEM;../MSH;../GEO; ../EQL;../GEM;../"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MSVCPP6;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;PROBLEM_CLASS;IPMGEMPLUGIN;GEM_REACT;"
 				RuntimeLibrary="1"
 				DisableLanguageExtensions="false"
 				UsePrecompiledHeader="0"
@@ -72,12 +72,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				UseLibraryDependencyInputs="false"
-				AdditionalDependencies="GEMS220_dbg.lib"
+				AdditionalDependencies="..\lib\GEMS224_dbg.lib"
 				OutputFile=".\Debug/rf4.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\LIB"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/rf3_cpp.pdb"
 				SubSystem="1"
@@ -139,8 +137,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="../FEM;../MSH;../GEO;../GEM; ../"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;IPMGEMPLUGIN;GEM_REACT"
+				AdditionalIncludeDirectories="../FEM;../MSH;../GEO;../GEM;../EQL; ../"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;PROBLEM_CLASS;IPMGEMPLUGIN;GEM_REACT;"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -168,11 +166,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="GEMS220_rl.lib"
+				AdditionalDependencies="..\lib\GEMS224_rl.lib"
 				OutputFile=".\Release/rf4.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\LIB"
 				ProgramDatabaseFile=".\Release/rf3_cpp.pdb"
 				SubSystem="1"
 				TargetMachine="1"
@@ -294,6 +291,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\eos.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\eos.h"
+				>
+			</File>
+			<File
 				RelativePath=".\equation_class.cpp"
 				>
 			</File>
@@ -358,55 +363,7 @@
 				>
 			</File>
 			<File
-				RelativePath="files0.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="loop_pcs.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="loop_pcs.h"
+				RelativePath=".\files0.cpp"
 				>
 			</File>
 			<File
@@ -422,31 +379,11 @@
 				>
 			</File>
 			<File
-				RelativePath="matrix.cpp"
+				RelativePath=".\matrix.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="matrix.h"
+				RelativePath=".\matrix.h"
 				>
 			</File>
 			<File
@@ -506,31 +443,11 @@
 				>
 			</File>
 			<File
-				RelativePath="nodes.cpp"
+				RelativePath=".\nodes.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="nodes.h"
+				RelativePath=".\nodes.h"
 				>
 			</File>
 			<File
@@ -590,63 +507,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\problem.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\problem.h"
+				>
+			</File>
+			<File
 				RelativePath="prototyp.h"
 				>
 			</File>
 			<File
-				RelativePath="ptrarr.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="ptrarr.h"
+				RelativePath=".\ptrarr.cpp"
 				>
 			</File>
 			<File
-				RelativePath="renumber.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="renumber.h"
+				RelativePath=".\ptrarr.h"
 				>
 			</File>
 			<File
@@ -672,34 +549,6 @@
 						BrowseInformation="1"
 					/>
 				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="rf_apl.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="rf_apl.h"
-				>
 			</File>
 			<File
 				RelativePath="rf_bc_new.cpp"
@@ -819,6 +668,14 @@
 			</File>
 			<File
 				RelativePath="rf_ic_new.h"
+				>
+			</File>
+			<File
+				RelativePath=".\rf_kinreact.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\rf_kinreact.h"
 				>
 			</File>
 			<File
@@ -1018,7 +875,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\rf_REACT_GEM.h"
+				RelativePath=".\rf_react_gem.h"
 				>
 			</File>
 			<File
@@ -1078,14 +935,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\rf_vel_new.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rf_vel_new.h"
-				>
-			</File>
-			<File
 				RelativePath="rfadt.cpp"
 				>
 				<FileConfiguration
@@ -1111,34 +960,6 @@
 			</File>
 			<File
 				RelativePath="rfadt.h"
-				>
-			</File>
-			<File
-				RelativePath="rfiter.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="rfiter.h"
 				>
 			</File>
 			<File
@@ -1198,31 +1019,11 @@
 				>
 			</File>
 			<File
-				RelativePath="solver.cpp"
+				RelativePath=".\solver.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="solver.h"
+				RelativePath=".\solver.h"
 				>
 			</File>
 			<File
@@ -1230,31 +1031,11 @@
 				>
 			</File>
 			<File
-				RelativePath="steam.cpp"
+				RelativePath=".\Stiff_Bulirsch-Stoer.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="steam67.h"
+				RelativePath=".\Stiff_Bulirsch-Stoer.h"
 				>
 			</File>
 			<File
@@ -1430,11 +1211,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_elements_rfi.cpp"
+				RelativePath="..\MSH\msh_elements_rfi.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_elements_rfi.h"
+				RelativePath="..\MSH\msh_elements_rfi.h"
 				>
 			</File>
 			<File
@@ -1495,30 +1276,6 @@
 			</File>
 			<File
 				RelativePath="..\Msh\msh_rfi.cpp"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="EQL"
-			>
-			<File
-				RelativePath="..\Eql\ca_vc_e.lib"
-				>
-			</File>
-			<File
-				RelativePath="..\Eql\cacint.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Eql\cacint.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Eql\eqlink.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Eql\eqlink.h"
 				>
 			</File>
 		</Filter>

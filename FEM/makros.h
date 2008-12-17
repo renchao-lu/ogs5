@@ -22,9 +22,9 @@
   /* Floating-Point */
 
 /* ROCKFLOW-Version */
-#define ROCKFLOW_VERSION    "4.8.02(TK)"
+#define ROCKFLOW_VERSION    "4.9(WW)    "
 #define RF_SHELL_VERSION    "4.7.08 (MR)"
-#define ROCKFLOW_DATE       "02.12.2008"
+#define ROCKFLOW_DATE       "08.12.2008"
 
 /* Definitionen von Makros zur Steuerung der bedingten Compilierung */
 #define SWITCHES

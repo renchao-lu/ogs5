@@ -1,11 +1,17 @@
 # GeoSys - Makefile for LINUX
-# Last modification 04/11/2004 WW
-
+#  04.11.2004 WW
+#  17.12.2008 WW
 ifneq ($(strip $(CHOSEN_TARGET)),)
 include $(TOPDIR)/configs/$(CHOSEN_TARGET)
 endif
 
+## 17.12.2008 WW
+ifdef NEW_SP
+include objects_sp.mak
+else
 include objects.mak
+endif
+#######
 
 FEMINCLUDE     = ../FEM
 GEMINCLUDE     = ../GEM
