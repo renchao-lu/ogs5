@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="GeoSys"
 	ProjectGUID="{A55509E7-0142-4424-B24F-4BD977C2FC26}"
 	Keyword="MFCProj"
@@ -147,7 +147,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../gui;../fem;../lib;../msh;../msh/tm;../msh/delaunay;../geo;../;../gui/splitter;../gui/iso;..\MSH\NW"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;MFC;_FEMPCHDEBUG_;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;MFC;_FEMPCHDEBUG_;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;PROBLEM_CLASS"
 				RuntimeLibrary="3"
 				DisableLanguageExtensions="false"
 				UsePrecompiledHeader="2"
@@ -1847,14 +1847,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Fem\loop_pcs.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Fem\loop_pcs.h"
-				>
-			</File>
-			<File
 				RelativePath="..\Fem\makros.h"
 				>
 			</File>
@@ -1915,6 +1907,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\FEM\problem.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\FEM\problem.h"
+				>
+			</File>
+			<File
 				RelativePath="..\Fem\prototyp.h"
 				>
 			</File>
@@ -1927,23 +1927,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Fem\renumber.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Fem\renumber.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Fem\rf.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Fem\rf_apl.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Fem\rf_apl.h"
+				RelativePath="..\FEM\rf.cpp"
 				>
 			</File>
 			<File
@@ -2099,14 +2083,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Fem\rfiter.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Fem\rfiter.h"
-				>
-			</File>
-			<File
 				RelativePath="..\Fem\rfmat_cp.cpp"
 				>
 			</File>
@@ -2132,14 +2108,6 @@
 			</File>
 			<File
 				RelativePath="..\Fem\stdafx.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Fem\steam.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Fem\steam67.h"
 				>
 			</File>
 			<File

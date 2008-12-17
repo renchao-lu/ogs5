@@ -17,6 +17,11 @@ using namespace std;
 #include "nodes.h"
 #include "rf_tim_new.h"
 //#include "test.h"
+
+#ifdef PROBLEM_CLASS //16.12.2008. WW
+    class Problem;
+#endif
+
 class CGeoSysDoc : public CDocument
 {
 public: // create from serialization only
@@ -84,8 +89,11 @@ protected:
     CString m_strFileNameRFE;
     void WriteRFD(char *);
 
+#ifdef PROBLEM_CLASS //16.12.2008. WW
+    Problem *problem_win;
+#endif
+
 // Generated message map functions
-protected:
 	//{{AFX_MSG(CGeoSysDoc)
 		// NOTE - the ClassWizard will add and remove member functions here.
 		//    DO NOT EDIT what you see in these blocks of generated code !

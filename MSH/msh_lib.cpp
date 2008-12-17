@@ -29,8 +29,10 @@ using namespace std;
 #include "tokenbuf.h"
 #endif
 
-extern void RFConfigRenumber(void);
+// WW extern void RFConfigRenumber(void);
+#ifndef NEW_EQS //WW. 07.11.2008
 extern void ConfigRenumberProperties(void);
+#endif
 extern int ReadRFIFile(string g_strFileNameBase);
 #include "rf_pcs.h"
 #include "gs_project.h"
@@ -81,8 +83,8 @@ void MSHOpen(string file_name_base)
 //OK  CreateEdgeList();
 //OK  CreatePlainList();
   ReadRFIFile(file_name_base);
-  ConfigRenumberProperties();
-  RFConfigRenumber();
+  //WW ConfigRenumberProperties();
+//WW   RFConfigRenumber();
   ELEConfigJacobianMatrix();
   //OK3909  CalcElementsGeometry();
 }

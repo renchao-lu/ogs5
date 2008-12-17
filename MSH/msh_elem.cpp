@@ -6,6 +6,8 @@ Programing:
 last modified
 **************************************************************************/
 #include "stdafx.h" // MFC
+#include <float.h>  //WW
+#include <stdlib.h>  //WW
 #include "mathlib.h"
 // MSHLib
 #include "msh_elem.h"
@@ -65,7 +67,7 @@ CElem::CElem(const long Index):CCore(Index)
    angle = NULL;
    gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
    normal_vector = NULL;
-   area = -1.0; //WW
+   area = 1.0; //WW
 
 #ifdef RFW_FRACTURE
    Aperture_is_set=false;
@@ -101,7 +103,7 @@ CElem::CElem():CCore(0)
    tranform_tensor = NULL;
    angle = NULL;
    gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
-   area = -1.0; //WW area = 1.0
+   area = 1.0; //WW area = 1.0
    normal_vector = NULL;
 }
 /**************************************************************************
@@ -305,7 +307,7 @@ CElem::CElem( const long Index, CElem* m_ele_parent):CCore(Index)
       edges[i] = NULL;
       edges_orientation[i] = 1;
    }
-   area = -1.0; //WW
+   area = 1.0; //WW
 }
 
 /**************************************************************************
@@ -356,11 +358,11 @@ void CElem::FillTransformMatrix()
        // an arbitrary vector 
        for(i=0; i<3; i++)
          yy[i] = 0.0;
-	   if(fabs(xx[0])>0.0&&fabs(xx[1])+fabs(xx[2])<MKleinsteZahl)
+	   if(fabs(xx[0])>0.0&&fabs(xx[1])+fabs(xx[2])<DBL_MIN)  //WW. 06.11.2007
            yy[2] = 1.0;
-	   else if (fabs(xx[1])>0.0&&fabs(xx[0])+fabs(xx[2])<MKleinsteZahl)
+	   else if (fabs(xx[1])>0.0&&fabs(xx[0])+fabs(xx[2])<DBL_MIN)
            yy[0] = 1.0;
-	   else if (fabs(xx[2])>0.0&&fabs(xx[0])+fabs(xx[1])<MKleinsteZahl)
+	   else if (fabs(xx[2])>0.0&&fabs(xx[0])+fabs(xx[1])<DBL_MIN)
            yy[1] = 1.0;
 	   else
 	   {

@@ -31,8 +31,6 @@ extern string GetLineFromFile1(ifstream*);
 #include "femlib.h"
 #include "fem_ele.h"
 // FEMLib
-#include "rf_apl.h"
-#include "loop_pcs.h"
 #include "rf_tim_new.h"
 #include "rf_out_new.h"
 #include "rf_bc_new.h"
@@ -43,6 +41,15 @@ extern string GetLineFromFile1(ifstream*);
 #include "rf_msp_new.h"
 #include "rfmat_cp.h"
 #include "pcs_dm.h"
+#ifdef PROBLEM_CLASS //16.12.2008. WW
+#include "problem.h"
+Problem *aproblem = NULL;
+#else
+#include "rf_apl.h"
+#include "loop_pcs.h"
+#endif
+
+
 extern bool RFDOpen(string file_name_base);
 #include "rf_fct.h"
 #include "par_ddc.h"
@@ -137,6 +144,9 @@ CGeoSysDoc::CGeoSysDoc()
   m_bDataPCS = false;
   m_bReady2Run = false;
   m_nodes_elements = NULL; //OK
+#ifdef PROBLEM_CLASS //16.12.2008. WW
+  problem_win = NULL;
+#endif
 }
 
 CGeoSysDoc::~CGeoSysDoc()
@@ -163,6 +173,10 @@ CGeoSysDoc::~CGeoSysDoc()
   mmp_group_list.clear();
 
   //OnRemoveFEM(); can not be called here, otherwise the files will be modified.
+#ifdef PROBLEM_CLASS //16.12.2008. WW
+  delete problem_win;
+  problem_win = NULL;
+#else 
   GEOLIB_Clear_GeoLib_Data();
 
   PCSDelete();
@@ -177,6 +191,7 @@ CGeoSysDoc::~CGeoSysDoc()
   MMPDelete();
   MCPDelete();
   PCSDestroyAllProcesses();//Do not put this before PCSDelete, it will cause crash
+#endif
   //--------------------------------------------------
 }
 
@@ -301,6 +316,7 @@ Programing:
 01/2005 OK GSPRead/GSPReadWIN
 01/2005 OK Serialize: File-Save
 06/2005 OK modeless Control Panel
+12/2008 WW Replace the creation of PCS with the instance of the new class
 **************************************************************************/
 void CGeoSysDoc::Serialize(CArchive& ar)
 {
@@ -373,7 +389,12 @@ void CGeoSysDoc::Serialize(CArchive& ar)
       if(pcs_created)
       {
         pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Create PCS data");
+#ifdef PROBLEM_CLASS //16.12.2008. WW
+        problem_win = new Problem();
+        aproblem = problem_win;
+#else
         PCSCreate(); //WW
+#endif
         //PCSCreateNew(); //OK Create PCS
 		//REACTInit(); //OK Initialization of REACT structure for rate exchange between MTM2 and Reactions
         //PCSRestart(); //SB
@@ -876,7 +897,7 @@ void CGeoSysDoc::OnAddMSH()
   }
   // Config GSP data
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Config MSH data");
-  RFPre_Model();
+ //16.12.2008. WW  RFPre_Model();
   start_new_elems = ElListSize();
   ConfigTopology(); // max_dim for solver, elements to nodes relationships
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Ready");
@@ -1578,6 +1599,7 @@ Programing:
 12/2003 OK Implementation
 08/2004 OK PCS2 based on ExecuteRFTimeLoop
 09/2004 OK/RN Progress bar
+12/2008 WW New simulation class
 **************************************************************************/
 void CGeoSysDoc::OnSimulatorForward()
 {
@@ -1603,6 +1625,9 @@ void CGeoSysDoc::OnSimulatorForward()
     return; // TK
   }
   //========================================================================
+#ifdef PROBLEM_CLASS    //16.12.2008. WW
+  aproblem->Euler_TimeDiscretize();
+#else
   // PreTimeLoop
    // Create PCS processes
   //PCSCreate();
@@ -1789,10 +1814,11 @@ void CGeoSysDoc::OnSimulatorForward()
       m_PBSimulationStep.StepIt();
     }
   }
-  //======================================================================
-  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Simulation finished");
   m_ProgressBar.DestroyWindow();
   m_PBSimulationStep.DestroyWindow();
+#endif
+  //======================================================================
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Simulation finished");
 }
 
 /**************************************************************************

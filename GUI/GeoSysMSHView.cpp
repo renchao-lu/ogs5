@@ -642,7 +642,7 @@ void CGeoSysMSHView::OnMshLibTriangulation()
       if(fem_msh_vector.size()>0){
         theApp->g_graphics_modeless_dlg->m_iDisplayMSH = true;
         theApp->g_graphics_modeless_dlg->m_iDisplayMSHTri= true;
-        RFPre_Model(); //OK
+        //WW RFPre_Model(); //OK
         start_new_elems = ElListSize(); //OK
         ConfigTopology(); //OK
       }

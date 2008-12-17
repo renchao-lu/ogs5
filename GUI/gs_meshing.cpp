@@ -998,7 +998,7 @@ void CMSHSurfaces::OnBnClickedButtonMSHExecute()
         CGSProject* m_gsp = NULL;
         m_gsp = GSPGetMember("gli");
         GSPAddMember(m_gsp->base + ".msh");
-        RFPre_Model(); //OK
+        //WW RFPre_Model(); //OK
         start_new_elems = ElListSize(); //OK
         ConfigTopology(); //OK
       }
