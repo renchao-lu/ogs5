@@ -1121,7 +1121,8 @@ inline double Problem::OverlandFlow()
   if(!m_pcs->selected) return error; //12.12.2008 WW
 
   error = m_pcs->ExecuteNonLinear();
-  PCSCalcSecondaryVariables(); 
+  if(m_pcs->TimeStepAccept())
+    PCSCalcSecondaryVariables(); 
   return error;
 }
 
