@@ -793,7 +793,7 @@ bool Problem::CouplingLoop()
    print_result = false;
    int acounter = 0;
    //  
-   for(i=0; i<(int)pcs_vector.size(); i++) //WW/CB
+   for(i=0; i<(int)pcs_vector.size(); i++) 
      pcs_vector[i]-> UpdateTransientBC(); 
 
    for(i=0; i<(int)total_processes.size(); i++)      
@@ -1121,6 +1121,7 @@ inline double Problem::OverlandFlow()
   if(!m_pcs->selected) return error; //12.12.2008 WW
 
   error = m_pcs->ExecuteNonLinear();
+  PCSCalcSecondaryVariables(); 
   return error;
 }
 
