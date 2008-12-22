@@ -1197,14 +1197,14 @@ inline double Problem::MassTrasport()
 //				delete rc;
   if(KinReactData_vector.size() > 0) 
   {  // WW moved the following lines into this curly braces. 12.12.2008
-    ClockTimeVec[0]->StopTime("Transport");
-    ClockTimeVec[0]->StartTime();
+//SB4900    ClockTimeVec[0]->StopTime("Transport");
+//SB4900    ClockTimeVec[0]->StartTime();
     // Calculate Chemical reactions, after convergence of flow and transport 
     // Move inside iteration loop if couplingwith transport is implemented SB:todo
     // First calculate kinetic reactions
     KinReactData_vector[0]->ExecuteKinReact();
-    ClockTimeVec[0]->StopTime("KinReactions");
-    ClockTimeVec[0]->StartTime();
+    //SB4900 ClockTimeVec[0]->StopTime("KinReactions");
+    //SB4900 ClockTimeVec[0]->StartTime();
   }
   if(REACT_vec.size()>0) //OK
   {
@@ -1256,7 +1256,7 @@ inline double Problem::MassTrasport()
 #endif
 
   if(KinReactData_vector.size() > 0)  //12.12.2008 WW
-    ClockTimeVec[0]->StopTime("EquiReact");
+//SB4900    ClockTimeVec[0]->StopTime("EquiReact");
 
   return error; 
 }
