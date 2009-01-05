@@ -474,7 +474,7 @@ inline int Problem::AssignProcessIndex(CRFProcess *m_pcs,  bool activefunc)
   {
     if(!activefunc) return 9;
     total_processes[9] = m_pcs;
-    active_processes[9] = &Problem::HeatTransport;
+    active_processes[9] = &Problem::FluidMomentum;
     return 9;
   }         
   else if(m_pcs->pcs_type_name.compare("RANDOM_WALK")==0) 
