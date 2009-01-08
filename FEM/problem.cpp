@@ -1255,7 +1255,7 @@ inline double Problem::MassTrasport()
                 
 #endif
 
-  if(KinReactData_vector.size() > 0)  //12.12.2008 WW
+ // if(KinReactData_vector.size() > 0)  //12.12.2008 WW
 //SB4900    ClockTimeVec[0]->StopTime("EquiReact");
 
   return error; 
