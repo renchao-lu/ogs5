@@ -668,6 +668,7 @@ void Problem::PCSRestart()
 /**************************************************************************
 FEMLib-Method: 
 07/2008 WW Implementation
+01/2009 WW Update
 **************************************************************************/
 void Problem::Euler_TimeDiscretize()
 {
@@ -692,9 +693,9 @@ void Problem::Euler_TimeDiscretize()
     //
     // Minimum time step.
     dt = 1.0e20;
-    for(int i=0; i<(int)pcs_vector.size(); i++)      
+    for(int i=0; i<(int)active_process_index.size(); i++)   //09.01.2009. WW   
     {
-       m_tim = pcs_vector[i]->Tim;
+       m_tim = total_processes[active_process_index[i]]->Tim;
        dt0 = m_tim->CalcTimeStep(current_time);
        if(dt0<dt)
           dt = dt0;  
@@ -1018,7 +1019,7 @@ Modification:
 inline double Problem::TwoPhaseFlow()
 {
   double error = 1.0e+8;
-  CRFProcess *m_pcs;
+  CRFProcess *m_pcs = NULL;
   if(!m_pcs->selected) return error; //12.12.2008 WW
   //
   for(int i=0;i<(int)multiphase_processes.size();i++) //08.01.2009. WW
