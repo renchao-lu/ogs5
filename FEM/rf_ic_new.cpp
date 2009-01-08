@@ -740,7 +740,7 @@ void CInitialCondition::SetDomain(int nidx)
     //---------------------------------------------------------------------
     else //Get absolut path of the file. 07.01.2009. WW
     {
-      basic_string <char>::size_type indexChWin, indexChLinux; //WW
+      basic_string <char>::size_type indexChWin, indexChLinux; 
       indexChWin = indexChLinux = 0;
       indexChWin = FileName.find_last_of('\\');
       indexChLinux = FileName.find_last_of('/');

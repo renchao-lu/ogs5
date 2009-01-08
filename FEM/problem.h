@@ -56,6 +56,7 @@ class Problem
    // Processes
    vector<CRFProcess*> total_processes;
    vector<CRFProcess*> transport_processes;
+   vector<CRFProcess*> multiphase_processes;
    ProblemMemFn *active_processes;
    vector<int> active_process_index;
    vector<int> coupled_process_index;

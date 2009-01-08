@@ -554,6 +554,8 @@ void Problem::SetActiveProcesses()
     m_pcs = pcs_vector[i];
     if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0)
       transport_processes.push_back(m_pcs);
+    if(m_pcs->pcs_type_name.compare("TWO_PHASE_FLOW")==0)  //09.01.2008. WW
+      multiphase_processes.push_back(m_pcs);   
   }
  
 }
@@ -1011,20 +1013,25 @@ Programming:
 07/2008 WW Extract from LOPTimeLoop_PCS();
 Modification:
 12.2008 WW Update
+01.2008 WW Add phases
 -------------------------------------------------------------------------*/
 inline double Problem::TwoPhaseFlow()
 {
   double error = 1.0e+8;
-  CRFProcess *m_pcs = total_processes[3];
+  CRFProcess *m_pcs;
   if(!m_pcs->selected) return error; //12.12.2008 WW
   //
-  error = m_pcs->ExecuteNonLinear();
-  if(m_pcs->TimeStepAccept())
+  for(int i=0;i<(int)multiphase_processes.size();i++) //08.01.2009. WW
   {
+    m_pcs = multiphase_processes[i];
+    error = m_pcs->ExecuteNonLinear();
+    if(m_pcs->TimeStepAccept())
+    {
 #ifdef RESET_4410
-    PCSCalcSecondaryVariables(); 
+      PCSCalcSecondaryVariables(); 
 #endif
-    m_pcs->CalIntegrationPointValue(); 
+      m_pcs->CalIntegrationPointValue(); 
+    }
   }
   return error;
 }
