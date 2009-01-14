@@ -35,9 +35,9 @@ Output: A GeoSys format domain decomposition file (*.ddc).
 
 # DEFAULTS
 program="partdmesh"
-infile=./*.msh  # FIXME: assumes that there is only one .msh file
+infile=.  # defaults to current directory, the *.msh file is found later
 outfile=
-allgood=
+allgood=0
 
 # SUPPORTED PARTITIONING PROGRAMS
 PROGRAMS="partdmesh"                          # add new programs to this list
@@ -80,9 +80,8 @@ function checkDomains {
 }
 
 function checkInFileExists {
-  if [ -f "${infile}" ]; then       # it's a file
-    allgood=0                       # it's a directory
-    return 0
+  if [ -f "${infile}" ]; then       # its a file
+    return 0                        # its a directory
   elif [ -d "${infile}" ]; then
     let counter=0
     lof=`ls ${infile}/*.msh`        # get all the *.msh files
@@ -96,7 +95,7 @@ function checkInFileExists {
         fi
     done
   else 
-    echo -e "\nError: ${infile} is neither a mesh file or a directory containing one."
+    echo -e "\nError: ${infile} is neither a mesh file nor a directory containing one."
   fi
 }
 
@@ -128,7 +127,7 @@ function checkProgram {
 
 function partitionWithXpartdmesh
 {
-    m2g $GEOSYS_MESH_BASE 2                    # makes GEOSYS_PROJ_NAM.mesh
+    m2g $GEOSYS_MESH_BASE #2                   # makes GEOSYS_PROJ_NAM.mesh
     $program ${GEOSYS_MESH_BASE}.mesh $domains # makes .mesh.epart.{nDOMAINS}
                                                # ...and .mesh.npart.{nDOMAINS}
 
@@ -139,9 +138,9 @@ function partitionWithXpartdmesh
     echo -e "\nMesh decomposition file ${outfile:-${GEOSYS_MESH_BASE}.ddc} written."
 
     # clean up
-    rm ${GEOSYS_MESH_BASE}*[0-9].msh
-    rm ${GEOSYS_MESH_BASE}.mesh
-    rm ${GEOSYS_MESH_BASE}.mesh.{e,n}part.${domains}
+    rm ${GEOSYS_MESH_BASE}*[0-9].msh 2> /dev/null
+    rm ${GEOSYS_MESH_BASE}.mesh 2> /dev/null
+    rm ${GEOSYS_MESH_BASE}.mesh.{e,n}part.${domains} 2> /dev/null
 }
 
 # MAIN ___________________________________________
@@ -158,7 +157,7 @@ checkProgram
 checkInFileExists && checkFileIsMesh
 GEOSYS_MESH_BASE=${infile%*.msh}
 checkOutFileDoesNotExist
-if [[ ${allgood} ]]; then usage; exit 1; fi
+if (( ${allgood}==1 )); then usage; exit 1; fi
 
 # PARTITION THE MESH
 eval partitionWithX${program}  # done like this so that it can be extended with
