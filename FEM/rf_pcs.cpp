@@ -2793,7 +2793,7 @@ void CRFProcess::ConfigUnsaturatedFlow()
   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
   pcs_number_of_secondary_nvals++;
 //TEST
-#define DECOVALEX
+//#define DECOVALEX
 #ifdef DECOVALEX
   // DECOVALEX Test
   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE_I";

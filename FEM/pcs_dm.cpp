@@ -2410,12 +2410,25 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
       m_st = st_vector[k];
       if(m_st->pcs_pv_name.find("EXCAVATION")!=string::npos)
       {
-          ExcavDomainIndex.push_back(m_st->geo_type);
+          // ---- 16.01.2009 WW
+          exist = false;
+          for(j=k+1; j<SizeSt; j++)
+          {
+            if(m_st->geo_type==st_vector[j]->geo_type)
+            {
+              //
+              exist = true;
+              break;
+            }                     
+          }
+          if(!exist) 
+          //---   
+            ExcavDomainIndex.push_back(m_st->geo_type);
       }                     
    }
    SizeSubD = (int)ExcavDomainIndex.size();
    if(SizeSubD==0) return; //05.09.2007 WW
-
+   exist = false;   // 16.02
    // 1. De-active host domain to be exvacated
    actElements = 0;
    CElem* elem = NULL;

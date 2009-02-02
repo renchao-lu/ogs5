@@ -927,7 +927,7 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
   if(time_forward>0.0||fabs(time_forward)<DBL_MIN)
   {
     time_current += pcs_step;
-    step_current++; 
+//WW. 02.02.2009    step_current++; 
    	this_stepsize = dt_sum+dt0; 
     ontime = true;
     dt_sum = 0.0;
