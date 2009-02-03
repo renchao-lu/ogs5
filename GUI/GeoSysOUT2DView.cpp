@@ -26,8 +26,6 @@
 #include "nodes.h"
 #include "rf_out_new.h"
 #include "rf_pcs.h"
-#include "loop_pcs.h"
-#include "rf_apl.h"
 #include "rf_out_new.h"
 // GeoSys-GEOLib
 #include "geo_pnt.h"

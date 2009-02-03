@@ -11,8 +11,6 @@
 #include "rf_p.h"
 #include "elements.h"
 #include "files.h"
-#include "rf_apl.h"
-#include "loop_pcs.h"
 #include "solver.h"
 #include "rf_pcs.h"
 #include "femlib.h"
