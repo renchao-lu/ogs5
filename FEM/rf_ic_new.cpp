@@ -314,6 +314,7 @@ Programing:
 02/2004 OK Implementation
 01/2005 OK Extensions
 05/2005 OK PRIMARY_VARIABLE
+12/2008 NW GRADIENT keyword
 last modification:
 **************************************************************************/
 void CInitialCondition::Write(fstream* ic_file)
@@ -339,11 +340,17 @@ void CInitialCondition::Write(fstream* ic_file)
   *ic_file << "  ";
   *ic_file << dis_type_name;
   *ic_file << " ";
-  CNodeValue* m_node = NULL;
-  int node_value_vector_size = (int)node_value_vector.size();
-  if(node_value_vector_size>0){
-    m_node = node_value_vector[0];
-   *ic_file << m_node->node_value;
+  if (dis_type_name == "CONSTANT") {
+    CNodeValue* m_node = NULL;
+    int node_value_vector_size = (int)node_value_vector.size();
+    if(node_value_vector_size>0){
+      m_node = node_value_vector[0];
+     *ic_file << m_node->node_value;
+    }
+  } else if (dis_type_name == "GRADIENT") {
+    *ic_file << this->gradient_ref_depth << " ";
+    *ic_file << this->gradient_ref_depth_value << " ";
+    *ic_file << this->gradient_ref_depth_gradient;
   }
   //--------------------------------------------------------------------
   *ic_file << endl;

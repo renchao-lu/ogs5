@@ -603,7 +603,7 @@ void CFiniteElementStd::SetMaterial(int phase)
   if(PCSGet("LIQUID_FLOW")){
     FluidProp = MFPGet("LIQUID");
     if(!FluidProp)
-      cout << "Warning ..." << endl;
+      cout << "Warning: LIQUID was not found in fluid properties." << endl;
   }
   if(mfp_vector.size()>0){
     FluidProp = mfp_vector[0];

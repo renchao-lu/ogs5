@@ -457,6 +457,7 @@ Programing:
 01/2005 OK Extensions
 12/2005 OK DIS_TYPE
 12/2005 OK MSH_TYPE
+12/2008 NW DAT_TYPE
 **************************************************************************/
 void COutput::Write(fstream* out_file)
 {
@@ -513,6 +514,11 @@ void COutput::Write(fstream* out_file)
     *out_file << "  ";
     *out_file << msh_type_name << endl;
   }
+  //--------------------------------------------------------------------
+  // DAT_TYPE
+  *out_file << " $DAT_TYPE" << endl;
+  *out_file << "  ";
+  *out_file << dat_type_name << endl;
   //--------------------------------------------------------------------
 }
 
@@ -2648,6 +2654,7 @@ Task:
 Programing:
 04/2006 KG44 Implementation
 09/2006 KG44 Output for MPI - correct OUTPUT not yet implemented
+12/2008 NW Remove ios::app, Add PCS name to VTK file name
 **************************************************************************/
 void COutput::WriteDataVTK(int number)
 {
@@ -2668,7 +2675,10 @@ void COutput::WriteDataVTK(int number)
   //--------------------------------------------------------------------
   // File handling
   string vtk_file_name;
-  vtk_file_name = file_base_name + number_string ;
+  vtk_file_name = file_base_name;
+  if(pcs_type_name.size()>0) // PCS
+    vtk_file_name += "_" + pcs_type_name;
+  vtk_file_name += number_string ;
 
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
     sprintf(tf_name, "%d", myrank);
@@ -2677,7 +2687,7 @@ void COutput::WriteDataVTK(int number)
 #endif
   vtk_file_name += ".vtk";
   if(!new_file_opened) remove(vtk_file_name.c_str()); //KG44
-  fstream vtk_file (vtk_file_name.data(),ios::app|ios::out);
+  fstream vtk_file (vtk_file_name.data(),ios::out); //NW remove ios::app
   vtk_file.setf(ios::scientific,ios::floatfield);
   vtk_file.precision(12);
   if (!vtk_file.good()) return;
@@ -2767,7 +2777,7 @@ void COutput::WriteVTKElementData(fstream &vtk_file)
         switch(m_ele->GetElementType()){
 	    case 1:  // vtk_line=3
             vtk_file \
-		<< "2  " ;
+              << "2  " ;
             break;
 	    case 2:  // quadrilateral=9
             vtk_file \
@@ -2810,7 +2820,7 @@ void COutput::WriteVTKElementData(fstream &vtk_file)
         switch(m_ele->GetElementType()){
 	    case 1:  // vtk_line=3
             vtk_file \
-		<< "3  "<< endl ;
+              << "3  "<< endl ;
             break;
 	    case 2:  // quadrilateral=9
             vtk_file \
@@ -2923,7 +2933,8 @@ void COutput::WriteVTKValues(fstream &vtk_file)
   for(j=0;j<(int)ele_value_index_vector.size();j++)
   {
 // header now scalar data
-    vtk_file << "SCALARS " << m_pcs->pcs_primary_function_name[0] << " float 1" << endl;
+    vtk_file << "SCALARS " << ele_value_vector[j] << " float 1" << endl;
+//    vtk_file << "SCALARS " << m_pcs->pcs_primary_function_name[0] << " float 1" << endl;
     vtk_file << "LOOKUP_TABLE default" <<endl;
 	for(long i=0;i<(long)m_msh->ele_vector.size();i++)
     {
