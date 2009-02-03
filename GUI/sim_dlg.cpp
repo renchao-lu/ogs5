@@ -124,6 +124,7 @@ Task:
 Programing:
 01/2005 OK Implementation
 last modification: 
+12/2008 NW Add .msh
 **************************************************************************/
 BOOL CSimulator::OnInitDialog() 
 {
@@ -146,7 +147,12 @@ BOOL CSimulator::OnInitDialog()
       m_bCheckMSH = TRUE;
       m_strMSHFile = path_base_type.c_str();
       m_iNoMSH = (long)ElListSize();
+    } else if(m_gsp->type=="msh"){
+      m_bCheckMSH = TRUE;
+      m_strMSHFile = path_base_type.c_str();
+      m_iNoMSH = (int)fem_msh_vector.size(); // Number of mesh
     }
+
     if(m_gsp->type=="pcs"){
       m_bCheckPCS = TRUE;
       m_strPCSFile = path_base_type.c_str();

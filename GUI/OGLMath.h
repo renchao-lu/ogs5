@@ -431,9 +431,10 @@ class quaternion
 private:
 	static int counter;//!< counts how many quaternion objects are present
 protected:
-	real s;//!< the scalar part of a quaternion
+	//real s;//!< the scalar part of a quaternion
 	//oglvector v;//!< the oglvector part of a quaternion
 public:
+	real s;//!< the scalar part of a quaternion
 	oglvector v;//!< the oglvector part of a quaternion
 	quaternion();//!< default constructor
 	quaternion(const real& scal, const oglvector& vec);//!< constructs a quaternion from the scalar and oglvector components

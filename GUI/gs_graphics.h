@@ -151,6 +151,8 @@ public:
     bool m_bTimeSelectedAll;
     int m_levels;
     CString m_strPolylineName;
+    int m_iMATType; //OK
+    CFunction* m_fct; //OK
 // Überschreibungen
 	// Vom Klassen-Assistenten generierte virtuelle Funktionsüberschreibungen
 	//{{AFX_VIRTUAL(CGraphics)

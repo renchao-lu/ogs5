@@ -56,8 +56,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
     ON_UPDATE_COMMAND_UI(ID_SURFACE, OnUpdateSurfaceDlg) //OK
 	ON_COMMAND(ID_VOLUME, OnVolumeDlg)
     ON_UPDATE_COMMAND_UI(ID_VOLUME, OnUpdateVolumeDlg) //OK
-	ON_COMMAND(ID_MSH, OnMSHView)
-	ON_COMMAND(ID_PCS, OnPCSView)
+	//ON_COMMAND(ID_MSH, OnMSHView) NW
+	//ON_COMMAND(ID_PCS, OnPCSView) NW
 	ON_COMMAND(ID_CONTROL_PANEL, OnControlPanel) //OK
 	ON_COMMAND(ID_GEO, OnGEOView)
 	ON_COMMAND(ID_SELECT, OnSelectInPicking) //PCH
@@ -150,7 +150,7 @@ BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
 	// TODO: Modify the Window class or styles here by modifying
 	//  the CREATESTRUCT cs
 	// Create a window without min/max buttons or sizable border
-   cs.style = WS_OVERLAPPED | WS_SYSMENU | WS_BORDER | WS_MAXIMIZE | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
+   cs.style = WS_OVERLAPPED | WS_SYSMENU | WS_BORDER | WS_MAXIMIZE | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SIZEBOX; 
 
 	return CMDIFrameWnd::PreCreateWindow(cs);
 }
@@ -281,43 +281,46 @@ Task: Create MSH View
 Programing:
 01/2004 OK Implementation
 07/2005 OK Create MSHView only once
+01/2009 NW Comment out
 **************************************************************************/
 void CMainFrame::OnViewMSHCreate()
 {
-  CMultiDocTemplate	*pDocTemplate ;
-  CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
-  //----------------------------------------------------------------------
-  // Check wether a MSHView exists
-  if(m_bIsMSHViewOpen){ //OK
-    pDocTemplate = theApp->GetDocTemplate(DOCTEMPLATE_MSH_VIEW);
-	if(pDocTemplate!=NULL)
-	{
-	}
-    return;
-  }
-  m_bIsMSHViewOpen = true;
-  //----------------------------------------------------------------------
-	CMDIChildWnd* pActiveChild = MDIGetActive();
-	CDocument* pDocument;
-	if (pActiveChild == NULL ||
-			(pDocument = pActiveChild->GetActiveDocument()) == NULL) {
-		TRACE("Warnung:  Kein aktives Dokument f? WindowNew vorhanden\n");
-		AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
-		return; // Befehl ist fehlgeschlagen
-	}
-	// Wenn nicht, haben wir einen neuen Rahmen
-	CDocTemplate* pTemplate =
-		((CGeoSysApp*) AfxGetApp())->m_pMDTMSH;
-	ASSERT_VALID(pTemplate);
-	CFrameWnd* pFrame =
-		pTemplate->CreateNewFrame(pDocument, pActiveChild);
-	if (pFrame == NULL) {
-		TRACE("Warnung:  Neuer Rahmen konnte nicht erstellt werden\n");
-		AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
-		return; // Befehl ist fehlgeschlagen
-	}
-	pTemplate->InitialUpdateFrame(pFrame, pDocument);
-pTemplate->yesAlreadyOpen;
+	return;
+
+//  CMultiDocTemplate	*pDocTemplate ;
+//  CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
+//  //----------------------------------------------------------------------
+//  // Check wether a MSHView exists
+//  if(m_bIsMSHViewOpen){ //OK
+//    pDocTemplate = theApp->GetDocTemplate(DOCTEMPLATE_MSH_VIEW);
+//	if(pDocTemplate!=NULL)
+//	{
+//	}
+//    return;
+//  }
+//  m_bIsMSHViewOpen = true;
+//  //----------------------------------------------------------------------
+//	CMDIChildWnd* pActiveChild = MDIGetActive();
+//	CDocument* pDocument;
+//	if (pActiveChild == NULL ||
+//			(pDocument = pActiveChild->GetActiveDocument()) == NULL) {
+//		TRACE("Warnung:  Kein aktives Dokument f? WindowNew vorhanden\n");
+//		AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
+//		return; // Befehl ist fehlgeschlagen
+//	}
+//	// Wenn nicht, haben wir einen neuen Rahmen
+//	CDocTemplate* pTemplate =
+//		((CGeoSysApp*) AfxGetApp())->m_pMDTMSH;
+//	ASSERT_VALID(pTemplate);
+//	CFrameWnd* pFrame =
+//		pTemplate->CreateNewFrame(pDocument, pActiveChild);
+//	if (pFrame == NULL) {
+//		TRACE("Warnung:  Neuer Rahmen konnte nicht erstellt werden\n");
+//		AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
+//		return; // Befehl ist fehlgeschlagen
+//	}
+//	pTemplate->InitialUpdateFrame(pFrame, pDocument);
+//pTemplate->yesAlreadyOpen;
 }
 
 /**************************************************************************
@@ -388,27 +391,28 @@ Programing:
 **************************************************************************/
 void CMainFrame::OnViewFEMCreate()
 {
-	CMDIChildWnd* pActiveChild = MDIGetActive();
-	CDocument* pDocument;
-	if (pActiveChild == NULL ||
-			(pDocument = pActiveChild->GetActiveDocument()) == NULL) {
-		TRACE("Warnung:  Kein aktives Dokument f? WindowNew vorhanden\n");
-		AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
-		return; // Befehl ist fehlgeschlagen
-	}
-	// Wenn nicht, haben wir einen neuen Rahmen
-	CDocTemplate* pTemplate =
-		((CGeoSysApp*) AfxGetApp())->m_pMDTSecond;
-	ASSERT_VALID(pTemplate);
-	CFrameWnd* pFrame =
-		pTemplate->CreateNewFrame(pDocument, pActiveChild);
-	if (pFrame == NULL) {
-		TRACE("Warnung:  Neuer Rahmen konnte nicht erstellt werden\n");
-		AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
-		return; // Befehl ist fehlgeschlagen
-	}
-	pTemplate->InitialUpdateFrame(pFrame, pDocument);
+	return;
 
+	//CMDIChildWnd* pActiveChild = MDIGetActive();
+	//CDocument* pDocument;
+	//if (pActiveChild == NULL ||
+	//		(pDocument = pActiveChild->GetActiveDocument()) == NULL) {
+	//	TRACE("Warnung:  Kein aktives Dokument f? WindowNew vorhanden\n");
+	//	AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
+	//	return; // Befehl ist fehlgeschlagen
+	//}
+	//// Wenn nicht, haben wir einen neuen Rahmen
+	//CDocTemplate* pTemplate =
+	//	((CGeoSysApp*) AfxGetApp())->m_pMDTSecond;
+	//ASSERT_VALID(pTemplate);
+	//CFrameWnd* pFrame =
+	//	pTemplate->CreateNewFrame(pDocument, pActiveChild);
+	//if (pFrame == NULL) {
+	//	TRACE("Warnung:  Neuer Rahmen konnte nicht erstellt werden\n");
+	//	AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
+	//	return; // Befehl ist fehlgeschlagen
+	//}
+	//pTemplate->InitialUpdateFrame(pFrame, pDocument);
 }
 
 /**************************************************************************
@@ -908,12 +912,13 @@ GeoSysGUI-Method:
 Task: 
 Programing:
 06/2005 OK Implementation
+01/2009	NW Comment out
 **************************************************************************/
 void CMainFrame::OnMSHView()
 {
   //----------------------------------------------------------------------
   // Create MSHView
-  OnViewMSHCreate();
+  //OnViewMSHCreate();
 }
 
 /**************************************************************************
@@ -921,12 +926,13 @@ GeoSysGUI-Method:
 Task: 
 Programing:
 06/2005 OK Implementation
+01/2009	NW Comment out
 **************************************************************************/
 void CMainFrame::OnPCSView()
 {
   //----------------------------------------------------------------------
   // Create PCSView
-  OnViewFEMCreate();
+  //OnViewFEMCreate();
 }
 
 /**************************************************************************

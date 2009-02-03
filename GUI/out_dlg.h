@@ -61,6 +61,9 @@ public:
     CListBox m_LB_VAL_ELE;
     afx_msg void OnBnClickedValELEClear();
     afx_msg void OnBnClickedAddOUTime();
-    BOOL m_iDATType;
+    int m_iDATType;
     void UpdateList();
+//    afx_msg void OnBnClickedRadioDatType3();
+//    afx_msg void OnBnClickedRadioDatType1();
+    afx_msg void OnBnClickedOk();
 };

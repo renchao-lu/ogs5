@@ -47,7 +47,6 @@ CGeoSysFCTView::CGeoSysFCTView()
   m_dXmax = 1.0;
   m_dYmin = 0.0;
   m_dYmax = 1.0;
-/*
 //OK_MODELESS
   //----------------------------------------------------------------------
   m_graphics_dlg = new CGraphics;
@@ -62,7 +61,6 @@ CGeoSysFCTView::CGeoSysFCTView()
       m_graphics_dlg->m_LB_FCT.SetSel(i,TRUE);
   }
   //----------------------------------------------------------------------
-*/
 }
 
 CGeoSysFCTView::~CGeoSysFCTView()

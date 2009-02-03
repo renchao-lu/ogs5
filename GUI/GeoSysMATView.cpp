@@ -115,6 +115,7 @@ Programing:
 12/2003 OK Implementation
 05/2004 CC Modification
 05/2005 OK MMP
+01/2009 OK MFP
 **************************************************************************/
 void CGeoSysMATView::OnDraw(CDC* pDC)
 {
@@ -123,7 +124,7 @@ void CGeoSysMATView::OnDraw(CDC* pDC)
   CString m_strViewTitle;
   m_strViewTitle = " Material function: ";
   m_strViewTitle += m_dlg_modeless->m_strMATPropertyName;
-  m_strViewTitle += " of ";
+  m_strViewTitle += " -> ";
   m_strViewTitle += m_dlg_modeless->m_strMATGroupName;
   pDC->TextOut(0,0,m_strViewTitle);
   //----------------------------------------------------------------------
@@ -147,8 +148,19 @@ void CGeoSysMATView::OnDraw(CDC* pDC)
   m_graphics.DrawGridAxes(pDC);
   //-----------------------------------------------------------------------
   // Medium properties
-  if(!m_dlg_modeless->m_strMATPropertyName.IsEmpty()){
-    m_graphics.DrawMATFunction(pDC,m_dlg_modeless->m_mmp,m_dlg_modeless->m_strMATPropertyName);
+  switch(m_dlg_modeless->m_iMATType)
+  {
+    case 0: //MMP
+      if(!m_dlg_modeless->m_strMATPropertyName.IsEmpty())
+      {
+        m_graphics.DrawMATFunction(pDC,m_dlg_modeless->m_mmp,m_dlg_modeless->m_strMATPropertyName);
+      }
+      break;
+    case 1: //MFP
+        m_graphics.m_iMATType = m_dlg_modeless->m_iMATType;
+        m_graphics.m_fct = m_dlg_modeless->m_fct;
+        m_graphics.DrawMATFunction(pDC,m_dlg_modeless->m_mmp,m_dlg_modeless->m_strMATPropertyName);
+      break;
   }
   //-----------------------------------------------------------------------
 }

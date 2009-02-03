@@ -3158,7 +3158,7 @@ void CGraphics::DrawMATFunction(CDC*dc,CMediumProperties*m_mmp,CString m_strMATP
   int m_iNX = 100;
   double m_dDX = (m_dXmax-m_dXmin)/double(m_iNX);
   //04/2007 NW compilation
-  /*
+/*
   m_mmp->mode = 2;
   for(i=0;i<m_iNX-1;i++){
     x1 = m_dXmin + i*m_dDX;
@@ -3193,7 +3193,28 @@ void CGraphics::DrawMATFunction(CDC*dc,CMediumProperties*m_mmp,CString m_strMATP
     m_pnt.y = y2;
     DrawPointOffset(dc,&m_pnt);
   }
-	*/
+*/
+  switch(m_iMATType)
+  {
+    case 1: //MFP
+      for(i=0;i<m_fct->matrix_dimension[0];i++)
+      {
+        //................................................................
+        x1 = m_dXmin + i*m_dDX;
+        x2 = x1 + m_dDX;
+        y1 = m_fct->variable_data_vector[m_fct->matrix_dimension[0]+m_fct->matrix_dimension[1] + i][0];
+        y2 = m_fct->variable_data_vector[m_fct->matrix_dimension[0]+m_fct->matrix_dimension[1] + i+1][0];
+        //.................................................................
+        DrawLineOffset(x1,y1,x2,y2,dc);
+        m_pnt.x = x1;
+        m_pnt.y = y1;
+        DrawPointOffset(dc,&m_pnt);
+        m_pnt.x = x2;
+        m_pnt.y = y2;
+        DrawPointOffset(dc,&m_pnt);
+      }
+      break;
+  }
 }
 
 /**************************************************************************

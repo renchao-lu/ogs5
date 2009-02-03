@@ -2,6 +2,8 @@
 #include "afxwin.h"
 #include "GeoSysDoc.h"
 #include "rf_mmp_new.h"
+#include "rf_mfp_new.h"
+#include "rf_fct.h"
 // COutputObservation dialog
 
 class COutputObservation : public CDialog
@@ -131,4 +133,11 @@ public:
     CMediumProperties* m_mmp;
     afx_msg void OnEnChangeEditUmin();
     afx_msg void OnEnChangeEditUmax();
+    CComboBox m_CB_MFP; //OK
+    CFluidProperties* m_mfp; //OK
+	CFunction* m_fct; //OK
+    void OnCbnSelchangeComboMFP(); //OK
+    CComboBox m_CB_MFP_property; //OK
+    void OnCbnSelchangeComboMFPProperty(); //OK
+    int m_iMATType; //OK
 };

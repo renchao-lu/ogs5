@@ -75,6 +75,7 @@ public:
 // Operations
 public:
 	COLORREF m_ClearCol;
+	float m_RGB_Character[3];
 
 // Overrides
 	// ClassWizard generated virtual function overrides
@@ -255,6 +256,7 @@ public:
 	void SetIsoLineWidth(float Width);
 //-----------------------------------------------
 
+    afx_msg void OnEnvironmentCharactercolor();
 };
 
 

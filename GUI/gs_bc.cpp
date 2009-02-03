@@ -338,7 +338,7 @@ void CBoundaryConditions::OnBnClickedButtonCreate()
   if(m_bc->dis_type_name.compare("LINEAR")==0)
   {
     m_bc->dis_type = 2;
-    long ldummy; double ddummy;
+    long ldummy=0; double ddummy=0.0;
     in.str((string)m_strValues);
     in >> ldummy >> ddummy;
     m_bc->PointsHaveDistribedBC.push_back(ldummy);

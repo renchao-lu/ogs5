@@ -295,11 +295,13 @@
 #define ID_ADD_ELE_VALUE                1058
 #define IDC_BUTTON_ELE                  1058
 #define IDC_BUTTON_MOD_READ             1058
+#define IDC_RADIO_DIS_GRADIENT          1058
 #define IDC_LIST_POLYLINES_MSH          1059
 #define IDC_CHECK_DISPLAY_ObS_WELLS2    1059
 #define IDC_CHECK_AXIS                  1059
 #define ID_VAL_CLEAR                    1059
 #define IDC_BUTTON_UPDATE_TREE          1059
+#define IDC_RADIO_DIS_DATA_BASE         1059
 #define IDC_BUTTON_GEO2MSH              1060
 #define IDC_BUTTON_SELECT_ALL2          1060
 #define ID_VAL_ELE_CLEAR                1060
@@ -620,8 +622,12 @@
 #define IDC_MSHNODES_IN_POLYGON         1186
 #define IDC_COMBO_PCS_PV_NAME           1187
 #define IDC_CLEAR_SELECTION             1187
+#define IDC_COMBO_MMP_GROUP2            1187
+#define IDC_COMBO_MFP_PROPERTY          1187
 #define IDC_EDIT_MSH_NAME               1188
 #define IDC_MIN_MAX_EDGE_LENGTH         1188
+#define IDC_BUTTON_CREATE_GROUP2        1188
+#define IDC_BUTTON_IC_DLG_CLOSE         1188
 #define IDC_COMBO_MFP_STD               1189
 #define IDC_SELECT_ALL                  1189
 #define IDC_BUTTON_CREATE_MFP           1190
@@ -691,6 +697,7 @@
 #define IDC_UNSELECT                    1216
 #define IDC_EDIT_X_Max                  1217
 #define IDC_BUTTON_UPDATE_MD            1217
+#define IDC_RADIO_DAT_TYPE3             1217
 #define IDC_EDIT_BC_2                   1218
 #define IDC_EDIT_Y_Max                  1218
 #define IDC_BUTTON_DISTORT              1218
@@ -921,6 +928,7 @@
 #define IDC_CHECK_ST                    1250
 #define IDC_RADIO_METHOD_3              1250
 #define IDC_CHECK_MOD_H                 1250
+#define IDC_EDIT_DIS_GRADIENT_GRADIENT  1250
 #define IDC_LIST_SFC_NEW                1251
 #define IDC_CID                         1251
 #define IDC_CHECK_MFP                   1251
@@ -929,8 +937,11 @@
 #define IDC_CHECK_MSP                   1252
 #define IDC_EDIT4                       1252
 #define IDC_BUTTON_MOD_RUN              1252
+#define IDC_EDIT_DIS_REF_X              1252
+#define IDC_EDIT_DIS_GRADIENT_REF_X     1252
 #define IDC_RADIO_METHOD_5              1253
 #define IDC_BUTTON_MSH_EDITOR           1253
+#define IDC_EDIT_DIS_GRADIENT_REF_Y     1253
 #define IDC_CHECK_MCP                   1254
 #define IDC_RADIO_METHOD_6              1254
 #define IDC_BUTTON_MOD_DELETE_H         1254
@@ -945,6 +956,8 @@
 #define IDC_BUTTON_CREATE_NOD           1260
 #define IDC_BUTTON_CREATE_ELE           1261
 #define IDC_BUTTON_CREATE_MMP           1262
+#define IDC_RADIO_DIS_CONSTANT          1263
+#define IDC_EDIT_DIS_CONSTANT           1264
 #define IDC_EDIT_TS_1                   1301
 #define IDC_EDIT_TS_2                   1302
 #define IDC_EDIT_TS_3                   1303
@@ -1316,6 +1329,8 @@
 #define ID_IMPORT_FLAC_MESH             33086
 #define ID_IMPORT_FEFLOW                33087
 #define ID_IMPORT_MIKE                  33088
+#define ID_ENVIRONMENT_CHARACTERCOLOR   33089
+#define ID_ENVIRONMENT_COLOR            33090
 
 // Next default values for new objects
 // 
@@ -1323,8 +1338,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        178
-#define _APS_NEXT_COMMAND_VALUE         33089
-#define _APS_NEXT_CONTROL_VALUE         1263
+#define _APS_NEXT_COMMAND_VALUE         33091
+#define _APS_NEXT_CONTROL_VALUE         1265
 #define _APS_NEXT_SYMED_VALUE           104
 #endif
 #endif

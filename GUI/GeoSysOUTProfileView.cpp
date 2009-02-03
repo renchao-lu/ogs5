@@ -116,7 +116,7 @@ void CGeoSysOUTProfileView::OnDraw(CDC* pDC)
     return;
   CRFProcess* m_pcs = NULL;
   m_pcs = PCSGet(m_out->pcs_type_name);
-  m_pcs = pcs_vector[m_out->pcs_vector_number];//CC
+  //OK4802 m_pcs = pcs_vector[m_out->pcs_vector_number];//CC
   if(!m_pcs)
     return;
   //----------------------------------------------------------------------

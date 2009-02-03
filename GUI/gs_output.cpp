@@ -443,6 +443,7 @@ COUTMaterialProperties::COUTMaterialProperties(CWnd* pParent /*=NULL*/)
   m_dYmax = 1.0;
   m_dUmin = 0.0;
   m_dUmax = 1.0;
+  m_iMATType = -1; //
 }
 
 COUTMaterialProperties::~COUTMaterialProperties()
@@ -460,8 +461,9 @@ void COUTMaterialProperties::DoDataExchange(CDataExchange* pDX)
     DDX_Text(pDX, IDC_EDIT_UMAX, m_dUmax);
     DDX_Control(pDX, IDC_COMBO_MMP, m_CB_MMP);
     DDX_Control(pDX, IDC_COMBO_MMP_GROUP, m_CB_MMP_Group);
+    DDX_Control(pDX, IDC_COMBO_MFP, m_CB_MFP); //OK
+    DDX_Control(pDX, IDC_COMBO_MFP_PROPERTY, m_CB_MFP_property); //OK
 }
-
 
 BEGIN_MESSAGE_MAP(COUTMaterialProperties, CDialog)
     ON_CBN_SELCHANGE(IDC_COMBO_MMP, OnCbnSelchangeComboMMP)
@@ -471,8 +473,9 @@ BEGIN_MESSAGE_MAP(COUTMaterialProperties, CDialog)
     ON_BN_CLICKED(IDC_BUTTON_FCT_REFRESH, OnBnClickedButtonRefresh)
     ON_EN_CHANGE(IDC_EDIT_UMIN, OnEnChangeEditUmin)
     ON_EN_CHANGE(IDC_EDIT_UMAX, OnEnChangeEditUmax)
+    ON_CBN_SELCHANGE(IDC_COMBO_MFP, OnCbnSelchangeComboMFP)
+    ON_CBN_SELCHANGE(IDC_COMBO_MFP_PROPERTY, OnCbnSelchangeComboMFPProperty)
 END_MESSAGE_MAP()
-
 
 // COUTMaterialProperties message handlers
 
@@ -482,6 +485,7 @@ Task:
 Programing:
 02/2004 OK Implementation
 05/2005 OK MMP start
+01/2009 OK MFP
 **************************************************************************/
 BOOL COUTMaterialProperties::OnInitDialog() 
 {
@@ -489,6 +493,19 @@ BOOL COUTMaterialProperties::OnInitDialog()
   CDialog::OnInitDialog();
   //----------------------------------------------------------------------
   // MFP
+  m_CB_MFP.ResetContent();
+  for(i=0;i<(int)mfp_vector.size();i++){
+    m_mfp = mfp_vector[i];
+    m_CB_MFP.AddString(m_mfp->name.c_str());
+  }
+  m_CB_MFP.SetCurSel(0);
+  //......................................................................
+  m_CB_MFP_property.ResetContent();
+  m_CB_MFP_property.AddString("DENSITY");
+  m_CB_MFP_property.AddString("VISCOSITY");
+  m_CB_MFP_property.AddString("HEAT_CAPACITY");
+  m_CB_MFP_property.AddString("THERMAL_CONDUCTIVITY");
+  m_CB_MFP_property.SetCurSel(0);
   //----------------------------------------------------------------------
   // MMP
   m_CB_MMP_Group.ResetContent();
@@ -596,6 +613,7 @@ void COUTMaterialProperties::OnCbnSelchangeComboMMP()
 */
     }
   }
+  m_iMATType = 0; //OK
   UpdateData(FALSE);
 }
 
@@ -607,7 +625,42 @@ Programing:
 **************************************************************************/
 void COUTMaterialProperties::OnBnClickedButtonRefresh()
 {
-  OnCbnSelchangeComboMMP();
+  switch(m_iMATType)
+  {
+    //--------------------------------------------------------------------
+    case 0: //MMP
+      OnCbnSelchangeComboMMP();
+      break;
+    //--------------------------------------------------------------------
+    case 1: //MFP
+      if(!m_mfp)
+      {
+        AfxMessageBox("Warning in COUTMaterialProperties: no MFP data");
+        return;
+      }
+      // MFP property type
+      switch(m_strMATGroupName[0])
+      {
+        case 'D': // Density
+          break;
+      }
+      // MFP data type
+      switch(m_mfp->density_model)
+      {
+        case 10: // FCT
+          m_fct = FCTGet((string)m_strMATPropertyName);
+          if(!m_fct)
+            return;
+          m_dXmin = m_fct->variable_data_vector[0][0];
+          m_dXmax = m_fct->variable_data_vector[m_fct->matrix_dimension[0]-1][0];
+          m_dUmin = m_fct->variable_data_vector[m_fct->matrix_dimension[0]+m_fct->matrix_dimension[1]][0];
+          m_dUmax = m_fct->variable_data_vector[m_fct->matrix_dimension[0]+m_fct->matrix_dimension[1]+m_fct->matrix_dimension[0]-1][0];
+      }
+    //--------------------------------------------------------------------
+      break;
+    default:
+      AfxMessageBox("Warning in COUTMaterialProperties: no MAT type selected");
+  }
 }
 
 /**************************************************************************
@@ -667,4 +720,27 @@ void COUTMaterialProperties::OnEnChangeEditUmin()
 void COUTMaterialProperties::OnEnChangeEditUmax()
 {
   UpdateData(TRUE);
+}
+
+/**************************************************************************
+GUI-Method: 
+01/2009 OK Implementation
+**************************************************************************/
+void COUTMaterialProperties::OnCbnSelchangeComboMFP()
+{
+  m_CB_MFP.GetLBText(m_CB_MFP.GetCurSel(),m_strMATPropertyName);
+  m_mfp = MFPGet((string)m_strMATPropertyName);
+  if(!m_mfp)
+    AfxMessageBox("Warning in COUTMaterialProperties: no MFP data");
+  m_iMATType = 1;
+}
+
+/**************************************************************************
+GUI-Method: 
+01/2009 OK Implementation
+**************************************************************************/
+void COUTMaterialProperties::OnCbnSelchangeComboMFPProperty()
+{
+  m_CB_MFP_property.GetLBText(m_CB_MFP_property.GetCurSel(),m_strMATGroupName);
+  m_iMATType = 1;
 }

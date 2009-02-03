@@ -862,6 +862,7 @@ Task:
 Programing:
 11/2003 OK Implementation
 01/2005 OK MSHDestroy
+12/2008 NW Support .MSH
 **************************************************************************/
 void CGeoSysDoc::OnAddMSH()
 {
@@ -869,7 +870,7 @@ void CGeoSysDoc::OnAddMSH()
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Add MSH data");
   char input_text[MAX_ZEILE];
   // File dialog
-  CFileDialog fileDlg(TRUE, "rfi", NULL, OFN_ENABLESIZING," MSH Files (*.rfi)|*.rfi|| ");
+  CFileDialog fileDlg(TRUE, "msh", NULL, OFN_ENABLESIZING," MSH Files (*.msh)|*.msh|RFI Files (*.rfi)|*.rfi|| "); //NW
   if(fileDlg.DoModal()==IDOK){
     if(fileDlg.GetFileExt()=="rfi"){
       m_bDataMSH = TRUE;
@@ -893,13 +894,36 @@ void CGeoSysDoc::OnAddMSH()
       }
       // Serialize: Write GSP file
       OnFileSave();
+    } else if (fileDlg.GetFileExt()=="msh") {
+      m_bDataMSH = TRUE;
+      FILE *gsp_member_file_orig = NULL;
+      FILE *gsp_member_file_copy = NULL;
+      gsp_member_file_orig = fopen(fileDlg.GetPathName(),"rt"); 
+      if(gsp_member_file_orig){
+        // Copy file to project folder
+        gsp_member_file_copy = fopen(m_strGSPFilePathBase + ".msh","w+t");
+ 	    while (!feof(gsp_member_file_orig)){
+	      fgets(input_text,1024,gsp_member_file_orig);
+		  FilePrintString(gsp_member_file_copy,input_text); 
+	    }
+	    fclose(gsp_member_file_orig);
+	    fclose(gsp_member_file_copy);
+        // Add MSH member to GSP vector
+        GSPAddMember((string)m_strGSPFileBase + ".msh");
+        // Read MSH file
+        FEMRead((string)m_strGSPFilePathBase);
+      }
+      // Serialize: Write GSP file
+      OnFileSave();
     }
   }
   // Config GSP data
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Config MSH data");
  //16.12.2008. WW  RFPre_Model();
   start_new_elems = ElListSize();
-  ConfigTopology(); // max_dim for solver, elements to nodes relationships
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Config MSH data");
+  CompleteMesh();
+//  ConfigTopology(); // max_dim for solver, elements to nodes relationships
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Ready");
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
   m_frame->m_rebuild_formtree = 1;//TK - left tree in form view
@@ -1103,14 +1127,26 @@ Task:
 Programing:
 01/2004 TK project related file handling
 01/2005 OK MSHDestroy
+12/2008 NW Support .msh
 **************************************************************************/
 void CGeoSysDoc::OnRemoveMSH()
 {
   m_bDataMSH = FALSE;
-  // Destroy MSH data
-  MSHDestroy();
-  // Remove MSH member
-  GSPRemoveMemberFromProject("rfi");
+  if (GSPGetMember("rfi")!=NULL) {
+    // Destroy MSH data
+    MSHDestroy();
+    // Remove MSH member
+    GSPRemoveMemberFromProject("rfi");
+  } else if (GSPGetMember("msh")!=NULL) {
+    // Destroy MSH data
+    FEMDeleteAll();
+    //for (int i=0; i<(int)fem_msh_vector.size(); i++) {
+    //  delete fem_msh_vector[i];
+    //}
+    //fem_msh_vector.clear();
+    // Remove MSH member
+    GSPRemoveMemberFromProject("msh");
+  }
   // Update Views
   DestroyOGLViewData();
   CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();

@@ -179,6 +179,7 @@ BEGIN_MESSAGE_MAP(COGLView, COGLEnabledView)
 	ON_WM_KEYDOWN()
 
 	//}}AFX_MSG_MAP
+    ON_COMMAND(ID_ENVIRONMENT_CHARACTERCOLOR, &COGLView::OnEnvironmentCharactercolor)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -201,6 +202,10 @@ trackball((real).8,unitquaternion(DegToRad(45),Y_AXIS)*unitquaternion(DegToRad(-
     m_iDisplayBC = 0;
     move_distance = 0;
     df = 0;  
+    //Inital character color: Red  //NW
+    m_RGB_Character[0] = 1.0; 
+    m_RGB_Character[1] = 0.0;
+    m_RGB_Character[2] = 0.0;
 }
 
 COGLView::~COGLView()
@@ -431,7 +436,8 @@ void COGLView::OnDrawGL()
          { 
           if (gli_points_vector[j]->display_mode == 1)
           {
-		   glColor3f(1.0,1.0,1.0);
+//		   glColor3f(1.0,1.0,1.0);
+	       glColor4f(m_RGB_Character[0],m_RGB_Character[1],m_RGB_Character[2],1.0f); //NW
 		   //glRasterPos3d(m_image_distort_factor_x*view_points_vector[j]->x,m_image_distort_factor_y*view_points_vector[j]->y,m_image_distort_factor_z*view_points_vector[j]->z);
            glRasterPos3d(m_image_distort_factor_x* (-x_mid +  gli_points_vector[j]->x),
                          m_image_distort_factor_y* (-y_mid +  gli_points_vector[j]->y),
@@ -801,7 +807,7 @@ void COGLView::OnDrawGL()
         if(m_bc->display_mode)
         {
           m_msh->GetNODOnGEO(m_bc->geo_type_name,m_bc->geo_name,nodes_vector);
-          for(j=0;j<nodes_vector.size();j++)
+          for(j=0;j<(long)nodes_vector.size();j++)
           {
             xyz[0] = m_msh->nod_vector[nodes_vector[j]]->X();
             xyz[1] = m_msh->nod_vector[nodes_vector[j]]->Y();
@@ -866,7 +872,7 @@ void COGLView::OnDrawGL()
         if(m_st->display_mode)
         {
           m_msh->GetNODOnGEO(m_st->geo_type_name,m_st->geo_name,nodes_vector);
-          for(j=0;j<nodes_vector.size();j++)
+          for(j=0;j<(long)nodes_vector.size();j++)
           {
             xyz[0] = m_msh->nod_vector[nodes_vector[j]]->X();
             xyz[1] = m_msh->nod_vector[nodes_vector[j]]->Y();
@@ -936,41 +942,44 @@ void COGLView::OnDrawGL()
        else
        {
         GetMidPoint();
-        for(i=0;i<(long)fem_msh_vector[j]->ele_vector.size();i++)
+        const long ele_vector_size = (long) fem_msh_vector[j]->ele_vector.size();
+        CElem *wrk_ele = NULL;
+        for(i=0;i<ele_vector_size;i++)
          {
+             wrk_ele = fem_msh_vector[j]->ele_vector[i];
          	 /*LINES = 1*/ 
-             if (fem_msh_vector[j]->ele_vector[i]->GetElementType() == 1)
+             if (wrk_ele->GetElementType() == 1 && wrk_ele->matgroup_view == 0) //NW
 			 {
-			 Draw_LineWireFrame(j, i);
+                Draw_LineWireFrame(j, i);
 			 }
 			 /*RECTANGLES = 2*/ 
-			 if (fem_msh_vector[j]->ele_vector[i]->GetElementType() == 2)
+			 if (wrk_ele->GetElementType() == 2)
 			 {
-			 Draw_QuadWireFrame(j, i);
-                if (fem_msh_vector[j]->ele_vector[i]->selected == 1){
+                Draw_QuadWireFrame(j, i);
+                if (wrk_ele->selected == 1){
                     Draw_SelectedQuads(j,i);
                 }
 			 }
 			 /*HEXAHEDRA = 3*/ 
-			 if (fem_msh_vector[j]->ele_vector[i]->GetElementType() == 3)
+			 if (wrk_ele->GetElementType() == 3)
 			 {
-			 Draw_HexWireFrame(j, i);
+                Draw_HexWireFrame(j, i);
 			 }
 			 /*TRIANGLES = 4*/ 
-			 if (fem_msh_vector[j]->ele_vector[i]->GetElementType() == 4)
+			 if (wrk_ele->GetElementType() == 4)
 			 {
-			 Draw_TriWireFrame(j, i);
-                if (fem_msh_vector[j]->ele_vector[i]->selected == 1){
+                Draw_TriWireFrame(j, i);
+                if (wrk_ele->selected == 1){
                 Draw_SelectedTriangles(j,i);
                 }
      		 }
 			 /*TETRAHEDRAS = 5*/ 
-			 if (fem_msh_vector[j]->ele_vector[i]->GetElementType() == 5)
+			 if (wrk_ele->GetElementType() == 5)
 			 {
-			 Draw_TetWireFrame(j, i);
+                Draw_TetWireFrame(j, i);
 			 }
 			 /*PRISMS = 6*/ 
-			 if (fem_msh_vector[j]->ele_vector[i]->GetElementType() == 6)
+			 if (wrk_ele->GetElementType() == 6)
 			 {
 			 Draw_PrismWireFrame(j, i);
 			 }
@@ -1211,6 +1220,34 @@ void COGLView::OnDrawGL()
            p_Blue =  Get_Blue_Value(value_norm);
           }
            switch(fem_msh_vector[j]->ele_vector[i]->GetElementType()){
+            case 1: //lines: NW
+              value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
+              value_norm = (value-value_min)/(value_max-value_min);
+              Red =   Get_Red_Value(value_norm);
+              Green = Get_Green_Value(value_norm);
+              Blue =  Get_Blue_Value(value_norm);
+              glColor3f(Red,Green,Blue) ;
+              glLineWidth(1.0);
+	          glBegin(GL_LINES); 
+              glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->X())),
+                      m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Y())),
+                      m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Z())));
+	          glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->X())),
+                      m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Y())),
+                      m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Z())));
+	          glEnd();
+              ////Coloring points (temporal solution) //NW
+              //   glPointSize(8.0);
+              //   glBegin(GL_POINTS); 
+              //   glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->X())),
+              //           m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Y())),
+              //           m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Z())));
+              //   glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->X())),
+              //           m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Y())),
+              //           m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Z())));
+              //   glEnd();
+
+              break;
             case 4: // triangle
 
              if (m_selected_wire_frame == 1)
@@ -6447,7 +6484,8 @@ void COGLView::Draw_Node_Numbers(int msh_vector_position, int node_vector_positi
         glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
         GetMSHMinMax();
         char number [24];
-        glColor3f(1.0,0.0,0.0);
+        //glColor3f(1.0,0.0,0.0);
+        glColor4f(m_RGB_Character[0],m_RGB_Character[1],m_RGB_Character[2],1.0f); //NW
 		glRasterPos3d(m_image_distort_factor_x* (-x_mid +   m_nod->X()),
                       m_image_distort_factor_y* (-y_mid +   m_nod->Y()),
                       m_image_distort_factor_z* (-z_mid +   m_nod->Z()));
@@ -6624,4 +6662,26 @@ void COGLView::DrawPoint(int mode, double*x)
   bc_z = -z_mid + x[2];
   glVertex3d(m_image_distort_factor_x*bc_x,m_image_distort_factor_y*bc_y,m_image_distort_factor_z*bc_z);   		   
   glEnd();
+}
+
+/**************************************************************************
+GUILib-Method:
+12/2008 NW Implementation
+**************************************************************************/
+void COGLView::OnEnvironmentCharactercolor()
+{
+	CColorDialog dlg;
+	if (dlg.DoModal()!=IDOK)
+		return;
+
+    COLORREF color_Character=dlg.GetColor();	// for drawing button
+
+    float r=float(GetRValue(color_Character))/255;
+    float g=float(GetGValue(color_Character))/255;
+    float b=float(GetBValue(color_Character))/255;
+    this->m_RGB_Character[0] = r;
+    this->m_RGB_Character[1] = g;
+    this->m_RGB_Character[2] = b;
+
+    Invalidate(TRUE);
 }

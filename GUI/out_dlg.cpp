@@ -8,6 +8,7 @@ Programing:
 //
 #include "stdafx.h"
 #include "GeoSys.h"
+#include "MainFrm.h" //OK
 #include "out_dlg.h"
 // FEMLib
 #include "rf_out_new.h"
@@ -25,7 +26,7 @@ Programing:
 IMPLEMENT_DYNAMIC(CDialogOUT, CDialog)
 CDialogOUT::CDialogOUT(CWnd* pParent /*=NULL*/)
 	: CDialog(CDialogOUT::IDD, pParent)
-    , m_iDATType(FALSE)
+    , m_iDATType(0)
 {
   m_dTIMSteps = 1.0;
   m_iTIMType = 0;
@@ -51,7 +52,7 @@ void CDialogOUT::DoDataExchange(CDataExchange* pDX)
     DDX_Text(pDX, IDC_EDIT_TIM_VALUE, m_dTIMSteps);
     DDX_Control(pDX, IDC_LIST_VAL, m_LB_VAL_NOD);
     DDX_Control(pDX, IDC_LIST_VAL_ELE, m_LB_VAL_ELE);
-    DDX_Radio(pDX, IDC_RADIO_DAT_TYPE1, m_iDATType);
+//    DDX_Radio(pDX, IDC_RADIO_DAT_TYPE1, m_iDATType);
 }
 
 BEGIN_MESSAGE_MAP(CDialogOUT, CDialog)
@@ -76,6 +77,8 @@ BEGIN_MESSAGE_MAP(CDialogOUT, CDialog)
     //
     ON_BN_CLICKED(IDC_BUTTON_OUT_WRITE, OnBnClickedButtonWrite)
     //ON_BN_CLICKED(ID_ADD_NOD_VALUE, OnBnClickedAddNodValue)
+//    ON_BN_CLICKED(IDC_RADIO_DAT_TYPE3, &CDialogOUT::OnBnClickedRadioDatType3)
+//    ON_BN_CLICKED(IDC_RADIO_DAT_TYPE1, &CDialogOUT::OnBnClickedRadioDatType1)
 END_MESSAGE_MAP()
 
 // CDialogOUT message handlers
@@ -520,14 +523,13 @@ void CDialogOUT::OnBnClickedButtonCreate()
       break;
   }
   //......................................................................
-  switch(m_iDATType){
-    case 0:
+  if (((CButton*)GetDlgItem(IDC_RADIO_DAT_TYPE1))->GetCheck() == BST_CHECKED) {
       m_obj->dat_type_name = "TECPLOT";
-      break;
-    case 1:
+  } else if (((CButton*)GetDlgItem(IDC_RADIO_DAT_TYPE2))->GetCheck() == BST_CHECKED) {
       m_obj->dat_type_name = "ROCKFLOW";
-      break;
-    default:
+  } else if (((CButton*)GetDlgItem(IDC_RADIO_DAT_TYPE3))->GetCheck() == BST_CHECKED) {
+      m_obj->dat_type_name = "VTK";
+  } else {
       AfxMessageBox("No DAT type");
   }
   //......................................................................
@@ -719,5 +721,9 @@ void CDialogOUT::OnBnClickedAddNodValue()
 
 void CDialogOUT::OnOK()
 {
+  CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd(); //OK
+  mainframe->m_pcs_name = m_strPCSType;
+  //mainframe->m_variable_name =;
   CDialog::OnOK();
 }
+
