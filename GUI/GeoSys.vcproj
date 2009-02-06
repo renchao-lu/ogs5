@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="GeoSys"
 	ProjectGUID="{A55509E7-0142-4424-B24F-4BD977C2FC26}"
 	Keyword="MFCProj"
@@ -20,7 +20,7 @@
 			IntermediateDirectory=".\Release"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			UseOfMFC="0"
+			UseOfMFC="2"
 			UseOfATL="2"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
@@ -50,9 +50,9 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="../gui;../fem;../lib;../msh;../msh/tm;../msh/delaunay;../geo;../;../gui/splitter;../gui/iso;..\MSH\NW"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;MFC;_FEMPCHDEBUG_;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;PROBLEM_CLASS"
 				StringPooling="true"
-				RuntimeLibrary="2"
+				RuntimeLibrary="3"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="stdafx.h"
@@ -82,6 +82,8 @@
 				OutputFile=".\Release/TestGL.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="..\LIB"
+				DelayLoadDLLs="shapelib.dll;fdelaun2d.dll;fdelaun3d.dll;"
 				TypeLibraryFile="..\lib"
 				ProgramDatabaseFile=".\Release/TestGL.pdb"
 				SubSystem="2"
