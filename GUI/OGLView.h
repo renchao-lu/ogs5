@@ -262,8 +262,8 @@ public:
 
 
 #ifndef _DEBUG  // debug version in OGLView.cpp
-inline COGLDoc* COGLView::GetDocument()
-   { return (COGLDoc*)m_pDocument; };
+inline CGeoSysDoc* COGLView::GetDocument()
+   { return (CGeoSysDoc*)m_pDocument; };
 #endif
 
 /////////////////////////////////////////////////////////////////////////////

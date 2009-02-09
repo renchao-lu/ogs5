@@ -49,7 +49,7 @@ CGLVolume *geo_volume = NULL;
 vector<CGLVolume*>::iterator pv /*= NULL*/;//HS 15.06.2007
 
 CBoundaryCondition *m_bc = NULL;
-list<CBoundaryCondition*>::const_iterator p_bc = NULL;
+list<CBoundaryCondition*>::const_iterator p_bc;
 
 CMATGroupsControl *m_material_groups = NULL;
 vector<CMATGroupsControl*> material_groups_vector;

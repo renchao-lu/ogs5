@@ -222,8 +222,8 @@ private:
 };
 
 #ifndef _DEBUG  // debug version in OpenGLMDIView.cpp
-inline COGLDoc* COGLPickingView::GetDocument()
-   { return (COGLDoc*)m_pDocument; }
+inline CGeoSysDoc* COGLPickingView::GetDocument()
+   { return (CGeoSysDoc*)m_pDocument; }
 #endif
 
 /////////////////////////////////////////////////////////////////////////////

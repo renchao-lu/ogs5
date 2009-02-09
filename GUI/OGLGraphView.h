@@ -76,8 +76,8 @@ public:
 
 
 #ifndef _DEBUG  // debug version in OGLGraphView.cpp
-inline COGLDoc* COGLGraphView::GetDocument()
-   { return (COGLDoc*)m_pDocument; };
+inline CGeoSysDoc* COGLGraphView::GetDocument()
+   { return (CGeoSysDoc*)m_pDocument; };
 #endif
 
 class CViewElementQuality
