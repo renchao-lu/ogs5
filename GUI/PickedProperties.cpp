@@ -295,7 +295,7 @@ void PickedProperties::ListGLINodeSelected()
 
 void PickedProperties::ListGLINodeAll()
 {
-	CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
+	//CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
 	LV_ITEM lvitem;
     CGLPoint* thisGLIPoint = NULL;
 
@@ -584,7 +584,7 @@ void PickedProperties::ListParticleSelected()
 	int numOfItems = 11;
 
 	// Open the gate to processes 
-	CRFProcess* m_pcs = NULL;
+	//CRFProcess* m_pcs = NULL;
     m_msh = fem_msh_vector[0];
 
     m_SmallList.InsertColumn (0, "Count");
@@ -1173,7 +1173,7 @@ void PickedProperties::ListPolylineSelected()
 	{
 		CGLPolyline thisPolyline = *(polyline_vector[theApp->polylinePickedTotal[i]]);
 		if(numOfPointsInThisPolyline < thisPolyline.point_vector.size())
-			numOfPointsInThisPolyline = thisPolyline.point_vector.size();
+			numOfPointsInThisPolyline = (int)thisPolyline.point_vector.size();
 	}
 	numOfItems += numOfPointsInThisPolyline;
 	for(int i=0; i<numOfPointsInThisPolyline; ++i)
@@ -1234,7 +1234,7 @@ void PickedProperties::ListPolylineSelected()
 void PickedProperties::ListPolylineAll()
 {
 
-    CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
+    //CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
 	LV_ITEM lvitem;
     CGLPolyline* thisPolyline = NULL;
 
@@ -1331,7 +1331,7 @@ void PickedProperties::ListSurfaceSelected()
 
 void PickedProperties::ListSurfaceAll()
 {
-    CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
+    //CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
 	LV_ITEM lvitem;
     Surface* thisSurface = NULL;
 
@@ -1429,7 +1429,7 @@ void PickedProperties::ListVolumeSelected()
 
 void PickedProperties::ListVolumeAll()
 {
-	CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
+	//CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
 	LV_ITEM lvitem;
     CGLVolume* thisVolume = NULL;
 

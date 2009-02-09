@@ -1209,6 +1209,11 @@ void COGLView::OnDrawGL()
         }
         for(i=0;i<(long)fem_msh_vector[j]->ele_vector.size();i++)
         {
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
+
          if (fem_msh_vector[j]->ele_vector[i]->matgroup_view == 1)
          {
           if(m_permeability_value_color==1)
@@ -1254,6 +1259,12 @@ void COGLView::OnDrawGL()
              {
                Draw_TriWireFrame(j,i);
              }
+
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
+
               glBegin(GL_TRIANGLES) ;
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
               value_norm = (value-value_min)/(value_max-value_min);
@@ -1321,6 +1332,12 @@ void COGLView::OnDrawGL()
              {
                Draw_QuadWireFrame(j,i);
              }
+
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
+
 	          glBegin(GL_QUADS) ;
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
               value_norm = (value-value_min)/(value_max-value_min);
@@ -1398,6 +1415,12 @@ void COGLView::OnDrawGL()
              {
                Draw_TetWireFrame(j,i);
              }
+
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
+
               glBegin(GL_TRIANGLES) ; /*TRI1*/ 
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
               value_norm = (value-value_min)/(value_max-value_min);
@@ -1451,6 +1474,12 @@ void COGLView::OnDrawGL()
                 glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Z())));
             }
                 glEnd() ;
+
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
+
 
 	          glBegin(GL_TRIANGLES) ; /*TRI2*/ 
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
@@ -1506,6 +1535,12 @@ void COGLView::OnDrawGL()
             }
                glEnd() ;
 
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
+
+
 	          glBegin(GL_TRIANGLES) ; /*TRI3*/ 
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
               value_norm = (value-value_min)/(value_max-value_min);
@@ -1559,6 +1594,12 @@ void COGLView::OnDrawGL()
                 glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(2)->Z())));
             }
                 glEnd() ;
+
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
+
 
 	          glBegin(GL_TRIANGLES) ; /*TRI4*/ 
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
@@ -1622,6 +1663,12 @@ void COGLView::OnDrawGL()
              {
                Draw_PrismWireFrame(j,i);
              }
+
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
+
 	          glBegin(GL_TRIANGLES) ; /*TRI1*/ 
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
               value_norm = (value-value_min)/(value_max-value_min);
@@ -1676,6 +1723,12 @@ void COGLView::OnDrawGL()
             }
              glEnd() ;
 
+
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
+
 	          glBegin(GL_TRIANGLES) ; /*TRI2*/ 
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
               value_norm = (value-value_min)/(value_max-value_min);
@@ -1729,6 +1782,12 @@ void COGLView::OnDrawGL()
 			 glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(5)->Z())));
             }
               glEnd() ;
+
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
+
 
               glBegin(GL_QUADS); /*QUAD1*/ 
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
@@ -1797,6 +1856,12 @@ void COGLView::OnDrawGL()
             }
               glEnd() ;
 
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
+
+
               glBegin(GL_QUADS); /*QUAD2*/ 
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
               value_norm = (value-value_min)/(value_max-value_min);
@@ -1863,6 +1928,12 @@ void COGLView::OnDrawGL()
              glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Z())));
             }
               glEnd() ;
+
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
+
 
               glBegin(GL_QUADS); /*QUAD3*/ 
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
@@ -1939,6 +2010,11 @@ void COGLView::OnDrawGL()
              {
                Draw_HexWireFrame(j,i);
              }
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
+
 	          glBegin(GL_QUADS) ; /*Quad1*/ 
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
               value_norm = (value-value_min)/(value_max-value_min);
@@ -2009,6 +2085,11 @@ void COGLView::OnDrawGL()
              glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(3)->Z())));
             }
              glEnd() ;
+
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
 
 	          glBegin(GL_QUADS) ; /*Quad2*/ 
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
@@ -2081,6 +2162,11 @@ void COGLView::OnDrawGL()
             }
              glEnd() ;
 
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
+
               glBegin(GL_QUADS); /*QUAD3*/ 
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
               value_norm = (value-value_min)/(value_max-value_min);
@@ -2152,7 +2238,12 @@ void COGLView::OnDrawGL()
             }
              glEnd() ;
 
-              glBegin(GL_QUADS); /*QUAD4*/ 
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
+
+             glBegin(GL_QUADS); /*QUAD4*/ 
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
@@ -2222,6 +2313,11 @@ void COGLView::OnDrawGL()
              glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->X())),m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->Y())),m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(4)->Z())));
             }
              glEnd() ;
+
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
 
               glBegin(GL_QUADS); /*QUAD5*/ 
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
@@ -2294,7 +2390,12 @@ void COGLView::OnDrawGL()
             }
              glEnd() ;
 
-              glBegin(GL_QUADS); /*QUAD6*/ 
+             glDisable(GL_BLEND);
+             glEnable(GL_POLYGON_OFFSET_FILL); 
+             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+             glPolygonOffset(1.0,1.0); 
+
+             glBegin(GL_QUADS); /*QUAD6*/ 
               value = fem_msh_vector[j]->ele_vector[i]->GetPatchIndex();
               value_norm = (value-value_min)/(value_max-value_min);
                 Red =   Get_Red_Value(value_norm);
@@ -2384,8 +2485,6 @@ void COGLView::OnDrawGL()
 //////////////////////////////////////////////////////////////////////////
  CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
 /*PCS-FEM-ContourPlot*/ 
-int n;
-int nidx;
 int onZ = 0;
 if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
   {

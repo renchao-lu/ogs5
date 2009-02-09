@@ -179,7 +179,7 @@ void COGLPickingView::OnCreateGL()
 	// prepare a bunch of line segments (carthesian axes arrows)
 	StartStockDListDef();
 
-	double xT = -0.8f, yT = -0.9f;
+	//double xT = -0.8f, yT = -0.9f;
 	
 	glBegin(GL_LINES);
 		// Red x axis arrow
@@ -623,7 +623,7 @@ void COGLPickingView::DrawVectorOnCrossroads(void)
 	{
 		// Find the index of crossroads
 		int crossIndex = 0;
-		for(int p=0; p< m_msh->fm_pcs->crossroads.size(); ++p)
+		for(int p=0; p< ((int)m_msh->fm_pcs->crossroads.size()); ++p)
 		{
 			if(theApp.RFInodePickedTotal[i] == m_msh->fm_pcs->crossroads[p]->Index)
 				crossIndex = p;
@@ -930,6 +930,7 @@ void COGLPickingView::DrawGDebugScene(GLenum mode)
 	// Open the gate to processes 
     m_pcs = PCSGet("FLUID_MOMENTUM");
 	m_msh = m_pcs->m_msh;
+    mode = mode;
   
 	double SquareOfMaximumOfMagnitudeOfVector = 0.0;
     SquareOfMaximumOfMagnitudeOfVector = GetSquareOfMaximumOfMagnitudeOfVector();
@@ -943,7 +944,6 @@ void COGLPickingView::DrawGDebugScene(GLenum mode)
 		if (m_ele->GetElementType() == 4)
 		{
 			double N1[3], N2[3], N3[3];
-			double XYx[3], XYy[3], XYz[3];
 			double x[3], y[3], z[3];
 
 			N1[0] = m_msh->nod_vector[m_ele->GetNodeIndex(0)]->X();
@@ -993,7 +993,7 @@ void COGLPickingView::DrawGDebugScene(GLenum mode)
 			{
 				// Find the crossroad index
 				CrossRoad* crossroad = NULL;
-				for(int k=0; k< m_msh->fm_pcs->crossroads.size(); ++k)
+				for(int k=0; k< (int)m_msh->fm_pcs->crossroads.size(); ++k)
 				{
 					if( m_msh->fm_pcs->crossroads[k]->Index == m_ele->GetNodeIndex(j) )
 						crossroad = m_msh->fm_pcs->crossroads[k];
@@ -3329,11 +3329,11 @@ void COGLPickingView::OnSelectAllInPicking()
 		// get the number of gli points from COGLPickingView
 		// Let's open the door to COGLPickingView
 		// Update the change by redrawing
-		CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+		//CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
 		// Get the active MDI child window.
-		CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+		//CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
 		// Get the active view attached to the active MDI child window.
-		COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
+		//COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
 
         // This is termperary measure only for single mesh cass
         m_msh = fem_msh_vector[0];
@@ -3350,11 +3350,11 @@ void COGLPickingView::OnSelectAllInPicking()
 
 		// Let's open the door to COGLPickingView
 		// Update the change by redrawing
-		CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+		//CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
 		// Get the active MDI child window.
-		CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+		//CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
 		// Get the active view attached to the active MDI child window.
-		COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
+		//COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
 
         // Getting the number of polylines
         int numberOfPolylines = (int)polyline_vector.size();//CC

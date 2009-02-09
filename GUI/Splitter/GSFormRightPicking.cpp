@@ -190,7 +190,7 @@ void CGSFormRightPicking::OnBnClickedInorout()
 {
     int InOrOut = 100; // Just for test
     CFEMesh* m_msh = fem_msh_vector[0];      // This is because FEM is not executed. Something should be done later.
-    CElem* m_ele = m_msh->ele_vector[theApp.elementPickedTotal[0]];
+    //CElem* m_ele = m_msh->ele_vector[theApp.elementPickedTotal[0]];
     
     int count = 0;
     for(int i=0; i< m_msh->PT->numOfParticles; ++i)
@@ -221,10 +221,9 @@ void CGSFormRightPicking::OnBnClickedInorout()
 */
   
     m_msh->PT->InterpolateVelocityOfTheParticleByInverseDistance(&(m_msh->PT->X[0].Now));
-    double vx = m_msh->PT->X[0].Now.Vx; double vy = m_msh->PT->X[0].Now.Vy; double vz = m_msh->PT->X[0].Now.Vz;
+    //double vx = m_msh->PT->X[0].Now.Vx; double vy = m_msh->PT->X[0].Now.Vy; double vz = m_msh->PT->X[0].Now.Vz;
     
 
-    double ok = 1.0;
     
 }
 void CGSFormRightPicking::OnBnClickedReadpct()
@@ -254,7 +253,7 @@ void CGSFormRightPicking::OnBnClickedCinele()
 
 	RandomWalk* RW = NULL;
 	RW = m_msh->PT;
-	int numOfElement = m_msh->ele_vector.size();
+	int numOfElement = (int)m_msh->ele_vector.size();
 
 	// Temp store for concentrations
 	double* conc = NULL;
@@ -345,7 +344,7 @@ void CGSFormRightPicking::OnBnClickedElefromnode()
 	for(int i=0; i<theApp.hitsRFINodeTotal; ++i)
 	{
 		CNode* thisNode = m_msh->nod_vector[theApp.RFInodePickedTotal[i]];
-		int NumOfNeighborElements = thisNode->connected_elements.size();
+		int NumOfNeighborElements = (int)thisNode->connected_elements.size();
 	
 		for(int j=0; j<NumOfNeighborElements; ++j)
 		{
@@ -376,7 +375,7 @@ void CGSFormRightPicking::OnBnClickedElefromedge()
 		for(int i=0; i<theApp.hitsRFINodeTotal; ++i)
 		{
 			CNode* thisNode = m_msh->nod_vector[theApp.RFInodePickedTotal[i]];
-			int NumOfNeighborElements = thisNode->connected_elements.size();    
+			int NumOfNeighborElements = (int)thisNode->connected_elements.size();    
 	
 			for(int j=0; j<NumOfNeighborElements; ++j)
 			{
@@ -532,7 +531,7 @@ void CGSFormRightPicking::OnBnClickedNodbyparticle()
 #define PATCH
 void CGSFormRightPicking::OnBnClickedPickplane()
 {
-	double tolerance = 1e-1;
+	//double tolerance = 1e-1;
 	// Mount the mesh and the picked element
 	CFEMesh* m_msh = fem_msh_vector[0];
 	CElem* theEle = NULL;
@@ -565,7 +564,7 @@ void CGSFormRightPicking::OnBnClickedPickplane()
 #endif			
 #ifdef PATCH
 		// Select by patch number
-		int patch = anEle->GetPatchIndex();
+		//int patch = anEle->GetPatchIndex();
 		if(anEle->GetPatchIndex() == 2)
 #endif
 		{
