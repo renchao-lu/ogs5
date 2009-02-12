@@ -182,6 +182,7 @@ class CFiniteElementStd:public CElement
      inline double CalCoefMass();
      inline double CalCoefMass2(int dof_index); // 25.2.2007 WW 
      inline void CalCoefLaplace(bool Gravity, int ip=0);
+	 inline void CalCoefLaplaceMultiphase(int phase, int ip=0); // 10 2008 PCH
      inline void CalCoefLaplace2(bool Gravity, int dof_index);
      inline double CalCoefAdvection(); //SB4200 OK/CMCD
      inline double CalCoefStorage(); //SB4200
@@ -218,6 +219,7 @@ class CFiniteElementStd:public CElement
 	 void AssembleMassMatrix(); // PCH
      // Assembly of RHS by Darcy's gravity term
      void Assemble_Gravity();
+	 void Assemble_Gravity_Multiphase();
      // Assembly of RHS by temperature for m-phase flow 27.2.2007 WW
      void Assemble_RHS_T_MPhaseFlow();
      // Assembly of RHS by deformation. 27.2.2007 WW
@@ -226,6 +228,8 @@ class CFiniteElementStd:public CElement
      void Assemble_DualTransfer();
      bool check_matrices; //OK4104
      void AssembleRHSVector(); //OK
+	 void AssembleCapillaryEffect(); // PCH
+	 void PrintTheSetOfElementMatrices(string mark); // PCH for debugging
      // Friend classes, 01/07, WW
      friend class ::CMediumProperties;
      friend class SolidProp::CSolidProperties;

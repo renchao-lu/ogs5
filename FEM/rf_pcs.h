@@ -286,6 +286,7 @@ public:
     int type;
     int GetObjType() {return type;}
     int pcs_component_number; //SB: counter for transport components
+		int ML_Cap;	// 23.01 2009 PCH
     int GetProcessComponentNumber() const { return pcs_component_number;} //SB:namepatch
     string file_name_base; //OK
     // Access to PCS

@@ -1019,7 +1019,7 @@ Modification:
 inline double Problem::TwoPhaseFlow()
 {
   double error = 1.0e+8;
-  CRFProcess *m_pcs = NULL;
+  CRFProcess *m_pcs = total_processes[3];
   if(!m_pcs->selected) return error; //12.12.2008 WW
   //
   for(int i=0;i<(int)multiphase_processes.size();i++) //08.01.2009. WW
@@ -1028,9 +1028,7 @@ inline double Problem::TwoPhaseFlow()
     error = m_pcs->ExecuteNonLinear();
     if(m_pcs->TimeStepAccept())
     {
-#ifdef RESET_4410
       PCSCalcSecondaryVariables(); 
-#endif
       m_pcs->CalIntegrationPointValue(); 
     }
   }
@@ -1926,43 +1924,7 @@ void Problem::PCSCalcSecondaryVariables()
       // do nothing
       break;
     case 12: /* Multi-phase flow process */
-#ifdef RESET_4410
-        double p_gas,p_liquid,p_cap;
         MMPCalcSecondaryVariablesNew(m_pcs);
-        if(pcs_cpl)
-        {
-          m_pcs_phase_1 = pcs_vector[0]; // "PRESSURE1"
-          m_pcs_phase_2 = pcs_vector[1]; // "SATURATION2"
-          //--------------------------------------------------------------
-          // 5.3.2 Phasendruck fuer 2. Phase: p^l = p^g - p_c(S)
-          ndx_p_gas_old = m_pcs_phase_1->GetNodeValueIndex("PRESSURE1");
-          ndx_p_gas_new = ndx_p_gas_old + 1;
-          ndx_p_liquid_old = m_pcs_phase_1->GetNodeValueIndex("PRESSURE2");
-          ndx_p_liquid_new = ndx_p_liquid_old + 1;
-          ndx_p_cap_old = m_pcs_phase_1->GetNodeValueIndex("PRESSURE_CAP");
-          //ndx_sg_old = m_pcs_phase_2->GetNodeValueIndex("SATURATION1");
-          for(j=0;j<(long)m_pcs_phase_1->m_msh->nod_vector.size();j++) 
-          {
-            p_gas = m_pcs_phase_1->GetNodeValue(j,ndx_p_gas_old);
-            p_cap = m_pcs_phase_1->GetNodeValue(j,ndx_p_cap_old);
-            p_liquid = p_gas - p_cap;
-            //CB m_pcs_phase_2 is incorrect pcs, secondary variable with indices 2, 3: SATURATION1(0) SATURATION1(1)
-            //m_pcs_phase_2->SetNodeValue(j,ndx_p_liquid_old,p_liquid); 
-            //m_pcs_phase_2->SetNodeValue(j,ndx_p_liquid_new,p_liquid);  
-            m_pcs_phase_1->SetNodeValue(j,ndx_p_liquid_old,p_liquid); 
-            m_pcs_phase_1->SetNodeValue(j,ndx_p_liquid_new,p_liquid); 
-          }
-          pcs_cpl = false;
-        }
-        //if(aktueller_zeitschritt<1)
-        //{
-        //  int ndx_sl_old = m_pcs_phase_2->GetNodeValueIndex("SATURATION2");
-        //  int ndx_sl_new = ndx_sl_old+1;
-        //  m_pcs_phase_2->SetNodeValue(0,ndx_sl_old,0.2);
-        //  m_pcs_phase_2->SetNodeValue(0,ndx_sl_new,0.2);
-        //}
-        m_pcs->WriteAllVariables();
-#endif
         break;
 	default:
 		cout << "PCSCalcSecondaryVariables - nothing to do" << endl;

@@ -41,6 +41,10 @@ using SolidProp::CSolidProperties;
 // MSHLib
 #include "msh_lib.h"
 
+#define noCUTOFF
+#define SEMIN 0.074120733
+#define PMAX 1e6
+
 // MAT-MP data base lists
 list<string>keywd_list; 
 list<string>mat_name_list;
@@ -859,6 +863,11 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
             in >> saturation_max[i];
             break;
           case 3: // power function
+            in >> saturation_res[i];
+            in >> saturation_max[i];
+            in >> saturation_exp[i];
+            break;
+					case 33: // power function
             in >> saturation_res[i];
             in >> saturation_max[i];
             in >> saturation_exp[i];
@@ -1978,6 +1987,12 @@ double CMediumProperties::PermeabilitySaturationFunction(const double Saturation
         saturation_eff = MRange(0.,saturation_eff,1.);
         permeability_saturation = pow(saturation_eff,saturation_exp[phase]);
         permeability_saturation = MRange(permeability_tensor[9],permeability_saturation,1.);   //WW
+      break;
+		case 33:  // Nichtlineare Permeabilitaets-Saettigungs-Beziehung
+        saturation_eff = (saturation-saturation_res[phase])/(saturation_max[phase]-saturation_res[phase]);
+        saturation_eff = MRange(0.,saturation_eff,1.);
+        permeability_saturation = pow(1.-saturation_eff,saturation_exp[phase]);
+        permeability_saturation = MRange(permeability_tensor[9],permeability_saturation,1.);  
       break;
     case 4:  // Van Genuchten: Wasser/Gas aus SOIL SIC. SOC. AM. J. VOL. 44, 1980 Page 894 Equation 19 (Burdine's Equation)
         if (saturation > (saturation_max[phase] - MKleinsteZahl))
@@ -6026,27 +6041,7 @@ double CMediumProperties::CapillaryPressureFunction(long number,double*gp,double
   static int nidx0,nidx1;
   int gueltig;
   double capillary_pressure=0.0;
-  //---------------------------------------------------------------------
-  if(mode==2){ // Given value
-    saturation = saturation;
-  }
-  else{
-    string pcs_name_this = "SATURATION";
-    char phase_char[1];
-    sprintf(phase_char,"%i",phase+1);
-    pcs_name_this.append(phase_char);
-    nidx0 = PCSGetNODValueIndex(pcs_name_this,0);
-    nidx1 = PCSGetNODValueIndex(pcs_name_this,1);
-    if(mode==0){ // Gauss point values
-      saturation = (1.-theta)*InterpolValue(number,nidx0,gp[0],gp[1],gp[2]) \
-                 + theta*InterpolValue(number,nidx1,gp[0],gp[1],gp[2]);
-    }
-    else if(mode==1){ // Node values
-     saturation = (1.-theta)*GetNodeVal(number,nidx0) \
-                + theta*GetNodeVal(number,nidx1);
-    }
-  }
-  //----------------------------------------------------------------------
+  
   switch(capillary_pressure_model){   
     case 0:  // k = f(x) user-defined function
       capillary_pressure = GetCurveValue((int)capillary_pressure_model_values[0],0,saturation,&gueltig);
@@ -6094,6 +6089,11 @@ double CMediumProperties::CapillaryPressureFunction(long number,double*gp,double
       if(van_saturation<1.0e-9)
         van_saturation = 1.0e-9;
       capillary_pressure =capillary_pressure_model_values[0]*pow(van_saturation, -1.0/saturation_exp[0]);
+#ifdef CUTOFF
+			// PCH putting Pmax constraint as in TOUGH2
+			if(capillary_pressure > PMAX)
+				capillary_pressure = PMAX;
+#endif
       break;
     case 7:  // Van Genuchten: Wasser/Gas aus SOIL SIC. SOC. AM. J. VOL. 44, 1980 Page 894 Equation 21 
       break;
@@ -6368,6 +6368,7 @@ Programing:
 02/2005 OK CMediumProperties function
 08/2005 WW Remove interpolation
 03/2007 WW Analytical solution: 
+02/2008 PCH Brooks-Corey dPc/dSw added
 Last modified:
 **************************************************************************/
 double CMediumProperties::SaturationPressureDependency
@@ -6414,6 +6415,30 @@ double CMediumProperties::SaturationPressureDependency
         //cout << "Warning in CMediumProperties::SaturationPressureDependency: dS_dp = 0" << endl; //OK4105
       }
       break;
+			
+		case 0:  // k = f(x) user-defined function  
+      //----------------------------------------------------------------------
+      // Wenn wir nah an der Vollsaettigung, ggf. Schrittweite verkleinern 
+      dS = 1.e-2;
+      do{
+        dS /= 10.;
+        saturation1 = saturation - dS;
+        capillary_pressure1 = CapillaryPressureFunction(number,NULL,theta,phase,saturation1);
+        saturation2 = saturation + dS;
+        capillary_pressure2 = CapillaryPressureFunction(number,NULL,theta,phase,saturation2);
+        dpc = capillary_pressure1 - capillary_pressure2; //OK4105
+      }
+      while((dS > MKleinsteZahl) && (capillary_pressure2 < MKleinsteZahl / 100.));
+      if ( ((capillary_pressure1 > MKleinsteZahl)||(capillary_pressure2 > MKleinsteZahl)) \
+        && (dpc > MKleinsteZahl) )
+				// PCH In fact, this is dPc/dSw. However I am using dS_dp variable. 
+        dS_dp =(capillary_pressure1 - capillary_pressure2)/( 2. * dS);
+      else{
+        dS_dp = 0.;
+        //cout << "Warning in CMediumProperties::SaturationPressureDependency: dS_dp = 0" << endl; //OK4105
+      }
+      break;
+			
     case 44:  // Van Genuchten: 01.3.2007 WW
       m = saturation_exp[phase]; 
       n = 1./(1.0-m);
@@ -6423,6 +6448,16 @@ double CMediumProperties::SaturationPressureDependency
 	  dS_dp = m*n*(saturation_max[phase]-saturation_res[phase])*
               pow(1.0+pow(alpha*capillary_pressure,n),-m-1.0)
               *pow(alpha, n)*pow(capillary_pressure, n-1.0);
+		case 6:  // Brooks-Corey: 02.2008 PCH
+			S_e = (saturation-saturation_res[phase])/(saturation_max[phase]-saturation_res[phase]);
+			// PCH Se Cut for Pmax=1e5 Pa as in TOUGHT2 in this Brooks-Corey
+#ifdef CUTOFF
+			if(S_e < SEMIN)
+				S_e = SEMIN;
+#endif
+			// dPc/dSw but PCH uses dS_dp local variable
+			dS_dp=-capillary_pressure_model_values[0]/(saturation_exp[0]*(saturation-saturation_res[phase])) *
+						pow(S_e, -1.0/saturation_exp[0]);
       break;
   }
   //----------------------------------------------------------------------

@@ -300,6 +300,8 @@ CRFProcess::CRFProcess(void)
   accepted = true;   //25.08.2008. WW
   accept_steps = 0;  //27.08.1008. WW
   reject_steps = 0;  //27.08.1008. WW
+	ML_Cap = 0;		// 23.01.2009 PCH
+
 #ifdef USE_MPI //WW
   cpu_time_assembly = 0;
 #endif
@@ -8254,8 +8256,7 @@ based on MMPCalcSecondaryVariables
 void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs)
 {
   long i;
-  double p_cap;
-  double s_liquid,s_gas;
+  
   //----------------------------------------------------------------------
   int ndx_density_phase;
   int ndx_viscosity_phase;
@@ -8263,47 +8264,107 @@ void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs)
   ndx_viscosity_phase = -1; //WW
   //----------------------------------------------------------------------
   m_pcs->SetBC();
+
+	// For accessing the other process
+	CRFProcess *cpl_pcs = NULL;
+	if(m_pcs->pcs_type_number==0)
+		cpl_pcs = pcs_vector[m_pcs->pcs_number+1];
+	else if(m_pcs->pcs_type_number==1)
+		cpl_pcs = pcs_vector[m_pcs->pcs_number-1];
+	else
+		;
+
+	int ndx_pressure1, ndx_p_cap, ndx_pressure2, ndx_s_wetting, ndx_s_nonwetting;
+  //======================================================================
+  //----------------------------------------------------------------------
+  // Capillary pressure - p_c (S) <- This is always the secondary variable
+  // in both phase1 and phase2	// PCH
+  CMediumProperties *m_mmp = NULL;
+  
   //======================================================================
   switch(m_pcs->pcs_type_number)
   {
     case 0:
-      //..................................................................
+			//..................................................................
+			//..................................................................
+      // PCH
+			// The primary variable is PRESSURE1
+			// From PRESSURE1, we are assigning PRESSURE2 which is
+			// the secondary variables of PRESSURE1.
+			ndx_pressure1 = m_pcs->GetNodeValueIndex("PRESSURE1");
+			ndx_pressure2 = m_pcs->GetNodeValueIndex("PRESSURE2");
+			ndx_p_cap = m_pcs->GetNodeValueIndex("PRESSURE_CAP");
+			double pressure1, pressure2, p_cap;
+			for(i=0;i<(long)m_pcs->m_msh->nod_vector.size();i++) 
+      {
+        pressure1 = m_pcs->GetNodeValue(i,ndx_pressure1);
+				// Let's get capillary pressure before updating pressure2
+				// by accessing the primary variable of the saturation equation 
+				// not the secondary variable of it.
+				int cpl_ndx_sat2 = cpl_pcs->GetNodeValueIndex("SATURATION2");
+				double cpl_sat2 = cpl_pcs->GetNodeValue(i,cpl_ndx_sat2);
+				m_mmp = mmp_vector[0];
+				m_mmp->mode =2;	
+				p_cap = m_mmp->CapillaryPressureFunction(i,NULL,1.0,0,1.0-cpl_sat2);
+				m_pcs->SetNodeValue(i,ndx_p_cap,p_cap);
+				m_pcs->SetNodeValue(i,ndx_p_cap+1,p_cap);
+
+        pressure2 = pressure1 + p_cap;
+				// Assigning the secondary variables
+				m_pcs->SetNodeValue(i,ndx_pressure2,pressure2);	// Previous
+        m_pcs->SetNodeValue(i,ndx_pressure2+1,pressure2); // Now
+      }
+			//......................................................................
       ndx_density_phase = m_pcs->GetNodeValueIndex("DENSITY1");
       ndx_viscosity_phase = m_pcs->GetNodeValueIndex("VISCOSITY1");
+			printf("Pressure2 from the known Pressure1 is updated for Process 0\n");
       break;
 
-    case 1:
-      //..................................................................
-      // Initial conditions
-      // Calc secondary variable saturation S^g=1-S^l
-      int ndx_sl_old = m_pcs->GetNodeValueIndex("SATURATION2");
-      int ndx_sg_old = m_pcs->GetNodeValueIndex("SATURATION1");
-      int ndx_sg_new = ndx_sg_old+1;
+	case 1:
+		//..................................................................
+		// PCH
+		// Calc secondary variable saturation Snonwetting = 1-Swetting
+	  // Don't forget here the primary variable is SATURATION2
+	  // From SATURATION2, we are assigning SATURATION1 which is
+	  // the secondary variables of SATURATION2.
+    ndx_s_wetting = m_pcs->GetNodeValueIndex("SATURATION1");
+			ndx_s_nonwetting = m_pcs->GetNodeValueIndex("SATURATION2");
+			ndx_p_cap = cpl_pcs->GetNodeValueIndex("PRESSURE_CAP");
+/*			
+			ndx_pressure1 = cpl_pcs->GetNodeValueIndex("PRESSURE1");
+			ndx_pressure2 = cpl_pcs->GetNodeValueIndex("PRESSURE2");
+*/			
+
+			double s_wetting,s_nonwetting;
       for(i=0;i<(long)m_pcs->m_msh->nod_vector.size();i++) 
       {
-        s_liquid = m_pcs->GetNodeValue(i,ndx_sl_old);
-        s_gas = MRange(0.0,1.0-s_liquid,1.0);
-        m_pcs->SetNodeValue(i,ndx_sg_old,s_gas);
-        m_pcs->SetNodeValue(i,ndx_sg_new,s_gas);
+        s_nonwetting = m_pcs->GetNodeValue(i,ndx_s_nonwetting);
+        s_wetting = MRange(0.0,1.0-s_nonwetting,1.0);
+
+				// Assigning the secondary variables
+				m_pcs->SetNodeValue(i,ndx_s_wetting,s_wetting);	// Previous
+        m_pcs->SetNodeValue(i,ndx_s_wetting+1,s_wetting); // Now
+
+				// Let's get capillary pressure
+				m_mmp = mmp_vector[0];
+				m_mmp->mode =2;	
+				p_cap = m_mmp->CapillaryPressureFunction(i,NULL,1.0,0,s_wetting);
+				cpl_pcs->SetNodeValue(i,ndx_p_cap,p_cap);
+				cpl_pcs->SetNodeValue(i,ndx_p_cap+1,p_cap);
+/*				
+				// Let's update pressure here in saturation equation as well
+				pressure1 = cpl_pcs->GetNodeValue(i,ndx_pressure1);
+				cpl_pcs->SetNodeValue(i,ndx_pressure2,pressure1+p_cap);	// Previous
+        cpl_pcs->SetNodeValue(i,ndx_pressure2+1,pressure1+p_cap); // Now
+*/				
       }
       //......................................................................
       ndx_density_phase = m_pcs->GetNodeValueIndex("DENSITY2");
       ndx_viscosity_phase = m_pcs->GetNodeValueIndex("VISCOSITY2");
+			printf("Saturation1 from the known Saturation2 is updated for Process 1\n");
       break;
   }
-  //======================================================================
-  //----------------------------------------------------------------------
-  // Capillary pressure - p_c (S)
-  int ndx_p_cap = m_pcs->GetNodeValueIndex("PRESSURE_CAP");
-  CMediumProperties *m_mmp = NULL;
-  for(i=0;i<(long)m_pcs->m_msh->nod_vector.size();i++) 
-  {
-    m_mmp = mmp_vector[0];
-    m_mmp->mode = 1;
-    p_cap = 0.0; //m_mmp->CapillaryPressure(i,NULL,theta,phase); //MATCalcNodeCapillaryPressure(phase,index,i,theta);
-    m_mmp->mode = 0;
-    m_pcs->SetNodeValue(i,ndx_p_cap,p_cap);
-  }
+  
   //----------------------------------------------------------------------
   // Fluid properties
   double density;
