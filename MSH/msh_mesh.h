@@ -163,6 +163,7 @@ class CFEMesh
     void GetELEOnSFC(Surface*,vector<long>&); //OK
     void GetELEOnSFC_TIN(Surface*,vector<long>&); //OK
     void CreateLineELEFromSFC(); //OK
+    void GetNODOnSFC_PLY_Z(Surface*,vector<long>&); //OK
     // GEO-VOL
     void ELEVolumes(); //OK
 
