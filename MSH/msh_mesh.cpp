@@ -1324,6 +1324,10 @@ void CFEMesh::GetNODOnSFC(Surface*m_sfc,vector<long>&msh_nod_vector)
 	case 100:
       GetNodesOnCylindricalSurface(m_sfc,msh_nod_vector);
 	  break;
+    //....................................................................
+    case 4: // layer polyline, all z
+      GetNODOnSFC_PLY_Z(m_sfc,msh_nod_vector);
+      break;
   }
 }
 
@@ -4188,6 +4192,26 @@ void CFEMesh::CreateSparseTable()
   //sparse_graph_H->Write(Dum);
 } 
 #endif
+
+/**************************************************************************
+MSHLib-Method: 
+Task: All nodes vertical to a polyline
+02/2009 OK
+**************************************************************************/
+void CFEMesh::GetNODOnSFC_PLY_Z(Surface*m_sfc,vector<long>&msh_nod_vector)
+{
+  vector<CGLPolyline*>::iterator p_ply;
+  CGLPolyline* m_ply = NULL;
+  // .................................................................
+  // nodes close to first polyline 
+  p_ply = m_sfc->polyline_of_surface_vector.begin();
+  while(p_ply!=m_sfc->polyline_of_surface_vector.end()) 
+  {
+    m_ply = *p_ply;
+    GetNODOnPLY_XY(m_ply,msh_nod_vector);
+    break;
+  }
+}
 
 } // namespace Mesh_Group
 
