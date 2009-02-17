@@ -325,19 +325,17 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
         heat_conductivity_pcs_name_vector.push_back("PRESSURE1");
         heat_conductivity_pcs_name_vector.push_back("TEMPERATURE1");
       }
-//      mfp_file->ignore(MAX_ZEILE,'\n');
       if(heat_conductivity_model==3){ // my = f(p,T) NB
         in >> caption;
         heat_conductivity_pcs_name_vector.push_back("PRESSURE1");
         heat_conductivity_pcs_name_vector.push_back("TEMPERATURE1");
-      in.clear();
       }
+      in.clear(); //OK
       continue;
     }
 	if(line_string.find("$PHASE_DIFFUSION")!=string::npos) { // subkeyword found
 	  in.str(GetLineFromFile1(mfp_file));
       in >> diffusion_model;
-
       if(diffusion_model==0){ // D = fct(x) 
         in >> dif_fct_name;
       }
