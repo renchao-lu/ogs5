@@ -1,15 +1,16 @@
 // feflow_dlg.cpp : implementation file
 //
-
 #include "stdafx.h"
 #include "GeoSys.h"
 #include "feflow_dlg.h"
+#include "afxpriv.h" // For WM_SETMESSAGESTRING
 
 extern string GetLineFromFile1(ifstream*);
 bool FEFLOWReadBoundaryConditions(string);
 bool FEFLOWReadNodes(string,CFEMesh*);
 bool FEFLOWReadElements(string,CFEMesh*);
 bool FEFLOWReadSourceSinkTerms(string);
+bool FEFLOWReadNodesFEM(string,CFEMesh*);
 // CDialogFEFLOW dialog
 
 IMPLEMENT_DYNAMIC(CDialogFEFLOW, CDialog)
@@ -64,33 +65,52 @@ BOOL CDialogFEFLOW::OnInitDialog()
 
 // CDialogFEFLOW message handlers
 
+
+/**************************************************************************
+GUI-Method:
+10/2008 OK Implementation
+02/2009 OK FEM files
+**************************************************************************/
 void CDialogFEFLOW::OnBnClickedReadNodes()
 {
+  CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
+  CString m_strInfo;
   // Homeworks#1(MK): copy the functions from MK to finish the node data import
   // MSH create
   m_msh = new CFEMesh();
   m_msh->nod_vector.clear();
-  // FEFLOW node file
-  CFileDialog fileDlg(TRUE,"dat",NULL,OFN_ENABLESIZING,"FEFLOW files (*.dat)|*.dat|");
+  // FEFLOW node files
+  CFileDialog fileDlg(TRUE,"fem",NULL,OFN_ENABLESIZING,"FEM files (*.fem)|*.fem| DAT files (*.dat)|*.dat|");
   if (fileDlg.DoModal()==IDOK) 
   {
     CString file_name = fileDlg.GetPathName();
     CString m_strFileExtension = file_name.Right(3);
-    FEFLOWReadNodes((string)file_name,m_msh);  
+    if(m_strFileExtension.Compare("dat")==0)
+      FEFLOWReadNodes((string)file_name,m_msh);  
+    else if (m_strFileExtension.Compare("fem")==0)
+      FEFLOWReadNodesFEM((string)file_name,m_msh);  
   }
-  // test output
+/*
+  // test output of NOD
   fstream msh_file;
   msh_file.open("nodes.msh",ios::trunc|ios::out);
   if(!msh_file.good()) return;
   msh_file.setf(ios::scientific,ios::floatfield);
   msh_file.precision(12);
   m_msh->InitialNodesNumber();
+  m_strInfo = "Import FEFLOW data: write nodes start";
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
   m_msh->Write(&msh_file);
+  msh_file << "#STOP" << endl;
   msh_file.close();
-  //----------------------------------------------------------------------
+  m_strInfo = "Import FEFLOW data: write nodes finished";
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
+*/
+  //......................................................................
   // m_msh->ConstructGrid();
   fem_msh_vector.push_back(m_msh);
   //----------------------------------------------------------------------
+/*
   MSHCalcMinMaxMidCoordinates();
   CGLPoint *m_pnt = NULL;
   m_pnt = new CGLPoint();
@@ -113,11 +133,14 @@ void CDialogFEFLOW::OnBnClickedReadNodes()
   m_pnt->x = msh_x_max;
   m_pnt->y = msh_y_min;
   gli_points_vector.push_back(m_pnt);
+*/
   GEOWrite("feflow");
 }
 
 void CDialogFEFLOW::OnBnClickedReadElements()
 {
+  CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
+  CString m_strInfo;
   // Homeworks#2(MK): copy the functions from MK to finish the element data import
   // test
   if(!m_msh)
@@ -131,7 +154,11 @@ void CDialogFEFLOW::OnBnClickedReadElements()
   {
     CString file_name = fileDlg.GetPathName();
     CString m_strFileExtension = file_name.Right(3);
+    m_strInfo = "Import FEFLOW data: elements start";
+    pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
     FEFLOWReadElements((string)file_name,m_msh);
+    m_strInfo = "Import FEFLOW data: elements finished";
+    pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
   }
   // if succesfull
   //fem_msh_vector.push_back(m_msh);
@@ -141,9 +168,14 @@ void CDialogFEFLOW::OnBnClickedReadElements()
   if(!msh_file.good()) return;
   msh_file.setf(ios::scientific,ios::floatfield);
   msh_file.precision(12);
+  m_strInfo = "Import FEFLOW data: write elements start";
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
+  m_msh->InitialNodesNumber();
   m_msh->Write(&msh_file);
   msh_file << "#STOP";
   msh_file.close();
+  m_strInfo = "Import FEFLOW data: write elements finished";
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
 }
 
 void CDialogFEFLOW::OnBnClickedReadBoundaryConditions()
@@ -186,7 +218,7 @@ void CDialogFEFLOW::OnBnClickedCreateELE()
 }
 
 /**************************************************************************
-GeoSys-Method:
+GeoSys-Method: Read from FEFLOW DAT files
 10/2008 MK/JOD Implementation
 10/2008 OK 2nd Implementation
 **************************************************************************/
@@ -249,6 +281,8 @@ bool FEFLOWReadElements(string file_name,CFEMesh* m_msh)
   CElem* m_ele = NULL;
   CString m_strSubLine;
   long no_nodes,no_elements=0;
+  //long no_elements_per_layer=0;
+  int idummy, no_layer=0;
   //----------------------------------------------------------------------
   // File handling
   ifstream feflow_file;
@@ -265,13 +299,17 @@ bool FEFLOWReadElements(string file_name,CFEMesh* m_msh)
   //----------------------------------------------------------------------
   while(!feflow_file.eof()) 
   {
-    // PROBLEM: Israel Steady state
-    // CLASS (v.5.307)
-    // 2    2    0    3    4    0    8    8    0
     feflow_file.getline(buffer,MAX_ZEILE);
     line_string = buffer;
-    //if(line.find("COOR")!=string::npos)
-    //  return true;
+    //....................................................................
+    // CLASS
+    if(line_string.find("CLASS")!=string::npos) 
+    {
+      // 8    1    0    3   27    0    8    8    1
+      line_stream.str(GetLineFromFile1(&feflow_file));
+      line_stream >> idummy >> idummy >> idummy >> idummy >> no_layer;
+	  line_stream.clear();
+    }
     //....................................................................
     if(line_string.find("DIMENS")!=string::npos) 
     {
@@ -289,7 +327,6 @@ bool FEFLOWReadElements(string file_name,CFEMesh* m_msh)
       // NODE
       for(i=0;i<no_elements;i++) 
       {
-        // 213  2685   212  8106 10578  8105
         m_ele = new CElem();
         m_ele->SetElementType(m_msh->ele_type);
         //feflow_file.getline(buffer,MAX_ZEILE);
@@ -556,3 +593,192 @@ void CDialogFEFLOW::OnBnClickedCreateST()
   GetDlgItem(IDC_FILE_FEFLOW_READ_BC)->EnableWindow(TRUE);
   GetDlgItem(IDC_BUTTON_CREATE_BC)->EnableWindow(FALSE);
 }
+
+/**************************************************************************
+GeoSys-Method:
+02/2009 OK Implementation (slow bit safe version)
+**************************************************************************/
+bool FEFLOWReadNodesFEM(string file_name, CFEMesh* m_msh)
+{
+  string line_string;
+  std::stringstream line_stream;
+  double x[12],z; 
+  CNode* m_nod = NULL;
+  long i,n,nn,n0;
+  long no_nodes=0, no_elements=0, no_nodes_per_layer, no_nodes_per_layer_1;
+  int j, idummy, no_layer=0, i_read=0, l;
+  char a;
+  CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
+  CString m_strInfo;
+  CGLPoint* m_pnt;
+/*
+  fstream file;
+  file.open("test.txt",ios::trunc|ios::out);
+  if(!file.good()) return false;
+  file.setf(ios::scientific,ios::floatfield);
+  file.precision(12);
+*/
+  //----------------------------------------------------------------------
+  // File handling
+  ifstream feflow_file;
+  feflow_file.open(file_name.c_str());
+  if(!feflow_file.good())
+  {
+    return false;
+  }
+  feflow_file.seekg(0L,ios::beg); // spool to begin
+  //----------------------------------------------------------------------
+  while(!feflow_file.eof()) 
+  {
+    line_string = GetLineFromFile1(&feflow_file);
+    //....................................................................
+    // CLASS
+    if(line_string.find("CLASS")!=string::npos) 
+    {
+      // 8    1    0    3   27    0    8    8    1
+      line_stream.str(GetLineFromFile1(&feflow_file));
+      line_stream >> idummy >> idummy >> idummy >> idummy >> no_layer;
+	  line_stream.clear();
+    }
+    //....................................................................
+    // DIMENS
+    if(line_string.find("DIMENS")!=string::npos) 
+    {
+      // DIMENS
+      // 39465  61808      6      1   2000      0      0      0      0     -1      0      0      1      0      0      0      0
+      //254744 489591      6      1   2000      2      4      0      0      1      0      0      1      0      0      0      0
+      line_stream.str(GetLineFromFile1(&feflow_file));
+      line_stream >> no_nodes >> no_elements >> m_msh->ele_type >> ws;
+	  line_stream.clear();
+      // Create nodes
+//long no_nodes_per_layer = no_nodes / (no_layer+1);
+//      for(i=0;i<no_nodes_per_layer*2;i++)
+      for(i=0;i<no_nodes;i++)
+      {
+        m_nod = new CNode(i);
+        m_msh->nod_vector.push_back(m_nod);
+      }
+    }
+    //....................................................................
+    // COOR
+    if(line_string.compare("COOR")==0)
+    {
+      m_strInfo = "Import FEFLOW data: COOR";
+      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
+      no_nodes_per_layer = no_nodes / (no_layer+1);// 9098;
+      i_read = no_nodes_per_layer / 12 + 1;
+      no_nodes_per_layer_1 = no_layer*no_nodes_per_layer;
+//no_layer = 1;
+      // x
+      for(i=0;i<i_read;i++)
+      {
+        line_string = GetLineFromFile1(&feflow_file);
+        line_stream.clear();
+        line_stream.str(line_string);
+        for(j=0;j<12;j++)
+        {
+          line_stream >> x[j] >> a;
+          for(l=0;l<no_layer+1;l++)
+          {
+            n = i*12 + l*no_nodes_per_layer + j;
+            nn = i*12 + no_nodes_per_layer_1 + j;
+            if(nn>=no_nodes)
+              break;
+            m_nod = m_msh->nod_vector[n];
+            m_nod->SetX(x[j]); 
+          }
+        }
+        line_stream.clear();
+      }
+      // y
+      for(i=0;i<i_read;i++)
+      {
+        line_string = GetLineFromFile1(&feflow_file);
+        line_stream.clear();
+        line_stream.str(line_string);
+        for(j=0;j<12;j++)
+        {
+          line_stream >> x[j] >> a;
+          for(l=0;l<no_layer+1;l++)
+          {
+            n = i*12 + l*no_nodes_per_layer + j;
+            nn = i*12 + no_nodes_per_layer_1 + j;
+            if(nn>=no_nodes)
+              break;
+            m_nod = m_msh->nod_vector[n];
+            m_nod->SetY(x[j]); 
+          }
+        }
+        line_stream.clear();
+      }
+    }
+    //....................................................................
+    // ELEV_I
+    if(line_string.compare("ELEV_I")==0)
+    {
+      m_strInfo = "Import FEFLOW data: ELEV_I";
+      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
+//no_layer = 27;
+      no_nodes_per_layer = no_nodes / (no_layer+1);// 9098;
+//no_layer = 1;
+      for(l=0;l<no_layer+1;l++)
+      {
+        for(i=0;i<no_nodes_per_layer;i++)
+        {
+          line_stream.clear();
+          line_string = GetLineFromFile1(&feflow_file);
+          line_stream.str(line_string);
+          line_stream >> z >> n0;
+          line_stream.clear();
+          //n = i+l*no_nodes_per_layer;
+          n = n0-1 + l*no_nodes_per_layer;
+          m_nod = m_msh->nod_vector[n];
+          m_nod->SetZ(z); 
+        }
+        line_string = GetLineFromFile1(&feflow_file);
+        line_stream.str(line_string);
+        line_stream >> j;
+        //file << j << endl;
+        line_stream.clear();
+      }
+    }
+    //....................................................................
+    // EXTENTS
+    if(line_string.compare("EXTENTS")==0)
+    {
+      m_strInfo = "FEFLOW import: EXTENTS";
+      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
+      //0.00000000000000e+000,0.00000000000000e+000,7.99587000000000e+003,5.29027651306167e+003,
+      line_string = GetLineFromFile1(&feflow_file);
+      line_stream.clear();
+      line_stream.str(line_string);
+      line_stream >> x[0] >> x[1] >> x[2] >> x[3];
+      //3.54101621147850e+003,3.26511822506216e+003,4.38757239488187e+003,3.81153176162252e+003,
+      line_string = GetLineFromFile1(&feflow_file);
+      line_stream.clear();
+      line_stream.str(line_string);
+      line_stream >> x[4] >> x[5] >> x[6] >> x[7];
+      //
+      m_pnt = new CGLPoint();
+      m_pnt->id = (long)gli_points_vector.size();
+      m_pnt->x = x[2];
+      m_pnt->y = x[4];
+      m_pnt->z = x[6];
+      gli_points_vector.push_back(m_pnt);
+      m_pnt = new CGLPoint();
+      m_pnt->id = (long)gli_points_vector.size();
+      m_pnt->x = x[3];
+      m_pnt->y = x[5];
+      m_pnt->z = x[7];
+      gli_points_vector.push_back(m_pnt);
+    }
+    //....................................................................
+  } // is line empty
+  feflow_file.close();
+  //----------------------------------------------------------------------
+  m_strInfo = "Import FEFLOW data: NOD finished";
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
+  //file.close();
+  return true;
+}
+
