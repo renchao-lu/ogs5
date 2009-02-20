@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="GeoSys"
 	ProjectGUID="{A55509E7-0142-4424-B24F-4BD977C2FC26}"
+	RootNamespace="GeoSys"
 	Keyword="MFCProj"
 	>
 	<Platforms>
@@ -650,6 +651,14 @@
 			<Filter
 				Name="DLG"
 				>
+				<File
+					RelativePath=".\dlg_GHDB.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\dlg_GHDB.h"
+					>
+				</File>
 				<File
 					RelativePath=".\dlg_rsm.cpp"
 					>
