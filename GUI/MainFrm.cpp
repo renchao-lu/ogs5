@@ -65,6 +65,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_COMMAND(ID_SELECTALL, OnSelectAllInPicking)
 	ON_COMMAND(ID_DESELECTALL, OnDeselectAllInPicking)
 	ON_COMMAND(ID_RUN, OnRUN) //OK
+	ON_COMMAND(ID_GHDBVIEW_CREATE, OnGhdbviewCreate)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -1071,4 +1072,28 @@ void CMainFrame::OnRUN()
   CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
   CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
   m_pDoc->OnSimulatorForward();
+}
+void CMainFrame::OnGhdbviewCreate()
+{
+	// TODO: Add your command handler code here
+		// TODO: Add your command handler code here
+
+	CMDIChildWnd* pActiveChild = MDIGetActive();
+	CDocument* pDocument;
+	if (pActiveChild == NULL ||
+			(pDocument = pActiveChild->GetActiveDocument()) == NULL) {
+		TRACE("Warnung:  Kein aktives Dokument f? WindowNew vorhanden\n");
+		AfxMessageBox(AFX_IDP_COMMAND_FAILURE);
+		return; // Befehl ist fehlgeschlagen
+	}
+	
+	// Wenn nicht, haben wir einen neuen Rahmen
+	CDocTemplate* pTemplate =
+		((CGeoSysApp*) AfxGetApp())->m_pMDTOUT; 
+	ASSERT_VALID(pTemplate);
+	CFrameWnd* pFrame =
+		pTemplate->CreateNewFrame(pDocument, pActiveChild);
+	if (pFrame == NULL) {
+	}
+	pTemplate->InitialUpdateFrame(pFrame, pDocument);
 }
