@@ -3,6 +3,8 @@
 
 #include "stdafx.h"
 #include "GeoSys.h"
+#include <algorithm>
+#include "math.h"
 
 #include "GeoSysDoc.h"
 #include "GeoSysOUTView.h"
@@ -15,6 +17,7 @@
 #include "rf_p.h"
 #include ".\geosysoutview.h"
 #include "out_dlg.h"
+#include "dlg_GHDB.h"
 
 // GeoSys-FEM
 #include "femlib.h"
@@ -37,8 +40,6 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-vector<double>x_vector;
-vector<double>y_vector;
 
 /////////////////////////////////////////////////////////////////////////////
 // CGeoSysOUTView
@@ -66,7 +67,7 @@ Programing:
 **************************************************************************/
 CGeoSysOUTView::CGeoSysOUTView()
 {
-  m_iDisplayOUTProperties = 0;
+  // FS m_iDisplayOUTProperties = 0;
   m_dXmin = 0.0;
   m_dXmax = 1.0;
   m_dYmin = 0.0;
@@ -91,7 +92,8 @@ void CGeoSysOUTView::OnInitialUpdate()
   // Initialize the CGeoSysZoomView class
   SetZoomSizes(pDoc->GetDocSize());
   // Properties dialog
-  OnProperties();
+ /* FS if(GHDBvector_x.size()==0)
+ OnProperties();*/
 }
 
 BOOL CGeoSysOUTView::PreCreateWindow(CREATESTRUCT& cs)
@@ -115,12 +117,56 @@ Programing:
 05/2004 CC Modification
 10/2004 OK LOAD_PATH_ANALYSIS
 01/2006 OK OUT,MSH,PCS concept
+02/2009 FS GHDB data view
 **************************************************************************/
 void CGeoSysOUTView::OnDraw(CDC* pDC)
 {
+  if(GHDBvector_x.size()>0)
+  {
+    vector<double> xx_vector;
+    vector<double> yy_vector;
+	int j=0;
+	int i;
+	j = (int)GHDBvector_y.size();
+	xx_vector.clear(); 
+	yy_vector.clear();
+	xx_vector.resize(GHDBvector_x.size());
+	yy_vector.resize(GHDBvector_y.size());
+	for(i=0;i<(int)GHDBvector_x.size();i++)
+
+{
+	xx_vector[i]=GHDBvector_x[i];
+	yy_vector[i]=GHDBvector_y[i];
+}
+m_dYmin= *min_element(GHDBvector_y.begin(),GHDBvector_y.end());
+m_dYmax= *max_element(GHDBvector_y.begin(),GHDBvector_y.end());
+GetWindowAttributes(this->m_hWnd,&width,&height);
+pDC->TextOut(0,0,GHDBViewTitle);
+CGraphics m_graphics;
+  m_graphics.width = width;
+  m_graphics.height = height;
+  m_graphics.m_dXmin = 1;
+  m_graphics.m_dXmax = j;
+  m_graphics.m_dDX = m_graphics.m_dXStep*(m_graphics.m_dXmax - m_graphics.m_dXmin);
+  m_graphics.m_dYmin = m_dYmin;
+  m_graphics.m_dYmax = m_dYmax;
+  m_graphics.m_dDY = m_graphics.m_dYStep*(m_graphics.m_dYmax - m_graphics.m_dYmin);
+  //m_graphics.m_strQuantityName = m_strQuantityName;
+  //-----------------------------------------------------------------------
+  // Axis
+  m_graphics.DrawGridAxes(pDC);
+  m_graphics.DrawCoordinateAxes(pDC);
+  //----------------------------------------------------------------------
+  // Draw x-y plot
+  m_graphics.DrawXYPlot(pDC,xx_vector,yy_vector,0);
+}
   //----------------------------------------------------------------------
   // Tests
   //......................................................................
+else
+{
+  vector<double>x_vector;
+  vector<double>y_vector;
   CGLPoint* m_pnt = GEOGetPointByName(m_out->geo_name);
   if(!m_pnt)
   {
@@ -196,6 +242,7 @@ void CGeoSysOUTView::OnDraw(CDC* pDC)
   //----------------------------------------------------------------------
   // Draw x-y plot
   m_graphics.DrawXYPlot(pDC,x_vector,y_vector,0);
+  }
   //-----------------------------------------------------------------------
 /*
   //-----------------------------------------------------------------------

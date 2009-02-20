@@ -57,6 +57,7 @@ extern bool RFDOpen(string file_name_base);
 // GeoSys-LIB
 #include "shp.h"
 #include "dlg_shp.h"
+#include "dlg_GHDB.h"//FS
 #include ".\geosysdoc.h"
 // Dialogs
 #include "gs_newproject.h"
@@ -124,6 +125,7 @@ BEGIN_MESSAGE_MAP(CGeoSysDoc, CDocument)
     ON_COMMAND(ID_SIMULATOR_CHECKSTATUS, OnSimulatorCheckStatus)
     ON_UPDATE_COMMAND_UI(ID_SIMULATOR_FORWARD, OnUpdateSimulatorForward)
     ON_COMMAND(ID_IMPORT_GMS, OnImportGMS)
+	ON_COMMAND(ID_GHDBVIEW_CREATE, &CGeoSysDoc::OnGhdbviewCreate)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2802,6 +2804,14 @@ void CGeoSysDoc::OnImportFLACMesh()
   if((int)fem_msh_vector.size()>0)
     GSPAddMember((string)m_strGSPFileBase + ".msh");
   MSHWriteTecplot();
+}
+void CGeoSysDoc::OnGhdbviewCreate()
+{
+	// TODO: Add your command handler code here
+	CDialogGHDB_Connect* GHDBdiag = new CDialogGHDB_Connect();
+  
+  if (GHDBdiag->DoModal()==IDOK) {
+  }
 }
 
 /**************************************************************************
