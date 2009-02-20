@@ -308,7 +308,7 @@ BEGIN
     CONTROL         "User defined settings",IDC_RADIO_USERDEFINED2,"Button",BS_AUTORADIOBUTTON,12,34,92,11
     GROUPBOX        "Setting",IDC_STATIC,7,7,131,43
     GROUPBOX        "Anisotropy",IDC_STATIC,7,58,131,48
-    LTEXT           "R²:",IDC_STATIC,11,134,28,14
+    LTEXT           "R?",IDC_STATIC,11,134,28,14
     EDITTEXT        IDC_EDIT_R2,65,133,48,12,ES_AUTOHSCROLL
 END
 
@@ -3006,6 +3006,11 @@ BEGIN
             MENUITEM "Create",                      ID_VIEW_FEM_CREATE, INACTIVE
             MENUITEM "Properties",                  ID_VIEW_FEM_PROPERTIES, INACTIVE
         END
+        MENUITEM SEPARATOR
+        POPUP "GHDB View"
+        BEGIN
+            MENUITEM "Create",                      ID_GHDBVIEW_CREATE
+        END
     END
     POPUP "GEOLib"
     BEGIN
@@ -3248,7 +3253,7 @@ END
 
 STRINGTABLE 
 BEGIN
-    IDR_MAINFRAME           "GeoSys  -  4.9.02(OK/TK/NW)"
+    IDR_MAINFRAME           "GeoSys  -  4.9.03(FS)"
     IDR_GEOSYSTYPE          "\nGeoSys\nGeoSys\nGeoSys project file (*.gsp)\n.gsp\nGeoSys.Document\nGeoSys Document"
 END
 
@@ -3472,6 +3477,71 @@ END
 #endif    // APSTUDIO_INVOKED
 
 #endif    // Italian (Italy) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.K.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_GHDB_Connect DIALOGEX 0, 0, 512, 326
+STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Connecting to GHDB"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    EDITTEXT        IDC_GHDB_File,7,7,360,15,ES_AUTOHSCROLL | ES_WANTRETURN
+    DEFPUSHBUTTON   "Connecting...",IDC_GHDB_Connect,433,7,59,14,BS_CENTER
+    DEFPUSHBUTTON   "Loading...",IDC_FILE_GHDB,376,7,47,14,BS_CENTER
+    LISTBOX         IDC_LIST1,25,62,104,66,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "TimeSeriesTables",IDC_STATIC,20,48,114,87
+    DEFPUSHBUTTON   "->Get Field Name",IDC_BUTTON1,154,81,63,16
+    LISTBOX         IDC_LIST_Fields,241,62,113,66,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        " Fields",IDC_STATIC,235,46,125,88
+    GROUPBOX        " Results",IDC_STATIC,235,142,262,133
+    DEFPUSHBUTTON   "->Check Field Value",IDC_BUTTON2,381,50,72,17
+    GROUPBOX        "Station ID or Other Fields",IDC_STATIC,380,76,116,57
+    DEFPUSHBUTTON   "->Search",IDC_BUTTON3,154,194,68,18
+    LISTBOX         IDC_LIST2,241,157,248,112,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT1,24,188,105,15,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT2,26,225,104,15,ES_AUTOHSCROLL
+    GROUPBOX        "From Date: (MM/DD/YYYY)",IDC_STATIC,20,176,113,30
+    GROUPBOX        "End Date: (MM/DD/YYYY)",IDC_STATIC,20,212,113,33
+    DEFPUSHBUTTON   "OK",IDC_OK,444,285,53,18
+    COMBOBOX        IDC_COMBO1,387,113,102,90,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Set Search Conditions",IDC_STATIC,20,161,113,84
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_GHDB_Connect, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 505
+        VERTGUIDE, 7
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 319
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (U.K.) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

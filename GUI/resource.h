@@ -57,6 +57,7 @@
 #define IDD_ISO_COL                     174
 #define IDD_ISO_VALUE                   175
 #define IDD_ISO_FRAMEWIDTH              176
+#define IDD_GHDB_Connect                180
 #define IDD_BOUNDARY_CONDITIONS         220
 #define IDD_ST                          220
 #define IDD_MAT_FP_DENSITY              237
@@ -958,6 +959,11 @@
 #define IDC_BUTTON_CREATE_MMP           1262
 #define IDC_RADIO_DIS_CONSTANT          1263
 #define IDC_EDIT_DIS_CONSTANT           1264
+#define IDC_GHDB_File                   1265
+#define IDC_LIST_Fields                 1266
+#define IDC_FILE_GHDB                   1268
+#define IDC_GHDB_Connect                1269
+#define IDC_LIST2                       1275
 #define IDC_EDIT_TS_1                   1301
 #define IDC_EDIT_TS_2                   1302
 #define IDC_EDIT_TS_3                   1303
@@ -1331,6 +1337,8 @@
 #define ID_IMPORT_MIKE                  33088
 #define ID_ENVIRONMENT_CHARACTERCOLOR   33089
 #define ID_ENVIRONMENT_COLOR            33090
+#define ID_2DVIEWS_GHDBVIEW             33091
+#define ID_GHDBVIEW_CREATE              33092
 
 // Next default values for new objects
 // 
@@ -1338,7 +1346,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        178
-#define _APS_NEXT_COMMAND_VALUE         33091
+#define _APS_NEXT_COMMAND_VALUE         33093
 #define _APS_NEXT_CONTROL_VALUE         1265
 #define _APS_NEXT_SYMED_VALUE           104
 #endif
