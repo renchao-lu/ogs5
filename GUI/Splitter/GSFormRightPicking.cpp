@@ -405,7 +405,7 @@ void CGSFormRightPicking::OnBnClickedPickcrossroads()
 	// Let's initilize the number of nodes picked.
 	theApp.hitsRFINodeTotal = 0;
 
-	for(int i=0; i<m_msh->nod_vector.size(); ++i)
+	for(int i=0; i<(int)m_msh->nod_vector.size(); ++i) //OK
 	{
 		CNode* thisNode = m_msh->nod_vector[i];
 		
@@ -455,7 +455,7 @@ void CGSFormRightPicking::OnBnClickedSparticle()
 		theApp.hitsElementTotal = 0;
 		for(int p=0; p<theApp.hitsParticleTotal; ++p)
 		{
-			for(int i=0; i<m_msh->ele_vector.size(); ++i)
+			for(int i=0; i<(int)m_msh->ele_vector.size(); ++i) //OK
 			{
 				if(m_msh->PT->X[theApp.ParticlePickedTotal[p]].Now.elementIndex 
 					== i)
@@ -504,7 +504,7 @@ void CGSFormRightPicking::OnBnClickedNodbyparticle()
 		theApp.hitsRFINodeTotal = 0;
 		for(int p=0; p<theApp.hitsParticleTotal; ++p)
 		{
-			for(int i=0; i<m_msh->ele_vector.size(); ++i)
+			for(int i=0; i<(int)m_msh->ele_vector.size(); ++i) //OK
 			{
 				if(m_msh->PT->X[theApp.ParticlePickedTotal[p]].Now.elementIndex 
 					== m_msh->ele_vector[i]->GetIndex())
@@ -549,7 +549,7 @@ void CGSFormRightPicking::OnBnClickedPickplane()
 	// Initialize picking
 	theApp.hitsElementTotal = 0;
 	// Loop over the elements
-	for(int i=0; i< m_msh->ele_vector.size(); ++i)
+	for(int i=0; i<(int)m_msh->ele_vector.size(); ++i) //OK
 	{
 		CElem* anEle = m_msh->ele_vector[i];
 #ifdef PLANE
