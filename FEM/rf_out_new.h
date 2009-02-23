@@ -75,6 +75,9 @@ class COutput
 	// MAT values 
     vector<string>mmp_value_vector; //OK
     vector<string>mfp_value_vector; //OK
+    // PCON values
+    string pcon_value_name;
+    vector<string>pcon_value_vector;
     // File status
     bool new_file_opened;   //WW
     //--------------------------------------------------------------------
@@ -116,6 +119,8 @@ class COutput
     void ELEWritePLY_TECData(fstream&); //OK
     void TIMValue_TEC(double); //OK
     double NODFlux(long); //OK
+	void PCONWriteDOMDataTEC(); //MX
+	void WriteTECNodePCONData(fstream &);  //MX
 };
 extern vector<COutput*>out_vector;
 extern bool OUTRead(string);

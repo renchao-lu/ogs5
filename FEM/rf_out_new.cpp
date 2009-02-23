@@ -34,6 +34,9 @@ using namespace std;
 #include "msh_lib.h"
 // Specific outoup for deformation 
 #include "rf_msp_new.h"
+#ifdef CHEMAPP
+  #include "./EQL/eqlink.h"
+#endif
 // MPI Parallel
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 #include "par_ddc.h"
@@ -147,6 +150,25 @@ ios::pos_type COutput::Read(ifstream *out_file)
       }
       continue;
     }
+    //--------------------------------------------------------------------
+    if(line_string.find("$PCON_VALUES")!=string::npos) { // subkeyword found //MX
+      while ((!new_keyword)&&(!new_subkeyword)) {
+        position_subkeyword = out_file->tellg();
+        *out_file >> line_string>>ws;
+        if(line_string.find(hash)!=string::npos) {
+          return position;
+        }
+        if(line_string.find(dollar)!=string::npos) {
+          new_subkeyword = true;
+          break;
+        }
+		if(line_string.size()==0) 
+          break; 
+        pcon_value_vector.push_back(line_string);
+      }
+      continue;
+    }
+
     //--------------------------------------------------------------------
     if(line_string.find("$ELE_VALUES")!=string::npos) { // subkeyword found
       ok = true;
@@ -627,8 +649,12 @@ void OUTData(double time_current, const int time_step_number)
           cout << "Data output: Domain" << endl;
           if(OutputBySteps)
           {
-            m_out->NODWriteDOMDataTEC();
-            m_out->ELEWriteDOMDataTEC();
+		    if(m_out->pcon_value_vector.size() > 0)  
+				m_out->PCONWriteDOMDataTEC();  //MX
+			else {
+              m_out->NODWriteDOMDataTEC();
+              m_out->ELEWriteDOMDataTEC();
+			}
             OutputBySteps = false;
             if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
           }
@@ -637,8 +663,12 @@ void OUTData(double time_current, const int time_step_number)
             for(j=0;j<no_times;j++){
               if((time_current>m_out->time_vector[j])
                  || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl 
+			  if(m_out->pcon_value_vector.size() > 0)  
+				m_out->PCONWriteDOMDataTEC();  //MX
+			  else {
                 m_out->NODWriteDOMDataTEC();
                 m_out->ELEWriteDOMDataTEC();
+			  }
                 m_out->time_vector.erase(m_out->time_vector.begin()+j); 
                 if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
                 break;	  
@@ -1231,6 +1261,9 @@ void COutput::WriteTECHeader(fstream &tec_file,int e_type, string e_type_name)
   int k;
   const int nName = (int)nod_value_vector.size(); 
   //--------------------------------------------------------------------
+  // PCON
+  const int nPconName = (int)pcon_value_vector.size();   //MX
+  //--------------------------------------------------------------------
   // MSH
   m_msh = GetMSH();
   //--------------------------------------------------------------------
@@ -1259,6 +1292,11 @@ void COutput::WriteTECHeader(fstream &tec_file,int e_type, string e_type_name)
   tec_file << "VARIABLES  = \"X\",\"Y\",\"Z\"";
   for(k=0;k<nName;k++){
     tec_file << ",\"" << nod_value_vector[k] << "\" ";
+  }
+  if (nPconName) {
+	for(k=0;k<nPconName;k++){
+	  tec_file << ", " << pcon_value_vector[k] << "";   //MX
+	}
   }
   tec_file << endl;
   //--------------------------------------------------------------------
@@ -3453,6 +3491,341 @@ void COutput::NODWriteLAYDataTEC(int time_step_number)
 
 }
 
+/**************************************************************************
+FEMLib-Method: 
+Task: Write PCON data for ChemApp output
+Programing:
+08/2008 MX Implementation
+**************************************************************************/
+void COutput::PCONWriteDOMDataTEC()
+{
+  int te=0;
+  string eleType;
+  string tec_file_name;
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
+  char tf_name[10];
+  std::cout << "Process " << myrank << " in WriteDOMDataTEC" << "\n";
+#endif
 
 
+  //----------------------------------------------------------------------
+  // Tests  
+  if((int)pcon_value_vector.size()==0)
+    return;
+  //......................................................................
+  // MSH
+  //m_msh = FEMGet(pcs_type_name);
+  m_msh = GetMSH();
+  if(!m_msh)
+  {
+    cout << "Warning in COutput::NODWriteDOMDataTEC() - no MSH data" << endl;
+    return;
+  }
+  //======================================================================
+  vector<int> mesh_type_list; //NW
+  if(m_msh->msh_no_line>0)
+    mesh_type_list.push_back(1);
+	if (m_msh->msh_no_quad>0)
+    mesh_type_list.push_back(2);
+	if (m_msh->msh_no_hexs>0)
+    mesh_type_list.push_back(3);
+	if (m_msh->msh_no_tris>0)
+    mesh_type_list.push_back(4);
+	if (m_msh->msh_no_tets>0)
+    mesh_type_list.push_back(5);
+	if (m_msh->msh_no_pris>0)
+    mesh_type_list.push_back(6);
 
+  // Output files for each mesh type
+  for (int i=0; i<(int)mesh_type_list.size(); i++) //NW
+  {
+    te = mesh_type_list[i];
+  //----------------------------------------------------------------------
+  // File name handling
+  tec_file_name = file_base_name + "_" + "domain_PCON";
+  if(msh_type_name.size()>0) // MultiMSH
+    tec_file_name += "_" + msh_type_name;
+  if(pcs_type_name.size()>0) // PCS
+    tec_file_name += "_" + pcs_type_name;
+  //======================================================================
+    switch (te) //NW
+    {
+    case 1:
+      tec_file_name += "_line";
+      eleType = "QUADRILATERAL"; 
+      break;
+    case 2:
+      tec_file_name += "_quad";
+      eleType = "QUADRILATERAL"; 
+      break;
+    case 3:
+      tec_file_name += "_hex";
+      eleType = "BRICK"; 
+      break;
+    case 4:
+      tec_file_name += "_tri";
+      eleType = "QUADRILATERAL";
+      break;
+    case 5:
+      tec_file_name += "_tet";
+  	  eleType = "TETRAHEDRON"; 
+      break;
+    case 6:
+      tec_file_name += "_pris";
+      eleType = "BRICK"; 
+      break;
+    }
+/*
+  if(m_msh->msh_no_line>0)
+	{
+      tec_file_name += "_line";
+      eleType = "QUADRILATERAL"; 
+	  te=1;
+	}
+	else if (m_msh->msh_no_quad>0)
+	{
+      tec_file_name += "_quad";
+      eleType = "QUADRILATERAL"; 
+	  te=2;
+    }
+	else if (m_msh->msh_no_hexs>0)
+	{
+      tec_file_name += "_hex";
+      eleType = "BRICK"; 
+	  te=3;
+    }
+	else if (m_msh->msh_no_tris>0)
+	{
+      tec_file_name += "_tri";
+//???Who was this eleType = "TRIANGLE";
+      eleType = "QUADRILATERAL";
+	  te=4;
+    }
+	else if (m_msh->msh_no_tets>0)
+	{
+      tec_file_name += "_tet";
+	  eleType = "TETRAHEDRON"; 
+      te=5;
+    }
+	else if (m_msh->msh_no_pris>0)
+	{
+      tec_file_name += "_pris";
+      eleType = "BRICK"; 
+	  te=6;
+	}
+*/
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
+    sprintf(tf_name, "%d", myrank);
+    tec_file_name += "_" + string(tf_name);
+    std::cout << "Tecplot filename: " << tec_file_name << endl;
+#endif
+    tec_file_name += TEC_FILE_EXTENSION;
+    if(!new_file_opened) remove(tec_file_name.c_str()); //WW
+    fstream tec_file (tec_file_name.data(),ios::app|ios::out);
+    tec_file.setf(ios::scientific,ios::floatfield);
+    tec_file.precision(12);
+    if (!tec_file.good()) return;
+#ifdef SUPERCOMPUTER
+// kg44 buffer the output
+    char mybuf1 [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+    tec_file.rdbuf()->pubsetbuf(mybuf1,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+#endif
+// 
+    WriteTECHeader(tec_file,te,eleType);
+    WriteTECNodePCONData(tec_file);
+    WriteTECElementData(tec_file,te);
+    tec_file.close(); // kg44 close file 
+    //--------------------------------------------------------------------
+    // tri elements
+    if(msh_no_tris>0){
+    //string tec_file_name = pcs_type_name + "_" + "domain" + "_tri" + TEC_FILE_EXTENSION;
+#ifdef SUPERCOMPUTER
+// buffer the output
+      char sxbuf1[MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+#endif
+      string tec_file_name = file_base_name + "_" + "domain" + "_tri" + TEC_FILE_EXTENSION;
+      fstream tec_file1 (tec_file_name.data(),ios::app|ios::out);
+      tec_file1.setf(ios::scientific,ios::floatfield);
+      tec_file1.precision(12);
+      if (!tec_file1.good()) return;
+#ifdef SUPERCOMPUTER
+      tec_file1.rdbuf()->pubsetbuf(sxbuf1,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+#endif
+      //OK  tec_file1.clear();
+      //OK  tec_file1.seekg(0L,ios::beg);
+      WriteTECHeader(tec_file1,4,"TRIANGLE");
+      WriteTECNodeData(tec_file1);
+      WriteTECElementData(tec_file1,4);
+      tec_file1.close(); // kg44 close file 
+    }
+    //--------------------------------------------------------------------
+    // quad elements
+    if(msh_no_quad>0){
+      //string tec_file_name = pcs_type_name + "_" + "domain" + "_quad" + TEC_FILE_EXTENSION;
+#ifdef SUPERCOMPUTER
+      char sxbuf2[MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+#endif
+      string tec_file_name = file_base_name + "_" + "domain" + "_quad" + TEC_FILE_EXTENSION;
+      fstream tec_file (tec_file_name.data(),ios::app|ios::out);
+
+      tec_file.setf(ios::scientific,ios::floatfield);
+      tec_file.precision(12);
+      if (!tec_file.good()) return;
+#ifdef SUPERCOMPUTER
+      tec_file.rdbuf()->pubsetbuf(sxbuf2,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+#endif
+      WriteTECHeader(tec_file,2,"QUADRILATERAL");
+      WriteTECNodeData(tec_file);
+      WriteTECElementData(tec_file,2);
+      tec_file.close(); // kg44 close file 
+    }
+    //--------------------------------------------------------------------
+    // tet elements
+    if(msh_no_tets>0){
+      //string tec_file_name = pcs_type_name + "_" + "domain" + "_tet" + TEC_FILE_EXTENSION;
+#ifdef SUPERCOMPUTER
+      char sxbuf3[MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+#endif
+
+      string tec_file_name = file_base_name + "_" + "domain" + "_tet";
+
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
+      sprintf(tf_name, "%d", myrank);
+      tec_file_name += "_" + string(tf_name);
+#endif
+
+      tec_file_name += TEC_FILE_EXTENSION;
+
+      fstream tec_file (tec_file_name.data(),ios::app|ios::out);
+
+      tec_file.setf(ios::scientific,ios::floatfield);
+      tec_file.precision(12);
+      if (!tec_file.good()) return;
+#ifdef SUPERCOMPUTER
+      tec_file.rdbuf()->pubsetbuf(sxbuf3,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+#endif
+
+      WriteTECHeader(tec_file,5,"TETRAHEDRON");
+      WriteTECNodeData(tec_file);
+      WriteTECElementData(tec_file,5);
+      tec_file.close(); // kg44 close file 
+    }
+    //--------------------------------------------------------------------
+    // pris elements
+    if(msh_no_pris>0){
+      //string tec_file_name = pcs_type_name + "_" + "domain" + "_pris" + TEC_FILE_EXTENSION;
+#ifdef SUPERCOMPUTER
+        char sxbuf4[MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+#endif
+      string tec_file_name = file_base_name + "_" + "domain" + "_pris" + TEC_FILE_EXTENSION;
+      fstream tec_file (tec_file_name.data(),ios::app|ios::out);
+
+      tec_file.setf(ios::scientific,ios::floatfield);
+      tec_file.precision(12);
+      if (!tec_file.good()) return;
+#ifdef SUPERCOMPUTER
+      tec_file.rdbuf()->pubsetbuf(sxbuf4,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+#endif
+
+      WriteTECHeader(tec_file,6,"BRICK");
+      WriteTECNodeData(tec_file);
+      WriteTECElementData(tec_file,6);
+      tec_file.close(); // kg44 close file 
+    }
+    //--------------------------------------------------------------------
+    // hex elements
+    if(msh_no_hexs>0){
+      //string tec_file_name = pcs_type_name + "_" + "domain" + "_hex" + TEC_FILE_EXTENSION;
+#ifdef SUPERCOMPUTER
+        char sxbuf5[MY_IO_BUFSIZE*MY_IO_BUFSIZE];
+#endif
+
+      string tec_file_name = file_base_name + "_" + "domain" + "_hex" + TEC_FILE_EXTENSION;
+      fstream tec_file (tec_file_name.data(),ios::app|ios::out);
+
+
+      tec_file.setf(ios::scientific,ios::floatfield);
+      tec_file.precision(12);
+      if (!tec_file.good()) return;
+#ifdef SUPERCOMPUTER
+      tec_file.rdbuf()->pubsetbuf(sxbuf5,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
+#endif
+      WriteTECHeader(tec_file,3,"BRICK");
+      WriteTECNodeData(tec_file);
+      WriteTECElementData(tec_file,3);
+      tec_file.close(); // kg44 close file 
+    }
+  }
+
+}
+
+
+/**************************************************************************
+FEMLib-Method: 
+Task: Node value output of PCON in aquous
+Programing:
+08/2008 MX Implementation
+**************************************************************************/
+void COutput::WriteTECNodePCONData(fstream &tec_file)
+{
+  const int nName = (int)pcon_value_vector.size();
+  long j;
+  double x[3];
+  int i, k;
+  int  nidx_dm[3];
+  vector<int> PconIndex(nName);
+  //----------------------------------------------------------------------
+  m_msh = GetMSH();
+  //======================================================================
+   #ifdef CHEMAPP
+	CEqlink *eq=NULL;
+	
+	eq = eq->GetREACTION();
+	if (!eq) 
+		return;
+	const int nPCON_aq = eq->NPCON[1];  //GetNPCON(1);
+	eq->GetPconNameAq();
+
+    for(i=0;i<nName;i++){
+	   for(k=0;k<nPCON_aq;k++){
+//		 pcon_value_name = PconName_Aq[i];
+		 if(pcon_value_vector[i].compare(PconName_Aq[k])==0)
+         { 
+		    PconIndex[i] = k;
+			break;
+		 }
+	   }
+    }
+   #endif
+  // MSH
+   //--------------------------------------------------------------------
+   //....................................................................
+   for(j=0l;j<m_msh->GetNodesNumber(false);j++)
+   {
+     //..................................................................
+     // XYZ
+     x[0] = m_msh->nod_vector[j]->X();
+     x[1] = m_msh->nod_vector[j]->Y();
+     x[2] = m_msh->nod_vector[j]->Z();
+     // Amplifying DISPLACEMENTs
+     if(M_Process||MH_Process)  //WW
+     {
+       for(k=0;k<max_dim+1;k++)
+         x[k] += out_amplifier*m_pcs->GetNodeValue(m_msh->nod_vector[j]->GetIndex(), nidx_dm[k]);
+     }
+     for(i=0;i<3;i++)
+       tec_file << x[i] << " ";
+     //..................................................................
+     // NOD values
+     //..................................................................
+     for(k=0;k<nName;k++){
+      #ifdef CHEMAPP
+	   tec_file << eq->GetPconAq_mol_amount(j,PconIndex[k]) << " ";
+      #endif
+     }
+     tec_file << endl;
+     //..................................................................
+   }
+   //======================================================================
+  //----------------------------------------------------------------------
+}

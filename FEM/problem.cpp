@@ -48,7 +48,7 @@ Modification:
 #include "rfstring.h" // GetLineFromFile1
 //
 #ifdef CHEMAPP
-  #include "eqlink.h"
+  #include "./EQL/eqlink.h"
 #endif
 #ifdef UDE_REACT
 #include "rf_REACT_ude.h"

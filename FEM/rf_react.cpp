@@ -30,6 +30,9 @@ Reaction package to go with MTM2
 #include "rf_kinreact.h"
 // Elem object
 #include "fem_ele_std.h"
+#ifdef CHEMAPP
+  #include "./EQL/eqlink.h"
+#endif
 
 #include <vector>
 using namespace std;

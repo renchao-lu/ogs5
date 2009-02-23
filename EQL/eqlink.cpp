@@ -14,6 +14,8 @@
 #include "rfmat_cp.h"
 
 vector <CEqlink*> Eqlink_vec;
+vector <string> PconName_Aq;
+vector <double>Pcon_Aq_mol_vec;
 
 #define no_DEBUG_CHEMAPP  //for debug
  static double lambda=0.001;
@@ -210,6 +212,50 @@ CEqlink * CEqlink::GetREACTION(void)
   if(Eqlink_vec.capacity() > 0)
 	eq = Eqlink_vec[0];
   return eq;
+}
+
+/**************************************************************************
+  GeoSys - Funktion: CEqlink::GetPconNameAq(void)
+ 
+   Aufgabe:
+     Get PCON_aq name vector	
+  
+  Ergebnis:
+   
+                                                                         
+  Programmaenderungen:
+     08/2008   MX  Erste Version
+**************************************************************************/
+void CEqlink::GetPconNameAq(void)
+{
+  int i;
+	CEqlink *eq = NULL;
+  string pconName_aq;
+  eq = GetREACTION();
+  for(i=0;i<NPCON[1];i++){
+    pconName_aq = eq->PCNAME_AQ[i];
+    PconName_Aq.push_back(pconName_aq);
+  }
+}
+
+/**************************************************************************
+  GeoSys - Funktion: CEqlink::GetPconNameAq(void)
+ 
+   Aufgabe:
+     Get PCON_aq mol vector	
+  
+  Ergebnis:
+   
+                                                                         
+  Programmaenderungen:
+     08/2008   MX  Erste Version
+**************************************************************************/
+double CEqlink::GetPconAq_mol_amount(const long node, const long pcon_indx)
+{
+  CEqlink *eq = NULL;
+  eq = GetREACTION();
+
+  return eq->mol_pcon_aq_out[node][pcon_indx];
 }
 
 /**************************************************************************
@@ -622,7 +668,8 @@ void CEqlink::initEQLINK(void){
 			str=m_pcs->pcs_primary_function_name[0];
 			if (cp_vec[comp]->mobil){
 				for (k=0; k<NSCOM;k++){   //pH  -> H+
-				    if (strcmp(m_pcs->pcs_primary_function_name[0],"pH") ==0 && strcmp(SCNAME[k],"H") ==0){
+//				    if (strcmp(m_pcs->pcs_primary_function_name[0],"pH") ==0 && strcmp(SCNAME[k],"H") ==0){
+				    if (strcmp(m_pcs->pcs_primary_function_name[0],"pH") ==0){
 					  for(i=0;i<nodenumber;i++){
 						memEQ_mol_scom_aq[i][k] =  \
 							m_pcs->GetNodeValue(i,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]) \
@@ -1156,7 +1203,10 @@ void CEqlink::callEQCALC(long node){
     if (KIND_OF_PFILE ==1) j=1;
     else j=0;
     for (i=j;i<NSCOM;i++){
-      if (memEQ_mol_scom_total[node][i] !=0.0)
+//MX      if (memEQ_mol_scom_total[node][i] !=0.0)
+    if (memEQ_mol_scom_total[node][i] <0.0)
+		cout<<"!!!Warning: Negative total system component of  "<<SCNAME[i]<<i+1<<" |"<<scientific<<memEQ_mol_scom_total[node][i]<<endl;
+	if (memEQ_mol_scom_total[node][i] > 0.0)
         tqsetc("ia",0,i+1,memEQ_mol_scom_total[node][i],&numcon, &numerr);
     }
     #ifdef _DEBUG_CHEMAPP
@@ -1255,13 +1305,19 @@ void CEqlink::callEQCALC(long node){
     }//while
 
     //Get CHEMAPP results
-    if (numerr !=0) {
-		        DisplayErrorMsg("******EQCALC (Warning):******");
-		        DisplayErrorMsg("Unrestricted calculated system volume");
-		        DisplayErrorMsg("deviates too much from input system volume.");
-                printf("\nThreshold value was: %d %d \n",aktuelle_zeit, node);
-		        DisplayErrorMsg("Calculation will be repeated with");
-		        DisplayErrorMsg("input system volume as target variable.");
+    if (numerr !=0 || ( aktuelle_zeit == 400 && node == 144) ) {
+		        DisplayErrorMsg("******EQCALC fails ******");
+//		        DisplayErrorMsg("Unrestricted calculated system volume");
+//		        DisplayErrorMsg("deviates too much from input system volume.");
+				cout << " ChemApp error No. is " << numerr <<endl;
+                cout << " Aktuelle_zeit is " << aktuelle_zeit <<endl;
+				cout << " Node is " << node <<endl;
+				
+				tqshow(&numerr); //MX
+	if (node == 145) 	exit(1);  //MX for debug only!!
+
+//		        DisplayErrorMsg("Calculation will be repeated with");
+//		        DisplayErrorMsg("input system volume as target variable.");
 }
     if (!numerr){
         iSysCalc[node] = iSysCalc[node]+1;
@@ -1328,7 +1384,7 @@ void CEqlink::callEQCALC(long node){
             pH_out[node] = - log10(dtemp);
             if (pstat[1]==2){
               dtemp =0.0;
-              tqgetr("Eh",2,0,&dtemp, &numerr);   //for Eh output 
+              // tqgetr("Eh",2,0,&dtemp, &numerr);   //for Eh output // 12.02.2009 HS, MX, disabled this. 
               Eh_out[node] = dtemp;
             }
         }
@@ -1474,7 +1530,8 @@ void CEqlink::SetResultsBackMassTransport(void){
             idx1 = idx0+1;
 			if (cp_vec[comp]->mobil){
 				for (k=0; k<NSCOM;k++){   //pH  -> H+
-				    if (strcmp(m_pcs->pcs_primary_function_name[0],"pH") ==0 && strcmp(SCNAME[k],"H") ==0){
+//MX				    if (strcmp(m_pcs->pcs_primary_function_name[0],"pH") ==0 && strcmp(SCNAME[k],"H") ==0){				    
+					if (strcmp(m_pcs->pcs_primary_function_name[0],"pH") ==0 && strcmp(SCNAME[k],"EA") ==0){
 					  for(i=0;i<nodenumber;i++){
                         m_pcs->SetNodeValue(i, idx1,pH_out[i]);
 					  } //for i
@@ -1484,6 +1541,9 @@ void CEqlink::SetResultsBackMassTransport(void){
 					  for(i=0;i<nodenumber;i++){
                         if (strcmp(SCNAME[k],"O")==0) 
                             mol_scom_aq_out[i][k] -= molH2O_out[i]; //H2O extract
+					    if (strcmp(SCNAME[k],"H")==0) 
+                            mol_scom_aq_out[i][k] -= 2*molH2O_out[i]; //H2O extract
+
                         m_pcs->SetNodeValue(i, idx1,mol_scom_aq_out[i][k]);
 						temp =  \
 							m_pcs->GetNodeValue(i,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]) \
@@ -1507,7 +1567,8 @@ void CEqlink::SetResultsBackMassTransport(void){
 			}  //if mobile
 			else if (cp_vec[comp]->mobil==0){ //immobile
                 for (k=0; k<NSCOM;k++){  
-				    if (strcmp(m_pcs->pcs_primary_function_name[0],"pH") ==0 && strcmp(SCNAME[k],"H") ==0){
+//				    if (strcmp(m_pcs->pcs_primary_function_name[0],"pH") ==0 && strcmp(SCNAME[k],"H") ==0){
+				    if (strcmp(m_pcs->pcs_primary_function_name[0],"pH") ==0 ){
 					  for(i=0;i<nodenumber;i++){
                         m_pcs->SetNodeValue(i, idx1,pH_out[i]);
 					  } //for i

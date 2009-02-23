@@ -62,7 +62,7 @@
 #include "rf_fct.h" //OK
 #include "rf_db.h" //OK
 #ifdef CHEMAPP
-  #include "eqlink.h"  //MX
+  #include "./EQL/eqlink.h"  //MX
 #endif
 /* Tools */
 #include "mathlib.h"

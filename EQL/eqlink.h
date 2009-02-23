@@ -77,9 +77,12 @@ using namespace std;
       double ***PCSTOI_SOLIDS,**PCSTOI_GAS, **PCSTOI_AQ;   //stoi coefficient
       double **PCMMASS_SOLIDS,*PCMMASS_GAS,*PCMMASS_AQ;    //mol mass (g/mol)
       double **PMOLVOL_SOLIDS, *PMOLVOL_GAS, *PMOLVOL_AQ;  //molar volume (cc/mol)
-      long   NPHAS, NMIXPHAS, NSCOM, *NPCON,KIND_OF_PFILE;
+      long   NPHAS, NMIXPHAS, NSCOM, KIND_OF_PFILE;
+  public:
+	  long *NPCON;
+  private:
       char   *FILE_DB;//120
-      char   **PMOD, **SCNAME, **PCNAME_GAS, **PCNAME_AQ, ***PCNAME_SOLIDS;
+      char   **PMOD, **SCNAME, **PCNAME_GAS, **PCNAME_AQ, ***PCNAME_SOLIDS;  
       char   **PNAME, *PSTATNAME[4]; //24
       char   TUnit[3],PUnit[3],VUnit[3],MUnit[4],EUnit[3];
 //      char   *TUnit, *PUnit,*VUnit,*MUnit,*EUnit;
@@ -360,6 +363,8 @@ C                  3: eliminated (= phase is excluded from calculation
   void TestCHEMAPPParameterFile(string); //Test file exist
   void prepare(string filename);   //reading the database of CHEMAPP 
   CEqlink * CEqlink::GetREACTION(void);
+  void GetPconNameAq(void);
+  double GetPconAq_mol_amount(const long, const long);
   void initEQLINK(void);
   void DestroyMemory();
   void callCHEMAPP(string filename);
@@ -379,7 +384,7 @@ C                  3: eliminated (= phase is excluded from calculation
 
 };
 extern vector <CEqlink*> Eqlink_vec;
-
+extern vector <string> PconName_Aq;
 extern void CHMRead(string filename);
 
 #endif
