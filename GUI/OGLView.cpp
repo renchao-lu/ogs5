@@ -1241,16 +1241,16 @@ void COGLView::OnDrawGL()
                       m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Y())),
                       m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Z())));
 	          glEnd();
-              ////Coloring points (temporal solution) //NW
-              //   glPointSize(8.0);
-              //   glBegin(GL_POINTS); 
-              //   glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->X())),
-              //           m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Y())),
-              //           m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Z())));
-              //   glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->X())),
-              //           m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Y())),
-              //           m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Z())));
-              //   glEnd();
+              //Temporal solution for Meijiang.msh
+              glPointSize(8.0);
+	          glBegin(GL_POINTS); 
+              glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->X())),
+                      m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Y())),
+                      m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(0)->Z())));
+	          glVertex3d(m_image_distort_factor_x*(-x_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->X())),
+                      m_image_distort_factor_y*(-y_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Y())),
+                      m_image_distort_factor_z*(-z_mid +   (fem_msh_vector[j]->ele_vector[i]->GetNode(1)->Z())));
+	          glEnd();
 
               break;
             case 4: // triangle

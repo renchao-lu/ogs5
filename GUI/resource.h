@@ -57,6 +57,7 @@
 #define IDD_ISO_COL                     174
 #define IDD_ISO_VALUE                   175
 #define IDD_ISO_FRAMEWIDTH              176
+#define IDD_DATABASE                    179
 #define IDD_GHDB_Connect                180
 #define IDD_BOUNDARY_CONDITIONS         220
 #define IDD_ST                          220
@@ -294,9 +295,9 @@
 #define IDC_CHECK_DISPLAY_MAT_GROUPS2   1058
 #define IDC_CHECK_DISPLAY_ObS_WELLS     1058
 #define ID_ADD_ELE_VALUE                1058
-#define IDC_BUTTON_ELE                  1058
 #define IDC_BUTTON_MOD_READ             1058
 #define IDC_RADIO_DIS_GRADIENT          1058
+#define IDC_BUTTON_ELE                  1058
 #define IDC_LIST_POLYLINES_MSH          1059
 #define IDC_CHECK_DISPLAY_ObS_WELLS2    1059
 #define IDC_CHECK_AXIS                  1059
@@ -513,6 +514,7 @@
 #define IDC_BUTTON2                     1170
 #define IDC_LISTCONTROL_DATA            1170
 #define IDC_BUTTON_NOT_DISTORT          1170
+#define IDC_BUTTON_MAT                  1170
 #define IDC_CHECK_SIMULATOR9            1171
 #define IDC_CHECK1                      1171
 #define IDC_BOUNDINGBOX_ON_OFF          1171
@@ -736,6 +738,7 @@
 #define IDC_PATCH_INDEX                 1226
 #define IDC_EDIT_SLOPE_Y                1226
 #define IDC_LIST_STATIONDATA            1226
+#define IDC_LIST_DATA                   1226
 #define IDC_VELOCITYVECTOR              1227
 #define IDC_COMBO_VOL_LAYER_SFC         1227
 #define IDC_ADD_NEXT_POLYGON_BUTTON     1227
@@ -954,14 +957,21 @@
 #define IDC_COMBO_MOD_C                 1257
 #define IDC_CHECK_MOD_M                 1258
 #define IDC_FILE_FEFLOW_READ_NOD        1259
+#define IDC_DB_EDIT                     1259
 #define IDC_BUTTON_CREATE_NOD           1260
+#define IDC_OPEN_DB                     1260
 #define IDC_BUTTON_CREATE_ELE           1261
 #define IDC_BUTTON_CREATE_MMP           1262
+#define IDC_BUTTON_IMPORT               1262
 #define IDC_RADIO_DIS_CONSTANT          1263
+#define IDC_LIST_ATT                    1263
 #define IDC_EDIT_DIS_CONSTANT           1264
+#define IDC_BUTTON_ATT                  1264
 #define IDC_GHDB_File                   1265
 #define IDC_LIST_Fields                 1266
+#define IDC_BUTTON_EXPDB                1267
 #define IDC_FILE_GHDB                   1268
+#define IDC_EDIT_NEWTB                  1268
 #define IDC_GHDB_Connect                1269
 #define IDC_LIST2                       1275
 #define IDC_EDIT_TS_1                   1301
@@ -1044,6 +1054,7 @@
 #define IDC_EDIT_MAT_FP_DENSITY_5       1616
 #define IDC_COMBO1                      1618
 #define IDC_EDIT_MAT_FP_DENSITY_6       1618
+#define IDC_COMBO_PLY                   1618
 #define IDC_COMBO10                     1619
 #define IDC_LIST_POLYLINES              1619
 #define IDC_RADIO_MAT_FP_DENSITY9       1619
@@ -1056,6 +1067,7 @@
 #define IDC_COMBO3                      1620
 #define IDC_COMBO_GEO                   1620
 #define IDC_COMBO_LAYER                 1620
+#define IDC_COMBO_PNT                   1620
 #define IDC_COMBO4                      1621
 #define IDC_EDIT_POLYLINE_2             1621
 #define IDC_EDIT_MAT_FP_DENSITY_8       1621
@@ -1076,6 +1088,7 @@
 #define IDC_EDIT_POLYLINE_6             1625
 #define IDC_EDIT_MAT_FP_DENSITY_12      1625
 #define IDC_COMBO_STATION               1625
+#define IDC_COMBO_SFC                   1625
 #define IDC_COMBO8                      1626
 #define IDC_EDIT_POLYLINE_7             1626
 #define IDC_EDIT_MAT_FP_DENSITY_11      1626
@@ -1339,6 +1352,7 @@
 #define ID_ENVIRONMENT_COLOR            33090
 #define ID_2DVIEWS_GHDBVIEW             33091
 #define ID_GHDBVIEW_CREATE              33092
+#define ID_IMPORT_GHDBDATABASE          33095
 
 // Next default values for new objects
 // 
@@ -1346,7 +1360,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        178
-#define _APS_NEXT_COMMAND_VALUE         33093
+#define _APS_NEXT_COMMAND_VALUE         33096
 #define _APS_NEXT_CONTROL_VALUE         1265
 #define _APS_NEXT_SYMED_VALUE           104
 #endif

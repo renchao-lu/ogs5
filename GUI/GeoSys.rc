@@ -813,6 +813,38 @@ BEGIN
     PUSHBUTTON      "Create ST",IDC_BUTTON_CREATE_ST,132,108,48,12
 END
 
+IDD_DATABASE DIALOGEX 0, 0, 366, 347
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "GHDB DATABASE Interface"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,309,315,50,14
+    EDITTEXT        IDC_DB_EDIT,16,26,226,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "Open...",IDC_OPEN_DB,248,24,40,14
+    LISTBOX         IDC_LIST_GEO,17,54,225,65,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Import Geometry...",IDC_BUTTON_IMPORT,273,145,71,18
+    LISTBOX         IDC_LIST_ATT,18,148,213,69,LBS_MULTIPLESEL | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Attributes of the selected table:",IDC_STATIC,17,135,112,13
+    LTEXT           "Table list:",IDC_STATIC,15,41,137,11
+    LTEXT           "Select GHDB database to open:",IDC_STATIC,17,15,122,8
+    COMBOBOX        IDC_COMBO_SFC,270,202,88,61,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_PNT,270,167,88,84,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_PLY,270,185,88,56,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Show attribute data",IDC_BUTTON_ATT,270,236,73,14
+    GROUPBOX        "Attribute Data List:",IDC_STATIC,7,226,352,75
+    GROUPBOX        "GEO data:",IDC_STATIC,7,1,352,222
+    PUSHBUTTON      "Generate Line elements",IDC_BUTTON_ELE,269,279,84,21
+    LTEXT           "Points:",IDC_STATIC,237,170,26,11
+    LTEXT           "Polylines:",IDC_STATIC,236,186,31,11
+    LTEXT           "Surfaces:",IDC_STATIC,236,203,29,11
+    CONTROL         "",IDC_LIST_DATA,"SysListView32",LVS_REPORT | LVS_EDITLABELS | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,235,250,65
+    GROUPBOX        "Export to GHDB:",IDC_STATIC,7,303,277,37
+    LTEXT           "Input new table name:",IDC_STATIC,9,319,76,12
+    EDITTEXT        IDC_EDIT_NEWTB,95,319,93,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "Export to GHDB",IDC_BUTTON_EXPDB,205,316,72,16
+    PUSHBUTTON      "Create MAT Group",IDC_BUTTON_MAT,271,257,73,16
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1092,6 +1124,14 @@ BEGIN
         RIGHTMARGIN, 179
         TOPMARGIN, 7
         BOTTOMMARGIN, 119
+    END
+
+    IDD_DATABASE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 359
+        TOPMARGIN, 1
+        BOTTOMMARGIN, 340
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -2865,6 +2905,7 @@ BEGIN
             MENUITEM "FLAC (NOD/ELE/MAT data)",     ID_IMPORT_FLAC
             MENUITEM "FLAC (Export file)",          ID_IMPORT_FLAC_MESH
             MENUITEM "FEFLOW",                      ID_IMPORT_FEFLOW
+            MENUITEM "GHDB Geodatabase(Import and Export File)", ID_IMPORT_GHDBDATABASE
         END
         POPUP "&Export...\tCtrl+O"
         BEGIN
@@ -3253,7 +3294,7 @@ END
 
 STRINGTABLE 
 BEGIN
-    IDR_MAINFRAME           "GeoSys  -  4.9.03(FS)"
+    IDR_MAINFRAME           "GeoSys  -  4.9.04(CC)"
     IDR_GEOSYSTYPE          "\nGeoSys\nGeoSys\nGeoSys project file (*.gsp)\n.gsp\nGeoSys.Document\nGeoSys Document"
 END
 

@@ -59,6 +59,7 @@ extern bool RFDOpen(string file_name_base);
 #include "dlg_shp.h"
 #include "dlg_GHDB.h"//FS
 #include ".\geosysdoc.h"
+#include "dlg_database.h"//CC 12/2008
 // Dialogs
 #include "gs_newproject.h"
 #include "gs_project.h"
@@ -108,6 +109,7 @@ BEGIN_MESSAGE_MAP(CGeoSysDoc, CDocument)
     ON_COMMAND(ID_IMPORT_EXCEL_FCT,OnImportEXCEL_FCT) //OK
     ON_COMMAND(ID_DEM_ASC, OnImportASC) //CC
 	ON_COMMAND(ID_IMPORT_SHP_NEW, OnImportSHPNew) //OK
+	ON_COMMAND(ID_IMPORT_GHDBDATABASE, OnImportGHDB)//CC
 	ON_COMMAND(ID_IMPORT_FLAC, OnImportFLAC) //OK
     ON_COMMAND(ID_IMPORT_FLAC_MESH, OnImportFLACMesh) //MR
     ON_COMMAND(ID_IMPORT_FEFLOW, OnImportFEFLOW) //OK
@@ -2246,6 +2248,24 @@ void CGeoSysDoc::OnImportSHPNew()
   UpdateAllViews(NULL);
 }
 
+/**************************************************************************
+GeoSys-Method: OnImportGHDB
+Task: 
+Programing:
+12/2008 CC Implementation
+**************************************************************************/
+void CGeoSysDoc::OnImportGHDB()
+{
+  CDialogDatabase m_dlg_shp;
+  m_dlg_shp.m_strGSPFilePathBase = m_strGSPFilePathBase;
+  m_dlg_shp.m_strGSPFileBase = m_strGSPFileBase;
+  m_dlg_shp.DoModal();
+  //....................................................................
+  // Open GEOView
+  CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+  m_frame->m_rebuild_formtree = 1;
+  UpdateAllViews(NULL);
+}
 /**************************************************************************
 GeoSys-Method: RearrangeFLACNodes
 Task: The node orders of FLAC3D zones and GS/RF elements are different from

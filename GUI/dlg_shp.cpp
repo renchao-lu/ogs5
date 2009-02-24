@@ -318,6 +318,7 @@ void CDialogSHP::OnBnClickedButtonCreatePLY()
   CGLPoint m_pnt;
   CGLPoint *m_pnt_exist = NULL;
   CGLPoint *m_pnt_new = NULL;
+  long number_of_points = 0;//CC 2008
   //----------------------------------------------------------------------
   // SHP objects
   SHPHandle hSHP;
@@ -362,10 +363,12 @@ void CDialogSHP::OnBnClickedButtonCreatePLY()
             m_ply->point_vector.push_back(m_pnt_exist);
           }
           else{
+		    number_of_points = (long)gli_points_vector.size();//CC 2009
             m_pnt_new = new CGLPoint;
             m_pnt_new->x = m_pnt.x;
             m_pnt_new->y = m_pnt.y;
             m_pnt_new->z = m_pnt.z;
+			m_pnt_new->id = number_of_points;//CC2009
             gli_points_vector.push_back(m_pnt_new);
             m_ply->point_vector.push_back(m_pnt_new);
           }
@@ -394,10 +397,12 @@ void CDialogSHP::OnBnClickedButtonCreatePLY()
             m_ply->point_vector.push_back(m_pnt_exist);
           }
           else{
+		    number_of_points = (long)gli_points_vector.size();//CC 2008
             m_pnt_new = new CGLPoint();
             m_pnt_new->x = m_pnt.x;
             m_pnt_new->y = m_pnt.y;
             m_pnt_new->z = m_pnt.z;
+			m_pnt_new->id = number_of_points;
             gli_points_vector.push_back(m_pnt_new);
             m_ply->point_vector.push_back(m_pnt_new);
           }

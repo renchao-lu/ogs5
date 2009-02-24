@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="GeoSys"
 	ProjectGUID="{A55509E7-0142-4424-B24F-4BD977C2FC26}"
 	RootNamespace="GeoSys"
@@ -50,7 +50,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="../gui;../fem;../lib;../msh;../msh/tm;../msh/delaunay;../geo;../;../gui/splitter;../gui/iso;..\MSH\NW"
+				AdditionalIncludeDirectories="../gui;../fem;../lib;../lib/gdal;../msh;../msh/tm;../msh/delaunay;../geo;../;../gui/splitter;../gui/iso;..\MSH\NW"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;MFC;_FEMPCHDEBUG_;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;PROBLEM_CLASS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -79,11 +79,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib fdelaun2d-msvc.lib"
+				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib fdelaun2d-msvc.lib gdal_i.lib geos_c_i.lib "
 				OutputFile=".\Release/GeoSys.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\LIB"
+				AdditionalLibraryDirectories="..\LIB;..\LIB\GDAL"
 				DelayLoadDLLs="shapelib.dll;fdelaun2d.dll;fdelaun3d.dll;"
 				TypeLibraryFile="..\lib"
 				ProgramDatabaseFile=".\Release/TestGL.pdb"
@@ -149,7 +149,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../gui;../fem;../lib;../msh;../msh/tm;../msh/delaunay;../geo;../;../gui/splitter;../gui/iso;..\MSH\NW"
+				AdditionalIncludeDirectories="../gui;../fem;../lib;../lib/gdal;../msh;../msh/tm;../msh/delaunay;../geo;../;../gui/splitter;../gui/iso;..\MSH\NW"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;MFC;_FEMPCHDEBUG_;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;PROBLEM_CLASS"
 				RuntimeLibrary="3"
 				DisableLanguageExtensions="false"
@@ -178,11 +178,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib fdelaun2d-msvc.lib"
+				AdditionalDependencies="OPENGL32.LIB GLU32.LIB shapelib.lib fdelaun2d-msvc.lib gdal_i.lib geos_c_i.lib"
 				OutputFile=".\Debug/GeoSys.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\LIB"
+				AdditionalLibraryDirectories="..\LIB;..\LIB\GDAL"
 				DelayLoadDLLs="shapelib.dll;fdelaun2d.dll;fdelaun3d.dll;"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/GeoSys.pdb"
@@ -651,6 +651,14 @@
 			<Filter
 				Name="DLG"
 				>
+				<File
+					RelativePath=".\dlg_database.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\dlg_database.h"
+					>
+				</File>
 				<File
 					RelativePath=".\dlg_GHDB.cpp"
 					>
@@ -2165,6 +2173,222 @@
 				RelativePath="..\Lib\test.h"
 				>
 			</File>
+			<Filter
+				Name="gdal"
+				>
+				<File
+					RelativePath="..\LIB\gdal\cpl_config.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\cpl_conv.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\cpl_csv.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\cpl_error.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\cpl_http.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\cpl_list.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\cpl_minixml.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\cpl_multiproc.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\cpl_odbc.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\cpl_port.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\cpl_string.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\cpl_vsi.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\cpl_vsi_private.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\cpl_vsi_virtual.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\cpl_win32ce_api.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\cpl_wince.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\gdal.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\gdal_alg.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\gdal_frmts.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\gdal_pam.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\gdal_priv.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\gdal_rat.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\gdal_version.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\gdal_vrt.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\gdalgrid.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\gdaljp2metadata.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\gdalwarper.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\geos_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\gvgcpfit.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\memdataset.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\ogr_api.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\ogr_attrind.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\ogr_core.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\ogr_feature.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\ogr_featurestyle.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\ogr_geometry.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\ogr_geos.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\ogr_p.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\ogr_spatialref.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\ogr_srs_api.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\ogrsf_frmts.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\oledb_sup.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\oledbgis.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\rawdataset.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\sfcdatasource.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\sfcenumerator.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\sfclsid.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\sfcschemarowsets.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\sfctable.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\sfiiddef.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\swq.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\thinplatespline.h"
+					>
+				</File>
+				<File
+					RelativePath="..\LIB\gdal\vrtdataset.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath="..\gs_project.cpp"
