@@ -121,48 +121,53 @@ Programing:
 **************************************************************************/
 void CGeoSysOUTView::OnDraw(CDC* pDC)
 {
-  if(GHDBvector_x.size()>0)
-  {
-    vector<double> xx_vector;
-    vector<double> yy_vector;
-	int j=0;
-	int i;
-	j = (int)GHDBvector_y.size();
-	xx_vector.clear(); 
-	yy_vector.clear();
-	xx_vector.resize(GHDBvector_x.size());
-	yy_vector.resize(GHDBvector_y.size());
-	for(i=0;i<(int)GHDBvector_x.size();i++)
-
-{
-	xx_vector[i]=GHDBvector_x[i];
-	yy_vector[i]=GHDBvector_y[i];
-}
-m_dYmin= *min_element(GHDBvector_y.begin(),GHDBvector_y.end());
-m_dYmax= *max_element(GHDBvector_y.begin(),GHDBvector_y.end());
-GetWindowAttributes(this->m_hWnd,&width,&height);
-pDC->TextOut(0,0,GHDBViewTitle);
-CGraphics m_graphics;
-  m_graphics.width = width;
-  m_graphics.height = height;
-  m_graphics.m_dXmin = 1;
-  m_graphics.m_dXmax = j;
-  m_graphics.m_dDX = m_graphics.m_dXStep*(m_graphics.m_dXmax - m_graphics.m_dXmin);
-  m_graphics.m_dYmin = m_dYmin;
-  m_graphics.m_dYmax = m_dYmax;
-  m_graphics.m_dDY = m_graphics.m_dYStep*(m_graphics.m_dYmax - m_graphics.m_dYmin);
-  //m_graphics.m_strQuantityName = m_strQuantityName;
-  //-----------------------------------------------------------------------
-  // Axis
-  m_graphics.DrawGridAxes(pDC);
-  m_graphics.DrawCoordinateAxes(pDC);
-  //----------------------------------------------------------------------
-  // Draw x-y plot
-  m_graphics.DrawXYPlot(pDC,xx_vector,yy_vector,0);
-}
-  //----------------------------------------------------------------------
-  // Tests
-  //......................................................................
+//----------------------------------------------------------------------- 
+	CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+	if(m_frame->GHDBvector_x.size()>0)
+	  {
+		vector<double> xx_vector;
+		vector<double> yy_vector;
+		
+		int j=0;
+		int i;
+		j = (int)m_frame->GHDBvector_y.size();
+		xx_vector.clear(); 
+		yy_vector.clear();
+		xx_vector.resize(m_frame->GHDBvector_x.size());
+		yy_vector.resize(m_frame->GHDBvector_y.size());
+		for(i=0;i<(int)m_frame->GHDBvector_x.size();i++)
+			{
+				xx_vector[i]=m_frame->GHDBvector_x[i];
+				yy_vector[i]=m_frame->GHDBvector_y[i];
+			}
+		m_dYmin= *min_element(m_frame->GHDBvector_y.begin(),m_frame->GHDBvector_y.end());
+		m_dYmax= *max_element(m_frame->GHDBvector_y.begin(),m_frame->GHDBvector_y.end());
+		GetWindowAttributes(this->m_hWnd,&width,&height);
+		pDC->TextOut(0,0,m_frame->GHDBViewTitle);
+		CGraphics m_graphics;
+		  m_graphics.width = width;
+		  m_graphics.height = height;
+		  m_graphics.m_dXmin = 1;
+		  m_graphics.m_dXmax = j;
+		  m_graphics.m_dDX = m_graphics.m_dXStep*(m_graphics.m_dXmax - m_graphics.m_dXmin);
+		  m_graphics.m_dYmin = m_dYmin;
+		  m_graphics.m_dYmax = m_dYmax;
+		  m_graphics.m_dDY = m_graphics.m_dYStep*(m_graphics.m_dYmax - m_graphics.m_dYmin);
+		  //m_graphics.m_strQuantityName = m_strQuantityName;
+		  //-----------------------------------------------------------------------
+		  // Axis
+		  m_graphics.DrawGridAxes(pDC);
+		  m_graphics.DrawCoordinateAxes(pDC);
+		  //----------------------------------------------------------------------
+		  // Draw x-y plot
+		  int max_dim0 = max_dim;
+		  max_dim = 0;
+		  m_graphics.DrawXYPlot(pDC,xx_vector,yy_vector,0);
+          max_dim = max_dim0; 
+		}
+		  //----------------------------------------------------------------------
+		  // Tests
+		  //......................................................................
 else
 {
   vector<double>x_vector;

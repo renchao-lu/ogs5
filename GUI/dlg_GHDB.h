@@ -2,8 +2,7 @@
 #include "afxwin.h"
 #include <vector>
 
-//#import "c:\program files\common files\system\ado\msado15.dll" no_namespace rename("EOF","adoEOF")
-#import "C:\Programme\Gemeinsame Dateien\System\ado\msado15.dll" no_namespace rename("EOF","adoEOF")
+#import "..\LIB\msado15.dll" no_namespace rename("EOF","adoEOF")
 #include "afxcmn.h"
 
 

@@ -28,10 +28,6 @@
 #include "vol_dlg.h"
 #include "gs_graphics.h"
 
-//SF
-extern vector<double> GHDBvector_x;
-extern vector<double> GHDBvector_y;
-extern CString GHDBViewTitle;
 /////////////////////////////////////////////////////////////////////////////
 // CGeoSysApp:
 // See GeoSys.cpp for the implementation of this class
