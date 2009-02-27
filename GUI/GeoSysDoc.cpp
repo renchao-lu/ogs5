@@ -127,7 +127,7 @@ BEGIN_MESSAGE_MAP(CGeoSysDoc, CDocument)
     ON_COMMAND(ID_SIMULATOR_CHECKSTATUS, OnSimulatorCheckStatus)
     ON_UPDATE_COMMAND_UI(ID_SIMULATOR_FORWARD, OnUpdateSimulatorForward)
     ON_COMMAND(ID_IMPORT_GMS, OnImportGMS)
-	ON_COMMAND(ID_GHDBVIEW_CREATE, &CGeoSysDoc::OnGhdbviewCreate)
+	ON_COMMAND(ID_GHDBVIEW_CREATE, &CGeoSysDoc::OnGhdbviewCreate)//FS
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2825,6 +2825,10 @@ void CGeoSysDoc::OnImportFLACMesh()
     GSPAddMember((string)m_strGSPFileBase + ".msh");
   MSHWriteTecplot();
 }
+/**************************************************************************
+GeoSys-GUI-Method: OnGHDBView
+02/2009 FS Implementation
+**************************************************************************/
 void CGeoSysDoc::OnGhdbviewCreate()
 {
 	// TODO: Add your command handler code here
