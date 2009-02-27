@@ -8,6 +8,8 @@
 #if _MSC_VER >= 1000
 #pragma once
 #endif // _MSC_VER >= 1000
+#include <vector>
+using namespace std;
 
 class CMainFrame : public CMDIFrameWnd
 {
@@ -62,6 +64,7 @@ public:
 	afx_msg void OnViewSplitterOGLCreate();
 	afx_msg void OnViewOGLCreate();
     afx_msg void OnViewFCTCreate();
+	afx_msg void OnGhdbviewCreate();//FS
     //PCH
     afx_msg void OnViewOGLPicking(); // Main OpenGL Window for picking
     afx_msg void OnViewControl();  // For Control Pannel Dialog
@@ -165,7 +168,12 @@ public:
 	double Iso_Step_Value;
 
 //-------------------------------------
-	afx_msg void OnGhdbviewCreate();
+//---GHDB View by FS------
+	vector<double> GHDBvector_x;
+	vector<double> GHDBvector_y;
+	CString GHDBViewTitle;
+//-------------------------------------
+
 };
 /////////////////////////////////////////////////////////////////////////////
 

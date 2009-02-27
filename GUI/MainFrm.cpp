@@ -65,7 +65,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWnd)
 	ON_COMMAND(ID_SELECTALL, OnSelectAllInPicking)
 	ON_COMMAND(ID_DESELECTALL, OnDeselectAllInPicking)
 	ON_COMMAND(ID_RUN, OnRUN) //OK
-	ON_COMMAND(ID_GHDBVIEW_CREATE, OnGhdbviewCreate)
+	ON_COMMAND(ID_GHDBVIEW_CREATE, OnGhdbviewCreate)//FS
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -1073,6 +1073,11 @@ void CMainFrame::OnRUN()
   CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
   m_pDoc->OnSimulatorForward();
 }
+
+/**************************************************************************
+GeoSysGUI-Method: OnGHDBView
+02/2009 FS Implementation
+**************************************************************************/
 void CMainFrame::OnGhdbviewCreate()
 {
 	// TODO: Add your command handler code here
