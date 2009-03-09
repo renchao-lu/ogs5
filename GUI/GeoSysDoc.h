@@ -16,6 +16,7 @@ using namespace std;
 #include "makros.h"
 #include "nodes.h"
 #include "rf_tim_new.h"
+#include "dlg_GHDB.h"
 //#include "test.h"
 
 #ifdef PROBLEM_CLASS //16.12.2008. WW
@@ -70,7 +71,7 @@ public:
 	public:
 	virtual BOOL OnNewDocument();
 	virtual void Serialize(CArchive& ar);
-    
+     CDialogGHDB_Connect* m_modeless_dlg;
 	//}}AFX_VIRTUAL
 
 // Implementation

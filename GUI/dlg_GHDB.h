@@ -46,7 +46,6 @@ public:
    
     virtual BOOL OnInitDialog();
 	afx_msg void OnBnClickedButtonRead();
-	afx_msg void OnBnClickedCancel();
 	vector<CString> itemhead;
 	CListCtrl pro_table;
 	CStatic	m_Statistics;	
@@ -75,5 +74,6 @@ public:
 	afx_msg void OnEnChangeEdit2();
 	CEdit End;
 	afx_msg void OnBnClickedOk();
+	afx_msg void OnBnClickedCancel();
 };
 

@@ -970,6 +970,7 @@
 #define IDC_GHDB_File                   1265
 #define IDC_LIST_Fields                 1266
 #define IDC_BUTTON_EXPDB                1267
+#define IDC_Canncel                     1267
 #define IDC_FILE_GHDB                   1268
 #define IDC_EDIT_NEWTB                  1268
 #define IDC_GHDB_Connect                1269
@@ -1361,7 +1362,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        178
 #define _APS_NEXT_COMMAND_VALUE         33096
-#define _APS_NEXT_CONTROL_VALUE         1265
+#define _APS_NEXT_CONTROL_VALUE         1268
 #define _APS_NEXT_SYMED_VALUE           104
 #endif
 #endif

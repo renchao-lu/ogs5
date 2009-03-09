@@ -2832,10 +2832,16 @@ GeoSys-GUI-Method: OnGHDBView
 void CGeoSysDoc::OnGhdbviewCreate()
 {
 	// TODO: Add your command handler code here
-	CDialogGHDB_Connect* GHDBdiag = new CDialogGHDB_Connect();
-  
-  if (GHDBdiag->DoModal()==IDOK) {
-  }
+// Modeless dialog
+// if(m_modeless_dlg->GetSafeHwnd() == NULL) 
+// {
+	m_modeless_dlg = new CDialogGHDB_Connect;
+// create the modeless dialog as a child of the desktop.
+	m_modeless_dlg->Create(IDD_GHDB_Connect,m_modeless_dlg->GetDesktopWindow());
+	m_modeless_dlg->ShowWindow(SW_SHOW);
+//}
+// else
+//	m_modeless_dlg->ShowWindow(SW_SHOW);
 }
 
 /**************************************************************************

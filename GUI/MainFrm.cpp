@@ -1081,8 +1081,7 @@ GeoSysGUI-Method: OnGHDBView
 void CMainFrame::OnGhdbviewCreate()
 {
 	// TODO: Add your command handler code here
-		// TODO: Add your command handler code here
-
+		
 	CMDIChildWnd* pActiveChild = MDIGetActive();
 	CDocument* pDocument;
 	if (pActiveChild == NULL ||
