@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="GeoSys"
 	ProjectGUID="{A55509E7-0142-4424-B24F-4BD977C2FC26}"
 	RootNamespace="GeoSys"
@@ -84,7 +84,7 @@
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="..\LIB;..\LIB\GDAL"
-				DelayLoadDLLs="shapelib.dll;fdelaun2d.dll;fdelaun3d.dll;"
+				DelayLoadDLLs="shapelib.dll;fdelaun2d.dll;fdelaun3d.dll;gdal15.dll;geos_c.dll;"
 				TypeLibraryFile="..\lib"
 				ProgramDatabaseFile=".\Release/TestGL.pdb"
 				SubSystem="2"
