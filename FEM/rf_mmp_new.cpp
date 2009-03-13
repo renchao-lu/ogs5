@@ -6448,6 +6448,8 @@ double CMediumProperties::SaturationPressureDependency
 	  dS_dp = m*n*(saturation_max[phase]-saturation_res[phase])*
               pow(1.0+pow(alpha*capillary_pressure,n),-m-1.0)
               *pow(alpha, n)*pow(capillary_pressure, n-1.0);
+      break;
+      /*
 		case 6:  // Brooks-Corey: 02.2008 PCH
 			S_e = (saturation-saturation_res[phase])/(saturation_max[phase]-saturation_res[phase]);
 			// PCH Se Cut for Pmax=1e5 Pa as in TOUGHT2 in this Brooks-Corey
@@ -6459,6 +6461,7 @@ double CMediumProperties::SaturationPressureDependency
 			dS_dp=-capillary_pressure_model_values[0]/(saturation_exp[0]*(saturation-saturation_res[phase])) *
 						pow(S_e, -1.0/saturation_exp[0]);
       break;
+      */
   }
   //----------------------------------------------------------------------
   mode = 0;

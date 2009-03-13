@@ -10,13 +10,11 @@ Programming: Norbert Böttcher
 **********************************************************************/
 
 #include "stdafx.h" //MFC
-
-#include <math.h>
-#include <fstream>
-#include <iostream>
-#include <stdio.h>
-#include <eos.h>
-#include <string>
+#include "nodes.h" //NB 4.9.05
+#include "rf_mmp_new.h"
+#include "rf_mfp_new.h"
+#include "rf_num_new.h"
+#include "tools.h"
 
 using namespace std;
 
@@ -38,15 +36,21 @@ Parameters:
 						 0 - CO2;
 						 1 - H20; !The coefficients for the residual part of 
 								   H2O does not exist yet!
+last change: NB, Feb 2009
 ***********************************************************************/
-double K0 (int parameter, int index,int part, int fluid)
+double K0 (int parameter, int index,int part, string caption)
 {
+  CFluidProperties *FP;
   
 	double k [14][56];
 	double value;
+    char n;
+    FP=MFPGet(caption,0);
+    n=FP->caption[0];
 
-	switch (fluid){
-		case 0: // CO2;
+	switch (n)
+	{
+		case 'C': // CARBON_DIOXIDE;
 			if (part == 0) // ideal gas part
 			{
 				k[0][0]=  8.37304456;	k[0][1]=  -3.70454304;	k[0][2]=  2.5;			k[0][3]=  1.99427042; 
@@ -123,7 +127,7 @@ double K0 (int parameter, int index,int part, int fluid)
 
 			break;
 
-		case 1: // H20;
+		case 'W': // WATER;
 			if (part == 0) // ideal gas part
 			{
 			k[0][0]=  -8.32044648201;	k[0][1]=   6.6832105268;	k[0][2]=  3.00632;
@@ -216,7 +220,55 @@ double K0 (int parameter, int index,int part, int fluid)
 
 			}
 			break;
-		default: cout << "fluid number " << fluid << "not in list!" << endl;
+		case 'M' : //METHANE
+		if (part == 0) // ideal gas part
+			{
+			k[0][0]=  9.912644; k[0][1]=  -6.333133;  k[0][2]=  3.0016; k[0][3]=  0.008449;
+			k[0][4]=  4.6942;   k[0][5]=  3.4865;     k[0][6]=  1.6572;	k[0][7]=  1.4115;
+			
+			k[1][0] = 0;  k[1][1] = 0;  k[1][2] = 0; k[1][3] = 3.400664; k[1][4] = 10.27022; k[1][5] = 20.44072; k[1][6] = 29.93949; k[1][7] = 79.13892;
+
+			value = k[parameter][index-1];
+
+			} 
+			else //real gas part
+			{
+			 k[0][0]=   0.4348859923e-1;k[0][1]=   0.6476440059;   k[0][2]=  -0.1754463135e1; k[0][3]=   0.8744372303;   k[0][4]= -0.1218590550e1;
+  			 k[0][5]=   0.5163288772;	k[0][6]=  -0.3897465465e-3;k[0][7]=  -0.1319614329e-1;k[0][8]=   0.3079114307e-1;k[0][9]=  0.1737122018e-2;
+             k[0][10]= -0.2875263339e-5;k[0][11]= -0.2264903549e-5;k[0][12]=  0.3011804067e-6;k[0][13]=  0.1894725958;   k[0][14]=  0.1631476829;
+             k[0][15]= -0.4352320208;   k[0][16]=  0.7272777114e-1;k[0][17]= -0.1535668820e-1;k[0][18]= -0.3189454742e-1;k[0][19]= -0.2929367924e-1;
+             k[0][20]= -0.1821109172e-1;k[0][21]= -0.1113246058;   k[0][22]=  0.9982980642e-1;k[0][23]=  0.8699729082e-2;k[0][24]= -0.6186578910e-1;
+             k[0][25]= -0.4233225078e-1;k[0][26]= -0.1805277017e-1;k[0][27]=  0.3385334473e-1;k[0][28]= -0.2352186959e-2;k[0][29]= -0.1312323657e-1;
+             k[0][30]=  0.6848790330e-1;k[0][31]= -0.2331836870e-1;k[0][32]= -0.4240901438e-1;k[0][33]= -0.1348415593e-1;k[0][34]=  0.3533592345e-1; 
+             k[0][35]= -0.3451638205e-2;k[0][36]=  0.8778034043e-4;k[0][37]= -0.6397385257e01;k[0][38]=  0.1293368651e02;k[0][39]= -0.6536731880e01;  
+
+             k[1][0]= 1; k[1][1]= 1; k[1][2]= 1; k[1][3]= 2; k[1][4]= 2; k[1][5]= 2; k[1][6]= 2; k[1][7]= 3; k[1][8]= 4; k[1][9]= 4;
+             
+             k[1][10]= 8; k[1][11]= 9; k[1][12]= 10;k[1][13]= 1; k[1][14]= 1; k[1][15]= 1; k[1][16]= 2; k[1][17]= 4; k[1][18]= 5; k[1][19]= 6;
+             k[1][20]= 1; k[1][21]= 2; k[1][22]= 3; k[1][23]= 4; k[1][24]= 4; k[1][25]= 3; k[1][26]= 5; k[1][27]= 5; k[1][28]= 8; k[1][29]= 2;
+             k[1][30]= 3; k[1][31]= 4; k[1][32]= 4; k[1][33]= 4; k[1][34]= 5; k[1][35]= 6; k[1][36]= 2; k[1][37]= 0; k[1][38]= 0; k[1][39]= 0;
+                
+             k[2][0]=-0.5; k[2][1]= 0.5; k[2][2]=  1;  k[2][3]=0.5;  k[2][4]=  1;  k[2][5]=1.5;  k[2][6]=4.5;   k[2][7]=  0;  k[2][8]=  1;  k[2][9]=  3; 
+             k[2][10]=  1; k[2][11]=  3; k[2][12]=  3; k[2][13]=  0; k[2][14]=  1; k[2][15]=  2; k[2][16]=  0;  k[2][17]=  0; k[2][18]=  2; k[2][19]=  2;
+             k[2][20]=  5; k[2][21]=  5; k[2][22]=  5; k[2][23]=  2; k[2][24]=  4; k[2][25]= 12; k[2][26]=  8;  k[2][27]= 10; k[2][28]= 10; k[2][29]= 10; 
+             k[2][30]= 14; k[2][31]= 12; k[2][32]= 18; k[2][33]= 22; k[2][34]= 18; k[2][35]= 14; k[2][36]=  2;  k[2][37]=  0; k[2][38]=  1; k[2][39]=  2; 
+  
+             k[10][36]= 20; k[10][37]= 40; k[10][38]= 40; k[10][39]= 40;
+
+             k[11][36] =  200; k[11][37] =  250; k[11][38] =  250; k[11][39] =  250;
+
+             k[12][36] =  1.07; k[12][37] =  1.11; k[12][38] =  1.11; k[12][39] =  1.11;
+
+             k[12][36] =  1.07; k[12][37] =  1.11; k[12][38] =  1.11; k[12][39] =  1.11;
+
+             k[13][36] =  1; k[13][37] =  1; k[13][38] =  1; k[13][39] =  1;
+
+			value = k[parameter][index-1];
+
+			}
+	
+		   break;
+		default: cout << "Properties for "<< FP->caption << " not in list!" << endl;
 
 			break;
 }
@@ -226,12 +278,19 @@ return value;
 /***********************************************************************
 This function returns the limits for the particular sum terms of the 
 derivations of the free Helmholtz energy depending on the used fluid
+last change: NB 4.9.05
 ***********************************************************************/
-int limit (int number, int fluid)
+int limit (int number, string caption)
 {
-	switch (fluid)
+    CFluidProperties *FP;
+    char n;
+    
+    FP=MFPGet(caption,0);
+    n=FP->caption[0];
+    
+	switch (n)
 	{
-		case 0: //CO2 
+		case 'C': //CARBON_DIOXIDE 
 			switch (number)
 			{
 				case 1: return 7; 
@@ -240,7 +299,7 @@ int limit (int number, int fluid)
 				case 4: return 42;
 			default : return 0;
 			}
-		case 1: //H2O 
+		case 'W': //WATER 
 			switch (number)
 			{
 				case 1: return 7;
@@ -249,30 +308,18 @@ int limit (int number, int fluid)
 				case 4: return 56; 
 			default : return 0;
 			}
+		case 'M': //METHANE 
+			switch (number)
+			{
+				case 1: return 13;
+				case 2: return 36;
+				case 3: return 40;
+	   		default : return 0;
+			}			
 		default : return 0;
 	}
 }
-/**********************************************************************
-Function thermal_properties (fluid, critical_density, critical_temperature, specific_gas_constant)
-returns the thermal properties of a given fluid
-**********************************************************************/
-void thermal_properties (int fluid, double &critical_density, double &critical_temperature, double &specific_gas_constant)
-{
-switch (fluid)
-{
-case 0: // CO2
-	{	critical_density = 467.6;
-		critical_temperature = 304.1282;
-		specific_gas_constant = 188.9241;
-		break;}
-case 1: // H2O
-	{	critical_density = 322;
-		critical_temperature = 647.096;
-		specific_gas_constant = 461.51805; 
-		break;}
-}
 
-}
 /**********************************************************************
 Some functions and derivations as shown in [Span&Wagner 1994]
 ***********************************************************************/
@@ -355,172 +402,192 @@ double d2phi_ddeltadtau (double C,double D,double delta,double tau,double phi_fn
 }
 /**********************************************************************
 A derivation of the free energy function phi
+last change: NB 4.9.05
 ***********************************************************************/
-double phi_r_d (double rho, double rhoc, double T, double Tc, int fluid)
+double phi_r_d (double rho, double T, string c)
 {
+CFluidProperties *FP;
 double phi_a=0,phi_b=0,phi_c=0,phi_d=0;
 double delta,tau,DELTA,THETA,PHI,DPHI,dDELTA_deriv,dDELTApowbddelta;
 int i;
 
-tau = Tc/T;
-delta = rho/rhoc;
+FP=MFPGet(c,0);
 
-for (i=1; i<limit(4,fluid)+1; i++)
+tau = FP->Tc/T;
+delta = rho/FP->rhoc;
+
+for (i=1; i<limit(4,c)+1; i++)
 {
-	if (i<limit(1,fluid)+1) 
+	if (i<limit(1,c)+1) 
 		
-		phi_a=phi_a+(K0(0,i,1,fluid)*K0(1,i,1,fluid)*pow(delta,(K0(1,i,1,fluid)-1))*pow(tau,K0(2,i,1,fluid)));
+		phi_a=phi_a+(K0(0,i,1,c)*K0(1,i,1,c)*pow(delta,(K0(1,i,1,c)-1))*pow(tau,K0(2,i,1,c)));
 
-	else if (i<limit(2,fluid)+1) 
+	else if (i<limit(2,c)+1) 
 		
-		phi_b=phi_b+(K0(0,i,1,fluid)*exp(-pow(delta,K0(3,i,1,fluid)))*(pow(delta,K0(1,i,1,fluid)-1)*
-		pow(tau,K0(2,i,1,fluid))*(K0(1,i,1,fluid)-K0(3,i,1,fluid)*pow(delta,K0(3,i,1,fluid)))));
+		phi_b=phi_b+(K0(0,i,1,c)*exp(-pow(delta,K0(3,i,1,c)))*(pow(delta,K0(1,i,1,c)-1)*
+		pow(tau,K0(2,i,1,c))*(K0(1,i,1,c)-K0(3,i,1,c)*pow(delta,K0(3,i,1,c)))));
 
-	else if (i<limit(3,fluid)+1) 
+	else if (i<limit(3,c)+1) 
 		
-		phi_c=phi_c+(K0(0,i,1,fluid)*pow(delta,K0(1,i,1,fluid))*pow(tau,K0(2,i,1,fluid))*
-		exp(-K0(10,i,1,fluid)*pow(delta-K0(13,i,1,fluid),2)-K0(11,i,1,fluid)*pow(tau-K0(12,i,1,fluid),2))*(K0(1,i,1,fluid)
-		/delta-2*K0(10,i,1,fluid)*(delta-K0(13,i,1,fluid))));
+		phi_c=phi_c+(K0(0,i,1,c)*pow(delta,K0(1,i,1,c))*pow(tau,K0(2,i,1,c))*
+		exp(-K0(10,i,1,c)*pow(delta-K0(13,i,1,c),2)-K0(11,i,1,c)*pow(tau-K0(12,i,1,c),2))*(K0(1,i,1,c)
+		/delta-2*K0(10,i,1,c)*(delta-K0(13,i,1,c))));
 
-	else if (i<limit(4,fluid)+1) {
+	else if (i<limit(4,c)+1) {
 
-		THETA  = theta_fn (tau,K0(6,i,1,fluid),delta,K0(11,i,1,fluid));
-		DELTA  = delta_fn (THETA,K0(7,i,1,fluid),delta,K0(4,i,1,fluid));
-		PHI    = phi_fn (K0(8,i,1,fluid),delta,K0(9,i,1,fluid),tau);
-		dDELTA_deriv = dDELTA_ddelta(delta,K0(6,i,1,fluid),THETA,K0(11,i,1,fluid),K0(7,i,1,fluid),K0(4,i,1,fluid));
-		dDELTApowbddelta = dDELTApowb_ddelta(K0(5,i,1,fluid),DELTA,dDELTA_deriv);
-		DPHI   = dphi_ddelta (K0(8,i,1,fluid),delta,PHI);
+		THETA  = theta_fn (tau,K0(6,i,1,c),delta,K0(11,i,1,c));
+		DELTA  = delta_fn (THETA,K0(7,i,1,c),delta,K0(4,i,1,c));
+		PHI    = phi_fn (K0(8,i,1,c),delta,K0(9,i,1,c),tau);
+		dDELTA_deriv = dDELTA_ddelta(delta,K0(6,i,1,c),THETA,K0(11,i,1,c),K0(7,i,1,c),K0(4,i,1,c));
+		dDELTApowbddelta = dDELTApowb_ddelta(K0(5,i,1,c),DELTA,dDELTA_deriv);
+		DPHI   = dphi_ddelta (K0(8,i,1,c),delta,PHI);
 		
-		phi_d=phi_d+K0(0,i,1,fluid)*(pow(DELTA,K0(5,i,1,fluid))*(PHI+delta*DPHI)+dDELTApowbddelta*delta*PHI);
+		phi_d=phi_d+K0(0,i,1,c)*(pow(DELTA,K0(5,i,1,c))*(PHI+delta*DPHI)+dDELTApowbddelta*delta*PHI);
 		}
 }
 return phi_a+phi_b+phi_c+phi_d;
 }
 /**********************************************************************
 A derivation of the free energy function phi
+last change: NB 4.9.05
 ***********************************************************************/
-double phi_r_tt (double rho, double rhoc, double T, double Tc,int fluid)
+double phi_r_tt (double rho, double T, string c)
 {
+CFluidProperties *FP;
 double phi_a=0,phi_b=0,phi_c=0,phi_d=0;
 double delta,tau,THETA,PHI,DELTA,DDELTA,D2DELTA,DPHI,D2PHI;
 int i=0;
 
-tau = Tc/T;
-delta = rho/rhoc;
+
+FP=MFPGet(c,0);
+
+tau = FP->Tc/T;
+delta = rho/FP->rhoc;
 
 
-for (i=1; i<limit(4,fluid)+1; i++)
+for (i=1; i<limit(4,c)+1; i++)
 {
-	if (i<limit(1,fluid)+1)  
+	if (i<limit(1,c)+1)  
 
-		phi_a = phi_a+ (K0(0,i,1,fluid)*K0(2,i,1,fluid)*(K0(2,i,1,fluid)-1)*pow(delta,K0(1,i,1,fluid))*
-						pow(tau,(K0(2,i,1,fluid)-2)));
+		phi_a = phi_a+ (K0(0,i,1,c)*K0(2,i,1,c)*(K0(2,i,1,c)-1)*pow(delta,K0(1,i,1,c))*
+						pow(tau,(K0(2,i,1,c)-2)));
 	
-	else if (i<limit(2,fluid)+1)  
+	else if (i<limit(2,c)+1)  
 
-		phi_b = phi_b+ (K0(0,i,1,fluid)*K0(2,i,1,fluid)*(K0(2,i,1,fluid)-1)*
-						pow(delta,K0(1,i,1,fluid))*pow(tau,(K0(2,i,1,fluid)-2))*exp(-pow(delta,K0(3,i,1,fluid))));
+		phi_b = phi_b+ (K0(0,i,1,c)*K0(2,i,1,c)*(K0(2,i,1,c)-1)*
+						pow(delta,K0(1,i,1,c))*pow(tau,(K0(2,i,1,c)-2))*exp(-pow(delta,K0(3,i,1,c))));
 	
-	else if (i<limit(3,fluid)+1)  
+	else if (i<limit(3,c)+1)  
 
-		phi_c = phi_c+ (K0(0,i,1,fluid)*pow(delta,K0(1,i,1,fluid))*pow(tau,K0(2,i,1,fluid))*
-						exp(-K0(10,i,1,fluid)*pow((delta-K0(13,i,1,fluid)),2)-K0(11,i,1,fluid)*pow((tau-K0(12,i,1,fluid)),2))
-						*(pow((K0(2,i,1,fluid)/tau-2*K0(11,i,1,fluid)*(tau-K0(12,i,1,fluid))),2)-K0(2,i,1,fluid)
-						/pow(tau,2)-2*K0(11,i,1,fluid)));
+		phi_c = phi_c+ (K0(0,i,1,c)*pow(delta,K0(1,i,1,c))*pow(tau,K0(2,i,1,c))*
+						exp(-K0(10,i,1,c)*pow((delta-K0(13,i,1,c)),2)-K0(11,i,1,c)*pow((tau-K0(12,i,1,c)),2))
+						*(pow((K0(2,i,1,c)/tau-2*K0(11,i,1,c)*(tau-K0(12,i,1,c))),2)-K0(2,i,1,c)
+						/pow(tau,2)-2*K0(11,i,1,c)));
 	
-	else if (i<limit(4,fluid)+1) {
+	else if (i<limit(4,c)+1) {
 
-		THETA  = theta_fn (tau,K0(6,i,1,fluid),delta,K0(11,i,1,fluid));
-		DELTA  = delta_fn (THETA,K0(7,i,1,fluid),delta,K0(4,i,1,fluid));
-		PHI    = phi_fn (K0(8,i,1,fluid),delta,K0(9,i,1,fluid),tau);
+		THETA  = theta_fn (tau,K0(6,i,1,c),delta,K0(11,i,1,c));
+		DELTA  = delta_fn (THETA,K0(7,i,1,c),delta,K0(4,i,1,c));
+		PHI    = phi_fn (K0(8,i,1,c),delta,K0(9,i,1,c),tau);
 
-		D2DELTA = d2DELTA_dtau2 (K0(5,i,1,fluid),DELTA,THETA);
-		DDELTA  = dDELTA_dtau (THETA, K0(5,i,1,fluid), DELTA);
-        DPHI    = dphi_dtau (K0(9,i,1,fluid),tau,PHI);
-		D2PHI   = d2phi_dtau2 (K0(9,i,1,fluid),tau,PHI);
+		D2DELTA = d2DELTA_dtau2 (K0(5,i,1,c),DELTA,THETA);
+		DDELTA  = dDELTA_dtau (THETA, K0(5,i,1,c), DELTA);
+        DPHI    = dphi_dtau (K0(9,i,1,c),tau,PHI);
+		D2PHI   = d2phi_dtau2 (K0(9,i,1,c),tau,PHI);
    		
-		 phi_d = phi_d + (K0(0,i,1,fluid)*delta*(D2DELTA*PHI+2*DDELTA*DPHI+pow(DELTA,K0(5,i,1,fluid))*D2PHI));
+		 phi_d = phi_d + (K0(0,i,1,c)*delta*(D2DELTA*PHI+2*DDELTA*DPHI+pow(DELTA,K0(5,i,1,c))*D2PHI));
 		}
 }
 return phi_a+phi_b+phi_c+phi_d;
 }
 /**********************************************************************
 A derivation of the free energy function phi
+last change: NB 4.9.05
 ***********************************************************************/
-double phi_0_t (double T, double Tc, int fluid)
+double phi_0_t (double T, string c)
 {
+CFluidProperties *FP;
 double phi_c=0,phi_d=0,phi_e=0;
 double tau;
 int i;
 
-tau = Tc/T;
+FP=MFPGet(c,0);
 
+tau = FP->Tc/T;
 
-phi_c = K0(0,2,0,fluid);
-phi_d = K0(0,3,0,fluid)/tau;
+phi_c = K0(0,2,0,c);
+phi_d = K0(0,3,0,c)/tau;
 
-for (i=4; i<9; i++) phi_e= phi_e + (K0(0,i,0,fluid)*K0(1,i,0,fluid)*(1/(1-exp(-K0(1,i,0,fluid)*tau))-1));
+for (i=4; i<9; i++) phi_e= phi_e + (K0(0,i,0,c)*K0(1,i,0,c)*(1/(1-exp(-K0(1,i,0,c)*tau))-1));
 
 return phi_c+phi_d+phi_e;
 }
 /**********************************************************************
 A derivation of the free energy function phi
+last change: NB 4.9.05
 ***********************************************************************/
-double phi_0_tt (double T, double Tc, int fluid)
+double phi_0_tt (double T,string c)
 {
+CFluidProperties *FP;
 double phi_d=0,phi_e=0;
 double tau;
 int i;
 
-tau = Tc/T;
+FP=MFPGet(c,0);
 
-phi_d = K0(0,3,0,fluid)/pow(tau,2);
+tau = FP->Tc/T;
 
-for (i=4; i<9; i++) phi_e=phi_e+(K0(0,i,0,fluid)*pow(K0(1,i,0,fluid),2)*exp(-K0(1,i,0,fluid)*tau)*pow(1-exp(-K0(1,i,0,fluid)*tau),-2));
+
+phi_d = K0(0,3,0,c)/pow(tau,2);
+
+for (i=4; i<9; i++) phi_e=phi_e+(K0(0,i,0,c)*pow(K0(1,i,0,c),2)*exp(-K0(1,i,0,c)*tau)*pow(1-exp(-K0(1,i,0,c)*tau),-2));
 
 return 0-phi_d-phi_e;
 }
 /**********************************************************************
 A derivation of the free energy function phi
-last change: Nov 2008 NB 4.8.01
+last change: MAR 2008 NB 4.9.05
 ***********************************************************************/
-double phi_r_t (double rho, double rhoc, double T, double Tc, int fluid)
+double phi_r_t (double rho, double T,string c)
 {
+    CFluidProperties *FP;
 	double phi_a=0,phi_b=0,phi_c=0,phi_d=0,h;
 	int i;
 	double delta,tau;
 	double thetafn,deltafn,ddeltatau,phifn,dphitau;
 
 
-	tau = Tc/T;
-	delta = rho/rhoc;
+FP=MFPGet(c,0);
+
+tau = FP->Tc/T;
+delta = rho/FP->rhoc;
 	
-	for (i=1;i<limit(1,fluid)+1;i++)
+	for (i=1;i<limit(1,c)+1;i++)
 	{
-		phi_a = phi_a + (K0(0,i,1,fluid)*K0(2,i,1,fluid)*pow(delta,K0(1,i,1,fluid))*pow(tau,(K0(2,i,1,fluid)-1)));
+		phi_a = phi_a + (K0(0,i,1,c)*K0(2,i,1,c)*pow(delta,K0(1,i,1,c))*pow(tau,(K0(2,i,1,c)-1)));
 	}
 
-	for  (i=limit(1,fluid)+1;i<limit(2,fluid)+1;i++)
+	for  (i=limit(1,c)+1;i<limit(2,c)+1;i++)
 	{
-		phi_b = phi_b + (K0(0,i,1,fluid)*K0(2,i,1,fluid)*pow(delta,K0(1,i,1,fluid))*pow(tau,(K0(2,i,1,fluid)-1))*exp(-pow(delta,K0(3,i,1,fluid))));
+		phi_b = phi_b + (K0(0,i,1,c)*K0(2,i,1,c)*pow(delta,K0(1,i,1,c))*pow(tau,(K0(2,i,1,c)-1))*exp(-pow(delta,K0(3,i,1,c))));
 	}
 	
-	for (i=limit(2,fluid)+1;i<limit(3,fluid)+1;i++)
+	for (i=limit(2,c)+1;i<limit(3,c)+1;i++)
 	{
-		phi_c = phi_c + (K0(0,i,1,fluid)*pow(delta,K0(1,i,1,fluid))*pow(tau,(K0(2,i,1,fluid)))*
-			exp(-K0(10,i,1,fluid)*pow((delta-K0(13,i,1,fluid)),2)-K0(11,i,1,fluid)*pow((tau-K0(12,i,1,fluid)),2))*
-			(K0(2,i,1,fluid)/tau-2*K0(11,i,1,fluid)*(tau-K0(12,i,1,fluid))));
+		phi_c = phi_c + (K0(0,i,1,c)*pow(delta,K0(1,i,1,c))*pow(tau,(K0(2,i,1,c)))*
+			exp(-K0(10,i,1,c)*pow((delta-K0(13,i,1,c)),2)-K0(11,i,1,c)*pow((tau-K0(12,i,1,c)),2))*
+			(K0(2,i,1,c)/tau-2*K0(11,i,1,c)*(tau-K0(12,i,1,c))));
 	}
 
-	for (i=limit(3,fluid)+1;i<limit(4,fluid)+1;i++)
+	for (i=limit(3,c)+1;i<limit(4,c)+1;i++)
 	{
-		thetafn = theta_fn(tau,K0(6,i,1,fluid),delta,K0(11,i,1,fluid));
-		deltafn = delta_fn(thetafn,K0(7,i,1,fluid),delta,K0(4,i,1,fluid));
-		ddeltatau = dDELTA_dtau(thetafn,K0(5,i,1,fluid),deltafn);
-		phifn = phi_fn(K0(8,i,1,fluid),delta,K0(9,i,1,fluid),tau);
-		dphitau = dphi_dtau(K0(9,i,1,fluid),tau,phifn);
+		thetafn = theta_fn(tau,K0(6,i,1,c),delta,K0(11,i,1,c));
+		deltafn = delta_fn(thetafn,K0(7,i,1,c),delta,K0(4,i,1,c));
+		ddeltatau = dDELTA_dtau(thetafn,K0(5,i,1,c),deltafn);
+		phifn = phi_fn(K0(8,i,1,c),delta,K0(9,i,1,c),tau);
+		dphitau = dphi_dtau(K0(9,i,1,c),tau,phifn);
 
-		phi_d = phi_d + (K0(0,i,1,fluid)*delta*(ddeltatau*phifn+pow(deltafn,K0(5,i,1,fluid))*dphitau));
+		phi_d = phi_d + (K0(0,i,1,c)*delta*(ddeltatau*phifn+pow(deltafn,K0(5,i,1,c))*dphitau));
 
 	}
     h = phi_a+phi_b+phi_c+phi_d;
@@ -529,9 +596,11 @@ double phi_r_t (double rho, double rhoc, double T, double Tc, int fluid)
 }
 /**********************************************************************
 A derivation of the free energy function phi
+last change: NB 4.9.05
 ***********************************************************************/
-double phi_r_dt (double rho, double rhoc, double T, double Tc, int fluid)
+double phi_r_dt (double rho, double T,string c)
 {
+    CFluidProperties *FP;
 	double phi_a=0,phi_b=0,phi_c=0,phi_d=0;
 	int i;
 	double delta,tau;
@@ -539,44 +608,46 @@ double phi_r_dt (double rho, double rhoc, double T, double Tc, int fluid)
            dDELTApowbdtau,dphiddelta,d2DELTApowbddeltadtau;
  
 		
-	tau = Tc/T;
-	delta = rho/rhoc;
+FP=MFPGet(c,0);
+
+tau = FP->Tc/T;
+delta = rho/FP->rhoc;
 	
-    for (i=1;i<limit(1,fluid)+1;i++)
+    for (i=1;i<limit(1,c)+1;i++)
     {
-        phi_a = phi_a + (K0(0,i,1,fluid)*K0(1,i,1,fluid)*K0(2,i,1,fluid)*pow(delta,(K0(1,i,1,fluid)-1))*pow(tau,(K0(2,i,1,fluid)-1)));
+        phi_a = phi_a + (K0(0,i,1,c)*K0(1,i,1,c)*K0(2,i,1,c)*pow(delta,(K0(1,i,1,c)-1))*pow(tau,(K0(2,i,1,c)-1)));
 	}
-    for (i=limit(1,fluid)+1;i<limit(2,fluid)+1;i++)
+    for (i=limit(1,c)+1;i<limit(2,c)+1;i++)
     {
-        phi_b = phi_b + (K0(0,i,1,fluid)*K0(2,i,1,fluid)*pow(delta,(K0(1,i,1,fluid)-1))*pow(tau,(K0(2,i,1,fluid)-1))*(K0(1,i,1,fluid)-K0(3,i,1,fluid)*
-        pow(delta,K0(3,i,1,fluid)))*exp(-pow(delta,K0(3,i,1,fluid))));
+        phi_b = phi_b + (K0(0,i,1,c)*K0(2,i,1,c)*pow(delta,(K0(1,i,1,c)-1))*pow(tau,(K0(2,i,1,c)-1))*(K0(1,i,1,c)-K0(3,i,1,c)*
+        pow(delta,K0(3,i,1,c)))*exp(-pow(delta,K0(3,i,1,c))));
     }
-    for (i=limit(2,fluid)+1;i<limit(3,fluid)+1;i++)
+    for (i=limit(2,c)+1;i<limit(3,c)+1;i++)
     {
      
-	phi_c = phi_c + ((K0(0,i,1,fluid)*pow(delta,K0(1,i,1,fluid))*pow(tau,K0(2,i,1,fluid))*exp(
-			-K0(10,i,1,fluid)*pow((delta-K0(13,i,1,fluid)),2)-K0(11,i,1,fluid)*pow((  tau-K0(12,i,1,fluid)),2)))*
+	phi_c = phi_c + ((K0(0,i,1,c)*pow(delta,K0(1,i,1,c))*pow(tau,K0(2,i,1,c))*exp(
+			-K0(10,i,1,c)*pow((delta-K0(13,i,1,c)),2)-K0(11,i,1,c)*pow((  tau-K0(12,i,1,c)),2)))*
 
-			(K0(1,i,1,fluid)/delta-2*K0(10,i,1,fluid)*(delta-K0(13,i,1,fluid)))*
-			(K0(2,i,1,fluid)/tau-2*K0(11,i,1,fluid)*(tau-K0(12,i,1,fluid))));
+			(K0(1,i,1,c)/delta-2*K0(10,i,1,c)*(delta-K0(13,i,1,c)))*
+			(K0(2,i,1,c)/tau-2*K0(11,i,1,c)*(tau-K0(12,i,1,c))));
     
 	}
-    for (i=limit(3,fluid)+1;i<limit(4,fluid)+1;i++)
+    for (i=limit(3,c)+1;i<limit(4,c)+1;i++)
     {
-        phifn = phi_fn(K0(8,i,1,fluid),delta,K0(9,i,1,fluid),tau);
-        thetafn = theta_fn(tau,K0(6,i,1,fluid),delta,K0(11,i,1,fluid));
-        deltafn = delta_fn(thetafn,K0(7,i,1,fluid),delta,K0(4,i,1,fluid));
-        d2phideriv = d2phi_ddeltadtau(K0(8,i,1,fluid),K0(9,i,1,fluid),delta,tau,phifn);
+        phifn = phi_fn(K0(8,i,1,c),delta,K0(9,i,1,c),tau);
+        thetafn = theta_fn(tau,K0(6,i,1,c),delta,K0(11,i,1,c));
+        deltafn = delta_fn(thetafn,K0(7,i,1,c),delta,K0(4,i,1,c));
+        d2phideriv = d2phi_ddeltadtau(K0(8,i,1,c),K0(9,i,1,c),delta,tau,phifn);
         
-		dDELTAderiv = dDELTA_ddelta(delta,K0(6,i,1,fluid),thetafn,K0(11,i,1,fluid),K0(7,i,1,fluid),K0(4,i,1,fluid));
+		dDELTAderiv = dDELTA_ddelta(delta,K0(6,i,1,c),thetafn,K0(11,i,1,c),K0(7,i,1,c),K0(4,i,1,c));
         
-		dDELTApowbddelta = dDELTApowb_ddelta(K0(5,i,1,fluid),deltafn,dDELTAderiv);
-        dphidtau = dphi_dtau(K0(9,i,1,fluid),tau,phifn);
-        dDELTApowbdtau = dDELTA_dtau(thetafn,K0(5,i,1,fluid),deltafn);
-        dphiddelta = dphi_ddelta(K0(8,i,1,fluid),delta,phifn);
-        d2DELTApowbddeltadtau = d2DELTApowb_ddeltadtau(K0(6,i,1,fluid),K0(5,i,1,fluid),K0(11,i,1,fluid),deltafn,delta,thetafn,dDELTAderiv);
+		dDELTApowbddelta = dDELTApowb_ddelta(K0(5,i,1,c),deltafn,dDELTAderiv);
+        dphidtau = dphi_dtau(K0(9,i,1,c),tau,phifn);
+        dDELTApowbdtau = dDELTA_dtau(thetafn,K0(5,i,1,c),deltafn);
+        dphiddelta = dphi_ddelta(K0(8,i,1,c),delta,phifn);
+        d2DELTApowbddeltadtau = d2DELTApowb_ddeltadtau(K0(6,i,1,c),K0(5,i,1,c),K0(11,i,1,c),deltafn,delta,thetafn,dDELTAderiv);
         
-        phi_d = phi_d + (K0(0,i,1,fluid)*(pow(deltafn,K0(5,i,1,fluid))*(dphidtau+delta*d2phideriv)+
+        phi_d = phi_d + (K0(0,i,1,c)*(pow(deltafn,K0(5,i,1,c))*(dphidtau+delta*d2phideriv)+
         delta*dDELTApowbddelta*dphidtau+dDELTApowbdtau*(phifn+delta*dphiddelta)+d2DELTApowbddeltadtau*
         delta*phifn)); }
 
@@ -584,59 +655,60 @@ double phi_r_dt (double rho, double rhoc, double T, double Tc, int fluid)
 }
 /**********************************************************************
 A derivation of the free energy function phi
+last change: NB 4.9.05
 ***********************************************************************/
-double phi_r_dd (double rho, double rhoc, double T, double Tc, int fluid)
+double phi_r_dd (double rho, double T, string c)
 {
+    CFluidProperties *FP;
 	double phi_a=0,phi_b=0,phi_c=0,phi_d=0;
 	int i;
-	double delta,tau;
+	double delta,tau,b;
 	double thetafn,deltafn,phifn,dphiddelta,d2phiddelta2,dDELTA_deriv,dDELTApowbddelta,d2DELTA_deriv,d2DELTApowbddelta2;
 		
-	tau = Tc/T;
-	delta = rho/rhoc;
+FP=MFPGet(c,0);
 
-	for (i=1;i<limit(1,fluid)+1;i++)
-	{
-		phi_a = phi_a + (K0(0,i,1,fluid)*K0(1,i,1,fluid)*(K0(1,i,1,fluid)-1)*pow(delta,(K0(1,i,1,fluid)-2))*pow(tau,K0(2,i,1,fluid)));
-	}
-	for (i=limit(1,fluid)+1;i<limit(2,fluid)+1;i++)
-	{
-		phi_b = phi_b + ((K0(0,i,1,fluid)*exp(-(pow(delta,K0(3,i,1,fluid)))))*
-			((pow(delta,(K0(1,i,1,fluid)-2))*pow(tau,K0(2,i,1,fluid)))*
-			((K0(1,i,1,fluid)-K0(3,i,1,fluid)*pow(delta,K0(3,i,1,fluid)))*
-			(K0(1,i,1,fluid)-1-K0(3,i,1,fluid)*pow(delta,K0(3,i,1,fluid)))-
-			(pow(K0(3,i,1,fluid),2)*pow(delta,K0(3,i,1,fluid))))));
+tau = FP->Tc/T;
+delta = rho/FP->rhoc;
 
-	}
-	for (i=limit(2,fluid)+1;i<limit(3,fluid)+1;i++)
+	for (i=1;i<limit(1,c)+1;i++)
 	{
-		phi_c = phi_c + ((K0(0,i,1,fluid)*pow(tau,K0(2,i,1,fluid)))*
-						exp(-K0(10,i,1,fluid)*pow((delta-K0(13,i,1,fluid)),2)-K0(11,i,1,fluid)*
-						pow((tau-K0(12,i,1,fluid)),2))*(
-						(-2*K0(10,i,1,fluid)*pow(delta,K0(1,i,1,fluid))+4*pow(K0(10,i,1,fluid),2)*pow(delta,K0(1,i,1,fluid))*
-						pow((delta-K0(13,i,1,fluid)),2))+
-						(-4*K0(1,i,1,fluid)*K0(10,i,1,fluid)*pow(delta,(K0(1,i,1,fluid)-1))*(delta-K0(13,i,1,fluid))+
-						K0(1,i,1,fluid)*(K0(1,i,1,fluid)-1)*pow(delta,(K0(1,i,1,fluid)-2)))));
+		phi_a = phi_a + (K0(0,i,1,c)*K0(1,i,1,c)*(K0(1,i,1,c)-1)*pow(delta,(K0(1,i,1,c)-2))*pow(tau,K0(2,i,1,c)));
+	}
+	for (i=limit(1,c)+1;i<limit(2,c)+1;i++)
+	{
+		phi_b = phi_b + ((K0(0,i,1,c)*exp((pow(-delta,K0(3,i,1,c)))))*
+			((pow(delta,(K0(1,i,1,c)-2))*pow(tau,K0(2,i,1,c)))*
+			((K0(1,i,1,c)-K0(3,i,1,c)*pow(delta,K0(3,i,1,c)))*
+			(K0(1,i,1,c)-1-K0(3,i,1,c)*pow(delta,K0(3,i,1,c)))-
+			(pow(K0(3,i,1,c),2)*pow(delta,K0(3,i,1,c))))));
+	}
+	for (i=limit(2,c)+1;i<limit(3,c)+1;i++)
+	{
+		phi_c = phi_c + ((K0(0,i,1,c)*pow(tau,K0(2,i,1,c)))*
+						exp(-K0(10,i,1,c)*pow((delta-K0(13,i,1,c)),2)-K0(11,i,1,c)*
+						pow((tau-K0(12,i,1,c)),2))*(
+						(-2*K0(10,i,1,c)*pow(delta,K0(1,i,1,c))+4*pow(K0(10,i,1,c),2)*pow(delta,K0(1,i,1,c))*
+						pow((delta-K0(13,i,1,c)),2))+
+						(-4*K0(1,i,1,c)*K0(10,i,1,c)*pow(delta,(K0(1,i,1,c)-1))*(delta-K0(13,i,1,c))+
+						K0(1,i,1,c)*(K0(1,i,1,c)-1)*pow(delta,(K0(1,i,1,c)-2)))));
 	
 	}
 
-
-
-	for (i=limit(3,fluid)+1;i<limit(4,fluid)+1;i++)
+	for (i=limit(3,c)+1;i<limit(4,c)+1;i++)
 	{
-		thetafn        = theta_fn(tau,K0(6,i,1,fluid),delta,K0(11,i,1,fluid));
-		deltafn        = delta_fn(thetafn,K0(7,i,1,fluid),delta,K0(4,i,1,fluid));
-		phifn          = phi_fn(K0(8,i,1,fluid),delta,K0(9,i,1,fluid),tau);
-		dphiddelta      = dphi_ddelta(K0(8,i,1,fluid),delta,phifn);
-        d2phiddelta2   = d2phi_ddelta2(K0(8,i,1,fluid),delta,phifn);
-		dDELTA_deriv   = dDELTA_ddelta(delta,K0(6,i,1,fluid),thetafn,K0(11,i,1,fluid),K0(7,i,1,fluid),K0(4,i,1,fluid));
-		dDELTApowbddelta = dDELTApowb_ddelta(K0(5,i,1,fluid),deltafn,dDELTA_deriv);
-		dphiddelta     = dphi_ddelta(K0(8,i,1,fluid),delta,phifn);
-		d2DELTA_deriv = d2DELTA_ddelta2(delta,dDELTA_deriv,K0(6,i,1,fluid),thetafn,K0(11,i,1,fluid),K0(7,i,1,fluid),K0(4,i,1,fluid));
-		d2DELTApowbddelta2 = d2DELTApowb_ddelta2(K0(5,i,1,fluid),deltafn,d2DELTA_deriv,dDELTA_deriv);
+		thetafn        = theta_fn(tau,K0(6,i,1,c),delta,K0(11,i,1,c));
+		deltafn        = delta_fn(thetafn,K0(7,i,1,c),delta,K0(4,i,1,c));
+		phifn          = phi_fn(K0(8,i,1,c),delta,K0(9,i,1,c),tau);
+		dphiddelta      = dphi_ddelta(K0(8,i,1,c),delta,phifn);
+        d2phiddelta2   = d2phi_ddelta2(K0(8,i,1,c),delta,phifn);
+		dDELTA_deriv   = dDELTA_ddelta(delta,K0(6,i,1,c),thetafn,K0(11,i,1,c),K0(7,i,1,c),K0(4,i,1,c));
+		dDELTApowbddelta = dDELTApowb_ddelta(K0(5,i,1,c),deltafn,dDELTA_deriv);
+		dphiddelta     = dphi_ddelta(K0(8,i,1,c),delta,phifn);
+		d2DELTA_deriv = d2DELTA_ddelta2(delta,dDELTA_deriv,K0(6,i,1,c),thetafn,K0(11,i,1,c),K0(7,i,1,c),K0(4,i,1,c));
+		d2DELTApowbddelta2 = d2DELTApowb_ddelta2(K0(5,i,1,c),deltafn,d2DELTA_deriv,dDELTA_deriv);
 
 
-		phi_d = phi_d + (K0(0,i,1,fluid)*(pow(deltafn,K0(5,i,1,fluid))*(2*dphiddelta+delta*d2phiddelta2)
+		phi_d = phi_d + (K0(0,i,1,c)*(pow(deltafn,K0(5,i,1,c))*(2*dphiddelta+delta*d2phiddelta2)
 			+2*dDELTApowbddelta*(phifn+delta*dphiddelta)+d2DELTApowbddelta2*delta*phifn));
 	}
 
@@ -656,12 +728,15 @@ Parameters:
 Programming: Norbert Böttcher
 			 Aug 2008
 ***********************************************************************/
-double pressure (double rho, double T, int fluid)
+double pressure (double rho, double T, string c)
 {
-	double P,rhoc,Tc,R;
-
-    thermal_properties (fluid, rhoc, Tc, R);
-	P = (1+(rho/rhoc)*phi_r_d(rho,rhoc,T,Tc,fluid))*rho*R*T;
+    CFluidProperties *a;
+	double P,R,rhoc;
+    a=MFPGet(c,0);
+    rhoc=a->rhoc;
+    R=a->Rs;
+    
+    P = (1+(rho/rhoc)*phi_r_d(rho,T,c))*rho*R*T;
 
 	return P;
 }
@@ -684,18 +759,22 @@ Parameters:
 
 Programming: Norbert Böttcher
 			 Aug 2008
+last change: NB 4.9.05
 ***********************************************************************/
-double density (double P, double rho0, double T, double prec, int fluid)
+double density (double P, double rho0, double T, double prec, string c)
 {
+	CFluidProperties *a;
 	int iterations=0;
-	double rho,p0,rhoc,Tc,R;
-
-	thermal_properties (fluid, rhoc, Tc, R);
+	double rho,p0,rhoc,R;
     
+    a=MFPGet(c,0);
+    rhoc=a->rhoc;
+    R=a->Rs;
+
 	p0 = 0;
 	while (fabs(P-p0) > prec) {  //change to fabs. 15.09.2008 WW
-		rho = P/((1+(rho0/rhoc)*phi_r_d(rho0,rhoc,T,Tc,fluid))*R*T);
-		p0  = pressure(rho0,T,fluid);
+		rho = P/((1+(rho0/rhoc)*phi_r_d(rho0,T,c))*R*T);
+		p0  = pressure(rho0,T,c);
 		rho0 = rho; 
 		iterations++;
 		if (iterations > 50) return 0;
@@ -718,16 +797,19 @@ Parameters:
 Programming: Norbert Böttcher
 			 Aug 2008
 ***********************************************************************/
-double enthalpy (double rho, double T, int fluid)
+double enthalpy (double rho, double T, string c)
 {
-	double h,rhoc,Tc,R;
+	CFluidProperties *a;
+	double h,R;
 	double tau, delta;
-
-	thermal_properties (fluid, rhoc, Tc, R);
-	tau = Tc/T; 
-	delta = rho/rhoc;
-
-	h = (1+tau*(phi_0_t(T,Tc,fluid)+phi_r_t(rho,rhoc,T,Tc,fluid))+delta*phi_r_d(rho,rhoc,T,Tc,fluid))*R*T;
+	
+	a=MFPGet(c,0);
+	
+	tau = a->Tc/T; 
+	delta = rho/a->rhoc;
+    R=a->Rs;
+    
+	h = (1+tau*(phi_0_t(T,c)+phi_r_t(rho,T,c))+delta*phi_r_d(rho,T,c))*R*T;
 
 	return h;
 }
@@ -745,13 +827,17 @@ Parameters:
 
 Programming: Norbert Böttcher
 			 Aug 2008
+last change: NB 4.9.05
 ***********************************************************************/
-double isochoric_heat_capacity (double rho, double T, int fluid)
+double isochoric_heat_capacity (double rho, double T, string c)
 {
-	double cv,rhoc,Tc,R;
+	CFluidProperties *a;
+	double cv;
+	
+	a=MFPGet(c,0);
 
-	thermal_properties (fluid, rhoc, Tc, R);
-	cv = -(pow((Tc/T),2)*(phi_0_tt(T,Tc,fluid)+phi_r_tt(rho,rhoc,T,Tc,fluid)))*R;
+//	thermal_properties (fluid, rhoc, Tc, R);
+	cv = -(pow((a->Tc/T),2)*(phi_0_tt(T,c)+phi_r_tt(rho,T,c)))*a->Rs;
 
 	return cv;
 }
@@ -770,22 +856,31 @@ Parameters:
 Programming: Norbert Böttcher
 			 Aug 2008
 ***********************************************************************/
-double isobaric_heat_capacity (double rho, double T, int fluid)
+
+double isobaric_heat_capacity (double rho, double T, string c)
 {
-	double cp,delta,tau,rhoc,Tc,R;
-  
- 	thermal_properties (fluid, rhoc, Tc, R);
-	tau = Tc/T;
-	delta = rho/rhoc;
+	CFluidProperties *mfp_prop;
+	double cp,delta,tau;
+//	double cp,delta,tau;
+     mfp_prop = MFPGet(c,0);
 
-	cp = (-pow(tau,2)*(phi_0_tt(T,Tc,fluid)+phi_r_tt(rho,rhoc,T,Tc,fluid))
-		+(pow((1+delta*phi_r_d(rho,rhoc,T,Tc,fluid)-delta*tau*phi_r_dt(rho,rhoc,T,Tc,fluid)),2))
-		/((1+2*delta*phi_r_d(rho,rhoc,T,Tc,fluid)+pow(delta,2)*phi_r_dd(rho,rhoc,T,Tc,fluid))))*R;
+	tau = mfp_prop->Tc/T;
+	delta = rho/mfp_prop->rhoc;
 
+
+cp = (-pow(tau,2)*(phi_0_tt(T,c)+phi_r_tt(rho,T,c))			
+		+(pow((1+delta*phi_r_d(rho,T,c)-delta*tau*phi_r_dt(rho,T,c)),2))
+		/((1+2*delta*phi_r_d(rho,T,c)+pow(delta,2)*phi_r_dd(rho,T,c))))*mfp_prop->Rs;
+
+//cp = (-pow(tau,2)*(phi_0_tt(T,Tc,fluid)+phi_r_tt(rho,rhoc,T,Tc,fluid))	//NB		
+//		+(pow((1+delta*phi_r_d(rho,rhoc,T,Tc,fluid)-delta*tau*phi_r_dt(rho,rhoc,T,Tc,fluid)),2))
+//		/((1+2*delta*phi_r_d(rho,rhoc,T,Tc,fluid)+pow(delta,2)*phi_r_dd(rho,rhoc,T,Tc,fluid))))*Rs;
 
 
 	return cp;
 }
+
+
 /**********************************************************************
 Function for calculating viscosity of CO2 depending on density and Temperature.
 Programming: Norbert Böttcher
@@ -1004,3 +1099,151 @@ default :   h = 0.5;}
 //      h = 0.598; // [W/m/K] at 293K and 1 bar
 
 return h;}
+/*************************************************************
+* vapour pressure for co2
+* NB, Dec 08
+last change: NB 4.9.05
+*************************************************************/
+double vapour_pressure_co2(double T,double Tc,double pc)
+{
+double p=0;
+double a[4],t[4];
+int i;
+a[0]=-7.0602087;	t[0]=1;
+a[1]=1.9391218;	    t[1]=1.5;
+a[2]=-1.6463597;	t[2]=2;
+a[3]=-3.2995634;	t[3]=4;
+
+for (i=0;i<4;i++) 
+p=p+a[i]*pow(1-(T/Tc),t[i]);
+
+p=exp(Tc/T*p)*pc;
+
+
+return p;
+}
+/*************************************************************
+* sublime pressure for co2
+* NB, Dec 08
+last change: NB 4.9.05
+*************************************************************/
+double sublime_pressure_co2(double T,double Tt,double pt)
+{
+double p;
+double a[3];
+
+a[0]=-14.740846;
+a[1]=2.4327015;
+a[2]=-5.3061778;
+
+p= exp(Tt/T*(a[0]*(1-T/Tt)+a[1]*pow((1-T/Tt),1.9)+a[2]*pow((1-T/Tt),2.9)))*pt;
+
+return p;
+}
+/*************************************************************
+* melting pressure for co2
+* NB, Dec 08
+last change: NB 4.9.05
+*************************************************************/
+double melting_pressure_co2(double T,double Tt,double pt) //just for CO2
+{
+double p;
+double a[2];
+a[0]=1955.539; //CO2
+a[1]=2055.4593;
+
+p= (1+a[0]*(T/Tt-1)+a[1]*pow((T/Tt-1),2))*pt;
+
+return p;
+}
+/*************************************************************
+* Peng&Robinson Equation of State
+* Analytical solving of third grade polynomial
+*
+* Parameters: temperature and pressure
+*             caption defines fluid
+* Programming: NB, Dec 08
+**************************************************************/
+double preos(double T, double P, string caption)
+{
+double z1,z2,z3;
+vector<double> roots;
+
+CFluidProperties *mfp_prop;
+
+double a,b,Tc,pc,MM,Ru;
+double omega,alpha;
+
+
+//int i;
+mfp_prop = MFPGet (caption,0);
+
+Ru=mfp_prop->Ru; //universal gas constant
+MM=mfp_prop->molar_mass; 
+Tc=mfp_prop->Tc; // critical temperature
+pc=mfp_prop->pc/1000; //critical pressure
+omega=mfp_prop->omega; // azentric factor
+
+// Peng Robinson EOS:
+// P= R*T / (V-b) - a*alpha / (V^2+2bV-b^2)   where V = MM/rho
+
+a=0.457235*pow(Ru,2)*pow(Tc,2)/pc;
+b=0.077796*Ru*Tc/pc;
+P=P/1000; //P in kPa
+alpha=pow((1+(0.37464+1.5422*omega-0.26992*pow(omega,2))*(1-pow((T/Tc),0.5))),2);
+
+//EOS in the form: 0 = rho^3 + z1*rho^2 + z2*rho + z3
+
+z1=(MM*a*alpha-3*MM*pow(b,2)*P-2*MM*Ru*T*b)/(b*(P*pow(b,2)+b*Ru*T-a*alpha));
+z2=(pow(MM,2)*(b*P-Ru*T))/(b*(P*pow(b,2)+b*Ru*T-a*alpha));
+z3=(pow(MM,3)*P)/(b*(P*pow(b,2)+b*Ru*T-a*alpha));
+
+NsPol3(z1,z2,z3,&roots); //derives the roots of the polynomial
+
+
+return FindMin(roots); //returns the lowest positive root
+}
+/*************************************************************
+* Redlich&Kwong Equation of State
+* Analytical solving of third grade polynomial
+*
+* Parameters: temperature and pressure
+*             caption defines fluid
+* Programming: NB, Jan 09
+**************************************************************/
+double rkeos(double T, double P, string caption)
+{
+double z1,z2,z3,h;
+vector<double> roots;
+
+CFluidProperties *mfp_prop;
+
+double a,b,Tc,pc,MM;
+double Ru;
+
+mfp_prop = MFPGet (caption,0);
+
+Ru=mfp_prop->Ru*10; //universal gas constant [bar cm³/mol/K]
+MM=mfp_prop->molar_mass; 
+Tc=mfp_prop->Tc; // critical temperature
+pc=mfp_prop->pc/100000; //critical pressure
+
+// Redlich-Kwong EOS:
+// P= R*T (1+y+y^2-y^3)/ v(1-y^3) - a / (T^0.5*v(cv+b)   where V = MM/rho and y = b / (4v)
+
+a=27*pow(Ru,2)*pow(Tc,2.5)/(64*pc);
+b=0.0866*Ru*Tc/pc;
+P=P/100000; //P in bar
+
+//EOS in the form: 0 = vm^3 + z1*vm^2 + z2*vm + z3
+
+z1=-Ru*T/P;
+z2=-(Ru*T*b/P-a/(pow(T,0.5)*P)+pow(b,2));
+z3=-a*b/(pow(T,0.5)*P);
+
+NsPol3(z1,z2,z3,&roots); //derives the roots of the polynomial
+
+h=FindMax(roots); //returns the lowest positive root (molar volume)
+h=MM/h*1000; // density in kg/m³
+return h;
+}

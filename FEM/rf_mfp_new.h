@@ -25,14 +25,22 @@ class CFluidProperties
     double primary_variable_t1[10];//CMCD
     // 
     bool cal_gravity; //YD/WW
-    double molar_mass; 
     // FEM
     friend class  FiniteElement::CFiniteElementStd; //WW
     // PCS
     CRFProcess *m_pcs; //OK4704
   public:
+    double rhoc; //critical_density; //NB
+	double Tc; //critical_temperature; 
+	double pc; //critical_pressure; 
+	double Tt; //triple_point_temperature; 
+	double pt; //triple_point_pressure; 
+	double Rs; //specific_gas_constant; 
+	double Ru; //universal_gas_constant; 
+	double omega; // azentric factor for Peng-Robinson EOS
+	double molar_mass; 
     string name;
-    string caption;
+    string caption; //NB4801
     int phase;
     // FEM
     CFiniteElementStd *Fem_Ele_Std;
@@ -53,6 +61,7 @@ class CFluidProperties
     double dmy_dC;
     string my_fct_name;
     // Thermal properties
+   
     double specific_heat_capacity;
     string heat_capacity_fct_name;
     int heat_conductivity_model;
@@ -99,7 +108,8 @@ class CFluidProperties
     // Add an argument: double* variables = NULL. 28.05.2008 WW
     double Density(double *variables = NULL); 
     double Viscosity(double *variables = NULL); //OK4709
-    double SpecificHeatCapacity();
+    double SpecificHeatCapacity(double *variables = NULL); //NB Jan09
+    void therm_prop(string caption); //NB 4.9.05
 	double PhaseChange(); // JOD 
     double HeatConductivity(double *variables = NULL);
     double CalcEnthalpy(double temperature);
@@ -132,5 +142,6 @@ extern double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem=NULL); //WW
 extern double MFPCalcFluidsHeatConductivity(long index,double*gp,double theta, CFiniteElementStd* assem=NULL);
 extern void MFPDelete();
 extern CFluidProperties* MFPGet(string);    //OK/YD
+extern CFluidProperties* MFPGet(string, int);    //NB 4.9.05
 double MFPGetNodeValue(long,string); //OK
 #endif

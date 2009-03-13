@@ -142,6 +142,7 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
     if(line_string.find("$CAPTION")!=string::npos) { // NB 4.8.01
 	  in.str(GetLineFromFile1(mfp_file));
       in >> caption; //sub_line
+      therm_prop (caption); //NB 4.9.05 (getting thermophysical constants of specified substance)
 	  in.clear();
       continue;
     }
@@ -228,7 +229,33 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
         density_pcs_name_vector.push_back("PRESSURE1");
         density_pcs_name_vector.push_back("TEMPERATURE1");
         }
-	  }
+        }
+       if(density_model==11)		//NB  4.9.05
+  //Peng-Robinson Equation of State
+	  if(!T_Process) 
+        {
+        in >> T_0;
+		density_pcs_name_vector.push_back("PRESSURE1");
+        }
+      else
+        {
+        density_pcs_name_vector.push_back("PRESSURE1");
+        density_pcs_name_vector.push_back("TEMPERATURE1");
+        } 
+       if(density_model==12)		//NB 4.9.05
+	  { // Redlich-Kwong Equation of State
+	    	  if(!T_Process) 
+        {
+        in >> T_0;
+		density_pcs_name_vector.push_back("PRESSURE1");
+        }
+      else
+        {
+        density_pcs_name_vector.push_back("PRESSURE1");
+        density_pcs_name_vector.push_back("TEMPERATURE1");
+        }
+        }
+	  
 //      mfp_file->ignore(MAX_ZEILE,'\n');
       in.clear();
       continue;
@@ -551,6 +578,7 @@ Programing:
 11/2005 YD Modification
 05/2008 WW Add an argument: double* variables: P, T, C
 last modification:
+NB 4.9.05
 **************************************************************************/
 double CFluidProperties::Density(double* variables)
 {
@@ -595,8 +623,15 @@ double CFluidProperties::Density(double* variables)
 		primary_variable[1]=variables[1];
 //		density = GetMatrixValue(variables[1],variables[0],caption,&gueltig);
 		density = GetMatrixValue(primary_variable[1],primary_variable[0],caption,&gueltig);
-  
-		break;      
+   		break;      
+   	  case 11: //Peng-Robinson EOS for CO2 NB 4.9.05
+		if(!T_Process) primary_variable[1]=T_0;
+   	    density=preos(primary_variable[1],primary_variable[0],caption);
+  	    break;
+   	  case 12: // Redlich-Kwong EOS for CO2 NB 4.9.05
+		if(!T_Process) primary_variable[1]=T_0;
+   	    density=rkeos(primary_variable[1],primary_variable[0],caption);
+  	    break;	
       default:
         cout << "Error in CFluidProperties::Density: no valid model" << endl;
         break;
@@ -644,6 +679,14 @@ double CFluidProperties::Density(double* variables)
 		if(!T_Process) primary_variable[1]=T_0;
 	
      	density = GetMatrixValue(primary_variable[1],primary_variable[0],caption,&gueltig);
+		break;	
+   	  case 11:
+   	  	if(!T_Process) primary_variable[1]=T_0;
+   	    density=preos(primary_variable[1],primary_variable[0],caption);
+  	    break;
+   	  case 12:
+   	  	if(!T_Process) primary_variable[1]=T_0;
+   	    density=rkeos(primary_variable[1],primary_variable[0],caption);
 		break;	
       default:
         cout << "Error in CFluidProperties::Density: no valid model" << endl;
@@ -830,6 +873,7 @@ Programing:
 08/2004 OK Implementation
 11/2005 YD Modification
 10/2008 OK Faster data access
+03/2009 NB Viscosity depending on Density()
 **************************************************************************/
 double CFluidProperties::Viscosity(double* variables) //OK4709
 {
@@ -887,7 +931,8 @@ double CFluidProperties::Viscosity(double* variables) //OK4709
     
       if(!T_Process) primary_variable[1]=T_0;
 //	  viscosity = co2_viscosity(GetMatrixValue(primary_variable[1],primary_variable[0],caption,&gueltig),primary_variable[1]); //NB
-      viscosity = Fluid_Viscosity(GetMatrixValue(primary_variable[1],primary_variable[0],caption,&gueltig),primary_variable[1],primary_variable[0],caption); //NB
+      viscosity = Fluid_Viscosity(Density(),primary_variable[1],primary_variable[0],caption); //NB
+
       break;
     default:
       cout << "Error in CFluidProperties::Viscosity: no valid model" << endl;
@@ -1029,14 +1074,23 @@ Programing:
 10/2005 WW/YD Case 3: simplified phase change
 10/2005 YD Case 4: improved phase change
 11/2005 CMCD edited cases and expanded case 3 & 4
-last modification:
+last modification: NB Jan 09 4.9.05
 **************************************************************************/
-double CFluidProperties::SpecificHeatCapacity()
+double CFluidProperties::SpecificHeatCapacity(double *variables) //NB
 {
   int gueltig = -1;
   double pressure, saturation, temperature;
  
-  CalPrimaryVariable(specific_heat_capacity_pcs_name_vector);
+    if(variables) //NB Jan 09
+  {
+    primary_variable[0] = variables[0]; //p (single phase)
+    primary_variable[1] = variables[1]; //T (temperature)
+  }
+  else
+  {
+    CalPrimaryVariable(specific_heat_capacity_pcs_name_vector);
+  }
+  
   pressure = primary_variable[0];  
   temperature =  primary_variable[1]; 
   saturation = primary_variable[2]; 
@@ -1250,13 +1304,14 @@ Programing:
 08/2004 OK MFP implementation based on MATCalcFluidHeatCapacity (OK)
 11/2005 YD Modification
 last modification:
+NB 4.9.05
 **************************************************************************/
-double CFluidProperties::HeatConductivity(double *variables) //NB
+double CFluidProperties::HeatConductivity(double *variables) //NB Dec 08 4.9.05
 {
   int fct_number = 0;
   int gueltig;
 
-  if(variables) //NB
+  if(variables) //NB Dec 08
   {
     primary_variable[0] = variables[0]; //p (single phase)
     primary_variable[1] = variables[1]; //T (temperature)
@@ -1277,9 +1332,7 @@ double CFluidProperties::HeatConductivity(double *variables) //NB
 	  heat_conductivity = MATCalcHeatConductivityMethod2(primary_variable[0],primary_variable[1], primary_variable[2]);
 	  break;
 	case 3: // NB
-//	  heat_conductivity = co2_heat_conductivity(GetMatrixValue(primary_variable[1],primary_variable[0],caption,&gueltig),primary_variable[1]);
-      heat_conductivity = Fluid_Heat_Conductivity (GetMatrixValue(primary_variable[1],primary_variable[0],caption,&gueltig),primary_variable[1],caption);
-                        //Fluid_Heat_Donductivity (Density,Temperature,Fluid_Caption);
+      heat_conductivity = Fluid_Heat_Conductivity (Density(),primary_variable[1],caption);
 	  break;
   }
   return heat_conductivity;
@@ -2387,7 +2440,16 @@ CFluidProperties* MFPGet(string name)
   }
   return NULL;
 }
-
+CFluidProperties* MFPGet(string caption, int dummy)
+{
+  CFluidProperties* m_mfp = NULL;
+  for(int i=0;i<(int)mfp_vector.size();i++){
+    m_mfp = mfp_vector[i];
+    if(m_mfp->caption.compare(caption)==0)
+      return m_mfp;
+  }
+  return NULL;
+}
 /**************************************************************************
 FEMLib-Method:
 Task:
@@ -2457,7 +2519,7 @@ double MFPGetNodeValue(long node,string mfp_name)
             break;
   case 'D': mfp_id = 1; //DENSITY
             break;
-  case 'H': mfp_id = 2; //HEAT_CAPACITY
+  case 'H': mfp_id = 2; //HEAT_CONDUCTIVITY
             break;
   default:  mfp_id = -1;}  
   //......................................................................
@@ -2479,4 +2541,56 @@ double MFPGetNodeValue(long node,string mfp_name)
   //......................................................................
   m_mfp->mode = 0;
   return mfp_value;
+}
+/**********************************************************************
+Function thermal_properties (fluid, critical_density, critical_temperature, specific_gas_constant)
+returns the thermal properties of a given fluid
+Programming: NB Mar09
+**********************************************************************/
+void CFluidProperties::therm_prop (string caption)
+{
+// CFluidProperties fpc;
+ char letter;
+ 
+ letter = caption[0];
+ Ru=8.314472;
+switch (letter)
+     {
+     case 'C' : // CARBON DIOXIDE
+	    {
+	    rhoc=467.6; // critical density [kg/m³]
+        Tc=304.1282; // critical temperature [K]
+        pc=7377300; // critical pressure [Pa]
+        Tt=216.592; // triple point temperature [K]
+        pt=517950; //  triple point pressure [Pa]
+        Rs=188.9241; // specific gas constant [J/kg/K]
+        molar_mass=44.0099; // [g/mol]
+        omega=0.22491; // azentric factor, see PREOS
+        break;
+        }
+     case 'W' : // WATER
+	    {
+	    rhoc=322; //[kg/m³]
+        Tc=647.096; //[K]
+        pc=22064000; // [Pa]
+        Tt=273.16; //  [K]
+        pt=611.657; //  [Pa]
+        Rs=461.51805; //  [J/kg/K]
+        molar_mass=18.01528; //  [g/mol]
+        omega=0.344; // azentric factor, see PREOS
+		break;
+		}
+     case 'M' : // METHANE
+	    {
+	    rhoc=162.66; //[kg/m³]
+        Tc=190.551; //[K]
+        pc=4599200; // [Pa]
+        Tt=90.685; //  [K]
+        pt=11696; //  [Pa]
+        Rs=518.3; //  [J/kg/K]
+        molar_mass=16.04; //  [g/mol]
+        omega=0.011; // azentric factor, see PREOS
+		break;
+		}
+     }
 }

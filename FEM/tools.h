@@ -145,6 +145,9 @@ typedef struct
 extern DMATRIX *CreateDoubleMatrix(long row, long col);
 /* Zerstoert die Instanz vom Typ DMATRIX */
 extern void DestroyDoubleMatrix(DMATRIX *dm);
+extern double FindMin (vector<double>Vec); //NB 4.9.05
+extern double FindMax (vector<double>Vec); //NB 4.9.05
+extern void NsPol3 (double p, double q, double r, vector<double>*t); //NB 4.9.05
 
 
 typedef struct

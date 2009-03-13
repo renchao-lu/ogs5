@@ -489,6 +489,17 @@ void  CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bo
            if(cpl_pcs)
              idxS = cpl_pcs->GetNodeValueIndex("SATURATION1")+1; //WW
          }
+         if(cpl_pcs == NULL) //23.02.2009 NB 4.9.05
+         {
+           cpl_pcs = PCSGet("TWO_PHASE_FLOW"); 
+           if(cpl_pcs)
+             idxS = cpl_pcs->GetNodeValueIndex("SATURATION1")+1; 
+         }
+         if(cpl_pcs == NULL) //23.02.2009 NB 4.9.05
+         {
+           cpl_pcs = PCSGet("AIR_FLOW"); //23.01.2009 NB
+         }
+
          if (cpl_pcs){  //MX
            idx_c0 = cpl_pcs->GetNodeValueIndex("PRESSURE1");
            idx_c1 = idx_c0+1;
@@ -522,6 +533,12 @@ void  CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bo
       }
       break;
     case 'A': //Gas flow
+          if(T_Flag) //NB 23.01.2009 4.9.05
+      {
+         cpl_pcs = PCSGet("HEAT_TRANSPORT"); 
+         idx_c0 = cpl_pcs->GetNodeValueIndex("TEMPERATURE1");
+         idx_c1 = idx_c0+1;           
+      }
       break;
     }
 }

@@ -2464,4 +2464,96 @@ double GetMatrixValue(double var1, double var2, string caption, int *gueltig)
 			zx2y2= *matrix->variable_data_vector[(j2-dim_x)*dim_x+(i2+dim_x+dim_y)];
 	return 	interpol (y1,y2,interpol (x1,x2,zx1y1,zx2y1,  var1),interpol (x1,y1,zx1y2,zx2y2,  var1),var2);
 }
+/****************************************************************************
+* Finds and returns the positive minimum of a vector.
+* Programming: NB Dec 08 
+*****************************************************************************/
+double FindMin (vector<double>Vec)
+{
+double x=DBL_MAX;
+int i;
 
+for(i=0;i<Vec.size();i++) {if ((Vec[i]>=0)&&(Vec[i]<x)) x=Vec[i];}
+
+return x;
+}
+/****************************************************************************
+* Finds and returns the maximum of a vector.
+* Programming: NB Jan 08 
+*****************************************************************************/
+double FindMax (vector<double>Vec)
+{
+double x=DBL_MIN;
+int i;
+
+for(i=0;i<Vec.size();i++) {if (Vec[i]>x) x=Vec[i];}
+
+return x;
+}
+/****************************************************************************
+* Finds all real roots of a third grade polynomial in the form:
+* P(x) = x^3 + px^2 + qx + r
+* roots are returned in a vector
+*
+* Programming: NB, Dec08 
+*****************************************************************************/
+void NsPol3 (double p, double q, double r, vector<double>*roots)
+{
+double eps=7E-15;
+double a,b,h,phi,D,z[3];
+double pi=3.1415926535897;
+double nz;
+int i;
+
+b=pow((p/3),2);
+a=q/3-b;
+b=b*p/3+0.5*(r-p/3*q);
+h=pow(fabs(a),0.5);
+
+
+if (b<0) h=-h;
+
+D = pow(a,3)+pow(b,2);
+
+if (D<=(-eps)) 
+  {
+  nz=3;
+  phi=acos(b/pow(h,3))/3;
+  z[0]=2*h*cos(pi/3-phi)-p/3;
+  z[1]=2*h*cos(pi/3+phi)-p/3;
+  z[2]=-2*h*cos(phi)-p/3;
+  }
+  else if (D<eps)
+        {
+        nz=3;
+        z[0]=-2*h-p/3;
+        z[1]=h-p/3;
+        z[2]=z[1];
+        } else
+             {
+             nz=1;
+             if(a>=eps) 
+                {
+                b=b/pow(h,3);
+                phi=log(b+pow(pow(b,2)+1,0.5))/3;
+                z[0]=-2*h*sinh(phi)-p/3;
+                } else if(a>(-eps))
+                         {
+                         z[0]=pow((2*abs(b)),1/3);
+                         if (b>0) 
+                            {
+                            z[0]=-z[0];;
+                            }
+                         z[0]=z[0]-p/3;
+                         }
+                         else 
+                             {
+                             b=b/pow(h,3);
+                             phi=log(b+pow(pow(b,2)-1,0.5))/3;
+                             z[0]=-2*h*cosh(phi)-p/3;
+                             }
+             }
+             
+for(i=0;i<nz;i++) roots->push_back(z[i]);
+             
+}

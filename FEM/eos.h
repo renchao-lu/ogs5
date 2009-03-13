@@ -7,15 +7,15 @@
 using namespace std;
 
 
-double pressure (double, double, int);
+double pressure (double rho, double T, string c);
 // calculates the pressure depending on density and temperature
-double density (double, double,  double,  double, int);
+double density (double P, double rho0, double T, double prec, string c);
 // calculates the density iteratively depending on pressure and temperature
-double enthalpy (double, double, int);
+double enthalpy (double rho, double T, string c);
 // calculates the density iteratively depending on pressure and temperature
-double isochoric_heat_capacity (double,  double,  int);
+double isochoric_heat_capacity (double rho, double T, string c);
 // calculates the isochoric heat capacity depending on density and temperature
-double isobaric_heat_capacity (double,  double,  int);
+double isobaric_heat_capacity (double rho, double T, string c);
 // calculates the isobaric heat capacity depending on density and temperature
 double co2_viscosity (double, double);
 // calculates the viscosity depending on density and temperature !ONLY for CO2!!!
@@ -27,3 +27,8 @@ double Fluid_Viscosity (double,double ,double ,string);
 //Viscosity for several fluids
 double Fluid_Heat_Conductivity (double, double, string);
 //Heat conductivity for several fluids
+double preos(double T, double P, string caption);
+double rkeos(double T, double P, string caption);
+double melting_pressure_co2(double T,double Tt,double pt);
+double sublime_pressure_co2(double T,double Tt,double pt);
+double vapour_pressure_co2(double T,double Tc,double pc);
