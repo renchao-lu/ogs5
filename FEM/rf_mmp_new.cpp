@@ -6415,30 +6415,6 @@ double CMediumProperties::SaturationPressureDependency
         //cout << "Warning in CMediumProperties::SaturationPressureDependency: dS_dp = 0" << endl; //OK4105
       }
       break;
-			
-		case 0:  // k = f(x) user-defined function  
-      //----------------------------------------------------------------------
-      // Wenn wir nah an der Vollsaettigung, ggf. Schrittweite verkleinern 
-      dS = 1.e-2;
-      do{
-        dS /= 10.;
-        saturation1 = saturation - dS;
-        capillary_pressure1 = CapillaryPressureFunction(number,NULL,theta,phase,saturation1);
-        saturation2 = saturation + dS;
-        capillary_pressure2 = CapillaryPressureFunction(number,NULL,theta,phase,saturation2);
-        dpc = capillary_pressure1 - capillary_pressure2; //OK4105
-      }
-      while((dS > MKleinsteZahl) && (capillary_pressure2 < MKleinsteZahl / 100.));
-      if ( ((capillary_pressure1 > MKleinsteZahl)||(capillary_pressure2 > MKleinsteZahl)) \
-        && (dpc > MKleinsteZahl) )
-				// PCH In fact, this is dPc/dSw. However I am using dS_dp variable. 
-        dS_dp =(capillary_pressure1 - capillary_pressure2)/( 2. * dS);
-      else{
-        dS_dp = 0.;
-        //cout << "Warning in CMediumProperties::SaturationPressureDependency: dS_dp = 0" << endl; //OK4105
-      }
-      break;
-			
     case 44:  // Van Genuchten: 01.3.2007 WW
       m = saturation_exp[phase]; 
       n = 1./(1.0-m);
