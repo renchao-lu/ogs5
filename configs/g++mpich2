@@ -1,0 +1,12 @@
+## 16.12.2008
+MPI              = yes
+NEW_SP = yes;
+CXX_LIBS         = -lstdc++
+CXX_LDFLAGS      = -O0 -v
+CXX_LD           = mpicxx
+CXX_OPT_FLAGS    = -O3
+CXX_DEBUG_FLAGS  = 
+CXX_WARN_FLAGS   =
+CXX_FLAGS        = -DUSE_MPI $(CXX_OPT_FLAGS) $(CXX_DEBUG_FLAGS) -DNEW_EQS -DPROBLEM_CLASS -DRANDOM_WALK -DMPICH_IGNORE_CXX_SEEK
+CXX              = mpicxx
+

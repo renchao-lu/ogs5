@@ -22,9 +22,9 @@
 
 
 #ifdef USE_MPI_GEMS
-#undef SEEK_SET
-#undef SEEK_CUR
-#undef SEEK_END
+
+
+
 #include "mpi.h"//Parallel Computing Support
 #include "par_ddc.h"
 // HS 07.01.2008: Comment the following 2 lines on LiClus.

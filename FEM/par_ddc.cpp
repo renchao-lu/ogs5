@@ -33,9 +33,9 @@ vector<int> node_connected_doms; //This will be removed after sparse class is fi
 
 //---- MPI Parallel --------------
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)
-#undef SEEK_SET  //WW 
-#undef SEEK_END  //WW
-#undef SEEK_CUR  //WW
+
+
+
 #include<mpi.h>
 int size;
 int myrank;
