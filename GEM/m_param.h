@@ -1,5 +1,5 @@
 //-------------------------------------------------------------------
-// $Id: m_param.h 1230 2009-02-11 17:41:06Z gems $
+// $Id: m_param.h 1069 2008-05-27 12:46:35Z gems $
 //
 // Copyright (C) 2006,2007  S.Dmitrieva, D.Kulik
 //
@@ -36,21 +36,19 @@ extern const double R_CONSTANT, NA_CONSTANT, F_CONSTANT,
 
 struct BASE_PARAM
 { // Flags and thresholds for numeric modules
-   long int
-    PC,    // Mode of PhaseSelekt() (Selekt2) operation ( 0 1 2 ... )
+    short PC,    // Mode of PhaseSelekt() (Selekt2) operation ( 0 1 2 ... )
     PD,  // Mode of DHH():0-invoke,1-at FIA only,2-last IPM it. 3-every IPM it.
     PRD, //Positive: mode GammaCalc(): 0-inactive, 1-FIA only, 2-SELEKT2 only 3-every IPM iteration
          // Negative: number of additional EFD-IPM improvement loops (-1 to -30 )
-    PSM, //  Level of diagnostic messages: 0- disabled (no ipmlog file); 1- normal; 2-incl. warnings
+    PSM, //  Mode of setting FIA Gamma in phases: 0-off; 1 - set activ.coeff. GAN
     DP,  //  Max number of EnterFeasibleDomain() iterations { default 144 }
     DW,  // IPM-2 precision mode: 0- disable >=1  - enable (number of loops, default 15)
     DT,  // Exponent for restoring x_j from dual solution {-5 to +2, default 0}
-    PLLG, // Tolerance for checking change in dual solution in refinement loops
-          //      { 0 to 1000 mol/mol, default 0 or 32000 means no check }
+    PLLG, // IPM view debug time on Progress Dialog screen from (sec) or 0
     PE,  // Include electroneutrality condition? { 0 1 }
     IIM  // Maximum number of iterations in the main IPM algorithm { 500 }
     ;
-  double DG,   // Precision of LEM IPM solver (Jordan) { 1e-15 }
+    double DG,   // Precision of LEM IPM solver (Jordan) { 1e-15 }
     DHB, // Precision of mass balance deviations at EFD { 1e-8 }
     DS,  // Cutoff number of moles of a phase { 1e-10 }
     DK,  // Threshold of Dikin criterion of IPM convergence { 1e-4 }
@@ -114,8 +112,7 @@ public:
    void outMultiTxt( const char *path  );
    void readMulti( GemDataStream& ff );
    void readMulti( const char* path );
-   double calcMulti( long int& PrecLoops_, long int& NumIterFIA_, long int& NumIterIPM_ );
-   long int testMulti( );
+   double calcMulti( int& PrecLoops_, int& NumIterFIA_, int& NumIterIPM_ );
 
 };
 

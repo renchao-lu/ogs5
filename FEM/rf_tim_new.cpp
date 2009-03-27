@@ -719,7 +719,6 @@ FEMLib-Method:
 Task: Self adaptive method
 Programing:
 10/2005 YD Implementation
-03/2008 HS KG Implementation for Groundwater flow and mass transport
 **************************************************************************/
 double CTimeDiscretization::SelfAdaptiveTimeControl(void) 
 {
@@ -848,12 +847,6 @@ double CTimeDiscretization::AdaptiveFirstTimeStepEstimate(void)
 	  cout<<"Error Control Time Step: "<<time_step_length<<endl;
 	  if(Write_tim_discrete)
 		*tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
-      break;
-      case 'M': // kg44 mass transport  
-        time_step_length = min_time_step; // take min time step as conservative best guess for testing
-      break;
-      case 'G': // kg44 groudnwater flow ---if steady state, time step should be greater zeor...transient flow does not work with adaptive stepping
-        time_step_length = min_time_step; // take min time step as conservative best guess for testing
       break;
  }
 }

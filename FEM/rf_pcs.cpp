@@ -4849,20 +4849,6 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
     eqs_rhs[bc_eqs_index] += value;
   }
   //====================================================================
-
-  // if coupling to GEMS exist----------------------------------------------------
-  // HS, added 11.2008
-  if ( flag_couple_GEMS ==1 && aktueller_zeitschritt > 1 )
-  {   // only when switch is on and not in the first time step
-	  for (int i=0; i < Water_ST_vec.size() ; i++)
-	  {   // loop over the Water_ST_vec vector,
-		  // add the excess water to the right-hand-side of the equation
-		  eqs_rhs[Water_ST_vec[i].index_node] += Water_ST_vec[i].water_st_value; 	  
-	  }
-	  // after finished adding to RHS, clear the vector
-	  Water_ST_vec.clear();
-  }
-  // ----------------------------------------------------------------------------
 }
 #ifndef NEW_EQS //WW
 /**************************************************************************
@@ -9639,25 +9625,3 @@ void CRFProcess:: UpdateTransientBC()
      }
   } 
 } 
-
-/*************************************************************************
-ROCKFLOW - Function: CRFProcess::Add_GEMS_Water_ST
-Task: add one more record into the vector Water_ST_vec
-Programming: 
-11/2008 //HS Implementation
-**************************************************************************/
-
-void CRFProcess::Add_GEMS_Water_ST(long idx, double val)
-{
-	Water_ST_GEMS tmp_st;
-
-	tmp_st.index_node = idx; 
-	tmp_st.water_st_value = val; 
-
-	Water_ST_vec.push_back(tmp_st);
-}
-
-void CRFProcess::Clean_Water_ST_vec()
-{
-	Water_ST_vec.clear();	
-}

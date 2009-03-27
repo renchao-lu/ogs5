@@ -15,7 +15,4 @@ node.o\
 node_format.o\
 num_methods.o\
 s_fgl.o\
-s_fgl1.o\
-s_fgl2.o\
-s_fgl3.o\
-s_fgl4.o
+s_fgl2.o

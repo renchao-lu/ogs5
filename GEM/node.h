@@ -51,18 +51,17 @@ protected:
 
     // These four values are set by the last GEM_run() call
     double CalcTime;  // GEMIPM2 calculation time, s 
-    long int 
-        PrecLoops,    // Number of performed IPM-2 precision refinement loops
+    int PrecLoops,    // Number of performed IPM-2 precision refinement loops
         NumIterFIA,   // Total Number of performed FIA entry iterations 
         NumIterIPM;   // Total Number of performed IPM main iterations
     
     // Tests Tc as a grid point for the interpolation of thermodynamic data
     // Returns index in the lookup grid array or -1  if it is not a grid point
-    long int  check_grid_T( double Tc );
+    int  check_grid_T( double Tc );
 
     // Tests P as a grid point for the interpolation of thermodynamic data
     // Return index in the lookup grid array or -1 if it is not a grid point
-    long int  check_grid_P( double P );
+    int  check_grid_P( double P );
 
     void allocMemory();
     void freeMemory();
@@ -70,10 +69,8 @@ protected:
    // Functions that maintain DATACH and DATABR memory allocation
     void datach_realloc();
     void datach_free();
-    void datach_reset();
     void databr_realloc();
-    void databr_reset( DATABR *CNode, long int level=0 );
-    
+
     // deletes fields of DATABR structure indicated by data_BR_
     // and sets the pointer data_BR_ to NULL
     DATABR* databr_free( DATABR* data_BR_ =0);
@@ -100,9 +97,9 @@ protected:
     void databr_from_text_file(fstream& ff );
 
     // virtual functions for interaction with TNodeArray class (not used at TNode level)
-    virtual void  setNodeArray( long int , long int*  ) { }
-    virtual void  checkNodeArray( long int, long int*, const char* ) { }
-    virtual long int nNodes()  const // virtual call for interaction with TNodeArray class
+    virtual void  setNodeArray( int , int*  ) { }
+    virtual void  checkNodeArray( int, int*, const char* ) { }
+    virtual int nNodes()  const // virtual call for interaction with TNodeArray class
     { return 1; }
 
 #ifndef IPMGEMPLUGIN
@@ -117,7 +114,7 @@ protected:
     void G0_V0_H0_Cp0_DD_arrays(); // to be written into DCH file
 
     // Virtual function for interaction with TNodeArray class
-    virtual void  setNodeArray( gstring& , long int , bool ) { }
+    virtual void  setNodeArray( gstring& , int , bool ) { }
 #endif
 
 public:
@@ -149,8 +146,8 @@ static TNode* na;   // static pointer to this TNode class instance
 // from DATABR files will be distributed among nodes in T1 node array
 // according to the distribution list nodeTypes.
 //
-    long int  GEM_init( const char *ipmfiles_lst_name,
-                   long int *nodeTypes = 0, bool getNodT1 = false);
+    int  GEM_init( const char *ipmfiles_lst_name,
+                   int *nodeTypes = 0, bool getNodT1 = false);
 
 #ifdef IPMGEMPLUGIN
 //  Calls for direct coupling of a FMT code with GEMIPM2K
@@ -160,8 +157,8 @@ static TNode* na;   // static pointer to this TNode class instance
 //  work structure into parameters provided by the FMT part
 //
    void GEM_restore_MT(
-    long int  &p_NodeHandle,   // Node identification handle
-    long int  &p_NodeStatusCH, // Node status code;  see typedef NODECODECH
+    int  &p_NodeHandle,   // Node identification handle
+    int  &p_NodeStatusCH, // Node status code;  see typedef NODECODECH
                       //                                    GEM input output  FMT control
     double &p_TC,      // Temperature T, C                       +       -      -
     double &p_P,      // Pressure P, bar                         +       -      -
@@ -178,8 +175,8 @@ static TNode* na;   // static pointer to this TNode class instance
 // into the DATABR work structure for the subsequent GEM calculation
 //
    void GEM_from_MT(
-    long int  p_NodeHandle,   // Node identification handle
-    long int  p_NodeStatusCH, // Node status code;  see typedef NODECODECH
+    int  p_NodeHandle,   // Node identification handle
+    int  p_NodeStatusCH, // Node status code;  see typedef NODECODECH
                      //                                     GEM input output  FMT control
     double p_TC,     // Temperature T, C                        +       -      -
     double p_P,      // Pressure P, bar                         +       -      -
@@ -194,8 +191,8 @@ static TNode* na;   // static pointer to this TNode class instance
 // Overload - uses also xDC vector for bulk composition input to GEM
 // added by DK on 09.07.2007
 void GEM_from_MT(
- long int  p_NodeHandle,   // Node identification handle
- long int  p_NodeStatusCH, // Node status code;  see typedef NODECODECH
+ int  p_NodeHandle,   // Node identification handle
+ int  p_NodeStatusCH, // Node status code;  see typedef NODECODECH
                   //                                     GEM input output  FMT control
  double p_TC,     // Temperature T, C                        +       -      -
  double p_P,      // Pressure P, bar                         +       -      -
@@ -217,8 +214,8 @@ void GEM_from_MT(
 // with passed through the DATABR structure.
 // added by DK on 17.09.2007
 void GEM_from_MT(
- long int  p_NodeHandle,   // Node identification handle
- long int  p_NodeStatusCH, // Node status code;  see typedef NODECODECH
+ int  p_NodeHandle,   // Node identification handle
+ int  p_NodeStatusCH, // Node status code;  see typedef NODECODECH
                   //                                     GEM input output  FMT control
  double p_TC,     // Temperature T, C                         +      -      -
  double p_P,      // Pressure P, bar                          +      -      -
@@ -232,13 +229,6 @@ void GEM_from_MT(
  double *p_gam   // DC activity coeffs [nDCb] - old primal s. +      -      -
 );
 
-// Passing current FMT iteration information into the work DATABR structure
-void GEM_set_MT(
-//   long int  NodeTypeHY,    // Node type (hydraulic); see typedef NODETYPE
-//   long int  NodeTypeMT,    // Node type (mass transport); see typedef NODETYPE
-   double p_Tm,      // actual total simulation time, s                        +       -      -
-   double p_dt       // actual time step, s                          +       -      -
-);
 #endif
 
 // (3 alternative)
@@ -246,7 +236,7 @@ void GEM_set_MT(
 // Parameter binary_f defines if the file is in binary format (true or 1)
 // or in text format (false or 0, default)
 //
-   long int GEM_read_dbr( const char* fname, bool binary_f=false );
+   int GEM_read_dbr( const char* fname, bool binary_f=false );
 
 // (4)
 // Main call for GEM IPM calculation, returns p_NodeStatusCH value
@@ -256,13 +246,13 @@ void GEM_set_MT(
 // check the return code and retrieve chemical speciation etc.
 // using the GEM_to_MT() call
 //
-   long int  GEM_run( bool uPrimalSol );   // calls GEM for a work node
+   int  GEM_run( bool uPrimalSol );   // calls GEM for a work node
 //
 // Calls GEM for a work node - an overloaded variant which scales the system 
 //   provided in DATABR and DATACH multiplying by a factor InternalMass/Ms before 
 //   calling GEM and the results by Ms/InternalMass after the GEM calculation
 //   
-   long int  GEM_run( double InternalMass = 1., bool uPrimalSol = false  );   
+   int  GEM_run( double InternalMass = 1., bool uPrimalSol = false  );   
 
 // Returns GEMIPM2 calculation time in sec after the last call to GEM_run()
    double GEM_CalcTime();
@@ -272,7 +262,7 @@ void GEM_set_MT(
 //    PrecLoops:  Number of performed IPM-2 precision refinement loops
 //    NumIterFIA: Total Number of performed FIA entry iterations
 //    NumIterIPM: Total Number of performed IPM main iterations
-   long int GEM_Iterations( long int& PrecLoops, long int& NumIterFIA, long int& NumIterIPM ); 
+   int GEM_Iterations( int& PrecLoops, int& NumIterFIA, int& NumIterIPM ); 
    
 // (5) For interruption/debugging
 // Writes work node (DATABR structure) into a file path name fname
@@ -298,9 +288,9 @@ void GEM_set_MT(
 // to those in currently existing DATACH structure )
 //
    void GEM_to_MT(
-   long int &p_NodeHandle,    // Node identification handle
-   long int &p_NodeStatusCH,  // Node status code (changed after GEM calculation); see typedef NODECODECH
-   long int &p_IterDone,      // Number of iterations performed by GEM IPM
+   int &p_NodeHandle,    // Node identification handle
+   int &p_NodeStatusCH,  // Node status code (changed after GEM calculation); see typedef NODECODECH
+   int &p_IterDone,      // Number of iterations performed by GEM IPM
                          //                                     GEM input output  FMT control
     // Chemical scalar variables
     double &p_Vs,    // Volume V of reactive subsystem, cm3     -      -      +     +
@@ -342,8 +332,8 @@ void GEM_set_MT(
     {        return CNode->P;   }
 
     // Setting node identification handle
-    void setNodeHandle( long int jj )
-    {      CNode->NodeHandle = jj;  }
+    void setNodeHandle( int jj )
+    {      CNode->NodeHandle = (short)jj;  }
     
     // Resizes the node chemical system
     // Returns new node mass Ms
@@ -355,65 +345,65 @@ void GEM_set_MT(
 
    // Returns DCH index of IC given the IC Name string (null-terminated)
    // or -1 if no such name was found in the DATACH IC name list
-   long int IC_name_to_xCH( const char *Name );
+   int IC_name_to_xCH( const char *Name );
 
    // Returns DCH index of DC given the DC Name string
    // or -1 if no such name was found in the DATACH DC name list
-   long int DC_name_to_xCH( const char *Name );
+   int DC_name_to_xCH( const char *Name );
 
    // Returns DCH index of Phase given the Phase Name string
    // or -1 if no such name was found in the DATACH Phase name list
-   long int Ph_name_to_xCH( const char *Name );
+   int Ph_name_to_xCH( const char *Name );
 
    // Returns DBR index of IC given the IC Name string
    // or -1 if no such name was found in the DATACH IC name list
-   inline long int IC_name_to_xDB( const char *Name )
+   inline int IC_name_to_xDB( const char *Name )
    { return IC_xCH_to_xDB( IC_name_to_xCH( Name ) ); }
 
    // Returns DBR index of DC given the DC Name string
    // or -1 if no such name was found in the DATACH DC name list
-   inline long int DC_name_to_xDB( const char *Name )
+   inline int DC_name_to_xDB( const char *Name )
    { return DC_xCH_to_xDB( DC_name_to_xCH( Name ) ); }
 
    // Returns DBR index of Phase given the Phase Name string
    // or -1 if no such name was found in the DATACH Phase name list
-   inline long int Ph_name_to_xDB( const char *Name )
+   inline int Ph_name_to_xDB( const char *Name )
    { return Ph_xCH_to_xDB( Ph_name_to_xCH( Name ) ); }
 
    // Converts the IC DCH index into the IC DBR index
    // or returns -1 if this IC is not used in the data bridge
-   long int IC_xCH_to_xDB( const long int xCH );
+   int IC_xCH_to_xDB( const int xCH );
 
    // Converts the DC DCH index into the DC DBR index
    // or returns -1 if this DC is not used in the data bridge
-   long int DC_xCH_to_xDB( const long int xCH );
+   int DC_xCH_to_xDB( const int xCH );
 
    // Converts the Phase DCH index into the Phase DBR index
    // or returns -1 if this Phase is not used in the data bridge
-   long int Ph_xCH_to_xDB( const long int xCH );
+   int Ph_xCH_to_xDB( const int xCH );
 
    // Converts the IC DBR index into the IC DCH index
-   inline long int IC_xDB_to_xCH( const long int xBR )
+   inline int IC_xDB_to_xCH( const int xBR )
    { return CSD->xIC[xBR]; }
 
    // Converts the DC DBR index into the DC DCH index
-   inline long int DC_xDB_to_xCH( const long int xBR )
+   inline int DC_xDB_to_xCH( const int xBR )
    { return CSD->xDC[xBR]; }
 
    // Converts the Phase DBR index into the Phase DCH index
-   inline long int Ph_xDB_to_xCH( const long int xBR )
+   inline int Ph_xDB_to_xCH( const int xBR )
    { return CSD->xPH[xBR]; }
 
    // Converts the Phase DCH index into the DC DCH index (for pure phases)
-    long int Phx_to_DCx( const long int Phx );
+    int Phx_to_DCx( const int Phx );
 
    // Converts the Phase DCH index into the DC DCH index (1-st)
    // returns into nDCinPh number of DC included into Phx phase
-    long int  PhtoDC_DCH( const long int Phx, long int& nDCinPh );
+    int  PhtoDC_DCH( const int Phx, int& nDCinPh );
 
    // Converts the Phase DBR index into the DC DBR index (1-st selected )
    // returns into nDCinPh number of DC selected into Phx phase
-    long int  PhtoDC_DBR( const long int Phx, long int& nDCinPh );
+    int  PhtoDC_DBR( const int Phx, int& nDCinPh );
 
     // Data exchange methods between GEMIPM and work node DATABR structure
     // Are called inside of GEM_run()
@@ -429,13 +419,13 @@ void GEM_set_MT(
     
     // Test Tc and P as grid point for the interpolation of thermodynamic data
     // Return index in grid matrix or -1
-     long int  check_grid_TP(  double Tc, double P );
+     int  check_grid_TP(  double Tc, double P );
 
      // Access to interpolated G0 from DCH structure ( xCH is the DC DCH index)
-     double  DC_G0_TP( const long int xCH, double Tc, double P );
+     double  DC_G0_TP( const int xCH, double Tc, double P );
     
      // Access to interpolated V0 from DCH structure ( xCH is the DC DCH index)
-     double  DC_V0_TP( const long int xCH, double Tc, double P );
+     double  DC_V0_TP( const int xCH, double Tc, double P );
 
 // To be provided - access to interpolated thermodynamic data from DCH structure
 //  DC_H0_TP
@@ -444,12 +434,12 @@ void GEM_set_MT(
 //  DC_DD_TP
 
      // Retrieval of Phase Volume ( xBR is DBR phase index)
-      double  Ph_Volume( const long int xBR );
+      double  Ph_Volume( const int xBR );
      // Retrieval of Phase mass ( xBR is DBR phase index)
-      double  Ph_Mass( const long int xBR );
+      double  Ph_Mass( const int xBR );
      // Retrieval of Phase composition ( xBR is DBR phase index)
      // Returns pointer to ARout which may also be allocated inside of Ph_BC()
-      double* Ph_BC( const long int xBR, double *ARout=0 );
+      double* Ph_BC( const int xBR, double *ARout=0 );
 
 
 #ifndef IPMGEMPLUGIN
@@ -466,7 +456,7 @@ void GEM_set_MT(
     // already existing index vectors axIC, axDC, axPH (with anICb, anDCb,
     // anPHb, respectively)
     void MakeNodeStructures(  short anICb, short anDCb,  short anPHb,
-    		short* axIC, short* axDC,  short* axPH,
+             short* axIC, short* axDC,  short* axPH,
              float* Tai, float* Pai,  short nTp_,
              short nPp_, float Ttol_, float Ptol_  );
 

@@ -433,18 +433,9 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
         case 11: //MB: read from file ToDo
 		  in >> porosity_file;
 		  break;
-#ifdef GEM_REACT
-       case 15:
-           in >> porosity_model_values[0]; // set a default value for GEMS calculation
-		   KC_porosity_initial = porosity_model_values[0];  // save this seperately;
-
-// KG44: TODO!!!!!!!!!!!!! check the above  ***************
-
-      break;
-#endif        default:
+        default:
           cout << "Error in MMPRead: no valid porosity model" << endl;
 		 break;
-
       }
       in.clear();
       continue;
@@ -1118,18 +1109,7 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
           in >> permeability_porosity_model_values[0];
 		  in >> permeability_porosity_model_values[1];
           break;
-		case 3:// HS: 11.2008, Kozeny-Carman relationship
-		  // we set the tensor type first to isotropic and constant as initial value
-		  permeability_tensor_type = 0;
-          permeability_model = 3; // this means permeability depends on K-C relationship
-          in >> permeability_porosity_model_values[0]; // initial values
-		  break;
-		case 4:// HS: 11.2008, Kozeny-Carman_normalized relationship 
-		  // we set the tensor type first to isotropic and constant as initial value
-		  permeability_tensor_type = 0;
-          permeability_model = 4; // this means permeability depends on K-C_normalized relationship
-          in >> permeability_porosity_model_values[0]; // initial values
-		  break;
+
         default:
           cout << "Error in MMPRead: no valid permeability model" << endl;
           break;
@@ -2433,7 +2413,7 @@ double* CMediumProperties::MassDispersionTensor(long number,double*gp,double the
   invjac = GEOGetELEJacobianMatrix(number,&detjac);
   //----------------------------------------------------------------------
   // Materials
-  molecular_diffusion = m_cp->CalcDiffusionCoefficientCP(number, theta, m_pcs) * TortuosityFunction(number,gp,theta);
+  molecular_diffusion = m_cp->CalcDiffusionCoefficientCP(number) * TortuosityFunction(number,gp,theta);
 //  heat_capacity_fluids = MFPCalcFluidsHeatCapacity(number,gp,theta);
   MNulleMat(dispersion_tensor,3,3);
   //----------------------------------------------------------------------
@@ -2605,7 +2585,7 @@ double* CMediumProperties::MassDispersionTensorNew(int ip)
   int Dim = m_pcs->m_msh->GetCoordinateFlag()/10;
   //----------------------------------------------------------------------
   // Materials
-  molecular_diffusion_value = m_cp->CalcDiffusionCoefficientCP(index,theta, m_pcs) * TortuosityFunction(index,g,theta);
+  molecular_diffusion_value = m_cp->CalcDiffusionCoefficientCP(index) * TortuosityFunction(index,g,theta);
   molecular_diffusion_value *= Porosity(index,theta);
   //CB 
   molecular_diffusion_value *= PCSGetEleMeanNodeSecondary_2(index, Fem_Ele_Std->pcs->flow_pcs_type, "SATURATION1", 1);
@@ -3341,29 +3321,6 @@ double CMediumProperties::Porosity(long number,double theta)
     case 10:
       porosity = PorosityVolumetricChemicalReaction(number);     /* porosity change through dissolution/precipitation */
       break;
-#ifdef GEM_REACT
-    case 15:
-        porosity = porosity_model_values[0]; // default value as backup 
- 
-//                CRFProcess* mf_pcs = NULL;
-		for (int i=0; i < (int)pcs_vector.size() ; i++)
-		{
-		pcs_temp = pcs_vector[i];
-		if (pcs_temp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0)
-		{
-                int idx;
-		idx=pcs_temp->GetElementValueIndex ( "POROSITY" ); 
-
-                porosity = pcs_temp->GetElementValue(number, idx);
-                // porosity=0.1;
-		if (porosity <1.e-6) cout <<"error for porosity1 " <<porosity << " node "<< number << endl;
-		}
-		}
-
-// KG44: TODO!!!!!!!!!!!!! check the above  ***************
-      break;
-#endif
-
 	default:
       DisplayMsgLn("Unknown porosity model!");
       break;
@@ -3462,29 +3419,6 @@ double CMediumProperties::Porosity(CElement* assem) //WW
     case 10:
       porosity = PorosityVolumetricChemicalReaction(number);     /* porosity change through dissolution/precipitation */
       break;
-#ifdef GEM_REACT
-       case 15:
- 
-         porosity = porosity_model_values[0]; // default value as backup 
- 
-//                CRFProcess* mf_pcs = NULL;
-		for (int i=0; i < (int)pcs_vector.size() ; i++)
-		{
-		pcs_temp = pcs_vector[i];
-		if (pcs_temp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0)
-		{
-                int idx;
-		idx=pcs_temp->GetElementValueIndex ( "POROSITY" ); 
-
-                porosity = pcs_temp->GetElementValue(number, idx);
-		if (porosity <1.e-6) cout <<"porosity 2" <<porosity << " node "<< number << endl;
-		}
-		}
-
-// KG44: TODO!!!!!!!!!!!!! check the above  ***************
-      break;
-#endif
-
 	default:
       DisplayMsgLn("Unknown porosity model!");
       break;
@@ -4865,121 +4799,31 @@ double* CMediumProperties::PermeabilityTensor(long index)
 static double tensor[9];
 int perm_index=0;
 
-int idx_k, idx_n;
-double /*k_old, n_old,*/ k_new, n_new;
-
-// HS: move the following loop into the "if ( permeability_tensor_type == 0 )" scope.----
-// this is not necessary for in-isotropic case;
-// if(permeability_model==2)
-//    for(perm_index=0;perm_index<(int)m_pcs->m_msh->mat_names_vector.size();perm_index++)
-//        if(m_pcs->m_msh->mat_names_vector[perm_index].compare("PERMEABILITY")==0)
-//              break;
-// end of comment out codes--------------------------------------------------------------
-
-// -------------------------------------------------------------------------------------------------------
-// Start of K-C relationship. This will write a value into tensor[0] first, the values depends on the 
-// value in permability_model. for 3 and 4, it gets the values from K-C relationship. 
-// this will only influence then case when permeability_tensor_type = 0 
-// -------------------------------------------------------------------------------------------------------
-if ( permeability_tensor_type == 0 )
-{       // only when permeability is isotropic
-		tensor[0] = permeability_tensor[0];
-		if( permeability_model == 2 ) 
-		{   // here get the initial permeability values from material perperty class;
-			// get the index:-------------------------------------------------------------------
-			for(perm_index=0;perm_index<(int)m_pcs->m_msh->mat_names_vector.size();perm_index++)
-				if(m_pcs->m_msh->mat_names_vector[perm_index].compare("PERMEABILITY")==0)
-					  break;
-			// end of getting the index---------------------------------------------------------
-
-            tensor[0] = m_msh->ele_vector[index]->mat_vector(perm_index);
-            int edx = m_pcs->GetElementValueIndex("PERMEABILITY");//CMCD
-            m_pcs->SetElementValue(index,edx,tensor[0]);//CMCD
-        }
-		else if ( permeability_model == 3 ) 
-		{   // HS: 11.2008, for K-C relationship
-			// get indexes
-			idx_k = m_pcs->GetElementValueIndex("PERMEABILITY");
-			idx_n = m_pcs->GetElementValueIndex("POROSITY");
-			
-			// get values of k0, n0, and n. 
-			k_new = m_pcs->GetElementValue( index, idx_k + 1 );
-			n_new = m_pcs->GetElementValue( index, idx_n + 1 );
-
-			// if first time step, get the k_new from material class
-			if ( aktueller_zeitschritt == 1) 
-			{   // for the first time step
-			    // get the permeability. 
-				KC_permeability_initial = k_new = tensor[0];				
-			}
-
-			// save old permeability
-			m_pcs->SetElementValue( index, idx_k, k_new	);
-
-			// calculate new permeability
-			k_new = CMediumProperties::KozenyCarman( KC_permeability_initial, 
-                                                     KC_porosity_initial,
-													 n_new );
-
-			// save new permeability
-			m_pcs->SetElementValue( index, idx_k+1, k_new	);
-
-			// now gives the newly calculated value to tensor[]
-			tensor[0] = k_new ; 
-		}
-		else if ( permeability_model == 4 ) 
-		{   // HS: 11.2008, for K-C_normalized relationship
-			// get indexes
-			idx_k = m_pcs->GetElementValueIndex("PERMEABILITY");
-			idx_n = m_pcs->GetElementValueIndex("POROSITY");
-			
-			// get values of k0, n0, and n. 
-			k_new = m_pcs->GetElementValue( index, idx_k + 1 );
-			n_new = m_pcs->GetElementValue( index, idx_n + 1 );
-
-			// if first time step, get the k_new from material class
-			if ( aktueller_zeitschritt == 0) 
-			{   // for the first time step
-			    // get the permeability. 
-				KC_permeability_initial = k_new = tensor[0];
-			}
-
-			// save old permeability
-			m_pcs->SetElementValue( index, idx_k, k_new	);
-
-			// calculate new permeability
-			k_new = CMediumProperties::KozenyCarman_normalized( KC_permeability_initial, 
-                                                                KC_porosity_initial,
-													            n_new );
-
-			// save new permeability
-			m_pcs->SetElementValue( index, idx_k+1, k_new	);
-
-			// now gives the newly calculated value to tensor[]
-			tensor[0] = k_new ; 
-		}
-}
-// end of K-C relationship-----------------------------------------------------------------------------------
+if(permeability_model==2)
+    for(perm_index=0;perm_index<(int)m_pcs->m_msh->mat_names_vector.size();perm_index++)
+        if(m_pcs->m_msh->mat_names_vector[perm_index].compare("PERMEABILITY")==0)
+              break;
 
   switch(geo_dimension){
     case 1: // 1-D
-        // HS: tensor[0] already set, doing nothing here;
-		break;
+        tensor[0] = permeability_tensor[0];
+		if(permeability_model==2) {
+         tensor[0] = m_msh->ele_vector[index]->mat_vector(perm_index);
+         int edx = m_pcs->GetElementValueIndex("PERMEABILITY");//CMCD
+         m_pcs->SetElementValue(index,edx,tensor[0]);//CMCD
+         }
+      break;
     case 2: // 2-D
       if(permeability_tensor_type==0){
-        // tensor[0] = permeability_tensor[0]; // HS: done already;
+        tensor[0] = permeability_tensor[0];
         tensor[1] = 0.0;
         tensor[2] = 0.0;
-        // tensor[3] = permeability_tensor[0];
-		tensor[3] = tensor[0]; // HS: use the existing value;
-
-		// HS: this is not needed any more--------------------------------
-		// if(permeability_model==2) {
-        //SB 4218	tensor[0] = GetHetValue(index,"permeability");
-		// 	tensor[0] = m_msh->ele_vector[index]->mat_vector(perm_index);
-		//	tensor[3] = tensor[0];
-	    // }
-		// end of comment out section-------------------------------------
+        tensor[3] = permeability_tensor[0];
+		if(permeability_model==2) {
+//SB 4218			tensor[0] = GetHetValue(index,"permeability");
+			tensor[0] = m_msh->ele_vector[index]->mat_vector(perm_index);
+			tensor[3] = tensor[0];
+		}
       }
       else if(permeability_tensor_type==1){
         tensor[0] = permeability_tensor[0];
@@ -4996,25 +4840,21 @@ if ( permeability_tensor_type == 0 )
       break;
     case 3: // 3-D
       if(permeability_tensor_type==0){
-        // tensor[0] = permeability_tensor[0]; // HS: not needed. already done before
+        tensor[0] = permeability_tensor[0];
         tensor[1] = 0.0;
         tensor[2] = 0.0;
         tensor[3] = 0.0;
-        // tensor[4] = permeability_tensor[0]; // HS: using the line below instead;
-		tensor[4] = tensor[0]; // using the existing value
+        tensor[4] = permeability_tensor[0];
         tensor[5] = 0.0;
         tensor[6] = 0.0;
         tensor[7] = 0.0;
-        // tensor[8] = permeability_tensor[0]; // HS: using the line below instead;
-		tensor[8] = tensor[0]; // using the existing value
-		// HS: this is not needed any more-------------------------------- 
-		// if(permeability_model==2) {
-        // SB 4218	tensor[0] = GetHetValue(index,"permeability");
-		// 	tensor[0] = m_pcs->m_msh->ele_vector[index]->mat_vector(perm_index);
-		// 	tensor[4] = tensor[0];
-		// 	tensor[8] = tensor[0];
-		// }
-		// end of comment out section-------------------------------------
+        tensor[8] = permeability_tensor[0];
+		if(permeability_model==2) {
+//SB 4218			tensor[0] = GetHetValue(index,"permeability");
+			tensor[0] = m_pcs->m_msh->ele_vector[index]->mat_vector(perm_index);
+			tensor[4] = tensor[0];
+			tensor[8] = tensor[0];
+		}
       }
       else if(permeability_tensor_type==1){
         tensor[0] = permeability_tensor[0];
@@ -6201,27 +6041,7 @@ double CMediumProperties::CapillaryPressureFunction(long number,double*gp,double
   static int nidx0,nidx1;
   int gueltig;
   double capillary_pressure=0.0;
-  //---------------------------------------------------------------------
-  if(mode==2){ // Given value
-    saturation = saturation;
-  }
-  else{
-    string pcs_name_this = "SATURATION";
-    char phase_char[1];
-    sprintf(phase_char,"%i",phase+1);
-    pcs_name_this.append(phase_char);
-    nidx0 = PCSGetNODValueIndex(pcs_name_this,0);
-    nidx1 = PCSGetNODValueIndex(pcs_name_this,1);
-    if(mode==0){ // Gauss point values
-      saturation = (1.-theta)*InterpolValue(number,nidx0,gp[0],gp[1],gp[2]) \
-                 + theta*InterpolValue(number,nidx1,gp[0],gp[1],gp[2]);
-    }
-    else if(mode==1){ // Node values
-     saturation = (1.-theta)*GetNodeVal(number,nidx0) \
-                + theta*GetNodeVal(number,nidx1);
-    }
-  }
-  //----------------------------------------------------------------------
+  
   switch(capillary_pressure_model){   
     case 0:  // k = f(x) user-defined function
       capillary_pressure = GetCurveValue((int)capillary_pressure_model_values[0],0,saturation,&gueltig);
@@ -7588,55 +7408,4 @@ bool MMPExist()
     }
   }
   return false;
-}
-
-/**************************************************************************
-FEMLib-Method: 
-Task: retrun the new permeability based on original permeability 
-      and old/new porosity
-Programing:
-11/2008 HS Implementation
-last modification:
-**************************************************************************/
-double CMediumProperties::KozenyCarman(double k0, double n0, double n)
-{
-	double rt = 0.0; 
-
-	// TODO: here it should be the min_porosity and max_porosity instead of 0 and 1
-	if (k0 < 1.0e-20 || k0 > 1.0 || n0 <=0 || n0 >= 1 || n <=0 || n >= 1 )
-		return k0;
-	else
-	{
-		rt = k0 ; 
-
-		rt *=pow( n / n0 , 3 );
-	}
-
-return rt;
-}
-/**************************************************************************
-FEMLib-Method: 
-Task: retrun the new permeability based on original permeability 
-      and old/new porosity (Koseny-Carman normalized)
-Programing:
-11/2008 HS Implementation
-last modification:
-**************************************************************************/
-double CMediumProperties::KozenyCarman_normalized(double k0, double n0, double n)
-{
-	double rt = 0.0; 
-
-	// TODO: here it should be the min_porosity and max_porosity instead of 0 and 1
-	if (k0 < 1.0e-20 || k0 > 1.0 || n0 <=0 || n0 >= 1 || n <=0 || n >= 1 )
-		return k0;
-	else
-	{
-		rt = k0 ; 
-
-		rt *=pow( n / n0 , 3 );
-
-		rt *=pow( (1 - n0) / (1 - n) , 2);	
-	}
-
-return rt;
 }

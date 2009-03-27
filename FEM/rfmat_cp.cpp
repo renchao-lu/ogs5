@@ -330,49 +330,6 @@ Programing:
 	  in.clear();
 	} // subkeyword found
 
-#ifdef GEM_REACT
-// kg44 26.11.2008 read in parameters for kinetics and GEM
-	if(line_string.find("$KINETIC_GEM")!=string::npos) { // subkeyword found
-          	in.str(GetLineFromFile1(rfd_file)); 
-           	in >> kinetic_model; cout << kinetic_model << endl;
-		if (kinetic_model == 1) {
-			in >> n_activities; if (n_activities >10) {cout << "To many dependent species for GEM kinetic model "<< n_activities<< endl; exit(1);}
-  //                      cout << n_activities << endl;
-			 // first general kinetic parameters
-//	0,1,2  double E_acid,E_neutral,E_base; // activation energies 
-			in >> kinetic_parameters[0] >> kinetic_parameters[1] >> kinetic_parameters[2];
-//			cout << kinetic_parameters[0] << kinetic_parameters[1] << kinetic_parameters[1]<<endl;
-
-
-//      3-5  double k_acid, k_neutral,k_base; // dissolution/precipitation rate constants 
-			in >> kinetic_parameters[3] >> kinetic_parameters[4] >> kinetic_parameters[5];
-//			cout << kinetic_parameters[3] << kinetic_parameters[4] << kinetic_parameters[5]<<endl;
-
-
-//      6-11  double q1,p1,q2,q3,p2,p3; // exponents for omega
-			in >> kinetic_parameters[6] >> kinetic_parameters[7] >> kinetic_parameters[8] >>kinetic_parameters[9] >> kinetic_parameters[10] >> kinetic_parameters[11];
-			for (j=0;j<n_activities;j++){
-
-				in >> active_species[j];
-//				cout << active_species[j] ;
-//      12,13,14  double n_1, n_2,n_3; // exponents for acidic, neutral and base cases for species one
-
-				in >> kinetic_parameters[j+12] >> kinetic_parameters[j+13] >> kinetic_parameters[j+14];
-			}
-
-		}
-	  in.clear();
-	} // subkeyword found
-	if(line_string.find("$SURFACE_GEM")!=string::npos) { // subkeyword found
-          	in.str(GetLineFromFile1(rfd_file)); 
-           	in >> surface_model; cout << surface_model << endl;
-		if (surface_model == 1) {// surface model 1....only one parameter...
-			in >> surface_area[0]; // surface: m*m / mol
-		}
-	  in.clear();
-	} // subkeyword found
-
-#endif
 
   } //end while
   return position;
@@ -490,29 +447,22 @@ for(i=0;i<count_of_isotherm_model_values;i++)
  09/2004	SB		Fitted to CP Class Structure, now CompProperties Member function
 
 *************************************************************************/
-double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFProcess* m_pcs)
+double CompProperties::CalcDiffusionCoefficientCP(long index)
 {
-    long i, group;
+    long i;
     int  p_idx = -1, t_idx = -1;
     /*int dependence = 0; */
     double diffusion_coefficient = -1.0;
     double pressure_average = 1e5;
     double temperature_average = 293.;
     double *k = NULL;
-    double Dm,porosity;
+    double Dm;
     static long *element_nodes;
     static int count_nodes;
     static int p_ind, t_ind;
     static double eta = 0.0; //, theta = 1.0;
     //    double gp[3]={0.,0.,0.};
 	char name_pres[80], name_heat[80];
-
- group = m_pcs->m_msh->ele_vector[index]->GetPatchIndex();
-
- CMediumProperties *m_mat_mp = NULL;
- m_mat_mp = mmp_vector[group];
-
-
 
 	k = diffusion_model_values;
 
@@ -572,20 +522,10 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
         element_nodes = NULL;
         break;
 	}
-  case 8:{                    /* Archies law De = Dp * poros^m      as Dp is part of the dispersion tensor, we  modify Dp -> Dp=Dp0*poro^(m-1)*/
-            if (count_of_diffusion_model_values < 2)
-                return 0.0;
-// porosity = GetSoilPorosity(index);
-          porosity =m_mat_mp->Porosity(index,theta);
-
-            Dm = k[0]*pow(porosity,k[1]-1.0);
-            return Dm;
-        }
     default:
         DisplayMsgLn("Unknown diffusion model!");
         break;
-    } 
-                          /* switch */
+    }                           /* switch */
 
     return (diffusion_coefficient);
 }
@@ -756,11 +696,7 @@ int CompProperties::GetNumberDiffusionValuesCompProperties(int diffusion_model)
 /* Diffusionskoeffizienten in Luft Dg [m^2/s] */
     case 7:
         n = 2;   break;                  /* FSG-Methode, Lyman et al., 1990 */
-    case 8:
-        n = 2;   break;                  /* Archies Law */
-     }                           /* switch */
-
-                          /* switch */
+    }                           /* switch */
 
     return n;
 }

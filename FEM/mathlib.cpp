@@ -153,6 +153,9 @@
 #include "femlib.h"    //CMCD 03 2004
 //WW----------------------
 #include "par_ddc.h" 
+#undef SEEK_SET 
+#undef SEEK_END 
+#undef SEEK_CUR
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 #include <mpi.h>
 #endif

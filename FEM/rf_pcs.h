@@ -70,11 +70,6 @@ typedef struct {  /* element data info */
   int index;
 } PCS_EVAL_DATA;
 
-typedef struct {
-	long index_node;
-	double water_st_value;	
-} Water_ST_GEMS;  // HS 11.2008
-
 //MB moved inside the Process object
 //extern vector<double*>nod_val_vector; //OK
 //extern vector<string>nod_val_name_vector; //OK
@@ -281,12 +276,6 @@ public:
     //WW void AssembleParabolicEquationRHSVector(CNode*); //(vector<long>&); //OK
 	//....................................................................
     int Shift[10];
-	// 16-GEM  // HS 11.2008
-	int flag_couple_GEMS;     // 0-no couple; 1-coupled
-	vector<Water_ST_GEMS> Water_ST_vec;
-	void Clean_Water_ST_vec(void);
-	void Add_GEMS_Water_ST(long idx, double val);
-	//....................................................................
     // Construction / destruction
     char pcs_name[MAX_ZEILE]; //string pcs_name;
     int pcs_number;

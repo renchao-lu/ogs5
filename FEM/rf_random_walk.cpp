@@ -1409,7 +1409,7 @@ void RandomWalk::SolveDispersionCoefficient(Particle* A)
 	CompProperties *m_cp = cp_vec[0];	// This should be expanded later on to cover multiple components.
 	double g[3]={0.,0.,0.};
 	double theta = 1.0;		// I'll just set it to be unity for moment.
-	molecular_diffusion_value = m_cp->CalcDiffusionCoefficientCP(A->elementIndex,theta,m_pcs) * MediaProp->TortuosityFunction(A->elementIndex,g,theta);
+	molecular_diffusion_value = m_cp->CalcDiffusionCoefficientCP(A->elementIndex) * MediaProp->TortuosityFunction(A->elementIndex,g,theta);
 	molecular_diffusion_value /= porosity;	// This should be divided by porosity in this RWPT method.
 
     // Just solve for the magnitude of the velocity to compute the dispersion tensor
