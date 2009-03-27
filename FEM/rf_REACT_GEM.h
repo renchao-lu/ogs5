@@ -37,37 +37,45 @@ public:
 	DATACH* dCH;   //pointer to DATACH
     DATABR* dBR;   //pointer to DATABR
 
+	// Read function for gem input file
+	ios::pos_type Read(ifstream *gem_file);
+
 	// Number of ICs, DCs, Phases and Phases-solutions kept in the node or elem;
-	int nIC, nDC, nPH, nPS;
+	long nIC, nDC, nPH, nPS;
 
 	// Data structure for each node to carry the chemical information (real FMT problems consider many nodes)
 	// Names are consistent with the DataBridge structure (also see "\GEM\databr.h")
-	int *m_NodeHandle, *m_NodeStatusCH, *m_IterDone;
-    int *m_ElemHandle, *m_ElemStatusCH, *m_IterDone_Elem;
+	long *m_NodeHandle, *m_NodeStatusCH, *m_IterDone;
+
+	// this is for porosity calculated on volume of solids
+	double *m_porosity; 
+	
+	// index, which one in the xDC vector is water. 
+	long idx_water;
 
 	double *m_T, *m_P, *m_Vs, *m_Ms,
           *m_Gs, *m_Hs, *m_IC, *m_pH, *m_pe,
           *m_Eh;
-	double *m_T_Elem, *m_P_Elem, *m_Vs_Elem, *m_Ms_Elem,
-          *m_Gs_Elem, *m_Hs_Elem, *m_IC_Elem, *m_pH_Elem, *m_pe_Elem,
-          *m_Eh_Elem;
 
 	double *m_xDC, *m_gam, *m_xPH, *m_aPH, *m_vPS, *m_mPS, *m_bPS,
          *m_xPA, *m_dul, *m_dll, *m_bIC, *m_bIC_dummy, *m_rMB, *m_uIC; 
 
     
-	double *m_xDC_Elem, *m_gam_Elem, *m_xPH_Elem, *m_aPH_Elem, *m_vPS_Elem, *m_mPS_Elem, *m_bPS_Elem,
-         *m_xPA_Elem, *m_dul_Elem, *m_dll_Elem, *m_bIC_Elem, *m_bIC_dummy_Elem, *m_rMB_Elem, *m_uIC_Elem;
+	double  *m_porosity_Elem, *m_porosity_Elem_buff;
 
     // previous time step DC values
     double *m_xDC_pts;        // previous time step Concentration;
     double *m_xDC_MT_delta;   // delta C from Mass Transport;
     double *m_xDC_Chem_delta; // delta C from Chemistry;
 
-    double *m_xDC_pts_Elem;
+	double *m_excess_water;   // excess water in m3/s for each node; 
+	double *m_excess_gas;   // excess gas in m3/s for each node; 
+	double *m_saturation;
+	double *m_Node_Volume;    // Volume around the node;
 
 	CFluidProperties *m_FluidProp;
-	CRFProcess *m_pcs;//pointer to the PCS Class.		
+	CRFProcess *m_pcs;        // pointer to the PCS Class.	
+	CRFProcess *m_flow_pcs;   // pointer to the flow PCS. 
 
 	// functions
 	short Init_Nodes(string Project_path);	// Initialization of the GEM TNode Class
@@ -78,7 +86,7 @@ public:
 
     short Init_RUN();// Run the node-GEM                      	
 	//  return: 0-ok;5-GEM does not converge 
-	short Run_MainLoop();
+	short Run_MainLoop(string Project_path);
 	//  return: 0-ok;5-GEM does not converge 
 
 	string Get_Init_File_Path(void);
@@ -93,7 +101,7 @@ public:
 
 
 	bool Load_Init_File(string m_Project_path);
-	int* mp_nodeTypes;
+	long* mp_nodeTypes;
 
 	//---flags------
 	int initialized_flag; //0 - not initialized 1 - initialized
@@ -104,6 +112,9 @@ public:
                                  // 3 - strang splitting scheme;
 	int heatflag;//0-initialized and not heat transport;1-heat_transport;
 	int flowflag;//0-initialized;1-GROUNDWATER_FLOW;2-LIQUID_FLOW;3-RICHARDS_FLOW;4-FLOW;
+	int flag_porosity_change;    //0-porosity change not coupled into transport; 1=coupled;
+	int flag_coupling_hydrology; //0-without coupling; 1=with coupling;
+	int flag_permeability_porosity;//0-no coupling; 1-Kozeny-Carman; 2-Kozeny-Carman normalized;
 	//--------------
 
 	long nNodes; // number of all nodes;
@@ -132,14 +143,35 @@ public:
 	short SetSoComponentValue_MT(long node_Index, int timelevel, double* m_Phase);
 	short SetPHValue_MT(long node_Index, int timelevel, double m_PH);
 	short SetPeValue_MT(long node_Index, int timelevel, double m_PE);
+	short SetEhValue_MT(long node_Index, int timelevel, double m_EH);
 
     // Copy current values into previous time step values
     void CopyCurXDCPre(void);
     void UpdateXDCChemDelta(void);
 
-    // Element and Node value conversion
-    void ConvElemValue2Node(void);
-    void ConvNodeValue2Elem(void);
+	// this is only for porosity
+    void ConvPorosityNodeValue2Elem(int i_timestep);
+    void CalcPorosity(long in);
+
+    void CalcPorosity(long in,double volume); //overload variant in case the volume is needed or is not equal to unit volume
+	double min_possible_porosity, max_possible_porosity;
+    void ScaleVolume_Water(long in);
+	void CalcExcessWater(long in);
+
+    // Set porosity in Mass Transport
+	int SetPorosityValue_MT(long ele_Index, double m_porosity_Elem, int i_timestep);
+	int SetSourceSink_MT(long in, double time_step_size /*in sec*/);
+
+	// find which one in xDC vector is water
+	int FindWater_xDC(void);
+    //kg44 11/2008 for kinetics
+    double CalcSaturationIndex(long in, long node,double temp, double press);
+    void CalcReactionRate(long node, double temp, double press);
+    double SpecificSurfaceArea(long in, long node, double temp, double press);
+
+    // concentration related
+    void ConcentrationToMass (long l /*idx of node*/,int i_timestep);
+    void MassToConcentration (long l /*idx of node*/,int i_timestep);
 
 	// Unit conversion for pressures
 	double Pressure_Pa_2_Bar(double Pre_in_Pa);
@@ -151,15 +183,38 @@ public:
     // given argument is the index of one particular node;
     double GetNodeAdjacentVolume(long Idx_Node);
 
-	// MPI implementation
-	void GetGEMResult_MPI(void);
-    void CleanMPIBuffer(void);
+
+	// Permeability-Porosity relationship--------------------------------
+    // they return the new permeability value
+	double KozenyCarman( double k0 /*original permeability*/,
+                         double n0 /*original porosity*/,
+	                     double n  /*new porosity*/);
+	double KozenyCarman_normalized( double k0 /*original permeability*/,
+                                    double n0 /*original porosity*/,
+	                                double n  /*new porosity*/);
+	// ------------------------------------------------------------------
+
+	// GEMS mass scaling parameter
+	double gem_mass_scale;
+	// GEM temperature (without coupling to temperature)
+    double m_gem_temperature;
 
 	// Definition of buffer variables
-	int *m_NodeHandle_buff, *m_NodeStatusCH_buff, *m_IterDone_buff;
+	long *m_NodeHandle_buff, *m_NodeStatusCH_buff, *m_IterDone_buff;
+	double *m_porosity_buff; // porosity buffer
 	double *m_Vs_buff, *m_Ms_buff, *m_Gs_buff, *m_Hs_buff, *m_IC_buff, *m_pH_buff, *m_pe_buff, *m_Eh_buff;
-	double *m_rMB_buff, *m_uIC_buff, *m_xDC_buff, *m_gam_buff, *m_xPH_buff, *m_vPS_buff, *m_mPS_buff, *m_bPS_buff, *m_xPA_buff;
+	double *m_rMB_buff, *m_uIC_buff, *m_xDC_buff, *m_gam_buff, *m_xPH_buff, *m_vPS_buff, *m_mPS_buff,*m_bPS_buff,*m_aPH_buff,*m_xPA_buff,*m_excess_water_buff,*m_excess_gas_buff,*m_dul_buff, *m_dll_buff, *m_Node_Volume_buff, *m_saturation_buff,*m_bIC_buff,*m_bIC_dummy_buff, *m_xDC_pts_buff, *m_xDC_MT_delta_buff, *m_xDC_Chem_delta_buff;
+
+#ifdef USE_MPI_GEMS
+	// MPI implementation
+
+    void CleanMPIBuffer(void);
+    void CopyToMPIBuffer(long in);
+
+    void GetGEMResult_MPI(void);
+#endif
 
 };
 
-
+#define GEM_FILE_EXTENSION ".gem"
+extern bool GEMRead(string base_file_name, REACT_GEM *m_GEM_p);

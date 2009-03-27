@@ -63,12 +63,28 @@ class CompProperties
 	/* bubble velocity */
 	int bubble_velocity_model;
 	double bubble_velocity[3];					/* velocity of rising bubbles */
+#ifdef GEM_REACT
+	//kg44 25.11.2008 kinetics...for coupling with GEMS
+	//
+	int kinetic_model;  // only 1 = GEMS implemented right now 
+        int n_activities;  // number of species for activities 
+        string active_species[10];  // name for species ...maximum 10 names 
+	double kinetic_parameters[41];
+//	0,1,2  double E_acid,E_neutral,E_base; // activation energies 
+//      3-5  double k_acid, k_neutral,k_base; // dissolution/precipitation rate constants 
+//      6-11  double p1,q1,p2,q2,p2,q2; // exponents for omega
+//      12,13, 14  double n_1, n_2, n_3; // exponents for acidic and base cases for species one
+//      append for each species another set of n_1, n_2, n_3 (up to 10 sets -> up to ten species)
+	int surface_model; // currently only 1 implemented
+	double surface_area[10];
+#endif
+	
 
     ios::pos_type Read(ifstream*);						/* Lesefunktion f? eine Instanz von CompProperties */
     void Write(ofstream*);						/* Schreibfunktion f? eine Instanz von CompProperties */
 
 	/* Member - Functions */
-	double CalcDiffusionCoefficientCP(long index);
+	double CalcDiffusionCoefficientCP(long index,double theta,CRFProcess* m_pcs);
 	double CalcDiffusionCoefficientCP_Method1(long index, double T, double P, double eta);
 	double CalcElementRetardationFactor( long index, double*gp, double theta );
 	double CalcElementRetardationFactorNew( long index, double*gp, CRFProcess* m_pcs );
