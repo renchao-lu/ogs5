@@ -75,6 +75,12 @@ class CMediumProperties
   double PermeabilityPressureFunction(long index,double *gp,double theta);//CMCD 9/2004 GeoSys 4
   double PermeabilitySaturationFunction(long number,double*gp,double theta,int phase);//CMCD 9/2004 GeoSys 4
   double PermeabilityPorosityFunction(long index,double *gp,double theta);//CMCD 9/2004 GeoSys 4
+  double KozenyCarman(double k0/*old permeability*/, 
+                      double n0/*old porosity*/, 
+					  double n/*new porosity*/);//HS: 11.2008
+  double KozenyCarman_normalized(double k0/*old permeability*/, 
+                                 double n0/*old porosity*/, 
+								 double n/*new porosity*/);//HS: 11.2008
   void CalStressPermeabilityFactor(double *kfac, const double T = 273.0); //WW
   void CalStressPermeabilityFactor2(double *kfac, const double T = 273.0); //WW
   void CalStressPermeabilityFactor3(double *kfac); //WW
@@ -124,7 +130,9 @@ class CMediumProperties
   int porosity_model; // porosity
   int porosity_curve;
   double porosity_model_values[15];
-  double porosity;
+  double porosity;   
+  double KC_porosity_initial; // HS 11.2008
+  double KC_permeability_initial; // HS 11.2008
   string porosity_file; //OK/MB
   int tortuosity_model;
   double tortuosity_model_values[10];

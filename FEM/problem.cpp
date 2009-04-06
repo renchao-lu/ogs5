@@ -140,19 +140,30 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
 	// HB, for the GEM chemical reaction engine 05.2007
 	//--------------------------------------------------
 	#ifdef GEM_REACT
-	  string project_path;
-	  //int pos;
-	  //pos = FileName.find_last_of('\\');
-	  project_path = FileName;
-	  // REACT_GEM *p_REACT_GEM = NULL;  
-	  m_vec_GEM = new REACT_GEM(); 
-	  // m_vec_GEM.push_back(p_REACT_GEM);
-	  if ( m_vec_GEM->Init_Nodes(project_path) == 0 && m_vec_GEM->Init_RUN() == 0 )
+      m_vec_GEM = new REACT_GEM(); 
+	  GEMRead( FileName , m_vec_GEM );
+
+	  string path = "";  // to get the path of the file;
+	  path = FileName;   // first get full path and project name;
+	  int pos, npos;
+	  pos = 0;
+	  npos = (int)path.size();
+
+	  // Get path
+	  #ifdef _WIN32
+		  pos = (int)path.rfind("\\");// HS keep this on windows
+	  #else
+		  pos = (int)path.rfind("/"); // HS keep this on linux
+	  #endif
+      if( pos < npos )
+      path = path.substr(0, pos+1);
+	  
+      // now start initialization of GEMS
+	  if ( m_vec_GEM->Init_Nodes(/*FileName*/ path ) == 0) 
 	  {
-		  m_vec_GEM->initialized_flag = 1;
+
+		if (m_vec_GEM->Init_RUN() == 0) m_vec_GEM->initialized_flag = 1;
 	  }
-	  // HS: here do not overwrite the conc. values in GS/RF. 
-      // So that the BC and IC values can be automatically taken care of. 
 
 	#else
 	//---------------------------------------------------
@@ -1226,28 +1237,32 @@ inline double Problem::MassTrasport()
 #ifdef GEM_REACT
    else    // WW moved these pare of curly braces inside  ifdef GEM_REACT
    {
-      if (m_vec_GEM->initialized_flag == 1)//when it was initialized. 
-      {
-         int m_time = 1; // 0-previous time step results; 1-current time step results
-              			      
-         // Check if the Sequential Iterative Scheme needs to be intergrated
-         if (m_pcs->m_num->cpl_iterations > 1)
-              m_vec_GEM->flag_iterative_scheme = 1; // set to standard iterative scheme;
-         // write time
-         cout << "CPU time elapsed before GEMIMP2K: " << TGetTimer(0) << " s" << endl;
-         // Move current xDC to previous xDC
-         m_vec_GEM->CopyCurXDCPre();
-         // Get info from MT
-         m_vec_GEM->GetReactInfoFromMassTransport(m_time);						  						  
-         // Run GEM
-         m_vec_GEM->Run_MainLoop();
-         // Calculate the different of xDC
-         m_vec_GEM->UpdateXDCChemDelta();						  
-         // Set info in MT
-         m_vec_GEM->SetReactInfoBackMassTransport(m_time);
-         // write time
-         cout << "CPU time elapsed after GEMIMP2K: " << TGetTimer(0) << " s" << endl;
-      }
+	   if (m_vec_GEM->initialized_flag == 1)//when it was initialized. 
+	   {
+		   int m_time = 1; // 0-previous time step results; 1-current time step results
+                			      
+           // Check if the Sequential Iterative Scheme needs to be intergrated
+           if (m_pcs->m_num->cpl_iterations > 1)
+			   m_vec_GEM->flag_iterative_scheme = 1; // set to standard iterative scheme;
+           // write time
+           cout << "CPU time elapsed before GEMIMP2K: " << TGetTimer(0) << " s" << endl;
+           // Move current xDC to previous xDC
+           m_vec_GEM->CopyCurXDCPre();
+           // Get info from MT
+           // m_vec_GEM->ConvPorosityNodeValue2Elem(); // 
+ 		   m_vec_GEM->GetReactInfoFromMassTransport(m_time);	// second arguments should be one if we work with concentrations
+		   // m_vec_GEM->ConcentrationToMass();	    
+           m_vec_GEM->Run_MainLoop(FileName);     // Run GEM
+
+		   // m_vec_GEM->MassToConcentration();
+           // Calculate the different of xDC
+           m_vec_GEM->UpdateXDCChemDelta();						  
+           // Set info in MT
+           m_vec_GEM->SetReactInfoBackMassTransport(m_time);
+           //m_vec_GEM->ConvPorosityNodeValue2Elem(); // update element porosity and push back values
+           // write time
+           cout << "CPU time elapsed after GEMIMP2K: " << TGetTimer(0) << " s" << endl;
+	   }
   }
 #endif
 

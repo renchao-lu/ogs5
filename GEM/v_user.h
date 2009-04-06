@@ -1,5 +1,5 @@
 //-------------------------------------------------------------------
-// $Id: v_user.h 988 2007-12-19 09:32:52Z gems $
+// $Id: v_user.h 1187 2009-01-23 16:42:05Z gems $
 //
 // Declaration of platform-specific utility functions and classes
 //
@@ -38,6 +38,7 @@ using namespace std;
 #define __FreeBSD
 #endif
 
+typedef unsigned int uint;
 #endif
 
 const int MAXKEYWD = 6+1;
@@ -50,10 +51,50 @@ typedef unsigned int uint;
 
 #endif //  __noborl
 
+void Gcvt(double number, size_t ndigit, char *buf);
+
 inline
 int ROUND(double x )
 {
     return int((x)+.5);
+}
+
+template <class T>
+inline
+void fillValue( T* arr, T value, int size )
+{
+  if( !arr )
+    return;
+  for(int ii=0; ii<size; ii++)
+    arr[ii] = value;
+}
+
+template <class T>
+inline
+void copyValues( T* arr, T* data, int size )
+{
+  if( !arr || !data )
+    return;
+  for(int ii=0; ii<size; ii++)
+    arr[ii] = data[ii];
+}
+
+inline
+void copyValues( double* arr, float* data, int size )
+{
+  if( !arr || !data )
+    return;
+  for(int ii=0; ii<size; ii++)
+    arr[ii] = (double)data[ii];
+}
+
+inline
+void copyValues( long int* arr, short* data, int size )
+{
+  if( !arr || !data )
+    return;
+  for(int ii=0; ii<size; ii++)
+    arr[ii] = (long int)data[ii];
 }
 
 #ifndef IPMGEMPLUGIN
@@ -180,7 +221,7 @@ u_splitpath(const gstring& Path, gstring& dir,
 #define fileNameLength 64
 // Get Path of file and Reading list of file names from it, return number of files 
 char  (* f_getfiles(const char *f_name, char *Path, 
-		int& nElem, char delim ))[fileNameLength];
+		long int& nElem, char delim ))[fileNameLength];
 
 
 #endif
