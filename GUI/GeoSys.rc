@@ -845,6 +845,15 @@ BEGIN
     PUSHBUTTON      "Create MAT Group",IDC_BUTTON_MAT,271,257,73,16
 END
 
+IDD_PETREL DIALOGEX 0, 0, 312, 132
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Import PETREL"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    PUSHBUTTON      "Create PLY",IDC_BUTTON_CREATE_PLY,127,17,168,28
+    PUSHBUTTON      "Create ELE",IDC_BUTTON_CREATE_ELE,17,88,169,29
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1132,6 +1141,14 @@ BEGIN
         RIGHTMARGIN, 359
         TOPMARGIN, 1
         BOTTOMMARGIN, 340
+    END
+
+    IDD_PETREL, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 305
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 125
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -2906,6 +2923,7 @@ BEGIN
             MENUITEM "FLAC (Export file)",          ID_IMPORT_FLAC_MESH
             MENUITEM "FEFLOW",                      ID_IMPORT_FEFLOW
             MENUITEM "GHDB Geodatabase(Import and Export File)", ID_IMPORT_GHDBDATABASE
+            MENUITEM "PETREL",                      ID_IMPORT_PETREL
         END
         POPUP "&Export...\tCtrl+O"
         BEGIN

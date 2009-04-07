@@ -144,6 +144,7 @@ public:
     afx_msg void OnImportFLACMesh(); //MR
     afx_msg void OnImportFEFLOW(); //OK
 	afx_msg void OnGhdbviewCreate();
+    afx_msg void OnImportPETREL(); //AKS
 };
 
 /////////////////////////////////////////////////////////////////////////////

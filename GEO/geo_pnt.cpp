@@ -904,7 +904,7 @@ void GEOWritePoints(char* file_name)
     gli_points_vector_size = (long)gli_points_vector.size();
     for(i=0;i<gli_points_vector_size;i++) {
       if(gli_points_vector[i]->id > -1) //OK
-        fprintf(f," %ld %#13.8g %#13.8g %#13.8g $MD %g $ID %s\n",\
+       fprintf(f," %ld %#16.11g %#16.11g %#16.11g $MD %g $ID %s\n",\
                                           gli_points_vector[i]->id,\
                                           gli_points_vector[i]->x,gli_points_vector[i]->y,gli_points_vector[i]->z,\
                                           gli_points_vector[i]->mesh_density,\

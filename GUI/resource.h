@@ -973,6 +973,7 @@
 #define IDC_Canncel                     1267
 #define IDC_FILE_GHDB                   1268
 #define IDC_EDIT_NEWTB                  1268
+#define IDC_PETREL_EDIT_                1268
 #define IDC_GHDB_Connect                1269
 #define IDC_LIST2                       1275
 #define IDC_EDIT_TS_1                   1301
@@ -1139,6 +1140,7 @@
 #define IDD_NUM_EDITOR                  2250
 #define IDD_MOD_EDITOR                  2251
 #define IDD_FEFLOW                      2252
+#define IDD_PETREL                      2253
 #define ID_HELP_OGLINFO                 32771
 #define ID_BUTTON_DRAW                  32773
 #define ID_CHANGE_SCENE                 32779
@@ -1354,6 +1356,7 @@
 #define ID_2DVIEWS_GHDBVIEW             33091
 #define ID_GHDBVIEW_CREATE              33092
 #define ID_IMPORT_GHDBDATABASE          33095
+#define ID_IMPORT_PETREL                33096
 
 // Next default values for new objects
 // 
@@ -1361,8 +1364,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        178
-#define _APS_NEXT_COMMAND_VALUE         33096
-#define _APS_NEXT_CONTROL_VALUE         1268
+#define _APS_NEXT_COMMAND_VALUE         33097
+#define _APS_NEXT_CONTROL_VALUE         1269
 #define _APS_NEXT_SYMED_VALUE           104
 #endif
 #endif

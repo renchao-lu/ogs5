@@ -1,4 +1,4 @@
-// GeoSysDoc.cpp : implementation of the CGeoSysDoc class
+//GeoSysDoc.cpp : implementation of the CGeoSysDoc class
 #include "stdafx.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -67,6 +67,8 @@ extern bool RFDOpen(string file_name_base);
 #include "gs_graphics.h"
 #include "feflow_dlg.h" //OK
 #include "rf_kinreact.h" //OK
+#include "petrel_dlg.h" //AKS
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -128,6 +130,7 @@ BEGIN_MESSAGE_MAP(CGeoSysDoc, CDocument)
     ON_UPDATE_COMMAND_UI(ID_SIMULATOR_FORWARD, OnUpdateSimulatorForward)
     ON_COMMAND(ID_IMPORT_GMS, OnImportGMS)
 	ON_COMMAND(ID_GHDBVIEW_CREATE, &CGeoSysDoc::OnGhdbviewCreate)//FS
+    ON_COMMAND(ID_IMPORT_PETREL, OnImportPETREL) //AKS
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2861,5 +2864,25 @@ void CGeoSysDoc::OnImportFEFLOW()
   m_dlg.DoModal(); // showing the dialog
   // Message to status bar
   m_strInfo = "Import FEFLOW data - finished";
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
+}
+
+/**************************************************************************
+GeoSys-GUI-Method: OnImportPETREL
+4/2009 AKS Implementation
+**************************************************************************/
+void CGeoSysDoc::OnImportPETREL()
+{
+  // Message to status bar
+  CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
+  CString m_strInfo;
+  // Message to status bar
+  m_strInfo = "Import PETREL data - start";
+  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
+  // Dialog
+  CDialogPETREL m_dlg; // creating an instance of CDialogFEFLOW
+  m_dlg.DoModal(); // showing the dialog
+  // Message to status bar
+  m_strInfo = "Import PETREL data - finished";
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
 }
