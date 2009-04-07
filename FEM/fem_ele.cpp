@@ -414,9 +414,10 @@ double CElement::computeJacobian(const int order)
     }
     else 
       GradShapeFunction(dN, unit);
-
-    for(i=0; i<ele_dim*ele_dim; i++)
+j = ele_dim*ele_dim;
+    for(i=0; i<j; i++)
        Jacobian[i] = 0.0;
+	j=0;
     //--------------------------------------------------------------------
     switch(ele_dim)
     {
@@ -440,12 +441,12 @@ double CElement::computeJacobian(const int order)
           break;
         //................................................................
         case 2:
-          for(i=0; i<nodes_number; i++)
+          for(i=0,j=nodes_number; i<nodes_number; i++,j++)
           {  
              Jacobian[0] += X[i]*dN[i];
              Jacobian[1] += Y[i]*dN[i];
-             Jacobian[2] += X[i]*dN[nodes_number+i];
-             Jacobian[3] += Y[i]*dN[nodes_number+i];
+             Jacobian[2] += X[i]*dN[j];
+             Jacobian[3] += Y[i]*dN[j];
           }
 
     	  DetJac =  Jacobian[0]*Jacobian[3]-Jacobian[1]*Jacobian[2];
@@ -457,8 +458,10 @@ double CElement::computeJacobian(const int order)
           invJacobian[1] = -Jacobian[1];
           invJacobian[2] = -Jacobian[2];
           invJacobian[3] = Jacobian[0];
-          for(i=0; i<ele_dim*ele_dim; i++)
+		  j=ele_dim*ele_dim;
+          for(i=0; i<j; i++)
              invJacobian[i] /= DetJac;
+		  j=0;
           //
           //By WW 
           //if(MeshElement->area>0)
@@ -797,23 +800,25 @@ void CElement::ComputeShapefct(const int order)
 void CElement::ComputeGradShapefct(const int order)
 {
 	int i, j, k;
+	int j_times_ele_dim_plus_k, j_times_nNodes_plus_i;
     static double Var[3]; 
     double *dN = dshapefct;
+
     if(order ==2) 
         dN = dshapefctHQ;
  
     setOrder(order);
     for(i=0; i<nNodes; i++)
     {
-       for(j=0; j<ele_dim; j++)
+       for(j=0,j_times_nNodes_plus_i = i; j<ele_dim; j++, j_times_nNodes_plus_i+=nNodes)
        {
-          Var[j] = dN[j*nNodes+i];
-		  dN[j*nNodes+i] = 0.0;
+          Var[j] = dN[j_times_nNodes_plus_i];
+		  dN[j_times_nNodes_plus_i] = 0.0;
        }
-       for(j=0; j<ele_dim; j++)
+       for(j=0,j_times_ele_dim_plus_k = 0,j_times_nNodes_plus_i = i ; j<ele_dim; j++, j_times_nNodes_plus_i += nNodes)
        {
-          for(k=0; k<ele_dim; k++)
-              dN[j*nNodes+i] += invJacobian[j*ele_dim+k]*Var[k]; 
+          for(k=0; k<ele_dim; k++, j_times_ele_dim_plus_k++)
+              dN[j_times_nNodes_plus_i] += invJacobian[j_times_ele_dim_plus_k]*Var[k];
        }
     }
     // 1D element in 3D

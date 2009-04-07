@@ -3110,11 +3110,17 @@ void CFiniteElementStd::CalcContent()
 void CFiniteElementStd::CalcLaplace()
 {
   int i, j, k, l, in, jn;
+
   // ---- Gauss integral
   int gp_r=0, gp_s=0, gp_t;
   gp_t = 0;
   double fkt, water_depth; 
   int dof_n = 1;
+
+  int in_times_nnodes, jn_times_nnodes, i_plus_in_times_nnodes, j_plus_jn_times_nnodes, dim_times_k, dim_times_k_plus_l, nnodes_plus_j, l_times_nnodes_plus_j, k_times_nnodes_plus_i;
+  double fkt_times_dshapefct__k_times_nnodes_plus_i__;
+
+ 
   if(PcsType==V) dof_n = 2;
 
   //----------------------------------------------------------------------
@@ -3140,9 +3146,11 @@ void CFiniteElementStd::CalcLaplace()
       }
       fkt *= water_depth;
       //---------------------------------------------------------
-      for (in = 0; in < dof_n; in++)
-      {       
-        for (jn = 0; jn < dof_n; jn++)
+      
+	  for (in_times_nnodes = 0,in = 0; in < dof_n; in++, in_times_nnodes+=nnodes)
+      {  
+		
+        for (jn_times_nnodes = 0,jn = 0; jn < dof_n; jn++, jn_times_nnodes+=nnodes)
         {
            // Material
            if(dof_n==1) 
@@ -3150,16 +3158,24 @@ void CFiniteElementStd::CalcLaplace()
            else if (dof_n==2)
              CalCoefLaplace2(false,in*dof_n+jn);       
            //---------------------------------------------------------
-           for (i = 0; i < nnodes; i++)
+	   
+           for (i = 0, i_plus_in_times_nnodes = in_times_nnodes; i < nnodes; i++, i_plus_in_times_nnodes++)
            {
-              for (j = 0; j < nnodes; j++)
+		      //i_plus_in_times_nnodes = i + in_times_nnodes;
+		
+              for (j = 0,j_plus_jn_times_nnodes = jn_times_nnodes,
+		nnodes_plus_j = nnodes; j < nnodes; j++, j_plus_jn_times_nnodes++, nnodes_plus_j++)
               {
-                 //  if(j>i) continue;  //MB temporary as Laplace now defined unsymmetric
-                 for (k = 0; k < dim; k++)
+				 for (k = 0, dim_times_k=0,k_times_nnodes_plus_i=i; k < dim; k++, dim_times_k+=dim,k_times_nnodes_plus_i+=nnodes)
                  {
-	                for(l=0; l< dim; l++)
+				    fkt_times_dshapefct__k_times_nnodes_plus_i__ = fkt * dshapefct[k_times_nnodes_plus_i];
+	                for(l=0, dim_times_k_plus_l = dim_times_k,l_times_nnodes_plus_j = j; l< dim; l++, dim_times_k_plus_l++,l_times_nnodes_plus_j+=nnodes)
                     {
-			           (*Laplace)(i+in*nnodes,j+jn*nnodes) += fkt * dshapefct[k*nnodes+i] \
+			    
+			           (*Laplace)(i_plus_in_times_nnodes,j_plus_jn_times_nnodes) += fkt_times_dshapefct__k_times_nnodes_plus_i__ \
+                           * mat[dim_times_k_plus_l] * dshapefct[l_times_nnodes_plus_j];
+
+//			           (*Laplace)(i+in*nnodes,j+jn*nnodes) += fkt * dshapefct[k*nnodes+i] \
                            * mat[dim*k+l] * dshapefct[l*nnodes+j];
 //					   if(Index < 10) {cout << " i, j, k, l, nnodes, dim: " << i << ", " << j << ", " << k << ", " << l << ", " << nnodes << ", " << dim << ". fkt, dshapefct[k*nnodes+i], mat[dim*k+l], dshapefct[l*nnodes+j]: ";
 //					   cout << fkt << ", " << dshapefct[k*nnodes+i] << ", " << mat[dim*k+l] << ", " << dshapefct[l*nnodes+j] << endl;}
