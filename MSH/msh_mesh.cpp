@@ -1797,7 +1797,7 @@ void CFEMesh::GetNodesOnCylindricalSurface(Surface*m_sfc, vector<long>& NodesS)
   CElem* elem = NULL;
   CNode* cnode = NULL; 
   NodesS.clear();
-  m_sfc->epsilon = 1.0e-6;
+  //m_sfc->epsilon = 1.0e-6;
   p1[0] = m_sfc->polygon_point_vector[0]->x;
   p1[1] = m_sfc->polygon_point_vector[0]->y;
   p1[2] = m_sfc->polygon_point_vector[0]->z;

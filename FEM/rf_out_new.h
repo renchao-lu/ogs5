@@ -18,6 +18,7 @@ using namespace std;
 // FEMLib
 #include "nodes.h"
 #include "rf_pcs.h"
+#include <sstream>        // for istringstream (ME)
 /*---------------------------------------------------------------*/
 namespace Mesh_Group{class CFEMesh;}
 using Mesh_Group::CFEMesh;
