@@ -31,9 +31,9 @@ extern ios::pos_type GetNextSubKeyword(ifstream* file,string* line, bool* keywor
 #include "nodes.h"
 #ifdef USE_MPI //WW
 #include "par_ddc.h"
-#undef SEEK_SET 
-#undef SEEK_END 
-#undef SEEK_CUR 
+//#undef SEEK_SET 
+//#undef SEEK_END 
+//#undef SEEK_CUR 
 #include "mpi.h"
 #endif
 

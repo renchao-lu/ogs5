@@ -77,11 +77,11 @@ Modification:
 Problem::Problem(char* filename):print_result(false)
 {
   if(filename!=NULL)
-  {
-     // Read data
-    ReadData(filename);
-    DOMRead(filename);
-  }
+    {
+      // Read data
+      ReadData(filename);
+      DOMRead(filename);
+    }
 #ifndef NEW_EQS
   ConfigSolverProperties();  //_new. 19.10.2008. WW
 #endif
@@ -106,15 +106,15 @@ Problem::Problem(char* filename):print_result(false)
   PCSCreate();
   //----------------------------------------------------------------------
 #ifdef RESET_4410
-if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
-  PCSCalcSecondaryVariables(); //OK
+  if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
+    PCSCalcSecondaryVariables(); //OK
 #endif
-
+  
   //----------------------------------------------------------------------
   //09.07.2008 WW
   SetActiveProcesses(); 
   //----------------------------------------------------------------------
-
+  
   //----------------------------------------------------------------------
   // REACTIONS 
   //CB before the first time step
@@ -124,150 +124,156 @@ if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
   //    Water phase Saturation from the NAPL concentrations
   //if(MASS_TRANSPORT_Process) // if(MASS_TRANSPORT_Process&&NAPL_Dissolution) //CB Todo
   if(transport_processes.size()>0) //12.12.2008. WW   
-  {
-    SetFlowProcessType();
-    //WW CRFProcess *m_pcs = NULL;
-    //WW if (m_pcs = PCSGet("TWO_PHASE_FLOW"))     
-    if(total_processes[3])  // 3: TWO_PHASE_FLOW. 12.12.2008. WW     
-      CalcInitialNAPLDens(total_processes[3]);
-  }
+    {
+      SetFlowProcessType();
+      //WW CRFProcess *m_pcs = NULL;
+      //WW if (m_pcs = PCSGet("TWO_PHASE_FLOW"))     
+      if(total_processes[3])  // 3: TWO_PHASE_FLOW. 12.12.2008. WW     
+	CalcInitialNAPLDens(total_processes[3]);
+    }
   //----------------------------------------------------------------------
   // REACTIONS 
   // Initialization of REACT structure for rate exchange between MTM2 and Reactions
-
-
-	//-------------------------------------------------- 
-	// HB, for the GEM chemical reaction engine 05.2007
-	//--------------------------------------------------
-	#ifdef GEM_REACT
-      m_vec_GEM = new REACT_GEM(); 
-	  GEMRead( FileName , m_vec_GEM );
-
-	  string path = "";  // to get the path of the file;
-	  path = FileName;   // first get full path and project name;
-	  int pos, npos;
-	  pos = 0;
-	  npos = (int)path.size();
-
-	  // Get path
-	  #ifdef _WIN32
-		  pos = (int)path.rfind("\\");// HS keep this on windows
-	  #else
-		  pos = (int)path.rfind("/"); // HS keep this on linux
-	  #endif
-      if( pos < npos )
-      path = path.substr(0, pos+1);
-	  
-      // now start initialization of GEMS
-	  if ( m_vec_GEM->Init_Nodes(/*FileName*/ path ) == 0) 
-	  {
-
-		if (m_vec_GEM->Init_RUN() == 0) m_vec_GEM->initialized_flag = 1;
+  
+  
+  //-------------------------------------------------- 
+  // HB, for the GEM chemical reaction engine 05.2007
+  //--------------------------------------------------
+#ifdef GEM_REACT
+  m_vec_GEM = new REACT_GEM(); 
+  GEMRead( FileName , m_vec_GEM );
+  
+  string path = "";  // to get the path of the file;
+  path = FileName;   // first get full path and project name;
+  int pos, npos;
+  pos = 0;
+  npos = (int)path.size();
+  
+  // Get path
+#ifdef _WIN32
+  pos = (int)path.rfind("\\");// HS keep this on windows
+#else
+  pos = (int)path.rfind("/"); // HS keep this on linux
+#endif // _WIN32
+  if( pos < npos )
+    path = path.substr(0, pos+1);
+  
+  // now start initialization of GEMS
+  if ( m_vec_GEM->Init_Nodes(/*FileName*/ path ) == 0) 
+    {
+      
+      if (m_vec_GEM->Init_RUN() == 0) m_vec_GEM->initialized_flag = 1;
+    }
+  
+#else // GEM_REACT
+  //---------------------------------------------------
+  REACT *rc = NULL; //SB
+  //  rc->TestPHREEQC(); // Test if *.pqc file is present
+  rc = rc->GetREACT();
+  if(rc) //OK
+    {  
+      if(rc->flag_pqc){
+	if(cp_vec.size()>0)
+	  { //OK
+#ifdef REACTION_ELEMENT
+	    rc->CreateREACT();//SB
+	    rc->InitREACT0();
+	    rc->ExecuteReactionsPHREEQC0();
+	    REACT_vec.clear();
+	    REACT_vec.push_back(rc);        
+#else
+	    
+	    rc->CreateREACT();//SB
+	    rc->InitREACT();
+	    //SB4501        rc->ExecuteReactions();
+	    
+#ifdef LIBPHREEQC  // MDL: new functions with built-in phreeqc
+	    rc->ExecuteReactionsPHREEQCNewLib();
+#else
+	    rc->ExecuteReactionsPHREEQCNew();
+#endif //LIBPHREEQC
+	    REACT_vec.clear();
+	    REACT_vec.push_back(rc);
+#endif // REACTION_ELEMENT
 	  }
-
-	#else
-	//---------------------------------------------------
-		REACT *rc = NULL; //SB
-	//  rc->TestPHREEQC(); // Test if *.pqc file is present
-	  rc = rc->GetREACT();
-	  if(rc) //OK
-	  {  
-		if(rc->flag_pqc){
-		  if(cp_vec.size()>0)
-		  { //OK
-		  #ifdef REACTION_ELEMENT
-			rc->CreateREACT();//SB
-			rc->InitREACT0();
-			rc->ExecuteReactionsPHREEQC0();
-			REACT_vec.clear();
-			REACT_vec.push_back(rc);        
-		  #else
-
-			rc->CreateREACT();//SB
-			rc->InitREACT();
-	//SB4501        rc->ExecuteReactions();
-			rc->ExecuteReactionsPHREEQCNew();
-			REACT_vec.clear();
-			REACT_vec.push_back(rc);
-			#endif
-		  }
-		}
-	//  delete rc;
-	  }
-  #endif
+      }
+      //  delete rc;
+    }
+#endif // GEM_REACT
+  
 #ifdef BRNS
-// Here to test BRNS; HB 02.11.2007
-// REACT_BRNS* pBRNS;
-// pBRNS = new REACT_BRNS();
-m_vec_BRNS = new REACT_BRNS();
-m_vec_BRNS->InitBRNS();
-	#endif
-
-
-  #ifdef CHEMAPP
-	CEqlink *eq=NULL;
-	eq = eq->GetREACTION();
+  // Here to test BRNS; HB 02.11.2007
+  // REACT_BRNS* pBRNS;
+  // pBRNS = new REACT_BRNS();
+  m_vec_BRNS = new REACT_BRNS();
+  m_vec_BRNS->InitBRNS();
+#endif
+  
+  
+#ifdef CHEMAPP
+  CEqlink *eq=NULL;
+  eq = eq->GetREACTION();
   if(cp_vec.size()>0  && eq){ //MX
     eq->TestCHEMAPPParameterFile(pcs_vector[0]->file_name_base); 
-	if (eq->flag_chemapp){
-		eq->callCHEMAPP(pcs_vector[0]->file_name_base);
-	}
+    if (eq->flag_chemapp){
+      eq->callCHEMAPP(pcs_vector[0]->file_name_base);
+    }
   }
-  #endif
-//  delete rc;
-                                     
+#endif
+  //  delete rc;
+  
   //----------------------------------------------------------------------
   // DDC
   int i;
   int no_processes =(int)pcs_vector.size();
   CRFProcess* m_pcs = NULL;
   if(dom_vector.size()>0)
-  {
-
-     // -----------------------
-     DOMCreate();
-     //
-     for(i=0;i<no_processes;i++){
-       m_pcs = pcs_vector[i];
-       m_pcs->CheckMarkedElement();
-       CountDoms2Nodes(m_pcs);
-       // Config boundary conditions for domain decomposition 
-       m_pcs->SetBoundaryConditionSubDomain(); //WW
-     }
-     //
-     node_connected_doms.clear();
-     // Release some memory. WW
+    {
+      
+      // -----------------------
+      DOMCreate();
+      //
+      for(i=0;i<no_processes;i++){
+	m_pcs = pcs_vector[i];
+	m_pcs->CheckMarkedElement();
+	CountDoms2Nodes(m_pcs);
+	// Config boundary conditions for domain decomposition 
+	m_pcs->SetBoundaryConditionSubDomain(); //WW
+      }
+      //
+      node_connected_doms.clear();
+      // Release some memory. WW
 #if defined(USE_MPI) //TEST_MPI WW
-     // Release memory of other domains. WW
-     for(i=0;i<(int)dom_vector.size();i++) 
-     {
-       if(i!=myrank)
-       {
-         // If shared memory, skip the following line 
-  #if defined(NEW_BREDUCE2)
-         dom_vector[i]->ReleaseMemory();
-  #else
-         // If MPI__Allreduce is used for all data conlection, activate following
-         delete dom_vector[i];
-         dom_vector[i] = NULL;
-  #endif
-       }
-     }
+      // Release memory of other domains. WW
+      for(i=0;i<(int)dom_vector.size();i++) 
+	{
+	  if(i!=myrank)
+	    {
+	      // If shared memory, skip the following line 
+#if defined(NEW_BREDUCE2)
+	      dom_vector[i]->ReleaseMemory();
+#else
+	      // If MPI__Allreduce is used for all data conlection, activate following
+	      delete dom_vector[i];
+	      dom_vector[i] = NULL;
 #endif
-
-   }
+	    }
+	}
+#endif
+      
+    }
   //----------------------------------------------------------------------
   PCSRestart(); //SB
   if(transport_processes.size()>0) //WW. 12.12.2008
-  {
-    //----------------------------------------------------------------------
-    KRConfig();
-    //----------------------------------------------------------------------
-    // Configure Data for Blobs (=>NAPL dissolution) 
-    KBlobConfig();
-    KBlobCheck();
-    //WW CreateClockTime();
-  }
+    {
+      //----------------------------------------------------------------------
+      KRConfig();
+      //----------------------------------------------------------------------
+      // Configure Data for Blobs (=>NAPL dissolution) 
+      KBlobConfig();
+      KBlobCheck();
+      //WW CreateClockTime();
+    }
   //========================================================================
   // Controls for coupling. WW
   loop_index = 0;
@@ -283,23 +289,23 @@ m_vec_BRNS->InitBRNS();
   string num_file_name = FileName + NUM_FILE_EXTENSION;
   ifstream num_file (num_file_name.data(),ios::in);
   if (num_file.good()) 
-  {
-     num_file.seekg(0L,ios::beg);
-     while (!num_file.eof())
-     {
-        num_file.getline(line,MAX_ZEILE);
-        line_string = line;
-        if(line_string.find("#STOP")!=string::npos)
-           break;
-        if(line_string.find("$OVERALL_COUPLING")!=string::npos) 
-        {
-           in_num.str(GetLineFromFile1(&num_file));
-           in_num>>max_coupling_iterations >> coupling_tolerance;
-           break;
-        }  
-     } 
-     num_file.close();
-  } 
+    {
+      num_file.seekg(0L,ios::beg);
+      while (!num_file.eof())
+	{
+	  num_file.getline(line,MAX_ZEILE);
+	  line_string = line;
+	  if(line_string.find("#STOP")!=string::npos)
+	    break;
+	  if(line_string.find("$OVERALL_COUPLING")!=string::npos) 
+	    {
+	      in_num.str(GetLineFromFile1(&num_file));
+	      in_num>>max_coupling_iterations >> coupling_tolerance;
+	      break;
+	    }  
+	} 
+      num_file.close();
+    } 
   //========================================================================
   // For time stepping. WW
   CTimeDiscretization *m_tim = NULL;
@@ -309,34 +315,34 @@ m_vec_BRNS->InitBRNS();
   bool time_ctr = false;
   // Determine the start and end times from all available process related data.
   for(i=0; i<(int)time_vector.size(); i++)
-  {
-    m_tim = time_vector[i];
-    m_tim->FillCriticalTime();
-    if(m_tim->time_start<start_time) 
-      start_time = m_tim->time_start;
-    if(m_tim->time_end>end_time)
-      end_time = m_tim->time_end; 
-    if(max_time_steps<(int)m_tim->time_step_vector.size())
-      max_time_steps = (int)m_tim->time_step_vector.size(); 
-    if(m_tim->GetTimeStepCrtlType()>0)
-      time_ctr = true;  
-  }
+    {
+      m_tim = time_vector[i];
+      m_tim->FillCriticalTime();
+      if(m_tim->time_start<start_time) 
+	start_time = m_tim->time_start;
+      if(m_tim->time_end>end_time)
+	end_time = m_tim->time_end; 
+      if(max_time_steps<(int)m_tim->time_step_vector.size())
+	max_time_steps = (int)m_tim->time_step_vector.size(); 
+      if(m_tim->GetTimeStepCrtlType()>0)
+	time_ctr = true;  
+    }
   if(max_time_steps==0) max_time_steps = 1000000;
   current_time =  start_time; 
   if(time_ctr)
-  {
-    int maxi_dof = 0;
-    int maxi_nnodes = 0;
-    for(i=0; i<no_processes; i++)
     {
-       m_pcs = pcs_vector[i];
-       if(m_pcs->GetPrimaryVNumber()>maxi_dof)
-         maxi_dof = m_pcs->GetPrimaryVNumber();
-       if(m_pcs->m_msh->GetNodesNumber(false)>maxi_nnodes)
-         maxi_nnodes = m_pcs->m_msh->GetNodesNumber(false);
+      int maxi_dof = 0;
+      int maxi_nnodes = 0;
+      for(i=0; i<no_processes; i++)
+	{
+	  m_pcs = pcs_vector[i];
+	  if(m_pcs->GetPrimaryVNumber()>maxi_dof)
+	    maxi_dof = m_pcs->GetPrimaryVNumber();
+	  if(m_pcs->m_msh->GetNodesNumber(false)>maxi_nnodes)
+	    maxi_nnodes = m_pcs->m_msh->GetNodesNumber(false);
+	}
+      buffer_array = new double[maxi_dof*maxi_nnodes]; 
     }
-    buffer_array = new double[maxi_dof*maxi_nnodes]; 
-  }
   else
     buffer_array = NULL;  
   //========================================================================  
@@ -344,18 +350,18 @@ m_vec_BRNS->InitBRNS();
 
   //  //WW
   for(i=0; i<no_processes; i++)
-  {
-    m_pcs = pcs_vector[i];
-    m_pcs->CalcSecondaryVariables(true); //WW
-    m_pcs->Extropolation_MatValue();  //WW
-  }
-    // Calculation of the initial stress and released load for excavation simulation
+    {
+      m_pcs = pcs_vector[i];
+      m_pcs->CalcSecondaryVariables(true); //WW
+      m_pcs->Extropolation_MatValue();  //WW
+    }
+  // Calculation of the initial stress and released load for excavation simulation
   // 07.09.2007  WW
   // Excavation for defromation
   dm_pcs = (CRFProcessDeformation *)total_processes[12];
   if(dm_pcs)
     dm_pcs->CreateInitialState4Excavation();      
-
+  
 }
 /**************************************************************************
 GeoSys - Function: Desstructor
@@ -1198,86 +1204,92 @@ inline double Problem::MassTrasport()
   CRFProcess *m_pcs = total_processes[11];
   //
   if(!m_pcs->selected) return error; //12.12.2008 WW
-
+  
   for(int i=0;i<(int)transport_processes.size();i++)
-  {
-    m_pcs = transport_processes[i];      //18.08.2008 WW
-    if(CPGetMobil(m_pcs->GetProcessComponentNumber())> 0) //Component Mobile ? 
-       error = m_pcs->Execute();
-  }
+    {
+      m_pcs = transport_processes[i];      //18.08.2008 WW
+      if(CPGetMobil(m_pcs->GetProcessComponentNumber())> 0) //Component Mobile ? 
+	error = m_pcs->Execute();
+    }
   // Calculate Chemical reactions, after convergence of flow and transport 
   // Move inside iteration loop if couplingwith transport is implemented SB:todo
   //SB:todo move into Execute Reactions	  if((aktueller_zeitschritt % 1) == 0)  
   //REACT *rc = NULL; //OK
   //rc = REACT_vec[0]; //OK
-//				if(rc->flag_pqc) rc->ExecuteReactions();
-//				delete rc;
+  //				if(rc->flag_pqc) rc->ExecuteReactions();
+  //				delete rc;
   if(KinReactData_vector.size() > 0) 
-  {  // WW moved the following lines into this curly braces. 12.12.2008
-//SB4900    ClockTimeVec[0]->StopTime("Transport");
-//SB4900    ClockTimeVec[0]->StartTime();
-    // Calculate Chemical reactions, after convergence of flow and transport 
-    // Move inside iteration loop if couplingwith transport is implemented SB:todo
-    // First calculate kinetic reactions
-    KinReactData_vector[0]->ExecuteKinReact();
-    //SB4900 ClockTimeVec[0]->StopTime("KinReactions");
-    //SB4900 ClockTimeVec[0]->StartTime();
-  }
-  if(REACT_vec.size()>0) //OK
-  {
-    if(REACT_vec[0]->flag_pqc){ 
-#ifdef REACTION_ELEMENT
-      REACT_vec[0]->ExecuteReactionsPHREEQC0();
-#else
-//                      REACT_vec[0]->ExecuteReactions();
-      REACT_vec[0]->ExecuteReactionsPHREEQCNew();
-#endif
+    {  // WW moved the following lines into this curly braces. 12.12.2008
+      //SB4900    ClockTimeVec[0]->StopTime("Transport");
+      //SB4900    ClockTimeVec[0]->StartTime();
+      // Calculate Chemical reactions, after convergence of flow and transport 
+      // Move inside iteration loop if couplingwith transport is implemented SB:todo
+      // First calculate kinetic reactions
+      KinReactData_vector[0]->ExecuteKinReact();
+      //SB4900 ClockTimeVec[0]->StopTime("KinReactions");
+      //SB4900 ClockTimeVec[0]->StartTime();
     }
-   }
+  if(REACT_vec.size()>0) //OK
+    {
+      if(REACT_vec[0]->flag_pqc){ 
+#ifdef REACTION_ELEMENT
+	REACT_vec[0]->ExecuteReactionsPHREEQC0();
+#else
+	// REACT_vec[0]->ExecuteReactions();
+
+#ifdef LIBPHREEQC
+	// MDL: built-in phreeqc
+	REACT_vec[0]->ExecuteReactionsPHREEQCNewLib();
+#else
+	REACT_vec[0]->ExecuteReactionsPHREEQCNew();
+#endif // LIBPHREEQC
+
+#endif // REACTION_ELEMENT
+      }
+    }
 #ifdef GEM_REACT
-   else    // WW moved these pare of curly braces inside  ifdef GEM_REACT
-   {
-	   if (m_vec_GEM->initialized_flag == 1)//when it was initialized. 
-	   {
-		   int m_time = 1; // 0-previous time step results; 1-current time step results
-                			      
-           // Check if the Sequential Iterative Scheme needs to be intergrated
-           if (m_pcs->m_num->cpl_iterations > 1)
-			   m_vec_GEM->flag_iterative_scheme = 1; // set to standard iterative scheme;
-           // write time
-           cout << "CPU time elapsed before GEMIMP2K: " << TGetTimer(0) << " s" << endl;
-           // Move current xDC to previous xDC
-           m_vec_GEM->CopyCurXDCPre();
-           // Get info from MT
-           // m_vec_GEM->ConvPorosityNodeValue2Elem(); // 
- 		   m_vec_GEM->GetReactInfoFromMassTransport(m_time);	// second arguments should be one if we work with concentrations
-		   // m_vec_GEM->ConcentrationToMass();	    
-           m_vec_GEM->Run_MainLoop(FileName);     // Run GEM
-
-		   // m_vec_GEM->MassToConcentration();
-           // Calculate the different of xDC
-           m_vec_GEM->UpdateXDCChemDelta();						  
-           // Set info in MT
-           m_vec_GEM->SetReactInfoBackMassTransport(m_time);
-           //m_vec_GEM->ConvPorosityNodeValue2Elem(); // update element porosity and push back values
-           // write time
-           cout << "CPU time elapsed after GEMIMP2K: " << TGetTimer(0) << " s" << endl;
-	   }
-  }
-#endif
-
+  else    // WW moved these pare of curly braces inside  ifdef GEM_REACT
+    {
+      if (m_vec_GEM->initialized_flag == 1)//when it was initialized. 
+	{
+	  int m_time = 1; // 0-previous time step results; 1-current time step results
+          
+	  // Check if the Sequential Iterative Scheme needs to be intergrated
+	  if (m_pcs->m_num->cpl_iterations > 1)
+	    m_vec_GEM->flag_iterative_scheme = 1; // set to standard iterative scheme;
+	  // write time
+	  cout << "CPU time elapsed before GEMIMP2K: " << TGetTimer(0) << " s" << endl;
+	  // Move current xDC to previous xDC
+	  m_vec_GEM->CopyCurXDCPre();
+	  // Get info from MT
+	  // m_vec_GEM->ConvPorosityNodeValue2Elem(); // 
+	  m_vec_GEM->GetReactInfoFromMassTransport(m_time);	// second arguments should be one if we work with concentrations
+	  // m_vec_GEM->ConcentrationToMass();	    
+	  m_vec_GEM->Run_MainLoop(FileName);     // Run GEM
+	  
+	  // m_vec_GEM->MassToConcentration();
+	  // Calculate the different of xDC
+	  m_vec_GEM->UpdateXDCChemDelta();						  
+	  // Set info in MT
+	  m_vec_GEM->SetReactInfoBackMassTransport(m_time);
+	  //m_vec_GEM->ConvPorosityNodeValue2Elem(); // update element porosity and push back values
+	  // write time
+	  cout << "CPU time elapsed after GEMIMP2K: " << TGetTimer(0) << " s" << endl;
+	}
+    }
+#endif // GEM_REACT
+  
 #ifdef CHEMAPP
   if(Eqlink_vec.size()>0) 
-  Eqlink_vec[0]->ExecuteEQLINK();
+    Eqlink_vec[0]->ExecuteEQLINK();
 #endif
 #ifdef BRNS
   if(m_vec_BRNS->init_flag == true)
-     {m_vec_BRNS->RUN(  dt  /*time value in seconds*/);} 
-                
+    {m_vec_BRNS->RUN(  dt  /*time value in seconds*/);} 
 #endif
 
- // if(KinReactData_vector.size() > 0)  //12.12.2008 WW
-//SB4900    ClockTimeVec[0]->StopTime("EquiReact");
+  // if(KinReactData_vector.size() > 0)  //12.12.2008 WW
+  //SB4900    ClockTimeVec[0]->StopTime("EquiReact");
 
   return error; 
 }

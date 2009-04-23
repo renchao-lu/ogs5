@@ -9,7 +9,7 @@ using namespace std;
 
 /* Structure for exchange of reaction rates */
 class REACT{
-	private:
+        private:
 	public:
 		REACT(void);
 		~REACT(void);
@@ -26,7 +26,7 @@ class REACT{
 	bool flag_pqc;     /* flag if *.pqc file exists */
 	bool check_no_reaction_nodes; /* flag if CheckNoReactionNodes has been performed */
 	double temperature; /* temperature of water at node as specified in input file */
-    long elenumber;    //number of elements
+	long elenumber;    //number of elements
 	/* hier später arrays of reactions reinhängen ?*/
 
 	// rcml moved here
@@ -36,19 +36,19 @@ class REACT{
 	int rcml_number_of_ion_exchanges; /* number of phases (in equilibrium) */
 	int rcml_number_of_gas_species; /* number of species in gas phase */
 	/* hier später reaction models reinhängen ?*/
-    int rcml_pH_flag;   /* =0, pH constant; =1 (default), pH will change  */
-    int rcml_pe_flag;   /* =0, pe constant; =1 (default), pe will change  */
+	int rcml_pH_flag;   /* =0, pH constant; =1 (default), pH will change  */
+	int rcml_pe_flag;   /* =0, pe constant; =1 (default), pe will change  */
 	int rcml_heat_flag; /* =0, temp constant (default); =1 , temp will change  */
 	int rcml_number_of_pqcsteps; /* Anzahl der Reaktionsschritte in PHREEQC aus dem Befehl: -steps "time" in "pqcsteps" steps */
-    int rcml_pH_charge; /* =0, no charge balance for pH; =1, used for charge balance (keyword charge in line with pH*/
+	int rcml_pH_charge; /* =0, no charge balance for pH; =1, used for charge balance (keyword charge in line with pH*/
 	char * outfile; /* Ausgabefile von PHREEQC */
-    string file_name_pqc; // Name of pqc file in GeoSys project (*.pqc)
-    string outfile_name;
-    string results_file_name;
-    vector < string > pqc_names; // species names in *-pqc input file
-    vector < int > pqc_index; // index in process array
-    vector < int > pqc_process; // process number in pcs_vector
-    double gamma_Hplus; //activity coefficent of H+ ion
+	string file_name_pqc; // Name of pqc file in GeoSys project (*.pqc)
+	string outfile_name;
+	string results_file_name;
+	vector < string > pqc_names; // species names in *-pqc input file
+	vector < int > pqc_index; // index in process array
+	vector < int > pqc_process; // process number in pcs_vector
+	double gamma_Hplus; //activity coefficent of H+ ion
 
 // Member functions
 	REACT* GetREACT(void);
@@ -62,7 +62,7 @@ class REACT{
 	int  ReadReactionModel(FILE *File);
 	int  ReadReactionModelNew(ifstream *);
 	int  ReadInputPhreeqc( long index, FILE *fpqc, FILE *Fphinp); //fsout removed 3912
-    int  WriteInputPhreeqc(long, /*ifstream*,*/ ofstream*);
+	int  WriteInputPhreeqc(long, /*ifstream*,*/ ofstream*);
 	int  ReadOutputPhreeqc(char* fout);
 	int  ReadOutputPhreeqcNew(void);
 	void ResetpHpe(void);
@@ -73,10 +73,16 @@ class REACT{
 	int  CheckNoReactionNodes(void);
 // Reaction at elements //MX
 	void InitREACT0(void);
-    void ExecuteReactionsPHREEQC0(void);
-    void SetConcentrationResultsEle(void);
-    void GetTransportResults2Element(void);
-
+	void ExecuteReactionsPHREEQC0(void);
+	void SetConcentrationResultsEle(void);
+	void GetTransportResults2Element(void);
+#ifdef LIBPHREEQC
+// MDL: libphreeqc
+	void ExecuteReactionsPHREEQCNewLib(void); // MDL:
+	int  WriteInputPhreeqcLib(long, stringstream*, int*); // MDL: 
+	int  ReadOutputPhreeqcNewLib(double*); // MDL:
+	int  Call_PhreeqcLib(int, int, int, stringstream*, double*);
+#endif // LIBPHREEQC
 };
 extern vector <REACT*> REACT_vec;
 
@@ -85,4 +91,10 @@ extern void RCRead(string);
 extern double MATCalcIonicStrengthNew(long index);
 extern void REACTInit(); //OK
 
+#endif
+
+
+#ifdef LIBPHREEQC
+// MDL: libphreeqc
+#pragma comment (lib, "libphreeqc.lib")
 #endif
