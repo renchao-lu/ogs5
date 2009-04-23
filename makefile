@@ -28,7 +28,7 @@ endif
 export CHOSEN_TARGET
 
 
-SUBDIRS = FEM GEO MSH UTL
+SUBDIRS = FEM GEO MSH UTL 
 
 OBJS_PATTERN = $(foreach subdir,$(SUBDIRS),$(subdir)/*.o)
 
@@ -41,7 +41,7 @@ distclean clean:
             ( cd $$i && $(MAKE) $@ ) \
         done
 	$(RM) $(TGT)
-        
+
 not_valid:
 	@ echo "Possible configurations are '$(CONFIG_NAMES)'."
 
@@ -57,5 +57,5 @@ $(CONFIG_NAMES):
 	@ for i in $(SUBDIRS); do \
             $(MAKE) -C $$i $(CHOSEN_TARGET) || exit 1; \
         done
-	$(CXX_LD) $(CXX_LDFLAGS) -o $(TGT) $(OBJS_PATTERN) $(CXX_LIBS) $(LIS_LIBS) $(GEM_LIBS)
+	$(CXX_LD) $(CXX_LDFLAGS) -o $(TGT) $(OBJS_PATTERN) $(CXX_LIBS) $(LIS_LIBS) $(GEM_LIBS) $(PQC_LIBS)
 
