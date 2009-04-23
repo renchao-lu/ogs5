@@ -1,4 +1,4 @@
-## MDL, 22.04.2009
+## MDL, 22.04.2009, modified to use the new libphreeqc interface
 MPI              = yes
 NEW_SP           = yes;
 CXX_LIBS         = -lstdc++

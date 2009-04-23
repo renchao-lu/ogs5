@@ -37,6 +37,7 @@ rf_out_new.o\
 rf_pcs.o\
 rf_random_walk.o\
 rf_react.o\
+rf_REACT_GEM.o\
 rf_st_new.o\
 rf_tim_new.o\
 rfadt.o\
