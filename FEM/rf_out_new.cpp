@@ -267,52 +267,41 @@ ios::pos_type COutput::Read(ifstream *out_file)
     }
     //--------------------------------------------------------------------
     if(line_string.find("$TIM_TYPE")!=string::npos) { // subkeyword found
-      while ((!new_keyword)&&(!new_subkeyword))
-	{
-	  position_subkeyword = out_file->tellg();
-
-	  *out_file >> line_string;
-
-	  if(line_string.size()==0) break; //SB
-
-	  if(line_string.find(hash)!=string::npos) {
-	    new_keyword = true;
-	    break;
-	  }
-
-	  if(line_string.find(dollar)!=string::npos) {
-	    new_subkeyword = true;
-	    break;
-	  }
-
-	  if(line_string.find("STEPS")!=string::npos) {
-	    *out_file >> nSteps;
-	    tim_type_name = "STEPS"; //OK
-	  }
-
-	  if(line_string.find("STEPPING")!=string::npos)
-	    {
-	      double stepping_length, stepping_end;
-
-	      line.str(GetLineFromFile1(out_file));
-	      line >> stepping_length;
-	      line >> stepping_end;
-	      line.clear();
-
-	      while(stepping_length <= stepping_end)
-		{
-		  time_vector.push_back(stepping_length);
-		  stepping_length += stepping_length;
+      while ((!new_keyword)&&(!new_subkeyword)) {
+        position_subkeyword = out_file->tellg();
+       *out_file >> line_string;
+        if(line_string.size()==0) //SB
+          break;
+        if(line_string.find(hash)!=string::npos) {
+          new_keyword = true;
+          break;
+        }
+        if(line_string.find(dollar)!=string::npos) {
+          new_subkeyword = true;
+          break;
+        }
+        if(line_string.find("STEPS")!=string::npos) {
+         *out_file >> nSteps;
+          tim_type_name = "STEPS"; //OK
+        }
+		if(line_string.find("STEPPING")!=string::npos) {
+		  double stepping_length, stepping_end;
+ 		  
+		  line.str(GetLineFromFile1(out_file));
+          line >> stepping_length;
+		  line >> stepping_end;
+		  line.clear();
+		  while(stepping_length <= stepping_end) {
+            time_vector.push_back(stepping_length);
+            stepping_length += stepping_length;
+		  }
+       
+        }
+        else{
+          time_vector.push_back(strtod(line_string.data(),NULL));
 		}
-
-	      break;
-	    }
-	  // by this point we know we are getting numbers...
-	  float time_val;
-	  (istringstream) line_string >> time_val;
-	  time_vector.push_back( time_val );
-	  out_file->ignore(MAX_ZEILE,'\n');
-	}
+        out_file->ignore(MAX_ZEILE,'\n');
+      }
       continue;
     }
     //--------------------------------------------------------------------
@@ -720,7 +709,7 @@ void OUTData(double time_current, const int time_step_number)
         break;
         //------------------------------------------------------------------
         case 'R': // profiles at surfaces
-          cout << "Data output: Surface profile - " << m_out->geo_name << endl;
+          cout << "Data output: Surface profile" << endl;
           //..............................................................
           if(m_out->dis_type_name.compare("AVERAGE")==0){
             if(OutputBySteps){
@@ -738,7 +727,7 @@ void OUTData(double time_current, const int time_step_number)
               OutputBySteps = false;
               if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
             } 
-	    else{
+		    else{
               for(j=0;j<no_times;j++){
                 if((time_current>m_out->time_vector[j]) 
                    || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl                m_out->NODWriteSFCDataTEC(j);
@@ -876,15 +865,15 @@ void COutput::NODWriteDOMDataTEC()
   vector<int> mesh_type_list; //NW
   if(m_msh->msh_no_line>0)
     mesh_type_list.push_back(1);
-  if (m_msh->msh_no_quad>0)
+	if (m_msh->msh_no_quad>0)
     mesh_type_list.push_back(2);
-  if (m_msh->msh_no_hexs>0)
+	if (m_msh->msh_no_hexs>0)
     mesh_type_list.push_back(3);
-  if (m_msh->msh_no_tris>0)
+	if (m_msh->msh_no_tris>0)
     mesh_type_list.push_back(4);
-  if (m_msh->msh_no_tets>0)
+	if (m_msh->msh_no_tets>0)
     mesh_type_list.push_back(5);
-  if (m_msh->msh_no_pris>0)
+	if (m_msh->msh_no_pris>0)
     mesh_type_list.push_back(6);
 
   // Output files for each mesh type
@@ -1142,15 +1131,15 @@ void COutput::WriteTECNodeData(fstream &tec_file)
    for(k=0;k<nName;k++){
      m_pcs = PCSGet(nod_value_vector[k],true);
      if(m_pcs != NULL){
-       NodeIndex[k] = m_pcs->GetNodeValueIndex(nod_value_vector[k]);
-       for(i=0; i<m_pcs->GetPrimaryVNumber(); i++)
-	{
-         if(nod_value_vector[k].compare(m_pcs->pcs_primary_function_name[i])==0)
-	   {
-	     NodeIndex[k]++;
-	     break;
-	   }
-	}
+     NodeIndex[k] = m_pcs->GetNodeValueIndex(nod_value_vector[k]);
+     for(i=0; i<m_pcs->GetPrimaryVNumber(); i++) 
+     {
+       if(nod_value_vector[k].compare(m_pcs->pcs_primary_function_name[i])==0)
+       { 
+         NodeIndex[k]++;
+         break;
+       }
+     }
      }
    }
    //--------------------------------------------------------------------
@@ -2278,7 +2267,6 @@ void COutput::NODWriteSFCDataTEC(int number)
   string project_title_string = "Profile at surface"; //project_title;
   tec_file << "TITLE = \"" << project_title_string << "\"" << endl;
   tec_file << "VARIABLES = \"X\",\"Y\",\"Z\",";
-
   for(k=0;k<(int)nod_value_vector.size();k++){
      tec_file << nod_value_vector[k] << ",";
   }
@@ -2288,31 +2276,26 @@ void COutput::NODWriteSFCDataTEC(int number)
   // Write data
   int nidx;
   long i;
-  vector< long > nodes_vector;
-  Surface* m_sfc = NULL;
+  vector<long>nodes_vector;
+  Surface*m_sfc = NULL;
   m_sfc = GEOGetSFCByName(geo_name);//CC
   if(m_sfc){
-    m_msh->GetNODOnSFC(m_sfc, nodes_vector);  // nodes_vector contains indicies
-    for(i=0; i<(long)nodes_vector.size(); i++)
-      {
-	tec_file << m_msh->nod_vector[ nodes_vector[i] ]->X() << " ";
-	tec_file << m_msh->nod_vector[ nodes_vector[i] ]->Y() << " ";
-	tec_file << m_msh->nod_vector[ nodes_vector[i] ]->Z() << " ";
-	for(k=0; k<(int)nod_value_vector.size(); k++)
-	  {
-	    // nod_value_vector is a vector of strings - value names
-	    nidx = m_pcs->GetNodeValueIndex( nod_value_vector[k] ) + 1;
-	    tec_file << m_pcs->GetNodeValue( nodes_vector[i], nidx ) << " ";
-	  }
-	tec_file << endl;
+    m_msh->GetNODOnSFC(m_sfc,nodes_vector);
+	for(i=0;i<(long)m_msh->nod_vector.size();i++){
+      tec_file << m_msh->nod_vector[i]->X() << " ";
+      tec_file << m_msh->nod_vector[i]->Y() << " ";
+      tec_file << m_msh->nod_vector[i]->Z() << " ";
+      for(k=0;k<(int)nod_value_vector.size();k++){
+        nidx = m_pcs->GetNodeValueIndex(nod_value_vector[k])+1;
+        tec_file << m_pcs->GetNodeValue(nodes_vector[i],nidx) << " ";
       }
-  }
-  else
-    {
-      tec_file << "Error in NODWriteSFCDataTEC: surface " << geo_name
-	       << " not found" << endl;
+      tec_file << endl;
     }
-  tec_file.close(); // kg44 close file 
+  }
+  else{
+    tec_file << "Error in NODWritePLYDataTEC: polyline " << geo_name << " not found" << endl;
+  }
+      tec_file.close(); // kg44 close file 
 }
 
 /**************************************************************************
