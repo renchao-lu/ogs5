@@ -2952,7 +2952,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
       // Keyword EXCHANGE
       if(line_string.find("EXCHANGE")!=string::npos) 
 	{ // keyword found
-	  *out_buff << endl << "EXCHANGE " <<  index+1 << endl;
+	  *out_buff << "EXCHANGE " <<  index+1 << endl;
 	  nline++;
 	  while(line_string.find("#ende")==string::npos){
 	    pqc_infile.getline(line,MAX_ZEILE);
