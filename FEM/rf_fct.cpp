@@ -71,7 +71,7 @@ ios::pos_type CFunction::Read(ifstream *fct_file)
 {
   bool ok_true = true;
   bool new_keyword = false;
-  bool dim = false;
+  //WW bool dim = false;
   int unsigned no_variable_names;
   int unsigned i;
   double* variable_data = NULL;
@@ -551,7 +551,7 @@ Programing:
 04/2006 CMCD Transient function
 last modification:
 **************************************************************************/
-double CFunction::GetValue(double point,bool*valid)
+double CFunction::GetValue(double point, bool*valid, int method)
 {
   long anz;
   anz = (long)variable_data_vector.size();
@@ -560,7 +560,6 @@ double CFunction::GetValue(double point,bool*valid)
   *valid = true;
   register long i;
   long j;
-  int method = 0;
   double value = 1.0;
   //----------------------------------------------------------------------
   //
@@ -585,7 +584,11 @@ double CFunction::GetValue(double point,bool*valid)
         value = variable_data_vector[i-1][1] \
               + (variable_data_vector[i][1] - variable_data_vector[i-1][1]) \
               / (variable_data_vector[i][0] - variable_data_vector[i-1][0]) \
-              * (point - variable_data_vector[i-1][0]);
+              * (point - variable_data_vector[i-1][0]);    
+        break;
+      case 1: // Piece wise constant. FS//WW
+        value = variable_data_vector[i-1][1];    
+        break;
     }
   }
   }

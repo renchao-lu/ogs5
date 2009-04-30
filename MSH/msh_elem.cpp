@@ -194,7 +194,8 @@ CElem::CElem(const long Index,CElem* onwer, const int Face):CCore(Index),owner(o
        nodes_index[i] =
        owner->nodes_index[faceIndex_loc[i]];
        nodes[i] = owner->nodes[faceIndex_loc[i]];
-       nodes[i]->boundary_type = 'B';
+       if((nodes[i]->boundary_type != '0')&&(nodes[i]->boundary_type != '1')) //18.02.2009. cf. changes in mapping & generation. WW
+         nodes[i]->boundary_type = 'B';
     }
 	// Face edges
     ne = owner->GetEdgesNumber();

@@ -22,9 +22,9 @@
   /* Floating-Point */
 
 /* ROCKFLOW-Version */
-#define ROCKFLOW_VERSION    "4.9.08(MDL)"
+#define ROCKFLOW_VERSION    "4.9.09(WW) "
 #define RF_SHELL_VERSION    "4.9.05(NB)"
-#define ROCKFLOW_DATE       "22.04.2009"
+#define ROCKFLOW_DATE       "28.04.2009"
 
 /* Definitionen von Makros zur Steuerung der bedingten Compilierung */
 #define SWITCHES
@@ -326,6 +326,7 @@ enum DIS_TYPES {CONSTANT,LINEAR};
   /* Funktions-Prototypen*/
 
 extern std::string FileName;
+extern std::string FilePath; //WW
 
 #define RESET_4410 // H2_ELE test
 

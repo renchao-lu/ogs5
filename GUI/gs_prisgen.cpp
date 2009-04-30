@@ -319,15 +319,16 @@ CPrisGenMap::CPrisGenMap(CWnd* pParent /*=NULL*/)
 
 void CPrisGenMap::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
-    DDX_Text(pDX, IDC_RowNumber, m_iRowNumber);
-    DDX_Text(pDX, IDC_CountOfPrismLayers, m_iNumberOfLayers);
-    DDX_Control(pDX, IDC_LIST_FILE, m_LBFileNames);
-    DDX_Text(pDX, IDC_EDIT1, m_file_number);
-    DDX_Control(pDX, IDC_PROGRESS_MAPPING, m_progess_mapping);
-    DDX_Control(pDX, IDC_COMBO_MSH, m_CB_MSH);
-    DDX_Control(pDX, IDC_COMBO_LAYER, m_CB_LAY);
-}
+CDialog::DoDataExchange(pDX);
+DDX_Text(pDX, IDC_RowNumber, m_iRowNumber);
+DDX_Text(pDX, IDC_CountOfPrismLayers, m_iNumberOfLayers);
+DDX_Control(pDX, IDC_LIST_FILE, m_LBFileNames);
+DDX_Text(pDX, IDC_EDIT1, m_file_number);
+DDX_Control(pDX, IDC_PROGRESS_MAPPING, m_progess_mapping);
+DDX_Control(pDX, IDC_COMBO_MSH, m_CB_MSH);
+DDX_Control(pDX, IDC_COMBO_LAYER, m_CB_LAY);
+DDX_Control(pDX, IDC_CHECK1, integ_flag);
+    }
 
 
 BEGIN_MESSAGE_MAP(CPrisGenMap, CDialog)
@@ -359,6 +360,7 @@ BOOL CPrisGenMap::OnInitDialog()
   CRect rect;
   pWnd->GetWindowRect(&rect);
   ScreenToClient(&rect);
+  integ_flag.SetCheck(1);   //WW. 19.02.2009
   // Initialise controls
   //m_progess_mapping.Create( WS_VISIBLE | WS_CHILD, rect, this, IDC_PROGRESS_MAPPING );
   //m_progess_mapping.SetRange( static_cast<short>(m_uiRangeFrom), static_cast<short>(m_uiRangeTo) );
@@ -405,7 +407,7 @@ void CPrisGenMap::OnBnClickedButtonMapRow()
   UpdateData(TRUE);
   /* Get Path name */
   CFileDialog dlg(TRUE, "dat", NULL, OFN_ENABLESIZING ,
-                 "Grid Files (*.dat)|*.dat| ArcView Files (*.asc)|*.asc| All Files (*.*)|*.*||", this );
+                 " ArcView Files (*.asc)|*.asc| Grid Files (*.dat)|*.dat| All Files (*.*)|*.*||", this );
   dlg.DoModal();
   CString m_filepath = dlg.GetPathName();
 
@@ -419,7 +421,8 @@ void CPrisGenMap::OnBnClickedButtonMapRow()
   if(!m_msh)
     AfxMessageBox("no MSH data");
   else
-  MSHMapping(m_filepath, m_iNumberOfLayers, m_iRowNumber, DataType,m_msh); //OK
+    m_msh->LayerMapping(m_filepath, m_iNumberOfLayers, m_iRowNumber+1, DataType,
+      integ_flag.GetCheck(),  0);  //Set as an member of CFEMesh. WW , 
  
   AfxMessageBox("Ready! Safe rfi: File --> Export --> MSH File");
 
@@ -438,7 +441,7 @@ void CPrisGenMap::OnBnClickedButtonAddFile()
 {
   // Get file name
   CFileDialog dlg(TRUE, "dat", NULL, OFN_ENABLESIZING ,
-                 " Grid Files (*.dat)|*.dat| ArcView Files (*.asc)|*.asc| All Files (*.*)|*.*||", this );
+                 " ArcView Files (*.asc)|*.asc| Grid Files (*.dat)|*.dat|  All Files (*.*)|*.*||", this );
   dlg.DoModal();
   CString m_filepath = dlg.GetPathName();
   //
@@ -503,7 +506,8 @@ void CPrisGenMap::OnBnClickedButtonExecute()
 	  AfxMessageBox("Not a valid file extension");
     m_msh = FEMGet((string)m_strMSHName);
     if(m_msh)
-      MSHMapping(m_strFileName,NumberOfLayers,RowNumber,DataType,m_msh);
+      m_msh->LayerMapping(m_strFileName,NumberOfLayers,RowNumber,DataType
+       , integ_flag.GetCheck(), 0); // m_msh->. 19.01.2009. WW
     else
       AfxMessageBox("no MSH data");
   }

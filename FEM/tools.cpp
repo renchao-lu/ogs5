@@ -892,6 +892,9 @@ double GetCurveValue(int kurve, int methode, double punkt, int *gueltig)
         return (s[i - 1].wert +
                 (s[i].wert - s[i - 1l].wert) / (s[i].punkt - s[i - 1l].punkt) *
                 (punkt - s[i - 1l].punkt));
+    case 1: //WW/SF
+        // Piece wise constant
+        return s[i].wert;
     }
 }
 
@@ -2473,7 +2476,7 @@ double FindMin (vector<double>Vec)
 double x=DBL_MAX;
 int i;
 
-for(i=0;i<Vec.size();i++) {if ((Vec[i]>=0)&&(Vec[i]<x)) x=Vec[i];}
+for(i=0;i<(int)Vec.size();i++) {if ((Vec[i]>=0)&&(Vec[i]<x)) x=Vec[i];}
 
 return x;
 }
@@ -2486,7 +2489,7 @@ double FindMax (vector<double>Vec)
 double x=DBL_MIN;
 int i;
 
-for(i=0;i<Vec.size();i++) {if (Vec[i]>x) x=Vec[i];}
+for(i=0;i<(int)Vec.size();i++) {if (Vec[i]>x) x=Vec[i];}
 
 return x;
 }

@@ -1,6 +1,8 @@
 ## 17.04.2009 MDL
 # config file for built-in phreeqc
 NEW_SP           = yes;
+## WW
+DO_PQC              = yes;
 CXX_LDFLAGS      =
 CXX_LD           = g++
 

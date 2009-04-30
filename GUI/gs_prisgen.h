@@ -102,7 +102,9 @@ public:
     CFEMesh* m_msh;
     CComboBox m_CB_LAY;
     afx_msg void OnCbnSelchangeComboLayer();
-};
+    // WW
+    CButton integ_flag;
+    };
 
 
 class CPrisGenVertDisc : public CDialog

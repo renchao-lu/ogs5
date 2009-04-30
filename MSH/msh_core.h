@@ -56,6 +56,7 @@ class CCore
       bool Interior() const {  if(boundary_type=='I') return true; else return false; }
       // Set members
       void SetBoundaryType(const char type) {boundary_type = type;}
+      char GetBoundaryType() const { return boundary_type;} // 18.02.2009. WW
       void SetOrder(const bool order) {quadratic = order;}
       void SetMark(const bool state) {mark = state;}
       void SetIndex(const long lvalue){index=lvalue;} //OK

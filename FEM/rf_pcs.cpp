@@ -3732,6 +3732,7 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
   //----------------------------------------------------------------------
   // Error calculation 
   //----------------------------------------------------------------------
+  double val_n = 0.; //03.04.2007.  WW
   // NEWTON
   if(m_num->nls_method_name.find("NEWTON")!=string::npos) {
     double Val;
@@ -3773,10 +3774,13 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
       for(j=0;j<g_nnodes;j++)
       {
          k = m_msh->Eqs2Global_NodeIndex[j];
+         val_n = GetNodeValue(k,nidx1);   //03.04.2009. WW
 #ifdef NEW_EQS
-         SetNodeValue(k,nidx1,relax*GetNodeValue(k,nidx1)+(1.0-relax)*eqs_new->x[j+i*g_nnodes]);
+         SetNodeValue(k,nidx1,relax*val_n+(1.0-relax)*eqs_new->x[j+i*g_nnodes]);
+         eqs_new->x[j+i*g_nnodes] = val_n; // Used for time stepping. 03.04.2009. WW  
 #else
-         SetNodeValue(k,nidx1,relax*GetNodeValue(k,nidx1)+(1.0-relax)*eqs->x[j+i*g_nnodes]);
+         SetNodeValue(k,nidx1,relax*val_n+(1.0-relax)*eqs->x[j+i*g_nnodes]);
+         eqs->x[j+i*g_nnodes] = val_n; // Used for time stepping. 03.04.2009. WW  
 #endif
       } 
     }
@@ -4016,8 +4020,7 @@ void CRFProcess::GlobalAssembly()
          } 
        }
     }
-	//
-//  MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
+	//MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
     //eqs_new->Write();
 
     IncorporateSourceTerms();
@@ -4034,7 +4037,7 @@ void CRFProcess::GlobalAssembly()
     // ofstream Dum("rf_pcs.txt", ios::out); // WW
     // eqs_new->Write(Dum);   Dum.close();
     //
-    //   MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
+    //    MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
   }
   //----------------------------------------------------------------------
 }
@@ -4797,7 +4800,7 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
         {
           m_fct = FCTGet(pcs_number);
           if(m_fct)
-             time_fac = m_fct->GetValue(aktuelle_zeit,&is_valid);
+             time_fac = m_fct->GetValue(aktuelle_zeit,&is_valid, m_st->fct_method); //fct_method. WW
            else
              cout << "Warning in CRFProcess::IncorporateSourceTerms - no FCT data" << endl;
          }
@@ -4854,7 +4857,7 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
   // HS, added 11.2008
   if ( flag_couple_GEMS ==1 && aktueller_zeitschritt > 1 )
   {   // only when switch is on and not in the first time step
-	  for (int i=0; i < Water_ST_vec.size() ; i++)
+	  for (int i=0; i < (int)Water_ST_vec.size() ; i++)
 	  {   // loop over the Water_ST_vec vector,
 		  // add the excess water to the right-hand-side of the equation
 		  eqs_rhs[Water_ST_vec[i].index_node] += Water_ST_vec[i].water_st_value; 	  
@@ -6316,15 +6319,15 @@ double CRFProcess::ExecuteNonLinear()
   //
 #endif
   //..................................................................
+#if defined(PROBLEM_CLASS) //WW
+  // PI time step size control. 29.08.2008. WW
+  if(Tim->GetTimeStepCrtlType()>0)
+    CopyU_n(aproblem->GetBufferArray()); 
+#endif    
   for(iter=0;iter<pcs_nonlinear_iterations;iter++)
   {
     cout << "    PCS non-linear iteration: " << iter << "/"   
          << pcs_nonlinear_iterations << endl;
-#if defined(PROBLEM_CLASS) //WW
-    // PI time step size control. 29.08.2008. WW
-    if(Tim->GetTimeStepCrtlType()>0)
-      CopyU_n(aproblem->GetBufferArray()); 
-#endif    
     nonlinear_iteration_error = Execute();
     if(mobile_nodes_flag ==1)
       PCSMoveNOD();
@@ -9340,6 +9343,7 @@ Task: PI time step contorl
 Programming: 
 08/2008 WW Implementation
 10/2008 WW Node value criteria (test)
+03/2009 WW Euclidean norm
 **************************************************************************/
 void CRFProcess::PI_TimeStepSize(double *u_n)
 {
@@ -9363,6 +9367,9 @@ void CRFProcess::PI_TimeStepSize(double *u_n)
   if (factor1<1.0e0) factor1 = 5.0; 
   if (factor2>1.0e0) factor2 = 0.166666666666666666667e+00; 
   //
+  hmax = Tim->max_time_step;
+  if(hmax<DBL_MIN)    
+    hmax = fabs(Tim->time_end-aktuelle_zeit);  
   //
   //esitmate the error
   double hnew;
@@ -9371,7 +9378,7 @@ void CRFProcess::PI_TimeStepSize(double *u_n)
   double hacc = Tim->GetHacc();
   double erracc = Tim->GetErracc();
   //
-#define E_NORM
+#define aE_NORM
 #ifdef E_NORM
   //
   long i;
@@ -9456,10 +9463,17 @@ void CRFProcess::PI_TimeStepSize(double *u_n)
   err = 0.0;
   //	
   int ii, nidx1;
-  long g_nnodes, j, k, size_x;
+  long g_nnodes, j, k, l, size_x;
   double x0, x1;
   double Rtol = Tim->GetRTol(); 
   double Atol = Tim->GetATol();
+  double *u_n0 = NULL;
+#if defined(NEW_EQS)
+    u_n0 = eqs_new->x;  
+#else
+    u_n0 = eqs->x;  
+#endif 
+
   size_x = 0;
   for(ii=0; ii<pcs_number_of_primary_nvals; ii++)
   {  
@@ -9469,9 +9483,10 @@ void CRFProcess::PI_TimeStepSize(double *u_n)
      for(j=0;j<g_nnodes;j++)
      {
         k = m_msh->Eqs2Global_NodeIndex[j];
-        x0 = u_n[j+ii*g_nnodes];
+        l = j+ii*g_nnodes;
+        x0 = u_n[l];
         x1 = GetNodeValue(k,nidx1);
-        err += pow( (x1- x0)/(Atol+Rtol*max(fabs(x0),fabs(x1))),2);
+        err += pow( (x1- u_n0[l])/(Atol+Rtol*max(fabs(x0),fabs(x1))),2);
      } 
   }   
   err = sqrt(err/(double)size_x);
@@ -9490,7 +9505,7 @@ void CRFProcess::PI_TimeStepSize(double *u_n)
     {
       if(accept_steps>1) 
       {
-        factorGus = (hacc/dt)*pow((pow(err,2)/erracc),0.25)/sfactor;
+        factorGus = (hacc/dt)*pow(err*err/erracc,0.25)/sfactor;
         factorGus = max(factor2, min(factor1,factorGus));
         fac = max(fac, factorGus);
         hnew=dt/fac;			
@@ -9500,7 +9515,10 @@ void CRFProcess::PI_TimeStepSize(double *u_n)
       Tim->SetHacc(hacc);
       Tim->setErracc(erracc);
     }
-    Tim->SetTimeStep(hnew);
+    if(fabs(hnew)>hmax) hnew = hmax;
+    if(!accepted)
+      hnew = min(fabs(hnew), dt);
+    Tim->SetTimeStep(fabs(hnew));
     accepted = true;
   }//end if(err<=1.0e0)
   else 

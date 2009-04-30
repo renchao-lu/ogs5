@@ -24,7 +24,7 @@ class CFunction
     void Set(string,string,double);
     ios::pos_type Read(ifstream*);
     void Write(fstream*);
-    double GetValue(double,bool*);
+    double GetValue(double point, bool*valid, int method =0);// add int method. WW
   public:
     string type_name;
     string geo_name;

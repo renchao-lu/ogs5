@@ -3600,6 +3600,7 @@ void MXDumpGLS(const char *name, int modus, double *rechts, double *ergebnis)
                   FilePrintString(dumpfile, "\n");
                 }
             }
+          /*
           if (fabs(rechts[i]) > 0.0)
             {
               FilePrintDouble(dumpfile, (double) i);
@@ -3607,6 +3608,7 @@ void MXDumpGLS(const char *name, int modus, double *rechts, double *ergebnis)
               FilePrintDouble(dumpfile, rechts[i]);
               FilePrintString(dumpfile, "\n");
             }
+         */
           if (ergebnis)
            if (fabs(ergebnis[i]) > MKleinsteZahl)
             {
@@ -3616,6 +3618,16 @@ void MXDumpGLS(const char *name, int modus, double *rechts, double *ergebnis)
               FilePrintString(dumpfile, "\n");
             }
         }
+
+//TEST  WW
+     FilePrintString(dumpfile, "RHS\n");
+      for (i = 0; i < dim; i++)
+            {
+              FilePrintDouble(dumpfile, (double) i);
+              FilePrintDouble(dumpfile, rechts[i]);
+              FilePrintString(dumpfile, "\n");
+            }
+
     }
   if (modus == 2)
     {

@@ -45,6 +45,7 @@ Problem *aproblem = NULL;
 int main ( int argc, char *argv[] );
 void ShowSwitches ( void );
 string FileName; //WW
+string FilePath; //23.02.2009. WW
 // ------  12.09.2007 WW:
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)
 double elapsed_time_mpi; 
@@ -135,7 +136,18 @@ int main ( int argc, char *argv[] )
   }
   //WW  DisplayMsgLn("");
   //WW  DisplayMsgLn("");
+  // ----------23.02.2009. WW-----------------
   FileName = dateiname;
+  basic_string <char>::size_type indexChWin, indexChLinux; 
+  indexChWin = indexChLinux = 0;
+  indexChWin = FileName.find_last_of('\\');
+  indexChLinux = FileName.find_last_of('/');
+  //
+  if(indexChWin!=string::npos)
+     FilePath = FileName.substr(0,indexChWin)+"\\";
+  else if(indexChLinux!=string::npos)
+     FilePath = FileName.substr(0,indexChLinux)+"/";
+  // ---------------------------WW
 #ifdef PROBLEM_CLASS    //12.08.2008. WW
   aproblem = new Problem(dateiname);
   aproblem->Euler_TimeDiscretize();

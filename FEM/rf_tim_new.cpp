@@ -265,6 +265,14 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
   	    if(time_control_name=="PI_AUTO_STEP_SIZE"){
           line.str(GetLineFromFile1(tim_file));
           line >> tsize_ctrl_type>>relative_error>>absolute_error>>this_stepsize;
+          int real_type = (int)(tsize_ctrl_type/10);  //13.03.2008. WW
+          if(real_type<10&&real_type>0) //
+          {
+             tsize_ctrl_type = real_type;
+             line >> h_min>> h_max >> max_time_step; 
+          }
+          else
+             max_time_step = 0.0;
           line.clear();
         }
         // 26.08.2008. WW
@@ -298,11 +306,13 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
           *tim_file >> line_string;
           max_time_step = strtod(line_string.data(),NULL);
           line.clear();
+            break;
 		  }
           if(line_string.find("MIN_TIME_STEP")!=string::npos){
           *tim_file >> line_string;
           min_time_step = strtod(line_string.data(),NULL);
           line.clear();
+            break;
 		  }
           /*  //WW
 		  if(line_string.find("MINISH")!=string::npos){
@@ -946,7 +956,10 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
     dt_sum = 0.0;
   }
   if(!ontime)
-    dt_sum += dt0; 
+  {
+    dt_sum += dt0;
+    //this_stepsize = 0.0;    //20.03.2009. WW
+  }
   if(pcs_step>time_end)   // make output for other processes
   {
      dt_sum = 0.0; 

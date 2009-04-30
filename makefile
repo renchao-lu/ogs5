@@ -28,22 +28,26 @@ endif
 export CHOSEN_TARGET
 
 
-SUBDIRS = FEM GEO MSH UTL 
+SUBDIRS = FEM GEO MSH 
+
 
 OBJS_PATTERN = $(foreach subdir,$(SUBDIRS),$(subdir)/*.o)
 
+## 30.04.2009 WW
+SUBDIRS_CLS = FEM GEO MSH PQC
 
 .PHONY:	first
 first:	check_config
 
 distclean clean:
-	@ for i in $(SUBDIRS); do \
+	@ for i in $(SUBDIRS_CLS); do \
             ( cd $$i && $(MAKE) $@ ) \
         done
 	$(RM) $(TGT)
 
 not_valid:
 	@ echo "Possible configurations are '$(CONFIG_NAMES)'."
+
 
 .PHONY:	check_config
 check_config:	$(REALGOAL)
@@ -57,5 +61,5 @@ $(CONFIG_NAMES):
 	@ for i in $(SUBDIRS); do \
             $(MAKE) -C $$i $(CHOSEN_TARGET) || exit 1; \
         done
-	$(CXX_LD) $(CXX_LDFLAGS) -o $(TGT) $(OBJS_PATTERN) $(CXX_LIBS) $(LIS_LIBS) $(GEM_LIBS) $(PQC_LIBS)
 
+	$(CXX_LD) $(CXX_LDFLAGS) -o $(TGT) $(OBJS_PATTERN) $(CXX_LIBS) $(LIS_LIBS) $(GEM_LIBS) $(PQC_LIBS)

@@ -441,7 +441,8 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 // KG44: TODO!!!!!!!!!!!!! check the above  ***************
 
       break;
-#endif        default:
+#endif   
+         default:
           cout << "Error in MMPRead: no valid porosity model" << endl;
 		 break;
 
@@ -4452,7 +4453,7 @@ double CMediumProperties::NonlinearFlowFunction(long index, double *gp, double t
 double CMediumProperties::StorageFunction(long index,double *gp,double theta)
 {
     int nn, i, idummy,Type;
-    double p, sigma, z[8];
+    double p; //WW, sigma, z[8];
 	int phase;
     double density_solid, stress_eff,S;
     double coords[3];

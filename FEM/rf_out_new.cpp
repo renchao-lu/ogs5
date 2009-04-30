@@ -1114,6 +1114,7 @@ void COutput::WriteTECNodeData(fstream &tec_file)
   const int nName = (int)nod_value_vector.size();
   long j;
   double x[3];
+  double val_n = 0.; //WW
   int i, k;
   int nidx, nidx_dm[3];
   vector<int> NodeIndex(nName);
@@ -1204,8 +1205,15 @@ void COutput::WriteTECNodeData(fstream &tec_file)
        {
          m_pcs = GetPCS(nod_value_vector[k]);
          if(m_pcs != NULL)
-          if(NodeIndex[k]>-1)
-           tec_file << m_pcs->GetNodeValue( m_msh->nod_vector[j]->GetIndex(),NodeIndex[k]) << " ";
+         {   //WW
+           if(NodeIndex[k]>-1)
+           {
+              val_n = m_pcs->GetNodeValue( m_msh->nod_vector[j]->GetIndex(),NodeIndex[k]); //WW
+              tec_file << val_n << " ";
+              if(m_pcs->type==1212&&nod_value_vector[k].find("SATURATION")!=string::npos) //WW
+                 tec_file << 1.-val_n << " ";  //WW
+           } 
+         }
        }
        for(k=0;k<(int)mfp_value_vector.size();k++) //OK4704
        {
@@ -1289,9 +1297,18 @@ void COutput::WriteTECHeader(fstream &tec_file,int e_type, string e_type_name)
   }
   //--------------------------------------------------------------------
   // Write Header I: variables
+  CRFProcess *m_pcs = NULL;     //WW
   tec_file << "VARIABLES  = \"X\",\"Y\",\"Z\"";
   for(k=0;k<nName;k++){
     tec_file << ",\"" << nod_value_vector[k] << "\" ";
+    //-------------------------------------WW
+    m_pcs = GetPCS(nod_value_vector[k]); 
+    if(m_pcs != NULL)
+    { 
+       if(m_pcs->type==1212&&nod_value_vector[k].find("SATURATION")!=string::npos) 
+         tec_file << ", SATURATION2 ";
+    } 
+    //-------------------------------------WW
   }
   if (nPconName) {
 	for(k=0;k<nPconName;k++){
@@ -1480,6 +1497,7 @@ double COutput::NODWritePLYDataTEC(int number)
   int ns = 4;
   int stress_i[6], strain_i[6];
   double ss[6];
+  double val_n =0.; //WW
   //----------------------------------------------------------------------
   // Tests  
   // OUT
@@ -1588,6 +1606,11 @@ double COutput::NODWritePLYDataTEC(int number)
     for(k=0;k<no_variables;k++)
     {
     tec_file << "\""<< nod_value_vector[k] << "\" ";
+      //-------------------------------------WW
+      m_pcs = GetPCS(nod_value_vector[k]);  
+      if(m_pcs&&m_pcs->type==1212&&nod_value_vector[k].find("SATURATION")!=string::npos) 
+         tec_file << "SATURATION2 ";
+      //-------------------------------------WW
       if(nod_value_vector[k].compare("FLUX")==0)
         tec_file << "FLUX_INNER" << " ";
     }
@@ -1662,7 +1685,12 @@ double COutput::NODWritePLYDataTEC(int number)
         tec_file << "Warning in COutput::NODWritePLYDataTEC - no PCS data" << endl;
         return 0.0;
       }
-      tec_file << m_pcs->GetNodeValue(gnode, NodeIndex[k]) << " ";
+      //-----------------------------------------WW
+      val_n = m_pcs->GetNodeValue(gnode, NodeIndex[k]);
+      tec_file << val_n << " ";
+      if(m_pcs->type==1212&&(nod_value_vector[k].find("SATURATION")!=string::npos))
+        tec_file << 1.-val_n << " ";
+      //-----------------------------------------WW         
       //................................................................
       if(nod_value_vector[k].compare("FLUX")==0)
       {
@@ -1781,7 +1809,14 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
     tec_file << "TITLE = \"" << project_title_string << "\"" << endl;
     tec_file << "VARIABLES = \"TIME \" ";
     for(k=0;k<no_variables;k++)
-      tec_file << "\""<< nod_value_vector[k] << "\" ";
+    {//WW 
+       tec_file << nod_value_vector[k] << " ";
+       //-------------------------------------WW
+       m_pcs = GetPCS(nod_value_vector[k]);  
+       if(m_pcs&&m_pcs->type==1212&&nod_value_vector[k].find("SATURATION")!=string::npos) 
+         tec_file << "SATURATION2 ";
+      //-------------------------------------WW
+    }
     //
     #ifdef RFW_FRACTURE
     for(i=0; i<(int)mmp_vector.size(); ++i)
@@ -1888,7 +1923,13 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
       // PCS
       if(!(nod_value_vector[i].compare("FLUX")==0)  || pcs_type_name == "OVERLAND_FLOW") // JOD separate infiltration flux output in overland flow 
       {
-        tec_file << m_pcs->GetNodeValue(msh_node_number,NodeIndex[i]) << " ";
+        //-----------------------------------------WW
+        double val_n =  m_pcs->GetNodeValue(msh_node_number,NodeIndex[i]);
+        tec_file << val_n << " ";
+        m_pcs = GetPCS(nod_value_vector[i]);
+        if(m_pcs->type==1212&&(nod_value_vector[i].find("SATURATION")!=string::npos))
+        tec_file << 1.-val_n << " ";
+        //-----------------------------------------WW         
       }
       else
       {
@@ -2901,6 +2942,7 @@ void COutput::WriteVTKValues(fstream &vtk_file)
   const int nName = (int)nod_value_vector.size();
   long j;
   int i, k;
+  double val_n = 0.;
   vector<int> NodeIndex(nName);
 //WW  int no_processes = (int)pcs_vector.size();
   CFEMesh* m_msh = GetMSH();
@@ -2935,6 +2977,21 @@ void COutput::WriteVTKValues(fstream &vtk_file)
     }
   }
   //======================================================================
+  // Saturation 2 for 1212 pp - scheme. 01.04.2009. WW
+  m_pcs = PCSGet(nod_value_vector[0],true);
+  if(m_pcs&&m_pcs->type==1212)
+  {
+    i = m_pcs->GetNodeValueIndex("SATURATION1");
+    vtk_file << "SCALARS SATURATION2 float 1" << endl;
+    //   
+    vtk_file << "LOOKUP_TABLE default" <<endl;
+    //....................................................................
+    for(j=0l;j<m_msh->GetNodesNumber(false);j++)
+    {
+       val_n = m_pcs->GetNodeValue( m_msh->nod_vector[j]->GetIndex(),i); //WW
+       vtk_file <<" "<< 1.-val_n  << endl;
+    }
+  }
   // ELE data
  if(ele_value_vector.size()>0)
  {

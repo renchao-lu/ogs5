@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="8.00"
 	Name="rf4"
 	ProjectGUID="{4F159AF7-FF53-410E-A9A7-2C500A4EF55E}"
-	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -73,15 +72,13 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile=".\Debug/rf4.exe"
+				OutputFile=".\Debug/rf4_pqc.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="../PQC;"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/rf3_cpp.pdb"
 				SubSystem="1"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -101,6 +98,9 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -166,14 +166,12 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile=".\Release/rf4.exe"
+				OutputFile=".\Release/rf4_pqc.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="../PQC;"
 				ProgramDatabaseFile=".\Release/rf3_cpp.pdb"
 				SubSystem="1"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -193,6 +191,9 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -295,14 +296,6 @@
 			</File>
 			<File
 				RelativePath=".\eos.h"
-				>
-			</File>
-			<File
-				RelativePath=".\equation_class.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\equation_class.h"
 				>
 			</File>
 			<File

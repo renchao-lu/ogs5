@@ -73,7 +73,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="..\lib\GEMS230_dbg.lib"
-				OutputFile=".\Debug/rf4.exe"
+				OutputFile=".\Debug/rf4_gems.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
@@ -167,7 +167,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="..\lib\GEMS230_rl.lib"
-				OutputFile=".\Release/rf4.exe"
+				OutputFile=".\Release/rf4_gems.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				ProgramDatabaseFile=".\Release/rf3_cpp.pdb"
@@ -296,14 +296,6 @@
 			</File>
 			<File
 				RelativePath=".\eos.h"
-				>
-			</File>
-			<File
-				RelativePath=".\equation_class.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\equation_class.h"
 				>
 			</File>
 			<File

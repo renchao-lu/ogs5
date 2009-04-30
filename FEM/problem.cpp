@@ -37,7 +37,7 @@ Modification:
 #include "rf_st_new.h"
 #include "rf_tim_new.h"
 #include "rfmat_cp.h"
-#include "rf_vel_new.h"
+//#include "rf_vel_new.h"
 #include "rf_fluid_momentum.h"	
 #include "rf_random_walk.h"     
 // Finite element
@@ -638,7 +638,8 @@ void Problem::PCSCreate()
     MMP2PCSRelation(m_pcs);
   }
   //----------------------------------------------------------------------
-  for(i=0;i<no_processes;i++){ //WW
+  for(i=0;i<no_processes;i++)
+  { //WW
     m_pcs = pcs_vector[i];
     m_pcs->ConfigureCouplingForLocalAssemblier();
   }
@@ -869,7 +870,7 @@ bool Problem::CouplingLoop()
                   break;
                }               
                // If not accepted, m_tim->step_current++
-               if(error_cpl-error<m_pcs->m_num->cpl_tolerance)
+               if(fabs(error_cpl-error)<m_pcs->m_num->cpl_tolerance)
                  break;
                error =  Call_Member_FN(this, active_processes[index])(); //aProcess(); 
                if(!a_pcs->TimeStepAccept())
@@ -881,6 +882,12 @@ bool Problem::CouplingLoop()
              }
              exe_flag[cpl_index] = false;    
            }  
+           else
+           {
+              if(fabs(error_cpl-error)<coupling_tolerance)
+                break;
+              error_cpl = error;
+           } 
            // 
            if(!accept) break;         
          }        
@@ -1011,7 +1018,11 @@ inline double Problem::RichardsFlow()
    }
    else  //WW
    {
-      error = m_pcs->ExecuteNonLinear();
+      CFEMesh* m_msh = FEMGet("RICHARDS_FLOW"); //WW
+      if(m_msh->geo_name.compare("REGIONAL")==0)
+        LOPExecuteRegionalRichardsFlow(m_pcs);
+      else
+        error = m_pcs->ExecuteNonLinear();
       if(m_pcs->TimeStepAccept())
       {
         m_pcs->CalcSecondaryVariablesUnsaturatedFlow();  //WW
@@ -1463,7 +1474,7 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
 #endif
   int timelevel = 1;
   int idxp  = m_pcs_global->GetNodeValueIndex("PRESSURE1") + timelevel;
-  int idxcp = m_pcs_global->GetNodeValueIndex("PRESSURE_CAP") + timelevel;
+  //WW int idxcp = m_pcs_global->GetNodeValueIndex("PRESSURE_CAP") + timelevel;
   int idxS  = m_pcs_global->GetNodeValueIndex("SATURATION1") + timelevel;
   CElem* m_ele_local = NULL;
   CNode* m_nod_local = NULL;
@@ -1552,8 +1563,8 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
     {
       value = m_pcs_global->GetNodeValue(i,idxp);
       m_pcs_global->SetNodeValue(i,idxp-1,value);
-      value = m_pcs_global->GetNodeValue(i,idxcp);
-      m_pcs_global->SetNodeValue(i,idxcp-1,value);
+     //WW value = m_pcs_global->GetNodeValue(i,idxcp);
+     //WW m_pcs_global->SetNodeValue(i,idxcp-1,value);
       value = m_pcs_global->GetNodeValue(i,idxS);
       m_pcs_global->SetNodeValue(i,idxS-1,value);
     }
@@ -1566,6 +1577,7 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
   for(i=0;i<no_richards_problems;i++)
   //for(i=0;i<2;i++)
   {
+    cout << "->Conlumn number " << i<<endl;
     m_pcs_local = pcs_vector[(int)pcs_vector.size()-1];
     m_pcs_local->pcs_number = i;
     m_msh_local = fem_msh_vector[(int)fem_msh_vector.size()-1];
@@ -1599,9 +1611,9 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
         value = m_pcs_global->GetNodeValue(g_node_number,idxp);
         m_pcs_local->SetNodeValue(j,idxp-1,value);
         m_pcs_local->SetNodeValue(j,idxp,value);       
-        value = m_pcs_global->GetNodeValue(g_node_number,idxcp);
-        m_pcs_local->SetNodeValue(j,idxcp-1,value);
-        m_pcs_local->SetNodeValue(j,idxcp,value);     
+       //WW value = m_pcs_global->GetNodeValue(g_node_number,idxcp);
+       //WW m_pcs_local->SetNodeValue(j,idxcp-1,value);
+       //WW  m_pcs_local->SetNodeValue(j,idxcp,value);     
         value = m_pcs_global->GetNodeValue(g_node_number,idxS);
         m_pcs_local->SetNodeValue(j,idxS-1,value);
         m_pcs_local->SetNodeValue(j,idxS,value);     
@@ -1614,8 +1626,8 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
         g_node_number = j+(i*no_local_nodes);
         value = m_pcs_global->GetNodeValue(g_node_number,idxp);
         m_pcs_local->SetNodeValue(j,idxp-1,value);
-        value = m_pcs_global->GetNodeValue(g_node_number,idxcp);
-        m_pcs_local->SetNodeValue(j,idxcp-1,value);
+        //value = m_pcs_global->GetNodeValue(g_node_number,idxcp);
+        //m_pcs_local->SetNodeValue(j,idxcp-1,value);
         value = m_pcs_global->GetNodeValue(g_node_number,idxS);
         m_pcs_local->SetNodeValue(j,idxS-1,value);
      }
@@ -1637,8 +1649,8 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
       g_node_number = j+(i*no_local_nodes);
       value = m_pcs_local->GetNodeValue(j,idxp);
       m_pcs_global->SetNodeValue(g_node_number,idxp,value);
-      value = m_pcs_local->GetNodeValue(j,idxcp);
-      m_pcs_global->SetNodeValue(g_node_number,idxcp,value);
+     // value = m_pcs_local->GetNodeValue(j,idxcp);
+      //m_pcs_global->SetNodeValue(g_node_number,idxcp,value);
       value = m_pcs_local->GetNodeValue(j,idxS);
       m_pcs_global->SetNodeValue(g_node_number,idxS,value);
     }
@@ -1907,14 +1919,14 @@ else{
 /**************************************************************************/
 void Problem::PCSCalcSecondaryVariables()
 {
-  long j;
+//WW  long j;
 
   int i, ptype;
   CRFProcess *m_pcs=NULL;
 #ifdef RESET_4410
   CRFProcess* m_pcs_phase_1 = NULL;
   CRFProcess* m_pcs_phase_2 = NULL;
-  int ndx_p_gas_old,ndx_p_gas_new,ndx_p_liquid_old,ndx_p_liquid_new,ndx_p_cap_old;
+ //WW int ndx_p_gas_old,ndx_p_gas_new,ndx_p_liquid_old,ndx_p_liquid_new,ndx_p_cap_old;
   //----------------------------------------------------------------------
   bool pcs_cpl = true; 
   //----------------------------------------------------------------------

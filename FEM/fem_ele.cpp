@@ -127,6 +127,8 @@ Last modified:
 void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
 {
 	int i; 
+    CNode *a_node = NULL; //07.04.2009. WW
+    CNode *a_node0 = NULL; //07.04.2009. WW
     MeshElement = MElement;
 	Index = MeshElement->GetIndex();
     nnodes = MeshElement->nnodes;
@@ -143,21 +145,22 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
     {
        if(dim!=ele_dim)
        {
+           a_node0 = MeshElement->nodes[0];    //07.04.2007. WW
            for(i=0; i<nNodes; i++)
            {
-               X[i] =  (*MeshElement->tranform_tensor)(0,0)
-                       *(MeshElement->nodes[i]->X()-MeshElement->nodes[0]->X())
-                      +(*MeshElement->tranform_tensor)(1,0)
-                       *(MeshElement->nodes[i]->Y()-MeshElement->nodes[0]->Y())
-                      +(*MeshElement->tranform_tensor)(2,0)
-                       *(MeshElement->nodes[i]->Z()-MeshElement->nodes[0]->Z());
-               Y[i] =  (*MeshElement->tranform_tensor)(0,1)
-                        *(MeshElement->nodes[i]->X()-MeshElement->nodes[0]->X())
-                      +(*MeshElement->tranform_tensor)(1,1)
-                        *(MeshElement->nodes[i]->Y()-MeshElement->nodes[0]->Y())
-                      +(*MeshElement->tranform_tensor)(2,1)
-                        *(MeshElement->nodes[i]->Z()-MeshElement->nodes[0]->Z());
-               Z[i] =  MeshElement->nodes[i]->Z();
+               double dx, dy, dz;
+               a_node = MeshElement->nodes[i]; //07.04.2007. WW 
+               dy = dz = 0.;
+               dx = a_node->X()-a_node0->X();
+               dz = a_node->Y()-a_node0->Y();
+               dz = a_node->Z()-a_node0->Z();
+               X[i] =  (*MeshElement->tranform_tensor)(0,0)*dx
+                      +(*MeshElement->tranform_tensor)(1,0)*dy
+                      +(*MeshElement->tranform_tensor)(2,0)*dz;
+               Y[i] =  (*MeshElement->tranform_tensor)(0,1)*dx
+                      +(*MeshElement->tranform_tensor)(1,1)*dy
+                      +(*MeshElement->tranform_tensor)(2,1)*dz;
+               Z[i] =  a_node->Z();
            }    
            done = true;                  
        }
@@ -170,9 +173,10 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
              {
                 for(i=0; i<nNodes; i++)
                 {
-                   X[i] = MeshElement->nodes[i]->Y();  
-                   Y[i] = MeshElement->nodes[i]->X();       
-                   Z[i] = MeshElement->nodes[i]->Z();        
+                   a_node = MeshElement->nodes[i]; //07.04.2007. WW 
+                   X[i] = a_node->Y();  
+                   Y[i] = a_node->X();       
+                   Z[i] = a_node->Z();        
 	            }
                 done = true;
              }
@@ -180,9 +184,10 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
              {
                 for(i=0; i<nNodes; i++)
                 {
-                   X[i] = MeshElement->nodes[i]->Z();  
-                   Y[i] = MeshElement->nodes[i]->Y();       
-                   Z[i] = MeshElement->nodes[i]->X();        
+                   a_node = MeshElement->nodes[i]; //07.04.2007. WW 
+                   X[i] = a_node->Z();  
+                   Y[i] = a_node->Y();       
+                   Z[i] = a_node->X();        
 	            }
                 done = true;
              }
@@ -192,9 +197,10 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
              {
                 for(i=0; i<nNodes; i++)
                 {
-                   X[i] = MeshElement->nodes[i]->X();  
-                   Y[i] = MeshElement->nodes[i]->Z();       
-                   Z[i] = MeshElement->nodes[i]->Y();        
+                   a_node = MeshElement->nodes[i]; //07.04.2007. WW 
+                   X[i] = a_node->X();  
+                   Y[i] = a_node->Z();       
+                   Z[i] = a_node->Y();        
 	            }
                 done = true;
              }
@@ -207,9 +213,10 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
     {
        for(i=0; i<nNodes; i++)
        {
-           X[i] = MeshElement->nodes[i]->X();  
-           Y[i] = MeshElement->nodes[i]->Y();       
-           Z[i] = MeshElement->nodes[i]->Z();        
+           a_node = MeshElement->nodes[i]; //07.04.2007. WW 
+           X[i] = a_node->X();  
+           Y[i] = a_node->Y();       
+           Z[i] = a_node->Z();        
         }
     }
 }
@@ -265,7 +272,7 @@ void CElement::ConfigNumerics(const int EleType)
 	   nGaussPoints = nGauss;
        ShapeFunction = ShapeFunctionLine;
 	   GradShapeFunction = GradShapeFunctionLine;
-	   break;    
+       return;
 	 case 2: // Quadrilateral 
 	   ele_dim =2;
 	   nGaussPoints = nGauss*nGauss;
@@ -273,7 +280,7 @@ void CElement::ConfigNumerics(const int EleType)
        ShapeFunctionHQ = ShapeFunctionQuadHQ;
 	   GradShapeFunction = GradShapeFunctionQuad;
 	   GradShapeFunctionHQ = GradShapeFunctionQuadHQ;
-	   break;    
+       return;
      case 3: // Hexahedra 
        ele_dim =3;
 	   nGaussPoints = nGauss*nGauss*nGauss;
@@ -281,7 +288,7 @@ void CElement::ConfigNumerics(const int EleType)
        ShapeFunctionHQ = ShapeFunctionHexHQ;
 	   GradShapeFunction = GradShapeFunctionHex;
 	   GradShapeFunctionHQ = GradShapeFunctionHexHQ;
-	   break;
+       return;
      case 4: // Triangle 
        ele_dim =2;
 	   nGaussPoints = nGauss = 3;  // Fixed to 3
@@ -289,7 +296,7 @@ void CElement::ConfigNumerics(const int EleType)
        ShapeFunctionHQ = ShapeFunctionTriHQ;
 	   GradShapeFunction = GradShapeFunctionTri;
 	   GradShapeFunctionHQ = GradShapeFunctionTriHQ;
-	   break;
+       return;
      case 5: // Tedrahedra 
        ele_dim =3;
 //	   nGaussPoints = nGauss = 15;  // Fixed to 15
@@ -298,7 +305,7 @@ void CElement::ConfigNumerics(const int EleType)
        ShapeFunctionHQ = ShapeFunctionTetHQ;
 	   GradShapeFunction = GradShapeFunctionTet;
 	   GradShapeFunctionHQ = GradShapeFunctionTetHQ;
-	   break;
+       return;
      case 6: // Prism 
        ele_dim =3;
 	   nGaussPoints = 6;  // Fixed to 9
@@ -307,7 +314,7 @@ void CElement::ConfigNumerics(const int EleType)
        ShapeFunctionHQ = ShapeFunctionPriHQ;
 	   GradShapeFunction = GradShapeFunctionPri;
 	   GradShapeFunctionHQ = GradShapeFunctionPriHQ;
-	   break;
+       return;
    }
 
 }
@@ -607,13 +614,13 @@ void CElement::SetGaussPoint(const int gp, int& gp_r, int& gp_s, int& gp_t)
        case 1:    // Line
           gp_r = gp;
           unit[0] = MXPGaussPkt(nGauss, gp_r);
-          break;
+          return;
        case 2:    // Quadralateral 
           gp_r = (int)(gp/nGauss);
           gp_s = gp%nGauss;
           unit[0] = MXPGaussPkt(nGauss, gp_r);
           unit[1] = MXPGaussPkt(nGauss, gp_s);
-          break;
+          return;
        case 3:    // Hexahedra 
           gp_r = (int)(gp/(nGauss*nGauss));
           gp_s = (gp%(nGauss*nGauss));
@@ -622,14 +629,14 @@ void CElement::SetGaussPoint(const int gp, int& gp_r, int& gp_s, int& gp_t)
           unit[0] = MXPGaussPkt(nGauss, gp_r);
           unit[1] = MXPGaussPkt(nGauss, gp_s);
           unit[2] = MXPGaussPkt(nGauss, gp_t);
-          break;
+          return;
        case 4: // Triangle 
           SamplePointTriHQ(gp, unit);
           break;
        case 5: // Tedrahedra
 //To be flexible          SamplePointTet15(gp, unit);
           SamplePointTet5(gp, unit);
-          break;
+          return;
        case 6: // Prism 
           gp_r = gp%nGauss; 
           gp_s = (int)(gp/nGauss);
@@ -637,7 +644,7 @@ void CElement::SetGaussPoint(const int gp, int& gp_r, int& gp_s, int& gp_t)
           unit[0] = MXPGaussPktTri(nGauss,gp_r,0);
           unit[1] = MXPGaussPktTri(nGauss,gp_r,1);
           unit[2] = MXPGaussPkt(gp_t,gp_s);
-          break;
+          return;
     }
 }
 /***************************************************************************

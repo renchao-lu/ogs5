@@ -50,7 +50,6 @@ extern void MSHAssignMATGroup2PrisElements();
 extern void MSHAssignMATGroup2PrisElementsNew();
 extern void MSH2MATPris();
 extern void MSHAssignMATGroup2HexsElements();
-extern void MSHMapping(const char *dateiname, const int NLayers,const int row, const int DataType,CFEMesh*);
 extern void PrismRefine(const int NLayers, const int Layer, const int NSubLayers);
 extern void MSHDestroy();
 extern void MSHDelete(string);

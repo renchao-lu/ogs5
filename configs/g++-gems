@@ -1,5 +1,7 @@
 ## 17.12.2008 WW
+## 30.04.2009 WW
 NEW_SP = yes;
+GEMS = yes;
 CXX_LDFLAGS      =
 CXX_LD           = g++
 #OPTIMIZING. WW

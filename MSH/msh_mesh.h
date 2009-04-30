@@ -59,6 +59,8 @@ class CFEMesh
 	// 3:  X, Y, Z component
     int coordinate_system; 
     int max_ele_dim; 
+    int map_counter;  //21.01.2009 WW
+    bool mapping_check;  //23.01.2009 WW
     // Sparse graph of this mesh. 1.11.2007 WW
 #ifdef NEW_EQS
     SparseTable *sparse_graph;  
@@ -98,6 +100,11 @@ class CFEMesh
     int ele_mat_display_mode;
     int highest_mat_group_nb;
     bool m_bCheckMSH; //OK
+
+#ifdef MFC //FS//WW
+    double *n_area_val; 
+#endif
+
 #ifdef RANDOM_WALK
     RandomWalk* PT; // PCH
 #endif
@@ -154,7 +161,7 @@ class CFEMesh
     // GEO-SFC
     void GetNODOnSFC(Surface*,vector<long>&);
     void GetNODOnSFC_PLY(Surface*,vector<long>&);
-    void GetNODOnSFC_PLY_XY(Surface*,vector<long>&);
+    void GetNODOnSFC_PLY_XY(Surface*m_sfc, vector<long>& msh_nod_vector, bool givenNodesOnSurface=false); // givenNodeOnSurface by WW
     void GetNODOnSFC_TIN(Surface*,vector<long>&);
     void GetNodesOnCylindricalSurface(Surface*m_sfc, vector<long>& NodesS);
     void GetNODOnSFC_Vertical(Surface*,vector<long>&);
@@ -163,7 +170,7 @@ class CFEMesh
     void GetELEOnSFC(Surface*,vector<long>&); //OK
     void GetELEOnSFC_TIN(Surface*,vector<long>&); //OK
     void CreateLineELEFromSFC(); //OK
-    void GetNODOnSFC_PLY_Z(Surface*,vector<long>&); //OK
+	void GetNODOnSFC_PLY_Z(Surface*,vector<long>&); // 02.2009/OK
     // GEO-VOL
     void ELEVolumes(); //OK
 
@@ -183,6 +190,12 @@ class CFEMesh
     void AppendLineELE();
     // TRI->PRIS
     void CreatePriELEFromTri(int,double);
+#ifdef MFC
+    void LayerMapping(const char *dateiname, const int NLayers,\
+            const int row, const int DataType, int integ, int infil_integ); //19.01.2009. WW
+    void LayerMapping_Check(const char *dateiname, const int NLayers, int integ); //19.01.2009. WW
+    inline void WriteCurve2RFD(const int NLayers, const char *dateiname);
+#endif 
     // TRI->LINE
     void CreateLineELEFromTri(); //OK
     void CreateLineELEFromTriELE(); //OK

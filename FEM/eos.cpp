@@ -662,7 +662,7 @@ double phi_r_dd (double rho, double T, string c)
     CFluidProperties *FP;
 	double phi_a=0,phi_b=0,phi_c=0,phi_d=0;
 	int i;
-	double delta,tau,b;
+	double delta,tau; //WW,b;
 	double thetafn,deltafn,phifn,dphiddelta,d2phiddelta2,dDELTA_deriv,dDELTApowbddelta,d2DELTA_deriv,d2DELTApowbddelta2;
 		
 FP=MFPGet(c,0);

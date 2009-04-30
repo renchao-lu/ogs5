@@ -234,6 +234,8 @@ ios::pos_type CSourceTerm::Read(ifstream *st_file)
     if(line_string.find("$FCT_TYPE")!=string::npos) { 
 	  in.str(GetLineFromFile1(st_file));
       in >> fct_name; //sub_line
+      if(fct_name.find("METHOD")!=string::npos) //WW
+        in >> fct_method;   
       in.clear(); 
     }
     //....................................................................
@@ -256,6 +258,7 @@ FEMLib-Method:
 Task: for CSourceTerm::Read
 Programing:
 11/2007 JOD Implementation
+02/2009 WW  Add a functionality to diectly assign source terms to element nodes.
 **************************************************************************/
 ios::pos_type CSourceTerm::ReadDistributionType(ifstream *st_file)
 {
@@ -377,6 +380,14 @@ ios::pos_type CSourceTerm::ReadDistributionType(ifstream *st_file)
 		in.str(GetLineFromFile1(st_file));
         in >> sorptivity >> constant >> rainfall >> moistureDeficit;
         in.clear();
+	  }
+      // Soure terms are assign to element nodes directly. 23.02.2009. WW
+	  if(dis_type_name.find("DIRECT")!=string::npos)
+      {
+        dis_type_name = "DIRECT";     
+		in >> fname;
+        fname = FilePath+fname;
+		in.clear();
 	  }
 
  return position;
@@ -806,6 +817,7 @@ Programing:
 02/2005 MB River condition, CriticalDepth
 08/2006 WW Re-implementing edge,face and domain integration versatile for all element types
 04/2006 OK MSH types
+02/2009 WW Direct assign node source terms
 **************************************************************************/
 void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, string this_pv_name) {
  
@@ -833,7 +845,14 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
        m_st = st_vector[i];
        if(m_st->conditional)
          m_msh_cond = FEMGet(m_st->pcs_type_name_cond);
-
+       //
+       //-- 23.02.3009. WW
+       if(m_st->dis_type_name.find("DIRECT")!=string::npos)
+       {
+          m_st->DirectAssign(ShiftInNodeVector);
+          continue;
+       }
+       //-----------
        if((m_st->pcs_type_name.compare(pcs_type_name)==0)&&(m_st->pcs_pv_name.compare(pcs_pv_name)==0)) {
          if(m_st->geo_type_name.compare("POINT")==0)
            SetPNT(m_pcs, m_st, ShiftInNodeVector);
@@ -2836,8 +2855,10 @@ void CSourceTerm::SetNodeValues(vector<long>&nodes, vector<long>&nodes_cond, vec
        m_nod_val->node_parameterE = node_value_vectorE[i];  
      } 
      if(dis_type == 6 || dis_type == 8 || dis_type == 9)  // critical depth, normal depth, analytical
-       m_nod_val->node_value = node_value_vectorArea[i];
-   
+     {
+        m_nod_val->node_value = node_value_vectorArea[i];   
+        m_nod_val->node_area = node_value_vectorArea[i]; //CMCD bugfix on 4.9.06
+     }   
      m_pcs->st_node_value.push_back(m_nod_val);  //WW
      m_pcs->st_node.push_back(this); //WW
  } // end nodes
@@ -2874,6 +2895,57 @@ void CSourceTerm::SetNOD2MSHNOD(vector<long>&nodes, vector<long>&conditional_nod
 
   delete m_pnt;
 
+}
+
+/**************************************************************************
+GeoSys source term function: 
+02/2009 WW Implementation
+**************************************************************************/
+inline void CSourceTerm::DirectAssign(const long ShiftInNodeVector)
+{
+  string line_string;
+  string st_file_name;
+  std::stringstream in;
+  long n_index;
+  double n_val;
+  CRFProcess* m_pcs = NULL;
+  CNodeValue *m_nod_val = NULL; 
+  m_pcs = PCSGet(pcs_type_name);
+
+  //========================================================================
+  // File handling
+  ifstream d_file (fname.c_str(),ios::in);
+  //if (!st_file.good()) return;
+
+  if (!d_file.good()){
+    cout << "! Error in direct node source terms: Could not find file:!\n" 
+         <<fname<<endl;
+    abort();
+  }
+  // Rewind the file
+  d_file.clear();
+  d_file.seekg(0L,ios::beg);
+  //========================================================================
+  while (!d_file.eof()) 
+  {
+    line_string = GetLineFromFile1(&d_file);
+    if(line_string.find("#STOP")!=string::npos)
+      break;
+    
+    in.str(line_string); 
+    in>>n_index>>n_val;   
+    in.clear(); 
+    //   
+    m_nod_val = new CNodeValue();
+    m_nod_val->msh_node_number = n_index + ShiftInNodeVector;
+    m_nod_val->geo_node_number = n_index;
+    m_nod_val->node_distype = dis_type;
+    m_nod_val->node_value = n_val;
+    m_nod_val->CurveIndex = CurveIndex;   
+    m_pcs->st_node_value.push_back(m_nod_val);  
+    m_pcs->st_node.push_back(this); 
+    // 
+  } // eof
 }
 
 /**************************************************************************

@@ -1590,7 +1590,7 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 				else	// Here is only active for Cal_Velocity
 				{
 					// This is to calculate velocity
-					int numOfPhases = 2;			
+//WW					int numOfPhases = 2;			
 					double mat_fac = 0.0;
 				
 					idxS = cpl_pcs->GetNodeValueIndex("SATURATION2");
@@ -1808,20 +1808,20 @@ inline void CFiniteElementStd::CalCoefLaplaceMultiphase(int phase, int ip)
 {
   int i=0;
   double mat_fac = 1.0;
-  double Dpv = 0.0;
-  double poro = 0.0;
-  double tort = 0.0;
-  double humi = 1.0;
-  double rhow = 0.0; 
+//WW  double Dpv = 0.0;
+//WW  double poro = 0.0;
+//WW  double tort = 0.0;
+//WW  double humi = 1.0;
+//WW  double rhow = 0.0; 
   double *tensor = NULL;
-  double Hav,manning,chezy,expp,chezy4,Ss,arg;
+//WW  double Hav,manning,chezy,expp,chezy4,Ss,arg;
   static double Hn[9],z[9];
-  double GradH[3],Gradz[3],w[3],v1[3],v2[3];
-  int nidx1;
+  //WW double GradH[3],Gradz[3],w[3],v1[3],v2[3];
+  //WW int nidx1;
   int Index = MeshElement->GetIndex();
   double k_rel;
   ComputeShapefct(1);   //  12.3.2007 WW
-  double variables[3]; //OK4709
+  //WW  double variables[3]; //OK4709
 
   // For nodal value interpolation
   //======================================================================
@@ -2020,7 +2020,8 @@ inline void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
                 / (GasProp->Viscosity()*rhow);
       //
       if(Gravity)
-        mat_fac *= rhow/rho_ga;
+//        mat_fac *= rhow/rho_ga;
+        mat_fac *= rho_g/rhow; //29.04.2009 WW
       //
       for(i=0; i<dim*dim; i++)
         mat[i] = tensor[i] * mat_fac*time_unit_factor;
@@ -3176,7 +3177,7 @@ void CFiniteElementStd::CalcLaplace()
                            * mat[dim_times_k_plus_l] * dshapefct[l_times_nnodes_plus_j];
 
 //			           (*Laplace)(i+in*nnodes,j+jn*nnodes) += fkt * dshapefct[k*nnodes+i] \
-                           * mat[dim*k+l] * dshapefct[l*nnodes+j];
+//                           * mat[dim*k+l] * dshapefct[l*nnodes+j];
 //					   if(Index < 10) {cout << " i, j, k, l, nnodes, dim: " << i << ", " << j << ", " << k << ", " << l << ", " << nnodes << ", " << dim << ". fkt, dshapefct[k*nnodes+i], mat[dim*k+l], dshapefct[l*nnodes+j]: ";
 //					   cout << fkt << ", " << dshapefct[k*nnodes+i] << ", " << mat[dim*k+l] << ", " << dshapefct[l*nnodes+j] << endl;}
 				    
@@ -4544,7 +4545,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
   (*StiffMatrix) *= fac1;
   // Laplace matrix
   // PCH to reduce PDE to ODE in Saturation model
-  if(pcs->pcs_type_number==1 && pcs->ML_Cap != 1)	// PCH: If equation 2 in Two-phase flow.
+  if(pcs->pcs_type_number==1 && pcs->ML_Cap != 0)	// PCH: If equation 2 in Two-phase flow.
   {								// then, Laplace equation is no need. Only solve for ODE
   }
   else {
@@ -4622,7 +4623,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
   (*AuxMatrix1) *= fac1;
   //Laplace - Diffusion
   // Laplace matrix
-  if(pcs->pcs_type_number==1 && pcs->ML_Cap != 1)	// PCH: If equation 2 in Two-phase flow.
+  if(pcs->pcs_type_number==1 && pcs->ML_Cap != 0)	// PCH: If equation 2 in Two-phase flow.
   {								// then, Laplace equation is no need. Only solve for ODE
   }
   else {
@@ -6364,7 +6365,7 @@ void CFiniteElementStd::AssembleRHSVector()
   int i;
   int idx_fv=0;
   double NodalVal_FV[20]; 
-  double FV;
+  //WW  double FV;
   CRFProcess* m_pcs_cpl = NULL;
   //----------------------------------------------------------------------
   // Initializations
@@ -6443,11 +6444,11 @@ PCSLib-Method:
 void CFiniteElementStd::AssembleCapillaryEffect()
 {
   int i;
-  int idx_fv=0, idx_w=0, idx_nw=0;
+  int idx_fv=0; //WW, idx_w=0, idx_nw=0;
   double NodalVal_FV[20]; 
-  double FV;
-	CRFProcess* m_pcs_cpl = NULL;
-	CMediumProperties *m_mmp = NULL;
+  //WW  double FV;
+//WW	CRFProcess* m_pcs_cpl = NULL;
+//WW	CMediumProperties *m_mmp = NULL;
 
 	//Debug
 	double temp[8];
@@ -6546,7 +6547,7 @@ void CFiniteElementStd::CalcEnergyNorm(const double *x_n1, double &err_norm0,
     NodeShift[i]=i*pcs->m_msh->GetNodesNumber(false);
 
   //----------------------------------------------------------------------
-  double beta1 = 0.0;
+ //  double beta1 = 0.0;
   //----------------------------------------------------------------------
   // Initialize.
   // if (pcs->Memory_Type==2) skip the these initialization

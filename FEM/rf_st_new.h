@@ -27,6 +27,7 @@ typedef struct {
 //========================================================================
 class CSourceTerm
 {
+    string fname; //23.02.2009. WW
   public: //OK
     int CurveIndex; // Time funtion index
     vector<int> PointsHaveDistribedBC;
@@ -81,6 +82,7 @@ class CSourceTerm
     int component;
     int geo_type;
     int dis_type;
+    int fct_method; //FS/WW
     double dis_prop[3];
     double *nodes;
     vector<long>node_number_vector;
@@ -127,6 +129,7 @@ class CSourceTerm
                         vector<double>&node_value_vector);
     // Set Members. WW
     void SetPolyline(CGLPolyline *Polyline) {plyST = Polyline;}  //OK ???
+    inline void DirectAssign(const long ShiftInNodeVector);  //23.02.2009. WW
 
     void SetNOD2MSHNOD(vector<long>&nodes, vector<long>&conditional_nodes);
 

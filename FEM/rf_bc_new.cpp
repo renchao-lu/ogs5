@@ -1267,7 +1267,9 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
       if(m_bc->msh_type_name.compare("NODE")==0) {
         m_node_value = new CBoundaryConditionNode;
         m_node_value->msh_node_number = m_bc->msh_node_number;
+        m_node_value->geo_node_number =  m_bc->msh_node_number;
         m_node_value->node_value = m_bc->geo_node_value;
+        m_node_value->CurveIndex = m_bc->CurveIndex;
         m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
         m_pcs->bc_node.push_back(m_bc);  //WW
         m_pcs->bc_node_value.push_back(m_node_value);  //WW
