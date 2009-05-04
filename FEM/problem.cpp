@@ -233,12 +233,13 @@ Problem::Problem(char* filename):print_result(false)
       // -----------------------
       DOMCreate();
       //
-      for(i=0;i<no_processes;i++){
-	m_pcs = pcs_vector[i];
-	m_pcs->CheckMarkedElement();
-	CountDoms2Nodes(m_pcs);
-	// Config boundary conditions for domain decomposition 
-	m_pcs->SetBoundaryConditionSubDomain(); //WW
+      for(i=0;i<no_processes;i++)
+      {
+         m_pcs = pcs_vector[i];
+         m_pcs->CheckMarkedElement();
+         CountDoms2Nodes(m_pcs);
+         // Config boundary conditions for domain decomposition 
+         m_pcs->SetBoundaryConditionSubDomain(); //WW
       }
       //
       node_connected_doms.clear();

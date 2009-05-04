@@ -853,6 +853,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\rf_react.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\rf_react.h"
+				>
+			</File>
+			<File
 				RelativePath="rf_st_new.cpp"
 				>
 				<FileConfiguration

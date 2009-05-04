@@ -1,6 +1,8 @@
 
 MPI              = yes
-
+## 04.05.2009. WW
+NEW_SP = yes
+doBRNS = yes
 
 CXX_LIBS         = -lstdc++
 
@@ -11,6 +13,6 @@ CXX_LD           = mpicxx
 CXX_OPT_FLAGS    = -O3
 CXX_DEBUG_FLAGS  = 
 CXX_WARN_FLAGS   =
-CXX_FLAGS        = -DUSE_MPI -DBRNS -DUSE_MPI_BRNS -DGCC $(CXX_OPT_FLAGS) $(CXX_DEBUG_FLAGS) -DNEW_EQS -DRANDOM_WALK
+CXX_FLAGS        = -DUSE_MPI -DBRNS -DUSE_MPI_BRNS -DPROBLEM_CLASS $(CXX_OPT_FLAGS) $(CXX_DEBUG_FLAGS) -DNEW_EQS -DRANDOM_WALK
 CXX              = mpicxx
 
