@@ -203,6 +203,24 @@ ios::pos_type CBoundaryCondition::Read(ifstream *bc_file)
 	  in.str(GetLineFromFile1(bc_file));
       in >> line_string; //sub_line
 	  periodic  = false; // JOD
+      // Soure terms are assign to element nodes directly. 23.02.2009. WW
+	  if(line_string.find("DIRECT")!=string::npos)
+      {
+        dis_type_name = "DIRECT";     
+		in >> fname;
+        fname = FilePath+fname;
+		in.clear();
+	  }
+      // Patch-wise constant. 19.03.2009. WW
+	  if(line_string.find("PATCH_C")!=string::npos)
+      {
+        dis_type_name = "PATCH_C";     
+		in >> fname;
+        fname = FilePath+fname;
+        in >> geo_node_value;
+		in.clear();
+	  }
+
       if(line_string.find("CONSTANT")!=string::npos) {
         dis_type_name = "CONSTANT";
         dis_type = 0;
@@ -815,6 +833,117 @@ void CBoundaryCondition::SetGEOType(void)
 }
 
 /**************************************************************************
+GeoSys source term function: 
+02/2009 WW Implementation
+**************************************************************************/
+inline void CBoundaryCondition::DirectAssign(const long ShiftInNodeVector)
+{
+  string line_string;
+  string st_file_name;
+  std::stringstream in;
+  long n_index;
+  double n_val;
+  CRFProcess* m_pcs = NULL;
+  CBoundaryConditionNode  *m_node_value = NULL;
+
+  m_pcs = PCSGet(pcs_type_name);
+
+  //========================================================================
+  // File handling
+  ifstream d_file (fname.c_str(),ios::in);
+  //if (!st_file.good()) return;
+
+  if (!d_file.good()){
+    cout << "! Error in direct node source terms: Could not find file:!\n" 
+         <<fname<<endl;
+    abort();
+  }
+  // Rewind the file
+  d_file.clear();
+  d_file.seekg(0L,ios::beg);
+  //========================================================================
+  while (!d_file.eof()) 
+  {
+    line_string = GetLineFromFile1(&d_file);
+    if(line_string.find("#STOP")!=string::npos)
+      break;
+    
+    in.str(line_string); 
+    in>>n_index>>n_val;   
+    in.clear(); 
+    // 
+    m_node_value = new CBoundaryConditionNode;
+	m_node_value->conditional = false;
+    m_node_value->msh_node_number = n_index + ShiftInNodeVector;
+    m_node_value->geo_node_number = n_index;
+    m_node_value->node_value = n_val;
+    m_node_value->CurveIndex = CurveIndex;
+    m_pcs->bc_node.push_back(this);  
+    m_pcs->bc_node_value.push_back(m_node_value); 
+  } // eof
+}
+/**************************************************************************
+GeoSys BC function: 
+03/2009 WW Implementation
+**************************************************************************/
+inline void CBoundaryCondition::PatchAssign(const long ShiftInNodeVector)
+{
+  string line_string;
+  string st_file_name;
+  std::stringstream in;
+  long n_index;
+  vector<long> sfc_nodes;
+  CRFProcess* m_pcs = NULL;
+  CBoundaryConditionNode  *m_node_value = NULL;
+
+  m_pcs = PCSGet(pcs_type_name);
+
+  Surface *m_surface = NULL;
+  m_surface = GEOGetSFCByName(geo_name);
+  //========================================================================
+  // File handling
+  ifstream d_file (fname.c_str(),ios::in);
+  //if (!st_file.good()) return;
+
+  if (!d_file.good()){
+    cout << "! Error in direct node source terms: Could not find file:!\n" 
+         <<fname<<endl;
+    abort();
+  }
+  // Rewind the file
+  d_file.clear();
+  d_file.seekg(0L,ios::beg);
+  //========================================================================
+  while (!d_file.eof()) 
+  {
+    line_string = GetLineFromFile1(&d_file);
+    if(line_string.find("#STOP")!=string::npos)
+      break;
+    
+    in.str(line_string); 
+    in>>n_index;   
+    in.clear();
+    sfc_nodes.push_back(n_index);
+  }
+  if(m_surface)
+     m_pcs->m_msh->GetNODOnSFC_PLY_XY(m_surface,sfc_nodes, true);
+  for(long i=0; i<(long)sfc_nodes.size(); i++)
+  {  
+    // 
+    m_node_value = new CBoundaryConditionNode;
+	m_node_value->conditional = false;
+    n_index = sfc_nodes[i];
+    m_node_value->msh_node_number = n_index + ShiftInNodeVector;
+    m_node_value->geo_node_number = n_index;
+    m_node_value->node_value = geo_node_value;
+    m_node_value->CurveIndex = CurveIndex;
+    m_pcs->bc_node.push_back(this);  
+    m_pcs->bc_node_value.push_back(m_node_value); 
+  } // eof
+}
+
+
+/**************************************************************************
 FEMLib-Method: 
 Task: 
 Programing:
@@ -965,15 +1094,25 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
   list<CBoundaryCondition*>::const_iterator p_bc = bc_list.begin();
   while(p_bc!=bc_list.end()) {
     m_bc = *p_bc;
-    if(m_bc->time_dep_interpol)  //WW/CB
-    { 
-      ++p_bc;
-      continue; 
-    }
     //====================================================================
     //OK if(m_bc->pcs_type_name.compare(pcs_type_name)==0){ //OK/SB 4108
     if((m_bc->pcs_type_name.compare(pcs_type_name)==0)&&(m_bc->pcs_pv_name.compare(pcs_pv_name)==0)){
         //................................................................
+        //-- 23.02.3009. WW
+        if(m_bc->dis_type_name.find("DIRECT")!=string::npos)
+        {
+           m_bc->DirectAssign(ShiftInNodeVector);
+           ++p_bc;
+           continue;
+        }        
+        //-- 19.03.3009. WW
+        if(m_bc->dis_type_name.find("PATCH_C")!=string::npos)
+        {
+           m_bc->PatchAssign(ShiftInNodeVector);
+           ++p_bc;
+           continue;
+        }        
+        //
         cont = false;
         if(m_bc->dis_type_name.compare("VARIABLE")==0){ //OK
           cont = true;
@@ -985,6 +1124,8 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
 			  msh_node_number_subst = ShiftInNodeVector + m_msh->GetNODOnPNT(m_geo_point);
           }
         }
+
+       
 
       //------------------------------------------------------------------
       if(m_bc->geo_type_name.compare("POINT")==0) {

@@ -27,6 +27,7 @@ class CBoundaryCondition
 {
   private:
     string tim_type_name; // Time function type
+    string fname; //27.02.2009. WW
 	int CurveIndex; // Time funtion index
   public: //OK
     vector<int> PointsHaveDistribedBC;
@@ -70,6 +71,8 @@ class CBoundaryCondition
     void ExecuteDataBasePolyline(CGLPolyline*);
     void SurfaceIntepolation(CRFProcess* m_pcs, vector<long>&nodes_on_sfc, 
                                 vector<double>&node_value_vector); //WW
+    inline void DirectAssign(const long ShiftInNodeVector);  //27.02.2009. WW
+    inline void PatchAssign(const long ShiftInNodeVector);  //19.03.2009. WW
     // MSH
     long msh_node_number;
     string msh_type_name; //OK4105
