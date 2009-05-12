@@ -2978,7 +2978,8 @@ void COutput::WriteVTKValues(fstream &vtk_file)
   }
   //======================================================================
   // Saturation 2 for 1212 pp - scheme. 01.04.2009. WW
-  m_pcs = PCSGet(nod_value_vector[0],true);
+  if(nod_value_vector.size() > 0) //SB added
+	m_pcs = PCSGet(nod_value_vector[0],true);
   if(m_pcs&&m_pcs->type==1212)
   {
     i = m_pcs->GetNodeValueIndex("SATURATION1");
