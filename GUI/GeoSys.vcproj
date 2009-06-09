@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="GeoSys"
 	ProjectGUID="{A55509E7-0142-4424-B24F-4BD977C2FC26}"
 	RootNamespace="GeoSys"
@@ -2155,6 +2155,14 @@
 			</File>
 			<File
 				RelativePath="..\Fem\version.h"
+				>
+			</File>
+			<File
+				RelativePath="..\FEM\vtk.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\FEM\vtk.h"
 				>
 			</File>
 		</Filter>

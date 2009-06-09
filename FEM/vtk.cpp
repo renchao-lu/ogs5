@@ -1,6 +1,5 @@
-#include "vtk.h"
-
 #include "stdafx.h" /* MFC */
+#include "vtk.h"
 #include <fstream>
 #if defined(WIN32)
 #include <direct.h>
