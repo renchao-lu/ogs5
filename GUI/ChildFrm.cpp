@@ -6,7 +6,6 @@
 #include "GeoSysDoc.h"
 
 #include "ChildFrm.h"
-#include "out_dlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

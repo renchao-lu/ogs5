@@ -547,22 +547,14 @@ void  CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bo
 /*************************************************************************
 FEMLib-Function: 
 Task: Set material pointers to the current element
-Programming: 
 01/2005 WW Implementation
 03/2005 OK MultiMSH
 11/2005 YD Set cursor of gas
-last modified:
+06/2009 OK MMP test not here (time consuming)
 **************************************************************************/
 void CFiniteElementStd::SetMaterial(int phase)
 {
   phase = 0;
-  if((int)mmp_vector.size()<pcs->m_msh->max_mmp_groups + 1){//CC8888
-#ifdef MFC
-    AfxMessageBox("Not enough MMP groups");
-#endif
-    cout << "Not enough MMP groups" << endl;
-    return;
-  }
   //----------------------------------------------------------------------
   // MMP
   int mmp_index=0;
@@ -617,11 +609,13 @@ void CFiniteElementStd::SetMaterial(int phase)
   }
   //----------------------------------------------------------------------
   // MFP
+/* Comment out - NW
   if(PCSGet("LIQUID_FLOW")){
     FluidProp = MFPGet("LIQUID");
     if(!FluidProp)
       cout << "Warning: LIQUID was not found in fluid properties." << endl;
   }
+*/
   if(mfp_vector.size()>0){
     FluidProp = mfp_vector[0];
     FluidProp->Fem_Ele_Std = this;

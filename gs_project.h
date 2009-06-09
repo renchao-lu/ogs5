@@ -38,6 +38,7 @@ extern void GSPWriteData();
 extern CGSProject* GSPGetMember(string);
 extern void GSPAddMemberNew(string path_base_orig,string path_base_copy,string type);
 extern bool GSPSimulatorReady();
+extern bool GSPReadData(string); //OK
 
 extern string g_gsp_path;
 extern string g_gsp_base;

@@ -9,6 +9,7 @@
 #include "gs_graphics.h"
 #include "COGLPickingView.h"	//PCH
 #include "afxdisp.h"
+#include "problem.h"
 
 // GeoSys-GUI
 #include "gs_output.h"
@@ -202,6 +203,25 @@ void CMainFrame::OnViewTemporalProfilesCreate()
 
 void CMainFrame::OnViewSpatialProfilesCreate()
 {
+  CMDIFrameWnd *pMIDIFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+  CMDIChildWnd *pChild = (CMDIChildWnd *) pMIDIFrame->GetActiveFrame();
+  CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+/*OK
+  if(!m_pDoc->problem_win){
+   int msgboxID = AfxMessageBox("No MOD data. Create now?",MB_YESNO);
+   switch (msgboxID)
+    {
+    case IDYES:
+	  delete m_pDoc->problem_win;
+	  m_pDoc->problem_win = NULL;
+	  m_pDoc->problem_win = new Problem();
+        break;
+    case IDNO:
+	  return;
+        break;
+    }
+  }
+*/
 	CMDIChildWnd* pActiveChild = MDIGetActive();
 	CDocument* pDocument;
 	if (pActiveChild == NULL ||

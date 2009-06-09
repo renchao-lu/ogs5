@@ -755,10 +755,10 @@ void BCWrite(string base_file_name)
   fstream bc_file (bc_file_name.data(),ios::trunc|ios::out);
   bc_file.setf(ios::scientific,ios::floatfield);
   bc_file.precision(12);
-  string tec_file_name = base_file_name + ".tec";
-  fstream tec_file (tec_file_name.data(),ios::trunc|ios::out);
-  tec_file.setf(ios::scientific,ios::floatfield);
-  tec_file.precision(12);
+  //OK string tec_file_name = base_file_name + ".tec";
+  //OK fstream tec_file (tec_file_name.data(),ios::trunc|ios::out);
+  //OK tec_file.setf(ios::scientific,ios::floatfield);
+  //OK tec_file.precision(12);
   if (!bc_file.good()) return;
   bc_file.seekg(0L,ios::beg); // rewind?
   //========================================================================
@@ -769,12 +769,12 @@ void BCWrite(string base_file_name)
   while(p_bc!=bc_list.end()) {
     m_bc = *p_bc;
     m_bc->Write(&bc_file);
-    m_bc->WriteTecplot(&tec_file);
+    //OK m_bc->WriteTecplot(&tec_file);
     ++p_bc;
   }
   bc_file << "#STOP";
   bc_file.close();
-  tec_file.close();
+  //OK tec_file.close();
 }
 
 /**************************************************************************
@@ -1094,6 +1094,11 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
   list<CBoundaryCondition*>::const_iterator p_bc = bc_list.begin();
   while(p_bc!=bc_list.end()) {
     m_bc = *p_bc;
+    if(m_bc->time_dep_interpol)  //WW/CB
+    { 
+      ++p_bc;
+      continue; 
+    }
     //====================================================================
     //OK if(m_bc->pcs_type_name.compare(pcs_type_name)==0){ //OK/SB 4108
     if((m_bc->pcs_type_name.compare(pcs_type_name)==0)&&(m_bc->pcs_pv_name.compare(pcs_pv_name)==0)){

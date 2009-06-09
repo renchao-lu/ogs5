@@ -48,7 +48,6 @@ BEGIN_MESSAGE_MAP(CDialogPCS, CDialog)
     ON_BN_CLICKED(IDC_BUTTON_PCS_CREATE, OnBnClickedCreate)
     ON_BN_CLICKED(IDC_BUTTON_PCS, OnBnClickedButtonAdd)
     ON_BN_CLICKED(IDC_BUTTON_CLEAR, OnBnClickedButtonClear)
-    ON_BN_CLICKED(IDC_BUTTON_PCS_READ, &CDialogPCS::OnBnClickedButtonPcsRead)
 END_MESSAGE_MAP()
 
 // CDialogPCS message handlers
@@ -196,7 +195,7 @@ void CDialogPCS::OnBnClickedCreate()
     //....................................................................
     // Due to  delete m_pcs  in  if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
     m_pcs = pcs_vector[(int)pcs_vector.size()-1]; 
-    //OK m_pcs->Config();
+    m_pcs->Config();
     //....................................................................
   }
   //----------------------------------------------------------------------
@@ -219,6 +218,7 @@ void CDialogPCS::OnBnClickedCreate()
   if(theApp->g_graphics_modeless_dlg->GetSafeHwnd())
     theApp->g_graphics_modeless_dlg->OnInitDialog();
   //----------------------------------------------------------------------
+  OnOK();
 }
 
 /**************************************************************************
@@ -320,23 +320,3 @@ void CDialogPCS::OnBnClickedCreateGSP()
 }
 */
 
-/**************************************************************************
-GUILib-Method: 
-07/2007 OK Implementation
-**************************************************************************/
-/*
-void CDialogPCS::OnBnClickedCheckGSP()
-{
-}
-*/
-
-void CDialogPCS::OnOK()
-{
-  //----------------------------------------------------------------------
-  CDialog::OnOK();
-  //----------------------------------------------------------------------
-}
-void CDialogPCS::OnBnClickedButtonPcsRead()
-{
-    // TODO: Add your control notification handler code here
-}

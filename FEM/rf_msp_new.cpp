@@ -4258,6 +4258,7 @@ void CSolidProperties::CalPrimaryVariable(vector<string>& pcs_name_vector)
 /**************************************************************************
 FEMLib-Method: 
 01/2006 OK Implementation
+05/2009 OK DENSITY
 **************************************************************************/
 void CSolidProperties::Write(fstream* msp_file)
 {
@@ -4278,6 +4279,10 @@ void CSolidProperties::Write(fstream* msp_file)
   // DIMENSION
   //-----------------------------------------------------------------------
   // PROPERTIES
+  //.......................................................................
+  *msp_file << " $DENSITY" << endl;
+  *msp_file << "  " << Density_mode;
+  *msp_file << " " << (*data_Density)(0) << endl;
   //.......................................................................
   // Elasticity properties
   *msp_file << " $ELASTICITY" << endl;

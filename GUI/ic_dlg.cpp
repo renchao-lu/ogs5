@@ -328,12 +328,19 @@ void CDialogInitialConditions::OnBnClickedButtonCreateGroup()
 
 /**************************************************************************
 GUILib-Method:
-Task:
-Programing:
 05/2005 OK Implementation
+06/2009 OK Update
 **************************************************************************/
 void CDialogInitialConditions::OnBnClickedButtonRead()
 {
+  CGSProject* m_gsp = GSPGetMember("pcs");
+  if(m_gsp)
+  {
+    ICDelete(); 
+    ICRead(m_gsp->path+m_gsp->base);
+    GSPAddMember(m_gsp->base + ".ic");
+    OnInitDialog();
+  }
 }
 
 /**************************************************************************

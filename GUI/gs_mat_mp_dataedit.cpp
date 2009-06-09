@@ -793,7 +793,7 @@ void CMATGroupEditorDataEdit::SafeArray2MMP(CMediumProperties* m_mmp0)
           m_mmp->conductivity_model = 1;
       }
     }
-    if(key_word.compare("PERMEABILITY")==0) //OK
+    if(key_word.compare("PERMEABILITY_TENSOR")==0) //OK
     {
       double szdata = vData.dblVal; 
       m_mmp->permeability_tensor_type_name = "ISOTROPIC";
@@ -1357,6 +1357,17 @@ void CMATGroupEditorDataEdit::SafeArray2MSP(CSolidProperties* m_msp)
     CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
     mainframe->saEdt.GetElement(index,vData);
     //.....................................................................
+    if(key_word.compare("DENSITY")==0)
+    {
+      if (vData.vt == VT_R8)
+      {
+        double szdata = vData.dblVal; 
+        m_msp->Density_mode = 1;
+        m_msp->data_Density = new Matrix(1);  
+        m_msp->data_Density[0] = szdata;
+      }
+    }
+    //.....................................................................
     if(key_word.compare("POISSON_RATIO")==0)
     {
       if (vData.vt == VT_R8)
@@ -1431,6 +1442,16 @@ void CMATGroupEditorDataEdit::MSP2UpdateListCtrl(void)
     lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
     m_listctrldata.InsertItem(&lvi);
     //.....................................................................
+    // Set Subitem
+    if(strItem == "DENSITY")
+    {
+      strItem.Format(_T("%g"),(*m_msp->data_Density)(0));
+      lvi.iSubItem = 1;
+      lvi.pszText = (LPTSTR)(LPCTSTR)(strItem);
+      m_listctrldata.SetItem(&lvi);
+    }
+    //.....................................................................
+    // Set Subitem
     if(strItem == "POISSON_RATIO")
     {
       strItem.Format(_T("%g"), m_msp->PoissonRatio);
@@ -1485,6 +1506,8 @@ GUILib-Method:
 void CMATGroupEditorDataEdit::MSPStandardKeywords(void)
 {
   CString in;
+  in = "DENSITY";
+    key_word_vector.push_back(in);
   in = "POISSON_RATIO";
     key_word_vector.push_back(in);
   in = "YOUNGS_MODULUS";

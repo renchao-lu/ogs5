@@ -62,6 +62,15 @@ Modification:
 #endif
 #include "rf_kinreact.h"
 
+#ifdef MFC
+//#include "Windowsx.h"
+#include "GeoSys.h"
+#include "GeoSysDoc.h"
+#include "MainFrm.h"
+//#include "GeoSysPCSView.h"
+#include "GeoSysOUTProfileView.h"
+#endif
+
 namespace process{class CRFProcessDeformation;}
 using process::CRFProcessDeformation;
 using namespace std;
@@ -76,6 +85,7 @@ Modification:
 ***************************************************************************/
 Problem::Problem(char* filename):print_result(false)
 {
+  print_result = true; //OK
   if(filename!=NULL)
     {
       // Read data
@@ -92,29 +102,35 @@ Problem::Problem(char* filename):print_result(false)
   GetHeterogeneousFields(); //OK/MB
   //----------------------------------------------------------------------
   // Test MSH-MMP //OK
-  int g_max_mmp_groups;
-  g_max_mmp_groups = MSHSetMaxMMPGroups();
+  int g_max_mmp_groups = MSHSetMaxMMPGroups();
   if(g_max_mmp_groups>(int)mmp_vector.size()){
     cout << "Error: not enough MMP data";
 #ifdef MFC
-    AfxMessageBox( "Fatal error: not enough MMP data");
+    AfxMessageBox( "Error: not enough MMP data");
 #endif
-    abort();
+    print_result = false; //OK
+    return;
   }
   //----------------------------------------------------------------------
   // Create PCS processes
   PCSCreate();
-  //----------------------------------------------------------------------
+  if (!PCSCheck()) //OK4910 reactivated
+  { 
+#ifdef MFC
+    AfxMessageBox("Warning: not all PCS data are available. PCS dependencies are not created");
+#endif  
+    print_result = false; //OK
+    return;
+  }
+  //......................................................................
 #ifdef RESET_4410
   if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
     PCSCalcSecondaryVariables(); //OK
 #endif
-  
-  //----------------------------------------------------------------------
+  //......................................................................
   //09.07.2008 WW
   SetActiveProcesses(); 
-  //----------------------------------------------------------------------
-  
+  //OK if (!Check()) return; //OK
   //----------------------------------------------------------------------
   // REACTIONS 
   //CB before the first time step
@@ -721,6 +737,10 @@ void Problem::Euler_TimeDiscretize()
     }   
     if(dt<DBL_EPSILON)
     {
+#ifdef MFC
+       AfxMessageBox("Too small time step size. Quit the simulation now.");
+       return;
+#endif
        cout<<"!!! Too small time step size. Quit the simulation now."<<endl;
        exit(0);
     }  
@@ -729,7 +749,6 @@ void Problem::Euler_TimeDiscretize()
     current_time += dt;
     aktuelle_zeit = current_time ;
     // Print messsage
-    // 
 #if defined(USE_MPI)  
   if(myrank==0)
   {
@@ -739,8 +758,6 @@ void Problem::Euler_TimeDiscretize()
 #if defined(USE_MPI)  
   }
 #endif 
-    //
-    //
     if(CouplingLoop())
     {
 #if defined(USE_MPI)  
@@ -760,6 +777,45 @@ void Problem::Euler_TimeDiscretize()
 #endif
       //
       accepted_times++; 
+#ifdef MFC
+ /*START: Update Visualization for OpenGL and other MFC view e.g. Diagram*/ 
+ CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+ CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+ CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+ CGeoSysOUTProfileView *pView = (CGeoSysOUTProfileView *) pChild->GetActiveView();
+ POSITION pos = m_pDoc->GetFirstViewPosition();
+  while(pos!=NULL) {
+    CView* pView = m_pDoc->GetNextView(pos);
+    pView->UpdateWindow();
+  }
+ CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+ CRFProcess* m_pcs = NULL;
+ if(pcs_vector.size()==0)
+ return;
+ m_pcs = PCSGet((string)mainframe->m_pcs_name);
+ if(!m_pcs)
+ {
+   m_pcs = pcs_vector[0];
+   //OK AfxMessageBox("Problem::Euler_TimeDiscretize() - no PCS data");
+   //OK return;
+ }
+ double value, m_pcs_min_r, m_pcs_max_r;
+ m_pcs_min_r = 1.e+19;
+ m_pcs_max_r = -1.e+19;
+ int nidx = m_pcs->GetNodeValueIndex((string)mainframe->m_variable_name);
+ for(long j=0;j<(long)m_pcs->nod_val_vector.size();j++)
+ {
+ value = m_pcs->GetNodeValue(j,nidx);
+ if(value<m_pcs_min_r) m_pcs_min_r = value;
+ if(value>m_pcs_max_r) m_pcs_max_r = value;
+ }  
+ mainframe->m_pcs_min = m_pcs_min_r;
+ mainframe->m_pcs_max = m_pcs_max_r;
+ mainframe->m_something_changed = 1;
+ m_pDoc->SetModifiedFlag(1);
+ m_pDoc->UpdateAllViews(NULL,0L,NULL);
+ /*END: Update Visualization for OpenGL and other MFC view e.g. Diagram*/ 
+#endif       
     }
     else
     { 
@@ -792,8 +848,9 @@ void Problem::Euler_TimeDiscretize()
   cout<<"|Acccept step times |"<<accepted_times;
   cout<<"  |Reject step times |"<<rejected_times<<endl;
   cout<<"----------------------------------------------------\n";
-  //                     
+  //           
 }
+
 /*-----------------------------------------------------------------------
 GeoSys - Function: Coupling loop
 Task: 
@@ -966,7 +1023,8 @@ inline double Problem::LiquidFlow()
   double error = 0.;
   CRFProcess *m_pcs = total_processes[0];
   if(!m_pcs->selected) return error; 
-  error = m_pcs->Execute();
+//  error = m_pcs->Execute();
+  error = m_pcs->ExecuteNonLinear();
 #ifdef RESET_4410
   PCSCalcSecondaryVariables(); // PCS member function
 #endif
@@ -1195,10 +1253,11 @@ inline double Problem::HeatTransport()
   CRFProcess *m_pcs = total_processes[8];
   if(!m_pcs->selected) return error; //12.12.2008 WW
 
-  if(m_pcs->non_linear)
-    error = m_pcs->ExecuteNonLinear();
-  else
-    error = m_pcs->Execute();
+  error = m_pcs->ExecuteNonLinear();
+  //if(m_pcs->non_linear)
+  //  error = m_pcs->ExecuteNonLinear();
+  //else
+  //  error = m_pcs->Execute();
   return error;
 }
 /*-------------------------------------------------------------------------
@@ -1974,7 +2033,38 @@ void Problem::PCSCalcSecondaryVariables()
  } // while
 }
 
+/**************************************************************************
+FEMLib-Method: 
+05/2009 OK Implementation
+**************************************************************************/
+bool Problem::Check()
+{
+  CRFProcess* m_pcs = NULL;
+  for(int i=0;i<(int)total_processes.size();i++)
+  {
+    m_pcs = total_processes[i];
+    if(!m_pcs->Check())
+      return false;
+  }
+  return true;
+}
 
-
+/**************************************************************************
+FEMLib-Method: 
+06/2009 OK Implementation
+**************************************************************************/
+bool MODCreate()
+{
+  PCSConfig(); //OK
+  if(!PCSCheck()) //OK
+  {
+    cout << "Not enough data for MOD creation.\n";
+    return false;
+  }
+  else
+  {
+    return true;
+  }
+}
 
 #endif //PROBLEM_CLASS

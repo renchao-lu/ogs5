@@ -2495,18 +2495,21 @@ if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
     if(!m_pcs)
     {
       AfxMessageBox("DrawIso - no PCS data");
+      StabilizeOpenGL4Return();
       return;
     }
     m_msh = m_pcs->m_msh;
     if(!m_msh)
     {
       AfxMessageBox("no MSH data");
+      StabilizeOpenGL4Return();
       return;
     }
     int nidx = m_pcs->GetNodeValueIndex((string)m_frame->m_variable_name);
     if(nidx<0)
     {
       AfxMessageBox("no VAL data");
+      StabilizeOpenGL4Return();
       return;
     }
     if(boundingbox == 1)
@@ -3399,18 +3402,21 @@ if(m_3dcontrol_pcs == 1 && m_frame->Iso_If_SwitchOff_ContourPlot == false)
     if(!m_pcs)
     {
       AfxMessageBox("DrawIso - no PCS data");
+      StabilizeOpenGL4Return();
       return;
     }
     m_msh = m_pcs->m_msh;
     if(!m_msh)
     {
       AfxMessageBox("no MSH data");
+      StabilizeOpenGL4Return();
       return;
     }
     int nidx = m_pcs->GetNodeValueIndex((string)m_frame->m_variable_name);
     if(nidx<0)
     {
       AfxMessageBox("no VAL data");
+      StabilizeOpenGL4Return();
       return;
     }
     if (boundingbox == 1)
@@ -6783,4 +6789,31 @@ void COGLView::OnEnvironmentCharactercolor()
     this->m_RGB_Character[2] = b;
 
     Invalidate(TRUE);
+}
+/**************************************************************************
+GUILib-Method: Before the return out of drawing call this
+
+e.g.
+    if(!m_pcs)
+    {
+      AfxMessageBox("DrawIso - no PCS data");
+      StabilizeOpenGL4Return();
+      return;
+    }
+05/2009 TK Implementation
+**************************************************************************/
+void COGLView::StabilizeOpenGL4Return()
+{
+  Arrange_and_Display();
+  GetMSHMinMax();
+  GetMidPoint();
+  trackball.DrawBall();
+  trackball.DrawBall();
+  glPopMatrix();
+  glPushAttrib(GL_ENABLE_BIT);
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_LIGHTING);
+  DrawStockDispLists();
+  glPopAttrib();
+  glPopMatrix();
 }

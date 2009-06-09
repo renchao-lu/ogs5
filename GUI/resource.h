@@ -2,7 +2,7 @@
 // Microsoft Visual C++ generated include file.
 // Used by GeoSys.rc
 //
-#define IDC_BUTTON_PCS_READ             2
+#define IDC_BUTTON_PCS_READ             101
 #define IDC_BUTTON_READ                 2
 #define ID_BUTTON_MAT_FP_CALC           3
 #define IDCANCEL2                       3
@@ -217,6 +217,7 @@
 #define IDC_BUTTON_UNSELECT             1042
 #define IDC_BUTTON_ST_ADD               1042
 #define IDC_CHECK_DISPLAY_MSH_LINE      1042
+#define IDC_BUTTON_MFP_CLOSE            1042
 #define IDC_RADIO_ST_GEO_TYPE1          1043
 #define IDC_CHECK_DISPLAY_MSH_TRI       1043
 #define IDC_EDIT_ST_VALUE               1044
@@ -235,6 +236,7 @@
 #define IDC_BUTTON_FCT_WRITE            1046
 #define IDC_BUTTON9                     1046
 #define IDC_BUTTON_NUM                  1046
+#define IDC_                            1046
 #define IDC_CHECK_DISPLAY_MSH_TET       1047
 #define IDC_BUTTON3                     1047
 #define IDC_BUTTON_WRITE_MP2            1047
@@ -685,6 +687,8 @@
 #define IDC_RADIO_BC_TYPE4              1211
 #define IDC_LIST_VAL_ELE                1211
 #define IDC_CREATE_ELLIPSE2D            1211
+#define IDC_EDIT_TIME_END2              1211
+#define IDC_EDIT_TIME_STEP              1211
 #define IDC_RADIO_BC_TYPE3              1212
 #define IDC_RADIO_TIM_TYPE1             1212
 #define IDC_MSHNODES_ALONG_POLYLINE     1212
@@ -852,6 +856,7 @@
 #define IDC_ISOLINE_ISOSURFACE_BUTTON   1240
 #define IDC_BUTTON_CREATE_VOL3          1240
 #define IDC_BUTTON_CREATE_IC            1240
+#define IDC_BUTTON_BC_CLOSE             1240
 #define IDC_LIST_BC                     1241
 #define IDC_BUTTON_BC_WRITE             1241
 #define IDC_GEO_NUMBER                  1241
@@ -975,6 +980,8 @@
 #define IDC_EDIT_NEWTB                  1268
 #define IDC_PETREL_EDIT_                1268
 #define IDC_GHDB_Connect                1269
+#define IDC_RADIO4                      1269
+#define IDC_RADIO5                      1270
 #define IDC_LIST2                       1275
 #define IDC_EDIT_TS_1                   1301
 #define IDC_EDIT_TS_2                   1302
@@ -1365,7 +1372,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        178
 #define _APS_NEXT_COMMAND_VALUE         33097
-#define _APS_NEXT_CONTROL_VALUE         1269
+#define _APS_NEXT_CONTROL_VALUE         1271
 #define _APS_NEXT_SYMED_VALUE           104
 #endif
 #endif

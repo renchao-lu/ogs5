@@ -40,6 +40,7 @@ extern string GetLineFromFile1(ifstream*);
 #include "rfmat_cp.h"
 #include "msh_elements_rfi.h"
 extern bool RFDOpen(string file_name_base);
+#include "problem.h"
 
 //==========================================================================
 vector<CGSProject*>gsp_vector;
@@ -547,5 +548,38 @@ bool GSPSimulatorReady()
     if(!GSPGetMember("mcp"))
       return false;
   }
+  //......................................................................
+  return true;
+}
+
+
+/**************************************************************************
+GeoSys-Method: 
+06/2009 OK Implementation
+**************************************************************************/
+bool GSPReadData(string gsp_member_path_base)
+{
+  //----------------------------------------------------------------------
+  GEOLIB_Read_GeoLib(gsp_member_path_base);
+  //......................................................................
+  FEMRead(gsp_member_path_base);
+  //......................................................................
+  PCSRead(gsp_member_path_base);
+  TIMRead(gsp_member_path_base);
+  OUTRead(gsp_member_path_base);
+  NUMRead(gsp_member_path_base);
+  //......................................................................
+  ICRead(gsp_member_path_base);
+  BCRead(gsp_member_path_base);
+  STRead(gsp_member_path_base);
+  //......................................................................
+  MFPRead(gsp_member_path_base);
+  MSPRead(gsp_member_path_base);
+  MMPRead(gsp_member_path_base);
+  CPRead(gsp_member_path_base);
+  //......................................................................
+  RFDOpen(gsp_member_path_base);
+  FCTRead(gsp_member_path_base);
+  //----------------------------------------------------------------------
   return true;
 }

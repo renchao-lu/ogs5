@@ -109,6 +109,7 @@ public:
     afx_msg void OnBnClickedButtonWriteTEC();
     afx_msg void OnCbnSelchangeComboPVName();
     void FillTable();
+    afx_msg void OnBnClickedButtonBcRead();
 };
 
 //{{AFX_INSERT_LOCATION}}

@@ -7575,6 +7575,7 @@ bool MMPExist(ifstream *mmp_file)
 /**************************************************************************
 FEMLib-Method:
 08/2007 OK Implementation
+06/2009 OK Bug fix
 **************************************************************************/
 bool MMPExist()
 {
@@ -7582,6 +7583,8 @@ bool MMPExist()
   {
     for(int j=0;j<(int)mmp_vector.size();j++)
     {
+      if(i==j)
+        continue;
       if(mmp_vector[i]->name.compare(mmp_vector[j]->name)==0)
       {
         return true;

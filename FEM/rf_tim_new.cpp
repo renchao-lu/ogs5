@@ -290,50 +290,48 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
         }
   	    if(time_control_name=="SELF_ADAPTIVE"){
           //m_pcs->adaption = true; JOD removed
-		  
 		  //WW minish = 10;
           while((!new_keyword)||(!new_subkeyword)||(!tim_file->eof())){
-          position = tim_file->tellg();
-          line_string = GetLineFromFile1(tim_file);
-          if(line_string.find("#")!=string::npos){
-            return position;
-          }
-          if(line_string.find("$")!=string::npos){
-            new_subkeyword = true;
-            break;
-          }
-          if(line_string.find("MAX_TIME_STEP")!=string::npos){
-          *tim_file >> line_string;
-          max_time_step = strtod(line_string.data(),NULL);
-          line.clear();
-            break;
-		  }
-          if(line_string.find("MIN_TIME_STEP")!=string::npos){
-          *tim_file >> line_string;
-          min_time_step = strtod(line_string.data(),NULL);
-          line.clear();
-            break;
-		  }
-          /*  //WW
-		  if(line_string.find("MINISH")!=string::npos){
-          *tim_file >> line_string;
-          minish = strtod(line_string.data(),NULL);
-          line.clear();
-		  }
-          */ 
-    	  if(line_string.find("M")==string::npos){
-          line.str(line_string);
-          line >> iter_times;
-          line >> multiply_coef;
-          
-		  time_adapt_tim_vector.push_back(iter_times);
-          time_adapt_coe_vector.push_back(multiply_coef);
-          line.clear();
-        }
+            position = tim_file->tellg();
+            line_string = GetLineFromFile1(tim_file);
+            if(line_string.find("#")!=string::npos){
+              return position;
+            }
+            if(line_string.find("$")!=string::npos){
+              new_subkeyword = true;
+              break;
+            }
+            if(line_string.find("MAX_TIME_STEP")!=string::npos){
+              *tim_file >> line_string;
+              max_time_step = strtod(line_string.data(),NULL);
+              line.clear();
+              break;
+		    }
+            if(line_string.find("MIN_TIME_STEP")!=string::npos){
+              *tim_file >> line_string;
+              min_time_step = strtod(line_string.data(),NULL);
+              line.clear();
+              break;
+            }
+            /*  //WW
+            if(line_string.find("MINISH")!=string::npos){
+            *tim_file >> line_string;
+            minish = strtod(line_string.data(),NULL);
+            line.clear();
+		    }
+            */ 
+            if(line_string.find("M")==string::npos){
+              line.str(line_string);
+              line >> iter_times;
+              line >> multiply_coef;
+		      time_adapt_tim_vector.push_back(iter_times);
+              time_adapt_coe_vector.push_back(multiply_coef);
+              line.clear();
+            }
           } // end of while loop adaptive
-        }// end of if "SELF_ADAPTIVE"
-      }// end of while
-    }// end of "TIME_CONTROL"
+        } // end of if "SELF_ADAPTIVE"
+      } // end of while
+    } // end of "TIME_CONTROL"
     //....................................................................
     /* //WW
 	if(line_string.find("$SUBSTEPS")!=string::npos) { // subkeyword found JOD 4.7.10
@@ -404,12 +402,15 @@ bool TIMRead(string file_base_name)
 /**************************************************************************
 FEMLib-Method: 
 Task: master write function
-Programing:
 01/2005 OK Implementation
-last modification:
+06/2009 OK Write only existing data
 **************************************************************************/
 void TIMWrite(string base_file_name)
 {
+  //----------------------------------------------------------------------
+  if((int)time_vector.size()<1)
+    return;
+  //----------------------------------------------------------------------
   CTimeDiscretization *m_tim = NULL;
   string sub_line;
   string line_string;
@@ -422,12 +423,9 @@ void TIMWrite(string base_file_name)
   if (!tim_file.good()) return;
   tim_file.seekg(0L,ios::beg);
   //========================================================================
-  tim_file << "GeoSys-TIM: ------------------------------------------------\n";
-  //========================================================================
   // OUT vector
-  int tim_vector_size =(int)time_vector.size();
-  int i;
-  for(i=0;i<tim_vector_size;i++){
+  tim_file << "GeoSys-TIM: ------------------------------------------------\n";
+  for(int i=0;i<(int)time_vector.size();i++){
     m_tim = time_vector[i];
     m_tim->Write(&tim_file);
   }
@@ -436,10 +434,8 @@ void TIMWrite(string base_file_name)
 }
 /**************************************************************************
 FEMLib-Method: 
-Task: write function
-Programing:
 01/2004 OK Implementation
-last modification:
+05/2009 OK $TIME_CONTROL
 **************************************************************************/
 void CTimeDiscretization::Write(fstream*tim_file)
 {
@@ -458,9 +454,46 @@ void CTimeDiscretization::Write(fstream*tim_file)
   *tim_file  << " $TIME_END" << endl;
   *tim_file  << "  " << time_end << endl;
   //--------------------------------------------------------------------
-  *tim_file  << " $TIME_STEPS" << endl;
-  for(i=0;i<(int)time_step_vector.size();i++){
-    *tim_file  << "  " << 1 << " " << time_step_vector[i] << endl;
+  if(time_control_name.size()==0)
+  {
+    *tim_file  << " $TIME_STEPS" << endl;
+    for(i=0;i<(int)time_step_vector.size();i++)
+    {
+      *tim_file  << "  " << 1 << " " << time_step_vector[i] << endl;
+    }
+  }
+  //--------------------------------------------------------------------
+  if(time_control_name.size()>0)
+  {
+    *tim_file  << " $TIME_CONTROL" << endl;
+    if(time_control_name=="COURANT_MANIPULATE")
+    {
+      *tim_file  << "  " << time_control_name << endl;
+      *tim_file  << "   " << time_control_manipulate << endl;
+    }
+    if(time_control_name=="PI_AUTO_STEP_SIZE")
+    {
+      *tim_file  << "  " << time_control_name << endl;
+      *tim_file  << "   " << tsize_ctrl_type << " " << relative_error << " " << absolute_error << " " << this_stepsize << endl;
+    }
+    if(time_control_name=="STEP_SIZE_RESTRICTION")
+    {
+      *tim_file  << "  " << time_control_name << endl;
+      *tim_file  << "   " << h_min << " " << h_max << endl;
+    }
+    if(time_control_name=="NEUMANN")
+    {
+      *tim_file  << "  " << time_control_name << endl;
+    }
+    if(time_control_name=="ERROR_CONTROL_ADAPTIVE")
+    {
+      *tim_file  << "  " << time_control_name << endl;
+    }
+    if(time_control_name=="SELF_ADAPTIVE")
+    {
+      *tim_file  << "  MAX_TIME_STEP " << max_time_step << endl;
+      *tim_file  << "  MIM_TIME_STEP " << min_time_step << endl;
+    }
   }
   //--------------------------------------------------------------------
 }

@@ -28,7 +28,7 @@ public:
     CTimeDiscretization* m_obj;
     afx_msg void OnCbnSelchangeComboPCSType();
     CListBox m_LB_TIM;
-    BOOL m_iTIMType;
+    int m_iTIMType;
     CString m_strPCSTypeName;
     int m_iNT;
     double m_dDT;
@@ -44,4 +44,6 @@ public:
     CComboBox m_CB_TIM_UNIT;
     CString m_strTIMUnitName;
     afx_msg void OnCbnSelchangeComboTimUnit();
+    int m_iTIMStepScheme;
+    double m_dTIMStep;
 };

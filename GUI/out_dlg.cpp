@@ -30,8 +30,8 @@ CDialogOUT::CDialogOUT(CWnd* pParent /*=NULL*/)
 {
   m_dTIMSteps = 1.0;
   m_iTIMType = 0;
-  m_iDATType = 0;
-  m_strDATType = "TECPLOT";
+  m_iDATType = 2;
+  m_strDATType = "VTK";
 }
 
 CDialogOUT::~CDialogOUT()
@@ -52,7 +52,7 @@ void CDialogOUT::DoDataExchange(CDataExchange* pDX)
     DDX_Text(pDX, IDC_EDIT_TIM_VALUE, m_dTIMSteps);
     DDX_Control(pDX, IDC_LIST_VAL, m_LB_VAL_NOD);
     DDX_Control(pDX, IDC_LIST_VAL_ELE, m_LB_VAL_ELE);
-//    DDX_Radio(pDX, IDC_RADIO_DAT_TYPE1, m_iDATType);
+    DDX_Radio(pDX, IDC_RADIO_DAT_TYPE1, m_iDATType);
 }
 
 BEGIN_MESSAGE_MAP(CDialogOUT, CDialog)
@@ -160,6 +160,8 @@ BOOL CDialogOUT::OnInitDialog()
   m_strGEOType = "DOMAIN";
   m_CB_GEOType.AddString(m_strGEOType);
   m_CB_GEOType.SetCurSel(4);
+  //---------------------------------------------------------------------------
+  // DAT types
   //======================================================================
   // Table
   CRect rect;
@@ -339,8 +341,8 @@ Programing:
 **************************************************************************/
 void CDialogOUT::OnLbnSelchangeListValELE()
 {
-  m_CB_ELEType.GetLBText(m_CB_ELEType.GetCurSel(),m_strELEName);
-  m_LB_VAL_ELE.AddString(m_strELEName);
+  //OK m_CB_ELEType.GetLBText(m_CB_ELEType.GetCurSel(),m_strELEName);
+  //OK m_LB_VAL_ELE.AddString(m_strELEName);
 }
 
 /**************************************************************************
@@ -663,8 +665,8 @@ Programing:
 void CDialogOUT::OnLbnSelchangeListVAL()
 {
   m_LB_VAL_NOD.GetText(m_LB_VAL_NOD.GetCurSel(),m_strNODName);
-  m_LC.SetItemText(nSelRow,1,m_strNODName); //ToDo
-  m_obj->nod_value_name = m_strNODName;
+  //OK m_LC.SetItemText(nSelRow,1,m_strNODName); //ToDo
+  //OK m_obj->nod_value_name = m_strNODName;
 }
 
 /**************************************************************************

@@ -24,15 +24,18 @@ class CTimeDiscretization
     double dt_sum; // 17.09.2007 WW
     // For PI time step control. Aug-Nov.2008. by WW
     //Begin of data section for PI Time control ------------------------ 
+  public: //OK
     double this_stepsize; 
     double relative_error; 
     double absolute_error; 
+  private:
     double h_min; 
     double h_max; 
     double hacc; 
     double erracc; 
+  public: //OK
     int tsize_ctrl_type; 
-    //
+  private:
     vector<double> critical_time;  
     //End of data section for PI Time control ------------------------ 
     friend bool IsSynCron(); //WW

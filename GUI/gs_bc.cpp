@@ -65,6 +65,8 @@ BEGIN_MESSAGE_MAP(CBoundaryConditions, CDialog)
     ON_BN_CLICKED(IDC_BUTTON_BC_WRITE, OnBnClickedButtonWrite)
     ON_BN_CLICKED(IDC_BUTTON_WRITE_TEC, OnBnClickedButtonWriteTEC)
     ON_CBN_SELCHANGE(IDC_COMBO_PCS_PV_NAME, OnCbnSelchangeComboPVName)
+    ON_BN_CLICKED(IDC_BUTTON_BC_READ, &CBoundaryConditions::OnBnClickedButtonBcRead)
+    ON_BN_CLICKED(IDC_BUTTON_BC_CLOSE, &CBoundaryConditions::OnOK)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -582,12 +584,18 @@ void CBoundaryConditions::OnOK()
   CDialog::OnOK();
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// Table
-// untill 4.1.01
-
-////////////////////////////////////////////////////////////////////////////
-// Remove
-
-
-
+/**************************************************************************
+GUILib-Method:
+05/2005 OK Implementation
+06/2009 OK Update
+**************************************************************************/
+void CBoundaryConditions::OnBnClickedButtonBcRead()
+{
+  CGSProject* m_gsp = GSPGetMember("pcs");
+  if(m_gsp)
+  {
+    BCDelete(); 
+    BCRead(m_gsp->path+m_gsp->base);
+    OnInitDialog();
+  }
+}

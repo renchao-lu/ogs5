@@ -37,6 +37,7 @@ using namespace std;
 #ifdef CHEMAPP
   #include "./EQL/eqlink.h"
 #endif
+#include "vtk.h"
 // MPI Parallel
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 #include "par_ddc.h"
@@ -480,6 +481,7 @@ Programing:
 12/2005 OK DIS_TYPE
 12/2005 OK MSH_TYPE
 12/2008 NW DAT_TYPE
+05/2009 OK bug fix STEPS
 **************************************************************************/
 void COutput::Write(fstream* out_file)
 {
@@ -516,12 +518,17 @@ void COutput::Write(fstream* out_file)
   //--------------------------------------------------------------------
   // TIM_TYPE
   *out_file << " $TIM_TYPE" << endl;
-  for(i=0;i<(int)time_vector.size();i++){
-    *out_file << "  ";
-    *out_file << time_vector[i] << endl;
+  if(tim_type_name=="STEPS")
+  {
+    *out_file << "  " << tim_type_name << " " << nSteps << endl;
   }
-  if((int)time_vector.size()==0)
-    *out_file << "  STEPS 1" << endl;
+  else
+  {
+    for(i=0;i<(int)time_vector.size();i++){
+      *out_file << "  ";
+      *out_file << time_vector[i] << endl;
+    }
+  }
   //--------------------------------------------------------------------
   // DIS_TYPE
   if(dis_type_name.size()>0){
@@ -797,6 +804,68 @@ void OUTData(double time_current, const int time_step_number)
       }
     }
     //--------------------------------------------------------------------
+    // PVD (ParaView)
+    else if(m_out->dat_type_name.compare("PVD")==0){
+      switch(m_out->geo_type_name[2]){
+        case 'M': // domain data
+          static vector<VTK_Info> vec_dataset;
+          static CVTK vtk;
+          static string pvd_file_name;
+          static string pvd_vtk_file_name_base;
+          if (time_step_number == 0) {
+            //PVD
+            vec_dataset.clear();
+            pvd_file_name = m_out->file_base_name;
+            if(m_out->pcs_type_name.size()>0) // PCS
+              pvd_file_name += "_" + m_out->pcs_type_name;
+            pvd_file_name += ".pvd";
+            //VTK
+            int ibs = (int)m_out->file_base_name.find_last_of("\\");
+            int is = (int)m_out->file_base_name.find_last_of("/");
+            if (ibs != string::npos  || is != string::npos) {
+              int ibegin = ibs; if (is > ibs) ibegin = is;
+              ibegin+=1;
+              pvd_vtk_file_name_base = m_out->file_base_name.substr(ibegin);
+            } else {
+              pvd_vtk_file_name_base = m_out->file_base_name;
+            }
+            if(m_out->pcs_type_name.size()>0) // PCS
+              pvd_vtk_file_name_base += "_" + m_out->pcs_type_name;
+          }
+          string vtk_file_name = m_out->file_base_name;
+          if(m_out->pcs_type_name.size()>0) // PCS
+            vtk_file_name += "_" + m_out->pcs_type_name;
+          string pvd_vtk_file_name = pvd_vtk_file_name_base;
+          stringstream stm;
+          stm << time_step_number;
+          vtk_file_name += stm.str() + ".vtu";
+          pvd_vtk_file_name += stm.str() + ".vtu";
+          if(OutputBySteps)
+		  {
+		    OutputBySteps = false;
+            vtk.WriteXMLUnstructuredGrid(vtk_file_name, m_out, time_step_number);
+		  }
+		  else
+		  {
+            for(j=0;j<no_times;j++){
+              if(time_current>=m_out->time_vector[j]){
+                vtk.WriteXMLUnstructuredGrid(vtk_file_name, m_out, time_step_number);
+                m_out->time_vector.erase(m_out->time_vector.begin()+j);
+		        break;
+              }
+		    }
+          }
+
+          VTK_Info dat;
+          vec_dataset.push_back(dat);
+          vec_dataset.back().timestep = m_out->time;
+          vec_dataset.back().vtk_file = pvd_vtk_file_name;
+          vtk.UpdatePVD(pvd_file_name, vec_dataset);
+
+          break;
+
+      }
+    }
     // ROCKFLOW    
     else if(m_out->dat_type_name.compare("ROCKFLOW")==0){
       switch(m_out->geo_type_name[2]){

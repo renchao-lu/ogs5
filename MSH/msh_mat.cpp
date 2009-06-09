@@ -26,7 +26,6 @@ using namespace std;
 #include "elements.h"
 #include "nodes.h"
 
-
 /**************************************************************************
 GeoSysGUI-Function: MSHAssignMATGroup2Elements
 Programing:
@@ -520,6 +519,7 @@ void MSHAssignMATGroup2Elements(string msh_name)
 /**************************************************************************
 MSHLib-Method: 
 01/2006 OK Implementation 
+06/2009 OK Bug fix
 **************************************************************************/
 int MSHSetMaxMMPGroups()
 {
@@ -535,7 +535,7 @@ int MSHSetMaxMMPGroups()
     msh_max_mmp_groups = 0;
     for(j=0;j<(long)m_msh->ele_vector.size();j++)
     {
-      if(m_msh->ele_vector[j]->GetPatchIndex()>msh_max_mmp_groups)
+      if((m_msh->ele_vector[j]->GetPatchIndex()+1) > msh_max_mmp_groups) //OK
         msh_max_mmp_groups++;
     }
     m_msh->max_mmp_groups = msh_max_mmp_groups;
@@ -557,12 +557,11 @@ MSHLib-Method:
 **************************************************************************/
 bool MSHTestMATGroups()
 {
-  int g_max_mmp_groups;
-  g_max_mmp_groups = MSHSetMaxMMPGroups();
+  int g_max_mmp_groups = MSHSetMaxMMPGroups();
   if(g_max_mmp_groups>(int)mmp_vector.size()){
     cout << "Error: not enough MMP data";
 #ifdef MFC
-    AfxMessageBox( "Fatal error: not enough MMP data");
+    AfxMessageBox( "Error: not enough MMP data");
 #endif
     return false; //abort();
   }

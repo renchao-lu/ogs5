@@ -735,6 +735,7 @@ void InterpolationAlongPolyline(CGLPolyline *plyL,
        xp = CGPb->x-CGPa->x;
 	   yp = CGPb->y-CGPa->y;
 	   zp = CGPb->z-CGPa->z;
+       //NW: why checking zero value? Zero could also be used for BC/ST.
        if(fabs(plyL->point_vector[i]->propert)> MKleinsteZahlen)
        {
           bVal.push_back(plyL->point_vector[i]->propert);
@@ -749,6 +750,14 @@ void InterpolationAlongPolyline(CGLPolyline *plyL,
        ss0.push_back(sl);
        bVal.push_back(plyL->point_vector[SizeCGLPoint-1]->propert);
    }
+
+  if (ss0.size() == 0) {
+    cout << "Error in CGLPolyline::InterpolationAlongPolyline: no PNT data found for Spline interpolation" <<  endl;
+#ifdef MFC
+    AfxMessageBox("Error! No point data found for interpolation along a polyline. Please check IC/BC/ST files.");
+#endif
+    return;
+  }
 
    // Spline interpolation
    CubicSpline *csp = new CubicSpline(ss0, bVal);

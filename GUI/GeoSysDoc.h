@@ -90,6 +90,7 @@ protected:
     CString m_strFileNameRFE;
     void WriteRFD(char *);
 
+public: //OK
 #ifdef PROBLEM_CLASS //16.12.2008. WW
     Problem *problem_win;
 #endif

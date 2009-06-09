@@ -164,49 +164,6 @@ using Math_Group::vec;
 #define noCHECK_EQS
 #define noCHECK_ST_GROUP
 #define noCHECK_BC_GROUP
-//----------------------------------------------------------
-
-/*************************************************************************
-PCS2 - File structure
-// Construction/destruction
-CRFProcess::CRFProcess(void)
-CRFProcess::~CRFProcess(void)
-void CRFProcess::Create()
-void PCSDestroyAllProcesses(void)
-void PCSRead(string file_base_name)
-ios::pos_type CRFProcess::Read(ifstream *pcs_file)
-// Access to PCS
-CRFProcess *CRFProcess::Get(string name)
-CRFProcess *CRFProcess::GetProcessByFunctionName(char *name)
-CRFProcess *CRFProcess::GetProcessByNumber(int number)
-// Configuration 1 - NOD
-void CRFProcess::Config(void)
-void CRFProcess::ConfigNODValues(void)
-void CRFProcess::CreateNODValues(void)
-// Configuration 2 - ELE
-void CRFProcess::ConfigELEValues(void)
-void CRFProcess::CreateELEValues(void)
-void CRFProcess::CreateELEGPValues(void)
-// Configuration 3 - ELE matrices
-void CRFProcess::CreateELEMatricesPointer(void)
-??? void PCSConfigELEMatricesXXX(int pcs_type_number)
-// Execution
-double CRFProcess::Execute()
-void CRFProcess::InitEQS()
-void CRFProcess::CalculateElementMatrices(void) 
-void CRFProcess::DomainDecomposition()
-void CRFProcess::AssembleSystemMatrixNew(void) 
-void CRFProcess::IncorporateBoundaryConditions(const double Scaling)
-void CRFProcess::IncorporateSourceTerms(const double Scaling)
-int CRFProcess::ExecuteLinearSolver(void)
-// Specials
-void PCSRestart()
-void RelocateDeformationProcess(CRFProcess *m_pcs)
-void CRFProcess::CreateFDMProcess()
-void CRFProcess::PCSMoveNOD(void) 
-string PCSProblemType()
-// ReMove site
-*************************************************************************/
 
 //////////////////////////////////////////////////////////////////////////
 // PCS vector
@@ -501,14 +458,11 @@ PCSLib-Method:
 01/2006 YD MMP for each PCS
 04/2006 WW Unique linear solver for all processes if they share the same mesh
 06/2006 WW Rearrange incorporation of BC and ST. Set BC and ST for domain decomposition  
-last modified:
-CREATE
 **************************************************************************/
 void CRFProcess::Create()
 {
   int i=0;
-  //WW  int phase;
-  CRFProcess *m_pcs = NULL; //
+  CRFProcess *m_pcs = NULL;
   //----------------------------------------------------------------------
   // Element matrix output. WW
   if(Write_Matrix)
@@ -534,7 +488,7 @@ void CRFProcess::Create()
   //----------------------------------------------------------------------------
   int DOF = GetPrimaryVNumber(); //OK should be PCS member variable
   //----------------------------------------------------------------------------
-  // MMP - create mmp groups for each process   //YD
+  // MMP - create mmp groups for each process //YD
   cout << "->Create MMP" << '\n';
   CMediumPropertiesGroup *m_mmp_group = NULL;
   int continua = 1; //WW
@@ -833,6 +787,7 @@ void CRFProcess::Create()
 #endif
      
 }
+
 /**************************************************************************
 FEMLib-Method:
 Task: Write the contribution of ST or Neumann BC to RHS to a file after
@@ -1172,6 +1127,7 @@ void PCSDestroyAllProcesses(void)
   long i;
   int j;
   //----------------------------------------------------------------------
+  // SOLver
 #ifdef NEW_EQS //WW
  #if defined(USE_MPI)
   for(j=0;j<(int)EQS_Vector.size();j+=2) //WW
@@ -1186,7 +1142,7 @@ void PCSDestroyAllProcesses(void)
  #endif
   }
 #else
-  // SOLver
+  // SOLDelete()
   LINEAR_SOLVER *eqs;
   for(j=0;j<(int)PCS_Solver.size();j++)
   {
@@ -1202,6 +1158,7 @@ void PCSDestroyAllProcesses(void)
         (int*) Free(eqs->unknown_update_methods); 
      eqs = DestroyLinearSolver(eqs);
   }
+  PCS_Solver.clear(); //WW
 #endif
   //----------------------------------------------------------------------
   // PCS
@@ -1211,7 +1168,6 @@ void PCSDestroyAllProcesses(void)
     //  if(myrank==0)
       m_process->Print_CPU_time_byAssembly();
 #endif
-
     if(m_process->pcs_nval_data)
       m_process->pcs_nval_data = (PCS_NVAL_DATA *) Free(m_process->pcs_nval_data);
     if(m_process->pcs_eval_data)
@@ -1248,8 +1204,6 @@ void PCSDestroyAllProcesses(void)
     dom_vector[i] = NULL; 
   }
   dom_vector.clear();
-  
-  
   //----------------------------------------------------------------------
   // ELE
   for(i=0;i<(long)ele_val_vector.size();i++)
@@ -1264,8 +1218,14 @@ void PCSDestroyAllProcesses(void)
   MSPDelete(); //WW
   BCDelete();  //WW
   STDelete();  //WW
-  //----------------------------------------------------------------------
-
+  //......................................................................
+  TIMDelete(); //OK
+  OUTDelete();
+  NUMDelete();
+  MFPDelete();
+  MSPDelete();
+  MMPDelete();
+  MCPDelete();
   //----------------------------------------------------------------------
 }
 
@@ -1615,28 +1575,25 @@ ios::pos_type CRFProcess::Read(ifstream *pcs_file)
 
 /**************************************************************************
 FEMLib-Method:
-Task:
-Programing:
 01/2004 OK Implementation
 08/2004 WW Read the deformation process
            Check the comment key '//' in .pcs
-last modified:
+06/2009 OK Write only if existing
 **************************************************************************/
 void PCSWrite(string file_base_name)
 {
+  if((int)pcs_vector.size()<1)
+    return;
   //----------------------------------------------------------------------
   // File handling
   string pcs_file_name = file_base_name + PCS_FILE_EXTENSION;
   fstream pcs_file (pcs_file_name.data(),ios::trunc|ios::out);
-  // rewind the file
   pcs_file.clear();
   //----------------------------------------------------------------------
   // PCS loop
   cout << "PCSWrite" << endl;
-  int no_processes = (int)pcs_vector.size();
   CRFProcess* m_pcs = NULL;
-  int i;
-  for(i=0;i<no_processes;i++){
+  for(int i=0;i<(int)pcs_vector.size();i++){
     m_pcs = pcs_vector[i];
     pcs_file << "#PROCESS" << endl;
     m_pcs->Write(&pcs_file);
@@ -1788,7 +1745,10 @@ void CRFProcess::Config(void)
   // Set mesh pointer to corresponding mesh
   m_msh = FEMGet(pcs_type_name);
   if(!m_msh)
+  {
     cout << "Error in CRFProcess::Config - no MSH data" << endl;
+    return;
+  }
   CheckMarkedElement();	 //WW
   //......................................................................
   if((int)continuum_vector.size()== 0)  // YD
@@ -3603,41 +3563,24 @@ double CRFProcess::Execute()
     eqs_new->ConfigNumerics(m_num);
   eqs_new->Initialize(); 
  #endif
-
 #else
   // System matrix
   SetLinearSolverType(eqs, m_num); //WW
   SetZeroLinearSolver(eqs);
 #endif
-  //
-
-
-
-  /*
-
-
-    
-    //TEST_MPI
+/*
+ //TEST_MPI
  string test = "rank";
  char stro[1028];  
  sprintf(stro, "%d",myrank);
  string test1 = test+(string)stro+"Assemble.txt";
-    ofstream Dum(test1.c_str(), ios::out); // WW
-    dom->eqs->Write(Dum);   Dum.close();
-    MPI_Finalize();
-    exit(0);
-
-
-  */
-
-
-
-
-
-
-
+ ofstream Dum(test1.c_str(), ios::out); // WW
+ dom->eqs->Write(Dum);   Dum.close();
+ MPI_Finalize();
+ exit(0);
+*/
+  //----------------------------------------------------------------------
   // Solution vector
-  //......................................................................
   relax = 0.0;
   if(m_num->nls_relaxation<DBL_MIN)
     relax = 0.0;
@@ -3966,10 +3909,8 @@ void CRFProcess::GlobalAssembly()
       //ofstream Dum("rf_pcs.txt", ios::out); // WW
       //m_dom->eqs->Write(Dum);
       //Dum.close();
-
       IncorporateSourceTerms(j);
       IncorporateBoundaryConditions(j);   
-
       /* 
       //TEST   
       string test = "rank";
@@ -3981,17 +3922,12 @@ void CRFProcess::GlobalAssembly()
       Dum.close(); 
       exit(0);
       */
-
-
-
 #ifndef USE_MPI   
     }
     //....................................................................
     // Assemble global system
     DDCAssembleGlobalMatrix();
 #endif
-//	
-//		MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x); //abort();
   }
   //----------------------------------------------------------------------
   // STD
@@ -4005,24 +3941,23 @@ void CRFProcess::GlobalAssembly()
         elem = m_msh->ele_vector[i];
         if (elem->GetMark()) // Marked for use
         {
-           elem->SetOrder(false);
-           fem->ConfigElement(elem,Check2D3D);
-           fem->Assembly();
-//-----------------------NEUMANN CONTROL---------
-           if(Tim->time_control_name.compare("NEUMANN")==0)
-           {
-	         Tim->time_step_length_neumann = MMin(Tim->time_step_length_neumann,timebuffer);
-             Tim->time_step_length_neumann *= 0.5*elem->GetVolume()*elem->GetVolume();
-	         if(Tim->time_step_length_neumann < MKleinsteZahl)
-               Tim->time_step_length_neumann = 1.0e-5;
-	       }
-//------------------------------   
-         } 
-       }
+          elem->SetOrder(false);
+          fem->ConfigElement(elem,Check2D3D);
+          fem->Assembly();
+          // NEUMANN CONTROL---------
+          if(Tim->time_control_name.compare("NEUMANN")==0)
+          {
+	        Tim->time_step_length_neumann = MMin(Tim->time_step_length_neumann,timebuffer);
+            Tim->time_step_length_neumann *= 0.5*elem->GetVolume()*elem->GetVolume();
+	        if(Tim->time_step_length_neumann < MKleinsteZahl)
+              Tim->time_step_length_neumann = 1.0e-5;
+	      }
+          //------------------------------   
+        } 
+      }
     }
 	//MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
     //eqs_new->Write();
-
     IncorporateSourceTerms();
 #ifdef GEM_REACT
     if ( pcs_type_name.compare("MASS_TRANSPORT") == 0 && aktueller_zeitschritt > 1 && this->m_num->cpl_iterations > 1)
@@ -4032,12 +3967,9 @@ void CRFProcess::GlobalAssembly()
     SetCPL(); //OK
 #endif
     IncorporateBoundaryConditions();
-    //
-    // 
     // ofstream Dum("rf_pcs.txt", ios::out); // WW
     // eqs_new->Write(Dum);   Dum.close();
-    //
-    //    MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
+    // MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
   }
   //----------------------------------------------------------------------
 }
@@ -8817,17 +8749,14 @@ bool CRFProcess::Check()
   if(!m_tim)
   {
     m_strMessage += "Error: no TIM data";
-/*OK48
     AfxMessageBox(m_strMessage);
     return false;
-*/
   }
   //-----------------------------------------------------------------------
   // NUM
   CNumerics* m_num = NUMGet(pcs_type_name);
   if(!m_num)
   {
-    AfxMessageBox("Error: no NUM data");
     m_strMessage += "Error: no NUM data";
     AfxMessageBox(m_strMessage);
     return false;
@@ -8960,6 +8889,7 @@ void EQSDelete()
       m_pcs->eqs = NULL;
     PCS_Solver.erase((PCS_Solver.begin()+i));
   }
+  //PCS_Solver.clear(); 
 }
 #endif
 /**************************************************************************
@@ -9679,3 +9609,19 @@ void CRFProcess::Clean_Water_ST_vec()
 {
 	Water_ST_vec.clear();	
 }
+
+/*************************************************************************
+GeoSys - Function: 
+06/2009 OK Implementation
+**************************************************************************/
+bool PCSConfig()
+{
+  bool some_thing_done = false;
+  for(int i=0;i<(int)pcs_vector.size();i++) //OK
+  {
+    pcs_vector[i]->Config();
+    some_thing_done = true;
+  }
+  return some_thing_done;
+}
+

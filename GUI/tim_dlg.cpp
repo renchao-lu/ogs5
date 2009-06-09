@@ -14,13 +14,15 @@
 IMPLEMENT_DYNAMIC(CDialogTimeDiscretization, CDialog)
 CDialogTimeDiscretization::CDialogTimeDiscretization(CWnd* pParent /*=NULL*/)
 	: CDialog(CDialogTimeDiscretization::IDD, pParent)
-    , m_iTIMType(FALSE)
     , m_iNT(1)
     , m_dDT(1)
     , m_dTIMStart(0.0)
     , m_dTIMEnd(1.0)
 {
   m_strTIMUnitName = "SECOND";
+  m_iTIMType = 1;
+  m_iTIMStepScheme = 0;
+  m_dTIMStep = 1.0;
 }
 
 CDialogTimeDiscretization::~CDialogTimeDiscretization()
@@ -39,8 +41,9 @@ void CDialogTimeDiscretization::DoDataExchange(CDataExchange* pDX)
     DDX_Text(pDX, IDC_EDIT_TIME_START, m_dTIMStart);
     DDX_Text(pDX, IDC_EDIT_TIME_END, m_dTIMEnd);
     DDX_Control(pDX, IDC_COMBO_TIM_UNIT, m_CB_TIM_UNIT);
+    DDX_Radio(pDX, IDC_RADIO3, m_iTIMStepScheme);
+    DDX_Text(pDX, IDC_EDIT_TIME_STEP, m_dTIMStep);
 }
-
 
 BEGIN_MESSAGE_MAP(CDialogTimeDiscretization, CDialog)
     ON_CBN_SELCHANGE(IDC_COMBO_PCS_TYPE, OnCbnSelchangeComboPCSType)
@@ -82,6 +85,7 @@ BOOL CDialogTimeDiscretization::OnInitDialog()
     {
       m_dTIMStart = m_tim->time_start;
       m_dTIMEnd = m_tim->time_end;
+      m_dTIMStep = m_tim->this_stepsize;
       m_LB_TIM.ResetContent();
       for(j=0;j<(int)m_tim->time_step_vector.size();j++)
       {
@@ -253,21 +257,6 @@ void CDialogTimeDiscretization::OnBnClickedButtonTIMCreate()
   m_obj->time_start = m_dTIMStart;
   m_obj->time_end = m_dTIMEnd;
   m_obj->time_unit = m_strTIMUnitName;
-  time_sum = 0.0;
-  if(m_LB_TIM.GetCount()==0) //OK
-  {
-    m_str.Format("%g",1.0);
-    m_LB_TIM.AddString(m_str);
-  }
-  for(int i=0;i<m_LB_TIM.GetCount();i++)
-  {
-    m_LB_TIM.GetText(i,m_str);
-    time = strtod(m_str,NULL);
-    while(time_sum<m_obj->time_end){
-      m_obj->time_step_vector.push_back(time);
-      time_sum += time;
-    }
-  }
   //......................................................................
   switch(m_iTIMType){
     case 1:
@@ -277,6 +266,47 @@ void CDialogTimeDiscretization::OnBnClickedButtonTIMCreate()
       m_obj->time_control_name = "FIXED";
       break;
   }
+  //......................................................................
+  if(m_iTIMType==0)
+  {
+    time_sum = 0.0;
+    if(m_LB_TIM.GetCount()==0) //OK
+    {
+      m_str.Format("%g",1.0);
+      m_LB_TIM.AddString(m_str);
+    }
+    for(int i=0;i<m_LB_TIM.GetCount();i++)
+    {
+      m_LB_TIM.GetText(i,m_str);
+      time = strtod(m_str,NULL);
+      while(time_sum<m_obj->time_end){
+        m_obj->time_step_vector.push_back(time);
+        time_sum += time;
+      }
+    }
+  }
+  //......................................................................
+  switch(m_iTIMStepScheme)
+  {
+    case 0:
+      m_obj->time_control_name = "PI_AUTO_STEP_SIZE";
+      m_obj->tsize_ctrl_type = 2;
+      m_obj->relative_error = 1.0;
+      m_obj->absolute_error = 1e-12;
+      m_obj->this_stepsize = m_dTIMStep;
+      break;
+    case 1:
+      m_obj->time_control_name = "COURANT_MANIPULATE";
+      break;
+      m_obj->time_control_name = "NEUMANN";
+    case 2:
+      break;
+  }
+/*
+time_control_name("STEP_SIZE_RESTRICTION")
+time_control_name("ERROR_CONTROL_ADAPTIVE")
+time_control_name("SELF_ADAPTIVE")
+*/
   //......................................................................
   time_vector.push_back(m_obj);
   //----------------------------------------------------------------------

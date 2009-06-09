@@ -132,8 +132,10 @@ class CRFProcess {
     //....................................................................
     int additioanl2ndvar_print; //WW
     // TIM
-    friend class CTimeDiscretization;      
+    friend class CTimeDiscretization;   
+  public: //OK
     CTimeDiscretization *Tim;    //time
+  protected: //WW
     void CopyU_n(double *temp_v); //29.08.2008. WW
     // Time unit factor 
     double time_unit_factor; 
@@ -547,6 +549,7 @@ extern CRFProcess *PCSGet(string,string); //SB
 extern CRFProcess *PCSGet(string,bool); //OK
 extern CRFProcess *PCSGetFluxProcess();//CMCD
 extern CRFProcess *PCSGetFlow(); //OK
+extern bool PCSConfig(); //OK
 // NOD
 extern int PCSGetNODValueIndex(string,int);
 extern double PCSGetNODValue(long,char*,int);

@@ -238,7 +238,7 @@ private:
     void UpdatePcsMinmax();
     void Arrange_and_Display();
 	void DrawEllipseAroundSelection();
-
+    void StabilizeOpenGL4Return();
 private:
 	CGLDispList anothercube;
 	CPoint MouseDownPoint;

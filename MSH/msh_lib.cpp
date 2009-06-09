@@ -1475,4 +1475,15 @@ bool CompleteMesh(string pcs_name)
   return succeed;
 }
 
+/**************************************************************************
+MSHLib-Method: 
+07/2007 OK Implementation
+**************************************************************************/
+void MSHConfig()
+{
+  CompleteMesh(); //WW
+  MSHTestMATGroups(); //OK Test MSH-MMP
+  ConfigSolverProperties();
+  //ConfigTopology(); // max_dim for solver, elements to nodes relationships
+}
 

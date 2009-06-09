@@ -70,6 +70,7 @@ extern CFEMesh* MSHGet(string pcs_type_name,string mat_type_name); //OK
 extern CFEMesh* MSHGetGEO(string); //OK
 extern int MSHSetMaxMMPGroups(); //OK
 extern bool MSHTestMATGroups(); //OK
+extern void MSHConfig(); //OK
 #ifdef RFW_FRACTURE
 extern bool MSHGetCommonNodes(CElem*, CElem*, vector<CNode*>&);
 extern void MSHSetFractureElements(void);

@@ -2,6 +2,8 @@
 //
 #include "stdafx.h"
 #include "GeoSys.h"
+#include "MainFrm.h"
+#include "GeoSysDoc.h"
 #include "sim_dlg.h"
 // FEMLib
 #include "rf_pcs.h"
@@ -147,12 +149,13 @@ BOOL CSimulator::OnInitDialog()
       m_bCheckMSH = TRUE;
       m_strMSHFile = path_base_type.c_str();
       m_iNoMSH = (long)ElListSize();
-    } else if(m_gsp->type=="msh"){
+    } 
+    else if(m_gsp->type=="msh")
+    {
       m_bCheckMSH = TRUE;
       m_strMSHFile = path_base_type.c_str();
       m_iNoMSH = (int)fem_msh_vector.size(); // Number of mesh
     }
-
     if(m_gsp->type=="pcs"){
       m_bCheckPCS = TRUE;
       m_strPCSFile = path_base_type.c_str();
@@ -279,4 +282,9 @@ last modification:
 **************************************************************************/
 void CSimulator::OnBnClickedButtonRunSimulation()
 {
+  CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+  CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+  CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+  m_pDoc->OnSimulatorForward();
+  OnOK();
 }

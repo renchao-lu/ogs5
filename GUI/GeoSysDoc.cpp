@@ -2,7 +2,6 @@
 #include "stdafx.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include "mainfrm.h"
 #include "GeoSys.h"
 #include "GeoSysDoc.h"
 #include "GeoSysListView.h"
@@ -49,7 +48,6 @@ Problem *aproblem = NULL;
 #include "loop_pcs.h"
 #endif
 
-
 extern bool RFDOpen(string file_name_base);
 #include "rf_fct.h"
 #include "par_ddc.h"
@@ -58,7 +56,6 @@ extern bool RFDOpen(string file_name_base);
 #include "shp.h"
 #include "dlg_shp.h"
 #include "dlg_GHDB.h"//FS
-#include ".\geosysdoc.h"
 #include "dlg_database.h"//CC 12/2008
 // Dialogs
 #include "gs_newproject.h"
@@ -68,7 +65,6 @@ extern bool RFDOpen(string file_name_base);
 #include "feflow_dlg.h" //OK
 #include "rf_kinreact.h" //OK
 #include "petrel_dlg.h" //AKS
-
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -174,7 +170,6 @@ CGeoSysDoc::~CGeoSysDoc()
   for (jj=st_group_list.begin();jj != st_group_list.end();jj++)delete *jj;
   st_group_list.clear();*/
 
-
   list<CMediumPropertiesGroup*>::iterator kk;
   for (kk=mmp_group_list.begin();kk != mmp_group_list.end();kk++)delete *kk;
   mmp_group_list.clear();
@@ -185,7 +180,6 @@ CGeoSysDoc::~CGeoSysDoc()
   problem_win = NULL;
 #else 
   GEOLIB_Clear_GeoLib_Data();
-
   PCSDelete();
   NUMDelete();
   TIMDelete();
@@ -324,6 +318,7 @@ Programing:
 01/2005 OK Serialize: File-Save
 06/2005 OK modeless Control Panel
 12/2008 WW Replace the creation of PCS with the instance of the new class
+05/2009 OK Create PRO shifted to CGSPropertyRightPCS::OnBnClickedButtonMOD()
 **************************************************************************/
 void CGeoSysDoc::Serialize(CArchive& ar)
 {
@@ -382,29 +377,40 @@ void CGeoSysDoc::Serialize(CArchive& ar)
     {
       // Read GSP file
       GSPReadWIN(ar);
-      if(m_bDataMSH)
+      //..................................................................
+      // MSH
+      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Config MSH data");
+      MSHConfig();
+      //..................................................................
+      GetHeterogeneousFields(); //OK/MB
+      DDCCreate(); //OK
+      //..................................................................
+      // PCS
+      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Check MOD data");
+      if(!MODCreate())
       {
-        pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Config MSH data");
-        CompleteMesh(); //WW
-        GetHeterogeneousFields(); //OK/MB
-        MSHTestMATGroups(); //OK Test MSH-MMP
-        DDCCreate(); //OK
-        ConfigSolverProperties();
-        //ConfigTopology(); // max_dim for solver, elements to nodes relationships
+        AfxMessageBox("Not enough data for MOD creation.");
       }
-      // Create PCS data
-      if(pcs_created)
+      else
       {
-        pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Create PCS data");
-#ifdef PROBLEM_CLASS //16.12.2008. WW
-        problem_win = new Problem();
-        aproblem = problem_win;
-#else
-        PCSCreate(); //WW
-#endif
-        //PCSCreateNew(); //OK Create PCS
-		//REACTInit(); //OK Initialization of REACT structure for rate exchange between MTM2 and Reactions
-        //PCSRestart(); //SB
+        pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Create MOD data");
+        //OK shifted to MOD Create -> CGSPropertyRightPCS::OnBnClickedButtonMOD()
+        if(!problem_win)
+        {
+          int msgboxID = AfxMessageBox("No MOD data. Create now?",MB_YESNO);
+          bool mod_ready = GSPSimulatorReady();
+          switch (msgboxID)
+          {
+            case IDYES:
+	          delete problem_win;
+              problem_win = NULL;
+	          problem_win = new Problem();
+              break;
+            case IDNO:
+	          return;
+              break;
+          }
+        }
         m_bDataPCS = true;
         m_bDataFEM = true;
       }
@@ -532,6 +538,7 @@ void CGeoSysDoc::GSPReadWIN(CArchive& ar)
       pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read GEO data");
       GEOLIB_Read_GeoLib(gsp_member_path_base);
       m_bDataGEO = TRUE;
+      continue;
     }
     //....................................................................
     if(m_strGSPFileNameType=="rfi"){
@@ -544,15 +551,17 @@ void CGeoSysDoc::GSPReadWIN(CArchive& ar)
     if(m_strGSPFileNameType=="msh"){
       pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read MSH data");
       FEMRead(gsp_member_path_base);
-	  PCTRead(gsp_member_path_base);   // PCH This is added for temperary purpose
+	  PCTRead(gsp_member_path_base);   // PCH This is added for temporary purpose
 	 // CompleteMesh(); //WW  
       m_bDataMSH = TRUE;
+      continue;
     }
     //....................................................................
     if(m_strGSPFileNameType=="pcs"){
       pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read PCS data");
       PCSRead(gsp_member_path_base);
       pcs_created = true;
+      continue;
     }
     //....................................................................
     if(m_strGSPFileNameType=="num"){
@@ -1643,20 +1652,39 @@ Programing:
 08/2004 OK PCS2 based on ExecuteRFTimeLoop
 09/2004 OK/RN Progress bar
 12/2008 WW New simulation class
+05/2009 OK Test Problem()
 **************************************************************************/
 void CGeoSysDoc::OnSimulatorForward()
 {
-  short no_steps, no_all_steps;
+  //OK short no_steps, no_all_steps;
   //WW double dt_sum = 0.0;
-  CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
-  CStatusBar* pStatus = &m_frame->m_wndStatusBar;
+  //CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
+  //CStatusBar* pStatus = &m_frame->m_wndStatusBar;
   CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
   //========================================================================
   // Tests
-  if((!NODListExists()||!ELEListExists())&&!GSPGetMember("msh")){//OK
+  //........................................................................
+  if(!problem_win)
+  {
+    int msgboxID = AfxMessageBox("No MOD data. Create now?",MB_YESNO);
+    switch (msgboxID)
+    {
+      case IDYES:
+	    delete problem_win;
+	    problem_win = NULL;
+	    problem_win = new Problem();
+        break;
+      case IDNO:
+	    return;
+        break;
+    }
+  }
+  //........................................................................
+  if(fem_msh_vector.size()==0){//OK
     AfxMessageBox("No MSH data !");
     return;
   }
+  //........................................................................
   if(pcs_vector.size()==0) {
     AfxMessageBox("No PCS data ! Create in -> Simulator -> Processes");
     return;
@@ -1669,50 +1697,9 @@ void CGeoSysDoc::OnSimulatorForward()
   }
   //========================================================================
 #ifdef PROBLEM_CLASS    //16.12.2008. WW
-  aproblem->Euler_TimeDiscretize();
-#else
-  // PreTimeLoop
-   // Create PCS processes
-  //PCSCreate();
- 
-
-  //------------------------------------------------------------------------
-  // Reactions
-  //CB before the first time step
-  // 1) set the id variable flow_pcs_type for Saturation and velocity calculation
-  //    in mass transport element matrices
-  // 2) in case of Twophaseflow calculate NAPL- and the corresponding 
-  //    Water phase Saturation from the NAPL concentrations
-  if(MASS_TRANSPORT_Process) // if(MASS_TRANSPORT_Process&&NAPL_Dissolution) //CB Todo
-  {
-    SetFlowProcessType();
-    CRFProcess *m_pcs = NULL;
-    if (m_pcs = PCSGet("TWO_PHASE_FLOW"))     
-      CalcInitialNAPLDens(m_pcs);
-  }
-
-  PCSRestart(); //SB
-  KRConfig();
-  KBlobConfig();
-  KBlobCheck();
-
-  //------------------------------------------------------------------------
-  // Clock time  
-  CreateClockTime();
-
-  //========================================================================
-  // Calculate Jakobian und Element-Volumen
-  CalcElementsGeometry();
-  //========================================================================
-  CTimeDiscretization *m_tim = NULL;
-  if(time_vector.size()>0)
-    m_tim = time_vector[0];
-  else{
-    cout << "Error in ExecuteRFTimeLoop: no time discretization data !" << endl;
-  }
-  int no_time_steps = (int)m_tim->time_step_vector.size();
-  //========================================================================
-  // Status bar
+  problem_win->Euler_TimeDiscretize();
+#endif
+/*
   //------------------------------------------------------------------------
   // Progress bar 1: Simulation time
   CProgressCtrl m_ProgressBar;
@@ -1720,18 +1707,6 @@ void CGeoSysDoc::OnSimulatorForward()
   m_frame->m_wndStatusBar.GetItemRect(1,&MyRect);
   MyRect.left = 800;
   int time_step_counter = 0;
-  int i;
-  m_tim->time_current = m_tim->time_start;
-  for(i=0;i<no_time_steps;i++)
-  //OK while(m_tim->time_current<m_tim->time_end)
-  {
-    dt = m_tim->CalcTimeStep();
-    m_tim->time_current += dt;
-    time_step_counter++;
-    m_tim->step_current++;
-    if(m_tim->time_current>m_tim->time_end)
-      break;
-  }
   if(m_ProgressBar.m_hWnd==NULL){
     m_ProgressBar.Create(WS_VISIBLE|PBS_SMOOTH,MyRect,&m_frame->m_wndStatusBar,1);
 	m_ProgressBar.SetRange(0,(short)time_step_counter-1);
@@ -1749,21 +1724,6 @@ void CGeoSysDoc::OnSimulatorForward()
 	m_PBSimulationStep.SetRange(0,no_all_steps);
 	m_PBSimulationStep.SetStep(1);
   }
-  //======================================================================
-  m_tim->step_current = 0;
-  m_tim->time_current = m_tim->time_start;
-  OUTData(0.,0);
-  //
-  while(m_tim->time_current < m_tim->time_end) {
-    //----------------------------------------------------------------------
-    // Time step calculation
-    dt = m_tim->CalcTimeStep();
-    m_tim->time_current += dt;
-    aktueller_zeitschritt++; // ToDo
-    aktuelle_zeit = m_tim->time_current; // ToDo
-    cout << endl;
-    cout << "*********************************************" << endl;
-    cout << "TIME step " << m_tim->step_current+1 << ": " << m_tim->time_current << endl;
     //----------------------------------------------------------------------
     // Status bar
     CString m_str;
@@ -1771,83 +1731,12 @@ void CGeoSysDoc::OnSimulatorForward()
       m_str.Format("t=%e",m_tim->time_current);
       pStatus->SetPaneText(1,m_str,1);
     }
-//WW -> DM calc secondary variables
-  //----------------------------------------------------------------------
-  // Draw stress path calculation
-  COutput *m_out = NULL;
-  CGLPoint *m_pnt = NULL;
-  int no_out = (int)out_vector.size();
-  int j;
-  int no_pcs_names;
-  long msh_node;
-  double* stressInv;
-  stressInv = new double[3];
-  for(i=0;i<no_out;i++){
-    m_out = out_vector[i];
-    no_pcs_names = (int)m_out->nod_value_vector.size();
-    for(j=0;j<no_pcs_names;j++){
-      if(m_out->nod_value_vector[j].find("LOAD_PATH_ANALYSIS")!=string::npos){
-        m_pnt = GEOGetPointByName(m_out->geo_name);//CC
-        msh_node = GetNodeNumberClose(m_pnt->x,m_pnt->y,m_pnt->z);
-        //OK CalStressInvariants(msh_node,stressInv);
-        m_out->out_line_vector.push_back(stressInv);
-      }
-    }
-  }
-//
-    //----------------------------------------------------------------------
-    // Time step excution 
-    m_str.Format("Execute time step: t=%e",m_tim->time_current);
-    pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
-    //dt_sum += dt;
-    LOPTimeLoop_PCS(); //WW (dt_sum);
-    IsSynCron();   //WW
-    //----------------------------------------------------------------------
-    // Data output
-    pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Data output");
-    OUTData(m_tim->time_current,aktueller_zeitschritt);
     //......................................................................
     // GUI
     POSITION pos = GetFirstViewPosition();
     while(pos!=NULL) {
       CView* pView = GetNextView(pos);
       pView->UpdateWindow();
-    }
-	// 04.2008 HS: Update the min and max values------------------------------------
-	CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
-	CRFProcess* m_pcs = NULL;
-	if(pcs_vector.size()==0)
-	return;
-	m_pcs = PCSGet((string)mainframe->m_pcs_name);
-	if(!m_pcs)
-	{
-	AfxMessageBox("CGSPropertyRightResults::GetPcsMinmax() - no PCS data");
-	return;
-	}
-	double value, m_pcs_min_r, m_pcs_max_r;
-	m_pcs_min_r = 1.e+19;
-	m_pcs_max_r = -1.e+19;
-	int nidx = m_pcs->GetNodeValueIndex((string)mainframe->m_variable_name);
-	for(long j=0;j<(long)m_pcs->nod_val_vector.size();j++)
-	{
-	value = m_pcs->GetNodeValue(j,nidx);
-	if(value<m_pcs_min_r) m_pcs_min_r = value;
-	if(value>m_pcs_max_r) m_pcs_max_r = value;
-	}  
-	mainframe->m_pcs_min = m_pcs_min_r;
-	mainframe->m_pcs_max = m_pcs_max_r;
-	mainframe->m_something_changed = 1;
-	//OKmainframe = NULL;
-	//OKm_pcs = NULL;
-	//OKdelete mainframe, m_pcs;
-	// -----------------------------------------------------------------------------
-    SetModifiedFlag(1);
-    UpdateAllViews(NULL,0L,NULL);
-    //......................................................................
-    // update current time step number
-    m_tim->step_current++;
-    if(m_tim->step_current==no_time_steps){
-      break;
     }
     //----------------------------------------------------------------------
     no_steps = (short)(dt/m_tim->time_end*no_all_steps);
@@ -1859,7 +1748,7 @@ void CGeoSysDoc::OnSimulatorForward()
   }
   m_ProgressBar.DestroyWindow();
   m_PBSimulationStep.DestroyWindow();
-#endif
+*/
   //======================================================================
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Simulation finished");
 }

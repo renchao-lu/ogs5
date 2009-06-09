@@ -32,16 +32,22 @@ class Problem
   private:
    // Time:
    double start_time;
+  public: //OK
    double end_time;
    double current_time;
+  private:
    double *buffer_array;
    int step_control_type;
    // Mixed time step WW
+  public: //OK
    double dt0; // Save the original time step size
+  private:
    // Controls
    int loop_index;
    int max_coupling_iterations;
+  public: //OK
    int max_time_steps;
+  private:
    double coupling_tolerance;
    //
    double TolCoupledF;
@@ -52,13 +58,19 @@ class Problem
    bool CalcVelocities; 
    bool conducted; 
    // Print flag
+  public: //OK
    bool print_result;
+  private:
    // Processes
+  public: //OK
    vector<CRFProcess*> total_processes;
+  private:
    vector<CRFProcess*> transport_processes;
    vector<CRFProcess*> multiphase_processes;
    ProblemMemFn *active_processes;
+  public: //OK
    vector<int> active_process_index;
+  private:
    vector<int> coupled_process_index;
    // 
    bool *exe_flag;
@@ -84,7 +96,9 @@ class Problem
    void LOPCalcELEResultants();
    inline void ASMCalcNodeWDepth(CRFProcess *m_pcs);
    void PCSCalcSecondaryVariables();
+   bool Check(); //OK
 };
 extern Problem *aproblem;
+extern bool MODCreate(); //OK
 #endif
 #endif //PROBLEM_CLASS

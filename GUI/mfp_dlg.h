@@ -29,4 +29,5 @@ public:
     CListCtrl m_LC;
     afx_msg void OnBnClickedButtonCreate();
     afx_msg void OnBnClickedButtonWrite();
+    afx_msg void OnBnClickedButtonMFPClose();
 };

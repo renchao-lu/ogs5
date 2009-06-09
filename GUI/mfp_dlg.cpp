@@ -31,6 +31,7 @@ BEGIN_MESSAGE_MAP(CDialogMFP, CDialog)
     ON_CBN_SELCHANGE(IDC_COMBO_MFP_STD, OnCbnSelchangeComboMFPStd)
     ON_BN_CLICKED(IDC_BUTTON_CREATE_MFP, OnBnClickedButtonCreate)
     ON_BN_CLICKED(IDC_BUTTON_WRITE_MFP, OnBnClickedButtonWrite)
+    ON_BN_CLICKED(IDC_BUTTON_MFP_CLOSE, &CDialogMFP::OnBnClickedButtonMFPClose)
 END_MESSAGE_MAP()
 
 // CDialogMFP message handlers
@@ -130,8 +131,6 @@ void CDialogMFP::OnBnClickedButtonCreate()
 
 /**************************************************************************
 GUILib-Method:
-Task:
-Programing:
 05/2005 OK Implementation
 **************************************************************************/
 void CDialogMFP::OnBnClickedButtonWrite()
@@ -140,4 +139,13 @@ void CDialogMFP::OnBnClickedButtonWrite()
   m_gsp = GSPGetMember("pcs");
   if(m_gsp)
     MFPWrite(m_gsp->path + m_gsp->base);
+}
+
+/**************************************************************************
+GUILib-Method:
+06/2009 OK Implementation
+**************************************************************************/
+void CDialogMFP::OnBnClickedButtonMFPClose()
+{
+  OnOK();
 }

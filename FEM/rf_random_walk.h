@@ -4,6 +4,8 @@ Task: Random Walk - an alternative for FDM or FEM of transport equation
 Programing:
 07/2005 PCH Implementation
 **************************************************************************/
+#ifndef break_RWPT //OK
+#define break_RWPT //OK
 
 #include <math.h>
 #include "mathlib.h"
@@ -171,7 +173,6 @@ private:
 extern void PCTRead(string);
 extern void DATWritePCTFile(const char *file_name);
 
-
-
+#endif //OK
 
 

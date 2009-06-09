@@ -47,6 +47,7 @@ Create and Add Page by copy and change of the line: m_PropSheet.AddPage(&m_Page1
 //GEOLIB
 //MSHLIB
 //PCS
+#include "problem.h"
 #include "rf_tim_new.h"
 #include "rf_react.h"
 //DLG
@@ -90,7 +91,6 @@ CGSPropertyRightPCS::~CGSPropertyRightPCS()
 
 void CGSPropertyRightPCS::DoDataExchange(CDataExchange* pDX)
 {
-/*
     if((int)pcs_vector.size()>0) m_check_pcs = true;
     if((int)time_vector.size()>0) m_check_tim = true;
     if((int)num_vector.size()>0) m_check_num = true;
@@ -102,8 +102,8 @@ void CGSPropertyRightPCS::DoDataExchange(CDataExchange* pDX)
     if((int)msp_vector.size()>0) m_check_msp = true;
     if((int)cp_vec.size()>0) m_check_mcp = true;
     if((int)mmp_vector.size()>0) m_check_mmp = true;
+    //if(aproblem) m_check_mod = true;
     //OK m_check_mod = PCSCheck();
-*/
     CViewPropertyPage::DoDataExchange(pDX);
     DDX_Check(pDX, IDC_CHECK_PCS, m_check_pcs);
     DDX_Check(pDX, IDC_CHECK_TIM, m_check_tim);
@@ -336,6 +336,7 @@ void CGSPropertyRightPCS::OnBnClickedButtonMFP()
 {
   CDialogMFP m_dlg;
   m_dlg.DoModal();
+  UpdateData(FALSE);
 }
 
 void CGSPropertyRightPCS::OnBnClickedButtonMSP()
@@ -399,20 +400,53 @@ void CGSPropertyRightPCS::OnBnClickedButtonMMP()
   UpdateData(FALSE);
 }
 
+/**************************************************************************
+OGS-GUI-Method:
+12/2007 OK Implementation
+05/2009 OK Create MOD
+**************************************************************************/
 void CGSPropertyRightPCS::OnBnClickedButtonMOD()
 {
-  //----------------------------------------------------------------------
+  //......................................................................
   CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
   pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Create MOD");
-  CompleteMesh(); //WW
-  //OK GetHeterogeneousFields(); //OK/MB
-  //OK MSHTestMATGroups(); //OK Test MSH-MMP
-  //OK DDCCreate(); //OK
-  ConfigSolverProperties();
-  PCSCreateNew();
-  //OK REACTInit(); //OK Initialization of REACT structure for rate exchange between MTM2 and Reactions
-  //OK PCSRestart(); //SB
-  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"MOD created");
+  try
+  {
+    //----------------------------------------------------------------------
+    CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+    CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+    CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+    //......................................................................
+    if(m_pDoc->problem_win)
+    {
+      delete m_pDoc->problem_win; // problem if repeated
+      CGSProject* m_gsp = GSPGetMember("pcs");
+      if(m_gsp)
+      {
+        GSPReadData(m_gsp->path+m_gsp->base);
+      }
+      else
+      {
+        AfxMessageBox("no GSP data. Read Data failed");
+        return;
+      }
+      MSHConfig();
+      if(!MODCreate())
+      {
+        AfxMessageBox("Not enough data for MOD creation.");
+      }
+      m_pDoc->problem_win = new Problem();
+      aproblem = m_pDoc->problem_win;
+      //....................................................................
+      if(m_pDoc->problem_win->print_result)
+      //GetDlgItem(IDC_BUTTON_OBJ) -> EnableWindow(FALSE);
+      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"MOD created");
+    }
+  }
+  catch(...)
+  {
+    pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"no MOD created");    
+  }
 }
 
 void CGSPropertyRightPCS::OnBnClickedButtonMODCheck()
