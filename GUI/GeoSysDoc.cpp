@@ -405,6 +405,7 @@ void CGeoSysDoc::Serialize(CArchive& ar)
 	          delete problem_win;
               problem_win = NULL;
 	          problem_win = new Problem();
+              aproblem = problem_win;
               break;
             case IDNO:
 	          return;
@@ -1673,6 +1674,7 @@ void CGeoSysDoc::OnSimulatorForward()
 	    delete problem_win;
 	    problem_win = NULL;
 	    problem_win = new Problem();
+        aproblem = problem_win;
         break;
       case IDNO:
 	    return;
