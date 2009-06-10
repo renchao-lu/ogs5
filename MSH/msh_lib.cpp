@@ -1474,7 +1474,7 @@ bool CompleteMesh(string pcs_name)
   }   
   return succeed;
 }
-
+#ifdef MFC //WW
 /**************************************************************************
 MSHLib-Method: 
 07/2007 OK Implementation
@@ -1486,4 +1486,4 @@ void MSHConfig()
   ConfigSolverProperties();
   //ConfigTopology(); // max_dim for solver, elements to nodes relationships
 }
-
+#endif

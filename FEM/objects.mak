@@ -45,4 +45,5 @@ rfstring.o\
 Stiff_Bulirsch-Stoer.o\
 timer.o\
 tools.o\
+vtk.o\
 

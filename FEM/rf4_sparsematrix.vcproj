@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="rf4sp_cpp"
 	ProjectGUID="{4F159AF7-FF53-410E-A9A7-2C500A4EF55E}"
+	RootNamespace="rf4sp_cpp"
 	>
 	<Platforms>
 		<Platform
@@ -1070,6 +1071,14 @@
 			</File>
 			<File
 				RelativePath="version.h"
+				>
+			</File>
+			<File
+				RelativePath=".\vtk.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\vtk.h"
 				>
 			</File>
 		</Filter>

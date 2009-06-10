@@ -1216,22 +1216,7 @@ double GetNumericalTimeCollocation(char *name)
   return 1.0;
 }
 
-/**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-01/2005 OK Implementation
-last modified:
-**************************************************************************/
-void NUMDelete()
-{
-  long i;
-  int no_num =(int)num_vector.size();
-  for(i=0;i<no_num;i++){
-    delete num_vector[i];
-  }
-  num_vector.clear();
-}
+
 /**************************************************************************/
 /* ROCKFLOW - Funktion: CalcIterationError
                                                                           */
@@ -1367,4 +1352,21 @@ CNumerics* NUMGet(string num_name)
       return m_num;
   }
   return NULL;
+}
+
+/**************************************************************************
+FEMLib-Method:
+Task:
+Programing:
+01/2005 OK Implementation
+last modified:
+**************************************************************************/
+void NUMDelete()
+{
+  long i;
+  int no_num =(int)num_vector.size();
+  for(i=0;i<no_num;i++){
+    delete num_vector[i];
+  }
+  num_vector.clear();
 }
