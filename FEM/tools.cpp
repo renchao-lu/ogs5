@@ -2474,7 +2474,7 @@ double GetMatrixValue(double var1, double var2, string caption, int *gueltig)
 double FindMin (vector<double>Vec)
 {
 double x=DBL_MAX;
-int i;
+int unsigned i;
 
 for(i=0;i<(int)Vec.size();i++) {if ((Vec[i]>=0)&&(Vec[i]<x)) x=Vec[i];}
 
@@ -2487,7 +2487,7 @@ return x;
 double FindMax (vector<double>Vec)
 {
 double x=DBL_MIN;
-int i;
+int unsigned i;
 
 for(i=0;i<(int)Vec.size();i++) {if (Vec[i]>x) x=Vec[i];}
 

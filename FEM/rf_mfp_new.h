@@ -3,7 +3,7 @@ FEMLib - Object: MAT-FP
 Task: class implementation
 Programing:
 08/2004 OK Implementation
-last modified:
+last modified: 
 **************************************************************************/
 #ifndef rf_mfp_new_INC
 #define rf_mfp_new_INC
@@ -30,6 +30,8 @@ class CFluidProperties
     // PCS
     CRFProcess *m_pcs; //OK4704
   public:
+  
+    int fluid_number; // specification of substance (NB JUN 09)
     double rhoc; //critical_density; //NB
 	double Tc; //critical_temperature; 
 	double pc; //critical_pressure; 
@@ -41,6 +43,11 @@ class CFluidProperties
 	double molar_mass; 
     string name;
     string caption; //NB4801
+// Limits and coefficients for free Helmholtz Energy, NB JUN 09
+    int limit[5];
+    double k [2][8];
+    double K [14][56];
+    
     int phase;
     // FEM
     CFiniteElementStd *Fem_Ele_Std;
@@ -50,6 +57,7 @@ class CFluidProperties
     double rho_0;
     double drho_dp;
     double drho_dT;
+    
     double drho_dC;
     string rho_fct_name;
     // Viscosity
@@ -122,6 +130,15 @@ class CFluidProperties
     double vaporDensity_derivative(const double T); //WW
     bool CheckGravityCalculation() const {return cal_gravity;}
     int GetHeatCapacityModel() const {return heat_capacity_model;}//YD
+// Derivations of free Helmholtz energy, NB JUN 09    
+    double phi_r_d (double rho, double T, int c);
+    double phi_r_tt (double rho, double T, int c);
+    double phi_0_t (double T,int c);
+    double phi_r_t (double rho, double T,int c);
+    double phi_r_dt (double rho, double T, int c);
+    double phi_r_dd (double rho, double T, int c);
+    double phi_0_tt (double T, int c);
+    
   private:
     double GasViscosity_Reichenberg_1971(double,double);
 	double MATCalcFluidDensityMethod8(double p, double T, double C);
@@ -142,6 +159,6 @@ extern double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem=NULL); //WW
 extern double MFPCalcFluidsHeatConductivity(long index,double*gp,double theta, CFiniteElementStd* assem=NULL);
 extern void MFPDelete();
 extern CFluidProperties* MFPGet(string);    //OK/YD
-extern CFluidProperties* MFPGet(string, int);    //NB 4.9.05
+extern CFluidProperties* MFPGet(int);    //NB JUN 09
 double MFPGetNodeValue(long,string); //OK
 #endif
