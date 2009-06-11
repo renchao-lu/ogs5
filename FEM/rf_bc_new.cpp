@@ -365,6 +365,7 @@ FEMLib-Method: CBoundaryCondition::Write
 02/2004 OK Implementation
 07/2007 OK LINEAR
 10/2008 OK NOD
+06/2009 OK MSH_TYPE off
 **************************************************************************/
 void CBoundaryCondition::Write(fstream* rfd_file)
 {
@@ -382,13 +383,14 @@ void CBoundaryCondition::Write(fstream* rfd_file)
   *rfd_file << "  ";
   *rfd_file << geo_type_name << delimiter_type << geo_name << endl;
   //--------------------------------------------------------------------
-//OK4105
+/*OK4910
   //MSH_TYPE
   if(msh_node_number>0){
    *rfd_file << " $MSH_TYPE" << endl;
    *rfd_file << "  ";
    *rfd_file << "NODE" << delimiter_type << msh_node_number << endl;
   }
+*/
   //--------------------------------------------------------------------
   //DIS_TYPE
   *rfd_file << " $DIS_TYPE" << endl;
