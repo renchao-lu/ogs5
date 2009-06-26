@@ -62,6 +62,18 @@ public:
 	afx_msg void OnBnClickedPinside();
 	afx_msg void OnBnClickedCid();
 	afx_msg void OnEnChangePid();
+	afx_msg void OnBnClickedVedge();
+	afx_msg void OnBnClickedPathline();
+	afx_msg void OnBnClickedXy();
+	afx_msg void OnBnClickedYz();
+	afx_msg void OnBnClickedZx();
+	afx_msg void OnBnClickedRange();
+	double m_Xlow;
+	double m_Xhigh;
+	double m_Ylow;
+	double m_Yhigh;
+	double m_Zlow;
+	double m_Zhigh;
 };
 
 

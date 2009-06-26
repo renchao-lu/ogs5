@@ -3,11 +3,12 @@ Class: RandomWalk
 Task: Random Walk - an alternative for FDM or FEM of transport equation
 Programing:
 07/2005 PCH Implementation
-**************************************************************************/
+ **************************************************************************/
 
 #include "stdafx.h" //MFC
 #include "rf_random_walk.h"
 #include "rf_fluid_momentum.h"
+#include "elements.h"
 
 // C++ STL
 #include <iostream>
@@ -23,34 +24,35 @@ Task: constructor
 Programing:
 07/2005 PCH Implementation
 last modification:
-**************************************************************************/
+ **************************************************************************/
 RandomWalk::RandomWalk(void)
 {
 	m_pcs = NULL;
-    fem = NULL;
+	fem = NULL;
 
-    // This is going to be reset by user input.
-    // Further, used for allocating dynamic memory.
-    numOfParticles = 0;
+	// This is going to be reset by user input.
+	// Further, used for allocating dynamic memory.
+	numOfParticles = 0;
 	UniformOrNormal = 1;	// Uniform random number generation
 	RWPTMode = 0;	// Initialized to be homogeneous media
 	PURERWPT = 0;
-    X = NULL;
 	CurrentTime = 0.0;
+	FDMIndexSwitch = 0;
+	GridOption = 0;
 
-    // To produce a different pseudo-random series each time your program is run.
-    srand((int)time(0));
+	// To produce a different pseudo-random series each time your program is run.
+	srand((int)time(0));
 }
 
 
 // Constructor
 Particle::Particle(void)
 {
-    // Position Vector
-    x = y = z = 0.0;
+	// Position Vector
+	x = y = z = 0.0;
 
-    // Velocity Vector
-    Vx = Vy = Vz = 0.0;
+	// Velocity Vector
+	Vx = Vy = Vz = 0.0;
 	K = 0.0;
 
 	dVxdx = dVydy = dVzdz = 0.0;
@@ -58,8 +60,8 @@ Particle::Particle(void)
 	for(int i=0; i<9; ++i)
 		D[i] = 0.0;
 
-    // Time
-    t = 0.0;
+	// Time
+	t = 0.0;
 	identity = 0;
 }
 
@@ -70,10 +72,10 @@ Task: destructor
 Programing:
 07/2005 PCH Implementation
 last modification:
-**************************************************************************/
+ **************************************************************************/
 RandomWalk::~RandomWalk(void)
 {
-    if(X) delete [] X;
+	//    if(X) delete [] X;
 }
 
 
@@ -88,49 +90,456 @@ Task: Create a random number from N(0,1) distribution
 Programing:
 08/2005 PCH Implementation
 last modification:
-**************************************************************************/
+ **************************************************************************/
 double RandomWalk::Marsaglia(void)
 {
-    int whichOne = 0;
-    double u1 = 0.0, u2 = 0.0;
-    double v1 = 0.0, v2 = 0.0;
-    double s = 0.0;
+	int whichOne = 0;
+	double u1 = 0.0, u2 = 0.0;
+	double v1 = 0.0, v2 = 0.0;
+	double s = 0.0;
 
-    do
-    {
-        // Create two random numbers which are uniform between 0 to 1.
-        u1 = (double) (1.0*rand() / (RAND_MAX+1.0));
-        u2 = (double) (1.0*rand() / (RAND_MAX+1.0));
+	do
+	{
+		// Create two random numbers which are uniform between 0 to 1.
+		u1 = (double) (1.0*rand() / (RAND_MAX+1.0));
+		u2 = (double) (1.0*rand() / (RAND_MAX+1.0));
 
-        v1 = 2. * u1 - 1.0;
-        v2 = 2. * u2 - 1.0;
-        s = v1*v1 + v2*v2;
-    } while (s >= 1.0 || s==0.0);  // To fit log definition
+		v1 = 2. * u1 - 1.0;
+		v2 = 2. * u2 - 1.0;
+		s = v1*v1 + v2*v2;
+	} while (s >= 1.0 || s==0.0);  // To fit log definition
 
-    double fac = sqrt(-2.0*log(s)/s);
-    
-    // This will create either 0 or 1.
-    whichOne = (int) (1.0*rand()/(RAND_MAX+1.0));
+	double fac = sqrt(-2.0*log(s)/s);
 
-    if (whichOne == 0)
-        return v1 * fac;
-    else
-        return v2 * fac;
+	// This will create either 0 or 1.
+	whichOne = (int) (1.0*rand()/(RAND_MAX+1.0));
+
+	if (whichOne == 0)
+		return v1 * fac;
+	else
+		return v2 * fac;
 }
 
 double RandomWalk::randomMinusOneToOne(void)
 {
-    return (double)(2.0*rand()/(RAND_MAX+1.0)-1.0);
+	return (double)(2.0*rand()/(RAND_MAX+1.0)-1.0);
 }
 
 double RandomWalk::randomZeroToOne(void)
 {
-    return (double)(1.0*rand()/(RAND_MAX+1.0));
+	return (double)(1.0*rand()/(RAND_MAX+1.0));
+}
+
+
+/**************************************************************************
+Class: RandomWalk
+Task: This function interpolates velocity in reference space
+Programing:
+01/2007 PCH Implementation
+ **************************************************************************/
+void RandomWalk::InterpolateVelocity(Particle* A)
+{
+	// Get the mesh first
+	CFEMesh* m_msh = NULL;
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
+	// Mount the element fromthe first particle from particles initially
+	CElem* theEle = m_msh->ele_vector[A->elementIndex];
+	double tolerance = 1e-8;
+
+	// If a quad element,
+	int nnode = theEle->GetEdgesNumber();
+	m_pcs = PCSGet("FLUID_MOMENTUM");
+
+	// Let's solve pore velocity.
+	// It is simple because Sw stuff automatically handles in Richards Flow.
+	// Thus, I only divide Darcy velocity by porosity only to get pore velocity.
+	CMediumProperties *MediaProp = mmp_vector[theEle->GetPatchIndex()];
+	double porosity = 0.0;
+	if(MediaProp->porosity > 10-6)
+		porosity = MediaProp->porosity;	// This is for simple one.
+	else
+		porosity = MediaProp->porosity_model_values[0];		// This will get you porosity.
+	// I guess for Dual Porocity stuff,
+	// this code should be revisited.
+
+	if(nnode == 4)
+	{
+		// Get physical coordinates of four corner points
+		double x[4], y[4], z[4];
+		double vx[4], vy[4], vz[4];
+		for(int i=0; i<nnode; ++i)
+		{
+			CNode* theNode = NULL;
+			theNode = theEle->GetNode(i);
+			x[i] = theNode->X();
+			y[i] = theNode->Y();
+			z[i] = theNode->Z();
+
+			vx[i] = m_pcs->GetNodeValue(theEle->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_X")+1)/porosity;
+			vy[i] = m_pcs->GetNodeValue(theEle->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1)/porosity;
+			vz[i] = m_pcs->GetNodeValue(theEle->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1)/porosity;
+		}
+
+		// solve for Jm at xm = (xhat,yhat)=(1/2,1/2) <- RT0
+		double Jm;
+		Jm = 0.5*(x[0]*y[1]-y[0]*x[1]+x[1]*y[2]-y[1]*x[2]+y[0]*x[3]-x[0]*y[3]+x[2]*y[3]-y[2]*x[3]);
+
+		// Mount the edges of the element
+		vec<CEdge*>theEdgesOfThisElement(nnode);
+		theEle->GetEdges(theEdgesOfThisElement);
+		// Mount the nodes of the edge
+		vec<CNode*>theNodesOfThisEdge(3);
+
+		// Solve for proper index in reference space
+		double* Ecenter=theEle->GetGravityCenter();
+		double u[4]; // Edge flux in reference space
+		for(int i=0; i<4; ++i)
+			u[i] = 0.0;
+
+		for(int i=0; i<4; ++i)
+		{
+			// Get the nodes of the edge i
+			theEdgesOfThisElement[i]->GetNodes(theNodesOfThisEdge);
+
+			double node1[3], node2[3];
+			node1[0] = theNodesOfThisEdge[0]->X(); node1[1] = theNodesOfThisEdge[0]->Y();
+			node2[0] = theNodesOfThisEdge[1]->X(); node2[1] = theNodesOfThisEdge[1]->Y();
+			// Get the referece position of these two ending points of the edge
+			IsoparametricMappingQuadfromPtoR(A->elementIndex, node1);
+			IsoparametricMappingQuadfromPtoR(A->elementIndex, node2);
+
+			double dx, dy;
+			dx = theEdgesOfThisElement[i]->GetVelocity(0);
+			dy = theEdgesOfThisElement[i]->GetVelocity(1);
+
+			double edge2mid[3], EdgeMidPoint[3];
+			theEdgesOfThisElement[i]->GetEdgeMidPoint(EdgeMidPoint);
+			for(int j=0; j<3; ++j)
+				edge2mid[j] = Ecenter[j]- EdgeMidPoint[j];
+
+			double angle = acos((dx*edge2mid[0]+dy*edge2mid[1])
+					/(sqrt(dx*dx+dy*dy)*sqrt(edge2mid[0]*edge2mid[0]+edge2mid[1]*edge2mid[1])));
+
+			// EA and EB: x1hat = x2hat and x1hat*x2hat > 0
+			if(fabs(node1[0]-node2[0])<0.5 && (node1[0]*node2[0]) > 0.0)
+			{
+				// EA: x1hat < 0
+				if(node1[0] < 0.0)
+				{
+					if(angle > 3.141592/2.0)
+						u[0] = -sqrt(dx*dx+dy*dy)/Jm;
+					else
+						u[0] = sqrt(dx*dx+dy*dy)/Jm;
+				}
+				else // EB
+				{
+					if(angle > 3.141592/2.0)
+						u[1] = sqrt(dx*dx+dy*dy)/Jm;
+					else
+						u[1] = -sqrt(dx*dx+dy*dy)/Jm;
+				}
+			}
+			// Else then, EC and ED
+			else
+			{
+				// EC: y1hat < 0
+				if(node1[1] < 0.0)
+				{
+					if(angle > 3.141592/2.0)
+						u[2] = -sqrt(dx*dx+dy*dy)/Jm;
+					else
+						u[2] = sqrt(dx*dx+dy*dy)/Jm;
+				}
+				else // ED
+				{
+					if(angle > 3.141592/2.0)
+						u[3] = sqrt(dx*dx+dy*dy)/Jm;
+					else
+						u[3] = -sqrt(dx*dx+dy*dy)/Jm;
+				}
+			}
+		}
+
+		// Let's do Pollock's method here.
+		// Solve for the reference position of this particle;
+		double R[3]; R[0]=A->x; R[1]=A->y; R[2]=A->z;
+		IsoparametricMappingQuadfromPtoR(A->elementIndex, R);
+
+		// Find the correct entry face from here.
+		double Gx = u[1] - u[0];
+		double Gy = u[3] - u[2];
+		double uT=Gx*R[0]+u[0];
+		double vT=Gy*R[1]+u[2];
+
+		double t[4], bigTime = 1e10, tmin;
+
+		t[0]= TA(Gx,uT,u[0],R[0]); if(t[0] < 0.0) t[0] = bigTime;
+		t[1]= TB(Gx,uT,u[0],u[1],R[1]); if(t[1] < 0.0) t[1] = bigTime;
+		t[2]= TA(Gy,vT,u[2],R[1]); if(t[2] < 0.0) t[2] = bigTime;
+		t[3]= TB(Gy,vT,u[2],u[3],R[1]); if(t[3] < 0.0) t[3] = bigTime;
+
+		int idx = -10;
+		tmin = Tmin(t, &idx);
+
+		R[0] = 1.0/Gx*(exp(-Gx*tmin)*uT-u[0]);
+		R[1] = 1.0/Gy*(exp(-Gy*tmin)*vT-u[2]);
+		R[2] = 0.0;
+
+
+		// Solve exit point in physical space back.
+		IsoparametricMappingQuadfromRtoP(A->elementIndex, R);
+
+		A->x = R[0]; A->y = R[1]; A->z = R[2];
+	}
+
+}
+/**************************************************************************
+Class: RandomWalk
+Task: This function traces exit point in this element.
+	  The element should be regular.
+	  Not really working.
+Programing:
+02/2007 PCH Implementation
+ **************************************************************************/
+void RandomWalk::TracePathlineInThisElement(Particle* A)
+{
+	// Get the mesh first
+	CFEMesh* m_msh = NULL;
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
+	// Mount the element fromthe first particle from particles initially
+	CElem* theEle = m_msh->ele_vector[A->elementIndex];
+	double tolerance = 1e-8;
+
+	// If a quad element,
+	int nnode = theEle->GetEdgesNumber();
+	m_pcs = PCSGet("FLUID_MOMENTUM");
+
+	// Let's solve pore velocity.
+	// It is simple because Sw stuff automatically handles in Richards Flow.
+	// Thus, I only divide Darcy velocity by porosity only to get pore velocity.
+	CMediumProperties *MediaProp = mmp_vector[theEle->GetPatchIndex()];
+	double porosity = 0.0;
+	if(MediaProp->porosity > 10-6)
+		porosity = MediaProp->porosity;	// This is for simple one.
+	else
+		porosity = MediaProp->porosity_model_values[0];		// This will get you porosity.
+	// I guess for Dual Porocity stuff,
+	// this code should be revisited.
+
+	if(nnode == 4)
+	{
+		// Mount the edges of the element
+		vec<CEdge*>theEdgesOfThisElement(nnode);
+		theEle->GetEdges(theEdgesOfThisElement);
+		// Mount the nodes of the edge
+		vec<CNode*>theNodesOfThisEdge(3);
+
+		// Let's do Pollock's method here.
+		// Solve for the reference position of this particle;
+		double R[3]; R[0]=A->x; R[1]=A->y; R[2]=A->z;
+
+		double x0,x1,y0,y1;
+		// Get the nodes of the edge i
+		theEdgesOfThisElement[0]->GetNodes(theNodesOfThisEdge);
+		//	x0 = theNodesOfThisEdge[0]->X();
+		x0 =R[0];
+		x1 = theNodesOfThisEdge[1]->X();
+		theEdgesOfThisElement[1]->GetNodes(theNodesOfThisEdge);
+		//	y0 = theNodesOfThisEdge[0]->Y();
+		y0 =R[1];
+		y1 = theNodesOfThisEdge[1]->Y();
+
+		double Fx0,Fx1,Fy0,Fy1;	// Flux at each edge in physical space
+		Fx0 = theEdgesOfThisElement[3]->GetVelocity(0);
+		Fx1 = theEdgesOfThisElement[1]->GetVelocity(0);
+		Fy0 = theEdgesOfThisElement[0]->GetVelocity(1);
+		Fy1 = theEdgesOfThisElement[2]->GetVelocity(1);
+
+		double ax,bx,cx,ay,by,cy;
+		ax = Fx1-Fx0; bx = Fx0*x1-x0*x1; cx = x1-x0;
+		ay = Fy1-Fy0; by = Fy0*y1-y0*y1; cy = y1-y0;
+
+		//Solve the T
+		double tolerance = 1e-8;
+		double tx, ty;
+		if(fabs(ax) > tolerance)
+		{
+			tx = cx/ax*log((ax*x1+bx)/(ax*x0+bx));
+		}
+		else
+			abort();
+
+		if(fabs(ay) > tolerance)
+		{
+			ty = cy/ay*log((ay*y1+by)/(ay*y0+by));
+		}
+		else
+			abort();
+
+		double tmin;
+		int index = -10; // 0 is i, 1 is j
+		if(tx > ty)
+		{
+			tmin = ty;
+			index = 1;
+		}
+		else
+		{
+			tmin = tx;
+			index = 0;
+		}
+
+		if(cx > tolerance)
+		{
+			R[0] = (x0+bx/ax)*exp(ax/cx*tmin)-bx/ax;
+		}
+		else
+		{
+			// Same point. Do nothing
+		}
+
+		if(cy > tolerance)
+		{
+			R[1] = (y0+by/ay)*exp(ay/cy*tmin)-by/ay;
+		}
+		else
+		{
+			// Same point. Do nothing
+		}
+
+		R[2] = 0.0;
+
+		A->x = R[0]; A->y = R[1]; A->z = R[2];
+		//update the element index;
+		int i = A->x / dx; int j = A->y / dy;
+
+		int iFDM;
+		if(index == 0)
+			iFDM = j*nx + i+1;
+		else
+			iFDM = (j+1)*nx + i;
+
+		if(iFDM < indexFDM.size())
+			A->elementIndex = indexFDM[iFDM].eleIndex;
+		else
+			A->elementIndex = -10;	 // Outside of the domain
+	}
+
+}
+
+double RandomWalk::Tmin(double* a, int* idx)
+{
+	double Tmin = 1e20;
+
+	for(int i=0; i<4; ++i)
+		if(Tmin > a[i])
+		{
+			Tmin = a[i];
+			*idx = i;
+		}
+
+	return Tmin;
+}
+double RandomWalk::TA(double Gx,double uT, double uA, double xTA)
+{
+	double tolerance = 1e-10, bigTime = 1e10;
+
+	if(fabs(Gx) > tolerance)	// If Gx is not zero
+	{
+		if(fabs(uA) > tolerance)
+		{
+			if(uA*uT > 0.0)
+			{
+				if (1.0/Gx*log(uT/uA) < 0.0)
+					return bigTime;
+				else
+					return 1.0/Gx*log(uT/uA);
+			}
+			else
+				return bigTime;
+		}
+		else
+			return bigTime;	// Assume T is infinite.
+	}
+	else
+	{
+		if(fabs(uA) > tolerance)  // uA is not zero
+		{
+			double xA = -1.0; // In my reference space
+			if( (xTA-xA)*uA < 0.0)
+				return bigTime;
+			else
+				return xTA/uA;
+		}
+		else
+			return bigTime;
+	}
+}
+double RandomWalk::TB(double Gx,double uT, double uA, double uB, double xTB)
+{
+	double tolerance = 1e-10, bigTime = 1e10;
+
+	if(fabs(Gx) > tolerance)	// If Gx is not zero
+	{
+		if(fabs(uB) > tolerance)
+		{
+			if(uB*uT > 0.0)
+			{
+				if (1.0/Gx*log(uT/uB) < 0.0)
+					return bigTime;
+				else
+					return 1.0/Gx*log(uT/uB);
+			}
+			else
+				return bigTime;
+		}
+		else
+			return bigTime;	// Assume T is infinite.
+	}
+	else
+	{
+		if(fabs(uB) > tolerance)  // uA is not zero
+		{
+			double xB = 1.0; // In my reference space
+			if( (xTB-xB)*uB < 0.0)
+				return bigTime;
+			else
+				return (xTB-1.0)/uA;
+		}
+		else
+			return bigTime;
+	}
 }
 
 /**************************************************************************
 Class: RandomWalk
-Task: This function interpolates velocity of the particle 
+Task: This function interpolates velocity of the particle
 	  based on the inverse distance method
 	  RWPT-IM This function should OK with the real plane.
 Programing:
@@ -139,18 +548,31 @@ Programing:
 			that has a joint or crossroads.
 05/2006 PCH This one gets hydraulic conductivity as well.
 last modification:
-**************************************************************************/
+ **************************************************************************/
 void RandomWalk::InterpolateVelocityOfTheParticleByInverseDistance(Particle* A)
 {
-	// Get the element that the particle belongs
-	m_msh = fem_msh_vector[0]; 
-	CElem* m_ele = m_msh->ele_vector[A->elementIndex];	
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
+
+	CElem* m_ele = m_msh->ele_vector[A->elementIndex];
 	// Set the pointer that leads to the nodes of element
 	CNode* node = NULL;
 
 	// Let's get the hydraulic conductivity first.
-	CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];	
-	//int phase = 0;
+	CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];
+	int phase = 0;
 	CFluidProperties *FluidProp = mfp_vector[0];
 	double* kTensor = MediaProp->PermeabilityTensor(A->elementIndex);
 	double k = kTensor[0];
@@ -166,7 +588,7 @@ void RandomWalk::InterpolateVelocityOfTheParticleByInverseDistance(Particle* A)
 	d = new double [nnodes] ();
 	double SumOfdInverse = 0.0;
 
-	// Get the cooridinate of the nodes in the element 
+	// Get the cooridinate of the nodes in the element
 	for(int i=0; i< nnodes; ++i)
 	{
 		node = m_ele->GetNode(i);
@@ -202,7 +624,7 @@ void RandomWalk::InterpolateVelocityOfTheParticleByInverseDistance(Particle* A)
 			{
 			}
 			else	// Failed to find the crossroad although it is a crossroad
-				abort();	
+				abort();
 
 			// Find the velocity of the crossroad associated with the connected planes.
 			for(int k=0; k< crossroad->numOfThePlanes; ++k)
@@ -212,15 +634,15 @@ void RandomWalk::InterpolateVelocityOfTheParticleByInverseDistance(Particle* A)
 				double E[3], P[3];
 				for(int p=0; p<3; ++p)
 				{
-					E[p] = m_ele->getTransformTensor(6+p); 
+					E[p] = m_ele->getTransformTensor(6+p);
 					P[p] = crossroad->plane[k].norm[p];
 				}
-					
+
 				double same = (E[0]-P[0])*(E[0]-P[0]) + (E[1]-P[1])*(E[1]-P[1]) + (E[2]-P[2])*(E[2]-P[2]);
 
 				if(same < tolerance)
 				{
-					vx = crossroad->plane[k].V[0]; vy = crossroad->plane[k].V[1]; vz = crossroad->plane[k].V[2];	
+					vx = crossroad->plane[k].V[0]; vy = crossroad->plane[k].V[1]; vz = crossroad->plane[k].V[2];
 				}
 			}
 		}
@@ -233,26 +655,663 @@ void RandomWalk::InterpolateVelocityOfTheParticleByInverseDistance(Particle* A)
 			// Let's solve pore velocity.
 			// It is simple because Sw stuff automatically handles in Richards Flow.
 			// Thus, I only divide Darcy velocity by porosity only to get pore velocity.
-			CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];	
+			CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];
 			double porosity = 0.0;
 			if(MediaProp->porosity > 10-6)
 				porosity = MediaProp->porosity;	// This is for simple one.
 			else
 				porosity = MediaProp->porosity_model_values[0];		// This will get you porosity.
-																	// I guess for Dual Porocity stuff, 
-																	// this code should be revisited.
+			// I guess for Dual Porocity stuff,
+			// this code should be revisited.
 
 			vx /= porosity; vy /= porosity; vz /= porosity;
 		}
 
 		A->Vx += w[i]*vx; A->Vy += w[i]*vy; A->Vz += w[i]*vz;
 	}
-	
+
 	// Release the temperary memory in this function
 	delete [] vertex;
 	delete [] d; delete [] w;
 }
 
+/**************************************************************************
+Class: RandomWalk
+Task: This function interpolates velocity of the particle
+	  based on the bilinear method
+	  The function requires FDM-like grid.
+	  option 0: FDM method
+	  option 1: Transformation for irregular grids
+Programing:
+01/2007 PCH Implementation
+02/2007 PCH Modification
+last modification:
+ **************************************************************************/
+void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle* A)
+{
+	// Get the element that the particle belongs
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
+
+	// Let's allocate some memory for miniFEM
+	CFEMesh* m_mini = new CFEMesh();
+	CElem* miniEle = new CElem();
+
+	if(option == 0)	// FDM method
+	{
+		int eleIndex = IndexOfTheElementThatThisParticleBelong(0,A);
+
+		if(eleIndex == -5)
+		{
+			// This is a temperary measure.
+			// Gotta be written better later on.
+			eleIndex = 0;
+		}
+
+		// Element is outside of the domain or in the sink
+		// Do not do anything. If not, then proceed.
+		if(eleIndex != -10)
+		{
+			A->elementIndex = eleIndex;
+			CElem* m_ele = m_msh->ele_vector[eleIndex];
+
+			int nnode = m_ele->GetEdgesNumber();
+
+			// Let's get the hydraulic conductivity first.
+			CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];
+			int phase = 0;
+			CFluidProperties *FluidProp = mfp_vector[0];
+			double* kTensor = MediaProp->PermeabilityTensor(eleIndex);
+			double k = kTensor[0];
+
+			A->K = k*FluidProp->Density()*9.81/FluidProp->Viscosity();
+
+			// Get the number of nodes
+			int nnodes = m_ele->GetVertexNumber();
+
+			// Mount the edges of the element
+			vec<CEdge*>theEdgesOfThisElement(nnode);
+			m_ele->GetEdges(theEdgesOfThisElement);
+
+			double E1[3], E2[3], E3[3], E4[3];	// mid points of each edge
+			theEdgesOfThisElement[0]->GetEdgeMidPoint(E1);
+			theEdgesOfThisElement[1]->GetEdgeMidPoint(E2);
+			theEdgesOfThisElement[2]->GetEdgeMidPoint(E3);
+			theEdgesOfThisElement[3]->GetEdgeMidPoint(E4);
+
+			// ux = a+b(x-x0); uy = c + d(y-y0)
+			double a,b,c,d,x0,y0;
+			x0 = E4[0]; y0 = E1[1];
+			a = theEdgesOfThisElement[3]->GetVelocity(0);
+			b = (theEdgesOfThisElement[1]->GetVelocity(0)-theEdgesOfThisElement[3]->GetVelocity(0))/dx;
+			c = theEdgesOfThisElement[0]->GetVelocity(1);
+			d = (theEdgesOfThisElement[2]->GetVelocity(1)-theEdgesOfThisElement[0]->GetVelocity(1))/dy;
+
+			// Let's solve pore velocity.
+			// It is simple because Sw stuff automatically handles in Richards Flow.
+			// Thus, I only divide Darcy velocity by porosity only to get pore velocity.
+			double porosity = 0.0;
+			if(MediaProp->porosity > 10-6)
+				porosity = MediaProp->porosity;	// This is for simple one.
+			else
+				porosity = MediaProp->porosity_model_values[0];		// This will get you porosity.
+			// I guess for Dual Porocity stuff,
+			// this code should be revisited.
+
+			A->Vx = (a+b*(A->x-x0))/porosity;
+			A->Vy = (c+d*(A->y-y0))/porosity;
+			A->Vz = 0.0;
+		}
+		else
+			;	// Think later for out of boundary particles.
+	}
+	else if(option == 1)	// miniFEM Way
+	{
+		m_pcs = PCSGet("FLUID_MOMENTUM");
+		CElem* theEle = m_msh->ele_vector[A->elementIndex];
+		int eleIndex = A->elementIndex;
+		// Set the pointer that leads to the nodes of element
+		CNode* node = NULL;
+
+		// If Element is outside of the domain or in the sink or on the edge or at the corner vertix
+		// Do not do anything. If not, then proceed.
+		// Check if the particle is on the edge or node.
+		int IsOnTheEdge = IsParticleOnTheEdge(A);
+		int nnode = theEle->GetEdgesNumber();
+		if(eleIndex != -10 && IsOnTheEdge == 0)
+		{
+			// Let's solve pore velocity.
+			// It is simple because Sw stuff automatically handles in Richards Flow.
+			// Thus, I only divide Darcy velocity by porosity only to get pore velocity.
+			CMediumProperties *MediaProp = mmp_vector[theEle->GetPatchIndex()];
+			double porosity = 0.0;
+			if(MediaProp->porosity > 10-6)
+				porosity = MediaProp->porosity;	// This is for simple one.
+			else
+				porosity = MediaProp->porosity_model_values[0];		// This will get you porosity.
+			// I guess for Dual Porocity stuff,
+			// this code should be revisited.
+
+			// Get the number of nodes
+			int nnodes = theEle->GetVertexNumber();
+
+			// Mount the edges of the element
+			vec<CEdge*>theEdgesOfThisElement(nnode);
+			theEle->GetEdges(theEdgesOfThisElement);
+
+			// Get physical coordinates of four corner points
+			double x[8], y[8], z[8];
+			double vx[8], vy[8], vz[8];
+			for(int i=0; i<nnode; ++i)
+			{
+				CNode* theNode = NULL;
+				theNode = theEle->GetNode(i);
+				x[i] = theNode->X();
+				y[i] = theNode->Y();
+				z[i] = theNode->Z();
+
+				vx[i] = m_pcs->GetNodeValue(theEle->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_X")+1)/porosity;
+				vy[i] = m_pcs->GetNodeValue(theEle->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1)/porosity;
+				vz[i] = m_pcs->GetNodeValue(theEle->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1)/porosity;
+			}
+
+			// Mount the nodes of the edge
+			vec<CNode*>theNodesOfThisEdge(3);
+
+			// MiniFEM for 2D elements starts here
+			// Find all the nodes for miniFEM first
+			if(nnode == 4)	// Quad
+			{
+				CNode* theNode = NULL;
+				// Node 0 for miniFEM for quad
+				theNode = theEle->GetNode(0);
+				m_mini->nod_vector.push_back(theNode);
+				// Node 1 For edge 0
+				GetNodeOfMiniFEMforTheEdge(theNode, theEdgesOfThisElement[0], A);
+				m_mini->nod_vector.push_back(theNode);
+				// Node 2 for miniFEM for quad
+				theNode = theEle->GetNode(1);
+				m_mini->nod_vector.push_back(theNode);
+				// Node 3 For edge 1
+				GetNodeOfMiniFEMforTheEdge(theNode, theEdgesOfThisElement[1], A);
+				m_mini->nod_vector.push_back(theNode);
+				// Node 4 for miniFEM for quad
+				theNode = theEle->GetNode(2);
+				m_mini->nod_vector.push_back(theNode);
+				// Node 5 For edge 2
+				GetNodeOfMiniFEMforTheEdge(theNode, theEdgesOfThisElement[2], A);
+				m_mini->nod_vector.push_back(theNode);
+				// Node 6 for miniFEM for quad
+				theNode = theEle->GetNode(3);
+				m_mini->nod_vector.push_back(theNode);
+				// Node 7 For edge 3
+				GetNodeOfMiniFEMforTheEdge(theNode, theEdgesOfThisElement[3], A);
+				m_mini->nod_vector.push_back(theNode);
+				// Node 8 Finally this particle
+				theNode->SetX(A->x); theNode->SetY(A->y); theNode->SetZ(A->z);
+				m_mini->nod_vector.push_back(theNode);
+
+				// Now elements for miniFEM
+				// ele 0 for miniFEM
+				miniEle->SetNodeIndex(0, m_mini->nod_vector[0]->GetIndex());
+				miniEle->SetNodeIndex(1, m_mini->nod_vector[1]->GetIndex());
+				miniEle->SetNodeIndex(2, m_mini->nod_vector[8]->GetIndex());
+				miniEle->SetNodeIndex(3, m_mini->nod_vector[7]->GetIndex());
+				m_mini->ele_vector.push_back(miniEle);
+				// ele 1 for miniFEM
+				miniEle->SetNodeIndex(0, m_mini->nod_vector[1]->GetIndex());
+				miniEle->SetNodeIndex(1, m_mini->nod_vector[2]->GetIndex());
+				miniEle->SetNodeIndex(2, m_mini->nod_vector[3]->GetIndex());
+				miniEle->SetNodeIndex(3, m_mini->nod_vector[8]->GetIndex());
+				m_mini->ele_vector.push_back(miniEle);
+				// ele 2 for miniFEM
+				miniEle->SetNodeIndex(0, m_mini->nod_vector[8]->GetIndex());
+				miniEle->SetNodeIndex(1, m_mini->nod_vector[3]->GetIndex());
+				miniEle->SetNodeIndex(2, m_mini->nod_vector[4]->GetIndex());
+				miniEle->SetNodeIndex(3, m_mini->nod_vector[5]->GetIndex());
+				m_mini->ele_vector.push_back(miniEle);
+				// ele 3 for miniFEM
+				miniEle->SetNodeIndex(0, m_mini->nod_vector[7]->GetIndex());
+				miniEle->SetNodeIndex(1, m_mini->nod_vector[8]->GetIndex());
+				miniEle->SetNodeIndex(2, m_mini->nod_vector[5]->GetIndex());
+				miniEle->SetNodeIndex(3, m_mini->nod_vector[6]->GetIndex());
+				m_mini->ele_vector.push_back(miniEle);
+
+				// Assemble
+				fem = new CFiniteElementStd(m_pcs, m_msh->GetCoordinateFlag());
+				// I am going to create global matrix here
+				CElem* elem = NULL;
+				for(int d=0; d < 2; ++d)
+				{
+					/* Initializations */
+					/* System matrix */
+#ifdef NEW_EQS //WW
+					m_pcs->EQSInitialize();
+#else
+					SetZeroLinearSolver(m_pcs->eqs);
+#endif
+
+					for (int i = 0; i < (long)m_msh->ele_vector.size(); i++)
+					{
+						elem = m_mini->ele_vector[i];
+						fem->ConfigElement(elem);
+						// Assembly gotta be written different way
+						fem->Assembly(0, d);
+					}
+
+					m_pcs->IncorporateBoundaryConditions(-1,d);
+
+					// Solve for velocity
+#ifdef NEW_EQS
+
+					double* x;
+					int size = m_msh->nod_vector.size();
+					x = new double[size];
+#if defined(LIS)
+					m_pcs->EQSSolver(x);		// an option added to tell FLUID_MOMENTUM for sparse matrix system.
+					cout << "Solver passed in FLUID_MOMENTUM." <<endl;
+#endif
+#else
+					m_pcs->ExecuteLinearSolver(m_pcs->eqs);
+#endif
+				}
+
+			}
+			else if(nnode == 3)
+			{
+			}
+			else
+				;	// This shouldn't happen here. There are only tri or quad ele's in 2D
+
+
+		}
+		else if(IsOnTheEdge != 0)	// The particle is on the edge.
+		{
+			// We have update edge index for this particle performing
+			// IsParticleOnTheEdge() function
+			// Thus, we only need to interpolate particle velocity along this edge.
+			// Even for this, I will use 1d Galerkin method.
+
+		}
+		else
+			;	// Think later for out of boundary particles.
+	}
+	else 	// Real Space and reference space way
+	{
+		m_pcs = PCSGet("FLUID_MOMENTUM");
+		CElem* theEle = m_msh->ele_vector[A->elementIndex];
+		int eleIndex = A->elementIndex;
+		// Set the pointer that leads to the nodes of element
+		CNode* node = NULL;
+
+		// Element is outside of the domain or in the sink
+		// Do not do anything. If not, then proceed.
+		if(eleIndex != -10)
+		{
+			int nnode = theEle->GetEdgesNumber();
+
+			// Let's solve pore velocity.
+			// It is simple because Sw stuff automatically handles in Richards Flow.
+			// Thus, I only divide Darcy velocity by porosity only to get pore velocity.
+			CMediumProperties *MediaProp = mmp_vector[theEle->GetPatchIndex()];
+			double porosity = 0.0;
+			if(MediaProp->porosity > 10-6)
+				porosity = MediaProp->porosity;	// This is for simple one.
+			else
+				porosity = MediaProp->porosity_model_values[0];		// This will get you porosity.
+			// I guess for Dual Porocity stuff,
+			// this code should be revisited.
+
+			// Get the number of nodes
+			int nnodes = theEle->GetVertexNumber();
+
+			// Mount the edges of the element
+			vec<CEdge*>theEdgesOfThisElement(nnode);
+			theEle->GetEdges(theEdgesOfThisElement);
+
+			// Get physical coordinates of four corner points
+			double x[4], y[4], z[4];
+			double vx[4], vy[4], vz[4];
+			for(int i=0; i<nnode; ++i)
+			{
+				CNode* theNode = NULL;
+				theNode = theEle->GetNode(i);
+				x[i] = theNode->X();
+				y[i] = theNode->Y();
+				z[i] = theNode->Z();
+
+				vx[i] = m_pcs->GetNodeValue(theEle->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_X")+1)/porosity;
+				vy[i] = m_pcs->GetNodeValue(theEle->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1)/porosity;
+				vz[i] = m_pcs->GetNodeValue(theEle->GetNodeIndex(i),m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1)/porosity;
+			}
+			// solve for Jm at xm = (xhat,yhat)=(1/2,1/2) <- RT0
+			double Jm;
+			Jm = 0.5*(x[0]*y[1]-y[0]*x[1]+x[1]*y[2]-y[1]*x[2]+y[0]*x[3]-x[0]*y[3]+x[2]*y[3]-y[2]*x[3]);
+
+			// Mount the nodes of the edge
+			vec<CNode*>theNodesOfThisEdge(3);
+
+			// Solve for proper index in reference space
+			double* Ecenter=theEle->GetGravityCenter();
+			double u[4]; // Edge flux in reference space
+			for(int i=0; i<4; ++i)
+				u[i] = 0.0;
+
+			for(int i=0; i<4; ++i)
+			{
+				// Get the nodes of the edge i
+				theEdgesOfThisElement[i]->GetNodes(theNodesOfThisEdge);
+
+				double node1[3], node2[3];
+				node1[0] = theNodesOfThisEdge[0]->X(); node1[1] = theNodesOfThisEdge[0]->Y();
+				node2[0] = theNodesOfThisEdge[1]->X(); node2[1] = theNodesOfThisEdge[1]->Y();
+				// Get the referece position of these two ending points of the edge
+				IsoparametricMappingQuadfromPtoR(A->elementIndex, node1);
+				IsoparametricMappingQuadfromPtoR(A->elementIndex, node2);
+
+				double dx, dy;
+				dx = theEdgesOfThisElement[i]->GetVelocity(0);
+				dy = theEdgesOfThisElement[i]->GetVelocity(1);
+
+				double edge2mid[3], EdgeMidPoint[3];
+				theEdgesOfThisElement[i]->GetEdgeMidPoint(EdgeMidPoint);
+				for(int j=0; j<3; ++j)
+					edge2mid[j] = Ecenter[j]- EdgeMidPoint[j];
+
+				double angle = acos((dx*edge2mid[0]+dy*edge2mid[1])
+						/(sqrt(dx*dx+dy*dy)*sqrt(edge2mid[0]*edge2mid[0]+edge2mid[1]*edge2mid[1])));
+
+				// EA and EB: x1hat = x2hat and x1hat*x2hat > 0
+				if(fabs(node1[0]-node2[0])<0.5 && (node1[0]*node2[0]) > 0.0)
+				{
+					// EA: x1hat < 0
+					if(node1[0] < 0.0)
+					{
+						if(angle > 3.141592/2.0)
+							u[0] = -sqrt(dx*dx+dy*dy)/Jm;
+						else
+							u[0] = sqrt(dx*dx+dy*dy)/Jm;
+					}
+					else // EB
+					{
+						if(angle > 3.141592/2.0)
+							u[1] = sqrt(dx*dx+dy*dy)/Jm;
+						else
+							u[1] = -sqrt(dx*dx+dy*dy)/Jm;
+					}
+				}
+				// Else then, EC and ED
+				else
+				{
+					// EC: y1hat < 0
+					if(node1[1] < 0.0)
+					{
+						if(angle > 3.141592/2.0)
+							u[2] = -sqrt(dx*dx+dy*dy)/Jm;
+						else
+							u[2] = sqrt(dx*dx+dy*dy)/Jm;
+					}
+					else // ED
+					{
+						if(angle > 3.141592/2.0)
+							u[3] = sqrt(dx*dx+dy*dy)/Jm;
+						else
+							u[3] = -sqrt(dx*dx+dy*dy)/Jm;
+					}
+				}
+			}
+
+			double E1[3], E2[3], E3[3], E4[3];	// mid points of each edge
+			theEdgesOfThisElement[0]->GetEdgeMidPoint(E1);
+			theEdgesOfThisElement[1]->GetEdgeMidPoint(E2);
+			theEdgesOfThisElement[2]->GetEdgeMidPoint(E3);
+			theEdgesOfThisElement[3]->GetEdgeMidPoint(E4);
+			IsoparametricMappingQuadfromPtoR(A->elementIndex, E1);
+			IsoparametricMappingQuadfromPtoR(A->elementIndex, E2);
+			IsoparametricMappingQuadfromPtoR(A->elementIndex, E3);
+			IsoparametricMappingQuadfromPtoR(A->elementIndex, E4);
+
+			// ux = a+b(x-x0); uy = c + d(y-y0)
+			double a,b,c,d,x0,y0;
+
+			x0 = E4[0]; y0 = E1[1];
+			a = u[0];
+			b = (u[1]-u[0])/2.0;	// set dx for reference space unit
+			c = u[2];
+			d = (u[3]-u[2])/2.0;
+
+			double R[3];
+			R[0] = A->x; R[1] = A->y; R[2] = 0.0;
+			IsoparametricMappingQuadfromPtoR(A->elementIndex, R);
+			A->Vx = (a+b*(R[0]-x0));
+			A->Vy = (c+d*(R[1]-y0));
+			A->Vz = 0.0;
+		}
+		else
+			;	// Think later for out of boundary particles.
+	}
+
+
+
+	delete miniEle;
+	delete m_mini;
+}
+
+void RandomWalk::GetNodeOfMiniFEMforTheEdge(CNode* theNode, CEdge* theEdge, Particle* A)
+{
+	double x[2], y[2];	// Just for two nodes of the edge
+
+	theNode = theEdge->GetNode(0);
+	x[0] = theNode->X(); y[0] = theNode->Y();
+	theNode = theEdge->GetNode(1);
+	x[1] = theNode->X(); y[1] = theNode->Y();
+
+	// Two rules. The angle is perpendicular. So the dot product is zero
+	// The particle is on this edge. Line equation
+	// a = x1-x2, b=y1-y2, aa=ax0+by0, bb=bx1-ay1
+	double a, b, aa, bb;
+	a = x[0]-x[1]; b=y[0]-y[1];
+	aa = a*A->x + b*A->y; bb = b*x[0] - a*y[0];
+	double det = - a*a - b*b;
+	double X, Y;
+	X = -(a*aa + b*bb)/det; Y = (-b*aa+a*bb)/det;
+
+	theNode->SetX(X); theNode->SetY(Y); theNode->SetZ(0.0);
+}
+
+
+/**************************************************************************
+Class: RandomWalk
+Task: The function returns 0 if particle is not on any of edge of the element
+	  1 if particle is on any of edge of the element
+Programing:
+02/2007 PCH Implementation
+last modification:
+ **************************************************************************/
+int RandomWalk::IsParticleOnTheEdge(Particle* A)
+{
+	double tolerance = 1e-6;
+	CElem* theEle = m_msh->ele_vector[A->elementIndex];
+	int nnode = theEle->GetVertexNumber();
+
+	// If element is triangle or quadrilateral.
+	if(nnode == 3 || nnode == 4)
+	{
+		// Mount the edges of the element
+		vec<CEdge*>theEdgesOfThisElement(nnode);
+		theEle->GetEdges(theEdgesOfThisElement);
+
+		double x1[3], x2[3], v[3];
+		vec<CNode*>theNodesOfThisEdge(3);
+
+		for(int i=0; i< nnode; ++i)
+		{
+			theEdgesOfThisElement[i]->GetNodes(theNodesOfThisEdge);
+			x1[0]=theNodesOfThisEdge[0]->X();
+			x1[1]=theNodesOfThisEdge[0]->Y();
+			x1[2]=theNodesOfThisEdge[0]->Z();
+			x2[0]=theNodesOfThisEdge[1]->X();
+			x2[1]=theNodesOfThisEdge[1]->Y();
+			x2[2]=theNodesOfThisEdge[1]->Z();
+
+			double x2x1[3], x1x0[3];
+			x2x1[0] = x2[0]-x1[0]; x2x1[1] = x2[1]-x1[1]; x2x1[2] = x2[2]-x1[2];
+			x1x0[0] = x1[0] - A->x; x1x0[1] = x1[1] - A->y; x1x0[2] = x1[2] - A->z;
+			double x2x1square;
+			x2x1square = (x2[0]-x1[0])*(x2[0]-x1[0]) + (x2[1]-x1[1])*(x2[1]-x1[1]) + (x2[2]-x1[2])*(x2[2]-x1[2]);
+
+			double cvec[3];
+			CrossProduction(x2x1,x1x0,cvec);
+
+			double distance;
+			distance = sqrt( (cvec[0]*cvec[0]+cvec[1]*cvec[1]+cvec[2]*cvec[2])/x2x1square);
+
+			if(distance < tolerance)	// The particle is on this edge
+			{
+				// Update the edge that the particle is on now.
+				A->edgeIndex = theEdgesOfThisElement[i]->GetIndex();
+
+				return 1;	// Yes, it is on one of the edges in the element
+			}
+			else
+				;	// Do the next
+		}
+	}
+	else
+		return 0;	// For 3D element, later....
+
+	return 0;	// No, The particle is not any edge in the element.
+}
+
+/**************************************************************************
+Class: RandomWalk
+Task: This function interpolates location of the particle for a given dt
+	  based on the bilinear method
+	  The function requires FDM-like grid.
+Programing:
+02/2007 PCH Implementation
+last modification:
+ **************************************************************************/
+double* RandomWalk::InterpolateLocationOfTheParticleByBilinear(Particle* A, double dt)
+{
+	double x[3];
+
+	// Get the element that the particle belongs
+	m_msh = NULL;
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
+	int eleIndex = IndexOfTheElementThatThisParticleBelong(0,A);
+	if(eleIndex == -5)
+	{
+		// This is a temperary measure.
+		// Gotta be written better later on.
+		eleIndex = 0;
+	}
+
+
+	// Element is outside of the domain or in the sink
+	// Do not do anything. If not, then proceed.
+	if(eleIndex != -10)
+	{
+		A->elementIndex = eleIndex;
+		CElem* m_ele = m_msh->ele_vector[eleIndex];
+
+		int nnode = m_ele->GetEdgesNumber();
+
+		// Let's get the hydraulic conductivity first.
+		CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];
+		int phase = 0;
+		CFluidProperties *FluidProp = mfp_vector[0];
+		double* kTensor = MediaProp->PermeabilityTensor(eleIndex);
+		double k = kTensor[0];
+
+		A->K = k*FluidProp->Density()*9.81/FluidProp->Viscosity();
+
+		// Get the number of nodes
+		int nnodes = m_ele->GetVertexNumber();
+
+		// Mount the edges of the element
+		vec<CEdge*>theEdgesOfThisElement(nnode);
+		m_ele->GetEdges(theEdgesOfThisElement);
+
+		double E1[3], E2[3], E3[3], E4[3];	// mid points of each edge
+		theEdgesOfThisElement[0]->GetEdgeMidPoint(E1);
+		theEdgesOfThisElement[1]->GetEdgeMidPoint(E2);
+		theEdgesOfThisElement[2]->GetEdgeMidPoint(E3);
+		theEdgesOfThisElement[3]->GetEdgeMidPoint(E4);
+
+		// ux = a+b(x-x0); uy = c + d(y-y0)
+		double a,b,c,d,x0,y0;
+		x0 = E4[0]; y0 = E1[1];
+		a = theEdgesOfThisElement[3]->GetVelocity(0);
+		b = (theEdgesOfThisElement[1]->GetVelocity(0)-theEdgesOfThisElement[3]->GetVelocity(0))/dx;
+		c = theEdgesOfThisElement[0]->GetVelocity(1);
+		d = (theEdgesOfThisElement[2]->GetVelocity(1)-theEdgesOfThisElement[0]->GetVelocity(1))/dy;
+
+		A->x = (a+b*(A->x-x0))/b*exp(b*dt)-a/b;
+		A->y = (c+d*(A->y-y0))/d*exp(d*dt)-c/d;
+		A->z = 0.0;
+	}
+	else
+		;	// Think later for out of boundary particles.
+
+	return x;
+}
+
+int RandomWalk::IndexOfTheElementThatThisParticleBelong(int option, Particle* A)
+{
+	int index=-10;
+
+	if(option == 0)
+	{
+		int i = A->x / dx; int j = A->y / dy;
+
+		int iFDM = j*nx + i;
+
+		// Set off the domain first
+		if(A->x > XT || A->x < 0.0 || A->y > YT || A->y < 0.0)
+			return index;
+
+		if(iFDM < indexFDM.size())
+		{
+			index = indexFDM[iFDM].eleIndex;
+			/*
+			if(index == 322 || index == 323 || index == 342 || index == 343)	// Sink condition
+				return -10;
+			else
+			 */
+			return index;
+		}
+		else
+			return index;
+	}
+	else
+		return GetTheElementOfTheParticleFromNeighbor(A);
+}
 /**************************************************************************
 Class: RandomWalk
 Task: The function solves two intersections along x or y or z axis.
@@ -266,11 +1325,11 @@ Programing:
 11/2005 PCH Implementation
 02/2006 PCH Improvement for RWPT in Fracture networks.
 last modification:
-**************************************************************************/
+ **************************************************************************/
 int RandomWalk::SolveForTwoIntersectionsInTheElement(Particle* A, double* P1, double* P2, int axis)
 {
 	// Get the element that the particle belongs
-	CElem* m_ele = m_msh->ele_vector[A->elementIndex];	
+	CElem* m_ele = m_msh->ele_vector[A->elementIndex];
 	// Set the pointer that leads to the nodes of element
 	CNode* node = NULL;
 
@@ -283,9 +1342,9 @@ int RandomWalk::SolveForTwoIntersectionsInTheElement(Particle* A, double* P1, do
 
 	// Set the size of displacement
 	double disp = 1e4; // This should be bigger the largest element size.
-	
+
 	// RWPT-IM
-	// Get the cooridinate of the nodes in the element 
+	// Get the cooridinate of the nodes in the element
 	for(int i=0; i< nnodes; ++i)
 	{
 		node = m_ele->GetNode(i);
@@ -298,7 +1357,7 @@ int RandomWalk::SolveForTwoIntersectionsInTheElement(Particle* A, double* P1, do
 	// Solve for the line equation
 	for(int i=0; i< nnodes; ++i)
 	{
-		double p1[3], p2[3], p3[3], p4[3]; 
+		double p1[3], p2[3], p3[3], p4[3];
 		// Need coordinate transform here.
 		p1[0] = vertex[i%nnodes].x; p1[1] = vertex[i%nnodes].y; p1[2] = vertex[i%nnodes].z;
 		p2[0] = vertex[(i+1)%nnodes].x; p2[1] = vertex[(i+1)%nnodes].y; p2[2] = vertex[(i+1)%nnodes].z;
@@ -334,18 +1393,18 @@ int RandomWalk::SolveForTwoIntersectionsInTheElement(Particle* A, double* P1, do
 				printf("Axis type in searching the intersection failed. Wrong axis type.\n");
 				abort();
 			}
-		
+
 			double x = 0.0, y = 0.0, ra = 0.0, rb = 0.0;
-		
+
 			int status = G_intersect_line_segments( p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], p4[0], p4[1],
-													&ra, &rb, &x, &y); 
+					&ra, &rb, &x, &y);
 			// RWPT-IM P1 and P2 are already on the XY plane.
 			if(status == 1&& j==0)
 			{
 				P1[0] = x; P1[1] = y; P1[2] = 0.0;
 				// Transform back the coordinates.
 				ToTheRealPlane(m_ele, P1);
-				
+
 				++R;
 			}
 			else if(status == 1&& j==1)
@@ -353,11 +1412,11 @@ int RandomWalk::SolveForTwoIntersectionsInTheElement(Particle* A, double* P1, do
 				P2[0] = x; P2[1] = y; P2[2] = 0.0;
 				// Transform back the coordinates.
 				ToTheRealPlane(m_ele, P2);
-				
+
 				++L;
 			}
 			else;
-		}		
+		}
 	}
 
 	// Free the memory for this function
@@ -373,7 +1432,7 @@ int RandomWalk::SolveForTwoIntersectionsInTheElement(Particle* A, double* P1, do
 
 /**************************************************************************
 Class: RandomWalk
-Task: The function solves three displacement by derivatives of 
+Task: The function solves three displacement by derivatives of
 	  dispersion tensor.
 	  1: The function succeeded
 	 -1: The function failed
@@ -381,7 +1440,7 @@ Programing:
 11/2005 PCH Implementation
 02/2006 PCH Improved for the RWPT method in Fracture Networks.
 last modification:
-**************************************************************************/
+ **************************************************************************/
 int RandomWalk::SolveForDisplacementByDerivativeOfDispersion(Particle* A, double* dD)
 {
 	double TensorOfdD[9];
@@ -393,49 +1452,49 @@ int RandomWalk::SolveForDisplacementByDerivativeOfDispersion(Particle* A, double
 
 	// Solve for the tensor of dispersion derivatives
 	// Extract the dispersivities from the group that the particle belongs
-	// To extract dispersivities from material properties    
+	// To extract dispersivities from material properties
 	// This should be checked if the dispersivity gets correctly.
-    CMediumProperties *m_mat_mp = NULL;
-    double alphaL = 0.0, alphaT = 0.0;
-    CElem* m_ele = m_msh->ele_vector[A->elementIndex];
-    int group = m_ele->GetPatchIndex();
-    m_mat_mp = mmp_vector[group];
-    alphaL = m_mat_mp->mass_dispersion_longitudinal;
-    alphaT = m_mat_mp->mass_dispersion_transverse;
+	CMediumProperties *m_mat_mp = NULL;
+	double alphaL = 0.0, alphaT = 0.0;
+	CElem* m_ele = m_msh->ele_vector[A->elementIndex];
+	int group = m_ele->GetPatchIndex();
+	m_mat_mp = mmp_vector[group];
+	alphaL = m_mat_mp->mass_dispersion_longitudinal;
+	alphaT = m_mat_mp->mass_dispersion_transverse;
 
 	// RWPT - IM
 	// This thing should be done on the XY plane too.
 	double V[3];
 	V[0] = A->Vx; V[1] = A->Vy; V[2] = A->Vz;
 	ToTheXYPlane(A->elementIndex, V);
-	
+
 	double U = sqrt(V[0]*V[0] + V[1]*V[1] + V[2]*V[2]);
-	
-	TensorOfdD[0] = V[0]*A->dVxdx*(alphaL*(2.0/U-V[0]*V[0]/(U*U*U)) 
-					- alphaT*(V[1]*V[1] + V[2]*V[2])/(U*U*U) );
-	TensorOfdD[1] = (alphaL-alphaT)*(A->dVydy*V[0]/U - 
-					V[0]*V[1]*V[1]/(U*U*U)*A->dVydy);
-	TensorOfdD[2] = (alphaL-alphaT)*(A->dVzdz*V[0]/U - 
-					V[0]*V[2]*V[2]/(U*U*U)*A->dVzdz);
-	TensorOfdD[3] = (alphaL-alphaT)*(A->dVxdx*V[1]/U - 
-					V[1]*V[0]*V[0]/(U*U*U)*A->dVxdx);
-	TensorOfdD[4] = V[1]*A->dVydy*(alphaL*(2.0/U-V[1]*V[1]/(U*U*U)) 
-					- alphaT*(V[0]*V[0] + V[2]*V[2])/(U*U*U) );
-	TensorOfdD[5] = (alphaL-alphaT)*(A->dVzdz*V[1]/U - 
-					V[1]*V[2]*V[2]/(U*U*U)*A->dVzdz);
-	TensorOfdD[6] = (alphaL-alphaT)*(A->dVxdx*V[2]/U - 
-					V[2]*V[0]*V[0]/(U*U*U)*A->dVxdx);
-	TensorOfdD[7] = (alphaL-alphaT)*(A->dVydy*V[2]/U - 
-					V[2]*V[1]*V[1]/(U*U*U)*A->dVydy);
-	TensorOfdD[8] = V[2]*A->dVzdz*(alphaL*(2.0/U-V[2]*V[2]/(U*U*U)) 
-					- alphaT*(V[0]*V[0] + V[1]*V[1])/(U*U*U) );
- 	
+
+	TensorOfdD[0] = V[0]*A->dVxdx*(alphaL*(2.0/U-V[0]*V[0]/(U*U*U))
+			- alphaT*(V[1]*V[1] + V[2]*V[2])/(U*U*U) );
+	TensorOfdD[1] = (alphaL-alphaT)*(A->dVydy*V[0]/U -
+			V[0]*V[1]*V[1]/(U*U*U)*A->dVydy);
+	TensorOfdD[2] = (alphaL-alphaT)*(A->dVzdz*V[0]/U -
+			V[0]*V[2]*V[2]/(U*U*U)*A->dVzdz);
+	TensorOfdD[3] = (alphaL-alphaT)*(A->dVxdx*V[1]/U -
+			V[1]*V[0]*V[0]/(U*U*U)*A->dVxdx);
+	TensorOfdD[4] = V[1]*A->dVydy*(alphaL*(2.0/U-V[1]*V[1]/(U*U*U))
+			- alphaT*(V[0]*V[0] + V[2]*V[2])/(U*U*U) );
+	TensorOfdD[5] = (alphaL-alphaT)*(A->dVzdz*V[1]/U -
+			V[1]*V[2]*V[2]/(U*U*U)*A->dVzdz);
+	TensorOfdD[6] = (alphaL-alphaT)*(A->dVxdx*V[2]/U -
+			V[2]*V[0]*V[0]/(U*U*U)*A->dVxdx);
+	TensorOfdD[7] = (alphaL-alphaT)*(A->dVydy*V[2]/U -
+			V[2]*V[1]*V[1]/(U*U*U)*A->dVydy);
+	TensorOfdD[8] = V[2]*A->dVzdz*(alphaL*(2.0/U-V[2]*V[2]/(U*U*U))
+			- alphaT*(V[0]*V[0] + V[1]*V[1])/(U*U*U) );
+
 	// Solve the three displacement by the tensor of dispersion derivative.
 	dD[0] = TensorOfdD[0] + TensorOfdD[1] + TensorOfdD[2];
 	dD[1] = TensorOfdD[3] + TensorOfdD[4] + TensorOfdD[5];
 	dD[2] = TensorOfdD[6] + TensorOfdD[7] + TensorOfdD[8];
 
-	return 1; 	
+	return 1;
 }
 
 /**************************************************************************
@@ -448,579 +1507,551 @@ Programing:
 11/2005 PCH Implementation
 02/2006 PCH Improvement for fracture networks.
 last modification:
-**************************************************************************/
+ **************************************************************************/
 int RandomWalk::SolveForDerivativeOfVelocity(Particle* A)
 {
 	int status = -10;	// Set to be meaningliss in the beginning
-	
-	// intersections for x and y axis
-	double x1[3], x2[3], y1[3], y2[3];	// I don't put the intersections for z direction for now.
+	m_msh = fem_msh_vector[0];
+	CElem* m_ele = m_msh->ele_vector[A->elementIndex];
 
-	// RWPT-IM x1 and x2 are the intersection coordinates on the XY plane.
-	// But the position of Particle A is on the realy plane.
-	// Get the two intersecitions parallel to x axis
-	status = SolveForTwoIntersectionsInTheElement(A, x1, x2, 0);
-	// RWPT-IM After SolveForTwoIntersectionsInTheElement, 
-	// All the coordinates are on the real plane.
-	// Check if the function succeeded.
-	if(status == -1)
+	// If not 1D,
+	if(m_ele->GetElementType()!=1)
 	{
-		printf("Solving two intersections parallel to x axis failed\n");
-		return -1;	// Failed
-	}
-	// Solve for the velocity for two intersections
-	Particle XR, XL;
-	// RWPT-IM
-	XR = XL = *A;	
-	// Again, the real plane coordinates.
-	XR.x = x1[0]; XR.y = x1[1]; XR.z = x1[2];
-	XL.x = x2[0]; XL.y = x2[1]; XL.z = x2[2];
-	
-	// Interpolating velocity by the real coordinates should be no problem.
-	InterpolateVelocityOfTheParticleByInverseDistance(&XR);
-	InterpolateVelocityOfTheParticleByInverseDistance(&XL);
-	// Solve for dVxdx
-	double x = XR.x - XL.x; double y = XR.y - XL.y; double z = XR.z - XL.z; 
-	double dx = sqrt(x*x + y*y + z*z);	// The distance does not make any difference.
-	// RWPT-IM
-	// Let me think if velocity should projected to the connected plane or treated in true 3D.
-	// Yes. Velocity should be on the XY plane
-	double Vx[3];
-	Vx[0] = XR.Vx - XL.Vx; Vx[1] = XR.Vy - XL.Vy; Vx[2] = XR.Vz - XL.Vz;
-	ToTheXYPlane(A->elementIndex, Vx);
-	A->dVxdx = Vx[0] / dx; // A->dVxdx = (XR.Vx - XL.Vx) / dx; 	
+		// intersections for x and y axis
+		double x1[3], x2[3], y1[3], y2[3];	// I don't put the intersections for z direction for now.
 
-	// RWPT-IM Just the same thing one more time.
-	// Get the two intersecitions parallel to y axis
-	status = SolveForTwoIntersectionsInTheElement(A, y1, y2, 1);
-	if(status == -1)
+		// RWPT-IM x1 and x2 are the intersection coordinates on the XY plane.
+		// But the position of Particle A is on the realy plane.
+		// Get the two intersecitions parallel to x axis
+		status = SolveForTwoIntersectionsInTheElement(A, x1, x2, 0);
+		// RWPT-IM After SolveForTwoIntersectionsInTheElement,
+		// All the coordinates are on the real plane.
+		// Check if the function succeeded.
+		if(status == -1)
+		{
+			//		printf("Solving two intersections parallel to x axis failed\n");
+			return -1;	// Failed
+		}
+		// Solve for the velocity for two intersections
+		Particle XR, XL;
+		// RWPT-IM
+		XR = XL = *A;
+		// Again, the real plane coordinates.
+		XR.x = x1[0]; XR.y = x1[1]; XR.z = x1[2];
+		XL.x = x2[0]; XL.y = x2[1]; XL.z = x2[2];
+
+		// Interpolating velocity by the real coordinates should be no problem.
+		if(PURERWPT !=2)
+		{
+			InterpolateVelocityOfTheParticleByInverseDistance(&XR);
+			InterpolateVelocityOfTheParticleByInverseDistance(&XL);
+		}
+		else
+		{
+			InterpolateVelocityOfTheParticleByBilinear(GridOption, &XR);
+			InterpolateVelocityOfTheParticleByBilinear(GridOption, &XL);
+		}
+
+		// Solve for dVxdx
+		double x = XR.x - XL.x; double y = XR.y - XL.y; double z = XR.z - XL.z;
+		double dx = sqrt(x*x + y*y + z*z);	// The distance does not make any difference.
+		// RWPT-IM
+		// Let me think if velocity should projected to the connected plane or treated in true 3D.
+		// Yes. Velocity should be on the XY plane
+		double Vx[3];
+		Vx[0] = XR.Vx - XL.Vx; Vx[1] = XR.Vy - XL.Vy; Vx[2] = XR.Vz - XL.Vz;
+		ToTheXYPlane(A->elementIndex, Vx);
+		A->dVxdx = Vx[0] / dx; // A->dVxdx = (XR.Vx - XL.Vx) / dx;
+
+		// RWPT-IM Just the same thing one more time.
+		// Get the two intersecitions parallel to y axis
+		status = SolveForTwoIntersectionsInTheElement(A, y1, y2, 1);
+		if(status == -1)
+		{
+			//		printf("Solving two intersections parallel to y axis failed\n");
+			return -1;	// Failed
+		}
+
+		// Solve for the velocity for two intersections
+		Particle YR, YL;
+		YR = YL = *A;
+		YR.x = y1[0]; YR.y = y1[1]; YR.z = y1[2];
+		YL.x = y2[0]; YL.y = y2[1]; YL.z = y2[2];
+		if(PURERWPT !=2)
+		{
+			InterpolateVelocityOfTheParticleByInverseDistance(&YR);
+			InterpolateVelocityOfTheParticleByInverseDistance(&YL);
+		}
+		else
+		{
+			InterpolateVelocityOfTheParticleByBilinear(GridOption, &XR);
+			InterpolateVelocityOfTheParticleByBilinear(GridOption, &XL);
+		}
+
+		// Solve for dVydy
+		x = YR.x - YL.x; y = YR.y - YL.y; z = YR.z - YL.z;
+		double dy = sqrt(x*x + y*y + z*z);
+		double Vy[3];
+		Vy[0] = YR.Vx - YL.Vx; Vy[1] = YR.Vy - YL.Vy; Vy[2] = YR.Vz - YL.Vz;
+		ToTheXYPlane(A->elementIndex, Vy);
+		A->dVydy = Vy[1] / dy; // A->dVydy = (YR.Vy - YL.Vy) / dy;
+
+
+		// Just set dVzdz to be zero for now
+		A->dVzdz = 0.0;
+
+		// Return 1 for success
+		return 1;
+	}
+	else	// 1D line element
 	{
-		printf("Solving two intersections parallel to y axis failed\n");
-		return -1;	// Failed
+		// Solve the length of the element
+		double length = m_ele->GetVolume();
+
+		m_pcs = PCSGet("FLUID_MOMENTUM");
+		double v1[3], v2[3];
+		v1[0] = m_pcs->GetNodeValue(m_ele->GetNodeIndex(0), m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);
+		v1[1] = m_pcs->GetNodeValue(m_ele->GetNodeIndex(0), m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);
+		v1[2] = m_pcs->GetNodeValue(m_ele->GetNodeIndex(0), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);
+		v2[0] = m_pcs->GetNodeValue(m_ele->GetNodeIndex(0), m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);
+		v2[1] = m_pcs->GetNodeValue(m_ele->GetNodeIndex(0), m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);
+		v2[2] = m_pcs->GetNodeValue(m_ele->GetNodeIndex(0), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);
+
+		int coordinateflag = m_msh->GetCoordinateFlag();
+		if(coordinateflag == 10)	// x only
+		{
+			A->dVxdx = (v2[0]-v1[0])/length;
+			A->dVydy = A->dVzdz = 0.0;
+		}
+		else if(coordinateflag == 11)	// y only
+		{
+			A->dVydy = (v2[1]-v1[1])/length;
+			A->dVxdx = A->dVzdz = 0.0;
+		}
+		else if(coordinateflag == 12)	// z only
+		{
+			A->dVzdz = (v2[2]-v1[2])/length;
+			A->dVydy = A->dVxdx = 0.0;
+		}
+		else	// Something Wrong.
+			abort();
+
+		return 1;
 	}
-
-	// Solve for the velocity for two intersections
-	Particle YR, YL;
-	YR = YL = *A;
-	YR.x = y1[0]; YR.y = y1[1]; YR.z = y1[2];
-	YL.x = y2[0]; YL.y = y2[1]; YL.z = y2[2];
-	InterpolateVelocityOfTheParticleByInverseDistance(&YR);
-	InterpolateVelocityOfTheParticleByInverseDistance(&YL);
-	// Solve for dVydy
-	x = YR.x - YL.x; y = YR.y - YL.y; z = YR.z - YL.z; 
-	double dy = sqrt(x*x + y*y + z*z);
-	double Vy[3];
-	Vy[0] = YR.Vx - YL.Vx; Vy[1] = YR.Vy - YL.Vy; Vy[2] = YR.Vz - YL.Vz;
-	ToTheXYPlane(A->elementIndex, Vy);
-	A->dVydy = Vy[1] / dy; // A->dVydy = (YR.Vy - YL.Vy) / dy;	
-	
-
-	// Just set dVzdz to be zero for now
-	A->dVzdz = 0.0;
-	
-	// Return 1 for success
-	return 1;
 }
 
-void RandomWalk::CopyParticleCoordToArray(Particle* A, double* x1buff, 
-    double* x2buff, double* x3buff, double* x4buff)
+void RandomWalk::CopyParticleCoordToArray(Particle* A, double* x1buff,
+		double* x2buff, double* x3buff, double* x4buff)
 {
-    x1buff[0] = A[0].x; x1buff[1] = A[0].y; x1buff[2] = A[0].z;
-    x2buff[0] = A[1].x; x2buff[1] = A[1].y; x2buff[2] = A[1].z;
-    x3buff[0] = A[2].x; x3buff[1] = A[2].y; x3buff[2] = A[2].z;
-    x4buff[0] = A[3].x; x4buff[1] = A[3].y; x4buff[2] = A[3].z;
+	x1buff[0] = A[0].x; x1buff[1] = A[0].y; x1buff[2] = A[0].z;
+	x2buff[0] = A[1].x; x2buff[1] = A[1].y; x2buff[2] = A[1].z;
+	x3buff[0] = A[2].x; x3buff[1] = A[2].y; x3buff[2] = A[2].z;
+	x4buff[0] = A[3].x; x4buff[1] = A[3].y; x4buff[2] = A[3].z;
 }
 
 /**************************************************************************
-Class: RandomWalk
-Task: This function creats the memory for particles dynamically.
-Programing:
-08/2005 PCH Implementation
-last modification:
-**************************************************************************/
-void RandomWalk::CreateParticles(int HowManyParticles)
-{
-    // In this way, I can track the number of particle from numOfParticles.
-    numOfParticles = HowManyParticles;
-    // Now this X will have memory for past and now locations of all particles.
-    if(X) delete X;
-    X = new Trace[numOfParticles]();
-}
-
-
-/**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task:Compute the volume of the object
 Programing:
 09/2005 PCH Implementation
-**************************************************************************/
+ **************************************************************************/
 double RandomWalk::ComputeVolume(Particle* A, CElem* m_ele)
 {
-    double x1buff[3];
-    double x2buff[3];
-    double x3buff[3];
-    double x4buff[3];
-    double volume = 0.0;
-    double* PieceOfVolume = NULL;
+	double x1buff[3];
+	double x2buff[3];
+	double x3buff[3];
+	double x4buff[3];
+	double volume = 0.0;
+	double* PieceOfVolume = NULL;
 
-    CNode* node = NULL;
+	CNode* node = NULL;
 
-    double A2buff[3];
+	double A2buff[3];
 
-    A2buff[0] = A->x; A2buff[1] = A->y; A2buff[2] = A->z;
+	A2buff[0] = A->x; A2buff[1] = A->y; A2buff[2] = A->z;
 
-    // If this is not a line element, get three verteces.
-    if(m_ele->GetElementType()!=1)
-    {
-        node = m_ele->GetNode(0);
-        x1buff[0] = node->X();
-        x1buff[1] = node->Y();
-        x1buff[2] = node->Z();
- 
-        node = m_ele->GetNode(1);
-        x2buff[0] = node->X();
-        x2buff[1] = node->Y();
-        x2buff[2] = node->Z();
-
-        node = m_ele->GetNode(2);
-        x3buff[0] = node->X();
-        x3buff[1] = node->Y();
-        x3buff[2] = node->Z();
-    }
-
-    //LINES = 1 
-    if (m_ele->GetElementType() == 1)
+	// If this is not a line element, get three verteces.
+	if(m_ele->GetElementType()!=1)
 	{
-        PieceOfVolume = new double[2]();
-        for(int i=0; i<2; ++i)
-        {
-            node = m_ele->GetNode(i);
-            x2buff[0] = node->X() - A2buff[0];
-            x2buff[1] = node->Y() - A2buff[1];
-            x2buff[2] = node->Z() - A2buff[2];
-            PieceOfVolume[i] = sqrt(x2buff[0]*x2buff[0]+x2buff[1]*x2buff[1]+x2buff[2]*x2buff[2]) ;
-            volume += PieceOfVolume[i];
-        }
-    }
-    //RECTANGLES = 2 
+		node = m_ele->GetNode(0);
+		x1buff[0] = node->X();
+		x1buff[1] = node->Y();
+		x1buff[2] = node->Z();
+
+		node = m_ele->GetNode(1);
+		x2buff[0] = node->X();
+		x2buff[1] = node->Y();
+		x2buff[2] = node->Z();
+
+		node = m_ele->GetNode(2);
+		x3buff[0] = node->X();
+		x3buff[1] = node->Y();
+		x3buff[2] = node->Z();
+	}
+
+	//LINES = 1
+	if (m_ele->GetElementType() == 1)
+	{
+		PieceOfVolume = new double[2]();
+		for(int i=0; i<2; ++i)
+		{
+			node = m_ele->GetNode(i);
+			x2buff[0] = node->X() - A2buff[0];
+			x2buff[1] = node->Y() - A2buff[1];
+			x2buff[2] = node->Z() - A2buff[2];
+			PieceOfVolume[i] = sqrt(x2buff[0]*x2buff[0]+x2buff[1]*x2buff[1]+x2buff[2]*x2buff[2]) ;
+			volume += PieceOfVolume[i];
+		}
+	}
+	//RECTANGLES = 2
 	if (m_ele->GetElementType() == 2)
 	{
-        PieceOfVolume = new double[4]();
-        
-        node = m_ele->GetNode(3);
-        x4buff[0] = node->X();
-        x4buff[1] = node->Y();
-        x4buff[2] = node->Z();
+		PieceOfVolume = new double[4]();
 
-        PieceOfVolume[0] = ComputeDetTri(x1buff, x2buff, A2buff) ;
-        PieceOfVolume[1] = ComputeDetTri(x2buff, x3buff, A2buff) ;
-        PieceOfVolume[2] = ComputeDetTri(x3buff, x4buff, A2buff) ;
-        PieceOfVolume[3] = ComputeDetTri(x4buff, x1buff, A2buff) ;
+		node = m_ele->GetNode(3);
+		x4buff[0] = node->X();
+		x4buff[1] = node->Y();
+		x4buff[2] = node->Z();
 
-        for(int i=0; i<4; ++i)
-            volume += PieceOfVolume[i];          
-    }
-    //HEXAHEDRA = 3 
+		PieceOfVolume[0] = ComputeDetTri(x1buff, x2buff, A2buff) ;
+		PieceOfVolume[1] = ComputeDetTri(x2buff, x3buff, A2buff) ;
+		PieceOfVolume[2] = ComputeDetTri(x3buff, x4buff, A2buff) ;
+		PieceOfVolume[3] = ComputeDetTri(x4buff, x1buff, A2buff) ;
+
+		for(int i=0; i<4; ++i)
+			volume += PieceOfVolume[i];
+	}
+	//HEXAHEDRA = 3
 	if (m_ele->GetElementType() == 3)
 	{
-        PieceOfVolume = new double[12]();
-        
-        // 2,1,4,3 face
-        node = m_ele->GetNode(1);
-        x1buff[0] = node->X();
-        x1buff[1] = node->Y();
-        x1buff[2] = node->Z(); 
-        node = m_ele->GetNode(0);
-        x2buff[0] = node->X();
-        x2buff[1] = node->Y();
-        x2buff[2] = node->Z(); 
-        node = m_ele->GetNode(3);
-        x3buff[0] = node->X();
-        x3buff[1] = node->Y();
-        x3buff[2] = node->Z(); 
-        node = m_ele->GetNode(2);
-        x4buff[0] = node->X();
-        x4buff[1] = node->Y();
-        x4buff[2] = node->Z(); 
-        PieceOfVolume[0] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
-        PieceOfVolume[1] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
+		PieceOfVolume = new double[12]();
 
-        // 5,6,7,8 face
-        node = m_ele->GetNode(4);
-        x1buff[0] = node->X();
-        x1buff[1] = node->Y();
-        x1buff[2] = node->Z(); 
-        node = m_ele->GetNode(5);
-        x2buff[0] = node->X();
-        x2buff[1] = node->Y();
-        x2buff[2] = node->Z(); 
-        node = m_ele->GetNode(6);
-        x3buff[0] = node->X();
-        x3buff[1] = node->Y();
-        x3buff[2] = node->Z(); 
-        node = m_ele->GetNode(7);
-        x4buff[0] = node->X();
-        x4buff[1] = node->Y();
-        x4buff[2] = node->Z(); 
-        PieceOfVolume[2] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
-        PieceOfVolume[3] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
+		// 2,1,4,3 face
+		node = m_ele->GetNode(1);
+		x1buff[0] = node->X();
+		x1buff[1] = node->Y();
+		x1buff[2] = node->Z();
+		node = m_ele->GetNode(0);
+		x2buff[0] = node->X();
+		x2buff[1] = node->Y();
+		x2buff[2] = node->Z();
+		node = m_ele->GetNode(3);
+		x3buff[0] = node->X();
+		x3buff[1] = node->Y();
+		x3buff[2] = node->Z();
+		node = m_ele->GetNode(2);
+		x4buff[0] = node->X();
+		x4buff[1] = node->Y();
+		x4buff[2] = node->Z();
+		PieceOfVolume[0] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
+		PieceOfVolume[1] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
 
-        // 1,5,8,4 face
-        node = m_ele->GetNode(0);
-        x1buff[0] = node->X();
-        x1buff[1] = node->Y();
-        x1buff[2] = node->Z(); 
-        node = m_ele->GetNode(4);
-        x2buff[0] = node->X();
-        x2buff[1] = node->Y();
-        x2buff[2] = node->Z(); 
-        node = m_ele->GetNode(7);
-        x3buff[0] = node->X();
-        x3buff[1] = node->Y();
-        x3buff[2] = node->Z(); 
-        node = m_ele->GetNode(3);
-        x4buff[0] = node->X();
-        x4buff[1] = node->Y();
-        x4buff[2] = node->Z(); 
-        PieceOfVolume[4] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
-        PieceOfVolume[5] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
+		// 5,6,7,8 face
+		node = m_ele->GetNode(4);
+		x1buff[0] = node->X();
+		x1buff[1] = node->Y();
+		x1buff[2] = node->Z();
+		node = m_ele->GetNode(5);
+		x2buff[0] = node->X();
+		x2buff[1] = node->Y();
+		x2buff[2] = node->Z();
+		node = m_ele->GetNode(6);
+		x3buff[0] = node->X();
+		x3buff[1] = node->Y();
+		x3buff[2] = node->Z();
+		node = m_ele->GetNode(7);
+		x4buff[0] = node->X();
+		x4buff[1] = node->Y();
+		x4buff[2] = node->Z();
+		PieceOfVolume[2] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
+		PieceOfVolume[3] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
 
-        // 8,7,3,4 face
-        node = m_ele->GetNode(7);
-        x1buff[0] = node->X();
-        x1buff[1] = node->Y();
-        x1buff[2] = node->Z(); 
-        node = m_ele->GetNode(6);
-        x2buff[0] = node->X();
-        x2buff[1] = node->Y();
-        x2buff[2] = node->Z(); 
-        node = m_ele->GetNode(2);
-        x3buff[0] = node->X();
-        x3buff[1] = node->Y();
-        x3buff[2] = node->Z(); 
-        node = m_ele->GetNode(3);
-        x4buff[0] = node->X();
-        x4buff[1] = node->Y();
-        x4buff[2] = node->Z(); 
-        PieceOfVolume[6] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
-        PieceOfVolume[7] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
+		// 1,5,8,4 face
+		node = m_ele->GetNode(0);
+		x1buff[0] = node->X();
+		x1buff[1] = node->Y();
+		x1buff[2] = node->Z();
+		node = m_ele->GetNode(4);
+		x2buff[0] = node->X();
+		x2buff[1] = node->Y();
+		x2buff[2] = node->Z();
+		node = m_ele->GetNode(7);
+		x3buff[0] = node->X();
+		x3buff[1] = node->Y();
+		x3buff[2] = node->Z();
+		node = m_ele->GetNode(3);
+		x4buff[0] = node->X();
+		x4buff[1] = node->Y();
+		x4buff[2] = node->Z();
+		PieceOfVolume[4] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
+		PieceOfVolume[5] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
 
-        // 2,3,7,6 face
-        node = m_ele->GetNode(1);
-        x1buff[0] = node->X();
-        x1buff[1] = node->Y();
-        x1buff[2] = node->Z(); 
-        node = m_ele->GetNode(2);
-        x2buff[0] = node->X();
-        x2buff[1] = node->Y();
-        x2buff[2] = node->Z(); 
-        node = m_ele->GetNode(6);
-        x3buff[0] = node->X();
-        x3buff[1] = node->Y();
-        x3buff[2] = node->Z(); 
-        node = m_ele->GetNode(5);
-        x4buff[0] = node->X();
-        x4buff[1] = node->Y();
-        x4buff[2] = node->Z(); 
-        PieceOfVolume[8] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
-        PieceOfVolume[9] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
+		// 8,7,3,4 face
+		node = m_ele->GetNode(7);
+		x1buff[0] = node->X();
+		x1buff[1] = node->Y();
+		x1buff[2] = node->Z();
+		node = m_ele->GetNode(6);
+		x2buff[0] = node->X();
+		x2buff[1] = node->Y();
+		x2buff[2] = node->Z();
+		node = m_ele->GetNode(2);
+		x3buff[0] = node->X();
+		x3buff[1] = node->Y();
+		x3buff[2] = node->Z();
+		node = m_ele->GetNode(3);
+		x4buff[0] = node->X();
+		x4buff[1] = node->Y();
+		x4buff[2] = node->Z();
+		PieceOfVolume[6] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
+		PieceOfVolume[7] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
 
-        // 1,2,6,5 face
-        node = m_ele->GetNode(0);
-        x1buff[0] = node->X();
-        x1buff[1] = node->Y();
-        x1buff[2] = node->Z(); 
-        node = m_ele->GetNode(1);
-        x2buff[0] = node->X();
-        x2buff[1] = node->Y();
-        x2buff[2] = node->Z(); 
-        node = m_ele->GetNode(5);
-        x3buff[0] = node->X();
-        x3buff[1] = node->Y();
-        x3buff[2] = node->Z(); 
-        node = m_ele->GetNode(4);
-        x4buff[0] = node->X();
-        x4buff[1] = node->Y();
-        x4buff[2] = node->Z(); 
-        PieceOfVolume[10] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
-        PieceOfVolume[11] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
+		// 2,3,7,6 face
+		node = m_ele->GetNode(1);
+		x1buff[0] = node->X();
+		x1buff[1] = node->Y();
+		x1buff[2] = node->Z();
+		node = m_ele->GetNode(2);
+		x2buff[0] = node->X();
+		x2buff[1] = node->Y();
+		x2buff[2] = node->Z();
+		node = m_ele->GetNode(6);
+		x3buff[0] = node->X();
+		x3buff[1] = node->Y();
+		x3buff[2] = node->Z();
+		node = m_ele->GetNode(5);
+		x4buff[0] = node->X();
+		x4buff[1] = node->Y();
+		x4buff[2] = node->Z();
+		PieceOfVolume[8] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
+		PieceOfVolume[9] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
 
-        for(int i=0; i<12; ++i)
-            volume += PieceOfVolume[i];    
-    }
-    //TRIANGLES = 4 
+		// 1,2,6,5 face
+		node = m_ele->GetNode(0);
+		x1buff[0] = node->X();
+		x1buff[1] = node->Y();
+		x1buff[2] = node->Z();
+		node = m_ele->GetNode(1);
+		x2buff[0] = node->X();
+		x2buff[1] = node->Y();
+		x2buff[2] = node->Z();
+		node = m_ele->GetNode(5);
+		x3buff[0] = node->X();
+		x3buff[1] = node->Y();
+		x3buff[2] = node->Z();
+		node = m_ele->GetNode(4);
+		x4buff[0] = node->X();
+		x4buff[1] = node->Y();
+		x4buff[2] = node->Z();
+		PieceOfVolume[10] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
+		PieceOfVolume[11] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
+
+		for(int i=0; i<12; ++i)
+			volume += PieceOfVolume[i];
+	}
+	//TRIANGLES = 4
 	if (m_ele->GetElementType() == 4)
 	{
-        PieceOfVolume = new double[3]();
+		PieceOfVolume = new double[3]();
 
-        PieceOfVolume[0] = ComputeDetTri(x1buff, x2buff, A2buff) ;
-        PieceOfVolume[1] = ComputeDetTri(x2buff, x3buff, A2buff) ;
-        PieceOfVolume[2] = ComputeDetTri(x3buff, x1buff, A2buff) ;
+		PieceOfVolume[0] = ComputeDetTri(x1buff, x2buff, A2buff) ;
+		PieceOfVolume[1] = ComputeDetTri(x2buff, x3buff, A2buff) ;
+		PieceOfVolume[2] = ComputeDetTri(x3buff, x1buff, A2buff) ;
 
-        for(int i=0; i<3; ++i)
-            volume += PieceOfVolume[i];     
-    }
-    //TETRAHEDRAS = 5 
+		for(int i=0; i<3; ++i)
+			volume += PieceOfVolume[i];
+	}
+	//TETRAHEDRAS = 5
 	if (m_ele->GetElementType() == 5)
 	{
-        PieceOfVolume = new double[4]();
-        
-        node = m_ele->GetNode(3);
-        x4buff[0] = node->X();
-        x4buff[1] = node->Y();
-        x4buff[2] = node->Z();
+		PieceOfVolume = new double[4]();
 
-        PieceOfVolume[0] = ComputeDetTex(A2buff, x1buff, x2buff, x3buff) ;
-        PieceOfVolume[1] = ComputeDetTex(A2buff, x1buff, x3buff, x4buff) ;
-        PieceOfVolume[2] = ComputeDetTex(A2buff, x1buff, x4buff, x2buff) ;
-        PieceOfVolume[3] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
+		node = m_ele->GetNode(3);
+		x4buff[0] = node->X();
+		x4buff[1] = node->Y();
+		x4buff[2] = node->Z();
 
-        for(int i=0; i<4; ++i)
-            volume += PieceOfVolume[i];   
-    }
-    //PRISMS = 6 
+		PieceOfVolume[0] = ComputeDetTex(A2buff, x1buff, x2buff, x3buff) ;
+		PieceOfVolume[1] = ComputeDetTex(A2buff, x1buff, x3buff, x4buff) ;
+		PieceOfVolume[2] = ComputeDetTex(A2buff, x1buff, x4buff, x2buff) ;
+		PieceOfVolume[3] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
+
+		for(int i=0; i<4; ++i)
+			volume += PieceOfVolume[i];
+	}
+	//PRISMS = 6
 	if (m_ele->GetElementType() == 6)
 	{
-        PieceOfVolume = new double[8](); 
+		PieceOfVolume = new double[8]();
 
-        // 2,1,3 face
-        node = m_ele->GetNode(1);
-        x1buff[0] = node->X();
-        x1buff[1] = node->Y();
-        x1buff[2] = node->Z(); 
-        node = m_ele->GetNode(0);
-        x2buff[0] = node->X();
-        x2buff[1] = node->Y();
-        x2buff[2] = node->Z(); 
-        node = m_ele->GetNode(2);       
-        x3buff[0] = node->X();
-        x3buff[1] = node->Y();
-        x3buff[2] = node->Z();
-        PieceOfVolume[0] = ComputeDetTex(A2buff, x1buff, x2buff, x3buff) ;
+		// 2,1,3 face
+		node = m_ele->GetNode(1);
+		x1buff[0] = node->X();
+		x1buff[1] = node->Y();
+		x1buff[2] = node->Z();
+		node = m_ele->GetNode(0);
+		x2buff[0] = node->X();
+		x2buff[1] = node->Y();
+		x2buff[2] = node->Z();
+		node = m_ele->GetNode(2);
+		x3buff[0] = node->X();
+		x3buff[1] = node->Y();
+		x3buff[2] = node->Z();
+		PieceOfVolume[0] = ComputeDetTex(A2buff, x1buff, x2buff, x3buff) ;
 
-        // 4,5,6 face
-        node = m_ele->GetNode(3);
-        x1buff[0] = node->X();
-        x1buff[1] = node->Y();
-        x1buff[2] = node->Z(); 
-        node = m_ele->GetNode(4);
-        x2buff[0] = node->X();
-        x2buff[1] = node->Y();
-        x2buff[2] = node->Z(); 
-        node = m_ele->GetNode(5);       
-        x3buff[0] = node->X();
-        x3buff[1] = node->Y();
-        x3buff[2] = node->Z();
-        PieceOfVolume[1] = ComputeDetTex(A2buff, x1buff, x2buff, x3buff) ;
+		// 4,5,6 face
+		node = m_ele->GetNode(3);
+		x1buff[0] = node->X();
+		x1buff[1] = node->Y();
+		x1buff[2] = node->Z();
+		node = m_ele->GetNode(4);
+		x2buff[0] = node->X();
+		x2buff[1] = node->Y();
+		x2buff[2] = node->Z();
+		node = m_ele->GetNode(5);
+		x3buff[0] = node->X();
+		x3buff[1] = node->Y();
+		x3buff[2] = node->Z();
+		PieceOfVolume[1] = ComputeDetTex(A2buff, x1buff, x2buff, x3buff) ;
 
-        // 1,4,6,3 face
-        node = m_ele->GetNode(0);
-        x1buff[0] = node->X();
-        x1buff[1] = node->Y();
-        x1buff[2] = node->Z(); 
-        node = m_ele->GetNode(3);
-        x2buff[0] = node->X();
-        x2buff[1] = node->Y();
-        x2buff[2] = node->Z(); 
-        node = m_ele->GetNode(5);
-        x3buff[0] = node->X();
-        x3buff[1] = node->Y();
-        x3buff[2] = node->Z(); 
-        node = m_ele->GetNode(2);
-        x4buff[0] = node->X();
-        x4buff[1] = node->Y();
-        x4buff[2] = node->Z(); 
-        PieceOfVolume[2] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
-        PieceOfVolume[3] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
+		// 1,4,6,3 face
+		node = m_ele->GetNode(0);
+		x1buff[0] = node->X();
+		x1buff[1] = node->Y();
+		x1buff[2] = node->Z();
+		node = m_ele->GetNode(3);
+		x2buff[0] = node->X();
+		x2buff[1] = node->Y();
+		x2buff[2] = node->Z();
+		node = m_ele->GetNode(5);
+		x3buff[0] = node->X();
+		x3buff[1] = node->Y();
+		x3buff[2] = node->Z();
+		node = m_ele->GetNode(2);
+		x4buff[0] = node->X();
+		x4buff[1] = node->Y();
+		x4buff[2] = node->Z();
+		PieceOfVolume[2] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
+		PieceOfVolume[3] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
 
-        // 2,5,4,1 face
-        node = m_ele->GetNode(1);
-        x1buff[0] = node->X();
-        x1buff[1] = node->Y();
-        x1buff[2] = node->Z(); 
-        node = m_ele->GetNode(4);
-        x2buff[0] = node->X();
-        x2buff[1] = node->Y();
-        x2buff[2] = node->Z(); 
-        node = m_ele->GetNode(3);
-        x3buff[0] = node->X();
-        x3buff[1] = node->Y();
-        x3buff[2] = node->Z(); 
-        node = m_ele->GetNode(0);
-        x4buff[0] = node->X();
-        x4buff[1] = node->Y();
-        x4buff[2] = node->Z(); 
-        PieceOfVolume[4] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
-        PieceOfVolume[5] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
+		// 2,5,4,1 face
+		node = m_ele->GetNode(1);
+		x1buff[0] = node->X();
+		x1buff[1] = node->Y();
+		x1buff[2] = node->Z();
+		node = m_ele->GetNode(4);
+		x2buff[0] = node->X();
+		x2buff[1] = node->Y();
+		x2buff[2] = node->Z();
+		node = m_ele->GetNode(3);
+		x3buff[0] = node->X();
+		x3buff[1] = node->Y();
+		x3buff[2] = node->Z();
+		node = m_ele->GetNode(0);
+		x4buff[0] = node->X();
+		x4buff[1] = node->Y();
+		x4buff[2] = node->Z();
+		PieceOfVolume[4] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
+		PieceOfVolume[5] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
 
-        // 5,2,3,6 face
-        node = m_ele->GetNode(4);
-        x1buff[0] = node->X();
-        x1buff[1] = node->Y();
-        x1buff[2] = node->Z(); 
-        node = m_ele->GetNode(1);
-        x2buff[0] = node->X();
-        x2buff[1] = node->Y();
-        x2buff[2] = node->Z(); 
-        node = m_ele->GetNode(2);
-        x3buff[0] = node->X();
-        x3buff[1] = node->Y();
-        x3buff[2] = node->Z(); 
-        node = m_ele->GetNode(5);
-        x4buff[0] = node->X();
-        x4buff[1] = node->Y();
-        x4buff[2] = node->Z(); 
-        PieceOfVolume[6] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
-        PieceOfVolume[7] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
+		// 5,2,3,6 face
+		node = m_ele->GetNode(4);
+		x1buff[0] = node->X();
+		x1buff[1] = node->Y();
+		x1buff[2] = node->Z();
+		node = m_ele->GetNode(1);
+		x2buff[0] = node->X();
+		x2buff[1] = node->Y();
+		x2buff[2] = node->Z();
+		node = m_ele->GetNode(2);
+		x3buff[0] = node->X();
+		x3buff[1] = node->Y();
+		x3buff[2] = node->Z();
+		node = m_ele->GetNode(5);
+		x4buff[0] = node->X();
+		x4buff[1] = node->Y();
+		x4buff[2] = node->Z();
+		PieceOfVolume[6] = ComputeDetTex(A2buff, x1buff, x2buff, x4buff) ;
+		PieceOfVolume[7] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
 
-        for(int i=0; i<8; ++i)
-            volume += PieceOfVolume[i];  
-    }
+		for(int i=0; i<8; ++i)
+			volume += PieceOfVolume[i];
+	}
 
-    // Release the memory
-    delete [] PieceOfVolume;
+	// Release the memory
+	delete [] PieceOfVolume;
 
-    return volume;
+	return volume;
 }
 
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task:Compute the volume of the object via the particle inside of the object
 Programing:
 09/2005 PCH Implementation
-**************************************************************************/
+ **************************************************************************/
 double RandomWalk::ComputeVolume(Particle* A, Particle* element, CElem* m_ele)
 {
-    double x1buff[3];
-    double x2buff[3];
-    double x3buff[3];
-    double x4buff[3];
-    double volume = 0.0;
-    double* PieceOfVolume = NULL;
+	double x1buff[3];
+	double x2buff[3];
+	double x3buff[3];
+	double x4buff[3];
+	double volume = 0.0;
+	double* PieceOfVolume = NULL;
 
-    double A2buff[3];
+	double A2buff[3];
 
-    A2buff[0] = A->x; A2buff[1] = A->y; A2buff[2] = A->z;
+	A2buff[0] = A->x; A2buff[1] = A->y; A2buff[2] = A->z;
 
-    x1buff[0] = element[0].x; x1buff[1] = element[0].y; x1buff[2] = element[0].z; 
-    x2buff[0] = element[1].x; x2buff[1] = element[1].y; x2buff[2] = element[1].z;
-    x3buff[0] = element[2].x; x3buff[1] = element[2].y; x3buff[2] = element[2].z;
-    
-  
-    //TRIANGLES = 4, RECTANGLE = 2
-    int eleType = m_ele->GetElementType(); 
+	x1buff[0] = element[0].x; x1buff[1] = element[0].y; x1buff[2] = element[0].z;
+	x2buff[0] = element[1].x; x2buff[1] = element[1].y; x2buff[2] = element[1].z;
+	x3buff[0] = element[2].x; x3buff[1] = element[2].y; x3buff[2] = element[2].z;
+
+
+	//TRIANGLES = 4, RECTANGLE = 2
+	int eleType = m_ele->GetElementType();
 	if (eleType == 4 || eleType == 2)
 	{
-        PieceOfVolume = new double[3]();
+		PieceOfVolume = new double[3]();
 
-        PieceOfVolume[0] = ComputeDetTri(x1buff, x2buff, A2buff) ;
-        PieceOfVolume[1] = ComputeDetTri(x2buff, x3buff, A2buff) ;
-        PieceOfVolume[2] = ComputeDetTri(x3buff, x1buff, A2buff) ;
+		PieceOfVolume[0] = ComputeDetTri(x1buff, x2buff, A2buff) ;
+		PieceOfVolume[1] = ComputeDetTri(x2buff, x3buff, A2buff) ;
+		PieceOfVolume[2] = ComputeDetTri(x3buff, x1buff, A2buff) ;
 
-        for(int i=0; i<3; ++i)
-            volume += PieceOfVolume[i];     
-    }
-    //TETRAHEDRAS = 5, HEXAHEDRA = 3, PRISM = 6
+		for(int i=0; i<3; ++i)
+			volume += PieceOfVolume[i];
+	}
+	//TETRAHEDRAS = 5, HEXAHEDRA = 3, PRISM = 6
 	else if (eleType == 5 || eleType == 3 || eleType == 6)
 	{
-        PieceOfVolume = new double[4]();
-        
-        x4buff[0] = element[3].x; x4buff[1] = element[3].y; x4buff[2] = element[3].z;
+		PieceOfVolume = new double[4]();
 
-        PieceOfVolume[0] = ComputeDetTex(A2buff, x1buff, x2buff, x3buff) ;
-        PieceOfVolume[1] = ComputeDetTex(A2buff, x1buff, x3buff, x4buff) ;
-        PieceOfVolume[2] = ComputeDetTex(A2buff, x1buff, x4buff, x2buff) ;
-        PieceOfVolume[3] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
+		x4buff[0] = element[3].x; x4buff[1] = element[3].y; x4buff[2] = element[3].z;
 
-        for(int i=0; i<4; ++i)
-            volume += PieceOfVolume[i];   
-    }
-    else
-        abort();
-   
-    // Release the memory
-    delete [] PieceOfVolume;
+		PieceOfVolume[0] = ComputeDetTex(A2buff, x1buff, x2buff, x3buff) ;
+		PieceOfVolume[1] = ComputeDetTex(A2buff, x1buff, x3buff, x4buff) ;
+		PieceOfVolume[2] = ComputeDetTex(A2buff, x1buff, x4buff, x2buff) ;
+		PieceOfVolume[3] = ComputeDetTex(A2buff, x2buff, x3buff, x4buff) ;
 
-    return volume;
+		for(int i=0; i<4; ++i)
+			volume += PieceOfVolume[i];
+	}
+	else
+		abort();
+
+	// Release the memory
+	delete [] PieceOfVolume;
+
+	return volume;
 }
 
 /**************************************************************************
-MSHLib-Method: 
-Task:Compute the next positions of particles from the previous positions.
-Programing:
-10/2005 PCH Implementation
-**************************************************************************/
-void RandomWalk::AdvanceParticlesLaBolle(double dt)
-{
-    // Loop over all the particles
-    for(int i=0; i< numOfParticles; ++i)
-    {
-		Particle Y; // the displaced particle
-		double V[3];
-		double delta[3];
-		int Dstatus = 100; int Astatus = 100;	// Set to be meaningless
-        //CElem* m_ele = m_msh->ele_vector[X[i].Now.elementIndex];
-
-		// Let's record the current to the past
-		printf("Velocity for X will be computed...\n");
-		InterpolateVelocityOfTheParticleByInverseDistance(&(X[i].Now));
-		V[0] = X[i].Now.Vx; V[1] = X[i].Now.Vy; V[2] = X[i].Now.Vz;
-		SolveDispersionCoefficient(&(X[i].Now));
-        X[i].Past = X[i].Now; 
-
-		do
-		{
-			// Compute the random drift for the particle by 
-			// solving the dispersion tensor at the particle location
-			RandomlyDriftAway(&(X[i].Now), dt, delta, 0);
-            
-			// Now we need the dispersion tensor at the position 
-			// where the particle drifted randomly by delta Of X.
-			// For this I need velocity at the displaced position meaning some smart searching technique.
-			// First let's assign one particle for the displaced position.
-			Y.x = X[i].Now.x + delta[0]; Y.y = X[i].Now.y + delta[1]; Y.z = X[i].Now.z + delta[2];
-
-			// Solve for the edge from this vector of delta
-//			Dstatus = SolveForDiffusionWithEdge(&(X[i].Now), &Y, delta);
-
-			if(Dstatus == -1 || Dstatus == -2)
-				printf("Dstatus = %d\n", Dstatus);
-		}while (Dstatus == -1 || Dstatus == -2);
-
-		do
-		{
-			// Initialize
-			X[i].Now = X[i].Past;
-			Y.t = dt;
-
-			do
-			{		
-				RandomlyDriftAway(&Y, Y.t, delta, 0);
-				
-//				Astatus = SolveForAdvectionWithEdge(&(X[i].Now), &Y, delta);
-			
-				if(Astatus == 2) Y.t = dt;
-
-				// Update the current info
-				X[i].Now = Y;
-
-				if(Astatus == -1 || Astatus == -2)
-					printf("Astatus = %d\n", Astatus);
-			}while ( Y.t < dt || Astatus == -1 || Astatus == -2);
-			X[i].Now.t = X[i].Past.t + dt;
-        }while(Astatus == -1 || Astatus == -2);
-
-		printf("No %d particle is done.\n", i);
-    }
-}
-
-/**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task:The function advances the set of particles by advection
 	 and dispersion
 Programing:
 10/2005 PCH Implementation
-**************************************************************************/
+ **************************************************************************/
 void RandomWalk::AdvanceBySplitTime(double dt, int numOfSplit)
 {
 	double subdt = dt / (double)numOfSplit;
@@ -1029,155 +2060,308 @@ void RandomWalk::AdvanceBySplitTime(double dt, int numOfSplit)
 	{
 		AdvanceToNextTimeStep(subdt);
 #ifdef _FEMPCHDEBUG_
+		// PCH Let's monitor what's going on in the FEM
+		// This messagebox is for debugging the primary variables at every time step.
+		// Should combine with the picking...
+		CWnd * pWnd = NULL;
+		pWnd->MessageBox("Split second!!!","Debug help", MB_ICONINFORMATION);
+#endif
+
+		/*
+		CurrentTime += subdt;
+		sprintf(now, "%f", CurrentTime);
+		DATWritePCTFile(now);
+		 */
+	}
+
+}
+
+/**************************************************************************
+Task:The function trace streamline or pathlines for a given number of
+		particles
+Programing:
+01/2007 PCH Implementation
+ **************************************************************************/
+void RandomWalk::TraceStreamline(void)
+{
+	double tolerance = 1e-18;
+	// Loop over all the particles
+	for(int i=0; i< numOfParticles; ++i)
+	{
+		if(X[i].Now.elementIndex != -10)
+		{
+			// Let's record the current to the past
+			//			InterpolateVelocity(&(X[i].Now));
+			TracePathlineInThisElement(&(X[i].Now));
+
+			// Record path
+			if(i<50)
+				RecordPath(i, &(X[i].Now));
+		}
+	}
+#ifdef _FEMPCHDEBUG_
 	// PCH Let's monitor what's going on in the FEM
 	// This messagebox is for debugging the primary variables at every time step.
 	// Should combine with the picking...
 	CWnd * pWnd = NULL;
 	pWnd->MessageBox("Split second!!!","Debug help", MB_ICONINFORMATION);
 #endif
-	}
-
 }
 
 /**************************************************************************
-MSHLib-Method: 
 Task:The function advances the set of particles by advection
 	 and dispersion
 Programing:
 10/2005 PCH Implementation
-**************************************************************************/
+05/2009 PCH mobiility of particle now defined in .mcp via components
+06/2009 PCH Case specific apps for RWPT defined by rwpt_app
+ **************************************************************************/
 void RandomWalk::AdvanceToNextTimeStep(double dt)
 {
 	double tolerance = 1e-18;
 	// Loop over all the particles
-    for(int i=0; i< numOfParticles; ++i)
-    {
-		Particle Y; // the displaced particle
-		int Astatus = 100;	// Set to be meaningless
+	for(int i=0; i< numOfParticles; ++i)
+	{
+		// components defined in .mcp should be syncronized with identity of particles.
+		CompProperties *m_cp = cp_vec[X[i].Now.identity];
 
-		// In case that the initial element index from .pct is wrong
-		// But this line makes significant lagging in computation.
-		// Must be avoided if possible.
-//		X[i].Now.elementIndex = GetTheElementOfTheParticleFromNeighbor(&(X[i].Now));
-		
-		if(X[i].Now.elementIndex != -10)
+		// If mobile, do transport.
+		if(m_cp->mobil)
 		{
-			// Let's record the current to the past
-			InterpolateVelocityOfTheParticleByInverseDistance(&(X[i].Now));
-			// If the mode is for heterogeneous media 
-			if(RWPTMode == 0 || RWPTMode == 1 || RWPTMode == 3)
-				SolveForDerivativeOfVelocity(&(X[i].Now));
-			if(RWPTMode < 2 || RWPTMode > 3)	// 0 or 1 for advection and dispersion cases.
-				SolveDispersionCoefficient(&(X[i].Now));
-		
-			// Initialize the reference and past particles
-			Y=X[i].Past = X[i].Now; 
+			Particle Y; // the displaced particle
+			int Astatus = 100;	// Set to be meaningless
 
-			// Initialize
-			Y.t = dt;
+			if(X[i].Now.elementIndex != -10 && X[i].Now.identity != 2)
+			{
+				// Let's record the current to the past
+				if(PURERWPT !=2)
+					InterpolateVelocityOfTheParticleByInverseDistance(&(X[i].Now));
+				else
+					InterpolateVelocityOfTheParticleByBilinear(GridOption, &(X[i].Now));
 
-			do
-			{	
-				// Let's update the info of Particle Y.
-				InterpolateVelocityOfTheParticleByInverseDistance(&Y);
-				if(RWPTMode < 4)
-					SolveForDerivativeOfVelocity(&Y);
-				if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on
-					SolveDispersionCoefficient(&Y);
-		
-				if(Astatus == -1)
-					Y.t = dt;
-				Astatus = SolveForNextPosition(&(X[i].Now), &Y);
-				// Just get the element index after this movement
-				// if not Homogeneous aquifer
-				if(RWPTMode%2 == 1)
-					Y.elementIndex = GetTheElementOfTheParticleFromNeighbor(&Y);
+				// If the mode is for heterogeneous media
+				if(RWPTMode == 0 || RWPTMode == 1 || RWPTMode == 3)
+					SolveForDerivativeOfVelocity(&(X[i].Now));
+				if(RWPTMode < 2 || RWPTMode > 3)	// 0 or 1 for advection and dispersion cases.
+					SolveDispersionCoefficient(&(X[i].Now));
+
+				// Initialize the reference and past particles
+				Y=X[i].Past = X[i].Now;
+
+				// Initialize
+				Y.t = dt;
+
+				// Record path
+				if(i<50)
+					RecordPath(i, &Y);
+
+				do
+				{
+					// Let's update the info of Particle Y.
+					if(PURERWPT !=2)
+						InterpolateVelocityOfTheParticleByInverseDistance(&Y);
+					else
+						InterpolateVelocityOfTheParticleByBilinear(GridOption, &Y);
+
+					if(RWPTMode < 4)
+						SolveForDerivativeOfVelocity(&Y);
+					if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on
+						SolveDispersionCoefficient(&Y);
+
+					if(Astatus == -1)
+						Y.t = dt;
+					Astatus = SolveForNextPosition(&(X[i].Now), &Y);
+					// Just get the element index after this movement
+					// if not Homogeneous aquifer
+					if(RWPTMode%2 == 1)
+					{
+						if(PURERWPT !=2)
+							Y.elementIndex = IndexOfTheElementThatThisParticleBelong(1,&Y);
+						//			Y.elementIndex = GetTheElementOfTheParticle(&(X[i].Now), &Y);
+						else
+							Y.elementIndex = IndexOfTheElementThatThisParticleBelong(0,&Y);
+					}
 
 #ifdef ALLOW_PARTICLES_GO_OUTSIDE
-				// We let the particle go outside of the domain
-				if(Y.elementIndex == -10) 
-				{	
-					// Before letting this particle outside of the domain,
-					// record the particle postion that includes the element index = -10.
-					X[i].Now = Y;
-					break;
-				}
+					// We let the particle go outside of the domain
+					if(Y.elementIndex == -10)
+					{
+						// Before letting this particle outside of the domain,
+						// record the particle postion that includes the element index = -10.
+						X[i].Now = Y;
+						break;
+					}
 #endif
 
-				// The result of the function is unknown error.
-				if(Astatus == -2)
-				{
-					printf("Astatus = %d\n", Astatus);
-					abort();
-				}
-				// Particle goes outside of the domain.
-				// Thus, do it again.
-				else if(Astatus == -1)
-				{
-					Y= X[i].Now;
-				}
-				// Right on track. Keep going.
-				else
-				{
-					// If particle stays in the element, Y.t = dt.
-					if(Y.t < tolerance) 
-						Y.t = dt;
-
-					// Update the current info
-					// where the advected particle is in either the element or 
-					// the neighboring element. 		
-					X[i].Now = Y;
-
-/*
-					// Check the stagnation point when transport is advective. 
-					double xx = X[i].Past.x - Y.x; double yy = X[i].Past.y - Y.y; double zz = X[i].Past.z - Y.z;
-					double difference = sqrt(xx*xx + yy*yy + zz*zz);
-
-					double tolerance = 10-6;
-					if(difference < tolerance)
+					// The result of the function is unknown error.
+					if(Astatus == -2)
 					{
-						X[i].Now = Y;
-						// Set the particle outside of the domain.
-						// This will bypass the particle for further particle tracking.
-						X[i].Now.elementIndex = -10;	
+						printf("Astatus = %d\n", Astatus);
+						abort();
 					}
+					// Particle goes outside of the domain.
+					// Thus, do it again.
+					else if(Astatus == -1)
+					{
+						Y= X[i].Now;
+					}
+					// Right on track. Keep going.
 					else
 					{
+						// If particle stays in the element, Y.t = dt.
+						if(Y.t < tolerance)
+							Y.t = dt;
+
 						// Update the current info
-						// where the advected particle is in either the element or 
-						// the neighboring element. 		
+						// where the advected particle is in either the element or
+						// the neighboring element.
 						X[i].Now = Y;
 					}
-*/
-				}			
 
-			// Keep looping if the time is not spent all or
-			// if the particle is outside of the domain or
-			// if the function fails
-			}while ( Y.t < dt );
-			
-			// Update the correct dt
-			X[i].Now.t = X[i].Past.t + dt;
-		}			
-    }
+					// Keep looping if the time is not spent all or
+					// if the particle is outside of the domain or
+					// if the function fails
+				}while ( Y.t < dt );
+
+				// Record path
+				if(i<50)
+					RecordPath(i, &Y);
+				// Update the correct dt
+				X[i].Now.t = X[i].Past.t + dt;
+
+			}
+
+		}
+
+		// Now ODE parts in RWPT
+		if(m_pcs->rwpt_app==1)	// Is the application is Cell Dynamics?
+		{
+			// Do mobile-Immobile by switching the identity of particles
+			double ChanceOfMobile = randomZeroToOne();
+			double ChanceOfImmobile = randomZeroToOne();
+
+			// Rate coefficients definition here
+			// For the use of the existing parameters, I borrow Freundlich non-isotherm parameter set,
+			// which is isotherm_model = 2
+			int numOfComps = cp_vec.size();
+			double* Kon = NULL; double* Koff = NULL;
+			Kon = new double [numOfComps];
+			Koff = new double [numOfComps];
+			double FeqSum=0.0;
+			for(int i=0; i< numOfComps; ++i)
+			{
+				Kon[i] = cp_vec[i]->isotherm_model_values[0];
+				Koff[i] = cp_vec[i]->isotherm_model_values[1];
+				FeqSum+=Kon[i]/Koff[i];
+			}
+			if(X[i].Now.identity == 0)	// Among mobile particles,
+			{
+				double Feq=1./(1.+FeqSum);
+
+				if( ChanceOfMobile < (1.0-exp(-Koff[0]*dt))*Kon[0]/Koff[0] )
+				{
+					if(numOfComps > 1)
+						X[i].Now.identity = 1;	// Make it immobile
+					else
+						;
+				}
+				else if( ChanceOfMobile < ( (1.0-exp(-Koff[0]*dt))*Kon[0]/Koff[0] + (1.0-exp(-Koff[1]*dt))*Kon[1]/Koff[1]) )
+				{
+					if(numOfComps > 2)	// If the number of components is bigger than 2,
+						X[i].Now.identity = 2;	// Make another kind of immobile
+					else
+						;
+				}
+				else
+					;	// Leave it as mobile
+			}
+			else if(X[i].Now.identity == 1 && numOfComps > 1)	// Among immobile particles,
+			{
+				if( ChanceOfImmobile < (1.0-exp(-Koff[0]*dt)) )
+					X[i].Now.identity = 0;	// Make it mobile
+				else
+					;	// Leave it as mobile
+			}
+			else if(X[i].Now.identity == 2 && numOfComps > 2)
+			{
+				if( ChanceOfImmobile < (1.0-exp(-Koff[1]*dt)) )
+					X[i].Now.identity = 0;	// Make it mobile
+				else
+					;	// Leave it as mobile
+			}
+			else
+			{
+				cout<< "Only Identity 0 and 1 are covered. There are more than 2 identities detected" << endl;
+				abort();
+			}
+
+			// Release memory
+			delete [] Kon;	delete [] Koff;
+		}
+		else if(m_pcs->rwpt_app==2)	// Is the application Cryptosporidium oocysts?
+		{
+			// PCH: Removing sorption and desorption
+			// Do sorption-desorption by switching the identity of particles
+			double ChanceOfSorbtion = randomZeroToOne();
+			double ChanceOfIrreversed = randomZeroToOne();
+			// Two-Rate Model: A = 0.5, k1=0.1, k2=0.01
+			double FractionRemainingOnMedia = Two_rateModel(0.99, 0.1, 0.001, X[i].Now.t/60.0);
+			if(X[i].Now.elementIndex != -10 && X[i].Now.identity != 2)
+			{
+				if( ChanceOfSorbtion < FractionRemainingOnMedia )
+					X[i].Now.identity = 1;
+				else
+					X[i].Now.identity = 0;
+
+				// Irreversible Reactions - Oocysts filtered for good or some chemicals decayed
+				// C/C0 = exp(-kt)
+				// For oocyst irreversible filtration, k = vp * lambda
+				double lamda = 16.0;
+				double k = X[i].Now.Vx * lamda;
+				double Irreversed = exp(-k*X[i].Now.t/60.0);
+
+				if( ChanceOfIrreversed > Irreversed )
+					X[i].Now.identity = 2; // Permanently filtered
+			}
+		}
+		else	// For some other applications with different kinetics
+		{
+
+		}
+
+
+	}
 }
 
+/**************************************************************************
+MSHLib-Method:
+Task:The function records pathlines of 100 particles or less
+Programing:
+01/2007 PCH Implementation
+ **************************************************************************/
+void RandomWalk::RecordPath(int no, Particle* P)
+{
+	Position p;
 
+	p.p[0] = P->x; p.p[1] = P->y; p.p[2] = P->z;
+
+	pathline[no].path.push_back(p);
+}
 
 /**************************************************************************
-MSHLib-Method: 
-Task:The function solves normalized concentration of element 
+MSHLib-Method:
+Task:The function solves normalized concentration of element
 Programing:
 10/2005 PCH Implementation
-**************************************************************************/
+ **************************************************************************/
 void RandomWalk::SetElementBasedConcentration(double dt)
 {
-/*
+	/*
     double UnitConcentration = 0.0;
 
     // Here's definition for unit concentration
     UnitConcentration = (double)numOfParticles / (double) m_msh->ele_vector.size();
-    
+
     for(int i=0; i< (int)m_msh->ele_vector.size(); ++i)
     {
         // Now count the number of particles in each element.
@@ -1185,28 +2369,35 @@ void RandomWalk::SetElementBasedConcentration(double dt)
         for(int j=0; j< numOfParticles; ++j)
         {
             if(X[j].Now.elementIndex == i)
-                ++CountInThisElement; 
-        }            
-      
+                ++CountInThisElement;
+        }
+
         // Store the normalized concentration
         double NormConcentrationOfTheElement = (double)CountInThisElement / UnitConcentration;
 //		double NormConcentrationOfTheElement = (double)CountInThisElement/numOfParticles;
-        SetElementValue(i, GetElementValueIndex("CONCENTRATION0")+1, NormConcentrationOfTheElement);   
+        SetElementValue(i, GetElementValueIndex("CONCENTRATION0")+1, NormConcentrationOfTheElement);
     }
-*/
+	 */
 
-/*
+	/*
 	if( ((int)(X[0].Now.t*1000))== 5)
 	{
 		char now[100];
 		sprintf(now, "%f", X[0].Now.t);
 		ConcPTFile(now);
 	}
-*/	
-	
+	 */
+
 	char now[100];
 	CurrentTime += dt;
 	sprintf(now, "%f", CurrentTime);
+
+	double outputStep = 10.0;		// This is the time step that I'd like to print.
+	double tolerance = 1e-1;
+	double checkDivision = CurrentTime/outputStep;
+	double checkDivisionNoNumbersAfterDecimalPoint = (int)(CurrentTime/outputStep);
+
+	//	if( fabs (checkDivision-checkDivisionNoNumbersAfterDecimalPoint) < tolerance )
 	DATWritePCTFile(now);
 }
 
@@ -1214,13 +2405,26 @@ void RandomWalk::ConcPTFile(const char *file_name)
 {
 
 	FILE *pct_file = NULL;
-    char pct_file_name[MAX_ZEILE];
+	char pct_file_name[MAX_ZEILE];
 
-    CFEMesh* m_msh = NULL;
-    m_msh = fem_msh_vector[0];  // Something must be done later on here.
+	CFEMesh* m_msh = NULL;
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
 
-    sprintf(pct_file_name,"%s.conc",file_name);
-    pct_file = fopen(pct_file_name,"w+t");
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
+
+	sprintf(pct_file_name,"%s.conc",file_name);
+	pct_file = fopen(pct_file_name,"w+t");
 
 	// Make a grid
 	int gridDensity = 0;
@@ -1233,7 +2437,7 @@ void RandomWalk::ConcPTFile(const char *file_name)
 			MaxX = thisNode->X();
 		if(MinX > thisNode->X())
 			MinX = thisNode->X();
-	}	
+	}
 
 	gridDensity = (int)(MaxX - MinX);
 
@@ -1248,39 +2452,49 @@ void RandomWalk::ConcPTFile(const char *file_name)
 		{
 			seg_start = MinX + i;
 			seg_end = MinX + i + 1.0;
-			
+
 			if( (X[j].Now.x >= seg_start) && (X[j].Now.x<seg_end) )
 				++count;
 		}
-	//	fprintf(pct_file, "%f 0.0 0.0 %f\n", (seg_start+seg_end)/2.0, count / numOfParticles);
+		//	fprintf(pct_file, "%f 0.0 0.0 %f\n", (seg_start+seg_end)/2.0, count / numOfParticles);
 		fprintf(pct_file, "%f 0.0 0.0 %f\n", (seg_start+seg_end)/2.0, count);
 	}
 
-    // Let's close it, now
-    fclose(pct_file);	
+	// Let's close it, now
+	fclose(pct_file);
+}
+
+/**************************************************************************
+Task:Solve fraction remaining on media
+     N/N0=Ae^(-k1t)+(1-A)e^(-k2t)
+Programing:
+09/2007 PCH Implementation
+ **************************************************************************/
+double RandomWalk::Two_rateModel(double A, double k1, double k2, double t)
+{
+	return ( A*exp(-k1*t) + (1.0-A)*exp(-k2*t) );
 }
 
 
-
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task:Give the beat boys and free my soul. I wanna get lost in your rock &
      roll (random displace) and DRIFT AWAY. Return three component of
-     random drift at the particle position. 
+     random drift at the particle position.
 Programing:
 10/2005 PCH Implementation
-**************************************************************************/
+ **************************************************************************/
 void RandomWalk::RandomlyDriftAway(Particle* A, double dt, double* delta, int type)
 {
-    CElem* m_ele = m_msh->ele_vector[A->elementIndex];
+	CElem* m_ele = m_msh->ele_vector[A->elementIndex];
 
-    // Let's generate three random components N(0,1) and use it to compute deltaOfX
-    double Z[3];
+	// Let's generate three random components N(0,1) and use it to compute deltaOfX
+	double Z[3];
 
-    // Here I tell the dimension for the element that contains the particle A
-    int ele_dim = m_ele->GetDimension(); 
-    if(ele_dim == 1)
-    {
+	// Here I tell the dimension for the element that contains the particle A
+	int ele_dim = m_ele->GetDimension();
+	if(ele_dim == 1)
+	{
 		if(UniformOrNormal == 1)
 		{
 			Z[0] = randomMinusOneToOne();
@@ -1290,14 +2504,14 @@ void RandomWalk::RandomlyDriftAway(Particle* A, double dt, double* delta, int ty
 		}
 		else
 		{
-			Z[0] = Marsaglia(); 	
+			Z[0] = Marsaglia();
 			delta[0] = sqrt(2.0*A->D[0]*dt) * Z[0];
 			delta[1] = 0.0;
-			delta[2] = 0.0;	
+			delta[2] = 0.0;
 		}
-        
-    } else if(ele_dim == 2)
-    {
+
+	} else if(ele_dim == 2)
+	{
 		if(UniformOrNormal == 1)
 		{
 			Z[0] = randomMinusOneToOne(); Z[1] = randomMinusOneToOne();
@@ -1312,8 +2526,8 @@ void RandomWalk::RandomlyDriftAway(Particle* A, double dt, double* delta, int ty
 			delta[1] = sqrt(2.0*A->D[3]*dt) * Z[0] + sqrt(2.0*A->D[4]*dt) * Z[1];
 			delta[2] = 0.0;
 		}
-    } else if(ele_dim == 3)
-    {
+	} else if(ele_dim == 3)
+	{
 		if(UniformOrNormal == 1)
 		{
 			Z[0] = randomMinusOneToOne(); Z[1] = randomMinusOneToOne(); Z[2] = randomMinusOneToOne();
@@ -1328,18 +2542,18 @@ void RandomWalk::RandomlyDriftAway(Particle* A, double dt, double* delta, int ty
 			delta[1] = sqrt(2.0*A->D[3]*dt) * Z[0] + sqrt(2.0*A->D[4]*dt) * Z[1] + sqrt(2.0*A->D[5]*dt) * Z[2];
 			delta[2] = sqrt(2.0*A->D[6]*dt) * Z[0] + sqrt(2.0*A->D[7]*dt) * Z[1] + sqrt(2.0*A->D[8]*dt) * Z[2];
 		}
-    }
-    else;
+	}
+	else;
 }
 
 /**************************************************************************
-MSHLib-Method: 
-Task:The function solves random displacement by random number generation. 
-	
-	 
+MSHLib-Method:
+Task:The function solves random displacement by random number generation.
+
+
 Programing:
 12/2005 PCH Implementation
-**************************************************************************/
+ **************************************************************************/
 int RandomWalk::RandomWalkDrift(double* Z, int dim)
 {
 	if(dim == 1)	// Generate the faster one.
@@ -1353,17 +2567,17 @@ int RandomWalk::RandomWalkDrift(double* Z, int dim)
 	{
 		Z[0] = 	randomMinusOneToOne(); Z[1] = randomMinusOneToOne();
 		Z[2] = 0.0;
-		
+
 		return 1;
 	}
 	else if(dim == 3)
 	{
-		Z[0] = randomMinusOneToOne(); Z[1] = randomMinusOneToOne(); Z[2] = randomMinusOneToOne();	
-		
+		Z[0] = randomMinusOneToOne(); Z[1] = randomMinusOneToOne(); Z[2] = randomMinusOneToOne();
+
 		return 1;
 	}
 	else
-	{	
+	{
 		printf("Something wrong in generation random drift\n");
 		abort();
 	}
@@ -1375,87 +2589,121 @@ int RandomWalk::RandomWalkDrift(double* Z, int dim)
 Task: SolveDispersionCoefficient(Particle* A)
 Programing: This function solves velocity tensor from the velocity of
 			particle.
-10/2005 PCH 
+10/2005 PCH
 02/2006 PCH	Extension to cover 2D elements in 3D
-**************************************************************************/
+05/2009 PCH mobility of components now defined in .mcp. However,
+			the particle idensity should be syncronized with components
+			.mcp files.
+ **************************************************************************/
 void RandomWalk::SolveDispersionCoefficient(Particle* A)
 {
-	// To extract dispersivities from material properties    
-    CMediumProperties *m_mat_mp = NULL;
-    double alphaL = 0.0, alphaT = 0.0;
+	// To extract dispersivities from material properties
+	CMediumProperties *m_mat_mp = NULL;
+	double alphaL = 0.0, alphaT = 0.0;
 	double V[3];
-    double tolerance = 1e-18;
+	double tolerance = 1e-18;
 
-    // Extract the dispersivities from the group that the particle belongs
-	m_msh = fem_msh_vector[0]; 
-    CElem* m_ele = m_msh->ele_vector[A->elementIndex];
-    int group = m_ele->GetPatchIndex();
-    m_mat_mp = mmp_vector[group];
-    alphaL = m_mat_mp->mass_dispersion_longitudinal;
-    alphaT = m_mat_mp->mass_dispersion_transverse;
-	
+	// Extract the dispersivities from the group that the particle belongs
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
+	CElem* m_ele = m_msh->ele_vector[A->elementIndex];
+	int group = m_ele->GetPatchIndex();
+	m_mat_mp = mmp_vector[group];
+	alphaL = m_mat_mp->mass_dispersion_longitudinal;
+	alphaT = m_mat_mp->mass_dispersion_transverse;
+
 	// Let's solve pore velocity.
 	// It is simple because Sw stuff automatically handles in Richards Flow.
 	// Thus, I only divide Darcy velocity by porosity only to get pore velocity.
-	CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];	
+	CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];
 	double porosity = 0.0;
 	if(MediaProp->porosity > 10-6)
 		porosity = MediaProp->porosity;	// This is for simple one.
 	else
 		porosity = MediaProp->porosity_model_values[0];		// This will get you porosity.
-																	// I guess for Dual Porocity stuff, 
-																	// this code should be revisited.
+	// I guess for Dual Porocity stuff can also be handled here.
 	double molecular_diffusion_value = 0.0;
-	CompProperties *m_cp = cp_vec[0];	// This should be expanded later on to cover multiple components.
+	// components defined in .mcp should be syncronized with identity of particles.
+	CompProperties *m_cp = cp_vec[A->identity];
 	double g[3]={0.,0.,0.};
 	double theta = 1.0;		// I'll just set it to be unity for moment.
-	molecular_diffusion_value = m_cp->CalcDiffusionCoefficientCP(A->elementIndex,theta,m_pcs) * MediaProp->TortuosityFunction(A->elementIndex,g,theta);
+	molecular_diffusion_value = m_cp->CalcDiffusionCoefficientCP(A->elementIndex,1.0,m_pcs) * MediaProp->TortuosityFunction(A->elementIndex,g,theta);
 	molecular_diffusion_value /= porosity;	// This should be divided by porosity in this RWPT method.
 
-    // Just solve for the magnitude of the velocity to compute the dispersion tensor
+	// Just solve for the magnitude of the velocity to compute the dispersion tensor
 	V[0] = A->Vx; V[1] = A->Vy; V[2] = A->Vz;
-	
+
 	// RWPT-IM
 	// Let's transform this velocity to be on the xy plane
 	// Some nice if condition to tell the need for transform will be nice. Later....
-	ToTheXYPlane(m_ele, V);
-	 
-    double Vmagnitude = sqrt(V[0]*V[0] + V[1]*V[1] + V[2]*V[2]);
+	if(m_ele->GetDimension() < 3)
+		ToTheXYPlane(m_ele, V);
 
-    // Compute the dispersion tensor at the particle location
-    // If the magnitude of velocity is not zero.
-    if(Vmagnitude > tolerance)
-    {
-        A->D[0] = (alphaT*(V[1]*V[1]+ V[2]*V[2]) + alphaL*V[0]*V[0]) / Vmagnitude + molecular_diffusion_value; // Dxx
-        A->D[1] = A->D[3] = (alphaL- alphaT)*V[0]*V[1]/Vmagnitude + molecular_diffusion_value;    // Dxy = Dyz
-        A->D[2] = A->D[6] = (alphaL- alphaT)*V[0]*V[2]/Vmagnitude + molecular_diffusion_value;    // Dxz = Dzx
-        A->D[4] = (alphaT*(V[0]*V[0]+ V[2]*V[2]) + alphaL*V[1]*V[1]) / Vmagnitude + molecular_diffusion_value; // Dyy
-        A->D[5] = A->D[7] = (alphaL- alphaT)*V[1]*V[2]/Vmagnitude + molecular_diffusion_value;    // Dyz = Dzy
-        A->D[8] = (alphaT*(V[0]*V[0]+ V[1]*V[1]) + alphaL*V[2]*V[2]) / Vmagnitude + molecular_diffusion_value; // Dzz
-    }
-    else
-    {
-		A->D[0] = alphaL; A->D[4] = alphaT;
-		A->D[1] =  A->D[2] =  A->D[3] =  A->D[5] =  A->D[6] =  A->D[7] =  A->D[8] = 0.0;
-    }	
+	double Vmagnitude = sqrt(V[0]*V[0] + V[1]*V[1] + V[2]*V[2]);
+
+	// Compute the dispersion tensor at the particle location
+	// If the magnitude of velocity is not zero.
+	if(Vmagnitude > tolerance)
+	{
+		A->D[0] = (alphaT*(V[1]*V[1]+ V[2]*V[2]) + alphaL*V[0]*V[0]) / Vmagnitude + molecular_diffusion_value; // Dxx
+		A->D[1] = A->D[3] = (alphaL- alphaT)*V[0]*V[1]/Vmagnitude;    // Dxy = Dyz
+		A->D[2] = A->D[6] = (alphaL- alphaT)*V[0]*V[2]/Vmagnitude;    // Dxz = Dzx
+		A->D[4] = (alphaT*(V[0]*V[0]+ V[2]*V[2]) + alphaL*V[1]*V[1]) / Vmagnitude + molecular_diffusion_value; // Dyy
+		A->D[5] = A->D[7] = (alphaL- alphaT)*V[1]*V[2]/Vmagnitude;    // Dyz = Dzy
+		A->D[8] = (alphaT*(V[0]*V[0]+ V[1]*V[1]) + alphaL*V[2]*V[2]) / Vmagnitude + molecular_diffusion_value; // Dzz
+	}
+	else
+	{
+		A->D[0] = molecular_diffusion_value; // Dxx
+		A->D[1] = A->D[3] = 0.0;    // Dxy = Dyz
+		A->D[2] = A->D[6] = 0.0;    // Dxz = Dzx
+		A->D[4] = molecular_diffusion_value; // Dyy
+		A->D[5] = A->D[7] = 0.0;    // Dyz = Dzy
+		A->D[8] = molecular_diffusion_value; // Dzz
+	}
 }
 
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task:This function solves the next info of the particle by advection only
 	 1: The particle moved to the neighbor element
-	 0: Particle stays in the same element. 
+	 0: Particle stays in the same element.
 	-1: Particle displaced outside of the domain
 	-2: The function failed
 Programing:
 09/2005 PCH Implementation
 03/2006 PCH Upgraded as one.
-**************************************************************************/
+ **************************************************************************/
 int RandomWalk::SolveForNextPosition(Particle* A, Particle* B)
 {
-	m_msh = fem_msh_vector[0]; 
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
 	CElem* theElement = m_msh->ele_vector[B->elementIndex];
-	
+
 	// Getting the number of the edges in the element that Particle P belongs
 	int nEdges = theElement->GetEdgesNumber();
 	int countNoIntersection = 0;
@@ -1463,451 +2711,796 @@ int RandomWalk::SolveForNextPosition(Particle* A, Particle* B)
 	// The estimated position advected for the given B->t
 	double dD[3]; dD[0] = dD[1] = dD[2] = 0.0;
 	double Z[3]; Z[0] = Z[1] = Z[2] = 0.0;
-	int ele_dim = theElement->GetDimension(); 
+	int ele_dim = theElement->GetDimension();
 
 	// Initialize some variables.
 	double dtt = 0.0, dt1 = 0.0, dt2 = 0.0, d1 = 0.0, d = 0.0;
-	double tolerance = 1e-6; 
-	double timeSplit = 100; // Important: This timeSplit is a bit sensitive. 
+	double tolerance = 1e-6;
+	double timeSplit = 100; // Important: This timeSplit is a bit sensitive.
 
-	// Loop over the edges
-	for(int i=0; i< nEdges; ++i)
+	if(ele_dim < 3)
 	{
-		// Get the edges of the element
-		vec<CEdge*> theEdges(nEdges);
-		theElement->GetEdges(theEdges);
-		
-		// Get the nodes of the edge
-		vec<CNode*> theNodes(3);
-		theEdges[i]->GetNodes(theNodes);
 
-		double p1[3], p2[3], p3[3], p4[3];			
-		// RWPT - IM 		
-		// Two points in the edge
-		double X1[3], X2[3];
-		X1[0] = theNodes[0]->X(); X1[1] = theNodes[0]->Y(); X1[2] = theNodes[0]->Z();
-		X2[0] = theNodes[1]->X(); X2[1] = theNodes[1]->Y(); X2[2] = theNodes[1]->Z();
-		ToTheXYPlane(theElement, X1); ToTheXYPlane(theElement, X2);
-		for(int j=0; j<3; ++j)
+		// Loop over the edges
+		for(int i=0; i< nEdges; ++i)
 		{
-			p1[j] = X1[j];	p2[j] = X2[j];
+			// Get the edges of the element
+			vec<CEdge*> theEdges(nEdges);
+			theElement->GetEdges(theEdges);
+
+			// Get the nodes of the edge
+			vec<CNode*> theNodes(3);
+			theEdges[i]->GetNodes(theNodes);
+
+			double p1[3], p2[3], p3[3], p4[3];
+			// RWPT - IM
+			// Two points in the edge
+			double X1[3], X2[3];
+			X1[0] = theNodes[0]->X(); X1[1] = theNodes[0]->Y(); X1[2] = theNodes[0]->Z();
+			X2[0] = theNodes[1]->X(); X2[1] = theNodes[1]->Y(); X2[2] = theNodes[1]->Z();
+			ToTheXYPlane(theElement, X1); ToTheXYPlane(theElement, X2);
+			for(int j=0; j<3; ++j)
+			{
+				p1[j] = X1[j];	p2[j] = X2[j];
+			}
+			// The starting point displaced by pure advection
+			p3[0] = B->x; p3[1] = B->y; p3[2] = B->z;
+			ToTheXYPlane(theElement, p3);
+			p3[2] = theElement->GetAngle(2);
+
+			int dDStatus = 1;
+
+			// If the mode is for heterogeneous media
+			if(RWPTMode%2 == 1)
+				// This currently only return TRUE (1)
+				dDStatus = SolveForDisplacementByDerivativeOfDispersion(A, dD);
+
+			// Let's get the local vector for particle velocity
+			double V[3];
+
+			// Create random drift according to the element dimension
+			if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on
+				RandomWalkDrift(Z, ele_dim);
+			if(dDStatus == 1)
+			{
+				if(ele_dim == 2)
+				{
+					// RWPT - IM
+					// This should be done carefully. Velocity should be transformed to be on the XY plane.
+					// dD[] should be fine because it is handled in the SolveForDisplacementByDerivativeOfDispersion function.
+					// Z[] should also be fine. Just randome nubmers.
+					// D[] Yes, this should be fine too. It is handled in the SolveDispersionCoefficient function.
+					// OK. Just velocity left.
+					V[0] = B->Vx;	V[1] = B->Vy;	V[2] = B->Vz;	// In fact, V[2] gotta be zero.
+					ToTheXYPlane(B->elementIndex, V);
+					double dsp[3];
+					GetDisplacement(B, Z, V, dD, B->t, dsp);
+
+					// Fix for translation
+					p4[0] = p3[0]+dsp[0]; p4[1] = p3[1]+dsp[1]; p4[2] = theElement->GetAngle(2);
+				}
+				else
+				{
+					printf("Other dimensions are not implemented yet.\n");
+					abort();
+				}
+			}
+			else
+			{
+				// This should never be the case by now. Later on, maybe.
+				printf("SolveForDisplacementByDerivativeOfDispersion failed\n");
+				abort();
+			}
+
+			// Initialize the values for getting the intersection
+			dtt = B->t;
+			double x = 0.0, y = 0.0, ra = 0.0, rb = 0.0;
+
+			int status = G_intersect_line_segments( p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], p4[0], p4[1],
+					&ra, &rb, &x, &y);
+
+			// If intersection is a sinle point
+			if(status == 1)
+			{
+				// Compute the time left over.
+				double I[3];
+				// Fix for translation
+				I[0] = x; I[1] = y; I[2] = theElement->GetAngle(2);
+				d1 = SolveDistanceBetweenTwoPoints(p3, I);
+				d = SolveDistanceBetweenTwoPoints(p3, p4);
+				dt1 = dtt*d1/d;
+				dt2 = dtt - dt1;
+
+				// dt2 should be positive
+				if(dt2 < 0.0)
+				{
+					/*
+					printf("The program aborts because dt2 < 0.0\n");
+					abort();
+					 */
+					// I and P4 are almost identical.
+					++countNoIntersection;
+				}
+				else
+				{
+					double dsp[3];	dsp[0] = dsp[1] = dsp[2] = 0.0;
+					if(d1 > tolerance)
+					{
+						// Update the record.
+						B->t = dt2;
+						// Adjust the position for the obtained dt1.
+						// But, keep in mind in this displacement there is no advective displament.
+						double Vzero[3]; Vzero[0] = Vzero[1] = Vzero[2] = 0.0;
+						GetDisplacement(B, Z, Vzero, dD, dt1, dsp);
+
+						double IC[3];
+						// Fix for translation
+						IC[0] = x + dsp[0]; IC[1] = y + dsp[1]; IC[2] = theElement->GetAngle(2);
+						// Let's convert these XY plance coordinates to the real plane coordinates.
+						ToTheRealPlane(B->elementIndex, IC);
+						B->x = IC[0]; B->y = IC[1]; B->z = IC[2];
+
+						return 1;	// The element index switched to the neighbor element
+					}
+					else	// It finds the wrong intersection.
+					{
+						// Just advance a little
+						dt1 = dtt/timeSplit;
+						dt2 = dtt - dt1;
+						B->t = dt2;
+						double IC[3];
+						GetDisplacement(B, Z, V, dD, dt1, dsp);
+
+						IC[0] = x + dsp[0]; IC[1] = y + dsp[1]; IC[2] = theElement->GetAngle(2);
+						// Let's convert these XY plance coordinates to the real plane coordinates.
+						ToTheRealPlane(B->elementIndex, IC);
+						B->x = IC[0]; B->y = IC[1]; B->z = IC[2];
+
+						return 1;
+					}
+				}
+			}
+			// It couldn't reach to the edge
+			else if(status == 0)
+				++countNoIntersection;
+			// If two segments are parallel
+			else if(status == -1)
+			{
+				++countNoIntersection;
+				// keep going.
+			}
+			// If two segments are colinear
+			else if(status == 2)
+			{
+				printf("The program aborts because two segments are colinear.\n");
+				++countNoIntersection;
+				// keep going.
+			}
+			else
+			{
+				printf("The program aborts because status of intersection search is not 1 or 0 or -1.\n");
+				abort();
+			}
+
 		}
-		// The starting point displaced by pure advection
-		p3[0] = B->x; p3[1] = B->y; p3[2] = B->z;
-		ToTheXYPlane(theElement, p3);
-		p3[2] = theElement->GetAngle(2);
-
-		int dDStatus = 1;
-	
-		// If the mode is for heterogeneous media 
-		if(RWPTMode%2 == 1)	
-			// This currently only return TRUE (1)
-			dDStatus = SolveForDisplacementByDerivativeOfDispersion(A, dD);
-
-		// Let's get the local vector for particle velocity
-		double V[3];
-
-		// Create random drift according to the element dimension
-		if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on	
-			RandomWalkDrift(Z, ele_dim);
-		if(dDStatus == 1)
+		// Check if the time left advances the particle within this element
+		if(countNoIntersection == nEdges)
 		{
 			if(ele_dim == 2)
 			{
-				// RWPT - IM 
-				// This should be done carefully. Velocity should be transformed to be on the XY plane.
-				// dD[] should be fine because it is handled in the SolveForDisplacementByDerivativeOfDispersion function.
-				// Z[] should also be fine. Just randome nubmers.
-				// D[] Yes, this should be fine too. It is handled in the SolveDispersionCoefficient function.
-				// OK. Just velocity left.
+				double V[3];
 				V[0] = B->Vx;	V[1] = B->Vy;	V[2] = B->Vz;	// In fact, V[2] gotta be zero.
-				ToTheXYPlane(B->elementIndex, V);
-				double dsp[3];
+				ToTheXYPlane(B->elementIndex, V);	// V XY planed.
+
+				double dsp[3];	dsp[0] = dsp[1] = dsp[2] = 0.0;
 				GetDisplacement(B, Z, V, dD, B->t, dsp);
 
-				// Fix for translation
-				p4[0] = p3[0]+dsp[0]; p4[1] = p3[1]+dsp[1]; p4[2] = theElement->GetAngle(2);
+				// Assigning the next postion of the particle. The index of element in this if condition
+				// should be one of the connected planes randomly chosen.
+				// Now just solve the real plane coordinates for the particle at the next position.
+				double P[3];
+				P[0] = B->x; P[1] = B->y; P[2] = B->z;
+				ToTheXYPlane(B->elementIndex, P);
+				P[0] += dsp[0]; P[1] += dsp[1]; P[2] = theElement->GetAngle(2);
+				ToTheRealPlane(B->elementIndex, P);
+				B->x = P[0]; B->y = P[1]; B->z = P[2];
+			}
+			else if(ele_dim == 1)
+			{
+				// Create random numbers according to dimension
+				RandomWalkDrift(Z, ele_dim);
+				double V[3];
+				V[0] = B->Vx;	V[1] = B->Vy;	V[2] = B->Vz;
+
+				double dsp[3];	dsp[0] = dsp[1] = dsp[2] = 0.0;
+				GetDisplacement(B, Z, V, dD, B->t, dsp);
+				B->x += dsp[0]; B->y += dsp[1]; B->z += dsp[2];
+
+				double dt = B->t;
 			}
 			else
 			{
 				printf("Other dimensions are not implemented yet.\n");
 				abort();
 			}
+			B->t = 0.0;
+
+			return 0; // Particle stays in the same element.
 		}
 		else
+			return -2;	// The function failed
+
+	}
+	else	// For 3D elements
+	{
+		// Currently 3D elements only work for dispersion in Homogeneous.
+		// Create random drift according to the element dimension
+		if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on
+			RandomWalkDrift(Z, ele_dim);
+
+		int dDStatus = 1;
+		// If the mode is for heterogeneous media
+		if(RWPTMode%2 == 1)
+			// This currently only return TRUE (1)
+			dDStatus = SolveForDisplacementByDerivativeOfDispersion(A, dD);
+
+		// Let's get the local vector for particle velocity
+		double V[3]; V[0] = V[1] = V[2] = 0.0;
+
+		// Create random drift according to the element dimension
+		if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on
 		{
-			// This should never be the case by now. Later on, maybe.
-			printf("SolveForDisplacementByDerivativeOfDispersion failed\n");
-			abort();
+			RandomWalkDrift(Z, ele_dim);
+			double dsp[3];
+			GetDisplacement(B, Z, V, dD, B->t, dsp);
+			B->x += dsp[0]; B->y += dsp[1]; B->z += dsp[2];
 		}
 
 		// Initialize the values for getting the intersection
-		dtt = B->t;
-		double x = 0.0, y = 0.0, ra = 0.0, rb = 0.0;
-		
-		int status = G_intersect_line_segments( p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], p4[0], p4[1],
-							&ra, &rb, &x, &y); 
-
-		// If intersection is a sinle point
-		if(status == 1)
-		{
-			// Compute the time left over.
-			double I[3];
-			// Fix for translation
-			I[0] = x; I[1] = y; I[2] = theElement->GetAngle(2);		
-			d1 = SolveDistanceBetweenTwoPoints(p3, I);
-			d = SolveDistanceBetweenTwoPoints(p3, p4);
-			dt1 = dtt*d1/d;
-			dt2 = dtt - dt1;
-
-			// dt2 should be positive
-			if(dt2 < 0.0)
-			{ 
-/*
-				printf("The program aborts because dt2 < 0.0\n");
-				abort();
-*/
-				// I and P4 are almost identical. 
-				++countNoIntersection;
-			}
-			else
-			{
-				double dsp[3];	dsp[0] = dsp[1] = dsp[2] = 0.0;
-				if(d1 > tolerance)
-				{
-					// Update the record.
-					B->t = dt2; 	
-					// Adjust the position for the obtained dt1.
-					// But, keep in mind in this displacement there is no advective displament.
-					double Vzero[3]; Vzero[0] = Vzero[1] = Vzero[2] = 0.0;
-					GetDisplacement(B, Z, Vzero, dD, dt1, dsp);
-
-					double IC[3];
-					// Fix for translation
-					IC[0] = x + dsp[0]; IC[1] = y + dsp[1]; IC[2] = theElement->GetAngle(2);
-					// Let's convert these XY plance coordinates to the real plane coordinates.
-					ToTheRealPlane(B->elementIndex, IC); 							
-					B->x = IC[0]; B->y = IC[1]; B->z = IC[2]; 
-
-					return 1;	// The element index switched to the neighbor element
-				}
-				else	// It finds the wrong intersection.
-				{
-					// Just advance a little	
-					dt1 = dtt/timeSplit;
-					dt2 = dtt - dt1;
-					B->t = dt2; 
-					double IC[3];
-					GetDisplacement(B, Z, V, dD, dt1, dsp);
-
-					IC[0] = x + dsp[0]; IC[1] = y + dsp[1]; IC[2] = theElement->GetAngle(2);
-					// Let's convert these XY plance coordinates to the real plane coordinates.
-					ToTheRealPlane(B->elementIndex, IC); 							
-					B->x = IC[0]; B->y = IC[1]; B->z = IC[2]; 
-				
-					return 1;
-				}
-			}
-		}
-		// It couldn't reach to the edge
-		else if(status == 0)
-			++countNoIntersection;
-		// If two segments are parallel
-		else if(status == -1)
-		{
-			++countNoIntersection;
-			// keep going.
-		}
-		// If two segments are colinear
-		else if(status == 2)
-		{
-			printf("The program aborts because two segments are colinear.\n");
-			++countNoIntersection;
-			// keep going.
-		}
-		else
-		{
-			printf("The program aborts because status of intersection search is not 1 or 0 or -1.\n");
-			abort();
-		}
-		
-	}
-	// Check if the time left advances the particle within this element
-	if(countNoIntersection == nEdges)
-	{
-		if(ele_dim == 2)
-		{
-			double V[3];
-			V[0] = B->Vx;	V[1] = B->Vy;	V[2] = B->Vz;	// In fact, V[2] gotta be zero.
-			ToTheXYPlane(B->elementIndex, V);	// V XY planed.
-
-			double dsp[3];	dsp[0] = dsp[1] = dsp[2] = 0.0;
-			GetDisplacement(B, Z, V, dD, B->t, dsp);
-								
-			// Assigning the next postion of the particle. The index of element in this if condition
-			// should be one of the connected planes randomly chosen.
-			// Now just solve the real plane coordinates for the particle at the next position.			
-			double P[3];
-			P[0] = B->x; P[1] = B->y; P[2] = B->z;
-			ToTheXYPlane(B->elementIndex, P);
-			P[0] += dsp[0]; P[1] += dsp[1]; P[2] = theElement->GetAngle(2);
-			ToTheRealPlane(B->elementIndex, P);
-			B->x = P[0]; B->y = P[1]; B->z = P[2];
-		}
-		else
-		{
-			printf("Other dimensions are not implemented yet.\n");
-			abort();
-		}
 		B->t = 0.0;
-
-		return 0; // Particle stays in the same element.	
 	}
-	else
-		return -2;	// The function failed
 }
 
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task:The function solves four different types of displacement.
 Programing:
 03/2006 PCH Implementation
-**************************************************************************/
+ **************************************************************************/
 void RandomWalk::GetDisplacement(Particle* B, double* Z, double* V, double* dD, double time, double* dsp)
 {
-	m_msh = fem_msh_vector[0]; 
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
 	CElem* theElement = m_msh->ele_vector[B->elementIndex];
-	double Dxx = 0.0, Dxy = 0.0, Dyx = 0.0, Dyy = 0.0;
+	int ele_dim = theElement->GetDimension();
+	double Dxx = 0.0, Dxy = 0.0, Dxz = 0.0, Dyx = 0.0, Dyy = 0.0, Dyz = 0.0, Dzx = 0.0, Dzy = 0.0, Dzz = 0.0;
 
-	// If the mode is for heterogeneous media 
-	if(RWPTMode%2 == 1)	
+	if(ele_dim == 2)	// If 2D,
 	{
-		if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on
+		// If the mode is for heterogeneous media
+		if(RWPTMode%2 == 1)
 		{
-			Dxx = sqrt(6.0*B->D[0]*time) * Z[0]; Dxy = sqrt(6.0*fabs(B->D[1])*time) * Z[1];
-			Dyx = sqrt(6.0*fabs(B->D[3])*time) * Z[0]; Dyy = sqrt(6.0*B->D[4]*time) * Z[1];
+			if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on
+			{
+				Dxx = sqrt(6.0*B->D[0]*time) * Z[0]; Dxy = sqrt(6.0*fabs(B->D[1])*time) * Z[1];
+				Dyx = sqrt(6.0*fabs(B->D[3])*time) * Z[0]; Dyy = sqrt(6.0*B->D[4]*time) * Z[1];
 
-			dsp[0] = V[0]*time + dD[0]*time + Dxx + Dxy;
-			dsp[1] = V[1]*time + dD[1]*time + Dyx + Dyy;
+				dsp[0] = V[0]*time + dD[0]*time + Dxx + Dxy;
+				dsp[1] = V[1]*time + dD[1]*time + Dyx + Dyy;
+			}
+			else	// advection only
+			{
+				// Do nothing for dipsersive transport.
+				dsp[0] = V[0]*time + dD[0]*time;
+				dsp[1] = V[1]*time + dD[1]*time;
+			}
 		}
-		else	// advection only
+		else	// Homogeneous case
 		{
-			// Do nothing for dipsersive transport.
-			dsp[0] = V[0]*time + dD[0]*time; 
-			dsp[1] = V[1]*time + dD[1]*time;
+			if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on
+			{
+				// Homo and hetero in this case are the same.
+				Dxx = sqrt(6.0*B->D[0]*time) * Z[0]; Dxy = sqrt(6.0*fabs(B->D[1])*time) * Z[1];
+				Dyx = sqrt(6.0*fabs(B->D[3])*time) * Z[0]; Dyy = sqrt(6.0*B->D[4]*time) * Z[1];
+
+				dsp[0] = V[0]*time + Dxx + Dxy;
+				dsp[1] = V[1]*time + Dyx + Dyy;
+			}
+			else	// advection only
+			{
+				dsp[0] = V[0]*time;
+				dsp[1] = V[1]*time;
+			}
+		}
+		// Fix for translation
+		dsp[2] = theElement->GetAngle(2);
+	}
+	else if(ele_dim == 1)	// If 2D,
+	{
+		double VV = 0.0, DD = 0.0, Dsp = 0.0;
+		int coordinateflag = m_msh->GetCoordinateFlag();
+		if(coordinateflag == 10)	// x only
+		{
+			VV = V[0]; DD = sqrt(6.0*B->D[0]*time) * Z[0];
+		}
+		else if(coordinateflag == 11)	// y only
+		{
+			VV = V[1]; DD = sqrt(6.0*B->D[4]*time) * Z[0];
+		}
+		else if(coordinateflag == 12)	// z only
+		{
+			VV = V[2]; DD = sqrt(6.0*B->D[8]*time) * Z[0];
+		}
+		else	// Something Wrong.
+			abort();
+
+
+		// If the mode is for heterogeneous media
+		if(RWPTMode%2 == 1)
+		{
+			if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on
+			{
+				Dsp = VV*time + dD[0]*time + DD;
+			}
+			else	// advection only
+			{
+				// Do nothing for dipsersive transport.
+				Dsp = VV*time + dD[0]*time;
+			}
+		}
+		else	// Homogeneous case
+		{
+			if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on
+			{
+				// Homo and hetero in this case are the same.
+				Dsp = VV*time + DD;
+			}
+			else	// advection only
+			{
+				Dsp = VV*time;
+			}
+		}
+
+		if(coordinateflag == 10)	// x only
+			dsp[0] = Dsp;
+		else if(coordinateflag == 11)	// y only
+			dsp[1] = Dsp;
+		else if(coordinateflag == 12)	// z only
+			dsp[2] = Dsp;
+		else	// Something Wrong.
+			abort();
+	}
+	else	// 3D elements
+	{
+		// If the mode is for heterogeneous media
+		if(RWPTMode%2 == 1)
+		{
+			if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on
+			{
+				Dxx = sqrt(6.0*B->D[0]*time) * Z[0]; Dxy = sqrt(6.0*fabs(B->D[1])*time) * Z[1]; Dxz = sqrt(6.0*fabs(B->D[2])*time) * Z[2];
+				Dyx = sqrt(6.0*fabs(B->D[3])*time) * Z[0]; Dyy = sqrt(6.0*B->D[4]*time) * Z[1]; Dyz = sqrt(6.0*fabs(B->D[5])*time) * Z[2];
+				Dzx = sqrt(6.0*fabs(B->D[6])*time) * Z[0]; Dzy = sqrt(6.0*fabs(B->D[5])*time) * Z[1]; Dzz = sqrt(6.0*B->D[8]*time) * Z[2];
+
+				dsp[0] = V[0]*time + dD[0]*time + Dxx + Dxy + Dxz;
+				dsp[1] = V[1]*time + dD[1]*time + Dyx + Dyy + Dxz;
+				dsp[2] = V[2]*time + dD[2]*time + Dzx + Dzy + Dzz;
+			}
+			else	// advection only
+			{
+				// Do nothing for dipsersive transport.
+				dsp[0] = V[0]*time + dD[0]*time;
+				dsp[1] = V[1]*time + dD[1]*time;
+				dsp[2] = V[2]*time + dD[2]*time;
+			}
+		}
+		else	// Homogeneous case
+		{
+			if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on
+			{
+				// Homo and hetero in this case are the same.
+				Dxx = sqrt(6.0*B->D[0]*time) * Z[0]; Dxy = sqrt(6.0*fabs(B->D[1])*time) * Z[1]; Dxz = sqrt(6.0*fabs(B->D[2])*time) * Z[2];
+				Dyx = sqrt(6.0*fabs(B->D[3])*time) * Z[0]; Dyy = sqrt(6.0*B->D[4]*time) * Z[1]; Dyz = sqrt(6.0*fabs(B->D[5])*time) * Z[2];
+				Dzx = sqrt(6.0*fabs(B->D[6])*time) * Z[0]; Dzy = sqrt(6.0*fabs(B->D[5])*time) * Z[1]; Dzz = sqrt(6.0*B->D[8]*time) * Z[2];
+
+				dsp[0] = V[0]*time + Dxx + Dxy + Dxz;
+				dsp[1] = V[1]*time + Dyx + Dyy + Dyz;
+				dsp[2] = V[2]*time + Dzx + Dzy + Dzz;
+			}
+			else	// advection only
+			{
+				dsp[0] = V[0]*time;
+				dsp[1] = V[1]*time;
+				dsp[2] = V[2]*time;
+			}
 		}
 	}
-	else	// Homogeneous case
+}
+
+/**************************************************************************
+MSHLib-Method:
+Task:This function returns the index of the element that contains
+	 the particle by comparing the previous position with current position
+Programing:
+01/2007 PCH Implementation
+ **************************************************************************/
+int RandomWalk::GetTheElementOfTheParticle(Particle* Pold, Particle* Pnew)
+{
+	int index = -10;
+
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
 	{
-		if(RWPTMode < 2 || RWPTMode > 3)	// whenever dispersion is on
-		{
-			// Homo and hetero in this case are the same.
-			Dxx = sqrt(6.0*B->D[0]*time) * Z[0]; Dxy = sqrt(6.0*fabs(B->D[1])*time) * Z[1];
-			Dyx = sqrt(6.0*fabs(B->D[3])*time) * Z[0]; Dyy = sqrt(6.0*B->D[4]*time) * Z[1];
-					
-			dsp[0] = V[0]*time + Dxx + Dxy; 
-			dsp[1] = V[1]*time + Dyx + Dyy;
-		}
-		else	// advection only
-		{
-			dsp[0] = V[0]*time;
-			dsp[1] = V[1]*time;
-		}
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
 	}
-	// Fix for translation
-	dsp[2] = theElement->GetAngle(2);
+
+
+#ifdef ALLOW_PARTICLES_GO_OUTSIDE
+	if(Pold->elementIndex != -10)
+	{
+#endif
+
+		CElem* theElement = m_msh->ele_vector[Pold->elementIndex];
+		// Let's check this element first.
+		index = IsTheParticleInThisElement(Pold);
+		if(index != -1)
+			return index;
+
+		// First find the edge of the previous element
+		// Mount the edges of the element
+		int nnode = theElement->GetEdgesNumber();
+		vec<CEdge*>theEdgesOfThisElement(nnode);
+		theElement->GetEdges(theEdgesOfThisElement);
+		// Mount the nodes of the edge
+		vec<CNode*>theNodesOfThisEdge(3);
+
+		for(int i=0; i< nnode; ++i)
+		{
+			// Get the nodes of the edge
+			theEdgesOfThisElement[i]->GetNodes(theNodesOfThisEdge);
+
+			double p1[3], p2[3], p3[3], p4[3];
+			// RWPT - IM
+			// Two points in the edge
+			double X1[3], X2[3];
+			X1[0] = theNodesOfThisEdge[0]->X(); X1[1] = theNodesOfThisEdge[0]->Y(); X1[2] = theNodesOfThisEdge[0]->Z();
+			X2[0] = theNodesOfThisEdge[1]->X(); X2[1] = theNodesOfThisEdge[1]->Y(); X2[2] = theNodesOfThisEdge[1]->Z();
+#ifdef TWODINTHREED
+			ToTheXYPlane(theElement, X1); ToTheXYPlane(theElement, X2);
+#endif
+			for(int j=0; j<3; ++j)
+			{
+				p1[j] = X1[j];	p2[j] = X2[j];
+			}
+
+			// The starting point which is the previous position
+			p3[0] = Pold->x; p3[1] = Pold->y; p3[2] = Pold->z;
+#ifdef TWODINTHREED
+			// RWPT - IM
+			ToTheXYPlane(theElement, p3);
+#endif
+			// The ending point which is the current position
+			p4[0] = Pnew->x; p4[1] = Pnew->y; p4[2] = Pnew->z;
+
+			double x = 0.0, y = 0.0, ra = 0.0, rb = 0.0;
+
+			int status = G_intersect_line_segments( p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], p4[0], p4[1],
+					&ra, &rb, &x, &y);
+
+			if(status == 0)		// Not intersect but extension intersects
+				;
+			else if(status == -1) // Parallel
+				;
+			else if(status == 1) // single intersection - Means the current position is outside of this element
+			{
+				// Do further implementation here.
+				index = theEdgesOfThisElement[i]->connected_elements[1];
+			}
+			else if(status == 2)	// Overlap just do nothing
+				index = Pold->elementIndex;	// This should indicate the particle in this element, then.
+			else
+			{
+				printf("Not making any sense.\n");
+				abort();
+			}
+		}
+
+#ifdef ALLOW_PARTICLES_GO_OUTSIDE
+	}
+#endif
+
+
+	return index;
 }
 
 
-
 /**************************************************************************
-MSHLib-Method: 
-Task:This function returns the index of the element that contains 
+MSHLib-Method:
+Task:This function returns the index of the element that contains
 	 the particle from neighboring elements only.
 Programing:
 12/2005 PCH Implementation
-**************************************************************************/
+ **************************************************************************/
 int RandomWalk::GetTheElementOfTheParticleFromNeighbor(Particle* A)
 {
 	int index = -10;
 
-	m_msh = fem_msh_vector[0]; 
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
 
 #ifdef ALLOW_PARTICLES_GO_OUTSIDE
 	if(A->elementIndex != -10)
 	{
 #endif
 
-	CElem* theElement = m_msh->ele_vector[A->elementIndex];
-	// Let's check this element first.
-	index = IsTheParticleInThisElement(A);
-	if(index != -1)	
-		return index;
-	
-	// First meighbor's search around the main element
-	for(int i=0; i<theElement->GetFacesNumber(); ++i)
-	{
-		CElem* thisNeighbor = theElement->GetNeighbor(i);
-				
-		// If element type has more dimension than line.
-		if(thisNeighbor->GetElementType() !=1) 
+		CElem* theElement = m_msh->ele_vector[A->elementIndex];
+		// Let's check this element first.
+		index = IsTheParticleInThisElement(A);
+		if(index != -1)
 		{
-			// If the particle belongs to this element
-			A->elementIndex = thisNeighbor->GetIndex();
-			index = IsTheParticleInThisElement(A);
-			if(index != -1)	
-				return index;
+			A->elementIndex = index;
+			return index;
+		}
 
-			// Second, search the neighbor's neighbor
-			for(int j=0; j<thisNeighbor->GetFacesNumber(); ++j)
+		// First meighbor's search around the main element
+		for(int i=0; i<theElement->GetFacesNumber(); ++i)
+		{
+			CElem* thisNeighbor = theElement->GetNeighbor(i);
+
+			// If element type has more dimension than line.
+			if(thisNeighbor->GetElementType() !=1)
 			{
-				CElem* theNeighborsNeighbor = thisNeighbor->GetNeighbor(j);
-			
-				if(theNeighborsNeighbor->GetElementType() !=1)
+				// If the particle belongs to this element
+				A->elementIndex = thisNeighbor->GetIndex();
+				index = IsTheParticleInThisElement(A);
+				if(index != -1)
+					return index;
+
+				// Second, search the neighbor's neighbor
+				for(int j=0; j<thisNeighbor->GetFacesNumber(); ++j)
 				{
-					// If the particle belongs to this element
-					A->elementIndex = theNeighborsNeighbor->GetIndex();
-					index = IsTheParticleInThisElement(A);
-					if(index != -1)	
-						return index;	
+					CElem* theNeighborsNeighbor = thisNeighbor->GetNeighbor(j);
 
-					// Third, search the neighbor's neighbor's neighbor
-					for(int k=0; k< theNeighborsNeighbor->GetFacesNumber(); ++k)
+					if(theNeighborsNeighbor->GetElementType() !=1)
 					{
-						CElem* theNeighborsNeighborsNeighbor = theNeighborsNeighbor->GetNeighbor(k);
+						// If the particle belongs to this element
+						A->elementIndex = theNeighborsNeighbor->GetIndex();
+						index = IsTheParticleInThisElement(A);
+						if(index != -1)
+							return index;
 
-						if(theNeighborsNeighborsNeighbor->GetElementType() !=1)
+						// Third, search the neighbor's neighbor's neighbor
+						for(int k=0; k< theNeighborsNeighbor->GetFacesNumber(); ++k)
 						{
-							// If the particle belongs to this element
-							A->elementIndex = theNeighborsNeighborsNeighbor->GetIndex();
-							index = IsTheParticleInThisElement(A);
-							if(index != -1)	
-								return index;
+							CElem* theNeighborsNeighborsNeighbor = theNeighborsNeighbor->GetNeighbor(k);
+
+							if(theNeighborsNeighborsNeighbor->GetElementType() !=1)
+							{
+								// If the particle belongs to this element
+								A->elementIndex = theNeighborsNeighborsNeighbor->GetIndex();
+								index = IsTheParticleInThisElement(A);
+								if(index != -1)
+									return index;
+							}
 						}
 					}
-				}	
+				}
 			}
 		}
-	}
 
-	// If the code pases the following loop, it means I am not lucky in this neighbor search.
-    int numberOfElements = (int)m_msh->ele_vector.size();
-    for(int i=0; i< numberOfElements; ++i)
-    {
-        CElem* thisElement = m_msh->ele_vector[i];
-       
-		if(thisElement->GetElementType() !=1) 
+		// If the code pases the following loop, it means I am not lucky in this neighbor search.
+		int numberOfElements = (int)m_msh->ele_vector.size();
+		for(int i=0; i< numberOfElements; ++i)
 		{
-			// If the particle belongs to this element
-			A->elementIndex = thisElement->GetIndex();
-			index = IsTheParticleInThisElement(A);
-			if(index != -1)	
-				return index;
+			CElem* thisElement = m_msh->ele_vector[i];
+
+			if(thisElement->GetElementType() !=1)
+			{
+				// If the particle belongs to this element
+				A->elementIndex = thisElement->GetIndex();
+				index = IsTheParticleInThisElement(A);
+				if(index != -1)
+					return index;
+			}
 		}
-    }
-	
-	// The search failed
-	if(index == -1)	
-	{
-		index = -10;
-		printf("Searching the index from the neighbor failed\n");
-		printf("The particle should be outside of the domain.\n");
-	}
+
+		// The search failed
+		if(index == -1)
+		{
+			index = -10;
+			printf("Searching the index from the neighbor failed\n");
+			printf("The particle should be outside of the domain.\n");
+		}
 
 #ifdef ALLOW_PARTICLES_GO_OUTSIDE
-}
+	}
 #endif
 	return index;
-	
+
 }
 
 /**************************************************************************
-MSHLib-Method: 
-Task:This function returns the index of the element that contains 
+MSHLib-Method:
+Task:This function returns the index of the element that contains
 	 the particle if the particle exists in the element.
 	 Or return -1 if the particle is not in the element.
 Programing:
 12/2005 PCH Implementation
 02/2006 PCH Improved for the RWPT method in Fracture Networks.
 02/2006 PCH The ray method implemented based on the proven theory.
-**************************************************************************/
+ **************************************************************************/
 int RandomWalk::IsTheParticleInThisElement(Particle* A)
 {
-	m_msh = fem_msh_vector[0]; 
-	CElem* theElement = m_msh->ele_vector[A->elementIndex];
-	
-	// Getting the number of the edges in the element that Particle P belongs
-	int nEdges = theElement->GetEdgesNumber();
-	int countOfInterception = 0;
-	int parallel = 0;
-	// Loop over the edges
-	for(int i=0; i< nEdges; ++i)
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
 	{
-		// Get the edges of the element
-		vec<CEdge*> theEdges(nEdges);
-		theElement->GetEdges(theEdges);
-		
-		// Get the nodes of the edge
-		vec<CNode*> theNodes(3);
-		theEdges[i]->GetNodes(theNodes);
+		m_pcs = pcs_vector[i];
 
-		double p1[3], p2[3], p3[3], p4[3];	
-		// RWPT - IM 		
-		// Two points in the edge
-		double X1[3], X2[3];
-		X1[0] = theNodes[0]->X(); X1[1] = theNodes[0]->Y(); X1[2] = theNodes[0]->Z();
-		X2[0] = theNodes[1]->X(); X2[1] = theNodes[1]->Y(); X2[2] = theNodes[1]->Z();
-		ToTheXYPlane(theElement, X1); ToTheXYPlane(theElement, X2);
-		for(int j=0; j<3; ++j)
-		{
-			p1[j] = X1[j];	p2[j] = X2[j];
-		}
-
-		// The starting point which is the particle position
-		p3[0] = A->x; p3[1] = A->y; p3[2] = A->z;
-		// RWPT - IM 
-		ToTheXYPlane(theElement, p3);
-		// Make p4 very long in x direction in the XY plane
-		double big = 1e3;
-		p4[0] = p3[0] + big; p4[1] = p3[1]; p4[2] = p3[2];
-		
-		double x = 0.0, y = 0.0, ra = 0.0, rb = 0.0;
-		
-		int status = G_intersect_line_segments( p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], p4[0], p4[1],
-							&ra, &rb, &x, &y); 
-
-		if(status == 0)		// Not intersect but extension intersects
-			;
-		else if(status == -1) // Parallel
-			parallel = 1;
-		else if(status == 1)
-			++countOfInterception; // single intersection
-		else if(status == 2)	// Overlap just do nothing 
-			;	// This should indicate the particle in this element, then.
-		else
-		{
-			printf("Not making any sense.\n");
-			abort();
-		}
-		
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
 	}
-	// Check if this particle is inside of the element
-	// If the number of interceptions is odd,
-	// then, it is inside of this element.
-	if(countOfInterception%2 == 1)
-		return A->elementIndex;
-	// if the number is even,
-	// then, it is outside
-	else
-		return -1; // This element does not have the particle.
+	CElem* theElement = m_msh->ele_vector[A->elementIndex];
+
+	int ele_dim = theElement->GetDimension();
+
+	if(ele_dim == 2)
+	{
+		// Getting the number of the edges in the element that Particle P belongs
+		int nEdges = theElement->GetEdgesNumber();
+		int countOfInterception = 0;
+		int parallel = 0;
+		// Loop over the edges
+		for(int i=0; i< nEdges; ++i)
+		{
+			// Get the edges of the element
+			vec<CEdge*> theEdges(nEdges);
+			theElement->GetEdges(theEdges);
+
+			// Get the nodes of the edge
+			vec<CNode*> theNodes(3);
+			theEdges[i]->GetNodes(theNodes);
+
+			double p1[3], p2[3], p3[3], p4[3];
+			// RWPT - IM
+			// Two points in the edge
+			double X1[3], X2[3];
+			X1[0] = theNodes[0]->X(); X1[1] = theNodes[0]->Y(); X1[2] = theNodes[0]->Z();
+			X2[0] = theNodes[1]->X(); X2[1] = theNodes[1]->Y(); X2[2] = theNodes[1]->Z();
+			ToTheXYPlane(theElement, X1); ToTheXYPlane(theElement, X2);
+			for(int j=0; j<3; ++j)
+			{
+				p1[j] = X1[j];	p2[j] = X2[j];
+			}
+
+			// The starting point which is the particle position
+			p3[0] = A->x; p3[1] = A->y; p3[2] = A->z;
+			// RWPT - IM
+			ToTheXYPlane(theElement, p3);
+			// Make p4 very long in x direction in the XY plane
+			double big = 1e3;
+			p4[0] = p3[0] + big; p4[1] = p3[1]; p4[2] = p3[2];
+
+			double x = 0.0, y = 0.0, ra = 0.0, rb = 0.0;
+
+			int status = G_intersect_line_segments( p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], p4[0], p4[1],
+					&ra, &rb, &x, &y);
+
+			if(status == 0)		// Not intersect but extension intersects
+				;
+			else if(status == -1) // Parallel
+				parallel = 1;
+			else if(status == 1)
+				++countOfInterception; // single intersection
+			else if(status == 2)	// Overlap just do nothing
+				;	// This should indicate the particle in this element, then.
+			else
+			{
+				printf("Not making any sense.\n");
+				abort();
+			}
+
+		}
+		// Check if this particle is inside of the element
+		// If the number of interceptions is odd,
+		// then, it is inside of this element.
+		if(countOfInterception%2 == 1)
+			return A->elementIndex;
+		// if the number is even,
+		// then, it is outside
+		else
+			return -1; // This element does not have the particle.
+	}
+	else if(ele_dim == 1)
+	{
+		// Since this is 1D, I'll do exhaustive search.
+		// Checking the coordinateflag for proper solution.
+		int coordinateflag = m_msh->GetCoordinateFlag();
+		CNode* p1 = NULL; CNode* p2=NULL;
+		for(int i=0; i< m_msh->ele_vector.size(); ++i)
+		{
+			CElem* theEle = m_msh->ele_vector[i];
+			if(coordinateflag == 10) // x only
+			{
+				p1 = m_msh->nod_vector[theEle->GetNodeIndex(0)];
+				p2 = m_msh->nod_vector[theEle->GetNodeIndex(1)];
+				if( (A->x >= p1->X() && A->x < p2->X()) ||
+						(A->x >= p2->X() && A->x < p1->X()) )
+				{
+					return i;
+				}
+			}
+			else if(coordinateflag == 11) // y only
+			{
+				p1 = m_msh->nod_vector[theEle->GetNodeIndex(0)];
+				p2 = m_msh->nod_vector[theEle->GetNodeIndex(1)];
+				if( (A->y >= p1->Y() && A->y < p2->Y()) ||
+						(A->y >= p2->Y() && A->y < p1->Y()) )
+				{
+					return i;
+				}
+			}
+			else if(coordinateflag == 12) // z only
+			{
+				p1 = m_msh->nod_vector[theEle->GetNodeIndex(0)];
+				p2 = m_msh->nod_vector[theEle->GetNodeIndex(1)];
+				if( (A->z >= p1->Z() && A->z < p2->Z()) ||
+						(A->z >= p2->Z() && A->z < p1->Z()) )
+				{
+					return i;
+				}
+			}
+			else
+				return -1;	// Something is wrong.
+		}
+
+		return -10;		// The particle is outside of domain
+	}
 }
 
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task:This function solves the distance between two points
 Programing:
 09/2005 PCH Implementation
-**************************************************************************/
+ **************************************************************************/
 double RandomWalk::SolveDistanceBetweenTwoPoints(double* p1, double* p2)
 {
 	double x = p2[0]-p1[0]; double y = p2[1]-p1[1]; double z = p2[2]-p1[2];
@@ -1917,143 +3510,463 @@ double RandomWalk::SolveDistanceBetweenTwoPoints(double* p1, double* p2)
 
 
 /**************************************************************
-* find interesection between two lines defined by points on the lines
-* line segment A is (ax1,ay1) to (ax2,ay2)
-* line segment B is (bx1,by1) to (bx2,by2)
-* returns
-*   -1 segment A and B do not intersect (parallel without overlap)
-*    0 segment A and B do not intersect but extensions do intersect
-*    1 intersection is a single point
-*    2 intersection is a line segment (colinear with overlap)
-* x,y intersection point
-* ra - ratio that the intersection divides A 
-* rb - ratio that the intersection divides B
-*
-*                              B2
-*                              /
-*                             /
-*   r=p/(p+q) : A1---p-------*--q------A2
-*                           /
-*                          /
-*                         B1
-*
-**************************************************************/
-  
+ * find interesection between two lines defined by points on the lines
+ * line segment A is (ax1,ay1) to (ax2,ay2)
+ * line segment B is (bx1,by1) to (bx2,by2)
+ * returns
+ *   -1 segment A and B do not intersect (parallel without overlap)
+ *    0 segment A and B do not intersect but extensions do intersect
+ *    1 intersection is a single point
+ *    2 intersection is a line segment (colinear with overlap)
+ * x,y intersection point
+ * ra - ratio that the intersection divides A
+ * rb - ratio that the intersection divides B
+ *
+ *                              B2
+ *                              /
+ *                             /
+ *   r=p/(p+q) : A1---p-------*--q------A2
+ *                           /
+ *                          /
+ *                         B1
+ *
+ **************************************************************/
+
 /**************************************************************
-*
-* A point P which lies on line defined by points A1=(x1,y1) and A2=(x2,y2)
-* is given by the equation r * (x2,y2) + (1-r) * (x1,y1).
-* if r is between 0 and 1, p lies between A1 and A2.
-* 
-* Suppose points on line (A1, A2) has equation 
-*     (x,y) = ra * (ax2,ay2) + (1-ra) * (ax1,ay1)
-* or for x and y separately
-*     x = ra * ax2 - ra * ax1 + ax1
-*     y = ra * ay2 - ra * ay1 + ay1
-* and the points on line (B1, B2) are represented by
-*     (x,y) = rb * (bx2,by2) + (1-rb) * (bx1,by1)
-* or for x and y separately
-*     x = rb * bx2 - rb * bx1 + bx1
-*     y = rb * by2 - rb * by1 + by1
-* 
-* when the lines intersect, the point (x,y) has to
-* satisfy a system of 2 equations:
-*     ra * ax2 - ra * ax1 + ax1 = rb * bx2 - rb * bx1 + bx1
-*     ra * ay2 - ra * ay1 + ay1 = rb * by2 - rb * by1 + by1
-* 
-* or
-* 
-*     (ax2 - ax1) * ra - (bx2 - bx1) * rb = bx1 - ax1
-*     (ay2 - ay1) * ra - (by2 - by1) * rb = by1 - ay1
-* 
-* by Cramer's method, one can solve this by computing 3
-* determinants of matrices:
-* 
-*    M  = (ax2-ax1)  (bx1-bx2)
-*         (ay2-ay1)  (by1-by2)
-* 
-*    M1 = (bx1-ax1)  (bx1-bx2)
-*         (by1-ay1)  (by1-by2)
-* 
-*    M2 = (ax2-ax1)  (bx1-ax1)
-*         (ay2-ay1)  (by1-ay1)
-* 
-* Which are exactly the determinants D, D2, D1 below:
-* 
-*   D  ((ax2-ax1)*(by1-by2) - (ay2-ay1)*(bx1-bx2))
-* 
-*   D1 ((bx1-ax1)*(by1-by2) - (by1-ay1)*(bx1-bx2))
-* 
-*   D2 ((ax2-ax1)*(by1-ay1) - (ay2-ay1)*(bx1-ax1))
-***********************************************************************/
+ *
+ * A point P which lies on line defined by points A1=(x1,y1) and A2=(x2,y2)
+ * is given by the equation r * (x2,y2) + (1-r) * (x1,y1).
+ * if r is between 0 and 1, p lies between A1 and A2.
+ *
+ * Suppose points on line (A1, A2) has equation
+ *     (x,y) = ra * (ax2,ay2) + (1-ra) * (ax1,ay1)
+ * or for x and y separately
+ *     x = ra * ax2 - ra * ax1 + ax1
+ *     y = ra * ay2 - ra * ay1 + ay1
+ * and the points on line (B1, B2) are represented by
+ *     (x,y) = rb * (bx2,by2) + (1-rb) * (bx1,by1)
+ * or for x and y separately
+ *     x = rb * bx2 - rb * bx1 + bx1
+ *     y = rb * by2 - rb * by1 + by1
+ *
+ * when the lines intersect, the point (x,y) has to
+ * satisfy a system of 2 equations:
+ *     ra * ax2 - ra * ax1 + ax1 = rb * bx2 - rb * bx1 + bx1
+ *     ra * ay2 - ra * ay1 + ay1 = rb * by2 - rb * by1 + by1
+ *
+ * or
+ *
+ *     (ax2 - ax1) * ra - (bx2 - bx1) * rb = bx1 - ax1
+ *     (ay2 - ay1) * ra - (by2 - by1) * rb = by1 - ay1
+ *
+ * by Cramer's method, one can solve this by computing 3
+ * determinants of matrices:
+ *
+ *    M  = (ax2-ax1)  (bx1-bx2)
+ *         (ay2-ay1)  (by1-by2)
+ *
+ *    M1 = (bx1-ax1)  (bx1-bx2)
+ *         (by1-ay1)  (by1-by2)
+ *
+ *    M2 = (ax2-ax1)  (bx1-ax1)
+ *         (ay2-ay1)  (by1-ay1)
+ *
+ * Which are exactly the determinants D, D2, D1 below:
+ *
+ *   D  ((ax2-ax1)*(by1-by2) - (ay2-ay1)*(bx1-bx2))
+ *
+ *   D1 ((bx1-ax1)*(by1-by2) - (by1-ay1)*(bx1-bx2))
+ *
+ *   D2 ((ax2-ax1)*(by1-ay1) - (ay2-ay1)*(bx1-ax1))
+ ***********************************************************************/
 
 int RandomWalk::G_intersect_line_segments (
-     double ax1,double ay1, double ax2,double ay2,
-     double bx1,double by1, double bx2,double by2,
-     double *ra,double *rb,
-     double *x,double *y)
+		double ax1,double ay1, double ax2,double ay2,
+		double bx1,double by1, double bx2,double by2,
+		double *ra,double *rb,
+		double *x,double *y)
 {
 	double D  = ((ax2-ax1)*(by1-by2) - (ay2-ay1)*(bx1-bx2));
 	double D1 = ((bx1-ax1)*(by1-by2) - (by1-ay1)*(bx1-bx2));
 	double D2 = ((ax2-ax1)*(by1-ay1) - (ay2-ay1)*(bx1-ax1));
 
 
-	double d; 
-    d = D;
- 
-    if (d) /* lines are not parallel */
-    {
-        *ra = D1/d;
-        *rb = D2/d;
- 
-        *x = ax1 + (*ra) * (ax2 - ax1) ;
-        *y = ay1 + (*ra) * (ay2 - ay1) ;
-        return (*ra >= 0.0 && *ra <= 1.0 && *rb >= 0.0 && *rb <= 1.0);
-    }
- 
-    if (D1 || D2) return -1;  /* lines are parallel, not colinear */
- 
-    if (ax1 > ax2)
-    {
-        SWAP (ax1, ax2)
-    }
-    if (bx1 > bx2)
-    {
-        SWAP (bx1, bx2)
-    }
-    if (ax1 > bx2) return -1;
-    if (ax2 < bx1) return -1;
+	double d;
+	d = D;
 
-    /* there is overlap */
-    if (ax1 == bx2)
-    {
-        *x = ax1;
-        *y = ay1;
-        return 1; /* at endpoints only */
-    }
-    if (ax2 == bx1)
-    {
-        *x = ax2;
-        *y = ay2;
-        return 1; /* at endpoints only */
-    }
- 
-    return 2; /* colinear with overlap on an interval, not just a single point*/
+	if (d) /* lines are not parallel */
+	{
+		*ra = D1/d;
+		*rb = D2/d;
+
+		*x = ax1 + (*ra) * (ax2 - ax1) ;
+		*y = ay1 + (*ra) * (ay2 - ay1) ;
+		return (*ra >= 0.0 && *ra <= 1.0 && *rb >= 0.0 && *rb <= 1.0);
+	}
+
+	if (D1 || D2) return -1;  /* lines are parallel, not colinear */
+
+	if (ax1 > ax2)
+	{
+		SWAP (ax1, ax2)
+	}
+	if (bx1 > bx2)
+	{
+		SWAP (bx1, bx2)
+	}
+	if (ax1 > bx2) return -1;
+	if (ax2 < bx1) return -1;
+
+	/* there is overlap */
+	if (ax1 == bx2)
+	{
+		*x = ax1;
+		*y = ay1;
+		return 1; /* at endpoints only */
+	}
+	if (ax2 == bx1)
+	{
+		*x = ax2;
+		*y = ay2;
+		return 1; /* at endpoints only */
+	}
+
+	return 2; /* colinear with overlap on an interval, not just a single point*/
+}
+
+
+/**************************************************************
+ * Task: find interesection between two lines defined
+ *		by points on the lines
+ *
+ * returns
+ *   -1 parallel
+ *    0 do not intersect so in this element
+ *    1 intersection is a single point and stored in pi
+ *    2 on the plane
+ **************************************************************/
+
+int RandomWalk::G_intersect_line_segments_3D (
+		double* pl1,double* pl2, double* pp1,double* pp2,
+		double* pp3,double* pi)
+{
+	// Solve for norm of the plane by performing cross product to solve for the plane
+	double p2p1[3], p3p1[3], normOfThePlane[3];
+
+	CrossProduction(pp2,pp1,p2p1);
+	CrossProduction(pp3,pp1,p3p1);
+	CrossProduction(p2p1,p3p1,normOfThePlane);
+
+	double a, b, c, d;
+	a = normOfThePlane[0]; b = normOfThePlane[1]; c = normOfThePlane[2];
+	d = -(a*pp1[0]+b*pp1[1]+c*pp1[2]);	// Refer pp1 point for solving d of the plane
+
+	// Now solution of intersection
+	double u, denominator; // The line eqn: P=P1+u(P2-P1) where P1 and P2 is on the line
+	denominator = a*(pl1[0]-pl2[0]) + b*(pl1[1]-pl2[1]) + c*(pl1[2]-pl2[2]);
+
+	// Check if denominator is zero or not
+	if(fabs(denominator) < 10e-8) // If this is zero
+	{
+		// The line is either parallel or on the plane.
+		// Check if the line is on the plane first by sustituting P1 into the plane eqn.
+		double onThePlane = a*pl1[0] + b*pl1[1] + c*pl1[2] + d;
+
+		if(fabs(onThePlane) < 10e-8)	// If the line is on the plane
+			return -1;
+		else	// If the line is parallel
+			return 2;
+	}
+	else // The line segment either is in the element or has an intersectional point.
+	{
+		u = (a*pl1[0] + b*pl1[1] + c*pl1[2] + d) / denominator;
+
+		if (u > 0 && u < 1)	// The line is in this element
+			return 0;
+		else	// The line intersects the plane
+		{
+			// Solve for the intersection
+			pi[0] = pl1[0] + u*(pl2[0]-pl1[0]);
+			pi[1] = pl1[1] + u*(pl2[1]-pl1[1]);
+			pi[2] = pl1[2] + u*(pl2[2]-pl1[2]);
+
+			return 1;
+		}
+	}
+}
+
+
+/**************************************************************************
+Task: The function solves reference coordinates of quad elements for a given physical
+		coordinates. For bilinear elements such as quadrilateral elements,
+		there is an analytical solution of the inverse bilinear
+		transformation
+
+01/2007 PCH
+ **************************************************************************/
+void RandomWalk::IsoparametricMappingQuadfromPtoR(int index, double* R)
+{
+	// Get the mesh first
+	CFEMesh* m_msh = NULL;
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
+	// Mount the element fromthe first particle from particles initially
+	CElem* theEle = m_msh->ele_vector[index];
+	double tolerance = 1e-8;
+
+	// If a quad element,
+	int nnode = theEle->GetEdgesNumber();
+
+	if(nnode == 4)
+	{
+		// Get physical coordinates of four corner points
+		double x[4], y[4];
+		for(int i=0; i<nnode; ++i)
+		{
+			CNode* theNode = NULL;
+			theNode = theEle->GetNode(i);
+			x[i] = theNode->X();
+			y[i] = theNode->Y();
+		}
+
+		// Some coeff's for convenience
+		double ax,ay,bx,by,cx,cy,dx,dy;
+		double X=R[0]; double Y=R[1];
+		/*
+		ax = x[0]-x[1]+x[2]-x[3]; bx = x[0]-x[1];
+		cx = x[0]-x[3]; dx = X - x[0];
+		ay = y[0]-y[1]+y[2]-y[3]; by = y[0]-y[1];
+		cy = y[0]-y[3]; dy = Y - y[0];
+		 */
+
+		ax = -0.25*(x[0]-x[1]+x[2]-x[3]); bx = -0.25*(x[0]-x[1]-x[2]+x[3]);
+		cx = -0.25*(x[0]+x[1]-x[2]-x[3]); dx = -X +0.25*(x[0]+x[1]+x[2]+x[3]);
+		ay = -0.25*(y[0]-y[1]+y[2]-y[3]); by = -0.25*(y[0]-y[1]-y[2]+y[3]);
+		cy = -0.25*(y[0]+y[1]-y[2]-y[3]); dy = -Y +0.25*(y[0]+y[1]+y[2]+y[3]);
+
+
+		// Cases for solution
+		if( fabs(ax) > tolerance) // ax is not zero CASE 1
+		{
+			double s, r, t;
+
+			s = ay/ax*bx-by; r = ay/ax*cx-cy; t = ay/ax*dx-dy;
+
+			if( fabs(s) > tolerance) // s is not zero
+			{
+				if( fabs(r) > tolerance) // r is not zero
+				{
+					double A,B,C;
+					A = -r*ax; B = r*bx-t*ax-s*cx; C = t*bx-s*dx;
+
+					double d, y1, y2;
+					d = B*B-4.0*A*C;
+					if(d >= 0.0)	// Only for real roots
+					{
+						y1 = (-B+sqrt(d))/(2.0*A); y2 = (-B-sqrt(d))/(2.0*A);
+						// Get the right y
+						//		if(y1 >= 0.0 && y1 <= 1.0)
+						if(y1 >= -1.0 && y1 <= 1.0)
+						{
+							R[1] = y1;
+							R[0] = -r/s*y1-t/s;
+							R[2] = 0.0;	// For now for 2D elemenets
+						}
+						//		else if(y2 >= 0.0 && y2 <= 1.0)
+						else if(y2 >= -1.0 && y2 <= 1.0)
+						{
+							R[1] = y2;
+							R[0] = -r/s*y2-t/s;
+							R[2] = 0.0;	// For now for 2D elemenets
+						}
+						else
+						{
+							printf("Failed to solve reference position for the particle\n");
+							abort();	// Failed find the solution.
+						}
+					}
+					else	// Case 2
+					{
+						// y undefined. This should not happen.
+					}
+				}
+				else
+				{
+				}
+			}
+			else	// Case 3
+			{
+				// x undefined. This should not happen
+			}
+		}
+		else	// if ax = 0 CASE 2
+		{
+			if( fabs(cx) > tolerance) // cx is not zero
+			{
+				// If ay is not zero and bx is not zero
+				if( (fabs(ay) > tolerance) && (fabs(bx) > tolerance) )
+				{
+					double A,B,C;
+					A = -ay*bx; B = bx*cy-by*cx-ay*dx; C = cy*dx-cx*dy;
+
+					double d, x1, x2;
+
+					// If ay = 0 or bx = 0
+					if(fabs(ay) < tolerance || fabs(bx) < tolerance )
+					{
+						R[0] = (dy*cx-cy*dx)/(cy*bx-dy*cx-ay*dx);
+						R[1] = (-bx*R[0]-dx)/cx;
+						R[2] = 0.0;
+					}
+					else // If ay is not zero and bx is not zero,
+					{
+						d = B*B-4.0*A*C;
+						if(d >= 0.0)	// Only for real roots
+						{
+							x1 = (-B+sqrt(d))/(2.0*A); x2 = (-B-sqrt(d))/(2.0*A);
+
+							// Get the right y
+							if(x1 >= -1.0 && x1 <= 1.0)
+								//	if(x1 >= 0.0 && x1 <= 1.0)
+							{
+								R[0] = x1;
+								R[1] = (-bx*R[0]-dx)/cx;
+								R[2] = 0.0;	// For now for 2D elemenets
+							}
+							//		else if(x2 >= 0.0 && x2 <= 1.0)
+							else if(x2 >= -1.0 && x2 <= 1.0)
+							{
+								R[0] = x2;
+								R[1] = (-bx*R[0]-dx)/cx;
+								R[2] = 0.0;	// For now for 2D elemenets
+							}
+							else
+							{
+								printf("Failed to solve reference position for the particle\n");
+								abort();	// Failed find the solution.
+							}
+						}
+						else	;	// Do nothing. We're not intereste
+					}
+				}
+			}
+			else	// If cx = 0, CASE 3
+			{
+				R[0] = -dx/bx;
+				R[1] = (by*dx-dy*dx)/(ay*dx+cy*bx);
+				R[2] = 0.0;
+			}
+		}
+		/*
+		// Convert it to -1 to 1
+		R[0] = 2*R[0]-1.0;
+		R[1] = 2*R[1]-1.0;
+		 */
+
+	}
+	else	// the element is not quad.
+	{
+	}
 }
 
 /**************************************************************************
-FEMLib-Method: 
+Task: The function solves physical coordinates of quad elements for a given reference
+		coordinates. For bilinear elements such as quadrilateral elements,
+		there is an analytical solution of the bilinear
+		transformation
+
+01/2007 PCH
+ **************************************************************************/
+void RandomWalk::IsoparametricMappingQuadfromRtoP(int index, double* P)
+{
+	// Get the mesh first
+	CFEMesh* m_msh = NULL;
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
+	// Mount the element fromthe first particle from particles initially
+	CElem* theEle = m_msh->ele_vector[index];
+	double tolerance = 1e-8;
+
+	// If a quad element,
+	int nnode = theEle->GetEdgesNumber();
+
+	if(nnode == 4)
+	{
+		// Get physical coordinates of four corner points
+		double x[4], y[4];
+		for(int i=0; i<nnode; ++i)
+		{
+			CNode* theNode = NULL;
+			theNode = theEle->GetNode(i);
+			x[i] = theNode->X();
+			y[i] = theNode->Y();
+		}
+
+		double phat[3];
+		phat[0] = P[0]; phat[1] = P[1]; phat[2] = P[2];
+
+		P[0] = 0.25*( x[0]*(1.0-phat[0])*(1.0-phat[1])+x[1]*(1.0+phat[0])*(1.0-phat[1])+
+				x[2]*(1.0+phat[0])*(1.0+phat[1])+x[3]*(1.0-phat[0])*(1.0+phat[1]) );
+		P[1] = 0.25*( y[0]*(1.0-phat[0])*(1.0-phat[1])+y[1]*(1.0+phat[0])*(1.0-phat[1])+
+				y[2]*(1.0+phat[0])*(1.0+phat[1])+y[3]*(1.0-phat[0])*(1.0+phat[1]) );
+		P[2] = 0.0;
+	}
+	else	// the element is not quad.
+	{
+	}
+}
+
+/**************************************************************************
+FEMLib-Method:
 Task: DoJointEffectOfElementInitially(void)
 Programing: This function does make a choice for each particle
-			that lies on a crossroad or a joint. The contribution is 
+			that lies on a crossroad or a joint. The contribution is
 			determined by Fluid Momentum. Roulette Wheel Selection (RWE)
 			determines which brach the particle continue to travel.
-02/2006 PCH 
-**************************************************************************/
+02/2006 PCH
+ **************************************************************************/
 void RandomWalk::DoJointEffectOfElementInitially(void)
 {
 	// Get the mesh first
-	CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
+	CFEMesh* m_msh = NULL;
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
 
 	// Looping all over the particles to have a choice which plane to go.
 	// Because all of the particles are on the joint initially.
@@ -2073,7 +3986,7 @@ void RandomWalk::DoJointEffectOfElementInitially(void)
 		{
 			// Is this a joint?
 			if(theEdges[i]->GetJoint() == 1)
-				theJoint = theEdges[i];	
+				theJoint = theEdges[i];
 		}
 
 		// 2. Get multiple planes out of the joint
@@ -2082,7 +3995,7 @@ void RandomWalk::DoJointEffectOfElementInitially(void)
 		vec<CNode*> theNodes(3);
 		theJoint->GetNodes(theNodes);
 		// I will use the first node of the joint as a crossroad
-		CNode* crossnode = theNodes[0];	
+		CNode* crossnode = theNodes[0];
 		// Let's mount the crossroad class
 		CrossRoad* crossroad = NULL;
 		for(int i=0; i < (int)(m_msh->fm_pcs->crossroads.size()); ++i)
@@ -2091,8 +4004,8 @@ void RandomWalk::DoJointEffectOfElementInitially(void)
 				crossroad = m_msh->fm_pcs->crossroads[i];
 		}
 		// Let's get the contribution of each connected plane.
-		double chances[100];	// I just set 100 as a maximum number of 
-							// connected planes.
+		double chances[100];	// I just set 100 as a maximum number of
+		// connected planes.
 		for(int i=0; i<crossroad->numOfThePlanes; ++i)
 			chances[i] = crossroad->plane[i].ratio;
 
@@ -2101,15 +4014,15 @@ void RandomWalk::DoJointEffectOfElementInitially(void)
 		m_msh->PT->X[p].Now.elementIndex = m_msh->PT->X[p].Past.elementIndex =
 			crossroad->plane[whichWay].eleIndex;
 	}
-	
+
 
 }
 
-/************************************************************************** 
+/**************************************************************************
 Task: ToTheXYPlane(CElem* E, double* X)
 Programing: This function rotate-transforms the vector to be on the xy plane
-02/2006 PCH 
-**************************************************************************/
+02/2006 PCH
+ **************************************************************************/
 void RandomWalk::ToTheXYPlane(CElem* E, double* X)
 {
 	double x[3], xx[3];
@@ -2120,11 +4033,11 @@ void RandomWalk::ToTheXYPlane(CElem* E, double* X)
 
 	double alpha = E->GetAngle(0);
 	double beta = E->GetAngle(1);
-	// Let's rotate the original Enorm to the BB coordinate system 
+	// Let's rotate the original Enorm to the BB coordinate system
 	// along the y axis
 	x[0] = cos(alpha)*X[0] + sin(alpha)*X[2];
 	x[1] = X[1];
-	x[2] = -sin(alpha)*X[0] + cos(alpha)*X[2];	
+	x[2] = -sin(alpha)*X[0] + cos(alpha)*X[2];
 	// Let's rotate the BB coordinate system to the BBB coordinate system
 	// along the x axis
 	xx[0] = x[0];
@@ -2133,15 +4046,28 @@ void RandomWalk::ToTheXYPlane(CElem* E, double* X)
 
 	for(int i=0; i<3; ++i) X[i] = xx[i];
 	// Do translation along z'' axis.
-//	X[2] -= E->GetAngle(2);
+	//	X[2] -= E->GetAngle(2);
 }
 
 void RandomWalk::ToTheXYPlane(int idx, double* X)
 {
-	CFEMesh* m_msh = NULL;  
+	CFEMesh* m_msh = NULL;
 	if(fem_msh_vector.size()==0)
 		return; //OK
-	m_msh = fem_msh_vector[0];  
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
 	CElem* E = m_msh->ele_vector[idx];
 
 	double x[3], xx[3];
@@ -2152,11 +4078,11 @@ void RandomWalk::ToTheXYPlane(int idx, double* X)
 
 	double alpha = E->GetAngle(0);
 	double beta = E->GetAngle(1);
-	// Let's rotate the original Enorm to the BB coordinate system 
+	// Let's rotate the original Enorm to the BB coordinate system
 	// along the y axis
 	x[0] = cos(alpha)*X[0] + sin(alpha)*X[2];
 	x[1] = X[1];
-	x[2] = -sin(alpha)*X[0] + cos(alpha)*X[2];	
+	x[2] = -sin(alpha)*X[0] + cos(alpha)*X[2];
 	// Let's rotate the BB coordinate system to the BBB coordinate system
 	// along the x axis
 	xx[0] = x[0];
@@ -2165,17 +4091,17 @@ void RandomWalk::ToTheXYPlane(int idx, double* X)
 
 	for(int i=0; i<3; ++i) X[i] = xx[i];
 	// Do translation along z'' axis.
-//	X[2] -= E->GetAngle(2);
+	//	X[2] -= E->GetAngle(2);
 }
 
-/************************************************************************** 
+/**************************************************************************
 Task: ToTheRealPlane(CElem* E, double* X)
-Programing: This function transform the vector on the xy plane to the 
+Programing: This function transform the vector on the xy plane to the
 			original plane of the element in 3D.
-02/2006 PCH 
-**************************************************************************/
+02/2006 PCH
+ **************************************************************************/
 void RandomWalk::ToTheRealPlane(CElem* E, double* X)
-{	
+{
 	double x[3], xx[3];
 
 	// Get the norm of the element plane and do some initialization
@@ -2184,11 +4110,11 @@ void RandomWalk::ToTheRealPlane(CElem* E, double* X)
 
 	double alpha = E->GetAngle(0);
 	double beta = E->GetAngle(1);
-	// Let's rotate the original Enorm to the BB coordinate system 
+	// Let's rotate the original Enorm to the BB coordinate system
 	// along the y axis
 	x[0] = cos(alpha)*X[0] - sin(alpha)*X[2];
 	x[1] = X[1];
-	x[2] = sin(alpha)*X[0] + cos(alpha)*X[2];	
+	x[2] = sin(alpha)*X[0] + cos(alpha)*X[2];
 	// Let's rotate the BB coordinate system to the BBB coordinate system
 	// along the x axis
 	xx[0] = x[0];
@@ -2197,15 +4123,28 @@ void RandomWalk::ToTheRealPlane(CElem* E, double* X)
 
 	for(int i=0; i<3; ++i) X[i] = xx[i];
 	// Let's translate back to z axis.
-//	X[2] += E->GetAngle(2);
+	//	X[2] += E->GetAngle(2);
 }
 
 void RandomWalk::ToTheRealPlane(int idx, double* X)
 {
-	CFEMesh* m_msh = NULL;  
+	CFEMesh* m_msh = NULL;
 	if(fem_msh_vector.size()==0)
-		return; 
-	m_msh = fem_msh_vector[0];  
+		return;
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
 	CElem* E = m_msh->ele_vector[idx];
 
 	double x[3], xx[3];
@@ -2216,11 +4155,11 @@ void RandomWalk::ToTheRealPlane(int idx, double* X)
 
 	double alpha = E->GetAngle(0);
 	double beta = E->GetAngle(1);
-	// Let's rotate the original Enorm to the BB coordinate system 
+	// Let's rotate the original Enorm to the BB coordinate system
 	// along the y axis
 	x[0] = cos(alpha)*X[0] - sin(alpha)*X[2];
 	x[1] = X[1];
-	x[2] = sin(alpha)*X[0] + cos(alpha)*X[2];	
+	x[2] = sin(alpha)*X[0] + cos(alpha)*X[2];
 	// Let's rotate the BB coordinate system to the BBB coordinate system
 	// along the x axis
 	xx[0] = x[0];
@@ -2229,20 +4168,33 @@ void RandomWalk::ToTheRealPlane(int idx, double* X)
 
 	for(int i=0; i<3; ++i) X[i] = xx[i];
 	// Let's translate back to z axis.
-//	X[2] += E->GetAngle(2);
+	//	X[2] += E->GetAngle(2);
 }
 
-/************************************************************************** 
+/**************************************************************************
 Task: SolveAnglesOfTheElment(CElem* E)
 Programing: This function solves two angles for rotation transformation
-02/2006 PCH 
-**************************************************************************/
+02/2006 PCH
+ **************************************************************************/
 void RandomWalk::SolveAnglesOfTheElment(CElem* E)
 {
-	CFEMesh* m_msh = NULL;  
+	CFEMesh* m_msh = NULL;
 	if(fem_msh_vector.size()==0)
 		return;
-	m_msh = fem_msh_vector[0];  
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
 
 	double tolerance = 1e-20, Enorm[3];
 	// Allocate angle memory dynamically.
@@ -2253,7 +4205,7 @@ void RandomWalk::SolveAnglesOfTheElment(CElem* E)
 	// If the coordinate system is xz plane or xyz, solve the angles.
 	if( coordinate_system != 32 && coordinate_system != 22 )
 	{
-			Enorm[0] = 0.0; Enorm[1] = 0.0; Enorm[2] = 1.0;
+		Enorm[0] = 0.0; Enorm[1] = 0.0; Enorm[2] = 1.0;
 	}
 	else
 		for(int k=0; k<3; ++k)
@@ -2264,30 +4216,30 @@ void RandomWalk::SolveAnglesOfTheElment(CElem* E)
 	double alpha = 0.0;
 
 	if(Enorm[0]*Enorm[0]+Enorm[2]*Enorm[2] < tolerance)
-	; // have alpha to be zero. No need to rotate.
+		; // have alpha to be zero. No need to rotate.
 	else
 		alpha = acos(Enorm[2]/sqrt(Enorm[0]*Enorm[0]+Enorm[2]*Enorm[2]));
 	// The following if condition is required because
-	// the acos function is not distintive in the case that Enorm[0]'s of  
-	// the two planes are opposite each other. 
+	// the acos function is not distintive in the case that Enorm[0]'s of
+	// the two planes are opposite each other.
 	if(Enorm[0] < 0.0)
 		E->SetAngle(0, alpha );
 	else
 		E->SetAngle(0, alpha + 2.0*(PI - alpha) );
-	
+
 	// Solving beta that will be used for rotation along x' axis
 	double beta = 0.0, BB[3], TranZ;
 	// Let's rotate the original Enorm to this coordinate system.
 	BB[0] = cos(E->GetAngle(0))*Enorm[0] + sin(E->GetAngle(0))*Enorm[2];
 	BB[1] = Enorm[1];
 	BB[2] = -sin(E->GetAngle(0))*Enorm[0] + cos(E->GetAngle(0))*Enorm[2];
-	if(BB[2] > tolerance)	
+	if(BB[2] > tolerance)
 		beta = atan(BB[1]/BB[2]);
 	else // if BB[2] is zero
 		beta = 0.5*PI;
-	
+
 	E->SetAngle(1, beta );
-	
+
 	// Solve for the translation.
 	// I'll use the center of the element for this translation.
 	double* center = E->GetGravityCenter();
@@ -2295,11 +4247,11 @@ void RandomWalk::SolveAnglesOfTheElment(CElem* E)
 	// Get the norm of the element plane and do some initialization
 	for(int k=0; k<3; ++k)
 		x[k] = xx[k] = 0.0;
-	// Let's rotate the original Enorm to the BB coordinate system 
+	// Let's rotate the original Enorm to the BB coordinate system
 	// along the y axis
 	x[0] = cos(E->GetAngle(0))*center[0] + sin(E->GetAngle(0))*center[2];
 	x[1] = center[1];
-	x[2] = -sin(E->GetAngle(0))*center[0] + cos(E->GetAngle(0))*center[2];	
+	x[2] = -sin(E->GetAngle(0))*center[0] + cos(E->GetAngle(0))*center[2];
 	// Let's rotate the BB coordinate system to the BBB coordinate system
 	// along the x axis
 	xx[0] = x[0];
@@ -2310,12 +4262,12 @@ void RandomWalk::SolveAnglesOfTheElment(CElem* E)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: RouletteWheelSelection(double *chances, int numOfCases)
-Programing: This function makes a choice by RWS that is based on 
+Programing: This function makes a choice by RWS that is based on
 			velocity contribution on each of the connected planes.
-02/2006 PCH 
-**************************************************************************/
+02/2006 PCH
+ **************************************************************************/
 int RandomWalk::RouletteWheelSelection(double *chances, int numOfCases)
 {
 	int whichOne = -1000; // Set it meaningless
@@ -2327,15 +4279,15 @@ int RandomWalk::RouletteWheelSelection(double *chances, int numOfCases)
 
 	delete [] roulette;
 
-	return whichOne; 
+	return whichOne;
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: MakeRoulette(double* fit, double* roulette, int numOfCases)
 Programing: This function makes a roulette according to chances (fit)
-02/2006 PCH 
-**************************************************************************/
+02/2006 PCH
+ **************************************************************************/
 void RandomWalk::MakeRoulette(double* fit, double* roulette, int numOfCases)
 {
 	double* pi = NULL; double* fitProbability = NULL;
@@ -2346,11 +4298,11 @@ void RandomWalk::MakeRoulette(double* fit, double* roulette, int numOfCases)
 
 	for(int i=0; i<numOfCases; ++i)
 	{
-		// Function modification can be done here. 
+		// Function modification can be done here.
 		pi[i] = 1./exp(-fit[i]);
 		fitTotal += pi[i];
 	}
-	
+
 	// Making Roulette
 	for(int i=0; i<numOfCases; ++i)
 	{
@@ -2359,129 +4311,264 @@ void RandomWalk::MakeRoulette(double* fit, double* roulette, int numOfCases)
 		roulette[i] = ProbTotal;
 	}
 
-	delete [] pi; delete [] fitProbability;	
+	delete [] pi; delete [] fitProbability;
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: Select(double* roulette)
 Programing: This function select a choice out of the roulette
-			Return -1 means failure
-02/2006 PCH 
-**************************************************************************/
+02/2006 PCH
+ **************************************************************************/
 int RandomWalk::Select(double* roulette, int numOfCases)
 {
 	double probability;
-	
+
 	probability = randomZeroToOne();
 	for(int i=0; i<numOfCases; ++i)
 		if(probability < roulette[i])
 			return (i);
-
-	return -1; // This means failure
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: ReadInVelocityFieldOnNodes(string file_base_name)
-Programing: This function gets velocity fields from a seprate file.
+Programming: This function gets velocity fields from a separate file.
 			A COMPLETE bypass of the FEM.
-05/2006 PCH 
-**************************************************************************/
+05/2006 PCH
+ **************************************************************************/
 int RandomWalk::ReadInVelocityFieldOnNodes(string file_base_name)
 {
-	CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
+	CFEMesh* m_msh = NULL;  // Something must be done later on here.
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
 	CRFProcess* m_pcs = PCSGet("FLUID_MOMENTUM");
 
 	// File handling
-    string vel_file_name;
-    ios::pos_type position;
-    vel_file_name = file_base_name + ".vel";
+	string vel_file_name;
+	ios::pos_type position;
+	vel_file_name = file_base_name + ".vel";
 
 	ifstream vel_file (vel_file_name.data(),ios::in);
 
-    int End = 1;
-    string strbuffer;  
+	int End = 1;
+	string strbuffer;
 
 	while(End)
-    {
-        for(int i=0; i< (int)m_msh->nod_vector.size(); ++i)
-        {
-            double v[3];
+	{
+		for(int i=0; i< m_msh->nod_vector.size(); ++i)
+		{
+			double v[3];
 			for(int p=0; p<3; ++p)	v[p] = 0.0;
 			vel_file>>v[0]>>v[1]>>v[2]>>ws;
-			
+
 			// Let's assign the velocity
 			for(int j=0; j<3; ++j)
 			{
 				int nidx1 = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[j])+1;
-				m_pcs->SetNodeValue(m_msh->Eqs2Global_NodeIndex[i],nidx1,v[j]);	
-			}   
-        }
-        End = 0;
-    }   
-	 
+				m_pcs->SetNodeValue(m_msh->Eqs2Global_NodeIndex[i],nidx1,v[j]);
+			}
+		}
+		End = 0;
+	}
+
 	return 1;
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
+Task: ReadInVelocityFieldOnNodes(string file_base_name)
+Programing: This function build FDM index for quads
+01/2007 PCH
+ **************************************************************************/
+void RandomWalk::buildFDMIndex(void)
+{
+	double* Cx; double* Cy;
+
+	Cx= new double[gli_points_vector.size()];
+	Cy= new double[gli_points_vector.size()];
+
+	// Solve for four corners from .gli
+	for(int i=0; i<gli_points_vector.size(); ++i)
+	{
+		Cx[i] = gli_points_vector[i]->x;
+		Cy[i] = gli_points_vector[i]->y;
+	}
+
+	// Solve for min and max of x and y respectively
+	double xmax=-1e+12, ymax=-1e+12;
+	double xmin=1e+12, ymin=1e+12;
+	double minX;
+	double minY;
+	for(int i=0;i<gli_points_vector.size(); ++i)
+	{
+		if(Cx[i] > xmax)
+			xmax = Cx[i];
+		if(Cy[i] > ymax)
+			ymax = Cy[i];
+		if(Cx[i] < xmin)
+			xmin = Cx[i];
+		if(Cy[i] < ymin)
+			ymin = Cy[i];
+
+	}
+	minX = xmin; minY=ymin;
+	XT = xmax - xmin; YT = ymax - ymin;
+
+	// solve for dx and dy
+	CFEMesh* m_msh = NULL;
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
+	// Solve for four corners from element #0.
+	for(int i=0; i<4; ++i)
+	{
+		Cx[i] = m_msh->nod_vector[m_msh->ele_vector[0]->GetNodeIndex(i)]->X();
+		Cy[i] = m_msh->nod_vector[m_msh->ele_vector[0]->GetNodeIndex(i)]->Y();
+	}
+
+	// Use the same variables again
+	xmax=-1e+12, ymax=-1e+12;
+	xmin=1e+12, ymin=1e+12;
+	for(int i=0;i<4; ++i)
+	{
+		if(Cx[i] > xmax)
+			xmax = Cx[i];
+		if(Cy[i] > ymax)
+			ymax = Cy[i];
+		if(Cx[i] < xmin)
+			xmin = Cx[i];
+		if(Cy[i] < ymin)
+			ymin = Cy[i];
+
+	}
+	dx = xmax - xmin; dy = ymax - ymin;
+
+	nx = (int)((XT+1e-12)/dx);
+	ny = (int)((YT+1e-12)/dy);
+	// We can allocate memory for indexFDM now.
+
+	for(double j=0; j<YT; j += dx)
+	{
+		double seg_startY = 0.0, seg_endY = 0.0;
+		seg_startY = minY+j;
+		seg_endY = minY+j+dy;
+		for(double i=0; i< XT; i += dy)
+		{
+			double seg_startX = 0.0, seg_endX = 0.0;
+			seg_startX = minX+i;
+			seg_endX = minX+i+dx;
+
+			// Store the dummy index by default
+			FDMIndex one;
+			// eleIndex -5 is dummy index different from -10
+			one.i = (int)(i/dx); one.j = (int)(j/dy); one.eleIndex = -5;
+
+			for(int k=0; k<m_msh->ele_vector.size(); ++k)
+			{
+				double* center = m_msh->ele_vector[k]->GetGravityCenter();
+				if( (center[0]>= seg_startX)	&& 	(center[0]<= seg_endX)	&&
+						(center[1]>= seg_startY)	&& 	(center[1]<= seg_endY))
+				{
+					one.eleIndex = k;
+				}
+			}
+			indexFDM.push_back(one);
+		}
+	}
+
+	delete [] Cx; delete [] Cy;
+}
+
+
+/**************************************************************************
+FEMLib-Method:
 Task: Random Walk read function
-Programing:
+Programming:
 09/2005 PCH Destruct before read
-**************************************************************************/
+ **************************************************************************/
 void PCTRead(string file_base_name)
 {
-    CFEMesh* m_msh = NULL;
-  
+	CFEMesh* m_msh = NULL;
+
 	if(fem_msh_vector.size()==0)
 		return; //OK
-    
+
+	// Mount the proper mesh
 	m_msh = fem_msh_vector[0];  // Something must be done later on here.
 
-    // File handling
-    string pct_file_name;
-    ios::pos_type position;
-    pct_file_name = file_base_name + PCT_FILE_EXTENSION;
+	// File handling
+	string pct_file_name;
+	ios::pos_type position;
+	pct_file_name = file_base_name + PCT_FILE_EXTENSION;
 
-    ifstream pct_file (pct_file_name.data(),ios::in);
+	ifstream pct_file (pct_file_name.data(),ios::in);
 
-    int End = 1;
-    string strbuffer;    
-    RandomWalk* RW = NULL;
-#ifdef RANDOM_WALK	
+	int End = 1;
+	string strbuffer;
+	RandomWalk* RW = NULL;
+#ifdef RANDOM_WALK
 	m_msh->PT = new RandomWalk(); //PCH
-    RW = m_msh->PT;
+	RW = m_msh->PT;
 #endif
- 
-    while(End)
-    {
-        // Later on from this line, I can put which mesh I am dealing with.  
-        pct_file>>RW->numOfParticles>>ws;
-        // Now allocate memory
-		if(RW->numOfParticles != 0)
-			RW->CreateParticles(RW->numOfParticles);
 
-        for(int i=0; i< RW->numOfParticles; ++i)
-        {
-            // Assign the number to the particle
-            int idx = 0, identity = 0;
-            double x = 0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0, K=0.0;
+	// Create pathline
+	RandomWalk::Pathline path;
+	while(End)
+	{
+		// Later on from this line, I can put which mesh I am dealing with.
+		pct_file>>RW->numOfParticles>>ws;
+		Trace one;
+		for(int i=0; i< RW->numOfParticles; ++i)
+		{
+			// Assign the number to the particle
+			int idx = 0, identity = 0;
+			double x = 0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0, K=0.0;
 
 			pct_file>>idx>>x>>y>>z>>identity>>vx>>vy>>vz>>K>>ws;
-            RW->X[i].Past.elementIndex = RW->X[i].Now.elementIndex = idx;
-            RW->X[i].Past.x = RW->X[i].Now.x = x;
-            RW->X[i].Past.y = RW->X[i].Now.y = y;
-            RW->X[i].Past.z = RW->X[i].Now.z = z;
-			RW->X[i].Past.identity = RW->X[i].Now.identity = identity;
-			RW->X[i].Past.Vx = RW->X[i].Now.Vx = vx;
-			RW->X[i].Past.Vy = RW->X[i].Now.Vy = vy;
-			RW->X[i].Past.Vz = RW->X[i].Now.Vz = vz;
-			RW->X[i].Past.K = RW->X[i].Now.K = K;
-        }
 
-        End = 0;
-    }   
+			one.Past.elementIndex = one.Now.elementIndex = idx;
+			one.Past.x = one.Now.x = x;
+			one.Past.y = one.Now.y = y;
+			one.Past.z = one.Now.z = z;
+			one.Past.identity = one.Now.identity = identity;
+			one.Past.Vx = one.Now.Vx = vx;
+			one.Past.Vy = one.Now.Vy = vy;
+			one.Past.Vz = one.Now.Vz = vz;
+			one.Past.K = one.Now.K = K;
+
+			RW->X.push_back(one);
+
+			// Creat pathline
+			if(i<50)
+				RW->pathline.push_back(path);
+		}
+
+		End = 0;
+	}
 }
 
 
@@ -2494,34 +4581,48 @@ ROCKFLOW - Funktion: DATWriteFile
 Task: Write PCT file
 Programing:
 09/2005   PCH   Implementation
-**************************************************************************/
+ **************************************************************************/
 void DATWritePCTFile(const char *file_name)
 {
-    FILE *pct_file = NULL;
-    char pct_file_name[MAX_ZEILE];
+	FILE *pct_file = NULL;
+	char pct_file_name[MAX_ZEILE];
 
-    CFEMesh* m_msh = NULL;
-    m_msh = fem_msh_vector[0];  // Something must be done later on here.
+	CFEMesh* m_msh = NULL;
+	CRFProcess* m_pcs=NULL;
+	// Mount the proper mesh
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
 
-    RandomWalk* RW = NULL;
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;
+	}
+
+	RandomWalk* RW = NULL;
 #ifdef RANDOM_WALK	//WW
-    RW = m_msh->PT;
+	RW = m_msh->PT;
 #endif
-    
-    sprintf(pct_file_name,"%s.%s",file_name,"pct");
-    pct_file = fopen(pct_file_name,"w+t");
-    
-    fprintf(pct_file, "%d\n", RW->numOfParticles);
-    for(int i=0; i< RW->numOfParticles; ++i)
-    {
-        fprintf(pct_file, "%d %17.12e %17.12e %17.12e %d %17.12e %17.12e %17.12e %17.12e\n",
-            RW->X[i].Now.elementIndex, RW->X[i].Now.x, RW->X[i].Now.y, RW->X[i].Now.z, RW->X[i].Now.identity,
-			RW->X[i].Now.Vx, RW->X[i].Now.Vy, RW->X[i].Now.Vz, RW->X[i].Now.K);
-//		fprintf(pct_file, "%d %17.12e %17.12e %17.12e\n",
-//			RW->/X[i].Now.elementIndex, RW->X[i].Now.x, RW->X[i].Now.y, RW->X[i].Now.z);
-    }
-    // Let's close it, now
-    fclose(pct_file);
+
+	sprintf(pct_file_name,"%s.%s",file_name,"pct");
+	pct_file = fopen(pct_file_name,"w+t");
+
+	fprintf(pct_file, "%d\n", RW->numOfParticles);
+	for(int i=0; i< RW->numOfParticles; ++i)
+	{
+		fprintf(pct_file, "%d %17.12e %17.12e %17.12e %d %17.12e %17.12e %17.12e %17.12e\n",
+				RW->X[i].Now.elementIndex, RW->X[i].Now.x, RW->X[i].Now.y, RW->X[i].Now.z, RW->X[i].Now.identity,
+				RW->X[i].Now.Vx, RW->X[i].Now.Vy, RW->X[i].Now.Vz, RW->X[i].Now.K);
+		//		fprintf(pct_file, "%d %17.12e %17.12e %17.12e\n",
+		//			RW->/X[i].Now.elementIndex, RW->X[i].Now.x, RW->X[i].Now.y, RW->X[i].Now.z);
+	}
+	// Let's close it, now
+	fclose(pct_file);
 
 }
 

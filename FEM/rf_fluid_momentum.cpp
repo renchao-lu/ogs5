@@ -107,9 +107,15 @@ double CFluidMomentum::Execute()
 	{
 		m_pcs = pcs_vector[i];
         
-        // Select the mesh whose process name has "FLOW"
-        if( m_pcs->pcs_type_name.find("FLOW")!=string::npos)
-            m_msh = fem_msh_vector[i];
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;	
+
 		if(m_pcs->pcs_type_name.find("FLUID_MOMENTUM")!=string::npos)
 			SolveDarcyVelocityOnNode();
 	}
@@ -118,7 +124,8 @@ double CFluidMomentum::Execute()
 	m_pcs = PCSGet("RANDOM_WALK");
 	if(m_pcs && RWPTSwitch == 0)
 	{
-		ConstructFractureNetworkTopology();
+		if(m_msh->GetCoordinateFlag() != 32)
+			ConstructFractureNetworkTopology();
 		RWPTSwitch = 1;
 	}
 
@@ -189,23 +196,22 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
                 if (elem->GetMark()) // Marked for use
                 {
                     fem->ConfigElement(elem);
-                    fem->Assembly(d);
-                } 
-            }
+					fem->Assembly(0, d);
+				} 
+			}
 
-	//		MXDumpGLS("rf_pcs.txt",1,m_pcs->eqs->b,m_pcs->eqs->x); //abort();
-
+			//		MXDumpGLS("rf_pcs.txt",1,m_pcs->eqs->b,m_pcs->eqs->x); //abort();
+			m_pcs->IncorporateBoundaryConditions(-1,d);
 			// Solve for velocity
 #ifdef NEW_EQS
+
 			double* x;
 			int size = m_msh->nod_vector.size();
 			x = new double[size];
-			double xxx[402];
-#if defined(LIS) //WW. 11.03.2008
-			m_pcs->EQSSolver(x);
+#if defined(LIS) 
+			m_pcs->EQSSolver(x);		// an option added to tell FLUID_MOMENTUM for sparse matrix system.
+			cout << "Solver passed in FLUID_MOMENTUM." <<endl;
 #endif
-			for(int i=0; i<402; ++i)
-				xxx[i] = x[i];
 #else
 			ExecuteLinearSolver(m_pcs->eqs);
 #endif
@@ -230,16 +236,17 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 			
 			
 #ifdef NEW_EQS
-			for(int j=0;j<dimension;j++)
+			for(int j=0;j<size;j++)
 				m_pcs->SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,x[j]);
 			
 			delete [] x;
 #else
 			for(int j=0;j<m_pcs->eqs->dim;j++)
-               m_pcs->SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,m_pcs->eqs->x[j]);	
+              m_pcs->SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,m_pcs->eqs->x[j]);	
 #endif
 		}
 
+		/*
 		if(m_msh->GetCoordinateFlag() == 32)
 			; // do nothing
 		else
@@ -260,14 +267,14 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 					for(int j=0; j<3; ++j)
 						norm[j] = m_msh->ele_vector[0]->getTransformTensor(j+6);	
 				}	
-                        
+
 				// Do some proper projection of velocity computed from Fluid Momentum.
 				// Get the fluid velocity for this node
 				double V[3];
 				V[0] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);  
 				V[1] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);  
 				V[2] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);  
-                
+
 				// Let's solve the projected velocity on the element plane
 				// by  Vp = norm X (V X norm) assuming norm is a unit vector
 				double VxNorm[3], Vp[3];
@@ -280,6 +287,9 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 				m_pcs->SetNodeValue(i,m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1,Vp[2]);	
 			}
 		}
+		 */
+		// Obtain the edge velocity
+		SolveForEdgeVelocity();
     
         // Obtain element-based velocity
         for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
@@ -370,8 +380,22 @@ last modification:
 void CFluidMomentum::ConstructFractureNetworkTopology()
 {
 	// Mount the process and the mesh
+	CFEMesh* m_msh = NULL; 
+	for(int i=0; i< (int)pcs_vector.size(); ++i)
+	{
+		m_pcs = pcs_vector[i];
+
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+			m_msh = FEMGet("RICHARDS_FLOW");
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			m_msh = FEMGet("LIQUID_FLOW");
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+		else;	
+	}
 	m_pcs = PCSGet("FLUID_MOMENTUM");
-	CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
+	// Something must be done later on here.
 	double tolerance = 1e-12;
 
 	// Checking the node is a crossroad starts here
@@ -708,6 +732,109 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
         for(int i=0; i< (int)m_msh->ele_vector.size(); ++i)
                 m_msh->PT->SolveAnglesOfTheElment(m_msh->ele_vector[i]);
 #endif
+}
+
+/**************************************************************************
+Task: The function solves constant edge velocity in 2D
+01/2007 PCH Implementation
+last modification:
+ **************************************************************************/
+void CFluidMomentum::SolveForEdgeVelocity(void)
+{
+	// Mount the process and the mesh
+	m_pcs = PCSGet("FLUID_MOMENTUM");
+	CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
+	double tolerance = 1e-12;
+
+	// Checking the edge is a joint starts here
+	// Loop over all the edges
+	// Mount the nodes of the edge
+	vec<CNode*>theNodesOfThisEdge(3);
+	for(int i=0; i<(int) m_msh->edge_vector.size(); ++i)
+	{
+		m_msh->edge_vector[i]->GetNodes(theNodesOfThisEdge);
+
+		double VectorOfEdge[3], MagOfVector;	// Norma vector of the edge
+		VectorOfEdge[0] = theNodesOfThisEdge[1]->X() - theNodesOfThisEdge[0]->X();
+		VectorOfEdge[1] = theNodesOfThisEdge[1]->Y() - theNodesOfThisEdge[0]->Y();
+
+		// Note MagOfVector is never zero
+		MagOfVector = sqrt(VectorOfEdge[0]*VectorOfEdge[0] + VectorOfEdge[1]*VectorOfEdge[1]);
+		// Now VectorOfEdge is unit vector
+		VectorOfEdge[0] = VectorOfEdge[0] / MagOfVector;
+		VectorOfEdge[1] = VectorOfEdge[1] / MagOfVector;
+		VectorOfEdge[2] = 0.0;
+		MagOfVector = sqrt(VectorOfEdge[0]*VectorOfEdge[0] + VectorOfEdge[1]*VectorOfEdge[1]);
+
+		// Geting velocity on two ending nodes of the edge
+		double V[3], V0[3], V1[3], Ve0[3], Ve1[3];	
+
+		V0[0] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);  
+		V0[1] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);  
+		V0[2] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1); 
+		V1[0] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);  
+		V1[1] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);  
+		V1[2] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1); 
+
+		double cos, sin, MagOfV0, MagOfV1;
+		MagOfV0 = sqrt(V0[0]*V0[0] + V0[1]*V0[1]); MagOfV1 = sqrt(V1[0]*V1[0] + V1[1]*V1[1]);
+
+		// There are two unit normal vectors for edge
+		// such as (-y,x) or (y,-x) for (x,y) edge vector
+		double UNVOfE[2];
+		// I will only use (-y,x) for rightys
+		UNVOfE[0] =  -VectorOfEdge[1]; 
+		UNVOfE[1] =  VectorOfEdge[0];
+
+		// Check if denominator is zero
+		if(MagOfV0 < tolerance)
+		{
+			Ve0[0] = 0.0; Ve0[1] = 0.0; Ve0[2] = 0.0;
+		}
+		else
+		{
+			// For Ve0 first
+			cos = (VectorOfEdge[0]*V0[0]+VectorOfEdge[1]*V0[1]) / (MagOfVector*MagOfV0);
+			sin = sqrt(1.0-cos*cos);
+
+			double magOfNormalV = sin*MagOfV0;
+
+			// Therefore V0 which is normal to the edge
+			Ve0[0] = magOfNormalV*UNVOfE[0]; Ve0[1] = magOfNormalV*UNVOfE[1]; Ve0[2] = 0.0;
+		}
+		// Now for the other node of the edge
+		if(MagOfV1 < tolerance)
+		{
+			Ve1[0] = 0.0; Ve1[1] = 0.0; Ve1[2] = 0.0;
+		}
+		else
+		{
+			// For Ve1 second
+			cos = (VectorOfEdge[0]*V1[0]+VectorOfEdge[1]*V1[1]) / (MagOfVector*MagOfV1);
+			sin = sqrt(1.0-cos*cos);
+
+			double magOfNormalV = sin*MagOfV1;
+
+			// Therefore V0 which is normal to the edge
+			Ve1[0] = magOfNormalV*UNVOfE[0]; Ve1[1] = magOfNormalV*UNVOfE[1]; Ve1[2] = 0.0;
+		}
+
+		// Solve for normal velocity vector for the edge at the midpoint.
+		V[0] = (Ve0[0]+Ve1[0])/2.0; V[1] = (Ve0[1]+Ve1[1])/2.0; V[2] = 0.0;
+		double Vc[3];
+		Vc[0] = (V0[0]+V1[0])/2.0; Vc[1] = (V0[1]+V1[1])/2.0; Vc[2] = 0.0;
+
+		// Checking the angle between node averaged velocity and flux averaged velocity along the edge
+		double angle=acos((V[0]*Vc[0]+V[1]*Vc[1])/(sqrt(V[0]*V[0]+V[1]*V[1]+V[2]*V[2])*sqrt(Vc[0]*Vc[0]+Vc[1]*Vc[1]+Vc[2]*Vc[2])));
+		if(angle > 3.141592/2.0)
+		{
+			V[0] = -V[0]; V[1] = -V[1];
+		}
+
+		// Assign this velocity to the edge.
+		m_msh->edge_vector[i]->AllocateMeomoryforV();
+		m_msh->edge_vector[i]->SetVelocity(V);
+	}
 }
 
 void FMRead(string file_base_name)

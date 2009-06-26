@@ -430,13 +430,14 @@ GeoSys - Function: SetActiveProcesses
 Task:   
    total_processes:
     0: LIQUID_FLOW     | 1: GROUNDWATER_FLOW  | 2: RICHARDS_FLOW
-    3: TWO_PHASE_FLOW  | 4: MULTI_PHASE_FLOW  | 5: COMPONENTAL_FLOW
+    3: PS_GLOBAL   | 4: MULTI_PHASE_FLOW  | 5: COMPONENTAL_FLOW
     6: OVERLAND_FLOW   | 7: AIR_FLOW          | 8: HEAT_TRANSPORT
     9: FLUID_MOMENTUM  |10: RANDOM_WALK       |11: MASS_TRANSPORT
-   12: DEFORMATION     |                      |
+   12: DEFORMATION     |
 Return: 
 Programming: 
 07/2008 WW 
+03/2009 PCH added PS_GLOBAL
 Modification:
 -------------------------------------------------------------------------*/
 inline int Problem::AssignProcessIndex(CRFProcess *m_pcs,  bool activefunc)
@@ -532,6 +533,14 @@ inline int Problem::AssignProcessIndex(CRFProcess *m_pcs,  bool activefunc)
     active_processes[12] = &Problem::Deformation;
     return 12;
   }  
+	else if(m_pcs->pcs_type_name.find("PS_GLOBAL")!=string::npos)
+  {
+//    if(!activefunc) return 13;
+    if(!activefunc) return 3;
+    total_processes[3] = m_pcs;
+    active_processes[3] = &Problem::PS_Global;
+    return 3;
+  }
   cout<<"Error: no process is specified. "<<endl; 
   return -1;         
 }
@@ -543,17 +552,18 @@ Task:
     3: TWO_PHASE_FLOW  | 4: MULTI_PHASE_FLOW  | 5: COMPONENTAL_FLOW
     6: OVERLAND_FLOW   | 7: AIR_FLOW          | 8: HEAT_TRANSPORT
     9: FLUID_MOMENTUM  |10: RANDOM_WALK       |11: MASS_TRANSPORT
-   12: DEFORMATION     |                      |
+   12: DEFORMATION     |13: PS_GLOBAL         |
 Return: 
 Programming: 
 07/2008 WW 
+03/2009 PCH add PS_GLOBAL
 Modification:
 --------------------------------------------------------------------*/
 void Problem::SetActiveProcesses()
 {
   int i;
   CRFProcess* m_pcs = NULL;
-  const int max_processes = 13;
+  const int max_processes = 14;	// PCH
   total_processes.resize(max_processes);
   active_processes = new ProblemMemFn[max_processes];
   coupled_process_index.resize(max_processes);
@@ -1141,6 +1151,25 @@ inline double Problem::MultiPhaseFlow()
   return error;
 }
 /*-------------------------------------------------------------------------
+GeoSys - Function: PS_Global()
+Task: Similate multi-phase flow by p-p scheme
+Return: error
+Programming:
+03/2009 PCH Implementation
+Modification:
+-------------------------------------------------------------------------*/
+inline double Problem::PS_Global()
+{
+  double error = 1.0e+8;
+  CRFProcess *m_pcs = total_processes[3];
+  if(!m_pcs->selected) return error;
+  error = m_pcs->ExecuteNonLinear();
+  if(m_pcs->TimeStepAccept())
+    m_pcs->CalIntegrationPointValue();
+  return error;
+}
+
+/*-------------------------------------------------------------------------
 GeoSys - Function: GroundWaterFlow()
 Task: 
 Return: error
@@ -1437,7 +1466,26 @@ inline double Problem::RandomWalker()
   //
   if(!m_pcs->selected) return error; //12.12.2008 WW
   //
-  CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
+	CFEMesh* m_msh = NULL;
+	if(m_pcs&&m_pcs->selected)
+	{
+		lop_coupling_iterations = 1;
+
+		// Mount the proper mesh
+		CFEMesh* m_msh = NULL;
+		for(int i=0; i< (int)pcs_vector.size(); ++i)
+		{
+			m_pcs = pcs_vector[i];
+
+			// Select the mesh whose process name has the mesh for Fluid_Momentum
+			if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+				m_msh = FEMGet("RICHARDS_FLOW");
+			else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+				m_msh = FEMGet("LIQUID_FLOW");
+			else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+				m_msh = FEMGet("GROUNDWATER_FLOW");
+			else;
+		}
 #ifdef RANDOM_WALK
   RandomWalk *rw_pcs = NULL; // By PCH
   rw_pcs = m_msh->PT;		
@@ -1461,20 +1509,76 @@ inline double Problem::RandomWalker()
 		
   // Set the mode of the RWPT method
   if(m_pcs->num_type_name.compare("HETERO")==0)
-	rw_pcs->RWPTMode = 1;	// Set it for heterogeneous media
-  else if(m_pcs->num_type_name.compare("HOMO_ADVECTION")==0)
-	rw_pcs->RWPTMode = 2;	 
-  else if(m_pcs->num_type_name.compare("HETERO_ADVECTION")==0)
-	rw_pcs->RWPTMode = 3;
-  else if(m_pcs->num_type_name.compare("HOMO_DISPERSION")==0)
-    rw_pcs->RWPTMode = 4;
-  else if(m_pcs->num_type_name.compare("HETERO_DISPERSION")==0)
-    rw_pcs->RWPTMode = 5;
-  else	// HOMO Advection + Dispersion
-    rw_pcs->RWPTMode = 0;
+		{
+			rw_pcs->RWPTMode = 1;	// Set it for heterogeneous media
+			cout << "RWPT is on " << m_pcs->num_type_name << " mode." << endl;
+		}
+		else if(m_pcs->num_type_name.compare("HOMO_ADVECTION")==0)
+		{
+			rw_pcs->RWPTMode = 2;
+			cout << "RWPT is on " << m_pcs->num_type_name << " mode." << endl;
+		}
+		else if(m_pcs->num_type_name.compare("HETERO_ADVECTION")==0)
+		{
+			rw_pcs->RWPTMode = 3;
+			cout << "RWPT is on " << m_pcs->num_type_name << " mode." << endl;
+		}
+		else if(m_pcs->num_type_name.compare("HOMO_DISPERSION")==0)
+		{
+			rw_pcs->RWPTMode = 4;
+			cout << "RWPT is on " << m_pcs->num_type_name << " mode." << endl;
+		}
+		else if(m_pcs->num_type_name.compare("HETERO_DISPERSION")==0)
+		{
+			rw_pcs->RWPTMode = 5;
+			cout << "RWPT is on " << m_pcs->num_type_name << " mode." << endl;
+		}
+		else if(m_pcs->num_type_name.compare("HETERO_FDM")==0)
+		{
+			rw_pcs->RWPTMode = 1;	// Set it for heterogeneous media
+			cout << "RWPT is on " << m_pcs->num_type_name << " mode." << endl;
+		}
+		else if(m_pcs->num_type_name.compare("HOMO_ADVECTION_FDM")==0)
+		{
+			rw_pcs->RWPTMode = 2;
+			cout << "RWPT is on " << m_pcs->num_type_name << " mode." << endl;
+		}
+		else if(m_pcs->num_type_name.compare("HETERO_ADVECTION_FDM")==0)
+		{
+			rw_pcs->RWPTMode = 3;
+			cout << "RWPT is on " << m_pcs->num_type_name << " mode." << endl;
+		}
+		else if(m_pcs->num_type_name.compare("HOMO_DISPERSION_FDM")==0)
+		{
+			rw_pcs->RWPTMode = 4;
+			cout << "RWPT is on " << m_pcs->num_type_name << " mode." << endl;
+		}
+		else if(m_pcs->num_type_name.compare("HETERO_DISPERSION_FDM")==0)
+		{
+			rw_pcs->RWPTMode = 5;
+			cout << "RWPT is on " << m_pcs->num_type_name << " mode." << endl;
+		}
+		else	// HOMO Advection + Dispersion
+		{
+			rw_pcs->RWPTMode = 0;
+			cout << "RWPT is on HOMO_ADVECTION_DISPERSION mode." << endl;
+		}
 
-  rw_pcs->AdvanceBySplitTime(dt, 10);
-  rw_pcs->SetElementBasedConcentration(dt);  
+		if(m_pcs->num_type_name.find("FDM")!=string::npos)
+		{
+			rw_pcs->PURERWPT = 2;
+			if(rw_pcs->FDMIndexSwitch == 0)
+			{
+				rw_pcs->buildFDMIndex();
+				// Switch off
+				rw_pcs->FDMIndexSwitch = 1;
+			}
+		}
+
+		rw_pcs->AdvanceBySplitTime(dt, 10);
+		//		rw_pcs->TraceStreamline();
+		rw_pcs->SetElementBasedConcentration(dt);
+	}
 #endif
   //
   return 0.0;

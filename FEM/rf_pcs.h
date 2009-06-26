@@ -300,6 +300,7 @@ public:
     int GetObjType() {return type;}
     int pcs_component_number; //SB: counter for transport components
 		int ML_Cap;	// 23.01 2009 PCH
+    int PartialPS; // 16.02 2009 PCH
     int GetProcessComponentNumber() const { return pcs_component_number;} //SB:namepatch
     string file_name_base; //OK
     // Access to PCS
@@ -337,6 +338,7 @@ public:
     LINEAR_SOLVER *eqs;
 #endif
     string num_type_name; 
+    int	rwpt_app;
     char *pcs_num_name[2];  //For monolithic scheme
     double pcs_nonlinear_iteration_tolerance;
     int pcs_nonlinear_iterations; //OK
@@ -387,6 +389,7 @@ public:
 	void ConfigFluidMomentum();
     void ConfigRandomWalk();
     void ConfigMultiPhaseFlow();
+		void ConfigPS_Global();	// PCH
     // Configuration 1 - NOD
 #ifndef NEW_EQS //WW. 07.11.2008
     void ConfigNODValues1(void);
@@ -445,6 +448,7 @@ public:
 #endif
     // BC
     void IncorporateBoundaryConditions(const int rank=-1);
+		void IncorporateBoundaryConditions(const int rank, const int axis);	// PCH for FLUID_MOMENTUM
     void SetBoundaryConditionSubDomain(); //WW
     //WW void CheckBCGroup(); //OK
 #ifdef NEW_EQS //WW
@@ -486,6 +490,8 @@ public:
     void MMPCalcSecondaryVariablesRichards(int timelevel, bool update);
     //WW Reomve int timelevel, bool update
     void CalcSecondaryVariablesUnsaturatedFlow(const bool initial = false); //WW
+		void CalcSecondaryVariablesPSGLOBAL(const bool initial = false);	// PCH
+		double GetCapillaryPressureOnNodeByNeighobringElementPatches(int nodeIdx, int meanOption, double Sw); // PCH
 	void CalcSaturationRichards(int timelevel, bool update); // JOD
     bool non_linear; //OK/CMCD
     void InterpolateTempGP(CRFProcess *, string); //MX

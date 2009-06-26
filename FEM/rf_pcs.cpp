@@ -204,6 +204,7 @@ CRFProcess::CRFProcess(void)
   m_num = NULL;
   cpl_type_name = "PARTITIONED"; //OK
   num_type_name = "FEM"; //OK
+  rwpt_app = 0;	// PCH Application types for RWPT such as Cell Dynamics, Crypto, etc.
 #ifndef NEW_EQS //WW 07.11.2008
   eqs = NULL; //WW
 #endif
@@ -258,6 +259,7 @@ CRFProcess::CRFProcess(void)
   accept_steps = 0;  //27.08.1008. WW
   reject_steps = 0;  //27.08.1008. WW
 	ML_Cap = 0;		// 23.01.2009 PCH
+	PartialPS = 0; // 16.02 2009 PCH
 
 #ifdef USE_MPI //WW
   cpu_time_assembly = 0;
@@ -744,12 +746,24 @@ void CRFProcess::Create()
   }
   // 
   if(reload>=2&&type!=4&&type!=41) 
-     ReadSolution(); //WW
-  //----------------------------------------------------------------------------
-  // IC
-  cout << "->Assign IC" << '\n';
-  //
-  SetIC();
+  {
+	  cout << "Reloading the primary variables... " << endl;	// PCH
+	  ReadSolution(); //WW
+  }
+
+  if(reload<2)	// PCH: If reload is set, no need to have ICs
+  {
+	  //----------------------------------------------------------------------------
+	  // IC
+	  cout << "->Assign IC" << '\n';
+	  //
+	  SetIC();
+  }
+  else
+  {
+	  // Bypassing IC
+	  cout << "RELOAD is set to be "<< reload <<". So, bypassing IC's" << endl;
+  }
   //
   if(pcs_type_name_vector.size()&&pcs_type_name_vector[0].find("DYNAMIC")!=string::npos) //WW
      setIC_danymic_problems();
@@ -1414,7 +1428,10 @@ ios::pos_type CRFProcess::Read(ifstream *pcs_file)
           pcs_no_fluid_phases++;
           H_Process = true;
         }
-        if(pcs_type_name.compare("FLUID_FLOW")==0){ 
+        if(pcs_type_name.compare("PS_GLOBAL")==0){
+        	H_Process = true;
+        }
+        if(pcs_type_name.compare("FLUID_FLOW")==0){
           pcs_type_name = "LIQUID_FLOW";
         }
   	    if(pcs_type_name.find("DEFORMATION")!=string::npos){
@@ -1481,6 +1498,12 @@ ios::pos_type CRFProcess::Read(ifstream *pcs_file)
     if(line_string.find("$TIM_TYPE")!=string::npos) { // subkeyword found
      *pcs_file >> tim_type_name;
       pcs_file->ignore(MAX_ZEILE,'\n');
+      continue;
+    }
+    //....................................................................
+    if(line_string.find("$APP_TYPE")!=string::npos) { // subkeyword found
+    	*pcs_file >> rwpt_app;
+    	pcs_file->ignore(MAX_ZEILE,'\n');
       continue;
     }
     //....................................................................
@@ -1737,6 +1760,7 @@ Programing:
 05/2005 WW/DL Dymanic problem
 01/2006 YD Dual Richards
 OKToDo switch to char
+03/2009 PCH PS_GLOBAL
 get rid of type
 **************************************************************************/
 void CRFProcess::Config(void)
@@ -1814,6 +1838,11 @@ void CRFProcess::Config(void)
   {
      type = 1212;
      ConfigMultiPhaseFlow();
+  }
+	if(pcs_type_name.find("PS_GLOBAL")!=string::npos) //24.02.2007 WW
+  {
+     type = 1313;
+     ConfigPS_Global();
   }
 }
 
@@ -3052,6 +3081,65 @@ void CRFProcess::ConfigMultiPhaseFlow()
     Shift[i] = i*m_msh->GetNodesNumber(true);
 }
 
+/**************************************************************************
+FEMLib-Method: For PS model for multiphase flow
+Task:
+Programing:
+03/2009 PCH Implementation
+**************************************************************************/
+void CRFProcess::ConfigPS_Global()
+{
+  dof = 2;
+  // 1.1 primary variables
+  pcs_number_of_primary_nvals = 2;
+  pcs_primary_function_name[0] = "PRESSURE1";
+  pcs_primary_function_unit[0] = "Pa";
+  pcs_primary_function_name[1] = "SATURATION2";
+  pcs_primary_function_unit[1] = "m3/m3";
+   // 1.2 secondary variables
+  pcs_number_of_secondary_nvals = 0;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE2";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+  pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE_CAP";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SATURATION1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++;
+  // Nodal velocity.
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X2";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y2";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++;
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z2";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++;
+
+  //
+  for(int i=0; i<GetPrimaryVNumber(); i++)  // 03.03.2008. WW
+    Shift[i] = i*m_msh->GetNodesNumber(true);
+}
 //////////////////////////////////////////////////////////////////////////
 // Configuration NOD
 //////////////////////////////////////////////////////////////////////////
@@ -3993,7 +4081,8 @@ void CRFProcess::CalIntegrationPointValue()
      ||pcs_type_name.find("RICHARD")!=string::npos
      ||pcs_type_name.find("MULTI_PHASE_FLOW")!=string::npos
      ||pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos 
-	 ||pcs_type_name.find("TWO_PHASE_FLOW")!=string::npos) //WW/CB
+	 ||pcs_type_name.find("TWO_PHASE_FLOW")!=string::npos
+	 ||pcs_type_name.find("PS_GLOBAL")!=string::npos) //WW/CB
      cal_integration_point_value = true;
   if(!cal_integration_point_value)
      return;
@@ -4540,6 +4629,417 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
 #endif
       }
   }
+}
+
+/**************************************************************************
+FEMLib-Method: CRFProcess::IncorporateBoundaryConditions
+Task: set PCS boundary conditions for FLUID_MOMENTUM depending on axis
+Programing:
+01/2007 PCH Implementation
+last modification:
+**************************************************************************/
+void CRFProcess::IncorporateBoundaryConditions(const int rank, const int axis)
+{
+  static long i;
+  static double bc_value, fac = 1.0, time_fac = 1.0;
+  long bc_msh_node;
+  long bc_eqs_index, shift;
+  int interp_method=0;
+  int curve, valid=0;
+  int idx0, idx1;
+  CBoundaryConditionNode* m_bc_node; //WW
+  CBoundaryCondition* m_bc; //WW
+  CPARDomain *m_dom = NULL;
+  CFunction* m_fct = NULL; //OK
+  double *eqs_rhs = NULL;
+  bool is_valid = false; //OK
+#ifdef NEW_EQS
+  Linear_EQS *eqs_p = NULL;
+#endif
+  //------------------------------------------------------------WW
+  // WW
+  double Scaling = 1.0;
+  if(type==4||type==41) fac = Scaling;
+
+  long begin = 0;
+  long end = 0;
+  long gindex=0;
+
+  CBoundaryConditionsGroup *m_bc_group = NULL;
+  m_bc_group = BCGetGroup(this->pcs_type_name,this->pcs_primary_function_name[axis]);
+
+
+  if(rank==-1)
+  {
+	 begin = 0;
+	 end = (long)bc_node_value.size();
+#ifdef NEW_EQS       //WW
+     eqs_p = eqs_new;
+     eqs_rhs = eqs_new->b; //27.11.2007 WW
+#else
+     eqs_rhs = eqs->b;
+#endif
+  }
+  else
+  {
+     m_dom = dom_vector[rank];
+#ifdef NEW_EQS
+     eqs_p = m_dom->eqs;
+     if(type == 4 ) //WW
+     {
+       eqs_p = m_dom->eqsH;
+       eqs_rhs = m_dom->eqsH->b;
+     }
+     else
+       eqs_rhs = m_dom->eqs->b;
+#else
+     eqs_rhs = m_dom->eqs->b;
+#endif
+     if(rank==0)
+        begin = 0;
+	 else
+        begin = rank_bc_node_value_in_dom[rank-1];
+	 end = rank_bc_node_value_in_dom[rank];
+  }
+
+  for(i=begin;i<end;i++) {
+     gindex = i;
+     if(rank>-1)
+       gindex = bc_node_value_in_dom[i];
+     m_bc_node = bc_node_value[gindex];
+
+	if(axis == 0 && m_bc_node->pcs_pv_name.find("VELOCITY1_X")!=string::npos)	// PCH
+	{
+		m_bc = bc_node[gindex];
+		shift = m_bc_node->msh_node_number-m_bc_node->geo_node_number;
+		//
+		if(rank>-1)
+		{
+			bc_msh_node = bc_local_index_in_dom[i];
+			int dim_space = 0;
+			if(m_msh->NodesNumber_Linear==m_msh->NodesNumber_Quadratic)
+				dim_space = 0;
+			else
+			{
+				if(shift%m_msh->NodesNumber_Quadratic==0)
+					dim_space = shift/m_msh->NodesNumber_Quadratic;
+				else
+					dim_space = m_msh->msh_max_dim;
+			}
+			shift = m_dom->shift[dim_space];
+		}
+		else
+			bc_msh_node = m_bc_node->geo_node_number;
+  //------------------------------------------------------------WW
+		if(m_msh) //OK
+//			if(!m_msh->nod_vector[bc_msh_node]->GetMark()) //WW
+//				continue;
+			time_fac = 1.0;
+		if(bc_msh_node>=0){
+        //................................................................
+			// Time dependencies - CURVE
+			curve =  m_bc_node->CurveIndex;
+			if(curve>0){
+				time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
+				if(!valid) continue;
+			}
+			else
+				time_fac = 1.0;
+        //................................................................
+			// Time dependencies - FCT
+			if(m_bc_node->fct_name.length()>0){
+				m_fct = FCTGet(m_bc_node->fct_name);
+				if(m_fct){
+					time_fac = m_fct->GetValue(aktuelle_zeit,&is_valid);
+					//if(!valid) continue;
+				}
+				else{
+					cout << "Warning in CRFProcess::IncorporateBoundaryConditions - no FCT data" << endl;
+				}
+			}
+			//................................................................
+			// Conditions
+			if(m_bc_node->conditional){
+				bc_value = time_fac*fac* GetNodeValue(m_bc_node->msh_node_number_subst,
+                      GetNodeValueIndex(pcs_primary_function_name[0])+1); //WW  bc_value = time_fac*fac* GetNodeVal(bc_msh_node+1,GetNODValueIndex(pcs_primary_function_name[0])+1); // YD-----TEST---
+			}
+			else
+				bc_value = time_fac*fac*m_bc_node->node_value; // time_fac*fac*PCSGetNODValue(bc_msh_node,"PRESSURE1",0);
+        //----------------------------------------------------------------
+			// MSH
+			if(m_msh){//OK
+				if(rank>-1)
+					bc_eqs_index = bc_msh_node;
+				else
+					bc_eqs_index = m_msh->nod_vector[bc_msh_node]->GetEquationIndex();  //WW#
+          //..............................................................
+				// NEWTON WW
+				if(m_num->nls_method_name.find("NEWTON")!=string::npos
+					||	type==4||type==41	 ) {  //Solution is in the manner of increment !
+					idx0 = GetNodeValueIndex(m_bc->pcs_pv_name.c_str());
+					if(type==4||type==41)
+					{
+						idx1 = idx0+1;
+						bc_value -=  GetNodeValue(m_bc_node->geo_node_number, idx0)
+							    + GetNodeValue(m_bc_node->geo_node_number, idx1);
+					}
+					else
+						bc_value = bc_value - GetNodeValue(m_bc_node->geo_node_number, idx0);
+				}
+			}
+        //----------------------------------------------------------------
+			// RFI
+			else {
+				bc_eqs_index = GetNodeIndex(bc_msh_node);
+          //..............................................................
+				// NEWTON
+				if(m_num->nls_method_name.find("NEWTON")!=string::npos){  //Solution vector is the increment !
+					idx0 = PCSGetNODValueIndex(m_bc->pcs_pv_name.c_str(),0);
+					if(type==4||type==41)
+					{
+						idx1 = PCSGetNODValueIndex(m_bc->pcs_pv_name.c_str(),1);
+						bc_value -= GetNodeVal(bc_eqs_index, idx0) + GetNodeVal(bc_eqs_index, idx1);
+					}
+					else
+						bc_value = bc_value - GetNodeVal(bc_eqs_index, idx0);
+				}
+			}
+        //----------------------------------------------------------------
+			bc_eqs_index += shift;
+			if((int)continuum_vector.size() > 1){
+				//YD/WW
+				if(m_bc_node->pcs_pv_name.find(pcs_primary_function_name[continuum]) == string::npos)
+					continue;
+			}
+#ifdef NEW_EQS       //WW
+        eqs_p->SetKnownX_i(bc_eqs_index, bc_value);
+#else
+        MXRandbed(bc_eqs_index,bc_value,eqs_rhs);
+#endif
+		}
+	}
+	else if(axis == 1 && m_bc_node->pcs_pv_name.find("VELOCITY1_Y")!=string::npos)	// PCH
+	{
+		m_bc = bc_node[gindex];
+		shift = m_bc_node->msh_node_number-m_bc_node->geo_node_number;
+		//
+		if(rank>-1)
+		{
+			bc_msh_node = bc_local_index_in_dom[i];
+			int dim_space = 0;
+			if(m_msh->NodesNumber_Linear==m_msh->NodesNumber_Quadratic)
+				dim_space = 0;
+			else
+			{
+				if(shift%m_msh->NodesNumber_Quadratic==0)
+					dim_space = shift/m_msh->NodesNumber_Quadratic;
+				else
+					dim_space = m_msh->msh_max_dim;
+			}
+			shift = m_dom->shift[dim_space];
+		}
+		else
+			bc_msh_node = m_bc_node->geo_node_number;
+  //------------------------------------------------------------WW
+		if(m_msh) //OK
+//			if(!m_msh->nod_vector[bc_msh_node]->GetMark()) //WW
+//				continue;
+			time_fac = 1.0;
+		if(bc_msh_node>=0){
+        //................................................................
+			// Time dependencies - CURVE
+			curve =  m_bc_node->CurveIndex;
+			if(curve>0){
+				time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
+				if(!valid) continue;
+			}
+			else
+				time_fac = 1.0;
+        //................................................................
+			// Time dependencies - FCT
+			if(m_bc_node->fct_name.length()>0){
+				m_fct = FCTGet(m_bc_node->fct_name);
+				if(m_fct){
+					time_fac = m_fct->GetValue(aktuelle_zeit,&is_valid);
+					//if(!valid) continue;
+				}
+				else{
+					cout << "Warning in CRFProcess::IncorporateBoundaryConditions - no FCT data" << endl;
+				}
+			}
+			//................................................................
+			// Conditions
+			if(m_bc_node->conditional){
+				bc_value = time_fac*fac* GetNodeValue(m_bc_node->msh_node_number_subst,
+                      GetNodeValueIndex(pcs_primary_function_name[0])+1); //WW  bc_value = time_fac*fac* GetNodeVal(bc_msh_node+1,GetNODValueIndex(pcs_primary_function_name[0])+1); // YD-----TEST---
+			}
+			else
+				bc_value = time_fac*fac*m_bc_node->node_value; // time_fac*fac*PCSGetNODValue(bc_msh_node,"PRESSURE1",0);
+        //----------------------------------------------------------------
+			// MSH
+			if(m_msh){//OK
+				if(rank>-1)
+					bc_eqs_index = bc_msh_node;
+				else
+					bc_eqs_index = m_msh->nod_vector[bc_msh_node]->GetEquationIndex();  //WW#
+          //..............................................................
+				// NEWTON WW
+				if(m_num->nls_method_name.find("NEWTON")!=string::npos
+					||	type==4||type==41	 ) {  //Solution is in the manner of increment !
+					idx0 = GetNodeValueIndex(m_bc->pcs_pv_name.c_str());
+					if(type==4||type==41)
+					{
+						idx1 = idx0+1;
+						bc_value -=  GetNodeValue(m_bc_node->geo_node_number, idx0)
+							    + GetNodeValue(m_bc_node->geo_node_number, idx1);
+					}
+					else
+						bc_value = bc_value - GetNodeValue(m_bc_node->geo_node_number, idx0);
+				}
+			}
+        //----------------------------------------------------------------
+			// RFI
+			else {
+				bc_eqs_index = GetNodeIndex(bc_msh_node);
+          //..............................................................
+				// NEWTON
+				if(m_num->nls_method_name.find("NEWTON")!=string::npos){  //Solution vector is the increment !
+					idx0 = PCSGetNODValueIndex(m_bc->pcs_pv_name.c_str(),0);
+					if(type==4||type==41)
+					{
+						idx1 = PCSGetNODValueIndex(m_bc->pcs_pv_name.c_str(),1);
+						bc_value -= GetNodeVal(bc_eqs_index, idx0) + GetNodeVal(bc_eqs_index, idx1);
+					}
+					else
+						bc_value = bc_value - GetNodeVal(bc_eqs_index, idx0);
+				}
+			}
+        //----------------------------------------------------------------
+			bc_eqs_index += shift;
+			if((int)continuum_vector.size() > 1){
+				//YD/WW
+				if(m_bc_node->pcs_pv_name.find(pcs_primary_function_name[continuum]) == string::npos)
+					continue;
+			}
+#ifdef NEW_EQS       //WW
+        eqs_p->SetKnownX_i(bc_eqs_index, bc_value);
+#else
+        MXRandbed(bc_eqs_index,bc_value,eqs_rhs);
+#endif
+		}
+	}
+	else if(axis == 2 && m_bc_node->pcs_pv_name.find("VELOCITY1_Z")!=string::npos)	// PCH
+	{
+		m_bc = bc_node[gindex];
+		shift = m_bc_node->msh_node_number-m_bc_node->geo_node_number;
+		//
+		if(rank>-1)
+		{
+			bc_msh_node = bc_local_index_in_dom[i];
+			int dim_space = 0;
+			if(m_msh->NodesNumber_Linear==m_msh->NodesNumber_Quadratic)
+				dim_space = 0;
+			else
+			{
+				if(shift%m_msh->NodesNumber_Quadratic==0)
+					dim_space = shift/m_msh->NodesNumber_Quadratic;
+				else
+					dim_space = m_msh->msh_max_dim;
+			}
+			shift = m_dom->shift[dim_space];
+		}
+		else
+			bc_msh_node = m_bc_node->geo_node_number;
+  //------------------------------------------------------------WW
+		if(m_msh) //OK
+//			if(!m_msh->nod_vector[bc_msh_node]->GetMark()) //WW
+//				continue;
+			time_fac = 1.0;
+		if(bc_msh_node>=0){
+        //................................................................
+			// Time dependencies - CURVE
+			curve =  m_bc_node->CurveIndex;
+			if(curve>0){
+				time_fac = GetCurveValue(curve,interp_method,aktuelle_zeit,&valid);
+				if(!valid) continue;
+			}
+			else
+				time_fac = 1.0;
+        //................................................................
+			// Time dependencies - FCT
+			if(m_bc_node->fct_name.length()>0){
+				m_fct = FCTGet(m_bc_node->fct_name);
+				if(m_fct){
+					time_fac = m_fct->GetValue(aktuelle_zeit,&is_valid);
+					//if(!valid) continue;
+				}
+				else{
+					cout << "Warning in CRFProcess::IncorporateBoundaryConditions - no FCT data" << endl;
+				}
+			}
+			//................................................................
+			// Conditions
+			if(m_bc_node->conditional){
+				bc_value = time_fac*fac* GetNodeValue(m_bc_node->msh_node_number_subst,
+                      GetNodeValueIndex(pcs_primary_function_name[0])+1); //WW  bc_value = time_fac*fac* GetNodeVal(bc_msh_node+1,GetNODValueIndex(pcs_primary_function_name[0])+1); // YD-----TEST---
+			}
+			else
+				bc_value = time_fac*fac*m_bc_node->node_value; // time_fac*fac*PCSGetNODValue(bc_msh_node,"PRESSURE1",0);
+        //----------------------------------------------------------------
+			// MSH
+			if(m_msh){//OK
+				if(rank>-1)
+					bc_eqs_index = bc_msh_node;
+				else
+					bc_eqs_index = m_msh->nod_vector[bc_msh_node]->GetEquationIndex();  //WW#
+          //..............................................................
+				// NEWTON WW
+				if(m_num->nls_method_name.find("NEWTON")!=string::npos
+					||	type==4||type==41	 ) {  //Solution is in the manner of increment !
+					idx0 = GetNodeValueIndex(m_bc->pcs_pv_name.c_str());
+					if(type==4||type==41)
+					{
+						idx1 = idx0+1;
+						bc_value -=  GetNodeValue(m_bc_node->geo_node_number, idx0)
+							    + GetNodeValue(m_bc_node->geo_node_number, idx1);
+					}
+					else
+						bc_value = bc_value - GetNodeValue(m_bc_node->geo_node_number, idx0);
+				}
+			}
+        //----------------------------------------------------------------
+			// RFI
+			else {
+				bc_eqs_index = GetNodeIndex(bc_msh_node);
+          //..............................................................
+				// NEWTON
+				if(m_num->nls_method_name.find("NEWTON")!=string::npos){  //Solution vector is the increment !
+					idx0 = PCSGetNODValueIndex(m_bc->pcs_pv_name.c_str(),0);
+					if(type==4||type==41)
+					{
+						idx1 = PCSGetNODValueIndex(m_bc->pcs_pv_name.c_str(),1);
+						bc_value -= GetNodeVal(bc_eqs_index, idx0) + GetNodeVal(bc_eqs_index, idx1);
+					}
+					else
+						bc_value = bc_value - GetNodeVal(bc_eqs_index, idx0);
+				}
+			}
+        //----------------------------------------------------------------
+			bc_eqs_index += shift;
+			if((int)continuum_vector.size() > 1){
+				//YD/WW
+				if(m_bc_node->pcs_pv_name.find(pcs_primary_function_name[continuum]) == string::npos)
+					continue;
+			}
+#ifdef NEW_EQS       //WW
+        eqs_p->SetKnownX_i(bc_eqs_index, bc_value);
+#else
+        MXRandbed(bc_eqs_index,bc_value,eqs_rhs);
+#endif
+		}
+	}
+  }
+
     //-----------------------------------------------------------------------
   /* irreg. Zeilen/Spalten regularisieren */
 /*
@@ -5342,6 +5842,9 @@ void CRFProcess::CalcSecondaryVariables(const bool initial)
       break;
     case 'V':
       CalcSecondaryVariablesUnsaturatedFlow(initial); //WW
+      break;
+		case 'P':
+      CalcSecondaryVariablesPSGLOBAL(initial); //WW
       break;
   }
 }
@@ -6318,7 +6821,7 @@ void CRFProcess::Extropolation_GaussValue()
      for(k=0; k<NS; k++)
        SetNodeValue(i, idx[k], 0.0);
   }
-  if(type==1212)  // Multi-phase flow
+  if(type==1212 || type==1313)  // Multi-phase flow
   {
      idx[0] = GetNodeValueIndex("VELOCITY_X2");
      idx[1] = GetNodeValueIndex("VELOCITY_Y2");
@@ -6874,6 +7377,139 @@ void CRFProcess::CalcSecondaryVariablesUnsaturatedFlow(const bool initial)
   }   
 }
 
+/*************************************************************************
+GeoSys-FEM Function:
+Task: Updating secondary variables for Multiphase flow in PS_GLOBAL
+
+Programming:
+03/2009 PCH Implementation
+**************************************************************************/
+void CRFProcess::CalcSecondaryVariablesPSGLOBAL(const bool initial)
+{
+	long i;
+
+	int ndx_pressure1, ndx_p_cap, ndx_pressure2, ndx_s_wetting, ndx_s_nonwetting;
+
+	// The primary variables
+	ndx_pressure1 = GetNodeValueIndex("PRESSURE1");
+	ndx_s_nonwetting = GetNodeValueIndex("SATURATION2");
+
+	// The secondary variables
+	ndx_pressure2 = GetNodeValueIndex("PRESSURE2");
+	ndx_p_cap = GetNodeValueIndex("PRESSURE_CAP");
+	ndx_s_wetting = GetNodeValueIndex("SATURATION1");
+
+	double pressure1, pressure2, p_cap, s_wetting;
+	for(i=0;i<(long)m_msh->GetNodesNumber(false);i++)
+	{
+		pressure1 = GetNodeValue(i,ndx_pressure1+1);	// New
+		pressure2 = GetNodeValue(i,ndx_pressure1); // Old
+
+		// Let's get capillary pressure before updating pressure2
+		// by accessing the primary variable of the saturation equation
+		// not the secondary variable of it.
+		int ndx_sat2 = GetNodeValueIndex("SATURATION2");
+		double sat2 = GetNodeValue(i,ndx_sat2+1);
+		// Due to the iterative solution scheme in solving Snw with no
+		// explicit boundary condition for non-zero flux condition,
+		// Snw may become negative particularly the density difference
+		// between two fluids is big. To prevent negative Snw, the
+		// saturation restriction added.
+		CMediumProperties* mmp = NULL;
+		if(mmp_vector.size() > 1)
+		{
+			double sum = 0.0;
+			CNode* thisNode = m_msh->nod_vector[i];
+			int NumOfNeighborElements = (int)thisNode->connected_elements.size();
+			// Harmonic mean
+			for(int i=0; i< NumOfNeighborElements; ++i)
+			{
+				// Mount neighboring elemenets and get the corresponding material group one by one.
+				int eleIdx = thisNode->connected_elements[i];
+				CElem* thisEle = m_msh->ele_vector[eleIdx];
+				int matgrp = thisEle->GetPatchIndex();
+				mmp = mmp_vector[matgrp];
+				mmp->mode = 2;
+	//			sum += 1.0/sat2;
+				sum += 1.0/MRange(mmp->saturation_res[1],sat2,1.0-mmp->saturation_res[0]);
+			}
+			sat2 = (double)NumOfNeighborElements/sum;
+		}
+		else
+		{
+			mmp = mmp_vector[0];
+			sat2 = MRange(mmp->saturation_res[1],sat2,1.0-mmp->saturation_res[0]);
+		}
+		s_wetting = 1.0 - sat2;
+		// Assigning the secondary variable, Sw
+		SetNodeValue(i,ndx_s_wetting,s_wetting);
+		// Assigning the primary variable Snw here one more time
+		// to completely bound the range of saturation
+		SetNodeValue(i,ndx_s_nonwetting,sat2);
+		SetNodeValue(i,ndx_s_nonwetting+1,sat2);
+
+		// Assigning the secondary variable, Pc
+		if(mmp_vector.size() > 1)
+			p_cap = GetCapillaryPressureOnNodeByNeighobringElementPatches(i, 2, 1.0-sat2);
+		else
+			p_cap = mmp->CapillaryPressureFunction(i,NULL,1.0,0,1.0-sat2);
+
+		SetNodeValue(i,ndx_p_cap,p_cap);
+
+		pressure2 = pressure1 + p_cap;
+		// Assigning the secondary variables, Pnw
+		SetNodeValue(i,ndx_pressure2,pressure2);
+	}
+}
+
+/**************************************************************************
+FEMLib-Method:
+Task: Calculate saturation on node by averaging the patches of the
+			neighboring elements in three means
+
+  0: Arithmatic mean
+  1: Geomtric mean
+  2: Harmonic mean
+
+Programing:
+03/2009 PCH Implementation
+last modification:
+*************************************************************************/
+double CRFProcess::GetCapillaryPressureOnNodeByNeighobringElementPatches(int nodeIdx, int meanOption, double Sw)
+{
+	double p_cap = 0.0, sum = 0.0;
+
+	CNode* thisNode = m_msh->nod_vector[nodeIdx];
+	int NumOfNeighborElements = (int)thisNode->connected_elements.size();
+
+	switch (meanOption) {
+		case 0:
+			break;
+		case 1:
+			break;
+		case 2:	// Harmonic mean
+			for(int i=0; i< NumOfNeighborElements; ++i)
+			{
+				// Mount neighboring elemenets and get the corresponding material group one by one.
+				int eleIdx = thisNode->connected_elements[i];
+				CElem* thisEle = m_msh->ele_vector[eleIdx];
+				int matgrp = thisEle->GetPatchIndex();
+				CMediumProperties* mmp = mmp_vector[matgrp];
+				sum += 1.0/mmp->CapillaryPressureFunction(i,NULL,1.0,0,Sw);
+			}
+			p_cap = (double)NumOfNeighborElements/sum;
+			break;
+
+		default:
+			cout<<"Please define the option for various means!"<<endl;
+			cout<<"The code stops at GetCapillaryPressureOnNodeByNeighobringElementPatches function!"<<endl;
+			abort();
+			break;
+	}
+
+
+	return p_cap;
+}
 
 /*************************************************************************
 GeoSys-FEM Function:
@@ -7721,35 +8357,39 @@ void CRFProcess::CalcELEVelocities(void)
 {
   long i;
   //----------------------------------------------------------------------
-  int eidx[3];
-  eidx[0] = GetElementValueIndex("VELOCITY1_X");
-  eidx[1] = GetElementValueIndex("VELOCITY1_Y");
-  eidx[2] = GetElementValueIndex("VELOCITY1_Z");
-  for(i=0;i<3;i++)
-  {
-    if(eidx[i]<0)
-    {
-      cout << "Fatal error in CRFProcess::CalcELEVelocities - abort"; //abort();	// PCH commented abort() out for FM.
-    }
-  }
-  //----------------------------------------------------------------------
-  CElem* m_ele = NULL;
-  FiniteElement::ElementValue* gp_ele = NULL;
-  double vx,vy,vz;
-  for(i=0l;i<(long)m_msh->ele_vector.size();i++){
-    m_ele = m_msh->ele_vector[i];
-    gp_ele = ele_gp_value[i];
-    vx = gp_ele->Velocity(0,0);
-    SetElementValue(i,eidx[0],vx);
-    SetElementValue(i,eidx[0]+1,vx);
-    vy = gp_ele->Velocity(1,0);
-    SetElementValue(i,eidx[1],vy);
-    SetElementValue(i,eidx[1]+1,vy);
-    vz = gp_ele->Velocity(2,0);
-    SetElementValue(i,eidx[2],vz);
-    SetElementValue(i,eidx[2]+1,vz);
-  }
-  //----------------------------------------------------------------------
+	// If not FLUID_MOMENTUM,
+	if( pcs_type_name.compare("RANDOM_WALK")!=0)
+	{
+		int eidx[3];
+		eidx[0] = GetElementValueIndex("VELOCITY1_X");
+		eidx[1] = GetElementValueIndex("VELOCITY1_Y");
+		eidx[2] = GetElementValueIndex("VELOCITY1_Z");
+		for(i=0;i<3;i++)
+		{
+			if(eidx[i]<0)
+			{
+				cout << "Fatal error in CRFProcess::CalcELEVelocities - abort" << endl; //abort();	// PCH commented abort() out for FM.
+			}
+		}
+		//----------------------------------------------------------------------
+		CElem* m_ele = NULL;
+		FiniteElement::ElementValue* gp_ele = NULL;
+		double vx,vy,vz;
+		for(i=0l;i<(long)m_msh->ele_vector.size();i++){
+			m_ele = m_msh->ele_vector[i];
+			gp_ele = ele_gp_value[i];
+			vx = gp_ele->Velocity(0,0);
+			SetElementValue(i,eidx[0],vx);
+			SetElementValue(i,eidx[0]+1,vx);
+			vy = gp_ele->Velocity(1,0);
+			SetElementValue(i,eidx[1],vy);
+			SetElementValue(i,eidx[1]+1,vy);
+			vz = gp_ele->Velocity(2,0);
+			SetElementValue(i,eidx[2],vz);
+			SetElementValue(i,eidx[2]+1,vz);
+		}
+	}
+	//----------------------------------------------------------------------
 }
 
 /*************************************************************************
@@ -8211,6 +8851,7 @@ void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs)
   int ndx_viscosity_phase;
   ndx_density_phase = -1; //WW
   ndx_viscosity_phase = -1; //WW
+	CFEMesh* m_msh = m_pcs->m_msh;	// PCH
   //----------------------------------------------------------------------
   m_pcs->SetBC();
 
@@ -8228,8 +8869,8 @@ void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs)
   //----------------------------------------------------------------------
   // Capillary pressure - p_c (S) <- This is always the secondary variable
   // in both phase1 and phase2	// PCH
-  CMediumProperties *m_mmp = NULL;
-  
+  CMediumProperties *mmp = NULL;
+
   //======================================================================
   switch(m_pcs->pcs_type_number)
   {
@@ -8244,17 +8885,46 @@ void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs)
 			ndx_pressure2 = m_pcs->GetNodeValueIndex("PRESSURE2");
 			ndx_p_cap = m_pcs->GetNodeValueIndex("PRESSURE_CAP");
 			double pressure1, pressure2, p_cap;
-			for(i=0;i<(long)m_pcs->m_msh->nod_vector.size();i++) 
+			for(i=0;i<(long)m_pcs->m_msh->nod_vector.size();i++)
       {
-        pressure1 = m_pcs->GetNodeValue(i,ndx_pressure1);
+        pressure1 = m_pcs->GetNodeValue(i,ndx_pressure1+1);	// New
+				pressure2 = m_pcs->GetNodeValue(i,ndx_pressure1); // Old
+
 				// Let's get capillary pressure before updating pressure2
-				// by accessing the primary variable of the saturation equation 
+				// by accessing the primary variable of the saturation equation
 				// not the secondary variable of it.
 				int cpl_ndx_sat2 = cpl_pcs->GetNodeValueIndex("SATURATION2");
-				double cpl_sat2 = cpl_pcs->GetNodeValue(i,cpl_ndx_sat2);
-				m_mmp = mmp_vector[0];
-				m_mmp->mode =2;	
-				p_cap = m_mmp->CapillaryPressureFunction(i,NULL,1.0,0,1.0-cpl_sat2);
+				double cpl_sat2 = cpl_pcs->GetNodeValue(i,cpl_ndx_sat2+1);
+
+				if(mmp_vector.size() > 1)
+				{
+					double sum = 0.0;
+					CNode* thisNode = m_msh->nod_vector[i];
+					int NumOfNeighborElements = (int)thisNode->connected_elements.size();
+					// Harmonic mean
+					for(int p=0; p< NumOfNeighborElements; ++p)
+					{
+						// Mount neighboring elemenets and get the corresponding material group one by one.
+						int eleIdx = thisNode->connected_elements[p];
+						CElem* thisEle = m_msh->ele_vector[eleIdx];
+						int matgrp = thisEle->GetPatchIndex();
+						mmp = mmp_vector[matgrp];
+						mmp->mode = 2;
+						sum += 1.0/MRange(mmp->saturation_res[1],cpl_sat2,1.0-mmp->saturation_res[0]);
+					}
+					cpl_sat2 = (double)NumOfNeighborElements/sum;
+				}
+				else
+				{
+					mmp = mmp_vector[0];
+					cpl_sat2 = MRange(mmp->saturation_res[1],cpl_sat2,1.0-mmp->saturation_res[0]);
+				}
+				// Assigning the secondary variable, Pc
+				if(mmp_vector.size() > 1)
+					p_cap = m_pcs->GetCapillaryPressureOnNodeByNeighobringElementPatches(i, 2, 1.0-cpl_sat2);
+				else
+					p_cap = mmp->CapillaryPressureFunction(i,NULL,1.0,0,1.0-cpl_sat2);
+
 				m_pcs->SetNodeValue(i,ndx_p_cap,p_cap);
 				m_pcs->SetNodeValue(i,ndx_p_cap+1,p_cap);
 
@@ -8276,36 +8946,58 @@ void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs)
 	  // Don't forget here the primary variable is SATURATION2
 	  // From SATURATION2, we are assigning SATURATION1 which is
 	  // the secondary variables of SATURATION2.
-    ndx_s_wetting = m_pcs->GetNodeValueIndex("SATURATION1");
+			ndx_s_wetting = m_pcs->GetNodeValueIndex("SATURATION1");
 			ndx_s_nonwetting = m_pcs->GetNodeValueIndex("SATURATION2");
 			ndx_p_cap = cpl_pcs->GetNodeValueIndex("PRESSURE_CAP");
-/*			
-			ndx_pressure1 = cpl_pcs->GetNodeValueIndex("PRESSURE1");
-			ndx_pressure2 = cpl_pcs->GetNodeValueIndex("PRESSURE2");
-*/			
 
 			double s_wetting,s_nonwetting;
-      for(i=0;i<(long)m_pcs->m_msh->nod_vector.size();i++) 
+      for(i=0;i<(long)m_pcs->m_msh->nod_vector.size();i++)
       {
-        s_nonwetting = m_pcs->GetNodeValue(i,ndx_s_nonwetting);
-        s_wetting = MRange(0.0,1.0-s_nonwetting,1.0);
+        s_nonwetting = m_pcs->GetNodeValue(i,ndx_s_nonwetting+1);
+				// Due to the iterative solution scheme in solving Snw with no
+				// explicit boundary condition for non-zero flux condition,
+				// Snw may become negative particularly the density difference
+				// between two fluids is big. To prevent negative Snw, the
+				// saturation restriction added.
+				if(mmp_vector.size() > 1)
+				{
+					double sum = 0.0;
+					CNode* thisNode = m_msh->nod_vector[i];
+					int NumOfNeighborElements = (int)thisNode->connected_elements.size();
+					// Harmonic mean
+					for(int p=0; p< NumOfNeighborElements; ++p)
+					{
+						// Mount neighboring elemenets and get the corresponding material group one by one.
+						int eleIdx = thisNode->connected_elements[p];
+						CElem* thisEle = m_msh->ele_vector[eleIdx];
+						int matgrp = thisEle->GetPatchIndex();
+						mmp = mmp_vector[matgrp];
+						mmp->mode = 2;
+						sum += 1.0/MRange(mmp->saturation_res[1],s_nonwetting,1.0-mmp->saturation_res[0]);
+					}
+					s_nonwetting = (double)NumOfNeighborElements/sum;
+				}
+				else
+				{
+					mmp = mmp_vector[0];
+					s_nonwetting = MRange(mmp->saturation_res[1],s_nonwetting,1.0-mmp->saturation_res[0]);
+				}
+				// Assigning the secondary variable, Pc
+				if(mmp_vector.size() > 1)
+					p_cap = m_pcs->GetCapillaryPressureOnNodeByNeighobringElementPatches(i, 2, 1.0-s_nonwetting);
+				else
+					p_cap = mmp->CapillaryPressureFunction(i,NULL,1.0,0,1.0-s_nonwetting);
+
+				m_pcs->SetNodeValue(i,ndx_s_nonwetting,s_nonwetting);
+				m_pcs->SetNodeValue(i,ndx_s_nonwetting+1,s_nonwetting);
+        s_wetting = 1.0-s_nonwetting;
 
 				// Assigning the secondary variables
 				m_pcs->SetNodeValue(i,ndx_s_wetting,s_wetting);	// Previous
         m_pcs->SetNodeValue(i,ndx_s_wetting+1,s_wetting); // Now
 
-				// Let's get capillary pressure
-				m_mmp = mmp_vector[0];
-				m_mmp->mode =2;	
-				p_cap = m_mmp->CapillaryPressureFunction(i,NULL,1.0,0,s_wetting);
 				cpl_pcs->SetNodeValue(i,ndx_p_cap,p_cap);
 				cpl_pcs->SetNodeValue(i,ndx_p_cap+1,p_cap);
-/*				
-				// Let's update pressure here in saturation equation as well
-				pressure1 = cpl_pcs->GetNodeValue(i,ndx_pressure1);
-				cpl_pcs->SetNodeValue(i,ndx_pressure2,pressure1+p_cap);	// Previous
-        cpl_pcs->SetNodeValue(i,ndx_pressure2+1,pressure1+p_cap); // Now
-*/				
       }
       //......................................................................
       ndx_density_phase = m_pcs->GetNodeValueIndex("DENSITY2");
@@ -9136,8 +9828,15 @@ void CreateEQS_LinearSolver()
     else // Monolithic scheme for the process with linear elements
     {
       if(dof_nonDM < m_pcs->GetPrimaryVNumber())
+			{
         dof_nonDM = m_pcs->GetPrimaryVNumber();
-    }          
+
+				// PCH: DOF Handling for FLUID_MOMENTUM in case that the LIS and PARDISO solvers
+				// are chosen.
+				if(m_pcs->pcs_type_name.compare("FLUID_MOMENTUM")==0)
+					dof_nonDM = 1;
+			}
+    }
   }
   //
   for(i=0; i<(int)fem_msh_vector.size(); i++)
@@ -9484,6 +10183,7 @@ ROCKFLOW - Function: CRFProcess::
 Task:  //For fluid momentum, 
 Programming: 
 02/2008 PCH Implementation
+03/2009 PCH option to tell if this is FLUID_MOMENTUM
 **************************************************************************/
 void CRFProcess::EQSSolver(double* x)
  {

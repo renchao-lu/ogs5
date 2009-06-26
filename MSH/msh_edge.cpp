@@ -32,6 +32,7 @@ CEdge::CEdge(const int Index, bool quadr)
 
    // PCH
    joint = 0;	// Set to be no joint.
+   V = NULL;
 }
 /**************************************************************************
 MSHLib-Method: 

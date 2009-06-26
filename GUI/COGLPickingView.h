@@ -147,6 +147,8 @@ private:
 	double computeCmax(void);
 
     void DrawVectorOnNode(void);
+	void DrawVelocityAlongEdge(void);
+	void DrawPathline(void);
 	void DrawVectorOnCrossroads(void);
     void DrawParticles(void);
 	void DrawGDebug(void);

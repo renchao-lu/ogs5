@@ -82,6 +82,7 @@ class Problem
    inline double RichardsFlow();
    inline double TwoPhaseFlow(); 
    inline double MultiPhaseFlow();
+	 inline double PS_Global();		// 03 2009 PCH
    inline double GroundWaterFlow();
    inline double ComponentalFlow(); 
    inline double OverlandFlow();

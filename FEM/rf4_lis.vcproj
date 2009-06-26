@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="rf4sp_cpp"
 	ProjectGUID="{4F159AF7-FF53-410E-A9A7-2C500A4EF55E}"
+	RootNamespace="rf4sp_cpp"
 	>
 	<Platforms>
 		<Platform
@@ -44,7 +45,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../FEM;../MSH;../GEO; ../EQL;../;../lib;../GEM"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MSVCPP6;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;NEW_EQS;LIS;IPMGEMPLUGIN;GEM_REACT;PROBLEM_CLASS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;MSVCPP6;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;NEW_EQS;LIS;IPMGEMPLUGIN;PROBLEM_CLASS"
 				RuntimeLibrary="1"
 				DisableLanguageExtensions="false"
 				OpenMP="true"
@@ -73,8 +74,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="GEMS224_dbg.lib"
-				OutputFile=".\Debug/rf4.exe"
+				AdditionalDependencies="GEMS230_dbg.lib"
+				OutputFile=".\Debug/rf4lis.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="../LIB"
@@ -140,7 +141,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="../FEM;../MSH;../GEO; ../;../lib;../GEM"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;NEW_EQS;LIS;IPMGEMPLUGIN;GEM_REACT;PROBLEM_CLASS"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_NONSTDC_NO_DEPRECATE;_CRT_XNONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;RANDOM_WALK;NEW_EQS;LIS;IPMGEMPLUGIN;PROBLEM_CLASS"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -169,8 +170,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="GEMS224_rl.lib"
-				OutputFile=".\Release/rf4.exe"
+				AdditionalDependencies="GEMS230_rl.lib"
+				OutputFile=".\Release/rf4lis.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="../LIB"
@@ -991,14 +992,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\rf_vel_new.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rf_vel_new.h"
-				>
-			</File>
-			<File
 				RelativePath="rfadt.cpp"
 				>
 				<FileConfiguration
@@ -1152,6 +1145,14 @@
 			</File>
 			<File
 				RelativePath="version.h"
+				>
+			</File>
+			<File
+				RelativePath=".\vtk.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\vtk.h"
 				>
 			</File>
 		</Filter>

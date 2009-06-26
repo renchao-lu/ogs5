@@ -1,4 +1,5 @@
-CXX_LIBS         = ./LIB/liblis.a
+NEW_SP = yes;
+CXX_LIBS         = ./LIB/liblis.a.gcc4
 
 CXX_LDFLAGS      = 
 CXX_LD           = gcc

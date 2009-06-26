@@ -94,6 +94,7 @@ public:
 	virtual double Execute();
 	void SolveDarcyVelocityOnNode();
 	void ConstructFractureNetworkTopology();
+	void SolveForEdgeVelocity(void);
 
 protected:
 	FiniteElement::CFiniteElementStd *fem;

@@ -219,6 +219,12 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
          // WW idx_P0 = pcs->GetNodeValueIndex("POROPRESSURE0");
          break;
       }
+      else if(pcs_vector[i]->pcs_type_name.find("PS_GLOBAL")!=string::npos)
+      {
+    	  h_pcs = pcs_vector[i];
+    	  if  (h_pcs->type==1313) Flow_Type = 3; //05.05.2009.  PCH
+    	  break;
+      }
     }
     if(Flow_Type==0)
     {
@@ -246,7 +252,15 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
        idx_S = h_pcs->GetNodeValueIndex("SATURATION1")+1;
        AuxNodal2 = new double[8];
     }
- 
+    else if(Flow_Type==3)
+    {
+    	idx_P1 = h_pcs->GetNodeValueIndex("PRESSURE1")+1;
+    	idx_P2 = h_pcs->GetNodeValueIndex("PRESSURE2");
+    	idx_S0 = h_pcs->GetNodeValueIndex("SATURATION1");
+    	idx_S = h_pcs->GetNodeValueIndex("SATURATION2")+1;
+    	AuxNodal2 = new double[8];
+    }
+
     for(int i=0;i<(int)pcs_vector.size();i++){
       if(pcs_vector[i]->pcs_type_name.find("HEAT")!=string::npos)
       {
@@ -699,8 +713,8 @@ void CFiniteElementVec::ComputeMatrix_RHS(const double fkt,
   //---------------------------------------------------------
   // Assemble coupling matrix
   //---------------------------------------------------------
-  // SM -> DM - Kopplungsgroeßen 
-  // Gauss-Punkte, Quadratische Ansätze fuer Verschiebungen 
+  // SM -> DM - Kopplungsgroe?n 
+  // Gauss-Punkte, Quadratische Ans?ze fuer Verschiebungen 
   // Lineare fuer den Druck  
   // LoadFactor: factor of incremental loading, prescibed in rf_pcs.cpp	
 
@@ -1123,6 +1137,20 @@ void CFiniteElementVec::GlobalAssembly_RHS()
                   AuxNodal[i] = val_n*LoadFactor;
              }
              break;
+          case 3:  // Multi-phase-flow: SwPw+SgPg	// PCH 05.05.2009
+        	  for (i=0;i<nnodes;i++)
+        	  {
+        		  double Sw = h_pcs->GetNodeValue(nodes[i],idx_S0);
+        		  double Snw = 1.0-Sw;
+        		  double Pw = h_pcs->GetNodeValue(nodes[i],idx_P1);
+        		  double Pnw = h_pcs->GetNodeValue(nodes[i],idx_P2);
+        		  val_n = -(Sw*Pw+Snw*Pnw);
+        		  if(biot<0.0&&val_n<0.0)
+        			  AuxNodal[i] = 0.0;
+        		  else
+        			  AuxNodal[i] = val_n*LoadFactor;
+        	  }
+        	  break;
       }
  
       // If dymanic

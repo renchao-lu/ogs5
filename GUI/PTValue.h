@@ -37,6 +37,6 @@ private:
     CFEMesh* m_msh;
     CElem* m_ele;
 
-    void AssignAParticleToTheElement(int no, CElem* m_ele);
+    void AssignAParticleToTheElement(Trace* one, CElem* m_ele);
 public:
 };

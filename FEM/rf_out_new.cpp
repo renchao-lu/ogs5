@@ -1746,7 +1746,7 @@ double COutput::NODWritePLYDataTEC(int number)
     for(k=0;k<no_variables;k++)
     {
       //if(!(nod_value_vector[k].compare("FLUX")==0))  // removed JOD, does not work for multiple flow processes
-      //WW if (!b_specified_pcs) //NW
+      //if (!b_specified_pcs) //NW
         m_pcs = PCSGet(nod_value_vector[k],bdummy);
       if(!m_pcs)
       {
@@ -3135,6 +3135,21 @@ void COutput::WriteVTKValues(fstream &vtk_file)
       vtk_file << mat_value << endl;
     }
   }
+	// PCH: Material groups from .msh just for temparary purpose
+	if(mmp_vector.size() > 1)
+	{
+		// write header for cell data
+    		vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;
+		// header now scalar data
+		vtk_file << "SCALARS " << "MatGroup" << " int 1" << endl;
+
+		vtk_file << "LOOKUP_TABLE default" <<endl;
+		for(long i=0;i<(long)m_msh->ele_vector.size();i++)
+		{
+			m_ele = m_msh->ele_vector[i];
+			vtk_file << m_ele->GetPatchIndex() << endl;
+		}
+	}
 }
 
 /**************************************************************************

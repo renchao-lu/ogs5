@@ -2,7 +2,6 @@
 // Microsoft Visual C++ generated include file.
 // Used by GeoSys.rc
 //
-#define IDC_BUTTON_PCS_READ             101
 #define IDC_BUTTON_READ                 2
 #define ID_BUTTON_MAT_FP_CALC           3
 #define IDCANCEL2                       3
@@ -14,6 +13,7 @@
 #define IDC_BUTTON_MOD_READ_T           5
 #define IDC_BUTTON_PCS_READ4            6
 #define IDD_ABOUTBOX                    100
+#define IDC_BUTTON_PCS_READ             101
 #define IDD_GSFORMRIGHTPASSIVE          103
 #define IDD_OGL_TETRA_VIEW              106
 #define IDD_GS_MESH_IMP                 107
@@ -899,6 +899,7 @@
 #define IDC_TEXT_DATAFROMSTATION        1244
 #define IDC_CHECK_PCS                   1244
 #define ID_MSP_NEW                      1244
+#define IDC_VEDGE                       1244
 #define IDC_UNSELECT_SFC                1245
 #define IDC_TEC_EDITOR_BUTTON           1245
 #define IDC_Min                         1245
@@ -907,6 +908,7 @@
 #define IDC_CHECK_TIM                   1245
 #define IDC_RADIO_METHOD                1245
 #define ID_MSP_UPDATE                   1245
+#define IDC_PATHLINE                    1245
 #define IDC_SURFACE_WRITE_TEC           1246
 #define IDC_GEO_EDITOR_BUTTON2          1246
 #define IDC_Step                        1246
@@ -915,11 +917,13 @@
 #define IDC_BUTTON_STATDATA             1246
 #define IDC_CHECK_NUM                   1246
 #define IDC_RADIO_METHOD_2              1246
+#define IDC_XY                          1246
 #define IDC_CREATE_SURFACE              1247
 #define IDC_PATCHNO                     1247
 #define IDC_Iso_AddListItem2            1247
 #define IDC_CHECK_OUT                   1247
 #define IDC_CHECK_PRECOND               1247
+#define IDC_YZ                          1247
 #define IDC_PLY2SFC                     1248
 #define IDC_POUTSIDE                    1248
 #define IDC_Iso_DelListItem2            1248
@@ -948,21 +952,29 @@
 #define IDC_BUTTON_MOD_RUN              1252
 #define IDC_EDIT_DIS_REF_X              1252
 #define IDC_EDIT_DIS_GRADIENT_REF_X     1252
+#define IDC_ZX                          1252
 #define IDC_RADIO_METHOD_5              1253
 #define IDC_BUTTON_MSH_EDITOR           1253
 #define IDC_EDIT_DIS_GRADIENT_REF_Y     1253
+#define IDC_XLOW                        1253
 #define IDC_CHECK_MCP                   1254
 #define IDC_RADIO_METHOD_6              1254
 #define IDC_BUTTON_MOD_DELETE_H         1254
+#define IDC_XHIGH                       1254
 #define IDC_CHECK_MMP                   1255
 #define IDC_RADIO_METHOD_7              1255
 #define IDC_COMBO_MOD_M                 1255
+#define IDC_YLOW                        1255
 #define IDC_CHECK_MOD                   1256
 #define IDC_COMBO_MOD_T                 1256
+#define IDC_YHIGH                       1256
 #define IDC_COMBO_MOD_C                 1257
+#define IDC_ZLOW                        1257
 #define IDC_CHECK_MOD_M                 1258
+#define IDC_ZHIGH                       1258
 #define IDC_FILE_FEFLOW_READ_NOD        1259
 #define IDC_DB_EDIT                     1259
+#define IDC_RANGE                       1259
 #define IDC_BUTTON_CREATE_NOD           1260
 #define IDC_OPEN_DB                     1260
 #define IDC_BUTTON_CREATE_ELE           1261

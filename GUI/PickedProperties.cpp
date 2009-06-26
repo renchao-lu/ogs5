@@ -295,7 +295,7 @@ void PickedProperties::ListGLINodeSelected()
 
 void PickedProperties::ListGLINodeAll()
 {
-	//CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
+	CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
 	LV_ITEM lvitem;
     CGLPoint* thisGLIPoint = NULL;
 
@@ -383,10 +383,16 @@ void PickedProperties::ListRFINodeSelected(int PCSSwitch)
 		for(int i=0;i<(int)pcs_vector.size(); ++i)
 		{
 			m_pcs = pcs_vector[i];
-			if(theApp->BothPrimaryVariable )
-				numOfItems += m_pcs->pcs_number_of_primary_nvals*2;
+			// Select the mesh whose process name has the mesh for Fluid_Momentum
+			if( m_pcs->pcs_type_name.find("OVERLAND_FLOW")!=string::npos)
+			;
 			else
-				numOfItems += m_pcs->pcs_number_of_primary_nvals;
+			{
+				if(theApp->BothPrimaryVariable )
+					numOfItems += m_pcs->pcs_number_of_primary_nvals*2;
+				else
+					numOfItems += m_pcs->pcs_number_of_primary_nvals;
+			}
 		}
 	}
 	else
@@ -408,24 +414,30 @@ void PickedProperties::ListRFINodeSelected(int PCSSwitch)
 		for(int i=0;i<(int)pcs_vector.size(); ++i)
 		{
 			m_pcs = pcs_vector[i];
-			
-			for(int j=0; j<m_pcs->pcs_number_of_primary_nvals; ++j)
-			{
-				string pcs_primary = m_pcs->pcs_primary_function_name[j];
 
-				if(theApp->BothPrimaryVariable)
+			// Select the mesh whose process name has the mesh for Fluid_Momentum
+			if( m_pcs->pcs_type_name.find("OVERLAND_FLOW")!=string::npos)
+			;
+			else
+			{
+				for(int j=0; j<m_pcs->pcs_number_of_primary_nvals; ++j)
 				{
-					string Old = pcs_primary + "Old";
-					m_SmallList.InsertColumn (currentPosition, Old.data() );	
-					++currentPosition;
-					string New = pcs_primary + "New";
-					m_SmallList.InsertColumn (currentPosition, New.data() );
-					++currentPosition;
-				}
-				else
-				{
-					m_SmallList.InsertColumn (currentPosition, pcs_primary.data() );
-					++currentPosition;
+					string pcs_primary = m_pcs->pcs_primary_function_name[j];
+
+					if(theApp->BothPrimaryVariable)
+					{
+						string Old = pcs_primary + "Old";
+						m_SmallList.InsertColumn (currentPosition, Old.data() );	
+						++currentPosition;
+						string New = pcs_primary + "New";
+						m_SmallList.InsertColumn (currentPosition, New.data() );
+						++currentPosition;
+					}
+					else
+					{
+						m_SmallList.InsertColumn (currentPosition, pcs_primary.data() );
+						++currentPosition;
+					}
 				}
 			}
 		}
@@ -438,16 +450,22 @@ void PickedProperties::ListRFINodeSelected(int PCSSwitch)
 		for(int i=0;i<(int)pcs_vector.size(); ++i)
 		{
 			m_pcs = pcs_vector[i];
-			for(int j=0; j<m_pcs->pcs_number_of_primary_nvals; ++j)
-			{
-				string pcs_primary = m_pcs->pcs_primary_function_name[j];
-				string pcs_primaryBC = "BC_"+pcs_primary;
-				string pcs_primaryST = "ST_"+pcs_primary;
+			// Select the mesh whose process name has the mesh for Fluid_Momentum
+			if( m_pcs->pcs_type_name.find("OVERLAND_FLOW")!=string::npos)
+			;
+			else
+			{	
+				for(int j=0; j<m_pcs->pcs_number_of_primary_nvals; ++j)
+				{
+					string pcs_primary = m_pcs->pcs_primary_function_name[j];
+					string pcs_primaryBC = "BC_"+pcs_primary;
+					string pcs_primaryST = "ST_"+pcs_primary;
 
-				m_SmallList.InsertColumn (currentPosition, pcs_primaryBC.data());
-				++currentPosition;
-				m_SmallList.InsertColumn (currentPosition, pcs_primaryST.data());
-				++currentPosition;
+					m_SmallList.InsertColumn (currentPosition, pcs_primaryBC.data());
+					++currentPosition;
+					m_SmallList.InsertColumn (currentPosition, pcs_primaryST.data());
+					++currentPosition;
+				}
 			}
 		}
 		numOfItems = currentPosition;
@@ -480,25 +498,31 @@ void PickedProperties::ListRFINodeSelected(int PCSSwitch)
 			{
 				m_pcs = pcs_vector[j];
 		
-				for(int k=0; k<m_pcs->pcs_number_of_primary_nvals; ++k)
+				// Select the mesh whose process name has the mesh for Fluid_Momentum
+				if( m_pcs->pcs_type_name.find("OVERLAND_FLOW")!=string::npos)
+				;
+				else
 				{
-					string pcs_primary = m_pcs->pcs_primary_function_name[k];
+					for(int k=0; k<m_pcs->pcs_number_of_primary_nvals; ++k)
+					{
+						string pcs_primary = m_pcs->pcs_primary_function_name[k];
 				
-					if(theApp->BothPrimaryVariable)
-					{
-                        int idxOld = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[k]);
-                        int idxNew = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[k])+1;
-						sprintf(tempNum[currentPosition], "%e", m_pcs->GetNodeValue(theApp->RFInodePickedTotal[i],idxOld) );
-						++currentPosition;
-                        sprintf(tempNum[currentPosition], "%e", m_pcs->GetNodeValue(theApp->RFInodePickedTotal[i],idxNew) );
-						++currentPosition;
-					}
-					else
-					{
-                        int idx = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[k])+1;
+						if(theApp->BothPrimaryVariable)
+						{
+					         int idxOld = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[k]);
+						     int idxNew = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[k])+1;
+								sprintf(tempNum[currentPosition], "%e", m_pcs->GetNodeValue(theApp->RFInodePickedTotal[i],idxOld) );
+								++currentPosition;
+					          sprintf(tempNum[currentPosition], "%e", m_pcs->GetNodeValue(theApp->RFInodePickedTotal[i],idxNew) );
+								++currentPosition;
+						}
+						else
+						{
+				             int idx = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[k])+1;
                         
-                        sprintf(tempNum[currentPosition], "%e", m_pcs->GetNodeValue(theApp->RFInodePickedTotal[i],idx) );
-						++currentPosition;
+						     sprintf(tempNum[currentPosition], "%e", m_pcs->GetNodeValue(theApp->RFInodePickedTotal[i],idx) );
+								++currentPosition;
+						}
 					}
 				}
 			}
@@ -511,9 +535,14 @@ void PickedProperties::ListRFINodeSelected(int PCSSwitch)
 			{
 				m_pcs = pcs_vector[j];
 
-				for(int k=0; k<m_pcs->pcs_number_of_primary_nvals; ++k)
+				// Select the mesh whose process name has the mesh for Fluid_Momentum
+				if( m_pcs->pcs_type_name.find("OVERLAND_FLOW")!=string::npos)
+				;
+				else
 				{
-					// Let's print BC and ST values
+					for(int k=0; k<m_pcs->pcs_number_of_primary_nvals; ++k)
+					{
+						// Let's print BC and ST values
 					CBoundaryConditionsGroup *m_bc_group = NULL;
 					CSourceTermGroup *m_st_group = NULL;
 
@@ -552,6 +581,7 @@ void PickedProperties::ListRFINodeSelected(int PCSSwitch)
 					{
 						sprintf(tempNum[currentPosition], "No source term used");	
 						++currentPosition;
+						}
 					}
 				}
 			}
@@ -584,7 +614,7 @@ void PickedProperties::ListParticleSelected()
 	int numOfItems = 11;
 
 	// Open the gate to processes 
-	//CRFProcess* m_pcs = NULL;
+	CRFProcess* m_pcs = NULL;
     m_msh = fem_msh_vector[0];
 
     m_SmallList.InsertColumn (0, "Count");
@@ -1819,6 +1849,21 @@ void PickedProperties::OnBnClickedSaveastxt()
 			}
 #endif			
 
+		}
+		else if (theApp.ParticleSwitch == 1) 
+		{
+			// Write the particle info
+			for (int i = 0; i < theApp.hitsParticleTotal; ++i)
+			{
+				fprintf(Mesh, "%d\t%e\t%e\t%e\t%e\n",
+					i, m_msh->PT->X[theApp.ParticlePickedTotal[i]].Now.x,
+					m_msh->PT->X[theApp.ParticlePickedTotal[i]].Now.y,
+					m_msh->PT->X[theApp.ParticlePickedTotal[i]].Now.z,
+					m_msh->PT->X[theApp.ParticlePickedTotal[theApp.hitsParticleTotal-i-1]].Now.x);
+			}
+
+			// Write the footer
+			fprintf(Mesh, "#STOP\n");
 		}
 		
 

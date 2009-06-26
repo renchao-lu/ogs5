@@ -96,6 +96,8 @@ public:
 	int AngleSwitch;
 	int DrawModeSwitch;
     int VelocitySwitch;
+	int VedgeSwitch;
+	int PathlineSwitch;
 	int CrossroadSwitch;
     int ParticleSwitch;
 	int GDebugSwitch;

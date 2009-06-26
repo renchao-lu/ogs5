@@ -14,9 +14,27 @@ Programing:
 #include "par_ddc.h"
 #endif
 
-#if defined(LIS)	// 07.02.2008 PCH
+#ifdef LIS	// 07.02.2008 PCH
 #include "lis.h"
 #include <omp.h>
+#endif
+
+#if defined(_WIN32) || defined(_WIN64)
+#define pardiso_ PARDISO
+#else
+#define PARDISO pardiso_
+#endif
+
+#ifdef MKL
+#include "mkl.h"
+
+/* PARDISO prototype. */
+//#define PARDISO pardiso_
+extern int omp_get_max_threads();
+extern int PARDISO
+        (void *, int *, int *, int *, int *, int *,
+        double *, int *, int*, int *, int *, int *,
+        int *, double *, double*, int *);
 #endif
 
 #include"rf_num_new.h"
@@ -62,7 +80,8 @@ Linear_EQS::Linear_EQS(const SparseTable &sparse_table,
   size_global = 0;
 
 #ifdef LIS
-  A->GetCRSIndex();
+//	A->Write();
+
   int argc=0;
   char** argv = NULL;
   // Initialization of the lis solver.
@@ -282,94 +301,291 @@ void Linear_EQS::Write(ostream &os)
 /**************************************************************************
 Task: Linear equation::Solver
 Programing:
-11/2007 WW/
+
+PARDISO openmp-paralle direct solver: 805
+
+
+LIS matrix solver options
+CG -i {cg|1}
+BiCG -i {bicg|2}
+CGS -i {cgs|3}
+BiCGSTAB -i {bicgstab|4}
+BiCGSTAB(l) -i {bicgstabl|5} -ell [2] Value for l
+GPBiCG -i {gpbicg|6}
+TFQMR -i {tfqmr|7}
+Orthomin(m) -i {orthomin|8} -restart [40] Value for Restart m
+GMRES(m) -i {gmres|9} -restart [40] Value for Restart m
+Jacobi -i {jacobi|10}
+Gauss-Seidel -i {gs|11}
+SOR -i {sor|12} -omega [1.9] Value for Relaxation Coefficient  (0 <  < 2)
+BiCGSafe -i {bicgsafe|13}
+CR -i {cr|14}
+BiCR -i {bicr|15}
+CRS -i {crs|16}
+BiCRSTAB -i {bicrstab|17}
+GPBiCR -i {gpbicr|18}
+BiCRSafe -i {bicrsafe|19}
+FGMRES(m) -i {fgmres|20} -restart [40] Value for Restart m
+IDR(s) -i {idrs|21} -restart [40] Value for Restart s
+
+
+Preconditioner Option Auxiliary Option
+None -p {none|0}
+Jacobi -p {jacobi|1}
+ILU(k) -p {ilu|2} -ilu_fill [0] Fill level k
+SSOR -p {ssor|3} -ssor_w [1.0] Relaxation Coefficient  (0 <  < 2)
+Hybrid -p {hybrid|4} -hybrid_i [sor] Iterative method
+-hybrid_maxiter [25] Maximum number of iterations
+-hybrid_tol [1.0e-3] Convergence criteria
+-hybrid_w [1.5] Relaxation Coefficient  for
+the SOR method (0 <  < 2)
+-hybrid_ell [2] Value for l of the BiCGSTAB(l) method
+-hybrid_restart [40] Restart values for GMRES and Orthomin
+I+S -p {is|5} -is_alpha [1.0] Parameter ?for preconditioner
+of a I + ?(m) type
+-is_m [3] Parameter m for preconditioner
+of a I + ?(m) type
+SAINV -p {sainv|6} -sainv_drop [0.05] Drop criteria
+SA-AMG -p {saamg|7} -saamg_unsym [false] Selection of asymmetric version
+Crout ILU -p {iluc|8} -iluc_drop [0.05] Drop criteria
+-iluc_rate [5.0] Ratio of Maximum fill-in
+ILUT -p {ilut|9} -ilut_drop [0.05] Drop criteria
+-ilut_rate [5.0] Ratio of Maximum fill-in
+additive Schwarz -adds true -adds_iter [1] Number of iterations
+
 02/2008 PCH OpenMP parallelization by LIS
-**************************************************************************/
+03/2009 PCH Solver type and precondition options added for .num file
+ **************************************************************************/
 #if defined(USE_MPI)
 int Linear_EQS::Solver(double *xg, const long n)
 {
-  //
-  double cpu_time_local = -MPI_Wtime();  
-  iter = 0;
-  ComputePreconditioner();
-  size_global = n; 
-  switch(solver_type)
-  {
-    case 2:
-      iter = BiCGStab(xg, n);
-      break;
-    case 3:
-      iter = BiCG(xg, n);
-      break;
-    case 5:
-      iter = CG(xg, n);
-      break; 
-    case 7:
-      iter = CGS(xg, n);
-      break;   
-  }
-  cpu_time_local += MPI_Wtime();
-  cpu_time += cpu_time_local;   
-  return iter; 
+	//
+	double cpu_time_local = -MPI_Wtime();
+	iter = 0;
+	ComputePreconditioner();
+	size_global = n;
+	switch(solver_type)
+	{
+	case 2:
+		iter = BiCGStab(xg, n);
+		break;
+	case 3:
+		iter = BiCG(xg, n);
+		break;
+	case 5:
+		iter = CG(xg, n);
+		break;
+	case 7:
+		iter = CGS(xg, n);
+		break;
+	}
+	cpu_time_local += MPI_Wtime();
+	cpu_time += cpu_time_local;
+	return iter;
 }
 
 #else
-#ifdef LIS	// PCH 02.2008 
+#ifdef LIS	// PCH 02.2008
 int Linear_EQS::Solver()
 {
-	int i, iter, ierr;
-	int size = A->Size();
-	// Creating a matrix.
-	ierr = lis_matrix_create(0,&AA);
-	ierr = lis_matrix_set_type(AA,LIS_MATRIX_CRS);
-	ierr = lis_matrix_set_size(AA,0,size);
 
-	// Assembling the matrix	
-	// Establishing CRS type matrix from GeoSys Matrix data storage type
-	int nonzero=A->nnz();
-	double *value;
-	value = new double [nonzero];
-
-	ierr = A->GetCRSValue(value);
-	ierr = lis_matrix_set_crs(nonzero,A->ptr,A->col_idx, value,AA);
-	ierr = lis_matrix_assemble(AA);
-
-	// Assemble the vector, b, x
-	int iflag = 0;
-	ierr = lis_vector_duplicate(AA,&bb);
-	ierr = lis_vector_duplicate(AA,&xx);
-#pragma omp parallel for
-	for(i=0; i < size; ++i)
+	// Check the openmp solver type iterative and directive
+	CNumerics* m_num=num_vector[0];
+	if(m_num->ls_method==805)	// Then, PARDISO parallel direct solver
 	{
-		ierr = lis_vector_set_value(LIS_INS_VALUE,i,x[i],xx);
-		ierr = lis_vector_set_value(LIS_INS_VALUE,i,b[i],bb);
-	}	
+#ifdef MKL	// PCH 10.03.2009: Requires the system platform where Math Kernel Library is properly configured.
+		int i, iter, ierr;
+		// Assembling the matrix
+		// Establishing CRS type matrix from GeoSys Matrix data storage type
+		int nonzero=A->nnz();
+		int numOfNode=A->Size()*A->Dof();
+		double *value;
+		value = new double [nonzero];
+		ierr = A->GetCRSValue(value);
+		int* ptr=NULL; int *index=NULL;
+		ptr= (int *)malloc((numOfNode+1)*sizeof( int));
+		index = (int *)malloc((nonzero)*sizeof( int));
 
-	// Create solver 
-	ierr = lis_solver_create(&solver);
-	// Matrix solver and Precondition can be handled better way.
-	// Here for example, by default a solver is BiCG with a preconditioner jacobian
-	ierr = lis_solver_set_option("-i bicgstab -p jacobi",solver);
-	// tolerance and other setting parameters are same
-	ierr = lis_solver_set_option("-tol 1.0e-12",solver);
-	ierr = lis_solve(AA,bb,xx,solver);
-	ierr = lis_solver_get_iters(solver,&iter);
-//	lis_vector_print(xx);
-//	lis_vector_print(bb);
+		// Reindexing ptr according to Fortran-based PARDISO
+		for(i=0; i < numOfNode; ++i)
+			ptr[i] = A->ptr[i]+1;
+		//ptr needs one more storage
+		ptr[i] = A->ptr[i]+1;
+		// Reindexing index according to Fortran-based PARDISO
+		// and zonzero of Matrix A
+		for(i=0; i < nonzero; ++i)
+			index[i] = A->col_idx[i]+1;
 
-	// Update the solution (answer) into the x vector
-#pragma omp parallel for
-    for(i=0; i<size; ++i)
+		int mtype = 11; /* Real unsymmetric matrix */
+		int nrhs = 1; /* Number of right hand sides. */
+		/* Internal solver memory pointer pt, */
+		/* 32-bit: int pt[64]; 64-bit: long int pt[64] */
+		/* or void *pt[64] should be OK on both architectures */
+		void *pt[64];
+		/* Pardiso control parameters.*/
+		int iparm[64];
+		int maxfct, mnum, phase, error, msglvl;
+
+		/* Auxiliary variables.*/
+		double ddum; /* Double dummy */
+		int idum; /* Integer dummy. */
+
+		/* --------------------------------------------------------------------*/
+		/* .. Setup Pardiso control parameters.*/
+		/* --------------------------------------------------------------------*/
+		for (i = 0; i < 64; i++) {
+			iparm[i] = 0;
+		}
+		iparm[0] = 1; /* No solver default */
+		iparm[1] = 2; /* Fill-in reordering from METIS */
+		/* Numbers of processors, value of MKL_NUM_THREADS */
+		iparm[2] = mkl_get_max_threads();
+		iparm[3] = 0; /* No iterative-direct algorithm */
+		iparm[4] = 0; /* No user fill-in reducing permutation */
+		iparm[5] = 0; /* Write solution into x */
+		iparm[6] = 0; /* Not in use */
+		iparm[7] = 2; /* Max numbers of iterative refinement steps */
+		iparm[8] = 0; /* Not in use */
+		iparm[9] = 13; /* Perturb the pivot elements with 1E-13 */
+		iparm[10] = 1; /* Use nonsymmetric permutation and scaling MPS */
+		iparm[11] = 0; /* Not in use */
+		iparm[12] = 0; /* Not in use */
+		iparm[13] = 0; /* Output: Number of perturbed pivots */
+		iparm[14] = 0; /* Not in use */
+		iparm[15] = 0; /* Not in use */
+		iparm[16] = 0; /* Not in use */
+		iparm[17] = -1; /* Output: Number of nonzeros in the factor LU */
+		iparm[18] = -1; /* Output: Mflops for LU factorization */
+		iparm[19] = 0; /* Output: Numbers of CG Iterations */
+		maxfct = 1; /* Maximum number of numerical factorizations. */
+		mnum = 1; /* Which factorization to use. */
+		msglvl = 0; /* Print statistical information in file */
+		error = 0; /* Initialize error flag */
+
+		/* --------------------------------------------------------------------*/
+		/* .. Initialize the internal solver memory pointer. This is only */
+		/* necessary for the FIRST call of the PARDISO solver. */
+		/* --------------------------------------------------------------------*/
+		for (i = 0; i < 64; i++) {
+			pt[i] = 0;
+		}
+
+		/* --------------------------------------------------------------------*/
+		/* .. Reordering and Symbolic Factorization. This step also allocates */
+		/* all memory that is necessary for the factorization. */
+		/* --------------------------------------------------------------------*/
+		phase = 11;
+		PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
+				&numOfNode, value, ptr, index , &idum, &nrhs,
+				iparm, &msglvl, &ddum, &ddum, &error);
+
+		if (error != 0) {
+			printf("\nERROR during symbolic factorization: %d", error);
+			exit(1);
+		}
+
+		/* --------------------------------------------------------------------*/
+		/* .. Numerical factorization.*/
+		/* --------------------------------------------------------------------*/
+		phase = 22;
+		PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
+				&numOfNode, value, ptr, index, &idum, &nrhs,
+				iparm, &msglvl, &ddum, &ddum, &error);
+		if (error != 0) {
+			printf("\nERROR during numerical factorization: %d", error);
+			exit(2);
+		}
+
+		/* --------------------------------------------------------------------*/
+		/* .. Back substitution and iterative refinement. */
+		/* --------------------------------------------------------------------*/
+		phase = 33;
+		iparm[7] = 2; /* Max numbers of iterative refinement steps. */
+
+		/* Set right hand side to one. */
+
+		PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
+				&numOfNode, value, ptr, index , &idum, &nrhs,
+				iparm, &msglvl, b, x, &error);
+		if (error != 0) {
+			printf("\nERROR during solution: %d", error);
+			exit(3);
+		}
+
+		phase = -1;                 /* Release internal memory. */
+		PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
+				&numOfNode, value, ptr, index, &idum, &nrhs,
+				iparm, &msglvl, &ddum, &ddum, &error);
+
+		// Releasing the local memory
+		delete [] value; free(ptr); free(index);
+//		MKL_FreeBuffers();
+
+#endif
+	}
+	else	// LIS parallel solver
 	{
-		lis_vector_get_value(xx,i,&(x[i]));
+		int i, iter, ierr, size;
+		// Fix for the fluid_momentum Dof
+		size = A->Size()*A->Dof();
+
+		// Assembling the matrix
+		// Establishing CRS type matrix from GeoSys Matrix data storage type
+		int nonzero=A->nnz();
+		double *value;
+		value = new double [nonzero];
+		ierr = A->GetCRSValue(value);
+
+		// Creating a matrix.
+		ierr = lis_matrix_create(0,&AA);
+		ierr = lis_matrix_set_type(AA,LIS_MATRIX_CRS);
+		ierr = lis_matrix_set_size(AA,0,size);
+
+		// Matrix solver and Precondition can be handled better way.
+		char solver_options[MAX_ZEILE], tol_option[MAX_ZEILE];
+		sprintf(solver_options, "-i %d -p %d",m_num->ls_method, m_num->ls_precond);
+		// tolerance and other setting parameters are same
+		sprintf(tol_option, "-tol %e",m_num->ls_error_tolerance);
+
+		ierr = lis_matrix_set_crs(nonzero,A->ptr,A->col_idx, value,AA);
+		ierr = lis_matrix_assemble(AA);
+
+		// Assemble the vector, b, x
+		int iflag = 0;
+		ierr = lis_vector_duplicate(AA,&bb);
+		ierr = lis_vector_duplicate(AA,&xx);
+#pragma omp parallel for
+		for(i=0; i < size; ++i)
+		{
+			ierr = lis_vector_set_value(LIS_INS_VALUE,i,x[i],xx);
+			ierr = lis_vector_set_value(LIS_INS_VALUE,i,b[i],bb);
+		}
+
+		// Create solver
+		ierr = lis_solver_create(&solver);
+
+		ierr = lis_solver_set_option(solver_options,solver);
+		ierr = lis_solver_set_option(tol_option,solver);
+		ierr = lis_solve(AA,bb,xx,solver);
+		ierr = lis_solver_get_iters(solver,&iter);
+		//	lis_vector_print(xx);
+		//	lis_vector_print(bb);
+
+		// Update the solution (answer) into the x vector
+#pragma omp parallel for
+		for(i=0; i<size; ++i)
+		{
+			lis_vector_get_value(xx,i,&(x[i]));
+		}
+
+		// Clear memory
+		delete [] value;
+		//	lis_matrix_destroy(AA);
+		lis_vector_destroy(bb);
+		lis_vector_destroy(xx);
+		lis_solver_destroy(solver);
 	}
 
-	// Clear memory
-	delete [] value;
-//	lis_matrix_destroy(AA);
-	lis_vector_destroy(bb);
-	lis_vector_destroy(xx);
-	lis_solver_destroy(solver);
 
 	return -1;	// This right now is meaningless. 
 }

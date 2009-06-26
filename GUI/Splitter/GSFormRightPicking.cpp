@@ -59,6 +59,12 @@ void CGSFormRightPicking::DoDataExchange(CDataExchange* pDX)
 	CFormView::DoDataExchange(pDX);
 
 	DDX_Text(pDX, IDC_PID, m_PID);
+	DDX_Text(pDX, IDC_XLOW, m_Xlow);
+	DDX_Text(pDX, IDC_XHIGH, m_Xhigh);
+	DDX_Text(pDX, IDC_YLOW, m_Ylow);
+	DDX_Text(pDX, IDC_YHIGH, m_Yhigh);
+	DDX_Text(pDX, IDC_ZLOW, m_Zlow);
+	DDX_Text(pDX, IDC_ZHIGH, m_Zhigh);
 }
 
 BEGIN_MESSAGE_MAP(CGSFormRightPicking, CFormView)
@@ -83,6 +89,12 @@ BEGIN_MESSAGE_MAP(CGSFormRightPicking, CFormView)
 	ON_BN_CLICKED(IDC_PINSIDE, OnBnClickedPinside)
 	ON_BN_CLICKED(IDC_CID, OnBnClickedCid)
 	ON_EN_CHANGE(IDC_PID, OnEnChangePid)
+	ON_BN_CLICKED(IDC_VEDGE, OnBnClickedVedge)
+	ON_BN_CLICKED(IDC_PATHLINE, OnBnClickedPathline)
+	ON_BN_CLICKED(IDC_XY, OnBnClickedXy)
+	ON_BN_CLICKED(IDC_YZ, OnBnClickedYz)
+	ON_BN_CLICKED(IDC_ZX, OnBnClickedZx)
+	ON_BN_CLICKED(IDC_RANGE, OnBnClickedRange)
 END_MESSAGE_MAP()
 
 
@@ -115,6 +127,17 @@ void CGSFormRightPicking::OnInitialUpdate()
 		GetDlgItem(IDC_VELOCITYVECTOR)->EnableWindow();
 	else
 		GetDlgItem(IDC_VELOCITYVECTOR)->EnableWindow(FALSE);
+	m_PID = 0;	// Default 
+
+	m_Xlow = 0.0;
+	m_Xhigh = 0.0;
+	m_Ylow = 0.0;
+	m_Yhigh = 0.0;
+	m_Zlow = 0.0;
+	m_Zhigh = 0.0;
+	
+
+	UpdateData(FALSE);
 }
 
 
@@ -190,7 +213,7 @@ void CGSFormRightPicking::OnBnClickedInorout()
 {
     int InOrOut = 100; // Just for test
     CFEMesh* m_msh = fem_msh_vector[0];      // This is because FEM is not executed. Something should be done later.
-    //CElem* m_ele = m_msh->ele_vector[theApp.elementPickedTotal[0]];
+    CElem* m_ele = m_msh->ele_vector[theApp.elementPickedTotal[0]];
     
     int count = 0;
     for(int i=0; i< m_msh->PT->numOfParticles; ++i)
@@ -221,7 +244,7 @@ void CGSFormRightPicking::OnBnClickedInorout()
 */
   
     m_msh->PT->InterpolateVelocityOfTheParticleByInverseDistance(&(m_msh->PT->X[0].Now));
-    //double vx = m_msh->PT->X[0].Now.Vx; double vy = m_msh->PT->X[0].Now.Vy; double vz = m_msh->PT->X[0].Now.Vz;
+    double vx = m_msh->PT->X[0].Now.Vx; double vy = m_msh->PT->X[0].Now.Vy; double vz = m_msh->PT->X[0].Now.Vz;
     
 
     
@@ -270,7 +293,7 @@ void CGSFormRightPicking::OnBnClickedCinele()
 		// Loop over the particles
 		for(int j=0; j< RW->numOfParticles; ++j)
 		{
-			if(i == RW->X[j].Now.elementIndex )
+			if(i == RW->X[j].Now.elementIndex && RW->X[j].Now.identity == 2)
 				++elementCount;
 		}
 
@@ -564,7 +587,7 @@ void CGSFormRightPicking::OnBnClickedPickplane()
 #endif			
 #ifdef PATCH
 		// Select by patch number
-		//int patch = anEle->GetPatchIndex();
+		int patch = anEle->GetPatchIndex();
 		if(anEle->GetPatchIndex() == 2)
 #endif
 		{
@@ -632,4 +655,427 @@ void CGSFormRightPicking::OnEnChangePid()
 {
 	UpdateData(TRUE);
 	theApp.PID = m_PID;
+}
+
+void CGSFormRightPicking::OnBnClickedVedge()
+{
+	if(IsDlgButtonChecked(IDC_VEDGE))
+		theApp.VedgeSwitch = 1;
+	else 
+		theApp.VedgeSwitch = 0;
+
+    showChange();	
+}
+
+void CGSFormRightPicking::OnBnClickedPathline()
+{
+	if(IsDlgButtonChecked(IDC_PATHLINE))
+		theApp.PathlineSwitch = 1;
+	else 
+		theApp.PathlineSwitch = 0;
+
+    showChange();
+}
+
+void CGSFormRightPicking::OnBnClickedXy()
+{
+	CFEMesh* m_msh = fem_msh_vector[0];
+	double tolerance = 1.e-6;
+	int count = 0;
+
+	if(theApp.hitsRFINodeTotal == 1  && theApp.RFINodeSwitch == 1)
+	{
+		// Get the coordinates of the base point
+		double BaseX = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->X();
+		double BaseY = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->Y();
+		double BaseZ = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->Z();
+		for(int i=0; i<m_msh->nod_vector.size(); ++i)
+		{
+			double z = m_msh->nod_vector[i]->Z();
+			double difference = fabs(BaseZ-z);
+		
+			if(difference < tolerance)
+				++count;
+		}
+
+		// Memory allocation for the new selection
+		theApp.hitsRFINodeTotal = count;
+		theApp.RFInodePickedTotal = (int *) realloc(theApp.RFInodePickedTotal, theApp.hitsRFINodeTotal*sizeof(int));
+
+		// Setting up the plane nodes
+		count = 0;
+		for(int i=0; i<m_msh->nod_vector.size(); ++i)
+		{
+			double z = m_msh->nod_vector[i]->Z();
+			double difference = fabs(BaseZ-z);
+
+			if(difference < tolerance)
+			{
+				theApp.RFInodePickedTotal[count] = i;
+				++count;
+			}
+		}
+	}
+	else if(theApp.hitsElementTotal == 1 && theApp.ElementSwitch == 1)
+	{
+		// Get the coordinates of the base point
+		double BaseX = 0.0, BaseY = 0.0, BaseZ = 0.0;
+		CElem* m_ele = m_msh->ele_vector[theApp.elementPickedTotal[0]];
+		int nnode = m_ele->GetVertexNumber();
+		for(int j=0; j<nnode; ++j)
+		{
+			BaseX += m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X();
+			BaseY += m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y();
+			BaseZ += m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z();
+		}
+		BaseX /= (double)nnode; BaseY /= (double)nnode; BaseZ /= (double)nnode;
+
+		for(int i=0; i<m_msh->ele_vector.size(); ++i)
+		{
+			double z = 0.0;
+			for(int j=0; j<nnode; ++j)
+			{
+				z += m_msh->nod_vector[m_msh->ele_vector[i]->GetNodeIndex(j)]->Z();
+			}
+			z /= (double)nnode;
+		
+			double difference = fabs(BaseZ-z);
+		
+			if(difference < tolerance)
+				++count;
+		}
+
+		// Memory allocation for the new selection
+		theApp.hitsElementTotal = count;
+		theApp.elementPickedTotal = (int *) realloc(theApp.elementPickedTotal, theApp.hitsElementTotal*sizeof(int));
+
+		// Setting up the plane nodes
+		count = 0;
+		for(int i=0; i<m_msh->ele_vector.size(); ++i)
+		{
+			double z = 0.0;
+			for(int j=0; j<nnode; ++j)
+			{
+				z += m_msh->nod_vector[m_msh->ele_vector[i]->GetNodeIndex(j)]->Z();
+			}
+			z /= (double)nnode;
+
+			double difference = fabs(BaseZ-z);
+
+			if(difference < tolerance)
+			{
+				theApp.elementPickedTotal[count] = i;
+				++count;
+			}
+		}
+	}
+	else
+	{
+		CWnd * pWnd = NULL;
+		pWnd->MessageBox("Select the only one object for the reference.","Object restriction", MB_ICONINFORMATION);
+	}
+
+	showChange();
+
+}
+void CGSFormRightPicking::OnBnClickedYz()
+{
+	CFEMesh* m_msh = fem_msh_vector[0];
+	double tolerance = 1.e-6;
+	int count = 0;
+
+	if(theApp.hitsRFINodeTotal == 1  && theApp.RFINodeSwitch == 1)
+	{
+		// Get the coordinates of the base point
+		double BaseX = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->X();
+		double BaseY = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->Y();
+		double BaseZ = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->Z();
+		for(int i=0; i<m_msh->nod_vector.size(); ++i)
+		{
+			double x = m_msh->nod_vector[i]->X();
+			double difference = fabs(BaseX-x);
+		
+			if(difference < tolerance)
+				++count;
+		}
+
+		// Memory allocation for the new selection
+		theApp.hitsRFINodeTotal = count;
+		theApp.RFInodePickedTotal = (int *) realloc(theApp.RFInodePickedTotal, theApp.hitsRFINodeTotal*sizeof(int));
+
+		// Setting up the plane nodes
+		count = 0;
+		for(int i=0; i<m_msh->nod_vector.size(); ++i)
+		{
+			double x = m_msh->nod_vector[i]->X();
+			double difference = fabs(BaseX-x);
+
+			if(difference < tolerance)
+			{
+				theApp.RFInodePickedTotal[count] = i;
+				++count;
+			}
+		}
+	}
+	else if(theApp.hitsElementTotal == 1 && theApp.ElementSwitch == 1)
+	{
+		// Get the coordinates of the base point
+		double BaseX = 0.0, BaseY = 0.0, BaseZ = 0.0;
+		CElem* m_ele = m_msh->ele_vector[theApp.elementPickedTotal[0]];
+		int nnode = m_ele->GetVertexNumber();
+		for(int j=0; j<nnode; ++j)
+		{
+			BaseX += m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X();
+			BaseY += m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y();
+			BaseZ += m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z();
+		}
+		BaseX /= (double)nnode; BaseY /= (double)nnode; BaseZ /= (double)nnode;
+
+		for(int i=0; i<m_msh->ele_vector.size(); ++i)
+		{
+			double x = 0.0;
+			for(int j=0; j<nnode; ++j)
+			{
+				x += m_msh->nod_vector[m_msh->ele_vector[i]->GetNodeIndex(j)]->X();
+			}
+			x /= (double)nnode;
+		
+			double difference = fabs(BaseX-x);
+		
+			if(difference < tolerance)
+				++count;
+		}
+
+		// Memory allocation for the new selection
+		theApp.hitsElementTotal = count;
+		theApp.elementPickedTotal = (int *) realloc(theApp.elementPickedTotal, theApp.hitsElementTotal*sizeof(int));
+
+		// Setting up the plane nodes
+		count = 0;
+		for(int i=0; i<m_msh->ele_vector.size(); ++i)
+		{
+			double x = 0.0;
+			for(int j=0; j<nnode; ++j)
+			{
+				x += m_msh->nod_vector[m_msh->ele_vector[i]->GetNodeIndex(j)]->X();
+			}
+			x /= (double)nnode;
+
+			double difference = fabs(BaseX-x);
+
+			if(difference < tolerance)
+			{
+				theApp.elementPickedTotal[count] = i;
+				++count;
+			}
+		}
+	}
+	else
+	{
+		CWnd * pWnd = NULL;
+		pWnd->MessageBox("Select the only one object for the reference.","Object restriction", MB_ICONINFORMATION);
+	}
+
+	showChange();
+}
+void CGSFormRightPicking::OnBnClickedZx()
+{
+	CFEMesh* m_msh = fem_msh_vector[0];
+	double tolerance = 1.e-6;
+	int count = 0;
+
+	if(theApp.hitsRFINodeTotal == 1  && theApp.RFINodeSwitch == 1)
+	{
+		// Get the coordinates of the base point
+		double BaseX = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->X();
+		double BaseY = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->Y();
+		double BaseZ = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->Z();
+		for(int i=0; i<m_msh->nod_vector.size(); ++i)
+		{
+			double y = m_msh->nod_vector[i]->Y();
+			double difference = fabs(BaseY-y);
+		
+			if(difference < tolerance)
+				++count;
+		}
+
+		// Memory allocation for the new selection
+		theApp.hitsRFINodeTotal = count;
+		theApp.RFInodePickedTotal = (int *) realloc(theApp.RFInodePickedTotal, theApp.hitsRFINodeTotal*sizeof(int));
+
+		// Setting up the plane nodes
+		count = 0;
+		for(int i=0; i<m_msh->nod_vector.size(); ++i)
+		{
+			double y = m_msh->nod_vector[i]->Y();
+			double difference = fabs(BaseY-y);
+
+			if(difference < tolerance)
+			{
+				theApp.RFInodePickedTotal[count] = i;
+				++count;
+			}
+		}
+	}
+	else if(theApp.hitsElementTotal == 1 && theApp.ElementSwitch == 1)
+	{
+		// Get the coordinates of the base point
+		double BaseX = 0.0, BaseY = 0.0, BaseZ = 0.0;
+		CElem* m_ele = m_msh->ele_vector[theApp.elementPickedTotal[0]];
+		int nnode = m_ele->GetVertexNumber();
+		for(int j=0; j<nnode; ++j)
+		{
+			BaseX += m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X();
+			BaseY += m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y();
+			BaseZ += m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z();
+		}
+		BaseX /= (double)nnode; BaseY /= (double)nnode; BaseZ /= (double)nnode;
+
+		for(int i=0; i<m_msh->ele_vector.size(); ++i)
+		{
+			double y = 0.0;
+			for(int j=0; j<nnode; ++j)
+			{
+				y += m_msh->nod_vector[m_msh->ele_vector[i]->GetNodeIndex(j)]->Y();
+			}
+			y /= (double)nnode;
+		
+			double difference = fabs(BaseY-y);
+		
+			if(difference < tolerance)
+				++count;
+		}
+
+		// Memory allocation for the new selection
+		theApp.hitsElementTotal = count;
+		theApp.elementPickedTotal = (int *) realloc(theApp.elementPickedTotal, theApp.hitsElementTotal*sizeof(int));
+
+		// Setting up the plane nodes
+		count = 0;
+		for(int i=0; i<m_msh->ele_vector.size(); ++i)
+		{
+			double y = 0.0;
+			for(int j=0; j<nnode; ++j)
+			{
+				y += m_msh->nod_vector[m_msh->ele_vector[i]->GetNodeIndex(j)]->Y();
+			}
+			y /= (double)nnode;
+
+			double difference = fabs(BaseY-y);
+
+			if(difference < tolerance)
+			{
+				theApp.elementPickedTotal[count] = i;
+				++count;
+			}
+		}
+	}
+	else
+	{
+		CWnd * pWnd = NULL;
+		pWnd->MessageBox("Select the only one object for the reference.","Object restriction", MB_ICONINFORMATION);
+	}
+
+	showChange();
+}
+
+void CGSFormRightPicking::OnBnClickedRange()
+{
+	CFEMesh* m_msh = fem_msh_vector[0];
+	double tolerance = 1.e-6;
+	int count = 0;
+
+	UpdateData(TRUE);
+
+	// For Node Selection
+	if( theApp.RFINodeSwitch == 1)
+	{
+		for(int i=0; i<m_msh->nod_vector.size(); ++i)
+		{
+			double X = m_msh->nod_vector[i]->X();
+			double Y = m_msh->nod_vector[i]->Y();
+			double Z = m_msh->nod_vector[i]->Z();
+
+			if ( ( m_Xlow < X && X < m_Xhigh ) && ( m_Ylow < Y && Y < m_Yhigh ) && ( m_Zlow < Z && Z < m_Zhigh ) )
+			{
+				++count;
+			}
+		}
+
+		// Memory allocation for the new selection
+		theApp.hitsRFINodeTotal = count;
+		theApp.RFInodePickedTotal = (int *) realloc(theApp.RFInodePickedTotal, theApp.hitsRFINodeTotal*sizeof(int));
+
+		// Setting up the plane nodes
+		count = 0;
+		for(int i=0; i<m_msh->nod_vector.size(); ++i)
+		{
+			double X = m_msh->nod_vector[i]->X();
+			double Y = m_msh->nod_vector[i]->Y();
+			double Z = m_msh->nod_vector[i]->Z();
+
+			if ( ( m_Xlow < X && X < m_Xhigh ) && ( m_Ylow < Y && Y < m_Yhigh ) && ( m_Zlow < Z && Z < m_Zhigh ) )
+			{
+				theApp.RFInodePickedTotal[count] = i;
+				++count;
+			}
+		}
+	}
+	else if(theApp.ElementSwitch == 1)
+	{
+		CElem* m_ele = NULL;
+		for(int i=0; i<m_msh->ele_vector.size(); ++i)
+		{
+			// Get the coordinates of the base point
+			m_ele = m_msh->ele_vector[i];
+			int nnode = m_ele->GetVertexNumber();
+
+			double X = 0.0, Y = 0.0, Z = 0.0;
+			for(int j=0; j<nnode; ++j)
+			{
+				X += m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X();
+				Y += m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y();
+				Z += m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z();
+			}
+			X /= (double)nnode; Y /= (double)nnode; Z /= (double)nnode;
+
+			if ( ( m_Xlow < X && X < m_Xhigh ) && ( m_Ylow < Y && Y < m_Yhigh ) && ( m_Zlow < Z && Z < m_Zhigh ) )
+			{
+				++count;
+			}
+		}
+
+		// Memory allocation for the new selection
+		theApp.hitsElementTotal = count;
+		theApp.elementPickedTotal = (int *) realloc(theApp.elementPickedTotal, theApp.hitsElementTotal * sizeof(int));
+
+		// Setting up the plane nodes
+		count = 0;
+		for(int i=0; i<m_msh->ele_vector.size(); ++i)
+		{
+			// Get the coordinates of the base point
+			m_ele = m_msh->ele_vector[i];
+			int nnode = m_ele->GetVertexNumber();
+
+			double X = 0.0, Y = 0.0, Z = 0.0;
+			for(int j=0; j<nnode; ++j)
+			{
+				X += m_msh->nod_vector[m_ele->GetNodeIndex(j)]->X();
+				Y += m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Y();
+				Z += m_msh->nod_vector[m_ele->GetNodeIndex(j)]->Z();
+			}
+			X /= (double)nnode; Y /= (double)nnode; Z /= (double)nnode;
+
+			if ( ( m_Xlow < X && X < m_Xhigh ) && ( m_Ylow < Y && Y < m_Yhigh ) && ( m_Zlow < Z && Z < m_Zhigh ) )
+			{
+				theApp.elementPickedTotal[count] = i;
+				++count;
+			}
+		}
+	}
+	else
+	{
+		CWnd * pWnd = NULL;
+		pWnd->MessageBox("Unnoticeable error","Object restriction", MB_ICONINFORMATION);
+	}
 }

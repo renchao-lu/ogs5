@@ -866,9 +866,16 @@ Programing:
 void CFEMesh::FillTransformMatrix()  
 {
    CElem* elem = NULL;
+   CRFProcess* m_pcs = PCSGet("FLUID_MOMENTUM");	// PCH
    //
    if((msh_no_hexs+msh_no_tets+msh_no_pris)==(long)ele_vector.size())
        return;
+   else if(coordinate_system!=32) 
+   {
+	  if(m_pcs) ;	// Need to do FillTransformMatrix	// PCH
+	  else
+		return;
+   }
    bool tilted = false;
    if(coordinate_system==32||coordinate_system==21||coordinate_system==22) 
      tilted = true;

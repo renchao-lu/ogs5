@@ -6,6 +6,7 @@
 #include "stdafx.h"
 // C++ STL
 #include <iostream>
+#include <limits>	// PCH to better use system max and min
 // Method
 #include "fem_ele_std.h"
 #include "mathlib.h"
@@ -77,6 +78,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
     NodalValC = new double [size_m]; 
     NodalValC1 = new double [size_m]; 
     NodalVal_Sat = new double [size_m]; 
+  NodalVal_SatNW = new double [size_m];
     NodalVal_p2 = new double [size_m]; 
     //
     // 27.2.2007. GravityMatrix = NULL;
@@ -225,10 +227,25 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
         PcsType = V;
         size_m = 40;       
         break;
-    }
-    if(pcs->Memory_Type==0)  // Do not store local matrices
+  case 'P': // 04.03.2009 PCH
+    for(i=0; i<pcs->pcs_number_of_primary_nvals; i++)
+      NodeShift[i] = i*pcs->m_msh->GetNodesNumber(false);
+    //
+    idx0 = pcs->GetNodeValueIndex("PRESSURE1");
+    idx1 = idx0+1;
+    idxSn0 = pcs->GetNodeValueIndex("SATURATION2");
+    idxSn1 = idxSn0+1;
+    idxS = pcs->GetNodeValueIndex("SATURATION1")+1;
+    idx_vel[0] =  pcs->GetNodeValueIndex("VELOCITY_X1");
+    idx_vel[1] =  pcs->GetNodeValueIndex("VELOCITY_Y1");
+    idx_vel[2] =  pcs->GetNodeValueIndex("VELOCITY_Z1");
+    PcsType = P;
+    size_m = 40;
+    break;
+  }
+  if(pcs->Memory_Type==0)  // Do not store local matrices
     {
-      if(PcsType == V)  
+      if(PcsType == V || PcsType == P)		// 04.03.2009 PCH
         Mass2 = new Matrix(size_m, size_m);
       else
 	     Mass = new Matrix(size_m, size_m);
@@ -306,6 +323,7 @@ CFiniteElementStd::~CFiniteElementStd()
     delete [] NodalValC; 
     delete [] NodalValC1; 
     delete [] NodalVal_Sat; 
+    delete [] NodalVal_SatNW;
     delete [] NodalVal_p2; 
 }
 /**************************************************************************
@@ -320,14 +338,14 @@ CFiniteElementStd::~CFiniteElementStd()
 void CFiniteElementStd::SetMemory()
 {
     int Size=nnodes;
-    if(PcsType==V) //24.2.2007 WW
+    if(PcsType==V || PcsType==P) //4.3.2009 PCH
        Size *= 2;
     ElementMatrix * EleMat = NULL;
     // Prepare local matrices
     // If local matrices are not stored, resize the matrix
-    if(pcs->Memory_Type==0) 
+    if(pcs->Memory_Type==0)
     {
-       if(PcsType==V) //24.2.2007 WW
+       if(PcsType==V || PcsType==P) //04.3.2009 PCH
          Mass2->LimitSize(Size, Size);
        else  
        Mass->LimitSize(nnodes, nnodes); // Mass->LimitSize(nnodes); // unsymmetric in case of Upwinding
@@ -374,6 +392,7 @@ void CFiniteElementStd::SetMemory()
    Programmaenderungen:
    01/2005   WW    Erste Version
    02/2007   WW    Multi phase flow
+	 03/2009   PCH	 PS_GLOBAL
    
 **************************************************************************/
 void  CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bool dyn)
@@ -540,6 +559,15 @@ void  CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int *Shift, bo
          idx_c1 = idx_c0+1;           
       }
       break;
+		case 'P': // Multi-phase flow. 03.03.2009 PCH
+      if(T_Flag)
+      {
+         cpl_pcs = PCSGet("HEAT_TRANSPORT");
+         idx_c0 = cpl_pcs->GetNodeValueIndex("TEMPERATURE1");
+         idx_c1 = idx_c0+1;
+      }
+      break;
+
     }
 }
 
@@ -620,7 +648,7 @@ void CFiniteElementStd::SetMaterial(int phase)
     FluidProp = mfp_vector[0];
     FluidProp->Fem_Ele_Std = this;
   }
-  if(PCSGet("RICHARDS_FLOW")&&PCSGet("HEAT_TRANSPORT")||pcs->type==1212){
+  if(PCSGet("RICHARDS_FLOW")&&PCSGet("HEAT_TRANSPORT")||pcs->type==1212||pcs->type==1313){	// 03.2009 PCH
     FluidProp = MFPGet("LIQUID");
     FluidProp->Fem_Ele_Std = this;
     //FluidProp = mfp_vector[0];
@@ -1196,12 +1224,36 @@ inline double CFiniteElementStd::CalCoefMass()
 				for(int i=0;i<nnodes;i++)
 					NodalVal_Sat[i] = cpl_pcs->GetNodeValue(nodes[i],idxS+1);
         Sw = 1.0 - interpolate(NodalVal_Sat);
-        val = MediaProp->Porosity(Index,pcs->m_num->ls_theta) \
+
+
+				// If Partial-Pressure-Based model
+				if(pcs->PartialPS == 1)
+				{
+					// Let's get dPcdSw and apply to the mat_fac
+					CMediumProperties *m_mmp = NULL;
+					m_mmp = mmp_vector[0];
+
+					// dSedPc always return positive numbers for default case
+					// However, the value should be negative analytically.
+					double dSwdPc = m_mmp->SaturationPressureDependency(Sw, 1000.0, 1);
+
+					val = MediaProp->Porosity(Index,pcs->m_num->ls_theta) \
+            * FluidProp->drho_dp \
+            / FluidProp->Density() \
+            * MMax(0.,Sw) \
+            + MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) \
+            * MMax(0.,Sw) // Intentionally made to be zero
+						- MediaProp->Porosity(Index,pcs->m_num->ls_theta)*dSwdPc;
+				}
+				else
+				{
+					val = MediaProp->Porosity(Index,pcs->m_num->ls_theta) \
             * FluidProp->drho_dp \
             / FluidProp->Density() \
             * MMax(0.,Sw) \
             + MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) \
             * MMax(0.,Sw);
+				}
       }
       if(pcs->pcs_type_number==1)
       {
@@ -1354,7 +1406,47 @@ inline double CFiniteElementStd::CalCoefMass2(int dof_index)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
+Task: Calculate material coefficient for mass matrix
+Programing:
+03/2009 PCH Multi-phase flow
+**************************************************************************/
+inline double CFiniteElementStd::CalCoefMassPSGLOBAL(int dof_index)
+{
+  int Index = MeshElement->GetIndex();
+  double val = 0.0;
+  double expfactor = 0.0;
+  double dens_arg[3]; //08.05.2008 WW
+  bool diffusion = false;   //08.05.2008 WW
+  if(MediaProp->heat_diffusion_model==273&&cpl_pcs)
+    diffusion = true;
+  dens_arg[1] = 293.15;
+  //
+  if(pcs->m_num->ele_mass_lumping)
+    ComputeShapefct(1);
+  switch(dof_index)
+  {
+     case 0:
+       val=0.0;
+       break;
+     case 1:
+			 poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
+       val = -poro;
+       break;
+     case 2:
+       val=0.0;
+       break;
+     case 3: //
+       poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
+       val = poro;
+       break;
+  }
+    return val;
+}
+
+
+/**************************************************************************
+FEMLib-Method:
 Task: Calculate material coefficient for mass matrix
 Programing:
 01/2005 WW/OK Implementation
@@ -1577,6 +1669,9 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 				
 						// Note here mat_fac is += meaning adding two phases 
 						mat_fac += time_unit_factor * k_rel / mfp_vector[p]->Viscosity();
+						// If Partial-Pressure-Based model
+						if(pcs->PartialPS == 1)
+							p=1;
 					}
 					for(i=0;i<dim*dim;i++)
 						mat[i] = tensor[i] * mat_fac;	
@@ -1619,7 +1714,11 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 					// Let's get dPcdSw and apply to the mat_fac
 					CMediumProperties *m_mmp = NULL;
 					m_mmp = mmp_vector[0];
-					double dPcdSw=m_mmp->SaturationPressureDependency(Sw, 1.0, 1);
+					double dPcdSw=0.0;
+					if (m_mmp->capillary_pressure_model_values[0] < MKleinsteZahl)
+						dPcdSw = 0.0;
+					else
+						dPcdSw = 1.0/m_mmp->SaturationPressureDependency(Sw, 1000.0, 1);
 					mat_fac = time_unit_factor * k_rel / mfp_vector[phase]->Viscosity()*(-dPcdSw); 
 					for(i=0;i<dim*dim;i++)
 						mat[i] = tensor[i] * mat_fac;	
@@ -1802,20 +1901,11 @@ inline void CFiniteElementStd::CalCoefLaplaceMultiphase(int phase, int ip)
 {
   int i=0;
   double mat_fac = 1.0;
-//WW  double Dpv = 0.0;
-//WW  double poro = 0.0;
-//WW  double tort = 0.0;
-//WW  double humi = 1.0;
-//WW  double rhow = 0.0; 
   double *tensor = NULL;
-//WW  double Hav,manning,chezy,expp,chezy4,Ss,arg;
   static double Hn[9],z[9];
-  //WW double GradH[3],Gradz[3],w[3],v1[3],v2[3];
-  //WW int nidx1;
   int Index = MeshElement->GetIndex();
   double k_rel;
   ComputeShapefct(1);   //  12.3.2007 WW
-  //WW  double variables[3]; //OK4709
 
   // For nodal value interpolation
   //======================================================================
@@ -2029,6 +2119,227 @@ inline void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
       break;
       //------------------------------------------------------------------
     }
+}
+/**************************************************************************
+FEMLib-Method:
+Task: Calculate material coefficient for Laplacian matrix of PS multi-phase
+      flow
+Programing:
+03/2009 PCH Implementation
+last modification:
+**************************************************************************/
+inline void CFiniteElementStd::CalCoefLaplacePSGLOBAL(bool Gravity,  int dof_index)
+{
+	int i=0;
+	double *tensor = NULL;
+	double mat_fac = 1.0, m_fac=0.;
+	double k_rel=0.0;
+
+	int Index = MeshElement->GetIndex();
+	//
+	ComputeShapefct(1);   //  12.3.2007 WW
+	//======================================================================
+	for(i=0; i<dim*dim; i++)
+		mat[i] = 0.0;
+	switch(dof_index)
+	{
+	case 0:
+		tensor = MediaProp->PermeabilityTensor(Index);
+		if(pcs->m_num->ele_upwinding == 1)
+		{
+			// Doing Upwind elements for saturation by divergent of pressure.
+			// Pw upwind
+			int WhichNode = UpwindElement((int)(pcs->m_num->ele_upwind_method), 0);
+			Sw = 1.0 - NodalVal_SatNW[WhichNode];
+		}
+		else
+		{
+			Sw = 1.0-interpolate(NodalVal_SatNW);
+		}
+		k_rel = MediaProp->PermeabilitySaturationFunction(Sw,0);
+
+		mat_fac = k_rel / FluidProp->Viscosity();
+
+		// Since gravity for water phase is handled directly in Assemble_Gravity,
+		// no need of any code for water phase here.
+		for(i=0;i<dim*dim;i++)
+			mat[i] = tensor[i] * mat_fac*time_unit_factor;
+		break;
+	case 1:
+		tensor = MediaProp->PermeabilityTensor(Index);
+		mat_fac = 0.0; // Snw has no laplace term
+		for(i=0; i<dim*dim; i++)
+			mat[i] = tensor[i] * mat_fac*time_unit_factor;
+		break;
+	case 2:
+		tensor = MediaProp->PermeabilityTensor(Index);
+		if(pcs->m_num->ele_upwinding == 1)
+		{
+			// Doing Upwind elements for saturation by divergent of pressure.
+			// Pnw upwind
+			int WhichNode = UpwindElement((int)(pcs->m_num->ele_upwind_method), 0);
+			Sw = 1.0 - NodalVal_SatNW[WhichNode];
+		}
+		else
+		{
+			Sw = 1.0-interpolate(NodalVal_SatNW);
+		}
+
+		k_rel = MediaProp->PermeabilitySaturationFunction(Sw,1);
+		mat_fac = k_rel / GasProp->Viscosity();
+
+		// The density of the non-wetting phase fluid should be considered here.
+		// However, the default water phase density should be canceled out simultaneously.
+		if(Gravity)
+			mat_fac *= GasProp->Density()/FluidProp->Density();
+
+		for(i=0;i<dim*dim;i++)
+			mat[i] = tensor[i] * mat_fac*time_unit_factor;
+		break;
+	case 3:
+		// Snw Laplace from Pc in Eqn 2
+		tensor = MediaProp->PermeabilityTensor(Index);
+
+		if(pcs->num_type_name.find("dPcdSwGradSnw")!=string::npos)
+		{
+			double Snw = -1.0;
+			if(pcs->m_num->ele_upwinding == 1)
+			{
+				// Doing Upwind elements for saturation by divergent of pressure.
+				// Pnw upwind
+				int WhichNode = UpwindElement((int)(pcs->m_num->ele_upwind_method), 1);
+				Snw = NodalVal_SatNW[WhichNode];
+			}
+			else
+			{
+				Snw = interpolate(NodalVal_SatNW);
+			}
+
+			CMediumProperties *m_mmp = NULL;
+			CElem* thisEle = pcs->m_msh->ele_vector[index];
+			int matgrp = thisEle->GetPatchIndex();
+			m_mmp = mmp_vector[matgrp];
+	//		Sw = 1.0 - Snw;
+			Sw = 1.0 - MRange(m_mmp->saturation_res[1],Snw,1.0-m_mmp->saturation_res[0]);
+			k_rel = MediaProp->PermeabilitySaturationFunction(Sw,1);
+
+			double dPcdSw=0.0;
+			if (m_mmp->capillary_pressure_model_values[0] < MKleinsteZahl)
+				dPcdSw = 0.0;
+			else
+				dPcdSw=m_mmp->PressureSaturationDependency(Sw, 1000.0, 1);
+
+			mat_fac = k_rel / GasProp->Viscosity()*(-dPcdSw);
+		}
+		else
+			mat_fac = 0.0;
+
+		for(i=0; i<dim*dim; i++)
+			mat[i] = tensor[i] * mat_fac*time_unit_factor;
+		break;
+	case 4:
+		// For Vnw
+		tensor = MediaProp->PermeabilityTensor(Index);
+
+		double Snw = -1.0;
+		if(pcs->m_num->ele_upwinding == 1)
+		{
+			// Doing Upwind elements for saturation by divergent of pressure.
+			// Pnw upwind
+			int WhichNode = UpwindElement((int)(pcs->m_num->ele_upwind_method), 1);
+			Snw = NodalVal_SatNW[WhichNode];
+		}
+		else
+		{
+			Snw = interpolate(NodalVal_SatNW);
+		}
+
+		CMediumProperties *m_mmp = NULL;
+		CElem* thisEle = pcs->m_msh->ele_vector[index];
+		int matgrp = thisEle->GetPatchIndex();
+		m_mmp = mmp_vector[matgrp];
+		//		Sw = 1.0 - Snw;
+		Sw = 1.0 - MRange(m_mmp->saturation_res[1],Snw,1.0-m_mmp->saturation_res[0]);
+		k_rel = MediaProp->PermeabilitySaturationFunction(Sw,1);
+		mat_fac = k_rel / GasProp->Viscosity();
+
+		for(i=0; i<dim*dim; i++)
+			mat[i] = tensor[i] * mat_fac*time_unit_factor;
+		break;
+		//------------------------------------------------------------------
+	}
+}
+/**************************************************************************
+FEMLib-Method:
+Task:
+Programing:
+04/2009 PCH Upwind Material Scheme
+Background:
+  Now material property at the upstream node is taken to exclude future
+  predition at the current due to abrupt change of material properties.
+  This is conservative perticularly the nodes very close to the interface
+  that divides two highly different materials. Thus,this is vector
+  characterisitics. In our case, pressure gradient can be a determinant
+  for permeability and saturation and so other material properties.
+
+Description:
+  0: none yet
+  1: Upwind element determined by div of pressure
+**************************************************************************/
+int CFiniteElementStd::UpwindElement(int option, int phase)
+{
+	int WhichNodeInTheElement = -1;	// Initialized to be none of elements
+	double Pmin = 1.0/DBL_MIN;   // Just set to be outrageously big.
+	int GravityOn = 1;  		// Initialized to be on
+
+	// If no gravity, then set GravityOn to be zero.
+	if((coordinate_system)%10!=2&&(!axisymmetry))
+		GravityOn = 0;
+
+	if(option==1)       // If upwind by divergent of pressure
+	{
+		double PdivAtnode = -1.0/DBL_MIN;       // Meaningless pressure.
+		double Pc = 0.0;        // Set to be no capillary at all.
+		int idx_p1 = pcs->GetNodeValueIndex("PRESSURE1");
+		int idx_pc = pcs->GetNodeValueIndex("PRESSURE_CAP");
+
+		for(int i=0; i<nnodes; ++i)
+		{
+			double Pw = pcs->GetNodeValue(nodes[i],idx_p1+1);
+			if(phase==0)
+			{
+				PdivAtnode = Pw;
+				if(GravityOn)
+					PdivAtnode -= FluidProp->Density()*gravity_constant;
+			}
+			else if(phase==1)
+			{
+				Pc = pcs->GetNodeValue(nodes[i],idx_pc);
+				PdivAtnode = Pw+Pc;
+				if(GravityOn)
+					PdivAtnode -= GasProp->Density()*gravity_constant;
+			}
+			else
+			{
+				cout << "Phase number is wrong in UpwindElement."<<endl;
+				abort();
+			}
+
+			if(Pmin > PdivAtnode)
+			{
+				Pmin = PdivAtnode;
+				WhichNodeInTheElement = i;
+			}
+		}
+	}
+
+	if(WhichNodeInTheElement == -1)
+	{
+		cout<<"UpwindElement is failed. Impossible node index!!!"<<endl;
+		cout<<"Pmin = "<<Pmin<<endl;
+		abort();
+	}
+	return WhichNodeInTheElement;
 }
 //CB 090507
 /**************************************************************************
@@ -2888,6 +3199,50 @@ void CFiniteElementStd::CalcMass2()
   }
 }
 
+/***************************************************************************
+   GeoSys - Funktion:
+           CFiniteElementStd:: CalcMassPSGLOBAL
+   Programming:
+   03/2009   PCH
+**************************************************************************/
+void CFiniteElementStd::CalcMassPSGLOBAL()
+{
+  int i, j,in,jn;
+  // ---- Gauss integral
+  int gp_r=0,gp_s=0,gp_t=0;
+  double fkt,mat_fac;
+  // Material
+  int dof_n = 2;
+  mat_fac = 1.0;
+  //----------------------------------------------------------------------
+  //======================================================================
+  // Loop over Gauss points
+  for (gp = 0; gp < nGaussPoints; gp++)
+  {
+      //---------------------------------------------------------
+      //  Get local coordinates and weights
+ 	  //  Compute Jacobian matrix and its determinate
+      //---------------------------------------------------------
+      fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+	  // Compute geometry
+      ComputeShapefct(1); // Linear interpolation function
+      for(in=0; in<dof_n; in++)
+      {
+         for(jn=0; jn<dof_n; jn++)
+         {
+           // Material
+           mat_fac = CalCoefMassPSGLOBAL(in*dof_n+jn);
+           mat_fac *= fkt;
+           // Calculate mass matrix
+           for (i = 0; i < nnodes; i++)
+           {
+             for (j = 0; j < nnodes; j++)
+                (*Mass2)(i+in*nnodes,j+jn*nnodes) += mat_fac *shapefct[i]*shapefct[j];
+           }
+         }
+      }
+  }
+}
 
 /***************************************************************************
    GeoSys - Funktion: 
@@ -3006,7 +3361,59 @@ void CFiniteElementStd::CalcLumpedMass2()
  // Mass2->Write();
 }
 /***************************************************************************
-   GeoSys - Funktion: 
+   GeoSys - Funktion:
+           CFiniteElementStd:: CalcLumpedMassPSGLOBAL
+   Programming:
+   03/2009   PCH PS_GLOBAL for Multi-phase flow
+**************************************************************************/
+void CFiniteElementStd::CalcLumpedMassPSGLOBAL()
+{
+  int i, in, jn, gp_r, gp_s, gp_t;
+  double factor, vol=0.0;
+  int dof_n = 2;
+  //----------------------------------------------------------------------
+  // Volume
+  if(axisymmetry)
+  {  // This calculation should be done in CompleteMesh.
+     // However, in order not to destroy the concise of the code,
+     // it is put here. Anyway it is computational cheap. WW
+     vol = 0.0;
+     for (gp = 0; gp < nGaussPoints; gp++)
+     {
+        //---------------------------------------------------------
+        //  Get local coordinates and weights
+ 	    //  Compute Jacobian matrix and its determinate
+        //---------------------------------------------------------
+        vol += GetGaussData(gp, gp_r, gp_s, gp_t);
+     }
+  }
+  else
+    vol = MeshElement->GetVolume();
+  //----------------------------------------------------------------------
+  // Initialize
+  (*Mass2) = 0.0;
+  // Center of the reference element
+  SetCenterGP();
+  for(in=0; in<dof_n; in++)
+  {
+    for(jn=0; jn<dof_n; jn++)
+    {
+      // Factor
+      factor = CalCoefMassPSGLOBAL(in*dof_n+jn);
+      pcs->timebuffer = factor;  // Tim Control "Neumann"
+      // Volume
+      factor *= vol/(double)nnodes;
+      for (i=0; i<nnodes; i++)
+        (*Mass2)(i+in*nnodes,i+jn*nnodes) = factor;
+    }
+  }
+  //TEST OUT
+//  Mass2->Write();
+}
+
+
+/***************************************************************************
+   GeoSys - Funktion:
            CFiniteElementStd:: CalcStorage
    Aufgabe:
            Compute mass matrix, i.e. int (N.mat.N). Linear interpolation
@@ -3101,6 +3508,7 @@ void CFiniteElementStd::CalcContent()
    01/2005   WW  
    02/2005 OK GEO factor
    02/2007 WW Multi-phase
+	 03/2009 PCH PS_GLOBAL for Multiphase flow
 **************************************************************************/
 void CFiniteElementStd::CalcLaplace()
 {
@@ -3116,7 +3524,7 @@ void CFiniteElementStd::CalcLaplace()
   double fkt_times_dshapefct__k_times_nnodes_plus_i__;
 
  
-  if(PcsType==V) dof_n = 2;
+  if(PcsType==V || PcsType==P) dof_n = 2;	// 03.03 2009 PCH
 
   //----------------------------------------------------------------------
   // Loop over Gauss points
@@ -3151,7 +3559,12 @@ void CFiniteElementStd::CalcLaplace()
            if(dof_n==1) 
              CalCoefLaplace(false,gp);
            else if (dof_n==2)
-             CalCoefLaplace2(false,in*dof_n+jn);       
+					 {
+						 if (PcsType==V)
+							CalCoefLaplace2(false,in*dof_n+jn);
+						 else if (PcsType==P)
+							 CalCoefLaplacePSGLOBAL(false,in*dof_n+jn);
+					 }
            //---------------------------------------------------------
 	   
            for (i = 0, i_plus_in_times_nnodes = in_times_nnodes; i < nnodes; i++, i_plus_in_times_nnodes++)
@@ -3641,7 +4054,7 @@ void  CFiniteElementStd::Assemble_Gravity()
   //
   //
   int dof_n = 1;  // 27.2.2007 WW 
-  if(PcsType==V) dof_n = 2;
+  if(PcsType==V || PcsType==P) dof_n = 2;
 
   //WW 05.01.07
   cshift = 0;
@@ -3688,8 +4101,13 @@ void  CFiniteElementStd::Assemble_Gravity()
 				CalCoefLaplace(true);
 		}
 
-         if(dof_n==2) 
-            CalCoefLaplace2(true, ii*dof_n+1);
+          if(dof_n==2)
+            {
+              if(PcsType==V)
+                CalCoefLaplace2(true, ii*dof_n+1);
+              else if(PcsType==P)
+                CalCoefLaplacePSGLOBAL(true, ii*dof_n);
+            }
          // Calculate mass matrix
          for (i = 0; i < nnodes; i++)
          {
@@ -3962,7 +4380,7 @@ void  CFiniteElementStd::Cal_Velocity()
   int gp_r=0, gp_s=0, gp_t;
   double coef = 0.0;
   int dof_n = 1;
-  if(PcsType==V) dof_n = 2;
+  if(PcsType==V || PcsType==P) dof_n = 2;
   //
   gp_t = 0;
 
@@ -3996,6 +4414,8 @@ void  CFiniteElementStd::Cal_Velocity()
   }
   else
   {
+	// This should be enough for Vw in PS_GLOBAL as well,
+	// since the first primary variable is Pw.
     for(i=0; i<nnodes; i++)
        NodalVal[i] = pcs->GetNodeValue(nodes[i], idx1); 
   }
@@ -4008,6 +4428,16 @@ void  CFiniteElementStd::Cal_Velocity()
        NodalVal[i] = pcs->GetNodeValue(nodes[i], idxp21) - NodalVal[i]; //WW
        NodalVal1[i] = pcs->GetNodeValue(nodes[i], idxp21);
     }
+  }
+  if(PcsType==P)
+  {
+	  gp_ele->Velocity_g = 0.0; //PCH 
+	  // Just get Pnw, which is the secondary variable in PS_GLOBAL
+		int idx_pn = pcs->GetNodeValueIndex("PRESSURE2");
+	  for(i=0; i<nnodes; i++)
+	  {
+		  NodalVal1[i] = pcs->GetNodeValue(nodes[i], idx_pn);
+	  }
   }
   gp_ele->Velocity = 0.0; // CB inserted here and commented above due to conflict with transport calculation, needs 
   for (gp = 0; gp < nGaussPoints; gp++)
@@ -4028,8 +4458,10 @@ void  CFiniteElementStd::Cal_Velocity()
       // Material
       if(dof_n==1) 
         CalCoefLaplace(true);
-      else if (dof_n==2)
-        CalCoefLaplace2(true,0);       
+      else if (dof_n==2 && PcsType==V)	// PCH 05.2009
+        CalCoefLaplace2(true,0);
+      else if (dof_n==2 && PcsType==P)	// PCH 05.2009
+    	  CalCoefLaplacePSGLOBAL(true,0);
       if((PcsType==T)&&(pcs->pcs_type_number==1)) //WW/CB
         flag_cpl_pcs = false;
       // Velocity
@@ -4040,7 +4472,7 @@ void  CFiniteElementStd::Cal_Velocity()
             vel[i] += NodalVal[j]*dshapefct[i*nnodes+j];
 //			 vel[i] += fabs(NodalVal[j])*dshapefct[i*nnodes+j];
       }     
-      if(PcsType==V)
+      if(PcsType==V || PcsType==P)	// PCH 05.2009
       {
          for (i = 0; i < dim; i++)
          {
@@ -4064,7 +4496,9 @@ void  CFiniteElementStd::Cal_Velocity()
                   if(PcsType==V)
                      vel_g[i] += rho_g*gravity_constant*(*MeshElement->tranform_tensor)(i, k)
                               *(*MeshElement->tranform_tensor)(2, k);
-                  
+                  if(PcsType==P)	// PCH 05.2009
+                	  vel_g[i] += coef*GasProp->Density()/FluidProp->Density()*(*MeshElement->tranform_tensor)(i, k)
+                	  *(*MeshElement->tranform_tensor)(2, k);
                }   
             }
          } // To be correctted   
@@ -4074,6 +4508,11 @@ void  CFiniteElementStd::Cal_Velocity()
             {
                vel[dim-1] -= coef;
                vel_g[dim-1] += gravity_constant*rho_ga;
+            }
+            else if(PcsType==P)		// PCH 05.2009
+            {
+            	vel[dim-1] -= coef;
+            	vel_g[dim-1] += gravity_constant*GasProp->Density();
             }
             else
                vel[dim-1] += coef;
@@ -4095,6 +4534,16 @@ void  CFiniteElementStd::Cal_Velocity()
            for(j=0; j<dim; j++)
               gp_ele->Velocity_g(i, gp) -= mat[dim*i+j]*vel_g[j]/time_unit_factor;
          }
+      }
+      if(PcsType==P)	// PCH 05.2009
+      {
+    	  // Juse use the coefficient of PSGLOBAL Pressure-based velocity (4)
+    	  CalCoefLaplacePSGLOBAL(true,4);
+    	  for (i = 0; i < dim; i++)
+    	  {
+    		  for(j=0; j<dim; j++)
+    			  gp_ele->Velocity_g(i, gp) -= mat[dim*i+j]*vel_g[j]/time_unit_factor;
+    	  }
       }
       //      
   }
@@ -4322,10 +4771,23 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
 	for(int i=0; i< (int)pcs_vector.size(); ++i)
     {
         m_pcs = pcs_vector[i];
-        if(m_pcs->pcs_type_name.find("FLOW")!=string::npos)
+        if(m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+          {
+            PcsType = L;
             break;
-    }
-	// Update the process for proper coefficient calculation.
+          }
+        else if(m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+          {
+            PcsType = R;
+            break;
+          }
+        else if(m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+          {
+            PcsType = G;
+            break;
+          }
+      }
+    // Update the process for proper coefficient calculation.
 	pcs = m_pcs;
 	int nidx1;
 	if(!(m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos))
@@ -4472,7 +4934,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
   //----------------------------------------------------------------------
   // Initialize.
   // if (pcs->Memory_Type==2) skip the these initialization
-  if(PcsType==V) //WW
+	if(PcsType==V || PcsType==P) //PCH
     (*Mass2) = 0.0;
   else 
   (*Mass) = 0.0;
@@ -4489,6 +4951,13 @@ void CFiniteElementStd::AssembleParabolicEquation()
       CalcLumpedMass2();
     else
       CalcMass2();
+  }
+	else if(PcsType==P) //PCH
+  {
+    if(pcs->m_num->ele_mass_lumping)
+      CalcLumpedMassPSGLOBAL();
+    else
+      CalcMassPSGLOBAL();
   }
   else
   {
@@ -4532,11 +5001,14 @@ void CFiniteElementStd::AssembleParabolicEquation()
   }
 
   //Mass matrix
-  if(PcsType==V) //WW
-    *StiffMatrix    = *Mass2;
-  else
-    *StiffMatrix    = *Mass;
-  (*StiffMatrix) *= fac1;
+	if(pcs->PartialPS != 1)	// PCH if not partial-pressure-based
+	{
+		if(PcsType==V || PcsType==P) //PCH
+			*StiffMatrix    = *Mass2;
+		else
+			*StiffMatrix    = *Mass;
+		(*StiffMatrix) *= fac1;
+	}
   // Laplace matrix
   // PCH to reduce PDE to ODE in Saturation model
   if(pcs->pcs_type_number==1 && pcs->ML_Cap != 0)	// PCH: If equation 2 in Two-phase flow.
@@ -4549,7 +5021,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
   *StiffMatrix   += *AuxMatrix;
   //----------------------------------------------------------------------
   // Add local matrix to global matrix
-  if(PcsType==V) // For DOF>1: 27.2.2007 WW
+  if(PcsType==V || PcsType==P) // For DOF>1: 03.03.2009 PCH
   {
      int ii_sh, jj_sh;
      long i_sh, j_sh=0;
@@ -4610,11 +5082,14 @@ void CFiniteElementStd::AssembleParabolicEquation()
   }
 
   // Mass - Storage
-  if(PcsType==V) //WW
-    *AuxMatrix1 = *Mass2;
-  else
-    *AuxMatrix1 = *Mass;
-  (*AuxMatrix1) *= fac1;
+	if(pcs->PartialPS != 1)	// PCH if not partial-pressure-based
+	{
+		if(PcsType==V || PcsType==P) //PCH
+			*AuxMatrix1 = *Mass2;
+		else
+			*AuxMatrix1 = *Mass;
+		(*AuxMatrix1) *= fac1;
+	}
   //Laplace - Diffusion
   // Laplace matrix
   if(pcs->pcs_type_number==1 && pcs->ML_Cap != 0)	// PCH: If equation 2 in Two-phase flow.
@@ -4642,6 +5117,14 @@ void CFiniteElementStd::AssembleParabolicEquation()
       NodalVal[i+nnodes] = 0.0;
     }      
   }
+	else if(PcsType==P) // For DOF>1:
+  {
+    for (i=0;i<nnodes; i++)
+    {
+      NodalVal0[i+nnodes] = pcs->GetNodeValue(nodes[i],idxSn0);
+      NodalVal[i+nnodes] = 0.0;
+    }
+  }
   AuxMatrix1->multi(NodalVal0, NodalVal);
 	// PCH: Type III (Cauchy boundary conditions) in need, it should be added here.
 
@@ -4662,7 +5145,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
     Laplace->multi(NodalVal0, NodalVal, -1.0);       
   }
   // 
-  if(PcsType==V) // For DOF>1: 27.2.2007 WW
+  if(PcsType==V || PcsType==P) // For DOF>1: 03.03.2009 PCH
   {
     int ii_sh;
     long i_sh;
@@ -5185,16 +5668,24 @@ Task: Assemble local mass matrices to the global system
 Programing:
 05/2005 PCH Implementation
 **************************************************************************/
-void CFiniteElementStd::AssembleMassMatrix()
+void CFiniteElementStd::AssembleMassMatrix(int option)
 {
 	// Calculate matrices
 	// Mass matrix..........................................................
 	// ---- Gauss integral
+	int gp;
 	int gp_r=0,gp_s=0,gp_t=0;
 	double fkt,mat_fac;
 	// Material
 	mat_fac = 1.0;
 
+#if defined(NEW_EQS)
+   CSparseMatrix *A = NULL;  //PCH
+   if(m_dom)
+     A = m_dom->eqs->A;
+   else
+     A = pcs->eqs_new->A;
+#endif
 	//----------------------------------------------------------------------
 	//======================================================================
 	// Loop over Gauss points
@@ -5209,23 +5700,75 @@ void CFiniteElementStd::AssembleMassMatrix()
 		// Compute geometry
 		ComputeShapefct(1); // Linear interpolation function
 	
-		// Calculate mass matrix
-		for (int i = 0; i < nnodes; i++)
-			for (int j = 0; j < nnodes; j++)
-			{
-			//	if(j>i) continue; //CB Mass is changed to a unsymmetric matrix WW/CB
-				(*Mass)(i,j) += fkt *shapefct[i]*shapefct[j];
-			}
+		if(option == 0)	// The consistent method
+		{
+			// Calculate mass matrix
+			for (int i = 0; i < nnodes; i++)
+				for (int j = 0; j < nnodes; j++)
+				{
+		//			if(j>i) continue;
+					(*Mass)(i,j) += fkt *shapefct[i]*shapefct[j];
+				}
+		}
+		else if(option == 1)	// The lumped method
+		{
+			// Calculate mass matrix
+			for (int i = 0; i < nnodes; i++)
+				for (int j = 0; j < nnodes; j++)
+				{
+					(*Mass)(i,i) += fkt *shapefct[i]*shapefct[j];
+				}
+		}
 	}
 
+	//----------------------------------------------------------------------
 	// Add local matrix to global matrix
-	for(int i=0;i<nnodes;i++)
-		for(int j=0;j<nnodes;j++)
-#ifdef NEW_EQS //WW
-        (*pcs->eqs_new->A)(eqs_number[i],eqs_number[j]) += (*Mass)(i,j);  //WW
+  if(PcsType==V || PcsType==P) // For DOF>1: 03.03.2009 PCH
+  {
+     int ii_sh, jj_sh;
+     long i_sh, j_sh=0;
+     for(int ii=0;ii<pcs->dof;ii++)
+     {
+       i_sh = NodeShift[ii];
+       ii_sh = ii*nnodes;
+       for(int jj=0;jj<pcs->dof;jj++)
+       {
+         j_sh = NodeShift[jj];
+         jj_sh = jj*nnodes;
+         for(int i=0;i<nnodes;i++)
+         {
+           for(int j=0;j<nnodes;j++)
+           {
+#ifdef NEW_EQS
+              (*A)(i_sh+eqs_number[i], j_sh+eqs_number[j]) += \
+              (*Mass)(i+ii_sh,j+jj_sh);
 #else
-        MXInc(eqs_number[i],eqs_number[j],(*Mass)(i,j));
+              MXInc(i_sh+eqs_number[i], j_sh+eqs_number[j],\
+              (*Mass)(i+ii_sh,j+jj_sh));
 #endif
+           }
+         }
+       }
+     }
+  }
+  else
+  {
+		int cshift = 0;
+    cshift += NodeShift[problem_dimension_dm]; //WW 05.01.07
+    for(int i=0;i<nnodes;i++)
+    {
+      for(int j=0;j<nnodes;j++)
+      {
+#ifdef NEW_EQS
+       (*A)(cshift+eqs_number[i], cshift+eqs_number[j]) += \
+	          (*Mass)(i,j);
+#else
+        MXInc(cshift+eqs_number[i], cshift+eqs_number[j],\
+           (*Mass)(i,j));
+#endif
+      }
+    }
+  }
 }
 
 
@@ -5313,6 +5856,11 @@ void CFiniteElementStd::Config()
   { 
     for(i=0;i<nnodes;i++)
        NodalVal_p2[i] = pcs->GetNodeValue(nodes[i],idxp21); 
+  }
+  if(PcsType==P)
+  {
+    for(i=0;i<nnodes;i++)
+       NodalVal_SatNW[i] = pcs->GetNodeValue(nodes[i],idxSn1);
   }                  //----------WW 05.01.07
   if(cpl_pcs) // ?2WW: flags are necessary
   {
@@ -5369,32 +5917,29 @@ void CFiniteElementStd::Assembly()
     case T: // Two-phase flow
       if(pcs->pcs_type_number==0)
       { 
+			// Start partial-pressure-based model
+			pcs->PartialPS = 0;
 
-        AssembleParabolicEquation();
-//				PrintTheSetOfElementMatrices("Right after AssembleParabolicEquation() in Process 0");
+			AssembleParabolicEquation();
 
-				AssembleCapillaryEffect();	// Doing something only in the pressure equation
-//				PrintTheSetOfElementMatrices("Right after AssembleCapillaryEffect() in Process 0");
-
-				Assemble_Gravity_Multiphase();
-//				PrintTheSetOfElementMatrices("Right after Assemble_Gravity_Multiphase() in Process 0");
-
-      }
-      else if(pcs->pcs_type_number==1)
-      {
-
-				pcs->ML_Cap = 1;
-        AssembleParabolicEquation();
-				pcs->ML_Cap = 0;
-//				PrintTheSetOfElementMatrices("Right after AssembleParabolicEquation() in Process 1");
-
+			if(pcs->PartialPS == 1)	// If it is partial-pressure-based
 				AssembleRHSVector();
-//				PrintTheSetOfElementMatrices("Right after AssembleRHSVector() in Process 1");
+			//			PrintTheSetOfElementMatrices("Pressure1");
+			AssembleCapillaryEffect();
+			Assemble_Gravity_Multiphase();
+		}
+		else if(pcs->pcs_type_number==1)
+		{
+			// Turn off the partial-pressure-based model for Snw equation
+			pcs->PartialPS = 0;
 
-				Assemble_Gravity_Multiphase();
-//				PrintTheSetOfElementMatrices("Right after Assemble_Gravity_Multiphase() in Process 1");
+			pcs->ML_Cap = 0;
+			AssembleParabolicEquation();
+			pcs->ML_Cap = 0;
 
-      }
+			AssembleRHSVector();
+			Assemble_Gravity_Multiphase();
+		}
       break;
     //....................................................................
     case C: // Componental flow
@@ -5443,6 +5988,20 @@ void CFiniteElementStd::Assembly()
       if(dm_pcs)
         Assemble_RHS_M(); 
       break;
+
+	case P: // PS_GLOBAL for Multi-phase flow 03.03 2009 PCH
+		AssembleParabolicEquation();
+		PrintTheSetOfElementMatrices("Laplace");
+		if(pcs->num_type_name.find("DirectPc")!=string::npos)
+		{
+			Assemble_RHS_Pc();
+			PrintTheSetOfElementMatrices("RHS_Pc");
+		}
+		else
+			;
+		Assemble_Gravity();
+
+		break;
 
     //....................................................................
     default:
@@ -5494,7 +6053,7 @@ Programing:
 08/2005 PCH for Fluid_Momentum
 last modification:
 **************************************************************************/
-void  CFiniteElementStd::Assembly(int dimension)
+void  CFiniteElementStd::Assembly(int option, int dimension)
 {
     int i,nn;
   //----------------------------------------------------------------------
@@ -5542,7 +6101,7 @@ void  CFiniteElementStd::Assembly(int dimension)
     (*RHS) = 0.0;
    
 	// Fluid Momentum
-	AssembleMassMatrix();		// This is exactly same with CalcMass().
+	AssembleMassMatrix(option);		// This is exactly same with CalcMass().
 	AssembleRHS(dimension); 
      //Output matrices
      if(pcs->Write_Matrix)
@@ -5578,7 +6137,7 @@ void CFiniteElementStd::ExtropolateGauss(CRFProcess *m_pcs, const int idof)
   //
   int ElementType = MeshElement->GetElementType();
 
-  if(m_pcs->type==1212)  // Multi-phase flow
+  if(m_pcs->type==1212 || m_pcs->type==1313)  // Multi-phase flow 03.2009 PCH
   {
      switch(idof)
      {
@@ -5627,7 +6186,7 @@ void CFiniteElementStd::ExtropolateGauss(CRFProcess *m_pcs, const int idof)
       NodalVal1[i] = gp_ele->Velocity(idof,gp)*time_unit_factor;
       //
       //
-      if(m_pcs->type==1212)  // Multi-phase flow
+      if(m_pcs->type==1212 || m_pcs->type==1313)  // PCH 05.2009
          NodalVal2[i] =gp_ele->Velocity_g(idof,gp)*time_unit_factor;
   }
 
@@ -5669,7 +6228,7 @@ void CFiniteElementStd::ExtropolateGauss(CRFProcess *m_pcs, const int idof)
       EV += m_pcs->GetNodeValue(nodes[i],idx_vel[idof]); 
       m_pcs->SetNodeValue (nodes[i], idx_vel[idof], EV);
       //
-      if(m_pcs->type==1212)  // Multi-phase flow
+      if(m_pcs->type==1212 || m_pcs->type==1313)  // Multi-phase flow PCH 05.2009
       {
          for(j=i_s; j<i_e; j++)
             EV1 += NodalVal2[j]*shapefct[j-ish];  
@@ -5824,7 +6383,12 @@ void CFiniteElementStd::CalcNodeMatParatemer()
   { 
     for(i=0;i<nnodes;i++)
        NodalVal_p2[i] = pcs->GetNodeValue(nodes[i],idxp21); 
-  }                 
+  }
+  if(PcsType==P)	// 4.3.2009 PCH
+  {
+    for(i=0;i<nnodes;i++)
+       NodalVal_SatNW[i] = pcs->GetNodeValue(nodes[i],idxSn1);
+  }
   if(cpl_pcs)
   {
     for(i=0;i<nnodes;i++)
@@ -5972,7 +6536,7 @@ ElementValue::ElementValue(CRFProcess* m_pcs, CElem* ele):pcs(m_pcs)
    //WW Velocity.resize(m_pcs->m_msh->GetCoordinateFlag()/10, NGPoints);
    Velocity.resize(3, NGPoints);
    Velocity = 0.0;
-   if(pcs->type ==1212) // 15.3.2007 Multi-phase flow WW
+   if(pcs->type ==1212 || pcs->type == 1313) // 15.3.2007 Multi-phase flow WW
    {
       Velocity_g.resize(3, NGPoints);
       Velocity_g = 0.0;     
@@ -6143,6 +6707,88 @@ inline double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
     }
     return val;
 }
+/**************************************************************************
+FEMLib-Method:
+Task: Calculate  Capillary pressure for RHS in the global scheme
+Programing:
+03/2009 PCH Implementation
+last modification:
+**************************************************************************/
+inline void CFiniteElementStd::CalCoef_RHS_Pc(int dof_index)
+{
+  int i=0;
+  double *tensor = NULL;
+  double mat_fac = 1.0, m_fac=0.;
+  double k_rel=0.0;
+
+  int Index = MeshElement->GetIndex();
+  //
+  ComputeShapefct(1);   //  12.3.2007 WW
+  //======================================================================
+  for(i=0; i<dim*dim; i++)
+    mat[i] = 0.0;
+
+  switch(dof_index)
+    {
+  case 0:
+    break;
+  case 1:
+    break;
+  case 2:
+    tensor = MediaProp->PermeabilityTensor(Index);
+    Sw = 1.0-interpolate(NodalVal_SatNW);
+    k_rel = MediaProp->PermeabilitySaturationFunction(Sw,1);
+    mat_fac = k_rel / GasProp->Viscosity()*time_unit_factor;
+
+    for(i=0;i<dim*dim;i++)
+      mat[i] = tensor[i] * mat_fac;
+    break;
+  case 3:
+    break;
+    //------------------------------------------------------------------
+    }
+}
+
+/**************************************************************************
+FEMLib-Method:
+Task: Calculate  coefficient of Pc induced RHS of multi-phase
+      flow
+Programing:
+03/2009 PCH Implementation
+last modification:
+**************************************************************************/
+inline double CFiniteElementStd::CalCoef_RHS_PSGLOBAL(int dof_index)
+{
+  double val = 0.0;
+  double k_rel=0.0, mat_fac=0.0;
+  int i=0;
+  int Index = MeshElement->GetIndex();
+  double *tensor = NULL;
+  ComputeShapefct(1);
+  for(i=0; i<dim*dim; i++)
+    mat[i] = 0.0;
+
+  switch(dof_index)
+    {
+  case 0:
+    val = 0.0;
+    break;
+  case 1:
+    val = 0.0;
+    break;
+  case 2:
+    Sw = 1.0-interpolate(NodalVal_SatNW);
+    k_rel = MediaProp->PermeabilitySaturationFunction(Sw,1);
+    val = k_rel / GasProp->Viscosity()*time_unit_factor;
+    break;
+  case 3:
+    val = 0.0;
+    break;
+    //------------------------------------------------------------------
+    }
+    return val;
+}
+
 /***************************************************************************
    GeoSys - Funktion: 
           Assemble_RHS_T_MPhaseFlow 
@@ -6213,7 +6859,83 @@ void CFiniteElementStd::Assemble_RHS_T_MPhaseFlow()
 }
 
 /***************************************************************************
-   GeoSys - Funktion: 
+   GeoSys - Funktion:
+          Assemble_RHS_Pc
+   Programming:
+   03/2009   PCH
+**************************************************************************/
+void CFiniteElementStd::Assemble_RHS_Pc()
+{
+	int i, j, k, l, ii,jj;
+	// ---- Gauss integral
+	int gp_r=0,gp_s=0,gp_t=0;
+	double fkt, fac;
+	// Material
+	int dof_n = 2;
+	int ndx_p_cap = pcs->GetNodeValueIndex("PRESSURE_CAP");
+	//----------------------------------------------------------------------
+
+	double temp[20];
+
+	for (i = 0; i < dof_n*nnodes; i++)
+	{
+		temp[i] = NodalVal[i] = 0.0;
+		NodalVal1[i] = 0.0;
+	}
+	for (i = 0; i < nnodes; i++)
+		temp[i+dof_n] = NodalVal1[i+dof_n] = -pcs->GetNodeValue(nodes[i],ndx_p_cap);
+
+	//======================================================================
+	// Loop over Gauss points
+	for (gp = 0; gp < nGaussPoints; gp++)
+	{
+		//---------------------------------------------------------
+		//  Get local coordinates and weights
+		//  Compute Jacobian matrix and its determinate
+		//---------------------------------------------------------
+		fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+		// Compute geometry
+		ComputeGradShapefct(1); // Linear interpolation function
+		ComputeShapefct(1); // Linear interpolation function
+		// grad Pc
+		for(ii=0; ii<dof_n; ii++)
+		{
+			// Material
+			CalCoef_RHS_Pc(ii+dof_n);
+			// Calculate Pc
+			for (i = 0; i < nnodes; i++)
+			{
+				for (j = 0; j < nnodes; j++)
+				{
+					for (k = 0; k < dim; k++)
+						for (l = 0; l < dim; l++)
+							NodalVal[dof_n+i] += fkt*mat[dim*k+l]*dshapefct[k*nnodes+i]*dshapefct[l*nnodes+j]
+							                                                                *NodalVal1[j+dof_n];
+				}
+			}
+		}
+	}
+
+	for(i=0; i<2*nnodes; ++i)
+		temp[i]=NodalVal[i];
+
+	int ii_sh;
+	long i_sh;
+	for(ii=0;ii<pcs->dof;ii++)
+	{
+		i_sh = NodeShift[ii];
+		ii_sh = ii*nnodes;
+		for (i=0;i<nnodes;i++)
+		{
+			eqs_rhs[i_sh + eqs_number[i]] += NodalVal[i+ii_sh];
+			(*RHS)(i+LocalShift+ii_sh) +=  NodalVal[i+ii_sh];
+		}
+	}
+//
+}
+
+/***************************************************************************
+   GeoSys - Funktion:
           Assemble_RHS_M
    Programming:
    02/2007   WW   
@@ -6353,25 +7075,31 @@ PCSLib-Method:
 /**************************************************************************
 PCSLib-Method: 
 01/2007 OK Implementation
+02/2009 PCH modified to handle known Snw in the mass matrix
 **************************************************************************/
 void CFiniteElementStd::AssembleRHSVector()
 {
   int i;
-  int idx_fv=0;
-  double NodalVal_FV[20]; 
-  //WW  double FV;
-  CRFProcess* m_pcs_cpl = NULL;
+  int idx_fv=0, idx_pw = 0, idx_pc=0;
+  double NodalVal_FV[20];
+  double FV;
+  CRFProcess* pcs_p = NULL;
+	CRFProcess* pcs_s = NULL;
   //----------------------------------------------------------------------
   // Initializations
   for(i=0;i<nnodes;i++)
-  {
     NodalVal[i] = 0.0;
-  }
+
+	double temp[8];
+
   switch(PcsType)
   {
     //....................................................................
     case T: // Two-phase flow
-      (*Laplace) = 0.0;
+			if(pcs->PartialPS == 0)	// If not partial-pressure-based
+				(*Laplace) = 0.0;
+			else
+				(*Mass) = 0.0;
       break;
     //....................................................................
   }
@@ -6381,15 +7109,33 @@ void CFiniteElementStd::AssembleRHSVector()
   {
     //....................................................................
     case T: // Two-phase flow
-      m_pcs_cpl = pcs_vector[0];
-      idx_fv = m_pcs_cpl->GetNodeValueIndex("PRESSURE1");
+			if(pcs->PartialPS == 0)
+			{
+				pcs_p = pcs_vector[0];
+				pcs_s = pcs_vector[1];
+
+				idx_pw = pcs_p->GetNodeValueIndex("PRESSURE1");
+				idx_pc = pcs_p->GetNodeValueIndex("PRESSURE_CAP");
+				idx_fv = pcs_s->GetNodeValueIndex("SATURATION2");
+				CMediumProperties *m_mmp = NULL;
+				m_mmp = mmp_vector[0];
+				for(i=0;i<nnodes;i++)
+				{
+					Sw = 1.0 - pcs_s->GetNodeValue(nodes[i],idx_fv+1);
+					double Pw = pcs_p->GetNodeValue(nodes[i],idx_pw+1);
+					double Pc = pcs_p->GetNodeValue(nodes[i],idx_pc+1);
+					if(pcs->ML_Cap == 0)	// If ODE method for Snw,
+						NodalVal_FV[i] = -(Pw + Pc);
+					else	// If PDE method,
+						NodalVal_FV[i] = -Pw;
+				}
+			}
+			else
+			{
+			}
       break;
     //....................................................................
   }
-  for(i=0;i<nnodes;i++)
-  {
-    NodalVal_FV[i] = m_pcs_cpl->GetNodeValue(nodes[i],idx_fv+1); 
-  } 
 
   //----------------------------------------------------------------------
   // Element matrices
@@ -6397,7 +7143,11 @@ void CFiniteElementStd::AssembleRHSVector()
   {
     //....................................................................
     case T: // Two-phase flow
-      CalcLaplace(); 
+			if(pcs->PartialPS == 0)
+				CalcLaplace();
+			else
+				CalcMass();
+
       break;
     //....................................................................
   }
@@ -6407,24 +7157,29 @@ void CFiniteElementStd::AssembleRHSVector()
   {
     //....................................................................
     case T: // Two-phase flow
+		if(pcs->PartialPS == 0)
       Laplace->multi(NodalVal_FV,NodalVal);
+		else
+			Mass->multi(NodalVal_FV,NodalVal);
       break;
     //....................................................................
   }
 
+	for(i=0;i<nnodes;i++)
+		temp[i]=NodalVal[i];
 
   //----------------------------------------------------------------------
   // Store RHS contribution
   for(i=0;i<nnodes;i++)
   {
-//CB 04008 
-#ifdef NEW_EQS	
-    pcs->eqs_new->b[NodeShift[problem_dimension_dm]+eqs_number[i]] -= NodalVal[i];
+//CB 04008
+#ifdef NEW_EQS
+    pcs->eqs_new->b[NodeShift[problem_dimension_dm]+eqs_number[i]] += NodalVal[i];
 #else
-    pcs->eqs->b[NodeShift[problem_dimension_dm]+eqs_number[i]] -= NodalVal[i];
-#endif 
-    (*RHS)(i+LocalShift) -= NodalVal[i];
-  } 
+    pcs->eqs->b[NodeShift[problem_dimension_dm]+eqs_number[i]] += NodalVal[i];
+#endif
+    (*RHS)(i+LocalShift) += NodalVal[i];
+  }
   //----------------------------------------------------------------------
   //RHS->Write();
 }
@@ -6438,79 +7193,71 @@ PCSLib-Method:
 void CFiniteElementStd::AssembleCapillaryEffect()
 {
   int i;
-  int idx_fv=0; //WW, idx_w=0, idx_nw=0;
-  double NodalVal_FV[20]; 
-  //WW  double FV;
-//WW	CRFProcess* m_pcs_cpl = NULL;
-//WW	CMediumProperties *m_mmp = NULL;
-
-	//Debug
-	double temp[8];
+  int idx_fv=0, idx_w=0, idx_nw=0, idx_pw=0, idx_pc=0;
+  double NodalVal_FV[20];
+  double FV;
+  CRFProcess* m_pcs_cpl = NULL;
+  CRFProcess* pcs_p = NULL;
+  CRFProcess* pcs_s = NULL;
+  CMediumProperties *m_mmp = NULL;
 
   //----------------------------------------------------------------------
   // Initializations
   for(i=0;i<nnodes;i++)
     NodalVal[i] = 0.0;
-  
-	// Setting the laplace matrix initialized
+
+  // Setting the laplace matrix initialized
   (*Laplace) = 0.0;
-    
-	if(pcs->pcs_type_number==0)
-	{
-		// Accessing the primary variable for the process 1 and compute the secondary
-		// Getting the capillary pressure from Sat2.
-		idx_fv = pcs->GetNodeValueIndex("PRESSURE_CAP");
-		
-		for(i=0;i<nnodes;i++)
-			temp[i]=NodalVal_FV[i] = pcs->GetNodeValue(nodes[i],idx_fv+1);	
-	}
-	else if(pcs->pcs_type_number==1)
-	{
-		idx_fv = cpl_pcs->GetNodeValueIndex("PRESSURE_CAP");
-		
-		for(i=0;i<nnodes;i++)
-			temp[i]=NodalVal_FV[i] = cpl_pcs->GetNodeValue(nodes[i],idx_fv+1);	
-	} 
-	else
-		printf("Something's wrong!!!\n");	
+
+  if(pcs->pcs_type_number==0)
+    {
+      pcs_p = pcs_vector[0];
+
+      idx_pc = pcs_p->GetNodeValueIndex("PRESSURE_CAP");
+
+      for(i=0;i<nnodes;i++)
+        {
+          double Pc = pcs_p->GetNodeValue(nodes[i],idx_pc+1);
+          NodalVal_FV[i] = -Pc;
+        }
+    }
+  else if(pcs->pcs_type_number==1)
+    {
+    }
+  else
+    printf("Something's wrong!!!\n");
 
   //----------------------------------------------------------------------
   // Element matrices and RHS calculation
-	if(pcs->pcs_type_number==0)
-  {
-		// Laplace should be calculated according to the nonwetting phase
-		// Then I need one switch to tell CalcCoefLaplace to use the nonwetting parameter only
-		pcs->ML_Cap = 1;
-		CalcLaplace(); 
-		Laplace->multi(NodalVal_FV,NodalVal);
-		pcs->ML_Cap = 0;
-	}
-	else if(pcs->pcs_type_number==1)
-	{
-		CalcLaplace(); 
-		Laplace->multi(NodalVal_FV,NodalVal);
-		for(i=0;i<nnodes;i++)
-			NodalVal[i]=-NodalVal[i];
-	}
-	else
-		printf("Something's wrong!!!\n");	 
-
-	
-	for(i=0;i<nnodes;i++)
-		temp[i]=NodalVal[i]; 
+  if(pcs->pcs_type_number==0)
+    {
+      // Laplace should be calculated according to the nonwetting phase
+      // Then I need one switch to tell CalcCoefLaplace to use the nonwetting parameter only
+      pcs->ML_Cap = 1;
+      CalcLaplace();
+      Laplace->multi(NodalVal_FV,NodalVal);
+      pcs->ML_Cap = 0;
+    }
+  else if(pcs->pcs_type_number==1)
+    {
+      CalcLaplace();
+      Laplace->multi(NodalVal_FV,NodalVal);
+    }
+  else
+    printf("Something's wrong!!!\n");
 
   //----------------------------------------------------------------------
   // Store RHS contribution
   for(i=0;i<nnodes;i++)
-  {
-//CB 04008 
-#ifdef NEW_EQS	
-    pcs->eqs_new->b[NodeShift[problem_dimension_dm]+eqs_number[i]] += NodalVal[i];
+    {
+      //CB 04008
+#ifdef NEW_EQS
+      pcs->eqs_new->b[NodeShift[problem_dimension_dm]+eqs_number[i]] += NodalVal[i];
 #else
-    pcs->eqs->b[NodeShift[problem_dimension_dm]+eqs_number[i]] += NodalVal[i];
-#endif 
-    (*RHS)(i+LocalShift) += NodalVal[i];
-  } 
+      pcs->eqs->b[NodeShift[problem_dimension_dm]+eqs_number[i]] += NodalVal[i];
+#endif
+      (*RHS)(i+LocalShift) += NodalVal[i];
+    }
   //----------------------------------------------------------------------
   //RHS->Write();
 }
@@ -6545,7 +7292,7 @@ void CFiniteElementStd::CalcEnergyNorm(const double *x_n1, double &err_norm0,
   //----------------------------------------------------------------------
   // Initialize.
   // if (pcs->Memory_Type==2) skip the these initialization
-  if(PcsType==V) 
+  if(PcsType==V || PcsType==P)  // 03.2009 PCH
     (*Mass2) = 0.0;
   else 
   (*Mass) = 0.0;
@@ -6563,6 +7310,13 @@ void CFiniteElementStd::CalcEnergyNorm(const double *x_n1, double &err_norm0,
     else
       CalcMass2();
   }
+	else if(PcsType==P)	// 03.2009 PCH
+  {
+    if(pcs->m_num->ele_mass_lumping)
+      CalcLumpedMassPSGLOBAL();
+    else
+      CalcMassPSGLOBAL();
+  }
   else
   {
     if(pcs->m_num->ele_mass_lumping)
@@ -6572,7 +7326,7 @@ void CFiniteElementStd::CalcEnergyNorm(const double *x_n1, double &err_norm0,
   }
   // Laplace matrix.......................................................
   CalcLaplace();
-  if(PcsType==V)
+  if(PcsType==V || PcsType==P) // 03.2009 PCH
     *AuxMatrix1 = *Mass2;
   else
     *AuxMatrix1 = *Mass;
@@ -6604,7 +7358,19 @@ void CFiniteElementStd::CalcEnergyNorm(const double *x_n1, double &err_norm0,
       NodalVal[i+nnodes] = 0.0;
     }      
   }
-  // 
+	else if(PcsType==P)
+  {
+    dof_n = 2;
+    //
+    // _new for(i=0; i<pcs->pcs_number_of_primary_nvals; i++)
+    // _new NodeShift[i] = i*pcs->m_msh->GetNodesNumber(false);
+    //
+    for (i=0;i<nnodes; i++)
+    {
+      NodalVal0[i+nnodes] = fabs(pcs->GetNodeValue(nodes[i],idxSn1)-x_n1[nodes[i]+NodeShift[1]]);
+      NodalVal[i+nnodes] = 0.0;
+    }
+  }
   //
   AuxMatrix1->multi(NodalVal0, NodalVal);
 
@@ -6626,6 +7392,14 @@ void CFiniteElementStd::CalcEnergyNorm(const double *x_n1, double &err_norm0,
       NodalVal0[i+nnodes] = atol+rtol*max(fabs(pcs->GetNodeValue(nodes[i],idxp21)), fabs(x_n1[nodes[i]+NodeShift[1]]));
       NodalVal[i+nnodes] = 0.0;
     }      
+  }
+	else if(PcsType==P)  // 03.2009 PCH
+  {
+    for (i=0;i<nnodes; i++)
+    {
+      NodalVal0[i+nnodes] = atol+rtol*max(fabs(pcs->GetNodeValue(nodes[i],idxSn1)), fabs(x_n1[nodes[i]+NodeShift[1]]));
+      NodalVal[i+nnodes] = 0.0;
+    }
   }
   // 
   //

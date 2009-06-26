@@ -763,26 +763,6 @@ SparseTable::SparseTable(CFEMesh *a_mesh, bool quadratic, bool symm):symmetry(sy
        num_column_entries[j]++;
    } 
 
-#ifdef LIS
-	int counter = 0;
-	ptr = new int [rows+1];
-	col_idx = new int [size_entry_column];
-	entry_index = new int [size_entry_column];
-
-	for(int i=0; i < rows; ++i)
-	{
-		ptr[i] = counter;
-		lbuff1 = (int)a_mesh->nod_vector[i]->connected_nodes.size();
-		for(int j=0; j< lbuff1; ++j)
-		{
-			col_idx[counter] = a_mesh->nod_vector[i]->connected_nodes[j];
-			++counter;
-		}
-	}
-	// ptr array has one more element than the number of nodes.
-	ptr[i] = counter;	
-#endif
-
    // 2. Fill the sparse table, i.e. store all its entries to   
    //    entry_column  
    lbuff0 = 0;
@@ -1022,9 +1002,48 @@ CSparseMatrix::CSparseMatrix(const SparseTable &sparse_table, const int dof)
   zero_e = 0.;
   //
 #ifdef LIS	// PCH
-  ptr = sparse_table.ptr;
-  col_idx = sparse_table.col_idx;
-  entry_index = sparse_table.entry_index;
+  int counter, counter_ptr = 0, counter_col_idx = 0;
+	int i,k,ii,jj,I,J,K;
+	int row_in_sparse_table;
+
+	ptr = new int [rows*dof+1];
+	col_idx = new int [dof*dof*size_entry_column];
+	entry_index = new int [dof*dof*size_entry_column];
+
+	for(ii=0; ii<DOF; ii++)
+  {
+    for(i=0; i<rows; i++)
+    {
+			// Store ptr arrary for CRS
+			ptr[i+rows*ii] = counter_ptr; 
+      row_in_sparse_table = row_index_mapping_o2n[i];
+      for(jj=0; jj<DOF; jj++)
+      {
+        counter = row_in_sparse_table;
+        for (k = 0; k < max_columns; k++)
+        {
+          if(row_in_sparse_table<num_column_entries[k])
+          {
+						I = ii*rows+i;	// row in global matrix
+						J = jj*rows+entry_column[counter];	// column in global matrix
+						K = (ii*DOF+jj)*size_entry_column+counter;
+
+						// Store column index for CRS
+						col_idx[counter_col_idx] = J;
+						entry_index[counter_col_idx] = K;
+
+						++counter_ptr;
+						++counter_col_idx;
+            counter += num_column_entries[k];
+						
+          }
+          else
+            break; 
+        }
+      }
+    }
+  }
+	ptr[i+rows*(ii-1)] = counter_ptr; 
 #endif
 }
 /*\!
@@ -1039,6 +1058,8 @@ CSparseMatrix::~CSparseMatrix()
   entry = NULL;
 
 #ifdef LIS	// PCH
+	delete [] ptr; ptr = NULL;
+	delete [] col_idx; col_idx = NULL;
   delete [] entry_index;
   entry_index = NULL;
 #endif
@@ -1443,66 +1464,10 @@ int CSparseMatrix::GetCRSValue(double* value)
 	int i;
 
 #pragma omp parallel for 
-	for(i=0; i< size_entry_column; ++i)
+	for(i=0; i< size_entry_column*DOF*DOF; ++i)
 		value[i] = entry[entry_index[i]];
 
 	return success;
-}
-
-int CSparseMatrix::GetCRSIndex()
-{
-	int success =1;
-	int counter = 0;
-	int i, j;
-
-	// Indexing CRS index from Coordinate Index
-	for(i=0; i < rows; ++i)
-	{
-		for(j=0; j < ptr[i+1]-ptr[i]; ++j)
-		{
-			int ii = i;
-			int jj = col_idx[ptr[i]+j];
-			entry_index[counter] = CRSIndex(ii,jj);
-			++counter;
-		}
-	}
-
-	return success;
-
-} 
-int CSparseMatrix::CRSIndex(const int i, const int j)
-{
-	int k, ii, jj, ir, jr, row_in_parse_table, counter;
-	ii = i;
-	jj = j;
-	if(symmetry)
-	{
-		if(i>j)
-		{
-			ii = j;
-			jj = i;
-		}       
-	}
-	ir = ii%rows;
-	jr = jj%rows;
-	ii /= rows;
-	jj /= rows;
-	// 
-	row_in_parse_table = row_index_mapping_o2n[ir];
-	counter = row_in_parse_table;
-	for (k = 0; k < max_columns; k++)
-	{
-		if(entry_column[counter]==jr)
-			break;  // Found the entry  
-		counter += num_column_entries[k]; 
-	}
-	if(counter>=size_entry_column)
-		return 0;	// This should not happen
-	//  Zero entry;  
-	k = (ii*DOF+jj)*size_entry_column+counter;
-
-	return k;
-
 }
 
 #endif // LIS

@@ -79,9 +79,6 @@ void PTValue::OnBnClickedOk()
     
 		m_msh->PT->numOfParticles = m_NumOfParticles;
 
-		// Allocate memory for number of particle objects
-		m_msh->PT->CreateParticles(m_msh->PT->numOfParticles);
-    
 		// Get the natural number obtained by dividing the number of elements
 		// picked by the number of particles
 
@@ -99,8 +96,9 @@ void PTValue::OnBnClickedOk()
 		else
 			naturalNumPlusOne = naturalNum = m_msh->PT->numOfParticles / theApp.hitsElementTotal; 
 
-		int count = 0;
-
+		// Loop over the number of the picked elements
+		Trace* one;
+		one = new Trace();
 		// Loop over the number of the picked elements
 		for(int i=0; i<theApp.hitsElementTotal; ++i)
 		{
@@ -110,9 +108,9 @@ void PTValue::OnBnClickedOk()
 				// Assign N number of particles in this element;
 				for(int j=0; j<naturalNumPlusOne; ++j)
 				{
-					AssignAParticleToTheElement(count, m_ele);
-					m_msh->PT->X[count].Past.identity = m_msh->PT->X[count].Now.identity = m_PID;
-					++count;
+					AssignAParticleToTheElement(one, m_ele);
+					one->Past.identity = one->Now.identity = m_PID;
+					m_msh->PT->X.push_back(*one);
 				}
 			}
 			else
@@ -120,9 +118,9 @@ void PTValue::OnBnClickedOk()
 				// Assign N number of particles in this element;  
 				for(int j=0; j<naturalNum; ++j)
 				{
-					AssignAParticleToTheElement(count, m_ele); 
-					m_msh->PT->X[count].Past.identity = m_msh->PT->X[count].Now.identity = m_PID;  
-					++count;
+					AssignAParticleToTheElement(one, m_ele); 
+					one->Past.identity = one->Now.identity = m_PID;
+					m_msh->PT->X.push_back(*one);
 				} 
 			}     
 		}
@@ -137,9 +135,7 @@ void PTValue::OnBnClickedOk()
 			m_msh = fem_msh_vector[0];      // This is because FEM is not executed. Something should be done later.
 			// Check if this is the first polyline assigned by particles.
 			m_msh->PT->numOfParticles = m_NumOfParticles;
-			// Allocate memory for number of particle objects
-			m_msh->PT->CreateParticles(m_msh->PT->numOfParticles);
-
+		
 			int numOfParticlesInThisPolyline = 0;
 
 			numOfParticlesInThisPolyline = m_msh->PT->numOfParticles / theApp.hitsPolylineTotal;
@@ -189,6 +185,7 @@ void PTValue::OnBnClickedOk()
 					seg10[0] = x[1] - x[0]; seg10[1] = y[1] - y[0]; seg10[2] = z[1] - z[0];
 					double lengthOfseq10 = sqrt(seg10[0]*seg10[0] + seg10[1]*seg10[1] + seg10[2]*seg10[2]); 
 				
+					Trace one;
 					for(int j=0; j< particles[i]; ++j)
 					{
 						// Get the random distance from 0 to line[i]
@@ -200,11 +197,11 @@ void PTValue::OnBnClickedOk()
 						double p[3];
 						// Don't forget to translate to the 0 point of the segment
 						p[0] = mag*seg10[0] + x[0]; p[1] = mag*seg10[1] + y[0]; p[2] = mag*seg10[2] + z[0];
-						m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = p[0];
-						m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = p[1];
-						m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = p[2];
+						one.Past.x = one.Now.x = p[0];
+						one.Past.y = one.Now.y = p[1];
+						one.Past.z = one.Now.z = p[2];
 						// Element index just chosen to be 0 initially.
-						m_msh->PT->X[no].Past.elementIndex = m_msh->PT->X[no].Now.elementIndex = 0;
+						one.Past.elementIndex = one.Now.elementIndex = 0;
 						// Now we successfully assign the position.
 						// But, we don't know the element index of particle yet.
 						// This is a bit tricky because all the particles assigned lie 
@@ -212,11 +209,13 @@ void PTValue::OnBnClickedOk()
 						// Let's stop here for now.
 					
 						// Let's search the element index
-						m_msh->PT->X[no].Past.elementIndex = m_msh->PT->X[no].Now.elementIndex =
-							m_msh->PT->GetTheElementOfTheParticleFromNeighbor(&(m_msh->PT->X[no].Now));
+						one.Past.elementIndex = one.Now.elementIndex =
+							m_msh->PT->GetTheElementOfTheParticleFromNeighbor(&(one.Now));
 
-						m_msh->PT->X[no].Past.identity = m_msh->PT->X[no].Now.identity = m_PID; 
+						one.Past.identity = one.Now.identity = m_PID; 
 
+
+						m_msh->PT->X.push_back(one);
 						// Right, increase the particle number 
 						++no;
 					}
@@ -238,7 +237,7 @@ void PTValue::OnBnClickedOk()
     OnOK();
 }
 
-void PTValue::AssignAParticleToTheElement(int no, CElem* m_ele)
+void PTValue::AssignAParticleToTheElement(Trace* one, CElem* m_ele)
 {
 
     double unit[4];
@@ -250,7 +249,7 @@ void PTValue::AssignAParticleToTheElement(int no, CElem* m_ele)
 	fem->SetRWPT(0);
    
     // Assign the index of the element
-    m_msh->PT->X[no].Past.elementIndex = m_msh->PT->X[no].Now.elementIndex = m_ele->GetIndex(); 
+	one->Past.elementIndex = one->Now.elementIndex = m_ele->GetIndex();
 
 	if(theApp.ElementSwitch == 1 && theApp.RFINodeSwitch != 1)
 	{
@@ -266,9 +265,9 @@ void PTValue::AssignAParticleToTheElement(int no, CElem* m_ele)
 			fem->RealCoordinates(unit);
 
 			// Assign the number to the particle
-			m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
-			m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
-			m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
+			one->Past.x = one->Now.x = unit[0];
+			one->Past.y = one->Now.y = unit[1];
+			one->Past.z = one->Now.z = unit[2];
 		}
 		/*RECTANGLES = 2*/ 
 		if (m_ele->GetElementType() == 2)
@@ -281,9 +280,9 @@ void PTValue::AssignAParticleToTheElement(int no, CElem* m_ele)
 			fem->RealCoordinates(unit);
 
 			// Assign the number to the particle
-			m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
-			m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
-			m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
+			one->Past.x = one->Now.x = unit[0];
+			one->Past.y = one->Now.y = unit[1];
+			one->Past.z = one->Now.z = unit[2];
 		}
 		/*HEXAHEDRA = 3*/ 
 		if (m_ele->GetElementType() == 3)
@@ -296,9 +295,9 @@ void PTValue::AssignAParticleToTheElement(int no, CElem* m_ele)
 			fem->RealCoordinates(unit);
 
 			// Assign the number to the particle
-			m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
-			m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
-			m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
+			one->Past.x = one->Now.x = unit[0];
+			one->Past.y = one->Now.y = unit[1];
+			one->Past.z = one->Now.z = unit[2];
 		}
 		/*TRIANGLES = 4*/ 
 		if (m_ele->GetElementType() == 4)
@@ -314,9 +313,9 @@ void PTValue::AssignAParticleToTheElement(int no, CElem* m_ele)
 			fem->RealCoordinates(unit);
 
 			// Assign the number to the particle
-			m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
-			m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
-			m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
+			one->Past.x = one->Now.x = unit[0];
+			one->Past.y = one->Now.y = unit[1];
+			one->Past.z = one->Now.z = unit[2];
 		}
 		/*TETRAHEDRAS = 5*/ 
 		if (m_ele->GetElementType() == 5)
@@ -332,9 +331,9 @@ void PTValue::AssignAParticleToTheElement(int no, CElem* m_ele)
 			fem->RealCoordinates(unit);
 
 			// Assign the number to the particle
-			m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
-			m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
-			m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
+			one->Past.x = one->Now.x = unit[0];
+			one->Past.y = one->Now.y = unit[1];
+			one->Past.z = one->Now.z = unit[2];
 		}
 		/*PRISMS = 6*/ 
 		if (m_ele->GetElementType() == 6)
@@ -350,9 +349,9 @@ void PTValue::AssignAParticleToTheElement(int no, CElem* m_ele)
 			fem->RealCoordinates(unit);
 
 			// Assign the number to the particle
-			m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = unit[0];
-			m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = unit[1];
-			m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = unit[2];
+			one->Past.x = one->Now.x = unit[0];
+			one->Past.y = one->Now.y = unit[1];
+			one->Past.z = one->Now.z = unit[2];
 		}
 	}
 	else if(theApp.ElementSwitch == 1 && theApp.RFINodeSwitch == 1)
@@ -376,15 +375,15 @@ void PTValue::AssignAParticleToTheElement(int no, CElem* m_ele)
 			NormalizeVector(a,3);
 
 			// Assign the number to the particle
-			m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = a[0]*m + p0[0];
-			m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = a[1]*m + p0[1];
-			m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = a[2]*m + p0[2];
+			one->Past.x = one->Now.x = a[0]*m + p0[0];
+			one->Past.y = one->Now.y = a[1]*m + p0[1];
+			one->Past.z = one->Now.z = a[2]*m + p0[2];
 		}
 		else
 		{
-			m_msh->PT->X[no].Past.x = m_msh->PT->X[no].Now.x = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->X();
-			m_msh->PT->X[no].Past.y = m_msh->PT->X[no].Now.y = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->Y();
-			m_msh->PT->X[no].Past.z = m_msh->PT->X[no].Now.z = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->Z();
+			one->Past.x = one->Now.x = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->X();
+			one->Past.y = one->Now.y = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->Y();
+			one->Past.z = one->Now.z = m_msh->nod_vector[theApp.RFInodePickedTotal[0]]->Z();
 		}
 	}
 }

@@ -1,10 +1,12 @@
-CXX_LIBS         = ./LIB/liblis.a.icc
+NEW_SP = yes;
+MKL_LIB=/opt/intel/Compiler/11.0/074/mkl/lib/em64t
+CXX_LIBS         = ./LIB/liblis.a.icc -L${MKL_LIB} ${MKL_LIB}/libmkl_solver_lp64.a -lmkl_intel_thread -lmkl_core -lmkl_lapack -lmkl_em64t -lguide -lpthread
 CXX_LDFLAGS      = -O3 -openmp -pthread -axP -ipo -hpo -static
 CXX_LD           = icpc
 
-CXX_OPT_FLAGS    = -O3 -openmp -axP -ipo -hpo -static
+CXX_OPT_FLAGS    = -O3 -openmp -axP -ipo -hpo -static 
 CXX_DEBUG_FLAGS  = 
 
-CXX_FLAGS        = -DGCC -D_POSIX_SOURCE -DNO_ERROR_CONTROL -I../LIB $(CXX_OPT_FLAGS) $(CXX_DEBUG_FLAGS) -DRANDOM_WALK -DNEW_EQS -DLIS -D_OPENMP
+CXX_FLAGS        = -DGCC -D_POSIX_SOURCE -DNO_ERROR_CONTROL -DPROBLEM_CLASS -I../LIB $(CXX_OPT_FLAGS) $(CXX_DEBUG_FLAGS) -DRANDOM_WALK -DNEW_EQS -DLIS -D_OPENMP -I/opt/intel/Compiler/11.0/074/mkl/include
 CXX              = icc
 

@@ -21,30 +21,34 @@ class CEdge:public CCore
    private: // Members
       vec<CNode*>  nodes_of_edges;
 	  int joint;	// PCH
-      friend class CElem;
-	  friend class FiniteElement::CElement;  
-	  friend class FiniteElement::CFiniteElementStd; 
-	  friend class FiniteElement::CFiniteElementVec; 
-      friend class FiniteElement::ElementMatrix; 
-	  friend class FiniteElement::ElementMatrix_DM;
-   public: // Methods
-      CEdge(const int Index, bool quadr=false);
-      ~CEdge(); 
-      // Get functions
-      void GetNodes( vec<CNode*>& Nodes) 
-        { for(int i=0; i<3; i++)  Nodes[i] = nodes_of_edges[i]; }			
-      CNode* GetNode(const int l_index) {return nodes_of_edges[l_index];} 
-      double Length();
-	  int GetJoint() const { return joint;}	// PCH
-      // Set functions
-      void SetNodes( vec<CNode*>& Nodes)
-        { for(int i=0; i<3; i++)  nodes_of_edges[i] = Nodes[i]; }
-      void SetNode(const int index,  CNode *aNode)
-        { nodes_of_edges[index] = aNode; }
-	  void SetJoint(const int i) { joint = i; }	// PCH
-      // Operator
-      void operator = (CEdge& edg);
-      bool operator == (CEdge& edg);
+	  double* V;	// PCH
+        friend class CElem;
+        friend class FiniteElement::CElement;  
+        friend class FiniteElement::CFiniteElementStd; 
+        friend class FiniteElement::CFiniteElementVec; 
+        friend class FiniteElement::ElementMatrix; 
+        friend class FiniteElement::ElementMatrix_DM;
+      public: // Methods
+        CEdge(const int Index, bool quadr=false);
+        ~CEdge(); 
+        // Get functions
+        void GetNodes( vec<CNode*>& Nodes) 
+          { for(int i=0; i<3; i++)  Nodes[i] = nodes_of_edges[i]; }			
+        CNode* GetNode(const int l_index) {return nodes_of_edges[l_index];} 
+        double Length();
+        int GetJoint() const { return joint;}	// PCH
+	  double GetVelocity(const int index) { return V[index]; } // PCH
+        // Set functions
+        void SetNodes( vec<CNode*>& Nodes)
+          { for(int i=0; i<3; i++)  nodes_of_edges[i] = Nodes[i]; }
+        void SetNode(const int index,  CNode *aNode)
+          { nodes_of_edges[index] = aNode; }
+        void SetJoint(const int i) { joint = i; }	// PCH
+	  void AllocateMeomoryforV() {if (!V) V = new double [3];}
+	  void SetVelocity(double* v) { V[0] = v[0]; V[1] = v[1]; V[2] = v[2];} // PCH
+        // Operator
+        void operator = (CEdge& edg);
+        bool operator == (CEdge& edg);
       // Output
       void Write(ostream& osm=cout) const;
       //

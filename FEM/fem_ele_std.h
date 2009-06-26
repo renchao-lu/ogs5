@@ -26,7 +26,7 @@
      //R: Richards flow
 //F: Fluid momentum
 //A: Gas flow
-enum ProcessType { L, U, G, T, C, H, M, O, R, F, A, V};
+enum ProcessType { L, U, G, T, C, H, M, O, R, F, A, V, P};
 //-----------------------------------------------------
 
 namespace process {class CRFProcessDeformation;}
@@ -63,9 +63,11 @@ class CFiniteElementStd:public CElement
      // 1. Mass matrix
      void CalcMass();
      void CalcMass2();
+		 void CalcMassPSGLOBAL();	// PCH
      // 2. Lumped mass matrix
      void CalcLumpedMass();
      void CalcLumpedMass2();
+		 void CalcLumpedMassPSGLOBAL();	// PCH
      // 3. Laplace matrix
      void CalcLaplace();
      // 4. Gravity term
@@ -89,7 +91,7 @@ class CFiniteElementStd:public CElement
      void CalcNodeMatParatemer(); //WW
      // Assembly
      void Assembly(); 
-	 void Assembly(int dimension);	// PCH for Fluid Momentum
+	 void Assembly(int option, int dimension);	// PCH for Fluid Momentum
      void Cal_Velocity();
      void Cal_Velocity_2(); //CB this is to provide velocity only at the element center of gravity
      //
@@ -113,6 +115,7 @@ class CFiniteElementStd:public CElement
      //
      inline void UpwindAlphaMass(double *alpha); //CB added by CB: 090507
      inline void UpwindUnitCoord(int p, int point, int ind); //CB added by CB: 090507
+     int UpwindElement(int option, int phase);	// PCH
      inline void UpwindSummandMass(const int gp, int& gp_r, int& gp_s, int& gp_t, double *alpha, double *summand); //CB added by CB: 090507
      // Gauss value
      void ExtropolateGauss(CRFProcess *m_pcs, const int idof);
@@ -123,7 +126,7 @@ class CFiniteElementStd:public CElement
      long index;
      int dof_index; //24.02.2007 WW
 	 // Column index in the node value table
-     int idx0, idx1, idxS, idx3; 
+     int idx0, idx1, idxS, idxSn0, idxSn1, idx3; 
      int idxp0,idxp1, idxp20, idxp21; 
      int phase; 
      int comp; // Component
@@ -181,9 +184,11 @@ class CFiniteElementStd:public CElement
      //
      inline double CalCoefMass();
      inline double CalCoefMass2(int dof_index); // 25.2.2007 WW 
+		 inline double CalCoefMassPSGLOBAL(int dof_index); // 03.3.2009 PCH 
      inline void CalCoefLaplace(bool Gravity, int ip=0);
 	 inline void CalCoefLaplaceMultiphase(int phase, int ip=0); // 10 2008 PCH
      inline void CalCoefLaplace2(bool Gravity, int dof_index);
+		 inline void CalCoefLaplacePSGLOBAL(bool Gravity, int dof_index);	// 03 2009 PCH
      inline double CalCoefAdvection(); //SB4200 OK/CMCD
      inline double CalCoefStorage(); //SB4200
 	 inline double CalCoefContent();
@@ -191,7 +196,8 @@ class CFiniteElementStd:public CElement
      inline double  CalcCoefDualTransfer();
      inline double CalCoef_RHS_T_MPhase(int dof_index); // 27.2.2007 WW  
      inline double CalCoef_RHS_M_MPhase(int dof_index); // 27.2.2007 WW  
-
+		 inline double CalCoef_RHS_PSGLOBAL(int dof_index);
+		 inline void CalCoef_RHS_Pc(int dof_index);	// 03.2007 PCH
      //
      inline void CalNodalEnthalpy();
      //-----------------------------------------------------
@@ -216,7 +222,7 @@ class CFiniteElementStd:public CElement
      void AssembleParabolicEquationNewton();
 	 void AssembleParabolicEquationNewtonJacobian(double** jacob, double* Haa, double* HaaOld, double axx, double ayy, double** amat, double ast, double* swold, double* residuall, int* iups);// JOD
      inline void Assemble_strainCPL(); // Assembly of strain coupling
-	 void AssembleMassMatrix(); // PCH
+	 void AssembleMassMatrix(int option); // PCH
      // Assembly of RHS by Darcy's gravity term
      void Assemble_Gravity();
 	 void Assemble_Gravity_Multiphase();
@@ -224,6 +230,7 @@ class CFiniteElementStd:public CElement
      void Assemble_RHS_T_MPhaseFlow();
      // Assembly of RHS by deformation. 27.2.2007 WW
      void Assemble_RHS_M();
+		 void Assemble_RHS_Pc();	// 03.2009 PCH
 	 void AssembleRHS(int dimension); // PCH
      void Assemble_DualTransfer();
      bool check_matrices; //OK4104
@@ -250,6 +257,7 @@ class CFiniteElementStd:public CElement
      double *NodalValC; 
      double *NodalValC1; 
      double *NodalVal_Sat; 
+     double *NodalVal_SatNW;
      double *NodalVal_p2; 
      //                    
      friend class ::CRFProcess;

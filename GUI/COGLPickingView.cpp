@@ -310,6 +310,13 @@ void COGLPickingView::OnDrawGL(void)
     // Draw Vectors
     if(theApp.VelocitySwitch == 1)
         DrawVectorOnNode();
+	// Draw Flux along edges
+    if(theApp.VedgeSwitch == 1)
+        DrawVelocityAlongEdge();
+
+	// Draw Flux along edges
+    if(theApp.PathlineSwitch == 1)
+        DrawPathline();
      
     // Draw Particles
     if(theApp.ParticleSwitch == 1)
@@ -712,9 +719,16 @@ void COGLPickingView::DrawVectorOnNode(void)
 
 		SquareOfMagnitudeOfVector = V[0]*V[0] + V[1]*V[1] + V[2]*V[2];
 
-		unit[0] = V[0] / sqrt(SquareOfMagnitudeOfVector); 
-        unit[1] = V[1] / sqrt(SquareOfMagnitudeOfVector); 
-        unit[2] = V[2] / sqrt(SquareOfMagnitudeOfVector);
+		if(SquareOfMagnitudeOfVector > 1e-18)
+		{
+			unit[0] = V[0] / sqrt(SquareOfMagnitudeOfVector); 
+			unit[1] = V[1] / sqrt(SquareOfMagnitudeOfVector); 
+			unit[2] = V[2] / sqrt(SquareOfMagnitudeOfVector);
+		}
+		else
+		{
+			unit[0] = 0.0; unit[1] = 0.0; unit[2] = 0.0;
+		}
 		
         // Here I compute the other point from the known magnitude and direction
         // This ratio is on the OpenGL scale
@@ -746,6 +760,103 @@ void COGLPickingView::DrawVectorOnNode(void)
 	}   
     Invalidate(TRUE);	 
 }
+void COGLPickingView::DrawVelocityAlongEdge(void)
+{
+	double SquareOfMaximumOfMagnitudeOfVector = 0.0;
+
+    SquareOfMaximumOfMagnitudeOfVector = GetSquareOfMaximumOfMagnitudeOfVector();
+    
+    // Open the gate to processes 
+    m_pcs = PCSGet("FLUID_MOMENTUM");
+    m_msh = m_pcs->m_msh;
+
+	for(int i=0; i < (int) m_msh->edge_vector.size(); ++i)
+	{
+		double V[3], unit[3], glOrigin[3], glTheOtherPoint[3];
+
+		for(int j=0; j<3; ++j)
+			V[j]=m_msh->edge_vector[i]->GetVelocity(j);
+
+        double SquareOfMagnitudeOfVector = 0.0;
+
+		SquareOfMagnitudeOfVector = V[0]*V[0] + V[1]*V[1] + V[2]*V[2];
+
+		if(SquareOfMagnitudeOfVector > 1e-18)
+		{
+			unit[0] = V[0] / sqrt(SquareOfMagnitudeOfVector); 
+			unit[1] = V[1] / sqrt(SquareOfMagnitudeOfVector); 
+			unit[2] = V[2] / sqrt(SquareOfMagnitudeOfVector);
+		}
+		else
+		{
+			unit[0] = 0.0; unit[1] = 0.0; unit[2] = 0.0;
+		}
+		
+        // Here I compute the other point from the known magnitude and direction
+        // This ratio is on the OpenGL scale
+        double ratio = SquareOfMagnitudeOfVector / SquareOfMaximumOfMagnitudeOfVector * LengthOfSideOfelement;
+		double Pmid[3];
+		m_msh->edge_vector[i]->GetEdgeMidPoint(Pmid);
+		glOrigin[0] = (Pmid[0]-x_mid)/ScaleFactor; 
+        glOrigin[1] = (Pmid[1]-y_mid)/ScaleFactor;  
+        glOrigin[2] = (Pmid[2]-z_mid)/ScaleFactor;
+
+		glTheOtherPoint[0] = unit[0]*ratio + glOrigin[0];
+        glTheOtherPoint[1] = unit[1]*ratio + glOrigin[1];
+        glTheOtherPoint[2] = unit[2]*ratio + glOrigin[2];
+        
+        // Now draw the line of the vector
+        glColor3f(0.0, 1.0, 1.0) ;  // Make the line cyan  
+
+		glBegin(GL_LINES);
+			//Draw the bottom triangle
+			glVertex3f(glOrigin[0], glOrigin[1], glOrigin[2]);
+			glVertex3f(glTheOtherPoint[0], glTheOtherPoint[1], glTheOtherPoint[2]);
+		glEnd();	
+        
+        //draw the wireframe sphere
+        // Let's walk to the center of the sphere	
+		glTranslatef(glTheOtherPoint[0], glTheOtherPoint[1], glTheOtherPoint[2]);	
+		gluSphere(obj, 0.05*LengthOfSideOfelement, 3, 3);
+        // Let's walk back to where it was. 
+		glTranslatef(-glTheOtherPoint[0], -glTheOtherPoint[1], -glTheOtherPoint[2]);
+	}   
+    Invalidate(TRUE);	 
+}
+
+void COGLPickingView::DrawPathline(void)
+{
+	int iend = m_msh->PT->pathline.size();
+	for(int i=0; i < iend; ++i)
+	{
+		int jend = m_msh->PT->pathline[i].path.size();
+		glColor3f(1.0, 0.0, 0.0) ;
+        
+		double x1, y1, z1, x2, y2, z2;
+		for(int j=0; j < jend-1; ++j)
+		{
+			double xtemp1 = m_msh->PT->pathline[i].path[j].p[0];
+			double ytemp1 = m_msh->PT->pathline[i].path[j].p[1];
+			double ztemp1 = 0.0;
+			double xtemp2 = m_msh->PT->pathline[i].path[j+1].p[0];
+			double ytemp2 = m_msh->PT->pathline[i].path[j+1].p[1];
+			double ztemp2 = 0.0;
+
+			x1 = (xtemp1-x_mid)/ScaleFactor; 
+			y1 = (ytemp1-y_mid)/ScaleFactor;
+			z1 = (ztemp1-z_mid)/ScaleFactor;
+			x2 = (xtemp2-x_mid)/ScaleFactor; 
+			y2 = (ytemp2-y_mid)/ScaleFactor;
+			z2 = (ztemp2-z_mid)/ScaleFactor;
+			
+			glBegin(GL_LINES);
+				glVertex3f( x1, y1, z1);
+				glVertex3f( x2, y2, z2);
+			glEnd();
+		}	
+	}	
+}
+
 void COGLPickingView::DrawParticles(void)
 {
 	DrawParticleScene(GL_RENDER);
@@ -944,6 +1055,7 @@ void COGLPickingView::DrawGDebugScene(GLenum mode)
 		if (m_ele->GetElementType() == 4)
 		{
 			double N1[3], N2[3], N3[3];
+			double XYx[3], XYy[3], XYz[3];
 			double x[3], y[3], z[3];
 
 			N1[0] = m_msh->nod_vector[m_ele->GetNodeIndex(0)]->X();
@@ -3329,11 +3441,11 @@ void COGLPickingView::OnSelectAllInPicking()
 		// get the number of gli points from COGLPickingView
 		// Let's open the door to COGLPickingView
 		// Update the change by redrawing
-		//CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+		CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
 		// Get the active MDI child window.
-		//CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+		CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
 		// Get the active view attached to the active MDI child window.
-		//COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
+		COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
 
         // This is termperary measure only for single mesh cass
         m_msh = fem_msh_vector[0];
@@ -3350,11 +3462,11 @@ void COGLPickingView::OnSelectAllInPicking()
 
 		// Let's open the door to COGLPickingView
 		// Update the change by redrawing
-		//CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+		CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
 		// Get the active MDI child window.
-		//CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+		CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
 		// Get the active view attached to the active MDI child window.
-		//COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
+		COGLPickingView *pView = (COGLPickingView *) pChild->GetActiveView();
 
         // Getting the number of polylines
         int numberOfPolylines = (int)polyline_vector.size();//CC
