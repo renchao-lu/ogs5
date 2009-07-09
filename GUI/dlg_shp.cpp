@@ -305,6 +305,7 @@ void CDialogSHP::OnBnClickedButtonCreatePNT()
   // Min/Max //OK
   CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
   GEOCalcPointMinMaxCoordinates();
+
   if(theApp->g_graphics_modeless_dlg->GetSafeHwnd()!= NULL)
   {
     theApp->g_graphics_modeless_dlg->m_dXmin = pnt_x_min;
