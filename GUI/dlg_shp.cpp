@@ -24,6 +24,7 @@ CDialogSHP::~CDialogSHP()
 {
 }
 
+
 void CDialogSHP::DoDataExchange(CDataExchange* pDX)
 {
     CDialog::DoDataExchange(pDX);
@@ -185,7 +186,7 @@ void CDialogSHP::ReadInfo()
         m_strSHPPolyline += m_strCount;
         m_CB_SHP_PLY.AddString(m_strSHPPolyline);
         m_CB_SHP_PLY.SetCurSel(0);
-        break;
+		break;
       case 11: // PointZ
         no_points++;
         m_strSHPPoint = "POINT";
@@ -207,6 +208,22 @@ void CDialogSHP::ReadInfo()
 	 }
    }
   //----------------------------------------------------------------------
+  
+  //KR: activate and deactivate buttons in dialog according to filetype
+  if (hSHPObject->nSHPType==1 || hSHPObject->nSHPType==11)
+  {
+		GetDlgItem(IDC_BUTTON_CREATE_PNT)->EnableWindow(TRUE);
+		GetDlgItem(IDC_BUTTON_CREATE_PLY)->EnableWindow(FALSE);
+		GetDlgItem(IDC_BUTTON_CREATE_SFC)->EnableWindow(FALSE);
+		GetDlgItem(IDC_BUTTON_CREATE_VOL)->EnableWindow(FALSE);
+  }
+  else {
+	  	GetDlgItem(IDC_BUTTON_CREATE_PNT)->EnableWindow(FALSE);
+		GetDlgItem(IDC_BUTTON_CREATE_PLY)->EnableWindow(TRUE);
+		GetDlgItem(IDC_BUTTON_CREATE_SFC)->EnableWindow(TRUE);
+		GetDlgItem(IDC_BUTTON_CREATE_VOL)->EnableWindow(TRUE);
+  }
+
   SHPClose(hSHP);
 }
 
@@ -258,6 +275,7 @@ void CDialogSHP::OnBnClickedButtonCreatePNT()
         if(pnt_number<0){
           gli_points_vector.push_back(m_pnt);
         }
+		m_pnt->id = no_points; //KR 
         break;
       case 11: // PointZ
         no_points++;
@@ -273,6 +291,7 @@ void CDialogSHP::OnBnClickedButtonCreatePNT()
         if(pnt_number<0){
           gli_points_vector.push_back(m_pnt);
         }
+		m_pnt->id = no_points; //KR
         break;
       default: AfxMessageBox("undeclared shapefile type!",MB_OK,0);
         break;
