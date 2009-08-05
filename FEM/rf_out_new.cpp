@@ -844,6 +844,11 @@ void OUTData(double time_current, const int time_step_number)
 		  {
 		    OutputBySteps = false;
             vtk.WriteXMLUnstructuredGrid(vtk_file_name, m_out, time_step_number);
+            VTK_Info dat;
+            vec_dataset.push_back(dat);
+            vec_dataset.back().timestep = m_out->time;
+            vec_dataset.back().vtk_file = pvd_vtk_file_name;
+            vtk.UpdatePVD(pvd_file_name, vec_dataset);
 		  }
 		  else
 		  {
@@ -851,17 +856,15 @@ void OUTData(double time_current, const int time_step_number)
               if(time_current>=m_out->time_vector[j]){
                 vtk.WriteXMLUnstructuredGrid(vtk_file_name, m_out, time_step_number);
                 m_out->time_vector.erase(m_out->time_vector.begin()+j);
+                VTK_Info dat;
+                vec_dataset.push_back(dat);
+                vec_dataset.back().timestep = m_out->time;
+                vec_dataset.back().vtk_file = pvd_vtk_file_name;
+                vtk.UpdatePVD(pvd_file_name, vec_dataset);
 		        break;
               }
 		    }
           }
-
-          VTK_Info dat;
-          vec_dataset.push_back(dat);
-          vec_dataset.back().timestep = m_out->time;
-          vec_dataset.back().vtk_file = pvd_vtk_file_name;
-          vtk.UpdatePVD(pvd_file_name, vec_dataset);
-
           break;
 
       }
@@ -1747,7 +1750,10 @@ double COutput::NODWritePLYDataTEC(int number)
     {
       //if(!(nod_value_vector[k].compare("FLUX")==0))  // removed JOD, does not work for multiple flow processes
       //if (!b_specified_pcs) //NW
-        m_pcs = PCSGet(nod_value_vector[k],bdummy);
+		if(msh_type_name != "COMPARTMENT") // JOD 4.10.01
+          m_pcs = PCSGet(nod_value_vector[k],bdummy);
+		
+
       if(!m_pcs)
       {
         cout << "Warning in COutput::NODWritePLYDataTEC - no PCS data" << endl;
@@ -3004,6 +3010,7 @@ Programing:
 04/2006 kg44 Implementation
 10/2006 WW Output secondary variables
 08/2008 OK MAT values
+06/2009 WW/OK WriteELEVelocity for different coordinate systems
 **************************************************************************/
 void COutput::WriteVTKValues(fstream &vtk_file)
 {
@@ -3014,11 +3021,11 @@ void COutput::WriteVTKValues(fstream &vtk_file)
   double val_n = 0.;
   vector<int> NodeIndex(nName);
 //WW  int no_processes = (int)pcs_vector.size();
-  CFEMesh* m_msh = GetMSH();
-// node data first
-  vtk_file << "POINT_DATA " <<m_msh->GetNodesNumber(false) << endl;
-// Each process gets its own field
+  //m_msh = GetMSH(); //WW/OK is member
   //======================================================================
+  // node data first
+  vtk_file << "POINT_DATA " <<m_msh->GetNodesNumber(false) << endl;
+  // Each process gets its own field
   // NOD data
   //WW 
   for(k=0;k<nName;k++)
@@ -3063,52 +3070,39 @@ void COutput::WriteVTKValues(fstream &vtk_file)
     }
   }
   // ELE data
- if(ele_value_vector.size()>0)
- {
+  if(ele_value_vector.size()>0)
+  {
     m_pcs = GetPCS_ELE(ele_value_vector[0]);
 //OK  else
 //OK    return;
-  //--------------------------------------------------------------------
-  int no_ele_values = (int)ele_value_vector.size();
-  vector<int>ele_value_index_vector(no_ele_values);
-  GetELEValuesIndexVector(ele_value_index_vector);
-  //--------------------------------------------------------------------
-//  double* xyz;
+    //--------------------------------------------------------------------
+    int no_ele_values = (int)ele_value_vector.size();
+    vector<int>ele_value_index_vector(no_ele_values);
+    GetELEValuesIndexVector(ele_value_index_vector);
+    //--------------------------------------------------------------------
 //WW  CElem* m_ele = NULL;
-  FiniteElement::ElementValue* gp_ele = NULL;
-// write header for cell data
-  vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;
-// header for velocities
-  vtk_file << "VECTORS velocity float " << endl;
-  for(long i=0;i<(long)m_msh->ele_vector.size();i++)
-  {
+    FiniteElement::ElementValue* gp_ele = NULL;
+    // write header for cell data
+    vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;
+    // header for velocities
+    vtk_file << "VECTORS velocity float " << endl;
+    WriteELEVelocity(vtk_file); //WW/OK
+    // now we write the rest
     //....................................................................
-//    m_ele = m_msh->ele_vector[i];
-//    xyz = m_ele->GetGravityCenter();
-//    tec_file << xyz[0] << " " << xyz[1] << " " << xyz[2] << " ";
-    //....................................................................
-    gp_ele = ele_gp_value[i];
-    vtk_file << gp_ele->Velocity(0,0) << " ";
-    vtk_file << gp_ele->Velocity(1,0) << " ";
-    vtk_file << gp_ele->Velocity(2,0) << " ";
-    vtk_file << endl;
-  }
-// now we write the rest
-  //....................................................................
-  for(j=0;j<(int)ele_value_index_vector.size();j++)
-  {
-// header now scalar data
-    vtk_file << "SCALARS " << ele_value_vector[j] << " float 1" << endl;
-//    vtk_file << "SCALARS " << m_pcs->pcs_primary_function_name[0] << " float 1" << endl;
-    vtk_file << "LOOKUP_TABLE default" <<endl;
-	for(long i=0;i<(long)m_msh->ele_vector.size();i++)
+    for(j=0;j<(int)ele_value_index_vector.size();j++)
     {
-	  vtk_file << m_pcs->GetElementValue(i,ele_value_index_vector[j]) << endl;
-	}
+      // header now scalar data
+      vtk_file << "SCALARS " << ele_value_vector[j] << " float 1" << endl;
+//    vtk_file << "SCALARS " << m_pcs->pcs_primary_function_name[0] << " float 1" << endl;
+      vtk_file << "LOOKUP_TABLE default" <<endl;
+	  for(long i=0;i<(long)m_msh->ele_vector.size();i++)
+      {
+	    vtk_file << m_pcs->GetElementValue(i,ele_value_index_vector[j]) << endl;
+	  }
+    }
+    //--------------------------------------------------------------------
+    ele_value_index_vector.clear();
   }
-  //--------------------------------------------------------------------
-  ele_value_index_vector.clear();
- }
   //======================================================================
   // MAT data
   double mat_value;
@@ -3135,21 +3129,20 @@ void COutput::WriteVTKValues(fstream &vtk_file)
       vtk_file << mat_value << endl;
     }
   }
-	// PCH: Material groups from .msh just for temparary purpose
-	if(mmp_vector.size() > 1)
+  // PCH: Material groups from .msh just for temparary purpose
+  if(mmp_vector.size() > 1)
+  {
+    // write header for cell data
+    vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;
+	// header now scalar data
+	vtk_file << "SCALARS " << "MatGroup" << " int 1" << endl;
+	vtk_file << "LOOKUP_TABLE default" <<endl;
+	for(long i=0;i<(long)m_msh->ele_vector.size();i++)
 	{
-		// write header for cell data
-    		vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;
-		// header now scalar data
-		vtk_file << "SCALARS " << "MatGroup" << " int 1" << endl;
-
-		vtk_file << "LOOKUP_TABLE default" <<endl;
-		for(long i=0;i<(long)m_msh->ele_vector.size();i++)
-		{
-			m_ele = m_msh->ele_vector[i];
-			vtk_file << m_ele->GetPatchIndex() << endl;
-		}
+      m_ele = m_msh->ele_vector[i];
+	  vtk_file << m_ele->GetPatchIndex() << endl;
 	}
+  }
 }
 
 /**************************************************************************
@@ -3970,4 +3963,60 @@ void COutput::WriteTECNodePCONData(fstream &tec_file)
    }
    //======================================================================
   //----------------------------------------------------------------------
+}
+
+/**************************************************************************
+FEMLib-Method: 
+06/2009 WW/OK Implementation
+**************************************************************************/
+inline void COutput::WriteELEVelocity(iostream &vtk_file)
+{
+    int k; 
+    int vel_ind[3];
+    FiniteElement::ElementValue* gp_ele = NULL;
+
+    vel_ind[0] = 0; 
+    vel_ind[1] = 1; 
+    vel_ind[2] = 2; 
+    // 1D 
+    if(m_msh->GetCoordinateFlag()/10==1)
+    {
+      // 0 y 0
+      if(m_msh->GetCoordinateFlag()%10==1)
+      {
+        vel_ind[0] = 1; 
+        vel_ind[1] = 0;
+      }
+      // 0 0 z
+      else if(m_msh->GetCoordinateFlag()%10==2)
+      {
+        vel_ind[0] = 2; 
+        vel_ind[2] = 0; 
+      }
+    }
+    // 2D 
+    if(m_msh->GetCoordinateFlag()/10==2)
+    {
+      // 0 y z
+      if(m_msh->GetCoordinateFlag()%10==1)
+      {
+        vel_ind[0] = 1; 
+        vel_ind[1] = 2; 
+      }
+      // x 0 z
+      else if(m_msh->GetCoordinateFlag()%10==2)
+      {
+        vel_ind[0] = 0; 
+        vel_ind[1] = 2; 
+        vel_ind[2] = 1; 
+      }
+    }
+   
+    for(long i=0;i<(long)m_msh->ele_vector.size();i++)
+    {
+      gp_ele = ele_gp_value[i];
+      for(k=0; k<3; k++)      
+         vtk_file << gp_ele->Velocity(vel_ind[k],0) << " ";
+      vtk_file << endl;
+    }
 }

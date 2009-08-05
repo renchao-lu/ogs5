@@ -63,7 +63,7 @@ class CSourceTerm
 	// fluid process coupling JOD
 	double coup_leakance, rill_height; 
 	double sorptivity, constant, rainfall, rainfall_duration, moistureDeficit;
-    bool conditional, node_averaging;
+    bool conditional, node_averaging, no_surface_water_pressure ;
     bool river;
   	bool COUPLING_SWITCH;
 	// overland flow  JOD

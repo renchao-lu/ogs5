@@ -27,6 +27,7 @@ class COutput
   private:
     double out_amplifier; //WW to amplify output
     friend void OUTData(double, const int step);
+    inline void WriteELEVelocity(iostream &vtk_file); //WW/OK
     CFEMesh* m_msh;
   public:
     // ID 

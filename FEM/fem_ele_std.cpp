@@ -4037,7 +4037,7 @@ void CFiniteElementStd::CalcStrainCoupling()
 // Local assembly
 void  CFiniteElementStd::Assemble_Gravity()
 {
-  if((coordinate_system)%10!=2&&(!axisymmetry)){
+  if((coordinate_system)%10!=2){ //NW: exclude (!axisymmetry)
    // 27.2.2007 WW (*GravityMatrix) = 0.0;
     return;
   }

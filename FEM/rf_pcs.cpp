@@ -6759,6 +6759,7 @@ double CRFProcess::ExecuteNonLinear()
   if(Tim->GetTimeStepCrtlType()>0)
     CopyU_n(aproblem->GetBufferArray()); 
 #endif    
+  this->CheckMarkedElement(); //NW 
   for(iter=0;iter<pcs_nonlinear_iterations;iter++)
   {
     cout << "    PCS non-linear iteration: " << iter << "/"   
@@ -10324,4 +10325,5 @@ bool PCSConfig()
   }
   return some_thing_done;
 }
+
 

@@ -885,7 +885,7 @@ bool Problem::CouplingLoop()
    for(i=0; i<(int)pcs_vector.size(); i++) 
      pcs_vector[i]-> UpdateTransientBC(); 
 
-   for(i=0; i<(int)total_processes.size(); i++)      
+   for(i=0; i<(int)total_processes.size(); i++)      	     
    {
       if(active_processes[i]&&total_processes[i]->selected)
       {
@@ -911,8 +911,8 @@ bool Problem::CouplingLoop()
    bool accept = true;
    for(loop_index=0; loop_index<max_coupling_iterations; loop_index++)                    
    {
-      for(i=0; i<num_processes; i++)
-      {
+    for(i=0; i<num_processes; i++)
+	  {
          index = active_process_index[i];
          //RealFunction aProcess = active_processes[index];
          cpl_index = coupled_process_index[index];
@@ -952,16 +952,39 @@ bool Problem::CouplingLoop()
            }  
            else
            {
+	
               if(fabs(error_cpl-error)<coupling_tolerance)
                 break;
               error_cpl = error;
-           } 
+		
+		   
+		   } 
            // 
            if(!accept) break;         
          }        
       }
+	  if(error_cpl<coupling_tolerance) break; // JOD/WW 4.10.01
       cout<<"Coupling loop: "<<loop_index+1<<" of "<<max_coupling_iterations<<endl;
-      if(!accept) break;         
+      if(!accept) break;     
+ /*index = active_process_index[1];
+  cpl_index = coupled_process_index[index];
+  if(exe_flag[index]) {
+	  a_pcs = total_processes[index];
+      error =  Call_Member_FN(this, active_processes[index])();
+   } 
+	  index = active_process_index[0];
+	    cpl_index = coupled_process_index[index];
+		if(exe_flag[index]){	
+		a_pcs = total_processes[index];
+      error =  Call_Member_FN(this, active_processes[index])();
+}	 
+	  index = active_process_index[2];
+	    cpl_index = coupled_process_index[index];
+		if(exe_flag[index]){
+		a_pcs = total_processes[index];
+      error =  Call_Member_FN(this, active_processes[index])();
+}*/
+
    }
    // 
    return accept;
@@ -1074,14 +1097,14 @@ inline double Problem::RichardsFlow()
       if(m_msh->geo_name.compare("REGIONAL")==0)
         LOPExecuteRegionalRichardsFlow(m_pcs);
       else
-        pcs_flow_error = m_pcs->ExecuteNonLinear();
+        pcs_flow_error = error = m_pcs->ExecuteNonLinear(); // JOD 4.10.01
       if(m_pcs->saturation_switch == true)
         m_pcs->CalcSaturationRichards(1, false); // JOD
       else
         m_pcs->CalcSecondaryVariablesUnsaturatedFlow();  //WW
 #ifndef NEW_EQS //WW. 07.11.2008
-      if(lop_coupling_iterations > 1) // JOD  coupling
-         pcs_coupling_error = m_pcs->CalcCouplingNODError();
+     // if(lop_coupling_iterations > 1) // JOD  4.10.01 removed
+     //    pcs_coupling_error = m_pcs->CalcCouplingNODError();
 #endif
        conducted = true; //WW 
    }

@@ -152,7 +152,7 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
                a_node = MeshElement->nodes[i]; //07.04.2007. WW 
                dy = dz = 0.;
                dx = a_node->X()-a_node0->X();
-               dz = a_node->Y()-a_node0->Y();
+               dy = a_node->Y()-a_node0->Y();
                dz = a_node->Z()-a_node0->Z();
                X[i] =  (*MeshElement->tranform_tensor)(0,0)*dx
                       +(*MeshElement->tranform_tensor)(1,0)*dy
