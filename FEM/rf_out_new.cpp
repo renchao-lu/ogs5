@@ -50,6 +50,7 @@ using namespace std;
 using Mesh_Group::CFEMesh;
 //==========================================================================
 vector<COutput*>out_vector;
+CVTK vtk;
 /**************************************************************************
 FEMLib-Method: 
 Task: OUT constructor
@@ -808,47 +809,29 @@ void OUTData(double time_current, const int time_step_number)
     else if(m_out->dat_type_name.compare("PVD")==0){
       switch(m_out->geo_type_name[2]){
         case 'M': // domain data
-          static vector<VTK_Info> vec_dataset;
-          static CVTK vtk;
-          static string pvd_file_name;
-          static string pvd_vtk_file_name_base;
+//          static CVTK vtk;
           if (time_step_number == 0) {
-            //PVD
-            vec_dataset.clear();
-            pvd_file_name = m_out->file_base_name;
-            if(m_out->pcs_type_name.size()>0) // PCS
-              pvd_file_name += "_" + m_out->pcs_type_name;
-            pvd_file_name += ".pvd";
-            //VTK
-            int ibs = (int)m_out->file_base_name.find_last_of("\\");
-            int is = (int)m_out->file_base_name.find_last_of("/");
-            if (ibs != string::npos  || is != string::npos) {
-              int ibegin = ibs; if (is > ibs) ibegin = is;
-              ibegin+=1;
-              pvd_vtk_file_name_base = m_out->file_base_name.substr(ibegin);
-            } else {
-              pvd_vtk_file_name_base = m_out->file_base_name;
-            }
-            if(m_out->pcs_type_name.size()>0) // PCS
-              pvd_vtk_file_name_base += "_" + m_out->pcs_type_name;
+         	vtk.InitializePVD(m_out->file_base_name, m_out->pcs_type_name);
           }
+          // Set VTU file name and path
           string vtk_file_name = m_out->file_base_name;
           if(m_out->pcs_type_name.size()>0) // PCS
             vtk_file_name += "_" + m_out->pcs_type_name;
-          string pvd_vtk_file_name = pvd_vtk_file_name_base;
+          string pvd_vtk_file_name = vtk.pvd_vtk_file_name_base;
           stringstream stm;
           stm << time_step_number;
           vtk_file_name += stm.str() + ".vtu";
           pvd_vtk_file_name += stm.str() + ".vtu";
+          // Output
           if(OutputBySteps)
 		  {
 		    OutputBySteps = false;
             vtk.WriteXMLUnstructuredGrid(vtk_file_name, m_out, time_step_number);
             VTK_Info dat;
-            vec_dataset.push_back(dat);
-            vec_dataset.back().timestep = m_out->time;
-            vec_dataset.back().vtk_file = pvd_vtk_file_name;
-            vtk.UpdatePVD(pvd_file_name, vec_dataset);
+            vtk.vec_dataset.push_back(dat);
+            vtk.vec_dataset.back().timestep = m_out->time;
+            vtk.vec_dataset.back().vtk_file = pvd_vtk_file_name;
+            vtk.UpdatePVD(vtk.pvd_file_name, vtk.vec_dataset);
 		  }
 		  else
 		  {
@@ -857,10 +840,10 @@ void OUTData(double time_current, const int time_step_number)
                 vtk.WriteXMLUnstructuredGrid(vtk_file_name, m_out, time_step_number);
                 m_out->time_vector.erase(m_out->time_vector.begin()+j);
                 VTK_Info dat;
-                vec_dataset.push_back(dat);
-                vec_dataset.back().timestep = m_out->time;
-                vec_dataset.back().vtk_file = pvd_vtk_file_name;
-                vtk.UpdatePVD(pvd_file_name, vec_dataset);
+                vtk.vec_dataset.push_back(dat);
+                vtk.vec_dataset.back().timestep = m_out->time;
+                vtk.vec_dataset.back().vtk_file = pvd_vtk_file_name;
+                vtk.UpdatePVD(vtk.pvd_file_name, vtk.vec_dataset);
 		        break;
               }
 		    }

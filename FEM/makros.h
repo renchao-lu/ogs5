@@ -23,8 +23,8 @@
 
 /* ROCKFLOW-Version */
 #define ROCKFLOW_VERSION    "4.10.01(JOD)"
-#define RF_SHELL_VERSION    "4.10.01 (JOD)"
-#define ROCKFLOW_DATE       "05.08.2009"
+#define RF_SHELL_VERSION    "4.10.02 (UJG/WW)"
+#define ROCKFLOW_DATE       "01.10.2009"
 
 /* Definitionen von Makros zur Steuerung der bedingten Compilierung */
 #define SWITCHES

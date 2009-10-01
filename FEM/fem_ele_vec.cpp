@@ -1281,7 +1281,7 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
   if(PModel==1||PModel==10)
     smat->CalulateCoefficent_DP();
   //
-  if(PModel!=3)
+  if(PModel!=3&&smat->Youngs_mode!=2)
   {
     #ifdef RFW_FRACTURE
     smat->Calculate_Lame_Constant(GetMeshElement());
@@ -1328,6 +1328,9 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
   //
   if(PoroModel==4||T_Flag||smat->Creep_mode>0)
     Strain_TCS =true;
+  //
+  if(smat->CreepModel()==1000) //HL_ODS
+    smat->CleanTrBuffer_HL_ODS();
   // Loop over Gauss points
   for (gp = 0; gp < nGaussPoints; gp++)
   {
@@ -1342,7 +1345,14 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
       //---------------------------------------------------------
       ComputeGradShapefct(2);
       ComputeShapefct(2); 
-      ComputeStrain();
+      if(smat->Youngs_mode==2) //WW/UJG. 22.01.2009
+	  {
+         smat->CalcYoungs_SVV(CalcStrain_v()); 		 
+         smat->ElasticConsitutive(ele_dim, De); 
+      }
+
+	  
+	  ComputeStrain();
       if(update) RecordGuassStrain(gp, gp_r, gp_s, gp_t);	   
       if( F_Flag||T_Flag) 
           ComputeShapefct(1); // Linear order interpolation function
@@ -1451,11 +1461,17 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
             for (i = 0; i < 3; i++)
                strain_ne[i] -= ThermalExpansion*Tem;
         } 
-        if(smat->Creep_mode>0) // Strain increment by creep
+        if(smat->Creep_mode==1||smat->Creep_mode==2) // Strain increment by creep
         {
            for (i = 0; i < ns; i++)
              stress_ne[i] = (*eleV_DM->Stress)(i, gp);
            smat->AddStain_by_Creep(ns,stress_ne, strain_ne, t1);           
+        }
+        if(smat->Creep_mode==1000) // HL_ODS. Strain increment by creep
+        {
+           for (i = 0; i < ns; i++)
+             stress_ne[i] = (*eleV_DM->Stress)(i, gp);
+           smat->AddStain_by_HL_ODS(eleV_DM, stress_ne, strain_ne, t1);           
         }
         // Stress deduced by thermal or swelling strain incremental: 
         De->multi(strain_ne, dstress);
@@ -1512,7 +1528,9 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
   }
   // The mapping of Gauss point strain to element nodes
   if(update)
-      ExtropolateGuassStrain();	
+    ExtropolateGuassStrain();	
+  else if(smat->Creep_mode==1000) // HL_ODS. Strain increment by creep
+    smat->AccumulateEtr_HL_ODS(eleV_DM, nGaussPoints);    
 
   /*
   //TEST
@@ -2736,6 +2754,11 @@ ElementValue_DM::ElementValue_DM(CElem* ele,  const int NGP, bool HM_Staggered)
        *prep0 = 0.0;
        *e_i = 0.0;
    }
+   if(sdp->CreepModel()==1000)
+   {
+      xi = new Matrix(LengthBS);
+      *xi = 0.0;      
+   } 
    disp_j=0.0;
    tract_j=0.0;
    Localized = false;
@@ -2821,5 +2844,36 @@ ElementValue_DM::~ElementValue_DM()
     xi = NULL;
     MatP = NULL;
 }
+
+
+
+/***************************************************************************
+   GeoSys - Funktion: 
+            CFiniteElementVec:: CalcStrain_v()
+   Aufgabe:
+           Calculate effictive strain at Gauss points    
+   Formalparameter:
+           E: 
+ 
+   Programming:
+   01/2009   WW/UWG  
+**************************************************************************/
+double  CFiniteElementVec:: CalcStrain_v()
+{
+  int i;
+  for (i = 0; i < ns; i++)
+    dstrain[i] = 0.0;
+  //
+  for(i=0; i<nnodesHQ; i++)
+	  dstrain[i] += pcs->GetNodeValue(nodes[i],Idx_Strain[0])*shapefctHQ[i];
+  double val = 0;
+  for (i = 0; i < 3; i++)
+    val += dstrain[i]*dstrain[i];
+  for (i = 3; i < ns; i++)
+    val += 0.5*dstrain[i]*dstrain[i];
+
+  return sqrt(2.0*val/3.); 
+}
+
 
 } // end namespace FiniteElement

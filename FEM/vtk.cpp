@@ -13,45 +13,67 @@
 #include "fem_ele_std.h" // for element velocity
 
 const string INDEX_STR = "  ";
+const string velocity_name[2][4] = {{"VELOCITY_X1", "VELOCITY_Y1", "VELOCITY_Z1", "NODAL_VELOCITY1"}, {"VELOCITY_X2", "VELOCITY_Y2", "VELOCITY_Z2", "NODAL_VELOCITY2"}};
 
-bool CVTK::WriteHeaderOfPVD(const string &pvdfile)
+bool CVTK::InitializePVD(const string &file_base_name, const string &pcs_type_name)
 {
-  fstream fin(pvdfile.data(), ios::out);
-  if (!fin.good()) return false;
+    //PVD
+	this->vec_dataset.clear();
+    this->pvd_file_name = file_base_name;
+    if(pcs_type_name.size()>0) // PCS
+    	this->pvd_file_name += "_" + pcs_type_name;
+    this->pvd_file_name += ".pvd";
+    //VTK
+    int ibs = (int)file_base_name.find_last_of("\\");
+    int is = (int)file_base_name.find_last_of("/");
+    if (ibs != string::npos  || is != string::npos) {
+      int ibegin = ibs; if (is > ibs) ibegin = is;
+      ibegin+=1;
+      this->pvd_vtk_file_name_base = file_base_name.substr(ibegin);
+    } else {
+      this->pvd_vtk_file_name_base = file_base_name;
+    }
+    if (pcs_type_name.size()>0) // PCS
+      this->pvd_vtk_file_name_base += "_" + pcs_type_name;
+
+    return true;
+}
+
+bool CVTK::WriteHeaderOfPVD(fstream &fin)
+{
   fin << "<?xml version=\"1.0\"?>" << endl;
   fin << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\" compressor=\"vtkZLibDataCompressor\">"  << endl;
   fin << INDEX_STR << "<Collection>" << endl;
-  fin.close();
   return true;
 }
 
-bool CVTK::WriteEndOfPVD(const string &pvdfile)
+bool CVTK::WriteEndOfPVD(fstream &fin)
 {
-  fstream fin(pvdfile.data(), ios::app);
-  if (!fin.good()) return false;
   fin << INDEX_STR << "</Collection>" << endl;
   fin << "</VTKFile>" << endl;
-  fin.close();
   return true;
 }
 
-bool CVTK::WriteDatasetOfPVD(const string &pvdfile, double timestep, const string &vtkfile)
+bool CVTK::WriteDatasetOfPVD(fstream &fin, double timestep, const string &vtkfile)
 {
-  fstream fin(pvdfile.data(), ios::app);
-  if (!fin.good()) return false;
   fin.setf(ios::scientific,ios::floatfield);
   fin.precision(12);
   fin << INDEX_STR << INDEX_STR << "<DataSet timestep=\"" << timestep << "\" group=\"\" part=\"0\" file=\"" << vtkfile << "\"/>" << endl;
-  fin.close();
   return true;
 }
 
 bool CVTK::UpdatePVD(const string &pvdfile, const vector<VTK_Info> &vec_vtk)
 {
-  CVTK::WriteHeaderOfPVD(pvdfile);
+
+  fstream fin(pvdfile.data(), ios::out);
+  if (!fin.good()) return false;
+
+  CVTK::WriteHeaderOfPVD(fin);
   for (int i=0; i<(int)vec_vtk.size(); i++)
-    CVTK::WriteDatasetOfPVD(pvdfile, vec_vtk[i].timestep, vec_vtk[i].vtk_file);
-  CVTK::WriteEndOfPVD(pvdfile);
+    CVTK::WriteDatasetOfPVD(fin, vec_vtk[i].timestep, vec_vtk[i].vtk_file);
+  CVTK::WriteEndOfPVD(fin);
+
+  fin.close();
 
   return true;
 }
@@ -195,7 +217,6 @@ bool CVTK::WriteXMLUnstructuredGrid(const string &vtkfile, COutput *out, const i
   }
   // Nodal velocities 
   if (outNodeVelocity) {
-    const static string velocity_name[][4] = {{"VELOCITY_X1", "VELOCITY_Y1", "VELOCITY_Z1", "NODAL_VELOCITY1"}, {"VELOCITY_X2", "VELOCITY_Y2", "VELOCITY_Z2", "NODAL_VELOCITY2"}};
     unsigned int velocity_id = 0;
     for (int i=0; i<(int)out->nod_value_vector.size(); i++) {
       m_pcs = NULL;
@@ -285,4 +306,5 @@ bool CVTK::WriteXMLUnstructuredGrid(const string &vtkfile, COutput *out, const i
 
   return true;
 }
+
 

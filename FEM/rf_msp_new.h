@@ -167,6 +167,7 @@ class CSolidProperties
       double Youngs_Modulus(double refence = 0.0); 
     #endif 
     double Poisson_Ratio() const {return PoissonRatio;}
+	void CalcYoungs_SVV(const double strain_v);
     double Thermal_Expansion() const {return ThermalExpansion;}
     // 4. Plasticity
     int Plastictity() const {return Plasticity_type;}
@@ -234,6 +235,9 @@ class CSolidProperties
     void TEPSwellingParameter_kis(const double suction); 
     // Strain inrement by creep
     void AddStain_by_Creep(const int ns, double *stress_n, double *dstrain, double temperature=0.0);
+    void AddStain_by_HL_ODS(const ElementValue_DM *ele_val, double *stress_n, double *dstrain, double temperature=30);
+    void CleanTrBuffer_HL_ODS();
+    void AccumulateEtr_HL_ODS(const ElementValue_DM *ele_val, const int nGS);
 
     // Plasticity
     // 1. Drucker-Prager

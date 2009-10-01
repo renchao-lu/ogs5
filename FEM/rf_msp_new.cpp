@@ -283,6 +283,10 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
           data_Youngs = new Matrix(1);        
           in_sd >> (*data_Youngs)(0);
           in_sd.clear();
+        case 2: //  = const
+          data_Youngs = new Matrix(3);        
+          in_sd >> (*data_Youngs)(0)>>(*data_Youngs)(1)>>(*data_Youngs)(2);
+          in_sd.clear();
           break;
       #ifdef RFW_FRACTURE
           case 2: // = f(aperture), for fracture material groups, RFW 04/2005,  RFW 09/12/2005
@@ -326,6 +330,24 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
            in_sd>>(*data_Creep)(2);
            in_sd.clear();           
         }
+       //....................................................................
+       if(line_string.find("LUBBY2")!=string::npos)
+       {
+          Creep_mode=1000;
+          // data_Creep: 
+          //  0: eta_m
+          //  1: m
+          //  2: l
+          //  3: eta_k
+          //  4: k1
+          //  5: k2
+          //  6: G_k
+         data_Creep = new Matrix(7,2);
+         in_sd.str(GetLineFromFile1(msp_file));
+         for(i=0; i<7; i++)
+           in_sd>>(*data_Creep)(i,0);
+         in_sd.clear();           
+      }
     }
     //....................................................................
     if(line_string.find("$BIOT_CONSTANT")!=string::npos)
@@ -4217,6 +4239,84 @@ void CSolidProperties::AddStain_by_Creep(const int ns, double *stress_n,
   for(i=0; i<ns; i++)
     dstrain[i] -= fac*stress_n[i]/norn_S;    
 }
+/**************************************************************************
+FEMLib-Method:
+Task: Caculate increment of strain induced by HL creep model
+Programing:
+10/2008 UJG/WW 
+last modified:
+**************************************************************************/
+void  CSolidProperties::CleanTrBuffer_HL_ODS()
+{
+  for(int i=0; i<6; i++)
+   (*data_Creep)(i,1) = 0.0;
+}
+/**************************************************************************
+FEMLib-Method:
+Task: Caculate increment of strain induced by HL creep model
+Programing:
+10/2008 UJG/WW 
+last modified:
+**************************************************************************/
+void  CSolidProperties::AccumulateEtr_HL_ODS(const ElementValue_DM *ele_val, const int nGS)
+{
+  int i, ns;
+  ns = ele_val->xi->Size();
+  //
+  for(i=0; i<ns; i++)
+    (*ele_val->xi)(i) += (*data_Creep)(i, 1)/(double)nGS;
+
+}
+/**************************************************************************
+FEMLib-Method:
+Task: Caculate increment of strain induced by HL creep model
+Programing:
+01/2009 UJG/WW 
+last modified:
+**************************************************************************/
+void CSolidProperties::CalcYoungs_SVV(const double strain_v)
+{
+   double nv = Poisson_Ratio();
+   E = (*data_Youngs)(0)/(1.+(*data_Youngs)(1)*pow(strain_v, (*data_Youngs)(2)));
+   Lambda = E * nv / ((1. + nv) * (1. - 2. * nv));
+   G = 0.5 * E / (1. + nv);
+   K=(3.0*Lambda+2.0*G)/3.0;  
+}
+/**************************************************************************
+FEMLib-Method:
+Task: Caculate increment of strain induced by HL creep model
+Programing:
+10/2008 UJG/WW 
+last modified:
+**************************************************************************/
+void CSolidProperties::AddStain_by_HL_ODS(const ElementValue_DM *ele_val, double *stress_n,
+     double *dstrain, double temperature)
+{
+  int i, ns, dim;
+  double norn_S, norm_str;
+  static double epsilon_tr[6]; 
+  ns = ele_val->xi->Size();
+  dim = 2;
+  if(ns>4) dim =3;
+  DeviatoricStress(stress_n);
+  norn_S = sqrt(1.5*TensorMutiplication2(stress_n, stress_n, dim));
+  //
+  for(i=0; i<ns; i++)
+    epsilon_tr[i] = (*ele_val->xi)(i);
+  //
+  norm_str = sqrt(2.0*TensorMutiplication2(epsilon_tr, epsilon_tr, dim)/3.0);
+  double max_etr = norn_S/(*data_Creep)(6, 0)*exp((*data_Creep)(4, 0)*norn_S);
+  double eta_k = (*data_Creep)(3, 0)*exp((*data_Creep)(5, 0)*norn_S); 
+  double eta_m = (*data_Creep)(0, 0)*exp((*data_Creep)(1, 0)*norn_S)
+                 *exp((temperature+273.16)*(*data_Creep)(2, 0)); 
+  if(max_etr<DBL_EPSILON)
+    return;
+  for(i=0; i<ns; i++)
+  {
+    (*data_Creep)(i, 1) += 1.5*dt*(1-norm_str/max_etr)*stress_n[i]/eta_k;
+    dstrain[i] -= 1.5*dt*((1-norm_str/max_etr)/eta_k+1/eta_m)*stress_n[i]; 
+  }   
+}
 
 /**************************************************************************
 FEMLib-Method:
@@ -4259,6 +4359,7 @@ void CSolidProperties::CalPrimaryVariable(vector<string>& pcs_name_vector)
 FEMLib-Method: 
 01/2006 OK Implementation
 05/2009 OK DENSITY
+09/2009 OK Bugfix, write only existing data
 **************************************************************************/
 void CSolidProperties::Write(fstream* msp_file)
 {
@@ -4282,14 +4383,19 @@ void CSolidProperties::Write(fstream* msp_file)
   //.......................................................................
   *msp_file << " $DENSITY" << endl;
   *msp_file << "  " << Density_mode;
-  *msp_file << " " << (*data_Density)(0) << endl;
+  if(data_Density) //OK410
+    *msp_file << " " << (*data_Density)(0) << endl;
+  else
+    *msp_file << " Warning: no density data" << endl;
   //.......................................................................
   // Elasticity properties
   *msp_file << " $ELASTICITY" << endl;
-  *msp_file << "  POISSION " << Poisson_Ratio() << endl;  
+  if(Poisson_Ratio()) //OK410
+    *msp_file << "  POISSION " << Poisson_Ratio() << endl;  
   *msp_file << "  YOUNGS_MODULUS" << endl;
   *msp_file << "  " << Youngs_mode;
-  *msp_file << " " << (*data_Youngs)(0) << endl;
+  if(data_Youngs) //OK410
+    *msp_file << " " << (*data_Youngs)(0) << endl;
   //.......................................................................
   // Thermal properties
   *msp_file << " $THERMAL" << endl;
@@ -4304,7 +4410,7 @@ void CSolidProperties::Write(fstream* msp_file)
     *msp_file << "  " << Capacity_mode;  
     *msp_file << " " << (*data_Capacity)(0) << endl;  
   }
-  if(Capacity_mode>0)
+  if(this->Conductivity_mode>0) //OK410
   {
     *msp_file << "  CONDUCTIVITY" << endl;  
     *msp_file << "  " << Conductivity_mode;  

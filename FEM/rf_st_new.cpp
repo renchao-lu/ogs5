@@ -860,6 +860,7 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector, strin
        }
        //-----------
        if((m_st->pcs_type_name.compare(pcs_type_name)==0)&&(m_st->pcs_pv_name.compare(pcs_pv_name)==0)) {
+		 m_st->m_pcs = m_pcs; // HS: 01.09.2009
          if(m_st->geo_type_name.compare("POINT")==0)
            SetPNT(m_pcs, m_st, ShiftInNodeVector);
          if(m_st->geo_type_name.compare("LINE")==0) 
@@ -2833,10 +2834,10 @@ last modification:
 **************************************************************************/
 void CSourceTerm::SetNodeValues(vector<long>&nodes, vector<long>&nodes_cond, vector<double>&node_values, const int ShiftInNodeVector) {
   
- CRFProcess* m_pcs = NULL;
+ //CRFProcess* m_pcs = NULL; // HS: removed 01.09.2009
  CNodeValue *m_nod_val = NULL; 
  long number_of_nodes = (long)nodes.size();
- m_pcs = PCSGet(pcs_type_name);
+ // m_pcs = PCSGet(pcs_type_name); // HS: removed 01.09.2009
 
  for(long i = 0; i < number_of_nodes; i++){
      m_nod_val = new CNodeValue();

@@ -200,6 +200,8 @@ class CFiniteElementVec:public CElement
      /// Extropolation
 	 bool RecordGuassStrain(const int gp, const int gp_r, 
 		                    const int gp_s, int gp_t);
+	 // Effictive strain
+	 double CalcStrain_v(); 
      void ExtropolateGuassStrain();
      void ExtropolateGuassStress();
 
