@@ -283,6 +283,7 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
           data_Youngs = new Matrix(1);        
           in_sd >> (*data_Youngs)(0);
           in_sd.clear();
+          break; //WW
         case 2: //  = const
           data_Youngs = new Matrix(3);        
           in_sd >> (*data_Youngs)(0)>>(*data_Youngs)(1)>>(*data_Youngs)(2);
