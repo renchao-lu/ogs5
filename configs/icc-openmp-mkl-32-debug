@@ -1,0 +1,14 @@
+NEW_SP = yes;
+MKL_HOME=/opt/intel/Compiler/11.0/074/mkl
+MKL_LIB=/opt/intel/Compiler/11.0/074/mkl/lib/32
+
+CXX_LIBS         = ./LIB/liblis.a.icc-32 -L$(MKL_LIB) -lmkl_intel_thread -lmkl_core -lmkl_lapack -lguide  -lstdc++
+
+CXX_LDFLAGS      = -debug -O0 -openmp -pthread -axP -hpo -static -no-multibyte-chars
+CXX_LD           = icc
+
+CXX_OPT_FLAGS    =-debug -O0 -openmp -pthread -axP -hpo -static -no-multibyte-chars 
+CXX_DEBUG_FLAGS  = 
+
+CXX_FLAGS        = -DGCC -D_POSIX_SOURCE -DNO_ERROR_CONTROL -DPROBLEM_CLASS -I../LIB $(CXX_OPT_FLAGS) $(CXX_DEBUG_FLAGS) -DRANDOM_WALK -DNEW_EQS -DLIS -D_OPENMP -DMKL -I$(MKL_HOME)/include 
+CXX              = icc
