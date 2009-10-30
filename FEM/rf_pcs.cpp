@@ -3090,6 +3090,8 @@ Programing:
 void CRFProcess::ConfigPS_Global()
 {
   dof = 2;
+  //fem->FluidProp->mode=3; //NB, secondary variable as MFP-argument, PV just from last timestep
+  //fem->GasProp->mode=3;
   // 1.1 primary variables
   pcs_number_of_primary_nvals = 2;
   pcs_primary_function_name[0] = "PRESSURE1";
@@ -7431,23 +7433,23 @@ void CRFProcess::CalcSecondaryVariablesPSGLOBAL(const bool initial)
 				int matgrp = thisEle->GetPatchIndex();
 				mmp = mmp_vector[matgrp];
 				mmp->mode = 2;
-	//			sum += 1.0/sat2;
-				sum += 1.0/MRange(mmp->saturation_res[1],sat2,1.0-mmp->saturation_res[0]);
+				sum += 1.0/sat2;
+	//			sum += 1.0/MRange(mmp->saturation_res[1],sat2,1.0-mmp->saturation_res[0]);
 			}
 			sat2 = (double)NumOfNeighborElements/sum;
 		}
 		else
 		{
 			mmp = mmp_vector[0];
-			sat2 = MRange(mmp->saturation_res[1],sat2,1.0-mmp->saturation_res[0]);
+	//		sat2 = MRange(mmp->saturation_res[1],sat2,1.0-mmp->saturation_res[0]);
 		}
 		s_wetting = 1.0 - sat2;
 		// Assigning the secondary variable, Sw
 		SetNodeValue(i,ndx_s_wetting,s_wetting);
 		// Assigning the primary variable Snw here one more time
 		// to completely bound the range of saturation
-		SetNodeValue(i,ndx_s_nonwetting,sat2);
-		SetNodeValue(i,ndx_s_nonwetting+1,sat2);
+	//	SetNodeValue(i,ndx_s_nonwetting,sat2);
+	//	SetNodeValue(i,ndx_s_nonwetting+1,sat2);
 
 		// Assigning the secondary variable, Pc
 		if(mmp_vector.size() > 1)

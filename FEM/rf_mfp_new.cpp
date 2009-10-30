@@ -139,11 +139,31 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
       continue;
     }
     //....................................................................
-    if(line_string.find("$CAPTION")!=string::npos) { // NB 4.8.01
+    if(line_string.find("$FLUID_NAME")!=string::npos) { // NB 4.8.01
 	  in.str(GetLineFromFile1(mfp_file));
-      in >> caption; //sub_line
-      therm_prop (caption); //NB 4.9.05 (getting thermophysical constants of specified substance)
+      in >> fluid_name; //sub_line
+      therm_prop (fluid_name); //NB 4.9.05 (getting thermophysical constants of specified substance)
       //TODO: add choosing of property functions in input file (NB)
+	  in.clear();
+      continue;
+    }
+    //....................................................................
+    if(line_string.find("$COMPRESSIBILITY")!=string::npos) { // NB Oct-2009
+	  in.str(GetLineFromFile1(mfp_file));
+	  in >> compressibility_model_pressure; //sub_line 1 for first phase
+	  in >> compressibility_pressure; //sub_line 1
+	  in.clear();
+	  in >> compressibility_model_temperature; //sub_line 2 for second phase
+	  in >> compressibility_temperature; //sub_line 2
+	  in.clear();
+
+	  // available models see CFluidProperties::drhodP and CFluidProperties::drhodT
+      // 0 incompressible
+      // 1 constant slope
+      // 2 slope from fct_table
+	  // 3 difference quotient
+	  // 4 analytical derivation
+
 	  in.clear();
       continue;
     }
@@ -218,51 +238,37 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
       { // Molar mass
         in >> molar_mass;
       }
-	  if(density_model==10)		//NB
-	  { // density read from matrix with rho-P-T values
-	  if(!T_Process) 
-        {
-        in >> T_0;
-		density_pcs_name_vector.push_back("PRESSURE1");
-        }
-      else
-        {
-        density_pcs_name_vector.push_back("PRESSURE1");
-        density_pcs_name_vector.push_back("TEMPERATURE1");
-        }
-        }
-       
-       if(density_model==11)		//NB  4.9.05
-  //Peng-Robinson Equation of State
-	  if(!T_Process) 
-        {
-        in >> T_0;
-		density_pcs_name_vector.push_back("PRESSURE1");
-        }
-      else
-        {
-        density_pcs_name_vector.push_back("PRESSURE1");
-        density_pcs_name_vector.push_back("TEMPERATURE1");
-        } 
-       if(density_model==12)		//NB 4.9.05
-	   { // Redlich-Kwong Equation of State
-	    	  if(!T_Process) 
-                {
-                in >> T_0;
-		        density_pcs_name_vector.push_back("PRESSURE1");
-                }
-                else
-                {
-                density_pcs_name_vector.push_back("PRESSURE1");
-                density_pcs_name_vector.push_back("TEMPERATURE1");
-                }
-        }
-       if(density_model==13)		//NB JUN 09
-	   { // Helmholtz free Energy
-                density_pcs_name_vector.push_back("PRESSURE1");
-                density_pcs_name_vector.push_back("TEMPERATURE1");
-       }
-	  
+
+	  if((density_model==10)	  //NB 4.8.01  read density from a rho-P-T table
+	   ||(density_model==11)      //NB 4.9.05  Peng-Robinson Equation of State
+	   ||(density_model==12)      //NB 4.9.05  Redlich-Kwong Equation of State
+	   ||(density_model==13))     //NB JUN 09  Fundamental equation
+	  {
+		  string arg1,arg2,arg3;
+		  in >> arg1 >> arg2 >> arg3; //get up to three arguments for density model
+
+		  if (isdigit(arg1[0])!=0) // first argument is reference temperature
+		  {
+			  T_0 = atof(arg1.c_str());
+			  arg1 = arg2;
+			  arg2 = arg3;
+		  }
+
+		  if (arg1.length()==0) // if no arguments are given use standard
+		  {
+			  arg1="PRESSURE1";
+			  arg2="TEMPERATURE1";
+		  } else
+		  {
+			  if (arg2.length()==0) // if only PRESSURE argument is given
+			  {
+				  arg2="TEMPERATURE1";
+			  }
+		  }
+
+		  density_pcs_name_vector.push_back(arg1);
+		  if (T_Process) density_pcs_name_vector.push_back(arg2);
+	  }
 //      mfp_file->ignore(MAX_ZEILE,'\n');
       in.clear();
       continue;
@@ -297,11 +303,28 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
         viscosity_pcs_name_vector.push_back("PRESSURE1");
         viscosity_pcs_name_vector.push_back("TEMPERATURE1");
       }
-	  if(viscosity_model==9){ // my(rho,T) (FENGHOUR et. al.; only for CO2) NB
-	   // in >> caption; // already defined by Subkeyword #CAPTION, NB
-		  viscosity_pcs_name_vector.push_back("TEMPERATURE1");
-	  }
-//      mfp_file->ignore(MAX_ZEILE,'\n');
+      if(viscosity_model==9){ // my(rho,T)
+
+    	  string arg1,arg2;
+    	  in >> arg1 >> arg2; //get up to three arguments for density model
+
+    	  if (arg1.length()==0) // if no arguments are given use standard
+    	  {
+    		  arg1="PRESSURE1";
+    		  arg2="TEMPERATURE1";
+    	  } else
+    	  {
+    		  if (arg2.length()==0) // if only PRESSURE argument is given
+    		  {
+    			  arg2="TEMPERATURE1";
+    		  }
+    	  }
+
+    	  viscosity_pcs_name_vector.push_back(arg1);
+    	  if (T_Process) viscosity_pcs_name_vector.push_back(arg2);
+
+      }
+//    mfp_file->ignore(MAX_ZEILE,'\n');
       in.clear();
       continue;
     }
@@ -360,9 +383,24 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
         heat_conductivity_pcs_name_vector.push_back("TEMPERATURE1");
       }
       if(heat_conductivity_model==3){ // my = f(p,T) NB
-        in >> caption;
-        heat_conductivity_pcs_name_vector.push_back("PRESSURE1");
-        heat_conductivity_pcs_name_vector.push_back("TEMPERATURE1");
+
+    	  string arg1,arg2;
+    	  in >> arg1 >> arg2; //get up to three arguments for density model
+
+    	  if (arg1.length()==0) // if no arguments are given use standard
+    	  {
+    		  arg1="PRESSURE1";
+    		  arg2="TEMPERATURE1";
+    	  } else
+    	  {
+    		  if (arg2.length()==0) // if only PRESSURE argument is given
+    		  {
+    			  arg2="TEMPERATURE1";
+    		  }
+    	  }
+
+        heat_conductivity_pcs_name_vector.push_back(arg1);
+        heat_conductivity_pcs_name_vector.push_back(arg2);
       }
       in.clear(); //OK
       continue;
@@ -552,19 +590,25 @@ void CFluidProperties::CalPrimaryVariable(vector<string>& pcs_name_vector)
   int nidx0,nidx1;
   if(!Fem_Ele_Std) //OK
     return;
+
+  primary_variable[0] = 0;
+  primary_variable[1] = 0;
+  primary_variable[2] = 0;
+
   for(int i=0;i<(int)pcs_name_vector.size();i++){
     //MX  m_pcs = PCSGet("HEAT_TRANSPORT");
      m_pcs = PCSGet(pcs_name_vector[i],true);
 	 if (!m_pcs) return;  //MX
      nidx0 = m_pcs->GetNodeValueIndex(pcs_name_vector[i]);
 	 nidx1 = nidx0+1;
-    
+
+
     if(mode==0){ // Gauss point values
       primary_variable_t0[i]= Fem_Ele_Std->interpolate(nidx0,m_pcs); 
       primary_variable_t1[i]= Fem_Ele_Std->interpolate(nidx1,m_pcs);
-      primary_variable[i] = (1.-Fem_Ele_Std->pcs->m_num->ls_theta)*Fem_Ele_Std->interpolate(nidx0,m_pcs) 
-                                + Fem_Ele_Std->pcs->m_num->ls_theta*Fem_Ele_Std->interpolate(nidx1,m_pcs);
- 
+      primary_variable[i] = (1.-Fem_Ele_Std->pcs->m_num->ls_theta)*Fem_Ele_Std->interpolate(nidx0,m_pcs)+
+    		  Fem_Ele_Std->pcs->m_num->ls_theta*Fem_Ele_Std->interpolate(nidx1,m_pcs);
+
     }
     else if(mode==2){ // Element average value
       primary_variable[i] = (1.-Fem_Ele_Std->pcs->m_num->ls_theta)*Fem_Ele_Std->elemnt_average(nidx0,m_pcs)
@@ -572,6 +616,11 @@ void CFluidProperties::CalPrimaryVariable(vector<string>& pcs_name_vector)
       primary_variable_t0[i]= Fem_Ele_Std->elemnt_average(nidx0,m_pcs); 
       primary_variable_t1[i]= Fem_Ele_Std->elemnt_average(nidx1,m_pcs);
 	}
+    if (mode==3) //NB, just testing
+    {
+    	primary_variable[i]=Fem_Ele_Std->interpolate(nidx0,m_pcs);
+
+    }
   }
 }
 ////////////////////////////////////////////////////////////////////////////
@@ -596,123 +645,113 @@ double CFluidProperties::Density(double* variables)
   //----------------------------------------------------------------------
   if(variables)  // This condition is added by WW
   {
-    //----------------------------------------------------------------------
-    // Duplicate the following lines just to enhance computation. WW
-    switch(density_model){
-      case 0: // rho = f(x)
-        density = GetCurveValue(fct_number,0,variables[0],&gueltig);
-        break;
-      case 1: // rho = const
-        density = rho_0;
-        break;
-      case 2: // rho(p) = rho_0*(1+beta_p*(p-p_0))
-        density = rho_0*(1.+drho_dp*(max(variables[0],0.0)-p_0));
-        break;
-      case 3: // rho(C) = rho_0*(1+beta_C*(C-C_0))
-        density = rho_0*(1.+drho_dC*(max(variables[2],0.0)-C_0));
-        break;
-      case 4: // rho(T) = rho_0*(1+beta_T*(T-T_0))
-        density = rho_0*(1.+drho_dT*(max(variables[1],0.0)-T_0));
-        break;
-      case 5: // rho(C,T) = rho_0*(1+beta_C*(C-C_0)+beta_T*(T-T_0))
-        density = rho_0*(1.+drho_dC*(max(variables[2],0.0)-C_0)+drho_dT*(max(variables[1],0.0)-T_0));
-        break;
-      case 6: // rho(p,T) = rho_0*(1+beta_p*(p-p_0)+beta_T*(T-T_0))
-        density = rho_0*(1.+drho_dp*(max(variables[0],0.0)-p_0)+drho_dT*(max(variables[1],0.0)-T_0));
-        break;
-      case 7: // Pefect gas. WW
-        density = variables[0]*molar_mass/(GAS_CONSTANT*variables[1]);
-        break;
-      case 10: // Get density from temperature-pressure values from fct-file	NB 4.8.01
+	  //----------------------------------------------------------------------
+	  // Duplicate the following lines just to enhance computation. WW
+	  switch(density_model){
+	  case 0: // rho = f(x)
+		  density = GetCurveValue(fct_number,0,variables[0],&gueltig);
+		  break;
+	  case 1: // rho = const
+		  density = rho_0;
+		  break;
+	  case 2: // rho(p) = rho_0*(1+beta_p*(p-p_0))
+		  density = rho_0*(1.+drho_dp*(max(variables[0],0.0)-p_0));
+		  break;
+	  case 3: // rho(C) = rho_0*(1+beta_C*(C-C_0))
+		  density = rho_0*(1.+drho_dC*(max(variables[2],0.0)-C_0));
+		  break;
+	  case 4: // rho(T) = rho_0*(1+beta_T*(T-T_0))
+		  density = rho_0*(1.+drho_dT*(max(variables[1],0.0)-T_0));
+		  break;
+	  case 5: // rho(C,T) = rho_0*(1+beta_C*(C-C_0)+beta_T*(T-T_0))
+		  density = rho_0*(1.+drho_dC*(max(variables[2],0.0)-C_0)+drho_dT*(max(variables[1],0.0)-T_0));
+		  break;
+	  case 6: // rho(p,T) = rho_0*(1+beta_p*(p-p_0)+beta_T*(T-T_0))
+		  density = rho_0*(1.+drho_dp*(max(variables[0],0.0)-p_0)+drho_dT*(max(variables[1],0.0)-T_0));
+		  break;
+	  case 7: // Pefect gas. WW
+		  density = variables[0]*molar_mass/(GAS_CONSTANT*variables[1]);
+		  break;
+	  case 10: // Get density from temperature-pressure values from fct-file	NB 4.8.01
+		  if(!T_Process) variables[1]=T_0;
+		  density = GetMatrixValue(variables[1],variables[0],fluid_name,&gueltig);
+		  break;
+	  case 11: //Peng-Robinson EOS for different fluids NB 4.9.05
+		  if(!T_Process) variables[1]=T_0;
+		  density = rkeos(variables[1],variables[0],fluid_id);
 
-		if(!T_Process) primary_variable[1]=T_0;
-		primary_variable[0]=variables[0];
-		primary_variable[1]=variables[1];
-//		density = GetMatrixValue(variables[1],variables[0],caption,&gueltig);
-		density = GetMatrixValue(primary_variable[1],primary_variable[0],caption,&gueltig);
-   		break;      
-   	  case 11: //Peng-Robinson EOS for CO2 NB 4.9.05
-		if(!T_Process) variables[1]=T_0;
-   	    density=preos(variables[1],variables[0],fluid_number);
-  	    break;
-   	  case 12: // Redlich-Kwong EOS for CO2 NB 4.9.05
-		if(!T_Process) variables[1]=T_0;
-   	  density=rkeos(variables[1],variables[0],fluid_number); //NB
-   	 //   density=rkeos(primary_variable[1],primary_variable[0],caption);
-  	    break;	
-   	 
-   	  case 13: // Helmholtz free Energy NB JUN 09
-        density=zbrent(variables[1],variables[0],fluid_number,1e-8); //NB
-   	    break;
-      default:
-        cout << "Error in CFluidProperties::Density: no valid model" << endl;
-        break;
-    }      
+
+		  break;
+	  case 12: // Redlich-Kwong EOS for different fluids NB 4.9.05
+		  if(!T_Process) variables[1]=T_0;
+		  density = preos(variables[1],variables[0],fluid_id); //NB
+		  break;
+	  case 13: // Helmholtz free Energy NB JUN 09
+		  density = zbrent(variables[1],variables[0],fluid_id,1e-8); //NB
+		  break;
+	  default:
+		  cout << "Error in CFluidProperties::Density: no valid model" << endl;
+		  break;
+	  }
   }   
   else
   {
-    CalPrimaryVariable(density_pcs_name_vector);
-    //----------------------------------------------------------------------
-    switch(density_model){
-      case 0: // rho = f(x)
-        density = GetCurveValue(fct_number,0,primary_variable[0],&gueltig);
-        break;
-      case 1: // rho = const
-        density = rho_0;
-        break;
-      case 2: // rho(p) = rho_0*(1+beta_p*(p-p_0))
-        density = rho_0*(1.+drho_dp*(max(primary_variable[0],0.0)-p_0));
-        break;
-      case 3: // rho(C) = rho_0*(1+beta_C*(C-C_0))
-        density = rho_0*(1.+drho_dC*(max(primary_variable[0],0.0)-C_0));
-        break;
-      case 4: // rho(T) = rho_0*(1+beta_T*(T-T_0))
-        density = rho_0*(1.+drho_dT*(max(primary_variable[0],0.0)-T_0));
-        break;
-      case 5: // rho(C,T) = rho_0*(1+beta_C*(C-C_0)+beta_T*(T-T_0))
-        density = rho_0*(1.+drho_dC*(max(primary_variable[0],0.0)-C_0)+drho_dT*(max(primary_variable[1],0.0)-T_0));
-        break;
-      case 6: // rho(p,T) = rho_0*(1+beta_p*(p-p_0)+beta_T*(T-T_0))
-        density = rho_0*(1.+drho_dp*(max(primary_variable[0],0.0)-p_0)+drho_dT*(max(primary_variable[1],0.0)-T_0));
-        break;
-      case 7: // rho_w^l(p,T) for gas phase
-        /* //WW
+	  CalPrimaryVariable(density_pcs_name_vector);
+	  //----------------------------------------------------------------------
+	  switch(density_model){
+	  case 0: // rho = f(x)
+		  density = GetCurveValue(fct_number,0,primary_variable[0],&gueltig);
+		  break;
+	  case 1: // rho = const
+		  density = rho_0;
+		  break;
+	  case 2: // rho(p) = rho_0*(1+beta_p*(p-p_0))
+		  density = rho_0*(1.+drho_dp*(max(primary_variable[0],0.0)-p_0));
+		  break;
+	  case 3: // rho(C) = rho_0*(1+beta_C*(C-C_0))
+		  density = rho_0*(1.+drho_dC*(max(primary_variable[0],0.0)-C_0));
+		  break;
+	  case 4: // rho(T) = rho_0*(1+beta_T*(T-T_0))
+		  density = rho_0*(1.+drho_dT*(max(primary_variable[0],0.0)-T_0));
+		  break;
+	  case 5: // rho(C,T) = rho_0*(1+beta_C*(C-C_0)+beta_T*(T-T_0))
+		  density = rho_0*(1.+drho_dC*(max(primary_variable[0],0.0)-C_0)+drho_dT*(max(primary_variable[1],0.0)-T_0));
+		  break;
+	  case 6: // rho(p,T) = rho_0*(1+beta_p*(p-p_0)+beta_T*(T-T_0))
+		  density = rho_0*(1.+drho_dp*(max(primary_variable[0],0.0)-p_0)+drho_dT*(max(primary_variable[1],0.0)-T_0));
+		  break;
+	  case 7: // rho_w^l(p,T) for gas phase
+		  /* //WW
         vapour_pressure = MFPCalcVapourPressure(primary_variable[0]);
         air_gas_density = (COMP_MOL_MASS_AIR * (primary_variable[1]-vapour_pressure)) / (GAS_CONSTANT*(primary_variable[0]+0.0));
         vapour_density = (COMP_MOL_MASS_WATER*vapour_pressure) / (GAS_CONSTANT*(primary_variable[0]+0.0));
         density = vapour_density + air_gas_density;
-        */
-        break;
-      case 8: // M14 von JdJ
-	    density = MATCalcFluidDensityMethod8(primary_variable[0],primary_variable[1],primary_variable[2]);
-        break;
-    case 10: // Get density from temperature-pressure values from fct-file	NB
-		
-		if(!T_Process) primary_variable[1]=T_0;
-	
-     	density = GetMatrixValue(primary_variable[1],primary_variable[0],caption,&gueltig);
-		break;	
-   	  case 11:
-   	  	if(!T_Process) primary_variable[1]=T_0;
-   	    density=preos(primary_variable[1],primary_variable[0],fluid_number);
-  	    break;
-   	  case 12:
-   	  	if(!T_Process) primary_variable[1]=T_0;
-   	    density=rkeos(primary_variable[1],primary_variable[0],fluid_number);
-		break;
-			
-   	  case 13: // Helmholtz free Energy NB JUN 09
-        density=zbrent(primary_variable[1],primary_variable[0],fluid_number,1e-8); //NB
-        
-        break;
-   	    
-      default:
-        cout << "Error in CFluidProperties::Density: no valid model" << endl;
-        break;
-    }
+		   */
+		  break;
+	  case 8: // M14 von JdJ
+		  density = MATCalcFluidDensityMethod8(primary_variable[0],primary_variable[1],primary_variable[2]);
+		  break;
+	  case 10: // Get density from temperature-pressure values from fct-file NB
+		  if(!T_Process) primary_variable[1]=T_0;
+		  density = GetMatrixValue(primary_variable[1],primary_variable[0],fluid_name,&gueltig);
+		  break;
+	  case 11: //Peng-Robinson equation of state NB
+		  if(!T_Process) primary_variable[1]=T_0;
+		  density = rkeos(primary_variable[1],primary_variable[0],fluid_id);
+		  break;
+	  case 12: //Redlich-Kwong equation of state NB
+		  if(!T_Process) primary_variable[1]=T_0;
+		  density = preos(primary_variable[1],primary_variable[0],fluid_id);
+		  break;
+	  case 13: // Helmholtz free Energy NB JUN 09
+		  if(!T_Process) primary_variable[1]=T_0;
+		  density = zbrent(primary_variable[1],primary_variable[0],fluid_id,1e-8); //NB
+		  break;
+	  default:
+		  cout << "Error in CFluidProperties::Density: no valid model" << endl;
+		  break;
+	  }
   } 
-
-  
   return density;
 }
 
@@ -900,15 +939,28 @@ double CFluidProperties::Viscosity(double* variables) //OK4709
   static double viscosity;
   int fct_number = 0;
   int gueltig;
+  double mfp_arguments[2];
+  double density;
+
+  // double TTT=0, PPP=0;
+  double arguments[2]; //NB
+  // long Element_Index;
+  // int nod_index;
+
+  // string val_name;
+  CRFProcess* m_pcs = NULL;
+
   //----------------------------------------------------------------------
   bool New = false; // To be
   if(fem_msh_vector.size()>0) New = true;
+
   //----------------------------------------------------------------------
   if(variables) //OK4709: faster data access
   {
     primary_variable[0] = variables[0]; //p (single phase)
     primary_variable[1] = variables[1]; //T (temperature)
     primary_variable[2] = variables[2]; //C (salinity)
+
   }
   else
   {
@@ -950,8 +1002,14 @@ double CFluidProperties::Viscosity(double* variables) //OK4709
     case 9: // viscosity as function of density and temperature, NB
     
       if(!T_Process) primary_variable[1]=T_0;
-//	  viscosity = co2_viscosity(GetMatrixValue(primary_variable[1],primary_variable[0],caption,&gueltig),primary_variable[1]); //NB
-      viscosity = Fluid_Viscosity(Density(),primary_variable[1],primary_variable[0],fluid_number); //NB
+      // TODO: switch case different models...
+      // Problem.cpp 3 PS_GLOBAL, 1212,1313 pcs_type
+      //TODO: default fluid_ID, if not specified
+      mfp_arguments[0] = primary_variable[0]; // rescue primary_variable before its destroyed by Density();
+      mfp_arguments[1] = primary_variable[1];
+
+      density = Density(mfp_arguments); //TODO: (NB) store density (and viscosity) as secondary variable
+      viscosity = Fluid_Viscosity(density,mfp_arguments[1],mfp_arguments[0],fluid_id); //NB
 
       break;
     default:
@@ -959,7 +1017,9 @@ double CFluidProperties::Viscosity(double* variables) //OK4709
       break;
   }
   //----------------------------------------------------------------------
+
   return viscosity;
+
 }
 
 /**************************************************************************
@@ -1011,7 +1071,7 @@ double CFluidProperties::GasViscosity_Reichenberg_1971(double p,double T)
 /**************************************************************************
 FEMLib-Method:
 Task: 
-   Dynamische Flüssigkeits-Viskositaet nach Yaws et al. (1976)
+   Dynamische Fluessigkeits-Viskositaet nach Yaws et al. (1976)
    als Funktion von Temperatur
    in Reid et al. (1988), S. 441/455
    Eqn.(3): ln(my) = A + B/T + CT + DT^2
@@ -1039,7 +1099,7 @@ double CFluidProperties::LiquidViscosity_Yaws_1976(double T)
 /**************************************************************************
 FEMLib-Method:
 Task: 
-   Flüssigkeits-Viskositaet in Abhaengigkeit von der Temperatur
+   Fluessigkeits-Viskositaet in Abhaengigkeit von der Temperatur
    (nach Marsily 1986)
 Programing:
 08/2004 OK MFP implementation 
@@ -1352,7 +1412,7 @@ double CFluidProperties::HeatConductivity(double *variables) //NB Dec 08 4.9.05
 	  heat_conductivity = MATCalcHeatConductivityMethod2(primary_variable[0],primary_variable[1], primary_variable[2]);
 	  break;
 	case 3: // NB
-      heat_conductivity = Fluid_Heat_Conductivity (Density(),primary_variable[1],fluid_number);
+      heat_conductivity = Fluid_Heat_Conductivity (Density(),primary_variable[1],fluid_id);
 	  break;
   }
   return heat_conductivity;
@@ -1453,7 +1513,7 @@ double MFPCalcVapourPressure(double temperature)
                   ((vapour_enthalpy*comp_mol_mass_water)/gas_constant);
   vapour_pressure = pressure_ref * exp(potenz);
 */
-    pressure = 1.e-3; /*Vorgabe eines vernEftigen Wertes*/
+    pressure = 1.e-3; /*Vorgabe eines vernueftigen Wertes*/
     pressure *= PA2PSI; /* Umrechnung Pa in psia */
     temperature -= 273.15; /* Kelvin -> Celsius */
     temperature_F = temperature*1.8+32.; /* Umrechnung Celsius in Fahrenheit */
@@ -1506,7 +1566,7 @@ double CFluidProperties::Enthalpy(int comp,double temperature)
       enthalpy = 733.0*temperature + (GAS_CONSTANT*(temperature+0.0))/COMP_MOL_MASS_AIR;
     }
     else if((phase==0)&&(comp==1)) { /* h_w^g: water species in gaseous phase */
-      pressure = 1.e-3; /*Vorgabe eines vernünftigen Wertes */
+      pressure = 1.e-3; /*Vorgabe eines vernuenftigen Wertes */
       pressure *= PA2PSI; /* Umrechnung Pa in psia */
       temperature -= 273.15; /* Kelvin -> Celsius */
       temperature_F = temperature*1.8+32.; /* Umrechnung Celsius in Fahrenheit*/
@@ -1774,7 +1834,7 @@ C = C;
 	/*CMcD end variables for 20 ALR*/
 	 /* //Prepared for introduction of solute transport in PCS version
 	    //Average Concentration 
-	    comp=0; // nur für Einkomponenten-Systeme 
+	    comp=0; // nur fuer Einkomponenten-Systeme
 		timelevel=1;
 		concentration_average = 0.0;
 		for (i = 0; i < count_nodes; i++)
@@ -2465,7 +2525,7 @@ CFluidProperties* MFPGet(int fluid) //NB
   CFluidProperties* m_mfp = NULL;
   for(int i=0;i<(int)mfp_vector.size();i++){
     m_mfp = mfp_vector[i];
-    if(m_mfp->fluid_number==fluid)
+    if(m_mfp->fluid_id==fluid)
       return m_mfp;
   }
   return NULL;
@@ -2526,39 +2586,176 @@ PCSLib-Method:
 08/2008 OK 
 last change: 11/2008 NB
 **************************************************************************/
-double MFPGetNodeValue(long node,string mfp_name)
+double MFPGetNodeValue(long node,string mfp_name, int phase_number)
 {
   double mfp_value;
-  char c;
-  double arguments[2]; //NB erster buchstabe zum vergleich
+//  char c;
+  double arguments[2];
+  string pcs_name1;
+  string pcs_name2;
   CRFProcess *tp;
-  c = mfp_name[0];
+  CFluidProperties *fp;
+  CFluidProperties *m_mfp = mfp_vector[max(phase_number,0)];//NB
+
   int mfp_id = -1;
-  switch (c) {
+  int val_idx=0;  // for later use, NB case 'V': mfp_id = 0; //VISCOSITY
+  switch (mfp_name[0]) {
   case 'V': mfp_id = 0; //VISCOSITY
+			if(m_mfp->viscosity_pcs_name_vector.size()<1)
+  			{pcs_name1 = "PRESSURE1";} else {pcs_name1 = m_mfp->viscosity_pcs_name_vector[0];}
+			if(m_mfp->viscosity_pcs_name_vector.size()<2)
+  			{pcs_name2 = "TEMPERATURE1";} else {pcs_name2 = m_mfp->viscosity_pcs_name_vector[1];}
             break;
   case 'D': mfp_id = 1; //DENSITY
-            break;
+			if(m_mfp->density_pcs_name_vector.size()<1)
+			{pcs_name1 = "PRESSURE1";} else {pcs_name1 = m_mfp->density_pcs_name_vector[0];}
+			if(m_mfp->density_pcs_name_vector.size()<2)
+		    {pcs_name2 = "TEMPERATURE1";} else {pcs_name2 = m_mfp->density_pcs_name_vector[1];}
+			break;
   case 'H': mfp_id = 2; //HEAT_CONDUCTIVITY
+            if(m_mfp->heat_conductivity_pcs_name_vector.size()<1)
+	        {pcs_name1 = "PRESSURE1";} else {pcs_name1 = m_mfp->heat_conductivity_pcs_name_vector[0];}
+	        if(m_mfp->heat_conductivity_pcs_name_vector.size()<2)
+            {pcs_name2 = "TEMPERATURE1";} else {pcs_name2 = m_mfp->heat_conductivity_pcs_name_vector[1];}
             break;
-  default:  mfp_id = -1;}  
+  case 'S': mfp_id = 3; //SPECIFIC HEAT CAPACITY
+            break;
+  default:  mfp_id = -1;
+            pcs_name1 = "PRESSURE1";
+            pcs_name2 = "TEMPERATURE1";
+              }
   //......................................................................
-  CFluidProperties *m_mfp = mfp_vector[0];
-  m_mfp->mode = 1;
+
+  int restore_mode=m_mfp->mode;
+  m_mfp->mode = 0;
   m_mfp->node = node;
-    tp = PCSGet("PRESSURE1",true);           //NB 4.8.01
-    arguments[0] = tp->GetNodeValue(node,0);   
+
+/*  if (phase_number==0)
+  {
+	  tp = PCSGet("PRESSURE1",true);           //NB 4.8.01
+	  val_idx=tp->GetNodeValueIndex("PRESSURE1"); // NB
+	  arguments[0] = tp->GetNodeValue(node,val_idx);
+  } else if (phase_number==1)
+  {
+	  tp = PCSGet("PRESSURE2",true);           //NB 4.8.01
+	  val_idx=tp->GetNodeValueIndex("PRESSURE2"); // NB
+	  arguments[0] = tp->GetNodeValue(node,val_idx);
+  }
+
     tp = PCSGet("TEMPERATURE1",true);       
     arguments[1] = tp->GetNodeValue(node,0);   
+*/
+  tp = PCSGet(pcs_name1,true);           //NB 4.8.01
+  val_idx=tp->GetNodeValueIndex(pcs_name1); // NB
+  arguments[0] = tp->GetNodeValue(node,val_idx);
+
+  tp = PCSGet(pcs_name2,true);           //NB 4.8.01
+  val_idx=tp->GetNodeValueIndex(pcs_name2); // NB
+  arguments[1] = tp->GetNodeValue(node,val_idx);
+
   //......................................................................
   switch(mfp_id)
   {
     case 0: mfp_value = m_mfp->Viscosity(arguments); break;
     case 1: mfp_value = m_mfp->Density(arguments); break; //NB 4.8.01
     case 2: mfp_value = m_mfp->HeatConductivity(arguments); break;
+	case 3: mfp_value = m_mfp->SpecificHeatCapacity(arguments); break; //NB AUG 2009
     default: cout << "MFPGetNodeValue: no MFP data" << endl;
   }  
   //......................................................................
-  m_mfp->mode = 0;
+  m_mfp->mode = restore_mode; //NB changeback
   return mfp_value;
+}
+/**************************************************************************
+Task: derivative of density with respect to pressure
+Programing: 09/2009 NB
+ **************************************************************************/
+double CFluidProperties::drhodP(double P, double T)
+{
+	double arguments[2];
+	double rho1,rho2,drhodP;
+
+	if (P<0) return 0;
+
+	switch(compressibility_model_pressure)
+	{
+	case 0 : // incompressible
+		drhodP = 0;
+		break;
+
+	case 1 : // constant slope compressibility
+		drhodP = compressibility_pressure;
+		break;
+
+	case 2 :  // use of fct file
+		drhodP = 0; // to be done
+		break;
+	case 3 :  // use of difference quotient
+		arguments[1] = T;
+		arguments[0] = P+(compressibility_pressure/2.);// in case 3, compressibility_pressure acts as delta P
+		rho1 = Density(arguments);
+
+		arguments[0] = P-(compressibility_pressure/2.);
+		rho2 = Density(arguments);
+
+		//drhodP = (rho(p+dP/2)-rho(P-dP/2))/dP
+		drhodP = (rho1-rho2)/compressibility_pressure;// in case 3, compressibility_pressure acts as delta P
+
+		break; // use of difference quotient
+
+	case 4 :  // use of analytical derivation
+		drhodP = 0; // to be done
+		break;
+	default :
+		drhodP = 0;
+
+	}
+	return drhodP;
+}
+/**************************************************************************
+Task: derivative of density with respect to temperature
+Programing: 09/2009 NB
+ **************************************************************************/
+double CFluidProperties::drhodT(double P, double T)
+{
+	double arguments[2];
+	double rho1,rho2,drhodT;
+
+	if (P<0) return 0;
+
+	switch(compressibility_model_temperature)
+	{
+	case 0 : // fluid is incompressible
+		drhodT = 0;
+		break;
+	case 1 : // constant slope compressibility, (for test cases)
+		drhodT = compressibility_temperature;
+		break;
+
+	case 2 : // use of fct file
+		drhodT = 0; // to be done
+		break;
+
+	case 3 : // use of difference quotient
+		// in case 3, compressibility_temperature acts as delta T
+		arguments[0] = P;
+
+		arguments[1] = T+(compressibility_temperature/2.);
+		rho1 = Density(arguments);
+
+		arguments[1] = T-(compressibility_temperature/2.);
+		rho2 = Density(arguments);
+
+		drhodT = (rho1-rho2)/compressibility_temperature;
+		break;
+
+	case 4 : // use of analytical derivation
+		drhodT = 0; // to be done
+		break;
+
+	default :
+		drhodT = 0;
+		break;
+	}
+	return drhodT;
 }

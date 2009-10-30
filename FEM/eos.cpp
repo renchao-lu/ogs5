@@ -5,7 +5,7 @@ Task: This file includes coefficients and functions for calculating the
 thermal properties of liquids and gases in relation to density, pressure
 and temperature.
 
-Programming: Norbert B�ttcher
+Programming: NB
 			 Aug 2008
 **********************************************************************/
 
@@ -413,7 +413,7 @@ Parameters:
 			Tc   - critical temperature
 			R    - specific gas constant
 
-Programming: Norbert B�ttcher
+Programming: NB
 			 Aug 2008
 ***********************************************************************/
 double pressure (double rho, double T, int c)
@@ -445,7 +445,7 @@ Parameters:
 			prec - precision for iteration criteria
 
 
-Programming: Norbert B�ttcher
+Programming: NB
 			 Aug 2008
 last change: NB 4.9.05
 ***********************************************************************/
@@ -482,7 +482,7 @@ Parameters:
 			R    - specific gas constant
 
 
-Programming: Norbert B�ttcher
+Programming: NB
 			 Aug 2008
 ***********************************************************************/
 double enthalpy (double rho, double T, int c)
@@ -513,7 +513,7 @@ Parameters:
 			R    - specific gas constant
 
 
-Programming: Norbert B�ttcher
+Programming: NB
 			 Aug 2008
 last change: NB 4.9.05
 ***********************************************************************/
@@ -541,7 +541,7 @@ Parameters:
 			R    - specific gas constant
 
 
-Programming: Norbert B�ttcher
+Programming: NB
 			 Aug 2008
 ***********************************************************************/
 
@@ -566,7 +566,7 @@ cp = (-pow(tau,2)*(mfp_prop->phi_0_tt(T,c)+mfp_prop->phi_r_tt(rho,T,c))
 
 /**********************************************************************
 Function for calculating viscosity of CO2 depending on density and Temperature.
-Programming: Norbert B�ttcher
+Programming: NB
 			 Aug 2008
 ***********************************************************************/
 double co2_viscosity (double rho, double T)
@@ -635,7 +635,7 @@ double co2_viscosity (double rho, double T)
 /**********************************************************************
 Function for calculating heat conductivity of CO2 depending on density and Temperature.
 	(Vesovic&Wakeham)
-Programming: Norbert B�ttcher 4.8.01
+Programming: NB 4.8.01
 			 Nov 2008
 ***********************************************************************/
 double co2_heat_conductivity (double rho, double T)
@@ -699,7 +699,7 @@ return lamda;
 /**********************************************************************
 Function for calculating viscosity of CH4 at 295K depending on pressure.
 	(Gulik,Mostert,Van den Berg)
-Programming: Norbert B�ttcher 4.8.01
+Programming: NB 4.8.01
 			 Nov 2008
 ***********************************************************************/
 double ch4_viscosity_295K (double p)
@@ -714,7 +714,7 @@ return h;
 /**********************************************************************
 Function for calculating viscosity of pure water at a density rho and
 a temperature T.
-Programming: Norbert B�ttcher
+Programming: NB
 			 Apr 2009
 ***********************************************************************/
 double h2o_viscosity_IAPWS (double rho, double T)
@@ -769,7 +769,7 @@ return my;
 /**********************************************************************
 Viscosity for different Fluids
 
-Programming: Norbert B�ttcher 4.8.01
+Programming: NB 4.8.01
 			 Nov 2008
 ***********************************************************************/
 double Fluid_Viscosity (double rho, double T, double p, int fluid)
@@ -802,7 +802,7 @@ return h;}
 /**********************************************************************
 Heat conductivity for different Fluids
 
-Programming: Norbert B�ttcher 4.8.01
+Programming: NB 4.8.01
 			 Nov 2008
 ***********************************************************************/
 double Fluid_Heat_Conductivity (double rho, double T, int fluid)
@@ -904,7 +904,7 @@ return p;
 **************************************************************/
 double preos(double T, double P, int c)
 {
-double z1,z2,z3,d;
+double z1,z2,z3,d,h;
 vector<double> roots;
 
 CFluidProperties *mfp_prop;
@@ -938,8 +938,8 @@ z3=(pow(MM,3)*P)/(b*(P*pow(b,2)+b*Ru*T-a*alpha));
 
 NsPol3(z1,z2,z3,&roots); //derives the roots of the polynomial
 
-
-return FindMin(roots); //returns the lowest positive root
+h=FindMin(roots);
+return h; //returns the lowest positive root
 }
 /////****************************************************************************
 ////* Finds and returns the positive minimum of a vector.
@@ -955,6 +955,7 @@ return FindMin(roots); //returns the lowest positive root
 ////return x;
 ////
 ////}
+
 /*************************************************************
 * Redlich&Kwong Equation of State
 * Analytical solving of third grade polynomial
@@ -973,9 +974,10 @@ CFluidProperties *mfp_prop;
 double a,b,Tc,pc,MM;
 double Ru;
 
+if (P<0) P=100000; // set pressure to 1atm if unstable NB
 mfp_prop = MFPGet (c);
 
-Ru=mfp_prop->Ru*10; //universal gas constant [bar cm�/mol/K]
+Ru=mfp_prop->Ru*10; //universal gas constant [bar cm3/mol/K]
 MM=mfp_prop->molar_mass;
 Tc=mfp_prop->Tc; // critical temperature
 pc=mfp_prop->pc/100000; //critical pressure
@@ -996,7 +998,7 @@ z3=-a*b/(pow(T,0.5)*P);
 NsPol3(z1,z2,z3,&roots); //derives the roots of the polynomial
 
 h=FindMax(roots); //returns the lowest positive root (molar volume)
-h=MM/h*1000; // density in kg/m�
+h=MM/h*1000; // density in kg/m3
 return h;
 }
 
@@ -1020,7 +1022,7 @@ vector<double> roots;
 
 double Ru;
 P=P/100000; //P in bar
-Ru=83.14472; //universal gas constant [bar cm�/mol/K]
+Ru=83.14472; //universal gas constant [bar cm3/mol/K]
 // Redlich-Kwong EOS:
 // 0 = vm^3 + z1*vm^2 + z2*vm + z3
 
@@ -1031,7 +1033,7 @@ z3=-a*b/(pow(T,0.5)*P);
 NsPol3(z1,z2,z3,&roots); //derives the roots of the polynomial
 
 h=FindMax(roots); //returns the lowest positive root (molar volume)
-h=MM/h*1000; // density in kg/m�
+h=MM/h*1000; // density in kg/m3
 return h;
 }
 
@@ -1039,7 +1041,7 @@ return h;
 Function for calculating thermal conductivity of pure water at a density
 rho and a temperature T.
 IAPWS Formulation 1997 for industrial use
-Programming: Norbert B�ttcher
+Programming: NB
 			 Apr 2009
 ***********************************************************************/
 double h2o_heat_conductivity_IAPWS_ind (double rho, double T)
@@ -1113,7 +1115,7 @@ see
 Friend, Ely, Ingham: The Transport Properties of Methane,
 J. Chem. Phys. Ref. Data,1989.
 
-Programming: Norbert B�ttcher
+Programming: NB
 			 Apr 2009
 ***********************************************************************/
 double ch4_viscosity (double rho, double T)
@@ -1124,7 +1126,7 @@ double C[9],r[11],s[11],g[11];
 double sum1=0,sum2=0;
 int unsigned i;
 
-rho=rho/16.043; //rho in [mol/dm�]
+rho=rho/16.043; //rho in [mol/dm3]
 t = T/174.;
 
 C[0] =  -3.0328138281;     C[1] =  16.918880086;    C[2] = -37.189364917;     C[3] =  41.288861858;    C[4] = -24.615921140;
@@ -1172,7 +1174,7 @@ see
 Friend, Ely, Ingham: The Transport Properties of Methane,
 J. Chem. Phys. Ref. Data,1989.
 
-Programming: Norbert B�ttcher
+Programming: NB
 			 Apr 2009
 ***********************************************************************/
 double ch4_heat_conductivity (double rho, double T)
@@ -1193,7 +1195,7 @@ const double R = 8.314510; // [J/mol/K]
 t = T/174.;
 tau = T_c/T;
 T_star = (T_c-T)/T_c; if (T_star < 0) T_star = 0;
-rho=rho/16.043; //rho in [mol/dm�]
+rho=rho/16.043; //rho in [mol/dm3]
 delta = rho/rho_c;
 
 C[0] =  -3.0328138281;     C[1] =  16.918880086;    C[2] = -37.189364917;     C[3] =  41.288861858;    C[4] = -24.615921140;
@@ -1260,7 +1262,7 @@ see
 Stephan, Krauss and Laeseke: Viscosity and themal conductivity of fluid
 Nitrogen, J. Chem. Phys. Ref. Data,Vol. 16, No. 4, 1987.
 
-Programming: Norbert B�ttcher
+Programming: NB
 			 Apr 2009
 ***********************************************************************/
 double n2_viscosity (double rho, double T)
@@ -1268,7 +1270,7 @@ double n2_viscosity (double rho, double T)
 const double M = 28.013;
 const double T_c = 126.2; //[K]
 const double P_c = 3.4; // [MPa]
-const double rho_c = 314; // [kg/m�]
+const double rho_c = 314; // [kg/m3]
 const double T_t = 63.1; //[K]
 const double CVF = 14.058; // [1e-3 Pa-s]
 
@@ -1333,7 +1335,7 @@ see
 Stephan, Krauss and Laeseke: Viscosity and themal conductivity of fluid
 Nitrogen, J. Chem. Phys. Ref. Data,Vol. 16, No. 4, 1987.
 
-Programming: Norbert B�ttcher
+Programming: NB
 			 Apr 2009
 ***********************************************************************/
 double n2_heat_conductivity (double rho, double T)
@@ -1341,7 +1343,7 @@ double n2_heat_conductivity (double rho, double T)
 const double X1 = 0.95185202;
 const double X2 = 1.0205422;
 
-const double rho_c = 314; // [kg/m�]
+const double rho_c = 314; // [kg/m3]
 const double M = 28.013;
 const double k = 1.38062e-23;
 const double eps = 138.08483e-23;
@@ -1464,7 +1466,7 @@ Methane saturation vapour pressure at a temperature, Setzmann,1991.
 Input: T in K
 Output: p in Pa
 
-Programming: Norbert B�ttcher
+Programming: NB
 *************************************************************/
 double vapour_pressure_ch4(double T)
 {
@@ -1487,7 +1489,7 @@ Water saturation vapour pressure at a temperature, Wagner,2002.
 Input: T in K
 Output: p in Pa
 
-Programming: Norbert B�ttcher
+Programming: NB
 *************************************************************/
 double vapour_pressure_h2o(double T)
 {
@@ -1633,7 +1635,9 @@ double zbrent(double TT, double PP, int fluid, const double tol)
 	fb=dpressure(TT,PP,fluid,x2);
 
 	if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0))
-		cout << "Root must be bracketed in zbrent" << endl;
+		{//cout << "Error in zbrent, fluid " << fluid << " T: " << TT << " P: " << PP << " b: " << b << endl;
+		 cout << ".";
+		}
 	fc=fb;
 	for (int iter=0;iter<ITMAX;iter++) {
 		if ((fb > 0.0 && fc > 0.0) || (fb < 0.0 && fc < 0.0)) {
@@ -1705,7 +1709,7 @@ Arguments: x[i] ... mole fraction of component i
            MM[i]... molar mass of pure substance
            ra,rb,MM   ... mixed parameters
 
-Programming: Norbert B�ttcher
+Programming: NB
 			 May 2009
 ***********************************************************************/
 double mixing_ternary (double* x,double* a,double* b,double *MM, double *ra, double *rb, double *rMM)
@@ -1736,7 +1740,7 @@ Methane liquid saturation density at a temperature, Setzmann,1991.
 Input: T in K
 Output: p in Pa
 
-Programming: Norbert B�ttcher
+Programming: NB
 *************************************************************/
 double liquid_saturation_density_ch4(double T)
 {
@@ -1759,7 +1763,7 @@ Methane vapour saturation density at a temperature, Setzmann,1991.
 Input: T in K
 Output: p in Pa
 
-Programming: Norbert B�ttcher
+Programming: NB
 *************************************************************/
 double vapour_saturation_density_ch4(double T)
 {
@@ -1782,7 +1786,7 @@ Nitrogen vapour pressure at a temperature, Setzmann,1991.
 Input: T in K
 Output: p in Pa
 
-Programming: Norbert B�ttcher
+Programming: NB
 *************************************************************/
 double vapour_pressure_n2(double T)
 {
@@ -1803,9 +1807,9 @@ return exp(h)*pc;
 Nitrogen liquid saturation density at a temperature, Setzmann,1991.
 
 Input: T in K
-Output: density in kg/m�
+Output: density in kg/m3
 
-Programming: Norbert B�ttcher
+Programming: NB
 *************************************************************/
 double liquid_saturation_density_n2(double T)
 {
@@ -1826,9 +1830,9 @@ return exp(h)*rhoc;;
 Nitrogen vapour saturation density at a temperature, Setzmann,1991.
 
 Input: T in K
-Output: density in kg/m�
+Output: density in kg/m3
 
-Programming: Norbert B�ttcher
+Programming: NB
 *************************************************************/
 double vapour_saturation_density_n2(double T)
 {
@@ -1849,9 +1853,9 @@ return exp(h)*rhoc;
 Carbon dioxide vapour saturation density at a temperature, Span,1996.
 
 Input: T in K
-Output: density in kg/m�
+Output: density in kg/m3
 
-Programming: Norbert B�ttcher
+Programming: NB
 *************************************************************/
 double vapour_saturation_density_co2(double T)
 {
@@ -1874,9 +1878,9 @@ return exp(h)*rhoc;
 Carbon dioxide liqiud saturation density at a temperature, Span,1996.
 
 Input: T in K
-Output: density in kg/m�
+Output: density in kg/m
 
-Programming: Norbert B�ttcher
+Programming: NB
 *************************************************************/
 double liquid_saturation_density_co2(double T)
 {
@@ -1913,8 +1917,8 @@ switch (letter)
      {
      case 'C' : // CARBON DIOXIDE
 	    {
-	    fluid_number = 0;
-	    rhoc=467.6; // critical density [kg/m�]
+	    fluid_id = 0;
+	    rhoc=467.6; // critical density [kg/m3]
         Tc=304.1282; // critical temperature [K]
         pc=7377300; // critical pressure [Pa]
         Tt=216.592; // triple point temperature [K]
@@ -1992,7 +1996,7 @@ switch (letter)
 			K[8][39]= 10;		K[8][40]= 10;		K[8][41]= 12.5; //C
 			K[9][39]=275;		K[9][40]=275;		K[9][41]=275; //D
 
-			K[10][34]=25;	K[10][35]=25;		K[10][36]=25;		K[10][37]=15;	K[10][38]=20; //alpha
+            K[10][34]=25;	K[10][35]=25;		K[10][36]=25;		K[10][37]=15;	K[10][38]=20; //alpha
 			K[11][34]=325;	K[11][35]=300;		K[11][36]=300;		K[11][37]=275;	K[11][38]=275; //beta
 			K[11][39]=0.3;	K[11][40]=0.3;		K[11][41]=0.3;
 			K[12][34]=1.16; K[12][35]=1.19;		K[12][36]=1.19;		K[12][37]=1.25; K[12][38]=1.22; //gamma
@@ -2002,8 +2006,8 @@ switch (letter)
         }
      case 'W' : // WATER
 	    {
-	    fluid_number = 1;
-	    rhoc=322; //[kg/m�]
+	    fluid_id = 1;
+	    rhoc=322; //[kg/m3]
         Tc=647.096; //[K]
         pc=22064000; // [Pa]
         Tt=273.16; //  [K]
@@ -2108,8 +2112,8 @@ switch (letter)
 		}
      case 'M' : // METHANE
 	    {
-	    fluid_number = 2;
-	    rhoc=162.66; //[kg/m�]
+	    fluid_id = 2;
+	    rhoc=162.66; //[kg/m3]
         Tc=190.551; //[K]
         pc=4599200; // [Pa]
         Tt=90.685; //  [K]
@@ -2176,8 +2180,8 @@ K[2][27]=10;K[2][28]=10;K[2][29]=10;K[2][30]=14;K[2][31]=12;K[2][32]=18;K[2][33]
 		}
      case 'N' : // Nitrogen
 	    {
-	    fluid_number = 3;
-	    rhoc=314.0; //[kg/m�]
+	    fluid_id = 3;
+	    rhoc=314.0; //[kg/m3]
         Tc=126.20; //[K]
         pc=3383000; // [Pa]
         Tt=63.148; //  [K]
@@ -2244,5 +2248,7 @@ K[2][27]=10;K[2][28]=10;K[2][29]=10;K[2][30]=14;K[2][31]=12;K[2][32]=18;K[2][33]
             K[13][32] = 1;      K[13][33] = 1;      K[13][34] = 1;      K[13][35] = 1;
             break;
 		}
+          default: cout << "Error in eos.cpp: no fluid name specified!" << endl;
+          break;
      }
 }

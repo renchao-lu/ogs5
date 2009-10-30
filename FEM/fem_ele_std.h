@@ -144,6 +144,7 @@ class CFiniteElementStd:public CElement
      char pcsT;
      bool dynamic; 
      CRFProcess *pcs;
+     CRFProcess *mfp_pcs;
      CSolidProperties *SolidProp;
      CFluidProperties *FluidProp;
      CFluidProperties *GasProp;
@@ -194,9 +195,10 @@ class CFiniteElementStd:public CElement
 	 inline double CalCoefContent();
      inline double CalCoefStrainCouping();
      inline double  CalcCoefDualTransfer();
-     inline double CalCoef_RHS_T_MPhase(int dof_index); // 27.2.2007 WW  
-     inline double CalCoef_RHS_M_MPhase(int dof_index); // 27.2.2007 WW  
+     inline double CalCoef_RHS_T_MPhase(int dof_index); // 27.2.2007 WW
+     inline double CalCoef_RHS_M_MPhase(int dof_index); // 27.2.2007 WW
 		 inline double CalCoef_RHS_PSGLOBAL(int dof_index);
+		 inline double CalCoef_RHS_T_PSGlobal(int dof_index);	//  NB
 		 inline void CalCoef_RHS_Pc(int dof_index);	// 03.2007 PCH
      //
      inline void CalNodalEnthalpy();
@@ -231,6 +233,7 @@ class CFiniteElementStd:public CElement
      // Assembly of RHS by deformation. 27.2.2007 WW
      void Assemble_RHS_M();
 		 void Assemble_RHS_Pc();	// 03.2009 PCH
+		 void Assemble_RHS_T_PSGlobal(); // Assembly of RHS by temperature for PSGlobal
 	 void AssembleRHS(int dimension); // PCH
      void Assemble_DualTransfer();
      bool check_matrices; //OK4104
@@ -247,19 +250,19 @@ class CFiniteElementStd:public CElement
      // Auxillarary vectors for node values
      // Vector of local node values, e.g. pressure, temperature.
      // Assume maximium element nodes is 20
-     //double OldMatrix[64]; // For grid adapting     
+     //double OldMatrix[64]; // For grid adapting
      double *NodalVal;
      double *NodalVal0; //?? NodalValueSaturation, NodalValueTemperature; ...
      double *NodalVal1;
-     double *NodalVal2; 
-     double *NodalVal3; 
-     double *NodalVal4; 
-     double *NodalValC; 
-     double *NodalValC1; 
-     double *NodalVal_Sat; 
+     double *NodalVal2;
+     double *NodalVal3;
+     double *NodalVal4;
+     double *NodalValC;
+     double *NodalValC1;
+     double *NodalVal_Sat;
      double *NodalVal_SatNW;
-     double *NodalVal_p2; 
-     //                    
+     double *NodalVal_p2;
+     //
      friend class ::CRFProcess;
 };
 
@@ -269,11 +272,11 @@ class ElementValue
 {
   public:
     ElementValue(CRFProcess* m_pcs, CElem* ele);
-    ~ElementValue(); 
+    ~ElementValue();
     void getIPvalue_vec(const int IP, double * vec);
     void GetEleVelocity(double * vec);
   private:
-    // Friend class 
+    // Friend class
     friend class ::CRFProcess;
     friend class FiniteElement::CFiniteElementStd;
     friend class ::COutput; //OK
@@ -282,11 +285,11 @@ class ElementValue
 	// Data
     Matrix Velocity;
     Matrix Velocity_g;
-}; 
+};
 } // end namespace
 
 /*------------------------------------------------------------------
-   Finite element calculation for standard PDE. 
+   Finite element calculation for standard PDE.
    12.12.2004 WW
 ------------------------------------------------------------------*/
 #endif

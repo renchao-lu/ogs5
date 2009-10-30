@@ -23,6 +23,8 @@ class CFluidProperties
     double primary_variable[10]; //WW
     double primary_variable_t0[10];//CMCD
     double primary_variable_t1[10];//CMCD
+    CRFProcess *mfp_pcs;
+    // CElement *m_element;
     // 
     bool cal_gravity; //YD/WW
     // FEM
@@ -31,7 +33,7 @@ class CFluidProperties
     CRFProcess *m_pcs; //OK4704
   public:
   
-    int fluid_number; // specification of substance (NB JUN 09)
+    int fluid_id; // specification of substance (NB JUN 09)
     double rhoc; //critical_density; //NB
 	double Tc; //critical_temperature; 
 	double pc; //critical_pressure; 
@@ -42,13 +44,19 @@ class CFluidProperties
 	double omega; // azentric factor for Peng-Robinson EOS
 	double molar_mass; 
     string name;
-    string caption; //NB4801
+    string fluid_name; //NB4801
 // Limits and coefficients for free Helmholtz Energy, NB JUN 09
     int limit[5];
     double k [2][8];
     double K [14][56];
-    
+    // compressibility
+    int compressibility_model_pressure; //NB
+    int compressibility_model_temperature; //NB
+    int compressibility_pressure; //NB
+    int compressibility_temperature; //NB
+
     int phase;
+    
     // FEM
     CFiniteElementStd *Fem_Ele_Std;
     long node; //OK4704
@@ -115,6 +123,8 @@ class CFluidProperties
     void CalPrimaryVariable(vector<string>& pcs_name_vector);
     // Add an argument: double* variables = NULL. 28.05.2008 WW
     double Density(double *variables = NULL); 
+    double drhodP (double P, double T);
+    double drhodT (double P, double T);
     double Viscosity(double *variables = NULL); //OK4709
     double SpecificHeatCapacity(double *variables = NULL); //NB Jan09
     void therm_prop(string caption); //NB 4.9.05
@@ -160,5 +170,5 @@ extern double MFPCalcFluidsHeatConductivity(long index,double*gp,double theta, C
 extern void MFPDelete();
 extern CFluidProperties* MFPGet(string);    //OK/YD
 extern CFluidProperties* MFPGet(int);    //NB JUN 09
-double MFPGetNodeValue(long,string); //OK
+double MFPGetNodeValue(long,string,int); //NB AUG 09
 #endif

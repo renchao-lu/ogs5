@@ -887,7 +887,7 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
             in >> saturation_res[i];
             in >> saturation_max[i];
             in >> saturation_exp[i];
-            in >> permeability_tensor[9]; // Minimum paermeability. WW
+            in >> permeability_tensor[9]; // Minimum permeability. WW
             break;
           case 6: //Brooks-Corey WW
             in >> saturation_res[i];
@@ -898,7 +898,7 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
             in >> saturation_res[i];
             in >> saturation_max[i];
             in >> saturation_exp[i];
-            in >> permeability_tensor[9]; // Minimum paermeability. WW
+            in >> permeability_tensor[9]; // Minimum permeability. WW
             break;
           case 14: // van Genuchten for liquid MX 03.2005 paper swelling pressure
             in >> saturation_res[i];
@@ -1163,8 +1163,8 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 		case 4: // van Genuchten
 		  in >> capillary_pressure_model_values[0];
           break;  //WW
-        //  Brook & Corey. 2.05.2008. WW
-		case 6: // van Genuchten
+
+		case 6:  //  Brook & Corey. 2.05.2008. WW
 		  in >> capillary_pressure_model_values[0];
           break;  //WW
 		 case 16: // van Genuchten, separate fit (thoms) JOD
@@ -6611,10 +6611,24 @@ double CMediumProperties::PressureSaturationDependency
 	// Althogh p_c is known, we need to calculate it again just to fit the range of p_c>0.0
 	// for this derivative calculation
 	capillary_pressure = CapillaryPressureFunction(number,NULL,theta,phase, saturation);
-	if(capillary_pressure < MKleinsteZahl)
-		return 0.;
+//	if(capillary_pressure < MKleinsteZahl)
+//		return 0.;
 	switch(capillary_pressure_model) // 01.3.2007 WW
 	{
+	case 0:  // k = f(x) user-defined function
+		dS = 1.e-2;
+		do{
+			dS /= 10.;
+			saturation1 = saturation - dS;
+			capillary_pressure1 = CapillaryPressureFunction(number,NULL,theta,phase,saturation1);
+			saturation2 = saturation + dS;
+			capillary_pressure2 = CapillaryPressureFunction(number,NULL,theta,phase,saturation2);
+			dpc = capillary_pressure1 - capillary_pressure2; //OK4105
+		}
+		while((dS > MKleinsteZahl) && (capillary_pressure2 < MKleinsteZahl / 100.));
+
+		dPcdSe = (capillary_pressure1 - capillary_pressure2)/(2. * dS);
+		break;
 	default: // k = f(x) user-defined function
 		dS = 1.e-2;
 		do{

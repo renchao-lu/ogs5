@@ -1272,7 +1272,10 @@ void COutput::WriteTECNodeData(fstream &tec_file)
        }
        for(k=0;k<(int)mfp_value_vector.size();k++) //OK4704
        {
-         tec_file << MFPGetNodeValue(m_msh->nod_vector[j]->GetIndex(),mfp_value_vector[k]) << " ";
+	     //tec_file << MFPGetNodeValue(m_msh->nod_vector[j]->GetIndex(),mfp_value_vector[k]) << " "; //NB
+         tec_file << MFPGetNodeValue(m_msh->nod_vector[j]->GetIndex(),
+			               mfp_value_vector[k],
+						   atoi(&mfp_value_vector[k][mfp_value_vector[k].size()-1])-1) << " "; //NB: MFP output for all phases 	 
        }
      }
      tec_file << endl;
@@ -1355,16 +1358,18 @@ void COutput::WriteTECHeader(fstream &tec_file,int e_type, string e_type_name)
   CRFProcess *m_pcs = NULL;     //WW
   tec_file << "VARIABLES  = \"X\",\"Y\",\"Z\"";
   for(k=0;k<nName;k++){
-    tec_file << ",\"" << nod_value_vector[k] << "\" ";
+    tec_file << ", \"" << nod_value_vector[k] << "\"";
     //-------------------------------------WW
     m_pcs = GetPCS(nod_value_vector[k]); 
     if(m_pcs != NULL)
     { 
        if(m_pcs->type==1212&&nod_value_vector[k].find("SATURATION")!=string::npos) 
-         tec_file << ", SATURATION2 ";
+         tec_file << ", SATURATION2";
     } 
     //-------------------------------------WW
   }
+  for(k=0;k<(int)mfp_value_vector.size();k++) 
+     tec_file << ", \"" << mfp_value_vector[k] << "\"";  //NB
   if (nPconName) {
 	for(k=0;k<nPconName;k++){
 	  tec_file << ", " << pcon_value_vector[k] << "";   //MX
@@ -1672,7 +1677,7 @@ double COutput::NODWritePLYDataTEC(int number)
     //....................................................................
     for(k=0;k<(int)mfp_value_vector.size();k++) //OK4709
     {
-      tec_file << mfp_value_vector[k] << " ";
+      tec_file << "\""<< mfp_value_vector[k] << "\" ";
     }
     //....................................................................
     // WW: M specific data
@@ -1778,7 +1783,9 @@ double COutput::NODWritePLYDataTEC(int number)
     // MFP //OK4704
     for(k=0;k<(int)mfp_value_vector.size();k++) //OK4704
     {
-      tec_file << MFPGetNodeValue(gnode,mfp_value_vector[k]) << " ";
+ //     tec_file << MFPGetNodeValue(gnode,mfp_value_vector[k],0) << " "; //NB
+      tec_file << MFPGetNodeValue(gnode,mfp_value_vector[k],
+						   atoi(&mfp_value_vector[k][mfp_value_vector[k].size()-1])-1) << " "; //NB: MFP output for all phases 	 
     }
     //....................................................................
     tec_file << endl;
@@ -1868,13 +1875,15 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
     tec_file << "VARIABLES = \"TIME \" ";
     for(k=0;k<no_variables;k++)
     {//WW 
-       tec_file << nod_value_vector[k] << " ";
+       tec_file << " \"" << nod_value_vector[k] << "\" ";
        //-------------------------------------WW
        m_pcs = GetPCS(nod_value_vector[k]);  
        if(m_pcs&&m_pcs->type==1212&&nod_value_vector[k].find("SATURATION")!=string::npos) 
          tec_file << "SATURATION2 ";
       //-------------------------------------WW
     }
+	for(k=0;k<mfp_value_vector.size();k++)
+        tec_file << " \"" << mfp_value_vector[k] << "\" "; //NB MFP data names for multiple phases
     //
     #ifdef RFW_FRACTURE
     for(i=0; i<(int)mmp_vector.size(); ++i)
@@ -2024,6 +2033,9 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
          DeviatoricStress(ss);
          tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0);        
     }
+	for (k=0;k<mfp_value_vector.size();k++)
+		tec_file << MFPGetNodeValue(msh_node_number,mfp_value_vector[k],
+		                  atoi(&mfp_value_vector[k][mfp_value_vector[k].size()-1])-1) << " "; //NB
   }
   tec_file << endl;
   //----------------------------------------------------------------------

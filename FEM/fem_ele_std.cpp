@@ -33,7 +33,7 @@ using Math_Group::CSparseMatrix;
 extern double gravity_constant;// TEST, must be put in input file
 #define COMP_MOL_MASS_AIR   28.96 // kg/kmol WW  28.96
 #define COMP_MOL_MASS_WATER 18.016  //WW 18.016
-#define GAS_CONSTANT    8314.41 // J/(kmol*K) WW 
+#define GAS_CONSTANT    8314.41 // J/(kmol*K) WW
 #define GAS_CONSTANT_V  461.5  //WW
 #define T_KILVIN_ZERO  273.15  //WW
 
@@ -1415,6 +1415,7 @@ inline double CFiniteElementStd::CalCoefMassPSGLOBAL(int dof_index)
 {
   int Index = MeshElement->GetIndex();
   double val = 0.0;
+	double P,T;
   double expfactor = 0.0;
   double dens_arg[3]; //08.05.2008 WW
   bool diffusion = false;   //08.05.2008 WW
@@ -1427,20 +1428,35 @@ inline double CFiniteElementStd::CalCoefMassPSGLOBAL(int dof_index)
   switch(dof_index)
   {
      case 0:
-       val=0.0;
-       break;
-     case 1:
-			 poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
-       val = -poro;
-       break;
-     case 2:
-       val=0.0;
-       break;
-     case 3: //
-       poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
-       val = poro;
-       break;
-  }
+
+		// compressibility also for the wetting phase NB
+		poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
+		Sw = 1.0-interpolate(NodalVal_SatNW); //Sw = 1-Snw
+		P  = interpolate(NodalVal1);  //Pw
+		T = interpolate(NodalValC1);
+
+		val = poro*(Sw)*FluidProp->drhodP(P,T)/FluidProp->Density();
+//		cout << FluidProp->fluid_name << " Pressure: " << P << " Temp: " << ": drhodP: " << FluidProp->drhodP(P,T) << " density: " << FluidProp->Density() << endl;
+		break;
+	case 1:	// Snw in the wetting equation
+		poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
+		val = -poro;
+		break;
+	case 2:	// Pw in the non-wetting equation
+		Sw = 1.0-interpolate(NodalVal_SatNW); //Sw = 1 - Snw
+		P = interpolate(NodalVal1) + MediaProp->CapillaryPressureFunction(0,NULL,0.0,1,Sw); // Pnw = Pw + Pc(Sw)
+		// 	P = interpolate(NodalVal1);  // Pw
+		T = interpolate(NodalValC1);
+
+		val = poro*(1.-Sw)*GasProp->drhodP(P,T)/GasProp->Density();
+
+		break;
+	case 3: // Snw in the non-wetting equation
+		poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
+		val = poro;
+		break;
+	}
+
     return val;
 }
 
@@ -2134,6 +2150,7 @@ inline void CFiniteElementStd::CalCoefLaplacePSGLOBAL(bool Gravity,  int dof_ind
 	double *tensor = NULL;
 	double mat_fac = 1.0, m_fac=0.;
 	double k_rel=0.0;
+	double mfp_arg[2];
 
 	int Index = MeshElement->GetIndex();
 	//
@@ -2186,7 +2203,11 @@ inline void CFiniteElementStd::CalCoefLaplacePSGLOBAL(bool Gravity,  int dof_ind
 		}
 
 		k_rel = MediaProp->PermeabilitySaturationFunction(Sw,1);
-		mat_fac = k_rel / GasProp->Viscosity();
+		mfp_arg[0] = interpolate(NodalVal1) + MediaProp->CapillaryPressureFunction(0,NULL,0.0,1,Sw); // Pnw = Pw + Pc(Sw) //TODO: could cause errors in some cases
+		mfp_arg[1] = interpolate(NodalValC1); // TEMPERATURE1 in most cases
+
+     mat_fac = k_rel / GasProp->Viscosity(mfp_arg);
+
 
 		// The density of the non-wetting phase fluid should be considered here.
 		// However, the default water phase density should be canceled out simultaneously.
@@ -2220,7 +2241,8 @@ inline void CFiniteElementStd::CalCoefLaplacePSGLOBAL(bool Gravity,  int dof_ind
 			int matgrp = thisEle->GetPatchIndex();
 			m_mmp = mmp_vector[matgrp];
 	//		Sw = 1.0 - Snw;
-			Sw = 1.0 - MRange(m_mmp->saturation_res[1],Snw,1.0-m_mmp->saturation_res[0]);
+			Sw = 1.0 - MRange(m_mmp->saturation_res[1],Snw,1.0);
+	//		Sw = 1.0 - MRange(m_mmp->saturation_res[1],Snw,1.0-m_mmp->saturation_res[0]);
 			k_rel = MediaProp->PermeabilitySaturationFunction(Sw,1);
 
 			double dPcdSw=0.0;
@@ -2229,7 +2251,9 @@ inline void CFiniteElementStd::CalCoefLaplacePSGLOBAL(bool Gravity,  int dof_ind
 			else
 				dPcdSw=m_mmp->PressureSaturationDependency(Sw, 1000.0, 1);
 
-			mat_fac = k_rel / GasProp->Viscosity()*(-dPcdSw);
+			mfp_arg[0] = interpolate(NodalVal1) + MediaProp->CapillaryPressureFunction(0,NULL,0.0,1,Sw); // Pnw = Pw + Pc(Sw) // TODO: could cause errors in some cases
+			mfp_arg[1] = interpolate(NodalValC1);
+			mat_fac = k_rel / GasProp->Viscosity(mfp_arg)*(-dPcdSw);
 		}
 		else
 			mat_fac = 0.0;
@@ -2259,7 +2283,8 @@ inline void CFiniteElementStd::CalCoefLaplacePSGLOBAL(bool Gravity,  int dof_ind
 		int matgrp = thisEle->GetPatchIndex();
 		m_mmp = mmp_vector[matgrp];
 		//		Sw = 1.0 - Snw;
-		Sw = 1.0 - MRange(m_mmp->saturation_res[1],Snw,1.0-m_mmp->saturation_res[0]);
+		Sw = 1.0 - MRange(m_mmp->saturation_res[1],Snw,1.0);
+	//	Sw = 1.0 - MRange(m_mmp->saturation_res[1],Snw,1.0-m_mmp->saturation_res[0]);
 		k_rel = MediaProp->PermeabilitySaturationFunction(Sw,1);
 		mat_fac = k_rel / GasProp->Viscosity();
 
@@ -6001,6 +6026,7 @@ void CFiniteElementStd::Assembly()
 			;
 		Assemble_Gravity();
 
+     	Assemble_RHS_T_PSGlobal();
 		break;
 
     //....................................................................
@@ -6707,6 +6733,48 @@ inline double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
     }
     return val;
 }
+
+/**************************************************************************
+FEMLib-Method:
+Task: Calculate coefficient of temperature induced RHS of PSGlobal scheme
+
+Programing:
+
+last modification:
+**************************************************************************/
+inline double CFiniteElementStd::CalCoef_RHS_T_PSGlobal(int dof_index)
+{
+	double val = 0.0, D_gw=0.0, D_ga=0.0;
+	double expfactor=0.0;
+	double P,T;
+	int Index = MeshElement->GetIndex();
+	ComputeShapefct(1);
+	//======================================================================
+	switch(dof_index)
+	{
+	case 0:
+		val = 0.;
+		break;
+	case 1:
+		poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
+		Sw = 1.0-interpolate(NodalVal_SatNW);
+		P  = interpolate(NodalVal1) + MediaProp->CapillaryPressureFunction(0,NULL,0.0,1,Sw); // Pnw = Pw + Pc(Sw)
+		// 	P  = interpolate(NodalVal1);  // Pw
+		T  = interpolate(NodalValC1);
+
+		val = -(1.-Sw)*poro*GasProp->drhodT(P,T)/GasProp->Density();
+		break;
+	case 2:
+		val = 0.;
+		break;
+	case 3:
+		val = 0.;
+		break;
+		//------------------------------------------------------------------
+	}
+	return val;
+}
+
 /**************************************************************************
 FEMLib-Method:
 Task: Calculate  Capillary pressure for RHS in the global scheme
@@ -6856,6 +6924,68 @@ void CFiniteElementStd::Assemble_RHS_T_MPhaseFlow()
     }
   }
 //  
+}
+
+
+/***************************************************************************
+GeoSys - Function: Assemble_RHS_T_PSGlobal
+Programming:
+ 09/2009
+**************************************************************************/
+void CFiniteElementStd::Assemble_RHS_T_PSGlobal()
+{
+	int i, j, k, ii;
+	// ---- Gauss integral
+	int gp_r=0,gp_s=0,gp_t=0;
+	double fkt, fac;
+	// Material
+	int dof_n = 2;
+	double temp[10];
+
+	for (i=0;i<10;i++) temp[i]=0; // remove
+
+	//----------------------------------------------------------------------
+	for (i = 0; i < dof_n*nnodes; i++) NodalVal[i] = 0.0;
+	//======================================================================
+	// Loop over Gauss points
+	for (gp = 0; gp < nGaussPoints; gp++)
+	{
+		//---------------------------------------------------------
+		//  Get local coordinates and weights
+		//  Compute Jacobian matrix and its determinate
+		//---------------------------------------------------------
+		fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+		// Compute geometry
+		ComputeGradShapefct(1); // Linear interpolation function
+		ComputeShapefct(1); // Linear interpolation function
+
+
+		for(ii=0; ii<dof_n; ii++)
+		{
+			// Material
+			fac = fkt*CalCoef_RHS_T_PSGlobal(ii)/dt;
+			// Calculate THS
+			for (i = 0; i < nnodes; i++)
+			{
+				NodalVal[i+ii*nnodes] += fac *shapefct[i];
+				temp[i+ii*nnodes] += fac *shapefct[i]; //remove
+			}
+		}
+
+	}
+	int ii_sh;
+	long i_sh;
+	for(ii=0;ii<pcs->dof;ii++)
+	{
+		i_sh = NodeShift[ii];
+		ii_sh = ii*nnodes;
+		for (i=0;i<nnodes;i++)
+		{
+			eqs_rhs[i_sh + eqs_number[i]] -= NodalVal[i+ii_sh];
+			(*RHS)(i+LocalShift+ii_sh) -=  NodalVal[i+ii_sh];
+		}
+	}
+	//
 }
 
 /***************************************************************************
