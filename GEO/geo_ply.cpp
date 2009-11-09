@@ -71,9 +71,16 @@ CGLPolyline::CGLPolyline(string ply_name)
 // deconstructor
 CGLPolyline::~CGLPolyline(void)
 {
+    if ( line_vector.size() > 0 )
+    line_vector.clear();
+    
+    if ( point_vector.size() > 0 )
+    point_vector.clear();
+
     sbuffer.clear();
     ibuffer.clear();
     OrderedPoint.clear();
+    msh_nodes_vector.clear();
 }
 /**************************************************************************
 GeoLib-Method: 
@@ -126,19 +133,20 @@ CCToDo Polyline destructor
 **************************************************************************/
 void GEORemoveAllPolylines()
 {
-    int i;  
-  //CGLPolyline * m_ply = NULL;
+  int i;  
   for (i = 0; i < (int) polyline_vector.size(); i++){
-     //m_ply = polyline_vector[0]; //TK: What's that Cui?
-     //delete m_ply;
-  delete polyline_vector[i];
-  polyline_vector[i]=NULL;
+      // delete polyline_vector[i];
+    if ( polyline_vector[i] )
+      delete polyline_vector[i]; //>~CGLPolyline(); //HS
+      // polyline_vector[i]=NULL;
   }
   polyline_vector.clear(); //CC
 
   for (i=0; i < (int) gli_lines_vector.size(); i++){
-  delete gli_lines_vector[i];
-  gli_lines_vector[i]=NULL;
+      //delete gli_lines_vector[i];
+    if ( gli_lines_vector[i] )
+      delete gli_lines_vector[i];// ->~CGLLine(); //HS
+      // gli_lines_vector[i]=NULL;
   }
   gli_lines_vector.clear();
   
@@ -531,6 +539,7 @@ void GEOReadPolylines (string file_name_path_base)
 // OK->CC encapsulate function
       //..................................................................
       m_polyline->CalcMinimumPointDistance();
+      m_polyline = NULL;
       //..................................................................
     } // keyword found
   } // eof

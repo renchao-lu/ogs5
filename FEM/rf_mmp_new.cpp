@@ -3346,14 +3346,13 @@ double CMediumProperties::Porosity(long number,double theta)
 		for (int i=0; i < (int)pcs_vector.size() ; i++)
 		{
 		pcs_temp = pcs_vector[i];
-		if (pcs_temp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0)
+		if ((pcs_temp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0) || (pcs_temp->pcs_type_name.compare("RICHARDS_FLOW") == 0)||(pcs_temp->pcs_type_name.compare("MULTI_PHASE_FLOW") == 0))
+
 		{
-                int idx;
-		idx=pcs_temp->GetElementValueIndex ( "POROSITY" );
+		int idx=pcs_temp->GetElementValueIndex ( "POROSITY" ); 
 
                 porosity = pcs_temp->GetElementValue(number, idx);
-                // porosity=0.1;
-		if (porosity <1.e-6) cout <<"error for porosity1 " <<porosity << " node "<< number << endl;
+		if (porosity <1.e-6 || porosity > 1.0) { cout <<" error getting porosity model 15 " <<porosity << " node "<< number << endl; porosity = porosity_model_values[0];}
 		}
 		}
 
@@ -3468,13 +3467,12 @@ double CMediumProperties::Porosity(CElement* assem) //WW
 		for (int i=0; i < (int)pcs_vector.size() ; i++)
 		{
 		pcs_temp = pcs_vector[i];
-		if (pcs_temp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0)
+		if ((pcs_temp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0) || (pcs_temp->pcs_type_name.compare("RICHARDS_FLOW") == 0)||(pcs_temp->pcs_type_name.compare("MULTI_PHASE_FLOW") == 0))
 		{
-                int idx;
-		idx=pcs_temp->GetElementValueIndex ( "POROSITY" );
+		int idx=pcs_temp->GetElementValueIndex ( "POROSITY" ); 
 
                 porosity = pcs_temp->GetElementValue(number, idx);
-		if (porosity <1.e-6) cout <<"porosity 2" <<porosity << " node "<< number << endl;
+		if (porosity <1.e-6 || porosity > 1.0) { cout <<" error getting porosity model 15 " <<porosity << " node "<< number << endl; porosity = porosity_model_values[0];}
 		}
 		}
 
@@ -7558,19 +7556,19 @@ Programing:
 01/2006 YD Implementation
 last modified:
 **************************************************************************/
-void MMPGroupDelete(string pcs_type_name)
+void MMPGroupDelete(/*string pcs_type_name*/)
 {
   CMediumPropertiesGroup* m_mmp_group = NULL;
   list<CMediumPropertiesGroup*>::const_iterator p=mmp_group_list.begin();
   while (p!=mmp_group_list.end()){
     m_mmp_group = *p;
-    if(m_mmp_group->pcs_type_name.compare(pcs_type_name)==0){
-      delete m_mmp_group;
-      mmp_group_list.remove(m_mmp_group);
-      return;
-    }
+    // if(m_mmp_group->pcs_type_name.compare(pcs_type_name)==0){
+    delete m_mmp_group;
+    // mmp_group_list.remove(m_mmp_group);
+    // return;
     ++p;
   }
+  mmp_group_list.clear();
 }
 
 /**************************************************************************

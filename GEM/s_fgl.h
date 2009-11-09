@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------
-// $Id: s_fgl.h 1246 2009-02-21 17:57:15Z wagner $
+// $Id: s_fgl.h 1396 2009-08-16 16:22:04Z wagner $
 //
-// Copyright (C) 2003-2009  T.Wagner, S.Churakov, D.Kulik, S.Dmitrieva
+// Copyright (C) 2003-2009  T.Wagner, D.Kulik, S.Dmitrieva, S.Churakov
 //
 // Declaration of new versions of fluid, liquid, aquous
 // and solid-solution models
@@ -15,27 +15,30 @@
 //
 // See http://gems.web.psi.ch/ for more information
 // E-mail: gems2.support@psi.ch; chud@igc.irk.ru
-//-------------------------------------------------------------------
+//------------------------------------------------------------------
 //
 
 #include <string.h>
 #ifndef _s_fgl_h_
 #define _s_fgl_h_
 
+enum fluid_mix_rules {  // Codes to identify specific mixing rules in EoS models (see also m_phase.h)
+    MR_WAAL_ = 'W',		// Basic Van der Waals mixing rules in cubic EoS models
+    MR_CONST_ = 'C',    // Constant one-term interaction parameter kij
+    MR_TEMP_ = 'T'		// Temperature-dependent one-term interaction parameter kij (Jaubert et al. 2005)
+};
 
 
-
-
-// -------------------------------------------------------------------------------------
+// ------------------------------------------------------------------
 // Added 07 March 2007 by TW and DK; extended 25.11.2008 by DK
 // Definition of a class for built-in solution models
 #define MAXPHASENAME 16
 
 class TSolMod
 {
-
 	protected:
 		char ModCode;   // Code of the mixing model
+		char MixCode;	// Code for specific EoS mixing rules
         char PhaseName[MAXPHASENAME+1];    // Phase name (for specific built-in models)
 
         long int NComp;    	// Number of components in the solution phase
@@ -43,21 +46,19 @@ class TSolMod
         long int NPcoef;   	// Number of coeffs per parameter (columns in the aIPc table)
         long int MaxOrd;   	// max. parameter order (or number of columns in aIPx)
         long int NP_DC;    	// Number of coeffs per one DC in the phase (columns in aDCc)
-        long int NPTP_DC;    	// Number of properties per one DC at T,P of interest (columns in aDC)
+        long int NPTP_DC;   // Number of properties per one DC at T,P of interest (columns in aDC)
         long int *aIPx;  	// Pointer to list of indexes of non-zero interaction parameters
 
         double R_CONST; // R constant
-        // double RhoW;	// Density of liquid water, added 04.06.2008 (TW)
-        // double EpsW;	// Dielectric constant of liquid water
         double Tk;    	// Temperature, K
         double Pbar;  	// Pressure, bar
 
-        double *aIPc;  	// Table of interaction parameter coefficients
+        double *aIPc;  // Table of interaction parameter coefficients
         double *aIP;   // Vector of interaction parameters corrected to T,P of interest
-        double *aDCc;  	// End-member properties coefficients
-        double **aDC;  // Table of corrected end member properties at T,P of interest (
-        double *x;    	// Pointer to mole fractions of end members (provided)
-        double *phVOL;    // phase volumes, cm3/mol                   [0:FI-1]
+        double *aDCc;  // End-member properties coefficients
+        double **aDC;  // Table of corrected end member properties at T,P of interest
+        double *x;     // Pointer to mole fractions of end members (provided)
+        double *phVOL; // phase volumes, cm3/mol (now obsolete)
 
         // Results
         double Gam;   	// work cell for activity coefficient of end member
@@ -66,6 +67,7 @@ class TSolMod
         double Gex, Hex, Sex, CPex, Vex, Aex, Uex;   // molar excess properties
         double Gid, Hid, Sid, CPid, Vid, Aid, Uid;   // molar ideal mixing properties
         double Gdq, Hdq, Sdq, CPdq, Vdq, Adq, Udq;   // molar Darken quadratic terms
+        double Grs, Hrs, Srs, CPrs, Vrs, Ars, Urs;   // molar residual functions (fluids)
         double *lnGamma;   // Pointer to ln activity coefficients of end members
                            // (memory must be provided from the calling program)
 
@@ -73,10 +75,9 @@ class TSolMod
 
 		// Generic constructor
 		TSolMod( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
-				long int NPperDC, long int NPTPperDC, char Mod_Code,
-				long int* arIPx, double* arIPc, double* arDCc,
-				double *arWx, double *arlnGam, double *aphVOL,
-				double T_k, double P_bar );
+					long int NPperDC, long int NPTPperDC, char Mod_Code, char Mix_Code,
+					long int* arIPx, double* arIPc, double* arDCc, double *arWx,
+					double *arlnGam, double *aphVOL, double T_k, double P_bar );
 
 		// Destructor
 		virtual ~TSolMod();
@@ -98,31 +99,11 @@ class TSolMod
 
 		virtual long int ExcessProp( double *Zex )
 		{
-			Aex = Gex - Vex*Pbar;
-			Uex = Hex - Vex*Pbar;
-			Zex[0] = Gex;
-			Zex[1] = Hex;
-			Zex[2] = Sex;
-			Zex[3] = CPex;
-			Zex[4] = Vex;
-			Zex[5] = Aex;
-			Zex[6] = Uex;
 			return 0;
 		};
 
 		virtual long int IdealProp( double *Zid )
 		{
-			Gid = Hid - Sid*Tk;
-			Aid = Gid - Vid*Pbar;
-			Uid = Hid - Vid*Pbar;
-			Zid[0] = Gid;
-			Zid[1] = Hid;
-			Zid[2] = Sid;
-			Zid[3] = CPid;
-			Zid[4] = Vid;
-			Zid[5] = Aid;
-			Zid[6] = Uid;
-
 			return 0;
 		};
 
@@ -130,7 +111,7 @@ class TSolMod
 		long int UpdatePT ( double T_k, double P_bar );
 
 		bool testSizes( long int NSpecies, long int NParams, long int NPcoefs,
-				long int MaxOrder, long int NPperDC, char Mod_Code );
+				long int MaxOrder, long int NPperDC, char Mod_Code, char Mix_Code );
 
 		// getting phase name
 		void GetPhaseName( const char *PhName );
@@ -242,7 +223,7 @@ class TCGFcalc: public TSolMod
         A22, A23, A31,
         A32, A33, A34;
 
-		//  double PhVol;  // bar, T Kelvin, phase volume in cm3
+		//  double PhVol;  // phase volume in cm3
 		double *Pparc;     // DC partial pressures/ pure fugacities, bar (Pc by default) [0:L-1]
 		double *phWGT;
 		double *aX;        // DC quantities at eqstate x_j, moles - primal IPM solution [L]
@@ -255,8 +236,8 @@ class TCGFcalc: public TSolMod
 		double *FugCoefs;
 		double *EoSparam;
 		double *EoSparam1;
-		double *DepPh;     // bulk phase departure functions
 
+		// internal functions
 		void alloc_internal();
 		void free_internal();
 		void set_internal();
@@ -331,11 +312,10 @@ class TCGFcalc: public TSolMod
 		// Constructor
 		TCGFcalc( long int NCmp, double Pp, double Tkp );
 		TCGFcalc( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
-				long int NPperDC, char Mod_Code,
-				long int *arIPx, double *arIPc, double *arDCc,
-				double *arWx, double *arlnGam, double *aphVOL,
-				double *aPparc, double *aphWGT, double *arX, double *arGEX, double *arVol,
-				double T_k, double P_bar );
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double *aPparc, double *aphWGT, double *arX,
+				double *arGEX, double *arVol, double T_k, double P_bar );
 
 		// Destructor
 		~TCGFcalc();
@@ -355,13 +335,13 @@ class TCGFcalc: public TSolMod
 		// calculates ideal mixing properties
 		long int IdealProp( double *Zid );
 
-		// CGofPureGases - Calc. fugacity for 1 species at X=1
-		long int CGcalcFug( void );  // Calc. fugacity for 1 species at X=1
+		// CGofPureGases, calculates fugacity for 1 species at (X=1)
+		long int CGcalcFugPure( double Tmin, float *Cemp, double *FugProps );  // called from DCthermo
 		long int CGFugacityPT( double *EoSparam, double *EoSparPT, double &Fugacity,
 				double &Volume, double P, double T, double &roro );
 
 		// calculates departure functions
-		long int CGDepartureFunct( double *X, double *param, double *param1, unsigned long int NN,
+		long int CGResidualFunct( double *X, double *param, double *param1, unsigned long int NN,
 				double ro, double T );
 
 		double GetDELTA( void )
@@ -373,8 +353,8 @@ class TCGFcalc: public TSolMod
 
 
 // -------------------------------------------------------------------------------------
-// Added 19 July 2006 by T.Wagner and D.Kulik
-// Declaration of a class for Peng-Robinson-Stryjek-Vera (PRSV) EOS calculations for fluids
+// Peng-Robinson-Stryjek-Vera (PRSV) model for fluid mixtures  (c) TW July 2006
+// References: Stryjek and Vera (1986)
 // Incorporates a C++ program written by Thomas Wagner (Univ. Tuebingen)
 
 class TPRSVcalc: public TSolMod
@@ -382,122 +362,57 @@ class TPRSVcalc: public TSolMod
 {
 	private:
 
-		double PhVol;   // bar, T Kelvin, phase volume in cm3
+		double PhVol;   // phase volume in cm3
 		double *Pparc;  // DC partial pressures/ pure fugacities, bar (Pc by default) [0:L-1]
 		double *aGEX;   // Increments to molar G0 values of DCs from pure fugacities or DQF terms, normalized [L]
 		double *aVol;   // DC molar volumes, cm3/mol [L]
 
 		// main work arrays
 		double (*Eosparm)[6];   // EoS parameters
-		double (*Pureparm)[4];  // parameters a, b, da and d2a for cubic EoS
+		double (*Pureparm)[4];  // Parameters a, b, da/dT, d2a/dT2 for cubic EoS
 		double (*Fugpure)[6];   // fugacity parameters of pure gas species
 		double (*Fugci)[4];     // fugacity parameters of species in the mixture
-		double *DepPh;  // bulk phase departure functions
 
+		double **a;		// arrays of generic parameters
+		double **b;
 		double **KK;     // binary interaction parameter
 		double **dKK;    // derivative of interaction parameter
 		double **d2KK;   // second derivative
 		double **AA;     // binary a terms in the mixture
 
+
+
+		// internal functions
 		void alloc_internal();
 		void free_internal();
+		long int AB( double Tcrit, double Pcrit, double omg, double k1, double k2, double k3,
+				double &apure, double &bpure, double &da, double &d2a );
+		long int FugacityPT( long int i, double *EoSparam );
+		long int FugacityPure( long int j ); // Calculates the fugacity of pure species
+		long int Cardano( double a2, double a1, double a0, double &z1, double &z2, double &z3 );
+		long int MixParam( double &amix, double &bmix );
+		long int FugacityMix( double amix, double bmix, double &fugmix, double &zmix, double &vmix );
+		long int FugacitySpec( double *fugpure );
+		long int ResidualFunct( double *fugpure );
+		long int MixingWaals();
+		long int MixingConst();
+		long int MixingTemp();
 
 	public:
 
 		// Constructor
 		TPRSVcalc( long int NCmp, double Pp, double Tkp );
 		TPRSVcalc( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
-				long int NPperDC, char Mod_Code,
-				long int *arIPx, double *arIPc, double *arDCc,
-				double *arWx, double *arlnGam, double *aphVOL, double *aPparc,
-				double *arGEX, double *arVol,
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double *aPparc, double *arGEX, double *arVol,
 				double T_k, double P_bar );
 
 		// Destructor
 		~TPRSVcalc();
 
 		// Calculates pure species properties (pure fugacities)
-		long int PureSpecies( );
-
-		// Calculates T,P corrected interaction parameters
-		long int PTparam( );
-
-		// Calculates activity coefficients
-		long int MixMod();
-
-		// calculates excess properties
-		long int ExcessProp( double *Zex );
-
-		// calculates ideal mixing properties
-		long int IdealProp( double *Zid );
-
-		// Calculates pure species properties (called from DCthermo)
-		long int PRCalcFugPure( void );
-
-	protected:
-
-		// long int PureParam( long int i,double *params ); // calculates a and b arrays
-		long int AB( double Tcrit, double Pcrit, double omg, double k1, double k2, double k3,
-				double &apure, double &bpure, double &da, double &d2a );
-		// Calc. fugacity for 1 species at X=1
-		long int PRFugacityPT( long int i, double P, double Tk, double *EoSparam, double *Eos2parPT,
-				double &Fugacity, double &Volume, double &DeltaH, double &DeltaS );
-		long int FugacityPure( long int j ); // Calculates the fugacity of pure species
-		long int Cardano( double a2, double a1, double a0, double &z1, double &z2, double &z3 );
-		long int MixParam( double &amix, double &bmix );
-		long int FugacityMix( double amix, double bmix, double &fugmix, double &zmix, double &vmix );
-		long int FugacitySpec( double *fugpure );
-		long int DepartureFunct( double *fugpure );
-
-};
-
-
-
-// -------------------------------------------------------------------------------------
-// Added 15 December 2008 by T. Wagner
-// Declaration of a class for Soave-Redlich-Kwong (SRK) EOS calculations for fluids
-// Incorporates a C++ program written by T. Wagner (ETH Zurich)
-
-class TSRKcalc: public TSolMod
-
-{
-	private:
-
-		double PhVol;   // bar, T Kelvin, phase volume in cm3
-		double *Pparc;  // DC partial pressures/ pure fugacities, bar (Pc by default) [0:L-1]
-		double *aGEX;   // Increments to molar G0 values of DCs from pure fugacities or DQF terms, normalized [L]
-		double *aVol;   // DC molar volumes, cm3/mol [L]
-
-		// main work arrays
-		double (*Eosparm)[4];   // EoS parameters
-		double (*Pureparm)[4];  // Parameters a, b, sqrAl, ac, dAldT for cubic EoS
-		double (*Fugpure)[6];   // Fugacity parameters of pure gas species
-		double (*Fugci)[4];     // Fugacity parameters of species in the mixture
-		double *DepPh;  // bulk phase departure functions
-
-		double **KK;    // binary interaction parameter
-		double **dKK;   // derivative of interaction parameter
-		double **d2KK;  // second derivative
-		double **AA;    // binary a terms in the mixture
-
-		void alloc_internal();
-		void free_internal();
-
-	public:
-
-		// Constructor
-		TSRKcalc( long int NCmp, double Pp, double Tkp );
-		TSRKcalc( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
-				long int NPperDC, char Mod_Code,
-				long int *arIPx, double *arIPc, double *arDCc,
-				double *arWx, double *arlnGam, double *aphVOL, double *aPparc,
-				double *arGEX, double *arVol, double T_k, double P_bar );
-
-		// Destructor
-		~TSRKcalc();
-
-		// Calculates pure species properties (pure fugacities)
-		long int PureSpecies( );
+		long int PureSpecies();
 
 		// Calculates T,P corrected interaction parameters
 		long int PTparam();
@@ -512,21 +427,163 @@ class TSRKcalc: public TSolMod
 		long int IdealProp( double *Zid );
 
 		// Calculates pure species properties (called from DCthermo)
-		long int SRCalcFugPure( void );
+		long int PRSVCalcFugPure( double Tmin, float *Cpg, double *FugProps );
 
-	protected:
+};
 
+
+
+// -------------------------------------------------------------------------------------
+// Soave-Redlich-Kwong (SRK) model for fluid mixtures (c) TW December 2008
+// References: Soave (1972); Soave (1993)
+
+class TSRKcalc: public TSolMod
+
+{
+	private:
+
+		double PhVol;   // phase volume in cm3
+		double *Pparc;  // DC partial pressures/ pure fugacities, bar (Pc by default) [0:L-1]
+		double *aGEX;   // Increments to molar G0 values of DCs from pure fugacities or DQF terms, normalized [L]
+		double *aVol;   // DC molar volumes, cm3/mol [L]
+
+		// main work arrays
+		double (*Eosparm)[4];   // EoS parameters
+		double (*Pureparm)[4];  // Parameters a, b, da/dT, d2a/dT2 for cubic EoS
+		double (*Fugpure)[6];   // Fugacity parameters of pure gas species
+		double (*Fugci)[4];     // Fugacity parameters of species in the mixture
+
+		double **a;		// arrays of generic parameters
+		double **b;
+		double **KK;    // binary interaction parameter
+		double **dKK;   // derivative of interaction parameter
+		double **d2KK;  // second derivative
+		double **AA;    // binary a terms in the mixture
+
+		// internal functions
+		void alloc_internal();
+		void free_internal();
 		long int AB( double Tcrit, double Pcrit, double omg, double N,
 				double &apure, double &bpure, double &da, double &d2a );
-		// Calc. fugacity for 1 species at X=1
-		long int SRFugacityPT( long int i, double P, double Tk, double *EoSparam, double *Eos2parPT,
-				double &Fugacity, double &Volume, double &DeltaH, double &DeltaS );
+		long int FugacityPT( long int i, double *EoSparam );
 		long int FugacityPure( long int j ); // Calculates the fugacity of pure species
 		long int Cardano( double a2, double a1, double a0, double &z1, double &z2, double &z3 );
 		long int MixParam( double &amix, double &bmix );
 		long int FugacityMix( double amix, double bmix, double &fugmix, double &zmix, double &vmix );
 		long int FugacitySpec( double *fugpure );
-		long int DepartureFunct( double *fugpure );
+		long int ResidualFunct( double *fugpure );
+		long int MixingWaals();
+		long int MixingConst();
+		long int MixingTemp();
+
+	public:
+
+		// Constructor
+		TSRKcalc( long int NCmp, double Pp, double Tkp );
+		TSRKcalc( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double *aPparc, double *arGEX, double *arVol,
+				double T_k, double P_bar );
+
+		// Destructor
+		~TSRKcalc();
+
+		// Calculates pure species properties (pure fugacities)
+		long int PureSpecies();
+
+		// Calculates T,P corrected interaction parameters
+		long int PTparam();
+
+		// Calculates activity coefficients
+		long int MixMod();
+
+		// calculates excess properties
+		long int ExcessProp( double *Zex );
+
+		// calculates ideal mixing properties
+		long int IdealProp( double *Zid );
+
+		// Calculates pure species properties (called from DCthermo)
+		long int SRKCalcFugPure( double Tmin, float *Cpg, double *FugProps );
+
+};
+
+
+
+// -------------------------------------------------------------------------------------
+// Peng-Robinson (PR78) model for fluid mixtures  (c) TW July 2009
+// References: Peng and Robinson (1976); Peng and Robinson (1978)
+
+class TPR78calc: public TSolMod
+
+{
+	private:
+
+		double PhVol;   // phase volume in cm3
+		double *Pparc;  // DC partial pressures/ pure fugacities, bar (Pc by default) [0:L-1]
+		double *aGEX;   // Increments to molar G0 values of DCs from pure fugacities or DQF terms, normalized [L]
+		double *aVol;   // DC molar volumes, cm3/mol [L]
+
+		// main work arrays
+		double (*Eosparm)[4];   // EoS parameters
+		double (*Pureparm)[4];  // Parameters a, b, da/dT, d2a/dT2 for cubic EoS
+		double (*Fugpure)[6];   // Fugacity parameters of pure gas species
+		double (*Fugci)[4];     // Fugacity parameters of species in the mixture
+
+		double **a;		// arrays of generic parameters
+		double **b;
+		double **KK;    // binary interaction parameter
+		double **dKK;   // derivative of interaction parameter
+		double **d2KK;  // second derivative
+		double **AA;    // binary a terms in the mixture
+
+		// internal functions
+		void alloc_internal();
+		void free_internal();
+		long int AB( double Tcrit, double Pcrit, double omg, double N,
+				double &apure, double &bpure, double &da, double &d2a );
+		long int FugacityPT( long int i, double *EoSparam );
+		long int FugacityPure( long int j ); // Calculates the fugacity of pure species
+		long int Cardano( double a2, double a1, double a0, double &z1, double &z2, double &z3 );
+		long int MixParam( double &amix, double &bmix );
+		long int FugacityMix( double amix, double bmix, double &fugmix, double &zmix, double &vmix );
+		long int FugacitySpec( double *fugpure );
+		long int ResidualFunct( double *fugpure );
+		long int MixingWaals();
+		long int MixingConst();
+		long int MixingTemp();
+
+	public:
+
+		// Constructor
+		TPR78calc( long int NCmp, double Pp, double Tkp );
+		TPR78calc( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double *aPparc, double *arGEX, double *arVol,
+				double T_k, double P_bar );
+
+		// Destructor
+		~TPR78calc();
+
+		// Calculates pure species properties (pure fugacities)
+		long int PureSpecies();
+
+		// Calculates T,P corrected interaction parameters
+		long int PTparam();
+
+		// Calculates activity coefficients
+		long int MixMod();
+
+		// calculates excess properties
+		long int ExcessProp( double *Zex );
+
+		// calculates ideal mixing properties
+		long int IdealProp( double *Zid );
+
+		// Calculates pure species properties (called from DCthermo)
+		long int PR78CalcFugPure( double Tmin, float *Cpg, double *FugProps );
 
 };
 
@@ -553,10 +610,9 @@ class TVanLaar: public TSolMod
 
 		// Constructor
 		TVanLaar( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
-				long int NPperDC, char Mod_Code,
-				long int *arIPx, double *arIPc, double *arDCc,
-				double *arWx, double *arlnGam, double *aphVOL,
-				double T_k, double P_bar );
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double T_k, double P_bar );
 
 		// Destructor
 		~TVanLaar();
@@ -596,10 +652,9 @@ class TRegular: public TSolMod
 
 		// Constructor
 		TRegular( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
-				long int NPperDC, char Mod_Code,
-				long int *arIPx, double *arIPc, double *arDCc,
-				double *arWx, double *arlnGam, double *aphVOL,
-				double T_k, double P_bar );
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double T_k, double P_bar );
 
 		// Destructor
 		~TRegular();
@@ -640,10 +695,9 @@ class TRedlichKister: public TSolMod
 
 		// Constructor
 		TRedlichKister( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
-				long int NPperDC, char Mod_Code,
-				long int *arIPx, double *arIPc, double *arDCc,
-				double *arWx, double *arlnGam, double *aphVOL,
-				double T_k, double P_bar );
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double T_k, double P_bar );
 
 		// Destructor
 		~TRedlichKister();
@@ -688,10 +742,9 @@ class TNRTL: public TSolMod
 
 		// Constructor
 		TNRTL( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
-				long int NPperDC, char Mod_Code,
-				long int *arIPx, double *arIPc, double *arDCc,
-				double *arWx, double *arlnGam, double *aphVOL,
-				double T_k, double P_bar );
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double T_k, double P_bar );
 
 		// Destructor
 		~TNRTL();
@@ -730,10 +783,9 @@ class TWilson: public TSolMod
 
 		// Constructor
 		TWilson( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
-				long int NPperDC, char Mod_Code,
-				long int *arIPx, double *arIPc, double *arDCc,
-				double *arWx, double *arlnGam, double *aphVOL,
-				double T_k, double P_bar );
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double T_k, double P_bar );
 
 		// Destructor
 		~TWilson();
@@ -760,31 +812,43 @@ class TWilson: public TSolMod
 class TSIT: public TSolMod
 {
 	private:
-		double *aZ;    // Vector of species charges (for aqueous models)
-		double *aM;    // Vector of species molality (for aqueous models)
+
+		// data objects copied from MULTI
+		double *z;    // vector of species charges (for aqueous models)
+		double *m;    // vector of species molalities (for aqueous models)
 		double *RhoW;  // water density properties
 		double *EpsW;  // water dielectrical properties
-		double I;	// Ionic strength
 
-		inline double IonicStr()
-		{
-			double Is=0.;
-			for(long int ii=0; ii<NComp; ii++ )
-				Is += aZ[ii]*aZ[ii]*aM[ii];
-			return 0.5*Is;
-		}
+		// internal work objects
+		double I;	// ionic strength
+		double A, dAdT, d2AdT2, dAdP;  // A term of DH equation (and derivatives)
+		double *LnG;  // activity coefficient
+		double *dLnGdT;  // derivatives
+		double *d2LnGdT2;
+		double *dLnGdP;
+		double **E0;  // interaction parameter
+		double **E1;
+		double **dE0;
+		double **dE1;
+		double **d2E0;
+		double **d2E1;
+
+		// internal functions
+		double IonicStrength();
+		void alloc_internal();
+		void free_internal();
 
 	public:
 
 		// Constructor
 		TSIT( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
-				long int NPperDC, char Mod_Code,
-				long int *arIPx, double *arIPc, double *arDCc,
-				double *arWx, double *arlnGam, double *aphVOL, double *arM, double *arZ,
-				double T_k, double P_bar, double *dW, double *eW );
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double *arM, double *arZ, double T_k, double P_bar,
+				double *dW, double *eW );
 
 		// Destructor
-		~TSIT() { }
+		~TSIT();
 
 		// calculates activity coefficients
 		long int MixMod();
@@ -796,7 +860,7 @@ class TSIT: public TSolMod
 		long int IdealProp( double *Zid );
 
 		// Calculation of internal tables (at each GEM iteration)
-		//long int PTparam()
+		long int PTparam();
 
 };
 
@@ -814,7 +878,7 @@ private:
 	long int Na;     // Number of anions
 	long int Nn;     // Number of neutral species
 	long int Ns;     // Total number of aqueous species (without H2O); index of H2O in aq phase
-	             // Conversion of species indexes between aq phase and Pitzer parameter tables
+					 // Conversion of species indexes between aq phase and Pitzer parameter tables
 	long int *xcx;   // list of indexes of Nc cations in aqueous phase
 	long int *xax;   // list of indexes of Na anions in aq phase
 	long int *xnx;   // list of indexes of Nn neutral species in aq phase
@@ -823,13 +887,13 @@ private:
 	double *RhoW;  // water density properties
 	double *EpsW;  // water dielectrical properties
 
-    double Aphi; //----------- Computing A- Factor
-	double I;  //------------- Ionic Strength
-	double Is;  //------------ Ionic Strength square root
-	double Ffac; //----------- F-Factor
-	double Zfac; //----------- Z- Term
+    double Aphi, dAphidT, d2AphidT2, dAphidP;  // Computing A-Factor
+	double I;  // Ionic Strength
+	double Is;  // Ionic Strength square root
+	double Ffac; // F-Factor
+	double Zfac; // Z-Term
 
-				// Input parameter arrays
+	// Input parameter arrays
 	double *abet0;    // Beta0 table for cation-anion interactions [Nc][Na]
 	double *abet1;    // Beta1 table for cation-anion interactions [Nc][Na]
 	double *abet2;    // Beta2 table for cation-anion interactions [Nc][Na]
@@ -842,51 +906,68 @@ private:
 	double *aPsi1;    // Psi1 array for anion-anion-cation interactions [Na][Na][Nc]
 	double *aZeta;    // Zeta array for neutral-cation-anion interactions [Nn][Nc][Na]
 
-                  // Work parameter arrays
-/*	double *B1;      // B' table for cation-anion interactions corrected for IS [Nc][Na]
-	double *B2;      // B table for cation-anion interactions corrected for IS [Nc][Na]
-	double *B3;      // B_phi table for cation-anion interactions corrected for IS [Nc][Na]
-	double *Phi1;    // Phi' table for anion-anion interactions corrected for IS [Na][Na]
-	double *Phi2;    // Phi table for cation-cation interactions corrected for IS [Nc][Nc]
-	double *Phi3;    // PhiPhi table for anion-anion interactions corrected for IS [Na][Na]
-	double *C;       // C table for cation-anion interactions corrected for charge [Nc][Na]
-	double *Etheta;  // Etheta table for cation-cation interactions [Nc][Nc]
-	double *Ethetap; // Etheta' table for anion-anion interactions [Na][Na]
-	double bk[21];   // work space
-	double dk[21];   // work space
-*/
+        // Work parameter arrays
+		// double *B1;      // B' table for cation-anion interactions corrected for IS [Nc][Na]
+		// double *B2;      // B table for cation-anion interactions corrected for IS [Nc][Na]
+		// double *B3;      // B_phi table for cation-anion interactions corrected for IS [Nc][Na]
+		// double *Phi1;    // Phi' table for anion-anion interactions corrected for IS [Na][Na]
+		// double *Phi2;    // Phi table for cation-cation interactions corrected for IS [Nc][Nc]
+		// double *Phi3;    // PhiPhi table for anion-anion interactions corrected for IS [Na][Na]
+		// double *C;       // C table for cation-anion interactions corrected for charge [Nc][Na]
+		// double *Etheta;  // Etheta table for cation-cation interactions [Nc][Nc]
+		// double *Ethetap; // Etheta' table for anion-anion interactions [Na][Na]
+		// double bk[21];   // work space
+		// double dk[21];   // work space
+
+	// McInnes parameter array and gamma values
+	double McI_PT_array[13];
+	double *GammaMcI;
+
 	enum eTableType
-	{ bet0_ = -10, bet1_ = -11, bet2_ = -12, Cphi_ = -20, Lam_ = -30, Lam1_ = -31,
-	  Theta_ = -40,  Theta1_ = -41, Psi_ = -50, Psi1_ = -51, Zeta_ = -60
+	{
+		bet0_ = -10, bet1_ = -11, bet2_ = -12, Cphi_ = -20, Lam_ = -30, Lam1_ = -31,
+		Theta_ = -40,  Theta1_ = -41, Psi_ = -50, Psi1_ = -51, Zeta_ = -60
 	};
 
- // internal calculations
+	// internal setup
+	void calcSizes();
+	void alloc_internal();
+	void free_internal();
+
+	// build conversion of species indexes between aq phase and Pitzer parameter tables
+	void setIndexes();
+	void setValues();
+
+	// internal calculations
 	// Calculation of Etheta and Ethetap values
 	void Ecalc( double z, double z1, double I, double Aphi,
-			double& Etheta, double& Ethetap);
+					double& Etheta, double& Ethetap );
 	inline long int getN() const
-	 { return Nc+Na+Nn; }
+	{
+		return Nc+Na+Nn;
+	}
 
 	double Z_Term();
 	double A_Factor( double T );
 	double IonicStr( double& I );
 	void getAlp( long int c, long int a, double& alp, double& alp1 );
+	double get_g( double x_alp );
+	double get_gp( double x_alp);
 	double F_Factor( double Aphi, double I, double Is );
-	double lnGammaN(  long int N );
-	double lnGammaM(  long int M );
-	double lnGammaX(  long int X );
+	double lnGammaN( long int N );
+	double lnGammaM( long int M );
+	// double lnGammaM( long int M, double Aphi );
+	double lnGammaX( long int X );
+	// double lnGammaX( long int X, double Aphi );
 	double lnGammaH2O();
 
-  // calc vector of interaction parameters corrected to T,P of interest
+	// calc vector of interaction parameters corrected to T,P of interest
 	void PTcalc( double T );
+	void McInnes_PTcalc( double T ); // corrects parameters for McInnes scaling
+	void Gex_PTcalc( double T );     // corrects parameters for Gex calculation
 
-   // internal setup
-	void calcSizes();
-	void alloc_internal();
-	void free_internal();
-  // build conversion of species indexes between aq phase and Pitzer parameter tables
-	void setIndexes();
-	void setValues();
+	// calculation KCl activity coefficients for McInnes scaling
+	double McInnes_KCl();
 
 	inline long int getIc( long int jj )
     {
@@ -924,22 +1005,23 @@ public:
 
     // Constructor
 	TPitzer( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
-	         long int NPperDC, char Mod_Code,
-	         long int *arIPx, double *arIPc, double *arDCc,
-	         double *arWx, double *arlnGam, double *aphVOL, double *arM, double *arZ,
-	         double T_k, double P_bar, double *dW, double *eW );
+	         long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+	         double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+	         double *aphVOL, double *arM, double *arZ, double T_k, double P_bar,
+	         double *dW, double *eW );
 
 	// Destructor
 	~TPitzer();
 
 	// Calculation of T,P corrected interaction parameters
 	long int PTparam();
+	long int McInnes_PTparam();
 
-    long int MixMod()
-    { return Pitzer_calc_Gamma();}
+    long int MixMod();
 
 	// calculates activity coefficients
-	long int Pitzer_calc_Gamma( );
+	long int Pitzer_calc_Gamma();
+	long int Pitzer_McInnes_KCl();
 
     // calculates excess properties
     long int ExcessProp( double *Zex );
@@ -960,10 +1042,14 @@ public:
 class TEUNIQUAC: public TSolMod
 {
 	private:
-		double *Z;   // species charges
-		double *M;   // species molalities
+
+		// data objects copied from MULTI
+		double *z;   // species charges
+		double *m;   // species molalities
 		double *RhoW;  // water density properties
 		double *EpsW;  // water dielectrical properties
+
+		// internal work objects
 		double *R;   // volume parameter
 		double *Q;   // surface parameter
 		double *Phi;
@@ -974,23 +1060,27 @@ class TEUNIQUAC: public TSolMod
 		double **Psi;
 		double **dPsi;
 		double **d2Psi;
+		double IS;  // ionic strength
+		double A, dAdT, d2AdT2, dAdP;  // A term of DH equation (and derivatives)
 
-		// only needed for debugging output
+		// objects needed for debugging output
 		double gammaDH[200];
 		double gammaC[200];
 		double gammaR[200];
 
+		// internal functions
 		void alloc_internal();
 		void free_internal();
+		long int IonicStrength();
 
 	public:
 
 		// Constructor
 		TEUNIQUAC( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
-				long int NPperDC, char Mod_Code,
-				long int *arIPx, double *arIPc, double *arDCc,
-				double *arWx, double *arlnGam, double *aphVOL, double *arM, double *arZ,
-				double T_k, double P_bar, double *dW, double *eW );
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double *arM, double *arZ, double T_k, double P_bar,
+				double *dW, double *eW );
 
 		// Destructor
 		~TEUNIQUAC();
@@ -1008,6 +1098,420 @@ class TEUNIQUAC: public TSolMod
 		long int IdealProp( double *Zid );
 
 		void Euniquac_test_out( const char *path );
+
+};
+
+
+
+// -------------------------------------------------------------------------------------
+// Extended Debye-Hueckel (EDH) model for aqueous electrolyte solutions, Helgesons variant
+// References: Helgeson et al. (1981); Oelkers and Helgeson (1990); Pokrovskii and Helgeson (1995; 1997a; 1997b)
+
+class THelgeson: public TSolMod
+{
+	private:
+
+		// status flags copied from MULTI
+		long int flagH2O;  // flag for water
+		long int flagNeut;  // flag for neutral species
+		long int flagElect;  // flag for selection of background electrolyte model
+
+		// data objects copied from MULTI
+		double *z;   // species charges
+		double *m;   // species molalities
+		double *RhoW;  // water density properties
+		double *EpsW;  // water dielectrical properties
+		double *an;  // individual ion size-parameters
+		double *bg;  // individual extended-term parameters
+		double ac;  // common ion size parameters
+		double bc;  // common extended-term parameter
+
+		// internal work objects
+		double ao, daodT, d2aodT2, daodP;  // ion-size parameter (TP corrected)
+		double bgam, dbgdT, d2bgdT2, dbgdP;  // extended-term parameter (TP corrected)
+		double *LnG;  // activity coefficient
+		double *dLnGdT;  // derivatives
+		double *d2LnGdT2;
+		double *dLnGdP;
+		double IS;  // ionic strength
+		double molT;  // total molality of aqueous species (except water solvent)
+		double molZ;  // total molality of charged species
+		double A, dAdT, d2AdT2, dAdP;  // A term of DH equation (and derivatives)
+		double B, dBdT, d2BdT2, dBdP;  // B term of DH equation (and derivatives)
+		double Gf, dGfdT, d2GfdT2, dGfdP;  // g function (and derivatives)
+
+		// internal functions
+		void alloc_internal();
+		void free_internal();
+		long int IonicStrength();
+		long int BgammaTP();
+		long int IonsizeTP();
+		long int Gfunction();
+		long int GShok2( double T, double P, double D, double beta,
+				double alpha, double daldT, double &g, double &dgdP,
+				double &dgdT, double &d2gdT2 );
+
+	public:
+
+		// Constructor
+		THelgeson( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double *arM, double *arZ, double T_k, double P_bar,
+				double *dW, double *eW );
+
+		// Destructor
+		~THelgeson();
+
+		// calculates T,P corrected interaction parameters
+		long int PTparam();
+
+		// calculates activity coefficients
+		long int MixMod();
+
+		// calculates excess properties
+		long int ExcessProp( double *Zex );
+
+		// calculates ideal mixing properties
+		long int IdealProp( double *Zid );
+
+};
+
+
+
+// -------------------------------------------------------------------------------------
+// Extended Debye-Hueckel (EDH) model for aqueous electrolyte solutions, Davies variant
+// References: Langmuir (1997)
+class TDavies: public TSolMod
+{
+	private:
+
+		// status flags copied from MULTI
+		long int flagH2O;  // flag for water
+		long int flagNeut;  // flag for neutral species
+		long int flagMol;  // flag for molality correction
+
+		// data objects copied from MULTI
+		double *z;   // species charges
+		double *m;   // species molalities
+		double *RhoW;  // water density properties
+		double *EpsW;  // water dielectrical properties
+
+		// internal work objects
+		double *LnG;  // activity coefficient
+		double *dLnGdT;  // derivatives
+		double *d2LnGdT2;
+		double *dLnGdP;
+		double IS;  // ionic strength
+		double molT;  // total molality of aqueous species (except water solvent)
+		double A, dAdT, d2AdT2, dAdP;  // A term of DH equation (and derivatives)
+
+		// internal functions
+		void alloc_internal();
+		void free_internal();
+		long int IonicStrength();
+
+	public:
+
+		// Constructor
+		TDavies( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double *arM, double *arZ, double T_k, double P_bar,
+				double *dW, double *eW );
+
+		// Destructor
+		~TDavies();
+
+		// calculates T,P corrected interaction parameters
+		long int PTparam();
+
+		// calculates activity coefficients
+		long int MixMod();
+
+		// calculates excess properties
+		long int ExcessProp( double *Zex );
+
+		// calculates ideal mixing properties
+		long int IdealProp( double *Zid );
+
+};
+
+
+
+// -------------------------------------------------------------------------------------
+// Debye-Hueckel (DH) limiting law for aqueous electrolyte solutions
+// References: Langmuir (1997)
+class TLimitingLaw: public TSolMod
+{
+	private:
+
+		// status flags copied from MULTI
+		long int flagH2O;  // flag for water
+		long int flagNeut;  // flag for neutral species
+
+		// data objects copied from MULTI
+		double *z;   // species charges
+		double *m;   // species molalities
+		double *RhoW;  // water density properties
+		double *EpsW;  // water dielectrical properties
+
+		// internal work objects
+		double *LnG;  // activity coefficient
+		double *dLnGdT;  // derivatives
+		double *d2LnGdT2;
+		double *dLnGdP;
+		double IS;  // ionic strength
+		double molT;  // total molality of aqueous species (except water solvent)
+		double A, dAdT, d2AdT2, dAdP;  // A term of DH equation (and derivatives)
+
+		// internal functions
+		void alloc_internal();
+		void free_internal();
+		long int IonicStrength();
+
+	public:
+
+		// Constructor
+		TLimitingLaw( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double *arM, double *arZ, double T_k, double P_bar,
+				double *dW, double *eW );
+
+		// Destructor
+		~TLimitingLaw();
+
+		// calculates T,P corrected interaction parameters
+		long int PTparam();
+
+		// calculates activity coefficients
+		long int MixMod();
+
+		// calculates excess properties
+		long int ExcessProp( double *Zex );
+
+		// calculates ideal mixing properties
+		long int IdealProp( double *Zid );
+
+};
+
+
+
+// -------------------------------------------------------------------------------------
+// Two-term Debye-Hueckel (DH) model for aqueous electrolyte solutions
+// References: Helgeson et al. (1981)
+// uses individual ion-size parameters, optionally individual salting-out coefficients
+
+class TDebyeHueckel: public TSolMod
+{
+	private:
+
+		// status flags copied from MULTI
+		long int flagH2O;  // flag for water
+		long int flagNeut;  // flag for neutral species
+
+		// data objects copied from MULTI
+		double *z;   // species charges
+		double *m;   // species molalities
+		double *RhoW;  // water density properties
+		double *EpsW;  // water dielectrical properties
+		double *an;  // individual ion size-parameters
+		double *bg;  // individual extended-term parameters
+		double ac;  // common ion size parameters
+		double bc;  // common extended-term parameter
+
+		// internal work objects
+		double ao;  // average ion-size parameter
+		double *LnG;  // activity coefficient
+		double *dLnGdT;  // derivatives
+		double *d2LnGdT2;
+		double *dLnGdP;
+		double IS;  // ionic strength
+		double molT;  // total molality of aqueous species (except water solvent)
+		double A, dAdT, d2AdT2, dAdP;  // A term of DH equation (and derivatives)
+		double B, dBdT, d2BdT2, dBdP;  // B term of DH equation (and derivatives)
+
+		// internal functions
+		void alloc_internal();
+		void free_internal();
+		long int IonicStrength();
+
+	public:
+
+		// Constructor
+		TDebyeHueckel( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double *arM, double *arZ, double T_k, double P_bar,
+				double *dW, double *eW );
+
+		// Destructor
+		~TDebyeHueckel();
+
+		// calculates T,P corrected interaction parameters
+		long int PTparam();
+
+		// calculates activity coefficients
+		long int MixMod();
+
+		// calculates excess properties
+		long int ExcessProp( double *Zex );
+
+		// calculates ideal mixing properties
+		long int IdealProp( double *Zid );
+
+};
+
+
+
+// -------------------------------------------------------------------------------------
+// Extended Debye-Hueckel (EDH) model for aqueous electrolyte solutions, Karpovs variant
+// References: Karpov et al. (1997); Helgeson et al. (1981); Oelkers and Helgeson (1990);
+// Pokrovskii and Helgeson (1995; 1997a; 1997b)
+
+class TKarpov: public TSolMod
+{
+	private:
+
+		// status flags copied from MULTI
+		long int flagH2O;  // flag for water
+		long int flagNeut;  // flag for neutral species
+		long int flagElect;  // flag for selection of background electrolyte model
+
+		// data objects copied from MULTI
+		double *z;   // species charges
+		double *m;   // species molalities
+		double *RhoW;  // water density properties
+		double *EpsW;  // water dielectrical properties
+		double *an;  // individual ion size-parameters at T,P
+		double *bg;  // individual extended-term parameters
+		double ac;  // common ion size parameters
+		double bc;  // common extended-term parameter
+
+		// internal work objects
+		double ao;  // average ion-size parameter
+		double bgam, dbgdT, d2bgdT2, dbgdP;  // extended-term parameter (TP corrected)
+		double *LnG;  // activity coefficient
+		double *dLnGdT;  // derivatives
+		double *d2LnGdT2;
+		double *dLnGdP;
+		double IS;  // ionic strength
+		double molT;  // total molality of aqueous species (except water solvent)
+		double molZ;  // total molality of charged species
+		double A, dAdT, d2AdT2, dAdP;  // A term of DH equation (and derivatives)
+		double B, dBdT, d2BdT2, dBdP;  // B term of DH equation (and derivatives)
+		double Gf, dGfdT, d2GfdT2, dGfdP;  // g function (and derivatives)
+
+		// internal functions
+		void alloc_internal();
+		void free_internal();
+		long int IonicStrength();
+		long int BgammaTP();
+		long int IonsizeTP();
+		long int Gfunction();
+		long int GShok2( double T, double P, double D, double beta,
+				double alpha, double daldT, double &g, double &dgdP,
+				double &dgdT, double &d2gdT2 );
+
+	public:
+
+		// Constructor
+		TKarpov( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double *arM, double *arZ, double T_k, double P_bar,
+				double *dW, double *eW );
+
+		// Destructor
+		~TKarpov();
+
+		// calculates T,P corrected interaction parameters
+		long int PTparam();
+
+		// calculates activity coefficients
+		long int MixMod();
+
+		// calculates excess properties
+		long int ExcessProp( double *Zex );
+
+		// calculates ideal mixing properties
+		long int IdealProp( double *Zid );
+
+};
+
+
+
+// -------------------------------------------------------------------------------------
+// Extended Debye-Hueckel (EDH) model for aqueous electrolyte solutions, Shvarov variant
+// References: Shvarov (2007); Oelkers and Helgeson (1990);
+// Pokrovskii and Helgeson (1995; 1997a; 1997b)
+
+class TShvarov: public TSolMod
+{
+	private:
+
+		// status flags copied from MULTI
+		long int flagH2O;  // new flag for water
+		long int flagNeut;  // new flag for neutral species
+		long int flagElect;  // flag for selection of background electrolyte model
+
+		// data objects copied from MULTI
+		double *z;   // species charges
+		double *m;   // species molalities
+		double *RhoW;  // water density properties
+		double *EpsW;  // water dielectrical properties
+		double *bj;  // individual ion parameters
+		double ac;  // common ion size parameters
+		double bc;  // common extended-term parameter
+
+		// internal work objects
+		double ao, daodT, d2aodT2, daodP;  // ion-size parameter (TP corrected)
+		double bgam, dbgdT, d2bgdT2, dbgdP;  // extended-term parameter (TP corrected)
+		double *LnG;  // activity coefficient
+		double *dLnGdT;  // derivatives
+		double *d2LnGdT2;
+		double *dLnGdP;
+		double IS;  // ionic strength
+		double molT;  // total molality of aqueous species (except water solvent)
+		double A, dAdT, d2AdT2, dAdP;  // A term of DH equation (and derivatives)
+		double B, dBdT, d2BdT2, dBdP;  // B term of DH equation (and derivatives)
+		double Gf, dGfdT, d2GfdT2, dGfdP;  // g function (and derivatives)
+
+		// internal functions
+		void alloc_internal();
+		void free_internal();
+		long int IonicStrength();
+		long int BgammaTP();
+		long int IonsizeTP();
+		long int Gfunction();
+		long int GShok2( double T, double P, double D, double beta,
+				double alpha, double daldT, double &g, double &dgdP,
+				double &dgdT, double &d2gdT2 );
+
+	public:
+
+		// Constructor
+		TShvarov( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double *arM, double *arZ, double T_k, double P_bar,
+				double *dW, double *eW );
+
+		// Destructor
+		~TShvarov();
+
+		// calculates T,P corrected interaction parameters
+		long int PTparam();
+
+		// calculates activity coefficients
+		long int MixMod();
+
+		// calculates excess properties
+		long int ExcessProp( double *Zex );
+
+		// calculates ideal mixing properties
+		long int IdealProp( double *Zid );
 
 };
 
@@ -1037,10 +1541,9 @@ class TModOther: public TSolMod
 
 		// Constructor
 		TModOther( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
-				long int NPperDC, char Mod_Code,
-				long int *arIPx, double *arIPc, double *arDCc,
-				double *arWx, double *arlnGam, double *aphVOL,
-				double T_k, double P_bar, double *dW, double *eW );
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double T_k, double P_bar, double *dW, double *eW );
 
 		// Destructor
 		~TModOther();
@@ -1064,6 +1567,122 @@ class TModOther: public TSolMod
 		long int Feldspar1_PTParam();
 		long int Feldspar1_MixMod();
 		long int Feldspar1_ExcessProp();
+
+};
+
+
+
+// -------------------------------------------------------------------------------------
+// Ternary Margules (regular) model for solid solutions (c) TW June 2009
+// References: Anderson and Crerar (1993); Anderson (2006)
+
+class TMargules: public TSolMod
+{
+	private:
+
+		double WU12, WS12, WV12, WG12;
+		double WU13, WS13, WV13, WG13;
+		double WU23, WS23, WV23, WG23;
+		double WU123, WS123, WV123, WG123;
+
+	public:
+
+		// Constructor
+		TMargules( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double T_k, double P_bar );
+
+		// Destructor
+		~TMargules();
+
+		// calculates T,P corrected interaction parameters
+		long int PTparam( );
+
+		// calculates of activity coefficients
+		long int MixMod();
+
+		// calculates excess properties
+		long int ExcessProp( double *Zex );
+
+		// calculates ideal mixing properties
+		long int IdealProp( double *Zid );
+
+};
+
+
+
+// -------------------------------------------------------------------------------------
+// Binary Margules (subregular) model for solid solutions (c) TW June 2009
+// References: Anderson and Crerar (1993); Anderson (2006)
+
+class TSubregular: public TSolMod
+{
+	private:
+
+		double WU12, WS12, WV12, WG12;
+		double WU21, WS21, WV21, WG21;
+
+	public:
+
+		// Constructor
+		TSubregular( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double T_k, double P_bar );
+
+		// Destructor
+		~TSubregular();
+
+		// calculates T,P corrected interaction parameters
+		long int PTparam( );
+
+		// calculates of activity coefficients
+		long int MixMod();
+
+		// calculates excess properties
+		long int ExcessProp( double *Zex );
+
+		// calculates ideal mixing properties
+		long int IdealProp( double *Zid );
+
+};
+
+
+
+// -------------------------------------------------------------------------------------
+// Binary Guggenheim (Redlich-Kister) model for solid solutions (c) TW June 2009
+// References: Anderson and Crerar (1993); Anderson (2006)
+// uses normalized (by RT) interaction parameters
+
+class TGuggenheim: public TSolMod
+{
+	private:
+
+		double a0, a1, a2;
+
+	public:
+
+		// Constructor
+		TGuggenheim( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
+				long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+				double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+				double *aphVOL, double T_k, double P_bar );
+
+		// Destructor
+		~TGuggenheim();
+
+		// calculates T,P corrected interaction parameters
+		long int PTparam( );
+
+		// calculates of activity coefficients
+		long int MixMod();
+
+		// calculates excess properties
+		long int ExcessProp( double *Zex );
+
+		// calculates ideal mixing properties
+		long int IdealProp( double *Zid );
 
 };
 

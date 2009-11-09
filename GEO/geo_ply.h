@@ -68,7 +68,7 @@ class CGLPolyline
     void WriteTecplot(string);//CC
     // Meshing
     vector<long>msh_nodes_vector;
-    vector<double*> msh_coor_vector;
+    // vector<double*> msh_coor_vector; //HS: never used. removed 30.10.2009
     vector<int> OrderedPoint;
     void GetPointOrderByDistance();  
     void SetPointOrderByDistance(CGLPoint*); //OK

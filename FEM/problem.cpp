@@ -1019,9 +1019,19 @@ void Problem::PostCouplingLoop()
      m_pcs = pcs_vector[i];
      m_pcs->CheckMarkedElement();
 #if defined(USE_MPI) // 18.10.2007 WW
-     if(myrank==0)
+     if(myrank==0) {
 #endif  
-     m_pcs->WriteSolution(); //WW
+         m_pcs->WriteSolution(); //WW
+#ifdef GEM_REACT
+	if (i==0) { // for GEM_REACT we also need information on porosity (node porosity internally stored in Gems process)!....do it only once and it does not matter for which process ! ....we assume that the first pcs process is the flow process...if reload not defined for every process, restarting with gems will not work in any case 
+
+	if (( m_pcs->reload==1 || m_pcs->reload==3 ) && !(( aktueller_zeitschritt % m_pcs->nwrite_restart  ) > 0) ) m_vec_GEM->WriteReloadGem();
+	}
+#endif
+#if defined(USE_MPI) // 18.10.2007 WW
+     }
+#endif  
+
      m_pcs->Extropolation_MatValue();  //WW
      if(m_pcs->cal_integration_point_value) //WW
         m_pcs->Extropolation_GaussValue();
@@ -1388,7 +1398,7 @@ inline double Problem::MassTrasport()
 	  // m_vec_GEM->ConvPorosityNodeValue2Elem(); // 
 	  m_vec_GEM->GetReactInfoFromMassTransport(m_time);	// second arguments should be one if we work with concentrations
 	  // m_vec_GEM->ConcentrationToMass();	    
-	  m_vec_GEM->Run_MainLoop(FileName);     // Run GEM
+           m_vec_GEM->Run_MainLoop(FileName,aktueller_zeitschritt);     // Run GEM
 	  
 	  // m_vec_GEM->MassToConcentration();
 	  // Calculate the different of xDC

@@ -1,45 +1,207 @@
-# GeoSys - Makefile for LINUX
-# Last modification 04/11/2004 WW
+CC = gcc
+CXX = gcc
+FORT = gfortran
+CFLAGS = -c  -g -O2 -pedantic -fno-nonansi-builtins -D__unix -DUse_qd_real
+# -lstd -lC -lpgc -lrt -Msecond_underscore
+CCFLAGS =   -c -g -O2 -DIPMGEMPLUGIN -D__unix -DUse_qd_real
+CCFLAGS1 =   -c -g -O2 -DIPMGEMPLUGIN -D__unix -DUse_qd_real
+FFLAGS = -c -g -O2 -fbounds-check -fno-underscoring -D__unix -D__GNU
+LINK = gcc
+LFLAGS = -lstdc++ -lqd -lgfortran
+LIB = libgemipm2k.a
 
-ifneq ($(strip $(CHOSEN_TARGET)),)
-include $(TOPDIR)/configs/$(CHOSEN_TARGET)
-endif
+${LIB}:  gstring.o gdatastream.o s_fgl.o s_fgl1.o s_fgl2.o s_fgl3.o s_fgl4.o \
+       node.o node_format.o ms_multi_file.o \
+       ms_multi_format.o ipm_chemical.o ipm_chemical2.o ipm_chemical3.o \
+       ipm_main.o ipm_simplex.o io_arrays.o ms_param.o num_methods.o
+# mcotac.o mcotac1d.o datio.o erech.o inistat2.o inparf.o setpar_.o walk2_.o wegdat1d_.o hydro1d_.o 
+             
+	ar -rvs ${LIB} gstring.o gdatastream.o s_fgl.o s_fgl1.o s_fgl2.o s_fgl3.o s_fgl4.o \
+	   node.o node_format.o ms_multi_file.o \
+       ms_multi_format.o ipm_chemical.o ipm_chemical2.o ipm_chemical3.o \
+       ipm_main.o ipm_simplex.o io_arrays.o ms_param.o num_methods.o
 
-include objects.mak
+gstring.o: gstring.cpp gstring.h \
+		v_user.h \
+		array.h \
+		verror.h
+	$(CXX)  $(CCFLAGS) gstring.cpp
+gdatastream.o: gdatastream.cpp gdatastream.h \
+		verror.h \
+		gstring.h \
+		array.h
+	$(CXX)  $(CCFLAGS) gdatastream.cpp
+s_fgl.o: s_fgl.cpp s_fgl.h \
+		verror.h \
+		m_const.h \
+		gstring.h \
+		array.h \
+		v_user.h
+	$(CXX)  $(CCFLAGS) s_fgl.cpp
+s_fgl1.o: s_fgl1.cpp verror.h \
+		s_fgl.h \
+		gstring.h \
+		array.h
+	$(CXX)  $(CCFLAGS) s_fgl1.cpp
+s_fgl2.o: s_fgl2.cpp s_fgl.h \
+		m_const.h \
+		verror.h \
+		v_user.h \
+		gstring.h \
+		array.h
+	$(CXX)  $(CCFLAGS) s_fgl2.cpp
+s_fgl3.o: s_fgl3.cpp verror.h \
+		s_fgl.h \
+		gstring.h \
+		array.h
+	$(CXX)  $(CCFLAGS) s_fgl3.cpp
+s_fgl4.o: s_fgl4.cpp verror.h \
+		s_fgl.h \
+		gstring.h \
+		array.h
+	$(CXX)  $(CCFLAGS) s_fgl4.cpp
+node.o: node.cpp node.h \
+		gdatastream.h \
+		num_methods.h \
+		m_param.h \
+		datach.h \
+		databr.h \
+		ms_multi.h \
+		verror.h \
+		gstring.h \
+		array.h \
+		m_const.h \
+		s_fgl.h \
+		v_user.h
+	$(CXX)  $(CCFLAGS) node.cpp
+node_format.o: node_format.cpp io_arrays.h \
+		node.h \
+		gdatastream.h \
+		gstring.h \
+		array.h \
+		m_param.h \
+		datach.h \
+		databr.h \
+		ms_multi.h \
+		verror.h \
+		m_const.h \
+		s_fgl.h \
+		v_user.h
+	$(CXX)  $(CCFLAGS) node_format.cpp
+ms_multi_file.o: ms_multi_file.cpp  io_arrays.h \
+		m_param.h \
+		gdatastream.h \
+		gstring.h \
+		array.h \
+		ms_multi.h \
+		verror.h \
+		m_const.h \
+		s_fgl.h \
+		v_user.h
+	$(CXX)  $(CCFLAGS) ms_multi_file.cpp
+ms_multi_format.o: ms_multi_format.cpp  io_arrays.h \
+		m_param.h \
+		node.h \
+		gstring.h \
+		array.h \
+		gdatastream.h \
+		ms_multi.h \
+		verror.h \
+		m_const.h \
+		s_fgl.h \
+		v_user.h \
+		datach.h \
+		databr.h
+	$(CXX)  $(CCFLAGS) ms_multi_format.cpp
+ipm_chemical.o: ipm_chemical.cpp m_param.h \
+		gdatastream.h \
+		ms_multi.h \
+		verror.h \
+		gstring.h \
+		array.h \
+		m_const.h \
+		s_fgl.h \
+		v_user.h
+	$(CXX)  $(CCFLAGS) ipm_chemical.cpp
+ipm_chemical2.o: ipm_chemical2.cpp m_param.h \
+		gdatastream.h \
+		ms_multi.h \
+		verror.h \
+		gstring.h \
+		array.h \
+		m_const.h \
+		s_fgl.h \
+		v_user.h
+	$(CXX)  $(CCFLAGS) ipm_chemical2.cpp
+ipm_chemical3.o: ipm_chemical3.cpp m_param.h \
+		s_fgl.h \
+		gdatastream.h \
+		ms_multi.h \
+		verror.h \
+		gstring.h \
+		array.h \
+		m_const.h \
+		v_user.h
+	$(CXX)  $(CCFLAGS) ipm_chemical3.cpp
+ipm_main.o: ipm_main.cpp m_param.h \
+		jama_lu.h \
+		jama_cholesky.h \
+		node.h \
+		gdatastream.h \
+		ms_multi.h \
+		verror.h \
+		gstring.h \
+		array.h \
+		m_const.h \
+		s_fgl.h \
+		v_user.h \
+		tnt.h \
+		tnt_array1d.h \
+		tnt_array2d.h \
+		tnt_i_refvec.h \
+		datach.h \
+		databr.h
+	$(CXX)  $(CCFLAGS) ipm_main.cpp
+ipm_simplex.o: ipm_simplex.cpp m_param.h \
+		gdatastream.h \
+		ms_multi.h \
+		verror.h \
+		gstring.h \
+		array.h \
+		m_const.h \
+		s_fgl.h \
+		v_user.h
+	$(CXX)  $(CCFLAGS) ipm_simplex.cpp
+io_arrays.o: io_arrays.cpp io_arrays.h \
+		verror.h \
+		v_user.h \
+		gstring.h \
+		array.h
+ms_param.o: ms_param.cpp m_param.h \
+		num_methods.h \
+		gdatastream.h \
+		node.h \
+		ms_multi.h \
+		verror.h \
+		gstring.h \
+		array.h \
+		m_const.h \
+		s_fgl.h \
+		v_user.h \
+		datach.h \
+		databr.h
+	$(CXX)  $(CCFLAGS) ms_param.cpp
+num_methods.o: num_methods.cpp v_user.h \
+		num_methods.h \
+		verror.h \
+		gstring.h \
+		array.h
+	$(CXX)  $(CCFLAGS) num_methods.cpp
 
-FEMINCLUDE     = ../FEM
-GEMINCLUDE     = ../GEM
-GEOINCLUDE     = ../GEO
-MSHINCLUDE     = ../MSH
-UTLINCLUDE     = ../UTL
-MPIINCLUDE     = ../MPI
-ROOTINCLUDE    = ../
+#gwheader.h: gwheader.h
+#f_gem_node.h: f_gem_node.h
+#gwheader.inc: gwheader.inc
+#kinetics.inc: kinetics.inc
 
-CXX_INCS      += -I$(FEMINCLUDE) -I$(GEMINCLUDE) -I$(GEOINCLUDE) -I$(MSHINCLUDE) -I$(UTLINCLUDE) -I$(ROOTINCLUDE)
-ifdef MPI
-CXX_INCS      += -I$(MPIINCLUDE)
-endif
-
-#### Only temporarliy until random walk compiles on every platform
-## Commented by WW
-#ifdef NO_RANDOM_WALK
-#CXX_FLAGS       += -URANDOM_WALK
-#else
-#CXX_FLAGS       += -DRANDOM_WALK
-#endif
-
-
-.SUFFIXES: .o .cpp .h 
-%.o:	%.cpp
-	$(CXX) $(CXX_FLAGS) $(CXX_INCS) -c $<
-
-
-.PHONY : $(CONFIG_NAMES)
-$(CONFIG_NAMES): $(GEMOBJS)
-
-
-distclean clean:
-	rm -rf *.o
-	rm -rf *~
-	rm -rf *.ti
-
+clean: 
+	rm -f *.o *.ti *.a

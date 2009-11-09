@@ -236,7 +236,7 @@ class CMediumProperties
 
 extern CMediumPropertiesGroup* MMPGetGroup(string pcs_type_name); //YD
 extern list<CMediumPropertiesGroup*>mmp_group_list;   //YD
-extern void MMPGroupDelete(string pcs_type_name);
+extern void MMPGroupDelete(/*string pcs_type_name*/);
 
 extern vector<CMediumProperties*>mmp_vector;
 extern void MATLoadDB(string);

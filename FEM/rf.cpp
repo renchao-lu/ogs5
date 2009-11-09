@@ -210,6 +210,8 @@ int main ( int argc, char *argv[] )
    MPI_Finalize();
 #endif
 /*--------- MPI Finalize ------------------*/
+
+  free(dateiname);
   return 0;
 }
 
@@ -403,3 +405,4 @@ void ShowSwitches ( void )
 }
 
 #endif
+

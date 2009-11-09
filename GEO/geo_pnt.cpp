@@ -304,8 +304,7 @@ void GEORemoveAllPoints()
 {
   //CGLPoint * m_pnt = NULL;
   for (int i = 0; i < (int) gli_points_vector.size(); i++){
-     //m_pnt = gli_points_vector[0]; TK What's that?
-     //delete m_pnt;
+     // gli_points_vector[i]->~CGLPoint(); //HS
      delete gli_points_vector[i];
      gli_points_vector[i]=NULL;
    }

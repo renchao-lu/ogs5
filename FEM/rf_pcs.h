@@ -174,7 +174,9 @@ public:
     // -1, default. Do nothing
     // 1. Write
     // 2. Read
+    // 3 read and write
     int reload; 
+    long nwrite_restart;
     inline void  WriteRHS_of_ST_NeumannBC();  
     inline void  ReadRHS_of_ST_NeumannBC();  
     friend bool PCSRead(string);
@@ -445,6 +447,7 @@ public:
     //WW void CheckSTGroup(); //OK
 #ifdef GEM_REACT
     void IncorporateSourceTerms_GEMS(void);//HS: dC/dt from GEMS chemical solver. 
+    int GetRestartFlag(){return reload;}
 #endif
     // BC
     void IncorporateBoundaryConditions(const int rank=-1);

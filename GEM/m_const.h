@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------
-// $Id: m_const.h 1197 2009-01-27 14:32:28Z gems $
+// $Id: m_const.h 1431 2009-08-28 16:28:04Z gems $
 //
-// Copyright (C) 2006,2007  S.Dmitrieva, D.Kulik
+// Copyright (C) 2006,2009  S.Dmitrieva, D.Kulik
 //
 // Codes and parameters used in GEM IPM work structure (standalone version)
 //
@@ -50,11 +50,12 @@ enum solmod_switches { // indexes of keys of model solution
     SPHAS_DEP,
     SGM_MODE,
     DCE_LINK,
-    SCM_TYPE,
+    MIX_TYP,
     // link state
     LINK_UX_MODE,
     LINK_TP_MODE,
     LINK_FIA_MODE,
+    LINK_PHP_MODE,
     // Posible values of �of keys of model solution - DCOMP_DEP, SPHAS_DEP
     SM_UNDEF = 'N',
     SM_TPDEP = 'T',
@@ -67,26 +68,28 @@ enum solmod_switches { // indexes of keys of model solution
     //  Possible values: (SPHAS_TYP)
     // Code to identify the mixing models used (during IPM iterations)
     SM_IDEAL =  'I',	// ideal solution or single-component phase;
-    SM_REDKIS = 'G', 	// built-in Guggenheim (Redlich-Kister) binary solid-solution model (with 3 coeffs)
-    SM_MARGB = 'M',		// built-in binary Margules solid-solutions (subreg. w. 3 coeff U,P,T )
-    SM_MARGT = 'T',		// built-in ternary Margules solid-solution (reg. w. 3 coeff U,P,T )
-    SM_VANLAAR = 'V',	// built-in multi-component Van Laar solid-solution model (added by T. Wagner)
-    SM_GUGGENM = 'K',	// built-in multi-component Guggenheim solid-solution model (added by T.Wagner)
-    SM_REGULAR = 'R',	// built-in multi-component Regular solid-solution model (added by T.Wagner)
-    SM_NRTLLIQ = 'L',	// built-in multi-component NRTL model for liquid solutions, added 03.06.2008 (TW)
-    SM_WILSLIQ = 'W',	// built-in multi-component Wilson model for liquid solutions, added 09.06.2008 (TW)
+    SM_REDKIS = 'G', 	// built-in binary Guggenheim (Redlich-Kister) solid-solution model
+    SM_MARGB = 'M',		// built-in binary Margules solid-solutions (subregular)
+    SM_MARGT = 'T',		// built-in ternary Margules solid-solution (regular)
+    SM_VANLAAR = 'V',	// built-in multi-component Van Laar solid-solution model
+    SM_GUGGENM = 'K',	// built-in multi-component Guggenheim solid-solution model
+    SM_REGULAR = 'R',	// built-in multi-component Regular solid-solution model
+    SM_NRTLLIQ = 'L',	// built-in multi-component NRTL model for liquid solutions
+    SM_WILSLIQ = 'W',	// built-in multi-component Wilson model for liquid solutions
     SM_CGFLUID = 'F',	// built-in multi-component Churakov-Gottschalk (CG) fluid EOS model
-    SM_PRFLUID = 'P',	// built-in Peng-Robinson-Stryjek-Vera (PRSV) fluid EOS model (added by T.Wagner)
-    SM_SRFLUID = 'E',	// built-in Soave-Redlich-Kwong (SRK) fluid EOS model (added by T.Wagner)
-    SM_AQDAV = 'D',		// built-in Davies model (with 0.3) for aqueous electrolytes (added by DK, 25.01.02)
+    SM_PRFLUID = 'P',	// built-in Peng-Robinson-Stryjek-Vera (PRSV) fluid EOS model
+    SM_SRFLUID = 'E',	// built-in Soave-Redlich-Kwong (SRK) fluid EOS model
+    SM_PR78FL = '7',	// built-in Peng-Robinson (PR78) fluid EoS model (under construction)
+    SM_AQDAV = 'D',		// built-in Davies model (with 0.3) for aqueous electrolytes
     SM_AQDH1 = '1',		// built-in Debye-Hueckel limiting law for aqueous electrolytes
     SM_AQDH2 = '2',		// built-in 2-term Debye-Hueckel model for aqueous electrolytes
     SM_AQDH3 = '3',		// built-in 3-term Debye-Hueckel model for aqueous electrolytes (Karpov version)
-    SM_AQDHH = 'H',		// built-in 3-term Debye-Hieckel model for aqueous electrolytes (Helgeson version)
+    SM_AQDHH = 'H',		// built-in 3-term Debye-Hueckel model for aqueous electrolytes (Helgeson version)
+    SM_AQDHS = 'Y',		// built-in 3-term Debye-Hueckel model for aqueous electrolytes (Shvarov version)
     SM_AQSIT = 'S',		// built-in SIT model for aqueous electrolytes
-    SM_AQEXUQ = 'Q',    // built-in EUNIQUAC model for aqueous electrolytes (reserved)
+    SM_AQEXUQ = 'Q',    // built-in EUNIQUAC model for aqueous electrolytes
     SM_AQPITZ = 'Z',    // built-in Pitzer HMW model for aqueous electrolytes
-// SM_IONEX = 'E',		// ion exchange (Donnan, Nikolskii) (reserved)
+		// SM_IONEX = 'X',		// ion exchange (Donnan, Nikolskii) (reserved)
     SM_SURCOM = 'A',	// models of surface complexation at solid-aqueous interface
     SM_USERDEF = 'U',	// user-defined mixing model (scripts in Phase record)
     SM_OTHER = 'O'		// other built-in phase-specific models of non-ideal solutions
@@ -126,6 +129,7 @@ typedef enum {  // Classifications of DC
     DC_AQ_PROTON   = 'T',      // hydrogen ion H+
     DC_AQ_ELECTRON = 'E',      // electron (as a DC)
     DC_AQ_SPECIES  = 'S',      // other aqueous species (ions, complexes and ion pairs)
+DC_AQ_SURCOMP = 'K',     // Surface complex represented as aqueous species
     DC_AQ_SOLVENT  = 'W',      // water H2O (major solvent)
     DC_AQ_SOLVCOM  = 'L',      // other components of a solvent (eg. alcohol)
     // Gas phase ( G code can be used for all gases; V,C,H,N codes are reserved
@@ -261,7 +265,7 @@ typedef enum { // Units of measurement of quantities and concentrations
     PVT_CELS = 'C',   // degrees Celsius (C)
     PVT_KELVIN = 'K', // Kelvins (K), 0 C = 273.15 K
     PVT_FAREN = 'F',  // degrees Fahrenheit (F)
-    //Attention: Only C code can be used in this version.
+    //Attention: Only C code can be used in this version of GEM IPM algorithm.
 
     // Units of measurement of energy values { j c J C n N }
     TDAT_JOUL = 'j',  // Joules (J/mole)

@@ -42,12 +42,14 @@ CInitialCondition::CInitialCondition(void)
   string delimiter_type(" ");
   geo_type_name = "DOMAIN";
   dis_type_name = "CONSTANT";
-  CNodeValue* m_node = new CNodeValue();        
-  m_node->node_value = 0.0;
+  // HS: not needed, removed. 
+  // m_node = new CNodeValue();        
+  // m_node->node_value = 0.0;
   SubNumber=0;
   m_pcs = NULL; //OK
   a0=b0=c0=d0=NULL; //WW
   m_msh = NULL; //OK
+  m_node = NULL; //HS
 }
 
 /**************************************************************************
@@ -58,7 +60,11 @@ Programing:
 **************************************************************************/
 CInitialCondition::~CInitialCondition(void) 
 {
+  if ( node_value_vector.size() > 0)
+      for (int i=0 ; i < (int)node_value_vector.size() ; i++ )
+          delete node_value_vector[i];
   node_value_vector.clear();
+  delete m_node; //HS
   //WW
   if(a0) delete a0;
   if(b0) delete b0;
@@ -106,6 +112,7 @@ bool ICRead(string file_base_name)
       m_ic = new CInitialCondition();
       position = m_ic->Read(&ic_file);
       ic_vector.push_back(m_ic);
+      m_ic = NULL;
       ic_file.seekg(position,ios::beg);
     } // keyword found
   } // eof
@@ -167,7 +174,7 @@ ios::pos_type CInitialCondition::Read(ifstream *ic_file)
   string hash("#");
   bool new_subkeyword = false;
   bool new_keyword = false;
-  CNodeValue *m_node = NULL;
+  // CNodeValue *m_node = NULL; //HS: move to the class definition. 11.2009
   int i, k, ibuf;
   double d_buf;
   i=0; ibuf=0; d_buf=0.0;
@@ -205,6 +212,7 @@ ios::pos_type CInitialCondition::Read(ifstream *ic_file)
         m_node = new CNodeValue();        
         in >> m_node->node_value;
         node_value_vector.push_back(m_node);
+        m_node = NULL;
       }
       if(dis_type_name.find("GRADIENT")!=string::npos) {
 		in >> gradient_ref_depth;  //CMCD
@@ -511,7 +519,7 @@ void CInitialCondition::SetSurface(int nidx)
         } // end surface nodes
 
     } // end constant
-    if(dis_type_name.find("GRADIENT")!=string::npos) {
+    else if(dis_type_name.find("GRADIENT")!=string::npos) {
  
       int onZ = m_msh->GetCoordinateFlag()%10;
       long msh_node;
@@ -907,6 +915,11 @@ void ICDelete()
     delete ic_vector[i];
   }
   ic_vector.clear();
+  no_ic = (int)ic_group_vector.size();
+  for(i=0;i<no_ic;i++){
+    delete ic_group_vector[i];
+  }
+  ic_group_vector.clear();
 }
 
 /**************************************************************************

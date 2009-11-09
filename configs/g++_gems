@@ -1,0 +1,13 @@
+## 17.12.2008 WW
+GEMS = yes;
+NEW_SP = yes;
+CXX_LDFLAGS      =
+CXX_LD           = g++
+#OPTIMIZING. WW
+CXX_OPT_FLAGS    = -O3  
+CXX_DEBUG_FLAGS  = -g
+CXX_WARN_FLAGS   = 
+GEM_LIBS         = GEM/libgemipm2k.a -lqd
+CXX_FLAGS        = -pedantic -fno-nonansi-builtins -DGCC -D_POSIX_SOURCE -DNO_ERROR_CONTROL $(CXX_OPT_FLAGS) $(CXX_DEBUG_FLAGS) -DNEW_EQS -DPROBLEM_CLASS -DRANDOM_WALK -DGEM_REACT -DIPMGEMPLUGIN 
+CXX              = g++
+

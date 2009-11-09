@@ -237,6 +237,7 @@ CRFProcess::CRFProcess(void)
   m_msh = NULL;
   // Reload solutions
   reload=-1;
+	nwrite_restart=1;  // kg44 write every timestep is default
   pcs_nval_data = NULL;
   pcs_eval_data = NULL;
   non_linear = false; //OK/CMCD
@@ -269,7 +270,7 @@ CRFProcess::CRFProcess(void)
   eqs_new = NULL;  
   configured_in_nonlinearloop = false;
 #endif
-
+  flag_couple_GEMS = 0; // 11.2009 HS
 }
 
 /**************************************************************************
@@ -495,9 +496,9 @@ void CRFProcess::Create()
   CMediumPropertiesGroup *m_mmp_group = NULL;
   int continua = 1; //WW
   if(RD_Process) continua = 2;
+  m_mmp_group = MMPGetGroup(pcs_type_name);  
   for(i=0;i<continua;i++)
   {
-    m_mmp_group = MMPGetGroup(pcs_type_name);
     if(!m_mmp_group) {
       m_mmp_group = new CMediumPropertiesGroup();
       m_mmp_group->pcs_type_name = pcs_type_name; 
@@ -505,6 +506,7 @@ void CRFProcess::Create()
       mmp_group_list.push_back(m_mmp_group);
     }
   }
+  m_mmp_group = NULL;
   //----------------------------------------------------------------------------
   // NUM_NEW
   cout << "->Create NUM" << '\n';
@@ -639,6 +641,7 @@ void CRFProcess::Create()
          m_bc_group->pcs_pv_name = pcs_primary_function_name[i]; //OK
          m_bc_group->Set(this,Shift[i]);
          bc_group_list.push_back(m_bc_group); //Useless, to be removed. WW
+         m_bc_group = NULL;
        //OK}
      } 
      if((long)bc_node_value.size()<1) //WW
@@ -667,6 +670,7 @@ void CRFProcess::Create()
        if(WriteSourceNBC_RHS==1)// WW
           WriteRHS_of_ST_NeumannBC();
      }
+  m_st_group = NULL;
   }
   // Write BC/ST nodes for vsualization.WW
   if(write_boundary_condition&&WriteSourceNBC_RHS!=2)
@@ -904,30 +908,37 @@ last modified:
 **************************************************************************/
 void CRFProcess:: WriteSolution()
 {
-    if(reload==2||reload<0) return;	 
-    string m_file_name = FileName +"_"+pcs_type_name+"_primary_value.asc";
-    ofstream os(m_file_name.c_str(), ios::trunc|ios::out);     	
-    if (!os.good())
-    {
-       cout << "Failure to open file: "<<m_file_name << endl;
-       abort();
-    }
-    //
-    long i;
-    int j;
-    int idx[20];
-	for(j=0; j<pcs_number_of_primary_nvals; j++) 
+	if ( reload==2 || reload<=0 ) return;
+	if ( ( aktueller_zeitschritt % nwrite_restart  ) > 0 ) return; //kg44 write out only between nwrite_restart timesteps
+
+	string m_file_name = FileName +"_"+pcs_type_name+"_"+pcs_primary_function_name[0]+"_primary_value.asc";
+	ofstream os ( m_file_name.c_str(), ios::trunc|ios::out );
+	if ( !os.good() )
 	{
-      idx[j] = GetNodeValueIndex(pcs_primary_function_name[j]);
-      idx[j+pcs_number_of_primary_nvals] = idx[j]+1;
+		cout << "Failure to open file: "<<m_file_name << endl;
+		abort();
 	}
-	for(i=0; i<m_msh->GetNodesNumber(false); i++)
-    {
-       for(j=0; j<2*pcs_number_of_primary_nvals; j++)
-         os<<GetNodeValue(i,idx[j]) <<"  ";
-       os<<endl;
-    }  
-    os.close();
+	os.precision(15); // 15 digits accuracy seems enough? more fields are filled up with random numbers!
+	os.setf(ios_base::scientific,ios_base::floatfield); 
+	//
+	long i;
+	int j;
+	int *idx; // better to use variable dimensioning
+	idx = new int [2*pcs_number_of_primary_nvals];
+	for ( j=0; j<pcs_number_of_primary_nvals; j++ )
+	{
+		idx[j] = GetNodeValueIndex ( pcs_primary_function_name[j] );
+		idx[j+pcs_number_of_primary_nvals] = idx[j]+1;
+	}
+	for ( i=0; i<m_msh->GetNodesNumber ( false ); i++ )
+	{
+		for ( j=0; j<2*pcs_number_of_primary_nvals; j++ )
+			os<<GetNodeValue ( i,idx[j] ) <<"  ";
+		os<<endl;
+	}
+	os.close();
+	cout << "Write solutions for timestep " << aktueller_zeitschritt << " into file " << m_file_name << endl;
+	delete ( idx );
 }
 
 /**************************************************************************
@@ -941,35 +952,47 @@ void CRFProcess:: ReadSolution()
 {
     string m_file_name; 
 #ifdef MFC //WW 
-    m_file_name = ext_file_name+ +"_"+pcs_type_name+"_primary_value.asc";
+	m_file_name = ext_file_name+ +"_"+pcs_type_name+"_"+pcs_primary_function_name[0]+"_primary_value.asc";
 #else
-    m_file_name = FileName +"_"+pcs_type_name+"_primary_value.asc";
+	m_file_name = FileName +"_"+pcs_type_name+"_"+pcs_primary_function_name[0]+"_primary_value.asc";
 #endif
-    ifstream is(m_file_name.c_str(), ios::in);     	
-    if (!is.good())
-    {
-       cout << "Failure to open file: "<<m_file_name << endl;
-       abort();
-    }
-    //
-    long i;
-    int j;
-    int idx[20];
-    double val[20];
-	for(j=0; j<pcs_number_of_primary_nvals; j++) 
+	ifstream is ( m_file_name.c_str(), ios::in );
+	if ( !is.good() )
 	{
-       idx[j] = GetNodeValueIndex(pcs_primary_function_name[j]);
-       idx[j+pcs_number_of_primary_nvals] = idx[j]+1;
+		cout << "Failure to open file: "<<m_file_name << endl;
+		abort();
 	}
-	for(i=0; i<m_msh->GetNodesNumber(false); i++)
-    {
-       for(j=0; j<2*pcs_number_of_primary_nvals; j++)
-         is>>val[j];
-       is>>ws;
-       for(j=0; j<2*pcs_number_of_primary_nvals; j++)
-         SetNodeValue(i,idx[j], val[j]);
-    }  
-    is.close();
+	//
+	long i;
+	int j;
+	int *idx;
+	double *val;
+
+	idx = new int [2*pcs_number_of_primary_nvals];
+	val = new double [2*pcs_number_of_primary_nvals];
+
+	for ( j=0; j<pcs_number_of_primary_nvals; j++ )
+	{
+		idx[j] = GetNodeValueIndex ( pcs_primary_function_name[j] );
+		idx[j+pcs_number_of_primary_nvals] = idx[j]+1;
+	}
+	for ( i=0; i<m_msh->GetNodesNumber ( false ); i++ )
+	{
+		for ( j=0; j<2*pcs_number_of_primary_nvals; j++ )
+			is>>val[j];
+		is>>ws;
+		for ( j=0; j<2*pcs_number_of_primary_nvals; j++ )
+			SetNodeValue ( i,idx[j], val[j] );
+	}
+	is.close();
+	delete ( idx );
+	delete ( val );
+	//cout << "ReadSolution for restart is successfull!" << endl;
+#ifdef GEM_REACT
+// for GEM_REACT we also need internal information on porosity!....
+	//if (!m_vec_GEM->ReadReloadGem()) abort();
+// moved to init_gem...otherwise it will not work....
+#endif
 }
 
 
@@ -1231,7 +1254,11 @@ void PCSDestroyAllProcesses(void)
   //----------------------------------------------------------------------
   MSPDelete(); //WW
   BCDelete();  //WW
+  ICDelete();  //HS
+  BCGroupDelete();  //HS
   STDelete();  //WW
+  STGroupsDelete(); //HS
+  GEOLIB_Clear_GeoLib_Data(); //HS
   //......................................................................
   TIMDelete(); //OK
   OUTDelete();
@@ -1239,6 +1266,7 @@ void PCSDestroyAllProcesses(void)
   MFPDelete();
   MSPDelete();
   MMPDelete();
+  MMPGroupDelete();
   MCPDelete();
   //----------------------------------------------------------------------
 }
@@ -1539,6 +1567,7 @@ ios::pos_type CRFProcess::Read(ifstream *pcs_file)
     //....................................................................
     if(line_string.find("$RELOAD")!=string::npos) { // subkeyword found
        *pcs_file >> reload;  //WW
+			if ( reload==1 || reload ==3 ) *pcs_file >> nwrite_restart; //kg44 read number of timesteps between writing restart files
        pcs_file->ignore(MAX_ZEILE,'\n');
        continue;
     }
@@ -3090,8 +3119,6 @@ Programing:
 void CRFProcess::ConfigPS_Global()
 {
   dof = 2;
-  //fem->FluidProp->mode=3; //NB, secondary variable as MFP-argument, PV just from last timestep
-  //fem->GasProp->mode=3;
   // 1.1 primary variables
   pcs_number_of_primary_nvals = 2;
   pcs_primary_function_name[0] = "PRESSURE1";
@@ -4073,7 +4100,7 @@ last modified:
 **************************************************************************/
 void CRFProcess::CalIntegrationPointValue()
 {
-  long i;
+  long i=0;
   CElem* elem = NULL;
   cal_integration_point_value = false;
   continuum = 0; //15.02.2007/
@@ -5313,7 +5340,7 @@ last modification:
 **************************************************************************/
 int CRFProcess::ExecuteLinearSolver(void)
 {
-  long iter_count;
+  long iter_count = 0;
   long iter_sum = 0;
   //WW  int found = 0;
   //-----------------------------------------------------------------------

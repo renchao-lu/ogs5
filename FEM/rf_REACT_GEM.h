@@ -45,8 +45,8 @@ public:
 
 	// Data structure for each node to carry the chemical information (real FMT problems consider many nodes)
 	// Names are consistent with the DataBridge structure (also see "\GEM\databr.h")
-	long *m_NodeHandle, *m_NodeStatusCH, *m_IterDone;
-
+	long *m_NodeHandle, *m_NodeStatusCH, *m_IterDone, *m_IterDoneCumulative, *m_IterDoneIndex;
+        long m_IterDoneIndexSort, m_ShuffleGems;
 	// this is for porosity calculated on volume of solids
 	double *m_porosity; 
 	
@@ -73,6 +73,9 @@ public:
 	double *m_saturation;
 	double *m_Node_Volume;    // Volume around the node;
 
+
+        int *m_boundary; //holds marker for boundary nodes
+
 	CFluidProperties *m_FluidProp;
 	CRFProcess *m_pcs;        // pointer to the PCS Class.	
 	CRFProcess *m_flow_pcs;   // pointer to the flow PCS. 
@@ -86,7 +89,7 @@ public:
 
     short Init_RUN();// Run the node-GEM                      	
 	//  return: 0-ok;5-GEM does not converge 
-	short Run_MainLoop(string Project_path);
+	short Run_MainLoop(string Project_path, long aktueller_zeitschritt);
 	//  return: 0-ok;5-GEM does not converge 
 
 	string Get_Init_File_Path(void);
@@ -115,6 +118,7 @@ public:
 	int flag_porosity_change;    //0-porosity change not coupled into transport; 1=coupled;
 	int flag_coupling_hydrology; //0-without coupling; 1=with coupling;
 	int flag_permeability_porosity;//0-no coupling; 1-Kozeny-Carman; 2-Kozeny-Carman normalized;
+        int flag_gem_smart; // shall we work with faster simplex for GEM?
 	//--------------
 
 	long nNodes; // number of all nodes;
@@ -129,7 +133,9 @@ public:
     short SetReactInfoBackMassTransport(int timelevel);
     void GetReactInfoFromGEM(long in);
 	void SetReactInfoBackGEM(long in);
-
+// necessary for reload with gems
+	int WriteReloadGem();
+	int ReadReloadGem();
 
 	double GetTempValue_MT(long node_Index, int timelevel);
 	double GetPressureValue_MT(long node_Index, int timelevel);
@@ -144,6 +150,9 @@ public:
 	short SetPHValue_MT(long node_Index, int timelevel, double m_PH);
 	short SetPeValue_MT(long node_Index, int timelevel, double m_PE);
 	short SetEhValue_MT(long node_Index, int timelevel, double m_EH);
+	short SetNodePorosityValue_MT(long node_Index, int timelevel, double m_porosity);
+
+  int IsThisPointBCIfYesStoreValue(int index, CRFProcess* m_pcs, double& value);// taken from rf_REACT_BRNS
 
     // Copy current values into previous time step values
     void CopyCurXDCPre(void);
@@ -167,7 +176,7 @@ public:
     //kg44 11/2008 for kinetics
     double CalcSaturationIndex(long in, long node,double temp, double press);
     void CalcReactionRate(long node, double temp, double press);
-    double SpecificSurfaceArea(long in, long node, double temp, double press);
+    double SurfaceAreaPh(long phasenr, long compnr);
 
     // concentration related
     void ConcentrationToMass (long l /*idx of node*/,int i_timestep);
@@ -178,7 +187,8 @@ public:
 	double Pressure_Bar_2_Pa(double Pre_in_Bar);
 	double Pressure_M_2_Bar(double Pre_in_M, double flu_density );
 	double Pressure_Bar_2_M(double Pre_in_Bar, double flu_density );
-
+	double Pressure_M_2_Pa ( double Pre_in_M, double flu_density );
+	double Pressure_Pa_2_M ( double Pre_in_Pa, double flu_density );
     // Calculate the volume of the nodes;
     // given argument is the index of one particular node;
     double GetNodeAdjacentVolume(long Idx_Node);
@@ -198,6 +208,8 @@ public:
 	double gem_mass_scale;
 	// GEM temperature (without coupling to temperature)
     double m_gem_temperature;
+	// GEM pressure (needed for Richards flow)
+    double m_gem_pressure;
 
 	// Definition of buffer variables
 	long *m_NodeHandle_buff, *m_NodeStatusCH_buff, *m_IterDone_buff;
@@ -212,7 +224,12 @@ public:
     void CopyToMPIBuffer(long in);
 
     void GetGEMResult_MPI(void);
+
+    void SortIterations(long *iterations, long *indexes, long len);
 #endif
+
+    int Random(long n);
+    void ShuffleIterations ( long *indexes, long len );
 
 };
 

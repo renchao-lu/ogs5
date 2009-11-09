@@ -62,6 +62,7 @@ class CInitialCondition
     void SetEle(int);  //MX
     void SetDomainEle(int); //MX
     CFEMesh* m_msh;
+    CNodeValue* m_node;
 };
 
 class CInitialConditionGroup
