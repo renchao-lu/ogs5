@@ -17,7 +17,7 @@ Task:
 Programing:
 06/2005 WW Implementation
 **************************************************************************/
-CCore::CCore(const int id)
+CCore::CCore(const long id)
 {
   index = id;
   mark = true;

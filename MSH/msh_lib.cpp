@@ -403,7 +403,7 @@ Programing:
 03/2005 OK Implementation
 last modification:
 **************************************************************************/
-CFEMesh* FEMGet(string msh_name)
+CFEMesh* FEMGet(const string &msh_name)
 {
   int no_msh = (int)fem_msh_vector.size();
   // If there is only one msh file available, use it for all process. WW

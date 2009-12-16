@@ -2830,9 +2830,10 @@ void COutput::WriteDataVTK(int number)
   vtk_file_name += number_string ;
 
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
-    sprintf(tf_name, "%d", myrank);
-    vtk_file_name += "_" + string(tf_name);
-    std::cout << "VTK filename: " << vtk_file_name << endl;
+	// kg44 removed "_0" as this make it impossible for visit/paraview to identify the cycle number
+   // sprintf(tf_name, "%d", myrank);
+   // vtk_file_name += "_" + string(tf_name);
+    // std::cout << "VTK filename: " << vtk_file_name << endl;
 #endif
   vtk_file_name += ".vtk";
   if(!new_file_opened) remove(vtk_file_name.c_str()); //KG44

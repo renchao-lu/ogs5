@@ -44,6 +44,7 @@ class Matrix
      // Operators
      virtual void operator = (const double a);
      virtual void operator *= (const double a);
+     virtual void operator /= (const double a);
      virtual void operator += (const double a);
      void operator = (const Matrix& m);
      void operator += (const Matrix& m);

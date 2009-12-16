@@ -110,6 +110,10 @@ void Matrix::operator *= (const double a)
 {
     for(int i=0; i<size; i++) data[i] *= a;
 }
+void Matrix::operator /= (const double a)
+{
+    for(int i=0; i<size; i++) data[i] /= a;
+}
 void Matrix::operator += (const double a)
 {
     for(int i=0; i<size; i++) data[i] += a;

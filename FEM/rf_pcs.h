@@ -360,13 +360,13 @@ public:
     vector<string> nod_val_name_vector; //OK
     void SetNodeValue(long,int,double); //OK
     double GetNodeValue(long,int); //OK
-    int GetNodeValueIndex(string); //OK
+    int GetNodeValueIndex(const string&); //OK
     //-----------------------------
     vector<double*> ele_val_vector; //PCH
     vector<string> ele_val_name_vector; //PCH
     void SetElementValue(long,int,double); //PCH
     double GetElementValue(long,int); //PCH
-    int GetElementValueIndex(string); //PCH
+    int GetElementValueIndex(const string&); //PCH
     //CB-----------------------------
     int flow_pcs_type;
     //----------------------------------------------------------------------

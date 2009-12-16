@@ -3707,6 +3707,20 @@ void GradShapeFunctionLine(double *dN1, const double *u)
   dN1[1] = 0.5;	
 }
 
+/**************************************************************************
+MathLib-Method:
+Task:
+Programing:
+04/2009 NW Implementation
+Last modified:
+**************************************************************************/
+void GradShapeFunctionLineHQ(double *dN1, const double *u)
+{
+  dN1[0] = u[0] - 0.5;
+  dN1[1] = u[0] + 0.5;
+  dN1[2] = -2.0*u[0];
+}
+
 /***************************************************************************
    ROCKFLOW - Funktion:  ShapeFunctionTri
 

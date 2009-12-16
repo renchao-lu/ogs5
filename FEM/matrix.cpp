@@ -88,7 +88,7 @@
 // MSHLib
 #include "msh_node.h"
 #include "msh_mesh.h"
-extern CFEMesh* FEMGet(string);
+extern CFEMesh* FEMGet(const string&);
 
 using Mesh_Group::CNode;
 

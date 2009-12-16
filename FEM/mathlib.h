@@ -272,6 +272,7 @@ extern void ShapeFunctionPri(double *N, const double *x);
 extern void ShapeFunctionPriHQ(double *N, const double *u);
 // Gradient of ...
 extern void GradShapeFunctionLine(double *dN1, const  double *u);
+extern void GradShapeFunctionLineHQ(double *dN1, const  double *u);
 extern void GradShapeFunctionTri(double *dN3, const  double *u);
 extern void GradShapeFunctionTriHQ(double *dN3, const  double *u);
 extern void GradShapeFunctionQuad(double *dN4, const double *u);

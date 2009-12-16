@@ -1650,7 +1650,7 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 */
         tensor = MediaProp->PermeabilityTensor(Index);
         for(i=0;i<dim*dim;i++)
-          mat[i] = tensor[i];
+          mat[i] = tensor[i]*time_unit_factor; //16.10.2009 .WW
         break;
       //..................................................................
       case T: // Two-phase flow
@@ -4073,7 +4073,7 @@ void  CFiniteElementStd::Assemble_Gravity()
   double fkt, rho; //, rich_f;
   double k_rel_iteration;
   // GEO
-  double geo_fac = MediaProp->geo_area;
+//NW  double geo_fac = MediaProp->geo_area;
   if(!FluidProp->CheckGravityCalculation()) return; 
   long cshift = 0; //WW 
   //
@@ -4151,7 +4151,10 @@ void  CFiniteElementStd::Assemble_Gravity()
     for (i=0;i<nnodes;i++)
     {
         eqs_rhs[cshift + eqs_number[i]]
-                 += k_rel_iteration* geo_fac*NodalVal[i+ii_sh];
+                  += k_rel_iteration * NodalVal[i+ii_sh];
+//NW not necessary to multiply geo_area(geo_fac) here. It's already multiplied in ComputeJacobian() through fkt.
+//          eqs_rhs[cshift + eqs_number[i]]
+//                  += k_rel_iteration* geo_fac*NodalVal[i+ii_sh];
        (*RHS)(i+LocalShift+ii_sh) += NodalVal[i+ii_sh];
     }
   }

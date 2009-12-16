@@ -6381,7 +6381,7 @@ Programing:
 03/2005 OK Implementation
 01/2006 OK Test
 **************************************************************************/
-int CRFProcess::GetNodeValueIndex(string var_name)
+int CRFProcess::GetNodeValueIndex(const string &var_name)
 {
   int i=0;
   int nidx = -2;
@@ -6418,7 +6418,7 @@ Programing:
 09/2005 PCH Implementation
 last modified:
 **************************************************************************/
-int CRFProcess::GetElementValueIndex(string var_name)
+int CRFProcess::GetElementValueIndex(const string &var_name)
 {
   int i;
   int nidx = -1;

@@ -41,7 +41,7 @@ class CCore
       friend class FiniteElement::ElementMatrix; 
       friend class FiniteElement::ElementMatrix_DM;
    public: // Methods
-      CCore(const int id);
+      CCore(const long id);
       ~CCore() {}
       // Operator
       void operator = (CCore & g) {g=g;}
