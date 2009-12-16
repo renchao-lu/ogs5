@@ -22,7 +22,7 @@
   /* Floating-Point */
 
 /* ROCKFLOW-Version */
-#define ROCKFLOW_VERSION    "4.10.04 (HS/GK)"
+#define ROCKFLOW_VERSION    "4.10.06 (CB/SB)"
 #define RF_SHELL_VERSION    "4.10.03(NB)"
 #define ROCKFLOW_DATE       "04.11.2009    "
 
