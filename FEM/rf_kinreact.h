@@ -204,7 +204,7 @@ class CKinReactData{
  double ReactDeactEpsilon;   // treshhold
  vector <bool> ReactDeact;   // flags for individual nodes
  vector <double> React_dCdT; // Sum of reaction rates for individual nodes
- vector <vector<int>> ReactNeighborhood; // node indices of local neighborhood around individual nodes
+ vector <vector<int> > ReactNeighborhood; // node indices of local neighborhood around individual nodes
  int ReactDeactMode;
 
  bool debugoutflag;
