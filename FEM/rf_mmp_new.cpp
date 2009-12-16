@@ -354,8 +354,9 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 //------------------------------------------------------------------------
 //3..POROSITY
 //------------------------------------------------------------------------
-//CB    if((line_string.find("$POROSITY")!=string::npos) && (line_string.find("$POROSITY_DISTRIBUTION")==string::npos)){ //subkeyword found
-    if(line_string.find("$POROSITY")!=string::npos) { //subkeyword found
+//CB 
+   if((line_string.find("$POROSITY")!=string::npos) && (!(line_string.find("_DISTRIBUTION")!=string::npos))){ //subkeyword found
+//    if(line_string.find("$POROSITY")!=string::npos) { //subkeyword found
       in.str(GetLineFromFile1(mmp_file));
       in >> porosity_model;
 	  int m=0;
