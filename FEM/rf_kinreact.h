@@ -37,6 +37,11 @@ public:
 	int speciesnumber; // number of species;
 	double concentration; //Monod concentration
 	double order ; // Order of monod term
+ int isotopecouplenumber; // CB isotope fractionation : specis number of isotope partner
+ // CB for Threshhold terms
+ bool threshhold;
+ double threshConc;
+ double threshOrder;
 	MonodSubstruct(void);
 	~MonodSubstruct(void);
 };
@@ -60,6 +65,7 @@ class CKinReact{
 	int		number_monod;			/* Number of Monod terms */
 	int		number_inhibit;			/* Number of inhibition terms */
 	int		number_production;		/* number of production terms */
+	int		number_isotope_couples;		/* number of production terms */
 	vector <MonodSubstruct*>  monod;		/* saves monod concentrations and names of species */
 	vector <MonodSubstruct*>  inhibit;		/* saves inhibit concentrations and names of species */
 	vector <MonodSubstruct*>  production;	/* saves production concentrations, orders and names of species */
@@ -69,6 +75,15 @@ class CKinReact{
     vector <double>	ProductionStoch; // stochiometry of reaction
 //    vector <double>	ProductionStoch2; // stochiometry of reaction - short version
 	vector <MonodSubstruct*> ProdStochhelp; // store input values
+    //CB Isotope fractionation  
+    string Isotope_light;
+    string Isotope_heavy;
+string degType;
+double isoenfac ;
+//CB Not this particular reaction on specified GEO-Objects; Data structures
+ vector <string> NotThisReactGeoName;
+	vector <string> NotThisReactGeoType;
+	vector <bool> switched_off_node;
 
 	// exchange data
 	vector <string>	ex_species_names;
@@ -91,6 +106,7 @@ class CKinReact{
 	int typeflag_exchange_langmuir;		/* set to 1 if reaction is langmuir exchange type */
 	int typeflag_exchange_freundlich;		/* set to 1 if reaction is freundlich exchange type */
 	int typeflag_napldissolution;		/* set to 1 if reaction is NAPL dissolution */
+ int typeflag_iso_fract; /* set to 1 if reaction is isotope fractionation */
 
     /* Methods */
    bool Read(ifstream*); /* Class Read Function */
@@ -99,13 +115,18 @@ class CKinReact{
    int CheckReactionDataConsistency(void); /* check data set */
    void TestWrite(void); // test output function
 
-   double Monod(double, double);
+   double Monod(double, double, double, double); // CB isotope fractionation + higher order terms
    double Inhibition(double, double);
    double BacteriaGrowth ( int r, double *c, double sumX, int exclude );
    int	  GetPhase(int );
-   double GetPorosity( int comp, long index );
+//   double GetPorosity( int comp, long index );
+// CB replaced by
+   double GetReferenceVolume( int comp, long index );
    double GetDensity( int comp, long index );
-
+   double GetNodePoreVelocity( long node);
+   double GetPhaseVolumeAtNode(long node, double theta, int phase);
+   // CB 19/10/09
+   long currentnode; // CB 19/10/09 This is eclusively for Brand model to allow porosity in Inhibition constant calculation
 };
 
 
@@ -173,20 +194,42 @@ class CKinReactData{
 	vector <int> sp_varind;
     
 	// No reactions on specified GEO-Objects; Data structures
-    vector <string> NoReactGeoName;
+ vector <string> NoReactGeoName;
 	vector <string> NoReactGeoType;
 	vector <bool> is_a_CCBC;
 
+ // CB ReactDeact no reaction switch
+ bool ReactDeactFlag;        // method flag
+ int ReactDeactPlotFlag;    // flag for tecplot plots of flags each timestep   
+ double ReactDeactEpsilon;   // treshhold
+ vector <bool> ReactDeact;   // flags for individual nodes
+ vector <double> React_dCdT; // Sum of reaction rates for individual nodes
+ vector <vector<int>> ReactNeighborhood; // node indices of local neighborhood around individual nodes
+ int ReactDeactMode;
+
+ bool debugoutflag;
+ string debugoutfilename;
+ ofstream debugoutstr;
+
 	vector <double> node_foc;
 
-    /* Methods */
-    CKinReactData(void);
-    ~CKinReactData(void);
-    bool Read(ifstream*);     /* Class Read Function */
-    void Write(ofstream*);   /* Class Write Function */
+ /* Methods */
+ CKinReactData(void);
+ ~CKinReactData(void);
+ bool Read(ifstream*);     /* Class Read Function */
+ void Write(ofstream*);   /* Class Write Function */
 	void TestWrite(void);
-    void ExecuteKinReact(void);
-    void Biodegradation( long node, double eps, double hmin, double *usedtneu, int *nok, int *nbad);
+ void ExecuteKinReact(void);
+ void Biodegradation( long node, double eps, double hmin, double *usedtneu, int *nok, int *nbad);
+
+ // CB ReactDeact
+ void ReactionDeactivation(long);  // Sets nodes active / inactive
+ void ReactDeactPlotFlagsToTec();
+ void ReactDeactSetOldReactionTerms(long nonodes);
+
+ double **concentrationmatrix;
+ void Aromaticum(long nonodes);
+
 };
 
 extern vector <CKinReact*> KinReact_vector; // declare extern instance of class CKinReact
@@ -199,7 +242,7 @@ extern void KRCDelete(void);
 extern void KRConfig(void);
 extern void KBlobConfig(void);  /* configure Blob-Object */
 extern void KBlobCheck(void);   /* check Blob-Object for input errors */
-
+extern bool KNaplDissCheck(void);   /* CB check if NAPL dissolution is modeled */
 
 
 

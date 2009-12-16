@@ -128,6 +128,7 @@ extern bool SubKeyword(string);
 extern bool Keyword(string);
 
 extern string GetLineFromFile1(ifstream*);//CC move here
+extern string GetUncommentedLine(string); //SB
 //extern string NumberToString(long);
 extern void is_line_empty(string*); //OK
 #endif

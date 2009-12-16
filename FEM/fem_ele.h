@@ -187,25 +187,30 @@ class ElementMatrix
 {
     public:
        ElementMatrix():Mass(NULL), Laplace(NULL),CouplingA(NULL),
-                      CouplingB(NULL), Stiffness(NULL), RHS(NULL) {};
+                      CouplingB(NULL), Stiffness(NULL),
+					  Advection(NULL), Storage(NULL), Content(NULL), RHS(NULL) {}; //SB4200
       ~ElementMatrix();
       // Allocate memory for strain coupling matrix
       void AllocateMemory(CElem* ele, int type=0);
       // Set members
       void SetMass(SymMatrix *mass) { Mass = mass;}
+      void SetMass_notsym(Matrix *mass) { Mass_notsym = mass;}
       void SetLaplace(Matrix *laplace) { Laplace = laplace;}
       void SetStiffness(Matrix *x) { Stiffness = x;}
 	  void SetAdvection(Matrix *x) { Advection = x;}
 	  void SetStorage(Matrix *x) { Storage = x;}
+	  void SetContent(Matrix *x) { Content = x;}
       void SetCouplingMatrixA(Matrix *cplM) {CouplingA = cplM;}
       void SetCouplingMatrixB(Matrix *cplM) {CouplingB = cplM;}
       void SetRHS(Vec *rhs) {RHS = rhs;}
       // Get members
       SymMatrix *GetMass() {return Mass;}
+	  Matrix *GetMass_notsym() {return Mass_notsym;}
       Matrix *GetLaplace() {return Laplace;}
       Matrix *GetStiffness() {return Stiffness;}
 	  Matrix *GetAdvection() {return Advection;}//SB4200
 	  Matrix *GetStorage() {return Storage;}//SB4200
+	  Matrix *GetContent() {return Content;}//SB4200
       Matrix *GetCouplingMatrixA() {return CouplingA;}
       Matrix *GetCouplingMatrixB() {return CouplingB;}
       Vec *GetRHS() {return RHS;}
@@ -213,9 +218,11 @@ class ElementMatrix
 //TODO in more gernal way for the case of sym and unsym. WW      SymMatrix *Mass;
 //      SymMatrix *Laplace;
       SymMatrix *Mass;
+	  Matrix *Mass_notsym;
       Matrix *Laplace;
 	  Matrix *Advection;
 	  Matrix *Storage;
+	  Matrix *Content;
       Matrix *CouplingA; // Pressure coupling for M_Process
       Matrix *CouplingB; // Strain coupling gor H_Process
       Matrix *Stiffness;

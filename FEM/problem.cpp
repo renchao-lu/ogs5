@@ -123,10 +123,11 @@ Problem::Problem(char* filename):print_result(false)
     return;
   }
   //......................................................................
-#ifdef RESET_4410
-  if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
-    PCSCalcSecondaryVariables(); //OK
-#endif
+//#ifdef RESET_4410
+//  //if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
+//  if(total_processes[3])  // 3: TWO_PHASE_FLOW. 12.12.2008. WW     
+//    PCSCalcSecondaryVariables(); //OK
+//#endif
   //......................................................................
   //09.07.2008 WW
   SetActiveProcesses(); 
@@ -134,19 +135,22 @@ Problem::Problem(char* filename):print_result(false)
   //----------------------------------------------------------------------
   // REACTIONS 
   //CB before the first time step
-  // 1) set the id variable flow_pcs_type for Saturation and velocity calculation
-  //    in mass transport element matrices
-  // 2) in case of Twophaseflow calculate NAPL- and the corresponding 
-  //    Water phase Saturation from the NAPL concentrations
   //if(MASS_TRANSPORT_Process) // if(MASS_TRANSPORT_Process&&NAPL_Dissolution) //CB Todo
   if(transport_processes.size()>0) //12.12.2008. WW   
-    {
-      SetFlowProcessType();
-      //WW CRFProcess *m_pcs = NULL;
-      //WW if (m_pcs = PCSGet("TWO_PHASE_FLOW"))     
-      if(total_processes[3])  // 3: TWO_PHASE_FLOW. 12.12.2008. WW     
-	CalcInitialNAPLDens(total_processes[3]);
-    }
+  {
+    // 1) set the id variable flow_pcs_type for Saturation and velocity calculation
+    //    in mass transport element matrices
+    SetFlowProcessType();
+    // 2) in case of Twophaseflow calculate NAPL- and the corresponding 
+    //    Water phase Saturation from the NAPL concentrations
+    //if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
+    //WW CRFProcess *m_pcs = NULL;
+    //WW if (m_pcs = PCSGet("TWO_PHASE_FLOW"))     
+    // CB: this fct will set the initial NAPL Density in case of NAPL-Dissolution
+    //     should this fct be executed in all cases?? --> CHP
+    if(total_processes[3])  // 3: TWO_PHASE_FLOW. 12.12.2008. WW     
+	     PCSCalcSecondaryVariables(); 
+  }
   //----------------------------------------------------------------------
   // REACTIONS 
   // Initialization of REACT structure for rate exchange between MTM2 and Reactions
@@ -291,6 +295,7 @@ Problem::Problem(char* filename):print_result(false)
       KBlobCheck();
       //WW CreateClockTime();
     }
+	OUTCheck(); // new SB
   //========================================================================
   // Controls for coupling. WW
   loop_index = 0;
@@ -887,7 +892,7 @@ bool Problem::CouplingLoop()
 
    for(i=0; i<(int)total_processes.size(); i++)      	     
    {
-      if(active_processes[i]&&total_processes[i]->selected)
+      if(active_processes[i]&&total_processes[i]->selected) //CB 12/09 Timtypesteady
       {
         m_tim = total_processes[i]->Tim;
         if(m_tim->CheckTime(current_time, dt)>DBL_MIN)
@@ -905,7 +910,9 @@ bool Problem::CouplingLoop()
    }
    //
    int num_processes = (int)active_process_index.size();
-   if(acounter==num_processes)
+// To do
+//SB->WW I do not understand this condition, why switch off output?
+//SB   if(acounter==num_processes)
       print_result = true;
    //
    bool accept = true;
@@ -952,11 +959,12 @@ bool Problem::CouplingLoop()
            }  
            else
            {
-	
-              if(fabs(error_cpl-error)<coupling_tolerance)
-                break;
+			  if(a_pcs->type != 55){//SB Not for fluid momentum process
+				if(fabs(error_cpl-error)<coupling_tolerance)
+				  if(loop_index > 0) //SB4900 - never break in first coupling loop?
+						break;
               error_cpl = error;
-		
+			   }
 		   
 		   } 
            // 
@@ -1009,10 +1017,20 @@ void Problem::PostCouplingLoop()
     dm_pcs->Extropolation_GaussValue();
   } 
 
+  //CB new NAPL and Water Saturations after reactions for Two_Phase_Flow and NAPL-Dissolution
   //WW if(MASS_TRANSPORT_Process) // if(MASS_TRANSPORT_Process&&NAPL_Dissolution) //CB Todo
   if(transport_processes.size()>0&&total_processes[3]) // 12.2008. WW
+    if (KNaplDissCheck())   // Check if NAPLdissolution is modeled
       CalcNewNAPLSat(total_processes[3]);
-
+    
+  /* CB 21/09 The next fct. was necessary in 4.08. Still needed here? I think so 
+  // for TWO_PHASE_FLOW the new time step results for secondary variables 
+  // PRESSURE2 and SATURATION1 are not copied below in the function 
+  // CopyTimestepNODValues(); but I can do it here:
+  if (m_pcs = PCSGet("TWO_PHASE_FLOW"))     
+     CopyTimestepNODValuesSVTPhF();
+  */      
+      
   //  Update the results
   for(int i=0;i<(int)pcs_vector.size();i++)
   {
@@ -1160,6 +1178,9 @@ inline double Problem::TwoPhaseFlow()
     {
       PCSCalcSecondaryVariables(); 
       m_pcs->CalIntegrationPointValue(); 
+      //CB 12/09 (first time added on 010808) Velocity at CenterOfGravity, required for NAPL dissolution
+      if (i==0) // is 0 in all cases the correct index?
+        m_pcs->CalcELEVelocities(); 
     }
   }
   return error;
@@ -1230,6 +1251,8 @@ inline double Problem::GroundWaterFlow()
     cout << "      Calculation of secondary GP values" << endl;
     m_pcs->CalIntegrationPointValue(); //WW
     m_pcs->cal_integration_point_value = false; //WW Do not extropolate Gauss velocity
+	if(m_pcs->tim_type_name.compare("STEADY")==0) //SB
+		m_pcs->selected = false;
   }
   // ELE values
 #ifndef NEW_EQS //WW. 07.11.2008
@@ -2128,6 +2151,9 @@ void Problem::PCSCalcSecondaryVariables()
   bool pcs_cpl = true; 
   //----------------------------------------------------------------------
 #endif
+  // Check if NAPLdissolution is modeled, required by MMPCalcSecondaryVariablesNew
+  bool NAPLdiss = false;
+  NAPLdiss = KNaplDissCheck();
   /* go through all processes */
   int no_processes =(int)pcs_vector.size();
   for(i=0;i<no_processes;i++){
@@ -2160,7 +2186,8 @@ void Problem::PCSCalcSecondaryVariables()
       // do nothing
       break;
     case 12: /* Multi-phase flow process */
-        MMPCalcSecondaryVariablesNew(m_pcs);
+        MMPCalcSecondaryVariablesNew(m_pcs, NAPLdiss);
+        //MMPCalcSecondaryVariablesNew(m_pcs);
         break;
 	default:
 		cout << "PCSCalcSecondaryVariables - nothing to do" << endl;

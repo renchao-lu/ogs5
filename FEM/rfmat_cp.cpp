@@ -225,6 +225,8 @@ Programing:
 //		read_help = (double *) Malloc(count_of_diffusion_model_values * sizeof(double));
 
 		for (j = 0; j < count_of_diffusion_model_values; j++) {
+			if(in.peek() > 0)
+
 /*
 				if(StrTestInv(&sub[p_sub += pos],&pos)) {
                     StrReadString (&name,&sub[p_sub += pos],f,TFString,&pos);
@@ -236,6 +238,11 @@ Programing:
                 else  */
 //					in >> read_help[j];
 					in >> diffusion_model_values[j];
+			else 
+				cout << "Warning: Missing diffusion model values for component " << this->compname << endl;
+			if((diffusion_model == 1) && (j == 0))
+				if((diffusion_model_values[j] < 0.0) || (diffusion_model_values[j] > 100000.0))
+					cout << "Warning: Funny diffusion model values specified" << endl;
 				
         } //end for(j...)
 
@@ -338,6 +345,38 @@ Programing:
 		  in >> bubble_velocity[0] >> bubble_velocity[1] >> bubble_velocity[2];
 	  in.clear();
 	} // subkeyword found
+
+ //....................................................................
+
+ // parameters for NAPL dissolution CB140708
+	if(line_string.find("$MOLAR_DENSITY")!=string::npos) { // subkeyword found
+	  in.str(GetLineFromFile1(rfd_file));
+      in >> molar_density;
+	  in.clear();
+   if(molar_density <= 0){ // unphysical entry
+     DisplayMsgLn("Error in MOLAR_DENSITY - setting molar_density to 1.0!");
+		   molar_density = 1.0;
+	  }
+ } 
+	if(line_string.find("$MOLAR_WEIGHT")!=string::npos) { // subkeyword found
+	  in.str(GetLineFromFile1(rfd_file));
+      in >> molar_weight;
+	  in.clear();
+   if(molar_weight <= 0){ // unphysical entry
+     DisplayMsgLn("Error in MOLAR_WEIGHT - setting molar_weight to 1.0!");
+		   molar_weight = 1.0;
+	  }
+ } 
+	if(line_string.find("$MAXIMUM_AQUEOUS_SOLUBILITY")!=string::npos) { // subkeyword found
+	  in.str(GetLineFromFile1(rfd_file));
+      in >> max_solubility;
+	  in.clear();
+   if(max_solubility <= 0){ // unphysical entry
+     DisplayMsgLn(": Error in MAXIMUM_AQUEOUS_SOLUBILITY - setting max_solubility to 1.0!");
+		   max_solubility = 1.0;
+	  }
+	} 
+ //....................................................................
 
 #ifdef GEM_REACT
 // kg44 26.11.2008 read in parameters for kinetics and GEM
@@ -477,6 +516,23 @@ for(i=0;i<count_of_isotherm_model_values;i++)
 	*rfe_file << isotherm_model_values[i] << " ";
 *rfe_file << endl;
 }
+//NAPL Dissolution CB140708
+if(molar_density > 0){
+*rfe_file << "$MOLAR_DENSITY" << endl;
+*rfe_file << molar_density << "  ";
+*rfe_file << endl;
+}
+if(molar_weight > 0){
+*rfe_file << "$MOLAR_WEIGHT" << endl;
+*rfe_file << molar_weight << "  ";
+*rfe_file << endl;
+}
+if(max_solubility > 0){
+*rfe_file << "$MAXIMUM_AQUEOUS_SOLUBILITY" << endl;
+*rfe_file << max_solubility << "  ";
+*rfe_file << endl;
+}
+
 *rfe_file << endl;
 }
 

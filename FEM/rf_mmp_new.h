@@ -216,7 +216,9 @@ class CMediumProperties
   double transfer_coefficient;
   //double unsaturated_hydraulic_conductivity;
   double specific_storage;
+  int vol_mat_model; // CB
   double vol_mat; //SB
+  int vol_bio_model; // CB
   double vol_bio; //SB
   double foc; // organic carbon content
 };

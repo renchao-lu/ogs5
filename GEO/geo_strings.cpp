@@ -1433,7 +1433,7 @@ string GetLineFromFile1(ifstream *ein){
 	  if((i != -1))
 		zeile = line.substr(i,j-i);   //Ab erstem nicht-Leerzeichen bis Kommentarzeichen rauskopieren in neuen substring, falls Zeile nicht leer ist
 	  i = (int) zeile.find_last_not_of(" "); // Suche nach dem letzten Zeichen, dass kein Leerzeichen ist
-	  if(i>0){
+	  if(i>=0){
 //		  line.clear(); // = "";
 		  line = zeile.substr(0,i+1); // Leerzeichen am Ende rausschneiden
 //		  zeile.clear(); // = "";
@@ -1445,6 +1445,34 @@ string GetLineFromFile1(ifstream *ein){
     }
   }// end while(...)
   //----------------------------------------------------------------------
+  return zeile;
+}
+
+/**************************************************************************/
+/* ROCKFLOW - Funktion: GetUncommentedLine
+                                      */
+/* Aufgabe:
+   Rückgabe ist ist ein string mit dem Zeileninhalt ab dem ersten Nicht-Leerzeichen 
+   bis zum ersten Auftreten des Kommentartzeichens ";"
+   Abgeleitet aus GetLineFromFile1()                                            */
+/* Programmaenderungen:
+    06/2009     SB  First Version
+ **************************************************************************/
+string GetUncommentedLine(string line){
+ 
+  string zeile = "";
+  int i=0, j=0;
+  //----------------------------------------------------------------------
+	  i = (int) line.find_first_not_of(" ",0);		//Anfängliche Leerzeichen überlesen, i=Position des ersten Nichtleerzeichens im string
+	  j = (int) line.find(";",i) ;					//Nach Kommentarzeichen ; suchen. j = Position des Kommentarzeichens, j=-1 wenn es keines gibt.
+	  if((i != -1))
+		zeile = line.substr(i,j-i);   //Ab erstem nicht-Leerzeichen bis Kommentarzeichen rauskopieren in neuen substring, falls Zeile nicht leer ist
+	  i = (int) zeile.find_last_not_of(" "); // Suche nach dem letzten Zeichen, dass kein Leerzeichen ist
+	  if(i>=0){
+		  line = zeile.substr(0,i+1); // Leerzeichen am Ende rausschneiden
+		  zeile = line;
+	  }
+
   return zeile;
 }
 

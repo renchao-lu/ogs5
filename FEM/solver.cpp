@@ -1750,7 +1750,7 @@ int SpBICGSTAB(double *b, double *x, long n)
         MXVorkond(1, x, b);
 
     //WW
-    printf("\tSpBICGSTAB iteration: %i/%i \n",k,max_iter);
+    printf("\t  SpBICGSTAB iteration: %i/%i \n",k,max_iter);
 
     return k;
 }

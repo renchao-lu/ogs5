@@ -369,7 +369,12 @@ void CFiniteElementStd::SetMemory()
         // Mass2 = EleMat->GetMass2();
         Mass = EleMat->GetMass();
         Laplace = EleMat->GetLaplace();
-		// Advection, Storage, Content SB:Todo ?
+		// Advection, Storage, Content SB4200
+		if(PcsType==M){
+			Advection = EleMat->GetAdvection();
+			Storage = EleMat->GetStorage();
+			Content = EleMat->GetContent();
+		}
         RHS = EleMat->GetRHS();
         if(D_Flag>0) 
            StrainCoupling = EleMat->GetCouplingMatrixB();
@@ -4590,6 +4595,81 @@ void  CFiniteElementStd::Cal_Velocity()
 // gp_ele->Velocity.Write();
 }
 
+
+
+
+
+/***************************************************************************
+   GeoSys - Funktion: Cal_GP_Velocity_FM
+   CFiniteElementStd:: Velocity calulation in gauss points from 
+   node velocities obtained by fluid momentum for one element
+ 
+   Programming:  SB
+   09/2009	first version
+**************************************************************************/
+void  CFiniteElementStd::Cal_GP_Velocity_FM(int *i_ind)
+{
+  int i, i_dim;
+  static double vel_g_old[3]={0.0,0.0,0.0}, vel_g[3]={0.0,0.0,0.0};  
+  // ---- Gauss integral
+  int gp_r=0, gp_s=0, gp_t=0;
+  double coef = 0.0, fkt=0.0;
+  int i_idx;    
+  // Get fluid_momentum process
+  CRFProcess *m_pcs_fm =  PCSGet("FLUID_MOMENTUM");
+
+  ElementValue* gp_ele = ele_gp_value[Index];
+
+  // Gauss point loop
+  for (gp = 0; gp < nGaussPoints; gp++){
+	  // Get gauss point data
+      // GetGaussData(gp, gp_r, gp_s, gp_t);
+	  fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+	  // Compute the shape function for interpolation within element
+      ComputeShapefct(1);
+	 
+	  // Save former gp velocity
+      for(i_dim=0;i_dim<dim;i_dim++) vel_g_old[i_dim] = gp_ele->Velocity(i_dim,gp);
+
+	  // Interpolate velocity from nodes to gauss point for all three velocity components
+	  for(i_dim=0;i_dim< dim;i_dim++){
+		   // Get  velocities from FLUID_MOMENTUM process in element nodes: 
+			i_idx = i_ind[i_dim];
+			for(i=0; i<nnodes; i++){
+				NodalVal[i] = m_pcs_fm->GetNodeValue(nodes[i], i_idx); 
+				NodalVal[i] = NodalVal[i] /gravity_constant/1000.0*0.001;  //dirty fix for permebility to conductivity
+			}
+			vel_g[i_dim] = interpolate(NodalVal);
+	  } // end for dim
+
+	  // Set gauss point velocity
+	  for(i_dim=0; i_dim<dim; i_dim++)
+            gp_ele->Velocity(i_dim, gp) = vel_g[i_dim];   
+
+/* 	  // Write out differences:
+	  if((Index < 100)&&(Index > 0)&&(gp < 3)){
+	  cout << " Element: " << Index << ", GP: " << gp << ": ";  
+	  cout << "vel_fem: " ;
+	  for(i_dim=0;i_dim<dim;i_dim++) cout << vel_g_old[i_dim] << "  "; 
+//  	  cout << "vel_FM: " ;
+//	  for(i_dim=0;i_dim<dim;i_dim++) cout << vel_g[i_dim] << "  "; 
+//	  cout << "vel_diff: " ;
+//	  for(i_dim=0;i_dim<dim;i_dim++) cout << vel_g_old[i_dim]-vel_g[i_dim] << "  "; 
+	  cout << endl;
+	  }
+/* */
+  } // end gauss point loop
+
+  // Output
+  // gp_ele->Velocity.Write();
+}
+
+
+
+
+
+
+
 /***************************************************************************
    GeoSys - Funktion: 
            CFiniteElementStd:: Velocity calulation
@@ -5228,7 +5308,8 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
 //  double non_linear_function_iter = 1.0; //OK MediaProp->NonlinearFlowFunction(Index,unit,theta);
 //  double non_linear_function_t0   = 1.0; //OK MediaProp->NonlinearFlowFunction(Index,unit,0.0);
   double fac_mass, fac_laplace, fac_advection, fac_storage, fac_content;
-  if(((aktueller_zeitschritt==1)||(pcs->tim_type_name.compare("TRANSIENT")==0))){   //SB-3
+  //if(((aktueller_zeitschritt==1)||(pcs->tim_type_name.compare("TRANSIENT")==0))){   //SB-3
+  if(((aktueller_zeitschritt==1)||(pcs->Memory_Type == 0))){   //SB-3
   // Initialize.
   (*Mass) = 0.0;
   (*Laplace) = 0.0;
@@ -5257,23 +5338,23 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
   // Store matrices to memory for steady state element matrices     //SB-3
   if(pcs->Memory_Type > 0){
     EleMat = pcs->Ele_Matrices[Index];
-//    EleMat->SetMass(Mass);
+    EleMat->SetMass_notsym(Mass);
     EleMat->SetLaplace(Laplace);
     EleMat->SetAdvection(Advection);
     EleMat->SetStorage(Storage);
-//    EleMat->SetContent(Content);
+    EleMat->SetContent(Content);
   }
 
   }     //SB-3
   else{
-	  if(Index < 1) cout << " Skipping calculation of element matrices " << endl;
+	  if(Index < 1) cout << "        Skipping calculation of element matrices " << endl;
 	  // Get Element Matrices
 	    EleMat = pcs->Ele_Matrices[Index];
-        Mass = EleMat->GetMass();
+        Mass = EleMat->GetMass_notsym();
         Laplace = EleMat->GetLaplace();
 		Advection = EleMat->GetAdvection();
 		Storage = EleMat->GetStorage();
-//		Content = EleMat->GetContent();
+		Content = EleMat->GetContent();
 
   }//pcs->tim_type    //SB-3
   //======================================================================

@@ -63,6 +63,12 @@ class CompProperties
 	/* bubble velocity */
 	int bubble_velocity_model;
 	double bubble_velocity[3];					/* velocity of rising bubbles */
+
+    /* parameters for NAPL dissolution CB140708 */
+    double molar_density;
+    double molar_weight;
+    double max_solubility;
+
 #ifdef GEM_REACT
 	//kg44 25.11.2008 kinetics...for coupling with GEMS
 	//
@@ -75,7 +81,7 @@ class CompProperties
 //      6-11  double p1,q1,p2,q2,p2,q2; // exponents for omega
 //      12,13, 14  double n_1, n_2, n_3; // exponents for acidic neutral and base cases for species one
 //      append for each species another set of n_1, n_2, n_3 (up to 10 sets -> up to ten species)
-	int surface_model; // currently only 1 implemented
+    int surface_model; // currently only 1 implemented
 	double surface_area[10];
     double GetNodePorosityValue_MT ( long node_Index, int timelevel);
 #endif

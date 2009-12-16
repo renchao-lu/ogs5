@@ -433,6 +433,8 @@ public:
     void ConfigureCouplingForLocalAssemblier();
     void CalIntegrationPointValue();
     bool cal_integration_point_value; //WW
+	void CalGPVelocitiesfromFluidMomentum(); //SB 4900
+	bool use_velocities_for_transport; //SB4900
     //---
     double Execute();
     double ExecuteNonLinear();
@@ -642,10 +644,11 @@ extern bool PS_Global; //NB
 extern string project_title; //OK41
 extern bool pcs_created;
 extern vector<LINEAR_SOLVER *> PCS_Solver; //WW
-extern void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs); //OK
+extern void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs, bool NAPLdiss); //OK
 extern void CalcNewNAPLSat(CRFProcess*m_pcs); //CB 01/08
-extern void CalcInitialNAPLDens(CRFProcess*m_pcs); //CB 01/08
+extern double CalcNAPLDens(CRFProcess*m_pcs, int node); //CB 01/08
 extern void SetFlowProcessType();//CB 01/08
+extern void CopyTimestepNODValuesSVTPhF(); //CB 13/08
 #ifndef NEW_EQS //WW. 07.11.2008
 extern void PCSCreateNew(); //OK
 #endif

@@ -3961,6 +3961,73 @@ void COutput::WriteTECNodePCONData(fstream &tec_file)
   //----------------------------------------------------------------------
 }
 
+/***************************************************************************************
+	Function checking the consistency of the output data as specified in the input file
+	This means up to now, that data for missing processes is not written
+	05/09	SB
+*****************************************************************************************/
+void OUTCheck(void){
+
+  int i,j, l, m;
+  COutput *m_out = NULL;
+  CRFProcess* m_pcs = NULL, *m_pcs_out=NULL;
+  CFEMesh* m_msh = NULL;
+  bool found = false;
+  vector <string> del_index;
+  cout << "Checking output data " << endl;
+
+  // Go through all out objects (#OUTPUT-section in input file)
+  for(i=0;i<(int)out_vector.size();i++){
+    m_out = out_vector[i];
+	del_index.clear();
+    // test MSH
+    m_msh = m_out->GetMSH();
+    if(!m_msh){
+      // cout << "Warning in OUTData - no MSH data" << endl;
+      //OK continue;
+    }
+
+    // for all 
+	if(m_out->nod_value_vector.size()>0){
+		for(j=0;j<(int)m_out->nod_value_vector.size();j++){
+		  found = false; // initialize variable found
+		  for(l=0;l<(int)pcs_vector.size();l++){
+		    m_pcs = pcs_vector[l];
+				for(m=0;m<(int)m_pcs->nod_val_name_vector.size();m++){
+					if(m_pcs->nod_val_name_vector[m].compare(m_out->nod_value_vector[j])==0){
+						found=true;
+						del_index.push_back(m_out->nod_value_vector[j]);
+						break;
+					}
+				} // end for(m...)
+		  } // end for(l...)
+		  if(!found){
+			cout << "Warning - no PCS data for output variable " << m_out->nod_value_vector[j] << " in ";
+			cout << m_out->geo_type_name << " " << m_out->geo_name << endl;
+		  }
+		} // end for(j...)
+
+	// Reduce vector m_out->nod_value_vector by elements which have no PCS
+		if(del_index.size() < m_out->nod_value_vector.size()){
+			cout << " Reducing output to variables with existing PCS-data " << endl;
+		m_out->nod_value_vector.clear();
+		for(j=0;j<del_index.size();j++){
+//			cout << del_index[j] << endl;
+			m_out->nod_value_vector.push_back(del_index[j]);
+		}
+		}
+		if(!m_pcs)
+			m_pcs = m_out->GetPCS(m_out->pcs_type_name); //OK 
+		if(!m_pcs){
+			cout << "Warning in OUTData - no PCS data" << endl;
+			//OK4704 continue;
+		}
+	} // end if(m_out->nod_value_vector.size()>0)
+  } // end for(i...)
+}
+
+
+
 /**************************************************************************
 FEMLib-Method: 
 06/2009 WW/OK Implementation

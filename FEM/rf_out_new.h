@@ -132,5 +132,6 @@ extern void OUTWriteNODValues(string,FEMNodesElements*);
 extern void OUTData(double, const int step);
 extern void OUTDelete();
 extern COutput* OUTGet(string);
+extern void OUTCheck(void); // new SB
 
 #endif

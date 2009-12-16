@@ -1068,6 +1068,7 @@ void CElement::SetExtropoGaussPoints(const int i)
                          type = 2, for Navier equation
                          type = 3, for Navier equation with pressure coupling
                          type = 4, Monlithic scheme of u-p coupling
+						 type = 5, Mass Transport
                                     default = 0.
 
    Programmaenderungen:
@@ -1118,6 +1119,14 @@ void ElementMatrix::AllocateMemory(CElem* ele, int type)
         CouplingA = new Matrix(dim*nnodesHQ, nnodes);   
         CouplingB = new Matrix(nnodes, dim*nnodesHQ);   
         break;
+	  case 5: // Mass Transport process
+        Mass = new SymMatrix(nnodes);
+        Laplace = new Matrix(nnodes, nnodes);
+		Advection = new Matrix(nnodes, nnodes);
+		Storage = new Matrix(nnodes, nnodes);
+		Content = new Matrix(nnodes, nnodes);
+        RHS = new Vec(nnodes);
+		break;
    }
 }
 
@@ -1135,11 +1144,17 @@ ElementMatrix::~ElementMatrix()
 {
    if(Mass) delete Mass;
    if(Laplace)delete Laplace;
+   if(Advection)delete Advection;
+   if(Storage)delete Storage;
+   if(Content)delete Content;
    if(RHS) delete RHS;
    if(CouplingA) delete CouplingA;
    if(CouplingB) delete CouplingB;
    Mass = NULL;
    Laplace = NULL;
+   Advection = NULL;
+   Storage = NULL;
+   Content = NULL;
    RHS = NULL;
    CouplingA = NULL;
    CouplingB = NULL;

@@ -1641,7 +1641,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
   string name, line_string, speciesname, dummy;
   CRFProcess* m_pcs = NULL;
   int i, ii, idx, n1, n2, n3, n4, count=-1;
-  double dval, dval1;
+  double dval, dval1, sat_index=0.0;
   double z, h, dens, press, partial_press, volume, temp=-1.0, mm;
  
 //  cout << " WriteInputPhreeqc for node " << index << endl;
@@ -1748,9 +1748,10 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
             line_string = line;
             if (line_string.find("# comp")!=string::npos){
                 count++;
-/*                in.str(line_string);
-                in >> speciesname ;
-                m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
+                in.str(line_string);
+                in >> speciesname >> sat_index ;
+
+/*                m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
                 idx = m_pcs->GetNodeValueIndex(speciesname)+1; // old timelevel
                 dval = m_pcs->GetNodeValue(index,idx);                
 */
@@ -1761,8 +1762,8 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
 
 //                cout << "Testing index vectors: " << speciesname << ", " << m_pcs->pcs_number << ", "<< idx <<",  With vectors: " << pqc_names[count] << ", " << pcs_vector[pqc_process[count]]->pcs_number << ", " << pqc_index[count];
 //                if(index <2) cout << " EQ-Species " << speciesname << " " << dval << endl;
-			    *out_file << speciesname << "       0.0  " << dval << "       # comp " <<endl;
-//                in.clear();
+			    *out_file << speciesname << " " << sat_index << "  " << dval << "       # comp " <<endl;
+                in.clear();
             }
             else
                 *out_file << line_string << endl;

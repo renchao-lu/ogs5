@@ -94,6 +94,7 @@ class CFiniteElementStd:public CElement
 	 void Assembly(int option, int dimension);	// PCH for Fluid Momentum
      void Cal_Velocity();
      void Cal_Velocity_2(); //CB this is to provide velocity only at the element center of gravity
+	 void  Cal_GP_Velocity_FM(int *i_ind); //SB 4900 interpolate node velocities to Gauss point velocities
      //
      void AssembleParabolicEquationRHSVector(); //OK
 

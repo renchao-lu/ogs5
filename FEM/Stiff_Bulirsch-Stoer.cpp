@@ -91,7 +91,10 @@ double *dvector(long nl, long nh)
 	double *v;
 
 	v=(double *)malloc((size_t) ((nh-nl+1+NR_END)*sizeof(double)));
-	if (!v) nrerror("allocation failure in dvector()");
+ if (!v) { //CB
+   cout <<  "allocation failure in dvector()" << endl;
+   nrerror("allocation failure in dvector()");
+ }
 	return v-nl+NR_END;
 }
 
@@ -106,7 +109,10 @@ int *ivector(long nl, long nh)
 	int *v;
 
 	v=(int *)malloc((size_t) ((nh-nl+1+NR_END)*sizeof(int)));
-	if (!v) nrerror("allocation failure in ivector()");
+ if (!v) {//CB
+   cout <<  "allocation failure in ivector()" << endl;
+   nrerror("allocation failure in ivector()");
+ }
 	return v-nl+NR_END;
 }
 
@@ -123,13 +129,19 @@ double **dmatrix(long nrl, long nrh, long ncl, long nch)
 
 	/* allocate pointers to rows */
 	m=(double **) malloc((size_t)((nrow+NR_END)*sizeof(double*)));
-	if (!m) nrerror("allocation failure 1 in matrix()");
+ if (!m) { //CB
+   cout <<  "allocation failure 1 in matrix()" << endl;
+   nrerror("allocation failure 1 in matrix()");
+ }
 	m += NR_END;
 	m -= nrl;
 
 	/* allocate rows and set pointers to them */
 	m[nrl]=(double *) malloc((size_t)((nrow*ncol+NR_END)*sizeof(double)));
-	if (!m[nrl]) nrerror("allocation failure 2 in matrix()");
+ if (!m[nrl]) { //CB
+   cout <<  "allocation failure 2 in matrix()" << endl;
+   nrerror("allocation failure 2 in matrix()");
+ }
 	m[nrl] += NR_END;
 	m[nrl] -= ncl;
 
@@ -211,7 +223,10 @@ void ludcmp(double **a, int n, int *indx, double *d)
 		big=0.0;
 		for (j=1;j<=n;j++)
 			if ((temp=fabs(a[i][j])) > big) big=temp;
-		if (big == 0.0) nrerror("Singular matrix in routine ludcmp");
+  if (big == 0.0) { //CB
+    cout << "Singular matrix in routine ludcmp" << endl;
+    nrerror("Singular matrix in routine ludcmp");
+  }
 		vv[i]=1.0/big;
 	}
 	
@@ -498,7 +513,10 @@ void stifbs(double y[], double dydx[], int nv, double *xx, double htry, double e
 		for (k=1;k<=kmax;k++) 
 		{
 			xnew=(*xx)+h;
-			if (xnew == (*xx)) nrerror("step size underflow in stifbs");
+   if (xnew == (*xx)){ //CB
+     cout << "step size underflow in stifbs" << endl;
+     nrerror("step size underflow in stifbs");
+   }
 			simpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq,derivs,node);
 			xest=DSQR(h/nseq[k]);
 
@@ -660,10 +678,13 @@ void odeint(double ystart[], int nvar, double x1, double x2, double eps, double 
 			*nexth=hnext;
 			return;
 		}
-		if (fabs(hnext) <= hmin) nrerror("Step size too small in odeint");
-		h=hnext;
+  if (fabs(hnext) <= hmin) { //CB
+    cout << "Step size too small in odeint" << endl;
+    nrerror("Step size too small in odeint");
+  }
+  h=hnext;
 	}
-
+ cout << "Too many steps in routine odeint" << endl; //CB
 	nrerror("Too many steps in routine odeint");
 }
 #undef MAXSTEP

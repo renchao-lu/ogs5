@@ -118,6 +118,8 @@ CMediumProperties::CMediumProperties(void)
   permeability_tensor[9] = 1.0e-9; // Minimum paermeability. 17.06.2008. WW
   vol_mat = 0.0;
   vol_bio = 0.0;
+  vol_mat_model = 0;
+  vol_bio_model = 0;
   foc = 0.0;
   #ifdef RFW_FRACTURE
    frac_num = 0;
@@ -352,6 +354,7 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 //------------------------------------------------------------------------
 //3..POROSITY
 //------------------------------------------------------------------------
+//CB    if((line_string.find("$POROSITY")!=string::npos) && (line_string.find("$POROSITY_DISTRIBUTION")==string::npos)){ //subkeyword found
     if(line_string.find("$POROSITY")!=string::npos) { //subkeyword found
       in.str(GetLineFromFile1(mmp_file));
       in >> porosity_model;
@@ -427,8 +430,12 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 			in >> porosity_model_values[i+1]; // molar volume [l/mol]
 		 break;
         case 11: //MB: read from file ToDo
-		  in >> porosity_file;
-		  break;
+		 // in >> porosity_file; // CB
+            in >> porosity_model_values[0];  // CB some dummy default value is read
+            // CB $POROSITY_DISTRIBUTION should be given as keyword in *.mmp file, 
+            //     porosities then are to be read in from file by fct. 
+            //     CMediumProperties::SetDistributedELEProperties
+		 break;
 #ifdef GEM_REACT
        case 15:
            in >> porosity_model_values[0]; // set a default value for GEMS calculation
@@ -448,13 +455,33 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
     }
 	if(line_string.find("$VOL_MAT")!=string::npos) { //subkeyword found
       in.str(GetLineFromFile1(mmp_file));
-	  in >> idummy >> this->vol_mat;
+	     // in >> idummy >> this->vol_mat; CB
+      in >> vol_mat_model >> this->vol_mat; 
+      switch(vol_mat_model) {
+        case 1:          // do nothing
+          break;
+        case 2:          // do nothing
+          break;
+        default:
+          cout << "Error in MMPRead: no valid vol_mat_model" << endl;
+      		  break;
+      }
       in.clear();
       continue;
     }
 	if(line_string.find("$VOL_BIO")!=string::npos) { //subkeyword found
       in.str(GetLineFromFile1(mmp_file));
-	  in >> idummy >> this->vol_bio;
+	     // in >> idummy >> this->vol_bio; CB
+      in >> vol_bio_model >> this->vol_bio; 
+      switch(vol_bio_model) {
+        case 1:          // do nothing
+          break;
+        case 2:          // do nothing
+          break;
+        default:
+          cout << "Error in MMPRead: no valid vol_bio_model" << endl;
+      		  break;
+      }
       in.clear();
       continue;
     }
@@ -1329,6 +1356,56 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
       in.clear();
       continue;
     }
+    
+    
+//------------------------------------------------------------------------
+//11..POROSITY_DISTRIBUTION
+//------------------------------------------------------------------------
+    if(line_string.find("$POROSITY_DISTRIBUTION")!=string::npos) { //subkeyword found
+      in.str(GetLineFromFile1(mmp_file));
+      in >> porosity_file;
+      string file_name = porosity_file;
+      CGSProject* m_gsp = NULL;
+      m_gsp = GSPGetMember("mmp");
+      if(m_gsp)
+      {
+        file_name = m_gsp->path + porosity_file;
+      }
+      //else{ //CB this is to get the correct path in case the exe is not run from within the project folder
+      //  pos = (int)FileName.find_last_of('\\', -1) + 1;
+      //  file_name = FileName.substr(0,pos) + porosity_file;
+      //}
+      //-------CB as above by WW
+      indexChWin = FileName.find_last_of('\\');
+      indexChLinux = FileName.find_last_of('/');
+      if(indexChWin==string::npos&&indexChLinux==string::npos)
+         funfname = file_name;
+      else if(indexChWin!=string::npos)
+      {
+         funfname = FileName.substr(0,indexChWin);
+         funfname = funfname+"\\"+file_name;
+      }
+      else if(indexChLinux!=string::npos)
+      {
+         funfname = FileName.substr(0,indexChLinux);
+         funfname = funfname+"/"+file_name;
+      }
+      porosity_file = funfname;
+      ifstream mmp_file(funfname.data(),ios::in); //WW
+      if (!mmp_file.good()){
+        cout << "Fatal error in MMPRead: no POROSITY_DISTRIBUTION file" << endl;
+#ifdef MFC
+        AfxMessageBox("Fatal error in MMPRead: no POROSITY_DISTRIBUTION file");
+#endif
+      }  
+      mmp_file.close();
+      porosity_model = 11;
+      in.clear();
+      continue;
+    }
+    
+    
+    
 //------------------------------------------------------------------------
 #ifdef RFW_FRACTURE
 //------------------------------------------------------------------------
@@ -3258,6 +3335,13 @@ double CMediumProperties::Porosity(long number,double theta)
   ///
   ElementValue_DM* gval = NULL;
 
+  // CB Get idx of porosity in elements mat vector for het porosity
+  int por_index=0;
+  if(porosity_model==11)
+    for(por_index=0;por_index<(int)m_pcs->m_msh->mat_names_vector.size();por_index++)
+      if(m_pcs->m_msh->mat_names_vector[por_index].compare("POROSITY")==0)
+        break;
+
   //----------------------------------------------------------------------
   // Functional dependencies
   int i;
@@ -3337,6 +3421,10 @@ double CMediumProperties::Porosity(long number,double theta)
       break;
     case 10:
       porosity = PorosityVolumetricChemicalReaction(number);     /* porosity change through dissolution/precipitation */
+      break;
+ case 11: // n = temp const, but spatially distributed CB
+      //porosity = porosity_model_values[0];
+      porosity  = m_msh->ele_vector[number]->mat_vector(por_index);
       break;
 #ifdef GEM_REACT
     case 15:
@@ -3457,6 +3545,9 @@ double CMediumProperties::Porosity(CElement* assem) //WW
       break;
     case 10:
       porosity = PorosityVolumetricChemicalReaction(number);     /* porosity change through dissolution/precipitation */
+      break;
+ case 11: // n = const, but spatially distributed CB
+      porosity = porosity_model_values[0];
       break;
 #ifdef GEM_REACT
        case 15:
@@ -6879,9 +6970,13 @@ void GetHeterogeneousFields()
     //....................................................................
     // For Porosity
     if(m_mmp->porosity_file.size()>0){
-      name_file = (char *) m_mmp->porosity_file.data();
-      if(name_file != NULL)
-        ok = FctReadHeterogeneousFields(name_file,m_mmp);
+      //CB name_file = (char *) m_mmp->porosity_file.data();
+      //CB if(name_file != NULL)
+      //CB  ok = FctReadHeterogeneousFields(name_file,m_mmp);
+      //file_path_base_ext = file_path + m_mmp->porosity_file;
+      //m_mmp->SetDistributedELEProperties(file_path_base_ext); // CB Removed bugs in this function 
+      m_mmp->SetDistributedELEProperties(m_mmp->porosity_file); // CB Removed bugs in this function 
+      m_mmp->WriteTecplotDistributedProperties();
     }
     //....................................................................
     // GEOMETRY_AREA
@@ -6930,7 +7025,7 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
   string mmp_property_mesh;
   CElem* m_ele_geo = NULL;
   bool element_area = false;
-  long i, ihet;
+  long i, j, ihet;
   double mmp_property_value;
   int mat_vector_size=0; // Init WW
   double ddummy, conversion_factor=1.0;; //init WW
@@ -6939,6 +7034,15 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
   int c_vals;
   double x, y, z, mmpv;
   std::stringstream in;
+  //CB
+  vector<double> garage;
+  int mat_vec_size=0;
+  int por_index = 0;
+  int vol_bio_index = 0;
+  string outfile;
+  int k;
+
+  cout << " SetDistributedELEProperties: " ;
   //----------------------------------------------------------------------
   // File handling
   ifstream mmp_property_file(file_name.data(),ios::in);
@@ -6978,6 +7082,7 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
     if(line_string.find("$MMP_TYPE")!=string::npos){
       element_area = false;
       mmp_property_file >> mmp_property_name;
+      cout << mmp_property_name << endl;
       m_msh->mat_names_vector.push_back(mmp_property_name);
       if (mmp_property_name == "GEOMETRY_AREA") element_area = true;
       continue;
@@ -7015,7 +7120,14 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
           for(i=0;i<(long)m_msh->ele_vector.size();i++){
              m_ele_geo = m_msh->ele_vector[i];
              mat_vector_size = m_ele_geo->mat_vector.Size();
+             // CB Store old values as they are set to zero after resizing
+             for(j=0;j<mat_vector_size;j++)
+               garage.push_back(m_ele_geo->mat_vector(j)) ;
              m_ele_geo->mat_vector.resize(mat_vector_size+1);
+             // CB Refill old values as they were set to zero after resizing
+             for(j=0;j<mat_vector_size;j++)
+               m_ele_geo->mat_vector(j) = garage[j];
+             garage.clear();
              if(mmp_property_dis_type[0] == 'N'){
                 // Search for all elements of the mesh, which is the nearest given value in the input file
                 // Return value ihet is the index of the het. val in the mmpval-vector
@@ -7061,29 +7173,77 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
     }
     //....................................................................
   }
+  // CB now set VOL_MAT & VOL_BIO as heterogeneous values, if defined as model 2 and het Porosity
+  if( (mmp_property_name == "POROSITY") && (this->vol_bio_model == 2) ){
+    m_msh->mat_names_vector.push_back("VOL_BIO");
+    for(i=0;i<(long)m_msh->ele_vector.size();i++){
+      m_ele_geo = m_msh->ele_vector[i]; // Get the element
+      mat_vec_size = m_ele_geo->mat_vector.Size();
+      // CB Store old values as they are set to zero after resizing
+      for(j=0;j<mat_vec_size;j++)
+        garage.push_back(m_ele_geo->mat_vector(j)) ;
+      m_ele_geo->mat_vector.resize(mat_vec_size+1);
+      // CB Refill old values as they were set to zero after resizing
+      for(j=0;j<mat_vec_size;j++)
+        m_ele_geo->mat_vector(j) = garage[j];
+      garage.clear();
+      // Set the VOL_BIO value from mmp file input
+      m_ele_geo->mat_vector(mat_vec_size) = this->vol_bio;
+    }
+  }
+  if( (mmp_property_name == "POROSITY") && (this->vol_mat_model == 2) ){
+    m_msh->mat_names_vector.push_back("VOL_MAT");
+    // Get the porosity index
+    for(por_index=0;por_index<(int)m_msh->mat_names_vector.size();por_index++)
+      if(m_msh->mat_names_vector[por_index].compare("POROSITY")==0)
+        break;
+    // Get the vol_bio index
+    for(vol_bio_index=0;vol_bio_index<(int)m_msh->mat_names_vector.size();vol_bio_index++)
+      if(m_msh->mat_names_vector[vol_bio_index].compare("VOL_BIO")==0)
+        break;
+    for(i=0;i<(long)m_msh->ele_vector.size();i++){
+      m_ele_geo = m_msh->ele_vector[i]; // Get the element
+      mat_vec_size = m_ele_geo->mat_vector.Size();
+      // CB Store old values as they are set to zero after resizing
+      for(j=0;j<mat_vec_size;j++)
+        garage.push_back(m_ele_geo->mat_vector(j)) ;
+      m_ele_geo->mat_vector.resize(mat_vec_size+1);
+      // CB Refill old values as they were set to zero after resizing
+      for(j=0;j<mat_vec_size;j++)
+        m_ele_geo->mat_vector(j) = garage[j];
+      garage.clear();
+      // Set the VOL_MAT value from (1-POROSITY-VOL_BIO)
+      m_ele_geo->mat_vector(mat_vec_size) = 1 - m_ele_geo->mat_vector(por_index) - m_ele_geo->mat_vector(vol_bio_index) ;
+    }
+  }
   //----------------------------------------------------------------------
   //Write sorted output file
   //----------------------------------------------------------------------
   // File handling
-  file_name +="_sorted";
-  ofstream mmp_property_file_out(file_name.data());
-  if(!mmp_property_file_out.good()){
-    cout << "Warning in CMediumProperties::WriteDistributedELEProperties: no MMP property data file to write to" << endl;
-    return;
-  }
-  mmp_property_file_out << "#MEDIUM_PROPERTIES_DISTRIBUTED" << endl;
-  mmp_property_file_out << "$MSH_TYPE" << endl << "  " << mmp_property_mesh << endl;
-  mmp_property_file_out << "$MSH_TYPE" << endl << "  " << mmp_property_mesh << endl;
-  mmp_property_file_out << "$MMP_TYPE" << endl << "  " << "PERMEABILITY" << endl;
-  mmp_property_file_out << "$DIS_TYPE" << endl << "  " << "ELEMENT" << endl;
-  mmp_property_file_out << "$DATA" << endl ;
-  for(i=0;i<(long)m_msh->ele_vector.size();i++){
-      m_ele_geo = m_msh->ele_vector[i];
-      mmp_property_file_out << i << "  " << m_ele_geo->mat_vector(mat_vector_size) << endl;
-  }
-  mmp_property_file_out << "#STOP" << endl;
-  mmp_property_file_out.close();
+  
+  for(k=0;k<(int)m_msh->mat_names_vector.size();k++){ // CB
+    //file_name +="_sorted";
+    outfile = m_msh->mat_names_vector[k] + "_sorted";
+    ofstream mmp_property_file_out(outfile.data());
+    if(!mmp_property_file_out.good()){
+      cout << "Warning in CMediumProperties::WriteDistributedELEProperties: no MMP property data file to write to" << endl;
+      return;
+    }
+    mmp_property_file_out << "#MEDIUM_PROPERTIES_DISTRIBUTED" << endl;
+    mmp_property_file_out << "$MSH_TYPE" << endl << "  " << mmp_property_mesh << endl;
+    //mmp_property_file_out << "$MSH_TYPE" << endl << "  " << mmp_property_mesh << endl;
+    //mmp_property_file_out << "$MMP_TYPE" << endl << "  " << "PERMEABILITY" << endl;
+    mmp_property_file_out << "$MMP_TYPE" << endl << "  " << m_msh->mat_names_vector[k] << endl;
+    mmp_property_file_out << "$DIS_TYPE" << endl << "  " << "ELEMENT" << endl;
+    mmp_property_file_out << "$DATA" << endl ;
+    for(i=0;i<(long)m_msh->ele_vector.size();i++){
+        m_ele_geo = m_msh->ele_vector[i];
+        mmp_property_file_out << i << "  " << m_ele_geo->mat_vector(k) << endl;
+    }
+    mmp_property_file_out << "#STOP" << endl;
+    mmp_property_file_out.close();
   //----------------------------------------------------------------------
+  }
 
 }
 

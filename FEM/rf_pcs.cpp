@@ -245,6 +245,7 @@ CRFProcess::CRFProcess(void)
   continuum = 0;
   //adaption = false; JOD removed
   compute_domain_face_normal = false; //WW
+  use_velocities_for_transport = false;
   //
   additioanl2ndvar_print = -1; //WW
   flow_pcs_type=0; //CB default: liquid flow, Sat = 1
@@ -1311,6 +1312,7 @@ bool PCSRead(string file_base_name)
   while (!pcs_file.eof()) {
     pcs_file.getline(line,MAX_ZEILE);
     line_string = line;
+	line_string = GetUncommentedLine(line_string);
     if(line_string.find("#STOP")!=string::npos)
       break;
     indexCh1a = (int)line_string.find_first_of(CommentK.c_str()); 
@@ -1437,6 +1439,8 @@ ios::pos_type CRFProcess::Read(ifstream *pcs_file)
     //....................................................................
     // WW Comment line
     if(line_string.find_first_of(CommentK.c_str())!=string::npos) return position;
+	//SB check for comment sign ;
+	line_string = GetUncommentedLine(line_string);
     //....................................................................
     if(line_string.find("$PCS_TYPE")!=string::npos) { // subkeyword found
       while((!new_keyword)||(!new_subkeyword)||(!pcs_file->eof())){
@@ -1616,6 +1620,11 @@ ios::pos_type CRFProcess::Read(ifstream *pcs_file)
     }
 	if(line_string.find("$SATURATION_SWITCH")!=string::npos) { //OK
       saturation_switch = true;;
+      continue;
+    }
+	if(line_string.find("$USE_VELOCITIES_FOR_TRANSPORT")!=string::npos) { //SB4900
+		if(this->pcs_type_name == "FLUID_MOMENTUM")  // Only for fluid momentum process
+			use_velocities_for_transport = true;
       continue;
     }
     //....................................................................
@@ -4130,6 +4139,52 @@ void CRFProcess::CalIntegrationPointValue()
     cal_integration_point_value = false;
 }
 
+/*************************************************************************
+GeoSys-Function: CalGPVelocitiesfromFluidMomentum
+Task: Calculate gauss point velocities from fluid momentum solution 
+		extrapolate velocitiues from nodes to gauss points
+Programming: 
+09/2009 SB Implementation
+
+**************************************************************************/
+void CRFProcess::CalGPVelocitiesfromFluidMomentum()
+{
+  long i;
+  Mesh_Group::CElem* elem = NULL;
+  int i_ind[3];
+
+  cout << "      CalGPVelocitiesfromFluidMomentum()" << endl;
+  
+  // Get fluid_momentum process
+  CRFProcess *m_pcs_fm =  PCSGet("FLUID_MOMENTUM");
+
+  //  check all possibilities for grid orientation (ccord_flag)
+  int coordinateflag = this->m_msh->GetCoordinateFlag();
+  i_ind[0] = m_pcs_fm->GetNodeValueIndex("VELOCITY1_X")+1; // get index of velocity
+  if(coordinateflag == 11) 
+	i_ind[0] = m_pcs_fm->GetNodeValueIndex("VELOCITY1_Y")+1; // get index of velocity
+  if(coordinateflag == 12) 
+	i_ind[0] = m_pcs_fm->GetNodeValueIndex("VELOCITY1_Z")+1; // get index of velocity
+  i_ind[1] = m_pcs_fm->GetNodeValueIndex("VELOCITY1_Y")+1; // get index of velocity
+  if(coordinateflag == 22) 
+	i_ind[1] = m_pcs_fm->GetNodeValueIndex("VELOCITY1_Z")+1; // get index of velocity
+  i_ind[2] = m_pcs_fm->GetNodeValueIndex("VELOCITY1_Z")+1; // get index of velocity
+
+	if((i_ind[0]<0)||(i_ind[1]<0)||(i_ind[2]<0))
+		cout << " Error - wrong index in Cal_GP_Velocity_FM " << endl;
+
+
+  // Loop over all elements
+  for (i = 0; i < (long)m_msh->ele_vector.size(); i++){
+    elem = m_msh->ele_vector[i]; // get element
+    if (elem->GetMark()) // Marked for use
+    {
+      fem->ConfigElement(elem);
+      fem->Cal_GP_Velocity_FM(i_ind);
+    } 
+  }  // end element loop
+
+}
 
 /*************************************************************************
 ROCKFLOW - Function: AllocateLocalMatrixMemory
@@ -4157,6 +4212,7 @@ void CRFProcess::AllocateLocalMatrixMemory()
     }
   } 
   if(!H_Process) up_type = 2;
+  if(MASS_TRANSPORT_Process)up_type = 5; //SB for steady state element matrices in transport
   //----------------------------------------------------------------------
   ElementMatrix *eleMatrix = NULL;
   CElem* elem = NULL;
@@ -7194,8 +7250,10 @@ void CRFProcess::CopyTimestepNODValues(bool forward)
     {
        if(j==1&&type==1212)  // Multiphase. WW
          continue;
-       if(j==0) nidx0 = GetNodeValueIndex("SATURATION1");
-       else if(j==1) nidx0 = GetNodeValueIndex("SATURATION2");
+       if(j==0) 
+         nidx0 = GetNodeValueIndex("SATURATION1");
+       else if(j==1) 
+         nidx0 = GetNodeValueIndex("SATURATION2");
        nidx1 = nidx0+1;
        if(!forward) //27.08.2008. WW
        {
@@ -8628,175 +8686,200 @@ void CRFProcess::SetBC()
 Task: Postprocessing function calculates the NAPL saturation after 
       Flow, Transport and kkinetic NAPL dissolution
 
-This function is not yet complete and needs input from component properties
-
 Programing:
    01/2008   CB   Implementation                                          */
 /**************************************************************************/
 void CalcNewNAPLSat(CRFProcess*m_pcs)
 {
 
-  long i, j, k;
-  int idx0, idx1, idx2;
-  long nnodes, nBlobs, nNAPLcomps;
-  double moldens, conc, rho_N_new, rho_N_old; 
+  long i, j, k, l;
+  int idx0, idx1, idx2, idxC;
+  long nnodes, nNAPLcomps;
+  double conc, rho_N_new, rho_N_old, rho_N_fluid;
+  double mass, volume; 
   double satu_N_new, satu_N_old ;
 
-//  CompProperties *m_cp = cp_vec[component];
+  vector<int>pcs_napl_comps_vector;
+  vector<double>molar_weights_vector;
+  vector<double>molar_densities_vector;
 
-  i = j = k = 0;
+  string var_name;
+  int no_processes;
+
+  CRFProcess *n_pcs = NULL;
+  CFluidProperties* m_mfp = NULL;
 
   nnodes = (long) fem_msh_vector[0]->nod_vector.size();
-  nBlobs = 0; //CB todo  
-//nBlobs = (int) KinBlob_vector.size();
 
-  nNAPLcomps = 0; //CB todo
-
-  moldens = conc = rho_N_new = 0;
-
-
-
-/*
-
-int nComps = (int)cp_vec.size();
-double *Concentration;
-Concentration = dvector(1,nComps); // Achtung! Speicher freigeben oder anders formulieren! in Kinreact_data
-int Sp1, sp, r;
-
-CKinReact *m_kr = NULL;
-CKinBlob *m_kb = NULL;
-CKinReactData *m_krd = NULL;
-m_krd = KinReactData_vector[0];
-
-int nreactions= m_krd->NumberReactions; 
-
-for(i = 0; i < nnodes; i++) { 
-  // Konzentrationen aller Substanzen aus Datenstruktur auslesen und in neuem Array speichern 
-  for(sp=0;sp<Number_of_Components;sp++) //CB: this???
-	   Concentration[sp+1] = pcs_vector[this->sp_pcsind[sp]]->GetNodeValue(i,this->sp_varind[sp]); 
-
-  rho_N_new = 0;
-
-  for(r=0; r<nreactions; r++){ //CB nreactions scheint die anzahl der NAPLSpezies zu sein, die am austausch teilnimmt
-    m_kr = KinReact_vector[r];
-	   if(m_kr->typeflag_napldissolution){     //dissolution reaction identified
-		    Sp1			= m_kr->ex_species[0]+1;        //Sp1 = NAPL-species //CB: warum hier +1? neues timelevel?
-		    moldens = m_kr->Density_NAPL;
-		    if(Concentration[Sp1] > 0.)
-         rho_N_new  += DMAX(Concentration[Sp1],0.) * moldens;
-	   }
-  } // end for nreactions
-  // und hier folgt dann die unten stehende Berechnung von
-  // new SATURATION2 and SATURATION1 and DENSITY2
-  // und setzen der GrÃ¶ÃŸen am aktuellen node
-
-} // for nnodes
-
-*/
-
-
-  // Get indices of node value variables
+  // make sure m_pcs is NAPL-phase
   if(m_pcs->pcs_type_number==0)
-    m_pcs = pcs_vector[m_pcs->pcs_number+1]; 
+    m_pcs = pcs_vector[m_pcs->pcs_number+1]; // this is the NAPL phase
+
+  m_mfp = mfp_vector[m_pcs->pcs_type_number];
+  //m_mfp->mode = 1; // CB ??
+
+  // Get indices of node value variables for phase 2
   idx0 = m_pcs->GetNodeValueIndex("SATURATION2"); // old timelevel
   idx1 = m_pcs->GetNodeValueIndex("DENSITY2"); 
   idx2 = m_pcs->GetNodeValueIndex("SATURATION1"); // old timelevel
 
+  i = j = k = l = 0;
+  no_processes =(int)pcs_vector.size();
+
+  for(i=0;i<no_processes;i++)
+  {
+     n_pcs = pcs_vector[i];
+     if(n_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0){
+       j = n_pcs->GetProcessComponentNumber();
+       if(cp_vec[j]->transport_phase==3){ // is in napl
+         pcs_napl_comps_vector.push_back(i); // store processes that are NAPL dissolution components
+         molar_weights_vector.push_back(cp_vec[j]->molar_weight); // get the corresponding molar weight
+         molar_densities_vector.push_back(cp_vec[j]->molar_density); // get the corresponding densities
+         l++;
+       }
+     }  
+  }
+  nNAPLcomps = l;
 
   for(i = 0; i < nnodes; i++) { 
+    conc = rho_N_new = rho_N_old = rho_N_fluid = satu_N_new = satu_N_old = mass = volume = 0;
+
+    // deteremine the old NAPL DENSITY after flow / transport step
+    for(j = 0; j < nNAPLcomps; j++) { 
+      l=pcs_napl_comps_vector[j];
+      idxC = pcs_vector[l]->GetNodeValueIndex(pcs_vector[l]->pcs_primary_function_name[0]);
+      conc = pcs_vector[l]->GetNodeValue(i, idxC);// old timelevel
+      mass += conc * molar_weights_vector[j];
+    }
+    if(mass > 0) 
+      rho_N_old = mass; // [kg/mÂ³REV] 
+    else 
+      rho_N_old = 0; 
     // determine the new NAPL density rho_N_neu at current node
-    rho_N_new = 0;
+    mass = 0;
+    for(j = 0; j < nNAPLcomps; j++) { 
+       l=pcs_napl_comps_vector[j];
+       idxC = pcs_vector[l]->GetNodeValueIndex(pcs_vector[l]->pcs_primary_function_name[0]);
+       conc = pcs_vector[l]->GetNodeValue(i, idxC+1);// +1 new timelevel
+       if(fabs(conc)<1e-19)
+         conc = 0.0;
+       mass += conc * molar_weights_vector[j];
+       volume += conc / molar_densities_vector[j]; // this is required calculating the napl fluid density
+     }
+     if(mass > 0) 
+       rho_N_new = mass ; // [kg/mÂ³REV] 
+    else 
+       rho_N_new = 0; 
+ 
+     // get the old SATURATION2 of NAPL after flow / transport step
+     satu_N_old = m_pcs->GetNodeValue(i, idx0);
+     // calculate new NAPL Saturation: dSatu = Satu(t+dt)-Satu(t) = Satu(t)*(1-rho(t)/rho(t+dt))
+     if(satu_N_old * rho_N_new * rho_N_old > 0) 
+       satu_N_new = satu_N_old + satu_N_old * (1 - rho_N_old / rho_N_new);   //fast  
+     //satu_N_new = satu_N_old + satu_N_old * (rho_N_new / rho_N_old - 1);   //slow
+     else
+       satu_N_new = satu_N_old ;
+     if (satu_N_new <0){
+      cout << " Warning in fct CalcNewNAPLSat: NAPL-Sat: " << satu_N_new << endl;
+      satu_N_new = MRange(0.0, satu_N_new, 1.0);
+     }
+     // set new SATURATION2 
+     //if(satu_N_new > 0.00001)  satu_N_new = 1-0.95; // 0.985 CB 14.01.09 Hansen+Kueper BM
+     
+     //m_pcs->SetNodeValue(i, idx0, satu_N_new);  // idx0 for timelevel 0 ??
+     m_pcs->SetNodeValue(i, idx0+1, satu_N_new);  // idx0+1 for timelevel 1 ??
+     // set new SATURATION1 
+     //m_pcs->SetNodeValue(i, idx2, 1-satu_N_new);     // idx2 for timelevel 0 ??
+     m_pcs->SetNodeValue(i, idx2+1, 1-satu_N_new); // idx2+1 for timelevel 1 ??
 
-    // loop over NAPL geometries is not necessary, as each NAPL component 
-    // is defined individualy as an immobile component for each rescpectivie geometry 
-    //for(j = 0; j < nBlobs; j++) {  
-      for(k = 0; k < nNAPLcomps; k++) { 
-    //   moldens =   NAPLcomp[k]->molar_density; //CB todo
-    //   conc =   NAPLcomp[k]->concentration; //CB todo
-    //   if NAPLcomp[k] is  NAPL; // gehÃ¶rt zur NAPLphase //CB todo
-           rho_N_new += conc * moldens; 
-      }
-    //}
-      // get the old SATURATION2 of NAPL after flow / transport step
-      satu_N_old = m_pcs->GetNodeValue(i, idx0);
-      // get the old NAPL DENSITY after flow / transport step
-      rho_N_old = m_pcs->GetNodeValue(i, idx1);
-      // calculate new NAPL Saturation: dSatu = Satu(t+dt)-Satu(t) = Satu(t)*(1-rho(t)/rho(t+dt))
-      //satu_N_new = satu_N_old + satu_N_old * (1 - rho_N_old / rho_N_new); //fast  
+     // finally determine the new napl fluid density
+     if(mass * volume > 0) 
+       rho_N_fluid = mass / volume; // [kg/mÂ³N] = [kg/mÂ³REV] / [mÂ³N/mÂ³REV]
+     else 
+       rho_N_fluid = m_mfp->Density(); // use NAPL phase fluid density as defined in .mfp
+     // set new DENSITY2
+     m_pcs->SetNodeValue(i, idx1, rho_N_fluid);     
 
-//CB for testing the saturation change
-rho_N_new=rho_N_old;//*1.05;
-//if (satu_N_old >0) 
-//  satu_N_new = satu_N_old + 0.02;
-//else 
-  satu_N_new = satu_N_old ;
+   }
 
-      //satu_N_new = satu_N_old + satu_N_old * (rho_N_new / rho_N_old - 1);   //slow
-      // set new 
-      // SATURATION2 
-      //m_pcs->SetNodeValue(i, idx0, satu_N_new); 
-      m_pcs->SetNodeValue(i, idx0+1, satu_N_new);
-      // DENSITY2
-      m_pcs->SetNodeValue(i, idx1, rho_N_new); 
-      // SATURATION1 
-      m_pcs->SetNodeValue(i, idx2, 1-satu_N_new); // idx2 for timelevel 0 ??
-      //m_pcs->SetNodeValue(i, idx2+1, 1-satu_N_new); // idx2+1 for timelevel 1 ??
-  }
+   pcs_napl_comps_vector.clear();
+   molar_weights_vector.clear();
+   molar_densities_vector.clear();
+
+   //m_pcs->WriteAllVariables();
 }
 
 
+
 /**************************************************************************
-Task: Preprocessing function calculates the initial 
-      NAPL and Water phase saturations 
-
-This function is not yet complete and needs input from component properties
-And what about the initial NAPL Saturation?
-
+Task: Calculates the NAPL and Water phase saturations 
+      in case of NAPL dissolution
 Programing:
    01/2008   CB   Implementation                                          */
 /**************************************************************************/
-void CalcInitialNAPLDens(CRFProcess*m_pcs)
+double CalcNAPLDens(CRFProcess*m_pcs, int node)
 {
-  long i, j, k;
-  int idx1;
-  long nnodes, nBlobs, nNAPLcomps;
-  double moldens, conc, rho_N_new; 
+  long i, j, k, l;
+  int idx1, idxC;
+  int nNAPLcomps;
+  double conc, rho_N_new, mass, volume; 
+  string var_name;
 
-//  CompProperties *m_cp = cp_vec[component];
+  vector<int>pcs_napl_comps_vector;
+  vector<double>molar_weights_vector;
+  vector<double>molar_densities_vector;
 
-  i = j = k = 0;
+  int no_processes;
+  CRFProcess *n_pcs = NULL;
+  CFluidProperties* m_mfp = NULL;
 
-  nnodes = (long) fem_msh_vector[0]->nod_vector.size();
-  nBlobs = 0; //CB todo
-  nNAPLcomps = 0; //CB todo
-
-  moldens = conc = rho_N_new = 0;
-
-  // Get indices of node value variables
+  // Get indices of node value variable DENSITY2 for NAPL phase
   if(m_pcs->pcs_type_number==0)
     m_pcs = pcs_vector[m_pcs->pcs_number+1]; 
   idx1 = m_pcs->GetNodeValueIndex("DENSITY2"); 
 
+  m_mfp = mfp_vector[m_pcs->pcs_type_number];
+  //m_mfp->mode = 1; // CB ??
 
-  for(i = 0; i < nnodes; i++) { 
-    // determine the initial NAPL density rho_N_neu at current node
-    rho_N_new = 0;
-    // loop over NAPL geometries is not necessary, as each NAPL component 
-    // is defined individualy as an immobile component for each rescpectivie geometry 
-    //for(j = 0; j < nBlobs; j++) {  
-      for(k = 0; k < nNAPLcomps; k++) { 
-    //   moldens =   NAPLcomp[k]->molar_density; //CB todo
-    //   conc =   NAPLcomp[k]->concentration; //CB todo
-    //   if NAPLcomp[k] is  NAPL; // gehÃ¶rt zur NAPLphase //CB todo
-           rho_N_new += conc * moldens; 
-      }
-    //}
+  i = j = k = l = 0;
+  no_processes =(int)pcs_vector.size();
 
-    //set DENSITY2
-    //m_pcs->SetNodeValue(i, idx1, rho_N_new);
-    //for debugging until function is copmplete
-    m_pcs->SetNodeValue(i, idx1, 1000);
+  //collect parameters and concentrations for NAPL-components
+  for(i=0;i<no_processes;i++){
+     n_pcs = pcs_vector[i];
+     if(n_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0){
+       j = n_pcs->GetProcessComponentNumber();
+       if(cp_vec[j]->transport_phase==3){ // is in NAPL component
+         pcs_napl_comps_vector.push_back(i); // store processes that are NAPL dissolution components
+         molar_weights_vector.push_back(cp_vec[j]->molar_weight); // get the corresponding molar weight
+         molar_densities_vector.push_back(cp_vec[j]->molar_density); // get the corresponding densities
+         l++;
+       }
+     }  
   }
+  nNAPLcomps = l;
+
+  // determine the NAPL density rho_N_neu at current node
+  conc = rho_N_new = mass = volume = 0;
+  for(j = 0; j < nNAPLcomps; j++) { 
+    l=pcs_napl_comps_vector[j];
+    idxC = pcs_vector[l]->GetNodeValueIndex(pcs_vector[l]->pcs_primary_function_name[0]);    
+    conc = pcs_vector[l]->GetNodeValue(node, idxC);
+    if(fabs(conc)<1e-19)
+      conc = 0.0;
+    mass += conc * molar_weights_vector[j]; // [kg/m³REV] = [molN/m³REV] * [kg/molN]
+    volume += conc / molar_densities_vector[j]; // [m³N/m³REV] = [molN/m³REV] / [molN/m³REV]
+  }
+  if(mass * volume > 0) 
+    rho_N_new = mass / volume; // [kg/m³N] = [kg/m³REV] / [m³N/m³REV]
+  else 
+    rho_N_new = m_mfp->Density(); // use NAPL phase fluid density as defined in .mfp
+  
+  pcs_napl_comps_vector.clear();
+  molar_weights_vector.clear();
+  molar_densities_vector.clear();
+
+  return rho_N_new; 
 }
 
 /**************************************************************************
@@ -8826,6 +8909,40 @@ void SetFlowProcessType()
   }
 }
 /**************************************************************************
+Task: Postprocessing function copies the new time step node values of
+      secondary variables PRESSURE1 and SATURATION1 to the old time level
+
+Programing:
+   13/2008   CB   Implementation                                          */
+/**************************************************************************/
+void CopyTimestepNODValuesSVTPhF()
+{
+  long i, j;
+  int idx0, idx1;
+  long nnodes;
+  double val = 0;
+  CRFProcess *m_pcs = NULL;
+
+  nnodes = (long) fem_msh_vector[0]->nod_vector.size();
+
+  for(j = 0; j < 2; j++) { //pcs 1 and 2
+    m_pcs = pcs_vector[j]; 
+    if(m_pcs->pcs_type_name.compare("TWO_PHASE_FLOW")!=0)
+      break;
+    if(j==0)
+       idx0 = m_pcs->GetNodeValueIndex("PRESSURE2"); // old timelevel
+    else 
+       idx0 = m_pcs->GetNodeValueIndex("SATURATION1"); // old timelevel
+    idx1 = idx0 + 1; 
+    for(i = 0; i < nnodes; i++) { 
+      val = m_pcs->GetNodeValue(i, idx1);
+      m_pcs->SetNodeValue(i, idx0, val);
+    }
+    //m_pcs->WriteAllVariables();
+  }  
+}
+
+/**************************************************************************
 PCSLib-Method:
 based on WriteSolution by WW
 01/2007 OK Implementation
@@ -8849,10 +8966,23 @@ void CRFProcess::WriteAllVariables()
     os << pcs_primary_function_name[j] << " ";
     idx[j+pcs_number_of_primary_nvals] = idx[j]+1;
   }
-  for(j=0;j<pcs_number_of_secondary_nvals;j++) 
-  {
-    os << pcs_secondary_function_name[j] << " ";
-    idx[2*pcs_number_of_primary_nvals+j] = GetNodeValueIndex(pcs_secondary_function_name[j]);
+  if(this->type==12){ //output of old & new time step for secondary variables PRESSURE2 and SATURATION1
+      os << pcs_secondary_function_name[0] << " ";
+      idx[2*pcs_number_of_primary_nvals+0] = GetNodeValueIndex(pcs_secondary_function_name[0]);
+      os << pcs_secondary_function_name[0] << " ";
+      idx[2*pcs_number_of_primary_nvals+1] = GetNodeValueIndex(pcs_secondary_function_name[0])+1;
+      for(j=2;j<pcs_number_of_secondary_nvals;j++) //other secondary variables
+      {
+        os << pcs_secondary_function_name[j] << " ";
+        idx[2*pcs_number_of_primary_nvals+j] = GetNodeValueIndex(pcs_secondary_function_name[j]);
+      }
+  }
+  else{
+    for(j=0;j<pcs_number_of_secondary_nvals;j++) 
+    {
+      os << pcs_secondary_function_name[j] << " ";
+      idx[2*pcs_number_of_primary_nvals+j] = GetNodeValueIndex(pcs_secondary_function_name[j]);
+    }
   }
   os << endl;
   long i;
@@ -8871,8 +9001,9 @@ void CRFProcess::WriteAllVariables()
 PCSLib-Method:
 based on MMPCalcSecondaryVariables
 01/2007 OK Implementation
+08/2008 CB NAPLdissolution
 **************************************************************************/
-void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs)
+void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs, bool NAPLdiss)
 {
   long i;
   
@@ -9045,6 +9176,10 @@ void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs)
   m_mfp->mode = 1;
   for(i=0;i<(long)m_pcs->m_msh->nod_vector.size();i++) 
   {
+    // CB NAPL dissolution reqiuires update of Density based on new composition of NAPL phase 
+    if(NAPLdiss==true && m_pcs->pcs_type_number==1) //CB phase 2
+      density = CalcNAPLDens(m_pcs, i); 
+    else
     density = m_mfp->Density();
     m_pcs->SetNodeValue(i,ndx_density_phase,density);
     viscosity = m_mfp->Viscosity();

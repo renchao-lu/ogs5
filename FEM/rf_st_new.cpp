@@ -285,6 +285,8 @@ ios::pos_type CSourceTerm::ReadDistributionType(ifstream *st_file)
    if(dis_type_name.find("CONSTANT")!=string::npos) {
         if(dis_type_name.find("NEUMANN")!=string::npos) 
           dis_type_name = "CONSTANT_NEUMANN";
+		else if(dis_type_name.find("_GEO")!=string::npos) //To do. 4.10.06
+			dis_type_name = "CONSTANT_GEO";
         else   
           dis_type_name = "CONSTANT";
         in >> geo_node_value;
@@ -756,6 +758,7 @@ void CSourceTerm::SetDISType()
 {
 	
   if(dis_type_name.compare("CONSTANT")==0)         dis_type = 1;
+  if(dis_type_name.compare("CONSTANT_GEO")==0)     dis_type = 12; //SB flux is distributed along polyline. To do. 4.10.06
   if(dis_type_name.compare("LINEAR")==0)           dis_type = 2;
   if(dis_type_name.compare("CONSTANT_NEUMANN")==0) dis_type = 3;
   if(dis_type_name.compare("LINEAR_NEUMANN")==0)   dis_type = 4;
@@ -2708,8 +2711,10 @@ void CSourceTermGroup::SetPolylineNodeValueVector(CSourceTerm* m_st, CGLPolyline
     } // end faces
   } // end system dependent
   else { //WW
-    for(long i=0;i<number_of_nodes;i++)
+	  for(long i=0;i<number_of_nodes;i++){
       ply_nod_val_vector[i] =  m_st->geo_node_value;
+	  if(m_st->dis_type == 12) ply_nod_val_vector[i] =  m_st->geo_node_value/(double)number_of_nodes; // distribute flow to nodes along polyline. To do.. 4.10.06
+	  }
  }
  //........................................................................................
  if(m_st->dis_type == 3 || m_st->dis_type == 4 || m_st->dis_type == 10 || m_st->dis_type == 11) { // neumann, Philip, Green-Ampt
@@ -2777,6 +2782,9 @@ void CSourceTermGroup::SetSurfaceNodeValueVector(CSourceTerm* m_st, Surface* m_s
 
  for(long i = 0; i < number_of_nodes; i++)  
        sfc_nod_val_vector[i] =  m_st->geo_node_value;
+ if(m_st->dis_type == 12 ) //To do. 4.10.06
+	  for(long i = 0; i < number_of_nodes; i++)  
+       sfc_nod_val_vector[i] =  m_st->geo_node_value/(double)number_of_nodes;
  
  if( m_st->dis_type == 2 ||  m_st->dis_type == 4)   {     // Piecewise linear distributed, polygon-wise WW
    CGLPolyline* m_ply = NULL; 
