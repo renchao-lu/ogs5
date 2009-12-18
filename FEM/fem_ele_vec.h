@@ -120,8 +120,6 @@ class CFiniteElementVec:public CElement
      // B matrix
      Matrix *B_matrix;
      Matrix *B_matrix_T;
-     vector<Matrix*> vec_B_matrix; //NW
-     vector<Matrix*> vec_B_matrix_T; //NW
 
 	 //------ Material -------
      CSolidProperties* smat;
@@ -138,7 +136,6 @@ class CFiniteElementVec:public CElement
 	 
      // Local matricies and vectors 
 	 Matrix *AuxMatrix;
-	 Matrix *AuxMatrix2; //NW
 	 Matrix *Stiffness;
      Matrix *PressureC;
      SymMatrix *Mass; // For dynamic analysis

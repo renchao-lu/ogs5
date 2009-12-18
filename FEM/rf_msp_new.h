@@ -41,6 +41,8 @@ class CSolidProperties
     // Material parameters
     double PoissonRatio;
     int Youngs_mode;
+    int excavation; //12.2009. WW
+    bool excavated; //12.2009. To be ..... WW
     Matrix *data_Youngs;
     double ThermalExpansion;
     //
@@ -153,6 +155,7 @@ class CSolidProperties
     // Boiling model
     double Heat_Capacity(double temperature, double porosity, double Sat);
 	int GetCapacityModel() const {return Capacity_mode;}
+	int GetConductModel() const {return Conductivity_mode;}
 	bool CheckTemperature_in_PhaseChange(const double T0, const double T1);
     double Enthalpy(double temperature, const double latent_factor );
     double Heat_Conductivity(double refence = 0.0);
@@ -166,6 +169,7 @@ class CSolidProperties
     #ifndef RFW_FRACTURE
       double Youngs_Modulus(double refence = 0.0); 
     #endif 
+    void SetYoungsModulus(const double El)  {(*data_Youngs)(0)=El;}
     double Poisson_Ratio() const {return PoissonRatio;}
 	void CalcYoungs_SVV(const double strain_v);
     double Thermal_Expansion() const {return ThermalExpansion;}
