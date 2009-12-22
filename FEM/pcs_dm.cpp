@@ -703,6 +703,30 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
     Error = fabs(Error-error_k0)/error_k0;
   error_k0 = Error;
   //
+
+  //----------------------------------------------------------------------
+  //Excavation. .. .12.2009. WW
+  //----------------------------------------------------------------------
+  vector<int> deact_dom;
+  for(l=0; l<(long)msp_vector.size(); l++)
+  {
+     if(msp_vector[l]->excavated)
+        deact_dom.push_back(l);      
+  }
+  if((int)deact_dom.size()>0)
+  { 
+
+     // 
+     ElementValue_DM *eleV_DM = NULL;
+     for (l = 0; l < (long)m_msh->ele_vector.size(); l++)
+     {
+        eleV_DM = ele_value_dm[l];
+        (*eleV_DM->Stress0) =  (*eleV_DM->Stress); 
+     }
+  }
+
+  //----------------------------------------------------------------------
+
   return Error;
 }
 

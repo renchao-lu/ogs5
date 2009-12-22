@@ -20,6 +20,7 @@
 #include "fem_ele.h"
 #include "fem_ele_vec.h"
 #include "rf_pcs.h"
+#include "tools.h" //12.2009. WW
 // Equation
 #if defined(NEW_EQS)
 #include "equation_class.h"
@@ -43,6 +44,8 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
  :CElement(C_Sys_Flad, order), pcs(dm_pcs)
 {
     int i;
+    excavation = false; // 12.2009. WW
+
     S_Water = 1.0;
     Tem = 273.15+23.0;
     h_pcs = NULL;
@@ -782,6 +785,7 @@ void CFiniteElementVec::LocalAssembly(const int update)
     Index = MeshElement->GetIndex();
     SetMemory();
     SetMaterial();
+    eleV_DM = ele_value_dm[MeshElement->GetIndex()];  //12.2009. WW
 
     (*RHS) = 0.0;
     (*Stiffness) = 0.0;
@@ -861,6 +865,23 @@ void CFiniteElementVec::LocalAssembly(const int update)
     }
     // 
 
+
+    // -------------------------------12.2009.  WW
+    excavation = false;
+    if(smat->excavation>0&&MeshElement->GetMark())
+    { 
+       int  valid;
+       if(GetCurveValue(smat->excavation,0,aktuelle_zeit,&valid)<1.0)
+       {
+           excavation = true; 
+           smat->excavated = true; // To be ... 12.2009. WW
+           *(eleV_DM->Stress) = 0.;
+       }
+       else
+         smat->excavated = false; // To be ... 12.2009. WW
+    }
+    //----------------------------------------------------
+
     if(enhanced_strain_dm&&ele_value_dm[MeshElement->GetIndex()]->Localized)
       LocalAssembly_EnhancedStrain(update);
     else 
@@ -897,11 +918,76 @@ void CFiniteElementVec::LocalAssembly(const int update)
  
    Programming:
    02/2005   WW   
+   12/2009   WW New excavtion approach
 **************************************************************************/
 bool CFiniteElementVec::GlobalAssembly()
 {
+    // For excavation simulation. 12.2009. WW
+    int valid = 0;
+    if(excavation)
+    { 
+        excavation = true;
+        bool onExBoundary = false;
+
+        CNode * node;
+        CElem * elem;
+        CSolidProperties* smat_e;
+ 
+        int i,j; 
+
+        for(i=0; i<nnodesHQ; i++)
+        {
+
+           node =  MeshElement->nodes[i];
+           onExBoundary = false;                 
+           for(j=0; j<(long)node->connected_elements.size(); j++)
+           {
+               elem = pcs->m_msh->ele_vector[node->connected_elements[j]]; 
+               if(!elem->GetMark()) continue;
+          
+               smat_e = msp_vector[elem->GetPatchIndex()];
+               if(smat_e->excavation>0)
+               {
+                  if(fabs(GetCurveValue(smat_e->excavation,0,aktuelle_zeit,&valid)-1.0)<DBL_MIN)
+                  {
+                      onExBoundary = true;
+                      break;
+                   }   
+
+               }
+               else
+               {
+                  onExBoundary = true;
+                  break;
+               }
+           }
+             
+           if(!onExBoundary)
+           { 
+              for(j=0; j<dim; j++)
+                (*RHS)(j*nnodesHQ+i) = 0.0;
+           }
+
+        }
+    }
+    //------------------------------------------------------------------------------
+
     GlobalAssembly_RHS();
     if(PreLoad==11) return true;
+
+
+    // For excavation simulation. 12.2009. WW
+    if(excavation)
+    { 
+
+        MeshElement->MarkingAll(false);
+        *(eleV_DM->Stress) = 0.;
+        *(eleV_DM->Stress0) = 0.;
+        if(eleV_DM->Stress_j)       
+          (*eleV_DM->Stress_j) = 0.0;
+        return false;
+    } 
+
     GlobalAssembly_Stiffness();
     return true;
 }
@@ -2372,7 +2458,6 @@ void CFiniteElementVec::LocalAssembly_EnhancedStrain(const int update)
 
   gp_r = gp_s = gp_t = 0;
 
-  eleV_DM = ele_value_dm[MeshElement->GetIndex()];
 
   ThermalExpansion=0.0;
   if(T_Flag)

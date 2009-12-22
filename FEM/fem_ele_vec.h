@@ -102,6 +102,8 @@ class CFiniteElementVec:public CElement
      process::CRFProcessDeformation *pcs;
      ::CRFProcess *h_pcs;
 	 ::CRFProcess *t_pcs;
+     // excavation
+     bool excavation; //12.2009. WW
      //      
 	 int ns;  // Number of stresses components    
      // Flow coupling

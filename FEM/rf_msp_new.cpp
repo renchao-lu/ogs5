@@ -197,7 +197,7 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
       in_sd>> Conductivity_mode;
       switch(Conductivity_mode)
 	  {
-	     case 0: //  = f(x)
+	     case 0: //  = f(T) //21.12.2009 WW
             in_sd>> Size;
             in_sd.clear();
             data_Conductivity = new Matrix(Size, 2);
@@ -231,6 +231,17 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
            capacity_pcs_name_vector.push_back("TEMPERATURE1");
            capacity_pcs_name_vector.push_back("SATURATION1");
            break;                      
+	     case 4: //  = f(S) //21.12.2009 WW
+            in_sd>> Size;
+            in_sd.clear();
+            data_Conductivity = new Matrix(Size, 2);
+            for(i=0; i<Size; i++)
+			{
+               in_sd.str(GetLineFromFile1(msp_file));
+               in_sd >>(*data_Conductivity)(i,0)>>(*data_Conductivity)(i,1);
+               in_sd.clear();
+			}
+            break;
       }
     }
 /*
@@ -856,6 +867,10 @@ double CSolidProperties::Heat_Conductivity(double refence)
         //val = 1.28-0.71/(1+10.0*exp(refence-0.65));  //MX
         val = 1.28-0.71/(1+exp(10.0*(refence-0.65)));  
         break;
+	  case 4:   //21.12.2009. WW
+        val = CalulateValue(data_Conductivity, refence);
+        break;
+
     }
     return val;
 }

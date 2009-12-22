@@ -1766,14 +1766,14 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
       case C: // Componental flow
         break;
       case H: // heat transport
-        if(SolidProp->GetCapacityModel()==2) // Boiling model. DECOVALEX THM2
+        if(SolidProp->GetConductModel()==2) // Boiling model. DECOVALEX THM2
         {
            TG = interpolate(NodalVal1); 
            for(i=0; i<dim*dim; i++) mat[i] = 0.0; 
            for(i=0; i<dim; i++) 
              mat[i*dim+i] = SolidProp->Heat_Conductivity(TG);
         }
-        else if(SolidProp->GetCapacityModel()==3) // DECOVALEX THM1 
+        else if(SolidProp->GetConductModel()==3||SolidProp->GetConductModel()==4) // DECOVALEX THM1 or Curce 12.09. WW 
         {
             // WW
             PG = interpolate(NodalValC1); 
@@ -1786,7 +1786,7 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
               mat[i*dim+i] = mat_fac; 
         }  
 //WW        else if(SolidProp->GetCapacityModel()==1 && MediaProp->heat_diffusion_model == 273){
-        else if(SolidProp->GetCapacityModel()==1){
+        else if(SolidProp->GetConductModel()==1){
           tensor = MediaProp->HeatConductivityTensor(Index);
           for(i=0; i<dim*dim; i++) 
             mat[i] = tensor[i]; //mat[i*dim+i] = tensor[i];
