@@ -1281,17 +1281,27 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
   if(PModel==1||PModel==10)
     smat->CalulateCoefficent_DP();
   //
-  if(PModel!=3&&smat->Youngs_mode!=2)
+  if(PModel!=3&&smat->Youngs_mode!=2) // modified due to transverse isotropic elasticity: UJG 24.11.2009
   {
-    #ifdef RFW_FRACTURE
-    smat->Calculate_Lame_Constant(GetMeshElement());
-    #else
-    smat->Calculate_Lame_Constant(); 
-    #endif
-    //
-    smat->ElasticConsitutive(ele_dim, De);  
+	if(smat->Youngs_mode<10||smat->Youngs_mode>13)
+	{
+		#ifdef RFW_FRACTURE
+		smat->Calculate_Lame_Constant(GetMeshElement());
+		#else
+		smat->Calculate_Lame_Constant(); 
+		#endif
+		//
+		smat->ElasticConsitutive(ele_dim, De);  
+	}
+	else
+      *De = *(smat->getD_tran()); // UJG/WW 
   }
 
+  /*
+   string fname=FileName+"_D.txt";
+   ofstream out_f(fname.c_str());  
+   De->Write(out_f);
+  */
 
   /*
   //TEST

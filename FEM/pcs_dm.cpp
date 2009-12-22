@@ -161,6 +161,11 @@ void CRFProcessDeformation::Initialization()
    if(type==41)  
      unknown_node_numbers[problem_dimension_dm] = m_msh->GetNodesNumber(false);    
 
+   //Initialize material transform tensor for tansverse isotropic elasticity
+   //UJG/WW. 25.11.2009 
+   for(i=0; i<(int)msp_vector.size(); i++)
+     msp_vector[i]->CalculateTransformMatrixFromNormalVector(problem_dimension_dm);
+
    // Initialize linear solver
 #ifndef NEW_EQS  //WW
    InitEQS();

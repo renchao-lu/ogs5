@@ -273,7 +273,9 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
     { // subkeyword found
       in_sd.str(GetLineFromFile1(msp_file));
       in_sd >> Youngs_mode;
-      switch(Youngs_mode) // 15.03.2008 WW
+      int type = Youngs_mode;
+	  if(type>9&&type<14)  type = 1000;
+      switch(type) // 15.03.2008 WW
       {
         case 0:  //  = f(x)
           in_sd >> Size;
@@ -290,10 +292,28 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
           data_Youngs = new Matrix(1);        
           in_sd >> (*data_Youngs)(0);
           in_sd.clear();
-          break; //WW
+		  break;  // UJG 24.11.2009
         case 2: //  = const
+          // data_Youngs Lubby1 model 
+          //  0: E_0
+          //  1: a (factor)
+          //  2: n (exponent)
           data_Youngs = new Matrix(3);        
           in_sd >> (*data_Youngs)(0)>>(*data_Youngs)(1)>>(*data_Youngs)(2);
+          in_sd.clear();
+          break;
+        case 1000:    // case 10-13: transverse isotropic linear elasticity (UJG 24.11.2009)
+          // data_Youngs transverse isotropic linear elasticity 
+          //  0: E_i     (Young's modulus of the plane of isotropy)
+          //  1: E_a     (Young's modulus w.r.t. the anisotropy direction)
+          //  2: nu_{ia} (Poisson's ratio w.r.t. the anisotropy direction)
+          //  3: G_a     (shear modulus w.r.t. the anisotropy direction)
+          //  4: n_x     (x-coefficient of the local axis of anisotropy (2D case: -\sin\phi))
+          //  5: n_y     (y-coefficient of the local axis of anisotropy (2D case: \cos\phi))
+          //  6: n_z     (z-coefficient of the local axis of anisotropy (2D case: 0))
+          data_Youngs = new Matrix(7);
+          in_sd >> (*data_Youngs)(0)>>(*data_Youngs)(1)>>(*data_Youngs)(2)>>(*data_Youngs)(3)
+                >>(*data_Youngs)(4)>>(*data_Youngs)(5)>>(*data_Youngs)(6);
           in_sd.clear();
           break;
       #ifdef RFW_FRACTURE
@@ -537,6 +557,9 @@ CSolidProperties::CSolidProperties()
     //
     s_tol = 1e-9;
     f_tol = 1e-9;
+
+    Crotm = NULL;  // rotation matrix for matrices: UJG 25.11.2009
+    D_tran = NULL; //UJG/WW
 }
 CSolidProperties::~CSolidProperties()
 {
@@ -548,6 +571,8 @@ CSolidProperties::~CSolidProperties()
     if(data_Creep) delete data_Creep;
     if(devS) delete [] devS;
 
+    if(Crotm) delete Crotm;  // rotation matrix for matrices: UJG 25.11.2009
+    if(D_tran) delete D_tran;  // rotation matrix for matrices: UJG 25.11.2009
     data_Density=NULL;
     data_Youngs=NULL;
     data_Plasticity=NULL;
@@ -555,6 +580,8 @@ CSolidProperties::~CSolidProperties()
     data_Conductivity=NULL;
     data_Creep = NULL;
     devS=NULL;
+	Crotm = NULL;
+	D_tran = NULL;
 
     if(d2G_dSdS) delete d2G_dSdS;     
     if(d2G_dSdM) delete d2G_dSdM;
@@ -1115,6 +1142,383 @@ void CSolidProperties::ElasticConsitutive(const int Dimension, Matrix *D_e) cons
       (*D_e)(4,4) = G;
       (*D_e)(5,5) = G;
    }
+}
+/*************************************************************************
+ ROCKFLOW - Funktion: CSolidProperties::ElasticConstitutiveTransverseIsotropic
+
+ Aufgabe:
+   Generate material matrix in case of transverse isotropic linear elasticity
+
+ Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+       const int Dimension  :  Dimension of the real space
+       double *D_e          :  Elastic constitutive 
+ Ergebnis:
+   - void -
+
+ Programmaenderungen:
+ 24.11.2009  UJG  first implementation
+
+*************************************************************************/
+void CSolidProperties::ElasticConstitutiveTransverseIsotropic(const int Dimension) 
+{
+   double aii,aai,bii,bai,cii,cai;
+
+   double ni  = Poisson_Ratio();
+   double Ei  = (*data_Youngs)(0);
+   double Ea  = (*data_Youngs)(1);
+   double nia = (*data_Youngs)(2);
+   double Ga  = (*data_Youngs)(3);
+
+   double nai  = nia*(Ea/Ei);
+   double Disk = 1.0+ni;
+
+   Matrix *D_e = NULL;
+
+   Disk *= (1.0-ni-2.0*(nia*nai));
+   Disk /= (Ei*Ei*Ea);
+
+   aii = (1.0-(nai*nia))/(Ei*Ea*Disk);
+   aai = (1.0-(ni*ni))/(Ei*Ei*Disk);
+   bii = (ni+(nia*nai))/(Ei*Ea*Disk);
+   bai = (nia*(1.0+ni))/(Ei*Ei*Disk);
+   cii = Ei/(2.0*(1+ni));
+   cai = Ga;
+
+   int size;
+   size = Dimension*2;    
+
+   switch(Youngs_mode)
+   {
+     case 10:
+       int i,j,l,m;
+       D_e = new Matrix(size,size);
+       (*D_e) = 0.0;
+
+	   if(Dimension==3)
+       {
+         (*D_e)(0,0) = aii;
+         (*D_e)(0,1) = bii; 
+         (*D_e)(0,2) = bai; 
+
+         (*D_e)(1,0) = bii;
+         (*D_e)(1,1) = aii;
+         (*D_e)(1,2) = bai;
+
+         (*D_e)(2,0) = bai;
+         (*D_e)(2,1) = bai;
+         (*D_e)(2,2) = aai;
+
+         (*D_e)(3,3) = cii;      
+         (*D_e)(4,4) = cai;
+         (*D_e)(5,5) = cai;
+       }
+       else
+       {
+         (*D_e)(0,0) = aii;
+         (*D_e)(0,1) = bai; 
+         (*D_e)(0,2) = bii; 
+
+         (*D_e)(1,0) = bai;
+         (*D_e)(1,1) = aai;
+         (*D_e)(1,2) = bai;
+
+         (*D_e)(2,0) = bii;
+         (*D_e)(2,1) = bai;
+         (*D_e)(2,2) = aii;
+
+         (*D_e)(3,3) = cai; 
+       }
+
+       D_tran = new Matrix(size, size);
+       (*D_tran) = 0.;
+       for(i=0; i<size; i++)
+       {
+         for(j=0; j<size; j++)
+		 {
+           for(l=0; l<size; l++)
+           {
+             for(m=0; m<size; m++)
+               (*D_tran)(i,j) += (*Crotm)(l,i)*(*D_e)(l,m)*(*Crotm)(m,j); 
+           }		  
+		 }		 
+       }			   
+       delete D_e;
+       D_e = NULL;
+       break;
+     case 11:
+       D_tran = new Matrix(size, size);
+       (*D_tran)(0,0) = aai;
+       (*D_tran)(0,1) = bai; 
+       (*D_tran)(0,2) = bai; 
+
+       (*D_tran)(1,0) = bai;
+       (*D_tran)(1,1) = aii;
+       (*D_tran)(1,2) = bii;
+
+       (*D_tran)(2,0) = bai;
+       (*D_tran)(2,1) = bii;
+       (*D_tran)(2,2) = aii;
+
+       (*D_tran)(3,3) = cai;      
+     
+       if(Dimension==3)
+       {
+         (*D_tran)(4,4) = cai;
+         (*D_tran)(5,5) = cii;
+       }
+       break;
+     case 12:
+       D_tran = new Matrix(size, size);
+       (*D_tran)(0,0) = aii;
+       (*D_tran)(0,1) = bai; 
+       (*D_tran)(0,2) = bii; 
+
+       (*D_tran)(1,0) = bai;
+       (*D_tran)(1,1) = aai;
+       (*D_tran)(1,2) = bai;
+
+       (*D_tran)(2,0) = bii;
+       (*D_tran)(2,1) = bai;
+       (*D_tran)(2,2) = aii;
+
+       (*D_tran)(3,3) = cai;      
+     
+       if(Dimension==3)
+       {
+         (*D_tran)(4,4) = cii;
+         (*D_tran)(5,5) = cai;
+       }
+       break;
+     case 13:
+       D_tran = new Matrix(size, size);
+       (*D_tran)(0,0) = aii;
+       (*D_tran)(0,1) = bii; 
+       (*D_tran)(0,2) = bai; 
+
+       (*D_tran)(1,0) = bii;
+       (*D_tran)(1,1) = aii;
+       (*D_tran)(1,2) = bai;
+
+       (*D_tran)(2,0) = bai;
+       (*D_tran)(2,1) = bai;
+       (*D_tran)(2,2) = aai;
+
+       (*D_tran)(3,3) = cii;      
+     
+       if(Dimension==3)
+       {
+         (*D_tran)(4,4) = cai;
+         (*D_tran)(5,5) = cai;
+       }
+       break;
+   }
+}
+/*************************************************************************
+ ROCKFLOW - Funktion: CSolidProperties::CalculateTransformMatrixFromNormalVector
+
+ Aufgabe:
+   Generate rotation matrices for vectors and matrices based on a given normal vector
+
+ Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+       const int Dimension  :  Dimension of the real space
+       double *Crotv       :  Rotation matrix for vectors
+       double *Crotm       :  Rotation matrix for matrices
+ Ergebnis:
+   - void -
+
+ Programmaenderungen:
+ 25.11.2009  UJG  first implementation
+
+*************************************************************************/
+void CSolidProperties::CalculateTransformMatrixFromNormalVector(const int Dimension)
+{
+   if(Youngs_mode!=10)
+   {
+     ElasticConstitutiveTransverseIsotropic(Dimension); 
+     return;
+   }
+   
+   double e1[3]={0.0},e2[3]={0.0},e3[3]={0.0};
+
+   double nx = (*data_Youngs)(4);
+   double ny = (*data_Youngs)(5);
+   double nz = (*data_Youngs)(6);
+   double Disk = 1.0, t1, t2, t3, ax(1.0), ay(0.0), az(0.0);
+
+   t1 = t2 = t3 = 0.; 
+
+   Matrix *Crotv = new Matrix(Dimension,Dimension);  // rotation matrix for vectors: UJG 25.11.2009
+   Crotm = new Matrix(Dimension*2,Dimension*2);  // rotation matrix for matrices: UJG 25.11.2009
+
+   if(Dimension==3)
+   {
+     if((nz>=-1.0 && nz<=1.0) && nx==0.0)
+     {
+       e1[0] = 1.0;
+       e1[1] = 0.0;
+       e1[2] = 0.0;
+
+       e2[0] = 0.0;
+       e2[1] = nz;
+       e2[2] = -ny;
+
+       e3[0] = 0.0;
+       e3[1] = ny;
+       e3[2] = nz;
+     }
+     else
+     {
+       if(nz<-1.0)
+	   {
+         t1    = 0.01745329252*nx;
+         t2    = 0.01745329252*ny;
+         e3[0] = -sin(t1)*cos(t2);
+         e3[1] = -sin(t2);
+         e3[2] = cos(t1)*cos(t2);
+	   }
+	   else if(nz>1.0)
+	        {
+              t1    = 0.01745329252*nx;
+              t2    = 0.01745329252*ny;
+              e3[0] = sin(t2)*sin(t1);
+              e3[1] = sin(t2)*cos(t1);
+              e3[2] = cos(t1);
+            }
+	        else
+			{
+              e3[0] = nx;
+              e3[1] = ny;
+              e3[2] = nz;
+            }
+
+       ax = e3[0];
+       ay = e3[1];
+       az = e3[2];
+
+       Disk = 1.0/sqrt(1.0+((az*az)/(ax*ax)));
+
+       e1[0] = (az/ax)*Disk;
+       e1[1] = 0.0;
+       e1[2] = -Disk;
+
+       t1    = ay*e1[2];
+       t2    = az*e1[0]-ax*e1[2];
+       t3    = -ay*e1[0];
+
+       Disk  = t1*t1; 
+       Disk += t2*t2;
+       Disk += t3*t3;
+
+       Disk = 1.0/sqrt(Disk);
+
+       e2[0] = Disk*t1;
+       e2[1] = Disk*t2;
+       e2[2] = Disk*t3;
+     }
+
+     (*Crotv)(0,0) = e1[0];
+     (*Crotv)(0,1) = e1[1];
+     (*Crotv)(0,2) = e1[2];
+
+     (*Crotv)(1,0) = e2[0];
+     (*Crotv)(1,1) = e2[1];
+     (*Crotv)(1,2) = e2[2];
+
+     (*Crotv)(2,0) = e3[0];
+     (*Crotv)(2,1) = e3[1];
+     (*Crotv)(2,2) = e3[2];
+
+     (*Crotm)(0,0) = (*Crotv)(0,0)*(*Crotv)(0,0);
+     (*Crotm)(0,1) = (*Crotv)(0,1)*(*Crotv)(0,1);
+     (*Crotm)(0,2) = (*Crotv)(0,2)*(*Crotv)(0,2);
+     (*Crotm)(0,3) = (*Crotv)(0,0)*(*Crotv)(0,1);
+     (*Crotm)(0,4) = (*Crotv)(0,0)*(*Crotv)(0,2);
+     (*Crotm)(0,5) = (*Crotv)(0,1)*(*Crotv)(0,2);
+
+     (*Crotm)(1,0) = (*Crotv)(1,0)*(*Crotv)(1,0);
+     (*Crotm)(1,1) = (*Crotv)(1,1)*(*Crotv)(1,1);
+     (*Crotm)(1,2) = (*Crotv)(1,2)*(*Crotv)(1,2);
+     (*Crotm)(1,3) = (*Crotv)(1,0)*(*Crotv)(1,1);
+     (*Crotm)(1,4) = (*Crotv)(1,0)*(*Crotv)(1,2);
+     (*Crotm)(1,5) = (*Crotv)(1,1)*(*Crotv)(1,2);
+
+     (*Crotm)(2,0) = (*Crotv)(2,0)*(*Crotv)(2,0);
+     (*Crotm)(2,1) = (*Crotv)(2,1)*(*Crotv)(2,1);
+     (*Crotm)(2,2) = (*Crotv)(2,2)*(*Crotv)(2,2);
+     (*Crotm)(2,3) = (*Crotv)(2,0)*(*Crotv)(2,1);
+     (*Crotm)(2,4) = (*Crotv)(2,0)*(*Crotv)(2,2);
+     (*Crotm)(2,5) = (*Crotv)(2,1)*(*Crotv)(2,2);
+
+     (*Crotm)(3,0) = 2.0*(*Crotv)(0,0)*(*Crotv)(1,0);
+     (*Crotm)(3,1) = 2.0*(*Crotv)(0,1)*(*Crotv)(1,1);
+     (*Crotm)(3,2) = 2.0*(*Crotv)(0,2)*(*Crotv)(1,2);
+     (*Crotm)(3,3) = (*Crotv)(0,0)*(*Crotv)(1,1)+(*Crotv)(1,0)*(*Crotv)(0,1);
+     (*Crotm)(3,4) = (*Crotv)(0,0)*(*Crotv)(1,2)+(*Crotv)(0,2)*(*Crotv)(1,0);
+     (*Crotm)(3,5) = (*Crotv)(0,1)*(*Crotv)(1,2)+(*Crotv)(0,2)*(*Crotv)(1,1);
+
+     (*Crotm)(4,0) = 2.0*(*Crotv)(0,0)*(*Crotv)(2,0);
+     (*Crotm)(4,1) = 2.0*(*Crotv)(0,1)*(*Crotv)(2,1);
+     (*Crotm)(4,2) = 2.0*(*Crotv)(0,2)*(*Crotv)(2,2);
+     (*Crotm)(4,3) = (*Crotv)(0,0)*(*Crotv)(2,1)+(*Crotv)(0,1)*(*Crotv)(2,0);
+     (*Crotm)(4,4) = (*Crotv)(0,0)*(*Crotv)(2,2)+(*Crotv)(2,0)*(*Crotv)(0,2);
+     (*Crotm)(4,5) = (*Crotv)(0,1)*(*Crotv)(2,2)+(*Crotv)(0,2)*(*Crotv)(2,1);
+
+     (*Crotm)(5,0) = 2.0*(*Crotv)(1,0)*(*Crotv)(2,0);
+     (*Crotm)(5,1) = 2.0*(*Crotv)(1,1)*(*Crotv)(2,1);
+     (*Crotm)(5,2) = 2.0*(*Crotv)(1,2)*(*Crotv)(2,2);
+     (*Crotm)(5,3) = (*Crotv)(1,0)*(*Crotv)(2,1)+(*Crotv)(1,1)*(*Crotv)(2,0);
+     (*Crotm)(5,4) = (*Crotv)(1,0)*(*Crotv)(2,2)+(*Crotv)(1,2)*(*Crotv)(2,0);
+     (*Crotm)(5,5) = (*Crotv)(1,1)*(*Crotv)(2,2)+(*Crotv)(2,1)*(*Crotv)(1,2);
+   }
+   else
+   {
+	 if(ny>1.0)
+	 {
+       e1[0] = cos(0.01745329252*nx);
+       e1[1] = sin(0.01745329252*nx);
+
+	   e2[0] = -e1[1];
+       e2[1] = e1[0];
+     }
+     else
+     {
+       e2[0] = nx;
+       e2[1] = ny;
+
+       e1[0] = ny;
+       e1[1] = -nx;
+     }
+
+     (*Crotv)(0,0) = e1[0];
+     (*Crotv)(0,1) = e1[1];
+
+     (*Crotv)(1,0) = e2[0];
+     (*Crotv)(1,1) = e2[1];
+
+     (*Crotm)(0,0) = (*Crotv)(0,0)*(*Crotv)(0,0);
+     (*Crotm)(0,1) = (*Crotv)(1,0)*(*Crotv)(1,0);
+     (*Crotm)(0,2) = 0.0;
+     (*Crotm)(0,3) = -(*Crotv)(0,0)*(*Crotv)(1,0);
+
+     (*Crotm)(1,0) = (*Crotv)(0,1)*(*Crotv)(0,1);
+     (*Crotm)(1,1) = (*Crotv)(1,1)*(*Crotv)(1,1);
+     (*Crotm)(1,2) = 0.0;
+     (*Crotm)(1,3) = -(*Crotv)(0,1)*(*Crotv)(1,1);
+
+     (*Crotm)(2,0) = 0.0;
+     (*Crotm)(2,1) = 0.0;
+     (*Crotm)(2,2) = 1.0;
+     (*Crotm)(2,3) = 0.0;
+
+     (*Crotm)(3,0) = -2.0*(*Crotv)(0,0)*(*Crotv)(0,1);
+     (*Crotm)(3,1) = -2.0*(*Crotv)(1,0)*(*Crotv)(1,1);
+     (*Crotm)(3,2) = 0.0;
+     (*Crotm)(3,3) = (*Crotv)(0,0)*(*Crotv)(1,1)+(*Crotv)(1,0)*(*Crotv)(0,1);
+   }
+   delete Crotv;
+   Crotv = NULL; 
+   
+   ElasticConstitutiveTransverseIsotropic(Dimension); 
 }
 //
 // WW. 09/02. Compute dilatancy for yield function 

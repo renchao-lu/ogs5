@@ -85,6 +85,11 @@ class CSolidProperties
     double Lambda;
     double G;      // Shear stress modulus
     double K;      // Bulk modulus
+
+    // Rotation matrices and their transpose: UJG 25.11.2009
+    Matrix *Crotm; // If this is needed by permaebility calculation, we keep it. Otherwise remove it. (To do, UJG/WW)
+    Matrix *D_tran;
+
     // Plasticity
     double dl2; 
     // 2. Single yield surface
@@ -195,6 +200,10 @@ class CSolidProperties
     #endif
     // For thermal elastic model
     void ElasticConsitutive(const int Dimension, Matrix *D_e) const;
+    // For transverse isotropic linear elasticity: UJG 24.11.2009
+    void ElasticConstitutiveTransverseIsotropic(const int Dimension);
+	Matrix* getD_tran() const {return D_tran;}
+    void CalculateTransformMatrixFromNormalVector(const int Dimension);
     // 2. Plasticity
     // 2.1 Drucker-Prager
     double GetAngleCoefficent_DP(const double Angle);
