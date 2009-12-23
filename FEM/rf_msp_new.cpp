@@ -1347,6 +1347,9 @@ void CSolidProperties::ElasticConstitutiveTransverseIsotropic(const int Dimensio
 *************************************************************************/
 void CSolidProperties::CalculateTransformMatrixFromNormalVector(const int Dimension)
 {
+   if(!(Youngs_mode>9&&Youngs_mode<14))     //WW
+      return;
+
    if(Youngs_mode!=10)
    {
      ElasticConstitutiveTransverseIsotropic(Dimension); 
