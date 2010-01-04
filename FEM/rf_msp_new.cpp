@@ -1370,49 +1370,49 @@ void CSolidProperties::CalculateTransformMatrixFromNormalVector(const int Dimens
 
    if(Dimension==3)
    {
-     if((nz>=-1.0 && nz<=1.0) && nx==0.0)
+     if(nz<-1.0)
+	 {
+       t1    = 0.01745329252*nx;
+       t2    = 0.01745329252*ny;
+       e3[0] = sin(t1)*cos(t2);
+       e3[1] = -sin(t2);
+       e3[2] = cos(t1)*cos(t2);
+	 }
+	 else if(nz>1.0)
+	      {
+            t1    = 0.01745329252*nx;
+            t2    = 0.01745329252*ny;
+            e3[0] = sin(t2)*sin(t1);
+            e3[1] = sin(t2)*cos(t1);
+            e3[2] = cos(t2);
+          }
+	      else
+	      {
+            e3[0] = nx;
+            e3[1] = ny;
+            e3[2] = nz;
+          }
+
+     ax = e3[0];
+     ay = e3[1];
+     az = e3[2];
+
+     if(ax==0.0)
      {
        e1[0] = 1.0;
        e1[1] = 0.0;
        e1[2] = 0.0;
 
        e2[0] = 0.0;
-       e2[1] = nz;
-       e2[2] = -ny;
+       e2[1] = az;
+       e2[2] = -ay;
 
        e3[0] = 0.0;
-       e3[1] = ny;
-       e3[2] = nz;
+       e3[1] = ay;
+       e3[2] = az;
      }
      else
      {
-       if(nz<-1.0)
-	   {
-         t1    = 0.01745329252*nx;
-         t2    = 0.01745329252*ny;
-         e3[0] = -sin(t1)*cos(t2);
-         e3[1] = -sin(t2);
-         e3[2] = cos(t1)*cos(t2);
-	   }
-	   else if(nz>1.0)
-	        {
-              t1    = 0.01745329252*nx;
-              t2    = 0.01745329252*ny;
-              e3[0] = sin(t2)*sin(t1);
-              e3[1] = sin(t2)*cos(t1);
-              e3[2] = cos(t1);
-            }
-	        else
-			{
-              e3[0] = nx;
-              e3[1] = ny;
-              e3[2] = nz;
-            }
-
-       ax = e3[0];
-       ay = e3[1];
-       az = e3[2];
-
        Disk = 1.0/sqrt(1.0+((az*az)/(ax*ax)));
 
        e1[0] = (az/ax)*Disk;
@@ -2542,6 +2542,7 @@ int CSolidProperties::CalStress_and_TangentialMatrix_SYS
                 for(k=0; k<LengthStrs; k++)
                 {
                   c2=1.0;
+
                   if(k>2) c2=2.0;
                   t1 += c1*c2*(*De)(i,k)*(*d2G_dSdS)(k,j);                           
                   if(j>=4) continue;                           
