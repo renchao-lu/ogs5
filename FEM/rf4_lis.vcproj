@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="rf4sp_cpp"
+	Name="rf4sp_lis"
 	ProjectGUID="{4F159AF7-FF53-410E-A9A7-2C500A4EF55E}"
 	RootNamespace="rf4sp_cpp"
 	>
@@ -16,8 +16,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\Debug"
-			IntermediateDirectory=".\Debug"
+			OutputDirectory=".\Debug_LIS"
+			IntermediateDirectory=".\Debug_LIS"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -50,10 +50,10 @@
 				DisableLanguageExtensions="false"
 				OpenMP="true"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile=".\Debug/rf3_cpp.pch"
-				AssemblerListingLocation=".\Debug/"
-				ObjectFile=".\Debug/"
-				ProgramDataBaseFileName=".\Debug/"
+				PrecompiledHeaderFile=".\Debug_LIS/rf3_cpp.pch"
+				AssemblerListingLocation=".\Debug_LIS/"
+				ObjectFile=".\Debug_LIS/"
+				ProgramDataBaseFileName=".\Debug_LIS/"
 				BrowseInformation="1"
 				WarningLevel="3"
 				WarnAsError="false"
@@ -74,12 +74,12 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile=".\Debug/rf4lis.exe"
+				OutputFile=".\Debug_LIS/rf4lis.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="../LIB"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\Debug/rf3_cpp.pdb"
+				ProgramDatabaseFile=".\Debug_LIS/rf3_cpp.pdb"
 				SubSystem="1"
 				TargetMachine="1"
 			/>
@@ -110,8 +110,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\Release"
-			IntermediateDirectory=".\Release"
+			OutputDirectory=".\Release_LIS"
+			IntermediateDirectory=".\Release_LIS"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -146,10 +146,10 @@
 				EnableFunctionLevelLinking="true"
 				OpenMP="true"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile=".\Release/rf3_cpp.pch"
-				AssemblerListingLocation=".\Release/"
-				ObjectFile=".\Release/"
-				ProgramDataBaseFileName=".\Release/"
+				PrecompiledHeaderFile=".\Release_LIS/rf3_cpp.pch"
+				AssemblerListingLocation=".\Release_LIS/"
+				ObjectFile=".\Release_LIS/"
+				ProgramDataBaseFileName=".\Release_LIS/"
 				BrowseInformation="1"
 				WarningLevel="4"
 				WarnAsError="false"
@@ -169,11 +169,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile=".\Release/rf4lis.exe"
+				OutputFile=".\Release_LIS/rf4lis.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="../LIB"
-				ProgramDatabaseFile=".\Release/rf3_cpp.pdb"
+				ProgramDatabaseFile=".\Release_LIS/rf3_cpp.pdb"
 				SubSystem="1"
 				TargetMachine="1"
 			/>
