@@ -985,7 +985,19 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
   // HS-WW: 04.01.2010, bugfix, if not ontime, set this_stepsize to zero
   if ( time_forward < 0.0 && fabs(time_forward)>MKleinsteZahl)
   {
-    this_stepsize = 0.0;
+    //check if current time step is critical time
+    bool isCriticalTime = false;
+    for (int i=0; i<(int)critical_time.size(); i++) {
+      if (critical_time[i]-c_time>MKleinsteZahl) 
+        break;
+      if (fabs(c_time-critical_time[i])<MKleinsteZahl) {
+        isCriticalTime = true;
+        break;
+      }
+    }
+
+    if (!isCriticalTime)
+      this_stepsize = 0.0;
   }
   if((fabs(pcs_step-time_end)<DBL_MIN)&&fabs(c_time-time_end)<DBL_MIN)
   {
