@@ -974,7 +974,7 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
   else
     pcs_step = this_stepsize;  // 16.09.2008. WW
   time_forward = c_time - time_current-pcs_step; 
-  if(time_forward>0.0||fabs(time_forward)<DBL_MIN)
+  if(time_forward>0.0||fabs(time_forward)<MKleinsteZahl)
   {
     time_current += pcs_step;
 //WW. 02.02.2009    step_current++; 
@@ -983,7 +983,7 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
     dt_sum = 0.0;
   }
   // HS-WW: 04.01.2010, bugfix, if not ontime, set this_stepsize to zero
-  if ( time_forward < 0.0 )
+  if ( time_forward < 0.0 && fabs(time_forward)>MKleinsteZahl)
   {
     this_stepsize = 0.0;
   }
