@@ -2510,7 +2510,7 @@ Task:
 Programing:
 10/2005 OK/YD Implementation
 **************************************************************************/
-CFluidProperties* MFPGet(string name)
+CFluidProperties* MFPGet(const string &name)
 {
   CFluidProperties* m_mfp = NULL;
   for(int i=0;i<(int)mfp_vector.size();i++){
@@ -2586,7 +2586,7 @@ PCSLib-Method:
 08/2008 OK 
 last change: 11/2008 NB
 **************************************************************************/
-double MFPGetNodeValue(long node,string mfp_name, int phase_number)
+double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 {
   double mfp_value;
 //  char c;

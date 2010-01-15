@@ -470,7 +470,7 @@ public:
     // Specials
     void PCSMoveNOD();
     void PCSDumpModelNodeValues(void);
-    int GetNODValueIndex(string name,int timelevel); //WW
+    int GetNODValueIndex(const string &name,int timelevel); //WW
     // BC for dynamic problems. WW
     inline void setBC_danymic_problems();
     inline void setST_danymic_problems();
@@ -550,24 +550,24 @@ extern bool PCSRead(string);
 extern void PCSWrite(string);
 extern void RelocateDeformationProcess(CRFProcess *m_pcs);
 extern void PCSDestroyAllProcesses(void);
-extern CRFProcess* PCSGet(string);
-extern CRFProcess* PCSGetNew(string,string);
+extern CRFProcess* PCSGet(const string&);
+extern CRFProcess* PCSGetNew(const string&,const string&);
 extern void PCSDelete();
 extern void PCSDelete(string);
 extern void PCSCreate();
-extern int PCSGetPCSIndex(string,string); //SB
-extern CRFProcess *PCSGet(string,string); //SB
-extern CRFProcess *PCSGet(string,bool); //OK
+extern int PCSGetPCSIndex(const string&,const string&); //SB
+extern CRFProcess *PCSGet(const string&,const string&); //SB
+extern CRFProcess *PCSGet(const string&,bool); //OK
 extern CRFProcess *PCSGetFluxProcess();//CMCD
 extern CRFProcess *PCSGetFlow(); //OK
 extern bool PCSConfig(); //OK
 // NOD
-extern int PCSGetNODValueIndex(string,int);
+extern int PCSGetNODValueIndex(const string&,int);
 extern double PCSGetNODValue(long,char*,int);
-extern void PCSSetNODValue(long,string,double,int);
+extern void PCSSetNODValue(long,const string&,double,int);
 // ELE
 extern int PCSGetELEValueIndex(char*);
-extern double PCSGetELEValue(long index,double*gp,double theta,string nod_fct_name);
+extern double PCSGetELEValue(long index,double*gp,double theta,const string &nod_fct_name);
 // Specials
 extern void PCSRestart();
 extern string PCSProblemType();
@@ -582,8 +582,8 @@ extern int dm_pcs_number;
 extern double PCSGetNODConcentration(long index, long component, long timelevel); //SB
 extern void PCSSetNODConcentration(long index, long component, long timelevel, double value); //SB
 extern char *GetCompNamehelp(char *name); //SB:namepatch - superseded by GetPFNamebyCPName
-extern double PCSGetEleMeanNodeSecondary(long index, string pcs_name, string var_name, int timelevel); //SB4218
-extern double PCSGetEleMeanNodeSecondary_2(long index, int pcsT, string var_name, int timelevel); //CB
+extern double PCSGetEleMeanNodeSecondary(long index, const string &pcs_name, const string &var_name, int timelevel); //SB4218
+extern double PCSGetEleMeanNodeSecondary_2(long index, int pcsT, const string &var_name, int timelevel); //CB
 extern string GetPFNamebyCPName(string line_string);
 
 extern int memory_opt; 
@@ -668,5 +668,7 @@ extern REACT_GEM *m_vec_GEM;
 class REACT_BRNS;
 extern REACT_BRNS *m_vec_BRNS;
 #endif
+
+extern bool hasAnyProcessDeactivatedSubdomains; //NW
 
 #endif

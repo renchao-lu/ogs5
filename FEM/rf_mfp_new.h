@@ -168,7 +168,7 @@ extern void MFPWrite(string);
 extern double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem=NULL); //WW
 extern double MFPCalcFluidsHeatConductivity(long index,double*gp,double theta, CFiniteElementStd* assem=NULL);
 extern void MFPDelete();
-extern CFluidProperties* MFPGet(string);    //OK/YD
+extern CFluidProperties* MFPGet(const string&);    //OK/YD
 extern CFluidProperties* MFPGet(int);    //NB JUN 09
-double MFPGetNodeValue(long,string,int); //NB AUG 09
+double MFPGetNodeValue(long,const string&,int); //NB AUG 09
 #endif

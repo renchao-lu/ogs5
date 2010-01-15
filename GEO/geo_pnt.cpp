@@ -143,7 +143,7 @@ Programing:
 07/2005 CC Implementation
 10/2005 OK Test
 **************************************************************************/
-CGLPoint* GEOGetPointByName(string point_name)
+CGLPoint* GEOGetPointByName(const string &point_name)
 {
   CGLPoint *m_pnt = NULL;
   for(long i=0;i<(long)gli_points_vector.size();i++) {

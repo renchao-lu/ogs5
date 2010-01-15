@@ -300,6 +300,10 @@ double NormalizeVector(double *x, const int n);
 extern double MVectorlength(double dx, double dy, double dz);
 extern double PointProduction(double *x, double *y);
 
+//NW
+extern double MLangevin(double v);
+
+
 #endif /* gehoert zum Schutz gegen mehrfaches Einfuegen */
 
 /*##########################################################################

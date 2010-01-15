@@ -16,8 +16,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\Debug"
-			IntermediateDirectory=".\Debug"
+			OutputDirectory=".\Debug_sp"
+			IntermediateDirectory=".\Debug_sp"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -49,10 +49,10 @@
 				RuntimeLibrary="1"
 				DisableLanguageExtensions="false"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile=".\Debug/rf3_cpp.pch"
-				AssemblerListingLocation=".\Debug/"
-				ObjectFile=".\Debug/"
-				ProgramDataBaseFileName=".\Debug/"
+				PrecompiledHeaderFile=".\Debug_sp/rf3_cpp.pch"
+				AssemblerListingLocation=".\Debug_sp/"
+				ObjectFile=".\Debug_sp/"
+				ProgramDataBaseFileName=".\Debug_sp/"
 				BrowseInformation="1"
 				WarningLevel="3"
 				WarnAsError="false"
@@ -73,11 +73,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile=".\Debug/rf4.exe"
+				OutputFile=".\Debug_sp/rf4.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\Debug/rf3_cpp.pdb"
+				ProgramDatabaseFile=".\Debug_sp/rf3_cpp.pdb"
 				SubSystem="1"
 				TargetMachine="1"
 			/>
@@ -108,8 +108,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\Release"
-			IntermediateDirectory=".\Release"
+			OutputDirectory=".\Release_sp"
+			IntermediateDirectory=".\Release_sp"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -143,10 +143,10 @@
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile=".\Release/rf3_cpp.pch"
-				AssemblerListingLocation=".\Release/"
-				ObjectFile=".\Release/"
-				ProgramDataBaseFileName=".\Release/"
+				PrecompiledHeaderFile=".\Release_sp/rf3_cpp.pch"
+				AssemblerListingLocation=".\Release_sp/"
+				ObjectFile=".\Release_sp/"
+				ProgramDataBaseFileName=".\Release_sp/"
 				BrowseInformation="1"
 				WarningLevel="4"
 				WarnAsError="false"
@@ -166,10 +166,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile=".\Release/rf4.exe"
+				OutputFile=".\Release_sp/rf4.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				ProgramDatabaseFile=".\Release/rf3_cpp.pdb"
+				ProgramDatabaseFile=".\Release_sp/rf3_cpp.pdb"
 				SubSystem="1"
 				TargetMachine="1"
 			/>

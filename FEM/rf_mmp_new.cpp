@@ -1810,7 +1810,7 @@ Programing:
 02/2004 OK Implementation
 last modification:
 **************************************************************************/
-CMediumProperties* MMPGet(string mat_name)
+CMediumProperties* MMPGet(const string &mat_name)
 {
   CMediumProperties *m_mat = NULL;
   int no_mat =(int)mmp_vector.size();
@@ -6986,7 +6986,7 @@ void GetHeterogeneousFields()
       m_mmp->SetDistributedELEProperties(file_path_base_ext);
       m_mmp->WriteTecplotDistributedProperties();
     }
-    else m_mmp->SetConstantELEarea(m_mmp->geo_area,i);
+//NW    else m_mmp->SetConstantELEarea(m_mmp->geo_area,i);
     //....................................................................
   }
   //----------------------------------------------------------------------
@@ -7697,7 +7697,7 @@ Programing:
 01/2006 YD Implementation
 last modification:
 **************************************************************************/
-CMediumPropertiesGroup* MMPGetGroup(string pcs_type_name)
+CMediumPropertiesGroup* MMPGetGroup(const string &pcs_type_name)
 {
   CMediumPropertiesGroup *m_mmp_group = NULL;
   list<CMediumPropertiesGroup*>::const_iterator p_mmp_group = mmp_group_list.begin();

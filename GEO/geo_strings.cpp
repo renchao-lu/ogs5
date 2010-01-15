@@ -1310,7 +1310,7 @@ Programing:
 02/2004 OK Implementation
 last modification:
 **************************************************************************/
-string get_sub_string(string buffer,string delimiter,int pos1,int *pos2)
+string get_sub_string(const string &buffer,const string &delimiter,int pos1,int *pos2)
 {
   int pos=0;
   string empty_string("");
@@ -1362,7 +1362,7 @@ Programing:
 02/2004 OK Implementation
 last modification:
 **************************************************************************/
-string get_sub_string2(string buffer,string delimiter,string *tmp)
+string get_sub_string2(const string &buffer,const string &delimiter,string *tmp)
 {
   int pos2 = (int)buffer.find_first_of(delimiter);
   string sub_string = buffer.substr(0,pos2);
@@ -1380,7 +1380,7 @@ Programing:
 09/2004 OK Implementation
 last modification:
 **************************************************************************/
-bool SubKeyword(string line)
+bool SubKeyword(const string &line)
 {
   if(line.find(SUBKEYWORD)!=string::npos)
     return true;
@@ -1395,7 +1395,7 @@ Programing:
 09/2004 OK Implementation
 last modification:
 **************************************************************************/
-bool Keyword(string line)
+bool Keyword(const string &line)
 {
   if(line.find(KEYWORD)!=string::npos)
     return true;

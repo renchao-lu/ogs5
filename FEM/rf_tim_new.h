@@ -109,7 +109,7 @@ class CTimeDiscretization
 
 extern vector<CTimeDiscretization*> time_vector;
 extern bool TIMRead(string);
-extern CTimeDiscretization* TIMGet(string);
+extern CTimeDiscretization* TIMGet(const string&);
 extern void TIMWrite(string);
 extern bool IsSynCron(); //WW
 extern void TIMDelete();

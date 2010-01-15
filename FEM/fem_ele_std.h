@@ -118,6 +118,9 @@ class CFiniteElementStd:public CElement
      inline void UpwindUnitCoord(int p, int point, int ind); //CB added by CB: 090507
      int UpwindElement(int option, int phase);	// PCH
      inline void UpwindSummandMass(const int gp, int& gp_r, int& gp_s, int& gp_t, double *alpha, double *summand); //CB added by CB: 090507
+     inline double CalcSUPGCoefficient(double*vel,int ip); //NW
+     inline void CalcSUPGWeightingFunction(double*vel, int ip, double &tau, double*v_dN); //NW
+     inline double CalcSUPGEffectiveElemenetLength(double *vel); //NW
      // Gauss value
      void ExtropolateGauss(CRFProcess *m_pcs, const int idof);
      //
@@ -263,6 +266,8 @@ class CFiniteElementStd:public CElement
      double *NodalVal_Sat;
      double *NodalVal_SatNW;
      double *NodalVal_p2;
+     //
+     double *weight_func; //NW
      //
      friend class ::CRFProcess;
 };

@@ -62,7 +62,11 @@ class Linear_EQS
     int CGS(double *xg, const long n);
     double GetCPUtime() const { return cpu_time;  }
 #else
+#ifdef LIS //NW
+    int Solver(CNumerics *num=NULL);
+#else
     int Solver();
+#endif
     int CG();
     int BiCG() {return -1;}
     int BiCGStab();

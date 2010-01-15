@@ -112,6 +112,24 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
     idx_S = -1;
     // Saturation;
     S_Water = 1.0;
+
+    // For cache NW
+    vec_B_matrix.resize(20);
+    vec_B_matrix_T.resize(20);
+    for (i=0; i<vec_B_matrix.size(); i++){
+	  switch(dim)
+	  {
+	     case 2:
+           vec_B_matrix[i] = new Matrix(4,2);
+           vec_B_matrix_T[i] = new Matrix(2,4);
+           break;
+	     case 3:
+           vec_B_matrix[i] = new Matrix(6,3);
+           vec_B_matrix_T[i] = new Matrix(3,6);
+           break;
+      }
+    }
+
     //
 	switch(dim)
 	{
@@ -124,6 +142,7 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
          De = new Matrix(4,4);
          ConsistDep = new Matrix(4,4);
          AuxMatrix = new Matrix(2,2);
+         AuxMatrix2 = new Matrix(2,4); //NW
          Disp = new double[18];
          Temp = new double[9];
          T1 = new double[9];
@@ -158,6 +177,7 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
          De = new Matrix(6,6);
          ConsistDep = new Matrix(6,6);
          AuxMatrix = new Matrix(3,3);
+         AuxMatrix2 = new Matrix(3,6); //NW
          Disp = new double[60];
          Temp = new double[20];
          T1 = new double[20];
@@ -291,6 +311,7 @@ CFiniteElementVec::~CFiniteElementVec()
     delete De;
     delete ConsistDep;
     delete AuxMatrix;
+    delete AuxMatrix2; //NW
     delete [] Disp;
     delete [] Temp;
     delete [] T1;
@@ -347,6 +368,7 @@ CFiniteElementVec::~CFiniteElementVec()
     De = NULL;
     ConsistDep = NULL;
     AuxMatrix = NULL;
+    AuxMatrix2 = NULL; //NW
     Disp = NULL;
     Temp = NULL;
     T1 = NULL;
@@ -357,6 +379,15 @@ CFiniteElementVec::~CFiniteElementVec()
     Sxz = NULL;
     Syz = NULL;
     pstr = NULL;
+
+    //NW
+    for (int i=0; i<vec_B_matrix.size(); i++){
+      delete vec_B_matrix[i];
+      delete vec_B_matrix_T[i];
+      vec_B_matrix[i] = NULL;
+      vec_B_matrix_T[i] = NULL;
+   }
+
 }
 
 
@@ -676,6 +707,7 @@ double CFiniteElementVec::CalDensity()
    Programming:
    07/2004   WW   
    08/2004   OK   MFP implementation                                                                      
+   01/2010   NW   use chache of B,B^T matrices
 **************************************************************************/
 void CFiniteElementVec::ComputeMatrix_RHS(const double fkt, 
 								   const Matrix *p_D)
@@ -685,34 +717,65 @@ void CFiniteElementVec::ComputeMatrix_RHS(const double fkt,
    fac = 0.0;
    dN_dx=0.0;
    rho = CalDensity();
-   for (i = 0; i < nnodesHQ; i++)
+   const int nnodesHQ = this->nnodesHQ;
+   const int nnodes = this->nnodes;
+   const int ele_dim = this->ele_dim;
+   const int ns = this->ns;
+
+   //NW cache B, B^T 
+   for (i=0; i<nnodesHQ; i++)
    {
       setTransB_Matrix(i);   
+      (*this->vec_B_matrix[i]) = *B_matrix;
+      (*this->vec_B_matrix_T[i]) = *B_matrix_T;
+   }
+   Matrix* old_B_matrix = B_matrix;
+   Matrix* old_B_matrix_T = B_matrix_T;
+
+   Matrix* tmp_B_matrix = NULL;
+   Matrix* tmp_B_matrix_T = NULL;
+   Matrix* tmp_AuxMatrix = AuxMatrix;
+   Matrix* tmp_AuxMatrix2 = AuxMatrix2;
+   Matrix* tmp_Stiffness = Stiffness;
+
+   for (i=0; i<nnodesHQ; i++)
+   {
+//NW      setTransB_Matrix(i);   
+      tmp_B_matrix_T = this->vec_B_matrix_T[i];
       // Local assembly of A*u=int(B^t*sigma) for Newton-Raphson method  			 
-      for (j = 0; j<ele_dim; j++)
+      for (j=0; j<ele_dim; j++)
       {
-          for (k = 0; k<ns; k++) 
+          for (k=0; k<ns; k++)
              (*RHS)(j*nnodesHQ+i) += 
+                 (*tmp_B_matrix_T)(j,k)*(dstress[k]-stress0[k])*fkt;
 //TEST             (*B_matrix_T)(j,k)*dstress[k]*fkt;
-                 (*B_matrix_T)(j,k)*(dstress[k]-stress0[k])*fkt;
       }         
       if(PreLoad==11) continue;       
       // Local assembly of stiffness matrix, B^T C B       
-      for (j = 0; j < nnodesHQ; j++)
+      (*tmp_AuxMatrix2) = 0.0;
+      tmp_B_matrix_T->multi(*p_D, *tmp_AuxMatrix2); //NW
+      for (j=0; j<nnodesHQ; j++)
       {
-          setB_Matrix(j);
+//NW          setB_Matrix(j);
+          tmp_B_matrix = this->vec_B_matrix[j];
           // Compute stiffness matrix
-          (*AuxMatrix) = 0.0;
-          B_matrix_T->multi(*p_D, *B_matrix, *AuxMatrix);      
+          (*tmp_AuxMatrix) = 0.0;
+          tmp_AuxMatrix2->multi(*tmp_B_matrix, *tmp_AuxMatrix);
+//NW          B_matrix_T->multi(*p_D, *B_matrix, *AuxMatrix);      
 
           // Local assembly of stiffness matrix
-          for (k = 0; k < ele_dim ; k++)
+          for (k=0; k<ele_dim; k++)
           {
-              for (l = 0; l < ele_dim; l++)
-                  (*Stiffness)(i+k*nnodesHQ, j+l*nnodesHQ) += (*AuxMatrix)(k,l) * fkt; 
+              for (l=0; l<ele_dim; l++)
+                  (*tmp_Stiffness)(i+k*nnodesHQ, j+l*nnodesHQ) += (*tmp_AuxMatrix)(k,l) * fkt;
 	      }
       }  // loop j 	    
   } // loop i 
+
+   //should restore pointer NW
+   B_matrix = old_B_matrix;
+   B_matrix_T = old_B_matrix_T;
+
   //---------------------------------------------------------
   // Assemble coupling matrix
   //---------------------------------------------------------
@@ -760,8 +823,10 @@ void CFiniteElementVec::ComputeMatrix_RHS(const double fkt,
       // 2D, in y-direction
       // 3D, in z-direction
       i = (ele_dim-1)*nnodesHQ;
-      for (k = 0; k < nnodesHQ; k++) 
-        (*RHS)(i+k) += LoadFactor * rho * smat->grav_const * shapefctHQ[k] * fkt;
+      const double coeff = LoadFactor * rho * smat->grav_const * fkt;
+      for (k=0; k<nnodesHQ; k++) 
+        (*RHS)(i+k) += coeff * shapefctHQ[k];
+//        (*RHS)(i+k) += LoadFactor * rho * smat->grav_const * shapefctHQ[k] * fkt;
   }
 }
 /***************************************************************************

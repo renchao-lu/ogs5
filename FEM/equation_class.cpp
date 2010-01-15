@@ -79,14 +79,16 @@ Linear_EQS::Linear_EQS(const SparseTable &sparse_table,
   error = 1.0e10;  
   size_global = 0;
 
-#ifdef LIS
-//	A->Write();
-
-  int argc=0;
-  char** argv = NULL;
-  // Initialization of the lis solver.
-  lis_initialize(&argc, &argv);
-#endif
+//NW moved below to rf.cpp. Initialization and finalization of LIS solver 
+//must be called only once but they were called several times with multiple meshes 
+//#ifdef LIS
+////	A->Write();
+//
+//  int argc=0;
+//  char** argv = NULL;
+//  // Initialization of the lis solver.
+//  lis_initialize(&argc, &argv);
+//#endif
 }
 #if defined(USE_MPI)
 /**************************************************************************
@@ -124,10 +126,11 @@ Linear_EQS::~Linear_EQS()
   x = NULL;
   b = NULL;
 
-#ifdef LIS
-	lis_finalize();
-#endif
-  //
+//NW moved to rf.cpp
+//#ifdef LIS
+//	lis_finalize();
+//#endif
+//
 }
 /**************************************************************************
 Task: Linear equation::
@@ -386,11 +389,17 @@ int Linear_EQS::Solver(double *xg, const long n)
 
 #else
 #ifdef LIS	// PCH 02.2008
-int Linear_EQS::Solver()
+//NW 01.2010 Use configuration in NUM file
+int Linear_EQS::Solver(CNumerics *num)
 {
 
 	// Check the openmp solver type iterative and directive
-	CNumerics* m_num=num_vector[0];
+	CNumerics* m_num;
+    if (num!=NULL) 
+      m_num = num; //NW
+    else 
+      m_num = num_vector[0];
+
 	if(m_num->ls_method==805)	// Then, PARDISO parallel direct solver
 	{
 #ifdef MKL	// PCH 10.03.2009: Requires the system platform where Math Kernel Library is properly configured.
@@ -545,7 +554,7 @@ int Linear_EQS::Solver()
 		char solver_options[MAX_ZEILE], tol_option[MAX_ZEILE];
 		sprintf(solver_options, "-i %d -p %d",m_num->ls_method, m_num->ls_precond);
 		// tolerance and other setting parameters are same
-		sprintf(tol_option, "-tol %e",m_num->ls_error_tolerance);
+        sprintf(tol_option, "-tol %e -maxiter %d",m_num->ls_error_tolerance, m_num->ls_max_iterations); //NW add max iteration counts
 
 		ierr = lis_matrix_set_crs(nonzero,A->ptr,A->col_idx, value,AA);
 		ierr = lis_matrix_assemble(AA);
@@ -568,6 +577,11 @@ int Linear_EQS::Solver()
 		ierr = lis_solver_set_option(tol_option,solver);
 		ierr = lis_solve(AA,bb,xx,solver);
 		ierr = lis_solver_get_iters(solver,&iter);
+        //NW
+        printf("\t iteration: %d/%d\n", iter, m_num->ls_max_iterations);
+        double resid = 0.0;
+        ierr = lis_solver_get_residualnorm(solver,&resid);
+        printf("\t residuals: %e\n", resid);
 		//	lis_vector_print(xx);
 		//	lis_vector_print(bb);
 

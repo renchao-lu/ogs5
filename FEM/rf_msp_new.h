@@ -144,6 +144,7 @@ class CSolidProperties
     ios::pos_type Read(ifstream*);
     FiniteElement::CFiniteElementStd *Fem_Ele_Std;//CMCD
     string name;
+    CRFProcess*m_pcs; //NW
     // IO
     string file_base_name;
     // Output

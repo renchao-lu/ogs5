@@ -58,6 +58,7 @@ class CFEMesh
 	// 23:  X, Z component
 	// 3:  X, Y, Z component
     int coordinate_system; 
+    bool has_multi_dim_ele;
     int max_ele_dim; 
     int map_counter;  //21.01.2009 WW
     bool mapping_check;  //23.01.2009 WW

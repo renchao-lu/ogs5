@@ -262,7 +262,7 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
   if(myrank==1)
   { 
 #endif
-  DisplayMsg("\n->Process: "); DisplayLong(pcs_number); 
+  DisplayMsg("\n    ->Process: "); DisplayLong(pcs_number);
   DisplayMsg(", "); cout << pcs_type_name << endl; 
 #if defined(USE_MPI)
   }
@@ -299,7 +299,8 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
   m_msh->SwitchOnQuadraticNodes(true);
   //
   //TEST if(num_type_name.find("EXCAVATION")!=0)
-  if(NumDeactivated_SubDomains>0||num_type_name.find("EXCAVATION")!=string::npos)
+  if(hasAnyProcessDeactivatedSubdomains || NumDeactivated_SubDomains>0||num_type_name.find("EXCAVATION")!=string::npos)
+  //if(NumDeactivated_SubDomains>0||num_type_name.find("EXCAVATION")!=string::npos)
      CheckMarkedElement();
   // MarkNodesForGlobalAssembly();
 
@@ -558,8 +559,13 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
  #if defined(USE_MPI)
         dom->eqsH->Solver(eqs_new->x, global_eqs_dim); //21.12.2007 
  #else
+#ifdef LIS
+        eqs_new->Solver(this->m_num); //NW
+#else
         eqs_new->Solver(); //27.11.2007
- #endif
+#endif
+
+#endif
 #else
         ExecuteLinearSolver();
 #endif

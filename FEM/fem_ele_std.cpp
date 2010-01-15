@@ -80,6 +80,19 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
     NodalVal_Sat = new double [size_m]; 
   NodalVal_SatNW = new double [size_m];
     NodalVal_p2 = new double [size_m]; 
+    //NW
+    switch(C_Sys_Flad/10)
+    {
+        case 1: 
+          weight_func = new double[2];
+          break;
+        case 2:
+          weight_func = new double[4];
+          break;
+        case 3:
+          weight_func = new double[8];
+          break;
+     }
     //
     // 27.2.2007. GravityMatrix = NULL;
     m_dom = NULL;
@@ -325,6 +338,9 @@ CFiniteElementStd::~CFiniteElementStd()
     delete [] NodalVal_Sat; 
     delete [] NodalVal_SatNW;
     delete [] NodalVal_p2; 
+    //NW
+    delete [] weight_func;
+    weight_func = NULL;
 }
 /**************************************************************************
    GeoSys - Function: SetMemory
@@ -584,6 +600,7 @@ Task: Set material pointers to the current element
 03/2005 OK MultiMSH
 11/2005 YD Set cursor of gas
 06/2009 OK MMP test not here (time consuming)
+01/2010 NW Set geo_area here
 **************************************************************************/
 void CFiniteElementStd::SetMaterial(int phase)
 {
@@ -597,6 +614,7 @@ void CFiniteElementStd::SetMaterial(int phase)
   if(msp_vector.size()>0)
   {
     SolidProp = msp_vector[mmp_index];
+	SolidProp->m_pcs = pcs; //NW
     SolidProp->Fem_Ele_Std = this;//CMCD for Decovalex
   }
 
@@ -610,6 +628,7 @@ void CFiniteElementStd::SetMaterial(int phase)
   MediaProp = mmp_vector[mmp_index];
   MediaProp->m_pcs = pcs;
   MediaProp->Fem_Ele_Std = this;
+  MeshElement->area = MediaProp->geo_area; // NW
   //----------------------------------------------------------------------
   // MSP
   // If dual thermal:
@@ -1617,6 +1636,29 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
         break;
       case L: // Liquid flow
         tensor = MediaProp->PermeabilityTensor(Index);
+        if (ele_dim != dim) {
+          Matrix local_tensor(dim,dim);
+          Matrix temp_tensor(dim,dim);
+          Matrix t_transform_tensor(*MeshElement->tranform_tensor);
+          MeshElement->tranform_tensor->GetTranspose(t_transform_tensor);
+          Matrix global_tensor(dim,dim);
+          for (i=0; i<ele_dim; i++) 
+            for (int j=0; j<ele_dim; j++) 
+              local_tensor(i,j) = tensor[j+i*ele_dim];
+          //cout << "K':" << endl; local_tensor.Write();
+          local_tensor.multi(t_transform_tensor, temp_tensor);
+          for (i=0; i<dim; i++) {
+            for (int j=0; j<dim; j++)
+              for (int k=0; k<dim; k++)
+                global_tensor(i,j)+=(*MeshElement->tranform_tensor)(i,k)*temp_tensor(k,j);
+          }
+          //cout << "K:" << endl; global_tensor.Write();
+          for(i=0; i<dim; i++) {
+             for(int j=0; j<dim; j++) { 
+                tensor[dim*i+j] = global_tensor(i,j);
+             }
+          }
+        }
         variables[0] = interpolate(NodalVal1); //OK4709 pressure
         variables[1] = interpolate(NodalValC); //OK4709 temperature
         mat_fac = FluidProp->Viscosity(variables); //OK4709
@@ -2796,16 +2838,18 @@ inline double CFiniteElementStd::CalCoefStrainCouping()
    Programming:
    01/2005   WW   
 02/2005 OK GEO factor
+01/2010 NW SUPG
 **************************************************************************/
 void CFiniteElementStd::CalcMass()
 {
-  int i, j;
+  int i, j, k;
   // ---- Gauss integral
   int gp_r=0,gp_s=0,gp_t=0;
   double fkt,mat_fac;
   // Material
   mat_fac = 1.0;
   double alpha[3], summand[8]; 
+  double vel[3]; //NW
 //  int indice = MeshElement->GetIndex();
 //  int phase = pcs->pcs_type_number;
   int upwind_method = pcs->m_num->ele_upwind_method;
@@ -2820,6 +2864,9 @@ void CFiniteElementStd::CalcMass()
       UpwindAlphaMass(alpha); // CB 160507
     }
   }
+
+  ElementValue* gp_ele = ele_gp_value[Index]; //NW
+
   //----------------------------------------------------------------------
   //======================================================================
   // Loop over Gauss points
@@ -2855,17 +2902,33 @@ void CFiniteElementStd::CalcMass()
       //TEST OUTPUT
       }
 	  else{
-      for (i = 0; i < nnodes; i++)
-      {
-         for (j = 0; j < nnodes; j++)
-         {
-            if(j>i) continue;
-            (*Mass)(i,j) += mat_fac *shapefct[i]*shapefct[j];
-         }
-      }
+          for (i = 0; i < nnodes; i++)
+          {
+             for (j = 0; j < nnodes; j++)
+             {
+               if (pcs->m_num->ele_supg_method == 0) //NW
+                     if(j>i) continue;
+                (*Mass)(i,j) += mat_fac *shapefct[i]*shapefct[j];
+             }
+          }
+          if (pcs->m_num->ele_supg_method > 0) { //NW
+              vel[0] = gp_ele->Velocity(0, gp);
+              vel[1] = gp_ele->Velocity(1, gp);
+              vel[2] = gp_ele->Velocity(2, gp);
+
+              double tau = 0;
+              CalcSUPGWeightingFunction(vel, gp, tau, weight_func);
+
+              // tau*({v}[dN])^T*[N]
+              for (i=0; i<nnodes; i++){
+                for (j=0; j<nnodes; j++)
+                  (*Mass)(i,j) += mat_fac*tau*weight_func[i]*shapefct[j];
+              }
+          }
 	  } //end else
 	} // loop gauss points
-      if(PcsType!=T){ //WW/CB
+
+    if(PcsType!=T && pcs->m_num->ele_supg_method==0){ //WW/CB //NW
         for(i = 0; i < nnodes; i++) {
          for(j = 0; j < nnodes; j++)  {
           if(j>i) 
@@ -2876,6 +2939,170 @@ void CFiniteElementStd::CalcMass()
 	  // Test Output
 	  //Mass->Write();
 }
+/**************************************************************************
+FEMLib-Method: 
+Task: 
+Programing:
+12/2009 NW
+last modification:
+**************************************************************************/
+inline double CFiniteElementStd::CalcSUPGCoefficient(double*vel,int ip)
+{
+  //--------------------------------------------------------------------
+  // Collect following information to determine SUPG coefficient
+  // + flow velocity
+  // + diffusivity coefficient (scalar)
+  // + characteristic element length
+  // + (Peclet number)
+
+  double v_mag = sqrt(vel[0]*vel[0]+vel[1]*vel[1]+vel[2]*vel[2]);
+  // Characteristic element length
+  double ele_len = CalcSUPGEffectiveElemenetLength(vel);
+  // Diffusivity = (effective heat conductivity) / (fluid heat capacity)
+  double diff = 0;
+  if (PcsType==H) { //heat
+    double *heat_conductivity_tensor = MediaProp->HeatConductivityTensor(MeshElement->GetIndex());
+    diff = heat_conductivity_tensor[0] / (FluidProp->SpecificHeatCapacity()*FluidProp->Density());
+  } else if (PcsType==M) { //mass
+    double *advection_dispersion_tensor = MediaProp->MassDispersionTensorNew(ip);
+    switch (pcs->m_num->ele_supg_method_diffusivity){
+      case 1: // min
+        {
+          double min_diff = advection_dispersion_tensor[0];
+          for (int i=1; i<dim; i++) {
+            if (advection_dispersion_tensor[i]<min_diff) min_diff = advection_dispersion_tensor[i];
+          }
+          diff = min_diff;
+        }
+        break;
+      case 2: // magnitude 
+        {
+          double tmp_diff = 0.0;
+          for (int i=0; i<dim; i++) {
+            tmp_diff = pow(advection_dispersion_tensor[i], 2.0);
+          }
+          diff = sqrt(tmp_diff);
+        }
+        break;
+      default: //0 or any invalid number: max. in dispersion coefficient
+        {
+          double max_diff = advection_dispersion_tensor[0];
+          for (int i=1; i<dim; i++) {
+            if (advection_dispersion_tensor[i]>max_diff) max_diff = advection_dispersion_tensor[i];
+          }
+          diff = max_diff;
+        }
+    }
+  }
+
+
+  //--------------------------------------------------------------------
+  // Here calculates SUPG coefficient (tau)
+  double tau = 0.0;
+  switch (pcs->m_num->ele_supg_method) {
+    case 1:
+      {
+        // this coefficient matches with the analytical solution in 1D stady state case
+        double alpha = 0.5*v_mag*ele_len/diff; // 0.5*Pe
+        double func = MLangevin(alpha);
+        tau = 0.5*ele_len/v_mag*func;
+      }
+      break;
+    case 2:
+      {
+        // taking into account time step
+        tau = 1.0 / sqrt(pow(2.0/dt ,2.0)+pow(2.0*v_mag/ele_len,2.0));
+      }
+      break;
+  }
+  
+  return tau;
+}
+/**************************************************************************
+FEMLib-Method: 
+Task: 
+Programing:
+12/2009 NW
+last modification:
+**************************************************************************/
+inline void CFiniteElementStd::CalcSUPGWeightingFunction(double *vel, int ip, double &tau, double *v_dN)
+{
+  if (pcs->m_num->ele_supg_method==0) {
+    cout << "***Warning in CalcSUPGWeightingFunction(): SPUG is not selected" << endl;
+    return;
+  }
+
+  // tau 
+  tau = CalcSUPGCoefficient(vel,ip);
+
+  // {v}[dN]
+  for (int i=0; i<nnodes; i++)
+    v_dN[i] = 0.0;
+  for (int i=0; i<nnodes; i++)
+    for (int k=0; k<dim; k++)
+      v_dN[i] += dshapefct[k*nnodes+i] * vel[k];
+}
+/**************************************************************************
+FEMLib-Method: 
+Task: 
+Programing:
+12/2009 NW
+last modification:
+**************************************************************************/
+inline double CFiniteElementStd::CalcSUPGEffectiveElemenetLength(double *vel)
+{
+  double L = 0.0;
+  switch (this->ele_dim) {
+    case 1:
+      {
+        L = this->MeshElement->GetVolume();
+      }
+      break;
+    case 2:
+    case 3:
+      {
+        switch (pcs->m_num->ele_supg_method_length) {
+          case 1: //min
+            {
+              double min = MeshElement->GetEdge(0)->Length();
+              for (int i=1; i<MeshElement->GetEdgesNumber(); i++) {
+                L = MeshElement->GetEdge(i)->Length();
+                if (L<min) min = L;
+              }
+              L = min;
+            }
+            break;
+          case 2: //average
+            {
+              double tmp_L=0.0;
+              for (int i=1; i<MeshElement->GetEdgesNumber(); i++) {
+                tmp_L += MeshElement->GetEdge(i)->Length();
+              }
+              L = tmp_L/MeshElement->GetEdgesNumber();
+            }
+            break;
+          case 3: // stream line length
+            {
+              cout << "***Error: ele_supg_method_length <3> has not been supported yet." << endl;
+            }
+            break;
+          default: //0 or any invalid number: max edge length
+            {
+              double max = MeshElement->GetEdge(0)->Length();
+              for (int i=1; i<MeshElement->GetEdgesNumber(); i++) {
+                L = MeshElement->GetEdge(i)->Length();
+                if (L>max) max = L;
+              }
+              L = max;
+            }
+            break;
+        }
+      }
+      break;
+  }
+  return L;
+}
+
 //CB 090507
 /**************************************************************************
 FEMLib-Method: 
@@ -3285,6 +3512,7 @@ void CFiniteElementStd::CalcMassPSGLOBAL()
    02/2005 OK GEO factor
    02/2007   WW Multi-phase flow   
    05/2007   WW Axismmetry volume
+   01/2010   NW geometrical area
 **************************************************************************/
 void CFiniteElementStd::CalcLumpedMass()
 {
@@ -3311,7 +3539,7 @@ void CFiniteElementStd::CalcLumpedMass()
      }
   }
   else
-    vol = MeshElement->GetVolume();
+    vol = MeshElement->GetVolume()*MeshElement->GetFluxArea(); //NW multiply geo_area
   // Center of the reference element
   SetCenterGP();
   factor = CalCoefMass();
@@ -3785,6 +4013,7 @@ inline double  CFiniteElementStd::CalcCoefDualTransfer()
    09/2005   SB - adapted to advection
    03/2007   WW - Fluid advection with multiphase flow
    05/2008   WW - General densty for multiphase flow
+   01/2010   NW - SUPG
 **************************************************************************/
 void CFiniteElementStd::CalcAdvection()
 {
@@ -3802,6 +4031,7 @@ void CFiniteElementStd::CalcAdvection()
      GasProp = MFPGet("GAS");
   }
   ElementValue* gp_ele = ele_gp_value[Index];
+  CRFProcess* pcs_fluid_momentum = PCSGet("FLUID_MOMENTUM");
 
   //Initial values
   gp_t = 0;
@@ -3835,11 +4065,44 @@ void CFiniteElementStd::CalcAdvection()
        vel[1] += mat_factor*gp_ele->Velocity_g(1, gp);
        vel[2] += mat_factor*gp_ele->Velocity_g(2, gp);
     }
+		// Velocity by Fluid_Momentum - 13.11.2009  PCH
+		if(pcs_fluid_momentum)
+		{
+			CRFProcess* m_pcs = pcs_fluid_momentum;
+
+			vel[0] = mat_factor*m_pcs->GetElementValue(index, m_pcs->GetElementValueIndex("VELOCITY1_X")+1);
+			vel[1] = mat_factor*m_pcs->GetElementValue(index, m_pcs->GetElementValueIndex("VELOCITY1_Y")+1);
+			vel[2] = mat_factor*m_pcs->GetElementValue(index, m_pcs->GetElementValueIndex("VELOCITY1_Z")+1);
+		}
+
     for (i = 0; i< nnodes; i++){
       for (j = 0; j < nnodes; j++)
          for (k = 0; k < dim; k++)
             (*Advection)(i,j) += fkt*shapefct[i]*vel[k]
                                  *dshapefct[k*nnodes+j];             
+    }
+
+    if (pcs->m_num->ele_supg_method > 0) { //NW
+        vel[0] = gp_ele->Velocity(0, gp);
+        vel[1] = gp_ele->Velocity(1, gp);
+        vel[2] = gp_ele->Velocity(2, gp);
+		if(pcs_fluid_momentum)
+		{
+			CRFProcess* m_pcs = pcs_fluid_momentum;
+
+			vel[0] = m_pcs->GetElementValue(index, m_pcs->GetElementValueIndex("VELOCITY1_X")+1);
+			vel[1] = m_pcs->GetElementValue(index, m_pcs->GetElementValueIndex("VELOCITY1_Y")+1);
+			vel[2] = m_pcs->GetElementValue(index, m_pcs->GetElementValueIndex("VELOCITY1_Z")+1);
+		}
+
+        double tau = 0;
+        CalcSUPGWeightingFunction(vel, gp, tau, weight_func);
+
+        //Calculate mat_factor*tau*({v}[dN])^T*({v}[dN])
+        for (i=0; i<nnodes; i++){
+          for (j=0; j<nnodes; j++)
+            (*Advection)(i,j) += fkt*mat_factor*tau*weight_func[i]*weight_func[j];
+        }
     }
   }
   //TEST OUTPUT
@@ -4403,6 +4666,7 @@ void  CFiniteElementStd::Assemble_Gravity()
    Programming:  WW
    08/2005      
    03/2007   WW  Multi-phase flow     
+   01/2010   NW  Fix multi-dimensional case     
 **************************************************************************/
 // Local assembly
 void  CFiniteElementStd::Cal_Velocity()
@@ -4515,25 +4779,26 @@ void  CFiniteElementStd::Cal_Velocity()
          }  
       }     
       // Gravity term
-      if(k==2&&(!HEAD_Flag))
+      if(k==2&&(!HEAD_Flag)&&FluidProp->CheckGravityCalculation()) //NW 
       {
          coef  =  gravity_constant*FluidProp->Density();
          if(dim==3&&ele_dim==2)
          {
-            for(i=0; i<dim; i++)
-            { 
-               for(j=0; j<ele_dim; j++)     
-               {     
-                  vel[i] += coef*(*MeshElement->tranform_tensor)(i, k)
-                            *(*MeshElement->tranform_tensor)(2, k);
-                  if(PcsType==V)
-                     vel_g[i] += rho_g*gravity_constant*(*MeshElement->tranform_tensor)(i, k)
-                              *(*MeshElement->tranform_tensor)(2, k);
-                  if(PcsType==P)	// PCH 05.2009
-                	  vel_g[i] += coef*GasProp->Density()/FluidProp->Density()*(*MeshElement->tranform_tensor)(i, k)
-                	  *(*MeshElement->tranform_tensor)(2, k);
-               }   
-            }
+           vel[dim-1] += coef; //NW local permeability tensor is already transformed to global one in CalCoefLaplace()
+           if (PcsType==V || PcsType==P) {
+              for(i=0; i<dim; i++)
+              {
+                 for(j=0; j<ele_dim; j++)
+                 {
+                    if(PcsType==V)
+                       vel_g[i] += rho_g*gravity_constant*(*MeshElement->tranform_tensor)(i, k)
+                                *(*MeshElement->tranform_tensor)(2, k);
+                    if(PcsType==P)	// PCH 05.2009
+                       vel_g[i] += coef*GasProp->Density()/FluidProp->Density()*(*MeshElement->tranform_tensor)(i, k)
+                                *(*MeshElement->tranform_tensor)(2, k);
+                 }
+              }
+           }
          } // To be correctted   
          else
          {
@@ -5287,6 +5552,7 @@ Programing:
 01/2005 WW/OK Implementation
 05/2005 WW Dynamics and others
 09/2005 SB Adapted from AssembleParabolicEquation to assemble transport equation
+01/2010 NW Steady state
 **************************************************************************/
 void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
 {
@@ -5322,10 +5588,13 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
   //----------------------------------------------------------------------
   // Calculate matrices
   // Mass matrix..........................................................
-  if(pcs->m_num->ele_mass_lumping)
-    CalcLumpedMass();
-  else
-    CalcMass();
+  if(this->pcs->tim_type_name.compare("STEADY")!=0) //NW
+  {
+    if(pcs->m_num->ele_mass_lumping)
+      CalcLumpedMass();
+    else
+      CalcMass();
+  }
   // Laplace matrix.......................................................
   CalcLaplace();
   // Advection matrix.....................................................

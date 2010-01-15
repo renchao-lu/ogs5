@@ -85,6 +85,8 @@ Modification:
 ***************************************************************************/
 Problem::Problem(char* filename):print_result(false)
 {
+  int i;
+
   print_result = true; //OK
   if(filename!=NULL)
     {
@@ -95,6 +97,11 @@ Problem::Problem(char* filename):print_result(false)
 #ifndef NEW_EQS
   ConfigSolverProperties();  //_new. 19.10.2008. WW
 #endif
+  for(i=0;i<(int)pcs_vector.size();i++)
+  {
+    hasAnyProcessDeactivatedSubdomains = (pcs_vector[i]->NumDeactivated_SubDomains > 0);
+    if (hasAnyProcessDeactivatedSubdomains) break;
+  }
   //----------------------------------------------------------------------
   // Create ST
   //OK STCreateFromPNT();
@@ -244,7 +251,6 @@ Problem::Problem(char* filename):print_result(false)
   
   //----------------------------------------------------------------------
   // DDC
-  int i;
   int no_processes =(int)pcs_vector.size();
   CRFProcess* m_pcs = NULL;
   if(dom_vector.size()>0)
@@ -1035,7 +1041,8 @@ void Problem::PostCouplingLoop()
   for(int i=0;i<(int)pcs_vector.size();i++)
   {
      m_pcs = pcs_vector[i];
-     m_pcs->CheckMarkedElement();
+     if (hasAnyProcessDeactivatedSubdomains) //NW
+       m_pcs->CheckMarkedElement();
 #if defined(USE_MPI) // 18.10.2007 WW
      if(myrank==0) {
 #endif  
@@ -1365,7 +1372,7 @@ inline double Problem::MassTrasport()
     {
       m_pcs = transport_processes[i];      //18.08.2008 WW
       if(CPGetMobil(m_pcs->GetProcessComponentNumber())> 0) //Component Mobile ? 
-	error = m_pcs->Execute();
+      error = m_pcs->ExecuteNonLinear(); //NW. ExecuteNonLinear() is called to use the adaptive time step scheme
     }
   // Calculate Chemical reactions, after convergence of flow and transport 
   // Move inside iteration loop if couplingwith transport is implemented SB:todo

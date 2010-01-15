@@ -18,6 +18,10 @@
 #include <mpi.h>
 #include "par_ddc.h"
 #endif
+#ifdef LIS
+#include <omp.h>
+#include "lis.h"
+#endif
 
 #include "stdafx.h" /* MFC */
 #include<iostream>
@@ -104,6 +108,13 @@ int main ( int argc, char *argv[] )
       time_ele_paral = 0.0;
 #endif
 /*---------- MPI Initialization ----------------------------------*/
+/*---------- LIS solver -----------------------------------------*/
+#ifdef LIS
+  //int argc=0;
+  //char** argv = NULL;
+  // Initialization of the lis solver.
+  lis_initialize(&argc, &argv);
+#endif
 /*========================================================================*/
 /* Kommunikation mit Betriebssystem */
   /* Ctrl-C ausschalten */
@@ -210,6 +221,11 @@ int main ( int argc, char *argv[] )
    MPI_Finalize();
 #endif
 /*--------- MPI Finalize ------------------*/
+/*--------- LIS Finalize ------------------*/
+#ifdef LIS
+  lis_finalize();
+#endif
+/*--------- LIS Finalize ------------------*/
 
   free(dateiname);
   return 0;

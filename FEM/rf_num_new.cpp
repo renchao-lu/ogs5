@@ -76,6 +76,9 @@ CNumerics::CNumerics(string name)
   ele_mass_lumping = 0;
   ele_upwind_method = 0; //CB
   ele_upwinding = 0;
+  ele_supg_method = 0; //NW
+  ele_supg_method_length = 0; //NW
+  ele_supg_method_diffusivity = 0; //NW
   //----------------------------------------------------------------------
   // Deformation
   GravityProfile = 0;
@@ -250,6 +253,13 @@ ios::pos_type CNumerics::Read(ifstream *num_file)
 	  line.str(GetLineFromFile1(num_file));
       line >> ele_upwinding >> ele_upwind_method  ; //CB now read also upwinding method
       line.clear();
+      continue;
+    }
+    if(line_string.find("$ELE_SUPG")!=string::npos) { // subkeyword found
+	  line.str(GetLineFromFile1(num_file));
+      line >> ele_supg_method >> ele_supg_method_length >> ele_supg_method_diffusivity; //NW
+      line.clear();
+      cout << "->SUPG method is selected." << endl;
       continue;
     }
     if(line_string.find("$GRAVITY_PROFILE")!=string::npos) { // subkeyword found

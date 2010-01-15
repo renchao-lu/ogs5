@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="rf4"
 	ProjectGUID="{4F159AF7-FF53-410E-A9A7-2C500A4EF55E}"
 	>
@@ -15,8 +15,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\Debug"
-			IntermediateDirectory=".\Debug"
+			OutputDirectory=".\Debug_pqc"
+			IntermediateDirectory=".\Debug_pqc"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -48,10 +48,10 @@
 				RuntimeLibrary="1"
 				DisableLanguageExtensions="false"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile=".\Debug/rf3_cpp.pch"
-				AssemblerListingLocation=".\Debug/"
-				ObjectFile=".\Debug/"
-				ProgramDataBaseFileName=".\Debug/"
+				PrecompiledHeaderFile=".\Debug_pqc/rf3_cpp.pch"
+				AssemblerListingLocation=".\Debug_pqc/"
+				ObjectFile=".\Debug_pqc/"
+				ProgramDataBaseFileName=".\Debug_pqc/"
 				BrowseInformation="1"
 				WarningLevel="3"
 				WarnAsError="false"
@@ -72,12 +72,12 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile=".\Debug/rf4_pqc.exe"
+				OutputFile=".\Debug_pqc/rf4_pqc.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="../PQC;"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\Debug/rf3_cpp.pdb"
+				ProgramDatabaseFile=".\Debug_pqc/rf3_cpp.pdb"
 				SubSystem="1"
 				TargetMachine="1"
 			/>
@@ -108,8 +108,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\Release"
-			IntermediateDirectory=".\Release"
+			OutputDirectory=".\Release_pqc"
+			IntermediateDirectory=".\Release_pqc"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -143,10 +143,10 @@
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile=".\Release/rf3_cpp.pch"
-				AssemblerListingLocation=".\Release/"
-				ObjectFile=".\Release/"
-				ProgramDataBaseFileName=".\Release/"
+				PrecompiledHeaderFile=".\Release_pqc/rf3_cpp.pch"
+				AssemblerListingLocation=".\Release_pqc/"
+				ObjectFile=".\Release_pqc/"
+				ProgramDataBaseFileName=".\Release_pqc/"
 				BrowseInformation="1"
 				WarningLevel="4"
 				WarnAsError="false"
@@ -166,11 +166,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile=".\Release/rf4_pqc.exe"
+				OutputFile=".\Release_pqc/rf4_pqc.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="../PQC;"
-				ProgramDatabaseFile=".\Release/rf3_cpp.pdb"
+				ProgramDatabaseFile=".\Release_pqc/rf3_cpp.pdb"
 				SubSystem="1"
 				TargetMachine="1"
 			/>

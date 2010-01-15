@@ -226,7 +226,7 @@ Programing:
 07/2003 OK Implementation
 09/2005 CC m_volume
 **************************************************************************/
-CGLVolume* GEOGetVOL(string name)
+CGLVolume* GEOGetVOL(const string &name)
 {
   CGLVolume* m_volume = NULL;
   vector<CGLVolume*>::iterator p = volume_vector.begin();//CC

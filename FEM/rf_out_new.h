@@ -19,6 +19,7 @@ using namespace std;
 #include "nodes.h"
 #include "rf_pcs.h"
 #include <sstream>        // for istringstream (ME)
+#include "vtk.h"
 /*---------------------------------------------------------------*/
 namespace Mesh_Group{class CFEMesh;}
 using Mesh_Group::CFEMesh;
@@ -29,6 +30,8 @@ class COutput
     friend void OUTData(double, const int step);
     inline void WriteELEVelocity(iostream &vtk_file); //WW/OK
     CFEMesh* m_msh;
+    CVTK* vtk;
+
   public:
     // ID 
     string ID; //OK4709
@@ -39,8 +42,8 @@ class COutput
     string pcs_type_name;
     int pcs_vector_number;//CC
     string pcs_pv_name;//CMCD
-    CRFProcess* GetPCS(string); //OK
-    CRFProcess* GetPCS_ELE(string); //OK
+    CRFProcess* GetPCS(const string&); //OK
+    CRFProcess* GetPCS_ELE(const string&); //OK
     CRFProcess* m_pcs; //OK
     // NOD values
     string nod_value_name;

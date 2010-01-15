@@ -12,6 +12,7 @@ last modified
 // C++ STL
 #include <fstream>
 #include <iostream>
+#include <set>
 using namespace std;
 
 #include "rfstring.h"
@@ -1149,6 +1150,7 @@ Task: Translate distributed Neumann boundary condition /source term on faces
 Programming:
  08/2005 WW Re-Implementation
 11/2005 WW/OK Layer optimization
+01/2010 NW improvement of efficiency to search faces
 **************************************************************************/
 void CSourceTerm::FaceIntegration(CFEMesh* msh, vector<long>&nodes_on_sfc, 
                                 vector<double>&node_value_vector)
@@ -1288,8 +1290,85 @@ void CSourceTerm::FaceIntegration(CFEMesh* msh, vector<long>&nodes_on_sfc,
      k = nodes_on_sfc[i];
      G2L[k] = i;
   }
- 
 
+  //----------------------------------------------------------------------
+  // NW 15.01.2010
+  // 1) search element faces on the surface
+  // 2) face integration
+
+  //init
+  for (i=0; i<(long)msh->ele_vector.size(); i++) {
+    msh->ele_vector[i]->selected = 0; //TODO can use a new variable
+  }
+  set<long> set_nodes_on_sfc; //unique set of node id on the surface
+  for (i=0; i<(long)nodes_on_sfc.size(); i++) {
+    set_nodes_on_sfc.insert(nodes_on_sfc[i]);
+  }
+
+  //filtering elements: elements should have nodes on the surface
+  //Notice: node-elements relation has to be constructed beforehand
+  vector<long> vec_possible_elements;
+  for (i=0; i<this_number_of_nodes; i++)
+  {
+     k = nodes_on_sfc[i];
+     for (j=0; j<msh->nod_vector[k]->connected_elements.size(); j++) {
+       l = msh->nod_vector[k]->connected_elements[j];
+       if (msh->ele_vector[l]->selected==0)
+         vec_possible_elements.push_back(l);
+       msh->ele_vector[l]->selected+=1; // remember how many nodes of an element are on the surface
+     }
+  }
+  //search elements & face integration
+  int count;
+  double fac=1.0;
+  for (i=0; i<(long)vec_possible_elements.size(); i++)
+  {
+      elem = msh->ele_vector[vec_possible_elements[i]];
+      if(!elem->GetMark()) continue;
+	  nfaces = elem->GetFacesNumber();
+	  elem->SetOrder(msh->getOrder());
+      for(j=0; j<nfaces; j++)
+      { 
+         e_nei =  elem->GetNeighbor(j);
+		 nfn = elem->GetElementFaceNodes(j, nodesFace);
+         //1st check
+         if (elem->selected < nfn)
+           continue;
+         //2nd check: if all nodes of the face are on the surface
+         count=0;
+         for(k=0; k<nfn; k++)
+         { 
+            e_node = elem->GetNode(nodesFace[k]);
+            if (set_nodes_on_sfc.count(e_node->GetIndex()) > 0) {
+              count++;
+            }
+		 }
+         if(count!=nfn) continue; 
+         // face integration
+         for(k=0; k<nfn; k++)
+		 { 
+            e_node = elem->GetNode(nodesFace[k]);
+            nodesFVal[k] = node_value_vector[G2L[e_node->GetIndex()]];
+		 }
+		 fac = 1.0;
+		 if(elem->GetDimension()==e_nei->GetDimension()) // Not a surface face 
+	        fac = 0.5;
+		 face->SetFace(elem, j);
+		 face->SetOrder(msh->getOrder());
+		 face->ComputeVolume();
+         fem->setOrder(msh->getOrder()+1);
+		 fem->ConfigElement(face, true);
+		 fem->FaceIntegration(nodesFVal);
+         for(k=0; k<nfn; k++)
+		 {
+            e_node = elem->GetNode(nodesFace[k]);
+            NVal[G2L[e_node->GetIndex()]] += fac*nodesFVal[k];      
+		 }
+      }
+  }
+
+/*
+  //----------------------------------------------------------------------
   int count;
   double fac=1.0;
   for (i = 0; i < (long)msh->ele_vector.size(); i++)
@@ -1337,6 +1416,7 @@ void CSourceTerm::FaceIntegration(CFEMesh* msh, vector<long>&nodes_on_sfc,
 		 }
       }      
   }   
+*/
 
   for (i = 0; i <this_number_of_nodes; i++)
     node_value_vector[i] = NVal[i];

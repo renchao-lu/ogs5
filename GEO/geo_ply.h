@@ -81,7 +81,7 @@ class CGLPolyline
 extern vector<CGLPolyline*> polyline_vector;//CC
 extern vector<CGLPolyline*> GetPolylineVector(void);//CC
 //Access
-extern CGLPolyline* GEOGetPLYByName(string);
+extern CGLPolyline* GEOGetPLYByName(const string&);
 extern CGLPolyline* GEOGetPLYById(long);// CC
 //methods
 extern void GEOPolylineGLI2GEO(FILE *geo_file);

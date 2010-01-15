@@ -913,7 +913,7 @@ MSHLib-Method:
 12/2005 OK Implementation
 07/2007 OK PCS
 **************************************************************************/
-CFEMesh* MSHGet(string geo_name)
+CFEMesh* MSHGet(const string &geo_name)
 {
   CFEMesh* m_msh = NULL;
   for(int i=0;i<(int)fem_msh_vector.size();i++)
@@ -937,7 +937,7 @@ Task:
 Programing:
 12/2005 OK Implementation
 **************************************************************************/
-CFEMesh* MSHGet(string pcs_type_name,string geo_name)
+CFEMesh* MSHGet(const string &pcs_type_name,const string &geo_name)
 {
   CFEMesh* m_msh = NULL;
   for(int i=0;i<(int)fem_msh_vector.size();i++){

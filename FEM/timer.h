@@ -71,7 +71,7 @@ class CClockTime{
 	clock_t start;
 	clock_t end;
 
-	void StopTime(string);
+	void StopTime(const string &name="");
 	void StartTime(void);
 	void PrintTimes(void);
 

@@ -56,7 +56,7 @@ extern void GEOReadVolumes(string file_name_path_base);
 extern void GEOWriteVolumes(string);//CC
 void GEOWriteVOL(FILE*);
 //Access
-extern   CGLVolume* GEOGetVOL(string);//CC//OK
+extern   CGLVolume* GEOGetVOL(const string&);//CC//OK
 extern   CGLVolume* GetVolume(long nsel); //CC
 //Remove
 extern void GEORemoveAllVolumes();

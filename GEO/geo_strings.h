@@ -120,12 +120,12 @@ extern void GetRFINodesData ();
 
 extern int StrOnlyReadStr ( char *x, char *s, FILE *f, FctTestString func, int *pos ); /*MX*/
 
-extern string get_sub_string(string,string,int,int*);
+extern string get_sub_string(const string&,const string&,int,int*);
 extern void remove_white_space(string*);
 //extern string get_sub_string2(string buffer,string delimiter,string cut_string);
-extern string get_sub_string2(string,string,string*);
-extern bool SubKeyword(string);
-extern bool Keyword(string);
+extern string get_sub_string2(const string&,const string&,string*);
+extern bool SubKeyword(const string&);
+extern bool Keyword(const string&);
 
 extern string GetLineFromFile1(ifstream*);//CC move here
 extern string GetUncommentedLine(string); //SB

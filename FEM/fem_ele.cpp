@@ -259,6 +259,7 @@ Task:
 Programing:
 06/2004 WW Implementation
 02/2005 OK Case 1: line elements
+01/2010 NW Higher order line elements
 Last modified:
 **************************************************************************/
 void CElement::ConfigNumerics(const int EleType)
@@ -271,7 +272,9 @@ void CElement::ConfigNumerics(const int EleType)
        nGauss = 2;
 	   nGaussPoints = nGauss;
        ShapeFunction = ShapeFunctionLine;
+       ShapeFunctionHQ = ShapeFunctionLineHQ; 
 	   GradShapeFunction = GradShapeFunctionLine;
+	   GradShapeFunctionHQ = GradShapeFunctionLineHQ;
        return;
 	 case 2: // Quadrilateral 
 	   ele_dim =2;

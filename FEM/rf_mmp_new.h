@@ -236,7 +236,7 @@ class CMediumProperties
     int OrigSize;  // For excavation simulation. 
 }; 
 
-extern CMediumPropertiesGroup* MMPGetGroup(string pcs_type_name); //YD
+extern CMediumPropertiesGroup* MMPGetGroup(const string &pcs_type_name); //YD
 extern list<CMediumPropertiesGroup*>mmp_group_list;   //YD
 extern void MMPGroupDelete(/*string pcs_type_name*/);
 
@@ -251,7 +251,7 @@ extern void MMPWrite(string);
 extern bool MMPRead(string);
 extern void MMPWriteTecplot(string);
 extern void MMPDelete();
-extern CMediumProperties* MMPGet(string);
+extern CMediumProperties* MMPGet(const string&);
 extern void MMP2PCSRelation(CRFProcess*);
 extern void GetHeterogeneousFields(); //SB
 extern long GetNearestHetVal2(long EleIndex, CFEMesh *m_msh, vector <double> xvals,  vector <double> yvals,  vector <double> zvals,  vector <double> mmpvals);

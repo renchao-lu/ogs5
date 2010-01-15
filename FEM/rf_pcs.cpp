@@ -142,6 +142,8 @@ int anz_eval = 0;
 EvalInfo *eval_data = NULL;
 string project_title("New project"); //OK41
 
+bool hasAnyProcessDeactivatedSubdomains = false; //NW
+
 //--------------------------------------------------------
 // Coupling Flag. WW
 bool T_Process = false;
@@ -1702,7 +1704,7 @@ Programing:
 12/2004 OK Implementation
 last modified:
 **************************************************************************/
-CRFProcess* PCSGet(string pcs_type_name)
+CRFProcess* PCSGet(const string &pcs_type_name)
 {
   CRFProcess *m_pcs = NULL;
   for(int i=0;i<(int)pcs_vector.size();i++){
@@ -1721,7 +1723,7 @@ Programing:
 11/2008 TK New Version with Primary Variable Comparision
 last modified:
 **************************************************************************/
-CRFProcess* PCSGetNew(string pcs_type_name,string primary_variable_name)
+CRFProcess* PCSGetNew(const string &pcs_type_name, const string &primary_variable_name)
 {
   int i;
   int j;
@@ -3338,7 +3340,7 @@ Task:
 Programing:
 07/2004 OK Implementation
 **************************************************************************/
-int PCSGetNODValueIndex(string name,int timelevel)
+int PCSGetNODValueIndex(const string &name,int timelevel)
 {
   // PCS primary variables
   int pcs_vector_size =(int)pcs_vector.size();
@@ -3377,7 +3379,7 @@ Task:
 Programing:
 11/2004 OK Implementation
 **************************************************************************/
-void PCSSetNODValue(long node,string v_name,double value,int timelevel)
+void PCSSetNODValue(long node,const string &v_name,double value,int timelevel)
 {
   SetNodeVal(node,PCSGetNODValueIndex(v_name,timelevel),value);
 }
@@ -3494,7 +3496,7 @@ Task:
 Programing:
 11/2004 OK Implementation
 **************************************************************************/
-double PCSGetELEValue(long index,double*gp,double theta,string nod_fct_name)
+double PCSGetELEValue(long index,double*gp,double theta,const string &nod_fct_name)
 {
   int nn;
   int nidx0,nidx1;
@@ -3712,7 +3714,13 @@ double CRFProcess::Execute()
     relax = 0.0;
   else
     relax = 1.0-m_num->nls_relaxation; //WW
-  if(NumDeactivated_SubDomains>0)
+  //NW. should mark active elements if any process uses deactivation
+  //if(NumDeactivated_SubDomains>0)
+  //TODO if it's nonlinear, CheckMarkedElement() has been already called
+  if (hasAnyProcessDeactivatedSubdomains)
+#ifdef NEW_EQS //WW
+    if(!configured_in_nonlinearloop)
+#endif
     CheckMarkedElement();
   m_msh->SwitchOnQuadraticNodes(false);
   for(i=0;i<pcs_number_of_primary_nvals;i++)
@@ -3791,7 +3799,11 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
 #if defined(USE_MPI)
    dom->eqs->Solver(eqs_new->x, global_eqs_dim); //21.12.2007
 #else
-   eqs_new->Solver(); //27.11.2007
+#ifdef LIS
+        eqs_new->Solver(this->m_num); //NW
+#else
+        eqs_new->Solver();
+#endif
 #endif
 #else
    ExecuteLinearSolver();
@@ -4861,7 +4873,7 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank, const int axis)
 				// NEWTON WW
 				if(m_num->nls_method_name.find("NEWTON")!=string::npos
 					||	type==4||type==41	 ) {  //Solution is in the manner of increment !
-					idx0 = GetNodeValueIndex(m_bc->pcs_pv_name.c_str());
+					idx0 = GetNodeValueIndex(m_bc->pcs_pv_name);
 					if(type==4||type==41)
 					{
 						idx1 = idx0+1;
@@ -5491,7 +5503,7 @@ int CRFProcess::ExecuteLinearSolver(LINEAR_SOLVER *eqs)
 
 #endif 
 //WW
-int CRFProcess::GetNODValueIndex(string name,int timelevel)
+int CRFProcess::GetNODValueIndex(const string &name,int timelevel)
 {
   for(int j=0;j<number_of_nvals;j++){
      if((name.compare(pcs_nval_data[j].name)==0) && \
@@ -6844,7 +6856,8 @@ double CRFProcess::ExecuteNonLinear()
   if(Tim->GetTimeStepCrtlType()>0)
     CopyU_n(aproblem->GetBufferArray()); 
 #endif    
-  this->CheckMarkedElement(); //NW 
+  if (hasAnyProcessDeactivatedSubdomains)
+    this->CheckMarkedElement(); //NW 
   for(iter=0;iter<pcs_nonlinear_iterations;iter++)
   {
     cout << "    PCS non-linear iteration: " << iter << "/"   
@@ -7273,7 +7286,7 @@ Programing:
 03/2006 SB Implementation
 last modified:
 **************************************************************************/
-int PCSGetPCSIndex(string pcs_type_name, string comp_name)
+int PCSGetPCSIndex(const string &pcs_type_name, const string &comp_name)
 {
   CRFProcess *m_pcs = NULL;
   int i, pcs_no;
@@ -7302,7 +7315,7 @@ Programing:
 12/2005 SB Implementation
 last modified:
 **************************************************************************/
-CRFProcess* PCSGet(string pcs_type_name, string comp_name)
+CRFProcess* PCSGet(const string &pcs_type_name, const string &comp_name)
 {
   CRFProcess *m_pcs = NULL;
   int i;
@@ -7326,7 +7339,7 @@ CRFProcess* PCSGet(string pcs_type_name, string comp_name)
 PCSLib-Method:
 12/2005 OK Implementation
 **************************************************************************/
-CRFProcess* PCSGet(string var_name,bool bdummy)
+CRFProcess* PCSGet(const string &var_name,bool bdummy)
 {
   int j;
   string pcs_var_name;
@@ -7701,7 +7714,7 @@ void CRFProcess::CalcSaturationRichards(int timelevel, bool update)
     01/2006   SB    Implementation
     02/2008   CB    generalization
 **************************************************************************/
-double PCSGetEleMeanNodeSecondary_2(long index, int pcsT, string var_name, int timelevel){
+double PCSGetEleMeanNodeSecondary_2(long index, int pcsT, const string &var_name, int timelevel){
 
 double val = 1.0; // As this returns saturation, default is fully saturated = 1.0;
 int idx, j;
@@ -7764,7 +7777,7 @@ return val;
 				      of process pcs_name and for variable var_name; old and new timelevel
     01/2006   SB    Implementation
 **************************************************************************/
-double PCSGetEleMeanNodeSecondary(long index, string pcs_name, string var_name, int timelevel){
+double PCSGetEleMeanNodeSecondary(long index, const string &pcs_name, const string &var_name, int timelevel){
 
 double val = 1.0; // As this returns saturation, default is fully saturated = 1.0;
 int idx, j;
@@ -10018,6 +10031,8 @@ void CreateEQS_LinearSolver()
     // sparse pattern with quadratic elements exists
     spH = a_msh->GetSparseTable(true);
     //
+    eqs=NULL;
+    eqsH=NULL;
     if(sp) 
       eqs = new Linear_EQS(*sp, dof_nonDM);
     if(spH) 
@@ -10352,7 +10367,7 @@ Programming:
 **************************************************************************/
 void CRFProcess::EQSSolver(double* x)
  {
-	 eqs_new->Solver();
+	 eqs_new->Solver(this->m_num); //NW
 
 	 for(int i=0; i < m_msh->nod_vector.size(); ++i)
 		 x[i] = eqs_new->X(i);

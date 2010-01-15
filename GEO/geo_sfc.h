@@ -97,7 +97,7 @@ extern vector<Surface*> surface_vector;//CC
 extern vector<Surface*> GetSurfaceVector(void);//CC
 extern void GEOCreateSurfacePointVector(void);//CC
 //Access
-extern Surface* GEOGetSFCByName(string);
+extern Surface* GEOGetSFCByName(const string&);
 //I/O
 extern void GEOReadSurfaces(string file_name_path_base);
 extern void GEOWriteSurfaces(string);//C

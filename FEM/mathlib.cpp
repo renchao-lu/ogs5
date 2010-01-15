@@ -4744,6 +4744,27 @@ double PointProduction(double *x, double *y)
    return nrm;
 }
 
+/**************************************************************************
+MSHLib-Method: 
+Task: Langevin function: L(x) = coth(x) - 1/x
+Programing:
+12/2009 NW Implementation
+**************************************************************************/
+double MLangevin(double v)
+{
+  double s = 0.0;
+  if (v < 0.01) {
+    s = v*(1.0/3.0+v*v*(-1.0/45.0+18.0/8505.0*v*v));
+  } else if (0.01 <= v && v < 20) {
+    s = (exp(v)+exp(-v))/(exp(v)-exp(-v))-1/v;
+//    s = coth(v)-1/v;
+  } else if (20 <= v) {
+    s = 1.0;
+  }
+
+  return s;
+}
+
 /*##########################################################################
    ##########################################################################
    Ende des ROCKFLOW - Moduls: mathlib.c

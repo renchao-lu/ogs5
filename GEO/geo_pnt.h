@@ -96,7 +96,7 @@ extern void GEOReadPointProperties(string);
 extern void GEOWritePoints(char* file_name);//CC
 //........................................................................
 // Access
-extern CGLPoint* GEOGetPointByName(string);//CC 
+extern CGLPoint* GEOGetPointByName(const string&);//CC 
 extern CGLPoint* GEOGetPointById(long);//CC
 //........................................................................
 // GEO

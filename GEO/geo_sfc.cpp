@@ -1673,7 +1673,7 @@ Task:
 Programing:
 08/2005 CC Implementation
 **************************************************************************/
-Surface* GEOGetSFCByName(string name)
+Surface* GEOGetSFCByName(const string &name)
 {
   Surface* m_sfc = NULL;
   vector<Surface*>::iterator p = surface_vector.begin();//CC

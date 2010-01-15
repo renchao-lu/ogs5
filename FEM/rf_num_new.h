@@ -55,6 +55,9 @@ class CNumerics
     int ele_mass_lumping;
     int ele_upwind_method; //CB
     double ele_upwinding;
+    int ele_supg_method; //NW
+    int ele_supg_method_length; //NW
+    int ele_supg_method_diffusivity; //NW
     // Deformation
     int GravityProfile;
     // LAGRANGE method //OK

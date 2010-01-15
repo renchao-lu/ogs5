@@ -7,6 +7,8 @@
 // using the node-GEM code from Paul Sherrer Institute (PSI)
 //-------------------------------------
 
+#ifdef GEM_REACT
+
 #include <time.h>
 #include <cmath>
 #include <string>
@@ -235,3 +237,5 @@ public:
 
 #define GEM_FILE_EXTENSION ".gem"
 extern bool GEMRead(string base_file_name, REACT_GEM *m_GEM_p);
+
+#endif

@@ -54,6 +54,7 @@ class CCore
       bool Cauchy ()   const  {  if(boundary_type=='C') return true; else return false;}
       bool onBoundary() const {  if(boundary_type=='B') return true; else return false; }
       bool Interior() const {  if(boundary_type=='I') return true; else return false; }
+      bool GetOrder() const {return quadratic;};
       // Set members
       void SetBoundaryType(const char type) {boundary_type = type;}
       char GetBoundaryType() const { return boundary_type;} // 18.02.2009. WW

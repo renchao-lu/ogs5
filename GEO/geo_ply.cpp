@@ -88,7 +88,7 @@ Task:
 Programing:
 08/2005 CC Implementation
 **************************************************************************/
-CGLPolyline* GEOGetPLYByName(string name)
+CGLPolyline* GEOGetPLYByName(const string &name)
 {
   vector<CGLPolyline*>::iterator p = polyline_vector.begin();//CC
   while(p!=polyline_vector.end()) {

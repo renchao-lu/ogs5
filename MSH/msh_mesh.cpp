@@ -73,6 +73,7 @@ CFEMesh::CFEMesh(void)
   no_msh_layer = 0; //OK
   min_edge_length = 1e-3; //OK
   max_mmp_groups = 0; //OKCC
+  max_ele_dim = 0; //NW
   m_bCheckMSH = false; //OK
   pcs_name = "NotSpecified"; //WW
 #ifdef RANDOM_WALK
@@ -86,7 +87,7 @@ CFEMesh::CFEMesh(void)
 #endif
   map_counter = 0;  //21.01.2009 WW
   mapping_check = false;  //23.01.2009 WW
-
+  has_multi_dim_ele = false; //NW
 #ifdef MFC 
   n_area_val = NULL;
 #endif
@@ -161,6 +162,7 @@ ios::pos_type CFEMesh::Read(ifstream *fem_file)
   double x,y,z;
   CNode* newNode = NULL;
   CElem* newElem = NULL;
+  this->max_ele_dim = 0; //NW
   //========================================================================
   // Keyword loop
   while (!new_keyword) {
@@ -231,6 +233,8 @@ ios::pos_type CFEMesh::Read(ifstream *fem_file)
         ele_type = newElem->geo_type ;//CC02/2006
          if(newElem->GetPatchIndex()>max_mmp_groups)
            max_mmp_groups = newElem->GetPatchIndex();
+         if (newElem->GetDimension() > this->max_ele_dim) //NW
+           this->max_ele_dim = newElem->GetDimension();
 		 ele_vector.push_back(newElem);
       }
       continue;
@@ -399,6 +403,7 @@ Task: Establish topology of a grid
 Programing:
 05/2005 WW Implementation
 02/2006 YD Add 1D line neighbor element set
+01/2010 NW Changed to determine the coordinate system by domain dimensions
 **************************************************************************/
 void CFEMesh::ConstructGrid()
 {
@@ -634,6 +639,14 @@ void CFEMesh::ConstructGrid()
    if((msh_no_hexs+msh_no_tets+msh_no_pris)>0) max_ele_dim=3;
    else if((msh_no_quad+msh_no_tris)>0) max_ele_dim=2;
    else max_ele_dim=1;
+
+   // check if this mesh includes multi-dimensional elements
+   if (max_ele_dim==2 && msh_no_line>0) { //NW
+     this->has_multi_dim_ele = true;
+   } else if (max_ele_dim==3 && (msh_no_quad+msh_no_tris+msh_no_line)>0) {
+     this->has_multi_dim_ele = true;
+   }
+
    //----------------------------------------------------------------------
    // Node information 
    // 1. Default node index <---> eqs index relationship
@@ -642,6 +655,9 @@ void CFEMesh::ConstructGrid()
    y_sum=0.0;
    z_sum=0.0;
    Eqs2Global_NodeIndex.clear();
+   double xyz_max[3] = {-DBL_MAX,-DBL_MAX,-DBL_MAX}; //NW
+   double xyz_min[3] = {DBL_MAX,DBL_MAX,DBL_MAX}; //NW
+
    for(e=0; e<(long)nod_vector.size(); e++)
    {
 	   nod_vector[e]->SetEquationIndex(e);
@@ -649,27 +665,41 @@ void CFEMesh::ConstructGrid()
 	   x_sum += fabs(nod_vector[e]->X());
 	   y_sum += fabs(nod_vector[e]->Y());
 	   z_sum += fabs(nod_vector[e]->Z());
+	   if (nod_vector[e]->X() > xyz_max[0]) xyz_max[0] =  nod_vector[e]->X();
+	   if (nod_vector[e]->Y() > xyz_max[1]) xyz_max[1] =  nod_vector[e]->Y();
+	   if (nod_vector[e]->Z() > xyz_max[2]) xyz_max[2] =  nod_vector[e]->Z();
+	   if (nod_vector[e]->X() < xyz_min[0]) xyz_min[0] =  nod_vector[e]->X();
+	   if (nod_vector[e]->Y() < xyz_min[1]) xyz_min[1] =  nod_vector[e]->Y();
+	   if (nod_vector[e]->Z() < xyz_min[2]) xyz_min[2] =  nod_vector[e]->Z();
    }
-   if(x_sum>0.0&&y_sum<MKleinsteZahl&&z_sum<MKleinsteZahl)
-      coordinate_system = 10;
-   else if(y_sum>0.0&&x_sum<MKleinsteZahl&&z_sum<MKleinsteZahl)
-      coordinate_system = 11;
-   else if(z_sum>0.0&&x_sum<MKleinsteZahl&&y_sum<MKleinsteZahl)
-      coordinate_system = 12;
-   else if(x_sum>0.0&&y_sum>0.0&&z_sum<MKleinsteZahl)
-      coordinate_system = 21;
-   else if(x_sum>0.0&&z_sum>0.0&&y_sum<MKleinsteZahl)
-      coordinate_system = 22;
-   else if(x_sum>0.0&&y_sum>0.0&&z_sum>0.0)
-      coordinate_system = 32;
+   double xyz_dim[3]; //NW
+   xyz_dim[0] = xyz_max[0] - xyz_min[0];
+   xyz_dim[1] = xyz_max[1] - xyz_min[1];
+   xyz_dim[2] = xyz_max[2] - xyz_min[2];
+
+  //check dimension of the domain to select appropriate coordinate system
+  if(xyz_dim[0]>0.0&&xyz_dim[1]<MKleinsteZahl&&xyz_dim[2]<MKleinsteZahl)
+	 coordinate_system = 10;
+  else if(xyz_dim[1]>0.0&&xyz_dim[0]<MKleinsteZahl&&xyz_dim[2]<MKleinsteZahl)
+	 coordinate_system = 11;
+  else if(xyz_dim[2]>0.0&&xyz_dim[0]<MKleinsteZahl&&xyz_dim[1]<MKleinsteZahl)
+	 coordinate_system = 12;
+  else if(xyz_dim[0]>0.0&&xyz_dim[1]>0.0&&xyz_dim[2]<MKleinsteZahl)
+	 coordinate_system = 21;
+  else if(xyz_dim[0]>0.0&&xyz_dim[2]>0.0&&xyz_dim[1]<MKleinsteZahl)
+	 coordinate_system = 22;
+  else if(xyz_dim[0]>0.0&&xyz_dim[1]>0.0&&xyz_dim[2]>0.0)
+	 coordinate_system = 32;
+
    // 1D in 2D
    if(msh_no_line>0)
    {
-     if(x_sum>0.0&&y_sum>0.0&&z_sum<MKleinsteZahl)
+     if(xyz_dim[0]>0.0&&xyz_dim[1]>0.0&&xyz_dim[2]<MKleinsteZahl)
         coordinate_system = 32;
-     if(x_sum>0.0&&z_sum>0.0&&y_sum<MKleinsteZahl)  
+     if(xyz_dim[0]>0.0&&xyz_dim[2]>0.0&&xyz_dim[1]<MKleinsteZahl)  
         coordinate_system = 32;
    }
+
    max_dim = coordinate_system/10-1;
    //----------------------------------------------------------------------
    // Gravity center
@@ -709,28 +739,56 @@ FEMLib-Method: GenerateHighOrderNodes()
 Task: 
 Programing:
 07/2007 WW Implementation
+01/2010 NW Case: a mesh with line elements
 **************************************************************************/
 void CFEMesh::GenerateHighOrderNodes()
 {
-   int i, k, ii;
+   int i, j, k, ii;
    int nnodes0, nedges0, nedges;
    long e, ei, ee,  e_size,  e_size_l;
    int edgeIndex_loc0[2];
    bool done;
    double x0,y0,z0;
+
+   // Set neighbors of node. All elements, even in deactivated subdomains, are taken into account here.
+   for(e=0; e<(long)nod_vector.size(); e++)
+     nod_vector[e]->connected_elements.clear();
+   done = false;
+   for(e=0; e<(long)ele_vector.size(); e++)
+   {
+      CElem *thisElem0 = ele_vector[e];   
+      for(i=0; i<thisElem0->GetNodesNumber(false); i++)
+      {
+          done = false;
+          long ni = thisElem0->GetNodeIndex(i);
+          for(j=0; j<(int)nod_vector[ni]->connected_elements.size(); j++)
+          {
+            if(e==nod_vector[ni]->connected_elements[j])
+            {
+              done = true;
+              break;
+            } 
+          }
+          if(!done)  
+            nod_vector[ni]->connected_elements.push_back(e);
+      }
+   }
    //
    CNode *aNode=NULL;
    vec<CNode*> e_nodes0(20);
+   vec<CNode*> e_nodes(20);
    CElem *thisElem0=NULL;
    CElem *thisElem=NULL;
    CEdge *thisEdge0=NULL;
    CEdge *thisEdge=NULL;
    //----------------------------------------------------------------------
-   // Loop over elements
+   // Loop over elements (except for line elements)
    e_size = (long)ele_vector.size();  
    for(e=0; e<e_size; e++)
    {
       thisElem0 = ele_vector[e];   
+      if (thisElem0->GetElementType()==1) continue; //NW
+
       nnodes0 = thisElem0->nnodes; // Number of nodes for linear element
 //      thisElem0->GetNodeIndeces(node_index_glb0);
       for(i=0; i<nnodes0; i++) // Nodes
@@ -785,7 +843,8 @@ void CFEMesh::GenerateHighOrderNodes()
             nnodes0++; 
             nod_vector.push_back(aNode);
          }
-   	  } //  for(i=0; i<nedges0; i++)
+ 	    } //  for(i=0; i<nedges0; i++)
+
       // No neighors or no neighbor has new middle point     
       //
       if(thisElem0->GetElementType()==2) // Quadrilateral
@@ -813,6 +872,81 @@ void CFEMesh::GenerateHighOrderNodes()
       // Resize is true
       thisElem0->SetNodes(e_nodes0, true);		
    }// Over elements
+
+   // Setup 1d line elements at the end
+   if (msh_no_line > 0) {
+     for (e=0; e<e_size; e++) {
+        thisElem0 = ele_vector[e];   
+        if (thisElem0->GetElementType()!=1) continue;
+
+        nnodes0 = thisElem0->nnodes; 
+        for(i=0; i<nnodes0; i++) 
+          e_nodes0[i] = thisElem0->GetNode(i);  
+
+        done = false; 
+
+        for (i=0; i<thisElem0->GetFacesNumber(); i++) {
+          thisElem = thisElem0->GetNeighbor(i);
+          // look for adjacent solid elements
+          if (thisElem->GetElementType()==1) continue;
+
+          for(j=0; j<thisElem->nnodes; j++)
+            e_nodes[j] = thisElem->GetNode(j);  
+          nedges = thisElem->GetEdgesNumber();
+          // search a edge connecting to this line element
+          for(j=0; j<nedges; j++)
+          { 
+              thisEdge = thisElem->GetEdge(j);    
+              thisElem->GetLocalIndicesOfEdgeNodes(j, edgeIndex_loc0);    
+              // Check neighbors 
+              for(k=0;k<2;k++)
+              {    
+                 CNode *tmp_nod = e_nodes[edgeIndex_loc0[k]];
+                 e_size_l = (long)e_nodes[edgeIndex_loc0[k]]->connected_elements.size();         
+                 for(ei=0; ei<e_size_l; ei++)
+                 {
+                    ee = e_nodes[edgeIndex_loc0[k]]->connected_elements[ei];   
+                    if(ele_vector[ee]!=thisElem0) continue;
+                    //the edge is found now
+                    aNode = thisEdge->GetNode(2); 
+                    if(aNode) // The middle point exist
+                    {
+                       e_nodes0[nnodes0] = aNode;
+                       nnodes0++;
+                       done = true; 
+                       break;                   
+                    }  
+                    if(done) break;
+                 } // for(ei=0; ei<e_size_l; ei++)
+                 if(done) break;
+              }//for(k=0;k<2;k++)
+              if(done) break;
+          } //  for(i=0; i<nedges0; i++)
+          if(done) break;
+        }
+         if(!done)
+         {
+            aNode = new CNode((long)nod_vector.size());
+            for(i=0; i<nnodes0; i++) // Nodes
+            {
+              x0 += e_nodes0[i]->X();	
+              y0 += e_nodes0[i]->Y();	
+              z0 += e_nodes0[i]->Z();	
+            }         
+            x0 /= (double)nnodes0;
+            y0 /= (double)nnodes0;
+            z0 /= (double)nnodes0;
+            aNode->SetX(x0);
+            aNode->SetY(y0);
+            aNode->SetZ(z0);
+            e_nodes0[nnodes0] = aNode;
+            nnodes0++; 
+            nod_vector.push_back(aNode);
+         }
+        thisElem0->SetOrder(true);
+        thisElem0->SetNodes(e_nodes0, true);		
+      }
+   }
    //
    NodesNumber_Quadratic= (long)nod_vector.size();
    for(e=NodesNumber_Linear; e<NodesNumber_Quadratic; e++)
@@ -870,7 +1004,7 @@ void CFEMesh::FillTransformMatrix()
    //
    if((msh_no_hexs+msh_no_tets+msh_no_pris)==(long)ele_vector.size())
        return;
-   else if(coordinate_system!=32) 
+   else if(coordinate_system!=32 && !this->has_multi_dim_ele) 
    {
 	  if(m_pcs) ;	// Need to do FillTransformMatrix	// PCH
 	  else
@@ -1615,6 +1749,7 @@ Programing:
 04/2005 OK
 07/2005 WW Node object is replaced
 04/2006 TK new method
+01/2010 NW use epsilon specified in GEO as tolerance
 last modification:
 **************************************************************************/
 void CFEMesh::GetNODOnSFC_TIN(Surface*m_sfc,vector<long>&msh_nod_vector)
@@ -1733,20 +1868,22 @@ void CFEMesh::GetNODOnSFC_TIN(Surface*m_sfc,vector<long>&msh_nod_vector)
   m_msh_aux = new CFEMesh();
   CNode* node = NULL;
 
-   //Loop over all edges
-        for(i=0;i<(long)edge_vector.size();i++)
-        {
-            if (j==0 && i==0){
-              min_mesh_dist = edge_vector[i]->Length();
-            }
-            else{
-              if (min_mesh_dist  > edge_vector[i]->Length())
-                  min_mesh_dist =  edge_vector[i]->Length();
-            }
-        }
-        tolerance = min_mesh_dist;
+  tolerance = m_sfc->epsilon; //NW
+   // NW commented out below. Minimum edge length doesn't work for some cases
+   ////Loop over all edges
+   //     for(i=0;i<(long)edge_vector.size();i++)
+   //     {
+   //         if (j==0 && i==0){
+   //           min_mesh_dist = edge_vector[i]->Length();
+   //         }
+   //         else{
+   //           if (min_mesh_dist  > edge_vector[i]->Length())
+   //               min_mesh_dist =  edge_vector[i]->Length();
+   //         }
+   //     }
+   //     tolerance = min_mesh_dist;
     //Loop over all mesh nodes
-        for(i=0;i<(long)nod_vector.size();i++)
+        for(i=0;i<NodesInUsage();i++) //NW cannot use nod_vector.size() because of higher order elements
         {
             checkpoint[0] = nod_vector[i]->X();
             checkpoint[1] = nod_vector[i]->Y(); 

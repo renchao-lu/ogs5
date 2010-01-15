@@ -43,10 +43,14 @@
                                                                           */
 /* Programmaenderungen:
    03/1994     MSR        Erste Version
+   01/2010     NW         Automatic centering of the version information
                                                                           */
 /**************************************************************************/
 void DisplayStartMsg ( void )
 {
+  int i, pad_len;
+  char buf[128];
+
   printf("\n");
   printf("          ###################################################\n");
   printf("          ##                                               ##\n");
@@ -61,11 +65,23 @@ void DisplayStartMsg ( void )
   printf("          ##       Federal Institute for Geosciences       ##\n");
   printf("          ##          and Natural Resources (BGR)          ##\n");
   printf("          ##                                               ##\n");
-  printf("          ##   Version %s  Date%s##\n",\
-                                      ROCKFLOW_VERSION,ROCKFLOW_DATE);
+
+  //align the version information to center of the line
+  printf("          ## ");
+  sprintf(buf, "Version %s  Date %s", ROCKFLOW_VERSION, ROCKFLOW_DATE);
+  pad_len = 45 - strlen(buf);
+  for (i=0; i<pad_len/2; i++) printf(" ");
+  printf("%s", buf);
+  for (i=0; i<pad_len-pad_len/2; i++) printf(" ");
+  printf(" ##\n");
+  //printf("          ## %-45s ##\n", buf);
+  //printf("          ##   Version %s  Date %s##\n",\
+  //                                    ROCKFLOW_VERSION, ROCKFLOW_DATE);
+
   printf("          ##                                               ##\n");
   printf("          ###################################################\n");
   printf("\n          File name (without extension): ");
+
 }
 
 

@@ -50,7 +50,6 @@ using namespace std;
 using Mesh_Group::CFEMesh;
 //==========================================================================
 vector<COutput*>out_vector;
-CVTK vtk;
 /**************************************************************************
 FEMLib-Method: 
 Task: OUT constructor
@@ -67,6 +66,8 @@ COutput::COutput(void): out_amplifier(0.0), m_msh(NULL), nSteps(-1)
   geo_type_name = "DOMAIN";
   selected = false;
   new_file_opened = false; //WW
+  m_pcs = NULL;
+  vtk = NULL; //NW
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -83,6 +84,7 @@ COutput::~COutput(void)
 	//---------------------------------
   mmp_value_vector.clear(); //OK
   //mfp_value_vector.clear(); //OK
+  if (this->vtk != NULL) delete vtk; //NW
 }
 /**************************************************************************
 FEMLib-Method: 
@@ -806,18 +808,27 @@ void OUTData(double time_current, const int time_step_number)
     }
     //--------------------------------------------------------------------
     // PVD (ParaView)
-    else if(m_out->dat_type_name.compare("PVD")==0){
+    else if(m_out->dat_type_name.find("PVD")!=string::npos){
+      if (m_out->vtk == NULL)
+        m_out->vtk = new CVTK();
+      CVTK* vtk = m_out->vtk ;
+
+      bool vtk_appended = false;
+      if(m_out->dat_type_name.find("PVD_A")!=string::npos){
+        vtk_appended = true;
+      }
+
       switch(m_out->geo_type_name[2]){
         case 'M': // domain data
 //          static CVTK vtk;
           if (time_step_number == 0) {
-         	vtk.InitializePVD(m_out->file_base_name, m_out->pcs_type_name);
+         	vtk->InitializePVD(m_out->file_base_name, m_out->pcs_type_name, vtk_appended);
           }
           // Set VTU file name and path
           string vtk_file_name = m_out->file_base_name;
           if(m_out->pcs_type_name.size()>0) // PCS
             vtk_file_name += "_" + m_out->pcs_type_name;
-          string pvd_vtk_file_name = vtk.pvd_vtk_file_name_base;
+          string pvd_vtk_file_name = vtk->pvd_vtk_file_name_base;
           stringstream stm;
           stm << time_step_number;
           vtk_file_name += stm.str() + ".vtu";
@@ -826,25 +837,25 @@ void OUTData(double time_current, const int time_step_number)
           if(OutputBySteps)
 		  {
 		    OutputBySteps = false;
-            vtk.WriteXMLUnstructuredGrid(vtk_file_name, m_out, time_step_number);
+            vtk->WriteXMLUnstructuredGrid(vtk_file_name, m_out, time_step_number);
             VTK_Info dat;
-            vtk.vec_dataset.push_back(dat);
-            vtk.vec_dataset.back().timestep = m_out->time;
-            vtk.vec_dataset.back().vtk_file = pvd_vtk_file_name;
-            vtk.UpdatePVD(vtk.pvd_file_name, vtk.vec_dataset);
+            vtk->vec_dataset.push_back(dat);
+            vtk->vec_dataset.back().timestep = m_out->time;
+            vtk->vec_dataset.back().vtk_file = pvd_vtk_file_name;
+            vtk->UpdatePVD(vtk->pvd_file_name, vtk->vec_dataset);
 		  }
 		  else
 		  {
             for(j=0;j<no_times;j++){
               if(time_current>=m_out->time_vector[j]){
-                vtk.WriteXMLUnstructuredGrid(vtk_file_name, m_out, time_step_number);
+                vtk->WriteXMLUnstructuredGrid(vtk_file_name, m_out, time_step_number);
                 m_out->time_vector.erase(m_out->time_vector.begin()+j);
                 VTK_Info dat;
-                vtk.vec_dataset.push_back(dat);
-                vtk.vec_dataset.back().timestep = m_out->time;
-                vtk.vec_dataset.back().vtk_file = pvd_vtk_file_name;
-                vtk.UpdatePVD(vtk.pvd_file_name, vtk.vec_dataset);
-		        break;
+                vtk->vec_dataset.push_back(dat);
+                vtk->vec_dataset.back().timestep = m_out->time;
+                vtk->vec_dataset.back().vtk_file = pvd_vtk_file_name;
+                vtk->UpdatePVD(vtk->pvd_file_name, vtk->vec_dataset);
+                break;
               }
 		    }
           }
@@ -2690,7 +2701,7 @@ PCSLib-Method:
 Programing:
 12/2005 OK Implementation
 **************************************************************************/
-CRFProcess* COutput::GetPCS(string var_name)
+CRFProcess* COutput::GetPCS(const string &var_name)
 {
   CRFProcess* m_pcs = NULL;
   if(pcs_type_name.size()>0)
@@ -2707,7 +2718,7 @@ PCSLib-Method:
 Programing:
 12/2005 OK Implementation
 **************************************************************************/
-CRFProcess* COutput::GetPCS_ELE(string var_name)
+CRFProcess* COutput::GetPCS_ELE(const string &var_name)
 {
   int i,j;
   string pcs_var_name;
