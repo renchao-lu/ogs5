@@ -982,6 +982,7 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
     ontime = true;
     dt_sum = 0.0;
   }
+  /*
   // HS-WW: 04.01.2010, bugfix, if not ontime, set this_stepsize to zero
   if ( time_forward < 0.0 && fabs(time_forward)>MKleinsteZahl)
   {
@@ -999,6 +1000,7 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
     if (!isCriticalTime)
       this_stepsize = 0.0;
   }
+  */
   if((fabs(pcs_step-time_end)<DBL_MIN)&&fabs(c_time-time_end)<DBL_MIN)
   {
     this_stepsize = dt_sum+dt0;
