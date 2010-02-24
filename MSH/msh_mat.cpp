@@ -4,13 +4,11 @@ Task:
 Programing:
 08/2005 OK Encapsulated from mshlib
 **************************************************************************/
-#include "stdafx.h" // MFC
+
 #ifdef MFC
 #include "afxpriv.h" // For WM_SETMESSAGESTRING
 #endif
-// C
 #include "math.h"
-// C++
 #include <string>
 #include <vector>
 #include <list>
@@ -19,12 +17,9 @@ using namespace std;
 #include "geo_sfc.h"
 #include "geo_vol.h"
 // MSHLib
-#include "msh_elements_rfi.h"
 #include "msh_lib.h"
 // PCSLib
 #include "rf_mmp_new.h"
-#include "elements.h"
-#include "nodes.h"
 
 /**************************************************************************
 GeoSysGUI-Function: MSHAssignMATGroup2Elements
@@ -34,6 +29,7 @@ last modified:
 **************************************************************************/
 void MSHAssignMATGroup2LineElements(void)
 {
+/*OK411
   long j;
   int k,l;
   long *element_nodes;
@@ -67,8 +63,8 @@ void MSHAssignMATGroup2LineElements(void)
       }
     }
   }
+*/
 }
-
 
 /**************************************************************************
 GeoSysGUI-Function:
@@ -130,6 +126,7 @@ void MSHAssignMATGroup2TrisElements(string msh_name)
 
 void MSHAssignMATGroup2QuadElements(void)
 {
+/*OK411
   long j;
   int nn,k;
   double x,y,z;
@@ -169,10 +166,12 @@ void MSHAssignMATGroup2QuadElements(void)
       }
     }
   }
+*/
 }
 
 void MSHAssignMATGroup2TetsElements(void)
 {
+/*OK411
   long j;
   int nn,k;
   double x,y,z;
@@ -215,10 +214,12 @@ void MSHAssignMATGroup2TetsElements(void)
       }
     }
   }
+*/
 }
 
 void MSHAssignMATGroup2PrisElements(void)
 {
+/*OK411
   long j;
   int nn,k;
   double x,y,z;
@@ -270,6 +271,7 @@ void MSHAssignMATGroup2PrisElements(void)
       }
     }
   }
+*/
 }
 
 /**************************************************************************
@@ -281,6 +283,7 @@ last modified:
 **************************************************************************/
 void MSHAssignMATGroup2PrisElementsNew(void)
 {
+/*OK411
   long i,j;
   CGLVolume *m_vol = NULL;
   vector<CGLVolume*>::iterator p_vol;
@@ -347,6 +350,7 @@ void MSHAssignMATGroup2PrisElementsNew(void)
     mmp_group++;
     ++p_vol;
   }
+*/
 }
 
 /**************************************************************************
@@ -358,6 +362,7 @@ last modified:
 **************************************************************************/
 void MSH2MATPris(void)
 {
+/*OK411
   long j;
   int nn,k,m;
   double x,y,z;
@@ -453,11 +458,13 @@ void MSH2MATPris(void)
     m_mmp = mmp_vector[m];
     m_mmp->WriteTecplot("ToDo");
   }
+*/
 }
 
 
 void MSHAssignMATGroup2HexsElements(void)
 {
+/*OK411
   long j;
   int nn,k;
   double x,y,z;
@@ -500,6 +507,7 @@ void MSHAssignMATGroup2HexsElements(void)
       }
     }
   }
+*/
 }
 
 void MSHAssignMATGroup2Elements(string msh_name)

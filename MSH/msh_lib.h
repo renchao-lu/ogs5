@@ -7,9 +7,8 @@ last modified
 **************************************************************************/
 #ifndef msh_lib_INC
 #define msh_lib_INC
-// MSHLib
+
 #include "msh_mesh.h"
-#include "moveGEOtoMSH.h"//CC
 
 #ifdef USE_TOKENBUF
 #include "tokenbuf.h"
@@ -26,7 +25,6 @@ extern void MSHWrite(string);
 extern void CompleteMesh(); //WW
 extern bool CompleteMesh(string); //OK
 extern void FEMDeleteAll();
-extern void MSHTopology(); //OK
 extern void MSHCalcMinMaxMidCoordinates(); //OK
 extern double msh_x_min,msh_x_max; //OK
 extern double msh_y_min,msh_y_max; //OK
@@ -36,7 +34,7 @@ extern double msh_x_mid,msh_y_mid,msh_z_mid; //OK
 void Read_RFI(istream& msh_file, CFEMesh* m_msh);
 extern void MSHAssignMATGroup2Elements(string);
 extern void MSHCreateQuadsFromPLY(CGLPolyline*,int);
-extern void MSHCreatePrismsFromTriangles();
+//OK411 extern void MSHCreatePrismsFromTriangles();
 extern void MSHCreateNodes();
 extern void MSHDeleteDoubleElements(int);
 extern long MSHMarkDoubleElementsType(int);
@@ -50,7 +48,6 @@ extern void MSHAssignMATGroup2PrisElements();
 extern void MSHAssignMATGroup2PrisElementsNew();
 extern void MSH2MATPris();
 extern void MSHAssignMATGroup2HexsElements();
-extern void PrismRefine(const int NLayers, const int Layer, const int NSubLayers);
 extern void MSHDestroy();
 extern void MSHDelete(string);
 extern void DATWriteRFIFile(const char *file_name);
@@ -79,5 +76,13 @@ extern void MSHSetFractureElements(void);
 extern void MSHResetFractureElements(void);
 extern long MSHWhatElemIsPointIn(double x, double y, long index); //RFW
 #endif
-
+extern void MSHOpen(string); //OK411
+extern void MSHDefineMobile(CRFProcess*); //OK411
+extern void MSHMoveNODUcFlow (CRFProcess*); //OK411
+extern long* MSHGetNodesClose(long*,CGLPolyline*); //OK411
+extern bool IsPointInSurface(Surface*,CGLPoint*); //OK411
+extern long* GetPointsIn(Surface*,long*); //OK411
+extern void GEOGetNodesInMaterialDomain(CFEMesh*, const int, vector<long>&, bool); //OK411
+extern void SetRFIPointsClose(CGLLine*); //OK411
+extern void MSHGetNodesClose(vector<long>&,CGLPoint*); //OK411
 #endif

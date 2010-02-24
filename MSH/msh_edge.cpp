@@ -5,8 +5,7 @@ Programing:
 08/2005 WW/OK Encapsulation from rf_ele_msh
 last modified
 **************************************************************************/
-#include "stdafx.h" // MFC
-// C++
+
 #include <cmath>
 // MSHLib
 #include "msh_edge.h"

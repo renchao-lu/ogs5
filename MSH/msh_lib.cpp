@@ -4,8 +4,7 @@ Task:
 Programing:
 08/2005 OK Encapsulated from mshlib
 **************************************************************************/
-#include "stdafx.h" // MFC
-// C
+
 #include "math.h"
 // C++
 #include <string>
@@ -13,14 +12,12 @@ Programing:
 using namespace std;
 // GEOLib
 #include "geo_lib.h"
-#include "geo_strings.h"
+#include "files0.h"
 // MSHLib
 #include "msh_lib.h"
-#include "msh_nodes_rfi.h"
 // PCSLib
 #include "mathlib.h"
-#include "nodes.h"
-#include "elements.h"
+#include "rf_mmp_new.h" //OK411
 
 #ifdef RFW_FRACTURE
 #include"rf_mmp_new.h"
@@ -70,30 +67,15 @@ void MSHDelete(string m_msh_name)
 
 /**************************************************************************
 GeoSys-Method: MSHOpen
-Task: 
-Programing:
 11/2003 OK Implementation
 **************************************************************************/
 void MSHOpen(string file_name_base)
 {
-  if(!NODListExists())
-    CreateNodeList();
-  if(!ELEListExists())
-    ElCreateElementList();
-//OK  CreateEdgeList();
-//OK  CreatePlainList();
-  ReadRFIFile(file_name_base);
-  //WW ConfigRenumberProperties();
-//WW   RFConfigRenumber();
-  ELEConfigJacobianMatrix();
-  //OK3909  CalcElementsGeometry();
+  //OK411 ReadRFIFile(file_name_base);
 }
-
 
 /**************************************************************************
 FEMLib-Method: 
-Task:
-Programing:
 03/2005 OK Implementation
 05/2005 TK modified
 05/2006 TK modified
@@ -371,30 +353,6 @@ void MSHWrite(string file_base_name)
   }
   fem_msh_file.close();
 }
-
-/**************************************************************************
-MSHLib-Method: 
-Task: 
-Programing:
-05/2005 OK
-last modification:
-**************************************************************************/
-void MSHTopology()
-{
-  CFEMesh* m_msh = NULL;
-  //----------------------------------------------------------------------
-  // Soil elements
-  m_msh = FEMGet("RICHARDS_FLOW");
-  if(m_msh)
-    m_msh->SetNOD2ELETopology();
-  //----------------------------------------------------------------------
-  // Groundwater elements
-  m_msh = FEMGet("GROUNDWATER_FLOW");
-  if(m_msh)
-    m_msh->SetELE2NODTopology();
-}
-
-
 
 /**************************************************************************
 FEMLib-Method:
@@ -1487,3 +1445,946 @@ void MSHConfig()
   //ConfigTopology(); // max_dim for solver, elements to nodes relationships
 }
 #endif
+
+/**************************************************************************/
+/* ROCKFLOW - Function: MSHGetNextNode
+                                                                          */
+/* Task:
+   Find the next node to the starting node in user defined direction
+                                                                          */
+/* Parameter: (I: Input; R: Return; X: Both)
+   I: startnode, direction
+                                                                          */
+/* Return:
+   nextnode
+                                                                          */
+/* Programming:
+   09/2002     MB         First Version
+   08/2005     MB
+                                                                          */
+/**************************************************************************/
+long MSHGetNextNode (long startnode, CFEMesh* m_msh)
+{
+  long nextnode;
+
+  long NumberOfNodes;
+  long NumberOfNodesPerLayer;
+  int NumberOfLayers;
+
+  NumberOfNodes = (long)m_msh->nod_vector.size();
+  NumberOfLayers = m_msh->no_msh_layer;
+  
+  NumberOfNodesPerLayer = NumberOfNodes / (NumberOfLayers + 1);  
+
+  nextnode = startnode + NumberOfNodesPerLayer;
+
+  return nextnode; 
+}
+
+/**************************************************************************/
+/* ROCKFLOW - Function: MSHSelectFreeSurfaceNodes
+                                                                          */
+/* Task:
+   Selection of free surface nodes, i.e. Setting free surface node flag = 1
+   for the uppermost row and free surface node flag = 2 for the lowermost
+   row. (Lowermost row is not moving)
+                                                                          */
+/* Parameter: (I: Input; R: Return; X: Both)   - void -
+                                                                          */
+/* Return:
+   - void -
+                                                                          */
+/* Programming:
+   03/2003     MB   First Version
+   09/2004     MB   PCS   
+   08/2005     MB msh    
+                                                                          */
+/**************************************************************************/
+void MSHSelectFreeSurfaceNodes (CFEMesh* m_msh)
+{
+  long i;
+  int j =0;
+  long startnode;
+  long nextnode;
+  long *strang=NULL;
+  long NumberOfNodes;
+  long NumberOfNodesPerLayer;
+  int NumberOfLayers;
+
+  // Number of nodes per node layer
+  NumberOfNodes = (long)m_msh->nod_vector.size();
+  NumberOfLayers = m_msh->no_msh_layer;
+  NumberOfNodesPerLayer = NumberOfNodes / (NumberOfLayers + 1);  
+  int no_unconfined_layer = 0;
+  // create array with nodes in vertical column
+  for (i = 0; i < NumberOfNodesPerLayer; i++) {
+   
+    if(m_msh->nod_vector[i]->free_surface == 4){
+      nextnode = i; 
+      no_unconfined_layer = 0;  
+      for (j=0; j < m_msh->no_msh_layer; j++) {
+        strang = (long*) Realloc(strang,(j+1)*sizeof(long));     
+        strang[j] = nextnode;
+        startnode = nextnode;
+        nextnode = MSHGetNextNode (startnode, m_msh);
+        if(m_msh->nod_vector[nextnode]->free_surface == 4)
+        {
+          strang[j+1] = nextnode;
+          no_unconfined_layer++;
+        }
+        else  {
+          continue;
+        }
+      } 
+    } //endif free_surface==4
+    
+    // mark start of vertical column with 1 - end of column with 2
+    // this is than used in MSHMoveNODUcFlow 
+    m_msh->nod_vector[strang[0]]->free_surface = 1;
+    m_msh->nod_vector[strang[no_unconfined_layer]]->free_surface = 2;
+  } /*endfor*/ 
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Task: Searches mobile nodes and sets node->free_surface = 4
+Programing:
+09/2004 OK / MB Implementation
+05/2005 OK Bugfix
+07/2005 MB MMP keyword
+08/2005 MB m_pcs
+**************************************************************************/
+void MSHDefineMobile(CRFProcess*m_pcs)
+{
+  long* mobile_nodes = NULL;
+  long no_mobile_nodes = -1;
+  long i;
+  CMediumProperties *m_mat_mp = NULL;
+
+  //----------------------------------------------------------------------
+  // Define mobile MSH nodes
+  //----------------------------------------------------------------------
+  // MMP Groups
+  if(mmp_vector.size()==0) return;
+  ////Schleife über alle Gruppen
+  for(i=0;i<(long) mmp_vector.size();i++){
+    m_mat_mp = mmp_vector[i];
+
+//WW    int test = m_pcs->m_msh->GetMaxElementDim();
+    //m_pcs->m_msh->cross_section
+    
+    //if (m_mat_mp->unconfined_flow_group ==1 && m_pcs->m_msh->GetMaxElementDim() == 3){
+   if (m_mat_mp->unconfined_flow_group ==1 && m_pcs->m_msh->GetMaxElementDim() == 3 || m_pcs->m_msh->cross_section){
+
+    //if (m_mat_mp->unconfined_flow_group ==1){
+    //if (m_pcs->m_msh->cross_section){
+      //....................................................................
+      //DOMAIN
+      if(m_mat_mp->geo_type_name.find("DOMAIN")!=string::npos){
+        //CGLDomain *m_domain = NULL;
+        //m_domain = m_domain->Get(m_mat_mp->geo_name);
+        //mobile_nodes = m_domain->GetPointsIn(&no_mobile_nodes);
+        //ToDo einlesen von domains ????
+        for(i=0; i < (long)m_pcs->m_msh->nod_vector.size(); i++) {
+          mobile_nodes = (long *) Realloc(mobile_nodes,sizeof(long)*(i+1));
+          mobile_nodes[i] = i;
+        }
+        no_mobile_nodes = (long)m_pcs->m_msh->nod_vector.size();
+      }
+      //....................................................................
+      //LAYER
+      if(m_mat_mp->geo_type_name.find("LAYER")!=string::npos){
+        //TODO next version, change to msh file !!!
+      }
+      //....................................................................
+      //SURFACE 
+      if(m_mat_mp->geo_type_name.find("SURFACE")!=string::npos){
+        Surface *m_surface = NULL;
+        m_surface = GEOGetSFCByName(m_mat_mp->geo_name);//CC
+        mobile_nodes = GetPointsIn(m_surface,&no_mobile_nodes);//CC
+      }
+      //....................................................................
+      //VOLUME
+      if(m_mat_mp->geo_type_name.find("VOLUME")!=string::npos){
+        CGLVolume *m_volume = NULL;
+        m_volume = GEOGetVOL(m_mat_mp->geo_name);//CC 10/05
+        //ToDo TK
+        //OK411 mobile_nodes =GetPointsInVolume(m_volume,&no_mobile_nodes);//CC 10/05
+      }
+  
+    } //end if unconfined flow group
+
+  } //end for mmp vector
+
+  //----------------------------------------------------------------------
+  // Set mobile MSH nodes flag
+  for(i=0;i<no_mobile_nodes;i++){
+    m_pcs->m_msh->nod_vector[i]->free_surface = 4;
+  }
+  //----------------------------------------------------------------------
+  if (no_mobile_nodes > 0)  {
+    m_pcs->mobile_nodes_flag = 1;
+    MSHSelectFreeSurfaceNodes(m_pcs->m_msh);
+  }
+}
+
+/**************************************************************************
+   ROCKFLOW - Function: MSHGetNodesInColumn
+   
+   Task:  
+   Gets nodes of a column searching downward from startnode. 
+         
+   Parameter: (I: Input; R: Return; X: Both)
+           I: long node, int anz_zeilen
+           
+   Return:
+           *long strang 
+   
+   Programming:
+   09/2002   MB   First Version
+   08/2005   MB   m_msh
+ **************************************************************************/
+long* MSHGetNodesInColumn(long nextnode, int anz_zeilen, CFEMesh* m_msh)
+{
+  int i;
+  long startnode;
+  long *strang=NULL;
+
+  for (i = 0; i< anz_zeilen +1; i++)  {
+    strang = (long*) Realloc(strang,(i+1)*sizeof(long));         
+    strang[i] = nextnode;
+    startnode = nextnode;
+    //nextnode = MSHGetNextNode (startnode, direction);
+    nextnode = MSHGetNextNode (startnode, m_msh);
+  } 
+  return strang;  
+}
+
+/**************************************************************************/
+/* ROCKFLOW - Function: MSHMoveNODUcFlow
+                                                                          */
+/* Task: 
+   Moves free surface nodes according to the pressure distribution
+                                                                          */
+/* Parameter: (I: Input; R: Return; X: Both)   - void -
+                                                                          */
+/* Return:
+   - void -
+                                                                          */
+/* Programming:
+   09/2002     MB       First Version
+   05/2003     MB       verallgemeinert für Prismen und Vierecke 
+   09/2004     MB       Methode vereinfacht
+   09/2004     MB       PCS    
+  08/2005      MB       m_msh                                                                   */
+/**************************************************************************/
+void MSHMoveNODUcFlow (CRFProcess*m_pcs)
+{
+  long nextnode = -1;
+  long startnode;
+  int index, index2;
+  long node;
+  int anz_zeilen = 0;
+  int i;
+  double spanne_ges;
+  double spanne_rel;
+  long* strang=NULL;
+  double head =0.0;
+  int xxflag;
+  int nidy;
+  long NumberOfNodes;
+  long NumberOfNodesPerLayer;
+  int NumberOfLayers;
+  double MinThickness = 1e-1; //OKMB
+  double z_bottom; //OKMB
+
+  // Number of nodes per node layer
+  NumberOfNodes = (long)m_pcs->m_msh->nod_vector.size();
+  NumberOfLayers = m_pcs->m_msh->no_msh_layer;
+  NumberOfNodesPerLayer = NumberOfNodes / (NumberOfLayers + 1);  
+  
+  for (node = 0; node < NumberOfNodesPerLayer; node++) {
+    
+    index = m_pcs->m_msh->nod_vector[node]->free_surface;
+    if (index == 1) {
+      /* Zählen der Zeilen (-> anz_zeilen) */
+      anz_zeilen = 0;
+      xxflag = 0;
+      nextnode = node;   
+      do {
+        startnode = nextnode;
+        nextnode = MSHGetNextNode (startnode, m_pcs->m_msh);
+
+        /* Test2: Gehört der nächste Knoten zu unterer Reihe ==> Abbruch */
+        index2 = m_pcs->m_msh->nod_vector[nextnode]->free_surface;
+        
+        if (index2 == 2)  {
+          xxflag = 1;
+        }
+        anz_zeilen++; /* Anzahl der beweglichen Zeilen (ohne die feste untere Zeile) */
+      } while (xxflag != 1);
+      /** Ende Zählen der Zeilen zwischen den oberen free surface node etc... und den Unteren **/
+
+    /* Die Knoten unterhalb eines Free Surface Knotens bilden einen Strang */
+    /* Die Knoten eines Stranges werden zwischengespeichert */
+    strang = MSHGetNodesInColumn(node, anz_zeilen, m_pcs->m_msh);
+  
+    /* Die Knoten eines Stranges werden entsprechend der neuen Druckverteilung  verformt */
+    /* Standrohrspiegelhöhe bestimmen */
+    nidy = m_pcs->GetNodeValueIndex("HEAD")+1;
+    if (GetRFProcessDensityFlow()) {  /* mit Dichteunterschiede */
+      //OK_MOD     head = MODCalcHeadInColumn_MB(strang, anz_zeilen);
+    }
+    else {  /* ohne Dichteunterschiede */
+      head = m_pcs->GetNodeValue(strang[0],nidy);
+    } 
+
+    /* nicht über surface elevation */
+    CRFProcess* m_pcs_OLF = NULL;
+    m_pcs_OLF = PCSGet("OVERLAND_FLOW");
+    double SurfaceZ; 
+  
+    if(m_pcs_OLF!=NULL){
+      SurfaceZ = m_pcs_OLF->m_msh->nod_vector[strang[0]]->Z();
+      if (head > SurfaceZ){   
+        head = SurfaceZ;
+      }
+    }
+    
+    /* Set minimum thickness */
+    z_bottom = m_pcs->m_msh->nod_vector[strang[anz_zeilen]]->Z();
+    if(head - z_bottom < MinThickness)
+      head = z_bottom + MinThickness;
+    
+    /* Berechnung der Differenz */
+    spanne_ges = head - z_bottom;
+    spanne_rel = spanne_ges / anz_zeilen;
+    m_pcs->m_msh->nod_vector[strang[0]]->SetZ(head); 
+
+    if(spanne_ges != 0) {
+      /* Setzen der neuen Z-Werte entlang eines Stranges */
+      for (i = 1; i< anz_zeilen; i++)  {  /* Schleife über Anzahl der Zeilen */
+        m_pcs->m_msh->nod_vector[strang[i]]->SetZ(head -i * spanne_rel); 
+      } 
+    }
+
+  strang = (long*) Free(strang);     
+  }  /*endif index ==1 */
+  } /* end for Schleife über alle Knoten */
+}
+
+/**************************************************************************
+FEMLib-Method: 
+Task: Searches mobile nodes and sets node->free_surface = 4
+Programing:
+09/2004 OK / MB Implementation
+05/2005 OK Bugfix
+07/2005 MB MMP keyword
+08/2005 MB m_pcs
+01/2006 OK LAYER
+**************************************************************************/
+void CFEMesh::DefineMobileNodes(CRFProcess*m_pcs)
+{
+  long* mobile_nodes = NULL;
+  long no_mobile_nodes = -1;
+  long i,j;
+  //----------------------------------------------------------------------
+  // Define mobile MSH nodes
+  //----------------------------------------------------------------------
+  //......................................................................
+  //DOMAIN
+  if(m_pcs->geo_type.find("DOMAIN")!=string::npos)
+  {
+    for(i=0;i<(long)nod_vector.size();i++) 
+    {
+      mobile_nodes = (long *) Realloc(mobile_nodes,sizeof(long)*(i+1));
+      mobile_nodes[i] = i;
+    }
+    no_mobile_nodes = (long)m_pcs->m_msh->nod_vector.size();
+  }
+  //......................................................................
+  //LAYER
+  if(m_pcs->geo_type.find("LAYER")!=string::npos)
+  {
+    string m_string;
+    long no_nodes_per_layer = (long)nod_vector.size() / (no_msh_layer+1);
+    int pos = 0;
+    int layer_start=0,layer_end=0;
+    if(m_pcs->geo_type_name.find("-")!=string::npos)
+    {
+      pos = m_pcs->geo_type_name.find("-")!=string::npos;
+      m_string = m_pcs->geo_type_name.substr(0,pos);
+      layer_start = strtol(m_string.c_str(),NULL,0);
+      m_string = m_pcs->geo_type_name.substr(pos+1,string::npos);
+      layer_end = strtol(m_string.c_str(),NULL,0);
+    }
+    else
+    {
+      layer_start = strtol(m_pcs->geo_type_name.c_str(),NULL,0);
+      layer_end = layer_start;
+    }
+    int no_layers = layer_end-layer_start+1;
+    no_mobile_nodes = (no_layers+1)*no_nodes_per_layer;
+    mobile_nodes = new long[no_mobile_nodes];
+    for(i=0;i<no_layers+1;i++)
+    {
+      for(j=0;j<no_nodes_per_layer;j++) 
+      {
+        mobile_nodes[i*no_nodes_per_layer+j] = j + (layer_start-1+i)*no_nodes_per_layer;
+      }
+    }
+  }
+  //......................................................................
+  //SURFACE 
+  if(m_pcs->geo_type.find("SURFACE")!=string::npos)
+  {
+    Surface *m_sfc = NULL;
+    m_sfc = GEOGetSFCByName(m_pcs->geo_type_name);//CC
+    if(m_sfc)
+      mobile_nodes = GetPointsIn(m_sfc,&no_mobile_nodes);//CC
+    else
+      cout << "Warning in CFEMesh::DefineMobileNodes - no GEO data" << endl;
+  }
+  //......................................................................
+  //VOLUME
+/*OK411
+  if(m_pcs->geo_type.find("VOLUME")!=string::npos)
+  {
+    CGLVolume *m_vol = NULL;
+    m_vol = GEOGetVOL(m_pcs->geo_type_name);//CC 10/05
+    if(m_vol)
+      mobile_nodes = GetPointsInVolume(m_vol,&no_mobile_nodes);//CC 10/05
+    else
+      cout << "Warning in CFEMesh::DefineMobileNodes - no GEO data" << endl;
+  }
+*/
+  //----------------------------------------------------------------------
+  // Set mobile MSH nodes flag
+  //----------------------------------------------------------------------
+  for(i=0;i<(long)nod_vector.size();i++) 
+  {
+    nod_vector[i]->free_surface = -1;
+  }
+  for(i=0;i<no_mobile_nodes;i++){
+    nod_vector[i]->free_surface = 4;
+    //nod_vector[mobile_nodes[i]]->free_surface = 4;
+  }
+  //----------------------------------------------------------------------
+  if (no_mobile_nodes > 0)  {
+    m_pcs->mobile_nodes_flag = 1;
+    MSHSelectFreeSurfaceNodes(this);
+  }
+  //----------------------------------------------------------------------
+  delete [] mobile_nodes;
+  mobile_nodes = NULL;
+}
+
+/**************************************************************************
+MSHLib-Method: 
+Task: 
+Programing:
+09/2004 OK Implementation
+ToDo evtl. vector<CGLPoint>
+08/2005 CC Modification: CGLPoint* e_pnt - Move from GeoLib to MshLib
+**************************************************************************/
+void MSHGetNodesClose(vector<long>&msh_point_vector,CGLPoint* e_pnt)
+{
+  e_pnt = e_pnt;
+  msh_point_vector.size();
+/*OK411
+  long i;
+  CGLPoint m_pnt;
+  // Node loop
+  for (i=0;i<NodeListSize();i++) {
+    if (GetNode(i)==NULL) continue;
+    m_pnt.x = GetNodeX(i);
+    m_pnt.y = GetNodeY(i);
+    m_pnt.z = GetNodeZ(i);
+    if(e_pnt->PointDis(&m_pnt)<=(e_pnt->epsilon+MKleinsteZahl))
+      msh_point_vector.push_back(i);
+  }
+*/
+}
+
+/*************************************************************************
+  ROCKFLOW - Function: MSHGetNodesClose
+  Task: Searching grid points which are close to a polyline
+  Programming: 
+   10/2002 OK Encapsulated from ExecuteSourceSinkMethod11 (CT)
+   01/2003 OK Test
+  last modified: 20.01.2003 OK
+   08/2005 CC Modification Move from GeoLib to MSHLib
+**************************************************************************/
+long* MSHGetNodesClose(long *number_of_nodes, CGLPolyline* m_ply)
+{
+  long *nodes_all = NULL;
+  m_ply = m_ply;
+  number_of_nodes = number_of_nodes;
+/*OK411
+  long j,k,l;
+  double pt1[3],line1[3],line2[3],pt0[3];
+  double mult_eps = 1.0;
+  double dist1p,dist2p,*length,laenge;
+  long anz_relevant = 0;
+  typedef struct {
+     long knoten;
+     long abschnitt;
+     double laenge;
+  } INFO;
+  INFO *relevant=NULL;
+  int weiter;
+  double w1,w2;
+  long knoten_help;
+  double laenge_help;
+  double gesamte_laenge = 0.;
+  long polyline_point_vector_size;
+
+  m_ply->sbuffer.clear();
+  m_ply->ibuffer.clear();
+
+if (m_ply) {
+
+  length = (double*) Malloc(sizeof(double) *(long)m_ply->point_vector.size());
+
+  pt0[0] = m_ply->point_vector[0]->x;
+  pt0[1] = m_ply->point_vector[0]->y;
+  pt0[2] = m_ply->point_vector[0]->z;
+
+  polyline_point_vector_size =(long)m_ply->point_vector.size();
+  for (k=0;k<polyline_point_vector_size-1;k++) {
+    line1[0] = m_ply->point_vector[k]->x;
+    line1[1] = m_ply->point_vector[k]->y;
+    line1[2] = m_ply->point_vector[k]->z;
+    line2[0] = m_ply->point_vector[k+1]->x;
+    line2[1] = m_ply->point_vector[k+1]->y;
+    line2[2] = m_ply->point_vector[k+1]->z;
+    length[k] = MCalcDistancePointToPoint(line2, line1);
+    gesamte_laenge += length[k];
+  }
+
+  // Wiederholen bis zumindest ein Knoten gefunden wurde
+ while(anz_relevant==0) {
+
+  for (j=0;j<NodeListSize();j++) {
+    if (GetNode(j)==NULL) continue;
+
+	polyline_point_vector_size =(long)m_ply->point_vector.size();
+    for (k=0;k<polyline_point_vector_size-1;k++) {
+
+      pt1[0] = GetNodeX(j);
+      pt1[1] = GetNodeY(j);
+      pt1[2] = GetNodeZ(j);
+
+      line1[0] = m_ply->point_vector[k]->x;
+      line1[1] = m_ply->point_vector[k]->y;
+      line1[2] = m_ply->point_vector[k]->z;
+      line2[0] = m_ply->point_vector[k+1]->x;
+      line2[1] = m_ply->point_vector[k+1]->y;
+      line2[2] = m_ply->point_vector[k+1]->z;
+
+      if ( MCalcDistancePointToLine(pt1,line1,line2) <= mult_eps*m_ply->epsilon ) {
+        MCalcProjectionOfPointOnLine(pt1,line1,line2,pt1);
+        dist1p = MCalcDistancePointToPoint(line1, pt1);
+        dist2p = MCalcDistancePointToPoint(line2, pt1);
+        if ((dist1p+dist2p-length[k]) <=  mult_eps*m_ply->epsilon ) {
+
+          // For boundary conditions. WW
+          m_ply->sbuffer.push_back(dist1p);
+          m_ply->ibuffer.push_back(k);
+          // ---------------------------
+
+          anz_relevant++;
+          nodes_all = (long *) Realloc(nodes_all,sizeof(long)*anz_relevant);
+          relevant = (INFO *) Realloc(relevant, sizeof(INFO) * anz_relevant);
+          nodes_all[anz_relevant-1] = j;
+          laenge = 0.;
+          for (l=0; l < k; l++)
+            laenge += length[l];
+          relevant[anz_relevant-1].knoten = j;
+          relevant[anz_relevant-1].laenge = laenge + dist1p;
+          k =(long)m_ply->point_vector.size();
+        }
+      }
+    }
+  }
+  if(anz_relevant==0) mult_eps *=2.;
+ }
+
+  if (mult_eps > 1.)
+     cout << "!!! Epsilon increased in sources!" << endl;
+
+  do {
+    weiter = 0;
+    for (k=0;k<anz_relevant-1;k++) {
+       w1=relevant[k].laenge;
+       w2=relevant[k+1].laenge;
+       if (w1>w2) { // Die Eintraege vertauschen
+          knoten_help = relevant[k].knoten;
+          laenge_help = relevant[k].laenge;
+          relevant[k].knoten = relevant[k+1].knoten;
+          relevant[k].laenge = relevant[k+1].laenge;
+          relevant[k+1].knoten = knoten_help;
+          relevant[k+1].laenge = laenge_help;
+          weiter=1;
+         }
+      }
+  } while (weiter);
+
+  relevant = (INFO*) Free(relevant);
+  *number_of_nodes = anz_relevant;
+  }
+*/
+  return nodes_all;
+}
+
+/**************************************************************************
+GeoLib-Method: GetPointsIn
+Task: 
+Programing:
+01/2004 OK Implementation
+08/2005 CC Modification Move from Geolib to Mshlib
+**************************************************************************/
+long* GetPointsIn(Surface* m_sfc,long* number_of_nodes)
+{
+  long *nodes = NULL;
+  number_of_nodes = number_of_nodes;
+  m_sfc = m_sfc;
+/*OK411
+  long i;
+  double *xp=NULL,*yp=NULL,*zp=NULL;
+  long anz_relevant = 0;
+  CGLPoint m_pnt;
+  // Inside polygon
+  if(!m_sfc->polygon_point_vector.empty()) {
+    xp = (double*) Malloc(((long)m_sfc->polygon_point_vector.size())*sizeof(double));
+    yp = (double*) Malloc(((long)m_sfc->polygon_point_vector.size())*sizeof(double));
+    zp = (double*) Malloc(((long)m_sfc->polygon_point_vector.size())*sizeof(double));
+    long polygon_point_vector_length = (long)m_sfc->polygon_point_vector.size();
+    for(i=0;i<polygon_point_vector_length;i++) {
+      xp[i] = m_sfc->polygon_point_vector[i]->x;
+      yp[i] = m_sfc->polygon_point_vector[i]->y;
+      zp[i] = m_sfc->polygon_point_vector[i]->z;
+    }
+
+    //-----------------------------------------------------------------
+    for(i=0;i<NodeListSize();i++) {
+      if (GetNode(i)==NULL) continue;
+      m_pnt.x = GetNodeX(i);
+      m_pnt.y = GetNodeY(i);
+      m_pnt.z = GetNodeZ(i);
+      if(m_pnt.IsInsidePolygonPlain(
+                                   xp,yp,zp,\
+                                   (long)m_sfc->polygon_point_vector.size())) {
+        anz_relevant++;
+        nodes = (long *) Realloc(nodes,sizeof(long)*anz_relevant);
+        nodes[anz_relevant-1] = i;
+      }
+    }
+  }
+  // Destructions
+   // nodes extern
+  xp = (double*) Free(xp);
+  yp = (double*) Free(yp);
+  zp = (double*) Free(zp);
+   //
+  *number_of_nodes = anz_relevant;
+*/
+  return nodes;
+}
+
+/**************************************************************************
+GeoLib-Method: GEOGetVolume
+Task: Get element nodes in a material domain
+Programing:
+10/2004 WW Implementation
+**************************************************************************/
+void GEOGetNodesInMaterialDomain(const int MatIndex, vector<long>& Nodes)
+{
+  MatIndex;
+  Nodes.size();
+/*OK411
+   long index, *element_nodes;
+   int i, j, Size, nn, order = 2;
+   const int L_Nodes = GetLowOrderNodeNumber();   
+   bool exist;
+   if(L_Nodes==NodeListSize()) order = 1;
+   if(L_Nodes==0) order = 1;
+
+   Nodes.resize(0);
+   nn = 0;
+   for (index=0;index<ElListSize();index++)
+   {
+      if (ElGetElement(index)!=NULL)
+      {  // Eelement exist
+         if (ElGetElementActiveState(index))
+         {  // Element active
+            if(order==1) nn = NumbersOfElementNode(index);
+            if(order==2) nn = NumbersOfElementNodeHQ(index);
+            if(ElGetElementGroupNumber(index)==MatIndex)
+            {
+               Size = (int)Nodes.size();
+               element_nodes = ElGetElementNodes(index); 
+               for(i=0; i<nn; i++)
+               {
+                   exist = false;
+                   for(j=0; j<Size; j++)
+                   {
+                      if(element_nodes[i]==Nodes[j])
+                      {
+                         exist = true;
+                         break;
+                      }
+                   }
+                   if(!exist) Nodes.push_back(element_nodes[i]);                  
+               }
+            }
+         }
+      }
+   }
+*/
+}
+
+/**************************************************************************
+GeoLib-Method: GEOGetVolume
+Task: Get element nodes in a material domain
+Programing:
+10/2004 WW Implementation
+**************************************************************************/
+//using Mesh_Group::CElem;
+void GEOGetNodesInMaterialDomain(CFEMesh* m_msh, const int MatIndex, vector<long>& Nodes, bool Order)
+{
+  int i, nn;
+  long e, j, Size;
+  CElem* elem = NULL;
+  bool exist;
+  nn =0;
+  Size = 0;
+  Nodes.resize(0);
+  for (e = 0; e < (long)m_msh->ele_vector.size(); e++)
+  {
+    elem = m_msh->ele_vector[e];
+    if (elem->GetMark()) // Marked for use
+    {
+       nn = elem->GetNodesNumber(Order); 
+	   if(elem->GetPatchIndex()==MatIndex)
+	   {
+           Size = (int)Nodes.size();
+           for(i=0; i<nn; i++)
+           {
+              exist = false;
+              for(j=0; j<Size; j++)
+              {
+				 if(elem->GetNodeIndex(i)==Nodes[j])
+                 {
+                    exist = true;
+                    break;
+                 }
+              }
+              if(!exist) Nodes.push_back(elem->GetNodeIndex(i));                  
+           }	   
+	   } 
+    }  // if
+  } //For
+}
+
+/**************************************************************************
+GeoLib-Method:
+Task:
+Programing:
+01/2004 OK Implementation based on algorithm originally by CT
+09/2005 CC Move from geolib to mshlib
+**************************************************************************/
+void SetRFIPointsClose(CGLLine* m_lin)
+{
+  m_lin = m_lin;
+/*OK411
+  long j;
+  double pt1[3],pt2[3],line1[3],line2[3];
+  double mult_eps = 1.0;
+  double dist1p,dist2p,length;
+  long anz_relevant;
+  double *dist;
+  typedef struct {
+     long knoten;
+     long abschnitt;
+     double laenge;
+  } INFO;
+  INFO *relevant=NULL;
+  long knoten_help;
+  double laenge_help;
+  double w1,w2;
+  int weiter;
+  //----------------------------------------------------------------------
+  // Tests
+  if(!ELEListExists()) {
+    return;
+  }
+  if(m_lin->point1<0)
+    return;
+  if(m_lin->point2<0)
+    return;
+  //----------------------------------------------------------------------
+  // Initializations
+  anz_relevant = 0;
+  m_lin->msh_nodes = NULL;
+  CGLPoint *m_point=NULL;
+  m_point = GEOGetPointById(m_lin->point1);//CC
+  line1[0] = m_point->x;
+  line1[1] = m_point->y;
+  line1[2] = m_point->z;
+  m_point = GEOGetPointById(m_lin->point2);//CC
+  line2[0] = m_point->x;
+  line2[1] = m_point->y;
+  line2[2] = m_point->z;
+  length = MCalcDistancePointToPoint(line2,line1);
+  //----------------------------------------------------------------------
+  // Repeat untill at least one node is found
+  while(anz_relevant==0) {
+    // NOD list loop
+    for (j=0;j<NodeListSize();j++) {
+      if (GetNode(j)==NULL) continue;
+      pt1[0] = GetNodeX(j);
+      pt1[1] = GetNodeY(j);
+      pt1[2] = GetNodeZ(j);
+      // Is MSH point near to line
+      if ( MCalcDistancePointToLine(pt1,line1,line2) <= mult_eps*m_lin->epsilon ) {
+        // Calc projection of pt1 to line and use this in the following
+        MCalcProjectionOfPointOnLine(pt1,line1,line2,pt1);
+        // Abstand des Punktes zum ersten Punkt des Polygonabschnitts
+        dist1p = MCalcDistancePointToPoint(line1, pt1);
+        // Abstand des Punktes zum zweiten Punkt des Polygonabschnitts
+        dist2p = MCalcDistancePointToPoint(line2, pt1);
+        // Ist der Knoten innerhalb des Intervalls?
+        if ((dist1p+dist2p-length) <=  mult_eps*m_lin->epsilon ) {
+          anz_relevant++;
+          // Feld anpassen
+          m_lin->msh_nodes = (long *) Realloc(m_lin->msh_nodes,sizeof(long)*anz_relevant);
+          relevant = (INFO *) Realloc(relevant, sizeof(INFO)*anz_relevant);
+          // Ablegen von Knotennummer und Position
+          m_lin->msh_nodes[anz_relevant-1] = j;
+        }
+      } // endif
+    } // Ende Schleife ueber Knoten
+    if(anz_relevant==0) mult_eps *=2.;
+  } // Ende Schleife Wiederholungen
+  if (mult_eps > 1.)
+    printf("Warning: Epsilon increased in CGLLine::SetRFIPointsClose.");
+  m_lin->no_msh_nodes = anz_relevant;
+  //----------------------------------------------------------------------
+  // Sort MSH nodes, beginning from first line point
+  //......................................................................
+  // Calc distances from first line point
+  m_point = GEOGetPointById(m_lin->point1);//CC
+  pt1[0] = m_point->x;
+  pt1[1] = m_point->y;
+  pt1[2] = m_point->z;
+  dist = (double*) Malloc(sizeof(double)*m_lin->no_msh_nodes);
+  for(j=0;j<m_lin->no_msh_nodes;j++) {
+    pt2[0] = GetNodeX(m_lin->msh_nodes[j]);  
+    pt2[1] = GetNodeY(m_lin->msh_nodes[j]);  
+    pt2[2] = GetNodeZ(m_lin->msh_nodes[j]);  
+    dist[j] = MCalcDistancePointToPoint(pt1,pt2);
+  }
+  //......................................................................
+  // Sorting by pair switching
+  do {
+    weiter = 0;
+    for (j=0;j<m_lin->no_msh_nodes-1;j++) {
+       w1=dist[j];
+       w2=dist[j+1];
+       if (w1>w2) { // Die Eintraege vertauschen
+          knoten_help = m_lin->msh_nodes[j];
+          laenge_help = dist[j];
+          m_lin->msh_nodes[j] = m_lin->msh_nodes[j+1];
+          dist[j] = dist[j+1];
+          m_lin->msh_nodes[j+1] = knoten_help;
+          dist[j+1] = laenge_help;
+          weiter=1;
+         }
+      }
+  } while (weiter);
+  //----------------------------------------------------------------------
+  // Destructions
+  dist = (double*) Free(dist);
+  relevant = (INFO*) Free(relevant);
+*/
+}
+
+
+/**************************************************************************
+GeoSys-GUI Function
+Programing:
+01/2004 OK Implementation
+09/2005 CC Modification No MFC function
+**************************************************************************/
+bool IsPointInSurface(Surface* m_fsc, CGLPoint *m_point)
+{
+  bool ok = false;
+  m_point = m_point;
+  if(!m_fsc)
+    return false; //OK
+ #ifdef MFC
+  long i;
+  int j;
+  CPoint this_point;
+  CGLPoint *m_sfc_point;
+
+  POINT m_arrPoint[1024] ;
+  long number_of_surface_polygon_points = (long)m_fsc->polygon_point_vector.size();
+  long number_of_TIN_elements = 0;
+  CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
+  if(theApp->g_graphics_modeless_dlg->GetSafeHwnd())
+  {
+    m_point->x_pix = theApp->g_graphics_modeless_dlg->xpixel(m_point->x);
+    m_point->y_pix = theApp->g_graphics_modeless_dlg->ypixel(m_point->y);
+  }
+  if(m_fsc->TIN)
+    number_of_TIN_elements = (long)m_fsc->TIN->Triangles.size();
+  //-----------------------------------------------------------------------
+  // surface polygon
+  if(number_of_surface_polygon_points>0) {
+    for(i=0;i<number_of_surface_polygon_points;i++) 
+    {
+      m_sfc_point = m_fsc->polygon_point_vector[i];
+      if(theApp->g_graphics_modeless_dlg->GetSafeHwnd())
+      {
+        m_arrPoint[i].x = theApp->g_graphics_modeless_dlg->xpixel(m_sfc_point->x);//CC
+        m_arrPoint[i].y = theApp->g_graphics_modeless_dlg->ypixel(m_sfc_point->y);//CC
+      }
+    }
+    CRgn surface_polygon;
+    surface_polygon.CreatePolygonRgn(&m_arrPoint[0],(int)number_of_surface_polygon_points,WINDING);
+    this_point.x = m_point->x_pix;
+    this_point.y = m_point->y_pix;
+    if (surface_polygon.PtInRegion(this_point)) {
+      ok = true;
+    }
+    DeleteObject(surface_polygon);
+  }
+  //-----------------------------------------------------------------------
+  // TIN
+  else if(number_of_TIN_elements>0) {
+    for(i=0;i<number_of_TIN_elements;i++) {
+     
+      for(j=0;j<3;j++) {
+         m_arrPoint[j].x = (long)m_fsc->TIN->Triangles[i]->x[j];
+         m_arrPoint[j].y = (long)m_fsc->TIN->Triangles[i]->y[j];
+      }
+      CRgn surface_polygon;
+      surface_polygon.CreatePolygonRgn(&m_arrPoint[0],3,WINDING);
+      this_point.x = (long)m_point->x;
+      this_point.y = (long)m_point->y;
+      if (surface_polygon.PtInRegion(this_point)) {
+        ok = true;
+        DeleteObject(surface_polygon);
+        break;
+      }
+      DeleteObject(surface_polygon);
+    }
+  }
+  //-----------------------------------------------------------------------
+  DeleteObject(m_arrPoint);
+#endif
+  return ok;
+}
+

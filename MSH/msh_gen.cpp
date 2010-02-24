@@ -4,8 +4,7 @@ Task:
 Programing:
 08/2005 OK Encapsulated from mshlib
 **************************************************************************/
-#include "stdafx.h" // MFC
-// C
+
 #include "math.h"
 // C++
 #include <string>
@@ -17,8 +16,6 @@ using namespace std;
 #include "mathlib.h"
 // PCSLib
 #include "rf_pcs.h"
-#include "elements.h"//CC
-#include "nodes.h"
 #include "gs_project.h"
 #include "rf_mmp_new.h" //OK
 
@@ -30,6 +27,8 @@ Programing:
 **************************************************************************/
 void MSHCreateQuadsFromLine(CGLLine *m_line)
 {
+  m_line = m_line;
+/*OK411
   int i,k;
   int col=0;
   long j;
@@ -82,51 +81,6 @@ void MSHCreateQuadsFromLine(CGLLine *m_line)
     matrix[i] = (long*) Free(matrix[i]);
   }
   matrix = (long**) Free(matrix);
-
-/*
-    //---------------------------------------------------------------------
-    // Strings
-  vector<long>string1;
-  vector<long>string2;
-  msh_node_number = m_line->m_point1->gli_point_id;
-  x1 = GetNodeX(msh_node_number);
-  y1 = GetNodeY(msh_node_number);
-  string1.push_back(msh_node_number);
-  msh_node_number = m_line->m_point2->gli_point_id;
-  x2 = GetNodeX(msh_node_number);
-  y2 = GetNodeY(msh_node_number);
-  string2.push_back(msh_node_number);
-   // String1+2
-  for(i=0;i<NodeListLength;i++) {
-    x = GetNodeX(NodeNumber[i]);
-    y = GetNodeY(NodeNumber[i]);
-    dist = sqrt((x-x1)*(x-x1)+(y-y1)*(y-y1));
-    if(dist<eps) {
-      string1.push_back(NodeNumber[i]);
-    }
-    dist = sqrt((x-x2)*(x-x2)+(y-y2)*(y-y2));
-    if(dist<eps) {
-      string2.push_back(msh_node_number);
-    }
-  }
-  //-----------------------------------------------------------------------
-  // Sort by distance
-   // String1
-   // String2
-  //-----------------------------------------------------------------------
-  // Create Quads
-  long *nodes = NULL;
-  int string_length = string1.size();
-  for(i=0;i<string_length-1;i++) {
-    nodes = (long*) Malloc(sizeof(long)*ElNumberOfNodes[1]);
-    nodes[0] = string1[i];
-    nodes[1] = string1[i+1];
-    nodes[2] = string2[i+1];
-    nodes[3] = string2[i];
-    ELECreateTopology(2,-1,0,ElementListLength);
-    ElSetElementNodes(ElementListLength-1,nodes);
-    anz_2D++;
-  }
 */
 }
 
@@ -158,179 +112,6 @@ void MSHCreateQuadsFromPLY(CGLPolyline *m_polyline,int msh_type)
       }
       break;
   }
-}
-
-/**************************************************************************
-  ROCKFLOW - Modul:PrismRefine()
-                                                                          
-  Aufgabe:
-    To refine prism element layers  
-  
-   const int NLayers        :      Number of layers (start mesh)
-   const int Layer          :      Layer number of the layer to be refined 
-   const int SUBLayers      :      Number of sublayers
-                                                                          
-   Programmaenderungen:
-   10/2003     WW/MB     Erste Version
-   08/2004     MB        NElementsPerLayer = msh_no_pris / NLayers; 
-                                                                          
-***************************************************************************/
-void PrismRefine(const int NLayers, const int Layer, const int NSubLayers)
-{
-  const int nn=6;
-  int i, j,nes;
-  int iii;
-  long group; 
-  long *element_nodes = NULL;
-  //WW  static long ele_nodes[6];
-  static double nx[6], ny[6], nz[6];
-  //WW  static int newNode0[3], newNode1[3];  
-  double dx[3], dy[3], dz[3];
-  double newz;
-  //WW  static double  newx0[3],newy0[3],newz0[3];
-  //WW  static double  newx1[3],newy1[3],newz1[3];
-  int element_type=0; 
-  int NumNodesNew, NumElementNew;  
-//  const double Nhood = 1.0e-8;
-  const int NumElement0 = ElListSize();
-//  const int NumNodes0 = NodeListSize();
-  long *knoten = NULL; 
-//  int pos = 0;
-  long vorgaenger;  
-  Knoten *kno = NULL;  
-  int NNodesPerRow = 0;
-  int NElementsPerLayer = 0;
-  int row;
-  int NRowsToShift;
-  int NRows;
-  int count;
-  int CountNLayers;
-
-  NNodesPerRow = NodeListSize() / (NLayers+1); 
-  //NElementsPerLayer = ElListSize() / NLayers;
-  NElementsPerLayer = msh_no_pris / NLayers;
-
-  row = Layer;
-  NRows = NLayers +1;
-
-  NumNodesNew = NodeListSize()-1;
-  NumElementNew = ElListSize()-1;
-
-  /* Initialisierung der Knoten flags */
-  for (i = 0; i < NodeListLength; i++) {
-  NODSetFreeSurfaceFlag(i, 0);
-  }
-
-  for (int ne = 0; ne < NumElement0; ne++)   {
-    if (ElGetElement(ne) != NULL)    {    /* Element existiert */
-      element_type=ElGetElementType(ne); 
-      if(element_type==6) {
-
-      element_nodes = ElGetElementNodes(ne);
-      CountNLayers = NLayers;
-
-         for(i=0; i<nn; i++)   {
-           nx[i] = GetNodeX(element_nodes[i]);
-           ny[i] = GetNodeY(element_nodes[i]);
-           nz[i] = GetNodeZ(element_nodes[i]);
-         } 
-
-         nes=0;
-         for(i=0; i<3; i++)   {
-           if(element_nodes[i] >= (row-1) * NNodesPerRow  &&
-              element_nodes[i] <= (row * NNodesPerRow) -1)   {
-              nes++;    
-           }  
-         }
-
-         if(nes==3)   {
-           for(i=0; i<3; i++)   {
-             dx[i] = (nx[i+3]-nx[i])/(float)NSubLayers;
-             dy[i] = (ny[i+3]-ny[i])/(float)NSubLayers;
-             dz[i] = (nz[i+3]-nz[i])/(float)NSubLayers;
-           }
-
-           /* Create new nodes */
-           for(iii=0; iii < NSubLayers-1 ; iii++) {  /* Loop over SubLayers */
-             /* neue Knoten ganz unten */
-             for(i=0; i<3; i++)   {
-               if (NODGetFreeSurfaceFlag(element_nodes[i])==0)   {  
-                 kno = (Knoten *)CreateNodeGeometry(); 
-                 kno->x = GetNodeX (element_nodes[i] + ((CountNLayers+1) - row) * NNodesPerRow);
-                 kno->y = GetNodeY(element_nodes[i] + ((CountNLayers+1) - row) * NNodesPerRow);
-                 kno->z = GetNodeZ(element_nodes[i] + ((CountNLayers+1) - row) * NNodesPerRow);
-                   if((element_nodes[i] + ((CountNLayers+2) - row) * NNodesPerRow) == 390) {
-                     i = i;
-                   }
-                 PlaceNode(kno,(element_nodes[i] + ((CountNLayers+2) - row) * NNodesPerRow));
-               }
-             }  
-             /* neues Element ganz unten */
-             NumElementNew++;
-             vorgaenger=-1; 
-             //OK CreateElementTopology(element_type,vorgaenger,0,NumElementNew); 
-             group = ElGetElementGroupNumber(NumElementNew - NElementsPerLayer);
-             ElSetElementGroupNumber(NumElementNew,group);
-               
-             knoten = (long *) Malloc(sizeof(long)*nn);
-             for(j=0; j<3; j++)  {
-               knoten[j] =   element_nodes[j] + ((CountNLayers+1) - row) * NNodesPerRow;
-               knoten[j+3] = element_nodes[j] + ((CountNLayers+2) - row) * NNodesPerRow;
-             } 
-             ElSetElementNodes(NumElementNew,knoten);
-             ElSetElementActiveState(NumElementNew,1);
-
-             /* "rowx hochziehen"   */
-             /* loop über die betroffenen rows   */
-             NRowsToShift = NRows - Layer;
-             count = 0;
-
-             for(i = NRowsToShift; i > 0; i--)  {
-               if (i != 1)   {
-                 count++;
-                 for(j=0; j<3; j++)  {
-                   if (NODGetFreeSurfaceFlag(element_nodes[j])==0)   {  
-                     SetNodeZ(element_nodes[j+3] + NNodesPerRow*(iii+i-1), GetNodeZ(element_nodes[j] + NNodesPerRow*(iii+i-1)));
-                   } 
-                 }
-               }
-               else   {
-                 for(j=0; j<3; j++)  {
-                   if (NODGetFreeSurfaceFlag(element_nodes[j])==0)   {  
-                     newz = GetNodeZ(element_nodes[j]) + (dz[j]*(iii+1));
-                     SetNodeZ(element_nodes[j] + (i) * NNodesPerRow *(iii+1), newz);
-                   }                               
-                 } 
-               }
-             } /* end for Rows to shift */
-            
-             if (iii== NSubLayers-2)   {
-               for(j=0; j<3; j++)   {
-                 NODSetFreeSurfaceFlag(element_nodes[j], 33);
-               }
-             }  
-           
-             CountNLayers++; 
-          } /* End Loop over SubLayers  */
-       }  /* End if nes==3 */
-    }  /* Elementtyp ==6 */
-    }  /* Element existiert */
-  }  /* Element loop */ 
-
-  /* Get Path name */
-#ifdef MFC //OK
-  CFileDialog dlg(FALSE, NULL, "new", OFN_ENABLESIZING ,
-                 " Geometry Files (*.rfi)|*.rfi| All Files (*.*)|*.*||" );
-  dlg.DoModal();
-  CString m_filepath = dlg.GetPathName();
-  anz_active_elements = ElListSize();
-  anz_3D = anz_active_elements;
-  /* Write rfi file */ 
-  const char* cpsz = static_cast<LPCTSTR>(m_filepath);
-  const char* xxxxx;
-  xxxxx = cpsz;     
-  DATWriteRFIFile(xxxxx);
-#endif
 }
 
 /**************************************************************************

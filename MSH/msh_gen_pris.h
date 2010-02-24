@@ -1,14 +1,6 @@
 #ifndef prisgen_INC
-
 #define prisgen_INC
-// FEM
-#include "prototyp.h" // PROTOTYP:H MUSS GANZ OBEN STEHEN(STEHT VOR ALLEN ANDEREN INCLUDES)
-#include "ptrarr.h"
-#include "elements.h"
-#include "nodes.h"
-//MSHLib
 #include "msh_mesh.h"
-// C++ STL
 #include <string>
 #include <list>
 #include <vector>

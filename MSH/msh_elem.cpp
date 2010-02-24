@@ -5,7 +5,7 @@ Programing:
 08/2005 WW/OK Encapsulation from rf_ele_msh
 last modified
 **************************************************************************/
-#include "stdafx.h" // MFC
+
 #include <float.h>  //WW
 #include <stdlib.h>  //WW
 #include "mathlib.h"

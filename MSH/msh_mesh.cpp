@@ -6,7 +6,6 @@ Programing:
 last modified
 **************************************************************************/
 #include "rf_mmp_new.h"
-#include "stdafx.h" // MFC
 #ifdef MFC
 #include "afxpriv.h"    // For WM_SETMESSAGESTRING
 #endif
@@ -25,10 +24,8 @@ using namespace std;
 #include "geo_lin.h"
 #include "geo_ply.h"
 #include "geo_sfc.h"
-#include "geo_strings.h"
+#include "files0.h"
 // MSHLib
-#include "elements.h"
-#include "nodes.h"
 #include "msh_mesh.h"
 #ifdef BENCHMARKING
 #include "benchtimer.h"
@@ -52,6 +49,8 @@ long msh_no_tets = 0;
 long msh_no_pris = 0;
 
 #define noMSH_CHECK
+
+int max_dim = 0; //OK411
 
 //========================================================================
 namespace Mesh_Group
@@ -748,7 +747,7 @@ void CFEMesh::GenerateHighOrderNodes()
    long e, ei, ee,  e_size,  e_size_l;
    int edgeIndex_loc0[2];
    bool done;
-   double x0,y0,z0;
+   double x0=0.0,y0=0.0,z0=0.0; //OK411
 
    // Set neighbors of node. All elements, even in deactivated subdomains, are taken into account here.
    for(e=0; e<(long)nod_vector.size(); e++)
@@ -901,7 +900,7 @@ void CFEMesh::GenerateHighOrderNodes()
               // Check neighbors 
               for(k=0;k<2;k++)
               {    
-                 CNode *tmp_nod = e_nodes[edgeIndex_loc0[k]];
+                 //OK411 CNode *tmp_nod = e_nodes[edgeIndex_loc0[k]];
                  e_size_l = (long)e_nodes[edgeIndex_loc0[k]]->connected_elements.size();         
                  for(ei=0; ei<e_size_l; ei++)
                  {
@@ -1754,7 +1753,7 @@ last modification:
 **************************************************************************/
 void CFEMesh::GetNODOnSFC_TIN(Surface*m_sfc,vector<long>&msh_nod_vector)
 {
-  long i=0,j=0,k=0,m=0;
+  long i=0,k=0,m=0;
   double angle_sum, dist;
   double tolerance = 0.001;
   double min_mesh_dist=0.0;
@@ -2147,76 +2146,6 @@ void CFEMesh::GetNODOnSFC_Vertical(Surface*m_sfc,vector<long>&msh_nod_vector)
       }
     } // no_points
   } // no_nodes
-}
-
-/**************************************************************************
-MSHLib-Method: 
-Task: 
-Programing:
-05/2005 OK
-last modification:
-**************************************************************************/
-void CFEMesh::SetNOD2ELETopology()
-{
-  int k;
-  long j;
-  double xr[4],yr[4],zr[4];
-  CGLPoint m_pnt;
-  CGLPoint m_pnt1,m_pnt2,m_pnt3,m_pnt4;
-//  FiniteElement::CElement* m_ele = NULL;
-//  CFEMesh* m_msh = NULL;
-  //----------------------------------------------------------------------
-/*
-  m_msh = FEMGet("OVERLAND_FLOW");
-  for(long i=0;i<(long)nod_vector.size();i++){
-    m_pnt.x = nod_vector[i]->x;
-    m_pnt.y = nod_vector[i]->y;
-    m_pnt.z = nod_vector[i]->z;
-    for(j=0;j<(long)m_msh->ele_vector.size();j++){
-      m_ele = m_msh->ele_vector[j];
-      if(m_pnt.PointInRectangle(xr,yr,zr))
-        nod_vector[i]->ele_vector.push_back(m_ele);
-    }
-  }
-*/
-  Element* element = NULL;
-  for(long i=0;i<(long)nod_vector.size();i++){
-    m_pnt.x = nod_vector[i]->X();
-    m_pnt.y = nod_vector[i]->Y();
-    m_pnt.z = nod_vector[i]->Z();
-    for(j=0;j<ElListSize();j++){
-      element = ElGetElement(j);
-      for(k=0;k<4;k++){
-        xr[k] = GetNodeX(element->elementknoten[k]);
-        yr[k] = GetNodeY(element->elementknoten[k]);
-        zr[k] = GetNodeZ(element->elementknoten[k]);
-      }
-      if(m_pnt.IsInsideRectangle(xr,yr,zr)){//CC 10/05
-//WW ?????????        nod_vector[i]->ele_vector.push_back(element);
-        //cout << i << " " << element->element_start_number << endl;
-      }
-    }
-  }
-  //----------------------------------------------------------------------
-/*
-  m_msh = FEMGet("GROUNDWATER_FLOW");
-  for(long i=0;i<(long)nod_vector.size();i++){
-    m_pnt.x = nod_vector[i]->x;
-    m_pnt.y = nod_vector[i]->y;
-    m_pnt.z = nod_vector[i]->z;
-    for(j=0;j<(long)m_msh->ele_vector.size();j++){
-      m_ele = m_msh->ele_vector[j];
-      for(k=0;k<4;k++){
-        xr[k] = m_msh->nod_vector[m_ele->nodes_index[k]]->x;
-        yr[k] = m_msh->nod_vector[m_ele->nodes_index[k]]->y;
-        zr[k] = m_msh->nod_vector[m_ele->nodes_index[k]]->z;
-      }
-      if(m_pnt.PointInRectangle(xr,yr,zr)){
-        nod_vector[i]->ele_vector_new.push_back(m_ele);
-      }
-    }
-  }
-*/
 }
 
 /**************************************************************************

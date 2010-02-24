@@ -4,13 +4,12 @@ Task:
 Programing:
 08/2005 OK Encapsulated from mshlib
 **************************************************************************/
-#include "stdafx.h" // MFC
-// C++
+
 #include <string>
 #include <vector>
 using namespace std;
 // MSHLib
-#include "msh_elements_rfi.h"
+#include "msh_mesh.h"
 // PCSLib
 
 /**************************************************************************
@@ -22,8 +21,7 @@ Programing:
 void CFEMesh::SetLINPointsClose(CGLLine*m_lin)
 {
   m_lin = m_lin;
-//WWW
-#ifdef TODO 
+/*OK411
   long j;
   double pt1[3],pt2[3],line1[3],line2[3];
   double mult_eps = 1.0;
@@ -117,7 +115,7 @@ void CFEMesh::SetLINPointsClose(CGLLine*m_lin)
     for (j=0;j<m_lin->no_msh_nodes-1;j++) {
        w1=dist[j];
        w2=dist[j+1];
-       if (w1>w2) { /* Die Eintraege vertauschen */
+       if (w1>w2) { // Die Eintraege vertauschen
           knoten_help = m_lin->msh_nodes[j];
           laenge_help = dist[j];
           m_lin->msh_nodes[j] = m_lin->msh_nodes[j+1];
@@ -132,7 +130,5 @@ void CFEMesh::SetLINPointsClose(CGLLine*m_lin)
   // Destructions
   dist = (double*) Free(dist);
   relevant = (INFO*) Free(relevant);
-
-///WWW
-#endif 
+*/
 }

@@ -184,7 +184,7 @@ class CFEMesh
     void SetMSHPart(vector<long>&,long); //MB
     bool NodeExists(long node);
     // NOD-ELE relations
-    void SetNOD2ELETopology();
+    //OK411 void SetNOD2ELETopology();
     // ELE-NOD relations
     void SetELE2NODTopology();
     // LINE->LINE

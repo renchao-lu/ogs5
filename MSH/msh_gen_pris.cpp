@@ -4,11 +4,7 @@ PRISM GENERATOR
 1. Schritt 3/2003  TK => Eingabe und Ausgabe der RFI-Dateien
 10/2004 OK msh_nodes_vector - name conflicts
 **************************************************************************/
-//------------------------------------------------------------------------
-// MFC
-#include "stdafx.h"
-//------------------------------------------------------------------------
-// C/C++
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -207,13 +203,8 @@ void MSH_CreateFirstPrismlayer (double thickness_prism_layers, CFEMesh*m_msh)
 long i=0; 
 long nodelistlength;
 
-if(m_msh){
   nodelistlength = (long)m_msh->nod_vector.size();
-}
 
-else{
-  nodelistlength =  NodeListSize ();
-}
   /*Add Nodes:*/
   for (i=0;i<nodelistlength;i++){
     m_msh_nodes = new CMSHNodesPrisGen;
@@ -582,35 +573,4 @@ void MSH_Destroy_PrismDataConstructs ()
 {
   msh_pris_nodes_vector.clear();
   msh_pris_elements_vector.clear();
-}
-
-
-/**************************************************************************
-MshLib-Method: 
-Task: 
-Programing:
-03/2004 OK Implementation
-**************************************************************************/
-void MSHCreatePrismsFromTriangles(void)
-{
-  //-----------------------------------------------------------------------
-  long *nodes = NULL;
-  long i;
-  int mat_group = 0;
-  long no_prisms = (long)msh_pris_elements_vector.size();
-  for(i=0;i<no_prisms;i++) {
-      nodes = (long*) Malloc(sizeof(long)*ElNumberOfNodes[5]);
-      nodes[0] = msh_pris_elements_vector[i]->node1;
-      nodes[1] = msh_pris_elements_vector[i]->node2;
-      nodes[2] = msh_pris_elements_vector[i]->node3;
-      nodes[3] = msh_pris_elements_vector[i]->node4;
-      nodes[4] = msh_pris_elements_vector[i]->node5;
-      nodes[5] = msh_pris_elements_vector[i]->node6;
-//OK      ELECreateTopology(elementtyp,vorgaenger,level,ElementListLength);
-      ElSetElementNodes(ElementListLength-1,nodes);
-      ElSetElementGroupNumber(ElementListLength-1,mat_group);
-      anz_3D++;
-  }
-  //-----------------------------------------------------------------------
-  msh_no_pris = no_prisms;
 }
