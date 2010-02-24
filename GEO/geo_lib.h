@@ -7,7 +7,7 @@ Programing:
 11/2003 OK -> GeoLib class
 09/2005 CC GeoLib2
 **************************************************************************/
-#include "stdafx.h"
+
 #ifndef geolib_INC
 #define geolib_INC
 

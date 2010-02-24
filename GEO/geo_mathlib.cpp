@@ -4,11 +4,11 @@ Task:
 Programing:
 08/2005 CC Implementation
 **************************************************************************/
-#include "stdafx.h"             /* MFC */
+
 #include <stdlib.h>
-/* Preprozessor-Definitionen */
 #include <cstdio>  
 #include "geo_mathlib.h"  
+
 /**************************************************************************/
 /* GEO MATHLIB - Funktion: EuklVek3dDist
                                                                           */

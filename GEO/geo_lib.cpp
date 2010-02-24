@@ -7,8 +7,7 @@ Programming:
 last modified:
 09/2005 CC GeoLib2
 -------------------------------------------------------------------------*/
-// MFC
-#include "stdafx.h"
+
 #include <stdio.h>
 #include <string.h>
 #ifdef MFC

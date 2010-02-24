@@ -1,4 +1,4 @@
-#include "stdafx.h" /* MFC */
+
 #include <stdlib.h>
 #ifdef MFC
 #include "afxpriv.h" // For WM_SETMESSAGESTRING
@@ -8,7 +8,7 @@
 #include "geo_sfc.h"
 #include "geo_pnt.h"
 #include "geo_mathlib.h"
-#include "geo_strings.h"
+#include "files0.h"
 #include "geo_lib.h"
 //GSP
 #ifdef MFC

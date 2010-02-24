@@ -5,14 +5,12 @@ Programing:
 09/2003 OK Implementation
 09/2005 CC GeoLib2
 **************************************************************************/
-// MFC
-#include "stdafx.h"
 #include <stdio.h> 
 #include <string.h>
 // C++ STL
 // GeoLib
 #include "geo_dom.h"
-#include "geo_strings.h"
+#include "files0.h"
 // Vector
 vector<CGLDomain*> domain_vector;//CC
 

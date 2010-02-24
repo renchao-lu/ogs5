@@ -10,8 +10,7 @@ Programing:
 03/2004 OK TINs
 09/2005 CC GeoLib2
 **************************************************************************/
-//MFC
-#include "stdafx.h"
+
 #ifdef MFC
 #include "geosys.h"
 #include "mainfrm.h"
@@ -23,7 +22,7 @@ Programing:
 #include "geo_pnt.h"
 #include "geo_ply.h"
 #include "geo_sfc.h"
-#include "geo_strings.h"
+#include "files0.h"
 #include "geo_lib.h"
 #include "geo_mathlib.h"
 //GSP

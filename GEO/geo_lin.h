@@ -1,7 +1,6 @@
 #ifndef gl_lin_INC
-
 #define gl_lin_INC
-#include "stdafx.h"
+
 #include "geo_pnt.h" 
 
 /*---------------------------------------------------------------*/

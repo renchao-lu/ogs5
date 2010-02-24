@@ -7,15 +7,14 @@ Programing:
 08/2005 CC Modification
 09/2005 CC GeoLib2
 **************************************************************************/
-// C/C++/MFC
-#include "stdafx.h" 
+
 #include <stdlib.h>
 #ifdef MFC
 #include "afxpriv.h" // For WM_SETMESSAGESTRING
 #endif
 // GeoLib
 #include "geo_pnt.h"
-#include "geo_strings.h"
+#include "files0.h"
 /*----------------------------------------------------------------------*/
 vector<CGLPoint*>gli_points_vector;
 vector<CGLPoint*>pnt_properties_vector;

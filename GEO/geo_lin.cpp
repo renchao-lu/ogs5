@@ -5,12 +5,10 @@ Programing:
 01/2004 OK Implementation
 09/2005 CC GeoLib2
 **************************************************************************/
-#include "stdafx.h" /* MFC */
 
-// GeoLib
 #include "geo_lin.h"
 #include "geo_pnt.h"
-#include "geo_strings.h"
+#include "files0.h"
 #include "geo_mathlib.h"//CC
 
 vector<CGLLine*> gli_lines_vector;

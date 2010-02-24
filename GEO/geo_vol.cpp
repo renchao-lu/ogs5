@@ -5,15 +5,14 @@ Programing:
 07/2003 OK Implementation
 09/2005 CC GeoLib2
 **************************************************************************/
-// MFC
-#include "stdafx.h" 
+
 #include <stdlib.h>
 // GEOLib
 #include "geo_pnt.h"
 #include "geo_lib.h"
 #include "geo_sfc.h"
 #include "geo_vol.h"
-#include "geo_strings.h"
+#include "files0.h"
 
 //------------------------------------------------------------------------
 vector<CGLVolume*> volume_vector;//CC
