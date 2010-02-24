@@ -1,4 +1,3 @@
-#include "stdafx.h" // MFC
 #include "Stiff_Bulirsch-Stoer.h"
 #include "stdlib.h"
 #include "stdio.h"

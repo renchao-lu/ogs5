@@ -12,22 +12,10 @@
                           Ausnahmen: DisplayStartMsg/DisplayEndMsg                                                  */
 /**************************************************************************/
 
-#include "stdafx.h" /* MFC */
-
-
-/* Preprozessor-Definitionen */
 #include "makros.h"
-
-
-/* Header / Andere intern benutzte Module */
 #include "display.h"
-#include "files.h"
-  /* wird durch makros.h schon importiert */
-
-/* Interne (statische) Deklarationen */
-
-
-/* Definitionen */
+extern FILE *OpenMsgFile(void);
+extern void CloseMsgFile(FILE*);
 
 /**************************************************************************/
 /* ROCKFLOW - Funktion: DisplayStartMsg
@@ -54,7 +42,7 @@ void DisplayStartMsg ( void )
   printf("\n");
   printf("          ###################################################\n");
   printf("          ##                                               ##\n");
-  printf("          ##               GEOSYS - ROCKFLOW               ##\n");
+  printf("          ##               OpenGeoSys-Project              ##\n");
   printf("          ##                                               ##\n");
   printf("          ##  Helmholtz Center for Environmental Research  ##\n");
   printf("          ##    UFZ Leipzig - Environmental Informatics    ##\n");
@@ -69,7 +57,7 @@ void DisplayStartMsg ( void )
   //align the version information to center of the line
   printf("          ## ");
   sprintf(buf, "Version %s  Date %s", ROCKFLOW_VERSION, ROCKFLOW_DATE);
-  pad_len = 45 - strlen(buf);
+  pad_len = 45 - (int)strlen(buf);
   for (i=0; i<pad_len/2; i++) printf(" ");
   printf("%s", buf);
   for (i=0; i<pad_len-pad_len/2; i++) printf(" ");
@@ -285,72 +273,6 @@ void DisplayDoubleVector ( double *vec, long grad, char *text )
   CloseMsgFile(f);
   DisplayMsgLn("");
 }
-
-
-/**************************************************************************/
-/* ROCKFLOW - Funktion: DisplayDoubleMatrix
-                                                                          */
-/* Aufgabe:
-   Schreibt Matrix auf Standardausgabe
-                                                                          */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E double *mat: Zeiger auf Matrix
-   E long m: 1. Dimension der Matrix
-   E long n: 2. Dimension der Matrix
-   E char *text: Ueberschrift ueber Ausgabe
-                                                                          */
-/* Ergebnis:
-   - void -
-                                                                          */
-/* Programmaenderungen:
-   08/1994     Hans Herrmann    Erste Version
-   12/1994     MSR              Von mathlib nach display portiert
-   01/2002     MK         Umleitung in MSG-Datei 
-                                                                         */
-/**************************************************************************/
-void DisplayDoubleMatrix ( double *mat, long m, long n, char *text )
-{
-  /* //WW
-  FILE *f;
-  long i, k;
-  DisplayMsgLn("");
-  DisplayMsgLn(text);
-  if(n<=6) {
-      f=OpenMsgFile();
-      for (k=0;k<m;k++) {
-          fprintf(f,"%s","|");
-          for(i=0;i<n;i++) {
-              fprintf(f,"%+10.3e",mat[i+k*n]);
-              if (i!=(n-1))
-                  fprintf(f,"%s"," ");
-          }
-          fprintf(f,"%s\n            ","|");
-          fflush(stdout);
-      }
-      CloseMsgFile(f);
-      DisplayMsgLn("");
-  }
-  else {
-      double *zwila = NULL;
-      char raus[100];
-      zwila = (double *) Malloc(n*sizeof(double));
-      DisplayMsg("(Darstellung erfolgt in ");
-      DisplayLong(m);
-      DisplayMsg(" Spaltenvektoren)");
-      for (i=0;i<m;i++) {
-          for(k=0;k<n;k++)
-              zwila[k]=mat[i+k*m];
-          sprintf(raus,"%ld.Spalte (%s)",(i+1l),text);
-          raus[(int)strlen(raus)]='\0';
-         // sprintf(raus,"%ld.Spalte (%s)\0",(i+1l),text);
-  //  \0 gibt eine warning, ist aber sonst zu umstaendlich 
-          DisplayDoubleVector(zwila,n,raus);
-      }
-      zwila = (double *) Free(zwila);
-  }
-*/
-}
-
 
 /**************************************************************************/
 /* ROCKFLOW - Funktion: DisplayErrorMsg

@@ -74,8 +74,6 @@
                         -> schnelleres Suchen
 **************************************************************************/
 
-/* Preprozessor-Definitionen */
-#include "stdafx.h"                    /* MFC */
 #include "makros.h"
 
 #define noTESTMATRIX_PERF
@@ -83,7 +81,7 @@
 
 /* Header / Andere intern benutzte Module */
 #include "matrix.h"
-#include "geo_strings.h"
+#include "files0.h"
 #include "mathlib.h"
 // MSHLib
 #include "msh_node.h"
@@ -1471,7 +1469,7 @@ int M5Set(long i, long j, double e_val)
 {
   long k, dim1;
   long ii, jj;  
-
+  e_val = e_val; //OK411
   CFEMesh* m_msh = NULL;
   CNode *m_nod_i = NULL;
 //  CNode *m_nod_j = NULL;

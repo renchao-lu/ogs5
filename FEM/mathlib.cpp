@@ -138,20 +138,11 @@
    06/2004     WW                   Generalized shape functions                                    
 ***************************************************************************/
 
-#include "stdafx.h"             /* MFC */
-/* Preprozessor-Definitionen */
-
 #include <float.h>
 #include <stdio.h>
 #include "makros.h"
-
-/* Header intern benutzter Module */
-
 #include "mathlib.h"
-#include "nodes.h"
-//WW #include "elements.h"
 #include "femlib.h"    //CMCD 03 2004
-//WW----------------------
 #include "par_ddc.h" 
 //#undef SEEK_SET 
 //#undef SEEK_END 
@@ -2788,8 +2779,10 @@ double MCalcProjectionOfPointOnLine(double *pt, double *l1, double *l2, double *
  **************************************************************************/
 double CalcTriangleArea (long n1, long n2, long n3)
 {
+  double area=0.0;
+  n1=n1;n2=n2;n3=n3; //OK411
+/*OK411
   double vec1[3], vec2[3], vec3[3];
-  double area;
 
   vec1[0] = GetNodeX(n2)-GetNodeX(n1);
   vec1[1] = GetNodeY(n2)-GetNodeY(n1);
@@ -2802,7 +2795,7 @@ double CalcTriangleArea (long n1, long n2, long n3)
   M3KreuzProdukt(vec1,vec2,vec3);
 
   area = 0.5 * MBtrgVec(vec3,3);
-
+*/
   return area;
 }
 

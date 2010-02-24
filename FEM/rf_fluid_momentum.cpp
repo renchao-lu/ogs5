@@ -7,15 +7,11 @@ Programing:
 05/2005 PCH Implementation
 **************************************************************************/
 
-#include "stdafx.h" //MFC
-
-// C++ STL
 #include <iostream>
 using namespace std;
 
 #include "rf_fluid_momentum.h"
 #include "rf_random_walk.h"
-//WW #include "elements.h" //OK
 
 /**************************************************************************
 FEMLib-Method: ThreeComponet
@@ -141,7 +137,7 @@ last modification:
 **************************************************************************/
 void CFluidMomentum::SolveDarcyVelocityOnNode()
 {
-	int nidx1;
+	int nidx1 = 0; //OK411
     long i;
     CElem* elem = NULL;
 	
@@ -206,7 +202,7 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 #ifdef NEW_EQS
 
 			double* x;
-			int size = m_msh->nod_vector.size();
+			int size = (int)m_msh->nod_vector.size(); //OK411??? long
 			x = new double[size];
 #if defined(LIS) 
 			m_pcs->EQSSolver(x);		// an option added to tell FLUID_MOMENTUM for sparse matrix system.

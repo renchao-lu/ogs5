@@ -7,7 +7,6 @@ Start time:  09.07.2008
 Modification:
             12.2008 WW Incoorparate the changes from previous versions. 
 ========================================================================*/
-#include "stdafx.h"
 #if defined(PROBLEM_CLASS)
 #if defined(USE_MPI_REGSOIL)
 #include <mpi.h>
@@ -27,7 +26,7 @@ Modification:
 #include "msh_lib.h"
 /*------------------------------------------------------------------------*/
 // Data file
-#include "files.h"
+extern int ReadData(char*); //OK411
 /* PCS */
 #include "pcs_dm.h"
 #include "rf_pcs.h" 
@@ -45,7 +44,7 @@ Modification:
 #include "rf_bc_new.h"
 #include "rf_out_new.h"
 #include "tools.h"
-#include "rfstring.h" // GetLineFromFile1
+#include "files0.h" // GetLineFromFile1
 //
 #ifdef CHEMAPP
   #include "./EQL/eqlink.h"
@@ -717,7 +716,7 @@ void Problem::PCSRestart()
       nidx0 = m_pcs->GetNodeValueIndex(m_pcs->GetPrimaryVName(j));
       // timelevel= 1;
       nidx1 = nidx0+1;
-      CopyNodeVals(nidx1,nidx0);
+//OK411      CopyNodeVals(nidx1,nidx0);
     }
   }
 }
@@ -1529,7 +1528,7 @@ inline double Problem::RandomWalker()
   //
   if(!m_pcs->selected) return error; //12.12.2008 WW
   //
-	CFEMesh* m_msh = NULL;
+	//OK411 CFEMesh* m_msh = NULL;
 	if(m_pcs&&m_pcs->selected)
 	{
 		lop_coupling_iterations = 1;
@@ -2092,43 +2091,22 @@ void Problem::LOPCalcELEResultants()
 **************************************************************************/
 inline void Problem::ASMCalcNodeWDepth(CRFProcess *m_pcs)
 {
-int nidx, nidy, nidz;
-int timelevel = 1; 
-int i;
-double WDepth;
+  int nidx, nidy, nidz;
+  //OK411 int timelevel = 1; 
+  double WDepth;
 
-if(m_pcs->m_msh){
-//  nidx = GetNodeValueIndex("HEAD")+1;
-//  nidy = GetNodeValueIndex("WDEPTH")+1;
   nidx = m_pcs->GetNodeValueIndex("HEAD")+1;
   nidy = m_pcs->GetNodeValueIndex("WDEPTH");
   nidz = m_pcs->GetNodeValueIndex("COUPLING");
-  //for (i=0;i<NodeListLength;i++) {
-  for(long nn=0;nn<(long)m_pcs->m_msh->nod_vector.size();nn++){
-    //if (GetNode(i)!=NULL) {  /* wenn Knoten existiert */
-      WDepth = m_pcs->GetNodeValue(nn, nidx) - m_pcs->m_msh->nod_vector[nn]->Z();
-	  m_pcs->SetNodeValue(nn,nidz, m_pcs->GetNodeValue(nn,nidz+1) ); // JOD only needed for GREEN_AMPT source term 
-      if (WDepth < 0.0) {
-        WDepth  = 0.0;
-      }
-      m_pcs->SetNodeValue(nn, nidy, WDepth);
-    
-  }
-}
-else{
-  nidx = PCSGetNODValueIndex("HEAD",timelevel);
-  nidy = PCSGetNODValueIndex("WDEPTH",timelevel);
-
-  for (i=0;i<NodeListLength;i++) {
-    if (GetNode(i)!=NULL) {  /* wenn Knoten existiert */
-      WDepth = GetNodeVal(i,nidx) - GetNodeZ(i);
-      if (WDepth < 0.0) {
-        WDepth  = 0.0;
-      }
-      SetNodeVal(i,nidy,WDepth);
+  for(long nn=0;nn<(long)m_pcs->m_msh->nod_vector.size();nn++)
+  {
+    WDepth = m_pcs->GetNodeValue(nn, nidx) - m_pcs->m_msh->nod_vector[nn]->Z();
+	m_pcs->SetNodeValue(nn,nidz, m_pcs->GetNodeValue(nn,nidz+1) ); // JOD only needed for GREEN_AMPT source term 
+    if (WDepth < 0.0) {
+      WDepth  = 0.0;
     }
+    m_pcs->SetNodeValue(nn, nidy, WDepth);
   }
-}
 }
 
 /**************************************************************************/
@@ -2150,14 +2128,12 @@ void Problem::PCSCalcSecondaryVariables()
 
   int i, ptype;
   CRFProcess *m_pcs=NULL;
-#ifdef RESET_4410
-  CRFProcess* m_pcs_phase_1 = NULL;
-  CRFProcess* m_pcs_phase_2 = NULL;
+  //OK411 CRFProcess* m_pcs_phase_1 = NULL;
+  //OK411 CRFProcess* m_pcs_phase_2 = NULL;
  //WW int ndx_p_gas_old,ndx_p_gas_new,ndx_p_liquid_old,ndx_p_liquid_new,ndx_p_cap_old;
   //----------------------------------------------------------------------
-  bool pcs_cpl = true; 
+  //OK411 bool pcs_cpl = true; 
   //----------------------------------------------------------------------
-#endif
   // Check if NAPLdissolution is modeled, required by MMPCalcSecondaryVariablesNew
   bool NAPLdiss = false;
   NAPLdiss = KNaplDissCheck();

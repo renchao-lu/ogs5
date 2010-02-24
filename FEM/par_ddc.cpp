@@ -8,7 +8,7 @@ Programing:
 07/2006 WW Local topology, High order nodes
 last modified:
 **************************************************************************/
-#include "stdafx.h" /* MFC */
+
 #include <math.h>
 // C++ STL
 #include <iostream>
@@ -16,11 +16,10 @@ using namespace std;
 #include "par_ddc.h"
 // FEM-Makros
 #include "makros.h"
-//WW #include "elements.h"
 #ifndef NEW_EQS //WW. 11.2008
 #include "matrix.h"
 #endif
-#include "geo_strings.h"
+#include "files0.h"
 #include "rf_num_new.h"
 #include "gs_project.h"
 #ifdef NEW_EQS

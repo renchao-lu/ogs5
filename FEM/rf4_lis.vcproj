@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="rf4sp_lis"
 	ProjectGUID="{4F159AF7-FF53-410E-A9A7-2C500A4EF55E}"
 	RootNamespace="rf4sp_cpp"
@@ -266,34 +266,6 @@
 				>
 			</File>
 			<File
-				RelativePath="elements.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="elements.h"
-				>
-			</File>
-			<File
 				RelativePath=".\eos.cpp"
 				>
 			</File>
@@ -458,34 +430,6 @@
 				>
 			</File>
 			<File
-				RelativePath="nodes.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="nodes.h"
-				>
-			</File>
-			<File
 				RelativePath="par_ddc.cpp"
 				>
 				<FileConfiguration
@@ -554,34 +498,6 @@
 				>
 			</File>
 			<File
-				RelativePath="ptrarr.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="ptrarr.h"
-				>
-			</File>
-			<File
 				RelativePath="rf.cpp"
 				>
 				<FileConfiguration
@@ -631,34 +547,6 @@
 			</File>
 			<File
 				RelativePath="rf_bc_new.h"
-				>
-			</File>
-			<File
-				RelativePath="rf_db.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="rf_db.h"
 				>
 			</File>
 			<File
@@ -926,14 +814,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\rf_REACT_GEM.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rf_REACT_GEM.h"
-				>
-			</File>
-			<File
 				RelativePath="rf_st_new.cpp"
 				>
 				<FileConfiguration
@@ -990,34 +870,6 @@
 				>
 			</File>
 			<File
-				RelativePath="rfadt.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="rfadt.h"
-				>
-			</File>
-			<File
 				RelativePath="rfmat_cp.cpp"
 				>
 				<FileConfiguration
@@ -1043,34 +895,6 @@
 			</File>
 			<File
 				RelativePath="rfmat_cp.h"
-				>
-			</File>
-			<File
-				RelativePath="rfstring.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						PreprocessorDefinitions=""
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="rfstring.h"
 				>
 			</File>
 			<File
@@ -1142,10 +966,6 @@
 				>
 			</File>
 			<File
-				RelativePath="version.h"
-				>
-			</File>
-			<File
 				RelativePath=".\vtk.cpp"
 				>
 			</File>
@@ -1214,14 +1034,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Geo\geo_strings.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Geo\geo_strings.h"
-				>
-			</File>
-			<File
 				RelativePath="..\Geo\geo_vol.cpp"
 				>
 			</File>
@@ -1233,14 +1045,6 @@
 		<Filter
 			Name="MSH"
 			>
-			<File
-				RelativePath="..\Msh\moveGEOtoMSH.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Msh\moveGEOtoMSH.h"
-				>
-			</File>
 			<File
 				RelativePath="..\Msh\msh_core.cpp"
 				>
@@ -1263,14 +1067,6 @@
 			</File>
 			<File
 				RelativePath="..\Msh\msh_elem.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Msh\msh_elements_rfi.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Msh\msh_elements_rfi.h"
 				>
 			</File>
 			<File
@@ -1318,19 +1114,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Msh\msh_nodes_rfi.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Msh\msh_nodes_rfi.h"
-				>
-			</File>
-			<File
 				RelativePath="..\Msh\msh_pnt.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Msh\msh_rfi.cpp"
 				>
 			</File>
 		</Filter>

@@ -8,17 +8,12 @@
 //-------------------------------------
 
 #include "rf_REACT_GEM.h"
-// #include "node.h"
 #include "rf_pcs.h"
 #include "rfmat_cp.h"
 #include "msh_node.h"
 #include "msh_elem.h"
-#include "elements.h"
-// LIB for file handling--
-#include "geo_strings.h"
-#include "rfstring.h"
-// -----------------------
-//Headers for shuffling
+extern string GetLineFromFile1(ifstream*);
+
 #include <iostream>
 #include <algorithm>
 #include <cstdlib>
@@ -31,8 +26,6 @@
 #include "unistd.h" // on unix/linux platform
 #include "stdlib.h"
 #endif
-
-
 
 #ifdef USE_MPI_GEMS
 #undef SEEK_SET

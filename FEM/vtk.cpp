@@ -1,4 +1,3 @@
-#include "stdafx.h" /* MFC */
 #include "vtk.h"
 #include <fstream>
 #if defined(WIN32)
@@ -29,7 +28,8 @@ bool CVTK::InitializePVD(const string &file_base_name, const string &pcs_type_na
     //VTK
     int ibs = (int)file_base_name.find_last_of("\\");
     int is = (int)file_base_name.find_last_of("/");
-    if (ibs != string::npos  || is != string::npos) {
+    if (ibs != (int)string::npos  || is != (int)string::npos) //OK411
+    {
       int ibegin = ibs; if (is > ibs) ibegin = is;
       ibegin+=1;
       this->pvd_vtk_file_name_base = file_base_name.substr(ibegin);
@@ -257,7 +257,7 @@ bool CVTK::WriteXMLUnstructuredGrid(const string &vtkfile, COutput *out, const i
   fin << "    <Piece NumberOfPoints=\"" << msh->GetNodesNumber(false) << "\" NumberOfCells=\"" << msh->ele_vector.size() << "\">" << endl;
   //....................................................................
   // Nodes
-  CNode *nod = NULL;
+  //OK411 CNode *nod = NULL;
   fin << "      <Points>" << endl;
   WriteDataArrayHeader(fin, type_Double, "", 3, str_format, offset);
   WriteMeshNodes(fin, data_out, msh, offset);
@@ -265,7 +265,7 @@ bool CVTK::WriteXMLUnstructuredGrid(const string &vtkfile, COutput *out, const i
   fin << "      </Points>" << endl;
   //....................................................................
   // Elements
-  CElem * ele = NULL;
+  //OK411 CElem * ele = NULL;
   fin << "      <Cells>" << endl;
   //connectivity
   WriteDataArrayHeader(fin, type_Long, "connectivity", 0, str_format, offset);
@@ -351,7 +351,7 @@ bool CVTK::WriteMeshNodes(fstream &fin, bool output_data, CFEMesh *msh, long &of
         fin << "          " << nod->X() << " " << nod->Y() << " " << nod->Z() << endl;
       }
     } else {
-      write_value_binary<unsigned int>(fin, sizeof(double)*3*msh->nod_vector.size());
+      write_value_binary<unsigned int>(fin, sizeof(double)*3*(long)msh->nod_vector.size()); //OK411
       for (long i=0; i<(long)msh->nod_vector.size(); i++) {
         nod = msh->nod_vector[i];
         write_value_binary(fin,  nod->X());
@@ -360,7 +360,7 @@ bool CVTK::WriteMeshNodes(fstream &fin, bool output_data, CFEMesh *msh, long &of
       }
     }
   } else if (useBinary) {
-    offset += msh->nod_vector.size()*sizeof(double)*3 + SIZE_OF_BLOCK_LENGTH_TAG;
+    offset += (long)msh->nod_vector.size()*sizeof(double)*3 + SIZE_OF_BLOCK_LENGTH_TAG; //OK411
   }
 
   return true;
@@ -414,7 +414,7 @@ bool CVTK::WriteMeshElementOffset(fstream &fin, bool output_data, CFEMesh *msh, 
       }
       fin << endl;
     } else {
-      write_value_binary<unsigned int>(fin, sizeof(long)*msh->ele_vector.size());
+      write_value_binary<unsigned int>(fin, sizeof(long)*(long)msh->ele_vector.size()); //OK411
       long ele_offset = 0;
       for (long i=0; i<(long)msh->ele_vector.size(); i++) {
         ele = msh->ele_vector[i];
@@ -424,7 +424,7 @@ bool CVTK::WriteMeshElementOffset(fstream &fin, bool output_data, CFEMesh *msh, 
     }
   } else {
     if (useBinary) {
-      offset += msh->ele_vector.size()*sizeof(long) + SIZE_OF_BLOCK_LENGTH_TAG;
+      offset += (long)msh->ele_vector.size()*sizeof(long) + SIZE_OF_BLOCK_LENGTH_TAG; //OK411
     }
   }
 
@@ -443,7 +443,7 @@ bool CVTK::WriteMeshElementType(fstream &fin, bool output_data, CFEMesh *msh, lo
       }
       fin << endl;
     } else {
-      write_value_binary<unsigned int>(fin, sizeof(unsigned char)*msh->ele_vector.size());
+      write_value_binary<unsigned int>(fin, sizeof(unsigned char)*(long)msh->ele_vector.size()); //OK411
       for(long i=0;i<(long)msh->ele_vector.size();i++){
         ele = msh->ele_vector[i];
         write_value_binary(fin, this->GetVTKCellType(ele->GetElementType()));
@@ -451,7 +451,7 @@ bool CVTK::WriteMeshElementType(fstream &fin, bool output_data, CFEMesh *msh, lo
     }
   } else {
     if (useBinary) {
-      offset += msh->ele_vector.size()*sizeof(unsigned char) + SIZE_OF_BLOCK_LENGTH_TAG;
+      offset += (long)msh->ele_vector.size()*sizeof(unsigned char) + SIZE_OF_BLOCK_LENGTH_TAG; //OK411
     }
   }
 
@@ -619,13 +619,13 @@ bool CVTK::WriteElementValue(fstream &fin, bool output_data, COutput *out, CFEMe
         }
         fin << endl;
       } else {
-        write_value_binary<unsigned int>(fin, sizeof(double)*msh->ele_vector.size());
+        write_value_binary<unsigned int>(fin, sizeof(double)*(long)msh->ele_vector.size()); //OK411
         for(long j=0;j<(long)msh->ele_vector.size();j++) {
 	      write_value_binary(fin, m_pcs->GetElementValue(j,ele_value_index_vector[i]));
         }
       }
     } else {
-      offset += msh->ele_vector.size()*sizeof(double) + SIZE_OF_BLOCK_LENGTH_TAG;
+      offset += (long)msh->ele_vector.size()*sizeof(double) + SIZE_OF_BLOCK_LENGTH_TAG; //OK411
     }
     if (!useBinary || !output_data) {
       WriteDataArrayFooter(fin);
@@ -651,7 +651,7 @@ bool CVTK::WriteElementValue(fstream &fin, bool output_data, COutput *out, CFEMe
         fin << endl;
       } else {
         static double ele_vel[3]={0.0,0.0,0.0};
-        write_value_binary<unsigned int>(fin, sizeof(double)*3*msh->ele_vector.size());
+        write_value_binary<unsigned int>(fin, sizeof(double)*3*(long)msh->ele_vector.size()); //OK411
         for(long i=0;i<(long)msh->ele_vector.size();i++)
         {
           ele_gp_value[i]->getIPvalue_vec(0, ele_vel);
@@ -661,7 +661,7 @@ bool CVTK::WriteElementValue(fstream &fin, bool output_data, COutput *out, CFEMe
         }
       }
     } else {
-      offset += msh->ele_vector.size()*sizeof(double)*3 + SIZE_OF_BLOCK_LENGTH_TAG;
+      offset += (long)msh->ele_vector.size()*sizeof(double)*3 + SIZE_OF_BLOCK_LENGTH_TAG; //OK411
     }
     if (!useBinary || !output_data) {
       WriteDataArrayFooter(fin);
@@ -684,7 +684,7 @@ bool CVTK::WriteElementValue(fstream &fin, bool output_data, COutput *out, CFEMe
           }
           fin << endl;
         } else {
-          write_value_binary<unsigned int>(fin, sizeof(double)*3*msh->ele_vector.size());
+          write_value_binary<unsigned int>(fin, sizeof(double)*3*(long)msh->ele_vector.size()); //OK411
           for(long i=0;i<(long)msh->ele_vector.size();i++)
           {
   	        write_value_binary(fin, pch_pcs->GetElementValue(i, pch_pcs->GetElementValueIndex("VELOCITY1_X")+1));
@@ -693,7 +693,7 @@ bool CVTK::WriteElementValue(fstream &fin, bool output_data, COutput *out, CFEMe
           }
         }
       } else {
-        offset += msh->ele_vector.size()*sizeof(double)*3 + SIZE_OF_BLOCK_LENGTH_TAG;
+        offset += (long)msh->ele_vector.size()*sizeof(double)*3 + SIZE_OF_BLOCK_LENGTH_TAG; //OK411
       }
       if (!useBinary || !output_data) {
         WriteDataArrayFooter(fin);
@@ -716,12 +716,12 @@ bool CVTK::WriteElementValue(fstream &fin, bool output_data, COutput *out, CFEMe
         }
         fin << endl;
       } else {
-        write_value_binary<unsigned int>(fin, sizeof(int)*msh->ele_vector.size());
+        write_value_binary<unsigned int>(fin, sizeof(int)*(long)msh->ele_vector.size()); //OK411
         for (long i=0;i<(long)msh->ele_vector.size();i++) 
           write_value_binary(fin, msh->ele_vector[i]->GetPatchIndex());
       }
     } else {
-        offset += msh->ele_vector.size()*sizeof(int) + SIZE_OF_BLOCK_LENGTH_TAG;
+        offset += (long)msh->ele_vector.size()*sizeof(int) + SIZE_OF_BLOCK_LENGTH_TAG; //OK411
     }
     if (!useBinary || !output_data) {
       WriteDataArrayFooter(fin);

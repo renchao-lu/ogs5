@@ -24,8 +24,6 @@ Programing:
 #endif
 /*--------------------- OpenMP Parallel ------------------*/
 
-// MFC
-#include "stdafx.h" 
 #ifdef MFC
 #include "afxpriv.h" // For WM_SETMESSAGESTRING
 #endif
@@ -40,14 +38,12 @@ Programing:
 #include "geo_ply.h"
 /*------------------------------------------------------------------------*/
 /* MshLib */
-#include "msh_nodes_rfi.h" //MB
 #include "msh_elem.h"
 #include "msh_lib.h"
 /*-----------------------------------------------------------------------*/
 /* Objects */
 #include "rf_pcs.h"
 #include "pcs_dm.h"
-#include "files.h"    // FIL
 #ifndef NEW_EQS //WW. 07.11.2008
 #include "solver.h"    // ConfigRenumberProperties
 #endif
@@ -56,11 +52,8 @@ Programing:
 #include "rf_mmp_new.h" // MAT
 #include "rf_ic_new.h"  // IC
 #include "rf_tim_new.h"  // IC
-//WW #include "rfiter.h"   // ITE
-//WW #include "elements.h" // ELE
 #include "fem_ele_std.h" // ELE
 #include "msh_lib.h" // ELE
-#include "nodes.h" 
 #include "rf_tim_new.h"
 #include "rf_out_new.h"
 #include "rfmat_cp.h"
@@ -80,11 +73,11 @@ Programing:
 #endif
 /* Tools */
 #include "mathlib.h"
-#include "geo_strings.h"
+#include "files0.h"
 #include "par_ddc.h"
 #include "tools.h"
 #include "rf_pcs.h"
-#include "rfstring.h"
+#include "files0.h"
 #ifdef GEM_REACT
 // GEMS chemical solver
 #include "rf_REACT_GEM.h"
@@ -167,6 +160,8 @@ using Math_Group::vec;
 #define noCHECK_ST_GROUP
 #define noCHECK_BC_GROUP
 
+extern int max_dim;  //OK411 todo
+
 //////////////////////////////////////////////////////////////////////////
 // PCS vector
 //////////////////////////////////////////////////////////////////////////
@@ -213,7 +208,6 @@ CRFProcess::CRFProcess(void)
   dof = 1; //WW
   //----------------------------------------------------------------------
   // ELE
-  ConfigELEMatrices = NULL;
   pcs_number_of_evals = 0;
   NumDeactivated_SubDomains = 0;
   Deactivated_SubDomain = NULL;
@@ -592,10 +586,7 @@ void CRFProcess::Create()
     /////////////////////////////////////////////////////////////////////
 	else
 	{
-       if(m_msh)
-         eqs = CreateLinearSolver(m_num->ls_storage_method,m_msh->GetNodesNumber(false)*DOF);
-       else
-         eqs = CreateLinearSolver(m_num->ls_storage_method,NodeListLength);
+       eqs = CreateLinearSolver(m_num->ls_storage_method,m_msh->GetNodesNumber(false)*DOF);
        InitializeLinearSolver(eqs,m_num);
        PCS_Solver.push_back(eqs); 
 	}
@@ -2415,8 +2406,10 @@ void CRFProcess::ConfigMassTransport()
 //  sprintf(pcs_primary_function_name[0], "%s%li","CONCENTRATION",comp);
   //----------------------------------------------------------------------
   // Tests
-  int size = (int)cp_vec.size();
-  int comnb = pcs_component_number;
+  int size;
+  size = (int)cp_vec.size();
+  int comb; //OK411
+  comb = pcs_component_number;
 
   if((int)cp_vec.size()<pcs_component_number+1){
     cout << "Error in CRFProcess::ConfigMassTransport - not enough MCP data" << endl;
@@ -2482,7 +2475,6 @@ void CRFProcess::ConfigHeatTransport()
 {
   pcs_num_name[0] = "TEMPERATURE0";
   pcs_sol_name    = "LINEAR_SOLVER_PROPERTIES_TEMPERATURE1";
-//WW  ConfigELEMatrices = PCSConfigELEMatricesHTM;
   // NOD
   if((int)continuum_vector.size() == 1)
   {
@@ -3314,25 +3306,6 @@ void CRFProcess::ConfigNODValues2(void)
   }
 }
 
-/*************************************************************************
-ROCKFLOW - Function: 
-Task: Create
-Programming: 03/2003 OK Implementation
-last modified:
-**************************************************************************/
-void CRFProcess::CreateNODValues(void)
-{
-  long i;
-  for (i=0;i<NodeListSize();i++) {
-    if (GetNode(i) != NULL) {
-      CreateModelNodeData(i);
-#ifdef PCS_NOD
-      k = GetNode(i);
-      k->values[pcs_number] = (double *)Malloc(number_of_nvals*sizeof(double));
-#endif
-    }
-  }
-}
 #endif //#ifndef NEW_EQS //WW. 07.11.2008
 /**************************************************************************
 FEMLib-Method: 
@@ -3358,30 +3331,6 @@ int PCSGetNODValueIndex(const string &name,int timelevel)
   }
   cout << "Error in PCSGetNODValueIndex: " << name << endl;
   return -1;
-}
-
-/**************************************************************************
-FEMLib-Method: 
-Task: 
-Programing:
-07/2004 OK Implementation
-**************************************************************************/
-double PCSGetNODValue(long node,char* name,int timelevel)
-{
-  int nidx;
-  nidx = PCSGetNODValueIndex(name,timelevel);
-  return GetNodeVal(node,nidx);
-}
-
-/**************************************************************************
-FEMLib-Method: 
-Task: 
-Programing:
-11/2004 OK Implementation
-**************************************************************************/
-void PCSSetNODValue(long node,const string &v_name,double value,int timelevel)
-{
-  SetNodeVal(node,PCSGetNODValueIndex(v_name,timelevel),value);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3435,38 +3384,6 @@ void CRFProcess::ConfigELEValues2(void)
 }
 
 /*************************************************************************
-ROCKFLOW - Function: 
-Task: Create
-Programming: 03/2003 OK Implementation
-last modified:
-**************************************************************************/
-void CRFProcess::CreateELEValues(void)
-{
-  long i;
-  for (i=0;i<ElListSize();i++) {
-    if (ElGetElement(i) != NULL) {
-      ELECreateElementData(i);
-    }
-  }
-}
-
-/*************************************************************************
-ROCKFLOW - Function:
-Task: Create
-Programming: 03/2003 OK Implementation
-last modified:
-**************************************************************************/
-void CRFProcess::CreateELEGPValues(void)
-{
-  long i;
-  for (i=0;i<ElListSize();i++) {
-    if (ElGetElement(i) != NULL) {
-      ELECreateGPValues(i);
-    }
-  }
-}
-
-/*************************************************************************
 ROCKFLOW - Function: CRFProcess::PCSGetELEValueIndex
 Task: Provide index for element values
 Programming: 08/2003 SB Implementation
@@ -3490,96 +3407,10 @@ int PCSGetELEValueIndex(char *name)
   return -1;
 }
 
-/**************************************************************************
-FEMLib-Method: 
-Task: 
-Programing:
-11/2004 OK Implementation
-**************************************************************************/
-double PCSGetELEValue(long index,double*gp,double theta,const string &nod_fct_name)
-{
-  int nn;
-  int nidx0,nidx1;
-  double e_value;
-  double nod_fct0,nod_fct1;
-  int no_nodes;
-  long* element_nodes = NULL;
-  //----------------------------------------------------------------------
-  nidx0 = PCSGetNODValueIndex(nod_fct_name,0);
-  nidx1 = PCSGetNODValueIndex(nod_fct_name,1);
-  //----------------------------------------------------------------------
-  nod_fct0 = 0.0;
-  nod_fct1 = 0.0;
-  if(gp==NULL){ // Element average value
-    no_nodes = ElNumberOfNodes[ElGetElementType(index)-1];
-    element_nodes = ElGetElementNodes(index);
-    for(nn=0;nn<no_nodes;nn++){
-      nod_fct0 += GetNodeVal(element_nodes[nn],nidx0);
-      nod_fct1 += GetNodeVal(element_nodes[nn],nidx1);
-    }
-    nod_fct0 /= no_nodes;
-    nod_fct1 /= no_nodes;
-  }
-  else{ // Gauss point values
-    nod_fct0 = InterpolValue(index,nidx0,gp[0],gp[1],gp[2]);
-    nod_fct1 = InterpolValue(index,nidx1,gp[0],gp[1],gp[2]);
-  }
-  //----------------------------------------------------------------------
-  e_value = (1.-theta)*nod_fct0 + theta*nod_fct1;
-  return e_value;
-}
-
 //////////////////////////////////////////////////////////////////////////
 // Configuration ELE matrices
 //////////////////////////////////////////////////////////////////////////
 
-/*************************************************************************
-ROCKFLOW - Function:
-Task: Create
-Programming: 03/2003 OK Implementation
-last modified:
-**************************************************************************/
-void CRFProcess::CreateELEMatricesPointer(void)
-{
-  long i;
-  for (i=0;i<ElListSize();i++) {
-    if (ElGetElement(i) != NULL) {
-      ELECreateElementMatricesPointer(i,pcs_number);
-    }
-  }
-}
-
-/*************************************************************************
-ROCKFLOW - Function: PCSConfigELEMatricesMPC
-Task: Config element matrices: data access functions
-Programming: 04/2003 OK Implementation
-last modified:
-todo: direct access possible !
-**************************************************************************/
-
-/*************************************************************************
-ROCKFLOW - Function: CRFProcess::PCSConfigELEMatricesMTM
-Task: Config elementa matrix pointer
-Programming:	02/2003 OK Implementation
-last modified:	08/2003 SB  Adapted to MTM2
-**************************************************************************/
-
-/*************************************************************************
-ROCKFLOW - Function: PCSConfigELEMatricesHTM
-Task: Config element matrices: data access functions
-Programming: 04/2003 OK Implementation
-last modified:
-todo: direct access possible !
-**************************************************************************/
-/*
-void PCSConfigELEMatricesHTM(int pcs_type_number)
-{
-  // Matrices pointer, allgemein
-  InitInternElementData = HTMCreateELEMatricesPointer;
-  ELEDestroyElementMatrices = HTMDestroyELEMatricesPointer;
-  PCSDestroyELEMatrices[pcs_type_number] = HTMDestroyELEMatricesPointer;
-}
-*/
 /**************************************************************************
 FEMLib-Method: 
 Task:  Activate or deactivate elements specified in .pcs file
@@ -4259,6 +4090,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
   double *rhs = NULL, *rhs_dom = NULL;
   double a_ij;
   double b_i=0.0;
+  b_i = b_i; //OK411
   int no_domains =(int)dom_vector.size();
   long no_dom_nodes;
   dof = pcs_number_of_primary_nvals; //WW
@@ -4663,14 +4495,13 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
 		   bc_value *= sin( 2 * 3.14159 * aktuelle_zeit / m_bc->periode_time_length  + m_bc->periode_phase_shift);
         //----------------------------------------------------------------
         // MSH
-        if(m_msh){//OK  
           if(rank>-1)
              bc_eqs_index = bc_msh_node;
           else
              bc_eqs_index = m_msh->nod_vector[bc_msh_node]->GetEquationIndex();  //WW#
           //..............................................................
           // NEWTON WW
-        if(m_num->nls_method_name.find("NEWTON")!=string::npos
+          if(m_num->nls_method_name.find("NEWTON")!=string::npos
            ||	type==4||type==41	 ) {  //Solution is in the manner of increment ! 
             idx0 = GetNodeValueIndex(m_bc->pcs_pv_name.c_str());
             if(type==4||type==41)  
@@ -4682,24 +4513,6 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
             else
               bc_value = bc_value - GetNodeValue(m_bc_node->geo_node_number, idx0);
          }
-       }
-        //----------------------------------------------------------------
-        // RFI
-        else {
-          bc_eqs_index = GetNodeIndex(bc_msh_node);
-          //..............................................................
-          // NEWTON
-          if(m_num->nls_method_name.find("NEWTON")!=string::npos){  //Solution vector is the increment !
-            idx0 = PCSGetNODValueIndex(m_bc->pcs_pv_name.c_str(),0);
-            if(type==4||type==41)  
-            {
-              idx1 = PCSGetNODValueIndex(m_bc->pcs_pv_name.c_str(),1);
-              bc_value -= GetNodeVal(bc_eqs_index, idx0) + GetNodeVal(bc_eqs_index, idx1);               
-            }
-            else
-              bc_value = bc_value - GetNodeVal(bc_eqs_index, idx0);
-            }
-        }
         //----------------------------------------------------------------
         bc_eqs_index += shift;
         /* // Make the follows as comment by WW. 04.03.2008
@@ -4864,7 +4677,6 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank, const int axis)
 				bc_value = time_fac*fac*m_bc_node->node_value; // time_fac*fac*PCSGetNODValue(bc_msh_node,"PRESSURE1",0);
         //----------------------------------------------------------------
 			// MSH
-			if(m_msh){//OK
 				if(rank>-1)
 					bc_eqs_index = bc_msh_node;
 				else
@@ -4883,24 +4695,6 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank, const int axis)
 					else
 						bc_value = bc_value - GetNodeValue(m_bc_node->geo_node_number, idx0);
 				}
-			}
-        //----------------------------------------------------------------
-			// RFI
-			else {
-				bc_eqs_index = GetNodeIndex(bc_msh_node);
-          //..............................................................
-				// NEWTON
-				if(m_num->nls_method_name.find("NEWTON")!=string::npos){  //Solution vector is the increment !
-					idx0 = PCSGetNODValueIndex(m_bc->pcs_pv_name.c_str(),0);
-					if(type==4||type==41)
-					{
-						idx1 = PCSGetNODValueIndex(m_bc->pcs_pv_name.c_str(),1);
-						bc_value -= GetNodeVal(bc_eqs_index, idx0) + GetNodeVal(bc_eqs_index, idx1);
-					}
-					else
-						bc_value = bc_value - GetNodeVal(bc_eqs_index, idx0);
-				}
-			}
         //----------------------------------------------------------------
 			bc_eqs_index += shift;
 			if((int)continuum_vector.size() > 1){
@@ -4974,7 +4768,6 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank, const int axis)
 				bc_value = time_fac*fac*m_bc_node->node_value; // time_fac*fac*PCSGetNODValue(bc_msh_node,"PRESSURE1",0);
         //----------------------------------------------------------------
 			// MSH
-			if(m_msh){//OK
 				if(rank>-1)
 					bc_eqs_index = bc_msh_node;
 				else
@@ -4993,24 +4786,6 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank, const int axis)
 					else
 						bc_value = bc_value - GetNodeValue(m_bc_node->geo_node_number, idx0);
 				}
-			}
-        //----------------------------------------------------------------
-			// RFI
-			else {
-				bc_eqs_index = GetNodeIndex(bc_msh_node);
-          //..............................................................
-				// NEWTON
-				if(m_num->nls_method_name.find("NEWTON")!=string::npos){  //Solution vector is the increment !
-					idx0 = PCSGetNODValueIndex(m_bc->pcs_pv_name.c_str(),0);
-					if(type==4||type==41)
-					{
-						idx1 = PCSGetNODValueIndex(m_bc->pcs_pv_name.c_str(),1);
-						bc_value -= GetNodeVal(bc_eqs_index, idx0) + GetNodeVal(bc_eqs_index, idx1);
-					}
-					else
-						bc_value = bc_value - GetNodeVal(bc_eqs_index, idx0);
-				}
-			}
         //----------------------------------------------------------------
 			bc_eqs_index += shift;
 			if((int)continuum_vector.size() > 1){
@@ -5084,7 +4859,6 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank, const int axis)
 				bc_value = time_fac*fac*m_bc_node->node_value; // time_fac*fac*PCSGetNODValue(bc_msh_node,"PRESSURE1",0);
         //----------------------------------------------------------------
 			// MSH
-			if(m_msh){//OK
 				if(rank>-1)
 					bc_eqs_index = bc_msh_node;
 				else
@@ -5103,24 +4877,6 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank, const int axis)
 					else
 						bc_value = bc_value - GetNodeValue(m_bc_node->geo_node_number, idx0);
 				}
-			}
-        //----------------------------------------------------------------
-			// RFI
-			else {
-				bc_eqs_index = GetNodeIndex(bc_msh_node);
-          //..............................................................
-				// NEWTON
-				if(m_num->nls_method_name.find("NEWTON")!=string::npos){  //Solution vector is the increment !
-					idx0 = PCSGetNODValueIndex(m_bc->pcs_pv_name.c_str(),0);
-					if(type==4||type==41)
-					{
-						idx1 = PCSGetNODValueIndex(m_bc->pcs_pv_name.c_str(),1);
-						bc_value -= GetNodeVal(bc_eqs_index, idx0) + GetNodeVal(bc_eqs_index, idx1);
-					}
-					else
-						bc_value = bc_value - GetNodeVal(bc_eqs_index, idx0);
-				}
-			}
         //----------------------------------------------------------------
 			bc_eqs_index += shift;
 			if((int)continuum_vector.size() > 1){
@@ -5354,15 +5110,10 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
     value *= time_fac*fac; 
     //------------------------------------------------------------------
     // EQS->RHS
-    if(m_msh) //WW
-    {
-      if(rank>-1)
-        bc_eqs_index = msh_node+shift;   
-      else
-        bc_eqs_index = m_msh->nod_vector[msh_node]->GetEquationIndex()+shift;   
-    } 
-    else 
-      bc_eqs_index = GetNodeIndex(msh_node)+shift;
+    if(rank>-1)
+      bc_eqs_index = msh_node+shift;   
+    else
+      bc_eqs_index = m_msh->nod_vector[msh_node]->GetEquationIndex()+shift;   
     /*
     // Make the follows as comments by WW. 04.03.2008 
     if(dof>1) // 07.2.2007 WW
@@ -5529,9 +5280,9 @@ last modified:
 -------------------------------------------------------------------------*/
 void PCSRestart()
 {
+/*OK411
   int j;
   CRFProcess *m_pcs = NULL;
-//  int timelevel;
   int nidx0,nidx1;
   int i;
   int no_processes =(int)pcs_vector.size();
@@ -5556,6 +5307,7 @@ void PCSRestart()
       CopyNodeVals(nidx1,nidx0);
     }
   }
+*/
 }
 
 /**************************************************************************
@@ -5582,156 +5334,6 @@ void RelocateDeformationProcess(CRFProcess *m_pcs)
 }
 
 /*************************************************************************
-ROCKFLOW - Function: CreateFDMProcess
-Task:
-Programming: 
-06/2004 OK Implementation
-06/2004 OK 1-D FDM
-last modified:
-**************************************************************************/
-#ifndef NEW_EQS //WW. 07.11.2008
-void CRFProcess::CreateFDMProcess()
-{
-  long i;
-  //----------------------------------------------------------------------
-  // create FDM nodes and relationships
-  start_new_elems = ElListSize();
-  ConstructElemsToNodesList();
-  //============================================================================
-  CFDMNode *m_FDM_node;
-/*
-  long *elems1d;
-  int num_elems1d;
-  long *nod_neighbors;
-  long *ele_neighbors;
-  Knoten *node = NULL;
-  long *element_nodes;
-  for(i=0;i<NodeListLength;i++){
-    node = GetNode(i);
-    if(node->anz1d>0){
-      elems1d = GetNode1DElems(i,&num_elems1d);
-      nod_neighbors = new long[num_elems1d];
-      ele_neighbors = elems1d;
-      l=0;
-      for(j=0;j<num_elems1d;j++){
-        element_nodes = ElGetElementNodes(elems1d[j]);
-        for(k=0;k<ElGetElementNodesNumber(elems1d[j]);k++) {
-          if(element_nodes[k]!=i){
-            nod_neighbors[l]=element_nodes[k];
-            l++;
-          }
-        }
-      }
-      m_FDM_node = new CFDMNode;
-      m_FDM_node->node = i;
-      m_FDM_node->nod_neighbors = nod_neighbors;
-      m_FDM_node->ele_neighbors = ele_neighbors;
-      m_FDM_node->no_neighbors = num_elems1d;
-      FDM_node_vector.push_back(m_FDM_node);
-    }
-  }
-*/
-  //----------------------------------------------------------------------------
-  long *nodes_sorted;
-  CGLPolyline *m_polyline = NULL;
-  m_polyline = GEOGetPLYByName("RIVER");//CC
-if(m_polyline){
-  //ToDo nodes_sorted = m_polyline->GetMHSNodesSorted(nodes_unsorted,&no_nodes);
-  long no_nodes = 0;
-  long *nodes_unsorted = NULL;
-   // encapsulate sort function
-///OK  nodes_unsorted = m_polyline->MSHGetNodesClose(&no_nodes);
-  double pt1[3],pt2[3];
-  pt1[0] = m_polyline->point_vector[0]->x;
-  pt1[1] = m_polyline->point_vector[0]->y;
-  pt1[2] = m_polyline->point_vector[0]->z;
-  double *node_distances = NULL;
-  node_distances = new double[no_nodes];
-  for(i=0;i<no_nodes;i++) {
-    pt2[0] = GetNodeX(nodes_unsorted[i]);
-    pt2[1] = GetNodeY(nodes_unsorted[i]);
-    pt2[2] = GetNodeZ(nodes_unsorted[i]);
-    node_distances[i] = MCalcDistancePointToPoint(pt1,pt2);
-  }
-  nodes_sorted = TOLSortNodes1(nodes_unsorted,node_distances,no_nodes);
-  delete [] node_distances;
-  //delete [] nodes_unsorted;
-  for(i=0;i<no_nodes;i++){
-    m_FDM_node = new CFDMNode;
-    m_FDM_node->node = nodes_sorted[i];
-    FDM_node_vector.push_back(m_FDM_node);
-  }
-  //delete [] nodes_sorted;
-
-}
-  WriteFDMNodes("river");
-  //----------------------------------------------------------------------------
-  // PCS
-  Config();
-  //----------------------------------------------------------------------------
-  // TIM
-  int timelevel;
-  //----------------------------------------------------------------------------
-  // NUM 
-  //----------------------------------------------------------------------------
-  // SOL
-  //----------------------------------------------------------------------------
-  // BC
-   // Set BC names to BC list
-/*OK
-  CBoundaryConditionsGroup *m_bc_group = NULL;
-  for(i=0;i<pcs_number_of_primary_nvals;i++) {
-    strcpy(c_string,pcs_primary_function_name[i]);
-    if(!BCGroupExists(c_string))
-       SetBoundaryConditions(c_string);
-    m_bc_group = new CBoundaryConditionsGroup();
-    m_bc_group->Set(pcs_primary_function_name[i]);
-    bc_group_list.push_back(m_bc_group);
-  }
-*/
-  //----------------------------------------------------------------------------
-  // ST
-  CSourceTermGroup *m_st_group = NULL;
-  for(i=0;i<pcs_number_of_primary_nvals;i++){
-    m_st_group = m_st_group->Get(pcs_primary_function_name[i]);
-    if(!m_st_group) {
-      m_st_group = new CSourceTermGroup();
-      m_st_group->Set(this, 0); //OK
-      st_group_list.push_back(m_st_group);
-    }
-  }
-  //----------------------------------------------------------------------------
-  // MAT
-  //----------------------------------------------------------------------------
-  // EQS
-  //----------------------------------------------------------------------------
-  // Set source terms: EQS<->ST (eqs->b)
-  // Set boundary conditions: EQS<->BC
-  //----------------------------------------------------------------------------
-  // MOD -> Kernel
-  //----------------------------------------------------------------------------
-  /* NOD - model node values */
-  ConfigNODValues1(); 
-  ConfigNODValues2();
-  CreateNODValues();
-  //----------------------------------------------------------------------------
-  /* IC<->NOD */    
-  int no_timelevel = 2; // pcs variable
-  int nidx;
-  timelevel=0;
-  for(i=0;i<pcs_number_of_primary_nvals;i++) {
-    nidx = pcs_nval_data[no_timelevel*i+timelevel].nval_index;
-///OK    ICSetNODValues(pcs_primary_function_name[i],nidx);
-    CopyNodeVals(nidx,nidx+1);
-  }
-///OK  SMSaintVenantHeadFTCS1D(this);
-}
-
-void CRFProcess::DestroyFDMProcess()
-{
-}
-#endif
-/*************************************************************************
 ROCKFLOW - Function: CRFProcess::PCSMoveNOD
 Task: 
 Programming: 
@@ -5740,7 +5342,6 @@ last modified:
 **************************************************************************/
 void CRFProcess::PCSMoveNOD(void) 
 {
-  
   switch(this->type) {
     case 1:
       MSHMoveNODUcFlow(this);
@@ -5868,6 +5469,7 @@ Programing:
 **************************************************************************/
 void CRFProcess::CalcELEMassFluxes(void)
 {
+/*OK411
   int i;
   double e_value = -1.0;
   string e_value_name;
@@ -5905,6 +5507,7 @@ void CRFProcess::CalcELEMassFluxes(void)
     }
   }
   //======================================================================
+*/
 }
 
 /**************************************************************************
@@ -5949,55 +5552,6 @@ void CRFProcess::CalcSecondaryVariables(const bool initial)
 //////////////////////////////////////////////////////////////////////////
 // ReMove site
 //////////////////////////////////////////////////////////////////////////
-
-/*****************************************************/
-
-
-/**************************************************************************
- ROCKFLOW - Funktion: DumpModelNodeValues
-
- Aufgabe:
- Schreiben von Modell-Knoten-Daten  
-
- Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   - void -
-
- Ergebnis:
-   - void -
-
- Programmaenderungen:
-   09/2001   OK   Erste Version
-   09/2002   OK   Spaltenvorgabe
-
-**************************************************************************/
-void DumpModelNodeValues(int columns)
-{
-  long i;
-  int j;
-  int nv=columns;
-
-  DisplayMsgLn(" ");
-
-  printf(" %6s ","Nodes");
-  for (j=0;j<nv+1;j++) {
-    if (nval_data[j].name) 
-      printf(" %13s ",nval_data[j].name);
-  }
-  DisplayMsgLn(" ");
-
-  for (i=0;i<NodeListLength;i++) {
-    printf(" %6ld ",i);
-    for (j=0;j<nv+1;j++) {
-      printf(" %13.5g ",GetNodeVal(i,j));
-    }
-    DisplayMsgLn(" ");
-  }
-}
-
-void CRFProcess::PCSDumpModelNodeValues(void)
-{
-  DumpModelNodeValues(pcs_number_of_primary_nvals+pcs_number_of_secondary_nvals);
-}
 
 /*************************************************************************
 ROCKFLOW - Function: GetCompNamehelp
@@ -6074,54 +5628,6 @@ string GetPFNamebyCPName(string inname){
 // Inname is not from a mass transport process, therefore return inname
  return inname;
 } //SB:namepatch
-
-/**************************************************************************
-FEMLib-Method: 
-Task: 
-Programing:
-??/2004 MX Implementation
-**************************************************************************/
- void CRFProcess::PCSSetTempArry(void){    
-    int i;
-    TempArry = (double *) Malloc(ElListSize() * sizeof(double));
-
-    for (i=0;i<ElListSize();i++) {
-      if (ElGetElement(i)!=NULL)
-        TempArry[i] = 0.0;
-      }
-}
-
-/*  SB: eingef?t */
-/**************************************************************************
-   ROCKFLOW - Funktion: PCSGetNODConcentration
-
-   Aufgabe:
-   Returns concentration at node of requested component
-
-   Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-		index: Index des Knotens, dessen Wert geholt werden soll
-		component: Komponente des Prozesses
-		timelevel: alte/neue Zeitebene
-   Ergebnis:
-		value: Knotenwert
-
-   Programmaenderungen:
-   08/2003     SB         Erste Version
-
-**************************************************************************/
-double PCSGetNODConcentration(long index, long component, long timelevel)
-{
-  char name[MAX_ZEILE];
-  sprintf(name,"%s%i","CONCENTRATION", (int)component); //SB:todo global name
-  return PCSGetNODValue(index,name,timelevel);
-}
-
-void PCSSetNODConcentration(long index, long component, long timelevel, double value)
-{
-  char name[MAX_ZEILE];
-  sprintf(name,"%s%i","CONCENTRATION", (int)component);
-  SetNodeVal(index, PCSGetNODValueIndex(name,timelevel),value);
-}
 
 //========================================================================
 //OK former model functions
@@ -7487,8 +6993,8 @@ Programming:
 **************************************************************************/
 void CRFProcess::CalcSecondaryVariablesPSGLOBAL(const bool initial)
 {
+  initial; //OK411
 	long i;
-
 	int ndx_pressure1, ndx_p_cap, ndx_pressure2, ndx_s_wetting, ndx_s_nonwetting;
 
 	// The primary variables
@@ -7717,7 +7223,7 @@ void CRFProcess::CalcSaturationRichards(int timelevel, bool update)
 double PCSGetEleMeanNodeSecondary_2(long index, int pcsT, const string &var_name, int timelevel){
 
 double val = 1.0; // As this returns saturation, default is fully saturated = 1.0;
-int idx, j;
+int idx=0, j; //OK411
 long enode;
 CRFProcess *m_pcs = NULL;
 CRFProcess *cplpcs = NULL;
@@ -10369,7 +9875,7 @@ void CRFProcess::EQSSolver(double* x)
  {
 	 eqs_new->Solver(this->m_num); //NW
 
-	 for(int i=0; i < m_msh->nod_vector.size(); ++i)
+	 for(int i=0; i < (int)m_msh->nod_vector.size(); ++i) //OK411
 		 x[i] = eqs_new->X(i);
  } 
 #endif
@@ -10504,5 +10010,4 @@ bool PCSConfig()
   }
   return some_thing_done;
 }
-
 

@@ -25,28 +25,14 @@
       
    
 *************************************************************************/
-
-
-#include "stdafx.h"             /* MFC */
-
 #include <iostream>
 using namespace std;
-
-/* Preprozessor-Definitionen */
 #include "makros.h"
-
-/* Interface */
 #include "solver.h"
-
-/* External objects */
-#include "nodes.h"              /* fuer nichtlineare Loeser */
-#include "elements.h"           /* fuer Umnummerierer */
 #include "rf_pcs.h" //OK_MOD"            
-/* External methods */
-//16.12.2008. WW #include "renumber.h"
 #include "mathlib.h"
 #include "matrix.h"
-#include "geo_strings.h"
+#include "files0.h"
 #include "tools.h"
 #include "rf_tim_new.h"
 
@@ -278,8 +264,8 @@ int SpRichardson(double *b, double *x, long n)
 
     if (cg_maxiter > 0)
         max_iter = cg_maxiter;
-    if (cg_maxiter == -1)
-        max_iter = NodeListLength;
+//OK411    if (cg_maxiter == -1)
+//OK411        max_iter = NodeListLength;
 
 #ifdef TESTLOES1
     DisplayMsgLn("SpRichard");
@@ -408,8 +394,8 @@ int SpJOR(double *b, double *x, long n)
 
     if (cg_maxiter > 0)
         max_iter = cg_maxiter;
-    if (cg_maxiter == -1)
-        max_iter = NodeListLength;
+//OK411    if (cg_maxiter == -1)
+//OK411        max_iter = NodeListLength;
 
 #ifdef TESTLOES1
     DisplayMsgLn("SpJacobi");
@@ -560,8 +546,8 @@ int SpSOR(double *b, double *x, long n)
 
     if (cg_maxiter > 0)
         max_iter = cg_maxiter;
-    if (cg_maxiter == -1)
-        max_iter = NodeListLength;
+//OK411    if (cg_maxiter == -1)
+//OK411        max_iter = NodeListLength;
 
 #ifdef TESTLOES1
     DisplayMsgLn("SpGaussSeidel");
@@ -1360,8 +1346,8 @@ int SpBICG(double *b, double *x, long n)
 
     if (cg_maxiter > 0)
         max_iter = cg_maxiter;
-    if (cg_maxiter == -1)
-        max_iter = NodeListLength;
+//OK411    if (cg_maxiter == -1)
+//OK411        max_iter = NodeListLength;
 
 #ifdef TESTLOES4
     DisplayMsgLn("SpBICG");
@@ -1563,8 +1549,8 @@ int SpBICGSTAB(double *b, double *x, long n)
 
     if (cg_maxiter > 0)
         max_iter = cg_maxiter;
-    if (cg_maxiter == -1)
-        max_iter = NodeListLength;
+//OK411    if (cg_maxiter == -1)
+//OK411        max_iter = NodeListLength;
 
   restart:
 
@@ -1806,8 +1792,8 @@ int SpQMRCGSTAB(double *b, double *x, long n)
 
     if (cg_maxiter > 0)
         max_iter = cg_maxiter;
-    if (cg_maxiter == -1)
-        max_iter = NodeListLength;
+//OK411    if (cg_maxiter == -1)
+//OK411        max_iter = NodeListLength;
 
 #ifdef TESTLOES4
     DisplayMsgLn("SpQMRCGSTAB");
@@ -2174,8 +2160,8 @@ int SpCG(double *b, double *x, long n)
 
     if (cg_maxiter > 0)
         max_iter = cg_maxiter;
-    if (cg_maxiter == -1)
-        max_iter = NodeListLength;
+//OK411    if (cg_maxiter == -1)
+//OK411        max_iter = NodeListLength;
 
 #ifdef TESTLOES4
     DisplayMsgLn("SpCG");
@@ -2327,8 +2313,8 @@ int SpCGNR(double *b, double *x, long n)
 
     if (cg_maxiter > 0)
         max_iter = cg_maxiter;
-    if (cg_maxiter == -1)
-        max_iter = NodeListLength;
+//OK411    if (cg_maxiter == -1)
+//OK411        max_iter = NodeListLength;
 
 #ifdef TESTLOES4
     DisplayMsgLn("SpCGNE");
@@ -2497,8 +2483,8 @@ int SpCGS(double *b, double *x, long n)
 
     if (cg_maxiter > 0)
         max_iter = cg_maxiter;
-    if (cg_maxiter == -1)
-        max_iter = NodeListLength;
+//OK411    if (cg_maxiter == -1)
+//OK411        max_iter = NodeListLength;
 
 #ifdef TESTLOES4
     DisplayMsgLn("SpCGS");
@@ -2954,6 +2940,7 @@ int NonLinearSolve(long cas, double *b, double *x, long n, void (*f) (double *, 
 int SpPICARD(double *b, double *x, long n, void (*f) (double *b, double *x, double aktuelle_zeit), long ind)
 /*int SpPICARD ( double *b, double *x, long n, void (*f)(), long ind ) */
 {
+  ind = ind; //OK411
     /* Variablen */
     static double *r, *xs, *rs;
     int k = 0;
@@ -3026,7 +3013,7 @@ int SpPICARD(double *b, double *x, long n, void (*f) (double *b, double *x, doub
         iter = LinearSolver(b, x, n);
 
         /* Speichern des Ergebnisses des Iterationsschritts in nval[ind] */
-        TransferNodeVals(x, ind);
+//OK411        TransferNodeVals(x, ind);
 
         /* Fehlerberechnung */
         switch (nonlinear_convergence_type) {

@@ -3,16 +3,11 @@
    Designed and programmed by WW, 06/2004
 */
 
-#include "stdafx.h"                    /* MFC */
 #include "makros.h"
 #include <iostream>
-
 #include "fem_ele_std.h"
-
 /* Objekte */
 #include "rf_pcs.h" //OK_MOD"
-#include "nodes.h"
-//#include "elements.h"
 #include "mathlib.h"
 #include "femlib.h"
 #include "matrix_class.h"

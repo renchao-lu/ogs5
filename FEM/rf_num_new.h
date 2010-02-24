@@ -12,10 +12,8 @@ last modified:
 #include <fstream>
 #include <string>
 #include <vector>
-#include "prototyp.h"
 using namespace std;
-// GEOLib
-// FEMLib
+#include "prototyp.h"
 //----------------------------------------------------------------
 class CNumerics
 {
@@ -162,9 +160,6 @@ extern void ConfigSolverProperties(void);
 extern double CalcNormOfRHS(LINEAR_SOLVER*);
 //
 extern int GetUnknownVectorDimensionLinearSolver(LINEAR_SOLVER*);
-extern LINEAR_SOLVER *TransferNodeValues(LINEAR_SOLVER*,long);
-extern LINEAR_SOLVER *TransferNodeValuesToVectorLinearSolver(LINEAR_SOLVER*,long);
-extern void TransferNodeValuesToVectorLinearSolverVec_New(LINEAR_SOLVER*);
 #endif   //ifndef NEW_EQS //WW 07.11.2008
 
 //////////////////////////////////////////////////////////////////////////

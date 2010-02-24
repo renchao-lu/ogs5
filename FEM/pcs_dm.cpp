@@ -1,4 +1,3 @@
-#include "stdafx.h" //MFC
 #include "makros.h"
 #ifdef MFC // -> makros.h
 #include "afxpriv.h" // For WM_SETMESSAGESTRING

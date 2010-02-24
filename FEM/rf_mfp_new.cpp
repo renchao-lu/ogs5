@@ -5,7 +5,6 @@ Programing:
 08/2004 OK Implementation
 last modified:
 **************************************************************************/
-#include "stdafx.h" /* MFC */
 #include "makros.h"
 // C++ STL
 #include <math.h>
@@ -16,8 +15,8 @@ using namespace std;
 #include "mathlib.h"
 #include "eos.h" //NB
 // GeoSys-GeoLib
-#include "geo_strings.h"
-#include "rfstring.h"
+#include "files0.h"
+#include "files0.h"
 // GeoSys-FEMLib
 #include "fem_ele_std.h"
 //
@@ -26,11 +25,8 @@ using namespace std;
 extern double InterpolValue(long number,int ndx,double r,double s,double t);
 #include "rf_pcs.h"
 extern double GetCurveValue(int,int,double,int*);
-#include "nodes.h"
 #include "tools.h" //GetLineFromFile
 
-// Structure element. To be removed
-//WW #include"elements.h"
 /* Umrechnungen SI - Amerikanisches System */
 //WW #include "steam67.h"
 #define PSI2PA 6895.
@@ -943,7 +939,6 @@ double CFluidProperties::Viscosity(double* variables) //OK4709
   double density;
 
   // double TTT=0, PPP=0;
-  double arguments[2]; //NB
   // long Element_Index;
   // int nod_index;
 
@@ -1427,7 +1422,9 @@ last modification:
 **************************************************************************/
 double MFPCalcFluidsHeatConductivity(long index,double*gp,double theta, CFiniteElementStd* assem)
 {
-  double saturation_phase;
+  gp = gp; //OK411
+  index = index;
+  double saturation_phase = 0.0; //OK411
   double heat_conductivity_fluids=0.0;
   int nidx0,nidx1;
   bool New = false; // To be removed. WW
@@ -1458,13 +1455,6 @@ double MFPCalcFluidsHeatConductivity(long index,double*gp,double theta, CFiniteE
 		 saturation_phase = (1.-theta)*assem->interpolate(nidx0,m_pcs)
                                 + theta*assem->interpolate(nidx1,m_pcs);
 
-	  }
-	  else
-	  {
-         nidx0 = PCSGetNODValueIndex("SATURATION1",0);
-         nidx1 = PCSGetNODValueIndex("SATURATION1",1);	  
-         saturation_phase = (1.-theta)*InterpolValue(index,nidx0,gp[0],gp[1],gp[2]) \
-                       + theta*InterpolValue(index,nidx1,gp[0],gp[1],gp[2]);
 	  }
       heat_conductivity_fluids = saturation_phase 
                                * m_mfp->HeatConductivity();
@@ -2588,13 +2578,12 @@ last change: 11/2008 NB
 **************************************************************************/
 double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 {
-  double mfp_value;
+  double mfp_value = 0.0; //OK411
 //  char c;
   double arguments[2];
   string pcs_name1;
   string pcs_name2;
   CRFProcess *tp;
-  CFluidProperties *fp;
   CFluidProperties *m_mfp = mfp_vector[max(phase_number,0)];//NB
 
   int mfp_id = -1;

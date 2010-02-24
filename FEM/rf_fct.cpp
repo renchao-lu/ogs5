@@ -5,10 +5,9 @@ Programing:
 01/2005 OK Implementation
 09/2008 NB Function with multiple arguments
 **************************************************************************/
-#include "stdafx.h" /* MFC */
 #include "makros.h"
 #include "rf_fct.h"
-#include "geo_strings.h"
+#include "files0.h"
 extern void remove_white_space(string *buffer);
 extern string GetLineFromFile1(ifstream*);
 #include "gs_project.h"
@@ -73,7 +72,8 @@ ios::pos_type CFunction::Read(ifstream *fct_file)
   bool new_keyword = false;
   //WW bool dim = false;
   int unsigned no_variable_names;
-  int unsigned i;
+  //OK411 int unsigned i;
+  int i;
   double* variable_data = NULL;
   double* j=0;
   double* k=0;
@@ -181,11 +181,11 @@ ios::pos_type CFunction::Read(ifstream *fct_file)
 	  
 	  }
 	  
-	  for (i=0;i<dim_x.size();i++) variable_data_vector.push_back(dim_x[i]);
-	  for (i=0;i<dim_y.size();i++) variable_data_vector.push_back(dim_y[i]);
-	  for (i=0;i<dim_z.size();i++) variable_data_vector.push_back(dim_z[i]);
+	  for (i=0;i<(int)dim_x.size();i++) variable_data_vector.push_back(dim_x[i]); //OK411
+	  for (i=0;i<(int)dim_y.size();i++) variable_data_vector.push_back(dim_y[i]);
+	  for (i=0;i<(int)dim_z.size();i++) variable_data_vector.push_back(dim_z[i]);
 	  
-	  if (variable_data_vector.size()!=matrix_dimension[0]*matrix_dimension[1]+matrix_dimension[0]+matrix_dimension[1])
+	  if ((int)variable_data_vector.size()!=matrix_dimension[0]*matrix_dimension[1]+matrix_dimension[0]+matrix_dimension[1]) //OK411
 	  {
 	  cout << "FCT function: Error! The number of data does not correspond to the specified matrix size" << endl;
 	  break;
@@ -215,7 +215,8 @@ ios::pos_type CFunction::Read(ifstream *fct_file)
           return position;
         }
         variable_data = new double[no_variable_names];
-        for(i=0;i<no_variable_names;i++){
+        for(i=0;i<(int)no_variable_names;i++) //OK411
+        {
           line_stream >> variable_data[i];
           variable_data_vector.push_back(variable_data);
         }

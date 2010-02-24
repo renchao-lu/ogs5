@@ -12,7 +12,6 @@
 #include <string>
 using namespace std;
 // MSH
-#include "prototyp.h"
 #include "par_ddc.h" //OK //Moved from fem_ele_std.h. WW
 
 

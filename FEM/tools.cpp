@@ -15,17 +15,13 @@
    02/2000     CT            Funktion P0260 von Rainer, CalcIterationError veraendert
    10/2001     AH            Abfrage if (!kurven) in DestroyFunctionsData.
    03/2003     RK            Quellcode bereinigt, Globalvariablen entfernt   
-      
+   02/2010     OK            Cleaning   
                                                                           */
 /**************************************************************************/
-#include "stdafx.h" /* MFC */
-/* Preprozessor-Definitionen */
 #include "makros.h"
 #define noTESTTOOLS
 /* Header / Andere intern benutzte Module */
 #include "tools.h"
-#include "elements.h"
-#include "nodes.h"
 #include "mathlib.h"
 #include "femlib.h"
 #include "intrface.h"
@@ -35,722 +31,19 @@
 #include "rf_num_new.h"
 // GEOLib
 #include "geo_pnt.h"
-#include "geo_strings.h"
-
+#include "files0.h"
 // MSHLib
 #include "msh_elem.h"
 #include "msh_lib.h"
 using namespace std;
-/* Interne (statische) Deklarationen */
 
-void Restart1DElementNodes ( long number );
-void Restart2DElementNodes ( long number );
-void Restart3DElementNodes ( long number );
-
-// int GetLineFromFile(char *, ifstream *);
-
- /* #CURVES */
 Kurven *kurven = NULL;
 int anz_kurven = 0;
-
- /* Schluesselwort #FRACTURE_APERTURE_DISTRIBUTION */
 double *fracture_aperture_array  = NULL;
 hetfields *hf = NULL;
 long fracture_aperture_anz = 0l;
 
 #define TIMER_CEN_LIST "CEN_LIST"
-
-
-/* Tools */
-
-/* Definitionen */
-
-/**************************************************************************/
-/* ROCKFLOW - Funktion: ConstructElemsToNodesList
-                                                                          */
-/* Aufgabe:
-   Erzeugt fuer alle Ausgangselemente die Element-zu-Knoten-Liste
-   Bei Restart wird sie fuer alle Elemente nachberechnet.
-                                                                          */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   - void -
-                                                                          */
-/* Ergebnis:
-   - void -
-                                                                          */
-/* Programmaenderungen:
-   12/1994     MSR        Erste Version
-   05/1996     MSR        Restart
-   10/1999     AH         Systemzeit
-   04/2003     MB         case4/case5
-                                                                          */
-/**************************************************************************/
-void ConstructElemsToNodesList ( void )
-{
-  long i;
-  static long cen_list_id_timer=-1;
-
-  /* Systemzeit fuer Element-zu-Knoten-Liste setzen und ausfuehren */
-//OK  SetSystemTime(TIMER_CEN_LIST,"ROCKFLOW","ROCKFLOW: ElemsToNodesList",&cen_list_id_timer);
-//OK  RunSystemTime(TIMER_CEN_LIST);
-
-  for (i=0;i<start_new_elems;i++) {
-      switch (ElGetElementType(i)) {
-          case 1: Assign1DElementNodes(i,ElGetElementNodes(i),ElGetElementNodesNumber(i));
-                  break;
-          case 2: Assign2DElementNodes(i,ElGetElementNodes(i),ElGetElementNodesNumber(i));
-                  break;
-          case 3: Assign3DElementNodes(i,ElGetElementNodes(i),ElGetElementNodesNumber(i));
-                  break;
-          case 4: Assign2DElementNodes(i,ElGetElementNodes(i),ElGetElementNodesNumber(i));
-                  break;
-          /* prism */
-          case 6: Assign3DElementNodes(i,ElGetElementNodes(i),ElGetElementNodesNumber(i));
-                  break;
-      }
-  }
-  if (ElListSize()>start_new_elems) {  /* Restart */
-      /* Bei Restart muss der Aufbau der Liste nachvollzogen werden, damit
-         Geschwister direkt nacheinander eingetragen werden
-         -->InterpolIrregNodeConcs etc. */
-      for (i=0;i<start_new_elems;i++) {
-          switch (ElGetElementType(i)) {
-              case 1: Restart1DElementNodes(i);
-                      break;
-              case 2: Restart2DElementNodes(i);
-                      break;
-              case 3: Restart3DElementNodes(i);
-                      break;
-          }
-      }
-  }
-  /* Systemzeit fuer Element-zu-Knoten-Liste anhalten */
-//OK  StopSystemTime(TIMER_CEN_LIST);
-}
-
-
-/**************************************************************************/
-/* ROCKFLOW - Funktion: Restart1DElementNodes
-                                                                          */
-/* Aufgabe: Passt die Element-zu-Knoten-Liste fuer number und seine
-            Kinder an.
-                                                                          */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E long number: Elementnummer
-                                                                          */
-/* Ergebnis:
-   - void -
-                                                                          */
-/* Programmaenderungen:
-   05/1996     MSR        Erste Version
-                                                                          */
-/**************************************************************************/
-void Restart1DElementNodes ( long number )
-{
-  long *kinder = NULL;
-  if ((kinder=ElGetElementChilds(number))!=NULL) {
-      int i;
-      ReAssign1DElementNodes(number,ElGetElementNodes(number),ElNumberOfNodes[0]);
-      for (i=0;i<ElNumberOfChilds[0];i++)
-          Assign1DElementNodes(kinder[i],ElGetElementNodes(kinder[i]),ElNumberOfNodes[0]);
-      for (i=0;i<ElNumberOfChilds[0];i++)
-          Restart1DElementNodes(kinder[i]);
-  }
-}
-
-
-/**************************************************************************/
-/* ROCKFLOW - Funktion: Restart2DElementNodes
-                                                                          */
-/* Aufgabe: Passt die Element-zu-Knoten-Liste fuer number und seine
-            Kinder an.
-                                                                          */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E long number: Elementnummer
-                                                                          */
-/* Ergebnis:
-   - void -
-                                                                          */
-/* Programmaenderungen:
-   05/1996     MSR        Erste Version
-                                                                          */
-/**************************************************************************/
-void Restart2DElementNodes ( long number )
-{
-  long *kinder = NULL;
-  if ((kinder=ElGetElementChilds(number))!=NULL) {
-      int i;
-      ReAssign2DElementNodes(number,ElGetElementNodes(number),ElNumberOfNodes[1]);
-      for (i=0;i<ElNumberOfChilds[1];i++)
-          Assign2DElementNodes(kinder[i],ElGetElementNodes(kinder[i]),ElNumberOfNodes[1]);
-      for (i=0;i<ElNumberOfChilds[1];i++)
-          Restart2DElementNodes(kinder[i]);
-  }
-}
-
-
-/**************************************************************************/
-/* ROCKFLOW - Funktion: Restart3DElementNodes
-                                                                          */
-/* Aufgabe: Passt die Element-zu-Knoten-Liste fuer number und seine
-            Kinder an.
-                                                                          */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E long number: Elementnummer
-                                                                          */
-/* Ergebnis:
-   - void -
-                                                                          */
-/* Programmaenderungen:
-   05/1996     MSR        Erste Version
-                                                                          */
-/**************************************************************************/
-void Restart3DElementNodes ( long number )
-{
-  long *kinder = NULL;
-  if ((kinder=ElGetElementChilds(number))!=NULL) {
-      int i;
-      ReAssign3DElementNodes(number,ElGetElementNodes(number),ElNumberOfNodes[2]);
-      for (i=0;i<ElNumberOfChilds[2];i++)
-          Assign3DElementNodes(kinder[i],ElGetElementNodes(kinder[i]),ElNumberOfNodes[2]);
-      for (i=0;i<ElNumberOfChilds[2];i++)
-          Restart3DElementNodes(kinder[i]);
-  }
-}
-
-/**************************************************************************/
-/* ROCKFLOW - Funktion: PresetErgebnis
-                                                                          */
-/* Aufgabe:
-   Belegt den Loesungsvektor des Gesamtgleichungssystems entweder
-   mit 0.0 oder mit den Ergebnissen des letzten Zeitschritts vor
-   (abhaengig von NULLE_ERGEBNIS).
-                                                                          */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   X double *ergebnis: Ergebnisvektor
-   E int nidx: Knotenergebnis-Index
-                                                                          */
-/* Ergebnis:
-   - void -
-                                                                          */
-/* Programmaenderungen:
-   11/1995     MSR        Erste Version
-                                                                          */
-/**************************************************************************/
-void PresetErgebnis ( double *ergebnis, int nidx )
-{
-#ifdef NULLE_ERGEBNIS
-    MNulleVec(ergebnis,NodeListLength);
-#else
-    register long i;
-    for(i=0l;i<NodeListLength;i++)
-        ergebnis[i]=GetNodeVal(NodeNumber[i],nidx);
-#endif
-}
-
-
-/**************************************************************************/
-/* ROCKFLOW - Funktion: StartTimeStep
-                                                                          */
-/* Aufgabe:
-   Minimalen Anfangszeitschritt berechnen
-                                                                          */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E int dtindex: Index des Elementdatums Courant- bzw. Neumann-Zeitschritt
-                                                                          */
-/* Ergebnis:
-   - double -
-                                                                          */
-/* Programmaenderungen:
-   01/1996     cb         Erste Version
-                                                                          */
-/**************************************************************************/
-double StartTimeStep ( int dtindex )
-{
-  static long index, l;
-  static double dtmin;
-  /* Vorschlag zum Anfangszeitschritt */
-  dtmin=1.0/MKleinsteZahl;
-  l = ElListSize();
-  for (index=0;index<l;index++) /* Elemente */
-    if (ElGetElement(index)!=NULL)
-      if (ElGetElementActiveState(index))
-        dtmin=min(ElGetElementVal(index,dtindex),dtmin);
-  return dtmin;
-}
-
-
-
-/**************************************************************************/
-/* ROCKFLOW - Funktion: FindFrontElement
-                                                                          */
-/* Aufgabe:
-   Massgebendes (Front-) Element (einschl. Zeitschritt) fuer automatische
-   Zeitschritt-Steuerung finden. Verfahren: Element mit steilstem
-   Gradienten und(!) kleinstem Zeitschritt ist massgebendes Element.
-
-   Voraussetzung: Benoetigte Parameter muessen entsprechend vorhanden
-                  sein.
-                                                                          */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   X double *mindt: ??? (msr)
-   E int nidx: Index des massgebenden Knotenwertes
-   E int dtindex: Elementdatenindex des Courant- bzw. Neumann-Zeitschritts
-   E DoubleXFuncLDX ElGetElJacobi: Funktionszeiger auf Funktion, die
-                  Jacobi-Matrix und Determinante wie bei aTM liefert
-                                                                          */
-/* Ergebnis:
-   Elementnummer des massgebenden Elements
-                                                                          */
-/* Programmaenderungen:
-   06/1995     cb         Erste Version
-   11/1995     msr        static und ohne malloc
-   08/1996     cb         neu (einfacher + schneller)
-                                                                          */
-/**************************************************************************/
-long FindFrontElement ( double *mindt, int nidx, int dtindex,
-                        DoubleXFuncLDX ElGetElJacobi )
-{
-  /* Variablen */
-  static int et,nn;
-  static long elanz,i,j,ele,mele;
-  static double maxgc,gc,eledt,detjac,mini;
-  static long *kn;
-  static double kc[8]; /* max. 1x8-Vektor */
-  static double *invjac;  /* max. 3x3-Matrix */
-  static double grad[24];  /* max. 3x8-Matrix */
-  static double zwi[3];
-
-  /* Initialisieren */
-  maxgc = MKleinsteZahl;
-  *mindt = mini = 1.0/MKleinsteZahl;
-  ele = mele = -1l;
-
-  elanz = ElListSize();
-  /* Schleife ueber alle aktiven Elemente */
-  for (j=0;j<elanz;j++)
-      if (ElGetElement(j)!=NULL)
-          if (ElGetElementActiveState(j)) {
-              et = ElGetElementType(j);
-              nn = ElNumberOfNodes[et-1];
-              kn = ElGetElementNodes(j);
-              for (i=0;i<nn;i++)
-                kc[i] = GetNodeVal(kn[i],nidx);
-              /* Gradient der Ansatzfunktionen im Schwerpunkt */
-              invjac = ElGetElJacobi(j,&detjac);
-              switch(et){
-                  case 1: /* 1D-Elemente */
-                          /* cb: CalcJac1D(j,invjac,&detjac); */
-                          gc = 0.5 * fabs(kc[1] - kc[0]) * MBtrgVec(invjac,3l);
-                          break;
-                  case 2: /* 2D-Elemente */
-                          /* (J^-1)T * grad(omega) * c */
-                          MGradOmega2D(grad,0.0,0.0);
-                          MMultMatVec(grad,2,4,kc,4,zwi,2);
-                          /* cb: CalcJac2D(j,0.0,0.0,invjac,&detjac); */
-                          MMultVecMat(zwi,2,invjac,2,2,grad,2);
-                          gc = MBtrgVec(grad,2l);
-                          break;
-                  case 3: /* 3D-Elemente */
-                          /* J^-1 * grad(omega) * c */
-                          MGradOmega3D(grad,0.0,0.0,0.0);
-                          MMultMatVec(grad,3,8,kc,8,zwi,3);
-                          /* cb: CalcJac3D(j,0.0,0.0,0.0,invjac,&detjac); */
-                          MMultMatVec(invjac,3,3,zwi,3,grad,3);
-                          gc = MBtrgVec(grad,3l);
-                          break;
-              } /* switch */
-              eledt = ElGetElementVal(j,dtindex);
-              if ((gc > maxgc) && (eledt < *mindt)) {
-                  maxgc = gc;
-                  *mindt = eledt;
-                  ele = j;
-              }
-              if (eledt < mini) {
-                  mini = eledt;
-                  mele = j;
-              }
-          }
-  if (ele < 0l) {
-      /* Front-Element nicht gefunden */
-      DisplayErrorMsg("Front-Element nicht gefunden");
-      ele = mele;
-      *mindt = mini;
-  }
-#ifdef TESTTOOLS
-    DisplayMsg("Massgebendes Element:");
-    DisplayLong(ele); DisplayMsg(" (Gradient="); DisplayDouble(maxgc,0,0);
-    DisplayMsg(") + zugeh. dt="); DisplayDouble(*mindt,0,0);
-    DisplayMsgLn("");
-#endif
-
-  return ele;
-}
-
-/**************************************************************************
-   ROCKFLOW - Funktion: CalcCourantTimeStep
-
-   Aufgabe:
-   Berechnet den Courant- (Cr=1) des angegebenen 1D-, 2D- oder 3D-Elements
-   dt_Courant = ds / v
-
-   Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E long number: Index des Elements
-   E long ndx   : Speicherplatz fuer die Konzentration in der Knotenstruktur
-   E double dc  : Grenzwert fuer Abweichungen der Knoten-Konzentration,
-                  damit Element ueberhaupt bearbeitet wird. Fuer dc<0 wird
-                  eine Projektion des Geschwindigkeitsvektors auf den
-                  Konzentrationsgradienten gemacht und der Geschwindigkeitsvektors
-                  dann auf die LÇnge dieser Projektion gebracht. Nur 2D.
-                  v_neu=(v*grad(c))/(|v|*|grad(c)|)*v
-
-   Ergebnis:
-   double dt  : Courant-Zeitschritt
-
-   Programmaenderungen:
-   7/1997 C.Thorenz, basiert auf Teilen von "FindFrontElement"
-
-
-**************************************************************************/
-double CalcCourantTimeStep ( long index, long ndx, double dc )
-{
- static int et,anz,i,j;
- static long k,anzgp,nn;
- static long *kn;
- static double *velovec,*invjac;
- static double vs[3],dx[3],dr[3],zwi[9],kc[8],grad[8];
- static double v,ds,el_dt,detjac,a,b,c,fkt,gc,c_min,c_max;
- static double deltax,deltay,deltaz;
- static double porosity;
-
- CMediumProperties *m_mat_mp = NULL;
- long group = ElGetElementGroupNumber(index);
- m_mat_mp = mmp_vector[group];
- porosity = m_mat_mp->Porosity(index,1.0);
- /* Betrag der mittleren Geschwindigkeit */
- et = ElGetElementType(index);
- if (et == 2)
-   anz = 2;
- else
-   anz = 3;
- velovec = ElGetVelocity(index);
-/* anzgp = (long)pow((double)ElGetGPNum(index),(double)et);*/
- anzgp = (long)pow((double)GetNumericsGaussPoints(ElGetElementType(index)),(double)et);
-
- for (j=0;j<anz;j++) {
-   vs[j] = 0.0;
-   for (k=0l;k<anzgp;k++)
-     vs[j] += velovec[anz*k+j] / porosity;
-   vs[j] /= (double)anzgp;
- }
-
-
-/*  nn=pow(2,et); */
- nn = ElNumberOfNodes[et-1];
-
- invjac = GetElementJacobiMatrix(index,&detjac);
- kn = ElGetElementNodes(index);
- c_min=1./MKleinsteZahl;
- c_max=-c_min;
-
- for (i=0;i<nn;i++) {
-   kc[i] = GetNodeVal(kn[i],ndx);
-   c_min=min(c_min,kc[i]);
-   c_max=max(c_max,kc[i]);
- }
-
- /* Wenn keine nennenswerten Konzentrationsunterschiede vorhanden sind, wird das
-    Element nicht beruecksichtigt */
-
- if (dc>0.) {
-   if ((c_max-c_min)<fabs(dc)) return -1.;
- } else {
-   /* OK if ((c_max-c_min)/(c_max)<fabs(dc)) return -1.; */
-   if ((c_max-c_min)/(c_max+MKleinsteZahl)<fabs(dc)) return -1.;
- }
-
- /* durchstroemte Elementlaenge */
- switch (et) {
-   case 1:
-     deltax=(GetNode(kn[0])->x)-(GetNode(kn[1])->x);
-     deltay=(GetNode(kn[0])->y)-(GetNode(kn[1])->y);
-     deltaz=(GetNode(kn[0])->z)-(GetNode(kn[1])->z);
-     ds = sqrt(pow(deltax,2.)+pow(deltay,2.)+pow(deltaz,2.));
-     v  = sqrt(pow(vs[0],2.)+pow(vs[1],2.)+pow(vs[2],2.));
-     break;
-   case 2:
-
-     if (dc<0.) {
-       /* Geschwindigkeitsvektors wird reduziert auf Laenge der
-          Projektion des Geschwindigkeitsvektors auf die Richtung von grad(c) */
-
-       /* v_neu=(v*grad(c))/(|v|*|grad(c)|)*v  */
-
-       MGradOmega2D(grad,0.0,0.0);
-       MMultMatVec(grad,2,4,kc,4,zwi,2);
-       /* cb: CalcJac2D(j,0.0,0.0,invjac,&detjac); */
-       MMultVecMat(zwi,2,invjac,2,2,grad,2);
-       /* in den ersten zwei Eintraegen von "grad" steht jetzt
-         (hoffentlich) der Gradient von c im A-B Koor.system */
-
-       /* gc= |v|*|grad(c)| */
-       gc = sqrt(vs[0]*vs[0]+vs[1]*vs[1]) * sqrt(grad[0]*grad[0]+grad[1]*grad[1]);
-
-       /* v= v*grad(c) */
-       v =  vs[0]*grad[0] + vs[1]*grad[1] ;
-
-       /* v= v*grad(c)/(|v|*|grad(c)|) */
-       v = -v/max(gc,MKleinsteZahl);
-
-       vs[0] = v*vs[0];
-       vs[1] = v*vs[1];
-     }
-
-     v = MBtrgVec(vs,anz);
-
-     if (v>MKleinsteZahl) {
-       a = fabs(vs[0]);
-       b = fabs(vs[1]);
-       fkt = max(a,b);
-       dr[0] = 2.0 * a / fkt;
-       dr[1] = 2.0 * b / fkt;
-     }
-     else { /* reine Diffusion */
-       dr[0] = 2.0;
-       dr[1] = 0.0;
-     }
-     /* dr(lokal) = J * dx(global) */
-     invjac = GetElementJacobiMatrix(index,&detjac);
-     for (j=0;j<4;j++)
-       zwi[j]=invjac[j];
-     M2InvertiereUndTransponiere(zwi);   /* MK_bitte_pruefen!!!: Transponierte der */ /* Jakobi-Matrix */
-     MMultMatVec(zwi,2,2,dr,2,dx,2);
-     ds = MBtrgVec(dx,2);
-     /* printf("dx=%e %e ds=%e\n",dx[0],dx[1],ds); */
-     break;
-
-  case 3:
-
-      a = fabs(vs[0]);
-      b = fabs(vs[1]);
-      c = fabs(vs[2]);
-      fkt = max(max(a,b),c);
-      dr[0] = 2.0 * a / fkt;
-      dr[1] = 2.0 * b / fkt;
-      dr[2] = 2.0 * c / fkt;
-     /* dr(lokal) = J * dx(global) */
-     invjac = GetElementJacobiMatrix(index,&detjac);
-     for (j=0;j<9;j++)
-       zwi[j]=invjac[j];
-     M3Invertiere(zwi); /* Jakobi-Matrix */
-     MMultMatVec(zwi,3,3,dr,3,dx,3);
-     ds = MBtrgVec(dx,3);
-     /* printf("dx=%e %e %e ds=%e\n",dx[0],dx[1],dx[2],ds); */
-     break;
- }
-
-  el_dt=ds/max(v,MKleinsteZahl); /* Courant */
-
-  return el_dt;
-
-}
-
-
-
-
-
-
-/**************************************************************************
-   ROCKFLOW - Funktion: CalcSystemCourantTimeStep
-
-   Aufgabe:
-   Berechnet den minimalen Courantzeitschritt (Cr=1) fuer alle aktiven Elemente
-   dt_Courant = ds / v
-
-   Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E long ndx   : Speicherplatz fuer die Konzentration in der Knotenstruktur
-   E double dc  : Grenzwert fuer Abweichungen der Knoten-Konzentration,
-                  damit Element ueberhaupt bearbeitet wird.
-
-   Ergebnis:
-   double dt  : Courant-Zeitschritt
-
-   Programmaenderungen:
-   7/1997 C.Thorenz
-
-**************************************************************************/
-double CalcSystemCourantTimeStep ( long ndx, double acknowledge )
-{
-#define DebugCourant
-
-  static long i;
-  static double dt,dt_zwischen;
-#ifdef DebugCourant
-  static long massgebendes_Element;
-#endif
-  dt_zwischen=-1.;
-  for (i=0;i<ElListSize();i++)
-    if (ElGetElement(i)!=NULL)  /* Element existiert */
-      if (ElGetElementActiveState(i)) {  /* aktives Element */
-        dt=CalcCourantTimeStep(i,ndx,acknowledge);
-        if (dt>0.) {
-          if ((dt<dt_zwischen)||(dt_zwischen<0.)) {
-            dt_zwischen=dt;
-#ifdef DebugCourant
-              massgebendes_Element=i;
-#endif
-          }
-        }
-      }
-  dt=dt_zwischen;
-#ifdef DebugCourant
-    if (dt>0.) {
-      DisplayMsg("Massgebendes Element Courant:");
-      DisplayLong(massgebendes_Element);
-      DisplayMsgLn("");
-    }
-#endif
-  return dt;
-}
-
-/**************************************************************************
-   ROCKFLOW - Funktion: GetSystemCourantNeumannTimeStep
-
-   Aufgabe:
-   Holt das Minimum von Courant- und Neumannzeitschritt fuer alle
-   aktiven Elemente.
-
-   Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E int ndx   : Speicherplatz fuer die Konzentration in der Knotenstruktur
-   E int dtindex : Speicherplatz fuer Zeitschritt in der Elementstruktur
-   E double dc  : Grenzwert fuer Abweichungen der Knoten-Konzentration,
-                  damit Element ueberhaupt bearbeitet wird.
-                  Wenn dc<0, dann wird mit den vorhandenen Konzentrationen normiert
-   Ergebnis:
-   double dt  : Zeitschritt
-
-   Programmaenderungen:
-   9/1998 C.Thorenz
-
-**************************************************************************/
-double GetSystemCourantNeumannTimeStep ( long ndx, int dtindex, double acknowledge )
-{
-#define DebugCourantNeumann
-  static long i,j,nn,*kn,et;
-  static double dt,dt_zwischen,c_min,c_max;
-
-#ifdef DebugCourantNeumann
-  static long massgebendes_Element;
-#endif
-  dt_zwischen=-1.;
-  for (i=0;i<ElListSize();i++)
-    if (ElGetElement(i)!=NULL)  /* Element existiert */
-      if (ElGetElementActiveState(i)) {  /* aktives Element */
-        dt = ElGetElementVal(i, dtindex);
-        if (dt>0.) {
-          if ((dt<dt_zwischen)||(dt_zwischen<0.)) {
-            et = ElGetElementType(i);
-            nn = ElNumberOfNodes[et-1];
-            kn = ElGetElementNodes(i);
-            c_min=1./MKleinsteZahl;
-            c_max=-c_min;
-
-            for (j=0;j<nn;j++) {
-              c_min=min(c_min,GetNodeVal(kn[j],ndx));
-              c_max=max(c_max,GetNodeVal(kn[j],ndx));
-            }
-
- /* Wenn keine nennenswerten Konzentrationsunterschiede vorhanden sind, wird das
-    Element nicht beruecksichtigt */
-
-            if(acknowledge>0.) {
-             if ((c_max-c_min)>=fabs(acknowledge)) {
-              dt_zwischen=dt;
-#ifdef DebugCourantNeumann
-                massgebendes_Element=i;
-#endif
-             }
-            } else {
-             if ((c_max-c_min)/(c_max+MKleinsteZahl)>=fabs(acknowledge)) {
-              dt_zwischen=dt;
-#ifdef DebugCourantNeumann
-                massgebendes_Element=i;
-#endif
-             }
-            }
-          }
-        }
-      }
-  dt=dt_zwischen;
-#ifdef DebugCourantNeumann
-    if (dt>0.) {
-      DisplayMsg("Massgebendes Element CourantNeumann:");
-      DisplayLong(massgebendes_Element);
-      DisplayMsg(" dt=");
-      DisplayDouble(dt,0,0);
-      DisplayMsgLn("");
-    }
-#endif
-  return dt;
-}
-
-
-
-/**************************************************************************
-   ROCKFLOW - Funktion: TestElementDirtyness
-
-   Aufgabe:
-   Untersucht, ob sich bestimmte Groessen in den Knoten eines
-   Elements veraendert haben.
-
-   Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E long index : Elementnummer
-   E long ndx1  : Speicherplatz fuer den ersten Wert des Vergleichpaares in der Knotenstruktur
-   E long ndx2  : Speicherplatz fuer den zweiten Wert des Vergleichpaares in der Knotenstruktur
-   E double dx  : Grenzwert fuer Abweichungen der Knoten-Konzentration,
-                  damit Element als "dirty" bezeichnet wird.
-                  dx < 0.  : Normieren mit Knotenwerten
-
-   Ergebnis:
-   int dirty    : Dirtyness
-
-   Programmaenderungen:
-   11/1997 C.Thorenz, erste Version
-
-**************************************************************************/
-int TestElementDirtyness ( long index, long ndx1, long ndx2, double acknowledge)
-{
-
-  static long i,anz_knoten;
-  static long *knoten;
-  static double a,b,c,d;
-
-  d=fabs(acknowledge);
-
-  if (d < MKleinsteZahl) return 1;
-
-  knoten = ElGetElementNodes(index);
-  anz_knoten = 1;
-  for (i=1;i<=ElGetElementType(index);i++) anz_knoten*=2;
-
-  for (i=0;i<anz_knoten;i++) {
-    if (acknowledge < 0.) {
-      a=(GetNodeVal(knoten[i],ndx1)-GetNodeVal(knoten[i],ndx2));
-      b=0.5*(GetNodeVal(knoten[i],ndx1)+GetNodeVal(knoten[i],ndx2));
-      c=fabs(a/(b+MKleinsteZahl));
-    } else {
-      a=(GetNodeVal(knoten[i],ndx1)-GetNodeVal(knoten[i],ndx2));
-      c=fabs(a);
-    }
-    if(c > d) return 1;
-  }
-  return 0;
-}
-
-
-
-
-
 
 /**************************************************************************/
 /* ROCKFLOW - Funktion: Signum
@@ -777,52 +70,6 @@ int Signum(double x)
         return -1;
     return 0;
 }
-
-
-
-
-
-/**************************************************************************/
-/* ROCKFLOW - Funktion: InterpolateElementNodesValues
-                                      */
-/* Aufgabe:
-   Bildet den arithmetischen Mittel einer Elementgroesse durch Interpolation
-   der zugehoerigen Knotenwerte.
-                                      */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E long index: Index des Elements
-   E long idx  : Index der Variable in der internen Datensturktur
-                                      */
-/* Ergebnis:
-   - double - Mittelwert im Element (arithmetischer Mittel)
-                                      */
-/* Programmaenderungen:
-   09/1997       ah         Erste Version
-
-   letzte Aenderung:     A.Habbar     18.09.1997
-                                      */
-/**************************************************************************/
-double InterpolateElementNodesValues ( long index, long idx )
-{
-  static long i;
-  static int nn;
-  static long *element_nodes;
-  static double val;
-
-  val=0.;
-  if (ElGetElement(index)!=NULL)   /* wenn Element existiert */
-     if (ElGetElementActiveState(index)){  /* nur aktive Elemente */
-        nn = ElGetElementNodesNumber(index);
-        element_nodes = ElGetElementNodes(index);
-        for (i=0;i<nn;i++) val +=GetNodeVal(element_nodes[i],idx);
-        val /= (double)nn;
-        element_nodes = NULL;
-     }
-  return val;
-
-}
-
-
 
 /**************************************************************************
  ROCKFLOW - Funktion: GetCurveValue
@@ -1080,71 +327,6 @@ double GetCurveDerivative(int kurve, int methode, double punkt, int *gueltig)
     }
 }
 
-
-
-
-
-
-
-/**************************************************************************/
-/* ROCKFLOW - Funktion: CreateFunctionsData
-                                                                          */
-/* Aufgabe:
-   Speicherbelegungen und Initialisierungen fuer Functions-Daten
-                                                                          */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   - void -
-                                                                          */
-/* Ergebnis:
-   0 bei Fehler, sonst 1
-                                                                          */
-/* Programmaenderungen:
-   06/1999   OK   Implementierung
-                                                                          */
-/**************************************************************************/
-int CreateFunctionsData(void)
-{
-    kurven = NULL;
-    anz_kurven = 0;
-
-    return 1;
-}
-
-
-/**************************************************************************/
-/* ROCKFLOW - Funktion: DestroyFunctionsData
-                                                                          */
-/* Aufgabe:
-   Speicherfreigaben fuer Functions-Daten
-                                                                          */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   - void -
-                                                                          */
-/* Ergebnis:
-   0 bei Fehler, sonst 1
-                                                                          */
-/* Programmaenderungen:
-   06/1999    OK      Implementierung
-   10/2001    AH      Abfrage: if (!kurven)
-                                                                          */
-/**************************************************************************/
-void DestroyFunctionsData(void)
-{
-  int i;
-
-  if (!kurven) return;
-
-  for (i=0;i<anz_kurven;i++)
-      kurven[i].stuetzstellen = (StuetzStellen *) Free(kurven[i].stuetzstellen);
-  kurven = (Kurven *) Free(kurven);
-    /* sollte bereits in ConstructStatusEntries geschehen sein */
-
-  fracture_aperture_array = (double *) Free(fracture_aperture_array);
-
-}
-
-
-
 /**************************************************************************/
 /* ROCKFLOW - Funktion: FctCurves
                                       */
@@ -1277,327 +459,6 @@ int FctCurves(char *data, int found, FILE * f)
     return ok;
 }
 
-
-
-/**************************************************************************/
-/* ROCKFLOW - Funktion: FctFractureApertureDistribution
-                                      */
-/* Aufgabe:
-   Liest die zu dem Schluesselwort FRACTURE_APERTURE_DISTRIBUTION
-   gehoerigen Daten ein und erstellt den zugehoerigen Protokollabschnitt.
-                                      */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E char *data: Zeiger auf die aus der Datei eingelesenen Zeichen
-   E int found: Schluesselwort gefunden: 1, sonst 0
-   E FILE *f: Dateizeiger der Protokolldatei
-                                      */
-/* Ergebnis:
-    0 bei Fehler, sonst 1
-                                      */
-/* Programmaenderungen:
-    09/1997     O.Kolditz
-                                      */
-/**************************************************************************/
-int FctFractureApertureDistribution(char *data, int found, FILE * f)
-{
-    int pos = 0;
-    int p = 0;
-    int ok = 1;
-    double d;
-
-#ifdef TESTFILES
-    DisplayMsgLn("Eingabedatenbank, Schluesselwort FRACTURE_APERTURE_DISTRIBUTION");
-#endif
-#ifdef EXT_RFD
-    LineFeed(f);
-#endif
-    if (!found) {
-#ifdef EXT_RFD
-        FilePrintString(f, "; Schluesselwort: #FRACTURE_APERTURE_DISTRIBUTION");
-        LineFeed(f);
-#endif
-    } else {
-        /* FRACTURE_APERTURE_DISTRIBUTION gefunden */
-        FilePrintString(f, "#FRACTURE_APERTURE_DISTRIBUTION");
-        LineFeed(f);
-#ifdef EXT_RFD
-        FilePrintString(f, "; Schluesselwort: #FRACTURE_APERTURE_DISTRIBUTION");
-        LineFeed(f);
-        FilePrintString(f, "; - Anzahl von Werten [anz_b>=0]");
-        LineFeed(f);
-        FilePrintString(f, "; - anz_b Kluftoeffnungsweiten");
-        LineFeed(f);
-#endif
-/*      ok = (StrReadLong(&l,&data[p],f,TFLong,&pos) && ok);
-      LineFeed(f);
-      p += pos; */
-        do {
-            ok = (StrReadDouble(&d, &data[p], f, TFDouble, &pos) && ok);
-            LineFeed(f);
-            fracture_aperture_anz++;
-            fracture_aperture_array = \
-                (double *) Realloc(fracture_aperture_array, (fracture_aperture_anz * sizeof(double)));
-            fracture_aperture_array[fracture_aperture_anz - 1] = d;
-        } while (StrTestDouble(&data[p += pos]));
-        LineFeed(f);
-
-    }
-    return ok;
-}
-
-
-
-/**************************************************************************/
-/* ROCKFLOW - Funktion: StrCmp
-                                                                          */
-/* Aufgabe:
-   Vergleicht zwei Zeichenketten, wobei ein sicheres Handling von
-   Konstanten gewaehrleistet wird. Es wird zwischen Klein- und
-   Grossbuchstaben nicht unterschieden.
-                                                                          */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   X char *string1:
-   X char *string2:
-                                                                          */
-/* Ergebnis:
-                                                                          */
-/* Programmaenderungen:
-   01/2000     AH        Erste Version
-                                                                          */
-/**************************************************************************/
-int StrCmp ( char *string1, char *string2 )
-{
-  int l1 = (int)strlen(string1);
-  int l2 = (int)strlen(string2);
-  char *copy_string1=NULL;
-  char *copy_string2=NULL;
-  int cmp=1;
-
-  copy_string1 = (char *) Malloc(l1+1);
-  if ( copy_string1 == NULL ) {
-    printf ("\n!!! Nicht genug Speicher um eine neue Zeichenkette zu allokieren !!!");
-    return cmp;
-  }
-  copy_string2 = (char *) Malloc(l2+1);
-  if ( copy_string2 == NULL ) {
-    copy_string1=(char *)Free(copy_string1);
-    printf ("\n!!! Nicht genug Speicher um eine neue Zeichenkette zu allokieren !!!");
-    return cmp;
-  }
-
-
-  strcpy(copy_string1,string1);
-  strcpy(copy_string2,string2);
-  cmp=strcmp(StrUp(copy_string1),StrUp(copy_string2));
-
-  copy_string1=(char *)Free(copy_string1);
-  copy_string2=(char *)Free(copy_string2);
-
-  return cmp;
-}
-
-
-/**************************************************************************
-   ROCKFLOW - Funktion: P0260
-
-   Aufgabe:
-        Spalten einer (long) Matrix aufsteigend sortieren (durch Mischen)
-
-   Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-       ma, na: Groesse, Spalten hintereinander gespeichert (wie FTN)
-       iz1,iz2: (0 - ma-1) erste und letzte Zeile, nach denen sortiert wird
-
-   Ergebnis:
-
-   Programmaenderungen:
-       R. Ratke, Jan. 2000
-
-**************************************************************************/
-void P0260 (long imat[], long ma, long na, long iz1, long iz2)
-
-{long  idz=1, is=0, js=na;         /* Inkrement Sortierzeilen, Spaltenanfaenge */
- long  i, k, j1, j2, j3, j4, la, lb, ls=1, ka, kb, ns;
- long *sort; sort =(long *) Malloc(2*na*sizeof(long));
-    for (i=0; i<na; i++) {sort[i]=ma*i;} /* rel. Spaltenanfaenge des Originals */
-    if (iz2<iz1) idz=-1;
-
-/* Sortieren mit MixSort, aufsteigend */
-    do
-    {  kb=0;         /* Index alte Folge */
-       ns=0;         /* Anzahl neu sortierter Spalten insges. */
-
-       do
-       {  ka=kb;            /* 1. sortiertes Stueck, Puffer "A" */
-          la=min(ls,na-ka); /* Laenge */
-          kb +=la;          /* 2. Teilstueck, Puffer "B" */
-          lb=min(ls,na-kb);
-
-Next_item:
-          if (la<1) goto Rest_B;   /* evtl. noch Rest aus "B" */
-          if (lb<1) goto Aus_A;
-
-          i=iz1-idz;
-          do
-          { i +=idz; k=imat[i+sort[is+ka]]-imat[i+sort[is+kb]];
-            if (k<0) goto Aus_A; if (k>0) goto Aus_B;
-          } while (i!=iz2);        /* ueber die Sortierzeilen */
-
-Aus_A:    sort[js+ns]=sort[is+ka]; /* aus Puffer "A" */
-          ka++; la--; ns++;
-          goto Next_item;
-
-Rest_B:   if (lb<1) goto Alles_leer;
-Aus_B:    sort[js+ns]=sort[is+kb];    /* aus Puffer "B" */
-          kb++; lb--; ns++;
-          goto Next_item;
-
-Alles_leer: i=i;
-       } while (ns<na);        /* noch neue Folgenpaare */
-       ls +=ls;                /* Durchgang fertig, doppelte Sortierlaenge */
-       is=js; js=na-is;        /* neue Reihenfolge ab is, Indextausch */
-    } while (ls<na);   /* nochmal mischen */
-
-/* Matrix in neue Reihenfolge bringen */
-    for (k=0; k<na; k++)     /* alle Spalten */
-    {  sort[k]=sort[is+k]/ma;/* Sortierfolge, ohne Faktor ma */
-       sort[na+k]=k;         /* Spaltennummer */
-    }
-
-    j2=0;                   /* Zielindex */
-    for (k=0; k<na; k++)    /* neue Spalten ab j2 */
-    { j1 =sort[na+sort[k]]; /* gesuchte Spalte */
-      j3 =j1*ma;            /* Spaltenanfang */
-      if (j3==j2) goto Next_Spal;
-
-      for (i=0;i<ma;i++)    /* Gesamte Spalte tauschen */
-      {  j4 =imat[j3+i];  imat[j3+i]=imat[j2+i];  imat[j2+i]=j4;
-      }
-      j3= sort[na+k];       /* alter Inhalt Sp. k */
-      sort[na+j1]=j3;       /* steht nun in Sp. j1 */
-      sort[na+j3]=j1;       /* wenn j3 gesucht wird --> in j1 */
-Next_Spal:
-        j2 +=ma;
-      }
-      Free (sort);
-      return;
-} /* END P0260 */
-
-/**************************************************************************
-   ROCKFLOW - Funktion: P0265
-
-   Aufgabe:
-      Vektor ivec der Laenge n aufsteigend sortieren (durch Mischen)
-
-   Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-        X: long *ivec:  Vektor der Laenge n aufsteigend sortieren (durch Mischen)
-        E: double *rvec:  Sortierkriterium
-        E: long n: Vektorlaenge
-        X: long *sort: Hilfsvektor der Laenge 2*n, initialisiert, wird nicht freigegeben
-
-   Ergebnis:
-
-   Programmaenderungen:
-       R. Ratke, Jan. 2000
-
-**************************************************************************/
-
-void P0265 (long ivec[], double rvec[], long n, long *sort)
-{long  is=0, js=n;         /* Indizes in sort */
- long  i, j, k, la, lb, ls=32, ka, kb, ns;
- if (sort==NULL) sort =(long *) Malloc(2*n*sizeof(long));
-    for (i=0; i<n; i++) {sort[i]=i;} /* Originalnumerierung */
-
-/* Vorsortieren mit Bubble-Sort: Stuecke der Laenge ls*/
-    if (ls>n) ls=n;
-    for (i=0; i<n; i=ns)
-    {  ns=i+ls; if (ns>n) ns=n;
-       for (j=i; j<(ns-1); j++)
-       {  kb=sort[j];
-          for (k=j+1; k<ns; k++)
-          {  if (rvec[sort[k]] < rvec[kb])
-             {  kb=sort[k]; sort[k]=sort[j]; sort[j]=kb;
-    }  }  }  }
-
-/* Sortieren mit MixSort, aufsteigend */
-    while (ls<n)
-    {  kb=0;         /* Index alte Folge */
-       ns=0;         /* Anzahl neu sortierter Elemente insges. */
-
-       do
-       {  ka=kb;           /* 1. sortiertes Stueck, Puffer "A" */
-          la=min(ls,n-ka); /* Laenge */
-          kb +=la;         /* 2. Teilstueck, Puffer "B" */
-          lb=min(ls,n-kb);
-
-Next_item:
-          if (la<1) goto Rest_B;   /* evtl. noch Rest aus "B" */
-          if (lb<1) goto Aus_A;
-
-          if (rvec[sort[is+ka]] > rvec[sort[is+kb]]) goto Aus_B;
-
-Aus_A:    sort[js+ns]=sort[is+ka]; /* aus Puffer "A" */
-          ka++; la--; ns++;
-          goto Next_item;
-
-Rest_B:   if (lb<1) goto Alles_leer;
-Aus_B:    sort[js+ns]=sort[is+kb]; /* aus Puffer "B" */
-          kb++; lb--; ns++;
-          goto Next_item;
-
-
-Alles_leer: n=n;
-       } while (ns<n); /* noch neue Folgenpaare */
-       ls +=ls;        /* Durchgang fertig, doppelte Sortierlaenge */
-       is=js; js=n-is; /* neue Reihenfolge ab is, Indextausch */
-    } /*  while (ls<n) nochmal mischen */
-
-/* Vektor in neue Reihenfolge bringen */
-    for (k=0; k<n; k++)    /* alle Spalten */
-    {  sort[k]=sort[is+k]; /* Sortierfolge, ohne Faktor ma */
-       sort[n+k]=k;        /* Zeiger auf Element */
-    }
-
-    for (k=0; k<n; k++)    /* Zielindex */
-    {  i =sort[n+sort[k]]; /* dort steht jetzt die Quelle */
-       if (i!=k)
-       {  j =ivec[i];    ivec[i] =ivec[k];  ivec[k]=j; /* tauschen */
-          j =sort[n+k];  sort[n+i] =j;   sort[n+j] =i; /* Verweis berichtigen */
-    }  }
-      return;
-} /* END P0265 */
-
-
-
-
-
-
-/**************************************************************************
-   ROCKFLOW - Funktion: DampOscillations
-
-   Aufgabe:
-   
-   Daempft Oszillationen eines Knotenfeldes.
-    - begrenzt den Wertebereich
-    - begrenzt die Differenz im Element
-   
-   Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-        E: int ndx1: Knotenindex der betrachteten Groesse
-        E: int oscil_damp_method: Art der Daempfung
-        E: double *oscil_damp_parameter: Parameter
-        E: double (*NodeCalcLumpedMass) (long)): Funktion um die gelumpte 
-           Massen-/Speichermatrix fuer einen Knoten zu holen.
-
-   Ergebnis:
-
-   - long -  Anzahl der ausgefuehrten Operationen
-
-   Programmaenderungen:
-   07/2002   CT   Erste Version
-
-  **************************************************************************/
-//OK long DampOscillations(int ndx1, int oscil_damp_method, double *oscil_damp_parameter, double (*NodeCalcLumpedMass) (long))
-
-//SB:
 /**************************************************************************/
 /* ROCKFLOW - Funktion: FctReadHeterogeneousFields
                                       */
@@ -1627,7 +488,6 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
   ifstream ein;
   ofstream out, out1;
   std::stringstream in;
-  Element *elem;
   long NumberOfElements;
   CFEMesh* m_msh = NULL;
   int layer = 1;
@@ -1636,9 +496,7 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
   int EleEnd = -1;
   int NumberOfLayers = -1;
   long NumberOfElementsPerLayer = -1;
-
   Mesh_Group::CElem* m_ele = NULL;
-
   //------------------------------------------------------------------------
   DisplayMsgLn("Input file Heterogeneous Fields ");
   //------------------------------------------------------------------------
@@ -1687,14 +545,12 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
     }  
   }
   //------------------------------------------------------------------------
-  /* read number of fields */
   GetLineFromFile(zeile,&ein);
   in.str((string ) zeile);
   in >> nof;
   in.clear();
   hf = Createhetfields(nof,name_file);
   //------------------------------------------------------------------------
-  /* Speicher */
   convertfact = (double *)Malloc(nof*sizeof(double));
   values = (double *) Malloc(nof * sizeof(double));
   defaultvalues = (double *) Malloc(nof * sizeof(double));
@@ -1703,7 +559,6 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
     defaultvalues[i] = 0.0;
   }
   //------------------------------------------------------------------------
-  /* read names of heterogeneous fields */
   GetLineFromFile(zeile,&ein);
   line = (string ) zeile;
   in.str(line);
@@ -1721,7 +576,6 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
   }
   in.clear();
   //------------------------------------------------------------------------
-  /* read conversion factors */
   GetLineFromFile(zeile,&ein);
   in.str((string ) zeile);
   for(i=0;i<nof;i++)
@@ -1737,23 +591,13 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
   // for(i=0;i<nof;i++)
   //  defaultvalues[i] *= convertfact[i]; MB->SB finde ich eher verwirrend ?
   //------------------------------------------------------------------------
-  /* read number of data sets, for which values of the heterogeneous fields are given */
   GetLineFromFile(zeile,&ein);
   in.str((string ) zeile);
   in >> no_values >> method;
   in.clear();
-
   //------------------------------------------------------------------------
-  if(m_msh){
-    NumberOfElements = (long)m_msh->ele_vector.size();
-  }
-  else{
-    NumberOfElements = ElListSize();
-  }
-  
+  NumberOfElements = (long)m_msh->ele_vector.size();
   //------------------------------------------------------------------------
-  if(m_msh){
-    
     NumberOfLayers = m_msh->no_msh_layer;
     NumberOfElementsPerLayer = NumberOfElements / NumberOfLayers;
   
@@ -1774,7 +618,6 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
     if(no_values < NumberOfElementsPerLayer) {
       DisplayMsgLn("Warning! Fewer element values in File for heterogeneous permeability field than elements in element list");
     }
-  } //if(m_msh)..
   //------------------------------------------------------------------------
   /* field (int) for helping sort */
   help = (int *) Malloc(NumberOfElements * sizeof(int));
@@ -1787,7 +630,6 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
   //WW double test1;
   //WW double test2;
   //WW double test;
- if(m_msh){
     for(i=EleStart;i<EleEnd;i++){
       m_ele = m_msh->ele_vector[i];
       if (m_ele->mat_vector.Size() == 0) {
@@ -1796,23 +638,9 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
       m_ele->mat_vector(material_properties_index)= defaultvalues[0];
      // test1 = m_ele->mat_vector(0);
     } 
-  }
-
-  else{
-    for(i=0;i<NumberOfElements;i++){
-      for(j=0;j<nof;j++){
-	    ELESetHetFieldValues(i, nof, defaultvalues);
-      }
-    } 
-  }
-
   m_ele = m_msh->ele_vector[0];
   //WW test1 = m_ele->mat_vector(0);
   //WW test2 = m_ele->mat_vector(1);
-  
-  
-
-  //------------------------------------------------------------------------
   //------------------------------------------------------------------------
   //METHOD = 0:  read in unsorted values for coordinates and distribute to corresponding elements */
   if(method == 0){ 
@@ -1873,22 +701,13 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
         DisplayMsg("  Value: ");
         DisplayDouble(values[0],0,0); 
       }
-
       // save values
-      if(m_msh){
-        m_ele = m_msh->ele_vector[i];
-        m_ele->mat_vector(material_properties_index) = values[0];
-      }
-      else{
-	    ELESetHetFieldValues(i, nof, values);
-      }
-    
+      m_ele = m_msh->ele_vector[i];
+      m_ele->mat_vector(material_properties_index) = values[0];
     } //end for element loop
-	
     ein.close();
     // free storage for input values
     invals = (double **) Free(invals);
-
     //------------------------------------------------------------------------
     //------------------------------------------------------------------------
     //  OUT   write out fields sorted by element number
@@ -1923,7 +742,6 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
 
     //------------------------------------------------------------------------
     // Element data
-    if(m_msh){
       for(i=EleStart;i<EleEnd;i++){
 	    m_ele = m_msh->ele_vector[i];
 	    for(j=0;j<nof;j++){
@@ -1931,23 +749,8 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
         }
 	    out << endl;
 	  }
-    }
-    else{
-	  for(i=0;i<NumberOfElements;i++){
-	    elem = ElGetElement(i);
-        for(j=0;j<nof;j++){
-          out << elem->hetfields[j] << ' ';			
-        }
-        out << endl;
-	  }
-    } 
-
     out.close();
-
   } /* end if (method == 0) */
-
-
-  //------------------------------------------------------------------------
   //------------------------------------------------------------------------
   //METHOD = 1:  read in one sorted column, index is element number no conversion, no sorting
   if(method == 1){
@@ -1957,14 +760,9 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
 	  for(j=0;j<nof;j++)
 		in >> values[j];
 	  in.clear();
-      if(m_msh){
         m_ele = m_msh->ele_vector[i];
         m_ele->mat_vector(material_properties_index) = values[0];
 	//WW  test = m_ele->mat_vector(material_properties_index);
-      }
-      else{
-	    ELESetHetFieldValues(i, nof, values);
-      }
 	}
   ein.close();
   } /* end if (method == 1) */
@@ -1977,51 +775,6 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
 
   return ok;
 }
-
-
-
-/**************************************************************************/
-/* ROCKFLOW - Funktion: GetNearestElement
-                                      */
-/* Aufgabe:
-   Bestimmt zu gegebenen Koordinaten das nächstliegende Element,
-   indem der Abstand zum Mittelpunkt des Elements berechnet wird.
-                                         */
-/* Ergebnis:
-   NUmmer dieses nächsten Elements
-                                      */
-/* Programmaenderungen:
-    10/2003     SB  First Version
-                                      */
-/**************************************************************************/
-long GetNearestElement(double x,double y,double z, int * help){
-	
-	long i, nextele;
-	double ex, ey, ez, dist, dist1; //, dist2;
-	
-        dist = 10000000.0; //Startwert
-	//WW        dist2 = 0.01;	// Abstand zwischen eingelesenen Knoten und Geometrieknoten-RF; 
-        // Achtung, doppelbelegung möglich bei kleinen Gitterabständen
-	nextele = -1;
-	if(help[0] == 0) nextele = -1;
-
-	for(i=0;i<ElListSize();i++){
-//		if (ElGetElement(i)!=NULL){  /* Element existiert */
-//		if (help[i]<1){  /* Element noch nicht vergeben  - raus für lokale Gitteradaption */
-			ex=ELEGetEleMidPoint(i,0);
-			ey=ELEGetEleMidPoint(i,1);
-			ez=ELEGetEleMidPoint(i,2);
-			dist1 = (ex-x)*(ex-x)+(ey-y)*(ey-y)+(ez-z)*(ez-z);
-			if(dist1<dist){
-					dist = dist1;
-					nextele = i;
-			}
-//			if(dist<dist2) return nextele;
-//		}
-	}
-	return nextele;
-}
-
 
 /**************************************************************************
 MSHLib-Method: GetAverageHetVal
@@ -2039,9 +792,7 @@ double GetAverageHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double **
   //  double InvNumberOfValues;
   CGLPoint *m_point = NULL;
   Mesh_Group::CElem* m_ele = NULL;
-  
   j = 0; //only for 1 value
-
   //-----------------------------------------------------------------------
   //Get element data
   m_ele = m_msh->ele_vector[EleIndex];
@@ -2050,22 +801,18 @@ double GetAverageHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double **
     yp[j] = m_ele->GetNode(j)->Y();
     //zp[j] = 0.0;
   }
-
   //-----------------------------------------------------------------------
   //Find data points in the element
   NumberOfValues = 0;
   //WW  InvNumberOfValues = 0; 
   m_point = new CGLPoint;
- 
   average = -1;
   value = 0;
-
   for(i=0;i<no_values;i++){
     if(invals[i][4]!= -999999.0){ //Data point not within an element yet
       m_point->x = invals[i][0];
       m_point->y = invals[i][1];
       m_point->z = 0.0;
- 
       //....................................................................
       //Calculate the product of values in element
       if(m_point->IsInTriangleXYProjection(xp,yp)) {//CC 10/05
@@ -2092,7 +839,6 @@ double GetAverageHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double **
   return average;
 }
 
-
 /**************************************************************************
 MSHLib-Method: GetAverageHetVal
 Task: 
@@ -2107,26 +853,22 @@ long GetNearestHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double ** i
   double x, y, z;
   double* center = NULL;
   Mesh_Group::CElem* m_ele = NULL;
-  
   //----------------------------------------------------------------------
   // MB ToDo
   //EleIndex = -1;
   //m_msh = NULL;
   //----------------------------------------------------------------------
-
   x=0.0; y=0.0; z=0.0;
   dist = 10000000.0; //Startwert
   //WW  dist2 = 0.01;	    // Abstand zwischen eingelesenen Knoten und Geometrieknoten-RF; 
 					// Achtung, doppelbelegung möglich bei kleinen Gitterabständen
   nextele = -1;
-
   //Get element data
   m_ele = m_msh->ele_vector[EleIndex];
   center = m_ele->GetGravityCenter();
   x = center[0];
   y = center[1];
   z = center[2];
-  
   //Calculate distances  
   for(i=0;i<no_values;i++){
     ex=invals[i][0];
@@ -2138,10 +880,8 @@ long GetNearestHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double ** i
 	  nextele = i;
 	}
   }
-  
   return nextele;
 }
-
 
 /**************************************************************************/
 /* ROCKFLOW - Funktion: GetLineFromFile
@@ -2248,8 +988,6 @@ int get_hetfields_number(hetfields *hf){
  return hf->nof;
 }
 
-
-
 /**************************************************************************/
 /* ROCKFLOW - Funktion: GetHetValue
                                       */
@@ -2287,69 +1025,6 @@ for(i=0;i<n;i++){
  return -1.0;
 }
 
-
-//SB ende
-
-/**************************************************************************
-   ROCKFLOW - Function: TOLSortNodes1
-   
-   Task:  
-   Sort nodes descending according to the criterium. 
-         
-   Parameter: (I: Input; R: Return; X: Both)
-           I: long* nodes, double* criterium, int anz
-           
-   Return:
-           *long nodes (aber sortiert!)
-   
-   Programming:
-   09/2002   MB   First Version
- **************************************************************************/
-
-
-/**************************************************************************
-   ROCKFLOW - Function: SortDataSet
-   
-   Task:  
-   Sort data set1 and set2 descending according to the criterium. 
-         
-   Parameter: (I: Input; R: Return; X: Both)
-           I: long* nodes, double* criterium, int anz
-           
-   Return:
-           *long nodes (aber sortiert!)
-   
-   Programming:
-   05/2003   MB   First Version  based on GeoSortNodes
- **************************************************************************/
-void TOLSortDataSet(double* set1, double* set2, double* criterium, int anz)
-{
-  int flag=1; 
-  int i;
-  int nummer=0;
-  double tempset1;
-  double tempset2;
-  double temp;
-
-  do  {
-    flag = 0;
-    nummer++;
-    for (i=0; i < (anz - nummer); i++)  {
-      if ( criterium[i] < criterium[i+1])  {
-        flag = 1;
-        tempset1 = set1[i];
-        tempset2 = set2[i];
-        temp = criterium[i];
-        set1[i] = set1[i+1];
-        set2[i] = set2[i+1];
-        criterium[i] = criterium[i+1];
-        set1[i+1] = tempset1;
-        set2[i+1] = tempset2;
-        criterium[i+1] = temp;
-      } /* end if */
-    } /* end for */
-  } while (flag == 1);
-}
 /**********************************************************************
 Function for interpolation between two points P1(x1|z1) and P2(x2|z2)
 The function returns the value zn at the position xn. 
@@ -2384,7 +1059,7 @@ double GetMatrixValue(double var1, double var2, string caption, int *gueltig)
   int j1 = 0;
   int j2 = 0;
   int counter;
-  double x1,x2,y1,y2;
+  double x1=0.0,x2=0.0,y1=0.0,y2=0.0; //OK411
   double zx1y1,zx2y1,zx1y2,zx2y2;
   
   matrix = FCTGet(caption);

@@ -9,7 +9,6 @@
                                                                           */
 /**************************************************************************/
 
-#include "stdafx.h"
 #ifdef WINDOWS
  #pragma warning (disable:4786)  /*Visual C++ 6.0*/
 #endif 
@@ -24,13 +23,11 @@
 using namespace std;
 
 #include "makros.h"
-#include "rfstring.h"
-#include "elements.h"
+#include "files0.h"
 #include "rf_pcs.h" //OK_MOD" //GetRFProcess..()
 #include "rfmat_cp.h"
 #include "rf_pcs.h"
 #include "rf_tim_new.h"
-#include "nodes.h"
 #include "rf_msp_new.h"
 #include "rf_mmp_new.h"
 #include "rf_mfp_new.h"
@@ -560,28 +557,30 @@ if(max_solubility > 0){
 *************************************************************************/
 double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFProcess* m_pcs)
 {
-    long i, group;
+    long group;
     int  p_idx = -1, t_idx = -1;
     /*int dependence = 0; */
     double diffusion_coefficient = -1.0;
     double pressure_average = 1e5;
-    double temperature_average = 293., diffusion_average=0.0;
+    double temperature_average = 293.;
+    double diffusion_average=0.0;
     double *k = NULL;
     double Dm,porosity;
     static long *element_nodes;
     static int count_nodes;
     static int p_ind, t_ind;
     static double eta = 0.0; //, theta = 1.0;
-    //    double gp[3]={0.,0.,0.};
-	char name_pres[80], name_heat[80];
 
- group = m_pcs->m_msh->ele_vector[index]->GetPatchIndex();
+  //OK411
+  diffusion_average = diffusion_average;
+  pressure_average = pressure_average;
+  temperature_average = temperature_average;
+  p_idx = p_idx;
+  t_idx = t_idx;
 
- CMediumProperties *m_mat_mp = NULL;
- m_mat_mp = mmp_vector[group];
-
-
-
+    group = m_pcs->m_msh->ele_vector[index]->GetPatchIndex();
+    CMediumProperties *m_mat_mp = NULL;
+    m_mat_mp = mmp_vector[group];
 	k = diffusion_model_values;
 
     switch (diffusion_model) {
@@ -603,23 +602,20 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
 	case 4:
 	case 5:
 	case 6:
-	case 7:  {                   /* Methode 1 */
+	case 7:  
+/*OK411
+        {
         count_nodes = ElNumberOfNodes[ElGetElementType(index) - 1];
         element_nodes = ElGetElementNodes(index);
-
-        /* Druckabhaengigkeit */
 		p_ind = 1;
-
 		sprintf(name_pres,"PRESSURE%ld",transport_phase+1);
 // SB:GS4 todo  		p_idx = m_pcs->PCSGetNODValueIndexNew(name_pres,1);
-
         if (p_ind) {
             pressure_average = 0.0;
             for (i = 0; i < count_nodes; i++)
                 pressure_average += GetNodeVal(element_nodes[i], p_idx);
             pressure_average /= count_nodes;
         }
-        /* Temperaturabhaengigkeit */
 		t_ind = 1;
 		if (! GetRFProcessHeatReactModel()){
 			DisplayMsgLn("No heat transport active, no temperature available for determination of diffusion coefficient ");
@@ -628,7 +624,6 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
 
 		sprintf(name_heat,"TEMPERATURE%ld",transport_phase+1);
 // SB:GS4 todo		m_pcs->PCSGetNODValueIndexNew(name_heat,1);
-
         if (t_ind) {
             temperature_average = 0.0;
             for (i = 0; i < count_nodes; i++)
@@ -639,7 +634,8 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
         diffusion_coefficient = CalcDiffusionCoefficientCP_Method1(index, temperature_average, pressure_average, eta);
         element_nodes = NULL;
         break;
-	}
+	    }
+*/
   case 8:{                    /* Archies law De = Dp * poros^m      as Dp is part of the dispersion tensor, we  modify Dp -> Dp=Dp0*poro^(m-1)*/
             if (count_of_diffusion_model_values < 2)
                 return 0.0;
@@ -665,7 +661,7 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
         count_nodes = m_Elem->GetNodesNumber ( false );
 
   	  diffusion_average=0.0;
-          for (i = 0; i < count_nodes; i++){ //calculate harmonic mean of node based diffusion coefficients
+          for (int i=0;i<count_nodes;i++){ //calculate harmonic mean of node based diffusion coefficients
 		// then get the values from nodes
 				
 		 Dm = k[0]*pow(GetNodePorosityValue_MT(m_Elem->GetNodeIndex ( i ), 1),k[1]); //node based diffusion coefficient
@@ -971,93 +967,6 @@ int CompProperties::GetNumberIsothermValuesCompProperties(int isotherm)
     return n;
 }
 
-
-/**************************************************************************
-   ROCKFLOW - Funktion: CalcElementRetardationFactor
-
-   Aufgabe:
-   Berechnet den Retardationsfaktor des angegebenen Elements (fuer
-   1D, 2D und 3D identisch)
-
-   Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E long number: Index des Elements, dessen Retardationsfaktor berechnet
-                  werden soll
-
-   Ergebnis:
-   Retardationsfaktor
-
-   Programmaenderungen:
-   04/2003     SB         Erste Version
-   09/2004	   SB		  Moved to Class CompProperties as member function
- **************************************************************************/
-double CompProperties::CalcElementRetardationFactor( long index, double*gp, double theta)
-{
- static double porosity,density_rock,isotherm;
- static double conc, retard = 0.0, saturation = 1.0;
- int gueltig;
-
- long group = ElGetElementGroupNumber(index);
-
- CMediumProperties *m_mat_mp = NULL;
- m_mat_mp = mmp_vector[group];
-
- CSolidProperties *m_msp = NULL;
- m_msp = msp_vector[group];
-
-// porosity = GetSoilPorosity(index);
- porosity = m_mat_mp->Porosity(index,theta);
-// density_rock = 2000.0; // GetSolidDensity(index);
- density_rock = fabs(m_msp->Density());
- // get fluid saturation in element, if unsaturated flow
- saturation = PCSGetEleMeanNodeSecondary(index, "RICHARDS_FLOW", "SATURATION1", 1);
- /* Get mean element concentration from last time step */
- conc = CalcElementMeanConc(index);
- /* DisplayMsg(" Mean conc: "); DisplayDouble(conc,0,0); DisplayMsgLn(" "); */
- 
- switch(isotherm_model){
- case -1: /* no sorption */
-	 isotherm = 0.0;
-	 break;
- case 0: /* from curve */
-	 isotherm = 0.0;
-	 isotherm = GetCurveDerivative((int) isotherm_function_name, 0, fabs(conc), &gueltig);
-	 break;
- case 1: /* linear isotherm   */
-	isotherm = isotherm_model_values[0];
-	break;
-/* rausgenommen, solange der PRozess linear ist */
- case 2: /* Freundlich Isotherm */
-	 if(fabs(isotherm_model_values[1] - 1.0)<MKleinsteZahl) /* Freundlich is linear */
-		 isotherm = isotherm_model_values[0];
-	 else
-		 if(fabs(conc)<MKleinsteZahl) 
-			isotherm = isotherm_model_values[0]; 
-		 else
-			isotherm = isotherm_model_values[0] * isotherm_model_values[1] * pow(fabs(conc),isotherm_model_values[1]-1.0);
-	break;
- case 3: /* Langmuir Isotherm */
-	isotherm = isotherm_model_values[0] * isotherm_model_values[1] / pow((1 + isotherm_model_values[0] * fabs(conc)),2.0);
-	break;
-// case 15: /* Input by curve */
-//	 isotherm = 0.0;
-//	 isotherm = GetCurveDerivative((int) isotherm_model_values[0], 0, fabs(conc), &gueltig);
-//	 break;
- default:
-	 DisplayMsgLn("Unknown sorption isotherm type. Assuming no sorption");
-	isotherm = 0.0;
-	break;
- };
-// DisplayMsg(" conc: "); DisplayDouble(conc,0,0);DisplayMsg(" isotherm: "); DisplayDouble(isotherm,0,0); DisplayMsgLn(" "); 
-// if(conc < 0.0) isotherm = 0.0;
- 
-  retard = 1. + (1.-porosity)*density_rock*isotherm/porosity/saturation;
-//  DisplayMsg(" Retardation factor: "); DisplayDouble(retard,0,0); DisplayMsgLn(" "); 
-
- return retard;
-}
-
-
-
 /**************************************************************************
    ROCKFLOW - Funktion: CalcElementRetardationFactorNew
 
@@ -1084,6 +993,7 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double *gp, 
  int gueltig;
  long group = 0; //SB4200 ToDO
  double fracture_width = 0.0; //CMCD needed for wall retardation in a fracture
+ gp = gp; //OK411
 
  group = m_pcs->m_msh->ele_vector[index]->GetPatchIndex();
 
@@ -1158,63 +1068,6 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double *gp, 
  return retard;
 }
 
-
-
-
-/**************************************************************************
-   ROCKFLOW - Funktion: CalcElementMeanConcentration
-
-   Aufgabe:
-   Berechnet den mittleren Wert eines Elements aus den Werten der 
-   angrenzenden Knoten
-   
-   Programmaenderungen:
-   04/2003     SB         Erste Version
-   09/2004	   SB		  Moved to Class CompProperties as member function
-**************************************************************************/
-double CompProperties::CalcElementMeanConc (long index)
-{
-  static long i,  nn;
-  static long *element_nodes;
-  static double val, val1, val2;
-  double theta = 1.0; //GetNumericalTimeCollocation("TRANSPORT");
-
-/* get Value after last iteration */
-  val1=0.0;
-  if (ElGetElement(index)!=NULL)   /* wenn Element existiert */
-     if (ElGetElementActiveState(index)){  /* nur aktive Elemente */
-        nn = ElGetElementNodesNumber(index);
-        element_nodes = ElGetElementNodes(index);
-        for (i=0;i<nn;i++) {
-//			val1 += PCSGetNODConcentration(element_nodes[i],component,timelevel);
-			val1 += PCSGetNODValue(element_nodes[i], (char *) name.data(),1); //name is class member, new timelevel
-		}
-        val1 /= (double)nn;
-        element_nodes = NULL;
-     }
-/* get value from beginning of timestep */
-  val2=0.0;
-  if (ElGetElement(index)!=NULL)   /* wenn Element existiert */
-     if (ElGetElementActiveState(index)){  /* nur aktive Elemente */
-        nn = ElGetElementNodesNumber(index);
-        element_nodes = ElGetElementNodes(index);
-        for (i=0;i<nn;i++) {
-//			val2 += ergebnis[element_nodes[i]];
-			val2 += PCSGetNODValue(element_nodes[i],(char *) name.data(),0);
-		}
-        val2 /= (double)nn;
-        element_nodes = NULL;
-     }
-/* calculate mean value */
-
-//	 DisplayMsgLn(" "); DisplayMsg(" val1: "); DisplayDouble(val1,0,0);DisplayMsg(", val2: "); DisplayDouble(val2,0,0); DisplayMsgLn("");
-//	 theta = 0.0;
-	 val = theta*val1 + (1.0-theta)*val2;   
-
-
-  return val;
-}
-
 /**************************************************************************
    ROCKFLOW - Funktion: CalcElementMeanConcentration
 
@@ -1286,79 +1139,6 @@ double CompProperties::CalcElementMeanConcNew (long index, CRFProcess* m_pcs)
 
   return val;
 }
-
-
-
-/**************************************************************************
-   ROCKFLOW - Funktion: MTM2CalcElementDecayRate
-
-   Aufgabe:
-   Berechnet die Zerfallsrate des angegebenen Elements (fuer
-   1D, 2D und 3D identisch)
-
-   Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E long number: Index des Elements, dessen Retardationsfaktor berechnet
-                  werden soll
-
-   Ergebnis:
-   Zerfallsrate
-
-   Programmaenderungen:
-   04/2003     SB         Erste Version
-   09/2004	   SB		  Moved to Class CompProperties as member function
- **************************************************************************/
-double CompProperties::CalcElementDecayRate( long index)
-{
- static double conc, lambda = 0.0;
- int gueltig;
-  
- if(index >= anz_active_elements){
-	 DisplayMsgLn(" Too many elements ");
-	 return 0.0;
- }
- /* Get mean element concentration from last time step */
- conc = CalcElementMeanConc(index);
-
- switch(decay_model){
- 
- case -1:  /* no decay */ 
-	 lambda = 0.0;
-	 break;
- case 0: /* curve - linear interpolation*/
-	 lambda = 0.0;
-	 lambda = GetCurveValue((int) decay_function_name, 0, fabs(conc), &gueltig);
-	 break;
- case 1: /* Any order decay  with n > 1 */
-	 if(fabs(decay_model_values[1] - 1.0) < MKleinsteZahl) { 
-		 /* First order decay */
-		 lambda = decay_model_values[0];
-		 break;
-	 }
-	 else if(decay_model_values[1] < MKleinsteZahl){ /* zero - order decay */
-		if(fabs(conc)<MKleinsteZahl) 
-			lambda = decay_model_values[0];
-		else
-			lambda = decay_model_values[0]/conc;
-	 }
-	 else { 
-		 /* Any order decay with n not equal to one or zero*/
-		 if(fabs(conc)<MKleinsteZahl)
-			lambda = decay_model_values[0];
-		 else
-			lambda = decay_model_values[0]*pow(fabs(conc),decay_model_values[1]-1.0);
-	 }
-	break;
- case 2:  /* Monod-Kinetics */
-	lambda = decay_model_values[0]/(decay_model_values[1] + conc);
-	break;
- default:
-	lambda = 0.0;
-	break;
- };
-
-  return lambda;
-}
-
 
 /**************************************************************************
    ROCKFLOW - Funktion: MTM2CalcElementDecayRate

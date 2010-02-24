@@ -3,9 +3,9 @@ Task: Linear equation
 Programing:
 11/2007 WW/
 **************************************************************************/
-#include "stdafx.h" /* MFC */
 
-//
+#include "makros.h"
+
 // NEW_EQS To be removed
 #ifdef NEW_EQS    //1.11.2007 WW
 #include <iomanip>
@@ -139,7 +139,7 @@ Programing:
 **************************************************************************/
 void Linear_EQS::ConfigNumerics(CNumerics *m_num, const long n)
 {
-  //
+  n; //OK411
   int i, nbuffer = 0; // Number of temperary float arrays
   precond_type = m_num->ls_precond;
   solver_type = m_num->ls_method;
@@ -560,7 +560,7 @@ int Linear_EQS::Solver(CNumerics *num)
 		ierr = lis_matrix_assemble(AA);
 
 		// Assemble the vector, b, x
-		int iflag = 0;
+		//OK411 int iflag = 0;
 		ierr = lis_vector_duplicate(AA,&bb);
 		ierr = lis_vector_duplicate(AA,&xx);
 #pragma omp parallel for

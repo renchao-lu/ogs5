@@ -6,20 +6,17 @@ Programing:
 last modified
 **************************************************************************/
 
-#include "stdafx.h" // MFC
 #include "makros.h"
-#include "nodes.h"
 // C++ STL
 #include <fstream>
 #include <iostream>
 #include <set>
 using namespace std;
 
-#include "rfstring.h"
-//WW #include "elements.h"
+#include "files0.h"
 // FEM-Makros
 #include "geo_lib.h"
-#include "geo_strings.h"
+#include "files0.h"
 #include "mathlib.h"
 
 // GeoSys-GeoLib
@@ -1311,7 +1308,7 @@ void CSourceTerm::FaceIntegration(CFEMesh* msh, vector<long>&nodes_on_sfc,
   for (i=0; i<this_number_of_nodes; i++)
   {
      k = nodes_on_sfc[i];
-     for (j=0; j<msh->nod_vector[k]->connected_elements.size(); j++) {
+     for (j=0; j<(long)msh->nod_vector[k]->connected_elements.size(); j++) {
        l = msh->nod_vector[k]->connected_elements[j];
        if (msh->ele_vector[l]->selected==0)
          vec_possible_elements.push_back(l);
@@ -1826,7 +1823,7 @@ void GetCouplingNODValueNewton(double &value, CSourceTerm* m_st, CNodeValue* cno
   CRFProcess* m_pcs_cond = NULL;
   CRFProcess* m_pcs_this = NULL;
   double h_this, h_cond, z_this, z_cond, h_this_shifted, h_this_averaged;
-  double epsilon = 1.e-7, value_jacobi, h_this_epsilon, relPerm_epsilon, condArea_epsilon;// epsilon as in pcs->assembleParabolicEquationNewton
+  double epsilon = 1.e-7, value_jacobi, h_this_epsilon=0.0, relPerm_epsilon, condArea_epsilon; //OK411 epsilon as in pcs->assembleParabolicEquationNewton
  
   m_pcs_this = PCSGet(m_st->pcs_type_name);
   m_pcs_cond = PCSGet(m_st->pcs_type_name_cond);
@@ -2314,82 +2311,64 @@ Programing:
 **************************************************************************/
 void CSourceTermGroup::SetPNT(CRFProcess* m_pcs, CSourceTerm* m_st, const int ShiftInNodeVector)
 {
+  CGLPoint* m_pnt = NULL;
+  CNodeValue *m_nod_val = NULL;
+  m_nod_val = new CNodeValue();
+  m_pnt = GEOGetPointByName(m_st->geo_name);
+  if(m_pnt)
+    m_nod_val->geo_node_number = m_pnt->id;
+  if(m_pnt)
+    m_nod_val->msh_node_number =  m_msh->GetNODOnPNT(m_pnt) +ShiftInNodeVector;
+  else
+    m_nod_val->msh_node_number = -1;
+  m_nod_val->CurveIndex = m_st->CurveIndex;
+  m_nod_val->geo_node_number =  m_nod_val->msh_node_number-ShiftInNodeVector; //WW
+  m_nod_val->node_value = m_st->geo_node_value;
+  m_nod_val->tim_type_name = m_st->tim_type_name;
 
+  if(m_st->dis_type_name.compare("CRITICALDEPTH")==0) {
+    m_nod_val->node_distype = 6;
+    m_nod_val->node_area = 1.0;
+  }
 
- CGLPoint* m_pnt = NULL;
+  if(m_st->dis_type_name.compare("NORMALDEPTH")==0) {
+    m_nod_val->node_distype = 8;
+    m_nod_val->node_area = 1.0;
+  }
 
+  if(m_st->dis_type_name.compare("PHILIP")==0) { // JOD
+    m_nod_val->node_distype = 10;
+    m_nod_val->node_area = 1.0;
+  }
 
- CNodeValue *m_nod_val = NULL;
- m_nod_val = new CNodeValue();
- 
-
-
- m_pnt = GEOGetPointByName(m_st->geo_name);
-
-        if(m_pnt)
-           m_nod_val->geo_node_number = m_pnt->id;
-
-
-        if(m_pnt)
-          if(m_msh) //WW
-			 m_nod_val->msh_node_number =  m_msh->GetNODOnPNT(m_pnt) +ShiftInNodeVector;
-		  else
-		  {  
-             m_nod_val->msh_node_number =
-		       GetNodeNumberClose(m_pnt->x,m_pnt->y,m_pnt->z)
-		         	 +ShiftInNodeVector;
-		  }
-        else
-          m_nod_val->msh_node_number = -1;
-		m_nod_val->CurveIndex = m_st->CurveIndex;
-        m_nod_val->geo_node_number =  m_nod_val->msh_node_number-ShiftInNodeVector; //WW
-        m_nod_val->node_value = m_st->geo_node_value;
-        m_nod_val->tim_type_name = m_st->tim_type_name;
-
-        if(m_st->dis_type_name.compare("CRITICALDEPTH")==0) {
-           m_nod_val->node_distype = 6;
-           m_nod_val->node_area = 1.0;
-        }
-
-		if(m_st->dis_type_name.compare("NORMALDEPTH")==0) {
-           m_nod_val->node_distype = 8;
-           m_nod_val->node_area = 1.0;
-        }
-
-	if(m_st->dis_type_name.compare("PHILIP")==0) { // JOD
-           m_nod_val->node_distype = 10;
-           m_nod_val->node_area = 1.0;
-        }
-
-     if(m_st->dis_type_name.compare("GREEN_AMPT")==0) { // JOD
-           m_nod_val->node_distype = 11;
-           m_nod_val->node_area = 1.0;
-        }
-      //------------------------------------------------------------------
-		if(m_st->dis_type_name.compare("SYSTEM_DEPENDENT")==0){      //YD
-           m_nod_val->node_distype = 7;
-           m_pcs->compute_domain_face_normal = true; //WW
-           CElem* elem = NULL;
-		   CNode* cnode = NULL; //WW
-           for (long i = 0; i < (long)m_msh->ele_vector.size(); i++)
-             {
-                elem = m_msh->ele_vector[i];
-                if(!elem->GetMark()) continue;
-                int nn = elem->GetNodesNumber(m_msh->getOrder());
-				for(long j=0; j < nn; j++){
-					cnode = elem->GetNode(j); //WW
-                    if(cnode->GetIndex()==m_st->geo_node_number)
-                    m_st->element_st_vector.push_back(i);
-				}
-			 }
-	    }         
-        //WW        group_vector.push_back(m_node_value);
-        //WW        st_group_vector.push_back(m_st); //OK
-        m_pcs->st_node_value.push_back(m_nod_val);  //WW
-        m_pcs->st_node.push_back(m_st); //WW
-
-
+  if(m_st->dis_type_name.compare("GREEN_AMPT")==0) { // JOD
+    m_nod_val->node_distype = 11;
+    m_nod_val->node_area = 1.0;
+  }
+  //------------------------------------------------------------------
+  if(m_st->dis_type_name.compare("SYSTEM_DEPENDENT")==0){      //YD
+    m_nod_val->node_distype = 7;
+    m_pcs->compute_domain_face_normal = true; //WW
+    CElem* elem = NULL;
+	CNode* cnode = NULL; //WW
+    for (long i = 0; i < (long)m_msh->ele_vector.size(); i++)
+    {
+      elem = m_msh->ele_vector[i];
+      if(!elem->GetMark()) continue;
+      int nn = elem->GetNodesNumber(m_msh->getOrder());
+	  for(long j=0; j < nn; j++){
+	    cnode = elem->GetNode(j); //WW
+        if(cnode->GetIndex()==m_st->geo_node_number)
+          m_st->element_st_vector.push_back(i);
+	  }
+	}
+  }         
+  //WW        group_vector.push_back(m_node_value);
+  //WW        st_group_vector.push_back(m_st); //OK
+  m_pcs->st_node_value.push_back(m_nod_val);  //WW
+  m_pcs->st_node.push_back(m_st); //WW
 }
+
 /**************************************************************************
 FEMLib-Method:
 Task:
@@ -2398,16 +2377,16 @@ Programing:
 **************************************************************************/
 void CSourceTermGroup::SetLIN(CRFProcess* m_pcs, CSourceTerm* m_st, const int ShiftInNodeVector)
 {
+  ShiftInNodeVector;
+  m_pcs = m_pcs;
+  m_st = m_st;
+/*OK411
   long number_of_nodes;
   vector<long>lin_nod_vector;
   vector<double>lin_nod_val_vector;
   CGLLine* m_lin = NULL;
   CGLPolyline* m_ply = NULL;
-  
- 
   long *nodes = NULL; 
-
- 
   m_lin = m_lin->GEOGetLine(m_st->geo_id);
 
         if(m_lin){
@@ -2446,9 +2425,7 @@ void CSourceTermGroup::SetLIN(CRFProcess* m_pcs, CSourceTerm* m_st, const int Sh
         else
           cout << "Warning - CSourceTermGroup::Set: LIN not found" << endl;
        
-
-
-
+*/
 }
 
 /**************************************************************************
@@ -2615,12 +2592,12 @@ void CSourceTermGroup::SetPolylineNodeVector(CGLPolyline* m_ply, vector<long>&pl
      } // end mesh
     else { //RFI //WW  To be deleted
 	  long *nodes = NULL;
-      if(m_ply->type==100)
-        nodes = GetNodesOnArc(number_of_nodes, m_ply); //WW CC change
-	  else {
+      //OK411 if(m_ply->type==100)
+        //OK411 nodes = GetNodesOnArc(number_of_nodes, m_ply); //WW CC change
+	  //OK411 else {
         m_ply->type = 3;  //??
         nodes = MSHGetNodesClose(&number_of_nodes, m_ply);//CC
-	  }
+	  //OK411 }
       m_ply->GetPointOrderByDistance(); 
   } // end !mesh
 }
@@ -2632,19 +2609,11 @@ Programing:
 11/2007 JOD
 last modification:
 **************************************************************************/
-void CSourceTermGroup::SetSurfaceNodeVector(Surface* m_sfc, vector<long>&sfc_nod_vector) {
-
-	if(m_msh) //MSH
-       m_msh->GetNODOnSFC(m_sfc, sfc_nod_vector);
-    else{
-       //WW nodes_vector = m_surface->GetMSHNodesClose();  
-       if(pcs_type_name.compare("OVERLAND_FLOW")==0)
-          GetMSHNodesOnSurfaceXY(m_sfc, sfc_nod_vector); //CC
-        else
-          GetMSHNodesOnSurface(m_sfc, sfc_nod_vector);//CC
-    }  
-
+void CSourceTermGroup::SetSurfaceNodeVector(Surface* m_sfc, vector<long>&sfc_nod_vector) 
+{
+  m_msh->GetNODOnSFC(m_sfc, sfc_nod_vector);
 }
+
 /**************************************************************************
 MSHLib-Method: 
 Task: 

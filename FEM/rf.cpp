@@ -23,7 +23,6 @@
 #include "lis.h"
 #endif
 
-#include "stdafx.h" /* MFC */
 #include<iostream>
 /* Preprozessor-Definitionen */
 #include "makros.h"
@@ -32,7 +31,7 @@
 #include "break.h"
 #include "timer.h"
 //16.12.2008. WW #include "rf_apl.h"
-#include "geo_strings.h"
+#include "files0.h"
 #ifdef SUPERCOMPUTER
 // kg44 test for buffered output
 #include <stdio.h>

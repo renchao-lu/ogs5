@@ -16,7 +16,6 @@ using namespace std;
 // GEOLib
 #include "geo_pnt.h"
 // FEMLib
-#include "nodes.h"
 #include "rf_pcs.h"
 #include <sstream>        // for istringstream (ME)
 #include "vtk.h"
@@ -63,8 +62,6 @@ class COutput
     long msh_node_number;
     string msh_type_name; //OK
     CFEMesh* GetMSH(); //OK
-    // RFO
-    FEMNodesElements *m_nodes_elements;
     // TIM
     string tim_type_name;
     vector<double>time_vector;
@@ -131,7 +128,6 @@ extern vector<COutput*>out_vector;
 extern bool OUTRead(string);
 extern void OUTWrite(string);
 #define OUT_FILE_EXTENSION ".out"
-extern void OUTWriteNODValues(string,FEMNodesElements*);
 extern void OUTData(double, const int step);
 extern void OUTDelete();
 extern COutput* OUTGet(string);

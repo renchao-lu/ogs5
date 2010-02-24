@@ -22,9 +22,9 @@
   /* Floating-Point */
 
 /* ROCKFLOW-Version */
-#define ROCKFLOW_VERSION    "4.10.08 (NW)"
+#define ROCKFLOW_VERSION    "4.11.00(OK)"
 #define RF_SHELL_VERSION    "4.10.03(NB)"
-#define ROCKFLOW_DATE       "15.01.2010"
+#define ROCKFLOW_DATE       "22.02.2010"
 
 /* Definitionen von Makros zur Steuerung der bedingten Compilierung */
 #define SWITCHES
@@ -315,15 +315,9 @@
 
 enum DIS_TYPES {CONSTANT,LINEAR};
 
-/* Global benoetigte Header */
 #include "display.h"
-  /* Bildschirmschnittstelle */
 #include "memory.h"
-  /* Speichertest-Bibliothek */
 #include "timer.h"
-  /* Laufzeit-Tests */
-#include "prototyp.h"
-  /* Funktions-Prototypen*/
 
 extern std::string FileName;
 extern std::string FilePath; //WW

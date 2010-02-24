@@ -5,7 +5,6 @@ Programing:
 02/2004 OK Implementation
 last modified
 **************************************************************************/
-#include "stdafx.h" // MFC
 #include "makros.h"
 // C++ STL
 #include <math.h>
@@ -16,15 +15,14 @@ using namespace std;
 #include "geo_pnt.h"
 #include "geo_sfc.h"
 #include "geo_vol.h"
-//include "geo_strings.h"
+//include "files0.h"
 #include "geo_dom.h"
-#include "rfstring.h"
+#include "files0.h"
 // MSHLib
 //#include "mshlib.h"
 // FEMLib
 extern void remove_white_space(string*);
 #include "gs_project.h"
-#include "nodes.h"
 #include "tools.h"
 #include "rf_node.h"
 #include "rf_bc_new.h"
@@ -528,6 +526,7 @@ last modification:
 **************************************************************************/
 void InterpolateValues(vector<CNodeValue*>node_value_vector)
 {
+/*OK4111
   long node_value_vector_length = (long)node_value_vector.size();
   long i;
   double *distance_vector = NULL;
@@ -537,7 +536,8 @@ void InterpolateValues(vector<CNodeValue*>node_value_vector)
   distance_vector = new double[node_value_vector_length];
   // --------------------------------------------------------------------
   distance_vector[0] = 0.0;
-  for(i=1;i<node_value_vector_length;i++) {
+  for(i=1;i<node_value_vector_length;i++) 
+  {
     x0 = GetNodeX(node_value_vector[i-1]->msh_node_number);
     y0 = GetNodeY(node_value_vector[i-1]->msh_node_number);
     z0 = GetNodeZ(node_value_vector[i-1]->msh_node_number);
@@ -573,11 +573,11 @@ void InterpolateValues(vector<CNodeValue*>node_value_vector)
       node_value_vector[i]->node_value = csp->interpolation(distance);
     }   
   }
-
   // Memory release
   ss0.clear();
   bVal.clear();
   delete distance_vector;
+*/
 }
 
 /**************************************************************************
@@ -588,6 +588,8 @@ Programing:
 **************************************************************************/
 void CBoundaryCondition::ExecuteDataBasePolyline(CGLPolyline *m_polyline)
 {
+  m_polyline = m_polyline; //OK411
+/*OK4111
   CBoundaryCondition *m_bc = NULL;
   CGLPoint *m_point = NULL;
   long number_of_nodes;
@@ -651,11 +653,11 @@ void CBoundaryCondition::ExecuteDataBasePolyline(CGLPolyline *m_polyline)
     tmp = node_value_vector_tmp[i]->node_value;
     node_value_vector.push_back(node_value_vector_tmp[i]->node_value);
   }
-
   // Release memory
   node_value_vector_tmp.clear();
   delete [] node_distances;
   delete [] nodes_unsorted;
+*/
 }
 
 /**************************************************************************
@@ -1091,10 +1093,9 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
 	 else quadratic = false; 
      m_pcs->m_msh->SwitchOnQuadraticNodes(quadratic);
   }
-  
-
   list<CBoundaryCondition*>::const_iterator p_bc = bc_list.begin();
-  while(p_bc!=bc_list.end()) {
+  while(p_bc!=bc_list.end()) 
+  {
     m_bc = *p_bc;
     if(m_bc->time_dep_interpol)  //WW/CB
     { 
@@ -1103,39 +1104,40 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
     }
     //====================================================================
     //OK if(m_bc->pcs_type_name.compare(pcs_type_name)==0){ //OK/SB 4108
-    if((m_bc->pcs_type_name.compare(pcs_type_name)==0)&&(m_bc->pcs_pv_name.compare(pcs_pv_name)==0)){
-        //................................................................
-        //-- 23.02.3009. WW
-        if(m_bc->dis_type_name.find("DIRECT")!=string::npos)
+    if((m_bc->pcs_type_name.compare(pcs_type_name)==0)&&(m_bc->pcs_pv_name.compare(pcs_pv_name)==0))
+    {
+      //................................................................
+      //-- 23.02.3009. WW
+      if(m_bc->dis_type_name.find("DIRECT")!=string::npos)
+      {
+         m_bc->DirectAssign(ShiftInNodeVector);
+         ++p_bc;
+         continue;
+      }        
+      //-- 19.03.3009. WW
+      if(m_bc->dis_type_name.find("PATCH_C")!=string::npos)
+      {
+        m_bc->PatchAssign(ShiftInNodeVector);
+        ++p_bc;
+        continue;
+      }        
+      //
+      cont = false;
+      if(m_bc->dis_type_name.compare("VARIABLE")==0) //OK
+      {
+        cont = true;
+        CGLPoint* m_geo_point = NULL;
+        m_geo_point = GEOGetPointByName(m_bc->geo_node_substitute);//C10/05
+        if(m_geo_point)
         {
-           m_bc->DirectAssign(ShiftInNodeVector);
-           ++p_bc;
-           continue;
-        }        
-        //-- 19.03.3009. WW
-        if(m_bc->dis_type_name.find("PATCH_C")!=string::npos)
-        {
-           m_bc->PatchAssign(ShiftInNodeVector);
-           ++p_bc;
-           continue;
-        }        
-        //
-        cont = false;
-        if(m_bc->dis_type_name.compare("VARIABLE")==0){ //OK
-          cont = true;
-          CGLPoint* m_geo_point = NULL;
-          m_geo_point = GEOGetPointByName(m_bc->geo_node_substitute);//C10/05
-          if(m_geo_point){
 //            m_node_value->msh_node_number = ShiftInNodeVector 
 //                                          + GetNodeNumberClose(m_geo_point->x,m_geo_point->y,m_geo_point->z);
 			  msh_node_number_subst = ShiftInNodeVector + m_msh->GetNODOnPNT(m_geo_point);
-          }
         }
-
-       
-
+      }
       //------------------------------------------------------------------
-      if(m_bc->geo_type_name.compare("POINT")==0) {
+      if(m_bc->geo_type_name.compare("POINT")==0) 
+      {
         m_node_value = new CBoundaryConditionNode;
         //m_node_value->geo_node_number = m_bc->geo_node_number;//CC remove
         // Get MSH node number
@@ -1145,19 +1147,13 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
         if(m_geo_point)
         m_bc->geo_node_number = m_geo_point->id;//CC
         m_node_value->geo_node_number = m_bc->geo_node_number;//CC
-          if(m_geo_point){
-             if(m_msh)
-                m_node_value->geo_node_number = m_msh->GetNODOnPNT(m_geo_point);
-			 else
-			 { 
-                 m_node_value->msh_node_number = ShiftInNodeVector+
-	             GetNodeNumberClose(m_geo_point->x,m_geo_point->y,m_geo_point->z);
-			 }
-		  }
+        if(m_geo_point)
+        {
+          m_node_value->geo_node_number = m_msh->GetNODOnPNT(m_geo_point);
 		}
-		
-        //................................................................
-        if(m_bc->dis_type_name.compare("VARIABLE")==0){ //OK
+	  }
+      //------------------------------------------------------------------
+      if(m_bc->dis_type_name.compare("VARIABLE")==0){ //OK
           m_node_value->conditional = true;
           m_geo_point = GEOGetPointByName(m_bc->geo_name);   //YD
           if(m_geo_point){
@@ -1233,9 +1229,9 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVecto
               }
             }
             else{
-              if(m_polyline->type==100)
-                nodes = GetNodesOnArc(number_of_nodes,m_polyline); //WW CC
-              else
+              //OK411 if(m_polyline->type==100)
+                //OK411 nodes = GetNodesOnArc(number_of_nodes,m_polyline); //WW CC
+              //OK411 else
                 nodes = MSHGetNodesClose(&number_of_nodes,m_polyline);
               for(i=0;i<number_of_nodes;i++){
                 m_node_value = new CBoundaryConditionNode();
@@ -1577,53 +1573,6 @@ node = node;
   else
 */
     return 0;
-}
-
-
-/**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-08/2004 OK Implementation
-06/2005 OK PCS
-05/2006 WW  
-last modification:
-**************************************************************************/
-//WW int NodeSetBoundaryConditions(char *pv_name,int ndx,string pcs_type_name)
-int NodeSetBoundaryConditions(char *pv_name,int ndx,CRFProcess* m_pcs)
-{
-  CBoundaryCondition *m_bc = NULL;
-  CBoundaryConditionNode *m_node = NULL;
-  long i;
-  //WW
-  long no_bc = (long)m_pcs->bc_node_value.size();
-  for(i=0;i<no_bc;i++){
-      m_node = m_pcs->bc_node_value[i];
-      m_bc = m_pcs->bc_node[i];
-	  if(m_bc->pcs_pv_name.compare(pv_name)==0)      
-        SetNodeVal(m_node->msh_node_number,ndx,m_node->node_value); //???
-  }
-  if(no_bc==0)
-    cout << "? Warning - NodeSetBoundaryConditions: m_bc_group not found" << endl;
-  return 1;
-
-  
-/* //WW
-
-  //OK m_bc_group = m_bc_group->Get(name);
-  m_bc_group = BCGetGroup(pcs_type_name,(string)pv_name); //OK
-  if(m_bc_group){
-    long no_bc = (long)m_bc_group->group_vector.size();
-    for(i=0;i<no_bc;i++){
-      m_node = m_bc_group->group_vector[i];
-      //SetNodeVal(NodeNumber[m_node->msh_node_number],ndx,m_node->node_value);
-      SetNodeVal(m_node->msh_node_number,ndx,m_node->node_value); //???
-    }
-  }
-  else
-    cout << "? Warning - NodeSetBoundaryConditions: m_bc_group not found" << endl;
-  return 1;
-*/  
 }
 
 /**************************************************************************

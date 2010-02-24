@@ -8,9 +8,7 @@
 
 #ifndef solver_INC
 #define solver_INC
-  /* Schutz gegen mehrfaches Einfuegen */
 
-#include "prototyp.h" /* Prototypen */
 #include "rf_num_new.h"
 /*-----------------------------------------------------------------------*/
 /* Objekt-Eigenschaften*/

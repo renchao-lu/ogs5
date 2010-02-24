@@ -10,14 +10,7 @@
 /**************************************************************************/
 
 #ifndef prototyp_INC
-
 #define prototyp_INC
-  /* Schutz gegen mehrfaches Einfuegen */
-
-/* Andere oeffentlich benutzte Module */
-#include <stdio.h>
-
-#include "makros.h"
 
 /* Deklarationen der Funktionszeigerprototypen */
 typedef void (*VoidFuncVoid) (void);
@@ -79,12 +72,8 @@ typedef double *(*DoubleXFuncLong) (long);
 typedef double *(*DoubleXFuncLI) (long, int);
 typedef double *(*DoubleXFuncLDX) (long, double *);
 typedef double *(*DoubleXFuncLII) (long,int,int);
-
-
 typedef void (*VoidFuncDXCDX) (double*, const double*);
-
 typedef void *(*VoidXFuncIVoidX) (int,void *);
 typedef double (*DoubleFuncIL) (int,long);
-
 
 #endif

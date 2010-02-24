@@ -6,8 +6,6 @@ Programing:
 last modified:
 **************************************************************************/
 
-#include "stdafx.h" /* MFC */
-
 // C++ STL
 #include <math.h>
 #include <string>
@@ -29,13 +27,9 @@ using namespace std;
 #include "rf_mmp_new.h"
 #include "pcs_dm.h"
 
-#include "rfstring.h" // GetLineFromFile1
+#include "files0.h" // GetLineFromFile1
 #include "tools.h" // GetLineFromFile
 
-//structure element. To be romoved
-//WW #include"elements.h"
-
-//
 vector<SolidProp::CSolidProperties*> msp_vector;
 vector<string> msp_key_word_vector; //OK
 
@@ -886,6 +880,7 @@ ToDo: geo_dimension
 **************************************************************************/
 void CSolidProperties::HeatConductivityTensor(const int dim, double* tensor, int group)
 {
+  group = group; //OK411
   //static double tensor[9];
   double temperature = 0.0;
   double saturation = 0.0;
@@ -4290,7 +4285,8 @@ void CSolidProperties::CalStress_and_TangentialMatrix_CC_SubStep(const int GPiGP
   //TEST
   int test_c = 0;
   // Begin substeps
-  while(1)
+  bool OK = true; //OK411
+  while(OK)
   { 
 /*
 if(test_c>2)

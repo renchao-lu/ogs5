@@ -14,12 +14,7 @@
    11/1999     C.Thorenz  Beliebige Anzahl Zeitspeicher
 **************************************************************************/
 
-#include "stdafx.h" /* MFC */
-
-/* Preprozessor-Definitionen */
 #include "makros.h"
-
-/* Header / Andere intern benutzte Module */
 #include "timer.h"
 #include <vector>
 #include <iostream>

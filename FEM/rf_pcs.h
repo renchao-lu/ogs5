@@ -423,7 +423,6 @@ public:
  //WW   double GetELEValue(long index,double*gp,double theta,string nod_fct_name);
     void CheckMarkedElement(); //WW
     // Configuration 3 - ELE matrices
-    VoidFuncInt ConfigELEMatrices;
     void CreateELEMatricesPointer(void);
     // Equation system
     //---WW

@@ -11,19 +11,17 @@ Programming:
 05/2007    Dirk Schaefer      Addition of NAPL-dissolution
 
 ***************************************************************************/
-#include "stdafx.h" // MFC
+
 #include "rf_kinreact.h"
 #include "stdio.h"
 #include "makros.h"
 #include "tools.h"
-#include "geo_strings.h"
+#include "files0.h"
 #include "rfmat_cp.h"
 #include "rf_mfp_new.h"
 #include "rf_msp_new.h"
 #include "msh_lib.h"
 #include "rf_mmp_new.h"
-#include "elements.h"
-#include "nodes.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -2276,7 +2274,7 @@ void CKinReactData::Biodegradation( long node, double eps, double hmin, double *
   long sp,  timelevel;
 //  int nok=0, nbad=0, Number_of_Components;
   int Number_of_Components, nreactions, r, Sp1, blob, Number_of_blobs;
-  double Csat_max, DensityNAPL, DensityAQ, DiffusionAQ, ViscosityAQ, PoreVelocity, d50, Reynolds, Schmidt, Sherwood;
+  double Csat_max, DensityNAPL, DensityAQ, DiffusionAQ, ViscosityAQ, PoreVelocity=0.0, d50, Reynolds, Schmidt, Sherwood; //OK411
   double tstart, tend, dt=0.0;
   double baditerations;
 //  CRFProcess* m_pcs = NULL;
@@ -2505,11 +2503,12 @@ for(sp=0;sp<Number_of_Components;sp++){
 
 void derivs(double t, double c[], double dcdt[], int n, long node)
 {
+  t = t; //OK411
 	int i, r, nreactions, BacteriaNumber;
 	int  Sp1, Sp2, phase, surfaceID=-1, blob;
 	double BacteriaMass, BacGrowth, Yield, sumX=0., maxkap;
-	double porosity1, porosity2, exchange, exch, kd, density1, saturation2, kadsorb, kdesorb, totalSurface,
-		   exponent, parameter, chochexp;
+	double porosity1, porosity2, exchange=0.0, exch, kd, density1, saturation2, kadsorb, kdesorb, totalSurface,
+		   exponent, parameter, chochexp; //OK411
 	double dt;
 	double foc;
  //#ds
@@ -2519,8 +2518,8 @@ void derivs(double t, double c[], double dcdt[], int n, long node)
 	vector <double> occupiedSurface;
 
  phase = 0;
-
- CKinReact *m_kr = NULL, *m_kr1=NULL;
+ CKinReact *m_kr = NULL;
+ //OK411 CKinReact *m_kr1 = NULL;
  CKinBlob *m_kb = NULL;
  CKinReactData *m_krd = NULL;
  m_krd = KinReactData_vector[0];
@@ -2864,7 +2863,7 @@ double   CKinReact::GetReferenceVolume( int comp, long index ){
   CRFProcess *m_pcs=NULL;
   CRFProcess *m_pcs_f=NULL;
   CKinReactData *m_krd = NULL;
-  CElem* m_ele_geo = NULL;
+  //OK411 CElem* m_ele_geo = NULL;
   int idx;
 
   m_krd = KinReactData_vector[0];
@@ -2912,10 +2911,10 @@ double CKinReact::GetPhaseVolumeAtNode(long node, double theta, int phase){
   CMediumProperties *m_mat_mp = NULL;
   CNode* m_nod = NULL;
   CElem* m_ele = NULL;
-  CRFProcess *m_pcs = NULL;
+  //OK411 CRFProcess *m_pcs = NULL;
   CFEMesh* m_msh = fem_msh_vector[0]; //SB: ToDo hart gesetzt
 
-  long idx, i, el, elem ,group;
+  long idx=0, i, el, elem ,group; //OK411
   double coord[3];
   double distance, weight, sum_w ;
   double* grav_c;
@@ -3060,6 +3059,7 @@ return dens;
 
 double CKinReact::BacteriaGrowth ( int r, double *c, double sumX, int exclude)
 {
+  r = r; //OK411
   int i, BacteriaNumber, MonodSpecies, InhibitionSpecies, Isotopespecies, NumberMonod, NumberInhibition;
   double Growth, BacteriaMass, maxVelocity, maxkap;
   double MonodConcentration, InhibitionConcentration, C;
@@ -3243,6 +3243,7 @@ double CKinReact::Inhibition ( double IC, double C )
 
 void jacobn(double t, double c[], double dfdt[], double **dfdc, int n, long node)
 {
+  t = t; //OK411
 int i, j, r, nreactions, BacteriaNumber, NumberMonod, MonodSpecies, NumberInhibition, InhibitionSpecies;
 int  Sp1, Sp2, SpX, surfaceID=-1, surfaceID2, blob;
 double maxkap, BacteriaMass, sumX=0., BacGrowth, maxVelocity, *d2X_dtdS;
@@ -3257,7 +3258,7 @@ double MonodOrder;
 double ThreshOrder;
 double ThreshConc;
 
-CKinReact *m_kr = NULL, *m_kr1=NULL , *m_kr2=NULL;
+CKinReact *m_kr = NULL, *m_kr1=NULL; //OK411 *m_kr2=NULL;
 CKinBlob *m_kb = NULL;
 CKinReactData *m_krd = NULL;
 //	CMediumProperties *m_mat_mp = NULL;
@@ -3762,10 +3763,11 @@ Task: returns true if NAPL dissolution is modeled
 Programing:
 08/2008 CB Implementation 
 **************************************************************************/
-bool KNaplDissCheck(void){
+bool KNaplDissCheck(void)
+{
   int j;
   CKinReact *m_kr = NULL;  
-  CKinReactData *m_krd = NULL;
+  //OK411 CKinReactData *m_krd = NULL;
   int nreact; 
   bool NAPLdiss = false;
 
@@ -4088,7 +4090,7 @@ void CKinReactData::ReactDeactPlotFlagsToTec(){
 void CKinReactData::Aromaticum(long nonodes){
 
   long node;
-  double conc, lambda;
+  double conc, lambda = 0.0; //OK411
   int pcsindex = 0;
   int varindex = 0;
   int nospec = (int)sp_varind.size();

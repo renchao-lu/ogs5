@@ -2,8 +2,6 @@
    The members of class Element definitions.
 */
 
-// MFC
-#include "stdafx.h"
 // C++ STL
 #include <iostream>
 #include <limits>	// PCH to better use system max and min
@@ -17,8 +15,6 @@
 // Sytem matrix
 #include "matrix.h"
 #endif
-// Geometry
-#include "nodes.h"
 // Parallel computing
 #include "par_ddc.h"
 // MSHLib
@@ -1439,8 +1435,8 @@ inline double CFiniteElementStd::CalCoefMassPSGLOBAL(int dof_index)
 {
   int Index = MeshElement->GetIndex();
   double val = 0.0;
-	double P,T;
-  double expfactor = 0.0;
+  double P,T;
+  //OK411 double expfactor = 0.0;
   double dens_arg[3]; //08.05.2008 WW
   bool diffusion = false;   //08.05.2008 WW
   if(MediaProp->heat_diffusion_model==273&&cpl_pcs)
@@ -1962,6 +1958,8 @@ Programing:
 **************************************************************************/
 inline void CFiniteElementStd::CalCoefLaplaceMultiphase(int phase, int ip) 
 {
+  ip = ip; //OK411
+
   int i=0;
   double mat_fac = 1.0;
   double *tensor = NULL;
@@ -2195,7 +2193,7 @@ inline void CFiniteElementStd::CalCoefLaplacePSGLOBAL(bool Gravity,  int dof_ind
 {
 	int i=0;
 	double *tensor = NULL;
-	double mat_fac = 1.0, m_fac=0.;
+	double mat_fac = 1.0; //OK411 m_fac=0.;
 	double k_rel=0.0;
 	double mfp_arg[2];
 
@@ -2424,6 +2422,7 @@ last modification:
 //inline void CFiniteElementStd::UpwindUnitCoord(int p, int point, int ind, double *rupw, double *supw, double *tupw)
 inline void CFiniteElementStd::UpwindUnitCoord(int p, int point, int ind)
 {
+  p = p; //OK411
   //Laufvariablen
   static long i, j, k, l;
   // Elementdaten 
@@ -2842,7 +2841,7 @@ inline double CFiniteElementStd::CalCoefStrainCouping()
 **************************************************************************/
 void CFiniteElementStd::CalcMass()
 {
-  int i, j, k;
+  int i, j; //OK411 k;
   // ---- Gauss integral
   int gp_r=0,gp_s=0,gp_t=0;
   double fkt,mat_fac;
@@ -3051,6 +3050,7 @@ last modification:
 **************************************************************************/
 inline double CFiniteElementStd::CalcSUPGEffectiveElemenetLength(double *vel)
 {
+  vel = vel; //OK411
   double L = 0.0;
   switch (this->ele_dim) {
     case 1:
@@ -4878,7 +4878,7 @@ void  CFiniteElementStd::Cal_GP_Velocity_FM(int *i_ind)
   static double vel_g_old[3]={0.0,0.0,0.0}, vel_g[3]={0.0,0.0,0.0};  
   // ---- Gauss integral
   int gp_r=0, gp_s=0, gp_t=0;
-  double coef = 0.0, fkt=0.0;
+  double fkt=0.0; //OK411 coef = 0.0
   int i_idx;    
   // Get fluid_momentum process
   CRFProcess *m_pcs_fm =  PCSGet("FLUID_MOMENTUM");
@@ -6185,17 +6185,9 @@ void CFiniteElementStd::Config()
      }     
   }
   else
-  {
-     if(pcs->m_msh)
-     {
-       for(i=0;i<nn;i++)
-          eqs_number[i] = MeshElement->nodes[i]->GetEquationIndex();         
-     }
-     else
-     {
-       for(i=0;i<nn;i++)
-          eqs_number[i] = GetNodeIndex(nodes[i]);        
-     }
+  { //OK4111
+    for(i=0;i<nn;i++)
+      eqs_number[i] = MeshElement->nodes[i]->GetEquationIndex();         
   }  
   //----------------------------------------------------------------------
   // Get room in the memory for local matrices
@@ -7097,8 +7089,8 @@ last modification:
 **************************************************************************/
 inline double CFiniteElementStd::CalCoef_RHS_T_PSGlobal(int dof_index)
 {
-	double val = 0.0, D_gw=0.0, D_ga=0.0;
-	double expfactor=0.0;
+	double val = 0.0; //OK411 D_gw=0.0, D_ga=0.0;
+	//OK411 double expfactor=0.0;
 	double P,T;
 	int Index = MeshElement->GetIndex();
 	ComputeShapefct(1);
@@ -7139,7 +7131,7 @@ inline void CFiniteElementStd::CalCoef_RHS_Pc(int dof_index)
 {
   int i=0;
   double *tensor = NULL;
-  double mat_fac = 1.0, m_fac=0.;
+  double mat_fac = 1.0; //OK411 m_fac=0.;
   double k_rel=0.0;
 
   int Index = MeshElement->GetIndex();
@@ -7181,10 +7173,10 @@ last modification:
 inline double CFiniteElementStd::CalCoef_RHS_PSGLOBAL(int dof_index)
 {
   double val = 0.0;
-  double k_rel=0.0, mat_fac=0.0;
+  double k_rel=0.0; //OK411 mat_fac=0.0;
   int i=0;
-  int Index = MeshElement->GetIndex();
-  double *tensor = NULL;
+  //OK411 int Index = MeshElement->GetIndex();
+  //OK411 double *tensor = NULL;
   ComputeShapefct(1);
   for(i=0; i<dim*dim; i++)
     mat[i] = 0.0;
@@ -7287,7 +7279,7 @@ Programming:
 **************************************************************************/
 void CFiniteElementStd::Assemble_RHS_T_PSGlobal()
 {
-	int i, j, k, ii;
+	int i, ii; //OK411 j, k, 
 	// ---- Gauss integral
 	int gp_r=0,gp_s=0,gp_t=0;
 	double fkt, fac;
@@ -7349,10 +7341,10 @@ void CFiniteElementStd::Assemble_RHS_T_PSGlobal()
 **************************************************************************/
 void CFiniteElementStd::Assemble_RHS_Pc()
 {
-	int i, j, k, l, ii,jj;
+	int i, j, k, l, ii; //OK411 jj;
 	// ---- Gauss integral
 	int gp_r=0,gp_s=0,gp_t=0;
-	double fkt, fac;
+	double fkt; //OK411 fac;
 	// Material
 	int dof_n = 2;
 	int ndx_p_cap = pcs->GetNodeValueIndex("PRESSURE_CAP");
@@ -7565,9 +7557,9 @@ void CFiniteElementStd::AssembleRHSVector()
   int i;
   int idx_fv=0, idx_pw = 0, idx_pc=0;
   double NodalVal_FV[20];
-  double FV;
+  //OK411 double FV;
   CRFProcess* pcs_p = NULL;
-	CRFProcess* pcs_s = NULL;
+  CRFProcess* pcs_s = NULL;
   //----------------------------------------------------------------------
   // Initializations
   for(i=0;i<nnodes;i++)
@@ -7676,13 +7668,13 @@ PCSLib-Method:
 void CFiniteElementStd::AssembleCapillaryEffect()
 {
   int i;
-  int idx_fv=0, idx_w=0, idx_nw=0, idx_pw=0, idx_pc=0;
+  int idx_pc=0; //OK411 idx_w=0, idx_pw=0, idx_fv=0, idx_nw=0, 
   double NodalVal_FV[20];
-  double FV;
-  CRFProcess* m_pcs_cpl = NULL;
+  //OK411 double FV;
+  //OK411 CRFProcess* m_pcs_cpl = NULL;
   CRFProcess* pcs_p = NULL;
-  CRFProcess* pcs_s = NULL;
-  CMediumProperties *m_mmp = NULL;
+  //OK411 CRFProcess* pcs_s = NULL;
+  //OK411 CMediumProperties *m_mmp = NULL;
 
   //----------------------------------------------------------------------
   // Initializations

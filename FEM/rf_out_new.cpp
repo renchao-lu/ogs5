@@ -5,7 +5,6 @@ Programing:
 06/2004 OK Implementation
 last modified:
 **************************************************************************/
-#include "stdafx.h" /* MFC */
 #include "makros.h"
 // C++ STL
 #include <math.h>
@@ -16,24 +15,24 @@ last modified:
 using namespace std;
 // FEM-Makros
 #include "makros.h"
-#include "rfstring.h"
+#include "files0.h"
 // GeoSys-GeoLib
-#include "geo_strings.h"
+#include "files0.h"
 #include "geo_ply.h"
 #include "geo_sfc.h"
 // GeoSys-FEMLib
 #include "rf_out_new.h"
-#include "nodes.h"
 #include "rf_pcs.h"
-#include "elements.h"
 #include "rf_pcs.h"
 #include "rf_tim_new.h"
 #include "mathlib.h"
 #include "fem_ele_std.h"
+#include "rf_msp_new.h"
 // GeoSys-MSHLib
 #include "msh_lib.h"
-// Specific outoup for deformation 
-#include "rf_msp_new.h"
+
+extern int max_dim;  //OK411 todo
+
 #ifdef CHEMAPP
   #include "./EQL/eqlink.h"
 #endif
@@ -1344,25 +1343,12 @@ void COutput::WriteTECHeader(fstream &tec_file,int e_type, string e_type_name)
   // MSH
   m_msh = GetMSH();
   //--------------------------------------------------------------------
+  //OK411
   long no_elements = 0;
-  if(m_msh)
+  for(long i=0;i<(long)m_msh->ele_vector.size();i++)  
   {
-    for(long i=0;i<(long)m_msh->ele_vector.size();i++)  
-    {
-      if (m_msh->ele_vector[i]->GetMark())   
-      if(m_msh->ele_vector[i]->GetElementType()==e_type) no_elements++;
-    }
-  }
-  else
-  {
-    for (long i = 0; i < ElListSize(); i++)  
-    {
-      if (ElGetElement(i) != NULL)     // Element existing 
-        if (ElGetElementActiveState(i)) // Active
-        {
-          if(ElGetElementType(i)==e_type) no_elements++;
-	    }
-    }
+    if (m_msh->ele_vector[i]->GetMark())   
+    if(m_msh->ele_vector[i]->GetElementType()==e_type) no_elements++;
   }
   //--------------------------------------------------------------------
   // Write Header I: variables
@@ -1391,13 +1377,8 @@ void COutput::WriteTECHeader(fstream &tec_file,int e_type, string e_type_name)
   // Write Header II: zone
   tec_file << "ZONE T=\"";
   tec_file << time << "s\", ";
-  if(m_msh){
-     tec_file << "N=" << m_msh->GetNodesNumber(false) << ", ";
-  }
-  else{
-    if(NodeListSize()>0)
-      tec_file << "N=" << NodeListSize() << ", ";
-  }
+  //OK411
+  tec_file << "N=" << m_msh->GetNodesNumber(false) << ", ";
   tec_file << "E=" << no_elements << ", ";
   tec_file << "F=" << "FEPOINT" << ", ";
   tec_file << "ET=" << e_type_name;
@@ -1893,7 +1874,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
          tec_file << "SATURATION2 ";
       //-------------------------------------WW
     }
-	for(k=0;k<mfp_value_vector.size();k++)
+	for(k=0;k<(int)mfp_value_vector.size();k++) //OK411
         tec_file << " \"" << mfp_value_vector[k] << "\" "; //NB MFP data names for multiple phases
     //
     #ifdef RFW_FRACTURE
@@ -2044,7 +2025,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
          DeviatoricStress(ss);
          tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0);        
     }
-	for (k=0;k<mfp_value_vector.size();k++)
+	for (k=0;k<(int)mfp_value_vector.size();k++) //OK411
 		tec_file << MFPGetNodeValue(msh_node_number,mfp_value_vector[k],
 		                  atoi(&mfp_value_vector[k][mfp_value_vector[k].size()-1])-1) << " "; //NB
   }
@@ -2072,13 +2053,16 @@ int COutput::GetPointClose(CGLPoint m_point)
   x[0] = m_point.x;
   x[1] = m_point.y;
   x[2] = m_point.z;
-  for(i=0;i<out_vector_size;i++) {
-    if(out_vector[i]->msh_node_number>=0){
-      y[0]=GetNodeX(out_vector[i]->msh_node_number);
-      y[1]=GetNodeY(out_vector[i]->msh_node_number);
-      y[2]=GetNodeZ(out_vector[i]->msh_node_number);
+  for(i=0;i<out_vector_size;i++) 
+  {
+    if(out_vector[i]->msh_node_number>=0)
+    {
+      //OK411 y[0]=GetNodeX(out_vector[i]->msh_node_number);
+      //OK411 y[1]=GetNodeY(out_vector[i]->msh_node_number);
+      //OK411 y[2]=GetNodeZ(out_vector[i]->msh_node_number);
       dist=EuklVek3dDist(x,y);
-      if (dist < distmin) {
+      if (dist < distmin) 
+      {
         distmin=dist;
         number=i;
       }
@@ -2087,108 +2071,6 @@ int COutput::GetPointClose(CGLPoint m_point)
  return number;
 }
 
-
-/**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-07/2004 OK Implementation for OUT points
-last modification:
-**************************************************************************/
-void OUTWriteNODValues(string base_file_name,FEMNodesElements *m_ne)
-{
-  int i;
-  int no_out_points =(int)out_vector.size();
-  COutput *m_out = NULL;
-  char char_i[2];
-  string out_extension;
-  string out_file_name;
-
-  for(i=0;i<no_out_points;i++){
-    m_out = out_vector[i];
-    m_out->m_nodes_elements = m_ne;
-    //--------------------------------------------------------------------
-    // File handling
-    sprintf(char_i,"%i",i);
-    out_extension = "N";
-    out_extension += char_i;
-    out_file_name = base_file_name + "." + out_extension;
-    fstream out_file (out_file_name.data(),ios::trunc|ios::out);
-
-    out_file.setf(ios::scientific,ios::floatfield);
-    out_file.precision(12);
-    if (!out_file.good()) return;
-    out_file.seekg(0L,ios::beg);
-#ifdef SUPERCOMPUTER
-// kg44 buffer the output
-    char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
-    out_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
-// 
-#endif
-    //--------------------------------------------------------------------
-    // Header
-    m_out->WriteTimeCurveHeader(out_file);
-    //--------------------------------------------------------------------
-    // Data
-    m_out->WriteTimeCurveData(out_file);
-    out_file.close(); // kg44 close file 
-
-  }
-}
-
-/**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-07/2004 OK Implementation for RFO data
-07/2004 CC modification
-last modification:
-**************************************************************************/
-void COutput::WriteTimeCurveHeader(fstream &out_file)
-{
-  out_file << "GeoSys-OUT: Output Time Curve ------------------------------------------------\n";
-  out_file << msh_node_number << " " << GetNodeX(msh_node_number) << " " \
-                                      << GetNodeY(msh_node_number) << " " \
-                                      << GetNodeZ(msh_node_number) << endl;
-  //------------------------------------------------------------------------
-  out_file << "4" << endl;
-  out_file << "TIME, s" << endl;
-  int i;
-  for(i=0;i<m_nodes_elements->number_of_node_variables;i++){
-    out_file << m_nodes_elements->nodevariablenames[i] << endl;
-  }
-}
-
-/**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-07/2004 OK Implementation for RFO data
-last modification:
-**************************************************************************/
-void COutput::WriteTimeCurveData(fstream &out_file)
-{
-  int i,j;
-  for(j=0;j<m_nodes_elements->number_of_times;j++){
-    out_file << m_nodes_elements->values_at_times[j] << "  ";
-    for(i=0;i<m_nodes_elements->number_of_node_variables;i++){
-      out_file << m_nodes_elements->nodevalues[msh_node_number][i][j] << " ";
-    }
-    out_file << endl;
-  }
-}
-
-
-/*
-  int no_processes =(int)pcs_vector.size();
-  CRFProcess *m_pcs = NULL;
-  for(i=0;i<no_processes;i++){
-    m_pcs = pcs_vector[i];
-    if(m_pcs->pcs_nval_data->speichern){
-      out_file << m_pcs->pcs_nval_data->name << ", " << m_pcs->pcs_nval_data->einheit << endl;
-    }
-  }
-*/
 /**************************************************************************
 FEMLib-Method:
 Task:
@@ -2205,6 +2087,7 @@ void OUTDelete()
   }
   out_vector.clear();
 }
+
 /**************************************************************************
 FEMLib-Method:
 Task:
@@ -3088,7 +2971,8 @@ void COutput::WriteVTKValues(fstream &vtk_file)
     GetELEValuesIndexVector(ele_value_index_vector);
     //--------------------------------------------------------------------
 //WW  CElem* m_ele = NULL;
-    FiniteElement::ElementValue* gp_ele = NULL;
+    FiniteElement::ElementValue* gp_ele;
+    gp_ele = NULL; //OK411
     // write header for cell data
     vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;
     // header for velocities
@@ -3112,7 +2996,7 @@ void COutput::WriteVTKValues(fstream &vtk_file)
   }
   //======================================================================
   // MAT data
-  double mat_value;
+  double mat_value = 0.0; //OK411
   CMediumProperties* m_mmp = NULL;
   CElem* m_ele = NULL;
   int mmp_id = -1;
@@ -3529,6 +3413,7 @@ FEMLib-Method:
 **************************************************************************/
 double COutput::NODFlux(long nod_number)
 {
+  nod_number = nod_number; //OK411
 /*
   cout << gnode << " " \
        << m_pcs->GetNodeValue(gnode,NodeIndex[k]) << end
@@ -3981,7 +3866,9 @@ void OUTCheck(void){
 
   int i,j, l, m;
   COutput *m_out = NULL;
-  CRFProcess* m_pcs = NULL, *m_pcs_out=NULL;
+  CRFProcess* m_pcs = NULL;
+  CRFProcess* m_pcs_out;
+  m_pcs_out = NULL;
   CFEMesh* m_msh = NULL;
   bool found = false;
   vector <string> del_index;
@@ -4022,7 +3909,7 @@ void OUTCheck(void){
 		if(del_index.size() < m_out->nod_value_vector.size()){
 			cout << " Reducing output to variables with existing PCS-data " << endl;
 		m_out->nod_value_vector.clear();
-		for(j=0;j<del_index.size();j++){
+		for(j=0;j<(int)del_index.size();j++){ //OK411
 //			cout << del_index[j] << endl;
 			m_out->nod_value_vector.push_back(del_index[j]);
 		}
@@ -4036,8 +3923,6 @@ void OUTCheck(void){
 	} // end if(m_out->nod_value_vector.size()>0)
   } // end for(i...)
 }
-
-
 
 /**************************************************************************
 FEMLib-Method: 

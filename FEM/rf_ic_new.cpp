@@ -6,7 +6,7 @@ Programing:
 12/2005 OK Restart
 last modified
 **************************************************************************/
-#include "stdafx.h" // MFC
+
 #include "makros.h"
 #include "gs_project.h"
 // C++ STL
@@ -14,18 +14,15 @@ last modified
 #include <iostream>
 using namespace std;
 // FEM-Makros
-#include "geo_strings.h"
+#include "files0.h"
 #include "mathlib.h"
-//#include "mshlib.h"//CC
-#include "rfstring.h"
+#include "files0.h"
 // GEOLib
 // MSHLib
 #include "msh_lib.h"
 // FEMLib
 #include "rf_ic_new.h"
 #include "rf_pcs.h"
-#include "nodes.h"
-//WW #include "elements.h"
 
 //==========================================================================
 vector<CInitialConditionGroup*>ic_group_vector;
@@ -453,34 +450,22 @@ void CInitialCondition::SetPolyline(int nidx)
 {
   long i;
   CGLPolyline *m_polyline = NULL;
-  long* msh_nodes = NULL;
+  long* msh_nodes;
+  msh_nodes = NULL; //OK411
   vector<long>nodes_vector;
   double value;
-  long no_nodes;
   //----------------------------------------------------------------------
   if(dis_type_name.find("CONSTANT")!=string::npos) 
   {
     m_polyline = GEOGetPLYByName(geo_name);//CC
     if(m_polyline)
-    {
-      if(m_msh)
+    { //OK411
+      m_msh->GetNODOnPLY(m_polyline,nodes_vector);
+      //msh_nodes = MSHGetNodesClose(&no_nodes, m_polyline);//CC
+      for(i=0;i<(long)nodes_vector.size();i++)
       {
-        m_msh->GetNODOnPLY(m_polyline,nodes_vector);
-        //msh_nodes = MSHGetNodesClose(&no_nodes, m_polyline);//CC
-        for(i=0;i<(long)nodes_vector.size();i++)
-        {
-          value = node_value_vector[0]->node_value;
-       
-		  m_pcs->SetNodeValue(nodes_vector[i],nidx, value);
-        }
-      }
-      else
-      {
-        msh_nodes = MSHGetNodesClose(&no_nodes, m_polyline);//CC
-        for(i=0;i<no_nodes;i++)
-        {
-          SetNodeVal(msh_nodes[i],nidx,node_value_vector[0]->node_value);
-        }
+        value = node_value_vector[0]->node_value;
+		m_pcs->SetNodeValue(nodes_vector[i],nidx, value);
       }
     }
     else{
@@ -579,6 +564,7 @@ last modification:
 **************************************************************************/
 void CInitialConditionGroup::Set(void)
 {
+/*OK411
   long number_of_nodes;
   long *nodes = NULL;
   vector<long>nodes_vector;
@@ -591,13 +577,15 @@ void CInitialConditionGroup::Set(void)
   for(i=0;i<no_ics;i++){
     m_ic = ic_vector[i];
     //====================================================================
-    if((m_ic->pcs_type_name.compare(pcs_type_name)==0)&&(m_ic->pcs_pv_name.compare(pcs_pv_name)==0)){
+    if((m_ic->pcs_type_name.compare(pcs_type_name)==0)&&(m_ic->pcs_pv_name.compare(pcs_pv_name)==0))
+    {
       //------------------------------------------------------------------
-      if(m_ic->geo_type_name.compare("POINT")==0) {
+      if(m_ic->geo_type_name.compare("POINT")==0) 
+      {
         m_node_value = new CNodeValue();
 //OK_IC        m_node_value->geo_node_number = m_ic->node_vector[0].geo_node_number;
         CGLPoint* m_point = NULL;
-       m_point = GEOGetPointByName(m_ic->geo_name);//CC
+        m_point = GEOGetPointByName(m_ic->geo_name);//CC
         if(m_point)
           m_node_value->msh_node_number = GetNodeNumberClose(m_point->x,m_point->y,m_point->z);
         else
@@ -659,7 +647,9 @@ void CInitialConditionGroup::Set(void)
     //====================================================================
     }
   }
+*/
 }
+
 /**************************************************************************
 FEMLib-Method:
 Task: set domain values
@@ -686,34 +676,25 @@ void CInitialCondition::SetDomain(int nidx)
     k=0;
     if(SubNumber==0) 
     {
-        //----------------------------------------------------------------------
-        if(dis_type_name.find("CONSTANT")!=string::npos) 
+      //----------------------------------------------------------------------
+      if(dis_type_name.find("CONSTANT")!=string::npos) 
+      {
+        //....................................................................
+        if(m_pcs->pcs_type_name.compare("OVERLAND_FLOW")==0) 
         {
-           //....................................................................
-           if(m_pcs->pcs_type_name.compare("OVERLAND_FLOW")==0) 
-           {
-              if(m_pcs->m_msh)
-              {
-                 for(i=0;i<m_pcs->m_msh->GetNodesNumber(false);i++){ //OK MSH
-                   node_val = node_value_vector[0]->node_value + m_pcs->m_msh->nod_vector[i]->Z();
-                   m_pcs->SetNodeValue(i,nidx,node_val);
-              }
-            }
-            else{
-              for(i=0;i<NodeListLength;i++){
-                node_val = node_value_vector[0]->node_value + GetNodeZ(i);
-                SetNodeVal(i,nidx,node_val);        
-              }
-            }
-         }    
-         else
-         {
-           //................................................................
-           node_val = node_value_vector[0]->node_value;
-           for(i=0;i<m_msh->GetNodesNumber(true);i++) //OK MSH
-               m_pcs->SetNodeValue(i,nidx,node_val);
-           //................................................................
-         }
+          for(i=0;i<m_pcs->m_msh->GetNodesNumber(false);i++){ //OK MSH
+            node_val = node_value_vector[0]->node_value + m_pcs->m_msh->nod_vector[i]->Z();
+            m_pcs->SetNodeValue(i,nidx,node_val);
+          }
+        }    
+        else
+        {
+          //................................................................
+          node_val = node_value_vector[0]->node_value;
+          for(i=0;i<m_msh->GetNodesNumber(true);i++) //OK MSH
+             m_pcs->SetNodeValue(i,nidx,node_val);
+          //................................................................
+        }
       }
       //--------------------------------------------------------------------
       if(dis_type_name.find("GRADIENT")!=string::npos)

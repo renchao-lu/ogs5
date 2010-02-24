@@ -93,7 +93,7 @@ class CompProperties
 	/* Member - Functions */
 	double CalcDiffusionCoefficientCP(long index,double theta,CRFProcess* m_pcs);
 	double CalcDiffusionCoefficientCP_Method1(long index, double T, double P, double eta);
-	double CalcElementRetardationFactor( long index, double*gp, double theta );
+	//OK411 double CalcElementRetardationFactor( long index, double*gp, double theta );
 	double CalcElementRetardationFactorNew( long index, double*gp, CRFProcess* m_pcs );
 	double CalcElementMeanConc(long index);
 	double CalcElementMeanConcNew(long index, CRFProcess* m_pcs);

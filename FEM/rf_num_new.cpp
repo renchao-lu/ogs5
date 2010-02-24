@@ -5,7 +5,6 @@ Programing:
 11/2004 OK Implementation
 last modified:
 **************************************************************************/
-#include "stdafx.h"
 #include "makros.h"
 // C++ STL
 #include <math.h>
@@ -16,19 +15,17 @@ last modified:
 using namespace std;
 // FEM-Makros
 #include "makros.h"
-#include "rfstring.h"
+#include "files0.h"
 extern ios::pos_type GetNextSubKeyword(ifstream* file,string* line, bool* keyword);
 // GeoSys-GeoLib
 // GeoSys-FEMLib
 #include "rf_num_new.h"
 #ifndef NEW_EQS //WW. 06.11.2008
 #include "matrix.h"
-#include "elements.h" // Only for max_dim, remove this later. WW
 #endif
 #include "mathlib.h"
 #include "rf_pcs.h"
 // GeoSys-MSHLib
-#include "nodes.h"
 #ifdef USE_MPI //WW
 #include "par_ddc.h"
 //#undef SEEK_SET 
@@ -36,6 +33,8 @@ extern ios::pos_type GetNextSubKeyword(ifstream* file,string* line, bool* keywor
 //#undef SEEK_CUR 
 #include "mpi.h"
 #endif
+
+extern int max_dim;  //OK411 todo
 
 //==========================================================================
 vector<CNumerics*>num_vector;
@@ -735,63 +734,6 @@ LINEAR_SOLVER *InitVectorLinearSolver(LINEAR_SOLVER * ls)
 #endif
 /////////////////////////////////////////////////////////////////////
 
-
-
-
-/*************************************************************************
- ROCKFLOW - Funktion: TransferNodeValues
-
- Aufgabe:
-   Ergebnisse eintragen.
-   Schnittstellenfunktion -> Modellabhaengig
-
- Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E LINEAR_SOLVER *ls: Zeiger auf eine Instanz vom Typ LINEAR_SOLVER.
-   E long index :.
-
- Ergebnis:
-   - Adresse des LS's im Erfolgsfall, ansonsten NULL-Zeiger -
-
- Programmaenderungen:
-   02/1999     AH         Erste Version
-
-*************************************************************************/
-LINEAR_SOLVER *TransferNodeValues(LINEAR_SOLVER*ls,long index)
-{
-    if (!ls)
-        return NULL;
-    /* Ergebnisse eintragen */
-    TransferNodeVals(ls->x, index);
-
-    return ls;
-}
-/*************************************************************************
- ROCKFLOW - Funktion: TransferNodeValuesToVectorLinearSolver
-
- Aufgabe:
-   Loesungsvektor vorbelegen. (Schnittstellenfunktion)
-
- Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E LINEAR_SOLVER *ls: Zeiger auf eine Instanz vom Typ LINEAR_SOLVER.
-   E long index : Index der Modellspeicherung.
-
- Ergebnis:
-   - Adresse des LS's im Erfolgsfall, ansonsten NULL-Zeiger -
-
- Programmaenderungen:
-   02/1999     AH         Erste Version
-
-*************************************************************************/
-LINEAR_SOLVER *TransferNodeValuesToVectorLinearSolver(LINEAR_SOLVER * ls, long index)
-{
-    if (!ls)
-        return NULL;
-    register long i;
-    for(i=0l;i<NodeListLength;i++)
-        ls->x[i]=GetNodeVal(NodeNumber[i],index);
-//    PresetErgebnis(ls->x, index);
-    return ls;
-}
 /*************************************************************************
  ROCKFLOW - Funktion: ConfigSolverProperties
 
@@ -827,48 +769,6 @@ void ConfigSolverProperties(void)
     /* Umnummerierer-Methode auswaehlen */
     //WW ConfigRenumberProperties();
     /* umnummerierer muss definiert sein ! */
-}
-
-/*************************************************************************
- ROCKFLOW - Funktion: TransferNodeValuesToVectorLinearSolver
-
- Aufgabe:
-   Loesungsvektor fuer Unbekannten-Vektor vorbelegen
-
- Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E LINEAR_SOLVER *ls: Zeiger auf eine Instanz vom Typ LINEAR_SOLVER.
-   E long index       : Modell-Knoten-Index der Komponente des Unbekannten-Vektors
-   E int shift        : Komponente des Unbekannten-Vektors
-
- Ergebnis:
-   - Adresse des LS's im Erfolgsfall, ansonsten NULL-Zeiger -
-
- Programmaenderungen:
-   02/2000   OK   aus TransferNodeValuesToVectorLinearSolver abgeleitet
-   08/2003   WW
-*************************************************************************/
-
-void TransferNodeValuesToVectorLinearSolverVec_New(LINEAR_SOLVER * ls)
-{
-    int i, j;
-    int unknown_vector_dimension;
-    long number_of_nodes;
-    long shift=0;
-    
-    
-    if (!ls) {printf(" \n Warning: solver not defined, exit from rfsolver.c"); exit(0);}
-    /* Ergebnisse eintragen */
-    unknown_vector_dimension = GetUnknownVectorDimensionLinearSolver(ls);
-    for (i = 0; i < unknown_vector_dimension; i++)
-    {   
-        number_of_nodes=ls->unknown_node_numbers[i];
-		for(j=0; j<number_of_nodes; j++)
-		{
-           ls->x[shift+j] = 
-			   GetNodeVal(NodeNumber[j],ls->unknown_vector_indeces[i]);
-		}
-        shift += number_of_nodes;
-    }
 }
 
 /*************************************************************************

@@ -9,20 +9,10 @@
                                                                           */
 /**************************************************************************/
 
-#include "stdafx.h" /* MFC */
-
-/* Preprozessor-Definitionen */
 #include "makros.h"
-
-
-/* Header / Andere intern benutzte Module */
 #include "break.h"
 
-
-/* Interne (statische) Deklarationen */
 void BreakFunc ( int sig );
-
-/* Definitionen */
 int abbruch = 0;
 
 /**************************************************************************/

@@ -1,28 +1,20 @@
 /*
-
-	rf_react.cpp
-
+rf_react.cpp
 Reaction package to go with MTM2
-
 */
 
-#include "stdafx.h" /* MFC */
 #include <signal.h>
 #include "display.h"
 #include "makros.h"
 #include "rf_pcs.h"
-#include "nodes.h"
 #include "rf_pcs.h"
 #include "mathlib.h"
 #include "rfmat_cp.h"
 #include "rf_react.h"
 #include "rf_ic_new.h"
 #include "stdio.h"
-#include "geo_strings.h"
+#include "files0.h"
 #include "rf_pcs.h" //OK_MOD"
-#include "files.h"
-#include "nodes.h"
-#include "elements.h"           /* für ElGetElementGroupNumber */
 #include <iostream>
 #include <fstream>
 #include "rf_tim_new.h"
@@ -2433,6 +2425,10 @@ void REACT::GetTransportResults(void){
 
 void REACT::SetNeighborNodesActive(long startnode, long level, int* help) //ToDo - reactivate with new structure
 {
+  startnode = startnode;
+  level = level;
+  help = help;
+/*OK411
 //  long *kanten=NULL;
   int anz_n;
 //  long nd1[2];  
@@ -2443,7 +2439,7 @@ void REACT::SetNeighborNodesActive(long startnode, long level, int* help) //ToDo
   int num_elems1d,num_elems2d,num_elems3d,num_elems;
 
  // DisplayMsg(" RSNNA: startnode: "); DisplayLong(startnode); DisplayMsg(", level: "); DisplayLong(level); DisplayMsgLn("");
-  /* Ende rekursiv */
+  // Ende rekursiv
   if(level == 0) {
 	  help[startnode] = 1;
 //	  DisplayMsg(" Knoten, Level 0 "); DisplayLong(startnode); DisplayMsgLn(" ");
@@ -2458,7 +2454,7 @@ void REACT::SetNeighborNodesActive(long startnode, long level, int* help) //ToDo
   if(num_elems3d > 8) num_elems3d =8;
   num_elems=num_elems1d+num_elems2d+num_elems3d;
 
-  /* Alle benachbarten Knoten holen */
+  // Alle benachbarten Knoten holen
   for (j=0; j<num_elems1d; j++) {
 	knoten = ElGetElementNodes(elems1d[j]);
 	anz_n = ElGetElementNodesNumber(elems1d[j]);
@@ -2485,7 +2481,9 @@ for (j=0; j<num_elems3d; j++) {
 }
 
   } //endifs   
+*/
 }
+
 void REACT::ResetpHpe(void){
 int i, j;
 
@@ -2496,12 +2494,16 @@ for (j=0; j<rcml_number_of_master_species+2; j++){
 		for(i=0;i<this->nodenumber;i++) this->val_out[j][i] = this->val_in[j][i];
 }
 }
-double MATCalcIonicStrengthNew(long index){
+
+double MATCalcIonicStrengthNew(long index)
+{
+  double ion_strength=0.0;
+  index = index;
+/*OK411
   int component, j, n=0, nn, timelevel, z_i;
   static long *element_nodes;
 //  long component;
   double conc[100];
-  double ion_strength=0.0;
 //  if (rcml) 
   REACT *rc = NULL; //SB
   rc->GetREACT();
@@ -2521,14 +2523,15 @@ double MATCalcIonicStrengthNew(long index){
         element_nodes = NULL;
       } 
 
-/* calculate the solid phase: volume =v_mi*Ci */
+// calculate the solid phase: volume =v_mi*Ci
 //      conc[i]=CalcElementMeanConcentration (index, i, timelevel, ergebnis);
      CompProperties *m_cp = cp_vec[component];
      z_i = m_cp->valence;
 
    ion_strength += 0.5 * conc[component]*z_i*z_i;
 	
-  } /*for */
+  }
+*/
   return ion_strength;
 }
 

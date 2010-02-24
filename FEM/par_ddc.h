@@ -15,8 +15,6 @@ last modified:
 #include <string>
 #include <vector>
 using namespace std;
-// FEMLib
-#include "prototyp.h"
 #include "rf_pcs.h"
 
 //---------   Declaration ---------------------WW

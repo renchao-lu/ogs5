@@ -9,8 +9,6 @@ Programming: NB
 			 Aug 2008
 **********************************************************************/
 
-#include "stdafx.h" //MFC
-#include "nodes.h" //NB 4.9.05
 #include "rf_mmp_new.h"
 #include "rf_mfp_new.h"
 #include "rf_num_new.h"
@@ -105,6 +103,8 @@ last change: NB JUN 09
 ***********************************************************************/
 double CFluidProperties::phi_r_d (double rho, double T, int c)
 {
+  c = c; //OK411
+
 double phi_a=0,phi_b=0,phi_c=0,phi_d=0;
 double delta,tau,DELTA,THETA,PHI,DPHI,dDELTA_deriv,dDELTApowbddelta;
 int i;
@@ -153,11 +153,11 @@ last change: NB JUN 09
 ***********************************************************************/
 double CFluidProperties::phi_r_tt (double rho, double T, int c)
 {
+  c = c; //OK411
 //CFluidProperties *FP;
 double phi_a=0,phi_b=0,phi_c=0,phi_d=0;
 double delta,tau,THETA,PHI,DELTA,DDELTA,D2DELTA,DPHI,D2PHI;
 int i=0;
-
 
 //FP=MFPGet(c);
 
@@ -207,6 +207,7 @@ last change: NB JUN 09
 ***********************************************************************/
 double CFluidProperties::phi_0_t (double T,int c)
 {
+  c = c; //OK411
 double phi_c=0,phi_d=0,phi_e=0;
 double tau;
 int i;
@@ -228,6 +229,7 @@ last change: NB JUN 09
 ***********************************************************************/
 double CFluidProperties::phi_0_tt (double T, int c)
 {
+  c = c; //OK411
 double phi_d=0,phi_e=0;
 double tau;
 int i;
@@ -244,6 +246,7 @@ last change: NB JUN 09
 ***********************************************************************/
 double CFluidProperties::phi_r_t (double rho, double T,int c)
 {
+  c = c; //OK411
 
 	double phi_a=0,phi_b=0,phi_c=0,phi_d=0,h;
 	int i;
@@ -293,6 +296,7 @@ last change: NB 4.9.05
 ***********************************************************************/
 double CFluidProperties::phi_r_dt (double rho, double T, int c)
 {
+  c = c; //OK411
   	double phi_a=0,phi_b=0,phi_c=0,phi_d=0;
 	int i;
 	double delta,tau;
@@ -350,6 +354,7 @@ last change: NB 4.9.05
 ***********************************************************************/
 double CFluidProperties::phi_r_dd (double rho, double T, int c)
 {
+  c = c; //OK411
   	double phi_a=0,phi_b=0,phi_c=0,phi_d=0;
 	int i;
 	double delta,tau;
@@ -453,7 +458,7 @@ double density (double P, double rho0, double T, double prec, int c)
 {
 	CFluidProperties *a;
 	int iterations=0;
-	double rho,p0,rhoc,R;
+	double rho=0.0,p0,rhoc,R; //OK411
 
     a=MFPGet(c);
     rhoc=a->rhoc;
@@ -774,6 +779,7 @@ Programming: NB 4.8.01
 ***********************************************************************/
 double Fluid_Viscosity (double rho, double T, double p, int fluid)
 {
+  p = p; //OK411
 //TODO: make a global function for all properties: Fluid_Property(int c, int property, double T, double P) (NB)
 
 double h;
@@ -904,7 +910,7 @@ return p;
 **************************************************************/
 double preos(double T, double P, int c)
 {
-double z1,z2,z3,d,h;
+double z1,z2,z3,h;
 vector<double> roots;
 
 CFluidProperties *mfp_prop;
@@ -1267,18 +1273,18 @@ Programming: NB
 ***********************************************************************/
 double n2_viscosity (double rho, double T)
 {
-const double M = 28.013;
-const double T_c = 126.2; //[K]
-const double P_c = 3.4; // [MPa]
+//OK411 const double M = 28.013;
+//OK411 const double T_c = 126.2; //[K]
+//OK411 const double P_c = 3.4; // [MPa]
 const double rho_c = 314; // [kg/m3]
-const double T_t = 63.1; //[K]
+//OK411 const double T_t = 63.1; //[K]
 const double CVF = 14.058; // [1e-3 Pa-s]
 
 const double sigma = 0.36502496e-09;
 const double k = 1.38062e-23;
 const double eps = 138.08483e-23;
-const double N_A = 6.02213E26;
-const double pi = 3.14159;
+//OK411 const double N_A = 6.02213E26;
+//OK411 const double pi = 3.14159;
 const double c1 = 0.3125;
 const double c2 = 2.0442e-49;
 
@@ -1537,6 +1543,7 @@ Last modification: NB Jun 2009
 *************************************************************/
 void auswahl (double T, double P, int fluid, double* x1, double* x2, double eps)
 {
+  eps = eps; //OK411
 switch (fluid)
 {
       case 0 :  //CO2
@@ -1630,7 +1637,7 @@ double zbrent(double TT, double PP, int fluid, const double tol)
 	double x2;
 //	PP=PP/1e5; // P in bar
 	auswahl(TT,PP,fluid,&x1,&x2,tol);
-	double a=x1,b=x2,c=x2,d,e;
+	double a=x1,b=x2,c=x2,d=0.0,e=0.0; //OK411
 	fa=dpressure(TT,PP,fluid,x1);
 	fb=dpressure(TT,PP,fluid,x2);
 
@@ -1689,7 +1696,7 @@ double zbrent(double TT, double PP, int fluid, const double tol)
 		if (fabs(d) > tol1)
 			b += d;
 		else
-			b += SIGN(tol1,xm);
+			b += (double)SIGN(tol1,(float)xm); //OK411
 			fb=dpressure(TT,PP,fluid,b);
 	}
 	throw("Maximum number of iterations exceeded in zbrent");
@@ -1817,7 +1824,7 @@ const double Tc=126.192;
 const double rhoc=313.3;
 
 double theta;
-double n1,n2,n3,n4,n5,n6,h;
+double n1,n2,n3,n4,h; //OK411 n5,n6,
 
 n1=1.48654237; n2=-0.280476066; n3=0.0894143085; n4=-0.119879866;
 
@@ -1840,7 +1847,7 @@ const double Tc=126.192;
 const double rhoc=313.3;
 
 double theta;
-double n1,n2,n3,n4,n5,n6,h;
+double n1,n2,n3,n4,n5,h; //OK411 n6,
 
 n1=-1.70127164; n2=-3.70402649; n3=1.29859383; n4=-0.561424977; n5=-2.68505381;
 

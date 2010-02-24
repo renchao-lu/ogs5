@@ -5,23 +5,21 @@ Programing:
 08/2004 OK Implementation
 last modified:
 **************************************************************************/
-#include "stdafx.h" /* MFC */
 // C++ STL
 #include <math.h>
 #include <iostream>
 using namespace std;
-#include "rfstring.h"
+#include "files0.h"
 // FEM-Makros
 #include "makros.h"
 // GeoSys-GeoLib
-#include "geo_strings.h"
+#include "files0.h"
 // GeoSys-FEMLib
 #include "rf_tim_new.h"
 #include "rf_pcs.h"
 #include "rf_mmp_new.h"
 #include "fem_ele_std.h"
 #include "mathlib.h"
-//WW #include "elements.h" //set functions for stability criteria
 // ToDo
 double aktuelle_zeit;
 long aktueller_zeitschritt = 0;

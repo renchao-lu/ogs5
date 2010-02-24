@@ -5,13 +5,11 @@ Programing:
 01/2004 OK Implementation
 **************************************************************************/
 
-#include "stdafx.h" //MFC
 #include "makros.h"
 // C++ STL
 #include <iostream>
 using namespace std;
 // FEMLib
-#include "nodes.h"
 #include "tools.h"
 #include "rf_pcs.h"
 #include "femlib.h"
@@ -25,12 +23,11 @@ extern double* GEOGetELEJacobianMatrix(long number,double *detjac);
 extern double gravity_constant;
 using SolidProp::CSolidProperties;
 // LIB
-#include "geo_strings.h"
-#include "rfstring.h"
+#include "files0.h"
+#include "files0.h"
 // this
 #include "rf_mmp_new.h"
 #include "rf_react.h"
-#include "elements.h"
 #ifdef RFW_FRACTURE
 #include "fem_ele.h"
 #endif
@@ -248,7 +245,7 @@ last modification:
 */
 ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 {
-  int i, idummy, j, k=0;
+  int i, j, k=0;
   string line_string;
   std::stringstream in;
   ios::pos_type position;
@@ -1866,6 +1863,11 @@ ToDo: GetSoilRelPermSatu
 double CMediumProperties::PermeabilitySaturationFunction(long number,double*gp,double theta,\
                                                          int phase)
 {
+//OK411
+  theta = theta;
+  gp = gp;
+  number = number;
+
   int no_fluid_phases =(int)mfp_vector.size();
   if(!m_pcs){
     cout << "CMediumProperties::PermeabilitySaturationFunction: no PCS data" << endl;
@@ -1874,43 +1876,31 @@ double CMediumProperties::PermeabilitySaturationFunction(long number,double*gp,d
   if(!(m_pcs->pcs_type_name.compare("RICHARDS_FLOW")==0)&&no_fluid_phases!=2)
      return 1.0;
   static int nidx0,nidx1;
-  double saturation,saturation_eff;
+  double saturation=0.0,saturation_eff; //OK411
   int gueltig;
   //---------------------------------------------------------------------
   if(mode==2){ // Given value
     saturation = argument;
   }
-else{
-  string pcs_name_this = "SATURATION";
-  char phase_char[1];
-  sprintf(phase_char,"%i",phase+1);
-  pcs_name_this.append(phase_char);
-/* //WW DEelete these
-  if(m_pcs->m_msh){
-    if(gp==NULL){ // NOD value
-      nidx0 = GetNodeValueIndex(pcs_name_this);
-      nidx1 = GetNodeValueIndex(pcs_name_this)+1;
-      saturation = (1.-theta)*GetNodeValue(number,nidx0) \
-                         + theta*GetNodeValue(number,nidx1);
-    }
-    else // ELE GP value
-      saturation = m_pcs->GetELEValue(number,gp,theta,pcs_name_this);
-  }
-
-  else{
-*/
-  nidx0 = PCSGetNODValueIndex(pcs_name_this,0);
-  nidx1 = PCSGetNODValueIndex(pcs_name_this,1);
-  if(mode==0){ // Gauss point values
-    saturation = (1.-theta)*InterpolValue(number,nidx0,gp[0],gp[1],gp[2]) \
+  else
+  {
+/*OK411
+    string pcs_name_this = "SATURATION";
+    char phase_char[1];
+    sprintf(phase_char,"%i",phase+1);
+    pcs_name_this.append(phase_char);
+    nidx0 = PCSGetNODValueIndex(pcs_name_this,0);
+    nidx1 = PCSGetNODValueIndex(pcs_name_this,1);
+    if(mode==0){ // Gauss point values
+      saturation = (1.-theta)*InterpolValue(number,nidx0,gp[0],gp[1],gp[2]) \
                + theta*InterpolValue(number,nidx1,gp[0],gp[1],gp[2]);
+    }
+    else{ // Node values
+      saturation = (1.-theta)*GetNodeVal(number,nidx0) \
+                 + theta*GetNodeVal(number,nidx1);
+    }
+*/
   }
-  else{ // Node values
-    saturation = (1.-theta)*GetNodeVal(number,nidx0) \
-               + theta*GetNodeVal(number,nidx1);
-  }
- // }
-}
   //----------------------------------------------------------------------
   switch(permeability_saturation_model[phase]){
     case 0:  // k = f(x) user-defined function
@@ -2238,10 +2228,7 @@ double CMediumProperties::HeatCapacity(long number,double theta,
       break;
     //....................................................................
     case 1:  // const
-      if(fem_msh_vector.size()>0)
-        group = m_pcs->m_msh->ele_vector[number]->GetPatchIndex();
-	  else
-        group = ElGetElementGroupNumber(number);
+      group = m_pcs->m_msh->ele_vector[number]->GetPatchIndex(); //OK411
       m_msp = msp_vector[group];
       specific_heat_capacity_solid = m_msp->Heat_Capacity();
       density_solid = fabs(m_msp->Density());
@@ -2471,189 +2458,6 @@ Programing:
 04/2002 OK Implementation
 09/2004 OK MMP implementation
 10/2004 SB Adapted to mass dispersion
-last modification:
-ToDo:
-**************************************************************************/
-double* CMediumProperties::MassDispersionTensor(long number,double*gp,double theta, long component)
-{
-  static double dispersion_tensor[9];
-//  static double *heat_conductivity_porous_medium;
-  static double molecular_diffusion;
-  static double art_diff=0.0;
-  static double vg, *velovec;
-//  double heat_capacity_fluids=0.0;
-//  int phase = 0;
-  static double dreh[4];
-  static double matrix2x2a[4];
-  static double matrix2x2b[4];
-  int dim;
-//  int eidx;
-//  char name[80];
-  static double *invjac, detjac;
-  static double matrix3x3a[24]; //zwa[24]
-  static double matrix3x3b[9]; //zwo[9];
-  static double matrix3x3c[64]; //zwi[64];
-  double fkt;
-  int ii,l;
-
-  //  static double zwa[24];
-  // static double zwo[9];
-  // static double zwi[64];
-  static double d[9];
-  MNulleMat(d,3,3);
-
-  CompProperties *m_cp = cp_vec[component];
-
-  //----------------------------------------------------------------------
-  invjac = GEOGetELEJacobianMatrix(number,&detjac);
-  //----------------------------------------------------------------------
-  // Materials
-  molecular_diffusion = m_cp->CalcDiffusionCoefficientCP(number, theta, m_pcs) * TortuosityFunction(number,gp,theta);
-//  heat_capacity_fluids = MFPCalcFluidsHeatCapacity(number,gp,theta);
-  MNulleMat(dispersion_tensor,3,3);
-  //----------------------------------------------------------------------
-  // Velocity
-//old version
-/*
-  double v[3]={0.,0.,0.};
-  sprintf(name,"%s%d_X","VELOCITY",phase+1);
-  eidx = PCSGetELEValueIndex(name);
-  v[0] = ElGetElementVal(number,eidx)/porosity;;
-  sprintf(name,"%s%d_Y","VELOCITY",phase+1);
-  eidx = PCSGetELEValueIndex(name);
-  v[1] = ElGetElementVal(number,eidx)/porosity;;
-  sprintf(name,"%s%d_Z","VELOCITY",phase+1);
-  eidx = PCSGetELEValueIndex(name);
-  v[2] = ElGetElementVal(number,eidx)/porosity;;
-  vg = MBtrgVec(v,3);
-*/
-// end old version
-// new version
-  double v[3]={0.,0.,0.};
-  velovec = ElGetVelocity(number);
-  v[0] = velovec[0]/porosity;
-  v[1] = velovec[1]/porosity;
-  v[2] = velovec[2]/porosity; //OK
-  vg = MBtrgVec(v,3);
-// end new version
-//   if(number<10){DisplayMsgLn(" dispersion_tensor calculation: v[0]= "); DisplayDouble(v[0],0,0); DisplayMsg(", "); DisplayDouble(v[1],0,0); DisplayMsg(", "); DisplayDouble(v[2],0,0); DisplayMsg(",    vg:"); DisplayDouble(vg,0,0); DisplayMsgLn(" ");}
-  //----------------------------------------------------------------------
-  switch (ElGetElementType(number)) {
-    //--------------------------------------------------------------------
-    case 1: // line elements
-//      dispersion_tensor[0] = heat_conductivity_porous_medium[0] + art_diff + heat_capacity_fluids * heat_dispersion_longitudinal * vg;
-	  dispersion_tensor[0] = (molecular_diffusion + art_diff) + vg * mass_dispersion_longitudinal;
-      // tdt = d * MSkalarprodukt(invjac, invjac, 3);
-       dispersion_tensor[0] *= MSkalarprodukt(invjac,invjac,3);
-      break;
-    //--------------------------------------------------------------------
-    case 2: // quad elements
-      dim=2;
-      dispersion_tensor[0] = molecular_diffusion + art_diff + mass_dispersion_longitudinal * vg;
-      dispersion_tensor[3] = molecular_diffusion + art_diff + mass_dispersion_transverse * vg;
-      /* Drehen des Tensors von stromlinienorientierten in lokale physikalische (Element) Koordinaten,
-         wird benoetigt, wenn Dispersionstensor in Hauptachsen angegeben ist */
-      if ((vg > MKleinsteZahl) && (dispersion_tensor[0] > MKleinsteZahl || dispersion_tensor[3] > MKleinsteZahl)){
-        dreh[0] = dreh[3] = v[0] / vg;
-        dreh[1] = v[1] / vg;
-        dreh[2] = -dreh[1];
-        // [T^T] [D_v] [T] -> [D_ab]
-        MMultMatMat(dispersion_tensor,dim,dim,dreh,dim,dim, matrix2x2a,dim,dim);
-        MTranspoMat(dreh,dim,dim,matrix2x2b);
-        MMultMatMat(matrix2x2b,dim,dim,matrix2x2a,dim,dim,dispersion_tensor,dim,dim);
-      }
-
-      break;
-    //--------------------------------------------------------------------
-    case 4: // tri elements
-      dim=2;
-      dispersion_tensor[0] = molecular_diffusion + art_diff \
-                           + mass_dispersion_longitudinal * vg;
-      dispersion_tensor[1] = molecular_diffusion + art_diff \
-                           + mass_dispersion_transverse * vg;
-      break;
-    //--------------------------------------------------------------------
-    case 3: // hex elements
-      dim=3;
-      //..................................................................
-      // Tensor in pathline coordinates
-      dispersion_tensor[0] = molecular_diffusion + art_diff \
-                           + mass_dispersion_longitudinal * vg;
-      dispersion_tensor[4] = dispersion_tensor[8] = \
-                             molecular_diffusion + art_diff \
-                           + mass_dispersion_transverse * vg;
-      //..................................................................
-      // Tensor in local element coordinates
-       // Drehen des Tensors von stromlinienorientierten in lokale physikalische (Element) Koordinaten,
-       // wird benoetigt, wenn Dispersionstensor in Hauptachsen angegeben ist
-      if (dispersion_tensor[0]>MKleinsteZahl||dispersion_tensor[4]>MKleinsteZahl||dispersion_tensor[8]>MKleinsteZahl){
-        // Drehen: Stromrichtung - r,s,t
-        if(vg>MKleinsteZahl){
-          // 1. Zeile
-          for(l=0;l<3;l++)
-            matrix3x3a[l] = v[l];
-          MNormiere(matrix3x3a,dim);
-          // 2. Zeile
-          fkt = fabs(v[0]);
-          ii = 0;
-          for(l=1;l<3;l++)
-            if(fabs(v[l])<fkt){
-              fkt = fabs(v[l]);
-              ii = l;
-            }
-          matrix3x3b[ii] = 0.0;
-          matrix3x3b[(ii + 1) % 3] = v[(ii + 2) % 3];
-          matrix3x3b[(ii + 2) % 3] = -v[(ii + 1) % 3];
-          MNormiere(matrix3x3b,dim);
-          // 3. Zeile
-          M3KreuzProdukt(matrix3x3a,matrix3x3b,matrix3x3c);
-          MNormiere(matrix3x3c,dim);
-          for(l=0;l<dim;l++){
-            matrix3x3a[3+l] = matrix3x3b[l];
-            matrix3x3a[6+l] = matrix3x3c[l];
-          }
-          // dreh^T * D * dreh
-          MMultMatMat(dispersion_tensor,dim,dim, matrix3x3a,dim,dim,matrix3x3c,dim,dim);
-          MTranspoMat(matrix3x3a,dim,dim,matrix3x3b);
-          MMultMatMat(matrix3x3b,dim,dim,matrix3x3c,dim,dim,dispersion_tensor,dim,dim);
-        }
-      }
-    break;
-	case 5: // tet elements
-      dim =3;
-      dispersion_tensor[0] = molecular_diffusion + art_diff \
-                           + mass_dispersion_longitudinal * vg;
-      dispersion_tensor[4] = molecular_diffusion + art_diff \
-                           + mass_dispersion_transverse * vg;
-      dispersion_tensor[8] = molecular_diffusion + art_diff \
-                           + mass_dispersion_transverse * vg;
-      break;
-    //--------------------------------------------------------------------
-    case 6: // pris elements
-      dim=3;
-      //..................................................................
-      // Tensor in pathline coordinates
-      dispersion_tensor[0] = molecular_diffusion + art_diff \
-                           + mass_dispersion_longitudinal * vg;
-      dispersion_tensor[4] = dispersion_tensor[8] = \
-                             molecular_diffusion + art_diff \
-                           + mass_dispersion_transverse * vg;
-      //..................................................................
-      // Tensor in local element coordinates
-      break;
-    default:
-      cout << "Error in CMediumProperties::HeatDispersionTensor: no valid element type" << endl;
-  }
-  return dispersion_tensor;
-}
-
-/**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-04/2002 OK Implementation
-09/2004 OK MMP implementation
-10/2004 SB Adapted to mass dispersion
 11/2005 CMCD
 05/2007 PCH Diffusion Coefficient corrected and Anisotropic diffusion
 			coeefient computed with tortuosity added
@@ -2672,7 +2476,7 @@ double* CMediumProperties::MassDispersionTensorNew(int ip)
   double alpha_l,alpha_t;
   double theta = Fem_Ele_Std->pcs->m_num->ls_theta;
   double g[3]={0.,0.,0.};
-  double l_char=0.0, volume=0.0;
+  double l_char=0.0; //OK411 volume=0.0;
   int set=0;
   ElementValue* gp_ele = ele_gp_value[index];
   CompProperties *m_cp = cp_vec[component];
@@ -3580,473 +3384,6 @@ double CMediumProperties::Porosity(CElement* assem) //WW
   return (porosity);
 }
 
-
-/**************************************************************************
-//3.1 Subfunction of Porosity
- ROCKFLOW - Funktion: MATCalcSoilPorosityMethod1
-
- Aufgabe:
-   Takes the porosity from a Geomechanical model, calulcates the effective stress
-   and then takes the value of porosity from a curve.
-
- Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E SOIL_PROPERTIES *sp: Zeiger auf eine Instanz vom Typ SOIL_PROPERTIES.
-
- Ergebnis:
-   - s.o. -
-Programming Example
-Programmaenderungen:
-   03/2004  CMCD First version
-
-**************************************************************************/
-double CMediumProperties::PorosityEffectiveStress(long index, double element_pressure)
-{
-    int  nn, i, idummy, Type;
-    long *element_nodes;
-    double p;
-	double znodes[8],ynodes[8],xnodes[8];
-    double zelnodes[8],yelnodes[8],xelnodes[8];
-	double coords[3];
-	double Pie,angle;
-	double sigma1,sigma2,sigma3;
-	double a1,a2,a3,b1,b2,b3;
-	double normx,normy,normz,normlen;
-	double dircosl, dircosm, dircosn;
-    double tot_norm_stress, eff_norm_stress;
-	int material_group;
-	double x_mid, y_mid, z_mid;
-
-
-/* Normal stress calculated according to the orientation of the fracture element*/
-
-		Type=ElGetElementType(index);
-		material_group = ElGetElementGroupNumber(index);
-
-		dircosl = dircosm = dircosn = 0.0;//Initialise variable
-
-
-		if (Type == 2||Type == 3||Type == 4)  /*Function defined for square, triangular and cubic elements*/
-		{
-			nn = ElNumberOfNodes[Type - 1];
-			element_nodes = ElGetElementNodes(index);
-
- 			/* Calculate directional cosins, note that this is currently set up*/
-			/* Sigma1 is in the y direction*/
-			/* Sigma2 is in the z direction*/
-			/* Sigma3 is in the x direction*/
-			/* This correspondes approximately to the KTB site conditions*/
-
-			for (i=0;i<nn;i++)
-			{
-				zelnodes[i]=GetNodeZ(element_nodes[i]);
-				yelnodes[i]=GetNodeY(element_nodes[i]);
-				xelnodes[i]=GetNodeX(element_nodes[i]);
-			}
-
-
-			/*Coordinate transformation to match sigma max direction*/
-			/* y direction matches the north direction*/
-			Pie=3.141592654;
-			angle=(porosity_model_values[3]*Pie)/180.;
-			for (i=0;i<nn;i++)
-			{
-				znodes[i]=zelnodes[i];
-				xnodes[i]=xelnodes[i]*cos(angle)-yelnodes[i]*sin(angle);
-				ynodes[i]=xelnodes[i]*sin(angle)+yelnodes[i]*cos(angle);
-
-			}
-
-
-			if (Type == 2) /*Square*/
-			{
-			a1=xnodes[2]-xnodes[0];
-			a2=ynodes[2]-ynodes[0];
-			a3=znodes[2]-znodes[0];
-			b1=xnodes[3]-xnodes[1];
-			b2=ynodes[3]-ynodes[1];
-			b3=znodes[3]-znodes[1];
-			normx=a2*b3-a3*b2;
-			normy=a3*b1-a1*b3;
-			normz=a1*b2-a2*b1;
-			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
-			dircosl= normy/normlen;
-			dircosm= normz/normlen;
-			dircosn= normx/normlen;
-			}
-
-			if (Type == 3) /*Cube*/
-			{
-			a1=xnodes[2]-xnodes[0];
-			a2=ynodes[2]-ynodes[0];
-			a3=znodes[2]-znodes[0];
-			b1=xnodes[3]-xnodes[1];
-			b2=ynodes[3]-ynodes[1];
-			b3=znodes[3]-znodes[1];
-			normx=a2*b3-a3*b2;
-			normy=a3*b1-a1*b3;
-			normz=a1*b2-a2*b1;
-			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
-			dircosl= normy/normlen;
-			dircosm= normz/normlen;
-			dircosn= normx/normlen;
-			}
-
-			if (Type == 4) /*Triangle*/
-			{
-			a1=xnodes[1]-xnodes[0];
-			a2=ynodes[1]-ynodes[0];
-			a3=znodes[1]-znodes[0];
-			b1=xnodes[2]-xnodes[1];
-			b2=ynodes[2]-ynodes[1];
-			b3=znodes[2]-znodes[1];
-			normx=a2*b3-a3*b2;
-			normy=a3*b1-a1*b3;
-			normz=a1*b2-a2*b1;
-			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
-			dircosl= normy/normlen;
-			dircosm= normz/normlen;
-			dircosn= normx/normlen;
-			}
-
-
-		/* Calculation of average location of element*/
-			CalculateSimpleMiddelPointElement(index,coords);
-			x_mid = coords[0];
-			y_mid = coords[1];
-			z_mid = coords[2];
-
-			/*Calculate fluid pressure in element*/
-			p = element_pressure;
-
-			/*Calcualtion of stress according to Ito & Zoback 2000 for KTB hole*/
-
-			sigma1=z_mid*0.045*-1e6;
-			sigma2=z_mid*0.028*-1e6;
-			sigma3=z_mid*0.02*-1e6;
-
-			//Calculate total normal stress on element
-			/*Note in this case sigma2 corresponds to the vertical stress*/
-			tot_norm_stress=sigma1*dircosl*dircosl+sigma2*dircosm*dircosm+sigma3*dircosn*dircosn;
-
-			/*Calculate normal effective stress*/
-			eff_norm_stress=tot_norm_stress-p;
-
-			/*Take value of storage from a curve*/
-			porosity=GetCurveValue((int) porosity_model_values[0], 0, eff_norm_stress, &idummy);
-
-		}
-		/* default value if element type is not included in the method for calculating the normal */
-		else porosity=porosity_model_values[0];
-  return porosity;
-}
-
-/**************************************************************************/
-/* ROCKFLOW - Funktion: CalculateSoilPorosityMethod1
- */
-/* Aufgabe:
-   Berechnet die Porositaet in Abhaengigkeit von der Konzentration
-   (Salzloesungsmodell)
- */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E SOIL_PROPERTIES *sp: Zeiger auf eine Instanz vom Typ SOIL_PROPERTIES.
- */
-/* Ergebnis:
-   - s.o. -
- */
-/* Programmaenderungen:
-   02/2000     RK     Erste Version
-   11/2001     AH     Warnung entfernt
-
-
- */
-/**************************************************************************/
-/*
-double CalculateSoilPorosityMethod1(SOIL_PROPERTIES * sp, long index)
-{
-    // double grainbound_limit = 1.73e-8;
-    double porosity_limit = 0.01;
-    int porosity_dependence_model;
-    double val0, val1;
-    static double porosity = 0.0;
-    static double rho;
-    static double theta;
-    static double porosity_n, density_rock;
-    static double dissolution_rate, solubility_coefficient;
-    int timelevel = 1;
-
-    porosity_dependence_model = get_sp_porosity_dependence_model(sp);
-    switch (porosity_dependence_model) {
-    case 1: //Salzloesungsmodell
-        val0 = get_sp_porosity_model_field_value(sp, 0);
-        val1 = get_sp_porosity_model_field_value(sp, 1);
-
-        theta = GetNumericalTimeCollocation("TRANSPORT");
-        density_rock = GetSolidDensity(index);
-        dissolution_rate = GetTracerDissolutionRate(index, 0, 0);
-        porosity_n = GetElementSoilPorosity(index);
-        rho = GetFluidDensity(0, index, 0., 0., 0., theta);
-        if (GetTracerSolubilityModel(index, 0, 0) == 1) {
-          //if (GetRFProcessHeatReactModel())
-                solubility_coefficient = CalcTracerSolubilityCoefficient(index,0,0,1,PCSGetNODValueIndex("CONCENTRATION1",timelevel),1,PCSGetNODValueIndex("CONCENTRATION1",timelevel));
-                //else solubility_coefficient = CalcTracerSolubilityCoefficient(index,0,0,1,PCSGetNODValueIndex("CONCENTRATION1",timelevel),0,PCSGetNODValueIndex("CONCENTRATION1",timelevel));
-        } else {
-            solubility_coefficient = GetTracerSolubilityCoefficient(index, 0, 0);
-        }
-
-        porosity = porosity_n + 2 * porosity_n * dissolution_rate * val1 * rho
-            * (solubility_coefficient - val0) * dt / density_rock;
-
-        if (porosity > porosity_limit)
-            porosity = porosity_limit;
-
-
-        break;
-
-    default:
-        DisplayMsgLn("Unknown porosity dependence model!");
-        break;
-
-    }
-
-    return porosity;
-}
-*/
-
-/**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-05/2005 MX Implementation
-last modification:
-**************************************************************************/
-double CMediumProperties::PorosityVolumetricFreeSwellingConstantIonicstrength(long index,double saturation,double temperature)
-{
-  double mat_mp_m, beta;
-  double porosity = 0.0;
-  static double theta;
-  static double porosity_n, porosity_IL, d_porosity, \
-                density_rock, fmon;
-  static double S_0;
-  static double epsilon;
-  static double satu_0=0.20;
-  //  static double porosity_min=0.05;
-  static double ion_strength;
-  static double F_const=96484.6, epsilon_0=8.854e-12;
-  static double R=8.314510, psi=1.0;
-  theta = 1.0;
-  //--------------------------------------------------------------------
-  // MMP medium properties
-  S_0 =      porosity_model_values[1];      // Specific surface area [m^2/g]
-  fmon =     porosity_model_values[2];     // Anteil quelfaehige mineral [-]
-  mat_mp_m = porosity_model_values[3]; // Schichtenanzahl eines quellfähigen Partikels [-]
-  beta =     porosity_model_values[6];     // modifications coefficient (z.B. free swelling Weimar beta=3.0)
-  //--------------------------------------------------------------------
-  // MSP solid properties
-  CSolidProperties *m_msp = NULL;
-  long group = ElGetElementGroupNumber(index);
-  m_msp = msp_vector[group];
-  density_rock  = m_msp->Density(1);
-  //--------------------------------------------------------------------
-  // State properties
-  ion_strength = porosity_model_values[4]; // Ionic strength [M]
-  satu_0 =       porosity_model_values[5];       // Initial saturation, if the sample is homogenous [-]
-  //--------------------------------------------------------------------
-  // Interlayer porosity calculation
-  if (abs(temperature)>1.0e10) temperature=298.0;  //TODO MX
-  epsilon = 87.0 + exp(-0.00456*(temperature-273.0));
-  porosity_n = porosity_model_values[0];
-  // Maximal inter layer porosity
-  porosity_IL = fmon * psi * mat_mp_m * S_0 * (density_rock * 1.0e3) \
-              * sqrt(epsilon * epsilon_0 * R * temperature / (2000.0 * F_const * F_const * ion_strength ));
-  d_porosity=porosity_IL*(pow(saturation,beta)-pow(satu_0,beta));
-  porosity_IL *=pow(saturation,beta);
-  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY_IL"),porosity_IL);
-  // Total porosity calculation
-  porosity = porosity_n+d_porosity;
-  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY"),porosity);
-  return porosity;
-}
-
-
-/**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-05/2005 MX Implementation
-last modification:
-**************************************************************************/
-double CMediumProperties::PorosityEffectiveConstrainedSwelling(long index,double saturation,double temperature, double *porosity_sw)
-{
-
- /*  Soil Properties */
-
-  double mat_mp_m, beta;
-  double porosity = 0.0;
-  static double theta;
-  double porosity_n, porosity_IL, d_porosity, \
-                n_total, density_rock, fmon;
-//  double n_max, n_min;
-  static double S_0;
-  /* Component Properties */
-  static double  satu, epsilon;
-  static double satu_0=0.20;
-  static double porosity_min=0.05;
-  static double ion_strength;
-  static double F_const=96484.6, epsilon_0=8.854e-12;
-  static double R=8.314510, psi=1.0;
-  /* Fluid properies */
-  int phase=1;
-
-  //--------------------------------------------------------------------
-  // MMP medium properties
-  S_0 =      porosity_model_values[1];      // Specific surface area [m^2/g]
-  fmon =     porosity_model_values[2];     // Anteil quelfaehige mineral [-]
-  mat_mp_m = porosity_model_values[3]; // Schichtenanzahl eines quellfähigen Partikels [-]
-  beta =     porosity_model_values[6];     // modifications coefficient (z.B. free swelling Weimar beta=3.0)
-  //--------------------------------------------------------------------
-  // MSP solid properties
-  CSolidProperties *m_msp = NULL;
-  //long group = ElGetElementGroupNumber(index);
-
-  long group = m_pcs->m_msh->ele_vector[index]->GetPatchIndex();
-  m_msp = msp_vector[group];
-  density_rock  = m_msp->Density(1);
-  //--------------------------------------------------------------------
-
-  /* Component Properties */
-   ion_strength = MATCalcIonicStrengthNew(index);
-   if (ion_strength == 0.0){
-	  ion_strength = porosity_model_values[4]; /*Ionic strength [M]*/
-   }
-  satu_0 = porosity_model_values[5];       /*Initial saturation, if the sample is homogenous [-]*/
-  porosity_min = porosity_model_values[7]; /*minimal porosity after swelling compaction*/
-
- //  ion_strength = MATGetSoilIonicStrength(index);
-
-  /* Field v0ariables */
-  /*theta = GetNumericalTimeCollocation("TRANSPORT");*/
-   theta = 1.0;
-  /*  T = MATGetTemperatureGP (index,0.0,0.0,0.0,theta);*/
-//  T=298.0;
-  phase=1;
-  satu = saturation; //MATGetSaturationGP(phase, index, 0.0, 0.0, 0.0, theta); /*only for fluid, phase=1*/
-
-  /*-----------------------------------------------------------------------*/
-  /* Interlayer Porositaet berechnen */
-  if (abs(temperature)>1.0e10) temperature=298.0;  //TODO MX
-  epsilon =87.0+exp(-0.00456*(temperature-273.0));
-  porosity_n = porosity_model_values[0];
-
-    /* Maximal inter layer porosity */
-  porosity_IL=fmon * psi * mat_mp_m * S_0 * (density_rock * 1.0e3) \
-           * sqrt(epsilon * epsilon_0 * R * temperature / (2000.0 * F_const * F_const * ion_strength ));
-  d_porosity=porosity_IL*(pow(satu, beta)-pow(satu_0, beta));
-
-/*-----------Interlayer porosity calculation------------------*/
-
-/*  porosity_IL = porosity_IL*satu; */
-  porosity_IL  *=pow(satu,beta);
-  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY_IL"),porosity_IL);
-    /* constrained swelling */
-
-/*-----------Effective porosity calculation------------------*/
-/*  n_max=porosity_n;
-  n_min=porosity_min;
-
-  porosity = n_max-(n_max-n_min)*fmon*(pow(satu,1.5));
-
-  ElSetElementVal(index,poro_start,porosity);
-
-*/
-  porosity = porosity_n-d_porosity;
-
-  if (porosity<porosity_min)
-	  porosity =porosity_min;
-
-  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY"),porosity);
-/*-----------Void ratio for swelling pressure calculation------------------*/
-//  e = porosity/(1.-porosity);
-//  ElSetElementVal(index,PCSGetELEValueIndex("VoidRatio"),e);
-/*-----------Swelling potential calculation------------------*/
-/* constrained swelling */
-//  n_total=porosity_n - d_porosity;
-  n_total=porosity_n + d_porosity-porosity_min;
-
-//  if(n_total>porosity_min)
-  if(n_total>=0)
-  {
-    *porosity_sw = n_total;
-  }
-  else
-//    *porosity_sw=-porosity_IL*(satu-satu_0)+(porosity_n-porosity_min);
-    *porosity_sw=d_porosity+(porosity_n-porosity_min);
-  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY_SW"),*porosity_sw);
-
-
-/*-----------Swelling pressure calculation------------------*/
- // MATCalSoilSwellPressMethod0(index);
-
-  return porosity;
-}
-
-/**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-05/2005 MX Implementation
-last modification:
-**************************************************************************/
-double CMediumProperties::PorosityVolumetricFreeSwelling(long index,double saturation,double temperature)
-{
-  double mat_mp_m, beta;
-  double porosity = 0.0;
-  static double theta;
-  static double porosity_n, porosity_IL, d_porosity, \
-                density_rock, fmon;
-  static double S_0;
-  static double epsilon;
-  static double satu_0=0.20;
-  //  static double porosity_min=0.05;
-  static double ion_strength;
-  static double F_const=96484.6, epsilon_0=8.854e-12;
-  static double R=8.314510, psi=1.0;
-  theta = 1.0;
-  //--------------------------------------------------------------------
-  // MMP medium properties
-  S_0 =      porosity_model_values[1];      // Specific surface area [m^2/g]
-  fmon =     porosity_model_values[2];     // Anteil quelfaehige mineral [-]
-  mat_mp_m = porosity_model_values[3]; // Schichtenanzahl eines quellfähigen Partikels [-]
-  beta =     porosity_model_values[6];     // modifications coefficient (z.B. free swelling Weimar beta=3.0)
-  //--------------------------------------------------------------------
-  // MSP solid properties
-  CSolidProperties *m_msp = NULL;
-  long group = ElGetElementGroupNumber(index);
-  m_msp = msp_vector[group];
-  density_rock  = m_msp->Density(1);
-  //--------------------------------------------------------------------
-  // State properties
-   ion_strength = MATCalcIonicStrengthNew(index);
-   if (ion_strength == 0.0){
-	 ion_strength = porosity_model_values[4]; // Ionic strength [M]
-   }
-  satu_0 =       porosity_model_values[5];       // Initial saturation, if the sample is homogenous [-]
-  //--------------------------------------------------------------------
-  // Interlayer porosity calculation
-  epsilon = 87.0 + exp(-0.00456*(temperature-273.0));
-  porosity_n = porosity_model_values[0];
-  // Maximal inter layer porosity
-  porosity_IL = fmon * psi * mat_mp_m * S_0 * (density_rock * 1.0e3) \
-              * sqrt(epsilon * epsilon_0 * R * temperature / (2000.0 * F_const * F_const * ion_strength ));
-  d_porosity=porosity_IL*(pow(saturation,beta)-pow(satu_0,beta));
-  porosity_IL *=pow(saturation,beta);
-  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY_IL"),porosity_IL);
-  // Total porosity calculation
-  porosity = porosity_n+d_porosity;
-  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY"),porosity);
-  return porosity;
-}
-
-
 /**************************************************************************
 FEMLib-Method:
 Task:
@@ -4171,769 +3508,14 @@ porosity_sw = porosity_sw; // WW Remove this argument
   return porosity;
 }
 
-
-/**************************************************************************
-FEMLib-Method: PorosityVolumetricChemicalReaction
-Task: Porosity variation owing to chemical reactions
-Programing:
-05/2005 MX Implementation
-last modification:
-**************************************************************************/
-double CMediumProperties::PorosityVolumetricChemicalReaction(long index)
-{
-  int n=0, i, timelevel, nn=0, m=0;
-  static long *element_nodes;
-//  long component;
-  double porosity=0.0, tot_mineral_volume=0.0, tot_mineral_volume0=0.0;
-  double conc[100];
-  double mineral_volume[100],molar_volume[100];
-//  double *ergebnis=NULL;
- // REACTION_MODEL *rcml=NULL;
-
-//  rcml=GETReactionModel(index);
-  REACT *rc = NULL; //SB
-  rc->GetREACT();
-
- /*  MMP Medium Properties  */
-  porosity = porosity_model_values[0];
-  if (!rc) return porosity;
-
-//  m=rcml->number_of_equi_phases;
-  m = rc->rcml_number_of_equi_phases;
-  if (m ==0 || ElGetElement(index)==NULL) /* wenn solid phases and Element existiert */
-  return porosity;
-
-/* mineral molar volume abholen */
-  for (i=0; i<m; i++){
-    molar_volume[i]=porosity_model_values[i+1];
-  }
-
-  tot_mineral_volume0=porosity_model_values[m+1]; /*initial total volume of the minerals*/
-
-//  if (!rcml) {return porosity;}
-
-/* calculate the concentrations of each solid phases (in mol/l soil) as element value from adjecent node values */
-//  n=rcml->number_of_master_species;
-  n = rc->rcml_number_of_master_species;
-//  n = get_rcml_number_of_master_species(rcml);
-  for (int component=0; component<m+2+n+rc->rcml_number_of_ion_exchanges; component++) {
-	conc[component] =0.0;
-	// Not used: CompProperties *m_cp = cp_vec[component];
- //    int z_i = m_cp->valence;
- //	 m_cp->compname; //What's this for
-    if (component>=n+2 && component<n+2+m){
-
-      if (ElGetElementActiveState(index)){
-         nn = ElGetElementNodesNumber(index);
-         element_nodes = ElGetElementNodes(index);
-         for (int j=0;j<nn;j++) {
-            timelevel=1;
-			conc[component] += PCSGetNODConcentration(element_nodes[j],component,timelevel);
-		}
-        conc[component] /= (double)nn;
-        element_nodes = NULL;
-      }
-
-/* calculate the solid phase: volume =v_mi*Ci */
-      timelevel=0;
-//      conc[i]=CalcElementMeanConcentration (index, i, timelevel, ergebnis);
-      mineral_volume[component-n-2] = conc[component]*molar_volume[component-n-2];
-      tot_mineral_volume += mineral_volume[component-n-2];
-    }
-  } /*for */
-
-
-  porosity += tot_mineral_volume0 - tot_mineral_volume;
-//  ElSetElementVal(index,"POROSITY",porosity);
-  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY"),porosity);
-  return porosity;
-}
-
 //------------------------------------------------------------------------
 //4..TORTUOSITY
 //------------------------------------------------------------------------
-/**************************************************************************
-FEMLib-Method: TortuosityFunction
-Task:
-Programing:
-05/2007 PCH Diffusion tensor is handled by tortuosity tensor as in
-		permeability. Agreed with GK
-last modification:
-**************************************************************************/
-double CMediumProperties::TortuosityFunction(long number, double *gp, double theta,CFiniteElementStd* assem)
-{
-  static int nidx0,nidx1;
-  double primary_variable[10];		//OK To Do
-  int count_nodes;
-  long* element_nodes = NULL;
-//  int fct_number = 0;
-//  int gueltig;
-  //----------------------------------------------------------------------
-  int i;
-  int no_pcs_names =(int)pcs_name_vector.size();
-  for(i=0;i<no_pcs_names;i++){
-    nidx0 = PCSGetNODValueIndex(pcs_name_vector[i],0);
-    nidx1 = PCSGetNODValueIndex(pcs_name_vector[i],1);
-    if(mode==0){ // Gauss point values
-      primary_variable[i] = (1.-theta)*InterpolValue(number,nidx0,gp[0],gp[1],gp[2]) \
-                          + theta*InterpolValue(number,nidx1,gp[0],gp[1],gp[2]);
-    }
-    else if(mode==1){ // Node values
-      primary_variable[i] = (1.-theta)*GetNodeVal(number,nidx0) \
-                          + theta*GetNodeVal(number,nidx1);
-    }
-    else if(mode==2){ // Element average value
-      count_nodes = ElNumberOfNodes[ElGetElementType(number) - 1];
-      element_nodes = ElGetElementNodes(number);
-      for (i = 0; i < count_nodes; i++)
-	    primary_variable[i] += GetNodeVal(element_nodes[i],nidx1);
-      primary_variable[i]/= count_nodes;
-    }
-  } //For Loop
-
-
-    switch (tortuosity_model) {
-
-		case 0:                     /* Tortuosity is read from a curve */
-        //To do
-        break;
-
-		case 1:                      /* Constant Tortuosity*/
-		tortuosity = tortuosity_model_values[0];
-        break;
-
-        default:
-		DisplayMsgLn("Unknown tortuosisty model!");
-        break;
-		}	                         /* switch */
-
-return (tortuosity);
-}
-
-
-
-
 
 /* 4B.4.3 non-linear flow */
-/**************************************************************************/
-/* ROCKFLOW - Funktion: NonlinearFlowFunction
- */
-/* Aufgabe:
-   Berechnung der relativen Permeabilitaet
-   fuer nichtlineare Fliessgesetze
- */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
- */
-/* Ergebnis:
-   0 bei Fehler, sonst 1 (dient nur zum Abbrechen der Funktion)
- */
-/* Programmaenderungen:
-   06/1999   OK   Implementierung
-   09/2004   CMCD In GeoSys 4
- */
-/**************************************************************************/
-double CMediumProperties::NonlinearFlowFunction(long index, double *gp, double theta)
-{
-	//Pressure variable name (PRESSURE 1) not used as yet in this function
-	int i;
-	//Pointer to fluid properties
-//	int no_phases =(int)mfp_vector.size();
-	CFluidProperties *m_mfp = NULL;
-	int phase = (int)mfp_vector.size()-1;
-	m_mfp = mfp_vector[phase];
-    /* Knotendaten */
-    int nn,Type;
-    long *element_nodes;
-    double p_element_node[4], h_element_node[4], z_element_node[4];
-    /* Materialdaten */
-    double alpha;
-    double k_rel = 1.0;
-    double g, rho, mu;
-    /* Elementdaten */
-    double grad_h[2],grad_x,grad_y;
-    double mult[2];
-    double detjac, *invjac, invjac2d[4];
-    double grad_omega[8];
-    double grad_h_min = MKleinsteZahl;  /*1.0; */
-	double xgt[3],ygt[3],zgt[3];				//CMCD Global x,y,z coordinates of traingular element
-	double xt[3],yt[3];							//CMCD Local x,y coordinates of traingular element
-	double pt_element_node[4], ht_element_node[4], zt_element_node[4]; //CMCD Pressure, depth head traingular element
-	double dN_dx[3],dN_dy[3], area;				//CMCD Shape function derivates for triangles
-	double isotropicgradient,porosity, Re, Lambda, apperture, hyd_radius, perm;
-	double linear_q,turbulent_q,linear_grad, turbulent_grad, flow_rate, temp;
-	double dircos[6];							//CMCD 04 2004
-    gp[0]= gp[1] = gp[2] = 0.0;					//Gaus points, triangular interpretation value not relevant
-
-	element_nodes = ElGetElementNodes(index);
-    g = gravity_constant;
-    //OK4104 theta = GetNumericalTimeCollocation("PRESSURE1");
-	Type = ElGetElementType(index);
-  //--------------------------------------------------------------------
-  // MMP medium properties
-  CMediumProperties *m_mmp = NULL;
-  long group = ElGetElementGroupNumber(index);
-  m_mmp = mmp_vector[group];
-  //--------------------------------------------------------------------
-	switch (flowlinearity_model){
-	case 1://Element Type Dependent
-	alpha = flowlinearity_model_values[0];
-	rho = m_mfp->Density();
-
-		switch (Type){
-		case 1:
-			nn = ElNumberOfNodes[0];
-			for (i = 0; i < nn; i++) {
-				p_element_node[i] = GetNodeVal(element_nodes[i],1);
-				z_element_node[i] = GetNode(element_nodes[i])->z;
-				h_element_node[i] = (p_element_node[i]) / (g * rho) + z_element_node[i];
-			}
-			invjac = GEOGetELEJacobianMatrix(index, &detjac);
-	/*          if(fabs(h_element_node[1]-h_element_node[0])>MKleinsteZahl) */
-			if (fabs(h_element_node[1] - h_element_node[0]) > grad_h_min) {
-				k_rel = \
-					pow(fabs(0.5 * sqrt(MSkalarprodukt(invjac, invjac, 3))), (alpha - 1.0)) * \
-					pow(fabs(h_element_node[1] - h_element_node[0]), (alpha - 1.0));
-				if (k_rel > 1)
-					k_rel = 1.;
-			} else
-				k_rel = 1.0;
-
-			break;
-
-		case 2:
-			nn = ElNumberOfNodes[1];        /* Knotenanzahl nn muss 4 sein ! */
-			for (i = 0; i < nn; i++) {
-				p_element_node[i] = GetNodeVal(element_nodes[i],1);
-				z_element_node[i] = GetNode(element_nodes[i])->z;
-				h_element_node[i] = p_element_node[i] / (g * rho) + z_element_node[i];
-			}
-			Calc2DElementJacobiMatrix(index, 0.0, 0.0, invjac2d, &detjac);
-			MGradOmega2D(grad_omega, 0, 0);         /* Gradientenmatrix */
-			MMultMatVec(grad_omega, 2, 4, h_element_node, 4, mult, 2);
-			MMultVecMat(mult, 2, invjac2d, 2, 2, grad_h, 2);
-	/*          if( (fabs(grad_h[0])>MKleinsteZahl)||(fabs(grad_h[1])>MKleinsteZahl) ) ) */
-			if ((fabs(grad_h[0]) > grad_h_min) || (fabs(grad_h[1]) > grad_h_min)) {
-				k_rel = \
-					pow(fabs(sqrt((grad_h[0]) * (grad_h[0]) + (grad_h[1]) * (grad_h[1]))), \
-						(alpha - 1.0));
-				/* DisplayDouble(k_rel_iteration,0,0);  DisplayMsgLn(""); */
-			} else {
-				k_rel = 1.0;
-			}
-			break;
-		case 3:
-			k_rel = 1.;
-			break;
-		}
-
-	case 2://Equivalent Fractured Media represented by triangles   CMCD April 2004
-
-			//Geometry
-			nn = ElNumberOfNodes[Type - 1];
-			element_nodes = ElGetElementNodes(index);
-
-			for (i = 0; i < nn; i++)
-				{
-				xgt[i] = GetNodeX(element_nodes[i]);
-				ygt[i] = GetNodeY(element_nodes[i]);
-				zgt[i] = GetNodeZ(element_nodes[i]);
-				}
-			//Input parameters
-			porosity = CMediumProperties::Porosity(index,theta);
-			alpha = flowlinearity_model_values[0];
-			apperture = porosity / flowlinearity_model_values[1]; /*Change equivalent porosity to individual fracture porosity */
-			Re = flowlinearity_model_values[2];
-
-			//Fluid properties
-			rho = m_mfp->Density();
-			mu  = m_mfp->Viscosity();
-			Re = 0.0; //Reynolds number for turbulent flow CMCD 04. 2004
-			Lambda = 0.0; //Frictional Resistence
-
-			//Flow status
-			hyd_radius = 2*apperture;
-			perm = (apperture * apperture)/12.;
-			linear_q = (Re*mu)/(hyd_radius*rho); //max linear q
-
-			/*Fluid pressure at each node*/
-			for (i = 0; i < nn; i++) {
-				pt_element_node[i] = GetNodeVal(element_nodes[i],1);
-				zt_element_node[i] = GetNode(element_nodes[i])->z;
-				ht_element_node[i] = pt_element_node[i] + ((g * rho) * zt_element_node[i]); //In Pascal
-			}
-			Calc2DElementCoordinatesTriangle(index,xt,yt,dircos); /*CMCD included 03/2004*/
-			area = ElGetElementVolume(index)/m_mmp->geo_area; //CMCD March 2004 removed wrong area in  code */
-			//Shape function derivatives
-			dN_dx[0] = (yt[1] - yt[2]) / (2. * area);
-			dN_dx[1] = (yt[2] - yt[0]) / (2. * area);
-			dN_dx[2] = (yt[0] - yt[1]) / (2. * area);
-			dN_dy[0] = (xt[2] - xt[1]) / (2. * area);
-			dN_dy[1] = (xt[0] - xt[2]) / (2. * area);
-			dN_dy[2] = (xt[1] - xt[0]) / (2. * area);
-			grad_x = MSkalarprodukt(dN_dx, ht_element_node, nn);
-			grad_y = MSkalarprodukt(dN_dy, ht_element_node, nn);
-			//v2[0] = MSkalarprodukt(dN_dx, zg, nn);
-			//v2[1] = MSkalarprodukt(dN_dy, zg, nn);
-			//Assume isotropic nonlinear flow (p268 Kolditz 2001)
-			linear_q = linear_q/3.0; // Here the whole element is considered hence 4* to remove avereaging effects
-			isotropicgradient = pow((grad_x*grad_x+grad_y*grad_y),0.5);
-			flow_rate = (perm * isotropicgradient)/mu;
-			if (flow_rate > linear_q){
-				turbulent_q = flow_rate-linear_q;
-				linear_grad = (linear_q *apperture * mu)/perm;
-				turbulent_grad = isotropicgradient - linear_grad;
-				temp = pow((turbulent_grad/(rho*g)),1-alpha)/(turbulent_grad/(rho*g));
-				k_rel = ((linear_grad*1.0) +(turbulent_grad*temp))/isotropicgradient;
-			}
-			else {
-				k_rel = 1.0;
-			}
-
-			//velovec[0] = (-k_x * k_rel_grad_p * k_rel_S*k_rel / mu)* (v1[0] + (rho * g * v2[0]));
-			//velovec[1] = (-k_y * k_rel_grad_p * k_rel_S*k_rel / mu) * (v1[1] + (rho * g * v2[1]));
-
-	/* special stop CMCD*/
-
-	//		if (index == 7021){
-	//			printf("\n");
-	//			printf("Element 4516 k_rel = %g\n",k_rel);
-	//			}
-	//
-	//		break;
-		}
-	return k_rel;
-	}
-
-
 
 /**************************************************************************
  9 Storage
-**************************************************************************
- ROCKFLOW - Funktion: Storage Function
-
- Aufgabe:
-   Berechnet Speicherkoeffizienten
-
- Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E long index: Elementnummer
-
- Ergebnis:
-   rel. Permeabilitaet
-
- Programmaenderungen:
-   1/2001   C.Thorenz   Erste Version
-   7/2007   C.Thorenz   Div. Druckabhaengigkeiten
-  06/2003 OK/CM case 4: Storage as function of effective stress read from curve
-  11/2003   CMCD		Geothermal methods added (20)
-
-  Case overview
-  0		Curve
-  1		Constant
-  2		Funktion der effektiven Spannung und des Drucks in Elementmitte
-  3		Funktion der effektiven Spannung und des Drucks in Elementmitte ueber Kurve
-  4		Storage as function of effective stress read from curve
-  5     Storage as normal stress in element in stress field defined by KTB stress field.
-  6		Storage as normal stress in element in stress field defined by KTB stress
-                field, function to increase storage with distance from borehole.
-**************************************************************************/
-double CMediumProperties::StorageFunction(long index,double *gp,double theta)
-{
-    int nn, i, idummy,Type;
-    double p; //WW, sigma, z[8];
-	int phase;
-    double density_solid, stress_eff,S;
-    double coords[3];
-	double znodes[8],ynodes[8],xnodes[8];
-	double zelnodes[8],yelnodes[8],xelnodes[8];
-	double Pie,angle;
-	double sigma1,sigma2,sigma3;
-	double a1,a2,a3,b1,b2,b3;
-	double normx,normy,normz,normlen;
-	double dircosl, dircosm, dircosn;
-    double tot_norm_stress, eff_norm_stress;
-	int material_group;
-	double x_mid, y_mid, z_mid, x_bore, y_bore, z_bore, distance;
-	dircosl = dircosm = dircosn = 0.0;//Initialise variable
-
-	static int nidx0,nidx1;
-	double primary_variable[10];		//OK To Do
-	int count_nodes;
-	long* element_nodes = NULL;
-//	int fct_number = 0;
-//	int gueltig;
-
-
-	int no_pcs_names =(int)pcs_name_vector.size();
-	for(i=0;i<no_pcs_names;i++){
-		nidx0 = PCSGetNODValueIndex(pcs_name_vector[i],0);
-		nidx1 = PCSGetNODValueIndex(pcs_name_vector[i],1);
-		if(mode==0){ // Gauss point values
-		primary_variable[i] = (1.-theta)*InterpolValue(index,nidx0,gp[0],gp[1],gp[2]) \
-							+ theta*InterpolValue(index,nidx1,gp[0],gp[1],gp[2]);		}
-		else if(mode==1){ // Node values
-		primary_variable[i] = (1.-theta)*GetNodeVal(index,nidx0) \
-							+ theta*GetNodeVal(index,nidx1);		}
-		else if(mode==2){ // Element average value
-//MX		count_nodes = ElNumberOfNodes[ElGetElementType(number) - 1];
-		count_nodes = ElNumberOfNodes[ElGetElementType(index) - 1];
-//MX		element_nodes = ElGetElementNodes(number);
-		element_nodes = ElGetElementNodes(index);
-		for (i = 0; i < count_nodes; i++)
-			primary_variable[i] += GetNodeVal(element_nodes[i],nidx1);
-		primary_variable[i]/= count_nodes;
-		}
-	}
-
-
-
-
-
-    switch (storage_model) {
-
-    case 0:
-
-        storage = GetCurveValue((int) storage_model_values[0], 0, primary_variable[0], &idummy);
-
-        break;
-
-
-    case 1:
-        /* Konstanter Wert */
-        storage = storage_model_values[0];
-        break;
-
-    case 2:
-        /* Funktion der effektiven Spannung und des Drucks in Elementmitte */
-#ifdef obsolete //WW. 06.11.2008
-        /* Den Druck holen */
- 		p = primary_variable[0];
-
-        /* Mittlere Tiefe */
-        nn = ElNumberOfNodes[ElGetElementType(index) - 1];
-        element_nodes = ElGetElementNodes(index);
-
-        for (i = 0; i < nn; i++)
-            z[i] = GetNodeZ(element_nodes[i]);
-
-        /* Spannung = sigma(z0) + d_sigma/d_z*z */
-        //OKsigma = storage_model_values[2] + storage_model_values[3] * InterpolValueVector(index, z, 0., 0., 0.);
-        sigma = storage_model_values[2] + storage_model_values[3] * InterpolValueVector(ElGetElementType(index), z, 0., 0., 0.);
-
-        /* Auf effektive Spannung umrechnen */
-        sigma -= p;
-
-        storage = exp(storage_model_values[0] - storage_model_values[1] * log(sigma));
-#endif //#ifdef obsolete //WW. 06.11.2008
-        break;
-
-    case 3:
-        /* Funktion der effektiven Spannung und des Drucks in Elementmitte
-                   ueber Kurve */
-#ifdef obsolete //WW. 06.11.2008
-        /* Den Druck holen */
-		p = primary_variable[0];
-
-        /* Mittlere Tiefe */
-        nn = ElNumberOfNodes[ElGetElementType(index) - 1];
-        element_nodes = ElGetElementNodes(index);
-
-        for (i = 0; i < nn; i++)
-            z[i] = GetNodeZ(element_nodes[i]);
-
-        /* Spannung = sigma(z0) + d_sigma/d_z*z */
-        sigma = storage_model_values[1] + storage_model_values[2] * InterpolValueVector(ElGetElementType(index), z, 0., 0., 0.);
-
-        /* Auf effektive Spannung umrechnen */
-        sigma -= p;
-
-        storage = GetCurveValue((int)storage_model_values[0],0,sigma,&i);
-#endif
-        break;
-
-    case 4: /* McD Storage as function of effective stress read from curve */
-
-		CalculateSimpleMiddelPointElement(index, coords);
-        p = primary_variable[0];
-	    density_solid = storage_model_values[2];
-		stress_eff = (fabs(coords[2])*gravity_constant*density_solid) - p;
-        storage =GetCurveValue((int) storage_model_values[0], 0, stress_eff, &idummy);
-		break;
-
-	case 5: /* Stroage : Normal stress calculated according to the orientation of the fracture element*/
-
-		Type=ElGetElementType(index);
-		material_group = ElGetElementGroupNumber(index);
-
-			if (Type == 2||Type == 3||Type == 4)  /*Function defined for square, triangular and cubic elements*/
-			{
-				nn = ElNumberOfNodes[Type - 1];
-				element_nodes = ElGetElementNodes(index);
-
-
-
-				/* Calculate directional cosins, note that this is currently set up*/
-				/* Sigma1 is in the y direction*/
-				/* Sigma2 is in the z direction*/
-				/* Sigma3 is in the x direction*/
-				/* This correspondes approximately to the KTB site conditions*/
-
-			for (i=0;i<nn;i++)
-			{
-				zelnodes[i]=GetNodeZ(element_nodes[i]);
-				yelnodes[i]=GetNodeY(element_nodes[i]);
-				xelnodes[i]=GetNodeX(element_nodes[i]);
-			}
-
-
-			/*Coordinate transformation to match sigma max direction*/
-			/* y direction matches the north direction*/
-
-			Pie=3.141592654;
-			angle=(storage_model_values[3]*Pie)/180.;
-			for (i=0;i<nn;i++)
-			{
-				znodes[i]=zelnodes[i];
-				xnodes[i]=xelnodes[i]*cos(angle)-yelnodes[i]*sin(angle);
-				ynodes[i]=xelnodes[i]*sin(angle)+yelnodes[i]*cos(angle);
-
-			}
-
-				if (Type == 2) /*Square*/
-				{
-				a1=xnodes[2]-xnodes[0];
-				a2=ynodes[2]-ynodes[0];
-				a3=znodes[2]-znodes[0];
-				b1=xnodes[3]-xnodes[1];
-				b2=ynodes[3]-ynodes[1];
-				b3=znodes[3]-znodes[1];
-				normx=a2*b3-a3*b2;
-				normy=a3*b1-a1*b3;
-				normz=a1*b2-a2*b1;
-				normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
-				dircosl= normy/normlen;
-				dircosm= normz/normlen;
-				dircosn= normx/normlen;
-				}
-
-				if (Type == 3) /*Cube*/
-				{
-				a1=xnodes[2]-xnodes[0];
-				a2=ynodes[2]-ynodes[0];
-				a3=znodes[2]-znodes[0];
-				b1=xnodes[3]-xnodes[1];
-				b2=ynodes[3]-ynodes[1];
-				b3=znodes[3]-znodes[1];
-				normx=a2*b3-a3*b2;
-				normy=a3*b1-a1*b3;
-				normz=a1*b2-a2*b1;
-				normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
-				dircosl= normy/normlen;
-				dircosm= normz/normlen;
-				dircosn= normx/normlen;
-				}
-
-				if (Type == 4) /*Triangle*/
-				{
-				a1=xnodes[1]-xnodes[0];
-				a2=ynodes[1]-ynodes[0];
-				a3=znodes[1]-znodes[0];
-				b1=xnodes[2]-xnodes[1];
-				b2=ynodes[2]-ynodes[1];
-				b3=znodes[2]-znodes[1];
-				normx=a2*b3-a3*b2;
-				normy=a3*b1-a1*b3;
-				normz=a1*b2-a2*b1;
-				normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
-				dircosl= normy/normlen;
-				dircosm= normz/normlen;
-				dircosn= normx/normlen;
-				}
-				/* Calculate average location of the element */
-				CalculateSimpleMiddelPointElement(index, coords);
-				x_mid = coords[0];
-				y_mid = coords[1];
-				z_mid = coords[2];
-
-				p = primary_variable[0];
-
-
-			/*Calcualtion of stress according to Ito & Zoback 2000 for KTB hole*/
-
-				sigma1=z_mid*0.045*-1e6;
-				sigma2=z_mid*0.028*-1e6;
-				sigma3=z_mid*0.02*-1e6;
-
-                        ///Calculate total normal stress on element
-			/*Note in this case sigma2 corresponds to the vertical stress*/
-				tot_norm_stress=sigma1*dircosl*dircosl+sigma2*dircosm*dircosm+sigma3*dircosn*dircosn;
-
-
-
-			/*Calculate normal effective stress*/
-				eff_norm_stress=tot_norm_stress-p;
-
-				/* special stop CMCD*/
-				if (eff_norm_stress>220000000.){
-				phase=0;
-				/* Stop here*/
-				}
-
-
-			/*Take value of storage from a curve*/
-				S=GetCurveValue((int) storage_model_values[0], 0, eff_norm_stress, &idummy);
-			}
-
-		/* default value if element type is not included in the method for calculating the normal */
-		else S=storage_model_values[2];
-		storage = S;
-		break;
-
-
-
-	case 6: /* Normal stress calculated according to the orientation of the fracture element*/
-
-		Type=ElGetElementType(index);
-		material_group = ElGetElementGroupNumber(index);
-
-		if (material_group == 0)
-		{
-			if (Type == 2||Type == 3||Type == 4)  /*Function defined for square, triangular and cubic elements*/
-			{
-				nn = ElNumberOfNodes[Type - 1];
-				element_nodes = ElGetElementNodes(index);
-
-				/* Calculate directional cosins, note that this is currently set up*/
-				/* Sigma1 is in the y direction*/
-				/* Sigma2 is in the z direction*/
-				/* Sigma3 is in the x direction*/
-				/* This correspondes approximately to the KTB site conditions*/
-				for (i=0;i<nn;i++)
-				{
-					zelnodes[i]=GetNodeZ(element_nodes[i]);
-					yelnodes[i]=GetNodeY(element_nodes[i]);
-					xelnodes[i]=GetNodeX(element_nodes[i]);
-				}
-
-
-				/*Coordinate transformation to match sigma max direction*/
-				/* y direction matches the north direction*/
-
-				Pie=3.141592654;
-				angle=(storage_model_values[3]*Pie)/180.;
-				for (i=0;i<nn;i++)
-				{
-					znodes[i]=zelnodes[i];
-					xnodes[i]=xelnodes[i]*cos(angle)-yelnodes[i]*sin(angle);
-					ynodes[i]=xelnodes[i]*sin(angle)+yelnodes[i]*cos(angle);
-
-				}
-
-				if (Type == 2) /*Square*/
-				{
-				a1=xnodes[2]-xnodes[0];
-				a2=ynodes[2]-ynodes[0];
-				a3=znodes[2]-znodes[0];
-				b1=xnodes[3]-xnodes[1];
-				b2=ynodes[3]-ynodes[1];
-				b3=znodes[3]-znodes[1];
-				normx=a2*b3-a3*b2;
-				normy=a3*b1-a1*b3;
-				normz=a1*b2-a2*b1;
-				normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
-				dircosl= normy/normlen;
-				dircosm= normz/normlen;
-				dircosn= normx/normlen;
-				}
-
-				if (Type == 3) /*Cube*/
-				{
-				a1=xnodes[2]-xnodes[0];
-				a2=ynodes[2]-ynodes[0];
-				a3=znodes[2]-znodes[0];
-				b1=xnodes[3]-xnodes[1];
-				b2=ynodes[3]-ynodes[1];
-				b3=znodes[3]-znodes[1];
-				normx=a2*b3-a3*b2;
-				normy=a3*b1-a1*b3;
-				normz=a1*b2-a2*b1;
-				normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
-				dircosl= normy/normlen;
-				dircosm= normz/normlen;
-				dircosn= normx/normlen;
-				}
-
-				if (Type == 4) /*Triangle*/
-				{
-				a1=xnodes[1]-xnodes[0];
-				a2=ynodes[1]-ynodes[0];
-				a3=znodes[1]-znodes[0];
-				b1=xnodes[2]-xnodes[1];
-				b2=ynodes[2]-ynodes[1];
-				b3=znodes[2]-znodes[1];
-				normx=a2*b3-a3*b2;
-				normy=a3*b1-a1*b3;
-				normz=a1*b2-a2*b1;
-				normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
-				dircosl= normy/normlen;
-				dircosm= normz/normlen;
-				dircosn= normx/normlen;
-				}
-
-			/* Calculation of average location of element*/
-
-			CalculateSimpleMiddelPointElement(index,coords);
-			x_mid = coords[0];
-			y_mid = coords[1];
-			z_mid = coords[2];
-
-			p = primary_variable[0];
-
-			x_bore = storage_model_values[4];
-			y_bore = storage_model_values[5];
-			z_bore = storage_model_values[6];
-
-			distance = pow(pow((x_mid-x_bore),2.0) + pow((y_mid-y_bore),2.0) + pow((z_mid-z_bore),2.0),0.5);
-
-
-
-			/*Calcualtion of stress according to Ito & Zoback 2000 for KTB hole*/
-
-			sigma1=z_mid*0.045*-1e6;
-			sigma2=z_mid*0.028*-1e6;
-			sigma3=z_mid*0.02*-1e6;
-
-			///Calculate total normal stress on element
-			/*Note in this case sigma2 corresponds to the vertical stress*/
-			tot_norm_stress=sigma1*dircosl*dircosl+sigma2*dircosm*dircosm+sigma3*dircosn*dircosn;
-
-
-			/*Calculate normal effective stress*/
-			eff_norm_stress=tot_norm_stress-p;
-
-
-			/*Take value of storage from a curve*/
-			S=GetCurveValue((int) storage_model_values[0], 0, eff_norm_stress, &idummy);
-			if (distance > storage_model_values[7]){
-				distance = storage_model_values[7];
-				}
-			if (distance > 2) S = S + (S * (distance-2) * storage_model_values[8]);
-			}
-
-		else S=storage_model_values[2];
-		}
-
-		else S=storage_model_values[2];
-		storage = S;
-		break;
-    case 7: // poroelasticity RW
-        storage = storage_model_values[1];
-        break;
-	default:
-        storage = 0.0;//OK DisplayMsgLn("The requested storativity model is unknown!!!");
- 	break;
-    }
-	return storage;
-}
 
 /**************************************************************************
  11 Permeability
@@ -5167,577 +3749,6 @@ double CMediumProperties::RelativePermeability (long index) //rfw cmcd
 //------------------------------------------------------------------------
 //12.(ii) PERMEABILITY_FUNCTION_PRESSURE
 //------------------------------------------------------------------------
-double CMediumProperties::PermeabilityPressureFunction(long index,double *gp,double theta)
-{
-    int nn, i, idummy,p_idx1;
-    long *element_nodes;
-    static double gh,  p, eins_durch_rho_g, sigma, z[8], h[8], grad_h[3];
-    static double invjac[8], detjac, grad_omega[8];
-    static double mult[3];
-    double x_mid,y_mid,z_mid,coords[3];
-    double density_solid, stress_eff;
-//	double porosity, factora, factorb,valuelogk;
-	double k_rel=0.0;
-    CFluidProperties* m_mfp=NULL;
-
-	//Collect primary variables
-	static int nidx0,nidx1;
-	double primary_variable[10];		//OK To Do
-	int count_nodes;
-	int no_pcs_names =(int)pcs_name_vector.size();
-	for(i=0;i<no_pcs_names;i++){
-		nidx0 = PCSGetNODValueIndex(pcs_name_vector[i],0);
-		nidx1 = PCSGetNODValueIndex(pcs_name_vector[i],1);
-		if(mode==0){ // Gauss point values
-		primary_variable[i] = (1.-theta)*InterpolValue(number,nidx0,gp[0],gp[1],gp[2]) \
-							+ theta*InterpolValue(number,nidx1,gp[0],gp[1],gp[2]);
-		}
-		else if(mode==1){ // Node values
-		primary_variable[i] = (1.-theta)*GetNodeVal(number,nidx0) \
-							+ theta*GetNodeVal(number,nidx1);
-		}
-		else if(mode==2){ // Element average value
-		count_nodes = ElNumberOfNodes[ElGetElementType(number) - 1];
-		element_nodes = ElGetElementNodes(number);
-		for (i = 0; i < count_nodes; i++)
-			primary_variable[i] += GetNodeVal(element_nodes[i],nidx1);
-		primary_variable[i]/= count_nodes;
-		}
-	}
-    switch (permeability_pressure_model) {
-    case 0://Curve function
-        k_rel = 1.0;
-        break;
-    case 1://No functional dependence
-		k_rel = 1.0;
-        break;
-        /* Funktion der effektiven Spannung */
-	case 2:
-#ifdef obsolete //WW. 06.11.2008
-        /* Den Druck holen */
-        p = primary_variable[0];
-        /* Mittlere Tiefe */
-        nn = ElNumberOfNodes[ElGetElementType(index) - 1];
-        element_nodes = ElGetElementNodes(index);
-        for (i = 0; i < nn; i++)
-            z[i] = GetNodeZ(element_nodes[i]);
-        /* Spannung = sigma(z0) + d_sigma/d_z*z */
-        sigma = permeability_pressure_model_values[2] + permeability_pressure_model_values[3] * InterpolValueVector(ElGetElementType(index), z, 0., 0., 0.);
-        /* Auf effektive Spannung umrechnen */
-        sigma -= p;
-        k_rel = exp(permeability_pressure_model_values[0] - permeability_pressure_model_values[1] * log(sigma));
-#endif
-        break;
-     case 3: /* Turbulentes Fliessen */
-        /* k_rel = max(min((grad(h)*alpha1)^(alpha2-1), alpha4),alpha3) */
-        m_mfp = MFPGet("LIQUID");
-        eins_durch_rho_g = 1./gravity_constant/m_mfp->Density(); // YDGetFluidDensity(0, index, 0., 0., 0., 1.);
-        nn = ElNumberOfNodes[ElGetElementType(index) - 1];
-        element_nodes = ElGetElementNodes(index);
-		p_idx1 = PCSGetNODValueIndex("PRESSURE1",1);
-        for (i=0;i<nn;i++)
-           h[i] = GetNodeVal(element_nodes[i], p_idx1)*eins_durch_rho_g
-                + GetNodeZ(element_nodes[i]);
-        switch (ElGetElementType(index)) {
-          default:
-            DisplayMsgLn("Error in GetSoilRelPermPress!");
-            DisplayMsgLn("  Nonlinear permeability not available!");
-            abort();
-          case 2:
-            Calc2DElementJacobiMatrix(index,0.0,0.0,invjac,&detjac);
-            MGradOmega2D(grad_omega,0,0); /* Gradientenmatrix */
-            MMultMatVec(grad_omega,2,4,h,4,mult,2);
-            MMultVecMat(mult,2,invjac,2,2,grad_h,2);
-            gh = sqrt(grad_h[0]*grad_h[0]+grad_h[1]*grad_h[1])*permeability_pressure_model_values[0];
-            if(gh<MKleinsteZahl)
-               k_rel = 1.0;
-            else
-               k_rel = max(min(pow(gh,permeability_pressure_model_values[1]-1.0),permeability_pressure_model_values[3]),permeability_pressure_model_values[2]);
-        }
-     case 4:
-#ifdef obsolete //WW. 06.11.2008
-        /* Funktion der effektiven Spannung ueber Kurve */
-        /* Den Druck holen */
-        p = primary_variable[0];
-        /* Mittlere Tiefe */
-        nn = ElNumberOfNodes[ElGetElementType(index) - 1];
-        element_nodes = ElGetElementNodes(index);
-        for (i = 0; i < nn; i++)
-            z[i] = GetNodeZ(element_nodes[i]);
-        /* Spannung = sigma(z0) + d_sigma/d_z*z */
-        sigma = permeability_pressure_model_values[1] + permeability_pressure_model_values[2] * InterpolValueVector(ElGetElementType(index), z, 0., 0., 0.);
-        /* Auf effektive Spannung umrechnen */
-        sigma -= p;
-        k_rel = GetCurveValue((int)permeability_pressure_model_values[0], 0, sigma, &i);
-#endif
-        break;
-    case 5:
-        /* Funktion der effektiven Spannung ueber Kurve CMCD 26.06.2003*/
-        /* Average depth */
-		CalculateSimpleMiddelPointElement(index,coords);
-		x_mid = coords[0];
-		y_mid = coords[1];
-		z_mid = coords[2];
-		p = primary_variable[0];
-        density_solid = permeability_pressure_model_values[2];
-        stress_eff = (fabs(z_mid)*gravity_constant*density_solid) - p;
-        k_rel = GetCurveValue((int) permeability_pressure_model_values[0], 0, stress_eff, &idummy);
-        break;
-	case 6:
-		k_rel = PermeabilityPressureFunctionMethod1(index,primary_variable[0]);
-		break;
-	case 7:
-		k_rel = PermeabilityPressureFunctionMethod2(index,primary_variable[0]);
-		break;
-	case 8:
-		k_rel = PermeabilityPressureFunctionMethod3(index,primary_variable[0]);
-		break;
-	case 9:
-		k_rel = PermeabilityPressureFunctionMethod4(index,primary_variable[0], primary_variable[1]);
-		break;
-	default:					// CMCD Einbau
-		k_rel = 1.0;			// CMCD Einbau
-		break;					// CMCD Einbau
-}
-		return k_rel;
-}
-
-
-/**************************************************************************
-12.(ii)a Subfunction of Permeability_Function_Pressure
-ROCKFLOW - Funktion: MATCalcPressurePermeabilityMethod1
-Application to KTB
- Aufgabe:
-   Calculates relative permeability from
-   the normal stress according to orientation of the fractures in the KTB site system
-   converts the normal stress to effective stress, reads from a curve what the permeability
-   of a fracture under the given effective stress is.
-
- Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E: long index: Elementnummer, double primary_variable pressure
-   R: relative permeability
-
- Ergebnis:
-   rel. Permeabilitaet
-
- Programmaenderungen:
-   09/2004   CMCD Inclusion in GeoSys 4
-**************************************************************************/
-
-double CMediumProperties::PermeabilityPressureFunctionMethod1(long index,double pressure)
-{
-	double R,Pie,p;
-    double znodes[8],ynodes[8],xnodes[8], angle;
-	double x_mid, y_mid, z_mid, coords[3];
-	double zelnodes[8],yelnodes[8],xelnodes[8];
-	double sigma1,sigma2,sigma3;
-	double a1,a2,a3,b1,b2,b3;
-	double normx,normy,normz,normlen;
-	double dircosl, dircosm, dircosn;
-    double tot_norm_stress, eff_norm_stress;
-	int material_group,Type;
-	int phase,nn,i,idummy;
-	long *element_nodes;
-	dircosl = dircosm = dircosn =0.0;
-		Type=ElGetElementType(index);
-		material_group = ElGetElementGroupNumber(index);
-
-		/* special stop CMCD*/
-		if (index == 6590){
-			phase=0;
-			/* Stop here*/
-			}
-
-
-		if (Type == 2||Type == 3||Type == 4)  /*Function defined for square, triangular and cubic elements*/
-		{
-			nn = ElNumberOfNodes[Type - 1];
-			element_nodes = ElGetElementNodes(index);
-
- 			/* Calculate directional cosins, note that this is currently set up*/
-			/* Sigma1 is in the y direction*/
-			/* Sigma2 is in the z direction*/
-			/* Sigma3 is in the x direction*/
-			/* This correspondes approximately to the KTB site conditions*/
-
-			for (i=0;i<nn;i++)
-			{
-				zelnodes[i]=GetNodeZ(element_nodes[i]);
-				yelnodes[i]=GetNodeY(element_nodes[i]);
-				xelnodes[i]=GetNodeX(element_nodes[i]);
-			}
-
-
-			/*Coordinate transformation to match sigma max direction*/
-			/* y direction matches the north direction*/
-
-			Pie=3.141592654;
-			for (i=0;i<nn;i++)
-			{
-				znodes[i]=zelnodes[i];
-				angle=(permeability_pressure_model_values[3]*Pie)/180.;
-				xnodes[i]=xelnodes[i]*cos(angle)-yelnodes[i]*sin(angle);
-				ynodes[i]=xelnodes[i]*sin(angle)+yelnodes[i]*cos(angle);
-
-			}
-
-
-			if (Type == 2) /*Square*/
-			{
-			a1=xnodes[2]-xnodes[0];
-			a2=ynodes[2]-ynodes[0];
-			a3=znodes[2]-znodes[0];
-			b1=xnodes[3]-xnodes[1];
-			b2=ynodes[3]-ynodes[1];
-			b3=znodes[3]-znodes[1];
-			normx=a2*b3-a3*b2;
-			normy=a3*b1-a1*b3;
-			normz=a1*b2-a2*b1;
-			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
-			dircosl= normy/normlen;
-			dircosm= normz/normlen;
-			dircosn= normx/normlen;
-			}
-
-			if (Type == 3) /*Cube*/
-			{
-			a1=xnodes[2]-xnodes[0];
-			a2=ynodes[2]-ynodes[0];
-			a3=znodes[2]-znodes[0];
-			b1=xnodes[3]-xnodes[1];
-			b2=ynodes[3]-ynodes[1];
-			b3=znodes[3]-znodes[1];
-			normx=a2*b3-a3*b2;
-			normy=a3*b1-a1*b3;
-			normz=a1*b2-a2*b1;
-			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
-			dircosl= normy/normlen;
-			dircosm= normz/normlen;
-			dircosn= normx/normlen;
-			}
-
-			if (Type == 4) /*Triangle*/
-			{
-			a1=xnodes[1]-xnodes[0];
-			a2=ynodes[1]-ynodes[0];
-			a3=znodes[1]-znodes[0];
-			b1=xnodes[2]-xnodes[1];
-			b2=ynodes[2]-ynodes[1];
-			b3=znodes[2]-znodes[1];
-			normx=a2*b3-a3*b2;
-			normy=a3*b1-a1*b3;
-			normz=a1*b2-a2*b1;
-			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
-			dircosl= normy/normlen;
-			dircosm= normz/normlen;
-			dircosn= normx/normlen;
-			}
-
-
-		/* Calculation of average location of element*/
-		CalculateSimpleMiddelPointElement(index,coords);
-		x_mid = coords[0];
-		y_mid = coords[1];
-		z_mid = coords[2];
-
-		/*Calculate fluid pressure in element*/
-		p = pressure;
-		/*Calcualtion of stress according to Ito & Zoback 2000 for KTB hole*/
-
-		sigma1=z_mid*0.045*-1e6;
-		sigma2=z_mid*0.028*-1e6;
-		sigma3=z_mid*0.02*-1e6;
-
-		/*Calculate total normal stress on element
-		Note in this case sigma2 corresponds to the vertical stress*/
-		tot_norm_stress=sigma1*dircosl*dircosl+sigma2*dircosm*dircosm+sigma3*dircosn*dircosn;
-
-		/*Calculate normal effective stress*/
-		eff_norm_stress=tot_norm_stress-p;
-
-		/*Take value of storage from a curve*/
-		R=GetCurveValue((int) permeability_pressure_model_values[0], 0, eff_norm_stress, &idummy);
-
-		return R;
-
-		}
-		/* default value if element type is not included in the method for calculating the normal */
-		else R=permeability_pressure_model_values[2];
-
-		return R;
-
-
-
-}
-
-/**************************************************************************
- 12.(ii)b Subfunction of Permeability_Function_Pressure
- Function: MATCalcPressurePermeabilityMethod2
- Application to KTB
- Aufgabe:
-   Calculates relative permeability from
-   the normal stress according to orientation of the fractures in the KTB site system
-   converts the normal stress to effective stress, reads from a curve what the permeability
-   of a fracture under the given effective stress is. Permeability is then related to
-   the distance from the borehole.
-
- Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E: long index: Elementnummer, double primary_variable pressure
-   R: relative permeability
-
- Ergebnis:
-   rel. Permeabilitaet
-
- Programmaenderungen:
-   09/2004   CMCD Inclusion in GeoSys 4
-**************************************************************************/
-
-double CMediumProperties::PermeabilityPressureFunctionMethod2(long index,double pressure)
-{
-	double R,Pie,p;
-    double znodes[8],ynodes[8],xnodes[8], angle;
-	double x_mid, y_mid, z_mid, coords[3];
-	double zelnodes[8],yelnodes[8],xelnodes[8];
-	double sigma1,sigma2,sigma3;
-	double a1,a2,a3,b1,b2,b3;
-	double normx,normy,normz,normlen;
-	double dircosl, dircosm, dircosn;
-    double tot_norm_stress, eff_norm_stress;
-	int material_group,Type;
-	double x_bore, y_bore, z_bore, distance;
-	int nn,i,idummy;
-	long *element_nodes;
-	dircosl = dircosm = dircosn =0.0;
-		Type=ElGetElementType(index);
-		material_group = ElGetElementGroupNumber(index);
-
-		/* special stop CMCD*/
-		if (index == 4516){
-			/* Stop here */
-		}
-
-		if (Type == 2||Type == 3||Type == 4)  /*Function defined for square, triangular and cubic elements*/
-		{
-			nn = ElNumberOfNodes[Type - 1];
-			element_nodes = ElGetElementNodes(index);
-
-
-			/* Calculate directional cosins, note that this is currently set up*/
-			/* Sigma1 is in the y direction*/
-			/* Sigma2 is in the z direction*/
-			/* Sigma3 is in the x direction*/
-			/* This correspondes approximately to the KTB site conditions*/
-
-			for (i=0;i<nn;i++)
-			{
-				zelnodes[i]=GetNodeZ(element_nodes[i]);
-				yelnodes[i]=GetNodeY(element_nodes[i]);
-				xelnodes[i]=GetNodeX(element_nodes[i]);
-			}
-
-
-			Pie=3.141592654;
-			angle=(permeability_pressure_model_values[3]*Pie)/180.;
-			for (i=0;i<nn;i++)
-			{
-				znodes[i]=zelnodes[i];
-				xnodes[i]=xelnodes[i]*cos(angle)-yelnodes[i]*sin(angle);
-				ynodes[i]=xelnodes[i]*sin(angle)+yelnodes[i]*cos(angle);
-
-			}
-
-			if (Type == 2) /*Square*/
-			{
-			a1=xnodes[2]-xnodes[0];
-			a2=ynodes[2]-ynodes[0];
-			a3=znodes[2]-znodes[0];
-			b1=xnodes[3]-xnodes[1];
-			b2=ynodes[3]-ynodes[1];
-			b3=znodes[3]-znodes[1];
-			normx=a2*b3-a3*b2;
-			normy=a3*b1-a1*b3;
-			normz=a1*b2-a2*b1;
-			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
-			dircosl= normy/normlen;
-			dircosm= normz/normlen;
-			dircosn= normx/normlen;
-			}
-
-			if (Type == 3) /*Cube*/
-			{
-			a1=xnodes[2]-xnodes[0];
-			a2=ynodes[2]-ynodes[0];
-			a3=znodes[2]-znodes[0];
-			b1=xnodes[3]-xnodes[1];
-			b2=ynodes[3]-ynodes[1];
-			b3=znodes[3]-znodes[1];
-			normx=a2*b3-a3*b2;
-			normy=a3*b1-a1*b3;
-			normz=a1*b2-a2*b1;
-			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
-			dircosl= normy/normlen;
-			dircosm= normz/normlen;
-			dircosn= normx/normlen;
-			}
-
-			if (Type == 4) /*Triangle*/
-			{
-			a1=xnodes[1]-xnodes[0];
-			a2=ynodes[1]-ynodes[0];
-			a3=znodes[1]-znodes[0];
-			b1=xnodes[2]-xnodes[1];
-			b2=ynodes[2]-ynodes[1];
-			b3=znodes[2]-znodes[1];
-			normx=a2*b3-a3*b2;
-			normy=a3*b1-a1*b3;
-			normz=a1*b2-a2*b1;
-			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
-			dircosl= normy/normlen;
-			dircosm= normz/normlen;
-			dircosn= normx/normlen;
-			}
-
-		CalculateSimpleMiddelPointElement(index,coords);
-		x_mid = coords[0];
-		y_mid = coords[1];
-		z_mid = coords[2];
-
-		/*Calculate fluid pressure in element*/
-		p = pressure;
-
-		/*Calculate distance from borehole*/
-		x_bore = permeability_pressure_model_values[4];
-		y_bore = permeability_pressure_model_values[5];
-		z_bore = permeability_pressure_model_values[6];
-
-		distance = pow(pow((x_mid-x_bore),2.0) + pow((y_mid-y_bore),2.0) + pow((z_mid-z_bore),2.0),0.5);
-
-		/*Calcualtion of stress according to Ito & Zoback 2000 for KTB hole*/
-
-		sigma1=z_mid*0.045*-1e6;
-		sigma2=z_mid*0.028*-1e6;
-		sigma3=z_mid*0.02*-1e6;
-
-		///Calculate total normal stress on element
-		/*Note in this case sigma2 corresponds to the vertical stress*/
-		tot_norm_stress=sigma1*dircosl*dircosl+sigma2*dircosm*dircosm+sigma3*dircosn*dircosn;
-
-		/*Calculate normal effective stress*/
-		eff_norm_stress=tot_norm_stress-p;
-
-		/*Take value of storage from a curve*/
-		R=GetCurveValue((int) permeability_pressure_model_values[0], 0, eff_norm_stress, &idummy);
-		if (distance > permeability_pressure_model_values[7]){
-			distance = permeability_pressure_model_values[7];
-
-		}
-			if (distance > 2) R = R + (R * (distance-2) * permeability_pressure_model_values[8]);
-
-			return R;
-		}
-		/* default value if element type is not included in the method for calculating the normal */
-		else R=permeability_pressure_model_values[2];
-
-		return R;
-
-
-}
-
-
-/**************************************************************************
- 12.(ii)c Subfunction of Permeability_Function_Pressure
- Function: MATCalcPressurePermeabilityMethod3
- Application to Urach
-
- Aufgabe:
-   The normal stress across the fractures is calculated according to an approximate formulation
-   from the relationship of stress with depth. This normal stress is then converted into a permeabilty
-   by reference to effective stress and a curve.
-
- Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E: long index: Elementnummer, double primary_variable pressure
-   R: relative permeability
-
- Ergebnis:
-   rel. Permeabilitaet
-
- Programmaenderungen:
-   09/2004   CMCD Inclusion in GeoSys 4
-**************************************************************************/
-
-double CMediumProperties::PermeabilityPressureFunctionMethod3(long index,double pressure)
-{
-
-      /* Funktion der effektiven Spannung ueber Kurve CMCD 26.06.2003*/
-		double x_mid, y_mid, z_mid, coords[3];
-		double stress_eff,p,perm;
-		int idummy;
-        /* Average depth */
-		CalculateSimpleMiddelPointElement(index,coords);
-		x_mid = coords[0];
-		y_mid = coords[1];
-		z_mid = coords[2];
-
-		/*Calculate fluid pressure in element*/
-		p = pressure;
-	    stress_eff = (fabs(z_mid)*permeability_pressure_model_values[1]*1e6)-p;
-		perm = GetCurveValue((int) permeability_pressure_model_values[0], 0, stress_eff, &idummy);
-
-		return perm;
-
-}
-
-/**************************************************************************
-12.(ii)d Subfunction of Permeability_Function_Pressure
- Function: MATCalcPressurePermeabilityMethod4
- Application to Urach
-
- Aufgabe:
-   The normal stress across the fractures is calculated according to an approximate formulation
-   from the relationship of stress with depth. This normal stress is then adjusted to take account of
-   thermal cooling, and the resulting effective stress across the fracture isconverted into a permeabilty.
-   by reference to a curve.
-
- Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E: long index: Elementnummer, double primary_variable pressure
-   R: relative permeability
-
- Ergebnis:
-   rel. Permeabilitaet
-
- Programmaenderungen:
-   09/2004   CMCD Inclusion in GeoSys 4
-**************************************************************************/
-
-double CMediumProperties::PermeabilityPressureFunctionMethod4(long index,double pressure, double temperature)
-{
-
-      /* Funktion der effektiven Spannung ueber Kurve CMCD 26.06.2003*/
-		double x_mid, y_mid, z_mid, coords[3];
-		double stress_eff,p,perm, thermal_stress;
-		int idummy;
-        /* Average depth */
-		CalculateSimpleMiddelPointElement(index,coords);
-		x_mid = coords[0];
-		y_mid = coords[1];
-		z_mid = coords[2];
-
-		/*Calculate effective stress in the element*/
-		p = pressure;
-	    stress_eff = (fabs(z_mid)*permeability_pressure_model_values[1]*1e6)-p;
-
-		/*Impact of thermal stress*/
-		thermal_stress = (permeability_pressure_model_values[2]-temperature)*permeability_pressure_model_values[3]*permeability_pressure_model_values[4];
-
-		stress_eff = stress_eff - thermal_stress;
-		if (stress_eff < 0.0){
-			stress_eff = 0.0;
-		}
-		/*Read value effective stress against curve*/
-		perm = GetCurveValue((int) permeability_pressure_model_values[0], 0, stress_eff, &idummy);
-		return perm;
-
-}
 
 //------------------------------------------------------------------------
 //12.(i) PERMEABILITY_FUNCTION_SATURATION
@@ -5745,59 +3756,6 @@ double CMediumProperties::PermeabilityPressureFunctionMethod4(long index,double 
 //------------------------------------------------------------------------
 //12.(vi) PERMEABILITY_FUNCTION_POROSITY
 //------------------------------------------------------------------------
-double CMediumProperties::PermeabilityPorosityFunction(long number,double *gp,double theta)
-{
-    int i;
-    long *element_nodes;
-	double factora, factorb,valuelogk;
-	double k_rel=0.0;
-
-	//Collect primary variables
-	static int nidx0,nidx1;
-	double primary_variable[10];		//OK To Do
-	int count_nodes;
-	int no_pcs_names =(int)pcs_name_vector.size();
-	for(i=0;i<no_pcs_names;i++){
-		nidx0 = PCSGetNODValueIndex(pcs_name_vector[i],0);
-		nidx1 = PCSGetNODValueIndex(pcs_name_vector[i],1);
-		if(mode==0){ // Gauss point values
-		primary_variable[i] = (1.-theta)*InterpolValue(number,nidx0,gp[0],gp[1],gp[2]) \
-							+ theta*InterpolValue(number,nidx1,gp[0],gp[1],gp[2]);
-		}
-		else if(mode==1){ // Node values
-		primary_variable[i] = (1.-theta)*GetNodeVal(number,nidx0) \
-							+ theta*GetNodeVal(number,nidx1);
-		}
-		else if(mode==2){ // Element average value
-		count_nodes = ElNumberOfNodes[ElGetElementType(number) - 1];
-		element_nodes = ElGetElementNodes(number);
-		for (i = 0; i < count_nodes; i++)
-			primary_variable[i] += GetNodeVal(element_nodes[i],nidx1);
-		primary_variable[i]/= count_nodes;
-		}
-	}
-    switch (permeability_porosity_model) {
-		case 0://Reserved for a curve function
-			k_rel=1.0;
-			break;
-		case 1://Constant value function
-			k_rel=1.0;
-			break;
-		case 2://Ming Lian function
-			factora=permeability_porosity_model_values[0];
-			factorb=permeability_porosity_model_values[1];
-			valuelogk=factora+(factorb*porosity);
-			k_rel=0.987e-12*pow(10.,valuelogk);
-            CMediumProperties *m_mmp = NULL;
-            long group = ElGetElementGroupNumber(number);
-			m_mmp = mmp_vector[group];
-			double* k_ij;
-			k_ij = m_mmp->PermeabilityTensor(number); //permeability;
-			k_rel /= k_ij[0];
-			break;
-	}
-	return k_rel;
-}
 
 //---------------------------------------------------------------------------------
 //12.(vii) PERMEABILITY_FUNCTION_FRAC_APERTURE
@@ -6279,6 +4237,11 @@ ToDo: GetSoilRelPermSatu
 double CMediumProperties::CapillaryPressureFunction(long number,double*gp,double theta,\
                                             int phase,double saturation)
 {
+//OK411
+  theta = theta;
+  gp = gp;
+  number = number;
+
   double density_fluid = 0.;
   double van_saturation,van_beta;
   CFluidProperties *m_mfp = NULL;
@@ -6489,6 +4452,11 @@ Last modified:
 **************************************************************************/
 double CMediumProperties::SaturationCapillaryPressureFunction(long number,double*gp,double theta,int phase)
 {
+//OK411
+  theta = theta;
+  gp = gp;
+  number = number;
+
   static int nidx0,nidx1;
   static double saturation;
   int gueltig;
@@ -6497,35 +4465,24 @@ double CMediumProperties::SaturationCapillaryPressureFunction(long number,double
   double density_fluid = 0.;
   CFluidProperties *m_mfp = NULL;
   //---------------------------------------------------------------------
-if(mode==2){
+  if(mode==2){
     capillary_pressure = argument;
-}
-else{
-/* WW delete these
-  if(m_pcs->m_msh){
-    if(gp==NULL){ // NOD value
-      nidx0 = GetNodeValueIndex("PRESSURE_CAP");
-      nidx1 = GetNodeValueIndex("PRESSURE_CAP")+1;
-      capillary_pressure = (1.-theta)*GetNodeValue(number,nidx0) \
-                         + theta*GetNodeValue(number,nidx1);
+  }
+  else
+  {
+/*OK411
+    nidx0 = PCSGetNODValueIndex("PRESSURE_CAP",0);
+    nidx1 = PCSGetNODValueIndex("PRESSURE_CAP",1);
+    if(mode==0){ // Gauss point values
+      capillary_pressure = (1.-theta)*InterpolValue(number,nidx0,gp[0],gp[1],gp[2]) \
+                         + theta*InterpolValue(number,nidx1,gp[0],gp[1],gp[2]);
     }
-    else // ELE mean value
-      capillary_pressure = m_pcs->GetELEValue(number,gp,theta,"PRESSURE_CAP");
-  }
-  else{
+    else{ // Node values
+      capillary_pressure = (1.-theta)*GetNodeVal(number,nidx0) \
+                         + theta*GetNodeVal(number,nidx1);
+    }
 */
-  nidx0 = PCSGetNODValueIndex("PRESSURE_CAP",0);
-  nidx1 = PCSGetNODValueIndex("PRESSURE_CAP",1);
-  if(mode==0){ // Gauss point values
-    capillary_pressure = (1.-theta)*InterpolValue(number,nidx0,gp[0],gp[1],gp[2]) \
-                       + theta*InterpolValue(number,nidx1,gp[0],gp[1],gp[2]);
   }
-  else{ // Node values
-    capillary_pressure = (1.-theta)*GetNodeVal(number,nidx0) \
-                       + theta*GetNodeVal(number,nidx1);
-  }
- // }
-}
   //----------------------------------------------------------------------
   switch(capillary_pressure_model){
     case 0:  // k = f(x) user-defined function
@@ -6627,8 +4584,7 @@ double CMediumProperties::SaturationPressureDependency
  static double capillary_pressure,capillary_pressure1,capillary_pressure2;
   static double saturation1,saturation2;
   static double dS,dS_dp,dpc;
- // 01.3.2007 WW
-  double S_e, m, n, alpha, dPcdSe;
+  double S_e, m, n, alpha;
   int phase = 0;
   S_e=m=n=alpha=0.0;
   //----------------------------------------------------------------------
@@ -6688,6 +4644,8 @@ Last modified:
 double CMediumProperties::PressureSaturationDependency
 (double saturation, double density_fluid, double theta)
 {
+
+  density_fluid = density_fluid; //OK411
 
 	static double capillary_pressure,capillary_pressure1,capillary_pressure2;
 	static double saturation1,saturation2;
@@ -6766,47 +4724,35 @@ Last modified:
 double CMediumProperties::SaturationPressureDependency(long number,double*gp,double theta)
 //(int phase, long index, double r, double s, double t, double theta)
 {
+//OK411
+  gp = gp;
+
   static double capillary_pressure,capillary_pressure1,capillary_pressure2;
   static double saturation,saturation1,saturation2;
   static double dS,dS_dp,dpc;
-  int nidx0,nidx1;
+  //int nidx0,nidx1;
   int phase = (int)mfp_vector.size()-1;
   //----------------------------------------------------------------------
-if(mode==2){
+  if(mode==2){
     saturation = argument;
-}
-else{
-  /* //WW Delete these
-  if(m_pcs->m_msh){
-    nidx0 = GetNodeValueIndex("SATURATION1");
-    nidx1 = GetNodeValueIndex("SATURATION1") + 1;
-    if(mode==0){ // Gauss point values
-      saturation = (1.-theta)*m_pcs->InterpolateNODValue(number,nidx0,gp) \
-                 + theta*m_pcs->InterpolateNODValue(number,nidx1,gp);
-
-    }
-    else{ // Node values
-      //saturation = SaturationCapillaryPressureFunction(number,NULL,theta);
-      saturation = (1.-theta)*GetNodeValue(number,nidx0) \
-                 + theta*GetNodeValue(number,nidx1);
-    }
-    saturation = m_pcs->GetELEValue(number,gp,theta,"SATURATION1");
   }
-  */
- // else{
+  else
+  {
+/*OK411
     nidx0 = PCSGetNODValueIndex("SATURATION1",0);
     nidx1 = PCSGetNODValueIndex("SATURATION1",1);
     if(mode==0){ // Gauss point values
       saturation = (1.-theta)*InterpolValue(number,nidx0,gp[0],gp[1],gp[2]) \
                + theta*InterpolValue(number,nidx1,gp[0],gp[1],gp[2]);
     }
-    else{ // Node values
-    saturation = SaturationCapillaryPressureFunction(number,NULL,theta,phase);
-    saturation = (1.-theta)*GetNodeVal(number,nidx0) \
-               + theta*GetNodeVal(number,nidx1);
+    else // Node values
+    { 
+      saturation = SaturationCapillaryPressureFunction(number,NULL,theta,phase);
+      saturation = (1.-theta)*GetNodeVal(number,nidx0) \
+                 + theta*GetNodeVal(number,nidx1);
     }
- // }
-}
+*/
+  }
   //----------------------------------------------------------------------
   // Vollsaettigung?
   mode = 2;
@@ -6852,11 +4798,14 @@ Programing:
 **************************************************************************/
 double CMediumProperties::Density(long element,double*gp,double theta)
 {
+//OK411
+  gp = gp;
+
   int no_phases = (int)mfp_vector.size();
   double density = 0.0;
   int i;
   CFluidProperties* m_mfp = NULL;
-  CSolidProperties* m_msp = NULL;
+  //OK411 CSolidProperties* m_msp = NULL;
   char saturation_name[15];
   if(no_phases==1){
     m_mfp = mfp_vector[0];
@@ -6866,12 +4815,14 @@ double CMediumProperties::Density(long element,double*gp,double theta)
     for(i=0;i<no_phases;i++){
       m_mfp = mfp_vector[i];
       sprintf(saturation_name,"SATURATION%i",i+1);
-      density += Porosity(element,theta) * m_mfp->Density() * PCSGetELEValue(element,gp,theta,saturation_name);
+      //OK411 density += Porosity(element,theta) * m_mfp->Density() * PCSGetELEValue(element,gp,theta,saturation_name);
     }
   }
+/*OK411
   long group = ElGetElementGroupNumber(element);
   m_msp = msp_vector[group];
   density += (1.-Porosity(element,theta))*fabs(m_msp->Density());
+*/
   return density;
 }
 
@@ -6937,8 +4888,8 @@ Programing:
 //MMPGetHeterogeneousFields
 void GetHeterogeneousFields()
 {
-  int ok=0;
-  char* name_file=NULL;
+  //OK411 int ok=0;
+  //OK411 char* name_file=NULL;
   CMediumProperties *m_mmp = NULL;
   //----------------------------------------------------------------------
   // File handling
@@ -7839,4 +5790,1866 @@ double CMediumProperties::KozenyCarman_normalized(double k0, double n0, double n
 	}
 
 return rt;
+}
+
+///////////////////////////////////////////////////////////////////////////
+// old data structure functions //OK411
+
+/**************************************************************************
+//3.1 Subfunction of Porosity
+ ROCKFLOW - Funktion: MATCalcSoilPorosityMethod1
+
+ Aufgabe:
+   Takes the porosity from a Geomechanical model, calulcates the effective stress
+   and then takes the value of porosity from a curve.
+
+ Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+   E SOIL_PROPERTIES *sp: Zeiger auf eine Instanz vom Typ SOIL_PROPERTIES.
+
+ Ergebnis:
+   - s.o. -
+Programming Example
+Programmaenderungen:
+   03/2004  CMCD First version
+
+**************************************************************************/
+double CMediumProperties::PorosityEffectiveStress(long index, double element_pressure)
+{
+//OK411
+  element_pressure = element_pressure; 
+  index = index;
+
+/*OK411
+    int  nn, i, idummy, Type;
+    long *element_nodes;
+    double p;
+	double znodes[8],ynodes[8],xnodes[8];
+    double zelnodes[8],yelnodes[8],xelnodes[8];
+	double coords[3];
+	double Pie,angle;
+	double sigma1,sigma2,sigma3;
+	double a1,a2,a3,b1,b2,b3;
+	double normx,normy,normz,normlen;
+	double dircosl, dircosm, dircosn;
+    double tot_norm_stress, eff_norm_stress;
+	int material_group;
+	double x_mid, y_mid, z_mid;
+
+// Normal stress calculated according to the orientation of the fracture element
+
+		Type=ElGetElementType(index);
+		material_group = ElGetElementGroupNumber(index);
+
+		dircosl = dircosm = dircosn = 0.0;//Initialise variable
+
+
+		if (Type == 2||Type == 3||Type == 4)  //Function defined for square, triangular and cubic elements
+		{
+			nn = ElNumberOfNodes[Type - 1];
+			element_nodes = ElGetElementNodes(index);
+
+ 			// Calculate directional cosins, note that this is currently set up
+			// Sigma1 is in the y direction
+			// Sigma2 is in the z direction
+			// Sigma3 is in the x direction
+			// This correspondes approximately to the KTB site conditions
+
+			for (i=0;i<nn;i++)
+			{
+				zelnodes[i]=GetNodeZ(element_nodes[i]);
+				yelnodes[i]=GetNodeY(element_nodes[i]);
+				xelnodes[i]=GetNodeX(element_nodes[i]);
+			}
+
+
+			// Coordinate transformation to match sigma max direction
+			// y direction matches the north direction
+			Pie=3.141592654;
+			angle=(porosity_model_values[3]*Pie)/180.;
+			for (i=0;i<nn;i++)
+			{
+				znodes[i]=zelnodes[i];
+				xnodes[i]=xelnodes[i]*cos(angle)-yelnodes[i]*sin(angle);
+				ynodes[i]=xelnodes[i]*sin(angle)+yelnodes[i]*cos(angle);
+
+			}
+
+			if (Type == 2) //Square
+			{
+			a1=xnodes[2]-xnodes[0];
+			a2=ynodes[2]-ynodes[0];
+			a3=znodes[2]-znodes[0];
+			b1=xnodes[3]-xnodes[1];
+			b2=ynodes[3]-ynodes[1];
+			b3=znodes[3]-znodes[1];
+			normx=a2*b3-a3*b2;
+			normy=a3*b1-a1*b3;
+			normz=a1*b2-a2*b1;
+			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
+			dircosl= normy/normlen;
+			dircosm= normz/normlen;
+			dircosn= normx/normlen;
+			}
+
+			if (Type == 3) //Cube
+			{
+			a1=xnodes[2]-xnodes[0];
+			a2=ynodes[2]-ynodes[0];
+			a3=znodes[2]-znodes[0];
+			b1=xnodes[3]-xnodes[1];
+			b2=ynodes[3]-ynodes[1];
+			b3=znodes[3]-znodes[1];
+			normx=a2*b3-a3*b2;
+			normy=a3*b1-a1*b3;
+			normz=a1*b2-a2*b1;
+			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
+			dircosl= normy/normlen;
+			dircosm= normz/normlen;
+			dircosn= normx/normlen;
+			}
+
+			if (Type == 4) //Triangle
+			{
+			a1=xnodes[1]-xnodes[0];
+			a2=ynodes[1]-ynodes[0];
+			a3=znodes[1]-znodes[0];
+			b1=xnodes[2]-xnodes[1];
+			b2=ynodes[2]-ynodes[1];
+			b3=znodes[2]-znodes[1];
+			normx=a2*b3-a3*b2;
+			normy=a3*b1-a1*b3;
+			normz=a1*b2-a2*b1;
+			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
+			dircosl= normy/normlen;
+			dircosm= normz/normlen;
+			dircosn= normx/normlen;
+			}
+
+
+		// Calculation of average location of element
+			CalculateSimpleMiddelPointElement(index,coords);
+			x_mid = coords[0];
+			y_mid = coords[1];
+			z_mid = coords[2];
+
+			//Calculate fluid pressure in element
+			p = element_pressure;
+
+			//Calcualtion of stress according to Ito & Zoback 2000 for KTB hole
+
+			sigma1=z_mid*0.045*-1e6;
+			sigma2=z_mid*0.028*-1e6;
+			sigma3=z_mid*0.02*-1e6;
+
+			//Calculate total normal stress on element
+			//Note in this case sigma2 corresponds to the vertical stress
+			tot_norm_stress=sigma1*dircosl*dircosl+sigma2*dircosm*dircosm+sigma3*dircosn*dircosn;
+
+			//Calculate normal effective stress
+			eff_norm_stress=tot_norm_stress-p;
+
+			//Take value of storage from a curve
+			porosity=GetCurveValue((int) porosity_model_values[0], 0, eff_norm_stress, &idummy);
+
+		}
+		// default value if element type is not included in the method for calculating the normal
+		else porosity=porosity_model_values[0];
+*/
+  return porosity;
+}
+
+/**************************************************************************
+FEMLib-Method:
+Task:
+Programing:
+05/2005 MX Implementation
+last modification:
+**************************************************************************/
+double CMediumProperties::PorosityVolumetricFreeSwellingConstantIonicstrength(long index,double saturation,double temperature)
+{
+//OK411
+  index = index;
+  saturation = saturation;
+  temperature = temperature;
+
+/*OK411
+  double mat_mp_m, beta;
+  double porosity = 0.0;
+  static double theta;
+  static double porosity_n, porosity_IL, d_porosity, \
+                density_rock, fmon;
+  static double S_0;
+  static double epsilon;
+  static double satu_0=0.20;
+  //  static double porosity_min=0.05;
+  static double ion_strength;
+  static double F_const=96484.6, epsilon_0=8.854e-12;
+  static double R=8.314510, psi=1.0;
+  theta = 1.0;
+  //--------------------------------------------------------------------
+  // MMP medium properties
+  S_0 =      porosity_model_values[1];      // Specific surface area [m^2/g]
+  fmon =     porosity_model_values[2];     // Anteil quelfaehige mineral [-]
+  mat_mp_m = porosity_model_values[3]; // Schichtenanzahl eines quellfähigen Partikels [-]
+  beta =     porosity_model_values[6];     // modifications coefficient (z.B. free swelling Weimar beta=3.0)
+  //--------------------------------------------------------------------
+  // MSP solid properties
+  CSolidProperties *m_msp = NULL;
+  long group = ElGetElementGroupNumber(index);
+  m_msp = msp_vector[group];
+  density_rock  = m_msp->Density(1);
+  //--------------------------------------------------------------------
+  // State properties
+  ion_strength = porosity_model_values[4]; // Ionic strength [M]
+  satu_0 =       porosity_model_values[5];       // Initial saturation, if the sample is homogenous [-]
+  //--------------------------------------------------------------------
+  // Interlayer porosity calculation
+  if (abs(temperature)>1.0e10) temperature=298.0;  //TODO MX
+  epsilon = 87.0 + exp(-0.00456*(temperature-273.0));
+  porosity_n = porosity_model_values[0];
+  // Maximal inter layer porosity
+  porosity_IL = fmon * psi * mat_mp_m * S_0 * (density_rock * 1.0e3) \
+              * sqrt(epsilon * epsilon_0 * R * temperature / (2000.0 * F_const * F_const * ion_strength ));
+  d_porosity=porosity_IL*(pow(saturation,beta)-pow(satu_0,beta));
+  porosity_IL *=pow(saturation,beta);
+  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY_IL"),porosity_IL);
+  // Total porosity calculation
+  porosity = porosity_n+d_porosity;
+  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY"),porosity);
+*/
+  return porosity;
+}
+
+/**************************************************************************
+FEMLib-Method:
+Task:
+Programing:
+05/2005 MX Implementation
+last modification:
+**************************************************************************/
+double CMediumProperties::PorosityEffectiveConstrainedSwelling(long index,double saturation,double temperature, double *porosity_sw)
+{
+//OK411
+  index = index;
+  saturation = saturation;
+  temperature = temperature;
+  porosity_sw = porosity_sw;
+
+/*OK411
+ // Soil Properties
+
+  double mat_mp_m, beta;
+  double porosity = 0.0;
+  static double theta;
+  double porosity_n, porosity_IL, d_porosity, \
+                n_total, density_rock, fmon;
+//  double n_max, n_min;
+  static double S_0;
+  // Component Properties
+  static double  satu, epsilon;
+  static double satu_0=0.20;
+  static double porosity_min=0.05;
+  static double ion_strength;
+  static double F_const=96484.6, epsilon_0=8.854e-12;
+  static double R=8.314510, psi=1.0;
+  // Fluid properies
+  int phase=1;
+
+  //--------------------------------------------------------------------
+  // MMP medium properties
+  S_0 =      porosity_model_values[1];      // Specific surface area [m^2/g]
+  fmon =     porosity_model_values[2];     // Anteil quelfaehige mineral [-]
+  mat_mp_m = porosity_model_values[3]; // Schichtenanzahl eines quellfähigen Partikels [-]
+  beta =     porosity_model_values[6];     // modifications coefficient (z.B. free swelling Weimar beta=3.0)
+  //--------------------------------------------------------------------
+  // MSP solid properties
+  CSolidProperties *m_msp = NULL;
+  //long group = ElGetElementGroupNumber(index);
+
+  long group = m_pcs->m_msh->ele_vector[index]->GetPatchIndex();
+  m_msp = msp_vector[group];
+  density_rock  = m_msp->Density(1);
+  //--------------------------------------------------------------------
+
+  // Component Properties
+   ion_strength = MATCalcIonicStrengthNew(index);
+   if (ion_strength == 0.0){
+	  ion_strength = porosity_model_values[4]; //Ionic strength [M]
+   }
+  satu_0 = porosity_model_values[5];       //Initial saturation, if the sample is homogenous [-]
+  porosity_min = porosity_model_values[7]; //minimal porosity after swelling compaction
+
+ //  ion_strength = MATGetSoilIonicStrength(index);
+
+  // Field variables
+  //theta = GetNumericalTimeCollocation("TRANSPORT");
+   theta = 1.0;
+  // T = MATGetTemperatureGP (index,0.0,0.0,0.0,theta);
+//  T=298.0;
+  phase=1;
+  satu = saturation; //MATGetSaturationGP(phase, index, 0.0, 0.0, 0.0, theta); //only for fluid, phase=1
+
+  //-----------------------------------------------------------------------
+  // Interlayer Porositaet berechnen
+  if (abs(temperature)>1.0e10) temperature=298.0;  //TODO MX
+  epsilon =87.0+exp(-0.00456*(temperature-273.0));
+  porosity_n = porosity_model_values[0];
+
+    // Maximal inter layer porosity 
+  porosity_IL=fmon * psi * mat_mp_m * S_0 * (density_rock * 1.0e3) \
+           * sqrt(epsilon * epsilon_0 * R * temperature / (2000.0 * F_const * F_const * ion_strength ));
+  d_porosity=porosity_IL*(pow(satu, beta)-pow(satu_0, beta));
+
+//-----------Interlayer porosity calculation------------------
+
+//  porosity_IL = porosity_IL*satu; 
+  porosity_IL  *=pow(satu,beta);
+  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY_IL"),porosity_IL);
+    // constrained swelling
+
+//-----------Effective porosity calculation------------------
+  porosity = porosity_n-d_porosity;
+
+  if (porosity<porosity_min)
+	  porosity =porosity_min;
+
+  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY"),porosity);
+//-----------Void ratio for swelling pressure calculation------------------
+//  e = porosity/(1.-porosity);
+//  ElSetElementVal(index,PCSGetELEValueIndex("VoidRatio"),e);
+//-----------Swelling potential calculation------------------
+// constrained swelling 
+//  n_total=porosity_n - d_porosity;
+  n_total=porosity_n + d_porosity-porosity_min;
+
+//  if(n_total>porosity_min)
+  if(n_total>=0)
+  {
+    *porosity_sw = n_total;
+  }
+  else
+//    *porosity_sw=-porosity_IL*(satu-satu_0)+(porosity_n-porosity_min);
+    *porosity_sw=d_porosity+(porosity_n-porosity_min);
+  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY_SW"),*porosity_sw);
+
+
+//-----------Swelling pressure calculation------------------
+ // MATCalSoilSwellPressMethod0(index);
+*/
+  return porosity;
+}
+
+/**************************************************************************/
+/* ROCKFLOW - Funktion: CalculateSoilPorosityMethod1
+ */
+/* Aufgabe:
+   Berechnet die Porositaet in Abhaengigkeit von der Konzentration
+   (Salzloesungsmodell)
+ */
+/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+   E SOIL_PROPERTIES *sp: Zeiger auf eine Instanz vom Typ SOIL_PROPERTIES.
+ */
+/* Ergebnis:
+   - s.o. -
+ */
+/* Programmaenderungen:
+   02/2000     RK     Erste Version
+   11/2001     AH     Warnung entfernt
+
+
+ */
+/**************************************************************************/
+/*
+double CalculateSoilPorosityMethod1(SOIL_PROPERTIES * sp, long index)
+{
+    // double grainbound_limit = 1.73e-8;
+    double porosity_limit = 0.01;
+    int porosity_dependence_model;
+    double val0, val1;
+    static double porosity = 0.0;
+    static double rho;
+    static double theta;
+    static double porosity_n, density_rock;
+    static double dissolution_rate, solubility_coefficient;
+    int timelevel = 1;
+
+    porosity_dependence_model = get_sp_porosity_dependence_model(sp);
+    switch (porosity_dependence_model) {
+    case 1: //Salzloesungsmodell
+        val0 = get_sp_porosity_model_field_value(sp, 0);
+        val1 = get_sp_porosity_model_field_value(sp, 1);
+
+        theta = GetNumericalTimeCollocation("TRANSPORT");
+        density_rock = GetSolidDensity(index);
+        dissolution_rate = GetTracerDissolutionRate(index, 0, 0);
+        porosity_n = GetElementSoilPorosity(index);
+        rho = GetFluidDensity(0, index, 0., 0., 0., theta);
+        if (GetTracerSolubilityModel(index, 0, 0) == 1) {
+          //if (GetRFProcessHeatReactModel())
+                solubility_coefficient = CalcTracerSolubilityCoefficient(index,0,0,1,PCSGetNODValueIndex("CONCENTRATION1",timelevel),1,PCSGetNODValueIndex("CONCENTRATION1",timelevel));
+                //else solubility_coefficient = CalcTracerSolubilityCoefficient(index,0,0,1,PCSGetNODValueIndex("CONCENTRATION1",timelevel),0,PCSGetNODValueIndex("CONCENTRATION1",timelevel));
+        } else {
+            solubility_coefficient = GetTracerSolubilityCoefficient(index, 0, 0);
+        }
+
+        porosity = porosity_n + 2 * porosity_n * dissolution_rate * val1 * rho
+            * (solubility_coefficient - val0) * dt / density_rock;
+
+        if (porosity > porosity_limit)
+            porosity = porosity_limit;
+
+
+        break;
+
+    default:
+        DisplayMsgLn("Unknown porosity dependence model!");
+        break;
+
+    }
+
+    return porosity;
+}
+*/
+
+/**************************************************************************
+FEMLib-Method:
+Task:
+Programing:
+05/2005 MX Implementation
+last modification:
+**************************************************************************/
+double CMediumProperties::PorosityVolumetricFreeSwelling(long index,double saturation,double temperature)
+{
+//OK411
+  index = index;
+  saturation = saturation;
+  temperature = temperature;
+
+/*OK411
+  double mat_mp_m, beta;
+  double porosity = 0.0;
+  static double theta;
+  static double porosity_n, porosity_IL, d_porosity, \
+                density_rock, fmon;
+  static double S_0;
+  static double epsilon;
+  static double satu_0=0.20;
+  //  static double porosity_min=0.05;
+  static double ion_strength;
+  static double F_const=96484.6, epsilon_0=8.854e-12;
+  static double R=8.314510, psi=1.0;
+  theta = 1.0;
+  //--------------------------------------------------------------------
+  // MMP medium properties
+  S_0 =      porosity_model_values[1];      // Specific surface area [m^2/g]
+  fmon =     porosity_model_values[2];     // Anteil quelfaehige mineral [-]
+  mat_mp_m = porosity_model_values[3]; // Schichtenanzahl eines quellfähigen Partikels [-]
+  beta =     porosity_model_values[6];     // modifications coefficient (z.B. free swelling Weimar beta=3.0)
+  //--------------------------------------------------------------------
+  // MSP solid properties
+  CSolidProperties *m_msp = NULL;
+  long group = ElGetElementGroupNumber(index);
+  m_msp = msp_vector[group];
+  density_rock  = m_msp->Density(1);
+  //--------------------------------------------------------------------
+  // State properties
+   ion_strength = MATCalcIonicStrengthNew(index);
+   if (ion_strength == 0.0){
+	 ion_strength = porosity_model_values[4]; // Ionic strength [M]
+   }
+  satu_0 =       porosity_model_values[5];       // Initial saturation, if the sample is homogenous [-]
+  //--------------------------------------------------------------------
+  // Interlayer porosity calculation
+  epsilon = 87.0 + exp(-0.00456*(temperature-273.0));
+  porosity_n = porosity_model_values[0];
+  // Maximal inter layer porosity
+  porosity_IL = fmon * psi * mat_mp_m * S_0 * (density_rock * 1.0e3) \
+              * sqrt(epsilon * epsilon_0 * R * temperature / (2000.0 * F_const * F_const * ion_strength ));
+  d_porosity=porosity_IL*(pow(saturation,beta)-pow(satu_0,beta));
+  porosity_IL *=pow(saturation,beta);
+  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY_IL"),porosity_IL);
+  // Total porosity calculation
+  porosity = porosity_n+d_porosity;
+  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY"),porosity);
+*/
+  return porosity;
+}
+
+/**************************************************************************
+FEMLib-Method: PorosityVolumetricChemicalReaction
+Task: Porosity variation owing to chemical reactions
+Programing:
+05/2005 MX Implementation
+last modification:
+**************************************************************************/
+double CMediumProperties::PorosityVolumetricChemicalReaction(long index)
+{
+//OK411
+  index = index;
+
+/*OK411
+  int n=0, i, timelevel, nn=0, m=0;
+  static long *element_nodes;
+//  long component;
+  double porosity=0.0, tot_mineral_volume=0.0, tot_mineral_volume0=0.0;
+  double conc[100];
+  double mineral_volume[100],molar_volume[100];
+//  double *ergebnis=NULL;
+ // REACTION_MODEL *rcml=NULL;
+
+//  rcml=GETReactionModel(index);
+  REACT *rc = NULL; //SB
+  rc->GetREACT();
+
+ // MMP Medium Properties
+  porosity = porosity_model_values[0];
+  if (!rc) return porosity;
+
+//  m=rcml->number_of_equi_phases;
+  m = rc->rcml_number_of_equi_phases;
+  if (m ==0 || ElGetElement(index)==NULL) // wenn solid phases and Element existiert
+  return porosity;
+
+// mineral molar volume abholen
+  for (i=0; i<m; i++){
+    molar_volume[i]=porosity_model_values[i+1];
+  }
+
+  tot_mineral_volume0=porosity_model_values[m+1]; //initial total volume of the minerals
+
+//  if (!rcml) {return porosity;}
+
+// calculate the concentrations of each solid phases (in mol/l soil) as element value from adjecent node values
+//  n=rcml->number_of_master_species;
+  n = rc->rcml_number_of_master_species;
+//  n = get_rcml_number_of_master_species(rcml);
+  for (int component=0; component<m+2+n+rc->rcml_number_of_ion_exchanges; component++) {
+	conc[component] =0.0;
+	// Not used: CompProperties *m_cp = cp_vec[component];
+ //    int z_i = m_cp->valence;
+ //	 m_cp->compname; //What's this for
+    if (component>=n+2 && component<n+2+m){
+
+      if (ElGetElementActiveState(index)){
+         nn = ElGetElementNodesNumber(index);
+         element_nodes = ElGetElementNodes(index);
+         for (int j=0;j<nn;j++) {
+            timelevel=1;
+			conc[component] += PCSGetNODConcentration(element_nodes[j],component,timelevel);
+		}
+        conc[component] /= (double)nn;
+        element_nodes = NULL;
+      }
+
+// calculate the solid phase: volume =v_mi*Ci 
+      timelevel=0;
+//      conc[i]=CalcElementMeanConcentration (index, i, timelevel, ergebnis);
+      mineral_volume[component-n-2] = conc[component]*molar_volume[component-n-2];
+      tot_mineral_volume += mineral_volume[component-n-2];
+    }
+  } //for
+
+
+  porosity += tot_mineral_volume0 - tot_mineral_volume;
+//  ElSetElementVal(index,"POROSITY",porosity);
+  ElSetElementVal(index,PCSGetELEValueIndex("POROSITY"),porosity);
+*/
+  return porosity;
+}
+
+/**************************************************************************
+FEMLib-Method: TortuosityFunction
+Task:
+Programing:
+05/2007 PCH Diffusion tensor is handled by tortuosity tensor as in
+		permeability. Agreed with GK
+last modification:
+**************************************************************************/
+double CMediumProperties::TortuosityFunction(long number, double *gp, double theta,CFiniteElementStd* assem)
+{
+//OK411
+  theta = theta;
+  gp = gp;
+  number = number;
+  assem = assem;
+
+  static int nidx0,nidx1;
+  //----------------------------------------------------------------------
+/*OK411
+  int count_nodes;
+  long* element_nodes = NULL;
+  double primary_variable[10];		//OK To Do
+  int i;
+  int no_pcs_names =(int)pcs_name_vector.size();
+  for(i=0;i<no_pcs_names;i++){
+    nidx0 = PCSGetNODValueIndex(pcs_name_vector[i],0);
+    nidx1 = PCSGetNODValueIndex(pcs_name_vector[i],1);
+    if(mode==0){ // Gauss point values
+      primary_variable[i] = (1.-theta)*InterpolValue(number,nidx0,gp[0],gp[1],gp[2]) \
+                          + theta*InterpolValue(number,nidx1,gp[0],gp[1],gp[2]);
+    }
+    else if(mode==1){ // Node values
+      primary_variable[i] = (1.-theta)*GetNodeVal(number,nidx0) \
+                          + theta*GetNodeVal(number,nidx1);
+    }
+    else if(mode==2){ // Element average value
+      count_nodes = ElNumberOfNodes[ElGetElementType(number) - 1];
+      element_nodes = ElGetElementNodes(number);
+      for (i = 0; i < count_nodes; i++)
+	    primary_variable[i] += GetNodeVal(element_nodes[i],nidx1);
+      primary_variable[i]/= count_nodes;
+    }
+  } //For Loop
+*/
+  switch (tortuosity_model) 
+  {
+	case 0:                     // Tortuosity is read from a curve
+      //To do
+      break;
+	case 1:                      // Constant Tortuosity
+	  tortuosity = tortuosity_model_values[0];
+      break;
+    default:
+	  DisplayMsgLn("Unknown tortuosisty model!");
+      break;
+  }
+  return (tortuosity);
+}
+
+/**************************************************************************/
+/* ROCKFLOW - Funktion: NonlinearFlowFunction
+ */
+/* Aufgabe:
+   Berechnung der relativen Permeabilitaet
+   fuer nichtlineare Fliessgesetze
+ */
+/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+ */
+/* Ergebnis:
+   0 bei Fehler, sonst 1 (dient nur zum Abbrechen der Funktion)
+ */
+/* Programmaenderungen:
+   06/1999   OK   Implementierung
+   09/2004   CMCD In GeoSys 4
+ */
+/**************************************************************************/
+double CMediumProperties::NonlinearFlowFunction(long index, double *gp, double theta)
+{
+  double k_rel = 1.0;
+//OK411
+  theta = theta;
+  gp = gp;
+  index = index;
+
+/*OK411
+	//Pressure variable name (PRESSURE 1) not used as yet in this function
+	int i;
+	//Pointer to fluid properties
+//	int no_phases =(int)mfp_vector.size();
+	CFluidProperties *m_mfp = NULL;
+	int phase = (int)mfp_vector.size()-1;
+	m_mfp = mfp_vector[phase];
+    // Knotendaten
+    int nn,Type;
+    long *element_nodes;
+    double p_element_node[4], h_element_node[4], z_element_node[4];
+    // Materialdaten
+    double alpha;
+    double g, rho, mu;
+    // Elementdaten
+    double grad_h[2],grad_x,grad_y;
+    double mult[2];
+    double detjac, *invjac, invjac2d[4];
+    double grad_omega[8];
+    double grad_h_min = MKleinsteZahl;  
+	double xgt[3],ygt[3],zgt[3];				//CMCD Global x,y,z coordinates of traingular element
+	double xt[3],yt[3];							//CMCD Local x,y coordinates of traingular element
+	double pt_element_node[4], ht_element_node[4], zt_element_node[4]; //CMCD Pressure, depth head traingular element
+	double dN_dx[3],dN_dy[3], area;				//CMCD Shape function derivates for triangles
+	double isotropicgradient,porosity, Re, Lambda, apperture, hyd_radius, perm;
+	double linear_q,turbulent_q,linear_grad, turbulent_grad, flow_rate, temp;
+	double dircos[6];							//CMCD 04 2004
+    gp[0]= gp[1] = gp[2] = 0.0;					//Gaus points, triangular interpretation value not relevant
+
+	element_nodes = ElGetElementNodes(index);
+    g = gravity_constant;
+    //OK4104 theta = GetNumericalTimeCollocation("PRESSURE1");
+	Type = ElGetElementType(index);
+  //--------------------------------------------------------------------
+  // MMP medium properties
+  CMediumProperties *m_mmp = NULL;
+  long group = ElGetElementGroupNumber(index);
+  m_mmp = mmp_vector[group];
+  //--------------------------------------------------------------------
+	switch (flowlinearity_model){
+	case 1://Element Type Dependent
+	alpha = flowlinearity_model_values[0];
+	rho = m_mfp->Density();
+
+		switch (Type){
+		case 1:
+			nn = ElNumberOfNodes[0];
+			for (i = 0; i < nn; i++) {
+				p_element_node[i] = GetNodeVal(element_nodes[i],1);
+				z_element_node[i] = GetNode(element_nodes[i])->z;
+				h_element_node[i] = (p_element_node[i]) / (g * rho) + z_element_node[i];
+			}
+			invjac = GEOGetELEJacobianMatrix(index, &detjac);
+	//          if(fabs(h_element_node[1]-h_element_node[0])>MKleinsteZahl)
+			if (fabs(h_element_node[1] - h_element_node[0]) > grad_h_min) {
+				k_rel = \
+					pow(fabs(0.5 * sqrt(MSkalarprodukt(invjac, invjac, 3))), (alpha - 1.0)) * \
+					pow(fabs(h_element_node[1] - h_element_node[0]), (alpha - 1.0));
+				if (k_rel > 1)
+					k_rel = 1.;
+			} else
+				k_rel = 1.0;
+
+			break;
+
+		case 2:
+			nn = ElNumberOfNodes[1];        // Knotenanzahl nn muss 4 sein !
+			for (i = 0; i < nn; i++) {
+				p_element_node[i] = GetNodeVal(element_nodes[i],1);
+				z_element_node[i] = GetNode(element_nodes[i])->z;
+				h_element_node[i] = p_element_node[i] / (g * rho) + z_element_node[i];
+			}
+			Calc2DElementJacobiMatrix(index, 0.0, 0.0, invjac2d, &detjac);
+			MGradOmega2D(grad_omega, 0, 0);         // Gradientenmatrix
+			MMultMatVec(grad_omega, 2, 4, h_element_node, 4, mult, 2);
+			MMultVecMat(mult, 2, invjac2d, 2, 2, grad_h, 2);
+	//          if( (fabs(grad_h[0])>MKleinsteZahl)||(fabs(grad_h[1])>MKleinsteZahl) ) )
+			if ((fabs(grad_h[0]) > grad_h_min) || (fabs(grad_h[1]) > grad_h_min)) {
+				k_rel = \
+					pow(fabs(sqrt((grad_h[0]) * (grad_h[0]) + (grad_h[1]) * (grad_h[1]))), \
+						(alpha - 1.0));
+			} else {
+				k_rel = 1.0;
+			}
+			break;
+		case 3:
+			k_rel = 1.;
+			break;
+		}
+
+	case 2://Equivalent Fractured Media represented by triangles   CMCD April 2004
+
+			//Geometry
+			nn = ElNumberOfNodes[Type - 1];
+			element_nodes = ElGetElementNodes(index);
+
+			for (i = 0; i < nn; i++)
+				{
+				xgt[i] = GetNodeX(element_nodes[i]);
+				ygt[i] = GetNodeY(element_nodes[i]);
+				zgt[i] = GetNodeZ(element_nodes[i]);
+				}
+			//Input parameters
+			porosity = CMediumProperties::Porosity(index,theta);
+			alpha = flowlinearity_model_values[0];
+			apperture = porosity / flowlinearity_model_values[1]; //Change equivalent porosity to individual fracture porosity
+			Re = flowlinearity_model_values[2];
+
+			//Fluid properties
+			rho = m_mfp->Density();
+			mu  = m_mfp->Viscosity();
+			Re = 0.0; //Reynolds number for turbulent flow CMCD 04. 2004
+			Lambda = 0.0; //Frictional Resistence
+
+			//Flow status
+			hyd_radius = 2*apperture;
+			perm = (apperture * apperture)/12.;
+			linear_q = (Re*mu)/(hyd_radius*rho); //max linear q
+
+			//Fluid pressure at each node
+			for (i = 0; i < nn; i++) {
+				pt_element_node[i] = GetNodeVal(element_nodes[i],1);
+				zt_element_node[i] = GetNode(element_nodes[i])->z;
+				ht_element_node[i] = pt_element_node[i] + ((g * rho) * zt_element_node[i]); //In Pascal
+			}
+			Calc2DElementCoordinatesTriangle(index,xt,yt,dircos); //CMCD included 03/2004
+			area = ElGetElementVolume(index)/m_mmp->geo_area; //CMCD March 2004 removed wrong area in  code
+			//Shape function derivatives
+			dN_dx[0] = (yt[1] - yt[2]) / (2. * area);
+			dN_dx[1] = (yt[2] - yt[0]) / (2. * area);
+			dN_dx[2] = (yt[0] - yt[1]) / (2. * area);
+			dN_dy[0] = (xt[2] - xt[1]) / (2. * area);
+			dN_dy[1] = (xt[0] - xt[2]) / (2. * area);
+			dN_dy[2] = (xt[1] - xt[0]) / (2. * area);
+			grad_x = MSkalarprodukt(dN_dx, ht_element_node, nn);
+			grad_y = MSkalarprodukt(dN_dy, ht_element_node, nn);
+			//v2[0] = MSkalarprodukt(dN_dx, zg, nn);
+			//v2[1] = MSkalarprodukt(dN_dy, zg, nn);
+			//Assume isotropic nonlinear flow (p268 Kolditz 2001)
+			linear_q = linear_q/3.0; // Here the whole element is considered hence 4* to remove avereaging effects
+			isotropicgradient = pow((grad_x*grad_x+grad_y*grad_y),0.5);
+			flow_rate = (perm * isotropicgradient)/mu;
+			if (flow_rate > linear_q){
+				turbulent_q = flow_rate-linear_q;
+				linear_grad = (linear_q *apperture * mu)/perm;
+				turbulent_grad = isotropicgradient - linear_grad;
+				temp = pow((turbulent_grad/(rho*g)),1-alpha)/(turbulent_grad/(rho*g));
+				k_rel = ((linear_grad*1.0) +(turbulent_grad*temp))/isotropicgradient;
+			}
+			else {
+				k_rel = 1.0;
+			}
+
+			//velovec[0] = (-k_x * k_rel_grad_p * k_rel_S*k_rel / mu)* (v1[0] + (rho * g * v2[0]));
+			//velovec[1] = (-k_y * k_rel_grad_p * k_rel_S*k_rel / mu) * (v1[1] + (rho * g * v2[1]));
+
+	// special stop CMCD
+
+	//		if (index == 7021){
+	//			printf("\n");
+	//			printf("Element 4516 k_rel = %g\n",k_rel);
+	//			}
+	//
+	//		break;
+		}
+*/
+  return k_rel;
+}
+
+/**************************************************************************
+ ROCKFLOW - Funktion: Storage Function
+
+ Aufgabe:
+   Berechnet Speicherkoeffizienten
+
+ Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+   E long index: Elementnummer
+
+ Ergebnis:
+   rel. Permeabilitaet
+
+ Programmaenderungen:
+   1/2001   C.Thorenz   Erste Version
+   7/2007   C.Thorenz   Div. Druckabhaengigkeiten
+  06/2003 OK/CM case 4: Storage as function of effective stress read from curve
+  11/2003   CMCD		Geothermal methods added (20)
+
+  Case overview
+  0		Curve
+  1		Constant
+  2		Funktion der effektiven Spannung und des Drucks in Elementmitte
+  3		Funktion der effektiven Spannung und des Drucks in Elementmitte ueber Kurve
+  4		Storage as function of effective stress read from curve
+  5     Storage as normal stress in element in stress field defined by KTB stress field.
+  6		Storage as normal stress in element in stress field defined by KTB stress
+                field, function to increase storage with distance from borehole.
+**************************************************************************/
+double CMediumProperties::StorageFunction(long index,double *gp,double theta)
+{
+//OK411
+  theta = theta;
+  gp = gp;
+  index = index;
+
+    //int nn, i, Type;
+    //int idummy;
+    //double p; //WW, sigma, z[8];
+	//int phase;
+    //double density_solid, stress_eff,S;
+    //double coords[3];
+	//double znodes[8],ynodes[8],xnodes[8];
+	//double zelnodes[8],yelnodes[8],xelnodes[8];
+	//double Pie,angle;
+	//double sigma1,sigma2,sigma3;
+	//double a1,a2,a3,b1,b2,b3;
+	//double normx,normy,normz,normlen;
+	double dircosl, dircosm, dircosn;
+    //double tot_norm_stress, eff_norm_stress;
+	//int material_group;
+	//double x_mid, y_mid, z_mid, x_bore, y_bore, z_bore, distance;
+	dircosl = dircosm = dircosn = 0.0;//Initialise variable
+	static int nidx0,nidx1;
+	//double primary_variable[10];		//OK To Do
+	//int count_nodes;
+/*OK411
+	long* element_nodes = NULL;
+	int no_pcs_names =(int)pcs_name_vector.size();
+	for(i=0;i<no_pcs_names;i++)
+    {
+	  nidx0 = PCSGetNODValueIndex(pcs_name_vector[i],0);
+	  nidx1 = PCSGetNODValueIndex(pcs_name_vector[i],1);
+	  if(mode==0) // Gauss point values
+      { 
+	    primary_variable[i] = (1.-theta)*InterpolValue(index,nidx0,gp[0],gp[1],gp[2]) \
+							+ theta*InterpolValue(index,nidx1,gp[0],gp[1],gp[2]);		}
+	  else if(mode==1) // Node values
+      { 
+	    primary_variable[i] = (1.-theta)*GetNodeVal(index,nidx0) \
+		                    + theta*GetNodeVal(index,nidx1);		
+      }
+	  else if(mode==2) // Element average value
+      { 
+//MX		count_nodes = ElNumberOfNodes[ElGetElementType(number) - 1];
+		count_nodes = ElNumberOfNodes[ElGetElementType(index) - 1];
+//MX		element_nodes = ElGetElementNodes(number);
+		element_nodes = ElGetElementNodes(index);
+		for (i = 0; i < count_nodes; i++)
+		  primary_variable[i] += GetNodeVal(element_nodes[i],nidx1);
+		primary_variable[i]/= count_nodes;
+	  }
+	}
+*/
+    switch (storage_model) {
+
+    case 0:
+
+        //OK411 storage = GetCurveValue((int) storage_model_values[0], 0, primary_variable[0], &idummy);
+
+        break;
+
+
+    case 1:
+        // Konstanter Wert
+        storage = storage_model_values[0];
+        break;
+
+    case 2:
+        // Funktion der effektiven Spannung und des Drucks in Elementmitte
+#ifdef obsolete //WW. 06.11.2008
+        // Den Druck holen
+ 		p = primary_variable[0];
+
+        /* Mittlere Tiefe */
+        nn = ElNumberOfNodes[ElGetElementType(index) - 1];
+        element_nodes = ElGetElementNodes(index);
+
+        for (i = 0; i < nn; i++)
+            z[i] = GetNodeZ(element_nodes[i]);
+
+        /* Spannung = sigma(z0) + d_sigma/d_z*z */
+        //OKsigma = storage_model_values[2] + storage_model_values[3] * InterpolValueVector(index, z, 0., 0., 0.);
+        sigma = storage_model_values[2] + storage_model_values[3] * InterpolValueVector(ElGetElementType(index), z, 0., 0., 0.);
+
+        /* Auf effektive Spannung umrechnen */
+        sigma -= p;
+
+        storage = exp(storage_model_values[0] - storage_model_values[1] * log(sigma));
+#endif //#ifdef obsolete //WW. 06.11.2008
+        break;
+
+    case 3:
+        /* Funktion der effektiven Spannung und des Drucks in Elementmitte
+                   ueber Kurve */
+#ifdef obsolete //WW. 06.11.2008
+        /* Den Druck holen */
+		p = primary_variable[0];
+
+        /* Mittlere Tiefe */
+        nn = ElNumberOfNodes[ElGetElementType(index) - 1];
+        element_nodes = ElGetElementNodes(index);
+
+        for (i = 0; i < nn; i++)
+            z[i] = GetNodeZ(element_nodes[i]);
+
+        /* Spannung = sigma(z0) + d_sigma/d_z*z */
+        sigma = storage_model_values[1] + storage_model_values[2] * InterpolValueVector(ElGetElementType(index), z, 0., 0., 0.);
+
+        /* Auf effektive Spannung umrechnen */
+        sigma -= p;
+
+        storage = GetCurveValue((int)storage_model_values[0],0,sigma,&i);
+#endif
+        break;
+
+    case 4: /* McD Storage as function of effective stress read from curve */
+/*OK411
+		CalculateSimpleMiddelPointElement(index, coords);
+        p = primary_variable[0];
+	    density_solid = storage_model_values[2];
+		stress_eff = (fabs(coords[2])*gravity_constant*density_solid) - p;
+        storage =GetCurveValue((int) storage_model_values[0], 0, stress_eff, &idummy);
+		break;
+*/
+	case 5: /* Stroage : Normal stress calculated according to the orientation of the fracture element*/
+/*OK411
+		Type=ElGetElementType(index);
+		material_group = ElGetElementGroupNumber(index);
+
+			if (Type == 2||Type == 3||Type == 4)  //Function defined for square, triangular and cubic elements
+			{
+				nn = ElNumberOfNodes[Type - 1];
+				element_nodes = ElGetElementNodes(index);
+
+			for (i=0;i<nn;i++)
+			{
+				zelnodes[i]=GetNodeZ(element_nodes[i]);
+				yelnodes[i]=GetNodeY(element_nodes[i]);
+				xelnodes[i]=GetNodeX(element_nodes[i]);
+			}
+
+			Pie=3.141592654;
+			angle=(storage_model_values[3]*Pie)/180.;
+			for (i=0;i<nn;i++)
+			{
+				znodes[i]=zelnodes[i];
+				xnodes[i]=xelnodes[i]*cos(angle)-yelnodes[i]*sin(angle);
+				ynodes[i]=xelnodes[i]*sin(angle)+yelnodes[i]*cos(angle);
+
+			}
+
+				if (Type == 2) //Square
+				{
+				a1=xnodes[2]-xnodes[0];
+				a2=ynodes[2]-ynodes[0];
+				a3=znodes[2]-znodes[0];
+				b1=xnodes[3]-xnodes[1];
+				b2=ynodes[3]-ynodes[1];
+				b3=znodes[3]-znodes[1];
+				normx=a2*b3-a3*b2;
+				normy=a3*b1-a1*b3;
+				normz=a1*b2-a2*b1;
+				normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
+				dircosl= normy/normlen;
+				dircosm= normz/normlen;
+				dircosn= normx/normlen;
+				}
+
+				if (Type == 3) //Cube
+				{
+				a1=xnodes[2]-xnodes[0];
+				a2=ynodes[2]-ynodes[0];
+				a3=znodes[2]-znodes[0];
+				b1=xnodes[3]-xnodes[1];
+				b2=ynodes[3]-ynodes[1];
+				b3=znodes[3]-znodes[1];
+				normx=a2*b3-a3*b2;
+				normy=a3*b1-a1*b3;
+				normz=a1*b2-a2*b1;
+				normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
+				dircosl= normy/normlen;
+				dircosm= normz/normlen;
+				dircosn= normx/normlen;
+				}
+
+				if (Type == 4) //Triangle
+				{
+				a1=xnodes[1]-xnodes[0];
+				a2=ynodes[1]-ynodes[0];
+				a3=znodes[1]-znodes[0];
+				b1=xnodes[2]-xnodes[1];
+				b2=ynodes[2]-ynodes[1];
+				b3=znodes[2]-znodes[1];
+				normx=a2*b3-a3*b2;
+				normy=a3*b1-a1*b3;
+				normz=a1*b2-a2*b1;
+				normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
+				dircosl= normy/normlen;
+				dircosm= normz/normlen;
+				dircosn= normx/normlen;
+				}
+				// Calculate average location of the element 
+				CalculateSimpleMiddelPointElement(index, coords);
+				x_mid = coords[0];
+				y_mid = coords[1];
+				z_mid = coords[2];
+
+				p = primary_variable[0];
+
+
+			//Calcualtion of stress according to Ito & Zoback 2000 for KTB hole
+
+				sigma1=z_mid*0.045*-1e6;
+				sigma2=z_mid*0.028*-1e6;
+				sigma3=z_mid*0.02*-1e6;
+
+                        ///Calculate total normal stress on element
+			//Note in this case sigma2 corresponds to the vertical stress
+				tot_norm_stress=sigma1*dircosl*dircosl+sigma2*dircosm*dircosm+sigma3*dircosn*dircosn;
+
+
+
+			//Calculate normal effective stress
+				eff_norm_stress=tot_norm_stress-p;
+
+				// special stop CMCD
+				if (eff_norm_stress>220000000.){
+				phase=0;
+				}
+
+			//Take value of storage from a curve
+				S=GetCurveValue((int) storage_model_values[0], 0, eff_norm_stress, &idummy);
+			}
+
+		// default value if element type is not included in the method for calculating the normal
+		else S=storage_model_values[2];
+		storage = S;
+		break;
+*/
+	case 6: /* Normal stress calculated according to the orientation of the fracture element*/
+/*OK411
+		Type=ElGetElementType(index);
+		material_group = ElGetElementGroupNumber(index);
+
+		if (material_group == 0)
+		{
+			if (Type == 2||Type == 3||Type == 4)
+			{
+				nn = ElNumberOfNodes[Type - 1];
+				element_nodes = ElGetElementNodes(index);
+
+				for (i=0;i<nn;i++)
+				{
+					zelnodes[i]=GetNodeZ(element_nodes[i]);
+					yelnodes[i]=GetNodeY(element_nodes[i]);
+					xelnodes[i]=GetNodeX(element_nodes[i]);
+				}
+
+ 			    Pie=3.141592654;
+				angle=(storage_model_values[3]*Pie)/180.;
+				for (i=0;i<nn;i++)
+				{
+					znodes[i]=zelnodes[i];
+					xnodes[i]=xelnodes[i]*cos(angle)-yelnodes[i]*sin(angle);
+					ynodes[i]=xelnodes[i]*sin(angle)+yelnodes[i]*cos(angle);
+
+				}
+
+				if (Type == 2)
+				{
+				a1=xnodes[2]-xnodes[0];
+				a2=ynodes[2]-ynodes[0];
+				a3=znodes[2]-znodes[0];
+				b1=xnodes[3]-xnodes[1];
+				b2=ynodes[3]-ynodes[1];
+				b3=znodes[3]-znodes[1];
+				normx=a2*b3-a3*b2;
+				normy=a3*b1-a1*b3;
+				normz=a1*b2-a2*b1;
+				normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
+				dircosl= normy/normlen;
+				dircosm= normz/normlen;
+				dircosn= normx/normlen;
+				}
+
+				if (Type == 3)
+				{
+				a1=xnodes[2]-xnodes[0];
+				a2=ynodes[2]-ynodes[0];
+				a3=znodes[2]-znodes[0];
+				b1=xnodes[3]-xnodes[1];
+				b2=ynodes[3]-ynodes[1];
+				b3=znodes[3]-znodes[1];
+				normx=a2*b3-a3*b2;
+				normy=a3*b1-a1*b3;
+				normz=a1*b2-a2*b1;
+				normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
+				dircosl= normy/normlen;
+				dircosm= normz/normlen;
+				dircosn= normx/normlen;
+				}
+
+				if (Type == 4)
+				{
+				a1=xnodes[1]-xnodes[0];
+				a2=ynodes[1]-ynodes[0];
+				a3=znodes[1]-znodes[0];
+				b1=xnodes[2]-xnodes[1];
+				b2=ynodes[2]-ynodes[1];
+				b3=znodes[2]-znodes[1];
+				normx=a2*b3-a3*b2;
+				normy=a3*b1-a1*b3;
+				normz=a1*b2-a2*b1;
+				normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
+				dircosl= normy/normlen;
+				dircosm= normz/normlen;
+				dircosn= normx/normlen;
+				}
+
+			CalculateSimpleMiddelPointElement(index,coords);
+			x_mid = coords[0];
+			y_mid = coords[1];
+			z_mid = coords[2];
+
+			p = primary_variable[0];
+
+			x_bore = storage_model_values[4];
+			y_bore = storage_model_values[5];
+			z_bore = storage_model_values[6];
+
+			distance = pow(pow((x_mid-x_bore),2.0) + pow((y_mid-y_bore),2.0) + pow((z_mid-z_bore),2.0),0.5);
+
+			sigma1=z_mid*0.045*-1e6;
+			sigma2=z_mid*0.028*-1e6;
+			sigma3=z_mid*0.02*-1e6;
+
+			///Calculate total normal stress on element
+			tot_norm_stress=sigma1*dircosl*dircosl+sigma2*dircosm*dircosm+sigma3*dircosn*dircosn;
+
+			eff_norm_stress=tot_norm_stress-p;
+
+			S=GetCurveValue((int) storage_model_values[0], 0, eff_norm_stress, &idummy);
+			if (distance > storage_model_values[7]){
+				distance = storage_model_values[7];
+				}
+			if (distance > 2) S = S + (S * (distance-2) * storage_model_values[8]);
+			}
+
+		else S=storage_model_values[2];
+		}
+
+		else S=storage_model_values[2];
+		storage = S;
+*/
+		break;
+    case 7: // poroelasticity RW
+        storage = storage_model_values[1];
+        break;
+	default:
+        storage = 0.0;//OK DisplayMsgLn("The requested storativity model is unknown!!!");
+ 	break;
+    }
+	return storage;
+}
+
+double CMediumProperties::PermeabilityPressureFunction(long index,double *gp,double theta)
+{
+  double k_rel=0.0;
+//OK411
+  theta = theta;
+  gp = gp;
+  index = index;
+
+#ifdef obsolete //OK411
+    int nn, i, idummy,p_idx1;
+    long *element_nodes;
+    static double gh,  p, eins_durch_rho_g, sigma, z[8], h[8], grad_h[3];
+    static double invjac[8], detjac, grad_omega[8];
+    static double mult[3];
+    double x_mid,y_mid,z_mid,coords[3];
+    double density_solid, stress_eff;
+//	double porosity, factora, factorb,valuelogk;
+    CFluidProperties* m_mfp=NULL;
+
+	//Collect primary variables
+	static int nidx0,nidx1;
+	double primary_variable[10];		//OK To Do
+	int count_nodes;
+	int no_pcs_names =(int)pcs_name_vector.size();
+	for(i=0;i<no_pcs_names;i++){
+		nidx0 = PCSGetNODValueIndex(pcs_name_vector[i],0);
+		nidx1 = PCSGetNODValueIndex(pcs_name_vector[i],1);
+		if(mode==0){ // Gauss point values
+		primary_variable[i] = (1.-theta)*InterpolValue(number,nidx0,gp[0],gp[1],gp[2]) \
+							+ theta*InterpolValue(number,nidx1,gp[0],gp[1],gp[2]);
+		}
+		else if(mode==1){ // Node values
+		primary_variable[i] = (1.-theta)*GetNodeVal(number,nidx0) \
+							+ theta*GetNodeVal(number,nidx1);
+		}
+		else if(mode==2){ // Element average value
+		count_nodes = ElNumberOfNodes[ElGetElementType(number) - 1];
+		element_nodes = ElGetElementNodes(number);
+		for (i = 0; i < count_nodes; i++)
+			primary_variable[i] += GetNodeVal(element_nodes[i],nidx1);
+		primary_variable[i]/= count_nodes;
+		}
+	}
+    switch (permeability_pressure_model) {
+    case 0://Curve function
+        k_rel = 1.0;
+        break;
+    case 1://No functional dependence
+		k_rel = 1.0;
+        break;
+        /* Funktion der effektiven Spannung */
+	case 2:
+#ifdef obsolete //WW. 06.11.2008
+        /* Den Druck holen */
+        p = primary_variable[0];
+        /* Mittlere Tiefe */
+        nn = ElNumberOfNodes[ElGetElementType(index) - 1];
+        element_nodes = ElGetElementNodes(index);
+        for (i = 0; i < nn; i++)
+            z[i] = GetNodeZ(element_nodes[i]);
+        /* Spannung = sigma(z0) + d_sigma/d_z*z */
+        sigma = permeability_pressure_model_values[2] + permeability_pressure_model_values[3] * InterpolValueVector(ElGetElementType(index), z, 0., 0., 0.);
+        /* Auf effektive Spannung umrechnen */
+        sigma -= p;
+        k_rel = exp(permeability_pressure_model_values[0] - permeability_pressure_model_values[1] * log(sigma));
+#endif
+        break;
+     case 3: /* Turbulentes Fliessen */
+        /* k_rel = max(min((grad(h)*alpha1)^(alpha2-1), alpha4),alpha3) */
+        m_mfp = MFPGet("LIQUID");
+        eins_durch_rho_g = 1./gravity_constant/m_mfp->Density(); // YDGetFluidDensity(0, index, 0., 0., 0., 1.);
+        nn = ElNumberOfNodes[ElGetElementType(index) - 1];
+        element_nodes = ElGetElementNodes(index);
+		p_idx1 = PCSGetNODValueIndex("PRESSURE1",1);
+        for (i=0;i<nn;i++)
+           h[i] = GetNodeVal(element_nodes[i], p_idx1)*eins_durch_rho_g
+                + GetNodeZ(element_nodes[i]);
+        switch (ElGetElementType(index)) {
+          default:
+            DisplayMsgLn("Error in GetSoilRelPermPress!");
+            DisplayMsgLn("  Nonlinear permeability not available!");
+            abort();
+          case 2:
+            Calc2DElementJacobiMatrix(index,0.0,0.0,invjac,&detjac);
+            MGradOmega2D(grad_omega,0,0); /* Gradientenmatrix */
+            MMultMatVec(grad_omega,2,4,h,4,mult,2);
+            MMultVecMat(mult,2,invjac,2,2,grad_h,2);
+            gh = sqrt(grad_h[0]*grad_h[0]+grad_h[1]*grad_h[1])*permeability_pressure_model_values[0];
+            if(gh<MKleinsteZahl)
+               k_rel = 1.0;
+            else
+               k_rel = max(min(pow(gh,permeability_pressure_model_values[1]-1.0),permeability_pressure_model_values[3]),permeability_pressure_model_values[2]);
+        }
+     case 4:
+#ifdef obsolete //WW. 06.11.2008
+        /* Funktion der effektiven Spannung ueber Kurve */
+        /* Den Druck holen */
+        p = primary_variable[0];
+        /* Mittlere Tiefe */
+        nn = ElNumberOfNodes[ElGetElementType(index) - 1];
+        element_nodes = ElGetElementNodes(index);
+        for (i = 0; i < nn; i++)
+            z[i] = GetNodeZ(element_nodes[i]);
+        /* Spannung = sigma(z0) + d_sigma/d_z*z */
+        sigma = permeability_pressure_model_values[1] + permeability_pressure_model_values[2] * InterpolValueVector(ElGetElementType(index), z, 0., 0., 0.);
+        /* Auf effektive Spannung umrechnen */
+        sigma -= p;
+        k_rel = GetCurveValue((int)permeability_pressure_model_values[0], 0, sigma, &i);
+#endif
+        break;
+    case 5:
+        /* Funktion der effektiven Spannung ueber Kurve CMCD 26.06.2003*/
+        /* Average depth */
+		CalculateSimpleMiddelPointElement(index,coords);
+		x_mid = coords[0];
+		y_mid = coords[1];
+		z_mid = coords[2];
+		p = primary_variable[0];
+        density_solid = permeability_pressure_model_values[2];
+        stress_eff = (fabs(z_mid)*gravity_constant*density_solid) - p;
+        k_rel = GetCurveValue((int) permeability_pressure_model_values[0], 0, stress_eff, &idummy);
+        break;
+	case 6:
+		k_rel = PermeabilityPressureFunctionMethod1(index,primary_variable[0]);
+		break;
+	case 7:
+		k_rel = PermeabilityPressureFunctionMethod2(index,primary_variable[0]);
+		break;
+	case 8:
+		k_rel = PermeabilityPressureFunctionMethod3(index,primary_variable[0]);
+		break;
+	case 9:
+		k_rel = PermeabilityPressureFunctionMethod4(index,primary_variable[0], primary_variable[1]);
+		break;
+	default:					// CMCD Einbau
+		k_rel = 1.0;			// CMCD Einbau
+		break;					// CMCD Einbau
+}
+#endif
+		return k_rel;
+}
+
+/**************************************************************************
+12.(ii)a Subfunction of Permeability_Function_Pressure
+ROCKFLOW - Funktion: MATCalcPressurePermeabilityMethod1
+Application to KTB
+ Aufgabe:
+   Calculates relative permeability from
+   the normal stress according to orientation of the fractures in the KTB site system
+   converts the normal stress to effective stress, reads from a curve what the permeability
+   of a fracture under the given effective stress is.
+
+ Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+   E: long index: Elementnummer, double primary_variable pressure
+   R: relative permeability
+
+ Ergebnis:
+   rel. Permeabilitaet
+
+ Programmaenderungen:
+   09/2004   CMCD Inclusion in GeoSys 4
+**************************************************************************/
+double CMediumProperties::PermeabilityPressureFunctionMethod1(long index,double pressure)
+{
+//OK411
+  index = index;
+  pressure = pressure;
+
+#ifdef obsolete //OK411
+	double R,Pie,p;
+    double znodes[8],ynodes[8],xnodes[8], angle;
+	double x_mid, y_mid, z_mid, coords[3];
+	double zelnodes[8],yelnodes[8],xelnodes[8];
+	double sigma1,sigma2,sigma3;
+	double a1,a2,a3,b1,b2,b3;
+	double normx,normy,normz,normlen;
+	double dircosl, dircosm, dircosn;
+    double tot_norm_stress, eff_norm_stress;
+	int material_group,Type;
+	int phase,nn,i,idummy;
+	long *element_nodes;
+	dircosl = dircosm = dircosn =0.0;
+		Type=ElGetElementType(index);
+		material_group = ElGetElementGroupNumber(index);
+
+		/* special stop CMCD*/
+		if (index == 6590){
+			phase=0;
+			/* Stop here*/
+			}
+
+
+		if (Type == 2||Type == 3||Type == 4)  /*Function defined for square, triangular and cubic elements*/
+		{
+			nn = ElNumberOfNodes[Type - 1];
+			element_nodes = ElGetElementNodes(index);
+
+ 			/* Calculate directional cosins, note that this is currently set up*/
+			/* Sigma1 is in the y direction*/
+			/* Sigma2 is in the z direction*/
+			/* Sigma3 is in the x direction*/
+			/* This correspondes approximately to the KTB site conditions*/
+
+			for (i=0;i<nn;i++)
+			{
+				zelnodes[i]=GetNodeZ(element_nodes[i]);
+				yelnodes[i]=GetNodeY(element_nodes[i]);
+				xelnodes[i]=GetNodeX(element_nodes[i]);
+			}
+
+
+			/*Coordinate transformation to match sigma max direction*/
+			/* y direction matches the north direction*/
+
+			Pie=3.141592654;
+			for (i=0;i<nn;i++)
+			{
+				znodes[i]=zelnodes[i];
+				angle=(permeability_pressure_model_values[3]*Pie)/180.;
+				xnodes[i]=xelnodes[i]*cos(angle)-yelnodes[i]*sin(angle);
+				ynodes[i]=xelnodes[i]*sin(angle)+yelnodes[i]*cos(angle);
+
+			}
+
+
+			if (Type == 2) /*Square*/
+			{
+			a1=xnodes[2]-xnodes[0];
+			a2=ynodes[2]-ynodes[0];
+			a3=znodes[2]-znodes[0];
+			b1=xnodes[3]-xnodes[1];
+			b2=ynodes[3]-ynodes[1];
+			b3=znodes[3]-znodes[1];
+			normx=a2*b3-a3*b2;
+			normy=a3*b1-a1*b3;
+			normz=a1*b2-a2*b1;
+			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
+			dircosl= normy/normlen;
+			dircosm= normz/normlen;
+			dircosn= normx/normlen;
+			}
+
+			if (Type == 3) /*Cube*/
+			{
+			a1=xnodes[2]-xnodes[0];
+			a2=ynodes[2]-ynodes[0];
+			a3=znodes[2]-znodes[0];
+			b1=xnodes[3]-xnodes[1];
+			b2=ynodes[3]-ynodes[1];
+			b3=znodes[3]-znodes[1];
+			normx=a2*b3-a3*b2;
+			normy=a3*b1-a1*b3;
+			normz=a1*b2-a2*b1;
+			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
+			dircosl= normy/normlen;
+			dircosm= normz/normlen;
+			dircosn= normx/normlen;
+			}
+
+			if (Type == 4) /*Triangle*/
+			{
+			a1=xnodes[1]-xnodes[0];
+			a2=ynodes[1]-ynodes[0];
+			a3=znodes[1]-znodes[0];
+			b1=xnodes[2]-xnodes[1];
+			b2=ynodes[2]-ynodes[1];
+			b3=znodes[2]-znodes[1];
+			normx=a2*b3-a3*b2;
+			normy=a3*b1-a1*b3;
+			normz=a1*b2-a2*b1;
+			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
+			dircosl= normy/normlen;
+			dircosm= normz/normlen;
+			dircosn= normx/normlen;
+			}
+
+
+		/* Calculation of average location of element*/
+		CalculateSimpleMiddelPointElement(index,coords);
+		x_mid = coords[0];
+		y_mid = coords[1];
+		z_mid = coords[2];
+
+		/*Calculate fluid pressure in element*/
+		p = pressure;
+		/*Calcualtion of stress according to Ito & Zoback 2000 for KTB hole*/
+
+		sigma1=z_mid*0.045*-1e6;
+		sigma2=z_mid*0.028*-1e6;
+		sigma3=z_mid*0.02*-1e6;
+
+		/*Calculate total normal stress on element
+		Note in this case sigma2 corresponds to the vertical stress*/
+		tot_norm_stress=sigma1*dircosl*dircosl+sigma2*dircosm*dircosm+sigma3*dircosn*dircosn;
+
+		/*Calculate normal effective stress*/
+		eff_norm_stress=tot_norm_stress-p;
+
+		/*Take value of storage from a curve*/
+		R=GetCurveValue((int) permeability_pressure_model_values[0], 0, eff_norm_stress, &idummy);
+
+		return R;
+
+		}
+		/* default value if element type is not included in the method for calculating the normal */
+		else R=permeability_pressure_model_values[2];
+#endif
+  return R;
+}
+
+/**************************************************************************
+ 12.(ii)b Subfunction of Permeability_Function_Pressure
+ Function: MATCalcPressurePermeabilityMethod2
+ Application to KTB
+ Aufgabe:
+   Calculates relative permeability from
+   the normal stress according to orientation of the fractures in the KTB site system
+   converts the normal stress to effective stress, reads from a curve what the permeability
+   of a fracture under the given effective stress is. Permeability is then related to
+   the distance from the borehole.
+
+ Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+   E: long index: Elementnummer, double primary_variable pressure
+   R: relative permeability
+
+ Ergebnis:
+   rel. Permeabilitaet
+
+ Programmaenderungen:
+   09/2004   CMCD Inclusion in GeoSys 4
+**************************************************************************/
+double CMediumProperties::PermeabilityPressureFunctionMethod2(long index,double pressure)
+{
+//OK411
+  index = index;
+  pressure = pressure;
+
+#ifdef obsolete //OK411
+	double R,Pie,p;
+    double znodes[8],ynodes[8],xnodes[8], angle;
+	double x_mid, y_mid, z_mid, coords[3];
+	double zelnodes[8],yelnodes[8],xelnodes[8];
+	double sigma1,sigma2,sigma3;
+	double a1,a2,a3,b1,b2,b3;
+	double normx,normy,normz,normlen;
+	double dircosl, dircosm, dircosn;
+    double tot_norm_stress, eff_norm_stress;
+	int material_group,Type;
+	double x_bore, y_bore, z_bore, distance;
+	int nn,i,idummy;
+	long *element_nodes;
+	dircosl = dircosm = dircosn =0.0;
+		Type=ElGetElementType(index);
+		material_group = ElGetElementGroupNumber(index);
+
+		/* special stop CMCD*/
+		if (index == 4516){
+			/* Stop here */
+		}
+
+		if (Type == 2||Type == 3||Type == 4)  /*Function defined for square, triangular and cubic elements*/
+		{
+			nn = ElNumberOfNodes[Type - 1];
+			element_nodes = ElGetElementNodes(index);
+
+
+			/* Calculate directional cosins, note that this is currently set up*/
+			/* Sigma1 is in the y direction*/
+			/* Sigma2 is in the z direction*/
+			/* Sigma3 is in the x direction*/
+			/* This correspondes approximately to the KTB site conditions*/
+
+			for (i=0;i<nn;i++)
+			{
+				zelnodes[i]=GetNodeZ(element_nodes[i]);
+				yelnodes[i]=GetNodeY(element_nodes[i]);
+				xelnodes[i]=GetNodeX(element_nodes[i]);
+			}
+
+
+			Pie=3.141592654;
+			angle=(permeability_pressure_model_values[3]*Pie)/180.;
+			for (i=0;i<nn;i++)
+			{
+				znodes[i]=zelnodes[i];
+				xnodes[i]=xelnodes[i]*cos(angle)-yelnodes[i]*sin(angle);
+				ynodes[i]=xelnodes[i]*sin(angle)+yelnodes[i]*cos(angle);
+
+			}
+
+			if (Type == 2) /*Square*/
+			{
+			a1=xnodes[2]-xnodes[0];
+			a2=ynodes[2]-ynodes[0];
+			a3=znodes[2]-znodes[0];
+			b1=xnodes[3]-xnodes[1];
+			b2=ynodes[3]-ynodes[1];
+			b3=znodes[3]-znodes[1];
+			normx=a2*b3-a3*b2;
+			normy=a3*b1-a1*b3;
+			normz=a1*b2-a2*b1;
+			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
+			dircosl= normy/normlen;
+			dircosm= normz/normlen;
+			dircosn= normx/normlen;
+			}
+
+			if (Type == 3) /*Cube*/
+			{
+			a1=xnodes[2]-xnodes[0];
+			a2=ynodes[2]-ynodes[0];
+			a3=znodes[2]-znodes[0];
+			b1=xnodes[3]-xnodes[1];
+			b2=ynodes[3]-ynodes[1];
+			b3=znodes[3]-znodes[1];
+			normx=a2*b3-a3*b2;
+			normy=a3*b1-a1*b3;
+			normz=a1*b2-a2*b1;
+			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
+			dircosl= normy/normlen;
+			dircosm= normz/normlen;
+			dircosn= normx/normlen;
+			}
+
+			if (Type == 4) /*Triangle*/
+			{
+			a1=xnodes[1]-xnodes[0];
+			a2=ynodes[1]-ynodes[0];
+			a3=znodes[1]-znodes[0];
+			b1=xnodes[2]-xnodes[1];
+			b2=ynodes[2]-ynodes[1];
+			b3=znodes[2]-znodes[1];
+			normx=a2*b3-a3*b2;
+			normy=a3*b1-a1*b3;
+			normz=a1*b2-a2*b1;
+			normlen=sqrt(pow(normx,2.0)+pow(normy,2.0)+pow(normz,2.0));
+			dircosl= normy/normlen;
+			dircosm= normz/normlen;
+			dircosn= normx/normlen;
+			}
+
+		CalculateSimpleMiddelPointElement(index,coords);
+		x_mid = coords[0];
+		y_mid = coords[1];
+		z_mid = coords[2];
+
+		/*Calculate fluid pressure in element*/
+		p = pressure;
+
+		/*Calculate distance from borehole*/
+		x_bore = permeability_pressure_model_values[4];
+		y_bore = permeability_pressure_model_values[5];
+		z_bore = permeability_pressure_model_values[6];
+
+		distance = pow(pow((x_mid-x_bore),2.0) + pow((y_mid-y_bore),2.0) + pow((z_mid-z_bore),2.0),0.5);
+
+		/*Calcualtion of stress according to Ito & Zoback 2000 for KTB hole*/
+
+		sigma1=z_mid*0.045*-1e6;
+		sigma2=z_mid*0.028*-1e6;
+		sigma3=z_mid*0.02*-1e6;
+
+		///Calculate total normal stress on element
+		/*Note in this case sigma2 corresponds to the vertical stress*/
+		tot_norm_stress=sigma1*dircosl*dircosl+sigma2*dircosm*dircosm+sigma3*dircosn*dircosn;
+
+		/*Calculate normal effective stress*/
+		eff_norm_stress=tot_norm_stress-p;
+
+		/*Take value of storage from a curve*/
+		R=GetCurveValue((int) permeability_pressure_model_values[0], 0, eff_norm_stress, &idummy);
+		if (distance > permeability_pressure_model_values[7]){
+			distance = permeability_pressure_model_values[7];
+
+		}
+			if (distance > 2) R = R + (R * (distance-2) * permeability_pressure_model_values[8]);
+
+			return R;
+		}
+		/* default value if element type is not included in the method for calculating the normal */
+		else R=permeability_pressure_model_values[2];
+#endif
+  return R;
+}
+
+/**************************************************************************
+ 12.(ii)c Subfunction of Permeability_Function_Pressure
+ Function: MATCalcPressurePermeabilityMethod3
+ Application to Urach
+
+ Aufgabe:
+   The normal stress across the fractures is calculated according to an approximate formulation
+   from the relationship of stress with depth. This normal stress is then converted into a permeabilty
+   by reference to effective stress and a curve.
+
+ Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+   E: long index: Elementnummer, double primary_variable pressure
+   R: relative permeability
+
+ Ergebnis:
+   rel. Permeabilitaet
+
+ Programmaenderungen:
+   09/2004   CMCD Inclusion in GeoSys 4
+**************************************************************************/
+double CMediumProperties::PermeabilityPressureFunctionMethod3(long index,double pressure)
+{
+//OK411
+  index = index;
+  pressure = pressure;
+
+  double perm=0.0;
+#ifdef obsolete //OK411
+      /* Funktion der effektiven Spannung ueber Kurve CMCD 26.06.2003*/
+		double x_mid, y_mid, z_mid, coords[3];
+		double stress_eff,p,perm;
+		int idummy;
+        /* Average depth */
+		CalculateSimpleMiddelPointElement(index,coords);
+		x_mid = coords[0];
+		y_mid = coords[1];
+		z_mid = coords[2];
+
+		/*Calculate fluid pressure in element*/
+		p = pressure;
+	    stress_eff = (fabs(z_mid)*permeability_pressure_model_values[1]*1e6)-p;
+		perm = GetCurveValue((int) permeability_pressure_model_values[0], 0, stress_eff, &idummy);
+#endif
+  return perm;
+}
+
+/**************************************************************************
+12.(ii)d Subfunction of Permeability_Function_Pressure
+ Function: MATCalcPressurePermeabilityMethod4
+ Application to Urach
+
+ Aufgabe:
+   The normal stress across the fractures is calculated according to an approximate formulation
+   from the relationship of stress with depth. This normal stress is then adjusted to take account of
+   thermal cooling, and the resulting effective stress across the fracture isconverted into a permeabilty.
+   by reference to a curve.
+
+ Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
+   E: long index: Elementnummer, double primary_variable pressure
+   R: relative permeability
+
+ Ergebnis:
+   rel. Permeabilitaet
+
+ Programmaenderungen:
+   09/2004   CMCD Inclusion in GeoSys 4
+**************************************************************************/
+double CMediumProperties::PermeabilityPressureFunctionMethod4(long index,double pressure, double temperature)
+{
+//OK411
+  index = index;
+  pressure = pressure;
+  temperature = temperature;
+  double perm=0.0;
+
+#ifdef obsolete //OK411
+      /* Funktion der effektiven Spannung ueber Kurve CMCD 26.06.2003*/
+		double x_mid, y_mid, z_mid, coords[3];
+		double stress_eff,p,perm, thermal_stress;
+		int idummy;
+        /* Average depth */
+		CalculateSimpleMiddelPointElement(index,coords);
+		x_mid = coords[0];
+		y_mid = coords[1];
+		z_mid = coords[2];
+
+		/*Calculate effective stress in the element*/
+		p = pressure;
+	    stress_eff = (fabs(z_mid)*permeability_pressure_model_values[1]*1e6)-p;
+
+		/*Impact of thermal stress*/
+		thermal_stress = (permeability_pressure_model_values[2]-temperature)*permeability_pressure_model_values[3]*permeability_pressure_model_values[4];
+
+		stress_eff = stress_eff - thermal_stress;
+		if (stress_eff < 0.0){
+			stress_eff = 0.0;
+		}
+		/*Read value effective stress against curve*/
+		perm = GetCurveValue((int) permeability_pressure_model_values[0], 0, stress_eff, &idummy);
+#endif
+		return perm;
+}
+
+double CMediumProperties::PermeabilityPorosityFunction(long number,double *gp,double theta)
+{
+  double k_rel=0.0;
+//OK411
+  theta = theta;
+  gp = gp;
+  number = number;
+#ifdef obsolete //OK411
+    int i;
+    long *element_nodes;
+	double factora, factorb,valuelogk;
+
+	//Collect primary variables
+	static int nidx0,nidx1;
+	double primary_variable[10];		//OK To Do
+	int count_nodes;
+	int no_pcs_names =(int)pcs_name_vector.size();
+	for(i=0;i<no_pcs_names;i++){
+		nidx0 = PCSGetNODValueIndex(pcs_name_vector[i],0);
+		nidx1 = PCSGetNODValueIndex(pcs_name_vector[i],1);
+		if(mode==0){ // Gauss point values
+		primary_variable[i] = (1.-theta)*InterpolValue(number,nidx0,gp[0],gp[1],gp[2]) \
+							+ theta*InterpolValue(number,nidx1,gp[0],gp[1],gp[2]);
+		}
+		else if(mode==1){ // Node values
+		primary_variable[i] = (1.-theta)*GetNodeVal(number,nidx0) \
+							+ theta*GetNodeVal(number,nidx1);
+		}
+		else if(mode==2){ // Element average value
+		count_nodes = ElNumberOfNodes[ElGetElementType(number) - 1];
+		element_nodes = ElGetElementNodes(number);
+		for (i = 0; i < count_nodes; i++)
+			primary_variable[i] += GetNodeVal(element_nodes[i],nidx1);
+		primary_variable[i]/= count_nodes;
+		}
+	}
+    switch (permeability_porosity_model) {
+		case 0://Reserved for a curve function
+			k_rel=1.0;
+			break;
+		case 1://Constant value function
+			k_rel=1.0;
+			break;
+		case 2://Ming Lian function
+			factora=permeability_porosity_model_values[0];
+			factorb=permeability_porosity_model_values[1];
+			valuelogk=factora+(factorb*porosity);
+			k_rel=0.987e-12*pow(10.,valuelogk);
+            CMediumProperties *m_mmp = NULL;
+            long group = ElGetElementGroupNumber(number);
+			m_mmp = mmp_vector[group];
+			double* k_ij;
+			k_ij = m_mmp->PermeabilityTensor(number); //permeability;
+			k_rel /= k_ij[0];
+			break;
+	}
+#endif
+	return k_rel;
 }

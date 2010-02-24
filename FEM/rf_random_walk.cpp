@@ -5,10 +5,8 @@ Programing:
 07/2005 PCH Implementation
  **************************************************************************/
 
-#include "stdafx.h" //MFC
 #include "rf_random_walk.h"
 #include "rf_fluid_momentum.h"
-#include "elements.h"
 
 // C++ STL
 #include <iostream>
@@ -157,7 +155,7 @@ void RandomWalk::InterpolateVelocity(Particle* A)
 	}
 	// Mount the element fromthe first particle from particles initially
 	CElem* theEle = m_msh->ele_vector[A->elementIndex];
-	double tolerance = 1e-8;
+	//OK411 double tolerance = 1e-8;
 
 	// If a quad element,
 	int nnode = theEle->GetEdgesNumber();
@@ -334,7 +332,7 @@ void RandomWalk::TracePathlineInThisElement(Particle* A)
 	}
 	// Mount the element fromthe first particle from particles initially
 	CElem* theEle = m_msh->ele_vector[A->elementIndex];
-	double tolerance = 1e-8;
+	//OK411 double tolerance = 1e-8;
 
 	// If a quad element,
 	int nnode = theEle->GetEdgesNumber();
@@ -437,7 +435,7 @@ void RandomWalk::TracePathlineInThisElement(Particle* A)
 
 		A->x = R[0]; A->y = R[1]; A->z = R[2];
 		//update the element index;
-		int i = A->x / dx; int j = A->y / dy;
+		int i = A->x / dx; int j = A->y / dy; //OK411
 
 		int iFDM;
 		if(index == 0)
@@ -445,7 +443,7 @@ void RandomWalk::TracePathlineInThisElement(Particle* A)
 		else
 			iFDM = (j+1)*nx + i;
 
-		if(iFDM < indexFDM.size())
+		if(iFDM < (int)indexFDM.size()) //OK411
 			A->elementIndex = indexFDM[iFDM].eleIndex;
 		else
 			A->elementIndex = -10;	 // Outside of the domain
@@ -572,7 +570,7 @@ void RandomWalk::InterpolateVelocityOfTheParticleByInverseDistance(Particle* A)
 
 	// Let's get the hydraulic conductivity first.
 	CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];
-	int phase = 0;
+	//OK411 int phase = 0;
 	CFluidProperties *FluidProp = mfp_vector[0];
 	double* kTensor = MediaProp->PermeabilityTensor(A->elementIndex);
 	double k = kTensor[0];
@@ -731,7 +729,7 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 
 			// Let's get the hydraulic conductivity first.
 			CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];
-			int phase = 0;
+			//OK411 int phase = 0;
 			CFluidProperties *FluidProp = mfp_vector[0];
 			double* kTensor = MediaProp->PermeabilityTensor(eleIndex);
 			double k = kTensor[0];
@@ -739,7 +737,7 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 			A->K = k*FluidProp->Density()*9.81/FluidProp->Viscosity();
 
 			// Get the number of nodes
-			int nnodes = m_ele->GetVertexNumber();
+			//OK411 int nnodes = m_ele->GetVertexNumber();
 
 			// Mount the edges of the element
 			vec<CEdge*>theEdgesOfThisElement(nnode);
@@ -783,7 +781,7 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 		CElem* theEle = m_msh->ele_vector[A->elementIndex];
 		int eleIndex = A->elementIndex;
 		// Set the pointer that leads to the nodes of element
-		CNode* node = NULL;
+		//OK411 CNode* node = NULL;
 
 		// If Element is outside of the domain or in the sink or on the edge or at the corner vertix
 		// Do not do anything. If not, then proceed.
@@ -805,7 +803,7 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 			// this code should be revisited.
 
 			// Get the number of nodes
-			int nnodes = theEle->GetVertexNumber();
+			//OK411 int nnodes = theEle->GetVertexNumber();
 
 			// Mount the edges of the element
 			vec<CEdge*>theEdgesOfThisElement(nnode);
@@ -954,7 +952,7 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 		CElem* theEle = m_msh->ele_vector[A->elementIndex];
 		int eleIndex = A->elementIndex;
 		// Set the pointer that leads to the nodes of element
-		CNode* node = NULL;
+		//OK411 CNode* node = NULL;
 
 		// Element is outside of the domain or in the sink
 		// Do not do anything. If not, then proceed.
@@ -975,7 +973,7 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 			// this code should be revisited.
 
 			// Get the number of nodes
-			int nnodes = theEle->GetVertexNumber();
+			//OK411 int nnodes = theEle->GetVertexNumber();
 
 			// Mount the edges of the element
 			vec<CEdge*>theEdgesOfThisElement(nnode);
@@ -1153,7 +1151,7 @@ int RandomWalk::IsParticleOnTheEdge(Particle* A)
 		vec<CEdge*>theEdgesOfThisElement(nnode);
 		theEle->GetEdges(theEdgesOfThisElement);
 
-		double x1[3], x2[3], v[3];
+		double x1[3], x2[3]; //OK411 , v[3];
 		vec<CNode*>theNodesOfThisEdge(3);
 
 		for(int i=0; i< nnode; ++i)
@@ -1244,7 +1242,7 @@ double* RandomWalk::InterpolateLocationOfTheParticleByBilinear(Particle* A, doub
 
 		// Let's get the hydraulic conductivity first.
 		CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];
-		int phase = 0;
+		//OK411 int phase = 0;
 		CFluidProperties *FluidProp = mfp_vector[0];
 		double* kTensor = MediaProp->PermeabilityTensor(eleIndex);
 		double k = kTensor[0];
@@ -1252,7 +1250,7 @@ double* RandomWalk::InterpolateLocationOfTheParticleByBilinear(Particle* A, doub
 		A->K = k*FluidProp->Density()*9.81/FluidProp->Viscosity();
 
 		// Get the number of nodes
-		int nnodes = m_ele->GetVertexNumber();
+		//OK411 int nnodes = m_ele->GetVertexNumber();
 
 		// Mount the edges of the element
 		vec<CEdge*>theEdgesOfThisElement(nnode);
@@ -1296,7 +1294,7 @@ int RandomWalk::IndexOfTheElementThatThisParticleBelong(int option, Particle* A)
 		if(A->x > XT || A->x < 0.0 || A->y > YT || A->y < 0.0)
 			return index;
 
-		if(iFDM < indexFDM.size())
+		if(iFDM < (int)indexFDM.size())
 		{
 			index = indexFDM[iFDM].eleIndex;
 			/*
@@ -2084,7 +2082,7 @@ Programing:
  **************************************************************************/
 void RandomWalk::TraceStreamline(void)
 {
-	double tolerance = 1e-18;
+	//OK411 double tolerance = 1e-18;
 	// Loop over all the particles
 	for(int i=0; i< numOfParticles; ++i)
 	{
@@ -2120,6 +2118,7 @@ void RandomWalk::AdvanceToNextTimeStep(double dt)
 {
 	double tolerance = 1e-18;
 	// Loop over all the particles
+//OK411???
 	for(int i=0; i< numOfParticles; ++i)
 	{
 		// components defined in .mcp should be syncronized with identity of particles.
@@ -2243,7 +2242,7 @@ void RandomWalk::AdvanceToNextTimeStep(double dt)
 			// Rate coefficients definition here
 			// For the use of the existing parameters, I borrow Freundlich non-isotherm parameter set,
 			// which is isotherm_model = 2
-			int numOfComps = cp_vec.size();
+			int numOfComps = (int)cp_vec.size(); //OK411 
 			double* Kon = NULL; double* Koff = NULL;
 			Kon = new double [numOfComps];
 			Koff = new double [numOfComps];
@@ -2254,9 +2253,10 @@ void RandomWalk::AdvanceToNextTimeStep(double dt)
 				Koff[i] = cp_vec[i]->isotherm_model_values[1];
 				FeqSum+=Kon[i]/Koff[i];
 			}
-			if(X[i].Now.identity == 0)	// Among mobile particles,
+//OK411???
+			if(X[i].Now.identity == 0)	// Among mobile particles, 
 			{
-				double Feq=1./(1.+FeqSum);
+				//OK411 double Feq=1./(1.+FeqSum);
 
 				if( ChanceOfMobile < (1.0-exp(-Koff[0]*dt))*Kon[0]/Koff[0] )
 				{
@@ -2392,10 +2392,10 @@ void RandomWalk::SetElementBasedConcentration(double dt)
 	CurrentTime += dt;
 	sprintf(now, "%f", CurrentTime);
 
-	double outputStep = 10.0;		// This is the time step that I'd like to print.
-	double tolerance = 1e-1;
-	double checkDivision = CurrentTime/outputStep;
-	double checkDivisionNoNumbersAfterDecimalPoint = (int)(CurrentTime/outputStep);
+	//OK411 double outputStep = 10.0;		// This is the time step that I'd like to print.
+	//OK411 double tolerance = 1e-1;
+	//OK411 double checkDivision = CurrentTime/outputStep;
+	//OK411 double checkDivisionNoNumbersAfterDecimalPoint = (int)(CurrentTime/outputStep);
 
 	//	if( fabs (checkDivision-checkDivisionNoNumbersAfterDecimalPoint) < tolerance )
 	DATWritePCTFile(now);
@@ -2486,6 +2486,10 @@ Programing:
  **************************************************************************/
 void RandomWalk::RandomlyDriftAway(Particle* A, double dt, double* delta, int type)
 {
+//OK411
+  type = type; 
+  dt =dt;
+
 	CElem* m_ele = m_msh->ele_vector[A->elementIndex];
 
 	// Let's generate three random components N(0,1) and use it to compute deltaOfX
@@ -2916,7 +2920,7 @@ int RandomWalk::SolveForNextPosition(Particle* A, Particle* B)
 				GetDisplacement(B, Z, V, dD, B->t, dsp);
 				B->x += dsp[0]; B->y += dsp[1]; B->z += dsp[2];
 
-				double dt = B->t;
+				//OK411 double dt = B->t;
 			}
 			else
 			{
@@ -3454,7 +3458,7 @@ int RandomWalk::IsTheParticleInThisElement(Particle* A)
 		// Checking the coordinateflag for proper solution.
 		int coordinateflag = m_msh->GetCoordinateFlag();
 		CNode* p1 = NULL; CNode* p2=NULL;
-		for(int i=0; i< m_msh->ele_vector.size(); ++i)
+		for(int i=0; i< (int)m_msh->ele_vector.size(); ++i) //OK411??? long
 		{
 			CElem* theEle = m_msh->ele_vector[i];
 			if(coordinateflag == 10) // x only
@@ -3909,7 +3913,7 @@ void RandomWalk::IsoparametricMappingQuadfromRtoP(int index, double* P)
 	}
 	// Mount the element fromthe first particle from particles initially
 	CElem* theEle = m_msh->ele_vector[index];
-	double tolerance = 1e-8;
+	//OK411 double tolerance = 1e-8;
 
 	// If a quad element,
 	int nnode = theEle->GetEdgesNumber();
@@ -4368,7 +4372,7 @@ int RandomWalk::ReadInVelocityFieldOnNodes(string file_base_name)
 
 	while(End)
 	{
-		for(int i=0; i< m_msh->nod_vector.size(); ++i)
+		for(int i=0; i< (int)m_msh->nod_vector.size(); ++i) //OK411??? long
 		{
 			double v[3];
 			for(int p=0; p<3; ++p)	v[p] = 0.0;
@@ -4401,7 +4405,7 @@ void RandomWalk::buildFDMIndex(void)
 	Cy= new double[gli_points_vector.size()];
 
 	// Solve for four corners from .gli
-	for(int i=0; i<gli_points_vector.size(); ++i)
+	for(int i=0; i<(int)gli_points_vector.size(); ++i) //OK411??? long
 	{
 		Cx[i] = gli_points_vector[i]->x;
 		Cy[i] = gli_points_vector[i]->y;
@@ -4412,7 +4416,7 @@ void RandomWalk::buildFDMIndex(void)
 	double xmin=1e+12, ymin=1e+12;
 	double minX;
 	double minY;
-	for(int i=0;i<gli_points_vector.size(); ++i)
+	for(int i=0;i<(int)gli_points_vector.size(); ++i)  //OK411??? long
 	{
 		if(Cx[i] > xmax)
 			xmax = Cx[i];
@@ -4487,7 +4491,7 @@ void RandomWalk::buildFDMIndex(void)
 			// eleIndex -5 is dummy index different from -10
 			one.i = (int)(i/dx); one.j = (int)(j/dy); one.eleIndex = -5;
 
-			for(int k=0; k<m_msh->ele_vector.size(); ++k)
+			for(int k=0; k<(int)m_msh->ele_vector.size(); ++k) //OK411??? long
 			{
 				double* center = m_msh->ele_vector[k]->GetGravityCenter();
 				if( (center[0]>= seg_startX)	&& 	(center[0]<= seg_endX)	&&

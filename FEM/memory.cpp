@@ -27,17 +27,10 @@
     7/1999    C.Thorenz  Bugfix
 
 **************************************************************************/
-#include "stdafx.h"             /* MFC */
-
-/* Preprozessor-Definitionen */
 
 #include "makros.h"
-  /* mit Makrodefinitionen und stdlib.h ! */
-
-/* Header / Andere intern benutzte Module */
 #include "memory.h"
 #include <stdio.h>
-
 
 /* Interne (statische) Deklarationen */
 

@@ -3,12 +3,10 @@
    Designed and programmed by WW, 06/2004
 */
 
-#include "stdafx.h"                    /* MFC */
 #include "makros.h"
 #include <iostream>
 // Sytem matrix
 #include "matrix.h"
-//#include "nodes.h"
 #include "mathlib.h"
 #include "pcs_dm.h"
 #include "rf_msp_new.h"
@@ -116,7 +114,7 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
     // For cache NW
     vec_B_matrix.resize(20);
     vec_B_matrix_T.resize(20);
-    for (i=0; i<vec_B_matrix.size(); i++){
+    for (i=0; i<(int)vec_B_matrix.size(); i++){
 	  switch(dim)
 	  {
 	     case 2:
@@ -381,15 +379,13 @@ CFiniteElementVec::~CFiniteElementVec()
     pstr = NULL;
 
     //NW
-    for (int i=0; i<vec_B_matrix.size(); i++){
+    for (int i=0; i<(int)vec_B_matrix.size(); i++){
       delete vec_B_matrix[i];
       delete vec_B_matrix_T[i];
       vec_B_matrix[i] = NULL;
       vec_B_matrix_T[i] = NULL;
    }
-
 }
-
 
 /***************************************************************************
    GeoSys - Funktion: 

@@ -150,7 +150,5 @@ extern CBoundaryCondition* BCGet(string); //OK
 //ToDo
 extern long IsNodeBoundaryCondition(char *name, long node);
 extern void ScalingDirichletBoundaryConditions(const double factor);
-//WW extern int NodeSetBoundaryConditions(char*,int,string);
-extern int NodeSetBoundaryConditions(char *pv_name,int ndx,CRFProcess* m_pcs);
 
 #endif
