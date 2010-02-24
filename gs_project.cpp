@@ -5,8 +5,7 @@ Programing:
 01/2005 OK/TK Implementation
 last modified:
 **************************************************************************/
-// MFC
-#include "stdafx.h"
+
 #ifdef MFC
 #include "afxpriv.h" // For WM_SETMESSAGESTRING
 #endif
@@ -20,7 +19,7 @@ using namespace std;
 // FEM-Makros
 #include "makros.h"
 extern string GetLineFromFile1(ifstream*);
-#include "geo_strings.h"
+#include "files0.h"
 // GeoSys-GEOLib
 #include "geo_lib.h"
 // MSHLib
@@ -38,7 +37,6 @@ extern string GetLineFromFile1(ifstream*);
 #include "rf_mfp_new.h"
 #include "rf_msp_new.h"
 #include "rfmat_cp.h"
-#include "msh_elements_rfi.h"
 extern bool RFDOpen(string file_name_base);
 #include "problem.h"
 
@@ -410,19 +408,9 @@ void GSPWriteData()
       path_base = g_gsp_path + m_gsp->base;
       GEOWrite(path_base);
     }
-    else if(m_gsp->type.compare("rfi")==0){
-      path_base = g_gsp_path + m_gsp->base;
-      DATWriteRFIFile(path_base.data());
-#ifdef RANDOM_WALK
-      //DATWritePCTFile(path_base.data());    // PCH Again, this is a temperary solution. Should be changed later on.
-#endif
-    }
     if(m_gsp->type.compare("msh")==0){
       path_base = g_gsp_path + m_gsp->base;
       MSHWrite(path_base);
-#ifdef RANDOM_WALK
-//	  DATWritePCTFile(path_base.data());    // PCH Again, this is a temperary solution. Should be changed later on.
-#endif
     }
     else if(m_gsp->type.compare("pct")==0){     // PCH
       path_base = g_gsp_path + m_gsp->base;
