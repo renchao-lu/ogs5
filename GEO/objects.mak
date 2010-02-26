@@ -1,8 +1,8 @@
 # GeoSys - Makefile for LINUX
 #  02/06/2006 MH
-#  22/072007  WW
+#  22/07 2007  WW
+#  26.02.2010  WW
 GEOOBJS = geo_vol.o\
-geo_strings.o\
 geo_sfc.o\
 geo_pnt.o\
 geo_ply.o\

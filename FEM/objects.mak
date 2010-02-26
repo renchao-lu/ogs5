@@ -19,10 +19,8 @@ memory.o\
 par_ddc.o\
 pcs_dm.o\
 problem.o\
-ptrarr.o\
 rf.o\
 rf_bc_new.o\
-rf_db.o\
 rf_fct.o\
 rf_fluid_momentum.o\
 rf_ic_new.o\
@@ -38,9 +36,7 @@ rf_random_walk.o\
 rf_react.o\
 rf_st_new.o\
 rf_tim_new.o\
-rfadt.o\
 rfmat_cp.o\
-rfstring.o\
 Stiff_Bulirsch-Stoer.o\
 timer.o\
 tools.o\
