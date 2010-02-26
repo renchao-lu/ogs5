@@ -4,9 +4,9 @@
 #        15/10/2008 WW
 # 4.9    17/12/2008 WW
 # 4.9.09 30/04/2009 WW
+#        26.02.2010 WW
 FEMOBJS = break.o\
 display.o\
-elements.o\
 eos.o\
 fem_ele.o\
 fem_ele_std.o\
@@ -16,7 +16,6 @@ files0.o\
 mathlib.o\
 matrix_class.o\
 memory.o\
-nodes.o\
 par_ddc.o\
 pcs_dm.o\
 problem.o\
