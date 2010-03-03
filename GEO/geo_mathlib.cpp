@@ -425,7 +425,7 @@ double MCalcDistancePointToPoint(double *pt1,double *pt2) {
  return MBtrgVec(vec,3);
 }
 
-CubicSpline::CubicSpline(vector<double>&s, vector<double>&val)
+CubicSpline::CubicSpline(std::vector<double>&s, std::vector<double>&val)
 {
    n = (int)s.size();
    xx = s;
@@ -447,7 +447,7 @@ CubicSpline::~CubicSpline()
     dd = NULL;
 }
 
-double CubicSpline::interpolation(const double x)
+double CubicSpline::interpolation(double x)
 {
     int i;
     double val = 0.0;

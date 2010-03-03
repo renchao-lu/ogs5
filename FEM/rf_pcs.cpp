@@ -59,7 +59,7 @@ Programing:
 #include "rfmat_cp.h"
 #include "rf_mfp_new.h" // MFP
 #include "rf_num_new.h"
-#include "gs_project.h"
+#include "../gs_project.h"
 #include "rf_fct.h"
 #include "femlib.h"
 /*-----------------------------------------------------------------------*/

@@ -20,8 +20,8 @@ class CTIN
   public:
      CTIN(){};
     ~CTIN();
-    string name;
-    vector<CTriangle*> Triangles;
+    std::string name;
+    std::vector<CTriangle*> Triangles;
 };
 
 //-------------------------------------------------------------------------
@@ -31,16 +31,16 @@ public:
 	~Surface();
 	//ID
     long id;//CC
-    string name;
+    std::string name;
     //Properties
 	int type;
-    string type_name;
-    string data_name;
+	std::string type_name;
+	std::string data_name;
     //int data_type;
     double epsilon;
     double mesh_density;
     int mat_group; // MMP
-    string mat_group_name;
+    std::string mat_group_name;
     double Radius; // Radius of cylinder. WW
     //display
     int m_color[3];
@@ -49,27 +49,27 @@ public:
     int display_mode_bc;
     bool highlighted;// CC
     //topology
-    bool order; 
+    bool order;
     bool createtins;
     double center_point[3];
     //TIN
     CTIN *TIN;
     //point vector
-    vector<CGLPoint*>polygon_point_vector;
+    std::vector<CGLPoint*>polygon_point_vector;
     // polylines
    // list<CGLPolyline*> polyline_of_surface_list;
-    vector<CGLPolyline*> polyline_of_surface_vector;
-    vector<int> polyline_of_surface_orient;
-    vector<double*>nodes_coor_vector;  
+    std::vector<CGLPolyline*> polyline_of_surface_vector;
+    std::vector<int> polyline_of_surface_orient;
+    std::vector<double*>nodes_coor_vector;
     // MSH
     int meshing_allowed; //TK
     //----------------------------------------------------------------
     //Method
     // I/O
-	void output(FILE* geo_file, int &p_index, int &l_index, 
+	void output(FILE* geo_file, int &p_index, int &l_index,
 		                        int &pl_index,int &s_index);
-    void Write(string);
-    ios::pos_type Read(ifstream*,string);
+    void Write(const std::string &);
+    std::ios::pos_type Read(std::ifstream*);
     //Topology
     void PolylineOrientation();//CC
     void ReArrangePolylineList();
@@ -80,27 +80,27 @@ public:
     void AssignColor();//CC
     // TIN
     void CreateTIN(void);
-    void ReadTIN(string);//CC
-    void WriteTIN(string);//CC
-    void WriteTINTecplot(string);//CC
+    void ReadTIN(const std::string &);//CC
+    void WriteTIN(const std::string &);//CC
+    void WriteTINTecplot(const std::string &);//CC
     //Tecplot
-    void WriteTecplot(fstream*);
+    void WriteTecplot(std::fstream*);
     bool PointInSurface(CGLPoint*); //OK
     //material
     long profile_code;  //YD
   private:
     friend class CGLLine; //WW
-   
-}; 
+
+};
 //vector
-extern vector<Surface*> surface_vector;//CC
-extern vector<Surface*> GetSurfaceVector(void);//CC
+extern std::vector<Surface*> surface_vector;//CC
+extern std::vector<Surface*> GetSurfaceVector(void);//CC
 extern void GEOCreateSurfacePointVector(void);//CC
 //Access
-extern Surface* GEOGetSFCByName(const string&);
+extern Surface* GEOGetSFCByName(const std::string &);
 //I/O
-extern void GEOReadSurfaces(string file_name_path_base);
-extern void GEOWriteSurfaces(string);//C
+extern void GEOReadSurfaces(const std::string & file_name_path_base);
+extern void GEOWriteSurfaces(const std::string &);//C
 //Remove
 extern void GEORemoveAllSurfaces();//CC
 extern void GEORemoveSurface(long);//CC
@@ -110,9 +110,9 @@ extern void GEOSurfaceTopology(void);
 extern void GEOUnselectSFC(); //OK
 //TIN
 #define TIN_FILE_EXTENSION ".tin"
-extern void GEOWriteSurfaceTINs(string);//TIN
+extern void GEOWriteSurfaceTINs(const std::string &);//TIN
 extern void GEOCreateLayerSurfaceTINs(int,double);//TIN
-extern void GEOWriteSurfaceTINsTecplot(string);
+extern void GEOWriteSurfaceTINsTecplot(const std::string &);
 extern int sfc_ID_max;
 // MSH
 void MSHUnselectSFC(); //OK

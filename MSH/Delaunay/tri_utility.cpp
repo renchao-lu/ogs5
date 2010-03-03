@@ -1,5 +1,4 @@
-
-#include "stdafx.h" /* MFC */
+#include <cstring>
 #include "tricommon.h"
 
 void chr_translate( 
@@ -20,9 +19,9 @@ void chr_translate(
 
 
 int iDelimitStr_PIX(	
-		char	*buff,			// [i] バッファー
-		char	*str[], 	// [i] デリミッター
-		char	dli,	    // [o] 分解後のアドレス格納エリア
+		char	*buff,		// [i]
+		char	*str[], 	// [i]
+		char	dli,	    	// [o]
 		int		iBuffSize )
 {
 	int i;

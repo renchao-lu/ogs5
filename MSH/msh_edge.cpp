@@ -1,11 +1,12 @@
 /**************************************************************************
-MSHLib - Object: 
-Task: 
+MSHLib - Object:
+Task:
 Programing:
 08/2005 WW/OK Encapsulation from rf_ele_msh
 last modified
 **************************************************************************/
 
+// C++
 #include <cmath>
 // MSHLib
 #include "msh_edge.h"
@@ -14,27 +15,27 @@ last modified
 namespace Mesh_Group
 {
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task:
 Programing:
 06/2005 WW Implementation
 **************************************************************************/
-CEdge::CEdge(const int Index, bool quadr)
-   :CCore(Index)
+CEdge::CEdge(size_t Index, bool quadr)
+   : CCore(Index)
 {
    quadratic = quadr;
-   index = Index;
    // Assume that each edge has three nodes
    nodes_of_edges.resize(3);
    for(int i=0; i<3; i++)
-     nodes_of_edges[i] = NULL;	 
+     nodes_of_edges[i] = NULL;
 
    // PCH
    joint = 0;	// Set to be no joint.
    V = NULL;
 }
+
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task:
 Programing:
 06/2005 WW Implementation
@@ -44,21 +45,21 @@ CEdge::~CEdge()
    nodes_of_edges.resize(0);
 }
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task:
 Programing:
 06/2005 WW Implementation
 **************************************************************************/
 void CEdge::operator = (CEdge& ed)
 {
-   boundary_type = ed.boundary_type; 
+   boundary_type = ed.boundary_type;
    index = ed.index;
    mark = ed.mark;
    for(int i=0; i<nodes_of_edges.Size(); i++)
-      nodes_of_edges[i] = ed.nodes_of_edges[i]; 
+      nodes_of_edges[i] = ed.nodes_of_edges[i];
 }
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task:
 Programing:
 06/2005 WW Implementation
@@ -72,7 +73,7 @@ double CEdge::Length()
     return sqrt(dx*dx+dy*dy+dz*dz);
 }
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task:
 Programing:
 06/2005 WW Implementation
@@ -80,7 +81,7 @@ Programing:
 bool CEdge::operator == (CEdge& ed)
 {
    int identical;
- 
+
    // Compare two ends
    identical=0;
    for(int i=0; i<2; i++)
@@ -104,7 +105,7 @@ bool CEdge::operator == (CEdge& ed)
 }
 
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task:
 Programing:
 06/2005 WW Implementation
@@ -115,13 +116,13 @@ void CEdge::Write(ostream& osm) const
    	for(int i=0; i<nodes_of_edges.Size(); i++)
    	{
        osm<<"Node: "<< i<<endl;
-       nodes_of_edges[i]->Write(osm);        
+       nodes_of_edges[i]->Write(osm);
     }
    	osm<<endl;
 }
 
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 08/2006 OK Implementation
 **************************************************************************/
 void CEdge::SetNormalVector(double*ele_normal_vector,double*normal_vector)
@@ -136,7 +137,7 @@ void CEdge::SetNormalVector(double*ele_normal_vector,double*normal_vector)
 }
 
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 08/2006 OK Implementation
 **************************************************************************/
 void CEdge::GetEdgeVector(double*edge_vector)
@@ -150,7 +151,7 @@ void CEdge::GetEdgeVector(double*edge_vector)
 }
 
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 08/2006 OK Implementation
 **************************************************************************/
 void CEdge::GetEdgeMidPoint(double*edge_vector)

@@ -26,7 +26,8 @@ class GeoLib
     friend class CGLPolyline; 
     friend class Surface;
 };
-extern void GEOLIB_Read_GeoLib (string file_name_path_base);
+
+extern void GEOLIB_Read_GeoLib (const std::string &file_name_path_base);
 extern void GEOLIB_Clear_GeoLib_Data ();
 //OK
 #define GLI_FILE_EXTENSION ".gli"

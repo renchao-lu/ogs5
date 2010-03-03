@@ -7,6 +7,8 @@ last modified:
 **************************************************************************/
 #ifndef gs_project_INC
 #define gs_project_INC
+
+#include "Configure.h"
 // C++ STL
 #include <string>
 #include <vector>

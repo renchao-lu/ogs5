@@ -5,6 +5,9 @@
 #if defined(PROBLEM_CLASS)
 #ifndef problem_INC
 #define problem_INC
+
+#include "Configure.h"
+
 #include <vector>
 class CRFProcess;
 using namespace std;
@@ -99,7 +102,7 @@ class Problem
    void PCSCalcSecondaryVariables();
    bool Check(); //OK
 };
-extern Problem *aproblem;
+static Problem *aproblem; // LB: changed extern keyword to static due to linker errors
 extern bool MODCreate(); //OK
 #endif
 #endif //PROBLEM_CLASS

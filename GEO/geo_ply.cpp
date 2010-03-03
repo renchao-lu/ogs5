@@ -8,11 +8,11 @@
 #include "geo_sfc.h"
 #include "geo_pnt.h"
 #include "geo_mathlib.h"
-#include "files0.h"
+#include "../FEM/files0.h"
 #include "geo_lib.h"
 //GSP
 #ifdef MFC
-#include "gs_project.h"
+#include "../gs_project.h"
 #endif
 
 CGLPolyline *m_polyline = NULL;
@@ -50,7 +50,7 @@ Task:
 Programing:
 11/2005 OK Implementation
 **************************************************************************/
-CGLPolyline::CGLPolyline(string ply_name)
+CGLPolyline::CGLPolyline(const std::string &ply_name)
 {
   name = ply_name;
   closed = false;
@@ -71,11 +71,6 @@ CGLPolyline::CGLPolyline(string ply_name)
 // deconstructor
 CGLPolyline::~CGLPolyline(void)
 {
-    if ( line_vector.size() > 0 )
-    line_vector.clear();
-    
-    if ( point_vector.size() > 0 )
-    point_vector.clear();
 
     sbuffer.clear();
     ibuffer.clear();
@@ -88,7 +83,7 @@ Task:
 Programing:
 08/2005 CC Implementation
 **************************************************************************/
-CGLPolyline* GEOGetPLYByName(const string &name)
+CGLPolyline* GEOGetPLYByName(string name)
 {
   vector<CGLPolyline*>::iterator p = polyline_vector.begin();//CC
   while(p!=polyline_vector.end()) {
@@ -133,23 +128,22 @@ CCToDo Polyline destructor
 **************************************************************************/
 void GEORemoveAllPolylines()
 {
-  int i;  
+    int i;
+  //CGLPolyline * m_ply = NULL;
   for (i = 0; i < (int) polyline_vector.size(); i++){
-      // delete polyline_vector[i];
-    if ( polyline_vector[i] )
-      delete polyline_vector[i]; //>~CGLPolyline(); //HS
-      // polyline_vector[i]=NULL;
+     //m_ply = polyline_vector[0]; //TK: What's that Cui?
+     //delete m_ply;
+  delete polyline_vector[i];
+  polyline_vector[i]=NULL;
   }
   polyline_vector.clear(); //CC
 
   for (i=0; i < (int) gli_lines_vector.size(); i++){
-      //delete gli_lines_vector[i];
-    if ( gli_lines_vector[i] )
-      delete gli_lines_vector[i];// ->~CGLLine(); //HS
-      // gli_lines_vector[i]=NULL;
+  delete gli_lines_vector[i];
+  gli_lines_vector[i]=NULL;
   }
   gli_lines_vector.clear();
-  
+
 }
 /**************************************************************************
 GeoLib-Method: 
@@ -253,40 +247,40 @@ Programing:
 **************************************************************************/
 void CGLPolyline::Write(char* file_name)
 {
-  FILE *f = NULL;
-  const char *filename = 0; 
-  string gli_file_name;
-  long i;
-  //sprintf(gli_file_name,"%s.%s",file_name,"gli");
-  gli_file_name = (string)file_name + ".gli";
-  filename = gli_file_name.data();
-  f = fopen(filename,"a");
-  fprintf(f,"#POLYLINE\n");
-  fprintf(f," $ID\n");//CC
-  fprintf(f,"  %ld\n",id);//CC
-  fprintf(f," $NAME\n");
- if (data_type == 1)//CC8888
- fprintf(f,"  %s\n",ply_name.c_str());//CC8888
-  else//CC8888
-  fprintf(f,"  %s\n",name.c_str());
-  fprintf(f," $TYPE\n");
-  fprintf(f,"  %d\n",type);
-  fprintf(f," $EPSILON\n");
-  fprintf(f,"  %g\n",epsilon);
-  fprintf(f," $MAT_GROUP\n");
-  fprintf(f,"  %d\n",mat_group);
-    if(data_type==0) {
-      fprintf(f," $POINTS\n");
-      for(i=0;i<(long)point_vector.size();i++) {
-        fprintf(f," %ld\n",point_vector[i]->id);
-      }
-    }
-    else if (data_type==1) {
-      fprintf(f," $POINT_VECTOR\n");
-      string ply_file_name = ply_name + PLY_FILE_EXTENSION;//CC
-      fprintf(f,"  %s\n",ply_file_name.data());  //TK
-  }
-  fclose(f);
+	FILE *f = NULL;
+	const char *filename = 0;
+	std::string gli_file_name;
+	long i;
+	//sprintf(gli_file_name,"%s.%s",file_name,"gli");
+	gli_file_name = (string) file_name + ".gli";
+	filename = gli_file_name.data();
+	f = fopen(filename, "a");
+	fprintf(f, "#POLYLINE\n");
+	fprintf(f, " $ID\n");//CC
+	fprintf(f, "  %ld\n", id);//CC
+	fprintf(f, " $NAME\n");
+	if (data_type == 1)//CC8888
+		fprintf(f, "  %s\n", ply_name.c_str());//CC8888
+	else
+		//CC8888
+		fprintf(f, "  %s\n", name.c_str());
+	fprintf(f, " $TYPE\n");
+	fprintf(f, "  %d\n", type);
+	fprintf(f, " $EPSILON\n");
+	fprintf(f, "  %g\n", epsilon);
+	fprintf(f, " $MAT_GROUP\n");
+	fprintf(f, "  %d\n", mat_group);
+	if (data_type == 0) {
+		fprintf(f, " $POINTS\n");
+		for (i = 0; i < (long) point_vector.size(); i++) {
+			fprintf(f, " %ld\n", point_vector[i]->id);
+		}
+	} else if (data_type == 1) {
+		fprintf(f, " $POINT_VECTOR\n");
+		string ply_file_name = ply_name + PLY_FILE_EXTENSION;//CC
+		fprintf(f, "  %s\n", ply_file_name.data()); //TK
+	}
+	fclose(f);
 }
 /**************************************************************************
 GeoLib-Method: 
@@ -341,9 +335,8 @@ Programing:
 01/2005 OK File handling
 08/2005 CC
 **************************************************************************/
-void CGLPolyline::WritePointVector(string base)
+void CGLPolyline::WritePointVector(const std::string & base)
 {
-  string delimiter(" ");
   string ply_path;
   string ply_path_base_type;
   long i;
@@ -368,8 +361,8 @@ void CGLPolyline::WritePointVector(string base)
     ply_file.seekg(0L,ios::beg);
     for(i=0;i<no_points;i++) {
       ply_file \
-        << point_vector[i]->x << delimiter \
-        << point_vector[i]->y << delimiter \
+        << point_vector[i]->x << " " \
+        << point_vector[i]->y << " " \
         << point_vector[i]->z << endl;
     }
   }
@@ -383,7 +376,7 @@ Programing:
 08/2005 CC file_path
 10/2005 OK Path
 **************************************************************************/
-void CGLPolyline::ReadPointVector(string base)
+void CGLPolyline::ReadPointVector(const std::string &base)
 {
   string cut_string;
   string delimiter_type(" ");
@@ -394,18 +387,10 @@ void CGLPolyline::ReadPointVector(string base)
   CGLPoint *m_point = NULL;
   //----------------------------------------------------------------------
   // File handling
-#ifdef MFC
-  CGSProject *m_gsp = GSPGetMember("gli");
-  ply_file_name = m_gsp->path + base;
-#else
   ply_file_name = base;
-#endif
-  ifstream ply_file (ply_file_name.data(),ios::in);
-  if (!ply_file.good()){
-    cout << "Warning in CGLPolyline::ReadPointVector: File not found" << endl;
-#ifdef MFC
-    AfxMessageBox("Warning in CGLPolyline::ReadPointVector: File not found");
-#endif
+  std::ifstream ply_file (base.c_str()); //,std::ios::in);
+  if (!ply_file.is_open()){
+    std::cout << "*** Warning in CGLPolyline::ReadPointVector: File " << ply_file_name << " not found" << std::endl;
     return;
   }
   ply_file.seekg(0L,ios::beg);
@@ -491,7 +476,7 @@ Programing:
 07/2005 CC read ID of polyline
 08/2005 CC parameter
 **************************************************************************/
-void GEOReadPolylines (string file_name_path_base)
+void GEOReadPolylines (const std::string &file_name_path_base)
 {
   CGLPolyline *m_polyline = NULL;
   char line[MAX_ZEILEN];
@@ -512,7 +497,10 @@ void GEOReadPolylines (string file_name_path_base)
 //  pos = (int)file_name_path_base.rfind('\\'); //CC remove
   //path_name = file_name_path_base.substr(0,(pos+1));//CC remove
   ifstream gli_file (gli_file_name.data(),ios::in);
-  if (!gli_file.good()) return;
+	if (!gli_file.good()) {
+		std::cerr << "stream error GEOReadPolylines " << std::endl;
+		return;
+	}
   gli_file.seekg(0L,ios::beg); // rewind?
   //========================================================================
   // Keyword loop
@@ -531,19 +519,18 @@ void GEOReadPolylines (string file_name_path_base)
         }
         counter++;
 #endif
-      m_polyline = new CGLPolyline();
-      m_polyline->AssignColor(); //CC
-      position = m_polyline->Read(&gli_file,file_name_path_base);//CC8888
-      polyline_vector.push_back(m_polyline);
-      gli_file.seekg(position,ios::beg);
-// OK->CC encapsulate function
-      //..................................................................
-      m_polyline->CalcMinimumPointDistance();
-      m_polyline = NULL;
-      //..................................................................
-    } // keyword found
-  } // eof
-  gli_file.close(); //OK41
+			m_polyline = new CGLPolyline();
+			m_polyline->AssignColor(); //CC
+			position = m_polyline->Read(gli_file); // CC8888, TF
+			polyline_vector.push_back(m_polyline);
+			gli_file.seekg(position, ios::beg);
+			// OK->CC encapsulate function
+			//..................................................................
+			m_polyline->CalcMinimumPointDistance();
+			//..................................................................
+		} // keyword found
+	} // eof
+	gli_file.close(); //OK41
 }
 
 /**************************************************************************
@@ -556,126 +543,114 @@ Programing:
 08/2005 CC parameter
 09/2005 CC itoa - convert integer to string
 **************************************************************************/
-ios::pos_type CGLPolyline::Read(ifstream *gli_file,string file_path_base)//CC8888
+ios::pos_type CGLPolyline::Read(std::ifstream &gli_file)//CC8888
 {
-  char line[MAX_ZEILEN];
-  
-  string sub_line;
-  string line_string;
-  string delimiter(",");
-  bool new_keyword = false;
-  string hash("#");
-  ios::pos_type position;
-  string sub_string;
-  string tin_file_name;
-  CGLPoint *m_point = NULL;
-  string delimiter_file_extension(".");
-  string cut_string;
-  //----------------------------------------------------------------------
-  int pos;
-  pos = (int)file_path_base.find_last_of('\\');
-  string file_path_base_name = file_path_base.substr(0,pos);
-  string file_path = file_path_base_name + "\\" ;
-  //========================================================================
-  // Schleife ueber alle Phasen bzw. Komponenten 
-  while (!new_keyword) {
-    position = gli_file->tellg();
-    gli_file->getline(line,MAX_ZEILEN);
-    line_string = line;
-    if(line_string.find(hash)!=string::npos) {
-      new_keyword = true;
-      break;
-    }
-    if(line_string.find("$ID")!=string::npos) { // subkeyword found CC
-      gli_file->getline(line,MAX_ZEILEN);
-      line_string = line;
-      remove_white_space(&line_string);
-      id = strtol(line_string.data(),NULL,0);
+	char line[MAX_ZEILEN];
+	string line_string;
 
-      continue;
-    } 
-    //....................................................................
-    if(line_string.find("$NAME")!=string::npos) { // subkeyword found
-      gli_file->getline(line,MAX_ZEILEN);
-      line_string = line;
-      remove_white_space(&line_string);
-      name = line_string.substr(0);
-      continue;
-    } // subkeyword found
-    //....................................................................
-    if(line_string.find("$TYPE")!=string::npos) { // subkeyword found
-      gli_file->getline(line,MAX_ZEILEN);
-      line_string = line;
-      type = strtol(line_string.data(),NULL,0);
-      continue;
-    } // subkeyword found
-    //....................................................................
-    if(line_string.find("$EPSILON")!=string::npos) { // subkeyword found
-      gli_file->getline(line,MAX_ZEILEN);
-      line_string = line;
-      remove_white_space(&line_string);
-      epsilon = strtod(line_string.data(),NULL);
-      continue;
-    } // subkeyword found
-    //....................................................................
-    if(line_string.find("$MAT_GROUP")!=string::npos) { // subkeyword found
-      gli_file->getline(line,MAX_ZEILEN);
-      line_string = line;
-      mat_group = strtol(line_string.data(),NULL,0);
-      continue;
-    } // subkeyword found
-    //....................................................................
-    if(line_string.find("$POINTS")!=string::npos) { // subkeyword found
-      gli_file->getline(line,MAX_ZEILEN);
-      line_string = line;
-      ply_type = "GEO_POINTS";//CC8888
-      ply_data = "POINTS";//CC8888
-      long lvalue = strtol(line_string.data(),NULL,0);
-      int i = 1;
-      while(i == 1) {
-        m_point = GEOGetPointById(lvalue);//CC wrong get point by id
-        if(m_point)
-          AddPoint(m_point); 
-         //CC---------------------------
-        else{
-          cout << "Error: point " << lvalue << " not found" << endl;
-          //--------------------------------------------------
-         string m_strname = name + ": Point not found: point "; 
-         char m_strnameid[10];
-         sprintf(m_strnameid,"%li",lvalue); //OK
-         //itoa((int)lvalue,m_strnameid,10); //CC 09/05 convert integer to string ultoa convert unsigned long to string
-         string error_str = m_strname + m_strnameid;
+	bool new_keyword = false;
+	ios::pos_type position;
+	CGLPoint *m_point = NULL;
+
+	// Schleife ueber alle Phasen bzw. Komponenten
+	while (!new_keyword) {
+		position = gli_file.tellg();
+		gli_file.getline(line, MAX_ZEILEN);
+		line_string = line;
+		if (line_string.find("#") != string::npos) {
+			new_keyword = true;
+			break;
+		}
+		if (line_string.find("$ID") != string::npos) { // subkeyword found CC
+			gli_file.getline(line, MAX_ZEILEN);
+			line_string = line;
+			remove_white_space(&line_string);
+			id = strtol(line_string.data(), NULL, 0);
+
+			continue;
+		}
+		//....................................................................
+		if (line_string.find("$NAME") != string::npos) { // subkeyword found
+			gli_file.getline(line, MAX_ZEILEN);
+			line_string = line;
+			remove_white_space(&line_string);
+			name = line_string.substr(0);
+			continue;
+		} // subkeyword found
+		//....................................................................
+		if (line_string.find("$TYPE") != string::npos) { // subkeyword found
+			gli_file.getline(line, MAX_ZEILEN);
+			line_string = line;
+			type = strtol(line_string.data(), NULL, 0);
+			continue;
+		} // subkeyword found
+		//....................................................................
+		if (line_string.find("$EPSILON") != string::npos) { // subkeyword found
+			gli_file.getline(line, MAX_ZEILEN);
+			line_string = line;
+			remove_white_space(&line_string);
+			epsilon = strtod(line_string.data(), NULL);
+			continue;
+		} // subkeyword found
+		//....................................................................
+		if (line_string.find("$MAT_GROUP") != string::npos) { // subkeyword found
+			gli_file.getline(line, MAX_ZEILEN);
+			line_string = line;
+			mat_group = strtol(line_string.data(), NULL, 0);
+			continue;
+		} // subkeyword found
+		//....................................................................
+		if (line_string.find("$POINTS") != string::npos) { // subkeyword found
+			gli_file.getline(line, MAX_ZEILEN);
+			line_string = line;
+			ply_type = "GEO_POINTS";//CC8888
+			ply_data = "POINTS";//CC8888
+			long lvalue = strtol(line_string.data(), NULL, 0);
+			int i = 1;
+			while (i == 1) {
+				m_point = GEOGetPointById(lvalue);//CC wrong get point by id
+				if (m_point)
+					AddPoint(m_point);
+				//CC---------------------------
+				else {
+					cout << "Error: point " << lvalue << " not found" << endl;
+					//--------------------------------------------------
+					string m_strname = name + ": Point not found: point ";
+					char m_strnameid[10];
+					sprintf(m_strnameid, "%li", lvalue); //OK
+					//itoa((int)lvalue,m_strnameid,10); //CC 09/05 convert integer to string ultoa convert unsigned long to string
+					string error_str = m_strname + m_strnameid;
 #ifdef MFC
-         AfxMessageBox(error_str.c_str());
+					AfxMessageBox(error_str.c_str());
 #endif
-         return position;
-        };
-        gli_file->getline(line,MAX_ZEILEN);
-        line_string = line;
-        if((line_string.find(hash)!=string::npos)\
-         ||(line_string.find("$")!=string::npos)){ //OK bugfix
-            i = 0;
-            new_keyword = true;
-          }
-        else
-           lvalue = strtol(line_string.data(),NULL,0);
-       }//end of while
-      data_type = 0;
-    } // subkeyword found
-    //....................................................................
-    if(line_string.find("$POINT_VECTOR")!=string::npos) { // subkeyword found
-      gli_file->getline(line,MAX_ZEILEN);
-      line_string = line;
-      ply_type = "NOD_POINTS";//CC8888
-      remove_white_space(&line_string);
-      ply_file_name = line_string.substr(0);
-      ReadPointVector(ply_file_name);//CC
-      data_type = 1; //OK41
-      ply_data = line_string;
-    } // subkeyword found
-  //========================================================================
-  }
-  return position;
+					return position;
+				};
+				gli_file.getline(line, MAX_ZEILEN);
+				line_string = line;
+				if ((line_string.find("#") != string::npos)\
+
+						|| (line_string.find("$") != string::npos)) { //OK bugfix
+					i = 0;
+					new_keyword = true;
+				} else
+					lvalue = strtol(line_string.data(), NULL, 0);
+			}//end of while
+			data_type = 0;
+		} // subkeyword found
+		//....................................................................
+		if (line_string.find("$POINT_VECTOR") != string::npos) { // subkeyword found
+			gli_file.getline(line, MAX_ZEILEN);
+			line_string = line;
+			ply_type = "NOD_POINTS";//CC8888
+			remove_white_space(&line_string);
+			ply_file_name = line_string.substr(0);
+			ReadPointVector(ply_file_name);//CC
+			data_type = 1; //OK41
+			ply_data = line_string;
+		} // subkeyword found
+		//========================================================================
+	}
+	return position;
 }
 
 /**************************************************************************
@@ -793,7 +768,7 @@ Programing:
 08/2005 CC file_path
 last modification:
 **************************************************************************/
-void CGLPolyline::WriteTecplot(string file_path)
+void CGLPolyline::WriteTecplot(const std::string &file_path)
 {
 
   long i;
@@ -1181,7 +1156,7 @@ GEOLib-Method:
 Programing:
 12/2005 OK Implementation
 **************************************************************************/
-CColumn* COLGet(string col_name)
+CColumn* COLGet(const std::string &col_name)
 {
   CColumn* m_col = NULL;
   for(int i=0;i<(int)column_vector.size();i++){

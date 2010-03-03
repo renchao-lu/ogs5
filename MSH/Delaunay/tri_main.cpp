@@ -1,4 +1,3 @@
-#include "stdafx.h" /* MFC */
 #include "tricommon.h"
 
 
@@ -248,6 +247,7 @@ void usage( char *argv[] )
 	fprintf( stdout, "===> If this option is omitted, convex hull is not used.\n" );
 }
 
+#ifdef WIN32
 void main_program_process( int argc, char *argv[] )
 {
 	char szTriFile[FILE_NAME_SIZE], szNodeFile[FILE_NAME_SIZE];
@@ -284,3 +284,5 @@ void main_program_process( int argc, char *argv[] )
 
 	return;
 }
+#endif // WIN32
+

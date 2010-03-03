@@ -32,7 +32,7 @@ extern void ConfigRenumberProperties(void);
 #endif
 extern int ReadRFIFile(string g_strFileNameBase);
 #include "rf_pcs.h"
-#include "gs_project.h"
+#include "../gs_project.h"
 
 vector<Mesh_Group::CFEMesh*>fem_msh_vector;
 

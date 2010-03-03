@@ -11,28 +11,52 @@ Programing:
 #include <string>
 #include <vector>
 #include "geo_mathlib.h"
+#include "MathTools.h"
 //
 #include <iostream>
 #include <sstream>
 #include <fstream>
-using namespace std;
+
+// LB TODO: trunk transition hack
+std::string get_sub_string(std::string buffer, std::string delimiter, int pos1, int *pos2);
+
 /*---------------------------------------------------------------*/
 class CGLPoint
 {
   private:
+	  /** geometry */
+	  double data[3];
 
   public:
   //----------------------------------------------------------------------
-  // Properties 
+  // Properties
     // ID
-    string name;
+    std::string name;
     long id; //CC
-    // Geometry
-    double x;
-    double y;
-    double z;
-    double epsilon;
-    double length; //OK well bore depth in 2D modells
+
+    /* *** get and set *** */
+    /** get the x coordinate of the point */
+    double getX () const {return data[0];}
+    /** get the y coordinate of the point */
+    double getY () const {return data[1];}
+    /** get the z coordinate of the point */
+    double getZ () const {return data[2];}
+    /** set the x coordinate of the point */
+    void setX (double v) { data[0] = v; }
+    /** set the y coordinate of the point */
+    void setY (double v) { data[1] = v; }
+    /** set the z coordinate of the point */
+    void setZ (double v) { data[2] = v; }
+    /** get the x,y and z coordinate of the point */
+	const double* const getPoint () const { return data; }
+
+    // do not use this attributes directly - use the getter and setter methods!!!
+    double& x;
+    double& y;
+    double& z;
+
+    //double epsilon;
+	double length; //OK well bore depth in 2D modells
 	long first_identical_id; //TK
 	long old_id, new_id; //TK
     int nb_of_ply; //TK Number of Polylines using this point
@@ -49,25 +73,25 @@ class CGLPoint
     double value;
     double propert;
     // Display
-    bool highlighted;
+    //bool highlighted;
     int x_pix, y_pix;
     int circle_pix;
-    int display_mode;
-	int m_color[3]; 
-    bool selected;
+    //int display_mode;
+	int m_color[3];
+    //bool selected;
     int plg_hightlight_seg;
   //----------------------------------------------------------------------
   // Methods
     // Create
 	CGLPoint(void);
     ~CGLPoint(void);
-  
+
     // Access
-	void SetIndex(const int L_index) {index_msh=L_index;}
+	void SetIndex(int L_index) {index_msh=L_index;}
 	int  GetIndex() {return index_msh;}
     // I/O
    // void Write(char*);
-    ios::pos_type Read(ifstream*,int*);//CC
+    std::ios::pos_type Read(std::ifstream*, int&);//CC
     // GEO
     int IsPointExist();//CC
     CGLPoint* Exist(); //OK
@@ -81,9 +105,9 @@ class CGLPoint
 };
 //------------------------------------------------------------------------
 // Properties
-extern vector<CGLPoint*> GetPointsVector(void);//CC
-extern vector<CGLPoint*> gli_points_vector;
-extern vector<CGLPoint*> pnt_properties_vector; //OK
+extern std::vector<CGLPoint*> GetPointsVector(void);//CC
+extern std::vector<CGLPoint*> gli_points_vector;
+extern std::vector<CGLPoint*> pnt_properties_vector; //OK
 
 //------------------------------------------------------------------------
 // Remove
@@ -91,21 +115,30 @@ extern void GEORemoveAllPoints();
 extern void GEORemovePoint(long);//CC
 //........................................................................
 // I/O
-extern void GEOReadPoints(string file_name_path_base);//CC
-extern void GEOReadPointProperties(string);
+extern void GEOReadPoints(const std::string &file_name_path_base);//CC
+extern void GEOReadPointProperties(const std::string &);
 extern void GEOWritePoints(char* file_name);//CC
 //........................................................................
 // Access
-extern CGLPoint* GEOGetPointByName(const string&);//CC 
+extern CGLPoint* GEOGetPointByName(const std::string &);//CC
 extern CGLPoint* GEOGetPointById(long);//CC
 //........................................................................
 // GEO
 extern long GEOPointID();
 extern void GEO_Search_DoublePoints(double);//TK
-extern vector<CGLPoint*> GEOLIB_SetGLIPoints_Vector(vector<CGLPoint*> gl_point); //TK
+extern std::vector<CGLPoint*> GEOLIB_SetGLIPoints_Vector(std::vector<CGLPoint*> gl_point); //TK
 extern double AngleSumPointInsideTriangle(double *point, double *tri_p1,double *tri_p2,double *tri_p3, double tolerance);
 extern void GEOCalcPointMinMaxCoordinates(); //OK
-extern int GEOMaxPointID(); //OK
+
+/** tests if the point p is near by a point of the vector vec
+ * \param vec the point vector
+ * \param p the point
+ * \param tol value for stopping criterion (||vec[i] - p||^2 < tol)
+ * \returns pointer to the point
+ * */
+CGLPoint* isPointInPointVector(const std::vector<CGLPoint*> &vec,
+		const CGLPoint* const p, double tol = 1e-3);
+
 //........................................................................
 //variables
 extern double pnt_x_min;

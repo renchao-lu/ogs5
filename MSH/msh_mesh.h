@@ -8,6 +8,7 @@ last modified
 #ifndef msh_mesh_INC
 #define msh_mesh_INC
 // C++
+#include "Configure.h"
 #include <string>
 // GEOLib
 #include "geo_lib.h"

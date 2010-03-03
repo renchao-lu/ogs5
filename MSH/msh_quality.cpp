@@ -4,7 +4,6 @@ Mesh Quality Test Tools
 1. Schritt 4/2004  TK => Utersuchung geometrischer Kriterien
 
 **************************************************************************/
-#include "stdafx.h" /* MFC */
 #include "msh_quality.h"
 // C/C++/MFC
 #include <stdlib.h>

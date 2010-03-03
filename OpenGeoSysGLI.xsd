@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+<!-- OpenGeoSysGLI schema; initial implementation: Karsten Rink -->
+
+    <xs:element name="OpenGeoSysGLI">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="name" type="xs:string" maxOccurs="1" />
+<!-- definition of points -->
+                <xs:element name="points" maxOccurs="1">
+                    <xs:complexType>
+                    	<xs:sequence>
+                            <xs:element name="point" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:attribute name="id" type="xs:nonNegativeInteger" use="required" />
+                                    <xs:attribute name="x" type="xs:decimal" use="required" />
+                                    <xs:attribute name="y" type="xs:decimal" use="required" />
+                                    <xs:attribute name="z" type="xs:decimal" />
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+<!-- definition of polylines -->
+                <xs:element name="polylines"  maxOccurs="1">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="polyline" maxOccurs="unbounded">
+                            	<xs:complexType>
+                            	    <xs:sequence>
+                                	<xs:element name="pnt" type="xs:integer" maxOccurs="unbounded" />
+                                    </xs:sequence>
+                                    <xs:attribute name="id" type="xs:nonNegativeInteger" use="required" />
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+<!-- definition of surfaces -->
+                <xs:element name="surfaces" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="surface" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="ply" type="xs:nonNegativeInteger"  maxOccurs="unbounded" />
+                                    </xs:sequence>
+                                    <xs:attribute name="id" type="xs:nonNegativeInteger" use="required" />
+				    <xs:attribute name="matgroup" type="xs:integer" />
+				    <xs:attribute name="epsilon" type="xs:decimal" />
+				</xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+	
+</xs:schema>

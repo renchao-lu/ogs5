@@ -18,7 +18,7 @@ last modified
 #include <sstream>
 #include <iomanip>  //WW
 using namespace std;
-#include "gs_project.h"
+#include "../gs_project.h"
 // GEOLib
 #include "geo_pnt.h"
 #include "geo_lin.h"

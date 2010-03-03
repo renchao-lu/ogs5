@@ -8,7 +8,7 @@ Programing:
 
 #include "geo_lin.h"
 #include "geo_pnt.h"
-#include "files0.h"
+#include "../FEM/files0.h"
 #include "geo_mathlib.h"//CC
 
 vector<CGLLine*> gli_lines_vector;

@@ -12,6 +12,8 @@
 #ifndef prototyp_INC
 #define prototyp_INC
 
+#include <stdio.h>
+
 /* Deklarationen der Funktionszeigerprototypen */
 typedef void (*VoidFuncVoid) (void);
 typedef void *(*VoidXFuncVoid) (void);

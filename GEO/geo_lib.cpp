@@ -46,43 +46,22 @@ Programmaenderungen:
 10/2004 OK path_name_slash
 09/2005 CC delete line lesen function
 **************************************************************************/
-void GEOLIB_Read_GeoLib(string file_name_path_base)
+void GEOLIB_Read_GeoLib(const std::string &file_name_path_base)
 {
-  //------------------------------------------------------------
    // Points
-#ifdef MFC
-  CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
-  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read GEO data: Points");
-#endif
   GEORemoveAllPoints();
   GEOReadPoints (file_name_path_base);
    // Polylines
-#ifdef MFC
-  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read GEO data: Polylines");
-#endif
   GEORemoveAllPolylines();
   GEOReadPolylines(file_name_path_base);
    // Surfaces
-#ifdef MFC
-  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read GEO data: Surfaces");
-#endif
   GEORemoveAllSurfaces();
   GEOReadSurfaces(file_name_path_base);
    // Volumes
-#ifdef MFC
-  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read GEO data: Volumes");
-#endif
   GEORemoveAllVolumes();
   GEOReadVolumes(file_name_path_base);
-  //------------------------------------------------------------
   // Determine dependencies between GEO objects
-#ifdef MFC
-  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"GEOLib: Surface Topology");
-#endif
   GEOSurfaceTopology();
-#ifdef MFC
-  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"GEOLib: Surface Point Vectors");
-#endif
   GEOCreateSurfacePointVector(); //OK
  
 }

@@ -3,7 +3,6 @@
 #define meshtets_INC
 // FEM
 #include "prototyp.h" // PROTOTYP:H MUSS GANZ OBEN STEHEN(STEHT VOR ALLEN ANDEREN INCLUDES)
-#include "ptrarr.h"
 #include "elements.h"
 #include "nodes.h"
 

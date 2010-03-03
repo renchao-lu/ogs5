@@ -21,7 +21,7 @@ using namespace std;
 #endif
 #include "files0.h"
 #include "rf_num_new.h"
-#include "gs_project.h"
+#include "../gs_project.h"
 #ifdef NEW_EQS
 // Solver WW
 #include "matrix_class.h"

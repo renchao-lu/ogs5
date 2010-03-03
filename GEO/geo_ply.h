@@ -9,49 +9,50 @@ Programing:
 #define gl_ply_INC
 #include "geo_pnt.h" 
 #include "geo_lin.h" 
+#include <fstream>
+#include <string>
 #define PLY_FILE_EXTENSION ".ply"
 enum PLY_TYPES {GEO,MSH,IC,BC,ST};
 
-class CGLPolyline
-{
-  private:
-    long number;
+class CGLPolyline {
+private:
+	long number;
 	friend class Surface;
-  public:
-    // constructor
-    CGLPolyline(void);
-    CGLPolyline(string); //OK
-    // destructor
-    ~CGLPolyline(void);
-    // ID
-    long id;//CC
-    string name;
-    string ply_name;
-    //properties
-    int type;
-    int data_type;
-    string ply_type;//CC9999
-    string ply_data;//CC9999
-    double epsilon;
-    int mat_group;
-    double minDis;
-    double mesh_density;//CC9999 ply density
-    //display
-    bool highlighted;// CC
-    int m_color[3];
-    int display_mode;
-    bool closed;
-    double min_plg_Dis;
-    //components
+public:
+	// constructor
+	CGLPolyline(void);
+	CGLPolyline(const std::string &); //OK
+	// destructor
+	~CGLPolyline(void);
+	// ID
+	long id;//CC
+	std::string name;
+	std::string ply_name;
+	//properties
+	int type;
+	int data_type;
+	std::string ply_type;//CC9999
+	std::string ply_data;//CC9999
+	double epsilon;
+	int mat_group;
+	double minDis;
+	double mesh_density;//CC9999 ply density
+	//display
+	bool highlighted;// CC
+	int m_color[3];
+	int display_mode;
+	bool closed;
+	double min_plg_Dis;
+	//components
 	bool computeline;
-    int number_of_points;
-    string ply_file_name;
-    vector<CGLPoint*> point_vector;
-	vector<CGLLine*> line_vector;
-    vector<double> sbuffer;
-    vector<int> ibuffer;
+	int number_of_points;
+	std::string ply_file_name;
+	std::vector<CGLPoint*> point_vector;
+	std::vector<CGLLine*> line_vector;
+	std::vector<double> sbuffer;
+	std::vector<int> ibuffer;
 	//I/O
-    ios::pos_type Read(ifstream*,string);//CC
+	std::ios::pos_type Read(std::ifstream&); // TF , const std::string &);//CC
     void Write(char* file_name);
     //display
     void AssignColor();//CC
@@ -61,27 +62,27 @@ class CGLPolyline
     void AddPoint(CGLPoint* m_point);
     CGLPoint* CenterPoint(void);
 	//point vector
-    void WritePointVector(string);//CC
-    void ReadPointVector(string);//CC
-    void SortPointVectorByDistance();
-    //write tecplot file
-    void WriteTecplot(string);//CC
-    // Meshing
-    vector<long>msh_nodes_vector;
-    // vector<double*> msh_coor_vector; //HS: never used. removed 30.10.2009
-    vector<int> OrderedPoint;
-    void GetPointOrderByDistance();  
-    void SetPointOrderByDistance(CGLPoint*); //OK
-    void CalcMinimumPointDistance(); //OK
-	#ifdef RFW_FRACTURE
+	void WritePointVector(const std::string &);//CC
+	void ReadPointVector(const std::string &);//CC
+	void SortPointVectorByDistance();
+	//write tecplot file
+	void WriteTecplot(const std::string &);//CC
+	// Meshing
+	std::vector<long> msh_nodes_vector;
+	std::vector<double*> msh_coor_vector;
+	std::vector<int> OrderedPoint;
+	void GetPointOrderByDistance();
+	void SetPointOrderByDistance(CGLPoint*); //OK
+	void CalcMinimumPointDistance(); //OK
+#ifdef RFW_FRACTURE
 	double CalcPolylineLength(); //RFW
-	#endif
+#endif
 };
 
-extern vector<CGLPolyline*> polyline_vector;//CC
-extern vector<CGLPolyline*> GetPolylineVector(void);//CC
+extern std::vector<CGLPolyline*> polyline_vector;//CC
+extern std::vector<CGLPolyline*> GetPolylineVector(void);//CC
 //Access
-extern CGLPolyline* GEOGetPLYByName(const string&);
+extern CGLPolyline* GEOGetPLYByName(std::string);
 extern CGLPolyline* GEOGetPLYById(long);// CC
 //methods
 extern void GEOPolylineGLI2GEO(FILE *geo_file);
@@ -91,10 +92,10 @@ extern void GEORemoveAllPolylines();//CC
 extern void GEORemovePolyline(long);//CC 03/06
 extern void GEORemovePLY(CGLPolyline*); //OK
 //I/O
-extern void GEOReadPolylines(string file_name_path_base);
+extern void GEOReadPolylines(const std::string &file_name_path_base);
 extern void GEOWritePolylines(char* file_name);//CC
 //RF
-extern void InterpolationAlongPolyline(CGLPolyline *plyL, vector<double>& bcNodalValue);  
+extern void InterpolationAlongPolyline(CGLPolyline *plyL, std::vector<double>& bcNodalValue);
 
 class CColumn : public CGLPolyline //OK
 {
@@ -113,16 +114,16 @@ public:
    CSoilProfile();
     ~CSoilProfile();
    long profile_type;
-   string soil_name;
-   vector<long>soil_type;
-   vector<double>soil_layer_thickness;
+   std::string soil_name;
+   std::vector<long>soil_type;
+   std::vector<double>soil_layer_thickness;
 };
 
 extern void COLDeleteLines();
 extern void COLDelete();
 extern CColumn* COLGet(int);
-extern CColumn* COLGet(string);
+extern CColumn* COLGet(const std::string &);
 
-extern vector<CColumn*>column_vector;
-extern vector<CSoilProfile*>profile_vector;  //YD
+extern std::vector<CColumn*>column_vector;
+extern std::vector<CSoilProfile*>profile_vector;  //YD
 #endif

@@ -64,7 +64,7 @@
 #include "files0.h"
 // MSHLib
 #include "msh_lib.h"
-#include "gs_project.h"
+#include "../gs_project.h"
 /* Dateinamen */
 char *crdat = NULL; /*MX*/
 char *file_name = NULL; /* dateiname */

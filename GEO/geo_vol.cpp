@@ -12,7 +12,7 @@ Programing:
 #include "geo_lib.h"
 #include "geo_sfc.h"
 #include "geo_vol.h"
-#include "files0.h"
+#include "../FEM/files0.h"
 
 //------------------------------------------------------------------------
 vector<CGLVolume*> volume_vector;//CC
@@ -225,7 +225,7 @@ Programing:
 07/2003 OK Implementation
 09/2005 CC m_volume
 **************************************************************************/
-CGLVolume* GEOGetVOL(const string &name)
+CGLVolume* GEOGetVOL(string name)
 {
   CGLVolume* m_volume = NULL;
   vector<CGLVolume*>::iterator p = volume_vector.begin();//CC

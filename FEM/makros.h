@@ -319,8 +319,8 @@ enum DIS_TYPES {CONSTANT,LINEAR};
 #include "memory.h"
 #include "timer.h"
 
-extern std::string FileName;
-extern std::string FilePath; //WW
+static std::string FileName;      // LB: changed extern keyword to static due to linker errors
+static std::string FilePath; //WW // LB: changed extern keyword to static due to linker errors
 
 #define RESET_4410 // H2_ELE test
 

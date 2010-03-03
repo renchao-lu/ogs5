@@ -1,4 +1,3 @@
-#include "stdafx.h" /* MFC */
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -222,7 +221,8 @@ bool bSaveTriFile_TRI( char* szTriFile, vector<Cp_dtri> *TriList,  vector<Cp_dbl
 	
 	fp = fopen( szTriFile, "w" );
 	if( NULL == fp ) {
-		goto PIX_EXIT;
+		if(fp) fclose(fp);
+		return bRetCode;
 	}
 
    	/*Lesen der Versionsnummer und loeschen der Punkte aus dem Versions-String */ 
@@ -269,8 +269,6 @@ bool bSaveTriFile_TRI( char* szTriFile, vector<Cp_dtri> *TriList,  vector<Cp_dbl
     // --- Done ---
 
 	bRetCode = true;
-	
-PIX_EXIT:
 	
 	if( fp ) fclose( fp );
 

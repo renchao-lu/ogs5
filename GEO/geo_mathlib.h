@@ -7,11 +7,11 @@ Programing:
 #ifndef geomathlib_INC
 #define geomathlib_INC
 
-#include "float.h"
-#include <math.h>
+#include <limits>
+#include <cmath>
 #include <vector>
-using namespace std;
-#define MKleinsteZahlen DBL_EPSILON  
+
+#define MKleinsteZahlen std::numeric_limits<double>::min()
 #define MAX_ZEILEN 256 //2048 OK
 #define CSV_FILE_EXTENSIONS ".csv"
 #define TEC_FILE_EXTENSIONS ".tec"
@@ -36,24 +36,20 @@ extern int MPhi2D(double *vf,double r, double s);
 extern bool LineSegmentIntersection(vector<double>, vector<double>, vector<double>, vector<double>, vector<double>&); //RFW 04/2005
 #endif
 
-class CubicSpline
-{
-    public:
-      CubicSpline(vector<double>&s, vector<double>&val);
-	  ~CubicSpline();
+class CubicSpline {
+public:
+	CubicSpline(std::vector<double>&s, std::vector<double>&val);
+	~CubicSpline();
+	double interpolation(double x);
 
-	  double interpolation(const double x);
-	
-    private:
-      vector<double> xx;
-      vector<double> yy;
-      double *bb;
-      double *cc;
-      double *dd;
-
-	  int n;
-
-	  void ComputeCoefficents();
+private:
+	std::vector<double> xx;
+	std::vector<double> yy;
+	double *bb;
+	double *cc;
+	double *dd;
+	int n;
+	void ComputeCoefficents();
 };
 
 #endif

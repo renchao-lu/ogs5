@@ -7,6 +7,9 @@ Programing:
 **************************************************************************/
 #ifndef rf_pcs_INC
 #define rf_pcs_INC
+
+#include "Configure.h"
+
 #include "makros.h"
 
 // MSHLib

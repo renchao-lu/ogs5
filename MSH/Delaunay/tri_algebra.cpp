@@ -1,4 +1,3 @@
-#include "stdafx.h" /* MFC */
 #include <iostream>
 #include <vector>                      
 #include <algorithm>

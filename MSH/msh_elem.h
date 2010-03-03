@@ -1,16 +1,16 @@
  /**************************************************************************
-MSHLib - Object: 
-Task: 
+MSHLib - Object:
+Task:
 Programing:
 08/2005 WW/OK Encapsulation from rf_ele_msh
 last modified
 **************************************************************************/
 #ifndef msh_elem_INC
 #define msh_elem_INC
-// C++
+
 #include <string>
-#include<iostream>
-using namespace std;
+#include <iostream>
+
 // MSHLib
 #include "msh_edge.h"
 #ifdef USE_TOKENBUF
@@ -30,11 +30,11 @@ namespace Mesh_Group
  using Math_Group::Matrix;
 //------------------------------------------------------------------------
 // Class definition
-class CElem:public CCore
+class CElem : public CCore
 {
    private: // Members
       // ID
-      int geo_type; // 1 Line, 2 Quad, 3 Hex, 4 Tri, 5 Tet, 6 Pris 
+      int geo_type; // 1 Line, 2 Quad, 3 Hex, 4 Tri, 5 Tet, 6 Pris
       CElem* owner;
       // Geometrical properties
       int ele_dim; // Dimension of element
@@ -53,7 +53,7 @@ class CElem:public CCore
       int grid_adaptation;  // Flag for grid adapting.
       int patch_index;
       /*
-      // Since m_tim->CheckCourant() is deactivated, the following member are 
+      // Since m_tim->CheckCourant() is deactivated, the following member are
       // put in comment.
       double representative_length;//For stability calculations
       double courant;
@@ -67,8 +67,8 @@ class CElem:public CCore
       //vec<CElem*> sons;
 	  // double angle[3];	// PCH, angle[0] rotation along y axis
 						//	    angle[1] rotation along x' axis
-						//		angle[2] translation along z'' axis.		
-      double *angle; // Dymanic allocate memory.  WW	
+						//		angle[2] translation along z'' axis.
+      double *angle; // Dymanic allocate memory.  WW
 	 //WW double MatT[9];
 
       #ifdef RFW_FRACTURE
@@ -84,32 +84,32 @@ class CElem:public CCore
      long frac_number;   //shows which fracture a frac element belongs to
      double f_dx;
      double f_dy; //related to fracture segment orientation
-     double f_weight; 
+     double f_weight;
      #endif
-      // 
+      //
 	  // -- Methods
       int GetElementFaces1D(int *FaceNode);
-      int GetElementFacesTri(const int Face, int *FaceNode);
-      int GetElementFacesQuad(const int Face, int *FaceNode);
-      int GetElementFacesHex(const int Face, int *FaceNode);
-      int GetElementFacesTet(const int Face, int *FaceNode);
-      int GetElementFacesPri(const int Face, int *FaceNode);
+      int GetElementFacesTri(int Face, int *FaceNode);
+      int GetElementFacesQuad(int Face, int *FaceNode);
+      int GetElementFacesHex(int Face, int *FaceNode);
+      int GetElementFacesTet(int Face, int *FaceNode);
+      int GetElementFacesPri(int Face, int *FaceNode);
       //-- Friends
       friend class CFEMesh;
       // FEM
-      friend class FiniteElement::CElement;  
-      friend class FiniteElement::CFiniteElementStd; 
-      friend class FiniteElement::CFiniteElementVec; 
-      friend class FiniteElement::ElementMatrix; 
+      friend class FiniteElement::CElement;
+      friend class FiniteElement::CFiniteElementStd;
+      friend class FiniteElement::CFiniteElementVec;
+      friend class FiniteElement::ElementMatrix;
       friend class FiniteElement::ElementMatrix_DM;
       // PCS
       friend class process::CRFProcessDeformation;
       friend class ::CRFProcess;
   public: // Methods
       CElem();
-      CElem(const long Index);
-      CElem( const long Index, CElem* onwer, const int Face); // For Faces: Face, local face index
-      CElem(const long Index, CElem* m_ele_parent); //WWOK
+      CElem(size_t Index);
+      CElem(size_t Index, CElem* onwer, int Face); // For Faces: Face, local face index
+      CElem(size_t Index, CElem* m_ele_parent); //WWOK
       ~CElem();
       //------------------------------------------------------------------
       // Geometry
@@ -132,23 +132,28 @@ class CElem:public CCore
       // ID
       int GetElementType() const {return geo_type;}
       void SetElementType(const int Type) {geo_type=Type;}
-      void MarkingAll(bool makop); 
-      string GetName() const;
+      void MarkingAll(bool makop);
+      std::string GetName() const;
       //------------------------------------------------------------------
       // Nodes
-      vec<long> nodes_index;      
-      void GetNodeIndeces(vec<long>&  node_index) const 
+      vec<long> nodes_index;
+      void GetNodeIndeces(vec<long>& node_index) const
 	    {for (int i=0; i< (int) nodes_index.Size();i++)
-           node_index[i]= nodes_index[i];} 
-      long GetNodeIndex(const int index) const  {return  nodes_index[index];} 
-      void SetNodeIndex(const int index, const long g_index) {nodes_index[index]= g_index;} 
+           node_index[i]= nodes_index[i];}
+      long GetNodeIndex(const int index) const  {return  nodes_index[index];}
+      void SetNodeIndex(const int index, const long g_index) {nodes_index[index]= g_index;}
       void GetNodes(vec<CNode*>&ele_nodes)
         {
 #ifdef RFW_FRACTURE
         ele_nodes.resize((int)nodes.Size());
 #endif
         for (int i=0; i< (int) nodes.Size();i++) ele_nodes[i]= nodes[i];}
-        
+	  void GetNodes(std::vector<CNode*>& nodesVec)
+	  {
+		for  (int i=0; i < (int) nodes.Size(); i++)
+			nodesVec.push_back(nodes[i]);
+	  }
+
       CNode* GetNode(const int index) { return nodes[index]; }
       void SetNodes(vec<CNode*>&  ele_nodes, const bool ReSize=false);
 	  int GetNodesNumber_H() const  {return nnodesHQ;}
@@ -158,15 +163,15 @@ class CElem:public CCore
       CElem* GetOwner() { return owner; }  //YD
       //------------------------------------------------------------------
       // Edges
-      void GetEdges(vec<CEdge*>&  ele_edges) 
-        {for (int i=0; i<nedges; i++) ele_edges[i]= edges[i];} 
-      CEdge* GetEdge(const int index) 
-        {return edges[index];} 
-      void SetEdges(vec<CEdge*>&  ele_edges) 
-        {for (int i=0; i<nedges; i++) edges[i]= ele_edges[i];} 
+      void GetEdges(vec<CEdge*>&  ele_edges)
+        {for (int i=0; i<nedges; i++) ele_edges[i]= edges[i];}
+      CEdge* GetEdge(const int index)
+        {return edges[index];}
+      void SetEdges(vec<CEdge*>&  ele_edges)
+        {for (int i=0; i<nedges; i++) edges[i]= ele_edges[i];}
       int FindFaceEdges(const int LocalFaceIndex, vec<CEdge*>&  face_edges);
-      void SetEdgesOrientation(vec<int>&  ori_edg) 
-         {for (int i=0; i<nedges; i++) edges_orientation[i]= ori_edg[i];} 
+      void SetEdgesOrientation(vec<int>&  ori_edg)
+         {for (int i=0; i<nedges; i++) edges_orientation[i]= ori_edg[i];}
       void GetLocalIndicesOfEdgeNodes(const int Edge, int *EdgeNodes);
       int GetEdgesNumber() const{return nedges;}
       //------------------------------------------------------------------
@@ -174,41 +179,41 @@ class CElem:public CCore
       int GetFacesNumber() const {return nfaces;}
       void SetFace();
       void SetFace(CElem* onwer, const int Face);
-	  int GetSurfaceFacesNumber() const {return no_faces_on_surface;} 
-	  int GetLocalFaceIndex() const {return face_index;} 
+	  int GetSurfaceFacesNumber() const {return no_faces_on_surface;}
+	  int GetLocalFaceIndex() const {return face_index;}
       int GetFaceType();
       int GetElementFaceNodes(const int Face, int *FacesNode);
       //------------------------------------------------------------------
       // Neighbors
-      void SetNeighbors(vec<CElem*>&  ele_neighbors) 
+      void SetNeighbors(vec<CElem*>&  ele_neighbors)
          { for (int i=0; i< nfaces;i++) neighbors[i] = ele_neighbors[i];}
-      void SetNeighbor(const int LocalIndex, CElem* ele_neighbor) 
+      void SetNeighbor(const int LocalIndex, CElem* ele_neighbor)
          { neighbors[LocalIndex] = ele_neighbor;}
-      void GetNeighbors(vec<CElem*>&  ele_neighbors)  
-         {for (int i=0; i< nfaces;i++) ele_neighbors[i]= neighbors[i];} 
-      CElem* GetNeighbor(const int index) { return neighbors[index];} 
+      void GetNeighbors(vec<CElem*>&  ele_neighbors)
+         {for (int i=0; i< nfaces;i++) ele_neighbors[i]= neighbors[i];}
+      CElem* GetNeighbor(const int index) { return neighbors[index];}
 
       //------------------------------------------------------------------
       // Coordinates transform
-      void FillTransformMatrix();  
+      void FillTransformMatrix();
 	  void FillTransformMatrix(int noneed);
 	  double getTransformTensor(const int idx);
 	  void AllocateMeomoryforAngle() {if (!angle) angle = new double [3];}	// WW
 	  double GetAngle(const int i) const { return angle[i]; }	// PCH
-	  void SetAngle(const int i, const double value) 
-	  { 
-		angle[i] = value; 
+	  void SetAngle(const int i, const double value)
+	  {
+		angle[i] = value;
 	  }	// PCH
       //------------------------------------------------------------------
       // I/O
-      void Read(istream& is=cin, int fileType=0);
+      void Read(std::istream& is=std::cin, int fileType=0);
 #ifdef USE_TOKENBUF
       void Read(TokenBuf* tokenbuf, int fileType=0);
 #endif
-      void WriteIndex(ostream& os=cout) const;
-      void WriteIndex_TEC(ostream& os=cout) const;
-      void WriteAll(ostream& os=cout) const;
-      void WriteNeighbors(ostream& os=cout) const;
+      void WriteIndex(std::ostream& os=std::cout) const;
+      void WriteIndex_TEC(std::ostream& os=std::cout) const;
+      void WriteAll(std::ostream& os=std::cout) const;
+      void WriteNeighbors(std::ostream& os=std::cout) const;
       void Config(); //OK
       //------------------------------------------------------------------
       // MAT
@@ -218,7 +223,7 @@ class CElem:public CCore
       // Operator
       // virtual void operator = (const CElem& elem);
       //-------------------------------------------------------------------
-      //GUI control variables 
+      //GUI control variables
        int selected;
        void FaceNormal(const int index0, const int index1, double*);   //YD
        double *normal_vector; //WW normal_vector[3]; //OK
@@ -226,22 +231,22 @@ class CElem:public CCore
       //
       #ifdef RFW_FRACTURE
       bool ApertureIsSet() {return Aperture_is_set;}
-      void ApertureIsNotSet() {Aperture_is_set = false; } 
+      void ApertureIsNotSet() {Aperture_is_set = false; }
       double GetAperture() {return Aperture;}
-      void SetAperture(double value) {Aperture = value; Aperture_is_set=true;} 
+      void SetAperture(double value) {Aperture = value; Aperture_is_set=true;}
       bool PermeabilityIsSet() {return Permeability_is_set;}
-      void PermeabilityIsNotSet() {Permeability_is_set = false; } 
+      void PermeabilityIsNotSet() {Permeability_is_set = false; }
       double GetPermeability() {return Permeability;}
-      void SetPermeability(double value) {Permeability = value; Permeability_is_set=true;} 
+      void SetPermeability(double value) {Permeability = value; Permeability_is_set=true;}
       bool InFrac() {return in_frac;}
       double GetWeight() {return f_weight;}
       void SetFrac(double value) {f_weight = value; in_frac=true;}
       long GetFracNum() {return frac_number;}
-      void SetFracNum(long value) {frac_number = value; } 
+      void SetFracNum(long value) {frac_number = value; }
       double GetFracDx() {return f_dx;}
       void SetFracDx(double value) {f_dx = value;}
       double GetFracDy() {return f_dy;}
-      void SetFracDy(double value) {f_dy = value;} 
+      void SetFracDy(double value) {f_dy = value;}
       void CalcDispGravityCenter(vector<double>&);
       #endif
 

@@ -11,8 +11,6 @@
                                                                           */
 /**************************************************************************/
 
-#include "stdafx.h" /* MFC */
-
 /* Preprozessor-Definitionen */
 #include "makros.h"
 

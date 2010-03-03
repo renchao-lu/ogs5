@@ -10,24 +10,25 @@ Programing:
 03/2004 OK TINs
 09/2005 CC GeoLib2
 **************************************************************************/
-
+//MFC
+#include <cstdlib>
 #ifdef MFC
 #include "geosys.h"
 #include "mainfrm.h"
 #include "afxpriv.h" // For WM_SETMESSAGESTRING
 #else //WW/JOD
-#include "makros.h"
+//#include "makros.h"
 #endif
 //GEOLib
 #include "geo_pnt.h"
 #include "geo_ply.h"
 #include "geo_sfc.h"
-#include "files0.h"
+#include "../FEM/files0.h"
 #include "geo_lib.h"
 #include "geo_mathlib.h"
 //GSP
 #ifdef MFC
-#include "gs_project.h"
+#include "../gs_project.h"
 #endif
 /*----------------------------------------------------------------------*/
 //vector
@@ -414,7 +415,7 @@ Programing:
 09/2005 CC move from Geo_lib to geo_sfc
 11/05 CC Write function
 **************************************************************************/
-void Surface::Write(string path_name)
+void Surface::Write(const std::string &path_name)
 {
   const char *char_string;
   //-----------------------------------------------------------------------
@@ -1025,7 +1026,7 @@ Programing:
 03/2004 OK Implementation
 05/2004 CC Modification
 **************************************************************************/
-void GEOReadSurfaces(string file_name_path_base)
+void GEOReadSurfaces(const std::string &file_name_path_base)
 {
   Surface *m_surface = NULL;
   char line[MAX_ZEILEN];
@@ -1065,7 +1066,7 @@ void GEOReadSurfaces(string file_name_path_base)
       m_surface = new Surface();
       m_surface->AssignColor();
       //OK not here m_surface->TIN = new CTIN;
-      position = m_surface->Read(&gli_file,file_name_path_base);
+      position = m_surface->Read(&gli_file);
       surface_vector.push_back(m_surface);
       gli_file.seekg(position,ios::beg);
     } // keyword found
@@ -1081,129 +1082,116 @@ Programing:
 05/2005 OK EPSILON
 09/2005 CC file_path_base
 **************************************************************************/
-ios::pos_type Surface::Read(ifstream *gli_file,string file_path_base)
+std::ios::pos_type Surface::Read(std::ifstream *gli_file)
 {
-  char line[MAX_ZEILEN];
-  string sub_line;
-  string line_string;
-  string delimiter(",");
-  bool new_keyword = false;
-  string hash("#");
-  int pos1,pos2;
-  ios::pos_type position;
-  string sub_string;
-  string tin_file_name;
-  CGLPolyline *m_polyline = NULL;
-  string delimiter_file_extension(".");
-  string cut_string;
-  string dollar("$");
-  CGLPoint *m_point = NULL;
-  bool ok_true = true;
-  type_name = "POLYLINE";//CC8888
-  //========================================================================
-  // Schleife ueber alle Phasen bzw. Komponenten 
-  while (!new_keyword) {
-    position = gli_file->tellg();
-    gli_file->getline(line,MAX_ZEILEN);
-    //line_string = line;
-    string line_string(line);
-    if(line_string.find(hash)!=string::npos) {
-      new_keyword = true;
-      break;
-    }
-   //.....................................................................
-   if(line_string.find("$ID")!=string::npos) { // subkeyword found CC
-      gli_file->getline(line,MAX_ZEILEN);
-      line_string = line;
-      remove_white_space(&line_string);
-      id = strtol(line_string.data(),NULL,0);
-      continue;
-    }
-    //....................................................................
-    if(line_string.find("$NAME")!=string::npos) { // subkeyword found
-      gli_file->getline(line,MAX_ZEILEN);
-      line_string = line;
-      remove_white_space(&line_string);
-      name = line_string.substr(0);
-      continue;
-    } // subkeyword found
-    //....................................................................
-    if(line_string.find("$EPSILON")!=string::npos) { // subkeyword found
-      gli_file->getline(line,MAX_ZEILEN);
-      line_string = line;
-      remove_white_space(&line_string);
-      epsilon = strtod(line_string.data(),NULL);
-      continue;
-    } // subkeyword found
-    //....................................................................
-    if(line_string.find("$TYPE")!=string::npos) { // subkeyword found
-      gli_file->getline(line,MAX_ZEILEN);
-      line_string = line;
-      remove_white_space(&line_string);
-      type = strtol(line_string.data(),NULL,0);
-      if(type==100)
-      {
-         int p_index;
-         polygon_point_vector.clear();
-         *gli_file>>p_index; // Center of top surface of cylinder
-         m_point = GEOGetPointById(p_index);//CC
-         polygon_point_vector.push_back(m_point);
-         *gli_file>>p_index; // Center of bottom surface of cylinder
-         m_point = GEOGetPointById(p_index);//CC
-         polygon_point_vector.push_back(m_point);
-         *gli_file>>Radius>>epsilon;
-         gli_file->ignore(MAX_ZEILEN,'\n'); 
-      }
-    } // subkeyword found
-    //....................................................................
-    if(line_string.find("$TIN")!=string::npos) { // subkeyword found
-      //gli_file->getline(line,MAX_ZEILE);
-      gli_file->getline(line,MAX_ZEILEN);
-      line_string = line;
-      remove_white_space(&line_string);
-      tin_file_name = line_string;
-      TIN = new CTIN();
-      //TIN->name = name;
-      ReadTIN(tin_file_name);
-      sub_string = get_sub_string2(line_string,delimiter_file_extension,&cut_string);
-      TIN->name = sub_string;
-      type = 1; //OK41
-      type_name = "TIN";//CC8888
-      data_name = line_string;//CC8888
-    } // subkeyword found
-    //....................................................................
-    if(line_string.find("$MAT_GROUP")!=string::npos) { // subkeyword found
-      gli_file->getline(line,MAX_ZEILEN);
-      line_string = line;
-      mat_group = strtol(line_string.data(),NULL,0);
-    } // subkeyword found
-    //....................................................................
-    if(line_string.find("$POLYLINES")!=string::npos) { // subkeyword found
-      pos1=0; pos2=0;
-while(ok_true) {
-      position = gli_file->tellg();
-      gli_file->getline(line,MAX_ZEILEN);
-      line_string = line;
-      remove_white_space(&line_string);
-    if(line_string.find(hash)!=string::npos) {
-      return position;
-    }
-    if(line_string.find(dollar)!=string::npos) {
-      gli_file->seekg(position,ios::beg);
-      break;
-    }
-        m_polyline = GEOGetPLYByName(line_string);//CC
-        if(m_polyline) {
-          polyline_of_surface_vector.push_back(m_polyline);    				   
-          //type = m_polyline->data_type; //MB Please set surface type with surface type, not polyline type  
-        }
-      else{
-        cout << "Warning in Surface::Read, polyline not found: " << line_string << endl;
-      }
-}
-}
-  }
-  return position;
+	char line[MAX_ZEILEN];
+	std::string line_string;
+
+	bool new_keyword = false;
+	std::ios::pos_type position;
+	CGLPolyline *m_polyline = NULL;
+	CGLPoint *m_point = NULL;
+	bool ok_true = true;
+	type_name = "POLYLINE";//CC8888
+	//========================================================================
+	// Schleife ueber alle Phasen bzw. Komponenten
+	while (!new_keyword) {
+		position = gli_file->tellg();
+		gli_file->getline(line, MAX_ZEILEN);
+		line_string = line;
+		if (line_string.find("#") != string::npos) {
+			new_keyword = true;
+			break;
+		}
+		//.....................................................................
+		if (line_string.find("$ID") != string::npos) { // subkeyword found CC
+			gli_file->getline(line, MAX_ZEILEN);
+			line_string = line;
+			remove_white_space(&line_string);
+			id = strtol(line_string.data(), NULL, 0);
+			continue;
+		}
+		//....................................................................
+		if (line_string.find("$NAME") != string::npos) { // subkeyword found
+			gli_file->getline(line, MAX_ZEILEN);
+			line_string = line;
+			remove_white_space(&line_string);
+			name = line_string.substr(0);
+			continue;
+		} // subkeyword found
+		//....................................................................
+		if (line_string.find("$EPSILON") != string::npos) { // subkeyword found
+			gli_file->getline(line, MAX_ZEILEN);
+			line_string = line;
+			remove_white_space(&line_string);
+			epsilon = strtod(line_string.data(), NULL);
+			continue;
+		} // subkeyword found
+		//....................................................................
+		if (line_string.find("$TYPE") != string::npos) { // subkeyword found
+			gli_file->getline(line, MAX_ZEILEN);
+			line_string = line;
+			remove_white_space(&line_string);
+			type = strtol(line_string.data(), NULL, 0);
+			if (type == 100) {
+				int p_index;
+				polygon_point_vector.clear();
+				*gli_file >> p_index; // Center of top surface of cylinder
+				m_point = GEOGetPointById(p_index);//CC
+				polygon_point_vector.push_back(m_point);
+				*gli_file >> p_index; // Center of bottom surface of cylinder
+				m_point = GEOGetPointById(p_index);//CC
+				polygon_point_vector.push_back(m_point);
+				*gli_file >> Radius >> epsilon;
+				gli_file->ignore(MAX_ZEILEN, '\n');
+			}
+		} // subkeyword found
+		//....................................................................
+		if (line_string.find("$TIN") != string::npos) { // subkeyword found
+			(*gli_file) >> line_string;
+			remove_white_space(&line_string);
+			TIN = new CTIN();
+			//TIN->name = name;
+			ReadTIN(line_string);
+			std::string cut_string;
+			TIN->name = get_sub_string2(line_string, ".", &cut_string);;
+			type = 1; //OK41
+			type_name = "TIN";//CC8888
+			data_name = line_string;//CC8888
+		} // subkeyword found
+		//....................................................................
+		if (line_string.find("$MAT_GROUP") != string::npos) { // subkeyword found
+			gli_file->getline(line, MAX_ZEILEN);
+			line_string = line;
+			mat_group = strtol(line_string.data(), NULL, 0);
+		} // subkeyword found
+		//....................................................................
+		if (line_string.find("$POLYLINES") != string::npos) { // subkeyword found
+			int pos1 = 0, pos2 = 0;
+			while (ok_true) {
+				position = gli_file->tellg();
+				gli_file->getline(line, MAX_ZEILEN);
+				line_string = line;
+				remove_white_space(&line_string);
+				if (line_string.find("#") != string::npos) {
+					return position;
+				}
+				if (line_string.find("$") != string::npos) {
+					gli_file->seekg(position, ios::beg);
+					break;
+				}
+				m_polyline = GEOGetPLYByName(line_string);//CC
+				if (m_polyline) {
+					polyline_of_surface_vector.push_back(m_polyline);
+					//type = m_polyline->data_type; //MB Please set surface type with surface type, not polyline type
+				} else {
+					cout << "Warning in Surface::Read, polyline not found: "
+							<< line_string << endl;
+				}
+			}
+		}
+	}
+	return position;
 }
 
 /**************************************************************************
@@ -1214,7 +1202,7 @@ Programing:
 09/2005 CC file_path_base
 10/2005 OK Path 2nd
 **************************************************************************/
-void Surface::ReadTIN(string tin_file_name)
+void Surface::ReadTIN(const std::string &tin_file_name)
 {
   string cut_string;
   string delimiter_type(" ");
@@ -1230,17 +1218,17 @@ void Surface::ReadTIN(string tin_file_name)
   CGSProject *m_gsp = GSPGetMember("gli");
   tin_file_name_path = m_gsp->path + tin_file_name;
 #else
-  tin_file_name_path = FileName;  //WW/JOD
+  //  tin_file_name_path = FileName;  //WW/JOD // LB: commented out to compile GEO without dependency on FEM
   basic_string <char>::size_type indexCh1a;
   indexCh1a = tin_file_name_path.find_last_of("\\");
- 
-  if( indexCh1a < tin_file_name_path.size()) { // JOD 4.7.10,  \ exists in path, DEBUG case  
+
+  if( indexCh1a < tin_file_name_path.size()) { // JOD 4.7.10,  \ exists in path, DEBUG case
     string stra = tin_file_name_path.substr (0, indexCh1a);
-    tin_file_name_path.clear();  
+    tin_file_name_path.clear();
 	tin_file_name_path = stra+"\\"+tin_file_name;
 
   }
-  else     //   \ does not exist, RELEASE case  
+  else     //   \ does not exist, RELEASE case
     tin_file_name_path = tin_file_name;
 #endif
   ifstream tin_file (tin_file_name_path.data(),ios::in);
@@ -1298,14 +1286,14 @@ void Surface::ReadTIN(string tin_file_name)
 }
 
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 03/2004 OK Implementation
 01/2005 OK File handling
 08/2005 CC string file_path
 **************************************************************************/
-void Surface::WriteTIN(string file_path)
+void Surface::WriteTIN(const std::string &file_path)
 {
   string delimiter(" ");
   long i;
@@ -1315,7 +1303,7 @@ void Surface::WriteTIN(string file_path)
   //----------------------------------------------------------------------
   // File handling
   string tin_path;
-  tin_path = file_path; 
+  tin_path = file_path;
   string tin_file_name = TIN->name + TIN_FILE_EXTENSION;
   string tin_path_base_type = tin_path + tin_file_name;
   fstream tin_file (tin_path_base_type.data(),ios::trunc|ios::out);
@@ -1341,8 +1329,8 @@ void Surface::WriteTIN(string file_path)
 }
 
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 03/2004 OK Implementation
 last modification:08/2005 CC
@@ -1359,7 +1347,7 @@ void GEOCreateLayerSurfaceTINs(int nb_prism_layers, double thickness_prism_layer
   vector<Surface*>new_surfaces;
 
   // Go through the existing surfaces (GEO_type)
-  while(ps!=surface_vector.end()) { 
+  while(ps!=surface_vector.end()) {
     m_surface = *ps;
     if(!m_surface->TIN){
       ++ps;
@@ -1402,15 +1390,15 @@ void GEOCreateLayerSurfaceTINs(int nb_prism_layers, double thickness_prism_layer
   }
 }
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 03/2004 OK Implementation
 01/2005 OK File handling
 last modification:
 09/2005 CC file_path
 **************************************************************************/
-void Surface::WriteTINTecplot(string file_path)
+void Surface::WriteTINTecplot(const std::string &file_path)
 {
   string delimiter(", ");
   long i;
@@ -1672,7 +1660,7 @@ Task:
 Programing:
 08/2005 CC Implementation
 **************************************************************************/
-Surface* GEOGetSFCByName(const string &name)
+Surface* GEOGetSFCByName(const std::string &name)
 {
   Surface* m_sfc = NULL;
   vector<Surface*>::iterator p = surface_vector.begin();//CC
@@ -1882,7 +1870,7 @@ Task:
 Programing:
 11/2005 CC Modification
 **************************************************************************/
-void GEOWriteSurfaces(string path_name){
+void GEOWriteSurfaces(const std::string &path_name){
   Surface* m_sfc = NULL;
   for(int i =0; i<(int)surface_vector.size(); i++)
   {

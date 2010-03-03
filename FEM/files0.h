@@ -6,6 +6,7 @@
 #define FPD_NACHKOMMA  14
 
 /* Andere oeffentlich benutzte Module */
+#include "Configure.h"
 #include <stdio.h>
 // C++ STL
 #include <string>

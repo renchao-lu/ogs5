@@ -31,7 +31,7 @@ using SolidProp::CSolidProperties;
 #ifdef RFW_FRACTURE
 #include "fem_ele.h"
 #endif
-#include "gs_project.h"
+#include "../gs_project.h"
 // Gauss point veclocity
 #include "fem_ele_std.h"
 #include "fem_ele_vec.h"
