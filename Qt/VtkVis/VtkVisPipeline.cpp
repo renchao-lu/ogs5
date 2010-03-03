@@ -86,8 +86,6 @@ void VtkVisPipeline::removeSourceItem(StationTreeModel* model, const std::string
 	for (int i = 0; i < _rootItem->childCount(); i++)
 	{
 		VtkVisPipelineItem* item = static_cast<VtkVisPipelineItem*>(getItem(index(i, 0)));
-		vtkPolyDataAlgorithm* a = item->algorithm();
-		vtkPolyDataAlgorithm* b = model->vtkSource(name);
 		if (item->algorithm() == model->vtkSource(name))
 			removePipelineItem(index(i, 0));
 	}

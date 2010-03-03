@@ -25,7 +25,8 @@ class BaseItem : public GraphicsItem2d
 	Q_OBJECT
 
 public:
-	BaseItem( const std::vector<GEOLIB::Point*> *stations = NULL, QGraphicsItem* parent = 0 ) : GraphicsItem2d(NULL), _stations(stations)
+	BaseItem( const std::vector<GEOLIB::Point*> *stations = NULL, QGraphicsItem* parent = 0 ) 
+		: _stations(stations), GraphicsItem2d(NULL)
 	{
 		setVisible(false);
 

@@ -120,7 +120,7 @@ void GraphicsScene::loadItemsFromTreeModel(StationTreeModel* model, std::string 
 				addItem( static_cast<ModelTreeItem*>(lists[i]->child(j))->getItem()->item2d() );
 		}
 	}
-	this->update();
+	emit sceneChanged();
 }
 
 void GraphicsScene::loadItemsFromTableModel( Model* model )
@@ -155,8 +155,9 @@ void GraphicsScene::loadItemsFromTableModel( Model* model )
 	foreach (Model* subModel, model->subModels())
 		loadItemsFromTableModel(subModel);
 
-	this->update();
+	emit sceneChanged();
 }
+
 void GraphicsScene::setViewPlane( EViewPlane viewplane )
 {
 	// set viewplane on all items

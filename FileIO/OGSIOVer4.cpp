@@ -306,9 +306,9 @@ void readGLIFileV4 (const std::string& fname, GEOObjects* geo)
 	in.close();
 
 	std::string unique_name (fname);
-	geo->addPointVec(pnt_vec, unique_name);
-	geo->addPolylineVec(ply_vec, unique_name);
-	geo->addSurfaceVec(sfc_vec, unique_name);
+	if (!pnt_vec->empty()) geo->addPointVec(pnt_vec, unique_name);		// KR: insert into GEOObjects if not empty
+	if (!ply_vec->empty()) geo->addPolylineVec(ply_vec, unique_name);	// KR: insert into GEOObjects if not empty
+	if (!sfc_vec->empty()) geo->addSurfaceVec(sfc_vec, unique_name);	// KR: insert into GEOObjects if not empty
 }
 
 } // end namespace

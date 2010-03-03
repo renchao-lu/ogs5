@@ -8,7 +8,6 @@
 #include <QMenu>
 #include "StationTreeView.h"
 #include "StationTreeModel.h"
-//#include "ListPropertiesDialog.h"
 #include "Station.h"
 #include "ModelTreeItem.h"
 
@@ -94,18 +93,10 @@ void StationTreeView::exportStation()
 		static_cast<StationBorehole*>(static_cast<StationTreeModel*>(model())->stationFromIndex(index, QString()))->writeAsGMS(fileName.toStdString());
 }
 
-/*
-void StationTreeView::filterStations(std::vector<PropertyBounds> bounds)
-{
-	QModelIndex index = this->selectionModel()->currentIndex();
-	static_cast<StationTreeModel*>(this->model())->filterStations(index, bounds);
-}
-*/
 void StationTreeView::removeStationList()
 {
 	TreeItem* item = static_cast<StationTreeModel*>(model())->getItem(this->selectionModel()->currentIndex());
 	emit stationListRemoved((item->data(0).toString()).toStdString());
-	//static_cast<StationTreeModel*>(model())->removeStationList(this->selectionModel()->currentIndex());
 }
 
 void StationTreeView::showPropertiesDialog()
@@ -113,7 +104,4 @@ void StationTreeView::showPropertiesDialog()
 	QModelIndex index = this->selectionModel()->currentIndex();
 	QString name = (static_cast<ModelTreeItem*>(index.internalPointer())->data(0)).toString();
 	emit propertiesDialogRequested(name.toStdString());
-	//ListPropertiesDialog* dlg = new ListPropertiesDialog(name.toStdString());
-	//connect(dlg, SIGNAL(propertyBoundariesChanged(std::vector<PropertyBounds>)), this, SLOT(filterStations(std::vector<PropertyBounds>)));
-
 }

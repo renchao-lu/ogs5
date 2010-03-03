@@ -54,11 +54,14 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 {
     setupUi(this);
 
-	// Get graphics scene
-	GraphicsScene* scene = visualizationWidget->scene();
 
 	// Setup connection GEOObjects to GUI through GEOModels and tab widgets
 	_geoModels = new GEOModels();
+
+
+	// Get graphics scene
+	GraphicsScene* scene = visualizationWidget->scene();
+	connect(scene, SIGNAL(sceneChanged()), this, SLOT(updateGraphicsScene()));	
 
 	// station model
 	stationTabWidget->treeView->setModel(_geoModels->getStationModel());
@@ -72,8 +75,6 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	// point models
 	connect (_geoModels, SIGNAL(pointModelAdded(Model*)),
 		pntTabWidget->dataViewWidget, SLOT(addModel(Model*)));
-	//connect(_geoModels, SIGNAL(pointModelAdded(Model*)),
-	//	this, SLOT(updateGraphicsScene()));						// update scene when points are added
 	connect(pntTabWidget->dataViewWidget, SIGNAL(requestModelClear(std::string)),
 		_geoModels, SLOT(removePointVec(const std::string)));
 	connect (_geoModels, SIGNAL(pointModelRemoved(Model*)),
@@ -86,8 +87,6 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	// line models
 	connect (_geoModels, SIGNAL(polylineModelAdded(Model*)),
 		lineTabWidget->dataViewWidget, SLOT(addModel(Model*)));
-	//connect(_geoModels, SIGNAL(polylineModelAdded(Model*)),
-	//	this, SLOT(updateGraphicsScene()));
 	connect(lineTabWidget->dataViewWidget, SIGNAL(requestModelClear(std::string)),
 		_geoModels, SLOT(removePolylineVec(const std::string)));
 	connect (_geoModels, SIGNAL(polylineModelRemoved(Model*)),

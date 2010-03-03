@@ -85,10 +85,9 @@ void GEOModels::filterStationVec(const std::string &name, const std::vector<Prop
 
 bool GEOModels::removeStationVec( const std::string &name )
 {
-	emit stationVectorRemoved(_stationModel, name);
 	_stationModel->removeStationList(name);
-	bool ret (GEOObjects::removeStationVec(name));
-	return ret;
+	emit stationVectorRemoved(_stationModel, name);	
+	return GEOObjects::removeStationVec(name);
 }
 
 void GEOModels::addPolylineVec( std::vector<GEOLIB::Polyline*> *lines, const std::string &name )

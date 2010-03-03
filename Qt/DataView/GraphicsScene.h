@@ -125,7 +125,7 @@ signals:
 		const QItemSelection & deselected);
 
 	/// Is emitted when items are loaded
-	void itemsLoaded();
+	void sceneChanged();
 };
 
 #endif // GRAPHICSSCENE_H
