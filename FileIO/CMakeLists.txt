@@ -29,3 +29,7 @@ include_directories(
 	../GEO
 	${Shapelib_INCLUDE_DIR}	
 )
+
+target_link_libraries( FileIO
+	Base
+)

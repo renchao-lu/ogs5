@@ -40,13 +40,13 @@ class CNode:public CCore
       long interior_test;
 	  int crossroad;	// PCH: Make theses privates can be done later on.
       int free_surface; //MB ??? mobile
-      vector<long> connected_elements;
-      vector<long> connected_nodes; //OK
+      std::vector<long> connected_elements;
+      std::vector<long> connected_nodes; //OK
 	  // The vector to store the representive element index.
       // This can be used to extract the norm of the plane that the element lies on.
 	  // Establishing this vector is done in the Fluid Momentum
 	  // since this is bounded by velocity.
-      vector<long> connected_planes;	// PCH 
+      std::vector<long> connected_planes;	// PCH 
  //     vector<long>  m5_index; //WW
       CNode(const int Index):CCore(Index), eqs_index(-1) {}
       CNode(const int Index, const double x, const double y, const double z=0.0);
@@ -70,7 +70,7 @@ class CNode:public CCore
       void SetCoordinates(const double* argCoord); 
 	  void SetEquationIndex(const long eqIndex) {eqs_index = eqIndex;} //
       // Output
-      void Write(ostream& os=cout) const;
+      void Write(std::ostream& os = std::cout) const;
       //GUI control variables 
       int selected;
       double patch_area; //OK4310
