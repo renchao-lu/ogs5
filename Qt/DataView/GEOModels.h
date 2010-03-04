@@ -40,7 +40,7 @@ public slots:
 	bool appendPointVec(const std::vector<GEOLIB::Point*> &points, std::string &name);
 	bool removePointVec(const std::string &name);
 
-	void addStationVec(std::vector<GEOLIB::Point*> *stations, std::string name, const GEOLIB::Color* const color);
+	void addStationVec(std::vector<GEOLIB::Point*> *stations, std::string &name, const GEOLIB::Color* const color);
 	void filterStationVec(const std::string &name, const std::vector<PropertyBounds> &bounds);
 	bool removeStationVec(const std::string &name);
 

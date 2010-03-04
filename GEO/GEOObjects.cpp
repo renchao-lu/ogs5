@@ -91,7 +91,7 @@ bool GEOObjects::removePointVec(const std::string &name)
 }
 
 
-void GEOObjects::addStationVec(std::vector<Point*> *stations, std::string name, const Color* const color)
+void GEOObjects::addStationVec(std::vector<Point*> *stations, std::string &name, const Color* const color)
 {
 	size_t idx = _pnt_vecs.size();
 	size_t size = stations->size();

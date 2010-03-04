@@ -67,7 +67,7 @@ public:
 	virtual bool removePointVec(const std::string &name);
 
 	/// Adds a vector of stations with the given name and colour to GEOObjects.
-	virtual void addStationVec(std::vector<Point*> *stations, std::string name,
+	virtual void addStationVec(std::vector<Point*> *stations, std::string &name,
 			const Color* const color);
 	/// Filters a list of stations with the given name based on the criteria in PropertyBounds.
 	/// (See property system in Station class for more information.)
