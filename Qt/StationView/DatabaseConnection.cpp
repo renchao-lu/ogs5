@@ -339,12 +339,15 @@ int DatabaseConnection::getStationID(const int &listID, const double &x, const d
 
 /**
  * Returns all properties associated with a given list
+ * Note: This function is currently not implemented correctly. Please leave it alone or contact me if you want to use it.
  * \param listID The ID of the queried list
  * \param propNames A vector in which the properties will be stored
  * \return 1 if there were no errors, 0 and an error message otherwise.
  */
 int DatabaseConnection::getListProperties(const int &listID, vector<QString> &propNames)
 {
+	Q_UNUSED (listID);
+
 	if (_db.open())
 	{
 		QSqlQuery query;

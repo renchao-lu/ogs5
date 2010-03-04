@@ -88,7 +88,7 @@ ModelItem* StationTreeModel::itemFromIndex( const QModelIndex& index ) const
  * \param listName Here, the method will put the name of the list this station belongs to.
  * \return The station object associated with the tree item
  */
-GEOLIB::Station* StationTreeModel::stationFromIndex( const QModelIndex& index, QString listName ) const
+GEOLIB::Station* StationTreeModel::stationFromIndex( const QModelIndex& index, QString &listName ) const
 {
 	if (index.isValid())
 	{

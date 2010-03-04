@@ -125,7 +125,7 @@ void QGraphicsGrid::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
 	Q_UNUSED (widget)
 
     if (!_bounds.isValid()) return;
-
+	
 	/* draw outside rectangle */
 	QBrush brush(Qt::NoBrush);
 	painter->setPen(_outside);

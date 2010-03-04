@@ -84,14 +84,16 @@ void QArrow::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QW
 	Q_UNUSED (option)
 	Q_UNUSED (widget)
 
-	double deltaX    = calcCos(_arrowAngle)*_arrowLength;
-	double deltaY    = calcSin(_arrowAngle)*_arrowLength;
-	double theta     = atan(deltaY/deltaX);
-	double theta2    = (deltaX < 0.0) ? (theta+PI) : theta;
-	int lengthdeltaX = -(int)(cos(theta2)*_headLength);
-	int lengthdeltaY = -(int)(sin(theta2)*_headLength);
-	int widthdeltaX  =  (int)(sin(theta2)*_headWidth);
-	int widthdeltaY  =  (int)(cos(theta2)*_headWidth);
+	double ddeltaX    = calcCos(_arrowAngle)*_arrowLength;
+	double ddeltaY    = calcSin(_arrowAngle)*_arrowLength;
+	double theta     = atan(ddeltaY/ddeltaX);
+	double theta2    = (ddeltaX < 0.0) ? (theta+PI) : theta;
+	int lengthdeltaX = -static_cast<int>(cos(theta2)*_headLength);
+	int lengthdeltaY = -static_cast<int>(sin(theta2)*_headLength);
+	int widthdeltaX  =  static_cast<int>(sin(theta2)*_headWidth);
+	int widthdeltaY  =  static_cast<int>(cos(theta2)*_headWidth);
+	int deltaX = static_cast<int>(ddeltaX);
+	int deltaY = static_cast<int>(ddeltaY);
 	painter->setPen(_arrowPen);
 	painter->drawLine(0, 0, deltaX, deltaY);
 	painter->drawLine(deltaX, deltaY, deltaX+lengthdeltaX+widthdeltaX, deltaY+lengthdeltaY-widthdeltaY);

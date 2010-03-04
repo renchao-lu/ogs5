@@ -48,7 +48,7 @@ public:
 	ModelItem* itemFromIndex( const QModelIndex& index ) const;
 	void removeStationList(QModelIndex index);
 	void removeStationList(const std::string &name);
-	GEOLIB::Station* stationFromIndex( const QModelIndex& index, QString listName ) const;
+	GEOLIB::Station* stationFromIndex( const QModelIndex& index, QString &listName ) const;
 	void setSelection( const QItemSelection & selected, const QItemSelection & deselected );
 	vtkPolyDataAlgorithm* vtkSource(const std::string &name);
 
