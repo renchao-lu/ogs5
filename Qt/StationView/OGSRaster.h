@@ -1,7 +1,7 @@
 /**
  * \file OGSRaster.h
  * 11/01/2010 KR Initial implementation
- * 
+ *
  */
 #ifndef OGSRASTER_H
 #define OGSRASTER_H
@@ -24,7 +24,7 @@ class OGSRaster
 		int nrows;
 		double x;
 		double y;
-		int cellsize;
+		double cellsize;
 		int noData;
 	};
 

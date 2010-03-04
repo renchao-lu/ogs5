@@ -61,7 +61,7 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 
 	// Get graphics scene
 	GraphicsScene* scene = visualizationWidget->scene();
-	connect(scene, SIGNAL(sceneChanged()), this, SLOT(updateGraphicsScene()));	
+	connect(scene, SIGNAL(sceneChanged()), this, SLOT(updateGraphicsScene()));
 
 	// station model
 	stationTabWidget->treeView->setModel(_geoModels->getStationModel());
@@ -69,7 +69,7 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 		scene, SLOT(loadItemsFromTreeModel(StationTreeModel*, std::string)));		// update model when stations are added
 	connect(stationTabWidget->treeView, SIGNAL(stationListRemoved(std::string)),
 		_geoModels, SLOT(removeStationVec(std::string)));	// update model when stations are removed
-	connect(_geoModels, SIGNAL(stationVectorRemoved(StationTreeModel*, std::string)), 
+	connect(_geoModels, SIGNAL(stationVectorRemoved(StationTreeModel*, std::string)),
 		this, SLOT(updateGraphicsScene()));					// update 2d view when stations are removed
 
 	// point models

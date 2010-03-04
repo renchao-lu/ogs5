@@ -35,23 +35,6 @@ GraphicsScene::GraphicsScene(QObject *parent)
 GraphicsScene::~GraphicsScene()
 {
 }
-void GraphicsScene::drawBackground( QPainter *painter, const QRectF& rect )
-{
-	// background grid
-	/*
-	if (_backgroundGridSize >= 1.0)
-		{
-			QPixmap pm(_backgroundGridSize*2, _backgroundGridSize*2);
-			QPainter pmp(&pm);
-			pmp.fillRect(0, 0, _backgroundGridSize, _backgroundGridSize, Qt::lightGray);
-			pmp.fillRect(_backgroundGridSize, _backgroundGridSize, _backgroundGridSize, _backgroundGridSize, Qt::lightGray);
-			pmp.fillRect(0, _backgroundGridSize, _backgroundGridSize, _backgroundGridSize, Qt::white);
-			pmp.fillRect(_backgroundGridSize, 0, _backgroundGridSize, _backgroundGridSize, Qt::white);
-			pmp.end();
-			painter->setBrush(QBrush(pm));
-			painter->drawRect(rect);
-		}*/
-}
 
 void GraphicsScene::drawPixmap(const QPixmap &img, const QPointF &origin, const double &scalingFactor)
 {
@@ -59,7 +42,7 @@ void GraphicsScene::drawPixmap(const QPixmap &img, const QPointF &origin, const 
 	raster->scale(scalingFactor, scalingFactor);
 	raster->setPos(origin);
 }
-/*
+
 /*
 void GraphicsScene::reloadAll()
 {
@@ -129,7 +112,7 @@ void GraphicsScene::loadItemsFromTableModel( Model* model )
 // 		this, SLOT(selectItems(QVector<QGraphicsItem*>)));
 // 	connect(model, SIGNAL(itemsDeselectedFromOutside(QVector<QGraphicsItem*>)),
 // 		this, SLOT(deselectItems(QVector<QGraphicsItem*>)));
-// 
+//
 // 	connect(model, SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(updateItems(QModelIndex,QModelIndex)));
 // 	_modelsByType[model->modelContentType()] = model;
 

@@ -99,7 +99,7 @@ bool OGSRaster::loadPixmapFromASC(const QString &fileName, QPixmap &raster, QPoi
 			for (int i=0; i<header.ncols; i++)
 			{	// scale intensities and set nodata values to white (i.e. the background colour)
 				value = (pixVal[index+i]==header.noData) ? maxVal : pixVal[index+i];
-				gVal = floor((value-minVal)*scalingFactor);
+				gVal = static_cast<int> (floor((value-minVal)*scalingFactor));
 				img.setPixel(i,j, qRgb(gVal, gVal, gVal));
 			}
 		}
@@ -242,7 +242,7 @@ void OGSRaster::convertTo8BitImage(QImage &img, const int &min, const int &max)
 	{
 		for (int j=0; j<img.height(); j++)
 		{
-			value = floor((qGreen(img.pixel(i,j))-min)*scalingFactor);
+			value = static_cast<int>(floor((qGreen(img.pixel(i,j))-min)*scalingFactor));
 			img.setPixel(i, j, qRgb(value, value, value));
 		}
 	}
@@ -264,7 +264,7 @@ int OGSRaster::getMaxValue(const QImage &img)
 
 int OGSRaster::getMinValue(const QImage &img)
 {
-	int value, minVal = pow(2.0,16);
+	int value, minVal = static_cast <int> (pow(2.0,16));
 	for (int i=0; i<img.width(); i++)
 	{
 		for (int j=0; j<img.height(); j++)

@@ -22,7 +22,7 @@ public:
 	DiagramScene(DiagramList* list, QObject* parent = 0);
 	~DiagramScene();
 
-	QArrow* addArrow(float length, float angle, float headlength, float headwidth, QPen &pen);
+	QArrow* addArrow(float length, float angle, QPen &pen);
 	void addGraph(DiagramList* list);
 	QGraphicsGrid* addGrid(const QRectF &rect, int xTicks, int yTicks, const QPen &pen);
 
@@ -44,7 +44,7 @@ private:
 	/// Sets an arrow as x-axis
 	void setXAxis(QArrow* arrow) { _xAxis = arrow; }
 
-	/// Sets an arrow as y-axis	
+	/// Sets an arrow as y-axis
 	void setYAxis(QArrow* arrow) { _yAxis = arrow; }
 
 	void update();

@@ -121,6 +121,9 @@ void QGraphicsGrid::initDefaultPens()
 /// Paints the grid.
 void QGraphicsGrid::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
+	Q_UNUSED (option)
+	Q_UNUSED (widget)
+
     if (!_bounds.isValid()) return;
 
 	/* draw outside rectangle */
@@ -130,7 +133,7 @@ void QGraphicsGrid::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
 
 	/* draw horizontal lines */
 	for (int i = 0; i <= _numberOfXCells; ++i) {
-         int x = _bounds.left() + (i * (_bounds.width()-1) / _numberOfXCells);
+         int x = static_cast<int>(_bounds.left() + (i * (_bounds.width()-1) / _numberOfXCells));
 
 		 if (i>0 && i<_numberOfXCells)
 		 {
@@ -151,7 +154,7 @@ void QGraphicsGrid::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
 
 	/* draw vertical lines */
     for (int j = 0; j <= _numberOfYCells; ++j) {
-        int y = _bounds.bottom() - (j * (_bounds.height()-1) / _numberOfYCells);
+        int y = static_cast<int>(_bounds.bottom() - (j * (_bounds.height()-1) / _numberOfYCells));
 
 		 if (j>0 && j<_numberOfYCells)
 		 {

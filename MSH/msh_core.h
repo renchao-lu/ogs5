@@ -11,7 +11,6 @@ last modified
 #include <string>
 #include <iostream>
 
-//using namespace std;
 //------------------------------------------------------------------------
 namespace FiniteElement
 {
@@ -33,6 +32,79 @@ namespace Mesh_Group
 
 //------------------------------------------------------------------------
 class CCore {
+public:
+	// Methods
+	CCore(size_t id);
+	virtual ~CCore() {}
+
+	// Get members
+	size_t GetIndex() const { return index; }
+
+	bool GetMark() const {
+		return mark;
+	}
+
+	bool Dirichlet() const {
+		if (boundary_type == 'D')
+			return true;
+		else
+			return false;
+	}
+
+	bool Neumann() const {
+		if (boundary_type == 'N')
+			return true;
+		else
+			return false;
+	}
+
+	bool Cauchy() const {
+		if (boundary_type == 'C')
+			return true;
+		else
+			return false;
+	}
+
+	bool onBoundary() const {
+		if (boundary_type == 'B')
+			return true;
+		else
+			return false;
+	}
+
+	bool Interior() const {
+		if (boundary_type == 'I')
+			return true;
+		else
+			return false;
+	}
+
+	// Set members
+	void SetBoundaryType(const char type) {
+		boundary_type = type;
+	}
+
+	char GetBoundaryType() const {
+		return boundary_type;
+	} // 18.02.2009. WW
+
+	void SetOrder(bool order) {
+		quadratic = order;
+	}
+
+	void SetMark(bool state) {
+		mark = state;
+	}
+
+	void SetIndex(size_t lvalue) {
+		index = lvalue;
+	} //OK
+
+	// Output
+	virtual void Write(std::ostream& os = std::cout) const {
+		os << std::endl;
+	}
+
 protected:
 	// Properties
 	size_t index;
@@ -45,72 +117,6 @@ protected:
 	friend class FiniteElement::CFiniteElementVec;
 	friend class FiniteElement::ElementMatrix;
 	friend class FiniteElement::ElementMatrix_DM;
-public:
-	// Methods
-	CCore(size_t id);
-	virtual ~CCore() {
-	}
-	// Operator
-	//      void operator = (CCore & g) {g=g;}
-	//      bool operator == (CCore & g) {g=g; return false;}
-	// Get members
-	size_t GetIndex() const {
-		return index;
-	}
-	bool GetMark() const {
-		return mark;
-	}
-	bool Dirichlet() const {
-		if (boundary_type == 'D')
-			return true;
-		else
-			return false;
-	}
-	bool Neumann() const {
-		if (boundary_type == 'N')
-			return true;
-		else
-			return false;
-	}
-	bool Cauchy() const {
-		if (boundary_type == 'C')
-			return true;
-		else
-			return false;
-	}
-	bool onBoundary() const {
-		if (boundary_type == 'B')
-			return true;
-		else
-			return false;
-	}
-	bool Interior() const {
-		if (boundary_type == 'I')
-			return true;
-		else
-			return false;
-	}
-	// Set members
-	void SetBoundaryType(const char type) {
-		boundary_type = type;
-	}
-	char GetBoundaryType() const {
-		return boundary_type;
-	} // 18.02.2009. WW
-	void SetOrder(bool order) {
-		quadratic = order;
-	}
-	void SetMark(bool state) {
-		mark = state;
-	}
-	void SetIndex(size_t lvalue) {
-		index = lvalue;
-	} //OK
-	// Output
-	virtual void Write(std::ostream& os = std::cout) const {
-		os << std::endl;
-	}
-	;
 };
 
 } // namespace Mesh_Group

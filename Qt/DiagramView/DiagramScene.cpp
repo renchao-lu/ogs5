@@ -12,7 +12,7 @@ const float DEFAULTX = 500.0;
 const float DEFAULTY = 300.0;
 
 /**
- * Creates a new scene. Since no data points are given some default 
+ * Creates a new scene. Since no data points are given some default
  * values are used for constructing all the necessary objects.
  */
 DiagramScene::DiagramScene(QObject* parent) : QGraphicsScene(parent)
@@ -36,7 +36,7 @@ DiagramScene::~DiagramScene()
 }
 
 /// Adds an arrow object to the diagram which might be used as a coordinate axis, etc.
-QArrow* DiagramScene::addArrow(float length, float angle, float headLength,float headwidth, QPen &pen)
+QArrow* DiagramScene::addArrow(float length, float angle, QPen &pen)
 {
 	QArrow* arrow = new QArrow(length, angle, 8, 5, pen);
 	addItem(arrow);
@@ -115,10 +115,10 @@ void DiagramScene::adjustAxis(float &min, float &max, int &numberOfTicks)
 }
 
 
-///Calculates scaling factors to set coordinate system and graphs to default window size 
+///Calculates scaling factors to set coordinate system and graphs to default window size
 void DiagramScene::adjustScaling()
 {
-	if ( (_unscaledBounds.width() > 0) && (_unscaledBounds.height() > 0)) 
+	if ( (_unscaledBounds.width() > 0) && (_unscaledBounds.height() > 0))
 	{
 		_scaleX = DEFAULTX / (_unscaledBounds.width());
 		_scaleY = DEFAULTY / (_unscaledBounds.height());
@@ -128,7 +128,7 @@ void DiagramScene::adjustScaling()
 /// Destroys the grid object (coordinate system) when a new graph is added.
 void DiagramScene::clearGrid()
 {
-	if (!_lists.isEmpty()) { 
+	if (!_lists.isEmpty()) {
 		removeItem(_grid);
 
 		for (int i = 0; i < _xTicksText.size(); ++i) removeItem(_xTicksText[i]);
@@ -157,9 +157,9 @@ void DiagramScene::constructGrid()
 	adjustAxis(yMin, yMax, numYTicks);
 
 	// adjust boundaries of coordinate system according to scaling
-	_bounds.setRect(	xMin*_scaleX, 
-						yMin*_scaleY, 
-						(xMax-xMin)*_scaleX, 
+	_bounds.setRect(	xMin*_scaleX,
+						yMin*_scaleY,
+						(xMax-xMin)*_scaleX,
 						(yMax-yMin)*_scaleY
 				  );
 
@@ -198,7 +198,7 @@ void DiagramScene::drawGraph(DiagramList* list)
 		 * For correct display the graph needs to be flipped vertically and then
 		 * translated back to its original position
 		 */
-		int verticalShift = 2 * (list->minYValue()*_scaleY) + (_graphs[last]->boundingRect()).height();
+		int verticalShift = static_cast<int>(2 * (list->minYValue()*_scaleY) + (_graphs[last]->boundingRect()).height());
 		_graphs[last]->setTransform(QTransform(QMatrix(1,0,0,-1,0,verticalShift)));
 	}
 }
@@ -225,8 +225,8 @@ void DiagramScene::initialize()
 	QPen pen(Qt::black, 2, Qt::SolidLine, Qt::SquareCap, Qt::RoundJoin);
 	pen.setCosmetic(true);
 
-	setXAxis(addArrow(_bounds.width(),  0, 8, 5, pen));
-	setYAxis(addArrow(_bounds.height(), -90, 8, 5, pen));
+	setXAxis(addArrow(_bounds.width(),  0, pen));
+	setYAxis(addArrow(_bounds.height(), -90, pen));
 	_xLabel = addNonScalableText(" ");
 	_yLabel = addNonScalableText(" ");
 	_yLabel->rotate(-90);
@@ -238,7 +238,7 @@ void DiagramScene::initialize()
 }
 
 
-/// Updates the (unscaled) boundaries of the visible coordinate system when a new 
+/// Updates the (unscaled) boundaries of the visible coordinate system when a new
 /// list is added (boundaries are rescaled in the constructGrid-method
 void DiagramScene::setDiagramBoundaries(DiagramList* list)
 {
@@ -248,18 +248,18 @@ void DiagramScene::setDiagramBoundaries(DiagramList* list)
 		if (list->minYValue()<_unscaledBounds.top()) _unscaledBounds.setTop(list->minYValue());
 		if (list->maxXValue()>_unscaledBounds.right()) _unscaledBounds.setRight(list->maxXValue());
 		if (list->maxYValue()>_unscaledBounds.bottom()) _unscaledBounds.setBottom(list->maxYValue());
-	} 
+	}
 	else
 	{
-		_unscaledBounds.setRect(list->minXValue(), list->minYValue(), 
+		_unscaledBounds.setRect(list->minXValue(), list->minYValue(),
 			           list->maxXValue()-list->minXValue(), list->maxYValue()-list->minYValue());
 	}
 }
 
 /**
  * Updates the scene at the start and everytime new data points
- * are added. Specifically, objects on the scene are assigned 
- * their position in the new coordinate system and are resized 
+ * are added. Specifically, objects on the scene are assigned
+ * their position in the new coordinate system and are resized
  * if necessary.
  */
 void DiagramScene::update()
@@ -280,8 +280,8 @@ void DiagramScene::update()
 	for (int i=0;i<_graphs.size();i++)
 	{
 		rect = _graphs[i]->boundingRect();
-		int offset = fabs(rect.bottom()-_bounds.bottom())
-				   - fabs(rect.top()-_bounds.top());
+		int offset = static_cast<int>(fabs(rect.bottom()-_bounds.bottom())
+				   - fabs(rect.top()-_bounds.top()));
 		_graphs[i]->setPos(0, offset);
 
 		rect = itemsBoundingRect();

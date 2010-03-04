@@ -4,7 +4,7 @@
  */
 
 #include <math.h>
-#include <QPainter>	
+#include <QPainter>
 #include "QArrow.h"
 
 
@@ -20,8 +20,8 @@ QArrow::QArrow(float l, float a, float hl, float hw, QPen &pen, QGraphicsItem* p
 {
 	_arrowLength = l;
 	_arrowAngle  = a;
-	_headLength  = hl;	
-	_headWidth   = hw;	
+	_headLength  = hl;
+	_headWidth   = hw;
 	_arrowPen	 = pen;
 }
 
@@ -50,14 +50,14 @@ double QArrow::calcCos(double angle)
 }
 
 double QArrow::calcSin(double angle)
-{	
+{
 	return sin (angle*PI/180);
 }
 
 /// The bounding box of the arrow
 QRectF QArrow::boundingRect() const
 {
-	double deltaX = cos(_arrowAngle)*_arrowLength;    
+	double deltaX = cos(_arrowAngle)*_arrowLength;
 	double deltaY = sin(_arrowAngle)*_arrowLength;
 
 	return QRectF(0, 0, deltaX, deltaY);
@@ -81,17 +81,20 @@ double QArrow::getAngle()
  */
 void QArrow::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-	double deltaX    = calcCos(_arrowAngle)*_arrowLength;    
-	double deltaY    = calcSin(_arrowAngle)*_arrowLength; 
+	Q_UNUSED (option)
+	Q_UNUSED (widget)
+
+	double deltaX    = calcCos(_arrowAngle)*_arrowLength;
+	double deltaY    = calcSin(_arrowAngle)*_arrowLength;
 	double theta     = atan(deltaY/deltaX);
-	double theta2    = (deltaX < 0.0) ? (theta+PI) : theta; 
-	int lengthdeltaX = -(int)(cos(theta2)*_headLength);   
-	int lengthdeltaY = -(int)(sin(theta2)*_headLength);  
-	int widthdeltaX  =  (int)(sin(theta2)*_headWidth); 
+	double theta2    = (deltaX < 0.0) ? (theta+PI) : theta;
+	int lengthdeltaX = -(int)(cos(theta2)*_headLength);
+	int lengthdeltaY = -(int)(sin(theta2)*_headLength);
+	int widthdeltaX  =  (int)(sin(theta2)*_headWidth);
 	int widthdeltaY  =  (int)(cos(theta2)*_headWidth);
 	painter->setPen(_arrowPen);
-	painter->drawLine(0, 0, deltaX, deltaY);  
-	painter->drawLine(deltaX, deltaY, deltaX+lengthdeltaX+widthdeltaX, deltaY+lengthdeltaY-widthdeltaY);  
+	painter->drawLine(0, 0, deltaX, deltaY);
+	painter->drawLine(deltaX, deltaY, deltaX+lengthdeltaX+widthdeltaX, deltaY+lengthdeltaY-widthdeltaY);
 	painter->drawLine(deltaX, deltaY, deltaX+lengthdeltaX-widthdeltaX, deltaY+lengthdeltaY+widthdeltaY);
 }
 

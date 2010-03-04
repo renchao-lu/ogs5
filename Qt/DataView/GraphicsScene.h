@@ -82,8 +82,6 @@ public slots:
 	void loadItemsFromTreeModel(StationTreeModel* model, std::string name);
 
 protected:
-	/// Draws a checkerboard background.
-	void drawBackground( QPainter *painter, const QRectF& rect);
 
 protected slots:
 	/// Updates selection changes to visualize selection on 2d and 3d items.

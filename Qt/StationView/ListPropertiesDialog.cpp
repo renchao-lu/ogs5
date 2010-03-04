@@ -16,8 +16,8 @@ using namespace GEOLIB;
  * Creates a new dialog.
  * \param db The database connection
  */
-ListPropertiesDialog::ListPropertiesDialog(std::string listName, GEOModels* geoModels, QDialog* parent) : 
-	QDialog(parent), _geoModels(geoModels), _listName(listName)
+ListPropertiesDialog::ListPropertiesDialog(std::string listName, GEOModels* geoModels, QDialog* parent) :
+	QDialog(parent), _listName(listName), _geoModels(geoModels)
 {
 	setupDialog();
 	show();

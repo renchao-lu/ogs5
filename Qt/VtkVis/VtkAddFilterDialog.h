@@ -1,7 +1,7 @@
 /**
  * \file VtkAddFilterDialog.h
  * 23/2/2010 LB Initial implementation
- * 
+ *
  */
 
 
@@ -23,7 +23,7 @@ class VtkAddFilterDialog : public QDialog, public Ui_VtkAddFilterDialogBase
 
 public:
 	VtkAddFilterDialog(VtkVisPipeline* pipeline, QModelIndex parentIndex, QDialog* parent = 0);
-	
+
 
 private:
 	VtkVisPipeline* _pipeline;

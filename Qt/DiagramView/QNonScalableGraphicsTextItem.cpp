@@ -15,7 +15,8 @@ QNonScalableGraphicsTextItem::QNonScalableGraphicsTextItem(QGraphicsItem* parent
 }
 
 /// Constructor using a QString.
-QNonScalableGraphicsTextItem::QNonScalableGraphicsTextItem(const QString & text, QGraphicsItem * parent)
+QNonScalableGraphicsTextItem::QNonScalableGraphicsTextItem(const QString & text, QGraphicsItem * parent) :
+	QGraphicsTextItem(parent)
 {
 	if (!text.isEmpty())
         setPlainText(text);

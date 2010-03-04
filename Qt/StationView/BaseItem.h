@@ -25,13 +25,15 @@ class BaseItem : public GraphicsItem2d
 	Q_OBJECT
 
 public:
-	BaseItem( const std::vector<GEOLIB::Point*> *stations = NULL, QGraphicsItem* parent = 0 ) 
-		: _stations(stations), GraphicsItem2d(NULL)
+	BaseItem( const std::vector<GEOLIB::Point*> *stations = NULL, QGraphicsItem* parent = 0 )
+		: GraphicsItem2d(NULL), _stations(stations), _vtkSource (VtkStationSource::New())
 	{
 		setVisible(false);
 
+		Q_UNUSED (parent)
+
 		// create the vtk-object for 3d-visualisation of this list
-		_vtkSource = VtkStationSource::New();
+//		_vtkSource = VtkStationSource::New();
 		static_cast<VtkStationSource*>(_vtkSource)->setStations(stations);
 	}
 	~BaseItem()
@@ -48,11 +50,15 @@ public:
 
 	const std::vector<GEOLIB::Point*> *getStations() { return _stations; }
 
-	void paint( QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 ) {}
+	virtual void paint( QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 ) {
+		Q_UNUSED (painter)
+		Q_UNUSED (option)
+		Q_UNUSED (widget)
+	}
 
-	void setEditable(bool enable) {}
+	virtual void setEditable(bool enable) { Q_UNUSED (enable) }
 
-	void updatePosition() {};
+	virtual void updatePosition() {};
 
 	/// Returns the Vtk polydata source object
 	vtkPolyDataAlgorithm* vtkSource() const { return _vtkSource; }

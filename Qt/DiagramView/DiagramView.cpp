@@ -34,31 +34,31 @@ void DiagramView::addGraph(DiagramList* list)
 
 int DiagramView::getHeight()
 {
-	return (_scene->itemsBoundingRect()).height();
+	return static_cast<int>((_scene->itemsBoundingRect()).height());
 }
 
 int DiagramView::getWidth()
 {
-	return (_scene->itemsBoundingRect()).width();
+	return static_cast<int>((_scene->itemsBoundingRect()).width());
 }
 
 /**
  * Initialises the view.
  */
 void DiagramView::initialize()
-{	
+{
 	//QMatrix currentMatrix = matrix();
 	//setMatrix(currentMatrix * scene->getTransformationMatrix());
-	
+
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	
+
 	update();
 }
 
 /*
  * Keeps the aspect ration of the labels when the view is resized.
- * It is only necessary to call this if 
+ * It is only necessary to call this if
  *		Qt::AspectRatioMode == Qt::IgnoreAspectRatio.
  * Also, this method is kind of annoying because you have to set the
  * appropriate transform for every single QGraphicsTextItem seperately.
@@ -89,14 +89,15 @@ QSize DiagramView::sizeHint() const
 
 void DiagramView::resizeEvent(QResizeEvent* event)
 {
+	Q_UNUSED (event)
 	update();
 	//keepItemAspectRatio();
 }
 
 /**
- * Updates the view automatically when a new list is added or when 
- * the window containing the view is resized or changes its state. 
- * Basically, the methods makes sure that everything keeps looking 
+ * Updates the view automatically when a new list is added or when
+ * the window containing the view is resized or changes its state.
+ * Basically, the methods makes sure that everything keeps looking
  * as it is supposed to.
  */
 void DiagramView::update()
