@@ -50,3 +50,9 @@ include_directories(
 	../FileIO
 	${Shapelib_INCLUDE_DIR}	
 )
+
+target_link_libraries (
+	GEO
+	Base
+)
+

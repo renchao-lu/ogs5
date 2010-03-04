@@ -123,6 +123,7 @@ add_library( QtDataView STATIC
 target_link_libraries( QtDataView
 	${QT_LIBRARIES}
 	GEO
+	FileIO
 	MSH
 	QtBase
 	DiagramView

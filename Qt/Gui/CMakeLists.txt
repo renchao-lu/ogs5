@@ -75,16 +75,16 @@ target_link_libraries( ogs-gui
 	QtBase
 	QtDataView
 	StationView
-	#${OpenSG_LIBRARIES}
-	#${OpenSGSupportlibs_LIBRARIES}
 	${Shapelib_LIBRARIES}
 	${libtiff_LIBRARIES}
 	${libgeotiff_LIBRARIES}
 	QVTK
 	VtkVis
+	#${OpenSG_LIBRARIES}
+	#${OpenSGSupportlibs_LIBRARIES}
 )
 
-add_dependencies ( ogs-gui Base VtkVis )
+add_dependencies ( ogs-gui Base VtkVis OGSProject )
 
 # Set linker flags
 IF(MSVC)
