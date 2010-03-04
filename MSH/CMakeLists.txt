@@ -86,6 +86,7 @@ include_directories(
 	../GEO
 	../FEM
 	../LIB
+	../OGSProject
 )
 
 # Create the library

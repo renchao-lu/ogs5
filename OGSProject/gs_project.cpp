@@ -6,9 +6,6 @@ Programing:
 last modified:
 **************************************************************************/
 
-#ifdef MFC
-#include "afxpriv.h" // For WM_SETMESSAGESTRING
-#endif
 #include "gs_project.h"
 // C++ STL
 #include <string>

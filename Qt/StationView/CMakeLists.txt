@@ -94,3 +94,5 @@ target_link_libraries( StationView
 	QtDataView
 	VtkVis
 )
+
+add_dependencies( StationView DiagramView )

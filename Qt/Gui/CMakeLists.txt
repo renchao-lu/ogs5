@@ -30,7 +30,7 @@ qt4_wrap_cpp( MOC_SOURCES ${MOC_HEADERS} )
 # and include additional header
 include_directories(
 	${CMAKE_BINARY_DIR}/Qt/Base
-	${CMAKE_BINARY_DIR}/Qt/DataViewTest
+	${CMAKE_BINARY_DIR}/Qt/Gui
 	${CMAKE_BINARY_DIR}/Qt/DataView
 	${CMAKE_BINARY_DIR}/Qt/StationView
 	${CMAKE_BINARY_DIR}/Qt/VtkVis
@@ -54,7 +54,7 @@ source_group("Moc Files" REGULAR_EXPRESSION "moc_.*")
 
 
 # Create the library
-add_executable( QtDataViewTest
+add_executable( ogs-gui
 	${SOURCES}
 	${HEADERS}
 	${MOC_HEADERS}
@@ -64,15 +64,17 @@ add_executable( QtDataViewTest
 )
 
 # Link Qt library
-target_link_libraries( QtDataViewTest
+target_link_libraries( ogs-gui
 	${QT_LIBRARIES}
 	Base
-	QtBase
-	QtDataView
 	GEO
 	FileIO
 	MSH
 	FEM
+	OGSProject
+	QtBase
+	QtDataView
+	StationView
 	#${OpenSG_LIBRARIES}
 	#${OpenSGSupportlibs_LIBRARIES}
 	${Shapelib_LIBRARIES}
@@ -82,9 +84,7 @@ target_link_libraries( QtDataViewTest
 	VtkVis
 )
 
-MESSAGE (${libgeotiff_LIBRARIES})
-
-add_dependencies ( QtDataViewTest Base VtkVis )
+add_dependencies ( ogs-gui Base VtkVis )
 
 # Set linker flags
 IF(MSVC)

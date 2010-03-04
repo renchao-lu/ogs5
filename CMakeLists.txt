@@ -65,6 +65,8 @@ add_subdirectory( MSH )
 add_subdirectory( FEM )
 #add_subdirectory( GEM )
 add_subdirectory( FileIO )
+add_subdirectory( OGSProject )
+add_subdirectory( OGS )
 
 if (QT4_FOUND)
   add_subdirectory( Qt )

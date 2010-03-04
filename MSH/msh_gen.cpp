@@ -16,7 +16,7 @@ using namespace std;
 #include "mathlib.h"
 // PCSLib
 #include "rf_pcs.h"
-#include "../gs_project.h"
+#include "gs_project.h"
 #include "rf_mmp_new.h" //OK
 
 /**************************************************************************

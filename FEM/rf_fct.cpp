@@ -10,7 +10,7 @@ Programing:
 #include "files0.h"
 extern void remove_white_space(string *buffer);
 extern string GetLineFromFile1(ifstream*);
-#include "../gs_project.h"
+#include "gs_project.h"
 
 vector<CFunction*>fct_vector;
 

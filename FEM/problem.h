@@ -2,11 +2,12 @@
   Class to define a problem to be solved.
   Programming WW 08.07.2008
 */
-#if defined(PROBLEM_CLASS)
 #ifndef problem_INC
 #define problem_INC
 
 #include "Configure.h"
+
+#if defined(PROBLEM_CLASS)
 
 #include <vector>
 class CRFProcess;
@@ -104,5 +105,5 @@ class Problem
 };
 static Problem *aproblem; // LB: changed extern keyword to static due to linker errors
 extern bool MODCreate(); //OK
-#endif
 #endif //PROBLEM_CLASS
+#endif

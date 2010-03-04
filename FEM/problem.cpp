@@ -1,13 +1,15 @@
 /*=======================================================================
-//Class Problem: Handle the datat and their functons for time stepping 
+//Class Problem: Handle the data and their functions for time stepping 
                  and coupled processes within each time step, and finally 
                  solve a problem. 
 Design and implementation:  WW
 Start time:  09.07.2008 
 Modification:
-            12.2008 WW Incoorparate the changes from previous versions. 
+            12.2008 WW Incorporate the changes from previous versions. 
 ========================================================================*/
+#include "problem.h"
 #if defined(PROBLEM_CLASS)
+
 #if defined(USE_MPI_REGSOIL)
 #include <mpi.h>
 #include "par_ddc.h"
@@ -15,7 +17,6 @@ Modification:
 #include <iostream>
 #include <sstream>
 //WW
-#include "problem.h"
 //
 /*------------------------------------------------------------------------*/
 /* Pre-processor definitions */
@@ -60,15 +61,6 @@ extern int ReadData(char*); //OK411
 #include "rf_REACT_BRNS.h"
 #endif
 #include "rf_kinreact.h"
-
-#ifdef MFC
-//#include "Windowsx.h"
-#include "GeoSys.h"
-#include "GeoSysDoc.h"
-#include "MainFrm.h"
-//#include "GeoSysPCSView.h"
-#include "GeoSysOUTProfileView.h"
-#endif
 
 namespace process{class CRFProcessDeformation;}
 using process::CRFProcessDeformation;

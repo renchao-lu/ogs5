@@ -41,14 +41,14 @@
 #ifdef PROBLEM_CLASS //WW
 #include "problem.h"
 #ifndef MFC //16.12.2008. WW
-Problem *aproblem = NULL;
+// LB, Problem *aproblem = NULL;
 #endif
 #endif
 /* Deklarationen */
 int main ( int argc, char *argv[] );
 void ShowSwitches ( void );
-string FileName; //WW
-string FilePath; //23.02.2009. WW
+// LB,string FileName; //WW
+// LB,string FilePath; //23.02.2009. WW
 // ------  12.09.2007 WW:
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)
 double elapsed_time_mpi; 

@@ -22,7 +22,7 @@ using namespace std;
 //#include "mshlib.h"
 // FEMLib
 extern void remove_white_space(string*);
-#include "../gs_project.h"
+#include "gs_project.h"
 #include "tools.h"
 #include "rf_node.h"
 #include "rf_bc_new.h"

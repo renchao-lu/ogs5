@@ -34,7 +34,7 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /ZI /Od /
 # Add subprojects
 add_subdirectory( Base )
 add_subdirectory( DataView )
-add_subdirectory( DataViewTest )
 add_subdirectory( DiagramView )
 add_subdirectory( StationView )
 add_subdirectory( VtkVis )
+add_subdirectory( Gui )

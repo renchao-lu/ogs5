@@ -8,7 +8,7 @@ last modified
 **************************************************************************/
 
 #include "makros.h"
-#include "../gs_project.h"
+#include "gs_project.h"
 // C++ STL
 #include <list>
 #include <iostream>

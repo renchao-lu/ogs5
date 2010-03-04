@@ -62,7 +62,6 @@ set( SOURCES
 	par_ddc.cpp
 	pcs_dm.cpp
 	problem.cpp
-	#rf.cpp							RockFlow-main()
 	rf_REACT_BRNS.cpp
 	rf_REACT_GEM.cpp
 	rf_bc_new.cpp
@@ -86,9 +85,6 @@ set( SOURCES
 	timer.cpp
 	tools.cpp
 	vtk.cpp
-	
-	../gs_project.h
-	../gs_project.cpp
 )
 
 include_directories(
@@ -97,6 +93,7 @@ include_directories(
 	../GEO
 	../MSH
 	../GEM
+	../OGSProject
 )
 
 # Create the library
