@@ -199,6 +199,15 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 
 	std::cout << "size of Polyline: " << sizeof (GEOLIB::Polyline) << std::endl;
 	std::cout << "size of CGLPolyline: " << sizeof (CGLPolyline) << std::endl;
+
+	std::cout << "size of GEOLIB::Surface: " << sizeof (GEOLIB::Surface) << std::endl;
+	std::cout << "size of Surface: " << sizeof (Surface) << std::endl;
+
+	std::cout << "size of CCore: " << sizeof (Mesh_Group::CCore) << std::endl;
+	std::cout << "size of CNode: " << sizeof (Mesh_Group::CNode) << std::endl;
+	std::cout << "size of CElement: " << sizeof (Mesh_Group::CNode) << std::endl;
+	std::cout << "size of CEdge: " << sizeof (Mesh_Group::CEdge) << std::endl;
+	std::cout << "size of CFEMesh: " << sizeof (Mesh_Group::CFEMesh) << std::endl;
 }
 
 MainWindow::~MainWindow()

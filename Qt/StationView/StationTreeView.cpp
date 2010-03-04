@@ -75,7 +75,8 @@ void StationTreeView::contextMenuEvent( QContextMenuEvent* event )
 	// The current index refers to a station object
 	else
 	{
-		if (static_cast<StationTreeModel*>(model())->stationFromIndex(index, QString())->type() == Station::BOREHOLE)
+		QString temp_name;
+		if (static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)->type() == Station::BOREHOLE)
 		{
 			QMenu menu;
 			QAction* exportAction = menu.addAction("Export to GMS...");
@@ -89,8 +90,10 @@ void StationTreeView::exportStation()
 {
 	QModelIndex index = this->selectionModel()->currentIndex();
 	QString fileName = QFileDialog::getSaveFileName(this, "Export Borehole to GMS-Format", "","*.txt");
-    if (!fileName.isEmpty())
-		static_cast<StationBorehole*>(static_cast<StationTreeModel*>(model())->stationFromIndex(index, QString()))->writeAsGMS(fileName.toStdString());
+    if (!fileName.isEmpty()) {
+    	QString temp_name;
+		static_cast<StationBorehole*>(static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name))->writeAsGMS(fileName.toStdString());
+    }
 }
 
 void StationTreeView::removeStationList()

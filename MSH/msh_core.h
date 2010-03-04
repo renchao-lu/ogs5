@@ -80,7 +80,7 @@ public:
 	}
 
 	// Set members
-	void SetBoundaryType(const char type) {
+	void SetBoundaryType(char type) {
 		boundary_type = type;
 	}
 
