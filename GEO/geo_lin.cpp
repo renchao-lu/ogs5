@@ -1,6 +1,6 @@
 /**************************************************************************
 GeoLib-Method: CGLLine
-Task: 
+Task:
 Programing:
 01/2004 OK Implementation
 09/2005 CC GeoLib2
@@ -11,12 +11,14 @@ Programing:
 #include "../FEM/files0.h"
 #include "geo_mathlib.h"//CC
 
+using namespace std;
+
 vector<CGLLine*> gli_lines_vector;
 vector<CGLLine*> gli_file_lines_vector;
 
 /**************************************************************************
 GeoLib-Method: CGLLine
-Task: 
+Task:
 Programing:
 01/2004 OK Implementation
 **************************************************************************/
@@ -27,7 +29,7 @@ CGLLine::CGLLine(void)
   marked = false;
   m_point1 = NULL;
   m_point2 = NULL;
-  point1 = -1; 
+  point1 = -1;
   point2 = -1;
   orientation = -1;
   epsilon = 0.1;
@@ -40,18 +42,18 @@ CGLLine::CGLLine(void)
 CGLLine::~CGLLine(void)
 {
   int i=0;
-  for (i=0;i<(int)nodes_coor_vector.size();i++) 
-  {	    
+  for (i=0;i<(int)nodes_coor_vector.size();i++)
+  {
     delete nodes_coor_vector[i];
   }
-  nodes_coor_vector.clear();  
+  nodes_coor_vector.clear();
 }
 
 /*************************************************************************
  GeoLib- Funktion: GEOLIB_GetGLILines_Vector
-                                                                          
-Aufgabe: Pointer für externen Vektorenzugriff
-                                                                          
+
+Aufgabe: Pointer fï¿½r externen Vektorenzugriff
+
  Programmaenderungen:
    08/2003     TK        Erste Version
 **************************************************************************/
@@ -61,9 +63,9 @@ vector<CGLLine*> GEOLIB_GetGLILines_Vector(void)
 }
 /*************************************************************************
  GeoLib- Funktion: Clear_LineVector
-                                                                          
+
  Aufgabe: Leeren des GLI Line-Vektors
-                                                                          
+
  Programmaenderungen:
    08/2003     TK        Erste Version
 **************************************************************************/
@@ -103,7 +105,7 @@ CGLLine *CGLLine::Exists()
       orientation = 1;
       return gli_lines_vector[i];
     }
-    //if ( ((node1==point1)&&(node2==point2))||((node2==point1)&&(node1==point2)) ) 
+    //if ( ((node1==point1)&&(node2==point2))||((node2==point1)&&(node1==point2)) )
       //return  gli_lines_vector[i];
   }
   return NULL;
@@ -111,8 +113,8 @@ CGLLine *CGLLine::Exists()
 
 
 /**************************************************************************
-GeoLib-Method: 
-Task: Check if the line is output in order to avoid the multi-output 
+GeoLib-Method:
+Task: Check if the line is output in order to avoid the multi-output
 Programing:
 03/2004 WW Implementation
 **************************************************************************/
@@ -121,7 +123,7 @@ CGLLine *CGLLine::CheckLineOutPut()
 	const double DistTol = 1.0e-10;
 	CGLLine *CGLn = NULL;
 
-	int Size =(long)gli_lines_vector.size(); 
+	int Size =(long)gli_lines_vector.size();
 	for (int j=0;j<Size;j++)
     {
         CGLn = gli_lines_vector[j];

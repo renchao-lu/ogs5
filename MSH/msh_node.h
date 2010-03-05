@@ -7,39 +7,26 @@ last modified
 **************************************************************************/
 #ifndef msh_node_INC
 #define msh_node_INC
-// C++
+
 #include <string>
 #include <vector>
 #include "matrix_class.h"
+
 // MSHLib
 #include "msh_core.h"
-//------------------------------------------------------------------------
-namespace Mesh_Group
-{
- using Math_Group::SymMatrix;
- using Math_Group::vec;
- using Math_Group::Vec;
 
-//------------------------------------------------------------------------
+namespace Mesh_Group {
+using Math_Group::SymMatrix;
+using Math_Group::vec;
+using Math_Group::Vec;
+
 // Class definition
-class CNode:public CCore
+class CNode: public CCore
 {
-private:
-	// Members
-	long eqs_index; // renumber
-	double coordinate[3];
-	friend class CEdge;
-	friend class CElem;
-	// FEM
-	friend class FiniteElement::CElement;
-	friend class FiniteElement::CFiniteElementStd;
-	friend class FiniteElement::CFiniteElementVec;
-	friend class FiniteElement::ElementMatrix;
-	friend class FiniteElement::ElementMatrix_DM;
 public:
 	double epsilon;
 	long interior_test;
-	int crossroad; // PCH: Make theses privates can be done later on.
+
 	int free_surface; //MB ??? mobile
 	std::vector<long> connected_elements;
 	std::vector<long> connected_nodes; //OK
@@ -50,15 +37,16 @@ public:
 	std::vector<long> connected_planes; // PCH
 	//     vector<long>  m5_index; //WW
 	CNode(const int Index) :
-		CCore(Index), eqs_index(-1) {
-	}
-			CNode(const int Index, const double x, const double y,
-					const double z = 0.0);
-	~CNode() {
-	}
+		CCore(Index), eqs_index(-1)
+	{}
+	CNode(const int Index, const double x, const double y,
+			const double z = 0.0);
+
+	~CNode() {}
+
 	// Operator
 	void operator =(const CNode& n);
-	bool operator ==(const CNode & n);
+	bool operator ==(const CNode& n);
 	// Get functions
 	double X() const {
 		return coordinate[0];
@@ -101,6 +89,21 @@ public:
 	double Y_displaced(void);
 	double Z_displaced(void);
 #endif
+
+	int crossroad; // PCH: Make theses privates can be done later on.
+
+private:
+	// Members
+	long eqs_index; // renumber
+	double coordinate[3];
+	friend class CEdge;
+	friend class CElem;
+	// FEM
+	friend class FiniteElement::CElement;
+	friend class FiniteElement::CFiniteElementStd;
+	friend class FiniteElement::CFiniteElementVec;
+	friend class FiniteElement::ElementMatrix;
+	friend class FiniteElement::ElementMatrix_DM;
 };
 
 } // namespace Mesh_Group

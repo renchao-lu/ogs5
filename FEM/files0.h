@@ -7,12 +7,9 @@
 
 /* Andere oeffentlich benutzte Module */
 #include "Configure.h"
-#include <stdio.h>
-// C++ STL
+#include <cstdio>
 #include <string>
 #include <fstream>
-using namespace std;
-
 
 typedef int (*FctTestInt) ( int * , FILE * );
 typedef int (*FctTestLong) ( long * , FILE * );
@@ -118,15 +115,15 @@ extern void GetRFINodesData ();
 
 extern int StrOnlyReadStr ( char *x, char *s, FILE *f, FctTestString func, int *pos ); /*MX*/
 
-extern string get_sub_string(const string&,const string&,int,int*);
-extern void remove_white_space(string*);
-//extern string get_sub_string2(string buffer,string delimiter,string cut_string);
-extern string get_sub_string2(const string&,const string&,string*);
-extern bool SubKeyword(const string&);
-extern bool Keyword(const string&);
+extern std::string get_sub_string(const std::string&,const std::string&,int,int*);
+extern void remove_white_space(std::string*);
+//extern std::string get_sub_string2(std::string buffer,std::string delimiter,std::string cut_string);
+extern std::string get_sub_string2(const std::string&,const std::string&,std::string*);
+extern bool SubKeyword(const std::string&);
+extern bool Keyword(const std::string&);
 
-extern string GetLineFromFile1(ifstream*);//CC move here
-extern string GetUncommentedLine(string); //SB
-//extern string NumberToString(long);
-extern void is_line_empty(string*); //OK
+extern std::string GetLineFromFile1(std::ifstream*);//CC move here
+extern std::string GetUncommentedLine(std::string); //SB
+//extern std::string NumberToString(long);
+extern void is_line_empty(std::string*); //OK
 #endif

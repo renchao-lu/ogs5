@@ -208,6 +208,7 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	std::cout << "size of CElement: " << sizeof (Mesh_Group::CNode) << std::endl;
 	std::cout << "size of CEdge: " << sizeof (Mesh_Group::CEdge) << std::endl;
 	std::cout << "size of CFEMesh: " << sizeof (Mesh_Group::CFEMesh) << std::endl;
+	std::cout << "size of Matrix: " << sizeof (Math_Group::Matrix) << std::endl;
 }
 
 MainWindow::~MainWindow()
