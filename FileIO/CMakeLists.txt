@@ -15,7 +15,7 @@ set( HEADERS
 if (Shapelib_FOUND)
 	set( HEADERS ${HEADERS} SHPInterface.h )
 	set (SOURCES ${SOURCES} SHPInterface.cpp )
-endif (Shapelib)
+endif (Shapelib_FOUND)
 
 if (QT4_FOUND)
 	set( HEADERS ${HEADERS} XMLInterface.h )
