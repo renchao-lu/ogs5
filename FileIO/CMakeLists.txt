@@ -4,7 +4,7 @@ set( SOURCES
 	OGSIOVer4.cpp
 	PetrelInterface.cpp
 	SHPInterface.cpp
-	XMLInterface.cpp
+	
 )
 
 # Header files
@@ -13,15 +13,18 @@ set( HEADERS
 	OGSIOVer4.h
 	PetrelInterface.h
 	SHPInterface.h
-	XMLInterface.h
 )
+
+if (QT4_FOUND)
+	set( HEADERS ${HEADERS} XMLInterface.h )
+	set (SOURCES ${SOURCES} XMLInterface.cpp )
+endif (QT4_FOUND)
 
 # Create the library
 add_library( FileIO STATIC
 	${SOURCES}
 	${HEADERS}
 )
-
 
 include_directories(
 	.

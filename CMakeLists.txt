@@ -24,8 +24,12 @@ endif (WIN32)
 option (RANDOM_WALK "Do you want to add #define RANDOM_WALK ?" ON)
 option (PROBLEM_CLASS "Do you want to add #define PROBLEM_CLASS ?" ON)
 
-# Find installed Qt4 libraries and headers
-find_package( Qt4 )
+option (OGS_USE_QT "Do you want to build the OGS GUI?" ON)
+
+if (OGS_USE_QT)
+	# Find installed Qt4 libraries and headers
+	find_package( Qt4 )
+endif (OGS_USE_QT)
 
 # Create Configure.h
 configure_file (Base/Configure.h.in ${PROJECT_BINARY_DIR}/Base/Configure.h)
@@ -36,10 +40,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeConfigurati
 
 # Find Shapelib
 find_package( Shapelib REQUIRED )
-
-# Adds useful macros and variables
-# this is needed to correctly link the qt libraries through target_link_libraries
-INCLUDE( ${QT_USE_FILE} )
 
 # Set build directories
 # Binaries are created in /bin and libraries in /lib
@@ -69,7 +69,10 @@ add_subdirectory( OGSProject )
 add_subdirectory( OGS )
 
 if (QT4_FOUND)
-  add_subdirectory( Qt )
+	# Adds useful macros and variables
+	# this is needed to correctly link the qt libraries through target_link_libraries
+	INCLUDE( ${QT_USE_FILE} )
+	add_subdirectory( Qt )
 endif (QT4_FOUND)
 
 # Copy ExampleData
