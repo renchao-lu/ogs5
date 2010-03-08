@@ -24,7 +24,7 @@ endif (WIN32)
 option (RANDOM_WALK "Do you want to add #define RANDOM_WALK ?" ON)
 option (PROBLEM_CLASS "Do you want to add #define PROBLEM_CLASS ?" ON)
 
-option (OGS_USE_QT "Do you want to build the OGS GUI?" ON)
+option (OGS_USE_QT "Do you want to build the OGS GUI?" OFF)
 
 if (OGS_USE_QT)
 	# By default only QtCore and QtGui modules are enabled
