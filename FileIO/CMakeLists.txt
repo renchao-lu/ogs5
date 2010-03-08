@@ -3,8 +3,7 @@ set( SOURCES
 	GocadInterface.cpp	
 	OGSIOVer4.cpp
 	PetrelInterface.cpp
-	SHPInterface.cpp
-	
+	SHPInterface.cpp	
 )
 
 # Header files

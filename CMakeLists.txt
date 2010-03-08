@@ -27,8 +27,22 @@ option (PROBLEM_CLASS "Do you want to add #define PROBLEM_CLASS ?" ON)
 option (OGS_USE_QT "Do you want to build the OGS GUI?" ON)
 
 if (OGS_USE_QT)
+	# By default only QtCore and QtGui modules are enabled
+	# other modules must be enabled like this:
+	set( QT_USE_QTOPENGL TRUE )
+	set( QT_USE_QTSQL TRUE )
+	set( QT_USE_QTTEST TRUE )
+
 	# Find installed Qt4 libraries and headers
 	find_package( Qt4 )
+
+	if (QTXMLPATTERNS_FOUND)
+		set( QT_USE_QTXMLPATTERNS TRUE )
+	endif (QTXMLPATTERNS_FOUND)
+
+	# Adds useful macros and variables
+	# this is needed to correctly link the qt libraries through target_link_libraries
+	INCLUDE( ${QT_USE_FILE} )
 endif (OGS_USE_QT)
 
 # Create Configure.h
@@ -74,19 +88,3 @@ if (QT4_FOUND)
 	INCLUDE( ${QT_USE_FILE} )
 	add_subdirectory( Qt )
 endif (QT4_FOUND)
-
-# Copy ExampleData
-option (COPY_EXAMPLE_DATA "If checked, every time CMake is run the data files from /ExampleData get copied to the executable directories" OFF)
-if (COPY_EXAMPLE_DATA)
-	message(STATUS "Copying example data...")
-	if (WIN32)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/ExampleData ${PROJECT_BINARY_DIR}/bin/Debug/ExampleData )
-		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${PROJECT_BINARY_DIR}/bin/Debug/ExampleData/.svn )
-		execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/ExampleData ${PROJECT_BINARY_DIR}/bin/Release/ExampleData )
-		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${PROJECT_BINARY_DIR}/bin/Release/ExampleData/.svn )
-	else (WIN32)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/ExampleData ${PROJECT_BINARY_DIR}/bin/ExampleData )
-		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${PROJECT_BINARY_DIR}/bin/ExampleData/.svn )
-	endif (WIN32)
-endif (COPY_EXAMPLE_DATA)
-

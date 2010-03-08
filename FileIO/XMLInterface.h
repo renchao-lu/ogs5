@@ -9,7 +9,7 @@
 #include "Configure.h"
 
 #include <map>
-#include <QtXml/QXmlStreamReader>
+#include <QXmlStreamReader>
 #if OGS_QT_VERSION > 45
 	#include <QtXmlPatterns/QXmlSchema>
 #endif // OGS_QT_VERSION > 45
