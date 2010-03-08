@@ -53,7 +53,7 @@ include_directories( ${PROJECT_BINARY_DIR}/Base )
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeConfiguration")
 
 # Find Shapelib
-find_package( Shapelib REQUIRED )
+find_package( Shapelib )
 
 # Set build directories
 # Binaries are created in /bin and libraries in /lib

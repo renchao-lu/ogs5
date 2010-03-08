@@ -2,8 +2,7 @@
 set( SOURCES
 	GocadInterface.cpp	
 	OGSIOVer4.cpp
-	PetrelInterface.cpp
-	SHPInterface.cpp	
+	PetrelInterface.cpp	
 )
 
 # Header files
@@ -11,8 +10,12 @@ set( HEADERS
 	GocadInterface.h
 	OGSIOVer4.h
 	PetrelInterface.h
-	SHPInterface.h
 )
+
+if (Shapelib_FOUND)
+	set( HEADERS ${HEADERS} SHPInterface.h )
+	set (SOURCES ${SOURCES} SHPInterface.cpp )
+endif (Shapelib)
 
 if (QT4_FOUND)
 	set( HEADERS ${HEADERS} XMLInterface.h )
