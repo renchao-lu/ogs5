@@ -15,6 +15,7 @@ set( HEADERS
 if (Shapelib_FOUND)
 	set( HEADERS ${HEADERS} SHPInterface.h )
 	set (SOURCES ${SOURCES} SHPInterface.cpp )
+	include_directories (${Shapelib_INCLUDE_DIR})
 endif (Shapelib_FOUND)
 
 if (QT4_FOUND)
@@ -32,7 +33,6 @@ include_directories(
 	.
 	../Base
 	../GEO
-	${Shapelib_INCLUDE_DIR}	
 )
 
 target_link_libraries( FileIO

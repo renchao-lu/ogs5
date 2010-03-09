@@ -17,9 +17,11 @@ include_directories(
 	../MSH
 	../FEM
 	../OGSProject
-
-	${Shapelib_INCLUDE_DIR}	
 )
+
+if (Shapelib_FOUND)
+	include_directories(${Shapelib_INCLUDE_DIR})
+endif (Shapelib_FOUND)
 
 
 # Create the library

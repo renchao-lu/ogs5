@@ -1,7 +1,7 @@
 #### OGS-5 Qt Project ####
 
 # Specify minimum CMake version
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.4)
 
 # Set build configuration types
 # "RelWithDebInfo" and "MinSizeRelease" can be added here
