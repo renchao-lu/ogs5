@@ -175,10 +175,6 @@ ios::pos_type CBoundaryCondition::Read(ifstream *bc_file)
         m_ply = GEOGetPLYByName(geo_name); //CC 10/05
         if(!m_ply)
           cout << "Warning in BCRead: no PLY data" << endl;
-#ifdef MFC
-        if(!m_ply)
-          AfxMessageBox("Warning in BCRead: no PLY data");
-#endif
         geo_type = 1;
       }
 

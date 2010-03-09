@@ -2413,9 +2413,6 @@ void CRFProcess::ConfigMassTransport()
 
   if((int)cp_vec.size()<pcs_component_number+1){
     cout << "Error in CRFProcess::ConfigMassTransport - not enough MCP data" << endl;
-#ifdef MFC
-    AfxMessageBox("Error in CRFProcess::ConfigMassTransport - not enough MCP data");
-#endif
 
     return;
   }

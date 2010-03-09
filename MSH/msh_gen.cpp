@@ -568,9 +568,6 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
       // 3 - create line elements
       m_polyline->MSHCreateLines();
 */
-#ifdef MFC
-AfxMessageBox("Method inactive");
-#endif
       break;
     //--------------------------------------------------------------------
     case 1: // based on lines
@@ -631,9 +628,6 @@ AfxMessageBox("Method inactive");
         m_ele->nodes_index[1] = i+1;
       }
 */
-#ifdef MFC
-AfxMessageBox("Method inactive");
-#endif
       break;
     //--------------------------------------------------------------------
     case 2: // based on triangles

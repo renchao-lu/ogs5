@@ -178,9 +178,6 @@ void REACT_BRNS::InitBRNS(void)
     {init_flag = true;}
     else
     {
-          #ifdef MFC
-            AfxMessageBox("!!! Node number and Components Number must be bigger than zero!");
-          #endif
           DisplayErrorMsg("!!! Node number and Components Number must be bigger than zero!");
           abort();
     }
@@ -222,9 +219,6 @@ void REACT_BRNS::InitBRNS(void)
 			}
 			else  // not getting the pointer to the proper PCS. 
 			{
-				#ifdef MFC
-				  AfxMessageBox("!!! In Data transfer for BRNS, can not find corresponding PCS!");
-				#endif
 				  DisplayErrorMsg("!!! In InitBRNS, can not find corresponding PCS!");
 				abort();
 			}
@@ -252,9 +246,6 @@ void REACT_BRNS::GSRF2Buffer(long i)
           }
           else  // not getting the pointer to the proper PCS. 
           {
-              #ifdef MFC
-                AfxMessageBox("!!! In Data transfer for BRNS, can not find corresponding PCS!");
-              #endif
                 DisplayErrorMsg("!!! In Data transfer for BRNS, can not find corresponding PCS!");
               abort();
           }
@@ -278,9 +269,6 @@ void REACT_BRNS::Buffer2GSRF(long i)
           }
           else  // not getting the pointer to the proper PCS. 
           {
-              #ifdef MFC
-                AfxMessageBox("!!! In Data transfer for BRNS, can not find corresponding PCS!");
-              #endif
                 DisplayErrorMsg("!!! In Data transfer for BRNS, can not find corresponding PCS!");
               abort();
           }

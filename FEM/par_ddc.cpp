@@ -886,9 +886,6 @@ void CPARDomain::WriteTecplot(string msh_name)
   CGSProject* m_gsp = NULL;
   m_gsp = GSPGetMember("msh");
   if(!m_gsp){
-#ifdef MFC
-    AfxMessageBox("Error: No MSH member");
-#endif
     return;
   }
   //--------------------------------------------------------------------

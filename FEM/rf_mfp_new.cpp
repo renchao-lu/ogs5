@@ -488,10 +488,7 @@ bool MFPRead(string file_base_name)
   //----------------------------------------------------------------------
   // Test
   if((int)mfp_vector.size()==0){
-    cout << "Error in MFPRead: no MFP data" << endl;
-#ifdef MFC
-    AfxMessageBox("Error in MFPRead: no MFP data");
-#endif    
+    cout << "Error in MFPRead: no MFP data" << endl;   
     abort();
   }
   //----------------------------------------------------------------------

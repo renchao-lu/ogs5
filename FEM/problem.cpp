@@ -103,9 +103,6 @@ Problem::Problem(char* filename):print_result(false)
   int g_max_mmp_groups = MSHSetMaxMMPGroups();
   if(g_max_mmp_groups>(int)mmp_vector.size()){
     cout << "Error: not enough MMP data";
-#ifdef MFC
-    AfxMessageBox( "Error: not enough MMP data");
-#endif
     print_result = false; //OK
     return;
   }
@@ -113,10 +110,7 @@ Problem::Problem(char* filename):print_result(false)
   // Create PCS processes
   PCSCreate();
   if (!PCSCheck()) //OK4910 reactivated
-  { 
-#ifdef MFC
-    AfxMessageBox("Warning: not all PCS data are available. PCS dependencies are not created");
-#endif  
+  {  
     print_result = false; //OK
     return;
   }
@@ -749,10 +743,6 @@ void Problem::Euler_TimeDiscretize()
     }   
     if(dt<DBL_EPSILON)
     {
-#ifdef MFC
-       AfxMessageBox("Too small time step size. Quit the simulation now.");
-       return;
-#endif
        cout<<"!!! Too small time step size. Quit the simulation now."<<endl;
        exit(0);
     }  
@@ -2030,9 +2020,6 @@ void Problem::LOPCalcELEResultants()
     //cout << "LOPCalcELEResultants: " << m_pcs->pcs_type_name << endl;
     switch(m_pcs->pcs_type_name[0]){
       default:
-#ifdef MFC
-        AfxMessageBox("Error in LOPCalcELEResultants: no valid process !");
-#endif
         break;
       case 'L': // Liquid flow
         m_pcs->CalcELEVelocities();

@@ -1508,12 +1508,6 @@ void CFEMesh::GetNODOnSFC(Surface*m_sfc,vector<long>&msh_nod_vector)
     //....................................................................
     case 1: // TIN
       if(!m_sfc->TIN){
-#ifdef MFC
-        CString m_str;
-        m_str = "Error in CFEMesh::GetNODOnSFC - no TIN data for ";
-        m_str += m_sfc->name.data();
-        AfxMessageBox(m_str);
-#endif
         return;
       }
       GetNODOnSFC_TIN(m_sfc,msh_nod_vector);
@@ -3091,9 +3085,6 @@ void CFEMesh::CreateLayerPolylines(CGLPolyline*m_ply)
       }
 
   if(ply_nod_vector_layer<1){
-#ifdef MFC
-    AfxMessageBox("Not enough NOD data, increase EPS");
-#endif
     return;
   }
   //---------------------------------------------------------------------
@@ -3112,11 +3103,6 @@ void CFEMesh::CreateLayerPolylines(CGLPolyline*m_ply)
   m_polyline->epsilon = m_ply->epsilon; //OK
   m_polyline->ply_data = m_polyline->ply_name + ".ply";//CC
   m_polyline->ply_type = "NOD_POINTS";//CC
-#ifdef MFC
-  if(m_ply->epsilon<min_edge_length)
-    AfxMessageBox("Warning: PLY-EPS < MSH_MIN_EDGE_LENGHT");
-    //m_polyline->epsilon = min_edge_length / 2.; //OK
-#endif
   for(i=0;i<ply_nod_vector_layer;i++) {
     m_point = new CGLPoint;
     m_nod = nod_vector[ply_nod_vector[i]];
@@ -3501,9 +3487,6 @@ void CFEMesh::CreateLayerSurfaceTINsfromPris(Surface*m_sfc)
   vec<long>node_indeces(6);
   //---------------------------------------------------------------------
   if(!m_sfc){
-#ifdef MFC
-    AfxMessageBox("No SFC data");
-#endif
     return;
   }
   //---------------------------------------------------------------------
@@ -3528,9 +3511,6 @@ void CFEMesh::CreateLayerSurfaceTINsfromPris(Surface*m_sfc)
   sfc_layer_name = m_sfc->name + "_layer_0";
   m_sfc_layer_0 = GEOGetSFCByName(sfc_layer_name);
   if(!m_sfc_layer_0){
-#ifdef MFC
-    AfxMessageBox("No SFC data");
-#endif
     return;
   }
   long no_nodes_per_layer = (long)nod_vector.size() / (no_msh_layer+1);
@@ -3558,9 +3538,6 @@ void CFEMesh::CreateLayerSurfaceTINsfromPris(Surface*m_sfc)
           sfc_layer_name = m_sfc->name + "_layer_" + layer_number;
           m_sfc_layer = GEOGetSFCByName(sfc_layer_name);
           if(!m_sfc_layer){
-#ifdef MFC
-            AfxMessageBox("No SFC data");
-#endif
             return;
           }
           m_tri_new = new CTriangle;
@@ -4465,9 +4442,6 @@ void CFEMesh::LayerMapping(const char *dateiname, const int NLayers,\
        for(i=0; i<NPoints; i++)   {
          if(fgets(s,MAX_ZEILE,f)==NULL)	 {
            //DisplayErrorMsg("Error: End of .grd file reached ");
-#ifdef MFC
-           AfxMessageBox("1");
-#endif
            abort();
          }
          s_str = s; //OK/CC
@@ -4478,9 +4452,6 @@ void CFEMesh::LayerMapping(const char *dateiname, const int NLayers,\
          }
          if (sscanf(s," %lf %lf %lf  ", &(GridX[i]),&(GridY[i]),&(H0[i]))!=3) 	   {
            //DisplayErrorMsg("Error: More than one integal in .grd file!");
-#ifdef MFC
-           AfxMessageBox("Empty line in DAT file");
-#endif
            abort();
          }
        }
@@ -4528,9 +4499,6 @@ void CFEMesh::LayerMapping(const char *dateiname, const int NLayers,\
 	   }
        if(counter<NPoints){
          cout << "Warning: not all grid points found, increase tolerance" << endl;
-#ifdef MFC
-         AfxMessageBox("Warning: not all grid points found, increase tolerance");
-#endif
        }
 	   break;
     //====================================================================
@@ -4591,9 +4559,6 @@ void CFEMesh::LayerMapping(const char *dateiname, const int NLayers,\
         y = anode->Y();
       //..................................................................
 	  if(x<MinX||x>MaxX||y<MinY||y>MaxY)   {
-#ifdef MFC
-        AfxMessageBox("Error: MSH coordinates are out of x-y range of MAP");
-#endif
         // Release memory
         if(GridX) GridX  = (double*) Free(GridX);
         if(GridY) GridY  = (double*) Free(GridY);
@@ -4649,16 +4614,10 @@ void CFEMesh::LayerMapping(const char *dateiname, const int NLayers,\
       {
          if(row==1)
          {
-#ifdef MFC
-            AfxMessageBox("Some points on bottom suface do not have elevation data.\n Fix the bottom data and try again.", MB_ICONERROR);
-#endif
             return;
          }
          if(row==NLayers+1)
          {
-#ifdef MFC
-            AfxMessageBox("Some points on top suface do not have elevation data.\n Fix the surface data and try again.", MB_ICONERROR);
-#endif
             return;
          }
          anode->SetZ(-9999);   //19.01.2009. WW

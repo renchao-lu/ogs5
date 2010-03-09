@@ -150,9 +150,6 @@ bool FEMRead(string file_base_name)
     cout << "ASCII file" << endl;
     msh_file_ascii.open(msh_file_name_ascii.data(),ios::in);
     if (!msh_file_ascii.good()){
-#ifdef MFC
-      AfxMessageBox("Opening MSH file failed");
-#endif
       return false;
     }
   }
@@ -510,13 +507,6 @@ void MSHWriteVOL2TEC(string m_msh_name)
         }
       }
     }
-#ifdef MFC
-    if(no_mat_elements<1){
-      CString m_str = "Warning: no ELE data for VOL ";
-      m_str += m_vol->name.data();
-      AfxMessageBox(m_str);
-    }
-#endif
     //--------------------------------------------------------------------
     position = vol_file.tellg();
     vol_file << "ZONE T = " << m_vol->name << ", " \

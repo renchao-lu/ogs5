@@ -183,9 +183,6 @@ double GetCurveValueInverse(int kurve, int methode, double wert, int *gueltig)
         DisplayMsg("PANIC! Curve ");
         DisplayLong(kurve);
         DisplayMsgLn(" is requested but not defined!");
-#ifdef MFC //OK
-        AfxMessageBox("Fatal error in GetCurveValueInverse: no CURVE data ! Abort");
-#endif
         abort();
     }
 #endif

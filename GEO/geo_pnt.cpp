@@ -860,9 +860,6 @@ void GEOWritePoints(char* file_name)
 		fclose(f);
 	}
 	else {
-#ifdef MFC
-		AfxMessageBox("Error during writing in CGLPoint::Write");
-#endif
 	}
 }
 /**************************************************************************

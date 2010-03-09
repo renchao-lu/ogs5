@@ -620,9 +620,6 @@ ios::pos_type CGLPolyline::Read(std::ifstream &gli_file)//CC8888
 					sprintf(m_strnameid, "%li", lvalue); //OK
 					//itoa((int)lvalue,m_strnameid,10); //CC 09/05 convert integer to string ultoa convert unsigned long to string
 					string error_str = m_strname + m_strnameid;
-#ifdef MFC
-					AfxMessageBox(error_str.c_str());
-#endif
 					return position;
 				};
 				gli_file.getline(line, MAX_ZEILEN);
@@ -737,9 +734,6 @@ void InterpolationAlongPolyline(CGLPolyline *plyL,
 
   if (ss0.size() == 0) {
     cout << "Error in CGLPolyline::InterpolationAlongPolyline: no PNT data found for Spline interpolation" <<  endl;
-#ifdef MFC
-    AfxMessageBox("Error! No point data found for interpolation along a polyline. Please check IC/BC/ST files.");
-#endif
     return;
   }
 
@@ -998,9 +992,6 @@ void CGLPolyline::SetPointOrderByDistance(CGLPoint*m_pnt)
     }
   }
   if((int)point_vector_aux.size()==0){
-#ifdef MFC
-    AfxMessageBox("Error in CGLPolyline::SetPointOrderByDistance: no PNT data");
-#endif
     return;
   }
   for(i=0;i<(int)point_vector.size();i++){

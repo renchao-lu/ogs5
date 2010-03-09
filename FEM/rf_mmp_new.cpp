@@ -1345,9 +1345,6 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
       ifstream mmp_file(funfname.data(),ios::in); //WW
       if (!mmp_file.good()){
         cout << "Fatal error in MMPRead: no PERMEABILITY_DISTRIBUTION file" << endl;
-#ifdef MFC
-        AfxMessageBox("Fatal error in MMPRead: no PERMEABILITY_DISTRIBUTION file");
-#endif
       }
       mmp_file.close();
       permeability_model = 2;
@@ -1392,9 +1389,6 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
       ifstream mmp_file(funfname.data(),ios::in); //WW
       if (!mmp_file.good()){
         cout << "Fatal error in MMPRead: no POROSITY_DISTRIBUTION file" << endl;
-#ifdef MFC
-        AfxMessageBox("Fatal error in MMPRead: no POROSITY_DISTRIBUTION file");
-#endif
       }  
       mmp_file.close();
       porosity_model = 11;
@@ -1684,9 +1678,6 @@ void CMediumProperties::WriteTecplot(string msh_name)
   CGSProject* m_gsp = NULL;
   m_gsp = GSPGetMember("msh");
   if(!m_gsp){
-#ifdef MFC
-    AfxMessageBox("Error: No MSH member");
-#endif
     return;
   }
   //--------------------------------------------------------------------
@@ -2800,11 +2791,7 @@ void read_keywd_list(void)
     } // eof
   }// if eingabe.good
   else {
-#ifdef MFC
-	  AfxMessageBox("No keyword file: mat_mp_keywords.dat");
-#else
 	  printf("No keyword file: mat_mp_keywords.dat");
-#endif
   }
   return;
 }

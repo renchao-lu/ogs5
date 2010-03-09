@@ -519,9 +519,6 @@ void MSHAssignMATGroup2Elements(string msh_name)
   MSHAssignMATGroup2PrisElements();
   MSHAssignMATGroup2HexsElements();
   MSHSetMaxMMPGroups();
-#ifdef MFC
-  AfxMessageBox("MSHSetMaxMMPGroups");
-#endif
 }
 
 /**************************************************************************
@@ -568,9 +565,6 @@ bool MSHTestMATGroups()
   int g_max_mmp_groups = MSHSetMaxMMPGroups();
   if(g_max_mmp_groups>(int)mmp_vector.size()){
     cout << "Error: not enough MMP data";
-#ifdef MFC
-    AfxMessageBox( "Error: not enough MMP data");
-#endif
     return false; //abort();
   }
   return true;
