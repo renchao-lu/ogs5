@@ -95,6 +95,11 @@ include_directories(
 	../GEM
 	../OGSProject
 )
+IF (LIBPQC)
+	include_directories(
+	../PQC
+	)
+ENDIF (LIBPQC)
 
 # Create the library
 add_library( FEM STATIC ${SOURCES} )
@@ -103,3 +108,11 @@ target_link_libraries( FEM
 	GEO
 	MSH
 )
+
+IF (LIBPQC)
+   target_link_libraries( FEM
+	GEO
+	MSH
+	PQC
+)
+ENDIF (LIBPQC)
