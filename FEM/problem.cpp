@@ -66,6 +66,10 @@ namespace process{class CRFProcessDeformation;}
 using process::CRFProcessDeformation;
 using namespace std;
 
+//NW: moved the following variables from rf.cpp to avoid linker errors
+string FileName; //WW
+string FilePath; //23.02.2009. WW
+
 /**************************************************************************
 GeoSys - Function: Constructor
 Task: 
