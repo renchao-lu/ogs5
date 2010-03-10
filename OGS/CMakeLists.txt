@@ -38,3 +38,8 @@ TARGET_LINK_LIBRARIES( ogs
 	OGSProject
 )
 
+ADD_DEPENDENCIES ( ogs
+	Base
+	OGSProject
+)
+
