@@ -1,5 +1,6 @@
 # Source files
 set( HEADERS
+	Vector3.h
 	MathTools.h
 )
 

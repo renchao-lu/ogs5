@@ -145,11 +145,16 @@ public:
 	long GetNODOnPNT(CGLPoint*);
 	/** depreciated method */
 	long GetNearestELEOnPNT(CGLPoint*);
+
 	// GEO-PLY
 	/** depreciated method */
 	void GetNODOnPLY(CGLPolyline*, std::vector<long>&);
+	/** depreciated method */
 	void GetNodesOnArc(CGLPolyline*m_ply, std::vector<long>&msh_nod_vector);
+
+	/** depreciated method - method uses old Polyline class  */
 	void GetNODOnPLY_XY(CGLPolyline*m_ply, std::vector<long>&msh_nod_vector);
+
 	void CreateLineELEFromPLY(CGLPolyline*, int, CFEMesh*);
 	void CreateLineELEFromPLY(CGLPolyline*);
 	void CreateLayerPolylines(CGLPolyline*); //OK
@@ -188,6 +193,9 @@ public:
 
 	/**
 	 * circle arc described by the middle point m, the arc start point a and the arc end point b
+	 * if the angle is to small (a == b) then all mesh nodes within the annulus defined by
+	 * the inner radius \f$ \|(a-m)- \| - min_edge_length \f$ and the outer radius
+	 * \f$\|(a-m)- \| + min_edge_length \f$ are pushed in msh_nod_vector
 	 */
 	void GetNodesOnArc(const GEOLIB::Point* a, const GEOLIB::Point* m,
 			const GEOLIB::Point* b, std::vector<size_t>& msh_nod_vector);

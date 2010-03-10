@@ -31,7 +31,7 @@ LineGraphicsItem2d::~LineGraphicsItem2d()
 	//delete _line;
 }
 QRectF LineGraphicsItem2d::boundingRect() const
-{ 
+{
 	switch (_viewplane)
 	{
 	case VIEWPLANE_XY: return QRectF(QPointF(_minimumPntRelative.X(), _maximumPntRelative.Y()), QPointF(_maximumPntRelative.X(), _minimumPntRelative.Y()));
@@ -109,7 +109,7 @@ void LineGraphicsItem2d::updatePosition()
 QVariant LineGraphicsItem2d::itemChange(GraphicsItemChange change, const QVariant& value)
 {
 	//updatePosition();
-	
+
 	// TODO
 // 	switch (change)
 // 	{
@@ -170,17 +170,17 @@ const QColor LineGraphicsItem2d::colorSelected()
 
 void LineGraphicsItem2d::computeRelativePositions()
 {
-	_minimumPnt = GEOLIB::Vector(*(*_line)[0]);
-	_maximumPnt = GEOLIB::Vector(*(*_line)[0]);
+	_minimumPnt = MATHLIB::Vector(*(*_line)[0]);
+	_maximumPnt = MATHLIB::Vector(*(*_line)[0]);
 
-	GEOLIB::Vector sumUpVec;
-	
+	MATHLIB::Vector sumUpVec;
+
 	size_t numPoints = _line->getSize();
 
 	for (size_t i = 0; i < numPoints; i++)
 	{
 		const double * coords = (*_line)[i]->getData();
-		sumUpVec += GEOLIB::Vector(coords[0], coords[1], coords[2]);
+		sumUpVec += MATHLIB::Vector(coords[0], coords[1], coords[2]);
 
 		if (coords[0] < _minimumPnt.X()) _minimumPnt.setX(coords[0]);
 		if (coords[0] > _maximumPnt.X()) _maximumPnt.setX(coords[0]);
@@ -202,7 +202,7 @@ void LineGraphicsItem2d::computeRelativePositions()
 	_pntsRelative.clear();
 	for (size_t i = 0; i < numPoints; i++)
 	{
-		GEOLIB::Vector p = GEOLIB::Vector(*(*_line)[i]) - _centerPnt;;
+		MATHLIB::Vector p = MATHLIB::Vector(*(*_line)[i]) - _centerPnt;;
 		_pntsRelative.push_back(p);
 	}
 }

@@ -34,7 +34,6 @@ set( HEADERS
 	PropertyBounds.h
 	Station.h	
 	GEOObjects.h
-	Vector3.h
 )
 
 # Create the library

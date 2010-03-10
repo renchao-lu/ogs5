@@ -25,12 +25,12 @@ public:
 	 * \param line The  polyline
 	 * \param viewplane The initial viewplane
 	 * \param parent The parent graphics item
-	 * \return 
+	 * \return
 	 */
 	LineGraphicsItem2d(Model* model, GEOLIB::Polyline* line,
 		EViewPlane viewplane = VIEWPLANE_XY, QGraphicsItem* parent = 0);
 	~LineGraphicsItem2d();
-	
+
 	QRectF boundingRect() const;
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
 
@@ -53,7 +53,7 @@ private:
 	GEOLIB::Polyline* _line;
 	QColor _pen;
 	std::vector<GEOLIB::Point> _pntsRelative;
-	GEOLIB::Vector _centerPnt, _minimumPnt, _maximumPnt, _minimumPntRelative, _maximumPntRelative;
+	MATHLIB::Vector _centerPnt, _minimumPnt, _maximumPnt, _minimumPntRelative, _maximumPntRelative;
 
 public slots:
 	void updatePosition();

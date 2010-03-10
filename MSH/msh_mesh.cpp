@@ -23,6 +23,10 @@ using namespace std;
 #include "geo_pnt.h"
 #include "geo_ply.h"
 
+// MathLib
+#include "Vector3.h"
+#include "MathTools.h"
+
 // FEM
 #include "files0.h"
 
@@ -1207,18 +1211,16 @@ long CFEMesh::GetNODOnPNT(const GEOLIB::Point* pnt) {
  03/2010 TF implementation based on long CFEMesh::GetNODOnPNT(CGLPoint*m_pnt)
  by MB
  **************************************************************************/
-long CFEMesh::GetNearestELEOnPNT(const GEOLIB::Point* pnt) {
+long CFEMesh::GetNearestELEOnPNT(const GEOLIB::Point* pnt)
+{
 	long nextele(-1);
-	double ex, ey, ez, dist(std::numeric_limits<double>::max()), dist1;
-	double x((*pnt)[0]), y((*pnt)[1]), z((*pnt)[2]);
+	double dist(std::numeric_limits<double>::max()), dist1;
 	double* center(NULL);
 
 	for (size_t i = 0; i < ele_vector.size(); i++) {
 		center = ele_vector[i]->GetGravityCenter();
-		ex = center[0];
-		ey = center[1];
-		ez = center[2];
-		dist1 = (ex - x) * (ex - x) + (ey - y) * (ey - y) + (ez - z) * (ez - z);
+		dist1 = 0.0;
+		for (size_t k(0); k<3; k++) dist1 += (center[k]-(*pnt)[k]) * (center[k]-(*pnt)[k]);
 		if (dist1 < dist) {
 			dist = dist1;
 			nextele = i;
@@ -1298,7 +1300,7 @@ void CFEMesh::GetNodesOnArc(CGLPolyline*m_ply, vector<long>&msh_nod_vector) {
 		r2 = sqrt(sqrDist(xn, xc));
 		if (fabs(r2 - r1) < m_ply->epsilon) {
 			if (a0 < Tol) // Closed arc
-				msh_nod_vector.push_back(i);
+				msh_nod_vector.push_back(nod_vector[i]->GetIndex());
 			else {
 				a1 = acos(dotProduction(xa, xn, xc) / (r1 * r2));
 				a2 = acos(dotProduction(xb, xn, xc) / (r1 * r2));
@@ -1312,59 +1314,71 @@ void CFEMesh::GetNodesOnArc(CGLPolyline*m_ply, vector<long>&msh_nod_vector) {
 
 /**************************************************************************
  FEMLib-Method: GetNodesOnArc
- Task:  To get fe nodes on a Arc defined by
-		 start point, center point, end point
+ Task:  To get fe nodes on a Arc defined by start point, center point, end point
  Programing:
  01/2005 WW Implementation
  05/2005 WW Transplant to this object from GEOLIB
  03/2010 TF change to new datastructure GEOLIB::Polyline - some improvements
  **************************************************************************/
 void CFEMesh::GetNodesOnArc(const GEOLIB::Point* a, const GEOLIB::Point* m,
-		const GEOLIB::Point* b, std::vector<size_t>& msh_nod_vector)
-{
-	//Obtain fem node for groupvector
-	const size_t nNodes = NodesInUsage();
-
-	double xa[3], xb[3], xc[3];
+		const GEOLIB::Point* b, std::vector<size_t>& msh_nod_vector) {
 	msh_nod_vector.clear();
+	MATHLIB::Vector v_am(*a, *m);
+	MATHLIB::Vector v_bm(*b, *m);
+	double sqr_radius1 = scpr(v_am.getData(), v_am.getData(), 3);
+	double sqr_radius2 = scpr(v_bm.getData(), v_bm.getData(), 3);
 
-	for (size_t i(0); i<3; i++) {
-		xa[i] = (*a)[i];
-		xb[i] = (*b)[i];
-		xc[i] = (*m)[i];
+	// since we describe a circle arc, the radii should match very good
+	// relative error criterion
+	if (fabs(sqr_radius1 - sqr_radius2)
+			> std::numeric_limits<double>::epsilon() * sqr_radius1) {
+		std::cout << "Start point and end point do not have identical "
+				<< "distance to the center of the arc" << std::endl;
+		abort();
 	}
 
-	double r1 = sqrt(sqrDist(xa, xc));
-	double r2 = sqrt(sqrDist(xb, xc));
-//	if (fabs(r1 - r2) > m_ply->epsilon) {
-//		cout << "Start point and end point do not have identical "
-//				<< "distance to the center of the arc" << endl;
-//		abort();
-//	}
-//	double a1, a2;
-//	const double Tol = 1.0e-5;
-//
-//	double a0 = acos(dotProduction(xa, xb, xc) / (r1 * r1));
-//
-//	double xn[3];
-//	// Check nodes by comparing distance
-//	for (i = 0; i < nNodes; i++) {
-//		xn[0] = nod_vector[i]->X();
-//		xn[1] = nod_vector[i]->Y();
-//		xn[2] = nod_vector[i]->Z();
-//		r2 = sqrt(sqrDist(xn, xc));
-//		if (fabs(r2 - r1) < m_ply->epsilon) {
-//			if (a0 < Tol) // Closed arc
-//				msh_nod_vector.push_back(i);
-//			else {
-//				a1 = acos(dotProduction(xa, xn, xc) / (r1 * r2));
-//				a2 = acos(dotProduction(xb, xn, xc) / (r1 * r2));
-//				if (fabs(a1 + a2 - a0) < Tol)
-//					msh_nod_vector.push_back(nod_vector[i]->GetIndex());
-//			}
-//		}
-//	}
-//	m_ply->GetPointOrderByDistance();
+	// compute the angle at centre
+	double a0 = acos(scpr(v_am.getData(), v_bm.getData(), 3) / sqr_radius1);
+
+	// obtain fem node for groupvector
+	const size_t nNodes = NodesInUsage();
+	double tol(1e-5);
+	// small arc - put all mesh nodes within the annulus into msh_nod_vector
+	if (a0 < tol) {
+		// Check nodes by comparing distance
+		for (size_t i = 0; i < nNodes; i++) {
+			double xn[3];
+			xn[0] = nod_vector[i]->X();
+			xn[1] = nod_vector[i]->Y();
+			xn[2] = nod_vector[i]->Z();
+			// compute vector middle point of circle arc and mesh node
+			for (size_t k = 0; k < 3; k++)
+				xn[k] -= (*m)[k];
+
+			sqr_radius2 = scpr(xn, xn, 3);
+			if (fabs(sqr_radius2 - sqr_radius1) < min_edge_length) {
+				msh_nod_vector.push_back(nod_vector[i]->GetIndex());
+			}
+		}
+	} else { // arc a0 > tol
+		for (size_t i = 0; i < nNodes; i++) {
+			double xn[3];
+			xn[0] = nod_vector[i]->X();
+			xn[1] = nod_vector[i]->Y();
+			xn[2] = nod_vector[i]->Z();
+			// compute vector middle point of circle arc and mesh node
+			for (size_t k = 0; k < 3; k++)
+				xn[k] -= (*m)[k];
+
+			sqr_radius2 = scpr(xn, xn, 3);
+			if (fabs(sqr_radius2 - sqr_radius1) < min_edge_length) {
+				double a1 = acos(scpr(v_am.getData(), xn, 3) / sqr_radius1);
+				double a2 = acos(scpr(xn, v_bm.getData(), 3) / sqr_radius1);
+				if (fabs(a1 + a2 - a0) < tol)
+					msh_nod_vector.push_back(nod_vector[i]->GetIndex());
+			}
+		}
+	}
 }
 
 /**************************************************************************
@@ -4263,7 +4277,6 @@ void CFEMesh::GetELEOnPLY(CGLPolyline*m_ply, vector<long>&ele_vector_ply) {
 			}
 		}
 	}
-	//----------------------------------------------------------------------
 	nodes_vector_ply.clear();
 }
 
@@ -4626,84 +4639,84 @@ void CFEMesh::LayerMapping(const char *dateiname, const int NLayers,
 			if(ny>nrows) ny = nrows-2;
 			if(nx<0) nx = 0;
 			if(ny<0) ny = 0;
-=======
-       }
-	   break;
-    //====================================================================
-	 case 2:
-       ncols = 0;
-       nrows = 0;
-	   double x0, y0, z0;
-       fgets(s,MAX_ZEILE,f);
-       sscanf(s," %40s %d  ", charbuff, &ncols);
-	   fgets(s,MAX_ZEILE,f);
-       sscanf(s," %40s %d ", charbuff, &nrows);
-	   fgets(s,MAX_ZEILE,f);
-       sscanf(s," %40s %lf", charbuff, &x0);
-	   fgets(s,MAX_ZEILE,f);
-       sscanf(s," %40s %lf", charbuff, &y0);
-	   fgets(s,MAX_ZEILE,f);
-       sscanf(s," %40s %lf ", charbuff, &dx);
-	   dy = dx;
-	   fgets(s,MAX_ZEILE,f);
-       sscanf(s," %40s %lf ", charbuff, &z0);
-       MinX = x0;
-       MaxX = x0+dx*ncols;
-       MinY = y0;
-       MaxY = y0+dy*nrows;
-       // Allocate memory for grid and the specified surface
-       H = new double*[nrows];
-	   for(i=0; i<nrows; i++)  H[i] = new double[ncols];
-	   // Compute the grid points:
-	 /*  for(i=0; i<nrows; i++)
-	   {
-    	  for(j=0; j<ncols; j++)
-		  {
-             fscanf(f,"%lf", &H[i][j]);
-		  }
-	   } */
-       //CC 02/2005
-         // Compute the grid points:
-	   for(i=nrows-1; i>=0; i--)
-	   {
-    	  for(j=0; j<ncols; j++)
-		  {
-             fscanf(f,"%lf", &H[i][j]);
-		  }
-	   }
-	   //
-       break;
-  }
-  //----------------------------------------------------------------------
-  NNodesPerRow = NNodes / (NLayers+1);
-  CNode *anode = NULL; //19.01.2009. WW
-  /* 1. Compute the height of points to be attached*/
-  for(i=0; i<NNodes; i++)
-  {
-    if(i >= (row-1) * NNodesPerRow  &&    i <= (row * NNodesPerRow) -1 )
-    {
-        anode = nod_vector[i];
-        x = anode->X();
-        y = anode->Y();
-      //..................................................................
-	  if(x<MinX||x>MaxX||y<MinY||y>MaxY)   {
-        // Release memory
-        if(GridX) GridX  = (double*) Free(GridX);
-        if(GridY) GridY  = (double*) Free(GridY);
-        if(H0) H0 = (double*) Free(H0);
-        if(s) s = (char *)Free(s);
-        return;
-	  }
-      //..................................................................
-	  nx = (int)((x-MinX)/dx);
-      ny = (int)((y-MinY)/dy);
-      if(nx*dx+MinX>=x)  nx -= 1;
-      if(ny*dy+MinY>=y)  ny -= 1;
-	  if(nx>ncols) nx = ncols-2;
-	  if(ny>nrows) ny = nrows-2;
-      if(nx<0) nx = 0;
-      if(ny<0) ny = 0;
->>>>>>> .r4614
+			=======
+		}
+		break;
+		//====================================================================
+		case 2:
+		ncols = 0;
+		nrows = 0;
+		double x0, y0, z0;
+		fgets(s,MAX_ZEILE,f);
+		sscanf(s," %40s %d  ", charbuff, &ncols);
+		fgets(s,MAX_ZEILE,f);
+		sscanf(s," %40s %d ", charbuff, &nrows);
+		fgets(s,MAX_ZEILE,f);
+		sscanf(s," %40s %lf", charbuff, &x0);
+		fgets(s,MAX_ZEILE,f);
+		sscanf(s," %40s %lf", charbuff, &y0);
+		fgets(s,MAX_ZEILE,f);
+		sscanf(s," %40s %lf ", charbuff, &dx);
+		dy = dx;
+		fgets(s,MAX_ZEILE,f);
+		sscanf(s," %40s %lf ", charbuff, &z0);
+		MinX = x0;
+		MaxX = x0+dx*ncols;
+		MinY = y0;
+		MaxY = y0+dy*nrows;
+		// Allocate memory for grid and the specified surface
+		H = new double*[nrows];
+		for(i=0; i<nrows; i++) H[i] = new double[ncols];
+		// Compute the grid points:
+		/*  for(i=0; i<nrows; i++)
+		 {
+		 for(j=0; j<ncols; j++)
+		 {
+		 fscanf(f,"%lf", &H[i][j]);
+		 }
+		 } */
+		//CC 02/2005
+		// Compute the grid points:
+		for(i=nrows-1; i>=0; i--)
+		{
+			for(j=0; j<ncols; j++)
+			{
+				fscanf(f,"%lf", &H[i][j]);
+			}
+		}
+		//
+		break;
+	}
+	//----------------------------------------------------------------------
+	NNodesPerRow = NNodes / (NLayers+1);
+	CNode *anode = NULL; //19.01.2009. WW
+	/* 1. Compute the height of points to be attached*/
+	for(i=0; i<NNodes; i++)
+	{
+		if(i >= (row-1) * NNodesPerRow && i <= (row * NNodesPerRow) -1 )
+		{
+			anode = nod_vector[i];
+			x = anode->X();
+			y = anode->Y();
+			//..................................................................
+			if(x<MinX||x>MaxX||y<MinY||y>MaxY) {
+				// Release memory
+				if(GridX) GridX = (double*) Free(GridX);
+				if(GridY) GridY = (double*) Free(GridY);
+				if(H0) H0 = (double*) Free(H0);
+				if(s) s = (char *)Free(s);
+				return;
+			}
+			//..................................................................
+			nx = (int)((x-MinX)/dx);
+			ny = (int)((y-MinY)/dy);
+			if(nx*dx+MinX>=x) nx -= 1;
+			if(ny*dy+MinY>=y) ny -= 1;
+			if(nx>ncols) nx = ncols-2;
+			if(ny>nrows) ny = nrows-2;
+			if(nx<0) nx = 0;
+			if(ny<0) ny = 0;
+			>>>>>>> .r4614
 
 			locX[0] = MinX+nx*dx;
 			locY[0] = MinY+ny*dy;

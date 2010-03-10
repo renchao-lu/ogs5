@@ -14,19 +14,24 @@
 #include <iostream>
 #include <cmath>
 
-namespace GEOLIB {
+namespace MATHLIB {
 
 /**
- * The GEOLIB::Vector class defines a three-dimensional vector, with appropriate
+ * The Vector class defines a three-dimensional vector, with appropriate
  *	operators.  (* is cross product.)
  */
 template <class T>
-class TemplateVector : public TemplatePoint<T>
+class TemplateVector : public GEOLIB::TemplatePoint<T>
 {
 public:
-	TemplateVector() : TemplatePoint<T>() {};
-	TemplateVector(T x1, T x2, T x3) : TemplatePoint<T>(x1, x2, x3) {};
- 	TemplateVector(const TemplatePoint<T> & rhs) : TemplatePoint<T>(rhs[0], rhs[1], rhs[2])
+	TemplateVector() : GEOLIB::TemplatePoint<T>() {};
+	TemplateVector(T x1, T x2, T x3) : GEOLIB::TemplatePoint<T>(x1, x2, x3) {};
+ 	TemplateVector(const GEOLIB::TemplatePoint<T> & rhs) :
+ 		GEOLIB::TemplatePoint<T>(rhs[0], rhs[1], rhs[2])
+ 	{}
+ 	/** constructs a vector from the gien points */
+ 	TemplateVector(const GEOLIB::TemplatePoint<T> &a, const GEOLIB::TemplatePoint<T> &b) :
+ 	 	GEOLIB::TemplatePoint<T>(b[0]-a[0], b[1]-a[1], b[2]-a[2])
  	{}
 	~TemplateVector() {};
 
@@ -120,7 +125,7 @@ public:
 	{ TemplateVector out( pV * (this->Dot(pV) / pV.LenSqr()) ); return out; }
 
 	/// Cosine of the angle between two vectors:
-	double CosAng( const TemplateVector & pV)
+	double CosAng(const TemplateVector& pV)
 	{ return this->Dot(pV) / (Length() * pV.Length()); }
 
 	/// Comparison if equal
