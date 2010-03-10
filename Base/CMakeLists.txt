@@ -6,6 +6,7 @@ set( HEADERS
 )
 
 set( SOURCES
+	dummy.cpp
 )
 
 # Create the library
