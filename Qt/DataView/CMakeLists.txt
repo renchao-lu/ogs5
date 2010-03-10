@@ -90,6 +90,7 @@ include_directories(
 	${CMAKE_BINARY_DIR}/Qt/DiagramView
 	${CMAKE_BINARY_DIR}/Qt/StationView
 	../../Base
+	../../MathLib
 	../../GEO
 	../../MSH
 	../../FEM

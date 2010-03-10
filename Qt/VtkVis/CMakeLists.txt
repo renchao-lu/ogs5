@@ -48,6 +48,8 @@ include_directories(
 	.
 	${CMAKE_BINARY_DIR}/Qt/VtkVis
 	../../GEO
+	../../Base
+	../../MathLib
 	../Base
 	../DataView
 	../StationView

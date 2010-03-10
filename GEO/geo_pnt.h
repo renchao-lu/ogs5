@@ -1,6 +1,6 @@
 /**************************************************************************
 GeoLib - Object: Point
-Task: 
+Task:
 Programing:
 07/2003 OK/CC/TK/WW GEOLib1
 07/2005 CC/OK GEOLib2 Design

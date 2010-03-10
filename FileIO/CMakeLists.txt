@@ -33,6 +33,7 @@ include_directories(
 	.
 	../Base
 	../GEO
+	../MathLib
 )
 
 target_link_libraries( FileIO

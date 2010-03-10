@@ -90,6 +90,7 @@ set( SOURCES
 include_directories(
 	.
 	../Base
+	../MathLib
 	../GEO
 	../MSH
 	../GEM

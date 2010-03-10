@@ -35,6 +35,7 @@ include_directories(
 	${CMAKE_BINARY_DIR}/Qt/StationView
 	${CMAKE_BINARY_DIR}/Qt/VtkVis
 	../../Base
+	../../MathLib
 	../Base
 	../DataView
 	../../GEO

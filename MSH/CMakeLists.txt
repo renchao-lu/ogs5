@@ -17,7 +17,6 @@ set( SOURCES
 	msh_gen_pris.cpp
 	msh_geo.cpp
 	msh_lib.cpp
-	msh_lin.cpp
 	msh_mat.cpp
 	msh_mesh.cpp
 	msh_node.cpp
@@ -84,6 +83,7 @@ include_directories(
 	.
 	../Base
 	../GEO
+	../MathLib
 	../FEM
 	../LIB
 	../OGSProject

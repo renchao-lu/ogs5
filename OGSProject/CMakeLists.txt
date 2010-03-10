@@ -12,6 +12,7 @@ set( HEADERS
 # and include additional header
 include_directories(
 	../Base
+	../MathLib
 	../GEO
 	../FileIO
 	../MSH

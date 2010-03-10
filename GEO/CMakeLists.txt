@@ -46,6 +46,7 @@ add_library( GEO STATIC
 
 include_directories(
 	../Base
+	../MathLib
 	.
 	../FileIO
 )
@@ -54,5 +55,6 @@ include_directories(
 target_link_libraries (
 	GEO
 	Base
+	MathLib
 )
 

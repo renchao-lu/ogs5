@@ -105,7 +105,7 @@
      MCalcProjectionOfPointOnPlane - Projektionspunkt eines Punktes auf einer Flaeche (Lotpunkt)
 
    Sortierfunktionen
-     MQSort_LongDouble     - Sortiert Datensaetze aus long und double nach dem groessten double  
+     MQSort_LongDouble     - Sortiert Datensaetze aus long und double nach dem groessten double
 
    Aenderungen/Korrekturen:
    08/1994     Hans Herrmann        Erste Version
@@ -135,7 +135,7 @@
                                     M2Invertiere korrigiert
    04/2002     OK                   M4Determinante
    07/2003     WW                   Triangle shape funtions
-   06/2004     WW                   Generalized shape functions                                    
+   06/2004     WW                   Generalized shape functions
 ***************************************************************************/
 
 #include <float.h>
@@ -143,9 +143,9 @@
 #include "makros.h"
 #include "mathlib.h"
 #include "femlib.h"    //CMCD 03 2004
-#include "par_ddc.h" 
-//#undef SEEK_SET 
-//#undef SEEK_END 
+#include "par_ddc.h"
+//#undef SEEK_SET
+//#undef SEEK_END
 //#undef SEEK_CUR
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 #include <mpi.h>
@@ -421,13 +421,13 @@ int MOmega2DTriangle(double *vf, double xx, double yy, long number)
     y[i]=GetNodeY(element_nodes[i]);
   }
 /* CMCD March 2004 The area of the triangle needs to be calculated for the 2D projected triangle
-not the three D as above 
+not the three D as above
     area = (x[1]*y[2]-x[2]*y[1]+x[0]*y[1]-x[1]*y[0]+x[2]*y[0]-x[0]*y[2])/2; // CMCD March 2004
 	xx=0.;
 	yy=0.;
 what is this ?
 */
-    vf[0] = (x[1]*y[2]-x[2]*y[1]) + (y[1]-y[2])*xx + (x[2]-x[1])*yy; 
+    vf[0] = (x[1]*y[2]-x[2]*y[1]) + (y[1]-y[2])*xx + (x[2]-x[1])*yy;
     vf[1] = (x[2]*y[0]-x[0]*y[2]) + (y[2]-y[0])*xx + (x[0]-x[2])*yy;
     vf[2] = (x[0]*y[1]-x[1]*y[0]) + (y[0]-y[1])*xx + (x[1]-x[0])*yy;
     vf[0] /= (2.*area);
@@ -1026,15 +1026,15 @@ void MNulleMat(double *mat, long m, long n)
 
 /**************************************************************************
    ROCKFLOW - Function: MAngleVectors
-   
+
    Task:  Calculate angle between 2 vectors
-         
+
    Parameter: (I: Input; R: Return; X: Both)
            I: *v1, *v2
-           
+
    Return:
            Angle
-   
+
    Programming:
    09/2002   MB   First Version
  **************************************************************************/
@@ -1238,7 +1238,7 @@ void M2InvertiereUndTransponiere(double *m)
     zecke = m[0];
     m[0] = m[3];
     m[3] = zecke;
-    zecke = -m[1];  
+    zecke = -m[1];
     m[1] = -m[2];   /* hier wird auch transponiert */
     m[2] = zecke;
     for (i = 0; i < 4; i++)
@@ -1260,10 +1260,10 @@ void M2InvertiereUndTransponiere(double *m)
    Aenderungen/Korrekturen:
    08/1994   hh           Erste Version
    11/1999   C.Thorenz    Register-Variablen
-   08/2001   M. Kohlmeier Funktion transponierte und invertierte jetzt 
-                          invertiert sie nur. Alle Aufrufe ersetzt durch 
-                          M2InvertiereUndTransponiere  
-  
+   08/2001   M. Kohlmeier Funktion transponierte und invertierte jetzt
+                          invertiert sie nur. Alle Aufrufe ersetzt durch
+                          M2InvertiereUndTransponiere
+
  **************************************************************************/
 
 void M2Invertiere(double *m)
@@ -1405,8 +1405,8 @@ int MAddVektoren(double *v1, double *v2, double *vout, long g)
    Formalparameter:
            E: *v1, *v2  : Vektoren
            e: m1,  m2   : Multiplikatoren
-           A: *vout     : Ergebnisvektor 
-           E: g         : Vektorlaenge  
+           A: *vout     : Ergebnisvektor
+           E: g         : Vektorlaenge
    Ergebnis:
            Vektorsumme
    Aenderungen/Korrekturen:
@@ -1426,19 +1426,19 @@ int MAddSkalVektoren(double *v1, double m1, double *v2, double m2, double *vout,
 #endif
       for (i = 0; i < g; i++)
         vout[i] = v1[i] + v2[i];
-    else if(fabs(m1-1.)< MKleinsteZahl) 
+    else if(fabs(m1-1.)< MKleinsteZahl)
 #ifdef SX
 #pragma cdir nodep
 #endif
       for (i = 0; i < g; i++)
         vout[i] = v1[i] + m2 * v2[i];
-    else if(fabs(m2-1.)< MKleinsteZahl) 
+    else if(fabs(m2-1.)< MKleinsteZahl)
 #ifdef SX
 #pragma cdir nodep
 #endif
       for (i = 0; i < g; i++)
         vout[i] = m1 * v1[i] + v2[i];
-    else  
+    else
 #ifdef SX
 #pragma cdir nodep
 #endif
@@ -2551,26 +2551,6 @@ void MVekGle(double alpha, double *x, double beta, double *y,
    Geometrische Funktionen im R3
    ######################################################################## */
 
-
-
-/***************************************************************************
-   ROCKFLOW - Funktion: MCalcDistancePointToPoint
-
-   Aufgabe:
-           Abstand zweier Punkte im R3
-
-   Formalparameter:
-           E: *pt1  - Punktkoordinaten
-           E: *pt2  - Punktkoordinaten
-
-   Ergebnis:
-           Abstand
-
-   Aenderungen/Korrekturen:
-   02/2000   C. Thorenz      Erste Version
-
- **************************************************************************/
-
 /***************************************************************************
    ROCKFLOW - Funktion: MCalcDistancePointToLine
 
@@ -2975,7 +2955,7 @@ int MGradPhi2D_9N(double *vf, double r, double s)
    Aufgabe:
            Berechnet Testfunktion (r,s,t).
            (K.- J. Bathe, Finite-Elemente-Methoden)
-           
+
    Formalparameter:
            Z: *vf - 1x20 Feld
            E: r,s,t (s.o.)
@@ -2989,7 +2969,7 @@ int MPhi3D_20N(double *vf, double r, double s, double t)
 {
     int ok = 0;
     double g[20];
-    
+
 #ifdef ERROR_CONTROL
     if (vf == NULL) {
         ok = 0;
@@ -3017,7 +2997,7 @@ int MPhi3D_20N(double *vf, double r, double s, double t)
     g[17] = 0.25  * (1.0 - r)     * (1.0 + s)     * (1.0 - t * t);
     g[18] = 0.25  * (1.0 - r)     * (1.0 - s)     * (1.0 - t * t);
     g[19] = 0.25  * (1.0 + r)     * (1.0 - s)     * (1.0 - t * t);
-    
+
 
     vf[0] = g[0] - (g[8] + g[11] + g[16]) * 0.5;
     vf[1] = g[1] - (g[8] + g[9] + g[17]) * 0.5;
@@ -3027,14 +3007,14 @@ int MPhi3D_20N(double *vf, double r, double s, double t)
     vf[5] = g[5] - (g[12] + g[13] + g[17]) * 0.5;
     vf[6] = g[6] - (g[13] + g[14] + g[18]) * 0.5;
     vf[7] = g[7] - (g[14] + g[15] + g[19]) * 0.5;
-   
+
     vf[8]  =  g[8]; vf[9]  = g[9] ; vf[10] = g[10];
     vf[11] = g[11]; vf[12] = g[12]; vf[13] = g[13];
     vf[14] = g[14]; vf[15] = g[15]; vf[16] = g[16];
     vf[17] = g[17]; vf[18] = g[18]; vf[19] = g[19];
 
 
-    
+
     return ok = 1;
 }
 
@@ -3042,7 +3022,7 @@ int MPhi3D_20N(double *vf, double r, double s, double t)
    ROCKFLOW - Funktion: MGradOmega3D_20N
    Aufgabe:
            Berechnet Gradient der Ansatzfunktion (r,s,t)
-           
+
    Formalparameter:
            Z: *vf - 3x20 Feld
            E: r,s,t (s.o.)
@@ -3058,7 +3038,7 @@ int MGradOmega3D_20N(double *vf, double r, double s, double t)
     double g_r[20];  /* r-Ableitung */
     double g_s[20];  /* s-Ableitung */
     double g_t[20];  /* t-Ableitung */
-    
+
 #ifdef ERROR_CONTROL
     if (vf == NULL) {
         ok = 0;
@@ -3086,8 +3066,8 @@ int MGradOmega3D_20N(double *vf, double r, double s, double t)
     g_r[17] = -0.25    * (1.0 + s)     * (1.0 - t * t);
     g_r[18] = -0.25    * (1.0 - s)     * (1.0 - t * t);
     g_r[19] = +0.25    * (1.0 - s)     * (1.0 - t * t);
-    
-    
+
+
     g_s[0] =  +0.125 * (1.0 + r)     * (1.0 + t);
     g_s[1] =  +0.125 * (1.0 - r)     * (1.0 + t);
     g_s[2] =  -0.125 * (1.0 - r)     * (1.0 + t);
@@ -3107,9 +3087,9 @@ int MGradOmega3D_20N(double *vf, double r, double s, double t)
     g_s[16] = +0.25  * (1.0 + r)     * (1.0 - t * t);
     g_s[17] = +0.25  * (1.0 - r)     * (1.0 - t * t);
     g_s[18] = -0.25  * (1.0 - r)     * (1.0 - t * t);
-    g_s[19] = -0.25  * (1.0 + r)     * (1.0 - t * t);   
-    
-    
+    g_s[19] = -0.25  * (1.0 + r)     * (1.0 - t * t);
+
+
     g_t[0] =  +0.125 * (1.0 + r)     * (1.0 + s)     ;
     g_t[1] =  +0.125 * (1.0 - r)     * (1.0 + s)     ;
     g_t[2] =  +0.125 * (1.0 - r)     * (1.0 - s)     ;
@@ -3130,7 +3110,7 @@ int MGradOmega3D_20N(double *vf, double r, double s, double t)
     g_t[17] = -0.5  * (1.0 - r)     * (1.0 + s)   * t;
     g_t[18] = -0.5  * (1.0 - r)     * (1.0 - s)   * t;
     g_t[19] = -0.5  * (1.0 + r)     * (1.0 - s)   * t;
-    
+
 
     vf[0] = g_r[0] - (g_r[8] + g_r[11] + g_r[16]) * 0.5;
     vf[1] = g_r[1] - (g_r[8] + g_r[9] + g_r[17]) * 0.5;
@@ -3140,10 +3120,10 @@ int MGradOmega3D_20N(double *vf, double r, double s, double t)
     vf[5] = g_r[5] - (g_r[12] + g_r[13] + g_r[17]) * 0.5;
     vf[6] = g_r[6] - (g_r[13] + g_r[14] + g_r[18]) * 0.5;
     vf[7] = g_r[7] - (g_r[14] + g_r[15] + g_r[19]) * 0.5;
-   
+
     vf[8] =  g_r[8];  vf[9] =  g_r[9];  vf[10] = g_r[10];
     vf[11] = g_r[11]; vf[12] = g_r[12]; vf[13] = g_r[13];
-    vf[14] = g_r[14]; vf[15] = g_r[15]; vf[16] = g_r[16]; 
+    vf[14] = g_r[14]; vf[15] = g_r[15]; vf[16] = g_r[16];
     vf[17] = g_r[17]; vf[18] = g_r[18]; vf[19] = g_r[19];
 
     vf[20] = g_s[0] - (g_s[8] + g_s[11] + g_s[16]) * 0.5;
@@ -3154,12 +3134,12 @@ int MGradOmega3D_20N(double *vf, double r, double s, double t)
     vf[25] = g_s[5] - (g_s[12] + g_s[13] + g_s[17]) * 0.5;
     vf[26] = g_s[6] - (g_s[13] + g_s[14] + g_s[18]) * 0.5;
     vf[27] = g_s[7] - (g_s[14] + g_s[15] + g_s[19]) * 0.5;
-   
+
     vf[28] =  g_s[8];  vf[29] =  g_s[9];  vf[30] = g_s[10];
     vf[31] = g_s[11];  vf[32] = g_s[12];  vf[33] = g_s[13];
     vf[34] = g_s[14];  vf[35] = g_s[15];  vf[36] = g_s[16];
     vf[37] = g_s[17];  vf[38] = g_s[18];  vf[39] = g_s[19];
-    
+
     vf[40] = g_t[0] - (g_t[8] + g_t[11] + g_t[16]) * 0.5;
     vf[41] = g_t[1] - (g_t[8] + g_t[9] + g_t[17]) * 0.5;
     vf[42] = g_t[2] - (g_t[9] + g_t[10] + g_t[18]) * 0.5;
@@ -3168,12 +3148,12 @@ int MGradOmega3D_20N(double *vf, double r, double s, double t)
     vf[45] = g_t[5] - (g_t[12] + g_t[13] + g_t[17]) * 0.5;
     vf[46] = g_t[6] - (g_t[13] + g_t[14] + g_t[18]) * 0.5;
     vf[47] = g_t[7] - (g_t[14] + g_t[15] + g_t[19]) * 0.5;
- 
+
     vf[48] =  g_t[8]; vf[49] =  g_t[9];  vf[50] = g_t[10];
     vf[51] = g_t[11]; vf[52] = g_t[12];  vf[53] = g_t[13];
     vf[54] = g_t[14]; vf[55] = g_t[15];  vf[56] = g_t[16];
     vf[57] = g_t[17]; vf[58] = g_t[18];  vf[59] = g_t[19];
-    
+
     return ok = 1;
 }
 
@@ -3210,7 +3190,7 @@ int MGradPhi3D_20N(double *vf, double r, double s, double t)
            *Arg1, *Arg2
 
    Ergebnis:
-           1,0,-1  (groeßer, gleich, kleiner) 
+           1,0,-1  (groeßer, gleich, kleiner)
    Aenderungen/Korrekturen:
    06/2001     MK       Erste Version
 
@@ -3239,7 +3219,7 @@ int MCompare_for_MQSort_LongDouble( const void *Arg1, const void *Arg2 )
            SizeOfDataSet
 
    Ergebnis:
-           Sortierter Datensatz 
+           Sortierter Datensatz
    Aenderungen/Korrekturen:
    06/2001     MK       Erste Version
 
@@ -3292,23 +3272,23 @@ double *JWDMMultMatSkalar(double *matrix,
 
 /**************************************************************************
   ROCKFLOW - Function: GetPriMatFromTriMat
-   
-  Task:  
+
+  Task:
       Gets a 9x9 Matrix from 3x3 matrix according to:
 
-                 a b c  a b c 
+                 a b c  a b c
    a b c         d e f  d e f
-   d e f   ==>   g h i  g h i 
+   d e f   ==>   g h i  g h i
    g h i         a b c  a b c
                  d e f  d e f
                  g h i  g h i
 
   Parameter: (I: Input; R: Return; X: Both)
            I: double *mat
-           
+
   Return:
            *mat2
-   
+
   Programming:
   07/2003   MB   First Version
  **************************************************************************/
@@ -3316,7 +3296,7 @@ double *JWDMMultMatSkalar(double *matrix,
 int GetPriMatFromTriMat(double *mat1, double *mat_2)
 {
 
-  mat_2[0] = mat_2[3] = mat1[0]; 
+  mat_2[0] = mat_2[3] = mat1[0];
   mat_2[1] = mat_2[4] = mat1[1];
   mat_2[2] = mat_2[5] = mat1[2];
   mat_2[6] = mat_2[9] = mat1[3];
@@ -3326,7 +3306,7 @@ int GetPriMatFromTriMat(double *mat1, double *mat_2)
   mat_2[13] = mat_2[16] = mat1[7];
   mat_2[14] = mat_2[17] = mat1[8];
 
-  mat_2[18] = mat_2[21] = mat1[0]; 
+  mat_2[18] = mat_2[21] = mat1[0];
   mat_2[19] = mat_2[22] = mat1[1];
   mat_2[20] = mat_2[23] = mat1[2];
   mat_2[24] = mat_2[27] = mat1[3];
@@ -3344,49 +3324,49 @@ int GetPriMatFromTriMat(double *mat1, double *mat_2)
    ROCKFLOW - Funktion: MMultMatMat2
    Aufgabe:
            Multiplikation zweier Matrizen der gleichen Grösse nach:
-  
+
    a b  x  e f  ==>  axe bxf
    c d     g h       cxg dxh
- 
+
    Formalparameter:
-           E: *mat1, *mat2, m1, n1 
+           E: *mat1, *mat2, m1, n1
    Ergebnis:
            *matrix
- 
+
 **************************************************************************/
 int MMultMatMat2(double *mat1, long m1, long n1, double *mat2, double *ergebnis)
 {
 
-  int i;  
+  int i;
 
   for (i = 0; i < m1 * n1; i++) {
-    ergebnis[i] = mat1[i] * mat2[i];  
+    ergebnis[i] = mat1[i] * mat2[i];
   }
-  
+
   return 1;
 }
 
 
 /**************************************************************************
  ROCKFLOW - Function: TensorDrehDich
-   
-   Task: Dreht Tensor von von stromlinienorietierten in lokale physikalische 
-         (Element) Koordinaten. 
+
+   Task: Dreht Tensor von von stromlinienorietierten in lokale physikalische
+         (Element) Koordinaten.
 
    Parameter: (I: Input; R: Return; X: Both)
            I: double*  d Tensor
               double*  velo Geschwindigkeitsvektor
-           
+
    Return:
            double* d
-   
+
    Programming:
    08/2003   MB   First Version, herausgelöst aus CalcEle3D
- 
+
  **************************************************************************/
 double* TensorDrehDich(double* d, double* velo)
 
-{  
+{
   double zwa[18];
   double zwi[18];
   long l, ii;
@@ -3427,7 +3407,7 @@ double* TensorDrehDich(double* d, double* velo)
         MTranspoMat(zwa, 3, 3, zwo);
         MMultMatMat(zwo, 3, 3, zwi, 3, 3, d, 3, 3);
       } /* end if (vg > MKleinsteZahl) */
-    } /* end if (d[0] > MKleinsteZahl || d[4] > MKleinsteZahl || d[8] > MKleinsteZahl) */  
+    } /* end if (d[0] > MKleinsteZahl || d[4] > MKleinsteZahl || d[8] > MKleinsteZahl) */
 
   return d;
 }
@@ -3439,16 +3419,16 @@ double* TensorDrehDich(double* d, double* velo)
 //--------------------------------------------------------------------------
 //--------------------------------------------------------------------------
 //--------------------------------------------------------------------------
-//NEW. WW 
+//NEW. WW
 
 /***************************************************************************
    ROCKFLOW - Funktion: SamplePointTriHQ(const int nsample)
 
    Aufgabe:
-        Provide the sample point for numerical intergral of quadratic 
-   triangle element. Totally there are three sample points. 
+        Provide the sample point for numerical intergral of quadratic
+   triangle element. Totally there are three sample points.
    Formalparameter:
-         const int nsample: Index of integration points 
+         const int nsample: Index of integration points
          double *SPoint   : 0-1 unit coordinates
                             2   Weight
    Programming:
@@ -3470,20 +3450,20 @@ void SamplePointTriHQ(const int nsample, double *SPoint)
      case 0:
             SPoint[0] = 0.166666666666667 ;
             SPoint[1] = 0.166666666666667 ;
-            SPoint[2] = 0.1666666666667;  // Weight 
-            break;        
+            SPoint[2] = 0.1666666666667;  // Weight
+            break;
      case 1:
             SPoint[0] = 0.666666666666667 ;
             SPoint[1] = 0.166666666666667 ;
-            SPoint[2] = 0.1666666666667;  // Weight 
-            break;        
+            SPoint[2] = 0.1666666666667;  // Weight
+            break;
      case 2:
             SPoint[0] = 0.166666666666667 ;
             SPoint[1] = 0.666666666666667 ;
-            SPoint[2] = 0.1666666666667;  // Weight 
-            break; 
-     default: break;            
-            
+            SPoint[2] = 0.1666666666667;  // Weight
+            break;
+     default: break;
+
    }
 }
 
@@ -3491,10 +3471,10 @@ void SamplePointTriHQ(const int nsample, double *SPoint)
    ROCKFLOW - Funktion: SamplePointTet(const int nsample, double *SPoint)
 
    Aufgabe:
-        Provide the sample point for numerical intergral of tedeahedra element. 
+        Provide the sample point for numerical intergral of tedeahedra element.
         Totally there are three sample points. 5 sample points
    Formalparameter:
-         const int nsample: Index of integration points 
+         const int nsample: Index of integration points
          double *SPoint   : 0-2 unit coordinates
                             3   Weight
    Programming:
@@ -3508,35 +3488,35 @@ void SamplePointTet5(const int nsample, double *SPoint)
       case 0:
          SPoint[0] = 0.25;
          SPoint[1] = 0.25;
-         SPoint[2] = 0.25;   
-         SPoint[3] = -0.133333333333333;  // Weight 
-         break;        
+         SPoint[2] = 0.25;
+         SPoint[3] = -0.133333333333333;  // Weight
+         break;
       case 1:
          SPoint[0] = 0.166666666666667;
          SPoint[1] = 0.166666666666667;
-         SPoint[2] = 0.166666666666667;   
-         SPoint[3] = 0.07500000000000;   // Weight 
-         break;        
+         SPoint[2] = 0.166666666666667;
+         SPoint[3] = 0.07500000000000;   // Weight
+         break;
       case 2:
          SPoint[0] = 0.5;
          SPoint[1] = 0.166666666666667 ;
-         SPoint[2] = 0.166666666666667 ;   
-         SPoint[3] = 0.07500000000000;  // Weight 
-         break;        
+         SPoint[2] = 0.166666666666667 ;
+         SPoint[3] = 0.07500000000000;  // Weight
+         break;
       case 3:
          SPoint[0] = 0.166666666666667;
          SPoint[1] = 0.5;
-         SPoint[2] = 0.166666666666667;   
-         SPoint[3] = 0.07500000000000;  // Weight 
-         break;        
+         SPoint[2] = 0.166666666666667;
+         SPoint[3] = 0.07500000000000;  // Weight
+         break;
       case 4:
          SPoint[0] = 0.166666666666667;
          SPoint[1] = 0.166666666666667;
-         SPoint[2] = 0.5;   
-         SPoint[3] = 0.07500000000000;  // Weight 
-         break;        
-     default: break;            
-            
+         SPoint[2] = 0.5;
+         SPoint[3] = 0.07500000000000;  // Weight
+         break;
+     default: break;
+
    }
 }
 
@@ -3545,10 +3525,10 @@ void SamplePointTet5(const int nsample, double *SPoint)
    ROCKFLOW - Funktion: SamplePointTetHQ(const int nsample, double *SPoint)
 
    Aufgabe:
-        Provide the sample point for numerical intergral of tedeahedra element. 
+        Provide the sample point for numerical intergral of tedeahedra element.
         Totally there are three sample points. 15 sample points
    Formalparameter:
-         const int nsample: Index of integration points 
+         const int nsample: Index of integration points
          double *SPoint   : 0-2 unit coordinates
                             3   Weight
    Programming:
@@ -3562,100 +3542,100 @@ void SamplePointTet15(const int nsample, double *SPoint)
       case 0:
          SPoint[0] = 0.25;
          SPoint[1] = 0.25;
-         SPoint[2] = 0.25;   
-         SPoint[3] = 0.019753086419753086;  // Weight 
-         break;        
+         SPoint[2] = 0.25;
+         SPoint[3] = 0.019753086419753086;  // Weight
+         break;
       case 1:
          SPoint[0] = 0.09197107805272303;
          SPoint[1] = 0.09197107805272303;
-         SPoint[2] = 0.09197107805272303;   
-         SPoint[3] = 0.011989513963169772;   // Weight 
-         break;        
+         SPoint[2] = 0.09197107805272303;
+         SPoint[3] = 0.011989513963169772;   // Weight
+         break;
       case 2:
          SPoint[0] = 0.72408676584183096;
          SPoint[1] = 0.09197107805272303 ;
-         SPoint[2] = 0.09197107805272303 ;   
-         SPoint[3] = 0.011989513963169772;  // Weight 
-         break;        
+         SPoint[2] = 0.09197107805272303 ;
+         SPoint[3] = 0.011989513963169772;  // Weight
+         break;
       case 3:
          SPoint[0] = 0.09197107805272303;
          SPoint[1] = 0.72408676584183096;
-         SPoint[2] = 0.09197107805272303;   
-         SPoint[3] = 0.011989513963169772;  // Weight 
-         break;        
+         SPoint[2] = 0.09197107805272303;
+         SPoint[3] = 0.011989513963169772;  // Weight
+         break;
       case 4:
          SPoint[0] = 0.09197107805272303;
          SPoint[1] = 0.09197107805272303;
-         SPoint[2] = 0.72408676584183096;   
-         SPoint[3] = 0.011989513963169772;  // Weight 
-         break;        
-      case 5:   
+         SPoint[2] = 0.72408676584183096;
+         SPoint[3] = 0.011989513963169772;  // Weight
+         break;
+      case 5:
          SPoint[0] = 0.44364916731037080;
          SPoint[1] = 0.05635083268962915;
-         SPoint[2] = 0.05635083268962915;   
-         SPoint[3] = 0.008818342151675485;  // Weight 
-         break;        
+         SPoint[2] = 0.05635083268962915;
+         SPoint[3] = 0.008818342151675485;  // Weight
+         break;
       case 6:
          SPoint[0] = 0.05635083268962915;
          SPoint[1] = 0.44364916731037080;
-         SPoint[2] = 0.05635083268962915;   
-         SPoint[3] = 0.008818342151675485;  // Weight 
-         break;        
+         SPoint[2] = 0.05635083268962915;
+         SPoint[3] = 0.008818342151675485;  // Weight
+         break;
       case 7:
          SPoint[0] = 0.05635083268962915;
          SPoint[1] = 0.05635083268962915;
-         SPoint[2] = 0.44364916731037080;   
-         SPoint[3] = 0.008818342151675485;  // Weight 
-         break;        
+         SPoint[2] = 0.44364916731037080;
+         SPoint[3] = 0.008818342151675485;  // Weight
+         break;
       case 8:
          SPoint[0] = 0.05635083268962915;
          SPoint[1] = 0.44364916731037080;
-         SPoint[2] = 0.44364916731037080;   
-         SPoint[3] = 0.008818342151675485;  // Weight 
-         break;        
+         SPoint[2] = 0.44364916731037080;
+         SPoint[3] = 0.008818342151675485;  // Weight
+         break;
       case 9:
          SPoint[0] = 0.44364916731037080;
          SPoint[1] = 0.05635083268962915;
-         SPoint[2] = 0.44364916731037080;   
-         SPoint[3] = 0.008818342151675485;  // Weight 
-         break;        
+         SPoint[2] = 0.44364916731037080;
+         SPoint[3] = 0.008818342151675485;  // Weight
+         break;
       case 10:
          SPoint[0] = 0.44364916731037080;
          SPoint[1] = 0.44364916731037080;
-         SPoint[2] = 0.05635083268962915;   
-         SPoint[3] = 0.008818342151675485;  // Weight 
-         break;        
+         SPoint[2] = 0.05635083268962915;
+         SPoint[3] = 0.008818342151675485;  // Weight
+         break;
       case 11:
          SPoint[0] = 0.31979362782962989;
          SPoint[1] = 0.31979362782962989;
-         SPoint[2] = 0.31979362782962989;   
-         SPoint[3] = 0.011511367871045397;  // Weight 
-         break;        
+         SPoint[2] = 0.31979362782962989;
+         SPoint[3] = 0.011511367871045397;  // Weight
+         break;
       case 12:
          SPoint[0] = 0.04061911651111023;
          SPoint[1] = 0.31979362782962989;
-         SPoint[2] = 0.31979362782962989;   
-         SPoint[3] = 0.011511367871045397;  // Weight 
-         break;        
+         SPoint[2] = 0.31979362782962989;
+         SPoint[3] = 0.011511367871045397;  // Weight
+         break;
       case 13:
          SPoint[0] = 0.31979362782962989;
          SPoint[1] = 0.04061911651111023;
-         SPoint[2] = 0.31979362782962989;   
-         SPoint[3] = 0.011511367871045397;  // Weight 
-         break;        
+         SPoint[2] = 0.31979362782962989;
+         SPoint[3] = 0.011511367871045397;  // Weight
+         break;
       case 14:
          SPoint[0] = 0.31979362782962989;
          SPoint[1] = 0.31979362782962989;
-         SPoint[2] = 0.04061911651111023;   
-         SPoint[3] = 0.011511367871045397;  // Weight 
-         break;        
-      default: break;                        
+         SPoint[2] = 0.04061911651111023;
+         SPoint[3] = 0.011511367871045397;  // Weight
+         break;
+      default: break;
    }
 }
 
 /**************************************************************************
 MathLib-Method:
-Task: 
+Task:
 Programing:
 02/2005 OK Implementation
 Last modified:
@@ -3673,21 +3653,21 @@ void ShapeFunctionLine(double *N1, const double *u)
 
 /**************************************************************************
 MathLib-Method:
-Task:    
+Task:
 Programing:
 07/2003 WW Implementation
 Last modified:
 **************************************************************************/
 void ShapeFunctionLineHQ(double *N1, const double *u)
 {
-   N1[0] = 0.5*u[0]*(u[0]-1.0); 
-   N1[1] = 0.5*u[0]*(u[0]+1.0); 
+   N1[0] = 0.5*u[0]*(u[0]-1.0);
+   N1[1] = 0.5*u[0]*(u[0]+1.0);
    N1[2] = 1.0-u[0]*u[0];
 }
 
 /**************************************************************************
 MathLib-Method:
-Task: 
+Task:
 Programing:
 02/2005 WW Implementation
 01/2006 PCH Correct the sign.
@@ -3696,8 +3676,8 @@ Last modified:
 void GradShapeFunctionLine(double *dN1, const double *u)
 {
   u = u;
-  dN1[0] = -0.5;	
-  dN1[1] = 0.5;	
+  dN1[0] = -0.5;
+  dN1[1] = 0.5;
 }
 
 /**************************************************************************
@@ -3718,15 +3698,15 @@ void GradShapeFunctionLineHQ(double *dN1, const double *u)
    ROCKFLOW - Funktion:  ShapeFunctionTri
 
    Aufgabe:
-        Compute the shape function for numerical intergral of linear  
-   triangle element. 
+        Compute the shape function for numerical intergral of linear
+   triangle element.
    Formalparameter:
-      E: 
-        const  double *u  : Pointer to a 2 dimension array for 
+      E:
+        const  double *u  : Pointer to a 2 dimension array for
                                the unit coordinates
       R:
-	    double * N3       : Array of size 3, to store the value of shape 
-                               function 
+	    double * N3       : Array of size 3, to store the value of shape
+                               function
 
    Programming:
    06/2003     WW        Erste Version
@@ -3734,7 +3714,7 @@ void GradShapeFunctionLineHQ(double *dN1, const double *u)
  **************************************************************************/
 void ShapeFunctionTri(double *N3, const double *u)
 {
-   N3[0] = 1.-u[0]-u[1]; 
+   N3[0] = 1.-u[0]-u[1];
    N3[1] = u[0];
    N3[2] = u[1];
 }
@@ -3743,14 +3723,14 @@ void ShapeFunctionTri(double *N3, const double *u)
    ROCKFLOW - Funktion:  *GradShapeFunctionTri
 
    Aufgabe:
-        Compute the shape function for numerical intergral of linear  
-   triangle element. 
+        Compute the shape function for numerical intergral of linear
+   triangle element.
    Formalparameter:
-      E: 
+      E:
 	    double * N3       : Array of size 6, gradient of shape function
 		                    0--2 d()/dL_1
 		                    3--5 d()/dL_2
-        const  double *u  : Pointer to a 2 dimension array for 
+        const  double *u  : Pointer to a 2 dimension array for
                                the unit coordinates
 
    Programming:
@@ -3761,11 +3741,11 @@ void GradShapeFunctionTri(double * dN3, const  double *u)
 {
    u = u;
    //   d()/dL_1
-   dN3[0] = -1.0;  
-   dN3[1] =  1.0; 
+   dN3[0] = -1.0;
+   dN3[1] =  1.0;
    dN3[2] =  0.0;
    //   d()/dL_2
-   dN3[3] = -1.0; 
+   dN3[3] = -1.0;
    dN3[4] = 0.0;
    dN3[5] = 1.0;
 }
@@ -3775,15 +3755,15 @@ void GradShapeFunctionTri(double * dN3, const  double *u)
    ROCKFLOW - Funktion:  ShapeFunctionTriHQ
 
    Aufgabe:
-        Compute the shape function for numerical intergral of quadratic  
-   triangle element. 
+        Compute the shape function for numerical intergral of quadratic
+   triangle element.
    Formalparameter:
-      E: 
-        const  double *u  : Pointer to a 2 dimension array for 
+      E:
+        const  double *u  : Pointer to a 2 dimension array for
                                the unit coordinates
       R:
-	    double * N3       : Array of size 6, to store the value of shape 
-                               function 
+	    double * N3       : Array of size 6, to store the value of shape
+                               function
 
    Programming:
    06/2003     WW        Erste Version
@@ -3791,11 +3771,11 @@ void GradShapeFunctionTri(double * dN3, const  double *u)
  **************************************************************************/
 void ShapeFunctionTriHQ(double *N6, const double *u)
 {
-   N6[0] = 2.*(1.-u[0]-u[1])*(0.5-u[0]-u[1]); 
+   N6[0] = 2.*(1.-u[0]-u[1])*(0.5-u[0]-u[1]);
    N6[1] = u[0]*(2.*u[0]-1.);
    N6[2] = u[1]*(2.*u[1]-1.);
-   N6[3] = 4.*u[0]*(1.-u[0]-u[1]);   
-   N6[4] = 4.*u[0]*u[1]; 
+   N6[3] = 4.*u[0]*(1.-u[0]-u[1]);
+   N6[4] = 4.*u[0]*u[1];
    N6[5] = 4.*u[1]*(1.-u[0]-u[1]);
 }
 
@@ -3803,14 +3783,14 @@ void ShapeFunctionTriHQ(double *N6, const double *u)
    ROCKFLOW - Funktion:  *GradShapeFunctionTriHQ
 
    Aufgabe:
-        Compute the shape function for numerical intergral of quadratic  
-   triangle element. 
+        Compute the shape function for numerical intergral of quadratic
+   triangle element.
    Formalparameter:
-      E: 
+      E:
 	    double * N3       : Array of size 6, gradient of shape function
 		                    0--5  d()/dL_1
 		                    6--11 d()/dL_2
-        const  double *u  : Pointer to a 2 dimension array for 
+        const  double *u  : Pointer to a 2 dimension array for
                                the unit coordinates
 
    Programming:
@@ -3819,24 +3799,24 @@ void ShapeFunctionTriHQ(double *N6, const double *u)
 **************************************************************************/
 void GradShapeFunctionTriHQ(double *dN6, const  double *u)
 {
-   dN6[0] = 4.*(u[0]+u[1])-3.;     // dN1/dL1    
-   dN6[6] = 4.*(u[0]+u[1])-3.;     // dN1/dL2 
- 
-   dN6[1] = 4.*u[0]-1.;            // dN2/dL1 
-   dN6[7] = 0.;                    // dN2/dL2 
+   dN6[0] = 4.*(u[0]+u[1])-3.;     // dN1/dL1
+   dN6[6] = 4.*(u[0]+u[1])-3.;     // dN1/dL2
 
-   dN6[2] = 0.;                    // dN3/dL1 
-   dN6[8] = 4.*u[1]-1.;            // dN3/dL2  
+   dN6[1] = 4.*u[0]-1.;            // dN2/dL1
+   dN6[7] = 0.;                    // dN2/dL2
 
-   dN6[3] =  4.*(1-2.*u[0]-u[1]);  // dN4/dL1 
-   dN6[9] = -4.*u[0];              // dN4/dL2 
-   
-   dN6[4] = 4.*u[1];               // dN5/dL1 
-   dN6[10] = 4.*u[0];              // dN5/dL2 
+   dN6[2] = 0.;                    // dN3/dL1
+   dN6[8] = 4.*u[1]-1.;            // dN3/dL2
+
+   dN6[3] =  4.*(1-2.*u[0]-u[1]);  // dN4/dL1
+   dN6[9] = -4.*u[0];              // dN4/dL2
+
+   dN6[4] = 4.*u[1];               // dN5/dL1
+   dN6[10] = 4.*u[0];              // dN5/dL2
 
 
-   dN6[5] =-4.*u[1];               // dN6/dL1 
-   dN6[11] = 4.*(1-u[0]-2.*u[1]);  // dN6/dL2 
+   dN6[5] =-4.*u[1];               // dN6/dL1
+   dN6[11] = 4.*(1-u[0]-2.*u[1]);  // dN6/dL2
 }
 
 
@@ -3846,15 +3826,15 @@ void GradShapeFunctionTriHQ(double *dN6, const  double *u)
    ROCKFLOW - Funktion: realCoordTriHQ
 
    Aufgabe:
-        Mapping to real coordaintes from the local ones of quadratic traingle 
-   element. 
+        Mapping to real coordaintes from the local ones of quadratic traingle
+   element.
    Formalparameter:
-           E: 
-             double * x         : Array of size 3, real coordiantes 
+           E:
+             double * x         : Array of size 3, real coordiantes
              const double *XY   : Array of size 12, to store the coordinates of
                                   the six  verteces as:
                                     0-5;  x1, ..., x6,
-                                    6-11; y1, ..., y6                                            
+                                    6-11; y1, ..., y6
              const double *u    : Array of size 2, unit coordiantes
 
 
@@ -3864,8 +3844,8 @@ void GradShapeFunctionTriHQ(double *dN6, const  double *u)
  **************************************************************************/
 void  realCoordTriHQ(double * x,   const double *XY, const double *u )
 {
-    x[1] = (1.0 - u[0] - u[1])*XY[0] +  u[0]*XY[1] + u[1]* XY[2]; 
-    x[1] = (1.0 - u[0] - u[1])*XY[6] +  u[0]*XY[7] + u[1]* XY[8]; 
+    x[1] = (1.0 - u[0] - u[1])*XY[0] +  u[0]*XY[1] + u[1]* XY[2];
+    x[1] = (1.0 - u[0] - u[1])*XY[6] +  u[0]*XY[7] + u[1]* XY[8];
 }
 
 
@@ -3873,13 +3853,13 @@ void  realCoordTriHQ(double * x,   const double *XY, const double *u )
    ROCKFLOW - Funktion:  ShapeFunctionQuad
 
    Aufgabe:
-        Compute the shape function for numerical intergral of linear  
-   quadralateral element. 
+        Compute the shape function for numerical intergral of linear
+   quadralateral element.
    Formalparameter:
-           E: 
-             double * N4     : Array of size 4, to store the value of shape 
-                                    function 
-             const  double *u   : Pointer to a 2 dimension array for 
+           E:
+             double * N4     : Array of size 4, to store the value of shape
+                                    function
+             const  double *u   : Pointer to a 2 dimension array for
                                     the unit coordinates
 
    Programming:
@@ -3901,13 +3881,13 @@ void ShapeFunctionQuad(double *N4, const double *u)
    ROCKFLOW - Funktion:  ShapeFunctionQuad
 
    Aufgabe:
-        Compute the shape function for numerical intergral of linear  
-   quadralateral element. 
+        Compute the shape function for numerical intergral of linear
+   quadralateral element.
    Formalparameter:
-           E: 
+           E:
              double * dN4     : Array of size 8, to store the gradient
-                                of shape function. 
-             const  double *u   : Pointer to a 2 dimension array for 
+                                of shape function.
+             const  double *u   : Pointer to a 2 dimension array for
                                     the unit coordinates
 
    Programming:
@@ -3931,15 +3911,15 @@ void GradShapeFunctionQuad(double *dN4, const double *u)
 
 /***************************************************************************
    Aufgabe:
-        Compute the shape function for numerical intergral of linear  
-   quadratic quadralateral element.(8 nodes) 
+        Compute the shape function for numerical intergral of linear
+   quadratic quadralateral element.(8 nodes)
    Formalparameter:
-      E: 
-        const  double *u  : Pointer to a 2 dimension array for 
+      E:
+        const  double *u  : Pointer to a 2 dimension array for
                                the unit coordinates
       R:
-	    double * N8       : Array of size 8, to store the value of shape 
-                               function 
+	    double * N8       : Array of size 8, to store the value of shape
+                               function
 
    Programming:
    08/2004     WW              Generalization
@@ -3961,15 +3941,15 @@ void ShapeFunctionQuadHQ8(double *N8, const double *u)
 
 /***************************************************************************
    Aufgabe:
-        Compute the shape function for numerical intergral of linear  
-   quadratic quadralateral element. 
+        Compute the shape function for numerical intergral of linear
+   quadratic quadralateral element.
    Formalparameter:
-      E: 
-        const  double *u  : Pointer to a 2 dimension array for 
+      E:
+        const  double *u  : Pointer to a 2 dimension array for
                                the unit coordinates
       R:
-	    double * N9       : Array of size 9, to store the value of shape 
-                               function 
+	    double * N9       : Array of size 9, to store the value of shape
+                               function
 
    Programming:
    12/1999     R.Kaiser        Erste Version
@@ -3991,18 +3971,18 @@ void ShapeFunctionQuadHQ(double *N9, const double *u)
 
 /***************************************************************************
    Aufgabe:
-        Compute the shape function for numerical intergral of linear  
-   quadratic quadralateral element. 
+        Compute the shape function for numerical intergral of linear
+   quadratic quadralateral element.
    Formalparameter:
-      E: 
-	    double * N9       : Array of size 9, to store the value of shape 
-                               function 
-        const  double *u  : Pointer to a 2 dimension array for 
+      E:
+	    double * N9       : Array of size 9, to store the value of shape
+                               function
+        const  double *u  : Pointer to a 2 dimension array for
                                the unit coordinates
 
    Programming:
    12/1999     RK        Erste Version
-   06/2004     WW        
+   06/2004     WW
  **************************************************************************/
 void GradShapeFunctionQuadHQ(double *dN9, const double *u)
 {
@@ -4030,141 +4010,141 @@ void GradShapeFunctionQuadHQ(double *dN9, const double *u)
 
 /***************************************************************************
    Aufgabe:
-        Compute the shape function for numerical intergral of   
-   linear tedrahedra element. 
+        Compute the shape function for numerical intergral of
+   linear tedrahedra element.
    Formalparameter:
-      E: 
-	    double * Nt4      : Array of size 4, to store the value of shape 
-                            function 
-        const  double *x  : Pointer to a 3 dimension array for 
+      E:
+	    double * Nt4      : Array of size 4, to store the value of shape
+                            function
+        const  double *x  : Pointer to a 3 dimension array for
 
    Programming:
-   09/2004     WW           
+   09/2004     WW
 **************************************************************************/
 void ShapeFunctionTet(double *Nt4, const double *x)
 {
 
-    Nt4[0] = 1.-x[0]-x[1]-x[2]; 
-    Nt4[1] = x[0];  
-    Nt4[2] = x[1];  
-    Nt4[3] = x[2];  
+    Nt4[0] = 1.-x[0]-x[1]-x[2];
+    Nt4[1] = x[0];
+    Nt4[2] = x[1];
+    Nt4[3] = x[2];
 }
 /***************************************************************************
    Aufgabe:
-        Compute the gradient of shape functions for numerical intergral of   
-   linear tedrahedra element. 
+        Compute the gradient of shape functions for numerical intergral of
+   linear tedrahedra element.
    Formalparameter:
-      E: 
-	    double * dNt4      : Array of size 12, to store the value of shape 
-                             function 
+      E:
+	    double * dNt4      : Array of size 12, to store the value of shape
+                             function
                              0--3 /dr
                              4--7 /ds
                              8--12 /dt
-        const  double *x   : Pointer to a 3 dimension array for 
+        const  double *x   : Pointer to a 3 dimension array for
 
    Programming:
-   09/2004     WW           
+   09/2004     WW
 **************************************************************************/
 void GradShapeFunctionTet(double *dNt4, const double* dummy)
 {
 dummy = dummy;
-    dNt4[0] = -1.0; 
-    dNt4[1] = 1.0;  
+    dNt4[0] = -1.0;
+    dNt4[1] = 1.0;
     dNt4[2] = 0.0;
-    dNt4[3] = 0.0;  
+    dNt4[3] = 0.0;
 
-    dNt4[4] = -1.0; 
-    dNt4[5] = 0.0;  
+    dNt4[4] = -1.0;
+    dNt4[5] = 0.0;
     dNt4[6] = 1.0;
-    dNt4[7] = 0.0;  
+    dNt4[7] = 0.0;
 
-    dNt4[8] = -1.0; 
-    dNt4[9] = 0.0;  
+    dNt4[8] = -1.0;
+    dNt4[9] = 0.0;
     dNt4[10] = 0.0;
-    dNt4[11] = 1.0;  
+    dNt4[11] = 1.0;
 }
 
 /***************************************************************************
    Aufgabe:
-        Compute the shape function for numerical intergral of   
-   quadratic tedrahedra element. 
+        Compute the shape function for numerical intergral of
+   quadratic tedrahedra element.
    Formalparameter:
-      E: 
-        const  double *x  : Pointer to a 3 dimension array for 
+      E:
+        const  double *x  : Pointer to a 3 dimension array for
                             the unit coordinates
       R:
-	    double * N10      : Array of size 10, to store the value of shape 
-                            function 
+	    double * N10      : Array of size 10, to store the value of shape
+                            function
 
    Programming:
-   09/2004     WW           
+   09/2004     WW
 **************************************************************************/
 void ShapeFunctionTetHQ(double *N10, const double *x)
 {
 
-    N10[0] = 2.*(1-x[0]-x[1]-x[2])*(0.5-x[0]-x[1]-x[2]); 
-    N10[1] = x[0]*(2.*x[0]-1);  
-    N10[2] = x[1]*(2.*x[1]-1);  
-    N10[3] = x[2]*(2.*x[2]-1);  
-    N10[4] = 4.0*x[0]*(1.0-x[0]-x[1]-x[2]); 
-    N10[5] = 4.0*x[0]*x[1];  
-    N10[6] = 4.0*x[1]*(1.0-x[0]-x[1]-x[2]); 
-    N10[7] = 4.0*x[0]*x[2];  
-    N10[8] = 4.0*x[1]*x[2];  
-    N10[9] = 4.0*x[2]*(1.0-x[0]-x[1]-x[2]); 
+    N10[0] = 2.*(1-x[0]-x[1]-x[2])*(0.5-x[0]-x[1]-x[2]);
+    N10[1] = x[0]*(2.*x[0]-1);
+    N10[2] = x[1]*(2.*x[1]-1);
+    N10[3] = x[2]*(2.*x[2]-1);
+    N10[4] = 4.0*x[0]*(1.0-x[0]-x[1]-x[2]);
+    N10[5] = 4.0*x[0]*x[1];
+    N10[6] = 4.0*x[1]*(1.0-x[0]-x[1]-x[2]);
+    N10[7] = 4.0*x[0]*x[2];
+    N10[8] = 4.0*x[1]*x[2];
+    N10[9] = 4.0*x[2]*(1.0-x[0]-x[1]-x[2]);
 }
 
 /***************************************************************************
    Aufgabe:
-        Compute the gradient of the shape function for numerical intergral 
-    of quadratic tedrahedra element with respect to unit coordinates. 
+        Compute the gradient of the shape function for numerical intergral
+    of quadratic tedrahedra element with respect to unit coordinates.
    Formalparameter:
-      E: 
-        const  double *x  : Pointer to a 3 dimension array for 
+      E:
+        const  double *x  : Pointer to a 3 dimension array for
                             the unit coordinates
       R:
-	    double * dN10     : Array of size 30, to store the value 
+	    double * dN10     : Array of size 30, to store the value
                             0 - 9, d()/dr
                             10-19, d()/ds
                             20-29, d()/dt
    Programming:
-   09/2004     WW           
+   09/2004     WW
 **************************************************************************/
 void GradShapeFunctionTetHQ(double *dN10, const double *x)
 {
 
-    dN10[0] = 4.0*(x[0]+x[1]+x[2])-3.0; 
-    dN10[1] = 4.*x[0]-1.;   
-    dN10[2] = 0.0;  
-    dN10[3] = 0.0;  
-    dN10[4] = 4.0*(1.0-2.0*x[0]-x[1]-x[2]); 
-    dN10[5] = 4.0*x[1];  
-    dN10[6] = -4.0*x[1]; 
-    dN10[7] = 4.0*x[2];  
-    dN10[8] = 0.0;  
-    dN10[9] = -4.0*x[2]; 
+    dN10[0] = 4.0*(x[0]+x[1]+x[2])-3.0;
+    dN10[1] = 4.*x[0]-1.;
+    dN10[2] = 0.0;
+    dN10[3] = 0.0;
+    dN10[4] = 4.0*(1.0-2.0*x[0]-x[1]-x[2]);
+    dN10[5] = 4.0*x[1];
+    dN10[6] = -4.0*x[1];
+    dN10[7] = 4.0*x[2];
+    dN10[8] = 0.0;
+    dN10[9] = -4.0*x[2];
 
-    dN10[10] =  4.*(x[0]+x[1]+x[2])-3.; 
-    dN10[11] = 0.0;  
-    dN10[12] = 4.*x[1]-1.; 
-    dN10[13] = 0.; 
-    dN10[14] = -4.0*x[0]; 
-    dN10[15] = 4.0*x[0];  
-    dN10[16] = 4.0*(1.0-x[0]-2.0*x[1]-x[2]); 
-    dN10[17] = 0.0;  
-    dN10[18] = 4.0*x[2];  
-    dN10[19] = -4.0*x[2]; 
+    dN10[10] =  4.*(x[0]+x[1]+x[2])-3.;
+    dN10[11] = 0.0;
+    dN10[12] = 4.*x[1]-1.;
+    dN10[13] = 0.;
+    dN10[14] = -4.0*x[0];
+    dN10[15] = 4.0*x[0];
+    dN10[16] = 4.0*(1.0-x[0]-2.0*x[1]-x[2]);
+    dN10[17] = 0.0;
+    dN10[18] = 4.0*x[2];
+    dN10[19] = -4.0*x[2];
 
-    dN10[20] = 4.*(x[0]+x[1]+x[2])-3.; 
-    dN10[21] = 0.;  
-    dN10[22] = 0.;  
-    dN10[23] = 4.*x[2]-1.;  
-    dN10[24] = -4.0*x[0]; 
-    dN10[25] = 0.0;  
-    dN10[26] = -4.0*x[1]; 
-    dN10[27] = 4.0*x[0];  
-    dN10[28] = 4.0*x[1];  
-    dN10[29] = 4.0*(1.0-x[0]-x[1]-2.0*x[2]); 
+    dN10[20] = 4.*(x[0]+x[1]+x[2])-3.;
+    dN10[21] = 0.;
+    dN10[22] = 0.;
+    dN10[23] = 4.*x[2]-1.;
+    dN10[24] = -4.0*x[0];
+    dN10[25] = 0.0;
+    dN10[26] = -4.0*x[1];
+    dN10[27] = 4.0*x[0];
+    dN10[28] = 4.0*x[1];
+    dN10[29] = 4.0*(1.0-x[0]-x[1]-2.0*x[2]);
 }
 
 /***************************************************************************
@@ -4186,7 +4166,7 @@ void GradShapeFunctionTetHQ(double *dN10, const double *x)
            Vektor
    Aenderungen/Korrekturen:
    08/1995     cb        Erste Version
-   09/2004     WW     Generalization   
+   09/2004     WW     Generalization
  **************************************************************************/
 void ShapeFunctionHex(double *N8, const double *x)
 {
@@ -4225,7 +4205,7 @@ void ShapeFunctionHex(double *N8, const double *x)
            3x8 Matrix
    Aenderungen/Korrekturen:
    05/1995     hh        Erste Version
-   09/2004     WW        Generalization   
+   09/2004     WW        Generalization
  **************************************************************************/
 
 void GradShapeFunctionHex(double *dN8, const double *x)
@@ -4271,33 +4251,33 @@ void GradShapeFunctionHex(double *dN8, const double *x)
 /***************************************************************************
    GEOSYS - Funktion: ShapeFunctionHexHQ
    Task:
-     Shape functions for the 20 node hexahedral element    
-     (Including: 
+     Shape functions for the 20 node hexahedral element
+     (Including:
              ShapeFunctionHexHQ_Corner
              ShapeFunctionHexHQ_Middle
              dShapeFunctionHexHQ_Corner
              dShapeFunctionHexHQ_Middle
              )
    Arguments:
-      E: 
-        const  double *x  : Pointer to a 3 dimension array for 
+      E:
+        const  double *x  : Pointer to a 3 dimension array for
                             the unit coordinates
       R:
-	    double * N20      : Array of size 20, to store the value of shape 
-                            function 
+	    double * N20      : Array of size 20, to store the value of shape
+                            function
    Programming:
-   09/2004     WW        
+   09/2004     WW
  **************************************************************************/
 double ShapeFunctionHexHQ_Corner(const double r, const double s, const double t)
-{ 
+{
     return 0.125*(1+r)*(1+s)*(1+t)*( r+s+t-2.0);
 }
 double ShapeFunctionHexHQ_Middle(const double r, const double s, const double t)
-{ 
+{
     return  0.25*(1-r*r)*(1+s)*(1+t);
 }
 double dShapeFunctionHexHQ_Corner(const double r, const double s, const double t, const int ty)
-{ 
+{
     switch(ty)
     {
        case 0:
@@ -4314,7 +4294,7 @@ double dShapeFunctionHexHQ_Corner(const double r, const double s, const double t
 }
 
 double dShapeFunctionHexHQ_Middle(const double r, const double s, const double t, const int ty)
-{ 
+{
    switch(ty)
     {
        case 0:
@@ -4333,7 +4313,7 @@ void ShapeFunctionHexHQ(double *N20, const double *x)
 {
     double r = x[0];
     double s = x[1];
-    double t = x[2];    
+    double t = x[2];
 
     N20[0] = ShapeFunctionHexHQ_Corner(r,s,t);
     N20[1] = ShapeFunctionHexHQ_Corner(-r,s,t);
@@ -4349,35 +4329,35 @@ void ShapeFunctionHexHQ(double *N20, const double *x)
     N20[14] = ShapeFunctionHexHQ_Middle(r,-s,-t);
     N20[12] = ShapeFunctionHexHQ_Middle(r,s,-t);
 
-    N20[11] = ShapeFunctionHexHQ_Middle(s,t,r); 
-    N20[15] = ShapeFunctionHexHQ_Middle(s,-t,r); 
-    N20[13] = ShapeFunctionHexHQ_Middle(s,-t,-r); 
-    N20[9]  =  ShapeFunctionHexHQ_Middle(s,t,-r); 
+    N20[11] = ShapeFunctionHexHQ_Middle(s,t,r);
+    N20[15] = ShapeFunctionHexHQ_Middle(s,-t,r);
+    N20[13] = ShapeFunctionHexHQ_Middle(s,-t,-r);
+    N20[9]  =  ShapeFunctionHexHQ_Middle(s,t,-r);
 
-    N20[16] = ShapeFunctionHexHQ_Middle(t,r,s); 
-    N20[17] = ShapeFunctionHexHQ_Middle(t,-r,s);  
-    N20[18] = ShapeFunctionHexHQ_Middle(t,-r,-s); 
-    N20[19] = ShapeFunctionHexHQ_Middle(t,r,-s); 
+    N20[16] = ShapeFunctionHexHQ_Middle(t,r,s);
+    N20[17] = ShapeFunctionHexHQ_Middle(t,-r,s);
+    N20[18] = ShapeFunctionHexHQ_Middle(t,-r,-s);
+    N20[19] = ShapeFunctionHexHQ_Middle(t,r,-s);
 
 }
 
 /***************************************************************************
    GEOSYS - Funktion: ShapeFunctionHexHQ
    Task:
-        Compute the gradient of shape functions 
-        for the 20 node hexahedral element           
+        Compute the gradient of shape functions
+        for the 20 node hexahedral element
    Arguments:
-      E: 
-        const  double *x  : Pointer to a 3 dimension array for 
+      E:
+        const  double *x  : Pointer to a 3 dimension array for
                             the unit coordinates
       R:
-	    double * dN20     : Array of size 60, to store the value of shape 
-                            function 
+	    double * dN20     : Array of size 60, to store the value of shape
+                            function
                             0 - 9, d()/dr
                             10-19, d()/ds
                             20-29, d()/dt
    Programming:
-   09/2004     WW           
+   09/2004     WW
  **************************************************************************/
 void GradShapeFunctionHexHQ(double *dN20, const double *x)
 {
@@ -4385,9 +4365,9 @@ void GradShapeFunctionHexHQ(double *dN20, const double *x)
     double r = x[0];
     double s = x[1];
     double t = x[2];
-    static double sign1[] = {-1.0, 1.0,1.0}; 
-    static double sign2[] = { 1.0,-1.0,1.0}; 
-    static double sign3[] = { 1.0, 1.0,-1.0}; 
+    static double sign1[] = {-1.0, 1.0,1.0};
+    static double sign2[] = { 1.0,-1.0,1.0};
+    static double sign3[] = { 1.0, 1.0,-1.0};
     for(int i=0; i<3; i++)
     {
        dN20[20*i+0] = dShapeFunctionHexHQ_Corner(r,s,t,i);
@@ -4420,23 +4400,23 @@ void GradShapeFunctionHexHQ(double *dN20, const double *x)
 /***************************************************************************
    GEOSYS/ROCKFLOW - Funktion: ShapeFunctionPri
    Task:
-        Compute the gradient of shape functions 
-        for the 6 node prism element           
+        Compute the gradient of shape functions
+        for the 6 node prism element
    Arguments:
-      E: 
-        const  double *x  : Pointer to a 3 dimension array for 
+      E:
+        const  double *x  : Pointer to a 3 dimension array for
                             the unit coordinates
       R:
-	    double * N     : Array of size 6, to store the value of shape 
+	    double * N     : Array of size 6, to store the value of shape
                             function of 6 nodes
    Programming:
-   08/2005     WW   (duplicated from MOmegaPrism by MB, 07/2003)        
+   08/2005     WW   (duplicated from MOmegaPrism by MB, 07/2003)
  **************************************************************************/
 void ShapeFunctionPri(double *N, const double *x)
 {
     double L1 = x[0];
     double L2 = x[1];
-    double t = x[2];    
+    double t = x[2];
     N[0] = 0.5*(1.0-L1-L2)*(1.0-t);
     N[1] = 0.5*L1*(1.0-t);
     N[2] = 0.5*L2*(1.0-t);
@@ -4448,25 +4428,25 @@ void ShapeFunctionPri(double *N, const double *x)
 /***************************************************************************
    GEOSYS/ROCKFLOW - Funktion: ShapeFunctionPriHQ
    Task:
-        Compute the gradient of shape functions 
-        for the 6 node prism element           
+        Compute the gradient of shape functions
+        for the 6 node prism element
    Arguments:
-      E: 
-        const  double *x  : Pointer to a 3 dimension array for 
+      E:
+        const  double *x  : Pointer to a 3 dimension array for
                             the unit coordinates
       R:
-	    double * N     : Array of size 15, to store the value of shape 
+	    double * N     : Array of size 15, to store the value of shape
                             function of 15 nodes
    Programming:
-   08/2005     WW           
+   08/2005     WW
  **************************************************************************/
 void ShapeFunctionPriHQ(double *N, const double *x)
 {
     double L0;
     double L1 = x[0];
     double L2 = x[1];
-    double t = x[2]; 
-    double tt1 = 1.0-t*t; 
+    double t = x[2];
+    double tt1 = 1.0-t*t;
     L0 = 1.0-L1-L2;
     // Vertex, bottom
     N[0] = 0.5*L0*((2.0*L0-1)*(1.0-t)-tt1);
@@ -4493,26 +4473,26 @@ void ShapeFunctionPriHQ(double *N, const double *x)
 /***************************************************************************
    GEOSYS/ROCKFLOW - Funktion: GradShapeFunctionPri
    Task:
-        Compute the gradient of shape functions 
-        for the 6 node prism element           
+        Compute the gradient of shape functions
+        for the 6 node prism element
    Arguments:
-      E: 
-        const  double *x  : Pointer to a 3 dimension array for 
+      E:
+        const  double *x  : Pointer to a 3 dimension array for
                             the unit coordinates
       R:
-	    double * N     : Array of size 18, to store the value of the grandient 
-		                 shape functions 
+	    double * N     : Array of size 18, to store the value of the grandient
+		                 shape functions
                           0--5: dN/dL1
                          6--11: dN/dL2
                         12--17: dN/dt
    Programming:
-   08/2005     WW           
+   08/2005     WW
  **************************************************************************/
 void GradShapeFunctionPri(double *dN, const double *x)
 {
     double L1 = x[0];
     double L2 = x[1];
-    double t = x[2];    
+    double t = x[2];
     //  dN/dL1
     dN[0] = -0.5*(1.0-t);
     dN[1] = 0.5*(1.0-t);
@@ -4538,28 +4518,28 @@ void GradShapeFunctionPri(double *dN, const double *x)
 
 /***************************************************************************
    GEOSYS/ROCKFLOW - Funktion: GradShapeFunctionPriHQ
-        Compute the gradient of shape functions 
-        for the 6 node prism element           
+        Compute the gradient of shape functions
+        for the 6 node prism element
    Arguments:
-      E: 
-        const  double *x  : Pointer to a 3 dimension array for 
+      E:
+        const  double *x  : Pointer to a 3 dimension array for
                             the unit coordinates
       R:
-	    double * N     : Array of size 18, to store the value of the grandient 
-		                 shape functions 
+	    double * N     : Array of size 18, to store the value of the grandient
+		                 shape functions
                           0--15: dN/dL1
                          16--29: dN/dL2
                          30--44: dN/dt
    Programming:
-   08/2005     WW           
+   08/2005     WW
 **************************************************************************/
 void GradShapeFunctionPriHQ(double *dN, const double *x)
 {
     double L0;
     double L1 = x[0];
     double L2 = x[1];
-    double t = x[2]; 
-    double tt1 = 1.0-t*t; 
+    double t = x[2];
+    double tt1 = 1.0-t*t;
     L0 = 1.0-L1-L2;
     //---dN/dL1
     // Vertex, bottom
@@ -4637,13 +4617,13 @@ void GradShapeFunctionPriHQ(double *dN, const double *x)
 
 
 /***************************************************************************
-   GeoSys - Funktion: 
+   GeoSys - Funktion:
            CElement::ComputeDetTri(const *double x1, const *double x2,
                                  const *double x3)
    Aufgabe:
-         Compute the vulume of a triangle 
+         Compute the vulume of a triangle
    Formalparameter:
-           E: 
+           E:
              const *double x1    : Vertex 1
              const *double x2    : Vertex 2
              const *double x3    : Vertex 3
@@ -4654,47 +4634,47 @@ double ComputeDetTri(const double *x1, const double *x2,
                                 const double *x3)
 {
     static double u[3], v[3], z[3];
-    
-    u[0] = x3[0] - x1[0];	
+
+    u[0] = x3[0] - x1[0];
     u[1] = x3[1] - x1[1];
     u[2] = x3[2] - x1[2];
 
-    v[0] = x2[0] - x1[0];	
+    v[0] = x2[0] - x1[0];
     v[1] = x2[1] - x1[1];
     v[2] = x2[2] - x1[2];
- 
+
     z[0] = u[1]*v[2] - u[2]*v[1];
     z[1] = u[2]*v[0] - u[0]*v[2];
     z[2] = u[0]*v[1] - u[1]*v[0];
 
-    return 0.5*sqrt(z[0]*z[0]+z[1]*z[1]+z[2]*z[2] );   
-} 
+    return 0.5*sqrt(z[0]*z[0]+z[1]*z[1]+z[2]*z[2] );
+}
 
 /***************************************************************************
-   GeoSys - Funktion: 
+   GeoSys - Funktion:
            CElem::ComputeDetTet(const *double x1, const *double x2,
                                  const *double x3, const *double x4)
    Aufgabe:
-         Compute the vulume of a tedrahedra 
+         Compute the vulume of a tedrahedra
    Formalparameter:
-           E: 
+           E:
              const *double x1    : Vertex 1
              const *double x2    : Vertex 2
              const *double x3    : Vertex 3
-             const *double x4    : Vertex 4 
+             const *double x4    : Vertex 4
    Programming:
    09/2004     WW        Erste Version
 **************************************************************************/
 double ComputeDetTex(const double *x1, const double *x2,
                      const double *x3, const double *x4)
 {
-   return 
+   return
      fabs((x1[0]-x4[0])*((x2[1]-x4[1])*(x3[2]-x4[2])-(x2[2]-x4[2])*(x3[1]-x4[1]))
          -(x1[1]-x4[1])*((x2[0]-x4[0])*(x3[2]-x4[2])-(x2[2]-x4[2])*(x3[0]-x4[0]))
-         +(x1[2]-x4[2])*((x2[0]-x4[0])*(x3[1]-x4[1])-(x2[1]-x4[1])*(x3[0]-x4[0])))/6.0;   
-} 
+         +(x1[2]-x4[2])*((x2[0]-x4[0])*(x3[1]-x4[1])-(x2[1]-x4[1])*(x3[0]-x4[0])))/6.0;
+}
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task:
 Programing:
 09/2005 WW Implementation
@@ -4708,10 +4688,10 @@ double NormalizeVector(double *x, const int n)
    for(i=0; i<n; i++)
      x[i] /= sqrt(nrm);
    return sqrt(nrm);
-   
+
 }
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task:         dim == 3
 Programing:
 09/2005 WW Implementation
@@ -4723,7 +4703,7 @@ void CrossProduction(const double *x, const double *y, double *z)
 	z[2] = x[0]*y[1]-x[1]*y[0];
 }
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task:
 Programing:
 01/2006 YD Implementation
@@ -4738,7 +4718,7 @@ double PointProduction(double *x, double *y)
 }
 
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task: Langevin function: L(x) = coth(x) - 1/x
 Programing:
 12/2009 NW Implementation

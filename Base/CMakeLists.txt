@@ -3,11 +3,9 @@ set( HEADERS
 	Configure.h.in
 	DateTools.h
 	StringTools.h
-	MathTools.h
 )
 
 set( SOURCES
-	MathTools.cpp
 )
 
 # Create the library

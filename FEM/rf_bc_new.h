@@ -7,75 +7,74 @@ last modified
 **************************************************************************/
 #ifndef rf_bc_new_INC
 #define rf_bc_new_INC
-// C++ STL
+
 #include <list>
 #include <fstream>
 #include <string>
 #include <vector>
-using namespace std;
+
 // GEOLib
 #include "geo_ply.h"
 // MSHLib
 #include "msh_lib.h"
-//#include "rf_ele_msh.h"
-
 // PCSLib
 #include "rf_pcs.h"
-//========================================================================
+
 using namespace Mesh_Group;
+
 class CBoundaryCondition
 {
   private:
-    string tim_type_name; // Time function type
-    string fname; //27.02.2009. WW
+    std::string tim_type_name; // Time function type
+    std::string fname; //27.02.2009. WW
 	int CurveIndex; // Time funtion index
   public: //OK
-    vector<int> PointsHaveDistribedBC;
-    vector<int> PointsCurvesIndex;
-    vector<string> PointsFCTNames;
-    vector<double> DistribedBC;
+    std::vector<int> PointsHaveDistribedBC;
+    std::vector<int> PointsCurvesIndex;
+    std::vector<std::string> PointsFCTNames;
+    std::vector<double> DistribedBC;
   private: //OK
     friend class CBoundaryConditionsGroup;
   public:
     // PCS
-    string pcs_pv_name; //OK
-    string pcs_type_name;
-    string pcs_type_name_cond; //OK
-    string pcs_pv_name_cond; //OK
+    std::string pcs_pv_name; //OK
+    std::string pcs_type_name;
+    std::string pcs_type_name_cond; //OK
+    std::string pcs_pv_name_cond; //OK
     int pcs_number;
     // GEO
     int geo_type;
-    string geo_type_name;
-    string geo_name;
+    std::string geo_type_name;
+    std::string geo_name;
     // DIS
     int dis_type;
-    string dis_type_name;
-    string dis_file_name;
-    vector<long>node_number_vector;
-    vector<double>node_value_vector;
-    vector<long>node_renumber_vector;
+    std::string dis_type_name;
+    std::string dis_file_name;
+    std::vector<long>node_number_vector;
+    std::vector<double>node_value_vector;
+    std::vector<long>node_renumber_vector;
     long geo_node_number;
     double geo_node_value;
 	double periode_time_length, periode_phase_shift; // JOD
-    string delimiter_type;
+    std::string delimiter_type;
     double node_value_cond; //OK
     double condition; //OK
-    string geo_node_substitute; //OK
+    std::string geo_node_substitute; //OK
     bool time_dep_interpol;
     // FCT
-    string fct_name;
+    std::string fct_name;
     bool conditional;
 	bool periodic; // JOD
     // DB
-    string db_file_name;
+    std::string db_file_name;
     void ExecuteDataBasePolyline(CGLPolyline*);
-    void SurfaceIntepolation(CRFProcess* m_pcs, vector<long>&nodes_on_sfc, 
-                                vector<double>&node_value_vector); //WW
+    void SurfaceIntepolation(CRFProcess* m_pcs, std::vector<long>&nodes_on_sfc,
+                                std::vector<double>&node_value_vector); //WW
     inline void DirectAssign(const long ShiftInNodeVector);  //27.02.2009. WW
     inline void PatchAssign(const long ShiftInNodeVector);  //19.03.2009. WW
     // MSH
     long msh_node_number;
-    string msh_type_name; //OK4105
+    std::string msh_type_name; //OK4105
     // GUI
     bool display_mode;
 
@@ -88,7 +87,6 @@ class CBoundaryCondition
     void WriteTecplot(fstream*);
 };
 
-//========================================================================
 class CBoundaryConditionNode //OK raus
 {
   public:
@@ -98,9 +96,9 @@ class CBoundaryConditionNode //OK raus
 
     double node_value;
     int CurveIndex; // Time dependent function index
-    string pcs_pv_name; //YD/WW
+    std::string pcs_pv_name; //YD/WW
     //
-    string fct_name; //WW
+    std::string fct_name; //WW
     //FCT
     int conditional; //OK
     CBoundaryConditionNode();
@@ -111,20 +109,20 @@ class CBoundaryConditionNode //OK raus
 class CBoundaryConditionsGroup
 {
   public:
-    string group_name;
-    string pcs_type_name; //OK
-    string pcs_pv_name; //OK
+    std::string group_name;
+    std::string pcs_type_name; //OK
+    std::string pcs_pv_name; //OK
     long msh_node_number_subst; //WW
-    string fct_name; //OK
+    std::string fct_name; //OK
   public:
-    //WW vector<CBoundaryConditionNode*>group_vector;
-    void Set(CRFProcess* m_pcs, const int ShiftInNodeVector, string this_pv_name="");
-    CBoundaryConditionsGroup* Get(string);
+    //WW std::vector<CBoundaryConditionNode*>group_vector;
+    void Set(CRFProcess* m_pcs, const int ShiftInNodeVector, std::string this_pv_name="");
+    CBoundaryConditionsGroup* Get(std::string);
 	CBoundaryConditionsGroup(void);
     ~CBoundaryConditionsGroup(void);
     void WriteTecplot(void);
     CFEMesh* m_msh; //OK
-    //WW vector<CBoundaryCondition*>bc_group_vector; //OK
+    //WW std::vector<CBoundaryCondition*>bc_group_vector; //OK
     //WW double GetConditionalNODValue(int,CBoundaryCondition*); //OK
     int time_dep_bc;
 
@@ -135,17 +133,17 @@ class CBoundaryConditionsGroup
 //========================================================================
 #define BC_FILE_EXTENSION ".bc"
 extern list<CBoundaryConditionsGroup*> bc_group_list;
-extern CBoundaryConditionsGroup* BCGetGroup(string pcs_type_name,string pcs_pv_name);
+extern CBoundaryConditionsGroup* BCGetGroup(std::string pcs_type_name,std::string pcs_pv_name);
 extern list<CBoundaryCondition*> bc_list;
-extern bool BCRead(string);
-extern void BCWrite(string);
-extern void BCReadDataBase(string);
+extern bool BCRead(std::string);
+extern void BCWrite(std::string);
+extern void BCReadDataBase(std::string);
 extern void BCExecuteDataBase(void);
 extern void BCDelete();
-extern void BCGroupDelete(string,string);
+extern void BCGroupDelete(std::string,std::string);
 extern void BCGroupDelete(void);
-extern CBoundaryCondition* BCGet(string,string,string); //OK
-extern CBoundaryCondition* BCGet(string); //OK
+extern CBoundaryCondition* BCGet(std::string,std::string,std::string); //OK
+extern CBoundaryCondition* BCGet(std::string); //OK
 
 //ToDo
 extern long IsNodeBoundaryCondition(char *name, long node);
