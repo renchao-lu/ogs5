@@ -31,15 +31,10 @@ ADD_EXECUTABLE( ogs
 )
 
 TARGET_LINK_LIBRARIES( ogs
-	Base
 	GEO
 	MSH
 	FEM
 	OGSProject
 )
 
-ADD_DEPENDENCIES ( ogs
-	Base
-	OGSProject
-)
 
