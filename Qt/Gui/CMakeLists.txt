@@ -67,7 +67,7 @@ add_executable( ogs-gui
 # Link Qt library
 target_link_libraries( ogs-gui
 	${QT_LIBRARIES}
-	Base
+	#Base
 	GEO
 	FileIO
 	MSH
@@ -85,7 +85,7 @@ target_link_libraries( ogs-gui
 	#${OpenSGSupportlibs_LIBRARIES}
 )
 
-add_dependencies ( ogs-gui Base VtkVis OGSProject )
+add_dependencies ( ogs-gui VtkVis OGSProject )
 
 # Set linker flags
 IF(MSVC)
