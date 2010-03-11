@@ -26,15 +26,14 @@ if (NOT Shapelib_FOUND)
 			PATHS ${CMAKE_SOURCE_DIR}/../Libs/shapelib )
 	endif ( UNIX )
 
-
 	# Set the include dir variables and the libraries and let libfind_process do the rest.
 	# NOTE: Singular variables for this library, plural for libraries this this lib depends on.
-	if (NOT Shapelib_LIBRARIES STREQUAL "" AND NOT Shapelib_INCLUDE_DIR STREQUAL "")
+	if (NOT Shapelib_LIBRARIES STREQUAL "Shapelib_LIBRARIES-NOTFOUND" AND NOT Shapelib_INCLUDE_DIR STREQUAL "Shapelib_INCLUDE_DIR-NOTFOUND")
 		set(Shapelib_PROCESS_INCLUDES Shapelib_INCLUDE_DIR)
 		set(Shapelib_PROCESS_LIBS Shapelib_LIBRARIES)
 		libfind_process(Shapelib)
-	else (NOT Shapelib_LIBRARIES STREQUAL "" AND NOT Shapelib_INCLUDE_DIR STREQUAL "")
-		message (STATUS "Error: shapelib not found!")
-	endif (NOT Shapelib_LIBRARIES STREQUAL "" AND NOT Shapelib_INCLUDE_DIR STREQUAL "")
+	else (NOT Shapelib_LIBRARIES STREQUAL "Shapelib_LIBRARIES-NOTFOUND" AND NOT Shapelib_INCLUDE_DIR STREQUAL "Shapelib_INCLUDE_DIR-NOTFOUND")
+		message (STATUS "Warning: shapelib not found!")
+	endif (NOT Shapelib_LIBRARIES STREQUAL "Shapelib_LIBRARIES-NOTFOUND" AND NOT Shapelib_INCLUDE_DIR STREQUAL "Shapelib_INCLUDE_DIR-NOTFOUND")
 	
 endif (NOT Shapelib_FOUND)
