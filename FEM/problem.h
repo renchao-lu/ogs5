@@ -33,8 +33,8 @@ class Problem
    void PostCouplingLoop();
    // Copy u_n for auto time stepping
    double* GetBufferArray() {return buffer_array;};
-  private:
 
+  private:
    // Time:
    double start_time;
    double end_time;
