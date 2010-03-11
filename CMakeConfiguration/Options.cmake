@@ -12,14 +12,15 @@ OPTION (IPMGEMPLUGIN OFF)
 OPTION (_POSIX_SOURCE OFF)
 OPTION (NO_ERROR_CONTROL OFF)
 
-## MDL: cmake options for LIBPHREEQC and DEBUG
 OPTION (LIBPQC "Do you want to compile LIBPHREEQC?" OFF)
 OPTION (LIBPQC_DEBUG "Do you want to compile LIBPHREEQC with debug flag?" OFF)
+
 
 OPTION (CONFIG_G++ "Do you want to use the g++ config?" OFF)
 OPTION (CONFIG_G++_BRNS "Do you want to use the g++_BRNS config?" OFF)
 OPTION (CONFIG_G++_GEMS "Do you want to use the g++_gems config?" OFF)
 OPTION (CONFIG_G++_PARDISO "Do you want to use the g++pardiso config?" OFF)
+OPTION (CONFIG_G++_PQC "Do you want to use the g++_PQC config?" OFF)
 
 if (CONFIG_G++)
 	INCLUDE (configs/g++.cmake)
@@ -37,6 +38,9 @@ if (CONFIG_G++_PARDISO)
 	INCLUDE (configs/g++pardiso.cmake)
 endif(CONFIG_G++_PARDISO)
 
+if (CONFIG_G++_PQC)
+	INCLUDE (configs/g++_PQC.cmake)
+endif(CONFIG_G++_PQC)
 
 OPTION (OGS_USE_QT "Do you want to build the OGS GUI?" OFF)
 
