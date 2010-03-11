@@ -12,6 +12,9 @@ last modified
 #include "msh_edge.h"
 #include "mathlib.h" //OK
 
+using namespace std;
+
+//========================================================================
 namespace Mesh_Group
 {
 /**************************************************************************

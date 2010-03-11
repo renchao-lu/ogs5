@@ -1,7 +1,7 @@
 #### OGS-5 Qt Project ####
 
 # Specify minimum CMake version
-cmake_minimum_required(VERSION 2.4)
+cmake_minimum_required(VERSION 2.6)	# or set to 2.4 for older systems (like JUGENE...)
 
 # Set build configuration types
 # "RelWithDebInfo" and "MinSizeRelease" can be added here
@@ -49,6 +49,9 @@ ELSE (MSVC)
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wall -Wextra")
 ENDIF (MSVC)
 
+# Add LIB to include and link directory
+include_directories( ${CMAKE_SOURCE_DIR}/LIB )
+link_directories( ${CMAKE_SOURCE_DIR}/LIB )
 
 # Add subdirectories with the projects
 ADD_SUBDIRECTORY( Base )

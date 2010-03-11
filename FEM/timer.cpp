@@ -13,6 +13,7 @@
    09/1999     AH         Funktionen: TGetTime und TGetTicksPerSecond global.
    11/1999     C.Thorenz  Beliebige Anzahl Zeitspeicher
 **************************************************************************/
+#include "Configure.h"
 
 #include "makros.h"
 #include "timer.h"
@@ -25,8 +26,10 @@ using namespace std;
 
 /* Auf POSIX-Rechern ist exaktere Zeitmessung vorhanden */
 #ifdef _POSIX_SOURCE
-#include <unistd.h>
-#include <sys/times.h>
+#ifndef WIN32
+	#include <unistd.h>
+	#include <sys/times.h>
+#endif WIN32
 #include <time.h>
 #endif
 

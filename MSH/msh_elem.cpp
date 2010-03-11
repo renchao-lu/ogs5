@@ -12,6 +12,12 @@ last modified
 // MSHLib
 #include "msh_elem.h"
 
+using namespace std;
+
+#ifdef RFW_FRACTURE
+#include "rf_pcs.h" //RFW 06/2006
+#endif
+
 #ifdef USE_TOKENBUF
 #include "tokenbuf.h"
 

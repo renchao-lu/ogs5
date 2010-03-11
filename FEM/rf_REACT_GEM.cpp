@@ -6,6 +6,7 @@
 // based on the PSI node-GEM source code
 // using the node-GEM code from Paul Sherrer Institute (PSI)
 //-------------------------------------
+#include "Configure.h"
 
 #include "rf_REACT_GEM.h"
 #include "rf_pcs.h"

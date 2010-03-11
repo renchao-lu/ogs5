@@ -1,3 +1,5 @@
+#include "Configure.h"
+
 #include "rf_REACT_BRNS.h"
 #include "rf_pcs.h"
 #include "rfmat_cp.h"

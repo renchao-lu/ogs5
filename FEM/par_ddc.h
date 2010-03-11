@@ -9,6 +9,8 @@ last modified:
 
 #define par_dd_INC
 
+#include "Configure.h"
+
 // C++ STL
 #include <list>
 #include <fstream>

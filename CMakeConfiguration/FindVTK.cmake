@@ -77,6 +77,12 @@ IF(NOT VTK_DIR)
     # Look for an environment variable VTK_DIR.
     $ENV{VTK_DIR}
 
+    // OGS Self compiled
+    ${PROJECT_SOURCE_DIR}/../Libs/vtk/VTK/Build
+
+    # OGS Pre compiled
+    C:/OGS_Libs/VTK/Build
+
     # Look in places relative to the system executable search path.
     ${VTK_DIR_SEARCH}
 

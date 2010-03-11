@@ -11,5 +11,11 @@
 
 #cmakedefine RANDOM_WALK
 #cmakedefine PROBLEM_CLASS
+#cmakedefine NEW_EQS
+#cmakedefine BRNS
+#cmakedefine GEM_REACT
+
+#cmakedefine _POSIX_SOURCE
+#cmakedefine NO_ERROR_CONTROL
 
 #endif // CONFIGURE_H

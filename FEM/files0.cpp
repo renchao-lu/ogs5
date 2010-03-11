@@ -29,7 +29,7 @@
    03/2003     RK         Quellcode bereinigt, Globalvariablen entfernt
                                                                           */
 /**************************************************************************/
-
+#include "Configure.h"
 #include <iostream>
 #include "makros.h"
 #ifndef NEW_EQS //WW. 07.11.2008

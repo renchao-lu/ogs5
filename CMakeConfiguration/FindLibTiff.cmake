@@ -11,27 +11,27 @@ if (NOT libtiff_FOUND)
 	
 	find_path( libtiff_INCLUDE_DIR
 		NAMES tiff.h
-		PATHS /usr/include ${CMAKE_SOURCE_DIR}/../Libs/libtiff/libtiff )
+		PATHS /usr/include ${CMAKE_SOURCE_DIR}/../Libs/libtiff/libtiff C:/OGS_Libs/libtiff)
 
 	if ( UNIX )
 		find_library(libtiff_LIBRARIES
 			NAMES tiff
-			PATHS /usr/lib64 /usr/lib ${CMAKE_SOURCE_DIR}/../Libs/libtiff/libtiff			)
+			PATHS /usr/lib64 /usr/lib ${CMAKE_SOURCE_DIR}/../Libs/libtiff/libtiff)
 	else ( UNIX )			
 		find_library(libtiff_LIBRARIES
 			NAMES libtiff
-			PATHS ${CMAKE_SOURCE_DIR}/../Libs/libtiff/libtiff )
+			PATHS ${CMAKE_SOURCE_DIR}/../Libs/libtiff/libtiff C:/OGS_Libs/libtiff)
 	endif ( UNIX )
 
 
 	# Set the include dir variables and the libraries and let libfind_process do the rest.
 	# NOTE: Singular variables for this library, plural for libraries this this lib depends on.
-	if (NOT libtiff_LIBRARIES STREQUAL "" AND NOT libtiff_INCLUDE_DIR STREQUAL "")
+	if (NOT libtiff_LIBRARIES STREQUAL "libtiff_LIBRARIES-NOTFOUND" AND NOT libtiff_INCLUDE_DIR STREQUAL "libtiff_INCLUDE_DIR-NOTFOUND")
 		set(libtiff_PROCESS_INCLUDES libtiff_INCLUDE_DIR)
 		set(libtiff_PROCESS_LIBS libtiff_LIBRARIES)
 		libfind_process(libtiff)
-	else (NOT libtiff_LIBRARIES STREQUAL "" AND NOT libtiff_INCLUDE_DIR STREQUAL "")
+	else (NOT libtiff_LIBRARIES STREQUAL "libtiff_LIBRARIES-NOTFOUND" AND NOT libtiff_INCLUDE_DIR STREQUAL "libtiff_INCLUDE_DIR-NOTFOUND")
 		message (STATUS "Error: libtiff not found!")
-	endif (NOT libtiff_LIBRARIES STREQUAL "" AND NOT libtiff_INCLUDE_DIR STREQUAL "")
+	endif (NOT libtiff_LIBRARIES STREQUAL "libtiff_LIBRARIES-NOTFOUND" AND NOT libtiff_INCLUDE_DIR STREQUAL "libtiff_INCLUDE_DIR-NOTFOUND")
 	
 endif (NOT libtiff_FOUND)

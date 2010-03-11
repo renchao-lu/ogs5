@@ -7,6 +7,8 @@ Start time:  09.07.2008
 Modification:
             12.2008 WW Incorporate the changes from previous versions. 
 ========================================================================*/
+#include "Configure.h"
+
 #include "problem.h"
 #if defined(PROBLEM_CLASS)
 

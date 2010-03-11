@@ -2,6 +2,8 @@
    The members of class Element definitions.
 */
 
+#include "Configure.h"
+
 // C++ STL
 #include <iostream>
 #include <limits>	// PCH to better use system max and min

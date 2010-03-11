@@ -9,6 +9,8 @@
 #ifndef matrix_class_INC
 #define matrix_class_INC
 
+#include "Configure.h"
+
 #include <iostream>
 #include <fstream>
 
@@ -189,7 +191,7 @@ class SparseTable
       SparseTable(CFEMesh *a_mesh, bool quadratic, bool symm=false);
       SparseTable(CPARDomain &m_dom, bool quadratic, bool symm=false);
       ~SparseTable();
-      void Write(ostream &os=cout);
+	  void Write(std::ostream &os=std::cout);
     private:
       bool symmetry;
       // Topology mapping from data array to matrix
@@ -238,7 +240,7 @@ class CSparseMatrix
 	 int GetCRSValue(double* value);
 #endif
      // Print
-     void Write(ostream &os=cout);
+	 void Write(std::ostream &os=std::cout);
 
      // Domain decomposition
 #if defined(USE_MPI)

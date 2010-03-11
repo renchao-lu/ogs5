@@ -11,7 +11,7 @@ if (NOT Shapelib_FOUND)
 	
 	find_path( Shapelib_INCLUDE_DIR
 		NAMES shapefil.h
-		PATHS /usr/include/libshp /usr/include ${CMAKE_SOURCE_DIR}/../Libs/shapelib )
+		PATHS /usr/include/libshp /usr/include ${CMAKE_SOURCE_DIR}/../Libs/shapelib C:/OGS_Libs/shapelib)
 
 	if ( UNIX )
 		find_library(Shapelib_LIBRARIES
@@ -23,7 +23,7 @@ if (NOT Shapelib_FOUND)
 	else ( UNIX )			
 		find_library(Shapelib_LIBRARIES
 			NAMES shapelib
-			PATHS ${CMAKE_SOURCE_DIR}/../Libs/shapelib )
+			PATHS ${CMAKE_SOURCE_DIR}/../Libs/shapelib C:/OGS_Libs/shapelib)
 	endif ( UNIX )
 
 	# Set the include dir variables and the libraries and let libfind_process do the rest.

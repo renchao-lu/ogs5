@@ -4,6 +4,7 @@ Programing:
 11/2007 WW/
 **************************************************************************/
 
+#include "Configure.h"
 #include "makros.h"
 
 // NEW_EQS To be removed

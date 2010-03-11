@@ -75,6 +75,7 @@
 **************************************************************************/
 
 #include "makros.h"
+#include "solver.h"
 
 #define noTESTMATRIX_PERF
 #define noDUMP

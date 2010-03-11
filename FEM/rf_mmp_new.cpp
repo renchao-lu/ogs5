@@ -4,6 +4,7 @@ Task: MediumProperties
 Programing:
 01/2004 OK Implementation
 **************************************************************************/
+#include "Configure.h"
 
 #include "makros.h"
 // C++ STL

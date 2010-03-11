@@ -12,6 +12,8 @@
 #ifndef makros_INC
 #define makros_INC
 
+#include "Configure.h"
+
 /* Global benoetigte Header */
 #include <stdlib.h>
   /* Speicherverwaltung */

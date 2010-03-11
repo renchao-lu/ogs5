@@ -10,6 +10,7 @@ Programing:
            and parellelisation of them 
 02/2008 PCH OpenMP parallelization for Lis matrix solver
 **************************************************************************/
+#include "Configure.h"
 
 /*--------------------- MPI Parallel  -------------------*/
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)

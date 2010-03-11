@@ -6,6 +6,10 @@
 // based on the PSI node-GEM source code
 // using the node-GEM code from Paul Sherrer Institute (PSI)
 //-------------------------------------
+#ifndef RF_REACT_GEM_H
+#define RF_REACT_GEM_H
+
+#include "Configure.h"
 
 #ifdef GEM_REACT
 
@@ -237,5 +241,7 @@ public:
 
 #define GEM_FILE_EXTENSION ".gem"
 extern bool GEMRead(string base_file_name, REACT_GEM *m_GEM_p);
+
+#endif
 
 #endif

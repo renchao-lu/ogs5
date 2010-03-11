@@ -37,4 +37,8 @@ TARGET_LINK_LIBRARIES( ogs
 	OGSProject
 )
 
+if (GEM_REACT AND WIN32)
+	target_link_libraries( ogs qd debug GEMS3_dbg optimized GEMS3_rl )
+endif (GEM_REACT AND WIN32)
+
 

@@ -14,4 +14,7 @@ set (NEW_EQS ON)
 set (PROBLEM_CLASS ON)
 set (RANDOM_WALK ON)
 set (GEM_REACT ON)
-set (IPMGEMPLUGIN ON)
+
+add_definitions(
+	-DIPMGEMPLUGIN
+)

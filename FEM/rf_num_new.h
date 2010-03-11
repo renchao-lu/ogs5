@@ -7,6 +7,9 @@ last modified:
 **************************************************************************/
 #ifndef rf_num_new_INC
 #define rf_num_new_INC
+
+#include "Configure.h"
+
 #define NUM_FILE_EXTENSION ".num"
 // C++ STL
 #include <fstream>

@@ -7,6 +7,9 @@ last modified
 **************************************************************************/
 #ifndef rf_st_new_INC
 #define rf_st_new_INC
+
+#include "Configure.h"
+
 // C++ STL
 #include <list>
 #include <fstream>

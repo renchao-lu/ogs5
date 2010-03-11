@@ -3,6 +3,8 @@
    Designed and programmed by WW, 06/2004
 */
 
+#include "Configure.h"
+
 #include "makros.h"
 #include <iostream>
 // Sytem matrix
