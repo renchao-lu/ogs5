@@ -41,7 +41,7 @@
 #ifdef PROBLEM_CLASS //WW
 #include "problem.h"
 #ifndef MFC //16.12.2008. WW
-// LB, Problem *aproblem = NULL;
+Problem *aproblem = NULL;
 #endif
 #endif
 /* Deklarationen */

@@ -103,7 +103,7 @@ class Problem
    void PCSCalcSecondaryVariables();
    bool Check(); //OK
 };
-static Problem *aproblem; // LB: changed extern keyword to static due to linker errors
+extern Problem *aproblem; 
 extern bool MODCreate(); //OK
 #endif //PROBLEM_CLASS
 #endif

@@ -46,6 +46,11 @@
 #include <QComboBox>
 #include <QPixmap>
 
+/// FEM. 11.03.2010. WW
+#include "problem.h" 
+Problem *aproblem = NULL;
+
+
 using namespace FileIO;
 
 
