@@ -25,23 +25,28 @@ class CNode: public CCore
 {
 public:
 	double epsilon;
-	long interior_test;
-
 	int free_surface; //MB ??? mobile
+
 	std::vector<long> connected_elements;
 	std::vector<long> connected_nodes; //OK
-	// The vector to store the representive element index.
+	// The vector to store the representative element index.
 	// This can be used to extract the norm of the plane that the element lies on.
 	// Establishing this vector is done in the Fluid Momentum
 	// since this is bounded by velocity.
 	std::vector<long> connected_planes; // PCH
-	//     vector<long>  m5_index; //WW
-	CNode(const int Index) :
-		CCore(Index), eqs_index(-1)
-	{}
-	CNode(const int Index, const double x, const double y,
-			const double z = 0.0);
 
+	//GUI control variables
+	int selected;
+	double patch_area; //OK4310
+	int crossroad; // PCH: Make theses privates can be done later on.
+
+	/** constructor */
+	CNode(size_t Index) :
+		CCore(Index), eqs_index(-1), epsilon (0.0),
+		free_surface (-1), selected (0), crossroad (0), patch_area (-1.0)
+	{}
+
+	CNode(size_t Index, double x, double y, double z = 0.0);
 	~CNode() {}
 
 	// Operator
@@ -58,44 +63,34 @@ public:
 		return coordinate[2];
 	}
 	void Coordinates(double *xyz) const {
-		for (int i = 0; i < 3; i++)
+		for (size_t i = 0; i < 3; i++)
 			xyz[i] = coordinate[i];
 	}
 	int GetEquationIndex() const {
 		return eqs_index;
 	}
 	// Set functions
-	void SetX(const double argX) {
+	void SetX(double argX) {
 		coordinate[0] = argX;
 	}
-	void SetY(const double argY) {
+	void SetY(double argY) {
 		coordinate[1] = argY;
 	}
-	void SetZ(const double argZ) {
+	void SetZ(double argZ) {
 		coordinate[2] = argZ;
 	}
 	void SetCoordinates(const double* argCoord);
-	void SetEquationIndex(const long eqIndex) {
+	void SetEquationIndex(long eqIndex) {
 		eqs_index = eqIndex;
 	} //
 	// Output
 	void Write(std::ostream& os = std::cout) const;
-	//GUI control variables
-	int selected;
-	double patch_area; //OK4310
-#ifdef RFW_FRACTURE
-	//function returns displaced nodal coordinates
-	double X_displaced(void);
-	double Y_displaced(void);
-	double Z_displaced(void);
-#endif
-
-	int crossroad; // PCH: Make theses privates can be done later on.
 
 private:
 	// Members
 	long eqs_index; // renumber
 	double coordinate[3];
+
 	friend class CEdge;
 	friend class CElem;
 	// FEM

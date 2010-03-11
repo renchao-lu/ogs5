@@ -47,7 +47,7 @@
 #include <QPixmap>
 
 /// FEM. 11.03.2010. WW
-#include "problem.h" 
+#include "problem.h"
 Problem *aproblem = NULL;
 
 
@@ -214,6 +214,9 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	std::cout << "size of CEdge: " << sizeof (Mesh_Group::CEdge) << std::endl;
 	std::cout << "size of CFEMesh: " << sizeof (Mesh_Group::CFEMesh) << std::endl;
 	std::cout << "size of Matrix: " << sizeof (Math_Group::Matrix) << std::endl;
+
+	std::cout << "size of vec<size_t>: " << sizeof (Math_Group::vec<size_t>) << std::endl;
+	std::cout << "size of std::vector: " << sizeof (std::vector<size_t>) << std::endl;
 }
 
 MainWindow::~MainWindow()

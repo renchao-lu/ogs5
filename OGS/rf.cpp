@@ -14,6 +14,10 @@
                                                                           */
 /**************************************************************************/
 
+/**
+ * the preprocessor directive RFW_FRACTURE is only useable until version 4.11 of OGS
+ * */
+
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)
 #include <mpi.h>
 #include "par_ddc.h"
@@ -51,8 +55,8 @@ void ShowSwitches ( void );
 // LB,string FilePath; //23.02.2009. WW
 // ------  12.09.2007 WW:
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)
-double elapsed_time_mpi; 
-// ------  
+double elapsed_time_mpi;
+// ------
 #endif
 /* Definitionen */
 
@@ -79,7 +83,7 @@ int main ( int argc, char *argv[] )
   char *dateiname;
 #ifdef SUPERCOMPUTER
 // *********************************************************************
-// buffered output ... important for performance on cray 
+// buffered output ... important for performance on cray
 // (unbuffered output is limited to 10 bytes per second)
 // georg.kosakowski@psi.ch 11.10.2007
 
@@ -148,7 +152,7 @@ int main ( int argc, char *argv[] )
   //WW  DisplayMsgLn("");
   // ----------23.02.2009. WW-----------------
   FileName = dateiname;
-  basic_string <char>::size_type indexChWin, indexChLinux; 
+  basic_string <char>::size_type indexChWin, indexChLinux;
   indexChWin = indexChLinux = 0;
   indexChWin = FileName.find_last_of('\\');
   indexChLinux = FileName.find_last_of('/');

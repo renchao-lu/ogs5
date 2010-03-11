@@ -427,7 +427,7 @@ void CFEMesh::ConstructGrid() {
 	//Elem->nodes not initialized
 
 	e_size = (long) ele_vector.size();
-	NodesNumber_Linear = (long) nod_vector.size();
+	NodesNumber_Linear = nod_vector.size();
 
 	Edge_Orientation = 1;
 	//----------------------------------------------------------------------
@@ -749,6 +749,7 @@ void CFEMesh::ConstructGrid() {
 	e_edgeNodes0.resize(0);
 	e_edgeNodes.resize(0);
 }
+
 /**************************************************************************
  FEMLib-Method: GenerateHighOrderNodes()
  Task:
@@ -1185,11 +1186,12 @@ long CFEMesh::GetNODOnPNT(CGLPoint*m_pnt) {
  03/2010 TF implementation based on long CFEMesh::GetNODOnPNT(CGLPoint*m_pnt)
  by OK, WW
  **************************************************************************/
-long CFEMesh::GetNODOnPNT(const GEOLIB::Point* pnt) {
+long CFEMesh::GetNODOnPNT(const GEOLIB::Point* pnt)
+{
 	double sqr_dist(0.0), distmin(std::numeric_limits<double>::max());
 	long number(-1);
 
-	for (long i = 0; i < NodesInUsage(); i++) {
+	for (size_t i=0; i<NodesInUsage(); i++) {
 		sqr_dist += (nod_vector[i]->X() - (*pnt)[0]) * (nod_vector[i]->X()
 				- (*pnt)[0]);
 		sqr_dist += (nod_vector[i]->Y() - (*pnt)[1]) * (nod_vector[i]->Y()
@@ -1229,13 +1231,6 @@ long CFEMesh::GetNearestELEOnPNT(const GEOLIB::Point* pnt)
 	return nextele;
 }
 
-/**************************************************************************
- FEMLib-Method: GetNodesOnArc
- Task:  To get fe nodes on a Arc defined by
- start point, center point, end point
- Programing:
- 01/2005 WW Implementation
- **************************************************************************/
 //WW. (x1-x0).(x2-x0)
 inline double dotProduction(const double *x1, const double *x2,
 		const double *x0) {
@@ -1321,7 +1316,8 @@ void CFEMesh::GetNodesOnArc(CGLPolyline*m_ply, vector<long>&msh_nod_vector) {
  03/2010 TF change to new datastructure GEOLIB::Polyline - some improvements
  **************************************************************************/
 void CFEMesh::GetNodesOnArc(const GEOLIB::Point* a, const GEOLIB::Point* m,
-		const GEOLIB::Point* b, std::vector<size_t>& msh_nod_vector) {
+		const GEOLIB::Point* b, std::vector<size_t>& msh_nod_vector)
+{
 	msh_nod_vector.clear();
 	MATHLIB::Vector v_am(*a, *m);
 	MATHLIB::Vector v_bm(*b, *m);
@@ -1544,7 +1540,7 @@ void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* ply,
 	// repeat until at least one relevant node was found
 	while (nfound) {
 		// loop over all nodes
-		for (size_t j = 0; j < NodesInUsage(); j++) {
+		for (size_t j=0; j<NodesInUsage(); j++) {
 			pt1[0] = nod_vector[j]->X();
 			pt1[1] = nod_vector[j]->Y();
 			pt1[2] = nod_vector[j]->Z();
@@ -3114,8 +3110,8 @@ void CFEMesh::PrismRefine(const int Layer, const int subdivision) {
 //    for(j=0;j<m_ele->nnodes-1;j++){
 //      m_nod1 = nod_vector[m_ele->nodes_index[j]];
 //      m_nod2 = nod_vector[m_ele->nodes_index[j+1]];
-//      edge_length = sqrt(((m_nod1->X()-m_nod2->X())*(m_nod1->X()-m_nod2->X()))+ \
-//                         ((m_nod1->Y()-m_nod2->Y())*(m_nod1->Y()-m_nod2->Y()))+ \
+//      edge_length = sqrt(((m_nod1->X()-m_nod2->X())*(m_nod1->X()-m_nod2->X()))+
+//                         ((m_nod1->Y()-m_nod2->Y())*(m_nod1->Y()-m_nod2->Y()))+
 //                         ((m_nod1->Z()-m_nod2->Z())*(m_nod1->Z()-m_nod2->Z())));
 //      if(i==0&&j==0)
 //      {
@@ -3132,8 +3128,8 @@ void CFEMesh::PrismRefine(const int Layer, const int subdivision) {
 //    }
 //    m_nod1 = nod_vector[m_ele->nodes_index[m_ele->nnodes-1]];
 //    m_nod2 = nod_vector[m_ele->nodes_index[0]];
-//    edge_length = sqrt(((m_nod1->X()-m_nod2->X())*(m_nod1->X()-m_nod2->X()))+ \
-//                       ((m_nod1->Y()-m_nod2->Y())*(m_nod1->Y()-m_nod2->Y()))+ \
+//    edge_length = sqrt(((m_nod1->X()-m_nod2->X())*(m_nod1->X()-m_nod2->X()))+
+//                       ((m_nod1->Y()-m_nod2->Y())*(m_nod1->Y()-m_nod2->Y()))+
 //                       ((m_nod1->Z()-m_nod2->Z())*(m_nod1->Z()-m_nod2->Z())));
 //    if(min_edge_length > edge_length)
 //      min_edge_length = edge_length;
@@ -3396,13 +3392,14 @@ long CFEMesh::GetNearestELEOnPNT(CGLPoint*m_pnt) {
  FEMLib-Method:
  Task:
  Programing:
- 11/2005 MB Implementation based on NodeExists..
+ 11/2005 MB Implementation based on NodeExists.
+ 03/2010 TF changed data type of loop variables
  **************************************************************************/
-bool CFEMesh::NodeExists(long node) {
-	long i;
-	long no_nodes = (long) nod_vector.size();
+bool CFEMesh::NodeExists(size_t node)
+{
+	size_t no_nodes (nod_vector.size());
 
-	for (i = 0; i < no_nodes; i++) {
+	for (size_t i=0; i<no_nodes; i++) {
 		if (node == Eqs2Global_NodeIndex[i])
 			return true;
 	}
@@ -4282,6 +4279,73 @@ void CFEMesh::GetELEOnPLY(CGLPolyline*m_ply, vector<long>&ele_vector_ply) {
 
 /**************************************************************************
  MSHLib-Method:
+ 08/2006 OK Implementation
+ 03/2010 TF change to new data structures
+ **************************************************************************/
+void CFEMesh::GetELEOnPLY(const GEOLIB::Polyline* ply, std::vector<size_t>& ele_vector_ply)
+{
+	CElem* element = NULL;
+	CEdge* edge = NULL;
+	vec<CEdge*> ele_edges_vector(15);
+	vec<CNode*> edge_nodes(3);
+
+	std::vector<size_t> nodes_vector_ply;
+
+	// get mesh nodes near the polyline
+	GetNODOnPLY(ply, nodes_vector_ply);
+
+	// get all elements having an edge in common with ply
+	for (size_t i=0; i<ele_vector.size(); i++) {
+		element = ele_vector[i];
+		element->SetMark(false);
+		element->selected = 0;
+		element->GetEdges(ele_edges_vector);
+		for (size_t j=0; j<element->GetEdgesNumber(); j++) {
+			edge = ele_edges_vector[j];
+			edge->SetMark(false);
+		}
+	}
+
+	for (size_t i=0; i<ele_vector.size(); i++) {
+		element = ele_vector[i];
+		element->SetMark(false);
+		element->GetEdges(ele_edges_vector);
+		for (size_t j=0; j<element->GetEdgesNumber(); j++) {
+			edge = ele_edges_vector[j];
+			edge->GetNodes(edge_nodes);
+			element->selected = 0;
+			for (size_t k=0; k<nodes_vector_ply.size(); k++) {
+				if (edge_nodes[0]->GetIndex() == nodes_vector_ply[k])
+					element->selected++;
+				if (edge_nodes[1]->GetIndex() == nodes_vector_ply[k])
+					element->selected++;
+			}
+			if (element->selected == 2) {
+				element->SetMark(true);
+				edge->SetMark(true);
+			}
+		}
+	}
+
+	ele_vector_ply.clear();
+	for (size_t i=0; i<ele_vector.size(); i++) {
+		element = ele_vector[i];
+		element->GetEdges(ele_edges_vector);
+		if (element->GetMark()) {
+			ele_vector_ply.push_back(element->GetIndex());
+		}
+		for (size_t j=0; j<element->GetEdgesNumber(); j++) {
+			edge = ele_edges_vector[j];
+			if (edge->GetMark()) {
+				edge->GetNodes(edge_nodes);
+			}
+		}
+	}
+	nodes_vector_ply.clear();
+}
+
+/**************************************************************************
+ MSHLib-Method:
  Programing:
  05/2006 OK Implementation
  08/2006 YD
@@ -4407,1060 +4471,6 @@ void CFEMesh::CreateSparseTable()
 }
 #endif
 
-#ifdef MFC
-/**************************************************************************
- ROCKFLOW - Modul:
- Aufgabe:
- Moves Z-Values of nodes according to a specified surface in
- filename.dat file. Works for regular grids only!!!
- const char *dateiname     :   file name
- const int NLayers         :   Number of layers in the
- const int row             :   row number of the row to be mapped
- Programmaenderungen:
- 10/2003 WW/MB Erste Version
- 04/2004 WW faster method
- 02/2005 CC Modification change the grid height read order
- 07/2005 OK MSH
- 09/2005 OK/CC Empty lines in DAT files
- 01/2009 WW Set as a member of CFEMesh
- ***************************************************************************/
-void CFEMesh::LayerMapping(const char *dateiname, const int NLayers,
-		const int row, const int DataType, int integ, int infil_integ)
-{
-	FILE *f;
-	fpos_t pos;
-	char *s; /* gelesene Zeile */
-	int i, j;
-	int ncols = 0;
-	int nrows = 0;
-	int nx, ny;
-	int NPoints = 0;
-	//  int count = 0;
-	double x,y, z;
-	double MinX = 1.0e+10;
-	double MinY = 1.0e+10;
-	//double MinZ = 1.0e+10;
-	double MaxX = -1.0e+10;
-	double MaxY = -1.0e+10;
-	double dx = 1.0e+10;
-	double dy = 1.0e+10;
-	double xi = 0.0;
-	double eta = 0.0;
-	double locX[4];
-	double locY[4];
-	double locH0[4];
-	double geo_tolerance = 1.0e-3;
-	double* GridX =NULL;
-	double* GridY =NULL;
-	double* H0=NULL;
-	double **H=NULL;
-
-	double ome[4];
-	long NNodesPerRow = 0;
-	long NNodes = 0;
-	char charbuff[41];
-	long counter = 0; //OK
-	string s_str; //OK/CC
-
-	//
-
-	//----------------------------------------------------------------------
-	NNodes = (long)nod_vector.size();
-	//----------------------------------------------------------------------
-	// Open grid file
-	if((f = fopen(dateiname,"rb"))==NULL) {
-		DisplayErrorMsg("Fehler: Cannot open .dat file. It may not exist !");
-		abort();
-	}
-	s = (char *) Malloc(MAX_ZEILE);
-	//----------------------------------------------------------------------
-	switch(DataType)
-	{
-		//====================================================================
-		case 1:
-		/* Count number of points of the grid */
-		if( fgetpos(f, &pos ) != 0 ) {
-			perror( "fgetpos error" );
-			abort();
-		}
-		else {
-			NPoints=-1;
-			while(!feof(f)) {
-				fgets(s,MAX_ZEILE,f);
-				s_str = s; //OK/CC
-				is_line_empty(&s_str);
-				if(s_str.size()>2)
-				NPoints++;
-			}
-		}
-		rewind(f);
-		fsetpos(f, &pos );
-		/* Allocate memory for grid and the specified surface*/
-		GridX = (double *) Malloc(NPoints * sizeof(double));
-		GridY = (double *) Malloc(NPoints * sizeof(double));
-		H0 = (double *) Malloc(NPoints * sizeof(double));
-		/* Read surface data and determine the range*/
-		for(i=0; i<NPoints; i++) {
-			if(fgets(s,MAX_ZEILE,f)==NULL) {
-				//DisplayErrorMsg("Error: End of .grd file reached ");
-				abort();
-			}
-			s_str = s; //OK/CC
-			is_line_empty(&s_str);
-			if(s_str.size()<=2) {
-				--i;
-				continue; //OK/CC
-			}
-			if (sscanf(s," %lf %lf %lf  ", &(GridX[i]),&(GridY[i]),&(H0[i]))!=3) {
-				//DisplayErrorMsg("Error: More than one integal in .grd file!");
-				abort();
-			}
-		}
-		for(i=0; i<NPoints; i++) {
-			// Determine the range of the grid
-			if(GridX[i]>=MaxX) MaxX = GridX[i];
-			if(GridY[i]>=MaxY) MaxY = GridY[i];
-			if(GridX[i]<=MinX) MinX = GridX[i];
-			if(GridY[i]<=MinY) MinY = GridY[i];
-			if(i>0&&(GridX[i]-GridX[i-1]!=0))
-			if(dx>=fabs(GridX[i]-GridX[i-1])) dx = fabs(GridX[i]-GridX[i-1]);
-			if(i>0&&(GridY[i]-GridY[i-1]!=0))
-			if(dy>=fabs(GridY[i]-GridY[i-1])) dy = fabs(GridY[i]-GridY[i-1]);
-		}
-		//.................................................................
-		if(dx>dy)
-		geo_tolerance = dy*1e-3;
-		else
-		geo_tolerance = dx*1e-3;
-		//.................................................................
-		// Copy the data of H0 to H[][] in order to enhance the computation
-		ncols = (int)((MaxX-MinX)/dx)+1;
-		nrows = (int)((MaxY-MinY)/dy)+1;
-		H = new double*[nrows];
-		double dist;
-		for(i=0; i<nrows; i++)
-		H[i] = new double[ncols];
-		for(i=0; i<nrows; i++)
-		{
-			y = MinY+i*dy;
-			for(j=0; j<ncols; j++)
-			{
-				x = MinX+j*dx;
-				for(int k=0; k<NPoints; k++)
-				{
-					dist = sqrt((x-GridX[k])*(x-GridX[k])+(y-GridY[k])*(y-GridY[k]));
-					if(dist<geo_tolerance)
-					{
-						counter++; //OK
-						H[i][j] = H0[k];
-						break;
-					}
-				}
-			}
-		}
-		if(counter<NPoints) {
-			cout << "Warning: not all grid points found, increase tolerance" << endl;
-#ifdef MFC
-			AfxMessageBox("Warning: not all grid points found, increase tolerance");
-#endif
-		}
-		break;
-		//====================================================================
-		case 2:
-		ncols = 0;
-		nrows = 0;
-		double x0, y0, z0;
-		fgets(s,MAX_ZEILE,f);
-		sscanf(s," %40s %d  ", charbuff, &ncols);
-		fgets(s,MAX_ZEILE,f);
-		sscanf(s," %40s %d ", charbuff, &nrows);
-		fgets(s,MAX_ZEILE,f);
-		sscanf(s," %40s %lf", charbuff, &x0);
-		fgets(s,MAX_ZEILE,f);
-		sscanf(s," %40s %lf", charbuff, &y0);
-		fgets(s,MAX_ZEILE,f);
-		sscanf(s," %40s %lf ", charbuff, &dx);
-		dy = dx;
-		fgets(s,MAX_ZEILE,f);
-		sscanf(s," %40s %lf ", charbuff, &z0);
-		MinX = x0;
-		MaxX = x0+dx*ncols;
-		MinY = y0;
-		MaxY = y0+dy*nrows;
-		// Allocate memory for grid and the specified surface
-		H = new double*[nrows];
-		for(i=0; i<nrows; i++) H[i] = new double[ncols];
-		// Compute the grid points:
-		/*  for(i=0; i<nrows; i++)
-		 {
-		 for(j=0; j<ncols; j++)
-		 {
-		 fscanf(f,"%lf", &H[i][j]);
-		 }
-		 } */
-		//CC 02/2005
-		// Compute the grid points:
-		for(i=nrows-1; i>=0; i--)
-		{
-			for(j=0; j<ncols; j++)
-			{
-				fscanf(f,"%lf", &H[i][j]);
-			}
-		}
-		//
-		break;
-	}
-	//----------------------------------------------------------------------
-	NNodesPerRow = NNodes / (NLayers+1);
-	CNode *anode = NULL; //19.01.2009. WW
-	/* 1. Compute the height of points to be attached*/
-	for(i=0; i<NNodes; i++)
-	{
-		if(i >= (row-1) * NNodesPerRow && i <= (row * NNodesPerRow) -1 )
-		{
-			anode = nod_vector[i];
-			x = anode->X();
-			y = anode->Y();
-			//..................................................................
-			if(x<MinX||x>MaxX||y<MinY||y>MaxY) {
-				// Release memory
-				if(GridX) GridX = (double*) Free(GridX);
-				if(GridY) GridY = (double*) Free(GridY);
-				if(H0) H0 = (double*) Free(H0);
-				if(s) s = (char *)Free(s);
-				return;
-			}
-			//..................................................................
-			nx = (int)((x-MinX)/dx);
-			ny = (int)((y-MinY)/dy);
-			if(nx*dx+MinX>=x) nx -= 1;
-			if(ny*dy+MinY>=y) ny -= 1;
-			if(nx>ncols) nx = ncols-2;
-			if(ny>nrows) ny = nrows-2;
-			if(nx<0) nx = 0;
-			if(ny<0) ny = 0;
-			=======
-		}
-		break;
-		//====================================================================
-		case 2:
-		ncols = 0;
-		nrows = 0;
-		double x0, y0, z0;
-		fgets(s,MAX_ZEILE,f);
-		sscanf(s," %40s %d  ", charbuff, &ncols);
-		fgets(s,MAX_ZEILE,f);
-		sscanf(s," %40s %d ", charbuff, &nrows);
-		fgets(s,MAX_ZEILE,f);
-		sscanf(s," %40s %lf", charbuff, &x0);
-		fgets(s,MAX_ZEILE,f);
-		sscanf(s," %40s %lf", charbuff, &y0);
-		fgets(s,MAX_ZEILE,f);
-		sscanf(s," %40s %lf ", charbuff, &dx);
-		dy = dx;
-		fgets(s,MAX_ZEILE,f);
-		sscanf(s," %40s %lf ", charbuff, &z0);
-		MinX = x0;
-		MaxX = x0+dx*ncols;
-		MinY = y0;
-		MaxY = y0+dy*nrows;
-		// Allocate memory for grid and the specified surface
-		H = new double*[nrows];
-		for(i=0; i<nrows; i++) H[i] = new double[ncols];
-		// Compute the grid points:
-		/*  for(i=0; i<nrows; i++)
-		 {
-		 for(j=0; j<ncols; j++)
-		 {
-		 fscanf(f,"%lf", &H[i][j]);
-		 }
-		 } */
-		//CC 02/2005
-		// Compute the grid points:
-		for(i=nrows-1; i>=0; i--)
-		{
-			for(j=0; j<ncols; j++)
-			{
-				fscanf(f,"%lf", &H[i][j]);
-			}
-		}
-		//
-		break;
-	}
-	//----------------------------------------------------------------------
-	NNodesPerRow = NNodes / (NLayers+1);
-	CNode *anode = NULL; //19.01.2009. WW
-	/* 1. Compute the height of points to be attached*/
-	for(i=0; i<NNodes; i++)
-	{
-		if(i >= (row-1) * NNodesPerRow && i <= (row * NNodesPerRow) -1 )
-		{
-			anode = nod_vector[i];
-			x = anode->X();
-			y = anode->Y();
-			//..................................................................
-			if(x<MinX||x>MaxX||y<MinY||y>MaxY) {
-				// Release memory
-				if(GridX) GridX = (double*) Free(GridX);
-				if(GridY) GridY = (double*) Free(GridY);
-				if(H0) H0 = (double*) Free(H0);
-				if(s) s = (char *)Free(s);
-				return;
-			}
-			//..................................................................
-			nx = (int)((x-MinX)/dx);
-			ny = (int)((y-MinY)/dy);
-			if(nx*dx+MinX>=x) nx -= 1;
-			if(ny*dy+MinY>=y) ny -= 1;
-			if(nx>ncols) nx = ncols-2;
-			if(ny>nrows) ny = nrows-2;
-			if(nx<0) nx = 0;
-			if(ny<0) ny = 0;
-			>>>>>>> .r4614
-
-			locX[0] = MinX+nx*dx;
-			locY[0] = MinY+ny*dy;
-			locH0[0] = H[ny][nx];
-
-			locX[1] = MinX+(nx+1)*dx;
-			locY[1] = MinY+ny*dy;
-			locH0[1] = H[ny+1][nx];
-
-			locX[2] = MinX+(nx+1)*dx;
-			locY[2] = MinY+(ny+1)*dy;
-			locH0[2] = H[ny+1][nx+1];
-
-			locX[3] = MinX+nx*dx;
-			locY[3] = MinY+(ny+1)*dy;
-			locH0[3] = H[ny][nx+1];
-			//------------YW/WW
-			int nblack = 0;
-			for(j=0; j<4; j++)
-			{
-				if(fabs(locH0[j]+9999)<1e-16)
-				nblack++;
-			}
-			if(nblack==0) //19.01.2009. WW
-			{
-				// Interpolate
-				xi = 2.0*(x-0.5*(locX[0]+locX[1]))/dx;
-				eta = 2.0*(y-0.5*(locY[1]+locY[2]))/dy;
-				MPhi2D(ome, xi, eta);
-
-				z=0.0;
-				for(j=0; j<4; j++) z += ome[j]*locH0[j];
-				anode->SetZ(z); //19.01.2009. WW
-				anode->SetMark(true); //19.01.2009. WW
-			}
-			else //19.01.2009. WW
-			{
-				if(row==1)
-				{
-					return;
-				}
-				if(row==NLayers+1)
-				{
-					return;
-				}
-				anode->SetZ(-9999); //19.01.2009. WW
-				anode->SetMark(false); //19.01.2009. WW
-				mapping_check = true;
-			}
-		}
-	}
-	//
-	/*
-	 CFileDialog dlg(FALSE, NULL, "new", OFN_ENABLESIZING ,
-	 " Geometry Files (*.rfi)|*.rfi| All Files (*.*)|*.*||" );
-	 dlg.DoModal();
-	 CString m_filepath = dlg.GetPathName();
-	 //
-	 const char* cpsz = static_cast<LPCTSTR>(m_filepath);
-	 xxxxx = cpsz;
-	 DATWriteRFIFile(xxxxx);
-	 */
-	// ------------------------------
-	//----------------------------------------------------------------------
-	// Release memory
-	if(GridX) GridX = (double*) Free(GridX);
-	if(GridY) GridY = (double*) Free(GridY);
-	if(H0) H0 = (double*) Free(H0);
-	if(s) s = (char *)Free(s);
-	fclose(f);
-
-	// -----------------22.01.2009 WW
-	map_counter++;
-	if(!mapping_check)
-	{
-		if((map_counter == NLayers+1)&&infil_integ)
-		WriteCurve2RFD(map_counter, dateiname);
-		return;
-	}
-	if(map_counter == NLayers+1)
-	{
-		LayerMapping_Check(dateiname, NLayers, integ);
-		map_counter = 0;
-	}
-
-}
-
-/**************************************************************************
- GeoSys:
- Programming:
- 03/2009 FS/WW
- Modification:
- ***************************************************************************/
-inline void CFEMesh::WriteCurve2RFD(const int NLayers, const char *dateiname)
-{
-	string path = dateiname;
-	CNode *node_b;
-	static double timec[]= {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
-	//
-	//string ofname = path+".rfd";
-	string ofname = path+".fct";
-	ofstream ofile_t(ofname.c_str(), ios::trunc|ios::out);
-	ofile_t.setf(ios::scientific, ios::floatfield);
-	setw(14);
-	ofile_t.precision(14);
-
-	//ofile_t<<"#PROJECT\n Produced by GUI"<<endl;
-	ofile_t<<"GeoSys-FCT: Functions ------------------------------------------------"<<endl;
-	long i, NNodesPerRow;
-	int k;
-	NNodesPerRow = (long)nod_vector.size() /NLayers;
-	// double val = 0.;
-	for(i=0; i<NNodesPerRow; i++)
-	{
-		//ofile_t<<"#CURVES  //"<<i<<endl;
-		ofile_t<<"#FUNCTION\n $TYPE\n  fromCMBsPrecipEvapoCalculations\n $GEO_TYPE"<<endl;
-		ofile_t<<"POINT"<<i<<endl;
-		ofile_t<<"$VARIABLES\n  TIME POINT\n $DATA"<<endl;
-		// Area val = n_area_val[i];
-		for(k=0; k<NLayers; k++)
-		{
-			node_b = nod_vector[k*NNodesPerRow+i];
-			ofile_t<< timec[k]<<"  "<<node_b->Z()/1000.0<<endl; //m/day
-		}
-	}
-	ofile_t<<"#STOP"<<endl;
-	ofile_t.close();
-	delete [] n_area_val;
-	n_area_val = NULL;
-}
-/**************************************************************************
- GeoSys:
- Check and remove/adjsut singular elements: nodes overided
- Argument:
- const int NLayers         :   Number of layers in the
-
- Programming:
- 01/2009 WW
- 01/2009 WW Surface integration
- Modification:
-
- ***************************************************************************/
-void CFEMesh::LayerMapping_Check(const char *dateiname, const int NLayers, int integ)
-{
-	CElem *elem;
-	CNode *node_t;
-	CNode *node_b;
-	CNode *node_n;
-	int k, j, l, m;
-	long i, NNodesPerRow;
-	int flat;
-	int ov_idx[3];
-
-	double ref_dep = -999999999.0;
-	double tol = 1.e-16;
-	//
-	vector<long> nodes_2node_on_1st_srf; //WW. 26.01.2009
-
-	l = j = 0;
-	NNodesPerRow = (long)nod_vector.size() / (NLayers+1);
-
-	//18.02.2009 WW
-	if(integ==1)
-	{
-		for(i=0; i<NNodesPerRow; i++)
-		{
-			for(k=0; k<NLayers+1; k++)
-			{
-				node_b = nod_vector[k*NNodesPerRow+i];
-				if(k==0)
-				node_b->SetBoundaryType('0');
-				else if(k==NLayers)
-				node_b->SetBoundaryType('1');
-				else
-				node_b->SetBoundaryType('I');
-			}
-		}
-	}
-
-	for(i=0; i<NNodesPerRow; i++)
-	{
-		flat = 0;
-		for(k=0; k<NLayers-1; k++)
-		{
-			node_b = nod_vector[k*NNodesPerRow+i];
-			node_t = nod_vector[(k+1)*NNodesPerRow+i];
-			if(!node_t->GetMark())
-			{
-
-				if(k==0) //WW. 27.01.2009
-				{
-					nodes_2node_on_1st_srf.clear();
-					for(j=0; j<(int)node_t->connected_nodes.size(); j++)
-					nodes_2node_on_1st_srf.push_back(node_t->connected_nodes[j]);
-				}
-
-				node_t->SetZ(node_b->Z());
-				node_t->connected_nodes.clear();
-				for(l=k; l>=0; l--) //WW/YW. 23.01.2009
-				{
-					node_n = nod_vector[l*NNodesPerRow+i];
-					if(node_n->GetMark())
-					{
-						node_t->connected_nodes.push_back(node_n->GetIndex());
-						break;
-					}
-				}
-				flat++;
-			}
-		}
-		//
-
-		//     if((flat==NLayers-1)&&(NLayers>3))
-		//---- 27.01.2009. WW
-		if(flat==NLayers-1)
-		{
-
-			node_b = nod_vector[NNodesPerRow+i];
-			node_b->SetMark(true);
-			node_b->connected_nodes.clear();
-			for(j=0; j<(int)nodes_2node_on_1st_srf.size(); j++)
-			node_b->connected_nodes.push_back(nodes_2node_on_1st_srf[j]);
-
-			// Upper
-			node_t = nod_vector[NLayers*NNodesPerRow+i];
-			node_t->SetMark(false);
-			node_b->SetZ(node_t->Z());
-			node_b->SetBoundaryType('1');
-			//
-			for(k=1; k<NLayers; k++)
-			{
-				node_t = nod_vector[(k+1)*NNodesPerRow+i];
-				node_t->SetZ(ref_dep);
-				node_t->connected_nodes.clear();
-				node_t->connected_nodes.push_back(node_b->GetIndex());
-			}
-		}
-
-	}
-
-	//----------------------------------------------------------------------
-	//
-	//
-	vector<CElem*> new_elems;
-	for(i=0; i<(long)ele_vector.size(); i++)
-	{
-		elem = ele_vector[i];
-		elem->SetMark(true);
-		// All upper layres are overidered together.
-
-		flat = 0;
-		for(k=0; k<3;k++)
-		{
-			node_b = elem->GetNode(k);
-			node_t = elem->GetNode(k+3);
-			if( fabs(node_b->Z()+ref_dep)<tol
-					||fabs(node_t->Z()+ref_dep)<tol)
-			{
-				flat = 1;
-				elem->SetMark(false);
-				break;
-			}
-		}
-		if(flat==1)
-		continue;
-
-		// Check flat element
-		// All top layer nodes are overided together with bottom nodes
-		flat = 0;
-		for(k=0; k<3;k++)
-		{
-			node_b = elem->GetNode(k);
-			node_t = elem->GetNode(k+3);
-
-			if(fabs(node_t->Z()-node_b->Z())<1.e-5)
-			{
-				ov_idx[flat] = k;
-				flat++; //WW/YW. 23.09.2009
-			}
-		}
-		//
-		switch(flat)
-		{
-			case 0:
-			elem->SetMark(true);
-			break;
-			case 1:
-			k = ov_idx[0];
-			j = (k+2)%3;
-			l = (k+1)%3;
-			node_b = elem->GetNode(k);
-			node_t = elem->GetNode(k+3);
-			if(node_t->GetBoundaryType()=='1') //24.02.2009. WW
-			node_b->SetBoundaryType('1');
-			//-------- New ------------------------
-			CElem *new_elem;
-			new_elem = new CElem((long)ele_vector.size()+(long)new_elems.size());
-			new_elems.push_back(new_elem);
-			// Only for linear element
-			new_elem->nodes.resize(4);
-			new_elem->nodes_index.resize(4);
-			new_elem->nodes[0] = node_b;
-			new_elem->nodes_index[0] = node_b->GetIndex();
-			new_elem->nodes[1] = elem->nodes[j+3];
-			new_elem->nodes_index[1] = elem->nodes_index[j+3];
-			new_elem->nodes[2] = elem->nodes[l+3];
-			new_elem->nodes_index[2] = elem->nodes_index[l+3];
-			new_elem->nodes[3] = elem->nodes[l];
-			new_elem->nodes_index[3] = elem->nodes_index[l];
-
-			new_elem->nnodes = 4;
-			new_elem->nnodesHQ = 10;
-			new_elem->ele_dim = 3;
-			new_elem->geo_type = 5;
-			new_elem->nfaces = 4;
-			new_elem->nedges = 6;
-			new_elem->mark = true;
-
-			new_elem->patch_index = elem->patch_index;
-			new_elem->quadratic = elem->quadratic;
-
-			new_elem->boundary_type='I';
-			// Initialize topological properties
-			new_elem->neighbors.resize(new_elem->nfaces);
-			for(m=0; m<new_elem->nfaces; m++)
-			new_elem->neighbors[m] = NULL;
-			new_elem->edges.resize(new_elem->nedges);
-			new_elem->edges_orientation.resize(new_elem->nedges);
-			for(m=0; m<new_elem->nedges; m++)
-			{
-				new_elem->edges[m] = NULL;
-				new_elem->edges_orientation[m] = 1;
-			}
-			new_elem->area = -1.0;
-
-			//-------- Old ------------------------
-			elem->geo_type = 5;
-			elem->mark = true;
-
-			elem->nnodes = 4;
-			elem->nnodesHQ = 10;
-			elem->ele_dim = 3;
-			elem->geo_type = 5;
-			elem->nfaces = 4;
-			elem->nedges = 6;
-			elem->mark = true;
-			// Initialize topological properties
-			elem->neighbors.resize(elem->nfaces);
-			for(m=0; m<elem->nfaces; m++)
-			elem->neighbors[m] = NULL;
-			elem->edges.resize(elem->nedges);
-			elem->edges_orientation.resize(elem->nedges);
-			for(m=0; m<elem->nedges; m++)
-			{
-				elem->edges[m] = NULL;
-				elem->edges_orientation[m] = 1;
-			}
-
-			elem->nodes.resize(4);
-			elem->nodes[0] = nod_vector[elem->nodes_index[j]];
-			elem->nodes[1] = nod_vector[elem->nodes_index[k]];
-			elem->nodes[2] = nod_vector[elem->nodes_index[l]];
-			elem->nodes[3] = nod_vector[elem->nodes_index[j+3]];
-
-			elem->nodes_index.resize(4);
-			for(m=0; m<4; m++)
-			elem->nodes_index[m] = elem->nodes[m]->GetIndex();
-
-			break;
-			case 2:
-			k = ov_idx[0];
-			j = (k+2)%3;
-			l = (k+1)%3;
-			if( ov_idx[1]==j)
-			k = l;
-			else if( ov_idx[1]==l)
-			k = j;
-
-			// 09.02. 2009. WW
-			j = (k+2)%3;
-			l = (k+1)%3;
-			// 24.02.2009. WW
-			node_b = elem->GetNode(j+3);
-			node_t = elem->GetNode(l+3);
-
-			//-------- Old ------------------------
-			elem->geo_type = 5;
-			elem->mark = true;
-
-			elem->nnodes = 4;
-			elem->nnodesHQ = 10;
-			elem->ele_dim = 3;
-			elem->geo_type = 5;
-			elem->nfaces = 4;
-			elem->nedges = 6;
-			elem->mark = true;
-			// Initialize topological properties
-			elem->neighbors.resize(elem->nfaces);
-			for(m=0; m<elem->nfaces; m++)
-			elem->neighbors[m] = NULL;
-			elem->edges.resize(elem->nedges);
-			elem->edges_orientation.resize(elem->nedges);
-			for(m=0; m<elem->nedges; m++)
-			{
-				elem->edges[m] = NULL;
-				elem->edges_orientation[m] = 1;
-			}
-
-			elem->nodes.resize(4);
-			elem->nodes[0] = nod_vector[elem->nodes_index[j]];
-			elem->nodes[1] = nod_vector[elem->nodes_index[k]];
-			elem->nodes[2] = nod_vector[elem->nodes_index[l]];
-			elem->nodes[3] = nod_vector[elem->nodes_index[k+3]];
-
-			//for j, l nodes if they becomes on top surface. 24.02.2009. WW
-			if(node_b->GetBoundaryType()=='1')
-			elem->nodes[0]->SetBoundaryType('1');
-			if(node_t->GetBoundaryType()=='1')
-			elem->nodes[2]->SetBoundaryType('1');
-
-			elem->nodes_index.resize(4);
-			for(m=0; m<4; m++)
-			elem->nodes_index[m] = elem->nodes[m]->GetIndex();
-			break;
-			case 3:
-			elem->SetMark(false);
-			break;
-		}
-	}
-
-	long counter;
-	//
-	for(i=0; i<(long)new_elems.size(); i++)
-	ele_vector.push_back(new_elems[i]);
-	std::vector<CElem*>::iterator beg_e = ele_vector.begin( ), last_e;
-	counter = 0;
-	while ( beg_e != ele_vector.end( ) )
-	{
-		last_e = beg_e++;
-		elem = *last_e;
-		if ( !(elem->GetMark()))
-		{
-			delete elem;
-			beg_e= ele_vector.erase(last_e);
-		}
-		else
-		{
-			elem->SetIndex(counter);
-			counter++;
-			for(m=0; m<elem->nnodes; m++)
-			{
-				node_b = elem->nodes[m];
-				if(!node_b->GetMark())
-				{
-					node_t = nod_vector[node_b->connected_nodes[0]];
-					elem->nodes[m] = node_t;
-				}
-			}
-		}
-	}
-	counter = 0;
-	std::vector<CNode*>::iterator beg = nod_vector.begin( ), last;
-	while ( beg != nod_vector.end( ) )
-	{
-		last = beg++;
-		node_b = *last;
-		if ( !(node_b->GetMark()) )
-		{
-			delete node_b;
-			node_b = NULL;
-			beg= nod_vector.erase(last);
-		}
-		else
-		{
-			node_b->SetIndex(counter);
-			node_b->connected_elements.clear();
-			node_b->connected_nodes.clear();
-			counter++;
-		}
-	}
-	//
-	for(i=0; i<(long)ele_vector.size(); i++)
-	{
-		elem = ele_vector[i];
-		for(m=0; m<elem->nnodes; m++)
-		elem->nodes_index[m] = elem->nodes[m]->GetIndex();
-
-		for(m=0; m<elem->nfaces; m++)
-		elem->neighbors[m] = NULL;
-		elem->edges.resize(elem->nedges);
-		elem->edges_orientation.resize(elem->nedges);
-		for(m=0; m<elem->nedges; m++)
-		{
-			elem->edges[m] = NULL;
-			elem->edges_orientation[m] = 1;
-		}
-	}
-
-	beg_e = ele_vector.begin( ), last_e;
-	counter = 0;
-	bool flatf = false;
-	while ( beg_e != ele_vector.end( ) )
-	{
-		last_e = beg_e++;
-		elem = *last_e;
-
-		//10.02.2009. WW !!!!!!!!!!!!!!!!!!!!!!
-		for(m=0; m<elem->nnodes; m++)
-		{
-			flatf = false;
-			for(int mm=0; mm<elem->nnodes; mm++)
-			{
-				if(m==mm) continue;
-				if(elem->GetNodeIndex(m)==elem->GetNodeIndex(mm))
-				{
-					flatf = true;
-					break;
-				}
-			}
-		}
-		if(flatf)
-		{
-			delete elem;
-			beg_e= ele_vector.erase(last_e);
-			continue;
-		}
-		else
-		{
-			elem->SetIndex(counter);
-			counter++;
-			for(m=0; m<elem->nnodes; m++)
-			{
-				node_b = elem->nodes[m];
-				if(!node_b->GetMark())
-				{
-					node_t = nod_vector[node_b->connected_nodes[0]];
-					elem->nodes[m] = node_t;
-				}
-			}
-		}
-	}
-
-	ConnectedElements2Node();
-
-	counter = 0;
-	beg = nod_vector.begin( );
-	while ( beg != nod_vector.end( ) )
-	{
-		last = beg++;
-		node_b = *last;
-		if (node_b->connected_elements.size()==0 )
-		{
-			delete node_b;
-			node_b = NULL;
-			beg= nod_vector.erase(last);
-		}
-		else
-		{
-			node_b->SetIndex(counter);
-			counter++;
-		}
-	}
-	//
-	for(i=0; i<(long)ele_vector.size(); i++)
-	{
-		elem = ele_vector[i];
-		for(m=0; m<elem->nnodes; m++)
-		elem->nodes_index[m] = elem->nodes[m]->GetIndex();
-	}
-
-	// 19.02.2009 WW
-	while(edge_vector.size()>0)
-	{
-		delete edge_vector[edge_vector.size()-1];
-		edge_vector.pop_back();
-	}
-	while(face_vector.size()>0)
-	{
-		delete face_vector[face_vector.size()-1];
-		face_vector.pop_back();
-	}
-	ConstructGrid();
-
-	// Surface integration
-	//18-20.02.2009 WW
-	if(integ==1)
-	{
-		string path = dateiname;
-		basic_string <char>::size_type indexCh1a;
-		indexCh1a = path.find_last_of("\\");
-		if( indexCh1a < path.size())
-		{
-			string stra = path.substr (0, indexCh1a);
-			path.clear();
-			path = stra;
-		}
-		//
-		CElem* elem = NULL;
-		CElement* fem = new CElement(GetCoordinateFlag());
-
-		string deli(" ");
-		string ofname = path+"\\bottom_integrated_node_st.txt";
-		ofstream ofile_b(ofname.c_str(), ios::trunc|ios::out);
-		ofile_b.setf(ios::scientific, ios::floatfield);
-		setw(14);
-		ofile_b.precision(14);
-		//
-		ofname = path+"\\top_integrated_node_st.txt";
-		ofstream ofile_t(ofname.c_str(), ios::trunc|ios::out);
-		ofile_t.setf(ios::scientific, ios::floatfield);
-		//
-		ofname = path+"\\surface_mesh.msh";
-		streamoff f_loc, fe_loc;
-		ofstream ofile_m(ofname.c_str(), ios::trunc|ios::out);
-		ofile_m.setf(ios::scientific, ios::floatfield);
-		ofile_m<<"#FEM_MSH\n$PCS_TYPE\nNO_PCS\n$NODES"<<endl;
-		f_loc = ofile_m.tellp();
-		ofile_m<<"                    "<<endl;
-		//
-		ofile_t.precision(14);
-		ofile_b.precision(14);
-		ofile_m.precision(14);
-		//
-		long ctop=0;
-		long cbottom=0;
-		long nSize = 0;
-		double nodesFVal[8];
-		double *n_val;
-
-		nSize = (long)nod_vector.size();
-		n_val = new double[nSize];
-		for(i=0; i<nSize; i++)
-		n_val[i] = 0;
-
-		// Top surface faces:
-		vector<long> node_map(nSize);
-		long s_node = 0;
-		for(i=0; i<(long)nSize; i++)
-		{
-			node_b = nod_vector[i];
-			node_map[i] = 0;
-			if(node_b->GetBoundaryType()=='1')
-			{
-				node_map[i] = s_node;
-				ofile_m<<s_node<<deli<<node_b->X()<<deli<<node_b->Y()<<deli<<node_b->Z()<<endl;
-				s_node++;
-			}
-		}
-		ofile_m<<"$ELEMENTS"<<endl; // Total nodes on top surface
-		fe_loc = ofile_m.tellp();
-		ofile_m<<"                       "<<endl;
-		string e_type;
-		long s_ele = 0;
-
-		for(i=0; i<(long)face_vector.size(); i++)
-		{
-			elem = face_vector[i];
-			ctop = cbottom = 0;
-			for(k=0; k<elem->nnodes; k++)
-			{
-				node_b = elem->nodes[k];
-				if(node_b->GetBoundaryType()=='0')
-				cbottom++;
-				else if(node_b->GetBoundaryType()=='1')
-				ctop++;
-			}
-			if(cbottom == elem->nnodes)
-			{
-				for(k=0; k<elem->nnodes; k++)
-				nodesFVal[k] = 1.0;
-				elem->ComputeVolume();
-				elem->FillTransformMatrix();
-				fem->setOrder(getOrder()+1);
-				fem->ConfigElement(elem);
-				fem->FaceIntegration(nodesFVal);
-				for(k=0; k<elem->nnodes; k++)
-				{
-					node_b = elem->nodes[k];
-					n_val[elem->nodes[k]->GetIndex()] += nodesFVal[k]*fabs(elem->getTransformTensor(8));
-				}
-				delete elem->tranform_tensor;
-				elem->tranform_tensor = NULL;
-			}
-			else if (ctop == elem->nnodes)
-			{
-				for(k=0; k<elem->nnodes; k++)
-				nodesFVal[k] = 1.0;
-				elem->ComputeVolume();
-				elem->FillTransformMatrix();
-				fem->setOrder(getOrder()+1);
-				fem->ConfigElement(elem);
-				fem->FaceIntegration(nodesFVal);
-				// Dump to file
-				e_type = "tri ";
-				if(elem->nnodes==4) e_type = "quad ";
-				ofile_m<<s_ele<<" 0 "<<e_type;
-				s_ele++;
-
-				for(k=0; k<elem->nnodes; k++)
-				{
-					node_b = elem->nodes[k];
-					// Dump to file
-					ofile_m<<node_map[node_b->GetIndex()]<<deli;
-					//
-					n_val[node_b->GetIndex()] += nodesFVal[k]*fabs(elem->getTransformTensor(8));
-				}
-				// Dump to file
-				ofile_m<<endl;
-				delete elem->tranform_tensor;
-				elem->tranform_tensor = NULL;
-			}
-		}
-
-		ofile_m<<"#STOP"<<endl;
-		// Rewind
-		ofile_m.clear();
-		ofile_m.seekp(f_loc);
-		ofile_m<<s_node;
-		ofile_m.seekp(fe_loc);
-		ofile_m<<s_ele;
-		ofile_m.close();
-
-		for(i=0; i<nSize; i++)
-		{
-			node_b = nod_vector[i];
-			if(node_b->GetBoundaryType()=='0')
-			ofile_b<<node_b->GetIndex()<<deli<<n_val[i]<<endl;
-			else if(node_b->GetBoundaryType()=='1')
-			ofile_t<<node_b->GetIndex()<<deli<<n_val[i]<<endl;
-			else
-			continue;
-		}
-		ofile_b<<"#STOP"<<endl;
-		ofile_t<<"#STOP"<<endl;
-		ofile_b.close();
-		ofile_t.close();
-		delete [] n_val;
-		delete fem;
-		fem = NULL;
-		n_val = NULL;
-		//
-	}
-}
-#endif
 /**************************************************************************
  MSHLib-Method:
  Task: All nodes vertical to a polyline

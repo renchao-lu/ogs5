@@ -11,7 +11,7 @@ last modified
 // MSHLib
 #include "msh_edge.h"
 #include "mathlib.h" //OK
-//========================================================================
+
 namespace Mesh_Group
 {
 /**************************************************************************
@@ -19,19 +19,14 @@ MSHLib-Method:
 Task:
 Programing:
 06/2005 WW Implementation
+03/2010 TF moved initialization of attributes to initialization list, added docu
 **************************************************************************/
 CEdge::CEdge(size_t Index, bool quadr)
-   : CCore(Index)
+   : CCore(Index), nodes_of_edges(3), joint (0), velocity (NULL)
 {
    quadratic = quadr;
-   // Assume that each edge has three nodes
-   nodes_of_edges.resize(3);
-   for(int i=0; i<3; i++)
-     nodes_of_edges[i] = NULL;
-
-   // PCH
-   joint = 0;	// Set to be no joint.
-   V = NULL;
+   // Assume that each edge has three nodes, third node is middle point
+   for(size_t i=0; i<3; i++) nodes_of_edges[i] = NULL;
 }
 
 /**************************************************************************
@@ -58,6 +53,7 @@ void CEdge::operator = (CEdge& ed)
    for(int i=0; i<nodes_of_edges.Size(); i++)
       nodes_of_edges[i] = ed.nodes_of_edges[i];
 }
+
 /**************************************************************************
 MSHLib-Method:
 Task:
@@ -72,6 +68,7 @@ double CEdge::Length()
     dz = nodes_of_edges[1]->Z()-nodes_of_edges[0]->Z();
     return sqrt(dx*dx+dy*dy+dz*dz);
 }
+
 /**************************************************************************
 MSHLib-Method:
 Task:
@@ -165,4 +162,3 @@ void CEdge::GetEdgeMidPoint(double*edge_vector)
 }
 
 } // namespace Mesh_Group
-//========================================================================

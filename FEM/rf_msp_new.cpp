@@ -96,7 +96,7 @@ ios::pos_type CSolidProperties::Read(ifstream *msp_file)
          if(!PCSGet("MULTI_PHASE_FLOW")||!PCSGet("RICHARDS_FLOW"))
          {
             data_Youngs = new Matrix(9);
-            //! 0: \f$ \kapa_i0     \f$
+            //! 0: \f$ \kappa_i0     \f$
             //! 1: \f$ \alpha_i     \f$
             //! 2: \f$ \kappa_{s0}  \f$
             //! 3: \f$ \alpha_{sp}  \f$
