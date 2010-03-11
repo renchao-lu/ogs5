@@ -1,9 +1,0 @@
-CXX_LDFLAGS      = -g
-CXX_LD           = g++
-#OPTIMIZING. WW
-CXX_OPT_FLAGS    =   
-CXX_DEBUG_FLAGS  = -ggdb
-CXX_WARN_FLAGS   = 
-CXX_FLAGS        = -pedantic -fno-nonansi-builtins -DGCC -D_POSIX_SOURCE -DNO_ERROR_CONTROL $(CXX_OPT_FLAGS) $(CXX_DEBUG_FLAGS) -DRANDOM_WALK
-CXX              = g++
-
