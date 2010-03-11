@@ -2,6 +2,9 @@
 OPTION (RANDOM_WALK "Do you want to add #define RANDOM_WALK ?" OFF)
 OPTION (PROBLEM_CLASS "Do you want to add #define PROBLEM_CLASS ?" OFF)
 OPTION (NEW_EQS "Do you want to add #define NEW_EQS ?" OFF)
+OPTION (_OPENMP "Do you want to add #define _OPENMP ?" OFF)
+OPTION (LIS "Do you want to add #define LIS ?" OFF)
+OPTION (MKL "Do you want to add #define MKL ?" OFF)
 OPTION (BRNS OFF)
 OPTION (GEM_REACT OFF)
 OPTION (IPMGEMPLUGIN OFF)
@@ -16,6 +19,7 @@ OPTION (LIBPQC_DEBUG "Do you want to compile LIBPHREEQC with debug flag?" OFF)
 OPTION (CONFIG_G++ "Do you want to use the g++ config?" OFF)
 OPTION (CONFIG_G++_BRNS "Do you want to use the g++_BRNS config?" OFF)
 OPTION (CONFIG_G++_GEMS "Do you want to use the g++_gems config?" OFF)
+OPTION (CONFIG_G++_PARDISO "Do you want to use the g++pardiso config?" OFF)
 
 if (CONFIG_G++)
 	INCLUDE (configs/g++.cmake)
@@ -28,6 +32,11 @@ endif(CONFIG_G++_BRNS)
 if (CONFIG_G++_GEMS)
 	INCLUDE (configs/g++_gems.cmake)
 endif(CONFIG_G++_GEMS)
+
+if (CONFIG_G++_PARDISO)
+	INCLUDE (configs/g++pardiso.cmake)
+endif(CONFIG_G++_PARDISO)
+
 
 OPTION (OGS_USE_QT "Do you want to build the OGS GUI?" OFF)
 
