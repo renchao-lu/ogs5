@@ -3629,6 +3629,7 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
    dom->eqs->Solver(eqs_new->x, global_eqs_dim); //21.12.2007
 #else
 #ifdef LIS
+	printf("I'm on LIS condition\n");
         eqs_new->Solver(this->m_num); //NW
 #else
         eqs_new->Solver();

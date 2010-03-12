@@ -116,7 +116,7 @@ int main ( int argc, char *argv[] )
   //int argc=0;
   //char** argv = NULL;
   // Initialization of the lis solver.
-  lis_initialize(&argc, &argv);
+//  lis_initialize(&argc, &argv);	PCH: Undoing NW modification for compilation OGS-5
 #endif
 /*========================================================================*/
 /* Kommunikation mit Betriebssystem */
@@ -226,7 +226,7 @@ int main ( int argc, char *argv[] )
 /*--------- MPI Finalize ------------------*/
 /*--------- LIS Finalize ------------------*/
 #ifdef LIS
-  lis_finalize();
+//  lis_finalize();	PCH: Undoing NW modification for compilation OGS-5
 #endif
 /*--------- LIS Finalize ------------------*/
 

@@ -38,6 +38,11 @@ IF (UNIX)
 
   # Find MKLlib
   FIND_PACKAGE( MKL )
+
+  if(MKL)
+    SET(CMAKE_CXX_FLAGS "-I${CMAKE_SOURCE_DIR}/LIB/MKL/include")
+    SET(CMAKE_C_LINK_SHARED "g++")
+  ENDIF(MKL)
 ENDIF (UNIX)
 
 # Set build directories

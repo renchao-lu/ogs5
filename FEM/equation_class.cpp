@@ -82,14 +82,12 @@ Linear_EQS::Linear_EQS(const SparseTable &sparse_table,
 
 //NW moved below to rf.cpp. Initialization and finalization of LIS solver 
 //must be called only once but they were called several times with multiple meshes 
-//#ifdef LIS
-////	A->Write();
-//
-//  int argc=0;
-//  char** argv = NULL;
-//  // Initialization of the lis solver.
-//  lis_initialize(&argc, &argv);
-//#endif
+#ifdef LIS
+  int argc=0;
+  char** argv = NULL;
+  // Initialization of the lis solver.
+  lis_initialize(&argc, &argv);
+#endif
 }
 #if defined(USE_MPI)
 /**************************************************************************
@@ -128,9 +126,9 @@ Linear_EQS::~Linear_EQS()
   b = NULL;
 
 //NW moved to rf.cpp
-//#ifdef LIS
-//	lis_finalize();
-//#endif
+#ifdef LIS
+	lis_finalize();   // PCH: Undo NW change for compilation of OGS-5
+#endif
 //
 }
 /**************************************************************************
@@ -416,6 +414,7 @@ int Linear_EQS::Solver(CNumerics *num)
 		ptr= (int *)malloc((numOfNode+1)*sizeof( int));
 		index = (int *)malloc((nonzero)*sizeof( int));
 
+		printf("I'm on PARDISO solver.\n");
 		// Reindexing ptr according to Fortran-based PARDISO
 		for(i=0; i < numOfNode; ++i)
 			ptr[i] = A->ptr[i]+1;

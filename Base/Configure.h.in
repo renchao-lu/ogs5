@@ -12,6 +12,8 @@
 #cmakedefine RANDOM_WALK
 #cmakedefine PROBLEM_CLASS
 #cmakedefine NEW_EQS
+#cmakedefine LIS
+#cmakedefine MKL
 #cmakedefine BRNS
 #cmakedefine GEM_REACT
 
