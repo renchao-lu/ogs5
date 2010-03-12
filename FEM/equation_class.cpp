@@ -33,7 +33,7 @@ Programing:
 //#define PARDISO pardiso_
 extern int omp_get_max_threads();
 extern int PARDISO
-        (void *, int *, int *, int *, int *, int *,
+        (int *, int *, int *, int *, int *, int *,
         double *, int *, int*, int *, int *, int *,
         int *, double *, double*, int *);
 #endif

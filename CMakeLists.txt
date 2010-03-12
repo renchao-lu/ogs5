@@ -32,6 +32,14 @@ SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeConfigurati
 # Find Shapelib
 FIND_PACKAGE( Shapelib )
 
+IF (UNIX)
+  # Find LISlib
+  FIND_PACKAGE( LIS )
+
+  # Find MKLlib
+  FIND_PACKAGE( MKL )
+ENDIF (UNIX)
+
 # Set build directories
 # Binaries are created in /bin and libraries in /lib
 SET( EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin )
