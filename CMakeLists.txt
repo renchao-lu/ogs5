@@ -41,7 +41,7 @@ IF (UNIX)
 
   if(MKL)
     SET(CMAKE_CXX_FLAGS "-I${CMAKE_SOURCE_DIR}/LIB/MKL/include")
-    SET(CMAKE_C_LINK_SHARED "g++")
+    SET(CMAKE_CXX_LINK_FLAGS "-L${CMAKE_SOURCE_DIR}/LIB/MKL/32 -llis-32 -lmkl_solver -lmkl_intel -lmkl_gnu_thread -lmkl_core ")
   ENDIF(MKL)
 ENDIF (UNIX)
 

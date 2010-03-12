@@ -4,7 +4,7 @@ if (UNIX)
 	add_definitions(
 		-O3 
 		-fopenmp 
-		-lpthread
+		-lpthread 
 	)
 endif (UNIX)
 

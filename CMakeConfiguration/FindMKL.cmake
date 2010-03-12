@@ -10,29 +10,29 @@ if (NOT MKL_FOUND)
 	if ( UNIX )
 		find_library(MKL_SOLVER_LIBRARIES
 			NAMES mkl_solver
-			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32 )	
+			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32/libmkl_solver.a )	
 		find_library(MKL_INTEL_LIBRARIES
 			NAMES mkl_intel
-			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32 )	
+			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32/libmkl_intel.a )	
 		find_library(MKL_GNU_THREAD_LIBRARIES
 			NAMES mkl_gnu_thread
-			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32 )	
+			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32/libmkl_gnu_thread.a )	
 		find_library(MKL_CORE_LIBRARIES
 			NAMES mkl_core
-			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32 )	
+			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32/libmkl_core.a )	
 	else ( UNIX )			
 		find_library(MKL_SOLVER_LIBRARIES
 			NAMES mkl_solver
-			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32 )	
+			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32/libmkl_solver.a )	
 		find_library(MKL_INTEL_LIBRARIES
 			NAMES mkl_intel
-			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32 )	
+			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32/libmkl_intel.a )	
 		find_library(MKL_GNU_THREAD_LIBRARIES
 			NAMES mkl_gnu_thread
-			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32 )	
+			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32/libmkl_gnu_thread.a )	
 		find_library(MKL_CORE_LIBRARIES
 			NAMES mkl_core
-			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32 )	
+			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32/libmkl_core.a )	
 	endif ( UNIX )
 
 	# Set the include dir variables and the libraries and let libfind_process do the rest.
