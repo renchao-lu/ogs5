@@ -21,6 +21,9 @@ find_package( LibGeoTiff REQUIRED )
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /ZI /Od /Ob0")
 
 # Add subprojects
+if (OGS_COMPILE_QVTK)
+	add_subdirectory( QVTK )
+endif (OGS_COMPILE_QVTK)
 add_subdirectory( Base )
 add_subdirectory( DataView )
 add_subdirectory( DiagramView )

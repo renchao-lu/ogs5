@@ -81,7 +81,8 @@ IF(NOT VTK_DIR)
     ${PROJECT_SOURCE_DIR}/../Libs/vtk/VTK/Build
 
     # OGS Pre compiled
-    C:/OGS_Libs/VTK/Build
+    C:/OGS_Libs/VTK/lib/vtk-5.4
+    C:/VTK/lib/vtk-5.4
 
     # Look in places relative to the system executable search path.
     ${VTK_DIR_SEARCH}

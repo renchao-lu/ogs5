@@ -60,6 +60,9 @@ IF (OGS_USE_QT)
 	# Adds useful macros and variables
 	# this is needed to correctly link the qt libraries through target_link_libraries
 	INCLUDE( ${QT_USE_FILE} )
+	
+	# Self-compile QVTK
+	option (OGS_COMPILE_QVTK "Should the QVTK window be compiled from OGS sources?" OFF)
 ENDIF (OGS_USE_QT)
 
 # Create Configure.h
