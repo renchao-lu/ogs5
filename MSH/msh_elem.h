@@ -97,12 +97,12 @@ public:
 	}
 
 	void GetNodes(vec<CNode*>& ele_nodes) {
-		for (size_t i=0; i<nodes.Size(); i++)
+		for (int i=0; i<nodes.Size(); i++)
 			ele_nodes[i] = nodes[i];
 	}
 
 	void GetNodes(std::vector<CNode*>& nodesVec) {
-		for (size_t i=0; i<nodes.Size(); i++)
+		for (int i=0; i<nodes.Size(); i++)
 			nodesVec.push_back(nodes[i]);
 	}
 

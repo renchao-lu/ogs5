@@ -64,6 +64,8 @@ signals:
 	void polylineModelAdded(Model* model);
 	void polylineModelRemoved(Model* model);
 
+	void removeVTK(StationTreeModel* model, std::string name);
+
 };
 
 #endif // GEOMODELS_H

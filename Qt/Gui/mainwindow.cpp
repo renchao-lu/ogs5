@@ -113,7 +113,7 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 		_vtkVisPipeline, SLOT(removeSourceItem(Model*)));
 	connect(_geoModels, SIGNAL(stationVectorAdded(StationTreeModel*, std::string)),
 		_vtkVisPipeline, SLOT(addPipelineItem(StationTreeModel*, std::string)));
-	connect(_geoModels, SIGNAL(stationVectorRemoved(StationTreeModel*, std::string)),
+	connect(_geoModels, SIGNAL(removeVTK(StationTreeModel*, std::string)),
 		_vtkVisPipeline, SLOT(removeSourceItem(StationTreeModel*, std::string)));
 
 	connect(_vtkVisPipeline, SIGNAL(vtkVisPipelineChanged()),
@@ -382,7 +382,7 @@ void MainWindow::loadFile(const QString &fileName)
 	}
 	else if (fi.suffix().toLower() == "stn")
 	{
-		GEOLIB::Station::StationType type = GEOLIB::Station::BOREHOLE;
+		GEOLIB::Station::StationType type = GEOLIB::Station::STATION;
 		vector<GEOLIB::Point*> *stations = new vector<GEOLIB::Point*>();
 		string name;
 

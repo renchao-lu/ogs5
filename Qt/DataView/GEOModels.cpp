@@ -85,6 +85,7 @@ void GEOModels::filterStationVec(const std::string &name, const std::vector<Prop
 
 bool GEOModels::removeStationVec( const std::string &name )
 {
+	emit removeVTK(_stationModel, name);
 	_stationModel->removeStationList(name);
 	emit stationVectorRemoved(_stationModel, name);	
 	return GEOObjects::removeStationVec(name);

@@ -110,7 +110,8 @@ ENDIF (LIBPQC)
 # Create the library
 add_library( FEM STATIC ${SOURCES} )
 
-target_link_libraries( FEM
+target_link_libraries( 
+	FEM
  	GEO
  	MSH
 )

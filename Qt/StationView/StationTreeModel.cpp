@@ -284,13 +284,13 @@ void StationTreeModel::filterStations(const std::string listName, const std::vec
 		}
 	}
 
-	std::cout << "Filter applied to List" << listName << ", " << itemCount << "items added.";
+	std::cout << "Filter applied to List \"" << listName << "\", " << itemCount << " items added.";
 
 	if (itemCount==0) OGSError::box("No object is within the given boundaries."); //The filtered list is empty.
 
 	reset();
 
-	emit updateScene();
+	//emit updateScene();
 }
 
 void StationTreeModel::setSelectionFromOutside( const QItemSelection & selected, const QItemSelection & deselected )
