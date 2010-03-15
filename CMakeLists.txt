@@ -59,7 +59,7 @@ IF (MSVC)
 	ADD_DEFINITIONS(-D_CRT_NONSTDC_NO_WARNINGS)
 ELSE (MSVC)
 	ADD_DEFINITIONS (-D__STDC_FORMAT_MACROS)	# for OpenSG compiling
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wall -Wextra")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wno-deprecated -Wall -Wextra")
 ENDIF (MSVC)
 
 # Add LIB to include and link directory

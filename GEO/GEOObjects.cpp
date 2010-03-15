@@ -175,6 +175,17 @@ int GEOObjects::readStationFile(const std::string &path, std::string &name, std:
 
 void GEOObjects::addPolylineVec(std::vector<Polyline*> *lines, const std::string &name)
 {
+	for (std::vector<Polyline*>::iterator it (lines->begin());
+		it != lines->end(); ) {
+		if ((*it)->getSize() < 2) {
+			std::vector<Polyline*>::iterator it_erase (it);
+			it = lines->erase (it_erase);
+		} else it++;
+	}
+
+	if (lines->size () == 0) return;
+	else std::cout << "GEOObjects::addPolylineVec adding " << lines->size() << " polylines" << std::endl;
+
 	size_t idx = _ply_vecs.size();
 	_ply_vecs.push_back(new PolylineVec(lines));
 	_ply_vecs[idx]->setName(name);

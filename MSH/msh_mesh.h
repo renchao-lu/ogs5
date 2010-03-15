@@ -266,6 +266,7 @@ public:
 	 */
 	void ELEVolumes(); //OK
 
+	// ***
 	/**
 	 * \ingroup MSHGEO
 	 * GetNODOnPNT searchs the nearest node to the geometric point
@@ -286,8 +287,10 @@ public:
 
 	/**
 	 * \ingroup MSHGEO
-	 * \brief circle arc described by the middle point m, the arc start point a and the arc end point b.
-	 * if the angle is to small (a == b) then all mesh nodes within the annulus defined by
+	 * \brief get nodes near the circle arc described by the middle point m, the arc start point a
+	 * and the arc end point b.
+	 *
+	 * If the angle is to small (a == b) then all mesh nodes within the annulus defined by
 	 * the inner radius \f$ \|(a-m) \| - min\_edge\_length \f$ and the outer radius
 	 * \f$\|(a-m) \| + min\_edge\_length \f$ are pushed in msh_nod_vector
 	 */
@@ -296,9 +299,13 @@ public:
 
 	/**
 	 * \ingroup MSHGEO
-	 * \brief ???
+	 * \brief gives the indices of CElement elements, which have an edge
+	 * in common with the polyline.
 	 */
 	void GetELEOnPLY(const GEOLIB::Polyline*, std::vector<size_t>&); //OK
+
+
+
 	//....................................................................
 	// QUAD->HEX
 	void CreateHexELEFromQuad(int, double);

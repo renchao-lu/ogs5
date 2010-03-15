@@ -1519,16 +1519,12 @@ void CFEMesh::GetNODOnPLY(CGLPolyline*m_ply, vector<long>&msh_nod_vector) {
  03/2005 OK Implementation (based on ExecuteSourceSinkMethod11 by CT)
  07/2005 WW Node object is replaced
  10/2005 OK test
- 03/2010 TF adaption to new data GEO-structures
+ 03/2010 TF adaption to new data GEO-structures, changed the algorithm
  **************************************************************************/
 void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* ply,
-		std::vector<size_t>& msh_nod_vector) {
-	if (ply->getSize() == 0)
-		return;
-
-	// get length of polyline segments and the length of the entire polyline
-	double *ply_line_seg_len(new double[ply->getSize()]), entire_len(0.0);
-	ply->getLength(entire_len, ply_line_seg_len);
+		std::vector<size_t>& msh_nod_vector)
+{
+	if (ply->getSize() == 0) return;
 
 	double mult_eps = 1.0;
 	msh_nod_vector.clear();
@@ -1562,11 +1558,10 @@ void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* ply,
 						msh_nod_vector.push_back(nod_vector[j]->GetIndex());
 					} // end if lambda
 				}
-			} /* Ende Schleife ueber Polygonabschnitte */
-		} /* Ende Schleife ueber Knoten */
-		if (nfound)
-			mult_eps *= 2.0;
-	} /* Ende Schleife Wiederholungen */
+			} // end line segment loop
+		} // end node loop
+		if (nfound) mult_eps *= 2.0;
+	}
 
 	if (mult_eps > 1.0)
 		std::cout << "!!! Epsilon increased in sources!" << std::endl;
@@ -1589,12 +1584,6 @@ void CFEMesh::GetNODOnSFC(Surface*m_sfc, vector<long>&msh_nod_vector) {
 		break;
 	case 1: // TIN
 		if (!m_sfc->TIN) {
-#ifdef MFC
-			CString m_str;
-			m_str = "Error in CFEMesh::GetNODOnSFC - no TIN data for ";
-			m_str += m_sfc->name.data();
-			AfxMessageBox(m_str);
-#endif
 			return;
 		}
 		GetNODOnSFC_TIN(m_sfc, msh_nod_vector);
@@ -4280,68 +4269,41 @@ void CFEMesh::GetELEOnPLY(CGLPolyline*m_ply, vector<long>&ele_vector_ply) {
 /**************************************************************************
  MSHLib-Method:
  08/2006 OK Implementation
- 03/2010 TF change to new data structures
+ 03/2010 TF change to new data structures, changed algorithm
  **************************************************************************/
 void CFEMesh::GetELEOnPLY(const GEOLIB::Polyline* ply, std::vector<size_t>& ele_vector_ply)
 {
-	CElem* element = NULL;
-	CEdge* edge = NULL;
 	vec<CEdge*> ele_edges_vector(15);
 	vec<CNode*> edge_nodes(3);
 
-	std::vector<size_t> nodes_vector_ply;
+	std::vector<size_t> nodes_near_ply;
 
 	// get mesh nodes near the polyline
-	GetNODOnPLY(ply, nodes_vector_ply);
+	GetNODOnPLY(ply, nodes_near_ply);
 
-	// get all elements having an edge in common with ply
-	for (size_t i=0; i<ele_vector.size(); i++) {
-		element = ele_vector[i];
-		element->SetMark(false);
-		element->selected = 0;
-		element->GetEdges(ele_edges_vector);
-		for (size_t j=0; j<element->GetEdgesNumber(); j++) {
-			edge = ele_edges_vector[j];
-			edge->SetMark(false);
-		}
-	}
-
-	for (size_t i=0; i<ele_vector.size(); i++) {
-		element = ele_vector[i];
-		element->SetMark(false);
-		element->GetEdges(ele_edges_vector);
-		for (size_t j=0; j<element->GetEdgesNumber(); j++) {
-			edge = ele_edges_vector[j];
-			edge->GetNodes(edge_nodes);
-			element->selected = 0;
-			for (size_t k=0; k<nodes_vector_ply.size(); k++) {
-				if (edge_nodes[0]->GetIndex() == nodes_vector_ply[k])
-					element->selected++;
-				if (edge_nodes[1]->GetIndex() == nodes_vector_ply[k])
-					element->selected++;
-			}
-			if (element->selected == 2) {
-				element->SetMark(true);
-				edge->SetMark(true);
-			}
-		}
-	}
-
+	// clear the given vector
 	ele_vector_ply.clear();
+
+	// loop over all elements
 	for (size_t i=0; i<ele_vector.size(); i++) {
-		element = ele_vector[i];
-		element->GetEdges(ele_edges_vector);
-		if (element->GetMark()) {
-			ele_vector_ply.push_back(element->GetIndex());
-		}
-		for (size_t j=0; j<element->GetEdgesNumber(); j++) {
-			edge = ele_edges_vector[j];
-			if (edge->GetMark()) {
-				edge->GetNodes(edge_nodes);
+		ele_vector[i]->GetEdges (ele_edges_vector);
+		size_t n_edges (ele_edges_vector.Size());
+		// loop over all edges of the i-th element
+		for (size_t j=0; j<n_edges; j++) {
+			ele_edges_vector[j]->GetNodes(edge_nodes);
+			size_t selected (0);
+			// get all elements having an edge in common with ply
+			for (size_t k=0; k<nodes_near_ply.size(); k++) {
+				if (edge_nodes[0]->GetIndex() == nodes_near_ply[k])
+					selected++;
+				if (edge_nodes[1]->GetIndex() == nodes_near_ply[k])
+					selected++;
+			}
+			if (selected == 2) {
+				ele_vector_ply.push_back(ele_vector[i]->GetIndex());
 			}
 		}
 	}
-	nodes_vector_ply.clear();
 }
 
 /**************************************************************************

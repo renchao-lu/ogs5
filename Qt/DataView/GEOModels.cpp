@@ -87,13 +87,14 @@ bool GEOModels::removeStationVec( const std::string &name )
 {
 	emit removeVTK(_stationModel, name);
 	_stationModel->removeStationList(name);
-	emit stationVectorRemoved(_stationModel, name);	
+	emit stationVectorRemoved(_stationModel, name);
 	return GEOObjects::removeStationVec(name);
 }
 
 void GEOModels::addPolylineVec( std::vector<GEOLIB::Polyline*> *lines, const std::string &name )
 {
 	GEOObjects::addPolylineVec(lines, name);
+	if (lines->size () == 0) return;
 
 	PolylinesModel* model = new PolylinesModel(QString::fromStdString(name), lines, this);
 	_lineModels.push_back(model);
