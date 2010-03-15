@@ -123,10 +123,3 @@ TARGET_LINK_LIBRARIES( QVTK
 IF(VTK_USE_VIEWS)
   TARGET_LINK_LIBRARIES( QVTK vtkViews )
 ENDIF(VTK_USE_VIEWS)
-
-
-
-# Configure the VTKConfigQt.cmake support file.
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/VTKConfigQt.cmake.in
-               ${VTK_BINARY_DIR}/VTKConfigQt.cmake @ONLY IMMEDIATE)
-

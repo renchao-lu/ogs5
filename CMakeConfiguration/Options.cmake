@@ -1,4 +1,14 @@
-# Ask for options
+### Configuration sets. These replace the old makefile configurations. ###
+### Set ONE of these options to ON ###
+
+OPTION (CONFIG_G++ "Do you want to use the g++ config?" OFF)
+OPTION (CONFIG_G++_BRNS "Do you want to use the g++_BRNS config?" OFF)
+OPTION (CONFIG_G++_GEMS "Do you want to use the g++_gems config?" OFF)
+OPTION (CONFIG_G++_PARDISO "Do you want to use the g++pardiso config?" OFF)
+OPTION (CONFIG_G++_PQC "Do you want to use the g++_PQC config?" OFF)
+
+
+## These specific options are set by the configurations listed above. ##
 OPTION (RANDOM_WALK "Do you want to add #define RANDOM_WALK ?" OFF)
 OPTION (PROBLEM_CLASS "Do you want to add #define PROBLEM_CLASS ?" OFF)
 OPTION (NEW_EQS "Do you want to add #define NEW_EQS ?" OFF)
@@ -13,13 +23,6 @@ OPTION (NO_ERROR_CONTROL OFF)
 
 OPTION (LIBPQC "Do you want to compile LIBPHREEQC?" OFF)
 OPTION (LIBPQC_DEBUG "Do you want to compile LIBPHREEQC with debug flag?" OFF)
-
-
-OPTION (CONFIG_G++ "Do you want to use the g++ config?" OFF)
-OPTION (CONFIG_G++_BRNS "Do you want to use the g++_BRNS config?" OFF)
-OPTION (CONFIG_G++_GEMS "Do you want to use the g++_gems config?" OFF)
-OPTION (CONFIG_G++_PARDISO "Do you want to use the g++pardiso config?" OFF)
-OPTION (CONFIG_G++_PQC "Do you want to use the g++_PQC config?" OFF)
 
 if (CONFIG_G++)
 	INCLUDE (configs/g++.cmake)
