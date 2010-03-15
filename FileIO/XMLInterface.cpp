@@ -323,8 +323,8 @@ void XMLInterface::writeGLIFile(QFile* file, const QString &gliName)
 	{
 		xml.writeStartElement("surface");
 		xml.writeAttribute("id", QString::number(i));
-		xml.writeAttribute("matgroup", QString::number(-1));
-		xml.writeAttribute("epsilon", QString::number(0.01));
+		//xml.writeAttribute("matgroup", QString::number(-1));
+		//xml.writeAttribute("epsilon", QString::number(0.01));
 
 		nPolylines = (*surfaces)[i]->getSize();
 		for (size_t j=0; j<nPolylines; j++)

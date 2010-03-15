@@ -81,7 +81,7 @@ void SHPInterface::readStations(const SHPHandle &hSHP, int numberOfElements, std
 void SHPInterface::readPolylines(const SHPHandle &hSHP, int numberOfElements, std::string listName)
 {
 	int nextIdx = -1;
-	size_t noOfPoints = 0, cnpoints = 0;
+	size_t noOfPoints = 0, noOfParts = 0, cnpoints = 0;
 	std::vector<Point*> *points = new std::vector<Point*>();
 	std::vector<Polyline*> *lines = new std::vector<Polyline*>();
 	SHPObject *hSHPObject;
@@ -91,35 +91,42 @@ void SHPInterface::readPolylines(const SHPHandle &hSHP, int numberOfElements, st
 	{
 		hSHPObject = SHPReadObject(hSHP,i);
 		noOfPoints = hSHPObject->nVertices;
+		noOfParts  = hSHPObject->nParts;
 
-		Polyline* line = new Polyline(*points);
-
-		// for each point in that polyline
-		for (size_t j=0; j<noOfPoints; j++)
+		for (size_t p=0; p<noOfParts; p++)
 		{
-			Point* pnt = new Point( *(hSHPObject->padfX+j), *(hSHPObject->padfY+j), *(hSHPObject->padfZ+j) );
-			nextIdx=-1;
+			int firstPnt = *(hSHPObject->panPartStart+p);
+			int lastPnt  = (p < (noOfParts-1)) ? *(hSHPObject->panPartStart+p+1) : noOfPoints;
 
-			// check if point already exists
-			cnpoints = points->size();
-			for (size_t k=0; k<cnpoints; k++)
+			Polyline* line = new Polyline(*points);
+
+			// for each point in that polyline
+			for (int j=firstPnt; j<lastPnt; j++)
 			{
-				if ( (j>0) && (sqrNrm2(pnt) == sqrNrm2( (*points)[k] )) )
+				Point* pnt = new Point( *(hSHPObject->padfX+j), *(hSHPObject->padfY+j), *(hSHPObject->padfZ+j) );
+				nextIdx=-1;
+
+				// check if point already exists
+				cnpoints = points->size();
+				for (size_t k=0; k<cnpoints; k++)
 				{
-					nextIdx=k;
-					k=cnpoints;
+					if ( (j>0) && (sqrNrm2(pnt) == sqrNrm2( (*points)[k] )) )
+					{
+						nextIdx=k;
+						k=cnpoints;
+					}
 				}
+				if (nextIdx<0) 
+				{
+					points->push_back(pnt);
+					nextIdx = points->size() - 1;
+				}
+				line->addPoint(nextIdx);
 			}
-			if (nextIdx<0) 
-			{
-				points->push_back(pnt);
-				nextIdx = points->size() - 1;
-			}
-			line->addPoint(nextIdx);
-		}
 
-		// add polyline to polyline vector
-		lines->push_back(line);
+			// add polyline to polyline vector
+			lines->push_back(line);
+		}
 	}
 
 	if (numberOfElements>0)

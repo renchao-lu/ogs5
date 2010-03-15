@@ -46,8 +46,6 @@
                                         <xs:element name="ply" type="xs:nonNegativeInteger"  maxOccurs="unbounded" />
                                     </xs:sequence>
                                     <xs:attribute name="id" type="xs:nonNegativeInteger" use="required" />
-				    <xs:attribute name="matgroup" type="xs:integer" />
-				    <xs:attribute name="epsilon" type="xs:decimal" />
 				</xs:complexType>
                             </xs:element>
                         </xs:sequence>
