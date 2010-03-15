@@ -81,7 +81,7 @@ void SHPInterface::readStations(const SHPHandle &hSHP, int numberOfElements, std
 void SHPInterface::readPolylines(const SHPHandle &hSHP, int numberOfElements, std::string listName)
 {
 	int nextIdx = -1;
-	size_t noOfPoints;
+	size_t noOfPoints = 0, cnpoints = 0;
 	std::vector<Point*> *points = new std::vector<Point*>();
 	std::vector<Polyline*> *lines = new std::vector<Polyline*>();
 	SHPObject *hSHPObject;
@@ -101,12 +101,13 @@ void SHPInterface::readPolylines(const SHPHandle &hSHP, int numberOfElements, st
 			nextIdx=-1;
 
 			// check if point already exists
-			for (size_t k=0; k<j; k++)
+			cnpoints = points->size();
+			for (size_t k=0; k<cnpoints; k++)
 			{
 				if ( (j>0) && (sqrNrm2(pnt) == sqrNrm2( (*points)[k] )) )
 				{
 					nextIdx=k;
-					k=j;
+					k=cnpoints;
 				}
 			}
 			if (nextIdx<0) 
