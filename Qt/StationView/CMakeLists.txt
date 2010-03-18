@@ -98,4 +98,4 @@ target_link_libraries( StationView
 	VtkVis
 )
 
-add_dependencies( StationView DiagramView )
+add_dependencies( StationView DiagramView StratView )
