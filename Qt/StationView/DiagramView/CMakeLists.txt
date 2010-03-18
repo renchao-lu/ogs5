@@ -39,7 +39,7 @@ qt4_wrap_cpp( MOC_SOURCES ${MOC_HEADERS} )
 # and include additional header
 include_directories(
 	.
-	${CMAKE_BINARY_DIR}/Qt/DiagramView
+	${CMAKE_BINARY_DIR}/Qt/StationView/DiagramView
 	../../../GEO
 	${CMAKE_SOURCE_DIR}
 )
