@@ -18,6 +18,7 @@
 #include <vtkStreamingDemandDrivenPipeline.h>
 #include <vtkPointData.h>
 #include <vtkPoints.h>
+#include <vtkLine.h>
 #include <vtkPolyData.h>
 #include <vtkCellData.h>
 
@@ -49,6 +50,8 @@ void VtkStationSource::PrintSelf( ostream& os, vtkIndent indent )
 	}
 }
 
+
+/// Create 3d Station objects
 int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
 	if (!_stations)
@@ -80,10 +83,14 @@ int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector
 	GEOLIB::Color* c = static_cast<GEOLIB::Station*>((*_stations)[0])->getColor();
 	unsigned char color[3] = {(*c)[0], (*c)[1], (*c)[2]};
 
-
 	vtkSmartPointer<vtkUnsignedCharArray> colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
 	colors->SetNumberOfComponents(3);
+	colors->SetName("StationColors");
 	colors->InsertNextTupleValue(color);
+
+	vtkSmartPointer<vtkUnsignedCharArray> stratColors = vtkSmartPointer<vtkUnsignedCharArray>::New();
+	stratColors->SetNumberOfComponents(3);
+	colors->SetName("StratColors");
 
 	int lastMaxIndex = 0;
 
@@ -105,7 +112,7 @@ int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector
 //			lastMaxIndex++;
 //		} else notTooLarge=true;
 
-		int scalingFactor=10;
+		int scalingFactor=1;
 		if (isBorehole && notTooLarge)
 		{
 			GEOLIB::StationBorehole* bore = static_cast<GEOLIB::StationBorehole*>(*it);
@@ -120,19 +127,29 @@ int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector
 				c[0] = coords[0];c[1] = coords[1];c[2] = coords[2]*scalingFactor;
 				newStations->InsertNextPoint(c);
 			}
-			// Generate line
+
+			// Generate lines
 			newLines->InsertNextCell(nLayers);
 			for (size_t i=0; i<nLayers; i++)
+			{
 				newLines->InsertCellPoint(lastMaxIndex+i);
+				GEOLIB::Color* c = GEOLIB::getRandomColor();
+				unsigned char randomColor[3] = {(*c)[0], (*c)[1], (*c)[2]};
+				stratColors->InsertNextTupleValue(randomColor);
+			}
 
 			lastMaxIndex += (nLayers);
 		}
-		else
-		{
-			//std::cout << static_cast<GEOLIB::StationBorehole*>(*it)->getName() <<  ": first not in!" << std::endl;
-		}
 	}
-
+/*
+	for (size_t i=0; i<_stations->size(); i++)
+		colors->InsertNextTupleValue(color);
+	
+	for (int i=0; i<newStations->GetData()->GetDataSize(); i++)
+	{
+		colors->InsertNextTupleValue();
+	}
+*/
 	output->SetPoints(newStations);
 	newStations->Delete();
 
@@ -145,6 +162,16 @@ int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector
 		output->SetLines(newLines);
 		newLines->Delete();
 	}
+
+	int nColors = stratColors->GetDataSize(); 
+	for (int i=0; i<nColors; i++)
+	{
+		unsigned char c[3];
+		stratColors->GetTupleValue(i, c);
+		colors->InsertNextTupleValue(c);
+	}
+
+	output->GetCellData()->AddArray(stratColors);
 
 	return 1;
 }

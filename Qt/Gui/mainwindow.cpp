@@ -50,7 +50,6 @@
 #include "problem.h"
 Problem *aproblem = NULL;
 
-
 using namespace FileIO;
 
 
@@ -382,7 +381,7 @@ void MainWindow::loadFile(const QString &fileName)
 	}
 	else if (fi.suffix().toLower() == "stn")
 	{
-		GEOLIB::Station::StationType type = GEOLIB::Station::STATION;
+		GEOLIB::Station::StationType type = GEOLIB::Station::BOREHOLE;
 		vector<GEOLIB::Point*> *stations = new vector<GEOLIB::Point*>();
 		string name;
 

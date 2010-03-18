@@ -46,6 +46,7 @@ protected:
 
 private:
 
+
 };
 
 #endif // VTKSTATIONSOURCE_H

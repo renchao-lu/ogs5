@@ -47,8 +47,9 @@ qt4_wrap_cpp( MOC_SOURCES ${MOC_HEADERS} )
 include_directories(
 	.
 	${CMAKE_BINARY_DIR}/Qt/Base
-	${CMAKE_BINARY_DIR}/Qt/DiagramView
 	${CMAKE_BINARY_DIR}/Qt/StationView
+	${CMAKE_BINARY_DIR}/Qt/StationView/DiagramView
+	${CMAKE_BINARY_DIR}/Qt/StationView/StratView
 	../../Base
 	../../MathLib
 	../../GEO
@@ -56,8 +57,9 @@ include_directories(
 	../../FEM
 	../Base
 	../DataView
-	../DiagramView
 	../VtkVis
+	./DiagramView
+	./StratView
 	${CMAKE_SOURCE_DIR}
 	#${OpenSG_INCLUDE_DIR}
 	#${OpenSGSupportlibs_INCLUDE_DIR}
@@ -90,8 +92,8 @@ target_link_libraries( StationView
 	GEO
 	MSH
 	FEM
-	QtBase
 	DiagramView
+	QtBase
 	QtDataView
 	VtkVis
 )

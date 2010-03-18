@@ -1,0 +1,70 @@
+/**
+ * \file StratBar.cpp
+ * 2010/03/16 - KR Initial implementation
+ */
+
+#include <QPainter>
+#include "StratBar.h"
+
+
+StratBar::StratBar(GEOLIB::StationBorehole* station, QGraphicsItem* parent) : _station(station), QGraphicsItem(parent)
+{
+}
+
+
+StratBar::~StratBar()
+{
+}
+
+QRectF StratBar::boundingRect() const
+{
+	return QRectF(0, 0, BARWIDTH+10, totalLogHeight());
+}
+
+void StratBar::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+	Q_UNUSED (option)
+	Q_UNUSED (widget)
+
+	double top=0, height=0;
+	
+	QPen pen(Qt::black, 1, Qt::SolidLine, Qt::SquareCap, Qt::RoundJoin);
+	pen.setCosmetic(true);
+	painter->setPen(pen);
+	//painter->drawRect(_bar);
+
+	//pen.setWidth(1);
+	std::vector<GEOLIB::Point*> profile = _station->getProfile();
+	size_t nLayers = profile.size();
+
+	painter->drawLine(0, 0, BARWIDTH+5 , 0);
+
+	for (size_t i = 1; i < nLayers ; i++) 
+	{
+		top += height;
+		height = logHeight(((*(profile[i-1]))[2]-(*(profile[i]))[2]));
+		QRectF layer(0, top, BARWIDTH, height);
+		GEOLIB::Color* c = GEOLIB::getRandomColor();
+		QBrush brush(QColor((int)(*c)[0], (int)(*c)[1], (int)(*c)[2], 127), Qt::SolidPattern);
+		painter->setBrush(brush);
+		
+		painter->drawRect(layer);
+		painter->drawLine(0, layer.bottom(), BARWIDTH+5 , layer.bottom());
+		//painter->drawText(BARWIDTH+10, layer.bottom(), QString::number((*(profile[i]))[2]));
+    }
+}
+
+
+double StratBar::totalLogHeight() const
+{
+	double height=0;
+	std::vector<GEOLIB::Point*> profile = _station->getProfile();
+	
+	for (size_t i=1; i<profile.size(); i++)
+	{
+		height += ( log((*(profile[i-1]))[2]-(*(profile[i]))[2]+1)*100 );
+	}
+	
+	return height;
+	
+}

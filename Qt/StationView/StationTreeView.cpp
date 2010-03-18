@@ -10,6 +10,7 @@
 #include "StationTreeModel.h"
 #include "Station.h"
 #include "ModelTreeItem.h"
+#include "StratWindow.h"
 
 using namespace GEOLIB;
 
@@ -79,11 +80,21 @@ void StationTreeView::contextMenuEvent( QContextMenuEvent* event )
 		if (static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)->type() == Station::BOREHOLE)
 		{
 			QMenu menu;
+			QAction* stratAction = menu.addAction("Display Stratigraphy...");
 			QAction* exportAction = menu.addAction("Export to GMS...");
+			connect(stratAction, SIGNAL(triggered()), this, SLOT(displayStratigraphy()));
 			connect(exportAction, SIGNAL(triggered()), this, SLOT(exportStation()));
 			menu.exec(event->globalPos());
 		}
 	}
+}
+
+void StationTreeView::displayStratigraphy()
+{
+	QModelIndex index = this->selectionModel()->currentIndex();
+	QString temp_name;
+	StratWindow* stationView = new StratWindow(static_cast<GEOLIB::StationBorehole*>(static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)));
+	stationView->show();
 }
 
 void StationTreeView::exportStation()

@@ -33,6 +33,7 @@ include_directories(
 	${CMAKE_BINARY_DIR}/Qt/Gui
 	${CMAKE_BINARY_DIR}/Qt/DataView
 	${CMAKE_BINARY_DIR}/Qt/StationView
+	${CMAKE_BINARY_DIR}/Qt/StratView
 	${CMAKE_BINARY_DIR}/Qt/VtkVis
 	../../Base
 	../../MathLib
@@ -43,6 +44,7 @@ include_directories(
 	../../MSH
 	../../FEM
 	../StationView
+	../StratView
 	../VtkVis
 	#${OpenSG_INCLUDE_DIR}
 	#${OpenSGSupportlibs_INCLUDE_DIR}
@@ -79,6 +81,7 @@ target_link_libraries( ogs-gui
 	QtBase
 	QtDataView
 	StationView
+	StratView
 	${Shapelib_LIBRARIES}
 	${libtiff_LIBRARIES}
 	${libgeotiff_LIBRARIES}

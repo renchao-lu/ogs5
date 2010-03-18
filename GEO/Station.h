@@ -202,6 +202,9 @@ public:
 	///Returns a reference to a vector of Points representing the stratigraphy of the borehole (incl. the station-point itself)
 	const std::vector<Point*> &getProfile() { return _profilePntVec; }
 
+	///Returns a reference to a vector of soil names for the stratigraphy of the borehole
+	const std::vector<std::string> &getSoilNames() { return _soilName; }
+
 	/// Exports the borehole data to a file in GMS-format.
 	int writeAsGMS(const std::string &filename);
 
@@ -232,7 +235,7 @@ private:
 	static int readStratigraphyFile(const std::string &path, std::vector<std::list<std::string> > &data);
 
 	//long profile_type;
-	std::vector<long> _soilType;
+	//std::vector<long> _soilType;
 	double _zCoord; // height at which the borehole officially begins (this might _not_ be the actual elevation)
 	double _depth;	// depth of the borehole
 	double _date;	// date when the borehole has been drilled

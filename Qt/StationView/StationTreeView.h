@@ -42,6 +42,7 @@ private:
 
 private slots:
 	void on_Clicked(QModelIndex idx);
+	void displayStratigraphy();
 	void exportStation();
 	void removeStationList();
 	void showPropertiesDialog();

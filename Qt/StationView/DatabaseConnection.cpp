@@ -505,7 +505,7 @@ int DatabaseConnection::addListToDB(string path, string listName, string catName
 		{
 			listID = query.value(0).toInt() + 1;
 
-			query.exec("select catid from categories where catname='" + QString::fromStdString(catName) + "'");
+			bool a = query.exec("select catid from categories where catname='" + QString::fromStdString(catName) + "'");
 
 			if (query.next())
 				catID = query.value(0).toInt();
@@ -519,8 +519,8 @@ int DatabaseConnection::addListToDB(string path, string listName, string catName
 			}
 
 			_db.transaction();
-			query.exec("insert into lists values(" + QString::number(listID) + ", '" + QString::fromStdString(listName) + "', " + QString::number(catID) + ")");
-			if (type == Station::BOREHOLE) query.exec("insert into geosysstationtypes values (" + QString::number(listID) + ", 1)");
+			bool b = query.exec("insert into lists values(" + QString::number(listID) + ", '" + QString::fromStdString(listName) + "', " + QString::number(catID) + ", 0)");
+			if (type == Station::BOREHOLE) query.exec("insert into geosysstationtypes values (" + QString::number(listID) + ", 2)");
 
 			int stationID=1;
 
@@ -595,7 +595,8 @@ bool DatabaseConnection::addBoreholeToDB(int listID, int stationID, string line)
 		query.bindValue(":listid", listID);
 		query.bindValue(":stationid", stationID);
 		query.bindValue(":bdepth", station->getDepth());
-		query.bindValue(":bdate", QString::fromStdString(date2String(station->getDate())));
+		QString sDate = QString::fromStdString(date2String(station->getDate()));
+		query.bindValue(":bdate", sDate);
 		return query.exec();
 	}
 	return false;
