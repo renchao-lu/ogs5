@@ -31,7 +31,7 @@ public:
 	 * \param geoObjects An GEOObject that into which data will be read or from which data will be written.
 	 * \param schemaFile An XML schema file (*.xsd) that defines the structure of a valid data file.
 	 */
-	XMLInterface(GEOLIB::GEOObjects* geoObects, std::string schemaFile);
+	XMLInterface(GEOLIB::GEOObjects* geoObjects, std::string schemaFile);
 
 	/// As QXMLStreamWriter seems currently unable to include style-file links into xml-files, this method will workaround this issue and include the stylefile link.
 	int insertStyleFileDefinition(const QString &fileName);

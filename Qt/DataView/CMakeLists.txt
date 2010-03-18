@@ -87,7 +87,7 @@ include_directories(
 	.
 	${CMAKE_BINARY_DIR}/Qt/Base
 	${CMAKE_BINARY_DIR}/Qt/DataView
-	${CMAKE_BINARY_DIR}/Qt/DiagramView
+	${CMAKE_BINARY_DIR}/Qt/StationView/DiagramView
 	${CMAKE_BINARY_DIR}/Qt/StationView
 	../../Base
 	../../MathLib
@@ -97,7 +97,7 @@ include_directories(
 	../../FileIO
 	../Base
 	../StationView
-	../DiagramView
+	../StationView/DiagramView
 	../VtkVis
 	${CMAKE_SOURCE_DIR}
 	#${OpenSG_INCLUDE_DIR}
