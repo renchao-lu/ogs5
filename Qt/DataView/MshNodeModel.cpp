@@ -9,8 +9,7 @@
 #include "MshNodeModel.h"
 #include "ModelItem.h"
 #include "PntGraphicsItem2d.h"
-#include "PntGraphicsItem3d.h"
-#include "MshNodeAdapter.h"
+//#include "MshNodeAdapter.h"
 
 
 MshNodeModel::MshNodeModel( QString name, Mesh_Group::CFEMesh* msh, QObject* parent /*= 0*/ )
@@ -32,16 +31,14 @@ QVariant MshNodeModel::data( const QModelIndex& index, int role ) const
 	if (!index.isValid())
 		return QVariant();
 	
-	if (index.row() >= _msh->nod_vector.size())
+	if (index.row() >= (int)_msh->nod_vector.size())
 		return QVariant();
 
 	GraphicsItem2d* item2d = itemFromIndex(index)->item2d();
 	if (item2d == NULL)
 		return QVariant();
-
-	// TODO 
-	/*
-	Mesh_Group::CNode* node = static_cast<MshNodeAdapter*>
+/*  TODO
+	Mesh_Group::CNode* node = static_cast<Mesh_Group::CNode*>
 		(static_cast<PntGraphicsItem2d*>(item2d)->point())->node();
 	if (node == NULL)
 		return QVariant();
@@ -68,8 +65,8 @@ QVariant MshNodeModel::data( const QModelIndex& index, int role ) const
 	default:
 		return QVariant();
 	}
-	*/
-
+*/
+	return QVariant();
 }
 
 QVariant MshNodeModel::headerData( int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole*/ ) const
@@ -173,7 +170,7 @@ void MshNodeModel::updateData()
 	}
 	Model::updateData();
 }
-
+/*
 void MshNodeModel::item2dChanged( IGeometryPoint* point )
 {
 	Mesh_Group::CNode* node = ((MshNodeAdapter*)point)->node();
@@ -181,3 +178,4 @@ void MshNodeModel::item2dChanged( IGeometryPoint* point )
 	QModelIndex indexEnd = index(itemIndex.row(), columnCount());
 	emit dataChanged(itemIndex, indexEnd);
 }
+*/

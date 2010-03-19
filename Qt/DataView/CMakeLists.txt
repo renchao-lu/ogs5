@@ -12,9 +12,9 @@ set( SOURCES
 	ModelItem.cpp
 	Model.cpp
 	DataView.cpp
-	#MshModel.cpp
-	#MshNodeModel.cpp
-	#MshElemModel.cpp
+	MshModel.cpp
+	MshNodeModel.cpp
+	MshElemModel.cpp
 	MshGraphicsItem2d.cpp
 	VisualizationWidget.cpp
 	PntTabWidget.cpp
@@ -39,10 +39,10 @@ set( MOC_HEADERS
 	PntGraphicsItem2d.h
 	Model.h
 	DataView.h
-	#MshModel.h
-	#MshNodeModel.h
-	#MshElemModel.h
-	#MshGraphicsItem2d.h
+	MshModel.h
+	MshNodeModel.h
+	MshElemModel.h
+	MshGraphicsItem2d.h
 	VisualizationWidget.h
 	PntTabWidget.h
 	LineTabWidget.h

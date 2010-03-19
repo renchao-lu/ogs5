@@ -6,7 +6,6 @@ set( SOURCES
 	DiagramView.cpp
 	QArrow.cpp
 	QGraphicsGrid.cpp
-	QNonScalableGraphicsTextItem.cpp
 )
 
 # Moc Header files
@@ -21,7 +20,6 @@ set( HEADERS
 	DiagramList.h
 	QArrow.h
 	QGraphicsGrid.h
-	QNonScalableGraphicsTextItem.h
 )
 
 # UI files
@@ -41,6 +39,7 @@ include_directories(
 	.
 	${CMAKE_BINARY_DIR}/Qt/StationView/DiagramView
 	../../../GEO
+	../../Base
 	${CMAKE_SOURCE_DIR}
 )
 

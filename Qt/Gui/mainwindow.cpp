@@ -275,7 +275,6 @@ void MainWindow::openDatabase()
 	if (_db==NULL)
 	{
 		_db = new DatabaseConnection(_geoModels);
-		//connect(_db, SIGNAL(listLoaded(QString)), _stationModel, SLOT(addStationList(QString)));
 		_db->dbConnect();
 	}
 

@@ -13,6 +13,12 @@
 
 class QItemSelection;
 
+namespace Mesh_Group
+{
+	class CFEMesh;
+}
+
+
 /**
  * The MshModel is a Qt model which represents  CFEMesh objects.
  * Item indexes hold references to ModelItem as internal pointers.
@@ -22,7 +28,7 @@ class MshModel : public Model
 	Q_OBJECT
 
 public:
-	MshModel(QString name, QObject* parent = 0);
+	MshModel(QString name, Mesh_Group::CFEMesh* mesh ,QObject* parent = 0);
 
 	int columnCount(const QModelIndex& parent = QModelIndex()) const;
 	QVariant data(const QModelIndex& index, int role) const;
@@ -42,6 +48,7 @@ public slots:
 	void updateData();
 
 private:
+	Mesh_Group::CFEMesh* _mesh;
 
 signals:
 	//void selectionChanged(const QItemSelection & selected, const QItemSelection & deselected);

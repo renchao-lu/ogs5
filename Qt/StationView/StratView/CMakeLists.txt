@@ -1,6 +1,5 @@
 # Source files
 set( SOURCES
-	QNonScalableGraphicsTextItem.cpp
 	StratBar.cpp
 	StratScene.cpp
 	StratView.cpp
@@ -16,7 +15,6 @@ set( MOC_HEADERS
 
 # Header files
 set( HEADERS
-	QNonScalableGraphicsTextItem.h
 	StratBar.h
 )
 
@@ -39,6 +37,7 @@ include_directories(
 	../../../Base
 	../../../GEO
 	../../../MathLib
+	../../Base
 	${CMAKE_SOURCE_DIR}
 )
 

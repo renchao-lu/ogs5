@@ -1,5 +1,6 @@
 # Source files
 set( SOURCES
+	VtkMeshSource.cpp
 	VtkPolylinesSource.cpp
 	VtkPointsSource.cpp
 	VtkStationSource.cpp
@@ -21,6 +22,7 @@ set( MOC_HEADERS
 
 # Header files
 set( HEADERS
+	VtkMeshSource.h
 	VtkPolylinesSource.h
 	VtkPointsSource.h
 	VtkStationSource.h
@@ -47,9 +49,11 @@ qt4_wrap_cpp( MOC_SOURCES ${MOC_HEADERS} )
 include_directories(
 	.
 	${CMAKE_BINARY_DIR}/Qt/VtkVis
-	../../GEO
 	../../Base
+	../../FEM
+	../../GEO
 	../../MathLib
+	../../MSH
 	../Base
 	../DataView
 	../StationView

@@ -9,17 +9,19 @@
 #include "MshModel.h"
 #include "ModelItem.h"
 #include "MshGraphicsItem2d.h"
-#include "MshGraphicsItem3d.h"
 #include "MshNodeModel.h"
 #include "MshElemModel.h"
+#include "VtkMeshSource.h"
 
 #include "msh_mesh.h"
 #include "msh_lib.h"
 
-MshModel::MshModel( QString name, QObject* parent /*= 0*/ )
-: Model(name, parent)
+MshModel::MshModel( QString name, Mesh_Group::CFEMesh* mesh ,QObject* parent /*= 0*/ )
+: Model(name, parent), _mesh(mesh)
 {
 	_modelContentType = MSH_MODEL;
+	_vtkSource = VtkMeshSource::New();
+	static_cast<VtkMeshSource*>(_vtkSource)->setMesh(_mesh);
 }
 
 int MshModel::columnCount( const QModelIndex& parent /*= QModelIndex()*/ ) const
@@ -34,16 +36,19 @@ QVariant MshModel::data( const QModelIndex& index, int role ) const
 	if (!index.isValid())
 		return QVariant();
 
-	if (index.row() >= fem_msh_vector.size())
+	if (index.row() >= (int)fem_msh_vector.size())
 		return QVariant();
 
 	// Get msh here...
+	// TODO
+/*
 	MshGraphicsItem3d* msh3dItem = static_cast<MshGraphicsItem3d*>(itemFromIndex(index)->item3d());
 	Mesh_Group::CFEMesh* msh = msh3dItem->msh();
-
+*/
 	switch (role)
 	{
 	case Qt::DisplayRole:
+/*
 		switch (index.column())
 		{
 		case 0:
@@ -56,7 +61,7 @@ QVariant MshModel::data( const QModelIndex& index, int role ) const
 			return QVariant();
 		}
 		break;
-
+*/
 	case Qt::ToolTipRole:
 		return QString("Add msh tooltip here...");
 
@@ -111,8 +116,8 @@ void MshModel::updateData()
 			mshItem2d, SLOT(reloadElemItems()));
 		//connect(_subModels[1], SIGNAL(subModelDataChanged(Model,QModelIndex,QModelIndex)),
 		//	mshItem2d, SLOT(reloadElemItems()));
-		MshGraphicsItem3d* mshItem3d = new MshGraphicsItem3d(*it);
-		ModelItem* item = new ModelItem(mshItem2d, mshItem3d, this);
+// KR		MshGraphicsItem3d* mshItem3d = new MshGraphicsItem3d(*it);
+		ModelItem* item = new ModelItem(mshItem2d, this);
 		item->addModel(nodeModel);
 		item->addModel(elemModel);
 

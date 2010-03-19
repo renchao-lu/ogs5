@@ -8,10 +8,8 @@
 // ** INCLUDES **
 #include "MshElemModel.h"
 #include "GraphicsItem2d.h"
-#include "MshElemAdapter.h"
 #include "ModelItem.h"
 #include "LineGraphicsItem2d.h"
-#include "LineGraphicsItem3d.h"
 
 MshElemModel::MshElemModel( QString name, Mesh_Group::CFEMesh* msh, QObject* parent /*= 0*/ )
 : Model(name, parent), _msh(msh)
@@ -32,7 +30,7 @@ QVariant MshElemModel::data( const QModelIndex& index, int role ) const
 	if (!index.isValid())
 		return QVariant();
 
-	if (index.row() >= _msh->ele_vector.size())
+	if (index.row() >= (int)_msh->ele_vector.size())
 		return QVariant();
 
 	Mesh_Group::CElem* elem = _msh->ele_vector[index.row()];

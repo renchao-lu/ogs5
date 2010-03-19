@@ -1,6 +1,7 @@
 # Source files
 set( SOURCES
 	OGSError.cpp
+	QNonScalableGraphicsTextItem.cpp
 	RecentFiles.cpp
 	TreeItem.cpp
 	TreeModel.cpp
@@ -15,6 +16,7 @@ set( MOC_HEADERS
 # Header files
 set( HEADERS
 	OGSError.h
+	QNonScalableGraphicsTextItem.cpp
 	TreeItem.h
 )
 
