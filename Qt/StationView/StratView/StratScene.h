@@ -22,7 +22,8 @@ public:
 	StratScene(GEOLIB::StationBorehole* station, QObject* parent = 0);
 	~StratScene();
 
-	static const int MARGIN=50;	/// The margin between the boundary of the scene and the bounding box of all items within the scene
+	/// The margin between the boundary of the scene and the bounding box of all items within the scene
+	static const int MARGIN=50;	
 
 private:
 	/// Adds text labels indicating the depth at the beginning and end of each soil layer
