@@ -106,6 +106,7 @@ int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector
 		newVerts->InsertNextCell(1, sid);
 		colors->InsertNextTupleValue(color);
 
+		// BUG OGS apparently crashes due to a vtk-error if the data loaded is too large (e.g. complete set of selke-boreholes) 
 //		if (lastMaxIndex>4000)
 //		{
 //			notTooLarge = false;

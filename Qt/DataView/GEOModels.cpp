@@ -13,6 +13,12 @@
 #include "StationTreeModel.h"
 #include "LinesModel.h"
 
+// BUG removal of lists is not correctly implemented as only the 2d _or_ the 3d visualisation
+// of the removed vector will also be removed correctly (depending on what is removed first).
+// this is likely somehow connected to incorrect use of qt's signal/slot architecture. 
+// also, if the 3d vis is removed first this will cause to crash the 2d scene.
+
+
 GEOModels::GEOModels( QObject* parent /*= 0*/ )
 {
 	_stationModel = new StationTreeModel();
@@ -75,6 +81,11 @@ void GEOModels::addStationVec( std::vector<GEOLIB::Point*> *stations, std::strin
 	_stationModel->addStationList(QString::fromStdString(name), stations);
 	emit stationVectorAdded(_stationModel, name);
 }
+
+// BUG OGS crashes if a station list is loaded from file and then filtered. this is probably connected
+// to another bug concerning the 2d/3d vis (see above) because filtering a list works by first removing
+// the original data and then adding the filtered data (i.e. essentially this means adding the (not 
+// correctly removed vtk-object))
 
 void GEOModels::filterStationVec(const std::string &name, const std::vector<PropertyBounds> &bounds)
 {

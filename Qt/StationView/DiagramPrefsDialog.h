@@ -13,6 +13,8 @@
 
 class DiagramList;
 
+// BUG OGS crashes if DiagramPrefsDialog is called before expanding the associated list in the StationTreeView
+
 /**
  * \brief A dialog that allows for setting preferences for a requested diagram.
  *

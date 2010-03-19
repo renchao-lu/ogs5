@@ -45,8 +45,10 @@ protected:
 	//typedef double (Station::*getFct)();
 	//typedef void (Station::*setFct)(double);
 
-	/// Container for station-properties. Each property consists of a name, a get- and a set-function.
-	/// Please refer to Station::addProperty for details.
+	/**
+	 * Container for station-properties. Each property consists of a name, a get- and a set-function.
+	 * Please refer to Station::addProperty for details.
+	 */
 	struct STNProperty
 	{
 		std::string name;
