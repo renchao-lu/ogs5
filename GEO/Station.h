@@ -59,7 +59,7 @@ public:
 	enum StationType
 	{
 		STATION  = 1,
-		BOREHOLE = 2,
+		BOREHOLE = 2
 	};
 
 	/// Constructor using a default colour

@@ -28,7 +28,7 @@ public:
 	enum PointType
 	{
 		POINT    = 0,
-		STATION  = 1,
+		STATION  = 1
 	};
 
 	/**

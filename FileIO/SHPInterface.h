@@ -25,7 +25,7 @@ public:
 		POINT		= 1,
 		STATION		= 2,
 		POLYLINE	= 3,
-		POLYGON		= 4,
+		POLYGON		= 4
 	};
 
 	/// Constructor
