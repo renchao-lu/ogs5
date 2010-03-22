@@ -37,8 +37,12 @@ TARGET_LINK_LIBRARIES( ogs
 	OGSProject
 )
 
-if (GEM_REACT AND WIN32)
-	target_link_libraries( ogs qd debug GEMS3_dbg optimized GEMS3_rl )
-endif (GEM_REACT AND WIN32)
-
-
+if (WIN32)
+	if (GEM_REACT)
+		target_link_libraries( ogs qd debug GEMS3_dbg optimized GEMS3_rl )
+	endif (GEM_REACT)
+	if (LIS)
+		target_link_libraries( ogs lisomp )
+		set_target_properties( ogs PROPERTIES LINK_FLAGS "/NODEFAULTLIB:libcmt" )
+	endif (LIS)
+endif (WIN32)

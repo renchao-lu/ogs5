@@ -29,6 +29,7 @@ Phreeqcmain ( int argc, char* argv[], int nsim, int punch_dim,
   int Perrors;
   void *db_cookie = NULL;
   void *input_cookie = NULL;
+  char* dum = "T";
 
   // MDL: not defined on windows
   //#ifndef DOS
@@ -64,7 +65,6 @@ Phreeqcmain ( int argc, char* argv[], int nsim, int punch_dim,
   printf(":: called with %i simulations, output will be %i values\n", 
 	 Pnsim, Pout_dim);
 
-  char* dum = "T";
   if (strncmp(argv[4],dum, 1)==0) {
     Pfileprint = TRUE; 
     printf(":: Ouput written to file %s\n",argv[2]);

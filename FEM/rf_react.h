@@ -96,5 +96,5 @@ extern void REACTInit(); //OK
 
 #ifdef LIBPHREEQC
 // MDL: libphreeqc
-#pragma comment (lib, "libphreeqc.lib")
+//#pragma comment (lib, "libphreeqc.lib")	 // LB Commented out, old stuff???
 #endif

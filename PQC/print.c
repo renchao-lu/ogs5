@@ -2957,12 +2957,13 @@ punch_user_punch (void)
  *   Punch with user defined BASIC print routine
  */
 
+  char command[] = "run";
+  extern int n_user_punch_index;
+
   // MDL: did we call this punch?
   if (Pdo_punch == FALSE)
     return(OK);
 
-  char command[] = "run";
-  extern int n_user_punch_index;
   n_user_punch_index = 0;
   if (punch.user_punch == FALSE)
     return (OK);

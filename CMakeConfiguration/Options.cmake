@@ -6,6 +6,7 @@ OPTION (CONFIG_G++_BRNS "Do you want to use the g++_BRNS config?" OFF)
 OPTION (CONFIG_G++_GEMS "Do you want to use the g++_gems config?" OFF)
 OPTION (CONFIG_G++_PARDISO "Do you want to use the g++pardiso config?" OFF)
 OPTION (CONFIG_G++_PQC "Do you want to use the g++_PQC config?" OFF)
+OPTION (CONFIG_VC_LIS "Do you want to use the Visual C++ LIS config?" OFF)
 
 
 ## These specific options are set by the configurations listed above. ##
@@ -43,6 +44,10 @@ endif(CONFIG_G++_PARDISO)
 if (CONFIG_G++_PQC)
 	INCLUDE (configs/g++_PQC.cmake)
 endif(CONFIG_G++_PQC)
+
+if (CONFIG_VC_LIS)
+	INCLUDE (configs/vc_lis.cmake)
+endif (CONFIG_VC_LIS)
 
 OPTION (OGS_USE_QT "Do you want to build the OGS GUI?" OFF)
 
