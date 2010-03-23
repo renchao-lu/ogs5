@@ -55,6 +55,7 @@ include_directories(
 	../../GEO
 	../../MSH
 	../../FEM
+	../../FileIO
 	../Base
 	../DataView
 	../VtkVis

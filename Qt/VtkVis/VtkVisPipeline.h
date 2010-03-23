@@ -13,7 +13,7 @@
 #include <QVector>
 
 class vtkPolyDataAlgorithm;
-class vtkPolyData;
+class vtkPointSet;
 class vtkRenderer;
 class Model;
 class QModelIndex;
@@ -36,7 +36,7 @@ public slots:
 	void addPipelineItem(Model* model);
 	void addPipelineItem(StationTreeModel* model, const std::string &name);
 	void addPipelineItem(vtkPolyDataAlgorithm* source, 
-		QModelIndex parent = QModelIndex(), vtkPolyData* input = NULL);
+		QModelIndex parent = QModelIndex(), vtkPointSet* input = NULL);
 
 	void removeSourceItem(Model* model);
 	void removeSourceItem(StationTreeModel* model, const std::string &name);

@@ -64,12 +64,20 @@ public:
 		BOREHOLE = 2
 	};
 
-	/// Constructor using a default colour
-	/** constructor initialises the Station with the given coordinates */
-	Station(double x = 0.0, double y = 0.0, double z = 0.0);
+	/**
+	 * \brief Constructor
+	 *
+	 * Constructor initialising a Station object
+	 * \param x The x-coordinate of the station.
+	 * \param y The y-coordinate of the station.
+	 * \param z The z-coordinate of the station.
+	 * \param name The name of the station.
+	 * \param color The color of the station in visualisation.
+	 */
+	Station(double x = 0.0, double y = 0.0, double z = 0.0, std::string name = "", Color* const color = new Color(0,128,0));
 
-	/// Constructor using a specific colour
-	Station(Color* const color);
+	Station(Point* coords, std::string name = "", Color* const color = new Color(0,128,0));
+
 
 	virtual ~Station();
 
@@ -104,6 +112,8 @@ public:
 
 	/// Returns a map containing all the properties of that station type.
 	const std::map<std::string, double> getProperties();
+
+	/// Determines if the station's parameters are within the the bounds of the current selection (see property system for details)
 	bool inSelection(const std::vector<PropertyBounds> &bounds);
 
 	/// Returns true if all properties of this stations are within the boundaries given by \param bounds and false otherwise
@@ -202,13 +212,10 @@ public:
 	double getDate() const { return _date; }
 
 	///Returns a reference to a vector of Points representing the stratigraphy of the borehole (incl. the station-point itself)
-	const std::vector<Point*> &getProfile() { return _profilePntVec; }
+	const std::vector<Point*> &getProfile() const { return _profilePntVec; }
 
 	///Returns a reference to a vector of soil names for the stratigraphy of the borehole
-	const std::vector<std::string> &getSoilNames() { return _soilName; }
-
-	/// Exports the borehole data to a file in GMS-format.
-	int writeAsGMS(const std::string &filename);
+	const std::vector<std::string> &getSoilNames() const { return _soilName; }
 
 	/// Add a soil layer to the boreholes stratigraphy
 	void addSoilLayer ( double thickness, const std::string &soil_name);

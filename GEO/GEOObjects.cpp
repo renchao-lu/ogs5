@@ -130,49 +130,6 @@ std::vector<Point*> *GEOObjects::getStationVec(const std::string &name)
 	return NULL;
 }
 
-int GEOObjects::readStationFile(const std::string &path, std::string &name, std::vector<Point*> *stations, Station::StationType type )
-{
-	int returnValue = 1;
-	std::string line;
-
-	std::ifstream in( path.c_str() );
-
-	if (!in.is_open())
-    {
-		std::cout << "Station::readFromFile() - Could not open file...\n";
-		return 0;
-	}
-
-	/* try to find a name for the list in the first line of the file */
-	getline(in, line);
-	if ((line.substr(0,1)).compare("!")==0)
-		name = line.substr( 1, line.length()-1 );
-	else in.seekg(0);	// sets stream to the beginning of the file
-
-	/* read all stations */
-	while ( getline(in, line) )
-	{
-		Station* newStation;
-		if (type == Station::STATION)
-			newStation = Station::createStation(line);
-		if (type == Station::BOREHOLE)
-			newStation = StationBorehole::createStation(line);
-
-		if (newStation)
-		{
-			//newStation->setList(name);
-			stations->push_back(newStation);
-		}
-		else
-			returnValue = -1;
-	}
-
-	in.close();
-
-    return returnValue;
-}
-
-
 void GEOObjects::addPolylineVec(std::vector<Polyline*> *lines, const std::string &name)
 {
 	for (std::vector<Polyline*>::iterator it (lines->begin());

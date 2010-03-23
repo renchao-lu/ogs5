@@ -32,6 +32,7 @@
 
 // FileIO includes
 #include "OGSIOVer4.h"
+#include "StationIO.h"
 #include "PetrelInterface.h"
 #include "GocadInterface.h"
 //#include "XMLInterface.h"
@@ -45,6 +46,8 @@
 #include <QSettings>
 #include <QComboBox>
 #include <QPixmap>
+
+
 
 /// FEM. 11.03.2010. WW
 #include "problem.h"
@@ -114,6 +117,7 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 		_vtkVisPipeline, SLOT(addPipelineItem(StationTreeModel*, std::string)));
 	connect(_geoModels, SIGNAL(removeVTK(StationTreeModel*, std::string)),
 		_vtkVisPipeline, SLOT(removeSourceItem(StationTreeModel*, std::string)));
+	
 
 	connect(_vtkVisPipeline, SIGNAL(vtkVisPipelineChanged()),
 		visualizationWidget->vtkWidget, SLOT(update()));
@@ -380,11 +384,11 @@ void MainWindow::loadFile(const QString &fileName)
 	}
 	else if (fi.suffix().toLower() == "stn")
 	{
-		GEOLIB::Station::StationType type = GEOLIB::Station::BOREHOLE;
+		GEOLIB::Station::StationType type = GEOLIB::Station::STATION;
 		vector<GEOLIB::Point*> *stations = new vector<GEOLIB::Point*>();
 		string name;
 
-		if (int returnValue = _geoModels->readStationFile(fileName.toStdString(), name, stations, type))
+		if (int returnValue = StationIO::readStationFile(fileName.toStdString(), name, stations, type))
 		{
 			if (returnValue<0) cout << "main(): An error occured while reading the file.\n";
 
@@ -431,6 +435,7 @@ void MainWindow::loadFile(const QString &fileName)
         	return;
         }
         cout << "Nr. Nodes: " << ::fem_msh_vector[0]->nod_vector.size() << endl;
+		
     }
 	else if (fi.suffix().toLower() == "ts") {
 #ifndef NDEBUG

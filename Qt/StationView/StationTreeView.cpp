@@ -6,9 +6,12 @@
 #include <iostream>
 #include <QFileDialog>
 #include <QMenu>
+
+#include "Station.h"
+#include "StationIO.h"
+
 #include "StationTreeView.h"
 #include "StationTreeModel.h"
-#include "Station.h"
 #include "ModelTreeItem.h"
 #include "StratWindow.h"
 
@@ -103,7 +106,7 @@ void StationTreeView::exportStation()
 	QString fileName = QFileDialog::getSaveFileName(this, "Export Borehole to GMS-Format", "","*.txt");
     if (!fileName.isEmpty()) {
     	QString temp_name;
-		static_cast<StationBorehole*>(static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name))->writeAsGMS(fileName.toStdString());
+		StationIO::writeBoreholeToGMS(static_cast<StationBorehole*>(static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)), fileName.toStdString());
     }
 }
 

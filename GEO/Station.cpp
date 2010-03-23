@@ -14,15 +14,16 @@ using namespace std;
 
 namespace GEOLIB {
 
-Station::Station(double x, double y, double z) :
-	Point (x,y,z), _type(Station::STATION), _color(new Color(0,128,0))
+Station::Station(double x, double y, double z, std::string name, Color* const color) :
+	Point (x,y,z), _type(Station::STATION), _name(name), _color(color)
 {
 	addProperty("x", &getX, &Station::setX);
 	addProperty("y", &getY, &Station::setY);
 	addProperty("z", &getZ, &Station::setZ);
 }
 
-Station::Station(Color* const color) : _type(Station::STATION), _color(color)
+Station::Station(Point* coords, std::string name, Color* const color) :
+	Point (*coords), _type(Station::STATION), _name(name), _color(color)
 {
 	addProperty("x", &getX, &Station::setX);
 	addProperty("y", &getY, &Station::setY);
@@ -357,20 +358,6 @@ StationBorehole* StationBorehole::createStation(const string &name, double x, do
 	station->_depth = depth;
 	station->_date  = strDate2Double(date);
 	return station;
-}
-
-int StationBorehole::writeAsGMS(const string &filename)
-{
-	ofstream out( filename.c_str(), ios::out );
-
-	for (size_t i=0; i<_profilePntVec.size(); i++) {
-		out	<< _name << "\t" << fixed << (*(_profilePntVec[i]))[0] << "\t"
-			<< (*(_profilePntVec[i]))[1]  << "\t" << (*(_profilePntVec[i]))[2] <<  "\t"
-			<< _soilName[i] << endl;
-	}
-	out.close();
-
-    return 1;
 }
 
 void StationBorehole::createSurrogateStratigraphies(std::vector<Point*> *boreholes)

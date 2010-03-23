@@ -31,7 +31,7 @@ public:
 
 	vtkTypeRevisionMacro(VtkMeshSource,vtkPolyDataAlgorithm);
 
-	/// Sets the stations as a vector
+	/// Sets the mesh that should be visualised
 	void setMesh(const Mesh_Group::CFEMesh* mesh) { _mesh = mesh; };
 
 	/// Prints its data on a stream.

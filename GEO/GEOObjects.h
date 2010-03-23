@@ -76,8 +76,6 @@ public:
 	/// Returns the station vector with the given name.
 	std::vector<Point*> *getStationVec(const std::string &name);
 
-	int readStationFile(const std::string &path, std::string &name,
-			std::vector<Point*> *stations, Station::StationType type);
 	/// Removes the station vector with the given name from GEOObjects
 	virtual bool removeStationVec(const std::string &name) {
 		return removePointVec(name);

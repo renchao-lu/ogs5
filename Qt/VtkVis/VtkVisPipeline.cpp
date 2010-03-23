@@ -16,7 +16,7 @@
 #include <vtkRenderer.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkPolyDataAlgorithm.h>
-#include <vtkPolyData.h>
+#include <vtkPointSet.h>
 #include <vtkActor.h>
 
 #include <vtkOutlineFilter.h>
@@ -53,7 +53,7 @@ void VtkVisPipeline::addPipelineItem(StationTreeModel* model, const std::string 
 
 void VtkVisPipeline::addPipelineItem( vtkPolyDataAlgorithm* source,
 									  QModelIndex parent /* = QModelindex() */,
-									  vtkPolyData* input /* = NULL */)
+									  vtkPointSet* input /* = NULL */)
 {
 	TreeItem* parentItem = getItem(parent);
 	QList<QVariant> itemData;

@@ -9,16 +9,18 @@
 #include "VtkVisPipelineItem.h"
 
 #include <vtkPolyDataAlgorithm.h>
-#include <vtkPolyData.h>
+#include <vtkPointSet.h>
 #include <vtkPolyDataMapper.h>
+//#include <vtkDataSetMapper.h>
 #include <vtkActor.h>
 #include <vtkRenderer.h>
+#include <vtkProperty.h>
 
 VtkVisPipelineItem::VtkVisPipelineItem(
 	vtkRenderer* renderer,
 	vtkPolyDataAlgorithm* algorithm,
 	TreeItem* parentItem,
-	vtkPolyData* input,
+	vtkPointSet* input,
 	const QList<QVariant> data /*= QList<QVariant>()*/)
 : TreeItem(data, parentItem), _renderer(renderer), _algorithm(algorithm), _input(input)
 {
@@ -74,4 +76,5 @@ void VtkVisPipelineItem::Initialize()
 	_actor = vtkActor::New();
 	_actor->SetMapper(_mapper);
 	_renderer->AddActor(_actor);
+	_actor->GetProperty()->SetDiffuseColor(0, 1, 0);
 }

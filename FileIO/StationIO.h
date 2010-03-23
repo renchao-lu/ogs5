@@ -1,0 +1,30 @@
+/**
+ * \file StationIO.h
+ * 23/03/2010 KR Initial implementation
+ *
+ */
+
+#ifndef STATIONIO_H
+#define STATIONIO_H
+
+#include "Station.h"
+
+
+/**
+ * \brief A number of methods for data input and output for station data.
+ *
+ * A number of methods for data input and output for station data.
+ */
+class StationIO {
+
+public:
+	/// Imports a file with station data
+	static int readStationFile(const std::string &path, std::string &name, std::vector<GEOLIB::Point*> *stations, GEOLIB::Station::StationType type);
+
+	/// Exports borehole data to a file in GMS-format.
+	static int writeBoreholeToGMS(const GEOLIB::StationBorehole* station, const std::string &filename);
+
+	static void writeStratigraphyTable(const std::vector<GEOLIB::Point*> *boreholes, const std::string &filename);
+};
+
+#endif // STATIONIO_H
