@@ -1,3 +1,13 @@
+# check 64 bit
+if( CMAKE_SIZEOF_VOID_P EQUAL 4 )
+ set( HAVE_64_BIT 0 )
+ set( BITS 32 )
+else( CMAKE_SIZEOF_VOID_P EQUAL 4 )
+ set( HAVE_64_BIT 1 )
+ set( BITS 64)
+endif( CMAKE_SIZEOF_VOID_P EQUAL 4 )
+
+
 # Visual Studio detection
 if (${CMAKE_GENERATOR} STREQUAL "Visual Studio 8 2005" 
   OR ${CMAKE_GENERATOR} STREQUAL "Visual Studio 9 2008"

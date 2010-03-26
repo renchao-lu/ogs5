@@ -52,3 +52,5 @@ if (UNIX)
 		target_link_libraries( ogs gemipm2k qd )
 	endif (GEM_REACT)
 endif (UNIX)
+
+install (TARGETS ogs RUNTIME DESTINATION bin COMPONENT ogs)

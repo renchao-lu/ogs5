@@ -11,11 +11,18 @@ IF (WIN32)
 	SET ( CMAKE_CONFIGURATION_TYPES "Release;Debug" CACHE TYPE INTERNAL FORCE )
 ENDIF (WIN32)
 
+SET (OGS_VERSION_MAJOR 5)
+SET (OGS_VERSION_MINOR 0)
+SET (OGS_VERSION_PATCH 0)
+
 # Project name
-PROJECT( OGS-5 )
+PROJECT( OGS-${OGS_VERSION_MAJOR} )
 
 # Adds useful macros and variables
 INCLUDE( CMakeConfiguration/Macros.cmake )
+
+# Adds packaging configuration
+INCLUDE( CMakeConfiguration/Pack.cmake)
 
 # Do some prerequisite checks
 IF (WIN32)
