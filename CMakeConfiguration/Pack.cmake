@@ -12,7 +12,7 @@ SET(CPACK_PACKAGE_VERSION_MINOR "${OGS_VERSION_MINOR}")
 SET(CPACK_PACKAGE_VERSION_PATCH "${OGS_VERSION_PATCH}")
 SET(CPACK_PACKAGE_FILE_NAME "ogs-${OGS_VERSION_MAJOR}.${OGS_VERSION_MINOR}.${OGS_VERSION_PATCH}-${CMAKE_SYSTEM}-x${BITS}")
 
-IF(WIN32 AND NOT UNIX)
+IF(WIN32)
   # There is a bug in NSI that does not handle full unix paths properly. Make
   # sure there is at least one set of four (4) backlasshes.
   SET(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/CMakeConfiguration\\\\OGS_Logo_Installer.bmp")
@@ -23,10 +23,17 @@ IF(WIN32 AND NOT UNIX)
   SET(CPACK_NSIS_CONTACT "lars.bilke@ufz.de")
   SET(CPACK_NSIS_MODIFY_PATH ON)
   SET(CPACK_NSIS_MENU_LINKS "https://geosys.ufz.de/trac" "OGS Wiki")
-ELSE(WIN32 AND NOT UNIX)
+ELSE(WIN32)
+  IF(UNIX)
+    SET(CPACK_GENERATOR TGZ)
+  ELSE(UNIX)
+    IF(APPLE)
+
+    ENDIF(APPLE)
+  ENDIF(UNIX)
   #SET(CPACK_STRIP_FILES "bin/ogs")
   #SET(CPACK_SOURCE_STRIP_FILES "")
-ENDIF(WIN32 AND NOT UNIX)
+ENDIF(WIN32)
 
 SET(CPACK_PACKAGE_EXECUTABLES "ogs" "OGS Command Line" "ogs-gui" "OGS User Interface")
 SET(CPACK_COMPONENTS_ALL ogs ogs_gui)
