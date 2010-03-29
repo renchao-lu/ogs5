@@ -99,7 +99,7 @@ IF(MSVC)
 ENDIF(MSVC)
 
 ### Installation ###
-install (TARGETS ogs-gui RUNTIME DESTINATION bin COMPONENT ogs-gui)
+install (TARGETS ogs-gui RUNTIME DESTINATION bin COMPONENT ogs_gui)
 
 include(GetPrerequisites)
 if (EXISTS ${CMAKE_BINARY_DIR}/bin/Release/ogs-gui.exe)
@@ -109,32 +109,5 @@ if (EXISTS ${CMAKE_BINARY_DIR}/bin/Release/ogs-gui.exe)
 		gp_resolve_item ("/" "${DEPENDENCY}" ${CMAKE_BINARY_DIR}/bin/Release/ogs-gui.exe "/" DEPENDENCY_PATH)
 		set (DEPENDENCY_PATHS ${DEPENDENCY_PATHS} ${DEPENDENCY_PATH})
 	endforeach (DEPENDENCY IN ${OGS_GUI_DEPENDENCIES})
-	install (FILES ${DEPENDENCY_PATHS} DESTINATION bin COMPONENT ogs-gui)
+	install (FILES ${DEPENDENCY_PATHS} DESTINATION bin COMPONENT ogs_gui)
 endif (EXISTS ${CMAKE_BINARY_DIR}/bin/Release/ogs-gui.exe)
-
-
-#CONFIGURE_FILE(
-#   "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies.cmake.in"
-#   "${CMAKE_CURRENT_BINARY_DIR}/Dependencies.cmake"
-#   @ONLY
-#   )
-#INSTALL(SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/Dependencies.cmake")
-
-#if (WIN32)
-#	## Install VTK DLLs ##
-#	if (EXISTS ${VTK_DIR}/bin)
-#		install (DIRECTORY ${VTK_DIR}/bin DESTINATION . COMPONENT ogs-gui
-#			FILES_MATCHING PATTERN "*.dll")
-#	endif (EXISTS ${VTK_DIR}/bin)
-#	if (EXISTS ${VTK_DIR}/../../bin)
-#		install (DIRECTORY ${VTK_DIR}/../../bin DESTINATION . COMPONENT ogs-gui
-#			FILES_MATCHING PATTERN "*.dll")
-#	endif (EXISTS ${VTK_DIR}/../../bin)
-#	
-#	## Install Qt DLLs ##
-#	string (LENGTH ${QT_MOC_EXECUTABLE} MOC_PATH_LENGTH)
-#	math (EXPR END_INDEX ${MOC_PATH_LENGTH}-8)
-#	string (SUBSTRING ${QT_MOC_EXECUTABLE} 0 ${END_INDEX} QT_BIN_DIR)
-#	install (DIRECTORY ${QT_BIN_DIR} DESTINATION . COMPONENT ogs-gui
-#		FILES_MATCHING PATTERN "*.dll")	
-#endif (WIN32)
