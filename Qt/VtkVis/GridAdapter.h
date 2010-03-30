@@ -25,6 +25,7 @@ class GridAdapter
 public:
 	/// The possible types of mesh elements.
 	enum MeshType {	// values are the same as in CElem::geo_type
+		LINE = 1,
 		QUAD = 2,
 		HEXAHEDRON = 3,
 		TRIANGLE = 4,

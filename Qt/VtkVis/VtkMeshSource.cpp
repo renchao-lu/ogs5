@@ -11,7 +11,14 @@
 #include <vtkStreamingDemandDrivenPipeline.h>
 #include <vtkPoints.h>
 #include <vtkUnstructuredGrid.h>
+
+// OGS Cell Types
 #include <vtkTriangle.h>
+#include <vtkQuad.h>
+#include <vtkHexahedron.h>
+#include <vtkTetra.h>
+#include <vtkWedge.h> // == Prism
+#include <vtkLine.h>
 
 #include "VtkMeshSource.h"
 
@@ -81,13 +88,27 @@ int VtkMeshSource::RequestData( vtkInformation* request, vtkInformationVector** 
 	// Generate mesh elements
 	for (size_t i=0; i<nElems; i++)
 	{
-		vtkTriangle* triangle = vtkTriangle::New(); // HACK for triangle meshes
+		//vtkTriangle* newCell = vtkTriangle::New(); // HACK for triangle meshes
+		vtkCell* newCell;
+		
+		if ((*_elems)[i]->type == GridAdapter::TRIANGLE)
+			newCell = vtkTriangle::New();
+		if ((*_elems)[i]->type == GridAdapter::LINE)
+			newCell = vtkLine::New();
+		if ((*_elems)[i]->type == GridAdapter::QUAD)
+			newCell = vtkQuad::New();
+		if ((*_elems)[i]->type == GridAdapter::HEXAHEDRON)
+			newCell = vtkHexahedron::New();
+		if ((*_elems)[i]->type == GridAdapter::TETRAEDER)
+			newCell = vtkTetra::New();
+		if ((*_elems)[i]->type == GridAdapter::PRISM)
+			newCell = vtkWedge::New();
 
 		nElemNodes = (*_elems)[i]->nodes.size();
 		for (size_t j=0; j<nElemNodes; j++)	
-			triangle->GetPointIds()->SetId(j, (*_elems)[i]->nodes[j]);
+			newCell->GetPointIds()->SetId(j, (*_elems)[i]->nodes[j]);
 
-		output->InsertNextCell(triangle->GetCellType(), triangle->GetPointIds());
+		output->InsertNextCell(newCell->GetCellType(), newCell->GetPointIds());
 	}
 	
 	output->SetPoints(gridPoints);

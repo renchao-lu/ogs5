@@ -447,12 +447,13 @@ void MainWindow::loadFile(const QString &fileName)
 #ifndef NDEBUG
     	 std::cout << myTimer.elapsed() << " ms" << std::endl;
 #endif
-/*		// 3d mesh test sequence	
-		vtkUnstructuredGridAlgorithm* meshSource = VtkMeshSource::New();
-		static_cast<VtkMeshSource*>(meshSource)->setMesh(grid.getNodes(), grid.getElements());
-		_vtkVisPipeline->addPipelineItem(meshSource);		
+/*
+		 // 3d mesh test sequence	
+		 vtkUnstructuredGridAlgorithm* meshSource = VtkMeshSource::New();
+		 static_cast<VtkMeshSource*>(meshSource)->setMesh(grid.getNodes(), grid.getElements());
+		 _vtkVisPipeline->addPipelineItem(meshSource);		
 */
-    }
+	}
 	else if (fi.suffix().toLower() == "ts") {
 #ifndef NDEBUG
     	 QTime myTimer;

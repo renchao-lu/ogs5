@@ -151,6 +151,7 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 GridAdapter::MeshType GridAdapter::getElementType(std::string t)
 {
 	if (t.compare("tri") == 0)  return TRIANGLE;
+	if (t.compare("line") == 0)  return LINE;
 	if (t.compare("quad") == 0) return QUAD;
 	if (t.compare("tet") == 0)  return TETRAEDER;
 	if (t.compare("hex") == 0)  return HEXAHEDRON;
@@ -161,6 +162,7 @@ GridAdapter::MeshType GridAdapter::getElementType(std::string t)
 GridAdapter::MeshType GridAdapter::getElementType(int type)
 {
 	if (type == TRIANGLE)  return TRIANGLE;
+	if (type == LINE)  return LINE;
 	if (type == QUAD) return QUAD;
 	if (type == TETRAEDER)  return TETRAEDER;
 	if (type == HEXAHEDRON)  return HEXAHEDRON;
