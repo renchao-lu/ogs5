@@ -7,25 +7,28 @@
 
 // ** INCLUDES **
 #include "VtkVisPipelineItem.h"
+#include "VtkAlgorithmProperties.h"
 
-#include <vtkPolyDataAlgorithm.h>
+#include <vtkAlgorithm.h>
 #include <vtkPointSet.h>
-#include <vtkPolyDataMapper.h>
-//#include <vtkDataSetMapper.h>
+#include <vtkDataSetMapper.h>
 #include <vtkActor.h>
 #include <vtkRenderer.h>
 #include <vtkProperty.h>
+#include <vtkPolyDataAlgorithm.h>
 
 VtkVisPipelineItem::VtkVisPipelineItem(
 	vtkRenderer* renderer,
-	vtkPolyDataAlgorithm* algorithm,
+	vtkAlgorithm* algorithm,
 	TreeItem* parentItem,
 	vtkPointSet* input,
 	const QList<QVariant> data /*= QList<QVariant>()*/)
 : TreeItem(data, parentItem), _renderer(renderer), _algorithm(algorithm), _input(input)
 {
 	if (_input != NULL)
-		_algorithm->SetInput(_input);
+		//_algorithm->SetInput(_input);
+		static_cast<vtkPolyDataAlgorithm*>(_algorithm)->SetInput(_input);
+
 	Initialize();
 }
 
@@ -69,12 +72,16 @@ void VtkVisPipelineItem::setVisible( bool visible )
 	_renderer->Render();
 }
 
+/// Initalises vtkMapper and vtkActor necessary for visualisation of the item and sets the item's properties
 void VtkVisPipelineItem::Initialize()
 {
-	_mapper = vtkPolyDataMapper::New();
-	_mapper->SetInput(_algorithm->GetOutput());
+	_mapper = vtkDataSetMapper::New();
+	_mapper->SetInputConnection(0, _algorithm->GetOutputPort(0));
 	_actor = vtkActor::New();
 	_actor->SetMapper(_mapper);
 	_renderer->AddActor(_actor);
-	_actor->GetProperty()->SetDiffuseColor(0, 1, 0);
+
+	vtkProperty* itemProperty;
+	if (itemProperty = dynamic_cast<VtkAlgorithmProperties*>(_algorithm)->GetProperties())
+		_actor->SetProperty(itemProperty);
 }

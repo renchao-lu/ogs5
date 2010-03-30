@@ -13,10 +13,9 @@
 
 #include <QList>
 
-class vtkPolyDataAlgorithm;
+class vtkAlgorithm;
 class vtkPointSet;
-class vtkPolyDataMapper;
-//class vtkDataSetMapper;
+class vtkDataSetMapper;
 class vtkActor;
 class vtkRenderer;
 
@@ -27,7 +26,7 @@ class VtkVisPipelineItem : public TreeItem
 {
 public:
 	/// Constructor for a source/filter object.
-	VtkVisPipelineItem(vtkRenderer* renderer, vtkPolyDataAlgorithm* algorithm,
+	VtkVisPipelineItem(vtkRenderer* renderer, vtkAlgorithm* algorithm,
 		TreeItem* parentItem, vtkPointSet* input,
 		const QList<QVariant> data = QList<QVariant>());
 
@@ -36,8 +35,8 @@ public:
 	QVariant data(int column) const;
 	bool setData(int column, const QVariant &value);
 
-	/// Returns the vtkPolyDataAlgorithm object
-	vtkPolyDataAlgorithm* algorithm() const { return _algorithm; }
+	/// Returns the algorithm object
+	vtkAlgorithm* algorithm() const { return _algorithm; }
 
 	/// Returns the actor
 	vtkActor* actor() const { return _actor; }
@@ -49,9 +48,9 @@ public:
 	void setVisible(bool visible);
 
 private:
-	vtkPolyDataAlgorithm* _algorithm;
+	vtkAlgorithm* _algorithm;
 	vtkPointSet* _input;
-	vtkPolyDataMapper* _mapper;
+	vtkDataSetMapper* _mapper;
 	vtkActor* _actor;
 	vtkRenderer* _renderer;
 

@@ -12,7 +12,10 @@
 #include "TreeModel.h"
 #include <QVector>
 
-class vtkPolyDataAlgorithm;
+#include "VtkVisPipelineItem.h"
+
+//class vtkPolyDataAlgorithm;
+class vtkAlgorithm;
 class vtkPointSet;
 class vtkRenderer;
 class Model;
@@ -35,7 +38,7 @@ public:
 public slots:
 	void addPipelineItem(Model* model);
 	void addPipelineItem(StationTreeModel* model, const std::string &name);
-	void addPipelineItem(vtkPolyDataAlgorithm* source, 
+	void addPipelineItem(vtkAlgorithm* source, 
 		QModelIndex parent = QModelIndex(), vtkPointSet* input = NULL);
 
 	void removeSourceItem(Model* model);
@@ -44,7 +47,7 @@ public slots:
 
 private:
 	vtkRenderer* _renderer;
-	QVector<vtkPolyDataAlgorithm*> _sources;
+	QVector<vtkAlgorithm*> _sources;
 
 signals:
 	void vtkVisPipelineChanged();

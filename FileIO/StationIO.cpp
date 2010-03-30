@@ -50,22 +50,68 @@ int StationIO::readStationFile(const std::string &path, std::string &name, std::
     return returnValue;
 }
 
-int StationIO::writeBoreholeToGMS(const GEOLIB::StationBorehole* station, const std::string &filename)
+void StationIO::writeBoreholesToGMS(const std::vector<GEOLIB::Point*> *stations)
+{
+	std::vector<std::string> soilID(1);
+	for (size_t i=0; i<stations->size(); i++)
+		StationIO::writeBoreholeToGMS(static_cast<GEOLIB::StationBorehole*>((*stations)[i]), std::string("Borehole-" + static_cast<GEOLIB::StationBorehole*>((*stations)[i])->getName() + ".txt"), soilID);
+	StationIO::writeSoilIDTable(soilID, "SoilIDReference.txt");
+}
+
+int StationIO::writeBoreholeToGMS(const GEOLIB::StationBorehole* station, const std::string &filename, std::vector<std::string> &soilID)
 {
 	std::ofstream out( filename.c_str(), std::ios::out );
+	size_t idx = 0;
+
+	// write header
+	out	<< "name" << "\t" << std::fixed << "X" << "\t" << "Y"  << "\t" << "Z" <<  "\t" << "soilID" << std::endl;
 
 	std::vector<GEOLIB::Point*> profile = station->getProfile();
 	std::vector<std::string> soilNames  = station->getSoilNames();
+
+	// write table
 	size_t nLayers = profile.size();
-	for (size_t i=0; i<nLayers; i++) {
-		out	<< station->getName() << "\t" << std::fixed << (*(profile[i]))[0] << "\t"
-			<< (*(profile[i]))[1]  << "\t" << (*(profile[i]))[2] <<  "\t"
-			<< soilNames[i] << std::endl;
+	for (size_t i=1; i<nLayers; i++) {
+
+		if ( (i>1) && (soilNames[i].compare(soilNames[i-1]) == 0) ) continue;
+		idx = getSoilID(soilID, soilNames[i]);
+
+		out	<< station->getName() << "\t" << std::fixed << (*(profile[i-1]))[0] << "\t"
+			<< (*(profile[i-1]))[1]  << "\t" << (*(profile[i-1]))[2] <<  "\t"
+			<< idx << std::endl;
 	}
 	out.close();
 
     return 1;
 }
+
+size_t StationIO::getSoilID(std::vector<std::string> &soilID, std::string &soilName)
+{
+	for (size_t j=0; j<soilID.size(); j++)
+	{
+		if (soilID[j].compare(soilName) == 0) return j;
+	}
+	soilID.push_back(soilName);
+	return (soilID.size() - 1);
+}
+
+int StationIO::writeSoilIDTable(const std::vector<std::string> &soilID, const std::string &filename)
+{
+	std::ofstream out( filename.c_str(), std::ios::out );
+	size_t idx = 0;
+
+	// write header
+	out	<< "ID" << "\t" << std::fixed << "Soil name"<< std::endl;
+
+	// write table
+	size_t nIDs = soilID.size();
+	for (size_t i=0; i<nIDs; i++)
+		out	<< i << "\t" << std::fixed << soilID[i] << "\t" << std::endl;
+	out.close();
+
+    return 1;
+}
+
 
 void StationIO::writeStratigraphyTable(const std::vector<GEOLIB::Point*> *boreholes, const std::string &filename)
 {

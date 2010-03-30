@@ -8,14 +8,13 @@
 // ** INCLUDES **
 #include "VtkVisPipeline.h"
 
-#include "VtkVisPipelineItem.h"
+//#include "VtkVisPipelineItem.h"
 #include "Model.h"
 #include "StationTreeModel.h"
 
 #include <vtkSmartPointer.h>
 #include <vtkRenderer.h>
-#include <vtkPolyDataMapper.h>
-#include <vtkPolyDataAlgorithm.h>
+#include <vtkAlgorithm.h>
 #include <vtkPointSet.h>
 #include <vtkActor.h>
 
@@ -51,7 +50,7 @@ void VtkVisPipeline::addPipelineItem(StationTreeModel* model, const std::string 
 }
 
 
-void VtkVisPipeline::addPipelineItem( vtkPolyDataAlgorithm* source,
+void VtkVisPipeline::addPipelineItem( vtkAlgorithm* source,
 									  QModelIndex parent /* = QModelindex() */,
 									  vtkPointSet* input /* = NULL */)
 {

@@ -10,6 +10,7 @@
 
 // ** INCLUDES **
 #include <vtkPolyDataAlgorithm.h>
+#include "VtkAlgorithmProperties.h"
 
 #include "GEOObjects.h"
 
@@ -18,7 +19,7 @@
  * visualization pipeline with polyline data. As a vtkPolyDataAlgorithm it
  * outputs polygonal data.
  */
-class VtkPolylinesSource : public vtkPolyDataAlgorithm
+class VtkPolylinesSource : public vtkPolyDataAlgorithm, public VtkAlgorithmProperties
 {
 
 public:

@@ -47,7 +47,8 @@
 #include <QComboBox>
 #include <QPixmap>
 
-
+//test
+#include "VtkMeshSource.h"
 
 /// FEM. 11.03.2010. WW
 #include "problem.h"
@@ -419,6 +420,7 @@ void MainWindow::loadFile(const QString &fileName)
     else if (fi.suffix().toLower() == "msh")
 	{
 #ifndef NDEBUG
+		
     	 QTime myTimer;
     	 myTimer.start();
     	 std::cout << "FEMRead ... " << std::flush;
@@ -436,6 +438,20 @@ void MainWindow::loadFile(const QString &fileName)
         }
         cout << "Nr. Nodes: " << ::fem_msh_vector[0]->nod_vector.size() << endl;
 		
+#ifndef NDEBUG
+    	 myTimer.start();
+    	 std::cout << "GridAdapter Read ... " << std::flush;
+#endif		
+//		 GridAdapter grid(fileName.toStdString());
+		 GridAdapter grid(fem_msh_vector[0]);
+#ifndef NDEBUG
+    	 std::cout << myTimer.elapsed() << " ms" << std::endl;
+#endif
+/*		// 3d mesh test sequence	
+		vtkUnstructuredGridAlgorithm* meshSource = VtkMeshSource::New();
+		static_cast<VtkMeshSource*>(meshSource)->setMesh(grid.getNodes(), grid.getElements());
+		_vtkVisPipeline->addPipelineItem(meshSource);		
+*/
     }
 	else if (fi.suffix().toLower() == "ts") {
 #ifndef NDEBUG

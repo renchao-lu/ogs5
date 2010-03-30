@@ -1,5 +1,7 @@
 # Source files
 set( SOURCES
+	GridAdapter.cpp
+	VtkAddFilterDialog.cpp
 	VtkMeshSource.cpp
 	VtkPolylinesSource.cpp
 	VtkPointsSource.cpp
@@ -9,19 +11,20 @@ set( SOURCES
 	VtkVisPipelineItem.cpp
 	VtkVisPipelineView.cpp
 	VtkVisTabWidget.cpp
-	VtkAddFilterDialog.cpp
 )
 
 # Moc headers
 set( MOC_HEADERS
+	VtkAddFilterDialog.h
 	VtkVisPipeline.h
 	VtkVisPipelineView.h
 	VtkVisTabWidget.h
-	VtkAddFilterDialog.h
 )
 
 # Header files
 set( HEADERS
+	GridAdapter.h
+	VtkAlgorithmProperties.h
 	VtkMeshSource.h
 	VtkPolylinesSource.h
 	VtkPointsSource.h

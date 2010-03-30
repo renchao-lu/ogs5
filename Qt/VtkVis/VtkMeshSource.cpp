@@ -4,29 +4,21 @@
  *
  */
 
-#include "msh_mesh.h"
-
 // ** VTK INCLUDES **
-#include "VtkMeshSource.h"
-
-#include <vtkSmartPointer.h>
-#include <vtkCellArray.h>
 #include <vtkInformation.h>
 #include <vtkInformationVector.h>
 #include "vtkObjectFactory.h"
 #include <vtkStreamingDemandDrivenPipeline.h>
-#include <vtkPointData.h>
 #include <vtkPoints.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkTriangle.h>
-#include <vtkPolyData.h>
-#include <vtkCellData.h>
+
+#include "VtkMeshSource.h"
 
 vtkStandardNewMacro(VtkMeshSource);
 vtkCxxRevisionMacro(VtkMeshSource, "$Revision$");
 
 VtkMeshSource::VtkMeshSource()
-: _mesh(NULL)
 {
 	this->SetNumberOfInputPorts(0);
 }
@@ -35,26 +27,81 @@ void VtkMeshSource::PrintSelf( ostream& os, vtkIndent indent )
 {
 	this->Superclass::PrintSelf(os,indent);
 
-	if (_mesh->ele_vector.size() == 0) // HACK use of ele_vector.size() is probably not correct.
+	if (_nodes->size() == 0 || _elems->size() == 0)
 		return;
 
-	os << indent << "== VtkStationSource ==" << "\n";
+	os << indent << "== VtkMeshSource ==" << "\n";
 
-/*  TODO
 	int i = 0;
-	for (std::vector<GEOLIB::Point*>::const_iterator it = _stations->begin();
-		it != _stations->end(); ++it)
+	for (std::vector<GEOLIB::Point*>::const_iterator it = _nodes->begin();
+		it != _nodes->end(); ++it)
 	{
-		const double* coords = (*it)->getData();
-		os << indent << "Station " << i <<" (" << coords[0] << ", " << coords[1] << ", " << coords[2] << ")\n";
+		os << indent << "Point " << i <<" (" << (*it)[0] << ", " << (*it)[1] << ", " << (*it)[2] << ")" << std::endl;
 		i++;
 	}
-*/
+
+	i = 0;
+	for (std::vector<GridAdapter::Element*>::const_iterator it = _elems->begin();
+		it != _elems->end(); ++it)
+	{
+		
+		os << indent << "Element " << i <<": ";
+		for (size_t t=0; t<(*it)->nodes.size(); t++)
+			os << (*it)->nodes[t] << " ";
+		os << std::endl;
+		i++;
+	}
+
+
 }
 
+int VtkMeshSource::RequestData( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
+{
+	size_t nPoints = _nodes->size();
+	size_t nElems  = _elems->size();
+	size_t nElemNodes = 0;
+	if (nPoints == 0 || nElems == 0)
+		return 0;
+
+	vtkPoints *gridPoints = vtkPoints::New();
+	vtkInformation *outInfo = outputVector->GetInformationObject(0);
+	vtkUnstructuredGrid* output = vtkUnstructuredGrid::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
+
+	gridPoints->Allocate(_nodes->size());
+	output->Allocate(nElems);
+
+	size_t cid = 0;
+
+	if (outInfo->Get(vtkStreamingDemandDrivenPipeline::UPDATE_PIECE_NUMBER()) > 0)
+		return 1;
+
+	for (size_t i=0; i<nPoints; i++)
+		gridPoints->InsertPoint(i, (*(*_nodes)[i])[0], (*(*_nodes)[i])[1], (*(*_nodes)[i])[2]);
+
+	// Generate mesh elements
+	for (size_t i=0; i<nElems; i++)
+	{
+		vtkTriangle* triangle = vtkTriangle::New(); // HACK for triangle meshes
+
+		nElemNodes = (*_elems)[i]->nodes.size();
+		for (size_t j=0; j<nElemNodes; j++)	
+			triangle->GetPointIds()->SetId(j, (*_elems)[i]->nodes[j]);
+
+		output->InsertNextCell(triangle->GetCellType(), triangle->GetPointIds());
+	}
+	
+	output->SetPoints(gridPoints);
+	gridPoints->Delete();
+
+	this->GetProperties()->SetOpacity(0.5);
+	this->GetProperties()->SetEdgeVisibility(1);
+
+	return 1;
+}
 
 /// Create 3d mesh object
-int VtkMeshSource::RequestData( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
+/*
+int VtkMeshSource::RequestData1( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
 	if (!_mesh)
 		return 0;
@@ -64,93 +111,66 @@ int VtkMeshSource::RequestData( vtkInformation* request, vtkInformationVector** 
 		return 0;
 
 	vtkInformation *outInfo = outputVector->GetInformationObject(0);
-	//vtkPolyData* output = vtkPolyData::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
+	vtkUnstructuredGrid* output = vtkUnstructuredGrid::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
 
-	//vtkPoints* newPoints = vtkPoints::New();
+	vtkPoints* gridPoints = vtkPoints::New();
 	vtkCellArray* newVerts = vtkCellArray::New();
-	vtkUnstructuredGrid* output = vtkUnstructuredGrid::New();
 
 	//newPoints->Allocate(nPoints);
-	//newVerts->Allocate(nStations);
 
-	size_t currentIndex = 0;
+	size_t cid = 0;
 
 	if (outInfo->Get(vtkStreamingDemandDrivenPipeline::UPDATE_PIECE_NUMBER()) > 0)
 		return 1;
 
-	int lastMaxIndex = 0;
-
-/*
-	// Generate point objects
-	for (std::vector<GEOLIB::Point*>::const_iterator it = _mesh->nod_vector->begin();
-		it != _mesh->nod_vector->end(); ++it)
-	{
-		const double* coords = (*it)->getData();
-		vtkIdType sid[1];
-		sid[0] = newPoints->InsertNextPoint(coords);
-		newVerts->InsertNextCell(1, sid);
-	}
-*/
-	// begin minimal example:
-	vtkPoints* trianglePoints = vtkPoints::New();
-trianglePoints->SetNumberOfPoints(3);
-trianglePoints->InsertPoint(0, 4408077, 5719585, 0.000000);
-trianglePoints->InsertPoint(1, 4481596, 5781261, 0.000000);
-trianglePoints->InsertPoint(2, 4481596, 5719585, 0.000000);
-vtkTriangle* aTriangle = vtkTriangle::New();
-aTriangle->GetPointIds()->SetId(0, 0);
-aTriangle->GetPointIds()->SetId(1, 1);
-aTriangle->GetPointIds()->SetId(2, 2);
-output->Allocate(1, 1);
-output->InsertNextCell(aTriangle->GetCellType(), aTriangle->GetPointIds());
-output->SetPoints(trianglePoints);
-/*
-	vtkTriangle* triangle = vtkTriangle::New(); // HACK for triangle meshes
-	const double pointa[3] = {4408077, 5719585, 0.000000};
-	const double pointb[3] = {4481596, 5781261, 0.000000};
-	const double pointc[3] = {4481596, 5719585, 0.000000};
-	vtkIdList* idList = vtkIdList::New();
-	idList->InsertNextId(0);
-	idList->InsertNextId(1);
-	idList->InsertNextId(2);
-
-	output->InsertNextCell(triangle->GetCellType(), idList);
-	output->SetPoints(newPoints);
-	//output->SetVerts(newVerts);
-*/
-	// end minimal example
-
-/*
-	vtkTriangle* triangle = vtkTriangle::New(); // HACK for triangle meshes
+	output->Allocate(nElems);
 	// Generate mesh elements
 	for (std::vector<Mesh_Group::CElem*>::const_iterator it = _mesh->ele_vector.begin();
 		it != _mesh->ele_vector.end(); ++it)
 	{
-		vtkIdList* idList = vtkIdList::New();
+		vtkTriangle* triangle = vtkTriangle::New(); // HACK for triangle meshes
 		for (size_t id=0; id<3; id++)  // HACK for triangle meshes
 		{
 			Mesh_Group::CNode* node = (*it)->GetNode(id);
-			const double point[3] = {node->X(), node->Y(), node->Z()};
-			vtkIdType sid[1];
-			sid[0] = newPoints->InsertNextPoint(point);
-			idList->InsertNextId(currentIndex);
-			currentIndex++;
+			gridPoints->InsertPoint(cid, node->X(), node->Y(), node->Z());
+			triangle->GetPointIds()->SetId(id, cid);
+			cid++;
 		}
-		output->InsertNextCell(triangle->GetCellType(), idList);
+		output->InsertNextCell(triangle->GetCellType(), triangle->GetPointIds());
 	}
 	
-	output->SetPoints(newPoints);
+	output->SetPoints(gridPoints);
 
+
+	gridPoints->Delete();
+
+	this->GetProperties()->SetOpacity(0.5);
+	this->GetProperties()->SetEdgeVisibility(1);
 */
-	
-	//output->SetPoints(newPoints);
-	//newPoints->Delete();
-
-//	output->SetVerts(newVerts);
-//	newVerts->Delete();
-
-	return 1;
-}
+/*
+	vtkPoints* trianglePoints = vtkPoints::New();
+	trianglePoints->SetNumberOfPoints(3);
+	trianglePoints->InsertPoint(0, 0, 0, 0);
+	trianglePoints->InsertPoint(1, 1, 0, 0);
+	trianglePoints->InsertPoint(2, .5, .5, 0);
+	vtkFloatArray* triangleTCoords = vtkFloatArray::New();
+	triangleTCoords->SetNumberOfComponents(3);
+	triangleTCoords->SetNumberOfTuples(3);
+	triangleTCoords->InsertTuple3(0, 1, 1, 1);
+	triangleTCoords->InsertTuple3(1, 2, 2, 2);
+	triangleTCoords->InsertTuple3(2, 3, 3, 3);
+	vtkTriangle* aTriangle = vtkTriangle::New();
+	aTriangle->GetPointIds()->SetId(0, 0);
+	aTriangle->GetPointIds()->SetId(1, 1);
+	aTriangle->GetPointIds()->SetId(2, 2);
+	vtkUnstructuredGrid* output = vtkUnstructuredGrid::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
+	output->Allocate(1, 1);
+	output->InsertNextCell(aTriangle->GetCellType(), aTriangle->GetPointIds());
+	output->SetPoints(trianglePoints);
+	output->GetPointData()->SetTCoords(triangleTCoords);
+*/
+//	return 1;
+//}
 
 int VtkMeshSource::RequestInformation( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {

@@ -20,8 +20,8 @@ MshModel::MshModel( QString name, Mesh_Group::CFEMesh* mesh ,QObject* parent /*=
 : Model(name, parent), _mesh(mesh)
 {
 	_modelContentType = MSH_MODEL;
-	_vtkSource = VtkMeshSource::New();
-	static_cast<VtkMeshSource*>(_vtkSource)->setMesh(_mesh);
+	//_vtkSource = VtkMeshSource::New();
+	//static_cast<VtkMeshSource*>(_vtkSource)->setMesh(_mesh);
 }
 
 int MshModel::columnCount( const QModelIndex& parent /*= QModelIndex()*/ ) const

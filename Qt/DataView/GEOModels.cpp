@@ -13,6 +13,8 @@
 #include "StationTreeModel.h"
 #include "LinesModel.h"
 
+//#include "StationIO.h"
+
 // BUG removal of lists is not correctly implemented as only the 2d _or_ the 3d visualisation
 // of the removed vector will also be removed correctly (depending on what is removed first).
 // this is likely somehow connected to incorrect use of qt's signal/slot architecture. 
@@ -78,6 +80,7 @@ bool GEOModels::removePointVec( const std::string &name )
 void GEOModels::addStationVec( std::vector<GEOLIB::Point*> *stations, std::string &name, const GEOLIB::Color* const color )
 {
 	GEOObjects::addStationVec(stations, name, color);
+
 	_stationModel->addStationList(QString::fromStdString(name), stations);
 	emit stationVectorAdded(_stationModel, name);
 }
