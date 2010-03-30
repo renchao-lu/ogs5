@@ -37,7 +37,8 @@ if (NOT ExternalLibs_BUILT)
 			COMMAND sh ./build_linux.sh
 			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/ExternalLibs/shapelib )
  	    endif ( APPLE )
-	endif ( UNIX )
+	endif ( UNIX )
+
 	
 	set (ExternalLibs_BUILT ON CACHE BOOL INTERNAL)
 	
