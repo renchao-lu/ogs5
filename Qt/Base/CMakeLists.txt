@@ -16,7 +16,7 @@ set( MOC_HEADERS
 # Header files
 set( HEADERS
 	OGSError.h
-	QNonScalableGraphicsTextItem.cpp
+	QNonScalableGraphicsTextItem.h
 	TreeItem.h
 )
 

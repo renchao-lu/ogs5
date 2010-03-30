@@ -51,6 +51,10 @@ if (UNIX)
 	if (GEM_REACT)
 		target_link_libraries( ogs gemipm2k qd )
 	endif (GEM_REACT)
+	
+	if (BRNS)
+		target_link_libraries( ogs dl )
+	endif (BRNS)
 endif (UNIX)
 
 install (TARGETS ogs RUNTIME DESTINATION bin COMPONENT ogs)
