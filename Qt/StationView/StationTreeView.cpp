@@ -106,7 +106,9 @@ void StationTreeView::exportStation()
 	QString fileName = QFileDialog::getSaveFileName(this, "Export Borehole to GMS-Format", "","*.txt");
     if (!fileName.isEmpty()) {
     	QString temp_name;
-		StationIO::writeBoreholeToGMS(static_cast<StationBorehole*>(static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)), fileName.toStdString());
+			std::vector<std::string> temp_soil_names;
+			temp_soil_names.push_back("");
+		StationIO::writeBoreholeToGMS(static_cast<StationBorehole*>(static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)), fileName.toStdString(), temp_soil_names);
     }
 }
 

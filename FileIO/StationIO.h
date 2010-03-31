@@ -25,7 +25,7 @@ public:
 	static void writeBoreholesToGMS(const std::vector<GEOLIB::Point*> *stations);
 
 	/// Exports borehole data to a file in GMS-format.
-	static int writeBoreholeToGMS(const GEOLIB::StationBorehole* station, const std::string &filename, std::vector<std::string> &soilID = std::vector<std::string>(1));
+	static int writeBoreholeToGMS(const GEOLIB::StationBorehole* station, const std::string &filename, std::vector<std::string> &soilID);
 
 	/// Writes a file that assigns each soilID-index in the GMS export file a name.
 	static int writeSoilIDTable(const std::vector<std::string> &soilID, const std::string &filename);

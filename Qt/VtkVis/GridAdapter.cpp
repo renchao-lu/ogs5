@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <list>
+#include <stdlib.h>
 #include "StringTools.h"
 
 
