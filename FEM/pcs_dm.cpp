@@ -721,13 +721,64 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
   if((int)deact_dom.size()>0)
   { 
 
+	 //	  MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  //abort();}
+
      // 
+     // 07.04.2010 WW
+     int i, j;
+     bool done;
+     CElem *elem = NULL;
+     CNode *node = NULL;
      ElementValue_DM *eleV_DM = NULL;
      for (l = 0; l < (long)m_msh->ele_vector.size(); l++)
      {
         eleV_DM = ele_value_dm[l];
         (*eleV_DM->Stress0) =  (*eleV_DM->Stress); 
+
+        elem = m_msh->ele_vector[l];
+        done = false;
+        for(i=0; i<(int)deact_dom.size(); i++)
+        {
+           if(elem->GetPatchIndex()== deact_dom[i]) 
+           {
+              elem->MarkingAll(false);
+              done = true;
+              break;
+           } 
+        } 
+        if(done)
+           continue;
+        else 
+           elem->MarkingAll(true);
      }
+     
+     for (l = 0; l < (long)m_msh->nod_vector.size(); l++)
+     {
+         while(m_msh->nod_vector[l]->connected_elements.size())
+            m_msh->nod_vector[l]->connected_elements.pop_back();
+     }
+     for (l = 0; l < (long)m_msh->ele_vector.size(); l++)
+     {
+        elem = m_msh->ele_vector[l];
+        if(!elem->GetMark()) continue;
+        for(i=0; i<elem->GetNodesNumber(m_msh->getOrder()); i++)
+        {
+           done = false;
+           node = elem->GetNode(i);
+           for(j=0; j<(int)node->connected_elements.size(); j++)
+           {
+              if(l==node->connected_elements[j])
+              {
+                 done = true;
+                 break;
+              }
+           }
+           if(!done)  
+             node->connected_elements.push_back(l);
+       }
+
+     }  //
+
   }
 
   //----------------------------------------------------------------------
