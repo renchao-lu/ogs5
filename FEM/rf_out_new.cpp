@@ -2960,6 +2960,7 @@ void COutput::WriteVTKValues(fstream &vtk_file)
     }
   }
   // ELE data
+  bool wroteAnyEleData = false; //NW
   if(ele_value_vector.size()>0)
   {
     m_pcs = GetPCS_ELE(ele_value_vector[0]);
@@ -2975,6 +2976,7 @@ void COutput::WriteVTKValues(fstream &vtk_file)
     gp_ele = NULL; //OK411
     // write header for cell data
     vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;
+    wroteAnyEleData = true;
     // header for velocities
     vtk_file << "VECTORS velocity float " << endl;
     WriteELEVelocity(vtk_file); //WW/OK
@@ -3007,7 +3009,9 @@ void COutput::WriteVTKValues(fstream &vtk_file)
       mmp_id = 0;
       // Let's say porosity
     // write header for cell data
-    vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;
+    if (!wroteAnyEleData)
+      vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;
+    wroteAnyEleData = true;
     for(long i=0;i<(long)m_msh->ele_vector.size();i++)
     {
       m_ele = m_msh->ele_vector[i];
@@ -3024,7 +3028,9 @@ void COutput::WriteVTKValues(fstream &vtk_file)
   if(mmp_vector.size() > 1)
   {
     // write header for cell data
-    vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;
+    if (!wroteAnyEleData) //NW: check whether the header has been already written 
+      vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;
+    wroteAnyEleData = true;
 	// header now scalar data
 	vtk_file << "SCALARS " << "MatGroup" << " int 1" << endl;
 	vtk_file << "LOOKUP_TABLE default" <<endl;
