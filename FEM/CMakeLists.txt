@@ -21,8 +21,6 @@ set( SOURCES
 	pcs_dm.h
 	problem.h
 	prototyp.h
-	rf_REACT_BRNS.h
-	rf_REACT_GEM.h
 	rf_bc_new.h
 	rf_fct.h
 	rf_fluid_momentum.h
@@ -62,8 +60,6 @@ set( SOURCES
 	par_ddc.cpp
 	pcs_dm.cpp
 	problem.cpp
-	rf_REACT_BRNS.cpp
-	rf_REACT_GEM.cpp
 	rf_bc_new.cpp
 	rf_fct.cpp
 	rf_fluid_momentum.cpp
@@ -86,6 +82,14 @@ set( SOURCES
 	tools.cpp
 	vtk.cpp
 )
+
+if ( GEM_REACT )
+	set ( SOURCES ${SOURCES} rf_REACT_GEM.h rf_REACT_GEM.cpp ) 
+endif ( GEM_REACT )
+
+if ( BRNS )
+	set ( SOURCES ${SOURCES} rf_REACT_BRNS.h rf_REACT_BRNS.cpp ) 
+endif ( BRNS )
 
 include_directories(
 	.
