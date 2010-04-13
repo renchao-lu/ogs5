@@ -15,6 +15,7 @@ endif (UNIX)
 set (PROBLEM_CLASS ON)
 set (RANDOM_WALK ON)
 set (GEM_REACT ON)
+set (GEMlib ON)
 
 add_definitions(
 	-DIPMGEMPLUGIN
