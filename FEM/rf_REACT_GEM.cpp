@@ -1477,7 +1477,7 @@ int REACT_GEM::SetSourceSink_MT ( long in, double time_step_size /*in sec*/ )
 	{
 		return 0;
 	}
-
+return 1; 
 }
 
 int REACT_GEM::FindWater_xDC ( void )
@@ -1890,7 +1890,7 @@ void REACT_GEM::MassToConcentration ( long l /*idx of node*/ ,int i_timestep )
 {
 	// converting the value from moles to the value in mol/m^3 water.
 	long i,j;
-	int k,idx;
+	int /* k,*/ idx;
 	double water_volume;
 
 // do not use water volume..use volume of fluid phase...that should be already corrected for temperature & pressure effects
@@ -2322,7 +2322,8 @@ void REACT_GEM::CalcReactionRate ( long in, double temp, double press )
 	long j,k,dc_counter;
 	double rrn=0.0, rrb=0.0,rra=0.0, sa=0.0;
 	double R=8.31451070; // molar gas konstant [J K-1 mol-1]
-	double omega; // saturation index
+    // HS: 04.2010, not used, then commented
+	// double omega; // saturation index 
 	double aa=1.0,ab=1.0,ac=1.0;  // activity products ...species are input from material file
 	double dmdt;
 	double *mol_phase, *omega_phase; // this we need for the phases
