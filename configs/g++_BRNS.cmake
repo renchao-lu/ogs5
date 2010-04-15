@@ -1,5 +1,9 @@
 message (STATUS "Setting the g++_BRNS configuration")
 
+if (WIN32)
+	#message (FATAL_ERROR "ERROR: This configuration is not available on Windows!")
+endif (WIN32)
+
 if (UNIX)
 	add_definitions(
 		-pedantic
