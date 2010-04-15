@@ -54,25 +54,32 @@ void VtkStationSource::PrintSelf( ostream& os, vtkIndent indent )
 /// Create 3d Station objects
 int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
+	int offsetFactor = 10;
+	int scalingFactor = 1;
+
 	if (!_stations)
 		return 0;
 	int nStations = _stations->size();
 	if (nStations == 0)
 		return 0;
 
+	// HACK colour table should be set from outside
+	std::map<std::string, GEOLIB::Color*> colorLookupTable;
+	int lookupTableFound = readColorLookupTable(colorLookupTable, "d:/BoreholeColourReference.txt");
+
 	bool isBorehole = (static_cast<GEOLIB::Station*>((*_stations)[0])->type() == GEOLIB::Station::BOREHOLE) ? true : false;
 
 
-	vtkInformation *outInfo = outputVector->GetInformationObject(0);
-	vtkPolyData* output = vtkPolyData::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
+	vtkSmartPointer<vtkInformation> outInfo = outputVector->GetInformationObject(0);
+	vtkSmartPointer<vtkPolyData> output = vtkPolyData::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
 
-	vtkPoints* newStations = vtkPoints::New();
-	vtkCellArray* newVerts = vtkCellArray::New();
+	vtkSmartPointer<vtkPoints> newStations = vtkSmartPointer<vtkPoints>::New();
+	vtkSmartPointer<vtkCellArray> newVerts = vtkSmartPointer<vtkCellArray>::New();
 	//newStations->Allocate(nStations);
-	//newVerts->Allocate(nStations);
+	newVerts->Allocate(nStations);
 
-	vtkCellArray* newLines;
-	if (isBorehole) newLines = vtkCellArray::New();
+	vtkSmartPointer<vtkCellArray> newLines;
+	if (isBorehole) newLines = vtkSmartPointer<vtkCellArray>::New();
 
 	if (outInfo->Get(vtkStreamingDemandDrivenPipeline::UPDATE_PIECE_NUMBER()) > 0)
 		return 1;
@@ -81,7 +88,8 @@ int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector
 	// if this is not the case the colour for each point has to be set for each point
 	// individually in the loop below
 	GEOLIB::Color* c = static_cast<GEOLIB::Station*>((*_stations)[0])->getColor();
-	unsigned char color[3] = {(*c)[0], (*c)[1], (*c)[2]};
+	unsigned char color[3] = { (*c)[0], (*c)[1], (*c)[2] };
+	delete c;
 
 	vtkSmartPointer<vtkUnsignedCharArray> colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
 	colors->SetNumberOfComponents(3);
@@ -100,7 +108,10 @@ int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector
 	for (std::vector<GEOLIB::Point*>::const_iterator it = _stations->begin();
 		it != _stations->end(); ++it)
 	{
-		const double* coords = (*it)->getData();
+		double* coords = const_cast<double*>((*it)->getData());
+		double offset  = ((offsetFactor-scalingFactor)*coords[2]);
+		coords[2] *= scalingFactor;
+		coords[2] += offset;
 		vtkIdType sid[1];
 		sid[0] = newStations->InsertNextPoint(coords);
 		newVerts->InsertNextCell(1, sid);
@@ -113,66 +124,51 @@ int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector
 //			lastMaxIndex++;
 //		} else notTooLarge=true;
 
-		int scalingFactor=1;
 		if (isBorehole && notTooLarge)
 		{
-			GEOLIB::StationBorehole* bore = static_cast<GEOLIB::StationBorehole*>(*it);
-			std::vector<GEOLIB::Point*> profile = bore->getProfile();
+			std::vector<GEOLIB::Point*> profile = static_cast<GEOLIB::StationBorehole*>(*it)->getProfile();
+			std::vector<std::string> soilNames = static_cast<GEOLIB::StationBorehole*>(*it)->getSoilNames();
 			const size_t nLayers = profile.size();
 
-			// Generate points (the 0-th point is the station itself and has already been added)
 			for (size_t i=1; i<nLayers; i++)
 			{
-				const double* coords = profile[i]->getData();
-				double c[3];
-				c[0] = coords[0];c[1] = coords[1];c[2] = coords[2]*scalingFactor;
-				newStations->InsertNextPoint(c);
+				double* pCoords = const_cast<double*>(profile[i]->getData());
+				double loc[3] = { pCoords[0], pCoords[1], pCoords[2]*scalingFactor+offset};
+				newStations->InsertNextPoint(loc);
+
+				newLines->InsertNextCell(2);
+				newLines->InsertCellPoint(lastMaxIndex+i-1); // start of borehole-layer
+				newLines->InsertCellPoint(lastMaxIndex+i);	//end of boreholelayer
+
+				GEOLIB::Color* c;
+				if (lookupTableFound) c = GEOLIB::getColor(soilNames[i], colorLookupTable);
+				else c = GEOLIB::getRandomColor();
+				unsigned char sColor[3] = { (*c)[0], (*c)[1], (*c)[2] };
+				stratColors->InsertNextTupleValue(sColor);
 			}
 
-			// Generate lines
-			newLines->InsertNextCell(nLayers);
-			for (size_t i=0; i<nLayers; i++)
-			{
-				newLines->InsertCellPoint(lastMaxIndex+i);
-				GEOLIB::Color* c = GEOLIB::getRandomColor();
-				unsigned char randomColor[3] = {(*c)[0], (*c)[1], (*c)[2]};
-				stratColors->InsertNextTupleValue(randomColor);
-			}
-
-			lastMaxIndex += (nLayers);
+			lastMaxIndex += nLayers;	
 		}
 	}
-/*
-	for (size_t i=0; i<_stations->size(); i++)
-		colors->InsertNextTupleValue(color);
-	
-	for (int i=0; i<newStations->GetData()->GetDataSize(); i++)
-	{
-		colors->InsertNextTupleValue();
-	}
-*/
-	output->SetPoints(newStations);
-	newStations->Delete();
 
+	output->SetPoints(newStations);
 	output->SetVerts(newVerts);
-	output->GetCellData()->SetScalars(colors);
-	newVerts->Delete();
+
 
 	if (isBorehole)
 	{
 		output->SetLines(newLines);
-		newLines->Delete();
+
+		int nColors = stratColors->GetDataSize(); 
+		for (int i=0; i<nColors; i++)
+		{
+			unsigned char c[3];
+			stratColors->GetTupleValue(i, c);
+			colors->InsertNextTupleValue(c);
+		}
 	}
 
-	int nColors = stratColors->GetDataSize(); 
-	for (int i=0; i<nColors; i++)
-	{
-		unsigned char c[3];
-		stratColors->GetTupleValue(i, c);
-		colors->InsertNextTupleValue(c);
-	}
-
-	output->GetCellData()->AddArray(stratColors);
+	output->GetCellData()->SetScalars(colors);
 
 	return 1;
 }

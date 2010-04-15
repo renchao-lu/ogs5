@@ -15,8 +15,7 @@
 
 
 /**
- * VtkStationSource is a VTK source object which can be used to feed a visualization
- * pipeline with point data.
+ * \brief VTK source object for the visualisation of unstructured grids
  */
 class VtkMeshSource : public vtkUnstructuredGridAlgorithm, public VtkAlgorithmProperties
 {

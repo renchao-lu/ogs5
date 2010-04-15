@@ -20,6 +20,9 @@
 
 #include <vtkOutlineFilter.h>
 
+#include <vtkSphereSource.h>
+#include <vtkGlyph3D.h>
+
 VtkVisPipeline::VtkVisPipeline( vtkRenderer* renderer, QObject* parent /*= 0*/ )
 : TreeModel(parent), _renderer(renderer)
 {
@@ -47,6 +50,22 @@ void VtkVisPipeline::addPipelineItem( Model* model )
 void VtkVisPipeline::addPipelineItem(StationTreeModel* model, const std::string &name)
 {
 	addPipelineItem(model->vtkSource(name));
+/*
+	vtkSphereSource* sphere = vtkSphereSource::New();
+	sphere->SetRadius(50);
+	sphere->SetPhiResolution(2);
+	sphere->SetThetaResolution(2);
+	sphere->SetReleaseDataFlag(1);
+
+	vtkGlyph3D* glyphs = vtkGlyph3D::New();
+    glyphs->ScalingOn();
+    glyphs->SetScaleModeToScaleByScalar();
+
+    glyphs->SetSource(sphere->GetOutput());
+    glyphs->SetInput(model->vtkSource(name)->GetOutput());
+
+	addPipelineItem(glyphs);
+*/
 }
 
 

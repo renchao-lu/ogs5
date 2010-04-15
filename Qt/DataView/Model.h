@@ -13,7 +13,7 @@
 class ModelItem;
 class QModelIndex;
 class QGraphicsItem;
-class vtkPolyDataAlgorithm;
+class vtkAlgorithm;
 
 /**
  * The Model is a base class for model implementation representing
@@ -87,7 +87,7 @@ public:
 	//void setName(QString val) { _name = val; }
 
 	/// Returns the Vtk polydata source object
-	vtkPolyDataAlgorithm* vtkSource() const { return _vtkSource; }
+	vtkAlgorithm* vtkSource() const { return _vtkSource; }
 
 public slots:
 	/// Deletes all data.
@@ -126,7 +126,7 @@ protected:
 
 	/// The Vtk data source object. This is the starting point for a Vtk data
 	/// visualization pipeline.
-	vtkPolyDataAlgorithm* _vtkSource;
+	vtkAlgorithm* _vtkSource;
 
 protected slots:
 

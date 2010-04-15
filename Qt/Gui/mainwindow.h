@@ -36,6 +36,7 @@ protected slots:
 private slots:
     void open();
 	void save();
+	void exportBoreholesToGMS(std::string listName, std::string fileName);
     void importGoCad();
 	void importRaster();
 	void importShape();

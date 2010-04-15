@@ -43,6 +43,7 @@ private:
 private slots:
 	void on_Clicked(QModelIndex idx);
 	void displayStratigraphy();
+	void exportList();
 	void exportStation();
 	void removeStationList();
 	void showPropertiesDialog();
@@ -50,6 +51,7 @@ private slots:
 signals:
 	void itemSelectionChanged(const QItemSelection & selected, const QItemSelection & deselected);
 	void propertiesDialogRequested(std::string name);
+	void stationListExportRequested(std::string listName, std::string fileName);
 	void stationListRemoved(std::string name);
 
 };

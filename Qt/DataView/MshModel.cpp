@@ -20,9 +20,16 @@ MshModel::MshModel( QString name, Mesh_Group::CFEMesh* mesh ,QObject* parent /*=
 : Model(name, parent), _mesh(mesh)
 {
 	_modelContentType = MSH_MODEL;
-	//_vtkSource = VtkMeshSource::New();
-	//static_cast<VtkMeshSource*>(_vtkSource)->setMesh(_mesh);
+	GridAdapter grid(mesh);
+	_vtkSource = VtkMeshSource::New();
+	static_cast<VtkMeshSource*>(_vtkSource)->setMesh(grid.getNodes(), grid.getElements());
 }
+
+MshModel::~MshModel()
+{
+	_vtkSource->Delete();
+}
+
 
 int MshModel::columnCount( const QModelIndex& parent /*= QModelIndex()*/ ) const
 {
@@ -48,20 +55,20 @@ QVariant MshModel::data( const QModelIndex& index, int role ) const
 	switch (role)
 	{
 	case Qt::DisplayRole:
-/*
+
 		switch (index.column())
 		{
 		case 0:
-			return QString::fromStdString(msh->pcs_name);
+			return QString::fromStdString(_mesh->pcs_name);
 		case 1:
-			return QString::fromStdString(msh->geo_name);
+			return QString::fromStdString(_mesh->geo_name);
 		case 2:
-			return QString::fromStdString(msh->geo_type_name);
+			return QString::fromStdString(_mesh->geo_type_name);
 		default:
 			return QVariant();
 		}
 		break;
-*/
+
 	case Qt::ToolTipRole:
 		return QString("Add msh tooltip here...");
 

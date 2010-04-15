@@ -27,7 +27,7 @@ GridAdapter::GridAdapter(const std::string &filename) :
 }
 
 
-void GridAdapter::convertCFEMesh(const Mesh_Group::CFEMesh* mesh)
+int GridAdapter::convertCFEMesh(const Mesh_Group::CFEMesh* mesh)
 {
 	size_t nElemNodes = 0;
 	size_t idx = 0;
@@ -48,13 +48,20 @@ void GridAdapter::convertCFEMesh(const Mesh_Group::CFEMesh* mesh)
 		int type = static_cast<int>(mesh->ele_vector[i]->GetElementType());
 		newElem->type = getElementType(type);
 
-		std::vector<long> elemNodes;
-		nElemNodes = mesh->ele_vector[i]->nodes_index.Size();
-		for (size_t j=0; j<nElemNodes; j++)
-			newElem->nodes.push_back(mesh->ele_vector[i]->GetNodeIndex(j));
+		if (newElem->type != ERROR)
+		{
+			std::vector<long> elemNodes;
+			nElemNodes = mesh->ele_vector[i]->nodes_index.Size();
+			for (size_t j=0; j<nElemNodes; j++)
+				newElem->nodes.push_back(mesh->ele_vector[i]->GetNodeIndex(j));
 
-		_elems->push_back(newElem);
+			_elems->push_back(newElem);
+		}
+		else
+			std::cout << "GridAdapter::convertCFEMesh() - Error recognising element type..." << std::endl;
 	}
+
+	return 1;
 }
 	
 int GridAdapter::readMeshFromFile(const std::string &filename)
@@ -125,15 +132,20 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 					if (fields.front().empty()) fields.pop_front(); // " "
 					elem->type = getElementType(fields.front()); // element type
 					
-					while (fields.size()>1)
+					if (elem->type != ERROR)
 					{
-						fields.pop_front();
-						if (fields.front().empty()) fields.pop_front(); // " "
-						elem->nodes.push_back(atoi(fields.front().c_str()));
-					} 
+						while (fields.size()>1)
+						{
+							fields.pop_front();
+							if (fields.front().empty()) fields.pop_front(); // " "
+							elem->nodes.push_back(atoi(fields.front().c_str()));
+						} 
 
-					_elems->push_back(elem);
-					cid++;
+						_elems->push_back(elem);
+						cid++;
+					}
+					else
+						std::cout << "GridAdapter::readMeshFromFile() - Error recognising element type..." << std::endl;
 				}
 				else
 					std::cout << "GridAdapter::readMeshFromFile() - Index error while reading elements..." << std::endl;
@@ -149,7 +161,7 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 	return 1;
 }
 
-GridAdapter::MeshType GridAdapter::getElementType(std::string t)
+GridAdapter::MeshType GridAdapter::getElementType(const std::string &t)
 {
 	if (t.compare("tri") == 0)  return TRIANGLE;
 	if (t.compare("line") == 0)  return LINE;

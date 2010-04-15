@@ -58,13 +58,13 @@ public:
 
 private:
 	/// Converts an FEM Mesh to a list of nodes and elements.
-	void convertCFEMesh(const Mesh_Group::CFEMesh* mesh);
+	int convertCFEMesh(const Mesh_Group::CFEMesh* mesh);
 
 	/// Reads a MSH file into a list of nodes and elements.
 	int readMeshFromFile(const std::string &filename);
 
 	/// Converts a string to a MeshType
-	MeshType getElementType(std::string t);
+	MeshType getElementType(const std::string &t);
 
 	/// Converts an integer to a MeshType
 	MeshType getElementType(int type);

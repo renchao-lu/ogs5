@@ -63,23 +63,25 @@ void StationTreeView::contextMenuEvent( QContextMenuEvent* event )
 {
 	QModelIndex index = this->selectionModel()->currentIndex();
 	ModelTreeItem* item = static_cast<ModelTreeItem*>(index.internalPointer());
+	QString temp_name;
 
 	// The current index refers to a parent item (e.g. a listname)
 	if (item->childCount()>0)
 	{
 		QMenu menu;
 		QAction* propertyAction = menu.addAction("Display list properties...");
+		QAction* exportAction   = menu.addAction("Export to GMS...");
 		menu.addSeparator();
-		QAction* removeAction = menu.addAction("Remove station list");
+		QAction* removeAction   = menu.addAction("Remove station list");
 
 		connect(propertyAction, SIGNAL(triggered()), this, SLOT(showPropertiesDialog()));
-		connect(removeAction, SIGNAL(triggered()), this, SLOT(removeStationList()));
+		connect(exportAction,   SIGNAL(triggered()), this, SLOT(exportList()));
+		connect(removeAction,   SIGNAL(triggered()), this, SLOT(removeStationList()));
 		menu.exec(event->globalPos());
 	}
 	// The current index refers to a station object
 	else
 	{
-		QString temp_name;
 		if (static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)->type() == Station::BOREHOLE)
 		{
 			QMenu menu;
@@ -100,14 +102,25 @@ void StationTreeView::displayStratigraphy()
 	stationView->show();
 }
 
+
+void StationTreeView::exportList()
+{
+	TreeItem* item = static_cast<StationTreeModel*>(model())->getItem(this->selectionModel()->currentIndex());
+	std::string listName = item->data(0).toString().toStdString();
+	QString fileName = QFileDialog::getSaveFileName(this, "Export Boreholes to GMS-Format", "","*.txt");
+    if (!fileName.isEmpty()) {
+		emit stationListExportRequested(listName, fileName.toStdString());
+	}
+}
+
 void StationTreeView::exportStation()
 {
 	QModelIndex index = this->selectionModel()->currentIndex();
 	QString fileName = QFileDialog::getSaveFileName(this, "Export Borehole to GMS-Format", "","*.txt");
     if (!fileName.isEmpty()) {
     	QString temp_name;
-			std::vector<std::string> temp_soil_names;
-			temp_soil_names.push_back("");
+		std::vector<std::string> temp_soil_names; 
+		temp_soil_names.push_back(""); // soil name vector needs to be initialised
 		StationIO::writeBoreholeToGMS(static_cast<StationBorehole*>(static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)), fileName.toStdString(), temp_soil_names);
     }
 }

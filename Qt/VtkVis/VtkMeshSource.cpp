@@ -11,6 +11,7 @@
 #include <vtkStreamingDemandDrivenPipeline.h>
 #include <vtkPoints.h>
 #include <vtkUnstructuredGrid.h>
+#include <vtkSmartPointer.h>
 
 // OGS Cell Types
 #include <vtkTriangle.h>
@@ -64,15 +65,16 @@ void VtkMeshSource::PrintSelf( ostream& os, vtkIndent indent )
 
 int VtkMeshSource::RequestData( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
+	int scalingFactor = 10;
 	size_t nPoints = _nodes->size();
 	size_t nElems  = _elems->size();
 	size_t nElemNodes = 0;
 	if (nPoints == 0 || nElems == 0)
 		return 0;
 
-	vtkPoints *gridPoints = vtkPoints::New();
-	vtkInformation *outInfo = outputVector->GetInformationObject(0);
-	vtkUnstructuredGrid* output = vtkUnstructuredGrid::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
+	vtkSmartPointer<vtkPoints> gridPoints = vtkSmartPointer<vtkPoints>::New();
+	vtkSmartPointer<vtkInformation> outInfo = outputVector->GetInformationObject(0);
+	vtkSmartPointer<vtkUnstructuredGrid> output = vtkUnstructuredGrid::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
 
 	gridPoints->Allocate(_nodes->size());
 	output->Allocate(nElems);
@@ -83,12 +85,11 @@ int VtkMeshSource::RequestData( vtkInformation* request, vtkInformationVector** 
 		return 1;
 
 	for (size_t i=0; i<nPoints; i++)
-		gridPoints->InsertPoint(i, (*(*_nodes)[i])[0], (*(*_nodes)[i])[1], (*(*_nodes)[i])[2]);
+		gridPoints->InsertPoint(i, (*(*_nodes)[i])[0], (*(*_nodes)[i])[1], (*(*_nodes)[i])[2]*scalingFactor);
 
 	// Generate mesh elements
 	for (size_t i=0; i<nElems; i++)
 	{
-		//vtkTriangle* newCell = vtkTriangle::New(); // HACK for triangle meshes
 		vtkCell* newCell;
 		
 		if ((*_elems)[i]->type == GridAdapter::TRIANGLE)
@@ -109,10 +110,10 @@ int VtkMeshSource::RequestData( vtkInformation* request, vtkInformationVector** 
 			newCell->GetPointIds()->SetId(j, (*_elems)[i]->nodes[j]);
 
 		output->InsertNextCell(newCell->GetCellType(), newCell->GetPointIds());
+		newCell->Delete();
 	}
 	
 	output->SetPoints(gridPoints);
-	gridPoints->Delete();
 
 	this->GetProperties()->SetOpacity(0.5);
 	this->GetProperties()->SetEdgeVisibility(1);

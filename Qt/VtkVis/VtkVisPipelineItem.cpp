@@ -17,6 +17,18 @@
 #include <vtkProperty.h>
 #include <vtkPolyDataAlgorithm.h>
 
+
+#include <vtkTIFFReader.h>
+#include <vtkTexture.h>
+#include <vtkImageData.h>
+#include <vtkPlaneSource.h>
+#include <vtkSmartPointer.h>
+#include <vtkTextureMapToPlane.h>
+#include <vtkImageCanvasSource2D.h>
+#include <vtkCylinderSource.h>
+#include <vtkSphereSource.h>
+
+
 VtkVisPipelineItem::VtkVisPipelineItem(
 	vtkRenderer* renderer,
 	vtkAlgorithm* algorithm,
@@ -82,6 +94,11 @@ void VtkVisPipelineItem::Initialize()
 	_renderer->AddActor(_actor);
 
 	vtkProperty* itemProperty;
+	
 	if (itemProperty = dynamic_cast<VtkAlgorithmProperties*>(_algorithm)->GetProperties())
+	{
+		itemProperty->SetColor(0,1,0);
 		_actor->SetProperty(itemProperty);
+	}
+	
 }

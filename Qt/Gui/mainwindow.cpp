@@ -75,6 +75,8 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	stationTabWidget->treeView->setModel(_geoModels->getStationModel());
 	connect(_geoModels, SIGNAL(stationVectorAdded(StationTreeModel*, std::string)),
 		scene, SLOT(loadItemsFromTreeModel(StationTreeModel*, std::string)));		// update model when stations are added
+	connect(stationTabWidget->treeView, SIGNAL(stationListExportRequested(std::string, std::string)),
+		this, SLOT(exportBoreholesToGMS(std::string, std::string)));	// export Stationlist to GMS
 	connect(stationTabWidget->treeView, SIGNAL(stationListRemoved(std::string)),
 		_geoModels, SLOT(removeStationVec(std::string)));	// update model when stations are removed
 	connect(_geoModels, SIGNAL(stationVectorRemoved(StationTreeModel*, std::string)),
@@ -447,12 +449,10 @@ void MainWindow::loadFile(const QString &fileName)
 #ifndef NDEBUG
     	 std::cout << myTimer.elapsed() << " ms" << std::endl;
 #endif
-/*
-		 // 3d mesh test sequence	
+		 // HACK 3d mesh test sequence	
 		 vtkUnstructuredGridAlgorithm* meshSource = VtkMeshSource::New();
 		 static_cast<VtkMeshSource*>(meshSource)->setMesh(grid.getNodes(), grid.getElements());
 		 _vtkVisPipeline->addPipelineItem(meshSource);		
-*/
 	}
 	else if (fi.suffix().toLower() == "ts") {
 #ifndef NDEBUG
@@ -687,4 +687,10 @@ void MainWindow::showAddPipelineFilterItemDialog( QModelIndex parentIndex )
 {
 	VtkAddFilterDialog dlg(_vtkVisPipeline, parentIndex);
 	dlg.exec();
+}
+
+void MainWindow::exportBoreholesToGMS(std::string listName, std::string fileName)
+{
+	std::vector<GEOLIB::Point*> *stations = _geoModels->getStationVec(listName);
+	StationIO::writeBoreholesToGMS(stations, fileName);
 }

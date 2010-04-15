@@ -29,6 +29,7 @@ class MshModel : public Model
 
 public:
 	MshModel(QString name, Mesh_Group::CFEMesh* mesh ,QObject* parent = 0);
+	~MshModel();
 
 	int columnCount(const QModelIndex& parent = QModelIndex()) const;
 	QVariant data(const QModelIndex& index, int role) const;

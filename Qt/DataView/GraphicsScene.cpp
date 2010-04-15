@@ -43,51 +43,6 @@ void GraphicsScene::drawPixmap(const QPixmap &img, const QPointF &origin, const 
 	raster->setPos(origin);
 }
 
-/*
-void GraphicsScene::reloadAll()
-{
-	this->clear();
-	loadAll();
-}*/
-
-
-/*
-void GraphicsScene::loadAll()
-{
-	//2DCoordinateOriginGraphicsItem* coordinateOriginItem = new 2DCoordinateOriginGraphicsItem(_viewplane);
-	//addItem(coordinateOriginItem);
-
-	QTime timer;
-	timer.start();
-
-	foreach (Model* model, _models)
-	{
-		model->updateData();
-
-		if (model->rowCount())
-		{
-			if (model->modelType() == Model::TABLE_MODEL)
-				loadItemsFromTableModel(model);
-			else
-			{
-				for (int i=0; i<model->rowCount(); i++)
-					loadChildItems(model, model->index(i,0));
-			}
-		}
-	}
-
-	if (_osgManager) _osgManager->showAll();
-
-	QRectF rect = itemsBoundingRect();
-	setSceneRect(rect);
-
-	std::cout << "Scene items: " << items().size() << std::endl;
-	std::cout << "Scene loaded in " << timer.elapsed() << " ms" << std::endl;
-
-	emit itemsLoaded();
-}
-*/
-
 
 void GraphicsScene::loadItemsFromTreeModel(StationTreeModel* model, std::string name)
 {

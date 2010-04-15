@@ -233,24 +233,49 @@ bool OGSRaster::loadPixmapFromImage(const QString &fileName, QPixmap &raster)
 	return raster.load(fileName);
 }
 
-void OGSRaster::convertTo8BitImage(QImage &img, const int &min, const int &max)
+void OGSRaster::convertToGreyscale(QPixmap &raster, const int &min, const int &max)
 {
 	int value = 0;
 	double scalingFactor = 255.0/(max-min);
 
+	QImage img = raster.toImage();
 	for (int i=0; i<img.width(); i++)
 	{
 		for (int j=0; j<img.height(); j++)
 		{
-			value = static_cast<int>(floor((qGreen(img.pixel(i,j))-min)*scalingFactor));
+			QRgb pix = img.pixel(i,j);
+			value = static_cast<int>(floor(((0.3*qRed(pix)+0.6*qGreen(pix)+0.1*qBlue(pix))-min)*scalingFactor));
 			img.setPixel(i, j, qRgb(value, value, value));
 		}
 	}
+	raster = QPixmap::fromImage(img);
 }
 
-int OGSRaster::getMaxValue(const QImage &img)
+
+int* OGSRaster::getGreyscaleData(QPixmap &raster, const int &min, const int &max)
+{
+	int index = 0;
+	double scalingFactor = 255.0/(max-min);
+	int *pixVal (new int[raster.height() * raster.width()]);
+	
+	QImage img = raster.toImage();
+	for (int j=0; j<img.height(); j++)
+	{
+		index = j*raster.width();
+		for (int i=0; i<img.width(); i++)
+		{
+			QRgb pix = img.pixel(i,j);
+			pixVal[index+i] = static_cast<int>(floor(((0.3*qRed(pix)+0.6*qGreen(pix)+0.1*qBlue(pix))-min)*scalingFactor));
+		}
+	}
+	return pixVal;
+}
+
+
+int OGSRaster::getMaxValue(const QPixmap &raster)
 {
 	int value, maxVal = 0;
+	QImage img = raster.toImage();
 	for (int i=0; i<img.width(); i++)
 	{
 		for (int j=0; j<img.height(); j++)
@@ -262,9 +287,10 @@ int OGSRaster::getMaxValue(const QImage &img)
 	return maxVal;
 }
 
-int OGSRaster::getMinValue(const QImage &img)
+int OGSRaster::getMinValue(const QPixmap &raster)
 {
 	int value, minVal = static_cast <int> (pow(2.0,16));
+	QImage img = raster.toImage();
 	for (int i=0; i<img.width(); i++)
 	{
 		for (int j=0; j<img.height(); j++)

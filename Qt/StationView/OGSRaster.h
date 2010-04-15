@@ -31,6 +31,8 @@ class OGSRaster
 
 public:
 	/**
+	 * \brief Loads an image- or raster-file into a QPixmap.
+	 *
 	 * Public method for loading all data formats. Internally the method automatically differentiates between
 	 * images and georeferenced files and then calls the appropriate method for reading the file.
 	 * \param fileName Filename of the file that should be loaded.
@@ -40,9 +42,18 @@ public:
 	 * \return True if the raster data was loaded correctly, false otherwise.
 	 */
 	static bool loadPixmap(const QString &fileName, QPixmap &raster, QPointF &origin, double &scalingFactor);
-	static void convertTo8BitImage(QImage &img, const int &min, const int &max);
-	static int getMaxValue(const QImage &img);
-	static int getMinValue(const QImage &img);
+
+	/// Converts raster to an 8 bit greyscale image that is contrast-stretched in [min:max].
+	static void convertToGreyscale(QPixmap &raster, const int &min = 0, const int &max = 255);
+
+	/// Returns an int-array containing the raster converted an 8 bit greyscale values that are contrast-stretched in [min:max].
+	static int* getGreyscaleData(QPixmap &raster, const int &min = 0, const int &max = 255);
+
+	/// Returns the maximum intensity of raster.
+	static int getMaxValue(const QPixmap &raster);
+
+	/// Returns the minimum intensity of raster.
+	static int getMinValue(const QPixmap &raster);
 
 private:
 	/**
