@@ -30,7 +30,9 @@ Programing:
 #endif
 #include "makros.h"
 // C
+#ifndef __APPLE__
 #include <malloc.h>
+#endif
 // C++
 #include <iostream>
 #include <iomanip>  //WW
