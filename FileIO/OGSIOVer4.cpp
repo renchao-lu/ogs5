@@ -5,13 +5,19 @@
  *      Author: fischeth
  */
 
-#include "OGSIOVer4.h"
 #include <sstream>
+// FileIO
+#include "OGSIOVer4.h"
+// Base
 #include "StringTools.h"
+// GEO
 #include "GEOObjects.h"
 #include "Point.h"
 #include "Polyline.h"
+#include "Triangle.h"
 #include "Surface.h"
+// MATHLIB
+#include "AnalyticalGeometry.h"
 
 using namespace GEOLIB;
 
@@ -81,7 +87,7 @@ void readPolylinePointVector(const std::string &fname,
 		std::vector<Point*>& pnt_vec, Polyline *ply, const std::string &path)
 {
 	// open file
-	std::ifstream in(fname.c_str());
+	std::ifstream in((path+fname).c_str());
 	if (!in)
 		std::cerr << "error opening stream from " << fname << std::endl;
 
@@ -128,7 +134,7 @@ std::string readPolyline(std::istream &in, std::vector<Polyline*>* ply_vec,
 		if (line.find("$TYPE") != std::string::npos) { // subkeyword found
 			in >> line; // read value
 			long type = strtol(line.c_str(), NULL, 0);
-			if (type == 2)
+			if (type == 100)
 				std::cerr << "Polyline is an arc" << std::endl;
 		}
 		//....................................................................
@@ -197,12 +203,13 @@ std::string readPolylines(std::istream &in, std::vector<Polyline*>* ply_vec,
 }
 
 void readTINFile(const std::string &fname, Surface* sfc,
-		std::vector<Polyline*> &ply_vec, std::vector<Point*> &pnt_vec)
+		std::vector<Point*> &pnt_vec)
 {
 	// open file
 	std::ifstream in(fname.c_str());
 	if (!in)
-		std::cerr << "readTINFile error opening stream from " << fname << std::endl;
+		std::cerr << "readTINFile error opening stream from " << fname
+				<< std::endl;
 
 	size_t id;
 	double x, y, z;
@@ -210,7 +217,7 @@ void readTINFile(const std::string &fname, Surface* sfc,
 		// read id
 		in >> id;
 		// determine size
-		size_t pnt_pos(pnt_vec.size()), ply_pos(ply_vec.size());
+		size_t pnt_pos(pnt_vec.size());
 		// read first point
 		in >> x >> y >> z;
 		pnt_vec.push_back(new Point(x, y, z));
@@ -220,13 +227,8 @@ void readTINFile(const std::string &fname, Surface* sfc,
 		// read third point
 		in >> x >> y >> z;
 		pnt_vec.push_back(new Point(x, y, z));
-		// create new Polyline
-		ply_vec.push_back (new Polyline (pnt_vec));
-		ply_vec[ply_pos]->addPoint(pnt_pos);
-		ply_vec[ply_pos]->addPoint(pnt_pos+1);
-		ply_vec[ply_pos]->addPoint(pnt_pos+2);
-		// create new Surface
-		sfc->addPolyline(ply_pos);
+		// create new Triangle
+		sfc->addTriangle(pnt_pos, pnt_pos+1, pnt_pos+1);
 	}
 }
 
@@ -246,9 +248,8 @@ std::string readSurface(std::istream &in, std::vector<Surface*> &sfc_vec,
 		const std::string &path)
 {
 	std::string line;
-	Surface *sfc(new Surface(ply_vec));
+	Surface *sfc(new Surface(pnt_vec));
 
-	// Schleife ueber alle Phasen bzw. Komponenten
 	do {
 		in >> line;
 		if (line.find("$ID") != std::string::npos) { // subkeyword found CC
@@ -264,6 +265,13 @@ std::string readSurface(std::istream &in, std::vector<Surface*> &sfc_vec,
 		if (line.find("$TYPE") != std::string::npos) { // subkeyword found
 			in >> line; // read value
 			long type = strtol(line.c_str(), NULL, 0);
+			if (type == 3)
+				std::cerr
+						<< "surface type 3: flat surface with any normal direction - - reading not implemented"
+						<< std::endl;
+			if (type == 100)
+				std::cerr << "cylindrical surface - reading not implemented"
+						<< std::endl;
 		}
 		//....................................................................
 		if (line.find("$EPSILON") != std::string::npos) { // subkeyword found
@@ -273,7 +281,7 @@ std::string readSurface(std::istream &in, std::vector<Surface*> &sfc_vec,
 		if (line.find("$TIN") != std::string::npos) { // subkeyword found
 			in >> line; // read value (file name)
 			line = path + line;
-			readTINFile (line, sfc, ply_vec, pnt_vec);
+			readTINFile(line, sfc, pnt_vec);
 		}
 		//....................................................................
 		if (line.find("$MAT_GROUP") != std::string::npos) { // subkeyword found
@@ -295,7 +303,19 @@ std::string readSurface(std::istream &in, std::vector<Surface*> &sfc_vec,
 				if (ply_id == ply_vec.size())
 					std::cerr << "polyline for surface not found!" << std::endl;
 				else {
-					sfc->addPolyline(ply_id);
+					// compute triangulation of polygon
+					GEOLIB::Polyline *polyline (ply_vec[ply_id]);
+					std::cout << "triangulation of Polygon with " << polyline->getSize() << " points ... " << std::flush;
+					std::list<GEOLIB::Triangle> triangles;
+					MATHLIB::earClippingTriangulationOfPolygon(ply_vec[ply_id], triangles);
+					std::cout << "done - " << triangles.size () << " triangles " << std::endl;
+
+					// add Triangles to Surface
+					std::list<GEOLIB::Triangle>::const_iterator it (triangles.begin());
+					while (it != triangles.end()) {
+						sfc->addTriangle ((*it)[0], (*it)[1], (*it)[2]);
+						it++;
+					}
 				}
 				in >> line;
 			}
@@ -319,7 +339,8 @@ std::string readSurface(std::istream &in, std::vector<Surface*> &sfc_vec,
 std::string readSurfaces(std::istream &in, std::vector<Surface*> &sfc_vec,
 		const std::vector<std::string>& ply_vec_names,
 		std::vector<Polyline*> &ply_vec, std::vector<Point*> &pnt_vec,
-		const std::string &path) {
+		const std::string &path)
+{
 	if (!in.good()) {
 		std::cerr << "*** readSurfaces input stream error " << std::endl;
 		return std::string("");
@@ -329,6 +350,7 @@ std::string readSurfaces(std::istream &in, std::vector<Surface*> &sfc_vec,
 	while (!in.eof() && tag.find("#SURFACE") != std::string::npos) {
 		tag = readSurface(in, sfc_vec, ply_vec_names, ply_vec, pnt_vec, path);
 	}
+
 	return tag;
 }
 
@@ -382,6 +404,24 @@ void readGLIFileV4(const std::string& fname, GEOObjects* geo) {
 		geo->addPolylineVec(ply_vec, unique_name); // KR: insert into GEOObjects if not empty
 	if (!sfc_vec->empty())
 		geo->addSurfaceVec(sfc_vec, unique_name); // KR: insert into GEOObjects if not empty
+
+	// *** test only - visualization ***
+	unique_name += "1";
+	geo->addPointVec(pnt_vec, unique_name);
+	// visualize all surfaces as polylines
+	std::vector<Polyline*> *ply_vec_for_sfc(new std::vector<Polyline*>);
+	for (size_t i(0); i<sfc_vec->size(); i++) {
+		for (size_t k(0); k<(*sfc_vec)[i]->getNTriangles (); k++) {
+			// get triangle
+			const GEOLIB::Triangle *tri ((*((*sfc_vec)[i]))[k]);
+			// create Poyline
+			Polyline *ply(new Polyline(*pnt_vec));
+			for (size_t j(0); j<3; j++) ply->addPoint ((*tri)[j]);
+			ply_vec_for_sfc->push_back (ply);
+		}
+	}
+	geo->addPolylineVec(ply_vec_for_sfc, unique_name);
+
 }
 
 } // end namespace

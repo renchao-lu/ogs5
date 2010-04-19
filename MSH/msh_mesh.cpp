@@ -1637,7 +1637,7 @@ void CFEMesh::GetNODOnSFC_PLY(Surface*m_sfc, vector<long>&msh_nod_vector) {
 		m_ply = *p_ply;
 		nPointsPly = (int) m_ply->point_vector.size();
 		//....................................................................
-		// Grativity center of this polygon
+		// Gravity center of this polygon
 		for (i = 0; i < 3; i++)
 			gC[i] = 0.0;
 		for (i = 0; i < nPointsPly; i++) {
@@ -1690,6 +1690,28 @@ void CFEMesh::GetNODOnSFC_PLY(Surface*m_sfc, vector<long>&msh_nod_vector) {
 		p_ply++;
 	}
 }
+
+/**************************************************************************
+ MSHLib-Method:
+ Task: Get nodes on plane surface by comparing the area of polygon computed
+ by triangles, which are formed by node and the gravity center
+ with edges of polygon, respectively
+ Programing:
+ 09/2004 WW Implementation
+ 04/2005 OK MSH
+ 07/2005 WW Node object is replaced
+ 03/2010 TF changed to new GEOLIB Surface, reimplementation
+ last modification:
+ **************************************************************************/
+void CFEMesh::GetNODOnSFC_PLY(const GEOLIB::Surface* sfc, std::vector<size_t>& msh_nod_vector)
+{
+	msh_nod_vector.clear();
+	double center[3], p0[3], p1[3];
+	size_t n_triangles (sfc->getNTriangles());
+
+//	if (n_plys != 1)
+}
+
 
 /**************************************************************************
  MSHLib-Method:

@@ -8,8 +8,11 @@
 #ifndef VECTOR3_H
 #define VECTOR3_H
 
-// ** INCLUDES **
+// GEO
 #include "TemplatePoint.h"
+
+// MathLib
+#include "MathTools.h"
 
 #include <iostream>
 #include <cmath>
@@ -52,6 +55,12 @@ public:
 
 	TemplateVector& operator+=(const TemplateVector & pV) {
 		for (size_t i(0); i<3; i++) this->x[i]+=pV[i];
+		return *this;
+	}
+
+	TemplateVector& operator+=(const GEOLIB::TemplatePoint<T>& pnt)
+	{
+		for (size_t i(0); i<3; i++) this->x[i] += pnt[i];
 		return *this;
 	}
 
@@ -112,7 +121,7 @@ public:
 	/// Returns the squared length
 	double LenSqr(void) const
 	{
-		return sqrNorm2 (this->getData ());
+		return scpr (this->getData (), this->getData (), 3);
 	}
 
 	/// Returns the length

@@ -21,6 +21,8 @@ XMLInterface::XMLInterface(GEOLIB::GEOObjects* geoObjects, std::string schemaFil
 {
 #if OGS_QT_VERSION > 45
 	this->setSchema(schemaFile);
+#else
+	Q_UNUSED (schemaFile)
 #endif // QT_VERSION > 45
 }
 
@@ -42,6 +44,7 @@ int XMLInterface::isValid(const QString &fileName) const
 		return -1;
     }
 #else
+    Q_UNUSED (fileName);
 	return 1;
 #endif // QT_VERSION > 45
 }
@@ -136,7 +139,6 @@ int XMLInterface::readGLIFile(const QString &fileName)
 
 void XMLInterface::readPoints( QXmlStreamReader &xml, std::vector<GEOLIB::Point*> *points )
 {
-	int x=0, y=0, z=0;
 	char* pEnd;
 	QXmlStreamAttributes att;
 	// check if the current element is indeed the beginning of the points list
@@ -207,7 +209,6 @@ void XMLInterface::readSurfaces( QXmlStreamReader &xml, std::vector<GEOLIB::Surf
 {
 	size_t idx=0;
 	QString value = NULL;
-	char* pEnd;
 	QXmlStreamAttributes att;
 
 	if(xml.tokenType() != QXmlStreamReader::StartElement && xml.name() == "surfaces") return;
@@ -223,7 +224,7 @@ void XMLInterface::readSurfaces( QXmlStreamReader &xml, std::vector<GEOLIB::Surf
 			if (att.hasAttribute("id")  &&  att.hasAttribute("matgroup") && att.hasAttribute("epsilon"))
 			{
 				idx = surfaces->size();
-				surfaces->push_back(new GEOLIB::Surface(*polylines));
+				surfaces->push_back(new GEOLIB::Surface((*polylines)[0]->getPointsVec()));
 
 				// add polylines to surface (as long as surface is not at an end)
 				while(!(xml.tokenType() == QXmlStreamReader::EndElement && xml.name() == "surface"))
@@ -231,7 +232,7 @@ void XMLInterface::readSurfaces( QXmlStreamReader &xml, std::vector<GEOLIB::Surf
 					xml.readNext();
 					value = readElement(xml, "ply");
 					if (!value.isNull())
-						(*surfaces)[idx]->addPolyline(_idx_map[strtol((value.toStdString()).c_str(), &pEnd, 10)]);
+						std::cout << "ToDo: (*surfaces)[idx]->addPolyline(_idx_map[strtol((value.toStdString()).c_str(), &pEnd, 10)]);" << std::endl;
 				}
 			}
 			else std::cout << "XMLInterface::readSurfaces() - Attribute missing in surface tag ..." << std::endl;
@@ -326,11 +327,12 @@ void XMLInterface::writeGLIFile(QFile* file, const QString &gliName)
 		//xml.writeAttribute("matgroup", QString::number(-1));
 		//xml.writeAttribute("epsilon", QString::number(0.01));
 
-		nPolylines = (*surfaces)[i]->getSize();
-		for (size_t j=0; j<nPolylines; j++)
-		{
-			xml.writeTextElement("ply", QString::number((*surfaces)[i]->getPolylineID(j)));
-		}
+		// ToDo
+//		nPolylines = (*surfaces)[i]->getNTriangles ();
+//		for (size_t j=0; j<nPolylines; j++)
+//		{
+//			xml.writeTextElement("ply", QString::number((*surfaces)[i]->getPolylineID(j)));
+//		}
 		xml.writeEndElement(); //surface
 	}
 	xml.writeEndElement(); //surfaces

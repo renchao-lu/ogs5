@@ -62,7 +62,10 @@ public:
 			return false;
 	}
 
-	/// returns the index of the i-th Point in the vector
+	/**
+	 * returns the index of the i-th polyline point
+	 * in the point vector
+	 */
 	size_t getPointID(size_t i) const {
 		assert(i < m_ply_pnt_ids.size());
 		return m_ply_pnt_ids[i];
@@ -91,6 +94,7 @@ public:
 		return m_ply_pnts[m_ply_pnt_ids[i]];
 	}
 
+	const std::vector<Point*> & getPointsVec () const { return m_ply_pnts; }
 //	/**
 //	 * compute the length of the line segments and the entire length of the polyline
 //	 * \param length the entire length of the polyline

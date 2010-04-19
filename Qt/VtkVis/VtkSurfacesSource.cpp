@@ -52,32 +52,30 @@ int VtkSurfacesSource::RequestData( vtkInformation* request, vtkInformationVecto
 	if (outInfo->Get(vtkStreamingDemandDrivenPipeline::UPDATE_PIECE_NUMBER()) > 0)
 		return 1;
 
-	for (std::vector<GEOLIB::Surface*>::const_iterator it = _surfaces.begin();
-		it != _surfaces.end(); ++it)
-	{
-		const int numPolylines = (*it)->getSize();
-		vtkPolygon* newPolygon = vtkPolygon::New();
-
-		int numberOfPointsInserted = 0;
-		for (int i = 0; i < numPolylines; i++)
-		{
-			GEOLIB::Polyline* polyline = (**it)[i];
-			const int numPoints = polyline->getSize();
-			for (int j = 0; j < numPoints; j++)
-			{
-				const GEOLIB::Point* point = (*polyline)[j];
-				const double* coords = point->getData();
-				newPoints->InsertNextPoint(coords);
-
-				newPolygon->GetPointIds()->InsertNextId(numberOfPointsInserted);
-
-				numberOfPointsInserted++;
-			}
-		}
-
-		newPolygons->InsertNextCell(newPolygon);
-		newPolygon->Delete();
-	}
+//	for (std::vector<GEOLIB::Surface*>::const_iterator it = _surfaces.begin();
+//		it != _surfaces.end(); ++it)
+//	{
+//		const size_t n_triangles = (*it)->getNTriangles();
+//		vtkPolygon* newPolygon = vtkPolygon::New();
+//
+//		int numberOfPointsInserted = 0;
+//		for (size_t i = 0; i < n_triangles; i++)
+//		{
+//			GEOLIB::Triangle* triangle = (**it)[i];
+//			for (int j = 0; j < 3; j++) {
+//				const GEOLIB::Point* point = (*polyline)[j];
+//				const double* coords = point->getData();
+//				newPoints->InsertNextPoint(coords);
+//
+//				newPolygon->GetPointIds()->InsertNextId(numberOfPointsInserted);
+//
+//				numberOfPointsInserted++;
+//			}
+//		}
+//
+//		newPolygons->InsertNextCell(newPolygon);
+//		newPolygon->Delete();
+//	}
 
 	output->SetPoints(newPoints);
 	newPoints->Delete();

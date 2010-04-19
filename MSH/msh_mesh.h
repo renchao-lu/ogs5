@@ -25,6 +25,7 @@
 // GEOLIB
 #include "Point.h"
 #include "Polyline.h"
+#include "Surface.h"
 
 // MSHLib
 #include "msh_elem.h"
@@ -304,7 +305,11 @@ public:
 	 */
 	void GetELEOnPLY(const GEOLIB::Polyline*, std::vector<size_t>&); //OK
 
-
+	/**
+	 * \ingroup MSHGEO
+	 * \brief gives the indices of nodes, which contained in the surface
+	 */
+	void GetNODOnSFC_PLY(const GEOLIB::Surface* sfc, std::vector<size_t>& msh_nod_vector);
 
 	//....................................................................
 	// QUAD->HEX

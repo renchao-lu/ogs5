@@ -63,7 +63,7 @@ int GridAdapter::convertCFEMesh(const Mesh_Group::CFEMesh* mesh)
 
 	return 1;
 }
-	
+
 int GridAdapter::readMeshFromFile(const std::string &filename)
 {
 	size_t cid = 0;
@@ -94,17 +94,17 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 	{
 		GEOLIB::Point* pnt = new GEOLIB::Point();
 		in >> cid >> (*pnt)[0] >> (*pnt)[1] >> (*pnt)[2];
-		
+
 		if (cid == _nodes->size())
 			_nodes->push_back(pnt);
 		else
 			std::cout << "GridAdapter::readMeshFromFile() - Index error while reading nodes..." << std::endl;
 	}
-	
+
 	getline(in, line);
 	getline(in, line);
 	trim(line);
-	if (line.compare("$ELEMENTS") == 0) 
+	if (line.compare("$ELEMENTS") == 0)
 	{
 
 		// read number of elements
@@ -113,7 +113,7 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 		int nElems = atoi(line.c_str());
 		cid = 0;
 
-		// read all nodes
+		// read all elements
 		while ( getline(in, line) )
 		{
 			trim(line);
@@ -131,7 +131,7 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 					fields.pop_front(); // 0
 					if (fields.front().empty()) fields.pop_front(); // " "
 					elem->type = getElementType(fields.front()); // element type
-					
+
 					if (elem->type != ERROR)
 					{
 						while (fields.size()>1)
@@ -139,7 +139,7 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 							fields.pop_front();
 							if (fields.front().empty()) fields.pop_front(); // " "
 							elem->nodes.push_back(atoi(fields.front().c_str()));
-						} 
+						}
 
 						_elems->push_back(elem);
 						cid++;

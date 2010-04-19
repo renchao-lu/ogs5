@@ -35,7 +35,7 @@ public:
 	};
 
 	/// An element structure consisting of a number of nodes and a MeshType
-	typedef struct 
+	typedef struct
 	{
 		MeshType type;
 		std::vector<size_t> nodes;

@@ -3,6 +3,7 @@ set( HEADERS
 	Configure.h.in
 	DateTools.h
 	StringTools.h
+	swap.h
 )
 
 set( SOURCES

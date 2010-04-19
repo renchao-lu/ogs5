@@ -26,6 +26,7 @@ set( HEADERS
 	TemplatePoint.h
 	Point.h
 	Polyline.h
+	Triangle.h
 	Surface.h
 	PointVec.h
 	TemplateVec.h

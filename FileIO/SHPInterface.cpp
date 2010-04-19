@@ -5,7 +5,6 @@
 
 #include "SHPInterface.h"
 #include "StringTools.h"
-#include "MathTools.h"
 
 using namespace GEOLIB;
 
@@ -116,7 +115,7 @@ void SHPInterface::readPolylines(const SHPHandle &hSHP, int numberOfElements, st
 						k=cnpoints;
 					}
 				}
-				if (nextIdx<0) 
+				if (nextIdx<0)
 				{
 					points->push_back(pnt);
 					nextIdx = points->size() - 1;
@@ -144,21 +143,21 @@ void SHPInterface::readPolygons(const SHPHandle &hSHP, int numberOfElements, std
 {
 	this->readPolylines(hSHP, numberOfElements, listName);
 
-	std::vector<Polyline*> *lines = _geoObjects->getPolylineVec(listName);
-	size_t nLines = lines->size();
-
-	if (nLines>0)
-	{
-		std::vector<Surface*> *surfaces = new std::vector<Surface*>(nLines);
-		for (size_t i=0; i<nLines; i++)	
-		{
-			Surface* sfc = new Surface(*lines);
-			if ((*lines)[i]->isClosed())
-			{
-				sfc->addPolyline(i);
-				surfaces->push_back(sfc);
-			}
-		}
-		_geoObjects->addSurfaceVec(surfaces, listName);
-	}
+//	std::vector<Polyline*> *lines = _geoObjects->getPolylineVec(listName);
+//	size_t nLines = lines->size();
+//
+//	if (nLines>0)
+//	{
+//		std::vector<Surface*> *surfaces = new std::vector<Surface*>(nLines);
+//		for (size_t i=0; i<nLines; i++)
+//		{
+//			Surface* sfc = new Surface(*lines);
+//			if ((*lines)[i]->isClosed())
+//			{
+//				sfc->addPolyline(i);
+//				surfaces->push_back(sfc);
+//			}
+//		}
+//		_geoObjects->addSurfaceVec(surfaces, listName);
+//	}
 }

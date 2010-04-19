@@ -6,9 +6,9 @@
  */
 
 #include "GEOObjects.h"
-#include "GocadInterface.h"
-#include "OGSIOVer4.h"
 #include "StringTools.h"
+
+#include <fstream>
 
 namespace GEOLIB {
 
@@ -38,7 +38,6 @@ void GEOObjects::addPointVec(std::vector<Point*> *points, std::string &name)
 	_pnt_vecs.push_back(new PointVec(points));
 	isUniquePointVecName(name);
 	_pnt_vecs[idx]->setName(name);
-	std::cout << "GEOObjects::addPointVec size of _pnt_vecs: " << _pnt_vecs.size() << std::endl;
 }
 
 bool GEOObjects::appendPointVec(const std::vector<Point*> &points, std::string &name)

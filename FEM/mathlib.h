@@ -20,7 +20,6 @@
 
 /* Andere oeffentlich benutzte Module */
 #include <cmath>
-#include <math.h>
 //#include "test.h"
 
 /* Die Schnittstellen der Gleichungsloeser und der Speichertechnik werden
