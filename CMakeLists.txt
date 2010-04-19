@@ -51,7 +51,11 @@ IF (UNIX)
 
   if(MKL)
     SET(CMAKE_CXX_FLAGS "-I${CMAKE_SOURCE_DIR}/LIB/MKL/include")
-    SET(CMAKE_CXX_LINK_FLAGS "-L${CMAKE_SOURCE_DIR}/LIB/MKL/32 -llis-32 -lmkl_solver -lmkl_intel -lmkl_gnu_thread -lmkl_core ")
+    if(CMAKE_SIZEOF_VOID_P MATCHES "8")
+    	SET(CMAKE_CXX_LINK_FLAGS "-L${CMAKE_SOURCE_DIR}/LIB/MKL/64 -llis-64 -lmkl_solver_lp64 -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core ")
+    else (CMAKE_SIZEOF_VOID_P MATCHES "8")
+    	SET(CMAKE_CXX_LINK_FLAGS "-L${CMAKE_SOURCE_DIR}/LIB/MKL/32 -llis-32 -lmkl_solver -lmkl_intel -lmkl_gnu_thread -lmkl_core ")
+    endif (CMAKE_SIZEOF_VOID_P MATCHES "8")
   ENDIF(MKL)
 ENDIF (UNIX)
 
