@@ -8,18 +8,34 @@ if (NOT MKL_FOUND)
 		PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/include)
 
 	if ( UNIX )
-		find_library(MKL_SOLVER_LIBRARIES
-			NAMES mkl_solver
-			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32/libmkl_solver.a )	
-		find_library(MKL_INTEL_LIBRARIES
-			NAMES mkl_intel
-			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32/libmkl_intel.a )	
-		find_library(MKL_GNU_THREAD_LIBRARIES
-			NAMES mkl_gnu_thread
-			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32/libmkl_gnu_thread.a )	
-		find_library(MKL_CORE_LIBRARIES
-			NAMES mkl_core
-			PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32/libmkl_core.a )	
+		# Tell if the unix system is on 64-bit base
+		if(CMAKE_SIZEOF_VOID_P MATCHES "8")
+			find_library(MKL_SOLVER_LIBRARIES
+				NAMES mkl_solver_lp64
+				PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/64/libmkl_solver_lp64.a )	
+			find_library(MKL_INTEL_LIBRARIES
+				NAMES mkl_intel_lp64
+				PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/64/libmkl_intel_lp64.a )	
+			find_library(MKL_GNU_THREAD_LIBRARIES
+				NAMES mkl_gnu_thread
+				PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/64/libmkl_gnu_thread.a )	
+			find_library(MKL_CORE_LIBRARIES
+				NAMES mkl_core
+				PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/64/libmkl_core.a )	
+		else (CMAKE_SIZEOF_VOID_P MATCHES "8")
+			find_library(MKL_SOLVER_LIBRARIES
+				NAMES mkl_solver
+				PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32/libmkl_solver.a )	
+			find_library(MKL_INTEL_LIBRARIES
+				NAMES mkl_intel
+				PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32/libmkl_intel.a )	
+			find_library(MKL_GNU_THREAD_LIBRARIES
+				NAMES mkl_gnu_thread
+				PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32/libmkl_gnu_thread.a )	
+			find_library(MKL_CORE_LIBRARIES
+				NAMES mkl_core
+				PATHS ${CMAKE_SOURCE_DIR}/LIB/MKL/32/libmkl_core.a )	
+		endif (CMAKE_SIZEOF_VOID_P MATCHES "8")
 	else ( UNIX )			
 		find_library(MKL_SOLVER_LIBRARIES
 			NAMES mkl_solver

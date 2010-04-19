@@ -14,9 +14,16 @@ if (NOT LIS_FOUND)
 		PATHS ${CMAKE_SOURCE_DIR}/LIB)
 
 	if ( UNIX )
-		find_library(LIS_LIBRARIES
-			NAMES lis-32
-			PATHS ${CMAKE_SOURCE_DIR}/LIB )	
+		# Tell if the unix system is on 64-bit base
+		if(CMAKE_SIZEOF_VOID_P MATCHES "8")
+			find_library(LIS_LIBRARIES
+				NAMES lis-64
+				PATHS ${CMAKE_SOURCE_DIR}/LIB )	
+		else (CMAKE_SIZEOF_VOID_P MATCHES "8")
+			find_library(LIS_LIBRARIES
+				NAMES lis-32
+				PATHS ${CMAKE_SOURCE_DIR}/LIB )	
+		endif (CMAKE_SIZEOF_VOID_P MATCHES "8")
 	else ( UNIX )			
 		find_library(LIS_LIBRARIES
 			NAMES lis-32
