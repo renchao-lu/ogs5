@@ -5,11 +5,12 @@ if (WIN32)
 endif (WIN32)
 
 if (UNIX)
-	add_definitions(
-		-pedantic
-		-fno-nonansi-builtins
-		-DGCC
-	)
+	if (APPLE)
+		
+	else (APPLE)
+		add_definitions(-pedantic)
+	endif (APPLE)
+	add_definitions(-fno-nonansi-builtins -DGCC)
 endif (UNIX)
 
 set (_POSIX_SOURCE ON)
