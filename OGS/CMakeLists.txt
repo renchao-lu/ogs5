@@ -58,6 +58,14 @@ if (UNIX)
 	if (BRNS)
 		target_link_libraries( ogs dl )
 	endif (BRNS)
+
+	if (LIS)
+		target_link_libraries( ogs ${LIS_LIBRARIES} )
+	endif (LIS)
+	
+	if (MKL)
+		target_link_libraries( ogs ${MKL_LIBRARIES} )
+	endif (MKL)
 endif (UNIX)
 
 install (TARGETS ogs RUNTIME DESTINATION bin COMPONENT ogs)
