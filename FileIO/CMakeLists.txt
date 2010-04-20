@@ -4,7 +4,6 @@ set( SOURCES
 	OGSIOVer4.cpp
 	PetrelInterface.cpp	
 	StationIO.cpp
-	XMLInterface.cpp
 )
 
 # Header files
@@ -13,7 +12,6 @@ set( HEADERS
 	OGSIOVer4.h
 	PetrelInterface.h
 	StationIO.h
-	XMLInterface.h
 )
 
 if (Shapelib_FOUND)
