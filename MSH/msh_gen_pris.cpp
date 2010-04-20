@@ -23,6 +23,7 @@ vector<CMSHNodesPrisGen*>msh_pris_nodes_vector; //OK
 CMSHNodesPrisGen *m_msh_nodes = NULL;
 // constructor
 CMSHNodesPrisGen::CMSHNodesPrisGen(void)
+: x(0.0), y(0.0), z(0.0), rfi_node_id(0)
 {
 }
 // destructor

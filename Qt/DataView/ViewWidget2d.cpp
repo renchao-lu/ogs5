@@ -17,7 +17,7 @@ ViewWidget2d::ViewWidget2d( QWidget* parent /*= 0*/ )
 {
 	setupUi(this);
 
-	QComboBox* viewplaneComboBox = new QComboBox();
+	QComboBox* viewplaneComboBox = new QComboBox(this);
 	viewplaneComboBox->addItem("X/Y");
 	viewplaneComboBox->addItem("X/Z");
 	viewplaneComboBox->addItem("Y/Z");
@@ -25,7 +25,7 @@ ViewWidget2d::ViewWidget2d( QWidget* parent /*= 0*/ )
 		this, SLOT(setViewplane(int)));
 	toolBar->addWidget(viewplaneComboBox);
 
-	itemTypeComboBox = new QComboBox();
+	itemTypeComboBox = new QComboBox(this);
 	itemTypeComboBox->addItem("Point");
 	itemTypeComboBox->addItem("Line");
 	itemTypeComboBox->addItem("Station");

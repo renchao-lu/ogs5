@@ -95,10 +95,14 @@ void VtkVisPipelineItem::Initialize()
 
 	vtkProperty* itemProperty;
 	
-	if (itemProperty = dynamic_cast<VtkAlgorithmProperties*>(_algorithm)->GetProperties())
+	VtkAlgorithmProperties* vtkProps = dynamic_cast<VtkAlgorithmProperties*>(_algorithm);
+	if (vtkProps)
 	{
-		itemProperty->SetColor(0,1,0);
-		_actor->SetProperty(itemProperty);
+		if (itemProperty = dynamic_cast<VtkAlgorithmProperties*>(_algorithm)->GetProperties())
+		{
+			itemProperty->SetColor(0,1,0);
+			_actor->SetProperty(itemProperty);
+		}
 	}
 	
 }

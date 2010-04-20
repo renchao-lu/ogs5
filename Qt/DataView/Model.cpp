@@ -20,7 +20,7 @@
 
 Model::Model( QString name, QObject* parent /*= 0*/ )
 : QAbstractTableModel(parent), _modelType(TABLE_MODEL),
- _modelContentType(EMPTY_MODEL), _name(name)
+ _modelContentType(EMPTY_MODEL), _name(name), _vtkSource(NULL)
 {
 }
 
@@ -105,7 +105,7 @@ bool Model::removeRows( int row, int count, const QModelIndex & parent /*= QMode
 		QModelIndex index = indexFromItem(item);
 		QModelIndex lastIndex = index.sibling(index.row(), columnCount()-1);
 		deletedRowsSelection.select(index, lastIndex);
-		if (item) delete item;
+		delete item;
 		_data.erase(it);
 	}
  	_selectedItems.merge(deletedRowsSelection, QItemSelectionModel::Deselect);
@@ -158,7 +158,7 @@ void Model::clearData()
 	foreach (Model* model, _subModels)
 	{
 		model->clearData();
-		if (model) delete model;
+		delete model;
 	}
 
 	_data.clear();

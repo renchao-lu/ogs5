@@ -117,7 +117,7 @@ void PolylinesModel::updateData()
 	{
 		LineGraphicsItem2d* lineItem2d = new LineGraphicsItem2d(this, *it);
 		ModelItem* item = new ModelItem(lineItem2d, this);
-		size_t numPoints = (*it)->getSize();
+		//size_t numPoints = (*it)->getSize();
 		/*
 		for (int i = 0; i < numPoints; i++)
 		{

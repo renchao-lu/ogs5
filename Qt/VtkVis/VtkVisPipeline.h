@@ -38,8 +38,7 @@ public:
 public slots:
 	void addPipelineItem(Model* model);
 	void addPipelineItem(StationTreeModel* model, const std::string &name);
-	void addPipelineItem(vtkAlgorithm* source, 
-		QModelIndex parent = QModelIndex(), vtkPointSet* input = NULL);
+	void addPipelineItem(vtkAlgorithm* source, QModelIndex parent = QModelIndex());
 
 	void removeSourceItem(Model* model);
 	void removeSourceItem(StationTreeModel* model, const std::string &name);

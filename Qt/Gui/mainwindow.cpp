@@ -227,7 +227,9 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 
 MainWindow::~MainWindow()
 {
-	if (_db) delete _db;
+	delete _db;
+	delete _vtkVisPipeline;
+	delete _geoModels;
 }
 
 void MainWindow::closeEvent( QCloseEvent* event )
@@ -325,7 +327,6 @@ void MainWindow::save()
 		schemaName.append("/OpenGeoSysGLI.xsd");
 		XMLInterface xml(_geoModels, schemaName);
 		xml.writeGLIFile(file, gliName);
-
 		file.close();
 
 		xml.insertStyleFileDefinition(fileName);

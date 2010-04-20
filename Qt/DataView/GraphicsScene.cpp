@@ -103,7 +103,7 @@ void GraphicsScene::setViewPlane( EViewPlane viewplane )
 	QMutableListIterator<QGraphicsItem*> it(sceneItems);
 	while (it.hasNext())
 	{
-		PntGraphicsItem2d* item = (PntGraphicsItem2d*)it.next();
+		PntGraphicsItem2d* item = static_cast<PntGraphicsItem2d*>(it.next());
 		item->setViewplane(viewplane);
 	}
 }

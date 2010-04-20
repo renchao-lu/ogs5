@@ -41,7 +41,7 @@ void DataView::selectionChangedFromOutside( const QItemSelection &selected, cons
 	selModel->select(selected, QItemSelectionModel::Select);
 	selModel->blockSignals(false);
 
-	Model* model = (Model*)this->model();
+	Model* model = static_cast<Model*>(this->model());
 	model->setSelectionFromOutside(selected, deselected);
 
 	return QTableView::selectionChanged(selected, deselected);

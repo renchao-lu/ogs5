@@ -78,7 +78,8 @@ Programing:
 **************************************************************************/
 CElem::CElem():CCore(0)
 {
-
+   selected = 0;
+   matgroup_view = 0;
    grid_adaptation = -1;
    nnodes = 0;
    nnodesHQ = 0;
@@ -506,25 +507,18 @@ string CElem::GetName() const
    {
      case 1:
        return "line";
-       break;
      case 2:
        return "quad";
-       break;
      case 3:
        return "hex";
-       break;
      case 4:
        return "tri";
-       break;
      case 5:
        return "tet";
-       break;
      case 6:
        return "pris";
-       break;
      default:
        return "none";
-       break;
    }
 }
 /**************************************************************************
@@ -1351,22 +1345,17 @@ int CElem::GetElementFaceNodes(int Face, int *FacesNode)
    {
        case 1:  // 1-D bar element
            return GetElementFaces1D(FacesNode);
-           break;
        case 2: // 2-D quadrilateral element
            return GetElementFacesQuad(Face, FacesNode);
-           break;
        case 3: // 3-D hexahedral element
            return GetElementFacesHex(Face, FacesNode);
-           break;
        case 4:  // 2-D triagular element
            return GetElementFacesTri(Face, FacesNode);
-           break;
        case 5:  // 3-D tetrahedral element
            return GetElementFacesTet(Face, FacesNode);
-           break;
        case 6:
            return GetElementFacesPri(Face, FacesNode);
-           break; // 3-D prismatic element
+			 // 3-D prismatic element
     }
     return 0;
 }

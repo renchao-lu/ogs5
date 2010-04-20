@@ -13,6 +13,7 @@
 
 class VtkVisPipeline;
 class QModelIndex;
+class QRadioButton;
 
 /**
  * VtkAddFilterDialog
@@ -24,10 +25,12 @@ class VtkAddFilterDialog : public QDialog, public Ui_VtkAddFilterDialogBase
 public:
 	VtkAddFilterDialog(VtkVisPipeline* pipeline, QModelIndex parentIndex, QDialog* parent = 0);
 
-
+public slots:
+	void on_buttonBox_accepted();
 private:
 	VtkVisPipeline* _pipeline;
 	QModelIndex _parentIndex;
+	QVector<QRadioButton*> _radioButtons;
 
 };
 

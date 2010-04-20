@@ -70,10 +70,17 @@ void VtkVisPipeline::addPipelineItem(StationTreeModel* model, const std::string 
 
 
 void VtkVisPipeline::addPipelineItem( vtkAlgorithm* source,
-									  QModelIndex parent /* = QModelindex() */,
-									  vtkPointSet* input /* = NULL */)
+									  QModelIndex parent /* = QModelindex() */)
 {
 	TreeItem* parentItem = getItem(parent);
+	vtkPointSet* input = NULL;
+
+	if (parent.isValid())
+	{
+		VtkVisPipelineItem* visParentItem = static_cast<VtkVisPipelineItem*>(parentItem);
+		input = static_cast<vtkPointSet*>(visParentItem->algorithm()->GetOutputDataObject(0));
+	}
+
 	QList<QVariant> itemData;
 	itemData << source->GetClassName() << true;
 	VtkVisPipelineItem* item;
