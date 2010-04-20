@@ -8,7 +8,6 @@
 #include "StationIO.h"
 #include "StringTools.h"
 
-
 int StationIO::readStationFile(const std::string &path, std::string &name, std::vector<GEOLIB::Point*> *stations, GEOLIB::Station::StationType type )
 {
 	int returnValue = 1;

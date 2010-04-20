@@ -261,11 +261,11 @@ QString XMLInterface::readElement(QXmlStreamReader &xml, const QString &name) co
 }
 
 
-void XMLInterface::writeGLIFile(QFile* file, const QString &gliName)
+void XMLInterface::writeGLIFile(QFile &file, const QString &gliName)
 {
 	size_t nPoints=0, nPolylines=0, nSurfaces=0;
 
-	QXmlStreamWriter xml(file);
+	QXmlStreamWriter xml(&file);
 	xml.setAutoFormatting(true);
 	xml.setCodec(QTextCodec::codecForName("ISO-8859-1"));
 

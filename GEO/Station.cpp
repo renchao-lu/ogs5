@@ -60,20 +60,19 @@ void Station::setColor(const Color* const color)
 
 Station* Station::createStation(const std::string & line)
 {
+	std::list<std::string>::const_iterator it;
 	Station* station = new Station();
 	list<string> fields = splitString(line, '\t');
 
 	if (fields.size() >= 3) {
-		station->_name  = fields.front();
-		fields.pop_front();
-		(*station)[0]     = strtod((replaceString(",", ".", fields.front())).c_str(), NULL);
-		fields.pop_front();
-		(*station)[1]     = strtod((replaceString(",", ".", fields.front())).c_str(), NULL);
-		fields.pop_front();
-		if (fields.size() > 0)
+
+		it = fields.begin();
+		station->_name  = *it;
+		(*station)[0]     = strtod((replaceString(",", ".", *(++it))).c_str(), NULL);
+		(*station)[1]     = strtod((replaceString(",", ".", *(++it))).c_str(), NULL);
+		if (it++ != fields.end())
 		{
-			(*station)[2] = strtod((replaceString(",", ".", fields.front())).c_str(), NULL);
-			fields.pop_front();
+			(*station)[2] = strtod((replaceString(",", ".", *it)).c_str(), NULL);
 		}
 	}
 	else
@@ -235,33 +234,6 @@ int StationBorehole::addLayer(list<string> fields, StationBorehole* borehole)
 					replaceString(",", ".", fields.front()).c_str(), 0));
 			fields.pop_front();
 			borehole->addSoilLayer(thickness, fields.front());
-			/* layers are not always in the correct order */
-/*			if (layer < static_cast<int> (borehole->_soilName.size() + 1)) // if the current stratigraphy-array is larger than the layer-ID
-			{
-				borehole->_soilLayerThickness[layer - 1] = strtod(
-						replaceString(",", ".", fields.front()).c_str(), 0);
-				fields.pop_front();
-				borehole->_soilName[layer - 1] = fields.front();
-				fields.pop_front();
-			} else {
-				if (layer > static_cast<int> (borehole->_soilName.size() + 1)) // if the current stratigraphy-array is smaller than the layer-ID
-				{
-					while (static_cast<int> (borehole->_soilName.size())
-							< layer - 1) // expand the array until it has the right size
-					{
-						borehole->_soilLayerThickness.push_back(-1);
-						borehole->_soilName.push_back("");
-					}
-				}
-
-				borehole->_soilLayerThickness.push_back(strtod(replaceString(
-						",", ".", fields.front()).c_str(), 0));
-				fields.pop_front();
-				borehole->_soilName.push_back(fields.front());
-				fields.pop_front();
-			}
-			*/
-
 		}
 	} else {
 		cout
@@ -286,7 +258,6 @@ int StationBorehole::addStratigraphies(const string &path, vector<Point*> *boreh
 			list<string> fields = data[i];
 
 			if (fields.size() >= 4) {
-	//			StationBorehole* bh (static_cast<StationBorehole*>((*boreholes)[it]));
 				name = static_cast<StationBorehole*>((*boreholes)[it])->_name;
 				if ( fields.front().compare(name) != 0 ) {
 						if (it < boreholes->size()-1) it++;

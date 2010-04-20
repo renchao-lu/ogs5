@@ -61,9 +61,9 @@ IF (OGS_USE_QT)
 	# Find installed Qt4 libraries and headers
 	FIND_PACKAGE( Qt4 REQUIRED)
 
-	IF (QTXMLPATTERNS_FOUND)
+	IF (QT_QTXMLPATTERNS_FOUND)
 		set( QT_USE_QTXMLPATTERNS TRUE )
-	ENDIF (QTXMLPATTERNS_FOUND)
+	ENDIF (QT_QTXMLPATTERNS_FOUND)
 
 	# Adds useful macros and variables
 	# this is needed to correctly link the qt libraries through target_link_libraries

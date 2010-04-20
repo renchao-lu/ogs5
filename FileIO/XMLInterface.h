@@ -52,7 +52,7 @@ public:
 	 * \param file The file into which the data will be written.
 	 * \param gliName The name of the GEOOBjects that will be written into the file.
 	 */
-	void writeGLIFile(QFile* file, const QString &gliName);
+	void writeGLIFile(QFile &file, const QString &gliName);
 
 private:
 	/// Reads GEOLIB::Point-objects from an xml-file
