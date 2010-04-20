@@ -246,7 +246,7 @@ QModelIndex StationTreeModel::getItemByName(const QModelIndex &idx, const std::s
  * Technically, the complete station list is removed from the model and only those items are re-loaded that fit the description.
  * If no station in the list fulfills the given description an error msg is given.
  */
-void StationTreeModel::filterStations(const std::string listName, const std::vector<GEOLIB::Point*> *stations, const std::vector<PropertyBounds> &bounds)
+void StationTreeModel::filterStations(const std::string &listName, const std::vector<GEOLIB::Point*> *stations, const std::vector<PropertyBounds> &bounds)
 {
 
 	//QString listName = static_cast<ModelTreeItem*>(index.internalPointer())->data(0).toString();

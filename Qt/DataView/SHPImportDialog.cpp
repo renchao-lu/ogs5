@@ -25,13 +25,17 @@ SHPImportDialog::SHPImportDialog(std::string filename, GEOModels* geoModels, QDi
 
 SHPImportDialog::~SHPImportDialog()
 {
-	if (_shpInterface) delete _shpInterface;
+	delete _shpInterface;
+	delete _buttonBox;
+	delete _listName;
+	delete _choice1;
+	delete _choice2;
 }
 
 
 void SHPImportDialog::setupDialog()
 {
-	QGridLayout* layout = new QGridLayout;
+	QGridLayout* layout = new QGridLayout(this);
 	int shpType, numberOfEntities;
 	QString type;
 
@@ -44,8 +48,8 @@ void SHPImportDialog::setupDialog()
 	if ((shpType-8)%10 == 0) type="multipoints";
 	if (shpType == 31) type="TIN elements";
 
-	QLabel* shpContentLabel = new QLabel("The selected file contains " + QString::number(numberOfEntities) + " " + type);
-	QLabel* nameLabel = new QLabel("List Name: ");
+	QLabel* shpContentLabel = new QLabel("The selected file contains " + QString::number(numberOfEntities) + " " + type, this);
+	QLabel* nameLabel = new QLabel("List Name: ", this);
 		
 	QFileInfo fi(QString::fromStdString(_filename));
 	_listName->setText(fi.baseName());
@@ -82,10 +86,10 @@ void SHPImportDialog::setupDialog()
 			layout->addWidget( nameLabel );
 	}
 
-	buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-	connect(buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
-	connect(buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
-	layout->addWidget( buttonBox );
+	_buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+	connect(_buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
+	connect(_buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
+	layout->addWidget( _buttonBox );
 
 	setLayout(layout);
 }

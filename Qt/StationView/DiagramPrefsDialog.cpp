@@ -47,6 +47,7 @@ DiagramPrefsDialog::DiagramPrefsDialog(Station* stn, QString listName, DatabaseC
 
 DiagramPrefsDialog::~DiagramPrefsDialog()
 {
+	delete _list;
 }
 
 /// Instructions if the OK-Button has been pressed.

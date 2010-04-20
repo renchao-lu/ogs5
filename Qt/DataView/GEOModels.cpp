@@ -108,7 +108,7 @@ bool GEOModels::removeStationVec( const std::string &name )
 void GEOModels::addPolylineVec( std::vector<GEOLIB::Polyline*> *lines, const std::string &name )
 {
 	GEOObjects::addPolylineVec(lines, name);
-	if (lines->size () == 0) return;
+	if (lines->empty()) return;
 
 	PolylinesModel* model = new PolylinesModel(QString::fromStdString(name), lines, this);
 	_lineModels.push_back(model);

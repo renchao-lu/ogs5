@@ -28,7 +28,7 @@ public:
 	SHPImportDialog(std::string filename, GEOModels* geoModels, QDialog* parent = 0);
 	~SHPImportDialog();
 
-	QDialogButtonBox* buttonBox;	/// The buttons used in this dialog.
+	QDialogButtonBox* _buttonBox;	/// The buttons used in this dialog.
 
 
 private:

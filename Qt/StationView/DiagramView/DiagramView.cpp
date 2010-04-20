@@ -24,6 +24,7 @@ DiagramView::DiagramView(DiagramList* list, QWidget* parent) : QGraphicsView(par
 
 DiagramView::~DiagramView()
 {
+	delete _scene;
 }
 
 void DiagramView::addGraph(DiagramList* list)

@@ -30,10 +30,10 @@ public:
 	ListPropertiesDialog(std::string listName, GEOModels* geoModels, QDialog* parent = 0);
 	~ListPropertiesDialog();
 
-	QDialogButtonBox* buttonBox;	/// The buttons used in this dialog.
-	std::vector<QLabel*> propLabel;		/// The names of the properties.
-	std::vector<QLineEdit*> minValue;	/// The minimum values of each property.
-	std::vector<QLineEdit*> maxValue;	/// The maximum values of each property.
+	QDialogButtonBox* _buttonBox;	/// The buttons used in this dialog.
+	std::vector<QLabel*> _propLabel;		/// The names of the properties.
+	std::vector<QLineEdit*> _minValue;	/// The minimum values of each property.
+	std::vector<QLineEdit*> _maxValue;	/// The maximum values of each property.
 
 
 private:

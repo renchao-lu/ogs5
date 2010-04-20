@@ -505,7 +505,7 @@ int DatabaseConnection::addListToDB(string path, string listName, string catName
 		{
 			listID = query.value(0).toInt() + 1;
 
-			bool a = query.exec("select catid from categories where catname='" + QString::fromStdString(catName) + "'");
+			query.exec("select catid from categories where catname='" + QString::fromStdString(catName) + "'");
 
 			if (query.next())
 				catID = query.value(0).toInt();
@@ -519,7 +519,7 @@ int DatabaseConnection::addListToDB(string path, string listName, string catName
 			}
 
 			_db.transaction();
-			bool b = query.exec("insert into lists values(" + QString::number(listID) + ", '" + QString::fromStdString(listName) + "', " + QString::number(catID) + ", 0)");
+			query.exec("insert into lists values(" + QString::number(listID) + ", '" + QString::fromStdString(listName) + "', " + QString::number(catID) + ", 0)");
 			if (type == Station::BOREHOLE) query.exec("insert into geosysstationtypes values (" + QString::number(listID) + ", 2)");
 
 			int stationID=1;
@@ -655,7 +655,7 @@ int DatabaseConnection::addStratigraphyToDB(string path, int listID)
 						query.bindValue(":strat", QString::fromStdString(fields.front()));
 						fields.pop_front();
 
-						if (fields.size() > 0)
+						if (!fields.empty())
 							query.bindValue(":petro", QString::fromStdString(fields.front()));
 						else
 							query.bindValue(":petro", "");

@@ -8,6 +8,11 @@
 #include "Station.h"
 
 
+StratView::~StratView()
+{
+	delete _scene;
+}
+
 void StratView::setStation(GEOLIB::StationBorehole* station)
 {
 	_scene = new StratScene(station);

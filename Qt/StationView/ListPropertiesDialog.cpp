@@ -26,6 +26,16 @@ ListPropertiesDialog::ListPropertiesDialog(std::string listName, GEOModels* geoM
 
 ListPropertiesDialog::~ListPropertiesDialog()
 {
+	delete _buttonBox;
+
+	size_t nProps = _propLabel.size();
+
+	for (size_t i=0; i<nProps; i++)
+	{
+		delete _propLabel[i];
+		delete _minValue[i];
+		delete _maxValue[i];
+	}
 }
 
 
@@ -44,9 +54,9 @@ void ListPropertiesDialog::setupDialog()
 
 	for(std::map<std::string, double>::const_iterator it = properties.begin(); it != properties.end(); ++it)
     {
-		QLabel* prop = new QLabel();
-		QLineEdit* min = new QLineEdit();
-		QLineEdit* max = new QLineEdit();
+		QLabel* prop = new QLabel(this);
+		QLineEdit* min = new QLineEdit(this);
+		QLineEdit* max = new QLineEdit(this);
 		prop->setText(QString::fromStdString(it->first));
 
 		if (getPropertyBounds(stations, it->first, minVal, maxVal))
@@ -58,28 +68,28 @@ void ListPropertiesDialog::setupDialog()
 			if (prop->text().compare("date")==0) max->setText(QString::fromStdString(date2String(maxVal)));
 		}
 
-		propLabel.push_back(prop);
-		minValue.push_back(min);
-		maxValue.push_back(max);
+		_propLabel.push_back(prop);
+		_minValue.push_back(min);
+		_maxValue.push_back(max);
 
-		layout->addWidget( propLabel[i] , i, 0 );
-		layout->addWidget( minValue[i]  , i, 1 );
-		layout->addWidget( maxValue[i]  , i, 2 );
+		layout->addWidget( _propLabel[i] , i, 0 );
+		layout->addWidget( _minValue[i]  , i, 1 );
+		layout->addWidget( _maxValue[i]  , i, 2 );
 		i++;
 	}
 
-	buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-	connect(buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
-	connect(buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
+	_buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+	connect(_buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
+	connect(_buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
 
-	layout->addWidget(buttonBox, i+1, 1, 1, 2 );
+	layout->addWidget(_buttonBox, i+1, 1, 1, 2 );
 
 	setLayout(layout);
 }
 
 int ListPropertiesDialog::getPropertyBounds(const std::vector<Point*> *stations, const std::string &prop, double &minVal, double &maxVal)
 {
-	if (stations->size()>0)
+	if (!stations->empty())
 	{
 		std::map<std::string, double> properties (static_cast<Station*>((*stations)[0])->getProperties());
 		minVal = properties[prop];
@@ -101,22 +111,22 @@ int ListPropertiesDialog::getPropertyBounds(const std::vector<Point*> *stations,
 void ListPropertiesDialog::accept()
 {
 	std::vector<PropertyBounds> bounds;
-	int noProp = propLabel.size();
+	int noProp = _propLabel.size();
 	double minVal, maxVal;
 
 	for (int i=0; i<noProp; i++)
 	{
-		if (propLabel[i]->text().compare("date")==0)
+		if (_propLabel[i]->text().compare("date")==0)
 		{
-			minVal = strDate2Double(minValue[i]->text().toStdString());
-			maxVal = strDate2Double(maxValue[i]->text().toStdString());
+			minVal = strDate2Double(_minValue[i]->text().toStdString());
+			maxVal = strDate2Double(_maxValue[i]->text().toStdString());
 		}
 		else
 		{
-			minVal = strtod(replaceString(",", ".", minValue[i]->text().toStdString()).c_str() ,0);
-			maxVal = strtod(replaceString(",", ".", maxValue[i]->text().toStdString()).c_str(), 0);
+			minVal = strtod(replaceString(",", ".", _minValue[i]->text().toStdString()).c_str() ,0);
+			maxVal = strtod(replaceString(",", ".", _maxValue[i]->text().toStdString()).c_str(), 0);
 		}
-		PropertyBounds b(propLabel[i]->text().toStdString(), minVal, maxVal);
+		PropertyBounds b(_propLabel[i]->text().toStdString(), minVal, maxVal);
 		bounds.push_back(b);
 	}
 

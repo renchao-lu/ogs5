@@ -24,25 +24,25 @@ public:
 	~DiagramList();
 
 	/// Returns the colour of the graph.
-	QColor getColor() {	return _colour; }
+	QColor getColor() const {	return _colour; }
 
 	/// Returns the height of the bounding box of all data points within the list.
-	float height() { return (_maxY-_minY); }
+	float height()    const { return (_maxY-_minY); }
 
 	/// Returns the minimum x-value.
-	float minXValue() { return _minX; }
+	float minXValue() const { return _minX; }
 
 	/// Returns the maximum x-value.
-	float maxXValue() {	return _maxX; }
+	float maxXValue() const { return _maxX; }
 
 	/// Returns the minimum y-value.
-	float minYValue() {	return _minY; }
+	float minYValue() const { return _minY; }
 
 	/// Returns the maximum y-value.
-	float maxYValue() { return _maxY; }
+	float maxYValue() const { return _maxY; }
 
 	/// Returns the name of the diagram.
-	QString getName() {	return _name; };
+	QString getName() const { return _name; };
 
 	/**
 	 * Returns all the data points in form of a QPainterPath in scene coordinates.
@@ -63,16 +63,16 @@ public:
 	bool getPoint(QPointF &p, size_t i);
 
 	/// Returns the label associated with the x-axis
-	QString getXLabel() { return _xLabel; }
+	QString getXLabel() const { return _xLabel; }
 
 	/// Returns the label associated with the y-axis
-	QString getYLabel() { return _yLabel; }
+	QString getYLabel() const { return _yLabel; }
 
 	/// Returns the unit associated with the x-axis
-	QString getXUnit() { return _xUnit; }
+	QString getXUnit() const { return _xUnit; }
 
 	/// Returns the unit associated with the y-axis
-	QString getYUnit() { return _yUnit; }
+	QString getYUnit() const { return _yUnit; }
 	int readList(const QString &path);
 
 	/// Sets the colour of the graph.
@@ -111,7 +111,7 @@ public:
 	size_t size();
 
 	/// Returns the width of the bounding box of all data points within the list.
-	double width() { return _maxX-_minX; }
+	double width() const { return _maxX-_minX; }
 
 private:
 	/// Returns the minimum x-value of all the data points.

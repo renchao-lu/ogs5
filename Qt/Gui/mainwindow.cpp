@@ -35,7 +35,7 @@
 #include "StationIO.h"
 #include "PetrelInterface.h"
 #include "GocadInterface.h"
-//#include "XMLInterface.h"
+#include "XMLInterface.h"
 
 #include "RecentFiles.h"
 
@@ -318,16 +318,17 @@ void MainWindow::save()
 
 	if (!fileName.isEmpty())
 	{
-		QFile* file = new QFile(fileName);
-		file->open( QIODevice::WriteOnly );
+		QFile file(fileName);
+		file.open( QIODevice::WriteOnly );
 
-//		std::string schemaName(SOURCEPATH);
-//		schemaName.append("/OpenGeoSysGLI.xsd");
-//		XMLInterface xml(_geoModels, schemaName);
-//		xml.writeGLIFile(file, gliName);
-		file->close();
+		std::string schemaName(SOURCEPATH);
+		schemaName.append("/OpenGeoSysGLI.xsd");
+		XMLInterface xml(_geoModels, schemaName);
+		xml.writeGLIFile(file, gliName);
 
-//		xml.insertStyleFileDefinition(fileName);
+		file.close();
+
+		xml.insertStyleFileDefinition(fileName);
 	}
 	else OGSError::box("No file name entered.");
 }
@@ -427,7 +428,8 @@ void MainWindow::loadFile(const QString &fileName)
     	 myTimer.start();
     	 std::cout << "FEMRead ... " << std::flush;
 #endif
-        FEMRead(base);
+
+		 FEMRead(base);
 #ifndef NDEBUG
     	 std::cout << myTimer.elapsed() << " ms" << std::endl;
 #endif
@@ -444,15 +446,19 @@ void MainWindow::loadFile(const QString &fileName)
     	 myTimer.start();
     	 std::cout << "GridAdapter Read ... " << std::flush;
 #endif		
-//		 GridAdapter grid(fileName.toStdString());
+
+		 //GridAdapter grid(fileName.toStdString());
 		 GridAdapter grid(fem_msh_vector[0]);
 #ifndef NDEBUG
     	 std::cout << myTimer.elapsed() << " ms" << std::endl;
 #endif
 		 // HACK 3d mesh test sequence	
-		 vtkUnstructuredGridAlgorithm* meshSource = VtkMeshSource::New();
-		 static_cast<VtkMeshSource*>(meshSource)->setMesh(grid.getNodes(), grid.getElements());
-		 _vtkVisPipeline->addPipelineItem(meshSource);		
+		 for (size_t i=0; i<=grid.getNumberOfMaterials(); i++)
+		 {
+			 vtkUnstructuredGridAlgorithm* meshSource = VtkMeshSource::New();
+			 static_cast<VtkMeshSource*>(meshSource)->setMesh(grid.getNodes(), grid.getElements(i));
+			 _vtkVisPipeline->addPipelineItem(meshSource);		
+		 }
 	}
 	else if (fi.suffix().toLower() == "ts") {
 #ifndef NDEBUG

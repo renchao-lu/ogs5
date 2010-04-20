@@ -26,7 +26,7 @@ public:
 	 * Creates an empty view.
 	 */
 	StratView(QWidget* parent = 0) {}
-	~StratView() {}
+	~StratView();
 
 	/// Sets the Borehole whose data should be visualised.
 	void setStation(GEOLIB::StationBorehole* station);
