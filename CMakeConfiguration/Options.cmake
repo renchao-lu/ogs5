@@ -71,6 +71,9 @@ IF (OGS_USE_QT)
 	
 	# Self-compile QVTK
 	option (OGS_COMPILE_QVTK "Should the QVTK window be compiled from OGS sources?" OFF)
+ELSE (OGS_USE_QT)
+	SET (QT_VERSION_MAJOR 1)
+	SET (QT_VERSION_MINOR 0)
 ENDIF (OGS_USE_QT)
 
 # Create Configure.h
