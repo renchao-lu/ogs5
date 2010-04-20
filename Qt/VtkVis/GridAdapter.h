@@ -37,7 +37,8 @@ public:
 	/// An element structure consisting of a number of nodes and a MeshType
 	typedef struct
 	{
-		MeshType type;
+		MeshType			type;
+		size_t				material;
 		std::vector<size_t> nodes;
 	} Element;
 
@@ -50,11 +51,16 @@ public:
 
 	~GridAdapter() {};
 
+	const size_t getNumberOfMaterials() const;
+
 	/// Returns the vector of nodes.
 	const std::vector<GEOLIB::Point*> *getNodes() const { return _nodes; }
 
 	/// Returns the vector of elements.
 	const std::vector<Element*> *getElements() const { return _elems; }
+
+	/// Return a vector of elements for one material group only.
+	const std::vector<Element*> *getElements(size_t matID) const;
 
 private:
 	/// Converts an FEM Mesh to a list of nodes and elements.
@@ -71,7 +77,6 @@ private:
 
 	std::vector<GEOLIB::Point*> *_nodes;
 	std::vector<Element*> *_elems;
-
 };
 
 #endif // GRIDADAPTER_H

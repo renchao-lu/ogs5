@@ -3,6 +3,7 @@ set( SOURCES
 	GridAdapter.cpp
 	VtkAddFilterDialog.cpp
 	VtkMeshSource.cpp
+	VtkOGSFilter.cpp
 	VtkPolylinesSource.cpp
 	VtkPointsSource.cpp
 	VtkStationSource.cpp
@@ -26,6 +27,7 @@ set( HEADERS
 	GridAdapter.h
 	VtkAlgorithmProperties.h
 	VtkMeshSource.h
+	VtkOGSFilter.h
 	VtkPolylinesSource.h
 	VtkPointsSource.h
 	VtkStationSource.h

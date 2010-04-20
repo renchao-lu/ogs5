@@ -21,6 +21,10 @@
 #include <vtkWedge.h> // == Prism
 #include <vtkLine.h>
 
+
+#include <vtkLookupTable.h>
+#include <vtkPointData.h>
+
 #include "VtkMeshSource.h"
 
 vtkStandardNewMacro(VtkMeshSource);
@@ -79,8 +83,6 @@ int VtkMeshSource::RequestData( vtkInformation* request, vtkInformationVector** 
 	gridPoints->Allocate(_nodes->size());
 	output->Allocate(nElems);
 
-	size_t cid = 0;
-
 	if (outInfo->Get(vtkStreamingDemandDrivenPipeline::UPDATE_PIECE_NUMBER()) > 0)
 		return 1;
 
@@ -112,8 +114,49 @@ int VtkMeshSource::RequestData( vtkInformation* request, vtkInformationVector** 
 		output->InsertNextCell(newCell->GetCellType(), newCell->GetPointIds());
 		newCell->Delete();
 	}
-	
+
+
 	output->SetPoints(gridPoints);
+
+
+
+
+
+  int minz=-100, maxz=2000;
+  vtkSmartPointer<vtkLookupTable> colorLookupTable = vtkSmartPointer<vtkLookupTable>::New();
+  colorLookupTable->SetTableRange(minz, maxz);
+  colorLookupTable->Build();
+ 
+  //generate the colors for each point based on the color map
+  vtkSmartPointer<vtkUnsignedCharArray> colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
+  colors->SetNumberOfComponents ( 3 );
+  colors->SetName ( "Colors" );
+	
+
+  cout << "There are " << output->GetNumberOfPoints() << " points." << endl;
+  cout << "There are " << colors->GetNumberOfTuples() << " colors." << endl;
+ 
+  for (int i = 0; i < output->GetNumberOfPoints(); i++)
+  {
+    double p[3];
+    output->GetPoint(i,p);
+ 
+    double dcolor[3];
+    colorLookupTable->GetColor(p[2], dcolor);
+    unsigned char color[3];
+    for (size_t j = 0; j < 3; j++)
+    {
+      color[j] = 255 * dcolor[j]/1.0;
+    }
+ 
+    colors->InsertNextTupleValue(color);
+  }
+ 
+  output->GetPointData()->AddArray(colors);
+
+
+
+	
 
 	this->GetProperties()->SetOpacity(0.5);
 	this->GetProperties()->SetEdgeVisibility(1);

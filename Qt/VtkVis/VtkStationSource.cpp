@@ -64,7 +64,7 @@ int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector
 		return 0;
 
 	// HACK colour table should be set from outside
-	std::map<std::string, GEOLIB::Color*> colorLookupTable;
+	std::map<std::string, GEOLIB::Color> colorLookupTable;
 	int lookupTableFound = readColorLookupTable(colorLookupTable, "d:/BoreholeColourReference.txt");
 
 	bool isBorehole = (static_cast<GEOLIB::Station*>((*_stations)[0])->type() == GEOLIB::Station::BOREHOLE) ? true : false;
@@ -140,10 +140,10 @@ int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector
 				newLines->InsertCellPoint(lastMaxIndex+i-1); // start of borehole-layer
 				newLines->InsertCellPoint(lastMaxIndex+i);	//end of boreholelayer
 
-				GEOLIB::Color* c;
+				GEOLIB::Color c;
 				if (lookupTableFound) c = GEOLIB::getColor(soilNames[i], colorLookupTable);
-				else c = GEOLIB::getRandomColor();
-				unsigned char sColor[3] = { (*c)[0], (*c)[1], (*c)[2] };
+				else c = *(GEOLIB::getRandomColor());
+				unsigned char sColor[3] = { c[0], c[1], c[2] };
 				stratColors->InsertNextTupleValue(sColor);
 			}
 
