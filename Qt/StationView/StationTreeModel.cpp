@@ -24,12 +24,12 @@ StationTreeModel::StationTreeModel( QObject *parent )
 	//_modelContentType = STATION_MODEL;
 	QList<QVariant> rootData;
 	rootData << "Station Name" << "x" << "y";
+	delete _rootItem;
 	_rootItem = new ModelTreeItem(rootData, NULL, NULL);
 }
 
 StationTreeModel::~StationTreeModel()
 {
-	delete _rootItem;
 }
 
 /**

@@ -407,7 +407,14 @@ void readGLIFileV4(const std::string& fname, GEOObjects* geo) {
 
 	// *** test only - visualization ***
 	unique_name += "1";
-	geo->addPointVec(pnt_vec, unique_name);
+	std::vector<Point*> *copy_pnt_vec(new std::vector<Point*>);
+	for (std::vector<Point*>::const_iterator it = pnt_vec->begin(); it != pnt_vec->end(); ++it)
+	{
+		const double * vals = (*it)->getData();
+		Point* pnt = new Point(vals[0], vals[1], vals[2]);
+		copy_pnt_vec->push_back(pnt);
+	}
+	geo->addPointVec(copy_pnt_vec, unique_name);
 	// visualize all surfaces as polylines
 	std::vector<Polyline*> *ply_vec_for_sfc(new std::vector<Polyline*>);
 	for (size_t i(0); i<sfc_vec->size(); i++) {
