@@ -424,6 +424,7 @@ void readGLIFileV4(const std::string& fname, GEOObjects* geo) {
 			// create Poyline
 			Polyline *ply(new Polyline(*pnt_vec));
 			for (size_t j(0); j<3; j++) ply->addPoint ((*tri)[j]);
+			ply->addPoint ((*tri)[0]);
 			ply_vec_for_sfc->push_back (ply);
 		}
 	}

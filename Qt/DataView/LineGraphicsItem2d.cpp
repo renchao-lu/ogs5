@@ -176,8 +176,6 @@ void LineGraphicsItem2d::computeRelativePositions()
 	MATHLIB::Vector sumUpVec;
 
 	size_t numPoints = _line->getSize();
-	if (numPoints > 100)
-		std::cerr << "numPoints > 100" << std::endl;
 
 	for (size_t i = 0; i < numPoints; i++)
 	{
