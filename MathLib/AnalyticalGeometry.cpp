@@ -7,6 +7,7 @@
 
 #include <cmath>
 #include <list>
+#include <limits>
 
 // Base
 #include "swap.h"
