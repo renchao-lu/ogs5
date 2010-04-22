@@ -77,10 +77,10 @@ public:
 	 * contains Point? assuming Triangle is in counterclockwise order
 	 * from book Real-Time Collision detection p. 204
 	 */
-	bool containsPoint (const GEOLIB::Point &pnt) const
+	bool containsPoint (const double *pnt) const
 	{
 		MATHLIB::Vector a(*(m_pnts[m_pnt_ids[0]])), b(*(m_pnts[m_pnt_ids[1]])), c(*(m_pnts[m_pnt_ids[2]]));
-		MATHLIB::Vector p (pnt);
+		MATHLIB::Vector p (pnt[0], pnt[1], pnt[2]);
 		a -= p;
 		b -= p;
 		c -= p;
@@ -98,6 +98,10 @@ public:
 		return true;
 	}
 
+	bool containsPoint (const GEOLIB::Point &pnt) const
+	{
+		return containsPoint (pnt.getData());
+	}
 
 protected:
 	/** a vector of pointers to points */

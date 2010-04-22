@@ -1611,6 +1611,25 @@ void CFEMesh::GetNODOnSFC(Surface*m_sfc, vector<long>&msh_nod_vector) {
 
 /**************************************************************************
  MSHLib-Method:
+ Task: Get nodes on plane surface
+ Programing:
+ 03/2010 TF
+ last modification:
+ **************************************************************************/
+void CFEMesh::GetNODOnSFC(const GEOLIB::Surface* sfc, std::vector<size_t>& msh_nod_vector) const
+{
+	msh_nod_vector.clear();
+
+	for (size_t j(0); j<NodesInUsage(); j++) {
+		if (sfc->isPntInBV ( (nod_vector[j])->getData() )) {
+			if (! sfc->isPntInSfc((nod_vector[j])->getData()))
+				msh_nod_vector.push_back (nod_vector[j]->GetIndex());
+		}
+	}
+}
+
+/**************************************************************************
+ MSHLib-Method:
  Task: Get nodes on plane surface by comparing the area of polygon computed
  by triangles, which are formed by node and the gravity center
  with edges of polygon, respectively
@@ -1690,28 +1709,6 @@ void CFEMesh::GetNODOnSFC_PLY(Surface*m_sfc, vector<long>&msh_nod_vector) {
 		p_ply++;
 	}
 }
-
-/**************************************************************************
- MSHLib-Method:
- Task: Get nodes on plane surface by comparing the area of polygon computed
- by triangles, which are formed by node and the gravity center
- with edges of polygon, respectively
- Programing:
- 09/2004 WW Implementation
- 04/2005 OK MSH
- 07/2005 WW Node object is replaced
- 03/2010 TF changed to new GEOLIB Surface, reimplementation
- last modification:
- **************************************************************************/
-void CFEMesh::GetNODOnSFC_PLY(const GEOLIB::Surface* sfc, std::vector<size_t>& msh_nod_vector)
-{
-	msh_nod_vector.clear();
-	double center[3], p0[3], p1[3];
-	size_t n_triangles (sfc->getNTriangles());
-
-//	if (n_plys != 1)
-}
-
 
 /**************************************************************************
  MSHLib-Method:
@@ -1831,54 +1828,6 @@ void CFEMesh::GetNODOnSFC_PLY_XY(Surface*m_sfc, vector<long>&msh_nod_vector,
  MSHLib-Method:
  Task:
  Programing:
- 04/2005 OK Implementation based on vector<long>Surface::GetMSHNodesClose()
- last modification:
- **************************************************************************/
-/*
- //vector<long>Surface::GetMSHNodesClose()
- void CFEMesh::GetNODOnSFC_PLY(Surface*m_sfc,vector<long>&msh_nod_vector)
- {
- long i;
- double x,y,z;
- double *xp=NULL,*yp=NULL,*zp=NULL;
- //----------------------------------------------------------------------
- m_sfc->CreatePolygonPointVector();
- //----------------------------------------------------------------------
- // Polygon point vector
- if(m_sfc->polygon_point_vector.empty())
- return;
- long polygon_point_vector_size = (long)m_sfc->polygon_point_vector.size();
- xp = new double[polygon_point_vector_size];
- yp = new double[polygon_point_vector_size];
- zp = new double[polygon_point_vector_size];
- for(i=0;i<polygon_point_vector_size;i++) {
- xp[i] = m_sfc->polygon_point_vector[i]->x;
- yp[i] = m_sfc->polygon_point_vector[i]->y;
- zp[i] = m_sfc->polygon_point_vector[i]->z;
- }
- // close the polygon ???
- //----------------------------------------------------------------------
- for(i=0;i<(long)nod_vector.size();i++) {
- x = nod_vector[i]->x;
- y = nod_vector[i]->y;
- z = nod_vector[i]->z;
- if(IsPointInsidePolygonPlain(x,y,z,xp,yp,zp,\
-                                 (long)m_sfc->polygon_point_vector.size())) {
- msh_nod_vector.push_back(i);
- }
- }
- //----------------------------------------------------------------------
- // Destructions
- delete [] xp;
- delete [] yp;
- delete [] zp;
- }
- */
-
-/**************************************************************************
- MSHLib-Method:
- Task:
- Programing:
  04/2005 OK
  07/2005 WW Node object is replaced
  04/2006 TK new method
@@ -1895,41 +1844,9 @@ void CFEMesh::GetNODOnSFC_TIN(Surface*m_sfc, vector<long>&msh_nod_vector) {
 
 	CGLPoint m_node;
 	CTriangle *m_triangle = NULL;
-	//Loop over all generated triangles of surface
-	//----------------------------------------------------------------------
-	/*
-	 double tri_x[3],tri_y[3],tri_z[3];
-	 for(m=0;m<(long)m_sfc->TIN->Triangles.size();m++){
-	 m_triangle = m_sfc->TIN->Triangles[m];
-	 tri_x[0] = m_triangle->x[0];
-	 tri_y[0] = m_triangle->y[0];
-	 tri_z[0] = m_triangle->z[0];
-	 tri_x[1] = m_triangle->x[1];
-	 tri_y[1] = m_triangle->y[1];
-	 tri_z[1] = m_triangle->z[1];
-	 tri_x[2] = m_triangle->x[2];
-	 tri_y[2] = m_triangle->y[2];
-	 tri_z[2] = m_triangle->z[2];
-
-	 for(j=0;j<NodesInUsage();j++){
-	 m_node.x = nod_vector[j]->X();
-	 m_node.y = nod_vector[j]->Y();
-	 m_node.z = nod_vector[j]->Z();
-	 if(m_node.IsInsideTriangle(xp,yp,zp)){//CC 10/05
-	 msh_nod_vector.push_back(nod_vector[j]->GetIndex());
-	 }
-	 }
-	 }*/
-
-	//TK 03.2006
-	// ATTENTION: NO MULTI MESH YET!!!!!!
-	// Several possibilities to do this:
-	// Mesh assignment by user input would be flexible or by process name is more static
-
 	//----------------------------------------------------------------------
 	// Create Bounding BOX = MIN/MAX of X/Y/Z
 	//----------------------------------------------------------------------
-
 	//Loop over all generated triangles of surface
 	for (m = 0; m < (long) m_sfc->TIN->Triangles.size(); m++) {
 		m_triangle = m_sfc->TIN->Triangles[m];

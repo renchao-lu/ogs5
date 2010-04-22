@@ -307,9 +307,9 @@ public:
 
 	/**
 	 * \ingroup MSHGEO
-	 * \brief gives the indices of nodes, which contained in the surface
+	 * \brief gives the indices of nodes, which are contained in the surface
 	 */
-	void GetNODOnSFC_PLY(const GEOLIB::Surface* sfc, std::vector<size_t>& msh_nod_vector);
+	void GetNODOnSFC(const GEOLIB::Surface* sfc, std::vector<size_t>& msh_nod_vector) const;
 
 	//....................................................................
 	// QUAD->HEX

@@ -4,7 +4,6 @@ set( HEADERS
 	DateTools.h
 	StringTools.h
 	swap.h
-	max.h
 )
 
 set( SOURCES

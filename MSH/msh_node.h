@@ -66,6 +66,10 @@ public:
 		for (size_t i = 0; i < 3; i++)
 			xyz[i] = coordinate[i];
 	}
+	// 04/2010 TF
+	/** returns the coordinates of the mesh node */
+	const double* getData () const { return coordinate; }
+
 	int GetEquationIndex() const {
 		return eqs_index;
 	}

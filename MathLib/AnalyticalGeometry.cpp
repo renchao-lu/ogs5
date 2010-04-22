@@ -11,7 +11,6 @@
 
 // Base
 #include "swap.h"
-#include "max.h"
 
 // GEO
 #include "Polyline.h"
@@ -20,7 +19,8 @@
 // MathLib
 #include "MathTools.h"
 #include "AnalyticalGeometry.h"
-#include "Matrix.h" // for transformation matrix
+#include "Matrix.h" // for transformation matri
+#include "max.h"
 #include "LinkedTriangle.h" // used by delaunay
 
 namespace MATHLIB {
@@ -49,6 +49,7 @@ bool isPointInTriangle (const double pp[3], const double pa[3], const double pb[
 {
 	MATHLIB::Vector a(pa[0],pa[1],pa[2]), b(pb[0],pb[1],pb[2]), c(pc[0],pc[1],pc[2]);
 	MATHLIB::Vector p (pp[0],pp[1],pp[2]);
+	// move triangle
 	a -= p;
 	b -= p;
 	c -= p;

@@ -92,3 +92,7 @@ include_directories(
 # Create the library
 add_library( MSH STATIC ${SOURCES} )
 
+target_link_libraries (
+	MSH
+	GEO
+)

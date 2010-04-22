@@ -53,7 +53,7 @@ public:
 		return const_cast<T&> (static_cast<const TemplatePoint&> (*this)[idx]);
 	}
 
-	/** returns the coordinates of the point contained in an array */
+	/** returns an array containing the coordinates of the point */
 	const T* getData () const { return x; }
 
 	/** write point coordinates into stream (used from operator<<)

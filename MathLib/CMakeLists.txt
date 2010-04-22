@@ -4,6 +4,7 @@ set( HEADERS
 	Matrix.h
 	MathTools.h
 	AnalyticalGeometry.h
+	max.h
 	LinkedTriangle.h
 )
 

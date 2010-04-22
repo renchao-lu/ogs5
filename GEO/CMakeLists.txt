@@ -8,6 +8,8 @@ set( SOURCES
 	geo_pnt.cpp
 	geo_sfc.cpp
 	geo_vol.cpp
+	Surface.cpp
+	AxisAlignedBoundingBox.cpp
 	Station.cpp
 	GEOObjects.cpp
 )
@@ -23,6 +25,7 @@ set( HEADERS
 	geo_pnt.h	
 	geo_sfc.h		
 	geo_vol.h	
+	AxisAlignedBoundingBox.h
 	TemplatePoint.h
 	Point.h
 	Polyline.h
