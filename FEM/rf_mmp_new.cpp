@@ -5215,7 +5215,7 @@ void CMediumProperties::WriteTecplotDistributedProperties()
     return;
   //--------------------------------------------------------------------
   // File handling
-  string mat_file_name = path + name + "_" + m_msh->pcs_name + "_PROPERTIES" + TEC_FILE_EXTENSION;
+  string mat_file_name = FileName + "_" + m_msh->pcs_name + "_PROPERTIES" + TEC_FILE_EXTENSION;
   fstream mat_file (mat_file_name.data(),ios::trunc|ios::out);
   mat_file.setf(ios::scientific,ios::floatfield);
   mat_file.precision(12);
