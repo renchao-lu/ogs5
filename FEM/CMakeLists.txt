@@ -5,7 +5,6 @@ set( SOURCES
 	break.h
 	display.h
 	eos.h
-	equation_class.h
 	fem_ele.h
 	fem_ele_std.h
 	fem_ele_vec.h
@@ -14,7 +13,6 @@ set( SOURCES
 	#intrface.h
 	makros.h
 	mathlib.h
-	matrix.h
 	matrix_class.h
 	memory.h
 	par_ddc.h
@@ -46,7 +44,6 @@ set( SOURCES
 	break.cpp
 	display.cpp
 	eos.cpp
-	equation_class.cpp
 	fem_ele.cpp
 	fem_ele_std.cpp
 	fem_ele_vec.cpp
@@ -54,7 +51,6 @@ set( SOURCES
 	files0.cpp
 	#intrface.cpp
 	mathlib.cpp
-	matrix.cpp
 	matrix_class.cpp
 	memory.cpp
 	par_ddc.cpp
@@ -76,20 +72,27 @@ set( SOURCES
 	rf_react.cpp
 	rf_st_new.cpp
 	rf_tim_new.cpp
-	rfmat_cp.cpp
-	solver.cpp
+	rfmat_cp.cpp	
 	timer.cpp
 	tools.cpp
 	vtk.cpp
 )
 
-if ( GEM_REACT )
-	set ( SOURCES ${SOURCES} rf_REACT_GEM.h rf_REACT_GEM.cpp ) 
-endif ( GEM_REACT )
+## New sparse class. WW
+IF(OGS_FEM_SP OR OGS_FEM_MPI OR OGS_FEM_GEMS OR OGS_FEM_BRNS OR OGS_FEM_PQC OR OGS_FEM_MKL OR OGS_FEM_LIS)
+	SET( SOURCES ${SOURCES} equation_class.h equation_class.cpp )
+ELSE(OGS_FEM_SP OR OGS_FEM_MPI OR OGS_FEM_GEMS OR OGS_FEM_BRNS OR OGS_FEM_PQC OR OGS_FEM_MKL OR OGS_FEM_LIS)
+	SET( SOURCES ${SOURCES} solver.h solver.cpp matrix.h matrix.cpp)
+ENDIF(OGS_FEM_SP OR OGS_FEM_MPI OR OGS_FEM_GEMS OR OGS_FEM_BRNS OR OGS_FEM_PQC OR OGS_FEM_MKL OR OGS_FEM_LIS)
 
-if ( BRNS )
+
+if ( OGS_FEM_GEMS )
+	set ( SOURCES ${SOURCES} rf_REACT_GEM.h rf_REACT_GEM.cpp ) 
+endif ( OGS_FEM_GEMS )
+
+if ( OGS_FEM_BRNS )
 	set ( SOURCES ${SOURCES} rf_REACT_BRNS.h rf_REACT_BRNS.cpp ) 
-endif ( BRNS )
+endif ( OGS_FEM_BRNS )
 
 include_directories(
 	.

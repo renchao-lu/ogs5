@@ -17,6 +17,7 @@ INCLUDE_DIRECTORIES(
 	../MSH
 	../FEM
 	../OGSProject
+        ../MathLib ##WW
 )
 
 if (Shapelib_FOUND)
@@ -38,26 +39,26 @@ TARGET_LINK_LIBRARIES( ogs
 )
 
 if (WIN32)
-	if (GEM_REACT)
-		target_link_libraries( ogs qd debug GEMS3_dbg optimized GEMS3_rl )
-	endif (GEM_REACT)
+	if (OGS_FEM_GEMS)
+		target_link_libraries( ogs qd debug GEMS3_dbg optimized GEMS3_rl ) 
+	endif (OGS_FEM_GEMS)
 	if (LIS)
-		target_link_libraries( ogs lisomp )
+		target_link_libraries( ogs lisomp ) 
 		set_target_properties( ogs PROPERTIES LINK_FLAGS "/NODEFAULTLIB:libcmt" )
 	endif (LIS)
-	if (BRNS)
+	if (OGS_FEM_BRNS)
 		target_link_libraries( ogs BrnsDll )
-	endif (BRNS)
+	endif (OGS_FEM_BRNS)
 endif (WIN32)
 
 if (UNIX)
-	if (GEM_REACT)
+	if (OGS_FEM_GEMS)
 		target_link_libraries( ogs gemipm2k qd )
-	endif (GEM_REACT)
+	endif (OGS_FEM_GEMS)
 	
-	if (BRNS)
+	if (OGS_FEM_BRNS)
 		target_link_libraries( ogs dl )
-	endif (BRNS)
+	endif (OGS_FEM_BRNS)
 
 	if (LIS)
 		target_link_libraries( ogs ${LIS_LIBRARIES} )
@@ -68,4 +69,6 @@ if (UNIX)
 	endif (MKL)
 endif (UNIX)
 
-install (TARGETS ogs RUNTIME DESTINATION bin COMPONENT ogs)
+IF (OGS_PACKAGING)
+	install (TARGETS ogs RUNTIME DESTINATION bin COMPONENT ogs)
+ENDIF (OGS_PACKAGING)

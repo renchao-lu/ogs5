@@ -1,113 +1,306 @@
-#### OGS-5 Qt Project ####
+#### OGS-5 Project ####
+## Programmed by Lars Bilke
+## Modified by:
+##            WW 20.04.2010. 
 
 # Specify minimum CMake version
 cmake_minimum_required(VERSION 2.6)	# or set to 2.4 for older systems (like JUGENE...)
-
-# Set build configuration types
-# "RelWithDebInfo" and "MinSizeRelease" can be added here
-#
-
-IF (WIN32)
-	SET ( CMAKE_CONFIGURATION_TYPES "Release;Debug" CACHE TYPE INTERNAL FORCE )
-ENDIF (WIN32)
 
 SET (OGS_VERSION_MAJOR 5)
 SET (OGS_VERSION_MINOR 0)
 SET (OGS_VERSION_PATCH 0)
 
-# Project name
-PROJECT( OGS-${OGS_VERSION_MAJOR} )
-
 # Adds useful macros and variables
 INCLUDE( CMakeConfiguration/Macros.cmake )
 
-# Adds packaging configuration
-INCLUDE( CMakeConfiguration/Pack.cmake)
-
-# Do some prerequisite checks
 IF (WIN32)
-   IF (NOT MSVC)
-      MESSAGE (FATAL_ERROR "Aborting: On Windows only the Visual Studio compiler is supported!")
-   ENDIF (NOT MSVC)
+	IF (MSVC)
+		ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
+		ADD_DEFINITIONS(-D_CRT_NONSTDC_NO_WARNINGS)
+		ADD_DEFINITIONS(-D_CRT_XNONSTDC_NO_WARNINGS)
+		SET ( CMAKE_CONFIGURATION_TYPES "Release;Debug" CACHE TYPE INTERNAL FORCE )
+	ELSE (MSVC)
+		MESSAGE (FATAL_ERROR "Aborting: On Windows only the Visual Studio compiler is supported!")
+	ENDIF (MSVC)
 ENDIF (WIN32)
 
-INCLUDE( CMakeConfiguration/Options.cmake )
+### For GNU C/CXX. WW
+IF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCC)
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wall -Wextra")
+        ADD_DEFINITIONS(
+		-DGCC
+#		-pedantic
+		-fno-nonansi-builtins
+	)
+ENDIF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCC)
+
+### These two difintitions are true by default. Should be removed late on. WW
+ADD_DEFINITIONS(-DPROBLEM_CLASS)
+ADD_DEFINITIONS(-DRANDOM_WALK)
+
+# Set build directories
+SET( EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin )
+SET( LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib )
+
+INCLUDE_DIRECTORIES( ${CMAKE_SOURCE_DIR}/LIB )
+LINK_DIRECTORIES( ${CMAKE_SOURCE_DIR}/LIB )
 
 # Set additional CMake modules path
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeConfiguration")
 
-# Find OpenMP
-FIND_PACKAGE( OpenMP )
+#INCLUDE( CMakeConfiguration/Options.cmake )
 
-# Find Shapelib
-FIND_PACKAGE( Shapelib )
+###-----WW------------------------------------------------------
+#OPTION Parallel
+OPTION(PARALLEL_USE_MPI OFF)
+OPTION(PARALLEL_USE_OPENMP OFF)
+IF(_OPENMP)
+	SET(PARALLEL_USE_OPENMP ON)
+ENDIF(_OPENMP)
+IF(PARALLEL_USE_OPENMP)
+	SET(_OPENMP ON)
+ENDIF(PARALLEL_USE_OPENMP)
 
-IF (UNIX)
-  # Find LISlib
-  FIND_PACKAGE( LIS )
 
-  # Find MKLlib
-  FIND_PACKAGE( MKL )
+OPTION(OGS_FEM OFF )
+OPTION(OGS_FEM_SP OFF )
+OPTION(OGS_FEM_GEMS OFF )
+OPTION(OGS_FEM_PQC OFF )
+OPTION(OGS_FEM_BRNS OFF )
+OPTION(OGS_USE_QT OFF)
 
-  if(MKL)
-    SET(CMAKE_CXX_FLAGS "-I${CMAKE_SOURCE_DIR}/LIB/MKL/include")
-    if(CMAKE_SIZEOF_VOID_P MATCHES "8")
-    	SET(CMAKE_CXX_LINK_FLAGS "-L${CMAKE_SOURCE_DIR}/LIB/MKL/64 -llis-64 -lmkl_solver_lp64 -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core ")
-    else (CMAKE_SIZEOF_VOID_P MATCHES "8")
-    	SET(CMAKE_CXX_LINK_FLAGS "-L${CMAKE_SOURCE_DIR}/LIB/MKL/32 -llis-32 -lmkl_solver -lmkl_intel -lmkl_gnu_thread -lmkl_core ")
-    endif (CMAKE_SIZEOF_VOID_P MATCHES "8")
-  ENDIF(MKL)
+
+IF (UNIX) # Only supported on Linux
+	OPTION(OGS_FEM_LIS OFF )
+	OPTION(OGS_FEM_MKL OFF )
+	OPTION(OGS_FEM_MPI OFF )
 ENDIF (UNIX)
 
-# Set build directories
-# Binaries are created in /bin and libraries in /lib
-SET( EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin )
-SET( LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib )
+OPTION(OGS_PACKAGING OFF )
 
-# Relative paths are used in the created projects
-# May not work correcty due to the CMake docs
-#SET( CMAKE_USE_RELATIVE_PATHS TRUE )
 
-# Set OpenMP flags
-IF (LIS AND OPENMP_FOUND)
-	SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}" )
-ENDIF (LIS AND OPENMP_FOUND)
+IF(OGS_FEM_SP)
+	SET( PRJ_EXT "SP" )
+	INCLUDE(configs/sparse.cmake)
+ENDIF(OGS_FEM_SP)
 
-IF (MSVC)
-	ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
-	ADD_DEFINITIONS(-D_CRT_NONSTDC_NO_WARNINGS)
-	ADD_DEFINITIONS(-D_CRT_XNONSTDC_NO_WARNINGS)
-ELSE (MSVC)
-	ADD_DEFINITIONS (-D__STDC_FORMAT_MACROS)	# for OpenSG compiling
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wno-deprecated -Wall -Wextra")
-ENDIF (MSVC)
+IF(OGS_FEM_MPI)
+	SET( PRJ_EXT "MPI" )
+	SET(PARALLEL_USE_MPI ON)	
+	INCLUDE(configs/sparse.cmake)
+ENDIF(OGS_FEM_MPI)
 
-# Add LIB to include and link directory
-include_directories( ${CMAKE_SOURCE_DIR}/LIB )
-link_directories( ${CMAKE_SOURCE_DIR}/LIB )
+IF(OGS_FEM_GEMS)
+	SET( PRJ_EXT "GEMS" )
+	INCLUDE(configs/gems.cmake)
+ENDIF(OGS_FEM_GEMS)
 
-# Add subdirectories with the projects
-ADD_SUBDIRECTORY( Base )
-ADD_SUBDIRECTORY( MathLib )
-ADD_SUBDIRECTORY( GEO )
-ADD_SUBDIRECTORY( MSH )
-ADD_SUBDIRECTORY( FEM )
-ADD_SUBDIRECTORY( FileIO )
-ADD_SUBDIRECTORY( OGSProject )
-ADD_SUBDIRECTORY( OGS )
+IF(OGS_FEM_PQC)
+	SET( PRJ_EXT "PQC" )
+	INCLUDE(configs/PQC.cmake)
+ENDIF(OGS_FEM_PQC)
 
-## MDL: compiling with LIBPHREEQC
-IF (LIBPQC)
-	ADD_SUBDIRECTORY ( PQC )
-ENDIF (LIBPQC)
+IF(OGS_FEM_BRNS)
+	SET( PRJ_EXT "BRNS" )
+	INCLUDE(configs/BRNS.cmake)
+ENDIF(OGS_FEM_BRNS)
 
-IF (GEM_REACT)
-	ADD_SUBDIRECTORY( GEM )
-ENDIF (GEM_REACT)
+IF(OGS_FEM_LIS)
+	SET( PRJ_EXT "LIS" )
+	SET(PARALLEL_USE_OPENMP ON)
+	INCLUDE(configs/vc_lis.cmake)
+ENDIF(OGS_FEM_LIS)
 
-IF (QT4_FOUND)
-	# Adds useful macros and variables
-	# this is needed to correctly link the qt libraries through target_link_libraries
-	INCLUDE( ${QT_USE_FILE} )
-	ADD_SUBDIRECTORY( Qt )
-ENDIF (QT4_FOUND)
+IF(OGS_FEM_MKL)
+	SET( PRJ_EXT "MKL" )
+	SET(PARALLEL_USE_OPENMP ON)
+	INCLUDE(configs/pardiso.cmake)
+ENDIF(OGS_FEM_MKL)
+###-----WW
+
+
+###LIBRARY
+IF(MKL)
+	IF (UNIX)
+		# Find MKLlib
+		FIND_PACKAGE( MKL REQUIRED )
+
+		SET(CMAKE_CXX_FLAGS "-I${CMAKE_SOURCE_DIR}/LIB/MKL/include")
+		if(CMAKE_SIZEOF_VOID_P MATCHES "8")
+			SET(CMAKE_CXX_LINK_FLAGS "-L${CMAKE_SOURCE_DIR}/LIB/MKL/64 -llis-64 -lmkl_solver_lp64 -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core ")
+		else (CMAKE_SIZEOF_VOID_P MATCHES "8")
+			SET(CMAKE_CXX_LINK_FLAGS "-L${CMAKE_SOURCE_DIR}/LIB/MKL/32 -llis-32 -lmkl_solver -lmkl_intel -lmkl_gnu_thread -lmkl_core ")
+		endif (CMAKE_SIZEOF_VOID_P MATCHES "8")
+		IF(MKL_FOUND)
+			SET(PARALLEL_USE_OPENMP ON)
+		ENDIF(MKL_FOUND)
+	ELSE(UNIX)
+		MESSAGE (FATAL_ERROR "MKL is only supported under LINUX/UNIX" )	
+	ENDIF (UNIX)
+ENDIF(MKL)
+
+IF(LIS)
+	# Find LISlib
+	IF (UNIX)
+		FIND_PACKAGE( LIS REQUIRED )
+		#set (LIS ON)
+		set (NEW_EQS ON)
+		add_definitions(
+			-o3
+			-DIPMGEMPLUGIN
+		)	
+	ELSE(UNIX)
+		MESSAGE (FATAL_ERROR  "LIS is only supported under LINUX/UNIX" )	
+	ENDIF (UNIX)
+ENDIF(LIS)
+
+
+IF(OGS_USE_QT)
+	# Find Shapelib
+	FIND_PACKAGE( Shapelib )
+
+	# Find Qt4 library
+	FIND_PACKAGE( Qt4 4.5 )
+
+	IF ( QT4_FOUND )
+		# OPTION(OGS_GUI OFF )
+		# this is needed to correctly link the qt libraries through target_link_libraries
+		# By default only QtCore and QtGui modules are enabled
+		# other modules must be enabled like this:
+		SET( QT_USE_QTOPENGL TRUE )
+		SET( QT_USE_QTSQL TRUE )
+		SET( QT_USE_QTTEST TRUE )
+		IF (QT_QTXMLPATTERNS_FOUND)
+			set( QT_USE_QTXMLPATTERNS TRUE )
+		ENDIF (QT_QTXMLPATTERNS_FOUND)
+		INCLUDE( ${QT_USE_FILE} )
+	ENDIF (QT4_FOUND )
+ENDIF(OGS_USE_QT)
+
+# Create Configure.h
+CONFIGURE_FILE (Base/Configure.h.in ${PROJECT_BINARY_DIR}/Base/Configure.h)
+INCLUDE_DIRECTORIES( ${PROJECT_BINARY_DIR}/Base )
+
+#IF(OGS_USE_QT AND QT4_FOUND)
+#	SET(OGS_GUI ON)
+#ENDIF(OGS_USE_QT AND QT4_FOUND)
+IF(OGS_USE_QT)
+   MESSAGE (STATUS  "Configuring for OGS with GUI" )	
+   INCLUDE(FEM.cmake )
+   INCLUDE(GUI.cmake )
+ENDIF(OGS_USE_QT)
+
+IF(OGS_FEM)
+   MESSAGE (STATUS  "Configuring for FEM command line" )	
+	SET(OGS_GUI OFF )
+	SET(OGS_FEM_SP OFF )
+	SET(OGS_FEM_MPI OFF )
+	SET(OGS_FEM_GEMS OFF )
+	SET(OGS_FEM_BRNS OFF )
+	SET(OGS_FEM_MKL OFF )
+	SET(OGS_FEM_PQC OFF )
+	SET(OGS_FEM_LIS OFF )   
+#
+#
+   INCLUDE(FEM.cmake )
+ENDIF(OGS_FEM)
+
+IF(OGS_FEM_SP)
+   MESSAGE (STATUS  "Configuring for FEM command line with new sparse matrix" )	
+	SET(OGS_GUI OFF )
+	SET(OGS_FEM OFF )
+	SET(OGS_FEM_MPI OFF )
+	SET(OGS_FEM_GEMS OFF )
+	SET(OGS_FEM_BRNS OFF )
+	SET(OGS_FEM_MKL OFF )
+	SET(OGS_FEM_PQC OFF )
+	SET(OGS_FEM_LIS OFF )   
+   INCLUDE(FEM.cmake )
+ENDIF(OGS_FEM_SP)
+
+IF(OGS_FEM_MPI)
+   MESSAGE (STATUS  "Configuring for FEM command line with MPI" )	
+	SET(OGS_GUI OFF )
+	SET(OGS_FEM_SP OFF )
+	SET(OGS_FEM OFF )
+	SET(OGS_FEM_GEMS OFF )
+	SET(OGS_FEM_BRNS OFF )
+	SET(OGS_FEM_MKL OFF )
+	SET(OGS_FEM_PQC OFF )
+	SET(OGS_FEM_LIS OFF )   
+	
+   INCLUDE(FEM.cmake )
+ENDIF(OGS_FEM_MPI)
+
+IF(OGS_FEM_GEMS)
+   MESSAGE (STATUS  "Configuring for FEM command line with GEMS" )	
+	SET(OGS_GUI OFF )
+	SET(OGS_FEM_SP OFF )
+	SET(OGS_FEM_MPI OFF )
+	SET(OGS_FEM OFF )
+	SET(OGS_FEM_BRNS OFF )
+	SET(OGS_FEM_MKL OFF )
+	SET(OGS_FEM_PQC OFF )
+	SET(OGS_FEM_LIS OFF )
+   INCLUDE(FEM.cmake )
+ENDIF(OGS_FEM_GEMS)
+
+IF(OGS_FEM_PQC)
+   MESSAGE (STATUS  "Configuring for FEM command line with PQC" )	
+	SET(OGS_GUI OFF )
+	SET(OGS_FEM_SP OFF )
+	SET(OGS_FEM_MPI OFF )
+	SET(OGS_FEM_GEMS OFF )
+	SET(OGS_FEM_BRNS OFF )
+	SET(OGS_FEM_MKL OFF )
+	SET(OGS_FEM OFF )
+	SET(OGS_FEM_LIS OFF ) 
+	INCLUDE(FEM.cmake )  
+    ADD_SUBDIRECTORY ( PQC )
+ENDIF(OGS_FEM_PQC)
+
+IF(OGS_FEM_BRNS)
+	MESSAGE (STATUS  "Configuring for FEM command line with BRNS" )	
+	SET(OGS_GUI OFF )
+	SET(OGS_FEM_SP OFF )
+	SET(OGS_FEM_MPI OFF )
+	SET(OGS_FEM_GEMS OFF )
+	SET(OGS_FEM_MKL OFF )
+	SET(OGS_FEM OFF )
+	SET(OGS_FEM_LIS OFF )   
+	INCLUDE(FEM.cmake)
+ENDIF(OGS_FEM_BRNS)
+
+IF(OGS_FEM_LIS)
+   MESSAGE (STATUS  "Configuring for FEM command line with LIS" )	
+	SET(OGS_GUI OFF )
+	SET(OGS_FEM_SP OFF )
+	SET(OGS_FEM_MPI OFF )
+	SET(OGS_FEM_GEMS OFF )
+	SET(OGS_FEM_BRNS OFF )
+	SET(OGS_FEM_MKL OFF )
+	SET(OGS_FEM_PQC OFF )
+	SET(OGS_FEM OFF )   
+   INCLUDE(FEM.cmake )
+ENDIF(OGS_FEM_LIS)
+
+IF(OGS_FEM_MKL)
+   MESSAGE (STATUS  "Configuring for FEM command line with MKL" )	
+	SET(OGS_GUI OFF )
+	SET(OGS_FEM_SP OFF )
+	SET(OGS_FEM_MPI OFF )
+	SET(OGS_FEM_GEMS OFF )
+	SET(OGS_FEM_BRNS OFF )
+	SET(OGS_FEM OFF )
+	SET(OGS_FEM_PQC OFF )
+	SET(OGS_FEM_LIS OFF )   
+   INCLUDE(FEM.cmake )
+ENDIF(OGS_FEM_MKL)
+###-----WW
+
+IF (OGS_PACKAGING)
+	# Add packaging configuration
+	MESSAGE (STATUS "Enabling packaging")
+	INCLUDE( CMakeConfiguration/Pack.cmake)
+ENDIF (OGS_PACKAGING)
+

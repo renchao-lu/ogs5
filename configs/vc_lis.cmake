@@ -1,10 +1,6 @@
-message (STATUS "Setting the Visual C++ LIS configuration")
-
-
-set (RANDOM_WALK ON)
-set (NEW_EQS ON)
+ADD_DEFINITIONS(-DNEW_EQS)
 set (LIS ON)
-set (PROBLEM_CLASS ON)
+
 
 add_definitions(
 	-DIPMGEMPLUGIN
