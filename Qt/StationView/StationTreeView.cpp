@@ -63,7 +63,6 @@ void StationTreeView::contextMenuEvent( QContextMenuEvent* event )
 {
 	QModelIndex index = this->selectionModel()->currentIndex();
 	ModelTreeItem* item = static_cast<ModelTreeItem*>(index.internalPointer());
-	QString temp_name;
 
 	// The current index refers to a parent item (e.g. a listname)
 	if (item->childCount()>0)
@@ -82,6 +81,7 @@ void StationTreeView::contextMenuEvent( QContextMenuEvent* event )
 	// The current index refers to a station object
 	else
 	{
+		QString temp_name;
 		if (static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)->type() == Station::BOREHOLE)
 		{
 			QMenu menu;

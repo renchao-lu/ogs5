@@ -7,10 +7,14 @@
 
 #include "VtkOGSFilter.h"
 
+#include "VtkColorByHeightFilter.h"
+
 #include <vtkSmartPointer.h>
 #include <vtkSphereSource.h>
 #include <vtkCylinderSource.h>
 #include <vtkGlyph3D.h>
+#include <vtkDataSetSurfaceFilter.h>
+
 
 vtkPolyDataAlgorithm* VtkOGSFilter::Point2GlyphFilter(vtkPolyDataAlgorithm* algorithm)
 {
@@ -53,3 +57,18 @@ vtkPolyDataAlgorithm* VtkOGSFilter::Line2CylinderFilter(vtkPolyDataAlgorithm* al
 	source->SetResolution(20.0); // 100 is really good, 10 is kinda insufficient
  	_mapper->SetInputConnection(0, source->GetOutputPort(0));
 */
+
+
+vtkPolyDataAlgorithm* VtkOGSFilter::ColorByHeight(vtkUnstructuredGridAlgorithm* algorithm)
+{
+	vtkDataSetSurfaceFilter* surfaceFilter = vtkDataSetSurfaceFilter::New();
+	surfaceFilter->SetInputConnection(0, algorithm->GetOutputPort(0));
+	surfaceFilter->Update(); 
+
+	VtkColorByHeightFilter* heightFilter = VtkColorByHeightFilter::New();
+	//heightFilter->SetLimits(-7000,3000);
+	heightFilter->SetInputConnection(0, surfaceFilter->GetOutputPort(0));
+	heightFilter->Update(); 
+
+	return heightFilter;
+}

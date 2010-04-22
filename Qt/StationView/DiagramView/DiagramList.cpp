@@ -9,7 +9,7 @@
 #include "DiagramList.h"
 
 
-DiagramList::DiagramList() : _xLabel(""), _yLabel(""), _xUnit(""), _yUnit("")
+DiagramList::DiagramList() : _xLabel(""), _yLabel(""), _xUnit(""), _yUnit(""), _minX(0), _maxX(0), _minY(0), _maxY(0)
 {
 }
 
@@ -137,11 +137,7 @@ int DiagramList::readList(char* path)
 
 int DiagramList::readList(const QString &path)
 {
-	int numberOfDays;
-	float value;
-	QDateTime date1, date2;
 	QString line;
-	QString stringDate;
 	QStringList fields;
 
 	QFile file(path);
@@ -155,10 +151,13 @@ int DiagramList::readList(const QString &path)
 
 	line = in.readLine();
 	fields = line.split('\t');
-	if (fields.size() >= 2) {
-		stringDate = fields.takeFirst();
-		value = fields.takeFirst().toDouble();
-		date1 = QDateTime::fromString(stringDate, "dd.MM.yyyy");
+	if (fields.size() >= 2) 
+	{
+		int numberOfDays = 0;
+		QString stringDate = fields.takeFirst();
+		float value = fields.takeFirst().toDouble();
+		QDateTime date1 = QDateTime::fromString(stringDate, "dd.MM.yyyy");
+		QDateTime date2;
 
 		_coords.push_back(std::pair<float, float>(0, value));
 

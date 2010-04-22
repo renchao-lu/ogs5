@@ -41,9 +41,11 @@ protected:
 	~VtkMeshSource() {};
 
 	/// Computes the unstructured grid data object.
-	int RequestData(vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector);
+	int RequestData(vtkInformation* request, 
+		            vtkInformationVector** inputVector, 
+					vtkInformationVector* outputVector);
 
-	int RequestInformation(vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector);
+
 
 	const std::vector<GEOLIB::Point*> *_nodes;
 	const std::vector<GridAdapter::Element*> *_elems;

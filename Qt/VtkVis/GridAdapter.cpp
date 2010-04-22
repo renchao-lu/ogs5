@@ -26,6 +26,18 @@ GridAdapter::GridAdapter(const std::string &filename) :
 	readMeshFromFile(filename);
 }
 
+GridAdapter::~GridAdapter()
+{
+	size_t nNodes = _nodes->size();
+	size_t nElems = _elems->size();
+	
+	for (size_t i=0; i<nNodes; i++) delete (*_nodes)[i];
+	for (size_t i=0; i<nElems; i++) delete (*_elems)[i];
+
+	delete _nodes;
+	delete _elems;
+}
+
 
 int GridAdapter::convertCFEMesh(const Mesh_Group::CFEMesh* mesh)
 {
@@ -68,7 +80,6 @@ int GridAdapter::convertCFEMesh(const Mesh_Group::CFEMesh* mesh)
 
 int GridAdapter::readMeshFromFile(const std::string &filename)
 {
-	size_t cid = 0;
 	std::string line;
 	std::list<std::string>::const_iterator it;
 
@@ -129,7 +140,6 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 		getline(in, line);
 		trim(line);
 		int nElems = atoi(line.c_str());
-		cid = 0;
 
 		// read all elements
 		while ( getline(in, line) )

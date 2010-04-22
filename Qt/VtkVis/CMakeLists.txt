@@ -2,6 +2,7 @@
 set( SOURCES
 	GridAdapter.cpp
 	VtkAddFilterDialog.cpp
+	VtkColorByHeightFilter.cpp
 	VtkMeshSource.cpp
 	VtkOGSFilter.cpp
 	VtkPolylinesSource.cpp
@@ -25,7 +26,8 @@ set( MOC_HEADERS
 # Header files
 set( HEADERS
 	GridAdapter.h
-	VtkAlgorithmProperties.h
+	VtkAlgorithmProperties.h	
+	VtkColorByHeightFilter.h
 	VtkMeshSource.h
 	VtkOGSFilter.h
 	VtkPolylinesSource.h

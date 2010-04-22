@@ -10,7 +10,7 @@
 
 
 #include <vtkPolyDataAlgorithm.h>
-
+#include <vtkUnstructuredGridAlgorithm.h>
 
 /**
  * \brief Convenience class for storing self-defined VTK filters
@@ -20,6 +20,8 @@ class VtkOGSFilter
 public:
 	VtkOGSFilter() {};
 	~VtkOGSFilter() {};
+
+	static vtkPolyDataAlgorithm* ColorByHeight(vtkUnstructuredGridAlgorithm* algorithm);
 
 	static vtkPolyDataAlgorithm* Point2GlyphFilter(vtkPolyDataAlgorithm* algorithm);
 

@@ -55,7 +55,7 @@ void VtkStationSource::PrintSelf( ostream& os, vtkIndent indent )
 int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
 	int offsetFactor = 10;
-	int scalingFactor = 1;
+	int scalingFactor = 10;
 
 	if (!_stations)
 		return 0;

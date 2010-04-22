@@ -25,7 +25,7 @@ public:
 	/**
 	 * Creates an empty view.
 	 */
-	StratView(QWidget* parent = 0) {}
+	StratView(QWidget* parent = 0) : _scene(NULL) {}
 	~StratView();
 
 	/// Sets the Borehole whose data should be visualised.

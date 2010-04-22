@@ -49,8 +49,9 @@ public:
 	/// Constructor using a MSH-file as source
 	GridAdapter(const std::string &filename);
 
-	~GridAdapter() {};
+	~GridAdapter();
 
+	/// Returns the total number of unique material IDs.
 	const size_t getNumberOfMaterials() const;
 
 	/// Returns the vector of nodes.

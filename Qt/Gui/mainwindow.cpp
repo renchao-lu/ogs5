@@ -47,8 +47,9 @@
 #include <QComboBox>
 #include <QPixmap>
 
-//test
+//3d mesh testing
 #include "VtkMeshSource.h"
+#include "VtkOGSFilter.h"
 
 /// FEM. 11.03.2010. WW
 #include "problem.h"
@@ -458,7 +459,8 @@ void MainWindow::loadFile(const QString &fileName)
 		 {
 			 vtkUnstructuredGridAlgorithm* meshSource = VtkMeshSource::New();
 			 static_cast<VtkMeshSource*>(meshSource)->setMesh(grid.getNodes(), grid.getElements(i));
-			 _vtkVisPipeline->addPipelineItem(meshSource);		
+			 _vtkVisPipeline->addPipelineItem(meshSource);
+			 //_vtkVisPipeline->addPipelineItem(VtkOGSFilter::ColorByHeight(meshSource));
 		 }
 	}
 	else if (fi.suffix().toLower() == "ts") {

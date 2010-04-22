@@ -485,7 +485,7 @@ void earClippingTriangulation (std::vector<GEOLIB::Point*>& pnts, std::list<GEOL
 	}
 
 	// *** clip an ear
-	while (vertex_list.size() > 2 && ! ear_list.empty()) {
+	while (vertex_list.size() > 3) {
 		// pop ear from list
 		size_t ear = ear_list.front ();
 		ear_list.pop_front();

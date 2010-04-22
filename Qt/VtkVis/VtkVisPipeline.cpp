@@ -18,10 +18,7 @@
 #include <vtkPointSet.h>
 #include <vtkActor.h>
 
-#include <vtkOutlineFilter.h>
-
-#include <vtkSphereSource.h>
-#include <vtkGlyph3D.h>
+#include "VtkOGSFilter.h"
 
 VtkVisPipeline::VtkVisPipeline( vtkRenderer* renderer, QObject* parent /*= 0*/ )
 : TreeModel(parent), _renderer(renderer)
@@ -50,22 +47,9 @@ void VtkVisPipeline::addPipelineItem( Model* model )
 void VtkVisPipeline::addPipelineItem(StationTreeModel* model, const std::string &name)
 {
 	addPipelineItem(model->vtkSource(name));
-/*
-	vtkSphereSource* sphere = vtkSphereSource::New();
-	sphere->SetRadius(50);
-	sphere->SetPhiResolution(2);
-	sphere->SetThetaResolution(2);
-	sphere->SetReleaseDataFlag(1);
 
-	vtkGlyph3D* glyphs = vtkGlyph3D::New();
-    glyphs->ScalingOn();
-    glyphs->SetScaleModeToScaleByScalar();
+	//addPipelineItem(VtkOGSFilter::Point2GlyphFilter(model->vtkSource(name)));
 
-    glyphs->SetSource(sphere->GetOutput());
-    glyphs->SetInput(model->vtkSource(name)->GetOutput());
-
-	addPipelineItem(glyphs);
-*/
 }
 
 
@@ -82,7 +66,7 @@ void VtkVisPipeline::addPipelineItem( vtkAlgorithm* source,
 	}
 
 	QList<QVariant> itemData;
-	itemData << source->GetClassName() << true;
+	//itemData << source->GetClassName() << true;
 	VtkVisPipelineItem* item;
 	item = new VtkVisPipelineItem(_renderer, source, parentItem, input, itemData);
 	parentItem->appendChild(item);
