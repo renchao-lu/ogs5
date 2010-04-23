@@ -2168,7 +2168,7 @@ inline void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
       //
       if(Gravity)
 //        mat_fac *= rhow/rho_ga;
-        mat_fac *= rho_g/rhow; //29.04.2009 WW
+        mat_fac *= rho_ga/rhow; //29.04.2009 WW
       //
       for(i=0; i<dim*dim; i++)
         mat[i] = tensor[i] * mat_fac*time_unit_factor;
