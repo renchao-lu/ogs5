@@ -12,8 +12,8 @@
 #include "PntsModel.h"
 #include "StationTreeModel.h"
 #include "LinesModel.h"
+#include "SurfaceModel.h"
 
-//#include "StationIO.h"
 
 // BUG removal of lists is not correctly implemented as only the 2d _or_ the 3d visualisation
 // of the removed vector will also be removed correctly (depending on what is removed first).
@@ -99,7 +99,6 @@ void GEOModels::filterStationVec(const std::string &name, const std::vector<Prop
 
 bool GEOModels::removeStationVec( const std::string &name )
 {
-	emit removeVTK(_stationModel, name);
 	_stationModel->removeStationList(name);
 	emit stationVectorRemoved(_stationModel, name);
 	return GEOObjects::removeStationVec(name);
@@ -117,20 +116,37 @@ void GEOModels::addPolylineVec( std::vector<GEOLIB::Polyline*> *lines, const std
 
 bool GEOModels::removePolylineVec( const std::string &name )
 {
-	if (isPlyVecUsed(name)) {
-		std::cout
-				<< "GEOModels::removePolylineVec() - there are Surfaces depending on these polylines"
-				<< std::endl;
-		return false;
-	} else {
-		for (std::vector<PolylinesModel*>::iterator it = _lineModels.begin();
-				it != _lineModels.end(); ++it) {
-			if ((*it)->name().toStdString() == name) {
-				emit polylineModelRemoved(*it);
-				delete *it;
-				_lineModels.erase(it);
-				return GEOObjects::removePolylineVec (name);
-			}
+	for (std::vector<PolylinesModel*>::iterator it = _lineModels.begin();
+			it != _lineModels.end(); ++it) {
+		if ((*it)->name().toStdString() == name) {
+			emit polylineModelRemoved(*it);
+			delete *it;
+			_lineModels.erase(it);
+			return GEOObjects::removePolylineVec (name);
+		}
+	}
+	return false;
+}
+
+void GEOModels::addSurfaceVec( std::vector<GEOLIB::Surface*> *surfaces, const std::string &name )
+{
+	GEOObjects::addSurfaceVec(surfaces, name);
+	if (surfaces->empty()) return;
+
+	SurfaceModel* model = new SurfaceModel(QString::fromStdString(name), surfaces, this);
+	_surfaceModels.push_back(model);
+	emit surfaceModelAdded(model);
+}
+
+bool GEOModels::removeSurfaceVec( const std::string &name )
+{
+	for (std::vector<SurfaceModel*>::iterator it = _surfaceModels.begin();
+			it != _surfaceModels.end(); ++it) {
+		if ((*it)->name().toStdString() == name) {
+			emit surfaceModelRemoved(*it);
+			delete *it;
+			_surfaceModels.erase(it);
+			return GEOObjects::removeSurfaceVec (name);
 		}
 	}
 	return false;

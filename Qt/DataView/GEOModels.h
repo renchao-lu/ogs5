@@ -17,6 +17,7 @@ class Model;
 class PntsModel;
 class StationTreeModel;
 class PolylinesModel;
+class SurfaceModel;
 class TreeModel;
 
 /**
@@ -47,9 +48,13 @@ public slots:
 	void addPolylineVec(std::vector<GEOLIB::Polyline*> *lines, const std::string &name);
 	bool removePolylineVec(const std::string &name);
 
+	void addSurfaceVec(std::vector<GEOLIB::Surface*> *surfaces, const std::string &name);
+	bool removeSurfaceVec(const std::string &name);
+
 protected:
 	std::vector<PntsModel*> _pntModels;
 	std::vector<PolylinesModel*> _lineModels;
+	std::vector<SurfaceModel*> _surfaceModels;;
 	StationTreeModel* _stationModel;
 
 private:
@@ -64,7 +69,8 @@ signals:
 	void polylineModelAdded(Model* model);
 	void polylineModelRemoved(Model* model);
 
-	void removeVTK(StationTreeModel* model, std::string name);
+	void surfaceModelAdded(Model* model);
+	void surfaceModelRemoved(Model* model);
 
 };
 

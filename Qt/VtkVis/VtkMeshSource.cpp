@@ -23,6 +23,8 @@
 
 #include "VtkMeshSource.h"
 
+#include "ColorLookupTable.h"
+
 vtkStandardNewMacro(VtkMeshSource);
 vtkCxxRevisionMacro(VtkMeshSource, "$Revision$");
 
@@ -59,15 +61,13 @@ void VtkMeshSource::PrintSelf( ostream& os, vtkIndent indent )
 		os << std::endl;
 		i++;
 	}
-
-
 }
 
 int VtkMeshSource::RequestData( vtkInformation* request, 
 							    vtkInformationVector** inputVector, 
 								vtkInformationVector* outputVector )
 {
-	int scalingFactor = 10;
+	int scalingFactor = 15;
 	size_t nPoints = _nodes->size();
 	size_t nElems  = _elems->size();
 	size_t nElemNodes = 0;

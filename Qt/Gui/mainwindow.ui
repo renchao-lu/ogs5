@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>600</height>
+    <height>602</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -202,6 +202,26 @@
     </layout>
    </widget>
   </widget>
+  <widget class="QDockWidget" name="surfaceDock">
+   <property name="windowTitle">
+    <string>Surfaces</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_8">
+    <widget class="SurfaceTabWidget" name="surfaceTabWidget" native="true">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>71</width>
+       <height>91</height>
+      </rect>
+     </property>
+    </widget>
+   </widget>
+  </widget>
   <action name="action_Open">
    <property name="text">
     <string>&amp;Open...</string>
@@ -313,6 +333,12 @@
    <class>VtkVisTabWidget</class>
    <extends>QWidget</extends>
    <header>VtkVisTabWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SurfaceTabWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">SurfaceTabWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

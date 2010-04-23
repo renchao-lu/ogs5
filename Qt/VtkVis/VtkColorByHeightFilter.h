@@ -11,11 +11,11 @@
 // ** INCLUDES **
 #include <vtkPolyDataAlgorithm.h>
 
+class ColorLookupTable;
 
 /**
  * \brief VTK filter object for colouring vtkPolyData objects based on z-coordinates.
  *
- * VTK filter object for colouring vtkPolyData objects based on z-coordinates.
  * The lower and upper boundaries for colouring surfaces can be set manually using the SetLimits() methods.
  * If no boundaries are set they are calculated from the data.
  */
@@ -46,6 +46,8 @@ protected:
 private:
 	static const int DEFAULTMINVALUE=-9999;
 	static const int DEFAULTMAXVALUE=9999;
+
+	ColorLookupTable* BuildColorTable(double min, double max);
 
 	/// Returns the value of the smallest z-coordinate in the data set.
 	double getMinHeight(vtkPolyData* data);

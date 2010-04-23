@@ -1,6 +1,7 @@
 /**
  * \file VtkSurfacesSource.h
  * 3/2/2010 LB Initial implementation
+ * 23/04/2010 KR Surface visualisation
  *
  */
 
@@ -28,7 +29,7 @@ public:
 	vtkTypeRevisionMacro(VtkSurfacesSource,vtkPolyDataAlgorithm);
 
 	/// Sets the surfaces vector
-	void setSurfaces(std::vector<GEOLIB::Surface*>& surfaces) { _surfaces = surfaces; };
+	void setSurfaces(std::vector<GEOLIB::Surface*> *surfaces) { _surfaces = surfaces; };
 
 	/// Prints its data on a stream.
 	void PrintSelf(ostream& os, vtkIndent indent);
@@ -43,7 +44,7 @@ protected:
 	int RequestInformation(vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector);
 
 	/// The surfaces to visualize
-	std::vector<GEOLIB::Surface*> _surfaces;
+	std::vector<GEOLIB::Surface*> *_surfaces;
 
 private:
 

@@ -1,5 +1,6 @@
 # Source files
 set( SOURCES
+	ColorLookupTable.cpp
 	GridAdapter.cpp
 	VtkAddFilterDialog.cpp
 	VtkColorByHeightFilter.cpp
@@ -25,6 +26,7 @@ set( MOC_HEADERS
 
 # Header files
 set( HEADERS
+	ColorLookupTable.h
 	GridAdapter.h
 	VtkAlgorithmProperties.h	
 	VtkColorByHeightFilter.h

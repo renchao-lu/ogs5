@@ -25,6 +25,8 @@ set( SOURCES
 	SHPImportDialog.cpp
 	GEOModels.cpp
 	DataViewWidget.cpp
+	SurfaceModel.cpp
+	SurfaceTabWidget.cpp
 )
 
 # Moc Header files
@@ -54,6 +56,8 @@ set( MOC_HEADERS
 	SHPImportDialog.h
 	GEOModels.h
 	DataViewWidget.h
+	SurfaceModel.h
+	SurfaceTabWidget.h
 )
 
 # Header files
@@ -68,6 +72,7 @@ set( UIS
 	VisualizationWidgetBase.ui
 	PntTabWidgetBase.ui
 	LineTabWidgetBase.ui
+	SurfaceTabWidgetBase.ui
 	StationTabWidgetBase.ui
 	MshTabWidgetBase.ui
 	DBConnection.ui

@@ -49,6 +49,9 @@ public:
 	 */
 	bool isPntInSfc (const double *pnt) const;
 
+	const std::vector<Point*> *getPointVec() const { return &m_sfc_pnts; };
+
+
 protected:
 	/** a vector of pointers to Points */
 	const std::vector<Point*> &m_sfc_pnts;

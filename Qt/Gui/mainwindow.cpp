@@ -107,6 +107,18 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	connect(_geoModels, SIGNAL(polylineModelAdded(Model*)),
 		scene, SLOT(loadItemsFromTableModel(Model*)));
 
+	// surface models
+	connect (_geoModels, SIGNAL(surfaceModelAdded(Model*)),
+		surfaceTabWidget->dataViewWidget, SLOT(addModel(Model*)));
+	connect(surfaceTabWidget->dataViewWidget, SIGNAL(requestModelClear(std::string)),
+		_geoModels, SLOT(removeSurfaceVec(const std::string)));
+	connect (_geoModels, SIGNAL(surfaceModelRemoved(Model*)),
+		surfaceTabWidget->dataViewWidget, SLOT(removeModel(Model*)));
+	connect(_geoModels, SIGNAL(surfaceModelRemoved(Model*)),
+		this, SLOT(updateGraphicsScene()));
+	connect(_geoModels, SIGNAL(surfaceModelAdded(Model*)),
+		scene, SLOT(loadItemsFromTableModel(Model*)));
+
 	// vtk visualization pipeline
 	_vtkVisPipeline = new VtkVisPipeline(visualizationWidget->renderer());
 	connect(_geoModels, SIGNAL(pointModelAdded(Model*)),
@@ -116,6 +128,10 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	connect(_geoModels, SIGNAL(polylineModelAdded(Model*)),
 		_vtkVisPipeline, SLOT(addPipelineItem(Model*)));
 	connect(_geoModels, SIGNAL(polylineModelRemoved(Model*)),
+		_vtkVisPipeline, SLOT(removeSourceItem(Model*)));
+	connect(_geoModels, SIGNAL(surfaceModelAdded(Model*)),
+		_vtkVisPipeline, SLOT(addPipelineItem(Model*)));
+	connect(_geoModels, SIGNAL(surfaceModelRemoved(Model*)),
 		_vtkVisPipeline, SLOT(removeSourceItem(Model*)));
 	connect(_geoModels, SIGNAL(stationVectorAdded(StationTreeModel*, std::string)),
 		_vtkVisPipeline, SLOT(addPipelineItem(StationTreeModel*, std::string)));
@@ -460,7 +476,7 @@ void MainWindow::loadFile(const QString &fileName)
 			 vtkUnstructuredGridAlgorithm* meshSource = VtkMeshSource::New();
 			 static_cast<VtkMeshSource*>(meshSource)->setMesh(grid.getNodes(), grid.getElements(i));
 			 _vtkVisPipeline->addPipelineItem(meshSource);
-			 //_vtkVisPipeline->addPipelineItem(VtkOGSFilter::ColorByHeight(meshSource));
+			 _vtkVisPipeline->addPipelineItem(VtkOGSFilter::ColorByHeight(meshSource));
 		 }
 	}
 	else if (fi.suffix().toLower() == "ts") {
@@ -515,6 +531,8 @@ void MainWindow::updateGraphicsScene()
 	pntTabWidget->dataViewWidget->dataView->resizeRowsToContents();
 	lineTabWidget->dataViewWidget->dataView->resizeColumnsToContents();
 	lineTabWidget->dataViewWidget->dataView->resizeRowsToContents();
+	surfaceTabWidget->dataViewWidget->dataView->resizeColumnsToContents();
+	surfaceTabWidget->dataViewWidget->dataView->resizeRowsToContents();
 	mshTabWidget->mshTableView->resizeColumnsToContents();
 	mshTabWidget->mshTableView->resizeRowsToContents();
 	visualizationWidget->showAll();

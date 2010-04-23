@@ -94,7 +94,7 @@ public:
 	virtual bool removePolylineVec(const std::string &name);
 
 	/** Adds a vector of surfaces with the given name to GEOObjects. */
-	virtual void addSurfaceVec(std::vector<Surface*> *lines,
+	virtual void addSurfaceVec(std::vector<Surface*> *surfaces,
 			const std::string &name);
 	/// Returns the surface vector with the given name.
 	std::vector<Surface*> *getSurfaceVec(const std::string &name);

@@ -1,6 +1,7 @@
 /**
  * \file VtkSurfacesSource.cpp
  * 3/2/2010 LB Initial implementation
+ * 23/04/2010 KR Surface visualisation
  *
  * Implementation of VtkSurfacesSource
  */
@@ -15,7 +16,7 @@
 #include <vtkInformationVector.h>
 #include <vtkObjectFactory.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
-#include <vtkPolygon.h>
+#include <vtkSmartPointer.h>
 
 vtkStandardNewMacro(VtkSurfacesSource);
 vtkCxxRevisionMacro(VtkSurfacesSource, "$Revision$");
@@ -23,14 +24,14 @@ vtkCxxRevisionMacro(VtkSurfacesSource, "$Revision$");
 VtkSurfacesSource::VtkSurfacesSource()
 : _surfaces(NULL)
 {
-	this->SetNumberOfOutputPorts(0);
+	this->SetNumberOfInputPorts(0);
 }
 
 void VtkSurfacesSource::PrintSelf( ostream& os, vtkIndent indent )
 {
 	this->Superclass::PrintSelf(os,indent);
 
-	if (_surfaces.size() == 0)
+	if (_surfaces->size() == 0)
 		return;
 
 	os << indent << "== VtkSurfacesSource ==" << "\n";
@@ -38,50 +39,56 @@ void VtkSurfacesSource::PrintSelf( ostream& os, vtkIndent indent )
 
 int VtkSurfacesSource::RequestData( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
-	const int numSurfaces = _surfaces.size();
-	if (numSurfaces == 0)
+	const int nSurfaces = _surfaces->size();
+	if (nSurfaces == 0)
 		return 0;
 
-	vtkInformation *outInfo = outputVector->GetInformationObject(0);
-	vtkPolyData* output = vtkPolyData::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
+	vtkSmartPointer<vtkInformation> outInfo = outputVector->GetInformationObject(0);
+	vtkSmartPointer<vtkPolyData> output = vtkPolyData::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
 
-	vtkPoints* newPoints = vtkPoints::New();
-	vtkCellArray* newPolygons = vtkCellArray::New();
-	newPolygons->Allocate(numSurfaces);
+	vtkSmartPointer<vtkPoints> newPoints = vtkSmartPointer<vtkPoints>::New();
+	vtkSmartPointer<vtkCellArray> newPolygons = vtkSmartPointer<vtkCellArray>::New();
+	//newPolygons->Allocate(nSurfaces);
 
 	if (outInfo->Get(vtkStreamingDemandDrivenPipeline::UPDATE_PIECE_NUMBER()) > 0)
 		return 1;
 
-//	for (std::vector<GEOLIB::Surface*>::const_iterator it = _surfaces.begin();
-//		it != _surfaces.end(); ++it)
-//	{
-//		const size_t n_triangles = (*it)->getNTriangles();
-//		vtkPolygon* newPolygon = vtkPolygon::New();
-//
-//		int numberOfPointsInserted = 0;
-//		for (size_t i = 0; i < n_triangles; i++)
-//		{
-//			GEOLIB::Triangle* triangle = (**it)[i];
-//			for (int j = 0; j < 3; j++) {
-//				const GEOLIB::Point* point = (*polyline)[j];
-//				const double* coords = point->getData();
-//				newPoints->InsertNextPoint(coords);
-//
-//				newPolygon->GetPointIds()->InsertNextId(numberOfPointsInserted);
-//
-//				numberOfPointsInserted++;
-//			}
-//		}
-//
-//		newPolygons->InsertNextCell(newPolygon);
-//		newPolygon->Delete();
-//	}
+/*
+	const std::vector<GEOLIB::Point*> *surfacePoints = (*_surfaces)[0]->getPointVec();
+	for (std::vector<GEOLIB::Point*>::const_iterator it = surfacePoints->begin(); it != surfacePoints->end(); ++it)
+	{
+		double* coords = const_cast<double*>((*it)->getData());
+		newPoints->InsertNextPoint(coords);
+	}
+*/
+
+	int numberOfPointsInserted = 0;
+	for (std::vector<GEOLIB::Surface*>::const_iterator it = _surfaces->begin();
+		it != _surfaces->end(); ++it)
+	{
+		const size_t nTriangles = (*it)->getNTriangles();
+		vtkPolygon* aPolygon = vtkPolygon::New();
+		aPolygon->GetPointIds()->SetNumberOfIds(nTriangles*3);
+
+		for (size_t i = 0; i < nTriangles; i++)
+		{
+			const GEOLIB::Triangle* triangle = (**it)[i];
+			for (size_t j=0; j<3; j++) 
+			{
+				double* coords = const_cast<double*>(triangle->getPoint(j)->getData());
+				newPoints->InsertNextPoint(coords);
+				aPolygon->GetPointIds()->SetId(i*3+j, numberOfPointsInserted);
+				numberOfPointsInserted++;
+			}
+		}
+
+		newPolygons->InsertNextCell(aPolygon);
+		aPolygon->Delete();
+	}
 
 	output->SetPoints(newPoints);
-	newPoints->Delete();
-
 	output->SetPolys(newPolygons);
-	newPolygons->Delete();
+
 
 	return 1;
 }

@@ -16,6 +16,7 @@
 #include <vtkCellData.h>
 
 #include "VtkColorByHeightFilter.h"
+#include "ColorLookupTable.h"
 
 vtkStandardNewMacro(VtkColorByHeightFilter);
 vtkCxxRevisionMacro(VtkColorByHeightFilter, "$Revision$");
@@ -45,9 +46,13 @@ int VtkColorByHeightFilter::RequestData( vtkInformation* request,
     vtkPolyData *output = vtkPolyData::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
 
 	// Generate a color lookup table
+/*	// vtk filter for lut-generation (supports only standard hsv colour sequence
 	vtkSmartPointer<vtkLookupTable> colorLookupTable = vtkSmartPointer<vtkLookupTable>::New();
 	colorLookupTable->SetTableRange(getMinHeight(input), getMaxHeight(input));
 	colorLookupTable->Build();
+*/
+	// our own colour table generation class 
+	ColorLookupTable* colorLookupTable = BuildColorTable(/*getMinHeight(input)*/-500, getMaxHeight(input));
 
 	vtkSmartPointer<vtkUnsignedCharArray> colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
 	colors->SetNumberOfComponents(3);
@@ -59,13 +64,13 @@ int VtkColorByHeightFilter::RequestData( vtkInformation* request,
 		double p[3];
 		input->GetPoint(i,p);
 
-		double lutColor[3];
-		colorLookupTable->GetColor(p[2], lutColor);
-		unsigned char color[3];
-		for (unsigned int j=0; j<3; j++)
-			color[j] = 255 * lutColor[j]/1.0;
+		unsigned char lutColor[3];
+		colorLookupTable->getColor(p[2], lutColor);
+//		unsigned char color[3];
+//		for (unsigned int j=0; j<3; j++)
+//			color[j] = lutColor[j];
 
-		colors->InsertNextTupleValue(color);
+		colors->InsertNextTupleValue(lutColor);
 	}
 
 	output->CopyStructure(input);
@@ -124,4 +129,25 @@ void VtkColorByHeightFilter::SetLimits(double min, double max)
 	}
 	else 
 		vtkstd::cout << "VtkColorByHeightFilter::SetLimits(min, max) - Limits not changed because min value > max value." << vtkstd::endl;
+}
+
+ColorLookupTable* VtkColorByHeightFilter::BuildColorTable(double min, double max)
+{
+	ColorLookupTable* t = new ColorLookupTable(min, max);
+	GEOLIB::Color* c = new GEOLIB::Color(0,255,0);
+	t->setColor(c,0.2);
+	//t->setColor(c,0.8);
+/*
+	GEOLIB::Color* a = new GEOLIB::Color(255,0,0);
+	GEOLIB::Color* b = new GEOLIB::Color(0,225,0);
+	GEOLIB::Color* c = new GEOLIB::Color(0,0,255);
+	GEOLIB::Color* d = new GEOLIB::Color(0,255,5);
+	t.setStartColor(a);
+	t.setEndColor(c);
+	t.setColor(b,0.5);
+	t.setColor(b,0.6);
+*/
+	t->build();
+
+	return t;
 }
