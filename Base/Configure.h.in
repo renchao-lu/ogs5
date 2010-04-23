@@ -9,9 +9,9 @@
 #define OGS_QT_VERSION ${QT_VERSION_MAJOR}${QT_VERSION_MINOR}
 #define SOURCEPATH "${CMAKE_SOURCE_DIR}"
 
-#cmakedefine RANDOM_WALK
-#cmakedefine PROBLEM_CLASS
-#cmakedefine NEW_EQS
+//WW #cmakedefine RANDOM_WALK
+//WW #cmakedefine PROBLEM_CLASS
+//WW #cmakedefine NEW_EQS
 #cmakedefine LIS
 #cmakedefine MKL
 #cmakedefine BRNS
