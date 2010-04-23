@@ -40,4 +40,5 @@ include_directories(
 
 target_link_libraries( FileIO
 	Base
+	MathLib
 )

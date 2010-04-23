@@ -19,7 +19,7 @@
    02/2000     CT         Restart wieder hergestellt
    07/2000     AH         Vorbereitungen zum HGM.
     9/2000     CT         Neu: RefreshNodeOutputData, Warnungen beseitigt
-   10/2001     AH         Inverse Modellierung 
+   10/2001     AH         Inverse Modellierung
                           Trennung und Anpassung (CreateFileData)
                           In DestroyFileData Datenfeld auskommentiert.
                           Neues Konzept fuer Datenbank-Verwaltung ah inv
@@ -62,6 +62,12 @@
 /* GeoLib */
 #include "geo_lib.h"
 #include "files0.h"
+
+// GEOLIB
+#include "GEOObjects.h"
+// FileIO
+#include "OGSIOVer4.h"
+
 // MSHLib
 #include "msh_lib.h"
 #include "gs_project.h"
@@ -129,14 +135,23 @@ int ReadData ( char *dateiname )
   if ((f = fopen(msgdat,"r")) == NULL) { /* MSG-Datei existiert nicht */
     msgdat = (char *)Free(msgdat);
   } else {
-    fclose (f); 
+    fclose (f);
     if ((f = fopen(msgdat,"a")) == NULL) { /* MSG-Schreibzugriff nicht moeglich */
       msgdat = (char *)Free(msgdat);
-    } else fclose (f); 
+    } else fclose (f);
   }
   //----------------------------------------------------------------------
   // Read GEO data
   GEOLIB_Read_GeoLib(dateiname);
+
+  std::string tmp_fname (dateiname);
+  tmp_fname += ".gli";
+  std::cout << "GEOLIB reading " << tmp_fname << " ... " << std::flush;
+  GEOLIB::GEOObjects *geo_obj (new GEOLIB::GEOObjects());
+  FileIO::readGLIFileV4(tmp_fname, geo_obj);
+  delete geo_obj;
+  std::cout << "ok" << std::endl;
+
   //----------------------------------------------------------------------
   // Read object data
   PCSRead(dateiname);
@@ -151,11 +166,11 @@ int ReadData ( char *dateiname )
   CPRead(dateiname); //SB:GS4
   RCRead(dateiname);
   KRRead(dateiname);
-  KRWrite(dateiname); 
+  KRWrite(dateiname);
 #ifdef CHEMAPP
   CHMRead(dateiname); //MX for CHEMAPP
 #endif
-  NUMRead(dateiname);   
+  NUMRead(dateiname);
   if(FEMRead(dateiname)) //OK4108//WW4107
   {
      CompleteMesh(); //WW
@@ -183,7 +198,7 @@ int ReadData ( char *dateiname )
 
 /**************************************************************************
 GeoSys-Method: FEMOpen->RFDOpen
-Task: 
+Task:
 Programing:
 11/2003 OK Implementation
 08/2004 OK PCS2
@@ -217,7 +232,7 @@ FILE *OpenMsgFile ()
       f=stdout;
       fprintf(f,"\n!!!!!!!!  %s\n\n            ","Fehler: Schreibzugriff auf Message-Protokolldatei nicht moeglich!!");
     }
-  } else f=stdout; /* Dateiname existiert nicht */ 
+  } else f=stdout; /* Dateiname existiert nicht */
   return f;
 }
 
@@ -226,7 +241,7 @@ void CloseMsgFile (FILE *f)
   if (f!=stdout)
     if (fclose(f))
       DisplayErrorMsg("Fehler: Message-Protokolldatei konnte nicht geschlossen werden !!");
-  
+
   return;
 }
 
@@ -250,7 +265,7 @@ void PRJRead(string base_file_name)
   //========================================================================
   // keyword loop
   cout << "RFDRead" << endl;
-  while (!rfd_file.eof()) 
+  while (!rfd_file.eof())
   {
     rfd_file.getline(line,MAX_ZEILE);
     project_title = line;
@@ -286,7 +301,7 @@ void CURRead(string base_file_name)
   //========================================================================
   // keyword loop
   cout << "CURRead" << endl;
-  while (!cur_file.eof()) 
+  while (!cur_file.eof())
   {
     cur_file.getline(line,MAX_ZEILE);
     line_string = line;
@@ -315,7 +330,7 @@ ios::pos_type CURReadCurve(ifstream *cur_file)
   double d1,d2;
   StuetzStellen *stuetz = NULL;
   //----------------------------------------------------------------------
-  while (!new_keyword) 
+  while (!new_keyword)
   {
     position = cur_file->tellg();
 //OK    cur_file->getline(buffer,MAX_ZEILE);
@@ -324,13 +339,13 @@ ios::pos_type CURReadCurve(ifstream *cur_file)
 	if(line_string.size() < 1) continue;
     //....................................................................
     // Test next keyword
-    if(line_string.find(hash)!=string::npos) 
+    if(line_string.find(hash)!=string::npos)
     {
       new_keyword = true;
       continue;
     }
     //--------------------------------------------------------------------
-    if(line_string.find(";")!=string::npos) 
+    if(line_string.find(";")!=string::npos)
     {
       continue;
     }
@@ -348,7 +363,7 @@ ios::pos_type CURReadCurve(ifstream *cur_file)
     //--------------------------------------------------------------------
   }
   //----------------------------------------------------------------------
-  if(anz>=1l) 
+  if(anz>=1l)
   {
     anz_kurven++;
     kurven = (Kurven *) Realloc(kurven, (anz_kurven * sizeof(Kurven)));
@@ -391,19 +406,19 @@ void CURWrite()
 /* ROCKFLOW - Funktion: GetLineFromFile1
                                       */
 /* Aufgabe:
-   Liest aus dem Eingabefile *ein die nächste Zeile
-   Fängt die Zeile mit ";" an oder ist sie leer, wird sie ausgelassen
-   Rückgabe ist ist ein string mit dem Zeileninhalt ab dem ersten Nicht-Leerzeichen 
+   Liest aus dem Eingabefile *ein die nï¿½chste Zeile
+   Fï¿½ngt die Zeile mit ";" an oder ist sie leer, wird sie ausgelassen
+   Rï¿½ckgabe ist ist ein string mit dem Zeileninhalt ab dem ersten Nicht-Leerzeichen
    bis zum ersten Auftreten des Kommentartzeichens ";"
                                             */
 /* Programmaenderungen:
     05/2004     SB  First Version
                                    */
-/*  09/2005     CC move from fem to geo 
+/*  09/2005     CC move from fem to geo
  **************************************************************************/
 string GetLineFromFile1(ifstream *ein)
 {
- 
+
   string line, zeile = "";
   int fertig=0, i=0, j=0;
   char zeile1[MAX_ZEILEN];
@@ -412,9 +427,9 @@ string GetLineFromFile1(ifstream *ein)
   while(fertig<1){
     if(ein->getline(zeile1,MAX_ZEILEN)){				//Zeile lesen
 	  line = zeile1;							//character in string umwandeln
-	  i = (int) line.find_first_not_of(" ",0);		//Anfängliche Leerzeichen überlesen, i=Position des ersten Nichtleerzeichens im string
+	  i = (int) line.find_first_not_of(" ",0);		//Anfï¿½ngliche Leerzeichen ï¿½berlesen, i=Position des ersten Nichtleerzeichens im string
 	  j = (int) line.find(";",i) ;					//Nach Kommentarzeichen ; suchen. j = Position des Kommentarzeichens, j=-1 wenn es keines gibt.
-	  if(j!=i)fertig = 1;						//Wenn das erste nicht-leerzeichen ein Kommentarzeichen ist, zeile überlesen. Sonst ist das eine Datenzeile
+	  if(j!=i)fertig = 1;						//Wenn das erste nicht-leerzeichen ein Kommentarzeichen ist, zeile ï¿½berlesen. Sonst ist das eine Datenzeile
 	  if((i != -1))
 		zeile = line.substr(i,j-i);   //Ab erstem nicht-Leerzeichen bis Kommentarzeichen rauskopieren in neuen substring, falls Zeile nicht leer ist
 	  i = (int) zeile.find_last_not_of(" "); // Suche nach dem letzten Zeichen, dass kein Leerzeichen ist
@@ -611,7 +626,7 @@ char *ReadString ( void )
 
 /**************************************************************************
 STRLib-Method: SubKeyword
-Task: 
+Task:
 Programing:
 09/2004 OK Implementation
 last modification:
@@ -620,13 +635,13 @@ bool SubKeyword(const string &line)
 {
   if(line.find(SUBKEYWORD)!=string::npos)
     return true;
-  else 
+  else
     return false;
 }
 
 /**************************************************************************
 STRLib-Method: SubKeyword
-Task: 
+Task:
 Programing:
 09/2004 OK Implementation
 last modification:
@@ -635,7 +650,7 @@ bool Keyword(const string &line)
 {
   if(line.find(KEYWORD)!=string::npos)
     return true;
-  else 
+  else
     return false;
 }
 
@@ -747,8 +762,8 @@ int TFString ( char *x, FILE *f )
 }
 
 /**************************************************************************
-STRLib-Method: 
-Task: 
+STRLib-Method:
+Task:
 Programing:
 03/2004 OK Implementation
 last modification:
@@ -986,7 +1001,7 @@ string get_sub_string(const string &buffer,const string &delimiter,int pos1,int 
       *pos2 = (int)buffer.size();
       break;
     }
-    if(pos1>=(int)buffer.size()) 
+    if(pos1>=(int)buffer.size())
       break;
   }
   string sub_string_this = buffer.substr(pos1,*pos2);
@@ -1000,7 +1015,7 @@ string get_sub_string(const string &buffer,const string &delimiter,int pos1,int 
 
 /**************************************************************************
 STRLib-Method: get_sub_string2
-Task: 
+Task:
 Programing:
 02/2004 OK Implementation
 last modification:
@@ -1017,18 +1032,18 @@ string get_sub_string2(const string &buffer,const string &delimiter,string *tmp)
 /* ROCKFLOW - Funktion: GetUncommentedLine
                                       */
 /* Aufgabe:
-   Rückgabe ist ist ein string mit dem Zeileninhalt ab dem ersten Nicht-Leerzeichen 
+   Rï¿½ckgabe ist ist ein string mit dem Zeileninhalt ab dem ersten Nicht-Leerzeichen
    bis zum ersten Auftreten des Kommentartzeichens ";"
    Abgeleitet aus GetLineFromFile1()                                            */
 /* Programmaenderungen:
     06/2009     SB  First Version
  **************************************************************************/
 string GetUncommentedLine(string line){
- 
+
   string zeile = "";
   int i=0, j=0;
   //----------------------------------------------------------------------
-	  i = (int) line.find_first_not_of(" ",0);		//Anfängliche Leerzeichen überlesen, i=Position des ersten Nichtleerzeichens im string
+	  i = (int) line.find_first_not_of(" ",0);		//Anfï¿½ngliche Leerzeichen ï¿½berlesen, i=Position des ersten Nichtleerzeichens im string
 	  j = (int) line.find(";",i) ;					//Nach Kommentarzeichen ; suchen. j = Position des Kommentarzeichens, j=-1 wenn es keines gibt.
 	  if((i != -1))
 		zeile = line.substr(i,j-i);   //Ab erstem nicht-Leerzeichen bis Kommentarzeichen rauskopieren in neuen substring, falls Zeile nicht leer ist

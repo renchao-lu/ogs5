@@ -250,6 +250,8 @@ std::string readSurface(std::istream &in, std::vector<Surface*> &sfc_vec,
 	std::string line;
 	Surface *sfc(new Surface(pnt_vec));
 
+	int type (-1);
+
 	do {
 		in >> line;
 		if (line.find("$ID") != std::string::npos) { // subkeyword found CC
@@ -264,13 +266,16 @@ std::string readSurface(std::istream &in, std::vector<Surface*> &sfc_vec,
 		//....................................................................
 		if (line.find("$TYPE") != std::string::npos) { // subkeyword found
 			in >> line; // read value
-			long type = strtol(line.c_str(), NULL, 0);
+			type = strtol(line.c_str(), NULL, 0);
 			if (type == 3)
 				std::cerr
 						<< "surface type 3: flat surface with any normal direction - - reading not implemented"
 						<< std::endl;
 			if (type == 100)
 				std::cerr << "cylindrical surface - reading not implemented"
+						<< std::endl;
+			if (type == 2)
+				std::cerr << "vertical surface - reading not implemented"
 						<< std::endl;
 		}
 		//....................................................................
@@ -281,7 +286,9 @@ std::string readSurface(std::istream &in, std::vector<Surface*> &sfc_vec,
 		if (line.find("$TIN") != std::string::npos) { // subkeyword found
 			in >> line; // read value (file name)
 			line = path + line;
+			if (type == 1) std::cerr << "reading tin file " << line << " ... " << std::flush;
 			readTINFile(line, sfc, pnt_vec);
+			std::cout << "ok" << std::endl;
 		}
 		//....................................................................
 		if (line.find("$MAT_GROUP") != std::string::npos) { // subkeyword found
@@ -303,18 +310,30 @@ std::string readSurface(std::istream &in, std::vector<Surface*> &sfc_vec,
 				if (ply_id == ply_vec.size())
 					std::cerr << "polyline for surface not found!" << std::endl;
 				else {
-					// compute triangulation of polygon
-					GEOLIB::Polyline *polyline (ply_vec[ply_id]);
-					std::cout << "triangulation of Polygon with " << polyline->getSize() << " points ... " << std::flush;
-					std::list<GEOLIB::Triangle> triangles;
-					MATHLIB::earClippingTriangulationOfPolygon(ply_vec[ply_id], triangles);
-					std::cout << "done - " << triangles.size () << " triangles " << std::endl;
+					if (type == 3) {
+						std::cerr << "surface type 3: flat surface with any normal direction - - reading not implemented"
+								<< std::endl;
+					}
 
-					// add Triangles to Surface
-					std::list<GEOLIB::Triangle>::const_iterator it (triangles.begin());
-					while (it != triangles.end()) {
-						sfc->addTriangle ((*it)[0], (*it)[1], (*it)[2]);
-						it++;
+					if (type == 2) {
+						std::cerr << "vertical surface - reading not implemented"
+												<< std::endl;
+					}
+
+					if (type == -1 || type == 0) {
+						// compute triangulation of closed polyline (polygon)
+						GEOLIB::Polyline *polyline (ply_vec[ply_id]);
+						std::cout << "triangulation of Polygon with " << polyline->getSize() << " points ... " << std::flush;
+						std::list<GEOLIB::Triangle> triangles;
+						MATHLIB::earClippingTriangulationOfPolygon(ply_vec[ply_id], triangles);
+						std::cout << "done - " << triangles.size () << " triangles " << std::endl;
+
+						// add Triangles to Surface
+						std::list<GEOLIB::Triangle>::const_iterator it (triangles.begin());
+						while (it != triangles.end()) {
+							sfc->addTriangle ((*it)[0], (*it)[1], (*it)[2]);
+							it++;
+						}
 					}
 				}
 				in >> line;

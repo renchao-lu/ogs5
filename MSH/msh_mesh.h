@@ -229,11 +229,6 @@ public:
 	 * \ingroup MSHGEO
 	 * \brief depreciated method
 	 */
-	void GetNODOnSFC_Vertical(Surface*, std::vector<long>&);
-	/**
-	 * \ingroup MSHGEO
-	 * \brief depreciated method
-	 */
 	void CreateQuadELEFromSFC(Surface*);
 	/**
 	 * \ingroup MSHGEO
@@ -255,11 +250,6 @@ public:
 	 * \brief depreciated method
 	 */
 	void CreateLineELEFromSFC(); //OK
-	/**
-	 * \ingroup MSHGEO
-	 * \brief depreciated method
-	 */
-	void GetNODOnSFC_PLY_Z(Surface*, std::vector<long>&); // 02.2009/OK
 	// GEO-VOL
 	/**
 	 * \ingroup MSHGEO
@@ -272,19 +262,19 @@ public:
 	 * \ingroup MSHGEO
 	 * GetNODOnPNT searchs the nearest node to the geometric point
 	 * */
-	long GetNODOnPNT(const GEOLIB::Point* pnt);
+	long GetNODOnPNT(const GEOLIB::Point* pnt) const;
 	/**
 	 * GetNearestELEOnPNT searchs the nearest element (gravity center)
 	 * to the geometric point
 	 * */
-	long GetNearestELEOnPNT(const GEOLIB::Point* const pnt);
+	long GetNearestELEOnPNT(const GEOLIB::Point* const pnt) const;
 
 	/**
 	 * \ingroup MSHGEO
-	 * GetNODOnPLY searchs the nearest node to the Polyline
+	 * GetNODOnPLY search the nearest node to the Polyline
 	 * */
 	void GetNODOnPLY(const GEOLIB::Polyline* ply,
-			std::vector<size_t>& msh_nod_vector);
+			std::vector<size_t>& msh_nod_vector) const;
 
 	/**
 	 * \ingroup MSHGEO
@@ -296,14 +286,14 @@ public:
 	 * \f$\|(a-m) \| + min\_edge\_length \f$ are pushed in msh_nod_vector
 	 */
 	void GetNodesOnArc(const GEOLIB::Point* a, const GEOLIB::Point* m,
-			const GEOLIB::Point* b, std::vector<size_t>& msh_nod_vector);
+			const GEOLIB::Point* b, std::vector<size_t>& msh_nod_vector) const;
 
 	/**
 	 * \ingroup MSHGEO
 	 * \brief gives the indices of CElement elements, which have an edge
 	 * in common with the polyline.
 	 */
-	void GetELEOnPLY(const GEOLIB::Polyline*, std::vector<size_t>&); //OK
+	void GetELEOnPLY(const GEOLIB::Polyline*, std::vector<size_t>&) const;
 
 	/**
 	 * \ingroup MSHGEO

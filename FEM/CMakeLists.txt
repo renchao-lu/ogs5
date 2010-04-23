@@ -99,6 +99,7 @@ include_directories(
 	../Base
 	../MathLib
 	../GEO
+	../FileIO
 	../MSH
 	../GEM
 	../OGSProject
@@ -120,6 +121,7 @@ add_library( FEM STATIC ${SOURCES} )
 target_link_libraries( 
 	FEM
  	GEO
+	FileIO
  	MSH
 )
 
