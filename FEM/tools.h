@@ -114,8 +114,4 @@ typedef struct
 extern LMATRIX *CreateLongMatrix(long row, long col);
 extern void DestroyLongMatrix(LMATRIX *lm);
 
-#ifdef MFC //WW
-extern void CURRead(string); //WW
-extern string ext_file_name;
-#endif
 #endif

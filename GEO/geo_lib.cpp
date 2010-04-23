@@ -10,10 +10,6 @@ last modified:
 
 #include <stdio.h>
 #include <string.h>
-#ifdef MFC
-#include "afxpriv.h" // For WM_SETMESSAGESTRING
-#include "MainFrm.h"
-#endif
 // C++ 
 #include <string>
 #include <iostream>
@@ -116,17 +112,6 @@ void GEO_Delete_DoublePoints()
 	vector<CGLPolyline*>::const_iterator p = polyline_vector.begin();
 
 	string Name;
-    
-    #ifdef MFC
-    CProgressCtrl m_ProgressBar;
-    CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
-    RECT MyRect;
-    m_frame->m_wndStatusBar.GetItemRect(1,&MyRect);
-    MyRect.left = 600;
-    m_ProgressBar.Create(WS_VISIBLE|PBS_SMOOTH,MyRect,&m_frame->m_wndStatusBar,1);
-	m_ProgressBar.SetRange(0,(short)pointsvectorsize + (short)linesvectorsize + (short)polylinesvectorsize);
-	m_ProgressBar.SetStep(1); 
-    #endif
 
 
     /*Deleting Parts of Polyline*/ 
@@ -165,9 +150,6 @@ void GEO_Delete_DoublePoints()
             }
 		}
 		++p;
-        #ifdef MFC
-        m_ProgressBar.StepIt();
-        #endif
 	}
 
  
@@ -193,9 +175,6 @@ void GEO_Delete_DoublePoints()
 			gli_points_vector[j]->id = gli_points_vector[j]->new_id;
 		}
  		
-        #ifdef MFC
-        m_ProgressBar.StepIt();
-        #endif
     }
 
 	GEOLIB_SetGLIPoints_Vector(gli_points_vector);
@@ -240,17 +219,6 @@ void GEO_Serialize_Point_Numbers()
 	vector<CGLPolyline*>::const_iterator p = polyline_vector.begin();
 
 	string Name;
-    
-    #ifdef MFC
-    CProgressCtrl m_ProgressBar;
-    CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
-    RECT MyRect;
-    m_frame->m_wndStatusBar.GetItemRect(1,&MyRect);
-    MyRect.left = 600;
-    m_ProgressBar.Create(WS_VISIBLE|PBS_SMOOTH,MyRect,&m_frame->m_wndStatusBar,1);
-	m_ProgressBar.SetRange(0,(short)pointsvectorsize + (short)linesvectorsize + (short)polylinesvectorsize);
-	m_ProgressBar.SetStep(1); 
-    #endif
 
     for (j=0;j<pointsvectorsize;j++)
     { 
@@ -258,9 +226,6 @@ void GEO_Serialize_Point_Numbers()
         check_point = gli_points_vector[j]->new_id = j;
         check_point = gli_points_vector[j]->old_id = gli_points_vector[j]->id;
         check_point = gli_points_vector[j]->id = gli_points_vector[j]->new_id;
-        #ifdef MFC
-        m_ProgressBar.StepIt();
-        #endif 
     }
 
     for (k=0;k<linesvectorsize;k++)
@@ -283,9 +248,6 @@ void GEO_Serialize_Point_Numbers()
                 break;
             }
         }
-        #ifdef MFC
-        m_ProgressBar.StepIt();
-        #endif
 	}
 
    	for (l=0;l<polylinesvectorsize;l++)
@@ -311,9 +273,6 @@ void GEO_Serialize_Point_Numbers()
             }
 		}
 		++p;
-        #ifdef MFC
-        m_ProgressBar.StepIt();
-        #endif
 	}
 	GEOLIB_SetGLIPoints_Vector(gli_points_vector);
 	gli_points_vector = GetPointsVector();
@@ -352,17 +311,6 @@ void GEO_Get_Min_Max_Distance_of_polyline_neighbor_points()
 	vector<CGLPolyline*>::const_iterator p = polyline_vector.begin();
 
 	string Name;
-    
-    #ifdef MFC
-    CProgressCtrl m_ProgressBar;
-    CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
-    RECT MyRect;
-    m_frame->m_wndStatusBar.GetItemRect(1,&MyRect);
-    MyRect.left = 600;
-    m_ProgressBar.Create(WS_VISIBLE|PBS_SMOOTH,MyRect,&m_frame->m_wndStatusBar,1);
-	m_ProgressBar.SetRange(0,(short)pointsvectorsize);
-	m_ProgressBar.SetStep(1); 
-    #endif
 
     for (i=0;i<(long)gli_points_vector.size();i++)
     { 	
@@ -432,9 +380,6 @@ void GEO_Get_Min_Max_Distance_of_polyline_neighbor_points()
 		}
 		++p;
 	}
-        #ifdef MFC
-        m_ProgressBar.StepIt();
-        #endif
 
     }
 }
@@ -460,18 +405,6 @@ void GEO_Get_Min_Distance_of_neighbor_points()
     double x2=0.0,y2=0.0,z2=0.0;
 	vector<CGLPoint*> gli_points_vector;
 	gli_points_vector = GetPointsVector();
-    
-    #ifdef MFC
-    long pointsvectorsize =(long)gli_points_vector.size();
-    CProgressCtrl m_ProgressBar;
-    CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
-    RECT MyRect;
-    m_frame->m_wndStatusBar.GetItemRect(1,&MyRect);
-    MyRect.left = 600;
-    m_ProgressBar.Create(WS_VISIBLE|PBS_SMOOTH,MyRect,&m_frame->m_wndStatusBar,1);
-	m_ProgressBar.SetRange(0,(short)pointsvectorsize);
-	m_ProgressBar.SetStep(1); 
-    #endif
 
     for (i=0;i<(long)gli_points_vector.size();i++)
     { 	
@@ -504,9 +437,6 @@ void GEO_Get_Min_Distance_of_neighbor_points()
             }
      
 	}
-        #ifdef MFC
-        m_ProgressBar.StepIt();
-        #endif
 
     }
 }
@@ -597,17 +527,6 @@ double GEO_Get_Min_PolySeg_length()
 	vector<CGLPolyline*>::const_iterator p = polyline_vector.begin();
 
 	string Name;
-    
-    #ifdef MFC
-    CProgressCtrl m_ProgressBar;
-    CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
-    RECT MyRect;
-    m_frame->m_wndStatusBar.GetItemRect(1,&MyRect);
-    MyRect.left = 600;
-    m_ProgressBar.Create(WS_VISIBLE|PBS_SMOOTH,MyRect,&m_frame->m_wndStatusBar,1);
-	m_ProgressBar.SetRange(0,(short)polylinesvectorsize);
-	m_ProgressBar.SetStep(1); 
-    #endif
 
    	for (l=0;l<polylinesvectorsize;l++)
     { 	
@@ -641,9 +560,6 @@ double GEO_Get_Min_PolySeg_length()
       
 		}
 		++p;
-        #ifdef MFC
-        m_ProgressBar.StepIt();
-        #endif
 	}
     return seg_length_saved;
 }
@@ -680,17 +596,6 @@ double GEO_Get_Max_PolySeg_length()
 	vector<CGLPolyline*>::const_iterator p = polyline_vector.begin();
 
 	string Name;
-    
-    #ifdef MFC
-    CProgressCtrl m_ProgressBar;
-    CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
-    RECT MyRect;
-    m_frame->m_wndStatusBar.GetItemRect(1,&MyRect);
-    MyRect.left = 600;
-    m_ProgressBar.Create(WS_VISIBLE|PBS_SMOOTH,MyRect,&m_frame->m_wndStatusBar,1);
-	m_ProgressBar.SetRange(0,(short)polylinesvectorsize);
-	m_ProgressBar.SetStep(1); 
-    #endif
 
    	for (l=0;l<polylinesvectorsize;l++)
     { 	
@@ -724,9 +629,6 @@ double GEO_Get_Max_PolySeg_length()
       
 		}
 		++p;
-        #ifdef MFC
-        m_ProgressBar.StepIt();
-        #endif
 	}
     return seg_length_saved;
 }
@@ -824,17 +726,6 @@ void GEO_Set_Poly_Seg_Length(double min_seg_length, double max_seg_length)
 	vector<CGLPolyline*>::const_iterator p = polyline_vector.begin();
 
 	string Name;
-    
-    #ifdef MFC
-    CProgressCtrl m_ProgressBar;
-    CMainFrame* m_frame = (CMainFrame*)AfxGetMainWnd();
-    RECT MyRect;
-    m_frame->m_wndStatusBar.GetItemRect(1,&MyRect);
-    MyRect.left = 600;
-    m_ProgressBar.Create(WS_VISIBLE|PBS_SMOOTH,MyRect,&m_frame->m_wndStatusBar,1);
-	m_ProgressBar.SetRange(0,(short)polylinesvectorsize);
-	m_ProgressBar.SetStep(1); 
-    #endif
 
     /*Number of polylines which share the point*/ 
     GEO_Polylines_per_Point();

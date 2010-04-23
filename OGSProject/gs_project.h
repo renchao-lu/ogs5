@@ -21,11 +21,6 @@ class CGSProject
 {
   private:
   public:
-#ifdef MFC
-	CString ProjectName; 
-	CString member;
-	CString memberextension;
-#endif
     string path;
     string base;
     string type;

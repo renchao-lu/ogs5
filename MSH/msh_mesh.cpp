@@ -94,9 +94,6 @@ CFEMesh::CFEMesh(void) {
 	map_counter = 0; //21.01.2009 WW
 	mapping_check = false; //23.01.2009 WW
 	has_multi_dim_ele = false; //NW
-#ifdef MFC
-	n_area_val = NULL;
-#endif
 }
 
 /**************************************************************************
@@ -2276,10 +2273,6 @@ ios::pos_type CFEMesh::GMSReadTIN(std::ifstream *tin_file) {
 	CNode* m_nod = NULL;
 	long no_triangles = 0;
 	CElem* m_ele = NULL;
-#ifdef MFC
-	char a = '\"';
-	CString m_strSubLine;
-#endif
 	double xyz[3];
 	//========================================================================
 	while (sub_line.compare("ENDT")) {
@@ -2288,16 +2281,6 @@ ios::pos_type CFEMesh::GMSReadTIN(std::ifstream *tin_file) {
 		//................................................................
 		if (sub_line.find("TNAM") != string::npos) { // TNAM "PriTIN_1gr"
 			in >> sub_line;
-#ifdef MFC
-			m_strSubLine = sub_line.c_str();
-			m_strSubLine.Replace(a,'_');
-			pcs_name = (string)m_strSubLine;
-			CString m_strInfo = "Read GMS TIN data: ";
-			CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
-			m_strInfo = "Read GMS-TIN data: ";
-			m_strInfo += pcs_name.c_str();
-			pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_strInfo);
-#endif
 		}
 		//................................................................
 		if (sub_line.find("VERT") != string::npos) { // VERT 3173

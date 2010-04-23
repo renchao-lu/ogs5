@@ -1347,59 +1347,7 @@ void Mesh_Single_Surface(string surface_name, const char *file_name_const_char)
   string m_strExecuteGEO = "gmsh " + m_strFileNameGEO +" -2";
 
 // PCH & TK: Workaround for the old problem.
-  #ifdef MFC
-    LPTSTR filename = new TCHAR[1024];
-    GetModuleFileName(NULL,filename,1024);
-    string m_strExecuteGEOonly = " " + m_strFileNameGEO +" -2";
-    //m_strExecuteGEO = filename + m_strExecuteGEOonly;
 
-//
-   //LPCTSTR pstr = "C:";
-   CFileFind finder;
-   CString strWildcard(filename);
-   CString LIB_PATH;
-   CString Folder_Level_0 = strWildcard.Left(strWildcard.ReverseFind('\\'));
-   CString Folder_Level_1 = Folder_Level_0.Left(Folder_Level_0.ReverseFind('\\'));
-   CString Folder_Level_2 = Folder_Level_1.Left(Folder_Level_1.ReverseFind('\\'));
-   Folder_Level_1 = Folder_Level_1 + "\\*.*";
-   Folder_Level_2 = Folder_Level_2 + "\\*.*";
-
-
-
-
-   BOOL bWorking = finder.FindFile(Folder_Level_2);
-
-   while (bWorking)
-   {
-      bWorking = finder.FindNextFile();
-      // skip . and .. files; otherwise, we'd
-      // recur infinitely!
-      if (finder.IsDots())
-         continue;
-      // if it's a directory, recursively search it
-      if (finder.IsDirectory())
-      {
-         CString str = finder.GetFilePath();
-         CString Folder = str.Right(str.GetLength()-str.ReverseFind('\\')-1);
-
-         if(Folder.Compare("LIB")==0)
-         {
-           LIB_PATH = str;
-           m_strExecuteGEO = LIB_PATH + "\\gmsh" + m_strExecuteGEOonly.data();
-         }
-      }
-   }
-   finder.Close();
-
-
-
-//
-
-
-  const char *m_strExecute=0;
-  m_strExecute = m_strExecuteGEO.data();
-  WinExec(m_strExecute,SW_HIDE);
-  #endif
   //system(m_strExecute);
   //remove(file_name_const_char);
   //END Meshing

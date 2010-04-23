@@ -12,13 +12,6 @@ Programing:
 **************************************************************************/
 //MFC
 #include <cstdlib>
-#ifdef MFC
-#include "geosys.h"
-#include "mainfrm.h"
-#include "afxpriv.h" // For WM_SETMESSAGESTRING
-#else //WW/JOD
-//#include "makros.h"
-#endif
 //GEOLib
 #include "geo_pnt.h"
 #include "geo_ply.h"
@@ -27,9 +20,6 @@ Programing:
 #include "geo_lib.h"
 #include "geo_mathlib.h"
 //GSP
-#ifdef MFC
-#include "../gs_project.h"
-#endif
 /*----------------------------------------------------------------------*/
 //vector
 vector<Surface*>surface_vector;//CC
@@ -427,9 +417,6 @@ void Surface::Write(const std::string &path_name)
   gli_file_name_char = gli_file_name.data();
   gli_file = fopen(gli_file_name_char, "a");
   if(gli_file==NULL) {
-#ifdef MFC
-  MessageBox(0,"GeoLib-FILE (*.gli) not found",0,MB_OK^MB_ICONERROR);
-#endif
     return;
   }
   else {
@@ -826,63 +813,6 @@ Programing:
 {
   bool ok = false;
   m_point = m_point;
- #ifdef MFC
-  long i;
-  int j;
-  CPoint this_point;
-  CGLPoint *m_sfc_point;
-
-  POINT m_arrPoint[1024] ;
-  long number_of_surface_polygon_points = (long)polygon_point_vector.size();
-  long number_of_TIN_elements = 0;
-  CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
-  m_point->x_pix = theApp->g_graphics_modeless_dlg->xpixel(m_point->x);
-  m_point->y_pix = theApp->g_graphics_modeless_dlg->ypixel(m_point->y);
-  if(TIN)
-    number_of_TIN_elements = (long)TIN->Triangles.size();
-  //-----------------------------------------------------------------------
-  // surface polygon
-  if(number_of_surface_polygon_points>0) {
- 
-    for(i=0;i<number_of_surface_polygon_points;i++) {
-      m_sfc_point = polygon_point_vector[i];
-
-       m_arrPoint[i].x = theApp->g_graphics_modeless_dlg->xpixel(m_sfc_point->x);//CC
-      m_arrPoint[i].y = theApp->g_graphics_modeless_dlg->ypixel(m_sfc_point->y);//CC
-    }
-    CRgn surface_polygon;
-    surface_polygon.CreatePolygonRgn(&m_arrPoint[0],(int)number_of_surface_polygon_points,WINDING);
-    this_point.x = m_point->x_pix;
-    this_point.y = m_point->y_pix;
-    if (surface_polygon.PtInRegion(this_point)) {
-      ok = true;
-    }
-    DeleteObject(surface_polygon);
-  }
-  //-----------------------------------------------------------------------
-  // TIN
-  else if(number_of_TIN_elements>0) {
-    for(i=0;i<number_of_TIN_elements;i++) {
-     
-      for(j=0;j<3;j++) {
-         m_arrPoint[j].x = (long)TIN->Triangles[i]->x[j];
-         m_arrPoint[j].y = (long)TIN->Triangles[i]->y[j];
-      }
-      CRgn surface_polygon;
-      surface_polygon.CreatePolygonRgn(&m_arrPoint[0],3,WINDING);
-      this_point.x = (long)m_point->x;
-      this_point.y = (long)m_point->y;
-      if (surface_polygon.PtInRegion(this_point)) {
-        ok = true;
-        DeleteObject(surface_polygon);
-        break;
-      }
-      DeleteObject(surface_polygon);
-    }
-  }
-  //-----------------------------------------------------------------------
-  DeleteObject(m_arrPoint);
-#endif
   return ok;
 }*/
 /**************************************************************************
@@ -1034,12 +964,6 @@ void GEOReadSurfaces(const std::string &file_name_path_base)
   string line_string;
   string gli_file_name;
   ios::pos_type position;
-#ifdef MFC
-  CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
-  CString m_str_counter;
-  CString m_str;
-  long counter = 0;
-#endif
   //========================================================================
   // File handling
   gli_file_name = file_name_path_base + ".gli";
@@ -1053,16 +977,6 @@ void GEOReadSurfaces(const std::string &file_name_path_base)
     line_string = line;
     //----------------------------------------------------------------------
     if(line_string.find("#SURFACE")!=string::npos) { // keyword found
-#ifdef MFC
-        if(counter==1000){
-          m_str = "Read GEO data: Surfaces: ";
-          m_str_counter.Format("%ld",(long)surface_vector.size());
-          m_str += m_str_counter;
-          pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
-          counter = 0;
-        }
-        counter++;
-#endif
       m_surface = new Surface();
       m_surface->AssignColor();
       //OK not here m_surface->TIN = new CTIN;
@@ -1214,10 +1128,6 @@ void Surface::ReadTIN(const std::string &tin_file_name)
   //----------------------------------------------------------------------
   // File handling
   string tin_file_name_path;
-#ifdef MFC
-  CGSProject *m_gsp = GSPGetMember("gli");
-  tin_file_name_path = m_gsp->path + tin_file_name;
-#else
   //  tin_file_name_path = FileName;  //WW/JOD // LB: commented out to compile GEO without dependency on FEM
   basic_string <char>::size_type indexCh1a;
   indexCh1a = tin_file_name_path.find_last_of("\\");
@@ -1230,7 +1140,7 @@ void Surface::ReadTIN(const std::string &tin_file_name)
   }
   else     //   \ does not exist, RELEASE case
     tin_file_name_path = tin_file_name;
-#endif
+
   ifstream tin_file (tin_file_name_path.data(),ios::in);
   if (!tin_file.good()) return;
   tin_file.seekg(0L,ios::beg);
@@ -1784,66 +1694,6 @@ bool Surface::PointInSurface(CGLPoint *m_point)
 {
   bool ok = false;
   m_point = m_point;
-#ifdef MFC
-  long i;
-  int j;
-  CPoint this_point;
-  CGLPoint *m_sfc_point;
-  POINT m_arrPoint[1024] ;
-  long number_of_surface_polygon_points = (long)polygon_point_vector.size();
-  long number_of_TIN_elements = 0;
-  CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
-  if(theApp->g_graphics_modeless_dlg->GetSafeHwnd())
-  {
-    m_point->x_pix = theApp->g_graphics_modeless_dlg->xpixel(m_point->x);
-    m_point->y_pix = theApp->g_graphics_modeless_dlg->ypixel(m_point->y);
-  }
-  if(TIN)
-    number_of_TIN_elements = (long)TIN->Triangles.size();
-  //-----------------------------------------------------------------------
-  // surface polygon
-  if(number_of_surface_polygon_points>0) {
-    for(i=0;i<number_of_surface_polygon_points;i++) {
-      m_sfc_point = polygon_point_vector[i];
-      if(theApp->g_graphics_modeless_dlg->GetSafeHwnd())
-      {
-        m_arrPoint[i].x = theApp->g_graphics_modeless_dlg->xpixel(m_sfc_point->x);//CC
-        m_arrPoint[i].y = theApp->g_graphics_modeless_dlg->ypixel(m_sfc_point->y);//CC
-      }
-    }
-    CRgn surface_polygon;
-    surface_polygon.CreatePolygonRgn(&m_arrPoint[0],(int)number_of_surface_polygon_points,WINDING);
-    this_point.x = m_point->x_pix;
-    this_point.y = m_point->y_pix;
-    if (surface_polygon.PtInRegion(this_point)) {
-      ok = true;
-    }
-    DeleteObject(surface_polygon);
-  }
-  //-----------------------------------------------------------------------
-  // TIN
-  else if(number_of_TIN_elements>0) {
-    for(i=0;i<number_of_TIN_elements;i++) {
-     
-      for(j=0;j<3;j++) {
-         m_arrPoint[j].x = (long)TIN->Triangles[i]->x[j];
-         m_arrPoint[j].y = (long)TIN->Triangles[i]->y[j];
-      }
-      CRgn surface_polygon;
-      surface_polygon.CreatePolygonRgn(&m_arrPoint[0],3,WINDING);
-      this_point.x = (long)m_point->x;
-      this_point.y = (long)m_point->y;
-      if (surface_polygon.PtInRegion(this_point)) {
-        ok = true;
-        DeleteObject(surface_polygon);
-        break;
-      }
-      DeleteObject(surface_polygon);
-    }
-  }
-  //-----------------------------------------------------------------------
-  DeleteObject(m_arrPoint);
-#endif
   return ok;
 }
 

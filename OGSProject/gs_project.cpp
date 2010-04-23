@@ -53,9 +53,6 @@ last modification:
 void GSPRead(string gsp_path_base_this)
 {
   CGSProject* m_gs_project = NULL;
-#ifdef MFC
-  CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
-#endif
   //----------------------------------------------------------------------
   // File handling
   string gsp_this;
@@ -94,9 +91,6 @@ void GSPRead(string gsp_path_base_this)
     string gsp_member_path_base = g_gsp_path + "\\" + gsp_member_file_base;
     //....................................................................
     if(gsp_member_file_extension.find("gli")!=string::npos){
-#ifdef MFC
-      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read GEO data");
-#endif
       GEOLIB_Read_GeoLib(gsp_member_path_base);
 	  m_gs_project = new CGSProject;
 	  m_gs_project->path = g_gsp_path; //?
@@ -106,9 +100,6 @@ void GSPRead(string gsp_path_base_this)
     }
     //....................................................................
     else if(gsp_member_file_extension.compare("rfi")==0){
-#ifdef MFC
-      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read MSH data");
-#endif
       MSHOpen(gsp_member_path_base);
 	  m_gs_project = new CGSProject;
 	  m_gs_project->base = gsp_member_file_base;
@@ -116,9 +107,6 @@ void GSPRead(string gsp_path_base_this)
     }
     //....................................................................
     else if(gsp_member_file_extension.compare("pcs")==0){
-#ifdef MFC
-      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read PCS data");
-#endif
       PCSRead(gsp_member_path_base);
 	  m_gs_project = new CGSProject;
 	  m_gs_project->base = gsp_member_file_base;
@@ -127,9 +115,6 @@ void GSPRead(string gsp_path_base_this)
     }
     //....................................................................
     else if(gsp_member_file_extension.compare("tim")==0){
-#ifdef MFC
-      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read TIM data");
-#endif
       TIMRead(gsp_member_path_base);
 	  m_gs_project = new CGSProject;
 	  m_gs_project->base = gsp_member_file_base;
@@ -137,9 +122,6 @@ void GSPRead(string gsp_path_base_this)
     }
     //....................................................................
     else if(gsp_member_file_extension.compare("out")==0){
-#ifdef MFC
-      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read OUT data");
-#endif
       OUTRead(gsp_member_path_base);
 	  m_gs_project = new CGSProject;
 	  m_gs_project->base = gsp_member_file_base;
@@ -147,9 +129,6 @@ void GSPRead(string gsp_path_base_this)
     }
     //....................................................................
     else if(gsp_member_file_extension.compare("num")==0){
-#ifdef MFC
-      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read NUM data");
-#endif
       NUMRead(gsp_member_path_base);
 	  m_gs_project = new CGSProject;
 	  m_gs_project->base = gsp_member_file_base;
@@ -157,9 +136,6 @@ void GSPRead(string gsp_path_base_this)
     }
     //....................................................................
     else if(gsp_member_file_extension.compare("ic")==0){
-#ifdef MFC
-      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read IC data");
-#endif
       ICRead(gsp_member_path_base);
 	  m_gs_project = new CGSProject;
 	  m_gs_project->base = gsp_member_file_base;
@@ -167,9 +143,6 @@ void GSPRead(string gsp_path_base_this)
     }
     //....................................................................
     else if(gsp_member_file_extension.compare("bc")==0){
-#ifdef MFC
-      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read BC data");
-#endif
       BCRead(gsp_member_path_base);
 	  m_gs_project = new CGSProject;
 	  m_gs_project->base = gsp_member_file_base;
@@ -177,9 +150,6 @@ void GSPRead(string gsp_path_base_this)
     }
     //....................................................................
     else if(gsp_member_file_extension.compare("st")==0){
-#ifdef MFC
-      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read ST data");
-#endif
       STRead(gsp_member_path_base);
 	  m_gs_project = new CGSProject;
 	  m_gs_project->base = gsp_member_file_base;
@@ -187,9 +157,6 @@ void GSPRead(string gsp_path_base_this)
     }
     //....................................................................
     else if(gsp_member_file_extension.compare("mfp")==0){
-#ifdef MFC
-      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read MFP data");
-#endif
       MFPRead(gsp_member_path_base);
 	  m_gs_project = new CGSProject;
 	  m_gs_project->base = gsp_member_file_base;
@@ -197,9 +164,6 @@ void GSPRead(string gsp_path_base_this)
     }
     //....................................................................
     else if(gsp_member_file_extension.compare("msp")==0){
-#ifdef MFC
-      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read MSP data");
-#endif
       MSPRead(gsp_member_path_base);
 	  m_gs_project = new CGSProject;
 	  m_gs_project->base = gsp_member_file_base;
@@ -207,9 +171,6 @@ void GSPRead(string gsp_path_base_this)
     }
     //....................................................................
     else if(gsp_member_file_extension.compare("mmp")==0){
-#ifdef MFC
-      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read MMP data");
-#endif
       MMPRead(gsp_member_path_base);
 	  m_gs_project = new CGSProject;
 	  m_gs_project->base = gsp_member_file_base;
@@ -217,9 +178,6 @@ void GSPRead(string gsp_path_base_this)
     }
     //....................................................................
     else if(gsp_member_file_extension.compare("cp")==0){
-#ifdef MFC
-      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read MCP data");
-#endif
       CPRead(gsp_member_path_base);
 	  m_gs_project = new CGSProject;
 	  m_gs_project->base = gsp_member_file_base;
@@ -227,9 +185,6 @@ void GSPRead(string gsp_path_base_this)
     }
     //....................................................................
     else if(gsp_member_file_extension.compare("rfd")==0){
-#ifdef MFC
-      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read RFD data");
-#endif
       RFDOpen(gsp_member_path_base);
 	  m_gs_project = new CGSProject;
 	  m_gs_project->base = gsp_member_file_base;
@@ -237,9 +192,6 @@ void GSPRead(string gsp_path_base_this)
     }
     //....................................................................
     else if(gsp_member_file_extension.compare("fct")==0){
-#ifdef MFC
-      pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)"Read FCT data");
-#endif
       FCTRead(gsp_member_path_base);
 	  m_gs_project = new CGSProject;
 	  m_gs_project->base = gsp_member_file_base;

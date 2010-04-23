@@ -9,9 +9,6 @@ Programing:
 **************************************************************************/
 
 #include <cstdlib>
-#ifdef MFC
-#include "afxpriv.h" // For WM_SETMESSAGESTRING
-#endif
 // GeoLib
 #include "geo_pnt.h"
 
@@ -185,12 +182,6 @@ Aufgabe: Lesen der GLI Points und schreiben in einen Vector
 **************************************************************************/
 void GEOReadPoints(const std::string &file_name_path_base)
 {
-#ifdef MFC
-	CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
-	CString m_str_counter;
-	CString m_str;
-	long counter = 0;
-#endif
 	string gli_file_name;
 	char line[MAX_ZEILEN];
 	string line_string;
@@ -209,16 +200,6 @@ void GEOReadPoints(const std::string &file_name_path_base)
 		if(line_string.find("#POINTS")!=string::npos)
 		{
 			while (ok){
-#ifdef MFC
-				if(counter==1000){
-					m_str = "Read GEO data: Points: ";
-					m_str_counter.Format("%ld",(long)gli_points_vector.size());
-					m_str += m_str_counter;
-					pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
-					counter = 0;
-				}
-				counter++;
-#endif
 				m_gli_points = new CGLPoint();
 				position = m_gli_points->Read(&dat_in,ok);
 				if(ok && m_gli_points->id >=0) //CC8888

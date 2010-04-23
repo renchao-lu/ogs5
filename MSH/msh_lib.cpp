@@ -1422,19 +1422,6 @@ bool CompleteMesh(string pcs_name)
   }   
   return succeed;
 }
-#ifdef MFC //WW
-/**************************************************************************
-MSHLib-Method: 
-07/2007 OK Implementation
-**************************************************************************/
-void MSHConfig()
-{
-  CompleteMesh(); //WW
-  MSHTestMATGroups(); //OK Test MSH-MMP
-  ConfigSolverProperties();
-  //ConfigTopology(); // max_dim for solver, elements to nodes relationships
-}
-#endif
 
 /**************************************************************************/
 /* ROCKFLOW - Function: MSHGetNextNode
@@ -2313,68 +2300,6 @@ bool IsPointInSurface(Surface* m_fsc, CGLPoint *m_point)
   m_point = m_point;
   if(!m_fsc)
     return false; //OK
- #ifdef MFC
-  long i;
-  int j;
-  CPoint this_point;
-  CGLPoint *m_sfc_point;
-
-  POINT m_arrPoint[1024] ;
-  long number_of_surface_polygon_points = (long)m_fsc->polygon_point_vector.size();
-  long number_of_TIN_elements = 0;
-  CGeoSysApp* theApp = (CGeoSysApp*)AfxGetApp();
-  if(theApp->g_graphics_modeless_dlg->GetSafeHwnd())
-  {
-    m_point->x_pix = theApp->g_graphics_modeless_dlg->xpixel(m_point->x);
-    m_point->y_pix = theApp->g_graphics_modeless_dlg->ypixel(m_point->y);
-  }
-  if(m_fsc->TIN)
-    number_of_TIN_elements = (long)m_fsc->TIN->Triangles.size();
-  //-----------------------------------------------------------------------
-  // surface polygon
-  if(number_of_surface_polygon_points>0) {
-    for(i=0;i<number_of_surface_polygon_points;i++) 
-    {
-      m_sfc_point = m_fsc->polygon_point_vector[i];
-      if(theApp->g_graphics_modeless_dlg->GetSafeHwnd())
-      {
-        m_arrPoint[i].x = theApp->g_graphics_modeless_dlg->xpixel(m_sfc_point->x);//CC
-        m_arrPoint[i].y = theApp->g_graphics_modeless_dlg->ypixel(m_sfc_point->y);//CC
-      }
-    }
-    CRgn surface_polygon;
-    surface_polygon.CreatePolygonRgn(&m_arrPoint[0],(int)number_of_surface_polygon_points,WINDING);
-    this_point.x = m_point->x_pix;
-    this_point.y = m_point->y_pix;
-    if (surface_polygon.PtInRegion(this_point)) {
-      ok = true;
-    }
-    DeleteObject(surface_polygon);
-  }
-  //-----------------------------------------------------------------------
-  // TIN
-  else if(number_of_TIN_elements>0) {
-    for(i=0;i<number_of_TIN_elements;i++) {
-     
-      for(j=0;j<3;j++) {
-         m_arrPoint[j].x = (long)m_fsc->TIN->Triangles[i]->x[j];
-         m_arrPoint[j].y = (long)m_fsc->TIN->Triangles[i]->y[j];
-      }
-      CRgn surface_polygon;
-      surface_polygon.CreatePolygonRgn(&m_arrPoint[0],3,WINDING);
-      this_point.x = (long)m_point->x;
-      this_point.y = (long)m_point->y;
-      if (surface_polygon.PtInRegion(this_point)) {
-        ok = true;
-        DeleteObject(surface_polygon);
-        break;
-      }
-      DeleteObject(surface_polygon);
-    }
-  }
-  //-----------------------------------------------------------------------
-  DeleteObject(m_arrPoint);
-#endif
   return ok;
 }
 

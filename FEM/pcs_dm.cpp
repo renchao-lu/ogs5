@@ -1,7 +1,4 @@
 #include "makros.h"
-#ifdef MFC // -> makros.h
-#include "afxpriv.h" // For WM_SETMESSAGESTRING
-#endif
 
 #include <math.h>
 #include <iostream>
@@ -253,9 +250,6 @@ last modified: 23.05.2003
 **************************************************************************/
 double CRFProcessDeformation::Execute(const int CouplingIterations)
 {
-#ifdef MFC
-  CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
-#endif
 
 #if defined(USE_MPI)
   if(myrank==1)
@@ -513,20 +507,7 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
 #endif
    
         // Assemble and solve system equation
-/*
-#ifdef MFC
-        CString m_str;
-        m_str.Format("Time step: t=%e sec, %s, Load step: %i, NR-Iteration: %i, Calculate element matrices",\
-                      aktuelle_zeit,pcs_type_name.c_str(),l,ite_steps);
-        pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
-#endif
-*/
-#ifdef MFC
-        CString m_str;
-        m_str.Format("Time step: t=%e sec, %s, Load step: %i, NR-Iteration: %i, Assemble equation system",\
-                      aktuelle_zeit,pcs_type_name.c_str(),l,ite_steps);
-        pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
-#endif
+
 #ifdef USE_MPI //WW
        clock_t cpu_time=0;  //WW
        cpu_time = -clock();
@@ -539,11 +520,7 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
         // 	
         if(monolithic == 0)
           SetInitialGuess_EQS_VEC();
-#ifdef MFC
-        m_str.Format("Time step: t=%e sec, %s, Load step: %i, NR-Iteration: %i, Solve equation system",\
-                      aktuelle_zeit,pcs_type_name.c_str(),l,ite_steps);
-        pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
-#endif
+
 #ifdef USE_MPI //WW
         // No initial guess for deformation. 
         // for(long ll=0; ll<eqs->dim; ll++)
@@ -2435,11 +2412,8 @@ void CRFProcessDeformation::ReadGaussPointStress()
 {
     long i, index, ActiveElements;
     string StressFileName;
-#ifdef MFC //WW 
-    StressFileName = ext_file_name+".sts";
-#else
     StressFileName = FileName+".sts";    
-#endif
+
     fstream file_stress (StressFileName.data(),ios::binary|ios::in);    	
     ElementValue_DM *eleV_DM = NULL;
     //

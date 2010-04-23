@@ -186,9 +186,6 @@ void CGLVolume::Write(string path_name)
   gli_file_name_char = gli_file_name.data();
   gli_file = fopen(gli_file_name_char, "a");
   if(gli_file==NULL) {
-#ifdef MFC
-    MessageBox(0,"GeoLib-FILE (*.gli) not found",0,MB_OK^MB_ICONERROR);
-#endif
     return;
   }
   else {

@@ -225,15 +225,6 @@ void MSHAssignMATGroup2PrisElements(void) {
 	 int no_mat_mp = (int)mmp_vector.size();
 	 for(m=0;m<no_mat_mp;m++){
 	 m_mat_mp = mmp_vector[m];
-	 #ifdef MFC
-	 CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
-	 CString m_str = "MSHAssignMATGroup2PrisElements: ";
-	 m_str += m_mat_mp->name.c_str();
-	 CString m_str_mmp;
-	 m_str_mmp.Format(", MAT group number: %i",m);
-	 m_str += m_str_mmp;
-	 pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
-	 #endif
 	 if(m_mat_mp->geo_type_name.compare("VOLUME")==0){
 	 for(j=0;j<ElListSize();j++){
 	 if(ElGetElementType(j)==6){
@@ -297,15 +288,6 @@ void MSHAssignMATGroup2PrisElementsNew(void) {
 	 while(p_vol!=volume_vector.end()){
 	 m_vol = *p_vol;
 	 m_vol->mat_group = mmp_group;
-	 #ifdef MFC
-	 CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
-	 CString m_str = "Assign MAT groups to elements, Volume: ";
-	 m_str += m_vol->name.c_str();
-	 CString m_str_vol;
-	 m_str_vol.Format(", Group number: %i",m_vol->mat_group);
-	 m_str += m_str_vol;
-	 pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
-	 #endif
 	 //--------------------------------------------------------------------
 	 for(i=0;i<ElementListLength;i++){
 	 if(ElGetElementType(i)==6){
@@ -386,14 +368,6 @@ void MSH2MATPris(void) {
 	 mat_test_file.seekg(0L,ios::beg);
 	 //-----------------------------------------------------------------------
 	 for(j=0;j<ElListSize();j++){
-	 #ifdef MFC
-	 CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
-	 CString m_str = "MSH2MATPris, ";
-	 CString m_str_msh;
-	 m_str_msh.Format("ELE number: %i",j);
-	 m_str += m_str_msh;
-	 pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
-	 #endif
 	 if(fmod((double)j,100.)<1e-3)
 	 mat_test_file << j << endl;
 	 if(ElGetElementType(j)==6){
@@ -439,12 +413,6 @@ void MSH2MATPris(void) {
 	 elements_failed_file.close();
 	 //======================================================================
 	 // Write Tecplot files
-	 #ifdef MFC
-	 CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
-	 CString m_str = "MSH2MATPris, ";
-	 m_str += " Write Tecplot files";
-	 pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
-	 #endif
 	 for(m=0;m<mmp_vector_size;m++){
 	 m_mmp = mmp_vector[m];
 	 m_mmp->WriteTecplot("ToDo");

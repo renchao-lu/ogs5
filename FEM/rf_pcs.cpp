@@ -25,9 +25,6 @@ Programing:
 #endif
 /*--------------------- OpenMP Parallel ------------------*/
 
-#ifdef MFC
-#include "afxpriv.h" // For WM_SETMESSAGESTRING
-#endif
 #include "makros.h"
 // C
 #ifndef __APPLE__
@@ -70,9 +67,6 @@ Programing:
 /* Tools */
 #ifndef NEW_EQS //WW. 06.11.2008
 #include "matrix.h"
-#endif
-#ifdef MFC //WW
-#include "rf_fluid_momentum.h"
 #endif
 /* Tools */
 #include "mathlib.h"
@@ -797,9 +791,6 @@ void CRFProcess::Create()
   //
   if(compute_domain_face_normal) //WW
      m_msh->FaceNormal();   
-#ifdef MFC
-  m_bCheckOBJ =  m_bCheckEQS =  m_bCheckNOD =  m_bCheckELE = true;
-#endif
      
 }
 
@@ -948,11 +939,8 @@ last modified:
 void CRFProcess:: ReadSolution()
 {
     string m_file_name; 
-#ifdef MFC //WW 
-	m_file_name = ext_file_name+ +"_"+pcs_type_name+"_"+pcs_primary_function_name[0]+"_primary_value.asc";
-#else
 	m_file_name = FileName +"_"+pcs_type_name+"_"+pcs_primary_function_name[0]+"_primary_value.asc";
-#endif
+
 	ifstream is ( m_file_name.c_str(), ios::in );
 	if ( !is.good() )
 	{
@@ -3573,14 +3561,6 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
   if(myrank==0)
 #endif
   cout << "      Calculate element matrices" << endl;
-#ifdef MFC
-  CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
-  CString m_str_time;
-  m_str_time.Format("Time step: t=%e sec",aktuelle_zeit);
-  CString m_str_pcs = pcs_type_name.c_str();
-  CString m_str = m_str_time + ", " + m_str_pcs + ", Calculate element matrices";
-  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
-#endif
 }
   /*---------------------------------------------------------------------*/
   /* 2 Assemble EQS */
@@ -3588,14 +3568,6 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
   if(myrank==0)
 #endif
   cout << "      Assemble equation system" << endl;
-#ifdef MFC
-  CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
-  CString m_str_time;
-  m_str_time.Format("Time step: t=%e sec",aktuelle_zeit);
-  CString m_str_pcs = pcs_type_name.c_str();
-  CString m_str = m_str_time + ", " + m_str_pcs + ", Assemble equation system";
-  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
-#endif
   // 
   // Assembly
 #ifdef USE_MPI //WW
@@ -3613,12 +3585,6 @@ if((aktueller_zeitschritt==1)||(tim_type_name.compare("TRANSIENT")==0)){
   /* 5 Solve EQS */
 //orig  cout << "      Solve equation system" << endl;
   // cout << "Solve equation system myrank =" <<myrank<<"of size="<<size<<endl;
-#ifdef MFC
-  m_str_time.Format("Time step: t=%e sec",aktuelle_zeit);
-  m_str_pcs = pcs_type_name.c_str();
-  m_str = m_str_time + ", " + m_str_pcs + ", Solve equation system";
-  pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
-#endif
 #ifdef CHECK_EQS
   string eqs_name = pcs_type_name + "_EQS.txt";
   MXDumpGLS((char*)eqs_name.c_str(),1,eqs->b,eqs->x);
@@ -9107,107 +9073,6 @@ PCSLib-Method:
 **************************************************************************/
 bool CRFProcess::Check()
 {
-#ifdef MFC
-  CString m_strMessage(pcs_type_name.data());
-  if(type==55) 
-     return true; // If fluid momentum. WW
-  m_strMessage += " -> ";
-  //-----------------------------------------------------------------------
-  // MSH
-  if(!m_msh)
-  {
-    m_strMessage += "Error: no MSH data";
-    AfxMessageBox(m_strMessage);
-    return false;
-  }
-  //-----------------------------------------------------------------------
-  // TIM
-  CTimeDiscretization* m_tim = TIMGet(pcs_type_name);
-  if(!m_tim)
-  {
-    m_strMessage += "Error: no TIM data";
-    AfxMessageBox(m_strMessage);
-    return false;
-  }
-  //-----------------------------------------------------------------------
-  // NUM
-  CNumerics* m_num = NUMGet(pcs_type_name);
-  if(!m_num)
-  {
-    m_strMessage += "Error: no NUM data";
-    AfxMessageBox(m_strMessage);
-    return false;
-  }
-  //-----------------------------------------------------------------------
-  // OUT
-  COutput* m_out = OUTGet(pcs_type_name);
-  if(!m_out)
-  {
-    //m_strMessage += "Warning: no OUT data";
-    //AfxMessageBox(m_strMessage);
-    //TK 07.11.2008
-    //return false;
-  }
-  //-----------------------------------------------------------------------
-  // IC
-  CInitialCondition* m_ic = ICGet(pcs_type_name);
-  if(!m_ic)
-  {
-    m_strMessage += "Warning: no IC data";
-    AfxMessageBox(m_strMessage);
-  }
-  //-----------------------------------------------------------------------
-  // BC
-  CBoundaryCondition* m_bc = BCGet(pcs_type_name);
-  if(!m_bc)
-  {
-    m_strMessage += "Error: no BC data";
-    AfxMessageBox(m_strMessage);
-    return false;
-  }
-  //-----------------------------------------------------------------------
-  // ST
-  CSourceTerm* m_st = STGet(pcs_type_name);
-  if(!m_st && !st_node.size()) //OK48
-  {
-    //m_strMessage += "Warning: no ST data";
-    //AfxMessageBox(m_strMessage);
-    //TK 07.11.2008
-    //return false;
-  }
-  //-----------------------------------------------------------------------
-  // MFP
-  if((pcs_type_name.find("FLOW")!=string::npos)&&((int)mfp_vector.size()==0))
-  {
-    m_strMessage += "Error: no MFP data";
-    AfxMessageBox(m_strMessage);
-    return false;
-  }
-  //-----------------------------------------------------------------------
-  // MSP
-  if((pcs_type_name.find("DEFORMATION")!=string::npos)&&((int)msp_vector.size()==0))
-  {
-    m_strMessage += "Error: no MSP data";
-    AfxMessageBox(m_strMessage);
-    return false;
-  }
-  if((pcs_type_name.find("HEAT")!=string::npos)&&((int)msp_vector.size()==0))
-  {
-    m_strMessage += "Error: no MSP data";
-    AfxMessageBox(m_strMessage);
-    return false;
-  }
-  //-----------------------------------------------------------------------
-  // MCP
-  /*
-  if((pcs_type_name.find("MASS")!=string::npos)&&((int)msp_vector.size()==0))
-  {
-    m_strMessage += "Error: no MCP data";
-    AfxMessageBox(m_strMessage);
-    return false;
-  }
-  */
-#endif
   //-----------------------------------------------------------------------
   // MMP
   MSHTestMATGroups();
@@ -9230,9 +9095,6 @@ bool PCSCheck()
     //if(m_pcs->m_bCheck)
       if(!m_pcs->Check()) 
         return false;
-#ifdef MFC
-    FMRead(); //WW
-#endif
   }
 
   return true;

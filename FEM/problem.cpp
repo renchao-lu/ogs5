@@ -784,46 +784,7 @@ void Problem::Euler_TimeDiscretize()
       }
 #endif
       //
-      accepted_times++; 
-#ifdef MFC
- /*START: Update Visualization for OpenGL and other MFC view e.g. Diagram*/ 
- CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
- CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
- CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
- CGeoSysOUTProfileView *pView = (CGeoSysOUTProfileView *) pChild->GetActiveView();
- POSITION pos = m_pDoc->GetFirstViewPosition();
-  while(pos!=NULL) {
-    CView* pView = m_pDoc->GetNextView(pos);
-    pView->UpdateWindow();
-  }
- CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
- CRFProcess* m_pcs = NULL;
- if(pcs_vector.size()==0)
- return;
- m_pcs = PCSGet((string)mainframe->m_pcs_name);
- if(!m_pcs)
- {
-   m_pcs = pcs_vector[0];
-   //OK AfxMessageBox("Problem::Euler_TimeDiscretize() - no PCS data");
-   //OK return;
- }
- double value, m_pcs_min_r, m_pcs_max_r;
- m_pcs_min_r = 1.e+19;
- m_pcs_max_r = -1.e+19;
- int nidx = m_pcs->GetNodeValueIndex((string)mainframe->m_variable_name);
- for(long j=0;j<(long)m_pcs->nod_val_vector.size();j++)
- {
- value = m_pcs->GetNodeValue(j,nidx);
- if(value<m_pcs_min_r) m_pcs_min_r = value;
- if(value>m_pcs_max_r) m_pcs_max_r = value;
- }  
- mainframe->m_pcs_min = m_pcs_min_r;
- mainframe->m_pcs_max = m_pcs_max_r;
- mainframe->m_something_changed = 1;
- m_pDoc->SetModifiedFlag(1);
- m_pDoc->UpdateAllViews(NULL,0L,NULL);
- /*END: Update Visualization for OpenGL and other MFC view e.g. Diagram*/ 
-#endif       
+      accepted_times++;       
     }
     else
     { 

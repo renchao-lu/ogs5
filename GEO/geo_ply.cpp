@@ -1,8 +1,5 @@
 
 #include <stdlib.h>
-#ifdef MFC
-#include "afxpriv.h" // For WM_SETMESSAGESTRING
-#endif
 /* Objects */
 #include "geo_ply.h"
 #include "geo_sfc.h"
@@ -11,9 +8,6 @@
 #include "../FEM/files0.h"
 #include "geo_lib.h"
 //GSP
-#ifdef MFC
-#include "../gs_project.h"
-#endif
 
 CGLPolyline *m_polyline = NULL;
 vector<CGLPolyline*> polyline_vector;
@@ -345,12 +339,6 @@ void CGLPolyline::WritePointVector(const std::string & base)
   if(no_points>0) {
     //----------------------------------------------------------------------
     // File handling
-#ifdef MFC
-    CGSProject* m_gsp = GSPGetMember("gli");
-    if(m_gsp)
-      ply_path = m_gsp->path; 
-#else
-#endif
     ply_file_name = ply_name + PLY_FILE_EXTENSION;//CC
     ply_path_base_type = ply_path + ply_file_name;
     fstream ply_file (ply_path_base_type.data(),ios::trunc|ios::out);
@@ -485,12 +473,6 @@ void GEOReadPolylines (const std::string &file_name_path_base)
   string gli_file_name;
   string path_name;
   ios::pos_type position;
-#ifdef MFC
-  CWnd *pWin = ((CWinApp*)AfxGetApp())->m_pMainWnd;
-  CString m_str_counter;
-  CString m_str;
-  long counter = 0;
-#endif
   //========================================================================
   // File handling
   gli_file_name = file_name_path_base + ".gli";
@@ -509,16 +491,6 @@ void GEOReadPolylines (const std::string &file_name_path_base)
     line_string = line;
     //----------------------------------------------------------------------
     if(line_string.find("#POLYLINE")!=string::npos) { // keyword found
-#ifdef MFC
-        if(counter==1000){
-          m_str = "Read GEO data: Polylines: ";
-          m_str_counter.Format("%ld",(long)polyline_vector.size());
-          m_str += m_str_counter;
-          pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
-          counter = 0;
-        }
-        counter++;
-#endif
 			m_polyline = new CGLPolyline();
 			m_polyline->AssignColor(); //CC
 			position = m_polyline->Read(gli_file); // CC8888, TF
