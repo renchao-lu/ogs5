@@ -37,7 +37,7 @@
 //16.12.2008. WW #include "rf_apl.h"
 #include "files0.h"
 #ifdef SUPERCOMPUTER
-// kg44 test for buffered output
+// kg44 test for buffered outputh
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -226,7 +226,7 @@ int main ( int argc, char *argv[] )
 /*--------- MPI Finalize ------------------*/
 /*--------- LIS Finalize ------------------*/
 #ifdef LIS
-//  lis_finalize();	PCH: Undoing NW modification for compilation OGS-5
+//  lis_finalize();	//PCH: Undoing NW modification for compilation OGS-5
 #endif
 /*--------- LIS Finalize ------------------*/
 

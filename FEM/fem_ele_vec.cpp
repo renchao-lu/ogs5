@@ -280,7 +280,8 @@ CFiniteElementVec::CFiniteElementVec(process::CRFProcessDeformation *dm_pcs, con
     	idx_P1 = h_pcs->GetNodeValueIndex("PRESSURE1")+1;
     	idx_P2 = h_pcs->GetNodeValueIndex("PRESSURE2");
     	idx_S0 = h_pcs->GetNodeValueIndex("SATURATION1");
-    	idx_S = h_pcs->GetNodeValueIndex("SATURATION2")+1;
+    	idx_S = idx_S0;
+			idx_Snw = h_pcs->GetNodeValueIndex("SATURATION2")+1;
     	AuxNodal2 = new double[8];
     }
 
@@ -678,13 +679,20 @@ double CFiniteElementVec::CalDensity()
             Sw += shapefct[i]*AuxNodal_S[i]; 
         }         
         rho = (1. - porosity) * fabs(smat->Density())+porosity * Sw* density_fluid;
-        if(Flow_Type==2)
+
+        
+				if(Flow_Type==2 || Flow_Type==3)
         {
-           p_g=0.0; 
+					/*
+           p_g=0.0;
            for(i = 0; i< nnodes; i++)
-             p_g += shapefct[i]*AuxNodal2[i];   
-           rho += porosity * (1.0-Sw)*COMP_MOL_MASS_AIR*p_g/(GAS_CONSTANT*(Tem+273.15));         
-        } 
+             p_g += shapefct[i]*AuxNodal2[i];
+           rho += porosity * (1.0-Sw)*COMP_MOL_MASS_AIR*p_g/(GAS_CONSTANT*(Tem+273.15));
+					 */
+					CFluidProperties *GasProp;
+					GasProp = MFPGet("GAS");
+					 rho += porosity * (1.0-Sw)*GasProp->Density();
+        }
      }
 	 else rho = 0.0; 	  
      
@@ -903,28 +911,28 @@ void CFiniteElementVec::LocalAssembly(const int update)
     }
 
     // Get saturation of element nodes
-   	if(Flow_Type>0&&Flow_Type!=10)
-   	{
-       for(i=0; i<nnodes; i++)
-	   {
-           AuxNodal_S[i] = h_pcs->GetNodeValue(nodes[i], idx_S);
-           AuxNodal_S0[i] = h_pcs->GetNodeValue(nodes[i], idx_S0);
-	   }
-       if(Flow_Type==2)   //12.03.2008 WW
-       {
-         for(i=0; i<nnodes; i++)
-           AuxNodal2[i] = h_pcs->GetNodeValue(nodes[i], idx_P2);
-       }
-       if((Flow_Type==1||Flow_Type==2)&&(smat->SwellingPressureType==3||smat->SwellingPressureType==4)) //12.03.2008 WW
-       {
-         double fac = 1.0;
-         if(Flow_Type==1) fac = -1.0;  
-         for(i=0; i<nnodes; i++)
-         {
-           AuxNodal1[i] = fac*h_pcs->GetNodeValue(nodes[i], idx_P1-1);  //Pc
-           AuxNodal[i] = fac*(h_pcs->GetNodeValue(nodes[i], idx_P1)-h_pcs->GetNodeValue(nodes[i], idx_P1-1));  //dPc            
-         }
-       } 
+    if(Flow_Type>0&&Flow_Type!=10)
+    {
+    	for(i=0; i<nnodes; i++)
+    	{
+    		AuxNodal_S[i] = h_pcs->GetNodeValue(nodes[i], idx_S);
+    		AuxNodal_S0[i] = h_pcs->GetNodeValue(nodes[i], idx_S0);
+    	}
+    	if(Flow_Type==2 || Flow_Type==3)   //09.10.2009 PCH
+    	{
+    		for(i=0; i<nnodes; i++)
+    			AuxNodal2[i] = h_pcs->GetNodeValue(nodes[i], idx_P2);
+    	}
+    	if((Flow_Type==1||Flow_Type==2)&&(smat->SwellingPressureType==3||smat->SwellingPressureType==4)) //12.03.2008 WW
+    	{
+    		double fac = 1.0;
+    		if(Flow_Type==1) fac = -1.0;
+    		for(i=0; i<nnodes; i++)
+    		{
+    			AuxNodal1[i] = fac*h_pcs->GetNodeValue(nodes[i], idx_P1-1);  //Pc
+    			AuxNodal[i] = fac*(h_pcs->GetNodeValue(nodes[i], idx_P1)-h_pcs->GetNodeValue(nodes[i], idx_P1-1));  //dPc
+    		}
+    	}
     }
     // 
 
@@ -1289,11 +1297,11 @@ void CFiniteElementVec::GlobalAssembly_RHS()
           case 3:  // Multi-phase-flow: SwPw+SgPg	// PCH 05.05.2009
         	  for (i=0;i<nnodes;i++)
         	  {
-        		  double Sw = h_pcs->GetNodeValue(nodes[i],idx_S0);
-        		  double Snw = 1.0-Sw;
+        		  double Snw = h_pcs->GetNodeValue(nodes[i],idx_Snw);
+        		  double Sw = 1.0-Snw;
         		  double Pw = h_pcs->GetNodeValue(nodes[i],idx_P1);
         		  double Pnw = h_pcs->GetNodeValue(nodes[i],idx_P2);
-        		  val_n = -(Sw*Pw+Snw*Pnw);
+        		  val_n = Sw*Pw+Snw*Pnw;
         		  if(biot<0.0&&val_n<0.0)
         			  AuxNodal[i] = 0.0;
         		  else

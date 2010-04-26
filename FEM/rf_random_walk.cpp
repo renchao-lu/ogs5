@@ -40,6 +40,10 @@ RandomWalk::RandomWalk(void)
 
 	// To produce a different pseudo-random series each time your program is run.
 	srand((int)time(0));
+
+	// These are the allowable outputs (input as options to file <file_base_name>.out
+	rwpt_out_strings.push_back("PARTICLES"); // output particle locations
+	rwpt_out_strings.push_back("PARTICLE_CONCENTRATION"); // output particles as elemental concentration
 }
 
 
@@ -311,6 +315,7 @@ Task: This function traces exit point in this element.
 	  Not really working.
 Programing:
 02/2007 PCH Implementation
+03/2010 JTARON modified cell search algorithm
  **************************************************************************/
 void RandomWalk::TracePathlineInThisElement(Particle* A)
 {
@@ -332,7 +337,7 @@ void RandomWalk::TracePathlineInThisElement(Particle* A)
 	}
 	// Mount the element fromthe first particle from particles initially
 	CElem* theEle = m_msh->ele_vector[A->elementIndex];
-	//OK411 double tolerance = 1e-8;
+	double tolerance = 1e-8;
 
 	// If a quad element,
 	int nnode = theEle->GetEdgesNumber();
@@ -401,49 +406,29 @@ void RandomWalk::TracePathlineInThisElement(Particle* A)
 			abort();
 
 		double tmin;
-		int index = -10; // 0 is i, 1 is j
 		if(tx > ty)
-		{
 			tmin = ty;
-			index = 1;
-		}
 		else
-		{
 			tmin = tx;
-			index = 0;
-		}
 
 		if(cx > tolerance)
-		{
 			R[0] = (x0+bx/ax)*exp(ax/cx*tmin)-bx/ax;
-		}
-		else
-		{
-			// Same point. Do nothing
-		}
+		else; // Same point. Do nothing
 
 		if(cy > tolerance)
-		{
 			R[1] = (y0+by/ay)*exp(ay/cy*tmin)-by/ay;
-		}
-		else
-		{
-			// Same point. Do nothing
-		}
+		else; // Same point. Do nothing
 
-		R[2] = 0.0;
-
+		R[2] = pnt_z_min;
 		A->x = R[0]; A->y = R[1]; A->z = R[2];
-		//update the element index;
-		int i = A->x / dx; int j = A->y / dy; //OK411
+		//update the element index // JTARON 2010;
+		long i,j,k;
+		i = (A->x - pnt_x_min)/dx;
+		j = (A->y - pnt_y_min)/dy;
+		k = (A->z - pnt_z_min)/dz;
+		long iFDM = k*(nx*ny) + j*nx + i;
 
-		int iFDM;
-		if(index == 0)
-			iFDM = j*nx + i+1;
-		else
-			iFDM = (j+1)*nx + i;
-
-		if(iFDM < (int)indexFDM.size()) //OK411
+		if(iFDM < indexFDM.size())
 			A->elementIndex = indexFDM[iFDM].eleIndex;
 		else
 			A->elementIndex = -10;	 // Outside of the domain
@@ -729,15 +714,22 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 
 			// Let's get the hydraulic conductivity first.
 			CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];
-			//OK411 int phase = 0;
 			CFluidProperties *FluidProp = mfp_vector[0];
 			double* kTensor = MediaProp->PermeabilityTensor(eleIndex);
 			double k = kTensor[0];
 
 			A->K = k*FluidProp->Density()*9.81/FluidProp->Viscosity();
 
+			// Get porosity
+			// I guess for Dual Porocity stuff this code should be revisited.
+			double porosity = 0.0;
+			if(MediaProp->porosity > 10-6)
+				porosity = MediaProp->porosity;	// This is for simple one.
+			else
+				porosity = MediaProp->porosity_model_values[0];		// This will get you porosity.
+
 			// Get the number of nodes
-			//OK411 int nnodes = m_ele->GetVertexNumber();
+			int nnodes = m_ele->GetVertexNumber();
 
 			// Mount the edges of the element
 			vec<CEdge*>theEdgesOfThisElement(nnode);
@@ -750,26 +742,24 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 			theEdgesOfThisElement[3]->GetEdgeMidPoint(E4);
 
 			// ux = a+b(x-x0); uy = c + d(y-y0)
-			double a,b,c,d,x0,y0;
-			x0 = E4[0]; y0 = E1[1];
-			a = theEdgesOfThisElement[3]->GetVelocity(0);
-			b = (theEdgesOfThisElement[1]->GetVelocity(0)-theEdgesOfThisElement[3]->GetVelocity(0))/dx;
-			c = theEdgesOfThisElement[0]->GetVelocity(1);
-			d = (theEdgesOfThisElement[2]->GetVelocity(1)-theEdgesOfThisElement[0]->GetVelocity(1))/dy;
+
+			double vx1,vx2,vy1,vy2,a,b,x0,y0;
+			
+			vx2 = theEdgesOfThisElement[1]->GetVelocity(0);
+			vx1 = theEdgesOfThisElement[3]->GetVelocity(0);
+			vy2 = theEdgesOfThisElement[0]->GetVelocity(1);
+			vy1 = theEdgesOfThisElement[2]->GetVelocity(1);
+
+			x0 = E4[0];
+			y0 = E1[1];
+			a  = (vx2-vx1)/dx;
+			b  = (vy1-vy2)/dy;
 
 			// Let's solve pore velocity.
 			// It is simple because Sw stuff automatically handles in Richards Flow.
 			// Thus, I only divide Darcy velocity by porosity only to get pore velocity.
-			double porosity = 0.0;
-			if(MediaProp->porosity > 10-6)
-				porosity = MediaProp->porosity;	// This is for simple one.
-			else
-				porosity = MediaProp->porosity_model_values[0];		// This will get you porosity.
-			// I guess for Dual Porocity stuff,
-			// this code should be revisited.
-
-			A->Vx = (a+b*(A->x-x0))/porosity;
-			A->Vy = (c+d*(A->y-y0))/porosity;
+			A->Vx = (vx1 + a*(A->x-x0))/porosity;
+			A->Vy = (vy2 + b*(A->y-y0))/porosity;
 			A->Vz = 0.0;
 		}
 		else
@@ -781,7 +771,6 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 		CElem* theEle = m_msh->ele_vector[A->elementIndex];
 		int eleIndex = A->elementIndex;
 		// Set the pointer that leads to the nodes of element
-		//OK411 CNode* node = NULL;
 
 		// If Element is outside of the domain or in the sink or on the edge or at the corner vertix
 		// Do not do anything. If not, then proceed.
@@ -803,7 +792,6 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 			// this code should be revisited.
 
 			// Get the number of nodes
-			//OK411 int nnodes = theEle->GetVertexNumber();
 
 			// Mount the edges of the element
 			vec<CEdge*>theEdgesOfThisElement(nnode);
@@ -1280,32 +1268,50 @@ double* RandomWalk::InterpolateLocationOfTheParticleByBilinear(Particle* A, doub
 	return x;
 }
 
+/**************************************************************************
+ Class: RandomWalk
+ Programing: Locate element location of particle, for FDM method
+ PCH Implementation
+ 03/2010 JTARON modified cellular search algorithm
+ **************************************************************************/
 int RandomWalk::IndexOfTheElementThatThisParticleBelong(int option, Particle* A)
 {
 	int index=-10;
 
 	if(option == 0)
 	{
-		int i = A->x / dx; int j = A->y / dy;
-
-		int iFDM = j*nx + i;
+		long i,j,k,iFDM;
+		double x,y,z;
+		x = A->x;
+		y = A->y;
+		z = A->z;
+		i=j=k=0;
 
 		// Set off the domain first
-		if(A->x > XT || A->x < 0.0 || A->y > YT || A->y < 0.0)
-			return index;
-
-		if(iFDM < (int)indexFDM.size())
-		{
-			index = indexFDM[iFDM].eleIndex;
-			/*
-			if(index == 322 || index == 323 || index == 342 || index == 343)	// Sink condition
-				return -10;
-			else
-			 */
-			return index;
+		if(xrw_range>1.e-12){ // only if non-negligible range in this direction
+			if(x>pnt_x_max || x<pnt_x_min)
+				return index;
+			i = floor((x - pnt_x_min)/dx);
 		}
+		if(yrw_range>1.e-12){
+			if(y>pnt_y_max || y<pnt_y_min)
+				return index;
+			j = floor((y - pnt_y_min)/dy);
+		}
+		if(zrw_range>1.e-12){
+			if(z>pnt_z_max || x<pnt_z_min)
+				return index;
+			k = floor((z - pnt_z_min)/dz);
+		}
+
+		iFDM = k*(nx*ny) + j*nx + i;
+		index = indexFDM[iFDM].eleIndex;
+		/*
+		if(index == 322 || index == 323 || index == 342 || index == 343)	// Sink condition
+			return -10;
 		else
-			return index;
+		 */
+		return index;
 	}
 	else
 		return GetTheElementOfTheParticleFromNeighbor(A);
@@ -2057,19 +2063,6 @@ void RandomWalk::AdvanceBySplitTime(double dt, int numOfSplit)
 	for(int i=0; i< numOfSplit; ++i)
 	{
 		AdvanceToNextTimeStep(subdt);
-#ifdef _FEMPCHDEBUG_
-		// PCH Let's monitor what's going on in the FEM
-		// This messagebox is for debugging the primary variables at every time step.
-		// Should combine with the picking...
-		CWnd * pWnd = NULL;
-		pWnd->MessageBox("Split second!!!","Debug help", MB_ICONINFORMATION);
-#endif
-
-		/*
-		CurrentTime += subdt;
-		sprintf(now, "%f", CurrentTime);
-		DATWritePCTFile(now);
-		 */
 	}
 
 }
@@ -2117,15 +2110,24 @@ Programing:
 void RandomWalk::AdvanceToNextTimeStep(double dt)
 {
 	double tolerance = 1e-18;
+	int TimeMobility;
 	// Loop over all the particles
 //OK411???
 	for(int i=0; i< numOfParticles; ++i)
 	{
+		TimeMobility = 0; //JTARON 2010, using this for now. Setting identity = 1 causes simulation failure... not sure why??
+		//X[i].Now.identity=1;
+		if(X[i].Now.StartingTime < aktuelle_zeit)
+		{
+			TimeMobility = 1;
+			//X[i].Now.identity=0;
+		}
+		
 		// components defined in .mcp should be syncronized with identity of particles.
 		CompProperties *m_cp = cp_vec[X[i].Now.identity];
 
 		// If mobile, do transport.
-		if(m_cp->mobil)
+		if(m_cp->mobil && TimeMobility>0)
 		{
 			Particle Y; // the displaced particle
 			int Astatus = 100;	// Set to be meaningless
@@ -2235,6 +2237,7 @@ void RandomWalk::AdvanceToNextTimeStep(double dt)
 		// Now ODE parts in RWPT
 		if(m_pcs->rwpt_app==1)	// Is the application is Cell Dynamics?
 		{
+/*
 			// Do mobile-Immobile by switching the identity of particles
 			double ChanceOfMobile = randomZeroToOne();
 			double ChanceOfImmobile = randomZeroToOne();
@@ -2253,10 +2256,9 @@ void RandomWalk::AdvanceToNextTimeStep(double dt)
 				Koff[i] = cp_vec[i]->isotherm_model_values[1];
 				FeqSum+=Kon[i]/Koff[i];
 			}
-//OK411???
-			if(X[i].Now.identity == 0)	// Among mobile particles, 
+			if(X[i].Now.identity == 0)	// Among mobile particles,
 			{
-				//OK411 double Feq=1./(1.+FeqSum);
+				double Feq=1./(1.+FeqSum);
 
 				if( ChanceOfMobile < (1.0-exp(-Koff[0]*dt))*Kon[0]/Koff[0] )
 				{
@@ -2297,6 +2299,7 @@ void RandomWalk::AdvanceToNextTimeStep(double dt)
 
 			// Release memory
 			delete [] Kon;	delete [] Koff;
+*/
 		}
 		else if(m_pcs->rwpt_app==2)	// Is the application Cryptosporidium oocysts?
 		{
@@ -2350,13 +2353,74 @@ void RandomWalk::RecordPath(int no, Particle* P)
 
 /**************************************************************************
 MSHLib-Method:
-Task:The function solves normalized concentration of element
+Task: Determines when to generate output files, and introduces call to data output
 Programing:
-10/2005 PCH Implementation
+03/2010 JTARON
  **************************************************************************/
-void RandomWalk::SetElementBasedConcentration(double dt)
+void RandomWalk::RandomWalkOutput(double dt, int current_time_step)
 {
+	COutput *m_out = NULL;
+	bool outputornot;
+	int no_times, i, j;
+	CurrentTime += dt;
+	string current_name;
+
+	for(i=0;i<rwpt_out_strings.size();i++)
+	{
+		current_name = rwpt_out_strings[i];
+		m_out = OUTGetRWPT(current_name);
+		if(!m_out)
+			continue;
+
+		outputornot = false;
+		m_out->time = CurrentTime;
+		no_times = (int)m_out->time_vector.size();
+		if(current_time_step%m_out->nSteps==0)
+		  outputornot = true;
+		if(current_time_step<2)
+		  outputornot = true;
+
+		if(outputornot)
+			if(current_name.compare("PARTICLES")==0)
+				DATWriteParticleFile(current_time_step);
+			//else if(current_name.compare("PARTICLE_CONCENTRATION")==0)
+				//DATWriteParticleConcFile(current_time_step); // routine not yet configured
+		else
+		  {
+			for(j=0;j<no_times;j++)
+			{
+			  if(CurrentTime>=m_out->time_vector[j])
+				if(current_name.compare("PARTICLES")==0)
+					DATWriteParticleFile(current_time_step);
+				//else if(current_name.compare("PARTICLE_CONCENTRATION")==0)
+					//DATWriteParticleConcFile(current_time_step); // routine not yet configured (see commented text below)
+			}
+		  }
+	}
+
+//  OUTPUT PARTICLES AS ELEMENTAL CONCENTRATION
+//  ---------------------------------------------------
 	/*
+	m_out = OUTGetRWPT("PARTICLE_CONCENTRATION");
+	outputornot=false;
+	m_out->time = CurrentTime;
+	no_times = (int)m_out->time_vector.size();
+    if(current_time_step%m_out->nSteps==0)
+      outputornot = true;
+    if(current_time_step<2)
+      outputornot = true;
+
+	if(outputornot)
+		DATWriteParticleFile(current_time_step);
+	else
+	  {
+        for(j=0;j<no_times;j++)
+		{
+          if(CurrentTime>=m_out->time_vector[j])
+            DATWriteParticleFile(current_time_step);
+	    }
+      }
+
     double UnitConcentration = 0.0;
 
     // Here's definition for unit concentration
@@ -2387,18 +2451,6 @@ void RandomWalk::SetElementBasedConcentration(double dt)
 		ConcPTFile(now);
 	}
 	 */
-
-	char now[100];
-	CurrentTime += dt;
-	sprintf(now, "%f", CurrentTime);
-
-	//OK411 double outputStep = 10.0;		// This is the time step that I'd like to print.
-	//OK411 double tolerance = 1e-1;
-	//OK411 double checkDivision = CurrentTime/outputStep;
-	//OK411 double checkDivisionNoNumbersAfterDecimalPoint = (int)(CurrentTime/outputStep);
-
-	//	if( fabs (checkDivision-checkDivisionNoNumbersAfterDecimalPoint) < tolerance )
-	DATWritePCTFile(now);
 }
 
 void RandomWalk::ConcPTFile(const char *file_name)
@@ -4393,11 +4445,113 @@ int RandomWalk::ReadInVelocityFieldOnNodes(string file_base_name)
 
 /**************************************************************************
 FEMLib-Method:
+Programing: This function buildS FDM index for quads
+01/2007 PCH
+Modified:: 03/2010 JTARON ... re-designed and expanded to 3-D
+ **************************************************************************/
+void RandomWalk::buildFDMIndex(void)
+{
+	double* center = NULL;
+	double xmax, ymax, zmax;
+	double xmin, ymin, zmin;
+	double x,y,z;
+	long i,j,k,iel,ic,jc,kc;
+	long ne, nels;
+	int index;
+
+	// get mesh
+	CFEMesh* m_msh = NULL;
+	for(index=0; index< (int)pcs_vector.size(); index++)
+	{
+		m_pcs = pcs_vector[index];
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos){
+			m_msh = FEMGet("RICHARDS_FLOW");
+			break;
+		}
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos){
+			m_msh = FEMGet("LIQUID_FLOW");
+			break;
+		}
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos){
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+			break;
+		}
+	}
+
+	// total geometry size
+	GEOCalcPointMinMaxCoordinates();
+	xrw_range = pnt_x_max - pnt_x_min;
+	yrw_range = pnt_y_max - pnt_y_min;
+	zrw_range = pnt_z_max - pnt_z_min;
+
+	// element size
+	xmax=ymax=zmax=-1e+12;
+	xmin=ymin=zmin=1e+12;
+	for(index=0; index<4; index++) // 4 nodes because FDM method only for equa-sized quads
+	{
+		x = m_msh->nod_vector[m_msh->ele_vector[0]->GetNodeIndex(index)]->X();
+		y = m_msh->nod_vector[m_msh->ele_vector[0]->GetNodeIndex(index)]->Y();
+		z = m_msh->nod_vector[m_msh->ele_vector[0]->GetNodeIndex(index)]->Z();
+		if(x>xmax)
+			xmax=x;
+		if(x<xmin)
+			xmin=x;
+		if(y>ymax)
+			ymax=y;
+		if(y<ymin)
+			ymin=y;
+		if(z>zmax)
+			zmax=z;
+		if(z<zmin)
+			zmin=z;
+	}
+	dx = xmax - xmin;
+	dy = ymax - ymin;
+	dz = zmax - zmin;
+	if(dx<1.e-12)
+		dx=1.e-12;
+	if(dy<1.e-12)
+		dy=1.e-12;
+	if(dz<1.e-12)
+		dz=1.e-12;
+	nx = floor(xrw_range/dx)+1;
+	ny = floor(yrw_range/dy)+1;
+	nz = floor(zrw_range/dz)+1;
+	ne = nx*ny*nz;
+	nels = m_msh->ele_vector.size();
+
+	for(k=0; k<nz; k++){ // loop over the dummy element set
+		for(j=0; j<ny; j++){
+			for(i=0; i<nx; i++){
+				FDMIndex one;		// store dummy index by default, initialize class vector
+				one.i = i;
+				one.j = j;
+				one.k = k;
+				one.eleIndex = -5;	// eleIndex -5 is dummy index different from -10
+				for(iel=0; iel<nels; iel++) // loop over mesh elements, assign them to dummy elements
+				{
+					center = m_msh->ele_vector[iel]->GetGravityCenter();
+					ic = floor((center[0]-pnt_x_min)/dx);
+					jc = floor((center[1]-pnt_y_min)/dy);
+					kc = floor((center[2]-pnt_z_min)/dz);
+					if(ic!=i || jc!=j || kc!=k)
+						continue;
+				    one.eleIndex = iel;
+					break;
+				}
+				indexFDM.push_back(one);
+			}
+		}
+	}
+}
+
+/**************************************************************************
+FEMLib-Method:
 Task: ReadInVelocityFieldOnNodes(string file_base_name)
 Programing: This function build FDM index for quads
 01/2007 PCH
- **************************************************************************/
-void RandomWalk::buildFDMIndex(void)
+ **************************************************************************
+void RandomWalk::buildFDMIndexOLDDDDDDDDDDDDDDDDDD(void)
 {
 	double* Cx; double* Cy;
 
@@ -4507,6 +4661,7 @@ void RandomWalk::buildFDMIndex(void)
 	delete [] Cx; delete [] Cy;
 }
 
+ **************************************************************************/
 
 /**************************************************************************
 FEMLib-Method:
@@ -4546,18 +4701,21 @@ void PCTRead(string file_base_name)
 		// Later on from this line, I can put which mesh I am dealing with.
 		pct_file>>RW->numOfParticles>>ws;
 		Trace one;
+
+		double Starting;
 		for(int i=0; i< RW->numOfParticles; ++i)
 		{
 			// Assign the number to the particle
 			int idx = 0, identity = 0;
 			double x = 0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0, K=0.0;
 
-			pct_file>>idx>>x>>y>>z>>identity>>vx>>vy>>vz>>K>>ws;
+			pct_file>>idx>>x>>y>>z>>identity>>Starting>>vx>>vy>>vz>>K>>ws;
 
 			one.Past.elementIndex = one.Now.elementIndex = idx;
 			one.Past.x = one.Now.x = x;
 			one.Past.y = one.Now.y = y;
 			one.Past.z = one.Now.z = z;
+			one.Past.StartingTime = one.Now.StartingTime = Starting; //JTARON 2010
 			one.Past.identity = one.Now.identity = identity;
 			one.Past.Vx = one.Now.Vx = vx;
 			one.Past.Vy = one.Now.Vy = vy;
@@ -4586,48 +4744,79 @@ Task: Write PCT file
 Programing:
 09/2005   PCH   Implementation
  **************************************************************************/
-void DATWritePCTFile(const char *file_name)
+void DATWriteParticleFile(int current_time_step)
 {
-	FILE *pct_file = NULL;
-	char pct_file_name[MAX_ZEILE];
-
 	CFEMesh* m_msh = NULL;
-	CRFProcess* m_pcs=NULL;
-	// Mount the proper mesh
-	for(int i=0; i< (int)pcs_vector.size(); ++i)
-	{
-		m_pcs = pcs_vector[i];
+	CRFProcess* m_pcs = NULL;
+	RandomWalk* RW = NULL;
 
-		// Select the mesh whose process name has the mesh for Fluid_Momentum
-		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+	int i, np;
+
+	// Gather the momentum mesh
+	for(i=0; i<(int)pcs_vector.size(); ++i){
+		m_pcs = pcs_vector[i];
+		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos){
 			m_msh = FEMGet("RICHARDS_FLOW");
-		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+			break;
+		}
+		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos){
 			m_msh = FEMGet("LIQUID_FLOW");
-		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
+			break;
+		}
+		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos){
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
+			break;
+		}
 	}
 
-	RandomWalk* RW = NULL;
 #ifdef RANDOM_WALK	//WW
 	RW = m_msh->PT;
 #endif
+	np = RW->numOfParticles;
 
-	sprintf(pct_file_name,"%s.%s",file_name,"pct");
-	pct_file = fopen(pct_file_name,"w+t");
+	// file naming
+	char now[10];
+	sprintf(now,"%i",current_time_step);
+    string nowstr = now;
 
-	fprintf(pct_file, "%d\n", RW->numOfParticles);
-	for(int i=0; i< RW->numOfParticles; ++i)
-	{
-		fprintf(pct_file, "%d %17.12e %17.12e %17.12e %d %17.12e %17.12e %17.12e %17.12e\n",
-				RW->X[i].Now.elementIndex, RW->X[i].Now.x, RW->X[i].Now.y, RW->X[i].Now.z, RW->X[i].Now.identity,
-				RW->X[i].Now.Vx, RW->X[i].Now.Vy, RW->X[i].Now.Vz, RW->X[i].Now.K);
-		//		fprintf(pct_file, "%d %17.12e %17.12e %17.12e\n",
-		//			RW->/X[i].Now.elementIndex, RW->X[i].Now.x, RW->X[i].Now.y, RW->X[i].Now.z);
-	}
+	string vtk_file_name = "RWPT_";
+	vtk_file_name += nowstr;
+	vtk_file_name += ".particles";
+	fstream vtk_file (vtk_file_name.data(),ios::out); 
+	vtk_file.setf(ios::scientific,ios::floatfield);
+	vtk_file.precision(12);
+	if(!vtk_file.good()) return;
+	vtk_file.seekg(0L,ios::beg);
+
+	// Write Header
+	vtk_file << "# vtk DataFile Version 3.6.2" << endl;
+	vtk_file << "Particle file: OpenGeoSys->Paraview. Current time (s) = " << RW->CurrentTime  << endl;
+	vtk_file << "ASCII"  << endl;
+	vtk_file << endl;
+	vtk_file << "DATASET PARTICLES"  << endl;
+	vtk_file << "POINTS "<< RW->numOfParticles << " float" << endl;
+
+	// Write particle locations
+	for(int i=0; i<np; ++i)
+		vtk_file << RW->X[i].Now.x << " " << RW->X[i].Now.y << " " << RW->X[i].Now.z << endl;
+
+	// Write particle identities
+	vtk_file << endl;
+	vtk_file << "POINT_DATA "<< RW->numOfParticles << endl;
+    vtk_file << "SCALARS identity float 1" << endl;
+	vtk_file << "LOOKUP_TABLE default" << endl;
+	for(i=0; i<np; ++i)
+		vtk_file << RW->X[i].Now.identity << endl;
+
+	// Write particle vectors
+	/*
+	vtk_file << endl;
+    vtk_file << "VECTORS velocity float" << endl;
+	for(i=0; i<np; ++i)
+		vtk_file << RW->X[i].Now.Vx << " " << RW->X[i].Now.Vy << " " << RW->X[i].Now.Vz << endl;
+    */
 	// Let's close it, now
-	fclose(pct_file);
-
+	vtk_file.close();
 }
 
 

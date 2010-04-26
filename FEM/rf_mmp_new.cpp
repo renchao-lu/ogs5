@@ -262,6 +262,8 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
   char seps[] = "+\n";
   char seps1[] = "*";
   double f_buff;
+  basic_string <char>::size_type indexChWin, indexChLinux; //JT, DEC 2009
+  string funfname; //JT, DEC 2009
   //======================================================================
    while (!new_keyword) {
     new_subkeyword = false;
@@ -337,11 +339,36 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 // ToDo to GeoLib
 //2ii..GEOMETRY_AREA
 //------------------------------------------------------------------------
+    indexChWin = indexChLinux = 0; //JT, DEC 2009
     if(line_string.find("$GEOMETRY_AREA")!=string::npos) { //subkeyword found
       in.str(GetLineFromFile1(mmp_file));
       in >> line_string;
       if(line_string.find("FILE")!=string::npos){
         in >> geo_area_file;
+// JT, Dec. 16, 2009, added lines below to correct and globalize the read of geometry area file
+		string file_name = geo_area_file;
+        CGSProject* m_gsp = NULL;
+        m_gsp = GSPGetMember("mmp");
+        if(m_gsp)
+        {
+          file_name = m_gsp->path + geo_area_file;
+        }
+        indexChWin = FileName.find_last_of('\\');
+        indexChLinux = FileName.find_last_of('/');
+        if(indexChWin==string::npos&&indexChLinux==string::npos)
+          funfname = file_name;
+        else if(indexChWin!=string::npos)
+        {
+          funfname = FileName.substr(0,indexChWin);
+          funfname = funfname+"\\"+file_name;
+        }
+        else if(indexChLinux!=string::npos)
+        {
+          funfname = FileName.substr(0,indexChLinux);
+          funfname = funfname+"/"+file_name;
+        }
+        geo_area_file = funfname;
+// End of new lines
       }
       else{
         geo_area = strtod(line_string.data(),NULL);
@@ -5215,7 +5242,7 @@ void CMediumProperties::WriteTecplotDistributedProperties()
     return;
   //--------------------------------------------------------------------
   // File handling
-  string mat_file_name = FileName + "_" + m_msh->pcs_name + "_PROPERTIES" + TEC_FILE_EXTENSION;
+  string mat_file_name = path + name + "_" + m_msh->pcs_name + "_PROPERTIES" + TEC_FILE_EXTENSION;
   fstream mat_file (mat_file_name.data(),ios::trunc|ios::out);
   mat_file.setf(ios::scientific,ios::floatfield);
   mat_file.precision(12);

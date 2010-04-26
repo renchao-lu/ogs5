@@ -43,6 +43,9 @@ CTimeDiscretization::CTimeDiscretization(void)
   time_unit = "SECOND"; 
   max_time_step = 1.e10;   //YD 
   min_time_step = 0;   //YD 
+  courant_desired = 0.5; //JTARON
+  courant_initial = 1.e-6; //JTARON
+  courant_static = 0; //JTARON
   repeat = false; //OK/YD
   step_current = 0;		//WW
   this_stepsize = 0.; //WW
@@ -273,6 +276,16 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
              max_time_step = 0.0;
           line.clear();
         }
+		// 12.03.2010 JTARON
+		if(time_control_name=="COURANT"){
+          line_string = GetLineFromFile1(tim_file);
+          line.str(line_string);
+//		  courant_initial = first time step size
+//        courant_static = 0 >> variable velocity (adapt in time)
+//        courant_static > 0 >> constant velocity ( = number of timesteps to recalculate (to achieve velocity equilibrium)... i.e. =1, calculate first time step only, use this as constant)
+          line >> courant_desired >> courant_initial >> courant_static;
+          line.clear();
+        }
         // 26.08.2008. WW
   	    if(time_control_name=="STEP_SIZE_RESTRICTION"){
           line.str(GetLineFromFile1(tim_file));
@@ -464,6 +477,11 @@ void CTimeDiscretization::Write(fstream*tim_file)
   if(time_control_name.size()>0)
   {
     *tim_file  << " $TIME_CONTROL" << endl;
+	if(time_control_name=="COURANT") // JTARON
+    {
+      *tim_file  << "  " << time_control_name << endl;
+      *tim_file  << " Courant number desired  " << courant_desired << endl; // JTARON
+    }
     if(time_control_name=="COURANT_MANIPULATE")
     {
       *tim_file  << "  " << time_control_name << endl;
@@ -534,6 +552,20 @@ double CTimeDiscretization::CalcTimeStep(double crt_time)
     if(time_control_name == "PI_AUTO_STEP_SIZE")  //WW
       time_step_length = this_stepsize;
 
+	if(time_control_name == "COURANT") // JTARON 2010, a more straight-forward Courant control
+	{
+	  if(step_current==0) // first time step, set an initial
+		  time_step_length = courant_initial;
+	  else if(courant_static==0)
+		  time_step_length = CourantTimeControl();
+	  else if(step_current < courant_static+1)
+	  {
+		  time_step_length = CourantTimeControl();
+		  courant_initial = time_step_length;
+	  }
+	  else
+		  time_step_length = courant_initial; // take constant value from step_current = 0
+	}
 
   //--------
   //WW. Force t+dt be indentical to the time for output or other special time
@@ -726,6 +758,86 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
 //-----------------------------------------------------
  }
 }
+  return time_step_length;
+}
+/**************************************************************************
+FEMLib-Method: 
+Task: Module controls adaptive timestep based on a simple Courant condition
+Programing:
+12.03.2010 JTARON implementation
+**************************************************************************/
+double CTimeDiscretization::CourantTimeControl(void) 
+{
+  CRFProcess *m_pcs = NULL;
+  CFEMesh* m_msh = NULL;
+  ElementValue* gp_ele =NULL;
+  CElem* m_ele =NULL;
+  CNode* m_nod1 = NULL;
+  CNode* m_nod2 = NULL;
+
+  long iel;
+  int i, j, k, nds;
+  double vel[3], dx[3], dx_temp[3];
+  double vel_mag, new_dt, char_len;
+  double final_dt = 1.e-6;
+
+  m_pcs = PCSGet(pcs_type_name);
+  m_msh = FEMGet(pcs_type_name);
+
+  // Loop over elements
+  for (iel=0; iel<(long)m_msh->ele_vector.size();iel++)
+  {
+	// velocities first
+	gp_ele = ele_gp_value[iel];
+    gp_ele->GetEleVelocity(vel); // the ELEMENTAL velocity vector
+
+	// positions next
+	m_ele = m_msh->ele_vector[iel];
+	nds = m_ele->GetNodesNumber(false);
+	for(i=0; i<nds; i++) // max x,y,z lengths of element
+	{
+		for(j=i+1; j<nds; j++)
+		{
+		  m_nod1 = m_msh->nod_vector[m_ele->nodes_index[i]];
+		  m_nod2 = m_msh->nod_vector[m_ele->nodes_index[j]];
+		  
+		  dx_temp[0] = (m_nod1->X()-m_nod2->X())*(m_nod1->X()-m_nod2->X());
+		  dx_temp[1] = (m_nod1->Y()-m_nod2->Y())*(m_nod1->Y()-m_nod2->Y());
+		  dx_temp[2] = (m_nod1->Z()-m_nod2->Z())*(m_nod1->Z()-m_nod2->Z());
+
+		  if(i==0&&j==1)
+			  VCopy(dx,dx_temp,3); //					copy dx_temp onto dx: first iteration
+		  else
+		  {
+			for(k=0; k<3; k++)
+			  if(dx_temp[k]>dx[k])
+				dx[k]=dx_temp[k]; //					take max dx values (x,y,z) subsequent iterations
+		  }
+		}
+	}
+	for(i=0; i<3; i++) //							Hold square root until after internal loop, for efficiency only
+        dx[i]=sqrt(dx[i]);
+
+    vel_mag = MVectorlength(vel[0],vel[1],vel[2]); //	velocity magnitude
+	for(i=0; i<3; i++)
+		vel[i] = fabs(vel[i])/vel_mag; //							normalized velocity
+    char_len = PointProduction(vel,dx); //			dot product, gives projection of element size onto velocity vector
+	new_dt = courant_desired*char_len/vel_mag; //		Courant timestep, this element
+
+	if(iel==0)
+		final_dt = new_dt;
+	else if(new_dt<final_dt) //  take minimum value in domain
+		final_dt = new_dt;
+  }
+  time_step_length = final_dt;
+
+  if(time_step_length < MKleinsteZahl){
+	  cout << "Fatal error: Courant time step is less than machine tolerance, setting dt = 1.e-6" << endl;
+	  time_step_length = 1.e-6;
+  }
+
+  if(Write_tim_discrete)
+      *tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
   return time_step_length;
 }
 /**************************************************************************

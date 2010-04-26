@@ -24,7 +24,7 @@
   /* Floating-Point */
 
 /* ROCKFLOW-Version */
-#define ROCKFLOW_VERSION    "5.0.00(LB/OK)"
+#define ROCKFLOW_VERSION    "5.0.01(PCH)"
 #define RF_SHELL_VERSION    "4.10.03(NB)"
 #define ROCKFLOW_DATE       "09.03.2010"
 

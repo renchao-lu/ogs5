@@ -205,6 +205,16 @@ ios::pos_type CInitialCondition::Read(ifstream *ic_file)
     if(line_string.find("$DIS_TYPE")!=string::npos) { // subkeyword found
       in.str(GetLineFromFile1(ic_file));
       in >> dis_type_name;
+
+		// Initial conditions are assign to mesh nodes directly. 17.11.2009. PCH
+	  if(dis_type_name.find("DIRECT")!=string::npos)
+    {
+			dis_type_name = "DIRECT";     
+			in >> fname;
+        fname = FilePath+fname;
+			in.clear();
+		}
+
       if(dis_type_name.find("CONSTANT")!=string::npos) {
         m_node = new CNodeValue();        
         in >> m_node->node_value;
@@ -387,6 +397,57 @@ void CInitialCondition::Set(int nidx)
 	  SetDomain(nidx);
 	  break; 
     }
+
+	// Direct assign by node indeces 17.11.2009 PCH
+	if(dis_type_name.find("DIRECT")!=string::npos)
+  {
+		SetByNodeIndex(nidx);
+	}
+}
+
+
+/**************************************************************************
+FEMLib-Method: 
+Task: 
+Programing:
+11/2009 PCH Implementation
+**************************************************************************/
+void CInitialCondition::SetByNodeIndex(int nidx)
+{
+		string line_string;
+		string st_file_name;
+		std::stringstream in;
+		long node_index;
+		double node_val;
+    vector<long>nodes_vector;
+    CFEMesh* m_msh = m_pcs->m_msh;
+
+	//========================================================================
+  // File handling
+  ifstream d_file (fname.c_str(),ios::in);
+  //if (!st_file.good()) return;
+
+  if (!d_file.good()){
+    cout << "! Error in direct node source terms: Could not find file:!\n" 
+         <<fname<<endl;
+    abort();
+  }
+  // Rewind the file
+  d_file.clear();
+  d_file.seekg(0L,ios::beg);
+  //========================================================================
+  while (!d_file.eof()) 
+  {
+    line_string = GetLineFromFile1(&d_file);
+    if(line_string.find("#STOP")!=string::npos)
+      break;
+    
+    in.str(line_string); 
+    in>>node_index>>node_val;   
+    in.clear(); 
+
+		m_pcs->SetNodeValue(node_index,nidx,node_val);
+	}
 }
 
 /**************************************************************************

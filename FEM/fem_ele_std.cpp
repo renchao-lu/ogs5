@@ -6373,6 +6373,8 @@ void CFiniteElementStd::Assembly()
 			;
 		Assemble_Gravity();
 
+		if(dm_pcs)
+    		Assemble_RHS_M();
      	Assemble_RHS_T_PSGlobal();
 		break;
 

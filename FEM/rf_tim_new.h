@@ -64,6 +64,9 @@ class CTimeDiscretization
 	double multiply_coef; //YD
     double max_time_step;  //YD
     double min_time_step; 
+	double courant_desired; //JTARON
+	double courant_initial; //JTARON
+	int courant_static; //JTARON
 	//WW double minish; // JOD
 	//WW int sub_steps; // JOD 4.7.10
 	bool Write_tim_discrete;  //YD
@@ -101,6 +104,7 @@ class CTimeDiscretization
     //Begin of function section for PI Time control ------------------------ 
    	double ErrorControlAdaptiveTimeControl();
     double NeumannTimeControl();
+	double CourantTimeControl(); // JTARON 2010 
     double SelfAdaptiveTimeControl();
     //
     //WW bool GetTimeStepTargetVector(); // kg44

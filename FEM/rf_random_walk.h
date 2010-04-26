@@ -43,6 +43,7 @@ public:
 
     // Time
     double t;
+	double StartingTime; // JTARON 2010, added for continuous particle boundary, segemented by StartingTime
 
     // the element it belongs to
     int elementIndex;
@@ -62,6 +63,7 @@ public:
         t = B.t; elementIndex = B.elementIndex;
 		edgeIndex = B.edgeIndex;
 		identity = B.identity;
+		StartingTime = B.StartingTime;
 		dVxdx = B.dVxdx; dVydy = B.dVydy; dVzdz = B.dVzdz;
 
 		for(int i=0; i<9; ++i)
@@ -158,8 +160,8 @@ public:
 
     void RandomlyDriftAway(Particle* A, double dt, double* delta, int type);
 	int RandomWalkDrift(double* Z, int type);
-    void SetElementBasedConcentration(double dt);
 	void SolveDispersionCoefficient(Particle* A);
+	void RandomWalkOutput(double,int); //JTARON 2010
 
 	int SolveForNextPosition(Particle* A, Particle* B);
 
@@ -207,12 +209,16 @@ private:
     CFEMesh* m_msh;
 
 	vector<FDMIndex> indexFDM;
-	double XT;
-	double YT;
+	vector<string>rwpt_out_strings; //JTARON
 	int nx;
 	int ny;
+	int nz;
 	double dx;
 	double dy;
+	double dz;
+	double xrw_range; //JTARON
+	double yrw_range;
+	double zrw_range;
 
     double ComputeVolume(Particle* A, CElem* m_ele);
     double ComputeVolume(Particle* A, Particle* element, CElem* m_ele);
@@ -234,7 +240,7 @@ private:
 
 
 extern void PCTRead(string);
-extern void DATWritePCTFile(const char *file_name);
+extern void DATWriteParticleFile(int);
 
 #endif //OK
 

@@ -53,6 +53,9 @@ class COutput
     string ele_value_name;
     vector<string>ele_value_vector;
     void GetELEValuesIndexVector(vector<int>&); //OK
+	// RWPT values
+	string rwpt_value_name;
+	vector<string>rwpt_value_vector;
     // GEO
     long geo_node_number;
     string geo_name;
@@ -132,5 +135,6 @@ extern void OUTData(double, const int step);
 extern void OUTDelete();
 extern COutput* OUTGet(string);
 extern void OUTCheck(void); // new SB
+extern COutput* OUTGetRWPT(string); //JTARON
 
 #endif

@@ -52,7 +52,7 @@ extern void MSHDestroy();
 extern void MSHDelete(string);
 extern void DATWriteRFIFile(const char *file_name);
 #ifdef RANDOM_WALK
-extern void DATWritePCTFile(const char *file_name);     // PCH
+extern void DATWriteParticleFile(int);     // PCH
 #endif
 extern void MSHWriteVOL2TEC(string); //OK
 extern bool msh_file_binary; //OK

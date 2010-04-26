@@ -300,6 +300,7 @@ double NormalizeVector(double *x, const int n);
 
 extern double MVectorlength(double dx, double dy, double dz);
 extern double PointProduction(double *x, double *y);
+extern void VCopy(double *x, const double *y, const int n);
 
 //NW
 extern double MLangevin(double v);

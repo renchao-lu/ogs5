@@ -27,6 +27,7 @@ class CInitialCondition
    // Coefficents for linear distribution function
    // f = a0+b0*x+c0*y+d0*z
    double *a0, *b0, *c0, *d0; //WW
+	 string fname; //17.11.2009. PCH
   public:
     // PCS
     string pcs_type_name; //OK
@@ -43,6 +44,7 @@ class CInitialCondition
     string dis_type_name;
     vector<CNodeValue*>node_value_vector;
     void SetDomain(int);
+		void SetByNodeIndex(int);	// 19.11.2009 PCH
     void SetPolyline(int);
 	void SetSurface(int);
     double DistributionFuntion(const int dom_i, const double x, const double y, const double z) //WW

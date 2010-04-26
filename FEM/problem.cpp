@@ -1,5 +1,6 @@
 /*=======================================================================
 //Class Problem: Handle the data and their functions for time stepping 
+
                  and coupled processes within each time step, and finally 
                  solve a problem. 
 Design and implementation:  WW
@@ -784,7 +785,46 @@ void Problem::Euler_TimeDiscretize()
       }
 #endif
       //
-      accepted_times++;       
+      accepted_times++; 
+#ifdef MFC
+ /*START: Update Visualization for OpenGL and other MFC view e.g. Diagram*/ 
+ CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+ CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+ CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+ CGeoSysOUTProfileView *pView = (CGeoSysOUTProfileView *) pChild->GetActiveView();
+ POSITION pos = m_pDoc->GetFirstViewPosition();
+  while(pos!=NULL) {
+    CView* pView = m_pDoc->GetNextView(pos);
+    pView->UpdateWindow();
+  }
+ CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+ CRFProcess* m_pcs = NULL;
+ if(pcs_vector.size()==0)
+ return;
+ m_pcs = PCSGet((string)mainframe->m_pcs_name);
+ if(!m_pcs)
+ {
+   m_pcs = pcs_vector[0];
+   //OK AfxMessageBox("Problem::Euler_TimeDiscretize() - no PCS data");
+   //OK return;
+ }
+ double value, m_pcs_min_r, m_pcs_max_r;
+ m_pcs_min_r = 1.e+19;
+ m_pcs_max_r = -1.e+19;
+ int nidx = m_pcs->GetNodeValueIndex((string)mainframe->m_variable_name);
+ for(long j=0;j<(long)m_pcs->nod_val_vector.size();j++)
+ {
+ value = m_pcs->GetNodeValue(j,nidx);
+ if(value<m_pcs_min_r) m_pcs_min_r = value;
+ if(value>m_pcs_max_r) m_pcs_max_r = value;
+ }  
+ mainframe->m_pcs_min = m_pcs_min_r;
+ mainframe->m_pcs_max = m_pcs_max_r;
+ mainframe->m_something_changed = 1;
+ m_pDoc->SetModifiedFlag(1);
+ m_pDoc->UpdateAllViews(NULL,0L,NULL);
+ /*END: Update Visualization for OpenGL and other MFC view e.g. Diagram*/ 
+#endif       
     }
     else
     { 
@@ -1447,7 +1487,9 @@ inline double Problem::FluidMomentum()
        m_pcs->selected = false;
   }
   //
-  return 0.0;
+  //error = 0.0 // JTARON... in unsteady flow, setting error=0.0 corresponds to error_cpl=0.0, and the coupling loop ceases before RWPT is performed
+  //            // What is the correct way to handle this, rather than setting error=1.e8???
+  return error;
 }
 
 /*-------------------------------------------------------------------------
@@ -1461,23 +1503,15 @@ Modification:
 -------------------------------------------------------------------------*/
 inline double Problem::RandomWalker()
 {
-#ifdef _FEMPCHDEBUG_
-	// PCH Let's monitor what's going on in the FEM
-	// This messagebox is for debugging the primary variables at every time step.
-	// Should combine with the picking...
-	CWnd * pWnd = NULL;
-	
-	//Disabled by Haibing 07112006
-//	pWnd->MessageBox("Liquid Flow and Fluid Momentum just solved!!!","Debug help", MB_ICONINFORMATION);
-	//--------------------------------------------------------
-#endif
+	double error = 1.0e+8;
+	int number_of_time_splits = 2; // JTARON ... KEEP AN EYE ON THIS NUMBER!!!
+	//
+	CRFProcess *m_pcs = total_processes[10];
+	//
+	if(!m_pcs->selected) return error; //12.12.2008 WW
+	//
+	CFEMesh* m_msh = NULL;
 
-  double error = 1.0e+8;
-  CRFProcess *m_pcs = total_processes[10];
-  //
-  if(!m_pcs->selected) return error; //12.12.2008 WW
-  //
-	//OK411 CFEMesh* m_msh = NULL;
 	if(m_pcs&&m_pcs->selected)
 	{
 		lop_coupling_iterations = 1;
@@ -1497,29 +1531,30 @@ inline double Problem::RandomWalker()
 				m_msh = FEMGet("GROUNDWATER_FLOW");
 			else;
 		}
+
 #ifdef RANDOM_WALK
-  RandomWalk *rw_pcs = NULL; // By PCH
-  rw_pcs = m_msh->PT;		
+		RandomWalk *rw_pcs = NULL; // By PCH
+		rw_pcs = m_msh->PT;
 
-  // Do I need velocity fileds solved by the FEM?
-  if(m_pcs->tim_type_name.compare("PURERWPT")==0)
-  {
-    rw_pcs->PURERWPT = 1;
-    char *dateiname = NULL;
-    int sizeOfWord = 100;
-    dateiname = (char *)malloc(sizeOfWord * sizeof(char ));
-    
-    string filename = FileName;
-    for(int i=0; i<= (int)filename.size(); ++i)
- 		dateiname[i] = filename[i];
+		// Do I need velocity fileds solved by the FEM?
+		if(m_pcs->tim_type_name.compare("PURERWPT")==0)
+		{
+			rw_pcs->PURERWPT = 1;
+			char *dateiname = NULL;
+			int sizeOfWord = 100;
+			dateiname = (char *)malloc(sizeOfWord * sizeof(char ));
 
-    rw_pcs->ReadInVelocityFieldOnNodes(dateiname);
+			string filename = FileName;
+			for(int i=0; i<= (int)filename.size(); ++i)
+				dateiname[i] = filename[i];
 
-    delete [] dateiname;
-  }
-		
-  // Set the mode of the RWPT method
-  if(m_pcs->num_type_name.compare("HETERO")==0)
+			rw_pcs->ReadInVelocityFieldOnNodes(dateiname);
+
+			delete [] dateiname;
+		}
+
+		// Set the mode of the RWPT method
+		if(m_pcs->num_type_name.compare("HETERO")==0)
 		{
 			rw_pcs->RWPTMode = 1;	// Set it for heterogeneous media
 			cout << "RWPT is on " << m_pcs->num_type_name << " mode." << endl;
@@ -1586,13 +1621,13 @@ inline double Problem::RandomWalker()
 			}
 		}
 
-		rw_pcs->AdvanceBySplitTime(dt, 10);
-		//		rw_pcs->TraceStreamline();
-		rw_pcs->SetElementBasedConcentration(dt);
-	}
+		rw_pcs->AdvanceBySplitTime(dt,number_of_time_splits);
+		//	rw_pcs->TraceStreamline();
+		rw_pcs->RandomWalkOutput(aktuelle_zeit,aktueller_zeitschritt);
 #endif
-  //
-  return 0.0;
+	}
+
+return 0.0;
 }
 
 

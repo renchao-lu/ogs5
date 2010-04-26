@@ -196,6 +196,27 @@ ios::pos_type COutput::Read(ifstream *out_file)
       */
       continue;
     }
+    //-------------------------------------------------------------------- // Added 03.2010 JTARON
+    if(line_string.find("$RWPT_VALUES")!=string::npos) { // subkeyword found
+      while ((!new_keyword)&&(!new_subkeyword)) {
+        position_subkeyword = out_file->tellg();
+		line_string = GetLineFromFile1(out_file);
+        if(line_string.find(hash)!=string::npos) {
+          return position;
+        }
+        if(line_string.find(dollar)!=string::npos) {
+          new_subkeyword = true;
+          break;
+        }
+		if(line_string.size()==0)
+          break; //SB: empty line
+		in.str(line_string);
+		in >> name;
+        rwpt_value_vector.push_back(name);
+		in.clear();
+      }
+      continue;
+    }
     //--------------------------------------------------------------------
     if(line_string.find("$GEO_TYPE")!=string::npos) { //subkeyword found
       //OK out_file->getline(buffer,MAX_ZEILE);
@@ -224,6 +245,7 @@ ios::pos_type COutput::Read(ifstream *out_file)
       }
       if(geo_type_name.find("DOMAIN")!=string::npos) {
         geo_type = 4;
+		line.clear(); //JT
         /* // Comment by WW
 		// Remove files
         tec_file_name = file_base_name + "_domain" + TEC_FILE_EXTENSION;
@@ -287,16 +309,15 @@ ios::pos_type COutput::Read(ifstream *out_file)
          *out_file >> nSteps;
           tim_type_name = "STEPS"; //OK
         }
-		if(line_string.find("STEPPING")!=string::npos) {
-		  double stepping_length, stepping_end;
- 		  
-		  line.str(GetLineFromFile1(out_file));
-          line >> stepping_length;
-		  line >> stepping_end;
+		if(line_string.find("STEPPING")!=string::npos) { // JTARON 2010, reconfigured... didn't work
+		  double stepping_length, stepping_end, stepping_current;
+          line.str(GetLineFromFile1(out_file));
+          line >> stepping_length >> stepping_end;
+		  stepping_current = stepping_length;
 		  line.clear();
-		  while(stepping_length <= stepping_end) {
-            time_vector.push_back(stepping_length);
-            stepping_length += stepping_length;
+		  while(stepping_current <= stepping_end) {
+            time_vector.push_back(stepping_current);
+            stepping_current += stepping_length;
 		  }
        
         }
@@ -1495,11 +1516,22 @@ void COutput::WriteELEValuesTECData(fstream &tec_file)
     tec_file << xyz[0] << " " << xyz[1] << " " << xyz[2] << " ";
     if(out_element_vel) //WW
 	{
+		if(PCSGet("FLUID_MOMENTUM"))	// PCH 16.11 2009
+		{
+			CRFProcess* pch_pcs = PCSGet("FLUID_MOMENTUM");
+
+			tec_file << pch_pcs->GetElementValue(i, pch_pcs->GetElementValueIndex("VELOCITY1_X")+1) << " ";
+			tec_file << pch_pcs->GetElementValue(i, pch_pcs->GetElementValueIndex("VELOCITY1_Y")+1) << " ";
+			tec_file << pch_pcs->GetElementValue(i, pch_pcs->GetElementValueIndex("VELOCITY1_Z")+1) << " ";
+		}
+		else
+		{
        //....................................................................
        gp_ele = ele_gp_value[i];
        tec_file << gp_ele->Velocity(0,0) << " ";
        tec_file << gp_ele->Velocity(1,0) << " ";
        tec_file << gp_ele->Velocity(2,0) << " ";
+		}
 	}
 	else
 	{
@@ -2308,7 +2340,11 @@ FEMLib-Method:
 Task:
 Programing:
 05/2005 OK Implementation
+<<<<<<< HEAD
 last modification:
+=======
+last modification: 03/2010 JTARON
+>>>>>>> FETCH_HEAD
 **************************************************************************/
 COutput* OUTGet(string out_name)
 {
@@ -2320,9 +2356,31 @@ COutput* OUTGet(string out_name)
   }
   return NULL;
 }
-
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
+Task: Return m_out for variable name (based on OUTGet)
+Programing:
+03/2010 JTARON Implementation
+last modification: 
+**************************************************************************/
+COutput* OUTGetRWPT(string out_name)
+{
+  COutput *m_out = NULL;
+  string vecname;
+  for(int i=0;i<(int)out_vector.size();i++)
+  {
+    m_out = out_vector[i];
+	for(int j=0;j<(int)m_out->rwpt_value_vector.size();j++)
+	{
+		vecname = m_out->rwpt_value_vector[j];
+		if(vecname.compare(out_name)==0)
+			return m_out;
+	}
+  }
+  return NULL;
+}
+/**************************************************************************
+FEMLib-Method:
 12/2005 OK Implementation
 04/2006 CMCD no mesh option & flux weighting
 last modification:
@@ -2759,10 +2817,10 @@ Programing:
 **************************************************************************/
 void COutput::WriteVTKHeader(fstream &vtk_file)
 {
-  // Write Header 
-  vtk_file << "# vtk DataFile Version 2.0" << endl;
-// title
-  vtk_file << "Unstructured Grid Rockflow"  << endl;
+
+  // Write Header
+  vtk_file << "# vtk DataFile Version 3.6.2" << endl;
+  vtk_file << "Unstructured Grid: OpenGeoSys->Paraview. Current time (s) = " << aktuelle_zeit << endl;
 // data type here always ASCII
   vtk_file << "ASCII"  << endl;
   vtk_file << endl;
