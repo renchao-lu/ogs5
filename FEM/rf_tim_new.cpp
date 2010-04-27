@@ -24,6 +24,7 @@ using namespace std;
 double aktuelle_zeit;
 long aktueller_zeitschritt = 0;
 double dt = 0.0;
+int rwpt_numsplits = -1; //JTARON 2010
 //==========================================================================
 vector<CTimeDiscretization*>time_vector;
 /**************************************************************************
@@ -223,6 +224,13 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
       }
     }
     //....................................................................
+    if(line_string.find("$TIME_SPLITS")!=string::npos) { // subkeyword found
+	  line.str(GetLineFromFile1(tim_file));
+      line >> rwpt_numsplits;
+      line.clear();
+      continue;
+    }
+    //....................................................................
     if(line_string.find("$CRITICAL_TIME")!=string::npos) { // 25.08.2008. WW
       while((!new_keyword)||(!new_subkeyword)||(!tim_file->eof())){
         position = tim_file->tellg();
@@ -256,12 +264,7 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
         line.str(line_string);
         line >> time_control_name;
         line.clear();
-  	    if(time_control_name=="COURANT_MANIPULATE"){
-          line_string = GetLineFromFile1(tim_file);
-          line.str(line_string);
-          line >> time_control_manipulate;
-          line.clear();
-        }
+  	
         // 26.08.2008. WW
   	    if(time_control_name=="PI_AUTO_STEP_SIZE"){
           line.str(GetLineFromFile1(tim_file));
@@ -289,7 +292,7 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
         // 26.08.2008. WW
   	    if(time_control_name=="STEP_SIZE_RESTRICTION"){
           line.str(GetLineFromFile1(tim_file));
-          line >> h_min>>h_max;
+          line >> h_min >> h_max;
           line.clear();
         }
   	    if(time_control_name=="NEUMANN"){
@@ -352,6 +355,7 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
     */
     //....................................................................
   } // end of while(!new_keyword)
+
   return position;
 }
 
@@ -477,15 +481,10 @@ void CTimeDiscretization::Write(fstream*tim_file)
   if(time_control_name.size()>0)
   {
     *tim_file  << " $TIME_CONTROL" << endl;
-	if(time_control_name=="COURANT") // JTARON
+    if(time_control_name=="COURANT") // JTARON
     {
       *tim_file  << "  " << time_control_name << endl;
       *tim_file  << " Courant number desired  " << courant_desired << endl; // JTARON
-    }
-    if(time_control_name=="COURANT_MANIPULATE")
-    {
-      *tim_file  << "  " << time_control_name << endl;
-      *tim_file  << "   " << time_control_manipulate << endl;
     }
     if(time_control_name=="PI_AUTO_STEP_SIZE")
     {
@@ -529,9 +528,9 @@ double CTimeDiscretization::CalcTimeStep(double crt_time)
     if(no_time_steps>0)
       time_step_length = time_step_vector[0];
     // Standard time stepping
-    if(step_current<no_time_steps){
+    if(step_current<no_time_steps)
       time_step_length = time_step_vector[step_current];
-    }
+
     // Time step controls
     if( time_control_name == "NEUMANN"||time_control_name == "SELF_ADAPTIVE")
     {

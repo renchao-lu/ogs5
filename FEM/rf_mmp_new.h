@@ -85,6 +85,7 @@ class CMediumProperties
   void CalStressPermeabilityFactor2(double *kfac, const double T = 273.0); //WW
   void CalStressPermeabilityFactor3(double *kfac); //WW
   void CalStressPermeabilityFactor3_Coef(); //WW
+  void CalStressPermeabilityFactor4(double *kfac, double);
 #ifdef RFW_FRACTURE
     double PermeabilityFracAperture(long index); //RFW 07/2005
     double CalculateFracAperture(CElem* elem, double search_step); //RFW 04/2005

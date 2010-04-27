@@ -149,6 +149,7 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
                dx = a_node->X()-a_node0->X();
                dy = a_node->Y()-a_node0->Y();
                dz = a_node->Z()-a_node0->Z();
+							
                X[i] =  (*MeshElement->tranform_tensor)(0,0)*dx
                       +(*MeshElement->tranform_tensor)(1,0)*dy
                       +(*MeshElement->tranform_tensor)(2,0)*dz;

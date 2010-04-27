@@ -942,6 +942,9 @@ void CInitialCondition::SetDomain(int nidx)
        */
     }
 }
+
+
+
 /**************************************************************************
 FEMLib-Method:
 Task:

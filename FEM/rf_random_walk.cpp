@@ -2362,7 +2362,7 @@ void RandomWalk::RandomWalkOutput(double dt, int current_time_step)
 	COutput *m_out = NULL;
 	bool outputornot;
 	int no_times, i, j;
-	CurrentTime += dt;
+	CurrentTime = dbl_time;
 	string current_name;
 
 	for(i=0;i<rwpt_out_strings.size();i++)
@@ -2374,8 +2374,9 @@ void RandomWalk::RandomWalkOutput(double dt, int current_time_step)
 
 		outputornot = false;
 		m_out->time = CurrentTime;
-		no_times = (int)m_out->time_vector.size();
-		if(current_time_step%m_out->nSteps==0)
+		no_times = (int)m_out->rwpt_time_vector.size();
+		//--------------------------------------------------------------------
+		if(no_times==0&&(m_out->nSteps>0)&&(current_time_step%m_out->nSteps==0))
 		  outputornot = true;
 		if(current_time_step<2)
 		  outputornot = true;
@@ -2385,15 +2386,21 @@ void RandomWalk::RandomWalkOutput(double dt, int current_time_step)
 				DATWriteParticleFile(current_time_step);
 			//else if(current_name.compare("PARTICLE_CONCENTRATION")==0)
 				//DATWriteParticleConcFile(current_time_step); // routine not yet configured
-		else
+		else;
 		  {
 			for(j=0;j<no_times;j++)
 			{
-			  if(CurrentTime>=m_out->time_vector[j])
+			  if(CurrentTime>=m_out->rwpt_time_vector[j])
+			  {
 				if(current_name.compare("PARTICLES")==0)
 					DATWriteParticleFile(current_time_step);
+		        
 				//else if(current_name.compare("PARTICLE_CONCENTRATION")==0)
 					//DATWriteParticleConcFile(current_time_step); // routine not yet configured (see commented text below)
+
+			    m_out->rwpt_time_vector.erase(m_out->rwpt_time_vector.begin()+j);	
+			    break;
+			  }
 			}
 		  }
 	}

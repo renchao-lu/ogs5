@@ -4609,13 +4609,6 @@ void GradShapeFunctionPriHQ(double *dN, const double *x)
 
 
 
-
-
-
-
-
-
-
 /***************************************************************************
    GeoSys - Funktion:
            CElement::ComputeDetTri(const *double x1, const *double x2,
@@ -4715,6 +4708,18 @@ double PointProduction(double *x, double *y)
    for(i=0; i<3; i++)
      nrm += x[i]*y[i];
    return nrm;
+}
+/**************************************************************************
+MSHLib-Method: 
+Task: Vector copy routine
+Programing:
+12.03.2010 JT Implementation
+**************************************************************************/
+void VCopy(double *x, const double *y, const int n)
+{
+   int i;
+   for(i=0; i<n; i++)
+     x[i] = y[i];
 }
 
 /**************************************************************************
