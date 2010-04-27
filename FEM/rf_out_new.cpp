@@ -3023,6 +3023,7 @@ void COutput::WriteVTKValues(fstream &vtk_file)
   }
   // ELEMENT DATA
   // ---------------------------------------------------------------------
+  bool wroteAnyEleData = false; //NW
   if(num_ele_values>0)
   {
     m_pcs = GetPCS_ELE(ele_value_vector[0]);
