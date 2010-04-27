@@ -429,7 +429,7 @@ double CalcNormOfRHS(LINEAR_SOLVER*ls)
     long number_of_nodes;
     double NormW = 0.0;  
     
-    if (!ls) {printf(" \n Warning: solver not defined, exit from loop_ww.cc"); exit(0);}
+    if (!ls) {printf(" \n Warning: solver not defined, exit from loop_ww.cc"); exit(1);}
     /* Ergebnisse eintragen */
     unknown_vector_dimension = GetUnknownVectorDimensionLinearSolver(ls);
     for (i = 0; i < unknown_vector_dimension; i++)

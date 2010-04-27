@@ -1302,7 +1302,7 @@ void CPARDomain::FillBorderNodeConnectDom(vector<int> allnodes_doms)
  Dum<<b_end[1]<<endl;
   for(i=0;i<bnode_connected_dom.size();i++)
     Dum<<bnode_connected_dom[i]<<endl;  
-  exit(0);
+  exit(1);
   */
 }
 
@@ -1341,7 +1341,7 @@ void CPARDomain::ConfigEQS(CNumerics *m_num, const long n, bool quad)
   
  Dum.close();
       MPI_Finalize();
-    exit(0);
+    exit(1);
   */
 
 
@@ -1497,7 +1497,7 @@ string test = "rank";
 	      }
          }
       }
-      exit(0);
+      exit(1);
 
   }
    */
@@ -1537,7 +1537,7 @@ string test = "rank";
    //TEST
    Dum.close();
  if(nq>1)
-    exit(0);
+    exit(1);
    */
 
 

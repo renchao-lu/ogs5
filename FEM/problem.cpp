@@ -751,7 +751,7 @@ void Problem::Euler_TimeDiscretize()
     if(dt<DBL_EPSILON)
     {
        cout<<"!!! Too small time step size. Quit the simulation now."<<endl;
-       exit(0);
+       exit(1);
     }  
     // 
     aktueller_zeitschritt++;  // Might be removed late on

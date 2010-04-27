@@ -350,7 +350,7 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
       dom->eqsH->Write(Dum);  
  Dum.close();
     //  MPI_Finalize();
-    exit(0);
+    exit(1);
 
   */
  
@@ -1465,7 +1465,7 @@ double CRFProcessDeformation::NormOfUnkonwn()
     long number_of_nodes;
     double NormW = 0.0;  
     
-    if (!eqs) {printf(" \n Warning: solver not defined, exit from loop_ww.cc"); exit(0);}
+    if (!eqs) {printf(" \n Warning: solver not defined, exit from loop_ww.cc"); exit(1);}
     /* Ergebnisse eintragen */
     unknown_vector_dimension = GetUnknownVectorDimensionLinearSolver(eqs);
     for (i = 0; i < unknown_vector_dimension; i++)
@@ -2172,7 +2172,7 @@ string test = "rank";
  ofstream Dum(test1.c_str(), ios::out);
  m_dom->eqsH->Write(Dum);
  Dum.close();
- exit(0);
+ exit(1);
 
     */
 
@@ -2208,7 +2208,7 @@ string test = "rank";
  ofstream Dum(test1.c_str(), ios::out);
  m_dom->eqsH->Write(Dum);
  Dum.close();
- exit(0);
+ exit(1);
     */
 
     // Apply Neumann BC

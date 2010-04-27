@@ -4,6 +4,7 @@ set( HEADERS
 	DateTools.h
 	StringTools.h
 	swap.h
+	FileTools.h
 )
 
 set( SOURCES

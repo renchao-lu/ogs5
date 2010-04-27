@@ -370,7 +370,7 @@ void KRConfig(void)
    if(ok==false){
 		cout << " Components missing, Stopping" << endl;
 		cout.flush();
-		exit(0);
+		exit(1);
    }
 
 // Set vector is_a_bacterium
@@ -660,7 +660,7 @@ void KRConfig(void)
   /********************************************************/
   //Set up vector is_a_CCBC
   CFEMesh* m_msh = fem_msh_vector[0]; //SB: ToDo hart gesetzt
-  if(m_msh == NULL) {cout << "No mesh in KRConfig" << endl; exit(0);}
+  if(m_msh == NULL) {cout << "No mesh in KRConfig" << endl; exit(1);}
   // Initialize vector is_a_CCBC
   for(l=0; l< (long)m_msh->nod_vector.size();l++) m_krd->is_a_CCBC.push_back(false);
   // Go through specified geometry elements
@@ -716,7 +716,7 @@ void KRConfig(void)
     /********************************************************/
     //Set up vectors switched_off_node for individual reactions
     m_msh = fem_msh_vector[0]; //SB: ToDo hart gesetzt
-    if(m_msh == NULL) {cout << "No mesh in KRConfig" << endl; exit(0);}
+    if(m_msh == NULL) {cout << "No mesh in KRConfig" << endl; exit(1);}
     // for all reactions
     for(k=0;k<m_krd->NumberReactions;k++){
  	    m_kr = KinReact_vector[k];
@@ -1717,7 +1717,7 @@ void KBlobConfig(void)
   //Vektor für Interfacial_area erstellen und mit Interfacial_area[0]= Eingabewert belegen
   CKinBlob *m_kb = NULL;
   CFEMesh* m_msh = fem_msh_vector[0]; //SB: ToDo hart gesetzt
-  if(m_msh == NULL) {cout << "No mesh in KRConfig" << endl; exit(0);}
+  if(m_msh == NULL) {cout << "No mesh in KRConfig" << endl; exit(1);}
 
   for (i=0; i<(int) KinBlob_vector.size(); i++){
 	m_kb = KinBlob_vector[i];

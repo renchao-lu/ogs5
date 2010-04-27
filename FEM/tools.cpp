@@ -504,7 +504,7 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
 	//DisplayMsgLn(" File does not exist.");
     cout << " FctReadHeterogeneousFields" << endl;
     cout << " Cannot find " << name_file << endl;
-    exit(0);
+    exit(1);
   }
   //------------------------------------------------------------------------
   // Read MSH data

@@ -216,7 +216,7 @@ Programing:
 	  count_of_diffusion_model_values = GetNumberDiffusionValuesCompProperties(diffusion_model);
 	  if(count_of_diffusion_model_values < 0){ // unknown parameter model
 		DisplayMsgLn(" Unknown Diffusion model - program stops !");
-		exit(0);
+		exit(1);
 	  }
 
 	  if (diffusion_model>0) {
@@ -265,7 +265,7 @@ Programing:
 
 	  if(count_of_decay_model_values < 0){ // unknown parameter model
 		DisplayMsgLn(" Unknown Aqueous Decay model - program stops !");
-		exit(0);
+		exit(1);
 	  }
 
 	  if (decay_model>0) {
@@ -306,7 +306,7 @@ Programing:
 
 	  if(count_of_isotherm_model_values < 0){ // unknown parameter model
 		DisplayMsgLn(" Unknown Isotherm model - program stops !");
-		exit(0);
+		exit(1);
 	  }
 	
 	  if (isotherm_model>0) {

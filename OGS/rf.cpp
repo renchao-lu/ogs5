@@ -36,6 +36,7 @@
 #include "timer.h"
 //16.12.2008. WW #include "rf_apl.h"
 #include "files0.h"
+#include "FileTools.h"
 #ifdef SUPERCOMPUTER
 // kg44 test for buffered outputh
 #include <stdio.h>
@@ -135,7 +136,7 @@ int main ( int argc, char *argv[] )
   if (!InitMemoryTest()) {
     DisplayErrorMsg("Fehler: Speicherprotokoll kann nicht erstellt werden!");
     DisplayErrorMsg("        Programm vorzeitig beendet!");
-    return 0;
+    return 1;	// LB changed from 0 to 1 because 0 is indicating success
   }
   /* Eingabe-Dateinamen ermitteln */
   if (argc>1) {
@@ -151,6 +152,16 @@ int main ( int argc, char *argv[] )
   //WW  DisplayMsgLn("");
   //WW  DisplayMsgLn("");
   // ----------23.02.2009. WW-----------------
+
+  // LB Check if file exists
+  std::string tmpFilename = dateiname;
+  tmpFilename.append(".pcs");
+  if(!IsFileExisting(tmpFilename))
+  {
+	  cout << " Error: Cannot find file " << dateiname << endl;
+	  return 1;
+  }
+
   FileName = dateiname;
   basic_string <char>::size_type indexChWin, indexChLinux;
   indexChWin = indexChLinux = 0;

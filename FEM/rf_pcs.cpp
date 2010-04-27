@@ -3533,7 +3533,7 @@ double CRFProcess::Execute()
  ofstream Dum(test1.c_str(), ios::out); // WW
  dom->eqs->Write(Dum);   Dum.close();
  MPI_Finalize();
- exit(0);
+ exit(1);
 */
   //----------------------------------------------------------------------
   // Solution vector
@@ -3886,7 +3886,7 @@ void CRFProcess::GlobalAssembly()
       ofstream Dum(test1.c_str(), ios::out);
       m_dom->eqs->Write(Dum);
       Dum.close(); 
-      exit(0);
+      exit(1);
       */
 #ifndef USE_MPI   
     }
@@ -9841,7 +9841,7 @@ void CRFProcess::PI_TimeStepSize(double *u_n)
     if(reject_steps>100&&accept_steps==0)
     {
        cout<<"!!! More than 100 steps rejected and none of steps accepted. Quit the simulation now"<<endl;
-       exit(0);
+       exit(1);
     }
     // Recover solutions
   }

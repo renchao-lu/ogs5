@@ -95,7 +95,7 @@ void REACT::ExecuteReactionsPHREEQC(void){
     }
     else {
       printf("ERROR: Can not open file *.pqc");
-      exit(0);
+      exit(1);
     }
 
  /* Read the input file (*.pqc) and set up the input file for PHREEQC ("phinp.dat")*/
@@ -115,19 +115,19 @@ void REACT::ExecuteReactionsPHREEQC(void){
     }
 	else{
 		DisplayMsgLn("The file phinput.dat could not be opened !");
-		exit(0);
+		exit(1);
 	}
 
 	/* Extern Program call to PHREEQC */
     if(ok) ok = Call_Phreeqc();
-	if(ok ==0) exit(0);
+	if(ok ==0) exit(1);
  
 
    /* Set up the output values for rockflow after Phreeqc reaction*/
     fsel_out=fopen(fsout,"r");
     if ((ok) && !fsel_out){
         DisplayMsgLn("The selected output file doesn't exist!!!");
-        exit(0);
+        exit(1);
     }
     else if(ok){
 		ok = ReadOutputPhreeqc(fsout);
@@ -196,13 +196,13 @@ void REACT::ExecuteReactionsPHREEQCNew(void){
     ifstream pqc_file (this->file_name_pqc.data(),ios::in);
     if (!pqc_file.good()){
       cout << "! Error in ExecuteReactionsPHREEQCNew: no Input File (*.pqc) found !" << endl;
-      //         exit(0);
+      //         exit(1);
     } 
     //	File handling - data exchange file to phreeqc, input to PHREEQC
     ofstream outfile (this->outfile_name.data(),ios::out);
     if(!outfile.is_open()){
       cout << "Error: Outfile phinp.dat could not be opened for writing " << endl;
-      //        exit(0);
+      //        exit(1);
     }
  
     // Set up reaction model
@@ -238,7 +238,7 @@ void REACT::ExecuteReactionsPHREEQCNew(void){
     if(ok ==0) {
       cout << " Error executing PHREEQC.exe - Stopping "<< endl;
       cout.flush();
-      //        exit(0);
+      //        exit(1);
     }
  
     if(ok){
@@ -807,7 +807,7 @@ int REACT::ReadReactionModel( FILE *File){
   if(indatei == NULL){           /*input dateien does not exist*/
     DisplayMsgLn("");
     DisplayMsgLn(" The input file *.pqc does not exist!!!");
-    exit(0);
+    exit(1);
   } /*end if*/
 
   /* zeilenweise lesen */
@@ -953,7 +953,7 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
                     m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
 					if(m_pcs == NULL){
 							cout << " PHREEQC SOLUTION SPECIES not in GeoSys components - Stopping" << endl;
-							cout.flush(); exit(0);
+							cout.flush(); exit(1);
 					}
                     idx = m_pcs->GetNodeValueIndex(speciesname)+1; // old timelevel
                     in.clear();
@@ -1595,7 +1595,7 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
           else {
               if (found !=1){
               fprintf(f, " %s %s ", str, " in the *.pqc file is an unknown keyword!!!");
-              exit(0);}
+              exit(1);}
           }
        }/* end while - 2 */
     } /* end while - 1 */
@@ -2013,7 +2013,7 @@ int REACT::Call_Phreeqc(void){
   }
    else {
     DisplayMsgLn("Warnung: Phreeqc doesn't run properly!!! ");
-    exit(0);   
+    exit(1);   
   }
 #endif 
 
@@ -2581,7 +2581,7 @@ void REACT::ExecuteReactionsPHREEQC0(void){
     }
     else {
       printf("ERROR: Can not open file *.pqc");
-      exit(0);
+      exit(1);
     }
 
  /* Read the input file (*.pqc) and set up the input file for PHREEQC ("phinp.dat")*/
@@ -2601,19 +2601,19 @@ void REACT::ExecuteReactionsPHREEQC0(void){
     }
 	else{
 		DisplayMsgLn("The file phinput.dat could not be opened !");
-		exit(0);
+		exit(1);
 	}
 
 	/* Extern Program call to PHREEQC */
     if(ok) ok = Call_Phreeqc();
-	if(ok ==0) exit(0);
+	if(ok ==0) exit(1);
  
 
    /* Set up the output values for rockflow after Phreeqc reaction*/
     fsel_out=fopen(fsout,"r");
     if ((ok) && !fsel_out){
         DisplayMsgLn("The selected output file doesn't exist!!!");
-        exit(0);
+        exit(1);
     }
     else if(ok){
 		ok = ReadOutputPhreeqc(fsout);
@@ -2783,7 +2783,7 @@ int REACT::CheckNoReactionNodes(void)
       else{
 	if(m_krd->is_a_CCBC.size() > 0){ // reaction nodes specified in krc input file
 	  CFEMesh* m_msh = fem_msh_vector[0]; //SB: ToDo hart gesetzt
-	  if(m_msh == NULL) {cout << "No mesh in CheckNoReactionNodes" << endl; exit(0);}
+	  if(m_msh == NULL) {cout << "No mesh in CheckNoReactionNodes" << endl; exit(1);}
 	  // Initialize vector is_a_CCBC
 	  for(l=1; l< (long)m_msh->nod_vector.size();l++) { // node 1 needed for phreeqc-input
 	    if(m_krd->is_a_CCBC[l] == true) this->rateflag[l] = 0;  // rateflag == 0 means no reactions calculated
@@ -3514,7 +3514,7 @@ int REACT::Call_PhreeqcLib(int nsim, int npunch, int nline, stringstream* pqc_bu
   else 
     {
       DisplayMsgLn("Warning: libphreeqc doesn't run properly!!! ");
-      exit(0);
+      exit(1);
     }
 
 }
