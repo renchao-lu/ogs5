@@ -68,10 +68,12 @@ class COutput
     // TIM
     string tim_type_name;
     vector<double>time_vector;
+	vector<double>rwpt_time_vector; //JTARON, needed because outputs are treated differently in RWPT
     double time;
     int nSteps; // After each nSteps, make output
     // DAT
     string dat_type_name;
+	string matlab_delim; //JTARON .. make matlab outputs same as tecplot, just need to comment the header
     vector<double*>out_line_vector;
 	bool INITIAL_CONDITIONS;
     bool selected;

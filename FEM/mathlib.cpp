@@ -4710,7 +4710,7 @@ double PointProduction(double *x, double *y)
    return nrm;
 }
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task: Vector copy routine
 Programing:
 12.03.2010 JT Implementation
@@ -4743,18 +4743,6 @@ double MLangevin(double v)
   return s;
 }
 
-/**************************************************************************
-MSHLib-Method: 
-Task: Vector copy routine
-Programing:
-12.03.2010 JT Implementation
-**************************************************************************/
-void VCopy(double *x, const double *y, const int n)
-{
-   int i;
-   for(i=0; i<n; i++)
-     x[i] = y[i];
-}
 /*##########################################################################
    ##########################################################################
    Ende des ROCKFLOW - Moduls: mathlib.c

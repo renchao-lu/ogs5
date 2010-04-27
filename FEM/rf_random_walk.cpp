@@ -2153,8 +2153,8 @@ void RandomWalk::AdvanceToNextTimeStep(double dt)
 				Y.t = dt;
 
 				// Record path
-				if(i<50)
-					RecordPath(i, &Y);
+				//if(i<50) // JT :: no longer needed... just use .particle outpus and Paraview
+					//RecordPath(i, &Y);
 
 				do
 				{
@@ -2225,8 +2225,8 @@ void RandomWalk::AdvanceToNextTimeStep(double dt)
 				}while ( Y.t < dt );
 
 				// Record path
-				if(i<50)
-					RecordPath(i, &Y);
+				//if(i<50) // JT :: no longer needed
+					//RecordPath(i, &Y);
 				// Update the correct dt
 				X[i].Now.t = X[i].Past.t + dt;
 
@@ -2357,7 +2357,7 @@ Task: Determines when to generate output files, and introduces call to data outp
 Programing:
 03/2010 JTARON
  **************************************************************************/
-void RandomWalk::RandomWalkOutput(double dt, int current_time_step)
+void RandomWalk::RandomWalkOutput(double dbl_time, int current_time_step)
 {
 	COutput *m_out = NULL;
 	bool outputornot;
@@ -4465,6 +4465,7 @@ void RandomWalk::buildFDMIndex(void)
 	long i,j,k,iel,ic,jc,kc;
 	long ne, nels;
 	int index;
+	neFDM = -1;
 
 	// get mesh
 	CFEMesh* m_msh = NULL;
@@ -4547,6 +4548,7 @@ void RandomWalk::buildFDMIndex(void)
 					break;
 				}
 				indexFDM.push_back(one);
+				neFDM += 1;
 			}
 		}
 	}

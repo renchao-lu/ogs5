@@ -213,6 +213,7 @@ private:
 	int nx;
 	int ny;
 	int nz;
+	int neFDM; // JTARON
 	double dx;
 	double dy;
 	double dz;
