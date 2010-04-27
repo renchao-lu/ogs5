@@ -294,7 +294,7 @@ ios::pos_type COutput::Read(ifstream *out_file)
     if(line_string.find("$TIM_TYPE")!=string::npos) { // subkeyword found
       while ((!new_keyword)&&(!new_subkeyword)) {
         position_subkeyword = out_file->tellg();
-       *out_file >> line_string;
+        line_string = GetLineFromFile1(out_file);
         if(line_string.size()==0) //SB
           break;
         if(line_string.find(hash)!=string::npos) {
@@ -311,18 +311,17 @@ ios::pos_type COutput::Read(ifstream *out_file)
         }
 		if(line_string.find("STEPPING")!=string::npos) { // JTARON 2010, reconfigured... didn't work
 		  double stepping_length, stepping_end, stepping_current;
-          line.str(GetLineFromFile1(out_file));
-          line >> stepping_length >> stepping_end;
+		  *out_file >> stepping_length >> stepping_end;
 		  stepping_current = stepping_length;
-		  line.clear();
 		  while(stepping_current <= stepping_end) {
             time_vector.push_back(stepping_current);
+			rwpt_time_vector.push_back(stepping_current);
             stepping_current += stepping_length;
 		  }
-       
         }
         else{
           time_vector.push_back(strtod(line_string.data(),NULL));
+		  rwpt_time_vector.push_back(strtod(line_string.data(),NULL));
 		}
         out_file->ignore(MAX_ZEILE,'\n');
       }
@@ -666,13 +665,17 @@ void OUTData(double time_current, const int time_step_number)
     no_times = (int)m_out->time_vector.size();
     //--------------------------------------------------------------------
     if(no_times==0&&(m_out->nSteps>0)&&(time_step_number%m_out->nSteps==0))
-      OutputBySteps = true; 
-    if(time_step_number==0) //WW
-      OutputBySteps = true; 
+      OutputBySteps = true;
+    if(time_step_number<2) //WW
+      OutputBySteps = true;
     //======================================================================
-    // TECPLOT    
-    if(m_out->dat_type_name.compare("TECPLOT")==0)
+    // TECPLOT
+    if(m_out->dat_type_name.compare("TECPLOT")==0 || m_out->dat_type_name.compare("MATLAB")==0)
     {
+	  m_out->matlab_delim = " ";
+	  if(m_out->dat_type_name.compare("MATLAB")==0) // JTARON, just for commenting header for matlab
+		  m_out->matlab_delim = "%";
+
       switch(m_out->geo_type_name[2]){
         //------------------------------------------------------------------
         case 'M': // domain data
@@ -1685,8 +1688,8 @@ double COutput::NODWritePLYDataTEC(int number)
   if(number==0||number==1) //WW if(number==1)
   {
     string project_title_string = "Profiles along polylines"; //project_title;
-    tec_file << "TITLE = \"" << project_title_string << "\"" << endl;
-  tec_file << "VARIABLES = \"DIST\" ";
+    tec_file << matlab_delim << "TITLE = \"" << project_title_string << "\"" << endl;
+    tec_file << matlab_delim << "VARIABLES = \"DIST\" ";
     for(k=0;k<no_variables;k++)
     {
     tec_file << "\""<< nod_value_vector[k] << "\" ";
@@ -1733,7 +1736,7 @@ double COutput::NODWritePLYDataTEC(int number)
     }
   }
   //......................................................................
-  tec_file << "ZONE T=\"TIME=" << time << "\"" << endl; // , I=" << NodeListLength << ", J=1, K=1, F=POINT" << endl;
+  tec_file << matlab_delim << "ZONE T=\"TIME=" << time << "\"" << endl; // , I=" << NodeListLength << ", J=1, K=1, F=POINT" << endl;
   //----------------------------------------------------------------------
   // Write data
   //======================================================================
@@ -1895,8 +1898,8 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
   // Write header
   if(time_step_number==0){ //WW  Old: if(time_step_number==1)
     string project_title_string = "Time curves in points"; //project_title;
-    tec_file << "TITLE = \"" << project_title_string << "\"" << endl;
-    tec_file << "VARIABLES = \"TIME \" ";
+    tec_file << matlab_delim << "TITLE = \"" << project_title_string << "\"" << endl;
+    tec_file << matlab_delim << "VARIABLES = \"TIME \" ";
     for(k=0;k<no_variables;k++)
     {//WW 
        tec_file << " \"" << nod_value_vector[k] << "\" ";
@@ -1926,10 +1929,10 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
     if(dm_pcs) //WW
        tec_file<< " p_(1st_Invariant) "<<" q_(2nd_Invariant)  "<<" Effective_Strain";
     tec_file << endl;
-    tec_file << "ZONE T=\"POINT=" << geo_name << "\"" << endl; //, I=" << anz_zeitschritte << ", J=1, K=1, F=POINT" << endl;
-  
+    tec_file << matlab_delim << "ZONE T=\"POINT=" << geo_name << "\"" << endl; //, I=" << anz_zeitschritte << ", J=1, K=1, F=POINT" << endl;
 
-  
+
+
   }
   // For deformation
   int ns = 4;
@@ -2302,13 +2305,13 @@ void COutput::NODWriteSFCDataTEC(int number)
   // Write header
   int k;
   string project_title_string = "Profile at surface"; //project_title;
-  tec_file << "TITLE = \"" << project_title_string << "\"" << endl;
-  tec_file << "VARIABLES = \"X\",\"Y\",\"Z\",";
+  tec_file << matlab_delim << "TITLE = \"" << project_title_string << "\"" << endl;
+  tec_file << matlab_delim << "VARIABLES = \"X\",\"Y\",\"Z\",";
   for(k=0;k<(int)nod_value_vector.size();k++){
      tec_file << nod_value_vector[k] << ",";
   }
   tec_file << endl;
-  tec_file << "ZONE T=\"TIME=" << time << "\"" << endl; // , I=" << NodeListLength << ", J=1, K=1, F=POINT" << endl;
+  tec_file << matlab_delim << "ZONE T=\"TIME=" << time << "\"" << endl; // , I=" << NodeListLength << ", J=1, K=1, F=POINT" << endl;
   //--------------------------------------------------------------------
   // Write data
   int nidx;
@@ -2438,13 +2441,13 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
   int i,j;
   if(time_step_number==0){ // WW Old:  if(time_step_number==1)
     string project_title_string = "Time curve at surface"; //project_title;
-    tec_file << "TITLE = \"" << project_title_string << "\"" << endl;
-    tec_file << "VARIABLES = Time ";
+    tec_file << matlab_delim << "TITLE = \"" << project_title_string << "\"" << endl;
+    tec_file << matlab_delim << "VARIABLES = Time ";
     for(i=0;i<(int)nod_value_vector.size();i++){
       tec_file << nod_value_vector[i] << " ";
     }
     tec_file << endl;
-    tec_file << "ZONE T=\"SFC=" << geo_name << "\"" << endl; //, I=" << anz_zeitschritte << ", J=1, K=1, F=POINT" << endl;
+    tec_file << matlab_delim << "ZONE T=\"SFC=" << geo_name << "\"" << endl; //, I=" << anz_zeitschritte << ", J=1, K=1, F=POINT" << endl;
   }
   //--------------------------------------------------------------------
   // node_value_index_vector
@@ -2963,31 +2966,31 @@ Programing:
 void COutput::WriteVTKValues(fstream &vtk_file)
 {
   CRFProcess* m_pcs = NULL;
-  const int nName = (int)nod_value_vector.size();
+  int num_nod_values = (int)nod_value_vector.size();
+  int num_ele_values = (int)ele_value_vector.size();
+  vector<int> nod_value_index_vector(num_nod_values);
+  vector<int> ele_value_index_vector(num_ele_values);
   long j;
   int i, k;
   double val_n = 0.;
-  vector<int> NodeIndex(nName);
-//WW  int no_processes = (int)pcs_vector.size();
-  //m_msh = GetMSH(); //WW/OK is member
+  double *tensor = NULL; // JTARON 2010, added for permeability output
   //======================================================================
-  // node data first
+  // NODAL DATA
+  // ---------------------------------------------------------------------
   vtk_file << "POINT_DATA " <<m_msh->GetNodesNumber(false) << endl;
-  // Each process gets its own field
-  // NOD data
-  //WW 
-  for(k=0;k<nName;k++)
+  //WW
+  for(k=0;k<num_nod_values;k++)
   {
     m_pcs = PCSGet(nod_value_vector[k],true);
     if(!m_pcs) continue;
-    NodeIndex[k] = m_pcs->GetNodeValueIndex(nod_value_vector[k]);
+    nod_value_index_vector[k] = m_pcs->GetNodeValueIndex(nod_value_vector[k]);
     //   if(nod_value_vector[k].find("SATURATION")!=string::npos)
     //   NodeIndex[k]++;
-    for(i=0; i<m_pcs->GetPrimaryVNumber(); i++) 
+    for(i=0; i<m_pcs->GetPrimaryVNumber(); i++)
     {
       if(nod_value_vector[k].compare(m_pcs->pcs_primary_function_name[i])==0)
-      { 
-         NodeIndex[k]++;
+      {
+         nod_value_index_vector[k]++;
          break;
        }
     }
@@ -2996,19 +2999,20 @@ void COutput::WriteVTKValues(fstream &vtk_file)
     //....................................................................
     for(j=0l;j<m_msh->GetNodesNumber(false);j++)
     {
-       if(NodeIndex[k]>-1)
-          vtk_file <<" "<< m_pcs->GetNodeValue( m_msh->nod_vector[j]->GetIndex(),NodeIndex[k]) << endl;
+       if(nod_value_index_vector[k]>-1)
+          vtk_file <<" "<< m_pcs->GetNodeValue( m_msh->nod_vector[j]->GetIndex(),nod_value_index_vector[k]) << endl;
     }
   }
   //======================================================================
   // Saturation 2 for 1212 pp - scheme. 01.04.2009. WW
-  if(nod_value_vector.size() > 0) //SB added
+// ---------------------------------------------------------------------
+  if(num_nod_values > 0) //SB added
 	m_pcs = PCSGet(nod_value_vector[0],true);
   if(m_pcs&&m_pcs->type==1212)
   {
     i = m_pcs->GetNodeValueIndex("SATURATION1");
     vtk_file << "SCALARS SATURATION2 float 1" << endl;
-    //   
+    //
     vtk_file << "LOOKUP_TABLE default" <<endl;
     //....................................................................
     for(j=0l;j<m_msh->GetNodesNumber(false);j++)
@@ -3017,38 +3021,47 @@ void COutput::WriteVTKValues(fstream &vtk_file)
        vtk_file <<" "<< 1.-val_n  << endl;
     }
   }
-  // ELE data
-  bool wroteAnyEleData = false; //NW
-  if(ele_value_vector.size()>0)
+  // ELEMENT DATA
+  // ---------------------------------------------------------------------
+  if(num_ele_values>0)
   {
     m_pcs = GetPCS_ELE(ele_value_vector[0]);
-//OK  else
-//OK    return;
-    //--------------------------------------------------------------------
-    int no_ele_values = (int)ele_value_vector.size();
-    vector<int>ele_value_index_vector(no_ele_values);
-    GetELEValuesIndexVector(ele_value_index_vector);
-    //--------------------------------------------------------------------
-//WW  CElem* m_ele = NULL;
-    FiniteElement::ElementValue* gp_ele;
-    gp_ele = NULL; //OK411
-    // write header for cell data
+	GetELEValuesIndexVector(ele_value_index_vector);
     vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;
     wroteAnyEleData = true;
-    // header for velocities
-    vtk_file << "VECTORS velocity float " << endl;
-    WriteELEVelocity(vtk_file); //WW/OK
-    // now we write the rest
     //....................................................................
-    for(j=0;j<(int)ele_value_index_vector.size();j++)
+//
+    for(k=0;k<num_ele_values;k++)
     {
-      // header now scalar data
-      vtk_file << "SCALARS " << ele_value_vector[j] << " float 1" << endl;
-//    vtk_file << "SCALARS " << m_pcs->pcs_primary_function_name[0] << " float 1" << endl;
-      vtk_file << "LOOKUP_TABLE default" <<endl;
-	  for(long i=0;i<(long)m_msh->ele_vector.size();i++)
+//    JTARON 2010, "VELOCITY" should only write as vector, scalars handled elswhere
+      if(ele_value_vector[k].compare("VELOCITY")==0)
       {
-	    vtk_file << m_pcs->GetElementValue(i,ele_value_index_vector[j]) << endl;
+		  vtk_file << "VECTORS velocity float " << endl;
+		  WriteELEVelocity(vtk_file); //WW/OK
+	  }
+//	  PRINT CHANGING (OR CONSTANT) PERMEABILITY TENSOR?   // JTARON 2010
+      else if(ele_value_vector[k].compare("PERMEABILITY")==0)
+      {
+		  vtk_file << "VECTORS permeability float " << endl;
+		  CMediumProperties* MediaProp = NULL;
+		  CElem* m_ele = NULL;
+		  for(j=0l;j<(long)m_msh->ele_vector.size();j++)
+		  {
+			  m_ele = m_msh->ele_vector[j];
+			  MediaProp = mmp_vector[m_ele->GetPatchIndex()];
+			  tensor = MediaProp->PermeabilityTensor(j);
+			  for(i=0;i<3;i++)
+				  vtk_file << tensor[i*3+i] << " ";
+			  vtk_file << endl;
+		  }
+	  }
+	  else if(ele_value_index_vector[k]>-1)
+	  {
+//	  NOW REMAINING SCALAR DATA  // JTARON 2010, reconfig
+		  vtk_file << "SCALARS " << ele_value_vector[k] << " float 1" << endl;
+		  vtk_file << "LOOKUP_TABLE default" <<endl;
+		  for(long i=0l;i<(long)m_msh->ele_vector.size();i++)
+			  vtk_file << m_pcs->GetElementValue(i,ele_value_index_vector[k]) << endl;
 	  }
     }
     //--------------------------------------------------------------------

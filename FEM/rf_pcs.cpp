@@ -1897,7 +1897,7 @@ void CRFProcess::ConfigLiquidFlow()
   pcs_primary_function_name[0] = "PRESSURE1";
   pcs_primary_function_unit[0] = "Pa";
   // ELE values
-  pcs_number_of_evals = 5;
+  pcs_number_of_evals = 6;
   pcs_eval_name[0] = "VOLUME";
   pcs_eval_unit[0] = "m3";
   pcs_eval_name[1] = "VELOCITY1_X";
@@ -1906,8 +1906,10 @@ void CRFProcess::ConfigLiquidFlow()
   pcs_eval_unit[2] = "m/s";
   pcs_eval_name[3] = "VELOCITY1_Z";
   pcs_eval_unit[3] = "m/s";
-    pcs_eval_name[4] = "POROSITY";  //MX, test for n=n(c), 04.2005
+  pcs_eval_name[4] = "POROSITY";  //MX, test for n=n(c), 04.2005
   pcs_eval_unit[4] = "-";
+  pcs_eval_name[5] = "PERMEABILITY";  //JTARON 2010 -- need this for index call of heterogeneous permeability
+  pcs_eval_unit[5] = "m2";
   //----------------------------------------------------------------------
   // Secondary variables
   pcs_number_of_secondary_nvals = 0; //WW

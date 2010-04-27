@@ -1462,14 +1462,14 @@ inline double Problem::FluidMomentum()
   CFluidMomentum *fm_pcs = NULL; // by PCH
   //
   CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
-  if(m_pcs->tim_type_name.compare("STEADY")==0)
+  if(m_pcs->tim_type_name.compare("STEADY")==0 && aktueller_zeitschritt>5) // JT 2010, allow a few equilibration steps before "STEADY"
     	m_pcs->selected = false;
 
   fm_pcs = m_msh->fm_pcs;
   fm_pcs->Execute();
 
-  // Switch off rechard flow if 
-  if(m_pcs->num_type_name.compare("STEADY")==0)
+  // Switch off rechard flow if
+  if(m_pcs->num_type_name.compare("STEADY")==0 && aktueller_zeitschritt>5)
   {
 	 // Turn off FLUID_MOMENTUM
      m_pcs->selected = false;
@@ -1504,7 +1504,6 @@ Modification:
 inline double Problem::RandomWalker()
 {
 	double error = 1.0e+8;
-	int number_of_time_splits = 2; // JTARON ... KEEP AN EYE ON THIS NUMBER!!!
 	//
 	CRFProcess *m_pcs = total_processes[10];
 	//
@@ -1621,8 +1620,11 @@ inline double Problem::RandomWalker()
 			}
 		}
 
-		rw_pcs->AdvanceBySplitTime(dt,number_of_time_splits);
-		//	rw_pcs->TraceStreamline();
+		if(rwpt_numsplits < 0)
+			rwpt_numsplits=10;		// JTARON 2010 set default value, unless specified in .tim input file
+
+		rw_pcs->AdvanceBySplitTime(dt,rwpt_numsplits);
+	//	rw_pcs->TraceStreamline(); // JTARON, no longer needed
 		rw_pcs->RandomWalkOutput(aktuelle_zeit,aktueller_zeitschritt);
 #endif
 	}

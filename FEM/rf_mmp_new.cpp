@@ -1117,6 +1117,7 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
           CalStressPermeabilityFactor3_Coef();
           //
           break;
+
         default:
           cout << "Error in MMPRead: no valid permeability model" << endl;
           break;

@@ -1215,18 +1215,34 @@ inline double CFiniteElementStd::CalCoefMass()
   double val = 0.0;
   double humi = 1.0;
   double rhov = 0.0;
+  double biot_val, poro_val, K_val, rho_val, Se;
   CompProperties *m_cp = NULL;
 
   if(pcs->m_num->ele_mass_lumping)
     ComputeShapefct(1); 
   switch(PcsType){
     default:
-      cout << "Fatal rrror in CalCoefMass: No valid PCS type" << endl;
+      cout << "Fatal error in CalCoefMass: No valid PCS type" << endl;
       break;
     case L: // Liquid flow
-      //OK coefficient = m_mmp->StorageFunction(ele,gp,1.0);
-      val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta);
-      val /=time_unit_factor;
+      val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta); // Is this really needed?  In what circumstance??
+	  // JTARON 2010, needed storage term and fluid compressibility...
+	  // We derive here the storage at constant strain, or the inverse of Biot's "M" coefficient
+	  // Assumptions are the most general possible::  Invarience under "pi" (Detournay & Cheng) loading.
+	  // Se = 1/M = poro/Kf + (alpha-poro)/Ks    ::    Cf = 1/Kf = 1/rho * drho/dp    ::    alpha = 1 - K/Ks
+	  // Second term (of Se) below vanishes for incompressible grains
+	  K_val = SolidProp->K;
+	  rho_val = FluidProp->Density();
+	  if(K_val>MKleinsteZahl && rho_val>MKleinsteZahl)
+	  {
+		biot_val = SolidProp->biot_const;
+		poro_val = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
+	  
+		val += poro_val * (FluidProp->drho_dp / rho_val) \
+	        + (biot_val - poro_val) * (1.0 - biot_val) / K_val;
+	    // Will handle the dual porosity version later...
+	  }
+	  val /= time_unit_factor;
       break;
     case U: // Unconfined flow
       break;
@@ -1245,8 +1261,23 @@ inline double CFiniteElementStd::CalCoefMass()
 				idxS = cpl_pcs->GetNodeValueIndex("SATURATION2");
 				for(int i=0;i<nnodes;i++)
 					NodalVal_Sat[i] = cpl_pcs->GetNodeValue(nodes[i],idxS+1);
-        Sw = 1.0 - interpolate(NodalVal_Sat);
+                Sw = 1.0 - interpolate(NodalVal_Sat);
+				val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) * MMax(0.,Sw); // Is this really needed?  In what circumstance??
 
+				// JTARON 2010, generalized poroelastic storage. See single phase version in case "L".
+				// Se = 1/M = poro/Kf + (alpha-poro)/Ks
+				rho_val = FluidProp->Density();
+				K_val = SolidProp->K;
+				if(rho_val>MKleinsteZahl && K_val>MKleinsteZahl)
+				{
+					biot_val = SolidProp->biot_const;
+					poro_val = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
+					Se = poro_val * (FluidProp->drho_dp / rho_val) \
+					   + (biot_val - poro_val) * (1.0 - biot_val) / K_val;
+					// The poroelastic portion
+					val += Se*MMax(0.,Sw);
+				}
+				
 
 				// If Partial-Pressure-Based model
 				if(pcs->PartialPS == 1)
@@ -1257,24 +1288,8 @@ inline double CFiniteElementStd::CalCoefMass()
 
 					// dSedPc always return positive numbers for default case
 					// However, the value should be negative analytically.
-					double dSwdPc = m_mmp->SaturationPressureDependency(Sw, 1000.0, 1);
-
-					val = MediaProp->Porosity(Index,pcs->m_num->ls_theta) \
-            * FluidProp->drho_dp \
-            / FluidProp->Density() \
-            * MMax(0.,Sw) \
-            + MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) \
-            * MMax(0.,Sw) // Intentionally made to be zero
-						- MediaProp->Porosity(Index,pcs->m_num->ls_theta)*dSwdPc;
-				}
-				else
-				{
-					val = MediaProp->Porosity(Index,pcs->m_num->ls_theta) \
-            * FluidProp->drho_dp \
-            / FluidProp->Density() \
-            * MMax(0.,Sw) \
-            + MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) \
-            * MMax(0.,Sw);
+					double dSwdPc = m_mmp->SaturationPressureDependency(Sw, rho_val, 1);
+					val -= poro_val*dSwdPc;
 				}
       }
       if(pcs->pcs_type_number==1)
@@ -7345,10 +7360,10 @@ void CFiniteElementStd::Assemble_RHS_T_PSGlobal()
 **************************************************************************/
 void CFiniteElementStd::Assemble_RHS_Pc()
 {
-	int i, j, k, l, ii; //OK411 jj;
+	int i, j, k, l, ii;
 	// ---- Gauss integral
 	int gp_r=0,gp_s=0,gp_t=0;
-	double fkt; //OK411 fac;
+	double fkt;
 	// Material
 	int dof_n = 2;
 	int ndx_p_cap = pcs->GetNodeValueIndex("PRESSURE_CAP");

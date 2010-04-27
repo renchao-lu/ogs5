@@ -672,7 +672,7 @@ double CFiniteElementVec::CalDensity()
      // Assume solid density is constant. (*smat->data_Density)(0)
      if(smat->Density()>0.0)
      {
-        Sw = 0.0;
+        Sw = 1.0; // JTARON, should be 1.0, unless multiphase (calculate below) (if unsaturated, fluid density would be negligible... so still works)
         if(Flow_Type>0&&Flow_Type!=10)
         {
           for(i = 0; i< nnodes; i++)
