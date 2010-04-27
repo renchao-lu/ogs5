@@ -5,7 +5,7 @@
    Diese Datei wird von allen ROCKFLOW-Modulen (*.c - Dateien !!!)
    importiert. Sie enthaelt globale Preprozessor-Definitionen und
    importiert weitere, (fast) ueberall benoetigte Header.
-   
+
                                                                           */
 /**************************************************************************/
 
@@ -24,9 +24,9 @@
   /* Floating-Point */
 
 /* ROCKFLOW-Version */
-#define ROCKFLOW_VERSION    "5.0.01(PCH)"
-#define RF_SHELL_VERSION    "4.10.03(NB)"
-#define ROCKFLOW_DATE       "09.03.2010"
+#define ROCKFLOW_VERSION    "5.0.02(JT/PCH)"
+#define RF_SHELL_VERSION    "5.0.02(JT/PCH)"
+#define ROCKFLOW_DATE       "27.04.2010"
 
 /* Definitionen von Makros zur Steuerung der bedingten Compilierung */
 #define SWITCHES
@@ -268,7 +268,7 @@
 
 /* Feste Zahlen fuer Genauigkeitspruefungen etc. */
 #define Mdrittel  (1.0/3.0)
-#define MKleinsteZahl DBL_EPSILON  
+#define MKleinsteZahl DBL_EPSILON
 #define MFastNull DBL_MIN
 #define MSqrt2Over3  sqrt(2.0/3.0)
 
@@ -287,7 +287,7 @@
 #endif
 
 /* Wo verwenden? */
-#ifdef CBLAS 
+#ifdef CBLAS
 #define CBLAS_M2MatVek
 #define CBLAS_MSkalarprodukt
 #define CBLAS_MMultMatMat
@@ -301,7 +301,7 @@
 #define UMFPACK
 #endif
 
-// min und max 
+// min und max
 #define Max(A,B) ((A) > (B) ? (A) : (B))
 
 /*
