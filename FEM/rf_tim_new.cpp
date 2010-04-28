@@ -283,9 +283,11 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
 		if(time_control_name=="COURANT"){
           line_string = GetLineFromFile1(tim_file);
           line.str(line_string);
+//	      courant_desired = desired Courant number
 //		  courant_initial = first time step size
-//        courant_static = 0 >> variable velocity (adapt in time)
-//        courant_static > 0 >> constant velocity ( = number of timesteps to recalculate (to achieve velocity equilibrium)... i.e. =1, calculate first time step only, use this as constant)
+//        courant_static = 0  --> variable velocity (adapt in time)
+//        courant_static > 0  --> steady velocity (# of timesteps to recalculate...
+//                                                 i.e. =2, calculate first 2 time steps only, then use last value as constant in remaining simulation)
           line >> courant_desired >> courant_initial >> courant_static;
           line.clear();
         }

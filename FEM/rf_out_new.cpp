@@ -294,7 +294,7 @@ ios::pos_type COutput::Read(ifstream *out_file)
     if(line_string.find("$TIM_TYPE")!=string::npos) { // subkeyword found
       while ((!new_keyword)&&(!new_subkeyword)) {
         position_subkeyword = out_file->tellg();
-        line_string = GetLineFromFile1(out_file);
+		*out_file >> line_string;
         if(line_string.size()==0) //SB
           break;
         if(line_string.find(hash)!=string::npos) {
@@ -309,7 +309,7 @@ ios::pos_type COutput::Read(ifstream *out_file)
          *out_file >> nSteps;
           tim_type_name = "STEPS"; //OK
         }
-		if(line_string.find("STEPPING")!=string::npos) { // JTARON 2010, reconfigured... didn't work
+		if(line_string.find("STEPPING")!=string::npos) { // JTARON 2010, reconfigured (and added RWPT)... didn't work
 		  double stepping_length, stepping_end, stepping_current;
 		  *out_file >> stepping_length >> stepping_end;
 		  stepping_current = stepping_length;
