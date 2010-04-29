@@ -1215,7 +1215,7 @@ inline double CFiniteElementStd::CalCoefMass()
   double val = 0.0;
   double humi = 1.0;
   double rhov = 0.0;
-  double biot_val, poro_val, K_val, rho_val, Se;
+  double biot_val, poro_val, rho_val, Se;
   CompProperties *m_cp = NULL;
 
   if(pcs->m_num->ele_mass_lumping)
@@ -1225,21 +1225,19 @@ inline double CFiniteElementStd::CalCoefMass()
       cout << "Fatal error in CalCoefMass: No valid PCS type" << endl;
       break;
     case L: // Liquid flow
-      val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta); // Is this really needed?  In what circumstance??
+      val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta); // Is this really needed?
 	  // JTARON 2010, needed storage term and fluid compressibility...
 	  // We derive here the storage at constant strain, or the inverse of Biot's "M" coefficient
 	  // Assumptions are the most general possible::  Invarience under "pi" (Detournay & Cheng) loading.
 	  // Se = 1/M = poro/Kf + (alpha-poro)/Ks    ::    Cf = 1/Kf = 1/rho * drho/dp    ::    alpha = 1 - K/Ks
 	  // Second term (of Se) below vanishes for incompressible grains
 	  rho_val = FluidProp->Density();
-	  if(msp_vector.size()>0  && rho_val>MKleinsteZahl)
-	  {
-		  K_val = SolidProp->K;
+	  if(D_Flag>0  && rho_val>MKleinsteZahl){
 		  biot_val = SolidProp->biot_const;
 		  poro_val = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
 
 		  val += poro_val * (FluidProp->drho_dp / rho_val) \
-				  + (biot_val - poro_val) * (1.0 - biot_val) / K_val;
+				  + (biot_val - poro_val) * (1.0 - biot_val) / SolidProp->K;
 		  // Will handle the dual porosity version later...
 	  }
 	  val /= time_unit_factor;
@@ -1262,22 +1260,19 @@ inline double CFiniteElementStd::CalCoefMass()
 				for(int i=0;i<nnodes;i++)
 					NodalVal_Sat[i] = cpl_pcs->GetNodeValue(nodes[i],idxS+1);
                 Sw = 1.0 - interpolate(NodalVal_Sat);
-				val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) * MMax(0.,Sw); // Is this really needed?  In what circumstance??
+				val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) * MMax(0.,Sw); // Is this really needed?
 
 				// JTARON 2010, generalized poroelastic storage. See single phase version in case "L".
 				// Se = 1/M = poro/Kf + (alpha-poro)/Ks
 				rho_val = FluidProp->Density();
-				K_val = SolidProp->K;
-				if(rho_val>MKleinsteZahl && K_val>MKleinsteZahl)
-				{
+				if(D_Flag>0 && rho_val>MKleinsteZahl){
 					biot_val = SolidProp->biot_const;
 					poro_val = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
 					Se = poro_val * (FluidProp->drho_dp / rho_val) \
-					   + (biot_val - poro_val) * (1.0 - biot_val) / K_val;
+					   + (biot_val - poro_val) * (1.0 - biot_val) / SolidProp->K;
 					// The poroelastic portion
 					val += Se*MMax(0.,Sw);
 				}
-				
 
 				// If Partial-Pressure-Based model
 				if(pcs->PartialPS == 1)
