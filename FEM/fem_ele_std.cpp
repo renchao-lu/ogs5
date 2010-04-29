@@ -1231,16 +1231,16 @@ inline double CFiniteElementStd::CalCoefMass()
 	  // Assumptions are the most general possible::  Invarience under "pi" (Detournay & Cheng) loading.
 	  // Se = 1/M = poro/Kf + (alpha-poro)/Ks    ::    Cf = 1/Kf = 1/rho * drho/dp    ::    alpha = 1 - K/Ks
 	  // Second term (of Se) below vanishes for incompressible grains
-	  K_val = SolidProp->K;
 	  rho_val = FluidProp->Density();
-	  if(K_val>MKleinsteZahl && rho_val>MKleinsteZahl)
+	  if(msp_vector.size()>0  && rho_val>MKleinsteZahl)
 	  {
-		biot_val = SolidProp->biot_const;
-		poro_val = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
-	  
-		val += poro_val * (FluidProp->drho_dp / rho_val) \
-	        + (biot_val - poro_val) * (1.0 - biot_val) / K_val;
-	    // Will handle the dual porosity version later...
+		  K_val = SolidProp->K;
+		  biot_val = SolidProp->biot_const;
+		  poro_val = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
+
+		  val += poro_val * (FluidProp->drho_dp / rho_val) \
+				  + (biot_val - poro_val) * (1.0 - biot_val) / K_val;
+		  // Will handle the dual porosity version later...
 	  }
 	  val /= time_unit_factor;
       break;

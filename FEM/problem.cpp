@@ -1462,14 +1462,12 @@ inline double Problem::FluidMomentum()
   CFluidMomentum *fm_pcs = NULL; // by PCH
   //
   CFEMesh* m_msh = fem_msh_vector[0];  // Something must be done later on here.
-  if(m_pcs->tim_type_name.compare("STEADY")==0 && aktueller_zeitschritt>5) // JT 2010, allow a few equilibration steps before "STEADY"
-    	m_pcs->selected = false;
 
   fm_pcs = m_msh->fm_pcs;
   fm_pcs->Execute();
 
   // Switch off rechard flow if
-  if(m_pcs->num_type_name.compare("STEADY")==0 && aktueller_zeitschritt>5)
+  if(m_pcs->num_type_name.compare("STEADY")==0 && aktueller_zeitschritt>1)
   {
 	 // Turn off FLUID_MOMENTUM
      m_pcs->selected = false;
