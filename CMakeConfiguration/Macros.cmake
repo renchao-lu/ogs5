@@ -130,8 +130,11 @@ MACRO(ADD_BENCHMARK authorName benchmarkName ogsConfiguration)
     ENDIF(WIN32)
     
     STRING (REGEX MATCH "[^/]+$" benchmarkStrippedName ${benchmarkName})
-    STRING (REPLACE ${benchmarkStrippedName} "" benchmarkDir ${benchmarkName})
-    
+    STRING (LENGTH ${benchmarkName} benchmarkNameLength)
+    STRING (LENGTH ${benchmarkStrippedName} benchmarkStrippedNameLength)
+    MATH (EXPR substringLength ${benchmarkNameLength}-${benchmarkStrippedNameLength}) 
+    STRING (SUBSTRING ${benchmarkName} 0 ${substringLength} benchmarkDir)
+
     ADD_TEST (
       BM_${authorName}_${benchmarkName}
       ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/../benchmarks/${benchmarkDir}
