@@ -15,12 +15,13 @@ ColorLookupTable::ColorLookupTable(double rangeBegin, double rangeEnd, size_t nu
 	for (size_t i=0; i<numberOfEntries; i++)
 		_lookuptable.push_back(NULL);
 
+	// default values ( can be changed via setStartColor() / startEndColor ()
 	GEOLIB::Color* start = new GEOLIB::Color(0,0,255);
 	GEOLIB::Color* end   = new GEOLIB::Color(255,0,0);
 	_dict.insert( std::pair<size_t, GEOLIB::Color*>(0, start) );
 	_dict.insert( std::pair<size_t, GEOLIB::Color*>(numberOfEntries-1, end) );
 
-//	_type = ColorLookupTable::EXPONENTIAL;
+	_type = ColorLookupTable::LINEAR;
 }
 
 ColorLookupTable::~ColorLookupTable()
@@ -33,15 +34,14 @@ unsigned char ColorLookupTable::linInterpolation(unsigned char a, unsigned char 
     return static_cast<unsigned char>(a * (1 - p) + b * p);
 }
 
-/*
+// doesn't work quite correct yet
 unsigned char ColorLookupTable::expInterpolation(unsigned char a, unsigned char b, double gamma, double p)
 {
-	if (gamma>-1 && gamma<1)
-	    return static_cast<unsigned char>( floor( (b-a) * pow(p/(b-a), gamma) ) );
-	std::cout << "ColorLookupTable::expInterpolation() - Error: gamma value should be in (-1,1)." << std::endl;
-	return 0;
+	assert (gamma>0 && gamma<2);
+	double temp = (b-a) * pow(p/(b-a), gamma);
+	return static_cast<unsigned char>(a* (1 - temp) + b * temp);
 }
-*/
+
 
 void ColorLookupTable::build()
 {
@@ -59,7 +59,6 @@ void ColorLookupTable::build()
 				double pos = (i - lastValue.first) / (static_cast<double>(it->first - lastValue.first));
 				for (size_t j=0; j<3; j++)
 					(*c)[j] = linInterpolation((*(lastValue.second))[j], (*(it->second))[j], pos);
-
 				_lookuptable[i] = c;
 
 			}

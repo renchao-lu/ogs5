@@ -67,7 +67,7 @@ int VtkMeshSource::RequestData( vtkInformation* request,
 							    vtkInformationVector** inputVector, 
 								vtkInformationVector* outputVector )
 {
-	int scalingFactor = 15;
+	int scalingFactor = 15;	// scaling z-coordinates
 	size_t nPoints = _nodes->size();
 	size_t nElems  = _elems->size();
 	size_t nElemNodes = 0;

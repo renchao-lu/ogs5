@@ -54,8 +54,8 @@ void VtkStationSource::PrintSelf( ostream& os, vtkIndent indent )
 /// Create 3d Station objects
 int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
-	int offsetFactor = 10;
-	int scalingFactor = 10;
+	int offsetFactor = 10;	// offset if different scalings are used for different source objects
+	int scalingFactor = 10;	// scaling z-coordinates
 
 	if (!_stations)
 		return 0;

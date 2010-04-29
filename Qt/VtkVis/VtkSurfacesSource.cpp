@@ -39,6 +39,7 @@ void VtkSurfacesSource::PrintSelf( ostream& os, vtkIndent indent )
 
 int VtkSurfacesSource::RequestData( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
+	int scalingFactor = 15;	// scaling z-coordinates
 	const int nSurfaces = _surfaces->size();
 	if (nSurfaces == 0)
 		return 0;
@@ -48,42 +49,43 @@ int VtkSurfacesSource::RequestData( vtkInformation* request, vtkInformationVecto
 
 	vtkSmartPointer<vtkPoints> newPoints = vtkSmartPointer<vtkPoints>::New();
 	vtkSmartPointer<vtkCellArray> newPolygons = vtkSmartPointer<vtkCellArray>::New();
+	
 	//newPolygons->Allocate(nSurfaces);
 
 	if (outInfo->Get(vtkStreamingDemandDrivenPipeline::UPDATE_PIECE_NUMBER()) > 0)
 		return 1;
 
-/*
+
 	const std::vector<GEOLIB::Point*> *surfacePoints = (*_surfaces)[0]->getPointVec();
-	for (std::vector<GEOLIB::Point*>::const_iterator it = surfacePoints->begin(); it != surfacePoints->end(); ++it)
+
+	size_t nPoints = surfacePoints->size();
+	newPoints->Allocate(nPoints);
+	//for (std::vector<GEOLIB::Point*>::const_iterator it = surfacePoints->begin(); it != surfacePoints->end(); ++it)
+	for (size_t i=0; i<nPoints; i++)
 	{
-		double* coords = const_cast<double*>((*it)->getData());
+		double* coords = const_cast<double*>((*surfacePoints)[i]->getData());
+		coords[2] *= scalingFactor;
 		newPoints->InsertNextPoint(coords);
 	}
-*/
 
-	int numberOfPointsInserted = 0;
 	for (std::vector<GEOLIB::Surface*>::const_iterator it = _surfaces->begin();
 		it != _surfaces->end(); ++it)
 	{
 		const size_t nTriangles = (*it)->getNTriangles();
-		vtkPolygon* aPolygon = vtkPolygon::New();
-		aPolygon->GetPointIds()->SetNumberOfIds(nTriangles*3);
 
 		for (size_t i = 0; i < nTriangles; i++)
 		{
+			vtkPolygon* aPolygon = vtkPolygon::New();
+			aPolygon->GetPointIds()->SetNumberOfIds(3);
+
 			const GEOLIB::Triangle* triangle = (**it)[i];
 			for (size_t j=0; j<3; j++) 
 			{
-				double* coords = const_cast<double*>(triangle->getPoint(j)->getData());
-				newPoints->InsertNextPoint(coords);
-				aPolygon->GetPointIds()->SetId(i*3+j, numberOfPointsInserted);
-				numberOfPointsInserted++;
+				aPolygon->GetPointIds()->SetId(j, ((*triangle)[j]));
 			}
+			newPolygons->InsertNextCell(aPolygon);
+			aPolygon->Delete();
 		}
-
-		newPolygons->InsertNextCell(aPolygon);
-		aPolygon->Delete();
 	}
 
 	output->SetPoints(newPoints);

@@ -87,3 +87,59 @@ MACRO(COPY_FILE_INTO_EXECUTABLE_DIRECTORY in_file target)
 		)
 	ENDIF (WIN32)
 ENDMACRO(COPY_FILE_INTO_EXECUTABLE_DIRECTORY)
+
+# Adds a benchmark run.
+# authorName Your short name
+# benchmarkName Relative path in benchmarks directory
+# ogsConfiguration E.g. "OGS_FEM"
+MACRO(ADD_BENCHMARK authorName benchmarkName ogsConfiguration)
+  #MESSAGE ("OGS_FEM: ${OGS_FEM}, config: ${ogsConfiguration}")
+  SET (CONFIG_MATCH FALSE)
+  IF (("${ogsConfiguration}" STREQUAL "OGS_FEM") AND OGS_FEM)
+    SET (CONFIG_MATCH TRUE)
+  ENDIF (("${ogsConfiguration}" STREQUAL "OGS_FEM") AND OGS_FEM)
+  IF (("${ogsConfiguration}" STREQUAL "OGS_FEM_SP") AND OGS_FEM_SP)
+    SET (CONFIG_MATCH TRUE)
+  ENDIF (("${ogsConfiguration}" STREQUAL "OGS_FEM_SP") AND OGS_FEM_SP)
+  IF (("${ogsConfiguration}" STREQUAL "OGS_FEM_GEMS") AND OGS_FEM_GEMS)
+    SET (CONFIG_MATCH TRUE)
+  ENDIF (("${ogsConfiguration}" STREQUAL "OGS_FEM_GEMS") AND OGS_FEM_GEMS)
+  IF (("${ogsConfiguration}" STREQUAL "OGS_FEM_BRNS") AND OGS_FEM_BRNS)
+    SET (CONFIG_MATCH TRUE)
+  ENDIF (("${ogsConfiguration}" STREQUAL "OGS_FEM_BRNS") AND OGS_FEM_BRNS)
+  IF (("${ogsConfiguration}" STREQUAL "OGS_FEM_PQC") AND OGS_FEM_PQC)
+    SET (CONFIG_MATCH TRUE)
+  ENDIF (("${ogsConfiguration}" STREQUAL "OGS_FEM_PQC") AND OGS_FEM_PQC)
+  IF (UNIX) # Only supported on Linux
+    IF (("${ogsConfiguration}" STREQUAL "OGS_FEM_LIS") AND OGS_FEM_LIS)
+      SET (CONFIG_MATCH TRUE)
+    ENDIF (("${ogsConfiguration}" STREQUAL "OGS_FEM_LIS") AND OGS_FEM_LIS)
+    IF (("${ogsConfiguration}" STREQUAL "OGS_FEM_MKL") AND OGS_FEM_MKL)
+      SET (CONFIG_MATCH TRUE)
+    ENDIF (("${ogsConfiguration}" STREQUAL "OGS_FEM_MKL") AND OGS_FEM_MKL)
+    IF (("${ogsConfiguration}" STREQUAL "OGS_FEM_MPI") AND OGS_FEM_MPI)
+      SET (CONFIG_MATCH TRUE)
+    ENDIF (("${ogsConfiguration}" STREQUAL "OGS_FEM_MPI") AND OGS_FEM_MPI)
+  ENDIF (UNIX)
+
+  IF (CONFIG_MATCH)
+    IF (WIN32)
+      SET (ogsExe ${EXECUTABLE_OUTPUT_PATH}/Release/ogs)
+    ELSE (WIN32)
+      SET (ogsExe ${EXECUTABLE_OUTPUT_PATH}/ogs)
+    ENDIF(WIN32)
+    
+    STRING (REGEX MATCH "[^/]+$" benchmarkStrippedName ${benchmarkName})
+    STRING (REPLACE ${benchmarkStrippedName} "" benchmarkDir ${benchmarkName})
+    
+    ADD_TEST (
+      BM_${authorName}_${benchmarkName}
+      ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/../benchmarks/${benchmarkDir}
+      ${ogsExe}
+      ${benchmarkStrippedName}
+    )
+    
+    #SET_TESTS_PROPERTIES (BM_${authorName}_${benchmarkName} PROPERTIES TIMEOUT 60)
+  ENDIF (CONFIG_MATCH)
+  
+ENDMACRO(ADD_BENCHMARK authorName benchmarkName ogsConfiguration)

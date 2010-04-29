@@ -425,29 +425,29 @@ void readGLIFileV4(const std::string& fname, GEOObjects* geo) {
 		geo->addSurfaceVec(sfc_vec, unique_name); // KR: insert into GEOObjects if not empty
 
 	// *** test only - visualization ***
-	unique_name += "1";
-	std::vector<Point*> *copy_pnt_vec(new std::vector<Point*>);
-	for (std::vector<Point*>::const_iterator it = pnt_vec->begin(); it != pnt_vec->end(); ++it)
-	{
-		const double * vals = (*it)->getData();
-		Point* pnt = new Point(vals[0], vals[1], vals[2]);
-		copy_pnt_vec->push_back(pnt);
-	}
-	geo->addPointVec(copy_pnt_vec, unique_name);
-	// visualize all surfaces as polylines
-	std::vector<Polyline*> *ply_vec_for_sfc(new std::vector<Polyline*>);
-	for (size_t i(0); i<sfc_vec->size(); i++) {
-		for (size_t k(0); k<(*sfc_vec)[i]->getNTriangles (); k++) {
-			// get triangle
-			const GEOLIB::Triangle *tri ((*((*sfc_vec)[i]))[k]);
-			// create Poyline
-			Polyline *ply(new Polyline(*pnt_vec));
-			for (size_t j(0); j<3; j++) ply->addPoint ((*tri)[j]);
-			ply->addPoint ((*tri)[0]);
-			ply_vec_for_sfc->push_back (ply);
-		}
-	}
-	geo->addPolylineVec(ply_vec_for_sfc, unique_name);
+//	unique_name += "1";
+//	std::vector<Point*> *copy_pnt_vec(new std::vector<Point*>);
+//	for (std::vector<Point*>::const_iterator it = pnt_vec->begin(); it != pnt_vec->end(); ++it)
+//	{
+//		const double * vals = (*it)->getData();
+//		Point* pnt = new Point(vals[0], vals[1], vals[2]);
+//		copy_pnt_vec->push_back(pnt);
+//	}
+//	geo->addPointVec(copy_pnt_vec, unique_name);
+//	// visualize all surfaces as polylines
+//	std::vector<Polyline*> *ply_vec_for_sfc(new std::vector<Polyline*>);
+//	for (size_t i(0); i<sfc_vec->size(); i++) {
+//		for (size_t k(0); k<(*sfc_vec)[i]->getNTriangles (); k++) {
+//			// get triangle
+//			const GEOLIB::Triangle *tri ((*((*sfc_vec)[i]))[k]);
+//			// create Poyline
+//			Polyline *ply(new Polyline(*pnt_vec));
+//			for (size_t j(0); j<3; j++) ply->addPoint ((*tri)[j]);
+//			ply->addPoint ((*tri)[0]);
+//			ply_vec_for_sfc->push_back (ply);
+//		}
+//	}
+//	geo->addPolylineVec(ply_vec_for_sfc, unique_name);
 
 }
 

@@ -1,12 +1,12 @@
 /*=======================================================================
-//Class Problem: Handle the data and their functions for time stepping 
+//Class Problem: Handle the data and their functions for time stepping
 
-                 and coupled processes within each time step, and finally 
-                 solve a problem. 
+                 and coupled processes within each time step, and finally
+                 solve a problem.
 Design and implementation:  WW
-Start time:  09.07.2008 
+Start time:  09.07.2008
 Modification:
-            12.2008 WW Incorporate the changes from previous versions. 
+            12.2008 WW Incorporate the changes from previous versions.
 ========================================================================*/
 #include "Configure.h"
 
@@ -33,7 +33,7 @@ Modification:
 extern int ReadData(char*); //OK411
 /* PCS */
 #include "pcs_dm.h"
-#include "rf_pcs.h" 
+#include "rf_pcs.h"
 //16.12.2008.WW #include "rf_apl.h"
 #include "rf_react.h"
 #include "par_ddc.h"
@@ -41,8 +41,8 @@ extern int ReadData(char*); //OK411
 #include "rf_tim_new.h"
 #include "rfmat_cp.h"
 //#include "rf_vel_new.h"
-#include "rf_fluid_momentum.h"	
-#include "rf_random_walk.h"     
+#include "rf_fluid_momentum.h"
+#include "rf_random_walk.h"
 // Finite element
 #include "fem_ele_std.h"
 #include "rf_bc_new.h"
@@ -75,9 +75,9 @@ string FilePath; //23.02.2009. WW
 
 /**************************************************************************
 GeoSys - Function: Constructor
-Task: 
+Task:
 Programing:
- 07/2008 WW Set it as an constructor of class problem based on the 
+ 07/2008 WW Set it as an constructor of class problem based on the
             PreTimeloop
 Modification:
 ***************************************************************************/
@@ -117,57 +117,57 @@ Problem::Problem(char* filename):print_result(false)
   // Create PCS processes
   PCSCreate();
   if (!PCSCheck()) //OK4910 reactivated
-  {  
+  {
     print_result = false; //OK
     return;
   }
   //......................................................................
 //#ifdef RESET_4410
 //  //if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
-//  if(total_processes[3])  // 3: TWO_PHASE_FLOW. 12.12.2008. WW     
+//  if(total_processes[3])  // 3: TWO_PHASE_FLOW. 12.12.2008. WW
 //    PCSCalcSecondaryVariables(); //OK
 //#endif
   //......................................................................
   //09.07.2008 WW
-  SetActiveProcesses(); 
+  SetActiveProcesses();
   //OK if (!Check()) return; //OK
   //----------------------------------------------------------------------
-  // REACTIONS 
+  // REACTIONS
   //CB before the first time step
   //if(MASS_TRANSPORT_Process) // if(MASS_TRANSPORT_Process&&NAPL_Dissolution) //CB Todo
-  if(transport_processes.size()>0) //12.12.2008. WW   
+  if(transport_processes.size()>0) //12.12.2008. WW
   {
     // 1) set the id variable flow_pcs_type for Saturation and velocity calculation
     //    in mass transport element matrices
     SetFlowProcessType();
-    // 2) in case of Twophaseflow calculate NAPL- and the corresponding 
+    // 2) in case of Twophaseflow calculate NAPL- and the corresponding
     //    Water phase Saturation from the NAPL concentrations
     //if(pcs_vector[0]->pcs_type_name.compare("TWO_PHASE_FLOW")==0) //OK
     //WW CRFProcess *m_pcs = NULL;
-    //WW if (m_pcs = PCSGet("TWO_PHASE_FLOW"))     
+    //WW if (m_pcs = PCSGet("TWO_PHASE_FLOW"))
     // CB: this fct will set the initial NAPL Density in case of NAPL-Dissolution
     //     should this fct be executed in all cases?? --> CHP
-    if(total_processes[3])  // 3: TWO_PHASE_FLOW. 12.12.2008. WW     
-	     PCSCalcSecondaryVariables(); 
+    if(total_processes[3])  // 3: TWO_PHASE_FLOW. 12.12.2008. WW
+	     PCSCalcSecondaryVariables();
   }
   //----------------------------------------------------------------------
-  // REACTIONS 
+  // REACTIONS
   // Initialization of REACT structure for rate exchange between MTM2 and Reactions
-  
-  
-  //-------------------------------------------------- 
+
+
+  //--------------------------------------------------
   // HB, for the GEM chemical reaction engine 05.2007
   //--------------------------------------------------
 #ifdef GEM_REACT
-  m_vec_GEM = new REACT_GEM(); 
+  m_vec_GEM = new REACT_GEM();
   GEMRead( FileName , m_vec_GEM );
-  
+
   string path = "";  // to get the path of the file;
   path = FileName;   // first get full path and project name;
   int pos, npos;
   pos = 0;
   npos = (int)path.size();
-  
+
   // Get path
 #ifdef _WIN32
   pos = (int)path.rfind("\\");// HS keep this on windows
@@ -176,21 +176,21 @@ Problem::Problem(char* filename):print_result(false)
 #endif // _WIN32
   if( pos < npos )
     path = path.substr(0, pos+1);
-  
+
   // now start initialization of GEMS
-  if ( m_vec_GEM->Init_Nodes(/*FileName*/ path ) == 0) 
+  if ( m_vec_GEM->Init_Nodes(/*FileName*/ path ) == 0)
     {
-      
+
       if (m_vec_GEM->Init_RUN() == 0) m_vec_GEM->initialized_flag = 1;
     }
-  
+
 #else // GEM_REACT
   //---------------------------------------------------
   REACT *rc = NULL; //SB
   //  rc->TestPHREEQC(); // Test if *.pqc file is present
   rc = rc->GetREACT();
   if(rc) //OK
-    {  
+    {
       if(rc->flag_pqc){
 	if(cp_vec.size()>0)
 	  { //OK
@@ -199,13 +199,13 @@ Problem::Problem(char* filename):print_result(false)
 	    rc->InitREACT0();
 	    rc->ExecuteReactionsPHREEQC0();
 	    REACT_vec.clear();
-	    REACT_vec.push_back(rc);        
+	    REACT_vec.push_back(rc);
 #else
-	    
+
 	    rc->CreateREACT();//SB
 	    rc->InitREACT();
 	    //SB4501        rc->ExecuteReactions();
-	    
+
 #ifdef LIBPHREEQC  // MDL: new functions with built-in phreeqc
 	    rc->ExecuteReactionsPHREEQCNewLib();
 #else
@@ -219,7 +219,7 @@ Problem::Problem(char* filename):print_result(false)
       //  delete rc;
     }
 #endif // GEM_REACT
-  
+
 #ifdef BRNS
   // Here to test BRNS; HB 02.11.2007
   // REACT_BRNS* pBRNS;
@@ -227,27 +227,27 @@ Problem::Problem(char* filename):print_result(false)
   m_vec_BRNS = new REACT_BRNS();
   m_vec_BRNS->InitBRNS();
 #endif
-  
-  
+
+
 #ifdef CHEMAPP
   CEqlink *eq=NULL;
   eq = eq->GetREACTION();
   if(cp_vec.size()>0  && eq){ //MX
-    eq->TestCHEMAPPParameterFile(pcs_vector[0]->file_name_base); 
+    eq->TestCHEMAPPParameterFile(pcs_vector[0]->file_name_base);
     if (eq->flag_chemapp){
       eq->callCHEMAPP(pcs_vector[0]->file_name_base);
     }
   }
 #endif
   //  delete rc;
-  
+
   //----------------------------------------------------------------------
   // DDC
   int no_processes =(int)pcs_vector.size();
   CRFProcess* m_pcs = NULL;
   if(dom_vector.size()>0)
     {
-      
+
       // -----------------------
       DOMCreate();
       //
@@ -256,7 +256,7 @@ Problem::Problem(char* filename):print_result(false)
          m_pcs = pcs_vector[i];
          m_pcs->CheckMarkedElement();
          CountDoms2Nodes(m_pcs);
-         // Config boundary conditions for domain decomposition 
+         // Config boundary conditions for domain decomposition
          m_pcs->SetBoundaryConditionSubDomain(); //WW
       }
       //
@@ -264,11 +264,11 @@ Problem::Problem(char* filename):print_result(false)
       // Release some memory. WW
 #if defined(USE_MPI) //TEST_MPI WW
       // Release memory of other domains. WW
-      for(i=0;i<(int)dom_vector.size();i++) 
+      for(i=0;i<(int)dom_vector.size();i++)
 	{
 	  if(i!=myrank)
 	    {
-	      // If shared memory, skip the following line 
+	      // If shared memory, skip the following line
 #if defined(NEW_BREDUCE2)
 	      dom_vector[i]->ReleaseMemory();
 #else
@@ -279,7 +279,7 @@ Problem::Problem(char* filename):print_result(false)
 	    }
 	}
 #endif
-      
+
     }
   //----------------------------------------------------------------------
   PCSRestart(); //SB
@@ -288,7 +288,7 @@ Problem::Problem(char* filename):print_result(false)
       //----------------------------------------------------------------------
       KRConfig();
       //----------------------------------------------------------------------
-      // Configure Data for Blobs (=>NAPL dissolution) 
+      // Configure Data for Blobs (=>NAPL dissolution)
       KBlobConfig();
       KBlobCheck();
       //WW CreateClockTime();
@@ -298,7 +298,7 @@ Problem::Problem(char* filename):print_result(false)
   // Controls for coupling. WW
   loop_index = 0;
   max_coupling_iterations = 1;
-  coupling_tolerance = 1.e-4; 
+  coupling_tolerance = 1.e-4;
   //========================================================================
   // WW
   char line[MAX_ZEILE];
@@ -308,7 +308,7 @@ Problem::Problem(char* filename):print_result(false)
   // File handling
   string num_file_name = FileName + NUM_FILE_EXTENSION;
   ifstream num_file (num_file_name.data(),ios::in);
-  if (num_file.good()) 
+  if (num_file.good())
     {
       num_file.seekg(0L,ios::beg);
       while (!num_file.eof())
@@ -317,15 +317,15 @@ Problem::Problem(char* filename):print_result(false)
 	  line_string = line;
 	  if(line_string.find("#STOP")!=string::npos)
 	    break;
-	  if(line_string.find("$OVERALL_COUPLING")!=string::npos) 
+	  if(line_string.find("$OVERALL_COUPLING")!=string::npos)
 	    {
 	      in_num.str(GetLineFromFile1(&num_file));
 	      in_num>>max_coupling_iterations >> coupling_tolerance;
 	      break;
-	    }  
-	} 
+	    }
+	}
       num_file.close();
-    } 
+    }
   //========================================================================
   // For time stepping. WW
   CTimeDiscretization *m_tim = NULL;
@@ -338,17 +338,17 @@ Problem::Problem(char* filename):print_result(false)
     {
       m_tim = time_vector[i];
       m_tim->FillCriticalTime();
-      if(m_tim->time_start<start_time) 
+      if(m_tim->time_start<start_time)
 	start_time = m_tim->time_start;
       if(m_tim->time_end>end_time)
-	end_time = m_tim->time_end; 
+	end_time = m_tim->time_end;
       if(max_time_steps<(int)m_tim->time_step_vector.size())
-	max_time_steps = (int)m_tim->time_step_vector.size(); 
+	max_time_steps = (int)m_tim->time_step_vector.size();
       if(m_tim->GetTimeStepCrtlType()>0)
-	time_ctr = true;  
+	time_ctr = true;
     }
   if(max_time_steps==0) max_time_steps = 1000000;
-  current_time =  start_time; 
+  current_time =  start_time;
   if(time_ctr)
     {
       int maxi_dof = 0;
@@ -361,11 +361,11 @@ Problem::Problem(char* filename):print_result(false)
 	  if(m_pcs->m_msh->GetNodesNumber(false)>maxi_nnodes)
 	    maxi_nnodes = m_pcs->m_msh->GetNodesNumber(false);
 	}
-      buffer_array = new double[maxi_dof*maxi_nnodes]; 
+      buffer_array = new double[maxi_dof*maxi_nnodes];
     }
   else
-    buffer_array = NULL;  
-  //========================================================================  
+    buffer_array = NULL;
+  //========================================================================
   CRFProcessDeformation *dm_pcs = NULL;
 
   //  //WW
@@ -380,18 +380,18 @@ Problem::Problem(char* filename):print_result(false)
   // Excavation for defromation
   dm_pcs = (CRFProcessDeformation *)total_processes[12];
   if(dm_pcs)
-    dm_pcs->CreateInitialState4Excavation();      
-  
+    dm_pcs->CreateInitialState4Excavation();
+
 }
 /**************************************************************************
 GeoSys - Function: Desstructor
-Task: 
+Task:
 Programing:
- 08/2008 WW Set it as an constructor of class problem based on the 
+ 08/2008 WW Set it as an constructor of class problem based on the
             PreTimeloop
- 
+
 Modification:
- 12.2008  WW  
+ 12.2008  WW
 ***************************************************************************/
 Problem::~Problem()
 {
@@ -399,7 +399,7 @@ Problem::~Problem()
   delete [] exe_flag;
   if(buffer_array) delete [] buffer_array;
   buffer_array = NULL;
-  active_processes = NULL; 
+  active_processes = NULL;
   exe_flag = NULL;
   //
   PCSDestroyAllProcesses();
@@ -410,7 +410,7 @@ Problem::~Problem()
   }
   //
 #ifdef CHEMAPP
-  if (Eqlink_vec.size()>0){ 
+  if (Eqlink_vec.size()>0){
     Eqlink_vec[0]->DestroyMemory();
     Eqlink_vec.clear();
   }
@@ -418,7 +418,7 @@ Problem::~Problem()
  //WW ClockTimeVec[0]->PrintTimes();
 #ifdef GEM_REACT
   // HS:
-  delete m_vec_GEM; 
+  delete m_vec_GEM;
 #endif
 
     #ifdef BRNS
@@ -430,112 +430,112 @@ Problem::~Problem()
 }
 /*-------------------------------------------------------------------------
 GeoSys - Function: SetActiveProcesses
-Task:   
+Task:
    total_processes:
     0: LIQUID_FLOW     | 1: GROUNDWATER_FLOW  | 2: RICHARDS_FLOW
     3: PS_GLOBAL   | 4: MULTI_PHASE_FLOW  | 5: COMPONENTAL_FLOW
     6: OVERLAND_FLOW   | 7: AIR_FLOW          | 8: HEAT_TRANSPORT
     9: FLUID_MOMENTUM  |10: RANDOM_WALK       |11: MASS_TRANSPORT
    12: DEFORMATION     |
-Return: 
-Programming: 
-07/2008 WW 
+Return:
+Programming:
+07/2008 WW
 03/2009 PCH added PS_GLOBAL
 Modification:
 -------------------------------------------------------------------------*/
 inline int Problem::AssignProcessIndex(CRFProcess *m_pcs,  bool activefunc)
-{  
-  if(m_pcs->pcs_type_name.compare("LIQUID_FLOW")==0) 
+{
+  if(m_pcs->pcs_type_name.compare("LIQUID_FLOW")==0)
   {
     if(!activefunc) return 0;
     total_processes[0] = m_pcs;
     active_processes[0] =  &Problem::LiquidFlow;
     return 0;
-  }         
-  else if(m_pcs->pcs_type_name.compare("GROUNDWATER_FLOW")==0) 
+  }
+  else if(m_pcs->pcs_type_name.compare("GROUNDWATER_FLOW")==0)
   {
     if(!activefunc) return 1;
     total_processes[1] = m_pcs;
     active_processes[1] =  &Problem::GroundWaterFlow;
     return 1;
-  }         
-  else if(m_pcs->pcs_type_name.compare("RICHARDS_FLOW")==0) 
+  }
+  else if(m_pcs->pcs_type_name.compare("RICHARDS_FLOW")==0)
   {
     if(!activefunc) return 2;
     total_processes[2] = m_pcs;
     active_processes[2] =  &Problem::RichardsFlow;
     return 2;
-  }         
-  else if(m_pcs->pcs_type_name.compare("TWO_PHASE_FLOW")==0) 
+  }
+  else if(m_pcs->pcs_type_name.compare("TWO_PHASE_FLOW")==0)
   {
     if(!activefunc) return 3;
     total_processes[3] = m_pcs;
     active_processes[3] =  &Problem::TwoPhaseFlow;
     return 3;
-  }         
-  else if(m_pcs->pcs_type_name.compare("MULTI_PHASE_FLOW")==0) 
+  }
+  else if(m_pcs->pcs_type_name.compare("MULTI_PHASE_FLOW")==0)
   {
     if(!activefunc) return 4;
     total_processes[4] = m_pcs;
     active_processes[4] =  &Problem::MultiPhaseFlow;
     return 4;
-  }         
-  else if(m_pcs->pcs_type_name.compare("COMPONENTAL_FLOW")==0) 
+  }
+  else if(m_pcs->pcs_type_name.compare("COMPONENTAL_FLOW")==0)
   {
     if(!activefunc) return 5;
     total_processes[5] = m_pcs;
     active_processes[5] =  &Problem::ComponentalFlow;
     return 5;
-  }         
-  else if(m_pcs->pcs_type_name.compare("OVERLAND_FLOW")==0) 
+  }
+  else if(m_pcs->pcs_type_name.compare("OVERLAND_FLOW")==0)
   {
     if(!activefunc) return 6;
     total_processes[6] = m_pcs;
     active_processes[6] = &Problem::OverlandFlow;
     return 6;
-  }         
-  else if(m_pcs->pcs_type_name.compare("AIR_FLOW")==0) 
+  }
+  else if(m_pcs->pcs_type_name.compare("AIR_FLOW")==0)
   {
     if(!activefunc) return 7;
     total_processes[7] = m_pcs;
     active_processes[7] = &Problem::AirFlow;
     return 7;
-  }         
-  else if(m_pcs->pcs_type_name.compare("HEAT_TRANSPORT")==0) 
+  }
+  else if(m_pcs->pcs_type_name.compare("HEAT_TRANSPORT")==0)
   {
     if(!activefunc) return 8;
     total_processes[8] = m_pcs;
     active_processes[8] = &Problem::HeatTransport;
     return 8;
-  }         
-  else if(m_pcs->pcs_type_name.compare("FLUID_MOMENTUM")==0) 
+  }
+  else if(m_pcs->pcs_type_name.compare("FLUID_MOMENTUM")==0)
   {
     if(!activefunc) return 9;
     total_processes[9] = m_pcs;
     active_processes[9] = &Problem::FluidMomentum;
     return 9;
-  }         
-  else if(m_pcs->pcs_type_name.compare("RANDOM_WALK")==0) 
+  }
+  else if(m_pcs->pcs_type_name.compare("RANDOM_WALK")==0)
   {
     if(!activefunc) return 10;
     total_processes[10] = m_pcs;
     active_processes[10] = &Problem::RandomWalker;
     return 10;
-  }         
-  else if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0) 
+  }
+  else if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0)
   {
     if(!activefunc) return 11;
     total_processes[11] = m_pcs;
     active_processes[11] = &Problem::MassTrasport;
     return 11;
-  }         
-  else if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos) 
+  }
+  else if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos)
   {
     if(!activefunc) return 12;
     total_processes[12] = m_pcs;
     active_processes[12] = &Problem::Deformation;
     return 12;
-  }  
+  }
 	else if(m_pcs->pcs_type_name.find("PS_GLOBAL")!=string::npos)
   {
 //    if(!activefunc) return 13;
@@ -544,21 +544,21 @@ inline int Problem::AssignProcessIndex(CRFProcess *m_pcs,  bool activefunc)
     active_processes[3] = &Problem::PS_Global;
     return 3;
   }
-  cout<<"Error: no process is specified. "<<endl; 
-  return -1;         
+  cout<<"Error: no process is specified. "<<endl;
+  return -1;
 }
 /*-------------------------------------------------------------------------
 GeoSys - Function: SetActiveProcesses
-Task:   
+Task:
    total_processes:
     0: LIQUID_FLOW     | 1: GROUNDWATER_FLOW  | 2: RICHARDS_FLOW
     3: TWO_PHASE_FLOW  | 4: MULTI_PHASE_FLOW  | 5: COMPONENTAL_FLOW
     6: OVERLAND_FLOW   | 7: AIR_FLOW          | 8: HEAT_TRANSPORT
     9: FLUID_MOMENTUM  |10: RANDOM_WALK       |11: MASS_TRANSPORT
    12: DEFORMATION     |13: PS_GLOBAL         |
-Return: 
-Programming: 
-07/2008 WW 
+Return:
+Programming:
+07/2008 WW
 03/2009 PCH add PS_GLOBAL
 Modification:
 --------------------------------------------------------------------*/
@@ -583,15 +583,15 @@ void Problem::SetActiveProcesses()
   {
      m_pcs = pcs_vector[i];
      AssignProcessIndex(m_pcs);
-  } 
+  }
   //
   for(i=0; i<max_processes; i++)
   {
-    if(total_processes[i]) 
+    if(total_processes[i])
     {
-      m_pcs = PCSGet(total_processes[i]->m_num->cpl_variable); 
+      m_pcs = PCSGet(total_processes[i]->m_num->cpl_variable);
       if(m_pcs)
-        coupled_process_index[i] = AssignProcessIndex(m_pcs, false); 
+        coupled_process_index[i] = AssignProcessIndex(m_pcs, false);
       active_process_index.push_back(i);
     }
   }
@@ -602,14 +602,14 @@ void Problem::SetActiveProcesses()
     if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0)
       transport_processes.push_back(m_pcs);
     if(m_pcs->pcs_type_name.compare("TWO_PHASE_FLOW")==0)  //09.01.2008. WW
-      multiphase_processes.push_back(m_pcs);   
+      multiphase_processes.push_back(m_pcs);
   }
- 
+
 }
 
 /**************************************************************************     <
 ROCKFLOW - Function: PCSCreate
-Task: 
+Task:
 Programing:
  02/2003 OK Implementation
  03/2003 OK H processes
@@ -646,7 +646,7 @@ void Problem::PCSCreate()
   }
   //
 #ifdef NEW_EQS
-  CreateEQS_LinearSolver(); //WW 
+  CreateEQS_LinearSolver(); //WW
 #endif
   //
   for(i=0;i<no_processes;i++)
@@ -656,7 +656,7 @@ void Problem::PCSCreate()
     cout << "Create: " << m_pcs->pcs_type_name << endl;
 	if(!m_pcs->pcs_type_name.compare("MASS_TRANSPORT")){
 		cout << " for " << m_pcs->pcs_primary_function_name[0] << " ";
-	    cout << " pcs_component_number " << m_pcs->pcs_component_number;       
+	    cout << " pcs_component_number " << m_pcs->pcs_component_number;
 	}
     cout << endl;
     m_pcs->Create();
@@ -678,7 +678,7 @@ void Problem::PCSCreate()
 /*-------------------------------------------------------------------------
 ROCKFLOW - Function: PCSRestart
 Task: Insert process to list
-Programming: 
+Programming:
 06/2003 OK Implementation
 07/2008 WW Capsulated into class Problem
 Modification:
@@ -714,80 +714,80 @@ void Problem::PCSRestart()
   }
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 07/2008 WW Implementation
 01/2009 WW Update
 **************************************************************************/
 void Problem::Euler_TimeDiscretize()
 {
-  long accepted_times = 0; 
-  long rejected_times = 0; 
+  long accepted_times = 0;
+  long rejected_times = 0;
   //
   CTimeDiscretization *m_tim = NULL;
-  aktueller_zeitschritt = 0; 
-#if defined(USE_MPI)  
+  aktueller_zeitschritt = 0;
+#if defined(USE_MPI)
   if(myrank==0)
-  { 
+  {
 #endif
   cout<<"\n\n***Start time steps\n";
   // Dump the initial conditions.
   OUTData(0.0,aktueller_zeitschritt);
-#if defined(USE_MPI)  
+#if defined(USE_MPI)
   }
 #endif
-  // 
+  //
   while(end_time>current_time)
   {
     //
     // Minimum time step.
     dt = 1.0e20;
-    for(int i=0; i<(int)active_process_index.size(); i++)   //09.01.2009. WW   
+    for(int i=0; i<(int)active_process_index.size(); i++)   //09.01.2009. WW
     {
        m_tim = total_processes[active_process_index[i]]->Tim;
        dt0 = m_tim->CalcTimeStep(current_time);
        if(dt0<dt)
-          dt = dt0;  
-    }   
+          dt = dt0;
+    }
     if(dt<DBL_EPSILON)
     {
        cout<<"!!! Too small time step size. Quit the simulation now."<<endl;
        exit(1);
-    }  
-    // 
+    }
+    //
     aktueller_zeitschritt++;  // Might be removed late on
     current_time += dt;
     aktuelle_zeit = current_time ;
     // Print messsage
-#if defined(USE_MPI)  
+#if defined(USE_MPI)
   if(myrank==0)
   {
-#endif 
+#endif
     cout<<"\n\n#############################################################";
     cout<<"\nTime step: "<<aktueller_zeitschritt<<"|  Time: "<<current_time<<"|  Time step size: "<<dt<<endl;
-#if defined(USE_MPI)  
+#if defined(USE_MPI)
   }
-#endif 
+#endif
     if(CouplingLoop())
     {
-#if defined(USE_MPI)  
+#if defined(USE_MPI)
   if(myrank==0)
-#endif 
+#endif
       cout<<"This step is accepted." <<endl;
       PostCouplingLoop();
-      if(print_result)			
-#if defined(USE_MPI) 
+      if(print_result)
+#if defined(USE_MPI)
       {
-       if(myrank==0) 
+       if(myrank==0)
 #endif
         OUTData(current_time, aktueller_zeitschritt);
-#if defined(USE_MPI) 
-       // MPI_Barrier (MPI_COMM_WORLD); 
+#if defined(USE_MPI)
+       // MPI_Barrier (MPI_COMM_WORLD);
       }
 #endif
       //
-      accepted_times++; 
+      accepted_times++;
 #ifdef MFC
- /*START: Update Visualization for OpenGL and other MFC view e.g. Diagram*/ 
+ /*START: Update Visualization for OpenGL and other MFC view e.g. Diagram*/
  CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
  CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
  CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
@@ -817,57 +817,57 @@ void Problem::Euler_TimeDiscretize()
  value = m_pcs->GetNodeValue(j,nidx);
  if(value<m_pcs_min_r) m_pcs_min_r = value;
  if(value>m_pcs_max_r) m_pcs_max_r = value;
- }  
+ }
  mainframe->m_pcs_min = m_pcs_min_r;
  mainframe->m_pcs_max = m_pcs_max_r;
  mainframe->m_something_changed = 1;
  m_pDoc->SetModifiedFlag(1);
  m_pDoc->UpdateAllViews(NULL,0L,NULL);
- /*END: Update Visualization for OpenGL and other MFC view e.g. Diagram*/ 
-#endif       
+ /*END: Update Visualization for OpenGL and other MFC view e.g. Diagram*/
+#endif
     }
     else
-    { 
+    {
       current_time -= dt;
       // aktuelle_zeit might be removed late on
       aktuelle_zeit = current_time;
       aktueller_zeitschritt--;  // Might be removed late on
       //
-      for(int i=0; i<(int)pcs_vector.size(); i++)      
+      for(int i=0; i<(int)pcs_vector.size(); i++)
       {
          if(pcs_vector[i]->pcs_type_name.find("DEFORMATION")!=string::npos)
            continue;
          pcs_vector[i]->CopyTimestepNODValues(false);
-      }     
-      rejected_times++; 
-#if defined(USE_MPI)  
+      }
+      rejected_times++;
+#if defined(USE_MPI)
   if(myrank==0)
-#endif 
+#endif
       cout<<"This step is rejected." <<endl;
-    } 
-#if defined(USE_MPI)  
+    }
+#if defined(USE_MPI)
   if(myrank==0)
-#endif 
+#endif
     cout<<"\n#############################################################\n";
     if(aktueller_zeitschritt>=max_time_steps)
       break;
-  } 
+  }
 
   cout<<"----------------------------------------------------\n";
   cout<<"|Acccept step times |"<<accepted_times;
   cout<<"  |Reject step times |"<<rejected_times<<endl;
   cout<<"----------------------------------------------------\n";
-  //           
+  //
 }
 
 /*-----------------------------------------------------------------------
 GeoSys - Function: Coupling loop
-Task: 
+Task:
 Return: error
-Programming: 
-07/2008 WW 
+Programming:
+07/2008 WW
 Modification:
-12.2008 WW Update 
+12.2008 WW Update
 -------------------------------------------------------------------------*/
 bool Problem::CouplingLoop()
 {
@@ -880,11 +880,11 @@ bool Problem::CouplingLoop()
    //
    print_result = false;
    int acounter = 0;
-   //  
-   for(i=0; i<(int)pcs_vector.size(); i++) 
-     pcs_vector[i]-> UpdateTransientBC(); 
+   //
+   for(i=0; i<(int)pcs_vector.size(); i++)
+     pcs_vector[i]-> UpdateTransientBC();
 
-   for(i=0; i<(int)total_processes.size(); i++)      	     
+   for(i=0; i<(int)total_processes.size(); i++)
    {
       if(active_processes[i]&&total_processes[i]->selected) //CB 12/09 Timtypesteady
       {
@@ -895,8 +895,8 @@ bool Problem::CouplingLoop()
            total_processes[i]->SetDefaultTimeStepAccepted();
            acounter++;
            m_tim->step_current++;
-        } 
-        else   
+        }
+        else
            exe_flag[i] = false;
       }
       else
@@ -910,7 +910,7 @@ bool Problem::CouplingLoop()
       print_result = true;
    //
    bool accept = true;
-   for(loop_index=0; loop_index<max_coupling_iterations; loop_index++)                    
+   for(loop_index=0; loop_index<max_coupling_iterations; loop_index++)
    {
     for(i=0; i<num_processes; i++)
 	  {
@@ -920,10 +920,10 @@ bool Problem::CouplingLoop()
          if(exe_flag[index])
          {
            a_pcs = total_processes[index];
-           error = Call_Member_FN(this, active_processes[index])(); //aProcess(); 
+           error = Call_Member_FN(this, active_processes[index])(); //aProcess();
            if(!a_pcs->TimeStepAccept())
-           {            
-              accept = false;            
+           {
+              accept = false;
               break;
            }
            // If not accepted, m_tim->step_current++
@@ -932,25 +932,25 @@ bool Problem::CouplingLoop()
              m_pcs = total_processes[cpl_index];
              for(j=0; j<m_pcs->m_num->cpl_iterations; j++)
              {
-               error_cpl =  Call_Member_FN(this, active_processes[cpl_index])(); //bProcess();  
+               error_cpl =  Call_Member_FN(this, active_processes[cpl_index])(); //bProcess();
                if(!m_pcs->TimeStepAccept())
-               {            
-                  accept = false;            
+               {
+                  accept = false;
                   break;
-               }               
+               }
                // If not accepted, m_tim->step_current++
                if(fabs(error_cpl-error)<m_pcs->m_num->cpl_tolerance)
                  break;
-               error =  Call_Member_FN(this, active_processes[index])(); //aProcess(); 
+               error =  Call_Member_FN(this, active_processes[index])(); //aProcess();
                if(!a_pcs->TimeStepAccept())
-               {            
-                 accept = false;            
+               {
+                 accept = false;
                  break;
                }
                // If not accepted, m_tim->step_current++
              }
-             exe_flag[cpl_index] = false;    
-           }  
+             exe_flag[cpl_index] = false;
+           }
            else
            {
 			  if(a_pcs->type != 55){//SB Not for fluid momentum process
@@ -959,27 +959,27 @@ bool Problem::CouplingLoop()
 						break;
               error_cpl = error;
 			   }
-		   
-		   } 
-           // 
-           if(!accept) break;         
-         }        
+
+		   }
+           //
+           if(!accept) break;
+         }
       }
 	  if(error_cpl<coupling_tolerance) break; // JOD/WW 4.10.01
       cout<<"Coupling loop: "<<loop_index+1<<" of "<<max_coupling_iterations<<endl;
-      if(!accept) break;     
+      if(!accept) break;
  /*index = active_process_index[1];
   cpl_index = coupled_process_index[index];
   if(exe_flag[index]) {
 	  a_pcs = total_processes[index];
       error =  Call_Member_FN(this, active_processes[index])();
-   } 
+   }
 	  index = active_process_index[0];
 	    cpl_index = coupled_process_index[index];
-		if(exe_flag[index]){	
+		if(exe_flag[index]){
 		a_pcs = total_processes[index];
       error =  Call_Member_FN(this, active_processes[index])();
-}	 
+}
 	  index = active_process_index[2];
 	    cpl_index = coupled_process_index[index];
 		if(exe_flag[index]){
@@ -988,43 +988,43 @@ bool Problem::CouplingLoop()
 }*/
 
    }
-   // 
+   //
    return accept;
 }
 
 /*-----------------------------------------------------------------------
 GeoSys - Function: post Coupling loop
-Task: 
+Task:
 Return: error
-Programming: 
-08/2008 WW 
+Programming:
+08/2008 WW
 Modification:
 -------------------------------------------------------------------------*/
 void Problem::PostCouplingLoop()
 {
   CRFProcess *m_pcs = NULL;
   if(total_processes[12])
-  {  
-    CRFProcessDeformation *dm_pcs = (CRFProcessDeformation *)(total_processes[12]); 
+  {
+    CRFProcessDeformation *dm_pcs = (CRFProcessDeformation *)(total_processes[12]);
     if(H_Process&&dm_pcs->type!=41) // HM partitioned scheme
-       dm_pcs->ResetTimeStep(); 
+       dm_pcs->ResetTimeStep();
     dm_pcs->Extropolation_GaussValue();
-  } 
+  }
 
   //CB new NAPL and Water Saturations after reactions for Two_Phase_Flow and NAPL-Dissolution
   //WW if(MASS_TRANSPORT_Process) // if(MASS_TRANSPORT_Process&&NAPL_Dissolution) //CB Todo
   if(transport_processes.size()>0&&total_processes[3]) // 12.2008. WW
     if (KNaplDissCheck())   // Check if NAPLdissolution is modeled
       CalcNewNAPLSat(total_processes[3]);
-    
-  /* CB 21/09 The next fct. was necessary in 4.08. Still needed here? I think so 
-  // for TWO_PHASE_FLOW the new time step results for secondary variables 
-  // PRESSURE2 and SATURATION1 are not copied below in the function 
+
+  /* CB 21/09 The next fct. was necessary in 4.08. Still needed here? I think so
+  // for TWO_PHASE_FLOW the new time step results for secondary variables
+  // PRESSURE2 and SATURATION1 are not copied below in the function
   // CopyTimestepNODValues(); but I can do it here:
-  if (m_pcs = PCSGet("TWO_PHASE_FLOW"))     
+  if (m_pcs = PCSGet("TWO_PHASE_FLOW"))
      CopyTimestepNODValuesSVTPhF();
-  */      
-      
+  */
+
   //  Update the results
   for(int i=0;i<(int)pcs_vector.size();i++)
   {
@@ -1033,17 +1033,17 @@ void Problem::PostCouplingLoop()
        m_pcs->CheckMarkedElement();
 #if defined(USE_MPI) // 18.10.2007 WW
      if(myrank==0) {
-#endif  
+#endif
          m_pcs->WriteSolution(); //WW
 #ifdef GEM_REACT
-	if (i==0) { // for GEM_REACT we also need information on porosity (node porosity internally stored in Gems process)!....do it only once and it does not matter for which process ! ....we assume that the first pcs process is the flow process...if reload not defined for every process, restarting with gems will not work in any case 
+	if (i==0) { // for GEM_REACT we also need information on porosity (node porosity internally stored in Gems process)!....do it only once and it does not matter for which process ! ....we assume that the first pcs process is the flow process...if reload not defined for every process, restarting with gems will not work in any case
 
 	if (( m_pcs->reload==1 || m_pcs->reload==3 ) && !(( aktueller_zeitschritt % m_pcs->nwrite_restart  ) > 0) ) m_vec_GEM->WriteReloadGem();
 	}
 #endif
 #if defined(USE_MPI) // 18.10.2007 WW
      }
-#endif  
+#endif
 
      m_pcs->Extropolation_MatValue();  //WW
      if(m_pcs->cal_integration_point_value) //WW
@@ -1061,16 +1061,16 @@ void Problem::PostCouplingLoop()
   }
   // WW
 #ifndef NEW_EQS //WW. 07.11.2008
-  if(total_processes[1])  
+  if(total_processes[1])
     total_processes[1]->AssembleParabolicEquationRHSVector();
 #endif
-  LOPCalcELEResultants(); 
+  LOPCalcELEResultants();
 }
 /*-------------------------------------------------------------------------
 GeoSys - Function: LiquidFlow
-Task: Similate liquid flow  
+Task: Similate liquid flow
 Return: error
-Programming: 
+Programming:
 07/2008 WW Extract from LOPTimeLoop_PCS();
 Modification:
 -------------------------------------------------------------------------*/
@@ -1078,7 +1078,7 @@ inline double Problem::LiquidFlow()
 {
   double error = 0.;
   CRFProcess *m_pcs = total_processes[0];
-  if(!m_pcs->selected) return error; 
+  if(!m_pcs->selected) return error;
 //  error = m_pcs->Execute();
   error = m_pcs->ExecuteNonLinear();
 #ifdef RESET_4410
@@ -1091,25 +1091,25 @@ inline double Problem::LiquidFlow()
 }
 /*-------------------------------------------------------------------------
 GeoSys - Function: RichardsFlow
-Task: Similate Richards flow  
+Task: Similate Richards flow
 Return: error
-Programming: 
+Programming:
 07/2008 WW Extract from LOPTimeLoop_PCS();
 Modification:
 -------------------------------------------------------------------------*/
 inline double Problem::RichardsFlow()
 {
-   //-------  WW                          
+   //-------  WW
    double error = 0.;
    CRFProcess *m_pcs = total_processes[2];
-   if(!m_pcs->selected) return error; 
+   if(!m_pcs->selected) return error;
    bool twoflowcpl = false;
    //if(GROUNDWATER_FLOW|| OVERLAND_FLOW) WW
-   if(total_processes[1]||total_processes[6])  
+   if(total_processes[1]||total_processes[6])
      twoflowcpl = true;
    if(twoflowcpl)
-   {  //-------  WW            
-      lop_coupling_iterations = m_pcs->m_num->cpl_iterations;  // JOD coupling      
+   {  //-------  WW
+      lop_coupling_iterations = m_pcs->m_num->cpl_iterations;  // JOD coupling
       if(pcs_vector.size()>1 && lop_coupling_iterations > 1)
       {
          m_pcs->CopyCouplingNODValues();
@@ -1129,7 +1129,7 @@ inline double Problem::RichardsFlow()
      // if(lop_coupling_iterations > 1) // JOD  4.10.01 removed
      //    pcs_coupling_error = m_pcs->CalcCouplingNODError();
 #endif
-       conducted = true; //WW 
+       conducted = true; //WW
    }
    else  //WW
    {
@@ -1142,18 +1142,18 @@ inline double Problem::RichardsFlow()
       {
         m_pcs->CalcSecondaryVariablesUnsaturatedFlow();  //WW
         CalcVelocities = true;
-        conducted = true; //WW 
+        conducted = true; //WW
       }
-   } 
+   }
    if(m_pcs->TimeStepAccept())
-     m_pcs->CalIntegrationPointValue(); //WW		
+     m_pcs->CalIntegrationPointValue(); //WW
    return error;
 }
 /*-------------------------------------------------------------------------
 GeoSys - Function: TwoPhaseFlow
-Task: Similate twp-phase flow  
+Task: Similate twp-phase flow
 Return: error
-Programming: 
+Programming:
 07/2008 WW Extract from LOPTimeLoop_PCS();
 Modification:
 12.2008 WW Update
@@ -1171,20 +1171,20 @@ inline double Problem::TwoPhaseFlow()
     error = m_pcs->ExecuteNonLinear();
     if(m_pcs->TimeStepAccept())
     {
-      PCSCalcSecondaryVariables(); 
-      m_pcs->CalIntegrationPointValue(); 
+      PCSCalcSecondaryVariables();
+      m_pcs->CalIntegrationPointValue();
       //CB 12/09 (first time added on 010808) Velocity at CenterOfGravity, required for NAPL dissolution
       if (i==0) // is 0 in all cases the correct index?
-        m_pcs->CalcELEVelocities(); 
+        m_pcs->CalcELEVelocities();
     }
   }
   return error;
 }
 /*-------------------------------------------------------------------------
 GeoSys - Function: MultiPhaseFlow()
-Task: Similate multi-phase flow by p-p scheme  
+Task: Similate multi-phase flow by p-p scheme
 Return: error
-Programming: 
+Programming:
 07/2008 WW Extract from LOPTimeLoop_PCS();
 Modification:
 12.2008 WW Update
@@ -1220,9 +1220,9 @@ inline double Problem::PS_Global()
 
 /*-------------------------------------------------------------------------
 GeoSys - Function: GroundWaterFlow()
-Task: 
+Task:
 Return: error
-Programming: 
+Programming:
 07/2008 WW Extract from LOPTimeLoop_PCS();
 Modification:
 12.2008 WW Update
@@ -1236,7 +1236,7 @@ inline double Problem::GroundWaterFlow()
   //................................................................
   // Calculate secondary variables
   // NOD values
-  conducted = true; //WW 
+  conducted = true; //WW
   cout << "      Calculation of secondary NOD values" << endl;
   if(m_pcs->TimeStepAccept())
   {
@@ -1263,9 +1263,9 @@ inline double Problem::GroundWaterFlow()
 }
 /*-------------------------------------------------------------------------
 GeoSys - Function: ComponentalFlow();
-Task: 
+Task:
 Return: error
-Programming: 
+Programming:
 07/2008 WW Extract from LOPTimeLoop_PCS();
 Modification:
 -------------------------------------------------------------------------*/
@@ -1281,9 +1281,9 @@ inline double Problem::ComponentalFlow()
 }
 /*-------------------------------------------------------------------------
 GeoSys - Function: OverlandFlow()
-Task: 
+Task:
 Return: error
-Programming: 
+Programming:
 07/2008 WW Extract from LOPTimeLoop_PCS();
 Modification:
 -------------------------------------------------------------------------*/
@@ -1295,15 +1295,15 @@ inline double Problem::OverlandFlow()
 
   error = m_pcs->ExecuteNonLinear();
   if(m_pcs->TimeStepAccept())
-    PCSCalcSecondaryVariables(); 
+    PCSCalcSecondaryVariables();
   return error;
 }
 
 /*-------------------------------------------------------------------------
 GeoSys - Function: AirFlow()
-Task: 
+Task:
 Return: error
-Programming: 
+Programming:
 07/2008 WW Extract from LOPTimeLoop_PCS();
 Modification:
 -------------------------------------------------------------------------*/
@@ -1312,7 +1312,7 @@ inline double Problem::AirFlow()
   double error = 1.e8;
   CRFProcess *m_pcs = total_processes[7];
   if(!m_pcs->selected) return error; //12.12.2008 WW
-  
+
   error = m_pcs->ExecuteNonLinear();
   m_pcs->CalIntegrationPointValue(); //WW
   m_pcs->CalcELEVelocities(); //OK
@@ -1321,9 +1321,9 @@ inline double Problem::AirFlow()
 }
 /*-------------------------------------------------------------------------
 GeoSys - Function: HeatTransport
-Task: Similate heat transport 
+Task: Similate heat transport
 Return: error
-Programming: 
+Programming:
 07/2008 WW Extract from LOPTimeLoop_PCS();
 Modification:
 -------------------------------------------------------------------------*/
@@ -1342,9 +1342,9 @@ inline double Problem::HeatTransport()
 }
 /*-------------------------------------------------------------------------
 GeoSys - Function: MassTrasport
-Task: Similate heat transport 
+Task: Similate heat transport
 Return: error
-Programming: 
+Programming:
 07/2008 WW Extract from LOPTimeLoop_PCS();
 Modification:
 12.2008 WW Immigrtate the new functionalities  from loop_pcs.cpp
@@ -1355,25 +1355,25 @@ inline double Problem::MassTrasport()
   CRFProcess *m_pcs = total_processes[11];
   //
   if(!m_pcs->selected) return error; //12.12.2008 WW
-  
+
   for(int i=0;i<(int)transport_processes.size();i++)
     {
       m_pcs = transport_processes[i];      //18.08.2008 WW
-      if(CPGetMobil(m_pcs->GetProcessComponentNumber())> 0) //Component Mobile ? 
+      if(CPGetMobil(m_pcs->GetProcessComponentNumber())> 0) //Component Mobile ?
       error = m_pcs->ExecuteNonLinear(); //NW. ExecuteNonLinear() is called to use the adaptive time step scheme
     }
-  // Calculate Chemical reactions, after convergence of flow and transport 
+  // Calculate Chemical reactions, after convergence of flow and transport
   // Move inside iteration loop if couplingwith transport is implemented SB:todo
-  //SB:todo move into Execute Reactions	  if((aktueller_zeitschritt % 1) == 0)  
+  //SB:todo move into Execute Reactions	  if((aktueller_zeitschritt % 1) == 0)
   //REACT *rc = NULL; //OK
   //rc = REACT_vec[0]; //OK
   //				if(rc->flag_pqc) rc->ExecuteReactions();
   //				delete rc;
-  if(KinReactData_vector.size() > 0) 
+  if(KinReactData_vector.size() > 0)
     {  // WW moved the following lines into this curly braces. 12.12.2008
       //SB4900    ClockTimeVec[0]->StopTime("Transport");
       //SB4900    ClockTimeVec[0]->StartTime();
-      // Calculate Chemical reactions, after convergence of flow and transport 
+      // Calculate Chemical reactions, after convergence of flow and transport
       // Move inside iteration loop if couplingwith transport is implemented SB:todo
       // First calculate kinetic reactions
       KinReactData_vector[0]->ExecuteKinReact();
@@ -1382,7 +1382,7 @@ inline double Problem::MassTrasport()
     }
   if(REACT_vec.size()>0) //OK
     {
-      if(REACT_vec[0]->flag_pqc){ 
+      if(REACT_vec[0]->flag_pqc){
 #ifdef REACTION_ELEMENT
 	REACT_vec[0]->ExecuteReactionsPHREEQC0();
 #else
@@ -1401,10 +1401,10 @@ inline double Problem::MassTrasport()
 #ifdef GEM_REACT
   else    // WW moved these pare of curly braces inside  ifdef GEM_REACT
     {
-      if (m_vec_GEM->initialized_flag == 1)//when it was initialized. 
+      if (m_vec_GEM->initialized_flag == 1)//when it was initialized.
 	{
 	  int m_time = 1; // 0-previous time step results; 1-current time step results
-          
+
 	  // Check if the Sequential Iterative Scheme needs to be intergrated
 	  if (m_pcs->m_num->cpl_iterations > 1)
 	    m_vec_GEM->flag_iterative_scheme = 1; // set to standard iterative scheme;
@@ -1413,14 +1413,14 @@ inline double Problem::MassTrasport()
 	  // Move current xDC to previous xDC
 	  m_vec_GEM->CopyCurXDCPre();
 	  // Get info from MT
-	  // m_vec_GEM->ConvPorosityNodeValue2Elem(); // 
+	  // m_vec_GEM->ConvPorosityNodeValue2Elem(); //
 	  m_vec_GEM->GetReactInfoFromMassTransport(m_time);	// second arguments should be one if we work with concentrations
-	  // m_vec_GEM->ConcentrationToMass();	    
+	  // m_vec_GEM->ConcentrationToMass();
            m_vec_GEM->Run_MainLoop(FileName,aktueller_zeitschritt);     // Run GEM
-	  
+
 	  // m_vec_GEM->MassToConcentration();
 	  // Calculate the different of xDC
-	  m_vec_GEM->UpdateXDCChemDelta();						  
+	  m_vec_GEM->UpdateXDCChemDelta();
 	  // Set info in MT
 	  m_vec_GEM->SetReactInfoBackMassTransport(m_time);
 	  //m_vec_GEM->ConvPorosityNodeValue2Elem(); // update element porosity and push back values
@@ -1429,26 +1429,26 @@ inline double Problem::MassTrasport()
 	}
     }
 #endif // GEM_REACT
-  
+
 #ifdef CHEMAPP
-  if(Eqlink_vec.size()>0) 
+  if(Eqlink_vec.size()>0)
     Eqlink_vec[0]->ExecuteEQLINK();
 #endif
 #ifdef BRNS
   if(m_vec_BRNS->init_flag == true)
-    {m_vec_BRNS->RUN(  dt  /*time value in seconds*/);} 
+    {m_vec_BRNS->RUN(  dt  /*time value in seconds*/);}
 #endif
 
   // if(KinReactData_vector.size() > 0)  //12.12.2008 WW
   //SB4900    ClockTimeVec[0]->StopTime("EquiReact");
 
-  return error; 
+  return error;
 }
 /*-------------------------------------------------------------------------
 GeoSys - Function: FluidMomentum()
-Task: 
+Task:
 Return: error
-Programming: 
+Programming:
 07/2008 WW Extract from LOPTimeLoop_PCS();
 Modification:
 -------------------------------------------------------------------------*/
@@ -1492,9 +1492,9 @@ inline double Problem::FluidMomentum()
 
 /*-------------------------------------------------------------------------
 GeoSys - Function: RandomWalker()
-Task: 
+Task:
 Return: error
-Programming: 
+Programming:
 07/2008 WW Extract from LOPTimeLoop_PCS();
 Modification:
 12.2008 WW
@@ -1633,9 +1633,9 @@ return 0.0;
 
 /*-------------------------------------------------------------------------
 GeoSys - Function: Deformation
-Task: Similate deformation 
+Task: Similate deformation
 Return: error
-Programming: 
+Programming:
 07/2008 WW Extract from LOPTimeLoop_PCS();
 Modification:
 -------------------------------------------------------------------------*/
@@ -1651,12 +1651,12 @@ inline double Problem::Deformation()
   if (dm_pcs->type==41)
   {
     m_pcs->cal_integration_point_value = true;
-    dm_pcs->CalIntegrationPointValue(); 
+    dm_pcs->CalIntegrationPointValue();
   }
   return error;
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 02/2005 OK Implementation
 08/2005 WW Changes due to geometry objects applied
 08/2005 MB Changes ... (OK to what ?)
@@ -1688,7 +1688,7 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
   int idxS  = m_pcs_global->GetNodeValueIndex("SATURATION1") + timelevel;
   CElem* m_ele_local = NULL;
   CNode* m_nod_local = NULL;
-  
+
 #if defined(USE_MPI_REGSOIL)
   values      = new double[no_local_nodes];   // Should be more sophisticated
 #endif
@@ -1758,10 +1758,10 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
 */
     m_pcs_local->st_node_value.clear();
     m_pcs_local->st_node.clear();
-    for(j=0;j<(int)m_pcs_global->st_node_value.size();j++)             
-      m_pcs_local->st_node_value.push_back(m_pcs_global->st_node_value[j]); 
-    for(j=0;j<(int)m_pcs_global->st_node.size();j++)             
-      m_pcs_local->st_node.push_back(m_pcs_global->st_node[j]); 
+    for(j=0;j<(int)m_pcs_global->st_node_value.size();j++)
+      m_pcs_local->st_node_value.push_back(m_pcs_global->st_node_value[j]);
+    for(j=0;j<(int)m_pcs_global->st_node.size();j++)
+      m_pcs_local->st_node.push_back(m_pcs_global->st_node[j]);
     //....................................................................
     pcs_vector.push_back(m_pcs_local);
 
@@ -1820,13 +1820,13 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
         g_node_number = j+(i*no_local_nodes);
         value = m_pcs_global->GetNodeValue(g_node_number,idxp);
         m_pcs_local->SetNodeValue(j,idxp-1,value);
-        m_pcs_local->SetNodeValue(j,idxp,value);       
+        m_pcs_local->SetNodeValue(j,idxp,value);
        //WW value = m_pcs_global->GetNodeValue(g_node_number,idxcp);
        //WW m_pcs_local->SetNodeValue(j,idxcp-1,value);
-       //WW  m_pcs_local->SetNodeValue(j,idxcp,value);     
+       //WW  m_pcs_local->SetNodeValue(j,idxcp,value);
         value = m_pcs_global->GetNodeValue(g_node_number,idxS);
         m_pcs_local->SetNodeValue(j,idxS-1,value);
-        m_pcs_local->SetNodeValue(j,idxS,value);     
+        m_pcs_local->SetNodeValue(j,idxS,value);
      }
     }
     else
@@ -1869,7 +1869,7 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
   }
 #else
   num_parallel_blocks = no_richards_problems / size;
-  
+
 #ifdef TRACE
   std::cout << "Num parallel blocks: " << num_parallel_blocks << std::endl;
 #endif
@@ -1910,13 +1910,13 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
           g_node_number = j+(rp*no_local_nodes);
           value = m_pcs_global->GetNodeValue(g_node_number,idxp);
           m_pcs_local->SetNodeValue(j,idxp-1,value);
-          m_pcs_local->SetNodeValue(j,idxp,value);       
+          m_pcs_local->SetNodeValue(j,idxp,value);
           value = m_pcs_global->GetNodeValue(g_node_number,idxcp);
           m_pcs_local->SetNodeValue(j,idxcp-1,value);
-          m_pcs_local->SetNodeValue(j,idxcp,value);     
+          m_pcs_local->SetNodeValue(j,idxcp,value);
           value = m_pcs_global->GetNodeValue(g_node_number,idxS);
           m_pcs_local->SetNodeValue(j,idxS-1,value);
-          m_pcs_local->SetNodeValue(j,idxS,value);     
+          m_pcs_local->SetNodeValue(j,idxS,value);
         }
       }
       else
@@ -1953,19 +1953,19 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
       if(rp < no_richards_problems) {
         if(myrank == k) {
           // idxp
-          for(l=0; l<no_local_nodes; l++) 
+          for(l=0; l<no_local_nodes; l++)
             values[l] = m_pcs_local->GetNodeValue(l, idxp);
           MPI_Bcast((void *)values, no_local_nodes, MPI_DOUBLE, k, MPI_COMM_WORLD);
           for(l=0; l<no_local_nodes; l++)
             m_pcs_global->SetNodeValue(l+rp*no_local_nodes, idxp, values[l]);
           // idxcp
-          for(l=0; l<no_local_nodes; l++) 
+          for(l=0; l<no_local_nodes; l++)
             values[l] = m_pcs_local->GetNodeValue(l, idxcp);
           MPI_Bcast((void *)values, no_local_nodes, MPI_DOUBLE, k, MPI_COMM_WORLD);
           for(l=0; l<no_local_nodes; l++)
             m_pcs_global->SetNodeValue(l+rp*no_local_nodes, idxcp, values[l]);
           // idxS
-          for(l=0; l<no_local_nodes; l++) 
+          for(l=0; l<no_local_nodes; l++)
             values[l] = m_pcs_local->GetNodeValue(l, idxS);
           MPI_Bcast((void *)values, no_local_nodes, MPI_DOUBLE, k, MPI_COMM_WORLD);
           for(l=0; l<no_local_nodes; l++)
@@ -2000,11 +2000,11 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global)
 
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 08/2003 SB Implementation
-01/2004 MX k_eff 
+01/2004 MX k_eff
 11/2004 OK fluid mass fluxes
 08/2008 WW Extract from LOPTimeLoop_PCS();
 last modification:
@@ -2047,7 +2047,7 @@ void Problem::LOPCalcELEResultants()
         m_pcs->CalcELEVelocities();
         break;
       case 'R': // Richards flow
-        m_pcs->CalcELEVelocities();   
+        m_pcs->CalcELEVelocities();
         break;
 	  case 'F': // Fluid Momentum
         break;
@@ -2057,23 +2057,23 @@ void Problem::LOPCalcELEResultants()
 
 /**************************************************************************
  ROCKFLOW - Funktion: ASMCalcNodeWDepth
-                                                                          
+
  Task:
    Berechnung und Speichern der Knotenfl?se
  Parameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    E: long i: node index
  Result:
    - void -
-                                                                          
+
  Programmaenderungen:
    11/2002   MB/OK  Implementation
-   10/2004   MB     PCS   
-   12/2008   WW     Encapsulate to this class                                            
+   10/2004   MB     PCS
+   12/2008   WW     Encapsulate to this class
 **************************************************************************/
 inline void Problem::ASMCalcNodeWDepth(CRFProcess *m_pcs)
 {
   int nidx, nidy, nidz;
-  //OK411 int timelevel = 1; 
+  //OK411 int timelevel = 1;
   double WDepth;
 
   nidx = m_pcs->GetNodeValueIndex("HEAD")+1;
@@ -2082,7 +2082,7 @@ inline void Problem::ASMCalcNodeWDepth(CRFProcess *m_pcs)
   for(long nn=0;nn<(long)m_pcs->m_msh->nod_vector.size();nn++)
   {
     WDepth = m_pcs->GetNodeValue(nn, nidx) - m_pcs->m_msh->nod_vector[nn]->Z();
-	m_pcs->SetNodeValue(nn,nidz, m_pcs->GetNodeValue(nn,nidz+1) ); // JOD only needed for GREEN_AMPT source term 
+	m_pcs->SetNodeValue(nn,nidz, m_pcs->GetNodeValue(nn,nidz+1) ); // JOD only needed for GREEN_AMPT source term
     if (WDepth < 0.0) {
       WDepth  = 0.0;
     }
@@ -2099,7 +2099,7 @@ inline void Problem::ASMCalcNodeWDepth(CRFProcess *m_pcs)
                                                                           */
 /* Programmaenderungen:
    08/2003   SB   Implementation
-   01/2006   YD   add dual porosity                                       
+   01/2006   YD   add dual porosity
    01/2007 OK Two-phase flow
                                                                           */
 /**************************************************************************/
@@ -2113,7 +2113,7 @@ void Problem::PCSCalcSecondaryVariables()
   //OK411 CRFProcess* m_pcs_phase_2 = NULL;
  //WW int ndx_p_gas_old,ndx_p_gas_new,ndx_p_liquid_old,ndx_p_liquid_new,ndx_p_cap_old;
   //----------------------------------------------------------------------
-  //OK411 bool pcs_cpl = true; 
+  //OK411 bool pcs_cpl = true;
   //----------------------------------------------------------------------
   // Check if NAPLdissolution is modeled, required by MMPCalcSecondaryVariablesNew
   bool NAPLdiss = false;
@@ -2141,7 +2141,7 @@ void Problem::PCSCalcSecondaryVariables()
     case 2: /* Mass transport process */
       break;
     case 3: /* Heat transport */
-      // do nothing 
+      // do nothing
       break;
     case 4: /* Deformation */
       // do nothing
@@ -2162,7 +2162,7 @@ void Problem::PCSCalcSecondaryVariables()
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 05/2009 OK Implementation
 **************************************************************************/
 bool Problem::Check()
@@ -2178,7 +2178,7 @@ bool Problem::Check()
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 06/2009 OK Implementation
 **************************************************************************/
 bool MODCreate()

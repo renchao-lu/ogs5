@@ -509,7 +509,7 @@ void earClippingTriangulation (std::vector<GEOLIB::Point*>& pnts, std::list<GEOL
 				}
 				prevprev--;
 
-				// apply changes to convex_vertex_list and ear_list
+				// apply changes to convex_vertex_list and ear_list looking "backward"
 				orientation = getOrientation (pnts[*prevprev], pnts[*prev], pnts[*next]);
 				if (orientation == CCW) {
 					// prev is convex
@@ -541,7 +541,7 @@ void earClippingTriangulation (std::vector<GEOLIB::Point*>& pnts, std::list<GEOL
 					nextnext++;
 				}
 
-				// apply changes to convex_vertex_list and ear_list
+				// apply changes to convex_vertex_list and ear_list looking "forward"
 				orientation = getOrientation (pnts[*prev], pnts[*next], pnts[*nextnext]);
 				if (orientation == CCW) {
 					// next is convex
@@ -573,6 +573,16 @@ void earClippingTriangulation (std::vector<GEOLIB::Point*>& pnts, std::list<GEOL
 		// add triangle
 		triangles.push_back (GEOLIB::Triangle (pnts, *prev, ear, *next));
 	}
+	// add last triangle
+	next = vertex_list.begin();
+	prev = next;
+	next++;
+	it = next;
+	next++;
+	if (getOrientation (pnts[*prev], pnts[*it], pnts[*next]) == CCW)
+		triangles.push_back (GEOLIB::Triangle (pnts, *prev, *it, *next));
+	else
+		triangles.push_back (GEOLIB::Triangle (pnts, *prev, *next, *it));
 }
 
 void earClippingTriangulationOfPolygon(const GEOLIB::Polyline* ply, std::list<GEOLIB::Triangle> &triangles)
