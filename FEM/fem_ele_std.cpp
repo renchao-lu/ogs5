@@ -4679,6 +4679,7 @@ void  CFiniteElementStd::Assemble_Gravity()
    08/2005      
    03/2007   WW  Multi-phase flow     
    01/2010   NW  Fix multi-dimensional case     
+   02/2010   WW  Fix a bug in velocity of the first phase 
 **************************************************************************/
 // Local assembly
 void  CFiniteElementStd::Cal_Velocity()
@@ -4726,7 +4727,10 @@ void  CFiniteElementStd::Cal_Velocity()
 	// This should be enough for Vw in PS_GLOBAL as well,
 	// since the first primary variable is Pw.
     for(i=0; i<nnodes; i++)
-       NodalVal[i] = pcs->GetNodeValue(nodes[i], idx1); 
+    {
+        NodalVal[i] = pcs->GetNodeValue(nodes[i], idx1);
+        NodalVal1[i] = NodalVal[i]; 
+    } 
   }
   //
   if(PcsType==V)
@@ -4734,8 +4738,9 @@ void  CFiniteElementStd::Cal_Velocity()
     gp_ele->Velocity_g = 0.0; //WW
     for(i=0; i<nnodes; i++)
     {
-       NodalVal[i] = pcs->GetNodeValue(nodes[i], idxp21) - NodalVal[i]; //WW
-       NodalVal1[i] = pcs->GetNodeValue(nodes[i], idxp21);
+       // 02.2010. WW
+       NodalVal2[i] = pcs->GetNodeValue(nodes[i], idxp21);
+       NodalVal[i] = NodalVal2[i]  - NodalVal[i];
     }
   }
   if(PcsType==P)
@@ -4787,7 +4792,7 @@ void  CFiniteElementStd::Cal_Velocity()
          {
            vel_g[i] = 0.0; 
            for(j=0; j<nnodes; j++)         
-             vel_g[i] += NodalVal1[j]*dshapefct[i*nnodes+j];
+             vel_g[i] += NodalVal2[j]*dshapefct[i*nnodes+j];   // Change   NodalVal2 to NodalVal1. 02.2010. WW
          }  
       }     
       // Gravity term
@@ -4816,7 +4821,7 @@ void  CFiniteElementStd::Cal_Velocity()
          {
             if(PcsType==V)
             {
-               vel[dim-1] -= coef;
+               vel[dim-1] += coef;
                vel_g[dim-1] += gravity_constant*rho_ga;
             }
             else if(PcsType==P)		// PCH 05.2009
@@ -4828,22 +4833,31 @@ void  CFiniteElementStd::Cal_Velocity()
                vel[dim-1] += coef;
          }
       }
-      for (i = 0; i < dim; i++)
-      {
-         for(j=0; j<dim; j++)
-//            gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j];  // unit as that given in input file
-            gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;
-      }
       //
       if(PcsType==V)
       {
-         
+         for (i = 0; i < dim; i++)  // 02.2010. WW
+         {
+            for(j=0; j<dim; j++)
+              gp_ele->Velocity(i, gp) += mat[dim*i+j]*vel[j]/time_unit_factor;
+         }
          CalCoefLaplace2(true,3); 
          for (i = 0; i < dim; i++)
          {
            for(j=0; j<dim; j++)
               gp_ele->Velocity_g(i, gp) -= mat[dim*i+j]*vel_g[j]/time_unit_factor;
          }
+      }
+      else  // 02.2010. WW
+      {
+         for (i = 0; i < dim; i++)
+         {
+            for(j=0; j<dim; j++)
+//              gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j];  // unit as that given in input file
+              gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;  //SI Unit
+         }
+
+
       }
       if(PcsType==P)	// PCH 05.2009
       {

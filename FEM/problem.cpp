@@ -854,8 +854,8 @@ void Problem::Euler_TimeDiscretize()
   }
 
   cout<<"----------------------------------------------------\n";
-  cout<<"|Acccept step times |"<<accepted_times;
-  cout<<"  |Reject step times |"<<rejected_times<<endl;
+  cout<<"|Acccepted step times |"<<accepted_times;
+  cout<<"  |Rejected step times |"<<rejected_times<<endl;
   cout<<"----------------------------------------------------\n";
   //
 }
@@ -906,7 +906,9 @@ bool Problem::CouplingLoop()
    int num_processes = (int)active_process_index.size();
 // To do
 //SB->WW I do not understand this condition, why switch off output?
-//SB   if(acounter==num_processes)
+//WW Reason: 
+   /// Make output when all defined processes are activated.
+   if(acounter==num_processes)
       print_result = true;
    //
    bool accept = true;
