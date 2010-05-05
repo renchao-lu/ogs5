@@ -180,7 +180,7 @@ public:
 	 * \ingroup MSHGEO
 	 * \brief depreciated method - uses old surface class
 	 */
-    void CFEMesh::GetNODOnSFC_Vertical(Surface*m_sfc,vector<long>&msh_nod_vector);
+        void GetNODOnSFC_Vertical(Surface*m_sfc,vector<long>&msh_nod_vector);
 
 
 	/**
