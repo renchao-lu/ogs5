@@ -28,6 +28,7 @@ using namespace std;
 #include "mathlib.h"
 #include "fem_ele_std.h"
 #include "rf_msp_new.h"
+#include "rf_random_walk.h"
 // GeoSys-MSHLib
 #include "msh_lib.h"
 
@@ -294,7 +295,7 @@ ios::pos_type COutput::Read(ifstream *out_file)
     if(line_string.find("$TIM_TYPE")!=string::npos) { // subkeyword found
       while ((!new_keyword)&&(!new_subkeyword)) {
         position_subkeyword = out_file->tellg();
-		*out_file >> line_string;
+	*out_file >> line_string; 
         if(line_string.size()==0) //SB
           break;
         if(line_string.find(hash)!=string::npos) {
@@ -309,7 +310,7 @@ ios::pos_type COutput::Read(ifstream *out_file)
          *out_file >> nSteps;
           tim_type_name = "STEPS"; //OK
         }
-		if(line_string.find("STEPPING")!=string::npos) { // JTARON 2010, reconfigured (and added RWPT)... didn't work
+		if(line_string.find("STEPPING")!=string::npos) { // JTARON 2010, reconfigured... didn't work
 		  double stepping_length, stepping_end, stepping_current;
 		  *out_file >> stepping_length >> stepping_end;
 		  stepping_current = stepping_length;
@@ -1900,6 +1901,8 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
     string project_title_string = "Time curves in points"; //project_title;
     tec_file << matlab_delim << "TITLE = \"" << project_title_string << "\"" << endl;
     tec_file << matlab_delim << "VARIABLES = \"TIME \" ";
+    if(pcs_type_name.compare("RANDOM_WALK")==0)
+    	tec_file << "leavingParticles ";
     for(k=0;k<no_variables;k++)
     {//WW 
        tec_file << " \"" << nod_value_vector[k] << "\" ";
@@ -1963,6 +1966,9 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
   tec_file << time_current << " ";
   //......................................................................
   // NOD values
+  if(pcs_type_name.compare("RANDOM_WALK")==0) {	
+	  tec_file <<  m_msh->PT->leavingParticles  << " ";
+  }
   int l,m;
   int nidx;
   int timelevel;
@@ -2343,11 +2349,7 @@ FEMLib-Method:
 Task:
 Programing:
 05/2005 OK Implementation
-<<<<<<< HEAD
-last modification:
-=======
 last modification: 03/2010 JTARON
->>>>>>> FETCH_HEAD
 **************************************************************************/
 COutput* OUTGet(string out_name)
 {

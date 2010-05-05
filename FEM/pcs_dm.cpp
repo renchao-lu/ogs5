@@ -521,12 +521,6 @@ double CRFProcessDeformation::Execute(const int CouplingIterations)
         pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
 #endif
 */
-#ifdef MFC
-        CString m_str;
-        m_str.Format("Time step: t=%e sec, %s, Load step: %i, NR-Iteration: %i, Assemble equation system",\
-                      aktuelle_zeit,pcs_type_name.c_str(),l,ite_steps);
-        pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
-#endif
 #ifdef USE_MPI //WW
        clock_t cpu_time=0;  //WW
        cpu_time = -clock();

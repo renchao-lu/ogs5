@@ -96,6 +96,7 @@ public:
     // For now, I just created here.
     int numOfParticles;
 	int UniformOrNormal;
+	int leavingParticles;
 	int RWPTMode;	// 0: Advection and dispersion for homogeneous media
 					// 1: Advection and dispersion for heterogeneous media
 					// 2: Advection only for homogeneous media

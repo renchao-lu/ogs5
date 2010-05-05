@@ -640,10 +640,7 @@ void RandomWalk::InterpolateVelocityOfTheParticleByInverseDistance(Particle* A)
 			// Thus, I only divide Darcy velocity by porosity only to get pore velocity.
 			CMediumProperties *MediaProp = mmp_vector[m_ele->GetPatchIndex()];
 			double porosity = 0.0;
-			if(MediaProp->porosity > 10-6)
-				porosity = MediaProp->porosity;	// This is for simple one.
-			else
-				porosity = MediaProp->porosity_model_values[0];		// This will get you porosity.
+			porosity = MediaProp->porosity_model_values[0];		// This will get you porosity.
 			// I guess for Dual Porocity stuff,
 			// this code should be revisited.
 
@@ -2059,7 +2056,7 @@ Programing:
 void RandomWalk::AdvanceBySplitTime(double dt, int numOfSplit)
 {
 	double subdt = dt / (double)numOfSplit;
-
+	leavingParticles = 0;
 	for(int i=0; i< numOfSplit; ++i)
 	{
 		AdvanceToNextTimeStep(subdt);
@@ -2172,6 +2169,14 @@ void RandomWalk::AdvanceToNextTimeStep(double dt)
 					if(Astatus == -1)
 						Y.t = dt;
 					Astatus = SolveForNextPosition(&(X[i].Now), &Y);
+
+					// YYS ToDO
+					if(Y.x< 1.e-20 )
+						Y.x= 1.e-20;
+					if(Y.x> 0.1 )
+						leavingParticles++;
+					// YYS ToDO ends here.
+
 					// Just get the element index after this movement
 					// if not Homogeneous aquifer
 					if(RWPTMode%2 == 1)
