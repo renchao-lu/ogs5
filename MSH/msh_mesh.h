@@ -173,9 +173,15 @@ public:
 
 	/**
 	 * \ingroup MSHGEO
-	 * \brief depreciated method - uses old Polyline class
+	 * \brief depreciated method - uses old surface class
 	 */
 	void GetNODOnPLY_XY(CGLPolyline*m_ply, std::vector<long>&msh_nod_vector);
+	/**
+	 * \ingroup MSHGEO
+	 * \brief depreciated method - uses old surface class
+	 */
+    void CFEMesh::GetNODOnSFC_Vertical(Surface*m_sfc,vector<long>&msh_nod_vector);
+
 
 	/**
 	 * \ingroup MSHGEO
@@ -215,6 +221,11 @@ public:
 	 */
 	void GetNODOnSFC_PLY_XY(Surface*m_sfc, std::vector<long>& msh_nod_vector,
 			bool givenNodesOnSurface = false); // givenNodeOnSurface by WW
+	/**
+	 * \ingroup MSHGEO
+	 * \brief depreciated method
+	 */
+	void GetNODOnSFC_PLY_Z(Surface*,vector<long>&); // 02.2009/OK
 	/**
 	 * \ingroup MSHGEO
 	 * \brief depreciated method
