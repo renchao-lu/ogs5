@@ -1967,7 +1967,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
   //......................................................................
   // NOD values
   if(pcs_type_name.compare("RANDOM_WALK")==0) {	
-//	  tec_file <<  m_msh->PT->leavingParticles  << " ";
+	  tec_file <<  m_msh->PT->leavingParticles  << " ";
   }
   int l,m;
   int nidx;
