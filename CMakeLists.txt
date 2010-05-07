@@ -120,6 +120,8 @@ ENDIF(OGS_FEM_MKL)
 
 
 ###LIBRARY
+FIND_PACKAGE (PythonInterp)
+
 IF(MKL)
 	IF (UNIX)
 		# Find MKLlib

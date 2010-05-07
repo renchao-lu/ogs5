@@ -136,13 +136,41 @@ MACRO(ADD_BENCHMARK authorName benchmarkName ogsConfiguration)
     STRING (SUBSTRING ${benchmarkName} 0 ${substringLength} benchmarkDir)
 
     ADD_TEST (
-      BM_${authorName}_${benchmarkName}
+      ${authorName}_BENCHMARK_${benchmarkName}
       ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/../benchmarks/${benchmarkDir}
       ${ogsExe}
       ${benchmarkStrippedName}
     )
     
-    #SET_TESTS_PROPERTIES (BM_${authorName}_${benchmarkName} PROPERTIES TIMEOUT 60)
+    #SET_TESTS_PROPERTIES (Benchmark_${authorName}_${benchmarkName} PROPERTIES TIMEOUT 60)
   ENDIF (CONFIG_MATCH)
   
 ENDMACRO(ADD_BENCHMARK authorName benchmarkName ogsConfiguration)
+
+MACRO(ADD_FILE_COMPARE authorName)
+
+ENDMACRO(ADD_FILE_COMPARE authorName)
+
+MACRO(ADD_FILES_COMPARE authorName)
+  # compare file differences with python script
+  IF (PYTHONINTERP_FOUND)
+    ADD_TEST (
+      ${authorName}_FILECOMPARE    
+      ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/../benchmarks
+      ${PYTHON_EXECUTABLE}
+      compare.py
+      ${authorName}_output_list.cmake
+      ../benchmarks_ref/
+      ${authorName}.html
+    )
+  # compare files with builtin cmake command
+  ELSE (PYTHONINTERP_FOUND)
+    INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/${authorName}_output_list.cmake)
+    FOREACH (OUTPUTFILE ${${authorName}_OUTPUT_LIST})
+      ADD_TEST (
+        ${authorName}_FILECOMPARE_${OUTPUTFILE}
+        ${CMAKE_COMMAND} -E compare_files ${PROJECT_SOURCE_DIR}/../benchmarks/${OUTPUTFILE} ${PROJECT_SOURCE_DIR}/../benchmarks_ref/${OUTPUTFILE}
+      )
+    ENDFOREACH (OUTPUTFILE ${${authorName}_OUTPUT_LIST})
+  ENDIF (PYTHONINTERP_FOUND)
+ENDMACRO(ADD_FILES_COMPARE authorName)
