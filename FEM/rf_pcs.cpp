@@ -7618,11 +7618,6 @@ if(pcs_type_name.compare("RICHARDS_FLOW")==0&&m_msh_cpl->pcs_name.compare("OVERL
   long cpl_msh_ele_number;
   value = 0.0;
   cout << "CPL value = " << value << endl;
-/*
-  CGLPoint* m_pnt = GEOGetPointByName("POINT18");
-  msh_node_number = m_msh->GetNODOnPNT(m_pnt);
-  eqs->b[msh_node_number] += value;
-*/
   // PCS-CON
   CRFProcess* m_pcs_cond = PCSGet(cpl_type_name);
   //int nidx = m_pcs_cond->GetNodeValueIndex(m_pcs_cond->pcs_primary_function_name[0]);

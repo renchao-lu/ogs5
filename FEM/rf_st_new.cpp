@@ -2314,7 +2314,7 @@ void CSourceTermGroup::SetPNT(CRFProcess* m_pcs, CSourceTerm* m_st, const int Sh
   CGLPoint* m_pnt = NULL;
   CNodeValue *m_nod_val = NULL;
   m_nod_val = new CNodeValue();
-  m_pnt = GEOGetPointByName(m_st->geo_name);
+  m_pnt = GEOGetPointByName(m_st->geo_name); //TF
   if(m_pnt)
     m_nod_val->geo_node_number = m_pnt->id;
   if(m_pnt)

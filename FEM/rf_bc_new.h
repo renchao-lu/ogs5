@@ -137,8 +137,6 @@ extern CBoundaryConditionsGroup* BCGetGroup(std::string pcs_type_name,std::strin
 extern list<CBoundaryCondition*> bc_list;
 extern bool BCRead(std::string);
 extern void BCWrite(std::string);
-extern void BCReadDataBase(std::string);
-extern void BCExecuteDataBase(void);
 extern void BCDelete();
 extern void BCGroupDelete(std::string,std::string);
 extern void BCGroupDelete(void);

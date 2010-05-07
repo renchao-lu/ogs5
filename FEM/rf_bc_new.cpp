@@ -141,27 +141,7 @@ ios::pos_type CBoundaryCondition::Read(ifstream *bc_file) {
 				in.clear();
 				geo_type_name = "POINT";
 				geo_type = 0;
-				// CGLPoint* m_point = NULL;//CC
-				// m_point= GEOGetPointByName(geo_name);//CC
-				//if(m_point)
-				// geo_node_number =  m_point->id;
-				// sub_string = geo_name.substr(5,100);//CC remove
-				//geo_node_number = strtol(sub_string.c_str(),NULL,0);//CC remove
 			}
-			/*    if(sub_string.find("POINTS")!=string::npos) { //OK //MX ToDo
-			 bc_file->seekg(position_line,ios::beg);
-			 *bc_file >> geo_type_name;
-			 pos = (int)geo_type_name.find(":");
-			 if(pos>0)
-			 geo_type_name.erase(pos);
-			 *bc_file >> geo_name;
-			 remove_white_space(&geo_name);
-			 sub_string = geo_name.substr(5,100);
-			 geo_node_number = strtol(sub_string.c_str(),NULL,0);
-			 bc_file->ignore(MAX_ZEILE,'\n');
-			 continue;
-			 }
-			 */
 			if (sub_string.find("POLYLINE") != string::npos) {
 				in >> geo_name; //sub_line
 				in.clear();
@@ -221,10 +201,6 @@ ios::pos_type CBoundaryCondition::Read(ifstream *bc_file) {
 
 				in >> db_file_name; //sub_line
 				in.clear();
-				//        pos1=pos2+1;
-				//        sub_string = get_sub_string(buffer,delimiter,pos1,&pos2);
-				//        db_file_name = sub_string;
-				BCReadDataBase(db_file_name);
 			}
 			if (line_string.find("LINEAR") != string::npos) {
 				dis_type_name = "LINEAR";
@@ -256,9 +232,6 @@ ios::pos_type CBoundaryCondition::Read(ifstream *bc_file) {
 				dis_type = 3;
 				in >> db_file_name; //sub_line
 				in.clear();
-
-				//        *bc_file >> db_file_name;
-				BCReadDataBase(db_file_name);
 			}
 			if (line_string.find("SUBSTITUTE") != string::npos) {
 				dis_type_name = "VARIABLE";
@@ -563,116 +536,6 @@ void InterpolateValues(vector<CNodeValue*> node_value_vector) {
 
 /**************************************************************************
  FEMLib-Method:
- Task: BC DB function
- Programing:
- 02/2004 OK Implementation
- **************************************************************************/
-void CBoundaryCondition::ExecuteDataBasePolyline(CGLPolyline *m_polyline) {
-	m_polyline = m_polyline; //OK411
-	/*OK4111
-	 CBoundaryCondition *m_bc = NULL;
-	 CGLPoint *m_point = NULL;
-	 long number_of_nodes;
-	 long *nodes = NULL;
-	 vector<CNodeValue*>node_value_vector_tmp;
-	 long i,j;
-	 CNodeValue *node_value = NULL;
-	 long bc_db_vector_size = (long)bc_db_vector.size();
-	 double pt1[3],pt2[3];
-	 double distance;
-	 long *nodes_unsorted = NULL;
-	 //...............................................................
-	 // Auxillary node_value vector
-	 nodes_unsorted = MSHGetNodesClose(&number_of_nodes,m_polyline);
-	 // Sort by distance
-	 pt1[0] = m_polyline->point_vector[0]->x;
-	 pt1[1] = m_polyline->point_vector[0]->y;
-	 pt1[2] = m_polyline->point_vector[0]->z;
-	 double *node_distances = new double[number_of_nodes];
-	 for(i=0;i<number_of_nodes;i++) {
-	 pt2[0] = GetNodeX(nodes_unsorted[i]);
-	 pt2[1] = GetNodeY(nodes_unsorted[i]);
-	 pt2[2] = GetNodeZ(nodes_unsorted[i]);
-	 node_distances[i] = MCalcDistancePointToPoint(pt1,pt2);
-	 }
-	 nodes = TOLSortNodes1(nodes_unsorted,node_distances,number_of_nodes);
-	 //
-	 for(i=0;i<number_of_nodes;i++) {
-	 node_value = new CNodeValue;
-	 node_value->geo_node_number = -1;
-	 node_value->msh_node_number = nodes[i];
-	 node_value->node_value = 0.0;
-	 pt1[0] = GetNodeX(nodes[i]);
-	 pt1[1] = GetNodeY(nodes[i]);
-	 pt1[2] = GetNodeZ(nodes[i]);
-	 for(j=0;j<bc_db_vector_size;j++) {
-	 m_bc = bc_db_vector[j];
-	 m_point = GEOGetPointByName(m_bc->geo_name);//CC
-	 m_bc->geo_node_number = m_point->id; //CC
-	 pt2[0] = m_point->x;
-	 pt2[1] = m_point->y;
-	 pt2[2] = m_point->z;
-	 distance = MCalcDistancePointToPoint(pt1,pt2);
-	 if(distance<1e-3) {
-	 node_value->geo_node_number = m_bc->geo_node_number;
-	 node_value->node_value = m_bc->geo_node_value;
-	 }
-	 }
-	 node_value_vector_tmp.push_back(node_value);
-	 }
-	 //...............................................................
-	 // Interpolate at polyline
-	 InterpolateValues(node_value_vector_tmp);
-	 //...............................................................
-	 // Fill BC node_value vector
-	 double tmp;
-	 long l_tmp;
-	 for(i=0;i<number_of_nodes;i++) {
-	 l_tmp = node_value_vector_tmp[i]->msh_node_number;
-	 node_number_vector.push_back(node_value_vector_tmp[i]->msh_node_number);
-	 tmp = node_value_vector_tmp[i]->node_value;
-	 node_value_vector.push_back(node_value_vector_tmp[i]->node_value);
-	 }
-	 // Release memory
-	 node_value_vector_tmp.clear();
-	 delete [] node_distances;
-	 delete [] nodes_unsorted;
-	 */
-}
-
-/**************************************************************************
- FEMLib-Method:
- Task: BC DB function
- Programing:
- 02/2004 OK Implementation
- **************************************************************************/
-void BCExecuteDataBase(void) {
-	CBoundaryCondition *m_bc = NULL;
-	CGLPolyline *m_polyline = NULL;
-	//-----------------------------------------------------------------------
-	list<CBoundaryCondition*>::const_iterator p_bc = bc_list.begin();
-	while (p_bc != bc_list.end()) {
-		m_bc = *p_bc;
-		if (!(m_bc->db_file_name.empty())) {
-			//...................................................................
-			// Polylines
-			if (m_bc->geo_type_name.compare("POLYLINE") == 0) {
-				m_polyline = GEOGetPLYByName(m_bc->geo_name);
-				if (m_polyline) {
-					m_bc->ExecuteDataBasePolyline(m_polyline);
-				}
-			}
-			//...................................................................
-			if (m_bc->geo_type_name.compare("SURFACE") == 0) {
-				// Surfaces
-			}
-		} // if DB
-		++p_bc;
-	} // while BC
-}
-
-/**************************************************************************
- FEMLib-Method:
  Task: BC read function
  Programing:
  01/2004 OK Implementation
@@ -916,80 +779,6 @@ inline void CBoundaryCondition::PatchAssign(const long ShiftInNodeVector) {
 		m_node_value->CurveIndex = CurveIndex;
 		m_pcs->bc_node.push_back(this);
 		m_pcs->bc_node_value.push_back(m_node_value);
-	} // eof
-}
-
-/**************************************************************************
- FEMLib-Method:
- Task:
- Programing:
- 02/2004 OK Implementation
- **************************************************************************/
-void BCReadDataBase(string csv_file_name) {
-	char buffer[MAX_ZEILE];
-	string sub_string, cut_string;
-	string line;
-	int pos1, pos2;
-	string delimiter_type(";");
-	CBoundaryCondition *m_bc = NULL;
-	//========================================================================
-	// File handling
-	ifstream csv_file(csv_file_name.data(), ios::in);
-	if (!csv_file.good()) {
-		cout << "! Warning in BCReadDataBase: DB file " << csv_file_name
-				<< " not found!" << endl;
-		return;
-	}
-	csv_file.seekg(0L, ios::beg);
-	//========================================================================
-	//
-	pos1 = 0;
-	pos2 = 0;
-	csv_file.getline(buffer, MAX_ZEILE);
-	line = buffer;
-	cut_string = line;
-	//------------------------------------------------------------------------
-	// read header
-	while (pos2 >= 0) {
-		//sub_string = get_sub_string(line,delimiter_type,pos1,&pos2);
-		pos2 = (int) cut_string.find_first_of(delimiter_type);
-		string db_head = cut_string.substr(0, pos2);
-		bc_db_head.push_back(db_head);
-		string tmp = cut_string.substr(pos2 + delimiter_type.size());
-		cut_string = tmp;
-		//pos1=pos2;
-	}
-	//------------------------------------------------------------------------
-	// read data
-	int bc_db_head_size = (int) bc_db_head.size();
-	int i;
-	while (!csv_file.eof()) {
-		pos1 = 0;
-		csv_file.getline(buffer, MAX_ZEILE);
-		line = buffer;
-		if ((line.find("#STOP") != string::npos) || (line.empty()))
-			return;
-		cut_string = line;
-		m_bc = new CBoundaryCondition;
-		for (i = 0; i < bc_db_head_size; i++) {
-			//string db_entry = get_sub_string(buffer,delimiter_type,pos1,&pos2);
-			pos2 = (int) cut_string.find_first_of(delimiter_type);
-			string db_entry = cut_string.substr(0, pos2);
-			string tmp = cut_string.substr(pos2 + delimiter_type.size());
-			cut_string = tmp;
-			if (bc_db_head[i].compare("GEO_TYPE") == 0) {
-				m_bc->geo_type_name = db_entry;
-			}
-			if (bc_db_head[i].compare("GEO_ID") == 0) {
-				m_bc->geo_node_number = strtol(db_entry.data(), NULL, 0);
-			}
-			if (bc_db_head[i].compare("BC_HEAD") == 0) {
-				m_bc->pcs_type_name = "PRESSURE1"; //OK4108
-				m_bc->geo_node_value = strtod(db_entry.data(), NULL);
-			}
-			pos1 = pos2;
-		}
-		bc_db_vector.push_back(m_bc);
 	} // eof
 }
 
