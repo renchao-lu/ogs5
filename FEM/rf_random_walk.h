@@ -154,7 +154,7 @@ public:
     double randomMinusOneToOne(void);   // create uniform random number between -1 and 1
     double randomZeroToOne(void);   // create uniform random number between 0 and 1
 
-	void AdvanceToNextTimeStep(double dt);
+	void AdvanceToNextTimeStep(double dt,double ctime);
 	void AdvanceBySplitTime(double dt, int numOfSplit);
 	void TraceStreamline(void);
 	void GetDisplacement(Particle* B, double* Z, double* V, double* dD, double time, double* dsp);

@@ -2057,9 +2057,11 @@ void RandomWalk::AdvanceBySplitTime(double dt, int numOfSplit)
 {
 	double subdt = dt / (double)numOfSplit;
 	leavingParticles = 0;
+	double ctime=0.0; //JT 05.2010: for continuous source compatible with SplitTimes.
 	for(int i=0; i< numOfSplit; ++i)
 	{
-		AdvanceToNextTimeStep(subdt);
+		AdvanceToNextTimeStep(subdt,ctime);
+		ctime+=subdt;
 	}
 
 }
@@ -2104,17 +2106,18 @@ Programing:
 05/2009 PCH mobiility of particle now defined in .mcp via components
 06/2009 PCH Case specific apps for RWPT defined by rwpt_app
  **************************************************************************/
-void RandomWalk::AdvanceToNextTimeStep(double dt)
+void RandomWalk::AdvanceToNextTimeStep(double dt,double ctime)
 {
 	double tolerance = 1e-18;
 	int TimeMobility;
+	double exceedtime = aktuelle_zeit + MKleinsteZahl + ctime; // 05.2010 JT
 	// Loop over all the particles
 //OK411???
 	for(int i=0; i< numOfParticles; ++i)
 	{
 		TimeMobility = 0; //JTARON 2010, using this for now. Setting identity = 1 causes simulation failure... not sure why??
 		//X[i].Now.identity=1;
-		if(X[i].Now.StartingTime < aktuelle_zeit)
+		if(X[i].Now.StartingTime <= exceedtime)
 		{
 			TimeMobility = 1;
 			//X[i].Now.identity=0;
