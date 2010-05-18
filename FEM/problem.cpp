@@ -51,7 +51,7 @@ extern int ReadData(char*); //OK411
 #include "files0.h" // GetLineFromFile1
 //
 #ifdef CHEMAPP
-  #include "./EQL/eqlink.h"
+  #include "eqlink.h"
 #endif
 #ifdef UDE_REACT
 #include "rf_REACT_ude.h"

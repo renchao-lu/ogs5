@@ -21,7 +21,7 @@ It may only be used together with GTT-Technologies´ ChemApp software.
 Unauthorised duplication and distribution both in printed and online
 form, also in parts, is prohibited.
 */
-#include "stdafx.h" /* MFC */
+// #include "stdafx.h" /* MFC */
 
 #include <string.h>
 #include "cacint.h"

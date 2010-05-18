@@ -23,7 +23,7 @@ Reaction package to go with MTM2
 // Elem object
 #include "fem_ele_std.h"
 #ifdef CHEMAPP
-  #include "./EQL/eqlink.h"
+  #include "eqlink.h"
 #endif
 
 #include <vector>

@@ -35,7 +35,7 @@ using namespace std;
 extern int max_dim;  //OK411 todo
 
 #ifdef CHEMAPP
-  #include "./EQL/eqlink.h"
+  #include "eqlink.h"
 #endif
 #include "vtk.h"
 // MPI Parallel

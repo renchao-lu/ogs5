@@ -3,7 +3,7 @@
 //First implementation:  MX 04/2006
 //******************************************************
 
-#include "stdafx.h" /* MFC */
+// #include "stdafx.h" /* MFC */
 
 #ifdef CHEMAPP
 

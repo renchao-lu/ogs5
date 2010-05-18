@@ -1,13 +1,13 @@
 #ifdef CHEMAPP
 
-#include "stdafx.h" /* MFC */
+// #include "stdafx.h" /* MFC */
 
 
 #include "eqlink.h"
-#include "files.h"
+#include "files0.h"
 #include <iostream>
 #include <fstream>
-#include "geo_strings.h"
+//#include "geo_strings.h"
 #include "cacint.h"
 #include <cstring>
 #include "rf_pcs.h"

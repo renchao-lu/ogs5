@@ -54,7 +54,7 @@
 #include "rf_fluid_momentum.h"  // PCH
 #include "rf_fct.h" //OK
 #ifdef CHEMAPP
-  #include "./EQL/eqlink.h"  //MX
+  #include "eqlink.h"  //MX
 #endif
 /* Tools */
 #include "mathlib.h"
