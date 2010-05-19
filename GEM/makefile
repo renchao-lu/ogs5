@@ -1,12 +1,12 @@
-CC = gcc
-CXX = gcc
+CC = g++
+CXX = g++
 FORT = gfortran
 CFLAGS = -c  -g -O2 -pedantic -fno-nonansi-builtins -D__unix -DUse_qd_real
 # -lstd -lC -lpgc -lrt -Msecond_underscore
 CCFLAGS =   -c -g -O2 -DIPMGEMPLUGIN -D__unix -DUse_qd_real
 CCFLAGS1 =   -c -g -O2 -DIPMGEMPLUGIN -D__unix -DUse_qd_real
 FFLAGS = -c -g -O2 -fbounds-check -fno-underscoring -D__unix -D__GNU
-LINK = gcc
+LINK = g++
 LFLAGS = -lstdc++ -lqd -lgfortran
 LIB = libgemipm2k.a
 

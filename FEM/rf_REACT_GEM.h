@@ -55,9 +55,12 @@ public:
         long m_IterDoneIndexSort, m_ShuffleGems;
 	// this is for porosity calculated on volume of solids
 	double *m_porosity; 
+	double *m_fluid_volume, *m_gas_volume;
 	
 	// index, which one in the xDC vector is water. 
-	long idx_water;
+	int idx_water;
+	int idx_hydrogen;
+        int idx_oxygen;
 
 	double *m_T, *m_P, *m_Vs, *m_Ms,
           *m_Gs, *m_Hs, *m_IC, *m_pH, *m_pe,
@@ -69,6 +72,9 @@ public:
     
 	double  *m_porosity_Elem, *m_porosity_Elem_buff;
 
+	// data for transport of IC 
+	double *m_soluteB, *m_soluteB_buff;
+
     // previous time step DC values
     double *m_xDC_pts;        // previous time step Concentration;
     double *m_xDC_MT_delta;   // delta C from Mass Transport;
@@ -79,7 +85,11 @@ public:
 	double *m_saturation;
 	double *m_Node_Volume;    // Volume around the node;
 
+	double *mol_phase, *omega_phase,*omega_components; // this we need for kinetics
 
+	double *dmdt; // kinetically controlled rates
+        void CalcLimits ( long in);
+        void CalcLimitsInitial ( long in);
         int *m_boundary; //holds marker for boundary nodes
 
 	CFluidProperties *m_FluidProp;
@@ -95,7 +105,7 @@ public:
 
     short Init_RUN();// Run the node-GEM                      	
 	//  return: 0-ok;5-GEM does not converge 
-	short Run_MainLoop(string Project_path, long aktueller_zeitschritt);
+	short Run_MainLoop();
 	//  return: 0-ok;5-GEM does not converge 
 
 	string Get_Init_File_Path(void);
@@ -125,6 +135,8 @@ public:
 	int flag_coupling_hydrology; //0-without coupling; 1=with coupling;
 	int flag_permeability_porosity;//0-no coupling; 1-Kozeny-Carman; 2-Kozeny-Carman normalized;
         int flag_gem_smart; // shall we work with faster simplex for GEM?
+        int gem_pressure_flag; //shall we give a constant user defined pressure to gems?
+	int flag_transport_b; //1: transport only dissolved components of b vector; 0: transport full speciation
 	//--------------
 
 	long nNodes; // number of all nodes;
@@ -135,6 +147,7 @@ public:
     long GetElemNumber_MT(void);
 	void GetFluidProperty_MT(void);
 
+	short GetInitialReactInfoFromMassTransport(int timelevel);
 	short GetReactInfoFromMassTransport(int timelevel);
     short SetReactInfoBackMassTransport(int timelevel);
     void GetReactInfoFromGEM(long in);
@@ -147,18 +160,21 @@ public:
 	double GetPressureValue_MT(long node_Index, int timelevel);
 	double GetComponentValue_MT(long node_Index, string m_component, int timelevel);
 	short GetDCValue_MT(long node_Index, int timelevel, double* m_DC, double* m_DC_pts, double* m_DC_MT_delta);
+	short GetBValue_MT ( long node_i, int timelevel, double *m_soluteB);
 	short GetSoComponentValue_MT(long node_Index, int timelevel, double* m_Phase);
-
+        double GetDCValueSpecies_MT ( long node_Index, int timelevel, int iDc );
 	short SetTempValue_MT(long node_Index, int timelevel, double temp);
 	short SetPressureValue_MT(long node_Index, int timelevel, double pressure);
 	short SetDCValue_MT(long node_Index, int timelevel, double* m_DC);
+	short SetBValue_MT(long node_Index, int timelevel, double* m_soluteB);
+
 	short SetSoComponentValue_MT(long node_Index, int timelevel, double* m_Phase);
 	short SetPHValue_MT(long node_Index, int timelevel, double m_PH);
 	short SetPeValue_MT(long node_Index, int timelevel, double m_PE);
 	short SetEhValue_MT(long node_Index, int timelevel, double m_EH);
 	short SetNodePorosityValue_MT(long node_Index, int timelevel, double m_porosity);
 
-  int IsThisPointBCIfYesStoreValue(int index, CRFProcess* m_pcs, double& value);// taken from rf_REACT_BRNS
+  int IsThisPointBCIfYesStoreValue(long index, CRFProcess* m_pcs, double& value);// taken from rf_REACT_BRNS
 
     // Copy current values into previous time step values
     void CopyCurXDCPre(void);
@@ -168,10 +184,8 @@ public:
     void ConvPorosityNodeValue2Elem(int i_timestep);
     void CalcPorosity(long in);
 
-    void CalcPorosity(long in,double volume); //overload variant in case the volume is needed or is not equal to unit volume
 	double min_possible_porosity, max_possible_porosity;
     void ScaleVolume_Water(long in);
-	void CalcExcessWater(long in);
 
     // Set porosity in Mass Transport
 	int SetPorosityValue_MT(long ele_Index, double m_porosity_Elem, int i_timestep);
@@ -179,10 +193,12 @@ public:
 
 	// find which one in xDC vector is water
 	int FindWater_xDC(void);
+	int Findhydrogen_bIC ( void );
+	int Findoxygen_bIC ( void );
     //kg44 11/2008 for kinetics
     double CalcSaturationIndex(long in, long node,double temp, double press);
     void CalcReactionRate(long node, double temp, double press);
-    double SurfaceAreaPh(long phasenr, long compnr);
+    double SurfaceAreaPh(long kin_phasenr);
 
     // concentration related
     void ConcentrationToMass (long l /*idx of node*/,int i_timestep);
@@ -219,9 +235,12 @@ public:
 
 	// Definition of buffer variables
 	long *m_NodeHandle_buff, *m_NodeStatusCH_buff, *m_IterDone_buff;
-	double *m_porosity_buff; // porosity buffer
+	double *m_porosity_buff, *m_fluid_volume_buff, *m_gas_volume_buff; // porosity buffer
 	double *m_Vs_buff, *m_Ms_buff, *m_Gs_buff, *m_Hs_buff, *m_IC_buff, *m_pH_buff, *m_pe_buff, *m_Eh_buff;
-	double *m_rMB_buff, *m_uIC_buff, *m_xDC_buff, *m_gam_buff, *m_xPH_buff, *m_vPS_buff, *m_mPS_buff,*m_bPS_buff,*m_aPH_buff,*m_xPA_buff,*m_excess_water_buff,*m_excess_gas_buff,*m_dul_buff, *m_dll_buff, *m_Node_Volume_buff, *m_saturation_buff,*m_bIC_buff,*m_bIC_dummy_buff, *m_xDC_pts_buff, *m_xDC_MT_delta_buff, *m_xDC_Chem_delta_buff;
+	double *m_xDC_buff, *m_xPH_buff,*m_aPH_buff,*m_xPA_buff,*m_excess_water_buff,*m_excess_gas_buff,*m_dul_buff, *m_dll_buff, *m_Node_Volume_buff, *m_saturation_buff,*m_bIC_buff,*m_bIC_dummy_buff, *m_xDC_pts_buff, *m_xDC_MT_delta_buff, *m_xDC_Chem_delta_buff;
+
+	double *omega_phase_buff, *mol_phase_buff, *dmdt_buff, *omega_components_buff; // this we need for kinetics
+
 
 #ifdef USE_MPI_GEMS
 	// MPI implementation
@@ -236,6 +255,33 @@ public:
 
     int Random(long n);
     void ShuffleIterations ( long *indexes, long len );
+
+    double GetNodePorosityValue( long node_Index);
+
+    void WriteVTKGEMValues(fstream &vtk_file);
+
+typedef struct {
+	//kg44 25.11.2008 kinetics...for coupling with GEMS
+	//
+	string phase_name;
+	int phase_number;
+        int dc_counter;
+	int kinetic_model;  // only 1 = GEMS implemented right now 
+        int n_activities;  // number of species for activities 
+        string active_species[10];  // name for species ...maximum 10 names 
+	double kinetic_parameters[41];
+//	0,1,2  double E_acid,E_neutral,E_base; // activation energies 
+//      3-5  double k_acid, k_neutral,k_base; // dissolution/precipitation rate constants 
+//      6-11  double p1,q1,p2,q2,p2,q2; // exponents for omega
+//      12,13, 14  double n_1, n_2, n_3; // exponents for acidic neutral and base cases for species one
+//      append for each species another set of n_1, n_2, n_3 (up to 10 sets -> up to ten species)
+	int surface_model; // currently only 1 implemented
+	double surface_area[10];
+} Kinetic_GEMS;
+
+vector<Kinetic_GEMS> m_kin;
+
+
 
 };
 

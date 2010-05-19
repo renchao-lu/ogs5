@@ -8,6 +8,27 @@ Programing:
 07/2006 WW Local topology, High order nodes
 last modified:
 **************************************************************************/
+//---- MPI Parallel --------------
+// There is a name conflict between stdio.h and the MPI C++ binding
+// with respect to the names SEEK_SET, SEEK_CUR, and SEEK_END.  MPI
+// wants these in the MPI namespace, but stdio.h will #define these
+// to integer values.  #undef'ing these can cause obscure problems
+// with other include files (such as iostream), so we instead use
+// #error to indicate a fatal error.  Users can either #undef
+// the names before including mpi.h or include mpi.h *before* stdio.h
+// or iostream.
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)
+//#undef SEEK_SET  //WW 
+//#undef SEEK_END  //WW
+//#undef SEEK_CUR  //WW
+#include<mpi.h>
+int size;
+int myrank;
+int mysize;
+char t_fname[3];
+double time_ele_paral;
+#endif
+//---- MPI Parallel --------------
 
 #include <math.h>
 // C++ STL
@@ -30,19 +51,6 @@ using namespace std;
 vector<CPARDomain*>dom_vector;
 vector<int> node_connected_doms; //This will be removed after sparse class is finished WW
 
-//---- MPI Parallel --------------
-#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)
-//#undef SEEK_SET  //WW 
-//#undef SEEK_END  //WW
-//#undef SEEK_CUR  //WW
-#include<mpi.h>
-int size;
-int myrank;
-int mysize;
-char t_fname[3];
-double time_ele_paral;
-#endif
-//---- MPI Parallel --------------
 
 /**************************************************************************
 STRLib-Method: 

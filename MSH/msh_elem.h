@@ -67,11 +67,12 @@ public:
 		volume = Vol;
 	}
 	// This will be activated after m_tim->CheckCourant() is ready to work
-	//      void SetCourant(double Cour) {courant = Cour;}//CMCD
-	//      double GetCourant() {return courant;}//CMCD
-	//      void SetNeumann(double Neum) {neumann = Neum;}//CMCD
-	//      double GetNeumann() {return neumann;}//CMCD
-	//      double GetRepLength() {return representative_length;}//CMCD
+	// kg44 21042010 activated
+	      void SetCourant(double Cour) {courant = Cour;}//CMCD
+	      double GetCourant() {return courant;}//CMCD
+	      void SetNeumann(double Neum) {neumann = Neum;}//CMCD
+	      double GetNeumann() {return neumann;}//CMCD
+	      double GetRepLength() {return representative_length;}//CMCD
 	//------------------------------------------------------------------
 	// ID
 	int GetElementType() const {
@@ -221,6 +222,13 @@ public:
 	void FaceNormal(const int index0, const int index1, double*); //YD
 	double *normal_vector; //WW normal_vector[3]; //OK
 	void SetNormalVector(); //OK
+
+	 // Since m_tim->CheckCourant() is deactivated, the following member are
+	 // put in comment.
+	// kg44 21042010 reactivated 
+	 double representative_length;//For stability calculations
+	 double courant;
+	 double neumann;	  // MSH topology
 
 private:
 	// Members

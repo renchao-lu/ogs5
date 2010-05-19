@@ -106,14 +106,20 @@ class CTimeDiscretization
     double NeumannTimeControl();
 	double CourantTimeControl(); // JTARON 2010 
     double SelfAdaptiveTimeControl();
+#ifdef GEM_REACT
+	double MaxTimeStep();
+#endif
     //
     //WW bool GetTimeStepTargetVector(); // kg44
-   // void CheckCourant();//CMCD
+   double CheckCourant();//CMCD
 };
 
 extern vector<CTimeDiscretization*> time_vector;
 extern bool TIMRead(string);
-extern CTimeDiscretization* TIMGet(const string&);
+// extern CTimeDiscretization* TIMGet(const string&);
+ extern CTimeDiscretization* TIMGet(string&); //kg44 const string made trouble for me
+
+
 extern void TIMWrite(string);
 extern bool IsSynCron(); //WW
 extern void TIMDelete();

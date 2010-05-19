@@ -33,6 +33,9 @@ using namespace std;
 #include "rf_mmp_new.h"
 #include "rf_mfp_new.h"
 #include "tools.h"
+#ifdef GEM_REACT
+#include "rf_REACT_GEM.h"
+#endif
 using SolidProp::CSolidProperties;
 /* Vector auf CompProperties , globale Zugriffe */
 vector <CompProperties*> cp_vec;
@@ -70,14 +73,6 @@ CompProperties::CompProperties(long n){
 	bubble_velocity_model=-1;
 	bubble_velocity[0] = bubble_velocity[1] = bubble_velocity[2] = 0.0;
 	file_base_name = "nix";
-#ifdef GEM_REACT
-	//kg44 25.11.2008 kinetics...for coupling with GEMS
-	//
-	kinetic_model = 0;  // only 1 = GEMS implemented right now 
-        n_activities = 0;  // number of species for activities 
-	surface_model = 0; // currently only 1 implemented
-	// all other parameters are initialized during read!
-#endif
 
 
 }
@@ -374,54 +369,7 @@ Programing:
 		   max_solubility = 1.0;
 	  }
 	} 
- //....................................................................
 
-#ifdef GEM_REACT
-// kg44 26.11.2008 read in parameters for kinetics and GEM
-	if(line_string.find("$KINETIC_GEM")!=string::npos) { // subkeyword found
-          	in.str(GetLineFromFile1(rfd_file)); 
-           	in >> kinetic_model; 
-		if (kinetic_model ==1) {
-                        cout << " found kinetics " << kinetic_model << endl;
-			in >> n_activities; if (n_activities >10) {cout << "To many dependent species for GEM kinetic model "<< n_activities<< endl; exit(1);}
-        //                cout <<" activities " << n_activities << endl;
-			 // first general kinetic parameters
-//	0,1,2  double E_acid,E_neutral,E_base; // activation energies 
-			in >> kinetic_parameters[0] >> kinetic_parameters[1] >> kinetic_parameters[2];
-//			cout << kinetic_parameters[0] << kinetic_parameters[1] << kinetic_parameters[1]<<endl;
-
-
-//      3-5  double k_acid, k_neutral,k_base; // dissolution/precipitation rate constants 
-			in >> kinetic_parameters[3] >> kinetic_parameters[4] >> kinetic_parameters[5];
-//			cout << kinetic_parameters[3] << kinetic_parameters[4] << kinetic_parameters[5]<<endl;
-
-
-//      6-11  double q1,p1,q2,q3,p2,p3; // exponents for omega
-			in >> kinetic_parameters[6] >> kinetic_parameters[7] >> kinetic_parameters[8] >>kinetic_parameters[9] >> kinetic_parameters[10] >> kinetic_parameters[11];
-			for (j=0;j<n_activities;j++){
-
-				in >> active_species[j];
-//				cout << active_species[j] ;
-//      12,13,14  double n_1, n_2,n_3; // exponents for acidic, neutral and base cases for species one
-
-				in >> kinetic_parameters[j+12] >> kinetic_parameters[j+13] >> kinetic_parameters[j+14];
-			}
-
-		}
-	  in.clear();
-	}
-
-
-	if(line_string.find("$SURFACE_GEM")!=string::npos) { // subkeyword found
-          	in.str(GetLineFromFile1(rfd_file)); 
-           	in >> surface_model; cout << surface_model << endl;
-		if (surface_model == 1 || surface_model == 2) {// surface model 1 and 2....only one parameter...
-			in >> surface_area[0]; // surface: m*m / mol
-		}
-	  in.clear();
-	} // subkeyword found
-
-#endif
 
   } //end while
   return position;
@@ -566,12 +514,12 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
     double temperature_average = 293.;
     double diffusion_average=0.0;
     double *k = NULL;
-    double Dm,porosity;
+    double Dm,porosity,dummy;
     static long *element_nodes;
     static int count_nodes;
     static int p_ind, t_ind;
     static double eta = 0.0; //, theta = 1.0;
-
+    int i; 
   //OK411
   diffusion_average = diffusion_average;
   pressure_average = pressure_average;
@@ -635,19 +583,23 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
         diffusion_coefficient = CalcDiffusionCoefficientCP_Method1(index, temperature_average, pressure_average, eta);
         element_nodes = NULL;
         break;
-	    }
+	}
 */
-  case 8:{                    /* Archies law De = Dp * poros^m      as Dp is part of the dispersion tensor, we  modify Dp -> Dp=Dp0*poro^(m-1)*/
-            if (count_of_diffusion_model_values < 2)
-                return 0.0;
-// porosity = GetSoilPorosity(index);
-          porosity =m_mat_mp->Porosity(index,theta);
-
-            Dm = k[0]*pow(porosity,k[1]-1.0);
-            return Dm;
-        }
 #ifdef GEM_REACT
-  case 9:{   /*  De is calculated independently from porosity with Archies law De = Dp * poros^m      as Dp is part of the dispersion tensor, we  modify Dp -> Dp=Dp0*poro^(m-1)*/
+  case 8:{                    /* Archies law De = Dp * poros^m      as Dp is part of the dispersion tensor, we  modify Dp -> Dp=Dp0*poro^(m-1)*/
+               /* not implemented anymore because we use arithmetric mean */
+		cout << "diffusion law no. 8 Not implemented anymore, please use law 9 in the *.mcp-file" << endl;
+		break;
+        
+       //     if (count_of_diffusion_model_values < 2)
+        //        return 0.0;
+// porosity = GetSoilPorosity(index);
+   //       porosity =m_mat_mp->Porosity(index,theta);
+
+    //        Dm = k[0]*pow(porosity,k[1]-1.0);
+    //        return Dm;
+        }
+  case 9:{   /*  De is calculated independently from element porosity. We use node porosity values with with Archies law De = Dp * poros^m   and do a harmonic average of the node diffusion coefficients!   as Dp is part of the dispersion tensor, we  modify Dp -> Dp=Dp0*poro^(m-1)*/
 
 	CElem* m_Elem;
 
@@ -662,10 +614,11 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
         count_nodes = m_Elem->GetNodesNumber ( false );
 
   	  diffusion_average=0.0;
-          for (int i=0;i<count_nodes;i++){ //calculate harmonic mean of node based diffusion coefficients
+          for (i = 0; i < count_nodes; i++){ //calculate harmonic mean of node based diffusion coefficients
 		// then get the values from nodes
 				
-		 Dm = k[0]*pow(GetNodePorosityValue_MT(m_Elem->GetNodeIndex ( i ), 1),k[1]); //node based diffusion coefficient
+		dummy=m_vec_GEM->REACT_GEM::GetNodePorosityValue(m_Elem->GetNodeIndex ( i ));
+		 Dm = k[0]*pow(dummy,k[1]); //node based diffusion coefficient
                 diffusion_average += 1.0/Dm;
 	//	cout << "debug: " << Dm << " porosity: " << GetNodePorosityValue_MT(m_Elem->GetNodeIndex ( i ), 0) << endl;
           }
@@ -1294,44 +1247,4 @@ void MCPDelete()
   }
   cp_vec.clear();
 }
-#ifdef GEM_REACT
-// function coming from GEMS coupling...extract node based porosities..does only 
-// work with GEMS coupling and if a species "POROSITY" or "NodePorosity" is defined
-// georg.kosakowski@psi.ch 02.11.2009
 
-double  CompProperties::GetNodePorosityValue_MT( long node_Index, int timelevel)
-{
-	string str;
-	int i;
-	double node_poros=-1.0; //default value is negative...that should not happen
-	CRFProcess *m_pcs;        // pointer to the PCS Class.		
- 
-	for ( i=0; i < ( int ) pcs_vector.size() ; i++ )
-	{
-		m_pcs = pcs_vector[i];
-		if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 )
-		{
-			str = m_pcs->pcs_primary_function_name[0];//get the name of compound from MT;
-			//x_Component = m_Node->Ph_name_to_xDB(str.c_str());//get the index of certain compound, -1: no match
-			if ( str.compare ( "POROSITY" ) == 0 )
-			{
-				node_poros=m_pcs->GetNodeValue ( node_Index,m_pcs->GetNodeValueIndex ( str ) +timelevel);
-			}
-			if ( str.compare ( "NodePorosity" ) == 0 )
-			{
-				node_poros=m_pcs->GetNodeValue ( node_Index,m_pcs->GetNodeValueIndex ( str ) +timelevel);
-			}
-
-		}
-	}
-	if ( node_poros<0.0 ) // only return if above loop found a value
-	{
-		cout << "rfmat_cp: called GetNodePorosity_MT via diffusion model No. 9, but not species for node based porosity is defined! (POROSITY or NodePorosity missing)  exiting"<< endl;
-		exit(1);
-	}
-	else{	
-		return node_poros;
-	}
-
-}
-#endif

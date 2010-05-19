@@ -329,7 +329,7 @@ Problem::Problem(char* filename):print_result(false)
   //========================================================================
   // For time stepping. WW
   CTimeDiscretization *m_tim = NULL;
-  start_time = 1.e+8;
+  start_time = 1.0e+25; // 1.e+8;  kg44 I need a really big time, as I have starting times bigger than 3.e+13 (1 Million years!!!)
   end_time = 0.;
   max_time_steps = 0;
   bool time_ctr = false;
@@ -722,6 +722,7 @@ void Problem::Euler_TimeDiscretize()
 {
   long accepted_times = 0;
   long rejected_times = 0;
+  double dtdummy = 0; 
   //
   CTimeDiscretization *m_tim = NULL;
   aktueller_zeitschritt = 0;
@@ -732,28 +733,38 @@ void Problem::Euler_TimeDiscretize()
   cout<<"\n\n***Start time steps\n";
   // Dump the initial conditions.
   OUTData(0.0,aktueller_zeitschritt);
-#if defined(USE_MPI)
+#if defined(USE_MPI)  
   }
 #endif
-  //
+  // 
   while(end_time>current_time)
   {
-    //
-    // Minimum time step.
-    dt = 1.0e20;
-    for(int i=0; i<(int)active_process_index.size(); i++)   //09.01.2009. WW
+    dt = DBL_EPSILON;
+
+   for(int i=0; i<(int)active_process_index.size(); i++)     //09.01.2009. WW    //kg44 11.12.2009 this loop has a problem...dt will be always changed twice as in the CalcTimeStep function and the underlying adaptive time step control there is a loop over all the processes..not only on the associated ones
     {
        m_tim = total_processes[active_process_index[i]]->Tim;
-       dt0 = m_tim->CalcTimeStep(current_time);
-       if(dt0<dt)
-          dt = dt0;
-    }
+       dtdummy = m_tim->CalcTimeStep(current_time);
+	if (i==0) dt=dtdummy; else dt =MMin(dt,dtdummy); // take always the smalles one, expect for first guess!
+       if(dt<dt0)
+          dt = dt0;  
+    }   
     if(dt<DBL_EPSILON)
     {
-       cout<<"!!! Too small time step size. Quit the simulation now."<<endl;
-       exit(1);
-    }
-    //
+       cout<<"!!! Too small time step size. Choose smallest number: "<< DBL_EPSILON <<endl;
+	dt=DBL_EPSILON;
+      //kg44 04/2010 proceed exit(0); 
+    }  
+#if defined(USE_MPI)  
+  MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);// all processes use the same time stepping
+#endif
+  for(int i=0; i<(int)active_process_index.size(); i++)     //kg44 11.12.2009 all time-step sizes should be equal?!
+    {
+       m_tim = total_processes[active_process_index[i]]->Tim;
+       m_tim->time_step_length=dt;
+    }   
+
+    // 
     aktueller_zeitschritt++;  // Might be removed late on
     current_time += dt;
     aktuelle_zeit = current_time ;
@@ -1418,7 +1429,7 @@ inline double Problem::MassTrasport()
 	  // m_vec_GEM->ConvPorosityNodeValue2Elem(); //
 	  m_vec_GEM->GetReactInfoFromMassTransport(m_time);	// second arguments should be one if we work with concentrations
 	  // m_vec_GEM->ConcentrationToMass();
-           m_vec_GEM->Run_MainLoop(FileName,aktueller_zeitschritt);     // Run GEM
+           m_vec_GEM->Run_MainLoop();     // Run GEM
 
 	  // m_vec_GEM->MassToConcentration();
 	  // Calculate the different of xDC

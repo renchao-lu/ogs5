@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------
-// $Id: s_fgl.h 1396 2009-08-16 16:22:04Z wagner $
+// $Id: s_fgl.h 1445 2009-10-15 12:42:54Z gems $
 //
-// Copyright (C) 2003-2009  T.Wagner, D.Kulik, S.Dmitrieva, S.Churakov
+// Copyright (C) 2003-2010  T.Wagner, D.Kulik, S.Dmitrieva, S.Churakov
 //
 // Declaration of new versions of fluid, liquid, aquous
 // and solid-solution models
@@ -14,7 +14,7 @@
 // QA Licence (GEMSPSI.QAL)
 //
 // See http://gems.web.psi.ch/ for more information
-// E-mail: gems2.support@psi.ch; chud@igc.irk.ru
+// E-mail: gems2.support@psi.ch
 //------------------------------------------------------------------
 //
 
@@ -22,16 +22,25 @@
 #ifndef _s_fgl_h_
 #define _s_fgl_h_
 
-enum fluid_mix_rules {  // Codes to identify specific mixing rules in EoS models (see also m_phase.h)
+enum fluid_mix_rules {  // Codes to identify specific mixing rules in EoS models
     MR_WAAL_ = 'W',		// Basic Van der Waals mixing rules in cubic EoS models
     MR_CONST_ = 'C',    // Constant one-term interaction parameter kij
     MR_TEMP_ = 'T'		// Temperature-dependent one-term interaction parameter kij (Jaubert et al. 2005)
 };
 
+enum dc_class_codes {  // codes to identify fluid types in EoS models
+    DC_GAS_H2O_ = 'V',
+    DC_GAS_CO2_ = 'C',
+    DC_GAS_H2_ = 'H',
+    DC_GAS_N2_ = 'N',
+    DC_GAS_COMP_ = 'G'
+};
+
 
 // ------------------------------------------------------------------
-// Added 07 March 2007 by TW and DK; extended 25.11.2008 by DK
-// Definition of a class for built-in solution models
+// base class for subclasses of built-in mixing models
+// (c) March 2007 DK/TW
+
 #define MAXPHASENAME 16
 
 class TSolMod
@@ -353,9 +362,9 @@ class TCGFcalc: public TSolMod
 
 
 // -------------------------------------------------------------------------------------
-// Peng-Robinson-Stryjek-Vera (PRSV) model for fluid mixtures  (c) TW July 2006
+// Peng-Robinson-Stryjek-Vera (PRSV) model for fluid mixtures
 // References: Stryjek and Vera (1986)
-// Incorporates a C++ program written by Thomas Wagner (Univ. Tuebingen)
+// (c) TW July 2006
 
 class TPRSVcalc: public TSolMod
 
@@ -434,8 +443,9 @@ class TPRSVcalc: public TSolMod
 
 
 // -------------------------------------------------------------------------------------
-// Soave-Redlich-Kwong (SRK) model for fluid mixtures (c) TW December 2008
+// Soave-Redlich-Kwong (SRK) model for fluid mixtures
 // References: Soave (1972); Soave (1993)
+// (c) TW December 2008
 
 class TSRKcalc: public TSolMod
 
@@ -512,8 +522,9 @@ class TSRKcalc: public TSolMod
 
 
 // -------------------------------------------------------------------------------------
-// Peng-Robinson (PR78) model for fluid mixtures  (c) TW July 2009
+// Peng-Robinson (PR78) model for fluid mixtures
 // References: Peng and Robinson (1976); Peng and Robinson (1978)
+// (c) TW July 2009
 
 class TPR78calc: public TSolMod
 
@@ -590,8 +601,89 @@ class TPR78calc: public TSolMod
 
 
 // -------------------------------------------------------------------------------------
-// Van Laar model for solid solutions (c) TW March 2007
-// References:  Holland & Powell (2003)
+// Compensated Redlich-Kwong (CORK) model for fluid mixtures
+// References: Holland and Powell (1991)
+// (c) TW May 2010
+
+class TCORKcalc: public TSolMod
+
+{
+        private:
+
+                double PhVol;   // phase volume in cm3
+                double *Pparc;  // DC partial pressures/ pure fugacities, bar (Pc by default) [0:L-1]
+                double *aGEX;   // Increments to molar G0 values of DCs from pure fugacities or DQF terms, normalized [L]
+                double *aVol;   // DC molar volumes, cm3/mol [L]
+
+                // main work arrays
+                double (*Eosparm)[2];   // EoS parameters
+                double (*Fugpure)[6];   // Fugacity parameters of pure gas species
+                double (*Fugci)[4];     // Fugacity parameters of species in the mixture
+
+                char *EosCode;    // identifier of EoS routine
+                double *Phi;        // phi parameters
+                double **A;         // binary interaction parameters
+                double **W;         // volume scaled interaction parameters (derivatives)
+                double **dW;
+                double **d2W;
+                double **dWp;
+
+                double RR;    // gas constant in kbar
+                double Pkb;   // pressure in kbar
+
+                // internal functions
+                void alloc_internal();
+                void free_internal();
+                long int FugacityPT( long int j, double *EoSparam );
+                long int FugacityH2O( long int j );
+                long int FugacityCO2( long int j );
+                long int FugacityCorresponding( long int j );
+                long int VolumeFugacity( long int phState, double pp, double p0, double a, double b, double c,
+                        double d, double e, double &vol, double &fc );
+                long int Cardano( double cb, double cc, double cd, double &v1, double &v2, double &v3 );
+                long int FugacityMix();
+                long int ResidualFunct();
+
+
+        public:
+
+                // Constructor
+                TCORKcalc( long int NCmp, double Pp, double Tkp, char *Eos_Code );
+                TCORKcalc( long int NSpecies, long int NParams, long int NPcoefs, long int MaxOrder,
+                                long int NPperDC, char Mod_Code, char Mix_Code, long int *arIPx,
+                                double *arIPc, double *arDCc, double *arWx, double *arlnGam,
+                                double *aphVOL, double *aPparc, double *arGEX, double *arVol,
+                                double T_k, double P_bar, char *Eos_Code );
+
+                // Destructor
+                ~TCORKcalc();
+
+                // Calculates pure species properties (pure fugacities)
+                long int PureSpecies();
+
+                // Calculates T,P corrected interaction parameters
+                long int PTparam();
+
+                // Calculates activity coefficients
+                long int MixMod();
+
+                // calculates excess properties
+                long int ExcessProp( double *Zex );
+
+                // calculates ideal mixing properties
+                long int IdealProp( double *Zid );
+
+                // Calculates pure species properties (called from DCthermo)
+                long int CORKCalcFugPure( double Tmin, float *Cpg, double *FugProps );
+
+};
+
+
+
+// -------------------------------------------------------------------------------------
+// Van Laar model for solid solutions
+// References:  Holland and Powell (2003)
+// (c) TW March 2007
 
 class TVanLaar: public TSolMod
 {
@@ -634,8 +726,9 @@ class TVanLaar: public TSolMod
 
 
 // -------------------------------------------------------------------------------------
-// Regular model for multicomponent solid solutions (c) TW March 2007
-// References: Holland & Powell (1993)
+// Regular model for multicomponent solid solutions
+// References: Holland and Powell (1993)
+// (c) TW March 2007
 
 class TRegular: public TSolMod
 {
@@ -676,8 +769,9 @@ class TRegular: public TSolMod
 
 
 // -------------------------------------------------------------------------------------
-// Redlich-Kister model for multicomponent solid solutions (c) TW March 2007
+// Redlich-Kister model for multicomponent solid solutions
 // References: Hillert (1998)
+// (c) TW March 2007
 
 class TRedlichKister: public TSolMod
 {
@@ -719,8 +813,9 @@ class TRedlichKister: public TSolMod
 
 
 // -------------------------------------------------------------------------------------
-// Non-random two liquid (NRTL) model for liquid solutions (c) TW June 2008
+// Non-random two liquid (NRTL) model for liquid solutions
 // References: Renon and Prausnitz (1968), Prausnitz et al. (1997)
+// (c) TW June 2008
 
 class TNRTL: public TSolMod
 {
@@ -766,8 +861,9 @@ class TNRTL: public TSolMod
 
 
 // -------------------------------------------------------------------------------------
-// Wilson model for liquid solutions (c) TW June 2008
+// Wilson model for liquid solutions
 // References: Prausnitz et al. (1997)
+// (c) TW June 2008
 
 class TWilson: public TSolMod
 {
@@ -808,6 +904,7 @@ class TWilson: public TSolMod
 
 // -------------------------------------------------------------------------------------
 // SIT model reimplementation for aqueous electrolyte solutions
+// (c) DK/TW June 2009
 
 class TSIT: public TSolMod
 {
@@ -864,11 +961,10 @@ class TSIT: public TSolMod
 
 };
 
-
-
 // -------------------------------------------------------------------------------------
 // Pitzer model, Harvie-Moller-Weare (HMW) version, with explicit temperature dependence
 // References:
+// (c) SD/FH February 2009
 
 class TPitzer: public TSolMod
 {
@@ -883,7 +979,12 @@ private:
 	long int *xax;   // list of indexes of Na anions in aq phase
 	long int *xnx;   // list of indexes of Nn neutral species in aq phase
 	double *aZ;    // Vector of species charges (for aqueous models)
+	double *zc;
+	double *za;
 	double *aM;    // Vector of species molality (for aqueous models)
+	double *mc;
+	double *ma;
+	double *mn;
 	double *RhoW;  // water density properties
 	double *EpsW;  // water dielectrical properties
 
@@ -894,17 +995,19 @@ private:
 	double Zfac; // Z-Term
 
 	// Input parameter arrays
-	double *abet0;    // Beta0 table for cation-anion interactions [Nc][Na]
-	double *abet1;    // Beta1 table for cation-anion interactions [Nc][Na]
-	double *abet2;    // Beta2 table for cation-anion interactions [Nc][Na]
-	double *aCphi;    // Cphi  table for cation-anion interactions [Nc][Na]
-	double *aLam;     // Lam table for neutral-cation interactions [Nn][Nc]
-	double *aLam1;    // Lam1 table for neutral-anion interactions [Nn][Na]
-	double *aTheta;   // Theta table for cation-cation interactions [Nc][Nc]
-	double *aTheta1;  // Theta1 table for anion-anion interactions [Na][Na]
-	double *aPsi;     // Psi array for cation-cation-anion interactions [Nc][Nc][Na]
-	double *aPsi1;    // Psi1 array for anion-anion-cation interactions [Na][Na][Nc]
-	double *aZeta;    // Zeta array for neutral-cation-anion interactions [Nn][Nc][Na]
+			//for Gex and activity coefficient calculation
+	double **Bet0;     // Beta0 table for cation-anion interactions [Nc][Na]
+	double **Bet1;	   // Beta1 table for cation-anion interactions [Nc][Na]
+	double **Bet2;	   // Beta2 table for cation-anion interactions [Nc][Na]
+	double **Cphi;     // Cphi  table for cation-anion interactions [Nc][Na]
+	double **Lam;      // Lam table for neutral-cation interactions [Nn][Nc]
+	double **Lam1;     // Lam1 table for neutral-anion interactions [Nn][Na]
+	double **Theta;    // Theta table for cation-cation interactions [Nc][Nc]
+	double **Theta1;   // Theta1 table for anion-anion interactions [Na][Na]
+	double ***Psi;     // Psi array for cation-cation-anion interactions [Nc][Nc][Na]
+	double ***Psi1;    // Psi1 array for anion-anion-cation interactions [Na][Na][Nc]
+	double ***Zeta;    // Zeta array for neutral-cation-anion interactions [Nn][Nc][Na]
+
 
         // Work parameter arrays
 		// double *B1;      // B' table for cation-anion interactions corrected for IS [Nc][Na]
@@ -920,7 +1023,7 @@ private:
 		// double dk[21];   // work space
 
 	// McInnes parameter array and gamma values
-	double McI_PT_array[13];
+	double *McI_PT_array;
 	double *GammaMcI;
 
 	enum eTableType
@@ -936,35 +1039,36 @@ private:
 
 	// build conversion of species indexes between aq phase and Pitzer parameter tables
 	void setIndexes();
-	void setValues();
+	double setvalue(long int ii, int Gex_or_Sex);
 
 	// internal calculations
 	// Calculation of Etheta and Ethetap values
-	void Ecalc( double z, double z1, double I, double Aphi,
+	void Ecalc( double z, double z1, double I, double DH_term,
 					double& Etheta, double& Ethetap );
 	inline long int getN() const
 	{
 		return Nc+Na+Nn;
 	}
 
-	double Z_Term();
-	double A_Factor( double T );
+	double Z_Term( );
 	double IonicStr( double& I );
 	void getAlp( long int c, long int a, double& alp, double& alp1 );
 	double get_g( double x_alp );
-	double get_gp( double x_alp);
-	double F_Factor( double Aphi, double I, double Is );
+	double get_gp( double x_alp );
+	double G_ex_par5( long int ii );
+	double G_ex_par8( long int ii );
+	double S_ex_par5( long int ii );
+	double S_ex_par8( long int ii );
+	double CP_ex_par5( long int ii );
+	double CP_ex_par8( long int ii );
+	double F_Factor( double DH_term );
 	double lnGammaN( long int N );
-	double lnGammaM( long int M );
-	// double lnGammaM( long int M, double Aphi );
-	double lnGammaX( long int X );
-	// double lnGammaX( long int X, double Aphi );
-	double lnGammaH2O();
+	double lnGammaM( long int M, double DH_term );
+	double lnGammaX( long int X, double DH_term );
+	double lnGammaH2O( double DH_term );
 
 	// calc vector of interaction parameters corrected to T,P of interest
-	void PTcalc( double T );
-	void McInnes_PTcalc( double T ); // corrects parameters for McInnes scaling
-	void Gex_PTcalc( double T );     // corrects parameters for Gex calculation
+	void PTcalc( int Gex_or_Sex );
 
 	// calculation KCl activity coefficients for McInnes scaling
 	double McInnes_KCl();
@@ -1015,7 +1119,7 @@ public:
 
 	// Calculation of T,P corrected interaction parameters
 	long int PTparam();
-	long int McInnes_PTparam();
+
 
     long int MixMod();
 
@@ -1029,7 +1133,7 @@ public:
 	// calculates ideal mixing properties
 	long int IdealProp( double *Zid );
 
-	void Pitzer_test_out( const char *path );
+	void Pitzer_test_out( const char *path, double Y );
 
 };
 
@@ -1038,6 +1142,7 @@ public:
 // -------------------------------------------------------------------------------------
 // Extended universal quasi-chemical (EUNIQUAC) model for aqueous electrolyte solutions
 // References: Nicolaisen et al. (1993), Thomsen et al. (1996), Thomsen (2005)
+// (c) TW/FH May 2009
 
 class TEUNIQUAC: public TSolMod
 {
@@ -1106,6 +1211,7 @@ class TEUNIQUAC: public TSolMod
 // -------------------------------------------------------------------------------------
 // Extended Debye-Hueckel (EDH) model for aqueous electrolyte solutions, Helgesons variant
 // References: Helgeson et al. (1981); Oelkers and Helgeson (1990); Pokrovskii and Helgeson (1995; 1997a; 1997b)
+// (c) TW July 2009
 
 class THelgeson: public TSolMod
 {
@@ -1182,6 +1288,8 @@ class THelgeson: public TSolMod
 // -------------------------------------------------------------------------------------
 // Extended Debye-Hueckel (EDH) model for aqueous electrolyte solutions, Davies variant
 // References: Langmuir (1997)
+// (c) TW July 2009
+
 class TDavies: public TSolMod
 {
 	private:
@@ -1242,6 +1350,8 @@ class TDavies: public TSolMod
 // -------------------------------------------------------------------------------------
 // Debye-Hueckel (DH) limiting law for aqueous electrolyte solutions
 // References: Langmuir (1997)
+// (c) TW July 2009
+
 class TLimitingLaw: public TSolMod
 {
 	private:
@@ -1302,6 +1412,7 @@ class TLimitingLaw: public TSolMod
 // Two-term Debye-Hueckel (DH) model for aqueous electrolyte solutions
 // References: Helgeson et al. (1981)
 // uses individual ion-size parameters, optionally individual salting-out coefficients
+// (c) TW July 2009
 
 class TDebyeHueckel: public TSolMod
 {
@@ -1369,6 +1480,7 @@ class TDebyeHueckel: public TSolMod
 // Extended Debye-Hueckel (EDH) model for aqueous electrolyte solutions, Karpovs variant
 // References: Karpov et al. (1997); Helgeson et al. (1981); Oelkers and Helgeson (1990);
 // Pokrovskii and Helgeson (1995; 1997a; 1997b)
+// (c) TW July 2009
 
 class TKarpov: public TSolMod
 {
@@ -1446,6 +1558,7 @@ class TKarpov: public TSolMod
 // Extended Debye-Hueckel (EDH) model for aqueous electrolyte solutions, Shvarov variant
 // References: Shvarov (2007); Oelkers and Helgeson (1990);
 // Pokrovskii and Helgeson (1995; 1997a; 1997b)
+// (c) TW July 2009
 
 class TShvarov: public TSolMod
 {
@@ -1518,8 +1631,8 @@ class TShvarov: public TSolMod
 
 
 // -------------------------------------------------------------------------------------
-// Class for hardcoded models for solid solutions (c) TW January 2009
-// References:
+// Class for hardcoded models for solid solutions
+// (c) TW January 2009
 
 class TModOther: public TSolMod
 {
@@ -1563,18 +1676,27 @@ class TModOther: public TSolMod
 		// calculates ideal mixing properties
 		long int IdealProp( double *Zid );
 
-		// functions for individual models
-		long int Feldspar1_PTParam();
-		long int Feldspar1_MixMod();
-		long int Feldspar1_ExcessProp();
+                // functions for individual models (under construction)
+                long int Amphibole1();
+                long int Biotite1();
+                long int Chlorite1();
+                long int Clinopyroxene1();
+                long int Feldspar1();
+                long int Feldspar2();
+                long int Garnet1();
+                long int Muscovite1();
+                long int Orthopyroxene1();
+                long int Staurolite1();
+                long int Talc();
 
 };
 
 
 
 // -------------------------------------------------------------------------------------
-// Ternary Margules (regular) model for solid solutions (c) TW June 2009
+// Ternary Margules (regular) model for solid solutions
 // References: Anderson and Crerar (1993); Anderson (2006)
+// (c) TW/DK June 2009
 
 class TMargules: public TSolMod
 {
@@ -1613,8 +1735,9 @@ class TMargules: public TSolMod
 
 
 // -------------------------------------------------------------------------------------
-// Binary Margules (subregular) model for solid solutions (c) TW June 2009
+// Binary Margules (subregular) model for solid solutions
 // References: Anderson and Crerar (1993); Anderson (2006)
+// (c) TW/DK June 2009
 
 class TSubregular: public TSolMod
 {
@@ -1651,9 +1774,10 @@ class TSubregular: public TSolMod
 
 
 // -------------------------------------------------------------------------------------
-// Binary Guggenheim (Redlich-Kister) model for solid solutions (c) TW June 2009
+// Binary Guggenheim (Redlich-Kister) model for solid solutions
 // References: Anderson and Crerar (1993); Anderson (2006)
 // uses normalized (by RT) interaction parameters
+// (c) TW/DK June 2009
 
 class TGuggenheim: public TSolMod
 {

@@ -3,6 +3,18 @@ Task: Linear equation
 Programing:
 11/2007 WW/
 **************************************************************************/
+// There is a name conflict between stdio.h and the MPI C++ binding
+// with respect to the names SEEK_SET, SEEK_CUR, and SEEK_END.  MPI
+// wants these in the MPI namespace, but stdio.h will #define these
+// to integer values.  #undef'ing these can cause obscure problems
+// with other include files (such as iostream), so we instead use
+// #error to indicate a fatal error.  Users can either #undef
+// the names before including mpi.h or include mpi.h *before* stdio.h
+// or iostream.
+#if defined(USE_MPI) 
+#include <mpi.h>
+#include "par_ddc.h"
+#endif
 
 #include "Configure.h"
 #include "makros.h"
@@ -10,10 +22,6 @@ Programing:
 // NEW_EQS To be removed
 #ifdef NEW_EQS    //1.11.2007 WW
 #include <iomanip>
-#if defined(USE_MPI) 
-#include <mpi.h>
-#include "par_ddc.h"
-#endif
 
 #ifdef LIS	// 07.02.2008 PCH
 #include "lis.h"
@@ -615,7 +623,8 @@ int Linear_EQS::Solver()
     case 1:
       return Gauss();
     case 2:
-      return BiCGStab();
+      iter= BiCGStab();
+      return iter;   //kg44 only to make sure here is iter returned
     case 3:
       return BiCG();
     case 4:
@@ -984,7 +993,7 @@ int Linear_EQS::BiCGStab()
       for(i=0; i<size; i++)
         x[i] += alpha * p_h[i];     
       Message();
-      return iter <= max_iter;
+      return iter;
     }
     //  M^{-1}s, 
     Precond(s, s_h); 
@@ -1008,19 +1017,19 @@ int Linear_EQS::BiCGStab()
     if ((error = norm_r / bNorm) < tol)
     {
       Message();
-      return iter <= max_iter;
+      return iter;
     }
     if (fabs(omega) < DBL_MIN)
     {
       error = norm_r / bNorm;
       Message(); 
-      return iter <= max_iter;
+      return iter;
     }
   }
   //
   Message(); 
   //
-  return iter <= max_iter;
+  return iter;
 }
 
 /*************************************************************************
@@ -1688,10 +1697,10 @@ int Linear_EQS::BiCGStab(double *xg, const long n)
   //
   Message(); 
   //
-  return iter <= max_iter;
+//  return iter <= max_iter;
+  return iter ;
 }
 #endif
 //------------------------------------------------------------------------
 } // namespace
 #endif // if defined(NEW_EQS)
-

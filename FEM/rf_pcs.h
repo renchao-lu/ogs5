@@ -291,8 +291,13 @@ public:
 	// 16-GEM  // HS 11.2008
 	int flag_couple_GEMS;     // 0-no couple; 1-coupled
 	vector<Water_ST_GEMS> Water_ST_vec;
+    vector<long> stgem_node_value_in_dom; //KG for domain decomposition
+    vector<long> stgem_local_index_in_dom; //KG for domain decomposition
+    vector<long> rank_stgem_node_value_in_dom; //KG
+
 	void Clean_Water_ST_vec(void);
 	void Add_GEMS_Water_ST(long idx, double val);
+	void SetSTWaterGemSubDomain(int myrank);
 	//....................................................................
     // Construction / destruction
     char pcs_name[MAX_ZEILE]; //string pcs_name;

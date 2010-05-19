@@ -107,7 +107,7 @@ class COutput
     void NODWriteSFCDataTEC(int);
     void NODWriteSFCAverageDataTEC(double,int); //OK
     void WriteDataVTK(int); //GK
-    void WriteVTKHeader(fstream&);
+    void WriteVTKHeader(fstream&,int);
     void WriteVTKNodeData(fstream&);
     void WriteVTKElementData(fstream&);
     void WriteVTKValues(fstream&); 

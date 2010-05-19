@@ -3149,7 +3149,7 @@ double CMediumProperties::Porosity(long number,double theta)
 {
   static int nidx0,nidx1;
   double primary_variable[PCS_NUMBER_MAX];
-  int gueltig;
+  int gueltig, idx;
   double porosity_sw;
   CFiniteElementStd* assem = m_pcs->GetAssember();
   string str;
@@ -3248,29 +3248,24 @@ double CMediumProperties::Porosity(long number,double theta)
       porosity  = m_msh->ele_vector[number]->mat_vector(por_index);
       break;
 #ifdef GEM_REACT
-    case 15:
+  case 15:
         porosity = porosity_model_values[0]; // default value as backup
 
-//                CRFProcess* mf_pcs = NULL;
-		for (int i=0; i < (int)pcs_vector.size() ; i++)
+	for (int i=0; i < (int)pcs_vector.size() ; i++)
 		{
-		pcs_temp = pcs_vector[i];
-		if ((pcs_temp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0) || (pcs_temp->pcs_type_name.compare("RICHARDS_FLOW") == 0)||(pcs_temp->pcs_type_name.compare("MULTI_PHASE_FLOW") == 0))
-
+		if ((pcs_vector[i]->pcs_type_name.find("FLOW") != string::npos))
 		{
-		int idx=pcs_temp->GetElementValueIndex ( "POROSITY" ); 
-
-                porosity = pcs_temp->GetElementValue(number, idx);
-		if (porosity <1.e-6 || porosity > 1.0) { cout <<" error getting porosity model 15 " <<porosity << " node "<< number << endl; porosity = porosity_model_values[0];}
+			idx=pcs_vector[i]->GetElementValueIndex ( "POROSITY" ); 
+                	porosity = pcs_vector[i]->GetElementValue(number, idx);
+			if (porosity <1.e-6 || porosity > 1.0) { cout <<"Porosity: error getting porosity for model 15. porosity: " <<porosity << " at node "<< number << endl; porosity = porosity_model_values[0];}
 		}
 		}
 
-// KG44: TODO!!!!!!!!!!!!! check the above  ***************
       break;
 #endif
 
 	default:
-      DisplayMsgLn("Unknown porosity model!");
+      cout << "Unknown porosity model!" << endl;
       break;
   }
   //----------------------------------------------------------------------
@@ -5243,7 +5238,7 @@ void CMediumProperties::WriteTecplotDistributedProperties()
     return;
   //--------------------------------------------------------------------
   // File handling
-  string mat_file_name = FileName + "_PROPERTIES" + TEC_FILE_EXTENSION;
+  string mat_file_name = path + name + "_" + m_msh->pcs_name + "_PROPERTIES" + TEC_FILE_EXTENSION;
   fstream mat_file (mat_file_name.data(),ios::trunc|ios::out);
   mat_file.setf(ios::scientific,ios::floatfield);
   mat_file.precision(12);

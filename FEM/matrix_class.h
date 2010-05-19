@@ -82,7 +82,7 @@ class SymMatrix : public Matrix
      explicit SymMatrix(const SymMatrix& m);
 
      void resize(size_t dim);
-     ~SymMatrix() {}
+     ~SymMatrix() {};
 
      // Operators
      void operator= (double a);

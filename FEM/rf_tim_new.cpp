@@ -20,6 +20,9 @@ using namespace std;
 #include "rf_mmp_new.h"
 #include "fem_ele_std.h"
 #include "mathlib.h"
+// kg44 not found #include "elements.h"
+#include "rfmat_cp.h"
+//WW #include "elements.h" //set functions for stability criteria
 // ToDo
 double aktuelle_zeit;
 long aktueller_zeitschritt = 0;
@@ -40,7 +43,7 @@ CTimeDiscretization::CTimeDiscretization(void)
   time_start = 0.0;
   time_end = 1.0;
   time_type_name = "CONSTANT"; //OK
-  time_control_name = "FIXED"; //kg44
+  time_control_name = ""; //kg44
   time_unit = "SECOND"; 
   max_time_step = 1.e10;   //YD 
   min_time_step = 0;   //YD 
@@ -133,7 +136,8 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
     double multiply_coef;    //YD
     int i;
     CRFProcess* m_pcs = NULL;
-    m_pcs = PCSGet("RICHARDS_FLOW");
+//    m_pcs = PCSGet("RICHARDS_FLOW");
+    m_pcs = PCSGet("GROUNDWATER_FLOW"); //kg44 changed default
 
     //========================================================================
     // Schleife ueber alle Phasen bzw. Komponenten 
@@ -321,13 +325,13 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
               *tim_file >> line_string;
               max_time_step = strtod(line_string.data(),NULL);
               line.clear();
-              break;
+              // kg44 should not break break;
 		    }
             if(line_string.find("MIN_TIME_STEP")!=string::npos){
               *tim_file >> line_string;
               min_time_step = strtod(line_string.data(),NULL);
               line.clear();
-              break;
+              // kg44 should not break break;
             }
             /*  //WW
             if(line_string.find("MINISH")!=string::npos){
@@ -483,10 +487,10 @@ void CTimeDiscretization::Write(fstream*tim_file)
   if(time_control_name.size()>0)
   {
     *tim_file  << " $TIME_CONTROL" << endl;
-    if(time_control_name=="COURANT") // JTARON
+    if(time_control_name=="COURANT_MANIPULATE")
     {
       *tim_file  << "  " << time_control_name << endl;
-      *tim_file  << " Courant number desired  " << courant_desired << endl; // JTARON
+      *tim_file  << "   " << time_control_manipulate << endl;
     }
     if(time_control_name=="PI_AUTO_STEP_SIZE")
     {
@@ -530,11 +534,11 @@ double CTimeDiscretization::CalcTimeStep(double crt_time)
     if(no_time_steps>0)
       time_step_length = time_step_vector[0];
     // Standard time stepping
-    if(step_current<no_time_steps)
+    if(step_current<no_time_steps){
       time_step_length = time_step_vector[step_current];
-
+    }
     // Time step controls
-    if( time_control_name == "NEUMANN"||time_control_name == "SELF_ADAPTIVE")
+    if( (time_control_name == "NEUMANN" ) || (time_control_name == "SELF_ADAPTIVE" ))
     {
 	  if(aktuelle_zeit < MKleinsteZahl && repeat == false) 
         time_step_length = FirstTimeStepEstimate();
@@ -577,6 +581,7 @@ double CTimeDiscretization::CalcTimeStep(double crt_time)
     {
        if(fabs( critical_time[i]-crt_time)>DBL_EPSILON) // _new, 23.09.2008.
          time_step_length = critical_time[i]-crt_time;
+	cout << "Time step set to " << time_step_length << " in order to match critical times!"<< endl;
        break; 
     }  
   } 
@@ -633,7 +638,7 @@ Programing:
 12/2004 OK Implementation
 last modified:
 **************************************************************************/
-CTimeDiscretization* TIMGet(const string &pcs_type_name)
+CTimeDiscretization* TIMGet(string &pcs_type_name) //kg44 const string gave trouble for me
 {
   CTimeDiscretization *m_tim = NULL;
   int i;
@@ -708,11 +713,20 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
   m_mfp = MFPGet("LIQUID");  //WW
   double density_fluid = m_mfp->Density(); //WW
   // 
+
   for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
   m_pcs = pcs_vector[n_p];
   CFiniteElementStd* fem = m_pcs->GetAssembler();
 
+  time_step_length = min_time_step; // take min time step as conservative best guess for testing
   switch(m_pcs->pcs_type_name[0]){
+      case 'G': // kg44 groudnwater flow ---if steady state, time step should be greater zero...transient flow does not work with adaptive stepping
+        time_step_length = min_time_step; // take min time step as conservative best guess for testing
+      break;
+      case 'M': // kg44 Mass transport ---if steady state, time step should be greater zero..
+        time_step_length = min_time_step; // take min time step as conservative best guess for testing
+      break;
+
     case 'R': // Richards
       idxS  = m_pcs->GetNodeValueIndex("SATURATION1");
       no_time_steps = 1000000000; //OK (int)(1.0e10);
@@ -875,37 +889,90 @@ Programing:
 10/2005 YD Implementation
 03/2008 HS KG Implementation for Groundwater flow and mass transport
 **************************************************************************/
-double CTimeDiscretization::SelfAdaptiveTimeControl(void) 
+double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 {
-  CRFProcess* m_pcs = NULL; //YDToDo: m_pcs should be member
+	int imflag=1, iprocs=0;
+        long iterdum=1;
+	double my_max_time_step;
+	CRFProcess* m_pcs = NULL; //YDToDo: m_pcs should be member
 
-  if(repeat)
-  {
-    cout << "   TIM step is repeated" << endl;  
-    m_pcs = PCSGet(pcs_type_name);
-    m_pcs->PrimaryVariableReload();
-  }
+// kg44 This does not work with multiple mass tranport processes!
+	if ( repeat )
+	{
+		cout << "   TIM step is repeated" << endl;
+		m_pcs = PCSGet ( pcs_type_name );
+		m_pcs->PrimaryVariableReload();
+	}
 
-  for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
-  m_pcs = pcs_vector[n_p];
-  switch(m_pcs->pcs_type_name[0]){
-  default:
-      cout << "Fatal error: No valid PCS type" << endl;
-      break;
-  case 'R': // Richards
-  if(m_pcs->iter <= time_adapt_tim_vector[0]) 
-    time_step_length = time_step_length*time_adapt_coe_vector[0];
-  else if(m_pcs->iter  >= time_adapt_tim_vector[time_adapt_tim_vector.size()-1])
-    time_step_length *= time_adapt_coe_vector[time_adapt_tim_vector.size()-1];
-  break;
- }
-}
-  time_step_length = MMin(time_step_length,max_time_step);
-  cout<<"Self_Adaptive Time Step: "<<time_step_length<<endl;
-  if(Write_tim_discrete)
-     *tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
+  // First calculate maximum time step according to Neumann criteria
+#ifdef GEM_REACT
+  my_max_time_step= MMin(max_time_step,MaxTimeStep());
+  cout<<"Self_Adaptive Time Step: max time step "<<my_max_time_step<< endl;
+#endif
+
+	for ( int n_p = 0; n_p< ( int ) pcs_vector.size(); n_p++ )
+	{
+		m_pcs = pcs_vector[n_p];
+
+		if (m_pcs->pcs_type_name == pcs_type_name ) { //compare process type and type name from Tim object
+		iprocs++;
+		switch ( m_pcs->pcs_type_name[0] )
+		{
+			default:
+				cout << "Fatal error: No valid PCS type" << endl;
+				break;
+			case 'R': // Richards
+				if ( (imflag>0) && ( m_pcs->iter  >= time_adapt_tim_vector[time_adapt_tim_vector.size()-1] ) )
+				{
+					imflag=0;
+					time_step_length = time_step_length * time_adapt_coe_vector[time_adapt_tim_vector.size()-1];
+				}
+				if ( (imflag == 1) && ( m_pcs->iter  <= time_adapt_tim_vector[0] ) )
+				{
+					imflag=2;
+					time_step_length = time_step_length * time_adapt_coe_vector[0];
+				}
+				break;
+			case 'G': //Groundwater flow
+			  // iterdum=MMax(iterdum,m_pcs->iter);
+				imflag=1;
+				if ( (imflag>0) && ( m_pcs->iter  >= time_adapt_tim_vector[time_adapt_tim_vector.size()-1] ) )
+				{
+					imflag=0; iterdum = MMax ( iterdum,m_pcs->iter );
+				}
+				if ( ((imflag == 1) && ( m_pcs->iter  <= time_adapt_tim_vector[0] ) ))
+				{
+					imflag=2;iterdum =MMax ( iterdum,m_pcs->iter );
+				}
+				break;
+			case 'M': // Mass transport
+				iterdum=MMax ( iterdum,m_pcs->iter );
+				break;
+		}
+		}
+	}
+
+	if   ( iterdum  >= time_adapt_tim_vector[time_adapt_tim_vector.size()-1] ) //reduce timestep always if mass transport need it
+		 {
+					imflag=0;
+		  }
+	else if ( (imflag>0) && (iterdum  <= time_adapt_tim_vector[0]) ) // increase timestep only if groundwater flow alows it, 
+				{
+					imflag=2;
+				}
+				
+
+	if (imflag==0) {time_step_length = time_step_length * time_adapt_coe_vector[time_adapt_tim_vector.size()-1];}
+        else if (imflag==2){ time_step_length = time_step_length * time_adapt_coe_vector[0];}
+
+	time_step_length = MMin ( time_step_length,my_max_time_step );
+	time_step_length = MMax ( time_step_length,min_time_step );
+
+	cout<<"Self_Adaptive Time Step: "<<" imflag " << imflag << " dr " << time_step_length<<" max iterations: " << iterdum << " number of evaluated processes: " << iprocs << endl;
+	if ( Write_tim_discrete )
+		*tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
 //}
-  return time_step_length;
+	return time_step_length;
 }
 
 /**************************************************************************
@@ -913,8 +980,7 @@ FEMLib-Method:
 Task: 
 Programing:CMCD 03/2006
 **************************************************************************/
-/*
-void CTimeDiscretization::CheckCourant(void)
+double CTimeDiscretization::CheckCourant(void)
 {
   long index; 
   long group;
@@ -922,7 +988,7 @@ void CTimeDiscretization::CheckCourant(void)
   double porosity, vg, advective_velocity, length, courant;
   CRFProcess* m_pcs = NULL;
   m_pcs = PCSGetFluxProcess();
-  if (!m_pcs) return;
+  if (!m_pcs) return 0.0;
   int pcs_no = m_pcs->pcs_number;
   CMediumProperties* m_mmp = NULL;
   CElem* elem =NULL;
@@ -944,10 +1010,11 @@ void CTimeDiscretization::CheckCourant(void)
     gp_ele->getIPvalue_vec(pcs_no, velocity);
     vg = MBtrgVec(velocity,3);
     advective_velocity = vg/porosity;
+    if (advective_velocity<DBL_EPSILON) advective_velocity=DBL_EPSILON; //kg44 avoid zero velocity..otherwise stable_time_step is a problem 
     courant = dt * advective_velocity/length;
     elem->SetCourant(courant);
-    edx = m_pcs->GetElementValueIndex("COURANT");
-    m_pcs->SetElementValue(index,edx,courant);
+//    edx = m_pcs->GetElementValueIndex("COURANT"); //kg44 does this work?
+//    m_pcs->SetElementValue(index,edx,courant);    // kg44 seems not to work
     stable_time_step = (1./courant)*dt;
     if (index == 0) recommended_time_step = stable_time_step;
     if (stable_time_step < recommended_time_step){
@@ -956,8 +1023,9 @@ void CTimeDiscretization::CheckCourant(void)
     }
   }
   cout<<"Courant time step control, critical element = "<<critical_element_no<<" Recomended time step "<<recommended_time_step<<endl;
+return recommended_time_step;
 }
-*/
+
 /**************************************************************************
 FEMLib-Method: 
 Task: Neumann estimation
@@ -1219,4 +1287,49 @@ Programing:
 
 return have_vector;
 } */
+#ifdef GEM_REACT
+double CTimeDiscretization::MaxTimeStep()
+{
+	long i;
+	double max_diff_time_step=1.0e+100,Dm,dummy,max_adv_time_step=1.0e+100;
+	double theta=0.0; // direction zero...no anisotropy
+	CRFProcess* this_pcs=NULL;
+       CElem* melem=NULL;
 
+
+ CMediumProperties *m_mat_mp = NULL;
+ 		// Get the pointer to a proper PCS. ..we assume that all transport processes use the same diffusion coefficient
+
+	this_pcs = PCSGet ( "MASS_TRANSPORT" );
+        long nElems = ( long ) this_pcs->m_msh->ele_vector.size();
+        int component = this_pcs->pcs_component_number;
+	int group;
+ 
+        CompProperties *m_cp = cp_vec[component];
+
+        dummy=CheckCourant(); // courant number
+	cout << " Advective Time Step " << dummy << " " ;
+	if (dummy>DBL_EPSILON) max_adv_time_step=min(max_diff_time_step, dummy); //only do if Courant number bigger than zero
+
+// find Neumann for first mass transport process
+	  for(i=0;i<nElems;i++){
+		group = this_pcs->m_msh->ele_vector[i]->GetPatchIndex();
+ 		m_mat_mp = mmp_vector[group];
+
+	        melem =  this_pcs->m_msh->ele_vector[i];
+//		cout << m_mat_mp->Porosity(i,theta) << " " << melem->representative_length << endl;
+		 Dm = m_mat_mp->Porosity(i,theta) * m_cp->CalcDiffusionCoefficientCP(i,theta,this_pcs); // KG44 attention DM needs to be multiplied with porosity!
+		 // calculation of typical length
+
+		dummy=( 0.5 * (melem->representative_length*melem->representative_length))/Dm;
+		max_diff_time_step=min(max_diff_time_step, dummy);
+//	cout << "Neumann criteria: " << max_diff_time_step << " i " << i << endl;
+	}
+
+	cout << " Diffusive Time Step " << max_diff_time_step  << endl;
+
+	return min(max_diff_time_step, max_adv_time_step);
+}
+
+
+#endif // end of GEM_REACT

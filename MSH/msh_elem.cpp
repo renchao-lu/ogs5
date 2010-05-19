@@ -1521,20 +1521,20 @@ void CElem::ComputeVolume()
          x2buff[1] = nodes[nnodes-1]->Y()-nodes[0]->Y();
          x2buff[2] = nodes[nnodes-1]->Z()-nodes[0]->Z();
          volume = sqrt(x2buff[0]*x2buff[0]+x2buff[1]*x2buff[1]+x2buff[2]*x2buff[2]) ;
-//         representative_length = sqrt(x2buff[0]*x2buff[0]+x2buff[1]*x2buff[1]+x2buff[2]*x2buff[2]) ;//CMCD
+         representative_length = sqrt(x2buff[0]*x2buff[0]+x2buff[1]*x2buff[1]+x2buff[2]*x2buff[2]) ;//CMCD kg44 reactivated
         break;
       case 4: // Triangle
          volume = ComputeDetTri(x1buff, x2buff, x3buff);
-//         representative_length = sqrt(volume)*4.0;
+         representative_length = sqrt(volume)*4.0; //kg44 reactivated
         break;
-      case 2:    // Quadralateral
+      case 2:    // Quadrilateral
          x4buff[0] = nodes[3]->X();
          x4buff[1] = nodes[3]->Y();
          x4buff[2] = nodes[3]->Z();
 
          volume =  ComputeDetTri(x1buff, x2buff, x3buff)
                +ComputeDetTri(x3buff, x4buff, x1buff);
-//         representative_length = sqrt(volume);
+         representative_length = sqrt(volume); //kg44 reactivated
         break;
       case 5:    // Tedrahedra
          x4buff[0] = nodes[3]->X();
@@ -1542,7 +1542,7 @@ void CElem::ComputeVolume()
          x4buff[2] = nodes[3]->Z();
 
          volume =  ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
-//         representative_length = sqrt(volume)*6.0;
+         representative_length = sqrt(volume)*6.0; //kg44 reactivated
          break;
       case 3:    // Hexehadra
          x1buff[0] = nodes[4]->X();
@@ -1647,7 +1647,7 @@ void CElem::ComputeVolume()
          x4buff[2] = nodes[2]->Z();
 
          volume  += ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
-//         representative_length = pow(volume,1./3.);
+         representative_length = pow(volume,1./3.); //kg44 reactivated
          break;
       case 6:    // Prism
          x4buff[0] = nodes[3]->X();
@@ -1688,7 +1688,7 @@ void CElem::ComputeVolume()
          x4buff[1] = nodes[3]->Y();
          x4buff[2] = nodes[3]->Z();
          volume  += ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
-//         representative_length = pow(volume,1./3.);//Here the direction of flow needs to be taken into account, we need rep length in x,y,z direction
+         representative_length = pow(volume,1./3.);  // kg44 reactivated ---------Here the direction of flow needs to be taken into account, we need rep length in x,y,z direction
          break;
     }
 }

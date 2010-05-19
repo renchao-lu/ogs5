@@ -933,7 +933,7 @@ void CRFProcess:: WriteSolution()
 	}
 	os.close();
 	cout << "Write solutions for timestep " << aktueller_zeitschritt << " into file " << m_file_name << endl;
-	delete ( idx );
+	delete []  idx ;
 }
 
 /**************************************************************************
@@ -980,14 +980,10 @@ void CRFProcess:: ReadSolution()
 			SetNodeValue ( i,idx[j], val[j] );
 	}
 	is.close();
-	delete ( idx );
-	delete ( val );
+	delete [] idx ;
+	delete [] val ;
 	//cout << "ReadSolution for restart is successfull!" << endl;
-#ifdef GEM_REACT
-// for GEM_REACT we also need internal information on porosity!....
-	//if (!m_vec_GEM->ReadReloadGem()) abort();
-// moved to init_gem...otherwise it will not work....
-#endif
+
 }
 
 
@@ -4329,6 +4325,60 @@ void CRFProcess::SetBoundaryConditionSubDomain()
   }
 
 }
+/**************************************************************************
+FEMLib-Method: CRFProcess::SetSTWaterGemSubDomain
+Task: set source/sink terms for GEMS-flow coupling
+Programing:
+05/2006 WW Implementation
+03/2010 KG44 modified to GEM 
+**************************************************************************/
+void CRFProcess::SetSTWaterGemSubDomain(int myrank)
+{
+	int k;
+	long i,j, dsize=0;
+	CPARDomain *m_dom = NULL;
+	long int m_stgem_nv = -1;
+	//
+	long Size = ( long ) Water_ST_vec.size();
+	long l_index=-1;
+
+//	cout << "dom_vec_size: " << dom_vector.size() << endl;
+//	for ( k=0;k< ( int ) dom_vector.size();k++ )
+//	{
+ 		k=myrank; //do it for each domain only once!
+		m_dom = dom_vector[k];
+		dsize=(long) m_dom->nodes.size();
+		// ST
+		for ( i=0; i< Size; i++ )
+		{
+			m_stgem_nv = Water_ST_vec[i].index_node;
+			for ( j=0; j< ( long ) m_dom->nodes.size(); j++ )
+			{
+				if ( m_stgem_nv==m_dom->nodes[j] )
+				{
+					stgem_node_value_in_dom.push_back ( i );   //index for Water_ST_vec
+					stgem_local_index_in_dom.push_back ( j ); //index for RHS
+//	cout << "dom " << k <<  " i, j " << i << " " << j   << endl;
+				}
+			} 
+		}
+			rank_stgem_node_value_in_dom.push_back ( ( long ) stgem_node_value_in_dom.size() ); // only one element per domain!
+//	cout << "dom " << k <<  " rank_stgem_node_value_in_dom " << (long) rank_stgem_node_value_in_dom[0]  << endl; 
+
+//	}
+
+
+
+	for ( i=0; i<Size; i++ )
+	{
+		l_index = Water_ST_vec[i].index_node;
+		cout << i << " " << node_connected_doms[l_index] << " " << endl;
+		Water_ST_vec[i].water_st_value /= ( double ) node_connected_doms[l_index]; //values for shared nodes are scaled
+	}
+
+     return;
+}
+
 
 /**************************************************************************
 FEMLib-Method: CRFProcess::IncorporateBoundaryConditions
@@ -4950,6 +5000,8 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
   long begin = 0;
   long end = 0;
   long gindex=0;
+  int dim_space=0; //kg44 better define here and not in a loop!
+ 
   if(rank==-1)
   {
 	 begin = 0;
@@ -4989,7 +5041,7 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
     if(rank>-1)
 	{
        msh_node = st_local_index_in_dom[i];
-       int dim_space = 0; 
+       dim_space = 0; 
 	   if(m_msh->NodesNumber_Linear==m_msh->NodesNumber_Quadratic)
           dim_space = 0;  
 	   else
@@ -5134,16 +5186,50 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
 
   // if coupling to GEMS exist----------------------------------------------------
   // HS, added 11.2008
-  if ( flag_couple_GEMS ==1 && aktueller_zeitschritt > 1 )
-  {   // only when switch is on and not in the first time step
-	  for (int i=0; i < (int)Water_ST_vec.size() ; i++)
-	  {   // loop over the Water_ST_vec vector,
-		  // add the excess water to the right-hand-side of the equation
-		  eqs_rhs[Water_ST_vec[i].index_node] += Water_ST_vec[i].water_st_value; 	  
-	  }
-	  // after finished adding to RHS, clear the vector
-	  Water_ST_vec.clear();
-  }
+  // KG44 03/03/2010 modified to hopefully soon work with parallel solvers
+	long gem_node_index=-1, glocalindex=-1;
+	if ( flag_couple_GEMS ==1 && aktueller_zeitschritt > 1 )
+	{
+		begin = 0;
+		if ( rank==-1 ) // serial version
+		{
+			end = ( long ) Water_ST_vec.size();
+		}
+		else   // parallel version
+		{
+			end=0;
+			if (rank_stgem_node_value_in_dom.size() >0)	end = rank_stgem_node_value_in_dom[0];
+		}
+		// only when switch is on and not in the first time step
+		// loop over the Water_ST_vec vector,
+		// add the excess water to the right-hand-side of the equation
+		for ( i=begin; i < end ; i++ )
+		{
+			if ( rank>-1 )  // parallel version: stgem_node_value_in_dom and stgem_local_index_in_dom contain only values for the corresponding domain  == rank
+			{
+//				cout << "rank " << rank ;
+				gindex=stgem_node_value_in_dom[i]; //contains indexes to water-st_vec
+//				cout << " gindex " << gindex << " i " << i << endl ;
+				glocalindex=stgem_local_index_in_dom[i]; // contains index to node
+//				cout << " gem_node_index " << gem_node_index << endl;
+				eqs_rhs[glocalindex] += Water_ST_vec[gindex].water_st_value;
+	
+			}
+			else   // serial version
+			{
+				gem_node_index = Water_ST_vec[i].index_node;
+				eqs_rhs[gem_node_index] += Water_ST_vec[i].water_st_value;
+			}
+		}
+		// after finished adding to RHS, clear the vector
+		Water_ST_vec.clear();
+		if ( rank>-1 )
+		{
+			stgem_node_value_in_dom.clear();
+			stgem_local_index_in_dom.clear();
+			rank_stgem_node_value_in_dom.clear();
+		}
+	}
   // ----------------------------------------------------------------------------
 }
 #ifndef NEW_EQS //WW

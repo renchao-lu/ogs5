@@ -47,6 +47,9 @@ extern int max_dim;  //OK411 todo
 #define endl '\n'
 #define MY_IO_BUFSIZE 4096
 #endif
+#ifdef GEM_REACT
+#include "rf_REACT_GEM.h"
+#endif
 using Mesh_Group::CFEMesh;
 //==========================================================================
 vector<COutput*>out_vector;
@@ -292,42 +295,51 @@ ios::pos_type COutput::Read(ifstream *out_file)
       continue;
     }
     //--------------------------------------------------------------------
-    if(line_string.find("$TIM_TYPE")!=string::npos) { // subkeyword found
-      while ((!new_keyword)&&(!new_subkeyword)) {
-        position_subkeyword = out_file->tellg();
-	*out_file >> line_string; 
-        if(line_string.size()==0) //SB
-          break;
-        if(line_string.find(hash)!=string::npos) {
-          new_keyword = true;
-          break;
-        }
-        if(line_string.find(dollar)!=string::npos) {
-          new_subkeyword = true;
-          break;
-        }
-        if(line_string.find("STEPS")!=string::npos) {
-         *out_file >> nSteps;
-          tim_type_name = "STEPS"; //OK
-        }
-		if(line_string.find("STEPPING")!=string::npos) { // JTARON 2010, reconfigured... didn't work
-		  double stepping_length, stepping_end, stepping_current;
-		  *out_file >> stepping_length >> stepping_end;
-		  stepping_current = stepping_length;
-		  while(stepping_current <= stepping_end) {
-            time_vector.push_back(stepping_current);
-			rwpt_time_vector.push_back(stepping_current);
-            stepping_current += stepping_length;
-		  }
-        }
-        else{
-          time_vector.push_back(strtod(line_string.data(),NULL));
-		  rwpt_time_vector.push_back(strtod(line_string.data(),NULL));
+	if ( line_string.find ( "$TIM_TYPE" ) !=string::npos )   // subkeyword found
+	{
+		while ( ( !new_keyword ) && ( !new_subkeyword ) )
+		{
+			position_subkeyword = out_file->tellg();
+			*out_file >> line_string;
+			if ( line_string.size() ==0 ) //SB
+				break;
+			if ( line_string.find ( hash ) !=string::npos )
+			{
+				new_keyword = true;
+				break;
+			}
+			if ( line_string.find ( dollar ) !=string::npos )
+			{
+				new_subkeyword = true;
+				break;
+			}
+			if ( line_string.find ( "STEPS" ) !=string::npos )
+			{
+				*out_file >> nSteps;
+				tim_type_name = "STEPS"; //OK
+				break; //kg44 I guess that was missing..otherwise it pushes back a time_vector!
+			}
+			if ( line_string.find ( "STEPPING" ) !=string::npos )   // JTARON 2010, reconfigured (and added RWPT)... didn't work
+			{
+				double stepping_length, stepping_end, stepping_current;
+				*out_file >> stepping_length >> stepping_end;
+				stepping_current = stepping_length;
+				while ( stepping_current <= stepping_end )
+				{
+					time_vector.push_back ( stepping_current );
+					rwpt_time_vector.push_back ( stepping_current );
+					stepping_current += stepping_length;
+				}
+			}
+			else
+			{
+				time_vector.push_back ( strtod ( line_string.data(),NULL ) );
+				rwpt_time_vector.push_back ( strtod ( line_string.data(),NULL ) );
+			}
+			out_file->ignore ( MAX_ZEILE,'\n' );
 		}
-        out_file->ignore(MAX_ZEILE,'\n');
-      }
-      continue;
-    }
+		continue;
+	}
     //--------------------------------------------------------------------
     if(line_string.find("$DAT_TYPE")!=string::npos) { // subkeyword found
      *out_file >> dat_type_name;
@@ -667,7 +679,7 @@ void OUTData(double time_current, const int time_step_number)
     //--------------------------------------------------------------------
     if(no_times==0&&(m_out->nSteps>0)&&(time_step_number%m_out->nSteps==0))
       OutputBySteps = true;
-    if(time_step_number==0) //WW
+    if(time_step_number<2) //WW
       OutputBySteps = true;
     //======================================================================
     // TECPLOT
@@ -2806,7 +2818,7 @@ void COutput::WriteDataVTK(int number)
 // 
 #endif
   //--------------------------------------------------------------------
-  WriteVTKHeader(vtk_file);
+  WriteVTKHeader(vtk_file,number);
   WriteVTKNodeData(vtk_file);
   WriteVTKElementData(vtk_file);
   WriteVTKValues(vtk_file);
@@ -2819,20 +2831,29 @@ void COutput::WriteDataVTK(int number)
 FEMLib-Method: 
 Programing:
 04/2006 KG44 Implementation
+12/2009 KG44 added time information to header
 **************************************************************************/
-void COutput::WriteVTKHeader(fstream &vtk_file)
+void COutput::WriteVTKHeader(fstream &vtk_file, int time_step_number)
 {
-
-  // Write Header
-  vtk_file << "# vtk DataFile Version 3.6.2" << endl;
-  vtk_file << "Unstructured Grid: OpenGeoSys->Paraview. Current time (s) = " << aktuelle_zeit << endl;
+  // Write Header 
+  vtk_file << "# vtk DataFile Version 3.0" << endl;
+// title
+  vtk_file << "Unstructured Grid Rockflow"  << endl;
 // data type here always ASCII
   vtk_file << "ASCII"  << endl;
   vtk_file << endl;
 
 // geometry/topoology
   vtk_file << "DATASET UNSTRUCTURED_GRID"  << endl;
+   // time information
+  vtk_file << "FIELD TimesAndCycles 2" << endl;
+  vtk_file << "TIME 1 1 double" << endl;
+  vtk_file << time << endl;
+  vtk_file << "CYLCE 1 1 long" << endl;
+  vtk_file << time_step_number << endl;
+   
 }
+
 /**************************************************************************
 FEMLib-Method: 
 Programing:
@@ -2842,7 +2863,7 @@ void COutput::WriteVTKNodeData(fstream &vtk_file)
 {
 // header for node data 
    CFEMesh* m_msh = GetMSH(); //WW
-   vtk_file << "POINTS "<< m_msh->GetNodesNumber(false) << " float" << endl;
+   vtk_file << "POINTS "<< m_msh->GetNodesNumber(false) << " double" << endl; //KG44 12/2009 should be double !!!!
 
 
   CNode* m_nod = NULL;
@@ -3023,6 +3044,10 @@ void COutput::WriteVTKValues(fstream &vtk_file)
        vtk_file <<" "<< 1.-val_n  << endl;
     }
   }
+//kg44 GEM node data
+#ifdef GEM_REACT
+  m_vec_GEM->WriteVTKGEMValues(vtk_file); //kg44 export GEM internal variables like speciateion vector , phases etc
+#endif  
   // ELEMENT DATA
   // ---------------------------------------------------------------------
   bool wroteAnyEleData = false; //NW
@@ -3045,7 +3070,7 @@ void COutput::WriteVTKValues(fstream &vtk_file)
 //	  PRINT CHANGING (OR CONSTANT) PERMEABILITY TENSOR?   // JTARON 2010
       else if(ele_value_vector[k].compare("PERMEABILITY")==0)
       {
-		  vtk_file << "VECTORS permeability float " << endl;
+		  vtk_file << "VECTORS permeability double " << endl;
 		  CMediumProperties* MediaProp = NULL;
 		  CElem* m_ele = NULL;
 		  for(j=0l;j<(long)m_msh->ele_vector.size();j++)
@@ -3061,7 +3086,7 @@ void COutput::WriteVTKValues(fstream &vtk_file)
 	  else if(ele_value_index_vector[k]>-1)
 	  {
 //	  NOW REMAINING SCALAR DATA  // JTARON 2010, reconfig
-		  vtk_file << "SCALARS " << ele_value_vector[k] << " float 1" << endl;
+		  vtk_file << "SCALARS " << ele_value_vector[k] << " double 1" << endl;
 		  vtk_file << "LOOKUP_TABLE default" <<endl;
 		  for(long i=0l;i<(long)m_msh->ele_vector.size();i++)
 			  vtk_file << m_pcs->GetElementValue(i,ele_value_index_vector[k]) << endl;

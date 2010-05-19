@@ -54,7 +54,6 @@ protected:
          // used for exchanging input data and results between FMT and GEM IPM
 
     // These four values are set by the last GEM_run() call
-    double internalScFact;
     double CalcTime;  // GEMIPM2 calculation time, s
     long int
         PrecLoops,    // Number of performed IPM-2 precision refinement loops
@@ -262,18 +261,12 @@ void GEM_set_MT(
 //   By other values of NodeStatusCH, no calculation will be performed and the status will remain unchanged.
 //  In "smart initial approximation" (SIA) mode, the program can automatically switch into the "automatic initial
 //  approximation" (AIA) mode and return  OK_GEM_AIA instead of OK_GEM_SIA.
-//  The variant with one function parameter performs no internal scaling of the mass of the system.
-//   Parameters:
+//  Parameter:
 //   uPrimalSol  flag to define the mode of GEM smart initial approximation
 //               (only if dBR->NodeStatusCH = NEED_GEM_SIA has been set before GEM_run() call).
 //               false  (0) -  use speciation and activity coefficients from previous GEM_run() calculation
 //               true  (1)  -  use speciation provided in the DATABR memory structure (e.g. after reading the DBR file)
-//  InternalMass Mass (kg) to which the input bulk composition (provided in DATABR memory structure) will be scaled
-//               internally during the GEM IPM calculation (results will be scaled back to the original mass).
-//               Default value - 1 kg, reasonable range from 0.01 to 100 kg. This scaling is used for achieving
-//               better convergence and balance accuracy of GEM IPM2 algorithm.
 //  Return values:    NodeStatusCH  (the same as set in dBR->NodeStatusCH). Possible values (see "databr.h" file for the full list)
-   long int  GEM_run( double InternalMass = 1., bool uPrimalSol = false  );
    long int  GEM_run( bool uPrimalSol );   // calls GEM for a work node
 
 // Returns GEMIPM2 calculation time in seconds elapsed during the last call of GEM_run() - can be used for monitoring
@@ -340,9 +333,9 @@ void GEM_set_MT(
     double  *p_vPS,  // Total volumes of multicomponent phases, m3   [nPSb]      -      -       +     +
     double  *p_mPS,  // Total mass of multicomponent phase (carrier),kg [nPSb]   -      -       +     +
     double  *p_bPS,  // Bulk compositions of phases  [nPSb][nICb]                -      -       +     +
-    double  *p_xPA,   //Amount of carrier in a multicomponent asymmetric phase[nPSb]-    -       +     +
-    double  *p_aPH   //surfaces for  phase[nPSb]                                   -    -       +     +
-  );
+    double  *p_xPA,  //Amount of carrier in a multicomponent asymmetric phase[nPSb]-    -       +     +
+    double  *p_aPH   // Specific surface areas of phases
+ );
 
 #endif
 
@@ -366,13 +359,15 @@ void GEM_set_MT(
     double cP() const     // Get current node Pressure P, Pa
     {        return CNode->P;   }
 
+    double cMs() const     // Get current node mass in kg (reactive part)
+    {        return CNode->Ms;   }
+
+    double cVs() const     // Get current node volume in m3 (reactive part)
+    {        return CNode->Vs;   }
+
     // Set current node identification handle to value of parameter jj
     void setNodeHandle( long int jj )
     {      CNode->NodeHandle = jj;  }
-
-    // Resizes the node chemical system size by factor Factor;
-    // returns new mass of the chemical system in kg
-    double ResizeNode( double Factor );
 
 // Useful methods facilitating the communication between DataCH (or FMT)
 // and DataBR (or node) data structures for components and phases
@@ -450,9 +445,6 @@ void GEM_set_MT(
     // Are called inside of GEM_run()
     void packDataBr();   //  packs GEMIPM calculation results into work node structure
     void unpackDataBr( bool uPrimalSol ); //  unpacks work DATABR content into GEMIPM data structure
-
-    void packDataBr( double ScFact );  // Overloaded variant with scaling to constant mass of internal system
-    void unpackDataBr( bool uPrimalSol, double ScFact );
 
     // Access to interpolated thermodynamic data from DCH structure
     // Checks if given temperature T (K) and pressure P (Pa) fit within the interpolation
@@ -603,19 +595,19 @@ void GEM_set_MT(
       // Also amount of ICs not included into DATABR list can be retrieved.
       // Internal re-scaling to mass of the system is applied
       inline void Set_IC_b( const double b_val, const long int xCH)
-      { pmm->B[xCH] = b_val * internalScFact; }
+      { pmm->B[xCH] = b_val; }
 
       // Retrieves the current total amount of Independent Component (xCH is IC DCH index).
       // Also amount of ICs not included into DATABR list can be retrieved.
       // Internal re-scaling to mass of the system is applied
       inline double IC_b(const long int xCH) const
-      { return pmm->B[xCH]/internalScFact; }
+      { return pmm->B[xCH]; }
 
       // Retrieves the current mole amount of DC (xCH is DC DCH index) directly from
       // GEM IPM work structure. Also amount of DCs not included into DATABR
       // list can be retrieved. Internal re-scaling to mass of the system is applied.
       inline double DC_n(const long int xCH) const
-      {  return pmm->X[xCH]/internalScFact; }
+      {  return pmm->X[xCH]; }
 
       // Retrieves the current (dual-thermodynamic) activity of DC (xCH is DC DCH index)
       // directly from GEM IPM work structure. Also activity of a DC not included into DATABR list
