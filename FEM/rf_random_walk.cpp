@@ -31,6 +31,7 @@ RandomWalk::RandomWalk(void)
 	// This is going to be reset by user input.
 	// Further, used for allocating dynamic memory.
 	numOfParticles = 0;
+	leavingParticles = 0;
 	UniformOrNormal = 1;	// Uniform random number generation
 	RWPTMode = 0;	// Initialized to be homogeneous media
 	PURERWPT = 0;
