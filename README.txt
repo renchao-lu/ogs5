@@ -9,11 +9,11 @@ Then, compile with the option
 
 mkdir Build
 cd Build
-cmake .. -D=OGS_FEM_MKL=on
+cmake .. -DOGS_FEM_MKL=on
 
 NOTE: Since the executable, ogs, is created by linking the libraries dynamically, users still need to download MKL from the intel site and install them to properly run ogs. Otherwise, the executalbe complains missing libraries.
 
 For OGS-GEM user, use the following cmake option, 
-cmake .. -D=OGS_FEM_GEMS=ON 
+cmake .. -DOGS_FEM_GEMS=ON 
 
  
