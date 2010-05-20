@@ -13,8 +13,11 @@ Modification:
 #include "problem.h"
 #if defined(PROBLEM_CLASS)
 
-#if defined(USE_MPI_REGSOIL)
+#if defined (USE_MPI)
 #include <mpi.h>
+#endif
+
+#if defined(USE_MPI_REGSOIL)
 #include "par_ddc.h"
 #endif
 #include <iostream>
