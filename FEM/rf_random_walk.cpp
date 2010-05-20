@@ -2057,10 +2057,10 @@ Programing:
 void RandomWalk::AdvanceBySplitTime(double dt, int numOfSplit)
 {
 	double subdt = dt / (double)numOfSplit;
-	leavingParticles = 0;
 	double ctime=0.0; //JT 05.2010: for continuous source compatible with SplitTimes.
 	for(int i=0; i< numOfSplit; ++i)
 	{
+		leavingParticles = 0;
 		AdvanceToNextTimeStep(subdt,ctime);
 		ctime+=subdt;
 	}
@@ -2177,7 +2177,7 @@ void RandomWalk::AdvanceToNextTimeStep(double dt,double ctime)
 					// YYS ToDO
 					if(Y.x< 1.e-20 )
 						Y.x= 1.e-20;
-					if(Y.x> 0.1 )
+					if(Y.x> 0.1 && Y.identity != 2)
 						leavingParticles++;
 					// YYS ToDO ends here.
 
@@ -2317,20 +2317,22 @@ void RandomWalk::AdvanceToNextTimeStep(double dt,double ctime)
 			double ChanceOfSorbtion = randomZeroToOne();
 			double ChanceOfIrreversed = randomZeroToOne();
 			// Two-Rate Model: A = 0.5, k1=0.1, k2=0.01
-			double FractionRemainingOnMedia = Two_rateModel(0.99, 0.1, 0.001, X[i].Now.t/60.0);
+//			double FractionRemainingOnMedia = Two_rateModel(0.99, 0.1, 0.001, X[i].Now.t/60.0);
 			if(X[i].Now.elementIndex != -10 && X[i].Now.identity != 2)
 			{
+/*
 				if( ChanceOfSorbtion < FractionRemainingOnMedia )
 					X[i].Now.identity = 1;
 				else
 					X[i].Now.identity = 0;
+					*/
 
 				// Irreversible Reactions - Oocysts filtered for good or some chemicals decayed
 				// C/C0 = exp(-kt)
 				// For oocyst irreversible filtration, k = vp * lambda
-				double lamda = 16.0;
+				double lamda = m_cp->decay_model_values[0];
 				double k = X[i].Now.Vx * lamda;
-				double Irreversed = exp(-k*X[i].Now.t/60.0);
+				double Irreversed = exp(-k*X[i].Now.t);
 
 				if( ChanceOfIrreversed > Irreversed )
 					X[i].Now.identity = 2; // Permanently filtered
@@ -4797,7 +4799,7 @@ void DATWriteParticleFile(int current_time_step)
 	sprintf(now,"%i",current_time_step);
     string nowstr = now;
 
-	string vtk_file_name = "RWPT_";
+	string vtk_file_name = FileName + "RWPT_";
 	vtk_file_name += nowstr;
 	vtk_file_name += ".particles";
 	fstream vtk_file (vtk_file_name.data(),ios::out); 
