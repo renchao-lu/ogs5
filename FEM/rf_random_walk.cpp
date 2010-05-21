@@ -2178,7 +2178,10 @@ void RandomWalk::AdvanceToNextTimeStep(double dt,double ctime)
 					if(Y.x< 1.e-20 )
 						Y.x= 1.e-20;
 					if(Y.x> 0.1 && Y.identity != 2)
+					{
 						leavingParticles++;
+						Y.identity=-10;
+					}
 					// YYS ToDO ends here.
 
 					// Just get the element index after this movement
@@ -2192,7 +2195,6 @@ void RandomWalk::AdvanceToNextTimeStep(double dt,double ctime)
 							Y.elementIndex = IndexOfTheElementThatThisParticleBelong(0,&Y);
 					}
 
-#ifdef ALLOW_PARTICLES_GO_OUTSIDE
 					// We let the particle go outside of the domain
 					if(Y.elementIndex == -10)
 					{
@@ -2201,7 +2203,6 @@ void RandomWalk::AdvanceToNextTimeStep(double dt,double ctime)
 						X[i].Now = Y;
 						break;
 					}
-#endif
 
 					// The result of the function is unknown error.
 					if(Astatus == -2)
@@ -2318,7 +2319,7 @@ void RandomWalk::AdvanceToNextTimeStep(double dt,double ctime)
 			double ChanceOfIrreversed = randomZeroToOne();
 			// Two-Rate Model: A = 0.5, k1=0.1, k2=0.01
 //			double FractionRemainingOnMedia = Two_rateModel(0.99, 0.1, 0.001, X[i].Now.t/60.0);
-			if(X[i].Now.elementIndex != -10 && X[i].Now.identity != 2)
+			if(X[i].Now.elementIndex == -10 && X[i].Now.identity != 2)
 			{
 /*
 				if( ChanceOfSorbtion < FractionRemainingOnMedia )

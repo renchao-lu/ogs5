@@ -723,155 +723,155 @@ FEMLib-Method:
 **************************************************************************/
 void Problem::Euler_TimeDiscretize()
 {
-  long accepted_times = 0;
-  long rejected_times = 0;
-  double dtdummy = 0; 
-  //
-  CTimeDiscretization *m_tim = NULL;
-  aktueller_zeitschritt = 0;
+	long accepted_times = 0;
+	long rejected_times = 0;
+	double dtdummy = 0;
+	//
+	CTimeDiscretization *m_tim = NULL;
+	aktueller_zeitschritt = 0;
 #if defined(USE_MPI)
-  if(myrank==0)
-  {
+	if(myrank==0)
+	{
 #endif
-  cout<<"\n\n***Start time steps\n";
-  // Dump the initial conditions.
-  OUTData(0.0,aktueller_zeitschritt);
+		cout<<"\n\n***Start time steps\n";
+		// Dump the initial conditions.
+		OUTData(0.0,aktueller_zeitschritt);
 #if defined(USE_MPI)  
-  }
+	}
 #endif
-  // 
-  while(end_time>current_time)
-  {
-    dt = DBL_EPSILON;
+	//
+	while(end_time>current_time)
+	{
+		dt = DBL_EPSILON;
 
-   for(int i=0; i<(int)active_process_index.size(); i++)     //09.01.2009. WW    //kg44 11.12.2009 this loop has a problem...dt will be always changed twice as in the CalcTimeStep function and the underlying adaptive time step control there is a loop over all the processes..not only on the associated ones
-    {
-       m_tim = total_processes[active_process_index[i]]->Tim;
-       dtdummy = m_tim->CalcTimeStep(current_time);
-	if (i==0) dt=dtdummy; else dt =MMin(dt,dtdummy); // take always the smalles one, expect for first guess!
-       if(dt<dt0)
-          dt = dt0;  
-    }   
-    if(dt<DBL_EPSILON)
-    {
-       cout<<"!!! Too small time step size. Choose smallest number: "<< DBL_EPSILON <<endl;
-	dt=DBL_EPSILON;
-      //kg44 04/2010 proceed exit(0); 
-    }  
+		for(int i=0; i<(int)active_process_index.size(); i++)     //09.01.2009. WW    //kg44 11.12.2009 this loop has a problem...dt will be always changed twice as in the CalcTimeStep function and the underlying adaptive time step control there is a loop over all the processes..not only on the associated ones
+		{
+			m_tim = total_processes[active_process_index[i]]->Tim;
+			dtdummy = m_tim->CalcTimeStep(current_time);
+			if (i==0) dt=dtdummy; else dt =MMin(dt,dtdummy); // take always the smalles one, expect for first guess!
+			if(dt<dt0)
+				dt = dt0;
+		}
+		if(dt<DBL_EPSILON)
+		{
+			cout<<"!!! Too small time step size. Choose smallest number: "<< DBL_EPSILON <<endl;
+			dt=DBL_EPSILON;
+			//kg44 04/2010 proceed exit(0);
+		}
 #if defined(USE_MPI)  
-  MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);// all processes use the same time stepping
+		MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);// all processes use the same time stepping
 #endif
-  for(int i=0; i<(int)active_process_index.size(); i++)     //kg44 11.12.2009 all time-step sizes should be equal?!
-    {
-       m_tim = total_processes[active_process_index[i]]->Tim;
-       m_tim->time_step_length=dt;
-    }   
+		for(int i=0; i<(int)active_process_index.size(); i++)     //kg44 11.12.2009 all time-step sizes should be equal?!
+		{
+			m_tim = total_processes[active_process_index[i]]->Tim;
+			m_tim->time_step_length=dt;
+		}
 
-    // 
-    aktueller_zeitschritt++;  // Might be removed late on
-    current_time += dt;
-    aktuelle_zeit = current_time ;
-    // Print messsage
+		//
+		aktueller_zeitschritt++;  // Might be removed late on
+		current_time += dt;
+		aktuelle_zeit = current_time ;
+		// Print messsage
 #if defined(USE_MPI)
-  if(myrank==0)
-  {
+		if(myrank==0)
+		{
 #endif
-    cout<<"\n\n#############################################################";
-    cout<<"\nTime step: "<<aktueller_zeitschritt<<"|  Time: "<<current_time<<"|  Time step size: "<<dt<<endl;
+			cout<<"\n\n#############################################################";
+			cout<<"\nTime step: "<<aktueller_zeitschritt<<"|  Time: "<<current_time<<"|  Time step size: "<<dt<<endl;
 #if defined(USE_MPI)
-  }
+		}
 #endif
-    if(CouplingLoop())
-    {
+		if(CouplingLoop())
+		{
 #if defined(USE_MPI)
-  if(myrank==0)
+			if(myrank==0)
 #endif
-      cout<<"This step is accepted." <<endl;
-      PostCouplingLoop();
-      if(print_result)
+				cout<<"This step is accepted." <<endl;
+			PostCouplingLoop();
+			if(print_result)
 #if defined(USE_MPI)
-      {
-       if(myrank==0)
+			{
+				if(myrank==0)
 #endif
-        OUTData(current_time, aktueller_zeitschritt);
+					OUTData(current_time, aktueller_zeitschritt);
 #if defined(USE_MPI)
-       // MPI_Barrier (MPI_COMM_WORLD);
-      }
+				// MPI_Barrier (MPI_COMM_WORLD);
+			}
 #endif
-      //
-      accepted_times++;
+			//
+			accepted_times++;
 #ifdef MFC
- /*START: Update Visualization for OpenGL and other MFC view e.g. Diagram*/
- CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
- CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
- CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
- CGeoSysOUTProfileView *pView = (CGeoSysOUTProfileView *) pChild->GetActiveView();
- POSITION pos = m_pDoc->GetFirstViewPosition();
-  while(pos!=NULL) {
-    CView* pView = m_pDoc->GetNextView(pos);
-    pView->UpdateWindow();
-  }
- CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
- CRFProcess* m_pcs = NULL;
- if(pcs_vector.size()==0)
- return;
- m_pcs = PCSGet((string)mainframe->m_pcs_name);
- if(!m_pcs)
- {
-   m_pcs = pcs_vector[0];
-   //OK AfxMessageBox("Problem::Euler_TimeDiscretize() - no PCS data");
-   //OK return;
- }
- double value, m_pcs_min_r, m_pcs_max_r;
- m_pcs_min_r = 1.e+19;
- m_pcs_max_r = -1.e+19;
- int nidx = m_pcs->GetNodeValueIndex((string)mainframe->m_variable_name);
- for(long j=0;j<(long)m_pcs->nod_val_vector.size();j++)
- {
- value = m_pcs->GetNodeValue(j,nidx);
- if(value<m_pcs_min_r) m_pcs_min_r = value;
- if(value>m_pcs_max_r) m_pcs_max_r = value;
- }
- mainframe->m_pcs_min = m_pcs_min_r;
- mainframe->m_pcs_max = m_pcs_max_r;
- mainframe->m_something_changed = 1;
- m_pDoc->SetModifiedFlag(1);
- m_pDoc->UpdateAllViews(NULL,0L,NULL);
- /*END: Update Visualization for OpenGL and other MFC view e.g. Diagram*/
+			/*START: Update Visualization for OpenGL and other MFC view e.g. Diagram*/
+			CMDIFrameWnd *pFrame = (CMDIFrameWnd*)AfxGetApp()->m_pMainWnd;
+			CMDIChildWnd *pChild = (CMDIChildWnd *) pFrame->GetActiveFrame();
+			CGeoSysDoc* m_pDoc = (CGeoSysDoc *)pChild->GetActiveDocument();
+			CGeoSysOUTProfileView *pView = (CGeoSysOUTProfileView *) pChild->GetActiveView();
+			POSITION pos = m_pDoc->GetFirstViewPosition();
+			while(pos!=NULL) {
+				CView* pView = m_pDoc->GetNextView(pos);
+				pView->UpdateWindow();
+			}
+			CMainFrame* mainframe = (CMainFrame*)AfxGetMainWnd();
+			CRFProcess* m_pcs = NULL;
+			if(pcs_vector.size()==0)
+				return;
+			m_pcs = PCSGet((string)mainframe->m_pcs_name);
+			if(!m_pcs)
+			{
+				m_pcs = pcs_vector[0];
+				//OK AfxMessageBox("Problem::Euler_TimeDiscretize() - no PCS data");
+				//OK return;
+			}
+			double value, m_pcs_min_r, m_pcs_max_r;
+			m_pcs_min_r = 1.e+19;
+			m_pcs_max_r = -1.e+19;
+			int nidx = m_pcs->GetNodeValueIndex((string)mainframe->m_variable_name);
+			for(long j=0;j<(long)m_pcs->nod_val_vector.size();j++)
+			{
+				value = m_pcs->GetNodeValue(j,nidx);
+				if(value<m_pcs_min_r) m_pcs_min_r = value;
+				if(value>m_pcs_max_r) m_pcs_max_r = value;
+			}
+			mainframe->m_pcs_min = m_pcs_min_r;
+			mainframe->m_pcs_max = m_pcs_max_r;
+			mainframe->m_something_changed = 1;
+			m_pDoc->SetModifiedFlag(1);
+			m_pDoc->UpdateAllViews(NULL,0L,NULL);
+			/*END: Update Visualization for OpenGL and other MFC view e.g. Diagram*/
 #endif
-    }
-    else
-    {
-      current_time -= dt;
-      // aktuelle_zeit might be removed late on
-      aktuelle_zeit = current_time;
-      aktueller_zeitschritt--;  // Might be removed late on
-      //
-      for(int i=0; i<(int)pcs_vector.size(); i++)
-      {
-         if(pcs_vector[i]->pcs_type_name.find("DEFORMATION")!=string::npos)
-           continue;
-         pcs_vector[i]->CopyTimestepNODValues(false);
-      }
-      rejected_times++;
+		}
+		else
+		{
+			current_time -= dt;
+			// aktuelle_zeit might be removed late on
+			aktuelle_zeit = current_time;
+			aktueller_zeitschritt--;  // Might be removed late on
+			//
+			for(int i=0; i<(int)pcs_vector.size(); i++)
+			{
+				if(pcs_vector[i]->pcs_type_name.find("DEFORMATION")!=string::npos)
+					continue;
+				pcs_vector[i]->CopyTimestepNODValues(false);
+			}
+			rejected_times++;
 #if defined(USE_MPI)
-  if(myrank==0)
+			if(myrank==0)
 #endif
-      cout<<"This step is rejected." <<endl;
-    }
+				cout<<"This step is rejected." <<endl;
+		}
 #if defined(USE_MPI)
-  if(myrank==0)
+		if(myrank==0)
 #endif
-    cout<<"\n#############################################################\n";
-    if(aktueller_zeitschritt>=max_time_steps)
-      break;
-  }
+			cout<<"\n#############################################################\n";
+		if(aktueller_zeitschritt>=max_time_steps)
+			break;
+	}
 
-  cout<<"----------------------------------------------------\n";
-  cout<<"|Acccepted step times |"<<accepted_times;
-  cout<<"  |Rejected step times |"<<rejected_times<<endl;
-  cout<<"----------------------------------------------------\n";
-  //
+	cout<<"----------------------------------------------------\n";
+	cout<<"|Acccepted step times |"<<accepted_times;
+	cout<<"  |Rejected step times |"<<rejected_times<<endl;
+	cout<<"----------------------------------------------------\n";
+	//
 }
 
 /*-----------------------------------------------------------------------
@@ -1639,6 +1639,7 @@ inline double Problem::RandomWalker()
 
 		rw_pcs->AdvanceBySplitTime(dt,rwpt_numsplits);
 	//	rw_pcs->TraceStreamline(); // JTARON, no longer needed
+		print_result = true;
 		rw_pcs->RandomWalkOutput(aktuelle_zeit,aktueller_zeitschritt);
 #endif
 	}
