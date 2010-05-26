@@ -685,7 +685,7 @@ void OUTData(double time_current, const int time_step_number)
     // TECPLOT
     if(m_out->dat_type_name.compare("TECPLOT")==0 || m_out->dat_type_name.compare("MATLAB")==0)
     {
-	  m_out->matlab_delim = " ";
+	  m_out->matlab_delim = "";
 	  if(m_out->dat_type_name.compare("MATLAB")==0) // JTARON, just for commenting header for matlab
 		  m_out->matlab_delim = "%";
 
