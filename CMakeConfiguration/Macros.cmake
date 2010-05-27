@@ -92,8 +92,9 @@ ENDMACRO(COPY_FILE_INTO_EXECUTABLE_DIRECTORY)
 # authorName Your short name
 # benchmarkName Relative path in benchmarks directory
 # ogsConfiguration E.g. "OGS_FEM"
-MACRO(ADD_BENCHMARK authorName benchmarkName ogsConfiguration)
-  #MESSAGE ("OGS_FEM: ${OGS_FEM}, config: ${ogsConfiguration}")
+# Additional arguments add output files to compare
+FUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration)
+  
   SET (CONFIG_MATCH FALSE)
   IF (("${ogsConfiguration}" STREQUAL "OGS_FEM") AND OGS_FEM)
     SET (CONFIG_MATCH TRUE)
@@ -134,6 +135,7 @@ MACRO(ADD_BENCHMARK authorName benchmarkName ogsConfiguration)
     STRING (LENGTH ${benchmarkStrippedName} benchmarkStrippedNameLength)
     MATH (EXPR substringLength ${benchmarkNameLength}-${benchmarkStrippedNameLength}) 
     STRING (SUBSTRING ${benchmarkName} 0 ${substringLength} benchmarkDir)
+    STRING (REPLACE "/" "_" benchmarkNameUnderscore ${benchmarkName})
 
     ADD_TEST (
       ${authorName}_BENCHMARK_${benchmarkName}
@@ -142,14 +144,35 @@ MACRO(ADD_BENCHMARK authorName benchmarkName ogsConfiguration)
       ${benchmarkStrippedName}
     )
     
-    #SET_TESTS_PROPERTIES (Benchmark_${authorName}_${benchmarkName} PROPERTIES TIMEOUT 60)
-  ENDIF (CONFIG_MATCH)
+    # compare file differences with python script
+    IF (PYTHONINTERP_FOUND)
+      FILE (REMOVE ${PROJECT_SOURCE_DIR}/../benchmarks/results/temp/temp_${benchmarkNameUnderscore}.txt)
+      FOREACH (entry ${ARGN})
+        FILE (APPEND ${PROJECT_SOURCE_DIR}/../benchmarks/results/temp/temp_${benchmarkNameUnderscore}.txt "${entry}\n")
+      ENDFOREACH (entry ${ARGN})
+      ADD_TEST (
+        ${authorName}_FILECOMPARE_${benchmarkName}  
+        ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/../benchmarks/results
+        ${PYTHON_EXECUTABLE}
+        ../compare.py
+        temp/temp_${benchmarkNameUnderscore}.txt
+        ../../benchmarks_ref/
+        ${authorName}_${benchmarkNameUnderscore}.html
+        ../
+      )
+    # compare files with builtin cmake command
+    ELSE (PYTHONINTERP_FOUND)
+      FOREACH (OUTPUTFILE ${ARGN})
+        ADD_TEST (
+          ${authorName}_FILECOMPARE_${OUTPUTFILE}
+          ${CMAKE_COMMAND} -E compare_files ${PROJECT_SOURCE_DIR}/../benchmarks/${OUTPUTFILE} ${PROJECT_SOURCE_DIR}/../benchmarks_ref/${OUTPUTFILE}
+        )
+      ENDFOREACH (OUTPUTFILE ${ARGN})
+    ENDIF (PYTHONINTERP_FOUND)
   
-ENDMACRO(ADD_BENCHMARK authorName benchmarkName ogsConfiguration)
-
-MACRO(ADD_FILE_COMPARE authorName)
-
-ENDMACRO(ADD_FILE_COMPARE authorName)
+  ENDIF (CONFIG_MATCH)   
+  
+ENDFUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration filesToCompare)
 
 MACRO(ADD_FILES_COMPARE authorName)
   # compare file differences with python script
