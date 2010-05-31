@@ -829,6 +829,9 @@ case 2 :  // METHANE
 case 3 :  // NITROGEN
             h= n2_heat_conductivity (rho,T);
             break;
+case 4 :  // NITROGEN
+            h= n2_heat_conductivity (rho,T);
+            break;
 
 default :   h = 0.5;}
 
@@ -1187,7 +1190,7 @@ double ch4_heat_conductivity (double rho, double T)
 {
 double lamda, eta_0, lamda_0, lamda_ex;
 double t,delta,tau,Omega=0,epsilon,beta;
-double C[9],Q[6],r[7],s[7],j[7],f[2],H[4],J[5];
+double C[9],Q[6],r[7],s[7],j[7],f[2],H[6],J[5];
 double sum=0,phi_id_tt,f_int;
 double P_sigma,Z_c,delta_star,T_star,rho_sigma_v;
 

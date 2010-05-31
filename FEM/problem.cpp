@@ -1338,6 +1338,7 @@ inline double Problem::AirFlow()
 
   error = m_pcs->ExecuteNonLinear();
   m_pcs->CalIntegrationPointValue(); //WW
+  m_pcs->cal_integration_point_value = false; //AKS 
   m_pcs->CalcELEVelocities(); //OK
   //
   return error;

@@ -261,7 +261,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, con
       else
 	     Mass = new Matrix(size_m, size_m);
       Laplace = new Matrix(size_m,size_m);
-      if(pcsT=='H'||pcsT=='M')
+      if(pcsT=='H'||pcsT=='M'||pcsT=='A')
 	  {
          Advection = new Matrix(size_m,size_m);
          Storage = new Matrix(size_m,size_m);
@@ -364,7 +364,7 @@ void CFiniteElementStd::SetMemory()
        else  
        Mass->LimitSize(nnodes, nnodes); // Mass->LimitSize(nnodes); // unsymmetric in case of Upwinding
        Laplace->LimitSize(Size, Size);
-       if(PcsType==H||PcsType==M)
+       if(PcsType==H||PcsType==M ||PcsType==A)
 	   {
 	      Advection->LimitSize(Size, Size); //SB4200
 	      Storage->LimitSize(Size, Size); //SB4200
@@ -1211,15 +1211,18 @@ Programing:
 **************************************************************************/
 inline double CFiniteElementStd::CalCoefMass() 
 {
+  int i=0.0,idxp;
   int Index = MeshElement->GetIndex();
   double val = 0.0;
   double humi = 1.0;
   double rhov = 0.0;
+double dens_arg[3]; //AKS
   double biot_val, poro_val, rho_val, Se;
   CompProperties *m_cp = NULL;
 
   if(pcs->m_num->ele_mass_lumping)
     ComputeShapefct(1); 
+ PG = interpolate(NodalVal1); //AKS
   switch(PcsType){
     default:
       cout << "Fatal error in CalCoefMass: No valid PCS type" << endl;
@@ -1308,7 +1311,28 @@ inline double CFiniteElementStd::CalCoefMass()
       break;
     //....................................................................
     case M: // Mass transport //SB4200
+
+if(FluidProp->density_model==14 && MediaProp->heat_diffusion_model==273 && cpl_pcs )
+{
+//Based on fractional-mass transport Eq.- AKS
+CRFProcess *m_pcs;
+m_pcs= PCSGet("AIR_FLOW"); 
+idxp=m_pcs->GetNodeValueIndex("PRESSURE1");
+PG=0.0;
+for(i=0; i<nnodes; i++)
+{
+PG += m_pcs->GetNodeValue(nodes[i], idxp);
+}
+PG /= (double)nnodes;
+dens_arg[0] = PG;   
+dens_arg[1] = interpolate(NodalValC1)+T_KILVIN_ZERO;
+dens_arg[2] = Index;
+val = FluidProp->Density(dens_arg)*MediaProp->Porosity(Index,pcs->m_num->ls_theta);
+}
+else
+{
 	  	val = MediaProp->Porosity(Index,pcs->m_num->ls_theta); // Porosity
+}
         val *= PCSGetEleMeanNodeSecondary_2(Index, pcs->flow_pcs_type, "SATURATION1", 1);
      //   val *= PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
 	  	m_cp = cp_vec[pcs->pcs_component_number]; 
@@ -1348,7 +1372,7 @@ inline double CFiniteElementStd::CalCoefMass()
   		val = 1.0;
       break;
     case A: // Air (gas) flow
-      val = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
+val = MediaProp->Porosity(Index,pcs->m_num->ls_theta)/interpolate(NodalVal1); 
       break;
   }
   return val;
@@ -1619,7 +1643,8 @@ Programing:
 **************************************************************************/
 inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip) 
 {
-  int i=0;
+  int i=0,idxp;
+double dens_arg[3]; //AKS
   double mat_fac = 1.0;
   double Dpv = 0.0;
   double poro = 0.0;
@@ -1627,10 +1652,10 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
   double humi = 1.0;
   double rhow = 0.0; 
   double *tensor = NULL;
-  double Hav,manning,chezy,expp,chezy4,Ss,arg;
+  double Hav,Hat,manning,chezy,expp,chezy4,Ss,arg;
   static double Hn[9],z[9];
   double GradH[3],Gradz[3],w[3],v1[3],v2[3];
-  int nidx1;
+  int nidx1,nidx2;
   int Index = MeshElement->GetIndex();
   double k_rel;
   ComputeShapefct(1);   //  12.3.2007 WW
@@ -1851,8 +1876,28 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
        }      
         break;
       case M: // Mass transport
-        tensor = MediaProp->MassDispersionTensorNew(ip);
+//for fractional mass transport Eq// AKS
+if(FluidProp->density_model==14)
+{
+CRFProcess *m_pcs;
+m_pcs= PCSGet("AIR_FLOW"); 
+idxp=m_pcs->GetNodeValueIndex("PRESSURE1");
+PG=0.0;
+for(i=0; i<nnodes; i++)
+{
+PG += m_pcs->GetNodeValue(nodes[i], idxp);
+}
+PG /= (double)nnodes;
+dens_arg[0] = PG;   
+dens_arg[1] = interpolate(NodalValC1)+T_KILVIN_ZERO;
+dens_arg[2] = Index;
+mat_fac = FluidProp->Density(dens_arg); //MediaProp->Porosity(Index,pcs->m_num->ls_theta); // porosity now included in MassDispersionTensorNew()
+}
+else
+{
         mat_fac = 1.0; //MediaProp->Porosity(Index,pcs->m_num->ls_theta); // porosity now included in MassDispersionTensorNew()
+}
+tensor = MediaProp->MassDispersionTensorNew(ip);
   	 	//CB 
       //SB->CB I think this does not belong here
 		// mat_fac *= PCSGetEleMeanNodeSecondary_2(Index, pcs->flow_pcs_type, "SATURATION1", 1);
@@ -1945,19 +1990,14 @@ inline void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
        break;
       //------------------------------------------------------------------
       case A: // Air flow
-        mat_fac = FluidProp->Viscosity();
+dens_arg[0] = interpolate(NodalVal1);   
+dens_arg[1] = interpolate(NodalValC1)+T_KILVIN_ZERO;
+dens_arg[2] = Index;
+mat_fac = FluidProp->Viscosity(dens_arg);
         tensor = MediaProp->PermeabilityTensor(Index);
-        // Pressure
-        nidx1 = pcs->GetNodeValueIndex("PRESSURE1")+1; //OK
-        Hav = 0.0;
-        for(i=0;i<nnodes;i++){
-		    Hav += pcs->GetNodeValue(MeshElement->nodes_index[i],nidx1);
-        }
-        Hav /= (double)nnodes;
-        // 
-        for(i=0;i<dim*dim;i++)
-          mat[i] = tensor[i]/mat_fac*Hav;
-        break;
+for(i=0;i<dim*dim;i++)
+mat[i] = tensor[i]/mat_fac;
+break;
       //------------------------------------------------------------------
     }
 }
@@ -2754,7 +2794,9 @@ last modification:
 **************************************************************************/
 inline double CFiniteElementStd::CalCoefAdvection() 
 {
-  double val = 0.0;
+  double val = 0.0,po=0.0;
+int i,idxp;
+double dens_arg[3]; //AKS
   //OK long Index = MeshElement->GetIndex();
   //----------------------------------------------------------------------
   switch(PcsType){
@@ -2772,11 +2814,39 @@ inline double CFiniteElementStd::CalCoefAdvection()
     case C: // Componental flow
       break;
     case H: // heat transport
+if(FluidProp->heat_capacity_model==10 && MediaProp->heat_diffusion_model==273 && cpl_pcs )
+{
+dens_arg[0]=interpolate(NodalValC1);
+dens_arg[1]=interpolate(NodalVal1)+T_KILVIN_ZERO;
+dens_arg[2]=Index;
+val = FluidProp->SpecificHeatCapacity(dens_arg)*FluidProp->Density(dens_arg); 
+}  
+else
       val = FluidProp->SpecificHeatCapacity()*FluidProp->Density();  
       break;
     case M: // Mass transport //SB4200
 		// Get velocity(Gausspoint)/porosity(element)
+//for fractional mass transport Eq// AKS
+if(FluidProp->density_model==14 && MediaProp->heat_diffusion_model==273 &&cpl_pcs )
+{
+CRFProcess *m_pcs;
+m_pcs= PCSGet("AIR_FLOW"); 
+idxp=m_pcs->GetNodeValueIndex("PRESSURE1");
+PG=0.0;
+for(i=0; i<nnodes; i++)
+{
+PG += m_pcs->GetNodeValue(nodes[i], idxp);
+}
+PG /= (double)nnodes;
+dens_arg[0] = PG;   
+dens_arg[1] = interpolate(NodalValC1)+T_KILVIN_ZERO;
+dens_arg[2] = Index;
+val = FluidProp->Density(dens_arg)*time_unit_factor; //*MediaProp->Porosity(Index,pcs->m_num->ls_theta); // Porosity; 
+}
+else
+{
 	  val = 1.0*time_unit_factor; //*MediaProp->Porosity(Index,pcs->m_num->ls_theta); // Porosity; 
+}
       break;
     case O: // Liquid flow
       val = 1.0; 
@@ -2786,6 +2856,7 @@ inline double CFiniteElementStd::CalCoefAdvection()
     case F:	// Fluid Momentum
       break;
     case A: // Air (gas) flow
+val = 1.0/interpolate(NodalVal1); // 1/p
       break;
   }
   return val;
@@ -4035,7 +4106,7 @@ void CFiniteElementStd::CalcAdvection()
   double vel[3], dens_aug[3];
   CFluidProperties *m_mfp_g = NULL;
   bool multiphase = false;
-  if(!cpl_pcs&&(pcs->type!=2)) return; //18.02.2008, 04.09.2008 WW
+  if(!cpl_pcs&&(pcs->type!=2 &&pcs->type!=5)) return; //18.02.2008, 04.09.2008 WW
   if(cpl_pcs&&cpl_pcs->type==1212)
   {
      multiphase = true; 
@@ -4686,6 +4757,7 @@ void  CFiniteElementStd::Cal_Velocity()
 {
   int i, j, k;
   static double vel[3], vel_g[3];  
+double dens_arg[3]; //AKS
   // ---- Gauss integral
   int gp_r=0, gp_s=0, gp_t;
   double coef = 0.0;
@@ -4798,7 +4870,17 @@ void  CFiniteElementStd::Cal_Velocity()
       // Gravity term
       if(k==2&&(!HEAD_Flag)&&FluidProp->CheckGravityCalculation()) //NW 
       {
-         coef  =  gravity_constant*FluidProp->Density();
+if((FluidProp->density_model==14))
+{
+dens_arg[0] = interpolate(NodalVal1);   
+dens_arg[1] = interpolate(NodalValC)+T_KILVIN_ZERO;
+dens_arg[2] = Index;
+coef  =  gravity_constant*FluidProp->Density(dens_arg);
+}
+else
+{
+coef  =  gravity_constant*FluidProp->Density();
+}
          if(dim==3&&ele_dim==2)
          {
            vel[dim-1] += coef; //NW local permeability tensor is already transformed to global one in CalCoefLaplace()
@@ -6344,10 +6426,12 @@ void CFiniteElementStd::Assembly()
       break;
     //....................................................................
     case H: // Heat transport
-      heat_phase_change = false; // ?2WW 
-      //  if(SolidProp->GetCapacityModel()==2) // Boiling model
-      //    CalNodalEnthalpy();
-      AssembleMixedHyperbolicParabolicEquation(); //CMCD4213 
+heat_phase_change = false; // ?2WW 
+//  if(SolidProp->GetCapacityModel()==2) // Boiling model
+//    CalNodalEnthalpy();
+AssembleMixedHyperbolicParabolicEquation(); //CMCD4213 
+if(FluidProp->density_model==14 && MediaProp->heat_diffusion_model==273 && cpl_pcs )
+Assemble_RHS_HEAT_TRANSPORT();// This include when need pressure terms n dp/dt + nv.Nabla p//AKS
 	  break;
     //....................................................................
     case M: // Mass transport
@@ -6373,9 +6457,11 @@ void CFiniteElementStd::Assembly()
 	case F: // Fluid Momentum - Assembly handled in Assembly in Fluid_Momentum file
 	  break;
     //....................................................................
-    case A: // Air (gas) flow
-      AssembleParabolicEquation();
-      break;
+case A: // Air (gas) flow
+AssembleMixedHyperbolicParabolicEquation(); //To account advection like term nv.Nabla p
+if(cpl_pcs&&MediaProp->heat_diffusion_model==273)//AKS
+Assemble_RHS_AIR_FLOW();// n*drho/dt + Nabla.[rho*k/mu rho g]//AKS
+break;
     case V: // Multi-phase flow 24.02.2007 WW
       AssembleParabolicEquation();       
       Assemble_Gravity();
@@ -7230,6 +7316,72 @@ inline double CFiniteElementStd::CalCoef_RHS_PSGLOBAL(int dof_index)
     return val;
 }
 
+/**************************************************************************
+FEMLib-Method:
+Task: Calculate right hand terms temperature coupled term and body force 
+Programing:
+05/2010 AKS Implementation
+last modification:
+**************************************************************************/
+
+inline double CFiniteElementStd::CalCoef_RHS_AIR_FLOW(int dof_index)
+{
+double val=0.0;
+int Index = MeshElement->GetIndex();
+PG=interpolate(NodalVal1); 
+TG=interpolate(NodalValC1)+T_KILVIN_ZERO;  
+TG0=interpolate(NodalValC)+T_KILVIN_ZERO; 
+switch(dof_index)
+{
+case 0:
+val = -MediaProp->Porosity(Index,pcs->m_num->ls_theta)/TG;
+val *= (TG-TG0);
+break;
+
+case 1:
+val = -1.0/TG;
+break;
+
+}
+return val;
+}
+/**************************************************************************
+FEMLib-Method:
+Task: Calculate RHS of pressure coupled term
+Programing:
+05/2010 AKS Implementation
+last modification:
+**************************************************************************/
+
+inline double CFiniteElementStd::CalCoef_RHS_HEAT_TRANSPORT(int dof_index)
+{
+double val=0.0, rho_g=0.0, rho_0=0.0;
+int Index = MeshElement->GetIndex();
+double dens_arg[3];
+dens_arg[0] = interpolate(NodalValC1);
+dens_arg[1] = interpolate(NodalVal1)+T_KILVIN_ZERO; 
+dens_arg[2] = Index;
+rho_g=FluidProp->Density(dens_arg);
+dens_arg[1] = 120+T_KILVIN_ZERO; 
+rho_0=FluidProp->Density(dens_arg);
+
+switch(dof_index)
+{
+case 0:
+val = rho_g*MediaProp->Porosity(Index,pcs->m_num->ls_theta)/rho_0;
+val *= interpolate(NodalValC1)-interpolate(NodalValC);
+break;
+
+case 1:
+val = rho_g/rho_0;
+break;
+
+case 2:
+val = rho_g*gravity_constant;
+break;
+}
+return val;
+}
 /***************************************************************************
    GeoSys - Funktion: 
           Assemble_RHS_T_MPhaseFlow 
@@ -7513,7 +7665,210 @@ void CFiniteElementStd::Assemble_RHS_M()
   setOrder(1);
 //  
 }
-///////
+
+/***************************************************************************
+   GeoSys - Funktion:
+   Assemble_RHS_AIR_FLOW
+   Programming:
+    05/2010 AKS
+**************************************************************************/
+
+void CFiniteElementStd::Assemble_RHS_AIR_FLOW()
+{
+int i, j, k, ii,idxd;
+// ---- Gauss integral
+int gp_r=0,gp_s=0,gp_t=0,z_sum;
+double vel[3],rhoz[3];
+double fkt, fac,mat_fac,rho_gravity;
+double dens_arg[3]; //08.05.2008 WW
+ double *tensor = NULL;
+CFEMesh* m_msh;
+int GravityOn = 1; // Initialized to be on
+// If no gravity, then set GravityOn to be zero.
+if((coordinate_system)%10!=2&&(!axisymmetry))
+GravityOn = 0;
+// Material
+int dof_n = 1;
+//----------------------------------------------------------------------
+for (i = 0; i < dof_n*nnodes; i++) NodalVal[i] = 0.0;
+//======================================================================
+// Loop over Gauss points
+for (gp = 0; gp < nGaussPoints; gp++)
+{
+//---------------------------------------------------------
+//  Get local coordinates and weights 
+//  Compute Jacobian matrix and its determinate
+//---------------------------------------------------------
+fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+// Compute geometry
+ComputeGradShapefct(1); // Linear interpolation function
+ComputeShapefct(1); // Linear interpolation function
+ElementValue* gp_ele = ele_gp_value[Index];
+
+for(ii=0; ii<dof_n; ii++)
+{
+// Material
+fac = CalCoef_RHS_AIR_FLOW(ii)/dt;
+
+for (i = 0; i < nnodes; i++)
+NodalVal[i+ii*nnodes] += fac*fkt*shapefct[i];
+}
+
+// grad T
+for(ii=0; ii<dof_n; ii++)
+{
+
+fac = CalCoef_RHS_AIR_FLOW(ii+1);
+//Velocity
+vel[0] = fac*gp_ele->Velocity(0, gp);   
+vel[1] = fac*gp_ele->Velocity(1, gp);
+vel[2] = fac*gp_ele->Velocity(2, gp);
+
+for (i = 0; i< nnodes; i++)
+{
+for (j = 0; j < nnodes; j++)
+{
+for (k = 0; k < dim; k++)
+NodalVal[i+ii*nnodes] += fkt*shapefct[i]*vel[k]*dshapefct[k*nnodes+j]*(NodalValC1[j]+T_KILVIN_ZERO);
+}
+}
+}
+
+//Body force term
+if(GravityOn)
+{
+dens_arg[0] = interpolate(NodalVal1);   
+dens_arg[1] = interpolate(NodalValC1)+T_KILVIN_ZERO;
+dens_arg[2] = Index;
+rho_gravity = gravity_constant*FluidProp->Density(dens_arg);
+mat_fac = FluidProp->Viscosity(dens_arg);
+tensor = MediaProp->PermeabilityTensor(Index);
+for(i=0;i<dim*dim;i++)
+mat[i] = tensor[i]/mat_fac;
+for(ii=0; ii<dof_n; ii++)
+{
+
+for (i = 0; i < nnodes; i++)
+{
+NodalVal[i+ii*nnodes] -= fkt*rho_gravity*mat[dim*dim-1]*dshapefct[(dim-1)*nnodes+i];	
+}
+}
+}
+
+
+
+}
+int ii_sh;
+long i_sh;
+for(ii=0;ii<pcs->dof;ii++)
+{
+i_sh = NodeShift[ii];
+ii_sh = ii*nnodes;
+for (i=0;i<nnodes;i++)
+{
+eqs_rhs[i_sh + eqs_number[i]] -= NodalVal[i+ii_sh];
+(*RHS)(i+LocalShift+ii_sh) -=  NodalVal[i+ii_sh];
+}
+} 
+}
+
+/***************************************************************************
+   GeoSys - Funktion:
+   Assemble_RHS_HEAT_TRANSPORT: This include when need pressure terms n dp/dt + nv.Nabla p
+   Programming:
+   05/2010   AKS
+**************************************************************************/
+
+void CFiniteElementStd::Assemble_RHS_HEAT_TRANSPORT()
+{
+int i, j, k, ii;
+// ---- Gauss integral
+int gp_r=0,gp_s=0,gp_t=0;
+double vel[3];
+double fkt=0.0, fac=0.0;
+// Material
+int dof_n = 1;
+//----------------------------------------------------------------------
+for (i = 0; i < dof_n*nnodes; i++) NodalVal[i] = 0.0;
+//======================================================================
+// Loop over Gauss points
+for (gp = 0; gp < nGaussPoints; gp++)
+{
+//---------------------------------------------------------
+//  Get local coordinates and weights 
+//  Compute Jacobian matrix and its determinate
+//---------------------------------------------------------
+fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+// Compute geometry
+ComputeGradShapefct(1); // Linear interpolation function
+ComputeShapefct(1); // Linear interpolation function
+ElementValue* gp_ele = ele_gp_value[Index];
+
+
+
+for(ii=0; ii<dof_n; ii++)
+{
+// Material
+fac = CalCoef_RHS_HEAT_TRANSPORT(ii)/dt;
+
+for (i = 0; i < nnodes; i++)
+NodalVal[i+ii*nnodes] += fac*fkt*shapefct[i];
+
+}
+
+// grad P
+
+for(ii=0; ii<dof_n; ii++)
+{
+fac = CalCoef_RHS_HEAT_TRANSPORT(ii+1);
+//Velocity
+vel[0] = fac*gp_ele->Velocity(0, gp);   
+vel[1] = fac*gp_ele->Velocity(1, gp);
+vel[2] = fac*gp_ele->Velocity(2, gp);
+
+for (i = 0; i< nnodes; i++)
+{
+for (j = 0; j < nnodes; j++)
+{
+for (k = 0; k < dim; k++)
+NodalVal[i+ii*nnodes] += fkt*shapefct[i]*vel[k]*dshapefct[k*nnodes+j]*NodalValC1[j];
+}
+}
+}
+
+// garvity term
+
+for(ii=0; ii<dof_n; ii++)
+{
+fac = CalCoef_RHS_HEAT_TRANSPORT(ii+2);
+//Velocity
+vel[0] = fac*gp_ele->Velocity(0, gp);   
+vel[1] = fac*gp_ele->Velocity(1, gp);
+vel[2] = fac*gp_ele->Velocity(2, gp);
+
+for (i = 0; i< nnodes; i++)
+{
+for (k = 0; k < dim; k++)
+NodalVal[i+ii*nnodes] += fkt*shapefct[i]*vel[k];
+}
+}
+
+
+}
+int ii_sh;
+long i_sh;
+for(ii=0;ii<pcs->dof;ii++)
+{
+i_sh = NodeShift[ii];
+ii_sh = ii*nnodes;
+for (i=0;i<nnodes;i++)
+{
+eqs_rhs[i_sh + eqs_number[i]] -= NodalVal[i+ii_sh];
+(*RHS)(i+LocalShift+ii_sh) -=  NodalVal[i+ii_sh];
+}
+} 
+}
+
 /**************************************************************************
 FEMLib-Method: 
 Task: Calculate  coefficient of displacement induced RHS of multi-phase

@@ -7,6 +7,7 @@ last modified:
 **************************************************************************/
 #ifndef rf_mfp_new_INC
 #define rf_mfp_new_INC
+#include "rfmat_cp.h"//AKS
 // C++ STL
 using namespace std;
 // GEOLib
@@ -83,6 +84,7 @@ class CFluidProperties
     int heat_conductivity_model;
     double heat_conductivity;
     string heat_conductivity_fct_name;
+    int heat_diffusion_model;//AKS
     double temperature_buffer; //YD, shifted to public JOD
 	int heat_capacity_model;  //YD, shifted to public JOD 
     // Electrical properties
@@ -109,6 +111,7 @@ class CFluidProperties
     vector<string>specific_heat_capacity_pcs_name_vector;
     vector<string>heat_conductivity_pcs_name_vector;
     vector<string>enthalpy_pcs_name_vector;
+    vector<CompProperties*>component_vector; //AKS
     // DAT
     //string dat_type_name;
     //string dat_name;
@@ -124,6 +127,7 @@ class CFluidProperties
     // Add an argument: double* variables = NULL. 28.05.2008 WW
     double Density(double *variables = NULL); 
     double drhodP (double P, double T);
+double MixtureSubProperity(int properties, long idx_elem, double p, double T);//AKS
     double drhodT (double P, double T);
     double Viscosity(double *variables = NULL); //OK4709
     double SpecificHeatCapacity(double *variables = NULL); //NB Jan09
@@ -148,9 +152,11 @@ class CFluidProperties
     double phi_r_dt (double rho, double T, int c);
     double phi_r_dd (double rho, double T, int c);
     double phi_0_tt (double T, int c);
+ double CalCopressibility(long idx_elem, double p, double T); //AKS
     
   private:
     double GasViscosity_Reichenberg_1971(double,double);
+    double GasViscosity_Chung_1988(long idx_elem, double,double);//AKS
 	double MATCalcFluidDensityMethod8(double p, double T, double C);
     double LiquidViscosity_Yaws_1976(double);
     double LiquidViscosity_Marsily_1986(double);

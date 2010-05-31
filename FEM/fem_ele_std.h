@@ -204,7 +204,8 @@ class CFiniteElementStd:public CElement
 		 inline double CalCoef_RHS_PSGLOBAL(int dof_index);
 		 inline double CalCoef_RHS_T_PSGlobal(int dof_index);	//  NB
 		 inline void CalCoef_RHS_Pc(int dof_index);	// 03.2007 PCH
-     //
+        inline double CalCoef_RHS_AIR_FLOW(int dof_index);	//AKS
+ inline double CalCoef_RHS_HEAT_TRANSPORT(int dof_index);	//AKS
      inline void CalNodalEnthalpy();
      //-----------------------------------------------------
      // Process type
@@ -237,6 +238,8 @@ class CFiniteElementStd:public CElement
      // Assembly of RHS by deformation. 27.2.2007 WW
      void Assemble_RHS_M();
 		 void Assemble_RHS_Pc();	// 03.2009 PCH
+void Assemble_RHS_AIR_FLOW();	//AKS
+void Assemble_RHS_HEAT_TRANSPORT();	//AKS
 		 void Assemble_RHS_T_PSGlobal(); // Assembly of RHS by temperature for PSGlobal
 	 void AssembleRHS(int dimension); // PCH
      void Assemble_DualTransfer();

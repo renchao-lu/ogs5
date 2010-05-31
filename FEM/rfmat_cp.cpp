@@ -199,6 +199,60 @@ Programing:
  	  in.str(GetLineFromFile1(rfd_file));
 	  in >> transport_phase;
 	  in.clear();
+      // critical constant and corresponding components fluid Property // AKS
+      if ( mfp_vector[transport_phase] )
+      {
+          // found corresponding fluid phase. 
+          mfp_vector[transport_phase]->component_vector.push_back(this); 
+      }
+      else
+      {
+         cout << "Error! Corresponding fluid phase not found!!! Terminate program..." << endl;
+         exit(0);
+      }
+    }
+    //....................................................................
+    if(line_string.find("$MOL_MASS")!=string::npos) { // subkeyword found
+ 	  in.str(GetLineFromFile1(rfd_file));
+	  in >> mol_mass;
+	  in.clear();
+    }
+    //....................................................................
+if(line_string.find("$CRITICAL_PRESSURE")!=string::npos) { // subkeyword found
+ 	  in.str(GetLineFromFile1(rfd_file));
+	  in >> critical_pressure;
+	  in.clear();
+    }
+  //....................................................................
+if(line_string.find("$CRITICAL_TEMPERATURE")!=string::npos) { // subkeyword found
+ 	  in.str(GetLineFromFile1(rfd_file));
+	  in >> critical_teperature;
+	  in.clear();
+    }
+    //....................................................................
+ //....................................................................
+if(line_string.find("$CRITICAL_VOLUME")!=string::npos) { // subkeyword found
+ 	  in.str(GetLineFromFile1(rfd_file));
+	  in >> critical_volume;
+	  in.clear();
+    }
+    //....................................................................
+if(line_string.find("$CRITICAL_DENSITY")!=string::npos) { // subkeyword found
+ 	  in.str(GetLineFromFile1(rfd_file));
+	  in >> critical_density;
+	  in.clear();
+    }
+    //....................................................................
+if(line_string.find("$ACENTRIC_FACTOR")!=string::npos) { // subkeyword found
+ 	  in.str(GetLineFromFile1(rfd_file));
+	  in >> acentric_factor;
+	  in.clear();
+    }
+    //....................................................................
+if(line_string.find("$COMP_CAPACITY")!=string::npos) { // subkeyword found
+ 	  in.str(GetLineFromFile1(rfd_file));
+	  in >> comp_capacity;
+	  in.clear();
     }
     //....................................................................
     if(line_string.find("$DIFFUSION")!=string::npos) { // subkeyword found

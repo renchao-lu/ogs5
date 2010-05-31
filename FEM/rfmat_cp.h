@@ -39,6 +39,13 @@ class CompProperties
 	long mobil;									/* flag mobil */
 	long transport_phase;						/* number of phase, in which component is transported */
 	int valence;								// valence of ionic elements /*MX*/
+    double mol_mass;  
+double critical_pressure; 
+double acentric_factor;
+double critical_teperature;
+double critical_volume;
+double critical_density;  
+double comp_capacity; 
 
     /* Diffusionsmodelle und zugehoerige Beschreibungswerte */
     int diffusion_model;						/* Zerfallsmodell in geloester Phase */

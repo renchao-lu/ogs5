@@ -59,6 +59,7 @@ using FiniteElement::ElementValue_DM;
 #define GAS_CONSTANT      8314.41
 #define COMP_MOL_MASS_AIR    28.96
 #define COMP_MOL_MASS_WATER  18.016
+#define T_KILVIN_ZERO  273.15 //AKS
 /**************************************************************************
 FEMLib-Method: CMediumProperties
 Task: constructor
@@ -2328,6 +2329,7 @@ double* CMediumProperties::HeatConductivityTensor(int number)
   int i, dimen;
   CSolidProperties *m_msp = NULL;
   double heat_conductivity_fluids;
+double dens_arg[3];//AKS
 //  double porosity =  this->porosity;  //MX
   double Sw, porosity =  this->porosity_model_values[0];
   bool FLOW = false; //WW
@@ -2353,7 +2355,17 @@ double* CMediumProperties::HeatConductivityTensor(int number)
        heat_conductivity_fluids += (1.0-Sw) * m_mfp->HeatConductivity();
     }
 	else {
-      heat_conductivity_fluids = Fem_Ele_Std->FluidProp->HeatConductivity();
+if(Fem_Ele_Std->FluidProp->heat_conductivity_model==10 && Fem_Ele_Std->MediaProp->heat_diffusion_model==273 && Fem_Ele_Std->cpl_pcs )
+{
+dens_arg[0]=Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalValC1);//Pressure
+dens_arg[1]=Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalVal1)+273.15;//Temperature
+dens_arg[2]=Fem_Ele_Std->Index;//ELE index
+heat_conductivity_fluids = Fem_Ele_Std->FluidProp->HeatConductivity(dens_arg);
+}
+else
+{
+heat_conductivity_fluids = Fem_Ele_Std->FluidProp->HeatConductivity();
+}
       Sw = 1;
 
 	  if(Fem_Ele_Std->cpl_pcs->type != 1) {
@@ -2410,6 +2422,7 @@ double* CMediumProperties::HeatDispersionTensorNew(int ip)
   static double heat_dispersion_tensor[9];
   double *heat_conductivity_porous_medium;
   double vg, D[9];
+    double dens_arg[3];//AKS
   double heat_capacity_fluids=0.0;
   double fluid_density;
   double alpha_t, alpha_l;
@@ -2422,6 +2435,14 @@ double* CMediumProperties::HeatDispersionTensorNew(int ip)
   // Materials
   heat_conductivity_porous_medium = HeatConductivityTensor(index); //MX, add index
   m_mfp = Fem_Ele_Std->FluidProp;
+if(m_mfp->heat_capacity_model==10 && m_mfp->heat_diffusion_model==273 && Fem_Ele_Std->cpl_pcs )//used density changing with p, T
+{
+dens_arg[0]=Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalValC1);
+dens_arg[1]=Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalVal1)+T_KILVIN_ZERO;
+dens_arg[2]=Fem_Ele_Std->Index;
+fluid_density = m_mfp->Density(dens_arg);
+}
+else
   fluid_density = m_mfp->Density();
   heat_capacity_fluids = m_mfp->specific_heat_capacity;
 
