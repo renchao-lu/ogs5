@@ -1222,7 +1222,6 @@ double dens_arg[3]; //AKS
 
   if(pcs->m_num->ele_mass_lumping)
     ComputeShapefct(1); 
- PG = interpolate(NodalVal1); //AKS
   switch(PcsType){
     default:
       cout << "Fatal error in CalCoefMass: No valid PCS type" << endl;
@@ -1652,10 +1651,10 @@ double dens_arg[3]; //AKS
   double humi = 1.0;
   double rhow = 0.0; 
   double *tensor = NULL;
-  double Hav,Hat,manning,chezy,expp,chezy4,Ss,arg;
+  double Hav,manning,chezy,expp,chezy4,Ss,arg;
   static double Hn[9],z[9];
   double GradH[3],Gradz[3],w[3],v1[3],v2[3];
-  int nidx1,nidx2;
+  int nidx1;
   int Index = MeshElement->GetIndex();
   double k_rel;
   ComputeShapefct(1);   //  12.3.2007 WW
@@ -2794,7 +2793,7 @@ last modification:
 **************************************************************************/
 inline double CFiniteElementStd::CalCoefAdvection() 
 {
-  double val = 0.0,po=0.0;
+  double val = 0.0;
 int i,idxp;
 double dens_arg[3]; //AKS
   //OK long Index = MeshElement->GetIndex();
@@ -2814,7 +2813,7 @@ double dens_arg[3]; //AKS
     case C: // Componental flow
       break;
     case H: // heat transport
-if(FluidProp->heat_capacity_model==10 && MediaProp->heat_diffusion_model==273 && cpl_pcs )
+if(FluidProp->density_model==14 && MediaProp->heat_diffusion_model==273 && cpl_pcs )
 {
 dens_arg[0]=interpolate(NodalValC1);
 dens_arg[1]=interpolate(NodalVal1)+T_KILVIN_ZERO;
@@ -2822,7 +2821,9 @@ dens_arg[2]=Index;
 val = FluidProp->SpecificHeatCapacity(dens_arg)*FluidProp->Density(dens_arg); 
 }  
 else
-      val = FluidProp->SpecificHeatCapacity()*FluidProp->Density();  
+{
+val = FluidProp->SpecificHeatCapacity()*FluidProp->Density();  
+}
       break;
     case M: // Mass transport //SB4200
 		// Get velocity(Gausspoint)/porosity(element)
@@ -6459,7 +6460,7 @@ Assemble_RHS_HEAT_TRANSPORT();// This include when need pressure terms n dp/dt +
     //....................................................................
 case A: // Air (gas) flow
 AssembleMixedHyperbolicParabolicEquation(); //To account advection like term nv.Nabla p
-if(cpl_pcs&&MediaProp->heat_diffusion_model==273)//AKS
+if(MediaProp->heat_diffusion_model==273 && cpl_pcs )//AKS
 Assemble_RHS_AIR_FLOW();// n*drho/dt + Nabla.[rho*k/mu rho g]//AKS
 break;
     case V: // Multi-phase flow 24.02.2007 WW

@@ -1202,9 +1202,9 @@ double CFluidProperties::LiquidViscosity_NN(double c,double T)
   sigma = (T - T_0) / T_0;
   sigma0 = 0.;
 
-  f1 = (1. + 1.85 * omega0 - 4.1 * omega0 * omega0 + 44.5 * omega0 * omega0 * omega0)/
+  f1 = (1. + 1.85 * omega0 - 4.1 * omega0 * omega0 + 44.5 * omega0 * omega0 * omega0) /
        (1. + 1.85 * omega - 4.1 * omega * omega + 44.5 * omega * omega * omega);
-  f2 = (1 + 0.7063 * sigma - 0.04832 * sigma * sigma * sigma)/
+  f2 = (1 + 0.7063 * sigma - 0.04832 * sigma * sigma * sigma) /
        (1 + 0.7063 * sigma0 - 0.04832 * sigma0 * sigma * sigma0);
   mu = mu0 / (f1 + f2);
   return mu;
@@ -1342,6 +1342,16 @@ double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem)
   //
   CFluidProperties *m_mfp = NULL;
   CRFProcess* m_pcs = assem->cpl_pcs;
+//AKS
+if(assem->FluidProp->density_model==14 && assem->MediaProp->heat_diffusion_model==273 && assem->cpl_pcs ) //rho(p,T) //AKS
+{
+dens_arg[0]=assem->interpolate(assem->NodalValC1); // pressure
+dens_arg[1]=assem->interpolate(assem->NodalVal1)+T_KILVIN_ZERO;// temperature
+dens_arg[2]=assem->Index;//ELE index
+heat_capacity_fluids = assem->FluidProp->Density(dens_arg)*assem->FluidProp->SpecificHeatCapacity(dens_arg);
+} 
+else
+{
   //
   //if (m_pcs->pcs_type_name.find("MULTI_PHASE_FLOW")!=string::npos)
   if (m_pcs->type==1212) // non-isothermal multi-phase flow
@@ -1357,16 +1367,10 @@ double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem)
      heat_capacity_fluids += (1.0-Sw) * rho_g * m_mfp->SpecificHeatCapacity();      
   }  
 
-if(assem->FluidProp->heat_capacity_model==10 && assem->MediaProp->heat_diffusion_model==273 && assem->cpl_pcs ) //rho(p,T) //AKS
-  {
-    dens_arg[0]=assem->interpolate(assem->NodalValC1); // pressure
-    dens_arg[1]=assem->interpolate(assem->NodalVal1)+T_KILVIN_ZERO;// temperature
-dens_arg[2]=assem->Index;//ELE index
-    heat_capacity_fluids = assem->FluidProp->Density(dens_arg) * assem->FluidProp->SpecificHeatCapacity(dens_arg);
-  }  
-  else 
-  {
-    heat_capacity_fluids = assem->FluidProp->Density() * assem->FluidProp->SpecificHeatCapacity();
+
+else 
+{
+heat_capacity_fluids = assem->FluidProp->Density() * assem->FluidProp->SpecificHeatCapacity();
    
 	if(m_pcs->type != 1) { // neither liquid nor ground water flow
    
@@ -1385,6 +1389,7 @@ dens_arg[2]=assem->Index;//ELE index
 	}
 
   }
+}
   return heat_capacity_fluids;
 }
 /**************************************************************************

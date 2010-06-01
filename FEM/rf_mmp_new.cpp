@@ -2355,7 +2355,7 @@ double dens_arg[3];//AKS
        heat_conductivity_fluids += (1.0-Sw) * m_mfp->HeatConductivity();
     }
 	else {
-if(Fem_Ele_Std->FluidProp->heat_conductivity_model==10 && Fem_Ele_Std->MediaProp->heat_diffusion_model==273 && Fem_Ele_Std->cpl_pcs )
+if(Fem_Ele_Std->FluidProp->density_model==14 && Fem_Ele_Std->MediaProp->heat_diffusion_model==273 && Fem_Ele_Std->cpl_pcs )
 {
 dens_arg[0]=Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalValC1);//Pressure
 dens_arg[1]=Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalVal1)+273.15;//Temperature
@@ -2435,7 +2435,7 @@ double* CMediumProperties::HeatDispersionTensorNew(int ip)
   // Materials
   heat_conductivity_porous_medium = HeatConductivityTensor(index); //MX, add index
   m_mfp = Fem_Ele_Std->FluidProp;
-if(m_mfp->heat_capacity_model==10 && m_mfp->heat_diffusion_model==273 && Fem_Ele_Std->cpl_pcs )//used density changing with p, T
+if(m_mfp->density_model==14 && m_mfp->heat_diffusion_model==273 )//used density changing with p, T
 {
 dens_arg[0]=Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalValC1);
 dens_arg[1]=Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalVal1)+T_KILVIN_ZERO;
@@ -2443,7 +2443,9 @@ dens_arg[2]=Fem_Ele_Std->Index;
 fluid_density = m_mfp->Density(dens_arg);
 }
 else
+{
   fluid_density = m_mfp->Density();
+}
   heat_capacity_fluids = m_mfp->specific_heat_capacity;
 
   //Global Velocity

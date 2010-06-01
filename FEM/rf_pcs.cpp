@@ -3958,7 +3958,7 @@ void CRFProcess::CalIntegrationPointValue()
      ||pcs_type_name.find("MULTI_PHASE_FLOW")!=string::npos
      ||pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos 
 	 ||pcs_type_name.find("TWO_PHASE_FLOW")!=string::npos
-     ||pcs_type_name.find("AIR_FLOW")!=string::npos   //AKS 
+     ||pcs_type_name.find("AIR_FLOW")!=string::npos   
 	 ||pcs_type_name.find("PS_GLOBAL")!=string::npos) //WW/CB
      cal_integration_point_value = true;
   if(!cal_integration_point_value)
