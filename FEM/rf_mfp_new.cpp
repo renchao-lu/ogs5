@@ -1202,9 +1202,9 @@ double CFluidProperties::LiquidViscosity_NN(double c,double T)
   sigma = (T - T_0) / T_0;
   sigma0 = 0.;
 
-  f1 = (1. + 1.85 * omega0 - 4.1 * omega0 * omega0 + 44.5 * omega0 * omega0 * omega0) /
+  f1 = (1. + 1.85 * omega0 - 4.1 * omega0 * omega0 + 44.5 * omega0 * omega0 * omega0)/
        (1. + 1.85 * omega - 4.1 * omega * omega + 44.5 * omega * omega * omega);
-  f2 = (1 + 0.7063 * sigma - 0.04832 * sigma * sigma * sigma) /
+  f2 = (1 + 0.7063 * sigma - 0.04832 * sigma * sigma * sigma)/
        (1 + 0.7063 * sigma0 - 0.04832 * sigma0 * sigma * sigma0);
   mu = mu0 / (f1 + f2);
   return mu;

@@ -4106,7 +4106,7 @@ void CFiniteElementStd::CalcAdvection()
   double vel[3], dens_aug[3];
   CFluidProperties *m_mfp_g = NULL;
   bool multiphase = false;
-  if(!cpl_pcs&&(pcs->type!=2 &&pcs->type!=5)) return; //18.02.2008, 04.09.2008 WW
+  if(!cpl_pcs&&(pcs->type!=2)&&(pcs->type!=5)) return; //18.02.2008, 04.09.2008 WW
   if(cpl_pcs&&cpl_pcs->type==1212)
   {
      multiphase = true; 
@@ -7786,6 +7786,10 @@ int i, j, k, ii;
 int gp_r=0,gp_s=0,gp_t=0;
 double vel[3];
 double fkt=0.0, fac=0.0;
+int GravityOn = 1; // Initialized to be on
+// If no gravity, then set GravityOn to be zero.
+if((coordinate_system)%10!=2&&(!axisymmetry))
+GravityOn = 0;
 // Material
 int dof_n = 1;
 //----------------------------------------------------------------------
@@ -7837,7 +7841,8 @@ NodalVal[i+ii*nnodes] += fkt*shapefct[i]*vel[k]*dshapefct[k*nnodes+j]*NodalValC1
 }
 
 // garvity term
-
+if(GravityOn)
+{
 for(ii=0; ii<dof_n; ii++)
 {
 fac = CalCoef_RHS_HEAT_TRANSPORT(ii+2);
@@ -7850,6 +7855,7 @@ for (i = 0; i< nnodes; i++)
 {
 for (k = 0; k < dim; k++)
 NodalVal[i+ii*nnodes] += fkt*shapefct[i]*vel[k];
+}
 }
 }
 
