@@ -679,7 +679,7 @@ void OUTData(double time_current, const int time_step_number)
     //--------------------------------------------------------------------
     if(no_times==0&&(m_out->nSteps>0)&&(time_step_number%m_out->nSteps==0))
       OutputBySteps = true;
-    if(time_step_number<2) //WW
+    if(time_step_number==0) //WW
       OutputBySteps = true;
     //======================================================================
     // TECPLOT
