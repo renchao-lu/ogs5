@@ -2175,9 +2175,9 @@ void RandomWalk::AdvanceToNextTimeStep(double dt,double ctime)
 					Astatus = SolveForNextPosition(&(X[i].Now), &Y);
 
 					// YYS ToDO
-					if(Y.x< 1.e-20 )
+					if(Y.x< 1.e-20 && m_pcs->rwpt_app==2)
 						Y.x= 1.e-20;
-					if(Y.x> 0.1 && Y.identity != 2)
+					if(Y.x> 0.1 && Y.identity != 2 && m_pcs->rwpt_app==2)
 					{
 						leavingParticles++;
 						Y.identity=-10;
