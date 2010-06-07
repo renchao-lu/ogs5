@@ -60,6 +60,7 @@ CompProperties::CompProperties(long n){
 	compname = name1;
 	mobil = 1;
 	transport_phase = 0;
+fluid_phase = 0;
 
 	diffusion_model = -1;
 	count_of_diffusion_model_values = 0;
@@ -199,11 +200,17 @@ Programing:
  	  in.str(GetLineFromFile1(rfd_file));
 	  in >> transport_phase;
 	  in.clear();
+}
+ //....................................................................
+    if(line_string.find("$FLUID_PHASE")!=string::npos) { // subkeyword found
+ 	  in.str(GetLineFromFile1(rfd_file));
+	  in >> fluid_phase;
+	  in.clear();
       // critical constant and corresponding components fluid Property // AKS
-      if ( mfp_vector[transport_phase] )
+      if ( mfp_vector[fluid_phase] )
       {
           // found corresponding fluid phase. 
-          mfp_vector[transport_phase]->component_vector.push_back(this); 
+          mfp_vector[fluid_phase]->component_vector.push_back(this); 
       }
       else
       {
@@ -252,6 +259,12 @@ if(line_string.find("$ACENTRIC_FACTOR")!=string::npos) { // subkeyword found
 if(line_string.find("$COMP_CAPACITY")!=string::npos) { // subkeyword found
  	  in.str(GetLineFromFile1(rfd_file));
 	  in >> comp_capacity;
+	  in.clear();
+    }
+    //....................................................................
+if(line_string.find("$COMP_CONDUCTIVITY")!=string::npos) { // subkeyword found
+ 	  in.str(GetLineFromFile1(rfd_file));
+	  in >> comp_conductivity;
 	  in.clear();
     }
     //....................................................................
@@ -491,7 +504,8 @@ int i;
 *rfe_file << "$MOBILE" << endl << mobil << endl;
 // TRANSPORT_PHASE
 *rfe_file << "$TRANSPORT_PHASE" << endl << transport_phase << endl; 
-
+// FLUID_PHASE
+*rfe_file << "$FLUID_PHASE" << endl << transport_phase << endl; 
 // Diffusion
 if(diffusion_model > -1 ){
 *rfe_file << "$DIFFUSION" << endl;

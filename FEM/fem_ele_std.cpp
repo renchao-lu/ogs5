@@ -7363,23 +7363,20 @@ dens_arg[0] = interpolate(NodalValC1);
 dens_arg[1] = interpolate(NodalVal1)+T_KILVIN_ZERO; 
 dens_arg[2] = Index;
 rho_g=FluidProp->Density(dens_arg);
+dens_arg[0] = 4.0e6;
 dens_arg[1] = 120+T_KILVIN_ZERO; 
 rho_0=FluidProp->Density(dens_arg);
 
 switch(dof_index)
 {
 case 0:
-val = rho_g*MediaProp->Porosity(Index,pcs->m_num->ls_theta)/rho_0;
-val *= interpolate(NodalValC1)-interpolate(NodalValC);
+val = (interpolate(NodalValC1)-interpolate(NodalValC))*MediaProp->Porosity(Index,pcs->m_num->ls_theta)*rho_g/rho_0;
 break;
 
 case 1:
-val = rho_g/rho_0;
+val = (rho_g/rho_0)-1;
 break;
 
-case 2:
-val = rho_g*gravity_constant;
-break;
 }
 return val;
 }
@@ -7832,7 +7829,7 @@ for (i = 0; i< nnodes; i++)
 for (j = 0; j < nnodes; j++)
 {
 for (k = 0; k < dim; k++)
-NodalVal[i+ii*nnodes] += fkt*shapefct[i]*vel[k]*dshapefct[k*nnodes+j]*NodalValC1[j];
+NodalVal[i+ii*nnodes] += fkt*vel[k]*shapefct[i]*dshapefct[k*nnodes+j]*NodalValC1[j];
 }
 }
 }

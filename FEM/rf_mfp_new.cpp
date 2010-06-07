@@ -3008,13 +3008,13 @@ for (int i=0 ; i < component_number ; i++)
 {
 m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname); 
 mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs ); 
-components_properties[i] =  Fluid_Heat_Conductivity(Density(dens_arg)*mass_fraction[i], T, 2*i);
+components_properties[i] =  this->component_vector[i]->comp_conductivity;//Fluid_Heat_Conductivity(Density(dens_arg)*mass_fraction[i], T, 2*i);
 
 for (int j=0 ; j < component_number ; j++)
 {
 m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[j]->compname); 
 mass_fraction[j] = this->component_vector[j]->CalcElementMeanConcNew( idx_elem, m_pcs );         
-components_properties[j] = Fluid_Heat_Conductivity(Density(dens_arg)*mass_fraction[j], T, 2*j);
+components_properties[j] = this->component_vector[j]->comp_conductivity;//Fluid_Heat_Conductivity(Density(dens_arg)*mass_fraction[j], T, 2*j);
 
 variables += mass_fraction[i]*mass_fraction[j]*pow(components_properties[i]*components_properties[j], 0.5) ;
 }
