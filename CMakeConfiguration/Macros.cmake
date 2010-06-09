@@ -170,6 +170,13 @@ FUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration)
       ENDFOREACH (OUTPUTFILE ${ARGN})
     ENDIF (PYTHONINTERP_FOUND)
   
+  # copy benchmark output files to reference directory
+  IF (COPY_BENCHMARKS_TO_REF)
+    FOREACH (entry ${ARGN})
+      CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/../benchmarks/${entry} ${PROJECT_SOURCE_DIR}/../benchmarks_ref/${entry} COPYONLY)
+    ENDFOREACH (entry ${ARGN})
+  ENDIF (COPY_BENCHMARKS_TO_REF)
+  
   ENDIF (CONFIG_MATCH)   
   
 ENDFUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration filesToCompare)
