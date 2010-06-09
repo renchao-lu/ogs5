@@ -472,6 +472,11 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 
       break;
 #endif
+#ifdef BRNS
+        case 16: 
+           in >> porosity_model_values[0]; // set a default value for BRNS calculation
+         break;
+#endif
          default:
           cout << "Error in MMPRead: no valid porosity model" << endl;
 		 break;
@@ -1181,6 +1186,30 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 		  permeability_tensor_type = 0;
           permeability_model = 4; // this means permeability depends on K-C_normalized relationship
           in >> permeability_porosity_model_values[0]; // initial values
+		  break;
+		case 5:// HS: 01.2010, Clement 1996 model
+		  // M. Thullner et al. 2004, J Contaminant Hydrology 70: 37-62, pp42
+		  permeability_tensor_type = 0;
+          permeability_model = 5; // Clement original model
+          in >> permeability_porosity_model_values[0]; // this is initial porosity
+          in >> permeability_porosity_model_values[1]; // this is initial permeability
+		  break;
+		case 6:// HS: 01.2010, ,modified Clement, biomass colonies clogging
+		  // M. Thullner et al. 2004, J Contaminant Hydrology 70: 37-62, pp42
+		  permeability_tensor_type = 0;
+          permeability_model = 6; // modified Clement, biomass growing in colonies
+          in >> permeability_porosity_model_values[0]; // this is initial porosity
+          in >> permeability_porosity_model_values[1]; // this is initial permeability
+          in >> permeability_porosity_model_values[2]; // this is parameter a
+		  break;
+		case 7:// HS: 01.2010, ,modified Clement, biofilm clogging
+		  // M. Thullner et al. 2004, J Contaminant Hydrology 70: 37-62, pp42
+		  permeability_tensor_type = 0;
+          permeability_model = 7; // modified Clement, biomass growing in biofilm
+          in >> permeability_porosity_model_values[0]; // this is initial porosity
+          in >> permeability_porosity_model_values[1]; // this is initial permeability
+          in >> permeability_porosity_model_values[2]; // this is parameter b
+          in >> permeability_porosity_model_values[3]; // this is prarameter k_fmin
 		  break;
         default:
           cout << "Error in MMPRead: no valid permeability model" << endl;
@@ -3286,7 +3315,28 @@ double CMediumProperties::Porosity(long number,double theta)
 
       break;
 #endif
+#ifdef BRNS
+    case 16: 
+        porosity = porosity_model_values[0]; // default value as backup
+        if ( aktueller_zeitschritt > 1  )
+        {
+	        for (int i=0; i < (int)pcs_vector.size() ; i++)
+	        {
+	            pcs_temp = pcs_vector[i];
+	            if ( pcs_temp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0 || 
+                     pcs_temp->pcs_type_name.compare("LIQUID_FLOW") == 0         )
+	            {
+                    int idx;
+	                idx=pcs_temp->GetElementValueIndex ( "POROSITY" );
 
+                    porosity = pcs_temp->GetElementValue(number, idx);
+	                if (porosity <1.e-6) 
+                        cout << "error for porosity1 " << porosity << " node "<< number << endl;
+	            }
+	        }
+        }
+        break;
+#endif 
 	default:
       cout << "Unknown porosity model!" << endl;
       break;
@@ -3569,7 +3619,7 @@ static double tensor[9];
 int perm_index=0;
 
 int idx_k, idx_n;
-double /*k_old, n_old,*/ k_new, n_new;
+double /*k_old, n_old,*/ k_new, n_new, k_rel, n_rel;
 
 // HS: move the following loop into the "if ( permeability_tensor_type == 0 )" scope.----
 // this is not necessary for in-isotropic case;
@@ -3660,6 +3710,119 @@ if ( permeability_tensor_type == 0 )
 
 			// now gives the newly calculated value to tensor[]
 			tensor[0] = k_new ;
+		}
+		else if ( permeability_model == 5 )
+		{   // HS: 11.2008, for Clement clogging model
+
+			// if first time step, do nothing. otherwise, 
+			if ( aktueller_zeitschritt > 1 )
+            {
+
+                for (int i=0; i < (int)pcs_vector.size() ; i++)
+	            {
+	                m_pcs_tmp = pcs_vector[i];
+	                if ( m_pcs_tmp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0 || 
+                                   m_pcs_tmp->pcs_type_name.compare("LIQUID_FLOW") == 0)
+                    break;
+                }
+			    // get index
+                idx_k = m_pcs_tmp->GetElementValueIndex("PERMEABILITY");
+			    idx_n = m_pcs_tmp->GetElementValueIndex("POROSITY");
+
+			    // get values of n.
+			    n_new = m_pcs_tmp->GetElementValue( index, idx_n + 1 );
+                
+		        // calculate new permeability
+                // k_rel(n) = n_rel^{19/6}
+                // first relative porosity change
+                n_rel = n_new / permeability_porosity_model_values[0];
+                // then relative permeability change
+		        k_rel = pow(n_rel, 19.0/6.0);
+                // finially permeability
+                k_new = k_rel * permeability_porosity_model_values[1];
+			    // save new permeability
+			    m_pcs->SetElementValue( index, idx_k+ 1, k_new );
+
+			    // now gives the newly calculated value to tensor[]
+			    tensor[0] = k_new ;
+            }
+		}
+		else if ( permeability_model == 6 )
+		{   // HS: 11.2008, for Clement biomass colony clogging
+			
+            // if first time step, do nothing. otherwise, 
+			if ( aktueller_zeitschritt > 1 )
+            {
+                for (int i=0; i < (int)pcs_vector.size() ; i++)
+	            {
+	                m_pcs_tmp = pcs_vector[i];
+	                if ( m_pcs_tmp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0 || 
+                                   m_pcs_tmp->pcs_type_name.compare("LIQUID_FLOW") == 0)
+                    break;
+                }
+			    // get index
+                idx_k = m_pcs_tmp->GetElementValueIndex("PERMEABILITY");
+			    idx_n = m_pcs_tmp->GetElementValueIndex("POROSITY");
+
+			    // get values of n.
+			    n_new = m_pcs_tmp->GetElementValue( index, idx_n + 1 );
+
+		        // calculate new permeability
+                // k_rel(n) = n_rel^{19/6}
+                // first relative porosity change
+                n_rel = n_new / permeability_porosity_model_values[0];
+
+                // then relative permeability change
+			    k_rel = permeability_porosity_model_values[2] * \
+                        pow( ( n_rel - permeability_porosity_model_values[0] )/(1 - permeability_porosity_model_values[0]) , 3.0) \
+                      + ( 1 - permeability_porosity_model_values[2] ) * \
+                        pow( ( n_rel - permeability_porosity_model_values[0] )/(1 - permeability_porosity_model_values[0]) , 2.0);
+                // finially permeability
+                k_new = k_rel * permeability_porosity_model_values[1];
+			    // save new permeability
+			    m_pcs->SetElementValue( index, idx_k+1, k_new	);
+
+			    // now gives the newly calculated value to tensor[]
+			    tensor[0] = k_new ;
+            }
+
+		}
+		else if ( permeability_model == 7 )
+		{   // HS: 11.2008, for Clement biofilm clogging
+            // if first time step, do nothing. otherwise, 
+			if ( aktueller_zeitschritt > 1 )
+            {
+                for (int i=0; i < (int)pcs_vector.size() ; i++)
+	            {
+	                m_pcs_tmp = pcs_vector[i];
+	                if ( m_pcs_tmp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0 || 
+                                   m_pcs_tmp->pcs_type_name.compare("LIQUID_FLOW") == 0)
+                    break;
+                }
+			    // get index
+                idx_k = m_pcs_tmp->GetElementValueIndex("PERMEABILITY");
+			    idx_n = m_pcs_tmp->GetElementValueIndex("POROSITY");
+
+			    // get values of n.
+			    n_new = m_pcs_tmp->GetElementValue( index, idx_n + 1 );
+
+		        // calculate new permeability
+                // k_rel(n) = n_rel^{19/6}
+                // first relative porosity change
+                n_rel = n_new / permeability_porosity_model_values[0];
+
+                // then relative permeability change
+			    k_rel = (pow( ( n_rel - permeability_porosity_model_values[0] )/(1 - permeability_porosity_model_values[0]) , permeability_porosity_model_values[2] ) \
+                         + permeability_porosity_model_values[3] ) / \
+                         ( 1 + permeability_porosity_model_values[3]) ;
+                // finially permeability
+                k_new = k_rel * permeability_porosity_model_values[1];
+			    // save new permeability
+			    m_pcs->SetElementValue( index, idx_k+1, k_new	);
+
+			    // now gives the newly calculated value to tensor[]
+			    tensor[0] = k_new ;
+            }
 		}
 }
 // end of K-C relationship-----------------------------------------------------------------------------------

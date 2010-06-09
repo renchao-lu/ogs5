@@ -113,6 +113,7 @@ class CMediumProperties
   // PCS
   string pcs_type_name;   //YD
   CRFProcess*m_pcs; //OK
+  CRFProcess*m_pcs_tmp; //HS
   vector<string>pcs_name_vector;
   vector<string>porosity_pcs_name_vector;
   //....................................................................

@@ -228,7 +228,7 @@ Problem::Problem(char* filename):print_result(false)
   // REACT_BRNS* pBRNS;
   // pBRNS = new REACT_BRNS();
   m_vec_BRNS = new REACT_BRNS();
-  m_vec_BRNS->InitBRNS();
+  m_vec_BRNS->InitBRNS(this);
 #endif
 
 
@@ -2219,5 +2219,22 @@ bool MODCreate()
     return true;
   }
 }
+
+#ifdef BRNS
+
+// BRNS-Coupling: For writing spatially resolved reaction rates at the final iteration,
+// we need to get the timing information.
+
+double Problem::getCurrentTime()
+{
+	return current_time;
+}
+
+double Problem::getEndTime()
+{
+	return end_time;
+}
+
+#endif //BRNS
 
 #endif //PROBLEM_CLASS

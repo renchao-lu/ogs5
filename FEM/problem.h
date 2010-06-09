@@ -34,6 +34,14 @@ class Problem
    // Copy u_n for auto time stepping
    double* GetBufferArray() {return buffer_array;};
 
+#ifdef BRNS
+// BRNS-Coupling: For writing spatially resolved reaction rates at the final iteration,
+// we need to get the timing information.
+	
+   double getCurrentTime();
+   double getEndTime();
+#endif //BRNS
+
   private:
    // Time:
    double start_time;
