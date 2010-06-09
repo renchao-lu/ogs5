@@ -20,4 +20,6 @@
 #cmakedefine _POSIX_SOURCE
 #cmakedefine NO_ERROR_CONTROL
 
+#cmakedefine MSVC
+
 #endif // CONFIGURE_H

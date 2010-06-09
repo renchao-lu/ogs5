@@ -1,11 +1,14 @@
 #ifndef STRINGTOOLS_H
 #define STRINGTOOLS_H
 
+#include "Configure.h"
+
 #include <string>
 #include <list>
 #include <sstream>
-
+#include <fstream>
 #include <iostream>
+#include <ctype.h>
 
 
 /**
@@ -81,6 +84,70 @@ static void trim(std::string &str)
 		if(pos != std::string::npos) str.erase(0, pos);
 	}
 	else str.erase(str.begin(), str.end());
+}
+
+static void correctScientificNotation(std::string filename, size_t precision = 0)
+{
+#ifdef MSVC
+	std::ifstream stream;
+	std::ofstream outputStream;
+	
+	stream.open(filename.c_str());
+	std::string tmpFilename = filename + ".tmp";
+	outputStream.open(tmpFilename.c_str());
+
+	if (!stream)
+	{
+		std::cout << "correctScientificNotation: fstream is not open" << std::endl;
+		return;
+	}
+
+	std::string line;
+	
+	// Iterate over lines in stream
+	while (getline(stream, line))
+	{
+		std::string word;
+		std::istringstream iss(line);
+		// Iterate over all words in line
+		while (iss >> word)
+		{
+			// Search for e+0
+			std::size_t exponentPosition = word.find("e+0", precision);
+			if (exponentPosition == std::string::npos)
+				// If not found search for e-0
+				exponentPosition = word.find("e-0", precision);
+			if (exponentPosition != std::string::npos)
+			{
+				std::size_t wordSize = word.size();
+				std::size_t exponentSize = wordSize - exponentPosition;
+
+				if(exponentSize > 4)
+				{
+					// Erase the leading zero considering trailing characters
+					int i = wordSize - 1;
+					while (!isdigit(word[i]))
+						--i;
+					
+					size_t erasePos = wordSize - 3 - (wordSize - 1 - i);
+					std::string eraseString = word.substr(erasePos, 1);
+					if (eraseString.find("0") != std::string::npos)
+						word.erase(erasePos, 1);
+				}
+			}
+
+			outputStream << word << " ";
+		}
+		outputStream << std::endl;
+	}
+
+	stream.close();
+	outputStream.close();
+
+	remove(filename.c_str());
+	rename(tmpFilename.c_str(), filename.c_str());
+
+#endif
 }
 
 #endif //STRINGTOOLS_H

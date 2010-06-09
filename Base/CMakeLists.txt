@@ -20,3 +20,8 @@ include_directories(
 	../GEO
 	.
 )
+
+IF(OGS_BUILD_UTILITIES)
+	# Create utility executable
+	add_executable( correctScientificNotation CorrectScientificNotationMain.cpp )
+IF(OGS_BUILD_UTILITIES)

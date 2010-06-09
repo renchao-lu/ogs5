@@ -77,7 +77,7 @@ IF (UNIX) # Only supported on Linux
 ENDIF (UNIX)
 
 OPTION(OGS_PACKAGING OFF )
-
+OPTION(OGS_BUILD_UTILITIES "Build additional utility programs?" OFF)
 
 IF(OGS_FEM_SP)
 	SET( PRJ_EXT "-SP" )
