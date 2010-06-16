@@ -7,7 +7,9 @@
 #define OGSRASTER_H
 
 #include <fstream>
-#include <QPixmap>
+
+class QImage;
+class QPointF;
 
 /**
  * \brief Loading of raster data such as images or ArcGIS-data.
@@ -41,19 +43,19 @@ public:
 	 * \param scalingFactor The size of each pixel in the image which is needed for re-scaling the data, the default value is 1.
 	 * \return True if the raster data was loaded correctly, false otherwise.
 	 */
-	static bool loadPixmap(const QString &fileName, QPixmap &raster, QPointF &origin, double &scalingFactor);
+	static bool loadImage(const QString &fileName, QImage &raster, QPointF &origin, double &scalingFactor);
 
 	/// Converts raster to an 8 bit greyscale image that is contrast-stretched in [min:max].
-	static void convertToGreyscale(QPixmap &raster, const int &min = 0, const int &max = 255);
+	static void convertToGreyscale(QImage &raster, const int &min = 0, const int &max = 255);
 
 	/// Returns an int-array containing the raster converted an 8 bit greyscale values that are contrast-stretched in [min:max].
-	static int* getGreyscaleData(QPixmap &raster, const int &min = 0, const int &max = 255);
+	static int* getGreyscaleData(QImage &raster, const int &min = 0, const int &max = 255);
 
 	/// Returns the maximum intensity of raster.
-	static int getMaxValue(const QPixmap &raster);
+	static int getMaxValue(const QImage &raster);
 
 	/// Returns the minimum intensity of raster.
-	static int getMinValue(const QPixmap &raster);
+	static int getMinValue(const QImage &raster);
 
 private:
 	/**
@@ -64,7 +66,7 @@ private:
 	 * \param cellsize The size of each pixel in the image which is needed for re-scaling the data
 	 * \return True if the raster data was loaded correctly, false otherwise.
 	 */
-	static bool loadPixmapFromASC(const QString &fileName, QPixmap &raster, QPointF &origin, double &scalingFactor);
+	static bool loadImageFromASC(const QString &fileName, QImage &raster, QPointF &origin, double &scalingFactor);
 
 
 	/**
@@ -75,7 +77,7 @@ private:
 	 * \param cellsize The size of each pixel in the image which is needed for re-scaling the data
 	 * \return True if the raster data was loaded correctly, false otherwise.
 	 */
-	static bool loadPixmapFromTIFF(const QString &fileName, QPixmap &raster, QPointF &origin, double &scalingFactor);
+	static bool loadImageFromTIFF(const QString &fileName, QImage &raster, QPointF &origin, double &scalingFactor);
 
 	/**
 	 * Loads image files into a QPixmap object. Since images are not geo-referenced no origin point will be returned.
@@ -83,7 +85,7 @@ private:
 	 * \param raster The QPixmap into which the raster data will be written.
 	 * \return True if the raster data was loaded correctly, false otherwise.
 	 */
-	static bool loadPixmapFromImage(const QString &fileName, QPixmap &raster);
+	static bool loadImageFromFile(const QString &fileName, QImage &raster);
 
 	/**
  	 * Reads the header of an ArcGIS asc-file.

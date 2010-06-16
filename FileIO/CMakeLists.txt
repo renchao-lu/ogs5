@@ -1,5 +1,7 @@
 # Source files
 set( SOURCES
+	GMSHInterface.cpp
+	GMSInterface.cpp
 	GocadInterface.cpp	
 	OGSIOVer4.cpp
 	PetrelInterface.cpp	
@@ -8,6 +10,8 @@ set( SOURCES
 
 # Header files
 set( HEADERS
+	GMSHInterface.h
+	GMSInterface.h
 	GocadInterface.h
 	OGSIOVer4.h
 	PetrelInterface.h

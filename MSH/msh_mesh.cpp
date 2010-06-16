@@ -1190,6 +1190,7 @@ long CFEMesh::GetNODOnPNT(const GEOLIB::Point* pnt) const
 	long number(-1);
 
 	for (size_t i=0; i<NodesInUsage(); i++) {
+		sqr_dist = 0.0;
 		sqr_dist += (nod_vector[i]->X() - (*pnt)[0]) * (nod_vector[i]->X()
 				- (*pnt)[0]);
 		sqr_dist += (nod_vector[i]->Y() - (*pnt)[1]) * (nod_vector[i]->Y()
@@ -1302,6 +1303,9 @@ void CFEMesh::GetNodesOnArc(CGLPolyline*m_ply, vector<long>&msh_nod_vector) {
 			}
 		}
 	}
+
+	std::cout << "*** CFEMesh::GetNodesOnArc: msh_nod_vector.size(): " << msh_nod_vector.size() << std::endl;
+
 	m_ply->GetPointOrderByDistance();
 }
 
@@ -2138,8 +2142,8 @@ void CFEMesh::GetNodesOnCylindricalSurface(Surface*m_sfc, vector<long>& NodesS) 
 }
 
 /**************************************************************************
-MSHLib-Method: 
-Task: 
+MSHLib-Method:
+Task:
 Programing:
 04/2005 OK
 last modification:
@@ -2156,7 +2160,7 @@ void CFEMesh::GetNODOnSFC_Vertical(Surface*m_sfc,vector<long>&msh_nod_vector)
   vector<CGLPolyline*>::iterator p_ply;
   long no_nodes = 0;
   // .................................................................
-  // nodes close to first polyline 
+  // nodes close to first polyline
   p_ply = m_sfc->polyline_of_surface_vector.begin();
   while(p_ply!=m_sfc->polyline_of_surface_vector.end()) {
     m_polyline = *p_ply;
@@ -2168,7 +2172,7 @@ void CFEMesh::GetNODOnSFC_Vertical(Surface*m_sfc,vector<long>&msh_nod_vector)
   // using triangles
   p_ply = m_sfc->polyline_of_surface_vector.begin();
   while(p_ply!=m_sfc->polyline_of_surface_vector.end()) {
-    m_polyline1 = *p_ply; 
+    m_polyline1 = *p_ply;
     ++p_ply;
     m_polyline2 = *p_ply;
     break;
@@ -2180,28 +2184,28 @@ void CFEMesh::GetNODOnSFC_Vertical(Surface*m_sfc,vector<long>&msh_nod_vector)
     //OK m_node.z = GetNodeZ(nodes_array[j]);
     for(i=0;i<no_points-1;i++) {
       // first triangle of quad
-      xp[0] = m_polyline1->point_vector[i]->x; 
-      yp[0] = m_polyline1->point_vector[i]->y; 
-      zp[0] = m_polyline1->point_vector[i]->z; 
-      xp[1] = m_polyline1->point_vector[i+1]->x; 
-      yp[1] = m_polyline1->point_vector[i+1]->y; 
-      zp[1] = m_polyline1->point_vector[i+1]->z; 
-      xp[2] = m_polyline2->point_vector[i]->x; 
-      yp[2] = m_polyline2->point_vector[i]->y; 
-      zp[2] = m_polyline2->point_vector[i]->z; 
+      xp[0] = m_polyline1->point_vector[i]->x;
+      yp[0] = m_polyline1->point_vector[i]->y;
+      zp[0] = m_polyline1->point_vector[i]->z;
+      xp[1] = m_polyline1->point_vector[i+1]->x;
+      yp[1] = m_polyline1->point_vector[i+1]->y;
+      zp[1] = m_polyline1->point_vector[i+1]->z;
+      xp[2] = m_polyline2->point_vector[i]->x;
+      yp[2] = m_polyline2->point_vector[i]->y;
+      zp[2] = m_polyline2->point_vector[i]->z;
       if(m_node.IsInsideTriangle(xp,yp,zp)) {//CC 10/05
         msh_nod_vector.push_back(nodes_array[j]);
       }
       // second triangle of quad
-      xp[0] = m_polyline2->point_vector[i]->x; 
-      yp[0] = m_polyline2->point_vector[i]->y; 
-      zp[0] = m_polyline2->point_vector[i]->z; 
-      xp[1] = m_polyline2->point_vector[i+1]->x; 
-      yp[1] = m_polyline2->point_vector[i+1]->y; 
-      zp[1] = m_polyline2->point_vector[i+1]->z; 
-      xp[2] = m_polyline1->point_vector[i+1]->x; 
-      yp[2] = m_polyline1->point_vector[i+1]->y; 
-      zp[2] = m_polyline1->point_vector[i+1]->z; 
+      xp[0] = m_polyline2->point_vector[i]->x;
+      yp[0] = m_polyline2->point_vector[i]->y;
+      zp[0] = m_polyline2->point_vector[i]->z;
+      xp[1] = m_polyline2->point_vector[i+1]->x;
+      yp[1] = m_polyline2->point_vector[i+1]->y;
+      zp[1] = m_polyline2->point_vector[i+1]->z;
+      xp[2] = m_polyline1->point_vector[i+1]->x;
+      yp[2] = m_polyline1->point_vector[i+1]->y;
+      zp[2] = m_polyline1->point_vector[i+1]->z;
       if(m_node.IsInsideTriangle(xp,yp,zp)) {//CC 10/05
         msh_nod_vector.push_back(nodes_array[j]);
       }
@@ -2210,8 +2214,8 @@ void CFEMesh::GetNODOnSFC_Vertical(Surface*m_sfc,vector<long>&msh_nod_vector)
 }
 
 /**************************************************************************
-MSHLib-Method: 
-Task: 
+MSHLib-Method:
+Task:
 Programing:
 05/2005 OK Implementation: hex elements to line nodes
  last modification:
@@ -4228,7 +4232,7 @@ void CFEMesh::GetELEOnPLY(const GEOLIB::Polyline* ply, std::vector<size_t>& ele_
 	}
 }
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 Task: All nodes vertical to a polyline
 02/2009 OK
 **************************************************************************/
@@ -4237,9 +4241,9 @@ void CFEMesh::GetNODOnSFC_PLY_Z(Surface*m_sfc,vector<long>&msh_nod_vector)
   vector<CGLPolyline*>::iterator p_ply;
   CGLPolyline* m_ply = NULL;
   // .................................................................
-  // nodes close to first polyline 
+  // nodes close to first polyline
   p_ply = m_sfc->polyline_of_surface_vector.begin();
-  while(p_ply!=m_sfc->polyline_of_surface_vector.end()) 
+  while(p_ply!=m_sfc->polyline_of_surface_vector.end())
   {
     m_ply = *p_ply;
     GetNODOnPLY_XY(m_ply,msh_nod_vector);

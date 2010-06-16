@@ -9,6 +9,8 @@
 #define MATHTOOLS_H_
 
 #include <vector>
+#include <cmath>
+#include <limits>
 #include "Point.h"
 
 // forward declaration
@@ -70,5 +72,10 @@ double sqrNrm2(const CGLPoint* p0);
 
 /** depreciated: squared dist between p0 and p1 */
 double sqrDist(const CGLPoint* p0, const CGLPoint* p1);
+
+/**
+ * lexicographic sorting of points
+ */
+bool isLowerEqual (const GEOLIB::Point &p0, const GEOLIB::Point &p1);
 
 #endif /* MATHTOOLS_H_ */

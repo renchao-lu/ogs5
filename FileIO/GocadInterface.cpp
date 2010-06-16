@@ -34,9 +34,7 @@ GocadInterface::GocadInterface(const std::string &fname, GEOObjects* obj) :
 }
 
 GocadInterface::~GocadInterface()
-{
-	// TODO Auto-generated destructor stub
-}
+{}
 
 void GocadInterface::readObjects (std::istream &in)
 {
@@ -86,7 +84,7 @@ void GocadInterface::readObjects (std::istream &in)
 				std::cout << "reading GOCAD object PLine" << std::endl;
 				readHeader(in);
 				readCoordinateSystem(in);
-				readPLineData(in);
+//				readPLineData(in);
 			} else
 				std::cout << "*** reading GOCAD object " << line
 						<< " not implemented" << std::endl;
@@ -327,10 +325,10 @@ void GocadInterface::readTSurfData (std::istream &in)
 //	}
 }
 
-void GocadInterface::readPLineData (std::istream &in)
-{
-	std::string line;
-	in >> line;
-}
+//void GocadInterface::readPLineData (std::istream &in)
+//{
+//	std::string line;
+//	in >> line;
+//}
 
 } // end namespace GEOLIB

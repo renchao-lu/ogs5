@@ -12,7 +12,7 @@
 
 #ifdef WINDOWS
  #pragma warning (disable:4786)  /*Visual C++ 6.0*/
-#endif 
+#endif
 // C
 #include <math.h>
 // C++
@@ -46,16 +46,16 @@ vector <CompProperties*> cp_vec;
 
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: CompProperties Constructor
 Programing:
-02/2004 SB Implementation 
+02/2004 SB Implementation
 **************************************************************************/
 CompProperties::CompProperties(long n){
 
 	char name1[MAX_ZEILE];
 	sprintf(name1,"%s%ld","CONCENTRATION", n);
-	
+
 	name =  name1;
 	compname = name1;
 	mobil = 1;
@@ -78,17 +78,17 @@ fluid_phase = 0;
 
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: CompProperties Destructor
 Programing:
-02/2004 SB Implementation 
+02/2004 SB Implementation
 **************************************************************************/
 CompProperties::~CompProperties(void)
 {
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: CompProperties read function
 Programing:
 02/2004 SB Implementation - adapted from OK rf_bc_new
@@ -99,7 +99,7 @@ Programing:
 bool CPRead(string file_base_name)
 {
   //----------------------------------------------------------------------
-//OK  MCPDelete();  
+//OK  MCPDelete();
   //----------------------------------------------------------------------
   CompProperties *m_cp = NULL;
   char line[MAX_ZEILE];
@@ -110,19 +110,19 @@ bool CPRead(string file_base_name)
   // File handling
   string cp_file_name = file_base_name + CP_FILE_EXTENSION;
   ifstream cp_file (cp_file_name.data(),ios::in);
-  if (!cp_file.good()) 
+  if (!cp_file.good())
     return false;
   cp_file.seekg(0L,ios::beg);
-  
+
   //========================================================================
   	cp_vec.clear();
 	cout << "CPRead" << endl;
-  // Schleife ueber alle Phasen bzw. Komponenten 
+  // Schleife ueber alle Phasen bzw. Komponenten
   while (!cp_file.eof()) {
-    
+
     cp_file.getline(line,MAX_ZEILE);
     line_string = line;
-	if(line_string.find("#STOP")!=string::npos) 
+	if(line_string.find("#STOP")!=string::npos)
       return true;
     //----------------------------------------------------------------------
     if(line_string.find("#COMPONENT_PROPERTIES")!=string::npos) { // keyword found
@@ -139,7 +139,7 @@ bool CPRead(string file_base_name)
 
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: CompProperties read function
 Programing:
 02/2004 SB Implementation - adapted from OK rf_bc_new
@@ -160,7 +160,7 @@ Programing:
   ios::pos_type position;
 
   //========================================================================
-  // Schleife ueber alle Phasen bzw. Komponenten 
+  // Schleife ueber alle Phasen bzw. Komponenten
   while (!new_keyword) {
 //    new_subkeyword = false;
     position = rfd_file->tellg();
@@ -209,8 +209,8 @@ Programing:
       // critical constant and corresponding components fluid Property // AKS
       if ( mfp_vector[fluid_phase] )
       {
-          // found corresponding fluid phase. 
-          mfp_vector[fluid_phase]->component_vector.push_back(this); 
+          // found corresponding fluid phase.
+          mfp_vector[fluid_phase]->component_vector.push_back(this);
       }
       else
       {
@@ -298,12 +298,12 @@ if(line_string.find("$COMP_CONDUCTIVITY")!=string::npos) { // subkeyword found
                 else  */
 //					in >> read_help[j];
 					in >> diffusion_model_values[j];
-			else 
+			else
 				cout << "Warning: Missing diffusion model values for component " << this->compname << endl;
 			if((diffusion_model == 1) && (j == 0))
 				if((diffusion_model_values[j] < 0.0) || (diffusion_model_values[j] > 100000.0))
 					cout << "Warning: Funny diffusion model values specified" << endl;
-				
+
         } //end for(j...)
 
 //		diffusion_model_values = read_help;
@@ -314,7 +314,7 @@ if(line_string.find("$COMP_CONDUCTIVITY")!=string::npos) { // subkeyword found
 		DisplayMsgLn("Error: Diffusion model must be larger than or 0");
 	  }
 	  in.clear();
-      
+
 	} // subkeyword found
     if(line_string.find("$DECAY")!=string::npos) { // subkeyword found
 	  in.str(GetLineFromFile1(rfd_file));
@@ -345,7 +345,7 @@ if(line_string.find("$COMP_CONDUCTIVITY")!=string::npos) { // subkeyword found
                 else  */
 //					in >> read_help[j];
 					in >> decay_model_values[j];
-				
+
         } //end for(j...)
 
 //		decay_model_values = read_help;
@@ -355,7 +355,7 @@ if(line_string.find("$COMP_CONDUCTIVITY")!=string::npos) { // subkeyword found
 		DisplayMsgLn("Error: Aqueous decay model must be larger than or 0");
 	  }
 	  in.clear();
-      
+
 	} // subkeyword found
     if(line_string.find("$ISOTHERM")!=string::npos) { // subkeyword found
 	  in.str(GetLineFromFile1(rfd_file));
@@ -370,7 +370,7 @@ if(line_string.find("$COMP_CONDUCTIVITY")!=string::npos) { // subkeyword found
 		DisplayMsgLn(" Unknown Isotherm model - program stops !");
 		exit(1);
 	  }
-	
+
 	  if (isotherm_model>0) {
 //		read_help = (double *) Malloc(count_of_isotherm_model_values * sizeof(double));
 
@@ -386,7 +386,7 @@ if(line_string.find("$COMP_CONDUCTIVITY")!=string::npos) { // subkeyword found
                 else  */
 //					in >> read_help[j];
 				in >> isotherm_model_values[j];
-				
+
         } //end for(j...)
 
 //		isotherm_model_values = read_help;
@@ -395,7 +395,7 @@ if(line_string.find("$COMP_CONDUCTIVITY")!=string::npos) { // subkeyword found
 		DisplayMsgLn("Error: Isotherm model must be larger than or 0");
 	  }
 	  in.clear();
-      
+
 	} // subkeyword found
 
 	if(line_string.find("$BUBBLE_VELOCITY")!=string::npos) { // subkeyword found
@@ -417,7 +417,7 @@ if(line_string.find("$COMP_CONDUCTIVITY")!=string::npos) { // subkeyword found
      DisplayMsgLn("Error in MOLAR_DENSITY - setting molar_density to 1.0!");
 		   molar_density = 1.0;
 	  }
- } 
+ }
 	if(line_string.find("$MOLAR_WEIGHT")!=string::npos) { // subkeyword found
 	  in.str(GetLineFromFile1(rfd_file));
       in >> molar_weight;
@@ -426,7 +426,7 @@ if(line_string.find("$COMP_CONDUCTIVITY")!=string::npos) { // subkeyword found
      DisplayMsgLn("Error in MOLAR_WEIGHT - setting molar_weight to 1.0!");
 		   molar_weight = 1.0;
 	  }
- } 
+ }
 	if(line_string.find("$MAXIMUM_AQUEOUS_SOLUBILITY")!=string::npos) { // subkeyword found
 	  in.str(GetLineFromFile1(rfd_file));
       in >> max_solubility;
@@ -435,7 +435,7 @@ if(line_string.find("$COMP_CONDUCTIVITY")!=string::npos) { // subkeyword found
      DisplayMsgLn(": Error in MAXIMUM_AQUEOUS_SOLUBILITY - setting max_solubility to 1.0!");
 		   max_solubility = 1.0;
 	  }
-	} 
+	}
 
 
   } //end while
@@ -451,7 +451,7 @@ Programing:
 05/2004 SB Implementation
 **************************************************************************/
 void CPWrite(string base_file_name,int flag){
-	
+
   CompProperties *m_kr = NULL;
   string rfe_file_name;
   int i, length;
@@ -468,7 +468,7 @@ void CPWrite(string base_file_name,int flag){
 	rfe_file_name = base_file_name + CP_FILE_EXTENSION;
 	rfe_file.open(rfe_file_name.data(),ios::trunc|ios::out);
   }
-  
+
   if (!rfe_file.good()) return;
   if(flag == 1)
 	rfe_file.seekp(0L,ios::end); // go to end
@@ -483,11 +483,11 @@ void CPWrite(string base_file_name,int flag){
   rfe_file << endl << "#STOP " << endl;
   rfe_file.close();
 //  delete rfe_file;
-  
+
 }
 
 /**************************************************************************
-Component Properties: 
+Component Properties:
 Task: Component class write function
 Programing:
 05/2004 SB Implementation - adapted from OK rf_bc_new
@@ -503,9 +503,9 @@ int i;
 // mobile or not?
 *rfe_file << "$MOBILE" << endl << mobil << endl;
 // TRANSPORT_PHASE
-*rfe_file << "$TRANSPORT_PHASE" << endl << transport_phase << endl; 
+*rfe_file << "$TRANSPORT_PHASE" << endl << transport_phase << endl;
 // FLUID_PHASE
-*rfe_file << "$FLUID_PHASE" << endl << transport_phase << endl; 
+*rfe_file << "$FLUID_PHASE" << endl << transport_phase << endl;
 // Diffusion
 if(diffusion_model > -1 ){
 *rfe_file << "$DIFFUSION" << endl;
@@ -582,12 +582,12 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
     double temperature_average = 293.;
     double diffusion_average=0.0;
     double *k = NULL;
-    double Dm,porosity,dummy;
+    double Dm,porosity;
     static long *element_nodes;
     static int count_nodes;
     static int p_ind, t_ind;
     static double eta = 0.0; //, theta = 1.0;
-    int i; 
+    int i;
   //OK411
   diffusion_average = diffusion_average;
   pressure_average = pressure_average;
@@ -601,7 +601,7 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
 	k = diffusion_model_values;
 
     switch (diffusion_model) {
-	case -1: 
+	case -1:
 		return 0.0;  //no diffusion specified
     case 0:{                    /* curve value */
 		DisplayMsgLn("Not implemented");
@@ -619,7 +619,7 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
 	case 4:
 	case 5:
 	case 6:
-	case 7:  
+	case 7:
 /*OK411
         {
         count_nodes = ElNumberOfNodes[ElGetElementType(index) - 1];
@@ -658,7 +658,7 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
                /* not implemented anymore because we use arithmetric mean */
 		cout << "diffusion law no. 8 Not implemented anymore, please use law 9 in the *.mcp-file" << endl;
 		break;
-        
+
        //     if (count_of_diffusion_model_values < 2)
         //        return 0.0;
 // porosity = GetSoilPorosity(index);
@@ -684,24 +684,24 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
   	  diffusion_average=0.0;
           for (i = 0; i < count_nodes; i++){ //calculate harmonic mean of node based diffusion coefficients
 		// then get the values from nodes
-				
-		dummy=m_vec_GEM->REACT_GEM::GetNodePorosityValue(m_Elem->GetNodeIndex ( i ));
+
+		double dummy=m_vec_GEM->REACT_GEM::GetNodePorosityValue(m_Elem->GetNodeIndex ( i ));
 		 Dm = k[0]*pow(dummy,k[1]); //node based diffusion coefficient
                 diffusion_average += 1.0/Dm;
 	//	cout << "debug: " << Dm << " porosity: " << GetNodePorosityValue_MT(m_Elem->GetNodeIndex ( i ), 0) << endl;
           }
                 Dm =  count_nodes / diffusion_average ; // This is now harmonic mean of node diffusion coefficients
-// end calculation of diffusion coefficient	    
+// end calculation of diffusion coefficient
             Dm = Dm/porosity; //correct for multiplication with element porosities -> Pore diffusion coefficient
 	//	cout << "Mean: " << Dm*porosity << endl;
 
             return Dm;
         }
-#endif	
+#endif
     default:
         DisplayMsgLn("Unknown diffusion model!");
         break;
-    } 
+    }
                           /* switch */
 
     return (diffusion_coefficient);
@@ -959,24 +959,24 @@ int CompProperties::GetNumberIsothermValuesCompProperties(int isotherm)
     case 3:
         n = 2;  break;                  /* Langmuir Isotherm */
     case 4:
-        n = 1;  break;                  /* Linear Isotherm, for fracture surface CMCD
+        n = 1;  break;                  /* Linear Isotherm, for fracture surface CMCD */
 /*
     case 4:
-        n = 3;  break;                  // Freundlich Langmuir Isotherm 
+        n = 3;  break;                  // Freundlich Langmuir Isotherm
     case 5:
-        n = 4;  break;                  // Double Langmuir Isotherm 
+        n = 4;  break;                  // Double Langmuir Isotherm
     case 6:
-        n = 3;  break;                  // Extented Freundlich Isotherm 
+        n = 3;  break;                  // Extented Freundlich Isotherm
     case 7:
-        n = 3;  break;                  // Gunary Isotherm 
+        n = 3;  break;                  // Gunary Isotherm
     case 8:
-        n = 3;  break;                  // Fitter-Sutton Isotherm 
+        n = 3;  break;                  // Fitter-Sutton Isotherm
     case 9:
-        n = 4;  break;                  // Barry Isotherm 
+        n = 4;  break;                  // Barry Isotherm
     case 10:
-        n = 2;  break;                  // Power Isotherm 
+        n = 2;  break;                  // Power Isotherm
     case 11:
-        n = 2;  break;                  // Modified Kielland Isotherm 
+        n = 2;  break;                  // Modified Kielland Isotherm
 */
 /*	case 15:
 		n=1;    break;
@@ -1035,7 +1035,7 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double *gp, 
  /* Get mean element concentration from last time step */
  conc = CalcElementMeanConcNew(index, m_pcs);
  /* DisplayMsg(" Mean conc: "); DisplayDouble(conc,0,0); DisplayMsgLn(" "); */
- 
+
  switch(isotherm_model){
  case -1: /* no sorption */
 	 isotherm = 0.0;
@@ -1056,8 +1056,8 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double *gp, 
 	 if(fabs(isotherm_model_values[1] - 1.0)<MKleinsteZahl) /* Freundlich is linear */
 		 isotherm = isotherm_model_values[0];
 	 else
-		 if(fabs(conc)<MKleinsteZahl) 
-			isotherm = isotherm_model_values[0]; 
+		 if(fabs(conc)<MKleinsteZahl)
+			isotherm = isotherm_model_values[0];
 		 else
 			isotherm = isotherm_model_values[0] * isotherm_model_values[1] * pow(fabs(conc),isotherm_model_values[1]-1.0);
     retard = 1. + (1.-porosity)*density_rock*isotherm/porosity;//CMCD moved here
@@ -1081,11 +1081,11 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double *gp, 
    retard = 1. + (1.-porosity)*density_rock*isotherm/porosity;//CMCD moved here
 	break;
  };
-// DisplayMsg(" conc: "); DisplayDouble(conc,0,0);DisplayMsg(" isotherm: "); DisplayDouble(isotherm,0,0); DisplayMsgLn(" "); 
+// DisplayMsg(" conc: "); DisplayDouble(conc,0,0);DisplayMsg(" isotherm: "); DisplayDouble(isotherm,0,0); DisplayMsgLn(" ");
 // if(conc < 0.0) isotherm = 0.0;
- 
+
 //  retard = 1. + (1.-porosity)*density_rock*isotherm/porosity; Case 4 doesn't use this function.
-//  if(index < 1) {DisplayMsg(" Retardation factor: "); DisplayDouble(retard,0,0); DisplayMsgLn(" ");} 
+//  if(index < 1) {DisplayMsg(" Retardation factor: "); DisplayDouble(retard,0,0); DisplayMsgLn(" ");}
 
  return retard;
 }
@@ -1094,9 +1094,9 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double *gp, 
    ROCKFLOW - Funktion: CalcElementMeanConcentration
 
    Aufgabe:
-   Berechnet den mittleren Wert eines Elements aus den Werten der 
+   Berechnet den mittleren Wert eines Elements aus den Werten der
    angrenzenden Knoten
-   
+
    Programmaenderungen:
    04/2003     SB         Erste Version
    09/2004	   SB		  Moved to Class CompProperties as member function
@@ -1112,7 +1112,7 @@ double CompProperties::CalcElementMeanConcNew (long index, CRFProcess* m_pcs)
 
   elem = m_pcs->m_msh->ele_vector[index];
   nn = elem->GetVertexNumber();
-  idx=m_pcs->GetNodeValueIndex((char *) compname.data()); 
+  idx=m_pcs->GetNodeValueIndex((char *) compname.data());
   theta = m_pcs->m_num->ls_theta;
   /* get Value after last iteration */
 /*
@@ -1156,7 +1156,7 @@ double CompProperties::CalcElementMeanConcNew (long index, CRFProcess* m_pcs)
 /* calculate mean value */
 
 //	 DisplayMsgLn(" "); DisplayMsg(" val1: "); DisplayDouble(val1,0,0);DisplayMsg(", val2: "); DisplayDouble(val2,0,0); DisplayMsgLn("");
-	 val = theta*val1 + (1.0-theta)*val2;   
+	 val = theta*val1 + (1.0-theta)*val2;
 
 
   return val;
@@ -1184,14 +1184,14 @@ double CompProperties::CalcElementDecayRateNew( long index, CRFProcess* m_pcs)
 {
  static double conc, lambda = 0.0;
  int gueltig;
-  
+
 // if(index >= anz_active_elements){DisplayMsgLn(" Too many elements "); return 0.0; }
  /* Get mean element concentration from last time step */
  conc = CalcElementMeanConcNew(index, m_pcs);
 
  switch(decay_model){
- 
- case -1:  /* no decay */ 
+
+ case -1:  /* no decay */
 	 lambda = 0.0;
 	 break;
  case 0: /* curve - linear interpolation*/
@@ -1199,18 +1199,18 @@ double CompProperties::CalcElementDecayRateNew( long index, CRFProcess* m_pcs)
 	 lambda = GetCurveValue((int) decay_function_name, 0, fabs(conc), &gueltig);
 	 break;
  case 1: /* Any order decay  with n > 1 */
-	 if(fabs(decay_model_values[1] - 1.0) < MKleinsteZahl) { 
+	 if(fabs(decay_model_values[1] - 1.0) < MKleinsteZahl) {
 		 /* First order decay */
 		 lambda = decay_model_values[0];
 		 break;
 	 }
 	 else if(decay_model_values[1] < MKleinsteZahl){ /* zero - order decay */
-		if(fabs(conc)<MKleinsteZahl) 
+		if(fabs(conc)<MKleinsteZahl)
 			lambda = decay_model_values[0];
 		else
 			lambda = decay_model_values[0]/conc;
 	 }
-	 else { 
+	 else {
 		 /* Any order decay with n not equal to one or zero*/
 		 if(fabs(conc)<MKleinsteZahl)
 			lambda = decay_model_values[0];
@@ -1225,7 +1225,7 @@ double CompProperties::CalcElementDecayRateNew( long index, CRFProcess* m_pcs)
 	lambda = 0.0;
 	break;
  };
-// if(index < 0){DisplayMsg(" Decay Rate lambda: "); DisplayDouble(lambda,0,0); DisplayMsgLn(" ");} 
+// if(index < 0){DisplayMsg(" Decay Rate lambda: "); DisplayDouble(lambda,0,0); DisplayMsgLn(" ");}
   return lambda;
 }
 
@@ -1234,7 +1234,7 @@ double CompProperties::CalcElementDecayRateNew( long index, CRFProcess* m_pcs)
 //SB:todo Wie kann ich die gut ersetzen (wird nur in loop_pcs gebraucht, um zu schauen ob der process mobil ist ??
 int CPGetMobil(long comp)
 {
-	int  mobil=-1; 
+	int  mobil=-1;
 	CompProperties *cp_single = NULL;
 
 	cp_single = cp_vec[comp];
@@ -1262,7 +1262,7 @@ int CPGetMobil(long comp)
 Eingabe for Schl?selw?ter:
 
 	DECAY
-	
+
 	Method 0: curve
 	Give curve number - not yet implemented
 	  0 ; no decay
@@ -1271,8 +1271,8 @@ Eingabe for Schl?selw?ter:
 	Give Method  decay_rate  order_of_decay
 	  1  1.0e-6  1.0  ; decay with first order kinetics
 	  1  1.0e-06 2.0  ; decay with second order kinetics
-    
-	Method 2:  Monod-Kinetics 
+
+	Method 2:  Monod-Kinetics
 	 Give Method degradation_rate half_saturation_concentration
 	 2  1.0e-6  0.5 ; Monod Kinetics with dC/dt = C * (1.0e-6/ 0.5 + c)
 
@@ -1286,15 +1286,15 @@ Eingabe for Schl?selw?ter:
 
 		Method 1: linear isotherm
 		Give: Method linear_distribution_coefficient
-		  1  1e-3;  
+		  1  1e-3;
 
 		Method 2: Freundlich Isotherm
 		Give: Method Freundlich_coefficient freundlich_exponent
 		  2  1.0e-4  0.8
 
-	 	Method 3: Langmuir Isotherm 
+	 	Method 3: Langmuir Isotherm
 		Give: param1  param2
-		  3   1e-3 0.5 
+		  3   1e-3 0.5
 
 
 */

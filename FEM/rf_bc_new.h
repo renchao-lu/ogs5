@@ -13,6 +13,9 @@ last modified
 #include <string>
 #include <vector>
 
+// new GEOLIB
+#include "GEOObjects.h"
+
 // GEOLib
 #include "geo_ply.h"
 // MSHLib
@@ -24,11 +27,47 @@ using namespace Mesh_Group;
 
 class CBoundaryCondition
 {
-  private:
-    std::string tim_type_name; // Time function type
-    std::string fname; //27.02.2009. WW
+private:
+	// GEO
+	/**
+	 * index of geometric object (GEOLIB::Point, GEOLIB::Polyline, ...)
+	 */
+	size_t _geo_obj_idx; // TF 18.05.2010
+	/**
+	 * the id of the geometric object as string REMOVE CANDIDATE
+	 */
+	std::string geo_name; // TF 05/2010
+
+	std::string tim_type_name; // Time function type
+	std::string fname; //27.02.2009. WW
 	int CurveIndex; // Time funtion index
-  public: //OK
+public:
+	/**
+	 * retrieves the index of the geometric object
+	 * @return the index in the vector storing the geometric entities
+	 */
+	size_t getGeoObjIdx() const; // TF 18.05.2010
+	/**
+	 * ToDo remove after transition to new GEOLIB - REMOVE CANDIDATE
+	 * getGeoName returns a string used as id for geometric entity
+	 * @return the value of attribute geo_name in case of
+	 * geo_type_name == POLYLINE or geo_type_name = SURFACE
+	 * If geo_type_name == POINT the id of the point is returned.
+	 */
+	const std::string& getGeoName(); // TF 05/2010
+
+	/**
+	 * set the file name attribute - REMOVE CANDIDATE
+	 * @param name
+	 */
+	void setFileName (const std::string &name); // TF 05/2010
+	std::string getFileName () const { return fname; } // TF 05/2010
+	void setCurveIndex (int curve_index) { CurveIndex = curve_index; } // TF 05/2010
+	int getCurveIndex () const { return CurveIndex; }; // TF 05/2010
+	void setTimTypeName (const std::string &name) { tim_type_name = name;} // TF 05/2010
+	std::string getTimTypeName () const { return tim_type_name; } // TF 05/2010
+
+
     std::vector<int> PointsHaveDistribedBC;
     std::vector<int> PointsCurvesIndex;
     std::vector<std::string> PointsFCTNames;
@@ -45,7 +84,6 @@ class CBoundaryCondition
     // GEO
     int geo_type;
     std::string geo_type_name;
-    std::string geo_name;
     // DIS
     int dis_type;
     std::string dis_type_name;
@@ -56,10 +94,8 @@ class CBoundaryCondition
     long geo_node_number;
     double geo_node_value;
 	double periode_time_length, periode_phase_shift; // JOD
-    std::string delimiter_type;
     double node_value_cond; //OK
     double condition; //OK
-    std::string geo_node_substitute; //OK
     bool time_dep_interpol;
     // FCT
     std::string fct_name;
@@ -78,9 +114,16 @@ class CBoundaryCondition
     // GUI
     bool display_mode;
 
-	CBoundaryCondition(void);
-    ~CBoundaryCondition(void);
-    ios::pos_type Read(ifstream*);
+	CBoundaryCondition();
+    ~CBoundaryCondition();
+    /**
+     * reads a boundary condition from stream
+     * @param in input file stream for reading
+     * @param geo_obj pointer to the geometric object manager
+     * @param unique_fname the project name
+     * @return the position in the stream after the boundary condition
+     */
+    ios::pos_type Read(std::ifstream* in, const GEOLIB::GEOObjects& geo_obj, const std::string& unique_fname); // TF
     void Write(fstream*);
     void SetDISType(void);
     void SetGEOType(void);
@@ -135,12 +178,21 @@ class CBoundaryConditionsGroup
 extern list<CBoundaryConditionsGroup*> bc_group_list;
 extern CBoundaryConditionsGroup* BCGetGroup(std::string pcs_type_name,std::string pcs_pv_name);
 extern list<CBoundaryCondition*> bc_list;
-extern bool BCRead(std::string);
+
+/**
+ * read boundary conditions from file
+ * @param file_base_name the base name of the file (without extension)
+ * @param geo_obj the geometric object managing geometric entities
+ * @param unique_name the (unique) name of the project
+ * @return false, if the file can not opened, else true
+ */
+bool BCRead (std::string file_base_name, const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name);
+
 extern void BCWrite(std::string);
 extern void BCDelete();
 extern void BCGroupDelete(std::string,std::string);
 extern void BCGroupDelete(void);
-extern CBoundaryCondition* BCGet(std::string,std::string,std::string); //OK
+extern CBoundaryCondition* BCGet(const std::string&,const std::string&,const std::string&); //OK
 extern CBoundaryCondition* BCGet(std::string); //OK
 
 //ToDo

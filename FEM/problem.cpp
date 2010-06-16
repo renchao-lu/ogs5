@@ -31,9 +31,10 @@ Modification:
 // MSHLib
 #include "msh_node.h"
 #include "msh_lib.h"
+
 /*------------------------------------------------------------------------*/
 // Data file
-extern int ReadData(char*); //OK411
+extern int ReadData(char*, GEOLIB::GEOObjects& geo_obj, std::string& unique_name); //OK411
 /* PCS */
 #include "pcs_dm.h"
 #include "rf_pcs.h"
@@ -84,25 +85,29 @@ Programing:
             PreTimeloop
 Modification:
 ***************************************************************************/
-Problem::Problem(char* filename):print_result(false)
+Problem::Problem (char* filename) :
+	print_result(true), _geo_obj (new GEOLIB::GEOObjects), _geo_name (filename)
 {
-  int i;
-
-  print_result = true; //OK
-  if(filename!=NULL)
-    {
-      // Read data
-      ReadData(filename);
-      DOMRead(filename);
-    }
+	if (filename != NULL) {
+		// read data
+		ReadData(filename, *_geo_obj, _geo_name);
+		DOMRead(filename);
+	}
 #ifndef NEW_EQS
-  ConfigSolverProperties();  //_new. 19.10.2008. WW
+ 	ConfigSolverProperties();  //_new. 19.10.2008. WW
 #endif
-  for(i=0;i<(int)pcs_vector.size();i++)
-  {
-    hasAnyProcessDeactivatedSubdomains = (pcs_vector[i]->NumDeactivated_SubDomains > 0);
-    if (hasAnyProcessDeactivatedSubdomains) break;
-  }
+
+ 	// set the link to Problem instance in CRFProcess objects
+ 	for (size_t i=0; i<pcs_vector.size(); i++) {
+ 		pcs_vector[i]->setProblemObjectPointer (this);
+ 	}
+
+	for (size_t i=0; i<pcs_vector.size(); i++) {
+		hasAnyProcessDeactivatedSubdomains
+				= (pcs_vector[i]->NumDeactivated_SubDomains > 0);
+		if (hasAnyProcessDeactivatedSubdomains)
+			break;
+	}
   //----------------------------------------------------------------------
   // Create ST
   //OK STCreateFromPNT();
@@ -246,16 +251,12 @@ Problem::Problem(char* filename):print_result(false)
 
   //----------------------------------------------------------------------
   // DDC
-  int no_processes =(int)pcs_vector.size();
+  size_t no_processes = pcs_vector.size();
   CRFProcess* m_pcs = NULL;
-  if(dom_vector.size()>0)
-    {
-
-      // -----------------------
+  if(dom_vector.size()>0) {
       DOMCreate();
       //
-      for(i=0;i<no_processes;i++)
-      {
+      for(size_t i=0;i<no_processes;i++) {
          m_pcs = pcs_vector[i];
          m_pcs->CheckMarkedElement();
          CountDoms2Nodes(m_pcs);
@@ -267,32 +268,29 @@ Problem::Problem(char* filename):print_result(false)
       // Release some memory. WW
 #if defined(USE_MPI) //TEST_MPI WW
       // Release memory of other domains. WW
-      for(i=0;i<(int)dom_vector.size();i++)
-	{
-	  if(i!=myrank)
-	    {
+      for(size_t i=0;i<dom_vector.size();i++) {
+    	  if(i!=myrank) {
 	      // If shared memory, skip the following line
 #if defined(NEW_BREDUCE2)
-	      dom_vector[i]->ReleaseMemory();
+    		  dom_vector[i]->ReleaseMemory();
 #else
-	      // If MPI__Allreduce is used for all data conlection, activate following
-	      delete dom_vector[i];
-	      dom_vector[i] = NULL;
+			  // If MPI__Allreduce is used for all data conlection, activate following
+			  delete dom_vector[i];
+			  dom_vector[i] = NULL;
 #endif
-	    }
-	}
+    	  }
+      }
 #endif
-
     }
   //----------------------------------------------------------------------
   PCSRestart(); //SB
   if(transport_processes.size()>0) //WW. 12.12.2008
     {
       //----------------------------------------------------------------------
-      KRConfig();
+      KRConfig(*_geo_obj, _geo_name);
       //----------------------------------------------------------------------
       // Configure Data for Blobs (=>NAPL dissolution)
-      KBlobConfig();
+      KBlobConfig(*_geo_obj, _geo_name);
       KBlobCheck();
       //WW CreateClockTime();
     }
@@ -337,47 +335,42 @@ Problem::Problem(char* filename):print_result(false)
   max_time_steps = 0;
   bool time_ctr = false;
   // Determine the start and end times from all available process related data.
-  for(i=0; i<(int)time_vector.size(); i++)
-    {
-      m_tim = time_vector[i];
-      m_tim->FillCriticalTime();
-      if(m_tim->time_start<start_time)
-	start_time = m_tim->time_start;
-      if(m_tim->time_end>end_time)
-	end_time = m_tim->time_end;
-      if(max_time_steps<(int)m_tim->time_step_vector.size())
-	max_time_steps = (int)m_tim->time_step_vector.size();
-      if(m_tim->GetTimeStepCrtlType()>0)
-	time_ctr = true;
-    }
+  for (size_t i = 0; i < time_vector.size(); i++) {
+		m_tim = time_vector[i];
+		m_tim->FillCriticalTime();
+		if (m_tim->time_start < start_time)
+			start_time = m_tim->time_start;
+		if (m_tim->time_end > end_time)
+			end_time = m_tim->time_end;
+		if (max_time_steps < (int) m_tim->time_step_vector.size())
+			max_time_steps = (int) m_tim->time_step_vector.size();
+		if (m_tim->GetTimeStepCrtlType() > 0)
+			time_ctr = true;
+	}
   if(max_time_steps==0) max_time_steps = 1000000;
   current_time =  start_time;
-  if(time_ctr)
-    {
-      int maxi_dof = 0;
-      int maxi_nnodes = 0;
-      for(i=0; i<no_processes; i++)
-	{
-	  m_pcs = pcs_vector[i];
-	  if(m_pcs->GetPrimaryVNumber()>maxi_dof)
-	    maxi_dof = m_pcs->GetPrimaryVNumber();
-	  if(m_pcs->m_msh->GetNodesNumber(false)>maxi_nnodes)
-	    maxi_nnodes = m_pcs->m_msh->GetNodesNumber(false);
-	}
-      buffer_array = new double[maxi_dof*maxi_nnodes];
-    }
-  else
-    buffer_array = NULL;
+  if (time_ctr) {
+		int maxi_dof = 0;
+		int maxi_nnodes = 0;
+		for (size_t i = 0; i < no_processes; i++) {
+			m_pcs = pcs_vector[i];
+			if (m_pcs->GetPrimaryVNumber() > maxi_dof)
+				maxi_dof = m_pcs->GetPrimaryVNumber();
+			if (m_pcs->m_msh->GetNodesNumber(false) > maxi_nnodes)
+				maxi_nnodes = m_pcs->m_msh->GetNodesNumber(false);
+		}
+		buffer_array = new double[maxi_dof * maxi_nnodes];
+	} else
+		buffer_array = NULL;
   //========================================================================
   CRFProcessDeformation *dm_pcs = NULL;
 
-  //  //WW
-  for(i=0; i<no_processes; i++)
-    {
-      m_pcs = pcs_vector[i];
-      m_pcs->CalcSecondaryVariables(true); //WW
-      m_pcs->Extropolation_MatValue();  //WW
-    }
+	//  //WW
+	for (size_t i = 0; i < no_processes; i++) {
+		m_pcs = pcs_vector[i];
+		m_pcs->CalcSecondaryVariables(true); //WW
+		m_pcs->Extropolation_MatValue(); //WW
+	}
   // Calculation of the initial stress and released load for excavation simulation
   // 07.09.2007  WW
   // Excavation for defromation
@@ -398,12 +391,15 @@ Modification:
 ***************************************************************************/
 Problem::~Problem()
 {
-  delete [] active_processes;
-  delete [] exe_flag;
-  if(buffer_array) delete [] buffer_array;
-  buffer_array = NULL;
-  active_processes = NULL;
-  exe_flag = NULL;
+	if (_geo_obj)
+		delete _geo_obj;
+	delete[] active_processes;
+	delete[] exe_flag;
+	if (buffer_array)
+		delete[] buffer_array;
+	buffer_array = NULL;
+	active_processes = NULL;
+	exe_flag = NULL;
   //
   PCSDestroyAllProcesses();
   //
@@ -429,6 +425,7 @@ Problem::~Problem()
     // delete m_vec_BRNS.at(0);
     delete m_vec_BRNS;
     #endif
+
   cout<<"\n^O^: Your simulation is terminated normally ^O^ "<<endl;
 }
 /*-------------------------------------------------------------------------
@@ -628,54 +625,42 @@ Programing:
  06/2005 OK MMP2PCSRelation
  07/2008 WW Capsulated into class Problem
 Modification:
+ 05/2010 TF formated source code
 ***************************************************************************/
 void Problem::PCSCreate()
 {
-  //----------------------------------------------------------------------
-  cout << "---------------------------------------------" << endl;
-  cout << "Create PCS processes" << endl;
-  //----------------------------------------------------------------------
-  int i;
-  int no_processes =(int)pcs_vector.size();
-  CRFProcess* m_pcs = NULL;
-  //
-  //----------------------------------------------------------------------
-  //OK_MOD if(pcs_deformation>0) Init_Linear_Elements();
-  for(i=0;i<no_processes;i++)
-  {
-    m_pcs = pcs_vector[i];
-    m_pcs->pcs_type_number = i;
-    m_pcs->Config(); //OK
-  }
-  //
-#ifdef NEW_EQS
-  CreateEQS_LinearSolver(); //WW
-#endif
-  //
-  for(i=0;i<no_processes;i++)
-  {
-    cout << "............................................." << endl;
-    m_pcs = pcs_vector[i];
-    cout << "Create: " << m_pcs->pcs_type_name << endl;
-	if(!m_pcs->pcs_type_name.compare("MASS_TRANSPORT")){
-		cout << " for " << m_pcs->pcs_primary_function_name[0] << " ";
-	    cout << " pcs_component_number " << m_pcs->pcs_component_number;
+	cout << "---------------------------------------------" << endl;
+	cout << "Create PCS processes" << endl;
+
+	size_t no_processes = pcs_vector.size();
+	//OK_MOD if(pcs_deformation>0) Init_Linear_Elements();
+	for (size_t i = 0; i < no_processes; i++) {
+		pcs_vector[i]->pcs_type_number = i;
+		pcs_vector[i]->Config(); //OK
 	}
-    cout << endl;
-    m_pcs->Create();
-  }
-  //----------------------------------------------------------------------
-  //----------------------------------------------------------------------
-  for(i=0;i<no_processes;i++){
-    m_pcs = pcs_vector[i];
-    MMP2PCSRelation(m_pcs);
-  }
-  //----------------------------------------------------------------------
-  for(i=0;i<no_processes;i++)
-  { //WW
-    m_pcs = pcs_vector[i];
-    m_pcs->ConfigureCouplingForLocalAssemblier();
-  }
+
+#ifdef NEW_EQS
+	CreateEQS_LinearSolver(); //WW
+#endif
+
+	for (size_t i = 0; i < no_processes; i++) {
+		cout << "............................................." << endl;
+		cout << "Create: " << pcs_vector[i]->pcs_type_name << endl;
+		if (!pcs_vector[i]->pcs_type_name.compare("MASS_TRANSPORT")) {
+			cout << " for " << pcs_vector[i]->pcs_primary_function_name[0] << " ";
+			cout << " pcs_component_number " << pcs_vector[i]->pcs_component_number;
+		}
+		cout << endl;
+		pcs_vector[i]->Create();
+	}
+
+	for (size_t i = 0; i < no_processes; i++) {
+		MMP2PCSRelation(pcs_vector[i]);
+	}
+
+	for (size_t i = 0; i < no_processes; i++) { //WW
+		pcs_vector[i]->ConfigureCouplingForLocalAssemblier();
+	}
 }
 
 /*-------------------------------------------------------------------------
@@ -729,14 +714,15 @@ void Problem::Euler_TimeDiscretize()
 	//
 	CTimeDiscretization *m_tim = NULL;
 	aktueller_zeitschritt = 0;
+
 #if defined(USE_MPI)
 	if(myrank==0)
 	{
 #endif
-		cout<<"\n\n***Start time steps\n";
+		std::cout << "\n\n***Start time steps\n";
 		// Dump the initial conditions.
 		OUTData(0.0,aktueller_zeitschritt);
-#if defined(USE_MPI)  
+#if defined(USE_MPI)
 	}
 #endif
 	//
@@ -758,7 +744,7 @@ void Problem::Euler_TimeDiscretize()
 			dt=DBL_EPSILON;
 			//kg44 04/2010 proceed exit(0);
 		}
-#if defined(USE_MPI)  
+#if defined(USE_MPI)
 		MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);// all processes use the same time stepping
 #endif
 		for(int i=0; i<(int)active_process_index.size(); i++)     //kg44 11.12.2009 all time-step sizes should be equal?!
@@ -917,7 +903,7 @@ bool Problem::CouplingLoop()
         } else {
           // no need to recalculate but active, e.g. the steady state
           exe_flag[i] = false;
-          acounter++; // incrementation is necessary for output 
+          acounter++; // incrementation is necessary for output
         }
       }
       else
@@ -927,7 +913,7 @@ bool Problem::CouplingLoop()
    int num_processes = (int)active_process_index.size();
 // To do
 //SB->WW I do not understand this condition, why switch off output?
-//WW Reason: 
+//WW Reason:
    /// Make output when all defined processes are activated.
    if(acounter==num_processes)
       print_result = true;
@@ -1089,6 +1075,18 @@ void Problem::PostCouplingLoop()
 #endif
   LOPCalcELEResultants();
 }
+
+const GEOLIB::GEOObjects* Problem::getGeoObj () const
+{
+	return _geo_obj;
+}
+
+const std::string& Problem::getGeoObjName () const
+{
+	return _geo_name;
+}
+
+
 /*-------------------------------------------------------------------------
 GeoSys - Function: LiquidFlow
 Task: Similate liquid flow
@@ -1338,7 +1336,7 @@ inline double Problem::AirFlow()
 
   error = m_pcs->ExecuteNonLinear();
   m_pcs->CalIntegrationPointValue(); //WW
-  m_pcs->cal_integration_point_value = false; //AKS 
+  m_pcs->cal_integration_point_value = false; //AKS
   m_pcs->CalcELEVelocities(); //OK
   //
   return error;

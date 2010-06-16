@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>250</width>
+    <width>252</width>
     <height>500</height>
    </rect>
   </property>
@@ -14,9 +14,6 @@
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <property name="margin">
-    <number>2</number>
-   </property>
    <item>
     <widget class="DataViewWidget" name="dataViewWidget" native="true"/>
    </item>

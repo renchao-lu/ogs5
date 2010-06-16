@@ -10,6 +10,8 @@
 #include <QContextMenuEvent>
 #include "PropertyBounds.h"
 
+#include "Station.h"
+
 /**
  * \brief A view for the StationTreeModel with a number of properties adequate for this kind of data
  * \sa StationTreeModel, ModelTreeItem
@@ -21,7 +23,6 @@ class StationTreeView : public QTreeView
 public:
 	/// Constructor
 	StationTreeView(QWidget* parent = 0);
-	~StationTreeView();
 
 	/// Update the view to visualise changes made to the underlying data
 	void updateView();
@@ -47,13 +48,14 @@ private slots:
 	void exportStation();
 	void removeStationList();
 	void showPropertiesDialog();
+	void showDiagramPrefsDialog();
 
 signals:
 	void itemSelectionChanged(const QItemSelection & selected, const QItemSelection & deselected);
 	void propertiesDialogRequested(std::string name);
 	void stationListExportRequested(std::string listName, std::string fileName);
 	void stationListRemoved(std::string name);
-
+	void diagramRequested(QModelIndex&);
 };
 
 #endif //QSTATIONTREEVIEW_H

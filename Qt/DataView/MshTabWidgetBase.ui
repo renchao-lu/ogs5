@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>250</width>
+    <width>229</width>
     <height>500</height>
    </rect>
   </property>
@@ -31,40 +31,21 @@
     </widget>
    </item>
    <item>
-    <widget class="DataView" name="mshTableView">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="minimumSize">
-      <size>
-       <width>0</width>
-       <height>30</height>
-      </size>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>16777215</width>
-       <height>150</height>
-      </size>
-     </property>
-    </widget>
+    <widget class="DataView" name="treeView"/>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QPushButton" name="clearAllPushButton">
        <property name="text">
-        <string>Clear All</string>
+        <string>Remove All</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="clearSelectedPushButton">
        <property name="text">
-        <string>Clear Selected</string>
+        <string>Remove Selected</string>
        </property>
       </widget>
      </item>
@@ -107,7 +88,7 @@
  <customwidgets>
   <customwidget>
    <class>DataView</class>
-   <extends>QTableView</extends>
+   <extends>QTreeView</extends>
    <header>DataView.h</header>
   </customwidget>
  </customwidgets>

@@ -18,7 +18,8 @@
 
 namespace MATHLIB {
 
-/** Matrix represents a matrix for a numeric data type.
+/**
+ * Matrix represents a dense matrix for a numeric data type.
  */
 template <class T> class Matrix
 {
@@ -30,7 +31,7 @@ public:
    size_t getNRows () const { return nrows; }
    size_t getNCols () const { return ncols; }
    /**
-    * \f$y = alpha * A x + beta y \f$
+    * \f$y = \alpha * A x + \beta y \f$
     */
    void axpy ( T alpha, const T* x, T beta, T* y);
 
@@ -96,7 +97,7 @@ template<class T> T& Matrix<T>::operator() (size_t row, size_t col)
 	throw (std::range_error)
 {
    if ( (row >= nrows) | ( col >= ncols) )
-      throw std::range_error ("Matrix: op() range error");
+	  throw std::range_error ("Matrix: op() const range error");
    return data [address(row,col)];
 }
 

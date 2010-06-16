@@ -60,10 +60,11 @@ public:
 	 * \param os a standard output stream
 	*/
 	virtual void write (std::ostream &os) const {
-		os << x[0] << " " << x[1] << " " << x[2] << std::flush;
+		os << x[0] << ", " << x[1] << ", " << x[2] << std::flush;
 	}
 
-	/** write point coordinates into string
+	/**
+	 * write point coordinates into string
 	*/
 	virtual std::string write () const {
 		std::ostringstream strStream;

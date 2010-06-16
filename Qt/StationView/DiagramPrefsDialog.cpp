@@ -10,15 +10,13 @@
 #include "DiagramList.h"
 #include "OGSError.h"
 
-using namespace GEOLIB;
-
 
 /**
  * Opens a new dialog.
  * \param stn The station object associated the diagram
  * \param db The database connection were the diagram-related data can be found
  */
-DiagramPrefsDialog::DiagramPrefsDialog(Station* stn, QString listName, DatabaseConnection* db, QDialog* parent) : QDialog(parent)
+DiagramPrefsDialog::DiagramPrefsDialog(GEOLIB::Station* stn, QString listName, DatabaseConnection* db, QDialog* parent) : QDialog(parent)
 {
 	setAttribute(Qt::WA_DeleteOnClose);
 
@@ -31,11 +29,11 @@ DiagramPrefsDialog::DiagramPrefsDialog(Station* stn, QString listName, DatabaseC
 	if (db)
 	{
 		_db = db;
-		QString startDate, endDate;
 		_listID    = _db->getListID(listName, (*stn)[0], (*stn)[1]);
 		_stationID = _db->getStationID(_listID, (*stn)[0], (*stn)[1]);
 		if (_listID > 0 && _stationID > 0)
 		{
+			QString startDate, endDate;
 			if (_db->getDateBounds(_listID, _stationID, startDate, endDate))
 			{
 				fromDateLine->setText(startDate);
@@ -48,6 +46,7 @@ DiagramPrefsDialog::DiagramPrefsDialog(Station* stn, QString listName, DatabaseC
 DiagramPrefsDialog::~DiagramPrefsDialog()
 {
 	delete _list;
+	this->destroy();
 }
 
 /// Instructions if the OK-Button has been pressed.

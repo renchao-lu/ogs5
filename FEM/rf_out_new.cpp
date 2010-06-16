@@ -1,6 +1,6 @@
 /**************************************************************************
 FEMLib - Object: OUT
-Task: 
+Task:
 Programing:
 06/2004 OK Implementation
 last modified:
@@ -32,6 +32,11 @@ using namespace std;
 // GeoSys-MSHLib
 #include "msh_lib.h"
 
+#include "problem.h"
+
+// Base
+#include "StringTools.h"
+
 extern int max_dim;  //OK411 todo
 
 #ifdef CHEMAPP
@@ -43,7 +48,7 @@ extern int max_dim;  //OK411 todo
 #include "par_ddc.h"
 #endif
 #ifdef SUPERCOMPUTER
-// kg44 this is usefull for io-buffering as endl flushes the buffer 
+// kg44 this is usefull for io-buffering as endl flushes the buffer
 #define endl '\n'
 #define MY_IO_BUFSIZE 4096
 #endif
@@ -54,31 +59,28 @@ using Mesh_Group::CFEMesh;
 //==========================================================================
 vector<COutput*>out_vector;
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: OUT constructor
 Programing:
 01/2004 OK Implementation
 **************************************************************************/
 COutput::COutput(void): out_amplifier(0.0), m_msh(NULL), nSteps(-1)
 {
-  delimiter_type = ":";
   msh_node_number = -1;
-  INITIAL_CONDITIONS = false;
   tim_type_name = "TIMES";
   dat_type_name = "TECPLOT";
   geo_type_name = "DOMAIN";
-  selected = false;
   new_file_opened = false; //WW
   m_pcs = NULL;
   vtk = NULL; //NW
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: OUT deconstructor
 Programing:
 04/2004 OK Implementation
 **************************************************************************/
-COutput::~COutput(void) 
+COutput::~COutput(void)
 {
 	//added by Haibing 08112006--------
 	long i;
@@ -89,8 +91,17 @@ COutput::~COutput(void)
   //mfp_value_vector.clear(); //OK
   if (this->vtk != NULL) delete vtk; //NW
 }
+
+const std::string& COutput::getGeoName ()
+{
+	if (geo_type_name.compare ("POINT"))
+		geo_name = number2str (_geo_obj_idx);
+
+	return geo_name;
+}
+
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: OUT read function
 Programing:
 06/2004 OK Implementation
@@ -100,10 +111,11 @@ Programing:
 12/2005 OK DIS_TYPE
 12/2005 OK MSH_TYPE
 08/2008 OK MAT
+06/2010 TF formated, restructured, signature changed, use new GEOLIB data structures
 **************************************************************************/
-ios::pos_type COutput::Read(ifstream *out_file)
+ios::pos_type COutput::Read(std::ifstream *out_file,
+		const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
 {
-//  char buffer[MAX_ZEILE];
   string sub_line;
   string line_string;
   string delimiter(" ");
@@ -121,7 +133,7 @@ ios::pos_type COutput::Read(ifstream *out_file)
   string name;
   ios::pos_type position_subkeyword;
   //========================================================================
-  // Schleife ueber alle Phasen bzw. Komponenten 
+  // Schleife ueber alle Phasen bzw. Komponenten
   while(!new_keyword){
     position = out_file->tellg();
     if(new_subkeyword)
@@ -132,8 +144,8 @@ ios::pos_type COutput::Read(ifstream *out_file)
 	line_string.clear();
 	line_string = GetLineFromFile1(out_file);
 	if(line_string.size() < 1) break;
-    
-    if(Keyword(line_string)) 
+
+    if(Keyword(line_string))
       return position;
     //--------------------------------------------------------------------
     if(line_string.find("$NOD_VALUES")!=string::npos) { // subkeyword found
@@ -148,7 +160,7 @@ ios::pos_type COutput::Read(ifstream *out_file)
           new_subkeyword = true;
           break;
         }
-		if(line_string.size()==0) 
+		if(line_string.size()==0)
           break; //SB: empty line
 		in.str(line_string);
 		in >> name;
@@ -169,8 +181,8 @@ ios::pos_type COutput::Read(ifstream *out_file)
           new_subkeyword = true;
           break;
         }
-		if(line_string.size()==0) 
-          break; 
+		if(line_string.size()==0)
+          break;
         pcon_value_vector.push_back(line_string);
       }
       continue;
@@ -230,6 +242,12 @@ ios::pos_type COutput::Read(ifstream *out_file)
       if(geo_type_name.find("POINT")!=string::npos) {
         geo_type = 0;
         line >> geo_name;
+
+        // TF 06/2010 - get the point vector and set the _geo_obj_idx
+		if (!((geo_obj.getPointVecObj(unique_name))->getPointIDByName (geo_name, _geo_obj_idx))) {
+			std::cerr << "error in COutput::Read: point name not found!" << std::endl;
+			exit (1);
+		}
         line.clear();
       }
       if(geo_type_name.find("POLYLINE")!=string::npos) {
@@ -295,48 +313,39 @@ ios::pos_type COutput::Read(ifstream *out_file)
       continue;
     }
     //--------------------------------------------------------------------
-	if ( line_string.find ( "$TIM_TYPE" ) !=string::npos )   // subkeyword found
-	{
-		while ( ( !new_keyword ) && ( !new_subkeyword ) )
-		{
+	if (line_string.find("$TIM_TYPE") != string::npos) { // subkeyword found
+		while ((!new_keyword) && (!new_subkeyword)) {
 			position_subkeyword = out_file->tellg();
 			*out_file >> line_string;
-			if ( line_string.size() ==0 ) //SB
+			if (line_string.size() == 0) //SB
 				break;
-			if ( line_string.find ( hash ) !=string::npos )
-			{
+			if (line_string.find(hash) != string::npos) {
 				new_keyword = true;
 				break;
 			}
-			if ( line_string.find ( dollar ) !=string::npos )
-			{
+			if (line_string.find(dollar) != string::npos) {
 				new_subkeyword = true;
 				break;
 			}
-			if ( line_string.find ( "STEPS" ) !=string::npos )
-			{
+			if (line_string.find("STEPS") != string::npos) {
 				*out_file >> nSteps;
 				tim_type_name = "STEPS"; //OK
 				break; //kg44 I guess that was missing..otherwise it pushes back a time_vector!
 			}
-			if ( line_string.find ( "STEPPING" ) !=string::npos )   // JTARON 2010, reconfigured (and added RWPT)... didn't work
-			{
+			if (line_string.find("STEPPING") != string::npos) { // JTARON 2010, reconfigured (and added RWPT)... didn't work
 				double stepping_length, stepping_end, stepping_current;
 				*out_file >> stepping_length >> stepping_end;
 				stepping_current = stepping_length;
-				while ( stepping_current <= stepping_end )
-				{
-					time_vector.push_back ( stepping_current );
-					rwpt_time_vector.push_back ( stepping_current );
+				while (stepping_current <= stepping_end) {
+					time_vector.push_back(stepping_current);
+					rwpt_time_vector.push_back(stepping_current);
 					stepping_current += stepping_length;
 				}
+			} else {
+				time_vector.push_back(strtod(line_string.data(), NULL));
+				rwpt_time_vector.push_back(strtod(line_string.data(), NULL));
 			}
-			else
-			{
-				time_vector.push_back ( strtod ( line_string.data(),NULL ) );
-				rwpt_time_vector.push_back ( strtod ( line_string.data(),NULL ) );
-			}
-			out_file->ignore ( MAX_ZEILE,'\n' );
+			out_file->ignore(MAX_ZEILE, '\n');
 		}
 		continue;
 	}
@@ -432,7 +441,7 @@ ios::pos_type COutput::Read(ifstream *out_file)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: OUT read function
 Programing:
 06/2004 OK Implementation
@@ -440,75 +449,54 @@ Programing:
 01/2005 OK Boolean type
 01/2005 OK Destruct before read
 06/2006 WW Remove the old files by new way
+06/2010 TF reformated, restructured, signature changed, use new GEOLIB data structures
 **************************************************************************/
-bool OUTRead(string file_base_name)
+bool OUTRead(const std::string& file_base_name, const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
 {
-  //----------------------------------------------------------------------
-//OK  OUTDelete();  
-  //----------------------------------------------------------------------
-  COutput *m_out = NULL;
-  char line[MAX_ZEILE];
-  string sub_line;
-  string line_string;
-  ios::pos_type position;
-  char number_char[3]; //OK4709
-  string number_string;
-  string tec_file_name;
-  //========================================================================
-  // File handling
-  string out_file_name = file_base_name + OUT_FILE_EXTENSION;
-  ifstream out_file (out_file_name.data(),ios::in);
-  if(!out_file.good()) 
-    return false;
-  out_file.seekg(0L,ios::beg);
-  //========================================================================
-  // Keyword loop
-  cout << "OUTRead" << endl;
-  while (!out_file.eof()) {
-    out_file.getline(line,MAX_ZEILE);
-    line_string = line;
-    if(line_string.find("#STOP")!=string::npos)
-      return true;
-    // Give version in file name 
-    if(line_string.find("#VERSION")!=string::npos) //15.01.2008. WW
-    {
-       file_base_name.append("(V");
-       file_base_name.append(ROCKFLOW_VERSION);
-       file_base_name.append(")");
-    }
-    //----------------------------------------------------------------------
-    if(line_string.find("#OUTPUT")!=string::npos) { // keyword found
-      m_out = new COutput();
-      m_out->file_base_name = file_base_name;
-      position = m_out->Read(&out_file);
-      out_vector.push_back(m_out);
-      sprintf(number_char,"%i",(int)out_vector.size()-1); //OK4709
-      number_string = number_char; //OK4709
-      m_out->ID = number_string; //OK4709
-      out_file.seekg(position,ios::beg);
-      /*
-      // Commented by WW
-      // Remove the old files
-	  if(m_out->geo_type==1){
-	    for(int i=0; i<(int)m_out->time_vector.size(); i++){
-          sprintf(number_char,"%i",i);
-          number_string = number_char;
-		  tec_file_name = file_base_name + "_ply_" + m_out->geo_name \
-		                + "_t" + number_string + TEC_FILE_EXTENSION;
-          remove(tec_file_name.c_str());
-        }
-	  }
-      tec_file_name=file_base_name + "_time_" + m_out->geo_name + TEC_FILE_EXTENSION;
-      remove(tec_file_name.c_str());
-      //  End remove files
-	  */
-    } // keyword found
-  } // eof
-  return true;
+	char line[MAX_ZEILE];
+	std::string line_string;
+	ios::pos_type position;
+
+	// File handling
+	string out_file_name = file_base_name + OUT_FILE_EXTENSION;
+	ifstream out_file(out_file_name.data(), ios::in);
+	if (!out_file.good())
+		return false;
+	out_file.seekg(0L, ios::beg);
+
+	// Keyword loop
+	cout << "OUTRead" << endl;
+	while (!out_file.eof()) {
+		out_file.getline(line, MAX_ZEILE);
+		line_string = line;
+		if (line_string.find("#STOP") != string::npos)
+			return true;
+
+		COutput *m_out(new COutput());
+		m_out->file_base_name = file_base_name;
+		// Give version in file name
+		if (line_string.find("#VERSION") != string::npos) { //15.01.2008. WW
+			m_out->file_base_name.append("(V");
+			m_out->file_base_name.append(OGS_VERSION);
+			m_out->file_base_name.append(")");
+		}
+		//----------------------------------------------------------------------
+		if (line_string.find("#OUTPUT") != string::npos) { // keyword found
+			position = m_out->Read(&out_file, geo_obj, unique_name);
+			out_vector.push_back(m_out);
+			char number_char[3]; //OK4709
+
+			sprintf(number_char, "%i", (int) out_vector.size() - 1); //OK4709
+//			number_string = number_char; //OK4709
+			m_out->ID = number_char; //OK4709
+			out_file.seekg(position, ios::beg);
+		} // keyword found
+	} // eof
+	return true;
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: write function
 Programing:
 06/2004 OK Implementation
@@ -610,7 +598,7 @@ void OUTWrite(string base_file_name)
 // kg44 buffer the output
   char   mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
   out_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
-// 
+//
 #endif
   //========================================================================
   out_file << "GeoSys-OUT: Output ------------------------------------------------\n";
@@ -627,8 +615,8 @@ void OUTWrite(string base_file_name)
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 08/2004 OK Implementation
 08/2004 WW Output by steps given in .out file
@@ -695,7 +683,7 @@ void OUTData(double time_current, const int time_step_number)
           cout << "Data output: Domain" << endl;
           if(OutputBySteps)
           {
-		    if(m_out->pcon_value_vector.size() > 0)  
+		    if(m_out->pcon_value_vector.size() > 0)
 				m_out->PCONWriteDOMDataTEC();  //MX
 			else {
               m_out->NODWriteDOMDataTEC();
@@ -704,26 +692,26 @@ void OUTData(double time_current, const int time_step_number)
             OutputBySteps = false;
             if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
           }
-          else 
+          else
 		  {
             for(j=0;j<no_times;j++){
               if((time_current>m_out->time_vector[j])
-                 || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl 
-			  if(m_out->pcon_value_vector.size() > 0)  
+                 || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl
+			  if(m_out->pcon_value_vector.size() > 0)
 				m_out->PCONWriteDOMDataTEC();  //MX
 			  else {
                 m_out->NODWriteDOMDataTEC();
                 m_out->ELEWriteDOMDataTEC();
 			  }
-                m_out->time_vector.erase(m_out->time_vector.begin()+j); 
+                m_out->time_vector.erase(m_out->time_vector.begin()+j);
                 if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
-                break;	  
+                break;
             }
-		  } 
+		  }
         }
         break;
         //------------------------------------------------------------------
-        case 'L': // profiles along polylines 
+        case 'L': // profiles along polylines
           cout << "Data output: Polyline profile - " << m_out->geo_name << endl;
           if(OutputBySteps)
 	      {
@@ -731,7 +719,7 @@ void OUTData(double time_current, const int time_step_number)
             if(tim_value>0.0) m_out->TIMValue_TEC(tim_value); //OK
             if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
             OutputBySteps = false;
-          } 
+          }
 		  else
 		  {
             for(j=0;j<no_times;j++){
@@ -762,7 +750,7 @@ void OUTData(double time_current, const int time_step_number)
               m_out->NODWriteSFCAverageDataTEC(time_current,time_step_number);
               OutputBySteps = false;
               if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
-            } 
+            }
 		    else{
             }
           }
@@ -772,10 +760,10 @@ void OUTData(double time_current, const int time_step_number)
               m_out->NODWriteSFCDataTEC(time_step_number);
               OutputBySteps = false;
               if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
-            } 
+            }
 		    else{
               for(j=0;j<no_times;j++){
-                if((time_current>m_out->time_vector[j]) 
+                if((time_current>m_out->time_vector[j])
                    || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl                m_out->NODWriteSFCDataTEC(j);
                     m_out->NODWriteSFCDataTEC(j);
                     m_out->time_vector.erase(m_out->time_vector.begin()+j);
@@ -801,16 +789,16 @@ void OUTData(double time_current, const int time_step_number)
             m_out->NODWriteLAYDataTEC(time_step_number);
             OutputBySteps = false;
           }
-          else 
+          else
 		  {
             for(j=0;j<no_times;j++){
               if((time_current>m_out->time_vector[j])
-                 || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ 
+                 || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){
                 m_out->NODWriteLAYDataTEC(j);
-                m_out->time_vector.erase(m_out->time_vector.begin()+j); 
-                break;	  
+                m_out->time_vector.erase(m_out->time_vector.begin()+j);
+                break;
             }
-		  } 
+		  }
           }
 
         break;
@@ -818,7 +806,7 @@ void OUTData(double time_current, const int time_step_number)
       }
     }
     //--------------------------------------------------------------------
-    // vtk 
+    // vtk
     else if(m_out->dat_type_name.compare("VTK")==0){
       switch(m_out->geo_type_name[2]){
         case 'M': // domain data
@@ -835,9 +823,9 @@ void OUTData(double time_current, const int time_step_number)
                 m_out->WriteDataVTK(time_step_number); //OK
                 m_out->time_vector.erase(m_out->time_vector.begin()+j);
                 if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
-		        break;	 
+		        break;
               }
-		    } 
+		    }
           }
           break;
       }
@@ -899,7 +887,7 @@ void OUTData(double time_current, const int time_step_number)
 
       }
     }
-    // ROCKFLOW    
+    // ROCKFLOW
     else if(m_out->dat_type_name.compare("ROCKFLOW")==0){
       switch(m_out->geo_type_name[2]){
         case 'M': // domain data
@@ -913,17 +901,17 @@ void OUTData(double time_current, const int time_step_number)
 		  {
             for(j=0;j<no_times;j++){
               if((time_current>m_out->time_vector[j])
-                 || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl 
+                 || fabs(time_current-m_out->time_vector[j])<MKleinsteZahl){ //WW MKleinsteZahl
                 m_out->WriteRFO(); //OK
                 m_out->time_vector.erase(m_out->time_vector.begin()+j);
                 if(!m_out->new_file_opened)  m_out->new_file_opened=true; //WW
-		        break;	 
+		        break;
               }
-		    } 
+		    }
           }
           break;
       }
-    } 
+    }
     //--------------------------------------------------------------------
     // ELE values
     m_out->CalcELEFluxes();
@@ -932,8 +920,8 @@ void OUTData(double time_current, const int time_step_number)
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 08/2004 OK Implementation
 03/2005 OK MultiMSH
@@ -951,7 +939,7 @@ void COutput::NODWriteDOMDataTEC()
   std::cout << "Process " << myrank << " in WriteDOMDataTEC" << "\n";
 #endif
   //----------------------------------------------------------------------
-  // Tests  
+  // Tests
   if(((int)nod_value_vector.size()==0)&&((int)mfp_value_vector.size()==0)) //OK4704
     return;
   //......................................................................
@@ -994,15 +982,15 @@ void COutput::NODWriteDOMDataTEC()
     {
     case 1:
       tec_file_name += "_line";
-      eleType = "QUADRILATERAL"; 
+      eleType = "QUADRILATERAL";
       break;
     case 2:
       tec_file_name += "_quad";
-      eleType = "QUADRILATERAL"; 
+      eleType = "QUADRILATERAL";
       break;
     case 3:
       tec_file_name += "_hex";
-      eleType = "BRICK"; 
+      eleType = "BRICK";
       break;
     case 4:
       tec_file_name += "_tri";
@@ -1010,30 +998,30 @@ void COutput::NODWriteDOMDataTEC()
       break;
     case 5:
       tec_file_name += "_tet";
-  	  eleType = "TETRAHEDRON"; 
+  	  eleType = "TETRAHEDRON";
       break;
     case 6:
       tec_file_name += "_pris";
-      eleType = "BRICK"; 
+      eleType = "BRICK";
       break;
     }
 /*
   if(m_msh->msh_no_line>0)
 	{
       tec_file_name += "_line";
-      eleType = "QUADRILATERAL"; 
+      eleType = "QUADRILATERAL";
 	  te=1;
 	}
 	else if (m_msh->msh_no_quad>0)
 	{
       tec_file_name += "_quad";
-      eleType = "QUADRILATERAL"; 
+      eleType = "QUADRILATERAL";
 	  te=2;
     }
 	else if (m_msh->msh_no_hexs>0)
 	{
       tec_file_name += "_hex";
-      eleType = "BRICK"; 
+      eleType = "BRICK";
 	  te=3;
     }
 	else if (m_msh->msh_no_tris>0)
@@ -1046,13 +1034,13 @@ void COutput::NODWriteDOMDataTEC()
 	else if (m_msh->msh_no_tets>0)
 	{
       tec_file_name += "_tet";
-	  eleType = "TETRAHEDRON"; 
+	  eleType = "TETRAHEDRON";
       te=5;
     }
 	else if (m_msh->msh_no_pris>0)
 	{
       tec_file_name += "_pris";
-      eleType = "BRICK"; 
+      eleType = "BRICK";
 	  te=6;
 	}
 */
@@ -1072,11 +1060,11 @@ void COutput::NODWriteDOMDataTEC()
     char mybuf1 [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
     tec_file.rdbuf()->pubsetbuf(mybuf1,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
 #endif
-// 
+//
     WriteTECHeader(tec_file,te,eleType);
     WriteTECNodeData(tec_file);
     WriteTECElementData(tec_file,te);
-    tec_file.close(); // kg44 close file 
+    tec_file.close(); // kg44 close file
     //--------------------------------------------------------------------
     // tri elements
     if(msh_no_tris>0){
@@ -1098,7 +1086,7 @@ void COutput::NODWriteDOMDataTEC()
       WriteTECHeader(tec_file1,4,"TRIANGLE");
       WriteTECNodeData(tec_file1);
       WriteTECElementData(tec_file1,4);
-      tec_file1.close(); // kg44 close file 
+      tec_file1.close(); // kg44 close file
     }
     //--------------------------------------------------------------------
     // quad elements
@@ -1119,7 +1107,7 @@ void COutput::NODWriteDOMDataTEC()
       WriteTECHeader(tec_file,2,"QUADRILATERAL");
       WriteTECNodeData(tec_file);
       WriteTECElementData(tec_file,2);
-      tec_file.close(); // kg44 close file 
+      tec_file.close(); // kg44 close file
     }
     //--------------------------------------------------------------------
     // tet elements
@@ -1150,7 +1138,7 @@ void COutput::NODWriteDOMDataTEC()
       WriteTECHeader(tec_file,5,"TETRAHEDRON");
       WriteTECNodeData(tec_file);
       WriteTECElementData(tec_file,5);
-      tec_file.close(); // kg44 close file 
+      tec_file.close(); // kg44 close file
     }
     //--------------------------------------------------------------------
     // pris elements
@@ -1172,7 +1160,7 @@ void COutput::NODWriteDOMDataTEC()
       WriteTECHeader(tec_file,6,"BRICK");
       WriteTECNodeData(tec_file);
       WriteTECElementData(tec_file,6);
-      tec_file.close(); // kg44 close file 
+      tec_file.close(); // kg44 close file
     }
     //--------------------------------------------------------------------
     // hex elements
@@ -1195,14 +1183,14 @@ void COutput::NODWriteDOMDataTEC()
       WriteTECHeader(tec_file,3,"BRICK");
       WriteTECNodeData(tec_file);
       WriteTECElementData(tec_file,3);
-      tec_file.close(); // kg44 close file 
+      tec_file.close(); // kg44 close file
     }
   }
 
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Programing:
 08/2004 OK Implementation
 08/2004 WW Output node variables by their names given in .out file
@@ -1235,10 +1223,10 @@ void COutput::WriteTECNodeData(fstream &tec_file)
      m_pcs = PCSGet(nod_value_vector[k],true);
      if(m_pcs != NULL){
      NodeIndex[k] = m_pcs->GetNodeValueIndex(nod_value_vector[k]);
-     for(i=0; i<m_pcs->GetPrimaryVNumber(); i++) 
+     for(i=0; i<m_pcs->GetPrimaryVNumber(); i++)
      {
        if(nod_value_vector[k].compare(m_pcs->pcs_primary_function_name[i])==0)
-       { 
+       {
          NodeIndex[k]++;
          break;
        }
@@ -1250,11 +1238,11 @@ void COutput::WriteTECNodeData(fstream &tec_file)
    if(M_Process||MH_Process)  //WW
    {
      m_pcs = PCSGet("DISPLACEMENT_X1",true);
-     nidx_dm[0] = m_pcs->GetNodeValueIndex("DISPLACEMENT_X1")+1;  
-     nidx_dm[1] = m_pcs->GetNodeValueIndex("DISPLACEMENT_Y1")+1;  
+     nidx_dm[0] = m_pcs->GetNodeValueIndex("DISPLACEMENT_X1")+1;
+     nidx_dm[1] = m_pcs->GetNodeValueIndex("DISPLACEMENT_Y1")+1;
      if(max_dim>1)
        nidx_dm[2] = m_pcs->GetNodeValueIndex("DISPLACEMENT_Z1")+1;
-     else  
+     else
        nidx_dm[2] = -1;
    }
    //....................................................................
@@ -1314,7 +1302,7 @@ void COutput::WriteTECNodeData(fstream &tec_file)
               tec_file << val_n << " ";
               if(m_pcs->type==1212&&nod_value_vector[k].find("SATURATION")!=string::npos) //WW
                  tec_file << 1.-val_n << " ";  //WW
-           } 
+           }
          }
        }
        for(k=0;k<(int)mfp_value_vector.size();k++) //OK4704
@@ -1322,7 +1310,7 @@ void COutput::WriteTECNodeData(fstream &tec_file)
 	     //tec_file << MFPGetNodeValue(m_msh->nod_vector[j]->GetIndex(),mfp_value_vector[k]) << " "; //NB
          tec_file << MFPGetNodeValue(m_msh->nod_vector[j]->GetIndex(),
 			               mfp_value_vector[k],
-						   atoi(&mfp_value_vector[k][mfp_value_vector[k].size()-1])-1) << " "; //NB: MFP output for all phases 	 
+						   atoi(&mfp_value_vector[k][mfp_value_vector[k].size()-1])-1) << " "; //NB: MFP output for all phases
        }
      }
      tec_file << endl;
@@ -1333,14 +1321,14 @@ void COutput::WriteTECNodeData(fstream &tec_file)
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 08/2004 OK Implementation
 03/2005 OK MultiMSH
 08/2005 WW Wite for MultiMSH
 12/2005 OK GetMSH
-07/2007 NW Multi Mesh Type 
+07/2007 NW Multi Mesh Type
 **************************************************************************/
 void COutput::WriteTECElementData(fstream &tec_file,int e_type)
 {
@@ -1351,7 +1339,7 @@ void COutput::WriteTECElementData(fstream &tec_file,int e_type)
   m_msh = GetMSH();
     for(i=0l;i<(long)m_msh->ele_vector.size();i++)
 	  {
-      if(!m_msh->ele_vector[i]->GetMark()) continue;       
+      if(!m_msh->ele_vector[i]->GetMark()) continue;
       if(m_msh->ele_vector[i]->GetElementType() == e_type) {  //NW
         m_msh->ele_vector[i]->WriteIndex_TEC(tec_file);
       }
@@ -1360,7 +1348,7 @@ void COutput::WriteTECElementData(fstream &tec_file,int e_type)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Programing:
 08/2004 OK Implementation
 08/2004 WW Header by the names gives in .out file
@@ -1372,7 +1360,7 @@ Programing:
 void COutput::WriteTECHeader(fstream &tec_file,int e_type, string e_type_name)
 {
   int k;
-  const int nName = (int)nod_value_vector.size(); 
+  const int nName = (int)nod_value_vector.size();
   //--------------------------------------------------------------------
   // PCON
   const int nPconName = (int)pcon_value_vector.size();   //MX
@@ -1382,9 +1370,9 @@ void COutput::WriteTECHeader(fstream &tec_file,int e_type, string e_type_name)
   //--------------------------------------------------------------------
   //OK411
   long no_elements = 0;
-  for(long i=0;i<(long)m_msh->ele_vector.size();i++)  
+  for(long i=0;i<(long)m_msh->ele_vector.size();i++)
   {
-    if (m_msh->ele_vector[i]->GetMark())   
+    if (m_msh->ele_vector[i]->GetMark())
     if(m_msh->ele_vector[i]->GetElementType()==e_type) no_elements++;
   }
   //--------------------------------------------------------------------
@@ -1394,15 +1382,15 @@ void COutput::WriteTECHeader(fstream &tec_file,int e_type, string e_type_name)
   for(k=0;k<nName;k++){
     tec_file << ", \"" << nod_value_vector[k] << "\"";
     //-------------------------------------WW
-    m_pcs = GetPCS(nod_value_vector[k]); 
+    m_pcs = GetPCS(nod_value_vector[k]);
     if(m_pcs != NULL)
-    { 
-       if(m_pcs->type==1212&&nod_value_vector[k].find("SATURATION")!=string::npos) 
+    {
+       if(m_pcs->type==1212&&nod_value_vector[k].find("SATURATION")!=string::npos)
          tec_file << ", SATURATION2";
-    } 
+    }
     //-------------------------------------WW
   }
-  for(k=0;k<(int)mfp_value_vector.size();k++) 
+  for(k=0;k<(int)mfp_value_vector.size();k++)
      tec_file << ", \"" << mfp_value_vector[k] << "\"";  //NB
   if (nPconName) {
 	for(k=0;k<nPconName;k++){
@@ -1423,8 +1411,8 @@ void COutput::WriteTECHeader(fstream &tec_file,int e_type, string e_type_name)
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 09/2004 OK Implementation
 01/2006 OK VAR,PCS,MSH concept
@@ -1454,19 +1442,19 @@ void COutput::ELEWriteDOMDataTEC()
 // kg44 buffer the output
     char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
     tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
-// 
+//
 #endif
 
   //--------------------------------------------------------------------
   WriteELEValuesTECHeader(tec_file);
   WriteELEValuesTECData(tec_file);
   //--------------------------------------------------------------------
-   tec_file.close(); // kg44 close file 
+   tec_file.close(); // kg44 close file
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 09/2004 OK Implementation
 last modification:
@@ -1493,12 +1481,12 @@ void COutput::WriteELEValuesTECHeader(fstream &tec_file)
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 09/2004 OK Implementation
 11/2005 OK MSH
-01/2006 OK 
+01/2006 OK
 **************************************************************************/
 void COutput::WriteELEValuesTECData(fstream &tec_file)
 {
@@ -1574,8 +1562,8 @@ void COutput::WriteELEValuesTECData(fstream &tec_file)
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 08/2004 OK Implementation
 08/2004 WW Output by the order of distance to one end of the polyline
@@ -1599,7 +1587,7 @@ double COutput::NODWritePLYDataTEC(int number)
   double ss[6];
   double val_n =0.; //WW
   //----------------------------------------------------------------------
-  // Tests  
+  // Tests
   // OUT
   //OK4704 if((int)nod_value_vector.size()==0)
   if(((int)nod_value_vector.size()==0)&&((int)mfp_value_vector.size()==0)) //OK4704
@@ -1625,12 +1613,13 @@ double COutput::NODWritePLYDataTEC(int number)
 // kg44 buffer the output
     char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
     tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
-// 
+//
 #endif
   //----------------------------------------------------------------------
-  // Tests  
+  // Tests
   //......................................................................
   // GEO
+    std::cout << "Polyline Name: " << geo_name << std::endl;
   CGLPolyline* m_ply = GEOGetPLYByName(geo_name);//CC
   if(!m_ply)
   {
@@ -1707,8 +1696,8 @@ double COutput::NODWritePLYDataTEC(int number)
     {
     tec_file << "\""<< nod_value_vector[k] << "\" ";
       //-------------------------------------WW
-      m_pcs = GetPCS(nod_value_vector[k]);  
-      if(m_pcs&&m_pcs->type==1212&&nod_value_vector[k].find("SATURATION")!=string::npos) 
+      m_pcs = GetPCS(nod_value_vector[k]);
+      if(m_pcs&&m_pcs->type==1212&&nod_value_vector[k].find("SATURATION")!=string::npos)
          tec_file << "SATURATION2 ";
       //-------------------------------------WW
       if(nod_value_vector[k].compare("FLUX")==0)
@@ -1731,11 +1720,11 @@ double COutput::NODWritePLYDataTEC(int number)
   // WW: M specific data
   if(dm_pcs)  //WW
   {
-    stress_i[0] = dm_pcs->GetNodeValueIndex("STRESS_XX");      
-    stress_i[1] = dm_pcs->GetNodeValueIndex("STRESS_YY");      
-    stress_i[2] = dm_pcs->GetNodeValueIndex("STRESS_ZZ");      
-    stress_i[3] = dm_pcs->GetNodeValueIndex("STRESS_XY"); 
-    strain_i[0] = dm_pcs->GetNodeValueIndex("STRAIN_XX"); 
+    stress_i[0] = dm_pcs->GetNodeValueIndex("STRESS_XX");
+    stress_i[1] = dm_pcs->GetNodeValueIndex("STRESS_YY");
+    stress_i[2] = dm_pcs->GetNodeValueIndex("STRESS_ZZ");
+    stress_i[3] = dm_pcs->GetNodeValueIndex("STRESS_XY");
+    strain_i[0] = dm_pcs->GetNodeValueIndex("STRAIN_XX");
     strain_i[1] = dm_pcs->GetNodeValueIndex("STRAIN_YY");
     strain_i[2] = dm_pcs->GetNodeValueIndex("STRAIN_ZZ");
     strain_i[3] = dm_pcs->GetNodeValueIndex("STRAIN_XY");
@@ -1743,7 +1732,7 @@ double COutput::NODWritePLYDataTEC(int number)
  	{
       ns = 6;
       stress_i[4] = dm_pcs->GetNodeValueIndex("STRESS_XZ");
-      stress_i[5] = dm_pcs->GetNodeValueIndex("STRESS_YZ");        
+      stress_i[5] = dm_pcs->GetNodeValueIndex("STRESS_YZ");
       strain_i[4] = dm_pcs->GetNodeValueIndex("STRAIN_XZ");
       strain_i[5] = dm_pcs->GetNodeValueIndex("STRAIN_YZ");
     }
@@ -1780,7 +1769,7 @@ double COutput::NODWritePLYDataTEC(int number)
       //if (!b_specified_pcs) //NW
 		if(msh_type_name != "COMPARTMENT") // JOD 4.10.01
           m_pcs = PCSGet(nod_value_vector[k],bdummy);
-		
+
 
       if(!m_pcs)
       {
@@ -1793,12 +1782,12 @@ double COutput::NODWritePLYDataTEC(int number)
       tec_file << val_n << " ";
       if(m_pcs->type==1212&&(nod_value_vector[k].find("SATURATION")!=string::npos))
         tec_file << 1.-val_n << " ";
-      //-----------------------------------------WW         
+      //-----------------------------------------WW
       //................................................................
       if(nod_value_vector[k].compare("FLUX")==0)
       {
         if(aktueller_zeitschritt==0) //OK
-          flux_nod = 0.0; 
+          flux_nod = 0.0;
         else
           flux_nod = NODFlux(gnode);
         tec_file << flux_nod << " ";
@@ -1817,7 +1806,7 @@ double COutput::NODWritePLYDataTEC(int number)
       for(i=0;i<ns;i++)
         ss[i] = dm_pcs->GetNodeValue(gnode,strain_i[i]);
       DeviatoricStress(ss);
-      tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0);        
+      tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0);
     }
     //....................................................................
     // MFP //OK4704
@@ -1825,12 +1814,12 @@ double COutput::NODWritePLYDataTEC(int number)
     {
  //     tec_file << MFPGetNodeValue(gnode,mfp_value_vector[k],0) << " "; //NB
       tec_file << MFPGetNodeValue(gnode,mfp_value_vector[k],
-						   atoi(&mfp_value_vector[k][mfp_value_vector[k].size()-1])-1) << " "; //NB: MFP output for all phases 	 
+						   atoi(&mfp_value_vector[k][mfp_value_vector[k].size()-1])-1) << " "; //NB: MFP output for all phases
     }
     //....................................................................
     tec_file << endl;
   }
-    tec_file.close(); // kg44 close file 
+    tec_file.close(); // kg44 close file
 
   //OK cout << "Flux averall: " << flux_sum << endl;
   //======================================================================
@@ -1839,8 +1828,8 @@ double COutput::NODWritePLYDataTEC(int number)
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 08/2004 OK Implementation
 08/2005 WW MultiMesh
@@ -1880,28 +1869,19 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
 // kg44 buffer the output
     char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
     tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
-// 
+//
 #endif
-  //--------------------------------------------------------------------
-  // Tests
-  //......................................................................
-  CGLPoint *m_pnt = GEOGetPointByName(geo_name);
-  if(!m_pnt)
-  {
-    cout << "Warning in COutput::NODWritePNTDataTEC - no PNT data: " << geo_name << endl;
-    tec_file << "Warning in COutput::NODWritePNTDataTEC - no PNT data: " << geo_name << endl;
-    tec_file.close();
-    return;
-  }
-  //......................................................................
-  CFEMesh* m_msh = GetMSH();
-  if(!m_msh)
-  {
-    cout << "Warning in COutput::NODWritePNTDataTEC - no MSH data: " << endl;
-    tec_file << "Warning in COutput::NODWritePNTDataTEC - no MSH data: " << endl;
-    tec_file.close();
-    return;
-  }
+    //--------------------------------------------------------------------
+    // Tests
+    //......................................................................
+    CFEMesh* m_msh = GetMSH();
+    if(!m_msh) {
+      cout << "Warning in COutput::NODWritePNTDataTEC - no MSH data: " << endl;
+      tec_file << "Warning in COutput::NODWritePNTDataTEC - no MSH data: " << endl;
+      tec_file.close();
+      return;
+    }
+
   //----------------------------------------------------------------------
   // NIDX for output variables
   int no_variables = (int)nod_value_vector.size();
@@ -1916,11 +1896,11 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
     if(pcs_type_name.compare("RANDOM_WALK")==0)
     	tec_file << "leavingParticles ";
     for(k=0;k<no_variables;k++)
-    {//WW 
+    {//WW
        tec_file << " \"" << nod_value_vector[k] << "\" ";
        //-------------------------------------WW
-       m_pcs = GetPCS(nod_value_vector[k]);  
-       if(m_pcs&&m_pcs->type==1212&&nod_value_vector[k].find("SATURATION")!=string::npos) 
+       m_pcs = GetPCS(nod_value_vector[k]);
+       if(m_pcs&&m_pcs->type==1212&&nod_value_vector[k].find("SATURATION")!=string::npos)
          tec_file << "SATURATION2 ";
       //-------------------------------------WW
     }
@@ -1934,32 +1914,30 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
       {
         for(int j=0; j<mmp_vector[i]->frac_num; ++j)
         {
-          tec_file << mmp_vector[i]->frac_names[j]<<"_k "<< mmp_vector[i]->frac_names[j] <<"_aper " 
+          tec_file << mmp_vector[i]->frac_names[j]<<"_k "<< mmp_vector[i]->frac_names[j] <<"_aper "
                     <<mmp_vector[i]->frac_names[j] <<"_closed ";
         }
       }
     }
     #endif
-    
+
     if(dm_pcs) //WW
        tec_file<< " p_(1st_Invariant) "<<" q_(2nd_Invariant)  "<<" Effective_Strain";
     tec_file << endl;
     tec_file << matlab_delim << "ZONE T=\"POINT=" << geo_name << "\"" << endl; //, I=" << anz_zeitschritte << ", J=1, K=1, F=POINT" << endl;
-
-
-
   }
+
   // For deformation
   int ns = 4;
   int stress_i[6], strain_i[6];
   double ss[6];
   if(dm_pcs) //WW
   {
-     stress_i[0] = dm_pcs->GetNodeValueIndex("STRESS_XX");      
-     stress_i[1] = dm_pcs->GetNodeValueIndex("STRESS_YY");      
-     stress_i[2] = dm_pcs->GetNodeValueIndex("STRESS_ZZ");      
-     stress_i[3] = dm_pcs->GetNodeValueIndex("STRESS_XY"); 
-     strain_i[0] = dm_pcs->GetNodeValueIndex("STRAIN_XX"); 
+     stress_i[0] = dm_pcs->GetNodeValueIndex("STRESS_XX");
+     stress_i[1] = dm_pcs->GetNodeValueIndex("STRESS_YY");
+     stress_i[2] = dm_pcs->GetNodeValueIndex("STRESS_ZZ");
+     stress_i[3] = dm_pcs->GetNodeValueIndex("STRESS_XY");
+     strain_i[0] = dm_pcs->GetNodeValueIndex("STRAIN_XX");
      strain_i[1] = dm_pcs->GetNodeValueIndex("STRAIN_YY");
      strain_i[2] = dm_pcs->GetNodeValueIndex("STRAIN_ZZ");
      strain_i[3] = dm_pcs->GetNodeValueIndex("STRAIN_XY");
@@ -1967,7 +1945,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
 	 {
        ns = 6;
        stress_i[4] = dm_pcs->GetNodeValueIndex("STRESS_XZ");
-       stress_i[5] = dm_pcs->GetNodeValueIndex("STRESS_YZ");        
+       stress_i[5] = dm_pcs->GetNodeValueIndex("STRESS_YZ");
        strain_i[4] = dm_pcs->GetNodeValueIndex("STRAIN_XZ");
        strain_i[5] = dm_pcs->GetNodeValueIndex("STRAIN_YZ");
 	 }
@@ -1978,15 +1956,23 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
   tec_file << time_current << " ";
   //......................................................................
   // NOD values
-  if(pcs_type_name.compare("RANDOM_WALK")==0) {	
+  if(pcs_type_name.compare("RANDOM_WALK")==0) {
 	  tec_file <<  m_msh->PT->leavingParticles  << " ";
   }
   int l,m;
   int nidx;
   int timelevel;
   CRFProcess* m_pcs_out = NULL;
-  long msh_node_number;
-  msh_node_number = m_msh->GetNODOnPNT(m_pnt);      
+
+  // fetch geometric entities, especial the associated GEOLIB::Point vector
+  if (pcs_vector[0] == NULL) return;
+
+  const GEOLIB::GEOObjects *geo_obj ((pcs_vector[0]->getProblemObjectPointer())->getGeoObj());
+  std::string name ((pcs_vector[0]->getProblemObjectPointer())->getGeoObjName());
+  const std::vector<GEOLIB::Point*> *pnt_vec (geo_obj->getPointVec(name));
+
+  long msh_node_number (m_msh->GetNODOnPNT((*pnt_vec)[_geo_obj_idx]));
+
   //..................................................................
   // Mass transport
   if(pcs_type_name.compare("MASS_TRANSPORT")==0){
@@ -2017,7 +2003,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
     {
       //..................................................................
       // PCS
-      if(!(nod_value_vector[i].compare("FLUX")==0)   ||  pcs_type_name == "OVERLAND_FLOW")  //JOD separate infiltration flux output in overland flow 
+      if(!(nod_value_vector[i].compare("FLUX")==0) || pcs_type_name == "OVERLAND_FLOW")  //JOD separate infiltration flux output in overland flow
       {
         m_pcs = GetPCS(nod_value_vector[i]);
       }
@@ -2033,7 +2019,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
       }
       //..................................................................
       // PCS
-      if(!(nod_value_vector[i].compare("FLUX")==0)  || pcs_type_name == "OVERLAND_FLOW") // JOD separate infiltration flux output in overland flow 
+      if(!(nod_value_vector[i].compare("FLUX")==0)  || pcs_type_name == "OVERLAND_FLOW") // JOD separate infiltration flux output in overland flow
       {
         //-----------------------------------------WW
         double val_n =  m_pcs->GetNodeValue(msh_node_number,NodeIndex[i]);
@@ -2041,7 +2027,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
         m_pcs = GetPCS(nod_value_vector[i]);
         if(m_pcs->type==1212&&(nod_value_vector[i].find("SATURATION")!=string::npos))
         tec_file << 1.-val_n << " ";
-        //-----------------------------------------WW         
+        //-----------------------------------------WW
       }
       else
       {
@@ -2052,7 +2038,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
         //OK cout << gnode << " " << flux_nod << " " << flux_sum << endl;
       }
     }
-    //....................................................................    
+    //....................................................................
     #ifdef RFW_FRACTURE
     for(i=0; i<(int)mmp_vector.size(); ++i)
     {
@@ -2060,7 +2046,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
       {
         for(int j=0; j<mmp_vector[i]->frac_num; ++j)
         {
-          tec_file << mmp_vector[i]->frac_perm[j]<<" "<< mmp_vector[i]->avg_aperture[j] <<" " 
+          tec_file << mmp_vector[i]->frac_perm[j]<<" "<< mmp_vector[i]->avg_aperture[j] <<" "
             <<mmp_vector[i]->closed_fraction[j] <<" ";
         }
       }
@@ -2076,7 +2062,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
          for(i=0;i<ns;i++)
            ss[i] = dm_pcs->GetNodeValue(msh_node_number,strain_i[i]);
          DeviatoricStress(ss);
-         tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0);        
+         tec_file<<sqrt(3.0*TensorMutiplication2(ss,ss, m_msh->GetCoordinateFlag()/10)/2.0);
     }
 	for (k=0;k<(int)mfp_value_vector.size();k++) //OK411
 		tec_file << MFPGetNodeValue(msh_node_number,mfp_value_vector[k],
@@ -2084,12 +2070,12 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
   }
   tec_file << endl;
   //----------------------------------------------------------------------
-   tec_file.close(); // kg44 close file 
+   tec_file.close(); // kg44 close file
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 06/2004 OK Implementation
 last modification:
@@ -2106,7 +2092,7 @@ int COutput::GetPointClose(CGLPoint m_point)
   x[0] = m_point.x;
   x[1] = m_point.y;
   x[2] = m_point.z;
-  for(i=0;i<out_vector_size;i++) 
+  for(i=0;i<out_vector_size;i++)
   {
     if(out_vector[i]->msh_node_number>=0)
     {
@@ -2114,7 +2100,7 @@ int COutput::GetPointClose(CGLPoint m_point)
       //OK411 y[1]=GetNodeY(out_vector[i]->msh_node_number);
       //OK411 y[2]=GetNodeZ(out_vector[i]->msh_node_number);
       dist=EuklVek3dDist(x,y);
-      if (dist < distmin) 
+      if (dist < distmin)
       {
         distmin=dist;
         number=i;
@@ -2154,7 +2140,7 @@ void COutput::WriteRFOHeader(fstream &rfo_file)
   rfo_file << "#0#0#0#1#";
   rfo_file << time;
   rfo_file << "#0#";
-  rfo_file << ROCKFLOW_VERSION;
+  rfo_file << OGS_VERSION;
   rfo_file << "###########################################";
   rfo_file << endl;
 }
@@ -2168,9 +2154,9 @@ Programing:
 **************************************************************************/
 void COutput::WriteRFONodes(fstream &rfo_file)
 {
-//0 101 100 
+//0 101 100
   rfo_file << 0 << " " << (long)m_msh->nod_vector.size() << " " << (long)m_msh->ele_vector.size() << endl;
-//0 0.00000000000000 0.00000000000000 0.00000000000000 
+//0 0.00000000000000 0.00000000000000 0.00000000000000
   CNode* m_nod = NULL;
   for(long i=0;i<(long)m_msh->nod_vector.size();i++){
     m_nod = m_msh->nod_vector[i];
@@ -2189,7 +2175,7 @@ void COutput::WriteRFOElements(fstream &rfo_file)
 {
   int j;
   CElem* m_ele = NULL;
-//0 0 -1 line 0 1 
+//0 0 -1 line 0 1
   for(long i=0;i<(long)m_msh->ele_vector.size();i++){
     m_ele = m_msh->ele_vector[i];
     rfo_file << i << " " << m_ele->GetPatchIndex() \
@@ -2213,9 +2199,9 @@ void COutput::WriteRFOValues(fstream &rfo_file)
 {
   int p,nidx;
   CRFProcess* m_pcs = NULL;
-//1 2 4 
+//1 2 4
   rfo_file << "1 1 4" << endl;
-//2 1 1 
+//2 1 1
   int no_processes = (int)pcs_vector.size();
   rfo_file << no_processes;
   for(p=0;p<no_processes;p++){
@@ -2231,7 +2217,7 @@ void COutput::WriteRFOValues(fstream &rfo_file)
     rfo_file << m_pcs->pcs_primary_function_unit[0];
     rfo_file << endl;
   }
-//0 0.00000000000000 0.00000000000000 
+//0 0.00000000000000 0.00000000000000
   // Node values
   for(long i=0;i<(long)m_msh->nod_vector.size();i++){
     rfo_file << i;
@@ -2274,7 +2260,7 @@ void COutput::WriteRFO()
 // kg44 buffer the output
     char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
     rfo_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
-// 
+//
 #endif
   //--------------------------------------------------------------------
   WriteRFOHeader(rfo_file);
@@ -2282,13 +2268,13 @@ void COutput::WriteRFO()
   WriteRFOElements(rfo_file);
   WriteRFOValues(rfo_file);
 //  RFOWriteELEValues();
-  rfo_file.close(); // kg44 close file 
+  rfo_file.close(); // kg44 close file
 
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 05/2004 OK Implementation
 **************************************************************************/
@@ -2317,7 +2303,7 @@ void COutput::NODWriteSFCDataTEC(int number)
 // kg44 buffer the output
     char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
     tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
-// 
+//
 #endif
   //--------------------------------------------------------------------
   // Write header
@@ -2353,7 +2339,7 @@ void COutput::NODWriteSFCDataTEC(int number)
   else{
     tec_file << "Error in NODWritePLYDataTEC: polyline " << geo_name << " not found" << endl;
   }
-      tec_file.close(); // kg44 close file 
+      tec_file.close(); // kg44 close file
 }
 
 /**************************************************************************
@@ -2378,7 +2364,7 @@ FEMLib-Method:
 Task: Return m_out for variable name (based on OUTGet)
 Programing:
 03/2010 JTARON Implementation
-last modification: 
+last modification:
 **************************************************************************/
 COutput* OUTGetRWPT(string out_name)
 {
@@ -2413,7 +2399,7 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
   double node_conc = 0.0;
   CRFProcess* m_pcs_gw = NULL;
   m_pcs_gw = PCSGet("GROUNDWATER_FLOW");
-  if (!m_pcs_gw)PCSGet("LIQUID_FLOW"); 
+  if (!m_pcs_gw)PCSGet("LIQUID_FLOW");
   //--------------------------------------------------------------------
   // Tests
   Surface* m_sfc = NULL;
@@ -2422,7 +2408,7 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
     cout << "Warning in COutput::NODWriteSFCAverageDataTEC - no GEO data" << endl;
     return;
   }
-  CFEMesh* m_msh=NULL; 
+  CFEMesh* m_msh=NULL;
   m_msh = FEMGet(pcs_type_name);
   if(!m_msh){
     cout << "Warning in COutput::NODWriteSFCAverageDataTEC - no MSH data" << endl;
@@ -2448,7 +2434,7 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
 // kg44 buffer the output
     char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
   tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
-// 
+//
 #endif
   //--------------------------------------------------------------------
   // Write header
@@ -2520,11 +2506,11 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
     }
     tec_file << endl;
   }
-      tec_file.close(); // kg44 close file 
+      tec_file.close(); // kg44 close file
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Programing:
 12/2005 OK Implementation
 **************************************************************************/
@@ -2541,7 +2527,7 @@ CFEMesh* COutput::GetMSH()
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Programing:
 12/2005 OK Implementation
 **************************************************************************/
@@ -2567,7 +2553,7 @@ void COutput::GetNodeIndexVector(vector<int>&NodeIndex)
         return;
       }
       NodeIndex[k] = m_pcs->GetNodeValueIndex(nod_value_vector[k]);
-      for(i=0;i<m_pcs->GetPrimaryVNumber();i++) 
+      for(i=0;i<m_pcs->GetPrimaryVNumber();i++)
       {
         if(nod_value_vector[k].compare(m_pcs->pcs_primary_function_name[i])==0)
         {
@@ -2594,7 +2580,7 @@ void COutput::GetNodeIndexVector(vector<int>&NodeIndex)
     for(k=0;k<nName;k++)
     {
       NodeIndex[k] = m_pcs->GetNodeValueIndex(nod_value_vector[k]);
-      for(i=0;i<m_pcs->GetPrimaryVNumber();i++) 
+      for(i=0;i<m_pcs->GetPrimaryVNumber();i++)
       {
       if(nod_value_vector[k].compare(m_pcs->pcs_primary_function_name[i])==0)
         {
@@ -2617,7 +2603,7 @@ void COutput::GetNodeIndexVector(vector<int>&NodeIndex)
         return;
       }
       NodeIndex[k] = m_pcs->GetNodeValueIndex(nod_value_vector[k]);
-      for(i=0;i<m_pcs->GetPrimaryVNumber();i++) 
+      for(i=0;i<m_pcs->GetPrimaryVNumber();i++)
       {
         if(nod_value_vector[k].compare(m_pcs->pcs_primary_function_name[i])==0)
         {
@@ -2642,10 +2628,10 @@ void COutput::GetNodeIndexVector(vector<int>&NodeIndex)
         tec_file.close();
         return;
       }
-      for(i=0;i<m_pcs->GetPrimaryVNumber();i++) 
+      for(i=0;i<m_pcs->GetPrimaryVNumber();i++)
       {
         if(nod_value_vector[k].compare(m_pcs->pcs_primary_function_name[i])==0)
-        { 
+        {
           NodeIndex[k]++;
           break;
         }
@@ -2655,7 +2641,7 @@ void COutput::GetNodeIndexVector(vector<int>&NodeIndex)
 */
 
 /**************************************************************************
-PCSLib-Method: 
+PCSLib-Method:
 Programing:
 12/2005 OK Implementation
 **************************************************************************/
@@ -2672,7 +2658,7 @@ CRFProcess* COutput::GetPCS(const string &var_name)
 }
 
 /**************************************************************************
-PCSLib-Method: 
+PCSLib-Method:
 Programing:
 12/2005 OK Implementation
 **************************************************************************/
@@ -2708,7 +2694,7 @@ CRFProcess* COutput::GetPCS_ELE(const string &var_name)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Programing:
 01/2006 OK Implementation
 **************************************************************************/
@@ -2725,7 +2711,7 @@ void COutput::GetELEValuesIndexVector(vector<int>&ele_value_index_vector)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Programing:
 01/2006 OK Implementation
 **************************************************************************/
@@ -2734,7 +2720,7 @@ void COutput::SetNODFluxAtPLY()
   //----------------------------------------------------------------------
   // Tests
   CGLPolyline* m_ply = GEOGetPLYByName(geo_name);
-//  m_polyline->GetPointOrderByDistance(); 
+//  m_polyline->GetPointOrderByDistance();
   if(!m_ply)
   {
     cout << "Warning in COutput::SetNODFluxAtPLY() - no PLY data" << endl;
@@ -2760,15 +2746,15 @@ void COutput::SetNODFluxAtPLY()
   int nidx = m_pcs->GetNodeValueIndex("FLUX");
   for(int i=0;i<(int)nodes_vector.size();i++)
   {
-    node_value_vector[i] = m_pcs->GetNodeValue(nodes_vector[i],nidx); 
+    node_value_vector[i] = m_pcs->GetNodeValue(nodes_vector[i],nidx);
   }
   //----------------------------------------------------------------------
 //m_st->FaceIntegration(m_pcs,nodes_vector,node_value_vector);
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 04/2006 KG44 Implementation
 09/2006 KG44 Output for MPI - correct OUTPUT not yet implemented
@@ -2815,7 +2801,7 @@ void COutput::WriteDataVTK(int number)
 // kg44 buffer the output
      char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
      vtk_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
-// 
+//
 #endif
   //--------------------------------------------------------------------
   WriteVTKHeader(vtk_file,number);
@@ -2824,18 +2810,18 @@ void COutput::WriteDataVTK(int number)
   WriteVTKValues(vtk_file);
   //======================================================================
   // vtk
-  vtk_file.close(); // kg44 close file 
+  vtk_file.close(); // kg44 close file
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Programing:
 04/2006 KG44 Implementation
 12/2009 KG44 added time information to header
 **************************************************************************/
 void COutput::WriteVTKHeader(fstream &vtk_file, int time_step_number)
 {
-  // Write Header 
+  // Write Header
   vtk_file << "# vtk DataFile Version 3.0" << endl;
 // title
   vtk_file << "Unstructured Grid Rockflow"  << endl;
@@ -2851,17 +2837,17 @@ void COutput::WriteVTKHeader(fstream &vtk_file, int time_step_number)
   vtk_file << time << endl;
   vtk_file << "CYLCE 1 1 long" << endl;
   vtk_file << time_step_number << endl;
-   
+
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Programing:
 04/2006 KG44 Implementation
 **************************************************************************/
 void COutput::WriteVTKNodeData(fstream &vtk_file)
 {
-// header for node data 
+// header for node data
    CFEMesh* m_msh = GetMSH(); //WW
    vtk_file << "POINTS "<< m_msh->GetNodesNumber(false) << " double" << endl; //KG44 12/2009 should be double !!!!
 
@@ -2871,13 +2857,13 @@ void COutput::WriteVTKNodeData(fstream &vtk_file)
     m_nod = m_msh->nod_vector[i];
     vtk_file << " " << m_nod->X() << " " << m_nod->Y() << " " << m_nod->Z() << " " << endl;
   }
-  vtk_file << endl; 
+  vtk_file << endl;
 
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 04/2006 KG44 Implementation
 **************************************************************************/
@@ -2889,14 +2875,14 @@ void COutput::WriteVTKElementData(fstream &vtk_file)
   CElem* m_ele = NULL;
   CFEMesh* m_msh = GetMSH(); //WW
 
-// count overall length of element vector 
+// count overall length of element vector
   for(long i=0;i<(long)m_msh->ele_vector.size();i++){
     m_ele = m_msh->ele_vector[i];
     no_all_elements=no_all_elements+(m_ele->GetNodesNumber(false))+1;
     }
 
 // write element header
-  vtk_file << "CELLS " << (long)m_msh->ele_vector.size() << " " << no_all_elements << endl; 
+  vtk_file << "CELLS " << (long)m_msh->ele_vector.size() << " " << no_all_elements << endl;
 
 // write elements
   for(long i=0;i<(long)m_msh->ele_vector.size();i++){
@@ -2935,12 +2921,12 @@ void COutput::WriteVTKElementData(fstream &vtk_file)
     vtk_file << endl;
   }
 
-  vtk_file << endl; 
+  vtk_file << endl;
 
 // write cell types
 
 // write cell_types header
-  vtk_file << "CELL_TYPES " << (int) m_msh->ele_vector.size() << endl; 
+  vtk_file << "CELL_TYPES " << (int) m_msh->ele_vector.size() << endl;
 
   for(long i=0;i<(long)m_msh->ele_vector.size();i++){
     m_ele = m_msh->ele_vector[i];
@@ -2972,9 +2958,9 @@ void COutput::WriteVTKElementData(fstream &vtk_file)
             break;
         }
   }
-  vtk_file << endl; 
+  vtk_file << endl;
 
- 
+
 }
 
 /**************************************************************************
@@ -3047,7 +3033,7 @@ void COutput::WriteVTKValues(fstream &vtk_file)
 //kg44 GEM node data
 #ifdef GEM_REACT
   m_vec_GEM->WriteVTKGEMValues(vtk_file); //kg44 export GEM internal variables like speciateion vector , phases etc
-#endif  
+#endif
   // ELEMENT DATA
   // ---------------------------------------------------------------------
   bool wroteAnyEleData = false; //NW
@@ -3127,7 +3113,7 @@ void COutput::WriteVTKValues(fstream &vtk_file)
   if(mmp_vector.size() > 1)
   {
     // write header for cell data
-    if (!wroteAnyEleData) //NW: check whether the header has been already written 
+    if (!wroteAnyEleData) //NW: check whether the header has been already written
       vtk_file << "CELL_DATA " << (long)m_msh->ele_vector.size() << endl;
     wroteAnyEleData = true;
 	// header now scalar data
@@ -3142,7 +3128,7 @@ void COutput::WriteVTKValues(fstream &vtk_file)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 06/2006 OK Implementation
 **************************************************************************/
 void COutput::ELEWriteSFC_TEC()
@@ -3170,7 +3156,7 @@ void COutput::ELEWriteSFC_TEC()
 // kg44 buffer the output
     char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
   tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
-// 
+//
 #endif
   //--------------------------------------------------------------------
   vector<long>tmp_ele_sfc_vector;
@@ -3179,11 +3165,11 @@ void COutput::ELEWriteSFC_TEC()
   ELEWriteSFC_TECHeader(tec_file);
   ELEWriteSFC_TECData(tec_file);
   //--------------------------------------------------------------------
-      tec_file.close(); // kg44 close file 
+      tec_file.close(); // kg44 close file
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 06/2006 OK Implementation
 **************************************************************************/
 void COutput::ELEWriteSFC_TECHeader(fstream &tec_file)
@@ -3207,7 +3193,7 @@ void COutput::ELEWriteSFC_TECHeader(fstream &tec_file)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 06/2006 OK Implementation
 **************************************************************************/
 void COutput::ELEWriteSFC_TECData(fstream &tec_file)
@@ -3249,12 +3235,14 @@ tec_file << "COutput::ELEWriteSFC_TECData - implementation not finished" << endl
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 08/2006 OK Implementation
+modification:
+05/2010 TF if geo_type_name[3] == 'N' (case point) only a pointer to the
+	CGLPoint is fetched, but the pointer is never used
 **************************************************************************/
 void COutput::CalcELEFluxes()
 {
-  CGLPoint* m_pnt = NULL;
   CGLPolyline* m_ply = NULL;
   Surface* m_sfc = NULL;
   CGLVolume* m_vol = NULL;
@@ -3273,10 +3261,11 @@ void COutput::CalcELEFluxes()
   //----------------------------------------------------------------------
   switch(geo_type_name[3])
   {
-    case 'N': //poiNt
-      m_pnt = GEOGetPointByName(geo_name);
-      //m_pcs->CalcELEFluxes(m_pnt);
-      break;
+  // TF m_pnt is never used
+//    case 'N': //poiNt
+//      m_pnt = GEOGetPointByName(geo_name);
+//      //m_pcs->CalcELEFluxes(m_pnt);
+//      break;
     case 'Y': //polYline
       m_ply = GEOGetPLYByName(geo_name);
       if(!m_ply)
@@ -3312,7 +3301,7 @@ void COutput::CalcELEFluxes()
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 08/2006 OK Implementation
 **************************************************************************/
 void COutput::ELEWritePLY_TEC()
@@ -3332,7 +3321,7 @@ void COutput::ELEWritePLY_TEC()
   if(msh_type_name.size()>1) // MSH
     tec_file_name += "_" + msh_type_name;
   tec_file_name += TEC_FILE_EXTENSION;
-  if(!new_file_opened) 
+  if(!new_file_opened)
     remove(tec_file_name.c_str()); //WW
   //......................................................................
   fstream tec_file(tec_file_name.data(),ios::app|ios::out);
@@ -3344,7 +3333,7 @@ void COutput::ELEWritePLY_TEC()
 // kg44 buffer the output
     char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
   tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
-// 
+//
 #endif
   //--------------------------------------------------------------------
   vector<long>tmp_ele_ply_vector;
@@ -3354,11 +3343,11 @@ void COutput::ELEWritePLY_TEC()
   ELEWritePLY_TECData(tec_file);
   //--------------------------------------------------------------------
 
-      tec_file.close(); // kg44 close file 
+      tec_file.close(); // kg44 close file
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 06/2006 OK Implementation
 **************************************************************************/
 void COutput::ELEWritePLY_TECHeader(fstream &tec_file)
@@ -3379,7 +3368,7 @@ void COutput::ELEWritePLY_TECHeader(fstream &tec_file)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 06/2006 OK Implementation
 **************************************************************************/
 void COutput::ELEWritePLY_TECData(fstream &tec_file)
@@ -3389,7 +3378,7 @@ void COutput::ELEWritePLY_TECData(fstream &tec_file)
   CElem* m_ele = NULL;
   CEdge* m_edg = NULL;
   vec<CEdge*>ele_edges_vector(15);
-  vec<CNode*>edge_nodes(3);    
+  vec<CNode*>edge_nodes(3);
   double edge_mid_vector[3];
   //----------------------------------------------------------------------
   CRFProcess* m_pcs = PCSGet(pcs_type_name);
@@ -3461,7 +3450,7 @@ void COutput::ELEWritePLY_TECData(fstream &tec_file)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 08/2006 OK Implementation
 **************************************************************************/
 void COutput::TIMValue_TEC(double tim_value)
@@ -3479,7 +3468,7 @@ void COutput::TIMValue_TEC(double tim_value)
   if(msh_type_name.size()>1) // MSH
     tec_file_name += "_" + msh_type_name;
   tec_file_name += TEC_FILE_EXTENSION;
-  if(!new_file_opened) 
+  if(!new_file_opened)
     remove(tec_file_name.c_str()); //WW
   //......................................................................
   tec_file.open(tec_file_name.data(),ios::app|ios::out);
@@ -3491,8 +3480,8 @@ void COutput::TIMValue_TEC(double tim_value)
 // kg44 buffer the output
     char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
     tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
-// 
-#endif 
+//
+#endif
   //--------------------------------------------------------------------
   // Write Header I: variables
   if(aktueller_zeitschritt==1)
@@ -3508,12 +3497,12 @@ void COutput::TIMValue_TEC(double tim_value)
   //--------------------------------------------------------------------
   tec_file << aktuelle_zeit << " " << tim_value << endl;
   //--------------------------------------------------------------------
-      tec_file.close(); // kg44 close file 
+      tec_file.close(); // kg44 close file
 
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 08/2006 OK Implementation
 **************************************************************************/
 double COutput::NODFlux(long nod_number)
@@ -3527,17 +3516,17 @@ double COutput::NODFlux(long nod_number)
   // All elements at node //OK
   CNode* m_nod = m_msh->nod_vector[nod_number];
 #ifdef NEW_EQS //WW. 07.11.2008
-  return 0.; //To do: m_pcs->eqs_new->b[nod_number];   
+  return 0.; //To do: m_pcs->eqs_new->b[nod_number];
 #else
   // Element nodal RHS contributions
   m_pcs->eqs->b[nod_number] = 0.0;
   m_pcs->AssembleParabolicEquationRHSVector(m_nod);
-  return m_pcs->eqs->b[nod_number];   
+  return m_pcs->eqs->b[nod_number];
 #endif
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 04/2006 OK Implementation
 08/2006 YD
 **************************************************************************/
@@ -3546,7 +3535,7 @@ void COutput::NODWriteLAYDataTEC(int time_step_number)
   int k;
   string tec_file_name;
   //----------------------------------------------------------------------
-  // Tests  
+  // Tests
   const int nName = (int)nod_value_vector.size();
   if(nName==0)
     return;
@@ -3580,11 +3569,11 @@ void COutput::NODWriteLAYDataTEC(int time_step_number)
   tec_file.precision(12);
   if (!tec_file.good()) return;
 #ifdef SUPERCOMPUTER
-// 
+//
 // kg44 buffer the output
     char mybuffer [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
   tec_file.rdbuf()->pubsetbuf(mybuffer,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
-// 
+//
 #endif
   //--------------------------------------------------------------------
   // Write Header I: variables
@@ -3619,12 +3608,12 @@ void COutput::NODWriteLAYDataTEC(int time_step_number)
       tec_file << endl;
     }
   }
-      tec_file.close(); // kg44 close file 
+      tec_file.close(); // kg44 close file
 
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: Write PCON data for ChemApp output
 Programing:
 08/2008 MX Implementation
@@ -3641,7 +3630,7 @@ void COutput::PCONWriteDOMDataTEC()
 
 
   //----------------------------------------------------------------------
-  // Tests  
+  // Tests
   if((int)pcon_value_vector.size()==0)
     return;
   //......................................................................
@@ -3684,15 +3673,15 @@ void COutput::PCONWriteDOMDataTEC()
     {
     case 1:
       tec_file_name += "_line";
-      eleType = "QUADRILATERAL"; 
+      eleType = "QUADRILATERAL";
       break;
     case 2:
       tec_file_name += "_quad";
-      eleType = "QUADRILATERAL"; 
+      eleType = "QUADRILATERAL";
       break;
     case 3:
       tec_file_name += "_hex";
-      eleType = "BRICK"; 
+      eleType = "BRICK";
       break;
     case 4:
       tec_file_name += "_tri";
@@ -3700,30 +3689,30 @@ void COutput::PCONWriteDOMDataTEC()
       break;
     case 5:
       tec_file_name += "_tet";
-  	  eleType = "TETRAHEDRON"; 
+  	  eleType = "TETRAHEDRON";
       break;
     case 6:
       tec_file_name += "_pris";
-      eleType = "BRICK"; 
+      eleType = "BRICK";
       break;
     }
 /*
   if(m_msh->msh_no_line>0)
 	{
       tec_file_name += "_line";
-      eleType = "QUADRILATERAL"; 
+      eleType = "QUADRILATERAL";
 	  te=1;
 	}
 	else if (m_msh->msh_no_quad>0)
 	{
       tec_file_name += "_quad";
-      eleType = "QUADRILATERAL"; 
+      eleType = "QUADRILATERAL";
 	  te=2;
     }
 	else if (m_msh->msh_no_hexs>0)
 	{
       tec_file_name += "_hex";
-      eleType = "BRICK"; 
+      eleType = "BRICK";
 	  te=3;
     }
 	else if (m_msh->msh_no_tris>0)
@@ -3736,13 +3725,13 @@ void COutput::PCONWriteDOMDataTEC()
 	else if (m_msh->msh_no_tets>0)
 	{
       tec_file_name += "_tet";
-	  eleType = "TETRAHEDRON"; 
+	  eleType = "TETRAHEDRON";
       te=5;
     }
 	else if (m_msh->msh_no_pris>0)
 	{
       tec_file_name += "_pris";
-      eleType = "BRICK"; 
+      eleType = "BRICK";
 	  te=6;
 	}
 */
@@ -3762,11 +3751,11 @@ void COutput::PCONWriteDOMDataTEC()
     char mybuf1 [MY_IO_BUFSIZE*MY_IO_BUFSIZE];
     tec_file.rdbuf()->pubsetbuf(mybuf1,MY_IO_BUFSIZE*MY_IO_BUFSIZE);
 #endif
-// 
+//
     WriteTECHeader(tec_file,te,eleType);
     WriteTECNodePCONData(tec_file);
     WriteTECElementData(tec_file,te);
-    tec_file.close(); // kg44 close file 
+    tec_file.close(); // kg44 close file
     //--------------------------------------------------------------------
     // tri elements
     if(msh_no_tris>0){
@@ -3788,7 +3777,7 @@ void COutput::PCONWriteDOMDataTEC()
       WriteTECHeader(tec_file1,4,"TRIANGLE");
       WriteTECNodeData(tec_file1);
       WriteTECElementData(tec_file1,4);
-      tec_file1.close(); // kg44 close file 
+      tec_file1.close(); // kg44 close file
     }
     //--------------------------------------------------------------------
     // quad elements
@@ -3809,7 +3798,7 @@ void COutput::PCONWriteDOMDataTEC()
       WriteTECHeader(tec_file,2,"QUADRILATERAL");
       WriteTECNodeData(tec_file);
       WriteTECElementData(tec_file,2);
-      tec_file.close(); // kg44 close file 
+      tec_file.close(); // kg44 close file
     }
     //--------------------------------------------------------------------
     // tet elements
@@ -3840,7 +3829,7 @@ void COutput::PCONWriteDOMDataTEC()
       WriteTECHeader(tec_file,5,"TETRAHEDRON");
       WriteTECNodeData(tec_file);
       WriteTECElementData(tec_file,5);
-      tec_file.close(); // kg44 close file 
+      tec_file.close(); // kg44 close file
     }
     //--------------------------------------------------------------------
     // pris elements
@@ -3862,7 +3851,7 @@ void COutput::PCONWriteDOMDataTEC()
       WriteTECHeader(tec_file,6,"BRICK");
       WriteTECNodeData(tec_file);
       WriteTECElementData(tec_file,6);
-      tec_file.close(); // kg44 close file 
+      tec_file.close(); // kg44 close file
     }
     //--------------------------------------------------------------------
     // hex elements
@@ -3885,7 +3874,7 @@ void COutput::PCONWriteDOMDataTEC()
       WriteTECHeader(tec_file,3,"BRICK");
       WriteTECNodeData(tec_file);
       WriteTECElementData(tec_file,3);
-      tec_file.close(); // kg44 close file 
+      tec_file.close(); // kg44 close file
     }
   }
 
@@ -3893,7 +3882,7 @@ void COutput::PCONWriteDOMDataTEC()
 
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: Node value output of PCON in aquous
 Programing:
 08/2008 MX Implementation
@@ -3911,9 +3900,9 @@ void COutput::WriteTECNodePCONData(fstream &tec_file)
   //======================================================================
    #ifdef CHEMAPP
 	CEqlink *eq=NULL;
-	
+
 	eq = eq->GetREACTION();
-	if (!eq) 
+	if (!eq)
 		return;
 	const int nPCON_aq = eq->NPCON[1];  //GetNPCON(1);
 	eq->GetPconNameAq();
@@ -3922,7 +3911,7 @@ void COutput::WriteTECNodePCONData(fstream &tec_file)
 	   for(k=0;k<nPCON_aq;k++){
 //		 pcon_value_name = PconName_Aq[i];
 		 if(pcon_value_vector[i].compare(PconName_Aq[k])==0)
-         { 
+         {
 		    PconIndex[i] = k;
 			break;
 		 }
@@ -3990,7 +3979,7 @@ void OUTCheck(void){
       //OK continue;
     }
 
-    // for all 
+    // for all
 	if(m_out->nod_value_vector.size()>0){
 		for(j=0;j<(int)m_out->nod_value_vector.size();j++){
 		  found = false; // initialize variable found
@@ -4006,7 +3995,7 @@ void OUTCheck(void){
 		  } // end for(l...)
 		  if(!found){
 			cout << "Warning - no PCS data for output variable " << m_out->nod_value_vector[j] << " in ";
-			cout << m_out->geo_type_name << " " << m_out->geo_name << endl;
+			cout << m_out->geo_type_name << " " << m_out->getGeoName() << endl;
 		  }
 		} // end for(j...)
 
@@ -4020,7 +4009,7 @@ void OUTCheck(void){
 		}
 		}
 		if(!m_pcs)
-			m_pcs = m_out->GetPCS(m_out->pcs_type_name); //OK 
+			m_pcs = m_out->GetPCS(m_out->pcs_type_name); //OK
 		if(!m_pcs){
 			cout << "Warning in OUTData - no PCS data" << endl;
 			//OK4704 continue;
@@ -4030,56 +4019,56 @@ void OUTCheck(void){
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 06/2009 WW/OK Implementation
 **************************************************************************/
 inline void COutput::WriteELEVelocity(iostream &vtk_file)
 {
-    int k; 
+    int k;
     int vel_ind[3];
     FiniteElement::ElementValue* gp_ele = NULL;
 
-    vel_ind[0] = 0; 
-    vel_ind[1] = 1; 
-    vel_ind[2] = 2; 
-    // 1D 
+    vel_ind[0] = 0;
+    vel_ind[1] = 1;
+    vel_ind[2] = 2;
+    // 1D
     if(m_msh->GetCoordinateFlag()/10==1)
     {
       // 0 y 0
       if(m_msh->GetCoordinateFlag()%10==1)
       {
-        vel_ind[0] = 1; 
+        vel_ind[0] = 1;
         vel_ind[1] = 0;
       }
       // 0 0 z
       else if(m_msh->GetCoordinateFlag()%10==2)
       {
-        vel_ind[0] = 2; 
-        vel_ind[2] = 0; 
+        vel_ind[0] = 2;
+        vel_ind[2] = 0;
       }
     }
-    // 2D 
+    // 2D
     if(m_msh->GetCoordinateFlag()/10==2)
     {
       // 0 y z
       if(m_msh->GetCoordinateFlag()%10==1)
       {
-        vel_ind[0] = 1; 
-        vel_ind[1] = 2; 
+        vel_ind[0] = 1;
+        vel_ind[1] = 2;
       }
       // x 0 z
       else if(m_msh->GetCoordinateFlag()%10==2)
       {
-        vel_ind[0] = 0; 
-        vel_ind[1] = 2; 
-        vel_ind[2] = 1; 
+        vel_ind[0] = 0;
+        vel_ind[1] = 2;
+        vel_ind[2] = 1;
       }
     }
-   
+
     for(long i=0;i<(long)m_msh->ele_vector.size();i++)
     {
       gp_ele = ele_gp_value[i];
-      for(k=0; k<3; k++)      
+      for(k=0; k<3; k++)
          vtk_file << gp_ele->Velocity(vel_ind[k],0) << " ";
       vtk_file << endl;
     }

@@ -9,12 +9,13 @@
 #include <vector>
 #include <QtGui/QMainWindow>
 #include <QDialog>
-#include <QLabel>
-#include <QLineEdit>
-#include <QDialogButtonBox>
 #include "GEOModels.h"
 #include "Station.h"
 
+
+class QLabel;
+class QLineEdit;
+class QDialogButtonBox;
 
 /**
  * \brief A dialog for selecting a subset of a station list based on the properties of that list.
@@ -30,15 +31,14 @@ public:
 	ListPropertiesDialog(std::string listName, GEOModels* geoModels, QDialog* parent = 0);
 	~ListPropertiesDialog();
 
-	QDialogButtonBox* _buttonBox;	/// The buttons used in this dialog.
-	std::vector<QLabel*> _propLabel;		/// The names of the properties.
-	std::vector<QLineEdit*> _minValue;	/// The minimum values of each property.
-	std::vector<QLineEdit*> _maxValue;	/// The maximum values of each property.
-
-
 private:
 	int getPropertyBounds(const std::vector<GEOLIB::Point*> *stations, const std::string &prop, double &minVal, double &maxVal);
 	void setupDialog();
+
+	QDialogButtonBox* _buttonBox;		/// The buttons used in this dialog.
+	std::vector<QLabel*> _propLabel;	/// The names of the properties.
+	std::vector<QLineEdit*> _minValue;	/// The minimum values of each property.
+	std::vector<QLineEdit*> _maxValue;	/// The maximum values of each property.
 
 	std::string _listName;
 	GEOModels* _geoModels;

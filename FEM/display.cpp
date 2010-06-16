@@ -56,7 +56,7 @@ void DisplayStartMsg ( void )
 
   //align the version information to center of the line
   printf("          ## ");
-  sprintf(buf, "Version %s  Date %s", ROCKFLOW_VERSION, ROCKFLOW_DATE);
+  sprintf(buf, "Version %s  Date %s", OGS_VERSION, OGS_DATE);
   pad_len = 45 - (int)strlen(buf);
   for (i=0; i<pad_len/2; i++) printf(" ");
   printf("%s", buf);
@@ -64,7 +64,7 @@ void DisplayStartMsg ( void )
   printf(" ##\n");
   //printf("          ## %-45s ##\n", buf);
   //printf("          ##   Version %s  Date %s##\n",\
-  //                                    ROCKFLOW_VERSION, ROCKFLOW_DATE);
+  //                                    OGS_VERSION, OGS_DATE);
 
   printf("          ##                                               ##\n");
   printf("          ###################################################\n");

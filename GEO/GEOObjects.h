@@ -2,7 +2,7 @@
  * GEOObjects.h
  *
  *  Created on: Jan 21, 2010
- *      Author: fischeth / KR
+ *      Author: TF / KR
  */
 
 #ifndef GEOOBJECTS_H_
@@ -26,7 +26,7 @@ namespace GEOLIB {
 /// \brief Container class for geometric objects.
 /**
  * This class contains all the methods necessary for the I/O of geometric objects.
- * Said objects are Points, Polylines, Surfaces and Stations and they are stored in
+ * Said objects are Points, polylines, Surfaces and Stations and they are stored in
  * vectors (arrays) which are identified by a unique name.
  * For a hierarchical definition, surfaces are bounded by polylines and polylines
  * are defined by points. Therefore, a vector of surfaces references a vector polylines
@@ -46,8 +46,14 @@ namespace GEOLIB {
  */
 class GEOObjects {
 public:
-	/// Adds a vector of points with the given name to GEOObjects.
-	virtual void addPointVec(std::vector<Point*> *points, std::string &name);
+	/**
+	 * Adds a vector of points with the given name to GEOObjects.
+	 * @param points vector of pointers to points
+	 * @param name the project name
+	 * @param pnt_names vector of the names corresponding to the points
+	 */
+	virtual void addPointVec(std::vector<Point*> *points, std::string &name, std::vector<std::string>* pnt_names = NULL);
+
 	/** copies the pointers to the points in the vector to the PointVec with provided name.
 	 * the pointers are managed by the GEOObjects, i.e. GEOObjects will delete the Points at the
 	 * end of its scope
@@ -58,8 +64,19 @@ public:
 	 * */
 	virtual bool appendPointVec(const std::vector<Point*> &points,
 			std::string &name);
-	/// Returns the point vector with the given name.
-	std::vector<Point*> *getPointVec(const std::string &name);
+
+	/**
+	 * Returns the point vector with the given name.
+	 */
+	const std::vector<Point*> *getPointVec(const std::string &name) const;
+
+	/**
+	 * search and returns the PointVec object with the given name.
+	 * @param name the name of the PointVec object
+	 * @return the PointVec object stored in GEOObjects
+	 */
+	const PointVec* getPointVecObj(const std::string &name) const;
+
 	/** If there exists no dependencies the point vector with the given
 	 * name from GEOObjects will be removed and the method returns true,
 	 * else the return value is false.
@@ -74,18 +91,26 @@ public:
 	std::vector<Point*> *filterStationVec(const std::string &name,
 			const std::vector<PropertyBounds> &bounds);
 	/// Returns the station vector with the given name.
-	std::vector<Point*> *getStationVec(const std::string &name);
+	const std::vector<Point*> *getStationVec(const std::string &name) const;
 
 	/// Removes the station vector with the given name from GEOObjects
 	virtual bool removeStationVec(const std::string &name) {
 		return removePointVec(name);
 	}
 
-	/// Adds a vector of polylines with the given name to GEOObjects.
+
+	/**
+	 * Adds a vector of polylines with the given name to GEOObjects.
+	 * @param ply_names vector of the names corresponding to the polylines
+	*/
 	virtual void addPolylineVec(std::vector<Polyline*> *lines,
-			const std::string &name);
-	/// Returns the polyline vector with the given name.
-	std::vector<Polyline*> *getPolylineVec(const std::string &name);
+			const std::string &name, std::vector<std::string>* ply_names = NULL);
+
+	/**
+	 * Returns the polyline vector with the given name.
+	 * */
+	const std::vector<Polyline*> *getPolylineVec(const std::string &name) const;
+
 	/**
 	 * If no Surfaces depends on the vector of Polylines with the given
 	 * name it will be removed and the method returns true,
@@ -95,9 +120,9 @@ public:
 
 	/** Adds a vector of surfaces with the given name to GEOObjects. */
 	virtual void addSurfaceVec(std::vector<Surface*> *surfaces,
-			const std::string &name);
+			const std::string &name, std::vector<std::string>* sfc_names = NULL);
 	/// Returns the surface vector with the given name.
-	std::vector<Surface*> *getSurfaceVec(const std::string &name);
+	const std::vector<Surface*> *getSurfaceVec(const std::string &name) const;
 	/** removes the vector of Surfaces with the given name */
 	virtual bool removeSurfaceVec(const std::string &name);
 
@@ -107,15 +132,6 @@ public:
 	virtual ~GEOObjects();
 
 protected:
-	/// Returns the total number of point vectors
-//	size_t nPointVecs() { return _pnt_vecs.size(); }
-
-	/// Returns the total number of polyline vectors
-//	size_t nPolylineVecs() { return _ply_vecs.size(); }
-
-	/// Returns the total number of surface vectors
-//	size_t nSurfaceVecs() { return _sfc_vecs.size(); }
-
 	/**
 	 * Determines if the given name is unique among all the names in point vectors and creates a
 	 * new name if this is not the case. The new name is then simply "name + x", where x>1 is
@@ -125,12 +141,14 @@ protected:
 	 */
 	bool isUniquePointVecName(std::string &name);
 
-	/** Method search into the std::vector<PolylineVec*> for the given name */
+	/// Checks if the point vector with the given name is referenced in a polyline- or surface vector.
 	bool isPntVecUsed (const std::string &name) const;
-	/** Method search into the std::vector<SurfaceVec*> for the given name */
-	bool isPlyVecUsed (const std::string &name) const;
-	/** vector manages pointers to PointVec objects */
+
+	/**
+	 * vector manages pointers to PointVec objects
+	 */
 	std::vector<PointVec*> _pnt_vecs;
+
 	/** vector manages pointers to PolylineVec objects */
 	std::vector<PolylineVec*> _ply_vecs;
 	/** vector manages pointers to SurfaceVec objects */

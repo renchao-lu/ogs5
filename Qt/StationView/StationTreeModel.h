@@ -8,7 +8,6 @@
 
 
 #include <vector>
-#include <QItemSelection>
 
 #include "Point.h"
 #include "TreeModel.h"
@@ -22,8 +21,6 @@ namespace GEOLIB {
 
 class QString;
 class QModelIndex;
-class QGraphicsItem;
-class ModelItem;
 class PropertyBounds;
 
 /**
@@ -45,29 +42,14 @@ public:
 	void filterStations(const std::string &name, const std::vector<GEOLIB::Point*> *stations, const std::vector<PropertyBounds> &bounds);
 	const std::vector<ModelTreeItem*> &getLists() { return _lists; }
 	QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const;
-	ModelItem* itemFromIndex( const QModelIndex& index ) const;
+	//BaseItem* itemFromIndex( const QModelIndex& index ) const;
 	void removeStationList(QModelIndex index);
 	void removeStationList(const std::string &name);
 	GEOLIB::Station* stationFromIndex( const QModelIndex& index, QString &listName ) const;
-	void setSelection( const QItemSelection & selected, const QItemSelection & deselected );
-	vtkPolyDataAlgorithm* vtkSource(const std::string &name);
-
-public slots:
-	void setSelectionFromOutside( const QItemSelection & selected, const QItemSelection & deselected );
+	vtkPolyDataAlgorithm* vtkSource(const std::string &name) const;
 
 private:
-	//QModelIndex getItemByName(const QModelIndex &index, const std::string &name) const;
-	void updateSelection( const QItemSelection &selected, QVector<QGraphicsItem*> &selectedItems, const QItemSelection &deselected, QVector<QGraphicsItem*> &deselectedItems );
-
-	QItemSelection _selectedItems;
 	std::vector<ModelTreeItem*> _lists;
-
-
-signals:
-	void updateScene();
-
-	void itemsSelectedFromOutside(QVector<QGraphicsItem*> item);
-	void itemsDeselectedFromOutside(QVector<QGraphicsItem*> item);
 
 };
 

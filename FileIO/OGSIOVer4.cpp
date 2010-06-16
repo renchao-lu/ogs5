@@ -6,16 +6,21 @@
  */
 
 #include <sstream>
+#include <iomanip>
 // FileIO
 #include "OGSIOVer4.h"
 // Base
 #include "StringTools.h"
+#include "quicksort.h"
 // GEO
 #include "GEOObjects.h"
 #include "Point.h"
 #include "Polyline.h"
 #include "Triangle.h"
 #include "Surface.h"
+// for tests only
+#include "PointVec.h"
+
 // MATHLIB
 #include "AnalyticalGeometry.h"
 
@@ -28,55 +33,54 @@ namespace FileIO {
  08/2005 CC Implementation
  01/2010 TF big modifications
  **************************************************************************/
-/** reads the points from in_stream using the OGS-4 file format */
+/** reads the points inclusive their names from input stream in
+ * using the OGS-4 file format */
 std::string readPoints(std::istream &in, std::vector<Point*>* pnt_vec,
-		bool &zero_based_indexing) {
-	const size_t MAX_ROW_LENGTH = 256;
-	char buffer[MAX_ROW_LENGTH];
-	in.getline(buffer, MAX_ROW_LENGTH);
-	std::string line(buffer);
-
-	if (line.find("#POINTS") == std::string::npos)
-		return line;
-
+		bool &zero_based_indexing, std::vector<std::string>* pnt_names)
+{
+	std::string line;
 	size_t cnt(0);
 
-	in.getline(buffer, MAX_ROW_LENGTH);
-	line = buffer;
+	getline(in, line);
 	// geometric key words start with the hash #
 	// while not found a new key word do ...
-	while (line.find("#") == std::string::npos && !in.eof()) {
+	while (line.find("#") == std::string::npos && !in.eof() && !in.fail()) {
 		// read id and point coordinates
 		std::stringstream inss(line);
 		size_t id;
 		double x, y, z;
 		inss >> id >> x >> y >> z;
-		if (cnt == 0) {
-			if (id == 0)
-				zero_based_indexing = true;
-			else
-				zero_based_indexing = false;
-		}
-		pnt_vec->push_back(new Point(x, y, z));
+		if (!inss.fail ()) {
+			if (cnt == 0) {
+				if (id == 0)
+					zero_based_indexing = true;
+				else
+					zero_based_indexing = false;
+			}
+			pnt_vec->push_back(new Point(x, y, z));
 
-		// read mesh density
-		if (line.find("$MD") != std::string::npos) {
-			double mesh_density;
-			size_t pos1(line.find_first_of("M"));
-			inss.str(line.substr(pos1 + 2, std::string::npos));
-			inss >> mesh_density;
-		}
+			// read mesh density
+			if (line.find("$MD") != std::string::npos) {
+				double mesh_density;
+				size_t pos1(line.find_first_of("M"));
+				inss.str(line.substr(pos1 + 2, std::string::npos));
+				inss >> mesh_density;
+			}
 
-		// read name of point
-		std::string name;
-		if (line.find("$ID") != std::string::npos) { //OK
-			size_t pos1(line.find_first_of("I"));
-			inss.str(line.substr(pos1 + 2, std::string::npos));
-			inss >> name;
+			// read name of point
+			std::string name;
+			if (line.find("$ID") != std::string::npos) { //OK
+				size_t pos1(line.find_first_of("I"));
+				inss.str(line.substr(pos1 + 2, std::string::npos));
+				inss >> name;
+			} else {
+				name = "POINT" + number2str (id);
+			}
+			pnt_names->push_back (name);
+
+			cnt++;
 		}
-		in.getline(buffer, MAX_ROW_LENGTH);
-		line = buffer;
-		cnt++;
+		getline(in, line);
 	}
 
 	return line;
@@ -112,11 +116,14 @@ void readPolylinePointVector(const std::string &fname,
  01/2010 TF cleaned method from unused variables
  **************************************************************************/
 /** read a single Polyline from stream in into the ply_vec-vector */
-std::string readPolyline(std::istream &in, std::vector<Polyline*>* ply_vec,
-		std::vector<std::string>& ply_vec_names, std::vector<Point*>& pnt_vec,
-		bool zero_based_indexing, const std::string &path) {
+std::string readPolyline(std::istream &in,
+		std::vector<Polyline*>* ply_vec, std::vector<std::string>& ply_vec_names,
+		std::vector<Point*>& pnt_vec, bool zero_based_indexing, const std::vector<size_t>& pnt_id_map,
+		const std::string &path)
+{
 	std::string line;
 	Polyline *ply(new Polyline(pnt_vec));
+	size_t type;
 
 	// Schleife ueber alle Phasen bzw. Komponenten
 	do {
@@ -133,9 +140,7 @@ std::string readPolyline(std::istream &in, std::vector<Polyline*>* ply_vec,
 		//....................................................................
 		if (line.find("$TYPE") != std::string::npos) { // subkeyword found
 			in >> line; // read value
-			long type = strtol(line.c_str(), NULL, 0);
-			if (type == 100)
-				std::cerr << "Polyline is an arc" << std::endl;
+			type = static_cast<size_t> (strtol(line.c_str(), NULL, 0));
 		}
 		//....................................................................
 		if (line.find("$EPSILON") != std::string::npos) { // subkeyword found
@@ -149,14 +154,25 @@ std::string readPolyline(std::istream &in, std::vector<Polyline*>* ply_vec,
 		if (line.find("$POINTS") != std::string::npos) { // subkeyword found
 			// read the point ids
 			in >> line;
-			while (!in.eof() && line.size() != 0 && (line.find("#")
-					== std::string::npos) && (line.find("$")
-					== std::string::npos)) {
-				size_t pnt_id(str2number<size_t> (line));
-				if (!zero_based_indexing)
-					pnt_id--; // one based indexing
-				ply->addPoint(pnt_id);
-				in >> line;
+			if (type != 100) {
+				while (!in.eof() && line.size() != 0 && (line.find("#")
+						== std::string::npos) && (line.find("$")
+						== std::string::npos)) {
+					size_t pnt_id(str2number<size_t> (line));
+					if (!zero_based_indexing)
+						pnt_id--; // one based indexing
+					size_t ply_size (ply->getSize());
+					if (ply_size > 0) {
+						if (ply->getPointID (ply_size-1) != pnt_id_map[pnt_id])
+							ply->addPoint(pnt_id_map[pnt_id]);
+					} else {
+						ply->addPoint(pnt_id_map[pnt_id]);
+					}
+					in >> line;
+				}
+			} else {
+				std::cerr << "*** polyline is an arc *** reading not implemented" << std::endl;
+				type = 2;
 			}
 			// empty line or the keyword or subkeyword or end of file
 		}
@@ -188,7 +204,8 @@ std::string readPolyline(std::istream &in, std::vector<Polyline*>* ply_vec,
 /** reads polylines */
 std::string readPolylines(std::istream &in, std::vector<Polyline*>* ply_vec,
 		std::vector<std::string>& ply_vec_names, std::vector<Point*>& pnt_vec,
-		bool zero_based_indexing, const std::string &path) {
+		bool zero_based_indexing, const std::vector<size_t>& pnt_id_map,
+		const std::string &path) {
 	if (!in) {
 		std::cerr << "*** readPolylines input stream error " << std::endl;
 		return std::string("");
@@ -197,7 +214,7 @@ std::string readPolylines(std::istream &in, std::vector<Polyline*>* ply_vec,
 
 	while (!in.eof() && tag.find("#POLYLINE") != std::string::npos) {
 		tag = readPolyline(in, ply_vec, ply_vec_names, pnt_vec,
-				zero_based_indexing, path);
+				zero_based_indexing, pnt_id_map, path);
 	}
 	return tag;
 }
@@ -228,7 +245,7 @@ void readTINFile(const std::string &fname, Surface* sfc,
 		in >> x >> y >> z;
 		pnt_vec.push_back(new Point(x, y, z));
 		// create new Triangle
-		sfc->addTriangle(pnt_pos, pnt_pos+1, pnt_pos+1);
+		sfc->addTriangle(pnt_pos, pnt_pos+1, pnt_pos+2);
 	}
 }
 
@@ -242,15 +259,17 @@ void readTINFile(const std::string &fname, Surface* sfc,
  01/2010 TF signatur modification, reimplementation
  **************************************************************************/
 /** read a single Surface */
-std::string readSurface(std::istream &in, std::vector<Surface*> &sfc_vec,
-		const std::vector<std::string>& ply_vec_names,
-		std::vector<Polyline*> &ply_vec, std::vector<Point*> &pnt_vec,
+std::string readSurface(std::istream &in,
+		std::vector<Surface*> &sfc_vec, std::vector<std::string>& sfc_names,
+		const std::vector<Polyline*> &ply_vec, const std::vector<std::string>& ply_vec_names,
+		std::vector<Point*> &pnt_vec,
 		const std::string &path)
 {
 	std::string line;
 	Surface *sfc(new Surface(pnt_vec));
 
 	int type (-1);
+	std::string name;
 
 	do {
 		in >> line;
@@ -261,22 +280,22 @@ std::string readSurface(std::istream &in, std::vector<Surface*> &sfc_vec,
 		//....................................................................
 		if (line.find("$NAME") != std::string::npos) { // subkeyword found
 			in >> line; // read value
-			//			name = line.substr(0);
+			name = line.substr(0);
 		}
 		//....................................................................
 		if (line.find("$TYPE") != std::string::npos) { // subkeyword found
 			in >> line; // read value
 			type = strtol(line.c_str(), NULL, 0);
-			if (type == 3)
-				std::cerr
-						<< "surface type 3: flat surface with any normal direction - - reading not implemented"
-						<< std::endl;
-			if (type == 100)
-				std::cerr << "cylindrical surface - reading not implemented"
-						<< std::endl;
-			if (type == 2)
-				std::cerr << "vertical surface - reading not implemented"
-						<< std::endl;
+//			if (type == 3)
+//				std::cerr
+//						<< "surface type 3: flat surface with any normal direction - - reading not implemented"
+//						<< std::endl;
+//			if (type == 100)
+//				std::cerr << "cylindrical surface - reading not implemented"
+//						<< std::endl;
+//			if (type == 2)
+//				std::cerr << "vertical surface - reading not implemented"
+//						<< std::endl;
 		}
 		//....................................................................
 		if (line.find("$EPSILON") != std::string::npos) { // subkeyword found
@@ -297,6 +316,9 @@ std::string readSurface(std::istream &in, std::vector<Surface*> &sfc_vec,
 		//....................................................................
 		if (line.find("$POLYLINES") != std::string::npos) { // subkeyword found
 			// read the polylines (as std::string)
+
+//			std::cout << "read polyline for surface of type " << type << std::endl;
+
 			in >> line;
 			while (!in.eof() && line.size() != 0 && (line.find("#")
 					== std::string::npos) && (line.find("$")
@@ -321,18 +343,26 @@ std::string readSurface(std::istream &in, std::vector<Surface*> &sfc_vec,
 					}
 
 					if (type == -1 || type == 0) {
-						// compute triangulation of closed polyline (polygon)
-						GEOLIB::Polyline *polyline (ply_vec[ply_id]);
-						std::cout << "triangulation of Polygon with " << polyline->getSize() << " points ... " << std::flush;
-						std::list<GEOLIB::Triangle> triangles;
-						MATHLIB::earClippingTriangulationOfPolygon(ply_vec[ply_id], triangles);
-						std::cout << "done - " << triangles.size () << " triangles " << std::endl;
 
-						// add Triangles to Surface
-						std::list<GEOLIB::Triangle>::const_iterator it (triangles.begin());
-						while (it != triangles.end()) {
-							sfc->addTriangle ((*it)[0], (*it)[1], (*it)[2]);
-							it++;
+						if (ply_vec[ply_id]->isClosed()) {
+							// compute triangulation of closed polyline (polygon)
+							std::list<GEOLIB::Polyline*> ply_list;
+							ply_list.push_back (ply_vec[ply_id]);
+							MATHLIB::getListOfSimplePolygons(ply_list, pnt_vec);
+
+							for (std::list<GEOLIB::Polyline*>::const_iterator ply_it (ply_list.begin());
+								ply_it != ply_list.end(); ply_it++) {
+								std::list<GEOLIB::Triangle> triangles;
+								MATHLIB::earClippingTriangulationOfPolygon(*ply_it, triangles);
+								std::cout << "done - " << triangles.size () << " triangles " << std::endl;
+
+								// add Triangles to Surface
+								std::list<GEOLIB::Triangle>::const_iterator it (triangles.begin());
+								while (it != triangles.end()) {
+									sfc->addTriangle ((*it)[0], (*it)[1], (*it)[2]);
+									it++;
+								}
+							}
 						}
 					}
 				}
@@ -342,6 +372,7 @@ std::string readSurface(std::istream &in, std::vector<Surface*> &sfc_vec,
 		}
 	} while (line.find("#") == std::string::npos && line.size() != 0 && in);
 
+	sfc_names.push_back (name);
 	sfc_vec.push_back(sfc);
 
 	return line;
@@ -355,9 +386,10 @@ std::string readSurface(std::istream &in, std::vector<Surface*> &sfc_vec,
  05/2004 CC Modification
  01/2010 TF changed signature of function, big modifications
  **************************************************************************/
-std::string readSurfaces(std::istream &in, std::vector<Surface*> &sfc_vec,
-		const std::vector<std::string>& ply_vec_names,
-		std::vector<Polyline*> &ply_vec, std::vector<Point*> &pnt_vec,
+std::string readSurfaces(std::istream &in,
+		std::vector<Surface*> &sfc_vec, std::vector<std::string>& sfc_names,
+		const std::vector<Polyline*> &ply_vec, const std::vector<std::string>& ply_vec_names,
+		std::vector<Point*> &pnt_vec,
 		const std::string &path)
 {
 	if (!in.good()) {
@@ -367,13 +399,14 @@ std::string readSurfaces(std::istream &in, std::vector<Surface*> &sfc_vec,
 	std::string tag("#SURFACE");
 
 	while (!in.eof() && tag.find("#SURFACE") != std::string::npos) {
-		tag = readSurface(in, sfc_vec, ply_vec_names, ply_vec, pnt_vec, path);
+		tag = readSurface(in, sfc_vec, sfc_names, ply_vec, ply_vec_names, pnt_vec, path);
 	}
 
 	return tag;
 }
 
-void readGLIFileV4(const std::string& fname, GEOObjects* geo) {
+void readGLIFileV4(const std::string& fname, GEOObjects* geo)
+{
 	std::cout << "GEOLIB::readGLIFile open stream from file " << fname
 			<< " ... " << std::flush;
 	std::ifstream in(fname.c_str());
@@ -381,21 +414,33 @@ void readGLIFileV4(const std::string& fname, GEOObjects* geo) {
 		std::cerr << "error opening stream from " << fname << std::endl;
 	std::cout << "done" << std::endl;
 
-	size_t pos(fname.rfind("/"));
-	std::string path(fname.substr(0, pos + 1));
+	std::string tag;
+	while (tag.find("#POINTS") == std::string::npos && !in.eof()) {
+		getline (in, tag);
+	}
 
+	// read names of points into vector of strings
+	std::vector<std::string>* pnt_names (new std::vector<std::string>);
 	bool zero_based_idx(true);
 	std::vector<Point*> *pnt_vec(new std::vector<Point*>);
 	std::cout << "read points from stream ... " << std::flush;
-	std::string tag(readPoints(in, pnt_vec, zero_based_idx));
-	std::cout << " ok: " << pnt_vec->size() << " points read" << std::endl;
+	tag = readPoints(in, pnt_vec, zero_based_idx, pnt_names);
+	std::cout << " ok, " << pnt_vec->size() << " points read" << std::endl;
 
-	std::vector<std::string> ply_vec_names; // read names of plys into temporary string-vec
+	std::string unique_name(fname);
+	if (!pnt_vec->empty())
+		geo->addPointVec(pnt_vec, unique_name, pnt_names); // KR: insert into GEOObjects if not empty
+
+	// extract path for reading external files
+	size_t pos(fname.rfind("/"));
+	std::string path(fname.substr(0, pos + 1));
+
+	std::vector<std::string> ply_names; // read names of plys into temporary string-vec
 	std::vector<Polyline*> *ply_vec(new std::vector<Polyline*>);
 	if (tag.find("#POLYLINE") != std::string::npos && in) {
 		std::cout << "read polylines from stream ... " << std::flush;
-		tag = readPolylines(in, ply_vec, ply_vec_names, *pnt_vec,
-				zero_based_idx, path);
+		tag = readPolylines(in, ply_vec, ply_names, *pnt_vec,
+				zero_based_idx, geo->getPointVecObj(unique_name)->getIDMap(), path);
 		std::cout << " ok, " << ply_vec->size() << " polylines read"
 				<< std::endl;
 	} else
@@ -404,10 +449,10 @@ void readGLIFileV4(const std::string& fname, GEOObjects* geo) {
 				<< std::endl;
 
 	std::vector<Surface*> *sfc_vec(new std::vector<Surface*>);
+	std::vector<std::string> sfc_names;
 	if (tag.find("#SURFACE") != std::string::npos && in) {
 		std::cout << "read surfaces from stream ... " << std::flush;
-		tag = readSurfaces(in, *sfc_vec, ply_vec_names, *ply_vec, *pnt_vec,
-				path);
+		tag = readSurfaces(in, *sfc_vec, sfc_names, *ply_vec, ply_names, *pnt_vec, path);
 		std::cout << " ok, " << sfc_vec->size() << " surfaces read"
 				<< std::endl;
 	} else
@@ -416,39 +461,32 @@ void readGLIFileV4(const std::string& fname, GEOObjects* geo) {
 				<< std::endl;
 	in.close();
 
-	std::string unique_name(fname);
-	if (!pnt_vec->empty())
-		geo->addPointVec(pnt_vec, unique_name); // KR: insert into GEOObjects if not empty
+//	std::ofstream out ("test.gli", std::ios::out);
+//	if (out) {
+//		out << "#POINTS" << std::endl;
+//		for (size_t k(0); k<(*ply_vec)[1]->getSize(); k++) {
+//			out << k << " " << (*(*ply_vec)[1])[k] << std::endl;
+//		}
+//		out << "#POLYLINE" << std::endl;
+//		out << "$NAME" << std::endl;
+//		out << " PLY0" << std::endl;
+//		out << "$POINTS" << std::endl;
+//		for (size_t k(0); k<(*ply_vec)[1]->getSize(); k++) {
+//			out << k << std::endl;
+//		}
+//		out << 0 << std::endl;
+//		out << "#SURFACE" << std::endl;
+//		out << "$NAME" << std::endl;
+//		out << " SFC0" << std::endl;
+//		out << "$POLYLINES" << std::endl;
+//		out << " PLY0" << std::endl;
+//		out.close ();
+//	}
+
 	if (!ply_vec->empty())
 		geo->addPolylineVec(ply_vec, unique_name); // KR: insert into GEOObjects if not empty
 	if (!sfc_vec->empty())
 		geo->addSurfaceVec(sfc_vec, unique_name); // KR: insert into GEOObjects if not empty
-
-	// *** test only - visualization ***
-//	unique_name += "1";
-//	std::vector<Point*> *copy_pnt_vec(new std::vector<Point*>);
-//	for (std::vector<Point*>::const_iterator it = pnt_vec->begin(); it != pnt_vec->end(); ++it)
-//	{
-//		const double * vals = (*it)->getData();
-//		Point* pnt = new Point(vals[0], vals[1], vals[2]);
-//		copy_pnt_vec->push_back(pnt);
-//	}
-//	geo->addPointVec(copy_pnt_vec, unique_name);
-//	// visualize all surfaces as polylines
-//	std::vector<Polyline*> *ply_vec_for_sfc(new std::vector<Polyline*>);
-//	for (size_t i(0); i<sfc_vec->size(); i++) {
-//		for (size_t k(0); k<(*sfc_vec)[i]->getNTriangles (); k++) {
-//			// get triangle
-//			const GEOLIB::Triangle *tri ((*((*sfc_vec)[i]))[k]);
-//			// create Poyline
-//			Polyline *ply(new Polyline(*pnt_vec));
-//			for (size_t j(0); j<3; j++) ply->addPoint ((*tri)[j]);
-//			ply->addPoint ((*tri)[0]);
-//			ply_vec_for_sfc->push_back (ply);
-//		}
-//	}
-//	geo->addPolylineVec(ply_vec_for_sfc, unique_name);
-
 }
 
 } // end namespace

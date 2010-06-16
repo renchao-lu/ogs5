@@ -8,7 +8,10 @@ cmake_minimum_required(VERSION 2.6)	# or set to 2.4 for older systems (like JUGE
 
 SET (OGS_VERSION_MAJOR 5)
 SET (OGS_VERSION_MINOR 0)
-SET (OGS_VERSION_PATCH 0)
+SET (OGS_VERSION_PATCH 05)
+SET (OGS_RELEASE_PERSONS "KR/LB/TF")
+SET (OGS_VERSION "${OGS_VERSION_MAJOR}.${OGS_VERSION_MINOR}.${OGS_VERSION_PATCH}(${OGS_RELEASE_PERSONS})")
+SET (OGS_DATE "16.06.2010")
 
 # Adds useful macros and variables
 INCLUDE( CMakeConfiguration/Macros.cmake )
@@ -61,23 +64,35 @@ IF(PARALLEL_USE_OPENMP)
 	SET(_OPENMP ON)
 ENDIF(PARALLEL_USE_OPENMP)
 
-
-OPTION(OGS_FEM OFF )
-OPTION(OGS_FEM_SP OFF )
-OPTION(OGS_FEM_GEMS OFF )
-OPTION(OGS_FEM_PQC OFF )
-OPTION(OGS_FEM_BRNS OFF )
-OPTION(OGS_FEM_CHEMAPP OFF )
-OPTION(OGS_USE_QT OFF)
+# Configurations
+OPTION(OGS_FEM "Default configuration" OFF)
+OPTION(OGS_FEM_SP "Sparse matrix configuration" OFF)
+OPTION(OGS_FEM_GEMS "GEMS configuration" OFF)
+OPTION(OGS_FEM_PQC "Phreeqc configuration" OFF)
+OPTION(OGS_FEM_BRNS "BRNS configuration" OFF)
+OPTION(OGS_FEM_CHEMAPP "CHEMAPP configuration" OFF)
+OPTION(OGS_USE_QT "User interface configuration" OFF)
 
 IF (UNIX) # Only supported on Linux
-	OPTION(OGS_FEM_LIS OFF )
-	OPTION(OGS_FEM_MKL OFF )
-	OPTION(OGS_FEM_MPI OFF )
+	OPTION(OGS_FEM_LIS "Library of Iterative Solvers for Linear Systems configuration" OFF)
+	OPTION(OGS_FEM_MKL "Math kernel library configuration" OFF)
+	OPTION(OGS_FEM_MPI "Message passing interface configuration" OFF)
 ENDIF (UNIX)
 
-OPTION(OGS_PACKAGING OFF )
+# Set default configuration when no other config is given
+IF (NOT OGS_FEM AND NOT OGS_FEM_SP AND NOT OGS_FEM_GEMS AND NOT OGS_FEM_PQC AND NOT OGS_FEM_BRNS AND NOT OGS_FEM_CHEMAPP AND NOT OGS_FEM_LIS AND NOT OGS_FEM_MKL AND NOT OGS_FEM_MPI AND NOT OGS_USE_QT)
+	MESSAGE (STATUS "No configuration specified. Default confuguration is used.")
+	SET (OGS_FEM ON)
+ENDIF (NOT OGS_FEM AND NOT OGS_FEM_SP AND NOT OGS_FEM_GEMS AND NOT OGS_FEM_PQC AND NOT OGS_FEM_BRNS AND NOT OGS_FEM_CHEMAPP AND NOT OGS_FEM_LIS AND NOT OGS_FEM_MKL AND NOT OGS_FEM_MPI AND NOT OGS_USE_QT)
 OPTION(OGS_BUILD_UTILITIES "Build additional utility programs?" OFF)
+
+# Additional options
+OPTION(OGS_PACKAGING "Creating installers / packages" OFF)
+IF (OGS_PACKAGING)
+	OPTION (OGS_PACKAGING_ZIP "Do you want to package as zip?" OFF)
+ENDIF (OGS_PACKAGING)
+OPTION(OGS_PYTHON "Enable python scripting interface" OFF)
+OPTION(OGS_CMAKE_DEBUG "Show additional cmake debug information" OFF)
 
 IF(OGS_FEM_SP)
 	SET( PRJ_EXT "-SP" )
@@ -126,6 +141,11 @@ ENDIF (OGS_FEM_CHEMAPP)
 ###LIBRARY
 FIND_PACKAGE (PythonInterp)
 
+
+IF (OGS_PYTHON)
+	FIND_PACKAGE (PythonLibs 2.5 REQUIRED)
+ENDIF (OGS_PYTHON)
+
 IF(MKL)
 	IF (UNIX)
 		# Find MKLlib
@@ -166,7 +186,7 @@ IF(OGS_USE_QT)
 	FIND_PACKAGE( Shapelib )
 
 	# Find Qt4 library
-	FIND_PACKAGE( Qt4 4.5 )
+	FIND_PACKAGE( Qt4 4.5 REQUIRED)
 
 	IF ( QT4_FOUND )
 		# OPTION(OGS_GUI OFF )
@@ -327,12 +347,6 @@ IF(OGS_USE_QT)
 ENDIF(OGS_USE_QT)
 
 
-IF (OGS_PACKAGING)
-	# Add packaging configuration
-	MESSAGE (STATUS "Enabling packaging")
-	INCLUDE( CMakeConfiguration/Pack.cmake)
-ENDIF (OGS_PACKAGING)
-
 IF(CMAKE_MINOR_VERSION GREATER 6)
 	IF (${CMAKE_GENERATOR} STREQUAL "Visual Studio 8 2005" )
 		#SET (GTEST_MSVC_SEARCH MT)
@@ -347,10 +361,26 @@ IF (BENCHMARK_DIR_FOUND OR GTEST_FOUND)
 	ENABLE_TESTING()
 ENDIF (BENCHMARK_DIR_FOUND OR GTEST_FOUND)
 
+FIND_PATH (EXAMPLEDATA_DIR_FOUND points.gli ${PROJECT_SOURCE_DIR}/../ExampleData)
+
+IF (EXAMPLEDATA_DIR_FOUND)
+	INSTALL (DIRECTORY ${PROJECT_SOURCE_DIR}/../ExampleData DESTINATION . PATTERN .svn EXCLUDE)
+ENDIF (EXAMPLEDATA_DIR_FOUND)
+
 IF (GTEST_FOUND)
 	include_directories(${GTEST_INCLUDE_DIRS})
 	add_subdirectory (TestRunner)
 ENDIF (GTEST_FOUND)
+
+IF (OGS_PACKAGING)
+	# Add packaging configuration
+	MESSAGE (STATUS "Enabling packaging")
+	INCLUDE( CMakeConfiguration/Pack.cmake)
+ENDIF (OGS_PACKAGING)
+
+IF (OGS_CMAKE_DEBUG)
+	INCLUDE (CMakeConfiguration/PrintVariables.cmake)
+ENDIF (OGS_CMAKE_DEBUG)	
 
 IF (BENCHMARK_DIR_FOUND)
 	MESSAGE (STATUS "Benchmarking through CTest enabled")
@@ -368,3 +398,8 @@ IF (BENCHMARK_DIR_FOUND)
 	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/MCGB.cmake)
 	UNSET (COPY_BENCHMARKS_TO_REF CACHE)
 ENDIF (BENCHMARK_DIR_FOUND)
+
+IF (ConvertSHPToGLI)
+	ADD_SUBDIRECTORY (UTL/FileConverter/)
+ENDIF (ConvertSHPToGLI)
+

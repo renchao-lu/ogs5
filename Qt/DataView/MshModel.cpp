@@ -1,142 +1,163 @@
 /**
  * \file MshModel.cpp
  * 19/10/2009 LB Initial implementation
+ * 12/05/2010 KR re-implementation
  *
  * Implementation of MshModel
  */
 
 // ** INCLUDES **
 #include "MshModel.h"
-#include "ModelItem.h"
-#include "MshGraphicsItem2d.h"
-#include "MshNodeModel.h"
-#include "MshElemModel.h"
+#include "MshItem.h"
+#include "StringTools.h"
+#include "TreeItem.h"
 #include "VtkMeshSource.h"
 
-#include "msh_mesh.h"
-#include "msh_lib.h"
 
-MshModel::MshModel( QString name, Mesh_Group::CFEMesh* mesh ,QObject* parent /*= 0*/ )
-: Model(name, parent), _mesh(mesh)
+MshModel::MshModel(QObject* parent /*= 0*/ )
+: TreeModel(parent)
 {
-	_modelContentType = MSH_MODEL;
-	GridAdapter grid(mesh);
-	_vtkSource = VtkMeshSource::New();
-	static_cast<VtkMeshSource*>(_vtkSource)->setMesh(grid.getNodes(), grid.getElements());
+	QList<QVariant> rootData;
+	delete _rootItem;
+	rootData << "Mesh Name";
+	_rootItem = new TreeItem(rootData, NULL);
 }
 
-MshModel::~MshModel()
+
+void MshModel::addMesh(GridAdapter* mesh, std::string &name)
 {
-	_vtkSource->Delete();
+	isUniqueMeshName(name);
+	mesh->setName(name);
+
+	QList<QVariant> meshData;
+	meshData.push_back(QVariant(QString::fromStdString(name)));
+	MshItem* newMesh = new MshItem(meshData, _rootItem, mesh);
+	_rootItem->appendChild(newMesh);
+	reset();
+
+	emit meshAdded(this, this->index(_rootItem->childCount()-1, 0, QModelIndex()));
 }
 
+const GridAdapter* MshModel::getMesh(const QModelIndex &idx) const
+{
+	if (idx.isValid())
+	{
+		MshItem* item = static_cast<MshItem*>(this->getItem(idx));
+		return item->getGrid();
+	}
+	std::cout << "MshModel::removeMesh() - Specified index does not exist." << std::endl;
+	return NULL;
+}
+
+const GridAdapter* MshModel::getMesh(const std::string &name) const
+{
+	for (int i=0; i<_rootItem->childCount(); i++) 
+	{
+		MshItem* item = static_cast<MshItem*>(_rootItem->child(i));
+		if (item->data(0).toString().toStdString().compare(name) == 0)
+			return item->getGrid();
+	}
+
+	std::cout << "MshModel::getMesh() - No entry found with name \"" << name << "\"." << std::endl;
+	return NULL;
+}
+
+
+bool MshModel::removeMesh(const QModelIndex &idx)
+{
+	if (idx.isValid())
+	{
+		MshItem* item = static_cast<MshItem*>(this->getItem(idx));
+		emit meshRemoved(this, idx);
+		_rootItem->removeChildren(item->row(),1);
+		reset();
+		return true;
+	}
+
+	std::cout << "MshModel::removeMesh() - Specified index does not exist." << std::endl;
+	return false;
+}
+
+bool MshModel::removeMesh(const std::string &name)
+{
+	for (int i=0; i<_rootItem->childCount(); i++) 
+	{
+		TreeItem* item = _rootItem->child(i);
+		if (item->data(0).toString().toStdString().compare(name) == 0)
+		{
+			emit meshRemoved(this, this->index(i, 0, QModelIndex()));
+			_rootItem->removeChildren(i,1);
+			reset();
+			return true;
+		}
+	}
+
+	std::cout << "MshModel::removeMesh() - No entry found with name \"" << name << "." << std::endl;
+	return false;
+}
+
+VtkMeshSource* MshModel::vtkSource(const QModelIndex &idx) const
+{
+	if (idx.isValid())
+	{
+		MshItem* item = static_cast<MshItem*>(this->getItem(idx));
+		return item->vtkSource();
+	}
+
+	std::cout << "MshModel::removeMesh() - Specified index does not exist." << std::endl;
+	return NULL;
+}
+
+VtkMeshSource* MshModel::vtkSource(const std::string &name) const
+{
+	for (int i=0; i<_rootItem->childCount(); i++) 
+	{
+		MshItem* item = static_cast<MshItem*>(_rootItem->child(i));
+		if (item->data(0).toString().toStdString().compare(name) == 0)
+			return item->vtkSource();
+	}
+
+	std::cout << "MshModel::getMesh() - No entry found with name \"" << name << "\"." << std::endl;
+	return NULL;
+}
 
 int MshModel::columnCount( const QModelIndex& parent /*= QModelIndex()*/ ) const
 {
 	Q_UNUSED(parent)
 
-	return 3;
+	return 1;
 }
 
-QVariant MshModel::data( const QModelIndex& index, int role ) const
+bool MshModel::isUniqueMeshName(std::string &name)
 {
-	if (!index.isValid())
-		return QVariant();
+	int count=0;
+	bool isUnique = false;
+	std::string cpName;
 
-	if (index.row() >= (int)fem_msh_vector.size())
-		return QVariant();
-
-	// Get msh here...
-	// TODO
-/*
-	MshGraphicsItem3d* msh3dItem = static_cast<MshGraphicsItem3d*>(itemFromIndex(index)->item3d());
-	Mesh_Group::CFEMesh* msh = msh3dItem->msh();
-*/
-	switch (role)
+	while (!isUnique)
 	{
-	case Qt::DisplayRole:
+		isUnique = true;
+		cpName = name;
 
-		switch (index.column())
+		count++;
+		// If the original name already exists we start to add numbers to name for
+		// as long as it takes to make the name unique.
+		if (count>1) cpName = cpName + "-" + number2str(count);
+
+		for (int i=0; i<_rootItem->childCount(); i++) 
 		{
-		case 0:
-			return QString::fromStdString(_mesh->pcs_name);
-		case 1:
-			return QString::fromStdString(_mesh->geo_name);
-		case 2:
-			return QString::fromStdString(_mesh->geo_type_name);
-		default:
-			return QVariant();
-		}
-		break;
-
-	case Qt::ToolTipRole:
-		return QString("Add msh tooltip here...");
-
-	default:
-		return QVariant();
-	}
-
-}
-
-QVariant MshModel::headerData( int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole*/ ) const
-{
-	if (role != Qt::DisplayRole)
-		return QVariant();
-
-	if (orientation == Qt::Horizontal)
-	{
-		switch (section)
-		{
-		case 0: return "PCS";
-		case 1: return "GEO";
-		case 2: return "GEO type";
-		default: return QVariant();
+			TreeItem* item = _rootItem->child(i);
+			if (item->data(0).toString().toStdString().compare(cpName) == 0) isUnique = false;
 		}
 	}
-	else
-		return QString("Row %1").arg(section);
-}
 
-bool MshModel::setData( const QModelIndex& index, const QVariant& value, int role /*= Qt::EditRole*/ )
-{
-	return false;
-}
-
-void MshModel::updateData()
-{
-	//clearData();
-
-	//_subModels.clear();
-
-	for (vector<Mesh_Group::CFEMesh*>::const_iterator it = fem_msh_vector.begin() + _data.size();
-		it != fem_msh_vector.end(); ++it)
+	// At this point cpName is a unique name and isUnique is true.
+	// If cpName is not the original name, "name" is changed and isUnique is set to false,
+	// indicating that a vector with the original name already exists.
+	if (count>1)
 	{
-
-		MshNodeModel* nodeModel = new MshNodeModel(this->name().append("_Nodes"), *it, this);
-		//_subModels.push_back(nodeModel);
-
-		MshElemModel* elemModel = new MshElemModel(this->name().append("_Elements"), *it, this);
-		//_subModels.push_back(elemModel);
-
-		MshGraphicsItem2d* mshItem2d = new MshGraphicsItem2d(this, *it);
-		connect(nodeModel, SIGNAL(dataChanged(QModelIndex,QModelIndex)),
-			mshItem2d, SLOT(reloadElemItems()));
-		//connect(_subModels[1], SIGNAL(subModelDataChanged(Model,QModelIndex,QModelIndex)),
-		//	mshItem2d, SLOT(reloadElemItems()));
-// KR		MshGraphicsItem3d* mshItem3d = new MshGraphicsItem3d(*it);
-		ModelItem* item = new ModelItem(mshItem2d, this);
-		item->addModel(nodeModel);
-		item->addModel(elemModel);
-
-		_data.push_back(item);
+		isUnique = false;
+		name = cpName;
 	}
-	Model::updateData();
-}
-
-bool MshModel::removeRows( int row, int count, const QModelIndex & parent /*= QModelIndex() */ )
-{
-	for (int i = count; i > 0; i--)
-		fem_msh_vector.erase(fem_msh_vector.begin() + row + i - 1);
-
-	return Model::removeRows(row, count, parent);
+	return isUnique;
 }

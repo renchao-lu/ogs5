@@ -1,7 +1,7 @@
 /**
  * \file FileTools.h
  * 26/4/2010 LB Initial implementation
- * 
+ *
  */
 
 
@@ -9,7 +9,7 @@
 #define FILETOOLS_H
 
 // ** INCLUDES **
-#include <sys/stat.h> 
+#include <sys/stat.h>
 
 /**
  * Returns true if given file exists. From http://www.techbytes.ca/techbyte103.html

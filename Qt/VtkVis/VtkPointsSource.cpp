@@ -1,7 +1,7 @@
 /**
  * \file VtkPointsSource.cpp
  * 3/2/2010 LB Initial implementation
- * 
+ *
  * Implementation of VtkPointsSource
  */
 
@@ -24,6 +24,9 @@ VtkPointsSource::VtkPointsSource()
 : _points(NULL)
 {
 	this->SetNumberOfInputPorts(0);
+
+	GEOLIB::Color* c = GEOLIB::getRandomColor();
+	GetProperties()->SetColor((*c)[0]/255.0,(*c)[1]/255.0,(*c)[2]/255.0);
 }
 
 void VtkPointsSource::PrintSelf( ostream& os, vtkIndent indent )
@@ -71,7 +74,7 @@ int VtkPointsSource::RequestData( vtkInformation* request, vtkInformationVector*
 	for (std::vector<GEOLIB::Point*>::const_iterator it = _points->begin();
 		it != _points->end(); ++it)
 	{
-		const double* coords = (*it)->getData();
+		double coords[3] = {(*(*it))[0], (*(*it))[1], (*(*it))[2]};
 		vtkIdType pid[1];
 		pid[0] = newPoints->InsertNextPoint(coords);
 		newVerts->InsertNextCell(1, pid);

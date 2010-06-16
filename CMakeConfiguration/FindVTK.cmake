@@ -76,6 +76,10 @@ IF(NOT VTK_DIR)
 
     # Look for an environment variable VTK_DIR.
     $ENV{VTK_DIR}
+    
+    # Look for installed on windows
+    "C:/Program Files (x86)/VTK/lib/vtk-5.4"
+    "C:/Program Files/VTK/lib/vtk-5.4"
 
     // OGS Self compiled
     ${PROJECT_SOURCE_DIR}/../Libs/vtk/VTK/Build

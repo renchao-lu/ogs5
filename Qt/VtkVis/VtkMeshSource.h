@@ -26,6 +26,8 @@ public:
 
 	vtkTypeRevisionMacro(VtkMeshSource, vtkUnstructuredGridAlgorithm);
 
+	const char* GetMaterialArrayName() const { return _matName; }
+
 	/// Sets the nodes and elements of the mesh that should be visualised
 	void setMesh(const std::vector<GEOLIB::Point*> *nodes, const std::vector<GridAdapter::Element*> *elems) 
 	{ 
@@ -35,6 +37,13 @@ public:
 
 	/// Prints the mesh data to an output stream.
 	void PrintSelf(ostream& os, vtkIndent indent);
+
+	/** 
+	 * \brief Generates random colors based on the material scalar value. 
+	 * Each element of the mesh is assigned an RGB-value based on its material group.
+	 * This method should only be called after setMesh()!
+	 */
+	void setColorsFromMaterials();
 
 protected:
 	VtkMeshSource();
@@ -51,7 +60,7 @@ protected:
 	const std::vector<GridAdapter::Element*> *_elems;
 
 private:
-
+	const char* _matName;
 
 };
 

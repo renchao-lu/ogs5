@@ -172,7 +172,7 @@ private:
 
 
 /**
- * \brief A borehole as a geometric object. 
+ * \brief A borehole as a geometric object.
  *
  * A borehole inherits Station but has some additional information such as a date, a borehole profile, etc.
  */
@@ -188,7 +188,7 @@ public:
 	static StationBorehole* createStation(const std::string &line);
 
 	/// Creates a new borehole object based on the given parameters.
-	static StationBorehole* createStation(const std::string &name, double x, double y, double z, double depth, std::string date);
+	static StationBorehole* createStation(const std::string &name, double x, double y, double z, double depth, std::string date = "");
 
 	/// Reads the stratigraphy for a specified station from a file
 	static int addStratigraphy(const std::string &path, StationBorehole* borehole);
@@ -211,17 +211,22 @@ public:
 	/// Returns the date entry for the borehole
 	double getDate() const { return _date; }
 
-	///Returns a reference to a vector of Points representing the stratigraphy of the borehole (incl. the station-point itself)
+	/// Returns a reference to a vector of Points representing the stratigraphy of the borehole (incl. the station-point itself)
 	const std::vector<Point*> &getProfile() const { return _profilePntVec; }
 
-	///Returns a reference to a vector of soil names for the stratigraphy of the borehole
+	/// Returns a reference to a vector of soil names for the stratigraphy of the borehole
 	const std::vector<std::string> &getSoilNames() const { return _soilName; }
+
+	/// Sets the depth of the borehole
+	void setDepth( double depth ) { _depth = depth; }
 
 	/// Add a soil layer to the boreholes stratigraphy
 	void addSoilLayer ( double thickness, const std::string &soil_name);
 
-	/// Add a soil layer to the boreholes stratigraphy 
+	/// Add a soil layer to the boreholes stratigraphy
 	void addSoilLayer ( double x, double y, double z, const std::string &soil_name);
+
+
 
 protected:
 	/// Returns the depth of this borehole. Please see the documentation for Station::getX for details concerning the syntax.
@@ -254,8 +259,6 @@ private:
 
 	/// Contains the points for the lower boundaries of all layers
 	std::vector<Point*> _profilePntVec;
-
-
 };
 
 } // namespace

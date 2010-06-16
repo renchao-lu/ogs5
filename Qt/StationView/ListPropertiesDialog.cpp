@@ -3,13 +3,14 @@
  * KR Initial implementation
  */
 
+#include <QLabel>
+#include <QLineEdit>
+#include <QDialogButtonBox>
 #include <QGridLayout>
 #include "ListPropertiesDialog.h"
 #include "DateTools.h"
 #include "PropertyBounds.h"
 #include "StringTools.h"
-
-using namespace GEOLIB;
 
 
 /**
@@ -26,16 +27,14 @@ ListPropertiesDialog::ListPropertiesDialog(std::string listName, GEOModels* geoM
 
 ListPropertiesDialog::~ListPropertiesDialog()
 {
-	delete _buttonBox;
-
-	size_t nProps = _propLabel.size();
-
-	for (size_t i=0; i<nProps; i++)
+	for (size_t i=0; i<_propLabel.size(); i++)
 	{
 		delete _propLabel[i];
 		delete _minValue[i];
 		delete _maxValue[i];
 	}
+
+	delete _buttonBox;
 }
 
 
@@ -45,32 +44,32 @@ void ListPropertiesDialog::setupDialog()
 	int i=0;
 	double minVal=0, maxVal=0;
 
-	std::vector<Point*> *stations = _geoModels->getStationVec(_listName);
+	const std::vector<GEOLIB::Point*> *stations ( _geoModels->getStationVec(_listName));
 
-	std::map<std::string, double> properties = static_cast<Station*>((*stations)[0])->getProperties();
+	std::map<std::string, double> properties = static_cast<GEOLIB::Station*>((*stations)[0])->getProperties();
 	QGridLayout* layout = new QGridLayout;
 
 	setWindowTitle("List Properties");
 
 	for(std::map<std::string, double>::const_iterator it = properties.begin(); it != properties.end(); ++it)
     {
-		QLabel* prop = new QLabel(this);
-		QLineEdit* min = new QLineEdit(this);
-		QLineEdit* max = new QLineEdit(this);
-		prop->setText(QString::fromStdString(it->first));
+		QLabel* _prop = new QLabel(this);
+		QLineEdit* _min = new QLineEdit(this);
+		QLineEdit* _max = new QLineEdit(this);
+		_prop->setText(QString::fromStdString(it->first));
 
 		if (getPropertyBounds(stations, it->first, minVal, maxVal))
 		{
-			min->setText(QString::number(minVal, 'f'));
-			if (prop->text().compare("date")==0) min->setText(QString::fromStdString(date2String(minVal)));
+			_min->setText(QString::number(minVal, 'f'));
+			if (_prop->text().compare("date")==0) _min->setText(QString::fromStdString(date2String(minVal)));
 
-			max->setText(QString::number(maxVal, 'f'));
-			if (prop->text().compare("date")==0) max->setText(QString::fromStdString(date2String(maxVal)));
+			_max->setText(QString::number(maxVal, 'f'));
+			if (_prop->text().compare("date")==0) _max->setText(QString::fromStdString(date2String(maxVal)));
 		}
 
-		_propLabel.push_back(prop);
-		_minValue.push_back(min);
-		_maxValue.push_back(max);
+		_propLabel.push_back(_prop);
+		_minValue.push_back(_min);
+		_maxValue.push_back(_max);
 
 		layout->addWidget( _propLabel[i] , i, 0 );
 		layout->addWidget( _minValue[i]  , i, 1 );
@@ -87,18 +86,18 @@ void ListPropertiesDialog::setupDialog()
 	setLayout(layout);
 }
 
-int ListPropertiesDialog::getPropertyBounds(const std::vector<Point*> *stations, const std::string &prop, double &minVal, double &maxVal)
+int ListPropertiesDialog::getPropertyBounds(const std::vector<GEOLIB::Point*> *stations, const std::string &prop, double &minVal, double &maxVal)
 {
 	if (!stations->empty())
 	{
-		std::map<std::string, double> properties (static_cast<Station*>((*stations)[0])->getProperties());
+		std::map<std::string, double> properties (static_cast<GEOLIB::Station*>((*stations)[0])->getProperties());
 		minVal = properties[prop];
 		maxVal = properties[prop];
 
 		size_t size = stations->size();
 		for (size_t i=1; i<size; i++)
 		{
-			properties = static_cast<Station*>((*stations)[i])->getProperties();
+			properties = static_cast<GEOLIB::Station*>((*stations)[i])->getProperties();
 			if (minVal > properties[prop]) minVal = properties[prop];
 			if (maxVal < properties[prop]) maxVal = properties[prop];
 		}

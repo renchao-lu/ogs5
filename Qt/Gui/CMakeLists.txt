@@ -1,6 +1,5 @@
 # Source files
 set( SOURCES
-	main.cpp
 	mainwindow.cpp
 )
 
@@ -62,6 +61,7 @@ source_group("Moc Files" REGULAR_EXPRESSION "moc_.*")
 
 # Create the library
 add_executable( ogs-gui
+	main.cpp
 	${SOURCES}
 	${HEADERS}
 	${MOC_HEADERS}
@@ -72,7 +72,6 @@ add_executable( ogs-gui
 # Link Qt library
 target_link_libraries( ogs-gui
 	${QT_LIBRARIES}
-	#Base
 	GEO
 	FileIO
 	MSH
@@ -87,8 +86,6 @@ target_link_libraries( ogs-gui
 	${libgeotiff_LIBRARIES}
 	QVTK
 	VtkVis
-	#${OpenSG_LIBRARIES}
-	#${OpenSGSupportlibs_LIBRARIES}
 )
 
 add_dependencies ( ogs-gui VtkVis OGSProject )
@@ -98,7 +95,60 @@ IF(MSVC)
 	SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /NODEFAULTLIB:MSVCRT")
 ENDIF(MSVC)
 
+###################
+### VRED plugin ###
+###################
+
+IF (OGS_VRED_PLUGIN)
+
+	ADD_DEFINITIONS(
+		-DBOOST_PYTHON_DYNAMIC_LIB
+	)
+  
+	INCLUDE_DIRECTORIES(
+		#${VRED_DIR}/include/vred
+	    ${VRED_DIR}/include/boost-1.34-vc8.0
+	    ${VRED_DIR}/include/python-2.52-vc8.0
+	    #${VRED_DIR}/include/zlib-1.23
+	    #${VRED_DIR}/include/OpenSG
+	    #${VRED_DIR}/include/OpenSG/OpenSG
+	)
+	LINK_DIRECTORIES( ${VRED_DIR}/bin/WIN32 )
+	
+	ADD_LIBRARY( ogs-gui-vred SHARED
+		${SOURCES}
+		${HEADERS}
+		${MOC_HEADERS}
+		${MOC_SOURCES}
+		${UIS}
+		pymainwindow.cpp
+	)
+	TARGET_LINK_LIBRARIES( ogs-gui-vred
+		${QT_LIBRARIES}
+		GEO
+		FileIO
+		MSH
+		FEM
+		OGSProject
+		QtBase
+		QtDataView
+		StationView
+		StratView
+		${Shapelib_LIBRARIES}
+		${libtiff_LIBRARIES}
+		${libgeotiff_LIBRARIES}
+		QVTK
+		VtkVis
+		#boost_python-vc80-mt-1_34_1
+	)
+	
+	ADD_DEPENDENCIES ( ogs-gui-vred VtkVis OGSProject )
+ENDIF (OGS_VRED_PLUGIN)
+
+####################
 ### Installation ###
+####################
+
 IF (OGS_PACKAGING)
 	install (TARGETS ogs-gui RUNTIME DESTINATION bin COMPONENT ogs_gui)
 	

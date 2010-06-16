@@ -1,6 +1,6 @@
 /**************************************************************************
-GeoSys - Object: 
-Task: 
+GeoSys - Object:
+Task:
 Programing:
 01/2005 OK/TK Implementation
 last modified:
@@ -37,6 +37,9 @@ extern string GetLineFromFile1(ifstream*);
 extern bool RFDOpen(string file_name_base);
 #include "problem.h"
 
+// FileIO
+#include "OGSIOVer4.h"
+
 //==========================================================================
 vector<CGSProject*>gsp_vector;
 string g_gsp_path;
@@ -44,167 +47,186 @@ string g_gsp_base;
 string gsp_path_base;
 
 /**************************************************************************
-GeoSys-Method: 
-Task: 
+GeoSys-Method:
+Task:
 Programing:
 01/2005 OK Implementation based on ExecuteProjectFile (TK)
 last modification:
 **************************************************************************/
-void GSPRead(string gsp_path_base_this)
-{
-  CGSProject* m_gs_project = NULL;
-  //----------------------------------------------------------------------
-  // File handling
-  string gsp_this;
-  gsp_this = gsp_path_base_this + ".gsp";
-  FILE* gsp_file_this = NULL;
-  gsp_file_this = fopen(gsp_this.c_str(),"r");
-  if(gsp_file_this)
-    fclose(gsp_file_this);
-  gsp_file_this = fopen(gsp_this.c_str(),"r");
-  char char_line[MAX_ZEILE];
-  //
-  ifstream gsp_file(gsp_this.data(),ios::in);
-  if (!gsp_file.good()){
-    cout << "Warning: no project data *.gsp file is missing" << endl;
-    return;
-  }
-  gsp_file.clear();
-  gsp_file.seekg(0,ios::beg); // rewind the file
-  //----------------------------------------------------------------------
-  // File analysis
-  int pos;
-  pos = (int)gsp_path_base_this.find_last_of('\\');
-  g_gsp_path = gsp_path_base_this.substr(0,pos);
-  //----------------------------------------------------------------------
-//OK  while(!gsp_file.eof()){
-  bool its_true = true;
-  while(its_true){
-    //gsp_file >> gsp_member_file;
-    fgets(char_line,MAX_ZEILE,gsp_file_this);
-    string gsp_member_file = char_line;
-    if(gsp_member_file.find("STOP")!=string::npos)
-      return;
-    pos = (int)gsp_member_file.find_last_of('.');
-    string gsp_member_file_base = gsp_member_file.substr(0,pos);
-    string gsp_member_file_extension = gsp_member_file.substr(pos+1,string::npos);
-    string gsp_member_path_base = g_gsp_path + "\\" + gsp_member_file_base;
-    //....................................................................
-    if(gsp_member_file_extension.find("gli")!=string::npos){
-      GEOLIB_Read_GeoLib(gsp_member_path_base);
-	  m_gs_project = new CGSProject;
-	  m_gs_project->path = g_gsp_path; //?
-	  m_gs_project->base = gsp_member_file_base;
-	  m_gs_project->type = gsp_member_file_extension; //?
-	  gsp_vector.push_back(m_gs_project);
-    }
-    //....................................................................
-    else if(gsp_member_file_extension.compare("rfi")==0){
-      MSHOpen(gsp_member_path_base);
-	  m_gs_project = new CGSProject;
-	  m_gs_project->base = gsp_member_file_base;
-	  gsp_vector.push_back(m_gs_project);
-    }
-    //....................................................................
-    else if(gsp_member_file_extension.compare("pcs")==0){
-      PCSRead(gsp_member_path_base);
-	  m_gs_project = new CGSProject;
-	  m_gs_project->base = gsp_member_file_base;
-	  gsp_vector.push_back(m_gs_project);
-      pcs_created = true;
-    }
-    //....................................................................
-    else if(gsp_member_file_extension.compare("tim")==0){
-      TIMRead(gsp_member_path_base);
-	  m_gs_project = new CGSProject;
-	  m_gs_project->base = gsp_member_file_base;
-	  gsp_vector.push_back(m_gs_project);
-    }
-    //....................................................................
-    else if(gsp_member_file_extension.compare("out")==0){
-      OUTRead(gsp_member_path_base);
-	  m_gs_project = new CGSProject;
-	  m_gs_project->base = gsp_member_file_base;
-	  gsp_vector.push_back(m_gs_project);
-    }
-    //....................................................................
-    else if(gsp_member_file_extension.compare("num")==0){
-      NUMRead(gsp_member_path_base);
-	  m_gs_project = new CGSProject;
-	  m_gs_project->base = gsp_member_file_base;
-	  gsp_vector.push_back(m_gs_project);
-    }
-    //....................................................................
-    else if(gsp_member_file_extension.compare("ic")==0){
-      ICRead(gsp_member_path_base);
-	  m_gs_project = new CGSProject;
-	  m_gs_project->base = gsp_member_file_base;
-	  gsp_vector.push_back(m_gs_project);
-    }
-    //....................................................................
-    else if(gsp_member_file_extension.compare("bc")==0){
-      BCRead(gsp_member_path_base);
-	  m_gs_project = new CGSProject;
-	  m_gs_project->base = gsp_member_file_base;
-	  gsp_vector.push_back(m_gs_project);
-    }
-    //....................................................................
-    else if(gsp_member_file_extension.compare("st")==0){
-      STRead(gsp_member_path_base);
-	  m_gs_project = new CGSProject;
-	  m_gs_project->base = gsp_member_file_base;
-	  gsp_vector.push_back(m_gs_project);
-    }
-    //....................................................................
-    else if(gsp_member_file_extension.compare("mfp")==0){
-      MFPRead(gsp_member_path_base);
-	  m_gs_project = new CGSProject;
-	  m_gs_project->base = gsp_member_file_base;
-	  gsp_vector.push_back(m_gs_project);
-    }
-    //....................................................................
-    else if(gsp_member_file_extension.compare("msp")==0){
-      MSPRead(gsp_member_path_base);
-	  m_gs_project = new CGSProject;
-	  m_gs_project->base = gsp_member_file_base;
-	  gsp_vector.push_back(m_gs_project);
-    }
-    //....................................................................
-    else if(gsp_member_file_extension.compare("mmp")==0){
-      MMPRead(gsp_member_path_base);
-	  m_gs_project = new CGSProject;
-	  m_gs_project->base = gsp_member_file_base;
-	  gsp_vector.push_back(m_gs_project);
-    }
-    //....................................................................
-    else if(gsp_member_file_extension.compare("cp")==0){
-      CPRead(gsp_member_path_base);
-	  m_gs_project = new CGSProject;
-	  m_gs_project->base = gsp_member_file_base;
-	  gsp_vector.push_back(m_gs_project);
-    }
-    //....................................................................
-    else if(gsp_member_file_extension.compare("rfd")==0){
-      RFDOpen(gsp_member_path_base);
-	  m_gs_project = new CGSProject;
-	  m_gs_project->base = gsp_member_file_base;
-	  gsp_vector.push_back(m_gs_project);
-    }
-    //....................................................................
-    else if(gsp_member_file_extension.compare("fct")==0){
-      FCTRead(gsp_member_path_base);
-	  m_gs_project = new CGSProject;
-	  m_gs_project->base = gsp_member_file_base;
-	  gsp_vector.push_back(m_gs_project);
-    }
-    //....................................................................
-    gsp_file.ignore(MAX_ZEILE,'\n');
-  }
-  //----------------------------------------------------------------------
-}
+
+// 05/2010 TF not needed for compilation
+//void GSPRead(string gsp_path_base_this)
+//{
+//  CGSProject* m_gs_project = NULL;
+//  //----------------------------------------------------------------------
+//  // File handling
+//  string gsp_this;
+//  gsp_this = gsp_path_base_this + ".gsp";
+//  FILE* gsp_file_this = NULL;
+//  gsp_file_this = fopen(gsp_this.c_str(),"r");
+//  if(gsp_file_this)
+//    fclose(gsp_file_this);
+//  gsp_file_this = fopen(gsp_this.c_str(),"r");
+//  char char_line[MAX_ZEILE];
+//  //
+//  ifstream gsp_file(gsp_this.data(),ios::in);
+//  if (!gsp_file.good()){
+//    cout << "Warning: no project data *.gsp file is missing" << endl;
+//    return;
+//  }
+//  gsp_file.clear();
+//  gsp_file.seekg(0,ios::beg); // rewind the file
+//  //----------------------------------------------------------------------
+//  // File analysis
+//  int pos;
+//  pos = (int)gsp_path_base_this.find_last_of('\\');
+//  g_gsp_path = gsp_path_base_this.substr(0,pos);
+//  //----------------------------------------------------------------------
+//
+//  GEOLIB::GEOObjects *geo_obj (NULL);
+//  std::string unique_fname;
+//  unique_fname += ".gli";
+//
+////OK  while(!gsp_file.eof()){
+//  bool its_true = true;
+//  while(its_true){
+//    //gsp_file >> gsp_member_file;
+//    fgets(char_line,MAX_ZEILE,gsp_file_this);
+//    string gsp_member_file = char_line;
+//    if(gsp_member_file.find("STOP")!=string::npos)
+//      return;
+//    pos = (int)gsp_member_file.find_last_of('.');
+//    string gsp_member_file_base = gsp_member_file.substr(0,pos);
+//    string gsp_member_file_extension = gsp_member_file.substr(pos+1,string::npos);
+//    string gsp_member_path_base = g_gsp_path + "\\" + gsp_member_file_base;
+//    //....................................................................
+//    if(gsp_member_file_extension.find("gli")!=string::npos){
+//
+//    	// old data structures
+//    	GEOLIB_Read_GeoLib(gsp_member_path_base);
+//
+//    	// new data structures
+//    	if (!geo_obj) geo_obj = new GEOLIB::GEOObjects ();
+//    	unique_fname = gsp_member_file_extension;
+//    	FileIO::readGLIFileV4 (unique_fname, geo_obj);
+//
+//    	m_gs_project = new CGSProject;
+//	  m_gs_project->path = g_gsp_path; //?
+//	  m_gs_project->base = gsp_member_file_base;
+//	  m_gs_project->type = gsp_member_file_extension; //?
+//	  gsp_vector.push_back(m_gs_project);
+//    }
+//    //....................................................................
+//    else if(gsp_member_file_extension.compare("rfi")==0){
+//      MSHOpen(gsp_member_path_base);
+//	  m_gs_project = new CGSProject;
+//	  m_gs_project->base = gsp_member_file_base;
+//	  gsp_vector.push_back(m_gs_project);
+//    }
+//    //....................................................................
+//    else if(gsp_member_file_extension.compare("pcs")==0){
+//      PCSRead(gsp_member_path_base);
+//	  m_gs_project = new CGSProject;
+//	  m_gs_project->base = gsp_member_file_base;
+//	  gsp_vector.push_back(m_gs_project);
+//      pcs_created = true;
+//    }
+//    //....................................................................
+//    else if(gsp_member_file_extension.compare("tim")==0){
+//      TIMRead(gsp_member_path_base);
+//	  m_gs_project = new CGSProject;
+//	  m_gs_project->base = gsp_member_file_base;
+//	  gsp_vector.push_back(m_gs_project);
+//    }
+//    //....................................................................
+//    else if(gsp_member_file_extension.compare("out")==0){
+//      OUTRead(gsp_member_path_base);
+//	  m_gs_project = new CGSProject;
+//	  m_gs_project->base = gsp_member_file_base;
+//	  gsp_vector.push_back(m_gs_project);
+//    }
+//    //....................................................................
+//    else if(gsp_member_file_extension.compare("num")==0){
+//      NUMRead(gsp_member_path_base);
+//	  m_gs_project = new CGSProject;
+//	  m_gs_project->base = gsp_member_file_base;
+//	  gsp_vector.push_back(m_gs_project);
+//    }
+//    //....................................................................
+//    else if(gsp_member_file_extension.compare("ic")==0){
+//      ICRead(gsp_member_path_base);
+//	  m_gs_project = new CGSProject;
+//	  m_gs_project->base = gsp_member_file_base;
+//	  gsp_vector.push_back(m_gs_project);
+//    }
+//    //....................................................................
+//    else if(gsp_member_file_extension.compare("bc")==0){
+//
+//    	// 05/2010 TF
+////    	BCRead(gsp_member_path_base);
+//        BCRead(gsp_member_path_base, geo_obj, unique_fname);
+//
+//	  m_gs_project = new CGSProject;
+//	  m_gs_project->base = gsp_member_file_base;
+//	  gsp_vector.push_back(m_gs_project);
+//    }
+//    //....................................................................
+//    else if(gsp_member_file_extension.compare("st")==0){
+//      STRead(gsp_member_path_base);
+//	  m_gs_project = new CGSProject;
+//	  m_gs_project->base = gsp_member_file_base;
+//	  gsp_vector.push_back(m_gs_project);
+//    }
+//    //....................................................................
+//    else if(gsp_member_file_extension.compare("mfp")==0){
+//      MFPRead(gsp_member_path_base);
+//	  m_gs_project = new CGSProject;
+//	  m_gs_project->base = gsp_member_file_base;
+//	  gsp_vector.push_back(m_gs_project);
+//    }
+//    //....................................................................
+//    else if(gsp_member_file_extension.compare("msp")==0){
+//      MSPRead(gsp_member_path_base);
+//	  m_gs_project = new CGSProject;
+//	  m_gs_project->base = gsp_member_file_base;
+//	  gsp_vector.push_back(m_gs_project);
+//    }
+//    //....................................................................
+//    else if(gsp_member_file_extension.compare("mmp")==0){
+//      MMPRead(gsp_member_path_base);
+//	  m_gs_project = new CGSProject;
+//	  m_gs_project->base = gsp_member_file_base;
+//	  gsp_vector.push_back(m_gs_project);
+//    }
+//    //....................................................................
+//    else if(gsp_member_file_extension.compare("cp")==0){
+//      CPRead(gsp_member_path_base);
+//	  m_gs_project = new CGSProject;
+//	  m_gs_project->base = gsp_member_file_base;
+//	  gsp_vector.push_back(m_gs_project);
+//    }
+//    //....................................................................
+//    else if(gsp_member_file_extension.compare("rfd")==0){
+//      RFDOpen(gsp_member_path_base);
+//	  m_gs_project = new CGSProject;
+//	  m_gs_project->base = gsp_member_file_base;
+//	  gsp_vector.push_back(m_gs_project);
+//    }
+//    //....................................................................
+//    else if(gsp_member_file_extension.compare("fct")==0){
+//      FCTRead(gsp_member_path_base);
+//	  m_gs_project = new CGSProject;
+//	  m_gs_project->base = gsp_member_file_base;
+//	  gsp_vector.push_back(m_gs_project);
+//    }
+//    //....................................................................
+//    gsp_file.ignore(MAX_ZEILE,'\n');
+//  }
+//  //----------------------------------------------------------------------
+//}
 
 /**************************************************************************
-GeoSys-Method: 
+GeoSys-Method:
 Task: Liest Projectmember-Liste und schreibt die Komponenten in das
       GSP-File
 Programing:
@@ -231,7 +253,7 @@ void GSPWrite()
   fstream gsp_file (gsp_this.data(),ios::trunc|ios::out);
   //gsp_file.close();
   //gsp_file.open(gsp_this.data(),ios::trunc|ios::out);
-  if (!gsp_file.good()) 
+  if (!gsp_file.good())
     return;
   gsp_file.seekg(0L,ios::beg);
   //========================================================================
@@ -249,7 +271,7 @@ void GSPWrite()
 }
 
 /**************************************************************************
-GeoSys-Method: 
+GeoSys-Method:
 Task:
 Programing:
 01/2005 OK GSP function
@@ -271,7 +293,7 @@ void GSPRemoveMember(string file_type)
 }
 
 /**************************************************************************
-GeoSys-Method: 
+GeoSys-Method:
 Task: Liest ?ergbenen File-pfad und erg?zt das Projektfile
 Programing:
 11/2003 TK project related file handling
@@ -297,8 +319,8 @@ void GSPAddMember(string base_plus_type)
 }
 
 /**************************************************************************
-GeoSys-Method: 
-Task: 
+GeoSys-Method:
+Task:
 Programing:
 01/2005 OK Implementation
 last modification:
@@ -311,14 +333,14 @@ void GSPAddMemberNew(string path_base_orig,string path_base_copy,string type)
   char input_text[MAX_ZEILE];
   FILE *gsp_member_file_orig = NULL;
   FILE *gsp_member_file_copy = NULL;
-  gsp_member_file_orig = fopen(path_base_type_orig.c_str(),"rt"); 
+  gsp_member_file_orig = fopen(path_base_type_orig.c_str(),"rt");
   gsp_member_file_copy = fopen(path_base_type_copy.c_str(),"w+t");
   if(!gsp_member_file_orig)//OK4104
     return;
   while(!feof(gsp_member_file_orig)){
     fgets(input_text,MAX_ZEILE,gsp_member_file_orig);
-    FilePrintString(gsp_member_file_copy,input_text); 
-  }	    
+    FilePrintString(gsp_member_file_copy,input_text);
+  }
   fclose(gsp_member_file_orig);
   fclose(gsp_member_file_copy);
   // Check GSP member and remove existing GSP type
@@ -338,8 +360,8 @@ void GSPAddMemberNew(string path_base_orig,string path_base_copy,string type)
 }
 
 /**************************************************************************
-GeoSys-Method: 
-Task: 
+GeoSys-Method:
+Task:
 Programing:
 01/2005 OK Implementation
 05/2005 OK MSHWrite
@@ -419,7 +441,7 @@ void GSPWriteData()
 }
 
 /**************************************************************************
-GeoSys-Method: 
+GeoSys-Method:
 Task:
 Programing:
 01/2005 OK GSP function
@@ -440,7 +462,7 @@ CGSProject* GSPGetMember(string file_type)
 }
 
 /**************************************************************************
-GeoSys-Method: 
+GeoSys-Method:
 Task:
 Programing:
 01/2005 OK GSP function
@@ -491,32 +513,33 @@ bool GSPSimulatorReady()
 
 
 /**************************************************************************
-GeoSys-Method: 
+GeoSys-Method:
 06/2009 OK Implementation
 **************************************************************************/
-bool GSPReadData(string gsp_member_path_base)
-{
-  //----------------------------------------------------------------------
-  GEOLIB_Read_GeoLib(gsp_member_path_base);
-  //......................................................................
-  FEMRead(gsp_member_path_base);
-  //......................................................................
-  PCSRead(gsp_member_path_base);
-  TIMRead(gsp_member_path_base);
-  OUTRead(gsp_member_path_base);
-  NUMRead(gsp_member_path_base);
-  //......................................................................
-  ICRead(gsp_member_path_base);
-  BCRead(gsp_member_path_base);
-  STRead(gsp_member_path_base);
-  //......................................................................
-  MFPRead(gsp_member_path_base);
-  MSPRead(gsp_member_path_base);
-  MMPRead(gsp_member_path_base);
-  CPRead(gsp_member_path_base);
-  //......................................................................
-  RFDOpen(gsp_member_path_base);
-  FCTRead(gsp_member_path_base);
-  //----------------------------------------------------------------------
-  return true;
-}
+// 05/2010 TF not needed for compilation
+//bool GSPReadData(string gsp_member_path_base)
+//{
+//  //----------------------------------------------------------------------
+//  GEOLIB_Read_GeoLib(gsp_member_path_base);
+//  //......................................................................
+//  FEMRead(gsp_member_path_base);
+//  //......................................................................
+//  PCSRead(gsp_member_path_base);
+//  TIMRead(gsp_member_path_base);
+//  OUTRead(gsp_member_path_base);
+//  NUMRead(gsp_member_path_base);
+//  //......................................................................
+//  ICRead(gsp_member_path_base);
+//  BCRead(gsp_member_path_base);
+//  STRead(gsp_member_path_base);
+//  //......................................................................
+//  MFPRead(gsp_member_path_base);
+//  MSPRead(gsp_member_path_base);
+//  MMPRead(gsp_member_path_base);
+//  CPRead(gsp_member_path_base);
+//  //......................................................................
+//  RFDOpen(gsp_member_path_base);
+//  FCTRead(gsp_member_path_base);
+//  //----------------------------------------------------------------------
+//  return true;
+//}

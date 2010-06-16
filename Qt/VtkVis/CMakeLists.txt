@@ -3,9 +3,11 @@ set( SOURCES
 	ColorLookupTable.cpp
 	GridAdapter.cpp
 	VtkAddFilterDialog.cpp
+	VtkBGImageSource.cpp
 	VtkColorByHeightFilter.cpp
 	VtkMeshSource.cpp
 	VtkOGSFilter.cpp
+	VtkTextureOnSurfaceFilter.cpp
 	VtkPolylinesSource.cpp
 	VtkPointsSource.cpp
 	VtkStationSource.cpp
@@ -29,9 +31,11 @@ set( HEADERS
 	ColorLookupTable.h
 	GridAdapter.h
 	VtkAlgorithmProperties.h	
+	VtkBGImageSource.h
 	VtkColorByHeightFilter.h
 	VtkMeshSource.h
 	VtkOGSFilter.h
+	VtkTextureOnSurfaceFilter.h
 	VtkPolylinesSource.h
 	VtkPointsSource.h
 	VtkStationSource.h

@@ -13,7 +13,6 @@ set( SOURCES
 
 # Moc Header files
 set( MOC_HEADERS
-	BaseItem.h
 	DatabaseConnection.h
 	DiagramPrefsDialog.h
 	#ProfileItem3d.h
@@ -26,6 +25,7 @@ set( MOC_HEADERS
 
 # Header files
 set( HEADERS
+	BaseItem.h
 	ModelTreeItem.h
 	OGSRaster.h
 )

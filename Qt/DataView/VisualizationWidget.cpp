@@ -7,53 +7,92 @@
 
 // ** INCLUDES **
 #include "VisualizationWidget.h"
-#include "ViewWidget2d.h"
-#include "GraphicsScene.h"
+#include "Configure.h"
 #include "Model.h"
-
 #include "Point.h"
 
 #include <vtkRenderWindow.h>
 #include <vtkRenderer.h>
+#include <vtkCamera.h>
+
+#include <QSettings>
 
 VisualizationWidget::VisualizationWidget( QWidget* parent /*= 0*/ )
 : QWidget(parent)
 {
 	setupUi(this);
 
-	viewWidget2d = new ViewWidget2d(this);
-	tab2DLayout->addWidget(viewWidget2d);
-
-	createScene();
-	
-	// Vtk
+	// Create renderer
 	_vtkRender = vtkRenderer::New();
-	vtkWidget->GetRenderWindow()->AddRenderer(_vtkRender);
 	_vtkRender->SetBackground(0.0,0.0,0.0);
+
+	// BUG Render Window conflicts with VREDs render window
+#ifndef OGS_VRED_PLUGIN
+	vtkRenderWindow* renderWindow = vtkWidget->GetRenderWindow();
+	renderWindow->StereoCapableWindowOn();
+	renderWindow->SetStereoTypeToCrystalEyes();
+	renderWindow->AddRenderer(_vtkRender);
+#endif // OGS_VRED_PLUGIN
+
+	// Restore settings
+	QSettings settings("UFZ", "OpenGeoSys-5");
+	stereoToolButton->setChecked(settings.value("stereoEnabled").toBool());
+	if (settings.contains("stereoEyeAngle"))
+		_vtkRender->GetActiveCamera()->SetEyeAngle(settings.value("stereoEyeAngle").toDouble());
+	else
+		_vtkRender->GetActiveCamera()->SetEyeAngle(2.0);
+
+	if (!stereoToolButton->isChecked())
+	{
+		eyeAngleLabel->setEnabled(false);
+		eyeAngleSlider->setEnabled(false);
+	}
+
+	eyeAngleSlider->setValue(_vtkRender->GetActiveCamera()->GetEyeAngle() * 10);
 }
 
-void VisualizationWidget::createScene()
+VisualizationWidget::~VisualizationWidget()
 {
-	_graphicsScene = new GraphicsScene(this);
-	viewWidget2d->graphicsView2d->setScene(_graphicsScene);
+	// Write settings
+	QSettings settings("UFZ", "OpenGeoSys-5");
+	settings.setValue("stereoEnabled", stereoToolButton->isChecked());
+	settings.setValue("stereoEyeAngle", _vtkRender->GetActiveCamera()->GetEyeAngle());
 }
-
-GraphicsScene* VisualizationWidget::scene() const
+void VisualizationWidget::updateView()
 {
-	return _graphicsScene;
-}
-
-void VisualizationWidget::updateViews()
-{
-	_vtkRender->ResetCamera();
-
-	viewWidget2d->graphicsView2d->updateView();
-	
-	// TODO update vtk
+	vtkWidget->GetRenderWindow()->Render();
 }
 
 void VisualizationWidget::showAll()
 {
-	viewWidget2d->on_actionShow_All_triggered();
-	// TODO update vtk
+	_vtkRender->ResetCamera();
+}
+
+void VisualizationWidget::on_stereoToolButton_toggled( bool checked )
+{
+	if (checked)
+	{
+		vtkWidget->GetRenderWindow()->StereoRenderOn();
+		eyeAngleLabel->setEnabled(true);
+		eyeAngleSlider->setEnabled(true);
+	}
+	else
+	{
+		vtkWidget->GetRenderWindow()->StereoRenderOff();
+		eyeAngleLabel->setEnabled(false);
+		eyeAngleSlider->setEnabled(false);
+	}
+
+	updateView();
+}
+
+void VisualizationWidget::on_fullscreenToolButton_clicked( bool checked )
+{
+	vtkWidget->GetRenderWindow()->FullScreenOn();
+}
+
+void VisualizationWidget::on_eyeAngleSlider_valueChanged( int value )
+{
+	_vtkRender->GetActiveCamera()->SetEyeAngle(value / 10.0);
+	updateView();
 }

@@ -38,11 +38,11 @@ class CElement
   public:
      CElement (int CoordFlag, const int order=1);
      virtual ~CElement ();
-     //     
+     //
      void ConfigNumerics(const int EleType);
      void ConfigElement(CElem* MElement, bool FaceIntegration=false);
      void setOrder(const int order);
-     // Set Gauss point 
+     // Set Gauss point
      void SetGaussPoint(const int gp, int& gp_r, int& gp_s, int& gp_t);
      // Get Gauss integration information
      double GetGaussData(const int gp, int& gp_r, int& gp_s, int& gp_t);
@@ -58,10 +58,10 @@ class CElement
      void RealCoordinates(double *realXYZ);
      // Compute the unit coordinates from known unit coordinates
      void UnitCoordinates(double *realXYZ);
-     // For axisymmetrical problems   
+     // For axisymmetrical problems
      void CalculateRadius();
      //
-     void setUnitCoordinates(double* u) 
+     void setUnitCoordinates(double* u)
        { for(int i=0; i<3; i++) unit[i] = u[i];    }
 
      // Finite element matrices and vectors
@@ -75,10 +75,10 @@ class CElement
      int Dim() const {return ele_dim; }
 
      // Integrate Neumman type BC
-     void FaceIntegration(double *NodeVal); 
+     void FaceIntegration(double *NodeVal);
 
      // Coupling
-     // 
+     //
      bool isTemperatureCoupling() const {return T_Flag;}
      bool isFluidPressureCoupling() const {return F_Flag;}
      int isDeformationCoupling() const {return D_Flag;}
@@ -92,17 +92,17 @@ class CElement
      void SetCenterGP();
      int GetGPindex() const {return gp;}
      int GetElementIndex() const {return Index;}
-     CElem* GetMeshElement() const {return MeshElement;} //OK 
+     CElem* GetMeshElement() const {return MeshElement;} //OK
      // For extropolating gauss value to node
      int GetLocalIndex(const int gp_r, const int gp_s, int gp_t);
 
      // DDC 05/2006
-     void SetElementNodesDomain(long *ele_nodes) 
-         {element_nodes_dom = ele_nodes;} 
+     void SetElementNodesDomain(long *ele_nodes)
+         {element_nodes_dom = ele_nodes;}
 
 	 void SetRWPT(const int idx) { PT_Flag = idx; } // PCH
-   protected:    
-     CElem* MeshElement; 
+   protected:
+     CElem* MeshElement;
      CPARDomain *m_dom; //OK
      long *element_nodes_dom; //Only a pointer. For domain decomposition. WW
 
@@ -117,30 +117,30 @@ class CElement
      // 22:  X, Z component
      // 32:  X, Y, Z component
      int coordinate_system;
-     bool axisymmetry; 
+     bool axisymmetry;
      // Order of shape functions
      // Displacement, 2. Others, 1. Default, 1
-     int Order;          
+     int Order;
      int ele_dim;         // Dimension of element
-     int dim;             // Dimension of real dimension  
+     int dim;             // Dimension of real dimension
      int nGaussPoints;    // Number of Gauss points
      int nGauss;          // Number of sample points for Gauss integration
-     int gp; // Gauss point index.   
+     int gp; // Gauss point index.
      mutable double unit[4];      // Local coordintes
      double *Jacobian;    // Jacobian matrix
      double *invJacobian; // Inverse of Jacobian matrix.
      double *shapefct;    // Results of linear shape function at Gauss points
      double *shapefctHQ;  // Results of quadratic shape function at Gauss points
      // Results of derivatives of linear shape function at Gauss points
-     double *dshapefct;   
+     double *dshapefct;
      // Results of derivatives of quadratic shape function at Gauss points
-     double *dshapefctHQ;   
-     // 
+     double *dshapefctHQ;
+     //
      double x1buff[3],x2buff[3],x3buff[3],x4buff[3];
 	 // Pointer to the linear interpolation function
-     VoidFuncDXCDX ShapeFunction;    
+     VoidFuncDXCDX ShapeFunction;
 	 // Pointer to the quadratic interpolation function
-     VoidFuncDXCDX ShapeFunctionHQ;  
+     VoidFuncDXCDX ShapeFunctionHQ;
      // Pointer to the gradient of linear interpolation function
      VoidFuncDXCDX GradShapeFunction;
      // Pointer to the gradient of Quadratic interpolation function
@@ -151,17 +151,17 @@ class CElement
      int Idx_dm0[3];
      int Idx_dm1[3];
 
-     int idx_c0, idx_c1; 
+     int idx_c0, idx_c1;
 
      // Coupling flag
      bool T_Flag; // Temperature
      bool F_Flag; // Fluid
      int D_Flag; // Deformation
-	 int PT_Flag;	// Particle Tracking Random Walk 
+	 int PT_Flag;	// Particle Tracking Random Walk
      bool RD_Flag; // Dual Richards
-     // For extropolation  
+     // For extropolation
      double Xi_p;
-     void SetExtropoGaussPoints(const int i); // 25.2.2007 WW 
+     void SetExtropoGaussPoints(const int i); // 25.2.2007 WW
 	 // Buffer
      int Index;
      int nNodes;
@@ -171,16 +171,16 @@ class CElement
      double Radius; // For axisymmetrical problems
      long nodes[20];
      long eqs_number[20];
-     double dShapefct[27]; // Auxullary 
+     double dShapefct[27]; // Auxullary
      double X[20];
      double Y[20];
-     double Z[20];	 
+     double Z[20];
 	 double node_val[20];
 	 double dbuff[20];
 };
 
 /*------------------------------------------------------------------
-   Element matrices: 
+   Element matrices:
    All local matrices are stored for the purpose of reducing
    compatation  time when steady state of the problem is reached
    12.01.2005. WW
@@ -188,9 +188,10 @@ class CElement
 class ElementMatrix
 {
     public:
-       ElementMatrix():Mass(NULL), Laplace(NULL),CouplingA(NULL),
-                      CouplingB(NULL), Stiffness(NULL),
-					  Advection(NULL), Storage(NULL), Content(NULL), RHS(NULL) {}; //SB4200
+       ElementMatrix():Mass(NULL), Laplace(NULL),
+		   Advection(NULL), Storage(NULL), Content(NULL),
+		   CouplingA(NULL), CouplingB(NULL), Stiffness(NULL),
+		   RHS(NULL) {}; //SB4200
       ~ElementMatrix();
       // Allocate memory for strain coupling matrix
       void AllocateMemory(CElem* ele, int type=0);
@@ -228,7 +229,7 @@ class ElementMatrix
       Matrix *CouplingA; // Pressure coupling for M_Process
       Matrix *CouplingB; // Strain coupling gor H_Process
       Matrix *Stiffness;
-      Vec       *RHS;      
+      Vec       *RHS;
 };
 
 } // end namespace

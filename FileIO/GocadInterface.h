@@ -33,7 +33,7 @@ private:
 	bool isProperty ( const std::string &line, std::istream &in );
 	bool isGeologicInformation ( const std::string &line );
 	void readTSurfData ( std::istream &in );
-	void readPLineData ( std::istream &in );
+//	void readPLineData ( std::istream &in );
 
 	std::string _fname;
 	std::vector<GEOLIB::Point*>* _pnt_vec;

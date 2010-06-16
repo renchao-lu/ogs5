@@ -16,8 +16,8 @@
 #include "Surface.h"
 
 /**
-* VtkSurfacesSource is a VTK source object which can be used to feed a visualization
-* pipeline with surface data. As a vtkPolyDataAlgorithm it outputs polygonal data.
+ * \brief VTK source object for the visualisation of surfaces.
+ * Technically, surfaces are displayed as triangulated polydata objects.
  */
 class VtkSurfacesSource : public vtkPolyDataAlgorithm, public VtkAlgorithmProperties
 {

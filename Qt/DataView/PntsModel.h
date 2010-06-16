@@ -1,7 +1,9 @@
 /**
  * \file PntsModel.h
  * 24/9/2009 LB Initial implementation
+ * 05/05/2010 KR 2d graphic functionality removed and various layout changes
  */
+
 #ifndef PNTSMODEL_H
 #define PNTSMODEL_H
 
@@ -10,14 +12,8 @@
 #include "Model.h"
 #include <QVector>
 
-class IGeometryPoint;
-class ModelItem;
-class PntGraphicsItem2d;
-class QItemSelection;
-
 /**
  * The PntsModel is a Qt model which represents Point objects.
- * Item indexes hold references to ModelItem as internal pointers.
  */
 class PntsModel : public Model
 {
@@ -55,10 +51,10 @@ protected slots:
 	void item2dChanged(GEOLIB::Point* point);
 
 private:
+	void setData(std::vector<GEOLIB::Point*> *points, TreeItem* parent);
+
 	std::vector<GEOLIB::Point*>* _pntVec;
 
-signals:
-	//void selectionChanged(const QItemSelection & selected, const QItemSelection & deselected);
 };
 
 #endif // PNTSMODEL_H

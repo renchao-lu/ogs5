@@ -1,82 +1,63 @@
 # Source files
 set( SOURCES
-	GraphicsView2d.cpp
-	CoordinateOriginGraphicsItem2d.cpp
-	GraphicsItem2d.cpp
-	PntGraphicsItem2d.cpp
-	ViewWidget2d.cpp
-	GraphicsScene.cpp
-	PntsModel.cpp
-	LineGraphicsItem2d.cpp
-	LinesModel.cpp
-	ModelItem.cpp
-	Model.cpp
-	DataView.cpp
-	MshModel.cpp
-	MshNodeModel.cpp
-	MshElemModel.cpp
-	MshGraphicsItem2d.cpp
-	VisualizationWidget.cpp
-	PntTabWidget.cpp
-	LineTabWidget.cpp
-	StationTabWidget.cpp
-	MshTabWidget.cpp
-	DBConnectionDialog.cpp
-	SHPImportDialog.cpp
-	GEOModels.cpp
 	DataViewWidget.cpp
+	DBConnectionDialog.cpp
+	GEOModels.cpp
+	LinesModel.cpp
+	LineTabWidget.cpp
+	DataView.cpp
+	Model.cpp
+	MshItem.cpp
+	MshModel.cpp
+	MshTabWidget.cpp
+	PntsModel.cpp
+	PntTabWidget.cpp
+	SHPImportDialog.cpp
+	StationTabWidget.cpp
 	SurfaceModel.cpp
 	SurfaceTabWidget.cpp
+	VisPrefsDialog.cpp
+	VisualizationWidget.cpp
 )
 
 # Moc Header files
 set( MOC_HEADERS
-	GraphicsView2d.h
-	ViewWidget2d.h
-	GraphicsScene.h
-	PntsModel.h
-	LineGraphicsItem2d.h
-	LinesModel.h
-	ModelItem.h
-	PntGraphicsItem2d.h
-	Model.h
 	DataView.h
-	MshModel.h
-	MshNodeModel.h
-	MshElemModel.h
-	MshGraphicsItem2d.h
-	VisualizationWidget.h
-	PntTabWidget.h
-	LineTabWidget.h
-	StationTabWidget.h
-	MshTabWidget.h
-	GraphicsItem2d.h
-	CoordinateOriginGraphicsItem2d.h
-	DBConnectionDialog.h
-	SHPImportDialog.h
-	GEOModels.h
 	DataViewWidget.h
+	DBConnectionDialog.h
+	GEOModels.h
+	LinesModel.h
+	LineTabWidget.h
+	Model.h
+	MshItem.h
+	MshModel.h
+	MshTabWidget.h
+	PntsModel.h
+	PntTabWidget.h
+	SHPImportDialog.h
+	StationTabWidget.h
 	SurfaceModel.h
 	SurfaceTabWidget.h
+	VisPrefsDialog.h
+	VisualizationWidget.h
 )
 
 # Header files
 set( HEADERS
-	Enums.h
+
 )
 
 # UI files
 set( UIS
-	ViewWidget2dBase.ui
-	#ViewWidget3dBase.ui
-	VisualizationWidgetBase.ui
-	PntTabWidgetBase.ui
-	LineTabWidgetBase.ui
-	SurfaceTabWidgetBase.ui
-	StationTabWidgetBase.ui
-	MshTabWidgetBase.ui
-	DBConnection.ui
 	DataViewWidgetBase.ui
+	DBConnection.ui
+	LineTabWidgetBase.ui
+	MshTabWidgetBase.ui
+	PntTabWidgetBase.ui
+	StationTabWidgetBase.ui
+	SurfaceTabWidgetBase.ui
+	VisPrefs.ui
+	VisualizationWidgetBase.ui
 )
 
 # Run Qts user interface compiler uic on .ui files

@@ -1,5 +1,6 @@
 # Source files
 set( SOURCES
+	Color.cpp
 	geo_dom.cpp
 	geo_lib.cpp
 	geo_lin.cpp
@@ -12,6 +13,7 @@ set( SOURCES
 	AxisAlignedBoundingBox.cpp
 	Station.cpp
 	GEOObjects.cpp
+	PointVec.cpp
 )
 
 # Header files

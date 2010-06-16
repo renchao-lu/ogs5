@@ -6,7 +6,7 @@ rf_kinreact.cpp
 FEMLib-Object KinReact
 
 Programming:
-01/2004    Dirk Schäfer       Original IMplementation
+01/2004    Dirk Schï¿½fer       Original IMplementation
 02/2006    Sebastian Bauer    Adaption to C++ Class structure, new FEM concept
 
 ***************************************************************************/
@@ -16,7 +16,9 @@ Programming:
 #include <fstream>
 #include <string>
 #include <vector>
-using namespace std;
+
+// GEOLIB
+#include "GEOObjects.h"
 
 /* residual for linearisation of critical functions */
 #define residual 1.E-20
@@ -25,7 +27,6 @@ using namespace std;
 #define maxBioReactions 30
 #define maxNumber_of_Components 30
 
-
 #define KRC_FILE_EXTENSION ".krc"
 
 /* New class KinReaction: contains the kinetic reactions and all necessary data structures for them */
@@ -33,7 +34,7 @@ using namespace std;
 class MonodSubstruct {
 private:
 public:
-	string species ; // Name of species
+	std::string species ; // Name of species
 	int speciesnumber; // number of species;
 	double concentration; //Monod concentration
 	double order ; // Order of monod term
@@ -53,47 +54,49 @@ class CKinReact{
     public:
     CKinReact(void); // Constructor
     ~CKinReact(void); // Destructor
-    
-	string	name;				/* name of reaction */
-	string	type;					/* type of reaction: monod, exchange, NAPLdissolution, ... */
+
+    std::string	name;				/* name of reaction */
+    std::string	type;					/* type of reaction: monod, exchange, NAPLdissolution, ... */
     int		number;                     /* counter */
 	int		number_reactionpartner;	/* Number of chemical species involved in reaction */
-	vector <string> reactionpartner;	/* all names of reaction partners stored here */
-	vector <double> stochmet;			/* stochiometric coefficients for each reactionpartner stored here */
+	std::vector <std::string> reactionpartner;	/* all names of reaction partners stored here */
+	std::vector <double> stochmet;			/* stochiometric coefficients for each reactionpartner stored here */
 	double	rateconstant;		/* rateconstant */
 	double	rateorder;			/* order of reaction */
 	int		number_monod;			/* Number of Monod terms */
 	int		number_inhibit;			/* Number of inhibition terms */
 	int		number_production;		/* number of production terms */
 	int		number_isotope_couples;		/* number of production terms */
-	vector <MonodSubstruct*>  monod;		/* saves monod concentrations and names of species */
-	vector <MonodSubstruct*>  inhibit;		/* saves inhibit concentrations and names of species */
-	vector <MonodSubstruct*>  production;	/* saves production concentrations, orders and names of species */
+	std::vector <MonodSubstruct*>  monod;		/* saves monod concentrations and names of species */
+	std::vector <MonodSubstruct*>  inhibit;		/* saves inhibit concentrations and names of species */
+	std::vector <MonodSubstruct*>  production;	/* saves production concentrations, orders and names of species */
     int grow; /* growth or no growth */
-    string	bacteria_name;
+    std::string	bacteria_name;
     int		bacteria_number;
-    vector <double>	ProductionStoch; // stochiometry of reaction
+    std::vector <double>	ProductionStoch; // stochiometry of reaction
 //    vector <double>	ProductionStoch2; // stochiometry of reaction - short version
-	vector <MonodSubstruct*> ProdStochhelp; // store input values
-    //CB Isotope fractionation  
-    string Isotope_light;
-    string Isotope_heavy;
-string degType;
-double isoenfac ;
-//CB Not this particular reaction on specified GEO-Objects; Data structures
- vector <string> NotThisReactGeoName;
-	vector <string> NotThisReactGeoType;
-	vector <bool> switched_off_node;
+    std::vector <MonodSubstruct*> ProdStochhelp; // store input values
+    //CB Isotope fractionation
+    std::string Isotope_light;
+    std::string Isotope_heavy;
+    std::string degType;
+    double isoenfac ;
+
+	//CB Not this particular reaction on specified GEO-Objects; Data structures
+	std::vector <std::string> NotThisReactGeoName;
+	std::vector <size_t> NotThisReactGeoID; // 06/2010 TF
+	std::vector <std::string> NotThisReactGeoType;
+	std::vector <bool> switched_off_node;
 
 	// exchange data
-	vector <string>	ex_species_names;
-	vector <int>	ex_species;
-	vector <double>	ex_param;
+	std::vector <std::string>	ex_species_names;
+	std::vector <int>	ex_species;
+	std::vector <double>	ex_param;
 	int		exSurfaceID;
-	string exType ;					/* sorption type: linear, langmuir, exchange */
+	std::string exType ;					/* sorption type: linear, langmuir, exchange */
 
     //#ds NAPLdissolution data
-	string  blob_name;              /* name of blob-class */
+	std::string  blob_name;              /* name of blob-class */
 	int     blob_ID;                /* id number of blobs where the NAPL phase resides */
 	double  Csat_pure;              /* maximum solubility of the pure NAPL phase */
 	double  current_Csat;            /* current solubility after considering Roult's law, interally calculated */
@@ -106,12 +109,20 @@ double isoenfac ;
 	int typeflag_exchange_langmuir;		/* set to 1 if reaction is langmuir exchange type */
 	int typeflag_exchange_freundlich;		/* set to 1 if reaction is freundlich exchange type */
 	int typeflag_napldissolution;		/* set to 1 if reaction is NAPL dissolution */
- int typeflag_iso_fract; /* set to 1 if reaction is isotope fractionation */
+	int typeflag_iso_fract; /* set to 1 if reaction is isotope fractionation */
 
-    /* Methods */
-   bool Read(ifstream*); /* Class Read Function */
-   void Write(ofstream*);       /* Class Write Function */
-   void ReadReactionEquation(string); /* Read function for chemical equations */
+	/* Methods */
+    /**
+     * read data from stream
+     * @param in input stream from file
+     * @param geo_obj object of class GEOObjects that manages the geometric entities
+     * @param unique_name the name of the project to access the right geometric entities
+     * @return true (in every case) ToDo
+     */
+	bool Read(std::ifstream* in, const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name);
+
+   void Write(std::ofstream*);       /* Class Write Function */
+   void ReadReactionEquation(std::string); /* Read function for chemical equations */
    int CheckReactionDataConsistency(void); /* check data set */
    void TestWrite(void); // test output function
 
@@ -132,122 +143,157 @@ double isoenfac ;
 
 //#ds Class for blob properties
 class CKinBlob {
-private:
-
 public:
+	CKinBlob();
+	~CKinBlob();
+	/**
+	 * read values from stream to initialize the CKinBlob object
+	 * @param in input file stream
+     * @param geo_obj object of class GEOObjects that manages the geometric entities
+     * @param unique_name the name of the project to access the right geometric entities
+	 * @return true (always) TODO
+	 */
+	bool Read(std::ifstream* in, const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name);
+    void Write(std::ostream & out) const;
+    std::vector<size_t>& getBlobGeoID()
+    {
+        return BlobGeoID;
+    }
 
-	string	name;				            /* name of blob-class */
-	double  d50;                            /* average diameter of sediment grains */
-	double  Sh_factor;                      /* initial factor for calculation of Sherwood number */
-	double  Re_expo;                        /* exponent of Reynolds number for calculation of Sherwood number */
-	double  Sc_expo;                        /* exponent of Schmidt number for calculation of Sherwood number */
-	double  Geometry_expo;                  /* exponent of relative volume for calculation of present interfacial area */
-    double  Mass;                           /* current total Mass of blob, internally calculated for one node */
-	double  Volume;                         /* current total Volume of blob, internally calculated for one node */
-    double  Masstransfer_k;                 /* current Mass transfer coefficient, internally calculated for one node */
-	double  current_Interfacial_area;       /* current Interfacial Area, internally calculated for one node only */ 
-	vector <string> BlobGeoType;            /* definition of initial interfacial area based on Geo-objects */
-    vector <string> BlobGeoName;            /* definition of initial interfacial area based on Geo-objects */
-	vector <double> Area_Value;             /* initial value within the Geo-object */
-    vector <double> Interfacial_area;       /* initial interfacial area, interfacial area of last iteration */
-
-	CKinBlob(void);                 
-	~CKinBlob(void);               
-	bool Read(ifstream*);     /* Class Read Function #ds muss noch erstellt werden*/
-    void Write(ofstream*);   /* Class Write Function #ds muss noch erstellt werden*/
-	void TestWrite(void);
+    std::string name;
+    double d50;
+    double Sh_factor;
+    double Re_expo;
+    double Sc_expo;
+    double Geometry_expo;
+    double Mass;
+    double Volume;
+    double Masstransfer_k;
+    double current_Interfacial_area;
+    std::vector<double> Area_Value;
+    std::vector<double> Interfacial_area;
+    std::vector<std::string> BlobGeoType;
+    std::vector<std::string> BlobGeoName;
+private:
+    std::vector<size_t> BlobGeoID;
 };
 
 
-class CKinReactData{
-    private:
-
-    public:
-    
-    /* Data */
-	int		SolverType;
-	double	relErrorTolerance;
-	double	minTimestep;
-	double  initialTimestep;
-    double  usedt;
-	int		NumberReactions;
-	int		NumberLinear;
-	int		NumberLangmuir;
-	int		NumberFreundlich;
-	int		NumberMonod;
-	int     NumberNAPLdissolution;
-	
+class CKinReactData
+{
+public:
+	/* Data */
+	int SolverType;
+	double relErrorTolerance;
+	double minTimestep;
+	double initialTimestep;
+	double usedt;
+	int NumberReactions;
+	int NumberLinear;
+	int NumberLangmuir;
+	int NumberFreundlich;
+	int NumberMonod;
+	int NumberNAPLdissolution;
 
 	// biodeg data
-	double	maxBacteriaCapacity;
-    vector <int> is_a_bacterium;
-//	vector <int> is_a_bacterium2; // short version
+	double maxBacteriaCapacity;
+	std::vector<int> is_a_bacterium;
+	//	vector <int> is_a_bacterium2; // short version
 	// exchange data
 	int maxSurfaces;
-	vector <double>	exSurface;
+	std::vector<double> exSurface;
 	// output flag
-    bool testoutput;
+	bool testoutput;
 	//index vector for shortening vectors c in kinetic calculations (omitting nonreacting species)
-//	vector <int> sp_index;
-//	int kr_active_species;
-	vector <int> sp_pcsind;
-	vector <int> sp_varind;
-    
+	//	vector <int> sp_index;
+	//	int kr_active_species;
+	std::vector<int> sp_pcsind;
+	std::vector<int> sp_varind;
+
 	// No reactions on specified GEO-Objects; Data structures
- vector <string> NoReactGeoName;
-	vector <string> NoReactGeoType;
-	vector <bool> is_a_CCBC;
+	std::vector<std::string> NoReactGeoName;
+	std::vector<size_t> NoReactGeoID;
+	std::vector<std::string> NoReactGeoType;
+	std::vector<bool> is_a_CCBC;
 
- // CB ReactDeact no reaction switch
- bool ReactDeactFlag;        // method flag
- int ReactDeactPlotFlag;    // flag for tecplot plots of flags each timestep   
- double ReactDeactEpsilon;   // treshhold
- vector <bool> ReactDeact;   // flags for individual nodes
- vector <double> React_dCdT; // Sum of reaction rates for individual nodes
- vector <vector<int> > ReactNeighborhood; // node indices of local neighborhood around individual nodes
- int ReactDeactMode;
+	// CB ReactDeact no reaction switch
+	bool ReactDeactFlag; // method flag
+	int ReactDeactPlotFlag; // flag for tecplot plots of flags each timestep
+	double ReactDeactEpsilon; // treshhold
+	std::vector<bool> ReactDeact; // flags for individual nodes
+	std::vector<double> React_dCdT; // Sum of reaction rates for individual nodes
+	std::vector<std::vector<int> > ReactNeighborhood; // node indices of local neighborhood around individual nodes
+	int ReactDeactMode;
 
- bool debugoutflag;
- string debugoutfilename;
- ofstream debugoutstr;
+	bool debugoutflag;
+	std::string debugoutfilename;
+	std::ofstream debugoutstr;
 
-	vector <double> node_foc;
+	std::vector<double> node_foc;
 
- /* Methods */
- CKinReactData(void);
- ~CKinReactData(void);
- bool Read(ifstream*);     /* Class Read Function */
- void Write(ofstream*);   /* Class Write Function */
+	/* Methods */
+	CKinReactData(void);
+	~CKinReactData(void);
+
+	/* Class Read Function */
+	/**
+	 * reading input data for kinetic reactions
+	 * @param in input file stream
+	 * @param geo_obj object of class GEOObjects that manages the geometric entities
+     * @param unique_name the name of the project to access the right geometric entities
+	 * @return
+	 */
+	bool Read(std::ifstream* in, const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name);
+	void Write(std::ofstream*); /* Class Write Function */
 	void TestWrite(void);
- void ExecuteKinReact(void);
- void Biodegradation( long node, double eps, double hmin, double *usedtneu, int *nok, int *nbad);
+	void ExecuteKinReact(void);
+	void Biodegradation(long node, double eps, double hmin, double *usedtneu,
+			int *nok, int *nbad);
 
- // CB ReactDeact
- void ReactionDeactivation(long);  // Sets nodes active / inactive
- void ReactDeactPlotFlagsToTec();
- void ReactDeactSetOldReactionTerms(long nonodes);
+	// CB ReactDeact
+	void ReactionDeactivation(long); // Sets nodes active / inactive
+	void ReactDeactPlotFlagsToTec();
+	void ReactDeactSetOldReactionTerms(long nonodes);
 
- double **concentrationmatrix;
- void Aromaticum(long nonodes);
+	double **concentrationmatrix;
+	void Aromaticum(long nonodes);
 
 };
 
-extern vector <CKinReact*> KinReact_vector; // declare extern instance of class CKinReact
-extern vector <CKinReactData*> KinReactData_vector; // declare extern instance of class CKinReact
-extern vector <CKinBlob*> KinBlob_vector; // declare extern instance of class Blob
+extern std::vector <CKinReact*> KinReact_vector; // declare extern instance of class CKinReact
+extern std::vector <CKinReactData*> KinReactData_vector; // declare extern instance of class CKinReact
+extern std::vector <CKinBlob*> KinBlob_vector; // declare extern instance of class Blob
 
-extern bool KRRead(string);
-extern bool KRWrite(string);
+/**
+ * read file for kinetic reaction
+ * @param file_base_name base file name (without extension) containing the data
+ * @param geo_obj object of class GEOObjects managing the geometric entities
+ * @param unique_name unique name to access the geometric entities in geo_obj
+ * @return false if file can not be opened, else true
+ */
+bool KRRead(const std::string& file_base_name, const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name);
+
+extern bool KRWrite(std::string);
 extern void KRCDelete(void);
-extern void KRConfig(void);
-extern void KBlobConfig(void);  /* configure Blob-Object */
+
+/**
+ * configure kinetic reaction
+ * @param geo_obj object of class GEOObjects managing the geometric entities
+ * @param unique_name unique name to access the geometric entities in geo_obj
+ */
+void KRConfig(const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name);
+
+/**
+ * configure Blob-Object
+ * @param geo_obj object of class GEOObjects managing the geometric entities
+ * @param unique_name unique name to access the geometric entities in geo_obj
+ */
+void KBlobConfig(const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name);
+
 extern void KBlobCheck(void);   /* check Blob-Object for input errors */
 extern bool KNaplDissCheck(void);   /* CB check if NAPL dissolution is modeled */
 
-
-
-
-/* Externe Subroutine-Deklarationen fuer Bulirsch-Stoer Gleichungslöser */
+/* Externe Subroutine-Deklarationen fuer Bulirsch-Stoer Gleichungslï¿½ser */
 
 extern void odeint(double ystart[], int nvar, double x1, double x2, double eps, double h1,
 	double hmin, double *nexth, int *nok, int *nbad,
@@ -261,8 +307,6 @@ extern void stifbs(double y[], double dydx[], int nv, double *xx, double htry, d
 
 extern double *dvector(long nl, long nh);
 extern void free_dvector(double *v, long nl, long nh);
-
-
 
 /* interne Deklarationen */
 extern void		ExecuteKineticReactions();

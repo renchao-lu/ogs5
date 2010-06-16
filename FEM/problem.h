@@ -11,12 +11,15 @@
 
 #include <vector>
 class CRFProcess;
-using namespace std;
+
+// GEOLIB
+#include "GEOObjects.h"
+
 //---------------------------------------------------------------------
 //Pointers to member functions
 class Problem;
-typedef  double (Problem::*ProblemMemFn)(void); 
-#define Call_Member_FN(object,ptrToMember)  ((object)->*(ptrToMember)) 
+typedef  double (Problem::*ProblemMemFn)(void);
+#define Call_Member_FN(object,ptrToMember)  ((object)->*(ptrToMember))
 //---------------------------------------------------------------------
 class Problem
 {
@@ -42,6 +45,18 @@ class Problem
    double getEndTime();
 #endif //BRNS
 
+   /**
+    * get the geometric objects stored in GEOLIB::GEOObjects
+    * @return a pointer to an instance of class GEOLIB::GEOObjects
+    */
+   const GEOLIB::GEOObjects* getGeoObj () const;
+   /**
+    * Get the name of the project. The name is used by GEOLIB::GEOObjects
+    * to access the geometric data.
+    * @return the name to acces geometric data
+    */
+   const std::string& getGeoObjName () const;
+
   private:
    // Time:
    double start_time;
@@ -51,7 +66,7 @@ class Problem
    int step_control_type;
    // Mixed time step WW
    double dt0; // Save the original time step size
-  
+
    // Controls
    int loop_index;
    int max_coupling_iterations;
@@ -63,32 +78,32 @@ class Problem
    double pcs_flow_error0;
    double pcs_coupling_error;
    int lop_coupling_iterations;
-   bool CalcVelocities; 
-   bool conducted; 
+   bool CalcVelocities;
+   bool conducted;
 
    // Print flag
    bool print_result;
    // Processes
 
-   vector<CRFProcess*> total_processes;
-   vector<CRFProcess*> transport_processes;
-   vector<CRFProcess*> multiphase_processes;
+   std::vector<CRFProcess*> total_processes;
+   std::vector<CRFProcess*> transport_processes;
+   std::vector<CRFProcess*> multiphase_processes;
    ProblemMemFn *active_processes;
-   vector<int> active_process_index;
-   vector<int> coupled_process_index;
-   // 
+   std::vector<int> active_process_index;
+   std::vector<int> coupled_process_index;
+   //
    bool *exe_flag;
-   inline int AssignProcessIndex(CRFProcess *m_pcs, bool activefunc = true); 
+   inline int AssignProcessIndex(CRFProcess *m_pcs, bool activefunc = true);
    //
    void PCSCreate();
    // Perform processes:
    inline double LiquidFlow();
    inline double RichardsFlow();
-   inline double TwoPhaseFlow(); 
+   inline double TwoPhaseFlow();
    inline double MultiPhaseFlow();
-	 inline double PS_Global();		// 03 2009 PCH
+   inline double PS_Global();		// 03 2009 PCH
    inline double GroundWaterFlow();
-   inline double ComponentalFlow(); 
+   inline double ComponentalFlow();
    inline double OverlandFlow();
    inline double AirFlow();
    inline double HeatTransport();
@@ -96,14 +111,27 @@ class Problem
    inline double RandomWalker();
    inline double MassTrasport();
    inline double Deformation();
-   // Accessory 
+   // Accessory
    void LOPExecuteRegionalRichardsFlow(CRFProcess*m_pcs_global);
    void LOPCalcELEResultants();
    inline void ASMCalcNodeWDepth(CRFProcess *m_pcs);
    void PCSCalcSecondaryVariables();
    bool Check(); //OK
+
+   /**
+    * pointer to an instance of class GEOObjects,
+    * that manages geometric entities
+    */
+   GEOLIB::GEOObjects* _geo_obj; // TF
+   /**
+    * project/file name for geometry file,
+    * used to access data in data manager GEOObjects
+    */
+   std::string _geo_name; // TF
 };
-extern Problem *aproblem; 
+
+extern Problem *aproblem;
 extern bool MODCreate(); //OK
+
 #endif //PROBLEM_CLASS
 #endif

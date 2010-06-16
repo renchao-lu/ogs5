@@ -1,6 +1,6 @@
 /**************************************************************************
 GeoLib - Object: Point
-Task: 
+Task:
 Programing:
 07/2003 OK/TK Implementation
 12/2003 CC Modification
@@ -138,15 +138,16 @@ Programing:
 07/2005 CC Implementation
 10/2005 OK Test
 **************************************************************************/
-CGLPoint* GEOGetPointByName(const std::string &point_name)
-{
-	//CGLPoint *m_pnt = NULL;
-	std::vector<CGLPoint*>::iterator it (gli_points_vector.begin());
-	for (; it != gli_points_vector.end(); it++)
-		if ((*it)->name.compare (point_name) == 0) return *it;
-	std::cout << "Warning: point " << point_name << " not found" << std::endl;
-	return NULL;
-}
+//// 06/2010 TF REMOVE CANDIDATE
+//CGLPoint* GEOGetPointByName(const std::string &point_name)
+//{
+//	//CGLPoint *m_pnt = NULL;
+//	std::vector<CGLPoint*>::iterator it (gli_points_vector.begin());
+//	for (; it != gli_points_vector.end(); it++)
+//		if ((*it)->name.compare (point_name) == 0) return *it;
+//	std::cout << "Warning: point " << point_name << " not found" << std::endl;
+//	return NULL;
+//}
 
 /**************************************************************************
 GeoLib- Funktion: GetPointsVector
@@ -946,7 +947,7 @@ string get_sub_string(string buffer,string delimiter,int pos1,int *pos2)
 			*pos2 = (int)buffer.size();
 			break;
 		}
-		if(pos1>=(int)buffer.size()) 
+		if(pos1>=(int)buffer.size())
 			break;
 	}
 	string sub_string_this = buffer.substr(pos1,*pos2);

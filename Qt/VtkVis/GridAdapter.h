@@ -52,7 +52,7 @@ public:
 	~GridAdapter();
 
 	/// Returns the total number of unique material IDs.
-	const size_t getNumberOfMaterials() const;
+	size_t getNumberOfMaterials() const;
 
 	/// Returns the vector of nodes.
 	const std::vector<GEOLIB::Point*> *getNodes() const { return _nodes; }
@@ -62,6 +62,14 @@ public:
 
 	/// Return a vector of elements for one material group only.
 	const std::vector<Element*> *getElements(size_t matID) const;
+
+	/// Returns the name of the mesh.
+	const std::string getName() const { return _name; };
+
+	/// Sets the name for the mesh.
+	void setName(const std::string &name) { _name = name; };
+
+
 
 private:
 	/// Converts an FEM Mesh to a list of nodes and elements.
@@ -76,6 +84,7 @@ private:
 	/// Converts an integer to a MeshType
 	MeshType getElementType(int type);
 
+	std::string _name;
 	std::vector<GEOLIB::Point*> *_nodes;
 	std::vector<Element*> *_elems;
 };

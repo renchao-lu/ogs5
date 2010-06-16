@@ -22,8 +22,8 @@ Programing:
 06/2005 WW Implementation
 **************************************************************************/
 CNode::CNode(size_t Index, double x, double y, double z) :
-	CCore(Index), eqs_index (-1), epsilon (0.0),
-	free_surface (-1), selected (0), crossroad (0), patch_area (-1.0)
+	CCore(Index), epsilon (0.0), free_surface (-1), selected (0),
+	patch_area (-1.0), crossroad (0), eqs_index (-1)
 {
    coordinate[0] = x;
    coordinate[1] = y;

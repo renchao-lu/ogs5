@@ -9,23 +9,20 @@
 
 #include "Station.h"
 #include "StationIO.h"
+#include "GMSInterface.h"
 
 #include "StationTreeView.h"
 #include "StationTreeModel.h"
 #include "ModelTreeItem.h"
 #include "StratWindow.h"
-
-using namespace GEOLIB;
+#include "DiagramPrefsDialog.h"
+#include "OGSError.h"
 
 
 StationTreeView::StationTreeView(QWidget* parent) : QTreeView(parent)
 {
 //	setContextMenuPolicy(Qt::CustomContextMenu);
 //    connect(this, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(showContextMenu(const QPoint &)));
-}
-
-StationTreeView::~StationTreeView()
-{
 }
 
 void StationTreeView::updateView()
@@ -82,13 +79,21 @@ void StationTreeView::contextMenuEvent( QContextMenuEvent* event )
 	else
 	{
 		QString temp_name;
-		if (static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)->type() == Station::BOREHOLE)
+		QMenu menu;
+
+		if (static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)->type() == GEOLIB::Station::BOREHOLE)
 		{
-			QMenu menu;
 			QAction* stratAction = menu.addAction("Display Stratigraphy...");
 			QAction* exportAction = menu.addAction("Export to GMS...");
 			connect(stratAction, SIGNAL(triggered()), this, SLOT(displayStratigraphy()));
 			connect(exportAction, SIGNAL(triggered()), this, SLOT(exportStation()));
+			menu.exec(event->globalPos());
+		}
+		else 
+		{
+			QAction* showInfoAction    = menu.addAction("View Information...");
+			QAction* showDiagramAction = menu.addAction("View Diagram...");
+			connect(showDiagramAction, SIGNAL(triggered()), this, SLOT(showDiagramPrefsDialog()));
 			menu.exec(event->globalPos());
 		}
 	}
@@ -98,8 +103,8 @@ void StationTreeView::displayStratigraphy()
 {
 	QModelIndex index = this->selectionModel()->currentIndex();
 	QString temp_name;
-	StratWindow* stationView = new StratWindow(static_cast<GEOLIB::StationBorehole*>(static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)));
-	stationView->show();
+	StratWindow* stratView = new StratWindow(static_cast<GEOLIB::StationBorehole*>(static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)));
+	stratView->show();
 }
 
 
@@ -121,7 +126,7 @@ void StationTreeView::exportStation()
     	QString temp_name;
 		std::vector<std::string> temp_soil_names; 
 		temp_soil_names.push_back(""); // soil name vector needs to be initialised
-		StationIO::writeBoreholeToGMS(static_cast<StationBorehole*>(static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)), fileName.toStdString(), temp_soil_names);
+		GMSInterface::writeBoreholeToGMS(static_cast<GEOLIB::StationBorehole*>(static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)), fileName.toStdString(), temp_soil_names);
     }
 }
 
@@ -136,4 +141,10 @@ void StationTreeView::showPropertiesDialog()
 	QModelIndex index = this->selectionModel()->currentIndex();
 	QString name = (static_cast<ModelTreeItem*>(index.internalPointer())->data(0)).toString();
 	emit propertiesDialogRequested(name.toStdString());
+}
+
+void StationTreeView::showDiagramPrefsDialog()
+{
+	QModelIndex index = this->selectionModel()->currentIndex();
+	emit diagramRequested(index);
 }

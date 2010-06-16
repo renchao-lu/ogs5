@@ -15,10 +15,15 @@ using namespace std;
 #include "geo_pnt.h"
 #include "geo_sfc.h"
 #include "files0.h"
+
+// GEOLIB
+#include "GEOObjects.h"
+
 // MSHLib
 //#include "mshlib.h"
 // FEMLib
 extern void remove_white_space(string*);
+#include "problem.h"
 #include "gs_project.h"
 #include "tools.h"
 #include "rf_node.h"
@@ -44,8 +49,9 @@ vector<CBoundaryCondition*> bc_db_vector;
  Programing:
  01/2004 OK Implementation
  **************************************************************************/
-CBoundaryCondition::CBoundaryCondition(void) {
-	delimiter_type = " ";
+CBoundaryCondition::CBoundaryCondition() :
+	_geo_obj_idx (std::numeric_limits<size_t>::max()), geo_name ("")
+{
 	dis_type = -1;
 	CurveIndex = -1;
 	// FCT
@@ -66,7 +72,6 @@ CBoundaryCondition::~CBoundaryCondition(void) {
 	// GEO
 	geo_type = -1;
 	geo_type_name.clear();
-	geo_name.clear();
 	// DIS
 	dis_type = -1;
 	dis_type_name.clear();
@@ -76,13 +81,27 @@ CBoundaryCondition::~CBoundaryCondition(void) {
 	node_renumber_vector.clear();
 	geo_node_number = -1;
 	geo_node_value = 0.0;
-	delimiter_type.clear();
 	//DB
 	db_file_name.clear();
 	// MSH
 	msh_node_number = -1;
 	PointsHaveDistribedBC.clear();
 	DistribedBC.clear();
+}
+
+size_t CBoundaryCondition::getGeoObjIdx () const
+{
+	return _geo_obj_idx;
+}
+
+const std::string& CBoundaryCondition::getGeoName ()
+{
+	return geo_name;
+}
+
+void CBoundaryCondition::setFileName (const std::string &name)
+{
+	fname = name;
 }
 
 /**************************************************************************
@@ -93,30 +112,26 @@ CBoundaryCondition::~CBoundaryCondition(void) {
  09/2004 OK POINTS method
  11/2004 MX stream string
  **************************************************************************/
-ios::pos_type CBoundaryCondition::Read(ifstream *bc_file) {
-	string sub_line;
+ios::pos_type CBoundaryCondition::Read(std::ifstream *bc_file,
+		const GEOLIB::GEOObjects& geo_obj, const std::string& unique_fname)
+{
 	string line_string;
-	string delimiter(" ");
 	bool new_keyword = false;
-	bool new_subkeyword = false;
-	string hash("#");
 	ios::pos_type position;
+
 	string sub_string, strbuff;
 	int ibuff; //pos,
 	double dbuff; //WW
-	ios::pos_type position_line;
 	std::stringstream in;
-	int nLBC;
 
 	//========================================================================
 	// Schleife ueber alle Phasen bzw. Komponenten
 	while (!new_keyword) {
-		new_subkeyword = false;
 		position = bc_file->tellg();
 		line_string = GetLineFromFile1(bc_file);
 		if (line_string.size() < 1)
 			break;
-		if (line_string.find(hash) != string::npos) {
+		if (line_string.find("#") != std::string::npos) {
 			new_keyword = true;
 			break;
 		}
@@ -138,6 +153,13 @@ ios::pos_type CBoundaryCondition::Read(ifstream *bc_file) {
 			in >> sub_string; //sub_line
 			if (sub_string.compare("POINT") == 0) { //OK
 				in >> geo_name; //sub_line
+
+				// TF 05/2010 - get the point vector
+				if (!((geo_obj.getPointVecObj(unique_fname))->getPointIDByName (geo_name, _geo_obj_idx))) {
+					std::cerr << "error in CBoundaryCondition::Read: point name \"" << geo_name << "\" not found!" << std::endl;
+					exit (1);
+				}
+
 				in.clear();
 				geo_type_name = "POINT";
 				geo_type = 0;
@@ -206,6 +228,7 @@ ios::pos_type CBoundaryCondition::Read(ifstream *bc_file) {
 				dis_type_name = "LINEAR";
 				dis_type = 2;
 				// Distribued. WW
+				int nLBC;
 				in >> nLBC; //sub_line
 				in.clear();
 
@@ -233,11 +256,12 @@ ios::pos_type CBoundaryCondition::Read(ifstream *bc_file) {
 				in >> db_file_name; //sub_line
 				in.clear();
 			}
-			if (line_string.find("SUBSTITUTE") != string::npos) {
-				dis_type_name = "VARIABLE";
-				in >> geo_node_substitute; //sub_line
-				in.clear();
-			}
+			// TF 18/05/2010 not used anymore ?!
+//			if (line_string.find("SUBSTITUTE") != string::npos) {
+//				dis_type_name = "VARIABLE";
+//				in >> geo_node_substitute; //sub_line
+//				in.clear();
+//			}
 			if (line_string.find("PERIODIC") != string::npos) { // JOD
 				dis_type_name = "PERIODIC";
 				periodic = true;
@@ -266,7 +290,7 @@ ios::pos_type CBoundaryCondition::Read(ifstream *bc_file) {
 				in.clear();
 
 				//        pos1=pos2+1;
-				//        sub_string = get_sub_string(buffer,delimiter,pos1,&pos2);
+				//        sub_string = get_sub_string(buffer,"  ",pos1,&pos2);
 				//		CurveIndex = atoi(sub_string.c_str());
 			}
 			continue;
@@ -338,14 +362,14 @@ void CBoundaryCondition::Write(fstream* rfd_file) {
 	//GEO_TYPE
 	*rfd_file << " $GEO_TYPE" << endl;
 	*rfd_file << "  ";
-	*rfd_file << geo_type_name << delimiter_type << geo_name << endl;
+	*rfd_file << geo_type_name << " " << geo_name << endl;
 	//--------------------------------------------------------------------
 	/*OK4910
 	 //MSH_TYPE
 	 if(msh_node_number>0){
 	 *rfd_file << " $MSH_TYPE" << endl;
 	 *rfd_file << "  ";
-	 *rfd_file << "NODE" << delimiter_type << msh_node_number << endl;
+	 *rfd_file << "NODE" << " " << msh_node_number << endl;
 	 }
 	 */
 	//--------------------------------------------------------------------
@@ -355,7 +379,7 @@ void CBoundaryCondition::Write(fstream* rfd_file) {
 	*rfd_file << dis_type_name;
 	switch (dis_type_name[0]) {
 	case 'C': // Constant
-		*rfd_file << delimiter_type << geo_node_value;
+		*rfd_file << " " << geo_node_value;
 		*rfd_file << endl;
 		break;
 	case 'L': // Linear
@@ -366,7 +390,7 @@ void CBoundaryCondition::Write(fstream* rfd_file) {
 		}
 		break;
 	case 'N': //OK4801 NOD
-		*rfd_file << delimiter_type << geo_node_value;
+		*rfd_file << " " << geo_node_value;
 		*rfd_file << endl;
 		break;
 	}
@@ -541,44 +565,39 @@ void InterpolateValues(vector<CNodeValue*> node_value_vector) {
  01/2004 OK Implementation
  01/2005 OK Boolean type
  01/2005 OK Destruct before read
+ 05/2010 TF changes due to new GEOLIB integration, some improvements
  **************************************************************************/
-bool BCRead(string file_base_name) {
-	//----------------------------------------------------------------------
-	//OK  BCDelete();
-	//----------------------------------------------------------------------
-	CBoundaryCondition *m_bc = NULL;
+bool BCRead(std::string file_base_name, const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
+{
 	char line[MAX_ZEILE];
-	string sub_line;
-	string line_string;
-	string bc_file_name;
+	std::string line_string, bc_file_name;
 	ios::pos_type position;
-	//========================================================================
+
 	// File handling
 	bc_file_name = file_base_name + BC_FILE_EXTENSION;
-	ifstream bc_file(bc_file_name.data(), ios::in);
+	std::ifstream bc_file(bc_file_name.data(), ios::in);
 	if (!bc_file.good()) {
-		cout << "! Error in BCRead: No boundary conditions !" << endl;
+		std::cout << "! Error in BCRead: No boundary conditions !" << std::endl;
 		return false;
 	}
-	// Rewind the file
-	bc_file.clear();
-	bc_file.seekg(0L, ios::beg);
-	//========================================================================
+
 	// Keyword loop
-	cout << "BCRead" << endl;
+	std::cout << "BCRead ... " << std::flush;
 	while (!bc_file.eof()) {
 		bc_file.getline(line, MAX_ZEILE);
 		line_string = line;
-		if (line_string.find("#STOP") != string::npos)
+		if (line_string.find("#STOP") != std::string::npos) {
+			std::cout << "ok" << std::endl;
 			return true;
-		//----------------------------------------------------------------------
-		if (line_string.find("#BOUNDARY_CONDITION") != string::npos) { // keyword found
-			m_bc = new CBoundaryCondition();
-			position = m_bc->Read(&bc_file);
+		}
+		if (line_string.find("#BOUNDARY_CONDITION") != std::string::npos) { // keyword found
+			CBoundaryCondition *m_bc (new CBoundaryCondition());
+			position = m_bc->Read (&bc_file, geo_obj, unique_name);
 			bc_list.push_back(m_bc);
 			bc_file.seekg(position, ios::beg);
 		} // keyword found
 	} // eof
+	std::cout << "ok" << std::endl;
 	return true;
 }
 
@@ -628,20 +647,19 @@ void BCWrite(string base_file_name) {
  01/2004 OK Implementation
  07/2007 OK V2, global function
  **************************************************************************/
-CBoundaryCondition* BCGet(string pcs_name, string geo_type_name,
-		string geo_name) {
-	CBoundaryCondition *m_bc = NULL;
-	list<CBoundaryCondition*>::const_iterator p_bc = bc_list.begin();
-	while (p_bc != bc_list.end()) {
-		m_bc = *p_bc;
-		if ((m_bc->pcs_type_name.compare(pcs_name) == 0)
-				&& (m_bc->geo_type_name.compare(geo_type_name) == 0)
-				&& (m_bc->geo_name.compare(geo_name) == 0))
-			return m_bc;
-		++p_bc;
-	}
-	return NULL;
-}
+//CBoundaryCondition* BCGet(const std::string &pcs_name, const std::string &geo_type_name,
+//		const std::string &geo_name)
+//{
+//	std::list<CBoundaryCondition*>::const_iterator p_bc = bc_list.begin();
+//	while (p_bc != bc_list.end()) {
+//		if (((*p_bc)->pcs_type_name.compare(pcs_name) == 0)
+//				&& ((*p_bc)->geo_type_name.compare(geo_type_name) == 0)
+//				&& ((*p_bc)->getGeoName().compare(geo_name) == 0))
+//			return *p_bc;
+//		++p_bc;
+//	}
+//	return NULL;
+//}
 
 /**************************************************************************
  FEMLib-Method: CBoundaryCondition::SetDISType
@@ -882,48 +900,39 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 			}
 			//
 			cont = false;
-			if (m_bc->dis_type_name.compare("VARIABLE") == 0) //OK
-			{
-				cont = true;
-				CGLPoint* m_geo_point = NULL;
-				m_geo_point = GEOGetPointByName(m_bc->geo_node_substitute);//C10/05
-				if (m_geo_point) {
-					//            m_node_value->msh_node_number = ShiftInNodeVector
-					//                                          + GetNodeNumberClose(m_geo_point->x,m_geo_point->y,m_geo_point->z);
-					msh_node_number_subst = ShiftInNodeVector
-							+ m_msh->GetNODOnPNT(m_geo_point);
-				}
-			}
+			// TF 18/05/2010 not used anymore ?!
+//			if (m_bc->dis_type_name.compare("VARIABLE") == 0) //OK
+//			{
+//				cont = true;
+//				CGLPoint* m_geo_point = NULL;
+//				m_geo_point = GEOGetPointByName(m_bc->geo_node_substitute);//C10/05
+//				if (m_geo_point) {
+//					//            m_node_value->msh_node_number = ShiftInNodeVector
+//					//                                          + GetNodeNumberClose(m_geo_point->x,m_geo_point->y,m_geo_point->z);
+//					msh_node_number_subst = ShiftInNodeVector
+//							+ m_msh->GetNODOnPNT(m_geo_point);
+//				}
+//			}
 			//------------------------------------------------------------------
 			if (m_bc->geo_type_name.compare("POINT") == 0) {
 				m_node_value = new CBoundaryConditionNode;
-				//m_node_value->geo_node_number = m_bc->geo_node_number;//CC remove
+				// TF get the point vector
+				const GEOLIB::GEOObjects* geo_obj ((m_pcs->getProblemObjectPointer()->getGeoObj()));
+				std::string geo_name ((m_pcs->getProblemObjectPointer()->getGeoObjName()));
+				const std::vector<GEOLIB::Point*> *pnt_vec (geo_obj->getPointVec (geo_name));
+
 				// Get MSH node number
-				CGLPoint* m_geo_point = NULL;
 				if (m_bc->dis_type_name.compare("CONSTANT") == 0
 						|| m_bc->dis_type_name.compare("PERIODIC") == 0) { //JOD
-					m_geo_point = GEOGetPointByName(m_bc->geo_name);//CC
-					if (m_geo_point)
-						m_bc->geo_node_number = m_geo_point->id;//CC
-					m_node_value->geo_node_number = m_bc->geo_node_number;//CC
-					if (m_geo_point) {
-						m_node_value->geo_node_number = m_msh->GetNODOnPNT(
-								m_geo_point);
-					}
+					// TF - tests from CC removed -> should be checked while reading data
+					m_node_value->geo_node_number = m_msh->GetNODOnPNT((*pnt_vec)[m_bc->getGeoObjIdx()]);
 				}
-				//------------------------------------------------------------------
 				if (m_bc->dis_type_name.compare("VARIABLE") == 0) { //OK
 					m_node_value->conditional = true;
-					m_geo_point = GEOGetPointByName(m_bc->geo_name); //YD
-					if (m_geo_point) {
-						m_node_value->geo_node_number = m_msh->GetNODOnPNT(
-								m_geo_point);
-						m_node_value->msh_node_number
-								= m_node_value->geo_node_number; // WW ShiftInNodeVector +
-						//    + GetNodeNumberClose(m_geo_point->x,m_geo_point->y,m_geo_point->z);
-						//             m_node_value->msh_node_number_subst = ShiftInNodeVector + m_msh->GetNODOnPNT(m_geo_point);
-					}
+					m_node_value->geo_node_number = m_msh->GetNODOnPNT((*pnt_vec)[m_bc->getGeoObjIdx()]);
+					m_node_value->msh_node_number = m_node_value->geo_node_number; // WW ShiftInNodeVector +
 				}
+
 				m_node_value->conditional = cont;
 				m_node_value->CurveIndex = m_bc->CurveIndex;
 				m_node_value->node_value = m_bc->geo_node_value;
@@ -938,27 +947,24 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 			// MHS node close (<=eps) to point
 			if (m_bc->geo_type_name.compare("POINTS") == 0) {
 				// Get MSH nodes numbers
-				CGLPoint* m_geo_point = NULL;
 				vector<long> bc_group_msh_nodes_vector;
-				m_geo_point = GEOGetPointByName(m_bc->geo_name);//CC
-				if (m_geo_point) {
-					m_bc->geo_node_number = m_geo_point->id;//CC
-					MSHGetNodesClose(bc_group_msh_nodes_vector, m_geo_point);//CC
-					long no_nodes = (long) bc_group_msh_nodes_vector.size();
-					for (i = 0; i < no_nodes; i++) {
-						m_node_value = new CBoundaryConditionNode;
-						m_node_value->conditional = cont;
-						m_node_value->geo_node_number = m_bc->geo_node_number;
-						m_node_value->CurveIndex = m_bc->CurveIndex;
-						m_node_value->msh_node_number
-								= bc_group_msh_nodes_vector[i];
-						m_node_value->node_value = m_bc->geo_node_value;
-						m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-						m_pcs->bc_node.push_back(m_bc); //WW
-						m_pcs->bc_node_value.push_back(m_node_value); //WW
-						//WW group_vector.push_back(m_node_value);
-						//WW bc_group_vector.push_back(m_bc); //OK
-					}
+				// TF - tests from CC removed -> should be checked while reading data
+				m_bc->geo_node_number = m_bc->getGeoObjIdx (); // TF
+//				MSHGetNodesClose(bc_group_msh_nodes_vector, m_geo_point);//CC
+				long no_nodes = (long) bc_group_msh_nodes_vector.size();
+				for (i = 0; i < no_nodes; i++) {
+					m_node_value = new CBoundaryConditionNode;
+					m_node_value->conditional = cont;
+					m_node_value->geo_node_number = m_bc->geo_node_number;
+					m_node_value->CurveIndex = m_bc->CurveIndex;
+					m_node_value->msh_node_number
+							= bc_group_msh_nodes_vector[i];
+					m_node_value->node_value = m_bc->geo_node_value;
+					m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
+					m_pcs->bc_node.push_back(m_bc); //WW
+					m_pcs->bc_node_value.push_back(m_node_value); //WW
+					//WW group_vector.push_back(m_node_value);
+					//WW bc_group_vector.push_back(m_bc); //OK
 				}
 				bc_group_msh_nodes_vector.clear(); // ? enough
 			}

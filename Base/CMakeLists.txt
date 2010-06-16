@@ -5,10 +5,16 @@ set( HEADERS
 	StringTools.h
 	swap.h
 	FileTools.h
+	quicksort.h
+	binarySearch.h
+	NameMapper.h
 )
 
 set( SOURCES
-	dummy.cpp
+	DateTools.cpp
+	StringTools.cpp
+	quicksort.cpp
+	NameMapper.cpp
 )
 
 # Create the library
@@ -18,6 +24,7 @@ set_target_properties(Base PROPERTIES LINKER_LANGUAGE CXX)
 
 include_directories(
 	../GEO
+	../MathLib
 	.
 )
 

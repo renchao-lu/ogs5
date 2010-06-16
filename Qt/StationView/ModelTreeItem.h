@@ -8,27 +8,40 @@
 
 #include "TreeItem.h"
 #include "Station.h"
-
-class ModelItem;
+#include "BaseItem.h"
 
 /**
- * \brief A TreeItem including a ModelItem for visualisation in 2D and 3D.
- * \sa TreeItem, ModelItem
+ * \brief A TreeItem containing some additional information used in the StationModel.
+ *
+ * \sa TreeItem
  */
 class ModelTreeItem : public TreeItem
 {
 public:
-	ModelTreeItem(const QList<QVariant> &data, TreeItem *parent, ModelItem* item = 0);
-	~ModelTreeItem();
+	/**
+	 * Constructor
+	 * \param data The data associated with each column
+	 * \param parent The parent item in the tree
+	 * \param item The ModelItem-object
+	 */
+	ModelTreeItem(const QList<QVariant> &data, TreeItem *parent, BaseItem* item = NULL);
+	~ModelTreeItem() { delete _item; };
 
-	GEOLIB::Station* getStation();
-	ModelItem* getItem() const;
-	void setStation(GEOLIB::Station* stn);
-	void setItem( ModelItem* item );
+	/// Returns the station object from which this item has been constructed
+	GEOLIB::Station* getStation() {	return _stn; };
+	
+	/// Returns the BaseItem associated with this item
+	BaseItem* getItem() const;
+
+	/// Associates a station object with this item
+	void setStation(GEOLIB::Station* stn) { _stn = stn; };
+
+	/// Associates a BaseItem with this item
+	void setItem( BaseItem* item ) { _item = item; };
 	
 
 private:
-	ModelItem* _item;
+	BaseItem* _item;
 	GEOLIB::Station* _stn;
 };
 

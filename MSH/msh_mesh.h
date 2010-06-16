@@ -143,10 +143,6 @@ public:
 	 * \defgroup MSHGEO methods connecting mesh with the geometric objects
 	 * */
 
-	/**
-	 * \ingroup MSHGEO
-	 */
-	void GetNODOnGEO(const std::string&, const std::string&, std::vector<long>&); //OK
 	// GEO-PNT
 	/**
 	 * \ingroup MSHGEO
@@ -180,7 +176,7 @@ public:
 	 * \ingroup MSHGEO
 	 * \brief depreciated method - uses old surface class
 	 */
-        void GetNODOnSFC_Vertical(Surface*m_sfc,vector<long>&msh_nod_vector);
+	void GetNODOnSFC_Vertical(Surface*m_sfc,vector<long>&msh_nod_vector);
 
 
 	/**

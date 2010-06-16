@@ -19,7 +19,7 @@ PetrelInterface::PetrelInterface(std::list<std::string> &sfc_fnames,
 					GEOLIB::Polyline*>) {
 
 	for (std::list<std::string>::const_iterator it(sfc_fnames.begin()); it
-			!= sfc_fnames.end(); it++) {
+			!= sfc_fnames.end(); ++it) {
 		std::cout << "PetrelInterface::PetrelInterface open surface stream from file " << *it
 				<< " ... " << std::flush;
 		std::ifstream in((*it).c_str());
@@ -33,7 +33,7 @@ PetrelInterface::PetrelInterface(std::list<std::string> &sfc_fnames,
 	}
 
 	for (std::list<std::string>::const_iterator it(well_path_fnames.begin()); it
-			!= well_path_fnames.end(); it++) {
+			!= well_path_fnames.end(); ++it) {
 		std::cout << "PetrelInterface::PetrelInterface open well path stream from file "
 				<< *it << " ... " << std::flush;
 		std::ifstream in((*it).c_str());

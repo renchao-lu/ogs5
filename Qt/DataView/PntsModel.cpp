@@ -1,28 +1,29 @@
 /**
  * \file PntsModel.cpp
  * 24/9/2009 LB Initial implementation
+ * 05/05/2010 KR 2d graphic functionality removed and various layout changes
  *
  * Implementation of PntsModel
  */
 
 // ** INCLUDES **
 #include "PntsModel.h"
-#include "geo_pnt.h"
+#include "TreeItem.h"
 #include "GEOObjects.h"
-
-#include "ModelItem.h"
-#include "PntGraphicsItem2d.h"
 
 #include "VtkPointsSource.h"
 
 PntsModel::PntsModel( QString name, std::vector<GEOLIB::Point*>* pntVec, QObject* parent /*= 0*/ )
 : Model(name, parent), _pntVec(pntVec)
 {
-	_modelContentType = PNTS_MODEL;
+	QList<QVariant> rootData;
+	delete _rootItem;
+	rootData << "Id" << "x" << "y" << "z";
+	_rootItem = new TreeItem(rootData, NULL);
+	setData(pntVec, _rootItem);
+
 	_vtkSource = VtkPointsSource::New();
 	static_cast<VtkPointsSource*>(_vtkSource)->setPoints(pntVec);
-
-	updateData();
 }
 
 PntsModel::~PntsModel()
@@ -34,8 +35,9 @@ int PntsModel::columnCount( const QModelIndex &parent /*= QModelIndex()*/ ) cons
 {
 	Q_UNUSED(parent)
 
-	return 5;
+	return 4;
 }
+
 QVariant PntsModel::data( const QModelIndex& index, int role ) const
 {
 	if (!index.isValid())
@@ -44,12 +46,7 @@ QVariant PntsModel::data( const QModelIndex& index, int role ) const
 	if ((size_t)index.row() >= _pntVec->size())
 		return QVariant();
 
-
-	GraphicsItem2d* item2d = itemFromIndex(index)->item2d();
-	if (item2d == NULL)
-		return QVariant();
-
-	GEOLIB::Point* point = static_cast<PntGraphicsItem2d*>(item2d)->point();
+	GEOLIB::Point* point = (*_pntVec)[index.row()];
 	if (point == NULL)
 		return QVariant();
 
@@ -58,16 +55,17 @@ QVariant PntsModel::data( const QModelIndex& index, int role ) const
 	case Qt::DisplayRole:
 		switch (index.column())
 		{
-//		case 0:
-//			return QString::fromStdString(point->name);
-//		case 1:
-//            return (int)point->id;
+		case 0:
+            return index.row();
+		case 1:
+			//return (*point)[0];
+			return QVariant(QString::number((*point)[0],'f'));
 		case 2:
-			return (*point)[0];
+			//return (*point)[1];
+			return QVariant(QString::number((*point)[1],'f'));
 		case 3:
-			return (*point)[1];
-		case 4:
-			return (*point)[2];
+			//return (*point)[2];
+			return QVariant(QString::number((*point)[2],'f'));
 		default:
 			return QVariant();
 		}
@@ -91,11 +89,10 @@ QVariant PntsModel::headerData( int section, Qt::Orientation orientation, int ro
 	{
 		switch (section)
 		{
-		case 0: return "Name";
-		case 1: return "Id";
-		case 2: return "x";
-		case 3: return "y";
-		case 4: return "z";
+		case 0: return "Id";
+		case 1: return "x";
+		case 2: return "y";
+		case 3: return "z";
 		default: return QVariant();
 		}
 	}
@@ -103,40 +100,52 @@ QVariant PntsModel::headerData( int section, Qt::Orientation orientation, int ro
 		return QString("Row %1").arg(section);
 }
 
+void PntsModel::setData(std::vector<GEOLIB::Point*> *points, TreeItem* parent)
+{
+	int nPoints = static_cast<int>(points->size());
+	for (int j=0; j<nPoints; j++)
+	{
+		QList<QVariant> pnt;
+		pnt << j << QString::number((*(*points)[j])[0],'f') << QString::number((*(*points)[j])[1],'f') << QString::number((*(*points)[j])[2],'f');
+		TreeItem* child = new TreeItem(pnt, parent);
+		parent->appendChild(child);
+	}
+
+	reset();
+}
+
 bool PntsModel::setData( const QModelIndex& index, const QVariant& value, int role /*= Qt::EditRole*/ )
 {
+
 	if (index.isValid() && role == Qt::EditRole)
 	{
-		GEOLIB::Point* point = _pntVec->at(index.row());
+		GEOLIB::Point* point = (*_pntVec)[index.row()];
 		bool wasConversionSuccesfull = false;
-		//int id;
 		double x, y, z;
 		switch (index.column())
 		{
-//		case 0:
-//			point->name = value.toString().toStdString();
-//		case 1:
+		case 0:
 //			id = value.toInt(&wasConversionSuccesfull);
 //			if (wasConversionSuccesfull)
 //				point->id = id;
 //			else
 //				return false;
 //			break;
-		case 2:
+		case 1:
 			x = value.toDouble(&wasConversionSuccesfull);
 			if (wasConversionSuccesfull)
 				(*point)[0] = x;
 			else
 				return false;
 			break;
-		case 3:
+		case 2:
 			y = value.toDouble(&wasConversionSuccesfull);
 			if (wasConversionSuccesfull)
 				(*point)[1] = y;
 			else
 				return false;
 			break;
-		case 4:
+		case 3:
 			z = value.toDouble(&wasConversionSuccesfull);
 			if (wasConversionSuccesfull)
 				(*point)[2] = z;
@@ -150,25 +159,14 @@ bool PntsModel::setData( const QModelIndex& index, const QVariant& value, int ro
 		emit dataChanged(index, index);
 		return true;
 	}
+
 	return false;
 }
 
 void PntsModel::updateData()
 {
 	clearData();
-
-	for (vector<GEOLIB::Point*>::const_iterator it = _pntVec->begin();
-		it != _pntVec->end(); ++it)
-	{
-		PntGraphicsItem2d* pntItem2d = new PntGraphicsItem2d(this, *it);
-		ModelItem* item = new ModelItem(pntItem2d, this);
-		connect(pntItem2d, SIGNAL(itemPositionChanged(GEOLIB::Point*)),
-			this, SLOT(item2dChanged(GEOLIB::Point*)));
-		_data.push_back(item);
-	}
-
 	Model::updateData();
-	//emit dataChanged(QModelIndex(), QModelIndex());
 }
 
 QModelIndex PntsModel::indexFromPoint( const GEOLIB::Point* pnt ) const
@@ -177,13 +175,8 @@ QModelIndex PntsModel::indexFromPoint( const GEOLIB::Point* pnt ) const
 	{
 		for (int i = 0; i < rowCount(); ++i)
 		{
-			QModelIndex pntIndex = index(i, 0);
-			PntGraphicsItem2d* itemFromIndex =
-				static_cast<PntGraphicsItem2d*>(
-				static_cast<ModelItem*>(pntIndex.internalPointer())->item2d());
-
-			if (pnt == itemFromIndex->point())
-				return pntIndex;
+			if (pnt == (*_pntVec)[i])
+				return index(i, 0);
 		}
 	}
 	return QModelIndex();

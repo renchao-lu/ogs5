@@ -6,7 +6,9 @@
 #include "SHPInterface.h"
 #include "StringTools.h"
 
-using namespace GEOLIB;
+// MATHLIB
+#include "AnalyticalGeometry.h"
+
 
 bool SHPInterface::readSHPInfo(const std::string &filename, int &shapeType, int &numberOfEntities)
 {
@@ -41,14 +43,14 @@ void SHPInterface::readPoints(const SHPHandle &hSHP, int numberOfElements, std::
 {
 	if (numberOfElements>0)
 	{
-		std::vector<Point*> *points = new std::vector<Point*>();
+		std::vector<GEOLIB::Point*> *points = new std::vector<GEOLIB::Point*>();
 		SHPObject *hSHPObject;
 
 		for (int i=0; i<numberOfElements; i++)
 		{
 			hSHPObject = SHPReadObject(hSHP,i);
 
-			Point* pnt = new Point( *(hSHPObject->padfX), *(hSHPObject->padfY), *(hSHPObject->padfZ) );
+			GEOLIB::Point* pnt = new GEOLIB::Point( *(hSHPObject->padfX), *(hSHPObject->padfY), *(hSHPObject->padfZ) );
 			points->push_back(pnt);
 		}
 
@@ -61,13 +63,13 @@ void SHPInterface::readStations(const SHPHandle &hSHP, int numberOfElements, std
 {
 	if (numberOfElements>0)
 	{
-		std::vector<Point*> *stations = new std::vector<Point*>[numberOfElements];
+		std::vector<GEOLIB::Point*> *stations = new std::vector<GEOLIB::Point*>[numberOfElements];
 		SHPObject *hSHPObject;
 
 		for (int i=0; i<numberOfElements; i++)
 		{
 			hSHPObject = SHPReadObject(hSHP,i);
-			Station* stn = Station::createStation( number2str(i), *(hSHPObject->padfX), *(hSHPObject->padfY), *(hSHPObject->padfZ) );
+			GEOLIB::Station* stn = GEOLIB::Station::createStation( number2str(i), *(hSHPObject->padfX), *(hSHPObject->padfY), *(hSHPObject->padfZ) );
 			stations->push_back(stn);
 		}
 
@@ -81,9 +83,12 @@ void SHPInterface::readPolylines(const SHPHandle &hSHP, int numberOfElements, st
 {
 	int nextIdx = -1;
 	size_t noOfPoints = 0, noOfParts = 0, cnpoints = 0;
-	std::vector<Point*> *points = new std::vector<Point*>();
-	std::vector<Polyline*> *lines = new std::vector<Polyline*>();
+	std::vector<GEOLIB::Point*> *points = new std::vector<GEOLIB::Point*>();
+	std::vector<GEOLIB::Polyline*> *lines = new std::vector<GEOLIB::Polyline*>();
 	SHPObject *hSHPObject;
+
+	// TODO tolerance value (is there a better value for the tolerance from arc gis?)
+	double eps (sqrt(std::numeric_limits<double>::min()));
 
 	// for each polyline)
 	for (int i=0; i<numberOfElements; i++)
@@ -97,19 +102,21 @@ void SHPInterface::readPolylines(const SHPHandle &hSHP, int numberOfElements, st
 			int firstPnt = *(hSHPObject->panPartStart+p);
 			int lastPnt  = (p < (noOfParts-1)) ? *(hSHPObject->panPartStart+p+1) : noOfPoints;
 
-			Polyline* line = new Polyline(*points);
+			GEOLIB::Polyline* line = new GEOLIB::Polyline(*points);
 
 			// for each point in that polyline
 			for (int j=firstPnt; j<lastPnt; j++)
 			{
-				Point* pnt = new Point( *(hSHPObject->padfX+j), *(hSHPObject->padfY+j), *(hSHPObject->padfZ+j) );
+				GEOLIB::Point* pnt = new GEOLIB::Point( *(hSHPObject->padfX+j), *(hSHPObject->padfY+j), *(hSHPObject->padfZ+j) );
 				nextIdx=-1;
 
 				// check if point already exists
 				cnpoints = points->size();
 				for (size_t k=0; k<cnpoints; k++)
 				{
-					if ( (j>0) && (sqrNrm2(pnt) == sqrNrm2( (*points)[k] )) )
+					if ( (j>0) && (fabs((*pnt)[0]-(*((*points)[k]))[0]) < eps
+							   &&  fabs((*pnt)[1]-(*((*points)[k]))[1]) < eps
+							   &&  fabs((*pnt)[2]-(*((*points)[k]))[2]) < eps))
 					{
 						nextIdx=k;
 						k=cnpoints;
@@ -143,21 +150,38 @@ void SHPInterface::readPolygons(const SHPHandle &hSHP, int numberOfElements, std
 {
 	this->readPolylines(hSHP, numberOfElements, listName);
 
-//	std::vector<Polyline*> *lines = _geoObjects->getPolylineVec(listName);
-//	size_t nLines = lines->size();
-//
-//	if (nLines>0)
-//	{
-//		std::vector<Surface*> *surfaces = new std::vector<Surface*>(nLines);
-//		for (size_t i=0; i<nLines; i++)
-//		{
-//			Surface* sfc = new Surface(*lines);
-//			if ((*lines)[i]->isClosed())
-//			{
-//				sfc->addPolyline(i);
-//				surfaces->push_back(sfc);
-//			}
-//		}
-//		_geoObjects->addSurfaceVec(surfaces, listName);
-//	}
+	const std::vector<GEOLIB::Point*> *pnt_vec (_geoObjects->getPointVec(listName));
+	const std::vector<GEOLIB::Polyline*> *polylines (_geoObjects->getPolylineVec(listName));
+	std::vector<GEOLIB::Surface*> *sfc_vec(new std::vector<GEOLIB::Surface*>);
+
+	for (std::vector<GEOLIB::Polyline*>::const_iterator poly_it (polylines->begin());
+		poly_it != polylines->end(); poly_it++) {
+
+		std::cout << "triangulation of Polygon with " << (*poly_it)->getSize() << " points ... " << std::flush;
+
+		if ((*poly_it)->getSize() > 2) {
+			if (MATHLIB::getOrientation ((*(*poly_it))[0], (*(*poly_it))[1], (*(*poly_it))[2]) == MATHLIB::CCW) {
+				// create empty surface
+				GEOLIB::Surface *sfc(new GEOLIB::Surface(*pnt_vec));
+
+				std::cout << "triangulation of Polygon with " << (*poly_it)->getSize() << " points ... " << std::flush;
+				std::list<GEOLIB::Triangle> triangles;
+				MATHLIB::earClippingTriangulationOfPolygon(*poly_it, triangles);
+				std::cout << "done - " << triangles.size () << " triangles " << std::endl;
+
+				// add Triangles to Surface
+				std::list<GEOLIB::Triangle>::const_iterator it (triangles.begin());
+				while (it != triangles.end()) {
+					sfc->addTriangle ((*it)[0], (*it)[1], (*it)[2]);
+					it++;
+				}
+
+				// add surface to sfc_vec
+				sfc_vec->push_back(sfc);
+			} else std::cout << "polygon in CW order " << std::endl;
+		}
+	}
+
+	if (!sfc_vec->empty())
+		_geoObjects->addSurfaceVec(sfc_vec, listName);
 }

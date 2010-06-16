@@ -2,7 +2,7 @@
  * GEOObjects.cpp
  *
  *  Created on: Jan 21, 2010
- *      Author: fischeth / KR
+ *      Author: TF / KR
  */
 
 #include "GEOObjects.h"
@@ -32,12 +32,15 @@ GEOObjects::~GEOObjects()
 	}
 }
 
-void GEOObjects::addPointVec(std::vector<Point*> *points, std::string &name)
+void GEOObjects::addPointVec(std::vector<Point*> *points, std::string &name, std::vector<std::string>* pnt_names)
 {
-	size_t idx = _pnt_vecs.size();
-	_pnt_vecs.push_back(new PointVec(points));
 	isUniquePointVecName(name);
-	_pnt_vecs[idx]->setName(name);
+	if (!pnt_names) {
+		pnt_names = new std::vector<std::string>;
+		size_t n_elements (points->size());
+		for (size_t k(0); k<n_elements; k++) pnt_names->push_back ("");
+	}
+	_pnt_vecs.push_back(new PointVec(name, points, pnt_names));
 }
 
 bool GEOObjects::appendPointVec(const std::vector<Point*> &points, std::string &name)
@@ -58,7 +61,7 @@ bool GEOObjects::appendPointVec(const std::vector<Point*> &points, std::string &
 	} else return false;
 }
 
-std::vector<Point*>* GEOObjects::getPointVec(const std::string &name)
+const std::vector<Point*>* GEOObjects::getPointVec(const std::string &name) const
 {
 	size_t size (_pnt_vecs.size());
 	for (size_t i=0; i<size; i++)
@@ -70,10 +73,21 @@ std::vector<Point*>* GEOObjects::getPointVec(const std::string &name)
 	return NULL;
 }
 
+const PointVec* GEOObjects::getPointVecObj(const std::string &name) const
+{
+	size_t size (_pnt_vecs.size());
+	for (size_t i=0; i<size; i++) {
+		if (_pnt_vecs[i]->getName().compare(name)==0)
+			return _pnt_vecs[i];
+	}
+	std::cout << "GEOObjects::getPointVec() - No entry found with name \"" << name << "\"." << std::endl;
+	return NULL;;
+}
+
 bool GEOObjects::removePointVec(const std::string &name)
 {
 	if (isPntVecUsed (name)) {
-		std::cout << "GEOObjects::removePointVec() - there are Polylines depending on this points" << std::endl;
+		std::cout << "GEOObjects::removePointVec() - There are still Polylines or Surfaces depending on these points." << std::endl;
 		return false;
 	}
 
@@ -92,12 +106,10 @@ bool GEOObjects::removePointVec(const std::string &name)
 
 void GEOObjects::addStationVec(std::vector<Point*> *stations, std::string &name, const Color* const color)
 {
-	size_t idx = _pnt_vecs.size();
 	size_t size = stations->size();
 	for (size_t i=0; i<size; i++) static_cast<Station*>((*stations)[i])->setColor(color);
-	_pnt_vecs.push_back(new PointVec(stations, PointVec::STATION));
 	isUniquePointVecName(name);
-	_pnt_vecs[idx]->setName(name);
+	_pnt_vecs.push_back(new PointVec(name, stations, NULL, PointVec::STATION));
 }
 
 
@@ -116,9 +128,9 @@ std::vector<Point*> *GEOObjects::filterStationVec(const std::string &name,
 	return NULL;
 }
 
-std::vector<Point*> *GEOObjects::getStationVec(const std::string &name)
+const std::vector<Point*> *GEOObjects::getStationVec(const std::string &name) const
 {
-	for (std::vector<PointVec*>::iterator it(_pnt_vecs.begin());
+	for (std::vector<PointVec*>::const_iterator it(_pnt_vecs.begin());
 		it != _pnt_vecs.end(); it++) {
 		if ((*it)->getName().compare(name) == 0 && (*it)->getType()
 				== PointVec::STATION)
@@ -129,7 +141,8 @@ std::vector<Point*> *GEOObjects::getStationVec(const std::string &name)
 	return NULL;
 }
 
-void GEOObjects::addPolylineVec(std::vector<Polyline*> *lines, const std::string &name)
+void GEOObjects::addPolylineVec(std::vector<Polyline*> *lines,
+		const std::string &name, std::vector<std::string>* ply_names)
 {
 	for (std::vector<Polyline*>::iterator it (lines->begin());
 		it != lines->end(); ) {
@@ -142,12 +155,10 @@ void GEOObjects::addPolylineVec(std::vector<Polyline*> *lines, const std::string
 	if (lines->size () == 0) return;
 	else std::cout << "GEOObjects::addPolylineVec adding " << lines->size() << " polylines" << std::endl;
 
-	size_t idx = _ply_vecs.size();
-	_ply_vecs.push_back(new PolylineVec(lines));
-	_ply_vecs[idx]->setName(name);
+	_ply_vecs.push_back(new PolylineVec(name, lines, ply_names));
 }
 
-std::vector<Polyline*> *GEOObjects::getPolylineVec(const std::string &name)
+const std::vector<Polyline*> *GEOObjects::getPolylineVec(const std::string &name) const
 {
 	size_t size (_ply_vecs.size());
 	for (size_t i=0; i<size; i++)
@@ -161,13 +172,6 @@ std::vector<Polyline*> *GEOObjects::getPolylineVec(const std::string &name)
 
 bool GEOObjects::removePolylineVec(const std::string &name)
 {
-	if (isPlyVecUsed(name)) {
-		std::cout
-				<< "GEOObjects::removePolylineVec() - there are Surfaces depending on these polylines"
-				<< std::endl;
-		return false;
-	}
-
 	for (std::vector<PolylineVec*>::iterator it = _ply_vecs.begin();
 		it != _ply_vecs.end(); ++it)
 	{
@@ -182,14 +186,13 @@ bool GEOObjects::removePolylineVec(const std::string &name)
 	return false;
 }
 
-void GEOObjects::addSurfaceVec(std::vector<Surface*> *sfc, const std::string &name)
+void GEOObjects::addSurfaceVec(std::vector<Surface*> *sfc, const std::string &name,
+		std::vector<std::string>* sfc_names)
 {
-	size_t idx = _sfc_vecs.size();
-	_sfc_vecs.push_back(new SurfaceVec(sfc));
-	_sfc_vecs[idx]->setName(name);
+	_sfc_vecs.push_back(new SurfaceVec(name, sfc, sfc_names));
 }
 
-std::vector<Surface*> *GEOObjects::getSurfaceVec(const std::string &name)
+const std::vector<Surface*>* GEOObjects::getSurfaceVec(const std::string &name) const
 {
 	size_t size (_sfc_vecs.size());
 	for (size_t i=0; i<size; i++)
@@ -203,9 +206,8 @@ std::vector<Surface*> *GEOObjects::getSurfaceVec(const std::string &name)
 
 bool GEOObjects::removeSurfaceVec(const std::string &name)
 {
-	bool nfound (true);
 	for (std::vector<SurfaceVec*>::iterator it (_sfc_vecs.begin());
-		it != _sfc_vecs.end() && nfound; it++) {
+		it != _sfc_vecs.end(); it++) {
 		if ((*it)->getName().compare (name) == 0) {
 			delete *it;
 			_sfc_vecs.erase (it);
@@ -240,8 +242,8 @@ bool GEOObjects::isUniquePointVecName(std::string &name)
 	}
 
 	// At this point cpName is a unique name and isUnique is true.
-	// If cpName is not the original name, name is changed and isUnique is set to false,
-	// indicating that the original name already existed.
+	// If cpName is not the original name, "name" is changed and isUnique is set to false,
+	// indicating that a vector with the original name already exists.
 	if (count>1)
 	{
 		isUnique = false;
@@ -253,24 +255,22 @@ bool GEOObjects::isUniquePointVecName(std::string &name)
 bool GEOObjects::isPntVecUsed (const std::string &name) const
 {
 	// search dependent data structures (Polyline)
-	bool used(false);
-	for (std::vector<PolylineVec*>::const_iterator it ( _ply_vecs.begin());
-		it != _ply_vecs.end() && !used; it++) {
+	for (std::vector<PolylineVec*>::const_iterator it ( _ply_vecs.begin());	it != _ply_vecs.end(); it++)
+	{
+		std::string a = (*it)->getName();
 		if (((*it)->getName()).compare(name) == 0)
-			used = true;
+			return true;
 	}
-	return used;
+	for (std::vector<SurfaceVec*>::const_iterator it ( _sfc_vecs.begin());	it != _sfc_vecs.end(); it++)
+	{
+		std::string a = (*it)->getName();
+		if (((*it)->getName()).compare(name) == 0)
+			return true;
+	}
+
+	return false;
+
 }
 
-bool GEOObjects::isPlyVecUsed (const std::string &name) const
-{
-	// search dependent data structures (Surfaces)
-	bool used(false);
-	for (std::vector<SurfaceVec*>::const_iterator it ( _sfc_vecs.begin());
-		it != _sfc_vecs.end() && !used; it++) {
-		if (((*it)->getName()).compare(name) == 0)
-			used = true;
-	}
-	return used;
-}
+
 } // namespace

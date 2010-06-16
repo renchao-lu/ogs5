@@ -7,14 +7,19 @@
 #define SHPIMPORTDIALOG_H
 
 #include <QtGui/QMainWindow>
-#include <QCheckBox>
 #include <QDialog>
-#include <QDialogButtonBox>
-#include <QLineEdit>
-#include <QRadioButton>
+
 
 class SHPInterface;
 class GEOModels;
+
+class QDialogButtonBox;
+class QFileInfo;
+class QGridLayout;
+class QLabel;
+class QLineEdit;
+class QRadioButton;
+class QVBoxLayout;
 
 /**
  * \brief Dialog for selecting which information should be loaded from a shape file.
@@ -35,6 +40,9 @@ private:
 	/// Constructs a dialog window based on the information found in the selected shape file
 	void setupDialog();
 
+	QGridLayout* _layout;
+	QLabel* _shpContentLabel;
+	QLabel* _nameLabel;
 	QLineEdit *_listName;
 	QRadioButton *_choice1, *_choice2;;
 	std::string _filename;

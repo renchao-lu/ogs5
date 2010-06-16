@@ -5,12 +5,14 @@ set( SOURCES
 	RecentFiles.cpp
 	TreeItem.cpp
 	TreeModel.cpp
+	ColorPickerPushButton.cpp
 )
 
 # Moc headers
 set( MOC_HEADERS
 	RecentFiles.h
 	TreeModel.h
+	ColorPickerPushButton.h
 )
 
 # Header files

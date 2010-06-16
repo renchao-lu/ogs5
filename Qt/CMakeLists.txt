@@ -8,9 +8,6 @@ endif (MSVC)
 
 
 # Find VTK
-#if (NOT UNIX)
-	#set ( VTK_DIR ${PROJECT_SOURCE_DIR}/../Libs/vtk/VTK/Build )
-#endif (NOT UNIX)
 find_package( VTK REQUIRED )
 INCLUDE( ${VTK_USE_FILE} )
 

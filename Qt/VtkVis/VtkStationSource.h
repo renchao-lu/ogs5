@@ -15,8 +15,7 @@
 #include "GEOObjects.h"
 
 /**
- * VtkStationSource is a VTK source object which can be used to feed a visualization
- * pipeline with point data. As a vtkPolyDataAlgorithm it outputs polygonal data.
+ * \brief VTK source object for the visualisation of station data (including boreholes)
  */
 class VtkStationSource : public vtkPolyDataAlgorithm, public VtkAlgorithmProperties
 {
@@ -26,6 +25,9 @@ public:
 	static VtkStationSource* New();
 
 	vtkTypeRevisionMacro(VtkStationSource,vtkPolyDataAlgorithm);
+
+	/// Sets a predefined color lookup table for the colouring of borehole stratigraphies
+	int setStratColors(const std::string &filename);
 
 	/// Sets the stations as a vector
 	void setStations(const std::vector<GEOLIB::Point*> *stations) { _stations = stations; };
@@ -44,6 +46,10 @@ protected:
 
 	/// The stations to visualize
 	const std::vector<GEOLIB::Point*> *_stations;
+	
+	/// The colour table for stratigraphic data. This table is either set using the setStratColors() method or is generated 
+	/// automatically with random colours while creating the VtkStationSource-object.
+	std::map<std::string, GEOLIB::Color> _colorLookupTable;
 
 private:
 

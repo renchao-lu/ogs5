@@ -226,7 +226,7 @@ bool bSaveTriFile_TRI( char* szTriFile, vector<Cp_dtri> *TriList,  vector<Cp_dbl
 	}
 
    	/*Lesen der Versionsnummer und loeschen der Punkte aus dem Versions-String */ 
-	strcpy(rf_version_string,ROCKFLOW_VERSION);
+	strcpy(rf_version_string,OGS_VERSION);
 	int j = 0;
 	for (i=0;((i<(int)(int)strlen(rf_version_string))&&(rf_version_string[i]));i++) 
 	{

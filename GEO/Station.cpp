@@ -7,15 +7,17 @@
 #include <fstream>
 #include <iomanip>
 #include <cmath>
+// Base
 #include "StringTools.h"
+#include "DateTools.h"
+// GEOLIB
 #include "Station.h"
 
-using namespace std;
 
 namespace GEOLIB {
 
 Station::Station(double x, double y, double z, std::string name, Color* const color) :
-	Point (x,y,z), _type(Station::STATION), _name(name), _color(color)
+	Point (x,y,z), _name(name), _type(Station::STATION), _color(color)
 {
 	addProperty("x", &getX, &Station::setX);
 	addProperty("y", &getY, &Station::setY);
@@ -23,7 +25,7 @@ Station::Station(double x, double y, double z, std::string name, Color* const co
 }
 
 Station::Station(Point* coords, std::string name, Color* const color) :
-	Point (*coords), _type(Station::STATION), _name(name), _color(color)
+	Point (*coords), _name(name), _type(Station::STATION), _color(color)
 {
 	addProperty("x", &getX, &Station::setX);
 	addProperty("y", &getY, &Station::setY);
@@ -62,7 +64,7 @@ Station* Station::createStation(const std::string & line)
 {
 	std::list<std::string>::const_iterator it;
 	Station* station = new Station();
-	list<string> fields = splitString(line, '\t');
+	std::list<std::string> fields = splitString(line, '\t');
 
 	if (fields.size() >= 3) {
 
@@ -70,21 +72,22 @@ Station* Station::createStation(const std::string & line)
 		station->_name  = *it;
 		(*station)[0]     = strtod((replaceString(",", ".", *(++it))).c_str(), NULL);
 		(*station)[1]     = strtod((replaceString(",", ".", *(++it))).c_str(), NULL);
-		if (it++ != fields.end())
+		if (++it != fields.end())
 		{
 			(*station)[2] = strtod((replaceString(",", ".", *it)).c_str(), NULL);
 		}
 	}
 	else
 	{
-		cout << "Station::createStation() - Unexpected file format...\n";
+		std::cout << "Station::createStation() - Unexpected file format..." << std::endl;
+		delete station;
 		return NULL;
 	}
 	return station;
 
 }
 
-Station* Station::createStation(const string &name, double x, double y, double z)
+Station* Station::createStation(const std::string &name, double x, double y, double z)
 {
 	Station* station = new Station();
 	station->_name = name;
@@ -152,7 +155,7 @@ StationBorehole::~StationBorehole(void)
 	for (size_t k(1); k<_profilePntVec.size(); k++) delete _profilePntVec[k];
 }
 
-int StationBorehole::find(const string &str)
+int StationBorehole::find(const std::string &str)
 {
 	size_t size = _soilName.size();
 	for (size_t i=0; i<size; i++)
@@ -162,20 +165,20 @@ int StationBorehole::find(const string &str)
 	return 0;
 }
 
-int StationBorehole::readStratigraphyFile(const string &path, vector<list<string> > &data)
+int StationBorehole::readStratigraphyFile(const std::string &path, std::vector<std::list<std::string> > &data)
 {
-    string line;
-	ifstream in( path.c_str() );
+    std::string line;
+	std::ifstream in( path.c_str() );
 
 	if (!in.is_open())
     {
-		cout << "StationBorehole::readStratigraphyFile() - Could not open file...\n";
+		std::cout << "StationBorehole::readStratigraphyFile() - Could not open file..." << std::endl;
 		return 0;
 	}
 
 	while ( getline(in, line) )
 	{
-		list<string> fields = splitString(line, '\t');
+		std::list<std::string> fields = splitString(line, '\t');
 		data.push_back(fields);
 	}
 
@@ -184,9 +187,9 @@ int StationBorehole::readStratigraphyFile(const string &path, vector<list<string
 	return 1;
 }
 
-int StationBorehole::addStratigraphy(const string &path, StationBorehole* borehole)
+int StationBorehole::addStratigraphy(const std::string &path, StationBorehole* borehole)
 {
-	vector<list<string> > data;
+	std::vector<std::list<std::string> > data;
 	if (readStratigraphyFile(path, data))
 	{
 		size_t size = data.size();
@@ -217,7 +220,7 @@ int StationBorehole::addStratigraphy(const string &path, StationBorehole* boreho
 	return 1;
 }
 
-int StationBorehole::addLayer(list<string> fields, StationBorehole* borehole)
+int StationBorehole::addLayer(std::list<std::string> fields, StationBorehole* borehole)
 {
 	if (fields.size() >= 4) /* check if there are enough fields to create a borehole object */
 	{
@@ -228,25 +231,23 @@ int StationBorehole::addLayer(list<string> fields, StationBorehole* borehole)
 			int layer = atoi(fields.front().c_str());
 			fields.pop_front();
 
-			std::cerr << "StationBorehole::addLayer - assuming correct order"
-					<< std::endl;
-			double thickness(strtod(
-					replaceString(",", ".", fields.front()).c_str(), 0));
+			std::cerr << "StationBorehole::addLayer - assuming correct order" << std::endl;
+			double thickness(strtod(replaceString(",", ".", fields.front()).c_str(), 0));
 			fields.pop_front();
 			borehole->addSoilLayer(thickness, fields.front());
 		}
 	} else {
-		cout
+		std::cout
 				<< "StationBorehole::addLayer() - Unexpected file format (Borehole "
-				<< borehole->_name << ")...\n";
+				<< borehole->_name << ")..." << std::endl;
 		return 0;
 	}
 	return 1;
 }
 
-int StationBorehole::addStratigraphies(const string &path, vector<Point*> *boreholes)
+int StationBorehole::addStratigraphies(const std::string &path, std::vector<Point*> *boreholes)
 {
-	vector<list<string> > data;
+	std::vector<std::list<std::string> > data;
 
 	if (readStratigraphyFile(path, data))
 	{
@@ -255,7 +256,7 @@ int StationBorehole::addStratigraphies(const string &path, vector<Point*> *boreh
 		size_t it=0;
 		size_t nBoreholes = data.size();
 		for (size_t i=0; i<nBoreholes; i++) {
-			list<string> fields = data[i];
+			std::list<std::string> fields = data[i];
 
 			if (fields.size() >= 4) {
 				name = static_cast<StationBorehole*>((*boreholes)[it])->_name;
@@ -273,12 +274,12 @@ int StationBorehole::addStratigraphies(const string &path, vector<Point*> *boreh
 				static_cast<StationBorehole*>((*boreholes)[it])->addSoilLayer(thickness, soil_name);
 			} else
 			{
-				cout << "StationBorehole::addStratigraphies() - Unexpected file format...\n";
+				std::cout << "StationBorehole::addStratigraphies() - Unexpected file format..." << std::endl;
 				//return 0;
 			}
 		}
 	}
-	else 
+	else
 	{
 		createSurrogateStratigraphies(boreholes);
 	}
@@ -287,10 +288,10 @@ int StationBorehole::addStratigraphies(const string &path, vector<Point*> *boreh
 }
 
 
-StationBorehole* StationBorehole::createStation(const string &line)
+StationBorehole* StationBorehole::createStation(const std::string &line)
 {
 	StationBorehole* borehole = new StationBorehole();
-	list<string> fields = splitString(line, '\t');
+	std::list<std::string> fields = splitString(line, '\t');
 
 	if (fields.size()      >= 5) {
 		borehole->_name     = fields.front();
@@ -313,13 +314,14 @@ StationBorehole* StationBorehole::createStation(const string &line)
 	}
 	else
 	{
-		cout << "Station::createStation() - Unexpected file format...\n";
+		std::cout << "Station::createStation() - Unexpected file format..." << std::endl;
+		delete borehole;
 		return NULL;
 	}
 	return borehole;
 }
 
-StationBorehole* StationBorehole::createStation(const string &name, double x, double y, double z, double depth, std::string date)
+StationBorehole* StationBorehole::createStation(const std::string &name, double x, double y, double z, double depth, std::string date)
 {
 	StationBorehole* station = new StationBorehole();
 	station->_name  = name;
@@ -343,7 +345,9 @@ void StationBorehole::createSurrogateStratigraphies(std::vector<Point*> *borehol
 
 void StationBorehole::addSoilLayer ( double thickness, const std::string &soil_name)
 {
-	if (_profilePntVec.size () == 0)
+	/*
+	// TF - Altmark
+	if (_profilePntVec.empty())
 		addSoilLayer ((*this)[0], (*this)[1], (*this)[2]-thickness, soil_name);
 	else {
 		size_t idx (_profilePntVec.size());
@@ -353,6 +357,18 @@ void StationBorehole::addSoilLayer ( double thickness, const std::string &soil_n
 		double z((*_profilePntVec[idx-1])[2]-thickness);
 		addSoilLayer (x, y, z, soil_name);
 	}
+	*/
+
+	// KR - Bode
+	if (_profilePntVec.empty())
+		addSoilLayer ((*this)[0], (*this)[1], (*this)[2], soil_name);
+
+	size_t idx (_profilePntVec.size());
+	double x((*_profilePntVec[idx-1])[0]);
+	double y((*_profilePntVec[idx-1])[1]);
+	double z((*_profilePntVec[0])[2]-thickness);
+	addSoilLayer (x, y, z, soil_name);
+
 }
 
 void StationBorehole::addSoilLayer ( double x, double y, double z, const std::string &soil_name)

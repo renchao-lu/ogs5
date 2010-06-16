@@ -6,12 +6,18 @@ set( HEADERS
 	AnalyticalGeometry.h
 	max.h
 	LinkedTriangle.h
+	# direcory LinAlg
+	LinAlg/GaussAlgorithm.h
+	LinAlg/TriangularSolve.h
 )
 
 set( SOURCES
 	MathTools.cpp
 	AnalyticalGeometry.cpp
 	LinkedTriangle.cpp
+	# direcory LinAlg
+	LinAlg/GaussAlgorithm.cpp
+	LinAlg/TriangularSolve.cpp
 )
 
 # Create the library
@@ -23,4 +29,5 @@ include_directories(
 	../Base
 	../GEO
 	.
+	./LinAlg
 )

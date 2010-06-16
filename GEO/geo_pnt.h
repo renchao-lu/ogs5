@@ -120,7 +120,7 @@ extern void GEOReadPointProperties(const std::string &);
 extern void GEOWritePoints(char* file_name);//CC
 //........................................................................
 // Access
-extern CGLPoint* GEOGetPointByName(const std::string &);//CC
+//extern CGLPoint* GEOGetPointByName(const std::string &);//CC
 extern CGLPoint* GEOGetPointById(long);//CC
 //........................................................................
 // GEO

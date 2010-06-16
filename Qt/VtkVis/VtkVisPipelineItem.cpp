@@ -15,20 +15,7 @@
 #include <vtkActor.h>
 #include <vtkRenderer.h>
 #include <vtkProperty.h>
-
-// temporary test includes
-#include <vtkTIFFReader.h>
-#include <vtkJPEGReader.h>
-#include <vtkTexture.h>
-#include <vtkImageData.h>
-#include <vtkPlaneSource.h>
 #include <vtkSmartPointer.h>
-#include <vtkTextureMapToPlane.h>
-#include <vtkImageCanvasSource2D.h>
-#include <vtkCylinderSource.h>
-#include <vtkSphereSource.h>
-
-#include "Color.h"
 
 
 VtkVisPipelineItem::VtkVisPipelineItem(
@@ -39,9 +26,9 @@ VtkVisPipelineItem::VtkVisPipelineItem(
 	const QList<QVariant> data /*= QList<QVariant>()*/)
 : TreeItem(data, parentItem), _renderer(renderer), _algorithm(algorithm), _input(input)
 {
-	if (_input != NULL)
+	//if (_input != NULL)
 		//_algorithm->SetInput(_input);
-		static_cast<vtkPolyDataAlgorithm*>(_algorithm)->SetInput(_input);
+		//static_cast<vtkPolyDataAlgorithm*>(_algorithm)->SetInput(_input);
 
 	Initialize();
 }
@@ -86,52 +73,52 @@ void VtkVisPipelineItem::setVisible( bool visible )
 	_renderer->Render();
 }
 
-/// Initalises vtkMapper and vtkActor necessary for visualisation of the item and sets the item's properties
 void VtkVisPipelineItem::Initialize()
 {
-	//_renderer->SetBackground(1,1,1);
-/*
-	// texture mapping test -> working
-	vtkJPEGReader* imgReader = vtkJPEGReader::New();
-	imgReader->SetFileName("d:/Bodeverlauf_Harz_Vorland.jpg");
-
-	vtkTexture* atext = vtkTexture::New();
-	atext->SetInput(vtkImageData::SafeDownCast(imgReader->GetOutput()));
-	atext->InterpolateOn();
-
-	vtkPlaneSource* plane1 = vtkPlaneSource::New();
-	//plane1->SetResolution(1,1);
-    plane1->SetCenter(0, 0, 0);
-    plane1->SetNormal(0, 0, 1);
-
-    //not needed!
-	//vtkSmartPointer<vtkTextureMapToPlane> texturePlane =vtkSmartPointer<vtkTextureMapToPlane>::New();
-    //texturePlane->SetInput(plane1->GetOutput());
-
-	_mapper = vtkDataSetMapper::New();
-	_mapper->SetInputConnection(plane1->GetOutputPort(0));
-	_mapper->ScalarVisibilityOff();
-	_actor = vtkActor::New();
-	_actor->SetMapper(_mapper);
-	_actor->SetTexture(atext);
-	_renderer->AddActor(_actor);
-*/
-	
 	_mapper = vtkDataSetMapper::New();
 	_mapper->SetInputConnection(0, _algorithm->GetOutputPort(0));
 	_actor = vtkActor::New();
 	_actor->SetMapper(_mapper);
 	_renderer->AddActor(_actor);
-
-	VtkAlgorithmProperties* vtkProps = dynamic_cast<VtkAlgorithmProperties*>(_algorithm);
 	
+	// Set pre-set properties
+	VtkAlgorithmProperties* vtkProps = dynamic_cast<VtkAlgorithmProperties*>(_algorithm);
 	if (vtkProps)
+		setVtkProperties(vtkProps);
+	
+	// Copy properties from parent
+	else
+	{
+		VtkVisPipelineItem* parentItem = dynamic_cast<VtkVisPipelineItem*>(parent());
+		while (parentItem)
+		{
+			VtkAlgorithmProperties* parentProps = dynamic_cast<VtkAlgorithmProperties*>(parentItem->algorithm());
+			if (parentProps)
+			{
+				setVtkProperties(parentProps);
+				parentItem = NULL;
+			}
+			else
+				parentItem = dynamic_cast<VtkVisPipelineItem*>(parentItem->parent());
+		}
+	}
+
+}
+
+void VtkVisPipelineItem::setVtkProperties(VtkAlgorithmProperties* vtkProps)
+{
+	if (vtkProps->GetTexture() != NULL)
+	{
+		_mapper->ScalarVisibilityOff();
+		_actor->GetProperty()->SetColor(1,1,1); // don't colorise textures
+		_actor->SetTexture(vtkProps->GetTexture());
+	}
+	else 
 	{
 		vtkSmartPointer<vtkProperty> itemProperty = vtkProps->GetProperties();
-		GEOLIB::Color* c = GEOLIB::getRandomColor();
-		itemProperty->SetColor((*c)[0]/255.0,(*c)[1]/255.0,(*c)[2]/255.0);
-		//itemProperty->SetColor(0,1,0);
 		_actor->SetProperty(itemProperty);
 	}
 
+	if (!vtkProps->GetScalarVisibility())
+		_mapper->ScalarVisibilityOff();
 }

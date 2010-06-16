@@ -17,8 +17,6 @@
 #include <iostream>
 #include <fstream>
 
-using namespace std;
-using namespace GEOLIB;
 
 /// The OGS5-Connection to a database
 DatabaseConnection::DatabaseConnection(GEOLIB::GEOObjects* geoObjects, QObject* parent) : QObject(parent), _geoObjects(geoObjects)
@@ -181,20 +179,20 @@ int DatabaseConnection::loadStationList(const int &listID)
  * \param color The colour which will be assigned to the objects in the list
  * \return 1 if there were no errors, 0 and an error message otherwise.
  */
-int DatabaseConnection::loadStationList(int listID, const Color* const color)
+int DatabaseConnection::loadStationList(int listID, const GEOLIB::Color* const color)
 {
 	if (_db.open())
 	{
 		QSqlQuery query, stnQuery;
 		QString stationName;
-		std::vector<Point*> *stations = new std::vector<Point*>;
+		std::vector<GEOLIB::Point*> *stations = new std::vector<GEOLIB::Point*>;
 
 		query.exec("select stationtype from geosysstationtypes where listid=" + QString::number(listID));
 
 		if (query.next())
 		{
-			Station::StationType type = static_cast<Station::StationType>(query.value(0).toInt());
-			if (type == Station::BOREHOLE)
+			GEOLIB::Station::StationType type = static_cast<GEOLIB::Station::StationType>(query.value(0).toInt());
+			if (type == GEOLIB::Station::BOREHOLE)
 				query.exec("select c.catname, l.listname from lists l, categories c, boreholes b where c.catid=l.catid and l.listid=b.listid and l.listid=" + QString::number(listID));
 			else
 				query.exec("select c.catname, l.listname from lists l, categories c where c.catid=l.catid and l.listid=" + QString::number(listID));
@@ -203,7 +201,7 @@ int DatabaseConnection::loadStationList(int listID, const Color* const color)
 			{
 				QString listName = (query.value(0)).toString() + " (" + (query.value(1)).toString() + ")";
 
-				if (type == Station::BOREHOLE)
+				if (type == GEOLIB::Station::BOREHOLE)
 					stnQuery.exec("select s.stationid, s.name, s.x, s.y, s.z, b.bdepth, to_char(b.bdate, 'DD.MM.YYYY') from stations s, boreholes b where s.listid=b.listid and s.stationid=b.stationid and s.listid=" + QString::number(listID) + " order by stationid");
 				else
 					stnQuery.exec("select stationid, name, x, y, z from stations where listid=" + QString::number(listID) + " order by stationid");
@@ -213,14 +211,14 @@ int DatabaseConnection::loadStationList(int listID, const Color* const color)
 					stationName = stnQuery.value(1).toString();
 					if (stationName.isEmpty()) stationName = "Station" + stnQuery.value(0).toString();
 
-					Station* newStation;
-					if (type == Station::BOREHOLE) newStation = StationBorehole::createStation(stationName.toStdString(), stnQuery.value(2).toDouble(), stnQuery.value(3).toDouble(), stnQuery.value(4).toDouble(), stnQuery.value(5).toDouble(), stnQuery.value(6).toString().toStdString());
-					else newStation = Station::createStation(stationName.toStdString(), stnQuery.value(2).toDouble(), stnQuery.value(3).toDouble(), stnQuery.value(4).toDouble());
+					GEOLIB::Station* newStation;
+					if (type == GEOLIB::Station::BOREHOLE) newStation = GEOLIB::StationBorehole::createStation(stationName.toStdString(), stnQuery.value(2).toDouble(), stnQuery.value(3).toDouble(), stnQuery.value(4).toDouble(), stnQuery.value(5).toDouble(), stnQuery.value(6).toString().toStdString());
+					else newStation = GEOLIB::Station::createStation(stationName.toStdString(), stnQuery.value(2).toDouble(), stnQuery.value(3).toDouble(), stnQuery.value(4).toDouble());
 					newStation->setColor(color);
 					stations->push_back(newStation);
 				}
 
-				if (type == Station::BOREHOLE)
+				if (type == GEOLIB::Station::BOREHOLE)
 					//addStratigraphy(listID, _geoObjects->getStationVec(listName.toStdString()));
 					addStratigraphy(listID, stations);
 
@@ -235,7 +233,7 @@ int DatabaseConnection::loadStationList(int listID, const Color* const color)
 		}
 		else
 		{
-			cout << "DatabaseConnection::loadList() - No database entry found for the selected key.\n";
+			std::cout << "DatabaseConnection::loadList() - No database entry found for the selected key." << std::endl;
 			_db.close();
 		}
 	}
@@ -251,7 +249,7 @@ int DatabaseConnection::loadStationList(int listID, const Color* const color)
  * \param stations List of station objects for which stratigraphy data will be provided
  * \return 1 if there were no errors, 0 and an error message otherwise.
  */
-int DatabaseConnection::addStratigraphy(int listID, vector<Point*> *stations)
+int DatabaseConnection::addStratigraphy(int listID, std::vector<GEOLIB::Point*> *stations)
 {
 	if (_db.open())
 	{
@@ -261,8 +259,8 @@ int DatabaseConnection::addStratigraphy(int listID, vector<Point*> *stations)
 		for (size_t i=0; i<size; i++)
 		{
 			int count = 1;
-			StationBorehole* newStation = static_cast<StationBorehole*>((*stations)[i]);
-			strat.exec("select s.layerid, s.thickness, s.strat from stations t, stratigraphies s where s.listid=" + QString::number(listID) + " and s.listid=t.listid and s.stationid=t.stationid and t.name='" + QString::fromStdString(static_cast<Station*>((*stations)[i])->getName()) + "' order by layerid");
+			GEOLIB::StationBorehole* newStation = static_cast<GEOLIB::StationBorehole*>((*stations)[i]);
+			strat.exec("select s.layerid, s.thickness, s.strat from stations t, stratigraphies s where s.listid=" + QString::number(listID) + " and s.listid=t.listid and s.stationid=t.stationid and t.name='" + QString::fromStdString(static_cast<GEOLIB::Station*>((*stations)[i])->getName()) + "' order by layerid");
 
 			while (strat.next())
 			{
@@ -273,7 +271,7 @@ int DatabaseConnection::addStratigraphy(int listID, vector<Point*> *stations)
 				}
 				else
 				{
-					std::cout << "DatabaseConnection::addStratigraphy - Station " << static_cast<Station*>((*stations)[i])->getName() << ": Stratigraphy incomplete...\n";
+					std::cout << "DatabaseConnection::addStratigraphy - Station " << static_cast<GEOLIB::Station*>((*stations)[i])->getName() << ": Stratigraphy incomplete...\n";
 				}
 				count++;
 			}
@@ -282,7 +280,7 @@ int DatabaseConnection::addStratigraphy(int listID, vector<Point*> *stations)
 	}
 	else
 	{
-		std::cout << "Database error";
+		std::cout << "Database error" << std::endl;
 		return 0;
 	}
 
@@ -344,7 +342,7 @@ int DatabaseConnection::getStationID(const int &listID, const double &x, const d
  * \param propNames A vector in which the properties will be stored
  * \return 1 if there were no errors, 0 and an error message otherwise.
  */
-int DatabaseConnection::getListProperties(const int &listID, vector<QString> &propNames)
+int DatabaseConnection::getListProperties(const int &listID, std::vector<QString> &propNames)
 {
 	Q_UNUSED (listID);
 
@@ -476,20 +474,20 @@ int DatabaseConnection::loadValues(const int &listID, const int &stationID, cons
  * \param catname	the category of stations (i.e. boreholes)
  * \param type		the OGS5 Stationtype
  */
-int DatabaseConnection::addListToDB(string path, string listName, string catName, Station::StationType type)
+int DatabaseConnection::addListToDB(std::string path, std::string listName, std::string catName, GEOLIB::Station::StationType type)
 {
 	QSqlQuery query;
 	int listID, catID;
-	string line;
+	std::string line;
 	bool status=true, commit=true;
 
 	if (_db.open())
 	{
-		ifstream in( path.c_str() );
+		std::ifstream in( path.c_str() );
 
 		if (!in.is_open())
 		{
-			cout << "DatabaseConnection::addListToDB() - Could not open file...\n";
+			std::cout << "DatabaseConnection::addListToDB() - Could not open file..." << std::endl;
 			return 0;
 		}
 
@@ -520,14 +518,14 @@ int DatabaseConnection::addListToDB(string path, string listName, string catName
 
 			_db.transaction();
 			query.exec("insert into lists values(" + QString::number(listID) + ", '" + QString::fromStdString(listName) + "', " + QString::number(catID) + ", 0)");
-			if (type == Station::BOREHOLE) query.exec("insert into geosysstationtypes values (" + QString::number(listID) + ", 2)");
+			if (type == GEOLIB::Station::BOREHOLE) query.exec("insert into geosysstationtypes values (" + QString::number(listID) + ", 2)");
 
 			int stationID=1;
 
 			/* read all stations */
 			while ( getline(in, line) )
 			{
-				if (type == Station::BOREHOLE) status = addBoreholeToDB(listID, stationID, line);
+				if (type == GEOLIB::Station::BOREHOLE) status = addBoreholeToDB(listID, stationID, line);
 				else status = addStationToDB(listID, stationID, line);
 
 				if (!status)
@@ -547,7 +545,7 @@ int DatabaseConnection::addListToDB(string path, string listName, string catName
 			return commit;
 		}
 		else
-			cout << "Database error.";
+			std::cout << "Database error." << std::endl;
 
 		_db.close();
 	}
@@ -563,10 +561,10 @@ int DatabaseConnection::addListToDB(string path, string listName, string catName
  * \param stationID	the ID of the station
  * \param line		a line of text containing all the necessary information for the station (typically from a textfile)
  */
-bool DatabaseConnection::addStationToDB(int listID, int stationID, string line)
+bool DatabaseConnection::addStationToDB(int listID, int stationID, std::string line)
 {
 	QSqlQuery query;
-	Station* station = Station::createStation(line);
+	GEOLIB::Station* station = GEOLIB::Station::createStation(line);
 	query.prepare("insert into stations values(:listid, :stationid, :stationname, :x, :y, :z)");
 	query.bindValue(":listid", listID);
 	query.bindValue(":stationid", stationID);
@@ -584,10 +582,10 @@ bool DatabaseConnection::addStationToDB(int listID, int stationID, string line)
  * \param stationID	the ID of the station
  * \param line		a line of text containing all the necessary information for the station (typically from a textfile)
  */
-bool DatabaseConnection::addBoreholeToDB(int listID, int stationID, string line)
+bool DatabaseConnection::addBoreholeToDB(int listID, int stationID, std::string line)
 {
 	QSqlQuery query;
-	StationBorehole* station = StationBorehole::createStation(line);
+	GEOLIB::StationBorehole* station = GEOLIB::StationBorehole::createStation(line);
 
 	if (addStationToDB(listID, stationID, line))
 	{
@@ -608,19 +606,19 @@ bool DatabaseConnection::addBoreholeToDB(int listID, int stationID, string line)
  * \param path		the	path to the file containing the data
  * \param listID	the ID of the station list the stratigraphic data belongs to
  */
-int DatabaseConnection::addStratigraphyToDB(string path, int listID)
+int DatabaseConnection::addStratigraphyToDB(std::string path, int listID)
 {
 	QSqlQuery query;
 	int stationID;
-	string line, stationName;
+	std::string line, stationName;
 
 	if (_db.open())
 	{
-		ifstream in( path.c_str() );
+		std::ifstream in( path.c_str() );
 
 		if (!in.is_open())
 		{
-			cout << "DatabaseConnection::addListToDB() - Could not open file...\n";
+			std::cout << "DatabaseConnection::addListToDB() - Could not open file..." << std::endl;
 			return 0;
 		}
 
@@ -635,7 +633,7 @@ int DatabaseConnection::addStratigraphyToDB(string path, int listID)
 				/* read all stations */
 				while ( getline(in, line) )
 				{
-					list<string> fields = splitString(line, '\t');
+					std::list<std::string> fields = splitString(line, '\t');
 
 					stationName = fields.front();
 					fields.pop_front();
@@ -671,7 +669,7 @@ int DatabaseConnection::addStratigraphyToDB(string path, int listID)
 			return 1;
 		}
 		else
-			cout << "Database error.";
+			std::cout << "Database error." << std::endl;
 
 		_db.close();
 	}
@@ -688,18 +686,18 @@ int DatabaseConnection::addStratigraphyToDB(string path, int listID)
  * \param listID	the ID of the list the stratigraphic data belongs to
  * \param stationID	the ID of the station the stratigraphic data belongs to
  */
-int DatabaseConnection::addMeasuredValuesToDB(string path, int listID, int stationID)
+int DatabaseConnection::addMeasuredValuesToDB(std::string path, int listID, int stationID)
 {
 	QSqlQuery query;
-	string line;
+	std::string line;
 
 	if (_db.open())
 	{
-		ifstream in( path.c_str() );
+		std::ifstream in( path.c_str() );
 
 		if (!in.is_open())
 		{
-			cout << "DatabaseConnection::addMeasuredValuesToDB() - Could not open file...\n";
+			std::cout << "DatabaseConnection::addMeasuredValuesToDB() - Could not open file..." << std::endl;
 			return 0;
 		}
 
@@ -713,7 +711,7 @@ int DatabaseConnection::addMeasuredValuesToDB(string path, int listID, int stati
 
 				while ( getline(in, line) )
 				{
-					list<string> fields = splitString(line, '\t');
+					std::list<std::string> fields = splitString(line, '\t');
 
 					QString a = query.lastQuery();
 
@@ -734,7 +732,7 @@ int DatabaseConnection::addMeasuredValuesToDB(string path, int listID, int stati
 			return 1;
 		}
 		else
-			cout << "Database error.";
+			std::cout << "Database error." << std::endl;
 
 		_db.close();
 	}

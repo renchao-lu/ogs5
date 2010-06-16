@@ -1,6 +1,6 @@
 /**************************************************************************
 ROCKFLOW - Object: Process PCS
-Task: 
+Task:
 Programing:
 02/2003 OK Implementation
 11/2004 OK PCS2
@@ -25,19 +25,19 @@ Programing:
 //
 // The follows are implicit declaration. WW
 //---------------------------------------------------------------------------
-namespace FiniteElement {class CFiniteElementStd; class CFiniteElementVec; 
-                         class ElementMatrix; class ElementValue;} 
-namespace Mesh_Group {class CFEMesh;} 
+namespace FiniteElement {class CFiniteElementStd; class CFiniteElementVec;
+                         class ElementMatrix; class ElementValue;}
+namespace Mesh_Group {class CFEMesh;}
 
 #ifdef NEW_EQS    //WW
-namespace Math_Group {class Linear_EQS;} 
+namespace Math_Group {class Linear_EQS;}
 using Math_Group::Linear_EQS;
 #endif
 
 //
-class CSourceTermGroup; 
+class CSourceTermGroup;
 class CSourceTerm;
-class CNodeValue; 
+class CNodeValue;
 class Problem; //WW
 using FiniteElement::CFiniteElementStd;
 using FiniteElement::CFiniteElementVec;
@@ -48,34 +48,34 @@ using Mesh_Group::CFEMesh;
 
 #define PCS_FILE_EXTENSION ".pcs"
 
-typedef struct {  /* Knotenwert-Informationen */
-    char name[80];  /* Name der Knotengroesse */
-    char einheit[10];  /* Einheit der Knotengroesse */
-    int speichern;  /* s.u., wird Wert gespeichert ? */
-    int laden;  /* s.u., wird Wert zu Beginn geladen ? */
-    int restart;  /* s.u., wird Wert bei Restart geladen ? */
-    int adapt_interpol;  /* Soll Wert bei Adaption auf Kinder interpoliert werden? */
-    double vorgabe;  /* Default-Wert fuer Initialisierung */
-  int nval_index;
-  int pcs_this;
-  int timelevel;
+typedef struct { /* Knotenwert-Informationen */
+	char name[80]; /* Name der Knotengroesse */
+	char einheit[10]; /* Einheit der Knotengroesse */
+	int speichern; /* s.u., wird Wert gespeichert ? */
+	int laden; /* s.u., wird Wert zu Beginn geladen ? */
+	int restart; /* s.u., wird Wert bei Restart geladen ? */
+	int adapt_interpol; /* Soll Wert bei Adaption auf Kinder interpoliert werden? */
+	double vorgabe; /* Default-Wert fuer Initialisierung */
+	int nval_index;
+	int pcs_this;
+	int timelevel;
 } PCS_NVAL_DATA;
 
-typedef struct {  /* element data info */
-    char name[80];  /* Name der Elementgroesse */
-    char einheit[10];  /* Einheit der Elementgroesse */
-    int speichern;  /* s.u., wird Wert gespeichert ? */
-    int laden;  /* s.u., wird Wert zu Beginn geladen ? */
-    int restart;  /* s.u., wird Wert bei Restart geladen ? */
-    int adapt_interpol;  /* Soll Wert bei Adaption auf Kinder vererbt werden? */
-    double vorgabe;  /* Default-Wert fuer Initialisierung */
-  int eval_index;
-  int index;
+typedef struct { /* element data info */
+	char name[80]; /* Name der Elementgroesse */
+	char einheit[10]; /* Einheit der Elementgroesse */
+	int speichern; /* s.u., wird Wert gespeichert ? */
+	int laden; /* s.u., wird Wert zu Beginn geladen ? */
+	int restart; /* s.u., wird Wert bei Restart geladen ? */
+	int adapt_interpol; /* Soll Wert bei Adaption auf Kinder vererbt werden? */
+	double vorgabe; /* Default-Wert fuer Initialisierung */
+	int eval_index;
+	int index;
 } PCS_EVAL_DATA;
 
 typedef struct {
 	long index_node;
-	double water_st_value;	
+	double water_st_value;
 } Water_ST_GEMS;  // HS 11.2008
 
 //MB moved inside the Process object
@@ -100,13 +100,24 @@ Programing:
 02/2005 WW Local element assembly (all protected members)
 12/2005 OK MSH_TYPE
 last modification:
+05/2010 TF inserted pointer to instance of class Problem inclusive access functions
 **************************************************************************/
+
+/**
+ * class manages the physical processes
+ */
 class CRFProcess {
   //----------------------------------------------------------------------
   // Properties
   private:
+	  /**
+	   * _problem is a pointer to an instance of class Problem.
+	   *  The pointer is used to get the geometric entities.
+	   */
+	  Problem* _problem;
+
     void VariableStaticProblem();
-    void VariableDynamics();      
+    void VariableDynamics();
     bool compute_domain_face_normal; //WW
     int continuum;
     bool continuum_ic;
@@ -114,55 +125,55 @@ class CRFProcess {
     friend class FiniteElement::CFiniteElementStd;
     friend class FiniteElement::CFiniteElementVec;
     friend class FiniteElement::ElementValue;
-    friend class ::CSourceTermGroup; 
+    friend class ::CSourceTermGroup;
     friend class ::Problem;
     // Assembler
-    CFiniteElementStd *fem;   
-    // Time step control 
+    CFiniteElementStd *fem;
+    // Time step control
     bool accepted; //25.08.1008. WW
     int accept_steps;  //27.08.1008. WW
     int reject_steps;  //27.08.1008. WW
     //
-    int dof;   //WW    
-    long orig_size; // Size of source term nodes 
+    int dof;   //WW
+    long orig_size; // Size of source term nodes
     // ELE
     std::vector<FiniteElement::ElementMatrix*> Ele_Matrices;
     // Storage type for all element matrices and vectors
-    // Case:  
+    // Case:
     // 0. Do not keep them in the memory
     // 1. Keep them to vector Ele_Matrices
     int Memory_Type;
     //....................................................................
     int additioanl2ndvar_print; //WW
     // TIM
-    friend class CTimeDiscretization;   
+    friend class CTimeDiscretization;
   public: //OK
     CTimeDiscretization *Tim;    //time
   protected: //WW
     void CopyU_n(double *temp_v); //29.08.2008. WW
-    // Time unit factor 
-    double time_unit_factor; 
+    // Time unit factor
+    double time_unit_factor;
     int NumDeactivated_SubDomains;
     int *Deactivated_SubDomain;
     //New equation and solver objects WW
 #ifdef NEW_EQS
 #ifdef LIS
 public:
-	Linear_EQS *eqs_new; 
+	Linear_EQS *eqs_new;
 #else
-    Linear_EQS *eqs_new; 
+    Linear_EQS *eqs_new;
 #endif // LIS endif for Fluid Momentum	// PCH
-    bool configured_in_nonlinearloop; 
+    bool configured_in_nonlinearloop;
 #endif
     //
 #ifdef USE_MPI //WW
-    clock_t cpu_time_assembly;  
+    clock_t cpu_time_assembly;
 #endif
-    // Position of unkowns from different DOFs in the system equation  
+    // Position of unkowns from different DOFs in the system equation
     //....................................................................
     // OUT
-    // Write indices of the nodes with boundary conditons 
-    bool write_boundary_condition; //15.01.2008. WW 
+    // Write indices of the nodes with boundary conditons
+    bool write_boundary_condition; //15.01.2008. WW
     // Element matrices output
   public: //OK
     bool Write_Matrix;
@@ -178,16 +189,28 @@ public:
     // 1. Write
     // 2. Read
     // 3 read and write
-    int reload; 
+    int reload;
     long nwrite_restart;
-    inline void  WriteRHS_of_ST_NeumannBC();  
-    inline void  ReadRHS_of_ST_NeumannBC();  
+    inline void  WriteRHS_of_ST_NeumannBC();
+    inline void  ReadRHS_of_ST_NeumannBC();
     friend bool PCSRead(string);
     //....................................................................
     // 1-GEO
   public:
-    string geo_type; //OK
-    string geo_type_name; //OK
+	  /**
+	   * Sets the value for pointer _problem.
+	   * @param problem the value for _problem
+	   */
+	  void setProblemObjectPointer (Problem* problem);
+
+	  /**
+	   * get access to the instance of class Problem
+	   * @return
+	   */
+	  const Problem* getProblemObjectPointer () const;
+
+	  string geo_type; //OK
+	  string geo_type_name; //OK
 	//....................................................................
     // 2-MSH
 	//....................................................................
@@ -196,7 +219,7 @@ public:
     // 4-IC
     //....................................................................
     // 5-BC
-    vector<CBoundaryConditionNode*> bc_node_value; //WW 
+    vector<CBoundaryConditionNode*> bc_node_value; //WW
     vector<CBoundaryCondition*> bc_node; //WW
     vector<long> bc_node_value_in_dom; //WW for domain decomposition
     vector<long> bc_local_index_in_dom; //WW for domain decomposition
@@ -206,7 +229,7 @@ public:
     //....................................................................
     // 6-ST
     // Node values from sourse/sink or Neumann BC. WW
-    vector<CNodeValue*> st_node_value; //WW 
+    vector<CNodeValue*> st_node_value; //WW
     vector<CSourceTerm*> st_node; //WW
     vector<long> st_node_value_in_dom; //WW for domain decomposition
     vector<long> st_local_index_in_dom; //WW for domain decomposition
@@ -318,13 +341,13 @@ public:
     PCS_NVAL_DATA *pcs_nval_data; ///OK
     int number_of_nvals;
     int pcs_number_of_primary_nvals;
-    int GetPrimaryVNumber() const {return pcs_number_of_primary_nvals;} 
+    int GetPrimaryVNumber() const {return pcs_number_of_primary_nvals;}
     char *pcs_primary_function_unit[4];
     char *pcs_primary_function_name[4];
     char* GetPrimaryVName(const int index) const {return pcs_primary_function_name[index];}
     string primary_variable_name; //OK
     int pcs_number_of_secondary_nvals;
-    int GetSecondaryVNumber() const {return pcs_number_of_secondary_nvals;} 
+    int GetSecondaryVNumber() const {return pcs_number_of_secondary_nvals;}
     char *pcs_secondary_function_name[PCS_NUMBER_MAX];
     char* GetSecondaryVName(const int index) const {return pcs_secondary_function_name[index];}
     char *pcs_secondary_function_unit[PCS_NUMBER_MAX];
@@ -343,11 +366,11 @@ public:
     char *pcs_eval_unit[PCS_NUMBER_MAX];
     // Configuration 3 - ELE matrices
     // Execution
-    // NUM 
+    // NUM
 #ifndef NEW_EQS //WW 07.11.2008
     LINEAR_SOLVER *eqs;
 #endif
-    string num_type_name; 
+    string num_type_name;
     int	rwpt_app;
     char *pcs_num_name[2];  //For monolithic scheme
     double pcs_nonlinear_iteration_tolerance;
@@ -355,7 +378,7 @@ public:
     int pcs_coupling_iterations; //OK
     string tim_type_name; //OK
     char *pcs_sol_name;
-    string cpl_type_name; 
+    string cpl_type_name;
     CNumerics* m_num;
     //
     bool selected; //OK
@@ -382,19 +405,19 @@ public:
     // Access to PCS
     CRFProcess *GetProcessByFunctionName(char* name);
     CRFProcess *GetProcessByNumber(int);
-    CFiniteElementStd* GetAssembler() {return fem; }    
+    CFiniteElementStd* GetAssembler() {return fem; }
     // CRFProcess *Get(string); // WW Removed
     // Configuration
     void Config();
-    void ConfigGroundwaterFlow(); 
-    void ConfigLiquidFlow(); 
+    void ConfigGroundwaterFlow();
+    void ConfigLiquidFlow();
     void ConfigNonIsothermalFlow();
     void ConfigNonIsothermalFlowRichards();
     void ConfigMassTransport();
     void ConfigHeatTransport();
     void ConfigDeformation();
     void ConfigMultiphaseFlow();
-    void ConfigGasFlow(); 
+    void ConfigGasFlow();
     void ConfigUnsaturatedFlow(); //OK4104
 	void ConfigFluidMomentum();
     void ConfigRandomWalk();
@@ -434,9 +457,9 @@ public:
     void CreateELEMatricesPointer(void);
     // Equation system
     //---WW
-    CFiniteElementStd* GetAssember () { return fem; }   
-    void AllocateLocalMatrixMemory(); 
-    void GlobalAssembly(); //NEW 
+    CFiniteElementStd* GetAssember () { return fem; }
+    void AllocateLocalMatrixMemory();
+    void GlobalAssembly(); //NEW
     void ConfigureCouplingForLocalAssemblier();
     void CalIntegrationPointValue();
     bool cal_integration_point_value; //WW
@@ -449,13 +472,13 @@ public:
     void DDCAssembleGlobalMatrix();
     virtual void AssembleSystemMatrixNew(void);
     // This function is a part of the monolithic scheme
-    //  and it is related to ST, BC, IC, TIM and OUT. WW 
-    void SetOBJNames(); 
+    //  and it is related to ST, BC, IC, TIM and OUT. WW
+    void SetOBJNames();
     // ST
     void IncorporateSourceTerms(const int rank=-1);
     //WW void CheckSTGroup(); //OK
 #ifdef GEM_REACT
-    void IncorporateSourceTerms_GEMS(void);//HS: dC/dt from GEMS chemical solver. 
+    void IncorporateSourceTerms_GEMS(void);//HS: dC/dt from GEMS chemical solver.
     int GetRestartFlag(){return reload;}
 #endif
     // BC
@@ -464,7 +487,7 @@ public:
     void SetBoundaryConditionSubDomain(); //WW
     //WW void CheckBCGroup(); //OK
 #ifdef NEW_EQS //WW
-    void EQSInitialize(); 
+    void EQSInitialize();
 	void EQSSolver(double* x);	// PCH
 #else
     void InitEQS();
@@ -483,7 +506,7 @@ public:
     inline void setST_danymic_problems();
     inline void setIC_danymic_problems();
     // Extropolate Gauss point values to node values. WW
-    void Extropolation_GaussValue(); 
+    void Extropolation_GaussValue();
     void Extropolation_MatValue();  //WW
     // Auto time step size control. WW
     void PI_TimeStepSize(double *u_n); //WW
@@ -501,9 +524,9 @@ public:
     void CalcSecondaryVariables(const bool initial = false); // Remove argument. WW
     void MMPCalcSecondaryVariablesRichards(int timelevel, bool update);
     //WW Reomve int timelevel, bool update
-    void CalcSecondaryVariablesUnsaturatedFlow(const bool initial = false); //WW
-		void CalcSecondaryVariablesPSGLOBAL(const bool initial = false);	// PCH
-		double GetCapillaryPressureOnNodeByNeighobringElementPatches(int nodeIdx, int meanOption, double Sw); // PCH
+    void CalcSecondaryVariablesUnsaturatedFlow(bool initial = false); //WW
+	void CalcSecondaryVariablesPSGLOBAL();	// PCH
+	double GetCapillaryPressureOnNodeByNeighobringElementPatches(int nodeIdx, int meanOption, double Sw); // PCH
 	void CalcSaturationRichards(int timelevel, bool update); // JOD
     bool non_linear; //OK/CMCD
     void InterpolateTempGP(CRFProcess *, string); //MX
@@ -512,7 +535,7 @@ public:
     void PrimaryVariableReload();  //YD
     void PrimaryVariableReloadRichards(); //YD
     void PrimaryVariableStorageRichards(); //YD
-    bool adaption; 
+    bool adaption;
     void PrimaryVariableReloadTransport(); //kg44
     void PrimaryVariableStorageTransport(); //kg44
     //double GetNewTimeStepSizeTransport(double mchange); //kg44
@@ -543,11 +566,11 @@ public:
 #ifdef USE_MPI //WW
     void Print_CPU_time_byAssembly(ostream &os=cout)
       {   os<<"\n***\nCPU time elapsed in the linear equation of "<<pcs_type_name<<"\n";
-          os<<"--Global assembly: "<<(double)cpu_time_assembly/CLOCKS_PER_SEC<<"\n"; 
+          os<<"--Global assembly: "<<(double)cpu_time_assembly/CLOCKS_PER_SEC<<"\n";
       }
 #endif
 
-}; 
+};
 
 //========================================================================
 // PCS
@@ -593,7 +616,7 @@ extern double PCSGetEleMeanNodeSecondary(long index, const string &pcs_name, con
 extern double PCSGetEleMeanNodeSecondary_2(long index, int pcsT, const string &var_name, int timelevel); //CB
 extern string GetPFNamebyCPName(string line_string);
 
-extern int memory_opt; 
+extern int memory_opt;
 
 typedef struct {  /* Knotenwert-Informationen */
     char *name;  /* Name der Knotengroesse */
@@ -663,7 +686,7 @@ extern bool PCSCheck(); //OK
 // New solvers WW
 // Create sparse graph for each mesh    //1.11.2007 WW
 #ifdef NEW_EQS    //1.11.2007 WW
-extern void CreateEQS_LinearSolver(); 
+extern void CreateEQS_LinearSolver();
 #endif
 
 #ifdef GEM_REACT

@@ -7,6 +7,8 @@
  */
 
 // ** INCLUDES **
+#include <limits>
+#include "Color.h"
 #include "VtkSurfacesSource.h"
 
 #include <vtkPolygon.h>
@@ -39,32 +41,27 @@ void VtkSurfacesSource::PrintSelf( ostream& os, vtkIndent indent )
 
 int VtkSurfacesSource::RequestData( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
-	int scalingFactor = 15;	// scaling z-coordinates
 	const int nSurfaces = _surfaces->size();
 	if (nSurfaces == 0)
 		return 0;
 
+	const std::vector<GEOLIB::Point*> *surfacePoints = (*_surfaces)[0]->getPointVec();
+	size_t nPoints = surfacePoints->size();
+
 	vtkSmartPointer<vtkInformation> outInfo = outputVector->GetInformationObject(0);
 	vtkSmartPointer<vtkPolyData> output = vtkPolyData::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
-
-	vtkSmartPointer<vtkPoints> newPoints = vtkSmartPointer<vtkPoints>::New();
-	vtkSmartPointer<vtkCellArray> newPolygons = vtkSmartPointer<vtkCellArray>::New();
-	
-	//newPolygons->Allocate(nSurfaces);
-
 	if (outInfo->Get(vtkStreamingDemandDrivenPipeline::UPDATE_PIECE_NUMBER()) > 0)
 		return 1;
 
+	vtkSmartPointer<vtkPoints> newPoints = vtkSmartPointer<vtkPoints>::New();
+		newPoints->Allocate(nPoints);
 
-	const std::vector<GEOLIB::Point*> *surfacePoints = (*_surfaces)[0]->getPointVec();
+	vtkSmartPointer<vtkCellArray> newPolygons = vtkSmartPointer<vtkCellArray>::New();
+		//newPolygons->Allocate(nSurfaces);
 
-	size_t nPoints = surfacePoints->size();
-	newPoints->Allocate(nPoints);
-	//for (std::vector<GEOLIB::Point*>::const_iterator it = surfacePoints->begin(); it != surfacePoints->end(); ++it)
 	for (size_t i=0; i<nPoints; i++)
 	{
 		double* coords = const_cast<double*>((*surfacePoints)[i]->getData());
-		coords[2] *= scalingFactor;
 		newPoints->InsertNextPoint(coords);
 	}
 
@@ -79,7 +76,7 @@ int VtkSurfacesSource::RequestData( vtkInformation* request, vtkInformationVecto
 			aPolygon->GetPointIds()->SetNumberOfIds(3);
 
 			const GEOLIB::Triangle* triangle = (**it)[i];
-			for (size_t j=0; j<3; j++) 
+			for (size_t j=0; j<3; j++)
 			{
 				aPolygon->GetPointIds()->SetId(j, ((*triangle)[j]));
 			}
@@ -91,6 +88,8 @@ int VtkSurfacesSource::RequestData( vtkInformation* request, vtkInformationVecto
 	output->SetPoints(newPoints);
 	output->SetPolys(newPolygons);
 
+	GEOLIB::Color* c = GEOLIB::getRandomColor();
+	this->GetProperties()->SetColor((*c)[0]/255.0,(*c)[1]/255.0,(*c)[2]/255.0);
 
 	return 1;
 }

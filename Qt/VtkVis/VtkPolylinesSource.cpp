@@ -24,6 +24,9 @@ VtkPolylinesSource::VtkPolylinesSource()
 : _polylines(NULL)
 {
 	this->SetNumberOfInputPorts(0);
+
+	GEOLIB::Color* c = GEOLIB::getRandomColor();
+	GetProperties()->SetColor((*c)[0]/255.0,(*c)[1]/255.0,(*c)[2]/255.0);
 }
 
 void VtkPolylinesSource::PrintSelf( ostream& os, vtkIndent indent )

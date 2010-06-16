@@ -14,14 +14,14 @@
 
 
 GridAdapter::GridAdapter(const Mesh_Group::CFEMesh* mesh) :
-	_nodes(new std::vector<GEOLIB::Point*>), _elems(new std::vector<Element*>)
+	_name(""), _nodes(new std::vector<GEOLIB::Point*>), _elems(new std::vector<Element*>)
 {
 	if (mesh) convertCFEMesh(mesh);
 }
 
 
 GridAdapter::GridAdapter(const std::string &filename) :
-	_nodes(new std::vector<GEOLIB::Point*>), _elems(new std::vector<Element*>)
+	_name(""), _nodes(new std::vector<GEOLIB::Point*>), _elems(new std::vector<Element*>)
 {
 	readMeshFromFile(filename);
 }
@@ -30,7 +30,7 @@ GridAdapter::~GridAdapter()
 {
 	size_t nNodes = _nodes->size();
 	size_t nElems = _elems->size();
-	
+
 	for (size_t i=0; i<nNodes; i++) delete (*_nodes)[i];
 	for (size_t i=0; i<nElems; i++) delete (*_elems)[i];
 
@@ -41,7 +41,7 @@ GridAdapter::~GridAdapter()
 
 int GridAdapter::convertCFEMesh(const Mesh_Group::CFEMesh* mesh)
 {
-	Element* newElem;
+	Element* newElem = NULL;
 	size_t nElemNodes = 0;
 
 	size_t nElems = mesh->ele_vector.size();
@@ -74,7 +74,7 @@ int GridAdapter::convertCFEMesh(const Mesh_Group::CFEMesh* mesh)
 		else
 			std::cout << "GridAdapter::convertCFEMesh() - Error recognising element type..." << std::endl;
 	}
-	
+
 	return 1;
 }
 
@@ -101,7 +101,6 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 	// read number of nodes
 	getline(in, line);
 	trim(line);
-	size_t nNodes = atoi(line.c_str());
 
 	// read all nodes
 	while ( getline(in, line) )
@@ -111,7 +110,7 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 
 		list<std::string> fields = splitString(line, ' ');
 
-		if (fields.size() >= 4) 
+		if (fields.size() >= 4)
 		{
 			it = fields.begin();
 
@@ -139,7 +138,6 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 		// read number of elements
 		getline(in, line);
 		trim(line);
-		int nElems = atoi(line.c_str());
 
 		// read all elements
 		while ( getline(in, line) )
@@ -186,7 +184,6 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 
 	in.close();
 
-
 	return 1;
 }
 
@@ -212,7 +209,7 @@ GridAdapter::MeshType GridAdapter::getElementType(int type)
 	else return ERROR;
 }
 
-const size_t GridAdapter::getNumberOfMaterials() const
+size_t GridAdapter::getNumberOfMaterials() const
 {
 	size_t nElems = _elems->size();
 	size_t maxMaterialID = 0;

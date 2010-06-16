@@ -9,9 +9,15 @@
 #define OGS_QT_VERSION ${QT_VERSION_MAJOR}${QT_VERSION_MINOR}
 #define SOURCEPATH "${CMAKE_SOURCE_DIR}"
 
-//WW #cmakedefine RANDOM_WALK
-//WW #cmakedefine PROBLEM_CLASS
-//WW #cmakedefine NEW_EQS
+#cmakedefine OGS_VERSION "${OGS_VERSION}"
+#cmakedefine OGS_DATE "${OGS_DATE}"
+
+#cmakedefine CMAKE_RUN_TIMESTAMP ""
+#cmakedefine SYSTEM_INFO "${CMAKE_SYSTEM}-x${BITS}"
+#cmakedefine PROCESSOR_INFO "${CMAKE_SYSTEM_PROCESSOR}"
+#cmakedefine COMPILER_INFO "${CMAKE_CXX_COMPILER}"
+#cmakedefine CMAKE_GENERATOR "${CMAKE_GENERATOR}"
+
 #cmakedefine LIS
 #cmakedefine MKL
 #cmakedefine BRNS
@@ -21,5 +27,8 @@
 #cmakedefine NO_ERROR_CONTROL
 
 #cmakedefine MSVC
+
+#cmakedefine OGS_VRED_PLUGIN
+#cmakedefine OGS_PYTHON
 
 #endif // CONFIGURE_H

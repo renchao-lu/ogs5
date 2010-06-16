@@ -49,7 +49,10 @@ public:
 		m_ply_pnt_ids.push_back(pos);
 	}
 
-	/** returns the number of points */
+	/**
+	 * returns the number of points,
+	 * the number of segments is about one smaller
+	 * */
 	size_t getSize() const {
 		return m_ply_pnt_ids.size();
 	}
@@ -94,21 +97,15 @@ public:
 		return m_ply_pnts[m_ply_pnt_ids[i]];
 	}
 
+	/**
+	 * \brief returns the coordinates of the i-th point contained in the polyline
+	 * */
+	Point* getPoint(size_t i) {
+		assert(i < m_ply_pnt_ids.size());
+		return m_ply_pnts[m_ply_pnt_ids[i]];
+	}
+
 	const std::vector<Point*> & getPointsVec () const { return m_ply_pnts; }
-//	/**
-//	 * compute the length of the line segments and the entire length of the polyline
-//	 * \param length the entire length of the polyline
-//	 * \param line_seg_length on input: an empty array,
-//	 * 	on output: the array filled with the corresponding length of each line segment
-//	 */
-//	void getLength ( double &len, double* len_line_seg = NULL) const {
-//		len = 0.0;
-//		for (size_t k(0); k<m_ply_pnt_ids.size()-1; k++) {
-//			double dist (sqrt (scpr (m_ply_pnts[k+1]->getData(), m_ply_pnts[k]->getData(), 3)));
-//			if (len_line_seg) len_line_seg[k] = dist;
-//			len += dist;
-//		}
-//	}
 
 protected:
 	/** a reference to the vector of pointers to the geometric points */

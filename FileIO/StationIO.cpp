@@ -17,7 +17,7 @@ int StationIO::readStationFile(const std::string &path, std::string &name, std::
 
 	if (!in.is_open())
     {
-		std::cout << "Station::readFromFile() - Could not open file...\n";
+		std::cout << "StationIO::readFromFile() - Could not open file...\n";
 		return 0;
 	}
 
@@ -50,102 +50,8 @@ int StationIO::readStationFile(const std::string &path, std::string &name, std::
     return returnValue;
 }
 
-/*
-// all boreholes to GMS which each borehole in a single file
-void StationIO::writeBoreholesToGMS(const std::vector<GEOLIB::Point*> *stations)
-{
-	//std::vector<std::string> soilID(1);
-	std::vector<std::string> soilID = readSoilIDfromFile("d:/BodeTimeline.txt");
-	for (size_t i=0; i<stations->size(); i++)
-		StationIO::writeBoreholeToGMS(static_cast<GEOLIB::StationBorehole*>((*stations)[i]), std::string("Borehole-" + static_cast<GEOLIB::StationBorehole*>((*stations)[i])->getName() + ".txt"), soilID);
-	StationIO::writeSoilIDTable(soilID, "SoilIDReference.txt");
-}
-*/
-void StationIO::writeBoreholesToGMS(const std::vector<GEOLIB::Point*> *stations, const std::string &filename)
-{
-	std::ofstream out( filename.c_str(), std::ios::out );
-	size_t idx = 0;
-	std::vector<std::string> soilID = readSoilIDfromFile("d:/BodeTimeline.txt");
-
-	// write header
-	out	<< "name" << "\t" << std::fixed << "X" << "\t" << "Y"  << "\t" << "Z" <<  "\t" << "soilID" << std::endl;
-
-	for (size_t j=0; j<stations->size(); j++)
-	{
-		GEOLIB::StationBorehole* station = static_cast<GEOLIB::StationBorehole*>((*stations)[j]);
-		std::vector<GEOLIB::Point*> profile = station->getProfile();
-		std::vector<std::string> soilNames  = station->getSoilNames();
-
-		size_t nLayers = profile.size();
-		for (size_t i=1; i<nLayers; i++) {
-
-			if ( (i>1) && (soilNames[i].compare(soilNames[i-1]) == 0) ) continue;
-			idx = getSoilID(soilID, soilNames[i]);
-
-			out	<< station->getName() << "\t" << std::fixed << (*(profile[i-1]))[0] << "\t"
-				<< (*(profile[i-1]))[1]  << "\t" << (*(profile[i-1]))[2] <<  "\t"
-				<< idx << std::endl;
-		}
-	}
-
-	out.close();
-	StationIO::writeSoilIDTable(soilID, "d:/SoilIDReference.txt");
-}
 
 
-int StationIO::writeBoreholeToGMS(const GEOLIB::StationBorehole* station, const std::string &filename, std::vector<std::string> &soilID)
-{
-	std::ofstream out( filename.c_str(), std::ios::out );
-	size_t idx = 0;
-
-	// write header
-	out	<< "name" << "\t" << std::fixed << "X" << "\t" << "Y"  << "\t" << "Z" <<  "\t" << "soilID" << std::endl;
-
-	std::vector<GEOLIB::Point*> profile = station->getProfile();
-	std::vector<std::string> soilNames  = station->getSoilNames();
-
-	// write table
-	size_t nLayers = profile.size();
-	for (size_t i=1; i<nLayers; i++) {
-
-		if ( (i>1) && (soilNames[i].compare(soilNames[i-1]) == 0) ) continue;
-		idx = getSoilID(soilID, soilNames[i]);
-
-		out	<< station->getName() << "\t" << std::fixed << (*(profile[i-1]))[0] << "\t"
-			<< (*(profile[i-1]))[1]  << "\t" << (*(profile[i-1]))[2] <<  "\t"
-			<< idx << std::endl;
-	}
-	out.close();
-
-    return 1;
-}
-
-size_t StationIO::getSoilID(std::vector<std::string> &soilID, std::string &soilName)
-{
-	for (size_t j=0; j<soilID.size(); j++)
-	{
-		if (soilID[j].compare(soilName) == 0) return j;
-	}
-	soilID.push_back(soilName);
-	return (soilID.size() - 1);
-}
-
-int StationIO::writeSoilIDTable(const std::vector<std::string> &soilID, const std::string &filename)
-{
-	std::ofstream out( filename.c_str(), std::ios::out );
-	size_t idx = 0;
-
-	// write header
-	out	<< "ID" << "\t" << std::fixed << "Soil name"<< std::endl;
-
-	// write table
-	size_t nIDs = soilID.size();
-	for (size_t i=0; i<nIDs; i++)
-		out	<< i << "\t" << std::fixed << soilID[i] << "\t" << std::endl;
-	out.close();
-
-    return 1;
-}
 
 
 void StationIO::writeStratigraphyTable(const std::vector<GEOLIB::Point*> *boreholes, const std::string &filename)
@@ -174,22 +80,3 @@ void StationIO::writeStratigraphyTable(const std::vector<GEOLIB::Point*> *boreho
 	out.close();	
 }
 
-std::vector<std::string> StationIO::readSoilIDfromFile(const std::string &filename)
-{
-	std::vector<std::string> soilID;
-	std::string line;
-
-	std::ifstream in( filename.c_str() );
-
-	if (in.is_open())
-	{
-		while ( getline(in, line) )
-		{
-			trim(line);
-			soilID.push_back(line);
-		}
-	}
-	in.close();
-
-	return soilID;
-}

@@ -5,20 +5,20 @@
  */
 
 #include "SurfaceModel.h"
-#include "PntGraphicsItem2d.h"
-//#include "LineGraphicsItem2d.h"
-#include "ModelItem.h"
 
 #include "VtkSurfacesSource.h"
 
-SurfaceModel::SurfaceModel( QString name, std::vector<GEOLIB::Surface*> *surfaceVec, /* PntsModel* pntsModel, */ QObject* parent /*= 0*/ )
-: Model(name, parent), /* _pntsModel(pntsModel), */ _surfaceVec(surfaceVec)
+SurfaceModel::SurfaceModel( QString name, std::vector<GEOLIB::Surface*>* surfaceVec, QObject* parent /*= 0*/ )
+: Model(name, parent), _surfaceVec(surfaceVec)
 {
-	_modelContentType = SURFACE_MODEL;
+	QList<QVariant> rootData;
+	delete _rootItem;
+	rootData << "Id" << "x" << "y" << "z";
+	_rootItem = new TreeItem(rootData, NULL);
+	setData(surfaceVec, _rootItem);
+
 	_vtkSource = VtkSurfacesSource::New();
 	static_cast<VtkSurfacesSource*>(_vtkSource)->setSurfaces(surfaceVec);
-
-	updateData();
 }
 
 SurfaceModel::~SurfaceModel()
@@ -30,78 +30,40 @@ int SurfaceModel::columnCount( const QModelIndex& parent /*= QModelIndex()*/ ) c
 {
 	Q_UNUSED(parent)
 
-	return 1;
+	return 4;
 }
 
-QVariant SurfaceModel::data( const QModelIndex& index, int role ) const
+void SurfaceModel::setData(std::vector<GEOLIB::Surface*> *surfaces, TreeItem* parent)
 {
-	if (!index.isValid())
-		return QVariant();
-
-	size_t numSurfaces = _surfaceVec->size();
-	if ((size_t)index.row() >= numSurfaces)
-		return QVariant();
-
-/* TODO	Qt 2D surface visualisation -- KR
-	GraphicsItem2d* item2d = itemFromIndex(index)->item2d();
-	if (item2d == NULL)
-		return QVariant();
-	LineGraphicsItem2d* lineItem = static_cast<LineGraphicsItem2d*>(item2d);
-	GEOLIB::Polyline* line = lineItem->line();
-	if (line == NULL)
-		return QVariant();
-	
-	//QString pntIds;
-	//for (int i = 0; i < numPolylines; i++)
-	//{
-	//	pntIds.append(QString::number(_polylineVec[i]->id)).append(" ");
-	//}
-
-	QString pntsString;
-	size_t numPnts = line->getSize();
-*/
-	switch (role)
+	int nSurfaces = surfaces->size();
+	for (int i=0; i<nSurfaces; i++)
 	{
-/* KR
-	case Qt::DisplayRole:
-		switch (index.column())
+		QList<QVariant> surface;
+		surface << "Surface " + QString::number(i);
+		TreeItem* surfaceItem = new TreeItem(surface, _rootItem);
+		_rootItem->appendChild(surfaceItem);
+
+		const std::vector<GEOLIB::Point*> *nodesVec = (*surfaces)[i]->getPointVec();
+
+		int nElems = static_cast<int>((*surfaces)[i]->getNTriangles());
+		for (int j=0; j<nElems; j++)
 		{
-		case 0:
-			for (size_t i = 0; i < numPnts; i++)
-				pntsString.append(QString::fromStdString((*line)[i]->write())).append("\n");
-			return pntsString;
-		default:
-			return QVariant();
-		}
-		break;
+			QList<QVariant> elem;
+			elem << j << static_cast<int>((*(*(*surfaces)[i])[j])[0]) << static_cast<int>((*(*(*surfaces)[i])[j])[1]) << static_cast<int>((*(*(*surfaces)[i])[j])[2]);
+			TreeItem* child = new TreeItem(elem, surfaceItem);
+			surfaceItem->appendChild(child);
 
-	case Qt::ToolTipRole:
-		//return QString("Polyline '(%1)' from points (%2) with Id=%3")
-		//	.arg(QString::fromStdString(line->name)).arg(pntIds).arg(line->id);
-		return QVariant();
-*/
-	default:
-		return QVariant();
-	}
-}
-
-QVariant SurfaceModel::headerData( int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole*/ ) const
-{
-	if (role != Qt::DisplayRole)
-		return QVariant();
-
-	if (orientation == Qt::Horizontal)
-	{
-		switch (section)
-		{
-		case 0: return "Points";
-		//case 1: return "Name";
-		//case 2: return "Point ids";
-		default: return QVariant();
+			for (int k=0; k<3; k++)
+			{
+				QList<QVariant> node;
+				node << static_cast<int>((*(*(*surfaces)[i])[j])[k]) << QString::number((*(*nodesVec)[(*(*(*surfaces)[i])[j])[k]])[0],'f') << QString::number((*(*nodesVec)[(*(*(*surfaces)[i])[j])[k]])[1],'f') << QString::number((*(*nodesVec)[(*(*(*surfaces)[i])[j])[k]])[2],'f');
+				TreeItem* nchild = new TreeItem(node, child);
+				child->appendChild(nchild);
+			}
 		}
 	}
-	else
-		return QString("Row %1").arg(section);
+
+	reset();
 }
 
 bool SurfaceModel::setData( const QModelIndex& index, const QVariant& value, int role /*= Qt::EditRole*/ )
@@ -112,37 +74,7 @@ bool SurfaceModel::setData( const QModelIndex& index, const QVariant& value, int
 void SurfaceModel::updateData()
 {
 	clearData();
-
-	for (vector<GEOLIB::Surface*>::const_iterator it = _surfaceVec->begin();
-	it != _surfaceVec->end(); ++it)
-	{
-
-//		LineGraphicsItem2d* lineItem2d = new LineGraphicsItem2d(this, *it);
-		ModelItem* item = new ModelItem(NULL, this);
-		//size_t numPoints = (*it)->getSize();
-
-		/*
-		for (int i = 0; i < numPoints; i++)
-		{
-			PntGraphicsItem2d* pntItem = static_cast<PntGraphicsItem2d*>
-				(_pntsModel->itemFromIndex(_pntsModel->indexFromPoint((**it)[i]))->item2d());
-			connect(pntItem, SIGNAL(itemPositionChanged(IGeometryPoint*)),
-				lineItem3d, SLOT(updatePosition()));
-			// TODO
-			//connect(pntItem, SIGNAL(itemPositionChanged(IGeometryPoint*)),
-			//	lineAdapter, SLOT(computePositions()));
-			connect(pntItem, SIGNAL(itemPositionChanged(IGeometryPoint*)),
-				lineItem2d, SLOT(updatePosition()));
-
-			connect(lineItem2d, SIGNAL(itemPositionChanged(IGeometryLine*)),
-				pntItem, SLOT(updatePosition()));
-		}
-		*/
-		//connect(lineItem2d, SIGNAL(itemPositionChanged(IGeometryLine*)),
-		//	this, SLOT(item2dChanged(IGeometryLine*)));
-		_data.push_back(item);
-	}
-	Model::updateData();
+	TreeModel::updateData();
 }
 
 
@@ -153,22 +85,18 @@ QModelIndex SurfaceModel::indexFromSurface( const GEOLIB::Surface* surface ) con
 		for (int i = 0; i < rowCount(); ++i)
 		{
 			QModelIndex surfaceIndex = index(i, 0);
-/* KR
-			LineGraphicsItem2d* itemFromIndex =
-				static_cast<LineGraphicsItem2d*>(
-				static_cast<ModelItem*>(lineIndex.internalPointer())->item2d());
 
-			if (line == itemFromIndex->line())
-				return lineIndex;
-*/
+			if (surface == (*_surfaceVec)[i])
+				return surfaceIndex;
 		}
 	}
 	return QModelIndex();
 }
 
-void SurfaceModel::item2dChanged( GEOLIB::Surface* surface)
+void SurfaceModel::item2dChanged( GEOLIB::Surface* surface )
 {
 	QModelIndex itemIndex = indexFromSurface(surface);
 	QModelIndex indexEnd = index(itemIndex.row(), columnCount());
 	emit dataChanged(itemIndex, indexEnd);
 }
+

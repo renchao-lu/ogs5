@@ -24,9 +24,9 @@
   /* Floating-Point */
 
 /* ROCKFLOW-Version */
-#define ROCKFLOW_VERSION    "5.0.04(AKS)"
-#define RF_SHELL_VERSION    "5.0.03(GK/HS)"
-#define ROCKFLOW_DATE       "31.05.2010"
+// LB: renamed ROCKFLOW_VERSION to OGS_VERSION and moved the #define to 
+// Base/Configure.h.in. Please set the version in the top-level CMakeLists.txt!!
+// (see sources/CMakeLists.txt)
 
 /* Definitionen von Makros zur Steuerung der bedingten Compilierung */
 #define SWITCHES

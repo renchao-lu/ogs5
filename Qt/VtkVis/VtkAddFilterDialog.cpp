@@ -9,58 +9,52 @@
 #include "VtkAddFilterDialog.h"
 #include "VtkVisPipeline.h"
 #include "VtkVisPipelineItem.h"
+#include "VtkOGSFilter.h"
 
-#include <vtkPolyDataAlgorithm.h>
 #include <vtkContourFilter.h>
 #include <vtkOutlineFilter.h>
 
 #include <QModelIndex>
-#include <QRadioButton>
+
 
 VtkAddFilterDialog::VtkAddFilterDialog( VtkVisPipeline* pipeline, QModelIndex parentIndex, QDialog* parent /*= 0*/ )
 : QDialog(parent), _pipeline(pipeline), _parentIndex(parentIndex)
 {
 	setupUi(this);
+	filterListWidget->setSelectionMode(QAbstractItemView::SingleSelection);
 
 	VtkVisPipelineItem* parentItem = static_cast<VtkVisPipelineItem*>(_pipeline->getItem(parentIndex));
 	parentTypeLineEdit->setText(parentItem->data(0).toString());
 	QString outputType = QString::fromStdString(parentItem->algorithm()->GetOutputDataObject(0)->GetClassName());
 	parentOutputLineEdit->setText(outputType);
 
-	QWidget* _filterSelectWidget = new QWidget(this);
+	VtkFilterItem::VtkTargetObject source = (outputType.compare("vtkUnstructuredGrid") == 0) ? VtkFilterItem::UNSTRUCTUREDGRID : VtkFilterItem::POLYDATA;
 
-	QVBoxLayout* layout = new QVBoxLayout(_filterSelectWidget);
+	VtkOGSFilter filter;
+	std::vector<VtkFilterItem> filters = filter.getAvailableFilters();
 
-	QGroupBox* groupBox = new QGroupBox("Select Filter", this);
-	QRadioButton* radio1 = new QRadioButton("Contour", this);
-	_radioButtons.push_back(radio1);
-	//radio1->setIcon()
-	QRadioButton* radio2 = new QRadioButton("Outline", this);
-	_radioButtons.push_back(radio2);
+	size_t nFilters = filters.size();
+	for (size_t i=0; i<nFilters; i++)
+	{
+		if (source == filters[i].target())
+		{
+			new QListWidgetItem(QString::fromStdString(filters[i].name()), filterListWidget);
+			_applicableFilters.push_back(filters[i]);
+		}
+	}
 
-	radio1->setChecked(true);
-
-	QVBoxLayout* vbox = new QVBoxLayout(groupBox);
-	vbox->addWidget(radio1);
-	vbox->addWidget(radio2);
-	vbox->addStretch(1);
-
-	layout->addWidget(groupBox);
-
-	filterScrollArea->setWidget(_filterSelectWidget);
+	if (_applicableFilters.empty())
+		this->buttonBox->setDisabled(true);
 }
 
 void VtkAddFilterDialog::on_buttonBox_accepted()
 {
-	foreach (QRadioButton* radioButton, _radioButtons)
-	{
-		if (radioButton->isChecked())
-		{
-			vtkContourFilter* vtkContour = vtkContourFilter::New();
-			vtkContour->GenerateValues(5, 0.0, 1.0);
-			vtkAlgorithm* vtkFilter = vtkOutlineFilter::New();
-			_pipeline->addPipelineItem(vtkContour, _parentIndex);
-		}
-	}
-	qDebug("clicked");
+	VtkOGSFilter filter;
+	size_t idx = filterListWidget->currentRow();
+	vtkAlgorithm* item = filter.apply(static_cast<VtkVisPipelineItem*>(_pipeline->getItem(_parentIndex))->algorithm(), _applicableFilters[idx].filter());
+	if (item)
+		_pipeline->addPipelineItem(item, _parentIndex);
 }
+
+
+

@@ -6,13 +6,10 @@
 
 #include "mainwindow.h"
 #include "msh_lib.h"
-#include "GraphicsScene.h"
-#include "GraphicsView2d.h"
 #include "PntsModel.h"
 #include "LinesModel.h"
 #include "StationTreeModel.h"
 #include "MshModel.h"
-#include "ViewWidget2d.h"
 #include "OGSError.h"
 #include "DBConnectionDialog.h"
 #include "DiagramPrefsDialog.h"
@@ -22,8 +19,9 @@
 #include "ListPropertiesDialog.h"
 #include "Configure.h"
 #include "VtkVisPipeline.h"
-#include "GraphicsItem2d.h"
 #include "VtkAddFilterDialog.h"
+#include "RecentFiles.h"
+#include "VisPrefsDialog.h"
 
 // GEOLIB includes
 #include "Point.h"
@@ -36,20 +34,29 @@
 #include "PetrelInterface.h"
 #include "GocadInterface.h"
 #include "XMLInterface.h"
+#include "GMSHInterface.h"
+#include "GMSInterface.h"
 
-#include "RecentFiles.h"
-
-
+// Qt Includes
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QGridLayout>
 #include <QSettings>
 #include <QComboBox>
+#include <QImage>
 #include <QPixmap>
 
-//3d mesh testing
-#include "VtkMeshSource.h"
-#include "VtkOGSFilter.h"
+//vtk testing
+#include <vtkRenderWindow.h>
+#include "VtkBGImageSource.h"
+#include <vtkVRMLExporter.h>
+#include <vtkOBJExporter.h>
+
+#include <clocale>
+
+// for sizeof operator
+//#include "rf_st_new.h"
+//#include "rf_bc_new.h"
 
 /// FEM. 11.03.2010. WW
 #include "problem.h"
@@ -63,25 +70,20 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 {
     setupUi(this);
 
-
 	// Setup connection GEOObjects to GUI through GEOModels and tab widgets
 	_geoModels = new GEOModels();
 
-
-	// Get graphics scene
-	GraphicsScene* scene = visualizationWidget->scene();
-	connect(scene, SIGNAL(sceneChanged()), this, SLOT(updateGraphicsScene()));
-
 	// station model
 	stationTabWidget->treeView->setModel(_geoModels->getStationModel());
-	connect(_geoModels, SIGNAL(stationVectorAdded(StationTreeModel*, std::string)),
-		scene, SLOT(loadItemsFromTreeModel(StationTreeModel*, std::string)));		// update model when stations are added
 	connect(stationTabWidget->treeView, SIGNAL(stationListExportRequested(std::string, std::string)),
 		this, SLOT(exportBoreholesToGMS(std::string, std::string)));	// export Stationlist to GMS
 	connect(stationTabWidget->treeView, SIGNAL(stationListRemoved(std::string)),
 		_geoModels, SLOT(removeStationVec(std::string)));	// update model when stations are removed
 	connect(_geoModels, SIGNAL(stationVectorRemoved(StationTreeModel*, std::string)),
-		this, SLOT(updateGraphicsScene()));					// update 2d view when stations are removed
+		this, SLOT(updateDataViews()));						// update data view when stations are removed
+	connect(stationTabWidget->treeView, SIGNAL(diagramRequested(QModelIndex&)),
+		this, SLOT(showDiagramPrefsDialog(QModelIndex&)));		// connect treeview to diagramview
+
 
 	// point models
 	connect (_geoModels, SIGNAL(pointModelAdded(Model*)),
@@ -91,9 +93,7 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	connect (_geoModels, SIGNAL(pointModelRemoved(Model*)),
 		pntTabWidget->dataViewWidget, SLOT(removeModel(Model*)));
 	connect(_geoModels, SIGNAL(pointModelRemoved(Model*)),
-		this, SLOT(updateGraphicsScene()));
-	connect(_geoModels, SIGNAL(pointModelAdded(Model*)),
-		scene, SLOT(loadItemsFromTableModel(Model*)));
+		this, SLOT(updateDataViews()));
 
 	// line models
 	connect (_geoModels, SIGNAL(polylineModelAdded(Model*)),
@@ -103,9 +103,7 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	connect (_geoModels, SIGNAL(polylineModelRemoved(Model*)),
 		lineTabWidget->dataViewWidget, SLOT(removeModel(Model*)));
 	connect(_geoModels, SIGNAL(polylineModelRemoved(Model*)),
-		this, SLOT(updateGraphicsScene()));
-	connect(_geoModels, SIGNAL(polylineModelAdded(Model*)),
-		scene, SLOT(loadItemsFromTableModel(Model*)));
+		this, SLOT(updateDataViews()));
 
 	// surface models
 	connect (_geoModels, SIGNAL(surfaceModelAdded(Model*)),
@@ -115,9 +113,14 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	connect (_geoModels, SIGNAL(surfaceModelRemoved(Model*)),
 		surfaceTabWidget->dataViewWidget, SLOT(removeModel(Model*)));
 	connect(_geoModels, SIGNAL(surfaceModelRemoved(Model*)),
-		this, SLOT(updateGraphicsScene()));
-	connect(_geoModels, SIGNAL(surfaceModelAdded(Model*)),
-		scene, SLOT(loadItemsFromTableModel(Model*)));
+		this, SLOT(updateDataViews()));
+
+
+	// Setup connections for mesh models to GUI
+	_meshModels = new MshModel();
+	mshTabWidget->treeView->setModel(_meshModels);
+	connect(mshTabWidget, SIGNAL(requestMeshRemoval(const QModelIndex&)),
+		_meshModels, SLOT(removeMesh(const QModelIndex&)));
 
 	// vtk visualization pipeline
 	_vtkVisPipeline = new VtkVisPipeline(visualizationWidget->renderer());
@@ -135,23 +138,31 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 		_vtkVisPipeline, SLOT(removeSourceItem(Model*)));
 	connect(_geoModels, SIGNAL(stationVectorAdded(StationTreeModel*, std::string)),
 		_vtkVisPipeline, SLOT(addPipelineItem(StationTreeModel*, std::string)));
-	connect(_geoModels, SIGNAL(removeVTK(StationTreeModel*, std::string)),
+	connect(_geoModels, SIGNAL(stationVectorRemoved(StationTreeModel*, std::string)),
 		_vtkVisPipeline, SLOT(removeSourceItem(StationTreeModel*, std::string)));
-	
+	connect(_meshModels, SIGNAL(meshAdded(MshModel*, QModelIndex)),
+		_vtkVisPipeline, SLOT(addPipelineItem(MshModel*,QModelIndex)));
+	connect(_meshModels, SIGNAL(meshRemoved(MshModel*, QModelIndex)),
+		_vtkVisPipeline, SLOT(removeSourceItem(MshModel*, QModelIndex)));
 
 	connect(_vtkVisPipeline, SIGNAL(vtkVisPipelineChanged()),
 		visualizationWidget->vtkWidget, SLOT(update()));
+	connect(_vtkVisPipeline, SIGNAL(vtkVisPipelineChanged()),
+		vtkVisTabWidget->vtkVisPipelineView, SLOT(expandAll()));
 
-	vtkVisTabWidget->treeView->setModel(_vtkVisPipeline);
-	connect(vtkVisTabWidget->treeView, SIGNAL(requestRemovePipelineItem(QModelIndex)),
+	vtkVisTabWidget->vtkVisPipelineView->setModel(_vtkVisPipeline);
+	connect(vtkVisTabWidget->vtkVisPipelineView, SIGNAL(requestRemovePipelineItem(QModelIndex)),
 		_vtkVisPipeline, SLOT(removePipelineItem(QModelIndex)));
-	connect(vtkVisTabWidget->treeView, SIGNAL(requestAddPipelineFilterItem(QModelIndex)),
+	connect(vtkVisTabWidget->vtkVisPipelineView, SIGNAL(requestAddPipelineFilterItem(QModelIndex)),
 		this, SLOT(showAddPipelineFilterItemDialog(QModelIndex)));
+	connect(vtkVisTabWidget, SIGNAL(requestViewUpdate()),
+		visualizationWidget, SLOT(updateView()));
 
 
 	// Stack the data dock widgets together
 	tabifyDockWidget(pntDock, lineDock);
 	tabifyDockWidget(lineDock, stationDock);
+	tabifyDockWidget(surfaceDock, stationDock);
 	tabifyDockWidget(stationDock, mshDock);
 
 	// Restore window geometry
@@ -181,15 +192,15 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	connect(showStationDockAction, SIGNAL(triggered(bool)), this, SLOT(showStationDockWidget(bool)));
 	menuWindows->addAction(showStationDockAction);
 
+	QAction* showSurfaceDockAction = surfaceDock->toggleViewAction();
+	showSurfaceDockAction->setStatusTip(tr("Shows / hides the surface view"));
+	connect(showSurfaceDockAction, SIGNAL(triggered(bool)), this, SLOT(showSurfaceDockWidget(bool)));
+	menuWindows->addAction(showSurfaceDockAction);
+
 	QAction* showMshDockAction = mshDock->toggleViewAction();
 	showMshDockAction->setStatusTip(tr("Shows / hides the lines view"));
 	connect(showMshDockAction, SIGNAL(triggered(bool)), this, SLOT(showMshDockWidget(bool)));
 	menuWindows->addAction(showMshDockAction);
-
-	// Edit mode combo box
-	connect(visualizationWidget->viewWidget2d->itemTypeComboBox, SIGNAL(currentIndexChanged(int)),
-		this, SLOT(setConnectsSceneToTabWidgets(int)));
-	setConnectsSceneToTabWidgets(visualizationWidget->viewWidget2d->itemTypeComboBox->currentIndex());
 
 	// connects for point model
 	//connect(pntTabWidget->pointsTableView, SIGNAL(itemSelectionChanged(const QItemSelection&,const QItemSelection&)),
@@ -197,55 +208,39 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	//connect(pntTabWidget->clearAllPushButton, SIGNAL(clicked()), pntsModel, SLOT(clearData()));
 	//connect(pntTabWidget->clearSelectedPushButton, SIGNAL(clicked()), pntsModel, SLOT(clearSelectedData()));
 	//connect(pntTabWidget->clearAllPushButton, SIGNAL(clicked()), linesModel, SLOT(clearData()));
-	//connect(pntsModel, SIGNAL(selectionCleared()), pntTabWidget->pointsTableView, SLOT(clearSelection()));
-
-	// connects for lines model
-	//connect(lineTabWidget->linesTableView, SIGNAL(itemSelectionChanged(const QItemSelection&,const QItemSelection&)),
-	//	linesModel, SLOT(setSelectionFromOutside(const QItemSelection&, const QItemSelection&)));
 
 	// connects for station model
-	//connect(stationTabWidget->treeView, SIGNAL(itemSelectionChanged(const QItemSelection&,const QItemSelection&)),
-	//	_stationModel, SLOT(setSelectionFromOutside(const QItemSelection&, const QItemSelection&)));
-	//connect(_stationModel, SIGNAL(updateScene()), this, SLOT(updateGraphicsScene()));
 	connect(stationTabWidget->treeView, SIGNAL(propertiesDialogRequested(std::string)), this, SLOT(showPropertiesDialog(std::string)));
 
 
-	mshTabWidget->setScene(scene);
-	//connect(mshTabWidget->mshTableView, SIGNAL(itemSelectionChanged(const QItemSelection&,const QItemSelection&)),
-	//	mshModel, SLOT(setSelectionFromOutside(const QItemSelection&, const QItemSelection&)));
-	//connect(mshTabWidget->clearAllPushButton, SIGNAL(clicked()), mshModel, SLOT(clearData()));
-	//connect(mshTabWidget->clearSelectedPushButton, SIGNAL(clicked()), mshModel, SLOT(clearSelectedData()));
-	connect(mshTabWidget->showMeshesCheckBox, SIGNAL(toggled(bool)), scene, SLOT(toggleMshVisibility(bool)));
-	connect(mshTabWidget->showMeshNodesCheckBox, SIGNAL(toggled(bool)), scene, SLOT(toggleMshNodeVisibility(bool)));
-	connect(mshTabWidget->showMeshElementsCheckBox, SIGNAL(toggled(bool)), scene, SLOT(toggleMshElemVisibility(bool)));
-	connect(pntTabWidget->dataViewWidget->visibleCheckBox, SIGNAL(toggled(bool)), scene, SLOT(togglePntsVisibility(bool)));
-	connect(lineTabWidget->dataViewWidget->visibleCheckBox, SIGNAL(toggled(bool)), scene, SLOT(toggleLinesVisibility(bool)));
-	connect(stationTabWidget->showStationsCheckBox, SIGNAL(toggled(bool)), scene, SLOT(toggleStationsVisibility(bool)));
+//	std::cout << "size of Point: " << sizeof (GEOLIB::Point) << std::endl;
+//	std::cout << "size of CGLPoint: " << sizeof (CGLPoint) << std::endl;
+//
+//	std::cout << "size of Polyline: " << sizeof (GEOLIB::Polyline) << std::endl;
+//	std::cout << "size of CGLPolyline: " << sizeof (CGLPolyline) << std::endl;
+//
+//	std::cout << "size of GEOLIB::Surface: " << sizeof (GEOLIB::Surface) << std::endl;
+//	std::cout << "size of Surface: " << sizeof (Surface) << std::endl;
+//
+//	std::cout << "size of CCore: " << sizeof (Mesh_Group::CCore) << std::endl;
+//	std::cout << "size of CNode: " << sizeof (Mesh_Group::CNode) << std::endl;
+//	std::cout << "size of CElement: " << sizeof (Mesh_Group::CNode) << std::endl;
+//	std::cout << "size of CEdge: " << sizeof (Mesh_Group::CEdge) << std::endl;
+//	std::cout << "size of CFEMesh: " << sizeof (Mesh_Group::CFEMesh) << std::endl;
+//	std::cout << "size of Matrix: " << sizeof (Math_Group::Matrix) << std::endl;
+//
+//	std::cout << "size of vec<size_t>: " << sizeof (Math_Group::vec<size_t>) << std::endl;
+//	std::cout << "size of std::vector: " << sizeof (std::vector<size_t>) << std::endl;
 
-	std::cout << "size of Point: " << sizeof (GEOLIB::Point) << std::endl;
-	std::cout << "size of CGLPoint: " << sizeof (CGLPoint) << std::endl;
-
-	std::cout << "size of Polyline: " << sizeof (GEOLIB::Polyline) << std::endl;
-	std::cout << "size of CGLPolyline: " << sizeof (CGLPolyline) << std::endl;
-
-	std::cout << "size of GEOLIB::Surface: " << sizeof (GEOLIB::Surface) << std::endl;
-	std::cout << "size of Surface: " << sizeof (Surface) << std::endl;
-
-	std::cout << "size of CCore: " << sizeof (Mesh_Group::CCore) << std::endl;
-	std::cout << "size of CNode: " << sizeof (Mesh_Group::CNode) << std::endl;
-	std::cout << "size of CElement: " << sizeof (Mesh_Group::CNode) << std::endl;
-	std::cout << "size of CEdge: " << sizeof (Mesh_Group::CEdge) << std::endl;
-	std::cout << "size of CFEMesh: " << sizeof (Mesh_Group::CFEMesh) << std::endl;
-	std::cout << "size of Matrix: " << sizeof (Math_Group::Matrix) << std::endl;
-
-	std::cout << "size of vec<size_t>: " << sizeof (Math_Group::vec<size_t>) << std::endl;
-	std::cout << "size of std::vector: " << sizeof (std::vector<size_t>) << std::endl;
+//	std::cout << "size of CSourceTerm: " << sizeof (CSourceTerm) << std::endl;
+//	std::cout << "size of CBoundaryCondition: " << sizeof (CBoundaryCondition) << std::endl;
 }
 
 MainWindow::~MainWindow()
 {
 	delete _db;
 	delete _vtkVisPipeline;
+	delete _meshModels;
 	delete _geoModels;
 }
 
@@ -278,6 +273,14 @@ void MainWindow::showStationDockWidget( bool show )
 		stationDock->hide();
 }
 
+void MainWindow::showSurfaceDockWidget( bool show )
+{
+	if (show)
+		surfaceDock->show();
+	else
+		surfaceDock->hide();
+}
+
 void MainWindow::showMshDockWidget( bool show )
 {
 	if (show)
@@ -288,10 +291,16 @@ void MainWindow::showMshDockWidget( bool show )
 
 void MainWindow::open()
 {
+	QSettings settings("UFZ", "OpenGeoSys-5");
     QString fileName = QFileDialog::getOpenFileName(this,
-		"Select data file to open", "","Geosys files (*.gli *.gml *.msh *.stn);;GLI files (*.gli);;MSH files (*.msh);;STN files (*.stn);;All files (* *.*)");
-     if (!fileName.isEmpty()) {
-         loadFile(fileName);
+		"Select data file to open", settings.value("lastOpenedFileDirectory").toString(),
+		"Geosys files (*.gli *.gml *.msh *.stn);;GLI files (*.gli);;MSH files (*.msh);;STN files (*.stn);;All files (* *.*)");
+     if (!fileName.isEmpty())
+	 {
+		QDir dir = QDir(fileName);
+		settings.setValue("lastOpenedFileDirectory", dir.absolutePath());
+		loadFile(fileName);
+		std::cout << dir.absolutePath().toStdString() << std::endl;
      }
 }
 
@@ -307,9 +316,7 @@ void MainWindow::openDatabase()
 	if (_db!=NULL && _db->isConnected())
 	{
 		_db->getListSelection();
-		updateGraphicsScene();
-		visualizationWidget->viewWidget2d->setEditableItemType();
-		setConnectsStationsToDiagramView();
+		updateDataViews();
 	}
 }
 
@@ -322,6 +329,7 @@ void MainWindow::openDatabaseConnection()
     dbConn->show();
 }
 
+
 void MainWindow::openRecentFile()
 {
 	QAction* action = qobject_cast<QAction*>(sender());
@@ -331,7 +339,13 @@ void MainWindow::openRecentFile()
 
 void MainWindow::save()
 {
-    QString fileName = QFileDialog::getSaveFileName(this, "Save data as", "","Geosys XML files (*.gml);;All files (* *.*)");
+	QSettings settings("UFZ", "OpenGeoSys-5");
+	QStringList files = settings.value("recentFileList").toStringList();
+	QString dir_str;
+	if (files.size() != 0) dir_str = QFileInfo(files[0]).absolutePath();
+	else dir_str = QDir::homePath();
+
+    QString fileName = QFileDialog::getSaveFileName(this, "Save data as", dir_str,"Geosys XML files (*.gml);;All files (* *.*)");
 
 	QString gliName = pntTabWidget->dataViewWidget->modelSelectComboBox->currentText();
 
@@ -347,6 +361,10 @@ void MainWindow::save()
 		file.close();
 
 		xml.insertStyleFileDefinition(fileName);
+
+		std::cout << "writing " << fileName.toStdString () << std::endl;
+		GMSHInterface gmsh_io;
+		gmsh_io.writeGMSHInputFile(fileName.toStdString(), gliName.toStdString(), *_geoModels);
 	}
 	else OGSError::box("No file name entered.");
 }
@@ -406,7 +424,7 @@ void MainWindow::loadFile(const QString &fileName)
 	}
 	else if (fi.suffix().toLower() == "stn")
 	{
-		GEOLIB::Station::StationType type = GEOLIB::Station::STATION;
+		GEOLIB::Station::StationType type = GEOLIB::Station::BOREHOLE;
 		vector<GEOLIB::Point*> *stations = new vector<GEOLIB::Point*>();
 		string name;
 
@@ -441,7 +459,7 @@ void MainWindow::loadFile(const QString &fileName)
     else if (fi.suffix().toLower() == "msh")
 	{
 #ifndef NDEBUG
-		
+
     	 QTime myTimer;
     	 myTimer.start();
     	 std::cout << "FEMRead ... " << std::flush;
@@ -459,25 +477,27 @@ void MainWindow::loadFile(const QString &fileName)
         	return;
         }
         cout << "Nr. Nodes: " << ::fem_msh_vector[0]->nod_vector.size() << endl;
-		
+
 #ifndef NDEBUG
     	 myTimer.start();
     	 std::cout << "GridAdapter Read ... " << std::flush;
-#endif		
+#endif
 
-		 //GridAdapter grid(fileName.toStdString());
-		 GridAdapter grid(fem_msh_vector[0]);
+		 //GridAdapter grid(fileName.toStdString());				// load mesh-files directly into GridAdapter
+		 GridAdapter* grid = new GridAdapter(fem_msh_vector[0]);	// convert CFEMeshes to GridAdapter
 #ifndef NDEBUG
     	 std::cout << myTimer.elapsed() << " ms" << std::endl;
 #endif
-		 // HACK 3d mesh test sequence	
-		 for (size_t i=0; i<=grid.getNumberOfMaterials(); i++)
-		 {
-			 vtkUnstructuredGridAlgorithm* meshSource = VtkMeshSource::New();
-			 static_cast<VtkMeshSource*>(meshSource)->setMesh(grid.getNodes(), grid.getElements(i));
-			 _vtkVisPipeline->addPipelineItem(meshSource);
-			 _vtkVisPipeline->addPipelineItem(VtkOGSFilter::ColorByHeight(meshSource));
-		 }
+		 std::string name = (fi.baseName()).toStdString();
+		 _meshModels->addMesh(grid, name);
+	}
+	else if (fi.suffix().toLower() == "txt")
+	{
+		vector<GEOLIB::Point*> *boreholes = new vector<GEOLIB::Point*>();
+		string name = fi.baseName().toStdString();
+
+		if (GMSInterface::readBoreholesFromGMS(boreholes, fileName.toStdString()))
+			_geoModels->addStationVec(boreholes, name, GEOLIB::getRandomColor());
 	}
 	else if (fi.suffix().toLower() == "ts") {
 #ifndef NDEBUG
@@ -491,10 +511,8 @@ void MainWindow::loadFile(const QString &fileName)
 #endif
 	}
 
-	updateGraphicsScene();
-	setConnectsStationsToDiagramView();
+	updateDataViews();
 
-	visualizationWidget->viewWidget2d->setEditableItemType();
 	emit fileUsed(fileName);
 }
 
@@ -519,23 +537,14 @@ void MainWindow::loadPetrelFiles(const QStringList &sfc_file_names, const QStrin
 	PetrelInterface (sfc_files, well_path_files, unique_str, _geoModels);
 }
 
-void MainWindow::updateGraphicsScene()
+void MainWindow::updateDataViews()
 {
-	GraphicsScene* scene = visualizationWidget->scene();
-
-	QRectF rect = scene->itemsBoundingRect();
-	scene->setSceneRect(rect);
-	// TODO emit itemsLoaded();
-
-	pntTabWidget->dataViewWidget->dataView->resizeColumnsToContents();
-	pntTabWidget->dataViewWidget->dataView->resizeRowsToContents();
-	lineTabWidget->dataViewWidget->dataView->resizeColumnsToContents();
-	lineTabWidget->dataViewWidget->dataView->resizeRowsToContents();
-	surfaceTabWidget->dataViewWidget->dataView->resizeColumnsToContents();
-	surfaceTabWidget->dataViewWidget->dataView->resizeRowsToContents();
-	mshTabWidget->mshTableView->resizeColumnsToContents();
-	mshTabWidget->mshTableView->resizeRowsToContents();
 	visualizationWidget->showAll();
+	pntTabWidget->		dataViewWidget->dataView->updateView();
+	lineTabWidget->		dataViewWidget->dataView->updateView();
+	surfaceTabWidget->	dataViewWidget->dataView->updateView();
+	stationTabWidget->	treeView->updateView();
+	mshTabWidget->		treeView->updateView();
 
     QApplication::restoreOverrideCursor();
 }
@@ -547,8 +556,6 @@ void MainWindow::readSettings()
 
 	restoreGeometry(settings.value("windowGeometry").toByteArray());
 	restoreState(settings.value("windowState").toByteArray());
-	visualizationWidget->tabWidget->setCurrentIndex(
-		settings.value("visWidgetActiveTab", 2).toInt());
 }
 
 void MainWindow::writeSettings()
@@ -557,8 +564,6 @@ void MainWindow::writeSettings()
 
 	settings.setValue("windowGeometry", saveGeometry());
 	settings.setValue("windowState", saveState());
-	settings.setValue("visWidgetActiveTab",
-		visualizationWidget->tabWidget->currentIndex());
 }
 
 void MainWindow::about()
@@ -567,75 +572,11 @@ void MainWindow::about()
 		arg(QDate::currentDate().toString()));
 }
 
-void MainWindow::setConnectsSceneToTabWidgets( int type )
-{
-	GraphicsScene* scene = visualizationWidget->scene();
-	Model* model;
-
-	disconnect(pntTabWidget->dataViewWidget->dataView, SLOT(selectionChangedFromOutside( const QItemSelection&, const QItemSelection&)));
-	disconnect(lineTabWidget->dataViewWidget->dataView, SLOT(selectionChangedFromOutside( const QItemSelection&, const QItemSelection&)));
-	disconnect(mshTabWidget->mshNodeTableView, SLOT(selectionChangedFromOutside( const QItemSelection&, const QItemSelection&)));
-
-	disconnect((Model*)pntTabWidget->dataViewWidget->dataView->model(), SLOT(setSelectionFromOutside( const QItemSelection&, const QItemSelection&)));
-	disconnect((Model*)lineTabWidget->dataViewWidget->dataView->model(), SLOT(setSelectionFromOutside( const QItemSelection&, const QItemSelection&)));
-	disconnect((Model*)stationTabWidget->treeView->model(), SLOT(setSelectionFromOutside( const QItemSelection&, const QItemSelection&)));
-	disconnect((Model*)mshTabWidget->mshTableView->model(), SLOT(setSelectionFromOutside( const QItemSelection&, const QItemSelection&)));
-
-	switch (type)
-	{
-	case 0:
-		connect(scene, SIGNAL(itemSelectionChanged( const QItemSelection&, const QItemSelection&)),
-				pntTabWidget->dataViewWidget->dataView, SLOT(selectionChangedFromOutside( const QItemSelection&, const QItemSelection&)));
-		model = (Model*)pntTabWidget->dataViewWidget->dataView->model();
-		//connect(scene, SIGNAL(itemSelectionChanged( const QItemSelection&, const QItemSelection&)),
-		//	model, SLOT(setSelectionFromOutside( const QItemSelection&, const QItemSelection&)));
-		//connect(model, SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
-		//	pntTabWidget->pointsTableView, SLOT(selectionChangedFromOutside( const QItemSelection&, const QItemSelection&)));
-
-		break;
-	case 1: connect(visualizationWidget->scene(), SIGNAL(itemSelectionChanged( const QItemSelection&, const QItemSelection&)),
-				lineTabWidget->dataViewWidget->dataView, SLOT(selectionChangedFromOutside( const QItemSelection&, const QItemSelection&)));
-		break;
-	case 2: connect(visualizationWidget->scene(), SIGNAL(itemSelectionChanged( const QItemSelection&, const QItemSelection&)),
-				stationTabWidget->treeView, SLOT(selectionChangedFromOutside( const QItemSelection&, const QItemSelection&)));
-		break;
-	case 3: connect(visualizationWidget->scene(), SIGNAL(itemSelectionChanged( const QItemSelection&, const QItemSelection&)),
-				mshTabWidget->mshNodeTableView, SLOT(selectionChangedFromOutside( const QItemSelection&, const QItemSelection&)));
-		break;
-	}
-}
-
-void MainWindow::setConnectsStationsToDiagramView()
-{
-	foreach (QGraphicsItem* g, visualizationWidget->scene()->items())
-	{
-		GraphicsItem2d* item = static_cast<GraphicsItem2d*>(g);
-		if (item->itemType() == STATION_ITEM)
-		{
-			connect(item,SIGNAL(diagramRequested(QModelIndex&)),this, SLOT(showDiagramPrefs(QModelIndex&)));
-		}
-	}
-
-}
-
-void MainWindow::showDiagramPrefs(QModelIndex &idx)
-{
-	QString listName;
-	GEOLIB::Station* stn = _geoModels->getStationModel()->stationFromIndex(idx, listName);
-
-	if (stn->type() == GEOLIB::Station::STATION)
-	{
-		DiagramPrefsDialog* prefs = new DiagramPrefsDialog(stn, listName, _db);
-		prefs->show();
-	}
-	if (stn->type() == GEOLIB::Station::BOREHOLE)
-		OGSError::box("No time series data available for borehole.");
-}
-
-
 QMenu* MainWindow::createImportFilesMenu()
 {
 	QMenu* importFiles = new QMenu("Import Files");
+	QAction* gmsFiles = importFiles->addAction("GMS Files...");
+	connect(gmsFiles, SIGNAL(triggered()), this, SLOT(importGMS()));
 	QAction* gocadFiles = importFiles->addAction("Gocad Files...");
 	connect(gocadFiles, SIGNAL(triggered()), this, SLOT(importGoCad()));
 	QAction* petrelFiles = importFiles->addAction("Petrel Files...");
@@ -646,6 +587,12 @@ QMenu* MainWindow::createImportFilesMenu()
 	connect(shapeFiles, SIGNAL(triggered()), this, SLOT(importShape()));
 
 	return importFiles;
+}
+
+void MainWindow::importGMS()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, "Select GMS file to import", "","GMS files (*.txt)");
+     if (!fileName.isEmpty()) loadFile(fileName);
 }
 
 void MainWindow::importGoCad()
@@ -668,26 +615,29 @@ void MainWindow::importRaster()
 		(fi.suffix().toLower() == "jpg") ||
 		(fi.suffix().toLower() == "bmp"))
 	{
-		QPixmap raster;
+		QImage raster;
 		QPointF origin;
 		double scalingFactor;
-		GraphicsScene* scene = visualizationWidget->scene();
-		OGSRaster::loadPixmap(fileName, raster, origin, scalingFactor);
-		scene->drawPixmap(raster, origin, scalingFactor);
-		updateGraphicsScene();
-		emit fileUsed(fileName);
+		OGSRaster::loadImage(fileName, raster, origin, scalingFactor);
+
+		VtkBGImageSource* bg = VtkBGImageSource::New();
+			bg->SetOrigin(origin.x(), origin.y());
+			bg->SetCellSize(scalingFactor);
+			bg->SetRaster(raster);
+		_vtkVisPipeline->addPipelineItem(bg);
 	}
 	else OGSError::box("File extension not supported.");
 }
 
 void MainWindow::importShape()
 {
-	QString fileName = QFileDialog::getOpenFileName(this, "Select shape file to import", "","ESRI Shape files (*.shp);;");
+	QString fileName = QFileDialog::getOpenFileName(this, "Select shape file to import", "","ESRI Shape files (*.shp );;");
+//	QString fileName = QFileDialog::getOpenFileName(this, "Select shape file to import", "","ESRI Shape files (*.shp *.dbf);;");
 	QFileInfo fi(fileName);
 
-	if (fi.suffix().toLower() == "shp")
+	if (fi.suffix().toLower() == "shp" || fi.suffix().toLower() == "dbf")
 	{
-		SHPImportDialog dlg(fileName.toStdString(), _geoModels);
+		SHPImportDialog dlg( (fileName.toUtf8 ()).constData(), _geoModels);
 		dlg.exec();
 	}
 }
@@ -718,6 +668,57 @@ void MainWindow::showAddPipelineFilterItemDialog( QModelIndex parentIndex )
 
 void MainWindow::exportBoreholesToGMS(std::string listName, std::string fileName)
 {
-	std::vector<GEOLIB::Point*> *stations = _geoModels->getStationVec(listName);
-	StationIO::writeBoreholesToGMS(stations, fileName);
+	const std::vector<GEOLIB::Point*> *stations (_geoModels->getStationVec(listName));
+	GMSInterface::writeBoreholesToGMS(stations, fileName);
+}
+
+void MainWindow::showDiagramPrefsDialog(QModelIndex &index)
+{
+	QString listName;
+	GEOLIB::Station* stn = _geoModels->getStationModel()->stationFromIndex(index, listName);
+
+	if (stn->type() == GEOLIB::Station::STATION)
+	{
+		DiagramPrefsDialog* prefs = new DiagramPrefsDialog(stn, listName, _db);
+		prefs->show();
+	}
+	if (stn->type() == GEOLIB::Station::BOREHOLE)
+		OGSError::box("No time series data available for borehole.");
+}
+
+void MainWindow::showVisalizationPrefsDialog()
+{
+	VisPrefsDialog* visPrefs = new VisPrefsDialog(_vtkVisPipeline);
+    visPrefs->show();
+}
+
+
+void MainWindow::ShowWindow()
+{
+	this->show();
+}
+
+void MainWindow::HideWindow()
+{
+	this->hide();
+}
+
+void MainWindow::on_actionExportVRML2_triggered( bool checked /*= false*/ )
+{
+	vtkVRMLExporter* exporter = vtkVRMLExporter::New();
+	QString fileName = QFileDialog::getSaveFileName(this, "Save scene to VRML file", "","VRML files (*.wrl);;");
+	exporter->SetFileName(fileName.toStdString().c_str());
+	exporter->SetRenderWindow(visualizationWidget->vtkWidget->GetRenderWindow());
+	exporter->Write();
+	exporter->Delete();
+}
+
+void MainWindow::on_actionExportObj_triggered( bool checked /*= false*/ )
+{
+	vtkOBJExporter* exporter = vtkOBJExporter::New();
+	QString fileName = QFileDialog::getSaveFileName(this, "Save scene to Wavefront OBJ files", "",";;");
+	exporter->SetFilePrefix(fileName.toStdString().c_str());
+	exporter->SetRenderWindow(visualizationWidget->vtkWidget->GetRenderWindow());
+	exporter->Write();
+	exporter->Delete();
 }

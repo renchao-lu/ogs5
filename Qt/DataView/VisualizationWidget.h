@@ -11,32 +11,24 @@
 // ** INCLUDES **
 #include "ui_VisualizationWidgetBase.h"
 
-class GraphicsScene;
-class Model;
-class ViewWidget2d;
-
 class vtkRenderer;
 
 /**
- * VisualizationWidget is tab widget which provides a combined 2d and/or a 3d view
- * to a GraphicsScene.
+ * VisualizationWidget is a widget which provides the 3d vtk scene view.
  */
 class VisualizationWidget : public QWidget, public Ui_VisualizationWidgetBase
 {
 	Q_OBJECT
 
 public:
-	ViewWidget2d* viewWidget2d;
 
 	/// Constructor.
 	VisualizationWidget(QWidget* parent = 0);
+	~VisualizationWidget();
 
-	/// Returns the graphics scene.
-	GraphicsScene* scene() const;
-
-	public slots:
-	/// Updates the 2d and the 3d view.
-	void updateViews();
+public slots:
+	/// Updates the the 3d view.
+	void updateView();
 
 	/// Shows the entire scene on the views.
 	void showAll();
@@ -44,14 +36,19 @@ public:
 	/// Returns the vtk renderer
 	vtkRenderer* renderer() const { return _vtkRender; }
 
-private:
-	GraphicsScene* _graphicsScene;
+protected slots:
+	/// Toggles stereo rendering on / off
+	void on_stereoToolButton_toggled(bool checked);
 
+	/// TODO Toggles full screen mode (actually not working)
+	void on_fullscreenToolButton_clicked(bool checked);
+
+	/// Adjusts the eye angle (separation) for stereo viewing
+	void on_eyeAngleSlider_valueChanged(int value);
+
+private:
 	vtkRenderer* _vtkRender;
 	
-	/// Creates the scene which represents the models.
-	void createScene();
-
 };
 
 #endif // VISUALIZATIONWIDGET_H

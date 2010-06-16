@@ -15,13 +15,8 @@
 #include "SurfaceModel.h"
 
 
-// BUG removal of lists is not correctly implemented as only the 2d _or_ the 3d visualisation
-// of the removed vector will also be removed correctly (depending on what is removed first).
-// this is likely somehow connected to incorrect use of qt's signal/slot architecture. 
-// also, if the 3d vis is removed first this will cause to crash the 2d scene.
-
-
-GEOModels::GEOModels( QObject* parent /*= 0*/ )
+GEOModels::GEOModels( QObject* parent /*= 0*/ ) :
+	QObject (parent)
 {
 	_stationModel = new StationTreeModel();
 }
@@ -31,9 +26,9 @@ GEOModels::~GEOModels()
 	delete _stationModel;
 }
 
-void GEOModels::addPointVec( std::vector<GEOLIB::Point*> *points, std::string &name )
+void GEOModels::addPointVec( std::vector<GEOLIB::Point*> *points, std::string &name, std::vector<std::string>* names )
 {
-	GEOObjects::addPointVec(points, name);
+	GEOObjects::addPointVec(points, name, names);
 
 	PntsModel* model = new PntsModel(QString::fromStdString(name), points, this);
 	_pntModels.push_back(model);
@@ -54,8 +49,6 @@ bool GEOModels::appendPointVec(const std::vector<GEOLIB::Point*> &points, std::s
 	if (nfound) std::cerr << "Model not found" << std::endl;
 	else (*it)->updateData ();
 
-	// ToDo : update graphic scene
-
 	return ret;
 }
 
@@ -73,7 +66,7 @@ bool GEOModels::removePointVec( const std::string &name )
 		}
 		return GEOObjects::removePointVec(name);
 	}
-	std::cout << "PointVec " << name << " is used" << std::endl;
+	std::cout << "GEOModels::removePointVec() - There are still Polylines or Surfaces depending on these points." << std::endl;
 	return false;
 }
 
@@ -85,28 +78,24 @@ void GEOModels::addStationVec( std::vector<GEOLIB::Point*> *stations, std::strin
 	emit stationVectorAdded(_stationModel, name);
 }
 
-// BUG OGS crashes if a station list is loaded from file and then filtered. this is probably connected
-// to another bug concerning the 2d/3d vis (see above) because filtering a list works by first removing
-// the original data and then adding the filtered data (i.e. essentially this means adding the (not 
-// correctly removed vtk-object))
-
 void GEOModels::filterStationVec(const std::string &name, const std::vector<PropertyBounds> &bounds)
 {
-	std::vector<GEOLIB::Point*> *stations = GEOObjects::getStationVec(name);
+	emit stationVectorRemoved(_stationModel, name);
+	const std::vector<GEOLIB::Point*> *stations (GEOObjects::getStationVec(name));
 	_stationModel->filterStations(name, stations, bounds);
 	emit stationVectorAdded(_stationModel, name);
 }
 
 bool GEOModels::removeStationVec( const std::string &name )
 {
-	_stationModel->removeStationList(name);
 	emit stationVectorRemoved(_stationModel, name);
+	_stationModel->removeStationList(name);
 	return GEOObjects::removeStationVec(name);
 }
 
-void GEOModels::addPolylineVec( std::vector<GEOLIB::Polyline*> *lines, const std::string &name )
+void GEOModels::addPolylineVec( std::vector<GEOLIB::Polyline*> *lines, const std::string &name, std::vector<std::string>* ply_names )
 {
-	GEOObjects::addPolylineVec(lines, name);
+	GEOObjects::addPolylineVec(lines, name, ply_names);
 	if (lines->empty()) return;
 
 	PolylinesModel* model = new PolylinesModel(QString::fromStdString(name), lines, this);
@@ -128,9 +117,9 @@ bool GEOModels::removePolylineVec( const std::string &name )
 	return false;
 }
 
-void GEOModels::addSurfaceVec( std::vector<GEOLIB::Surface*> *surfaces, const std::string &name )
+void GEOModels::addSurfaceVec( std::vector<GEOLIB::Surface*> *surfaces, const std::string &name, std::vector<std::string>* sfc_names )
 {
-	GEOObjects::addSurfaceVec(surfaces, name);
+	GEOObjects::addSurfaceVec(surfaces, name, sfc_names);
 	if (surfaces->empty()) return;
 
 	SurfaceModel* model = new SurfaceModel(QString::fromStdString(name), surfaces, this);

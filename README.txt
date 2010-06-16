@@ -1,5 +1,5 @@
 ## OGS-5 ##
-see https://geosys.ufz.de/trac for build instructions
+see https://svn.ufz.de/ogs for build instructions
 
 ## For those who are interested in ogs-pardiso on linux, please extract the libraries in LIB/MKL 
 

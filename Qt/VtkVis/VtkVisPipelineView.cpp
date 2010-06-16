@@ -16,6 +16,7 @@
 VtkVisPipelineView::VtkVisPipelineView( QWidget* parent /*= 0*/ )
 : QTreeView(parent)
 {
+	setItemsExpandable(false);
 }
 
 void VtkVisPipelineView::contextMenuEvent( QContextMenuEvent* event )
@@ -44,4 +45,18 @@ void VtkVisPipelineView::removeSelectedPipelineItem()
 void VtkVisPipelineView::addPipelineFilterItem()
 {
 	emit requestAddPipelineFilterItem(selectionModel()->currentIndex());
+}
+
+void VtkVisPipelineView::selectionChanged( const QItemSelection &selected, const QItemSelection &deselected )
+{
+	QTreeView::selectionChanged(selected, deselected);
+
+	QModelIndex index = this->selectionModel()->currentIndex();
+	if (index.isValid())
+	{
+		VtkVisPipelineItem* item = static_cast<VtkVisPipelineItem*>(index.internalPointer());
+		emit itemSelected(item);
+	}
+	else
+		emit itemSelected(NULL);
 }

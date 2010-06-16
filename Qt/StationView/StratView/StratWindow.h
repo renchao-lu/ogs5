@@ -27,7 +27,7 @@ public:
 	 * \param station The borehole object to be visualised.
 	 */
 	StratWindow(GEOLIB::StationBorehole* station, QWidget* parent = 0);
-	~StratWindow(void) {}
+	~StratWindow(void) { this->destroy(); };
 
 private:
 	/// Automatically resize window based on the measurements of the borehole.

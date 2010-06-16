@@ -39,8 +39,8 @@ CGLPolyline::CGLPolyline(void)
 }
 
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 11/2005 OK Implementation
 **************************************************************************/
@@ -72,8 +72,8 @@ CGLPolyline::~CGLPolyline(void)
     msh_nodes_vector.clear();
 }
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 08/2005 CC Implementation
 **************************************************************************/
@@ -82,7 +82,7 @@ CGLPolyline* GEOGetPLYByName(string name)
   vector<CGLPolyline*>::iterator p = polyline_vector.begin();//CC
   while(p!=polyline_vector.end()) {
     m_polyline = *p;
-   if(m_polyline->name.compare(name)==0) { 
+   if(m_polyline->name.compare(name)==0) {
       return m_polyline;
       break;
     }
@@ -91,8 +91,8 @@ CGLPolyline* GEOGetPLYByName(string name)
   return NULL;
 }
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 08/2005 CC Implementation
 **************************************************************************/
@@ -101,7 +101,7 @@ CGLPolyline* GEOGetPLYById(long number)
   vector<CGLPolyline*>::iterator p = polyline_vector.begin();//CC
   while(p!=polyline_vector.end()) {
     m_polyline = *p;
-   if(m_polyline->id == number) { 
+   if(m_polyline->id == number) {
       return m_polyline;
       break;
     }
@@ -111,7 +111,7 @@ CGLPolyline* GEOGetPLYById(long number)
 }
 /**************************************************************************
 GeoLib-Method: GEORemovePolylines
-Task: 
+Task:
 Programing:
 11/2003 CC Implementation
 01/2005 OK List destructor
@@ -140,8 +140,8 @@ void GEORemoveAllPolylines()
 
 }
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 03/2006 CC destructor
 **************************************************************************/
@@ -153,8 +153,8 @@ void GEORemovePolyline(long nSel)
   polyline_vector.erase(polyline_vector.begin() + nSel);
 }
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 07/2003 OK Implementation
 08/2005 CC Modification
@@ -177,7 +177,7 @@ Programing:
 11/2005 TK FOR-LOOP because of GEOLIB2
 **************************************************************************/
 void GEOPolylineGLI2GEO(FILE *geo_file)
-{	
+{
   int i;
   //vector<CGLLine*> gli_lines_vector;
   vector<CGLPoint*> gli_Points_vector;
@@ -208,7 +208,7 @@ void GEOPolylineGLI2GEO(FILE *geo_file)
 	 }
    }
   //----------------------------------------------------------------------
-  // Write 
+  // Write
   int p_counter = 0;
   int l_counter = 0;
   int s_counter = 0;
@@ -216,7 +216,7 @@ void GEOPolylineGLI2GEO(FILE *geo_file)
   for (i=0; i<(int)surface_vector.size();i++)
   {
     if(!surface_vector[i]->meshing_allowed){ //OK/TK
-      continue; 
+      continue;
     }
     s_counter++;
 	surface_vector[i]->output(geo_file, p_counter, l_counter, pl_counter, s_counter);
@@ -277,8 +277,8 @@ void CGLPolyline::Write(char* file_name)
 	fclose(f);
 }
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 11/2003 OK/CC Implementation
 **************************************************************************/
@@ -307,7 +307,7 @@ bool CGLPolyline::PointExists(CGLPoint* point,CGLPoint* point1)
 }
 /**************************************************************************
 GeoLib-Method: CenterPoint
-Task: 
+Task:
 Programing:
 12/2003 OK Implementation
 **************************************************************************/
@@ -323,7 +323,7 @@ CGLPoint* CGLPolyline::CenterPoint(void)
 }
 /**************************************************************************
 GeoLib-Method:
-Task: 
+Task:
 Programing:
 03/2004 OK Implementation
 01/2005 OK File handling
@@ -358,7 +358,7 @@ void CGLPolyline::WritePointVector(const std::string & base)
 
 /**************************************************************************
 GeoLib-Method:
-Task: 
+Task:
 Programing:
 03/2004 OK Implementation
 08/2005 CC file_path
@@ -407,7 +407,7 @@ void CGLPolyline::ReadPointVector(const std::string &base)
 
 /**************************************************************************
 GeoLib-Method: ComputeLines
-Task: 
+Task:
 Programing:
 11/2003 WW Implementation
 01/2004 CC Modification -- remove orientation value
@@ -428,7 +428,7 @@ void CGLPolyline::ComputeLines(CGLPolyline *m_polyline)
   for(i=1;i<number_of_polyline_points;i++)
   {
     m_point1 = m_polyline->point_vector[i-1];
-    m_point2 = m_polyline->point_vector[i];      
+    m_point2 = m_polyline->point_vector[i];
     CGLLine *m_line = new CGLLine;
     m_line->point1 = m_point1->id;
     m_line->point2 = m_point2->id;
@@ -454,12 +454,12 @@ void CGLPolyline::ComputeLines(CGLPolyline *m_polyline)
   }
 }
 /**************************************************************************
-GEOLib-Method: 
+GEOLib-Method:
 Task: polyline read function
 Programing:
 03/2004 CC Implementation
 05/2004 CC Modification
-04/2005 CC Modification calculate the minimal distance between points reference for 
+04/2005 CC Modification calculate the minimal distance between points reference for
            mesh density of line element calculation
 07/2005 CC read ID of polyline
 08/2005 CC parameter
@@ -624,7 +624,7 @@ ios::pos_type CGLPolyline::Read(std::ifstream &gli_file)//CC8888
 
 /**************************************************************************
 GeoLib-Method:addpoint
-Task: 
+Task:
 Programing:
 03/2004 CC Implementation
 **************************************************************************/
@@ -634,8 +634,8 @@ void CGLPolyline::AddPoint(CGLPoint* m_point)
      point_vector.push_back(m_point);
 }
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 05/2004 CC Implementation Assign randam color to polyline
 last modification:
@@ -654,19 +654,19 @@ void CGLPolyline::AssignColor()
 
 /**************************************************************************
 FEMLib-Method: InterpolationAlongPolyline
-Task: Prescibe the boundary values to all points of a polyline by the means 
+Task: Prescibe the boundary values to all points of a polyline by the means
 of spline
 Programing:
 02/2004 WW Implementation
 last modification:
 **************************************************************************/
-void InterpolationAlongPolyline(CGLPolyline *plyL, 
-                                vector<double>& bcNodalValue)  
+void InterpolationAlongPolyline(CGLPolyline *plyL,
+                                vector<double>& bcNodalValue)
 {
    long number_of_nodes, i;
 
    double sl = 0.0;
-     
+
    number_of_nodes = (long)bcNodalValue.size();
 
    vector<double> ss0;
@@ -679,7 +679,7 @@ void InterpolationAlongPolyline(CGLPolyline *plyL,
    xp = yp = zp = 0.0;
 
 
-   // Prepare spline data 
+   // Prepare spline data
    sl = 0.0;
    for(i=0; i<SizeCGLPoint-1; i++)
    {
@@ -693,7 +693,7 @@ void InterpolationAlongPolyline(CGLPolyline *plyL,
        {
           bVal.push_back(plyL->point_vector[i]->propert);
           ss0.push_back(sl);
-       } 
+       }
        sl += sqrt(xp*xp+yp*yp+zp*zp);
    }
 
@@ -714,7 +714,7 @@ void InterpolationAlongPolyline(CGLPolyline *plyL,
 
    // Interpolate
    for(i=0; i<number_of_nodes; i++)
-	   bcNodalValue[plyL->OrderedPoint[i]] = csp->interpolation(plyL->sbuffer[i]); 
+	   bcNodalValue[plyL->OrderedPoint[i]] = csp->interpolation(plyL->sbuffer[i]);
 
    // Release the memory
    delete csp;
@@ -744,7 +744,7 @@ void CGLPolyline::WriteTecplot(const std::string &file_path)
  /* CGSProject* m_gsp = GSPGetMember("gli");
   if(m_gsp)
     tec_path = m_gsp->path; */
- 
+
   string tec_file_name = file_path + name + ".tec";
   //string tec_file_name = tec_path + name + ".tec";
   fstream tec_file (tec_file_name.data(),ios::trunc|ios::out);
@@ -771,8 +771,8 @@ void CGLPolyline::WriteTecplot(const std::string &file_path)
 
 }
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 01/2005 OK Implementation
 **************************************************************************/
@@ -813,20 +813,20 @@ void CGLPolyline::SortPointVectorByDistance()
   delete [] nodes_unsorted;
 }
 /**************************************************************************
-FEMLib-Method: GetOrderedNodeByDistance_Polyline(const long *nodes, 
-               const CGLPolyline *plyL, vector<double>& Distance, 
-			   vector<int>& OrderedNode)  
-Task: Prescibe the boundary values to all points of a polyline by the means 
+FEMLib-Method: GetOrderedNodeByDistance_Polyline(const long *nodes,
+               const CGLPolyline *plyL, vector<double>& Distance,
+			   vector<int>& OrderedNode)
+Task: Prescibe the boundary values to all points of a polyline by the means
 of spline
-          
+
 Programing:
 02/2004 WW Implementation
 last modification:
-23/2004 WW 
+23/2004 WW
 08/2005 WW Set as a member of polyline
 04/2006 WW Fix a big for polyines have more than two points
 **************************************************************************/
-void CGLPolyline::GetPointOrderByDistance()  
+void CGLPolyline::GetPointOrderByDistance()
 {
    long number_of_nodes, i, l;
    int j, k;
@@ -844,7 +844,7 @@ void CGLPolyline::GetPointOrderByDistance()
    for(j=0; j<number_of_nodes; j++)
       OrderedPoint[j] = j;
 
-   // Reorder the nodes finded along polyline 
+   // Reorder the nodes finded along polyline
    /*
    for(i=0; i<SizeCGLPoint-1; i++)
    {
@@ -856,7 +856,7 @@ void CGLPolyline::GetPointOrderByDistance()
 		  {
              if(ibuffer[k]!=i) continue;
              s0 = sbuffer[j];
-             sl = sbuffer[k];		  
+             sl = sbuffer[k];
              if(sl<s0)
 			 {
                 l = OrderedPoint[j];
@@ -878,7 +878,7 @@ void CGLPolyline::GetPointOrderByDistance()
        {
           if(ibuffer[k]!=i) continue;
           s0 = sbuffer[j];
-          sl = sbuffer[k];		  
+          sl = sbuffer[k];
           if(sl<s0)
           {
              l = OrderedPoint[j];
@@ -903,17 +903,17 @@ void CGLPolyline::GetPointOrderByDistance()
        xp = CGPb->x-CGPa->x;
 	   yp = CGPb->y-CGPa->y;
 	   zp = CGPb->z-CGPa->z;
-       sl += sqrt(xp*xp+yp*yp+zp*zp);       
+       sl += sqrt(xp*xp+yp*yp+zp*zp);
    }
    //
-   // Reorder all nodes found 
+   // Reorder all nodes found
    for(j=0; j<number_of_nodes; j++)
    {
        for(k=j; k<number_of_nodes; k++)
        {
           if(k==j) continue;
           s0 = sbuffer[j];
-          sl = sbuffer[k];		  
+          sl = sbuffer[k];
           if(sl<s0)
           {
              l = OrderedPoint[j];
@@ -927,15 +927,15 @@ void CGLPolyline::GetPointOrderByDistance()
 }
 
 /**************************************************************************
-GEOLib-Method: 
-Task: 
+GEOLib-Method:
+Task:
 Programing:
 10/2005 OK Implementation
 **************************************************************************/
 void GEOUnselectPLY()
 {
   CGLPolyline* m_ply = NULL;
-  vector<CGLPolyline*>::const_iterator p_ply; 
+  vector<CGLPolyline*>::const_iterator p_ply;
   p_ply = polyline_vector.begin();
   while(p_ply!=polyline_vector.end()) {
     m_ply = *p_ply;
@@ -949,7 +949,7 @@ GEOLib-Method
 Programing:
 10/2005 OK Implementation
 **************************************************************************/
-void CGLPolyline::SetPointOrderByDistance(CGLPoint*m_pnt)  
+void CGLPolyline::SetPointOrderByDistance(CGLPoint*m_pnt)
 {
   int i;
 //OK  double eps = 1e-3;
@@ -992,8 +992,8 @@ void CGLPolyline::SetPointOrderByDistance(CGLPoint*m_pnt)
  //----------------------------------------------------------------------
 }
 /**************************************************************************
-GEOLib-Method: 
-Task: 
+GEOLib-Method:
+Task:
 Programing:
 11/2005 CC Implementation
 **************************************************************************/
@@ -1008,8 +1008,8 @@ void GEOWritePolylines(char* file_name)
 }
 
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 10/2005 OK Implementation
 **************************************************************************/
@@ -1019,7 +1019,7 @@ void GEORemovePLY(CGLPolyline*m_ply)
   vector<CGLPolyline*>::const_iterator p_ply = polyline_vector.begin();
   for(int i=0;i<(int)polyline_vector.size();i++){
     m_ply_this = polyline_vector[i];
-    if(m_ply_this->name.compare(m_ply->name)==0){ 
+    if(m_ply_this->name.compare(m_ply->name)==0){
       delete m_ply_this;
       polyline_vector.erase(polyline_vector.begin()+i);
       //i--;
@@ -1029,7 +1029,7 @@ void GEORemovePLY(CGLPolyline*m_ply)
 }
 
 /**************************************************************************
-GeoLib-Method: 
+GeoLib-Method:
 01/2006 OK Implementation based on CCs version
 **************************************************************************/
 void CGLPolyline::CalcMinimumPointDistance()
@@ -1093,7 +1093,7 @@ void COLDeleteLines()
     for(j=0;j<(int)m_col->line_vector.size();j++){
       m_lin = m_col->line_vector[j];
       delete m_lin;
-    } 
+    }
     m_col->line_vector.clear();
   }
 }
@@ -1145,10 +1145,10 @@ Programing:
 CSoilProfile::~CSoilProfile()  //YD
 {
   for (int i = 0; i < (int) soil_type.size(); i++){
-    soil_type[i]=0; 
+    soil_type[i]=0;
   }
   for (int i = 0; i < (int) soil_layer_thickness.size(); i++){
-    soil_layer_thickness[i]=0.; 
+    soil_layer_thickness[i]=0.;
   }
   soil_type.clear();
   soil_layer_thickness.clear();
@@ -1156,21 +1156,21 @@ CSoilProfile::~CSoilProfile()  //YD
 }
 #ifdef RFW_FRACTURE
 /**************************************************************************
-GeoLib-Method: CalcPolylineLength(); 
+GeoLib-Method: CalcPolylineLength();
 
 Task: Calculate the length of a polyline, not from end-to-end, but rather from CGLPoint-to-CGLPoint
-along the entire polyline.  
+along the entire polyline.
 Argument:
 Ergebnis:
-          double poly_length : Length of the polyline, along the points, not from end to end        
+          double poly_length : Length of the polyline, along the points, not from end to end
 Programing:
 05/2005 RFW Implementierung
-05/2006 RFW Änderung
+05/2006 RFW ï¿½nderung
 **************************************************************************/
 double CGLPolyline::CalcPolylineLength()
 {
 	double dx, dy, dz, dist=0, poly_length=0;
-   
+
 	for(int j=0; j<(int)point_vector.size()-1; j++)
 	{
 		dx = point_vector[j]->x - point_vector[j+1]->x;

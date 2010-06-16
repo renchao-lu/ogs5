@@ -1,6 +1,6 @@
 /**************************************************************************
 FEMLib - Object: TIM
-Task: 
+Task:
 Programing:
 08/2004 OK Implementation
 last modified:
@@ -31,7 +31,7 @@ int rwpt_numsplits = -1; //JTARON 2010
 //==========================================================================
 vector<CTimeDiscretization*>time_vector;
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: OBJ constructor
 Programing:
 08/2004 OK Implementation
@@ -44,9 +44,9 @@ CTimeDiscretization::CTimeDiscretization(void)
   time_end = 1.0;
   time_type_name = "CONSTANT"; //OK
   time_control_name = ""; //kg44
-  time_unit = "SECOND"; 
-  max_time_step = 1.e10;   //YD 
-  min_time_step = 0;   //YD 
+  time_unit = "SECOND";
+  max_time_step = 1.e10;   //YD
+  min_time_step = 0;   //YD
   courant_desired = 0.5; //JTARON
   courant_initial = 1.e-6; //JTARON
   courant_static = 0; //JTARON
@@ -63,12 +63,12 @@ CTimeDiscretization::CTimeDiscretization(void)
   tsize_ctrl_type = -1;   //27.08.2008. WW
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: OBJ destructor
 Programing:
 08/2004 OK Implementation
 **************************************************************************/
-CTimeDiscretization::~CTimeDiscretization(void) 
+CTimeDiscretization::~CTimeDiscretization(void)
 {
   if(tim_discrete)  //YD
   {
@@ -96,11 +96,11 @@ ios::pos_type GetNextSubKeyword(ifstream* file,string* line, bool* keyword)
       *keyword = true;
       return position;
     }
-	i = (int) line_complete.find_first_not_of(" ",0); //Anfängliche Leerzeichen überlesen, i=Position des ersten Nichtleerzeichens im string
+	i = (int) line_complete.find_first_not_of(" ",0); //Anfï¿½ngliche Leerzeichen ï¿½berlesen, i=Position des ersten Nichtleerzeichens im string
 	j = (int) line_complete.find(";",i);			 //Nach Kommentarzeichen ; suchen. j = Position des Kommentarzeichens, j=-1 wenn es keines gibt.
     if(j<0)
       j = (int)line_complete.length();
-	//if(j!=i) break;						 //Wenn das erste nicht-leerzeichen ein Kommentarzeichen ist, zeile überlesen. Sonst ist das eine Datenzeile
+	//if(j!=i) break;						 //Wenn das erste nicht-leerzeichen ein Kommentarzeichen ist, zeile ï¿½berlesen. Sonst ist das eine Datenzeile
 	if(i!=-1)
       *line = line_complete.substr(i,j-i);          //Ab erstem nicht-Leerzeichen bis Kommentarzeichen rauskopieren in neuen substring, falls Zeile nicht leer ist
   }
@@ -108,7 +108,7 @@ ios::pos_type GetNextSubKeyword(ifstream* file,string* line, bool* keyword)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: OBJ read function
 Programing:
 08/2004 OK Implementation
@@ -140,14 +140,14 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
     m_pcs = PCSGet("GROUNDWATER_FLOW"); //kg44 changed default
 
     //========================================================================
-    // Schleife ueber alle Phasen bzw. Komponenten 
-    while(!new_keyword) 
+    // Schleife ueber alle Phasen bzw. Komponenten
+    while(!new_keyword)
     {
         if(new_subkeyword)
             tim_file->seekg(position,ios::beg);
         new_subkeyword = false;
         position = GetNextSubKeyword(tim_file,&line_string,&new_keyword);
-        if(new_keyword) 
+        if(new_keyword)
           return position;
         /*
             position = tim_file->tellg();
@@ -157,8 +157,8 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
             tim_file->getline(buffer,MAX_ZEILE);
             line_string = buffer;
 	        if(line_string.size()<1) // empty line
-              continue; 
-            if(Keyword(line_string)) 
+              continue;
+            if(Keyword(line_string))
               return position;
         */
     //....................................................................
@@ -196,7 +196,7 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
 	  int no_fixed_points;
       double fixed_point;
 	  line.str(GetLineFromFile1(tim_file));
-      line >> no_fixed_points; 
+      line >> no_fixed_points;
 	  line.clear();
 	  for(i=0;i<no_fixed_points;i++) {
         line.str(GetLineFromFile1(tim_file));
@@ -268,7 +268,7 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
         line.str(line_string);
         line >> time_control_name;
         line.clear();
-  	
+
         // 26.08.2008. WW
   	    if(time_control_name=="PI_AUTO_STEP_SIZE"){
           line.str(GetLineFromFile1(tim_file));
@@ -277,7 +277,7 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
           if(real_type<10&&real_type>0) //
           {
              tsize_ctrl_type = real_type;
-             line >> h_min>> h_max >> max_time_step; 
+             line >> h_min>> h_max >> max_time_step;
           }
           else
              max_time_step = 0.0;
@@ -339,7 +339,7 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
             minish = strtod(line_string.data(),NULL);
             line.clear();
 		    }
-            */ 
+            */
             if(line_string.find("M")==string::npos){
               line.str(line_string);
               line >> iter_times;
@@ -355,7 +355,7 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
     //....................................................................
     /* //WW
 	if(line_string.find("$SUBSTEPS")!=string::npos) { // subkeyword found JOD 4.7.10
-      *tim_file>>sub_steps>>ws; 
+      *tim_file>>sub_steps>>ws;
       continue;
     }
     */
@@ -366,7 +366,7 @@ ios::pos_type CTimeDiscretization::Read(ifstream *tim_file)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: OBJ read function
 Programing:
 08/2004 OK Implementation
@@ -376,7 +376,7 @@ Programing:
 bool TIMRead(string file_base_name)
 {
   //----------------------------------------------------------------------
-  //OK  TIMDelete();  
+  //OK  TIMDelete();
   //----------------------------------------------------------------------
   CTimeDiscretization *m_tim = NULL;
   char line[MAX_ZEILE];
@@ -387,12 +387,11 @@ bool TIMRead(string file_base_name)
   // File handling
   string tim_file_name = file_base_name + TIM_FILE_EXTENSION;
   ifstream tim_file (tim_file_name.data(),ios::in);
-  if (!tim_file.good()) 
+  if (!tim_file.good())
     return false;
   tim_file.seekg(0L,ios::beg);
   //========================================================================
   // Keyword loop
-  cout << "TIMRead" << endl;
   while (!tim_file.eof()) {
     tim_file.getline(line,MAX_ZEILE);
     line_string = line;
@@ -421,7 +420,7 @@ bool TIMRead(string file_base_name)
   return true;
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: master write function
 01/2005 OK Implementation
 06/2009 OK Write only existing data
@@ -454,7 +453,7 @@ void TIMWrite(string base_file_name)
   tim_file.close();
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 01/2004 OK Implementation
 05/2009 OK $TIME_CONTROL
 **************************************************************************/
@@ -520,14 +519,14 @@ void CTimeDiscretization::Write(fstream*tim_file)
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 08/2004 OK Implementation
 08/2008 WW Force t+dt be indentical to the time for output or other special time
-        WW Auto time step size control  
+        WW Auto time step size control
 **************************************************************************/
-double CTimeDiscretization::CalcTimeStep(double crt_time) 
+double CTimeDiscretization::CalcTimeStep(double crt_time)
 {
     // time_step_length = 0.0;
     int no_time_steps = (int)time_step_vector.size();
@@ -540,18 +539,18 @@ double CTimeDiscretization::CalcTimeStep(double crt_time)
     // Time step controls
     if( (time_control_name == "NEUMANN" ) || (time_control_name == "SELF_ADAPTIVE" ))
     {
-	  if(aktuelle_zeit < MKleinsteZahl && repeat == false) 
+	  if(aktuelle_zeit < MKleinsteZahl && repeat == false)
         time_step_length = FirstTimeStepEstimate();
       else if( time_control_name == "NEUMANN" )
         time_step_length = NeumannTimeControl();
-      else if(time_control_name == "SELF_ADAPTIVE") 
+      else if(time_control_name == "SELF_ADAPTIVE")
       time_step_length = SelfAdaptiveTimeControl();
     }
     if(time_control_name == "ERROR_CONTROL_ADAPTIVE")
     {
-      if(aktuelle_zeit < MKleinsteZahl) 
+      if(aktuelle_zeit < MKleinsteZahl)
         time_step_length = AdaptiveFirstTimeStepEstimate();
-      else 
+      else
         time_step_length = ErrorControlAdaptiveTimeControl();
     }
     if(time_control_name == "PI_AUTO_STEP_SIZE")  //WW
@@ -582,16 +581,16 @@ double CTimeDiscretization::CalcTimeStep(double crt_time)
        if(fabs( critical_time[i]-crt_time)>DBL_EPSILON) // _new, 23.09.2008.
          time_step_length = critical_time[i]-crt_time;
 	cout << "Time step set to " << time_step_length << " in order to match critical times!"<< endl;
-       break; 
-    }  
-  } 
+       break;
+    }
+  }
   //
   return time_step_length;
 }
 
 /**************************************************************************
 FEMLib-Method: Operator
-Task: 
+Task:
 Programing:
 08/2008 WW Implementation
 **************************************************************************/
@@ -599,27 +598,27 @@ CTimeDiscretization::CTimeDiscretization(const CTimeDiscretization& a_tim, strin
 {
    int i;
    safty_coe = a_tim.safty_coe;
-   dt_sum = a_tim.dt_sum; 
-   this_stepsize = a_tim.this_stepsize; 
+   dt_sum = a_tim.dt_sum;
+   this_stepsize = a_tim.this_stepsize;
    file_base_name = a_tim.file_base_name;
    time_start = a_tim.time_start;
    time_end = a_tim.time_end;
    time_current = a_tim.time_current;
-   time_control_manipulate = a_tim.time_control_manipulate; 
+   time_control_manipulate = a_tim.time_control_manipulate;
    step_current = a_tim.step_current;
-   repeat = a_tim.repeat; 
-   pcs_type_name = pcsname; // by argument 
-   time_type_name = a_tim.time_type_name; 
+   repeat = a_tim.repeat;
+   pcs_type_name = pcsname; // by argument
+   time_type_name = a_tim.time_type_name;
    time_control_name = a_tim.time_control_name;
-   time_unit = a_tim.time_unit;  
-   iter_times = a_tim.iter_times;  
-   multiply_coef = a_tim.multiply_coef; 
-   max_time_step = a_tim.max_time_step; 
-   min_time_step = a_tim.min_time_step; 
-   Write_tim_discrete = a_tim.Write_tim_discrete;  
-   tim_discrete = a_tim.tim_discrete;  
+   time_unit = a_tim.time_unit;
+   iter_times = a_tim.iter_times;
+   multiply_coef = a_tim.multiply_coef;
+   max_time_step = a_tim.max_time_step;
+   min_time_step = a_tim.min_time_step;
+   Write_tim_discrete = a_tim.Write_tim_discrete;
+   tim_discrete = a_tim.tim_discrete;
    nonlinear_iteration_error = a_tim.nonlinear_iteration_error;
-   // 
+   //
    time_step_vector.clear();
    time_adapt_tim_vector.clear();
    time_adapt_coe_vector.clear();
@@ -690,12 +689,12 @@ void TIMDelete(string pcs_type_name)
   }
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: Neumann estimation
-Programing:  
+Programing:
 10/2005 YD Implementation
 **************************************************************************/
-double CTimeDiscretization::FirstTimeStepEstimate(void) 
+double CTimeDiscretization::FirstTimeStepEstimate(void)
 {
   CMediumProperties* m_mmp = NULL;
   CRFProcess* m_pcs = NULL;
@@ -703,16 +702,16 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
   int i, j, EleType;
   int idxS;
   long group;
-  double GP[3];  
+  double GP[3];
   static double Node_Sat[8];
   double buffer;
   int no_time_steps;
 //WW  int no_processes =(int)pcs_vector.size();
-  int mmp_vector_size = (int)mmp_vector.size(); 
+  int mmp_vector_size = (int)mmp_vector.size();
   CFluidProperties *m_mfp = NULL;
   m_mfp = MFPGet("LIQUID");  //WW
   double density_fluid = m_mfp->Density(); //WW
-  // 
+  //
 
   for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
   m_pcs = pcs_vector[n_p];
@@ -732,24 +731,24 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
       no_time_steps = 1000000000; //OK (int)(1.0e10);
 	  time_step_length = 1.e10;
 	  for(int m=0;m< mmp_vector_size;m++) m_mmp = mmp_vector[m];
-	  for (i=0;i< (long)m_pcs->m_msh->ele_vector.size();i++){  
+	  for (i=0;i< (long)m_pcs->m_msh->ele_vector.size();i++){
         elem = m_pcs->m_msh->ele_vector[i];
         if (elem->GetMark())     // Element selected
            {
-            // Activated Element 
+            // Activated Element
             group = elem->GetPatchIndex();
             m_mmp = mmp_vector[group];
             m_mmp->m_pcs=m_pcs;
             EleType = elem->GetElementType();
             if(EleType==4) // Traingle
               {
-                 GP[0] = GP[1] = 0.1/0.3; 
+                 GP[0] = GP[1] = 0.1/0.3;
                  GP[2] = 0.0;
               }
-              else if(EleType==5) 
+              else if(EleType==5)
 		         GP[0] = GP[1] = GP[2] = 0.25;
               else
-		         GP[0] = GP[1] = GP[2] = 0.0; 
+		         GP[0] = GP[1] = GP[2] = 0.0;
             }
 		   for(j=0; j<elem->GetVertexNumber(); j++)
               Node_Sat[j] =  m_pcs->GetNodeValue(elem->GetNodeIndex(j),idxS);
@@ -757,14 +756,14 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
 	    buffer *= 0.5*elem->GetVolume()*elem->GetVolume();
 	    buffer *=m_mmp->porosity_model_values[0]*mfp_vector[0]->Viscosity()/m_mmp->permeability_tensor[0];
         buffer /=m_pcs->time_unit_factor;
-	    time_step_length = MMin(time_step_length, buffer);  
+	    time_step_length = MMin(time_step_length, buffer);
 	  } // ele_vector
 			  if (time_step_length < MKleinsteZahl){
 				  cout<<"Waning : Time Control Step Wrong, dt = 0.0 "<<endl;
                   time_step_length = 1.e-6;
 			  }
 			 cout<<"Neumann Time Step: "<<time_step_length<<endl;
-             time_step_length_neumann = 1.e10; 
+             time_step_length_neumann = 1.e10;
              time_step_length = MMin(time_step_length, max_time_step);
 			if(Write_tim_discrete)
 			*tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
@@ -776,12 +775,12 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
   return time_step_length;
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: Module controls adaptive timestep based on a simple Courant condition
 Programing:
 12.03.2010 JTARON implementation
 **************************************************************************/
-double CTimeDiscretization::CourantTimeControl(void) 
+double CTimeDiscretization::CourantTimeControl(void)
 {
   CRFProcess *m_pcs = NULL;
   CFEMesh* m_msh = NULL;
@@ -815,7 +814,7 @@ double CTimeDiscretization::CourantTimeControl(void)
 		{
 		  m_nod1 = m_msh->nod_vector[m_ele->nodes_index[i]];
 		  m_nod2 = m_msh->nod_vector[m_ele->nodes_index[j]];
-		  
+
 		  dx_temp[0] = (m_nod1->X()-m_nod2->X())*(m_nod1->X()-m_nod2->X());
 		  dx_temp[1] = (m_nod1->Y()-m_nod2->Y())*(m_nod1->Y()-m_nod2->Y());
 		  dx_temp[2] = (m_nod1->Z()-m_nod2->Z())*(m_nod1->Z()-m_nod2->Z());
@@ -856,12 +855,12 @@ double CTimeDiscretization::CourantTimeControl(void)
   return time_step_length;
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: Nuemann Control
 Programing:
 10/2005 YD Implementation
 **************************************************************************/
-double CTimeDiscretization::NeumannTimeControl(void) 
+double CTimeDiscretization::NeumannTimeControl(void)
 {
   CRFProcess* m_pcs = NULL;
 
@@ -877,13 +876,13 @@ double CTimeDiscretization::NeumannTimeControl(void)
  }
 }
   cout<<"Neumann Time Step: "<<time_step_length<<endl;
-	time_step_length_neumann = 1.e10;   
+	time_step_length_neumann = 1.e10;
   if(Write_tim_discrete)
       *tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
   return time_step_length;
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: Self adaptive method
 Programing:
 10/2005 YD Implementation
@@ -892,7 +891,7 @@ Programing:
 double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 {
 	int imflag=1, iprocs=0;
-        long iterdum=1;
+    int iterdum=1;
 	double my_max_time_step;
 	CRFProcess* m_pcs = NULL; //YDToDo: m_pcs should be member
 
@@ -938,15 +937,15 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 				imflag=1;
 				if ( (imflag>0) && ( m_pcs->iter  >= time_adapt_tim_vector[time_adapt_tim_vector.size()-1] ) )
 				{
-					imflag=0; iterdum = MMax ( iterdum,m_pcs->iter );
+					imflag=0; iterdum = max ( iterdum,m_pcs->iter );
 				}
 				if ( ((imflag == 1) && ( m_pcs->iter  <= time_adapt_tim_vector[0] ) ))
 				{
-					imflag=2;iterdum =MMax ( iterdum,m_pcs->iter );
+					imflag=2;iterdum = max ( iterdum,m_pcs->iter );
 				}
 				break;
 			case 'M': // Mass transport
-				iterdum=MMax ( iterdum,m_pcs->iter );
+				iterdum = max ( iterdum,m_pcs->iter );
 				break;
 		}
 		}
@@ -956,11 +955,11 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 		 {
 					imflag=0;
 		  }
-	else if ( (imflag>0) && (iterdum  <= time_adapt_tim_vector[0]) ) // increase timestep only if groundwater flow alows it, 
+	else if ( (imflag>0) && (iterdum  <= time_adapt_tim_vector[0]) ) // increase timestep only if groundwater flow alows it,
 				{
 					imflag=2;
 				}
-				
+
 
 	if (imflag==0) {time_step_length = time_step_length * time_adapt_coe_vector[time_adapt_tim_vector.size()-1];}
         else if (imflag==2){ time_step_length = time_step_length * time_adapt_coe_vector[0];}
@@ -976,13 +975,13 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:CMCD 03/2006
 **************************************************************************/
 double CTimeDiscretization::CheckCourant(void)
 {
-  long index; 
+  long index;
   long group;
   double velocity[3]={0.,0.,0.};
   double porosity, vg, advective_velocity, length, courant;
@@ -996,10 +995,10 @@ double CTimeDiscretization::CheckCourant(void)
   long critical_element_no = -1;
   double recommended_time_step = 0.0;
   double stable_time_step = 0.0;
-  int edx;
+//  int edx;
 
 
-  for (index=0;index< (long)m_pcs->m_msh->ele_vector.size();index++){  
+  for (index=0;index< (long)m_pcs->m_msh->ele_vector.size();index++){
     elem = m_pcs->m_msh->ele_vector[index];
     length = elem->GetRepLength();
     group = elem->GetPatchIndex();
@@ -1010,7 +1009,7 @@ double CTimeDiscretization::CheckCourant(void)
     gp_ele->getIPvalue_vec(pcs_no, velocity);
     vg = MBtrgVec(velocity,3);
     advective_velocity = vg/porosity;
-    if (advective_velocity<DBL_EPSILON) advective_velocity=DBL_EPSILON; //kg44 avoid zero velocity..otherwise stable_time_step is a problem 
+    if (advective_velocity<DBL_EPSILON) advective_velocity=DBL_EPSILON; //kg44 avoid zero velocity..otherwise stable_time_step is a problem
     courant = dt * advective_velocity/length;
     elem->SetCourant(courant);
 //    edx = m_pcs->GetElementValueIndex("COURANT"); //kg44 does this work?
@@ -1027,12 +1026,12 @@ return recommended_time_step;
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: Neumann estimation
-Programing:  
+Programing:
 04/2006 YD Implementation
 **************************************************************************/
-double CTimeDiscretization::AdaptiveFirstTimeStepEstimate(void) 
+double CTimeDiscretization::AdaptiveFirstTimeStepEstimate(void)
 {
   CNumerics *m_num = NULL;
   CRFProcess* m_pcs = NULL;
@@ -1054,7 +1053,7 @@ double CTimeDiscretization::AdaptiveFirstTimeStepEstimate(void)
       idxp  = m_pcs->GetNodeValueIndex("PRESSURE1")+1;
       no_time_steps = 1000000000; //OK (int)(1e10);
 	  time_step_length = 1.e10;
-	  for (i=0;i< (long)m_pcs->m_msh->ele_vector.size();i++){  
+	  for (i=0;i< (long)m_pcs->m_msh->ele_vector.size();i++){
         elem = m_pcs->m_msh->ele_vector[i];
 		for(j=0; j<elem->GetVertexNumber(); j++)
            Node_p[j] =  m_pcs->GetNodeValue(elem->GetNodeIndex(j),idxp);
@@ -1062,7 +1061,7 @@ double CTimeDiscretization::AdaptiveFirstTimeStepEstimate(void)
 	  }
 	  buff = safty_coe*sqrt(m_num->nls_error_tolerance/p_ini);
       buff /=m_pcs->time_unit_factor;
-      time_step_length = MMin(time_step_length,buff);  
+      time_step_length = MMin(time_step_length,buff);
 	  if (time_step_length < MKleinsteZahl){
 		cout<<"Waning : Time Control Step Wrong, dt = 0.0 "<<endl;
         time_step_length = 1.0e-8;
@@ -1071,7 +1070,7 @@ double CTimeDiscretization::AdaptiveFirstTimeStepEstimate(void)
 	  if(Write_tim_discrete)
 		*tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
       break;
-      case 'M': // kg44 mass transport  
+      case 'M': // kg44 mass transport
         time_step_length = min_time_step; // take min time step as conservative best guess for testing
       break;
       case 'G': // kg44 groudnwater flow ---if steady state, time step should be greater zeor...transient flow does not work with adaptive stepping
@@ -1083,12 +1082,12 @@ double CTimeDiscretization::AdaptiveFirstTimeStepEstimate(void)
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: Error control adaptive method                                                              
+FEMLib-Method:
+Task: Error control adaptive method
 Programing:
 04/2006 YD Implementation
 **************************************************************************/
-double CTimeDiscretization::ErrorControlAdaptiveTimeControl(void) 
+double CTimeDiscretization::ErrorControlAdaptiveTimeControl(void)
 {
   CRFProcess* m_pcs = NULL;
   double rmax = 5.0;
@@ -1110,11 +1109,11 @@ double CTimeDiscretization::ErrorControlAdaptiveTimeControl(void)
         //nonlinear_iteration_error = m_pcs->nonlinear_iteration_error;
         if(repeat)
         {
-          time_step_length *=MMax(safty_coe*sqrt(m_pcs->m_num->nls_error_tolerance/nonlinear_iteration_error),rmin); 
+          time_step_length *=MMax(safty_coe*sqrt(m_pcs->m_num->nls_error_tolerance/nonlinear_iteration_error),rmin);
         }
         else
         {
-          time_step_length *=MMin(safty_coe*sqrt(m_pcs->m_num->nls_error_tolerance/nonlinear_iteration_error),rmax); 
+          time_step_length *=MMin(safty_coe*sqrt(m_pcs->m_num->nls_error_tolerance/nonlinear_iteration_error),rmax);
         }
         cout<<"Error_Self_Adaptive Time Step: "<<time_step_length<<endl;
         if(Write_tim_discrete)
@@ -1125,18 +1124,18 @@ double CTimeDiscretization::ErrorControlAdaptiveTimeControl(void)
   return time_step_length;
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task:  Check the time of the process in the case: different process has
-       different time step size   
-Return boolean value: skip or execute the process                                                             
+       different time step size
+Return boolean value: skip or execute the process
 Programing:
 06/2007 WW Implementation
 09/2007 WW The varable of the time step accumulation as a  member
 **************************************************************************/
-double CTimeDiscretization::CheckTime(double const c_time, const double dt0) 
+double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
 {
   double pcs_step;
-  double time_forward; 
+  double time_forward;
   bool ontime = false;
   if((int)time_vector.size()==1)
     return dt0;
@@ -1152,12 +1151,12 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
   }
   else
     pcs_step = this_stepsize;  // 16.09.2008. WW
-  time_forward = c_time - time_current-pcs_step; 
+  time_forward = c_time - time_current-pcs_step;
   if(time_forward>0.0||fabs(time_forward)<MKleinsteZahl)
   {
     time_current += pcs_step;
-//WW. 02.02.2009    step_current++; 
-   	this_stepsize = dt_sum+dt0; 
+//WW. 02.02.2009    step_current++;
+   	this_stepsize = dt_sum+dt0;
     ontime = true;
     dt_sum = 0.0;
   }
@@ -1168,7 +1167,7 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
     //check if current time step is critical time
     bool isCriticalTime = false;
     for (int i=0; i<(int)critical_time.size(); i++) {
-      if (critical_time[i]-c_time>MKleinsteZahl) 
+      if (critical_time[i]-c_time>MKleinsteZahl)
         break;
       if (fabs(c_time-critical_time[i])<MKleinsteZahl) {
         isCriticalTime = true;
@@ -1193,15 +1192,15 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
   }
   if(pcs_step>time_end)   // make output for other processes
   {
-     dt_sum = 0.0; 
+     dt_sum = 0.0;
      this_stepsize = 0.0;
   }
-  return this_stepsize;   
+  return this_stepsize;
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task:  Used to force time steps matching the times requried by output or
-       boundary                                           
+       boundary
 Programing:
 08/2008 WW Implementation
 **************************************************************************/
@@ -1215,7 +1214,7 @@ void CTimeDiscretization::FillCriticalTime()
    {
       a_out = out_vector[i];
       for(j=0; j<(int) a_out->time_vector.size(); j++)
-      { 
+      {
          done = false;
          for(k=0; k<(int)critical_time.size(); k++)
          {
@@ -1224,11 +1223,11 @@ void CTimeDiscretization::FillCriticalTime()
                done = true;
                break;
             }
-           
+
          }
          if(!done)
            critical_time.push_back(a_out->time_vector[j]);
-      } 
+      }
    }
    // Sort
    for(i=0; i<(int)critical_time.size(); i++)
@@ -1242,10 +1241,10 @@ void CTimeDiscretization::FillCriticalTime()
             critical_time[j] = val;
          }
       }
-   }       
+   }
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Programing:
 09/2007 WW Implementation
 **************************************************************************/
@@ -1254,18 +1253,18 @@ bool IsSynCron()
    int i, count = 0;
    for(i=0; i<(int)time_vector.size(); i++)
    {
-      if(time_vector[i]->dt_sum<DBL_MIN) 
-      count++; 
+      if(time_vector[i]->dt_sum<DBL_MIN)
+      count++;
    }
    if(count==(int)time_vector.size())
      return true;
    else
-     return false;   
+     return false;
 }
 /**************************************************************************
-FEMLib-Method: 
-Task:  construct time_step_target_vector from ic-/bc-curves (time curves) 
-Return boolean value:                                                              
+FEMLib-Method:
+Task:  construct time_step_target_vector from ic-/bc-curves (time curves)
+Return boolean value:
 Programing:
 12/2007 KG44 Implementation
 **************************************************************************/
@@ -1304,7 +1303,7 @@ double CTimeDiscretization::MaxTimeStep()
         long nElems = ( long ) this_pcs->m_msh->ele_vector.size();
         int component = this_pcs->pcs_component_number;
 	int group;
- 
+
         CompProperties *m_cp = cp_vec[component];
 
         dummy=CheckCourant(); // courant number

@@ -18,9 +18,13 @@ class vtkPointSet;
 class vtkDataSetMapper;
 class vtkActor;
 class vtkRenderer;
+class VtkAlgorithmProperties;
 
 /**
- * VtkVisPipelineItem
+ * \brief An item in the VtkVisPipeline containing a graphic object to be visualised.
+ *
+ * Any VTK-object (source-items, filter-items, etc.) need to be put into a VtkPipelineItem
+ * to be assigned a mapper, an actor and its visualisation properties (colour, etc.).
  */
 class VtkVisPipelineItem : public TreeItem
 {
@@ -54,7 +58,12 @@ private:
 	vtkActor* _actor;
 	vtkRenderer* _renderer;
 
+	/// Initalises vtkMapper and vtkActor necessary for visualization of
+	/// the item and sets the item's properties.
 	void Initialize();
+
+	/// Sets pre-set properties on vtkActor and on vtkMapper
+	void setVtkProperties(VtkAlgorithmProperties* vtkProps);
 };
 
 #endif // VTKVISPIPELINEITEM_H

@@ -6,11 +6,14 @@
  */
 
 #include <cmath>
+#include <cstdlib> // for exit
 #include <list>
 #include <limits>
+#include <fstream>
 
 // Base
 #include "swap.h"
+#include "quicksort.h"
 
 // GEO
 #include "Polyline.h"
@@ -19,9 +22,9 @@
 // MathLib
 #include "MathTools.h"
 #include "AnalyticalGeometry.h"
-#include "Matrix.h" // for transformation matri
+#include "GaussAlgorithm.h"
+#include "Matrix.h" // for transformation matrix
 #include "max.h"
-#include "LinkedTriangle.h" // used by delaunay
 
 namespace MATHLIB {
 
@@ -44,6 +47,183 @@ size_t getOrientation (const GEOLIB::Point* p0, const GEOLIB::Point* p1, const G
 {
 	return getOrientation ((*p0)[0], (*p0)[1], (*p1)[0], (*p1)[1], (*p2)[0], (*p2)[1]);
 }
+
+void splitPolygonAtPoint (std::list<GEOLIB::Polyline*>& ply_list, std::list<GEOLIB::Polyline*>::iterator ply_it)
+{
+	size_t n ((*ply_it)->getSize()-1), idx0 (0), idx1(0);
+	size_t *id_vec (new size_t[n]), *perm (new size_t[n]);
+	for (size_t k(0); k<n; k++) {
+		id_vec[k] = (*ply_it)->getPointID (k);
+		perm[k] = k;
+	}
+
+	quicksort (id_vec, 0, n, perm);
+
+	for (size_t k(0); k<n-1; k++) {
+		if (id_vec[k] == id_vec[k+1]) {
+			idx0 = perm[k];
+			idx1 = perm[k+1];
+			delete [] perm;
+			delete [] id_vec;
+
+			if (idx0 > idx1) swap (idx0, idx1);
+
+			GEOLIB::Polyline* ply0 (new GEOLIB::Polyline((*ply_it)->getPointsVec()));
+			for (size_t k(0); k<=idx0; k++) ply0->addPoint ((*ply_it)->getPointID (k));
+			for (size_t k(idx1+1); k<(*ply_it)->getSize(); k++) ply0->addPoint ((*ply_it)->getPointID (k));
+
+			GEOLIB::Polyline* ply1 (new GEOLIB::Polyline((*ply_it)->getPointsVec()));
+			for (size_t k(idx0); k<=idx1; k++) ply1->addPoint ((*ply_it)->getPointID (k));
+
+//			std::cout << "original polyline: " << std::endl;
+//			for (size_t k(0); k<(*ply_it)->getSize(); k++) std::cout << (*ply_it)->getPointID(k) << std::endl;
+
+			// remove original polyline and add two new polylines
+			std::list<GEOLIB::Polyline*>::iterator ply0_it, ply1_it;
+			ply1_it = ply_list.insert (ply_list.erase (ply_it), ply1);
+			ply0_it = ply_list.insert (ply1_it, ply0);
+
+//			std::cout << "created two polylines: " << std::endl;
+//			std::cout << "polyline one: " << std::endl;
+//			for (size_t k(0); k<(*ply0_it)->getSize(); k++) std::cout << (*ply0_it)->getPointID(k) << std::endl;
+//			std::cout << "polyline two: " << std::endl;
+//			for (size_t k(0); k<(*ply1_it)->getSize(); k++) std::cout << (*ply1_it)->getPointID(k) << std::endl;
+
+			splitPolygonAtPoint (ply_list, ply0_it);
+			splitPolygonAtPoint (ply_list, ply1_it);
+
+			return;
+		}
+	}
+	delete [] perm;
+	delete [] id_vec;
+}
+
+bool lineSegmentIntersect (const GEOLIB::Point& a, const GEOLIB::Point& b,
+		const GEOLIB::Point& c, const GEOLIB::Point& d,
+		GEOLIB::Point& s)
+{
+	Matrix<double> mat(2,2);
+	mat(0,0) = b[0] - a[0];
+	mat(1,0) = b[1] - a[1];
+	mat(0,1) = c[0] - d[0];
+	mat(1,1) = c[1] - d[1];
+
+	// check if vectors are parallel
+	double eps (sqrt(std::numeric_limits<double>::min()));
+	if (fabs(mat(1,1)) < eps) {
+		// vector (D-C) is parallel to x-axis
+		if (fabs(mat(0,1)) < eps) {
+			// vector (B-A) is parallel to x-axis
+			return false;
+		}
+	} else {
+		// vector (D-C) is not parallel to x-axis
+		if (fabs(mat(0,1)) >= eps) {
+			// vector (B-A) is not parallel to x-axis
+			// \$f(B-A)\f$ and \$f(D-C)\f$ are parallel iff there exists
+			// a constant \f$c\f$ such that \$f(B-A) = c (D-C)\f$
+			if (fabs (mat(0,0) / mat(0,1) - mat(1,0) / mat(1,1)) < eps * fabs (mat(0,0) / mat(0,1)))
+				return false;
+		}
+	}
+
+	double *rhs (new double[2]);
+	rhs[0] = c[0] - a[0];
+	rhs[1] = c[1] - a[1];
+
+	GaussAlgorithm lu_solver (mat);
+	lu_solver.execute (rhs);
+	if (0 <= rhs[0] && rhs[0] <= 1.0 && 0 <= rhs[1] && rhs[1] <= 1.0) {
+		s[0] = a[0] + rhs[0] * (b[0] - a[0]);
+		s[1] = a[1] + rhs[0] * (b[1] - a[1]);
+		s[2] = a[2] + rhs[0] * (b[2] - a[2]);
+		delete [] rhs;
+		return true;
+	} else delete [] rhs;
+	return false;
+}
+
+bool lineSegmentsIntersect (const GEOLIB::Polyline* ply, size_t &idx0, size_t &idx1, GEOLIB::Point& intersection_pnt)
+{
+	size_t n_segs (ply->getSize());
+	/**
+	 * computing the intersections of all possible pairs of line segments of the given polyline
+	 * as follows:
+	 * let the segment \f$s_1 = (A,B)\f$ defined by \f$k\f$-th and \f$k+1\f$-st point
+	 * of the polyline and segment \f$s_2 = (C,B)\f$ defined by \f$j\f$-th and
+	 * \f$j+1\f$-st point of the polyline, \f$j>k+1\f$
+	 */
+	for (size_t k(0); k<n_segs-3; k++) {
+		for (size_t j(k+2); j<n_segs-1; j++) {
+			if (k!=0 || j<n_segs-2) {
+				if (lineSegmentIntersect (*(*ply)[k], *(*ply)[k+1], *(*ply)[j], *(*ply)[j+1], intersection_pnt)) {
+					idx0 = k;
+					idx1 = j;
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+void splitPolygonAtIntersection (std::list<GEOLIB::Polyline*>& ply_list,
+		std::list<GEOLIB::Polyline*>::iterator ply_it,
+		std::vector<GEOLIB::Point*>& pnt_vec)
+{
+	size_t idx0 (0), idx1 (0);
+	for (ply_it = ply_list.begin(); ply_it != ply_list.end(); ++ply_it) {
+		GEOLIB::Point *intersection_pnt (new GEOLIB::Point);
+		bool is_simple (!lineSegmentsIntersect (*ply_it, idx0, idx1, *intersection_pnt));
+		if (!is_simple) {
+			// adding intersection point to pnt_vec
+			size_t intersection_pnt_id (pnt_vec.size());
+			pnt_vec.push_back (intersection_pnt);
+
+			// split Polygon
+			if (idx0 > idx1) swap (idx0, idx1);
+
+			GEOLIB::Polyline* ply0 (new GEOLIB::Polyline((*ply_it)->getPointsVec()));
+			for (size_t k(0); k<=idx0; k++) ply0->addPoint ((*ply_it)->getPointID (k));
+			ply0->addPoint (intersection_pnt_id);
+			for (size_t k(idx1+1); k<(*ply_it)->getSize(); k++) ply0->addPoint ((*ply_it)->getPointID (k));
+
+			GEOLIB::Polyline* ply1 (new GEOLIB::Polyline((*ply_it)->getPointsVec()));
+			ply1->addPoint (intersection_pnt_id);
+			for (size_t k(idx0+1); k<=idx1; k++) ply1->addPoint ((*ply_it)->getPointID (k));
+			ply1->addPoint (intersection_pnt_id);
+
+			// remove original polyline and add two new polylines
+			std::list<GEOLIB::Polyline*>::iterator ply0_it, ply1_it;
+			ply_it = ply_list.erase (ply_it);
+			ply1_it = ply_list.insert (ply_it, ply1);
+			ply0_it = ply_list.insert (ply1_it, ply0);
+
+			splitPolygonAtIntersection (ply_list, ply0_it, pnt_vec);
+			splitPolygonAtIntersection (ply_list, ply1_it, pnt_vec);
+		} else {
+			delete intersection_pnt;
+		}
+	}
+}
+
+void getListOfSimplePolygons (std::list<GEOLIB::Polyline*>& ply_list, std::vector<GEOLIB::Point*>& pnt_vec)
+{
+	if (ply_list.empty()) {
+		std::cerr << "list of polylines is empty" << std::endl;
+		return;
+	}
+
+	if (! (*(ply_list.begin()))->isClosed()) {
+		std::cerr << "Polyline is not closed " << std::endl;
+		return;
+	}
+
+	splitPolygonAtPoint (ply_list, ply_list.begin());
+	splitPolygonAtIntersection (ply_list, ply_list.begin(), pnt_vec);
+}
+
 
 bool isPointInTriangle (const double pp[3], const double pa[3], const double pb[3], const double pc[3])
 {
@@ -73,6 +253,328 @@ bool isPointInTriangle (const GEOLIB::Point* p,
 	return isPointInTriangle (p->getData(), a->getData(), b->getData(), c->getData());
 }
 
+
+// NewellPlane from book Real-Time Collision detection p. 494
+void getNewellPlane(const std::vector<GEOLIB::Point*>& pnts, Vector &plane_normal,
+		double& d)
+{
+	d = 0;
+	Vector centroid;
+	size_t n_pnts (pnts.size());
+	for (size_t i(n_pnts - 1), j(0); j < n_pnts; i = j, j++) {
+		plane_normal[0] += ((*(pnts[i]))[1] - (*(pnts[j]))[1])
+				* ((*(pnts[i]))[2] + (*(pnts[j]))[2]); // projection on yz
+		plane_normal[1] += ((*(pnts[i]))[2] - (*(pnts[j]))[2])
+				* ((*(pnts[i]))[0] + (*(pnts[j]))[0]); // projection on xz
+		plane_normal[2] += ((*(pnts[i]))[0] - (*(pnts[j]))[0])
+				* ((*(pnts[i]))[1] + (*(pnts[j]))[1]); // projection on xy
+
+		centroid += *(pnts[j]);
+	}
+
+	plane_normal *= 1.0 / plane_normal.Length();
+	d = centroid.Dot(plane_normal) / n_pnts;
+}
+
+
+void rotatePointsToXY(Vector &plane_normal,
+		std::vector<GEOLIB::Point*> &pnts)
+{
+	// *** some frequently used terms ***
+	// sqrt (v_1^2 + v_2^2)
+	double h0(sqrt(plane_normal[0] * plane_normal[0] + plane_normal[1]
+			* plane_normal[1]));
+	// 1 / sqrt (v_1^2 + v_2^2)
+	double h1(1 / h0);
+	// 1 / sqrt (h0 + v_3^2)
+	double h2(1.0 / sqrt(h0 + plane_normal[2] * plane_normal[2]));
+
+	Matrix<double> rot_mat(3, 3);
+	// calc rotation matrix
+	rot_mat(0, 0) = plane_normal[2] * plane_normal[0] * h2 * h1;
+	rot_mat(0, 1) = plane_normal[2] * plane_normal[1] * h2 * h1;
+	rot_mat(0, 2) = - h0 * h2;
+	rot_mat(1, 0) = -plane_normal[1] * h1;
+	rot_mat(1, 1) = plane_normal[0] * h1;;
+	rot_mat(1, 2) = 0.0;
+	rot_mat(2, 0) = plane_normal[0] * h2;
+	rot_mat(2, 1) = plane_normal[1] * h2;
+	rot_mat(2, 2) = plane_normal[2] * h2;
+
+	double *tmp (new double[3]);
+	size_t n_pnts(pnts.size());
+	for (size_t k(0); k < n_pnts; k++) {
+		tmp = rot_mat * pnts[k]->getData();
+		for (size_t j(0); j < 3; j++)
+			(*(pnts[k]))[j] = tmp[j];
+	}
+
+	tmp = rot_mat * plane_normal.getData();
+	for (size_t j(0); j < 3; j++) plane_normal[j] = tmp[j];
+
+	delete [] tmp;
+}
+
+bool isEar(const std::vector<GEOLIB::Point*>& pnts,
+		const std::list<size_t>& vertex_list, size_t v0, size_t v1, size_t v2)
+{
+	for (std::list<size_t>::const_iterator it (vertex_list.begin ());
+		it != vertex_list.end(); ++it) {
+		if (*it != v0 && *it != v1 && *it != v2) {
+			if (isPointInTriangle (pnts[*it], pnts[v0], pnts[v1], pnts[v2])) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+void uniqueListInsert (std::list<size_t>& list, size_t element)
+{
+	// search element
+	std::list<size_t>::const_iterator it;
+	for (it = list.begin (); it != list.end(); it++) {
+		if (*it == element) return;
+	}
+	// element not found -> insert
+	list.push_back (element);
+}
+
+void earClippingTriangulation (std::vector<GEOLIB::Point*>& pnts, std::list<GEOLIB::Triangle> &triangles)
+{
+	size_t n_pnts (pnts.size()), orientation;
+	std::list<size_t> vertex_list;
+	for (size_t k(0); k<n_pnts; k++) vertex_list.push_back (k);
+
+	// initialize lists
+	std::list<size_t> convex_vertex_list, ear_list;
+	// go through points checking ccw, cw or collinear order and identifying ears
+	std::list<size_t>::iterator it (vertex_list.begin()), prev(vertex_list.end()), next;
+	prev--;
+	next = it;
+	next++;
+	while (next != vertex_list.end()) {
+		orientation  = getOrientation (pnts[*prev], pnts[*it], pnts[*next]);
+		if (orientation == COLLINEAR) {
+			it = vertex_list.erase (it);
+			it = next;
+			next++;
+		} else {
+			if (orientation == CCW) {
+				convex_vertex_list.push_back (*it);
+				bool is_ear (true);
+				for (std::list<size_t>::const_iterator my_it (vertex_list.begin());
+					my_it != vertex_list.end() && is_ear; ++my_it) {
+					if (my_it != it && my_it != prev && my_it != next) {
+						if (isPointInTriangle (pnts[*my_it], pnts[*prev], pnts[*it], pnts[*next]))
+							is_ear = false;
+					}
+				}
+				if (is_ear) {
+					ear_list.push_back (*it);
+				}
+			}
+			prev = it;
+			it = next;
+			next++;
+		}
+	}
+
+	next = vertex_list.begin();
+	orientation = getOrientation (pnts[*prev], pnts[*it], pnts[*next]);
+	if (orientation == COLLINEAR) {
+		it = vertex_list.erase (it);
+	}
+	if (orientation == CCW) {
+		convex_vertex_list.push_back (*it);
+		bool is_ear (true);
+		for (std::list<size_t>::const_iterator my_it (vertex_list.begin());
+			my_it != vertex_list.end() && is_ear; ++my_it) {
+			if (my_it != it && my_it != prev && my_it != next) {
+				if (isPointInTriangle (pnts[*my_it], pnts[*prev], pnts[*it], pnts[*next]))
+					is_ear = false;
+			}
+		}
+		if (is_ear) {
+			ear_list.push_back (*it);
+		}
+	}
+
+	// *** clip an ear
+	while (vertex_list.size() > 3) {
+		// pop ear from list
+		size_t ear = ear_list.front ();
+		ear_list.pop_front();
+
+		// remove ear from vertex_list
+		bool nfound (true);
+		it = vertex_list.begin();
+		prev = vertex_list.end();
+		prev--;
+		while (nfound && it != vertex_list.end()) {
+			if (*it == ear) {
+				nfound = false;
+				it = vertex_list.erase (it); // remove ear tip
+				next = it;
+				if (next == vertex_list.end()) {
+					next = vertex_list.begin();
+					prev = vertex_list.end();
+					prev--;
+				}
+				// check the orientation of prevprev, prev, next
+				std::list<size_t>::iterator prevprev;
+				if (prev == vertex_list.begin ()) {
+					prevprev = vertex_list.end();
+				} else {
+					prevprev = prev;
+				}
+				prevprev--;
+
+				// apply changes to convex_vertex_list and ear_list looking "backward"
+				orientation = getOrientation (pnts[*prevprev], pnts[*prev], pnts[*next]);
+				if (orientation == CCW) {
+					// prev is convex
+					if (isEar (pnts, vertex_list, *prevprev, *prev, *next)) {
+						// prev is an ear tip
+						uniqueListInsert (convex_vertex_list, *prev);
+						uniqueListInsert (ear_list, *prev);
+					} else {
+						uniqueListInsert (convex_vertex_list, *prev);
+						// if necessary remove prev
+						ear_list.remove (*prev);
+					}
+				} else {
+					// prev is not convex => reflex or collinear
+					convex_vertex_list.remove (*prev);
+					ear_list.remove (*prev);
+					if (orientation == COLLINEAR) {
+						prev = vertex_list.erase (prev);
+						prev--;
+					}
+				}
+
+				// check the orientation of prev, next, nextnext
+				std::list<size_t>::iterator nextnext, help_it (vertex_list.end ());
+				help_it--;
+				if (next == help_it) {
+					nextnext = vertex_list.begin();
+				} else {
+					nextnext = next;
+					nextnext++;
+				}
+
+				// apply changes to convex_vertex_list and ear_list looking "forward"
+				orientation = getOrientation (pnts[*prev], pnts[*next], pnts[*nextnext]);
+				if (orientation == CCW) {
+					// next is convex
+					if (isEar (pnts, vertex_list, *prev, *next, *nextnext)) {
+						// next is an ear tip
+						uniqueListInsert (convex_vertex_list, *next);
+						uniqueListInsert (ear_list, *next);
+					} else {
+						uniqueListInsert (convex_vertex_list, *next);
+						// if necessary remove *prev
+						ear_list.remove (*next);
+					}
+				} else {
+					// next is not convex => reflex or collinear
+					convex_vertex_list.remove (*next);
+					ear_list.remove (*next);
+					if (orientation == COLLINEAR) {
+						next = vertex_list.erase (next);
+						if (next == vertex_list.end())
+							next = vertex_list.begin();
+					}
+				}
+
+			} else {
+				prev = it;
+				it++;
+			}
+		}
+		// remove ear tip from convex_vertex_list
+		convex_vertex_list.remove (ear);
+		// add triangle
+		triangles.push_back (GEOLIB::Triangle (pnts, *prev, ear, *next));
+	}
+	// add last triangle
+	next = vertex_list.begin();
+	prev = next;
+	next++;
+	it = next;
+	next++;
+	if (getOrientation (pnts[*prev], pnts[*it], pnts[*next]) == CCW)
+		triangles.push_back (GEOLIB::Triangle (pnts, *prev, *it, *next));
+	else
+		triangles.push_back (GEOLIB::Triangle (pnts, *prev, *next, *it));
+}
+
+void earClippingTriangulationOfPolygon(const GEOLIB::Polyline* ply, std::list<GEOLIB::Triangle> &triangles)
+{
+	if (!ply->isClosed()) {
+		std::cerr << "Polyline is not a Polygon!" << std::endl;
+		return;
+	}
+	// copy points
+	size_t n_pnts (ply->getSize()-1);
+
+	std::vector<GEOLIB::Point*> pnts;
+	pnts.reserve (n_pnts);
+	for (size_t k(0); k < n_pnts; k++)
+		pnts.push_back (new GEOLIB::Point (*(ply->getPoint(k))));
+
+	// calculate supporting plane
+	Vector plane_normal;
+	double d;
+	// compute the plane normal
+	getNewellPlane(pnts, plane_normal, d);
+
+	double tol (sqrt(std::numeric_limits<double>::min()));
+	if (fabs(plane_normal[0]) > tol || fabs(plane_normal[1]) > tol) {
+		// rotate copied points into x-y-plane
+		rotatePointsToXY(plane_normal, pnts);
+	}
+
+	// recompute the plane normal
+	getNewellPlane(pnts, plane_normal, d);
+
+	// check orientation and if CW change orientation
+	size_t orientation (CCW);
+	double z_axis[3] = {0.0, 0.0, 1.0};
+	if (scpr (plane_normal.getData(), z_axis, 3) <= 0.0) {
+		// CW orientation of polygon
+		orientation = CW;
+		for (size_t k(0); k<n_pnts/2; k++) {
+			swap (pnts[k], pnts[n_pnts-1-k]);
+		}
+	}
+
+	std::list<GEOLIB::Triangle> temp_triangles;
+	earClippingTriangulation (pnts, temp_triangles);
+
+	const std::vector<GEOLIB::Point*>& ref_pnts_vec (ply->getPointsVec());
+	std::list<GEOLIB::Triangle>::const_iterator it (temp_triangles.begin());
+	while (it != temp_triangles.end()) {
+		const size_t i0 (ply->getPointID ((*it)[0]));
+		const size_t i1 (ply->getPointID ((*it)[1]));
+		const size_t i2 (ply->getPointID ((*it)[2]));
+
+		if (orientation == CCW) {
+			triangles.push_back (GEOLIB::Triangle (ref_pnts_vec, i0, i1, i2));
+		} else {
+			triangles.push_back (GEOLIB::Triangle (ref_pnts_vec,
+					ply->getPointID (n_pnts-1-((*it)[0])),
+					ply->getPointID (n_pnts-1-((*it)[1])),
+					ply->getPointID (n_pnts-1-((*it)[2]))));
+		}
+		it++;
+	}
+
+	// delete points
+	for (size_t k(0); k < n_pnts; k++) delete pnts[k];
+}
+
+//#include "LinkedTriangle.h" // used by Delaunay-Triangulation
 //void getCircumscribedSphereOfTriangle(const double a[3], const double b[3],
 //		const double c[3], double middle_pnt[3], double& sqr_radius)
 //{
@@ -158,65 +660,6 @@ bool isPointInTriangle (const GEOLIB::Point* p,
 //	sqr_radius = sqrDist(middle_pnt, a);
 //}
 
-// NewellPlane from book Real-Time Collision detection p. 494
-void getNewellPlane(const std::vector<GEOLIB::Point*>& pnts, Vector &plane_normal,
-		double& d)
-{
-	d = 0;
-	Vector centroid;
-	size_t n_pnts (pnts.size());
-	for (size_t i(n_pnts - 1), j(0); j < n_pnts; i = j, j++) {
-		plane_normal[0] += ((*(pnts[i]))[1] - (*(pnts[j]))[1])
-				* ((*(pnts[i]))[2] + (*(pnts[j]))[2]); // projection on yz
-		plane_normal[1] += ((*(pnts[i]))[2] - (*(pnts[j]))[2])
-				* ((*(pnts[i]))[0] + (*(pnts[j]))[0]); // projection on xz
-		plane_normal[2] += ((*(pnts[i]))[0] - (*(pnts[j]))[0])
-				* ((*(pnts[i]))[1] + (*(pnts[j]))[1]); // projection on xy
-
-		centroid += *(pnts[j]);
-	}
-
-	plane_normal *= 1.0 / plane_normal.Length();
-	d = centroid.Dot(plane_normal) / n_pnts;
-}
-
-
-void rotatePointsToXY(Vector &plane_normal,
-		std::vector<GEOLIB::Point*> &pnts)
-{
-	// *** some frequently used terms ***
-	// sqrt (n_x^2 + n_z^2)
-	double h0(sqrt(plane_normal[0] * plane_normal[0] + plane_normal[2]
-			* plane_normal[2]));
-	// 1 / sqrt (n_x^2 + n_z^2)
-	double h1(1 / h0);
-	double inv_normal_nrm(1 / plane_normal.Length());
-
-	Matrix<double> rot_mat(3, 3);
-	// calc rotation matrix
-	rot_mat(0, 0) = plane_normal[2] * h1;
-	rot_mat(0, 1) = 0.0;
-	rot_mat(0, 2) = -plane_normal[0] * h1;
-	rot_mat(1, 0) = -plane_normal[0] * plane_normal[1] * h1 * inv_normal_nrm;
-	rot_mat(1, 1) = h0 * inv_normal_nrm;
-	rot_mat(1, 2) = -plane_normal[1] * plane_normal[2] * h1 * inv_normal_nrm;
-	rot_mat(2, 0) = plane_normal[0] * plane_normal[2] * h1 * inv_normal_nrm;
-	rot_mat(2, 1) = plane_normal[1] * inv_normal_nrm;
-	rot_mat(2, 2) = plane_normal[2] * plane_normal[2] * h1;
-
-	double *tmp (new double[3]);
-	size_t n_pnts(pnts.size());
-	for (size_t k(0); k < n_pnts; k++) {
-		tmp = rot_mat * pnts[k]->getData();
-		for (size_t j(0); j < 3; j++)
-			(*(pnts[k]))[j] = tmp[j];
-	}
-
-	tmp = rot_mat * plane_normal.getData();
-	for (size_t j(0); j < 3; j++) plane_normal[j] = tmp[j];
-
-	delete [] tmp;
-}
 
 //bool isEdgeIllegal (const std::vector<GEOLIB::Point*> &pnts, size_t r, LinkedTriangle* triangle)
 //{
@@ -399,255 +842,6 @@ void rotatePointsToXY(Vector &plane_normal,
 ////		std::cout << "edge " << i << "," << j << " is not illegal" << std::endl;
 //}
 
-bool isEar(const std::vector<GEOLIB::Point*>& pnts,
-		const std::list<size_t>& vertex_list, size_t v0, size_t v1, size_t v2)
-{
-	for (std::list<size_t>::const_iterator it (vertex_list.begin ());
-		it != vertex_list.end(); it++) {
-		if (*it != v0 && *it != v1 && *it != v2) {
-			if (isPointInTriangle (pnts[*it], pnts[v0], pnts[v1], pnts[v2])) {
-				return false;
-			}
-		}
-	}
-	return true;
-}
-
-void uniqueListInsert (std::list<size_t>& list, size_t element)
-{
-	// search element
-	std::list<size_t>::const_iterator it;
-	for (it = list.begin (); it != list.end(); it++) {
-		if (*it == element) return;
-	}
-	// element not found -> insert
-	list.push_back (element);
-}
-
-void earClippingTriangulation (std::vector<GEOLIB::Point*>& pnts, std::list<GEOLIB::Triangle> &triangles)
-{
-	size_t n_pnts (pnts.size()), orientation;
-	std::list<size_t> vertex_list;
-	for (size_t k(0); k<n_pnts; k++) vertex_list.push_back (k);
-
-	// initialize lists
-	std::list<size_t> convex_vertex_list, ear_list;
-	// go through points checking ccw, cw or collinear order and identifying ears
-	std::list<size_t>::iterator it (vertex_list.begin()), prev(vertex_list.end()), next;
-	prev--;
-	next = it;
-	next++;
-	while (next != vertex_list.end()) {
-		orientation  = getOrientation (pnts[*prev], pnts[*it], pnts[*next]);
-		if (orientation == COLLINEAR) {
-			it = vertex_list.erase (it);
-			it = next;
-			next++;
-		} else {
-			if (orientation == CCW) {
-				convex_vertex_list.push_back (*it);
-				bool is_ear (true);
-				for (std::list<size_t>::const_iterator my_it (vertex_list.begin());
-					my_it != vertex_list.end() && is_ear; my_it++) {
-					if (my_it != it && my_it != prev && my_it != next) {
-						if (isPointInTriangle (pnts[*my_it], pnts[*prev], pnts[*it], pnts[*next]))
-							is_ear = false;
-					}
-				}
-				if (is_ear) {
-					ear_list.push_back (*it);
-				}
-			}
-			prev = it;
-			it = next;
-			next++;
-		}
-	}
-
-	next = vertex_list.begin();
-	orientation = getOrientation (pnts[*prev], pnts[*it], pnts[*next]);
-	if (orientation == COLLINEAR) {
-		it = vertex_list.erase (it);
-	}
-	if (orientation == CCW) {
-		convex_vertex_list.push_back (*it);
-		bool is_ear (true);
-		for (std::list<size_t>::const_iterator my_it (vertex_list.begin());
-			my_it != vertex_list.end() && is_ear; my_it++) {
-			if (my_it != it && my_it != prev && my_it != next) {
-				if (isPointInTriangle (pnts[*my_it], pnts[*prev], pnts[*it], pnts[*next]))
-					is_ear = false;
-			}
-		}
-		if (is_ear) {
-			ear_list.push_back (*it);
-		}
-	}
-
-	// *** clip an ear
-	while (vertex_list.size() > 3) {
-		// pop ear from list
-		size_t ear = ear_list.front ();
-		ear_list.pop_front();
-
-		// erase ear from vertex_list
-		bool nfound (true);
-		it = vertex_list.begin();
-		prev = vertex_list.end();
-		prev--;
-		while (nfound && it != vertex_list.end()) {
-			if (*it == ear) {
-				nfound = false;
-				next = vertex_list.erase (it); // remove ear tip
-				if (next == vertex_list.end()) next = vertex_list.begin();
-				// check the orientation of prevprev, prev, next
-				std::list<size_t>::iterator prevprev;
-				if (prev == vertex_list.begin ()) {
-					prevprev = vertex_list.end();
-				} else {
-					prevprev = prev;
-				}
-				prevprev--;
-
-				// apply changes to convex_vertex_list and ear_list looking "backward"
-				orientation = getOrientation (pnts[*prevprev], pnts[*prev], pnts[*next]);
-				if (orientation == CCW) {
-					// prev is convex
-					if (isEar (pnts, vertex_list, *prevprev, *prev, *next)) {
-						// prev is an ear tip
-						uniqueListInsert (convex_vertex_list, *prev);
-						uniqueListInsert (ear_list, *prev);
-					} else {
-						uniqueListInsert (convex_vertex_list, *prev);
-						// if necessary remove *prev
-						ear_list.remove (*prev);
-					}
-				} else {
-					// prev is not convex => reflex or collinear
-					convex_vertex_list.remove (*prev);
-					ear_list.remove (*prev);
-					if (orientation == COLLINEAR) {
-						vertex_list.erase (prev);
-					}
-				}
-
-				// check the orientation of prev, next, nextnext
-				std::list<size_t>::iterator nextnext, help_it (vertex_list.end ());
-				help_it--;
-				if (next == help_it) {
-					nextnext = vertex_list.begin();
-				} else {
-					nextnext = next;
-					nextnext++;
-				}
-
-				// apply changes to convex_vertex_list and ear_list looking "forward"
-				orientation = getOrientation (pnts[*prev], pnts[*next], pnts[*nextnext]);
-				if (orientation == CCW) {
-					// next is convex
-					if (isEar (pnts, vertex_list, *prev, *next, *nextnext)) {
-						// next is an ear tip
-						uniqueListInsert (convex_vertex_list, *next);
-						uniqueListInsert (ear_list, *next);
-					} else {
-						uniqueListInsert (convex_vertex_list, *next);
-						// if necessary remove *prev
-						ear_list.remove (*next);
-					}
-				} else {
-					// next is not convex => reflex or collinear
-					convex_vertex_list.remove (*next);
-					ear_list.remove (*next);
-					if (orientation == COLLINEAR) {
-						vertex_list.erase (next);
-					}
-				}
-
-			} else {
-				prev = it;
-				it++;
-			}
-		}
-		// remove ear tip from convex_vertex_list
-		convex_vertex_list.remove (ear);
-		// add triangle
-		triangles.push_back (GEOLIB::Triangle (pnts, *prev, ear, *next));
-	}
-	// add last triangle
-	next = vertex_list.begin();
-	prev = next;
-	next++;
-	it = next;
-	next++;
-	if (getOrientation (pnts[*prev], pnts[*it], pnts[*next]) == CCW)
-		triangles.push_back (GEOLIB::Triangle (pnts, *prev, *it, *next));
-	else
-		triangles.push_back (GEOLIB::Triangle (pnts, *prev, *next, *it));
-}
-
-void earClippingTriangulationOfPolygon(const GEOLIB::Polyline* ply, std::list<GEOLIB::Triangle> &triangles)
-{
-	if (!ply->isClosed()) {
-		return;
-	}
-	// copy points
-	size_t n_pnts (ply->getSize()-1);
-
-	std::vector<GEOLIB::Point*> pnts;
-	pnts.reserve (n_pnts);
-	for (size_t k(0); k < n_pnts; k++)
-		pnts.push_back (new GEOLIB::Point (*(ply->getPoint(k))));
-
-	// calculate supporting plane
-	Vector plane_normal;
-	double d;
-	// compute the plane normal
-	getNewellPlane(pnts, plane_normal, d);
-
-//	// rotate copied points into x-y-plane
-//	rotatePointsToXY(plane_normal, pnts);
-//
-//	// recompute the plane normal
-//	getNewellPlane(pnts, plane_normal, d);
-
-	// check orientation and if CW change orientation
-	size_t orientation (CCW);
-	double z_axis[3] = {0.0, 0.0, 1.0};
-	if (scpr (plane_normal.getData(), z_axis, 3) > 0.0) {
-		// CCW orientation of polygon
-		orientation = CCW;
-	} else {
-		// CW orientation of polygon
-		orientation = CW;
-		for (size_t k(0); k<n_pnts/2; k++) {
-			swap (pnts[k], pnts[n_pnts-1-k]);
-		}
-	}
-
-	std::list<GEOLIB::Triangle> temp_triangles;
-	earClippingTriangulation (pnts, temp_triangles);
-
-	const std::vector<GEOLIB::Point*>& ref_pnts_vec (ply->getPointsVec());
-	std::list<GEOLIB::Triangle>::const_iterator it (temp_triangles.begin());
-	while (it != temp_triangles.end()) {
-		const size_t i0 (ply->getPointID ((*it)[0]));
-		const size_t i1 (ply->getPointID ((*it)[1]));
-		const size_t i2 (ply->getPointID ((*it)[2]));
-
-		if (orientation == CCW) {
-			triangles.push_back (GEOLIB::Triangle (ref_pnts_vec, i0, i1, i2));
-		} else {
-			triangles.push_back (GEOLIB::Triangle (ref_pnts_vec,
-					ply->getPointID (n_pnts-1-((*it)[0])),
-					ply->getPointID (n_pnts-1-((*it)[1])),
-					ply->getPointID (n_pnts-1-((*it)[2]))));
-		}
-		it++;
-	}
-
-	// delete points
-	for (size_t k(0); k < n_pnts; k++) delete pnts[k];
-}
 
 //void delaunayTriangulation (std::vector<GEOLIB::Point*>& pnts,
 //		std::list<LinkedTriangle>& triangles, const Vector& plane_normal)

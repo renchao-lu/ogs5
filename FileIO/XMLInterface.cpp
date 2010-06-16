@@ -78,10 +78,11 @@ int XMLInterface::readGLIFile(const QString &fileName)
 	if (!file->open(QIODevice::ReadOnly | QIODevice::Text))
 	{
 		std::cout << "XMLInterface::readGLIFile() - Can't open xml-file." << std::endl;
+		delete file;
 		return 0;
 	}
 
-	if (!this->isValid(fileName)) return 0;
+	if (!this->isValid(fileName)) { delete file; return 0; }
 
 	QXmlStreamReader xml(file);
 	std::vector<GEOLIB::Point*>    *points    = new std::vector<GEOLIB::Point*>;
@@ -207,7 +208,6 @@ void XMLInterface::readPolylines( QXmlStreamReader &xml, std::vector<GEOLIB::Pol
 
 void XMLInterface::readSurfaces( QXmlStreamReader &xml, std::vector<GEOLIB::Surface*> *surfaces, std::vector<GEOLIB::Polyline*> *polylines )
 {
-	size_t idx=0;
 	QString value = NULL;
 	QXmlStreamAttributes att;
 
@@ -223,7 +223,6 @@ void XMLInterface::readSurfaces( QXmlStreamReader &xml, std::vector<GEOLIB::Surf
 			att = xml.attributes();
 			if (att.hasAttribute("id")  &&  att.hasAttribute("matgroup") && att.hasAttribute("epsilon"))
 			{
-				idx = surfaces->size();
 				surfaces->push_back(new GEOLIB::Surface((*polylines)[0]->getPointsVec()));
 
 				// add polylines to surface (as long as surface is not at an end)
@@ -284,7 +283,7 @@ void XMLInterface::writeGLIFile(QFile &file, const QString &gliName)
 
 	// POINTS
 	xml.writeStartElement("points");
-	std::vector<GEOLIB::Point*> *points = _geoObjects->getPointVec(gliName.toStdString());
+	const std::vector<GEOLIB::Point*> *points (_geoObjects->getPointVec(gliName.toStdString()));
 	nPoints = points->size();
 	for (size_t i=0; i<nPoints; i++)
 	{
@@ -300,7 +299,7 @@ void XMLInterface::writeGLIFile(QFile &file, const QString &gliName)
 
 	// POLYLINES
 	xml.writeStartElement("polylines");
-	std::vector<GEOLIB::Polyline*> *polylines = _geoObjects->getPolylineVec(gliName.toStdString());
+	const std::vector<GEOLIB::Polyline*> *polylines (_geoObjects->getPolylineVec(gliName.toStdString()));
 	nPolylines = polylines->size();
 	for (size_t i=0; i<nPolylines; i++)
 	{
@@ -318,7 +317,7 @@ void XMLInterface::writeGLIFile(QFile &file, const QString &gliName)
 
 	// SURFACES
 	xml.writeStartElement("surfaces");
-	std::vector<GEOLIB::Surface*> *surfaces = _geoObjects->getSurfaceVec(gliName.toStdString());
+	const std::vector<GEOLIB::Surface*> *surfaces (_geoObjects->getSurfaceVec(gliName.toStdString()));
 	nSurfaces = surfaces->size();
 	for (size_t i=0; i<nSurfaces; i++)
 	{

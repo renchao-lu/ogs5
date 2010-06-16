@@ -1,6 +1,7 @@
 /**
  * \file MshTabWidget.h
  * 3/11/2009 LB Initial implementation
+ * 18/05/2010 KR Re-Implementation
  *
  */
 
@@ -11,10 +12,10 @@
 // ** INCLUDES **
 #include "ui_MshTabWidgetBase.h"
 
-class GraphicsScene;
+class MshModel;
 
 /**
- * MshTabWidget
+ * Tab Widget for data views on meshes
  */
 class MshTabWidget : public QWidget, public Ui_MshTabWidgetBase
 {
@@ -23,14 +24,18 @@ class MshTabWidget : public QWidget, public Ui_MshTabWidgetBase
 public:
 	MshTabWidget(QWidget* parent = 0);
 
-	void setScene(const GraphicsScene* scene);
-
-
 private slots:
-	void changeMshSubmodelViews(QItemSelection selected, QItemSelection deselected);
+	// Remove the currently selected mesh.
+	void removeMesh();
 
-private:
-	const GraphicsScene* _scene;
+	// Remove all currently loaded meshes.
+	void removeAllMeshes();
+
+//private slots:
+//	void changeMshSubmodelViews(QItemSelection selected, QItemSelection deselected);
+
+signals:
+	void requestMeshRemoval(const QModelIndex&);
 
 };
 

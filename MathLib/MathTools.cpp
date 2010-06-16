@@ -64,3 +64,22 @@ double sqrDist(const CGLPoint* p0, const CGLPoint* p1)
 	return scpr (v, v, 3);
 }
 
+bool isLowerEqual (const GEOLIB::Point &p0, const GEOLIB::Point &p1)
+{
+	double tol (sqrt (std::numeric_limits<double>::min()));
+
+	if (fabs (p0[0]-p1[0]) > tol * fabs(p0[0])) {
+		if (p0[0] < p1[0]) return true;
+		else return false;
+	} else {
+		// assume p0[0] == p1[0]
+		if (fabs (p0[1]-p1[1]) > tol * fabs(p0[1])) {
+			if (p0[1] < p1[1]) return true;
+			else return false;
+		} else {
+			// assume p0[1] == p1[1] and p0[0] == p1[0]
+			if (p0[2] < p1[2]) return true;
+			else return false;
+		}
+	}
+}

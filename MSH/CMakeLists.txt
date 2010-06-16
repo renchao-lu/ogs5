@@ -15,7 +15,6 @@ set( SOURCES
 	msh_elem.cpp
 	msh_gen.cpp
 	msh_gen_pris.cpp
-	msh_geo.cpp
 	msh_lib.cpp
 	msh_mat.cpp
 	msh_mesh.cpp

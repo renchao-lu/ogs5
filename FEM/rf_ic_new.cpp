@@ -1,6 +1,6 @@
 /**************************************************************************
 FEMLib - Object: Initial Conditions IC
-Task: 
+Task:
 Programing:
 08/2004 OK Implementation
 12/2005 OK Restart
@@ -17,30 +17,33 @@ using namespace std;
 #include "files0.h"
 #include "mathlib.h"
 #include "files0.h"
-// GEOLib
+// Base
+#include "StringTools.h"
+// GEOLIB
+#include "GEOObjects.h"
 // MSHLib
 #include "msh_lib.h"
 // FEMLib
 #include "rf_ic_new.h"
 #include "rf_pcs.h"
+#include "problem.h"
 
 //==========================================================================
 vector<CInitialConditionGroup*>ic_group_vector;
 vector<CInitialCondition*>ic_vector;
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 08/2004 OK Implementation
 **************************************************************************/
 CInitialCondition::CInitialCondition(void)
 {
-  string delimiter_type(" ");
   geo_type_name = "DOMAIN";
   dis_type_name = "CONSTANT";
-  // HS: not needed, removed. 
-  // m_node = new CNodeValue();        
+  // HS: not needed, removed.
+  // m_node = new CNodeValue();
   // m_node->node_value = 0.0;
   SubNumber=0;
   m_pcs = NULL; //OK
@@ -50,12 +53,12 @@ CInitialCondition::CInitialCondition(void)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: BC deconstructor
 Programing:
 04/2004 OK Implementation
 **************************************************************************/
-CInitialCondition::~CInitialCondition(void) 
+CInitialCondition::~CInitialCondition(void)
 {
   if ( node_value_vector.size() > 0)
       for (int i=0 ; i < (int)node_value_vector.size() ; i++ )
@@ -67,53 +70,49 @@ CInitialCondition::~CInitialCondition(void)
   if(b0) delete b0;
   if(c0) delete c0;
   if(d0) delete d0;
-  a0=b0=c0=d0=NULL; 
+  a0=b0=c0=d0=NULL;
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: IC read function
 Programing:
 08/2004 OK Implementation
 01/2005 OK Boolean type
 01/2005 OK Destruct before read
+05/2010 TF reformated, restructured, signature changed, use new GEOLIB data structures
 **************************************************************************/
-bool ICRead(string file_base_name)
+bool ICRead(const std::string& file_base_name,
+		const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
 {
-  //----------------------------------------------------------------------
-  //ICDelete();  
-  CInitialCondition *m_ic = NULL;
-  char line[MAX_ZEILE];
-  string sub_line;
-  string line_string;
-  string ic_file_name;
-  ios::pos_type position;
-  //========================================================================
-  // File handling
-  ic_file_name = file_base_name + IC_FILE_EXTENSION;
-  ifstream ic_file (ic_file_name.data(),ios::in);
-  if (!ic_file.good()){
-    cout << "! Error in ICRead: No initial conditions !" << endl;
-    return false;
-  }
-  ic_file.seekg(0L,ios::beg);
-  //========================================================================
-  // Keyword loop
-  cout << "ICRead" << endl;
-  while (!ic_file.eof()) {
-    ic_file.getline(line,MAX_ZEILE);
-    line_string = line;
-    if(line_string.find("#STOP")!=string::npos)
-      return true;
-    //----------------------------------------------------------------------
-    if(line_string.find("#INITIAL_CONDITION")!=string::npos) { // keyword found
-      m_ic = new CInitialCondition();
-      position = m_ic->Read(&ic_file);
-      ic_vector.push_back(m_ic);
-      m_ic = NULL;
-      ic_file.seekg(position,ios::beg);
-    } // keyword found
-  } // eof
-  return true;
+	// File handling
+	std::string ic_file_name = file_base_name + IC_FILE_EXTENSION;
+	std::ifstream ic_file(ic_file_name.data(), std::ios::in);
+	if (!ic_file.good()) {
+		std::cout << "! Error in ICRead: No initial conditions !" << std::endl;
+		return false;
+	}
+
+	char line[MAX_ZEILE];
+	std::string line_string;
+	std::ios::pos_type position;
+
+	// Keyword loop
+	std::cout << "ICRead" << std::endl;
+	while (!ic_file.eof()) {
+		ic_file.getline(line, MAX_ZEILE);
+		line_string = line;
+		if (line_string.find("#STOP") != string::npos)
+			return true;
+
+		if (line_string.find("#INITIAL_CONDITION") != std::string::npos) { // keyword found
+			CInitialCondition *ic = new CInitialCondition();
+			position = ic->Read(&ic_file, geo_obj, unique_name);
+			ic_vector.push_back(ic);
+			ic = NULL;
+			ic_file.seekg(position, ios::beg);
+		} // keyword found
+	} // eof
+	return true;
 }
 
 /**************************************************************************
@@ -151,7 +150,7 @@ void ICWrite(string base_file_name)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: ST read function
 Programing:
 08/2004 OK Implementation (DOMAIN)
@@ -161,169 +160,177 @@ Programing:
 05/2005 OK PRIMARY_VARIABLE
 12/2005 OK RESTART
 07/2006 WW Read data by expression
+06/2010 TF changed signature to use the new GEOLIB data structures
 **************************************************************************/
-ios::pos_type CInitialCondition::Read(ifstream *ic_file)
+ios::pos_type CInitialCondition::Read(std::ifstream *ic_file,
+		const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
 {
-  string line_string;
-  std::stringstream in;
-  ios::pos_type position;
-  string dollar("$");
-  string hash("#");
-  bool new_subkeyword = false;
-  bool new_keyword = false;
-  // CNodeValue *m_node = NULL; //HS: move to the class definition. 11.2009
-  int i, k, ibuf;
-  double d_buf;
-  i=0; ibuf=0; d_buf=0.0;
-  k=0;
-  //========================================================================
-  // Schleife ueber alle Phasen bzw. Komponenten 
-  while (!new_keyword) {
-    new_subkeyword = false;
-    position = ic_file->tellg();
-	line_string = GetLineFromFile1(ic_file);
-	if(line_string.size() < 1) break;
-    if(line_string.find(hash)!=string::npos) {
-      new_keyword = true;
-      break;
-    }
-    //....................................................................
-    if(line_string.find("$PCS_TYPE")!=string::npos) { // subkeyword found
-      in.str(GetLineFromFile1(ic_file));
-      in >> pcs_type_name;
-      in.clear();
-      continue;
-    }
-    //....................................................................
-    if(line_string.find("$PRIMARY_VARIABLE")!=string::npos) { // subkeyword found
-      in.str(GetLineFromFile1(ic_file));
-      in >> pcs_pv_name;
-      in.clear();
-      continue;
-    }
-    //....................................................................
-    if(line_string.find("$DIS_TYPE")!=string::npos) { // subkeyword found
-      in.str(GetLineFromFile1(ic_file));
-      in >> dis_type_name;
+	string line_string;
+	std::stringstream in;
+	ios::pos_type position;
 
-		// Initial conditions are assign to mesh nodes directly. 17.11.2009. PCH
-	  if(dis_type_name.find("DIRECT")!=string::npos)
-    {
-			dis_type_name = "DIRECT";     
-			in >> fname;
-        fname = FilePath+fname;
-			in.clear();
+	bool new_keyword = false;
+	int ibuf (0);
+	double d_buf (0.0);
+
+	// read loop
+	while (!new_keyword) {
+		position = ic_file->tellg();
+		line_string = GetLineFromFile1(ic_file);
+		if (line_string.size() < 1)
+			break;
+		if (line_string.find("#") != string::npos) {
+			new_keyword = true;
+			break;
 		}
+		//....................................................................
+		if (line_string.find("$PCS_TYPE") != string::npos) { // subkeyword found
+			in.str(GetLineFromFile1(ic_file));
+			in >> pcs_type_name;
+			in.clear();
+			continue;
+		}
+		//....................................................................
+		if (line_string.find("$PRIMARY_VARIABLE") != string::npos) { // subkeyword found
+			in.str(GetLineFromFile1(ic_file));
+			in >> pcs_pv_name;
+			in.clear();
+			continue;
+		}
+		//....................................................................
+		if (line_string.find("$DIS_TYPE") != string::npos) { // subkeyword found
+			in.str(GetLineFromFile1(ic_file));
+			in >> dis_type_name;
 
-      if(dis_type_name.find("CONSTANT")!=string::npos) {
-        m_node = new CNodeValue();        
-        in >> m_node->node_value;
-        node_value_vector.push_back(m_node);
-        m_node = NULL;
-      }
-      if(dis_type_name.find("GRADIENT")!=string::npos) {
-		in >> gradient_ref_depth;  //CMCD
-        in >> gradient_ref_depth_value; //CMCD
-		in >> gradient_ref_depth_gradient; //CMCD
-       }
-      if(dis_type_name.find("RESTART")!=string::npos) { //OK
-		in >> rfr_file_name;
-      }
-      in.clear();
-      continue;
-    }
-    //....................................................................
-    if(line_string.find("$GEO_TYPE")!=string::npos) { //subkeyword found
-      in.str(GetLineFromFile1(ic_file));
-      in >> geo_type_name;
-      if(geo_type_name.find("POINT")!=string::npos) {
-        geo_type = 0;
-        in >> geo_name;
-      }
-      if(geo_type_name.find("POLYLINE")!=string::npos) {
-        geo_type = 1;
-        in >> geo_name;
-      }
-      if(geo_type_name.find("SURFACE")!=string::npos) {
-        geo_type = 2;
-	    in >> geo_name;
-      }
-      if(geo_type_name.find("VOLUME")!=string::npos) {
-        geo_type = 3;
-      }
-      if(geo_type_name.find("DOMAIN")!=string::npos) {
-        geo_type = 4;
-        //  Give initial condition by patches of domain. WW
-        if(geo_type_name.find("SUB")!=string::npos) 
-        {
-           *ic_file>>SubNumber;
-           if(pcs_pv_name.find("STRESS")!=string::npos
-              ||dis_type_name.find("FUNCTION")!=string::npos) //01.07.2008 WW
-		   {
-              string str_buff;
-              vector<string> tokens;
-              stringstream buff;
-              char *pch;
-              char seps[] = "+\n";
-              char seps1[] = "*";
-              double f_buff;
-              a0 = new double [SubNumber];
-              b0 = new double [SubNumber];
-              c0 = new double [SubNumber];
-              d0 = new double [SubNumber];
-              for(i=0; i<SubNumber; i++) 
-              {
-                 a0[i] = b0[i]=c0[i]=d0[i]=0.0;
-                 *ic_file>> ibuf>>str_buff>>ws;  
-                 subdom_index.push_back(ibuf); 
-                 pch = strtok (const_cast<char*> (str_buff.c_str()),seps);   
-                 buff<<pch;
-                 buff>>a0[i];
-                 buff.clear();
-                 while (pch != NULL)
-                 { 
-                    pch = strtok (NULL, seps);
-                    if(pch==NULL) break;
-                    string token = pch;
-                    tokens.push_back(token);
-                 }
-                 for(k=0; k<(int)tokens.size(); k++)
-                 {
-                    pch = strtok (const_cast<char*> (tokens[k].c_str()),seps1);   
-                    buff<<pch;
-                    buff>>f_buff;
-                    buff.clear();
-                    pch = strtok (NULL,seps1);   
-                    switch(pch[0])
-                    {
-                       case 'x':  b0[i]=f_buff; break;
-                       case 'y':  c0[i]=f_buff; break;
-                       case 'z':  d0[i]=f_buff; break;
-                    }   
-                 }
-                 tokens.clear();
-			  }
-		   }
-		   else
-		   {
-             for(i=0; i<SubNumber; i++) 
-             {
-                 *ic_file>>ibuf>>d_buf;
-                 subdom_index.push_back(ibuf);
-                 subdom_ic.push_back(d_buf);
-             }
-		   }
-        }
-      }
-      in.clear();
-      continue;
-    }
-  }  // Schleife ueber alle Phasen bzw. Komponenten
-  return position;
+			// Initial conditions are assign to mesh nodes directly. 17.11.2009. PCH
+			if (dis_type_name.find("DIRECT") != string::npos) {
+				dis_type_name = "DIRECT";
+				in >> fname;
+				fname = FilePath + fname;
+				in.clear();
+			}
+
+			if (dis_type_name.find("CONSTANT") != string::npos) {
+				m_node = new CNodeValue();
+				in >> m_node->node_value;
+				node_value_vector.push_back(m_node);
+				m_node = NULL;
+			}
+			if (dis_type_name.find("GRADIENT") != string::npos) {
+				in >> gradient_ref_depth; //CMCD
+				in >> gradient_ref_depth_value; //CMCD
+				in >> gradient_ref_depth_gradient; //CMCD
+			}
+			if (dis_type_name.find("RESTART") != string::npos) { //OK
+				in >> rfr_file_name;
+			}
+			in.clear();
+			continue;
+		}
+		//....................................................................
+		if (line_string.find("$GEO_TYPE") != string::npos) { //subkeyword found
+			in.str(GetLineFromFile1(ic_file));
+			in >> geo_type_name;
+			if (geo_type_name.find("POINT") != string::npos) {
+				geo_type = 0;
+				geo_type_name = "POINT";
+				in >> geo_name;
+
+				// TF 06/2010 - get the point vector
+				if (!((geo_obj.getPointVecObj(unique_name))->getPointIDByName (geo_name, _geo_obj_idx))) {
+					std::cerr << "error in CInitialCondition::Read: point name not found!" << std::endl;
+					exit (1);
+				}
+
+				in.clear();
+				geo_name = ""; // REMOVE CANDIDATE
+			}
+			if (geo_type_name.find("POLYLINE") != string::npos) {
+				geo_type = 1;
+				in >> geo_name;
+			}
+			if (geo_type_name.find("SURFACE") != string::npos) {
+				geo_type = 2;
+				in >> geo_name;
+			}
+			if (geo_type_name.find("VOLUME") != string::npos) {
+				geo_type = 3;
+			}
+			if (geo_type_name.find("DOMAIN") != string::npos) {
+				geo_type = 4;
+				//  Give initial condition by patches of domain. WW
+				if (geo_type_name.find("SUB") != string::npos) {
+					*ic_file >> SubNumber;
+					if (pcs_pv_name.find("STRESS") != string::npos
+							|| dis_type_name.find("FUNCTION") != string::npos) //01.07.2008 WW
+					{
+						string str_buff;
+						vector<string> tokens;
+						stringstream buff;
+						char *pch;
+						char seps[] = "+\n";
+						char seps1[] = "*";
+						double f_buff;
+						a0 = new double[SubNumber];
+						b0 = new double[SubNumber];
+						c0 = new double[SubNumber];
+						d0 = new double[SubNumber];
+						for (size_t i = 0; i < SubNumber; i++) {
+							a0[i] = b0[i] = c0[i] = d0[i] = 0.0;
+							*ic_file >> ibuf >> str_buff >> ws;
+							subdom_index.push_back(ibuf);
+							pch = strtok(const_cast<char*> (str_buff.c_str()),
+									seps);
+							buff << pch;
+							buff >> a0[i];
+							buff.clear();
+							while (pch != NULL) {
+								pch = strtok(NULL, seps);
+								if (pch == NULL)
+									break;
+								string token = pch;
+								tokens.push_back(token);
+							}
+							for (size_t k=0; k < tokens.size(); k++) {
+								pch = strtok(
+										const_cast<char*> (tokens[k].c_str()),
+										seps1);
+								buff << pch;
+								buff >> f_buff;
+								buff.clear();
+								pch = strtok(NULL, seps1);
+								switch (pch[0]) {
+								case 'x':
+									b0[i] = f_buff;
+									break;
+								case 'y':
+									c0[i] = f_buff;
+									break;
+								case 'z':
+									d0[i] = f_buff;
+									break;
+								}
+							}
+							tokens.clear();
+						}
+					} else {
+						for (size_t i = 0; i < SubNumber; i++) {
+							*ic_file >> ibuf >> d_buf;
+							subdom_index.push_back(ibuf);
+							subdom_ic.push_back(d_buf);
+						}
+					}
+				}
+			}
+			in.clear();
+			continue;
+		}
+	} // Schleife ueber alle Phasen bzw. Komponenten
+	return position;
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: write function
 Programing:
 02/2004 OK Implementation
@@ -348,7 +355,9 @@ void CInitialCondition::Write(fstream* ic_file)
   //GEO_TYPE
   *ic_file << " $GEO_TYPE" << endl;
   *ic_file << "  ";
-  *ic_file << geo_type_name << delimiter_type << geo_name << endl;
+  if (geo_type == 0)
+	  geo_name = number2str (_geo_obj_idx);
+  *ic_file << geo_type_name << " " << geo_name << endl;
   //--------------------------------------------------------------------
   //DIS_TYPE
   *ic_file << " $DIS_TYPE" << endl;
@@ -372,8 +381,8 @@ void CInitialCondition::Write(fstream* ic_file)
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 08/2004 OK Implementation
 **************************************************************************/
@@ -395,7 +404,7 @@ void CInitialCondition::Set(int nidx)
       break;
     case 4: // DOM
 	  SetDomain(nidx);
-	  break; 
+	  break;
     }
 
 	// Direct assign by node indeces 17.11.2009 PCH
@@ -407,8 +416,8 @@ void CInitialCondition::Set(int nidx)
 
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 11/2009 PCH Implementation
 **************************************************************************/
@@ -420,7 +429,6 @@ void CInitialCondition::SetByNodeIndex(int nidx)
 		long node_index;
 		double node_val;
     vector<long>nodes_vector;
-    CFEMesh* m_msh = m_pcs->m_msh;
 
 	//========================================================================
   // File handling
@@ -428,7 +436,7 @@ void CInitialCondition::SetByNodeIndex(int nidx)
   //if (!st_file.good()) return;
 
   if (!d_file.good()){
-    cout << "! Error in direct node source terms: Could not find file:!\n" 
+    cout << "! Error in direct node source terms: Could not find file:!\n"
          <<fname<<endl;
     abort();
   }
@@ -436,15 +444,15 @@ void CInitialCondition::SetByNodeIndex(int nidx)
   d_file.clear();
   d_file.seekg(0L,ios::beg);
   //========================================================================
-  while (!d_file.eof()) 
+  while (!d_file.eof())
   {
     line_string = GetLineFromFile1(&d_file);
     if(line_string.find("#STOP")!=string::npos)
       break;
-    
-    in.str(line_string); 
-    in>>node_index>>node_val;   
-    in.clear(); 
+
+    in.str(line_string);
+    in>>node_index>>node_val;
+    in.clear();
 
 		m_pcs->SetNodeValue(node_index,nidx,node_val);
 	}
@@ -459,22 +467,23 @@ last modification:
 **************************************************************************/
 void CInitialCondition::SetPoint(int nidx)
 {
-//  long i;
-  CGLPoint *m_point = NULL;
-  CFEMesh* m_msh = m_pcs->m_msh;
+	if ((m_msh) && dis_type_name.find("CONSTANT") != std::string::npos) {
+		// get the GEOObject data
+		const GEOLIB::GEOObjects *geo_obj ((m_pcs->getProblemObjectPointer())->getGeoObj());
+		std::string name ((m_pcs->getProblemObjectPointer())->getGeoObjName());
+		const std::vector<GEOLIB::Point*> *pnt (geo_obj->getPointVec(name));
 
-  if((m_msh) && dis_type_name.find("CONSTANT")!=string::npos) {
-    m_point = GEOGetPointByName(geo_name);//CC
-    m_pcs->SetNodeValue(m_msh->GetNODOnPNT(m_point),nidx,node_value_vector[0]->node_value);
-  }
-  else{
-      cout << "Error in CInitialCondition::SetPoint - point: " << geo_name << " not found" << endl;
-  }
+		m_pcs->SetNodeValue(m_pcs->m_msh->GetNODOnPNT((*pnt)[_geo_obj_idx]), nidx,
+				node_value_vector[0]->node_value);
+	} else {
+		std::cerr << "Error in CInitialCondition::SetPoint - point: " << _geo_obj_idx
+				<< " not found" << endl;
+	}
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 08/2004 OK Implementation
 **************************************************************************/
@@ -496,7 +505,7 @@ void CInitialCondition::SetEle(int nidx)
       break;
     case 4: // DOM
 	  SetDomainEle(nidx);
-	  break; 
+	  break;
     }
 }
 
@@ -516,7 +525,7 @@ void CInitialCondition::SetPolyline(int nidx)
   vector<long>nodes_vector;
   double value;
   //----------------------------------------------------------------------
-  if(dis_type_name.find("CONSTANT")!=string::npos) 
+  if(dis_type_name.find("CONSTANT")!=string::npos)
   {
     m_polyline = GEOGetPLYByName(geo_name);//CC
     if(m_polyline)
@@ -546,19 +555,19 @@ Programing:
 **************************************************************************/
 void CInitialCondition::SetSurface(int nidx)
 {
- 
+
   Surface* m_sfc = NULL;
   double value, node_depth;
   vector<long>sfc_nod_vector;
 
   m_sfc = GEOGetSFCByName(geo_name);
- 
+
   if(m_sfc && m_msh)  {
 
     m_msh->GetNODOnSFC(m_sfc, sfc_nod_vector);
 
     if(dis_type_name.find("CONSTANT")!=string::npos) {
-        
+
 		for(long i = 0; i < (long)sfc_nod_vector.size(); i++) {
           value = node_value_vector[0]->node_value;
    		  m_pcs->SetNodeValue(sfc_nod_vector[i],nidx, value);
@@ -566,13 +575,13 @@ void CInitialCondition::SetSurface(int nidx)
 
     } // end constant
     else if(dis_type_name.find("GRADIENT")!=string::npos) {
- 
+
       int onZ = m_msh->GetCoordinateFlag()%10;
       long msh_node;
 
-	  for(long i = 0; i < (long)sfc_nod_vector.size(); i++) { 
+	  for(long i = 0; i < (long)sfc_nod_vector.size(); i++) {
 		 msh_node = sfc_nod_vector[i];
-         if(onZ == 1) //2D 
+         if(onZ == 1) //2D
            node_depth = m_msh->nod_vector[msh_node]->Y();
          else if(onZ == 2) //3D
            node_depth = m_msh->nod_vector[msh_node]->Z();
@@ -583,7 +592,7 @@ void CInitialCondition::SetSurface(int nidx)
 	     value = ((gradient_ref_depth_gradient)*(gradient_ref_depth-node_depth))+ gradient_ref_depth_value;
 		 m_pcs->SetNodeValue(msh_node,nidx, value);
       } // end surface nodes
-		
+
 	} // end gradient
 	else
        cout << "Error in CInitialCondition::SetSurface - dis_type: " << dis_type_name << " not found" << endl;
@@ -592,12 +601,12 @@ void CInitialCondition::SetSurface(int nidx)
   }  // end m_sfc
     else
       cout << "Error in CInitialCondition::SetSurface - surface: " << geo_name << " not found" << endl;
-    
- 
+
+
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task:
 Programing:
 04/2004 OK Implementation
@@ -610,106 +619,12 @@ CInitialConditionGroup* GetInitialConditionGroup(string this_pcs_name)
   long no_ic_groups = (long)ic_group_vector.size();
   for(i=0;i<no_ic_groups;i++){
     m_ic_group = ic_group_vector[i];
-    if(m_ic_group->pcs_type_name.find(this_pcs_name)!=string::npos) 
+    if(m_ic_group->pcs_type_name.find(this_pcs_name)!=string::npos)
       return m_ic_group;
   }
   return NULL;
 }
 
-/**************************************************************************
-FEMLib-Method:
-Task: set ST group member
-Programing:
-02/2004 OK Implementation
-last modification:
-**************************************************************************/
-void CInitialConditionGroup::Set(void)
-{
-/*OK411
-  long number_of_nodes;
-  long *nodes = NULL;
-  vector<long>nodes_vector;
-  long i;
-
-  CInitialCondition *m_ic = NULL;
-  CNodeValue *m_node_value = NULL;
-
-  long no_ics =(long)ic_vector.size();
-  for(i=0;i<no_ics;i++){
-    m_ic = ic_vector[i];
-    //====================================================================
-    if((m_ic->pcs_type_name.compare(pcs_type_name)==0)&&(m_ic->pcs_pv_name.compare(pcs_pv_name)==0))
-    {
-      //------------------------------------------------------------------
-      if(m_ic->geo_type_name.compare("POINT")==0) 
-      {
-        m_node_value = new CNodeValue();
-//OK_IC        m_node_value->geo_node_number = m_ic->node_vector[0].geo_node_number;
-        CGLPoint* m_point = NULL;
-        m_point = GEOGetPointByName(m_ic->geo_name);//CC
-        if(m_point)
-          m_node_value->msh_node_number = GetNodeNumberClose(m_point->x,m_point->y,m_point->z);
-        else
-          m_node_value->msh_node_number = -1;
-//OK_IC        m_node_value->node_value = m_ic->node_vector[0].geo_node_value;
-        group_vector.push_back(m_node_value);
-      }
-      //------------------------------------------------------------------
-      if(m_ic->geo_type_name.compare("POLYLINE")==0) {
-        CGLPolyline *m_polyline = NULL;
-        m_polyline = GEOGetPLYByName(m_ic->geo_name);//CC
-       if(m_polyline) {
-         m_polyline->type = 3;
-        //................................................................
-        if(m_ic->dis_type_name.compare("CONSTANT")==0){
-          nodes = MSHGetNodesClose(&number_of_nodes, m_polyline);//CC
-          for(i=0;i<number_of_nodes;i++){
-            m_node_value = new CNodeValue();
-            m_node_value->msh_node_number = -1;
-            m_node_value->msh_node_number = nodes[i];
-            m_node_value->geo_node_number = nodes[i];
-//OK_IC            m_node_value->node_value = m_ic->node_vector[0].geo_node_value / (double)number_of_nodes;  //dis_prop[0];
-            group_vector.push_back(m_node_value);
-          }
-        }
-        if(m_ic->dis_type_name.compare("POINTS")==0){
-          long node_vector_length = (long)m_ic->node_value_vector.size();
-          for(i=0;i<node_vector_length;i++) {
-            m_node_value = new CNodeValue();
-            m_node_value = m_ic->node_value_vector[i];
-//OK_IC            m_node_value->msh_node_number = m_ic->node_vector[i].msh_node_number;
-            //m_node_value->geo_node_number = m_bc->geo_node_number;
-//OK_IC            m_node_value->node_value = m_ic->node_vector[i].node_value;
-            group_vector.push_back(m_node_value);
-          }
-        }
-        //delete(values);
-        Free(nodes);
-       }
-      }
-      //------------------------------------------------------------------
-      if(m_ic->geo_type_name.compare("SURFACE")==0) {
-        Surface *m_surface = NULL;
-        m_surface = GEOGetSFCByName(m_ic->geo_name);//CC
-        if(m_surface) {
-          nodes_vector = GetMSHNodesClose(m_surface);//CC
-          //nodes = m_surface->GetPointsIn(&number_of_nodes);
-          long nodes_vector_length = (long)nodes_vector.size();
-          for(i=0;i<nodes_vector_length;i++){
-            m_node_value = new CNodeValue();
-            m_node_value->msh_node_number = -1;
-            m_node_value->msh_node_number = nodes_vector[i]; //nodes[i];
-            m_node_value->geo_node_number = nodes_vector[i]; //nodes[i];
-//OK_IC            m_node_value->node_value = m_ic->node_vector[i].geo_node_value;  //dis_prop[0];
-            group_vector.push_back(m_node_value);
-          }
-        }
-      }
-    //====================================================================
-    }
-  }
-*/
-}
 
 /**************************************************************************
 FEMLib-Method:
@@ -735,19 +650,19 @@ void CInitialCondition::SetDomain(int nidx)
       onZ = m_msh->GetCoordinateFlag()%10;
     node_depth = 0.0;
     k=0;
-    if(SubNumber==0) 
+    if(SubNumber==0)
     {
       //----------------------------------------------------------------------
-      if(dis_type_name.find("CONSTANT")!=string::npos) 
+      if(dis_type_name.find("CONSTANT")!=string::npos)
       {
         //....................................................................
-        if(m_pcs->pcs_type_name.compare("OVERLAND_FLOW")==0) 
+        if(m_pcs->pcs_type_name.compare("OVERLAND_FLOW")==0)
         {
           for(i=0;i<m_pcs->m_msh->GetNodesNumber(false);i++){ //OK MSH
             node_val = node_value_vector[0]->node_value + m_pcs->m_msh->nod_vector[i]->Z();
             m_pcs->SetNodeValue(i,nidx,node_val);
           }
-        }    
+        }
         else
         {
           //................................................................
@@ -762,7 +677,7 @@ void CInitialCondition::SetDomain(int nidx)
 	  {  // Remove unused stuff by WW
          for(i=0;i<m_msh->GetNodesNumber(true);i++) //WW
          {
-           if(onZ==1) //2D 
+           if(onZ==1) //2D
             node_depth = m_msh->nod_vector[i]->Y();
            if(onZ==2) //3D
              node_depth = m_msh->nod_vector[i]->Z();
@@ -783,7 +698,7 @@ void CInitialCondition::SetDomain(int nidx)
     double ddummy, dddummy;
     long ldummy;
     //....................................................................
-    // File handling  
+    // File handling
     if(rfr_file_name.size()==0){
       cout << "Warning in CInitialCondition::SetDomain - no RFR file" << endl;
       return;
@@ -797,12 +712,12 @@ void CInitialCondition::SetDomain(int nidx)
     //---------------------------------------------------------------------
     else //Get absolut path of the file. 07.01.2009. WW
     {
-      basic_string <char>::size_type indexChWin, indexChLinux; 
+      basic_string <char>::size_type indexChWin, indexChLinux;
       indexChWin = indexChLinux = 0;
       indexChWin = FileName.find_last_of('\\');
       indexChLinux = FileName.find_last_of('/');
       //
-      string funfname; 
+      string funfname;
       if(indexChWin==string::npos&&indexChLinux==string::npos)
          funfname = rfr_file_name;
       else if(indexChWin!=string::npos)
@@ -814,8 +729,8 @@ void CInitialCondition::SetDomain(int nidx)
       {
          funfname = FileName.substr(0,indexChLinux);
          funfname = funfname+"/"+rfr_file_name;
-      } 
-      restart_file_name = funfname; 
+      }
+      restart_file_name = funfname;
     }
     //-------------------------------------------------------------------
     rfr_file.open(restart_file_name.c_str(),ios::in);
@@ -844,7 +759,7 @@ void CInitialCondition::SetDomain(int nidx)
 //WW        cout << ldummy << endl;
       for(i=0;i<no_var;i++){ // HEAD, m ...
          rfr_file >> ddummy;
-          m_pcs->SetNodeValue(ldummy,nidx,ddummy);      
+          m_pcs->SetNodeValue(ldummy,nidx,ddummy);
       }
     }
     //....................................................................
@@ -860,13 +775,13 @@ void CInitialCondition::SetDomain(int nidx)
        /// In case of P_U coupling monolithic scheme
        if(m_pcs->type==41) //WW Mono
        {
-         if(pcs_pv_name.find("DISPLACEMENT")!=string::npos) //Deform 
-            quadratic = true; 
-         else quadratic = false;  
+         if(pcs_pv_name.find("DISPLACEMENT")!=string::npos) //Deform
+            quadratic = true;
+         else quadratic = false;
        }
-       else if(m_pcs->type==4) quadratic = true; 
-       else quadratic = false; 
-       //WW if (m_msh){   
+       else if(m_pcs->type==4) quadratic = true;
+       else quadratic = false;
+       //WW if (m_msh){
        for(k=0; k<SubNumber; k++)
        {
           GEOGetNodesInMaterialDomain(m_msh, subdom_index[k], nodes_vector, quadratic);
@@ -881,23 +796,23 @@ void CInitialCondition::SetDomain(int nidx)
              {
                for(i=0;i<(int)nodes_vector.size();i++)
 	           {
-                  if(onZ==1) //2D 
+                  if(onZ==1) //2D
                       node_depth =  m_msh->nod_vector[nodes_vector[i]]->Y();
-                  if(onZ==2) //2D 
+                  if(onZ==2) //2D
 		              node_depth =  m_msh->nod_vector[nodes_vector[i]]->Z();
 	              node_val = ((gradient_ref_depth_gradient)*(gradient_ref_depth-node_depth))+
                         gradient_ref_depth_value;
                   m_pcs->SetNodeValue(nodes_vector[i],nidx,node_val);
                }
-             }            
+             }
            }
            else if(dis_type_name.find("FUNCTION")!=string::npos) //01.07.2008 WW
            {
               for(i=0;i<(int)nodes_vector.size();i++)
               {
                  CNode *thisNode = m_msh->nod_vector[nodes_vector[i]];
-                 m_pcs->SetNodeValue(nodes_vector[i],nidx,DistributionFuntion(k, thisNode->X(),thisNode->Y(), thisNode->Z()));  
-              } 
+                 m_pcs->SetNodeValue(nodes_vector[i],nidx,DistributionFuntion(k, thisNode->X(),thisNode->Y(), thisNode->Z()));
+              }
            }
            else
            {
@@ -921,7 +836,7 @@ void CInitialCondition::SetDomain(int nidx)
              else
              for(i=0;i<(int)nodes_vector.size();i++)
 	         {
-                if(max_dim==1) //2D 
+                if(max_dim==1) //2D
                     node_depth = GetNodeY(nodes_vector[i]);
                 if(max_dim==2) //3D
 		            node_depth = GetNodeZ(nodes_vector[i]);
@@ -929,7 +844,7 @@ void CInitialCondition::SetDomain(int nidx)
                         gradient_ref_depth_value;
                 SetNodeVal(nodes_vector[i],nidx,node_val);
              }
-             
+
            }
            else
            {
@@ -1008,13 +923,13 @@ void CInitialCondition::SetDomainEle(int nidx)
           if(m_ele->GetMark()) // Marked for use
           {
             m_pcs->SetElementValue(i,nidx, ele_val);
-          } 
+          }
        }
     }
 //========================================================================
     else //MX
     {
-       if (m_msh){   
+       if (m_msh){
          for(k=0; k<SubNumber; k++)
          {
            for(i=0;i<(long)m_msh->ele_vector.size();i++)
@@ -1024,7 +939,7 @@ void CInitialCondition::SetDomainEle(int nidx)
              {
                m_pcs->SetElementValue(i, nidx, subdom_ic[k]);
                ele_val = m_pcs->GetElementValue(i, nidx);
-             } 
+             }
            }
          }
        }  //if

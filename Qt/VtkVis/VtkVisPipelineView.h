@@ -11,6 +11,9 @@
 // ** INCLUDES **
 #include <QTreeView>
 
+class QItemSelection;
+class VtkVisPipelineItem;
+
 /**
  * VtkVisPipelineView
  */
@@ -21,7 +24,8 @@ class VtkVisPipelineView : public QTreeView
 public:
 	VtkVisPipelineView(QWidget* parent = 0);
 
-
+protected slots:
+	void selectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
 
 private:
 	void contextMenuEvent(QContextMenuEvent* event);
@@ -33,6 +37,7 @@ private slots:
 signals:
 	void requestRemovePipelineItem(QModelIndex);
 	void requestAddPipelineFilterItem(QModelIndex);
+	void itemSelected(VtkVisPipelineItem*);
 
 };
 

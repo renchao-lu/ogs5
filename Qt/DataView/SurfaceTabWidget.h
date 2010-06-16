@@ -12,7 +12,7 @@
 #include "ui_SurfaceTabWidgetBase.h"
 
 /**
- * LineTabWidget
+ * SurfaceTabWidget
  */
 class SurfaceTabWidget : public QWidget, public Ui_SurfaceTabWidgetBase
 {

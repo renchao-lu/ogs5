@@ -1,6 +1,7 @@
 /**
  * \file MshModel.h
  * 19/10/2009 LB Initial implementation
+ * 12/05/2010 KR re-implementation
  *
  */
 
@@ -9,50 +10,47 @@
 #define MSHMODEL_H
 
 // ** INCLUDES **
-#include "Model.h"
+#include "TreeModel.h"
+#include "GridAdapter.h"
 
-class QItemSelection;
-
-namespace Mesh_Group
-{
-	class CFEMesh;
-}
-
+class VtkMeshSource;
 
 /**
- * The MshModel is a Qt model which represents  CFEMesh objects.
- * Item indexes hold references to ModelItem as internal pointers.
+ * The MshModel is a Qt model which represents Mesh objects.
  */
-class MshModel : public Model
+class MshModel : public TreeModel
 {
 	Q_OBJECT
 
 public:
-	MshModel(QString name, Mesh_Group::CFEMesh* mesh ,QObject* parent = 0);
-	~MshModel();
+	MshModel(QObject* parent = 0);
 
+	/// Returns the number of columns used for the data list
 	int columnCount(const QModelIndex& parent = QModelIndex()) const;
-	QVariant data(const QModelIndex& index, int role) const;
-	QVariant headerData(int section, Qt::Orientation orientation,
-		int role = Qt::DisplayRole) const;
-
-	/// Erases the corresponding entries in the internal mesh data structure.
-	/// At the moment this is fem_msh_vector. At the end Model::removeRows()
-	/// is called.
-	bool removeRows(int row, int count, const QModelIndex & parent = QModelIndex() );
-
-	bool setData(const QModelIndex& index, const QVariant& value,
-		int role = Qt::EditRole);
 
 public slots:
-	/// Reloads all items
-	void updateData();
+	/// Adds a new mesh
+	void addMesh(GridAdapter* mesh, std::string &name);
+	/// Returns the mesh with the given index.
+	const GridAdapter* getMesh(const QModelIndex &idx) const;
+	/// Returns the mesh with the given name.
+	const GridAdapter* getMesh(const std::string &name) const;
+	/// Removes the mesh with the given index.
+	bool removeMesh(const QModelIndex &idx);
+	/// Removes the mesh with the given name.
+	bool removeMesh(const std::string &name);
+	/// Returns the VTK source item for the mesh with the given index.
+	VtkMeshSource* vtkSource(const QModelIndex &idx) const;
+	/// Returns the VTK source item for the mesh with the given name.
+	VtkMeshSource* vtkSource(const std::string &name) const;
 
 private:
-	Mesh_Group::CFEMesh* _mesh;
+	/// Checks if the name of the mesh is already exists, if so it generates a unique name.
+	bool isUniqueMeshName(std::string &name);
 
 signals:
-	//void selectionChanged(const QItemSelection & selected, const QItemSelection & deselected);
+	void meshAdded(MshModel*, const QModelIndex&);
+	void meshRemoved(MshModel*, const QModelIndex&);
 
 };
 
