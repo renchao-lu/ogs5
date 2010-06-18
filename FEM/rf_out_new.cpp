@@ -1619,7 +1619,6 @@ double COutput::NODWritePLYDataTEC(int number)
   // Tests
   //......................................................................
   // GEO
-    std::cout << "Polyline Name: " << geo_name << std::endl;
   CGLPolyline* m_ply = GEOGetPLYByName(geo_name);//CC
   if(!m_ply)
   {

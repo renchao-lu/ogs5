@@ -305,9 +305,9 @@ std::string readSurface(std::istream &in,
 		if (line.find("$TIN") != std::string::npos) { // subkeyword found
 			in >> line; // read value (file name)
 			line = path + line;
-			if (type == 1) std::cerr << "reading tin file " << line << " ... " << std::flush;
+//			if (type == 1) std::cerr << "reading tin file " << line << " ... " << std::flush;
 			readTINFile(line, sfc, pnt_vec);
-			std::cout << "ok" << std::endl;
+//			std::cout << "ok" << std::endl;
 		}
 		//....................................................................
 		if (line.find("$MAT_GROUP") != std::string::npos) { // subkeyword found
@@ -354,7 +354,7 @@ std::string readSurface(std::istream &in,
 								ply_it != ply_list.end(); ply_it++) {
 								std::list<GEOLIB::Triangle> triangles;
 								MATHLIB::earClippingTriangulationOfPolygon(*ply_it, triangles);
-								std::cout << "done - " << triangles.size () << " triangles " << std::endl;
+//								std::cout << "done - " << triangles.size () << " triangles " << std::endl;
 
 								// add Triangles to Surface
 								std::list<GEOLIB::Triangle>::const_iterator it (triangles.begin());

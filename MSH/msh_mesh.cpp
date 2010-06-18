@@ -1304,8 +1304,6 @@ void CFEMesh::GetNodesOnArc(CGLPolyline*m_ply, vector<long>&msh_nod_vector) {
 		}
 	}
 
-	std::cout << "*** CFEMesh::GetNodesOnArc: msh_nod_vector.size(): " << msh_nod_vector.size() << std::endl;
-
 	m_ply->GetPointOrderByDistance();
 }
 

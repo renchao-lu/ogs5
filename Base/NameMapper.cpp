@@ -17,9 +17,10 @@ NameMapper::NameMapper(std::vector<std::string>* names) :
 		for (size_t k(0); k<n_pnts; k++) _perm.push_back (k);
 		// sort names of points
 		quicksort (*_ele_vec_names, 0, _ele_vec_names->size(), _perm);
-	} else {
-		std::cerr << "INFO: no point names" << std::endl;
-	}
+	} 
+//	else {
+//		std::cerr << "INFO: no names for geometric entities given" << std::endl;
+//	}
 }
 
 NameMapper::~NameMapper()

@@ -64,7 +64,7 @@ public:
 
 		if (type == PointVec::POINT) {
 			makePntsUnique (_pnt_vec, _pnt_id_map);
-			std::cout << "INFO: " << _pnt_vec->size() << " unique points" << std::endl;
+//			std::cout << "INFO: " << _pnt_vec->size() << " unique points" << std::endl;
 		}
 	}
 
