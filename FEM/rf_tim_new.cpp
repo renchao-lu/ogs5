@@ -392,6 +392,7 @@ bool TIMRead(string file_base_name)
   tim_file.seekg(0L,ios::beg);
   //========================================================================
   // Keyword loop
+  cout << "TIMRead" << endl;
   while (!tim_file.eof()) {
     tim_file.getline(line,MAX_ZEILE);
     line_string = line;
