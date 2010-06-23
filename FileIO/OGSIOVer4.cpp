@@ -123,7 +123,7 @@ std::string readPolyline(std::istream &in,
 {
 	std::string line;
 	Polyline *ply(new Polyline(pnt_vec));
-	size_t type;
+	size_t type=2; //need an initial value
 
 	// Schleife ueber alle Phasen bzw. Komponenten
 	do {

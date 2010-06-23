@@ -58,6 +58,7 @@ CBoundaryCondition::CBoundaryCondition() :
 	conditional = false;
 	display_mode = false; //OK
 	time_dep_interpol = false;
+    epsilon = 1e-9; //NW
 }
 
 /**************************************************************************
@@ -337,6 +338,12 @@ ios::pos_type CBoundaryCondition::Read(std::ifstream *bc_file,
 			in.clear();
 			conditional = true;
 		}
+        //....................................................................
+        if (line_string.find("$EPSILON") != string::npos) { // NW
+          in.str(GetLineFromFile1(bc_file));
+          in >> epsilon;
+          in.clear();
+        }
 		//....................................................................
 	}
 	return position;
@@ -1531,9 +1538,9 @@ void CBoundaryCondition::SurfaceIntepolation(CRFProcess* m_pcs,
 	// Interpolation of polygon values to nodes_on_sfc
 	int nPointsPly = 0;
 	double Area1, Area2;
-	double Tol = 1.0e-9;
+    //NW. Default tolerance is 1e-9 but it can be changed in a BC file. 
+	double Tol = this->epsilon;
 	bool Passed;
-	const int Size = (int) nodes_on_sfc.size();
 	double gC[3], p1[3], p2[3], pn[3], vn[3], unit[3], NTri[3];
 	//
 	CGLPolyline* m_polyline = NULL;
@@ -1544,7 +1551,7 @@ void CBoundaryCondition::SurfaceIntepolation(CRFProcess* m_pcs,
 	vector<CGLPolyline*>::iterator p =
 			m_surface->polyline_of_surface_vector.begin();
 
-	for (j = 0; j < Size; j++) {
+	for (j = 0; j < (long)nodes_on_sfc.size(); j++) {
 		pn[0] = m_pcs->m_msh->nod_vector[nodes_on_sfc[j]]->X();
 		pn[1] = m_pcs->m_msh->nod_vector[nodes_on_sfc[j]]->Y();
 		pn[2] = m_pcs->m_msh->nod_vector[nodes_on_sfc[j]]->Z();
@@ -1554,7 +1561,7 @@ void CBoundaryCondition::SurfaceIntepolation(CRFProcess* m_pcs,
 		p = m_surface->polyline_of_surface_vector.begin();
 		while (p != m_surface->polyline_of_surface_vector.end()) {
 			m_polyline = *p;
-			// Grativity center of this polygon
+			// Gravity center of this polygon
 			for (i = 0; i < 3; i++)
 				gC[i] = 0.0;
 			vn[2] = 0.0;
@@ -1569,7 +1576,7 @@ void CBoundaryCondition::SurfaceIntepolation(CRFProcess* m_pcs,
 				gC[i] /= (double) nPointsPly;
 			// BC value at center is an average of all point values of polygon
 			vn[2] /= (double) nPointsPly;
-			// Area of this polygon by the grativity center
+			// Area of this polygon by the gravity center
 			for (i = 0; i < nPointsPly; i++) {
 				p1[0] = m_polyline->point_vector[i]->x;
 				p1[1] = m_polyline->point_vector[i]->y;
@@ -1592,7 +1599,7 @@ void CBoundaryCondition::SurfaceIntepolation(CRFProcess* m_pcs,
 				unit[1] = fabs(ComputeDetTri(p1, p2, pn));
 				Area2 += unit[0] + unit[1];
 				if (fabs(Area1 - Area2) < Tol) {
-					// Intopolation whin triangle (p1,p2,gC)
+					// Interpolation within a triangle (p1,p2,gC)
 					// Shape function
 					for (l = 0; l < 2; l++)
 						unit[l] /= Area1;

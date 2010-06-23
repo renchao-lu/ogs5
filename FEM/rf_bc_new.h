@@ -96,6 +96,7 @@ public:
 	double periode_time_length, periode_phase_shift; // JOD
     double node_value_cond; //OK
     double condition; //OK
+    double epsilon; //NW. temporally set here for surfarce interpolation
     bool time_dep_interpol;
     // FCT
     std::string fct_name;
