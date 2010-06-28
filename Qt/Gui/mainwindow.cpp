@@ -202,6 +202,11 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	connect(showMshDockAction, SIGNAL(triggered(bool)), this, SLOT(showMshDockWidget(bool)));
 	menuWindows->addAction(showMshDockAction);
 
+	QAction* showVisDockAction = vtkVisDock->toggleViewAction();
+	showVisDockAction->setStatusTip(tr("Shows / hides the visualization pipeline view"));
+	connect(showVisDockAction, SIGNAL(triggered(bool)), this, SLOT(showVisDockWidget(bool)));
+	menuWindows->addAction(showVisDockAction);
+
 	// connects for point model
 	//connect(pntTabWidget->pointsTableView, SIGNAL(itemSelectionChanged(const QItemSelection&,const QItemSelection&)),
 	//	pntsModel, SLOT(setSelectionFromOutside(const QItemSelection&, const QItemSelection&)));
@@ -721,4 +726,9 @@ void MainWindow::on_actionExportObj_triggered( bool checked /*= false*/ )
 	exporter->SetRenderWindow(visualizationWidget->vtkWidget->GetRenderWindow());
 	exporter->Write();
 	exporter->Delete();
+}
+
+void MainWindow::showVisDockWidget( bool show )
+{
+	show ? vtkVisTabWidget->show() : vtkVisTabWidget->hide();
 }

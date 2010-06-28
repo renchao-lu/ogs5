@@ -36,6 +36,7 @@ protected slots:
 	void showSurfaceDockWidget( bool show );
 	void showStationDockWidget( bool show );
 	void showMshDockWidget( bool show );
+	void showVisDockWidget( bool show );
 
 private slots:
     void open();
