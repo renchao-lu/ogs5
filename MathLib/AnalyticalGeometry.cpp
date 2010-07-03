@@ -66,7 +66,7 @@ void splitPolygonAtPoint (std::list<GEOLIB::Polyline*>& ply_list, std::list<GEOL
 			delete [] perm;
 			delete [] id_vec;
 
-			if (idx0 > idx1) swap (idx0, idx1);
+			if (idx0 > idx1) BASELIB::swap (idx0, idx1);
 
 			GEOLIB::Polyline* ply0 (new GEOLIB::Polyline((*ply_it)->getPointsVec()));
 			for (size_t k(0); k<=idx0; k++) ply0->addPoint ((*ply_it)->getPointID (k));
@@ -182,7 +182,7 @@ void splitPolygonAtIntersection (std::list<GEOLIB::Polyline*>& ply_list,
 			pnt_vec.push_back (intersection_pnt);
 
 			// split Polygon
-			if (idx0 > idx1) swap (idx0, idx1);
+			if (idx0 > idx1) BASELIB::swap (idx0, idx1);
 
 			GEOLIB::Polyline* ply0 (new GEOLIB::Polyline((*ply_it)->getPointsVec()));
 			for (size_t k(0); k<=idx0; k++) ply0->addPoint ((*ply_it)->getPointID (k));
@@ -545,7 +545,7 @@ void earClippingTriangulationOfPolygon(const GEOLIB::Polyline* ply, std::list<GE
 		// CW orientation of polygon
 		orientation = CW;
 		for (size_t k(0); k<n_pnts/2; k++) {
-			swap (pnts[k], pnts[n_pnts-1-k]);
+			BASELIB::swap (pnts[k], pnts[n_pnts-1-k]);
 		}
 	}
 

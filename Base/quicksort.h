@@ -32,12 +32,12 @@ size_t partition_(T* array, size_t beg, size_t end, size_t *perm)
 
 		if (i >= j)
 			break;
-		::swap(array[i], array[j]);
-		::swap(perm[i], perm[j]);
+		BASELIB::swap(array[i], array[j]);
+		BASELIB::swap(perm[i], perm[j]);
 	}
 
-	::swap(array[beg], array[j]);
-	::swap(perm[beg], perm[j]);
+	BASELIB::swap(array[beg], array[j]);
+	BASELIB::swap(perm[beg], perm[j]);
 	return j;
 }
 
@@ -75,12 +75,12 @@ size_t partition_(std::vector<T>& array, size_t beg, size_t end, std::vector<siz
 
 		if (i >= j)
 			break;
-		::swap(array[i], array[j]);
-		::swap(perm[i], perm[j]);
+		BASELIB::swap(array[i], array[j]);
+		BASELIB::swap(perm[i], perm[j]);
 	}
 
-	::swap(array[beg], array[j]);
-	::swap(perm[beg], perm[j]);
+	BASELIB::swap(array[beg], array[j]);
+	BASELIB::swap(perm[beg], perm[j]);
 	return j;
 }
 
