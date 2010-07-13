@@ -72,7 +72,7 @@ int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector
 	vtkSmartPointer<vtkPolyData> output = vtkPolyData::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
 
 	//setStratColors("d:/BoreholeColourReference.txt");
-	if (_colorLookupTable.empty()) std::cout << "No look-up table for stratigraphy-colors specified. Generating colors on the fly..." << std::endl;
+	if (isBorehole && _colorLookupTable.empty()) std::cout << "No look-up table for stratigraphy-colors specified. Generating colors on the fly..." << std::endl;
 
 	vtkSmartPointer<vtkPoints> newStations = vtkSmartPointer<vtkPoints>::New();
 	vtkSmartPointer<vtkCellArray> newVerts = vtkSmartPointer<vtkCellArray>::New();

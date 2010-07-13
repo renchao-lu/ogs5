@@ -50,26 +50,28 @@ DiagramPrefsDialog::~DiagramPrefsDialog()
 }
 
 /// Instructions if the OK-Button has been pressed.
+/// Note: Clicking the "Load from file"-button overrides the database input!
 void DiagramPrefsDialog::accept()
 {
 	if (_listID > 0 && _stationID > 0)
 	{
-		std::vector< std::pair<QDateTime, float> > values;
-		_db->loadValues(_listID, _stationID, QDateTime::fromString(fromDateLine->text(), "dd.MM.yyyy"), QDateTime::fromString(toDateLine->text(), "dd.MM.yyyy"), values);
-		loadList(values);
-	}
+		if (_list->size() == 0)	// data will be read from the database
+		{
+			std::vector< std::pair<QDateTime, float> > values;
+			_db->loadValues(_listID, _stationID, QDateTime::fromString(fromDateLine->text(), "dd.MM.yyyy"), QDateTime::fromString(toDateLine->text(), "dd.MM.yyyy"), values);
+			if (!loadList(values))
+				OGSError::box("No data found.");
+		}
 
+		if (_list->size()>0)	// data has been read either from database or from a file
+		{
+			DetailWindow* stationView = new DetailWindow(_list);
+			stationView->show();
+		}
+	}
+	else 
+		OGSError::box("Invalid station.");
 	this->done(QDialog::Accepted);
-
-	if (_list->size()>0)
-	{
-		DetailWindow* stationView = new DetailWindow(_list);
-		stationView->show();
-	}
-	else
-		OGSError::box("No data found.");
-
-
 }
 
 /// Instructions if the Cancel-Button has been pressed.
@@ -91,7 +93,7 @@ void DiagramPrefsDialog::on_loadFileButton_clicked()
  * \param filename Name of the file containing the data
  * return 1 if everything is okay, 0 and an error message if there were errors
  */
-int DiagramPrefsDialog::loadFile(const QString &filename)
+const int DiagramPrefsDialog::loadFile(const QString &filename)
 {
 	_list->setName(stationTypeLabel->text() + ": " + stationNameLabel->text());
 	_list->setXLabel("Time");
@@ -99,17 +101,16 @@ int DiagramPrefsDialog::loadFile(const QString &filename)
 	_list->setXUnit("day");
 	//_list->setYUnit("metres");
 	_list->setColor(QColor(Qt::red));
+
 	if (_list->readList(filename))
 	{
 		fromDateLine->setText(QString::number(_list->minXValue()));
 		toDateLine->setText(QString::number(_list->maxXValue()));
 		return 1;
 	}
-	else
-	{
-		OGSError::box("Error reading file.");
-		return 0;
-	}
+
+	OGSError::box("Error reading file.");
+	return 0;
 }
 
 /**
@@ -117,13 +118,18 @@ int DiagramPrefsDialog::loadFile(const QString &filename)
  * \param coords List of coordinates.
  * return 1 if everything is okay, 0 and an error message if there were errors
  */
-void DiagramPrefsDialog::loadList(const std::vector< std::pair<QDateTime, float> > &coords)
+const int DiagramPrefsDialog::loadList(const std::vector< std::pair<QDateTime, float> > &coords)
 {
-	_list->setName(stationTypeLabel->text() + ": " + stationNameLabel->text());
-	_list->setXLabel("Time");
-	//_list->setYLabel("Water Level");
-	_list->setXUnit("day");
-	//_list->setYUnit("metres");
-	_list->setColor(QColor(Qt::red));
-	_list->setList(coords);
+	if (!coords.empty())
+	{
+		_list->setName(stationTypeLabel->text() + ": " + stationNameLabel->text());
+		_list->setXLabel("Time");
+		//_list->setYLabel("Water Level");
+		_list->setXUnit("day");
+		//_list->setYUnit("metres");
+		_list->setColor(QColor(Qt::red));
+		_list->setList(coords);
+		return 1;
+	}
+	return 0;
 }
