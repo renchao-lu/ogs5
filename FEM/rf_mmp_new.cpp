@@ -3201,7 +3201,10 @@ double CMediumProperties::Porosity(long number,double theta)
 {
   static int nidx0,nidx1;
   double primary_variable[PCS_NUMBER_MAX];
-  int gueltig; //KR , idx;
+  int gueltig;
+#ifdef GEM_REACT
+  int idx;
+#endif
   double porosity_sw;
   CFiniteElementStd* assem = m_pcs->GetAssember();
   string str;

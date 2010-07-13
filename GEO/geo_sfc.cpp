@@ -177,10 +177,10 @@ void Surface::output(FILE* geo_file, int &p_index, int &l_index,
                    CGLn0 = gli_lines_vector[j];
 				   if(CGLn0->mesh_index>=0)
 				   {
-					   if(  (CGLn->m_point1->PointDis(CGLn0->m_point1)<DistTol)
-					     && (CGLn->m_point2->PointDis(CGLn0->m_point2)<DistTol)
-					     || (CGLn->m_point1->PointDis(CGLn0->m_point2)<DistTol)
-					     && (CGLn->m_point2->PointDis(CGLn0->m_point1)<DistTol))
+					   if(  ((CGLn->m_point1->PointDis(CGLn0->m_point1)<DistTol)
+					     && (CGLn->m_point2->PointDis(CGLn0->m_point2)<DistTol))
+					     || ((CGLn->m_point1->PointDis(CGLn0->m_point2)<DistTol)
+					     && (CGLn->m_point2->PointDis(CGLn0->m_point1)<DistTol)))
 				      {
                          CGLn->mesh_index =  CGLn0->mesh_index;
 						 break;

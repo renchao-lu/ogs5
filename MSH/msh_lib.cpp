@@ -1552,7 +1552,7 @@ void MSHDefineMobile(CRFProcess*m_pcs)
     //m_pcs->m_msh->cross_section
     
     //if (m_mat_mp->unconfined_flow_group ==1 && m_pcs->m_msh->GetMaxElementDim() == 3){
-   if (m_mat_mp->unconfined_flow_group ==1 && m_pcs->m_msh->GetMaxElementDim() == 3 || m_pcs->m_msh->cross_section){
+   if ((m_mat_mp->unconfined_flow_group ==1 && m_pcs->m_msh->GetMaxElementDim() == 3) || m_pcs->m_msh->cross_section){
 
     //if (m_mat_mp->unconfined_flow_group ==1){
     //if (m_pcs->m_msh->cross_section){

@@ -128,7 +128,7 @@ void VtkVisPipelineItem::setVtkProperties(VtkAlgorithmProperties* vtkProps)
 		_mapper->ScalarVisibilityOff();
 }
 
-const int VtkVisPipelineItem::writeToFile(const std::string &filename) const
+int VtkVisPipelineItem::writeToFile(const std::string &filename) const
 {
 	if (!filename.empty())
 	{

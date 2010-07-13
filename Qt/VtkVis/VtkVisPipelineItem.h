@@ -52,7 +52,7 @@ public:
 	void setVisible(bool visible);
 
 	/// Writes this algorithm's vtkDataSet (i.e. vtkPolyData or vtkUnstructuredGrid) to a vtk-file.
-	const int writeToFile(const std::string &filename) const;
+	int writeToFile(const std::string &filename) const;
 
 private:
 	vtkAlgorithm* _algorithm;

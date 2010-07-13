@@ -119,10 +119,10 @@ public:
 	const std::string& name() const { return _name; };
 
 	/// Returns the registered name for use in VtkOGSFilter.
-	const VtkOGSFilter::OGSVisFilter filter() const { return _filter; };
+	const VtkOGSFilter::OGSVisFilter& filter() const { return _filter; };
 
 	/// Returns the object type on which the filter can be applied.
-	const VtkTargetObject target() const { return _target; };
+	const VtkTargetObject& target() const { return _target; };
 
 private:
 	std::string _name;

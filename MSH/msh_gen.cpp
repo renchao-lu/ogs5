@@ -1899,8 +1899,8 @@ void CFEMesh::CheckMarkedEdgesOnPolyLine(CGLPolyline*m_polyline, vector<long> &e
         {
           m_edg = ele_edges_vector[j];
           m_edg->GetNodes(edge_nodes);
-		  if (edge_nodes[0]->GetIndex() == (size_t)node1 &&  edge_nodes[1]->GetIndex() == (size_t)node2
-			|| edge_nodes[1]->GetIndex() == (size_t)node1 &&  edge_nodes[0]->GetIndex() == (size_t)node2)
+		  if ((edge_nodes[0]->GetIndex() == (size_t)node1 &&  edge_nodes[1]->GetIndex() == (size_t)node2)
+			|| (edge_nodes[1]->GetIndex() == (size_t)node1 &&  edge_nodes[0]->GetIndex() == (size_t)node2))
           {
             m_edg->SetMark(false);
           }

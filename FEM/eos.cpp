@@ -1554,15 +1554,18 @@ switch (fluid)
              *x2 = 2000.0;
 
              if (T<304.128) //gas or liquid
-		   if (P<(vapour_pressure_co2(T))) // gas
-		      {
-		      *x1 = 5e-4; //min_density;
-		      *x2 = vapour_saturation_density_co2(T);
-              } else // liquid
-		      {
-		      *x1 = liquid_saturation_density_co2(T);
-		      *x2 = 2000; //max_density;
-		      }
+		{
+		   	if (P<(vapour_pressure_co2(T))) // gas
+		      	{
+		      		*x1 = 5e-4; //min_density;
+		      		*x2 = vapour_saturation_density_co2(T);
+              		}
+			else // liquid
+		      	{
+		      		*x1 = liquid_saturation_density_co2(T);
+		      		*x2 = 2000; //max_density;
+		      	}
+		}
 
       break;
       case 1 :  //Water
@@ -1589,6 +1592,7 @@ switch (fluid)
 		  *x2=600; //max_density
 
 		if (T<190.564) //gas or liquid
+		{
 		   if (P<(vapour_pressure_ch4(T))) // gas
 		      {
 		      *x1 = 5e-4; //min_density;
@@ -1598,6 +1602,7 @@ switch (fluid)
 		      *x1 = liquid_saturation_density_ch4(T);
 		      *x2 = 600; //max_density;
 		      }
+		}
       break;
       case 3 :  //Nitrogen
 
@@ -1606,6 +1611,7 @@ switch (fluid)
 		*x2=2000; //max_density
 
 		if (T<126.192) //gas or liquid
+		{
 		   if (P<(vapour_pressure_n2(T))) // gas
 		      {
 		      *x1 = 5e-4; //min_density;
@@ -1615,6 +1621,7 @@ switch (fluid)
 		      *x1 = liquid_saturation_density_n2(T);
 		      *x2 = 2000; //max_density;
 		      }
+		}		
 		}
 
       break;

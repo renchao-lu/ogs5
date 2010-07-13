@@ -129,10 +129,10 @@ CGLLine *CGLLine::CheckLineOutPut()
         CGLn = gli_lines_vector[j];
         if(CGLn->marked) // Already being output
         {
-             if(    (m_point1->PointDis(CGLn->m_point1)<DistTol)
-       	        &&  (m_point2->PointDis(CGLn->m_point2)<DistTol)
-			     || (m_point1->PointDis(CGLn->m_point2)<DistTol)
-			     && (m_point2->PointDis(CGLn->m_point1)<DistTol))
+             if(    ((m_point1->PointDis(CGLn->m_point1)<DistTol)
+       	        &&  (m_point2->PointDis(CGLn->m_point2)<DistTol))
+			     || ((m_point1->PointDis(CGLn->m_point2)<DistTol)
+			     && (m_point2->PointDis(CGLn->m_point1)<DistTol)))
 				  return CGLn;
 		}
     }

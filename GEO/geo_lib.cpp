@@ -864,7 +864,7 @@ void GEO_Set_Poly_Seg_Length(double min_seg_length, double max_seg_length)
                 }
                 gl_polyline = *p;
                 j--;
-                if((pmax_x==x2 && pmax_y==y2 && pmax_z==z2) || pmax_x==x1 && pmax_y==y1 && pmax_z==z1) j++;
+                if((pmax_x==x2 && pmax_y==y2 && pmax_z==z2) || (pmax_x==x1 && pmax_y==y1 && pmax_z==z1)) j++;
             }
 
 

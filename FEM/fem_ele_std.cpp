@@ -670,7 +670,7 @@ void CFiniteElementStd::SetMaterial(int phase)
     FluidProp = mfp_vector[0];
     FluidProp->Fem_Ele_Std = this;
   }
-  if(PCSGet("RICHARDS_FLOW")&&PCSGet("HEAT_TRANSPORT")||pcs->type==1212||pcs->type==1313){	// 03.2009 PCH
+  if((PCSGet("RICHARDS_FLOW")&&PCSGet("HEAT_TRANSPORT"))||pcs->type==1212||pcs->type==1313){	// 03.2009 PCH
     FluidProp = MFPGet("LIQUID");
     FluidProp->Fem_Ele_Std = this;
     //FluidProp = mfp_vector[0];

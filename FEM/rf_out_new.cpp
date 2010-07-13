@@ -7,7 +7,8 @@ last modified:
 **************************************************************************/
 #include "makros.h"
 // C++ STL
-#include <math.h>
+#include <cmath>
+#include <limits>
 #include <list>
 #include <string>
 #include <fstream>
@@ -65,7 +66,7 @@ Programing:
 01/2004 OK Implementation
 **************************************************************************/
 COutput::COutput() :
-	GeoInfo (GEOLIB::GEODOMAIN, std::numeric_limits<size_t>::max()),
+	GeoInfo (GEOLIB::GEODOMAIN),
 	out_amplifier(0.0), m_msh(NULL), nSteps(-1)
 {
   msh_node_number = -1;

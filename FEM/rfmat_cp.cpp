@@ -583,14 +583,15 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
     double temperature_average = 293.;
     double diffusion_average=0.0;
     double *k = NULL;
-    double Dm; //KR ,porosity;
+    double Dm;
 	// static long *element_nodes;
 #ifdef GEM_REACT
     static int count_nodes;
-	 static double eta = 0.0; //, theta = 1.0;
+	static double eta = 0.0; //, theta = 1.0;
+	double porosity;
+	int i;
 #endif
 	// static int p_ind, t_ind;
-    //KR int i;
   //OK411
   diffusion_average = diffusion_average;
   pressure_average = pressure_average;

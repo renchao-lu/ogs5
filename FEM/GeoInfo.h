@@ -33,7 +33,7 @@ public:
 	 * @param geo_type the type of the geometric entity
 	 * @param geo_obj_idx the index in the vector
 	 */
-	GeoInfo(GEOLIB::GEOTYPE geo_type, size_t geo_obj_idx);
+	GeoInfo(GEOLIB::GEOTYPE geo_type, size_t geo_obj_idx = std::numeric_limits<size_t>::max());
 	/**
 	 * virtual destructor - destroys the object
 	 */

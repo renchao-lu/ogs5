@@ -48,7 +48,7 @@ class CGLPoint
     /** set the z coordinate of the point */
     void setZ (double v) { data[2] = v; }
     /** get the x,y and z coordinate of the point */
-	const double* const getPoint () const { return data; }
+	const double* getPoint () const { return data; }
 
     // do not use this attributes directly - use the getter and setter methods!!!
     double& x;
