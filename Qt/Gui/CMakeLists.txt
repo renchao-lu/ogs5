@@ -34,6 +34,7 @@ include_directories(
 	${CMAKE_BINARY_DIR}/Qt/StationView
 	${CMAKE_BINARY_DIR}/Qt/StratView
 	${CMAKE_BINARY_DIR}/Qt/VtkVis
+	${CMAKE_BINARY_DIR}/Qt/VtkAct
 	../../Base
 	../../MathLib
 	../Base
@@ -45,6 +46,7 @@ include_directories(
 	../StationView
 	../StratView
 	../VtkVis
+	../VtkAct
 	#${OpenSG_INCLUDE_DIR}
 	#${OpenSGSupportlibs_INCLUDE_DIR}
 	${Shapelib_INCLUDE_DIR}	
@@ -86,6 +88,7 @@ target_link_libraries( ogs-gui
 	${libgeotiff_LIBRARIES}
 	QVTK
 	VtkVis
+	VtkAct
 )
 
 add_dependencies ( ogs-gui VtkVis OGSProject )
@@ -139,6 +142,7 @@ IF (OGS_VRED_PLUGIN)
 		${libgeotiff_LIBRARIES}
 		QVTK
 		VtkVis
+		VtkAct
 		#boost_python-vc80-mt-1_34_1
 	)
 	

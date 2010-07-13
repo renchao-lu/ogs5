@@ -143,11 +143,9 @@ class CFiniteElementStd:public CElement
      double mat[9];
      double *eqs_rhs; //For DDC WW
      bool heat_phase_change;
-     process::CRFProcessDeformation *dm_pcs;
      ::CRFProcess *cpl_pcs; // Pointer to coupled process. WW  
      char pcsT;
      bool dynamic; 
-     CRFProcess *pcs;
      CRFProcess *mfp_pcs;
      CSolidProperties *SolidProp;
      CFluidProperties *FluidProp;
@@ -155,7 +153,9 @@ class CFiniteElementStd:public CElement
      CMediumProperties *MediaProp;
      CMediumProperties *MediaProp1; // Matrix for the dual model. YD/WW
      CSolidProperties *SolidProp1;  // Matrix for the dual model. YD/WW
-     bool flag_cpl_pcs; //OK
+	 CRFProcess *pcs;
+	 process::CRFProcessDeformation *dm_pcs;
+	 bool flag_cpl_pcs; //OK
      //-------------------------------------------------------
      // Auxillarary matrices
      Matrix *StiffMatrix;

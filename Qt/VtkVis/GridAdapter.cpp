@@ -14,14 +14,14 @@
 
 
 GridAdapter::GridAdapter(const Mesh_Group::CFEMesh* mesh) :
-	_name(""), _nodes(new std::vector<GEOLIB::Point*>), _elems(new std::vector<Element*>)
+	_name(""), _nodes(new std::vector<GEOLIB::Point*>), _elems(new std::vector<Element*>), _mesh(mesh)
 {
 	if (mesh) convertCFEMesh(mesh);
 }
 
 
 GridAdapter::GridAdapter(const std::string &filename) :
-	_name(""), _nodes(new std::vector<GEOLIB::Point*>), _elems(new std::vector<Element*>)
+	_name(""), _nodes(new std::vector<GEOLIB::Point*>), _elems(new std::vector<Element*>), _mesh(NULL)
 {
 	readMeshFromFile(filename);
 }
@@ -41,6 +41,7 @@ GridAdapter::~GridAdapter()
 
 int GridAdapter::convertCFEMesh(const Mesh_Group::CFEMesh* mesh)
 {
+	if (!mesh) return 0;
 	Element* newElem = NULL;
 	size_t nElemNodes = 0;
 
@@ -76,6 +77,56 @@ int GridAdapter::convertCFEMesh(const Mesh_Group::CFEMesh* mesh)
 	}
 
 	return 1;
+}
+
+const CFEMesh* GridAdapter::getCFEMesh() const
+{
+	if (_mesh) return _mesh;
+	return toCFEMesh();
+}
+
+const CFEMesh* GridAdapter::toCFEMesh() const	
+{
+	if (!this) return NULL;
+	CFEMesh* mesh = new CFEMesh();
+	std::cout << "Converting mesh object ... ";
+
+	// set mesh nodes
+	size_t nNodes = _nodes->size();
+	for (size_t i=0; i<nNodes; i++)
+	{
+		Mesh_Group::CNode* node = new Mesh_Group::CNode(i);
+		double coords[3] = { (*(*_nodes)[i])[0], (*(*_nodes)[i])[1], (*(*_nodes)[i])[2] };
+		node->SetCoordinates(coords);     
+		mesh->nod_vector.push_back(node);
+	}
+
+	// set mesh elements
+	size_t nElems = _elems->size();
+	for (size_t i=0; i<nElems; i++)
+	{
+		Mesh_Group::CElem* elem = new Mesh_Group::CElem();
+		elem->SetElementType((*_elems)[i]->type); 
+		elem->SetPatchIndex((*_elems)[i]->material);
+
+		size_t nElemNodes = ((*_elems)[i]->nodes).size();
+		elem->SetNodesNumber(nElemNodes);
+		elem->nodes_index.resize(nElemNodes);
+		for (size_t j=0; j<nElemNodes; j++)
+		{
+			int a = (*_elems)[i]->nodes[j];
+			//elem->nodes_index[j] = a;
+			elem->SetNodeIndex(j, a);
+		}
+
+		mesh->ele_vector.push_back(elem);
+	}
+	// nfaces?
+	// nedges?
+	mesh->ConstructGrid();
+	std::cout << "done." << std::endl;
+
+	return mesh;
 }
 
 int GridAdapter::readMeshFromFile(const std::string &filename)
@@ -114,7 +165,7 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 		{
 			it = fields.begin();
 
-			if (atoi(it->c_str()) == _nodes->size())
+			if (atoi(it->c_str()) == (int)_nodes->size())
 			{
 				GEOLIB::Point* pnt = new GEOLIB::Point();
 
@@ -150,7 +201,7 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 			if (fields.size() >= 6) {
 
 				it = fields.begin();
-				if (atoi(it->c_str()) == _elems->size())
+				if (atoi(it->c_str()) == (int)_elems->size())
 				{
 					newElem = new Element();
 

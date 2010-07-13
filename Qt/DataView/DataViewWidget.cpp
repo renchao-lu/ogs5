@@ -65,5 +65,6 @@ void DataViewWidget::changeActiveModel( int index )
 
 void DataViewWidget::emitRequestModelClear()
 {
-	emit requestModelClear(this->modelSelectComboBox->currentText().toStdString());
+	std::string modelName = this->modelSelectComboBox->currentText().toStdString();
+	emit requestModelClear(modelName);
 }

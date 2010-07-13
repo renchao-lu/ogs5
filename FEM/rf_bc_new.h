@@ -15,6 +15,7 @@ last modified
 
 // new GEOLIB
 #include "GEOObjects.h"
+#include "GeoInfo.h"
 
 // GEOLib
 #include "geo_ply.h"
@@ -25,28 +26,21 @@ last modified
 
 using namespace Mesh_Group;
 
-class CBoundaryCondition
+class CBoundaryCondition : public GeoInfo
 {
 private:
 	// GEO
 	/**
-	 * index of geometric object (GEOLIB::Point, GEOLIB::Polyline, ...)
-	 */
-	size_t _geo_obj_idx; // TF 18.05.2010
-	/**
 	 * the id of the geometric object as string REMOVE CANDIDATE
 	 */
 	std::string geo_name; // TF 05/2010
+//    std::string geo_type_name;
 
 	std::string tim_type_name; // Time function type
 	std::string fname; //27.02.2009. WW
 	int CurveIndex; // Time funtion index
 public:
-	/**
-	 * retrieves the index of the geometric object
-	 * @return the index in the vector storing the geometric entities
-	 */
-	size_t getGeoObjIdx() const; // TF 18.05.2010
+
 	/**
 	 * ToDo remove after transition to new GEOLIB - REMOVE CANDIDATE
 	 * getGeoName returns a string used as id for geometric entity
@@ -81,9 +75,7 @@ public:
     std::string pcs_type_name_cond; //OK
     std::string pcs_pv_name_cond; //OK
     int pcs_number;
-    // GEO
-    int geo_type;
-    std::string geo_type_name;
+
     // DIS
     int dis_type;
     std::string dis_type_name;
@@ -197,7 +189,6 @@ extern CBoundaryCondition* BCGet(const std::string&,const std::string&,const std
 extern CBoundaryCondition* BCGet(std::string); //OK
 
 //ToDo
-extern long IsNodeBoundaryCondition(char *name, long node);
 extern void ScalingDirichletBoundaryConditions(const double factor);
 
 #endif

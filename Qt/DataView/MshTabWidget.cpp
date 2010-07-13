@@ -7,11 +7,16 @@
  */
 
 // ** INCLUDES **
+#include "GridAdapter.h"
 #include "MshTabWidget.h"
 #include "MshModel.h"
+#include "OGSError.h"
 #include "TreeItem.h"
 
 #include <QObject>
+#include <QMenu>
+#include <QContextMenuEvent>
+#include <QFileDialog>
 
 MshTabWidget::MshTabWidget( QWidget* parent /*= 0*/ )
 : QWidget(parent)
@@ -45,6 +50,42 @@ void MshTabWidget::removeAllMeshes()
 	int nChildren = root->childCount()-1;
 	for (int i=nChildren; i>=0; i--)
 		emit requestMeshRemoval(this->treeView->model()->index(i, 0, QModelIndex()));
+}
+
+
+void MshTabWidget::contextMenuEvent( QContextMenuEvent* event )
+{
+	QMenu menu;
+	QAction* saveMeshAction    = menu.addAction("Save mesh...");
+	connect(saveMeshAction, SIGNAL(triggered()), this, SLOT(writeMeshToFile()));
+	menu.exec(event->globalPos());
+}
+
+int MshTabWidget::writeMeshToFile() const
+{
+	QModelIndex index = this->treeView->selectionModel()->currentIndex();
+	const CFEMesh* mesh = static_cast<MshModel*>(this->treeView->model())->getMesh(index)->getCFEMesh();
+    
+	if (mesh)
+	{
+		QString mshName = QString::fromStdString(static_cast<MshModel*>(this->treeView->model())->getMesh(index)->getName());
+		std::string fileName = QFileDialog::getSaveFileName(NULL, "Save mesh as", mshName, "GeoSys mesh file (*.msh)").toStdString();
+
+		if (!fileName.empty())
+		{
+			std::fstream* out = new std::fstream(fileName.c_str(), fstream::out);
+			if (out->is_open())
+			{
+				mesh->Write(out);
+				out->close();
+				return 1;
+			}
+			else 
+				std::cout << "MshTabWidget::saveMeshFile() - Could not create file..." << std::endl;
+		}
+		else OGSError::box("No file name entered.");
+	}
+	return 0;
 }
 
 /*

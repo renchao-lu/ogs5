@@ -9,7 +9,7 @@
 #include "DiagramList.h"
 
 
-DiagramList::DiagramList() : _xLabel(""), _yLabel(""), _xUnit(""), _yUnit(""), _minX(0), _maxX(0), _minY(0), _maxY(0)
+DiagramList::DiagramList() : _maxX(0), _maxY(0), _minX(0), _minY(0), _xLabel(""), _yLabel(""), _xUnit(""), _yUnit("")
 {
 }
 

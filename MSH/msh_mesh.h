@@ -89,7 +89,7 @@ public:
 #endif
 
 	ios::pos_type ReadBIN(std::ifstream*); //OK
-	void Write(fstream*);
+	void Write(fstream*) const;
 	void WriteBIN(fstream*, fstream*); //OK
 	ios::pos_type GMSReadTIN(std::ifstream*);
 	//
@@ -111,7 +111,7 @@ public:
 		return axisymmetry;
 	}
 	// Get number of nodes
-	long GetNodesNumber(const bool quadr)//CMCD int to long
+	long GetNodesNumber(const bool quadr) const//CMCD int to long
 	{
 		if (quadr)
 			return NodesNumber_Quadratic;

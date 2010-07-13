@@ -37,6 +37,8 @@ public:
 	int rowCount(const QModelIndex &parent = QModelIndex()) const;
 	int columnCount(const QModelIndex &parent = QModelIndex()) const;
 
+	TreeItem* rootItem() const;
+
 public slots:
 	void updateData();
 

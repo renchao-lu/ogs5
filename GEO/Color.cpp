@@ -6,8 +6,10 @@
  *      TF moved implementation to separate source file
  */
 
-#include "Color.h"
+#include <iostream>
+#include <sstream>
 
+#include "Color.h"
 #include "StringTools.h"
 
 namespace GEOLIB {
@@ -61,6 +63,13 @@ Color getColor(const std::string &id, std::map<std::string, Color> &colors)
 	Color* c = getRandomColor();
 	colors.insert(std::pair<std::string, Color>(id, *c));
 	return *c;
+}
+
+Color getColor(const double id, std::map<std::string, GEOLIB::Color> &colors)
+{
+	std::ostringstream stream;
+	stream << id;
+	return getColor(stream.str(), colors);
 }
 
 }

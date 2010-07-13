@@ -365,6 +365,7 @@ Programing:
 **************************************************************************/
 void GEOWriteVolumes2TecplotV1(string file_base_name)
 {
+  (void)file_base_name;
   long i;
   CGLVolume *m_volume = NULL;
   vector<CGLVolume*>::iterator p_vol = volume_vector.begin();//CC

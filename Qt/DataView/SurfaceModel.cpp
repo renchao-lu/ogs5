@@ -35,6 +35,7 @@ int SurfaceModel::columnCount( const QModelIndex& parent /*= QModelIndex()*/ ) c
 
 void SurfaceModel::setData(std::vector<GEOLIB::Surface*> *surfaces, TreeItem* parent)
 {
+	Q_UNUSED(parent)
 	int nSurfaces = surfaces->size();
 	for (int i=0; i<nSurfaces; i++)
 	{
@@ -68,6 +69,9 @@ void SurfaceModel::setData(std::vector<GEOLIB::Surface*> *surfaces, TreeItem* pa
 
 bool SurfaceModel::setData( const QModelIndex& index, const QVariant& value, int role /*= Qt::EditRole*/ )
 {
+	Q_UNUSED(index)
+	Q_UNUSED(value)
+	Q_UNUSED(role)
 	return false;
 }
 

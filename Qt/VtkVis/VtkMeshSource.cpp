@@ -6,7 +6,6 @@
 
 
 #include "VtkMeshSource.h"
-#include "ColorLookupTable.h"
 
 // ** VTK INCLUDES **
 #include <vtkCellData.h>
@@ -37,10 +36,10 @@ VtkMeshSource::VtkMeshSource() : _matName("Materials")
 	this->SetNumberOfInputPorts(0);
 
 	this->SetScalarVisibility(false);
-	GEOLIB::Color* c = GEOLIB::getRandomColor();
+	const GEOLIB::Color* c = GEOLIB::getRandomColor();
 	vtkProperty* vtkProps = GetProperties();
 	vtkProps->SetColor((*c)[0]/255.0,(*c)[1]/255.0,(*c)[2]/255.0);
-	vtkProps->SetOpacity(0.5);
+	//vtkProps->SetOpacity(0.5);
 	vtkProps->SetEdgeVisibility(1);
 }
 
@@ -78,6 +77,9 @@ int VtkMeshSource::RequestData( vtkInformation* request,
 							    vtkInformationVector** inputVector, 
 								vtkInformationVector* outputVector )
 {
+	(void)request;
+	(void)inputVector;
+
 	size_t nPoints = _nodes->size();
 	size_t nElems  = _elems->size();
 	size_t nElemNodes = 0;
@@ -100,7 +102,7 @@ int VtkMeshSource::RequestData( vtkInformation* request,
 
 	// Generate attribute vector for material groups
 	vtkSmartPointer<vtkIntArray> materialIDs = vtkSmartPointer<vtkIntArray>::New();
-	    materialIDs->SetName("Materials");
+	    materialIDs->SetName(_matName);
 		materialIDs->SetNumberOfComponents(1);
 		//materialIDs->SetNumberOfTuples(nElems);
 
@@ -152,27 +154,16 @@ void VtkMeshSource::setColorsFromMaterials()
 		matColors->SetNumberOfComponents(3);
 		matColors->SetName("MatColors");
 
-	vtkSmartPointer<vtkIntArray> materialIDs = vtkIntArray::SafeDownCast(this->GetOutput()->GetCellData()->GetArray("Materials"));
-	std::map<size_t, GEOLIB::Color*> colorLookupTable;
+	vtkSmartPointer<vtkIntArray> materialIDs = vtkIntArray::SafeDownCast(this->GetOutput()->GetCellData()->GetArray(_matName));
 
 	size_t nEntries = materialIDs->GetDataSize();
 	for (size_t i=0; i<nEntries; i++)
 	{
-		size_t id = materialIDs->GetComponent(i,0);
-		GEOLIB::Color* c = colorLookupTable[id];
-		if (c == NULL)
-		{
-			c = GEOLIB::getRandomColor();
-			colorLookupTable[id] = c;
-		}
-		unsigned char color[3] = { (*c)[0], (*c)[1], (*c)[2] };
+		GEOLIB::Color c;
+		c = GEOLIB::getColor(materialIDs->GetComponent(i,0), _colorLookupTable);
+		unsigned char color[3] = { c[0], c[1], c[2] };
 		matColors->InsertNextTupleValue(color);
 	}
-
-	for (std::map<size_t, GEOLIB::Color*>::const_iterator it = colorLookupTable.begin();
-		it != colorLookupTable.end(); ++it)
-		delete it->second;
-	colorLookupTable.clear();
 
 	this->GetOutput()->GetCellData()->AddArray(matColors);
 	this->GetOutput()->GetCellData()->SetActiveAttribute("MatColors", vtkDataSetAttributes::SCALARS);

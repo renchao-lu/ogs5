@@ -40,6 +40,7 @@ set( SOURCES
 	timer.h
 	tools.h
 	vtk.h
+	GeoInfo.h
 	Stiff_Bulirsch-Stoer.cpp
 	break.cpp
 	display.cpp
@@ -76,6 +77,7 @@ set( SOURCES
 	timer.cpp
 	tools.cpp
 	vtk.cpp
+	GeoInfo.cpp
 )
 
 ## New sparse class. WW

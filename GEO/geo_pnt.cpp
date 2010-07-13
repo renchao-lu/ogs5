@@ -459,7 +459,7 @@ void GEOCalcPointMinMaxCoordinates()
 	double value;
 	//----------------------------------------------------------------------
 	size_t size (gli_points_vector.size());
-	for(long i=0;i<size;i++)
+	for(size_t i=0;i<size;i++)
 	{
 		value = gli_points_vector[i]->x;
 		if(value<pnt_x_min) pnt_x_min = value;

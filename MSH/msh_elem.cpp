@@ -757,6 +757,16 @@ void CElem::Read(istream& is, int fileType)
         nodes_index[i] -= 1;
       }
       break;
+    case 8: // GMS_3DM
+	  is>>idummy;	 
+      for(int i=0; i<nnodes; i++)
+      {
+        is>>nodes_index[i];
+        nodes_index[i] -= 1;
+      }
+	  is>>patch_index;
+	  patch_index-=1;
+      break;
   }
   is>>ws;
   //----------------------------------------------------------------------

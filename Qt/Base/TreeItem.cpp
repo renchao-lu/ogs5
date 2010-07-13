@@ -39,7 +39,7 @@ void TreeItem::appendChild(TreeItem *item)
  * Returns the child that corresponds to the specified row number 
  * in the item's list of child items
  */
-TreeItem *TreeItem::child(int row)
+TreeItem *TreeItem::child(int row) const
 {
 	return _childItems.value(row);
 }
@@ -94,7 +94,7 @@ bool TreeItem::setData( int column, const QVariant &value )
 /**
  * Returns the parent object of the tree item.
  */
-TreeItem *TreeItem::parent()
+TreeItem *TreeItem::parent() const
 {
 	return _parentItem;
 }

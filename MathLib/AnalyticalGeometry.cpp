@@ -48,57 +48,6 @@ size_t getOrientation (const GEOLIB::Point* p0, const GEOLIB::Point* p1, const G
 	return getOrientation ((*p0)[0], (*p0)[1], (*p1)[0], (*p1)[1], (*p2)[0], (*p2)[1]);
 }
 
-void splitPolygonAtPoint (std::list<GEOLIB::Polyline*>& ply_list, std::list<GEOLIB::Polyline*>::iterator ply_it)
-{
-	size_t n ((*ply_it)->getSize()-1), idx0 (0), idx1(0);
-	size_t *id_vec (new size_t[n]), *perm (new size_t[n]);
-	for (size_t k(0); k<n; k++) {
-		id_vec[k] = (*ply_it)->getPointID (k);
-		perm[k] = k;
-	}
-
-	quicksort (id_vec, 0, n, perm);
-
-	for (size_t k(0); k<n-1; k++) {
-		if (id_vec[k] == id_vec[k+1]) {
-			idx0 = perm[k];
-			idx1 = perm[k+1];
-			delete [] perm;
-			delete [] id_vec;
-
-			if (idx0 > idx1) BASELIB::swap (idx0, idx1);
-
-			GEOLIB::Polyline* ply0 (new GEOLIB::Polyline((*ply_it)->getPointsVec()));
-			for (size_t k(0); k<=idx0; k++) ply0->addPoint ((*ply_it)->getPointID (k));
-			for (size_t k(idx1+1); k<(*ply_it)->getSize(); k++) ply0->addPoint ((*ply_it)->getPointID (k));
-
-			GEOLIB::Polyline* ply1 (new GEOLIB::Polyline((*ply_it)->getPointsVec()));
-			for (size_t k(idx0); k<=idx1; k++) ply1->addPoint ((*ply_it)->getPointID (k));
-
-//			std::cout << "original polyline: " << std::endl;
-//			for (size_t k(0); k<(*ply_it)->getSize(); k++) std::cout << (*ply_it)->getPointID(k) << std::endl;
-
-			// remove original polyline and add two new polylines
-			std::list<GEOLIB::Polyline*>::iterator ply0_it, ply1_it;
-			ply1_it = ply_list.insert (ply_list.erase (ply_it), ply1);
-			ply0_it = ply_list.insert (ply1_it, ply0);
-
-//			std::cout << "created two polylines: " << std::endl;
-//			std::cout << "polyline one: " << std::endl;
-//			for (size_t k(0); k<(*ply0_it)->getSize(); k++) std::cout << (*ply0_it)->getPointID(k) << std::endl;
-//			std::cout << "polyline two: " << std::endl;
-//			for (size_t k(0); k<(*ply1_it)->getSize(); k++) std::cout << (*ply1_it)->getPointID(k) << std::endl;
-
-			splitPolygonAtPoint (ply_list, ply0_it);
-			splitPolygonAtPoint (ply_list, ply1_it);
-
-			return;
-		}
-	}
-	delete [] perm;
-	delete [] id_vec;
-}
-
 bool lineSegmentIntersect (const GEOLIB::Point& a, const GEOLIB::Point& b,
 		const GEOLIB::Point& c, const GEOLIB::Point& d,
 		GEOLIB::Point& s)
@@ -167,63 +116,6 @@ bool lineSegmentsIntersect (const GEOLIB::Polyline* ply, size_t &idx0, size_t &i
 	}
 	return false;
 }
-
-void splitPolygonAtIntersection (std::list<GEOLIB::Polyline*>& ply_list,
-		std::list<GEOLIB::Polyline*>::iterator ply_it,
-		std::vector<GEOLIB::Point*>& pnt_vec)
-{
-	size_t idx0 (0), idx1 (0);
-	for (ply_it = ply_list.begin(); ply_it != ply_list.end(); ++ply_it) {
-		GEOLIB::Point *intersection_pnt (new GEOLIB::Point);
-		bool is_simple (!lineSegmentsIntersect (*ply_it, idx0, idx1, *intersection_pnt));
-		if (!is_simple) {
-			// adding intersection point to pnt_vec
-			size_t intersection_pnt_id (pnt_vec.size());
-			pnt_vec.push_back (intersection_pnt);
-
-			// split Polygon
-			if (idx0 > idx1) BASELIB::swap (idx0, idx1);
-
-			GEOLIB::Polyline* ply0 (new GEOLIB::Polyline((*ply_it)->getPointsVec()));
-			for (size_t k(0); k<=idx0; k++) ply0->addPoint ((*ply_it)->getPointID (k));
-			ply0->addPoint (intersection_pnt_id);
-			for (size_t k(idx1+1); k<(*ply_it)->getSize(); k++) ply0->addPoint ((*ply_it)->getPointID (k));
-
-			GEOLIB::Polyline* ply1 (new GEOLIB::Polyline((*ply_it)->getPointsVec()));
-			ply1->addPoint (intersection_pnt_id);
-			for (size_t k(idx0+1); k<=idx1; k++) ply1->addPoint ((*ply_it)->getPointID (k));
-			ply1->addPoint (intersection_pnt_id);
-
-			// remove original polyline and add two new polylines
-			std::list<GEOLIB::Polyline*>::iterator ply0_it, ply1_it;
-			ply_it = ply_list.erase (ply_it);
-			ply1_it = ply_list.insert (ply_it, ply1);
-			ply0_it = ply_list.insert (ply1_it, ply0);
-
-			splitPolygonAtIntersection (ply_list, ply0_it, pnt_vec);
-			splitPolygonAtIntersection (ply_list, ply1_it, pnt_vec);
-		} else {
-			delete intersection_pnt;
-		}
-	}
-}
-
-void getListOfSimplePolygons (std::list<GEOLIB::Polyline*>& ply_list, std::vector<GEOLIB::Point*>& pnt_vec)
-{
-	if (ply_list.empty()) {
-		std::cerr << "list of polylines is empty" << std::endl;
-		return;
-	}
-
-	if (! (*(ply_list.begin()))->isClosed()) {
-		std::cerr << "Polyline is not closed " << std::endl;
-		return;
-	}
-
-	splitPolygonAtPoint (ply_list, ply_list.begin());
-	splitPolygonAtIntersection (ply_list, ply_list.begin(), pnt_vec);
-}
-
 
 bool isPointInTriangle (const double pp[3], const double pa[3], const double pb[3], const double pc[3])
 {
@@ -595,8 +487,8 @@ void earClippingTriangulationOfPolygon(const GEOLIB::Polyline* ply, std::list<GE
 //	// swapping planes if necessary
 //	if (fabs(n0[0]) < std::numeric_limits<double>::min()) {
 //		for (size_t k(0); k < 3; k++)
-//			swap(n0[k], n1[k]);
-//		swap(d0, d1);
+//			BASELIB::swap(n0[k], n1[k]);
+//		BASELIB::swap(d0, d1);
 //	}
 //
 //	if (fabs(n0[0]) < std::numeric_limits<double>::min()) {

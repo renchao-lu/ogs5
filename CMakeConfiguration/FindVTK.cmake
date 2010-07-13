@@ -41,14 +41,19 @@ IF(NOT VTK_DIR)
   ENDIF(UNIX)
   STRING(REGEX REPLACE "/;" ";" VTK_DIR_SEARCH2 "${VTK_DIR_SEARCH1}")
 
+  # Add mac homebrew search path
+  SET (VTK_DIR_SEARCH2 ${VTK_DIR_SEARCH2} /usr/local/bin)
+
   # Construct a set of paths relative to the system search path.
   SET(VTK_DIR_SEARCH "")
   FOREACH(dir ${VTK_DIR_SEARCH2})
     SET(VTK_DIR_SEARCH ${VTK_DIR_SEARCH}
-      ${dir}/../lib64/vtk-5.4
-      ${dir}/../lib64/vtk      
+	  ${dir}/../lib64/vtk-5.6
+	  ${dir}/../lib64/vtk-5.4
+	  ${dir}/../lib64/vtk
 
-      ${dir}/../lib/vtk-5.4
+	  ${dir}/../lib/vtk-5.6
+	  ${dir}/../lib/vtk-5.4
       ${dir}/../lib/vtk-5.2
       ${dir}/../lib/vtk-5.1
       ${dir}/../lib/vtk-5.0

@@ -84,6 +84,7 @@
       <string>Export</string>
      </property>
      <addaction name="actionExportVRML2"/>
+     <addaction name="actionExportVTK"/>
      <addaction name="actionExportObj"/>
     </widget>
     <addaction name="action_Open"/>
@@ -332,6 +333,11 @@
   <action name="action_VisualisationSettings">
    <property name="text">
     <string>Visualisation Settings...</string>
+   </property>
+  </action>
+  <action name="actionExportVTK">
+   <property name="text">
+    <string>VTK</string>
    </property>
   </action>
  </widget>

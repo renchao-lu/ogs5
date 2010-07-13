@@ -153,4 +153,4 @@ template <class T> short CDT_Matrix<T>::sCopyBuff(
    return sErrCode;
 }
 
-#endif _DT_MATRIX_H_
+#endif // _DT_MATRIX_H_

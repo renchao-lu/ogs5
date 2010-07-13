@@ -1007,7 +1007,7 @@ last modified:
 **************************************************************************/
 void CRFProcess::setIC_danymic_problems()
 {
-  char *function_name[7];
+  const char *function_name[7];
   int i, j, nv;
   nv = 0;
   if(max_dim==1) // 2D
@@ -1054,7 +1054,7 @@ last modified:
 **************************************************************************/
 void CRFProcess::setST_danymic_problems()
 {
-  char *function_name[7];
+  const char *function_name[7];
   int i, nv;
   nv = 0;
   if(max_dim==1) // 2D
@@ -1104,7 +1104,7 @@ last modified:
 **************************************************************************/
 void CRFProcess::setBC_danymic_problems()
 {
-  char *function_name[7];
+  const char *function_name[7];
   int i, nv;
   nv = 0;
   if(max_dim==1) // 2D
@@ -2421,7 +2421,8 @@ void CRFProcess::ConfigMassTransport()
     return;
   }
   //----------------------------------------------------------------------
-  sprintf(pcs_primary_function_name[0], "%s", cp_vec[pcs_component_number]->compname.c_str());
+  pcs_primary_function_name[0] = cp_vec[pcs_component_number]->compname.c_str();
+  //sprintf(pcs_primary_function_name[0], "%s", cp_vec[pcs_component_number]->compname.c_str());
   pcs_primary_function_unit[0] = "kg/m3";  //SB
 /* SB: Eintrag component name in Ausgabestruktur */ //SB:todo : just one phase todo:name
 /*
@@ -2432,19 +2433,23 @@ void CRFProcess::ConfigMassTransport()
   // 1.2 secondary variables
   pcs_number_of_secondary_nvals = 2; //SB3909
   pcs_secondary_function_name[0]= new char[80];
-  sprintf(pcs_secondary_function_name[0], "%s%li","MASS_FLUX_",comp);
+  char pcs_secondary_function_name_tmp [80];
+  sprintf(pcs_secondary_function_name_tmp, "%s%li","MASS_FLUX_",comp);
+  pcs_secondary_function_name[0] = pcs_secondary_function_name_tmp;
 //      pcs_secondary_function_name[0] = "MASS_FLUX1";
   pcs_secondary_function_unit[0] = "kg/m3/s";
   pcs_secondary_function_timelevel[0] = 0;
   pcs_secondary_function_name[1]= new char[80];
-  sprintf(pcs_secondary_function_name[1], "%s%li","MASS_FLUX_",comp);
+  sprintf(pcs_secondary_function_name_tmp, "%s%li","MASS_FLUX_",comp);
+  pcs_secondary_function_name[1] = pcs_secondary_function_name_tmp;
   pcs_secondary_function_unit[1] = "kg/m3/s";
   pcs_secondary_function_timelevel[1] = 1;
 //KG44 added secondary function for adaptive time stepping
 if (adaption) {
   pcs_number_of_secondary_nvals = 3;
   pcs_secondary_function_name[2]= new char[80];
-  sprintf(pcs_secondary_function_name[2], "%s%li","CONC_BACK_",comp);
+  sprintf(pcs_secondary_function_name_tmp, "%s%li","CONC_BACK_",comp);
+  pcs_secondary_function_name[2] = pcs_secondary_function_name_tmp;
   pcs_secondary_function_unit[2] = "kg/m3";
   pcs_secondary_function_timelevel[2] = 0;
 }
@@ -5100,7 +5105,7 @@ void CRFProcess::IncorporateSourceTerms(const int rank)
             for(long i_face=0;i_face < (long)m_msh->face_vector.size();i_face++)
             {
               face = m_msh->face_vector[i_face];
-              if(m_st->element_st_vector[i_st] == face->GetOwner()->GetIndex())
+			  if((size_t)m_st->element_st_vector[i_st] == face->GetOwner()->GetIndex())
                 q_face = PointProduction(vel,m_msh->face_normal[i_face])*face->GetVolume();   //
                      //for(i_node)
             }
@@ -5793,7 +5798,7 @@ int GetRFProcessProcessing(char* rfpp_type)
   return 0;
 }
 
-int GetRFProcessProcessingAndActivation(char*)
+int GetRFProcessProcessingAndActivation(const char*)
 {
   cout << "GetRFProcessProcessingAndActivation - to be removed" << endl;
   return 0;
@@ -7227,7 +7232,7 @@ void CRFProcess::CalcSaturationRichards(int timelevel, bool update)
   double p_cap, saturation;
   double volume_sum;
   long  elemsCnode, elem_index;
-  static double Node_Cap[8];
+  // static double Node_Cap[8];
   int idxp,idxcp,idxS,idx_tS=-1;
   int number_continuum;
   double total_S;
@@ -8622,8 +8627,6 @@ void MMPCalcSecondaryVariablesNew(CRFProcess*m_pcs, bool NAPLdiss)
 		cpl_pcs = pcs_vector[m_pcs->pcs_number+1];
 	else if(m_pcs->pcs_type_number==1)
 		cpl_pcs = pcs_vector[m_pcs->pcs_number-1];
-	else
-		;
 
 	int ndx_pressure1, ndx_p_cap, ndx_pressure2, ndx_s_wetting, ndx_s_nonwetting;
   //======================================================================

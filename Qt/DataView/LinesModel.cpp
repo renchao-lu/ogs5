@@ -38,6 +38,8 @@ int PolylinesModel::columnCount( const QModelIndex& parent /*= QModelIndex()*/ )
 
 void PolylinesModel::setData(std::vector<GEOLIB::Polyline*> *lines, TreeItem* parent)
 {
+	Q_UNUSED(parent)
+
 	int nLines = static_cast<int>(lines->size());
 	for (int i=0; i<nLines; i++)
 	{
@@ -61,6 +63,9 @@ void PolylinesModel::setData(std::vector<GEOLIB::Polyline*> *lines, TreeItem* pa
 
 bool PolylinesModel::setData( const QModelIndex& index, const QVariant& value, int role /*= Qt::EditRole*/ )
 {
+	Q_UNUSED(index)
+	Q_UNUSED(value)
+	Q_UNUSED(role)
 	return false;
 }
 

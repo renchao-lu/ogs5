@@ -195,8 +195,8 @@ void Matrix::multi(const Matrix& m1, const Matrix& m2, Matrix& m_result)
 // vec_result = This*vec. vec_result must be  initialized
 void Matrix::multi(const double *vec, double *vec_result, double fac)
 {
-    for(int i=0; i<nrows; i++) {
-       for(int j=0; j<ncols; j++) {
+	for(int i=0; (size_t)i<nrows; i++) {
+	   for(int j=0; (size_t)j<ncols; j++) {
          vec_result[i] += fac*(*this)(i,j)*vec[j];
        }
     }
@@ -267,7 +267,7 @@ Programing:
 **************************************************************************/
 void Matrix::Read_BIN(std::fstream& is)
 {
-    for(int i=0; i<size; i++)
+	for(size_t i=0; i<size; i++)
       is.read((char*)(&data[i]), sizeof(data[i]));
 }
 
@@ -282,7 +282,7 @@ SymMatrix::SymMatrix(size_t dim) :
     size = (int)nrows*(nrows+1)/2;
     data = new double[size];
     nrows0 = ncols0 = dim;
-    for(int i=0; i<size; i++) data[i] = 0.0;
+	for(size_t i=0; i<size; i++) data[i] = 0.0;
 }
 
 SymMatrix::SymMatrix():Matrix(0)
@@ -304,7 +304,7 @@ SymMatrix::SymMatrix(const SymMatrix& m):Matrix(0)
    ncols0 = m.ncols0;
    size = m.size;
    data = new double[size];
-   for(int i=0; i<size; i++) data[i] = 0.0;
+   for(size_t i=0; i<size; i++) data[i] = 0.0;
 }
 
 void SymMatrix::resize(size_t dim)
@@ -319,7 +319,7 @@ void SymMatrix::resize(size_t dim)
 	size = (int) nrows * (nrows + 1) / 2;
 	data = new double[size];
 	nrows0 = ncols0 = dim;
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 		data[i] = 0.0;
 }
 

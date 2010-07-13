@@ -38,9 +38,9 @@ Task:
 Programing:
 08/2004 OK Implementation
 **************************************************************************/
-CInitialCondition::CInitialCondition(void)
+CInitialCondition::CInitialCondition()
 {
-  geo_type_name = "DOMAIN";
+//  geo_type_name = "DOMAIN";
   dis_type_name = "CONSTANT";
   // HS: not needed, removed.
   // m_node = new CNodeValue();
@@ -230,15 +230,15 @@ ios::pos_type CInitialCondition::Read(std::ifstream *ic_file,
 		//....................................................................
 		if (line_string.find("$GEO_TYPE") != string::npos) { //subkeyword found
 			in.str(GetLineFromFile1(ic_file));
+			std::string geo_type_name;
 			in >> geo_type_name;
 			if (geo_type_name.find("POINT") != string::npos) {
-				geo_type = 0;
-				geo_type_name = "POINT";
+				setGeoType (GEOLIB::POINT);
 				in >> geo_name;
 
 				// TF 06/2010 - get the point vector
 				if (!((geo_obj.getPointVecObj(unique_name))->getPointIDByName (geo_name, _geo_obj_idx))) {
-					std::cerr << "error in CInitialCondition::Read: point name not found!" << std::endl;
+					std::cerr << "ERROR: CInitialCondition::Read: point name not found!" << std::endl;
 					exit (1);
 				}
 
@@ -246,18 +246,18 @@ ios::pos_type CInitialCondition::Read(std::ifstream *ic_file,
 				geo_name = ""; // REMOVE CANDIDATE
 			}
 			if (geo_type_name.find("POLYLINE") != string::npos) {
-				geo_type = 1;
+				setGeoType (GEOLIB::POLYLINE);
 				in >> geo_name;
 			}
 			if (geo_type_name.find("SURFACE") != string::npos) {
-				geo_type = 2;
+				setGeoType (GEOLIB::SURFACE);
 				in >> geo_name;
 			}
 			if (geo_type_name.find("VOLUME") != string::npos) {
-				geo_type = 3;
+				setGeoType (GEOLIB::VOLUME);
 			}
 			if (geo_type_name.find("DOMAIN") != string::npos) {
-				geo_type = 4;
+				setGeoType (GEOLIB::GEODOMAIN);
 				//  Give initial condition by patches of domain. WW
 				if (geo_type_name.find("SUB") != string::npos) {
 					*ic_file >> SubNumber;
@@ -339,7 +339,7 @@ Programing:
 12/2008 NW GRADIENT keyword
 last modification:
 **************************************************************************/
-void CInitialCondition::Write(fstream* ic_file)
+void CInitialCondition::Write(fstream* ic_file) const
 {
   //KEYWORD
   *ic_file  << "#INITIAL_CONDITION" << endl;
@@ -354,10 +354,8 @@ void CInitialCondition::Write(fstream* ic_file)
   //--------------------------------------------------------------------
   //GEO_TYPE
   *ic_file << " $GEO_TYPE" << endl;
-  *ic_file << "  ";
-  if (geo_type == 0)
-	  geo_name = number2str (_geo_obj_idx);
-  *ic_file << geo_type_name << " " << geo_name << endl;
+  *ic_file << "  " << getGeoTypeAsString() << " " << _geo_obj_idx << std::endl;
+
   //--------------------------------------------------------------------
   //DIS_TYPE
   *ic_file << " $DIS_TYPE" << endl;
@@ -388,21 +386,21 @@ Programing:
 **************************************************************************/
 void CInitialCondition::Set(int nidx)
 {
-  switch(geo_type){
-    case 0: // PNT
+  switch(getGeoType()){
+    case GEOLIB::POINT:
       SetPoint(nidx);
-      cout << "Warning CInitialCondition::Set - ToDo" << endl;
+      std::cout << "WARNING: CInitialCondition::Set - ToDo" << endl;
       break;
-    case 1: // PLY
+    case GEOLIB::POLYLINE:
       SetPolyline(nidx);
       break;
-    case 2: // SFC
+    case GEOLIB::SURFACE:
       SetSurface(nidx);
       break;
-    case 3: // VOL
-      cout << "Warning CInitialCondition::Set - ToDo" << endl;
+    case GEOLIB::VOLUME:
+      std::cout << "WARNING: CInitialCondition::Set - ToDo" << endl;
       break;
-    case 4: // DOM
+    case GEOLIB::GEODOMAIN:
 	  SetDomain(nidx);
 	  break;
     }
@@ -489,24 +487,24 @@ Programing:
 **************************************************************************/
 void CInitialCondition::SetEle(int nidx)
 {
-  switch(geo_type){
-    case 0: // PNT
-      cout << "Warning CInitialCondition::Set - ToDo" << endl;
-      break;
-    case 1: // PLY
-      // SetPolyline(nidx);
-      cout << "Warning CInitialCondition::Set - ToDo" << endl;
-      break;
-    case 2: // SFC
-      cout << "Warning CInitialCondition::Set - ToDo" << endl;
-      break;
-    case 3: // VOL
-      cout << "Warning CInitialCondition::Set - ToDo" << endl;
-      break;
-    case 4: // DOM
-	  SetDomainEle(nidx);
-	  break;
-    }
+  switch (getGeoType()) {
+	case GEOLIB::POINT:
+		std::cout << "Warning CInitialCondition::Set - ToDo" << std::endl;
+		break;
+	case GEOLIB::POLYLINE:
+		// SetPolyline(nidx);
+		std::cout << "Warning CInitialCondition::Set - ToDo" << std::endl;
+		break;
+	case GEOLIB::SURFACE:
+		std::cout << "Warning CInitialCondition::Set - ToDo" << std::endl;
+		break;
+	case GEOLIB::VOLUME:
+		std::cout << "Warning CInitialCondition::Set - ToDo" << std::endl;
+		break;
+	case GEOLIB::GEODOMAIN:
+		SetDomainEle(nidx);
+		break;
+	}
 }
 
 /**************************************************************************
@@ -782,7 +780,7 @@ void CInitialCondition::SetDomain(int nidx)
        else if(m_pcs->type==4) quadratic = true;
        else quadratic = false;
        //WW if (m_msh){
-       for(k=0; k<SubNumber; k++)
+	   for(k=0; (size_t)k<SubNumber; k++)
        {
           GEOGetNodesInMaterialDomain(m_msh, subdom_index[k], nodes_vector, quadratic);
           if(dis_type_name.find("GRADIENT")!=string::npos)
@@ -930,7 +928,7 @@ void CInitialCondition::SetDomainEle(int nidx)
     else //MX
     {
        if (m_msh){
-         for(k=0; k<SubNumber; k++)
+		 for(k=0; (size_t)k<SubNumber; k++)
          {
            for(i=0;i<(long)m_msh->ele_vector.size();i++)
            {

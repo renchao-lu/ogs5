@@ -23,7 +23,7 @@ vector<CMSHNodesPrisGen*>msh_pris_nodes_vector; //OK
 CMSHNodesPrisGen *m_msh_nodes = NULL;
 // constructor
 CMSHNodesPrisGen::CMSHNodesPrisGen(void)
-: x(0.0), y(0.0), z(0.0), rfi_node_id(0)
+: rfi_node_id(0), x(0.0), y(0.0), z(0.0)
 {
 }
 // destructor
@@ -82,7 +82,7 @@ void Create_Quads2Tri(CFEMesh*m_msh)
                                                                           */
 /* Aufgabe: Erstellt aus einem 2D (x,y) Dreiecksgitter ein 3D
             Prismengitter, anhand der Anzahl der Prismenschichten und deren 
-			Mächtigkeit.
+			MÃ¤chtigkeit.
                                                                           */
 /* Programmaenderungen:
    10/2003     TK        Erste Version
@@ -100,7 +100,7 @@ void Create_Triangles2Prisms(long nb_prism_layers,double thickness_prism_layers,
                                                                           */
 /* Aufgabe: Erstellt aus einem 2D (x,y) Rechtecksgitter ein 3D
             Prismengitter, anhand der Anzahl der Prismenschichten und deren 
-			Mächtigkeit.
+			MÃ¤chtigkeit.
                                                                           */
 /* Programmaenderungen:
    6/2005     TK        Erste Version
@@ -194,7 +194,7 @@ void MSH_GetRFIElements (CFEMesh*m_msh)
  PRISGEN - Funktion: MSH_CreateFirstPrismlayer
                                                                           
  Aufgabe: Berechnet neue Knoten und setzt sie in KnotenVektor
-           Erstellt neue Prismen-Elemente und überschreibt Element-Vektor                                                                          
+           Erstellt neue Prismen-Elemente und Ã¼berschreibt Element-Vektor                                                                          
  Programmaenderungen:
    10/2003     TK        Erste Version
    03/2004 OK treat only triangles
@@ -238,7 +238,7 @@ for (i=0;i<msh_triangle_elements_vector_length;i++)  {
  PRISGEN - Funktion: MSH_Tri_from_Quads
                                                                           
  Aufgabe: Berechnet neue Knoten und setzt sie in KnotenVektor
-            Erstellt neue Hex-Elemente und überschreibt Element-Vektor 
+            Erstellt neue Hex-Elemente und Ã¼berschreibt Element-Vektor 
  Programmaenderungen:
    10/2003     TK        Erste Version
    03/2004 OK treat only triangles
@@ -275,7 +275,7 @@ void MSH_Tri_from_Quads ()
  PRISGEN - Funktion: MSH_CreateFirstHexlayer
                                                                           
  Aufgabe: Berechnet neue Knoten und setzt sie in KnotenVektor
-            Erstellt neue Hex-Elemente und überschreibt Element-Vektor 
+            Erstellt neue Hex-Elemente und Ã¼berschreibt Element-Vektor 
  Programmaenderungen:
    10/2003     TK        Erste Version
    03/2004 OK treat only triangles
@@ -551,10 +551,10 @@ void MSH_OverWriteMSH (string m_filepath, long numberofprismlayers)
 
     //Write STOP
    	fprintf( msh_file, "%s\n", " $LAYER");
-   	fprintf( msh_file, "%  d\n", numberofprismlayers);
+	fprintf( msh_file, "%ld\n", numberofprismlayers);
     fprintf( msh_file, "%s\n", "#STOP");
 
-	/*Datei Schließen*/ 
+	/*Datei SchlieÃŸen*/ 
 	fclose(msh_file);
     MSH_Destroy_PrismDataConstructs ();
     // -> void CPRISGEN::OnCancel() 
@@ -565,7 +565,7 @@ void MSH_OverWriteMSH (string m_filepath, long numberofprismlayers)
 /**************************************************************************
  PRISGEN - Funktion: MSH_Destroy_PrismDataConstructs
                                                                           
- Aufgabe: Zerstört/löscht die Inhalte der Vektoren
+ Aufgabe: ZerstÃ¶rt/lÃ¶scht die Inhalte der Vektoren
 
  Programmaenderungen:
    10/2003     TK        Erste Version

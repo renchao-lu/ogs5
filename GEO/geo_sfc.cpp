@@ -1081,7 +1081,7 @@ std::ios::pos_type Surface::Read(std::ifstream *gli_file)
 		} // subkeyword found
 		//....................................................................
 		if (line_string.find("$POLYLINES") != string::npos) { // subkeyword found
-			int pos1 = 0, pos2 = 0;
+			// int pos1 = 0, pos2 = 0;
 			while (ok_true) {
 				position = gli_file->tellg();
 				gli_file->getline(line, MAX_ZEILEN);

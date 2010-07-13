@@ -62,9 +62,6 @@ void DisplayStartMsg ( void )
   printf("%s", buf);
   for (i=0; i<pad_len-pad_len/2; i++) printf(" ");
   printf(" ##\n");
-  //printf("          ## %-45s ##\n", buf);
-  //printf("          ##   Version %s  Date %s##\n",\
-  //                                    OGS_VERSION, OGS_DATE);
 
   printf("          ##                                               ##\n");
   printf("          ###################################################\n");
@@ -112,7 +109,7 @@ void DisplayEndMsg ( void )
    01/2002     MK         Umleitung in MSG-Datei 
                                                                           */
 /**************************************************************************/
-void DisplayMsg ( char *s )
+void DisplayMsg ( const char *s )
 {
   FILE *f;
   f=OpenMsgFile();
@@ -139,7 +136,7 @@ void DisplayMsg ( char *s )
    01/2002     MK         Umleitung in MSG-Datei 
                                                                           */
 /**************************************************************************/
-void DisplayMsgLn ( char *s )
+void DisplayMsgLn ( const char *s )
 {
   FILE *f;
   f=OpenMsgFile();
@@ -167,7 +164,7 @@ void DisplayMsgLn ( char *s )
    01/2002     MK         Umleitung in MSG-Datei 
                                                                           */
 /**************************************************************************/
-void DisplayMsgCR ( char *s )
+void DisplayMsgCR ( const char *s )
 {
   FILE *f;
   f=OpenMsgFile();
@@ -291,7 +288,7 @@ void DisplayDoubleVector ( double *vec, long grad, char *text )
    01/2002     MK         Umleitung in MSG-Datei 
                                                                           */
 /**************************************************************************/
-void DisplayErrorMsg ( char *s )
+void DisplayErrorMsg ( const char *s )
 {
   FILE *f;
   f=OpenMsgFile();
@@ -318,7 +315,7 @@ void DisplayErrorMsg ( char *s )
    01/2002     MK         Umleitung in MSG-Datei 
                                                                           */
 /**************************************************************************/
-void DisplayTimeMsg ( char *s, double d )
+void DisplayTimeMsg ( const char *s, double d )
 {
   FILE *f;
   f=OpenMsgFile();

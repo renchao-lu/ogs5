@@ -60,7 +60,7 @@ public:
 	 * \param os a standard output stream
 	*/
 	virtual void write (std::ostream &os) const {
-		os << x[0] << ", " << x[1] << ", " << x[2] << std::flush;
+		os << x[0] << " " << x[1] << " " << x[2] << std::flush;
 	}
 
 	/**

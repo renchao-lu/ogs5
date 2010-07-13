@@ -1,4 +1,4 @@
-	/**
+/**
  * \file XMLInterface.cpp
  * 18/02/2010 KR Initial implementation
  */
@@ -6,16 +6,17 @@
 #include "XMLInterface.h"
 
 #include <iostream>
-#include <fstream>
-#include <QFile>
 #include <QFileInfo>
+
+#include <QFile>
 #include <QTextCodec>
-#include <QXmlStreamAttributes>
+#include <QCryptographicHash>
+#include <QtXml/QDomDocument>
 #if OGS_QT_VERSION > 45
-#include <QtXmlPatterns/QXmlSchemaValidator>
+	#include <QtXmlPatterns/QXmlSchemaValidator>
 #endif // QT_VERSION > 45
 
-
+#include <QTime>
 
 XMLInterface::XMLInterface(GEOLIB::GEOObjects* geoObjects, std::string schemaFile) : _geoObjects(geoObjects)
 {
@@ -28,6 +29,8 @@ XMLInterface::XMLInterface(GEOLIB::GEOObjects* geoObjects, std::string schemaFil
 
 int XMLInterface::isValid(const QString &fileName) const
 {
+
+
 #if OGS_QT_VERSION > 45
     if ( _schema.isValid() )
 	{
@@ -36,7 +39,7 @@ int XMLInterface::isValid(const QString &fileName) const
 			return 1;
 		else
 		{
-			std::cout << "XMLInterface::isValid() - XML File is invalid (in reference to the set schema)." << std::endl;
+			std::cout << "XMLInterface::isValid() - XML File is invalid (in reference to the given schema)." << std::endl;
 			return 0;
         }
     } else {
@@ -45,6 +48,7 @@ int XMLInterface::isValid(const QString &fileName) const
     }
 #else
     Q_UNUSED (fileName);
+	std::cout << "XMLInterface: XML schema validation skipped. Qt 4.6 is required for validation." << std::endl;
 	return 1;
 #endif // QT_VERSION > 45
 }
@@ -53,7 +57,7 @@ int XMLInterface::isValid(const QString &fileName) const
 int XMLInterface::setSchema(const std::string &schemaFile)
 {
 	_schema.load( QUrl(QString::fromStdString(schemaFile)) );
-	if ( _schema.isValid() )
+	if ( _schema.isValid() ) 
 		return 1;
 	else
 	{
@@ -65,200 +69,113 @@ int XMLInterface::setSchema(const std::string &schemaFile)
 
 int XMLInterface::readGLIFile(const QString &fileName)
 {
-	/*
-	if (_schema )
-	{
-		std::cout << "XMLInterface::readGLIFile() - No schema set." << std::endl;
-		return 0;
-	}
-	*/
-	QFile* file = new QFile(fileName);
 	QString gliName = "";
 
+	QFile* file = new QFile(fileName);
 	if (!file->open(QIODevice::ReadOnly | QIODevice::Text))
 	{
 		std::cout << "XMLInterface::readGLIFile() - Can't open xml-file." << std::endl;
 		delete file;
 		return 0;
 	}
+	if (!checkHash(fileName)) { delete file; return 0; }
 
-	if (!this->isValid(fileName)) { delete file; return 0; }
-
-	QXmlStreamReader xml(file);
 	std::vector<GEOLIB::Point*>    *points    = new std::vector<GEOLIB::Point*>;
 	std::vector<GEOLIB::Polyline*> *polylines = new std::vector<GEOLIB::Polyline*>;
 	std::vector<GEOLIB::Surface*>  *surfaces  = new std::vector<GEOLIB::Surface*>;
 
-	while(!xml.atEnd() && !xml.hasError())
-	{
-		// read next element
-		QXmlStreamReader::TokenType token = xml.readNext();
+	QDomDocument doc("OGS-GLI-DOM");
+	doc.setContent(file); 
+	QDomElement docElement = doc.documentElement(); //OpenGeoSysGLI
+	QDomNodeList geoTypes = docElement.childNodes();
 
-		if (token == QXmlStreamReader::StartDocument) continue;
-
-		if (token == QXmlStreamReader::StartElement)
-		{
-			if (xml.name() == "name")
-			{
-				xml.readNext();
-				gliName = xml.text().toString();
-			}
-			if (xml.name() == "points")
-				this->readPoints(xml, points);
-			if (xml.name() == "polylines")
-				this->readPolylines(xml, polylines, points);
-			if (xml.name() == "surfaces")
-				this->readSurfaces(xml, surfaces, polylines);
-		}
+	for(int i=0; i<geoTypes.count(); i++)
+    {
+		if (geoTypes.at(i).nodeName().compare("name") == 0)				gliName = geoTypes.at(i).toElement().text();
+		else if (geoTypes.at(i).nodeName().compare("points") == 0)		readPoints(geoTypes.at(i), points);
+		else if (geoTypes.at(i).nodeName().compare("polylines") == 0)	readPolylines(geoTypes.at(i), polylines, points);
+		else if (geoTypes.at(i).nodeName().compare("surfaces") == 0)	readSurfaces(geoTypes.at(i), surfaces, points);
+		else std::cout << "Unknown XML-Node found in file." << std::endl;
 	}
-
-	// if there are any open xml errors display them
-	if(xml.hasError())
-	{
-		std::cout << "XMLInterface::readGLIFile() - Error: " << xml.errorString().toStdString() << std::endl;
-		xml.clear();
-		delete file;
-		return 0;
-	}
-
-	// if no name was given in the xml-file simply use the file name
-	if (gliName.isEmpty())
-	{
-		QFileInfo fi(fileName);
-		gliName = fi.baseName();
-	}
+	delete file;
 
 	std::string gliFinalName = gliName.toStdString();
 	_geoObjects->addPointVec(points, gliFinalName);
 	_geoObjects->addPolylineVec(polylines, gliFinalName);
 	_geoObjects->addSurfaceVec(surfaces, gliFinalName);
-
-	xml.clear();
-	delete file;
 	return 1;
 }
 
-void XMLInterface::readPoints( QXmlStreamReader &xml, std::vector<GEOLIB::Point*> *points )
+void XMLInterface::readPoints( const QDomNode &pointsRoot, std::vector<GEOLIB::Point*> *points )
 {
 	char* pEnd;
-	QXmlStreamAttributes att;
-	// check if the current element is indeed the beginning of the points list
-	if(xml.tokenType() != QXmlStreamReader::StartElement && xml.name() == "points") return;
-
-	xml.readNext();
-	// as long as the list of points does not end
-	while(!(xml.tokenType() == QXmlStreamReader::EndElement && xml.name() == "points")) {
-
-		if(xml.tokenType() == QXmlStreamReader::StartElement && xml.name() == "point")
+	QDomElement point = pointsRoot.firstChildElement();
+	while (!point.isNull()) 
+	{
+		if (point.hasAttribute("id") && point.hasAttribute("x") && point.hasAttribute("y"))
 		{
-			att = xml.attributes();
-			if (att.hasAttribute("id") && att.hasAttribute("x") && att.hasAttribute("y") && att.hasAttribute("z"))
-			{
-				_idx_map.insert (std::pair<size_t,size_t>(strtol((att.value("id")).toString().toStdString().c_str(), &pEnd, 10), points->size()));
-				GEOLIB::Point* p = new GEOLIB::Point(strtod((att.value("x")).toString().toStdString().c_str(), 0),
-													 strtod((att.value("y")).toString().toStdString().c_str(), 0),
-													 strtod((att.value("z")).toString().toStdString().c_str(), 0));
-				points->push_back(p);
-			}
-			else std::cout << "XMLInterface::readPoints() - Attribute missing in point tag ..." << std::endl;
-		}
-		xml.readNext();
+			_idx_map.insert (std::pair<size_t,size_t>(strtol((point.attribute("id")).toStdString().c_str(), &pEnd, 10), points->size()));
+			double zVal = (point.hasAttribute("z")) ? strtod((point.attribute("z")).toStdString().c_str(), 0) : 0.0;
+			GEOLIB::Point* p = new GEOLIB::Point(strtod((point.attribute("x")).toStdString().c_str(), 0),
+												 strtod((point.attribute("y")).toStdString().c_str(), 0),
+												 zVal);
+			points->push_back(p);
+		} 
+		else std::cout << "XMLInterface::readPoints() - Attribute missing in <point> tag ..." << std::endl;
+		point = point.nextSiblingElement();
 	}
 }
 
-void XMLInterface::readPolylines( QXmlStreamReader &xml, std::vector<GEOLIB::Polyline*> *polylines, std::vector<GEOLIB::Point*> *points )
+void XMLInterface::readPolylines( const QDomNode &polylinesRoot, std::vector<GEOLIB::Polyline*> *polylines, std::vector<GEOLIB::Point*> *points )
 {
 	size_t idx=0;
-	QString value = NULL;
-	char* pEnd;
-	std::map<size_t, size_t> ply_idx;
-	QXmlStreamAttributes att;
-
-	if(xml.tokenType() != QXmlStreamReader::StartElement && xml.name() == "polylines") return;
-
-	// while within "polylines" section
-	while(!(xml.tokenType() == QXmlStreamReader::EndElement && xml.name() == "polylines"))
+	QDomElement polyline = polylinesRoot.firstChildElement();
+	while (!polyline.isNull())
 	{
-		xml.readNext();
-
-		// definition of a new polyline begins
-		if(xml.tokenType() == QXmlStreamReader::StartElement && xml.name() == "polyline")
+		if (polyline.hasAttribute("id"))
 		{
-			att = xml.attributes();
-			if (att.hasAttribute("id"))
+			idx = polylines->size();
+			polylines->push_back(new GEOLIB::Polyline(*points));
+
+			QDomElement point = polyline.firstChildElement();
+			while (!point.isNull())
 			{
-				idx = polylines->size();
-				ply_idx.insert (std::pair<size_t,size_t>(strtol((att.value("id")).toString().toStdString().c_str(), &pEnd, 10), idx));
-				polylines->push_back(new GEOLIB::Polyline(*points));
-
-				// add points to polyline (as long as polyline does not end)
-				while(!(xml.tokenType() == QXmlStreamReader::EndElement && xml.name() == "polyline"))
-				{
-					xml.readNext();
-					value = readElement(xml, "pnt");
-					if (!value.isNull())
-						(*polylines)[idx]->addPoint(_idx_map[strtol((value.toStdString()).c_str(), &pEnd, 10)]);
-				}
+				(*polylines)[idx]->addPoint(_idx_map[atoi(point.text().toStdString().c_str())]);
+				point = point.nextSiblingElement();
 			}
-			else std::cout << "XMLInterface::readPolylines() - Attribute missing in polyline tag ..." << std::endl;
-		}
+		} 
+		else std::cout << "XMLInterface::readPolylines() - Attribute missing in <polyline> tag ..." << std::endl;
+		polyline = polyline.nextSiblingElement();
 	}
-	_idx_map = ply_idx; // point index mapping is not needed anymore but polyline index mapping will be needed for creating surfaces
 }
 
-void XMLInterface::readSurfaces( QXmlStreamReader &xml, std::vector<GEOLIB::Surface*> *surfaces, std::vector<GEOLIB::Polyline*> *polylines )
+void XMLInterface::readSurfaces( const QDomNode &surfacesRoot, std::vector<GEOLIB::Surface*> *surfaces, std::vector<GEOLIB::Point*> *points )
 {
-	QString value = NULL;
-	QXmlStreamAttributes att;
-
-	if(xml.tokenType() != QXmlStreamReader::StartElement && xml.name() == "surfaces") return;
-
-	// while within "surfaces" section
-	while(!(xml.tokenType() == QXmlStreamReader::EndElement && xml.name() == "surfaces"))
+	QDomElement surface = surfacesRoot.firstChildElement();
+	while (!surface.isNull())
 	{
-		xml.readNext();
-		// definition of a new surface begins
-		if(xml.tokenType() == QXmlStreamReader::StartElement && xml.name() == "surface")
+		if (surface.hasAttribute("id"))
 		{
-			att = xml.attributes();
-			if (att.hasAttribute("id")  &&  att.hasAttribute("matgroup") && att.hasAttribute("epsilon"))
+			surfaces->push_back(new GEOLIB::Surface(*points));
+
+			QDomElement element = surface.firstChildElement();
+			while (!element.isNull())
 			{
-				surfaces->push_back(new GEOLIB::Surface((*polylines)[0]->getPointsVec()));
-
-				// add polylines to surface (as long as surface is not at an end)
-				while(!(xml.tokenType() == QXmlStreamReader::EndElement && xml.name() == "surface"))
+				if (element.hasAttribute("p1") && element.hasAttribute("p2") && element.hasAttribute("p3"))
 				{
-					xml.readNext();
-					value = readElement(xml, "ply");
-					if (!value.isNull())
-						std::cout << "ToDo: (*surfaces)[idx]->addPolyline(_idx_map[strtol((value.toStdString()).c_str(), &pEnd, 10)]);" << std::endl;
+					size_t p1 = _idx_map[atoi((element.attribute("p1")).toStdString().c_str())];
+					size_t p2 = _idx_map[atoi((element.attribute("p2")).toStdString().c_str())];
+					size_t p3 = _idx_map[atoi((element.attribute("p3")).toStdString().c_str())];
+					surfaces->back()->addTriangle(p1,p2,p3);
 				}
+				else std::cout << "XMLInterface::readSurfaces() - Attribute missing in <element> tag ..." << std::endl;
+				element = element.nextSiblingElement();
 			}
-			else std::cout << "XMLInterface::readSurfaces() - Attribute missing in surface tag ..." << std::endl;
 		}
+		else std::cout << "XMLInterface::readSurfaces() - Attribute missing in <surface> tag ..." << std::endl;
+		surface = surface.nextSiblingElement();
 	}
 }
-
-QString XMLInterface::readElement(QXmlStreamReader &xml, const QString &name) const
-{
-	QString value = NULL;
-	// until the next EndElement
-	while(xml.tokenType() != QXmlStreamReader::EndElement)
-	{
-		xml.readNext();
-
-		// check if the next StartElement has the right name (if not exit)
-		if (xml.tokenType() == QXmlStreamReader::StartElement && xml.name() == name)
-		{
-			xml.readNext();
-			// has the element a value?
-			if(xml.tokenType() != QXmlStreamReader::Characters) return NULL;;
-			value = xml.text().toString();
-		}
-	}
-	return value;
-}
-
 
 void XMLInterface::writeGLIFile(QFile &file, const QString &gliName)
 {
@@ -267,6 +184,8 @@ void XMLInterface::writeGLIFile(QFile &file, const QString &gliName)
 	QXmlStreamWriter xml(&file);
 	xml.setAutoFormatting(true);
 	xml.setCodec(QTextCodec::codecForName("ISO-8859-1"));
+
+	xml.writeCharacters("<!-- hash code -->\n");
 
 	xml.writeStartDocument();
 
@@ -323,15 +242,17 @@ void XMLInterface::writeGLIFile(QFile &file, const QString &gliName)
 	{
 		xml.writeStartElement("surface");
 		xml.writeAttribute("id", QString::number(i));
-		//xml.writeAttribute("matgroup", QString::number(-1));
-		//xml.writeAttribute("epsilon", QString::number(0.01));
 
-		// ToDo
-//		nPolylines = (*surfaces)[i]->getNTriangles ();
-//		for (size_t j=0; j<nPolylines; j++)
-//		{
-//			xml.writeTextElement("ply", QString::number((*surfaces)[i]->getPolylineID(j)));
-//		}
+		// writing the elements compromising the surface
+		size_t nElements = (*surfaces)[i]->getNTriangles();
+		for (size_t j=0; j<nElements; j++)
+		{
+			xml.writeStartElement("element"); //triangle-element
+			xml.writeAttribute("p1", QString::number((*(*(*surfaces)[i])[j])[0]));
+			xml.writeAttribute("p2", QString::number((*(*(*surfaces)[i])[j])[1]));
+			xml.writeAttribute("p3", QString::number((*(*(*surfaces)[i])[j])[2]));
+			xml.writeEndElement(); //triangle-element
+		}
 		xml.writeEndElement(); //surface
 	}
 	xml.writeEndElement(); //surfaces
@@ -358,4 +279,55 @@ int XMLInterface::insertStyleFileDefinition(const QString &fileName)
 	stream.write(styleDef.c_str(), 60*sizeof(char));	// write new line with xml-stylesheet definition
 	stream.close();
 	return 1;
+}
+
+bool XMLInterface::checkHash(const QString &fileName) const
+{
+	QFileInfo fi(fileName);
+	QString md5FileName(fileName.left(fileName.length()-3) + "md5");
+	std::string md5HashStr;
+
+	std::ifstream md5( md5FileName.toStdString().c_str() );
+	if (md5.is_open())
+	{
+		getline(md5, md5HashStr);
+		QByteArray md5Hash(md5HashStr.c_str());
+		if (fileIsValid(fileName, md5Hash)) return true;
+	}
+
+	if (!this->isValid(fileName)) return false;
+
+	std::cout << "File is valid, writing hashfile..." << std::endl;
+	QByteArray hash = calcHash(fileName);
+	std::ofstream out( md5FileName.toStdString().c_str(), std::ios::out );
+	out << hash.data();
+	out.close();
+	return true;
+}
+
+QByteArray XMLInterface::calcHash(const QString &fileName) const
+{
+	int length;
+	char * buffer;
+	std::ifstream is;
+	is.open (fileName.toStdString().c_str(), std::ios::binary );
+	is.seekg (0, std::ios::end);
+	length = is.tellg();
+	is.seekg (0, std::ios::beg);
+	buffer = new char [length];
+	is.read (buffer,length);
+	is.close();
+	return QCryptographicHash::hash(buffer, QCryptographicHash::Md5);
+}
+
+bool XMLInterface::fileIsValid(const QString &fileName, const QByteArray &hash) const
+{
+	int hashLength = hash.length();
+	QByteArray fileHash = calcHash(fileName);
+	if (fileHash.length() != hashLength) return false;
+	for (int i=0; i<hashLength; i++)
+	{
+		if (fileHash[i] != hash[i]) return false;
+	}
+	return true;
 }

@@ -24,6 +24,9 @@ class MshTabWidget : public QWidget, public Ui_MshTabWidgetBase
 public:
 	MshTabWidget(QWidget* parent = 0);
 
+private:
+	void contextMenuEvent( QContextMenuEvent* event );
+	
 private slots:
 	// Remove the currently selected mesh.
 	void removeMesh();
@@ -31,11 +34,14 @@ private slots:
 	// Remove all currently loaded meshes.
 	void removeAllMeshes();
 
-//private slots:
+	// Calls the FileDialog to save a mesh to a file.
+	int writeMeshToFile() const;
+
 //	void changeMshSubmodelViews(QItemSelection selected, QItemSelection deselected);
 
 signals:
 	void requestMeshRemoval(const QModelIndex&);
+	void saveMeshAction();
 
 };
 

@@ -61,6 +61,7 @@ namespace FileIO {
 /** method reads geometric objects from file in gli format */
 void readGLIFileV4 (const std::string& fname, GEOLIB::GEOObjects* geo);
 
+void writeGLIFileV4 (const std::string& fname, const std::string& proj_name, const GEOLIB::GEOObjects& geo);
 } // end namespace
 
 #endif /* OGSIOVER4_H_ */

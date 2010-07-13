@@ -91,7 +91,7 @@ void StationTreeView::contextMenuEvent( QContextMenuEvent* event )
 		}
 		else 
 		{
-			QAction* showInfoAction    = menu.addAction("View Information...");
+			menu.addAction("View Information...");
 			QAction* showDiagramAction = menu.addAction("View Diagram...");
 			connect(showDiagramAction, SIGNAL(triggered()), this, SLOT(showDiagramPrefsDialog()));
 			menu.exec(event->globalPos());
@@ -102,8 +102,13 @@ void StationTreeView::contextMenuEvent( QContextMenuEvent* event )
 void StationTreeView::displayStratigraphy()
 {
 	QModelIndex index = this->selectionModel()->currentIndex();
+
 	QString temp_name;
-	StratWindow* stratView = new StratWindow(static_cast<GEOLIB::StationBorehole*>(static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)));
+	// get list name
+	static_cast<StationTreeModel*>(model())->stationFromIndex(this->selectionModel()->currentIndex(), temp_name); 
+	// get color table (horrible way to do it but there you go ...)
+	std::map<std::string, GEOLIB::Color> colorLookupTable = static_cast<VtkStationSource*>(static_cast<StationTreeModel*>(model())->vtkSource(temp_name.toStdString()))->getColorLookupTable();
+	StratWindow* stratView = new StratWindow(static_cast<GEOLIB::StationBorehole*>(static_cast<StationTreeModel*>(model())->stationFromIndex(index, temp_name)), &colorLookupTable);
 	stratView->show();
 }
 

@@ -109,8 +109,7 @@ double CFluidMomentum::Execute()
 		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
-			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;	
+			m_msh = FEMGet("GROUNDWATER_FLOW");	
 
 		if(m_pcs->pcs_type_name.find("FLUID_MOMENTUM")!=string::npos)
 			SolveDarcyVelocityOnNode();
@@ -387,8 +386,7 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
-			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;	
+			m_msh = FEMGet("GROUNDWATER_FLOW");	
 	}
 	m_pcs = PCSGet("FLUID_MOMENTUM");
 	// Something must be done later on here.
@@ -835,6 +833,7 @@ void CFluidMomentum::SolveForEdgeVelocity(void)
 
 void FMRead(string file_base_name)
 {
+	(void)file_base_name;
     // Fluid_Momentum memory allocation is moved here. by PCH
   CRFProcess* m_pcs = PCSGet("FLUID_MOMENTUM");
 //WW  if(!m_pcs)

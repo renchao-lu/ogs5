@@ -22,11 +22,11 @@ extern void DisplayStartMsg ( void );
   /* Gibt Eroeffnungsbildschirm aus */
 extern void DisplayEndMsg ( void );
   /* Gibt Programm-Abspann aus */
-extern void DisplayMsg ( char *s );
+extern void DisplayMsg ( const char *s );
   /* Schreibt Zeichenkette ohne Zeilenvorschub auf Standardausgabe */
-extern void DisplayMsgLn ( char *s );
+extern void DisplayMsgLn ( const char *s );
   /* Schreibt Zeichenkette mit Zeilenvorschub auf Standardausgabe */
-extern void DisplayMsgCR ( char *s );
+extern void DisplayMsgCR ( const char *s );
   /* Schreibt Zeichenkette mit Zeilenruecklauf auf Standardausgabe */
 extern void DisplayDouble ( double x, int i, int j );
   /* Schreibt Double-Wert ohne Zeilenvorschub auf Standardausgabe */
@@ -36,9 +36,9 @@ extern void DisplayDoubleVector ( double *vec, long grad, char *text );
   /* Schreibt Vektor auf Standardausgabe */
 //OK411 extern void DisplayDoubleMatrix ( double *mat, long m, long n, char *text );
   /* Schreibt Matrix auf Standardausgabe */
-extern void DisplayErrorMsg ( char *s );
+extern void DisplayErrorMsg ( const char *s );
   /* Schreibt Fehlermeldung auf Standardausgabe */
-extern void DisplayTimeMsg ( char *s, double d );
+extern void DisplayTimeMsg ( const char *s, double d );
   /* Schreibt Laufzeitmeldung auf Standardausgabe */
 
 #endif

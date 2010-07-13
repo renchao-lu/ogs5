@@ -96,11 +96,11 @@ ios::pos_type GetNextSubKeyword(ifstream* file,string* line, bool* keyword)
       *keyword = true;
       return position;
     }
-	i = (int) line_complete.find_first_not_of(" ",0); //Anf�ngliche Leerzeichen �berlesen, i=Position des ersten Nichtleerzeichens im string
+	i = (int) line_complete.find_first_not_of(" ",0); //Anf?ngliche Leerzeichen ?berlesen, i=Position des ersten Nichtleerzeichens im string
 	j = (int) line_complete.find(";",i);			 //Nach Kommentarzeichen ; suchen. j = Position des Kommentarzeichens, j=-1 wenn es keines gibt.
     if(j<0)
       j = (int)line_complete.length();
-	//if(j!=i) break;						 //Wenn das erste nicht-leerzeichen ein Kommentarzeichen ist, zeile �berlesen. Sonst ist das eine Datenzeile
+	//if(j!=i) break;						 //Wenn das erste nicht-leerzeichen ein Kommentarzeichen ist, zeile ?berlesen. Sonst ist das eine Datenzeile
 	if(i!=-1)
       *line = line_complete.substr(i,j-i);          //Ab erstem nicht-Leerzeichen bis Kommentarzeichen rauskopieren in neuen substring, falls Zeile nicht leer ist
   }
@@ -965,6 +965,7 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 	if (imflag==0) {time_step_length = time_step_length * time_adapt_coe_vector[time_adapt_tim_vector.size()-1];}
         else if (imflag==2){ time_step_length = time_step_length * time_adapt_coe_vector[0];}
 
+	// BUG my_max_time_step is not necessarily initialised
 	time_step_length = MMin ( time_step_length,my_max_time_step );
 	time_step_length = MMax ( time_step_length,min_time_step );
 

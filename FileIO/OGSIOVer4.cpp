@@ -7,17 +7,23 @@
 
 #include <sstream>
 #include <iomanip>
+
 // FileIO
 #include "OGSIOVer4.h"
+
 // Base
 #include "StringTools.h"
 #include "quicksort.h"
+
 // GEO
 #include "GEOObjects.h"
 #include "Point.h"
 #include "Polyline.h"
+#include "Polygon.h"
+#include "SimplePolygonHierarchy.h"
 #include "Triangle.h"
 #include "Surface.h"
+
 // for tests only
 #include "PointVec.h"
 
@@ -216,6 +222,7 @@ std::string readPolylines(std::istream &in, std::vector<Polyline*>* ply_vec,
 		tag = readPolyline(in, ply_vec, ply_vec_names, pnt_vec,
 				zero_based_indexing, pnt_id_map, path);
 	}
+
 	return tag;
 }
 
@@ -260,16 +267,18 @@ void readTINFile(const std::string &fname, Surface* sfc,
  **************************************************************************/
 /** read a single Surface */
 std::string readSurface(std::istream &in,
+		std::vector<Polygon*> &polygon_vec,
 		std::vector<Surface*> &sfc_vec, std::vector<std::string>& sfc_names,
 		const std::vector<Polyline*> &ply_vec, const std::vector<std::string>& ply_vec_names,
 		std::vector<Point*> &pnt_vec,
 		const std::string &path)
 {
 	std::string line;
-	Surface *sfc(new Surface(pnt_vec));
+	Surface *sfc(NULL);
 
 	int type (-1);
 	std::string name;
+	size_t ply_id (0); // std::numeric_limits<size_t>::max());
 
 	do {
 		in >> line;
@@ -286,16 +295,6 @@ std::string readSurface(std::istream &in,
 		if (line.find("$TYPE") != std::string::npos) { // subkeyword found
 			in >> line; // read value
 			type = strtol(line.c_str(), NULL, 0);
-//			if (type == 3)
-//				std::cerr
-//						<< "surface type 3: flat surface with any normal direction - - reading not implemented"
-//						<< std::endl;
-//			if (type == 100)
-//				std::cerr << "cylindrical surface - reading not implemented"
-//						<< std::endl;
-//			if (type == 2)
-//				std::cerr << "vertical surface - reading not implemented"
-//						<< std::endl;
 		}
 		//....................................................................
 		if (line.find("$EPSILON") != std::string::npos) { // subkeyword found
@@ -306,6 +305,7 @@ std::string readSurface(std::istream &in,
 			in >> line; // read value (file name)
 			line = path + line;
 //			if (type == 1) std::cerr << "reading tin file " << line << " ... " << std::flush;
+			sfc = new Surface(pnt_vec);
 			readTINFile(line, sfc, pnt_vec);
 //			std::cout << "ok" << std::endl;
 		}
@@ -316,15 +316,11 @@ std::string readSurface(std::istream &in,
 		//....................................................................
 		if (line.find("$POLYLINES") != std::string::npos) { // subkeyword found
 			// read the polylines (as std::string)
-
-//			std::cout << "read polyline for surface of type " << type << std::endl;
-
 			in >> line;
 			while (!in.eof() && line.size() != 0 && (line.find("#")
 					== std::string::npos) && (line.find("$")
 					== std::string::npos)) {
 				// search polyline
-				size_t ply_id(0);
 				while (ply_id < ply_vec.size()
 						&& ply_vec_names[ply_id].compare(line) != 0) {
 					ply_id++;
@@ -341,30 +337,8 @@ std::string readSurface(std::istream &in,
 						std::cerr << "vertical surface - reading not implemented"
 												<< std::endl;
 					}
-
-					if (type == -1 || type == 0) {
-
-						if (ply_vec[ply_id]->isClosed()) {
-							// compute triangulation of closed polyline (polygon)
-							std::list<GEOLIB::Polyline*> ply_list;
-							ply_list.push_back (ply_vec[ply_id]);
-							MATHLIB::getListOfSimplePolygons(ply_list, pnt_vec);
-
-							for (std::list<GEOLIB::Polyline*>::const_iterator ply_it (ply_list.begin());
-								ply_it != ply_list.end(); ply_it++) {
-								std::list<GEOLIB::Triangle> triangles;
-								MATHLIB::earClippingTriangulationOfPolygon(*ply_it, triangles);
-//								std::cout << "done - " << triangles.size () << " triangles " << std::endl;
-
-								// add Triangles to Surface
-								std::list<GEOLIB::Triangle>::const_iterator it (triangles.begin());
-								while (it != triangles.end()) {
-									sfc->addTriangle ((*it)[0], (*it)[1], (*it)[2]);
-									it++;
-								}
-							}
-						}
-					}
+//					if (type == 0 || type == -1)
+//						std::cerr << "reading Polygon " << ply_vec_names[ply_id] << std::endl;
 				}
 				in >> line;
 			}
@@ -372,9 +346,20 @@ std::string readSurface(std::istream &in,
 		}
 	} while (line.find("#") == std::string::npos && line.size() != 0 && in);
 
-	sfc_names.push_back (name);
-	sfc_vec.push_back(sfc);
 
+	if (sfc) {
+		// surface create by TIN
+		sfc_vec.push_back (sfc);
+	} else {
+		// surface created by polygon
+		if (ply_id != std::numeric_limits<size_t>::max()) {
+			if (ply_vec[ply_id]->isClosed()) {
+				polygon_vec.push_back (new Polygon (*(ply_vec[ply_id])));
+			}
+		}
+	}
+
+	sfc_names.push_back (name);
 	return line;
 }
 
@@ -398,9 +383,71 @@ std::string readSurfaces(std::istream &in,
 	}
 	std::string tag("#SURFACE");
 
+	std::vector<Polygon*> polygon_vec;
+
 	while (!in.eof() && tag.find("#SURFACE") != std::string::npos) {
-		tag = readSurface(in, sfc_vec, sfc_names, ply_vec, ply_vec_names, pnt_vec, path);
+		tag = readSurface(in, polygon_vec, sfc_vec, sfc_names, ply_vec, ply_vec_names, pnt_vec, path);
 	}
+
+	std::cout << "number of read polygons  " << polygon_vec.size() << std::endl;
+	// subdivide all polygons in simple polygons
+	for (std::vector<GEOLIB::Polygon*>::iterator polygon_it (polygon_vec.begin());
+			polygon_it != polygon_vec.end(); polygon_it++) {
+		// compute list of simple polygons
+		(*polygon_it)->computeListOfSimplePolygons ();
+	}
+
+	// subdivide all polygons in simple polygons
+	for (std::vector<GEOLIB::Polygon*>::iterator polygon_it (polygon_vec.begin());
+			polygon_it != polygon_vec.end(); polygon_it++) {
+		// compute list of simple polygons
+		std::cout << "size of list " << ((*polygon_it)->getListOfSimplePolygons ()).size() << std::endl;
+	}
+	std::cout << "number of read polygons  " << polygon_vec.size() << std::endl;
+
+
+	// create surfaces from simple polygons
+	for (std::vector<GEOLIB::Polygon*>::iterator polygon_it (polygon_vec.begin());
+		polygon_it != polygon_vec.end(); polygon_it++) {
+
+		const std::list<GEOLIB::Polygon*>& list_of_simple_polygons ((*polygon_it)->getListOfSimplePolygons());
+
+		for (std::list<GEOLIB::Polygon*>::const_iterator simple_polygon_it (list_of_simple_polygons.begin());
+			simple_polygon_it != list_of_simple_polygons.end(); simple_polygon_it++) {
+
+			std::list<GEOLIB::Triangle> triangles;
+			MATHLIB::earClippingTriangulationOfPolygon(*simple_polygon_it, triangles);
+			std::cout << "done - " << triangles.size () << " triangles " << std::endl;
+
+			Surface *sfc(new Surface(pnt_vec));
+			// add Triangles to Surface
+			std::list<GEOLIB::Triangle>::const_iterator it (triangles.begin());
+			while (it != triangles.end()) {
+				sfc->addTriangle ((*it)[0], (*it)[1], (*it)[2]);
+				it++;
+			}
+			sfc_vec.push_back (sfc);
+		}
+	}
+
+	// forest consist of (hierarchy) trees
+	std::list<SimplePolygonHierarchy*> polygon_forest;
+	// create polygon forest
+	for (std::vector<GEOLIB::Polygon*>::iterator polygon_it (polygon_vec.begin());
+				polygon_it != polygon_vec.end(); polygon_it++) {
+		// get the list and insert the elements as SimplePolygonHierarchy items into the forest
+		const std::list<Polygon*> simple_polygon_list ((*polygon_it)->getListOfSimplePolygons());
+		for (std::list<Polygon*>::const_iterator simple_polygon_it (simple_polygon_list.begin());
+			simple_polygon_it != simple_polygon_list.end(); simple_polygon_it++) {
+			SimplePolygonHierarchy *sph (new SimplePolygonHierarchy (*simple_polygon_it));
+			polygon_forest.push_back (sph);
+		}
+	}
+	std::cout << "\"Polygon forest\" consists of " << polygon_forest.size() << " trees" << std::endl;
+
+	// create the hierarchy
+	createPolygonHierarchy (polygon_forest);
+	std::cout << "\"Polygon forest\" consists of " << polygon_forest.size() << " trees" << std::endl;
 
 	return tag;
 }
@@ -487,6 +534,39 @@ void readGLIFileV4(const std::string& fname, GEOObjects* geo)
 		geo->addPolylineVec(ply_vec, unique_name); // KR: insert into GEOObjects if not empty
 	if (!sfc_vec->empty())
 		geo->addSurfaceVec(sfc_vec, unique_name); // KR: insert into GEOObjects if not empty
+}
+
+void writeGLIFileV4 (const std::string& fname, const std::string& proj_name, const GEOLIB::GEOObjects& geo)
+{
+	const std::vector<GEOLIB::Point*>* pnts (geo.getPointVec(proj_name));
+	std::ofstream os (fname.c_str());
+	if (pnts) {
+		std::cout << "writing " << pnts->size () << " points to file " << fname << std::endl;
+		os << "#POINTS" << std::endl;
+		os.precision (20);
+		for (size_t k(0); k<pnts->size(); k++) {
+			os << k << " " << *((*pnts)[k]) << std::endl;
+		}
+	}
+
+	std::cout << "writing " << std::flush;
+	const std::vector<GEOLIB::Polyline*>* plys (geo.getPolylineVec(proj_name));
+	if (plys) {
+		std::cout << plys->size () << " polylines to file " << fname << std::endl;
+		const std::vector<size_t>& pnt_id_map (geo.getPointVecObj(proj_name)->getIDMap());
+		for (size_t k(0); k<plys->size(); k++) {
+
+//			std::cout << "Polyline " << k << " has " << (*plys)[k]->getSize() << " points" << std::endl;
+
+			os << "#POLYLINE" << std::endl;
+			os << " $NAME " << std::endl << "  " << k << std::endl;
+			os << " $POINTS" << std::endl;
+			for (size_t j(0); j<(*plys)[k]->getSize(); j++) {
+				os << "  " << pnt_id_map[((*plys)[k])->getPointID(j)] << std::endl;
+			}
+		}
+	}
+	os.close ();
 }
 
 } // end namespace

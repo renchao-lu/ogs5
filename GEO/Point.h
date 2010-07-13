@@ -13,4 +13,9 @@ namespace GEOLIB {
 typedef TemplatePoint<double> Point;
 }
 
+/**
+ * lexicographic comparison of points
+ */
+bool operator<= (const GEOLIB::Point& p0, const GEOLIB::Point& p1);
+
 #endif /* POINT_H_ */

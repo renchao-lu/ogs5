@@ -12,6 +12,8 @@
 #include "ui_VisualizationWidgetBase.h"
 
 class vtkRenderer;
+class VtkCustomInteractorStyle;
+class VtkPickCallback;
 
 /**
  * VisualizationWidget is a widget which provides the 3d vtk scene view.
@@ -24,7 +26,15 @@ public:
 
 	/// Constructor.
 	VisualizationWidget(QWidget* parent = 0);
+
+	/// Destructor.
 	~VisualizationWidget();
+
+	/// Returns the VtkCustomInteractorStyle.
+	VtkCustomInteractorStyle* interactorStyle() const;
+
+	/// Returns the VtkPickCallback.
+	VtkPickCallback* vtkPickCallback() const;
 
 public slots:
 	/// Updates the the 3d view.
@@ -46,8 +56,13 @@ protected slots:
 	/// Adjusts the eye angle (separation) for stereo viewing
 	void on_eyeAngleSlider_valueChanged(int value);
 
+	/// Toggles rectangular zooming mode.
+	void on_zoomToolButton_toggled(bool checked);
+
 private:
 	vtkRenderer* _vtkRender;
+	VtkCustomInteractorStyle* _interactorStyle;
+	VtkPickCallback* _vtkPickCallback;
 	
 };
 

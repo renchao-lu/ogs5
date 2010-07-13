@@ -1211,7 +1211,7 @@ Programing:
 **************************************************************************/
 inline double CFiniteElementStd::CalCoefMass() 
 {
-  int i=0.0,idxp;
+  int i=0,idxp;
   int Index = MeshElement->GetIndex();
   double val = 0.0;
   double humi = 1.0;
@@ -1750,8 +1750,6 @@ double dens_arg[3]; //AKS
 						// PCH Check if Capillary term is on
 						if(pcs->ML_Cap == 1)
 							p=1;
-						else
-							;
 
 						idxS = cpl_pcs->GetNodeValueIndex("SATURATION2");
 						
@@ -2014,7 +2012,7 @@ inline void CFiniteElementStd::CalCoefLaplaceMultiphase(int phase, int ip)
   int i=0;
   double mat_fac = 1.0;
   double *tensor = NULL;
-  static double Hn[9],z[9];
+  // static double Hn[9],z[9];
   int Index = MeshElement->GetIndex();
   double k_rel;
   ComputeShapefct(1);   //  12.3.2007 WW
@@ -2475,10 +2473,10 @@ inline void CFiniteElementStd::UpwindUnitCoord(int p, int point, int ind)
 {
   p = p; //OK411
   //Laufvariablen
-  static long i, j, k, l;
+  static long i, j; //, k, l;
   // Elementdaten 
   int eletyp; 
-  static long *element_nodes;
+  // static long *element_nodes;
   double scale;
   double alpha[3];
   int gp_r, gp_s, gp_t;
@@ -3198,11 +3196,11 @@ last modification:
 inline void CFiniteElementStd::UpwindAlphaMass(double *alpha)
 {
   //Laufvariablen
-  static long i, j, k, l;
+  static long i, j; //, k, l;
   int no_phases; 
    // Elementdaten 
   int eletyp; 
-  static long *element_nodes;
+  //static long *element_nodes;
   double gp[3], v_rst[3], v_tot[3];
   static double zeta;            
   //static double *velovec, vg, v[2], vt[2], v_rs[2];
@@ -3924,12 +3922,12 @@ void CFiniteElementStd::CalcLaplace()
 			    
 			           (*Laplace)(i_plus_in_times_nnodes,j_plus_jn_times_nnodes) += fkt_times_dshapefct__k_times_nnodes_plus_i__ \
                            * mat[dim_times_k_plus_l] * dshapefct[l_times_nnodes_plus_j];
-
-//			           (*Laplace)(i+in*nnodes,j+jn*nnodes) += fkt * dshapefct[k*nnodes+i] \
-//                           * mat[dim*k+l] * dshapefct[l*nnodes+j];
-//					   if(Index < 10) {cout << " i, j, k, l, nnodes, dim: " << i << ", " << j << ", " << k << ", " << l << ", " << nnodes << ", " << dim << ". fkt, dshapefct[k*nnodes+i], mat[dim*k+l], dshapefct[l*nnodes+j]: ";
-//					   cout << fkt << ", " << dshapefct[k*nnodes+i] << ", " << mat[dim*k+l] << ", " << dshapefct[l*nnodes+j] << endl;}
-				    
+/*
+					   (*Laplace)(i+in*nnodes,j+jn*nnodes) += fkt * dshapefct[k*nnodes+i] \
+						   * mat[dim*k+l] * dshapefct[l*nnodes+j];
+					   if(Index < 10) {cout << " i, j, k, l, nnodes, dim: " << i << ", " << j << ", " << k << ", " << l << ", " << nnodes << ", " << dim << ". fkt, dshapefct[k*nnodes+i], mat[dim*k+l], dshapefct[l*nnodes+j]: ";
+					   cout << fkt << ", " << dshapefct[k*nnodes+i] << ", " << mat[dim*k+l] << ", " << dshapefct[l*nnodes+j] << endl;}
+*/
    		            } 
                  }
               } // j: nodes
@@ -5031,7 +5029,7 @@ void  CFiniteElementStd::Cal_GP_Velocity_FM(int *i_ind)
 //	  for(i_dim=0;i_dim<dim;i_dim++) cout << vel_g_old[i_dim]-vel_g[i_dim] << "  "; 
 	  cout << endl;
 	  }
-/* */
+*/
   } // end gauss point loop
 
   // Output
@@ -5861,7 +5859,7 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
 //	cout << " RHS vector: " << endl;
 //	for (i=0;i<nnodes; i++) cout << "| " <<  (double)(*RHS)(i+LocalShift) << " |" << endl;
 	}
-	/* */
+  */
 
 }
 /**************************************************************************
@@ -6312,7 +6310,7 @@ void CFiniteElementStd::Config()
   // Initialize RHS
   if(pcs->Memory_Type>0)
   {
-    for(i=LocalShift;i<RHS->Size();i++)
+	for(i=LocalShift;(size_t)i<RHS->Size();i++)
       (*RHS)(i) = 0.0;
   } 
   else
@@ -6480,8 +6478,6 @@ break;
 			Assemble_RHS_Pc();
 			PrintTheSetOfElementMatrices("RHS_Pc");
 		}
-		else
-			;
 		Assemble_Gravity();
 
 		if(dm_pcs)
@@ -6580,7 +6576,7 @@ void  CFiniteElementStd::Assembly(int option, int dimension)
     (*Laplace) = 0.0;
 	if(pcs->Memory_Type>0)
 	{
-        for(i=LocalShift;i<RHS->Size();i++)
+		for(i=LocalShift;(size_t)i<RHS->Size();i++)
            (*RHS)(i) = 0.0;
 	} 
 	else
@@ -7031,7 +7027,7 @@ ElementValue::ElementValue(CRFProcess* m_pcs, CElem* ele):pcs(m_pcs)
 //WW 08/2007
 void ElementValue::getIPvalue_vec(const int IP, double * vec)
 {
-	for(int i=0; i<Velocity.Rows(); i++) vec[i] = Velocity(i, IP);
+	for(int i=0; (size_t)i<Velocity.Rows(); i++) vec[i] = Velocity(i, IP);
 }
 
 /**************************************************************************
@@ -7043,10 +7039,10 @@ last modification:
 **************************************************************************/
 void ElementValue::GetEleVelocity(double * vec)
 {
-	for(int i=0; i<Velocity.Rows(); i++)
+	for(int i=0; (size_t)i<Velocity.Rows(); i++)
     { 
       vec[i] = 0.0;
-      for(int j=0; j<Velocity.Cols(); j++) 
+	  for(int j=0; (size_t)j<Velocity.Cols(); j++)
         vec[i] += Velocity(i, j);
       vec[i] /= Velocity.Cols();
     }
@@ -7673,14 +7669,14 @@ void CFiniteElementStd::Assemble_RHS_M()
 
 void CFiniteElementStd::Assemble_RHS_AIR_FLOW()
 {
-int i, j, k, ii,idxd;
+int i, j, k, ii; //KR,idxd;
 // ---- Gauss integral
-int gp_r=0,gp_s=0,gp_t=0,z_sum;
-double vel[3],rhoz[3];
+int gp_r=0,gp_s=0,gp_t=0; //KR ,z_sum;
+double vel[3]; //KR,rhoz[3];
 double fkt, fac,mat_fac,rho_gravity;
 double dens_arg[3]; //08.05.2008 WW
  double *tensor = NULL;
-CFEMesh* m_msh;
+//KR CFEMesh* m_msh;
 int GravityOn = 1; // Initialized to be on
 // If no gravity, then set GravityOn to be zero.
 if((coordinate_system)%10!=2&&(!axisymmetry))
@@ -7940,6 +7936,8 @@ void CFiniteElementStd::AssembleRHSVector()
 			else
 				(*Mass) = 0.0;
       break;
+	default:
+	  break;
     //....................................................................
   }
   //----------------------------------------------------------------------
@@ -7973,6 +7971,8 @@ void CFiniteElementStd::AssembleRHSVector()
 			{
 			}
       break;
+	default:
+	  break;
     //....................................................................
   }
 
@@ -7986,8 +7986,9 @@ void CFiniteElementStd::AssembleRHSVector()
 				CalcLaplace();
 			else
 				CalcMass();
-
       break;
+  default:
+	  break;
     //....................................................................
   }
   //----------------------------------------------------------------------
@@ -8001,6 +8002,8 @@ void CFiniteElementStd::AssembleRHSVector()
 		else
 			Mass->multi(NodalVal_FV,NodalVal);
       break;
+  default:
+	  break;
     //....................................................................
   }
 

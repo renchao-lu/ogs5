@@ -343,7 +343,7 @@ double GetCurveDerivative(int kurve, int methode, double punkt, int *gueltig)
 /* Programmaenderungen:
    03/1994     MSR        Erste Version
    07/1996     RK         Rockflow-Anpassung
-   12/1999     OK         Protokoll für RF-Shell
+   12/1999     OK         Protokoll fÃ¼r RF-Shell
 
    letzte Aenderung: OK 05.05.2000 Bugfix
                                        */
@@ -460,8 +460,8 @@ int FctCurves(char *data, int found, FILE * f)
 /* ROCKFLOW - Funktion: FctReadHeterogeneousFields
                                       */
 /* Aufgabe:
-   Liest zu jedem Knoten einen Wert der Permeabilität ein.
-   Identifikation über Koordinaten
+   Liest zu jedem Knoten einen Wert der PermeabilitÃ¤t ein.
+   Identifikation Ã¼ber Koordinaten
                                       */
 /* Ergebnis:
     0 bei Fehler, sonst 1
@@ -858,7 +858,7 @@ long GetNearestHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double ** i
   x=0.0; y=0.0; z=0.0;
   dist = 10000000.0; //Startwert
   //WW  dist2 = 0.01;	    // Abstand zwischen eingelesenen Knoten und Geometrieknoten-RF; 
-					// Achtung, doppelbelegung möglich bei kleinen Gitterabständen
+					// Achtung, doppelbelegung mÃ¶glich bei kleinen GitterabstÃ¤nden
   nextele = -1;
   //Get element data
   m_ele = m_msh->ele_vector[EleIndex];
@@ -884,12 +884,12 @@ long GetNearestHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double ** i
 /* ROCKFLOW - Funktion: GetLineFromFile
                                       */
 /* Aufgabe:
-   Liest aus dem Eingabefile für die heterogenen Felder die nächste ZEile
-   Fängt die Zeile mit ; an, wird sie ausgelassen
+   Liest aus dem Eingabefile fÃ¼r die heterogenen Felder die nÃ¤chste ZEile
+   FÃ¤ngt die Zeile mit ; an, wird sie ausgelassen
    SB:todo
                                          */
 /* Ergebnis:
-   Nächste Zeile aus dem Eingabefile
+   NÃ¤chste Zeile aus dem Eingabefile
                                       */
 /* Programmaenderungen:
     01/2004     SB  First Version
@@ -904,9 +904,9 @@ long GetNearestHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double ** i
  while(fertig < 1){
 	 if(ein->getline(zeile,MAX_ZEILE)){				//Zeile lesen
 	line = zeile;							//character in string umwandeln
-	i = (int) line.find_first_not_of(" ",0);		//Anfängliche Leerzeichen überlesen, i=Position des ersten Nichtleerzeichens im string
+	i = (int) line.find_first_not_of(" ",0);		//AnfÃ¤ngliche Leerzeichen Ã¼berlesen, i=Position des ersten Nichtleerzeichens im string
 	j = (int) line.find(";",i) ;					//Nach Kommentarzeichen ; suchen. j = Position des Kommentarzeichens, j=-1 wenn es keines gibt.
-	if(j!=i)fertig = 1;				//Wenn das erste nicht-leerzeichen ein Kommentarzeichen ist, zeile überlesen. Sonst ist das eine Datenzeile
+	if(j!=i)fertig = 1;				//Wenn das erste nicht-leerzeichen ein Kommentarzeichen ist, zeile Ã¼berlesen. Sonst ist das eine Datenzeile
 	 }
 	 else{ //end of file found
 		 ok=0;
@@ -989,7 +989,7 @@ int get_hetfields_number(hetfields *hf){
 /* ROCKFLOW - Funktion: GetHetValue
                                       */
 /* Aufgabe:
-   Liest zu einen übergebenen Namen den enstrechenden Wert aus 
+   Liest zu einen Ã¼bergebenen Namen den enstrechenden Wert aus 
    der elementstruktur het_fields aus.
    
                                       */
@@ -1148,7 +1148,7 @@ double FindMin (vector<double>Vec)
 double x=DBL_MAX;
 int unsigned i;
 
-for(i=0;i<(int)Vec.size();i++) {if ((Vec[i]>=0)&&(Vec[i]<x)) x=Vec[i];}
+for(i=0;i<Vec.size();i++) {if ((Vec[i]>=0)&&(Vec[i]<x)) x=Vec[i];}
 
 return x;
 }
@@ -1161,7 +1161,7 @@ double FindMax (vector<double>Vec)
 double x=DBL_MIN;
 int unsigned i;
 
-for(i=0;i<(int)Vec.size();i++) {if (Vec[i]>x) x=Vec[i];}
+for(i=0;i<Vec.size();i++) {if (Vec[i]>x) x=Vec[i];}
 
 return x;
 }

@@ -331,6 +331,8 @@ Programing:
 **************************************************************************/
 void CGLPolyline::WritePointVector(const std::string & base)
 {
+  (void)base;
+
   string ply_path;
   string ply_path_base_type;
   long i;

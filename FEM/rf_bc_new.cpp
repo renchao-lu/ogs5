@@ -50,7 +50,7 @@ vector<CBoundaryCondition*> bc_db_vector;
  01/2004 OK Implementation
  **************************************************************************/
 CBoundaryCondition::CBoundaryCondition() :
-	_geo_obj_idx (std::numeric_limits<size_t>::max()), geo_name ("")
+	GeoInfo (), geo_name ("")
 {
 	dis_type = -1;
 	CurveIndex = -1;
@@ -70,9 +70,6 @@ CBoundaryCondition::CBoundaryCondition() :
 CBoundaryCondition::~CBoundaryCondition(void) {
 	// PCS
 	pcs_type_name.clear();
-	// GEO
-	geo_type = -1;
-	geo_type_name.clear();
 	// DIS
 	dis_type = -1;
 	dis_type_name.clear();
@@ -88,11 +85,6 @@ CBoundaryCondition::~CBoundaryCondition(void) {
 	msh_node_number = -1;
 	PointsHaveDistribedBC.clear();
 	DistribedBC.clear();
-}
-
-size_t CBoundaryCondition::getGeoObjIdx () const
-{
-	return _geo_obj_idx;
 }
 
 const std::string& CBoundaryCondition::getGeoName ()
@@ -155,39 +147,39 @@ ios::pos_type CBoundaryCondition::Read(std::ifstream *bc_file,
 			if (sub_string.compare("POINT") == 0) { //OK
 				in >> geo_name; //sub_line
 
-				// TF 05/2010 - get the point vector
+				// TF 05/2010 - get the index from the point vector
 				if (!((geo_obj.getPointVecObj(unique_fname))->getPointIDByName (geo_name, _geo_obj_idx))) {
 					std::cerr << "error in CBoundaryCondition::Read: point name \"" << geo_name << "\" not found!" << std::endl;
 					exit (1);
 				}
 
 				in.clear();
-				geo_type_name = "POINT";
-				geo_type = 0;
+//				geo_type_name = "POINT";
+				setGeoType (GEOLIB::POINT);
 			}
 			if (sub_string.find("POLYLINE") != string::npos) {
 				in >> geo_name; //sub_line
 				in.clear();
-				geo_type_name = "POLYLINE";
+//				geo_type_name = "POLYLINE";
 				CGLPolyline* m_ply = NULL;
 				m_ply = GEOGetPLYByName(geo_name); //CC 10/05
 				if (!m_ply)
 					cout << "Warning in BCRead: no PLY data" << endl;
-				geo_type = 1;
+				setGeoType (GEOLIB::POLYLINE);
 			}
 
 			if (sub_string.find("SURFACE") != string::npos) {
 				in >> geo_name; //sub_line
 				in.clear();
-				geo_type_name = "SURFACE";
-				geo_type = 2;
+//				geo_type_name = "SURFACE";
+				setGeoType (GEOLIB::SURFACE);
 			}
 			if (sub_string.find("VOLUME") != string::npos) {
 				in >> geo_name; //sub_line
 				in.clear();
 
-				geo_type_name = "VOLUME";
-				geo_type = 3;
+//				geo_type_name = "VOLUME";
+				setGeoType (GEOLIB::VOLUME);
 			}
 		}
 		//....................................................................
@@ -369,7 +361,8 @@ void CBoundaryCondition::Write(fstream* rfd_file) {
 	//GEO_TYPE
 	*rfd_file << " $GEO_TYPE" << endl;
 	*rfd_file << "  ";
-	*rfd_file << geo_type_name << " " << geo_name << endl;
+	*rfd_file << getGeoTypeAsString() << " " << geo_name << endl;
+
 	//--------------------------------------------------------------------
 	/*OK4910
 	 //MSH_TYPE
@@ -429,7 +422,7 @@ void CBoundaryCondition::WriteTecplot(fstream* tec_file) {
 
 	*tec_file << "VARIABLES = X,Y,Z,V1" << endl;
 
-	if (geo_type_name.compare("SURFACE") == 0) {
+	if (getGeoType () == GEOLIB::SURFACE) {
 		m_surface = GEOGetSFCByName(geo_name);//CC
 		if (m_surface)
 			switch (m_surface->type) {
@@ -511,6 +504,7 @@ void CBoundaryCondition::WriteTecplot(fstream* tec_file) {
 	 last modification:
 	 **************************************************************************/
 void InterpolateValues(vector<CNodeValue*> node_value_vector) {
+	(void)node_value_vector;
 	/*OK4111
 	 long node_value_vector_length = (long)node_value_vector.size();
 	 long i;
@@ -689,16 +683,13 @@ void CBoundaryCondition::SetDISType(void) {
  02/2004 OK Implementation
  last modification:
  **************************************************************************/
-void CBoundaryCondition::SetGEOType(void) {
-	if (geo_type_name.compare("POINT") == 0) {
-	}
-	if (geo_type_name.compare("POLYLINE")) {
+void CBoundaryCondition::SetGEOType(void)
+{
+	if (getGeoType () == GEOLIB::POLYLINE) {
 		CGLPolyline *m_polyline = NULL;
 		m_polyline = GEOGetPLYByName(geo_name);//CC
 		if (m_polyline)
 			m_polyline->type = BC;
-	}
-	if (geo_type_name.compare("SURFACE") == 0) {
 	}
 }
 
@@ -921,7 +912,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 //				}
 //			}
 			//------------------------------------------------------------------
-			if (m_bc->geo_type_name.compare("POINT") == 0) {
+			if (m_bc->getGeoType () == GEOLIB::POINT) {
 				m_node_value = new CBoundaryConditionNode;
 				// TF get the point vector
 				const GEOLIB::GEOObjects* geo_obj ((m_pcs->getProblemObjectPointer()->getGeoObj()));
@@ -952,31 +943,33 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 			}
 			//------------------------------------------------------------------
 			// MHS node close (<=eps) to point
-			if (m_bc->geo_type_name.compare("POINTS") == 0) {
-				// Get MSH nodes numbers
-				vector<long> bc_group_msh_nodes_vector;
-				// TF - tests from CC removed -> should be checked while reading data
-				m_bc->geo_node_number = m_bc->getGeoObjIdx (); // TF
-//				MSHGetNodesClose(bc_group_msh_nodes_vector, m_geo_point);//CC
-				long no_nodes = (long) bc_group_msh_nodes_vector.size();
-				for (i = 0; i < no_nodes; i++) {
-					m_node_value = new CBoundaryConditionNode;
-					m_node_value->conditional = cont;
-					m_node_value->geo_node_number = m_bc->geo_node_number;
-					m_node_value->CurveIndex = m_bc->CurveIndex;
-					m_node_value->msh_node_number
-							= bc_group_msh_nodes_vector[i];
-					m_node_value->node_value = m_bc->geo_node_value;
-					m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-					m_pcs->bc_node.push_back(m_bc); //WW
-					m_pcs->bc_node_value.push_back(m_node_value); //WW
-					//WW group_vector.push_back(m_node_value);
-					//WW bc_group_vector.push_back(m_bc); //OK
-				}
-				bc_group_msh_nodes_vector.clear(); // ? enough
-			}
+			// TF 06/2010 commented out because keyword POINTS is never used in Read-method
+			// and also never used in the benchmarks
+//			if (m_bc->geo_type_name.compare("POINTS") == 0) {
+//				// Get MSH nodes numbers
+//				vector<long> bc_group_msh_nodes_vector;
+//				// TF - tests from CC removed -> should be checked while reading data
+//				m_bc->geo_node_number = m_bc->getGeoObjIdx (); // TF
+////				MSHGetNodesClose(bc_group_msh_nodes_vector, m_geo_point);//CC
+//				long no_nodes = (long) bc_group_msh_nodes_vector.size();
+//				for (i = 0; i < no_nodes; i++) {
+//					m_node_value = new CBoundaryConditionNode;
+//					m_node_value->conditional = cont;
+//					m_node_value->geo_node_number = m_bc->geo_node_number;
+//					m_node_value->CurveIndex = m_bc->CurveIndex;
+//					m_node_value->msh_node_number
+//							= bc_group_msh_nodes_vector[i];
+//					m_node_value->node_value = m_bc->geo_node_value;
+//					m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
+//					m_pcs->bc_node.push_back(m_bc); //WW
+//					m_pcs->bc_node_value.push_back(m_node_value); //WW
+//					//WW group_vector.push_back(m_node_value);
+//					//WW bc_group_vector.push_back(m_bc); //OK
+//				}
+//				bc_group_msh_nodes_vector.clear(); // ? enough
+//			}
 			//------------------------------------------------------------------
-			if (m_bc->geo_type_name.compare("POLYLINE") == 0) {
+			if (m_bc->getGeoType () == GEOLIB::POLYLINE) {
 				m_polyline = GEOGetPLYByName(m_bc->geo_name);//CC
 				if (m_polyline) {
 					//  if(m_polyline->type==100)
@@ -1117,7 +1110,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 				} // if(m_ply)
 			}
 			//------------------------------------------------------------------
-			if (m_bc->geo_type_name.compare("SURFACE") == 0) {
+			if (m_bc->getGeoType () == GEOLIB::SURFACE) {
 				Surface *m_surface = NULL;
 				m_surface = GEOGetSFCByName(m_bc->geo_name);//CC10/05
 				if (m_surface) {
@@ -1180,24 +1173,24 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 			}
 			//------------------------------------------------------------------
 			// Material domain
-			if (m_bc->geo_type_name.find("MATERIAL_DOMAIN") == 0) {
-				GEOGetNodesInMaterialDomain(m_msh, m_bc->geo_type,
-						nodes_vector, quadratic);
-				for (i = 0; i < (long) nodes_vector.size(); i++) {
-					m_node_value = new CBoundaryConditionNode();
-					m_node_value->msh_node_number = -1;
-					m_node_value->msh_node_number = nodes_vector[i]
-							+ ShiftInNodeVector; //nodes[i];
-					m_node_value->geo_node_number = nodes_vector[i]; //nodes[i];
-					m_node_value->node_value = m_bc->geo_node_value;
-					m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-					m_node_value->CurveIndex = m_bc->CurveIndex;
-					m_pcs->bc_node.push_back(m_bc); //WW
-					m_pcs->bc_node_value.push_back(m_node_value); //WW
-					//WW group_vector.push_back(m_node_value);
-					//WW bc_group_vector.push_back(m_bc); //OK
-				}
-			}
+//			if (m_bc->geo_type_name.find("MATERIAL_DOMAIN") == 0) {
+//				GEOGetNodesInMaterialDomain(m_msh, m_bc->_geo_type,
+//						nodes_vector, quadratic);
+//				for (i = 0; i < (long) nodes_vector.size(); i++) {
+//					m_node_value = new CBoundaryConditionNode();
+//					m_node_value->msh_node_number = -1;
+//					m_node_value->msh_node_number = nodes_vector[i]
+//							+ ShiftInNodeVector; //nodes[i];
+//					m_node_value->geo_node_number = nodes_vector[i]; //nodes[i];
+//					m_node_value->node_value = m_bc->geo_node_value;
+//					m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
+//					m_node_value->CurveIndex = m_bc->CurveIndex;
+//					m_pcs->bc_node.push_back(m_bc); //WW
+//					m_pcs->bc_node_value.push_back(m_node_value); //WW
+//					//WW group_vector.push_back(m_node_value);
+//					//WW bc_group_vector.push_back(m_bc); //OK
+//				}
+//			}
 			//------------------------------------------------------------------
 			// MSH types //OK4105
 			if (m_bc->msh_type_name.compare("NODE") == 0) {
@@ -1242,7 +1235,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 		if ((m_bc->pcs_type_name.compare(pcs_type_name) == 0)
 				&& (m_bc->pcs_pv_name.compare(pcs_pv_name) == 0)) {
 			//................................................................
-			if (m_bc->geo_type_name.compare("POLYLINE") == 0) {
+			if (m_bc->getGeoType () == GEOLIB::POLYLINE) {
 				m_polyline = GEOGetPLYByName(m_bc->geo_name);//CC
 				if (m_polyline) {
 					//................................................................
@@ -1326,43 +1319,6 @@ CBoundaryConditionsGroup* BCGetGroup(string pcs_type_name, string pcs_pv_name) {
 		++p_bc_group;
 	}
 	return NULL;
-}
-
-/**************************************************************************/
-/* ROCKFLOW - Funktion: IsNodeBoundaryCondition
- */
-/* Aufgabe:
- Abfrage ob ein Knoten der Gruppe name ein R.B. besitzt oder nicht.
- */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
- E BOUNDARY_CONDITIONS *bc: Zeiger auf die Datenstruktur bc.
- */
-/* Ergebnis:
- - void -
- */
-/* Programmaenderungen:
- 10/1998     AH    Erste Version
- 7/1999     CT    Coredump bei fehlenden BC beseitigt
- 6/2000     CT    Bugfix fuer Rueckgabe bei col<0
- */
-/**************************************************************************/
-long IsNodeBoundaryCondition(char *name, long node) {
-	name = name;
-	node = node;
-	/* OK_BC
-	 long col = IndexBoundaryConditions(name);
-
-	 if (GetNode(node) == NULL)
-	 {
-	 DisplayErrorMsg("Fehler in IsNodeBoundaryCondition --> Abbruch !!!");
-	 abort();
-	 }
-
-	 if ((bc_matrix_flags) && (col >= 0))
-	 return (bc_matrix_flags -> m[node][col] >= 0) ? 1 : 0;
-	 else
-	 */
-	return 0;
 }
 
 /**************************************************************************

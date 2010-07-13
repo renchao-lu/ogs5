@@ -17,6 +17,11 @@
 #include <vtkProperty.h>
 #include <vtkSmartPointer.h>
 
+// export test
+#include <vtkPolyDataAlgorithm.h>
+#include <vtkPolyDataWriter.h>
+#include <vtkUnstructuredGridAlgorithm.h>
+#include <vtkUnstructuredGridWriter.h>
 
 VtkVisPipelineItem::VtkVisPipelineItem(
 	vtkRenderer* renderer,
@@ -24,7 +29,7 @@ VtkVisPipelineItem::VtkVisPipelineItem(
 	TreeItem* parentItem,
 	vtkPointSet* input,
 	const QList<QVariant> data /*= QList<QVariant>()*/)
-: TreeItem(data, parentItem), _renderer(renderer), _algorithm(algorithm), _input(input)
+: TreeItem(data, parentItem), _algorithm(algorithm), _input(input), _renderer(renderer)
 {
 	//if (_input != NULL)
 		//_algorithm->SetInput(_input);
@@ -121,4 +126,37 @@ void VtkVisPipelineItem::setVtkProperties(VtkAlgorithmProperties* vtkProps)
 
 	if (!vtkProps->GetScalarVisibility())
 		_mapper->ScalarVisibilityOff();
+}
+
+const int VtkVisPipelineItem::writeToFile(const std::string &filename) const
+{
+	if (!filename.empty())
+	{
+		vtkAlgorithm* alg = this->algorithm();
+		vtkPolyDataAlgorithm* algPD = dynamic_cast<vtkPolyDataAlgorithm*>(alg);
+		if (algPD)
+		{
+			vtkSmartPointer<vtkPolyDataWriter> pdWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
+			pdWriter->SetInput(algPD->GetOutputDataObject(0));
+			pdWriter->SetFileName(filename.c_str());
+			int result = pdWriter->Write();
+			return result;
+		}
+		else 
+		{
+			vtkUnstructuredGridAlgorithm* algUG = dynamic_cast<vtkUnstructuredGridAlgorithm*>(alg);
+			if (algUG)
+			{
+				std::string gridName(filename);
+				gridName.replace(filename.length()-1, 1, "u"); // change fileextension from "vtp" to "vtu"
+				vtkSmartPointer<vtkUnstructuredGridWriter> ugWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
+				ugWriter->SetInput(algUG->GetOutputDataObject(0));
+				ugWriter->SetFileName(filename.c_str());
+				int result = ugWriter->Write();
+				return result;
+			}
+		}
+		std::cout << "VtkVisPipelineItem::writeToFile() - Unknown data type..." << std::endl;
+	}
+	return 0;
 }

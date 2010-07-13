@@ -5,22 +5,16 @@
  */
 
 #include <fstream>
-
-// Base
-#include "StringTools.h"
-
 #include "GMSInterface.h"
-
-
+#include "StringTools.h"
 
 int GMSInterface::readBoreholesFromGMS(std::vector<GEOLIB::Point*> *boreholes, const std::string &filename)
 {
-	double depth = 0;
-	std::string line="", cName="", sName="";
+	double depth(0.0);
+	std::string line(""), cName(""), sName("");
 	std::list<std::string>::const_iterator it;
 	GEOLIB::Point* pnt = new GEOLIB::Point();
 	GEOLIB::StationBorehole* newBorehole = NULL;
-
 	std::ifstream in( filename.c_str() );
 
 	if (!in.is_open())
@@ -198,3 +192,96 @@ std::vector<std::string> GMSInterface::readSoilIDfromFile(const std::string &fil
 	return soilID;
 }
 
+
+CFEMesh* GMSInterface::readGMS3DMMesh(std::string filename)
+{
+	std::string buffer("");
+
+	std::ifstream in(filename.c_str());
+	if (!in.is_open())
+    {
+		std::cout << "GMSInterface::readGMS3DMMesh() - Could not open file..." << std::endl;
+		return NULL;
+	}
+
+	// Read data from file
+	getline(in, buffer); // "MESH3D"
+	if (buffer.compare("MESH3D") != 0)
+	{
+		std::cout << "GMSInterface::readGMS3DMMesh() - Could not read expected file header..." << std::endl;
+		return NULL;
+	}
+	
+	std::cout << "Read GMS-3DM data...";
+	CFEMesh* mesh = new CFEMesh();
+
+	while (!in.eof()) 
+	{  
+		Mesh_Group::CElem* elem = new Mesh_Group::CElem();
+		std::string element_id("");
+		in >> element_id;
+
+		if (element_id.compare("E6W") == 0)
+		{
+			elem->SetElementType(6); 
+			elem->Read(in, 8);
+			mesh->ele_vector.push_back(elem);
+		}     
+		else if (element_id.compare("E4T") == 0)
+		{
+			elem->SetElementType(5); 
+			elem->Read(in, 8);
+			mesh->ele_vector.push_back(elem);
+
+		}  
+		else if (element_id.compare("E4P") == 0)
+		{
+			int i(0);
+			long node_index[5];
+			elem->SetElementType(5); 
+			elem->Read(in, 8);
+			mesh->ele_vector.push_back(elem);
+			for (size_t j=0; j<4; j++)
+				node_index[j] = elem->GetNodeIndex(j);
+			in >> node_index[4];
+			i = elem->GetPatchIndex();
+			elem->SetPatchIndex(node_index[4]-1);
+			node_index[4] = i;
+
+			elem->SetNodeIndex(0, node_index[0]);
+			elem->SetNodeIndex(1, node_index[1]);
+			elem->SetNodeIndex(2, node_index[3]);
+			elem->SetNodeIndex(3, node_index[4]);
+
+			Mesh_Group::CElem* elem2 = new Mesh_Group::CElem(mesh->ele_vector.size()-1, elem);
+			elem2->SetNodeIndex(0, node_index[1]);
+			elem2->SetNodeIndex(1, node_index[2]);
+			elem2->SetNodeIndex(2, node_index[3]);
+			elem2->SetNodeIndex(3, node_index[4]);
+			mesh->ele_vector.push_back(elem2);
+		}
+		else if (element_id.compare("ND") == 0)
+		{
+			int i;
+			double xyz[3];
+			in >> i;
+			Mesh_Group::CNode* node = new Mesh_Group::CNode(i-1);
+			in >> xyz[0] >> xyz[1] >> xyz[2] >> ws;
+			node->SetCoordinates(xyz);     
+			mesh->nod_vector.push_back(node);
+		}
+		else // default
+		{
+			std::cout << std::endl << "GMSInterface::readGMS3DMMesh() - Unknown identifier ..." << std::endl;
+			return NULL;
+		}
+	}
+
+	in.close();
+
+	mesh->ConstructGrid();
+
+	std::cout << "finished" << std::endl;
+
+	return mesh;
+}

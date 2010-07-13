@@ -30,7 +30,7 @@ VtkStationSource::VtkStationSource()
 {
 	this->SetNumberOfInputPorts(0);
 
-	GEOLIB::Color* c = GEOLIB::getRandomColor();
+	const GEOLIB::Color* c = GEOLIB::getRandomColor();
 	GetProperties()->SetColor((*c)[0]/255.0,(*c)[1]/255.0,(*c)[2]/255.0);
 }
 
@@ -57,6 +57,9 @@ void VtkStationSource::PrintSelf( ostream& os, vtkIndent indent )
 /// Create 3d Station objects
 int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
+	(void)request;
+	(void)inputVector;
+
 	if (!_stations)
 		return 0;
 	int nStations = _stations->size();
@@ -69,6 +72,7 @@ int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector
 	vtkSmartPointer<vtkPolyData> output = vtkPolyData::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
 
 	//setStratColors("d:/BoreholeColourReference.txt");
+	if (_colorLookupTable.empty()) std::cout << "No look-up table for stratigraphy-colors specified. Generating colors on the fly..." << std::endl;
 
 	vtkSmartPointer<vtkPoints> newStations = vtkSmartPointer<vtkPoints>::New();
 	vtkSmartPointer<vtkCellArray> newVerts = vtkSmartPointer<vtkCellArray>::New();
@@ -120,12 +124,10 @@ int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector
 
 				newLines->InsertNextCell(2);
 				newLines->InsertCellPoint(lastMaxIndex);	// start of borehole-layer
-				newLines->InsertCellPoint(++lastMaxIndex);	//end of boreholelayer
-
+				newLines->InsertCellPoint(lastMaxIndex+1);	//end of boreholelayer
+				lastMaxIndex++;
 				GEOLIB::Color c;
-				//if (!_colorLookupTable.empty()) 
-					c = GEOLIB::getColor(soilNames[i], _colorLookupTable);
-				//else c = *(GEOLIB::getRandomColor());
+				c = GEOLIB::getColor(soilNames[i], _colorLookupTable);
 				unsigned char sColor[3] = { c[0], c[1], c[2] };
 				stratColors->InsertNextTupleValue(sColor);
 			}
@@ -155,14 +157,11 @@ int VtkStationSource::RequestData( vtkInformation* request, vtkInformationVector
 	return 1;
 }
 
-
-int VtkStationSource::setStratColors(const std::string &filename)
-{
-	return readColorLookupTable(_colorLookupTable, filename);
-}
-
 int VtkStationSource::RequestInformation( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
+	(void)request;
+	(void)inputVector;
+
 	vtkInformation* outInfo = outputVector->GetInformationObject(0);
 		outInfo->Set(vtkStreamingDemandDrivenPipeline::MAXIMUM_NUMBER_OF_PIECES(), -1);
 

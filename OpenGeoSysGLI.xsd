@@ -28,7 +28,7 @@
                             <xs:element name="polyline" maxOccurs="unbounded">
                             	<xs:complexType>
                             	    <xs:sequence>
-                                	<xs:element name="pnt" type="xs:integer" maxOccurs="unbounded" />
+                                	<xs:element name="pnt" type="xs:nonNegativeInteger" maxOccurs="unbounded" />
                                     </xs:sequence>
                                     <xs:attribute name="id" type="xs:nonNegativeInteger" use="required" />
                                 </xs:complexType>
@@ -43,11 +43,17 @@
                             <xs:element name="surface" maxOccurs="unbounded">
                                 <xs:complexType>
                                     <xs:sequence>
-                                        <xs:element name="ply" type="xs:nonNegativeInteger"  maxOccurs="unbounded" />
+                                        <xs:element name="element" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:attribute name="p1" type="xs:nonNegativeInteger" use="required" />
+                                                <xs:attribute name="p2" type="xs:nonNegativeInteger" use="required" />
+                                                <xs:attribute name="p3" type="xs:nonNegativeInteger" use="required"/>
+                                            </xs:complexType>
+                                        </xs:element>
                                     </xs:sequence>
                                     <xs:attribute name="id" type="xs:nonNegativeInteger" use="required" />
-				</xs:complexType>
-                            </xs:element>
+                                </xs:complexType>
+			    </xs:element>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>

@@ -25,7 +25,7 @@ VtkPointsSource::VtkPointsSource()
 {
 	this->SetNumberOfInputPorts(0);
 
-	GEOLIB::Color* c = GEOLIB::getRandomColor();
+	const GEOLIB::Color* c = GEOLIB::getRandomColor();
 	GetProperties()->SetColor((*c)[0]/255.0,(*c)[1]/255.0,(*c)[2]/255.0);
 }
 
@@ -50,6 +50,9 @@ void VtkPointsSource::PrintSelf( ostream& os, vtkIndent indent )
 
 int VtkPointsSource::RequestData( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
+	(void)request;
+	(void)inputVector;
+
 	if (!_points)
 		return 0;
 	int numPoints = _points->size();
@@ -91,6 +94,9 @@ int VtkPointsSource::RequestData( vtkInformation* request, vtkInformationVector*
 
 int VtkPointsSource::RequestInformation( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
+	(void)request;
+	(void)inputVector;
+
 	vtkInformation* outInfo = outputVector->GetInformationObject(0);
 	outInfo->Set(vtkStreamingDemandDrivenPipeline::MAXIMUM_NUMBER_OF_PIECES(), -1);
 

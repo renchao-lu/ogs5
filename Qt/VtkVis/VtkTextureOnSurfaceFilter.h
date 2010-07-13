@@ -16,7 +16,15 @@
 class QImage;
 
 /**
- * \brief Container class to keep properties linked to a vtk object
+ * \brief Filter class for assigning a texture to a surface.
+ * Use SetRaster() to define the texture that should be mapped on the object.
+ * The input of this class is a vtkPolyData object. It is important to call SetTexture() before
+ * calling SetInputConnection(). Texture coordinates will then be calculated automatically and
+ * the texture will also be saved in the VtkAlgorithmProperties object from which this class is
+ * derived (i.e. the texture can be returned by VtkAlgorithmProperties::GetTexture()).
+ *
+ * For convenience this class also has a converter function ConvertImageToTexture() which uses 
+ * a QImage as input.
  */
 class VtkTextureOnSurfaceFilter : public vtkPolyDataAlgorithm, public VtkAlgorithmProperties
 {
@@ -26,7 +34,7 @@ public:
 
 	vtkTypeRevisionMacro(VtkTextureOnSurfaceFilter,vtkPolyDataAlgorithm);
 
-	/// Prints the mesh data to an output stream.
+	/// Prints the object data to an output stream.
 	void PrintSelf(ostream& os, vtkIndent indent);	
 
 	/// Sets the raster/image to be used as a texture map
@@ -39,7 +47,8 @@ protected:
 	VtkTextureOnSurfaceFilter();
 	~VtkTextureOnSurfaceFilter();
 
-	/// Copies the input data.
+	/// Copies the input data and calculates texture coordinates (this requires that SetRaster() has
+	/// been called before this method is executed.
 	int RequestData(vtkInformation* request, 
 		            vtkInformationVector** inputVector, 
 					vtkInformationVector* outputVector);

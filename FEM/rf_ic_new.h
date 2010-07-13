@@ -15,10 +15,17 @@ last modified
 #include <string>
 #include <vector>
 
+// FEM
+#include "GeoInfo.h"
+
 #include "rf_node.h"
 #include "rf_pcs.h"
-/*---------------------------------------------------------------*/
-class CInitialCondition {
+
+/**
+ * class for handling initial conditions
+ */
+class CInitialCondition : public GeoInfo
+{
 private:
 	size_t SubNumber; //WW
 	std::vector<int> subdom_index; //WW
@@ -32,19 +39,8 @@ public:
 	std::string pcs_type_name; //OK
 	std::string pcs_pv_name; //OK
 	CRFProcess* m_pcs; //OK
-	// GEO
-	std::string geo_type_name;
-	int geo_type;
-
 private:
-	// GEO
-	/**
-	 * index of geometric object (GEOLIB::Point, GEOLIB::Polyline, ...)
-	 */
-	size_t _geo_obj_idx; // TF 05/2010
-	/**
-	 * the id of the geometric object as string REMOVE CANDIDATE
-	 */
+	// REMOVE CANDIDATE
 	std::string geo_name; // TF 05/2010
 public:
 	int GetNumDom() const {
@@ -72,8 +68,8 @@ public:
 	double gradient_ref_depth_value;
 	double gradient_ref_depth_gradient;
 	std::string rfr_file_name; //OK
-	CInitialCondition(void);
-	~CInitialCondition(void);
+	CInitialCondition();
+	~CInitialCondition();
     /**
      * read initial condition from stream
      * @param in input stream from file
@@ -82,7 +78,7 @@ public:
      * @return the new position in the stream after reading
      */
 	ios::pos_type Read(std::ifstream* in, const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name);
-	void Write(fstream*);
+	void Write(std::fstream*) const;
 	void Set(int);
 	void SetEle(int); //MX
 	void SetDomainEle(int); //MX

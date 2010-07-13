@@ -5,6 +5,9 @@
  *      Author: TF
  */
 
+// STL
+#include <limits>
+
 #ifndef BINARYSEARCH_H_
 #define BINARYSEARCH_H_
 

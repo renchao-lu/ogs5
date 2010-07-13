@@ -156,7 +156,6 @@ void RandomWalk::InterpolateVelocity(Particle* A)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 	// Mount the element fromthe first particle from particles initially
 	CElem* theEle = m_msh->ele_vector[A->elementIndex];
@@ -334,11 +333,10 @@ void RandomWalk::TracePathlineInThisElement(Particle* A)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 	// Mount the element fromthe first particle from particles initially
 	CElem* theEle = m_msh->ele_vector[A->elementIndex];
-	double tolerance = 1e-8;
+	// double tolerance = 1e-8;
 
 	// If a quad element,
 	int nnode = theEle->GetEdgesNumber();
@@ -414,22 +412,20 @@ void RandomWalk::TracePathlineInThisElement(Particle* A)
 
 		if(cx > tolerance)
 			R[0] = (x0+bx/ax)*exp(ax/cx*tmin)-bx/ax;
-		else; // Same point. Do nothing
 
 		if(cy > tolerance)
 			R[1] = (y0+by/ay)*exp(ay/cy*tmin)-by/ay;
-		else; // Same point. Do nothing
 
 		R[2] = pnt_z_min;
 		A->x = R[0]; A->y = R[1]; A->z = R[2];
 		//update the element index // JTARON 2010;
 		long i,j,k;
-		i = (A->x - pnt_x_min)/dx;
-		j = (A->y - pnt_y_min)/dy;
-		k = (A->z - pnt_z_min)/dz;
+		i = (int)((A->x - pnt_x_min)/dx);
+		j = (int)((A->y - pnt_y_min)/dy);
+		k = (int)((A->z - pnt_z_min)/dz);
 		long iFDM = k*(nx*ny) + j*nx + i;
 
-		if(iFDM < indexFDM.size())
+		if((size_t)iFDM < indexFDM.size())
 			A->elementIndex = indexFDM[iFDM].eleIndex;
 		else
 			A->elementIndex = -10;	 // Outside of the domain
@@ -547,7 +543,6 @@ void RandomWalk::InterpolateVelocityOfTheParticleByInverseDistance(Particle* A)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 
 	CElem* m_ele = m_msh->ele_vector[A->elementIndex];
@@ -601,7 +596,7 @@ void RandomWalk::InterpolateVelocityOfTheParticleByInverseDistance(Particle* A)
 			// Get the velocity contributed in this element
 			CrossRoad* crossroad = NULL;
 			for(int j=0; j< (int)(m_msh->fm_pcs->crossroads.size()); ++j)
-				if( m_msh->fm_pcs->crossroads[j]->Index == m_msh->nod_vector[m_ele->GetNodeIndex(i)]->GetIndex() )
+				if( (size_t)m_msh->fm_pcs->crossroads[j]->Index == m_msh->nod_vector[m_ele->GetNodeIndex(i)]->GetIndex() )
 					crossroad = m_msh->fm_pcs->crossroads[j];
 
 			if(crossroad)
@@ -683,7 +678,6 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 
 	// Let's allocate some memory for miniFEM
@@ -727,7 +721,7 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 				porosity = MediaProp->porosity_model_values[0];		// This will get you porosity.
 
 			// Get the number of nodes
-			int nnodes = m_ele->GetVertexNumber();
+			// int nnodes = m_ele->GetVertexNumber();
 
 			// Mount the edges of the element
 			vec<CEdge*>theEdgesOfThisElement(nnode);
@@ -760,8 +754,8 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 			A->Vy = (vy2 + b*(A->y-y0))/porosity;
 			A->Vz = 0.0;
 		}
-		else
-			;	// Think later for out of boundary particles.
+		//else
+		//	;	// Think later for out of boundary particles.
 	}
 	else if(option == 1)	// miniFEM Way
 	{
@@ -916,8 +910,8 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 			else if(nnode == 3)
 			{
 			}
-			else
-				;	// This shouldn't happen here. There are only tri or quad ele's in 2D
+			//else
+			//	;	// This shouldn't happen here. There are only tri or quad ele's in 2D
 
 
 		}
@@ -929,8 +923,8 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 			// Even for this, I will use 1d Galerkin method.
 
 		}
-		else
-			;	// Think later for out of boundary particles.
+		//else
+		//	;	// Think later for out of boundary particles.
 	}
 	else 	// Real Space and reference space way
 	{
@@ -1083,8 +1077,8 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 			A->Vy = (c+d*(R[1]-y0));
 			A->Vz = 0.0;
 		}
-		else
-			;	// Think later for out of boundary particles.
+		//else
+		//	;	// Think later for out of boundary particles.
 	}
 
 
@@ -1169,8 +1163,6 @@ int RandomWalk::IsParticleOnTheEdge(Particle* A)
 
 				return 1;	// Yes, it is on one of the edges in the element
 			}
-			else
-				;	// Do the next
 		}
 	}
 	else
@@ -1190,7 +1182,7 @@ last modification:
  **************************************************************************/
 double* RandomWalk::InterpolateLocationOfTheParticleByBilinear(Particle* A, double dt)
 {
-	double x[3];
+	double* x = new double [3];
 
 	// Get the element that the particle belongs
 	m_msh = NULL;
@@ -1206,7 +1198,6 @@ double* RandomWalk::InterpolateLocationOfTheParticleByBilinear(Particle* A, doub
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 	int eleIndex = IndexOfTheElementThatThisParticleBelong(0,A);
 	if(eleIndex == -5)
@@ -1260,8 +1251,8 @@ double* RandomWalk::InterpolateLocationOfTheParticleByBilinear(Particle* A, doub
 		A->y = (c+d*(A->y-y0))/d*exp(d*dt)-c/d;
 		A->z = 0.0;
 	}
-	else
-		;	// Think later for out of boundary particles.
+	//else
+	//	;	// Think later for out of boundary particles.
 
 	return x;
 }
@@ -1289,17 +1280,17 @@ int RandomWalk::IndexOfTheElementThatThisParticleBelong(int option, Particle* A)
 		if(xrw_range>1.e-12){ // only if non-negligible range in this direction
 			if(x>pnt_x_max || x<pnt_x_min)
 				return index;
-			i = floor((x - pnt_x_min)/dx);
+			i = (long int)floor((x - pnt_x_min)/dx);
 		}
 		if(yrw_range>1.e-12){
 			if(y>pnt_y_max || y<pnt_y_min)
 				return index;
-			j = floor((y - pnt_y_min)/dy);
+			j = (long int)floor((y - pnt_y_min)/dy);
 		}
 		if(zrw_range>1.e-12){
 			if(z>pnt_z_max || x<pnt_z_min)
 				return index;
-			k = floor((z - pnt_z_min)/dz);
+			k = (long int)floor((z - pnt_z_min)/dz);
 		}
 
 		iFDM = k*(nx*ny) + j*nx + i;
@@ -1417,7 +1408,6 @@ int RandomWalk::SolveForTwoIntersectionsInTheElement(Particle* A, double* P1, do
 
 				++L;
 			}
-			else;
 		}
 	}
 
@@ -2315,7 +2305,7 @@ void RandomWalk::AdvanceToNextTimeStep(double dt,double ctime)
 		{
 			// PCH: Removing sorption and desorption
 			// Do sorption-desorption by switching the identity of particles
-			double ChanceOfSorbtion = randomZeroToOne();
+			// double ChanceOfSorbtion = randomZeroToOne();
 			double ChanceOfIrreversed = randomZeroToOne();
 			// Two-Rate Model: A = 0.5, k1=0.1, k2=0.01
 //			double FractionRemainingOnMedia = Two_rateModel(0.99, 0.1, 0.001, X[i].Now.t/60.0);
@@ -2377,7 +2367,7 @@ void RandomWalk::RandomWalkOutput(double dbl_time, int current_time_step)
 	CurrentTime = dbl_time;
 	string current_name;
 
-	for(i=0;i<rwpt_out_strings.size();i++)
+	for(i=0;(size_t)i<rwpt_out_strings.size();i++)
 	{
 		current_name = rwpt_out_strings[i];
 		m_out = OUTGetRWPT(current_name);
@@ -2398,7 +2388,6 @@ void RandomWalk::RandomWalkOutput(double dbl_time, int current_time_step)
 				DATWriteParticleFile(current_time_step);
 			//else if(current_name.compare("PARTICLE_CONCENTRATION")==0)
 				//DATWriteParticleConcFile(current_time_step); // routine not yet configured
-		else;
 		  {
 			for(j=0;j<no_times;j++)
 			{
@@ -2491,7 +2480,6 @@ void RandomWalk::ConcPTFile(const char *file_name)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 
 	sprintf(pct_file_name,"%s.conc",file_name);
@@ -2528,7 +2516,7 @@ void RandomWalk::ConcPTFile(const char *file_name)
 				++count;
 		}
 		//	fprintf(pct_file, "%f 0.0 0.0 %f\n", (seg_start+seg_end)/2.0, count / numOfParticles);
-		fprintf(pct_file, "%f 0.0 0.0 %f\n", (seg_start+seg_end)/2.0, count);
+		fprintf(pct_file, "%f 0.0 0.0 %f\n", (seg_start+seg_end)/2.0, (double)count);
 	}
 
 	// Let's close it, now
@@ -2618,7 +2606,6 @@ void RandomWalk::RandomlyDriftAway(Particle* A, double dt, double* delta, int ty
 			delta[2] = sqrt(2.0*A->D[6]*dt) * Z[0] + sqrt(2.0*A->D[7]*dt) * Z[1] + sqrt(2.0*A->D[8]*dt) * Z[2];
 		}
 	}
-	else;
 }
 
 /**************************************************************************
@@ -2691,7 +2678,6 @@ void RandomWalk::SolveDispersionCoefficient(Particle* A)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 	CElem* m_ele = m_msh->ele_vector[A->elementIndex];
 	int group = m_ele->GetPatchIndex();
@@ -2775,7 +2761,6 @@ int RandomWalk::SolveForNextPosition(Particle* A, Particle* B)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 	CElem* theElement = m_msh->ele_vector[B->elementIndex];
 
@@ -3034,6 +3019,7 @@ int RandomWalk::SolveForNextPosition(Particle* A, Particle* B)
 		// Initialize the values for getting the intersection
 		B->t = 0.0;
 	}
+	return -2;
 }
 
 /**************************************************************************
@@ -3056,7 +3042,6 @@ void RandomWalk::GetDisplacement(Particle* B, double* Z, double* V, double* dD, 
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 	CElem* theElement = m_msh->ele_vector[B->elementIndex];
 	int ele_dim = theElement->GetDimension();
@@ -3226,7 +3211,6 @@ int RandomWalk::GetTheElementOfTheParticle(Particle* Pold, Particle* Pnew)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 
 
@@ -3332,7 +3316,6 @@ int RandomWalk::GetTheElementOfTheParticleFromNeighbor(Particle* A)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 
 #ifdef ALLOW_PARTICLES_GO_OUTSIDE
@@ -3450,7 +3433,6 @@ int RandomWalk::IsTheParticleInThisElement(Particle* A)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 	CElem* theElement = m_msh->ele_vector[A->elementIndex];
 
@@ -3568,6 +3550,8 @@ int RandomWalk::IsTheParticleInThisElement(Particle* A)
 
 		return -10;		// The particle is outside of domain
 	}
+
+	return -1;
 }
 
 /**************************************************************************
@@ -3795,7 +3779,6 @@ void RandomWalk::IsoparametricMappingQuadfromPtoR(int index, double* R)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 	// Mount the element fromthe first particle from particles initially
 	CElem* theEle = m_msh->ele_vector[index];
@@ -3933,7 +3916,6 @@ void RandomWalk::IsoparametricMappingQuadfromPtoR(int index, double* R)
 								abort();	// Failed find the solution.
 							}
 						}
-						else	;	// Do nothing. We're not intereste
 					}
 				}
 			}
@@ -3951,9 +3933,9 @@ void RandomWalk::IsoparametricMappingQuadfromPtoR(int index, double* R)
 		 */
 
 	}
-	else	// the element is not quad.
-	{
-	}
+	//else	// the element is not quad.
+	//{
+	//}
 }
 
 /**************************************************************************
@@ -3980,7 +3962,6 @@ void RandomWalk::IsoparametricMappingQuadfromRtoP(int index, double* P)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 	// Mount the element fromthe first particle from particles initially
 	CElem* theEle = m_msh->ele_vector[index];
@@ -4010,9 +3991,9 @@ void RandomWalk::IsoparametricMappingQuadfromRtoP(int index, double* P)
 				y[2]*(1.0+phat[0])*(1.0+phat[1])+y[3]*(1.0-phat[0])*(1.0+phat[1]) );
 		P[2] = 0.0;
 	}
-	else	// the element is not quad.
-	{
-	}
+	//else	// the element is not quad.
+	//{
+	//}
 }
 
 /**************************************************************************
@@ -4040,7 +4021,6 @@ void RandomWalk::DoJointEffectOfElementInitially(void)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 
 	// Looping all over the particles to have a choice which plane to go.
@@ -4075,7 +4055,7 @@ void RandomWalk::DoJointEffectOfElementInitially(void)
 		CrossRoad* crossroad = NULL;
 		for(int i=0; i < (int)(m_msh->fm_pcs->crossroads.size()); ++i)
 		{
-			if( m_msh->fm_pcs->crossroads[i]->Index == crossnode->GetIndex() )
+			if( (size_t)m_msh->fm_pcs->crossroads[i]->Index == crossnode->GetIndex() )
 				crossroad = m_msh->fm_pcs->crossroads[i];
 		}
 		// Let's get the contribution of each connected plane.
@@ -4141,7 +4121,6 @@ void RandomWalk::ToTheXYPlane(int idx, double* X)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 	CElem* E = m_msh->ele_vector[idx];
 
@@ -4218,7 +4197,6 @@ void RandomWalk::ToTheRealPlane(int idx, double* X)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 	CElem* E = m_msh->ele_vector[idx];
 
@@ -4268,7 +4246,6 @@ void RandomWalk::SolveAnglesOfTheElment(CElem* E)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 
 	double tolerance = 1e-20, Enorm[3];
@@ -4403,6 +4380,7 @@ int RandomWalk::Select(double* roulette, int numOfCases)
 	for(int i=0; i<numOfCases; ++i)
 		if(probability < roulette[i])
 			return (i);
+	return 0;
 }
 
 /**************************************************************************
@@ -4427,7 +4405,6 @@ int RandomWalk::ReadInVelocityFieldOnNodes(string file_base_name)
 			m_msh = FEMGet("LIQUID_FLOW");
 		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 			m_msh = FEMGet("GROUNDWATER_FLOW");
-		else;
 	}
 	CRFProcess* m_pcs = PCSGet("FLUID_MOMENTUM");
 
@@ -4534,9 +4511,9 @@ void RandomWalk::buildFDMIndex(void)
 		dy=1.e-12;
 	if(dz<1.e-12)
 		dz=1.e-12;
-	nx = floor(xrw_range/dx)+1;
-	ny = floor(yrw_range/dy)+1;
-	nz = floor(zrw_range/dz)+1;
+	nx = (int)floor(xrw_range/dx)+1;
+	ny = (int)floor(yrw_range/dy)+1;
+	nz = (int)floor(zrw_range/dz)+1;
 	ne = nx*ny*nz;
 	nels = m_msh->ele_vector.size();
 
@@ -4551,9 +4528,9 @@ void RandomWalk::buildFDMIndex(void)
 				for(iel=0; iel<nels; iel++) // loop over mesh elements, assign them to dummy elements
 				{
 					center = m_msh->ele_vector[iel]->GetGravityCenter();
-					ic = floor((center[0]-pnt_x_min)/dx);
-					jc = floor((center[1]-pnt_y_min)/dy);
-					kc = floor((center[2]-pnt_z_min)/dz);
+					ic = (int)floor((center[0]-pnt_x_min)/dx);
+					jc = (int)floor((center[1]-pnt_y_min)/dy);
+					kc = (int)floor((center[2]-pnt_z_min)/dz);
 					if(ic!=i || jc!=j || kc!=k)
 						continue;
 				    one.eleIndex = iel;

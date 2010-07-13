@@ -138,7 +138,7 @@ void QGraphicsGrid::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
 		 if (i>0 && i<_numberOfXCells)
 		 {
 			 painter->setPen(_inside);
-		     painter->drawLine(x, _bounds.top(), x, _bounds.bottom());
+		     painter->drawLine(x, (int)_bounds.top(), x, (int)_bounds.bottom());
 		 }
 
 		 /* draw ticks on x-axis */
@@ -146,7 +146,7 @@ void QGraphicsGrid::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
 		 {
 			 //double label = bounds.left() + (i * bounds.width() / numberOfXCells);
 			 painter->setPen(_outside);
-	         painter->drawLine(x, _bounds.bottom(), x, _bounds.bottom() + 5);
+	         painter->drawLine(x, (int)_bounds.bottom(), x, (int)_bounds.bottom() + 5);
 		     //painter->drawText(x - margin, bounds.bottom() + 5, 2*margin, 20,
 			//				   Qt::AlignHCenter | Qt::AlignTop, QString::number(label));
 		 }
@@ -159,7 +159,7 @@ void QGraphicsGrid::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
 		 if (j>0 && j<_numberOfYCells)
 		 {
 			 painter->setPen(_inside);
-			 painter->drawLine(_bounds.left(), y, _bounds.right(), y);
+			 painter->drawLine((int)_bounds.left(), y, (int)_bounds.right(), y);
 		 }
 
 		 /* draw ticks on y-axis */
@@ -167,7 +167,7 @@ void QGraphicsGrid::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
 		 {
 			 //double label = bounds.top() + (j * bounds.height() / numberOfYCells);
 			 painter->setPen(_outside);
-	         painter->drawLine(_bounds.left() - 5, y, _bounds.left(), y);
+	         painter->drawLine((int)_bounds.left() - 5, y, (int)_bounds.left(), y);
 			 //painter->drawText(bounds.left() - margin, y - 10, margin - 5, 20,
 			 //	               Qt::AlignRight | Qt::AlignVCenter, QString::number(label));
 		 }

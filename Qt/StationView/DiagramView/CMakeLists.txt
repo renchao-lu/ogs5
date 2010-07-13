@@ -11,7 +11,6 @@ set( SOURCES
 # Moc Header files
 set( MOC_HEADERS
 	DetailWindow.h
-	DiagramScene.h
 	DiagramView.h
 )
 
@@ -20,6 +19,7 @@ set( HEADERS
 	DiagramList.h
 	QArrow.h
 	QGraphicsGrid.h
+	DiagramScene.h
 )
 
 # UI files

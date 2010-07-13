@@ -1,5 +1,7 @@
 # Source files
 set( SOURCES
+	ColorTableModel.cpp
+	ColorTableView.cpp
 	DataViewWidget.cpp
 	DBConnectionDialog.cpp
 	GEOModels.cpp
@@ -22,6 +24,8 @@ set( SOURCES
 
 # Moc Header files
 set( MOC_HEADERS
+	ColorTableModel.h
+	ColorTableView.h
 	DataView.h
 	DataViewWidget.h
 	DBConnectionDialog.h
@@ -29,7 +33,6 @@ set( MOC_HEADERS
 	LinesModel.h
 	LineTabWidget.h
 	Model.h
-	MshItem.h
 	MshModel.h
 	MshTabWidget.h
 	PntsModel.h
@@ -44,7 +47,7 @@ set( MOC_HEADERS
 
 # Header files
 set( HEADERS
-
+	MshItem.h
 )
 
 # UI files
@@ -85,6 +88,7 @@ include_directories(
 	../StationView
 	../StationView/DiagramView
 	../VtkVis
+	../VtkAct
 	${CMAKE_SOURCE_DIR}
 	#${OpenSG_INCLUDE_DIR}
 	#${OpenSGSupportlibs_INCLUDE_DIR}

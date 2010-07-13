@@ -793,7 +793,7 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
               if (m_msh_ply->NodeExists(m_ele->nodes_index[j])) {
                 for (k=0; k<(long)m_msh_ply->nod_vector.size(); k++)
                 {
-                  if(m_msh_ply->nod_vector[k]->GetIndex() == m_ele->nodes_index[j])
+				  if(m_msh_ply->nod_vector[k]->GetIndex() == (size_t)m_ele->nodes_index[j])
                   {
                     m_ele->nodes[j] = m_msh_ply->nod_vector[k];
                     m_ele->nodes_index[j] = k;
@@ -1875,8 +1875,8 @@ void CFEMesh::CheckMarkedEdgesOnPolyLine(CGLPolyline*m_polyline, vector<long> &e
 
         n_edg->GetNodes(n_edge_nodes);
         for (int l=0;l<3;l++) {
-          if (n_edge_nodes[0]->GetIndex() == m_ele->nodes_index[l]
-              || n_edge_nodes[1]->GetIndex() == m_ele->nodes_index[l]) {
+		  if (n_edge_nodes[0]->GetIndex() == (size_t)m_ele->nodes_index[l]
+			  || n_edge_nodes[1]->GetIndex() == (size_t)m_ele->nodes_index[l]) {
             node_use[l]+=1;
           }
         }
@@ -1899,8 +1899,8 @@ void CFEMesh::CheckMarkedEdgesOnPolyLine(CGLPolyline*m_polyline, vector<long> &e
         {
           m_edg = ele_edges_vector[j];
           m_edg->GetNodes(edge_nodes);
-          if (edge_nodes[0]->GetIndex() == node1 &&  edge_nodes[1]->GetIndex() == node2
-            || edge_nodes[1]->GetIndex() == node1 &&  edge_nodes[0]->GetIndex() == node2)
+		  if (edge_nodes[0]->GetIndex() == (size_t)node1 &&  edge_nodes[1]->GetIndex() == (size_t)node2
+			|| edge_nodes[1]->GetIndex() == (size_t)node1 &&  edge_nodes[0]->GetIndex() == (size_t)node2)
           {
             m_edg->SetMark(false);
           }

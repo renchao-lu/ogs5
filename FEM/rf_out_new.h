@@ -19,10 +19,13 @@ last modified:
 #include "rf_pcs.h"
 #include <sstream>        // for istringstream (ME)
 #include "vtk.h"
+#include "GeoInfo.h"
+
 /*---------------------------------------------------------------*/
 namespace Mesh_Group{class CFEMesh;}
 using Mesh_Group::CFEMesh;
-class COutput
+
+class COutput : public GeoInfo
 {
   private:
     double out_amplifier; //WW to amplify output
@@ -31,10 +34,6 @@ class COutput
     CFEMesh* m_msh;
     CVTK* vtk;
 	// GEO
-	/**
-	 * index of geometric object (GEOLIB::Point, GEOLIB::Polyline, ...)
-	 */
-	size_t _geo_obj_idx; // TF 05/2010
 	/**
 	 * the id of the geometric object as string REMOVE CANDIDATE
 	 */
@@ -71,8 +70,8 @@ class COutput
 	std::vector<std::string>rwpt_value_vector;
     // GEO
     long geo_node_number;
-    int geo_type;
-    std::string geo_type_name;
+
+//    std::string geo_type_name;
 	/**
 	 * ToDo remove after transition to new GEOLIB - REMOVE CANDIDATE
 	 * getGeoName returns a string used as id for geometric entity

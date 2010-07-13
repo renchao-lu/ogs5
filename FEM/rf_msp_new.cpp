@@ -515,8 +515,8 @@ Programing:
 04/2005 WW Curve dependency
 **************************************************************************/
 CSolidProperties::CSolidProperties()
-      :data_Density(NULL), data_Youngs(NULL),data_Plasticity(NULL),
-       data_Capacity(NULL), data_Conductivity(NULL), data_Creep(NULL)
+	  : data_Youngs(NULL), data_Density(NULL), data_Capacity(NULL),
+	  data_Conductivity(NULL), data_Plasticity(NULL), data_Creep(NULL)
 {
     PoissonRatio = 0.2;
     ThermalExpansion = 0.0;

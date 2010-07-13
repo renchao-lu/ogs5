@@ -67,7 +67,7 @@ static double dminarg1,dminarg2;
 /* Numerical Recipes standard error handler                                           */
 /*************************************************************************************/
 
-void nrerror(char *error_text)
+void nrerror(const char *error_text)
 //char error_text[];
 {
 //void exit();
@@ -190,16 +190,14 @@ void free_dmatrix(double **m, long nrl, long nrh, long ncl, long nch)
 
 
 
-
-
 /*************************************************************************************/
 /* Numerical Recipes Chapter 2.3                                                     */
 /* LU Decomposition of matrix a[1..n][1..n]                                          */
 
-/* a[1..n][1..n] input-Matrix und output-Matrix
-/* n input: Dimension des arrays a
-/* indx output: vector zeichnet row permutation auf (kann weg)
-/* d output:  
+/* a[1..n][1..n] input-Matrix und output-Matrix										 */
+/* n input: Dimension des arrays a													 */
+/* indx output: vector zeichnet row permutation auf (kann weg)						 */
+/* d output:																		 */
 
 /* Diese Funktion entspricht der Rockflow-Routine LU-Decomposition (solver.c),       */
 /* indiziert aber ALLE arrays von 1-nn (Rockflow 0-(nn-1))                           */
@@ -458,9 +456,9 @@ void stifbs(double y[], double dydx[], int nv, double *xx, double htry, double e
 //	static int nseq[IMAXX+1]={0,2,6,10,14,22,34,50,70,98,138,194,274,386};
 // Num Recip S. 744
 // Differenz zwischen zwei Werten muss ein Vielfaches von 4 sein
-// So wählen, dass Verhältnis der Werte <= 5/7 ist
+// So wÃ¤hlen, dass VerhÃ¤ltnis der Werte <= 5/7 ist
 // z.B. 10, 14 -> 10/14 <= 5/7
-// nächster wäre 18, aber 14/18 > 5/7, deshalb 22 mit 14/22 <= 5/7
+// nÃ¤chster wÃ¤re 18, aber 14/18 > 5/7, deshalb 22 mit 14/22 <= 5/7
 	int reduct,exitflag=0;
 	km=0; //SB avoid warnings
 	red = 0.0; //SB avoid warning

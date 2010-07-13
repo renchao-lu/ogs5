@@ -29,6 +29,10 @@ int readColorLookupTable(std::map<std::string, GEOLIB::Color> &colors, const std
 /// in the colortable a new entry is created with the new name and a random colour.
 Color getColor(const std::string &id, std::map<std::string, GEOLIB::Color> &colors);
 
+/// Convenience function to use the getColor method with numbers as identifiers.
+Color getColor(const double id, std::map<std::string, GEOLIB::Color> &colors);
+
+
 } // namespace
 
 #endif /* COLOR_H_ */

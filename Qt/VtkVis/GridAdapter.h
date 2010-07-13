@@ -63,13 +63,14 @@ public:
 	/// Return a vector of elements for one material group only.
 	const std::vector<Element*> *getElements(size_t matID) const;
 
+	/// Returns the grid as a CFEMesh for use in OGS-FEM
+	const CFEMesh* getCFEMesh() const;
+
 	/// Returns the name of the mesh.
 	const std::string getName() const { return _name; };
 
 	/// Sets the name for the mesh.
 	void setName(const std::string &name) { _name = name; };
-
-
 
 private:
 	/// Converts an FEM Mesh to a list of nodes and elements.
@@ -84,9 +85,13 @@ private:
 	/// Converts an integer to a MeshType
 	MeshType getElementType(int type);
 
+	/// Converts a GridAdapter into an CFEMesh.
+	const CFEMesh* toCFEMesh() const;
+
 	std::string _name;
 	std::vector<GEOLIB::Point*> *_nodes;
 	std::vector<Element*> *_elems;
+	const CFEMesh* _mesh;
 };
 
 #endif // GRIDADAPTER_H

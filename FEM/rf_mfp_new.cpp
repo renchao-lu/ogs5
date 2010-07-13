@@ -640,7 +640,7 @@ NB 4.9.05
 double CFluidProperties::Density(double* variables)
 {
   static double density;
-  static double air_gas_density,vapour_density,vapour_pressure;
+  // static double air_gas_density,vapour_density,vapour_pressure;
   int fct_number = 0;
   int gueltig;
   //----------------------------------------------------------------------
@@ -2850,8 +2850,8 @@ Programing:
 double CFluidProperties::CalCopressibility(long idx_elem, double p,double T)
 {
 vector<double> roots;
-double fac=0.0,a,b,A,B,zn,z,Pc,Tc,PG,TG,w,ff,dff, R=8314.41;
-double z1,z2,z3,d,h;
+double a,b,A,B, R=8314.41;//KR w,Pc,dff,TG,Tc,PG,zn,z,ff
+double z1,z2,z3,h; //KR d
 a=MixtureSubProperity(0, idx_elem, p, T); 
 b=MixtureSubProperity(1, idx_elem, p, T); 
 A=a*p/(R*R*T*T);

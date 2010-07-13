@@ -57,6 +57,7 @@ private slots:
 	void updateDataViews();
 	void showAddPipelineFilterItemDialog(QModelIndex parentIndex);
 
+	void on_actionExportVTK_triggered(bool checked = false);
 	void on_actionExportVRML2_triggered(bool checked = false);
 	void on_actionExportObj_triggered(bool checked = false);
 

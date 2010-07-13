@@ -41,6 +41,8 @@ int VtkTextureOnSurfaceFilter::RequestData( vtkInformation* request,
 							             vtkInformationVector** inputVector, 
 								         vtkInformationVector* outputVector )
 {
+	(void)request;
+
 	if (this->GetTexture() == NULL) 
 	{
 		std::cout << "Error in VtkTextureOnSurfaceFilter::RequestData() - No texture specified ..." << std::endl;
@@ -54,8 +56,8 @@ int VtkTextureOnSurfaceFilter::RequestData( vtkInformation* request,
 	this->GetTexture()->GetInput()->GetDimensions(dims);
 	size_t imgWidth=dims[0]; size_t imgHeight=dims[1];
 
-	std::pair<int, int> min(_origin.first, _origin.second);
-	std::pair<int, int> max(_origin.first+(imgWidth * _scalingFactor), _origin.second+(imgHeight * _scalingFactor));
+	std::pair<int, int> min((int)_origin.first, (int)_origin.second);
+	std::pair<int, int> max((int)(_origin.first+(imgWidth * _scalingFactor)), (int)(_origin.second+(imgHeight * _scalingFactor)));
 
 	//calculate texture coordinates
 	vtkPoints* points = input->GetPoints();

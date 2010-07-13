@@ -38,11 +38,14 @@ add_library( FileIO STATIC
 include_directories(
 	.
 	../Base
+	../FEM
 	../GEO
 	../MathLib
+	../MSH
 )
 
 target_link_libraries( FileIO
 	Base
 	MathLib
+	GEO
 )

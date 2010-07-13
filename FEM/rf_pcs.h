@@ -342,15 +342,15 @@ public:
     int number_of_nvals;
     int pcs_number_of_primary_nvals;
     int GetPrimaryVNumber() const {return pcs_number_of_primary_nvals;}
-    char *pcs_primary_function_unit[4];
-    char *pcs_primary_function_name[4];
-    char* GetPrimaryVName(const int index) const {return pcs_primary_function_name[index];}
+	const char *pcs_primary_function_unit[4];
+	const char *pcs_primary_function_name[4];
+	const char* GetPrimaryVName(const int index) const {return pcs_primary_function_name[index];}
     string primary_variable_name; //OK
     int pcs_number_of_secondary_nvals;
     int GetSecondaryVNumber() const {return pcs_number_of_secondary_nvals;}
-    char *pcs_secondary_function_name[PCS_NUMBER_MAX];
-    char* GetSecondaryVName(const int index) const {return pcs_secondary_function_name[index];}
-    char *pcs_secondary_function_unit[PCS_NUMBER_MAX];
+	const char *pcs_secondary_function_name[PCS_NUMBER_MAX];
+	const char* GetSecondaryVName(const int index) const {return pcs_secondary_function_name[index];}
+	const char *pcs_secondary_function_unit[PCS_NUMBER_MAX];
     int pcs_secondary_function_timelevel[PCS_NUMBER_MAX];
     int pcs_number_of_history_values;
     /*double pcs_secondary_function_time_history[PCS_NUMBER_MAX];//CMCD for analytical solution
@@ -362,8 +362,8 @@ public:
     // Configuration 2 - ELE
     PCS_EVAL_DATA* pcs_eval_data;
     int pcs_number_of_evals;
-    char *pcs_eval_name[PCS_NUMBER_MAX];
-    char *pcs_eval_unit[PCS_NUMBER_MAX];
+	const char *pcs_eval_name[PCS_NUMBER_MAX];
+	const char *pcs_eval_unit[PCS_NUMBER_MAX];
     // Configuration 3 - ELE matrices
     // Execution
     // NUM
@@ -372,12 +372,12 @@ public:
 #endif
     string num_type_name;
     int	rwpt_app;
-    char *pcs_num_name[2];  //For monolithic scheme
+	const char *pcs_num_name[2];  //For monolithic scheme
     double pcs_nonlinear_iteration_tolerance;
     int pcs_nonlinear_iterations; //OK
     int pcs_coupling_iterations; //OK
     string tim_type_name; //OK
-    char *pcs_sol_name;
+	const char *pcs_sol_name;
     string cpl_type_name;
     CNumerics* m_num;
     //
@@ -652,7 +652,7 @@ extern int GetRFProcessFlowModel(void);
 extern int GetRFProcessHeatReactModel(void);
 extern int GetRFProcessNumPhases(void);
 extern int GetRFProcessProcessing(char*);
-extern int GetRFProcessProcessingAndActivation(char*);
+extern int GetRFProcessProcessingAndActivation(const char*);
 extern long GetRFProcessNumComponents(void);
 extern int GetRFControlModex(void);
 extern int GetRFProcessDensityFlow(void);

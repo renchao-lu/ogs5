@@ -655,7 +655,9 @@ double CFiniteElementVec::CalDensity()
   //--------------------------------------------------------------------
   // MFP fluid properties
    double density_fluid = 0.0;
-   double porosity = 0.0, p_g = 0.0, Sw=0.0;  
+   double porosity = 0.0;
+   // double p_g = 0.0;
+   double Sw=0.0;
    int no_phases = (int)mfp_vector.size();
    int i=0, phase = 0;
    

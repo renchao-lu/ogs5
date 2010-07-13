@@ -32,7 +32,7 @@ private slots:
 	void emitRequestModelClear();
 
 signals:
-	void requestModelClear(const std::string name);
+	void requestModelClear(const std::string &name);
 
 private:
 	std::vector<Model*> _models;

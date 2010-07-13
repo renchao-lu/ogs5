@@ -13,14 +13,14 @@
 #include "MshModel.h"
 #include "MshItem.h"
 #include "StationTreeModel.h"
+#include "VtkVisPipelineItem.h"
+#include "VtkMeshSource.h"
 
 #include <vtkSmartPointer.h>
 #include <vtkRenderer.h>
 #include <vtkAlgorithm.h>
 #include <vtkPointSet.h>
 #include <vtkActor.h>
-#include "VtkMeshSource.h"
-
 #include <vtkLight.h>
 
 VtkVisPipeline::VtkVisPipeline( vtkRenderer* renderer, QObject* parent /*= 0*/ )
@@ -31,16 +31,6 @@ VtkVisPipeline::VtkVisPipeline( vtkRenderer* renderer, QObject* parent /*= 0*/ )
 	delete _rootItem;
 	_rootItem = new TreeItem(rootData, NULL);
 	//_renderer->SetBackground(1,1,1);
-}
-
-Qt::ItemFlags VtkVisPipeline::flags( const QModelIndex &index ) const
-{
-	if (!index.isValid())
-		return Qt::ItemIsEnabled;
-	if (index.column() == 1)
-		return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
-	else
-		return QAbstractItemModel::flags(index);
 }
 
 void VtkVisPipeline::addLight(const GEOLIB::Point &pos)
@@ -89,6 +79,21 @@ void VtkVisPipeline::setBGColor(const GEOLIB::Color &color)
 	_renderer->SetBackground(color[0]/255.0, color[1]/255.0, color[2]/255.0); 
 }
 
+QModelIndex VtkVisPipeline::getIndex( vtkActor* actor )
+{
+	return _actorMap.value(actor, QModelIndex());
+}
+
+Qt::ItemFlags VtkVisPipeline::flags( const QModelIndex &index ) const
+{
+	if (!index.isValid())
+		return Qt::ItemIsEnabled;
+	if (index.column() == 1)
+		return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
+	else
+		return QAbstractItemModel::flags(index);
+}
+
 void VtkVisPipeline::addPipelineItem( Model* model )
 {
 	addPipelineItem(model->vtkSource());
@@ -124,6 +129,8 @@ void VtkVisPipeline::addPipelineItem( vtkAlgorithm* source,
 	QModelIndex newIndex = index(parentItem->childCount(), 0, parent);
 
 	_renderer->ResetCamera(_renderer->ComputeVisiblePropBounds());
+
+	_actorMap.insert(item->actor(), newIndex);
 
 	reset();
 	emit vtkVisPipelineChanged();
@@ -171,6 +178,16 @@ void VtkVisPipeline::removePipelineItem( QModelIndex index )
 {
 	if (!index.isValid())
 		return;
+
+	QMap<vtkActor*, QModelIndex>::iterator it = _actorMap.begin();
+	while (it != _actorMap.end())
+	{
+		if (it.value() == index)
+		{
+			_actorMap.erase(it);
+			break;
+		}
+	}
 
 	//TreeItem* item = getItem(index);
 	removeRows(index.row(), 1, index.parent());

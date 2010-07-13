@@ -45,7 +45,7 @@ const GridAdapter* MshModel::getMesh(const QModelIndex &idx) const
 		MshItem* item = static_cast<MshItem*>(this->getItem(idx));
 		return item->getGrid();
 	}
-	std::cout << "MshModel::removeMesh() - Specified index does not exist." << std::endl;
+	std::cout << "MshModel::getMesh() - Specified index does not exist." << std::endl;
 	return NULL;
 }
 

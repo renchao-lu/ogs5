@@ -71,6 +71,7 @@ GeoSys-Method: MSHOpen
 **************************************************************************/
 void MSHOpen(string file_name_base)
 {
+  (void)file_name_base;
   //OK411 ReadRFIFile(file_name_base);
 }
 
@@ -2077,9 +2078,11 @@ Programing:
 **************************************************************************/
 void GEOGetNodesInMaterialDomain(const int MatIndex, vector<long>& Nodes)
 {
+	(void)MatIndex;
+	(void)Nodes;
+  /*OK411
   MatIndex;
   Nodes.size();
-/*OK411
    long index, *element_nodes;
    int i, j, Size, nn, order = 2;
    const int L_Nodes = GetLowOrderNodeNumber();   

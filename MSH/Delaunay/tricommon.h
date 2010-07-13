@@ -22,11 +22,11 @@ using namespace std;
 
 #ifndef max
 #define max( a, b )	(((double)(a) > (double)(b)) ? (a) : (b))
-#endif max
+#endif // max
 
 #ifndef min
 #define min(a,b)	(((double)(a) < (double)(b)) ? (a) : (b))
-#endif min
+#endif // min
 
 #define PIE		( 3.14159265358979323846 )	
 #define PIE05	( 1.57079632679489661923 )	
@@ -234,5 +234,4 @@ DXPORT bool	bBoxSortPoint_TRI( int, vector<Cp_dbl2>* PntList, int* iBoxSorted );
 DXPORT bool bLoadStart_TRI(char *szNodeFile, char *szTriFile,int iUseConvexHul);
 
 
-#endif _TRI_COMMON_H_
-
+#endif // _TRI_COMMON_H_

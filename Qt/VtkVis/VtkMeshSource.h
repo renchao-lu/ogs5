@@ -9,10 +9,13 @@
 #define VTKMESHSOURCE_H
 
 // ** INCLUDES **
-#include <vtkUnstructuredGridAlgorithm.h>
-#include "VtkAlgorithmProperties.h"
-#include "GridAdapter.h"
+#include <map>
 
+#include <vtkUnstructuredGridAlgorithm.h>
+
+#include "Color.h"
+#include "GridAdapter.h"
+#include "VtkAlgorithmProperties.h"
 
 /**
  * \brief VTK source object for the visualisation of unstructured grids
@@ -27,6 +30,11 @@ public:
 	vtkTypeRevisionMacro(VtkMeshSource, vtkUnstructuredGridAlgorithm);
 
 	const char* GetMaterialArrayName() const { return _matName; }
+
+	/// Returns the colour lookup table generated for material groups. 
+	/// This method should only be called after setColorsFromMaterials().
+	const std::map<std::string, GEOLIB::Color>& getColorLookupTable() const { return _colorLookupTable; };
+
 
 	/// Sets the nodes and elements of the mesh that should be visualised
 	void setMesh(const std::vector<GEOLIB::Point*> *nodes, const std::vector<GridAdapter::Element*> *elems) 
@@ -60,6 +68,9 @@ protected:
 	const std::vector<GridAdapter::Element*> *_elems;
 
 private:
+	/// The colour table for material groups. This table is generated in the setColorsFromMaterials() method.
+	std::map<std::string, GEOLIB::Color> _colorLookupTable;
+
 	const char* _matName;
 
 };

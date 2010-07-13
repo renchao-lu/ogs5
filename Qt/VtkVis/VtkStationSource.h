@@ -26,8 +26,12 @@ public:
 
 	vtkTypeRevisionMacro(VtkStationSource,vtkPolyDataAlgorithm);
 
+	/// Returns the colour lookup table generated for boreholes. 
+	/// This method should only be called after the colour lookup table has actually been build (via RequestData() or setColorLookupTable()).
+	const std::map<std::string, GEOLIB::Color>& getColorLookupTable() const { return _colorLookupTable; };
+
 	/// Sets a predefined color lookup table for the colouring of borehole stratigraphies
-	int setStratColors(const std::string &filename);
+	int setColorLookupTable(const std::string &filename) { return readColorLookupTable(_colorLookupTable, filename); };
 
 	/// Sets the stations as a vector
 	void setStations(const std::vector<GEOLIB::Point*> *stations) { _stations = stations; };

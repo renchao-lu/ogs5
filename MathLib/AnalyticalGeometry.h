@@ -10,6 +10,8 @@
 
 // MathLib
 #include "Vector3.h"
+// GEOLIB
+#include "Triangle.h"
 
 namespace GEOLIB {
 	class Polyline;
@@ -59,6 +61,30 @@ void getNewellPlane (GEOLIB::Polyline* ply, Vector &plane_normal, double& d);
  * simple triangulation of simple polygons - ear clipping algorithm
  */
 void earClippingTriangulationOfPolygon (const GEOLIB::Polyline* ply, std::list<GEOLIB::Triangle> &triangles);
+
+/**
+ * test for intersections of the line segments of the Polyline
+ * @param ply the polyline
+ * @param idx0 beginning index of the first line segment that has an intersection
+ * @param idx1 beginning index of the second line segment that has an intersection
+ * @param intersection_pnt the intersection point if the line segments intersect
+ * @return true, if the polyline contains intersections
+ */
+bool lineSegmentsIntersect (const GEOLIB::Polyline* ply, size_t &idx0, size_t &idx1, GEOLIB::Point& intersection_pnt);
+
+/**
+ * A line segment is given by its two end-points. The function checks,
+ * if the two line segments (ab) and (cd) intersects. Up to now only
+ * 2D line segments are handled!
+ * @param a first end-point of the first line segment
+ * @param b second end-point of the first line segment
+ * @param c first end-point of the second line segment
+ * @param d second end-point of the second line segment
+ * @param s the intersection point
+ * @return true, if the line segments intersect, else false
+ */
+bool lineSegmentIntersect (const GEOLIB::Point& a, const GEOLIB::Point& b,
+		const GEOLIB::Point& c, const GEOLIB::Point& d, GEOLIB::Point& s);
 
 /**
  * Function getSimplePolygons checks if the Polylines of the list

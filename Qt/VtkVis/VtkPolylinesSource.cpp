@@ -25,7 +25,7 @@ VtkPolylinesSource::VtkPolylinesSource()
 {
 	this->SetNumberOfInputPorts(0);
 
-	GEOLIB::Color* c = GEOLIB::getRandomColor();
+	const GEOLIB::Color* c = GEOLIB::getRandomColor();
 	GetProperties()->SetColor((*c)[0]/255.0,(*c)[1]/255.0,(*c)[2]/255.0);
 }
 
@@ -53,6 +53,9 @@ void VtkPolylinesSource::PrintSelf( ostream& os, vtkIndent indent )
 
 int VtkPolylinesSource::RequestData( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
+	(void)request;
+	(void)inputVector;
+
 	if (!_polylines)
 		return 0;
 	if (_polylines->size() == 0)
@@ -78,7 +81,7 @@ int VtkPolylinesSource::RequestData( vtkInformation* request, vtkInformationVect
 		it != _polylines->end(); ++it)
 	{
 		const int numPoints = (*it)->getSize();
-		const int numLines = numPoints - 1;
+		//const int numLines = numPoints - 1;
 
 		// Generate points
 		for (int i = 0; i < numPoints; i++)
@@ -107,6 +110,9 @@ int VtkPolylinesSource::RequestData( vtkInformation* request, vtkInformationVect
 
 int VtkPolylinesSource::RequestInformation( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
+	(void)request;
+	(void)inputVector;
+
 	vtkInformation* outInfo = outputVector->GetInformationObject(0);
 	outInfo->Set(vtkStreamingDemandDrivenPipeline::MAXIMUM_NUMBER_OF_PIECES(), -1);
 

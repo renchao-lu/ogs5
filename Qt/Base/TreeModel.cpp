@@ -236,3 +236,8 @@ void TreeModel::setupModelData(const QStringList &lines, TreeItem *parent)
          number++;
      }
  }
+
+TreeItem* TreeModel::rootItem() const
+{
+	return _rootItem;
+}

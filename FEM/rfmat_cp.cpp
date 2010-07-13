@@ -574,7 +574,8 @@ if(max_solubility > 0){
 *************************************************************************/
 double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFProcess* m_pcs)
 {
-    long group;
+	(void)theta;
+	long group;
     int  p_idx = -1, t_idx = -1;
     /*int dependence = 0; */
     double diffusion_coefficient = -1.0;
@@ -582,12 +583,14 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
     double temperature_average = 293.;
     double diffusion_average=0.0;
     double *k = NULL;
-    double Dm,porosity;
-    static long *element_nodes;
+    double Dm; //KR ,porosity;
+	// static long *element_nodes;
+#ifdef GEM_REACT
     static int count_nodes;
-    static int p_ind, t_ind;
-    static double eta = 0.0; //, theta = 1.0;
-    int i;
+	 static double eta = 0.0; //, theta = 1.0;
+#endif
+	// static int p_ind, t_ind;
+    //KR int i;
   //OK411
   diffusion_average = diffusion_average;
   pressure_average = pressure_average;

@@ -19,6 +19,7 @@ ColorPickerPushButton::ColorPickerPushButton( QWidget* parent /*= 0*/ )
 
 void ColorPickerPushButton::mouseReleaseEvent(QMouseEvent* e)
 {
+	Q_UNUSED(e);
 	QColor newColor = QColorDialog::getColor(_color, NULL, "Choose a color");
 	if (!newColor.isValid())
 		return;

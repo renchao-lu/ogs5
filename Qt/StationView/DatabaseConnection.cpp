@@ -223,7 +223,7 @@ int DatabaseConnection::loadStationList(int listID, const GEOLIB::Color* const c
 					addStratigraphy(listID, stations);
 
 				std::string temp_name (listName.toStdString());
-				if (stations->size()>0) _geoObjects->addStationVec(stations, temp_name , color);
+				if (!stations->empty()) _geoObjects->addStationVec(stations, temp_name , color);
 
 				_db.close();
 				//emit listLoaded(listName);

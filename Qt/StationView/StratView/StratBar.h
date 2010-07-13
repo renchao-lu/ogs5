@@ -22,7 +22,7 @@ public:
 	 * \brief Constructor
 	 * \param station The borehole whose stratigraphy will be visualised.
 	 */
-	StratBar(GEOLIB::StationBorehole* station, QGraphicsItem* parent = 0);
+	StratBar(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color> *stratColors = NULL, QGraphicsItem* parent = 0);
 	~StratBar();
 
 	/// Returns the bounding rectangle of the bar.
@@ -45,6 +45,7 @@ private:
 	static const int BARWIDTH = 50;
 
 	GEOLIB::StationBorehole* _station;
+	std::map<std::string, GEOLIB::Color> _stratColors;
 
 };
 

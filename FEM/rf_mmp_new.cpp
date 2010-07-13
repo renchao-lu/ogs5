@@ -1925,7 +1925,7 @@ double CMediumProperties::PermeabilitySaturationFunction(long number,double*gp,d
   }
   if(!(m_pcs->pcs_type_name.compare("RICHARDS_FLOW")==0)&&no_fluid_phases!=2)
      return 1.0;
-  static int nidx0,nidx1;
+  // static int nidx0,nidx1;
   double saturation=0.0,saturation_eff; //OK411
   int gueltig;
   //---------------------------------------------------------------------
@@ -3201,7 +3201,7 @@ double CMediumProperties::Porosity(long number,double theta)
 {
   static int nidx0,nidx1;
   double primary_variable[PCS_NUMBER_MAX];
-  int gueltig, idx;
+  int gueltig; //KR , idx;
   double porosity_sw;
   CFiniteElementStd* assem = m_pcs->GetAssember();
   string str;
@@ -3601,7 +3601,7 @@ porosity_sw = porosity_sw; // WW Remove this argument
 /**************************************************************************
  9 Storage
 
-/**************************************************************************
+**************************************************************************
  11 Permeability
 **************************************************************************
 FEMLib-Method:
@@ -4445,7 +4445,7 @@ double CMediumProperties::CapillaryPressureFunction(long number,double*gp,double
   // only for liquid phase
   //if (phase == 0)  //YD
   //  return 0.;
-  static int nidx0,nidx1;
+  // static int nidx0,nidx1;
   int gueltig;
   double capillary_pressure=0.0;
 
@@ -4654,7 +4654,7 @@ double CMediumProperties::SaturationCapillaryPressureFunction(long number,double
   gp = gp;
   number = number;
 
-  static int nidx0,nidx1;
+  // static int nidx0,nidx1;
   static double saturation;
   int gueltig;
   double capillary_pressure=0.0;
@@ -4846,7 +4846,8 @@ double CMediumProperties::PressureSaturationDependency
 
 	static double capillary_pressure,capillary_pressure1,capillary_pressure2;
 	static double saturation1,saturation2;
-	static double dS,dS_dp,dpc;
+	static double dS,dpc;
+	// static double dS_dp;
 	// 01.3.2007 WW
 	double S_e, m, n, alpha, dPcdSe;
 	int phase = 0;
@@ -5536,6 +5537,7 @@ Programing:
 **************************************************************************/
 long GetNearestHetVal2(long EleIndex, CFEMesh *m_msh, vector <double> xvals,  vector <double> yvals,  vector <double> zvals,  vector <double> mmpvals){
 
+  (void)mmpvals;
   long i, nextele, no_values;
   double ex, ey, ez, dist, dist1, dist2;
   double x, y, z;
@@ -6570,7 +6572,7 @@ double CMediumProperties::TortuosityFunction(long number, double *gp, double the
   number = number;
   assem = assem;
 
-  static int nidx0,nidx1;
+  // static int nidx0,nidx1;
   //----------------------------------------------------------------------
 /*OK411
   int count_nodes;
@@ -6860,7 +6862,7 @@ double CMediumProperties::StorageFunction(long index,double *gp,double theta)
 	//int material_group;
 	//double x_mid, y_mid, z_mid, x_bore, y_bore, z_bore, distance;
 	dircosl = dircosm = dircosn = 0.0;//Initialise variable
-	static int nidx0,nidx1;
+	// static int nidx0,nidx1;
 	//double primary_variable[10];		//OK To Do
 	//int count_nodes;
 /*OK411

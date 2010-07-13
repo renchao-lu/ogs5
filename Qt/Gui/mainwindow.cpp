@@ -19,9 +19,13 @@
 #include "ListPropertiesDialog.h"
 #include "Configure.h"
 #include "VtkVisPipeline.h"
+#include "VtkVisPipelineItem.h"
 #include "VtkAddFilterDialog.h"
 #include "RecentFiles.h"
 #include "VisPrefsDialog.h"
+#include "TreeModelIterator.h"
+
+#include "modeltest.h"
 
 // GEOLIB includes
 #include "Point.h"
@@ -46,7 +50,7 @@
 #include <QImage>
 #include <QPixmap>
 
-//vtk testing
+// VTK
 #include <vtkRenderWindow.h>
 #include "VtkBGImageSource.h"
 #include <vtkVRMLExporter.h>
@@ -158,6 +162,12 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	connect(vtkVisTabWidget, SIGNAL(requestViewUpdate()),
 		visualizationWidget, SLOT(updateView()));
 
+	connect(vtkVisTabWidget->vtkVisPipelineView, SIGNAL(actorSelected(vtkActor*)),
+		(QObject*)(visualizationWidget->interactorStyle()), SLOT(highlightActor(vtkActor*)));
+	connect((QObject*)(visualizationWidget->vtkPickCallback()), SIGNAL(actorPicked(vtkActor*)),
+		vtkVisTabWidget->vtkVisPipelineView, SLOT(selectItem(vtkActor*)));
+
+	//TEST new ModelTest(_vtkVisPipeline, this);
 
 	// Stack the data dock widgets together
 	tabifyDockWidget(pntDock, lineDock);
@@ -188,7 +198,7 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	menuWindows->addAction(showLineDockAction);
 
 	QAction* showStationDockAction = stationDock->toggleViewAction();
-	showStationDockAction->setStatusTip(tr("Shows / hides the lines view"));
+	showStationDockAction->setStatusTip(tr("Shows / hides the station view"));
 	connect(showStationDockAction, SIGNAL(triggered(bool)), this, SLOT(showStationDockWidget(bool)));
 	menuWindows->addAction(showStationDockAction);
 
@@ -198,12 +208,12 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	menuWindows->addAction(showSurfaceDockAction);
 
 	QAction* showMshDockAction = mshDock->toggleViewAction();
-	showMshDockAction->setStatusTip(tr("Shows / hides the lines view"));
+	showMshDockAction->setStatusTip(tr("Shows / hides the mesh view"));
 	connect(showMshDockAction, SIGNAL(triggered(bool)), this, SLOT(showMshDockWidget(bool)));
 	menuWindows->addAction(showMshDockAction);
 
 	QAction* showVisDockAction = vtkVisDock->toggleViewAction();
-	showVisDockAction->setStatusTip(tr("Shows / hides the visualization pipeline view"));
+	showVisDockAction->setStatusTip(tr("Shows / hides the mesh view"));
 	connect(showVisDockAction, SIGNAL(triggered(bool)), this, SLOT(showVisDockWidget(bool)));
 	menuWindows->addAction(showVisDockAction);
 
@@ -294,6 +304,14 @@ void MainWindow::showMshDockWidget( bool show )
 		mshDock->hide();
 }
 
+void MainWindow::showVisDockWidget( bool show )
+{
+	if (show)
+		vtkVisDock->show();
+	else
+		vtkVisDock->hide();
+}
+
 void MainWindow::open()
 {
 	QSettings settings("UFZ", "OpenGeoSys-5");
@@ -350,28 +368,35 @@ void MainWindow::save()
 	if (files.size() != 0) dir_str = QFileInfo(files[0]).absolutePath();
 	else dir_str = QDir::homePath();
 
-    QString fileName = QFileDialog::getSaveFileName(this, "Save data as", dir_str,"Geosys XML files (*.gml);;All files (* *.*)");
-
 	QString gliName = pntTabWidget->dataViewWidget->modelSelectComboBox->currentText();
+	QString fileName = QFileDialog::getSaveFileName(this, "Save data as", dir_str,"Geosys geometry files (*.gml);;GMSH geometry files (*.geo)");
 
-	if (!fileName.isEmpty())
+	if (!(fileName.isEmpty() || gliName.isEmpty()))
 	{
+		QFileInfo fi(fileName);
+
 		QFile file(fileName);
 		file.open( QIODevice::WriteOnly );
+		std::cout << "Writing " << fileName.toStdString() << " ... ";
 
-		std::string schemaName(SOURCEPATH);
-		schemaName.append("/OpenGeoSysGLI.xsd");
-		XMLInterface xml(_geoModels, schemaName);
-		xml.writeGLIFile(file, gliName);
+		if (fi.suffix().toLower() == "gml")
+		{
+			std::string schemaName(SOURCEPATH);
+			schemaName.append("/OpenGeoSysGLI.xsd");
+			XMLInterface xml(_geoModels, schemaName);
+			xml.writeGLIFile(file, gliName);
+			xml.insertStyleFileDefinition(fileName);
+		}
+		else if (fi.suffix().toLower() == "geo")
+		{
+			GMSHInterface gmsh_io;
+			gmsh_io.writeGMSHInputFile(fileName.toStdString(), gliName.toStdString(), *_geoModels);
+		}
+
 		file.close();
-
-		xml.insertStyleFileDefinition(fileName);
-
-		std::cout << "writing " << fileName.toStdString () << std::endl;
-		GMSHInterface gmsh_io;
-		gmsh_io.writeGMSHInputFile(fileName.toStdString(), gliName.toStdString(), *_geoModels);
+		std::cout << "done." << std::endl;
 	}
-	else OGSError::box("No file name entered.");
+	else if (!fileName.isEmpty() && gliName.isEmpty()) OGSError::box("No geometry data available.");
 }
 
 void MainWindow::loadFile(const QString &fileName)
@@ -421,12 +446,13 @@ void MainWindow::loadFile(const QString &fileName)
 #endif
 		std::string schemaName(SOURCEPATH);
 		schemaName.append("/OpenGeoSysGLI.xsd");
-//		XMLInterface xml(_geoModels, schemaName);
-//		xml.readGLIFile(fileName);
+		XMLInterface xml(_geoModels, schemaName);
+		xml.readGLIFile(fileName);
 #ifndef NDEBUG
     	std::cout << myTimer0.elapsed() << " ms" << std::endl;
 #endif
 	}
+	// OpenGeoSys observation station files (incl. boreholes)
 	else if (fi.suffix().toLower() == "stn")
 	{
 		GEOLIB::Station::StationType type = GEOLIB::Station::BOREHOLE;
@@ -461,6 +487,7 @@ void MainWindow::loadFile(const QString &fileName)
 			_geoModels->addStationVec(stations, name, GEOLIB::getRandomColor());
 		}
 	}
+	// OpenGeoSys mesh files
     else if (fi.suffix().toLower() == "msh")
 	{
 #ifndef NDEBUG
@@ -496,6 +523,7 @@ void MainWindow::loadFile(const QString &fileName)
 		 std::string name = (fi.baseName()).toStdString();
 		 _meshModels->addMesh(grid, name);
 	}
+	// GMS borehole files
 	else if (fi.suffix().toLower() == "txt")
 	{
 		vector<GEOLIB::Point*> *boreholes = new vector<GEOLIB::Point*>();
@@ -504,6 +532,15 @@ void MainWindow::loadFile(const QString &fileName)
 		if (GMSInterface::readBoreholesFromGMS(boreholes, fileName.toStdString()))
 			_geoModels->addStationVec(boreholes, name, GEOLIB::getRandomColor());
 	}
+	// GMS mesh files
+	else if (fi.suffix().toLower() == "3dm")
+	{
+		std::string name = fileName.toStdString();
+		const CFEMesh* mesh = GMSInterface::readGMS3DMMesh(name);
+		GridAdapter* grid = new GridAdapter(mesh);
+		_meshModels->addMesh(grid, name);
+	}
+	// goCAD files
 	else if (fi.suffix().toLower() == "ts") {
 #ifndef NDEBUG
     	 QTime myTimer;
@@ -596,7 +633,7 @@ QMenu* MainWindow::createImportFilesMenu()
 
 void MainWindow::importGMS()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, "Select GMS file to import", "","GMS files (*.txt)");
+    QString fileName = QFileDialog::getOpenFileName(this, "Select GMS file to import", "","GMS files (*.txt *.3dm)");
      if (!fileName.isEmpty()) loadFile(fileName);
 }
 
@@ -708,8 +745,28 @@ void MainWindow::HideWindow()
 	this->hide();
 }
 
+
+void MainWindow::on_actionExportVTK_triggered( bool checked /*= false*/ )
+{
+	Q_UNUSED(checked)
+
+	int count = 0;
+	QString filename = QFileDialog::getSaveFileName(this, "Export object to vtk-files", "","VTK files (*.vtp *.vtu)");
+	std::string basename = QFileInfo(filename).path().toStdString();
+	basename.append("/" + QFileInfo(filename).baseName().toStdString());
+	TreeModelIterator it(_vtkVisPipeline);
+	++it;
+	while(*it)
+	{
+		count++;
+		static_cast<VtkVisPipelineItem*>(*it)->writeToFile(basename + number2str(count) + ".vtk");
+		++it;
+	}
+}
+
 void MainWindow::on_actionExportVRML2_triggered( bool checked /*= false*/ )
 {
+	Q_UNUSED(checked)
 	vtkVRMLExporter* exporter = vtkVRMLExporter::New();
 	QString fileName = QFileDialog::getSaveFileName(this, "Save scene to VRML file", "","VRML files (*.wrl);;");
 	exporter->SetFileName(fileName.toStdString().c_str());
@@ -720,6 +777,7 @@ void MainWindow::on_actionExportVRML2_triggered( bool checked /*= false*/ )
 
 void MainWindow::on_actionExportObj_triggered( bool checked /*= false*/ )
 {
+	Q_UNUSED(checked)
 	vtkOBJExporter* exporter = vtkOBJExporter::New();
 	QString fileName = QFileDialog::getSaveFileName(this, "Save scene to Wavefront OBJ files", "",";;");
 	exporter->SetFilePrefix(fileName.toStdString().c_str());
@@ -728,7 +786,3 @@ void MainWindow::on_actionExportObj_triggered( bool checked /*= false*/ )
 	exporter->Delete();
 }
 
-void MainWindow::showVisDockWidget( bool show )
-{
-	show ? vtkVisTabWidget->show() : vtkVisTabWidget->hide();
-}

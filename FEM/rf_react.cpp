@@ -298,8 +298,8 @@ REACT::~REACT(void){
    ROCKFLOW - Funktion: CreateREACT
 
    Aufgabe:
-   Stellt Datenstruktur für Ratenkommunikation zwischen Raecations and MTM2
-   zur verfügung
+   Stellt Datenstruktur fÃ¼r Ratenkommunikation zwischen Raecations and MTM2
+   zur verfÃ¼gung
    
    Programmaenderungen:
    06/2003     SB         Erste Version
@@ -328,7 +328,7 @@ for(i=0;i<vector_size;i++){
  np = np + heatflag; // allocate one for temperature
  // allocate memory for the concentration arrays 
 
- name     = (char **)   Malloc(sizeof(char *)   * np);
+ name     = (const char **)   Malloc(sizeof(char *)   * np);
  val_in   = (double **) Malloc(sizeof(double *) * np);
  val_out  = (double **) Malloc(sizeof(double *) * np);
  rate     = (double **) Malloc(sizeof(double *) * np);
@@ -349,7 +349,7 @@ for(i=0;i<vector_size;i++){
    ROCKFLOW - Funktion: DestroyREACT
 
    Aufgabe:
-   Zerstört Datenstructur REACT
+   ZerstÃ¶rt Datenstructur REACT
    
    Programmaenderungen:
    06/2003     SB         Erste Version
@@ -363,7 +363,7 @@ void DestroyREACT(void)
 	rc->val_in   = (double **)Free(rc->val_in);
 	rc->val_out  = (double **)Free(rc->val_in);
 	rc->rate     = (double **)Free(rc->val_in);
-	rc->name     = (char **)  Free(rc->name);
+	rc->name     = (const char **)  Free(rc->name);
 	rc->rateflag = (int *) Free(rc->rateflag);
 	rc = (REACT *) Free(rc);
  }
@@ -699,7 +699,7 @@ void REACT::SetConcentrationResults(void)
  CRFProcess *m_pcs = NULL;
 
  //Fix Process here ??
- //Rücksrache mit Sebastian
+ //RÃ¼cksrache mit Sebastian
 
  timelevel = 1;  // concentrations are in new timelevel
  np = (int)pcs_vector.size();
@@ -770,7 +770,7 @@ REACT* REACT::GetREACT(void)
    ROCKFLOW - Funktion: ReadReactionModel
 
    Aufgabe:
-   Liest die Eingabedatei *.pqc und geben die Model-values zurück
+   Liest die Eingabedatei *.pqc und geben die Model-values zurÃ¼ck
                                                                           
    Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    R REACTION_MODEL *rcml:Zeiger des REACTION_MODELs
@@ -893,7 +893,7 @@ int REACT::ReadReactionModel( FILE *File){
    ROCKFLOW - Funktion: ReadReactionModelNew
 
    Aufgabe:
-   Liest die Eingabedatei *.pqc und gibt die Parameter der Schnittstelle zurück
+   Liest die Eingabedatei *.pqc und gibt die Parameter der Schnittstelle zurÃ¼ck
 
     indices of vectors pqc_name, pqc_index and pqc_process
     n1 = number_of_master_species
@@ -1064,7 +1064,7 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
         }
 		this->rcml_number_of_ion_exchanges = n_ion_exchange;
        } 
-	  /* Scleife über Keyword GAS_PHASE */
+	  /* Scleife Ã¼ber Keyword GAS_PHASE */
 	  if(line_string.find("GAS_PHASE")!=string::npos) { // keyword found
 
         while(line_string.find("#ende")==string::npos){
@@ -1188,7 +1188,7 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
               }
               else{
 //                DisplayMsgLn(" # comp found ");
-                sscanf("%s", str);
+				//sscanf(str, "%s");
                 StrReadStr(s, str, f, TFString, &pos);
 
 				/* SB: temperature introduced */
@@ -1379,7 +1379,7 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
             LineFeed(f);
             while (fgets(str,256,indatei) && (!strstr(str, "#ende"))){
 				if(strstr(str,"-steps")){
-				/* zerlegen und RockFlow timestep einfügen */
+				/* zerlegen und RockFlow timestep einfÃ¼gen */
 				  sscanf(str," %s %lf %s %i %s", s1,&dvalue,s,&j,s2); ///OK
 				  /* steps in reaction model eintragen */
 				  this->rcml_number_of_pqcsteps = j;
@@ -1693,8 +1693,8 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
                     m_pcs = PCSGet("HEAT_TRANSPORT");
                     idx = m_pcs->GetNodeValueIndex("TEMPERATURE1");
                     dval = m_pcs->GetNodeValue(index,idx);
-					if (dval<273.0) dval += 273.15; //change from °C to Kelvin if necessary
-                    dval -=273.15; // Input to PHREEQC is in °C
+					if (dval<273.0) dval += 273.15; //change from Â°C to Kelvin if necessary
+                    dval -=273.15; // Input to PHREEQC is in Â°C
                     *out_file << "temp " << dval << "  # temp " << endl;
 					temp = dval; // save for gas phase input
                 }                
@@ -1817,7 +1817,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
 		// cout << " Pressure: " << press << " = " << dens << " * " << gravity_constant << " * ( " << h << " - " << z << " ) " << endl;
 		
 
-		// get temperature in [°C]
+		// get temperature in [Â°C]
 		if(rcml_heat_flag < 1) temp = this->temperature; 
 
 		// get molar masses of gas phase
@@ -1842,7 +1842,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
 			else if (line_string.find("-volume") !=string::npos)
 				*out_file << "        -volume       " << volume*1000.0 << endl;     // volume in Liters
 			else if (line_string.find("-temperature") !=string::npos)
-				*out_file << "        -temperature       " << temp << endl;         // temperature in °Celsius
+				*out_file << "        -temperature       " << temp << endl;         // temperature in Â°Celsius
             else if (line_string.find("# comp") !=string::npos){
                 count++;
                 speciesname = pqc_names[count];
@@ -2001,7 +2001,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
 
 int REACT::Call_Phreeqc(void){
 
-  char *m_phreeqc;
+  const char *m_phreeqc;
 //  m_phreeqc="phrqc phinp.dat  phinp.out  phreeqc.dat";
    m_phreeqc="phreeqc phinp.dat  phinp.out  phreeqc.dat";
    
@@ -2032,7 +2032,7 @@ int REACT::Call_Phreeqc(void){
   
   Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    E char *File: Dateiname der PHREEQC-Ausdgabedatei
-   R char **val_out: Zeiger für chemische Conzentration 
+   R char **val_out: Zeiger fÃ¼r chemische Conzentration 
    E char **name: Componentnamen 
 
   Ergebnis:
@@ -2113,7 +2113,7 @@ int REACT::ReadOutputPhreeqc(char* fout){
   
   Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    E char *File: Dateiname der PHREEQC-Ausdgabedatei
-   R char **val_out: Zeiger für chemische Conzentration 
+   R char **val_out: Zeiger fÃ¼r chemische Conzentration 
    E char **name: Componentnamen 
 
   Ergebnis:
@@ -2301,7 +2301,7 @@ double *helprates;
 // long *neighbor_nodes=NULL;
 // int anz_neighbor_nodes;
 
-/* Wann soll gerechnet werden: rel. Genauigkeit der Konzentration = deltaC/Cin /Zeitschrittlänge */
+/* Wann soll gerechnet werden: rel. Genauigkeit der Konzentration = deltaC/Cin /ZeitschrittlÃ¤nge */
 schwellwert = 1.0e-12;
 if(dt>0.0)	schwellwert = 1.0e-4/dt;
 
@@ -2446,7 +2446,7 @@ void REACT::SetNeighborNodesActive(long startnode, long level, int* help) //ToDo
   }
   else {
 
-  elems1d = GetNode1DElems(NodeNumber[startnode],&num_elems1d); //SB: liefert zu viele Elemente zurück
+  elems1d = GetNode1DElems(NodeNumber[startnode],&num_elems1d); //SB: liefert zu viele Elemente zurÃ¼ck
   if(num_elems1d > 0) num_elems1d =2;
   elems2d = GetNode2DElems(NodeNumber[startnode],&num_elems2d);
   if(num_elems2d > 4) num_elems2d =4;
@@ -2878,8 +2878,8 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 	      m_pcs = PCSGet("HEAT_TRANSPORT");
 	      idx = m_pcs->GetNodeValueIndex("TEMPERATURE1");
 	      dval = m_pcs->GetNodeValue(index,idx);
-	      if (dval<273.0) dval += 273.15; //change from °C to Kelvin if necessary
-	      dval -=273.15; // Input to PHREEQC is in °C
+	      if (dval<273.0) dval += 273.15; //change from Â°C to Kelvin if necessary
+	      dval -=273.15; // Input to PHREEQC is in Â°C
 	      *out_buff << "temp " << dval << endl ; 
 	      nline++;
 	      temp = dval; // save for gas phase input
@@ -3007,7 +3007,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 	  // calculate pressure in [Pa]
 	  press = dens * gravity_constant * (h-z);
 	  
-	  // get temperature in [°C]
+	  // get temperature in [Â°C]
 	  if(rcml_heat_flag < 1) 
 	    temp = this->temperature; 
 	
@@ -3039,7 +3039,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 	    }
 	  else if (line_string.find("-temperature") !=string::npos)
 	    {
-	      *out_buff << "-temperature " << temp << endl;         // temperature in °Celsius
+	      *out_buff << "-temperature " << temp << endl;         // temperature in Â°Celsius
 	      nline++;
 	    }
 	  else if (line_string.find("# comp") !=string::npos)

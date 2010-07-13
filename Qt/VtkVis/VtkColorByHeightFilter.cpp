@@ -44,6 +44,8 @@ int VtkColorByHeightFilter::RequestData( vtkInformation* request,
 							             vtkInformationVector** inputVector, 
 								         vtkInformationVector* outputVector )
 {
+	(void)request;
+
 	vtkInformation* inInfo = inputVector[0]->GetInformationObject(0);
     vtkPolyData *input = vtkPolyData::SafeDownCast(inInfo->Get(vtkDataObject::DATA_OBJECT()));
 	
@@ -70,7 +72,7 @@ int VtkColorByHeightFilter::RequestData( vtkInformation* request,
 		input->GetPoint(i,p);
 
 		unsigned char lutColor[3];
-		_colorLookupTable->getColor(p[2], lutColor);
+		_colorLookupTable->getColor((size_t)p[2], lutColor);
 		colors->InsertNextTupleValue(lutColor);
 	}
 

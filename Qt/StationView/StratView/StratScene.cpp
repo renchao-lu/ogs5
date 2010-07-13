@@ -14,7 +14,7 @@
 #include "DateTools.h"
 
 
-StratScene::StratScene(GEOLIB::StationBorehole* station, QObject* parent) : QGraphicsScene(parent)
+StratScene::StratScene(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color> *stratColors, QObject* parent) : QGraphicsScene(parent)
 {
 	QRectF textBounds;
 	int stratBarOffset = 200;
@@ -36,7 +36,7 @@ StratScene::StratScene(GEOLIB::StationBorehole* station, QObject* parent) : QGra
 	textBounds = dateText->boundingRect();
 	dateText->setPos(50 + textBounds.width()/2, 350);
 
-	StratBar* stratBar = addStratBar(station);
+	StratBar* stratBar = addStratBar(station, stratColors);
 	stratBar->setPos(stratBarOffset, MARGIN);
 	QRectF stratBarBounds = stratBar->boundingRect();
 
@@ -96,9 +96,9 @@ void StratScene::addSoilNameLabels(std::vector<std::string> soilNames, std::vect
 	}
 }
 
-StratBar* StratScene::addStratBar(GEOLIB::StationBorehole* station)
+StratBar* StratScene::addStratBar(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color> *stratColors)
 {
-	StratBar* b = new StratBar(station);
+	StratBar* b = new StratBar(station, stratColors);
 	addItem(b);
 	return b;
 }

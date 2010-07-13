@@ -57,26 +57,10 @@ public:
 	 * @return an object of type PointVec
 	 */
 	PointVec (const std::string& name, std::vector<Point*>* points, std::vector<std::string>* names,
-			PointType type = PointVec::POINT) :
-		NameMapper (names), _pnt_vec(points), _type(type), _name (name)
-	{
-		assert (_pnt_vec);
-
-		if (type == PointVec::POINT) {
-			makePntsUnique (_pnt_vec, _pnt_id_map);
-//			std::cout << "INFO: " << _pnt_vec->size() << " unique points" << std::endl;
-		}
-	}
+			PointType type = PointVec::POINT);
 
 	/** Destructor deletes all Points of this PointVec. */
-	~PointVec ()
-	{
-		for (size_t k(0); k<size(); k++) {
-			delete (*_pnt_vec)[k];
-			(*_pnt_vec)[k] = NULL;
-		}
-		delete _pnt_vec;
-	}
+	~PointVec ();
 
 	/**
 	 * Method adds a Point to the vector and takes care to delete it.
@@ -98,7 +82,7 @@ public:
 		if (_ele_vec_names) {
 			_ele_vec_names->push_back (name);
 			// sort names of points
-			quicksort (*_ele_vec_names, 0, _ele_vec_names->size(), _perm);
+			Quicksort<std::string> (*_ele_vec_names, 0, _ele_vec_names->size(), _perm);
 		}
 	}
 
@@ -117,16 +101,7 @@ public:
 	 */
 	const std::vector<Point*>* getVector () const { return _pnt_vec; }
 
-	std::vector<Point*> *filterStations(const std::vector<PropertyBounds> &bounds) const
-	{
-		std::vector<Point*> *tmpStations (new std::vector<Point*>);
-		size_t size (_pnt_vec->size());
-		for (size_t i=0; i<size; i++)
-		{
-			if (static_cast<Station*>((*_pnt_vec)[i])->inSelection(bounds)) tmpStations->push_back((*_pnt_vec)[i]);
-		}
-		return tmpStations;
-	}
+	std::vector<Point*> *filterStations(const std::vector<PropertyBounds> &bounds) const;
 
 	/** sets the name of the object
 	 * \param n the name as standard string */
@@ -140,13 +115,7 @@ public:
 	 * @param id the id of the point
 	 * @return the id of the point
 	 */
-	bool getPointIDByName (const std::string& name, size_t &id) const
-	{
-		bool ret;
-		if ((ret = getElementIDByName (name, id)))
-			id = _pnt_id_map[id];
-		return ret;
-	}
+	bool getPointIDByName (const std::string& name, size_t &id) const;
 
 	const std::vector<size_t>& getIDMap () const { return _pnt_id_map; }
 

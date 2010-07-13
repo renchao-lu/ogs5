@@ -23,13 +23,13 @@ public:
 	virtual ~TreeItem();
 
 	void appendChild(TreeItem *child);
-	TreeItem* child(int row);
+	TreeItem* child(int row) const;
 	virtual int childCount() const;
 	virtual int columnCount() const;
 	virtual QVariant data(int column) const;
 	virtual bool setData(int column, const QVariant &value);
 	int row() const;
-	TreeItem* parent();
+	TreeItem* parent() const;
 	bool removeChildren(int position, int count);
 
 private:

@@ -14,7 +14,7 @@ class REACT{
 		REACT(void);
 		~REACT(void);
 // Data
-	char **name;       /* names of reactants */
+	const char **name;       /* names of reactants */
 	double **val_in ;  /* input concentration values to reaction module */
 	double **val_out ; /* output concentration values of reaction module */
 	double **rate ;    /* reaction rates for MTM2 */
@@ -27,7 +27,7 @@ class REACT{
 	bool check_no_reaction_nodes; /* flag if CheckNoReactionNodes has been performed */
 	double temperature; /* temperature of water at node as specified in input file */
 	long elenumber;    //number of elements
-	/* hier sp‰ter arrays of reactions reinh‰ngen ?*/
+	/* hier sp√§ter arrays of reactions reinh√§ngen ?*/
 
 	// rcml moved here
 	int rcml_number_of_master_species; /* number of master species (inorgan. equilibrium) */
@@ -35,7 +35,7 @@ class REACT{
 	int rcml_number_of_kinetics; /* number of kinetic reactions  */
 	int rcml_number_of_ion_exchanges; /* number of phases (in equilibrium) */
 	int rcml_number_of_gas_species; /* number of species in gas phase */
-	/* hier sp‰ter reaction models reinh‰ngen ?*/
+	/* hier sp√§ter reaction models reinh√§ngen ?*/
 	int rcml_pH_flag;   /* =0, pH constant; =1 (default), pH will change  */
 	int rcml_pe_flag;   /* =0, pe constant; =1 (default), pe will change  */
 	int rcml_heat_flag; /* =0, temp constant (default); =1 , temp will change  */

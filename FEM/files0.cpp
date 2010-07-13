@@ -202,6 +202,7 @@ Programing:
 **************************************************************************/
 bool RFDOpen(string file_name_base)
 {
+	(void)file_name_base;
   return false;
 }
 
@@ -402,9 +403,9 @@ void CURWrite()
 /* ROCKFLOW - Funktion: GetLineFromFile1
                                       */
 /* Aufgabe:
-   Liest aus dem Eingabefile *ein die n�chste Zeile
-   F�ngt die Zeile mit ";" an oder ist sie leer, wird sie ausgelassen
-   R�ckgabe ist ist ein string mit dem Zeileninhalt ab dem ersten Nicht-Leerzeichen
+   Liest aus dem Eingabefile *ein die n?chste Zeile
+   F?ngt die Zeile mit ";" an oder ist sie leer, wird sie ausgelassen
+   R?ckgabe ist ist ein string mit dem Zeileninhalt ab dem ersten Nicht-Leerzeichen
    bis zum ersten Auftreten des Kommentartzeichens ";"
                                             */
 /* Programmaenderungen:
@@ -423,9 +424,9 @@ string GetLineFromFile1(ifstream *ein)
   while(fertig<1){
     if(ein->getline(zeile1,MAX_ZEILEN)){				//Zeile lesen
 	  line = zeile1;							//character in string umwandeln
-	  i = (int) line.find_first_not_of(" ",0);		//Anf�ngliche Leerzeichen �berlesen, i=Position des ersten Nichtleerzeichens im string
+	  i = (int) line.find_first_not_of(" ",0);		//Anf?ngliche Leerzeichen ?berlesen, i=Position des ersten Nichtleerzeichens im string
 	  j = (int) line.find(";",i) ;					//Nach Kommentarzeichen ; suchen. j = Position des Kommentarzeichens, j=-1 wenn es keines gibt.
-	  if(j!=i)fertig = 1;						//Wenn das erste nicht-leerzeichen ein Kommentarzeichen ist, zeile �berlesen. Sonst ist das eine Datenzeile
+	  if(j!=i)fertig = 1;						//Wenn das erste nicht-leerzeichen ein Kommentarzeichen ist, zeile ?berlesen. Sonst ist das eine Datenzeile
 	  if((i != -1))
 		zeile = line.substr(i,j-i);   //Ab erstem nicht-Leerzeichen bis Kommentarzeichen rauskopieren in neuen substring, falls Zeile nicht leer ist
 	  i = (int) zeile.find_last_not_of(" "); // Suche nach dem letzten Zeichen, dass kein Leerzeichen ist
@@ -461,12 +462,13 @@ string GetLineFromFile1(ifstream *ein)
    03/1994     MSR        Erste Version
                                                                           */
 /**************************************************************************/
-int FilePrintString ( FILE *f, char *s )
+int FilePrintString ( FILE *f, const char *s )
 {
   if ((int)fprintf(f,"%s",s)!=(int)strlen(s))
       return 0;
   return 1;
 }
+
 /**************************************************************************/
 /* ROCKFLOW - Funktion: FilePrintInt
                                                                           */
@@ -666,15 +668,17 @@ bool Keyword(const string &line)
    03/1994   MSR   Erste Version
                                                                           */
 /**************************************************************************/
-char *StrUp ( char *s )
+char *StrUp ( const char *s )
 {
   int i;
   int l = (int)strlen(s);
+  char* tmp = new char[l];
+  strcpy(tmp, s);
   for (i=0; i<l; i++) {
       if (islower((int)s[i]))
-          s[i] = (char)toupper((int)s[i]);
+		  tmp[i] = (char)toupper((int)s[i]);
   }
-  return s;
+  return tmp;
 }
 
 /**************************************************************************/
@@ -1028,7 +1032,7 @@ string get_sub_string2(const string &buffer,const string &delimiter,string *tmp)
 /* ROCKFLOW - Funktion: GetUncommentedLine
                                       */
 /* Aufgabe:
-   R�ckgabe ist ist ein string mit dem Zeileninhalt ab dem ersten Nicht-Leerzeichen
+   R?ckgabe ist ist ein string mit dem Zeileninhalt ab dem ersten Nicht-Leerzeichen
    bis zum ersten Auftreten des Kommentartzeichens ";"
    Abgeleitet aus GetLineFromFile1()                                            */
 /* Programmaenderungen:
@@ -1039,7 +1043,7 @@ string GetUncommentedLine(string line){
   string zeile = "";
   int i=0, j=0;
   //----------------------------------------------------------------------
-	  i = (int) line.find_first_not_of(" ",0);		//Anf�ngliche Leerzeichen �berlesen, i=Position des ersten Nichtleerzeichens im string
+	  i = (int) line.find_first_not_of(" ",0);		//Anf?ngliche Leerzeichen ?berlesen, i=Position des ersten Nichtleerzeichens im string
 	  j = (int) line.find(";",i) ;					//Nach Kommentarzeichen ; suchen. j = Position des Kommentarzeichens, j=-1 wenn es keines gibt.
 	  if((i != -1))
 		zeile = line.substr(i,j-i);   //Ab erstem nicht-Leerzeichen bis Kommentarzeichen rauskopieren in neuen substring, falls Zeile nicht leer ist

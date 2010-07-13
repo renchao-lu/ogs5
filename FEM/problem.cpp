@@ -1529,7 +1529,7 @@ inline double Problem::RandomWalker()
 	//
 	if(!m_pcs->selected) return error; //12.12.2008 WW
 	//
-	CFEMesh* m_msh = NULL;
+	// CFEMesh* m_msh = NULL;
 
 	if(m_pcs&&m_pcs->selected)
 	{
@@ -1548,7 +1548,6 @@ inline double Problem::RandomWalker()
 				m_msh = FEMGet("LIQUID_FLOW");
 			else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
 				m_msh = FEMGet("GROUNDWATER_FLOW");
-			else;
 		}
 
 #ifdef RANDOM_WALK

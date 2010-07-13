@@ -41,6 +41,9 @@ void VtkSurfacesSource::PrintSelf( ostream& os, vtkIndent indent )
 
 int VtkSurfacesSource::RequestData( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
+	(void)request;
+	(void)inputVector;
+
 	const int nSurfaces = _surfaces->size();
 	if (nSurfaces == 0)
 		return 0;
@@ -88,7 +91,7 @@ int VtkSurfacesSource::RequestData( vtkInformation* request, vtkInformationVecto
 	output->SetPoints(newPoints);
 	output->SetPolys(newPolygons);
 
-	GEOLIB::Color* c = GEOLIB::getRandomColor();
+	const GEOLIB::Color* c = GEOLIB::getRandomColor();
 	this->GetProperties()->SetColor((*c)[0]/255.0,(*c)[1]/255.0,(*c)[2]/255.0);
 
 	return 1;
@@ -96,6 +99,9 @@ int VtkSurfacesSource::RequestData( vtkInformation* request, vtkInformationVecto
 
 int VtkSurfacesSource::RequestInformation( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
 {
+	(void)request;
+	(void)inputVector;
+
 	vtkInformation* outInfo = outputVector->GetInformationObject(0);
 	outInfo->Set(vtkStreamingDemandDrivenPipeline::MAXIMUM_NUMBER_OF_PIECES(), -1);
 

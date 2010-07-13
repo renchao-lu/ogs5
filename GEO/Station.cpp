@@ -228,7 +228,7 @@ int StationBorehole::addLayer(std::list<std::string> fields, StationBorehole* bo
 		{
 			fields.pop_front();
 
-			int layer = atoi(fields.front().c_str());
+			// int layer = atoi(fields.front().c_str());
 			fields.pop_front();
 
 			std::cerr << "StationBorehole::addLayer - assuming correct order" << std::endl;

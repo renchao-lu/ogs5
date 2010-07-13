@@ -19,7 +19,7 @@ class StratScene : public QGraphicsScene
 {
 public:
 	/// Constructor
-	StratScene(GEOLIB::StationBorehole* station, QObject* parent = 0);
+	StratScene(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color> *stratColors = NULL, QObject* parent = 0);
 	~StratScene();
 
 	/// The margin between the boundary of the scene and the bounding box of all items within the scene
@@ -36,7 +36,7 @@ private:
 	void addSoilNameLabels(std::vector<std::string> soilNames, std::vector<GEOLIB::Point*> profile, double offset);
 
 	/// Add a stratigraphy-bar to the scene.
-	StratBar* addStratBar(GEOLIB::StationBorehole* station);
+	StratBar* addStratBar(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color> *stratColors = NULL);
 
 };
 

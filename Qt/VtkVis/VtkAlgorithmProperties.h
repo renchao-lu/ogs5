@@ -21,12 +21,15 @@ class VtkAlgorithmProperties
 public:
 	/// Returns the properties
 	vtkProperty* GetProperties() const { return _property; };
+	/// Returns a texture (if one has been assigned).
 	vtkTexture* GetTexture()       { return _texture; };
+	/// Sets a texture for the VtkVisPipelineItem.
 	void SetTexture(vtkTexture* t) { _texture = t; };
 	bool GetScalarVisibility() const { return _scalarVisibility; }
 	void SetScalarVisibility(bool on) { _scalarVisibility = on; }
 
 protected:
+	/// Constructor (sets default values)
 	VtkAlgorithmProperties() 
 	{ 
 		_property = vtkProperty::New(); 

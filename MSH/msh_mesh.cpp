@@ -552,9 +552,9 @@ void CFEMesh::ConstructGrid() {
 							if (Edges[ii]) {
 								Edges0[i] = Edges[ii];
 								Edges[ii]->GetNodes(e_edgeNodes);
-								if (node_index_glb0[edgeIndex_loc0[0]]
+								if ((size_t)node_index_glb0[edgeIndex_loc0[0]]
 										== e_edgeNodes[1]->GetIndex()
-										&& node_index_glb0[edgeIndex_loc0[1]]
+										&& (size_t)node_index_glb0[edgeIndex_loc0[1]]
 												== e_edgeNodes[0]->GetIndex())
 									Edge_Orientation[i] = -1;
 								done = true;
@@ -965,7 +965,7 @@ void CFEMesh::GenerateHighOrderNodes() {
 	}
 	//
 	NodesNumber_Quadratic = (long) nod_vector.size();
-	for (e = NodesNumber_Linear; e < NodesNumber_Quadratic; e++) {
+	for (e = NodesNumber_Linear; (size_t)e < NodesNumber_Quadratic; e++) {
 		nod_vector[e]->SetEquationIndex(e);
 		Eqs2Global_NodeIndex.push_back(nod_vector[e]->GetIndex());
 	}
@@ -1106,7 +1106,7 @@ void CFEMesh::RenumberNodesForGlobalAssembly() {
  07/2005 WW Write by member methods of geometry objects.
  12/2005 OK MAT_TYPE
  **************************************************************************/
-void CFEMesh::Write(fstream*fem_msh_file) {
+void CFEMesh::Write(fstream*fem_msh_file) const {
 	long i;
 	//--------------------------------------------------------------------
 	//KEYWORD
@@ -1189,7 +1189,7 @@ long CFEMesh::GetNODOnPNT(const GEOLIB::Point* pnt) const
 	double sqr_dist(0.0), distmin(std::numeric_limits<double>::max());
 	long number(-1);
 
-	for (size_t i=0; i<NodesInUsage(); i++) {
+	for (size_t i=0; i<(size_t)NodesInUsage(); i++) {
 		sqr_dist = 0.0;
 		sqr_dist += (nod_vector[i]->X() - (*pnt)[0]) * (nod_vector[i]->X()
 				- (*pnt)[0]);
@@ -1536,7 +1536,7 @@ void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* ply,
 	// repeat until at least one relevant node was found
 	while (nfound) {
 		// loop over all nodes
-		for (size_t j=0; j<NodesInUsage(); j++) {
+		for (size_t j=0; j<(size_t)NodesInUsage(); j++) {
 			pt1[0] = nod_vector[j]->X();
 			pt1[1] = nod_vector[j]->Y();
 			pt1[2] = nod_vector[j]->Z();
@@ -1616,7 +1616,7 @@ void CFEMesh::GetNODOnSFC(const GEOLIB::Surface* sfc, std::vector<size_t>& msh_n
 {
 	msh_nod_vector.clear();
 
-	for (size_t j(0); j<NodesInUsage(); j++) {
+	for (size_t j(0); j<(size_t)NodesInUsage(); j++) {
 		if (sfc->isPntInBV ( (nod_vector[j])->getData() )) {
 			if (! sfc->isPntInSfc((nod_vector[j])->getData()))
 				msh_nod_vector.push_back (nod_vector[j]->GetIndex());
@@ -3313,7 +3313,7 @@ bool CFEMesh::NodeExists(size_t node)
 	size_t no_nodes (nod_vector.size());
 
 	for (size_t i=0; i<no_nodes; i++) {
-		if (node == Eqs2Global_NodeIndex[i])
+		if (node == (size_t)Eqs2Global_NodeIndex[i])
 			return true;
 	}
 	return false;
@@ -4138,11 +4138,11 @@ void CFEMesh::GetELEOnPLY(CGLPolyline*m_ply, vector<long>&ele_vector_ply) {
 					nn = nodes_vector_ply[k];
 					//if(edge_node_numbers[0]==nodes_vector_ply[k])
 					edge_node_0 = edge_nodes[0]->GetIndex();
-					if (edge_nodes[0]->GetIndex() == nodes_vector_ply[k])
+					if (edge_nodes[0]->GetIndex() == (size_t)nodes_vector_ply[k])
 						m_ele->selected++;
 					//if(edge_node_numbers[1]==nodes_vector_ply[k])
 					edge_node_1 = edge_nodes[1]->GetIndex();
-					if (edge_nodes[1]->GetIndex() == nodes_vector_ply[k])
+					if (edge_nodes[1]->GetIndex() == (size_t)nodes_vector_ply[k])
 						m_ele->selected++;
 				}
 				if (m_ele->selected == 2) {

@@ -2052,7 +2052,7 @@ long CRFProcessDeformation::MarkBifurcatedNeighbor(const int PathIndex)
          {
             // Neighbor is a face on surface
             if(elem1->neighbors[j]->GetDimension()!=elem1->GetDimension()) continue;
-            if(index!=elem1->neighbors[j]->GetIndex()) continue;
+			if((size_t)index!=elem1->neighbors[j]->GetIndex()) continue;
             {
                 adjacent = true;
                 Extended = nb;
@@ -2493,7 +2493,7 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
           exist = false;
           for(j=k+1; j<SizeSt; j++)
           {
-            if(m_st->geo_type==st_vector[j]->geo_type)
+            if(m_st->getGeoType() == st_vector[j]->getGeoType())
             {
               //
               exist = true;
@@ -2502,7 +2502,7 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
           }
           if(!exist)
           //---
-            ExcavDomainIndex.push_back(m_st->geo_type);
+            ExcavDomainIndex.push_back(m_st->getGeoType());
       }
    }
    SizeSubD = (int)ExcavDomainIndex.size();
@@ -2683,7 +2683,7 @@ void CRFProcessDeformation::UpdateInitialStress(bool ZeroInitialS)
 **************************************************************************/
 bool CRFProcessDeformation::CalcBC_or_SecondaryVariable_Dynamics(bool BC)
 {
-  char *function_name[7];
+  const char *function_name[7];
   long i, j;
   double v, bc_value, time_fac = 1.0;
 

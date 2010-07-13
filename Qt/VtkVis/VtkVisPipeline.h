@@ -12,20 +12,20 @@
 #include "TreeModel.h"
 #include "Color.h"
 #include "Point.h"
-#include <QVector>
 
-#include "VtkVisPipelineItem.h"
+#include <QVector>
+#include <QMap>
 
 class vtkAlgorithm;
 class vtkLight;
 class vtkPointSet;
 class vtkRenderer;
+class vtkActor;
 class Model;
 class TreeModel;
 class MshModel;
 class StationTreeModel;
 class QModelIndex;
-
 
 /**
  * \brief VtkVisPipeline manages the VTK visualization.
@@ -53,6 +53,9 @@ public:
 	/// Sets the background-colour of the scene.
 	void setBGColor(const GEOLIB::Color &color);
 
+	/// Returns the QModelIndex of VtkVisPipelineItem which actor
+	/// is the given one.
+	QModelIndex getIndex(vtkActor* actor);
 
 	Qt::ItemFlags flags( const QModelIndex &index ) const;
 
@@ -78,6 +81,7 @@ private:
 	vtkRenderer* _renderer;
 	QVector<vtkAlgorithm*> _sources;
 	std::list<vtkLight*> _lights;
+	QMap<vtkActor*, QModelIndex> _actorMap;
 
 
 signals:

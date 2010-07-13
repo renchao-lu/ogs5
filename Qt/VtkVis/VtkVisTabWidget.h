@@ -34,6 +34,7 @@ protected slots:
 	void on_scaleZ_textChanged(const QString &text);
 
 private:
+	void addColorTable();
 	VtkVisPipelineItem* _item;
 
 signals:

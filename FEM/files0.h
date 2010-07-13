@@ -24,7 +24,7 @@ typedef int (*FctTestString) ( char * , FILE * );
 
 extern int LineFeed ( FILE *f );
   /* Schreibt Zeilenvorschub in Textdatei */
-extern int FilePrintString ( FILE *f, char *s );
+extern int FilePrintString ( FILE *f, const char *s );
   /* Schreibt Zeichenkette in Textdatei */
 extern int FilePrintInt ( FILE *f, int x );
   /* Schreibt Integer-Wert in Textdatei */
@@ -104,7 +104,7 @@ extern int TFString ( char *x, FILE *f );
 
 extern char *ReadString ( void );
   /* Liest Zeichenkette von Standardeingabe */
-extern char *StrUp ( char *s );
+extern char *StrUp ( const char *s );
   /* wandelt s in Grossbuchstaben um */
 extern char *StrDown ( char *s );
   /* wandelt s in Kleinbuchstaben um */

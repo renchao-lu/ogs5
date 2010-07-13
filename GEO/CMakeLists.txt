@@ -9,6 +9,10 @@ set( SOURCES
 	geo_pnt.cpp
 	geo_sfc.cpp
 	geo_vol.cpp
+	Point.cpp
+	Polyline.cpp
+	Polygon.cpp
+	SimplePolygonHierarchy.cpp
 	Surface.cpp
 	AxisAlignedBoundingBox.cpp
 	Station.cpp
@@ -23,14 +27,16 @@ set( HEADERS
 	geo_lib.h
 	geo_lin.h
 	geo_mathlib.h
-	geo_ply.h 	
-	geo_pnt.h	
-	geo_sfc.h		
-	geo_vol.h	
+	geo_ply.h
+	geo_pnt.h
+	geo_sfc.h	
+	geo_vol.h
 	AxisAlignedBoundingBox.h
 	TemplatePoint.h
 	Point.h
 	Polyline.h
+	Polygon.h
+	SimplePolygonHierarchy.h
 	Triangle.h
 	Surface.h
 	PointVec.h
@@ -40,6 +46,7 @@ set( HEADERS
 	PropertyBounds.h
 	Station.h	
 	GEOObjects.h
+	GeoType.h
 )
 
 # Create the library

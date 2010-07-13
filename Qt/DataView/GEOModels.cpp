@@ -14,7 +14,6 @@
 #include "LinesModel.h"
 #include "SurfaceModel.h"
 
-
 GEOModels::GEOModels( QObject* parent /*= 0*/ ) :
 	QObject (parent)
 {

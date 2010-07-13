@@ -13,7 +13,6 @@ set( HEADERS
 set( SOURCES
 	DateTools.cpp
 	StringTools.cpp
-	quicksort.cpp
 	NameMapper.cpp
 )
 
@@ -27,6 +26,12 @@ include_directories(
 	../MathLib
 	.
 )
+
+target_link_libraries (
+        Base
+        GEO
+)
+
 
 IF(OGS_BUILD_UTILITIES)
 	# Create utility executable

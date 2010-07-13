@@ -7,18 +7,17 @@
 #define XMLINTERFACE_H
 
 #include "Configure.h"
+#include "GEOObjects.h"
 
-#include <map>
 #include <QXmlStreamReader>
 #if OGS_QT_VERSION > 45
 	#include <QtXmlPatterns/QXmlSchema>
 #endif // OGS_QT_VERSION > 45
-#include <QFile>
 
-#include "GEOObjects.h"
-#include "Point.h"
-#include "Polyline.h"
-#include "Surface.h"
+
+
+class QFile;
+class QDomNode;
 
 /** 
  * \brief Reads and writes GeoObjects to and from XML files.
@@ -56,16 +55,24 @@ public:
 
 private:
 	/// Reads GEOLIB::Point-objects from an xml-file
-	void readPoints    ( QXmlStreamReader &xmlReader, std::vector<GEOLIB::Point*> *points );	
+	void readPoints    ( const QDomNode &pointsRoot, std::vector<GEOLIB::Point*> *points );	
 
 	/// Reads GEOLIB::Polyline-objects from an xml-file
-	void readPolylines ( QXmlStreamReader &xmlReader, std::vector<GEOLIB::Polyline*> *polylines, std::vector<GEOLIB::Point*> *points );
+	void readPolylines ( const QDomNode &polylinesRoot, std::vector<GEOLIB::Polyline*> *polylines, std::vector<GEOLIB::Point*> *points );
 
 	/// Reads GEOLIB::Surface-objects from an xml-file
-	void readSurfaces  ( QXmlStreamReader &xmlReader, std::vector<GEOLIB::Surface*> *surfaces, std::vector<GEOLIB::Polyline*> *polylines );
+	void readSurfaces  ( const QDomNode &surfacesRoot, std::vector<GEOLIB::Surface*> *surfaces, std::vector<GEOLIB::Point*> *points );
 
-	/// Returns the value of element 'name' as a string.
-	QString readElement(QXmlStreamReader &xml, const QString &name) const;
+	/// Checks if a hash for the given data file exists to skip the time-consuming validation part.
+	/// If a hash file exists _and_ the hash of the data file is the same as the content of the hash file the validation is skipped
+	/// If no hash file exists, the xml-file is validated and a hash file is written if the xml-file was valid.
+	bool checkHash(const QString &fileName) const;
+
+	/// Calculates an MD5 hash of the given file.
+	QByteArray calcHash(const QString &fileName) const;
+	
+	/// Checks if the given file is conform to the given hash.
+	bool fileIsValid(const QString &fileName, const QByteArray &hash) const;
 
 	GEOLIB::GEOObjects* _geoObjects;
 	

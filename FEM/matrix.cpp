@@ -268,7 +268,7 @@ void M34MatTVek(double *vektor, double *ergebnis);
 void M34Vorkond(int aufgabe, double *x, double *b);
 int  M34CopyToAMG1R5Structure( double *A, int *IA, int *JA, int NDA, int NDIA, int NDJA, double *, double *, double *, double *);
 
-void MX_Exit(char *caller, int errcode)
+void MX_Exit(const char *caller, int errcode)
 {
   char text[1024];
 

@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "Station.h"
-
+#include "msh_mesh.h"
 
 /**
  * \brief Manages the import and export of Aquaveo GMS files into and out of GEOLIB.
@@ -29,6 +29,9 @@ public:
 
 	/// Writes a file that assigns each soilID-index in the GMS export file a name.
 	static int writeSoilIDTable(const std::vector<std::string> &soilID, const std::string &filename);
+
+	/// Reads a GMS *.3dm file and converts it to an CFEMesh.
+	static CFEMesh* readGMS3DMMesh(std::string file_name);
 
 private:
 	/**

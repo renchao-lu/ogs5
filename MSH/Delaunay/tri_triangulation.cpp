@@ -212,7 +212,7 @@ bool bSaveTriFile_TRI( char* szTriFile, vector<Cp_dtri> *TriList,  vector<Cp_dbl
 	bool bRetCode = false;
 	FILE *fp = NULL;
 	int i, nTri, nPnt;
-   	static char kopf[81];
+	// static char kopf[81];
 	//long output_nr=0,output_geom=0;
 	char rf_version_string[16];
 
@@ -245,7 +245,7 @@ bool bSaveTriFile_TRI( char* szTriFile, vector<Cp_dtri> *TriList,  vector<Cp_dbl
     //Write Nodes
 	   	fprintf( fp, "%s\n", " $NODES");
 		nPnt = (int)pnt->size();
-		fprintf(fp,"%ld ",nPnt);
+		fprintf(fp,"%d ",nPnt);
     //write Geometry    
 	for( i = 0 ; i < nPnt ; i++ ) {
 		Cp_dbl3 node = pnt->at( i );
@@ -255,7 +255,7 @@ bool bSaveTriFile_TRI( char* szTriFile, vector<Cp_dtri> *TriList,  vector<Cp_dbl
     //Write Elements
 	   	fprintf( fp, "%s\n", " $ELEMENTS");
         nTri = (int)TriList->size( );
-		fprintf(fp,"%ld \n",nTri);
+		fprintf(fp,"%d \n",nTri);
     //write Topology
 	for( i = 0 ; i < nTri ; i++ ) {
 		Cp_dtri tri = TriList->at( i );
@@ -1020,8 +1020,8 @@ int iListNeighbour_TRI(
 			TriVector->push_back( tmptri );
 
 			/*----------------------------------------------------------
-			#### "ポイントが属する三角形"リストの修正。 
-			#### ptr0、ptr1、ptr2が属する三角形の数がひとつ増やされる
+			#### "ﾂポﾂイﾂδ督トﾂつｪﾂ堕ｮﾂつｷﾂづｩﾂ三ﾂ角ﾂ形"ﾂδ環スﾂトﾂづ個修ﾂ青ｳﾂ。 
+			#### ptr0ﾂ、ptr1ﾂ、ptr2ﾂつｪﾂ堕ｮﾂつｷﾂづｩﾂ三ﾂ角ﾂ形ﾂづ個青板つｪﾂづ青づ�ﾂづつ堕敖づ｢ﾂつｳﾂづｪﾂづｩ
 			----------------------------------------------------------*/
 			iBlgList->Set( ptr0, iBelngCount[ptr0], iTri );
 			iBelngCount[ptr0]++;
@@ -1062,7 +1062,7 @@ bool bResetTriangleList_TRI(
 	vector <Cp_dtri>::iterator Iter;
 
 	/*------------------------------------------------------------------
-	#### 三角形リストを再構成する
+	#### ﾂ三ﾂ角ﾂ形ﾂδ環スﾂトﾂづｰﾂ催�ﾂ構ﾂ青ｬﾂつｷﾂづｩ
 	------------------------------------------------------------------*/
 	TriVector2->clear( );
 	for ( Iter = TriVector->begin( ); Iter != TriVector->end( ); Iter++ ) {

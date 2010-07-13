@@ -7,11 +7,17 @@
 
 // ** INCLUDES **
 #include "VtkVisTabWidget.h"
-
 #include "VtkVisPipelineItem.h"
 
 #include <vtkActor.h>
 #include <vtkProperty.h>
+
+#include "ColorTableModel.h"
+#include "ColorTableView.h"
+
+/* test includes */
+#include "VtkMeshSource.h"
+#include "VtkStationSource.h"
 
 VtkVisTabWidget::VtkVisTabWidget( QWidget* parent /*= 0*/ )
 : QWidget(parent)
@@ -20,6 +26,8 @@ VtkVisTabWidget::VtkVisTabWidget( QWidget* parent /*= 0*/ )
 
 	connect(this->vtkVisPipelineView, SIGNAL(itemSelected(VtkVisPipelineItem*)),
 		this, SLOT(setActiveItem(VtkVisPipelineItem*)));
+
+
 }
 
 void VtkVisTabWidget::setActiveItem( VtkVisPipelineItem* item )
@@ -32,9 +40,30 @@ void VtkVisTabWidget::setActiveItem( VtkVisPipelineItem* item )
 		diffuseColorPickerButton->setColor(vtkProps->GetDiffuseColor());
 		visibleEdgesCheckBox->setChecked(vtkProps->GetEdgeVisibility());
 		edgeColorPickerButton->setColor(vtkProps->GetEdgeColor());
-		opacitySlider->setValue(vtkProps->GetOpacity() * 100.0);
+		opacitySlider->setValue((int)(vtkProps->GetOpacity() * 100.0));
 		double* scale = item->actor()->GetScale();
 		scaleZ->setText(QString::number(scale[2]));
+
+	/* test - integrating colour tables into property-window */
+	VtkStationSource* test = dynamic_cast<VtkStationSource*>(_item->algorithm());
+	if (test)
+	{
+		std::map<std::string, GEOLIB::Color> colors = test->getColorLookupTable();
+		if (!colors.empty())
+		{
+			QVBoxLayout *vbox = new QVBoxLayout;
+			this->filterPropertiesGroupBox->setLayout(vbox);
+			//readColorLookupTable(colors, "d:/BoreholeColourReference.txt");
+			ColorTableModel* ctm = new ColorTableModel(colors);
+			ColorTableView* ctv = new ColorTableView();
+			ctv->setModel(ctm);
+			ctv->setItemDelegate(new ColorTableViewDelegate);
+			vbox->addWidget(ctv);
+			ctv->resizeRowsToContents();
+		}
+	}
+	/* ------------------------------------------------------- */
+
 
 		emit requestViewUpdate();
 	}
@@ -83,11 +112,16 @@ void VtkVisTabWidget::on_opacitySlider_sliderMoved( int value )
 void VtkVisTabWidget::on_scaleZ_textChanged(const QString &text)
 {
 	bool ok=true;
-	double scale = scaleZ->text().toDouble(&ok);
+	double scale = text.toDouble(&ok);
 
 	if (ok)
 	{
 		_item->actor()->SetScale(1, 1, scale);
 		emit requestViewUpdate();
 	}
+}
+
+void VtkVisTabWidget::addColorTable()
+{
+	
 }

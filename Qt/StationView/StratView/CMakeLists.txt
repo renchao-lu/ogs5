@@ -8,7 +8,6 @@ set( SOURCES
 
 # Moc Header files
 set( MOC_HEADERS
-	StratScene.h
 	StratView.h
 	StratWindow.h
 )
@@ -16,6 +15,7 @@ set( MOC_HEADERS
 # Header files
 set( HEADERS
 	StratBar.h
+	StratScene.h
 )
 
 # UI files
