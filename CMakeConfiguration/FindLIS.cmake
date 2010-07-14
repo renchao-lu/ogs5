@@ -11,18 +11,18 @@ if (NOT LIS_FOUND)
 	
 	find_path( LIS_INCLUDE_DIR
 		NAMES lis.h
-		PATHS ${CMAKE_SOURCE_DIR}/LIB)
+		PATHS ${CMAKE_SOURCE_DIR}/../Libs/precompiled)
 
 	if ( UNIX )
 		# Tell if the unix system is on 64-bit base
 		if(CMAKE_SIZEOF_VOID_P MATCHES "8")
 			find_library(LIS_LIBRARIES
 				NAMES lis-64
-				PATHS ${CMAKE_SOURCE_DIR}/LIB )	
+				PATHS ${CMAKE_SOURCE_DIR}/../Libs/precompiled )	
 		else (CMAKE_SIZEOF_VOID_P MATCHES "8")
 			find_library(LIS_LIBRARIES
 				NAMES lis-32
-				PATHS ${CMAKE_SOURCE_DIR}/LIB )	
+				PATHS ${CMAKE_SOURCE_DIR}/../Libs/precompiled )	
 		endif (CMAKE_SIZEOF_VOID_P MATCHES "8")
 	else ( UNIX )			
 		find_library(LIS_LIBRARIES
