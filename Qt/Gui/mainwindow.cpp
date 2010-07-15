@@ -389,8 +389,8 @@ void MainWindow::save()
 		}
 		else if (fi.suffix().toLower() == "geo")
 		{
-			GMSHInterface gmsh_io;
-			gmsh_io.writeGMSHInputFile(fileName.toStdString(), gliName.toStdString(), *_geoModels);
+			GMSHInterface gmsh_io (fileName.toStdString());
+			gmsh_io.writeGMSHInputFile(gliName.toStdString(), *_geoModels);
 		}
 
 		file.close();
@@ -455,7 +455,7 @@ void MainWindow::loadFile(const QString &fileName)
 	// OpenGeoSys observation station files (incl. boreholes)
 	else if (fi.suffix().toLower() == "stn")
 	{
-		GEOLIB::Station::StationType type = GEOLIB::Station::BOREHOLE;
+		GEOLIB::Station::StationType type = GEOLIB::Station::STATION;
 		vector<GEOLIB::Point*> *stations = new vector<GEOLIB::Point*>();
 		string name;
 
@@ -785,3 +785,4 @@ void MainWindow::on_actionExportObj_triggered( bool checked /*= false*/ )
 	exporter->Write();
 	exporter->Delete();
 }
+
