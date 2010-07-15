@@ -1,6 +1,6 @@
 /**************************************************************************
 GeoLib - Object: Surface
-Task: 
+Task:
 Programing:
 03/2003 WW Implementation
 11/2003 WW Pointers to the polylines instead of names of polylines are set
@@ -52,12 +52,12 @@ Surface::~Surface()
 
   while(polyline_of_surface_vector.size()) //CC
 	polyline_of_surface_vector.pop_back();
-  
-  for (i=0;i<(int)nodes_coor_vector.size();i++) 
-  {	    
+
+  for (i=0;i<(int)nodes_coor_vector.size();i++)
+  {
     delete nodes_coor_vector[i];
   }
-  nodes_coor_vector.clear();  
+  nodes_coor_vector.clear();
 }
 CTIN::~CTIN()
 {
@@ -67,7 +67,7 @@ CTIN::~CTIN()
   name.clear();
   for(i=0;i<no_triangles;i++) {
     delete Triangles[i];
-  }   
+  }
   while(Triangles.size()) Triangles.pop_back();
   //this == NULL;
 }
@@ -76,11 +76,11 @@ GeoLib-Method: Surface::output(FILE* geo_file, const int index)
 Task: Output the information of surface to a geo syntax file
 Programing:
 11/2003 WW Implement
-03/2004 WW Avoid multiplie defined entities 
+03/2004 WW Avoid multiplie defined entities
 08/2004 CC see version: Geosys3909_ac10ww.zip
 07/2005 CC .gli to .geo for multi polylines of one surface
 **************************************************************************/
-void Surface::output(FILE* geo_file, int &p_index, int &l_index, 
+void Surface::output(FILE* geo_file, int &p_index, int &l_index,
 					 int &pl_index, int &s_index)
 {
     int  orient = 1;
@@ -95,16 +95,16 @@ void Surface::output(FILE* geo_file, int &p_index, int &l_index,
 
     CGLPoint *CGPnt = NULL;
     CGLPoint *CGPnt0 = NULL;
-    CGLLine *CGLn0 = NULL; 
-    CGLLine *CGLn1 = NULL; 
-    CGLLine *CGLn = NULL; 
+    CGLLine *CGLn0 = NULL;
+    CGLLine *CGLn1 = NULL;
+    CGLLine *CGLn = NULL;
 
 	//First entity: points
     // list<CGLPolyline*>::const_iterator p  = polyline_of_surface_list.begin();//CC
     vector<CGLPolyline*>::iterator p = polyline_of_surface_vector.begin();
 
     FilePrintString(geo_file, "// Points");
-    LineFeed (geo_file);   
+    LineFeed (geo_file);
     while (p!=polyline_of_surface_vector.end())//CC
 	{
        p_pline = *p;
@@ -144,7 +144,7 @@ void Surface::output(FILE* geo_file, int &p_index, int &l_index,
 	             FilePrintString(geo_file, ", ");
                  FilePrintDouble(geo_file, CGPnt->mesh_density);
                  //FilePrintString(geo_file, "DensityScale");
-                 FilePrintString(geo_file, "};"); 
+                 FilePrintString(geo_file, "};");
                  LineFeed (geo_file);
 			  }
 	      }
@@ -153,7 +153,7 @@ void Surface::output(FILE* geo_file, int &p_index, int &l_index,
     }
     // Second entity: lines
     FilePrintString(geo_file, "// Lines");
-    LineFeed (geo_file);   
+    LineFeed (geo_file);
     p = polyline_of_surface_vector.begin();//CC
     while (p!=polyline_of_surface_vector.end())//CC
     {
@@ -170,7 +170,7 @@ void Surface::output(FILE* geo_file, int &p_index, int &l_index,
               return;
             }
 		   if(CGLn->mesh_index<0)
-		   { 
+		   {
 			   Size0 = (int)gli_lines_vector.size();
                for (j=0;j<Size0;j++)
                {
@@ -203,15 +203,15 @@ void Surface::output(FILE* geo_file, int &p_index, int &l_index,
                   LineFeed (geo_file);
 				  CGLn->marked = true;
 			   }
-		   } 
+		   }
 		   pl++;
 	   }
 	   p++;
     }
-     
+
 	// Third entity: curves
 	FilePrintString(geo_file, "// Curve");
-    LineFeed (geo_file);   
+    LineFeed (geo_file);
 	p = polyline_of_surface_vector.begin(); //CC
 	int LocalPLyIndex = 0;
 	while(p!=polyline_of_surface_vector.end()) {//CC
@@ -223,11 +223,11 @@ void Surface::output(FILE* geo_file, int &p_index, int &l_index,
       FilePrintInt(geo_file,pl_index);
       FilePrintString(geo_file, ")={");
 
-	  orient = polyline_of_surface_orient[LocalPLyIndex]; 
+	  orient = polyline_of_surface_orient[LocalPLyIndex];
 
-	  vector<CGLLine*>::iterator pl =  p_pline->line_vector.begin(); //WW NULL; 
+	  vector<CGLLine*>::iterator pl =  p_pline->line_vector.begin(); //WW NULL;
 	  if(orient>0)
-	  { 
+	  {
 
 		  pl = p_pline->line_vector.begin();
 		  count = 0;
@@ -237,13 +237,13 @@ void Surface::output(FILE* geo_file, int &p_index, int &l_index,
              CGLn = *pl;
 
 			 //Determine the local orentation of this line
-			 ortL = 1; // 
+			 ortL = 1; //
 			 CGLn = CGLn->CheckLineOutPut();
              if(count==0)
 			 {
 				 CGPnt = p_pline->point_vector[0];
 				 if(CGLn->m_point2->PointDis(CGPnt)<DistTol)
-                 ortL = -1; 
+                 ortL = -1;
 
 			 }
 			 else
@@ -283,7 +283,7 @@ void Surface::output(FILE* geo_file, int &p_index, int &l_index,
 	         --pl;
 			 count--;
 			 //Determine the local orentation of this line
-			 ortL = 1; // 
+			 ortL = 1; //
              CGLn = *pl;
 
 			 CGLn = CGLn->CheckLineOutPut();
@@ -317,19 +317,19 @@ void Surface::output(FILE* geo_file, int &p_index, int &l_index,
 			 FilePrintInt(geo_file, ortL*orient*CGLn->mesh_index);
 	         if(pl!=p_pline->line_vector.begin()) FilePrintString(geo_file, ", ");//CC
 		  }
-	  } 
+	  }
 
-      
+
 	  FilePrintString(geo_file, "};");
-      LineFeed (geo_file);  
+      LineFeed (geo_file);
 
       LocalPLyIndex++;
       ++p;
 	}
-	
+
 	// Write surface
     FilePrintString(geo_file, "// Surface");
-    LineFeed (geo_file);   
+    LineFeed (geo_file);
     FilePrintString(geo_file, "Plane Surface(");
     FilePrintInt(geo_file, s_index);
     FilePrintString(geo_file, ")={");
@@ -339,18 +339,18 @@ void Surface::output(FILE* geo_file, int &p_index, int &l_index,
          FilePrintInt(geo_file, lineIndex[i]);
          int lineIndex_size = (int)lineIndex.size();
          if(i!=lineIndex_size-1)
-         FilePrintString(geo_file, ", ");         
+         FilePrintString(geo_file, ", ");
     }
     FilePrintString(geo_file, "};");
-    LineFeed (geo_file);  
+    LineFeed (geo_file);
     FilePrintString(geo_file, "// Physical Surface");
-    LineFeed (geo_file);   
+    LineFeed (geo_file);
     FilePrintString(geo_file, "Physical Surface(");
     FilePrintInt(geo_file, s_index);
     FilePrintString(geo_file, ")={");
     FilePrintInt(geo_file, s_index);
     FilePrintString(geo_file, "};");
-    LineFeed (geo_file);  
+    LineFeed (geo_file);
 }
 
 //OKmsh
@@ -372,25 +372,25 @@ void GEOSurfaceGLI2GEO(FILE *geo_file)
    vector<CGLPolyline*>::iterator p = polyline_vector.begin();//CC
   while(p!=polyline_vector.end()) {
     polyline = *p;
-    if(polyline->type==2) { 
+    if(polyline->type==2) {
       mesh_surface++;
       FilePrintString(geo_file, "// Surface");
-      LineFeed (geo_file);   
+      LineFeed (geo_file);
       FilePrintString(geo_file, "Plane Surface(");
       FilePrintInt(geo_file, mesh_surface);
       FilePrintString(geo_file, ")={");
       FilePrintInt(geo_file, mesh_surface);
       FilePrintString(geo_file, "};");
-      LineFeed (geo_file);  
+      LineFeed (geo_file);
 
       FilePrintString(geo_file, "// Physical Surface");
-      LineFeed (geo_file);   
+      LineFeed (geo_file);
       FilePrintString(geo_file, "Physical Surface(");
       FilePrintInt(geo_file, mesh_surface);
       FilePrintString(geo_file, ")={");
       FilePrintInt(geo_file, mesh_surface);
       FilePrintString(geo_file, "};");
-      LineFeed (geo_file);  
+      LineFeed (geo_file);
     }
     ++p;
   }
@@ -413,14 +413,14 @@ void Surface::Write(const std::string &path_name)
   FILE *gli_file = NULL;
   string gli_file_name;
   gli_file_name = path_name + ".gli";
-  const char *gli_file_name_char = 0; 
+  const char *gli_file_name_char = 0;
   gli_file_name_char = gli_file_name.data();
   gli_file = fopen(gli_file_name_char, "a");
   if(gli_file==NULL) {
     return;
   }
   else {
- 
+
     fprintf(gli_file,"%s\n","#SURFACE");
     //-----------------------------------------------------------------
     fprintf(gli_file," %s\n","$ID");
@@ -498,9 +498,9 @@ void Surface::ReArrangePolylineList()
 	{
  		p = polyline_of_surface_vector.begin();
 
-        while(p!=polyline_of_surface_vector.end()) 
-	    {   
-          top = (int)buff.size()-1; 
+        while(p!=polyline_of_surface_vector.end())
+	    {
+          top = (int)buff.size()-1;
           p_pline = *p;
 //OK
              if(p_pline->line_vector.size()==0) //CC
@@ -516,16 +516,16 @@ void Surface::ReArrangePolylineList()
 		//  line_b_1 = *(--pline_b->line_vector.end());
           long sizeb = (long)pline_b->line_vector.size();
           line_b_1 = pline_b->line_vector[sizeb-1];
-           
-           
-		  
+
+
+
           if(Firstply == true){
-              if( 
+              if(
                   (abs(line_begin->point1)==abs(line_b_1->point2))
 		         ||(abs(line_end->point2)==abs(line_b_1->point2)))
-                 
+
 		  {
-         
+
               buff.push_back(p_pline);
 			  // Strike out the compared polylines
           //    polyline_of_surface_vector.remove(p_pline);
@@ -534,7 +534,7 @@ void Surface::ReArrangePolylineList()
         ite2 = 0;
               Firstply = false;
               break;
-		  } 
+		  }
           }//end of if Firstply
          else if((abs(line_begin->point1)==abs(line_b_1->point2))
 		         ||(abs(line_end->point2)==abs(line_b_1->point2))
@@ -548,9 +548,9 @@ void Surface::ReArrangePolylineList()
            ite2 = 0;
               break;
           }
-       
+
           ++ite2;
-          ++p; 
+          ++p;
         }//end of while
 	}//end of while
     //
@@ -563,11 +563,11 @@ void Surface::ReArrangePolylineList()
 	   pline_b = buff[i];
        polyline_of_surface_vector.push_back(pline_b);
 	}
-    
+
 	// Release the buff
 	while(buff.size())
         buff.pop_back();
-}	   
+}
 /**************************************************************************
 GeoLib-Method: Surface::PolylineOrientation(void)
 Task: check the polyline orientation of surface
@@ -591,14 +591,14 @@ vector<CGLPolyline*>::iterator p =polyline_of_surface_vector.begin();
     p_pline = *p;
     if(p_pline->data_type==1) // OK not a toplogical polyline
       return;
- 
+
 	while(p!=polyline_of_surface_vector.end()) {
-      
+
       p_pline = *p;
-   	  
-      vector<CGLLine*>::iterator pl 
+
+      vector<CGLLine*>::iterator pl
 		  = p_pline->line_vector.begin();//CC
-      
+
       //Determine the orientation
       if(!firstPline)
 	  {
@@ -608,7 +608,7 @@ vector<CGLPolyline*>::iterator p =polyline_of_surface_vector.begin();
 
 			 )
            orient=1;
-		
+
 		 else
             orient=-1;
 	  }
@@ -622,33 +622,33 @@ vector<CGLPolyline*>::iterator p =polyline_of_surface_vector.begin();
 	      m_line = *pl;
 
 	      ++pl;
-	    
+
         }
 	  }
 	  else
 	  {
-        vector<CGLLine*>::iterator pl2 
+        vector<CGLLine*>::iterator pl2
 			= p_pline->line_vector.end();//CC
 		--pl2;
    	    while(pl2!=p_pline->line_vector.begin()) {//CC
 	       m_line = *pl2;
-          	
+
 		   --pl2;
-		} 
+		}
         m_line = *pl2;
-     
+
 
 	  }
-	  
-	  line_end = m_line; 
+
+	  line_end = m_line;
       firstPline = false;
-	
+
       ++p;
-	}//end of while	
+	}//end of while
 }
 /**************************************************************************
 GeoLib-Method: GEORemoveAllSurfaces()
-Task: 
+Task:
 Programing:
 12/2003 CC Implementation
 01/2005 OK List destructor
@@ -658,7 +658,7 @@ CCToDo Surface destructor
 05/2006 TK
 **************************************************************************/
 void GEORemoveAllSurfaces()
-{  
+{
   for (int i = 0; i < (int) surface_vector.size(); i++){
      delete surface_vector[i];
      surface_vector[i]=NULL;
@@ -666,8 +666,8 @@ void GEORemoveAllSurfaces()
   surface_vector.clear();
 }
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 04/2005 CC   Implementation
 07/2005 CC Modification remove polyline
@@ -683,7 +683,7 @@ void GEORemoveSurface(long nSel)
 
 /**************************************************************************
 GeoLib-Method:  GEOSurfaceTopology(long)
-Task: 
+Task:
 Programing:
 12/2003 CC Implementation
 03/2004 OK only if polyline_of_surface_list exists
@@ -701,7 +701,7 @@ void GEOSurfaceTopology(void)
   for(int i=0;i<(int)surface_vector.size();i++)
   {
     m_sfc = surface_vector[i];
-    if(m_sfc->polyline_of_surface_vector.size()==0) 
+    if(m_sfc->polyline_of_surface_vector.size()==0)
       continue;
 	if(m_sfc->order==false)
     {
@@ -730,7 +730,7 @@ void GEOSurfaceTopology(void)
 
 /**************************************************************************
 GeoLib-Method: GetPointsIn
-Task: 
+Task:
 Programing:
 01/2004 OK Implementation
 08/2005 CC Modification
@@ -763,13 +763,13 @@ Programing:
                                    xp,yp,zp,\
                                    (long)polygon_point_vector.size())) {
         anz_relevant++;
-      
+
         nodes = (long *) Realloc(nodes,sizeof(long)*anz_relevant);
-    
+
         nodes[anz_relevant-1] = i;
-      }  
+      }
     }
-   
+
   }
   // Destructions
    // nodes extern
@@ -782,7 +782,7 @@ Programing:
 }*/
 /**************************************************************************
 GeoLib-Method: CalcCenterPoint
-Task: 
+Task:
 Programing:
 01/2004 OK Implementation
 last modification:
@@ -816,8 +816,8 @@ Programing:
   return ok;
 }*/
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 03/2004 OK Implementation
 01/2005 OK TIN based on layer polylines
@@ -840,7 +840,7 @@ vector<CGLPolyline*>::iterator p = polyline_of_surface_vector.begin();
     CGLPolyline *m_polyline1 = NULL;
     CGLPolyline *m_polyline2 = NULL;
     while(p!=polyline_of_surface_vector.end()) {
-      m_polyline1 = *p; 
+      m_polyline1 = *p;
       ++p;
       m_polyline2 = *p;
       break;
@@ -849,15 +849,15 @@ vector<CGLPolyline*>::iterator p = polyline_of_surface_vector.begin();
     double xp[3],yp[3],zp[3];
     for(i=0;i<no_points-1;i++) {
       // first triangle of quad
-      xp[0] = m_polyline1->point_vector[i]->x; 
-      yp[0] = m_polyline1->point_vector[i]->y; 
-      zp[0] = m_polyline1->point_vector[i]->z; 
-      xp[1] = m_polyline1->point_vector[i+1]->x; 
-      yp[1] = m_polyline1->point_vector[i+1]->y; 
-      zp[1] = m_polyline1->point_vector[i+1]->z; 
-      xp[2] = m_polyline2->point_vector[i]->x; 
-      yp[2] = m_polyline2->point_vector[i]->y; 
-      zp[2] = m_polyline2->point_vector[i]->z; 
+      xp[0] = m_polyline1->point_vector[i]->x;
+      yp[0] = m_polyline1->point_vector[i]->y;
+      zp[0] = m_polyline1->point_vector[i]->z;
+      xp[1] = m_polyline1->point_vector[i+1]->x;
+      yp[1] = m_polyline1->point_vector[i+1]->y;
+      zp[1] = m_polyline1->point_vector[i+1]->z;
+      xp[2] = m_polyline2->point_vector[i]->x;
+      yp[2] = m_polyline2->point_vector[i]->y;
+      zp[2] = m_polyline2->point_vector[i]->z;
       m_triangle = new CTriangle;
       m_triangle->number = (long)TIN->Triangles.size();
       for(j=0;j<3;j++) {
@@ -867,15 +867,15 @@ vector<CGLPolyline*>::iterator p = polyline_of_surface_vector.begin();
       }
       TIN->Triangles.push_back(m_triangle);
       // second triangle of quad
-      xp[0] = m_polyline2->point_vector[i]->x; 
-      yp[0] = m_polyline2->point_vector[i]->y; 
-      zp[0] = m_polyline2->point_vector[i]->z; 
-      xp[1] = m_polyline2->point_vector[i+1]->x; 
-      yp[1] = m_polyline2->point_vector[i+1]->y; 
-      zp[1] = m_polyline2->point_vector[i+1]->z; 
-      xp[2] = m_polyline1->point_vector[i+1]->x; 
-      yp[2] = m_polyline1->point_vector[i+1]->y; 
-      zp[2] = m_polyline1->point_vector[i+1]->z; 
+      xp[0] = m_polyline2->point_vector[i]->x;
+      yp[0] = m_polyline2->point_vector[i]->y;
+      zp[0] = m_polyline2->point_vector[i]->z;
+      xp[1] = m_polyline2->point_vector[i+1]->x;
+      yp[1] = m_polyline2->point_vector[i+1]->y;
+      zp[1] = m_polyline2->point_vector[i+1]->z;
+      xp[2] = m_polyline1->point_vector[i+1]->x;
+      yp[2] = m_polyline1->point_vector[i+1]->y;
+      zp[2] = m_polyline1->point_vector[i+1]->z;
       m_triangle = new CTriangle;
       m_triangle->number = (long)TIN->Triangles.size();
       for(j=0;j<3;j++) {
@@ -894,8 +894,8 @@ vector<CGLPolyline*>::iterator p = polyline_of_surface_vector.begin();
   }
 }
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 03/2004 OK Implementation
 last modification:08/2005 CC
@@ -904,7 +904,7 @@ void GEOWriteSurfaceTINs(string file_path)
 {
   vector<Surface*>::iterator ps = surface_vector.begin();
   Surface *m_surface = NULL;
-  while(ps!=surface_vector.end()) { 
+  while(ps!=surface_vector.end()) {
     m_surface = *ps;
     if(!m_surface->TIN){
       ++ps;
@@ -918,8 +918,8 @@ void GEOWriteSurfaceTINs(string file_path)
 }
 
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 03/2004 OK Implementation
 last modification:
@@ -928,7 +928,7 @@ void GEOWriteSurfaceTINsTecplot(string file_path)
 {
   vector<Surface*>::iterator ps = surface_vector.begin();
   Surface *m_surface =NULL;
-  while(ps!=surface_vector.end()) { 
+  while(ps!=surface_vector.end()) {
     m_surface = *ps;
     if(!m_surface->TIN){
       ++ps;
@@ -950,7 +950,7 @@ void Surface::operator = (const Surface m_surface)
 */
 
 /**************************************************************************
-GEOLib-Method: 
+GEOLib-Method:
 Task: Surface read function
 Programing:
 03/2004 OK Implementation
@@ -1109,8 +1109,8 @@ std::ios::pos_type Surface::Read(std::ifstream *gli_file)
 }
 
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 03/2004 OK Implementation
 09/2005 CC file_path_base
@@ -1350,8 +1350,8 @@ void Surface::WriteTINTecplot(const std::string &file_path)
 }
 
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 04/2004 OK Implementation
 01/2005 OK TIN case
@@ -1410,7 +1410,7 @@ last modification:
     //--------------------------------------------------------------------
     case 2: // 2 vertical polylines //OK
       // .................................................................
-      // nodes close to first polyline 
+      // nodes close to first polyline
       p = polyline_of_surface_list.begin();
       while(p!=polyline_of_surface_list.end()) {
         m_polyline = *p;
@@ -1421,7 +1421,7 @@ last modification:
       // using triangles
       p = polyline_of_surface_list.begin();
       while(p!=polyline_of_surface_list.end()) {
-        m_polyline1 = *p; 
+        m_polyline1 = *p;
         ++p;
         m_polyline2 = *p;
         break;
@@ -1434,28 +1434,28 @@ last modification:
         m_node.z = GetNodeZ(nodes_array[j]);
         for(i=0;i<no_points-1;i++) {
           // first triangle of quad
-          xp[0] = m_polyline1->point_vector[i]->x; 
-          yp[0] = m_polyline1->point_vector[i]->y; 
-          zp[0] = m_polyline1->point_vector[i]->z; 
-          xp[1] = m_polyline1->point_vector[i+1]->x; 
-          yp[1] = m_polyline1->point_vector[i+1]->y; 
-          zp[1] = m_polyline1->point_vector[i+1]->z; 
-          xp[2] = m_polyline2->point_vector[i]->x; 
-          yp[2] = m_polyline2->point_vector[i]->y; 
-          zp[2] = m_polyline2->point_vector[i]->z; 
+          xp[0] = m_polyline1->point_vector[i]->x;
+          yp[0] = m_polyline1->point_vector[i]->y;
+          zp[0] = m_polyline1->point_vector[i]->z;
+          xp[1] = m_polyline1->point_vector[i+1]->x;
+          yp[1] = m_polyline1->point_vector[i+1]->y;
+          zp[1] = m_polyline1->point_vector[i+1]->z;
+          xp[2] = m_polyline2->point_vector[i]->x;
+          yp[2] = m_polyline2->point_vector[i]->y;
+          zp[2] = m_polyline2->point_vector[i]->z;
           if(m_node.IsInsideTriangle(xp,yp,zp)) {
             nodes_vector.push_back(nodes_array[j]);
           }
           // second triangle of quad
-          xp[0] = m_polyline2->point_vector[i]->x; 
-          yp[0] = m_polyline2->point_vector[i]->y; 
-          zp[0] = m_polyline2->point_vector[i]->z; 
-          xp[1] = m_polyline2->point_vector[i+1]->x; 
-          yp[1] = m_polyline2->point_vector[i+1]->y; 
-          zp[1] = m_polyline2->point_vector[i+1]->z; 
-          xp[2] = m_polyline1->point_vector[i+1]->x; 
-          yp[2] = m_polyline1->point_vector[i+1]->y; 
-          zp[2] = m_polyline1->point_vector[i+1]->z; 
+          xp[0] = m_polyline2->point_vector[i]->x;
+          yp[0] = m_polyline2->point_vector[i]->y;
+          zp[0] = m_polyline2->point_vector[i]->z;
+          xp[1] = m_polyline2->point_vector[i+1]->x;
+          yp[1] = m_polyline2->point_vector[i+1]->y;
+          zp[1] = m_polyline2->point_vector[i+1]->z;
+          xp[2] = m_polyline1->point_vector[i+1]->x;
+          yp[2] = m_polyline1->point_vector[i+1]->y;
+          zp[2] = m_polyline1->point_vector[i+1]->z;
           if(m_node.IsInsideTriangle(xp,yp,zp)) {
             nodes_vector.push_back(nodes_array[j]);
           }
@@ -1472,8 +1472,8 @@ last modification:
 
 
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 05/2004 CC Implementation Assign randam color to surface
 last modification:
@@ -1491,7 +1491,7 @@ void Surface::AssignColor()
 
 /**************************************************************************
 GeoLib-Method: GetSurfaceVector
-Task: 
+Task:
 Programing:
 05/2004 TK Implementation
 08/2005 CC vector
@@ -1524,7 +1524,7 @@ vector<CGLPolyline*>::iterator p;
     case 22:
       p = polyline_of_surface_vector.begin();
       while(p!=polyline_of_surface_vector.end()) {
-        m_polyline1 = *p; 
+        m_polyline1 = *p;
         ++p;
         m_polyline2 = *p;
         break;
@@ -1535,7 +1535,7 @@ vector<CGLPolyline*>::iterator p;
   long no_nodes = 2*no_points;
   //long no_elements = triangle_vector.size();
   long no_elements = 2*(no_points-1);
-  // Write 
+  // Write
   *tec_file << "ZONE T = " << name << ", " \
              << "N = " << no_nodes << ", " \
              << "E = " << no_elements << ", " \
@@ -1565,8 +1565,8 @@ vector<CGLPolyline*>::iterator p;
 }
 
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 08/2005 CC Implementation
 **************************************************************************/
@@ -1576,7 +1576,7 @@ Surface* GEOGetSFCByName(const std::string &name)
   vector<Surface*>::iterator p = surface_vector.begin();//CC
   while(p!=surface_vector.end()) {
     m_sfc = *p;
-   if(m_sfc->name.compare(name)==0) { 
+   if(m_sfc->name.compare(name)==0) {
       return m_sfc;
     }
     ++p;
@@ -1606,35 +1606,35 @@ void Surface::PolygonPointVector()
   vector<CGLPolyline*>::iterator p1 = polyline_of_surface_vector.begin();
   if (polyline_of_surface_vector.size() == 1){
 //Closed polyline
-  gl_polyline = *p1; 
-  vector<CGLPoint*>::iterator pt = gl_polyline->point_vector.begin(); 
+  gl_polyline = *p1;
+  vector<CGLPoint*>::iterator pt = gl_polyline->point_vector.begin();
   while(pt!=gl_polyline->point_vector.end()){
-    gl_point = *pt; 
+    gl_point = *pt;
 
     polygon_point_vector.push_back(gl_point);
 	++pt;
   }
-  vector<CGLPoint*>::iterator pn = gl_polyline->point_vector.begin(); 
+  vector<CGLPoint*>::iterator pn = gl_polyline->point_vector.begin();
   gl_point = *pn;
   polygon_point_vector.push_back(gl_point);
   }
   else{
-  //CC-------------------------------------------------------end     
+  //CC-------------------------------------------------------end
   vector<CGLPolyline*>::iterator p1 = polyline_of_surface_vector.begin();
   //----------------------------------------------------------------------
   while(p1!=polyline_of_surface_vector.end()){
-    gl_polyline = *p1; 
+    gl_polyline = *p1;
     //....................................................................
     if(gl_polyline->line_vector.size()>0){
       vector<CGLLine*>::iterator pb = gl_polyline->line_vector.begin();
       vector<CGLLine*>::iterator pe = gl_polyline->line_vector.end();
-      if(gl_polyline->line_vector.size()==0) 
+      if(gl_polyline->line_vector.size()==0)
         return;
       if(polyline_of_surface_orient[LocalPlyIndex] == 1){
 	    while(pb!=gl_polyline->line_vector.end()) {
           gl_line = *pb;
           polygon_point_vector.push_back(GEOGetPointById(gl_line->point2));
-          
+
 		  ++i;
 	      ++pb;
 	    }
@@ -1656,19 +1656,19 @@ void Surface::PolygonPointVector()
         gl_point = *pv;
         polygon_point_vector.push_back( gl_point);
         ++pv;
-         ++i;    
+         ++i;
       }
     }
     ++p1;
-    LocalPlyIndex++; 
+    LocalPlyIndex++;
   }
    //CC--------------------------------------------------------begin
   }
   //CC--------------------------------------------------------end
 }
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 03/2004 OK Implementation
 09/2005 CC Modification
@@ -1677,8 +1677,8 @@ void GEOCreateSurfacePointVector(void)
 {
   vector<Surface*>::iterator ps = surface_vector.begin();
   Surface *m_surface = NULL;
-  while(ps!=surface_vector.end()) 
-  { 
+  while(ps!=surface_vector.end())
+  {
     m_surface = *ps;
    m_surface->PolygonPointVector();//CC
     ++ps;
@@ -1690,23 +1690,24 @@ GeoSys-GUI Function
 Programing:
 01/2004 OK Implementation
 **************************************************************************/
-bool Surface::PointInSurface(CGLPoint *m_point)
-{
-  bool ok = false;
-  m_point = m_point;
-  return ok;
-}
+// REMOVE CANDIDATE
+//bool Surface::PointInSurface(CGLPoint *m_point)
+//{
+//  bool ok = false;
+//  m_point = m_point;
+//  return ok;
+//}
 
 /**************************************************************************
-GEOLib-Method: 
-Task: 
+GEOLib-Method:
+Task:
 Programing:
 10/2005 OK Implementation
 **************************************************************************/
 void GEOUnselectSFC()
 {
   Surface* m_sfc = NULL;
-  vector<Surface*>::const_iterator p_sfc; 
+  vector<Surface*>::const_iterator p_sfc;
   p_sfc = surface_vector.begin();
   while(p_sfc!=surface_vector.end()) {
     m_sfc = *p_sfc;
@@ -1715,8 +1716,8 @@ void GEOUnselectSFC()
   }
 }
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 11/2005 CC Modification
 **************************************************************************/
@@ -1730,8 +1731,8 @@ void GEOWriteSurfaces(const std::string &path_name){
 }
 
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 10/2005 OK Implementation
 **************************************************************************/
@@ -1741,7 +1742,7 @@ void GEORemoveSFC(Surface*m_sfc)
   vector<Surface*>::const_iterator p_sfc = surface_vector.begin();
   for(int i=0;i<(int)surface_vector.size();i++){
     m_sfc_this = surface_vector[i];
-    if(m_sfc_this->name.compare(m_sfc->name)==0){ 
+    if(m_sfc_this->name.compare(m_sfc->name)==0){
       delete m_sfc_this;
       surface_vector.erase(surface_vector.begin()+i);
       //i--;
@@ -1755,7 +1756,7 @@ void GEORemoveSFC(Surface*m_sfc)
     p_sfc = surface_vector.begin();
     while(p_sfc!=surface_vector.end()) {
       m_sfc = *p_sfc;
-      if(m_sfc->name.find(sfc_lay_name)!=string::npos){ 
+      if(m_sfc->name.find(sfc_lay_name)!=string::npos){
         delete m_sfc;
         surface_vector.remove(*p_sfc);
         break;
@@ -1766,15 +1767,15 @@ void GEORemoveSFC(Surface*m_sfc)
 */
 
 /**************************************************************************
-GEOLib-Method: 
-Task: 
+GEOLib-Method:
+Task:
 Programing:
 11/2005 OK Implementation
 **************************************************************************/
 void MSHUnselectSFC()
 {
   Surface* m_sfc = NULL;
-  vector<Surface*>::const_iterator p_sfc; 
+  vector<Surface*>::const_iterator p_sfc;
   p_sfc = surface_vector.begin();
   while(p_sfc!=surface_vector.end()) {
     m_sfc = *p_sfc;
@@ -1801,8 +1802,8 @@ int SFCGetMaxMATGroupNumber()
 }
 
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 12/2005 OK Color of surface MAT groups
 **************************************************************************/
@@ -1844,8 +1845,8 @@ void SFCAssignMATColors()
 }
 
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 12/2005 OK Color of surface MAT groups
 **************************************************************************/

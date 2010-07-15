@@ -12,7 +12,7 @@ set( SOURCES
 	Point.cpp
 	Polyline.cpp
 	Polygon.cpp
-	SimplePolygonHierarchy.cpp
+	SimplePolygonTree.cpp
 	Surface.cpp
 	AxisAlignedBoundingBox.cpp
 	Station.cpp
@@ -36,7 +36,7 @@ set( HEADERS
 	Point.h
 	Polyline.h
 	Polygon.h
-	SimplePolygonHierarchy.h
+	SimplePolygonTree.h
 	Triangle.h
 	Surface.h
 	PointVec.h

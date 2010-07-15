@@ -98,7 +98,7 @@ private:
 	}
 };
 
-// specialisation for pointer types
+// specialization for pointer types
 template <typename T>
 class Quicksort <T *> {
 public:
@@ -178,38 +178,5 @@ private:
 	}
 
 };
-
-// GEOLIB
-#include "Point.h"
-///**
-// * version of partition_ that additional updates the permutation vector
-// * */
-//size_t partitionPnts_(std::vector<GEOLIB::Point*>& array, size_t beg, size_t end, size_t *perm);
-//
-///**
-// * version of quickSort that stores the permutation
-// * */
-//void quicksortPnts(std::vector<GEOLIB::Point*>& array, size_t beg, size_t end, size_t* perm);
-
-///**
-// * sorts the points according the given permutation
-// * @param perm the permutation
-// * @param beg the beginning index
-// * @param end the ending index
-// * @param array the field of GEOLIB::Point
-// * @return the splitting index
-// */
-//size_t partitionPnts_(size_t *perm, size_t beg, size_t end, std::vector<GEOLIB::Point*>& array);
-//
-///**
-// * sorts the points according the given permutation using function partitionPnts_
-// * @param perm the permutation
-// * @param beg the beginning index
-// * @param end the ending index
-// * @param array the field of GEOLIB::Point
-// */
-//void quicksortPnts(size_t *perm, size_t beg, size_t end, std::vector<GEOLIB::Point*>& array);
-
-
 
 #endif /* QUICKSORT_H_ */

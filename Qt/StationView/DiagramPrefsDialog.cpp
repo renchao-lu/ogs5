@@ -53,21 +53,22 @@ DiagramPrefsDialog::~DiagramPrefsDialog()
 /// Note: Clicking the "Load from file"-button overrides the database input!
 void DiagramPrefsDialog::accept()
 {
-	if (_listID > 0 && _stationID > 0)
+	if (_list->size() == 0)	// data will be read from the database (if data has been loaded from file, size is already >0)
 	{
-		if (_list->size() == 0)	// data will be read from the database
+		if (_listID > 0 && _stationID > 0)
 		{
 			std::vector< std::pair<QDateTime, float> > values;
 			_db->loadValues(_listID, _stationID, QDateTime::fromString(fromDateLine->text(), "dd.MM.yyyy"), QDateTime::fromString(toDateLine->text(), "dd.MM.yyyy"), values);
 			if (!loadList(values))
 				OGSError::box("No data found.");
 		}
-
-		if (_list->size()>0)	// data has been read either from database or from a file
-		{
-			DetailWindow* stationView = new DetailWindow(_list);
-			stationView->show();
-		}
+	}
+	
+	// data has been loaded
+	if (_list->size()>0)	
+	{
+		DetailWindow* stationView = new DetailWindow(_list);
+		stationView->show();
 	}
 	else 
 		OGSError::box("Invalid station.");
@@ -93,7 +94,7 @@ void DiagramPrefsDialog::on_loadFileButton_clicked()
  * \param filename Name of the file containing the data
  * return 1 if everything is okay, 0 and an error message if there were errors
  */
-const int DiagramPrefsDialog::loadFile(const QString &filename)
+int DiagramPrefsDialog::loadFile(const QString &filename)
 {
 	_list->setName(stationTypeLabel->text() + ": " + stationNameLabel->text());
 	_list->setXLabel("Time");
@@ -118,7 +119,7 @@ const int DiagramPrefsDialog::loadFile(const QString &filename)
  * \param coords List of coordinates.
  * return 1 if everything is okay, 0 and an error message if there were errors
  */
-const int DiagramPrefsDialog::loadList(const std::vector< std::pair<QDateTime, float> > &coords)
+int DiagramPrefsDialog::loadList(const std::vector< std::pair<QDateTime, float> > &coords)
 {
 	if (!coords.empty())
 	{

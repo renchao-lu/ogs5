@@ -7,6 +7,7 @@
 #include <QFile>
 #include <QTextStream>
 #include "DiagramList.h"
+#include "StringTools.h"
 
 
 DiagramList::DiagramList() : _maxX(0), _maxY(0), _minX(0), _minY(0), _xLabel(""), _yLabel(""), _xUnit(""), _yUnit("")
@@ -166,7 +167,8 @@ int DiagramList::readList(const QString &path)
 			fields = line.split('\t');
 			if (fields.size() >= 2) {
 				stringDate = fields.takeFirst();
-				value = fields.takeFirst().toDouble();
+				//value = fields.takeFirst().toDouble();
+				value = strtod(replaceString(",", ".", fields.takeFirst().toStdString()).c_str(),0);
 				date2 = QDateTime::fromString(stringDate, "dd.MM.yyyy");
 
 				numberOfDays = date1.daysTo(date2);

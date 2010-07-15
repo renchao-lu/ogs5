@@ -1,7 +1,7 @@
 /**
  * \file VtkVisPipelineItem.cpp
  * 17/2/2010 LB Initial implementation
- * 
+ *
  * Implementation of VtkVisPipelineItem
  */
 
@@ -85,12 +85,12 @@ void VtkVisPipelineItem::Initialize()
 	_actor = vtkActor::New();
 	_actor->SetMapper(_mapper);
 	_renderer->AddActor(_actor);
-	
+
 	// Set pre-set properties
 	VtkAlgorithmProperties* vtkProps = dynamic_cast<VtkAlgorithmProperties*>(_algorithm);
 	if (vtkProps)
 		setVtkProperties(vtkProps);
-	
+
 	// Copy properties from parent
 	else
 	{
@@ -118,7 +118,7 @@ void VtkVisPipelineItem::setVtkProperties(VtkAlgorithmProperties* vtkProps)
 		_actor->GetProperty()->SetColor(1,1,1); // don't colorise textures
 		_actor->SetTexture(vtkProps->GetTexture());
 	}
-	else 
+	else
 	{
 		vtkSmartPointer<vtkProperty> itemProperty = vtkProps->GetProperties();
 		_actor->SetProperty(itemProperty);
@@ -142,7 +142,7 @@ int VtkVisPipelineItem::writeToFile(const std::string &filename) const
 			int result = pdWriter->Write();
 			return result;
 		}
-		else 
+		else
 		{
 			vtkUnstructuredGridAlgorithm* algUG = dynamic_cast<vtkUnstructuredGridAlgorithm*>(alg);
 			if (algUG)

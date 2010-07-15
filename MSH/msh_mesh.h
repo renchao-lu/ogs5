@@ -18,7 +18,7 @@
 
 /** depreciated includes of GEOLib */
 #include "geo_lib.h"
-#include "geo_pnt.h"
+//#include "geo_pnt.h"
 #include "geo_sfc.h"
 #include "geo_vol.h"
 
@@ -143,18 +143,6 @@ public:
 	 * \defgroup MSHGEO methods connecting mesh with the geometric objects
 	 * */
 
-	// GEO-PNT
-	/**
-	 * \ingroup MSHGEO
-	 * \brief depreciated method
-	 */
-	long GetNODOnPNT(CGLPoint*);
-	/**
-	 * \ingroup MSHGEO
-	 * \brief depreciated method
-	 */
-	long GetNearestELEOnPNT(CGLPoint*);
-
 	// GEO-PLY
 	/**
 	 * \ingroup MSHGEO
@@ -172,12 +160,11 @@ public:
 	 * \brief depreciated method - uses old surface class
 	 */
 	void GetNODOnPLY_XY(CGLPolyline*m_ply, std::vector<long>&msh_nod_vector);
-	/**
-	 * \ingroup MSHGEO
-	 * \brief depreciated method - uses old surface class
-	 */
+//	/**
+//	 * \ingroup MSHGEO
+//	 * \brief depreciated method - uses old surface class
+//	 */
 	void GetNODOnSFC_Vertical(Surface*m_sfc,vector<long>&msh_nod_vector);
-
 
 	/**
 	 * \ingroup MSHGEO
@@ -242,16 +229,16 @@ public:
 	 * \brief depreciated method
 	 */
 	void CopySelectedNodes(std::vector<long>&msh_nod_vector); //TK
-	/**
-	 * \ingroup MSHGEO
-	 * \brief depreciated method
-	 */
-	void GetELEOnSFC(Surface*, std::vector<long>&); //OK
-	/**
-	 * \ingroup MSHGEO
-	 * \brief depreciated method
-	 */
-	void GetELEOnSFC_TIN(Surface*, std::vector<long>&); //OK
+//	/**
+//	 * \ingroup MSHGEO
+//	 * \brief depreciated method
+//	 */
+//	void GetELEOnSFC(Surface*, std::vector<long>&); //OK
+//	/**
+//	 * \ingroup MSHGEO
+//	 * \brief depreciated method
+//	 */
+//	void GetELEOnSFC_TIN(Surface*, std::vector<long>&); //OK
 	/**
 	 * \ingroup MSHGEO
 	 * \brief depreciated method
@@ -269,7 +256,7 @@ public:
 	 * \ingroup MSHGEO
 	 * GetNODOnPNT searchs the nearest node to the geometric point
 	 * */
-	long GetNODOnPNT(const GEOLIB::Point* pnt) const;
+	long GetNODOnPNT(const GEOLIB::Point* const pnt) const;
 	/**
 	 * GetNearestELEOnPNT searchs the nearest element (gravity center)
 	 * to the geometric point
@@ -345,12 +332,13 @@ public:
 	std::vector<long> Eqs2Global_NodeIndex;
 	void PrismRefine(const int Layer, const int subdivision); //OK
 	//	void EdgeLengthMinMax(); //OK
-	void SetMATGroupFromVOLLayer(CGLVolume*); //OK
-	void SetMATGroupsFromVOLLayer(); //OK
+	// TF the following two methods are not used, at least in the standard config
+//	void SetMATGroupFromVOLLayer(CGLVolume*); //OK
+//	void SetMATGroupsFromVOLLayer(); //OK
 	void ConnectedNodes(bool quadratic); //OK
 	void ConnectedElements2Node(bool quadratic = false); //WW
-	void CreateSurfaceTINfromTri(Surface*); //OK
-	void CreateLayerSurfaceTINsfromPris(Surface*); //OK
+//	void CreateSurfaceTINfromTri(Surface*); //OK
+//	void CreateLayerSurfaceTINsfromPris(Surface*); //OK
 	// MAT
 	std::vector<std::string> mat_names_vector; //OK
 	void DefineMobileNodes(CRFProcess*); //OK

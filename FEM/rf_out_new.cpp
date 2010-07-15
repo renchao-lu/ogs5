@@ -849,10 +849,10 @@ void OUTData(double time_current, int time_step_number)
 			if (m_out->dat_type_name.find("PVD_A") != string::npos) {
 				vtk_appended = true;
 			}
-			
+
 			stringstream stm;
 			string pvd_vtk_file_name, vtk_file_name;
-			
+
 			switch (m_out->getGeoType()) {
 			case GEOLIB::GEODOMAIN: // domain data
 			//          static CVTK vtk;
@@ -2106,35 +2106,36 @@ Programing:
 06/2004 OK Implementation
 last modification:
 **************************************************************************/
-int COutput::GetPointClose(CGLPoint m_point)
-{
-  int i;
-  double x[3];
-  double y[3];
-  long number=-1;
-  double distmin=1.e+300;
-  int out_vector_size =(int)out_vector.size();
-  double dist;
-  x[0] = m_point.x;
-  x[1] = m_point.y;
-  x[2] = m_point.z;
-  for(i=0;i<out_vector_size;i++)
-  {
-    if(out_vector[i]->msh_node_number>=0)
-    {
-      //OK411 y[0]=GetNodeX(out_vector[i]->msh_node_number);
-      //OK411 y[1]=GetNodeY(out_vector[i]->msh_node_number);
-      //OK411 y[2]=GetNodeZ(out_vector[i]->msh_node_number);
-      dist=EuklVek3dDist(x,y);
-      if (dist < distmin)
-      {
-        distmin=dist;
-        number=i;
-      }
-    }
-  }
- return number;
-}
+// TF not used (at the moment?) REMOVE CANDIDATE
+//int COutput::GetPointClose(CGLPoint m_point)
+//{
+//  int i;
+//  double x[3];
+//  double y[3];
+//  long number=-1;
+//  double distmin=1.e+300;
+//  int out_vector_size =(int)out_vector.size();
+//  double dist;
+//  x[0] = m_point.x;
+//  x[1] = m_point.y;
+//  x[2] = m_point.z;
+//  for(i=0;i<out_vector_size;i++)
+//  {
+//    if(out_vector[i]->msh_node_number>=0)
+//    {
+//      //OK411 y[0]=GetNodeX(out_vector[i]->msh_node_number);
+//      //OK411 y[1]=GetNodeY(out_vector[i]->msh_node_number);
+//      //OK411 y[2]=GetNodeZ(out_vector[i]->msh_node_number);
+//      dist=EuklVek3dDist(x,y);
+//      if (dist < distmin)
+//      {
+//        distmin=dist;
+//        number=i;
+//      }
+//    }
+//  }
+// return number;
+//}
 
 /**************************************************************************
 FEMLib-Method:

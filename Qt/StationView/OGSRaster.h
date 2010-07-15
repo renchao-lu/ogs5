@@ -10,6 +10,7 @@
 
 class QImage;
 class QPointF;
+class QString;
 
 /**
  * \brief Loading of raster data such as images or ArcGIS-data.

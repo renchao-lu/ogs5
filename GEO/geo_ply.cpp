@@ -90,6 +90,7 @@ CGLPolyline* GEOGetPLYByName(string name)
   }
   return NULL;
 }
+
 /**************************************************************************
 GeoLib-Method:
 Task:

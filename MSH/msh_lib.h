@@ -1,6 +1,6 @@
  /**************************************************************************
-MSHLib - Object: 
-Task: 
+MSHLib - Object:
+Task:
 Programing:
 08/2005 WW/OK Encapsulation from rf_ele_msh
 last modified
@@ -77,7 +77,9 @@ extern void MSHOpen(string); //OK411
 extern void MSHDefineMobile(CRFProcess*); //OK411
 extern void MSHMoveNODUcFlow (CRFProcess*); //OK411
 extern long* MSHGetNodesClose(long*,CGLPolyline*); //OK411
-extern bool IsPointInSurface(Surface*,CGLPoint*); //OK411
+
+//extern bool IsPointInSurface(Surface*,CGLPoint*); //OK411
+
 extern long* GetPointsIn(Surface*,long*); //OK411
 extern void GEOGetNodesInMaterialDomain(CFEMesh*, const int, vector<long>&, bool); //OK411
 extern void SetRFIPointsClose(CGLLine*); //OK411

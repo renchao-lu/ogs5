@@ -12,7 +12,6 @@
 using namespace std;
 // GEOLib
 #include "geo_lib.h"
-#include "geo_pnt.h"
 #include "geo_sfc.h"
 #include "files0.h"
 
@@ -1494,7 +1493,7 @@ void CBoundaryCondition::SurfaceIntepolation(CRFProcess* m_pcs,
 	// Interpolation of polygon values to nodes_on_sfc
 	int nPointsPly = 0;
 	double Area1, Area2;
-    //NW. Default tolerance is 1e-9 but it can be changed in a BC file. 
+    //NW. Default tolerance is 1e-9 but it can be changed in a BC file.
 	double Tol = this->epsilon;
 	bool Passed;
 	double gC[3], p1[3], p2[3], pn[3], vn[3], unit[3], NTri[3];

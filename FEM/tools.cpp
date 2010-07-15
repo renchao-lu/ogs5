@@ -14,8 +14,8 @@
    01/2000     AH            in GetCurveValue: Konstante Kurve beruecksichtigt
    02/2000     CT            Funktion P0260 von Rainer, CalcIterationError veraendert
    10/2001     AH            Abfrage if (!kurven) in DestroyFunctionsData.
-   03/2003     RK            Quellcode bereinigt, Globalvariablen entfernt   
-   02/2010     OK            Cleaning   
+   03/2003     RK            Quellcode bereinigt, Globalvariablen entfernt
+   02/2010     OK            Cleaning
                                                                           */
 /**************************************************************************/
 #include "makros.h"
@@ -30,7 +30,6 @@
 #include "rf_fct.h" //NB
 #include "rf_num_new.h"
 // GEOLib
-#include "geo_pnt.h"
 #include "files0.h"
 // MSHLib
 #include "msh_elem.h"
@@ -262,7 +261,7 @@ double GetCurveDerivative(int kurve, int methode, double punkt, int *gueltig)
     static long anz;
     register long i;
     static StuetzStellen *s;
-    static double w, s1, s2; 
+    static double w, s1, s2;
 
     if (kurve==0) {*gueltig = 1; return 1.0; }
 
@@ -284,11 +283,11 @@ double GetCurveDerivative(int kurve, int methode, double punkt, int *gueltig)
     if (punkt < s[0].punkt) {
         *gueltig = 0;
         i = 1;
-        punkt = s[0].punkt; 
+        punkt = s[0].punkt;
     } else if (punkt > s[anz - 1l].punkt) {
         *gueltig = 0;
         i = anz-1;
-        punkt = s[anz-1].punkt; 
+        punkt = s[anz-1].punkt;
     } else {
         /* Suchen der Stuetzstelle. Vorraussetzung: Zeitpunkte aufsteigend geordnet */
         while (punkt > s[i].punkt) i++;
@@ -305,14 +304,14 @@ double GetCurveDerivative(int kurve, int methode, double punkt, int *gueltig)
     case 1:
         /* Gleitend */
         if ((i>1)&&(i<anz-2)) {
-          s1 = (0.5*s[i].wert-0.5*s[i-2].wert)/ 
+          s1 = (0.5*s[i].wert-0.5*s[i-2].wert)/
                (0.5*s[i].punkt-0.5*s[i-2].punkt);
 
-          s2 = (0.5*s[i+1].wert-0.5*s[i-1].wert)/ 
+          s2 = (0.5*s[i+1].wert-0.5*s[i-1].wert)/
                (0.5*s[i+1].punkt-0.5*s[i-1].punkt);
 
           w  = (punkt-s[i-1].punkt)/(s[i].punkt-s[i-1].punkt);
- 
+
           return (1.-w) * s1 + w * s2;
         } else {
           /* Stueckweise konstant */
@@ -320,7 +319,7 @@ double GetCurveDerivative(int kurve, int methode, double punkt, int *gueltig)
              return (s[i].wert-s[i-1].wert)/(s[i].punkt-s[i-1].punkt);
           else
              return Signum(s[i+1].wert-s[i].wert)/DBL_MIN;
-        } 
+        }
     }
 }
 
@@ -469,7 +468,7 @@ int FctCurves(char *data, int found, FILE * f)
 /* Programmaenderungen:
     09/2003     SB  First Version
 	01/2004     SB  Verallgemeinert auf beliebig viele Parameter
-    06/2005     MB  msh / layer 
+    06/2005     MB  msh / layer
     08/2005     MB $NUM_TYPE NEW
                                       */
 /**************************************************************************/
@@ -539,7 +538,7 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
     }
     if(line_string.find("GEOMETRIC_MEAN")!=string::npos){
       interpolation_option = 2;
-    }  
+    }
   }
   //------------------------------------------------------------------------
   GetLineFromFile(zeile,&ein);
@@ -564,10 +563,10 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
     set_hetfields_name(hf,i,outname);
 
     //set material_properties_index
-    if(line.find("permeability")==0){  
+    if(line.find("permeability")==0){
       material_properties_index = 0;
     }
-    if(line.find("porosity")==0){  
+    if(line.find("porosity")==0){
       material_properties_index = 1;
     }
   }
@@ -597,7 +596,7 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
   //------------------------------------------------------------------------
     NumberOfLayers = m_msh->no_msh_layer;
     NumberOfElementsPerLayer = NumberOfElements / NumberOfLayers;
-  
+
     //layers
     if(m_mat_mp->geo_type_name.compare("LAYER") == 0){
       char* temp = strdup(m_mat_mp->geo_name.c_str());
@@ -620,10 +619,10 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
   help = (int *) Malloc(NumberOfElements * sizeof(int));
   for(i=0;i<NumberOfElements;i++)
     help[i] = 0;
- 
+
   /* initialize element values in element list; this is for the case, if not for all
   elements values are given in the input file */
- 
+
   //WW double test1;
   //WW double test2;
   //WW double test;
@@ -634,13 +633,13 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
       }
       m_ele->mat_vector(material_properties_index)= defaultvalues[0];
      // test1 = m_ele->mat_vector(0);
-    } 
+    }
   m_ele = m_msh->ele_vector[0];
   //WW test1 = m_ele->mat_vector(0);
   //WW test2 = m_ele->mat_vector(1);
   //------------------------------------------------------------------------
   //METHOD = 0:  read in unsorted values for coordinates and distribute to corresponding elements */
-  if(method == 0){ 
+  if(method == 0){
 
     // allocate storage to read in file with het values and initialize
     invals = (double **) Malloc((no_values) * sizeof(double *));
@@ -661,7 +660,7 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
 	  for(j=0;j<nof;j++)
 	    in >> invals[i][j+3];
 	  in.clear();
-    
+
       // convert values by convertfact
 	  for(j=0;j<nof;j++){
 	    invals[i][j+3] = invals[i][j+3] * convertfact[j];
@@ -673,7 +672,7 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
     for(i=EleStart;i<EleEnd;i++){
       //.....................................................................
       //Get the values that are nearest to element mid point
- 	  if(interpolation_option == 1){ 
+ 	  if(interpolation_option == 1){
         ihet = GetNearestHetVal(i, m_msh, no_values, invals);
         if(ihet<0)
 	      DisplayMsgLn(" Error getting nearest het_value location");
@@ -682,21 +681,21 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
 	        values[j] = invals[ihet][j+3];
           }
         }
-        //DisplayMsg(" Het Val for element: "); DisplayLong(i); DisplayMsg(" with coordinates "); 
+        //DisplayMsg(" Het Val for element: "); DisplayLong(i); DisplayMsg(" with coordinates ");
 	    //DisplayDouble(x,0,0); DisplayMsg(", "); DisplayDouble(y,0,0); DisplayMsg(", "); DisplayDouble(z,0,0); DisplayMsg("       found at: ");
 	    //DisplayDouble(invals[ihet][0],0,0); DisplayMsg(", "); DisplayDouble(invals[ihet][1],0,0); DisplayMsg(", "); DisplayDouble(invals[ihet][2],0,0); DisplayMsgLn(". ");
       }
       //.....................................................................
       //Get all values in Element and calculate the geometric mean
       if(interpolation_option == 2){
-      
+
         values[0] = GetAverageHetVal(i, m_msh, no_values, invals);
 
         DisplayMsgLn(" AverageHetVal ");
         DisplayMsg(" Element ");
-        DisplayDouble(i,0,0); 
+        DisplayDouble(i,0,0);
         DisplayMsg("  Value: ");
-        DisplayDouble(values[0],0,0); 
+        DisplayDouble(values[0],0,0);
       }
       // save values
       m_ele = m_msh->ele_vector[i];
@@ -711,10 +710,10 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
     //------------------------------------------------------------------------
     // Header
     sprintf(outname,"%s%i",name_file,1);
-    out.open(outname); 
+    out.open(outname);
     out << "$MSH_TYPE" << endl;
     out << "  GROUNDWATER_FLOW" << endl;  //ToDo as variable
-    //out << "$LAYER" << endl;  
+    //out << "$LAYER" << endl;
     //out << "  " << layer << endl;
     out << "$INTERPOLATION" << endl;
     out << "  GEOMETRIC_MEAN" << endl;  //ToDo as variable
@@ -727,7 +726,7 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
     for(i=0;i<nof;i++)
       out << 1.0 << ' ';
     out << endl;
-    // default values  
+    // default values
     for(i=0;i<nof;i++)
 	  out << defaultvalues[i] << ' ';
     out << endl;
@@ -742,7 +741,7 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
       for(i=EleStart;i<EleEnd;i++){
 	    m_ele = m_msh->ele_vector[i];
 	    for(j=0;j<nof;j++){
-          out << m_ele->mat_vector(material_properties_index) << ' ';	
+          out << m_ele->mat_vector(material_properties_index) << ' ';
         }
 	    out << endl;
 	  }
@@ -765,7 +764,7 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
   } /* end if (method == 1) */
 
   /* data structures deallocate */
-  convertfact = (double *) Free(convertfact); 
+  convertfact = (double *) Free(convertfact);
   values = (double *) Free(values);
   defaultvalues = (double *) Free(defaultvalues);
   help = (int *) Free(help);
@@ -775,12 +774,12 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
 
 /**************************************************************************
 MSHLib-Method: GetAverageHetVal
-Task: 
+Task:
 Programing:
 06/2005 MB Implementation
 **************************************************************************/
 double GetAverageHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double ** invals){
-	
+
   long i, j, ihet;
   double average;
   double xp[3],yp[3];
@@ -801,7 +800,7 @@ double GetAverageHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double **
   //-----------------------------------------------------------------------
   //Find data points in the element
   NumberOfValues = 0;
-  //WW  InvNumberOfValues = 0; 
+  //WW  InvNumberOfValues = 0;
   m_point = new CGLPoint;
   average = -1;
   value = 0;
@@ -825,7 +824,7 @@ double GetAverageHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double **
     if(ihet<0)
 	  DisplayMsgLn(" Error getting nearest het_value location");
 	else{
-      average = invals[ihet][j+3];     
+      average = invals[ihet][j+3];
     }
   }
   //........................................................................
@@ -838,13 +837,13 @@ double GetAverageHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double **
 
 /**************************************************************************
 MSHLib-Method: GetAverageHetVal
-Task: 
+Task:
 Programing:
 0?/2004 SB Implementation
 09/2005 MB EleClass
 **************************************************************************/
 long GetNearestHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double ** invals){
-	
+
   long i, nextele;
   double ex, ey, ez, dist, dist1; //WW, dist2;
   double x, y, z;
@@ -857,7 +856,7 @@ long GetNearestHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double ** i
   //----------------------------------------------------------------------
   x=0.0; y=0.0; z=0.0;
   dist = 10000000.0; //Startwert
-  //WW  dist2 = 0.01;	    // Abstand zwischen eingelesenen Knoten und Geometrieknoten-RF; 
+  //WW  dist2 = 0.01;	    // Abstand zwischen eingelesenen Knoten und Geometrieknoten-RF;
 					// Achtung, doppelbelegung möglich bei kleinen Gitterabständen
   nextele = -1;
   //Get element data
@@ -866,7 +865,7 @@ long GetNearestHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double ** i
   x = center[0];
   y = center[1];
   z = center[2];
-  //Calculate distances  
+  //Calculate distances
   for(i=0;i<no_values;i++){
     ex=invals[i][0];
     ey=invals[i][1];
@@ -896,7 +895,7 @@ long GetNearestHetVal(long EleIndex, CFEMesh *m_msh, long no_values, double ** i
                                    */
 /**************************************************************************/
  int GetLineFromFile(char *zeile, ifstream *ein){
- 
+
  int ok = 1;
  string line;
  int fertig=0, i, j;
@@ -941,7 +940,7 @@ hetfields * Createhetfields(int n, char* name_file){
  hf->names = (char **) Malloc(n * sizeof(char *));
  for(i=0;i<n;i++)
   hf->names[i] = (char *) Malloc(256 * sizeof(char));
- 
+
  return hf;
 }
 
@@ -989,9 +988,9 @@ int get_hetfields_number(hetfields *hf){
 /* ROCKFLOW - Funktion: GetHetValue
                                       */
 /* Aufgabe:
-   Liest zu einen übergebenen Namen den enstrechenden Wert aus 
+   Liest zu einen übergebenen Namen den enstrechenden Wert aus
    der elementstruktur het_fields aus.
-   
+
                                       */
 /* Ergebnis:
     value = Ausgelesener Wert
@@ -1024,10 +1023,10 @@ for(i=0;i<n;i++){
 
 /**********************************************************************
 Function for interpolation between two points P1(x1|z1) and P2(x2|z2)
-The function returns the value zn at the position xn. 
+The function returns the value zn at the position xn.
 function is used in GetMatrixValue();
 
-Programming: 
+Programming:
 08/2008 NB
 ***********************************************************************/
 double interpol (double x1, double x2, double zx1, double zx2, double xn)
@@ -1038,9 +1037,9 @@ double interpol (double x1, double x2, double zx1, double zx2, double xn)
 /**********************************************************************
 Function GetMatrixValue (double var1, double var2, int *gueltig)
 
-This function reads a data matrix with two independent arguments and 
-function values in an FCT-File and returns the value corresponding to 
-var1 and var2. If var1 and var2 are not in the matrix, the function 
+This function reads a data matrix with two independent arguments and
+function values in an FCT-File and returns the value corresponding to
+var1 and var2. If var1 and var2 are not in the matrix, the function
 returns a value interpolated between both arguments.
 
 Programming:
@@ -1058,13 +1057,13 @@ double GetMatrixValue(double var1, double var2, string caption, int *gueltig)
   int counter;
   double x1=0.0,x2=0.0,y1=0.0,y2=0.0; //OK411
   double zx1y1,zx2y1,zx1y2,zx2y2;
-  
+
   matrix = FCTGet(caption);
   anz_variables = (int)matrix->variable_names_vector.size();
   //dim_x = matrix->matrix_dimension_x;
   //dim_y = matrix->matrix_dimension_y;
   dim_x = matrix->matrix_dimension[0];//NB 4.8.01
-  dim_y = matrix->matrix_dimension[1];//NB  
+  dim_y = matrix->matrix_dimension[1];//NB
   anz_data = (int)matrix->variable_data_vector.size()-dim_x-dim_y;
   //----------------------------------------------------------------------
   if (var1<*matrix->variable_data_vector[0]) //is var1 smaller then the smallest argument?
@@ -1073,14 +1072,14 @@ double GetMatrixValue(double var1, double var2, string caption, int *gueltig)
     *gueltig=0;
 	i1=i2=0;
   }
-	else 
+	else
 		if (var1>*matrix->variable_data_vector[dim_x-1]) //is var1 larger then largest argument?
 		{
 			x1=x2=*matrix->variable_data_vector[dim_x-1];
 			*gueltig=0;
 			i1=i2=dim_x-1;
 		}
-		else 
+		else
 			for (counter=0;counter<dim_x;counter++)
 			{
 				if (var1==*matrix->variable_data_vector[counter]) //does var1 fit an argument in the matrix exactly?
@@ -1106,14 +1105,14 @@ double GetMatrixValue(double var1, double var2, string caption, int *gueltig)
 		*gueltig=0;
 		j1=j2=dim_x;
 	}
-	else 
+	else
 		if (var2>*matrix->variable_data_vector[dim_x+dim_y-1])
 		{
 			y1=y2=*matrix->variable_data_vector[dim_x+dim_y-1];
 			*gueltig=0;
 			j1=j2=dim_x+dim_y-1;
 		}
-		else 
+		else
 			for (counter=dim_x;counter<dim_x+dim_y;counter++)
 			{
 				if (var2==*matrix->variable_data_vector[counter])
@@ -1141,7 +1140,7 @@ double GetMatrixValue(double var1, double var2, string caption, int *gueltig)
 }
 /****************************************************************************
 * Finds and returns the positive minimum of a vector.
-* Programming: NB Dec 08 
+* Programming: NB Dec 08
 *****************************************************************************/
 double FindMin (vector<double>Vec)
 {
@@ -1154,7 +1153,7 @@ return x;
 }
 /****************************************************************************
 * Finds and returns the maximum of a vector.
-* Programming: NB Jan 08 
+* Programming: NB Jan 08
 *****************************************************************************/
 double FindMax (vector<double>Vec)
 {
@@ -1170,7 +1169,7 @@ return x;
 * P(x) = x^3 + px^2 + qx + r
 * roots are returned in a vector
 *
-* Programming: NB, Dec08 
+* Programming: NB, Dec08
 *****************************************************************************/
 void NsPol3 (double p, double q, double r, vector<double>*roots)
 {
@@ -1190,7 +1189,7 @@ if (b<0) h=-h;
 
 D = pow(a,3)+pow(b,2);
 
-if (D<=(-eps)) 
+if (D<=(-eps))
   {
   nz=3;
   phi=acos(b/pow(h,3))/3;
@@ -1207,7 +1206,7 @@ if (D<=(-eps))
         } else
              {
              nz=1;
-             if(a>=eps) 
+             if(a>=eps)
                 {
                 b=b/pow(h,3);
                 phi=log(b+pow(pow(b,2)+1,0.5))/3;
@@ -1215,20 +1214,20 @@ if (D<=(-eps))
                 } else if(a>(-eps))
                          {
                          z[0]=pow((2*abs(b)),1/3);
-                         if (b>0) 
+                         if (b>0)
                             {
                             z[0]=-z[0];;
                             }
                          z[0]=z[0]-p/3;
                          }
-                         else 
+                         else
                              {
                              b=b/pow(h,3);
                              phi=log(b+pow(pow(b,2)-1,0.5))/3;
                              z[0]=-2*h*cosh(phi)-p/3;
                              }
              }
-             
+
 for(i=0;i<nz;i++) roots->push_back(z[i]);
-             
+
 }

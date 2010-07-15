@@ -3969,7 +3969,7 @@ void CRFProcess::CalIntegrationPointValue()
      ||pcs_type_name.find("MULTI_PHASE_FLOW")!=string::npos
      ||pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos
 	 ||pcs_type_name.find("TWO_PHASE_FLOW")!=string::npos
-     ||pcs_type_name.find("AIR_FLOW")!=string::npos   
+     ||pcs_type_name.find("AIR_FLOW")!=string::npos
 	 ||pcs_type_name.find("PS_GLOBAL")!=string::npos) //WW/CB
      cal_integration_point_value = true;
   if(!cal_integration_point_value)
@@ -6646,134 +6646,132 @@ Programing:
 11/2005 MB Implementation
 **************************************************************************/
 #ifndef NEW_EQS //WW. 07.11.2008
-void CRFProcess::CalcFluxesForCoupling(void)
-{
-  int i,j;
-  double flux;
-  long n_index;
-  long NodeIndex_GW;
-  long NodeIndex_OLF;
-  int no_nodes = m_msh->no_msh_layer +1;
-  long no_richards_problems = (long)(m_msh->ele_vector.size()/m_msh->no_msh_layer);
-  long IndexBottomNode;
-  long IndexTopNode;
-  int NoOfGWNodes = 0;
-  double AverageZ_GW = 0.0;
-  double AverageZ_OLF =  0.0;
-  double AverageH_GW = 0.0;
-  double AverageH_OLF =  0.0;
-  double dh;
-  int idxFLUX;
-  int idxHead_GW;
-  int idxHead_OLF;
-  Mesh_Group::CElem* m_ele_GW = NULL;
-  Mesh_Group::CElem* m_ele_OLF = NULL;
-  CRFProcess*m_pcs_GW = NULL;
-  CRFProcess*m_pcs_OLF = NULL;
-  //Get processes
-  m_pcs_GW = PCSGet("GROUNDWATER_FLOW");
-  if(!m_pcs_GW) //OK
-  {
-    cout << "Fatal error: no GROUNDWATER_FLOW process" << endl;
-    return;
-  }
-  m_pcs_OLF  = PCSGet("OVERLAND_FLOW");
-  if(!m_pcs_OLF) //OK
-  {
-    cout << "Fatal error: no OVERLAND_FLOW process" << endl;
-    return;
-  }
-  //Get meshes
-  CFEMesh* m_msh_GW = m_pcs_GW->m_msh;
-  CFEMesh* m_msh_OLF = m_pcs_OLF->m_msh;
-  //Get indeces
-  idxHead_GW  = m_pcs_GW->GetNodeValueIndex("HEAD")+1;
-  idxHead_OLF  = m_pcs_OLF->GetNodeValueIndex("HEAD")+1;
-  idxFLUX  = GetNodeValueIndex("FLUX")+1;
+void CRFProcess::CalcFluxesForCoupling(void) {
+	int i, j;
+	double flux;
+	long n_index;
+	long NodeIndex_GW;
+	long NodeIndex_OLF;
+	int no_nodes = m_msh->no_msh_layer + 1;
+	long no_richards_problems = (long) (m_msh->ele_vector.size()
+			/ m_msh->no_msh_layer);
+	long IndexBottomNode;
+	long IndexTopNode;
+	int NoOfGWNodes = 0;
+	double AverageZ_GW = 0.0;
+	double AverageZ_OLF = 0.0;
+	double AverageH_GW = 0.0;
+	double AverageH_OLF = 0.0;
+	double dh;
+	int idxFLUX;
+	int idxHead_GW;
+	int idxHead_OLF;
+	Mesh_Group::CElem* m_ele_GW = NULL;
+	Mesh_Group::CElem* m_ele_OLF = NULL;
 
-  for(i=0;i<no_richards_problems;i++){
-    IndexBottomNode = ((i+1) * no_nodes)-1;
+	// Get processes
+	CRFProcess* m_pcs_GW(PCSGet("GROUNDWATER_FLOW"));
+	if (!m_pcs_GW) { //OK
+		cout << "Fatal error: no GROUNDWATER_FLOW process" << endl;
+		return;
+	}
+	CRFProcess* m_pcs_OLF(PCSGet("OVERLAND_FLOW"));
+	if (!m_pcs_OLF) { //OK
+		cout << "Fatal error: no OVERLAND_FLOW process" << endl;
+		return;
+	}
 
-    // ToDo safe somewhere else so that this has to be done only once
-    //-----------------------------------------------------------------
-    // Get Nearest GW and OLF Element
-    CGLPoint* m_pnt = NULL;
-    long EleNumber;
-    m_pnt = new CGLPoint;
+	// Get meshes
+	CFEMesh* m_msh_GW = m_pcs_GW->m_msh;
+	CFEMesh* m_msh_OLF = m_pcs_OLF->m_msh;
 
-    m_pnt->x = m_msh->nod_vector[IndexBottomNode]->X();
-    m_pnt->y = m_msh->nod_vector[IndexBottomNode]->Y();
-    m_pnt->z = m_msh->nod_vector[IndexBottomNode]->Z();
+	//Get indeces
+	idxHead_GW = m_pcs_GW->GetNodeValueIndex("HEAD") + 1;
+	idxHead_OLF = m_pcs_OLF->GetNodeValueIndex("HEAD") + 1;
+	idxFLUX = GetNodeValueIndex("FLUX") + 1;
 
-    EleNumber = m_msh_GW->GetNearestELEOnPNT(m_pnt);
-    delete m_pnt;
-    //GW and OLF use the same Numbering !!!
-    m_ele_GW = m_msh_GW->ele_vector[EleNumber];
-    m_ele_OLF = m_msh_OLF->ele_vector[EleNumber];
+	for (i = 0; i < no_richards_problems; i++) {
+		IndexBottomNode = ((i + 1) * no_nodes) - 1;
 
-    //-----------------------------------------------------------------
-    // Get Average values for element //ToDo encapsulate //WW: CElement::elemnt_averag??e
-    NoOfGWNodes = m_ele_OLF->GetNodesNumber(m_msh_GW->getOrder());
-    for(j=0; j<NoOfGWNodes; j++){
-      NodeIndex_GW = m_ele_GW->GetNodeIndex(j);
-      NodeIndex_OLF = m_ele_OLF->GetNodeIndex(j);
+		// ToDo safe somewhere else so that this has to be done only once
+		//-----------------------------------------------------------------
+		// Get Nearest GW and OLF Element
+		GEOLIB::Point pnt;
+		pnt[0] = m_msh->nod_vector[IndexBottomNode]->X();
+		pnt[1] = m_msh->nod_vector[IndexBottomNode]->Y();
+		pnt[2] = m_msh->nod_vector[IndexBottomNode]->Z();
 
-      AverageZ_GW += m_pcs_GW->GetNodeValue(NodeIndex_GW,idxHead_GW);
-      AverageZ_OLF += m_msh_OLF->nod_vector[NodeIndex_OLF]->Z();
-    }
-    AverageZ_GW = AverageZ_GW / NoOfGWNodes;
-    AverageZ_OLF = AverageZ_OLF / NoOfGWNodes;
+		long EleNumber = m_msh_GW->GetNearestELEOnPNT(&pnt);
 
-    //-----------------------------------------------------------------
-    // UsatZone exists -> Flux from this
-    if(AverageZ_GW < AverageZ_OLF){
-      n_index = m_msh->Eqs2Global_NodeIndex[IndexBottomNode];
-      if(m_msh->nod_vector[IndexBottomNode]->GetMark()){
-        flux = eqs->b[IndexBottomNode];
-        //FLUXES IN NEW VERSION WITH VELOCITIES !!!!!
-        //WAIT FOR SEBASTIANS MASS TRANSPORT IN USAT ZONE !!!!!
-        //TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST
-        flux = 0.00001;
-        //flux = 1;
-        SetNodeValue(n_index, idxFLUX, flux);
-      }
-    }
+		//GW and OLF use the same Numbering !!!
+		m_ele_GW = m_msh_GW->ele_vector[EleNumber];
+		m_ele_OLF = m_msh_OLF->ele_vector[EleNumber];
 
-    //-----------------------------------------------------------------
-    // No UsatZone -> Calculate Flux from leakage terms
-    if(AverageZ_GW >= AverageZ_OLF){
-      //SetRichardsNodesToFullySaturated??
-      IndexTopNode = i * no_nodes;              // Top Node of Richard Column -> Flux for OLF
-      IndexBottomNode = ((i+1) * no_nodes)-1;   // Bottom Node of Richards Column -> Flux for GW
-      //-----------------------------------------------------------------
-      // Get Average values for element //ToDo encapsulate
-      for(j=0; j<NoOfGWNodes; j++){
-        NodeIndex_GW = m_ele_GW->GetNodeIndex(j);
-        NodeIndex_OLF = m_ele_OLF->GetNodeIndex(j);
-        AverageH_GW += m_pcs_GW->GetNodeValue(NodeIndex_GW,idxHead_GW);
-        AverageH_OLF += m_pcs_OLF->GetNodeValue(NodeIndex_OLF,idxHead_OLF);
-      }
-      AverageH_GW = AverageH_GW / NoOfGWNodes;
-      AverageH_OLF = AverageH_OLF / NoOfGWNodes;
-      //Calculate the vertical leakage
-      dh = AverageH_GW - AverageH_OLF;
-      // get kf fully saturated of uppermost element ?
-      // or user defined value: entry resistance / leakage factor ?
-      //flux = dh * 0.001;
-      flux = dh * 1.;
+		//-----------------------------------------------------------------
+		// Get Average values for element //ToDo encapsulate //WW: CElement::elemnt_averag??e
+		NoOfGWNodes = m_ele_OLF->GetNodesNumber(m_msh_GW->getOrder());
+		for (j = 0; j < NoOfGWNodes; j++) {
+			NodeIndex_GW = m_ele_GW->GetNodeIndex(j);
+			NodeIndex_OLF = m_ele_OLF->GetNodeIndex(j);
 
-      //1. Add reacharge value to GW flow -> Add to flux off IndexBottomNode
-      //Achtung nur zum Testen Source für GW flow durchgehend !!!!!!
-      //SetNodeValue(IndexBottomNode, idxFLUX, -flux);  //H_OLF  > H_GW -> + flux_GW
-      SetNodeValue(IndexBottomNode, idxFLUX, 0.00001);
+			AverageZ_GW += m_pcs_GW->GetNodeValue(NodeIndex_GW, idxHead_GW);
+			AverageZ_OLF += m_msh_OLF->nod_vector[NodeIndex_OLF]->Z();
+		}
+		AverageZ_GW = AverageZ_GW / NoOfGWNodes;
+		AverageZ_OLF = AverageZ_OLF / NoOfGWNodes;
 
-      //2. Add reacharge value to OLF -> Add to flux off IndexTopNode
-      SetNodeValue(IndexTopNode, idxFLUX, flux);      //H_OLF  > H_GW -> - flux_OLF
-      //3. Set flag to set reacharge to Usat to zero ???
+		//-----------------------------------------------------------------
+		// UsatZone exists -> Flux from this
+		if (AverageZ_GW < AverageZ_OLF) {
+			n_index = m_msh->Eqs2Global_NodeIndex[IndexBottomNode];
+			if (m_msh->nod_vector[IndexBottomNode]->GetMark()) {
+				flux = eqs->b[IndexBottomNode];
+				//FLUXES IN NEW VERSION WITH VELOCITIES !!!!!
+				//WAIT FOR SEBASTIANS MASS TRANSPORT IN USAT ZONE !!!!!
+				//TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST
+				flux = 0.00001;
+				//flux = 1;
+				SetNodeValue(n_index, idxFLUX, flux);
+			}
+		}
 
-    }
-  }
+		//-----------------------------------------------------------------
+		// No UsatZone -> Calculate Flux from leakage terms
+		if (AverageZ_GW >= AverageZ_OLF) {
+			//SetRichardsNodesToFullySaturated??
+			IndexTopNode = i * no_nodes; // Top Node of Richard Column -> Flux for OLF
+			IndexBottomNode = ((i + 1) * no_nodes) - 1; // Bottom Node of Richards Column -> Flux for GW
+			//-----------------------------------------------------------------
+			// Get Average values for element //ToDo encapsulate
+			for (j = 0; j < NoOfGWNodes; j++) {
+				NodeIndex_GW = m_ele_GW->GetNodeIndex(j);
+				NodeIndex_OLF = m_ele_OLF->GetNodeIndex(j);
+				AverageH_GW += m_pcs_GW->GetNodeValue(NodeIndex_GW, idxHead_GW);
+				AverageH_OLF += m_pcs_OLF->GetNodeValue(NodeIndex_OLF,
+						idxHead_OLF);
+			}
+			AverageH_GW = AverageH_GW / NoOfGWNodes;
+			AverageH_OLF = AverageH_OLF / NoOfGWNodes;
+			//Calculate the vertical leakage
+			dh = AverageH_GW - AverageH_OLF;
+			// get kf fully saturated of uppermost element ?
+			// or user defined value: entry resistance / leakage factor ?
+			//flux = dh * 0.001;
+			flux = dh * 1.;
+
+			//1. Add reacharge value to GW flow -> Add to flux off IndexBottomNode
+			//Achtung nur zum Testen Source für GW flow durchgehend !!!!!!
+			//SetNodeValue(IndexBottomNode, idxFLUX, -flux);  //H_OLF  > H_GW -> + flux_GW
+			SetNodeValue(IndexBottomNode, idxFLUX, 0.00001);
+
+			//2. Add reacharge value to OLF -> Add to flux off IndexTopNode
+			SetNodeValue(IndexTopNode, idxFLUX, flux); //H_OLF  > H_GW -> - flux_OLF
+			//3. Set flag to set reacharge to Usat to zero ???
+
+		}
+	}
 }
+
 /**************************************************************************
 FEMLib-Method:
 Task: Ermittelt den Fehler bei Kopplungs Iterationen

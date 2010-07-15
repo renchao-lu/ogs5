@@ -1,14 +1,14 @@
 /**************************************************************************
 GeoLib - Object: Polyline
-Task: 
+Task:
 Programing:
 07/2003 OK/CC/TK/WW GEOLib1
 07/2005 CC/OK  GEOLib2 Design
 **************************************************************************/
 #ifndef gl_ply_INC
 #define gl_ply_INC
-#include "geo_pnt.h" 
-#include "geo_lin.h" 
+#include "geo_pnt.h"
+#include "geo_lin.h"
 #include <fstream>
 #include <string>
 #define PLY_FILE_EXTENSION ".ply"

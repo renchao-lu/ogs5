@@ -22,8 +22,8 @@ using namespace std;
 #include "gs_project.h"
 
 // GEOLib
-#include "geo_pnt.h"
-#include "geo_ply.h"
+//#include "geo_pnt.h"
+//#include "geo_ply.h"
 
 // MathLib
 #include "Vector3.h"
@@ -1150,41 +1150,10 @@ void CFEMesh::Write(fstream*fem_msh_file) const {
  FEMLib-Method:
  Task: Ermittelt den nahliegenden existierenden Knoten
  Programing:
- 03/2005 OK Implementation (based on GetNodeNumberClose by AH)
- 07/2005 WW Node object is replaced
- last modification:
- **************************************************************************/
-long CFEMesh::GetNODOnPNT(CGLPoint*m_pnt) {
-	double dist, distmin;
-	double pnt[3];
-	double nod[3];
-	long number;
-	pnt[0] = m_pnt->x;
-	pnt[1] = m_pnt->y;
-	pnt[2] = m_pnt->z;
-	number = -1;
-	distmin = 1.e+300;
-	for (long i = 0; i < NodesInUsage(); i++) {
-		nod[0] = nod_vector[i]->X();
-		nod[1] = nod_vector[i]->Y();
-		nod[2] = nod_vector[i]->Z();
-		dist = EuklVek3dDist(pnt, nod);
-		if (dist < distmin) {
-			distmin = dist;
-			number = i;
-		}
-	}
-	return number;
-}
-
-/**************************************************************************
- FEMLib-Method:
- Task: Ermittelt den nahliegenden existierenden Knoten
- Programing:
  03/2010 TF implementation based on long CFEMesh::GetNODOnPNT(CGLPoint*m_pnt)
  by OK, WW
  **************************************************************************/
-long CFEMesh::GetNODOnPNT(const GEOLIB::Point* pnt) const
+long CFEMesh::GetNODOnPNT(const GEOLIB::Point* const pnt) const
 {
 	double sqr_dist(0.0), distmin(std::numeric_limits<double>::max());
 	long number(-1);
@@ -1212,7 +1181,7 @@ long CFEMesh::GetNODOnPNT(const GEOLIB::Point* pnt) const
  03/2010 TF implementation based on long CFEMesh::GetNODOnPNT(CGLPoint*m_pnt)
  by MB
  **************************************************************************/
-long CFEMesh::GetNearestELEOnPNT(const GEOLIB::Point* pnt) const
+long CFEMesh::GetNearestELEOnPNT(const GEOLIB::Point* const pnt) const
 {
 	long nextele(-1);
 	double dist(std::numeric_limits<double>::max()), dist1;
@@ -1245,11 +1214,11 @@ inline double dotProduction(const double *x1, const double *x2,
  01/2005 WW Implementation
  05/2005 WW Transplant to this object from GEOLIB
  **************************************************************************/
-void CFEMesh::GetNodesOnArc(CGLPolyline*m_ply, vector<long>&msh_nod_vector) {
+void CFEMesh::GetNodesOnArc(CGLPolyline*m_ply, vector<long>&msh_nod_vector)
+{
 	long i;
 
 	//Obtain fem node for groupvector
-	CGLPoint *CGPa = NULL, *CGPb = NULL, *CGPc = NULL;
 	const long nNodes = NodesInUsage();
 	const int SizeCGLPoint = (int) m_ply->point_vector.size();
 	double r1, r2, a0, a1, a2;
@@ -1263,18 +1232,16 @@ void CFEMesh::GetNodesOnArc(CGLPolyline*m_ply, vector<long>&msh_nod_vector) {
 		cout << "No point are given for this arc" << endl;
 		abort();
 	}
-	CGPa = m_ply->point_vector[0];
-	CGPb = m_ply->point_vector[2];
-	CGPc = m_ply->point_vector[1];
-	xa[0] = CGPa->x;
-	xa[1] = CGPa->y;
-	xa[2] = CGPa->z;
-	xb[0] = CGPb->x;
-	xb[1] = CGPb->y;
-	xb[2] = CGPb->z;
-	xc[0] = CGPc->x;
-	xc[1] = CGPc->y;
-	xc[2] = CGPc->z;
+
+	xa[0] = m_ply->point_vector[0]->x;
+	xa[1] = m_ply->point_vector[0]->y;
+	xa[2] = m_ply->point_vector[0]->z;
+	xb[0] = m_ply->point_vector[2]->x;
+	xb[1] = m_ply->point_vector[2]->y;
+	xb[2] = m_ply->point_vector[2]->z;
+	xc[0] = m_ply->point_vector[1]->x;
+	xc[1] = m_ply->point_vector[1]->y;
+	xc[2] = m_ply->point_vector[1]->z;
 
 	r1 = sqrt(sqrDist(xa, xc));
 	r2 = sqrt(sqrDist(xb, xc));
@@ -1838,7 +1805,6 @@ void CFEMesh::GetNODOnSFC_TIN(Surface*m_sfc, vector<long>&msh_nod_vector) {
 	double tri_point1[3], tri_point2[3], tri_point3[3], checkpoint[3];
 	double sfc_min[3], sfc_max[3];
 
-	CGLPoint m_node;
 	CTriangle *m_triangle = NULL;
 	//----------------------------------------------------------------------
 	// Create Bounding BOX = MIN/MAX of X/Y/Z
@@ -2146,69 +2112,71 @@ Programing:
 04/2005 OK
 last modification:
 **************************************************************************/
-void CFEMesh::GetNODOnSFC_Vertical(Surface*m_sfc,vector<long>&msh_nod_vector)
+void CFEMesh::GetNODOnSFC_Vertical(Surface*m_sfc, vector<long>&msh_nod_vector)
 {
-  long i,j;
-  long *nodes_array = NULL;
-  double xp[3],yp[3],zp[3];
-  CGLPoint m_node;
-  CGLPolyline* m_polyline = NULL;
-  CGLPolyline* m_polyline1 = NULL;
-  CGLPolyline* m_polyline2 = NULL;
-  vector<CGLPolyline*>::iterator p_ply;
-  long no_nodes = 0;
-  // .................................................................
-  // nodes close to first polyline
-  p_ply = m_sfc->polyline_of_surface_vector.begin();
-  while(p_ply!=m_sfc->polyline_of_surface_vector.end()) {
-    m_polyline = *p_ply;
-    //OK41 nodes_array = m_polyline->MSHGetNodesCloseXY(&no_nodes);
-    nodes_array = MSHGetNodesClose(&no_nodes,m_polyline);//CC 10/05
-    break;
-  }
-  // .....................................................................
-  // using triangles
-  p_ply = m_sfc->polyline_of_surface_vector.begin();
-  while(p_ply!=m_sfc->polyline_of_surface_vector.end()) {
-    m_polyline1 = *p_ply;
-    ++p_ply;
-    m_polyline2 = *p_ply;
-    break;
-  }
-  long no_points = (long)m_polyline1->point_vector.size();
-  for(j=0;j<no_nodes;j++) {
-    //OK m_node.x = GetNodeX(nodes_array[j]);
-    //OK m_node.y = GetNodeY(nodes_array[j]);
-    //OK m_node.z = GetNodeZ(nodes_array[j]);
-    for(i=0;i<no_points-1;i++) {
-      // first triangle of quad
-      xp[0] = m_polyline1->point_vector[i]->x;
-      yp[0] = m_polyline1->point_vector[i]->y;
-      zp[0] = m_polyline1->point_vector[i]->z;
-      xp[1] = m_polyline1->point_vector[i+1]->x;
-      yp[1] = m_polyline1->point_vector[i+1]->y;
-      zp[1] = m_polyline1->point_vector[i+1]->z;
-      xp[2] = m_polyline2->point_vector[i]->x;
-      yp[2] = m_polyline2->point_vector[i]->y;
-      zp[2] = m_polyline2->point_vector[i]->z;
-      if(m_node.IsInsideTriangle(xp,yp,zp)) {//CC 10/05
-        msh_nod_vector.push_back(nodes_array[j]);
-      }
-      // second triangle of quad
-      xp[0] = m_polyline2->point_vector[i]->x;
-      yp[0] = m_polyline2->point_vector[i]->y;
-      zp[0] = m_polyline2->point_vector[i]->z;
-      xp[1] = m_polyline2->point_vector[i+1]->x;
-      yp[1] = m_polyline2->point_vector[i+1]->y;
-      zp[1] = m_polyline2->point_vector[i+1]->z;
-      xp[2] = m_polyline1->point_vector[i+1]->x;
-      yp[2] = m_polyline1->point_vector[i+1]->y;
-      zp[2] = m_polyline1->point_vector[i+1]->z;
-      if(m_node.IsInsideTriangle(xp,yp,zp)) {//CC 10/05
-        msh_nod_vector.push_back(nodes_array[j]);
-      }
-    } // no_points
-  } // no_nodes
+	long i, j;
+	long *nodes_array = NULL;
+	double xp[3], yp[3], zp[3];
+	CGLPolyline* m_polyline = NULL;
+	CGLPolyline* m_polyline1 = NULL;
+	CGLPolyline* m_polyline2 = NULL;
+	vector<CGLPolyline*>::iterator p_ply;
+	long no_nodes = 0;
+	// .................................................................
+	// nodes close to first polyline
+	p_ply = m_sfc->polyline_of_surface_vector.begin();
+	while (p_ply != m_sfc->polyline_of_surface_vector.end()) {
+		m_polyline = *p_ply;
+		//OK41 nodes_array = m_polyline->MSHGetNodesCloseXY(&no_nodes);
+		nodes_array = MSHGetNodesClose(&no_nodes, m_polyline);//CC 10/05
+		break;
+	}
+	// .....................................................................
+	// using triangles
+	p_ply = m_sfc->polyline_of_surface_vector.begin();
+	while (p_ply != m_sfc->polyline_of_surface_vector.end()) {
+		m_polyline1 = *p_ply;
+		++p_ply;
+		m_polyline2 = *p_ply;
+		break;
+	}
+	long no_points = (long) m_polyline1->point_vector.size();
+
+	CGLPoint m_node;
+
+	for (j = 0; j < no_nodes; j++) {
+		//OK m_node.x = GetNodeX(nodes_array[j]);
+		//OK m_node.y = GetNodeY(nodes_array[j]);
+		//OK m_node.z = GetNodeZ(nodes_array[j]);
+		for (i = 0; i < no_points - 1; i++) {
+			// first triangle of quad
+			xp[0] = m_polyline1->point_vector[i]->x;
+			yp[0] = m_polyline1->point_vector[i]->y;
+			zp[0] = m_polyline1->point_vector[i]->z;
+			xp[1] = m_polyline1->point_vector[i + 1]->x;
+			yp[1] = m_polyline1->point_vector[i + 1]->y;
+			zp[1] = m_polyline1->point_vector[i + 1]->z;
+			xp[2] = m_polyline2->point_vector[i]->x;
+			yp[2] = m_polyline2->point_vector[i]->y;
+			zp[2] = m_polyline2->point_vector[i]->z;
+			if (m_node.IsInsideTriangle(xp, yp, zp)) {//CC 10/05
+				msh_nod_vector.push_back(nodes_array[j]);
+			}
+			// second triangle of quad
+			xp[0] = m_polyline2->point_vector[i]->x;
+			yp[0] = m_polyline2->point_vector[i]->y;
+			zp[0] = m_polyline2->point_vector[i]->z;
+			xp[1] = m_polyline2->point_vector[i + 1]->x;
+			yp[1] = m_polyline2->point_vector[i + 1]->y;
+			zp[1] = m_polyline2->point_vector[i + 1]->z;
+			xp[2] = m_polyline1->point_vector[i + 1]->x;
+			yp[2] = m_polyline1->point_vector[i + 1]->y;
+			zp[2] = m_polyline1->point_vector[i + 1]->z;
+			if (m_node.IsInsideTriangle(xp, yp, zp)) {//CC 10/05
+				msh_nod_vector.push_back(nodes_array[j]);
+			}
+		} // no_points
+	} // no_nodes
 }
 
 /**************************************************************************
@@ -3060,7 +3028,8 @@ void CFEMesh::PrismRefine(const int Layer, const int subdivision) {
  10/2005 OK Delete existing layer polylines
  02/2006 CC polyline id
  **************************************************************************/
-void CFEMesh::CreateLayerPolylines(CGLPolyline* m_ply) {
+void CFEMesh::CreateLayerPolylines(CGLPolyline* m_ply)
+{
 	long i, j;
 	CGLPoint* m_point = NULL;
 	CGLPolyline* m_polyline = NULL;
@@ -3203,9 +3172,9 @@ void CFEMesh::ELEVolumes() {
 				m_point.x = center[0];
 				m_point.y = center[1];
 				m_point.z = center[2];
-				if (m_sfc->PointInSurface(&m_point)) {
-					m_ele->volume = vol_number;
-				}
+//				if (m_sfc->PointInSurface(&m_point)) {
+//					m_ele->volume = vol_number;
+//				}
 			}
 		}
 		//....................................................................
@@ -3215,35 +3184,39 @@ void CFEMesh::ELEVolumes() {
 	}
 }
 
+// TF the following two methods are not used, at least in the standard config
 /**************************************************************************
  MSHLib-Method:
  Task:
  Programing:
  09/2005 OK Implementation
  **************************************************************************/
-void CFEMesh::SetMATGroupFromVOLLayer(CGLVolume*m_vol) {
-	CElem* m_ele = NULL;
-	//......................................................................
-	CGLPoint m_pnt;
-	Surface* m_sfc = NULL;
-	vector<Surface*>::const_iterator p_sfc;
-	p_sfc = m_vol->surface_vector.begin();
-	m_sfc = *p_sfc;
-	//......................................................................
-	long ep_layer = (long) ele_vector.size() / no_msh_layer;
-	long jb = (m_vol->layer - 1) * ep_layer;
-	long je = jb + ep_layer;
-	double* xy;
-	for (long j = jb; j < je; j++) {
-		// Point in surface
-		m_ele = ele_vector[j];
-		xy = m_ele->GetGravityCenter();
-		m_pnt.x = xy[0];
-		m_pnt.y = xy[1];
-		if (m_sfc->PointInSurface(&m_pnt))
-			m_ele->SetPatchIndex(m_vol->mat_group);
-	}
-}
+// TF m_sfc->PointInSurface(&m_point) returns always false
+
+//void CFEMesh::SetMATGroupFromVOLLayer(CGLVolume*m_vol) {
+//	CElem* m_ele = NULL;
+//	//......................................................................
+////	CGLPoint m_pnt;
+//	Surface* m_sfc = NULL;
+//	vector<Surface*>::const_iterator p_sfc;
+//	p_sfc = m_vol->surface_vector.begin();
+//	m_sfc = *p_sfc;
+//	//......................................................................
+//
+////	long ep_layer = (long) ele_vector.size() / no_msh_layer;
+////	long jb = (m_vol->layer - 1) * ep_layer;
+////	long je = jb + ep_layer;
+////	double* xy;
+////	for (long j = jb; j < je; j++) {
+////		// Point in surface
+////		m_ele = ele_vector[j];
+////		xy = m_ele->GetGravityCenter();
+////		m_pnt.x = xy[0];
+////		m_pnt.y = xy[1];
+////		if (m_sfc->PointInSurface(&m_pnt))
+////			m_ele->SetPatchIndex(m_vol->mat_group);
+////	}
+//}
 
 /**************************************************************************
  MSHLib-Method:
@@ -3251,55 +3224,18 @@ void CFEMesh::SetMATGroupFromVOLLayer(CGLVolume*m_vol) {
  Programing:
  09/2005 OK Implementation
  **************************************************************************/
-void CFEMesh::SetMATGroupsFromVOLLayer() {
-	CGLVolume* m_vol;
-	vector<CGLVolume*>::const_iterator p_vol = volume_vector.begin();
-	while (p_vol != volume_vector.end()) {
-		m_vol = *p_vol;
-		//....................................................................
-		// LAYER
-		SetMATGroupFromVOLLayer(m_vol);
-		//....................................................................
-		++p_vol;
-	}
-}
-
-/**************************************************************************
- FEMLib-Method:
- Task: Ermittelt das nahliegende Element
- Programing:
- 11/2005 MB, based on GetNearestElement
- **************************************************************************/
-long CFEMesh::GetNearestELEOnPNT(CGLPoint*m_pnt) {
-	long i, nextele;
-	double ex, ey, ez, dist, dist1, dist2;
-	double x, y, z;
-	double* center = NULL;
-	Mesh_Group::CElem* m_ele = NULL;
-
-	dist = 10000000.0; //Startwert
-	dist2 = 0.01; // Abstand zwischen eingelesenen Knoten und Geometrieknoten-RF;
-	// Achtung, doppelbelegung m?lich bei kleinen Gitterabst?den
-	nextele = -1;
-
-	x = m_pnt->x;
-	y = m_pnt->y;
-	z = m_pnt->z;
-
-	for (i = 0; i < (long) ele_vector.size(); i++) {
-		m_ele = ele_vector[i];
-		center = m_ele->GetGravityCenter();
-		ex = center[0];
-		ey = center[1];
-		ez = center[2];
-		dist1 = (ex - x) * (ex - x) + (ey - y) * (ey - y) + (ez - z) * (ez - z);
-		if (dist1 < dist) {
-			dist = dist1;
-			nextele = i;
-		}
-	}
-	return nextele;
-}
+//void CFEMesh::SetMATGroupsFromVOLLayer() {
+//	CGLVolume* m_vol;
+//	vector<CGLVolume*>::const_iterator p_vol = volume_vector.begin();
+//	while (p_vol != volume_vector.end()) {
+//		m_vol = *p_vol;
+//		//....................................................................
+//		// LAYER
+//		SetMATGroupFromVOLLayer(m_vol);
+//		//....................................................................
+//		++p_vol;
+//	}
+//}
 
 /**************************************************************************
  FEMLib-Method:
@@ -3439,37 +3375,37 @@ void CFEMesh::CopySelectedNodes(vector<long>&msh_nod_vector) {
  11/2005 OK MSH
  03/2006 CC
  **************************************************************************/
-void CFEMesh::CreateSurfaceTINfromTri(Surface*m_sfc) {
-	int j;
-	CGLPoint m_point;
-	CTriangle *m_triangle;
-	CElem* m_ele = NULL;
-	double* xyz;
-	vec<long> node_indeces(3);
-	m_sfc->TIN = new CTIN;//CC
-	//----------------------------------------------------------------------
-	for (long i = 0; i < (long) ele_vector.size(); i++) {
-		m_ele = ele_vector[i];
-		if (m_ele->GetElementType() == 4) { // use only triangles
-			xyz = m_ele->GetGravityCenter();
-			m_point.x = xyz[0];
-			m_point.y = xyz[1];
-			m_point.z = xyz[2];
-			if (IsPointInSurface(m_sfc, &m_point)) {
-				m_triangle = new CTriangle;
-				m_triangle->number = (long) m_sfc->TIN->Triangles.size();
-				m_ele->GetNodeIndeces(node_indeces);
-				for (j = 0; j < 3; j++) {
-					m_triangle->x[j] = nod_vector[node_indeces[j]]->X();
-					m_triangle->y[j] = nod_vector[node_indeces[j]]->Y();
-					m_triangle->z[j] = nod_vector[node_indeces[j]]->Z();
-				}
-				m_sfc->TIN->Triangles.push_back(m_triangle);
-				m_sfc->TIN->name = m_sfc->name;//CC
-			} // element found
-		} // triangle
-	} // ele_vector
-}
+//void CFEMesh::CreateSurfaceTINfromTri(Surface*m_sfc) {
+//	int j;
+//	CGLPoint m_point;
+//	CTriangle *m_triangle;
+//	CElem* m_ele = NULL;
+//	double* xyz;
+//	vec<long> node_indeces(3);
+//	m_sfc->TIN = new CTIN;//CC
+//	//----------------------------------------------------------------------
+//	for (long i = 0; i < (long) ele_vector.size(); i++) {
+//		m_ele = ele_vector[i];
+//		if (m_ele->GetElementType() == 4) { // use only triangles
+//			xyz = m_ele->GetGravityCenter();
+//			m_point.x = xyz[0];
+//			m_point.y = xyz[1];
+//			m_point.z = xyz[2];
+//			if (IsPointInSurface(m_sfc, &m_point)) {
+//				m_triangle = new CTriangle;
+//				m_triangle->number = (long) m_sfc->TIN->Triangles.size();
+//				m_ele->GetNodeIndeces(node_indeces);
+//				for (j = 0; j < 3; j++) {
+//					m_triangle->x[j] = nod_vector[node_indeces[j]]->X();
+//					m_triangle->y[j] = nod_vector[node_indeces[j]]->Y();
+//					m_triangle->z[j] = nod_vector[node_indeces[j]]->Z();
+//				}
+//				m_sfc->TIN->Triangles.push_back(m_triangle);
+//				m_sfc->TIN->name = m_sfc->name;//CC
+//			} // element found
+//		} // triangle
+//	} // ele_vector
+//}
 
 /**************************************************************************
  GeoLib-Method:
@@ -3479,85 +3415,85 @@ void CFEMesh::CreateSurfaceTINfromTri(Surface*m_sfc) {
  01/2005 CC add variable :long i for the function
  08/2005 CC move from Geolib to Mshlib
  **************************************************************************/
-void CFEMesh::CreateLayerSurfaceTINsfromPris(Surface*m_sfc) {
-	int j;
-	CGLPoint m_point;
-	CTriangle *m_tri;
-	CTriangle *m_tri_new;
-	CElem* m_ele = NULL;
-	double* xyz;
-	vec<long> node_indeces(6);
-	//---------------------------------------------------------------------
-	if (!m_sfc) {
-		return;
-	}
-	//---------------------------------------------------------------------
-	// Create layer surfaces
-	char layer_number[3];
-	Surface *m_sfc_layer = NULL;
-	CTIN *m_TIN = NULL;
-	string sfc_layer_name = m_sfc->name + "_layer_";
-	for (int l = 0; l < no_msh_layer + 1; l++) {
-		m_sfc_layer = new Surface;
-		m_sfc_layer->type_name = "TIN";
-		sprintf(layer_number, "%i", l);
-		m_sfc_layer->name = sfc_layer_name + layer_number;
-		m_sfc_layer->data_name = m_sfc_layer->name + ".tin";
-		m_TIN = new CTIN;
-		m_TIN->name = m_sfc_layer->name;
-		m_sfc_layer->TIN = m_TIN;
-		surface_vector.push_back(m_sfc_layer);
-	}
-	//----------------------------------------------------------------------
-	Surface *m_sfc_layer_0 = NULL;
-	sfc_layer_name = m_sfc->name + "_layer_0";
-	m_sfc_layer_0 = GEOGetSFCByName(sfc_layer_name);
-	if (!m_sfc_layer_0) {
-		return;
-	}
-	long no_nodes_per_layer = (long) nod_vector.size() / (no_msh_layer + 1);
-	long no_elements_per_layer = (long) ele_vector.size() / (no_msh_layer);
-	for (long i = 0; i < no_elements_per_layer; i++) {
-		m_ele = ele_vector[i];
-		if (m_ele->GetElementType() == 6) { // prism
-			xyz = m_ele->GetGravityCenter();
-			m_point.x = xyz[0];
-			m_point.y = xyz[1];
-			m_point.z = xyz[2];
-			if (IsPointInSurface(m_sfc, &m_point)) {
-				m_tri = new CTriangle;
-				m_tri->number = (long) m_sfc_layer_0->TIN->Triangles.size();
-				m_ele->GetNodeIndeces(node_indeces);
-				for (j = 0; j < 3; j++) {
-					m_tri->x[j] = nod_vector[node_indeces[j]]->X();
-					m_tri->y[j] = nod_vector[node_indeces[j]]->Y();
-					m_tri->z[j] = nod_vector[node_indeces[j]]->Z();
-				}
-				m_sfc_layer_0->TIN->Triangles.push_back(m_tri);
-				m_sfc_layer_0->TIN->name = m_sfc_layer_0->name;//CC
-				for (int l = 0; l < no_msh_layer; l++) {
-					sprintf(layer_number, "%i", l + 1);
-					sfc_layer_name = m_sfc->name + "_layer_" + layer_number;
-					m_sfc_layer = GEOGetSFCByName(sfc_layer_name);
-					if (!m_sfc_layer) {
-						return;
-					}
-					m_tri_new = new CTriangle;
-					for (j = 0; j < 3; j++) {
-						m_tri_new->number = m_tri->number;
-						m_tri_new->x[j] = m_tri->x[j];
-						m_tri_new->y[j] = m_tri->y[j];
-						m_tri_new->z[j] = nod_vector[node_indeces[j + 3] + l
-								* no_nodes_per_layer]->Z();
-					}
-					m_sfc_layer->TIN->Triangles.push_back(m_tri_new);
-					m_sfc_layer->TIN->name = m_sfc_layer->name;//CC
-				}
-			} // element found
-		} // triangle
-	} // ele_vector
-	//---------------------------------------------------------------------
-}
+//void CFEMesh::CreateLayerSurfaceTINsfromPris(Surface*m_sfc) {
+//	int j;
+//	CGLPoint m_point;
+//	CTriangle *m_tri;
+//	CTriangle *m_tri_new;
+//	CElem* m_ele = NULL;
+//	double* xyz;
+//	vec<long> node_indeces(6);
+//	//---------------------------------------------------------------------
+//	if (!m_sfc) {
+//		return;
+//	}
+//	//---------------------------------------------------------------------
+//	// Create layer surfaces
+//	char layer_number[3];
+//	Surface *m_sfc_layer = NULL;
+//	CTIN *m_TIN = NULL;
+//	string sfc_layer_name = m_sfc->name + "_layer_";
+//	for (int l = 0; l < no_msh_layer + 1; l++) {
+//		m_sfc_layer = new Surface;
+//		m_sfc_layer->type_name = "TIN";
+//		sprintf(layer_number, "%i", l);
+//		m_sfc_layer->name = sfc_layer_name + layer_number;
+//		m_sfc_layer->data_name = m_sfc_layer->name + ".tin";
+//		m_TIN = new CTIN;
+//		m_TIN->name = m_sfc_layer->name;
+//		m_sfc_layer->TIN = m_TIN;
+//		surface_vector.push_back(m_sfc_layer);
+//	}
+//	//----------------------------------------------------------------------
+//	Surface *m_sfc_layer_0 = NULL;
+//	sfc_layer_name = m_sfc->name + "_layer_0";
+//	m_sfc_layer_0 = GEOGetSFCByName(sfc_layer_name);
+//	if (!m_sfc_layer_0) {
+//		return;
+//	}
+////	long no_nodes_per_layer = (long) nod_vector.size() / (no_msh_layer + 1);
+////	long no_elements_per_layer = (long) ele_vector.size() / (no_msh_layer);
+////	for (long i = 0; i < no_elements_per_layer; i++) {
+////		m_ele = ele_vector[i];
+////		if (m_ele->GetElementType() == 6) { // prism
+////			xyz = m_ele->GetGravityCenter();
+////			m_point.x = xyz[0];
+////			m_point.y = xyz[1];
+////			m_point.z = xyz[2];
+////			if (IsPointInSurface(m_sfc, &m_point)) {
+////				m_tri = new CTriangle;
+////				m_tri->number = (long) m_sfc_layer_0->TIN->Triangles.size();
+////				m_ele->GetNodeIndeces(node_indeces);
+////				for (j = 0; j < 3; j++) {
+////					m_tri->x[j] = nod_vector[node_indeces[j]]->X();
+////					m_tri->y[j] = nod_vector[node_indeces[j]]->Y();
+////					m_tri->z[j] = nod_vector[node_indeces[j]]->Z();
+////				}
+////				m_sfc_layer_0->TIN->Triangles.push_back(m_tri);
+////				m_sfc_layer_0->TIN->name = m_sfc_layer_0->name;//CC
+////				for (int l = 0; l < no_msh_layer; l++) {
+////					sprintf(layer_number, "%i", l + 1);
+////					sfc_layer_name = m_sfc->name + "_layer_" + layer_number;
+////					m_sfc_layer = GEOGetSFCByName(sfc_layer_name);
+////					if (!m_sfc_layer) {
+////						return;
+////					}
+////					m_tri_new = new CTriangle;
+////					for (j = 0; j < 3; j++) {
+////						m_tri_new->number = m_tri->number;
+////						m_tri_new->x[j] = m_tri->x[j];
+////						m_tri_new->y[j] = m_tri->y[j];
+////						m_tri_new->z[j] = nod_vector[node_indeces[j + 3] + l
+////								* no_nodes_per_layer]->Z();
+////					}
+////					m_sfc_layer->TIN->Triangles.push_back(m_tri_new);
+////					m_sfc_layer->TIN->name = m_sfc_layer->name;//CC
+////				}
+////			} // element found
+////		} // triangle
+////	} // ele_vector
+//	//---------------------------------------------------------------------
+//}
 
 /**************************************************************************
  MSHLib-Method:
@@ -3566,32 +3502,32 @@ void CFEMesh::CreateLayerSurfaceTINsfromPris(Surface*m_sfc) {
  11/2005 OK
  last modification:
  **************************************************************************/
-void CFEMesh::GetELEOnSFC(Surface*m_sfc, vector<long>&msh_ele_vector) {
-	msh_ele_vector.clear();
-	//----------------------------------------------------------------------
-	switch (m_sfc->type) {
-	//....................................................................
-	case 0: // Surface polygon
-		cout << "Warning in CFEMesh::GetELEOnSFC: case not implemented" << endl;
-		break;
-		//....................................................................
-	case 1: // TIN
-		GetELEOnSFC_TIN(m_sfc, msh_ele_vector);
-		break;
-		//....................................................................
-	case 2: // 2 vertical polylines
-		cout << "Warning in CFEMesh::GetELEOnSFC: case not implemented" << endl;
-		break;
-		//....................................................................
-	case 3: // projection on xy plane (all mesh points above and below the surface) //MB
-		cout << "Warning in CFEMesh::GetELEOnSFC: case not implemented" << endl;
-		break;
-		//....................................................................
-	case 100:
-		cout << "Warning in CFEMesh::GetELEOnSFC: case not implemented" << endl;
-		break;
-	}
-}
+//void CFEMesh::GetELEOnSFC(Surface*m_sfc, vector<long>&msh_ele_vector) {
+//	msh_ele_vector.clear();
+//	//----------------------------------------------------------------------
+//	switch (m_sfc->type) {
+//	//....................................................................
+//	case 0: // Surface polygon
+//		cout << "Warning in CFEMesh::GetELEOnSFC: case not implemented" << endl;
+//		break;
+//		//....................................................................
+//	case 1: // TIN
+//		GetELEOnSFC_TIN(m_sfc, msh_ele_vector);
+//		break;
+//		//....................................................................
+//	case 2: // 2 vertical polylines
+//		cout << "Warning in CFEMesh::GetELEOnSFC: case not implemented" << endl;
+//		break;
+//		//....................................................................
+//	case 3: // projection on xy plane (all mesh points above and below the surface) //MB
+//		cout << "Warning in CFEMesh::GetELEOnSFC: case not implemented" << endl;
+//		break;
+//		//....................................................................
+//	case 100:
+//		cout << "Warning in CFEMesh::GetELEOnSFC: case not implemented" << endl;
+//		break;
+//	}
+//}
 
 /**************************************************************************
  MSHLib-Method:
@@ -3600,38 +3536,38 @@ void CFEMesh::GetELEOnSFC(Surface*m_sfc, vector<long>&msh_ele_vector) {
  11/2005 OK
  last modification:
  **************************************************************************/
-void CFEMesh::GetELEOnSFC_TIN(Surface*m_sfc, vector<long>&msh_ele_vector) {
-	long i, j;
-	double xp[3], yp[3], zp[3];
-	CGLPoint m_node;
-	CTriangle *m_triangle = NULL;
-	CElem* m_ele = NULL;
-	double* xyz;
-	//----------------------------------------------------------------------
-	for (i = 0; i < (long) m_sfc->TIN->Triangles.size(); i++) {
-		m_triangle = m_sfc->TIN->Triangles[i];
-		xp[0] = m_triangle->x[0];
-		yp[0] = m_triangle->y[0];
-		zp[0] = m_triangle->z[0];
-		xp[1] = m_triangle->x[1];
-		yp[1] = m_triangle->y[1];
-		zp[1] = m_triangle->z[1];
-		xp[2] = m_triangle->x[2];
-		yp[2] = m_triangle->y[2];
-		zp[2] = m_triangle->z[2];
-		for (j = 0; j < (long) ele_vector.size(); j++) {
-			m_ele = ele_vector[j];
-			xyz = m_ele->GetGravityCenter();
-			m_node.x = xyz[0];
-			m_node.y = xyz[1];
-			m_node.z = xyz[2];
-			if (m_node.IsInsideTriangle(xp, yp, zp)) {
-				msh_ele_vector.push_back(m_ele->GetIndex());
-			}
-		}
-	}
-	//----------------------------------------------------------------------
-}
+//void CFEMesh::GetELEOnSFC_TIN(Surface*m_sfc, vector<long>&msh_ele_vector) {
+//	long i, j;
+//	double xp[3], yp[3], zp[3];
+//	CGLPoint m_node;
+//	CTriangle *m_triangle = NULL;
+//	CElem* m_ele = NULL;
+//	double* xyz;
+//	//----------------------------------------------------------------------
+//	for (i = 0; i < (long) m_sfc->TIN->Triangles.size(); i++) {
+//		m_triangle = m_sfc->TIN->Triangles[i];
+//		xp[0] = m_triangle->x[0];
+//		yp[0] = m_triangle->y[0];
+//		zp[0] = m_triangle->z[0];
+//		xp[1] = m_triangle->x[1];
+//		yp[1] = m_triangle->y[1];
+//		zp[1] = m_triangle->z[1];
+//		xp[2] = m_triangle->x[2];
+//		yp[2] = m_triangle->y[2];
+//		zp[2] = m_triangle->z[2];
+//		for (j = 0; j < (long) ele_vector.size(); j++) {
+//			m_ele = ele_vector[j];
+//			xyz = m_ele->GetGravityCenter();
+//			m_node.x = xyz[0];
+//			m_node.y = xyz[1];
+//			m_node.z = xyz[2];
+//			if (m_node.IsInsideTriangle(xp, yp, zp)) {
+//				msh_ele_vector.push_back(m_ele->GetIndex());
+//			}
+//		}
+//	}
+//	//----------------------------------------------------------------------
+//}
 /**************************************************************************
  FEMLib-Method:
  Task:  Renumbering nodes corresponding to the activiate of elements

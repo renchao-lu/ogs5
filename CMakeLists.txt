@@ -6,6 +6,7 @@
 # Specify minimum CMake version
 cmake_minimum_required(VERSION 2.6)	# or set to 2.4 for older systems (like JUGENE...)
 
+# OGS version information. Adjust these if you release a new version.
 SET (OGS_VERSION_MAJOR 5)
 SET (OGS_VERSION_MINOR 0)
 SET (OGS_VERSION_PATCH 06)
@@ -17,11 +18,14 @@ SET (OGS_DATE "13.07.2010")
 INCLUDE( CMakeConfiguration/Macros.cmake )
 
 IF (WIN32)
+	## For Visual Studio compiler
 	IF (MSVC)
 		ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
 		ADD_DEFINITIONS(-D_CRT_NONSTDC_NO_WARNINGS)
 		ADD_DEFINITIONS(-D_CRT_XNONSTDC_NO_WARNINGS)
 		SET ( CMAKE_CONFIGURATION_TYPES "Release;Debug" CACHE TYPE INTERNAL FORCE )
+		# Sets warning level 3 and ignores warning 4290
+		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /wd4290")
 	ELSE (MSVC)
 		MESSAGE (FATAL_ERROR "Aborting: On Windows only the Visual Studio compiler is supported!")
 	ENDIF (MSVC)

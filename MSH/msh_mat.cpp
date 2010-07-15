@@ -70,18 +70,10 @@ void MSHAssignMATGroup2LineElements(void) {
  10/2005 OK MAT-GEO
  last modified:
  **************************************************************************/
-void MSHAssignMATGroup2TrisElements(string msh_name) {
-	int m;
-	int k;
-	long j;
-	Surface *m_sfc = NULL;
-	CGLPoint m_pnt;
-	CMediumProperties *m_mmp = NULL;
-	CElem* m_ele = NULL;
-	//-----------------------------------------------------------------------
+void MSHAssignMATGroup2TrisElements(string msh_name)
+{
 	// Tests
-	CFEMesh* m_msh = NULL;
-	m_msh = FEMGet(msh_name);
+	CFEMesh* m_msh (FEMGet(msh_name));
 	if (!m_msh) {
 		cout << "Warning: MSHAssignMATGroup2TrisElements: no MSH data: "
 				<< msh_name << endl;
@@ -89,35 +81,40 @@ void MSHAssignMATGroup2TrisElements(string msh_name) {
 	}
 	//-----------------------------------------------------------------------
 	// Initialize MAT groups
-	for (j = 0; j < (long) m_msh->ele_vector.size(); j++) {
-		m_ele = m_msh->ele_vector[j];
-		if (m_ele->GetElementType() == 4)
-			m_ele->SetPatchIndex(-1);
+	for (size_t j = 0; j < m_msh->ele_vector.size(); j++) {
+		if (m_msh->ele_vector[j]->GetElementType() == 4)
+			m_msh->ele_vector[j]->SetPatchIndex(-1);
 	}
 	//-----------------------------------------------------------------------
-	double* xyz;
-	for (m = 0; m < (int) mmp_vector.size(); m++) {
-		m_mmp = mmp_vector[m];
-		if (m_mmp->geo_type_name.compare("SURFACE") == 0) {
-			for (j = 0; j < (long) m_msh->ele_vector.size(); j++) {
-				m_ele = m_msh->ele_vector[j];
-				if (m_ele->GetElementType() == 4) {
-					xyz = m_ele->GetGravityCenter();
-					m_pnt.x = xyz[0];
-					m_pnt.y = xyz[1];
-					m_pnt.z = xyz[2];
-					for (k = 0; k < (int) m_mmp->geo_name_vector.size(); k++) {
-						m_sfc = GEOGetSFCByName(m_mmp->geo_name_vector[k]);
-						if (m_sfc) {
-							if (m_sfc->PointInSurface(&m_pnt)) {
-								m_ele->SetPatchIndex(m_mmp->number);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+	// TF m_sfc->PointInSurface(&m_point) returns always false
+//	int m;
+//	int k;
+//	CGLPoint m_pnt;
+//	CMediumProperties *m_mmp = NULL;
+//	Surface *m_sfc = NULL;
+//	double* xyz;
+//	for (m = 0; m < (int) mmp_vector.size(); m++) {
+//		m_mmp = mmp_vector[m];
+//		if (m_mmp->geo_type_name.compare("SURFACE") == 0) {
+//			for (j = 0; j < (long) m_msh->ele_vector.size(); j++) {
+//				m_ele = m_msh->ele_vector[j];
+//				if (m_ele->GetElementType() == 4) {
+//					xyz = m_ele->GetGravityCenter();
+//					m_pnt.x = xyz[0];
+//					m_pnt.y = xyz[1];
+//					m_pnt.z = xyz[2];
+//					for (k = 0; k < (int) m_mmp->geo_name_vector.size(); k++) {
+//						m_sfc = GEOGetSFCByName(m_mmp->geo_name_vector[k]);
+//						if (m_sfc) {
+//							if (m_sfc->PointInSurface(&m_pnt)) {
+//								m_ele->SetPatchIndex(m_mmp->number);
+//							}
+//						}
+//					}
+//				}
+//			}
+//		}
+//	}
 }
 
 void MSHAssignMATGroup2QuadElements(void) {

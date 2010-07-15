@@ -2986,30 +2986,46 @@ void CSourceTerm::SetNodeValues(vector<long>&nodes, vector<long>&nodes_cond,
  11/2005 MB
  last modification:
  **************************************************************************/
-void CSourceTerm::SetNOD2MSHNOD(vector<long>&nodes,
-		vector<long>&conditional_nodes)
+//void CSourceTerm::SetNOD2MSHNOD(vector<long>&nodes,
+//		vector<long>&conditional_nodes)
+//{
+//	CGLPoint* m_pnt = NULL;
+//	long number;
+//	CFEMesh* m_msh_cond = NULL;
+//	CFEMesh* m_msh_this = NULL;
+//
+//	m_msh_cond = FEMGet(pcs_type_name_cond);
+//	m_msh_this = FEMGet(pcs_type_name);
+//	m_pnt = new CGLPoint;
+//
+//	for (long i = 0; i < (long) nodes.size(); i++) {
+//		m_pnt->x = m_msh_this->nod_vector[nodes[i]]->X();
+//		m_pnt->y = m_msh_this->nod_vector[nodes[i]]->Y();
+//		m_pnt->z = m_msh_this->nod_vector[nodes[i]]->Z();
+//
+//		number = m_msh_cond->GetNODOnPNT(m_pnt);
+//		conditional_nodes[i] = number;
+//
+//	}
+//
+//	delete m_pnt;
+//
+//}
+
+void CSourceTerm::SetNOD2MSHNOD(vector<long>& nodes,
+		vector<long>& conditional_nodes)
 {
-	CGLPoint* m_pnt = NULL;
-	long number;
-	CFEMesh* m_msh_cond = NULL;
-	CFEMesh* m_msh_this = NULL;
+	CFEMesh* m_msh_cond(FEMGet(pcs_type_name_cond));
+	CFEMesh* m_msh_this(FEMGet(pcs_type_name));
 
-	m_msh_cond = FEMGet(pcs_type_name_cond);
-	m_msh_this = FEMGet(pcs_type_name);
-	m_pnt = new CGLPoint;
+	GEOLIB::Point pnt;
+	for (size_t i = 0; i < nodes.size(); i++) {
+		pnt[0] = m_msh_this->nod_vector[nodes[i]]->X();
+		pnt[1] = m_msh_this->nod_vector[nodes[i]]->Y();
+		pnt[2] = m_msh_this->nod_vector[nodes[i]]->Z();
 
-	for (long i = 0; i < (long) nodes.size(); i++) {
-		m_pnt->x = m_msh_this->nod_vector[nodes[i]]->X();
-		m_pnt->y = m_msh_this->nod_vector[nodes[i]]->Y();
-		m_pnt->z = m_msh_this->nod_vector[nodes[i]]->Z();
-
-		number = m_msh_cond->GetNODOnPNT(m_pnt);
-		conditional_nodes[i] = number;
-
+		conditional_nodes[i] = m_msh_cond->GetNODOnPNT(&pnt);
 	}
-
-	delete m_pnt;
-
 }
 
 /**************************************************************************

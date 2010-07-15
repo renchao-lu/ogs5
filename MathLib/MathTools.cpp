@@ -6,7 +6,6 @@
  */
 
 #include "MathTools.h"
-#include "geo_pnt.h"
 
 void crossProd(const double u[3], const double v[3], double r[3])
 {
@@ -52,14 +51,9 @@ double sqrDist(const double* p0, const double* p1)
 	return scpr (v, v, 3);
 }
 
-double sqrNrm2 (const CGLPoint* p0)
-{
-	double v[3] = { p0->getX(), p0->getY(), p0->getZ() };
-	return scpr (v, v, 3);
-}
+//double sqrNrm2 (const CGLPoint* p0)
+//{
+//	double v[3] = { p0->getX(), p0->getY(), p0->getZ() };
+//	return scpr (v, v, 3);
+//}
 
-double sqrDist(const CGLPoint* p0, const CGLPoint* p1)
-{
-	double v[3] = { p1->getX() - p0->getX(), p1->getY() - p0->getY(), p1->getZ() - p0->getZ() };
-	return scpr (v, v, 3);
-}

@@ -38,6 +38,7 @@ qt4_wrap_cpp( MOC_SOURCES ${MOC_HEADERS} )
 include_directories(
 	.
 	${CMAKE_BINARY_DIR}/Qt/StationView/DiagramView
+	../../../Base
 	../../../GEO
 	../../Base
 	${CMAKE_SOURCE_DIR}

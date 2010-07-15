@@ -13,9 +13,6 @@
 #include <limits>
 #include "Point.h"
 
-// forward declaration
-class CGLPoint;
-
 /**
  * standard inner product in R^3
  * \param v0 array of type T representing the vector
@@ -64,13 +61,5 @@ double sqrDist(const GEOLIB::Point* p0, const GEOLIB::Point* p1);
 
 /** squared dist between double arrays p0 and p1 (size of arrays is 3) */
 double sqrDist(const double* p0, const double* p1);
-
-/** depreciated: squared euklid norm of the vector p0
- * using old CGLPoint
- */
-double sqrNrm2(const CGLPoint* p0);
-
-/** depreciated: squared dist between p0 and p1 */
-double sqrDist(const CGLPoint* p0, const CGLPoint* p1);
 
 #endif /* MATHTOOLS_H_ */

@@ -13,8 +13,6 @@ last modified:
 #include <string>
 #include <vector>
 
-// GEOLib
-#include "geo_pnt.h"
 // FEMLib
 #include "rf_pcs.h"
 #include <sstream>        // for istringstream (ME)
@@ -119,7 +117,8 @@ class COutput : public GeoInfo
     ios::pos_type Read(std::ifstream* in, const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name);
 
     void Write(fstream*);
-    int GetPointClose(CGLPoint);
+    // TF not used (at the moment?) REMOVE CANDIDATE
+//    int GetPointClose(CGLPoint);
     void WriteTimeCurveData(fstream &);
     void WriteTimeCurveHeader(fstream &);
     void NODWriteDOMDataTEC();

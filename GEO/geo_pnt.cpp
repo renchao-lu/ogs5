@@ -921,6 +921,12 @@ double AngleSumPointInsideTriangle(double *point, double *tri_p1,double *tri_p2,
 	return sum; //359.99999999997630
 }
 
+double sqrDist(const CGLPoint* p0, const CGLPoint* p1)
+{
+	double v[3] = { p1->getX() - p0->getX(), p1->getY() - p0->getY(), p1->getZ() - p0->getZ() };
+	return scpr (v, v, 3);
+}
+
 CGLPoint* isPointInPointVector( const std::vector<CGLPoint*> &vec, const CGLPoint* const p, double tol)
 {
 	size_t size (vec.size());

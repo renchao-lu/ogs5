@@ -35,7 +35,7 @@ public:
 	REACT_GEM(void);
 	~REACT_GEM(void);
 
-    
+
 	TNode* m_Node; // Instance of TNode class
 	// HS: 06.2007 Only set one TNode here, repeatedly use its resources for GEM calculation
 
@@ -54,10 +54,10 @@ public:
 	long *m_NodeHandle, *m_NodeStatusCH, *m_IterDone, *m_IterDoneCumulative, *m_IterDoneIndex;
         long m_IterDoneIndexSort, m_ShuffleGems;
 	// this is for porosity calculated on volume of solids
-	double *m_porosity; 
+	double *m_porosity;
 	double *m_fluid_volume, *m_gas_volume;
-	
-	// index, which one in the xDC vector is water. 
+
+	// index, which one in the xDC vector is water.
 	int idx_water;
 	int idx_hydrogen;
         int idx_oxygen;
@@ -67,12 +67,12 @@ public:
           *m_Eh;
 
 	double *m_xDC, *m_gam, *m_xPH, *m_aPH, *m_vPS, *m_mPS, *m_bPS,
-         *m_xPA, *m_dul, *m_dll, *m_bIC, *m_bIC_dummy, *m_rMB, *m_uIC; 
+         *m_xPA, *m_dul, *m_dll, *m_bIC, *m_bIC_dummy, *m_rMB, *m_uIC;
 
-    
+
 	double  *m_porosity_Elem, *m_porosity_Elem_buff;
 
-	// data for transport of IC 
+	// data for transport of IC
 	double *m_soluteB, *m_soluteB_buff;
 
     // previous time step DC values
@@ -80,8 +80,8 @@ public:
     double *m_xDC_MT_delta;   // delta C from Mass Transport;
     double *m_xDC_Chem_delta; // delta C from Chemistry;
 
-	double *m_excess_water;   // excess water in m3/s for each node; 
-	double *m_excess_gas;   // excess gas in m3/s for each node; 
+	double *m_excess_water;   // excess water in m3/s for each node;
+	double *m_excess_gas;   // excess gas in m3/s for each node;
 	double *m_saturation;
 	double *m_Node_Volume;    // Volume around the node;
 
@@ -93,8 +93,8 @@ public:
         int *m_boundary; //holds marker for boundary nodes
 
 	CFluidProperties *m_FluidProp;
-	CRFProcess *m_pcs;        // pointer to the PCS Class.	
-	CRFProcess *m_flow_pcs;   // pointer to the flow PCS. 
+	CRFProcess *m_pcs;        // pointer to the PCS Class.
+	CRFProcess *m_flow_pcs;   // pointer to the flow PCS.
 
 	// functions
 	short Init_Nodes(string Project_path);	// Initialization of the GEM TNode Class
@@ -103,10 +103,10 @@ public:
     //          3-dch problem;
     //          4-dbr problem;
 
-    short Init_RUN();// Run the node-GEM                      	
-	//  return: 0-ok;5-GEM does not converge 
+    short Init_RUN();// Run the node-GEM
+	//  return: 0-ok;5-GEM does not converge
 	short Run_MainLoop();
-	//  return: 0-ok;5-GEM does not converge 
+	//  return: 0-ok;5-GEM does not converge
 
 	string Get_Init_File_Path(void);
 	string Get_DCH_File_Path(void);
@@ -266,12 +266,12 @@ typedef struct {
 	string phase_name;
 	int phase_number;
         int dc_counter;
-	int kinetic_model;  // only 1 = GEMS implemented right now 
-        int n_activities;  // number of species for activities 
-        string active_species[10];  // name for species ...maximum 10 names 
+	int kinetic_model;  // only 1 = GEMS implemented right now
+        int n_activities;  // number of species for activities
+        string active_species[10];  // name for species ...maximum 10 names
 	double kinetic_parameters[41];
-//	0,1,2  double E_acid,E_neutral,E_base; // activation energies 
-//      3-5  double k_acid, k_neutral,k_base; // dissolution/precipitation rate constants 
+//	0,1,2  double E_acid,E_neutral,E_base; // activation energies
+//      3-5  double k_acid, k_neutral,k_base; // dissolution/precipitation rate constants
 //      6-11  double p1,q1,p2,q2,p2,q2; // exponents for omega
 //      12,13, 14  double n_1, n_2, n_3; // exponents for acidic neutral and base cases for species one
 //      append for each species another set of n_1, n_2, n_3 (up to 10 sets -> up to ten species)

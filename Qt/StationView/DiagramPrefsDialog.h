@@ -31,8 +31,8 @@ public:
 
 
 private:
-	const int loadFile(const QString &filename);
-	const int loadList(const std::vector< std::pair<QDateTime, float> > &coords);
+	int loadFile(const QString &filename);
+	int loadList(const std::vector< std::pair<QDateTime, float> > &coords);
 
 	DiagramList* _list;
 	DatabaseConnection* _db;

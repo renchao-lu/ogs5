@@ -3,7 +3,7 @@ FEMLib - Object: MAT-FP
 Task: class implementation
 Programing:
 08/2004 OK Implementation
-last modified: 
+last modified:
 **************************************************************************/
 #ifndef rf_mfp_new_INC
 #define rf_mfp_new_INC
@@ -26,24 +26,24 @@ class CFluidProperties
     double primary_variable_t1[10];//CMCD
     CRFProcess *mfp_pcs;
     // CElement *m_element;
-    // 
+    //
     bool cal_gravity; //YD/WW
     // FEM
     friend class  FiniteElement::CFiniteElementStd; //WW
     // PCS
     CRFProcess *m_pcs; //OK4704
   public:
-  
+
     int fluid_id; // specification of substance (NB JUN 09)
     double rhoc; //critical_density; //NB
-	double Tc; //critical_temperature; 
-	double pc; //critical_pressure; 
-	double Tt; //triple_point_temperature; 
-	double pt; //triple_point_pressure; 
-	double Rs; //specific_gas_constant; 
-	double Ru; //universal_gas_constant; 
+	double Tc; //critical_temperature;
+	double pc; //critical_pressure;
+	double Tt; //triple_point_temperature;
+	double pt; //triple_point_pressure;
+	double Rs; //specific_gas_constant;
+	double Ru; //universal_gas_constant;
 	double omega; // azentric factor for Peng-Robinson EOS
-	double molar_mass; 
+	double molar_mass;
     string name;
     string fluid_name; //NB4801
 // Limits and coefficients for free Helmholtz Energy, NB JUN 09
@@ -57,7 +57,7 @@ class CFluidProperties
     int compressibility_temperature; //NB
 
     int phase;
-    
+
     // FEM
     CFiniteElementStd *Fem_Ele_Std;
     long node; //OK4704
@@ -66,7 +66,7 @@ class CFluidProperties
     double rho_0;
     double drho_dp;
     double drho_dT;
-    
+
     double drho_dC;
     string rho_fct_name;
     // Viscosity
@@ -78,7 +78,7 @@ class CFluidProperties
     double dmy_dC;
     string my_fct_name;
     // Thermal properties
-   
+
     double specific_heat_capacity;
     string heat_capacity_fct_name;
     int heat_conductivity_model;
@@ -86,11 +86,11 @@ class CFluidProperties
     string heat_conductivity_fct_name;
     int heat_diffusion_model;//AKS
     double temperature_buffer; //YD, shifted to public JOD
-	int heat_capacity_model;  //YD, shifted to public JOD 
+	int heat_capacity_model;  //YD, shifted to public JOD
     // Electrical properties
     int electric_conductivity_model;
     int electric_conductivity_num_val;
-    double *electric_conductivity_val; 
+    double *electric_conductivity_val;
     // Chemical properties
 	string dif_fct_name;
 	int diffusion_model; /* SB:p2 */
@@ -100,8 +100,8 @@ class CFluidProperties
 	double T_0;
 	double C_0;
     double Z;
-    double T_Latent1, T_Latent2, latent_heat; 
-    int heat_phase_change_curve; 
+    double T_Latent1, T_Latent2, latent_heat;
+    int heat_phase_change_curve;
     // IO
     string file_base_name;
     int mode;
@@ -125,14 +125,14 @@ class CFluidProperties
     void Write(ofstream*);
     void CalPrimaryVariable(vector<string>& pcs_name_vector);
     // Add an argument: double* variables = NULL. 28.05.2008 WW
-    double Density(double *variables = NULL); 
+    double Density(double *variables = NULL);
     double drhodP (double P, double T);
 double MixtureSubProperity(int properties, long idx_elem, double p, double T);//AKS
     double drhodT (double P, double T);
     double Viscosity(double *variables = NULL); //OK4709
     double SpecificHeatCapacity(double *variables = NULL); //NB Jan09
     void therm_prop(string caption); //NB 4.9.05
-	double PhaseChange(); // JOD 
+	double PhaseChange(); // JOD
     double HeatConductivity(double *variables = NULL);
     double CalcEnthalpy(double temperature);
     //WW double Enthalpy(int,double);
@@ -144,7 +144,7 @@ double MixtureSubProperity(int properties, long idx_elem, double p, double T);//
     double vaporDensity_derivative(const double T); //WW
     bool CheckGravityCalculation() const {return cal_gravity;}
     int GetHeatCapacityModel() const {return heat_capacity_model;}//YD
-// Derivations of free Helmholtz energy, NB JUN 09    
+// Derivations of free Helmholtz energy, NB JUN 09
     double phi_r_d (double rho, double T, int c);
     double phi_r_tt (double rho, double T, int c);
     double phi_0_t (double T,int c);
@@ -153,7 +153,7 @@ double MixtureSubProperity(int properties, long idx_elem, double p, double T);//
     double phi_r_dd (double rho, double T, int c);
     double phi_0_tt (double T, int c);
  double CalCopressibility(long idx_elem, double p, double T); //AKS
-    
+
   private:
     double GasViscosity_Reichenberg_1971(double,double);
     double GasViscosity_Chung_1988(long idx_elem, double,double);//AKS

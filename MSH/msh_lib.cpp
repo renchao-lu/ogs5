@@ -1,6 +1,6 @@
 /**************************************************************************
-MSHLib - Object: 
-Task: 
+MSHLib - Object:
+Task:
 Programing:
 08/2005 OK Encapsulated from mshlib
 **************************************************************************/
@@ -47,7 +47,7 @@ bool msh_file_binary = false;
 #define MSH_SIZE 1e5
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task:
 Programing:
 04/2005 OK Implementation
@@ -76,7 +76,7 @@ void MSHOpen(string file_name_base)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 03/2005 OK Implementation
 05/2005 TK modified
 05/2006 TK modified
@@ -91,7 +91,7 @@ void FEMDeleteAll()
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task:
 Programing:
 03/2005 OK Implementation
@@ -100,9 +100,9 @@ Programing:
 **************************************************************************/
 bool FEMRead(string file_base_name)
 {
- 
+
   //----------------------------------------------------------------------
-  FEMDeleteAll();  
+  FEMDeleteAll();
   //----------------------------------------------------------------------
   CFEMesh *m_fem_msh = NULL;
   char line[MAX_ZEILE];
@@ -121,7 +121,7 @@ bool FEMRead(string file_base_name)
 #endif
 
   msh_file_bin.open(msh_file_name_bin.c_str(),ios::binary|ios::in);
-  if(msh_file_bin.good()){ 
+  if(msh_file_bin.good()){
     msh_file_binary = true;
   }
 /*
@@ -130,7 +130,7 @@ bool FEMRead(string file_base_name)
   ifstream fem_msh_file;
   //......................................................................
   fem_msh_file.open(fem_msh_file_name.data(),ios::in);
-  if (!fem_msh_file.good()) 
+  if (!fem_msh_file.good())
     return false;
   fem_msh_file.getline(line,MAX_ZEILE);
   line_string = line;
@@ -144,7 +144,7 @@ bool FEMRead(string file_base_name)
   cout << "MSHRead: ";
   if(msh_file_binary){
     cout << "BINARY file" << endl;
-    if (!msh_file_bin.good()) 
+    if (!msh_file_bin.good())
       return false;
   }
   else{
@@ -164,12 +164,12 @@ if(!msh_file_binary){
   if(line_string.find("GeoSys-MSH")!=string::npos) //OK
     rfiMesh = false;
   msh_file_ascii.seekg(0L,ios::beg);
-  
+
 #ifdef USE_TOKENBUF
   tokenbuf = new TokenBuf(msh_file_ascii, 10485760);
 #endif
 
-  if (rfiMesh) 
+  if (rfiMesh)
   {
 #ifdef TRACE
     std::cout << "RFI MESH" << std::endl;
@@ -240,7 +240,7 @@ if(!msh_file_binary){
   return true;
 }
 /**************************************************************************
-MSHLib-Method: Read rfi file () 
+MSHLib-Method: Read rfi file ()
 Task:
 Programing:
 08/2005 WW Re-implememtation
@@ -258,7 +258,7 @@ void Read_RFI(istream& msh_file,CFEMesh* m_msh)
   CNode* node = NULL;
   CElem* elem = NULL;
   //----------------------------------------------------------------------
-  while (End) 
+  while (End)
   {
     getline(msh_file, strbuffer);// The first line
     msh_file>>i>>NumNodes>>NumElements>>ws;
@@ -281,7 +281,7 @@ void Read_RFI(istream& msh_file,CFEMesh* m_msh)
 
 
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 02/2006 WW Implementation
 **************************************************************************/
 void CompleteMesh()
@@ -290,7 +290,7 @@ void CompleteMesh()
   {
     fem_msh_vector[i]->ConstructGrid();
     fem_msh_vector[i]->FillTransformMatrix();
-  }      
+  }
 }
 
 /**************************************************************************
@@ -374,8 +374,8 @@ CFEMesh* FEMGet(const string &msh_name)
 }
 
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 09/2004 OK Implementation
 **************************************************************************/
@@ -392,7 +392,7 @@ void MSHCalcMinMaxMidCoordinates()
   //----------------------------------------------------------------------
   for(int j=0;j<(int)fem_msh_vector.size();j++){
     m_msh = fem_msh_vector[j];
-    for(long i=0;i<(long)m_msh->nod_vector.size();i++) 
+    for(long i=0;i<(long)m_msh->nod_vector.size();i++)
     {
       value = m_msh->nod_vector[i]->X();
       if(value<m_dXMin1) m_dXMin1 = value;
@@ -422,13 +422,13 @@ void MSHCalcMinMaxMidCoordinates()
 
 
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 04/2004 OK Implementation
 01/2005 OK File handling
 09/2005 OK MSH ToDo
-last modification: 
+last modification:
 **************************************************************************/
 void MSHWriteVOL2TEC(string m_msh_name)
 {
@@ -437,15 +437,13 @@ void MSHWriteVOL2TEC(string m_msh_name)
   vector<CGLVolume*>::const_iterator p_vol;
   string name("VOLUMES");
   vector<Surface*>::const_iterator p_sfc;
-  string delimiter(", ");
   double x,y,z;
-  CGLPoint m_point;
+//  CGLPoint m_point; // TF
   ios::pos_type position;
   int vol_number = -1;
   Surface* m_sfc = NULL;
   //--------------------------------------------------------------------
-  CFEMesh* m_msh = NULL;
-  m_msh = FEMGet(m_msh_name);
+  CFEMesh* m_msh (FEMGet(m_msh_name));
   if(!m_msh)
     return;
   long no_nodes = (long)m_msh->nod_vector.size();
@@ -455,7 +453,7 @@ void MSHWriteVOL2TEC(string m_msh_name)
   string tec_path;
   CGSProject* m_gsp = GSPGetMember("gli");
   if(m_gsp)
-    tec_path = m_gsp->path; 
+    tec_path = m_gsp->path;
   //======================================================================
   p_vol = volume_vector.begin();
   while(p_vol!=volume_vector.end()) {
@@ -500,12 +498,13 @@ void MSHWriteVOL2TEC(string m_msh_name)
         x /= double(6);
         y /= double(6);
         z /= double(6);
-        m_point.x = x;
-        m_point.y = y;
-        m_point.z = z;
-        if(m_sfc->PointInSurface(&m_point)){
-          no_mat_elements++; 
-        }
+        // TF m_sfc->PointInSurface(&m_point) returns always false
+//        m_point.x = x;
+//        m_point.y = y;
+//        m_point.z = z;
+//        if(m_sfc->PointInSurface(&m_point)){
+//          no_mat_elements++;
+//        }
       }
     }
     //--------------------------------------------------------------------
@@ -531,14 +530,15 @@ void MSHWriteVOL2TEC(string m_msh_name)
         x /= double(6);
         y /= double(6);
         z /= double(6);
-        m_point.x = x;
-        m_point.y = y;
-        m_point.z = z;
-        if(m_sfc->PointInSurface(&m_point)){
-          vol_file \
-            << node_indeces[0]+1 << " " << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " << node_indeces[2]+1 << " " \
-            << node_indeces[3]+1 << " " << node_indeces[3]+1 << " " << node_indeces[4]+1 << " " << node_indeces[5]+1 << endl;
-        }
+        // TF m_sfc->PointInSurface(&m_point) returns always false
+//        m_point.x = x;
+//        m_point.y = y;
+//        m_point.z = z;
+//        if(m_sfc->PointInSurface(&m_point)){
+//          vol_file
+//            << node_indeces[0]+1 << " " << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " << node_indeces[2]+1 << " "
+//            << node_indeces[3]+1 << " " << node_indeces[3]+1 << " " << node_indeces[4]+1 << " " << node_indeces[5]+1 << endl;
+//        }
       }
     }
     ++p_vol;
@@ -547,8 +547,8 @@ void MSHWriteVOL2TEC(string m_msh_name)
 }
 
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 04/2005 OK Implementation
 11/2005 OK OO-ELE
@@ -679,7 +679,7 @@ void MSHWriteTecplot()
           msh_file \
             << m_msh->nod_vector[i]->X() << " " << m_msh->nod_vector[i]->Y() << " " << m_msh->nod_vector[i]->Z() << endl;
         }
-        for(i=0;i<no_elements;i++) 
+        for(i=0;i<no_elements;i++)
         {
           m_ele = m_msh->ele_vector[i];
           m_ele->GetNodeIndeces(node_indeces);
@@ -706,8 +706,8 @@ void MSHWriteTecplot()
 }
 
 /**************************************************************************
-GeoLib-Method: 
-Task: 
+GeoLib-Method:
+Task:
 Programing:
 04/2005 OK Implementation
 11/2005 OK OO-ELE
@@ -858,7 +858,7 @@ for(k=0;k<m_msh->no_msh_layer;k++){
 }
 
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 12/2005 OK Implementation
 07/2007 OK PCS
 **************************************************************************/
@@ -881,7 +881,7 @@ CFEMesh* MSHGet(const string &geo_name)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task:
 Programing:
 12/2005 OK Implementation
@@ -907,7 +907,7 @@ CFEMesh* MSHGetGEO(string geo_name)
 {
   int no_msh = (int)fem_msh_vector.size();
   // If there is only one msh file available, use it for all process. WW
-  if(no_msh==1) 
+  if(no_msh==1)
     return fem_msh_vector[0]; //WW
   //----------------------------------------------------------------------
   CFEMesh* m_msh = NULL;
@@ -932,13 +932,13 @@ CFEMesh* MSHGetGEO(string geo_name)
    otherwise returns false
  Programmaenderungen:
    05/2005 RFW Implementierung
-   05/2006 RFW Änderung
+   05/2006 RFW ï¿½nderung
 ***************************************************************************************/
 bool MSHGetCommonNodes(CElem* elem1, CElem* elem2, vector<CNode*>& nodes)
 {
 nodes.clear();
 bool neighbor = false;
-vec<CNode*> nodes1, nodes2; 
+vec<CNode*> nodes1, nodes2;
 int numnodes1, numnodes2;
 if(elem1!=NULL && elem2!=NULL)//RFW 19/05/2005
 {
@@ -973,7 +973,7 @@ else
    does this by using polylines that define the top and bottom of the 2D fracture.  For
    the function to work properly, the points defining the polyline must be evenly spaced.
    Function should only be called once, after configuration.
- Formalparameter: 
+ Formalparameter:
  Ergebnis:
  Programmaenderungen:
    11/2005 RFW Implementierung
@@ -990,7 +990,7 @@ CMediumProperties *m_mmp = NULL;
 CFEMesh* m_msh = NULL;
 group = -1; //WW
 vector<long> bound_elements;
-vector<double> node_x, node_y; 
+vector<double> node_x, node_y;
 double x, y, tri[6], dx_avg, dy_avg, d_max, *gravity_center;
 //The following vector is a strange beast.  The first index indicates the fracture being considered, the second
 //index indicates the segment of the fracture being considered, and the final index contains the element numbers
@@ -1007,7 +1007,7 @@ for(int i=0; i<(int)mmp_vector.size(); ++i)
     m_mmp = mmp_vector[i];
     //for(int j=0; j<(int)m_mmp->relative_permeability_function.size(); ++j)
     //{
-        if (m_mmp->frac_num != 0) 
+        if (m_mmp->frac_num != 0)
         {
             group = i;
             frac_exists = 1;
@@ -1047,8 +1047,8 @@ if(frac_exists)
     {
         string polyname_top = m_mmp->frac_names[j] + "_top";
         string polyname_bot = m_mmp->frac_names[j] + "_bot";
-        frac_top = GEOGetPLYByName(polyname_top); 
-        frac_bot = GEOGetPLYByName(polyname_bot); 
+        frac_top = GEOGetPLYByName(polyname_top);
+        frac_bot = GEOGetPLYByName(polyname_bot);
         //frac_segments[j].resize((long)frac_top->point_vector.size()-1);
         segment_elements[j].resize((long)frac_top->point_vector.size()-1);
         segment_on_boundary[j].resize((long)frac_top->point_vector.size()-1);
@@ -1061,7 +1061,7 @@ if(frac_exists)
             abort();
         }
         for(long k=0; k<((long)frac_top->point_vector.size()-1); ++k) //loop2, over fracture segments
-        {                     
+        {
             node_x.resize(4); //of course, these are not really nodes, but I'm using code from ELEWhatElemIsPointIn
             node_y.resize(4);
             //4 points defining the fracture segment
@@ -1084,11 +1084,11 @@ if(frac_exists)
                 elem = m_msh->ele_vector[l];
                 if(elem->GetPatchIndex()==group) //this is simply to make things go faster
                 {
-                    
+
                     gravity_center = elem->GetGravityCenter();
                     x = gravity_center[0]; //x = ELEGetEleMidPoint(l,0);
                     y = gravity_center[1]; //y = ELEGetEleMidPoint(l,1);
-                               
+
                     //calculate triangular coordinates for both triangles making up fracture segment
                     //first triangle
                     tri[0] = ( (node_x[1]*node_y[2]-node_x[2]*node_y[1]) + (node_y[1]-node_y[2])*x + (node_x[2]-node_x[1])*y )/(2*Area1);
@@ -1098,12 +1098,12 @@ if(frac_exists)
                     tri[3] = ( (node_x[3]*node_y[2]-node_x[2]*node_y[3]) + (node_y[3]-node_y[2])*x + (node_x[2]-node_x[3])*y )/(2*Area2);
                     tri[4] = ( (node_x[2]*node_y[0]-node_x[0]*node_y[2])+ (node_y[2]-node_y[0])*x + (node_x[0]-node_x[2])*y )/(2*Area2);
                     tri[5] = ( (node_x[0]*node_y[3]-node_x[3]*node_y[0]) + (node_y[0]-node_y[3])*x + (node_x[3]-node_x[0])*y )/(2*Area2);
-                    
+
                     if((tri[0]>=-0.00000001 && tri[1]>=-0.00000001 && tri[2]>=-0.00000001)
                     || (tri[3]>=-0.00000001 && tri[4]>=-0.00000001 && tri[5]>=-0.00000001))
-                    {     
+                    {
                       elem->SetFracNum(j);
-                       
+
                         //what is the appropriate search dirction for aperture searches?
                         dx_avg = ( (node_x[1]-node_x[0]) + (node_x[2]-node_x[3]) )/2;
                         dy_avg = ( (node_y[1]-node_y[0]) + (node_y[2]-node_y[3]) )/2;
@@ -1116,11 +1116,11 @@ if(frac_exists)
                         segment_elements[j][k].push_back( l );
 
                         //check if element is on boundary, if so, the segment_on_boundary gets a value of true, otherwise false
-                        vector<CNode*> match_nodes; 
-                        vec<CNode*> elem_nodes; 
-                        elem->GetNodes(elem_nodes); 
+                        vector<CNode*> match_nodes;
+                        vec<CNode*> elem_nodes;
+                        elem->GetNodes(elem_nodes);
                         int elem_num_nodes = elem->GetVertexNumber();
-                    
+
                         for(long m=0; m!=(long)poly_nodes.size(); ++m)
                         {
                             for(int n=0; n!=elem_num_nodes; ++n)
@@ -1139,7 +1139,7 @@ if(frac_exists)
                             d_max = max(abs(dx_avg), abs(dy_avg));
                             segment_dx[j][k] = dx_avg/d_max; //no longer the inverese of the average slope as above, rather the orientation of the boundary
                             segment_dy[j][k] = dy_avg/d_max;
-                        }                       
+                        }
 
                     }
                 }//if GroupNumber
@@ -1156,11 +1156,11 @@ if(frac_exists)
         point_x.resize(2); point_y.resize(2);
         string polyname_top = m_mmp->frac_names[j] + "_top";
         string polyname_bot = m_mmp->frac_names[j] + "_bot";
-        frac_top = GEOGetPLYByName(polyname_top); 
+        frac_top = GEOGetPLYByName(polyname_top);
         frac_bot = GEOGetPLYByName(polyname_bot);
 
         //calculating polyline length
-	    double top_poly_length = frac_top->CalcPolylineLength(); 
+	    double top_poly_length = frac_top->CalcPolylineLength();
 
         for(long k=0; k<((long)frac_top->point_vector.size()-1); ++k) //loop5, over fracture segments
         {
@@ -1176,7 +1176,7 @@ if(frac_exists)
 //WW                long test1 = ((long)frac_top->point_vector.size()-1);
 //WW                long test2 = (long)segment_elements[j][k].size();
                 Weight = seg_length / top_poly_length / (double)segment_elements[j][k].size();
-                
+
                 elem = m_msh->ele_vector[segment_elements[j][k][l]];
                 //elem->in_frac = true; // RFW 18/11/2005
                 elem->SetFrac(Weight);
@@ -1199,7 +1199,7 @@ if(frac_exists)
  Aufgabe:
   Resets the aperture calculation for the next time, this means that CalculateFracAperture
   function will not be called multiple times each timestep
- Formalparameter: 
+ Formalparameter:
  Ergebnis:
  Programmaenderungen:
    11/2005 RFW Implementierung
@@ -1225,9 +1225,9 @@ for(int i = 0; i<(int)mmp_vector.size(); i++)
 }
 
 /**************************************************************************
-GeoSys-FEM-Method: 
+GeoSys-FEM-Method:
 Task: Find what element a set of given coords is in.  Works for triangles and quadrilatera in a 2d system.
-Programming: 
+Programming:
       RFW 04.2005 index is an initial guess of an element close to
       the one containing the given point.
 **************************************************************************/
@@ -1241,7 +1241,7 @@ long MSHWhatElemIsPointIn(double x, double y, long index)
     bool inside = false, in_domain = false;
     int num_face, num_nodes;
     double Area1, Area2, tri[6];
-    vector<double> node_x, node_y; 
+    vector<double> node_x, node_y;
     long return_value=0, count=0;//perhaps return_value shouldn't be initialized
     vector<long> index_guess;
     index_guess.push_back(index);
@@ -1257,8 +1257,8 @@ long MSHWhatElemIsPointIn(double x, double y, long index)
     bnode_x[0]=bound_ply->point_vector[0]->x;       bnode_y[0]=bound_ply->point_vector[0]->y;
     bnode_x[1]=bound_ply->point_vector[1]->x;        bnode_y[1]=bound_ply->point_vector[1]->y;
     bnode_x[2]=bound_ply->point_vector[2]->x;        bnode_y[2]=bound_ply->point_vector[2]->y;
-    bnode_x[3]=bound_ply->point_vector[3]->x;        bnode_y[3]=bound_ply->point_vector[3]->y;    
-   
+    bnode_x[3]=bound_ply->point_vector[3]->x;        bnode_y[3]=bound_ply->point_vector[3]->y;
+
     Area1 = ( (bnode_x[1]*bnode_y[2] - bnode_x[2]*bnode_y[1])
         + (bnode_x[2]*bnode_y[0] - bnode_x[0]*bnode_y[2])
         + (bnode_x[0]*bnode_y[1] - bnode_x[1]*bnode_y[0]) )/2;
@@ -1274,7 +1274,7 @@ long MSHWhatElemIsPointIn(double x, double y, long index)
     tri[3] = ( (bnode_x[3]*bnode_y[2]-bnode_x[2]*bnode_y[3]) + (bnode_y[3]-bnode_y[2])*x + (bnode_x[2]-bnode_x[3])*y )/(2*Area2);
     tri[4] = ( (bnode_x[2]*bnode_y[0]-bnode_x[0]*bnode_y[2])+ (bnode_y[2]-bnode_y[0])*x + (bnode_x[0]-bnode_x[2])*y )/(2*Area2);
     tri[5] = ( (bnode_x[0]*bnode_y[3]-bnode_x[3]*bnode_y[0]) + (bnode_y[0]-bnode_y[3])*x + (bnode_x[3]-bnode_x[0])*y )/(2*Area2);
-    
+
     if((tri[0]>=-0.0000001 && tri[1]>=-0.0000001 && tri[2]>=-0.0000001)
         || (tri[3]>=-0.0000001 && tri[4]>=-0.0000001 && tri[5]>=-0.0000001)) //perhaps this should be +ve??
     {
@@ -1284,7 +1284,7 @@ long MSHWhatElemIsPointIn(double x, double y, long index)
     {
         return_value = -100;
     }
-        
+
     //----------------------------------------------point in model domain?---------------------------------------------------------END
 
     //----------------------------------------------which element is point in?----------------------------------------------------START
@@ -1347,7 +1347,7 @@ long MSHWhatElemIsPointIn(double x, double y, long index)
            tri[3] = ( (node_x[3]*node_y[2]-node_x[2]*node_y[3]) + (node_y[3]-node_y[2])*x + (node_x[2]-node_x[3])*y )/(2*Area2);
            tri[4] = ( (node_x[2]*node_y[0]-node_x[0]*node_y[2])+ (node_y[2]-node_y[0])*x + (node_x[0]-node_x[2])*y )/(2*Area2);
            tri[5] = ( (node_x[0]*node_y[3]-node_x[3]*node_y[0]) + (node_y[0]-node_y[3])*x + (node_x[3]-node_x[0])*y )/(2*Area2);
-           
+
            if((tri[0]>=-0.0000001 && tri[1]>=-0.0000001 && tri[2]>=-0.0000001)
                || (tri[3]>=-0.0000001 && tri[4]>=-0.0000001 && tri[5]>=-0.0000001)) //perhaps this should be +ve??
           {
@@ -1357,7 +1357,7 @@ long MSHWhatElemIsPointIn(double x, double y, long index)
           }
         }
     } //end of for loop over i
-        
+
     if(!inside) //Add the neighboring elements to the search
     {
         bool already_there;
@@ -1366,14 +1366,14 @@ long MSHWhatElemIsPointIn(double x, double y, long index)
         //for (long j=0; j!=(long)index_guess.size(); ++j)
         //    index_guess_old[j] = index_guess[j];
         index_guess_old = index_guess; //not quite sure this works
-         //CLEAR OLD VALUES FROM INDEX_GUESS AT THIS POINT? 
+         //CLEAR OLD VALUES FROM INDEX_GUESS AT THIS POINT?
 	    for (long j=0; j!=(long)index_guess_old.size(); ++j)
         {
 
             elem = m_msh->ele_vector[index_guess_old[j]];
             elem->GetNeighbors(neighbors);
             num_face = elem->GetFacesNumber();
-            
+
             for(long k =0; k!=num_face; ++k)
             {
                 if(neighbors[k]->GetIndex() >= 0){
@@ -1387,10 +1387,10 @@ long MSHWhatElemIsPointIn(double x, double y, long index)
                     index_guess.push_back(neighbors[k]->GetIndex());
                 }
     		}
-    		   
-        }                
+
+        }
     } // end of if !inside
-   
+
     } //end of while
     //----------------------------------------------which element is point in?------------------------------------------------------END
 
@@ -1406,7 +1406,7 @@ long MSHWhatElemIsPointIn(double x, double y, long index)
 #endif
 
 /**************************************************************************
-MSHLib-Method: 
+MSHLib-Method:
 07/2007 OK Implementation
 **************************************************************************/
 bool CompleteMesh(string pcs_name)
@@ -1420,7 +1420,7 @@ bool CompleteMesh(string pcs_name)
       fem_msh_vector[i]->FillTransformMatrix();
       succeed = true;
     }
-  }   
+  }
   return succeed;
 }
 
@@ -1451,12 +1451,12 @@ long MSHGetNextNode (long startnode, CFEMesh* m_msh)
 
   NumberOfNodes = (long)m_msh->nod_vector.size();
   NumberOfLayers = m_msh->no_msh_layer;
-  
-  NumberOfNodesPerLayer = NumberOfNodes / (NumberOfLayers + 1);  
+
+  NumberOfNodesPerLayer = NumberOfNodes / (NumberOfLayers + 1);
 
   nextnode = startnode + NumberOfNodesPerLayer;
 
-  return nextnode; 
+  return nextnode;
 }
 
 /**************************************************************************/
@@ -1474,8 +1474,8 @@ long MSHGetNextNode (long startnode, CFEMesh* m_msh)
                                                                           */
 /* Programming:
    03/2003     MB   First Version
-   09/2004     MB   PCS   
-   08/2005     MB msh    
+   09/2004     MB   PCS
+   08/2005     MB msh
                                                                           */
 /**************************************************************************/
 void MSHSelectFreeSurfaceNodes (CFEMesh* m_msh)
@@ -1492,16 +1492,16 @@ void MSHSelectFreeSurfaceNodes (CFEMesh* m_msh)
   // Number of nodes per node layer
   NumberOfNodes = (long)m_msh->nod_vector.size();
   NumberOfLayers = m_msh->no_msh_layer;
-  NumberOfNodesPerLayer = NumberOfNodes / (NumberOfLayers + 1);  
+  NumberOfNodesPerLayer = NumberOfNodes / (NumberOfLayers + 1);
   int no_unconfined_layer = 0;
   // create array with nodes in vertical column
   for (i = 0; i < NumberOfNodesPerLayer; i++) {
-   
+
     if(m_msh->nod_vector[i]->free_surface == 4){
-      nextnode = i; 
-      no_unconfined_layer = 0;  
+      nextnode = i;
+      no_unconfined_layer = 0;
       for (j=0; j < m_msh->no_msh_layer; j++) {
-        strang = (long*) Realloc(strang,(j+1)*sizeof(long));     
+        strang = (long*) Realloc(strang,(j+1)*sizeof(long));
         strang[j] = nextnode;
         startnode = nextnode;
         nextnode = MSHGetNextNode (startnode, m_msh);
@@ -1513,18 +1513,18 @@ void MSHSelectFreeSurfaceNodes (CFEMesh* m_msh)
         else  {
           continue;
         }
-      } 
+      }
     } //endif free_surface==4
-    
+
     // mark start of vertical column with 1 - end of column with 2
-    // this is than used in MSHMoveNODUcFlow 
+    // this is than used in MSHMoveNODUcFlow
     m_msh->nod_vector[strang[0]]->free_surface = 1;
     m_msh->nod_vector[strang[no_unconfined_layer]]->free_surface = 2;
-  } /*endfor*/ 
+  } /*endfor*/
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: Searches mobile nodes and sets node->free_surface = 4
 Programing:
 09/2004 OK / MB Implementation
@@ -1544,13 +1544,13 @@ void MSHDefineMobile(CRFProcess*m_pcs)
   //----------------------------------------------------------------------
   // MMP Groups
   if(mmp_vector.size()==0) return;
-  ////Schleife über alle Gruppen
+  ////Schleife ï¿½ber alle Gruppen
   for(i=0;i<(long) mmp_vector.size();i++){
     m_mat_mp = mmp_vector[i];
 
 //WW    int test = m_pcs->m_msh->GetMaxElementDim();
     //m_pcs->m_msh->cross_section
-    
+
     //if (m_mat_mp->unconfined_flow_group ==1 && m_pcs->m_msh->GetMaxElementDim() == 3){
    if ((m_mat_mp->unconfined_flow_group ==1 && m_pcs->m_msh->GetMaxElementDim() == 3) || m_pcs->m_msh->cross_section){
 
@@ -1575,7 +1575,7 @@ void MSHDefineMobile(CRFProcess*m_pcs)
         //TODO next version, change to msh file !!!
       }
       //....................................................................
-      //SURFACE 
+      //SURFACE
       if(m_mat_mp->geo_type_name.find("SURFACE")!=string::npos){
         Surface *m_surface = NULL;
         m_surface = GEOGetSFCByName(m_mat_mp->geo_name);//CC
@@ -1589,7 +1589,7 @@ void MSHDefineMobile(CRFProcess*m_pcs)
         //ToDo TK
         //OK411 mobile_nodes =GetPointsInVolume(m_volume,&no_mobile_nodes);//CC 10/05
       }
-  
+
     } //end if unconfined flow group
 
   } //end for mmp vector
@@ -1608,16 +1608,16 @@ void MSHDefineMobile(CRFProcess*m_pcs)
 
 /**************************************************************************
    ROCKFLOW - Function: MSHGetNodesInColumn
-   
-   Task:  
-   Gets nodes of a column searching downward from startnode. 
-         
+
+   Task:
+   Gets nodes of a column searching downward from startnode.
+
    Parameter: (I: Input; R: Return; X: Both)
            I: long node, int anz_zeilen
-           
+
    Return:
-           *long strang 
-   
+           *long strang
+
    Programming:
    09/2002   MB   First Version
    08/2005   MB   m_msh
@@ -1629,19 +1629,19 @@ long* MSHGetNodesInColumn(long nextnode, int anz_zeilen, CFEMesh* m_msh)
   long *strang=NULL;
 
   for (i = 0; i< anz_zeilen +1; i++)  {
-    strang = (long*) Realloc(strang,(i+1)*sizeof(long));         
+    strang = (long*) Realloc(strang,(i+1)*sizeof(long));
     strang[i] = nextnode;
     startnode = nextnode;
     //nextnode = MSHGetNextNode (startnode, direction);
     nextnode = MSHGetNextNode (startnode, m_msh);
-  } 
-  return strang;  
+  }
+  return strang;
 }
 
 /**************************************************************************/
 /* ROCKFLOW - Function: MSHMoveNODUcFlow
                                                                           */
-/* Task: 
+/* Task:
    Moves free surface nodes according to the pressure distribution
                                                                           */
 /* Parameter: (I: Input; R: Return; X: Both)   - void -
@@ -1651,9 +1651,9 @@ long* MSHGetNodesInColumn(long nextnode, int anz_zeilen, CFEMesh* m_msh)
                                                                           */
 /* Programming:
    09/2002     MB       First Version
-   05/2003     MB       verallgemeinert für Prismen und Vierecke 
+   05/2003     MB       verallgemeinert fï¿½r Prismen und Vierecke
    09/2004     MB       Methode vereinfacht
-   09/2004     MB       PCS    
+   09/2004     MB       PCS
   08/2005      MB       m_msh                                                                   */
 /**************************************************************************/
 void MSHMoveNODUcFlow (CRFProcess*m_pcs)
@@ -1679,80 +1679,80 @@ void MSHMoveNODUcFlow (CRFProcess*m_pcs)
   // Number of nodes per node layer
   NumberOfNodes = (long)m_pcs->m_msh->nod_vector.size();
   NumberOfLayers = m_pcs->m_msh->no_msh_layer;
-  NumberOfNodesPerLayer = NumberOfNodes / (NumberOfLayers + 1);  
-  
+  NumberOfNodesPerLayer = NumberOfNodes / (NumberOfLayers + 1);
+
   for (node = 0; node < NumberOfNodesPerLayer; node++) {
-    
+
     index = m_pcs->m_msh->nod_vector[node]->free_surface;
     if (index == 1) {
-      /* Zählen der Zeilen (-> anz_zeilen) */
+      /* Zï¿½hlen der Zeilen (-> anz_zeilen) */
       anz_zeilen = 0;
       xxflag = 0;
-      nextnode = node;   
+      nextnode = node;
       do {
         startnode = nextnode;
         nextnode = MSHGetNextNode (startnode, m_pcs->m_msh);
 
-        /* Test2: Gehört der nächste Knoten zu unterer Reihe ==> Abbruch */
+        /* Test2: Gehï¿½rt der nï¿½chste Knoten zu unterer Reihe ==> Abbruch */
         index2 = m_pcs->m_msh->nod_vector[nextnode]->free_surface;
-        
+
         if (index2 == 2)  {
           xxflag = 1;
         }
         anz_zeilen++; /* Anzahl der beweglichen Zeilen (ohne die feste untere Zeile) */
       } while (xxflag != 1);
-      /** Ende Zählen der Zeilen zwischen den oberen free surface node etc... und den Unteren **/
+      /** Ende Zï¿½hlen der Zeilen zwischen den oberen free surface node etc... und den Unteren **/
 
     /* Die Knoten unterhalb eines Free Surface Knotens bilden einen Strang */
     /* Die Knoten eines Stranges werden zwischengespeichert */
     strang = MSHGetNodesInColumn(node, anz_zeilen, m_pcs->m_msh);
-  
+
     /* Die Knoten eines Stranges werden entsprechend der neuen Druckverteilung  verformt */
-    /* Standrohrspiegelhöhe bestimmen */
+    /* Standrohrspiegelhï¿½he bestimmen */
     nidy = m_pcs->GetNodeValueIndex("HEAD")+1;
     if (GetRFProcessDensityFlow()) {  /* mit Dichteunterschiede */
       //OK_MOD     head = MODCalcHeadInColumn_MB(strang, anz_zeilen);
     }
     else {  /* ohne Dichteunterschiede */
       head = m_pcs->GetNodeValue(strang[0],nidy);
-    } 
+    }
 
-    /* nicht über surface elevation */
+    /* nicht ï¿½ber surface elevation */
     CRFProcess* m_pcs_OLF = NULL;
     m_pcs_OLF = PCSGet("OVERLAND_FLOW");
-    double SurfaceZ; 
-  
+    double SurfaceZ;
+
     if(m_pcs_OLF!=NULL){
       SurfaceZ = m_pcs_OLF->m_msh->nod_vector[strang[0]]->Z();
-      if (head > SurfaceZ){   
+      if (head > SurfaceZ){
         head = SurfaceZ;
       }
     }
-    
+
     /* Set minimum thickness */
     z_bottom = m_pcs->m_msh->nod_vector[strang[anz_zeilen]]->Z();
     if(head - z_bottom < MinThickness)
       head = z_bottom + MinThickness;
-    
+
     /* Berechnung der Differenz */
     spanne_ges = head - z_bottom;
     spanne_rel = spanne_ges / anz_zeilen;
-    m_pcs->m_msh->nod_vector[strang[0]]->SetZ(head); 
+    m_pcs->m_msh->nod_vector[strang[0]]->SetZ(head);
 
     if(spanne_ges != 0) {
       /* Setzen der neuen Z-Werte entlang eines Stranges */
-      for (i = 1; i< anz_zeilen; i++)  {  /* Schleife über Anzahl der Zeilen */
-        m_pcs->m_msh->nod_vector[strang[i]]->SetZ(head -i * spanne_rel); 
-      } 
+      for (i = 1; i< anz_zeilen; i++)  {  /* Schleife ï¿½ber Anzahl der Zeilen */
+        m_pcs->m_msh->nod_vector[strang[i]]->SetZ(head -i * spanne_rel);
+      }
     }
 
-  strang = (long*) Free(strang);     
+  strang = (long*) Free(strang);
   }  /*endif index ==1 */
-  } /* end for Schleife über alle Knoten */
+  } /* end for Schleife ï¿½ber alle Knoten */
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: Searches mobile nodes and sets node->free_surface = 4
 Programing:
 09/2004 OK / MB Implementation
@@ -1773,7 +1773,7 @@ void CFEMesh::DefineMobileNodes(CRFProcess*m_pcs)
   //DOMAIN
   if(m_pcs->geo_type.find("DOMAIN")!=string::npos)
   {
-    for(i=0;i<(long)nod_vector.size();i++) 
+    for(i=0;i<(long)nod_vector.size();i++)
     {
       mobile_nodes = (long *) Realloc(mobile_nodes,sizeof(long)*(i+1));
       mobile_nodes[i] = i;
@@ -1806,14 +1806,14 @@ void CFEMesh::DefineMobileNodes(CRFProcess*m_pcs)
     mobile_nodes = new long[no_mobile_nodes];
     for(i=0;i<no_layers+1;i++)
     {
-      for(j=0;j<no_nodes_per_layer;j++) 
+      for(j=0;j<no_nodes_per_layer;j++)
       {
         mobile_nodes[i*no_nodes_per_layer+j] = j + (layer_start-1+i)*no_nodes_per_layer;
       }
     }
   }
   //......................................................................
-  //SURFACE 
+  //SURFACE
   if(m_pcs->geo_type.find("SURFACE")!=string::npos)
   {
     Surface *m_sfc = NULL;
@@ -1839,7 +1839,7 @@ void CFEMesh::DefineMobileNodes(CRFProcess*m_pcs)
   //----------------------------------------------------------------------
   // Set mobile MSH nodes flag
   //----------------------------------------------------------------------
-  for(i=0;i<(long)nod_vector.size();i++) 
+  for(i=0;i<(long)nod_vector.size();i++)
   {
     nod_vector[i]->free_surface = -1;
   }
@@ -1858,8 +1858,8 @@ void CFEMesh::DefineMobileNodes(CRFProcess*m_pcs)
 }
 
 /**************************************************************************
-MSHLib-Method: 
-Task: 
+MSHLib-Method:
+Task:
 Programing:
 09/2004 OK Implementation
 ToDo evtl. vector<CGLPoint>
@@ -1887,7 +1887,7 @@ void MSHGetNodesClose(vector<long>&msh_point_vector,CGLPoint* e_pnt)
 /*************************************************************************
   ROCKFLOW - Function: MSHGetNodesClose
   Task: Searching grid points which are close to a polyline
-  Programming: 
+  Programming:
    10/2002 OK Encapsulated from ExecuteSourceSinkMethod11 (CT)
    01/2003 OK Test
   last modified: 20.01.2003 OK
@@ -2017,7 +2017,7 @@ if (m_ply) {
 
 /**************************************************************************
 GeoLib-Method: GetPointsIn
-Task: 
+Task:
 Programing:
 01/2004 OK Implementation
 08/2005 CC Modification Move from Geolib to Mshlib
@@ -2085,7 +2085,7 @@ void GEOGetNodesInMaterialDomain(const int MatIndex, vector<long>& Nodes)
   Nodes.size();
    long index, *element_nodes;
    int i, j, Size, nn, order = 2;
-   const int L_Nodes = GetLowOrderNodeNumber();   
+   const int L_Nodes = GetLowOrderNodeNumber();
    bool exist;
    if(L_Nodes==NodeListSize()) order = 1;
    if(L_Nodes==0) order = 1;
@@ -2103,7 +2103,7 @@ void GEOGetNodesInMaterialDomain(const int MatIndex, vector<long>& Nodes)
             if(ElGetElementGroupNumber(index)==MatIndex)
             {
                Size = (int)Nodes.size();
-               element_nodes = ElGetElementNodes(index); 
+               element_nodes = ElGetElementNodes(index);
                for(i=0; i<nn; i++)
                {
                    exist = false;
@@ -2115,7 +2115,7 @@ void GEOGetNodesInMaterialDomain(const int MatIndex, vector<long>& Nodes)
                          break;
                       }
                    }
-                   if(!exist) Nodes.push_back(element_nodes[i]);                  
+                   if(!exist) Nodes.push_back(element_nodes[i]);
                }
             }
          }
@@ -2145,7 +2145,7 @@ void GEOGetNodesInMaterialDomain(CFEMesh* m_msh, const int MatIndex, vector<long
     elem = m_msh->ele_vector[e];
     if (elem->GetMark()) // Marked for use
     {
-       nn = elem->GetNodesNumber(Order); 
+       nn = elem->GetNodesNumber(Order);
 	   if(elem->GetPatchIndex()==MatIndex)
 	   {
            Size = (int)Nodes.size();
@@ -2160,9 +2160,9 @@ void GEOGetNodesInMaterialDomain(CFEMesh* m_msh, const int MatIndex, vector<long
                     break;
                  }
               }
-              if(!exist) Nodes.push_back(elem->GetNodeIndex(i));                  
-           }	   
-	   } 
+              if(!exist) Nodes.push_back(elem->GetNodeIndex(i));
+           }
+	   }
     }  // if
   } //For
 }
@@ -2260,9 +2260,9 @@ void SetRFIPointsClose(CGLLine* m_lin)
   pt1[2] = m_point->z;
   dist = (double*) Malloc(sizeof(double)*m_lin->no_msh_nodes);
   for(j=0;j<m_lin->no_msh_nodes;j++) {
-    pt2[0] = GetNodeX(m_lin->msh_nodes[j]);  
-    pt2[1] = GetNodeY(m_lin->msh_nodes[j]);  
-    pt2[2] = GetNodeZ(m_lin->msh_nodes[j]);  
+    pt2[0] = GetNodeX(m_lin->msh_nodes[j]);
+    pt2[1] = GetNodeY(m_lin->msh_nodes[j]);
+    pt2[2] = GetNodeZ(m_lin->msh_nodes[j]);
     dist[j] = MCalcDistancePointToPoint(pt1,pt2);
   }
   //......................................................................
@@ -2297,12 +2297,12 @@ Programing:
 01/2004 OK Implementation
 09/2005 CC Modification No MFC function
 **************************************************************************/
-bool IsPointInSurface(Surface* m_fsc, CGLPoint *m_point)
-{
-  bool ok = false;
-  m_point = m_point;
-  if(!m_fsc)
-    return false; //OK
-  return ok;
-}
+//bool IsPointInSurface(Surface* m_fsc, CGLPoint *m_point)
+//{
+//  bool ok = false;
+//  m_point = m_point;
+//  if(!m_fsc)
+//    return false; //OK
+//  return ok;
+//}
 
