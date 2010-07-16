@@ -43,9 +43,9 @@ REACT_BRNS::REACT_BRNS(void)
     cout << "Debugging #1." << endl;
 #ifdef GCC
 
-    hDll_1 = dlopen("./libblas.so.3", RTLD_NOW);
+    hDll_1 = dlopen("libblas.so.3", RTLD_NOW);
     cout << "Debugging #2." << endl;
-    hDll_2 = dlopen("./liblapack.so.3", RTLD_NOW);
+    hDll_2 = dlopen("liblapack.so.3", RTLD_NOW);
     cout << "Debugging #3." << endl;
     hDll = dlopen("./brns.so", RTLD_NOW);
     cout << "Debugging #4." << endl;
