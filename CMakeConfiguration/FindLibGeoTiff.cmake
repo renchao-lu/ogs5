@@ -11,11 +11,20 @@ if (NOT libgeotiff_FOUND)
 
 	find_path( libgeotiff_INCLUDE_DIR
 			NAMES geotiff.h
-			PATHS /usr/include /usr/include/libgeotiff /usr/include/geotiff ${CMAKE_SOURCE_DIR}/../Libs/libgeotiff C:/OGS_Libs/libgeotiff)
+			PATHS	/usr/include
+				/usr/include/libgeotiff
+				/usr/include/geotiff
+				${CMAKE_SOURCE_DIR}/../Libs/libgeotiff
+				C:/OGS_Libs/libgeotiff
+				$ENV{OGS_LIBS}/libgeotiff)
 
 	find_library(libgeotiff_LIBRARIES
 		NAMES geotiff
-		PATHS /usr/lib64 /usr/lib ${CMAKE_SOURCE_DIR}/../Libs/libgeotiff C:/OGS_Libs/libgeotiff)
+		PATHS	/usr/lib64
+			/usr/lib
+			${CMAKE_SOURCE_DIR}/../Libs/libgeotiff
+			C:/OGS_Libs/libgeotiff
+			$ENV{OGS_LIBS}/libgeotiff)
 
 
 	# Set the include dir variables and the libraries and let libfind_process do the rest.
