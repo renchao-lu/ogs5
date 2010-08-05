@@ -148,7 +148,7 @@ Programing:
 **************************************************************************/
 void Linear_EQS::ConfigNumerics(CNumerics *m_num, const long n)
 {
-  n; //OK411
+  (void)n;
   int i, nbuffer = 0; // Number of temperary float arrays
   precond_type = m_num->ls_precond;
   solver_type = m_num->ls_method;

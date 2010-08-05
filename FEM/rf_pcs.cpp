@@ -474,7 +474,6 @@ PCSLib-Method:
 void CRFProcess::Create()
 {
   int i=0;
-  CRFProcess *m_pcs = NULL;
   //----------------------------------------------------------------------
   // Element matrix output. WW
   if(Write_Matrix)
@@ -582,7 +581,7 @@ void CRFProcess::Create()
   {
     /////////////////////////////////////////////////////////////////////
     // If there is a solver exsiting. WW
-    m_pcs = NULL;
+    CRFProcess *m_pcs = NULL;
     for(i=0; i<(int)pcs_vector.size(); i++)
 	{
        m_pcs = pcs_vector[i];

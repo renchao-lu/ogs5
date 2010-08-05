@@ -3536,7 +3536,7 @@ double COutput::NODFlux(long nod_number)
   flux_sum += m_pcs->GetNodeValue(gnode,NodeIndex[k]);
 */
   // All elements at node //OK
-  CNode* m_nod = m_msh->nod_vector[nod_number];
+  // CNode* m_nod = m_msh->nod_vector[nod_number];
 #ifdef NEW_EQS //WW. 07.11.2008
   return 0.; //To do: m_pcs->eqs_new->b[nod_number];
 #else
