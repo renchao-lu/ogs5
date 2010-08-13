@@ -12,6 +12,11 @@
 #cmakedefine OGS_VERSION "${OGS_VERSION}"
 #cmakedefine OGS_DATE "${OGS_DATE}"
 
+#cmakedefine CMAKE_CMD_ARGS "${CMAKE_CMD_ARGS}"
+#cmakedefine SVN_REVISION "${SVN_REVISION}"
+#cmakedefine GIT_COMMIT_INFO "${GIT_COMMIT_INFO}"
+#cmakedefine BUILD_TIMESTAMP "${BUILD_TIMESTAMP}"
+
 // for tests
 #define OGS_EXECUTABLE "${PROJECT_BINARY_DIR}/bin/ogs"
 #define PUT_TMP_DIR_IN "${PROJECT_BINARY_DIR}/tests/"
@@ -34,7 +39,5 @@
 
 #cmakedefine OGS_VRED_PLUGIN
 #cmakedefine OGS_PYTHON
-
-#cmakedefine CMAKE_CMD_ARGS "${CMAKE_CMD_ARGS}"
 
 #endif // CONFIGURE_H

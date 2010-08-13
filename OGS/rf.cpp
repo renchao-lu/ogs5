@@ -101,7 +101,8 @@ int main ( int argc, char *argv[] )
 		  << "ogs date: " << OGS_DATE << endl
 		  << "cmake command line arguments: " << CMAKE_CMD_ARGS << endl
 		  << "git commit info: " << GIT_COMMIT_INFO << endl
-		  << "subversion info: " << SVN_REVISION << endl;
+		  << "subversion info: " << SVN_REVISION << endl
+		  << "build timestamp: " << BUILD_TIMESTAMP << endl;
 	continue;
       }
     if( anArg == "--version" )

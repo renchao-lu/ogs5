@@ -22,6 +22,7 @@ SET (OGS_VERSION_MINOR 0)
 SET (OGS_VERSION_PATCH 06)
 SET (OGS_RELEASE_PERSONS "FS/KR/LB")
 SET (OGS_VERSION "${OGS_VERSION_MAJOR}.${OGS_VERSION_MINOR}.${OGS_VERSION_PATCH}(${OGS_RELEASE_PERSONS})")
+# should we use ISO dates: 2010-12-31 ?
 SET (OGS_DATE "13.07.2010")
 
 # Adds useful macros and variables
@@ -254,10 +255,6 @@ IF(OGS_USE_QT)
 	ENDIF (QT4_FOUND )
 ENDIF(OGS_USE_QT)
 
-# Create Configure.h
-CONFIGURE_FILE (Base/Configure.h.in ${PROJECT_BINARY_DIR}/Base/Configure.h)
-INCLUDE_DIRECTORIES( ${PROJECT_BINARY_DIR}/Base )
-
 find_package( Subversion )
 if(Subversion_FOUND)
   message( STATUS "Subversion - found" )
@@ -268,7 +265,7 @@ if(Subversion_FOUND)
     OUTPUT_VARIABLE svn_revision
     ERROR_VARIABLE svn_error
     )
-  add_definitions( -DSVN_REVISION="${svn_revision}" )
+  set( SVN_REVISION "${svn_revision}" )
 endif( Subversion_FOUND )
 
 if( "${CMAKE_SYSTEM_NAME}" MATCHES "Linux" )
@@ -278,6 +275,15 @@ if( "${CMAKE_SYSTEM_NAME}" MATCHES "Linux" )
     message( WARNING "there is no FindGit.cmake file, so I am downloading one that is licensed under the GPL, copyright Szilard Pall (pszilard@cbr.su.se).  Do not commit it to the repository." )
     file( DOWNLOAD http://repo.or.cz/w/gromacs.git/blob_plain/f81efa276ee7e1c41197d9d8b56b91c7764e0641:/cmake/FindGit.cmake ${PROJECT_SOURCE_DIR}/CMakeConfiguration/FindGit.cmake TIMEOUT 10 )
   endif( GIT STREQUAL GIT-NOTFOUND )
+    execute_process(
+      COMMAND "date" "+%Y-%m-%d %H:%M:%S"
+      OUTPUT_VARIABLE build_timestamp
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      )
+    if( build_timestamp )
+       set( BUILD_TIMESTAMP "${build_timestamp}" )
+       message( STATUS "Build timestamp: ${BUILD_TIMESTAMP}" )
+    endif()
   find_package( Git )
   if(Git_FOUND)
     execute_process(
@@ -291,7 +297,7 @@ if( "${CMAKE_SYSTEM_NAME}" MATCHES "Linux" )
     if( git_commit_info )
       message( STATUS "Git executable version: " ${Git_VERSION} )
       message( STATUS "Git commit: " ${git_commit_info} )
-      add_definitions( -DGIT_COMMIT_INFO="${git_commit_info}" )
+      set( GIT_COMMIT_INFO "${git_commit_info}" )
     else( git_commit_info )
       if( not_git_repo )
 	message( STATUS "Git not versioning the source" )
@@ -299,6 +305,11 @@ if( "${CMAKE_SYSTEM_NAME}" MATCHES "Linux" )
     endif( git_commit_info )
   endif( Git_FOUND )
 endif( "${CMAKE_SYSTEM_NAME}" MATCHES "Linux" )
+
+
+# Create Configure.h
+CONFIGURE_FILE (Base/Configure.h.in ${PROJECT_BINARY_DIR}/Base/Configure.h)
+INCLUDE_DIRECTORIES( ${PROJECT_BINARY_DIR}/Base )
 
 IF(OGS_FEM)
    MESSAGE (STATUS  "Configuring for FEM command line" )	
