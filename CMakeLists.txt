@@ -6,6 +6,16 @@
 # Specify minimum CMake version
 cmake_minimum_required(VERSION 2.6)	# or set to 2.4 for older systems (like JUGENE...)
 
+# Project name
+project( OGS-5 )
+
+option ( WITH_GTEST "Build ogs5 with GTest" OFF )
+option ( CMAKE_CMD_ARGS "Build ogs5 storing the CMake command line args (hint: use cmake.ogs.sh" OFF )
+
+if( CMAKE_CMD_ARGS )
+  message( STATUS "Command line args: ${CMAKE_CMD_ARGS}")
+endif( CMAKE_CMD_ARGS )
+
 # OGS version information. Adjust these if you release a new version.
 SET (OGS_VERSION_MAJOR 5)
 SET (OGS_VERSION_MINOR 0)
@@ -248,6 +258,48 @@ ENDIF(OGS_USE_QT)
 CONFIGURE_FILE (Base/Configure.h.in ${PROJECT_BINARY_DIR}/Base/Configure.h)
 INCLUDE_DIRECTORIES( ${PROJECT_BINARY_DIR}/Base )
 
+find_package( Subversion )
+if(Subversion_FOUND)
+  message( STATUS "Subversion - found" )
+  #Subversion_WC_INFO(${CMAKE_SOURCE_DIR} "svn") , not a working copy
+  execute_process(
+    COMMAND "svnversion" "--no-newline" ${CMAKE_SOURCE_DIR}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE svn_revision
+    ERROR_VARIABLE svn_error
+    )
+  add_definitions( -DSVN_REVISION="${svn_revision}" )
+endif( Subversion_FOUND )
+
+if( "${CMAKE_SYSTEM_NAME}" MATCHES "Linux" )
+  # see if there is a file that will work with find_package
+  find_file( GIT FindGit.cmake CMakeConfiguration/ )
+  if( GIT STREQUAL GIT-NOTFOUND )
+    message( WARNING "there is no FindGit.cmake file, so I am downloading one that is licensed under the GPL, copyright Szilard Pall (pszilard@cbr.su.se).  Do not commit it to the repository." )
+    file( DOWNLOAD http://repo.or.cz/w/gromacs.git/blob_plain/f81efa276ee7e1c41197d9d8b56b91c7764e0641:/cmake/FindGit.cmake ${PROJECT_SOURCE_DIR}/CMakeConfiguration/FindGit.cmake TIMEOUT 10 )
+endif( GIT STREQUAL GIT-NOTFOUND )
+  find_package( Git )
+  if(Git_FOUND)
+    execute_process(
+      COMMAND "git" "describe" "--always"
+      COMMAND "xargs" "-Ixx" "git" "name-rev" "xx"
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      OUTPUT_VARIABLE git_commit_info
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      ERROR_VARIABLE not_git_repo
+      )
+    if( git_commit_info )
+      message( STATUS "Git executable version: " ${Git_VERSION} )
+      message( STATUS "Git commit: " ${git_commit_info} )
+      add_definitions( -DGIT_COMMIT_INFO="${git_commit_info}" )
+    else( git_commit_info )
+      if( not_git_repo )
+	message( STATUS "Git not versioning the source" )
+      endif( not_git_repo )
+    endif( git_commit_info )
+  endif( Git_FOUND )
+endif( "${CMAKE_SYSTEM_NAME}" MATCHES "Linux" )
+
 IF(OGS_FEM)
    MESSAGE (STATUS  "Configuring for FEM command line" )	
 	SET(OGS_GUI OFF )
@@ -259,7 +311,7 @@ IF(OGS_FEM)
 	SET(OGS_FEM_PQC OFF )
 	SET(OGS_FEM_LIS OFF )   
 	SET(OGS_FEM_CHEMAPP OFF)
-#
+
 #
    INCLUDE(FEM.cmake )
 ENDIF(OGS_FEM)

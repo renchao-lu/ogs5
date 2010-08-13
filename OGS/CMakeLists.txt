@@ -38,6 +38,11 @@ TARGET_LINK_LIBRARIES( ogs
 	OGSProject
 )
 
+if( WITH_GTEST )
+  add_subdirectory(tests)
+  enable_testing()
+endif( WITH_GTEST )
+
 if (WIN32)
 	if (OGS_FEM_GEMS)
 		target_link_libraries( ogs qd debug GEMS3_dbg optimized GEMS3_rl ) 

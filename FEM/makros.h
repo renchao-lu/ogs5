@@ -28,6 +28,21 @@
 // Base/Configure.h.in. Please set the version in the top-level CMakeLists.txt!!
 // (see sources/CMakeLists.txt)
 
+/* save CMake command line args used*/
+#ifndef CMAKE_CMD_ARGS
+#define CMAKE_CMD_ARGS "n/a"
+#endif // CMAKE_CMD_ARGS
+
+/* version control tags that may be passed in by cmake */
+#ifndef GIT_COMMIT_INFO
+#define GIT_COMMIT_INFO "none"
+#endif // GIT_COMMIT_INFO
+
+#ifndef SVN_REVISION
+#define SVN_REVISION "none"
+#endif // SVN_REVISION
+
+
 /* Definitionen von Makros zur Steuerung der bedingten Compilierung */
 #define SWITCHES
   /* Ausgabe der Schalterstellungen zu Beginn des Programms */

@@ -81,6 +81,46 @@ double elapsed_time_mpi;
 /**************************************************************************/
 int main ( int argc, char *argv[] )
 {
+  /* parse command line arguments */
+  std::string anArg;
+  std::string modelRoot;
+  for( int i = 1; i < argc; i++ ) {
+    anArg = std::string( argv[i] );
+    if( anArg == "--help" || anArg == "-h")
+      {
+	std::cout << "Usage: ogs [MODEL_ROOT] [OPTIONS]\n"
+		  << "Where OPTIONS are:\n"
+		  << "  -h [--help]       print this message and exit\n"
+		  << "  -b [--build-info] print build info and exit\n"
+		  << "  --version         print ogs version and exit" << endl;
+	continue;
+      }
+    if( anArg == "--build-info" || anArg == "-b" )
+      {
+	std::cout << "ogs version: " << OGS_VERSION << endl
+		  << "ogs date: " << OGS_DATE << endl
+		  << "cmake command line arguments: " << CMAKE_CMD_ARGS << endl
+		  << "git commit info: " << GIT_COMMIT_INFO << endl
+		  << "subversion info: " << SVN_REVISION << endl;
+	continue;
+      }
+    if( anArg == "--version" )
+      {
+	std::cout << OGS_VERSION << endl;
+	exit(0);
+      }
+    if( anArg == "--model-root" || anArg == "-m" )
+      {
+	modelRoot = std::string( argv[++i] );
+	continue;
+      }
+    // anything left over must be the model root, unless already found
+    if ( modelRoot == "" ){ modelRoot = std::string( argv[i] ); }
+  } // end of parse argc loop
+
+  if( argc > 1 and modelRoot == "" ) // non-interactive mode and no model given
+    exit(0);                         // e.g. just wanted the build info
+
   char *dateiname;
 #ifdef SUPERCOMPUTER
 // *********************************************************************
@@ -138,16 +178,24 @@ int main ( int argc, char *argv[] )
     DisplayErrorMsg("        Programm vorzeitig beendet!");
     return 1;	// LB changed from 0 to 1 because 0 is indicating success
   }
-  /* Eingabe-Dateinamen ermitteln */
-  if (argc>1) {
-      dateiname = (char *) Malloc((int)strlen(argv[1])+1);
-//WW      dateiname = StrDown(strcpy(dateiname,argv[1]));
-      dateiname = strcpy(dateiname,argv[1]);
-      DisplayMsgLn(dateiname);
-  }
-  else {
-//WW      dateiname = StrDown(ReadString());
+  if( argc == 1 )                     // interactive mode
+    {
       dateiname = ReadString();
+    }
+  else                               // non-interactive mode
+    {
+      if ( argc == 2 )               // a model root was supplied 
+	{
+	  dateiname = (char *) Malloc((int)strlen(argv[1])+1);
+	  dateiname = strcpy(dateiname,argv[1]);
+	}
+      else                          // several args supplied
+	if( modelRoot != "")
+	  {
+	    dateiname = (char *) Malloc( (int) modelRoot.size() + 1 );
+	    dateiname = strcpy( dateiname, modelRoot.c_str() );
+	  }
+      DisplayMsgLn(dateiname);
   }
   //WW  DisplayMsgLn("");
   //WW  DisplayMsgLn("");
