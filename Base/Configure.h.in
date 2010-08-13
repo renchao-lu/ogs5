@@ -14,6 +14,7 @@
 
 // for tests
 #define OGS_EXECUTABLE "${PROJECT_BINARY_DIR}/bin/ogs"
+#define PUT_TMP_DIR_IN "${PROJECT_BINARY_DIR}/tests/"
 
 #cmakedefine CMAKE_RUN_TIMESTAMP ""
 #cmakedefine SYSTEM_INFO "${CMAKE_SYSTEM}-x${BITS}"
