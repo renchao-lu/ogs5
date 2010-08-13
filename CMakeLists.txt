@@ -117,6 +117,7 @@ IF (OGS_PACKAGING)
 ENDIF (OGS_PACKAGING)
 OPTION(OGS_PYTHON "Enable python scripting interface" OFF)
 OPTION(OGS_CMAKE_DEBUG "Show additional cmake debug information" OFF)
+OPTION(OGS_ONE_BIG_GTEST "Should all gtests be collected to one ctest" ON)
 
 IF(OGS_FEM_SP)
 	SET( PRJ_EXT "-SP" )
