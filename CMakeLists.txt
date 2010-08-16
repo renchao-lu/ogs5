@@ -268,7 +268,8 @@ if(Subversion_FOUND)
   set( SVN_REVISION "${svn_revision}" )
 endif( Subversion_FOUND )
 
-if( "${CMAKE_SYSTEM_NAME}" MATCHES "Linux" )
+if( NOT MSVC )
+#if( "${CMAKE_SYSTEM_NAME}" MATCHES "Linux" )
   # see if there is a file that will work with find_package
   find_file( GIT FindGit.cmake CMakeConfiguration/ )
   if( GIT STREQUAL GIT-NOTFOUND )
@@ -304,7 +305,8 @@ if( "${CMAKE_SYSTEM_NAME}" MATCHES "Linux" )
       endif( not_git_repo )
     endif( git_commit_info )
   endif( Git_FOUND )
-endif( "${CMAKE_SYSTEM_NAME}" MATCHES "Linux" )
+endif( NOT MSVC )
+#endif( "${CMAKE_SYSTEM_NAME}" MATCHES "Linux" )
 
 
 # Create Configure.h
