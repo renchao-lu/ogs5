@@ -18,7 +18,7 @@
 #cmakedefine BUILD_TIMESTAMP "${BUILD_TIMESTAMP}"
 
 // for tests
-#define OGS_EXECUTABLE "${PROJECT_BINARY_DIR}/bin/ogs"
+#cmakedefine OGS_EXECUTABLE "${OGS_EXECUTABLE}"
 #define PUT_TMP_DIR_IN "${PROJECT_BINARY_DIR}/tests/"
 
 #cmakedefine CMAKE_RUN_TIMESTAMP ""

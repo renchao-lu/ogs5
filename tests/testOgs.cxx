@@ -1,6 +1,7 @@
 #ifndef OGS_CL_TESTS_H
 #define OGS_CL_TESTS_H
 
+#include "Configure.h"
 #include <gtest/gtest.h>
 
 #include <cstdlib>
@@ -9,9 +10,9 @@
 
 #include <unistd.h>
 
-std::string tmpStr = ( OGS_EXECUTABLE ); // passed by CMakeLists.txt
-
 namespace {
+	
+std::string tmpStr = ( OGS_EXECUTABLE ); // passed by CMakeLists.txt
 
 // The fixture for testing class Ogs.
 class OgsTest : public ::testing::Test {
@@ -120,11 +121,11 @@ class OgsTest : public ::testing::Test {
   }
 
 }  // namespace
-
+/*
 int main(int argc, char **argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-
+*/
 #endif //OGS_CL_TESTS_H

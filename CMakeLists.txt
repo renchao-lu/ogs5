@@ -59,6 +59,11 @@ ADD_DEFINITIONS(-DRANDOM_WALK)
 # Set build directories
 SET( EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin )
 SET( LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib )
+IF (MSVC)
+	SET(OGS_EXECUTABLE ${EXECUTABLE_OUTPUT_PATH}/release/ogs)
+ELSE (MSVC)
+	SET(OGS_EXECUTABLE ${EXECUTABLE_OUTPUT_PATH}/ogs)
+ENDIF (MSVC)
 
 # Find precompiled libraries (for BRNS GEMS LIS)
 FIND_PATH (OGS_PRECOMPILED_LIBS_DIR_FOUND qd.lib ${PROJECT_SOURCE_DIR}/../Libs/precompiled)
@@ -269,7 +274,6 @@ if(Subversion_FOUND)
 endif( Subversion_FOUND )
 
 if( NOT MSVC )
-#if( "${CMAKE_SYSTEM_NAME}" MATCHES "Linux" )
   # see if there is a file that will work with find_package
   find_file( GIT FindGit.cmake CMakeConfiguration/ )
   if( GIT STREQUAL GIT-NOTFOUND )
@@ -306,7 +310,6 @@ if( NOT MSVC )
     endif( git_commit_info )
   endif( Git_FOUND )
 endif( NOT MSVC )
-#endif( "${CMAKE_SYSTEM_NAME}" MATCHES "Linux" )
 
 
 # Create Configure.h
@@ -474,11 +477,9 @@ IF (EXAMPLEDATA_DIR_FOUND)
 ENDIF (EXAMPLEDATA_DIR_FOUND)
 
 IF (GTEST_FOUND)
+	SET(WITH_GTEST ON)
 	include_directories(${GTEST_INCLUDE_DIRS})
-	add_subdirectory (TestRunner)
-	if( WITH_GTEST )
-	  add_subdirectory(tests)
-	endif( WITH_GTEST )
+	add_subdirectory(tests)
 ENDIF (GTEST_FOUND)
 
 IF (OGS_PACKAGING)

@@ -4,8 +4,6 @@
 #ifndef OGS_MINI_BM_TESTS_H
 #define OGS_MINI_BM_TESTS_H
 
-#include "Configure.h"
-
 using namespace std;
 
 /* Adjust verbosity here */
@@ -13,6 +11,7 @@ using namespace std;
 //#define NINFO
 #define NWARNING
 #define NERROR
+#include "Configure.h"
 #include "logging.h"
 
 #include <gtest/gtest.h>
@@ -36,10 +35,10 @@ using namespace std;
 exit(1) // fail
 #endif
 
+namespace {
+	
 char tmpChar[] = OGS_EXECUTABLE;
 std::string tmpStr = tmpChar; // path passed by CMakeLists.txt
-
-namespace {
 
 class MinBMTest : public ::testing::Test {
   /**
@@ -257,7 +256,7 @@ protected:
   }
 };
 
-  TEST_F( MinBMTest, MostBasicModelEverMade )
+  TEST_F(MinBMTest, MostBasicModelEverMade)
   {
     // setup the model for running
     copyModelToTmpDir( "data/bmskel" );
@@ -291,12 +290,12 @@ protected:
   }
 
 }  // namespace
-
+/*
 int main(int argc, char **argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-
+*/
 #endif //OGS_MINI_BM_TESTS_H
 #endif // MFC
