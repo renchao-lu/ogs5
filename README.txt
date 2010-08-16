@@ -8,7 +8,7 @@ mkdir Build
 cd Build
 cmake .. -DOGS_FEM_MKL=ON
 
-NOTE: Since the executable, ogs, is created by linking the libraries dynamically, users need to add the Libs/MKL/[Bits]/ directory to their shell environment. Otherwise, the executalbe complains missing libraries.
+NOTE: Since the executable, ogs, is created by linking the libraries dynamically, users need to add the Libs/MKL/[Bits]/ directory to their shell environment. Otherwise, the executable complains missing libraries.
 
 ## For OGS-GEM user, use the following cmake option,
 cd sources

@@ -30,7 +30,7 @@
 
 /* save CMake command line args used*/
 #ifndef CMAKE_CMD_ARGS
-#define CMAKE_CMD_ARGS
+#define CMAKE_CMD_ARGS ""
 #endif
 
 /* version control tags that may be passed in by cmake */
