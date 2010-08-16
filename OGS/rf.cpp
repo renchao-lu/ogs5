@@ -119,7 +119,7 @@ int main ( int argc, char *argv[] )
     if ( modelRoot == "" ){ modelRoot = std::string( argv[i] ); }
   } // end of parse argc loop
 
-  if( argc > 1 and modelRoot == "" ) // non-interactive mode and no model given
+  if( argc > 1 && modelRoot == "" ) // non-interactive mode and no model given
     exit(0);                         // e.g. just wanted the build info
 
   char *dateiname;
