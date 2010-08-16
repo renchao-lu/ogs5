@@ -9,11 +9,10 @@ cmake_minimum_required(VERSION 2.6)	# or set to 2.4 for older systems (like JUGE
 # Project name
 project( OGS-5 )
 
-option ( WITH_GTEST "Build ogs5 with GTest" OFF )
 option ( CMAKE_CMD_ARGS "Build ogs5 storing the CMake command line args (hint: use cmake.ogs.sh" OFF )
 
 if( CMAKE_CMD_ARGS )
-  message( STATUS "Command line args: ${CMAKE_CMD_ARGS}")
+  message( STATUS "CMake args: ${CMAKE_CMD_ARGS}")
 endif( CMAKE_CMD_ARGS )
 
 # OGS version information. Adjust these if you release a new version.
@@ -262,7 +261,6 @@ ENDIF(OGS_USE_QT)
 
 find_package( Subversion )
 if(Subversion_FOUND)
-  message( STATUS "Subversion - found" )
   #Subversion_WC_INFO(${CMAKE_SOURCE_DIR} "svn") , not a working copy
   execute_process(
     COMMAND "svnversion" "--no-newline" ${CMAKE_SOURCE_DIR}
@@ -300,7 +298,7 @@ if( NOT MSVC )
       ERROR_VARIABLE not_git_repo
       )
     if( git_commit_info )
-      message( STATUS "Git executable version: " ${Git_VERSION} )
+      #message( STATUS "Git executable version: " ${Git_VERSION} )
       message( STATUS "Git commit: " ${git_commit_info} )
       set( GIT_COMMIT_INFO "${git_commit_info}" )
     else( git_commit_info )
@@ -477,7 +475,6 @@ IF (EXAMPLEDATA_DIR_FOUND)
 ENDIF (EXAMPLEDATA_DIR_FOUND)
 
 IF (GTEST_FOUND)
-	SET(WITH_GTEST ON)
 	include_directories(${GTEST_INCLUDE_DIRS})
 	add_subdirectory(tests)
 ENDIF (GTEST_FOUND)
