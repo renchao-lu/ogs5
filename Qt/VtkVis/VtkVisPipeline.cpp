@@ -126,7 +126,8 @@ void VtkVisPipeline::addPipelineItem( vtkAlgorithm* source,
 	VtkVisPipelineItem* item = new VtkVisPipelineItem(_renderer, source, parentItem, input, itemData);
 	parentItem->appendChild(item);
 
-	QModelIndex newIndex = index(parentItem->childCount(), 0, parent);
+	int parentChildCount = parentItem->childCount();
+	QModelIndex newIndex = index(parentChildCount - 1, 0, parent);
 
 	_renderer->ResetCamera(_renderer->ComputeVisiblePropBounds());
 
@@ -182,11 +183,13 @@ void VtkVisPipeline::removePipelineItem( QModelIndex index )
 	QMap<vtkActor*, QModelIndex>::iterator it = _actorMap.begin();
 	while (it != _actorMap.end())
 	{
-		if (it.value() == index)
+		QModelIndex itIndex = it.value();
+		if (itIndex == index)
 		{
 			_actorMap.erase(it);
 			break;
 		}
+		++it;
 	}
 
 	//TreeItem* item = getItem(index);
