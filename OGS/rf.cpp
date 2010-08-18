@@ -108,7 +108,7 @@ int main ( int argc, char *argv[] )
     if( anArg == "--version" )
       {
 	std::cout << OGS_VERSION << endl;
-	exit(0);
+	continue;
       }
     if( anArg == "--model-root" || anArg == "-m" )
       {
