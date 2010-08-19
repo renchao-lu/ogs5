@@ -3,9 +3,13 @@ cmake_minimum_required(VERSION 2.6)
 SET ( SOURCES
 	testrunner.cpp
 	testBase.cpp
-	testOgs.cxx
-	testBmSkel.cxx
 )
+
+IF (NOT MSVC)
+	SET ( SOURCES ${SOURCES}
+		testOgs.cxx
+		testBmSkel.cxx)
+ENDIF (NOT MSVC)
 
 include_directories(
 	../Base
@@ -67,4 +71,6 @@ endmacro ( UPDATE_MODEL_FILES dirOUT fileLIST)
   
 # add new test models here not all of these models will be needed, depending
 # on compile flags but it is safe to copy them all across
-add_subdirectory( data/bmskel )
+IF (NOT MSVC)
+	add_subdirectory( data/bmskel )
+ENDIF (NOT MSVC)

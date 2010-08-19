@@ -1,6 +1,3 @@
-#ifndef MFC /* this may only work on Linux but please feel free to test it on
-	       Windows and remove this block */
-
 #ifndef OGS_MINI_BM_TESTS_H
 #define OGS_MINI_BM_TESTS_H
 
@@ -11,8 +8,8 @@ using namespace std;
 //#define NINFO
 #define NWARNING
 #define NERROR
-#include "Configure.h"
 #include "logging.h"
+#include "Configure.h"
 
 #include <gtest/gtest.h>
 
@@ -298,4 +295,3 @@ int main(int argc, char **argv)
 }
 */
 #endif //OGS_MINI_BM_TESTS_H
-#endif // MFC
