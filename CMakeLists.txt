@@ -227,7 +227,6 @@ ENDIF(OGS_FEM_GEMS)
 
 IF(OGS_FEM_PQC)
 	MESSAGE (STATUS  "Configuring for FEM command line with PQC" )	
-	INCLUDE(FEM.cmake )
 	SET( PRJ_EXT "-PQC" )
 	INCLUDE(configs/PQC.cmake)
     ADD_SUBDIRECTORY ( PQC )
