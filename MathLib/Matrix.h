@@ -13,10 +13,7 @@
 #include <new>
 #include <exception>
 #include <stdexcept>
-
-#ifndef NDEBUG
 #include <iostream>
-#endif
 
 namespace MATHLIB {
 	
