@@ -8,8 +8,6 @@ IF (NOT QT4_FOUND)
 	MESSAGE(FATAL_ERROR "Error: Qt was not found but is needed for the GUI. Aborting...")
 ENDIF (NOT QT4_FOUND)
 
-FIND_PACKAGE( Shapelib )
-
 IF (NOT OGS_VRED_PLUGIN)
 	IF (OGS_USE_OPENSG)
 		FIND_PACKAGE( OpenSG REQUIRED COMPONENTS OSGBase OSGSystem)
