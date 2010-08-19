@@ -43,12 +43,9 @@
 #include <unistd.h>
 #include <stdlib.h>
 #endif
-#ifdef PROBLEM_CLASS //WW
 #include "problem.h"
-#ifndef MFC //16.12.2008. WW
+
 Problem *aproblem = NULL;
-#endif
-#endif
 /* Deklarationen */
 int main ( int argc, char *argv[] );
 void ShowSwitches ( void );
@@ -222,54 +219,10 @@ int main ( int argc, char *argv[] )
   else if(indexChLinux!=string::npos)
      FilePath = FileName.substr(0,indexChLinux)+"/";
   // ---------------------------WW
-#ifdef PROBLEM_CLASS    //12.08.2008. WW
   aproblem = new Problem(dateiname);
   aproblem->Euler_TimeDiscretize();
   delete aproblem;
   aproblem = NULL;
-#else // of define PROBLEM_CLASS
-  /* Schalterstellungen zeigen */
-  //#ifdef SWITCHES
-  //    ShowSwitches();
-  //#endif
-  /* Konfiguration lesen */
-#ifdef ENABLE_ADT
-    ReadRFConfigFile(dateiname);
-#endif
-/*========================================================================*/
-/* FEM-Applikation */
-  /* Allgemeine FEM-Datenstrukturen anlegen */
-//WW  CreateObjectLists();
-  /* Systemzeit fuer Rockflow setzen */
-//OK  SetSystemTime("RF-MAIN","ROCKFLOW","ROCKFLOW: Total time",&rockflow_id_timer);
-//OK  RunSystemTime("RF-MAIN");
-  /* Ctrl-C abfangen und interpretieren */
-  SaveBreak();
-  /* FEM-Applikation: ROCKFLOW */
-  RF_FEM(dateiname);
-#ifdef TEST
-  cout << "*********************************************" << endl;
-  cout << "End of simulation" << endl;
-#endif
-  /* Ctrl-C erzeugt keinen Abbruch mehr */
-  NoBreak();
-  /* Systemzeit fuer Rockflow anhalten */
-//OK  StopSystemTime("RF-MAIN");
-  /* Systemzeit fuer Rockflow-Gruppe ausgeben */
-//OK  StatisticsSystemTime("ROCKFLOW");
-  /* Allgemeine FEM-Datenstrukturen freigeben */
-  DestroyObjectLists();
-#ifdef TEST
-  cout << "Data destruction" << endl;
-#endif
-/*========================================================================*/
-/* Kommunikation mit Betriebssystem */
-  /* Speicher frei */
-  dateiname = (char *)Free(dateiname);
-  /* Speichertest beenden */
-  StopMemoryTest();
-  /* Laufzeit ausgeben */
-#endif //of define PROBLEM_CLASS
 #ifdef TESTTIME
   cout << "Simulation time: " << TGetTimer(0) << "s" << endl;
 #endif
@@ -336,58 +289,12 @@ int mainPCH ( int argc, char *argv[] )
   //WW  DisplayMsgLn("");
   //WW  DisplayMsgLn("");
   FileName = dateiname;
-#ifdef PROBLEM_CLASS    //12.08.2008. WW
+
   aproblem = new Problem(dateiname);
   aproblem->Euler_TimeDiscretize();
   delete aproblem;
   aproblem = NULL;
-#else // of define PROBLEM_CLASS
-  /* Schalterstellungen zeigen */
-  //#ifdef SWITCHES
-  //    ShowSwitches();
-  //#endif
-  /* Konfiguration lesen */
-#ifdef ENABLE_ADT
-    ReadRFConfigFile(dateiname);
-#endif
-/*========================================================================*/
-/* FEM-Applikation */
-  /* Allgemeine FEM-Datenstrukturen anlegen */
-//WW  CreateObjectLists();
-  /* Systemzeit fuer Rockflow setzen */
-//OK  SetSystemTime("RF-MAIN","ROCKFLOW","ROCKFLOW: Total time",&rockflow_id_timer);
-//OK  RunSystemTime("RF-MAIN");
-  /* Ctrl-C abfangen und interpretieren */
-  SaveBreak();
-  /* FEM-Applikation: ROCKFLOW */
-  RF_FEM(dateiname);
-#ifdef TEST
-  cout << "*********************************************" << endl;
-  cout << "End of simulation" << endl;
-#endif
-  /* Ctrl-C erzeugt keinen Abbruch mehr */
-  NoBreak();
-  /* Systemzeit fuer Rockflow anhalten */
-//OK  StopSystemTime("RF-MAIN");
-  /* Systemzeit fuer Rockflow-Gruppe ausgeben */
-//OK  StatisticsSystemTime("ROCKFLOW");
-  /* Allgemeine FEM-Datenstrukturen freigeben */
-  DestroyObjectLists();
-#ifdef TEST
-  cout << "Data destruction" << endl;
-#endif
 
-
-/*========================================================================*/
-/* Kommunikation mit Betriebssystem */
-
-  /* Speicher frei */
-  dateiname = (char *)Free(dateiname);
-
-  /* Speichertest beenden */
-  StopMemoryTest();
-  /* Laufzeit ausgeben */
-#endif //of define PROBLEM_CLASS
 #ifdef TESTTIME
   cout << "Simulation time: " << TGetTimer(0) << "s" << endl;
 #endif
@@ -399,89 +306,3 @@ int mainPCH ( int argc, char *argv[] )
 
   return 0;
 }
-#ifndef PROBLEM_CLASS    //12.08.2008. WW
-/**************************************************************************/
-/* ROCKFLOW - Funktion: ShowSwitches
-                                                                          */
-/* Aufgabe:
-   Zeigt globale Schalterstellungen (aus makros.h)
-                                                                          */
-/* Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   - void -
-                                                                          */
-/* Ergebnis:
-   - void -
-                                                                          */
-/* Programmaenderungen:
-   12/1994     hh        Erste Version
-                                                                          */
-/**************************************************************************/
-void ShowSwitches ( void )
-{
-  DisplayMsgLn("");
-  DisplayMsgLn("");
-  DisplayMsgLn("Schalter:");
-#ifdef TESTTIME
-     DisplayMsgLn("  - TESTTIME");
-     DisplayMsgLn("    Laufzeitausgaben in Sekunden (!)");
-#endif
-#ifdef EXT_RFD_MIN
-    DisplayMsgLn("  - EXT_RFD_MIN");
-    DisplayMsgLn("    Eingabeprotokoll f. gef. Schluesselworte dokumentieren");
-#endif
-#ifdef EXT_RFD
-    DisplayMsgLn("  - EXT_RFD");
-    DisplayMsgLn("    Eingabeprotokoll ausfuehrlich dokumentieren");
-#endif
-#ifdef ERROR_CONTROL
-     DisplayMsgLn("  - ERROR_CONTROL");
-     DisplayMsgLn("    Erweiterte Fehlerueberpruefung");
-#endif
-#ifdef REF_STATIC
-     DisplayMsgLn("  - REF_STATIC");
-     DisplayMsgLn("    Statische Variablen in Refine-Rekursionen");
-#endif
-#ifdef NULLE_ERGEBNIS
-     DisplayMsgLn("  - NULLE_ERGEBNIS");
-     DisplayMsgLn("    Startvektor fuer CG-Loeser ist Nullvektor");
-#endif
-#ifdef RELATIVE_EPS
-     DisplayMsgLn("  - RELATIVE_EPS");
-     DisplayMsgLn("    cg_eps gibt relative Schranke an (bei CG-Loesern)");
-#endif
-#ifdef MEMORY_TEST
-     DisplayMsgLn("  - MEMORY_TEST");
-     DisplayMsgLn("    Speicherprotokoll in Datei 'memtest.log'");
-#endif
-#ifdef MEMORY_TEST_IN_TIME
-     DisplayMsgLn("  - MEMORY_TEST_IN_TIME");
-     DisplayMsgLn("    Es wird waehrend der Laufzeit eine Speicherbilanz erstellt");
-#endif
-#ifdef MEMORY_SHOW_USAGE
-     DisplayMsgLn("  - MEMORY_SHOW_USAGE");
-     DisplayMsgLn("    Jedes Malloc/Realloc/Free wird aufgefuehrt");
-#endif
-#ifdef MEMORY_FLUSH
-     DisplayMsgLn("  - MEMORY_FLUSH ");
-     DisplayMsgLn("    immer fflush beim Schreiben von 'memtest.log'");
-#endif
-#ifdef MEMORY_REALLOC
-     DisplayMsgLn("  - MEMORY_REALLOC");
-     DisplayMsgLn("    realloc ersetzt durch malloc/free");
-#endif
-#ifdef MEMORY_STR
-     DisplayMsgLn("  - MEMORY_STR");
-     DisplayMsgLn("    zusaetzliche Aufrufstellenangabe bei Malloc/Realloc/Free'");
-#endif
-#ifdef DOSGNUC
-     DisplayMsgLn("  - DOSGNUC");
-     DisplayMsgLn("    wegen Realloc-Problemen bei GNU-C unter DOS");
-#endif
-  /* evtl. auch noch die benutzten Loeser-Normen ausgeben */
-  DisplayMsgLn("----- ");
-  DisplayMsgLn("");
-  DisplayMsgLn("");
-}
-
-#endif
-

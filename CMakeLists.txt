@@ -46,14 +46,9 @@ IF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCC)
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wall -Wextra")
         ADD_DEFINITIONS(
 		-DGCC
-#		-pedantic
 		-fno-nonansi-builtins
 	)
 ENDIF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCC)
-
-### These two difintitions are true by default. Should be removed late on. WW
-ADD_DEFINITIONS(-DPROBLEM_CLASS)
-ADD_DEFINITIONS(-DRANDOM_WALK)
 
 # Set build directories
 SET( EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin )
@@ -90,7 +85,6 @@ ENDIF (LIB_DIR_FOUND)
 # Set additional CMake modules path
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeConfiguration")
 
-#INCLUDE( CMakeConfiguration/Options.cmake )
 
 ###-----WW------------------------------------------------------
 #OPTION Parallel
@@ -118,13 +112,6 @@ IF (UNIX) # Only supported on Linux
 	OPTION(OGS_FEM_MPI "Message passing interface configuration" OFF)
 ENDIF (UNIX)
 
-# Set default configuration when no other config is given
-IF (NOT OGS_FEM AND NOT OGS_FEM_SP AND NOT OGS_FEM_GEMS AND NOT OGS_FEM_PQC AND NOT OGS_FEM_BRNS AND NOT OGS_FEM_CHEMAPP AND NOT OGS_FEM_LIS AND NOT OGS_FEM_MKL AND NOT OGS_FEM_MPI AND NOT OGS_USE_QT)
-	MESSAGE (STATUS "No configuration specified. Default confuguration is used.")
-	SET (OGS_FEM ON)
-ENDIF (NOT OGS_FEM AND NOT OGS_FEM_SP AND NOT OGS_FEM_GEMS AND NOT OGS_FEM_PQC AND NOT OGS_FEM_BRNS AND NOT OGS_FEM_CHEMAPP AND NOT OGS_FEM_LIS AND NOT OGS_FEM_MKL AND NOT OGS_FEM_MPI AND NOT OGS_USE_QT)
-OPTION(OGS_BUILD_UTILITIES "Build additional utility programs?" OFF)
-
 # Additional options
 OPTION(OGS_PACKAGING "Creating installers / packages" OFF)
 IF (OGS_PACKAGING)
@@ -134,130 +121,33 @@ OPTION(OGS_PYTHON "Enable python scripting interface" OFF)
 OPTION(OGS_CMAKE_DEBUG "Show additional cmake debug information" OFF)
 OPTION(OGS_ONE_BIG_GTEST "Should all gtests be collected to one ctest" ON)
 
-IF(OGS_FEM_SP)
-	SET( PRJ_EXT "-SP" )
-	INCLUDE(configs/sparse.cmake)
-ENDIF(OGS_FEM_SP)
-
-IF(OGS_FEM_MPI)
-	SET( PRJ_EXT "-MPI" )
-	SET(PARALLEL_USE_MPI ON)	
-	INCLUDE(configs/sparse.cmake)
-ENDIF(OGS_FEM_MPI)
-
-IF(OGS_FEM_GEMS)
-	SET( PRJ_EXT "-GEMS" )
-	INCLUDE(configs/gems.cmake)
-ENDIF(OGS_FEM_GEMS)
-
-IF(OGS_FEM_PQC)
-	SET( PRJ_EXT "-PQC" )
-	INCLUDE(configs/PQC.cmake)
-ENDIF(OGS_FEM_PQC)
-
-IF(OGS_FEM_BRNS)
-	SET( PRJ_EXT "-BRNS" )
-	INCLUDE(configs/BRNS.cmake)
-ENDIF(OGS_FEM_BRNS)
-
-IF(OGS_FEM_LIS)
-	SET( PRJ_EXT "-LIS" )
-	SET(PARALLEL_USE_OPENMP ON)
-	INCLUDE(configs/vc_lis.cmake)
-ENDIF(OGS_FEM_LIS)
-
-IF(OGS_FEM_MKL)
-	SET( PRJ_EXT "-MKL" )
-	SET(PARALLEL_USE_OPENMP ON)
-	INCLUDE(configs/pardiso.cmake)
-ENDIF(OGS_FEM_MKL)
-IF (OGS_FEM_CHEMAPP)
-	SET( PRJ_EXT "-CHEMAPP" )
-	INCLUDE(configs/chemapp.cmake)
-ENDIF (OGS_FEM_CHEMAPP)
-###-----WW
-
+# Check if a valid OGS configuration is given (see Macros.cmake)
+CHECK_CONFIG()
 
 ###LIBRARY
 FIND_PACKAGE (PythonInterp)
-
 
 IF (OGS_PYTHON)
 	FIND_PACKAGE (PythonLibs 2.5 REQUIRED)
 ENDIF (OGS_PYTHON)
 
-IF(MKL)
-	IF (UNIX)
-		#Extract MKL
-		FIND_PATH (MKL_INCLUDE_DIR_FOUND mkl.h ${PROJECT_SOURCE_DIR}/../Libs/MKL/include)
-		IF (NOT MKL_INCLUDE_DIR_FOUND)
-			FIND_PATH (MKL_DIR_FOUND mkl-include.tgz ${PROJECT_SOURCE_DIR}/../Libs/MKL)
-			IF (MKL_DIR_FOUND)
-				MESSAGE (STATUS "Uncompressing MKL...")
-				EXECUTE_PROCESS (COMMAND tar xvzf mkl-include.tgz WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/../Libs/MKL/ OUTPUT_QUIET)
-				IF (HAVE_64_BIT)
-					EXECUTE_PROCESS (COMMAND tar xvzf mkl-64.tgz WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/../Libs/MKL/ OUTPUT_QUIET)
-				ELSE (HAVE_64_BIT)
-					EXECUTE_PROCESS (COMMAND tar xvzf mkl-32.tgz WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/../Libs/MKL/ OUTPUT_QUIET)
-				ENDIF (HAVE_64_BIT)
-			ELSE (MKL_DIR_FOUND)
-				MESSAGE (STATUS "MKL archives in ../Libs/ not found")
-			ENDIF (MKL_DIR_FOUND)
-		ENDIF (NOT MKL_INCLUDE_DIR_FOUND)
-		
-		# Find MKLlib
-		FIND_PACKAGE( MKL REQUIRED )
-		SET(PARALLEL_USE_OPENMP ON)
+# Find Qt4 library
+FIND_PACKAGE( Qt4 4.5)
 
-		SET(CMAKE_CXX_FLAGS "-I${CMAKE_SOURCE_DIR}/../Libs/MKL/include")
-		if(CMAKE_SIZEOF_VOID_P MATCHES "8")
-			SET(CMAKE_CXX_LINK_FLAGS "-L${CMAKE_SOURCE_DIR}/../Libs/MKL/64 -llis-64 -lmkl_solver_lp64 -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core ")
-		else (CMAKE_SIZEOF_VOID_P MATCHES "8")
-			SET(CMAKE_CXX_LINK_FLAGS "-L${CMAKE_SOURCE_DIR}/../Libs/MKL/32 -llis-32 -lmkl_solver -lmkl_intel -lmkl_gnu_thread -lmkl_core ")
-		endif (CMAKE_SIZEOF_VOID_P MATCHES "8")
-	ELSE(UNIX)
-		MESSAGE (FATAL_ERROR "MKL is only supported under LINUX/UNIX" )	
-	ENDIF (UNIX)
-ENDIF(MKL)
-
-IF(LIS)
-	# Find LISlib
-	IF (UNIX)
-		FIND_PACKAGE( LIS REQUIRED )
-		#set (LIS ON)
-		set (NEW_EQS ON)
-		add_definitions(
-			-o3
-			-DIPMGEMPLUGIN
-		)	
-	ELSE(UNIX)
-		MESSAGE (FATAL_ERROR  "LIS is only supported under LINUX/UNIX" )	
-	ENDIF (UNIX)
-ENDIF(LIS)
-
-
-IF(OGS_USE_QT)
-	# Find Shapelib
-	FIND_PACKAGE( Shapelib )
-
-	# Find Qt4 library
-	FIND_PACKAGE( Qt4 4.5 REQUIRED)
-
-	IF ( QT4_FOUND )
-		# OPTION(OGS_GUI OFF )
-		# this is needed to correctly link the qt libraries through target_link_libraries
-		# By default only QtCore and QtGui modules are enabled
-		# other modules must be enabled like this:
-		SET( QT_USE_QTOPENGL TRUE )
-		SET( QT_USE_QTSQL TRUE )
-		SET( QT_USE_QTTEST TRUE )
-		SET( QT_USE_QTXML TRUE )
-		IF (QT_QTXMLPATTERNS_FOUND)
-			set( QT_USE_QTXMLPATTERNS TRUE )
-		ENDIF (QT_QTXMLPATTERNS_FOUND)
-		INCLUDE( ${QT_USE_FILE} )
-	ENDIF (QT4_FOUND )
-ENDIF(OGS_USE_QT)
+IF ( QT4_FOUND )
+	# OPTION(OGS_GUI OFF )
+	# this is needed to correctly link the qt libraries through target_link_libraries
+	# By default only QtCore and QtGui modules are enabled
+	# other modules must be enabled like this:
+	SET( QT_USE_QTOPENGL TRUE )
+	SET( QT_USE_QTSQL TRUE )
+	SET( QT_USE_QTTEST TRUE )
+	SET( QT_USE_QTXML TRUE )
+	IF (QT_QTXMLPATTERNS_FOUND)
+		set( QT_USE_QTXMLPATTERNS TRUE )
+	ENDIF (QT_QTXMLPATTERNS_FOUND)
+	INCLUDE( ${QT_USE_FILE} )
+ENDIF (QT4_FOUND )
 
 find_package( Subversion )
 if(Subversion_FOUND)
@@ -309,150 +199,77 @@ if( NOT MSVC )
   endif( Git_FOUND )
 endif( NOT MSVC )
 
-
-# Create Configure.h
-CONFIGURE_FILE (Base/Configure.h.in ${PROJECT_BINARY_DIR}/Base/Configure.h)
+# This is for Configure.h which is generated later
 INCLUDE_DIRECTORIES( ${PROJECT_BINARY_DIR}/Base )
 
 IF(OGS_FEM)
    MESSAGE (STATUS  "Configuring for FEM command line" )	
-	SET(OGS_GUI OFF )
-	SET(OGS_FEM_SP OFF )
-	SET(OGS_FEM_MPI OFF )
-	SET(OGS_FEM_GEMS OFF )
-	SET(OGS_FEM_BRNS OFF )
-	SET(OGS_FEM_MKL OFF )
-	SET(OGS_FEM_PQC OFF )
-	SET(OGS_FEM_LIS OFF )   
-	SET(OGS_FEM_CHEMAPP OFF)
-
-#
-   INCLUDE(FEM.cmake )
 ENDIF(OGS_FEM)
 
 IF(OGS_FEM_SP)
-   MESSAGE (STATUS  "Configuring for FEM command line with new sparse matrix" )	
-	SET(OGS_GUI OFF )
-	SET(OGS_FEM OFF )
-	SET(OGS_FEM_MPI OFF )
-	SET(OGS_FEM_GEMS OFF )
-	SET(OGS_FEM_BRNS OFF )
-	SET(OGS_FEM_MKL OFF )
-	SET(OGS_FEM_PQC OFF )
-	SET(OGS_FEM_LIS OFF )   
-	SET(OGS_FEM_CHEMAPP OFF)
-   INCLUDE(FEM.cmake )
+	MESSAGE (STATUS  "Configuring for FEM command line with new sparse matrix" )	
+	SET( PRJ_EXT "-SP" )
+	INCLUDE(configs/sparse.cmake)
 ENDIF(OGS_FEM_SP)
 
 IF(OGS_FEM_MPI)
-   MESSAGE (STATUS  "Configuring for FEM command line with MPI" )	
-	SET(OGS_GUI OFF )
-	SET(OGS_FEM_SP OFF )
-	SET(OGS_FEM OFF )
-	SET(OGS_FEM_GEMS OFF )
-	SET(OGS_FEM_BRNS OFF )
-	SET(OGS_FEM_MKL OFF )
-	SET(OGS_FEM_PQC OFF )
-	SET(OGS_FEM_LIS OFF )   
-	SET(OGS_FEM_CHEMAPP OFF)
-   INCLUDE(FEM.cmake )
+	MESSAGE (STATUS  "Configuring for FEM command line with MPI" )
+	SET( PRJ_EXT "-MPI" )
+	SET(PARALLEL_USE_MPI ON)	
+	INCLUDE(configs/sparse.cmake)
 ENDIF(OGS_FEM_MPI)
 
 IF(OGS_FEM_GEMS)
-   MESSAGE (STATUS  "Configuring for FEM command line with GEMS" )	
-	SET(OGS_GUI OFF )
-	SET(OGS_FEM_SP OFF )
-	SET(OGS_FEM_MPI OFF )
-	SET(OGS_FEM OFF )
-	SET(OGS_FEM_BRNS OFF )
-	SET(OGS_FEM_MKL OFF )
-	SET(OGS_FEM_PQC OFF )
-	SET(OGS_FEM_LIS OFF )
-	SET(OGS_FEM_CHEMAPP OFF)
-   INCLUDE(FEM.cmake )
+	MESSAGE (STATUS  "Configuring for FEM command line with GEMS" )
+	SET( PRJ_EXT "-GEMS" )
+	INCLUDE(configs/gems.cmake)
 ENDIF(OGS_FEM_GEMS)
 
 IF(OGS_FEM_PQC)
-   MESSAGE (STATUS  "Configuring for FEM command line with PQC" )	
-	SET(OGS_GUI OFF )
-	SET(OGS_FEM_SP OFF )
-	SET(OGS_FEM_MPI OFF )
-	SET(OGS_FEM_GEMS OFF )
-	SET(OGS_FEM_BRNS OFF )
-	SET(OGS_FEM_MKL OFF )
-	SET(OGS_FEM OFF )
-	SET(OGS_FEM_LIS OFF ) 
-	SET(OGS_FEM_CHEMAPP OFF)
-	INCLUDE(FEM.cmake )  
+	MESSAGE (STATUS  "Configuring for FEM command line with PQC" )	
+	INCLUDE(FEM.cmake )
+	SET( PRJ_EXT "-PQC" )
+	INCLUDE(configs/PQC.cmake)
     ADD_SUBDIRECTORY ( PQC )
 ENDIF(OGS_FEM_PQC)
 
 IF(OGS_FEM_BRNS)
-	MESSAGE (STATUS  "Configuring for FEM command line with BRNS" )	
-	SET(OGS_GUI OFF )
-	SET(OGS_FEM_SP OFF )
-	SET(OGS_FEM_MPI OFF )
-	SET(OGS_FEM_GEMS OFF )
-	SET(OGS_FEM_MKL OFF )
-	SET(OGS_FEM OFF )
-	SET(OGS_FEM_LIS OFF )  
-	SET(OGS_FEM_CHEMAPP OFF) 
-	INCLUDE(FEM.cmake)
+	MESSAGE (STATUS  "Configuring for FEM command line with BRNS" )
+	SET( PRJ_EXT "-BRNS" )
+	INCLUDE(configs/BRNS.cmake)
 ENDIF(OGS_FEM_BRNS)
 
 IF(OGS_FEM_LIS)
-   MESSAGE (STATUS  "Configuring for FEM command line with LIS" )	
-	SET(OGS_GUI OFF )
-	SET(OGS_FEM_SP OFF )
-	SET(OGS_FEM_MPI OFF )
-	SET(OGS_FEM_GEMS OFF )
-	SET(OGS_FEM_BRNS OFF )
-	SET(OGS_FEM_MKL OFF )
-	SET(OGS_FEM_PQC OFF )
-	SET(OGS_FEM OFF )   
-	SET(OGS_FEM_CHEMAPP OFF)
-   INCLUDE(FEM.cmake )
+	MESSAGE (STATUS  "Configuring for FEM command line with LIS" )
+	SET( PRJ_EXT "-LIS" )
+	SET(PARALLEL_USE_OPENMP ON)
+	INCLUDE(configs/vc_lis.cmake)
 ENDIF(OGS_FEM_LIS)
 
 IF(OGS_FEM_MKL)
-   MESSAGE (STATUS  "Configuring for FEM command line with MKL" )	
-	SET(OGS_GUI OFF )
-	SET(OGS_FEM_SP OFF )
-	SET(OGS_FEM_MPI OFF )
-	SET(OGS_FEM_GEMS OFF )
-	SET(OGS_FEM_BRNS OFF )
-	SET(OGS_FEM OFF )
-	SET(OGS_FEM_PQC OFF )
-	SET(OGS_FEM_LIS OFF )  
-	SET(OGS_FEM_CHEMAPP OFF) 
-   INCLUDE(FEM.cmake )
+	MESSAGE (STATUS  "Configuring for FEM command line with MKL" )
+	SET( PRJ_EXT "-MKL" )
+	SET(PARALLEL_USE_OPENMP ON)
+	INCLUDE(configs/pardiso.cmake)
 ENDIF(OGS_FEM_MKL)
 
 IF(OGS_FEM_CHEMAPP)
-   MESSAGE (STATUS  "Configuring for FEM command line with CHEMAPP" )	
-	SET(OGS_GUI OFF )
-	SET(OGS_FEM_SP OFF )
-	SET(OGS_FEM_MPI OFF )
-	SET(OGS_FEM_GEMS OFF )
-	SET(OGS_FEM_BRNS OFF )
-	SET(OGS_FEM OFF )
-	SET(OGS_FEM_PQC OFF )
-	SET(OGS_FEM_LIS OFF )   
-	SET(OGS_FEM_MKL OFF )
-   INCLUDE(FEM.cmake )
+	MESSAGE (STATUS  "Configuring for FEM command line with CHEMAPP" )
+	SET( PRJ_EXT "-CHEMAPP" )
+	INCLUDE(configs/chemapp.cmake)
 ENDIF(OGS_FEM_CHEMAPP)
-###-----WW
 
-#IF(OGS_USE_QT AND QT4_FOUND)
-#	SET(OGS_GUI ON)
-#ENDIF(OGS_USE_QT AND QT4_FOUND)
+INCLUDE(FEM.cmake )
+
 IF(OGS_USE_QT)
    MESSAGE (STATUS  "Configuring for OGS with GUI" )	
    SET(OGS_FEM ON )
-   INCLUDE(FEM.cmake )
+   #INCLUDE(FEM.cmake )
    INCLUDE(GUI.cmake )
 ENDIF(OGS_USE_QT)
 
+# Create Configure.h
+CONFIGURE_FILE (Base/Configure.h.in ${PROJECT_BINARY_DIR}/Base/Configure.h)
 
 IF(CMAKE_MINOR_VERSION GREATER 6)
 	IF (${CMAKE_GENERATOR} STREQUAL "Visual Studio 8 2005" )

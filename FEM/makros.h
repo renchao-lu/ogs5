@@ -269,8 +269,6 @@
 #define noSX
 #define noMPI
 #define noOPEN_MP
-// Temporary Makro for RandomWalk Trouble
-//#define RANDOM_WALK
 /* Definitionen von Konstanten, die bei manchen Compilern benoetigt werden */
 #ifndef NULL
 #define NULL ((void *)0)

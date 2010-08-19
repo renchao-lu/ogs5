@@ -173,10 +173,8 @@ int ReadData ( char *dateiname, GEOLIB::GEOObjects& geo_obj, std::string& unique
      MSH = true;
   }
 //SBOK4209 MSHWrite(dateiname);
-#ifdef RANDOM_WALK
   // PCTRead is bounded by msh
   PCTRead(dateiname);   // PCH
-#endif
   FMRead(dateiname);    // PCH
   FCTRead(dateiname); //OK
   CURRead(dateiname); //OK

@@ -7,8 +7,6 @@
 
 #include "Configure.h"
 
-#if defined(PROBLEM_CLASS)
-
 #include <vector>
 class CRFProcess;
 
@@ -133,5 +131,4 @@ class Problem
 extern Problem *aproblem;
 extern bool MODCreate(); //OK
 
-#endif //PROBLEM_CLASS
 #endif

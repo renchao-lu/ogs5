@@ -204,3 +204,46 @@ MACRO(ADD_FILES_COMPARE authorName)
     ENDFOREACH (OUTPUTFILE ${${authorName}_OUTPUT_LIST})
   ENDIF (PYTHONINTERP_FOUND)
 ENDMACRO(ADD_FILES_COMPARE authorName)
+
+# Checks if a valid ogs configuration is given
+FUNCTION(CHECK_CONFIG)
+	
+	SET(configs
+		"${OGS_USE_QT}"
+		"${OGS_FEM}"
+		"${OGS_FEM_SP}"
+		"${OGS_FEM_MPI}"
+		"${OGS_FEM_GEMS}"
+		"${OGS_FEM_BRNS}"
+		"${OGS_FEM_MKL}"
+		"${OGS_FEM_PQC}"
+		"${OGS_FEM_LIS}"
+		"${OGS_FEM_CHEMAPP}")
+	
+	SET(counter 0)
+	
+	FOREACH(config ${configs})
+		IF (config)
+			MATH(EXPR counter "${counter} + 1")
+		ENDIF (config)
+	ENDFOREACH()
+	IF (counter EQUAL 0)
+		MESSAGE(STATUS "No configuration specified. Assuming default configuration...")
+		SET(OGS_FEM ON)
+	ENDIF (counter EQUAL 0)
+	
+	IF (counter GREATER 1)
+		MESSAGE(FATAL_ERROR "Error: More than one OGS configuration given. Please use only one of the following configurations:
+			OGS_USE_QT (GUI configuration)
+			OGS_FEM (Default FEM configuration)
+			OGS_FEM_SP
+			OGS_FEM_MPI
+			OGS_FEM_GEMS
+			OGS_FEM_BRNS
+			OGS_FEM_MKL
+			OGS_FEM_PQC
+			OGS_FEM_LIS
+			OGS_FEM_CHEMAPP")
+	ENDIF (counter GREATER 1)
+	
+ENDFUNCTION()

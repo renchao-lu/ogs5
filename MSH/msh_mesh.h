@@ -30,10 +30,7 @@
 // MSHLib
 #include "msh_elem.h"
 
-#ifdef RANDOM_WALK
 class RandomWalk;
-#endif
-
 class CFluidMomentum;
 
 #ifdef NEW_EQS    //1.11.2007 WW
@@ -74,9 +71,7 @@ public:
 	int highest_mat_group_nb;
 	bool m_bCheckMSH; //OK
 
-#ifdef RANDOM_WALK
 	RandomWalk* PT; // PCH
-#endif
 
 	CFluidMomentum* fm_pcs; // by PCH
 	CFEMesh(void);

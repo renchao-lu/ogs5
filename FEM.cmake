@@ -7,6 +7,37 @@ IF(NOT OGS_USE_QT)
 	PROJECT( OGS-FEM-${OGS_VERSION_MAJOR}${PRJ_EXT} )
 ENDIF(NOT OGS_USE_QT)
 
+IF(MKL)
+	IF (UNIX)
+		# Find MKLlib
+		FIND_PACKAGE( MKL REQUIRED )
+		SET(PARALLEL_USE_OPENMP ON)
+
+		SET(CMAKE_CXX_FLAGS "-I${CMAKE_SOURCE_DIR}/../Libs/MKL/include")
+		if(CMAKE_SIZEOF_VOID_P MATCHES "8")
+			SET(CMAKE_CXX_LINK_FLAGS "-L${CMAKE_SOURCE_DIR}/../Libs/MKL/64 -llis-64 -lmkl_solver_lp64 -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core ")
+		else (CMAKE_SIZEOF_VOID_P MATCHES "8")
+			SET(CMAKE_CXX_LINK_FLAGS "-L${CMAKE_SOURCE_DIR}/../Libs/MKL/32 -llis-32 -lmkl_solver -lmkl_intel -lmkl_gnu_thread -lmkl_core ")
+		endif (CMAKE_SIZEOF_VOID_P MATCHES "8")
+	ELSE(UNIX)
+		MESSAGE (FATAL_ERROR "MKL is only supported under LINUX/UNIX" )	
+	ENDIF (UNIX)
+ENDIF(MKL)
+
+IF(LIS)
+	# Find LISlib
+	IF (UNIX)
+		FIND_PACKAGE( LIS REQUIRED )
+		#set (LIS ON)
+		set (NEW_EQS ON)
+		add_definitions(
+			-o3
+			-DIPMGEMPLUGIN
+		)	
+	ELSE(UNIX)
+		MESSAGE (FATAL_ERROR  "LIS is only supported under LINUX/UNIX" )	
+	ENDIF (UNIX)
+ENDIF(LIS)
 
 # Find OpenMP
 IF(PARALLEL_USE_OPENMP)

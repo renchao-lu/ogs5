@@ -4687,10 +4687,8 @@ void PCTRead(string file_base_name)
 	int End = 1;
 	string strbuffer;
 	RandomWalk* RW = NULL;
-#ifdef RANDOM_WALK
 	m_msh->PT = new RandomWalk(); //PCH
 	RW = m_msh->PT;
-#endif
 
 	// Create pathline
 	RandomWalk::Pathline path;
@@ -4767,9 +4765,7 @@ void DATWriteParticleFile(int current_time_step)
 		}
 	}
 
-#ifdef RANDOM_WALK	//WW
 	RW = m_msh->PT;
-#endif
 	np = RW->numOfParticles;
 
 	// file naming

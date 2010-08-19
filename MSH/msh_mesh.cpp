@@ -37,9 +37,7 @@ using namespace std;
 #ifdef BENCHMARKING
 #include "benchtimer.h"
 #endif
-#ifdef RANDOM_WALK
 #include "rf_random_walk.h"
-#endif
 #include "msh_lib.h"
 // For surface integration. WW. 29.02.2009
 #include "fem_ele.h"
@@ -82,10 +80,8 @@ CFEMesh::CFEMesh(void) {
 	max_ele_dim = 0; //NW
 	m_bCheckMSH = false; //OK
 	pcs_name = "NotSpecified"; //WW
-#ifdef RANDOM_WALK
 	PT=NULL; // WW+TK
 	fm_pcs=NULL; //WW
-#endif
 	// 1.11.2007 WW
 #ifdef NEW_EQS
 	sparse_graph = NULL;
@@ -127,9 +123,7 @@ CFEMesh::~CFEMesh(void) {
 		delete face_normal[i];
 	face_normal.clear();
 
-#ifdef RANDOM_WALK
 	delete PT; // PCH
-#endif
 	// 1.11.2007 WW
 #ifdef NEW_EQS
 	if(sparse_graph) delete sparse_graph;

@@ -94,9 +94,7 @@ REACT_BRNS *m_vec_BRNS;
 #ifdef NEW_EQS
 #include "equation_class.h"
 #endif
-#ifdef PROBLEM_CLASS //WW
 #include "problem.h"
-#endif
 
 /*-------------------- ITPACKV    ---------------------------*/
 extern void transM2toM6(void);
@@ -6454,11 +6452,9 @@ double CRFProcess::ExecuteNonLinear()
   //
 #endif
   //..................................................................
-#if defined(PROBLEM_CLASS) //WW
   // PI time step size control. 29.08.2008. WW
   if(Tim->GetTimeStepCrtlType()>0)
     CopyU_n(aproblem->GetBufferArray());
-#endif
   if (hasAnyProcessDeactivatedSubdomains)
     this->CheckMarkedElement(); //NW
   for(iter=0;iter<pcs_nonlinear_iterations;iter++)
@@ -6479,11 +6475,9 @@ double CRFProcess::ExecuteNonLinear()
     else
       Tim->repeat = true; //OK/YD
   }
-#if defined(PROBLEM_CLASS) //WW
   // PI time step size control. 27.08.2008. WW
   if(Tim->GetTimeStepCrtlType()>0)
     PI_TimeStepSize(aproblem->GetBufferArray());
-#endif // (PROBLEM_CLASS)
   // 8 Calculate secondary variables
   if(accepted) // 27.08.2008. WW
     CalcSecondaryVariables(); // Moved here from Execute() WW

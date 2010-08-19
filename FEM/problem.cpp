@@ -11,7 +11,6 @@ Modification:
 #include "Configure.h"
 
 #include "problem.h"
-#if defined(PROBLEM_CLASS)
 
 #if defined (USE_MPI)
 #include <mpi.h>
@@ -1550,7 +1549,6 @@ inline double Problem::RandomWalker()
 				m_msh = FEMGet("GROUNDWATER_FLOW");
 		}
 
-#ifdef RANDOM_WALK
 		RandomWalk *rw_pcs = NULL; // By PCH
 		rw_pcs = m_msh->PT;
 
@@ -1646,7 +1644,6 @@ inline double Problem::RandomWalker()
 	//	rw_pcs->TraceStreamline(); // JTARON, no longer needed
 		print_result = true;
 		rw_pcs->RandomWalkOutput(aktuelle_zeit,aktueller_zeitschritt);
-#endif
 	}
 
 return 0.0;
@@ -2233,5 +2230,3 @@ double Problem::getEndTime()
 }
 
 #endif //BRNS
-
-#endif //PROBLEM_CLASS

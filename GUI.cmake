@@ -2,6 +2,22 @@
 ## Modified by:
 ##            WW 20.04.2010. 
 
+# Additional libraries
+
+IF (NOT QT4_FOUND)
+	MESSAGE(FATAL_ERROR "Error: Qt was not found but is needed for the GUI. Aborting...")
+ENDIF (NOT QT4_FOUND)
+
+FIND_PACKAGE( Shapelib )
+
+IF (NOT OGS_VRED_PLUGIN)
+	IF (OGS_USE_OPENSG)
+		FIND_PACKAGE( OpenSG REQUIRED COMPONENTS OSGBase OSGSystem)
+	ELSE (OGS_USE_OPENSG)
+		FIND_PACKAGE( OpenSG COMPONENTS OSGBase OSGSystem)
+	ENDIF (OGS_USE_OPENSG)
+ENDIF (NOT OGS_VRED_PLUGIN)
+
 # Project name
 PROJECT( OGS-${OGS_VERSION_MAJOR}-GUI )
 

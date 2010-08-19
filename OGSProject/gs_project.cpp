@@ -385,9 +385,7 @@ void GSPWriteData()
     }
     else if(m_gsp->type.compare("pct")==0){     // PCH
       path_base = g_gsp_path + m_gsp->base;
-#ifdef RANDOM_WALK
       DATWriteParticleFile(aktueller_zeitschritt);
-#endif
     }
     else if(m_gsp->type.compare("pcs")==0){
       path_base = g_gsp_path + m_gsp->base;
