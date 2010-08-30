@@ -565,12 +565,18 @@ int REACT_BRNS::SetPorosityValue_MT ( long ele_Index,  double m_porosity_Elem , 
 				m_pcs->SetElementValue ( ele_Index,idx+1,m_porosity_Elem );
 				break;
 			case 3:
-			cout << "Richards flow not supported - quitting program" << endl;
-			exit(1);
 
 				m_pcs = PCSGet ( "RICHARDS_FLOW" );
 				idx   =m_pcs->GetElementValueIndex ( "POROSITY" );
 				// always write into the new step
+				if (m_pcs->GetElementValue(ele_Index,idx+1) == 0)
+					m_pcs->SetElementValue ( ele_Index,idx+1,m_porosity_Elem );
+				else
+				if (m_porosity_Elem != m_pcs->GetElementValue(ele_Index,idx+1) ) {
+					cout << "Richards flow not supported - quitting program" << endl;
+					exit(1);
+				}
+				break;
 				m_pcs->SetElementValue ( ele_Index,idx+1,m_porosity_Elem );
 				break;
 			case 4:   // kg44: do we have to update POROSITY_IL and POROSITY_SW?
