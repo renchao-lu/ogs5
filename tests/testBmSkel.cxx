@@ -279,7 +279,7 @@ protected:
     std::string ans = " TITLE = \"Time curves in points\"\n";
     ans += " VARIABLES = \"TIME \"  \"TEMPERATURE1\" \n";
     ans += " ZONE T=\"POINT=POINT0\"\n";
-    ans += "0.000000000000e+00 0.000000000000e+00 \n";
+    ans += "0.000000000000e+00 2.730000000000e+02 \n";
     ans += "1.000000000000e+00 2.740000000000e+02 \n";
 
     // test
