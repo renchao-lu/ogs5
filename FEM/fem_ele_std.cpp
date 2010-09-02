@@ -1310,28 +1310,7 @@ double dens_arg[3]; //AKS
       break;
     //....................................................................
     case M: // Mass transport //SB4200
-
-if(FluidProp->density_model==14 && MediaProp->heat_diffusion_model==273 && cpl_pcs )
-{
-//Based on fractional-mass transport Eq.- AKS
-CRFProcess *m_pcs;
-m_pcs= PCSGet("AIR_FLOW"); 
-idxp=m_pcs->GetNodeValueIndex("PRESSURE1");
-PG=0.0;
-for(i=0; i<nnodes; i++)
-{
-PG += m_pcs->GetNodeValue(nodes[i], idxp);
-}
-PG /= (double)nnodes;
-dens_arg[0] = PG;   
-dens_arg[1] = interpolate(NodalValC1)+T_KILVIN_ZERO;
-dens_arg[2] = Index;
-val = FluidProp->Density(dens_arg)*MediaProp->Porosity(Index,pcs->m_num->ls_theta);
-}
-else
-{
-	  	val = MediaProp->Porosity(Index,pcs->m_num->ls_theta); // Porosity
-}
+val = MediaProp->Porosity(Index,pcs->m_num->ls_theta); // Porosity
         val *= PCSGetEleMeanNodeSecondary_2(Index, pcs->flow_pcs_type, "SATURATION1", 1);
      //   val *= PCSGetEleMeanNodeSecondary(Index, "RICHARDS_FLOW", "SATURATION1", 1);
 	  	m_cp = cp_vec[pcs->pcs_component_number]; 
@@ -1859,41 +1838,22 @@ double dens_arg[3]; //AKS
         }  
 //WW        else if(SolidProp->GetCapacityModel()==1 && MediaProp->heat_diffusion_model == 273){
         else if(SolidProp->GetConductModel()==1){
-          tensor = MediaProp->HeatConductivityTensor(Index);
-          for(i=0; i<dim*dim; i++) 
-            mat[i] = tensor[i]; //mat[i*dim+i] = tensor[i];
+TG = interpolate(NodalVal1); 
+tensor = MediaProp->HeatDispersionTensorNew(ip);
+for(i=0;i<dim*dim;i++) 
+mat[i] = tensor[i]; 
         }
         else
         {
-          TG = interpolate(NodalVal1); 
-          tensor = MediaProp->HeatDispersionTensorNew(ip);
-          for(i=0;i<dim*dim;i++) 
-            mat[i] = tensor[i];  
+tensor = MediaProp->HeatConductivityTensor(Index);
+for(i=0; i<dim*dim; i++) 
+mat[i] = tensor[i]; //mat[i*dim+i] = tensor[i]; 
+
  
        }      
         break;
       case M: // Mass transport
-//for fractional mass transport Eq// AKS
-if(FluidProp->density_model==14)
-{
-CRFProcess *m_pcs;
-m_pcs= PCSGet("AIR_FLOW"); 
-idxp=m_pcs->GetNodeValueIndex("PRESSURE1");
-PG=0.0;
-for(i=0; i<nnodes; i++)
-{
-PG += m_pcs->GetNodeValue(nodes[i], idxp);
-}
-PG /= (double)nnodes;
-dens_arg[0] = PG;   
-dens_arg[1] = interpolate(NodalValC1)+T_KILVIN_ZERO;
-dens_arg[2] = Index;
-mat_fac = FluidProp->Density(dens_arg); //MediaProp->Porosity(Index,pcs->m_num->ls_theta); // porosity now included in MassDispersionTensorNew()
-}
-else
-{
-        mat_fac = 1.0; //MediaProp->Porosity(Index,pcs->m_num->ls_theta); // porosity now included in MassDispersionTensorNew()
-}
+mat_fac = 1.0; //MediaProp->Porosity(Index,pcs->m_num->ls_theta); // porosity now included in MassDispersionTensorNew()
 tensor = MediaProp->MassDispersionTensorNew(ip);
   	 	//CB 
       //SB->CB I think this does not belong here
@@ -2824,28 +2784,7 @@ val = FluidProp->SpecificHeatCapacity()*FluidProp->Density();
 }
       break;
     case M: // Mass transport //SB4200
-		// Get velocity(Gausspoint)/porosity(element)
-//for fractional mass transport Eq// AKS
-if(FluidProp->density_model==14 && MediaProp->heat_diffusion_model==273 &&cpl_pcs )
-{
-CRFProcess *m_pcs;
-m_pcs= PCSGet("AIR_FLOW"); 
-idxp=m_pcs->GetNodeValueIndex("PRESSURE1");
-PG=0.0;
-for(i=0; i<nnodes; i++)
-{
-PG += m_pcs->GetNodeValue(nodes[i], idxp);
-}
-PG /= (double)nnodes;
-dens_arg[0] = PG;   
-dens_arg[1] = interpolate(NodalValC1)+T_KILVIN_ZERO;
-dens_arg[2] = Index;
-val = FluidProp->Density(dens_arg)*time_unit_factor; //*MediaProp->Porosity(Index,pcs->m_num->ls_theta); // Porosity; 
-}
-else
-{
-	  val = 1.0*time_unit_factor; //*MediaProp->Porosity(Index,pcs->m_num->ls_theta); // Porosity; 
-}
+val = 1.0*time_unit_factor; //*MediaProp->Porosity(Index,pcs->m_num->ls_theta); // Porosity; 
       break;
     case O: // Liquid flow
       val = 1.0; 
@@ -3043,7 +2982,20 @@ inline double CFiniteElementStd::CalcSUPGCoefficient(double*vel,int ip)
   double diff = 0;
   if (PcsType==H) { //heat
     double *heat_conductivity_tensor = MediaProp->HeatConductivityTensor(MeshElement->GetIndex());
-    diff = heat_conductivity_tensor[0] / (FluidProp->SpecificHeatCapacity()*FluidProp->Density());
+
+if((FluidProp->density_model==14))
+{
+double dens_arg[3];//AKS
+int Index = MeshElement->GetIndex();
+dens_arg[0]=interpolate(NodalValC1); 
+dens_arg[1]=interpolate(NodalVal1)+T_KILVIN_ZERO; 
+dens_arg[2] =Index;
+diff = heat_conductivity_tensor[0] / (FluidProp->SpecificHeatCapacity(dens_arg)*FluidProp->Density(dens_arg));
+}
+else
+{
+diff = heat_conductivity_tensor[0] / (FluidProp->SpecificHeatCapacity()*FluidProp->Density());
+}
   } else if (PcsType==M) { //mass
     double *advection_dispersion_tensor = MediaProp->MassDispersionTensorNew(ip);
     switch (pcs->m_num->ele_supg_method_diffusivity){
@@ -7370,7 +7322,8 @@ val = (interpolate(NodalValC1)-interpolate(NodalValC))*MediaProp->Porosity(Index
 break;
 
 case 1:
-val = (rho_g/rho_0)-1;
+val = rho_g/rho_0;
+val -=1.0;// term coresponding to the 'Viscour dissipation' 
 break;
 
 }
@@ -7673,7 +7626,7 @@ int i, j, k, ii; //KR,idxd;
 // ---- Gauss integral
 int gp_r=0,gp_s=0,gp_t=0; //KR ,z_sum;
 double vel[3]; //KR,rhoz[3];
-double fkt, fac,mat_fac,rho_gravity;
+double fkt, fac,mat_fac,fluid_density;
 double dens_arg[3]; //08.05.2008 WW
  double *tensor = NULL;
 //KR CFEMesh* m_msh;
@@ -7734,7 +7687,7 @@ if(GravityOn)
 dens_arg[0] = interpolate(NodalVal1);   
 dens_arg[1] = interpolate(NodalValC1)+T_KILVIN_ZERO;
 dens_arg[2] = Index;
-rho_gravity = gravity_constant*FluidProp->Density(dens_arg);
+fluid_density=FluidProp->Density(dens_arg);
 mat_fac = FluidProp->Viscosity(dens_arg);
 tensor = MediaProp->PermeabilityTensor(Index);
 for(i=0;i<dim*dim;i++)
@@ -7744,7 +7697,8 @@ for(ii=0; ii<dof_n; ii++)
 
 for (i = 0; i < nnodes; i++)
 {
-NodalVal[i+ii*nnodes] -= fkt*rho_gravity*mat[dim*dim-1]*dshapefct[(dim-1)*nnodes+i];	
+for (k = 0; k < dim; k++)
+NodalVal[i+ii*nnodes] -= fkt*fluid_density*gravity_constant*mat[dim*k+dim-1]*dshapefct[k*nnodes+i];		
 }
 }
 }

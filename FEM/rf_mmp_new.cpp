@@ -2464,12 +2464,12 @@ double* CMediumProperties::HeatDispersionTensorNew(int ip)
   // Materials
   heat_conductivity_porous_medium = HeatConductivityTensor(index); //MX, add index
   m_mfp = Fem_Ele_Std->FluidProp;
-if(m_mfp->density_model==14 && m_mfp->heat_diffusion_model==273 )//used density changing with p, T
+if(Fem_Ele_Std->FluidProp->density_model==14 )//used density changing with p, T
 {
 dens_arg[0]=Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalValC1);
 dens_arg[1]=Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalVal1)+T_KILVIN_ZERO;
 dens_arg[2]=Fem_Ele_Std->Index;
-fluid_density = m_mfp->Density(dens_arg);
+fluid_density = Fem_Ele_Std->FluidProp->Density(dens_arg);
 }
 else
 {

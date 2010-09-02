@@ -1121,16 +1121,16 @@ Tc = 1.2593*MixtureSubProperity(3, idx_elem, p, T);// 1.2593*mixture_energy_para
 Fc = 1.0 - 0.2756*MixtureSubProperity(4, idx_elem, p, T);// 1 - 0.2756*mixture_acentric_factor
 M = MixtureSubProperity(5, idx_elem, p, T);// mixture_molecular_weight
 T_str = T/MixtureSubProperity(3, idx_elem, p, T);
-Vc = pow(MixtureSubProperity(2, idx_elem, p, T)/0.0809, 3.0);// mixture_critical_volume UNIT: m3/kmole
-Y = Density(dens_arg)*Vc/(M*6.0e+03);
+Vc = pow(MixtureSubProperity(2, idx_elem, p, T)/0.809, 3.0);// mixture_critical_volume UNIT: m3/kmole
+Y = Density(dens_arg)*Vc/(M*6000.0);
 G1 = (1 - 0.5*Y)*pow((1-Y), -3.0);
 G2 = ((A1*(1 - exp(-A4*Y))/Y) + A2*G1*exp(A5*Y)+ A3*G1)/(A1*A4 + A2 + A3);
 Omega = A*pow(T_str, -B) + C*exp(-T_str*D) + E*exp(-T_str*F) + G*pow(T_str, B)*sin(S*pow(T_str, W) - H);
 
-my0 = (4.0785e-06)*sqrt(M*T)*Fc/(pow(Vc, 0.667)*Omega);
+my0 = (4.0785e-05)*pow(M*T, 0.5)*Fc/(pow(Vc,0.6666)*Omega);
 myk = my0*(pow(G2, -1.0) + A6*Y);
-myp = ( (3.6344e-06)*sqrt(M*Tc)*pow(Vc, -0.667) )*A7*Y*Y*G2*exp(A8 + A9*pow(T_str, -1.0) + A10*pow(T_str, -2.0));
-my = myp + myk;
+myp = ( (3.6344e-05)*pow(M*Tc, 0.5)/pow(Vc, 0.6666) )*A7*Y*Y*G2*exp(A8 + A9*pow(T_str, -1.0) + A10*pow(T_str, -2.0));
+my = 0.1*(myp + myk);// g/(cm.s)=0.1 Pa.s
 return my;
 }
 
@@ -2876,7 +2876,7 @@ double CFluidProperties::MixtureSubProperity(int properties, long idx_elem, doub
 
 
 CRFProcess* m_pcs;
-double dens_arg[3];
+double ax, dens_arg[3];
 double mass_fraction[10], components_properties[10], w[10],pc[10],tc[10],fact[10];
 double variables = 0.0, R=8314.41;
 int component_number = (int) this->component_vector.size();
@@ -2930,18 +2930,18 @@ for (int i=0 ; i < component_number ; i++)
 m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname); 
 if (m_pcs)
 mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs ); 
-components_properties[i] = pow(0.0809, 3.0)*this->component_vector[i]->critical_volume;
+components_properties[i] =pow(pow(0.809, 3.0)*this->component_vector[i]->critical_volume,0.5);
 
 for (int j=0 ; j < component_number ; j++)
 {
 m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[j]->compname); 
 mass_fraction[j] = this->component_vector[j]->CalcElementMeanConcNew( idx_elem, m_pcs );         
-components_properties[j] = pow(0.0809, 3.0)*this->component_vector[j]->critical_volume;
+components_properties[j] = pow(pow(0.809, 3.0)*this->component_vector[j]->critical_volume,0.5);
 
-variables += mass_fraction[i]*mass_fraction[j]*pow(components_properties[i]*components_properties[j], 0.5) ;
+variables += mass_fraction[i]*mass_fraction[j]*components_properties[i]*components_properties[j];
 }
 }
-variables = pow(variables, 0.333);
+variables = pow(variables, 0.3333);
 break;
 
 case 3 : // energy parameter 'epsilon'
@@ -2950,18 +2950,19 @@ for (int i=0 ; i < component_number ; i++)
 m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname); 
 if (m_pcs)
 mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs );
-components_properties[i] = (pow(0.0809, 3.0)/1.2593)*this->component_vector[i]->critical_teperature*this->component_vector[i]->critical_volume;
+components_properties[i] = pow((this->component_vector[i]->critical_teperature/1.2593)*pow(0.809, 3.0)*this->component_vector[i]->critical_volume, 0.5);
 
 for (int j=0 ; j < component_number ; j++)
 {
 m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[j]->compname); 
 mass_fraction[j] = this->component_vector[j]->CalcElementMeanConcNew( idx_elem, m_pcs );   
+components_properties[j] =pow((this->component_vector[j]->critical_teperature/1.2593)*pow(0.809, 3.0)*this->component_vector[j]->critical_volume, 0.5);
       
-components_properties[j] = (pow(0.0809, 3.0)/1.2593)*this->component_vector[j]->critical_teperature*this->component_vector[j]->critical_volume;
-variables += mass_fraction[i]*mass_fraction[j]*pow(components_properties[i]*components_properties[j], 0.5) ;
+variables += mass_fraction[i]*mass_fraction[j]*components_properties[i]*components_properties[j];
 }
 }
-variables /= pow(MixtureSubProperity(2, idx_elem, p, T), 3.0);
+ax=pow(MixtureSubProperity(2, idx_elem, p, T), 3.0);
+variables /= ax;
 break;
 
 case 4 : // acentric factor 'w'
@@ -2969,18 +2970,9 @@ for (int i=0 ; i < component_number ; i++)
 {
 m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname); 
 mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs ); 
-components_properties[i] = pow(0.0809, 3.0)*this->component_vector[i]->critical_volume*this->component_vector[i]->acentric_factor;
-
-for (int j=0 ; j < component_number ; j++)
-{
-m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[j]->compname); 
-mass_fraction[j] = this->component_vector[j]->CalcElementMeanConcNew( idx_elem, m_pcs );         
-components_properties[j] = pow(0.0809, 3.0)*this->component_vector[j]->critical_volume*this->component_vector[j]->acentric_factor;
-
-variables += mass_fraction[i]*mass_fraction[j]*pow(components_properties[i]*components_properties[j], 0.5) ;
+components_properties[i] =this->component_vector[i]->acentric_factor;
+variables += mass_fraction[i]*components_properties[i]; 
 }
-}
-variables /= pow(MixtureSubProperity(2,  idx_elem, p, T), 3.0);
 break;
 
 case 5 : // molecular weight 'M'
@@ -2988,19 +2980,9 @@ for (int i=0 ; i < component_number ; i++)
 {
 m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname); 
 mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs ); 
-components_properties[i] = 0.005197180973557*this->component_vector[i]->critical_teperature*pow(this->component_vector[i]->critical_volume, 0.667)*pow(this->component_vector[i]->mol_mass, 0.5);
-
-for (int j=0 ; j < component_number ; j++)
-{
-m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[j]->compname); 
-mass_fraction[j] = this->component_vector[j]->CalcElementMeanConcNew( idx_elem, m_pcs );         
-components_properties[j] = 0.005197180973557*this->component_vector[j]->critical_teperature*pow(this->component_vector[j]->critical_volume, 0.667)*pow(this->component_vector[j]->mol_mass, 0.5);
-
-variables += mass_fraction[i]*mass_fraction[j]*pow(components_properties[i]*components_properties[j], 0.5) ;
+components_properties[i] =this->component_vector[i]->mol_mass;
+variables += mass_fraction[i]*components_properties[i]; 
 }
-}
-variables /= MixtureSubProperity(3, idx_elem, p, T)*pow(MixtureSubProperity(2, idx_elem, p, T), 2.0);
-variables *=variables;
 break;
 
 case 6 : // thermal conductivity 'k'
@@ -3008,16 +2990,8 @@ for (int i=0 ; i < component_number ; i++)
 {
 m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname); 
 mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs ); 
-components_properties[i] =  this->component_vector[i]->comp_conductivity;//Fluid_Heat_Conductivity(Density(dens_arg)*mass_fraction[i], T, 2*i);
-
-for (int j=0 ; j < component_number ; j++)
-{
-m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[j]->compname); 
-mass_fraction[j] = this->component_vector[j]->CalcElementMeanConcNew( idx_elem, m_pcs );         
-components_properties[j] = this->component_vector[j]->comp_conductivity;//Fluid_Heat_Conductivity(Density(dens_arg)*mass_fraction[j], T, 2*j);
-
-variables += mass_fraction[i]*mass_fraction[j]*pow(components_properties[i]*components_properties[j], 0.5) ;
-}
+components_properties[i] =  Fluid_Heat_Conductivity(Density(dens_arg)*mass_fraction[i], T, 2*i);
+variables += mass_fraction[i]*components_properties[i]; 
 }
 break;
 
@@ -3027,15 +3001,7 @@ for (int i=0 ; i < component_number ; i++)
 m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname); 
 mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs ); 
 components_properties[i] =  this->component_vector[i]->comp_capacity;
-
-for (int j=0 ; j < component_number ; j++)
-{
-m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[j]->compname); 
-mass_fraction[j] = this->component_vector[j]->CalcElementMeanConcNew( idx_elem, m_pcs );         
-components_properties[j] =  this->component_vector[j]->comp_capacity;
-
-variables += mass_fraction[i]*mass_fraction[j]*pow(components_properties[i]*components_properties[j], 0.5) ;
-}
+variables += mass_fraction[i]*components_properties[i]; 
 }
 break;
 
