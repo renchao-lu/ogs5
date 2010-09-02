@@ -4564,9 +4564,12 @@ void CRFProcess::IncorporateBoundaryConditions(const int rank)
             idx0 = GetNodeValueIndex(m_bc->pcs_pv_name.c_str());
             if(type==4||type==41)
             {
-              idx1 = idx0+1;
-              bc_value -=  GetNodeValue(m_bc_node->geo_node_number, idx0)
-                         + GetNodeValue(m_bc_node->geo_node_number, idx1);
+                if(m_bc_node->pcs_pv_name.find("PRESSURE")==string::npos) //02.09.2010. WW 
+                {
+                  idx1 = idx0+1;
+                  bc_value -=  GetNodeValue(m_bc_node->geo_node_number, idx0)
+                             + GetNodeValue(m_bc_node->geo_node_number, idx1);
+                }
             }
             else
               bc_value = bc_value - GetNodeValue(m_bc_node->geo_node_number, idx0);
