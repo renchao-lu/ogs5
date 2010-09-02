@@ -1838,18 +1838,16 @@ double dens_arg[3]; //AKS
         }  
 //WW        else if(SolidProp->GetCapacityModel()==1 && MediaProp->heat_diffusion_model == 273){
         else if(SolidProp->GetConductModel()==1){
-TG = interpolate(NodalVal1); 
-tensor = MediaProp->HeatDispersionTensorNew(ip);
-for(i=0;i<dim*dim;i++) 
-mat[i] = tensor[i]; 
-        }
-        else
-        {
 tensor = MediaProp->HeatConductivityTensor(Index);
 for(i=0; i<dim*dim; i++) 
 mat[i] = tensor[i]; //mat[i*dim+i] = tensor[i]; 
-
- 
+        }
+        else
+        {
+ TG = interpolate(NodalVal1); 
+tensor = MediaProp->HeatDispersionTensorNew(ip);
+for(i=0;i<dim*dim;i++) 
+mat[i] = tensor[i]; 
        }      
         break;
       case M: // Mass transport
