@@ -311,6 +311,32 @@ void Linear_EQS::Write(ostream &os)
     os<<setw(10)<<i<<" "<<setw(15)<<b[i]<<endl;
 }
 /**************************************************************************
+Task: Linear equation::Write
+Programing:
+07/2010 NW
+**************************************************************************/
+void Linear_EQS::WriteRHS(ostream &os)   
+{
+  os.width(10);
+  os.precision(6); 
+  //
+  for(long i=0; i<A->Dim(); i++)
+    os<<setw(15)<<b[i]<<endl;
+}
+/**************************************************************************
+Task: Linear equation::Write
+Programing:
+07/2010 NW
+**************************************************************************/
+void Linear_EQS::WriteX(ostream &os)   
+{
+  os.width(10);
+  os.precision(6); 
+  //
+  for(long i=0; i<A->Dim(); i++)
+    os<<setw(15)<<x[i]<<endl;
+}
+/**************************************************************************
 Task: Linear equation::Solver
 Programing:
 

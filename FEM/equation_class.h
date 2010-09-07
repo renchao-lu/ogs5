@@ -100,6 +100,8 @@ class Linear_EQS
 #endif
     // Write
     void Write(ostream &os=cout);   
+    void WriteRHS(ostream &os=cout);   
+    void WriteX(ostream &os=cout);   
 
     CSparseMatrix *A;
     double *b;

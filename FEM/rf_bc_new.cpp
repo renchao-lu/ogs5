@@ -58,6 +58,7 @@ CBoundaryCondition::CBoundaryCondition() :
 	display_mode = false; //OK
 	time_dep_interpol = false;
     epsilon = 1e-9; //NW
+    periodic = false; 
 }
 
 /**************************************************************************

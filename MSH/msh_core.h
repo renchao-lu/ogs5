@@ -43,6 +43,8 @@ public:
 	bool GetMark() const {
 		return mark;
 	}
+	
+    bool GetOrder() const { return quadratic; };
 
 	bool Dirichlet() const {
 		if (boundary_type == 'D')

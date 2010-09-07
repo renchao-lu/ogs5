@@ -49,7 +49,7 @@ using namespace std;
 #include "equation_class.h"
 #endif
 vector<CPARDomain*>dom_vector;
-vector<int> node_connected_doms; //This will be removed after sparse class is finished WW
+vector<long> node_connected_doms; //This will be removed after sparse class is finished WW
 
 
 /**************************************************************************

@@ -169,7 +169,7 @@ class CPARDomain
 
 extern vector<CPARDomain*> dom_vector;
 
-extern vector<int> node_connected_doms; // WW
+extern vector<long> node_connected_doms; // WW
 extern void CountDoms2Nodes(CRFProcess *m_pcs); //WW
 extern void DOMRead(string);
 extern void DOMCreate();

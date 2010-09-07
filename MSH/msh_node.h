@@ -47,6 +47,7 @@ public:
 	{}
 
 	CNode(size_t Index, double x, double y, double z = 0.0);
+	CNode(size_t Index, const CNode* parent); //NW
 	~CNode() {}
 
 	// Operator

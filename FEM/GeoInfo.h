@@ -11,6 +11,7 @@
 // STL
 #include <cstddef>
 #include <string>
+#include <limits>
 
 // GEO
 #include "GeoType.h"

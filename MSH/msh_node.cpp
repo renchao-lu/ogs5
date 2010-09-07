@@ -31,6 +31,21 @@ CNode::CNode(size_t Index, double x, double y, double z) :
 }
 
 /**************************************************************************
+MSHLib-Method: 
+Task:
+Programing:
+10/2009 NW Implementation
+**************************************************************************/
+CNode::CNode(size_t Index, const CNode* parent) :
+	CCore(Index), eqs_index (-1), epsilon (0.0),
+	free_surface (-1), selected (0), crossroad (0), patch_area (-1.0)
+{
+   coordinate[0] = parent->coordinate[0];
+   coordinate[1] = parent->coordinate[1];
+   coordinate[2] = parent->coordinate[2];
+}
+
+/**************************************************************************
 MSHLib-Method:
 Task:
 Programing:
