@@ -633,22 +633,33 @@ QMenu* MainWindow::createImportFilesMenu()
 
 void MainWindow::importGMS()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, "Select GMS file to import", "","GMS files (*.txt *.3dm)");
-     if (!fileName.isEmpty()) loadFile(fileName);
+	QSettings settings("UFZ", "OpenGeoSys-5");
+    QString fileName = QFileDialog::getOpenFileName(this, "Select GMS file to import", settings.value("lastOpenedFileDirectory").toString(),"GMS files (*.txt *.3dm)");
+     if (!fileName.isEmpty())
+		{
+			loadFile(fileName);
+			QDir dir = QDir(fileName);
+			settings.setValue("lastOpenedFileDirectory", dir.absolutePath());
+		}
 }
 
 void MainWindow::importGoCad()
 {
+	QSettings settings("UFZ", "OpenGeoSys-5");
     QString fileName = QFileDialog::getOpenFileName(this,
-		"Select data file to import", "","Gocad files (*.ts);;Gocad lines (*.tline)");
-     if (!fileName.isEmpty()) {
-         loadFile(fileName);
+		"Select data file to import", settings.value("lastOpenedFileDirectory").toString(),"Gocad files (*.ts);;Gocad lines (*.tline)");
+     if (!fileName.isEmpty())
+	{
+        loadFile(fileName);
+		QDir dir = QDir(fileName);
+		settings.setValue("lastOpenedFileDirectory", dir.absolutePath());
      }
 }
 
 void MainWindow::importRaster()
 {
-	QString fileName = QFileDialog::getOpenFileName(this, "Select raster file to import", "","Raster files (*.asc *.bmp *.jpg *.png *.tif);;");
+	QSettings settings("UFZ", "OpenGeoSys-5");
+	QString fileName = QFileDialog::getOpenFileName(this, "Select raster file to import", settings.value("lastOpenedFileDirectory").toString(),"Raster files (*.asc *.bmp *.jpg *.png *.tif);;");
 	QFileInfo fi(fileName);
 
 	if ((fi.suffix().toLower() == "asc") ||
@@ -667,13 +678,17 @@ void MainWindow::importRaster()
 			bg->SetCellSize(scalingFactor);
 			bg->SetRaster(raster);
 		_vtkVisPipeline->addPipelineItem(bg);
+		
+		QDir dir = QDir(fileName);
+		settings.setValue("lastOpenedFileDirectory", dir.absolutePath());
 	}
 	else OGSError::box("File extension not supported.");
 }
 
 void MainWindow::importShape()
 {
-	QString fileName = QFileDialog::getOpenFileName(this, "Select shape file to import", "","ESRI Shape files (*.shp );;");
+	QSettings settings("UFZ", "OpenGeoSys-5");
+	QString fileName = QFileDialog::getOpenFileName(this, "Select shape file to import", settings.value("lastOpenedFileDirectory").toString(),"ESRI Shape files (*.shp );;");
 //	QString fileName = QFileDialog::getOpenFileName(this, "Select shape file to import", "","ESRI Shape files (*.shp *.dbf);;");
 	QFileInfo fi(fileName);
 
@@ -681,18 +696,25 @@ void MainWindow::importShape()
 	{
 		SHPImportDialog dlg( (fileName.toUtf8 ()).constData(), _geoModels);
 		dlg.exec();
+		
+		QDir dir = QDir(fileName);
+		settings.setValue("lastOpenedFileDirectory", dir.absolutePath());
 	}
 }
 
 void MainWindow::importPetrel()
 {
+	QSettings settings("UFZ", "OpenGeoSys-5");
     QStringList sfc_file_names = QFileDialog::getOpenFileNames(this,
 		"Select surface data file(s) to import", "","Petrel files (*)");
     QStringList well_path_file_names = QFileDialog::getOpenFileNames(this,
     		"Select well path data file(s) to import", "","Petrel files (*)");
-     if (sfc_file_names.size() != 0 || well_path_file_names.size() != 0 ) {
-         loadPetrelFiles (sfc_file_names, well_path_file_names);
-     }
+    if (sfc_file_names.size() != 0 || well_path_file_names.size() != 0 )
+	{
+		loadPetrelFiles (sfc_file_names, well_path_file_names);
+		QDir dir = QDir(sfc_file_names.at(0));
+		settings.setValue("lastOpenedFileDirectory", dir.absolutePath());
+	}
 }
 
 void MainWindow::showPropertiesDialog(std::string name)
@@ -749,40 +771,63 @@ void MainWindow::HideWindow()
 void MainWindow::on_actionExportVTK_triggered( bool checked /*= false*/ )
 {
 	Q_UNUSED(checked)
-
+	QSettings settings("UFZ", "OpenGeoSys-5");
 	int count = 0;
-	QString filename = QFileDialog::getSaveFileName(this, "Export object to vtk-files", "","VTK files (*.vtp *.vtu)");
-	std::string basename = QFileInfo(filename).path().toStdString();
-	basename.append("/" + QFileInfo(filename).baseName().toStdString());
-	TreeModelIterator it(_vtkVisPipeline);
-	++it;
-	while(*it)
+	QString filename = QFileDialog::getSaveFileName(this, "Export object to vtk-files", settings.value(
+				"lastExportedFileDirectory").toString(),"VTK files (*.vtp *.vtu)");
+	if (!filename.isEmpty())
 	{
-		count++;
-		static_cast<VtkVisPipelineItem*>(*it)->writeToFile(basename + number2str(count) + ".vtk");
+		QDir dir = QDir(filename);
+		settings.setValue("lastExportedFileDirectory", dir.absolutePath());
+		
+		std::string basename = QFileInfo(filename).path().toStdString();
+		basename.append("/" + QFileInfo(filename).baseName().toStdString());
+		TreeModelIterator it(_vtkVisPipeline);
 		++it;
+		while(*it)
+		{
+			count++;
+			static_cast<VtkVisPipelineItem*>(*it)->writeToFile(basename + number2str(count) + ".vtk");
+			++it;
+		}
 	}
 }
 
 void MainWindow::on_actionExportVRML2_triggered( bool checked /*= false*/ )
 {
 	Q_UNUSED(checked)
-	vtkVRMLExporter* exporter = vtkVRMLExporter::New();
-	QString fileName = QFileDialog::getSaveFileName(this, "Save scene to VRML file", "","VRML files (*.wrl);;");
-	exporter->SetFileName(fileName.toStdString().c_str());
-	exporter->SetRenderWindow(visualizationWidget->vtkWidget->GetRenderWindow());
-	exporter->Write();
-	exporter->Delete();
+	QSettings settings("UFZ", "OpenGeoSys-5");
+	QString fileName = QFileDialog::getSaveFileName(this, "Save scene to VRML file", settings.value(
+				"lastExportedFileDirectory").toString(),"VRML files (*.wrl);;");
+	if(!fileName.isEmpty())
+	{
+		QDir dir = QDir(fileName);
+		settings.setValue("lastExportedFileDirectory", dir.absolutePath());
+		
+		vtkVRMLExporter* exporter = vtkVRMLExporter::New();
+		exporter->SetFileName(fileName.toStdString().c_str());
+		exporter->SetRenderWindow(visualizationWidget->vtkWidget->GetRenderWindow());
+		exporter->Write();
+		exporter->Delete();
+	}
 }
 
 void MainWindow::on_actionExportObj_triggered( bool checked /*= false*/ )
 {
 	Q_UNUSED(checked)
-	vtkOBJExporter* exporter = vtkOBJExporter::New();
-	QString fileName = QFileDialog::getSaveFileName(this, "Save scene to Wavefront OBJ files", "",";;");
-	exporter->SetFilePrefix(fileName.toStdString().c_str());
-	exporter->SetRenderWindow(visualizationWidget->vtkWidget->GetRenderWindow());
-	exporter->Write();
-	exporter->Delete();
+	QSettings settings("UFZ", "OpenGeoSys-5");
+	QString fileName = QFileDialog::getSaveFileName(this, "Save scene to Wavefront OBJ files", settings.value(
+				"lastExportedFileDirectory").toString(),";;");
+	if(!fileName.isEmpty())
+	{
+		QDir dir = QDir(fileName);
+		settings.setValue("lastExportedFileDirectory", dir.absolutePath());
+		
+		vtkOBJExporter* exporter = vtkOBJExporter::New();
+		exporter->SetFilePrefix(fileName.toStdString().c_str());
+		exporter->SetRenderWindow(visualizationWidget->vtkWidget->GetRenderWindow());
+		exporter->Write();
+		exporter->Delete();
+	}
 }
 
