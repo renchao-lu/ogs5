@@ -4,7 +4,7 @@
 cd ..
 
 # Cleanup
-rm -rf build_fem build_sp build_mpi build_gems build_pqc build_brns build_mkl build_lis
+rm -rf Release build_fem build_sp build_mpi build_gems build_pqc build_brns build_mkl build_lis
 
 # Executables will be copied to Release/
 mkdir -p Release
