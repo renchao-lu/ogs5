@@ -2,7 +2,7 @@
 set( SOURCES
 	GMSHInterface.cpp
 	GMSInterface.cpp
-	GocadInterface.cpp	
+	GocadInterface.cpp
 	OGSIOVer4.cpp
 	PetrelInterface.cpp	
 	StationIO.cpp

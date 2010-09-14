@@ -867,4 +867,3 @@ void MainWindow::on_actionExportObj_triggered( bool checked /*= false*/ )
 		exporter->Delete();
 	}
 }
-
