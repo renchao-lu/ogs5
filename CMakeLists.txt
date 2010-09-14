@@ -18,11 +18,11 @@ endif( CMAKE_CMD_ARGS )
 # OGS version information. Adjust these if you release a new version.
 SET (OGS_VERSION_MAJOR 5)
 SET (OGS_VERSION_MINOR 0)
-SET (OGS_VERSION_PATCH 06)
-SET (OGS_RELEASE_PERSONS "FS/KR/LB")
+SET (OGS_VERSION_PATCH 07)
+SET (OGS_RELEASE_PERSONS "YW")
 SET (OGS_VERSION "${OGS_VERSION_MAJOR}.${OGS_VERSION_MINOR}.${OGS_VERSION_PATCH}(${OGS_RELEASE_PERSONS})")
 # should we use ISO dates: 2010-12-31 ?
-SET (OGS_DATE "13.07.2010")
+SET (OGS_DATE "14.09.2010")
 
 # Adds useful macros and variables
 INCLUDE( CMakeConfiguration/Macros.cmake )
@@ -120,6 +120,7 @@ ENDIF (OGS_PACKAGING)
 OPTION(OGS_PYTHON "Enable python scripting interface" OFF)
 OPTION(OGS_CMAKE_DEBUG "Show additional cmake debug information" OFF)
 OPTION(OGS_ONE_BIG_GTEST "Should all gtests be collected to one ctest" ON)
+OPTION(OGS_USE_NETCDF "NetCDF interface" OFF)
 
 # Check if a valid OGS configuration is given (see Macros.cmake)
 CHECK_CONFIG()

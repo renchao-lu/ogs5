@@ -782,6 +782,20 @@ void CElem::Read(istream& is, int fileType)
     edges_orientation[i] = 1;
   }
 }
+void CElem::InitializeMembers()
+{
+  // Initialize topological properties
+  neighbors.resize(nfaces);
+  for(int i=0; i<nfaces; i++)
+    neighbors[i] = NULL;
+  edges.resize(nedges);
+  edges_orientation.resize(nedges);
+  for(int i=0; i<nedges; i++)
+  {
+    edges[i] = NULL;
+    edges_orientation[i] = 1;
+  }
+}
 
 #ifdef USE_TOKENBUF
 void CElem::Read(TokenBuf* tokenbuf, int fileType)

@@ -18,6 +18,13 @@ set( HEADERS
 	StationIO.h
 )
 
+if (OGS_USE_NETCDF)
+	find_package( VTK REQUIRED )
+	INCLUDE( ${VTK_USE_FILE} )
+	set (HEADERS NetCDFInterface.h ${HEADERS})
+	set (SOURCES NetCDFInterface.cpp ${SOURCES})
+endif (OGS_USE_NETCDF)
+
 if (Shapelib_FOUND)
 	set( HEADERS ${HEADERS} SHPInterface.h )
 	set (SOURCES ${SOURCES} SHPInterface.cpp )

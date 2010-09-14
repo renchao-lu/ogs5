@@ -40,6 +40,7 @@
 #include "XMLInterface.h"
 #include "GMSHInterface.h"
 #include "GMSInterface.h"
+#include "NetCDFInterface.h"    //YW  07.2010
 
 // Qt Includes
 #include <QFileDialog>
@@ -553,6 +554,26 @@ void MainWindow::loadFile(const QString &fileName)
 #endif
 	}
 
+    // NetCDF files
+	// YW  07.2010
+	else if (fi.suffix().toLower() == "nc") {
+#ifndef NDEBUG
+    	 QTime myTimer;
+    	 myTimer.start();
+    	 std::cout << "NetCDF Read ...\n" << std::flush;
+#endif
+		 std::string name = fileName.toStdString();
+         std::vector<GEOLIB::Point*> *pnt_vec = new std::vector<GEOLIB::Point*>();
+		 /* Data dimensions. */
+		 size_t len_rlat, len_rlon;
+    	 FileIO::NetCDFInterface::readNetCDFData(name, pnt_vec, _geoModels, len_rlat, len_rlon);
+		 const CFEMesh* mesh = FileIO::NetCDFInterface::createMeshFromPoints(pnt_vec, len_rlat, len_rlon);
+         GridAdapter* grid = new GridAdapter(mesh);
+         _meshModels->addMesh(grid, name);
+#ifndef NDEBUG
+    	 std::cout << myTimer.elapsed() << " ms" << std::endl;
+#endif
+	}
 	updateDataViews();
 
 	emit fileUsed(fileName);
@@ -627,7 +648,9 @@ QMenu* MainWindow::createImportFilesMenu()
 	connect(rasterFiles, SIGNAL(triggered()), this, SLOT(importRaster()));
 	QAction* shapeFiles = importFiles->addAction("Shape Files...");
 	connect(shapeFiles, SIGNAL(triggered()), this, SLOT(importShape()));
-
+	//YW  07.2010
+	QAction* netcdfFiles = importFiles->addAction("NetCDF Files...");
+	connect(netcdfFiles, SIGNAL(triggered()), this, SLOT(importNetcdf()));
 	return importFiles;
 }
 
@@ -715,6 +738,20 @@ void MainWindow::importPetrel()
 		QDir dir = QDir(sfc_file_names.at(0));
 		settings.setValue("lastOpenedFileDirectory", dir.absolutePath());
 	}
+}
+
+//YW  07.2010
+void MainWindow::importNetcdf()
+{
+    QSettings settings("UFZ", "OpenGeoSys-5");
+    QString fileName = QFileDialog::getOpenFileName(this,
+		"Select NetCDF file to import", settings.value("lastOpenedFileDirectory").toString(), "NetCDF files (*.nc);;");
+     if (!fileName.isEmpty()) 
+	 {
+         loadFile(fileName);
+		 QDir dir = QDir(fileName);
+		 settings.setValue("lastOpenedFileDirectory", dir.absolutePath());
+     }
 }
 
 void MainWindow::showPropertiesDialog(std::string name)

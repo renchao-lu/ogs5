@@ -129,6 +129,9 @@ public:
 	CElem* GetOwner() {
 		return owner;
 	} //YD
+
+	// Initialize topological properties
+	void InitializeMembers(); 
 	//------------------------------------------------------------------
 	// Edges
 	void GetEdges(vec<CEdge*>& ele_edges) {

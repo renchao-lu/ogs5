@@ -47,6 +47,7 @@ private slots:
 	void importRaster();
 	void importShape();
 	void importPetrel();
+	void importNetcdf();     //YW  07.2010
 	void openDatabase();
 	void openDatabaseConnection();
 	void openRecentFile();
