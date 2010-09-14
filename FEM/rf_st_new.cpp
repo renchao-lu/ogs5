@@ -485,6 +485,12 @@ ios::pos_type CSourceTerm::ReadGeoType(std::ifstream *st_file,
 		geo_type_name = "COLUMN";
 		in.clear();
 	}
+
+	if (geo_type_name.find("NODES") != string::npos) { //WW
+		in >> nodes_file;
+		in.clear();
+	}
+
 	if (pcs_pv_name.find("EXCAVATION") != string::npos) { //WW
 		in.str(GetLineFromFile1(st_file));
 		size_t tmp_geo_type;
@@ -503,6 +509,7 @@ ios::pos_type CSourceTerm::ReadGeoType(std::ifstream *st_file,
 		}
 		in.clear();
 	}
+     
 	return position;
 }
 
@@ -891,7 +898,9 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector,
 					SetPLY(m_st, ShiftInNodeVector);
 				if (m_st->geo_type_name.compare("DOMAIN") == 0)
 					SetDMN(m_st, ShiftInNodeVector);
-				if (m_st->geo_type_name.compare("SURFACE") == 0) // "SURFACE" has to be changed to "FACE". WW
+                /// If surface is found or nodes are directly given: //WW 
+				if (m_st->geo_type_name.compare("SURFACE") == 0 ||m_st->geo_type_name.compare("NODES") == 0
+                    ) // "SURFACE" has to be changed to "FACE". WW
 					SetSFC(m_st, ShiftInNodeVector);
 				if (m_st->geo_type_name.compare("COLUMN") == 0)
 					SetCOL(m_st, ShiftInNodeVector);
@@ -2529,6 +2538,7 @@ void CSourceTermGroup::SetCOL(CSourceTerm *m_st, const int ShiftInNodeVector) {
  Task:
  Programing:
  11/2007 JOD Implementation
+ 09/2010 WW  For the case that nodes are directly given
  **************************************************************************/
 void CSourceTermGroup::SetSFC(CSourceTerm* m_st, const int ShiftInNodeVector) {
 
@@ -2552,6 +2562,39 @@ void CSourceTermGroup::SetSFC(CSourceTerm* m_st, const int ShiftInNodeVector) {
 				sfc_nod_val_vector, ShiftInNodeVector);
 
 	} // end surface
+    
+    /// If nodes are directly given. WW
+    if(m_st->geo_type_name.find("NODES")!=string::npos)
+    {
+       string t_str = FilePath+m_st->nodes_file;
+       ifstream ins(t_str.c_str()); 
+       if(!ins.good())
+       {
+          cout<<" File "<<t_str<<" needed by .st is not found"<<endl; 
+          exit(1);
+       }
+
+       long node_i;
+       double val;  
+       while(!ins.eof())
+       {
+          stringstream ss;
+          getline(ins, t_str);  
+          if(t_str.find("#STOP")!=string::npos)
+            break;
+   
+          ss.str(t_str);
+          ss>> node_i >> val;
+          sfc_nod_vector.push_back(node_i);
+          sfc_nod_val_vector.push_back(val);
+          ss.clear();         
+       }
+
+       m_st->FaceIntegration(m_msh, sfc_nod_vector, sfc_nod_val_vector);
+ 
+	   m_st->SetNodeValues(sfc_nod_vector, sfc_nod_vector_cond,
+				sfc_nod_val_vector, ShiftInNodeVector);
+    }
 
 }
 /**************************************************************************

@@ -26,6 +26,8 @@ last modified
 #include "rf_node.h"
 #include "geo_ply.h"
 
+using namespace std;
+
 typedef struct {
   std::vector<double> value_reference;
   std::vector<double> last_source_value;
@@ -56,6 +58,7 @@ public:
     std::vector<int> element_st_vector;
 private:
     CGLPolyline *plyST;
+    string nodes_file;
     friend class CSourceTermGroup;
 public:
     std::string pcs_pv_name;
