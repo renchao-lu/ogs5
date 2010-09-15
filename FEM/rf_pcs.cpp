@@ -2045,10 +2045,25 @@ void CRFProcess::ConfigGroundwaterFlow()
   pcs_secondary_function_name[4] = "STORE"; //JOD  for subtiming 4.7.10
   pcs_secondary_function_unit[4] = "m";
   pcs_secondary_function_timelevel[4] = 1;
+
+  pcs_number_of_secondary_nvals = 5; //WW
+  //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; //WW
+  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z1";
+  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+  pcs_number_of_secondary_nvals++; //WW
   //----------------------------------------------------------------------
   //WW
   // Output material parameters
-  pcs_number_of_secondary_nvals = 5; //WW
+  //pcs_number_of_secondary_nvals = 5; //WW
   //WW
   COutput *m_out = NULL;
   for(int i=0;i<(int)out_vector.size();i++)
