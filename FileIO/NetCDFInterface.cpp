@@ -3,7 +3,7 @@
  * 29/07/2010 YW Initial implementation
  */
 #include <stdio.h>
-#include <netcdf.h>
+#include <vtknetcdf/netcdf.h>
 #include "NetCDFInterface.h"
 
 using namespace GEOLIB;
