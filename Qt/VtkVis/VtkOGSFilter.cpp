@@ -128,8 +128,8 @@ vtkPolyDataAlgorithm* VtkOGSFilter::ColorByHeight(vtkPolyDataAlgorithm* algorith
 {
 	VtkColorByHeightFilter* heightFilter = VtkColorByHeightFilter::New();
 		heightFilter->SetInputConnection(0, algorithm->GetOutputPort(0));
-		heightFilter->GetColorLookupTable()->setMinRange(-35);
-		heightFilter->GetColorLookupTable()->setMaxRange(800);
+		//heightFilter->GetColorLookupTable()->setMinRange(-35);
+		//heightFilter->GetColorLookupTable()->setMaxRange(800);
 		//heightFilter->GetColorLookupTable()->setInterpolationType(ColorLookupTable::EXPONENTIAL);
 	GEOLIB::Color* c = new GEOLIB::Color(0,255,0);
 	GEOLIB::Color* d = new GEOLIB::Color(255,255,0);
