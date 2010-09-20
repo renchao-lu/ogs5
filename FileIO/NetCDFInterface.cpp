@@ -126,6 +126,12 @@ void NetCDFInterface::readNetCDFData(std::string &ifname, std::vector<GEOLIB::Po
 				      count3, var_in);
        if (status != NC_NOERR)   HANDLE_ERROR(status);
    }
+   else if (var_name.compare("HSURF") == 0)
+   {
+       status = nc_get_vara_float(ncid, choose_varid, start3,
+				      count3, var_in);
+       if (status != NC_NOERR)   HANDLE_ERROR(status);
+   }
 
    /* Close the file. */
    status = nc_close(ncid);
