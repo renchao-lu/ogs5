@@ -308,6 +308,7 @@ IF (OGS_CMAKE_DEBUG)
 ENDIF (OGS_CMAKE_DEBUG)	
 
 IF (BENCHMARK_DIR_FOUND)
+	STRING (COMPARE EQUAL $ENV{HOSTNAME} "dev2.intern.ufz.de" HOST_IS_DEV2)
 	MESSAGE (STATUS "Benchmarking through CTest enabled")
 	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/AKS.cmake)
 	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/CB.cmake)

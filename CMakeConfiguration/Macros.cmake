@@ -144,31 +144,33 @@ FUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration)
       ${benchmarkStrippedName}
     )
     
-    # compare file differences with python script
-    IF (PYTHONINTERP_FOUND)
-      FILE (REMOVE ${PROJECT_SOURCE_DIR}/../benchmarks/results/temp/temp_${benchmarkNameUnderscore}.txt)
-      FOREACH (entry ${ARGN})
-        FILE (APPEND ${PROJECT_SOURCE_DIR}/../benchmarks/results/temp/temp_${benchmarkNameUnderscore}.txt "${entry}\n")
-      ENDFOREACH (entry ${ARGN})
-      ADD_TEST (
-        ${authorName}_FILECOMPARE_${benchmarkName}  
-        ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/../benchmarks/results
-        ${PYTHON_EXECUTABLE}
-        ../compare.py
-        temp/temp_${benchmarkNameUnderscore}.txt
-        ../../benchmarks_ref/
-        ${authorName}_${benchmarkNameUnderscore}.html
-        ../
-      )
-    # compare files with builtin cmake command
-    ELSE (PYTHONINTERP_FOUND)
-      FOREACH (OUTPUTFILE ${ARGN})
-        ADD_TEST (
-          ${authorName}_FILECOMPARE_${OUTPUTFILE}
-          ${CMAKE_COMMAND} -E compare_files ${PROJECT_SOURCE_DIR}/../benchmarks/${OUTPUTFILE} ${PROJECT_SOURCE_DIR}/../benchmarks_ref/${OUTPUTFILE}
-        )
-      ENDFOREACH (OUTPUTFILE ${ARGN})
-    ENDIF (PYTHONINTERP_FOUND)
+    # compare file differences with python script only on dev2.intern.ufz.de
+	IF(HOST_IS_DEV2)
+    	IF (PYTHONINTERP_FOUND)
+    	  FILE (REMOVE ${PROJECT_SOURCE_DIR}/../benchmarks/results/temp/temp_${benchmarkNameUnderscore}.txt)
+    	  FOREACH (entry ${ARGN})
+    	    FILE (APPEND ${PROJECT_SOURCE_DIR}/../benchmarks/results/temp/temp_${benchmarkNameUnderscore}.txt "${entry}\n")
+    	  ENDFOREACH (entry ${ARGN})
+    	  ADD_TEST (
+    	    ${authorName}_FILECOMPARE_${benchmarkName}  
+    	    ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/../benchmarks/results
+    	    ${PYTHON_EXECUTABLE}
+    	    ../compare.py
+    	    temp/temp_${benchmarkNameUnderscore}.txt
+    	    ../../benchmarks_ref/
+    	    ${authorName}_${benchmarkNameUnderscore}.html
+    	    ../
+    	  )
+    	# compare files with builtin cmake command
+    	ELSE (PYTHONINTERP_FOUND)
+    	  FOREACH (OUTPUTFILE ${ARGN})
+    	    ADD_TEST (
+    	      ${authorName}_FILECOMPARE_${OUTPUTFILE}
+    	      ${CMAKE_COMMAND} -E compare_files ${PROJECT_SOURCE_DIR}/../benchmarks/${OUTPUTFILE} ${PROJECT_SOURCE_DIR}/../benchmarks_ref/${OUTPUTFILE}
+    	    )
+    	  ENDFOREACH (OUTPUTFILE ${ARGN})
+    	ENDIF (PYTHONINTERP_FOUND)
+	ENDIF(HOST_IS_DEV2)
   
   # copy benchmark output files to reference directory
   IF (COPY_BENCHMARKS_TO_REF)
