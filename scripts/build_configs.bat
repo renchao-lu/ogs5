@@ -14,7 +14,7 @@ mkdir Release
 :: Build FEM
 mkdir build_fem
 cd build_fem
-cmake -DOGS_FEM=ON ..
+cmake -DOGS_FEM=ON -DOGS_DONT_USE_QT=ON ..
 devenv OGS-FEM-5.sln /Build Release
 cd bin\Release
 copy /Y ogs.exe ..\..\..\Release\
@@ -23,7 +23,7 @@ cd ..\..\..\
 :: Build FEM_GEMS
 mkdir build_gems
 cd build_gems
-cmake -DOGS_FEM_GEMS=ON ..
+cmake -DOGS_FEM_GEMS=ON -DOGS_DONT_USE_QT=ON ..
 devenv OGS-FEM-5-GEMS.sln /Build Release
 cd bin\Release
 ren ogs.exe ogs_gems.exe
@@ -33,7 +33,7 @@ cd ..\..\..\
 :: Build FEM_PQC
 mkdir build_pqc
 cd build_pqc
-cmake -DOGS_FEM_PQC=ON ..
+cmake -DOGS_FEM_PQC=ON -DOGS_DONT_USE_QT=ON ..
 devenv OGS-FEM-5-PQC.sln /Build Release
 cd bin\Release
 ren ogs.exe ogs_pqc.exe
@@ -43,7 +43,7 @@ cd ..\..\..\
 :: Build FEM_BRNS
 mkdir build_brns
 cd build_brns
-cmake -DOGS_FEM_BRNS=ON ..
+cmake -DOGS_FEM_BRNS=ON -DOGS_DONT_USE_QT=ON ..
 devenv OGS-FEM-5-BRNS.sln /Build Release
 cd bin\Release
 ren ogs.exe ogs_brns.exe

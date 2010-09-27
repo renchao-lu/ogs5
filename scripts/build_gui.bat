@@ -11,12 +11,12 @@ rd /S /Q build_gui
 :: Build
 mkdir build_gui
 cd build_gui
-cmake -DOGS_USE_QT=ON -DOGS_COMPILE_QVTK=ON -DOGS_PACKAGING=ON ..
+cmake -DOGS_USE_QT=ON -DOGS_PACKAGING=ON ..
 devenv OGS-5-GUI.sln /Build Release
 
 :: Package
 cmake ..
 devenv OGS-5-GUI.sln /Build Release /Project PACKAGE
 del CMakeCache.txt
-cmake -DOGS_USE_QT=ON -DOGS_COMPILE_QVTK=ON -DOGS_PACKAGING=ON -DOGS_PACKAGING_ZIP=ON ..
+cmake -DOGS_USE_QT=ON -DOGS_PACKAGING=ON -DOGS_PACKAGING_ZIP=ON ..
 devenv OGS-5-GUI.sln /Build Release /Project PACKAGE
