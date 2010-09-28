@@ -47,8 +47,6 @@ include_directories(
 	../StratView
 	../VtkVis
 	../VtkAct
-	#${OpenSG_INCLUDE_DIR}
-	#${OpenSGSupportlibs_INCLUDE_DIR}
 	${Shapelib_INCLUDE_DIR}	
 )
 
@@ -97,6 +95,13 @@ add_dependencies ( ogs-gui VtkVis OGSProject )
 IF(MSVC)
 	SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /NODEFAULTLIB:MSVCRT")
 ENDIF(MSVC)
+
+### OpenSG support ###
+IF (OGS_USE_OPENSG)
+	INCLUDE_DIRECTORIES(
+		${OpenSG_INCLUDE_DIRS}
+	)
+ENDIF (OGS_USE_OPENSG)
 
 ###################
 ### VRED plugin ###
