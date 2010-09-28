@@ -63,7 +63,7 @@ int GridAdapter::convertCFEMesh(const Mesh_Group::CFEMesh* mesh)
 
 		newElem->material = mesh->ele_vector[i]->GetPatchIndex();
 
-		if (newElem->type != ERROR)
+		if (newElem->type != INVALID)
 		{
 			std::vector<long> elemNodes;
 			nElemNodes = mesh->ele_vector[i]->nodes_index.Size();
@@ -210,7 +210,7 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 					if ((++it)->empty()) it++;
 					newElem->type = getElementType(*it);	// element type
 
-					if (newElem->type != ERROR)
+					if (newElem->type != INVALID)
 					{
 						while ((++it) != fields.end())
 						{
@@ -246,7 +246,7 @@ GridAdapter::MeshType GridAdapter::getElementType(const std::string &t)
 	if (t.compare("tet") == 0)  return TETRAEDER;
 	if (t.compare("hex") == 0)  return HEXAHEDRON;
 	if (t.compare("pri") == 0)  return PRISM;
-	else return ERROR;
+	else return INVALID;
 }
 
 GridAdapter::MeshType GridAdapter::getElementType(int type)
@@ -257,7 +257,7 @@ GridAdapter::MeshType GridAdapter::getElementType(int type)
 	if (type == TETRAEDER)  return TETRAEDER;
 	if (type == HEXAHEDRON)  return HEXAHEDRON;
 	if (type == PRISM)  return PRISM;
-	else return ERROR;
+	else return INVALID;
 }
 
 size_t GridAdapter::getNumberOfMaterials() const

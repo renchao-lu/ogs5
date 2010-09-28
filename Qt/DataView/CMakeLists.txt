@@ -101,6 +101,10 @@ IF(VRPN_FOUND)
 	INCLUDE_DIRECTORIES( ../Vrpn ${VRPN_INCLUDE_DIRS} )
 ENDIF()
 
+IF (OGS_USE_OPENSG)
+	INCLUDE_DIRECTORIES( ${OpenSG_INCLUDE_DIRS} )
+ENDIF (OGS_USE_OPENSG)
+
 # Put moc files in a project folder
 source_group("UI Files" REGULAR_EXPRESSION "\\w*\\.ui")
 source_group("Moc Files" REGULAR_EXPRESSION "moc_.*")

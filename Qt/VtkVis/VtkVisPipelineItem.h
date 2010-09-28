@@ -23,6 +23,7 @@ class vtkDataSetMapper;
 class vtkActor;
 class vtkRenderer;
 class VtkAlgorithmProperties;
+class vtkOsgActor;
 
 /**
  * \brief An item in the VtkVisPipeline containing a graphic object to be visualised.
@@ -53,7 +54,7 @@ public:
 	vtkAlgorithm* algorithm() const { return _algorithm; }
 
 	/// Returns the actor
-	vtkActor* actor() const { return _actor; }
+	vtkActor* actor() const;
 
 	/// Returns the mapper
 	vtkDataSetMapper* mapper() const { return _mapper; }
@@ -71,7 +72,11 @@ private:
 	vtkAlgorithm* _algorithm;
 	vtkPointSet* _input;
 	vtkDataSetMapper* _mapper;
-	vtkActor* _actor;
+	#ifdef OGS_USE_OPENSG
+		vtkOsgActor* _actor;
+	#else // OGS_USE_OPENSG
+		vtkActor* _actor;
+	#endif // OGS_USE_OPENSG
 	vtkRenderer* _renderer;
 #ifdef OGS_USE_OPENSG
 	OSG::NodePtr _parentNode;

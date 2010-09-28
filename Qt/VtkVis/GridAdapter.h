@@ -31,7 +31,7 @@ public:
 		TRIANGLE = 4,
 		TETRAEDER = 5,
 		PRISM = 6,
-		ERROR = -1
+		INVALID = -1	// LB replaced symbol ERROR due to conflicts (with OpenSG?)
 	};
 
 	/// An element structure consisting of a number of nodes and a MeshType

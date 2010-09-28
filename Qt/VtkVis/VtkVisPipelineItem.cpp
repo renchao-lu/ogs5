@@ -69,18 +69,21 @@
 VtkVisPipelineItem::~VtkVisPipelineItem()
 {
 	#ifdef OGS_USE_OPENSG
+		vtkOsgActor* osgActor = dynamic_cast<vtkOsgActor*>(actor());
 		if(_parentNode != NullFC)
 		{
-			vtkOsgActor* osgActor = dynamic_cast<vtkOsgActor*>(actor());
 			OSG::beginEditCP(_parentNode);{
 				_parentNode->subChild(osgActor->GetOsgRoot());
 			};OSG::endEditCP(_parentNode);
 		}
+		_renderer->RemoveActor(osgActor);
+		_mapper->Delete();
+		osgActor->Delete();
+	#else // OGS_USE_OPENSG
+		_renderer->RemoveActor(_actor);
+		_mapper->Delete();
+		_actor->Delete();
 	#endif // OGS_USE_OPENSG
-	
-	_renderer->RemoveActor(_actor);
-	_actor->Delete();
-	_mapper->Delete();
 }
 
 QVariant VtkVisPipelineItem::data( int column ) const
@@ -121,15 +124,14 @@ void VtkVisPipelineItem::Initialize()
 	_mapper = vtkDataSetMapper::New();
 	_mapper->SetInputConnection(0, _algorithm->GetOutputPort(0));
 #ifdef OGS_USE_OPENSG
-	vtkOsgActor* actor = vtkOsgActor::New();
-	_actor = actor;
+	_actor = vtkOsgActor::New();
 	_actor->SetMapper(_mapper);
-	actor->Render(_renderer, _mapper);
+	_actor->Render(_renderer, _mapper);
 	//actor->SetVerbose(true);
-	actor->UpdateOsg();
+	_actor->UpdateOsg();
 
 	OSG::beginEditCP(_parentNode);{
-		_parentNode->addChild(actor->GetOsgRoot());
+		_parentNode->addChild(_actor->GetOsgRoot());
 	};OSG::endEditCP(_parentNode);
 #else
 	_actor = vtkActor::New();
@@ -226,4 +228,9 @@ int VtkVisPipelineItem::writeToFile(const std::string &filename) const
 		}
 	}
 	return 0;
+}
+
+vtkActor* VtkVisPipelineItem::actor() const
+{
+	return static_cast<vtkActor*>(_actor);
 }

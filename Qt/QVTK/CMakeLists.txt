@@ -104,7 +104,6 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/QVTKWidget.h.in
                ${CMAKE_CURRENT_BINARY_DIR}/QVTKWidget.h
                @ONLY)
 
-MESSAGE(STATUS "Adding QVTK")
 ADD_LIBRARY(QVTK ${QVTKLibSrcs} ${QVTKLibMocSrcs})
 
 # Apply user-defined properties to the library target.

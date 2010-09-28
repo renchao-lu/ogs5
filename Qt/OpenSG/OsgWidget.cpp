@@ -34,7 +34,7 @@ OsgWidget::OsgWidget (const QGLFormat &format, QWidget *parent, const QGLWidget 
 
 OsgWidget::~OsgWidget()
 {
-
+	delete _mgr;
 }
 
 void OsgWidget::initializeGL()

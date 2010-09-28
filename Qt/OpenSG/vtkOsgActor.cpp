@@ -56,6 +56,7 @@ vtkOsgActor::~vtkOsgActor(void)
 	if (m_pvtkTexCoords != NULL) m_pvtkTexCoords->Delete();
 	if (m_pvtkColors != NULL) m_pvtkColors->Delete();
 
+	ClearOsg();
 	//Open SG Objects are deleted via the reference counting scheme
 }
 

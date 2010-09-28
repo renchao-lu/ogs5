@@ -63,6 +63,7 @@
 #include <OpenSG/OSGGroup.h>
 #include "vtkOsgActor.h"
 #include "OsgWidget.h"
+#include <OpenSG/OSGBaseFunctions.h>´>
 #endif
 
 //OSG_USING_NAMESPACE
@@ -83,6 +84,11 @@ using namespace FileIO;
 MainWindow::MainWindow(QWidget *parent /* = 0*/)
 : QMainWindow(parent), _db (NULL)
 {
+
+#ifdef OGS_USE_OPENSG
+	OSG::osgInit(0, NULL);
+#endif
+
     setupUi(this);
 
 	// Setup connection GEOObjects to GUI through GEOModels and tab widgets
@@ -276,6 +282,8 @@ MainWindow::~MainWindow()
 	delete _vtkVisPipeline;
 	delete _meshModels;
 	delete _geoModels;
+
+	OSG::osgExit();
 }
 
 void MainWindow::closeEvent( QCloseEvent* event )
