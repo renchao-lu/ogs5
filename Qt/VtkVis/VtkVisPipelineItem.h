@@ -16,6 +16,7 @@
 class vtkAlgorithm;
 class vtkPointSet;
 class vtkDataSetMapper;
+class vtkOsgActor;
 class vtkActor;
 class vtkRenderer;
 class VtkAlgorithmProperties;
@@ -43,7 +44,7 @@ public:
 	vtkAlgorithm* algorithm() const { return _algorithm; }
 
 	/// Returns the actor
-	vtkActor* actor() const { return _actor; }
+	vtkActor* actor() const { return (vtkActor*)_actor; }
 
 	/// Returns if the VTK object is visible in the visualization.
 	bool isVisible() const;
@@ -58,7 +59,7 @@ private:
 	vtkAlgorithm* _algorithm;
 	vtkPointSet* _input;
 	vtkDataSetMapper* _mapper;
-	vtkActor* _actor;
+	vtkOsgActor* _actor;
 	vtkRenderer* _renderer;
 
 	/// Initalises vtkMapper and vtkActor necessary for visualization of

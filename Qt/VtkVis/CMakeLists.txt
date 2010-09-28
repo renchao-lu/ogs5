@@ -1,5 +1,5 @@
 # Source files
-set( SOURCES
+SET( SOURCES
 	ColorLookupTable.cpp
 	GridAdapter.cpp
 	VtkAddFilterDialog.cpp
@@ -19,7 +19,7 @@ set( SOURCES
 )
 
 # Moc headers
-set( MOC_HEADERS
+SET( MOC_HEADERS
 	VtkAddFilterDialog.h
 	VtkVisPipeline.h
 	VtkVisPipelineView.h
@@ -27,7 +27,7 @@ set( MOC_HEADERS
 )
 
 # Header files
-set( HEADERS
+SET( HEADERS
 	ColorLookupTable.h
 	GridAdapter.h
 	VtkAlgorithmProperties.h	
@@ -43,23 +43,29 @@ set( HEADERS
 	VtkVisPipelineItem.h
 )
 
+IF (OGS_USE_OPENSG)
+	SET (SOURCES ${SOURCES} vtkOsgActor.cpp)
+	SET (HEADERS ${HEADERS} vtkOsgActor.h)
+	MESSAGE("nflgflgjd")
+ENDIF (OGS_USE_OPENSG)
+
 # UI files
-set ( UIS
+SET ( UIS
 	VtkVisTabWidgetBase.ui
 	VtkAddFilterDialogBase.ui
 )
 
 # Put moc files in a project folder
-source_group("UI Files" REGULAR_EXPRESSION "\\w*\\.ui")
-source_group("Moc Files" REGULAR_EXPRESSION "moc_.*")
+SOURCE_GROUP("UI Files" REGULAR_EXPRESSION "\\w*\\.ui")
+SOURCE_GROUP("Moc Files" REGULAR_EXPRESSION "moc_.*")
 
 # Run Qts user interface compiler uic on .ui files
-qt4_wrap_ui( UI_HEADERS ${UIS} )
+QT4_WRAP_UI( UI_HEADERS ${UIS} )
 
 # Run Qts meta object compiler moc on header files
-qt4_wrap_cpp( MOC_SOURCES ${MOC_HEADERS} )
+QT4_WRAP_CPP( MOC_SOURCES ${MOC_HEADERS} )
 
-include_directories(
+INCLUDE_DIRECTORIES(
 	.
 	${CMAKE_BINARY_DIR}/Qt/VtkVis
 	../../Base
@@ -73,7 +79,7 @@ include_directories(
 )
 
 # Create the library
-add_library( VtkVis STATIC
+ADD_LIBRARY( VtkVis STATIC
 	${SOURCES}
 	${HEADERS}
 	${MOC_HEADERS}
@@ -81,4 +87,9 @@ add_library( VtkVis STATIC
 	${UIS}
 )
 
-target_link_libraries( VtkVis ${QT_LIBRARIES} )
+TARGET_LINK_LIBRARIES( VtkVis ${QT_LIBRARIES} )
+
+IF (OGS_USE_OPENSG)
+	INCLUDE_DIRECTORIES (${OpenSG_INCLUDE_DIRS})
+	TARGET_LINK_LIBRARIES (VtkVis ${OpenSG_LIBRARIES})
+ENDIF (OGS_USE_OPENSG)

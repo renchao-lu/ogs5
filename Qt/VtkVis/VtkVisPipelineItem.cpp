@@ -13,6 +13,7 @@
 #include <vtkPointSet.h>
 #include <vtkDataSetMapper.h>
 #include <vtkActor.h>
+#include "vtkOsgActor.h"
 #include <vtkRenderer.h>
 #include <vtkProperty.h>
 #include <vtkSmartPointer.h>
@@ -82,7 +83,7 @@ void VtkVisPipelineItem::Initialize()
 {
 	_mapper = vtkDataSetMapper::New();
 	_mapper->SetInputConnection(0, _algorithm->GetOutputPort(0));
-	_actor = vtkActor::New();
+	_actor = vtkOsgActor::New();
 	_actor->SetMapper(_mapper);
 	_renderer->AddActor(_actor);
 

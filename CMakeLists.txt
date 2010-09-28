@@ -28,14 +28,11 @@ SET (OGS_DATE "14.09.2010")
 INCLUDE( CMakeConfiguration/Macros.cmake )
 
 IF (WIN32)
-	## For Visual Studio compiler
 	IF (MSVC)
 		ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
 		ADD_DEFINITIONS(-D_CRT_NONSTDC_NO_WARNINGS)
 		ADD_DEFINITIONS(-D_CRT_XNONSTDC_NO_WARNINGS)
 		SET ( CMAKE_CONFIGURATION_TYPES "Release;Debug" CACHE TYPE INTERNAL FORCE )
-		# Sets warning level 3 and ignores warning 4290
-		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /wd4290")
 	ELSE (MSVC)
 		MESSAGE (FATAL_ERROR "Aborting: On Windows only the Visual Studio compiler is supported!")
 	ENDIF (MSVC)
@@ -112,15 +109,23 @@ IF (UNIX) # Only supported on Linux
 	OPTION(OGS_FEM_MPI "Message passing interface configuration" OFF)
 ENDIF (UNIX)
 
+# Set default configuration when no other config is given
+IF (NOT OGS_FEM AND NOT OGS_FEM_SP AND NOT OGS_FEM_GEMS AND NOT OGS_FEM_PQC AND NOT OGS_FEM_BRNS AND NOT OGS_FEM_CHEMAPP AND NOT OGS_FEM_LIS AND NOT OGS_FEM_MKL AND NOT OGS_FEM_MPI AND NOT OGS_USE_QT)
+	MESSAGE (STATUS "No configuration specified. Default confuguration is used.")
+	SET (OGS_FEM ON)
+ENDIF (NOT OGS_FEM AND NOT OGS_FEM_SP AND NOT OGS_FEM_GEMS AND NOT OGS_FEM_PQC AND NOT OGS_FEM_BRNS AND NOT OGS_FEM_CHEMAPP AND NOT OGS_FEM_LIS AND NOT OGS_FEM_MKL AND NOT OGS_FEM_MPI AND NOT OGS_USE_QT)
+
 # Additional options
 OPTION(OGS_PACKAGING "Creating installers / packages" OFF)
 IF (OGS_PACKAGING)
 	OPTION (OGS_PACKAGING_ZIP "Do you want to package as zip?" OFF)
 ENDIF (OGS_PACKAGING)
 OPTION(OGS_PYTHON "Enable python scripting interface" OFF)
+OPTION(OGS_BUILD_UTILITIES "Build additional utility programs?" OFF)
 OPTION(OGS_CMAKE_DEBUG "Show additional cmake debug information" OFF)
 OPTION(OGS_ONE_BIG_GTEST "Should all gtests be collected to one ctest" ON)
 OPTION(OGS_USE_NETCDF "NetCDF interface" OFF)
+OPTION(OGS_USE_OPENSG "VTK to OpenSG converter" OFF)
 
 # Check if a valid OGS configuration is given (see Macros.cmake)
 CHECK_CONFIG()
@@ -327,7 +332,6 @@ IF (BENCHMARK_DIR_FOUND)
 	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/WW.cmake)
 	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/YW.cmake)
 	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/MCGB.cmake)
-	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/FC.cmake)
 	UNSET (COPY_BENCHMARKS_TO_REF CACHE)
 ENDIF (BENCHMARK_DIR_FOUND)
 
