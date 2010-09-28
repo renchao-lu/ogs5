@@ -15,6 +15,7 @@
 #include "StationTreeModel.h"
 #include "VtkVisPipelineItem.h"
 #include "VtkMeshSource.h"
+#include "VtkTrackedCamera.h"
 
 #include <vtkSmartPointer.h>
 #include <vtkRenderer.h>
@@ -22,6 +23,7 @@
 #include <vtkPointSet.h>
 #include <vtkActor.h>
 #include <vtkLight.h>
+#include <vtkCamera.h>
 
 #ifdef OGS_USE_OPENSG
 #include "vtkOsgActor.h"
@@ -167,7 +169,7 @@ void VtkVisPipeline::addPipelineItem( vtkAlgorithm* source,
 	int parentChildCount = parentItem->childCount();
 	QModelIndex newIndex = index(parentChildCount - 1, 0, parent);
 
-	_renderer->ResetCamera(_renderer->ComputeVisiblePropBounds());
+	_renderer->ResetCamera();
 
 	_actorMap.insert(item->actor(), newIndex);
 

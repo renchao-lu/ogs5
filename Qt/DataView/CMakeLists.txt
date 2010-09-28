@@ -90,14 +90,16 @@ include_directories(
 	../VtkVis
 	../VtkAct
 	${CMAKE_SOURCE_DIR}
-	#${OpenSG_INCLUDE_DIR}
-	#${OpenSGSupportlibs_INCLUDE_DIR}
 	${Shapelib_INCLUDE_DIR}	
 )
 
 if (OGS_COMPILE_QVTK)
 	include_directories(${CMAKE_BINARY_DIR}/Qt/QVTK ../QVTK)
 endif (OGS_COMPILE_QVTK)
+
+IF(VRPN_FOUND)
+	INCLUDE_DIRECTORIES( ../Vrpn )
+ENDIF()
 
 # Put moc files in a project folder
 source_group("UI Files" REGULAR_EXPRESSION "\\w*\\.ui")

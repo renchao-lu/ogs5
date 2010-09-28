@@ -10,10 +10,14 @@
 
 // ** INCLUDES **
 #include "ui_VisualizationWidgetBase.h"
+#include "Configure.h"
 
 class vtkRenderer;
 class VtkCustomInteractorStyle;
 class VtkPickCallback;
+#ifdef OGS_USE_VRPN
+class vtkEventQtSlotConnect;
+#endif // OGS_USE_VRPN
 
 /**
  * VisualizationWidget is a widget which provides the 3d vtk scene view.
@@ -58,12 +62,17 @@ protected slots:
 
 	/// Toggles rectangular zooming mode.
 	void on_zoomToolButton_toggled(bool checked);
+	
+	/// Resets the camera to view the entire scene
+	void on_showAllPushButton_pressed();
 
 private:
 	vtkRenderer* _vtkRender;
 	VtkCustomInteractorStyle* _interactorStyle;
 	VtkPickCallback* _vtkPickCallback;
-	
+	#ifdef OGS_USE_VRPN
+	vtkEventQtSlotConnect* _qtConnect;
+	#endif // OGS_USE_VRPN
 };
 
 #endif // VISUALIZATIONWIDGET_H

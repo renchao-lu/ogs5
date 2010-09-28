@@ -103,6 +103,10 @@ IF (OGS_USE_OPENSG)
 	TARGET_LINK_LIBRARIES( ogs-gui OgsOpenSG )
 ENDIF (OGS_USE_OPENSG)
 
+IF(OGS_USE_VRPN)
+	TARGET_LINK_LIBRARIES( ogs-gui ${VRPN_LIBRARIES} OgsVrpn)
+ENDIF()
+
 ###################
 ### VRED plugin ###
 ###################

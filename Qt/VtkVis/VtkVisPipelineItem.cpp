@@ -124,8 +124,8 @@ void VtkVisPipelineItem::Initialize()
 	vtkOsgActor* actor = vtkOsgActor::New();
 	_actor = actor;
 	_actor->SetMapper(_mapper);
-	//actor->Render(_renderer, _mapper);
-	actor->SetVerbose(true);
+	actor->Render(_renderer, _mapper);
+	//actor->SetVerbose(true);
 	actor->UpdateOsg();
 
 	OSG::beginEditCP(_parentNode);{

@@ -16,6 +16,7 @@ SET( SOURCES
 	VtkVisPipelineItem.cpp
 	VtkVisPipelineView.cpp
 	VtkVisTabWidget.cpp
+	VtkTrackedCamera.cpp
 )
 
 # Moc headers
@@ -24,6 +25,7 @@ SET( MOC_HEADERS
 	VtkVisPipeline.h
 	VtkVisPipelineView.h
 	VtkVisTabWidget.h
+	VtkTrackedCamera.h
 )
 
 # Header files

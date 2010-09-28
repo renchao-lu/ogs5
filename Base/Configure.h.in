@@ -30,4 +30,6 @@
 #cmakedefine OGS_PYTHON
 #cmakedefine OGS_USE_OPENSG
 
+#cmakedefine OGS_USE_VRPN
+
 #endif // CONFIGURE_H

@@ -12,6 +12,7 @@
 #include "Point.h"
 #include "VtkPickCallback.h"
 #include "VtkCustomInteractorStyle.h"
+#include "VtkTrackedCamera.h"
 
 #include <vtkRenderWindow.h>
 #include <vtkRenderer.h>
@@ -21,8 +22,18 @@
 
 #include <vtkInteractorStyleSwitch.h>
 #include <vtkInteractorStyleRubberBandZoom.h>
+#include <vtkMath.h>
+#include <vtkCommand.h>
 
 #include <QSettings>
+
+#ifdef OGS_USE_VRPN
+#include "QSpaceNavigatorClient.h"
+#include "VtkTrackedCamera.h"
+#include <vtkEventQtSlotConnect.h>
+#include "QVrpnArtTrackingClient.h"
+#include <QTimer>
+#endif // OGS_USE_VRPN
 
 VisualizationWidget::VisualizationWidget( QWidget* parent /*= 0*/ )
 : QWidget(parent)
@@ -31,6 +42,33 @@ VisualizationWidget::VisualizationWidget( QWidget* parent /*= 0*/ )
 
 	// Create renderer
 	_vtkRender = vtkRenderer::New();
+
+	VtkTrackedCamera* cam = new VtkTrackedCamera(this);
+	_vtkRender->SetActiveCamera(cam);
+	connect( cam, SIGNAL(viewUpdated()), this, SLOT(updateView()) );                                                                                                                          
+	
+	
+	#ifdef OGS_USE_VRPN
+	QSpaceNavigatorClient* spacenav = QSpaceNavigatorClient::Instance();
+	spacenav->init("spacenav@localhost", 1000 / 15, SpaceNavigatorClient::Z);
+	cam->setFocalPoint(0, 5.0, 0.5);
+	cam->updateView();
+	spacenav->setTranslationFactor(2.0);
+	//connect( spacenav, SIGNAL(translated(double, double, double)), cam, SLOT(setTrackingData(double, double, double)) );
+	//connect( spacenav, SIGNAL(translated(double, double, double)), cam, SLOT(translate(double, double, double)) );
+	
+	QVrpnArtTrackingClient* art = QVrpnArtTrackingClient::Instance();
+	//art->StartTracking("DTrack@141.65.34.36");
+	art->StartTracking("DTrack@visserv3.intern.ufz.de");
+	connect( art, SIGNAL(positionUpdated(double, double, double)), cam, SLOT(setTrackingData(double, double, double)) );
+	
+	// Connect the vtk event to the qt slot
+	_qtConnect = vtkEventQtSlotConnect::New();
+	_qtConnect->Connect(vtkWidget->GetRenderWindow()->GetInteractor(), vtkCommand::EndInteractionEvent,
+		cam, SLOT(updatedFromOutside()));
+		
+	#endif // OGS_USE_VRPN
+
 	_vtkRender->SetBackground(0.0,0.0,0.0);
 
 	_interactorStyle = VtkCustomInteractorStyle::New();
@@ -53,9 +91,9 @@ VisualizationWidget::VisualizationWidget( QWidget* parent /*= 0*/ )
 	QSettings settings("UFZ", "OpenGeoSys-5");
 	stereoToolButton->setChecked(settings.value("stereoEnabled").toBool());
 	if (settings.contains("stereoEyeAngle"))
-		_vtkRender->GetActiveCamera()->SetEyeAngle(settings.value("stereoEyeAngle").toDouble());
+		cam->SetEyeAngle(settings.value("stereoEyeAngle").toDouble());
 	else
-		_vtkRender->GetActiveCamera()->SetEyeAngle(2.0);
+		cam->SetEyeAngle(2.0);
 
 	if (!stereoToolButton->isChecked())
 	{
@@ -75,6 +113,9 @@ VisualizationWidget::~VisualizationWidget()
 
 	_interactorStyle->deleteLater();
 	_vtkPickCallback->deleteLater();
+	#ifdef OGS_USE_VRPN
+	_qtConnect->Delete();
+	#endif // OGS_USE_VRPN
 }
 VtkCustomInteractorStyle* VisualizationWidget::interactorStyle() const
 {
@@ -86,6 +127,17 @@ VtkPickCallback* VisualizationWidget::vtkPickCallback() const
 }
 void VisualizationWidget::updateView()
 {
+	/*
+	vtkCamera* camera = _vtkRender->GetActiveCamera();
+	double x,y,z;
+	camera->GetFocalPoint(x, y, z);
+	std::cout << "Focal point: " << x << " " << y << " " << z << std::endl;
+	camera->GetPosition(x, y, z);
+	std::cout << "Position: " << x << " " << y << " " << z << std::endl;
+	camera->GetClippingRange(x, y);
+	std::cout << "Clipping range: " << x << " " << y << std::endl << std::endl;
+	*/
+	
 	vtkWidget->GetRenderWindow()->Render();
 }
 
@@ -142,4 +194,9 @@ void VisualizationWidget::on_zoomToolButton_toggled( bool checked )
 		cursor.setShape(Qt::ArrowCursor);
 		vtkWidget->setCursor(cursor);
 	}
+}
+
+void VisualizationWidget::on_showAllPushButton_pressed()
+{
+	_vtkRender->ResetCamera();
 }

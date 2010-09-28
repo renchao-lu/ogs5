@@ -267,6 +267,7 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 
 //	std::cout << "size of CSourceTerm: " << sizeof (CSourceTerm) << std::endl;
 //	std::cout << "size of CBoundaryCondition: " << sizeof (CBoundaryCondition) << std::endl;
+	
 }
 
 MainWindow::~MainWindow()
