@@ -33,6 +33,14 @@ VtkVisPipeline::VtkVisPipeline( vtkRenderer* renderer, QObject* parent /*= 0*/ )
 	//_renderer->SetBackground(1,1,1);
 }
 
+bool VtkVisPipeline::setData( const QModelIndex &index, const QVariant &value,
+	int role /* = Qt::EditRole */ )
+{
+	emit vtkVisPipelineChanged();
+
+	return TreeModel::setData(index, value, role);
+}
+
 void VtkVisPipeline::addLight(const GEOLIB::Point &pos)
 {
 	double lightPos[3];

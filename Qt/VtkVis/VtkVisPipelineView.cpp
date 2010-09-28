@@ -19,14 +19,17 @@
 #include <QContextMenuEvent>
 #include <QFileDialog>
 #include <QSettings>
+#include <QHeaderView>
 
 VtkVisPipelineView::VtkVisPipelineView( QWidget* parent /*= 0*/ )
 : QTreeView(parent)
 {
 	setItemsExpandable(false);
-	setEditTriggers(QAbstractItemView::AllEditTriggers);
-	CheckboxDelegate* checkboxDelegate = new CheckboxDelegate(1, this);
+	//setEditTriggers(QAbstractItemView::AllEditTriggers);
+	CheckboxDelegate* checkboxDelegate = new CheckboxDelegate(this);
 	setItemDelegateForColumn(1, checkboxDelegate);
+	header()->setStretchLastSection(false);
+	header()->setResizeMode(QHeaderView::ResizeToContents);
 }
 
 void VtkVisPipelineView::contextMenuEvent( QContextMenuEvent* event )

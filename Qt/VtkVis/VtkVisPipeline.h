@@ -38,42 +38,45 @@ class VtkVisPipeline : public TreeModel
 
 public:
 
-	/// Constructor
+	/// \brief Constructor
 	VtkVisPipeline(vtkRenderer* renderer, QObject* parent = 0);
 
-	/// Adds a light to the scene at the given coordinates.
+	/// \brief Emits vtkVisPipelineChanged() and calls base class method.
+	bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
+
+	/// \brief Adds a light to the scene at the given coordinates.
 	void addLight(const GEOLIB::Point &pos);
 
-	/// Returns a light (or NULL) for the given coordinates.
+	/// \brief Returns a light (or NULL) for the given coordinates.
 	vtkLight* getLight(const GEOLIB::Point &pos) const;
 
-	/// Removes a light at the given coordinates (if possible).
+	/// \brief Removes a light at the given coordinates (if possible).
 	void removeLight(const GEOLIB::Point &pos);
 
-	/// Sets the background-colour of the scene.
+	/// \brief Sets the background-colour of the scene.
 	void setBGColor(const GEOLIB::Color &color);
 
-	/// Returns the QModelIndex of VtkVisPipelineItem which actor
+	/// \brief Returns the QModelIndex of VtkVisPipelineItem which actor
 	/// is the given one.
 	QModelIndex getIndex(vtkActor* actor);
 
 	Qt::ItemFlags flags( const QModelIndex &index ) const;
 
 public slots:
-	/// Adds the given Model to the pipeline.
+	/// \brief Adds the given Model to the pipeline.
 	void addPipelineItem(Model* model);
 	void addPipelineItem(MshModel* model, const QModelIndex &idx);
 	void addPipelineItem(StationTreeModel* model, const std::string &name);
 
-	/// Inserts the vtkAlgorithm as a child of the given QModelIndex to the pipeline.
+	/// \brief Inserts the vtkAlgorithm as a child of the given QModelIndex to the pipeline.
 	void addPipelineItem(vtkAlgorithm* source, QModelIndex parent = QModelIndex());
 
-	/// Removes the given Model (and all attached vtkAlgorithms) from the pipeline.
+	/// \brief Removes the given Model (and all attached vtkAlgorithms) from the pipeline.
 	void removeSourceItem(Model* model);
 	void removeSourceItem(MshModel* model, const QModelIndex &idx);
 	void removeSourceItem(StationTreeModel* model, const std::string &name);
 
-	/// Removes the vtkAlgorithm at the given QModelIndex (and all attached
+	/// \brief Removes the vtkAlgorithm at the given QModelIndex (and all attached
 	/// vtkAlgorithms) from the pipeline.
 	void removePipelineItem(QModelIndex index);
 
@@ -85,7 +88,7 @@ private:
 
 
 signals:
-	/// Is emitted when a pipeline item was added or removed.
+	/// \brief Is emitted when a pipeline item was added or removed.
 	void vtkVisPipelineChanged();
 
 };

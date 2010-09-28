@@ -12,33 +12,30 @@ class QWidget;
 class QRect;
 
 /**
- * CheckboxDelegate modifies a model view to display boolean values as checkboxes.
+ * \brief CheckboxDelegate modifies a model view to display boolean values as checkboxes.
+ * Important: the column on which this delegate is set (
+ * QAbstractItemView::setItemDelegateForColumn()) must not have the flags
+ * Qt::ItemIsEditable or Qt::ItemIsUserCheckable set in the model.
 **/
 class CheckboxDelegate : public QItemDelegate
 {
 	Q_OBJECT
 	
 public:
-	CheckboxDelegate (int checkboxColumn, QObject* parent = 0);
+	/// \brief Constructor
+	CheckboxDelegate (QObject* parent = 0);
 
+	/// \brief Paints a checkbox. This overrides the default painting of a combo box.
 	void paint(QPainter* painter, const QStyleOptionViewItem& option,
 		const QModelIndex& index) const;
-	QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem &option,
-		const QModelIndex& index) const;
-	void setEditorData(QWidget* editor, const QModelIndex& index) const;
-	void setModelData(QWidget* editor, QAbstractItemModel* model,
-		const QModelIndex& index) const;
-	void updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option,
-		const QModelIndex& index) const;
+
+	/// \brief Handles the click events and sets the model data.
 	bool editorEvent(QEvent *event, QAbstractItemModel *model,
 		const QStyleOptionViewItem &option, const QModelIndex &index);
 
-public slots:
-	void test(int state);
+	QSize sizeHint (const QStyleOptionViewItem & option, const QModelIndex & index) const;
 
 private:
-	int _checkboxColumn;
-
 	QRect checkboxRect(const QStyleOptionViewItem& viewItemStyleOptions) const;
 };
 
