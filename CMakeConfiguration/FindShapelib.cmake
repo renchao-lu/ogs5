@@ -21,8 +21,13 @@ if (NOT Shapelib_FOUND)
 			NAMES shp
 			PATHS /usr/lib64 /usr/lib ${CMAKE_SOURCE_DIR}/../Libs/shapelib )
 		find_library(Shapelib_LIBRARIES
+			NAMES shapelib.a
+			PATHS /usr/lib64 /usr/lib 
+			${CMAKE_SOURCE_DIR}/../Libs/shapelib/ )
+		find_library(Shapelib_LIBRARIES
 			NAMES shapelib
-			PATHS /usr/lib64 /usr/lib ${CMAKE_SOURCE_DIR}/../Libs/shapelib )
+			PATHS /usr/lib64 /usr/lib 
+			${CMAKE_SOURCE_DIR}/../Libs/shapelib/ )
 	else ( UNIX )			
 		find_library(Shapelib_LIBRARIES
 			NAMES shapelib
