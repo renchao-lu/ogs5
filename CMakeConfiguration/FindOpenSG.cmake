@@ -26,6 +26,23 @@
 #  OPENSG_INCLUDE_SEARCH_DIR
 #  OPENSG_LIBRARY_SEARCH_DIR
 
+# This macro sets the include path and libraries to link to.
+# On Windows this also sets some preprocessor definitions and disables some warnings.
+MACRO(USE_OPENSG targetName)
+	IF (MSVC)
+		ADD_DEFINITIONS(
+			-DOSG_BUILD_DLL
+			-DOSG_HAVE_CONFIGURED_H_
+			-DOSG_WITH_GIF
+			-DOSG_WITH_TIF
+			-DOSG_WITH_JPG
+		)
+		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4231 /wd4275")
+	ENDIF (MSVC)
+	TARGET_LINK_LIBRARIES( ${targetName} ${OpenSG_LIBRARIES} )
+	INCLUDE_DIRECTORIES( ${OpenSG_INCLUDE_DIRS} )
+ENDMACRO()
+
 SET(__OpenSG_IN_CACHE TRUE)
 IF(OpenSG_INCLUDE_DIR)
     FOREACH(COMPONENT ${OpenSG_FIND_COMPONENTS})

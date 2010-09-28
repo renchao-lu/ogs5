@@ -37,12 +37,12 @@ include_directories(
 	${CMAKE_BINARY_DIR}/Qt/VtkAct
 	../../Base
 	../../MathLib
-	../Base
-	../DataView
 	../../GEO
 	../../FileIO
 	../../MSH
 	../../FEM
+	../Base
+	../DataView
 	../StationView
 	../StratView
 	../VtkVis
@@ -98,17 +98,7 @@ ENDIF(MSVC)
 
 ### OpenSG support ###
 IF (OGS_USE_OPENSG)
-	IF (MSVC)
-		ADD_DEFINITIONS(
-			-DOSG_BUILD_DLL
-			-DOSG_HAVE_CONFIGURED_H_
-			-DOSG_WITH_GIF
-			-DOSG_WITH_TIF
-			-DOSG_WITH_JPG
-		)
-	ENDIF (MSVC)
-	TARGET_LINK_LIBRARIES( ogs-gui ${OpenSG_LIBRARIES} )
-	INCLUDE_DIRECTORIES( ${OpenSG_INCLUDE_DIRS} )
+	USE_OPENSG(ogs-gui)
 ENDIF (OGS_USE_OPENSG)
 
 ###################
