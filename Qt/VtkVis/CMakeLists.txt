@@ -46,7 +46,6 @@ SET( HEADERS
 IF (OGS_USE_OPENSG)
 	SET (SOURCES ${SOURCES} vtkOsgActor.cpp)
 	SET (HEADERS ${HEADERS} vtkOsgActor.h)
-	MESSAGE("nflgflgjd")
 ENDIF (OGS_USE_OPENSG)
 
 # UI files
