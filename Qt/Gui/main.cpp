@@ -1,5 +1,6 @@
 #include <QtGui/QApplication>
 #include "mainwindow.h"
+#include "Configure.h"
 #include <OpenSG/OSGBaseFunctions.h>
 
 int main(int argc, char *argv[])

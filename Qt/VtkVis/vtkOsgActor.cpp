@@ -107,6 +107,8 @@ void vtkOsgActor::Render(vtkRenderer *ren, vtkMapper *mapper){
 
 void vtkOsgActor::UpdateOsg(){
 	if (m_posgRoot == NullFC) InitOpenSG();
+	if (m_bTextureHasChanged) CreateTexture();
+
 	this->GetMapper()->Update();
 	LookForNormals();
 	LookForColors();
@@ -152,6 +154,7 @@ void vtkOsgActor::ClearOsg(){
 	m_posgColors = NullFC;
 	m_posgNormals = NullFC;
 	m_posgTexCoords = NullFC;
+	m_bTextureHasChanged = true;
 }
 
 void vtkOsgActor::SetVerbose(bool value){
@@ -336,13 +339,23 @@ void vtkOsgActor::LookForArraySizes(){
 }
 
 void vtkOsgActor::CreateTexture(){
+	if (m_bVerbose){
+		std::cerr << "Calling CreateTexture()" << std::endl;
+	}
 	if (! m_bTextureHasChanged){
+		if (m_bVerbose){
+			std::cerr << "		... nothing to do" << std::endl;
+			std::cerr << "		End CreateTexture()" << std::endl;
+		}
 		//can we check if the actual image has been updated, even if the texture is the same?
 		return;
-	} else {
-		if (m_pvtkTexture == NULL){
-			//the texture has changed but it is NULL now. We should remove the texture from the material
+	} else if (m_pvtkTexture == NULL){
+		if (m_bVerbose){
+			std::cerr << "		... texture is (still ?) NULL" << std::endl;
+			std::cerr << "		EndCreateTexture()" << std::endl;
 		}
+			//the texture has changed but it is NULL now. We should remove the texture from the material
+		return;
 	}
 	m_bTextureHasChanged = false;
 
@@ -358,19 +371,19 @@ void vtkOsgActor::CreateTexture(){
 	if (imgPointData != NULL){
 		if (NULL != imgPointData->GetScalars()){
 			data = imgPointData->GetScalars();
-			if (m_bVerbose) std::cout << "found texture data in point data" << std::endl;
+			if (m_bVerbose) std::cout << "		found texture data in point data" << std::endl;
 		}
 	}
 
 	if (imgCellData != NULL){
 		if (NULL != imgCellData->GetScalars()){
 			data = imgCellData->GetScalars();
-			if (m_bVerbose) std::cout << "found texture data in cell data" << std::endl;
+			if (m_bVerbose) std::cout << "		found texture data in cell data" << std::endl;
 		}
 	}
 
 	if (data == NULL){
-		std::cout << "could not load texture data" << std::endl;
+		std::cerr << "		could not load texture data" << std::endl;
 		return;
 	}
 	
@@ -422,12 +435,16 @@ void vtkOsgActor::CreateTexture(){
 	};endEditCP(m_posgTextureChunk);
 
 	if (m_bVerbose){
-		std::cout << "Loading image with " << iImgDims[0] << " x " << iImgDims[1] << " x " << iImgDims[2] << "pixels." << std::endl;
-		std::cout << "   components: " << iImgComps << std::endl;
+		std::cerr << "		Loading image with " << iImgDims[0] << " x " << iImgDims[1] << " x " << iImgDims[2] << "pixels." << std::endl;
+		std::cerr << "		components: " << iImgComps << std::endl;
+		std::cerr << "		End CreateTexture()" << std::endl;
 	}
 }
 
 ChunkMaterialPtr vtkOsgActor::CreateMaterial(){
+	if (m_bVerbose){
+		std::cerr << "Start CreateMaterial()" << std::endl;
+	}
 	vtkProperty *prop = this->GetProperty();
 	double *diffuseColor = prop->GetDiffuseColor();
 	double *ambientColor = prop->GetAmbientColor();
@@ -442,10 +459,10 @@ ChunkMaterialPtr vtkOsgActor::CreateMaterial(){
 	int representation = prop->GetRepresentation();
 
 	if (m_bVerbose){
-		std::cerr << "Colors:" << std::endl;
-		std::cerr << "diffuse " << diffuse << " * " << diffuseColor[0] << " " << diffuseColor[1] << " " << diffuseColor[2] << std::endl;
-		std::cerr << "ambient " << ambient << " * " << ambientColor[0] << " " << ambientColor[1] << " " << ambientColor[2] << std::endl;
-		std::cerr << "specular " << specular << " * " << specularColor[0] << " " << specularColor[1] << " " << specularColor[2] << std::endl;
+		std::cerr << "		Colors:" << std::endl;
+		std::cerr << "		diffuse " << diffuse << " * " << diffuseColor[0] << " " << diffuseColor[1] << " " << diffuseColor[2] << std::endl;
+		std::cerr << "		ambient " << ambient << " * " << ambientColor[0] << " " << ambientColor[1] << " " << ambientColor[2] << std::endl;
+		std::cerr << "		specular " << specular << " * " << specularColor[0] << " " << specularColor[1] << " " << specularColor[2] << std::endl;
 	}
 
 	beginEditCP(m_posgPolygonChunk);{
@@ -476,13 +493,27 @@ ChunkMaterialPtr vtkOsgActor::CreateMaterial(){
 		m_posgMaterial->addChunk(m_posgPolygonChunk);
 
 		if (m_pvtkTexCoords != NULL){
+			if (m_bVerbose){
+				std::cerr << "		Add TextureChunk" << std::endl;
+			}
 			m_posgMaterial->addChunk(m_posgTextureChunk);
+		} else {
+			if (m_bVerbose){
+				std::cerr << "		Not adding TextureChunk" << std::endl;
+			}
 		}
 	}endEditCP(m_posgMaterial);
 	return m_posgMaterial;
+	if (m_bVerbose){
+		std::cerr << "		End CreateMaterial()" << std::endl;
+	}
 }
 
 NodePtr vtkOsgActor::ProcessGeometryNormalsAndColorsPerVertex(){
+	if (m_bVerbose){
+		std::cerr << "Start ProcessGeometryNormalsAndColorsPerVertex()" << std::endl;
+	}
+
 	beginEditCP(m_posgTypes);{
 		m_posgTypes->clear();
 	};endEditCP(m_posgTypes);
@@ -520,13 +551,13 @@ NodePtr vtkOsgActor::ProcessGeometryNormalsAndColorsPerVertex(){
 	if (dynamic_cast<vtkPolyDataMapper*>(this->GetMapper())){
 		pPolyData = (vtkPolyData*) this->GetMapper()->GetInput();
 		if (m_bVerbose){
-			std::cerr << "Using vtkPolyDataMapper directly" << std::endl;
+			std::cerr << "		Using vtkPolyDataMapper directly" << std::endl;
 		}
 	} else if (dynamic_cast<vtkDataSetMapper*>(this->GetMapper())){
 		vtkDataSetMapper *dataSetMapper = (vtkDataSetMapper*) this->GetMapper();
 		pPolyData = (vtkPolyData*) dataSetMapper->GetPolyDataMapper()->GetInput();
 		if (m_bVerbose){
-			std::cerr << "Using vtkPolyDataMapper via the vtkDataSetMapper" << std::endl;
+			std::cerr << "		Using vtkPolyDataMapper via the vtkDataSetMapper" << std::endl;
 		}
 	}
 	if (pPolyData == NULL) return NullFC;
@@ -655,14 +686,16 @@ NodePtr vtkOsgActor::ProcessGeometryNormalsAndColorsPerVertex(){
 		if (m_iNormalType == PER_VERTEX) m_posgGeometry->setNormals(m_posgNormals);
 		if (m_iColorType == PER_VERTEX) m_posgGeometry->setColors(m_posgColors);
 		if (m_posgTexCoords->getSize() > 0) m_posgGeometry->setTexCoords(m_posgTexCoords);
-		std::cout << "texcoords container size: " << m_posgTexCoords->getSize() << std::endl;
 	};endEditCP(m_posgGeometry);
+	if (m_bVerbose){
+		std::cerr << "		Start ProcessGeometryNormalsAndColorsPerVertex()" << std::endl;
+	}
 	return m_posgGeomNode;
 }
 
 NodePtr vtkOsgActor::ProcessGeometryNonIndexedCopyAttributes(int gl_primitive_type){
 	if (m_bVerbose){
-		std::cout << "starting CVtkActorToOpenSG::ProcessGeometryNonIndexedCopyAttributes(int gl_primitive_type)" << std::endl;
+		std::cout << "Start ProcessGeometryNonIndexedCopyAttributes(int gl_primitive_type)" << std::endl;
 	}
 
 	beginEditCP(m_posgTypes);{
@@ -697,13 +730,13 @@ NodePtr vtkOsgActor::ProcessGeometryNonIndexedCopyAttributes(int gl_primitive_ty
 	if (dynamic_cast<vtkPolyDataMapper*>(this->GetMapper())){
 		pPolyData = (vtkPolyData*) this->GetMapper()->GetInput();
 		if (m_bVerbose){
-			std::cerr << "Using vtkPolyDataMapper directly" << std::endl;
+			std::cerr << "		Using vtkPolyDataMapper directly" << std::endl;
 		}
 	} else if (dynamic_cast<vtkDataSetMapper*>(this->GetMapper())){
 		vtkDataSetMapper *dataSetMapper = (vtkDataSetMapper*) this->GetMapper();
 		pPolyData = (vtkPolyData*) dataSetMapper->GetPolyDataMapper()->GetInput();
 		if (m_bVerbose){
-			std::cerr << "Using vtkPolyDataMapper via the vtkDataSetMapper" << std::endl;
+			std::cerr << "		Using vtkPolyDataMapper via the vtkDataSetMapper" << std::endl;
 		}
 	}
 	if (pPolyData == NULL) return NullFC;
@@ -803,12 +836,15 @@ NodePtr vtkOsgActor::ProcessGeometryNonIndexedCopyAttributes(int gl_primitive_ty
 		//geo->setMaterial(getDefaultMaterial());
 	}endEditCP(m_posgGeometry);
 
+	if (m_bVerbose){
+		std::cout << "		End ProcessGeometryNonIndexedCopyAttributes(int gl_primitive_type)" << std::endl;
+	}
 	return m_posgGeomNode;
 }
 
 NodePtr vtkOsgActor::GetNodePtr(){
 	if (m_bVerbose){
-		std::cerr << "--------Starting vtkActorToOpenSG(...)----------" << std::endl;
+		std::cerr << "Calling GetNodePtr()" << std::endl;
 	}
 
 	this->GetMapper()->Update();

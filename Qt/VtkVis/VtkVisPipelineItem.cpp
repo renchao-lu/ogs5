@@ -150,6 +150,7 @@ int VtkVisPipelineItem::writeToFile(const std::string &filename) const
 		{
 #ifdef OGS_USE_OPENSG
 			vtkOsgActor* osgActor = static_cast<vtkOsgActor*>(_actor);
+			osgActor->SetVerbose(true);
 			osgActor->UpdateOsg();
 			OSG::SceneFileHandler::the().write(osgActor->GetOsgRoot(), filename.c_str());
 			osgActor->ClearOsg();
