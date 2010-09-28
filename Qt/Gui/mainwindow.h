@@ -55,6 +55,7 @@ private slots:
 	void showDiagramPrefsDialog(QModelIndex &index);
 	void showPropertiesDialog(std::string name);
 	void showVisalizationPrefsDialog();
+	void showTrackingSettingsDialog();
 	void updateDataViews();
 	void showAddPipelineFilterItemDialog(QModelIndex parentIndex);
 

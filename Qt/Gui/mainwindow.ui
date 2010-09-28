@@ -106,6 +106,7 @@
     </property>
     <addaction name="action_DatabaseConnection"/>
     <addaction name="action_VisualisationSettings"/>
+    <addaction name="action_TrackingSettings"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menuWindows"/>
@@ -346,6 +347,11 @@
     <string>Export to OpenSG binary format</string>
    </property>
   </action>
+  <action name="action_TrackingSettings">
+   <property name="text">
+    <string>Tracking Settings...</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -490,6 +496,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>action_TrackingSettings</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindowClass</receiver>
+   <slot>showTrackingSettingsDialog()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>399</x>
+     <y>300</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>open()</slot>
@@ -498,5 +520,6 @@
   <slot>import()</slot>
   <slot>save()</slot>
   <slot>showVisalizationPrefsDialog()</slot>
+  <slot>showTrackingSettingsDialog()</slot>
  </slots>
 </ui>

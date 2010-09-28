@@ -95,5 +95,5 @@ void VtkTrackedCamera::updatedFromOutside()
 	
 	updateView();
 	
-	std::cout << "Camera slot" << std::endl;
+	//std::cout << "Camera slot" << std::endl;
 }

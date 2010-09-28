@@ -198,11 +198,11 @@ void VRPN_CALLBACK VrpnArtTrackingClient::CBHandleTracker(void *userdata, const 
 	{
 		if (t.sensor == 0)
 		{
-			std::cout << "CBHandleTracker" << std::endl;
+			//std::cout << "CBHandleTracker" << std::endl;
 			for (i=0; i<3; i++)
 			{
 				art->m_dBodyTranslation[i] = t.pos[i];
-				std::cout << t.pos[i] << std::endl;
+				//std::cout << t.pos[i] << std::endl;
 			}
 			for (i=0; i<4; i++)
 			{
@@ -223,7 +223,7 @@ void VRPN_CALLBACK VrpnArtTrackingClient::CBHandleTracker(void *userdata, const 
 void VRPN_CALLBACK VrpnArtTrackingClient::CBHandleAnalogs(void *, vrpn_ANALOGCB analogData)
 {
 	
-	std::cout << "CBHandleAnalogs" << std::endl;
+	//std::cout << "CBHandleAnalogs" << std::endl;
 	
 	VrpnArtTrackingClient *art = m_pInstance;
 	if (art != NULL)
@@ -237,7 +237,7 @@ void VRPN_CALLBACK VrpnArtTrackingClient::CBHandleAnalogs(void *, vrpn_ANALOGCB 
 
 void VRPN_CALLBACK VrpnArtTrackingClient::CBHandleButtons(void *userdata, vrpn_BUTTONCB buttonData)
 {
-	std::cout << "CBHandleButtons" << std::endl;
+	//std::cout << "CBHandleButtons" << std::endl;
 	
 	(void)userdata;
 	VrpnArtTrackingClient *art = m_pInstance;

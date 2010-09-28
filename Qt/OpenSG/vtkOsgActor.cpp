@@ -89,7 +89,7 @@ vtkOsgActor *vtkOsgActor::New(){
 	vtkObject* ret = vtkGraphicsFactory::CreateInstance("vtkOsgActor");
   
 	if (ret == NULL) {
-		std::cout << "could not use vtkGraphicsFactory" << std::endl;
+		// std::cout << "could not use vtkGraphicsFactory" << std::endl;
 		ret = new vtkOsgActor();
   
 	}

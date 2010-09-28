@@ -47,7 +47,7 @@ void QVrpnArtTrackingClient::MainLoop()
 	
 	double x, y, z;
 	VrpnArtTrackingClient::GetBodyTranslation(x, y, z);
-	std::cout << "Body: " << x << " " << y << " " << z << std::endl;
+	//std::cout << "Body: " << x << " " << y << " " << z << std::endl;
 	//std::cout << "Body: " << m_dBodyTranslation[0] << " " << m_dBodyTranslation[1] << " " << m_dBodyTranslation[2] << std::endl;
 	emit positionUpdated(x, z, y);
 	

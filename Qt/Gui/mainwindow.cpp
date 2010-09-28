@@ -63,8 +63,13 @@
 #include <OpenSG/OSGGroup.h>
 #include "vtkOsgActor.h"
 #include "OsgWidget.h"
-#include <OpenSG/OSGBaseFunctions.h>´>
+#include <OpenSG/OSGBaseFunctions.h>
 #endif
+
+#ifdef OGS_USE_VRPN
+	#include "TrackingSettingsWidget.h"
+#endif // OGS_USE_VRPN
+
 
 //OSG_USING_NAMESPACE
 
@@ -283,7 +288,9 @@ MainWindow::~MainWindow()
 	delete _meshModels;
 	delete _geoModels;
 
+#ifdef OGS_USE_OPENSG
 	OSG::osgExit();
+#endif // OGS_USE_OPENSG
 }
 
 void MainWindow::closeEvent( QCloseEvent* event )
@@ -814,8 +821,20 @@ void MainWindow::showDiagramPrefsDialog(QModelIndex &index)
 
 void MainWindow::showVisalizationPrefsDialog()
 {
-	VisPrefsDialog* visPrefs = new VisPrefsDialog(_vtkVisPipeline);
-    visPrefs->show();
+	VisPrefsDialog dlg(_vtkVisPipeline);
+	dlg.exec();
+	//VisPrefsDialog* visPrefs = new VisPrefsDialog(_vtkVisPipeline); // LB memory leak
+    //visPrefs->show();
+}
+
+void MainWindow::showTrackingSettingsDialog()
+{
+	#ifdef OGS_USE_VRPN
+	TrackingSettingsWidget* widget = new TrackingSettingsWidget();
+	widget->show();
+	#else // OGS_USE_VRPN
+	QMessageBox::warning(this, "Functionality not implemented", "Sorry but this progam was not compiled with VRPN support.");
+	#endif // OGS_USE_VRPN
 }
 
 

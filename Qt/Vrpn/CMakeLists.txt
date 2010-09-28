@@ -8,6 +8,7 @@ SET( SOURCES
 	QSpaceNavigatorClient.cpp
 	VrpnArtTrackingClient.cpp
 	QVrpnArtTrackingClient.cpp
+	TrackingSettingsWidget.cpp
 )
 
 ### Moc header files ###
@@ -15,12 +16,13 @@ SET( MOC_HEADERS
 	VrpnClient.h
 	QSpaceNavigatorClient.h
 	QVrpnArtTrackingClient.h
+	TrackingSettingsWidget.h
 )
 
 ### UI files ###
-#SET( UIS
-#	widget.ui
-#)
+SET( UIS
+	TrackingSettingsWidgetBase.ui
+)
 
 ### Header files ###
 SET( HEADERS
@@ -29,18 +31,18 @@ SET( HEADERS
 )
 
 ### Qt precompiler ###
-#QT4_WRAP_UI( UI_HEADERS ${UIS} )
+QT4_WRAP_UI( UI_HEADERS ${UIS} )
 Qt4_WRAP_CPP( MOC_SOURCES ${MOC_HEADERS} )
 
 ### Include directories ###
 INCLUDE_DIRECTORIES(
 	.
-	${CMAKE_BINARY_DIR}/.
+	${CMAKE_BINARY_DIR}/Qt/Vrpn/
 	${VRPN_INCLUDE_DIRS}
 )
 
 # Put moc files in a project folder
-#SOURCE_GROUP("UI Files" REGULAR_EXPRESSION "\w*\.ui")
+SOURCE_GROUP("UI Files" REGULAR_EXPRESSION "\\w*\\.ui")
 SOURCE_GROUP("Moc Files" REGULAR_EXPRESSION "moc_.*")
 
 ### Create the library ###
@@ -49,7 +51,7 @@ ADD_LIBRARY( OgsVrpn STATIC
 	${HEADERS}
 	${MOC_HEADERS}
 	${MOC_SOURCES}
-	#${UIS}
+	${UIS}
 )
 
 ### Link other libraries ###
