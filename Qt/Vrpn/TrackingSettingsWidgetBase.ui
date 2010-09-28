@@ -8,7 +8,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>300</height>
+    <height>308</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -118,7 +118,7 @@
         </widget>
        </item>
        <item row="2" column="3">
-        <widget class="QLineEdit" name="offsetZlineEdit">
+        <widget class="QLineEdit" name="offsetZLineEdit">
          <property name="text">
           <string>0.0</string>
          </property>

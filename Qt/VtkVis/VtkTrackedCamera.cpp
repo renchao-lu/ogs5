@@ -19,6 +19,9 @@ _realToVirtualScale(1.0), _screenAspectRatio(1.6), _screenHeight(0.4)
 	_trackedPosition[0] = 0;
 	_trackedPosition[1] = 2;
 	_trackedPosition[2] = 0;
+	_trackedPositionOffset[0] = 0;
+	_trackedPositionOffset[1] = 0;
+	_trackedPositionOffset[2] = 0;
 	_focalPoint[0] = 0;
 	_focalPoint[1] = 0;
 	_focalPoint[2] = 0;
@@ -33,9 +36,9 @@ VtkTrackedCamera::~VtkTrackedCamera()
 
 void VtkTrackedCamera::setTrackingData(double x, double y, double z)
 {
-	_trackedPosition[0] = x;
-	_trackedPosition[1] = y + 1.0;
-	_trackedPosition[2] = z;
+	_trackedPosition[0] = x + _trackedPositionOffset[0];
+	_trackedPosition[1] = y + _trackedPositionOffset[1];
+	_trackedPosition[2] = z + _trackedPositionOffset[2];
 	updateView();
 }
 
@@ -45,6 +48,13 @@ void VtkTrackedCamera::setFocalPoint(double x, double y, double z)
 	_focalPoint[1] = y;
 	_focalPoint[2] = z;
 	updateView();
+}
+
+void VtkTrackedCamera::setTrackingOffset(double x, double y, double z)
+{
+	setTrackingOffsetX(x);
+	setTrackingOffsetY(y);
+	setTrackingOffsetZ(z);
 }
 
 void VtkTrackedCamera::translate(double x, double y, double z)

@@ -39,6 +39,8 @@ INCLUDE_DIRECTORIES(
 	.
 	${CMAKE_BINARY_DIR}/Qt/Vrpn/
 	${VRPN_INCLUDE_DIRS}
+	../VtkVis
+	${CMAKE_BINARY_DIR}/Qt/VtkVis
 )
 
 # Put moc files in a project folder

@@ -28,13 +28,20 @@ public:
 public slots:
 	//void setTrackinData(double position[3], double dir[3]);
 	/// @brief Sets the tracked position. The coordinate origin must be the center
-	/// of the projection wall.
-	// TODO Add tracking center translation vector
+	/// of the projection wall. See also setTrackingOffset().
 	void setTrackingData(double x, double y, double z);
 	
 	/// Sets the focal point in world coordinates. This point corresponds to the
 	/// center of the projection wall.
 	void setFocalPoint(double x, double y, double z);
+	
+	/// @brief Sets an offset of the tracked position. This must be used to setup
+	/// the origin of the calibrated tracking space.
+	void setTrackingOffset(double x, double y, double z);
+	
+	void setTrackingOffsetX(double val) { _trackedPositionOffset[0] = val; }
+	void setTrackingOffsetY(double val) { _trackedPositionOffset[1] = val; }
+	void setTrackingOffsetZ(double val) { _trackedPositionOffset[2] = val; }
 	
 	/// Move the camera by the given vector.
 	void translate(double x, double y, double z);
@@ -55,10 +62,17 @@ public slots:
 	void setScreenProperties(double aspectRatio, double height) {
 		_screenAspectRatio = aspectRatio;
 		_screenHeight = height; }
+		
+	/// @brief Sets the screen aspect ratio (width / height).
+	void setScreenAspectRatio(double ratio) { _screenAspectRatio = ratio; updateView(); }
+	
+	/// @brief Sets the screen height in meter.
+	void setScreenHeight(double height) { _screenHeight = height; updateView(); }
 
 private:
 	double _focalPoint[3];
 	double _trackedPosition[3];
+	double _trackedPositionOffset[3];
 	double _realToVirtualScale;
 	double _screenAspectRatio;
 	double _screenHeight;

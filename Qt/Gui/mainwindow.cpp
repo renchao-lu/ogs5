@@ -56,6 +56,7 @@
 #include "VtkBGImageSource.h"
 #include <vtkVRMLExporter.h>
 #include <vtkOBJExporter.h>
+#include <vtkRenderer.h>
 
 #ifdef OGS_USE_OPENSG
 #include <OpenSG/OSGSceneFileHandler.h>
@@ -68,6 +69,7 @@
 
 #ifdef OGS_USE_VRPN
 	#include "TrackingSettingsWidget.h"
+	#include "VtkTrackedCamera.h"
 #endif // OGS_USE_VRPN
 
 
@@ -247,6 +249,13 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	showVisDockAction->setStatusTip(tr("Shows / hides the mesh view"));
 	connect(showVisDockAction, SIGNAL(triggered(bool)), this, SLOT(showVisDockWidget(bool)));
 	menuWindows->addAction(showVisDockAction);
+	
+	#ifdef OGS_USE_VRPN
+		VtkTrackedCamera* cam = static_cast<VtkTrackedCamera*>
+			(visualizationWidget->renderer()->GetActiveCamera());
+		_trackingSettingsWidget = new TrackingSettingsWidget(cam);
+	#endif // OGS_USE_VRPN
+	
 
 	// connects for point model
 	//connect(pntTabWidget->pointsTableView, SIGNAL(itemSelectionChanged(const QItemSelection&,const QItemSelection&)),
@@ -291,6 +300,10 @@ MainWindow::~MainWindow()
 #ifdef OGS_USE_OPENSG
 	OSG::osgExit();
 #endif // OGS_USE_OPENSG
+#ifdef OGS_USE_VRPN
+	delete _trackingSettingsWidget;
+#endif // OGS_USE_VRPN
+
 }
 
 void MainWindow::closeEvent( QCloseEvent* event )
@@ -830,8 +843,7 @@ void MainWindow::showVisalizationPrefsDialog()
 void MainWindow::showTrackingSettingsDialog()
 {
 	#ifdef OGS_USE_VRPN
-	TrackingSettingsWidget* widget = new TrackingSettingsWidget();
-	widget->show();
+	_trackingSettingsWidget->show();
 	#else // OGS_USE_VRPN
 	QMessageBox::warning(this, "Functionality not implemented", "Sorry but this progam was not compiled with VRPN support.");
 	#endif // OGS_USE_VRPN

@@ -208,7 +208,7 @@ ELSE(__OpenSG_IN_CACHE)
             NAMES         OpenSG/OSGConfigured.h
             HINTS         ${__OpenSG_INCLUDE_SEARCH_DIRS})
     ENDIF(NOT OpenSG_INCLUDE_DIR)
-	message(STATUS "OpenSG_INCLUDE_DIR: " ${OpenSG_INCLUDE_DIR})
+	#message(STATUS "OpenSG_INCLUDE_DIR: " ${OpenSG_INCLUDE_DIR})
     # ------------------------------------------------------------------------
     #  Begin finding OpenSG libraries
     # ------------------------------------------------------------------------
@@ -224,7 +224,7 @@ ELSE(__OpenSG_IN_CACHE)
             HINTS  ${__OpenSG_LIBRARIES_SEARCH_DIRS}
         )
 	
-		message(STATUS "OpenSG Component: " ${COMPONENT})
+		#message(STATUS "OpenSG Component: " ${COMPONENT})
     
         FIND_LIBRARY(OpenSG_${UPPERCOMPONENT}_LIBRARY_DEBUG
 	    # 1.8 Added the "D" suffix
@@ -240,7 +240,7 @@ ELSE(__OpenSG_IN_CACHE)
 	    PATH_SUFFIXES "/opt"
         )
 	
-		message(STATUS "OpenSG Component: " ${COMPONENT})
+		#message(STATUS "OpenSG Component: " ${COMPONENT})
     
         FIND_LIBRARY(OpenSG_${UPPERCOMPONENT}_LIBRARY_DEBUG
             NAMES  ${COMPONENT}

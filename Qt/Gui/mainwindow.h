@@ -15,6 +15,9 @@ class StationTreeModel;
 class GEOModels;
 class MshModel;
 class VtkVisPipeline;
+#ifdef OGS_USE_VRPN
+	class TrackingSettingsWidget;
+#endif // OGS_USE_VRPN
 
 class MainWindow : public QMainWindow, public Ui_MainWindowClass
 {
@@ -78,6 +81,9 @@ private:
 	GEOModels* _geoModels;
 	MshModel* _meshModels;
 	VtkVisPipeline* _vtkVisPipeline;
+	#ifdef OGS_USE_VRPN
+		TrackingSettingsWidget* _trackingSettingsWidget;
+	#endif // OGS_USE_VRPN
 
 signals:
 	void fileUsed( QString filename );
