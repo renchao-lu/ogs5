@@ -10,8 +10,10 @@
 
 // ** INCLUDES **
 #include "TreeItem.h"
+#include "Configure.h"
 
 #include <QList>
+#include <OpenSG/OSGNode.h>
 
 class vtkAlgorithm;
 class vtkPointSet;
@@ -30,9 +32,15 @@ class VtkVisPipelineItem : public TreeItem
 {
 public:
 	/// Constructor for a source/filter object.
+#ifdef OGS_USE_OPENSG
+	VtkVisPipelineItem(vtkRenderer* renderer, vtkAlgorithm* algorithm,
+		TreeItem* parentItem, vtkPointSet* input, OSG::NodePtr parentNode,
+		const QList<QVariant> data = QList<QVariant>());
+#else // OGS_USE_OPENSG
 	VtkVisPipelineItem(vtkRenderer* renderer, vtkAlgorithm* algorithm,
 		TreeItem* parentItem, vtkPointSet* input,
 		const QList<QVariant> data = QList<QVariant>());
+#endif // OGS_USE_OPENSG
 
 	~VtkVisPipelineItem();
 
@@ -63,6 +71,9 @@ private:
 	vtkDataSetMapper* _mapper;
 	vtkActor* _actor;
 	vtkRenderer* _renderer;
+#ifdef OGS_USE_OPENSG
+	OSG::NodePtr _parentNode;
+#endif // OGS_USE_OPENSG
 
 	/// Initalises vtkMapper and vtkActor necessary for visualization of
 	/// the item and sets the item's properties.

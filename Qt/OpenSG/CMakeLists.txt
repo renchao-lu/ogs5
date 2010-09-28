@@ -4,12 +4,13 @@
 ### Source files ###
 SET( SOURCES
 	vtkOsgActor.cpp
+	OsgWidget.cpp
 )
 
 ### Moc header files ###
-#SET( MOC_HEADERS
-#	
-#)
+SET( MOC_HEADERS
+	OsgWidget.h
+)
 
 ### UI files ###
 #SET( UIS
@@ -23,7 +24,7 @@ SET( HEADERS
 
 ### Qt precompiler ###
 #QT4_WRAP_UI( UI_HEADERS ${UIS} )
-#Qt4_WRAP_CPP( MOC_SOURCES ${MOC_HEADERS} )
+Qt4_WRAP_CPP( MOC_SOURCES ${MOC_HEADERS} )
 
 ### Include directories ###
 INCLUDE_DIRECTORIES(
@@ -39,8 +40,8 @@ INCLUDE_DIRECTORIES(
 ADD_LIBRARY( OgsOpenSG STATIC
 	${SOURCES}
 	${HEADERS}
-	#${MOC_HEADERS}
-	#${MOC_SOURCES}
+	${MOC_HEADERS}
+	${MOC_SOURCES}
 	#${UIS}
 )
 

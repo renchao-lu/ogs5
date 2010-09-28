@@ -180,6 +180,7 @@ void vtkOsgActor::LookForNormals(){
 		}
 	} else if (dynamic_cast<vtkDataSetMapper*>(this->GetMapper())){
 		vtkDataSetMapper *dataSetMapper = (vtkDataSetMapper*) this->GetMapper();
+		dataSetMapper->Update();
 		pPolyData = (vtkPolyData*) dataSetMapper->GetPolyDataMapper()->GetInput();
 		if (m_bVerbose){
 			std::cerr << "Using vtkPolyDataMapper via the vtkDataSetMapper" << std::endl;

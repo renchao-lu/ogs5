@@ -23,6 +23,17 @@
 #include <vtkActor.h>
 #include <vtkLight.h>
 
+#ifdef OGS_USE_OPENSG
+#include "vtkOsgActor.h"
+VtkVisPipeline::VtkVisPipeline(vtkRenderer* renderer, OSG::SimpleSceneManager* manager, QObject* parent /*= 0*/)
+: TreeModel(parent), _renderer(renderer), _sceneManager(manager)
+{
+	QList<QVariant> rootData;
+	rootData << "Object name" << "Visible";
+	delete _rootItem;
+	_rootItem = new TreeItem(rootData, NULL);
+}
+#else // OGS_USE_OPENSG
 VtkVisPipeline::VtkVisPipeline( vtkRenderer* renderer, QObject* parent /*= 0*/ )
 : TreeModel(parent), _renderer(renderer)
 {
@@ -32,6 +43,7 @@ VtkVisPipeline::VtkVisPipeline( vtkRenderer* renderer, QObject* parent /*= 0*/ )
 	_rootItem = new TreeItem(rootData, NULL);
 	//_renderer->SetBackground(1,1,1);
 }
+#endif // OGS_USE_OPENSG
 
 bool VtkVisPipeline::setData( const QModelIndex &index, const QVariant &value,
 	int role /* = Qt::EditRole */ )
@@ -126,6 +138,7 @@ void VtkVisPipeline::addPipelineItem( vtkAlgorithm* source,
 	TreeItem* parentItem = getItem(parent);
 	vtkPointSet* input = NULL;
 
+	// If the parent is not the root TreeItem
 	if (parent.isValid())
 	{
 		VtkVisPipelineItem* visParentItem = static_cast<VtkVisPipelineItem*>(parentItem);
@@ -134,7 +147,21 @@ void VtkVisPipeline::addPipelineItem( vtkAlgorithm* source,
 
 	QList<QVariant> itemData;
 	itemData << source->GetClassName() << true;
+#ifdef OGS_USE_OPENSG
+	VtkVisPipelineItem* item;
+	if (parent.isValid())
+	{
+		VtkVisPipelineItem* visParentItem = static_cast<VtkVisPipelineItem*>(parentItem);
+		OSG::NodePtr parentNode = static_cast<vtkOsgActor*>(visParentItem->actor())->GetOsgRoot();
+		item = new VtkVisPipelineItem(_renderer, source, parentItem, input, parentNode, itemData);
+	}
+	else
+		item = new VtkVisPipelineItem(_renderer, source, parentItem, input, _sceneManager->getRoot(), itemData);
+		
+	_sceneManager->showAll();
+#else // OGS_USE_OPENSG
 	VtkVisPipelineItem* item = new VtkVisPipelineItem(_renderer, source, parentItem, input, itemData);
+#endif // OGS_USE_OPENSG
 	parentItem->appendChild(item);
 
 	int parentChildCount = parentItem->childCount();

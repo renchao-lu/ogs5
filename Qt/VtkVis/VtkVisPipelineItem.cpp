@@ -8,7 +8,6 @@
 // ** INCLUDES **
 #include "VtkVisPipelineItem.h"
 #include "VtkAlgorithmProperties.h"
-#include "Configure.h"
 
 #include <vtkAlgorithm.h>
 #include <vtkPointSet.h>
@@ -33,23 +32,52 @@
 #include <vtkUnstructuredGridAlgorithm.h>
 #include <vtkUnstructuredGridWriter.h>
 
-VtkVisPipelineItem::VtkVisPipelineItem(
-	vtkRenderer* renderer,
-	vtkAlgorithm* algorithm,
-	TreeItem* parentItem,
-	vtkPointSet* input,
-	const QList<QVariant> data /*= QList<QVariant>()*/)
-: TreeItem(data, parentItem), _algorithm(algorithm), _input(input), _renderer(renderer)
-{
-	//if (_input != NULL)
-		//_algorithm->SetInput(_input);
-		//static_cast<vtkPolyDataAlgorithm*>(_algorithm)->SetInput(_input);
+#ifdef OGS_USE_OPENSG
+	VtkVisPipelineItem::VtkVisPipelineItem(
+		vtkRenderer* renderer,
+		vtkAlgorithm* algorithm,
+		TreeItem* parentItem,
+		vtkPointSet* input,
+		OSG::NodePtr parentNode,
+		const QList<QVariant> data /*= QList<QVariant>()*/)
+	: TreeItem(data, parentItem), _algorithm(algorithm), _input(input), _renderer(renderer), _parentNode(parentNode)
+	{
+		//if (_input != NULL)
+			//_algorithm->SetInput(_input);
+			//static_cast<vtkPolyDataAlgorithm*>(_algorithm)->SetInput(_input);
 
-	Initialize();
-}
+		Initialize();
+	}
+#else // OGS_USE_OPENSG
+	VtkVisPipelineItem::VtkVisPipelineItem(
+		vtkRenderer* renderer,
+		vtkAlgorithm* algorithm,
+		TreeItem* parentItem,
+		vtkPointSet* input,
+		const QList<QVariant> data /*= QList<QVariant>()*/)
+	: TreeItem(data, parentItem), _algorithm(algorithm), _input(input), _renderer(renderer)
+	{
+		//if (_input != NULL)
+			//_algorithm->SetInput(_input);
+			//static_cast<vtkPolyDataAlgorithm*>(_algorithm)->SetInput(_input);
+
+		Initialize();
+	}
+#endif // OGS_USE_OPENSG
+
 
 VtkVisPipelineItem::~VtkVisPipelineItem()
 {
+	#ifdef OGS_USE_OPENSG
+		if(_parentNode != NullFC)
+		{
+			vtkOsgActor* osgActor = dynamic_cast<vtkOsgActor*>(actor());
+			OSG::beginEditCP(_parentNode);{
+				_parentNode->subChild(osgActor->GetOsgRoot());
+			};OSG::endEditCP(_parentNode);
+		}
+	#endif // OGS_USE_OPENSG
+	
 	_renderer->RemoveActor(_actor);
 	_actor->Delete();
 	_mapper->Delete();
@@ -93,11 +121,20 @@ void VtkVisPipelineItem::Initialize()
 	_mapper = vtkDataSetMapper::New();
 	_mapper->SetInputConnection(0, _algorithm->GetOutputPort(0));
 #ifdef OGS_USE_OPENSG
-	_actor = vtkOsgActor::New();
+	vtkOsgActor* actor = vtkOsgActor::New();
+	_actor = actor;
+	_actor->SetMapper(_mapper);
+	//actor->Render(_renderer, _mapper);
+	actor->SetVerbose(true);
+	actor->UpdateOsg();
+
+	OSG::beginEditCP(_parentNode);{
+		_parentNode->addChild(actor->GetOsgRoot());
+	};OSG::endEditCP(_parentNode);
 #else
 	_actor = vtkActor::New();
-#endif
 	_actor->SetMapper(_mapper);
+#endif
 	_renderer->AddActor(_actor);
 
 	// Set pre-set properties

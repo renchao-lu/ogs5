@@ -62,6 +62,7 @@
 #include <OpenSG/OSGCoredNodePtr.h>
 #include <OpenSG/OSGGroup.h>
 #include "vtkOsgActor.h"
+#include "OsgWidget.h"
 #endif
 
 //OSG_USING_NAMESPACE
@@ -137,7 +138,16 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 		_meshModels, SLOT(removeMesh(const QModelIndex&)));
 
 	// vtk visualization pipeline
+#ifdef OGS_USE_OPENSG
+	OsgWidget* osgWidget = new OsgWidget(parent);
+	osgWidget->show();
+	OSG::NodePtr box = OSG::makeBox(1,1,1,1,1,1);
+	osgWidget->sceneManager()->setRoot(makeCoredNode<OSG::Group>());
+	osgWidget->sceneManager()->showAll();
+	_vtkVisPipeline = new VtkVisPipeline(visualizationWidget->renderer(), osgWidget->sceneManager());
+#else // OGS_USE_OPENSG
 	_vtkVisPipeline = new VtkVisPipeline(visualizationWidget->renderer());
+#endif // OGS_USE_OPENSG
 	connect(_geoModels, SIGNAL(pointModelAdded(Model*)),
 		_vtkVisPipeline, SLOT(addPipelineItem(Model*)));
 	connect(_geoModels, SIGNAL(pointModelRemoved(Model*)),
