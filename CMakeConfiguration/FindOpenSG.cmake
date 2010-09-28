@@ -123,18 +123,26 @@ ELSE(__OpenSG_IN_CACHE)
 	if (VS32)
 	  # Visual Studio x32
 	  SET( __OpenSG_INCLUDE_SEARCH_DIRS
+	    $ENV{OPENSG_ROOT}/include
+	    ${OPENSG_ROOT}/include
 	    ${LIBRARIES_DIR}/opensg/include
 	    ${CMAKE_SOURCE_DIR}/../OpenSG/include )
 	  SET( __OpenSG_LIBRARIES_SEARCH_DIRS
+	    $ENV{OPENSG_ROOT}/lib
+	    ${OPENSG_ROOT}/lib
 	    ${LIBRARIES_DIR}/opensg/lib
 	    ${CMAKE_SOURCE_DIR}/../opensg/lib )
 	else (VS32)  
 	  if (VS64) 
 	    # Visual Studio x64
 		SET( __OpenSG_INCLUDE_SEARCH_DIRS
+		$ENV{OPENSG_ROOT}/include
+		${OPENSG_ROOT}/include
 	      ${LIBRARIES_DIR}/opensg_x64/include
 	      ${CMAKE_SOURCE_DIR}/../opensg_x64/include )
 		SET( __OpenSG_LIBRARIES_SEARCH_DIRS
+		$ENV{OPENSG_ROOT}/lib
+		${OPENSG_ROOT}/lib
 	      ${LIBRARIES_DIR}/opensg_x64/lib
 	      ${CMAKE_SOURCE_DIR}/../opensg_x64/lib )
 	  else (VS64)  
