@@ -86,12 +86,15 @@ QModelIndex VtkVisPipeline::getIndex( vtkActor* actor )
 
 Qt::ItemFlags VtkVisPipeline::flags( const QModelIndex &index ) const
 {
+	Qt::ItemFlags defaultFlags = Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+
 	if (!index.isValid())
 		return Qt::ItemIsEnabled;
-	if (index.column() == 1)
-		return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
-	else
-		return QAbstractItemModel::flags(index);
+
+	//if (index.column() == 1)
+	//	defaultFlags |= Qt::ItemIsEditable;
+
+	return defaultFlags;
 }
 
 void VtkVisPipeline::addPipelineItem( Model* model )

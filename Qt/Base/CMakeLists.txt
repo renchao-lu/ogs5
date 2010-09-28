@@ -8,6 +8,7 @@ set( SOURCES
 	ColorPickerPushButton.cpp
 	TreeModelIterator.cpp
 	modeltest.cpp
+	CheckboxDelegate.cpp
 )
 
 # Moc headers
@@ -16,6 +17,7 @@ set( MOC_HEADERS
 	TreeModel.h
 	ColorPickerPushButton.h
 	modeltest.h
+	CheckboxDelegate.h
 )
 
 # Header files

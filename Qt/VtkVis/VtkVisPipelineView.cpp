@@ -10,6 +10,7 @@
 
 #include "VtkVisPipelineItem.h"
 #include "VtkVisPipeline.h"
+#include "CheckboxDelegate.h"
 
 #include <vtkActor.h>
 #include <vtkDataSetMapper.h>
@@ -23,6 +24,9 @@ VtkVisPipelineView::VtkVisPipelineView( QWidget* parent /*= 0*/ )
 : QTreeView(parent)
 {
 	setItemsExpandable(false);
+	setEditTriggers(QAbstractItemView::AllEditTriggers);
+	CheckboxDelegate* checkboxDelegate = new CheckboxDelegate(1, this);
+	setItemDelegateForColumn(1, checkboxDelegate);
 }
 
 void VtkVisPipelineView::contextMenuEvent( QContextMenuEvent* event )
