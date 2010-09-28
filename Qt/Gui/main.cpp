@@ -4,8 +4,9 @@
 
 int main(int argc, char *argv[])
 {
-	// OpenSG
-	OSG::osgInit(argc,argv);
+	#ifdef OGS_USE_OPENSG
+		OSG::osgInit(argc,argv);
+	#endif
 
 	QApplication a(argc, argv);
 	setlocale(LC_NUMERIC,"C");

@@ -8,15 +8,24 @@
 // ** INCLUDES **
 #include "VtkVisPipelineItem.h"
 #include "VtkAlgorithmProperties.h"
+#include "Configure.h"
 
 #include <vtkAlgorithm.h>
 #include <vtkPointSet.h>
 #include <vtkDataSetMapper.h>
 #include <vtkActor.h>
-#include "vtkOsgActor.h"
 #include <vtkRenderer.h>
 #include <vtkProperty.h>
 #include <vtkSmartPointer.h>
+
+#include <QMessageBox>
+
+#ifdef OGS_USE_OPENSG
+#include <OpenSG/OSGSceneFileHandler.h>
+#include <OpenSG/OSGCoredNodePtr.h>
+#include <OpenSG/OSGGroup.h>
+#include "vtkOsgActor.h"
+#endif
 
 // export test
 #include <vtkPolyDataAlgorithm.h>
@@ -83,7 +92,11 @@ void VtkVisPipelineItem::Initialize()
 {
 	_mapper = vtkDataSetMapper::New();
 	_mapper->SetInputConnection(0, _algorithm->GetOutputPort(0));
+#ifdef OGS_USE_OPENSG
 	_actor = vtkOsgActor::New();
+#else
+	_actor = vtkActor::New();
+#endif
 	_actor->SetMapper(_mapper);
 	_renderer->AddActor(_actor);
 
@@ -130,34 +143,49 @@ void VtkVisPipelineItem::setVtkProperties(VtkAlgorithmProperties* vtkProps)
 }
 
 int VtkVisPipelineItem::writeToFile(const std::string &filename) const
-{
+{	
 	if (!filename.empty())
 	{
-		vtkAlgorithm* alg = this->algorithm();
-		vtkPolyDataAlgorithm* algPD = dynamic_cast<vtkPolyDataAlgorithm*>(alg);
-		if (algPD)
+		if (filename.substr(filename.size() - 4).find("os") != std::string::npos)
 		{
-			vtkSmartPointer<vtkPolyDataWriter> pdWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
-			pdWriter->SetInput(algPD->GetOutputDataObject(0));
-			pdWriter->SetFileName(filename.c_str());
-			int result = pdWriter->Write();
-			return result;
+#ifdef OGS_USE_OPENSG
+			vtkOsgActor* osgActor = static_cast<vtkOsgActor*>(_actor);
+			osgActor->UpdateOsg();
+			OSG::SceneFileHandler::the().write(osgActor->GetOsgRoot(), filename.c_str());
+			osgActor->ClearOsg();
+#else
+			QMessageBox::warning(NULL, "Functionality not implemented",
+				"Sorry but this progam was not compiled with OpenSG support.");
+#endif
 		}
 		else
 		{
-			vtkUnstructuredGridAlgorithm* algUG = dynamic_cast<vtkUnstructuredGridAlgorithm*>(alg);
-			if (algUG)
+			vtkAlgorithm* alg = this->algorithm();
+			vtkPolyDataAlgorithm* algPD = dynamic_cast<vtkPolyDataAlgorithm*>(alg);
+			if (algPD)
 			{
-				std::string gridName(filename);
-				gridName.replace(filename.length()-1, 1, "u"); // change fileextension from "vtp" to "vtu"
-				vtkSmartPointer<vtkUnstructuredGridWriter> ugWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
-				ugWriter->SetInput(algUG->GetOutputDataObject(0));
-				ugWriter->SetFileName(filename.c_str());
-				int result = ugWriter->Write();
+				vtkSmartPointer<vtkPolyDataWriter> pdWriter = vtkSmartPointer<vtkPolyDataWriter>::New();
+				pdWriter->SetInput(algPD->GetOutputDataObject(0));
+				pdWriter->SetFileName(filename.c_str());
+				int result = pdWriter->Write();
 				return result;
 			}
+			else
+			{
+				vtkUnstructuredGridAlgorithm* algUG = dynamic_cast<vtkUnstructuredGridAlgorithm*>(alg);
+				if (algUG)
+				{
+					std::string gridName(filename);
+					gridName.replace(filename.length()-1, 1, "u"); // change fileextension from "vtp" to "vtu"
+					vtkSmartPointer<vtkUnstructuredGridWriter> ugWriter = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
+					ugWriter->SetInput(algUG->GetOutputDataObject(0));
+					ugWriter->SetFileName(filename.c_str());
+					int result = ugWriter->Write();
+					return result;
+				}
+			}
+			std::cout << "VtkVisPipelineItem::writeToFile() - Unknown data type..." << std::endl;
 		}
-		std::cout << "VtkVisPipelineItem::writeToFile() - Unknown data type..." << std::endl;
 	}
 	return 0;
 }

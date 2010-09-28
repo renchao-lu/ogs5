@@ -19,12 +19,6 @@
 #include <QFileDialog>
 #include <QSettings>
 
-// OpenSG
-#include <OpenSG/OSGSceneFileHandler.h>
-#include <OpenSG/OSGCoredNodePtr.h>
-#include <OpenSG/OSGGroup.h>
-#include "vtkOsgActor.h"
-
 VtkVisPipelineView::VtkVisPipelineView( QWidget* parent /*= 0*/ )
 : QTreeView(parent)
 {
@@ -75,19 +69,7 @@ void VtkVisPipelineView::exportSelectedPipelineItemAsOsg()
 		settings.value("lastExportedFileDirectory").toString(), "OpenSG file (*.osg *.osb)");
 	if (!filename.isEmpty())
 	{
-		OSG::NodePtr root = OSG::makeCoredNode<OSG::Group>();
-		VtkVisPipelineItem* item = static_cast<VtkVisPipelineItem*>(static_cast<VtkVisPipeline*>(this->model())->getItem(idx));
-		vtkOsgActor* actor = static_cast<vtkOsgActor*>(item->actor());
-		item->mapper()->SetScalarVisibility(true);
-		actor->SetVerbose(true);
-		actor->UpdateOsg();
-		beginEditCP(root);
-		root->addChild(actor->GetOsgRoot());
-		endEditCP(root);
-		//actor->ClearOsg();
-
-		OSG::SceneFileHandler::the().write(root, filename.toStdString().c_str());
-
+		static_cast<VtkVisPipelineItem*>(static_cast<VtkVisPipeline*>(this->model())->getItem(idx))->writeToFile(filename.toStdString());
 		QDir dir = QDir(filename);
 		settings.setValue("lastExportedFileDirectory", dir.absolutePath());
 	}

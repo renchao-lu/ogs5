@@ -57,11 +57,12 @@
 #include <vtkVRMLExporter.h>
 #include <vtkOBJExporter.h>
 
-// OpenSG
+#ifdef OGS_USE_OPENSG
 #include <OpenSG/OSGSceneFileHandler.h>
 #include <OpenSG/OSGCoredNodePtr.h>
 #include <OpenSG/OSGGroup.h>
 #include "vtkOsgActor.h"
+#endif
 
 //OSG_USING_NAMESPACE
 
@@ -876,7 +877,7 @@ void MainWindow::on_actionExportObj_triggered( bool checked /*= false*/ )
 void MainWindow::on_actionExportOpenSG_triggered(bool checked /*= false*/ )
 {
 	Q_UNUSED(checked)
-
+#ifdef OGS_USE_OPENSG
 	QSettings settings("UFZ", "OpenGeoSys-5");
 	QString filename = QFileDialog::getSaveFileName(
 		this, "Export scene to OpenSG binary file",	settings.value(
@@ -904,4 +905,7 @@ void MainWindow::on_actionExportOpenSG_triggered(bool checked /*= false*/ )
 
 		OSG::SceneFileHandler::the().write(root, filename.toStdString().c_str());
 	}
+#else
+	QMessageBox::warning(this, "Functionality not implemented", "Sorry but this progam was not compiled with OpenSG support.");
+#endif
 }

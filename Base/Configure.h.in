@@ -39,5 +39,6 @@
 
 #cmakedefine OGS_VRED_PLUGIN
 #cmakedefine OGS_PYTHON
+#cmakedefine OGS_USE_OPENSG
 
 #endif // CONFIGURE_H
