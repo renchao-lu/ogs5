@@ -61,6 +61,7 @@ private slots:
 	void on_actionExportVTK_triggered(bool checked = false);
 	void on_actionExportVRML2_triggered(bool checked = false);
 	void on_actionExportObj_triggered(bool checked = false);
+	void on_actionExportOpenSG_triggered(bool checked = false);
 
 private:
 	QMenu* createImportFilesMenu();

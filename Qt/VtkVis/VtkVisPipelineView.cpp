@@ -16,6 +16,13 @@
 #include <QMenu>
 #include <QContextMenuEvent>
 #include <QFileDialog>
+#include <QSettings>
+
+// OpenSG
+#include <OpenSG/OSGSceneFileHandler.h>
+#include <OpenSG/OSGCoredNodePtr.h>
+#include <OpenSG/OSGGroup.h>
+#include "vtkOsgActor.h"
 
 VtkVisPipelineView::VtkVisPipelineView( QWidget* parent /*= 0*/ )
 : QTreeView(parent)
@@ -32,22 +39,56 @@ void VtkVisPipelineView::contextMenuEvent( QContextMenuEvent* event )
 		QMenu menu;
 		QAction* addFilterAction = menu.addAction("Add filter...");
 		menu.addSeparator();
-		QAction* exportAction = menu.addAction("Export...");
+		QAction* exportVtkAction = menu.addAction("Export as VTK");
+		QAction* exportOsgAction = menu.addAction("Export as OpenSG");
 		QAction* removeAction = menu.addAction("Remove");
 
 		connect(addFilterAction, SIGNAL(triggered()), this, SLOT(addPipelineFilterItem()));
-		connect(exportAction, SIGNAL(triggered()), this, SLOT(exportSelectedPipelineItem()));
+		connect(exportVtkAction, SIGNAL(triggered()), this, SLOT(exportSelectedPipelineItemAsVtk()));
+		connect(exportOsgAction, SIGNAL(triggered()), this, SLOT(exportSelectedPipelineItemAsOsg()));
 		connect(removeAction, SIGNAL(triggered()), this, SLOT(removeSelectedPipelineItem()));
 
 		menu.exec(event->globalPos());
 	}
 }
 
-void VtkVisPipelineView::exportSelectedPipelineItem()
+void VtkVisPipelineView::exportSelectedPipelineItemAsVtk()
 {
+	QSettings settings("UFZ", "OpenGeoSys-5");
 	QModelIndex idx = this->selectionModel()->currentIndex();
-	QString filename = QFileDialog::getSaveFileName(this, "Export object to vtk-file", "","VTK file (*.vtp *.vtu)");
-	static_cast<VtkVisPipelineItem*>(static_cast<VtkVisPipeline*>(this->model())->getItem(idx))->writeToFile(filename.toStdString());
+	QString filename = QFileDialog::getSaveFileName(this, "Export object to vtk-file",
+		settings.value("lastExportedFileDirectory").toString(),"VTK file (*.vtp *.vtu)");
+	if (!filename.isEmpty())
+	{
+		static_cast<VtkVisPipelineItem*>(static_cast<VtkVisPipeline*>(this->model())->getItem(idx))->writeToFile(filename.toStdString());
+		QDir dir = QDir(filename);
+		settings.setValue("lastExportedFileDirectory", dir.absolutePath());
+	}
+}
+
+void VtkVisPipelineView::exportSelectedPipelineItemAsOsg()
+{
+	QSettings settings("UFZ", "OpenGeoSys-5");
+	QModelIndex idx = this->selectionModel()->currentIndex();
+	QString filename = QFileDialog::getSaveFileName(this, "Export object to OpenSG file",
+		settings.value("lastExportedFileDirectory").toString(), "OpenSG file (*.osg *.osb)");
+	if (!filename.isEmpty())
+	{
+		OSG::NodePtr root = OSG::makeCoredNode<OSG::Group>();
+		VtkVisPipelineItem* item = static_cast<VtkVisPipelineItem*>(static_cast<VtkVisPipeline*>(this->model())->getItem(idx));
+		vtkOsgActor* actor = static_cast<vtkOsgActor*>(item->actor());
+		actor->SetVerbose(true);
+		actor->UpdateOsg();
+		beginEditCP(root);
+		root->addChild(actor->GetOsgRoot());
+		endEditCP(root);
+		actor->ClearOsg();
+
+		OSG::SceneFileHandler::the().write(root, filename.toStdString().c_str());
+
+		QDir dir = QDir(filename);
+		settings.setValue("lastExportedFileDirectory", dir.absolutePath());
+	}
 }
 
 void VtkVisPipelineView::removeSelectedPipelineItem()

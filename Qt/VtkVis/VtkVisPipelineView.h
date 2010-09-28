@@ -36,7 +36,11 @@ private:
 
 private slots:
 
-	void exportSelectedPipelineItem();
+	/// Exports the currently selected item as a VTK file
+	void exportSelectedPipelineItemAsVtk();
+
+	/// Exports the currently selected item as an OpenSG file
+	void exportSelectedPipelineItemAsOsg();
 
 	/// Sends an requestRemovePipelineItem() signal to remove
 	/// the currently selected item.

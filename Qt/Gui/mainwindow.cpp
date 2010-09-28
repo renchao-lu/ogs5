@@ -57,6 +57,14 @@
 #include <vtkVRMLExporter.h>
 #include <vtkOBJExporter.h>
 
+// OpenSG
+#include <OpenSG/OSGSceneFileHandler.h>
+#include <OpenSG/OSGCoredNodePtr.h>
+#include <OpenSG/OSGGroup.h>
+#include "vtkOsgActor.h"
+
+//OSG_USING_NAMESPACE
+
 #include <clocale>
 
 // for sizeof operator
@@ -227,8 +235,6 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 
 	// connects for station model
 	connect(stationTabWidget->treeView, SIGNAL(propertiesDialogRequested(std::string)), this, SLOT(showPropertiesDialog(std::string)));
-
-
 //	std::cout << "size of Point: " << sizeof (GEOLIB::Point) << std::endl;
 //	std::cout << "size of CGLPoint: " << sizeof (CGLPoint) << std::endl;
 //
@@ -324,7 +330,6 @@ void MainWindow::open()
 		QDir dir = QDir(fileName);
 		settings.setValue("lastOpenedFileDirectory", dir.absolutePath());
 		loadFile(fileName);
-		std::cout << dir.absolutePath().toStdString() << std::endl;
      }
 }
 
@@ -865,5 +870,38 @@ void MainWindow::on_actionExportObj_triggered( bool checked /*= false*/ )
 		exporter->SetRenderWindow(visualizationWidget->vtkWidget->GetRenderWindow());
 		exporter->Write();
 		exporter->Delete();
+	}
+}
+
+void MainWindow::on_actionExportOpenSG_triggered(bool checked /*= false*/ )
+{
+	Q_UNUSED(checked)
+
+	QSettings settings("UFZ", "OpenGeoSys-5");
+	QString filename = QFileDialog::getSaveFileName(
+		this, "Export scene to OpenSG binary file",	settings.value(
+			"lastExportedFileDirectory").toString(), "OpenSG files (*.osb *.osg);");
+	if (!filename.isEmpty())
+	{
+		QDir dir = QDir(filename);
+		settings.setValue("lastExportedFileDirectory", dir.absolutePath());
+
+		TreeModelIterator it(_vtkVisPipeline);
+		++it;
+		OSG::NodePtr root = OSG::makeCoredNode<OSG::Group>();
+		while(*it)
+		{
+			VtkVisPipelineItem* item = static_cast<VtkVisPipelineItem*>(*it);
+			vtkOsgActor* actor = static_cast<vtkOsgActor*>(item->actor());
+			actor->SetVerbose(true);
+			actor->UpdateOsg();
+			beginEditCP(root);
+			root->addChild(actor->GetOsgRoot());
+			endEditCP(root);
+			actor->ClearOsg();
+			++it;
+		}
+
+		OSG::SceneFileHandler::the().write(root, filename.toStdString().c_str());
 	}
 }
