@@ -24,6 +24,14 @@ public:
 	
 	/// Sets the scaling from real meters to virtual meters.
 	void setRealToVirtualScale(double scale) { _realToVirtualScale = scale; }
+	double realToVirtualScale () const { return _realToVirtualScale; }
+
+	double trackingOffsetX() const { return _trackedPositionOffset[0]; }
+	double trackingOffsetY() const { return _trackedPositionOffset[1]; }
+	double trackingOffsetZ() const { return _trackedPositionOffset[2]; }
+
+	double screenAspectRatio() const { return _screenAspectRatio; }
+	double screenHeight() const { return _screenHeight; }
 
 public slots:
 	//void setTrackinData(double position[3], double dir[3]);

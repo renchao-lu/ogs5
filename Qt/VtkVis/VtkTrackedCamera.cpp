@@ -11,17 +11,39 @@
 #include <vtkMath.h>
 #include <vtkPerspectiveTransform.h>
 
+#include <QSettings>
+
 VtkTrackedCamera::VtkTrackedCamera(QObject* parent)
-: QObject(parent), vtkOpenGLCamera(),
-_realToVirtualScale(1.0), _screenAspectRatio(1.6), _screenHeight(0.4)
+: QObject(parent), vtkOpenGLCamera()
 {
+	QSettings settings("UFZ", "OpenGeoSys-5");
+	settings.beginGroup("Tracking");
+	// Read from settings
+	if (settings.contains("artOffsetX"))
+	{
+		_trackedPositionOffset[0] = settings.value("artOffsetX").toDouble();
+		_trackedPositionOffset[1] = settings.value("artOffsetY").toDouble();
+		_trackedPositionOffset[2] = settings.value("artOffsetZ").toDouble();
+		_realToVirtualScale = settings.value("artRealToVirtualScale").toDouble();
+		_screenAspectRatio = settings.value("artAspectRatio").toDouble();
+		_screenHeight = settings.value("artScreenHeight").toDouble();
+	}
+	// Default values
+	else
+	{
+		_trackedPositionOffset[0] = 0;
+		_trackedPositionOffset[1] = 0;
+		_trackedPositionOffset[2] = 0;
+		_realToVirtualScale = 1.0;
+		_screenAspectRatio = 1.6;
+		_screenHeight = 0.4;
+	}
+	settings.endGroup();
+
 	// if z up
 	_trackedPosition[0] = 0;
 	_trackedPosition[1] = 2;
 	_trackedPosition[2] = 0;
-	_trackedPositionOffset[0] = 0;
-	_trackedPositionOffset[1] = 0;
-	_trackedPositionOffset[2] = 0;
 	_focalPoint[0] = 0;
 	_focalPoint[1] = 0;
 	_focalPoint[2] = 0;
@@ -32,6 +54,15 @@ _realToVirtualScale(1.0), _screenAspectRatio(1.6), _screenHeight(0.4)
 
 VtkTrackedCamera::~VtkTrackedCamera()
 {
+	QSettings settings("UFZ", "OpenGeoSys-5");
+	settings.beginGroup("Tracking");
+	settings.setValue("artOffsetX", _trackedPositionOffset[0]);
+	settings.setValue("artOffsetY", _trackedPositionOffset[1]);
+	settings.setValue("artOffsetZ", _trackedPositionOffset[2]);
+	settings.setValue("artRealToVirtualScale", _realToVirtualScale);
+	settings.setValue("artAspectRatio", _screenAspectRatio);
+	settings.setValue("artScreenHeight", _screenHeight);
+	settings.endGroup();
 }
 
 void VtkTrackedCamera::setTrackingData(double x, double y, double z)

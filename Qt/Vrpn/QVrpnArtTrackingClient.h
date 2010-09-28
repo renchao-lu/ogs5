@@ -11,6 +11,8 @@
 
 #include <QTimer>
 
+class QString;
+
 class QVrpnArtTrackingClient : public QObject, public VrpnArtTrackingClient
 {
 	Q_OBJECT
@@ -25,6 +27,12 @@ public:
 	/// @param updateInterval The update interval in ms. If 0 then you have to
 	/// manually call MainLoop().
 	void StartTracking(const char* deviceName, int updateInterval = 100);
+
+	/// @brief Returns the device name.
+	QString deviceName() const { return _deviceName; }
+
+	/// @ Returns the update interval.
+	int updateInterval() const { return _updateInterval; }
 	
 public slots:
 	/// @brief Calls the vrpn mainloop functions. Must be called once per frame.
@@ -38,6 +46,12 @@ protected:
 private:
 	/// Calls MainLoop(), see init().
 	QTimer* _timer;
+
+	/// The device name, e.g. DTrack@141.65.34.36
+	QString _deviceName;
+
+	/// The update interval
+	int _updateInterval;
 	
 	/// @brief This one points to the class itself.
 	/// You can use only one QVrpnArtTrackingClient because it´s static.

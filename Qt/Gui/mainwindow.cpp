@@ -152,7 +152,7 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 
 	// vtk visualization pipeline
 #ifdef OGS_USE_OPENSG
-	OsgWidget* osgWidget = new OsgWidget(parent);
+	OsgWidget* osgWidget = new OsgWidget(this, 0, Qt::Window);
 	osgWidget->show();
 	OSG::NodePtr box = OSG::makeBox(1,1,1,1,1,1);
 	osgWidget->sceneManager()->setRoot(makeCoredNode<OSG::Group>());
@@ -253,7 +253,7 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	#ifdef OGS_USE_VRPN
 		VtkTrackedCamera* cam = static_cast<VtkTrackedCamera*>
 			(visualizationWidget->renderer()->GetActiveCamera());
-		_trackingSettingsWidget = new TrackingSettingsWidget(cam);
+		_trackingSettingsWidget = new TrackingSettingsWidget(cam, visualizationWidget, Qt::Window);
 	#endif // OGS_USE_VRPN
 	
 

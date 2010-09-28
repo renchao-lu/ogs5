@@ -18,7 +18,7 @@ class TrackingSettingsWidget : public QWidget, public Ui_TrackingSettingsWidgetB
 	Q_OBJECT
 	
 public:
-	TrackingSettingsWidget(VtkTrackedCamera* cam, QWidget* parent = 0);
+	TrackingSettingsWidget(VtkTrackedCamera* cam, QWidget* parent = 0, Qt::WindowFlags f = 0);
 	virtual ~TrackingSettingsWidget();
 
 protected slots:
@@ -31,7 +31,8 @@ protected slots:
 	void on_realToVirtualScaleLineEdit_textChanged(QString text);
 	void on_aspectRatioLineEdit_textChanged(QString text);
 	void on_screenHeightLineEdit_textChanged(QString text);
-
+	void on_nearClipPlaneLineEdit_textChanged(QString text);
+	void on_farClipPlaneLineEdit_textChanged(QString text);
 private:
 	VtkTrackedCamera*  _cam;
 };

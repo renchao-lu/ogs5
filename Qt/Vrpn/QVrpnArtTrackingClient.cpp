@@ -10,6 +10,9 @@
 
 #include <iostream>
 
+#include <QSettings>
+#include <QString>
+#include <QStringList>
 
 QVrpnArtTrackingClient* QVrpnArtTrackingClient::_singleton = 0;
 
@@ -23,6 +26,14 @@ QVrpnArtTrackingClient::QVrpnArtTrackingClient(QObject* parent /*= NULL*/)
 
 QVrpnArtTrackingClient::~QVrpnArtTrackingClient()
 {
+	QStringList list = _deviceName.split("@");
+
+	QSettings settings("UFZ", "OpenGeoSys-5");
+	settings.beginGroup("Tracking");
+	settings.setValue("artDeviceName", list.at(0));
+	settings.setValue("artDeviceNameAt", list.at(1));
+	settings.setValue("artUpdateInterval", _updateInterval);
+	settings.endGroup();
 }
 
 QVrpnArtTrackingClient* QVrpnArtTrackingClient::Instance(QObject* parent /*= NULL*/)
@@ -35,6 +46,8 @@ QVrpnArtTrackingClient* QVrpnArtTrackingClient::Instance(QObject* parent /*= NUL
 void QVrpnArtTrackingClient::StartTracking(const char *deviceName,
 	int updateInterval /*= 100*/)
 {
+	_deviceName = QString(deviceName);
+	_updateInterval = updateInterval;
 	VrpnArtTrackingClient::StartTracking(deviceName);
 	std::cout << "Tracking started." << std::endl;
 	if (updateInterval > 0)

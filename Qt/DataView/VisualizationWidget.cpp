@@ -55,25 +55,33 @@ VisualizationWidget::VisualizationWidget( QWidget* parent /*= 0*/ )
 	renderWindow->SetStereoTypeToCrystalEyes();
 	_vtkRender = vtkRenderer::New();
 	renderWindow->AddRenderer(_vtkRender);
-#endif // OGS_VRED_PLUGIN
+#endif // OGS_VRED_PLUGIN                                                                                                               
 
-	VtkTrackedCamera* cam = new VtkTrackedCamera(this);
-	_vtkRender->SetActiveCamera(cam);
-	connect( cam, SIGNAL(viewUpdated()), this, SLOT(updateView()) );                                                                                                                          
-
+	QSettings settings("UFZ", "OpenGeoSys-5");
 
 #ifdef OGS_USE_VRPN
-	QSpaceNavigatorClient* spacenav = QSpaceNavigatorClient::Instance();
+	VtkTrackedCamera* cam = new VtkTrackedCamera(this);
+	_vtkRender->SetActiveCamera(cam);
+	connect( cam, SIGNAL(viewUpdated()), this, SLOT(updateView()) );           
+
+	//QSpaceNavigatorClient* spacenav = QSpaceNavigatorClient::Instance();
 	//spacenav->init("spacenav@localhost", 1000 / 15, SpaceNavigatorClient::Z);
-	cam->setFocalPoint(0, 5.0, 0.5);
-	cam->updateView();
-	spacenav->setTranslationFactor(2.0);
+	//cam->setFocalPoint(0, 5.0, 0.5);
+	//cam->updateView();
+	//spacenav->setTranslationFactor(2.0);
 	//connect( spacenav, SIGNAL(translated(double, double, double)), cam, SLOT(setTrackingData(double, double, double)) );
 	//connect( spacenav, SIGNAL(translated(double, double, double)), cam, SLOT(translate(double, double, double)) );
 
-	QVrpnArtTrackingClient* art = QVrpnArtTrackingClient::Instance();
-	art->StartTracking("DTrack@141.65.34.36");
-	//art->StartTracking("DTrack@visserv3.intern.ufz.de");
+	QVrpnArtTrackingClient* art = QVrpnArtTrackingClient::Instance(this);
+	if (settings.contains("Tracking/artDeviceName"))
+	{
+		QString deviceName = settings.value("Tracking/artDeviceName").toString();
+		QString deviceNameAt = settings.value("Tracking/artDeviceNameAt").toString();
+		art->StartTracking(QString(deviceName + "@" + deviceNameAt).toStdString().c_str(),
+			settings.value("Tracking/artUpdateInterval").toInt());
+	}
+	else
+		art->StartTracking("DTrack@141.65.34.36");
 	connect( art, SIGNAL(positionUpdated(double, double, double)), cam, SLOT(setTrackingData(double, double, double)) );
 
 	// Connect the vtk event to the qt slot
@@ -86,12 +94,11 @@ VisualizationWidget::VisualizationWidget( QWidget* parent /*= 0*/ )
 	_vtkRender->SetBackground(0.0,0.0,0.0);
 
 	// Restore settings
-	QSettings settings("UFZ", "OpenGeoSys-5");
 	stereoToolButton->setChecked(settings.value("stereoEnabled").toBool());
-	if (settings.contains("stereoEyeAngle"))
-		cam->SetEyeAngle(settings.value("stereoEyeAngle").toDouble());
-	else
-		cam->SetEyeAngle(2.0);
+	//if (settings.contains("stereoEyeAngle"))
+	//	cam->SetEyeAngle(settings.value("stereoEyeAngle").toDouble());
+	//else
+	//	cam->SetEyeAngle(2.0);
 
 	if (!stereoToolButton->isChecked())
 	{
@@ -99,7 +106,7 @@ VisualizationWidget::VisualizationWidget( QWidget* parent /*= 0*/ )
 		eyeAngleSlider->setEnabled(false);
 	}
 
-	eyeAngleSlider->setValue((int)(_vtkRender->GetActiveCamera()->GetEyeAngle() * 10));
+	//eyeAngleSlider->setValue((int)(_vtkRender->GetActiveCamera()->GetEyeAngle() * 10));
 }
 
 VisualizationWidget::~VisualizationWidget()
@@ -170,8 +177,8 @@ void VisualizationWidget::on_fullscreenToolButton_clicked( bool checked )
 
 void VisualizationWidget::on_eyeAngleSlider_valueChanged( int value )
 {
-	_vtkRender->GetActiveCamera()->SetEyeAngle(value / 10.0);
-	updateView();
+	//_vtkRender->GetActiveCamera()->SetEyeAngle(value / 10.0);
+	//updateView();
 }
 
 void VisualizationWidget::on_zoomToolButton_toggled( bool checked )
