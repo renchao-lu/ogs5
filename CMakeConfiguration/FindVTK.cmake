@@ -4,26 +4,26 @@
 #  VTK_FOUND         - Set to true when VTK is found.
 #  VTK_USE_FILE      - CMake file to use VTK.
 #  VTK_MAJOR_VERSION - The VTK major version number.
-#  VTK_MINOR_VERSION - The VTK minor version number 
+#  VTK_MINOR_VERSION - The VTK minor version number
 #                       (odd non-release).
-#  VTK_BUILD_VERSION - The VTK patch level 
+#  VTK_BUILD_VERSION - The VTK patch level
 #                       (meaningless for odd minor).
 #  VTK_INCLUDE_DIRS  - Include directories for VTK
 #  VTK_LIBRARY_DIRS  - Link directories for VTK libraries
-#  VTK_KITS          - List of VTK kits, in CAPS 
+#  VTK_KITS          - List of VTK kits, in CAPS
 #                      (COMMON,IO,) etc.
 #  VTK_LANGUAGES     - List of wrapped languages, in CAPS
 #                      (TCL, PYHTON,) etc.
 # The following cache entries must be set by the user to locate VTK:
-#  VTK_DIR  - The directory containing VTKConfig.cmake.  
+#  VTK_DIR  - The directory containing VTKConfig.cmake.
 #             This is either the root of the build tree,
-#             or the lib/vtk directory.  This is the 
+#             or the lib/vtk directory.  This is the
 #             only cache entry.
 # The following variables are set for backward compatibility and
 # should not be used in new code:
 #  USE_VTK_FILE - The full path to the UseVTK.cmake file.
-#                 This is provided for backward 
-#                 compatibility.  Use VTK_USE_FILE 
+#                 This is provided for backward
+#                 compatibility.  Use VTK_USE_FILE
 #                 instead.
 #
 
@@ -48,16 +48,24 @@ IF(NOT VTK_DIR)
   SET(VTK_DIR_SEARCH "")
   FOREACH(dir ${VTK_DIR_SEARCH2})
     SET(VTK_DIR_SEARCH ${VTK_DIR_SEARCH}
-	  ${dir}/../lib64/vtk-5.6
-	  ${dir}/../lib64/vtk-5.4
-	  ${dir}/../lib64/vtk
+		${dir}/../lib64/vtk-5.8
+		${dir}/../lib64/vtk-5.7
+		${dir}/../lib64/vtk-5.6
+		${dir}/../lib64/vtk-5.4
+		${dir}/../lib64/vtk-5.3
+		${dir}/../lib64/vtk-5.2
+		${dir}/../lib64/vtk-5.1
+		${dir}/../lib64/vtk-5.0
+		${dir}/../lib64/vtk
 
-	  ${dir}/../lib/vtk-5.6
-	  ${dir}/../lib/vtk-5.4
-      ${dir}/../lib/vtk-5.2
-      ${dir}/../lib/vtk-5.1
-      ${dir}/../lib/vtk-5.0
-      ${dir}/../lib/vtk
+		${dir}/../lib/vtk-5.8
+		${dir}/../lib/vtk-5.7
+		${dir}/../lib/vtk-5.6
+		${dir}/../lib/vtk-5.4
+		${dir}/../lib/vtk-5.2
+		${dir}/../lib/vtk-5.1
+		${dir}/../lib/vtk-5.0
+		${dir}/../lib/vtk
       )
   ENDFOREACH(dir)
 
@@ -81,7 +89,7 @@ IF(NOT VTK_DIR)
 
     # Look for an environment variable VTK_DIR.
     $ENV{VTK_DIR}
-    
+
     # Look for installed on windows
     "C:/Program Files (x86)/VTK/lib/vtk-5.4"
     "C:/Program Files/VTK/lib/vtk-5.4"
@@ -149,6 +157,7 @@ ENDIF(VTK_DIR)
 IF(VTK_FOUND)
   # Set USE_VTK_FILE for backward-compatability.
   SET(USE_VTK_FILE ${VTK_USE_FILE})
+MESSAGE(STATUS "Found VTK")
 ELSE(VTK_FOUND)
   # VTK not found, explain to the user how to specify its location.
   IF(VTK_FIND_REQUIRED)
