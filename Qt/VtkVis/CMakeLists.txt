@@ -43,11 +43,6 @@ SET( HEADERS
 	VtkVisPipelineItem.h
 )
 
-IF (OGS_USE_OPENSG)
-	SET (SOURCES ${SOURCES} vtkOsgActor.cpp)
-	SET (HEADERS ${HEADERS} vtkOsgActor.h)
-ENDIF (OGS_USE_OPENSG)
-
 # UI files
 SET ( UIS
 	VtkVisTabWidgetBase.ui
@@ -77,6 +72,10 @@ INCLUDE_DIRECTORIES(
 	../StationView
 )
 
+IF (OGS_USE_OPENSG)
+	INCLUDE_DIRECTORIES( ../OpenSG )
+ENDIF (OGS_USE_OPENSG)
+
 # Create the library
 ADD_LIBRARY( VtkVis STATIC
 	${SOURCES}
@@ -87,8 +86,3 @@ ADD_LIBRARY( VtkVis STATIC
 )
 
 TARGET_LINK_LIBRARIES( VtkVis ${QT_LIBRARIES} )
-
-### OpenSG support ###
-IF (OGS_USE_OPENSG)
-	USE_OPENSG(VtkVis)
-ENDIF (OGS_USE_OPENSG)

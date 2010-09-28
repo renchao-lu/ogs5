@@ -1,31 +1,34 @@
 
 # Visual Studio settings
-if (MSVC)
-	add_definitions(
+IF (MSVC)
+	ADD_DEFINITIONS(
 		-D/MP	# For multicore compiling
 	)
-endif (MSVC)
+ENDIF (MSVC)
 
 
 # Find VTK
-find_package( VTK REQUIRED )
+FIND_PACKAGE( VTK REQUIRED )
 INCLUDE( ${VTK_USE_FILE} )
 
 # Find libgeotiff
-find_package( LibTiff REQUIRED )
-find_package( LibGeoTiff REQUIRED )
+FIND_PACKAGE( LibTiff REQUIRED )
+FIND_PACKAGE( LibGeoTiff REQUIRED )
 
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /ZI /Od /Ob0")
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /ZI /Od /Ob0")
 
 # Add subprojects
-if (OGS_COMPILE_QVTK)
-	add_subdirectory( QVTK )
-endif (OGS_COMPILE_QVTK)
-add_subdirectory( Base )
-add_subdirectory( DataView )
-add_subdirectory( StationView )
-add_subdirectory( StationView/DiagramView )
-add_subdirectory( StationView/StratView )
-add_subdirectory( VtkVis )
-add_subdirectory( VtkAct )
-add_subdirectory( Gui )
+IF (OGS_COMPILE_QVTK)
+	ADD_SUBDIRECTORY( QVTK )
+ENDIF (OGS_COMPILE_QVTK)
+ADD_SUBDIRECTORY( Base )
+ADD_SUBDIRECTORY( DataView )
+ADD_SUBDIRECTORY( StationView )
+ADD_SUBDIRECTORY( StationView/DiagramView )
+ADD_SUBDIRECTORY( StationView/StratView )
+ADD_SUBDIRECTORY( VtkVis )
+ADD_SUBDIRECTORY( VtkAct )
+IF (OGS_USE_OPENSG)
+	ADD_SUBDIRECTORY( OpenSG )
+ENDIF (OGS_USE_OPENSG)
+ADD_SUBDIRECTORY( Gui )

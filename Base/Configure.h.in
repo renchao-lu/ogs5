@@ -12,20 +12,9 @@
 #cmakedefine OGS_VERSION "${OGS_VERSION}"
 #cmakedefine OGS_DATE "${OGS_DATE}"
 
-#cmakedefine CMAKE_CMD_ARGS "${CMAKE_CMD_ARGS}"
-#cmakedefine SVN_REVISION "${SVN_REVISION}"
-#cmakedefine GIT_COMMIT_INFO "${GIT_COMMIT_INFO}"
-#cmakedefine BUILD_TIMESTAMP "${BUILD_TIMESTAMP}"
-
 // for tests
 #cmakedefine OGS_EXECUTABLE "${OGS_EXECUTABLE}"
 #define PUT_TMP_DIR_IN "${PROJECT_BINARY_DIR}/tests/"
-
-#cmakedefine CMAKE_RUN_TIMESTAMP ""
-#cmakedefine SYSTEM_INFO "${CMAKE_SYSTEM}-x${BITS}"
-#cmakedefine PROCESSOR_INFO "${CMAKE_SYSTEM_PROCESSOR}"
-#cmakedefine COMPILER_INFO "${CMAKE_CXX_COMPILER}"
-#cmakedefine CMAKE_GENERATOR "${CMAKE_GENERATOR}"
 
 #cmakedefine LIS
 #cmakedefine MKL

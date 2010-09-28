@@ -27,6 +27,7 @@
 #include "lis.h"
 #endif
 
+#include "BuildInfo.h"
 #include<iostream>
 /* Preprozessor-Definitionen */
 #include "makros.h"
