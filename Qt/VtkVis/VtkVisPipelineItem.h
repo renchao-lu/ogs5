@@ -46,6 +46,9 @@ public:
 	/// Returns the actor
 	vtkActor* actor() const { return (vtkActor*)_actor; }
 
+	/// Returns the mapper
+	vtkDataSetMapper* mapper() const { return _mapper; }
+
 	/// Returns if the VTK object is visible in the visualization.
 	bool isVisible() const;
 

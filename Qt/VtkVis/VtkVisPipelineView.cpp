@@ -12,6 +12,7 @@
 #include "VtkVisPipeline.h"
 
 #include <vtkActor.h>
+#include <vtkDataSetMapper.h>
 
 #include <QMenu>
 #include <QContextMenuEvent>
@@ -57,7 +58,7 @@ void VtkVisPipelineView::exportSelectedPipelineItemAsVtk()
 	QSettings settings("UFZ", "OpenGeoSys-5");
 	QModelIndex idx = this->selectionModel()->currentIndex();
 	QString filename = QFileDialog::getSaveFileName(this, "Export object to vtk-file",
-		settings.value("lastExportedFileDirectory").toString(),"VTK file (*.vtp *.vtu)");
+		settings.value("lastExportedFileDirectory").toString(),"VTK file (*.vtk)");
 	if (!filename.isEmpty())
 	{
 		static_cast<VtkVisPipelineItem*>(static_cast<VtkVisPipeline*>(this->model())->getItem(idx))->writeToFile(filename.toStdString());
@@ -77,12 +78,13 @@ void VtkVisPipelineView::exportSelectedPipelineItemAsOsg()
 		OSG::NodePtr root = OSG::makeCoredNode<OSG::Group>();
 		VtkVisPipelineItem* item = static_cast<VtkVisPipelineItem*>(static_cast<VtkVisPipeline*>(this->model())->getItem(idx));
 		vtkOsgActor* actor = static_cast<vtkOsgActor*>(item->actor());
+		item->mapper()->SetScalarVisibility(true);
 		actor->SetVerbose(true);
 		actor->UpdateOsg();
 		beginEditCP(root);
 		root->addChild(actor->GetOsgRoot());
 		endEditCP(root);
-		actor->ClearOsg();
+		//actor->ClearOsg();
 
 		OSG::SceneFileHandler::the().write(root, filename.toStdString().c_str());
 

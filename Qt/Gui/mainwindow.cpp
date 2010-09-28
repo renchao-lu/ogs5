@@ -880,7 +880,7 @@ void MainWindow::on_actionExportOpenSG_triggered(bool checked /*= false*/ )
 	QSettings settings("UFZ", "OpenGeoSys-5");
 	QString filename = QFileDialog::getSaveFileName(
 		this, "Export scene to OpenSG binary file",	settings.value(
-			"lastExportedFileDirectory").toString(), "OpenSG files (*.osb *.osg);");
+			"lastExportedFileDirectory").toString(), "OpenSG files (*.osb *.osg);;");
 	if (!filename.isEmpty())
 	{
 		QDir dir = QDir(filename);
