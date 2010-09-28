@@ -86,11 +86,13 @@ void vtkOsgActor::InitOpenSG(){
 vtkOsgActor *vtkOsgActor::New(){
 	// First try to create the object from the vtkGraphicsFactory
 	vtkObject* ret = vtkGraphicsFactory::CreateInstance("vtkOsgActor");
-  if (ret == NULL) {
-	  std::cout << "could not use vtkGraphicsFactory" << std::endl;
-	  ret = new vtkOsgActor();
-  }
-  return (vtkOsgActor*)ret;
+  
+	if (ret == NULL) {
+		std::cout << "could not use vtkGraphicsFactory" << std::endl;
+		ret = new vtkOsgActor();
+  
+	}
+	return (vtkOsgActor*)ret;
 }
 
 void vtkOsgActor::PrintSelf(ostream& os, vtkIndent indent){
@@ -122,7 +124,9 @@ void vtkOsgActor::UpdateOsg(){
 		} else if ((newGeometryPtr != NullFC) && (m_iColorType == PER_CELL)){
 			std::cout << "WARNING: Normals are missing in the vtk layer, calculating normals per face!" << std::endl;
 			calcFaceNormals(newGeometryPtr);
-		} else if (m_iColorType == NOT_GIVEN){
+		} else if (newGeometryPtr != NullFC){
+			std::cout << "WARNING: Normals are missing in the vtk layer, calculating normals per vertex!" << std::endl;
+			calcVertexNormals(newGeometryPtr);
 		}
 	}
 
@@ -178,9 +182,10 @@ void vtkOsgActor::LookForNormals(){
 			std::cerr << "Using vtkPolyDataMapper via the vtkDataSetMapper" << std::endl;
 		}
 	}
-	if (pPolyData == NULL) return;
 
 	m_iNormalType = NOT_GIVEN;
+	if (pPolyData == NULL) return;
+
 	if (this->GetProperty()->GetInterpolation() == VTK_FLAT){
 		m_pvtkNormals = pPolyData->GetCellData()->GetNormals();
 		if (m_pvtkNormals != NULL) m_iNormalType = PER_CELL;
@@ -201,36 +206,63 @@ void vtkOsgActor::LookForNormals(){
 
 void vtkOsgActor::LookForColors(){
 	vtkPolyData *pPolyData = NULL;
-	vtkPolyDataMapper *polyDataMapper = NULL;
+	vtkPolyDataMapper *pPolyDataMapper = NULL;
 	if (dynamic_cast<vtkPolyDataMapper*>(this->GetMapper())){
-		polyDataMapper = (vtkPolyDataMapper*) this->GetMapper();
-		pPolyData = (vtkPolyData*) this->GetMapper()->GetInput();
+		pPolyDataMapper = (vtkPolyDataMapper*) this->GetMapper();
+		pPolyData = (vtkPolyData*) pPolyDataMapper->GetInput();
 		if (m_bVerbose){
 			std::cerr << "Using vtkPolyDataMapper directly" << std::endl;
 		}
 	} else if (dynamic_cast<vtkDataSetMapper*>(this->GetMapper())){
 		vtkDataSetMapper *dataSetMapper = (vtkDataSetMapper*) this->GetMapper();
-		polyDataMapper = dataSetMapper->GetPolyDataMapper();
-		pPolyData = (vtkPolyData*) dataSetMapper->GetPolyDataMapper()->GetInput();
+		pPolyDataMapper = dataSetMapper->GetPolyDataMapper();
+		pPolyData = (vtkPolyData*) pPolyDataMapper->GetInput();
 		if (m_bVerbose){
 			std::cerr << "Using vtkPolyDataMapper via the vtkDataSetMapper" << std::endl;
 		}
 	}
-	if (pPolyData == NULL) return;
-
-	m_pvtkColors = polyDataMapper->MapScalars(1.0);
 	m_iColorType = NOT_GIVEN;
-	bool b = this->GetMapper()->GetScalarVisibility();
-	bool c = (m_pvtkColors == NULL);
-	if (polyDataMapper->GetScalarVisibility() && (m_pvtkColors != NULL)){
-		int iScalarMode = this->GetMapper()->GetScalarMode();
-		if (iScalarMode == VTK_SCALAR_MODE_USE_CELL_DATA || (!pPolyData->GetPointData()->GetScalars())){ //there are no point data
+	if (pPolyData == NULL) return;
+	if (pPolyDataMapper == NULL) return;
+
+	//m_pvtkColors = pPolyDataMapper->MapScalars(1.0);
+	//if (pPolyDataMapper->GetScalarVisibility() && (m_pvtkColors != NULL)){
+	if (pPolyDataMapper->GetScalarVisibility()){
+		int iScalarMode = pPolyDataMapper->GetScalarMode();
+		m_pvtkColors = pPolyDataMapper->MapScalars(1.0);
+		if (m_pvtkColors == NULL){
+			m_iColorType = NOT_GIVEN;
+		} else if (iScalarMode == VTK_SCALAR_MODE_USE_CELL_DATA){
 			m_iColorType = PER_CELL;
-		}else{
+		} else if (iScalarMode == VTK_SCALAR_MODE_USE_POINT_DATA){
 			m_iColorType = PER_VERTEX;
+		} else if (iScalarMode == VTK_SCALAR_MODE_USE_CELL_FIELD_DATA){
+			std::cerr << "WARNING: Can not process colours with scalar mode using cell field data!" << std::endl;
+			m_iColorType = NOT_GIVEN;
+		} else if (iScalarMode == VTK_SCALAR_MODE_USE_POINT_FIELD_DATA){
+			std::cerr << "WARNING: Can not process colours with scalar mode using point field data!" << std::endl;
+			m_iColorType = NOT_GIVEN;
+		} else if (iScalarMode == VTK_SCALAR_MODE_DEFAULT){
+			//Bummer, we do not know what it is. may be we can make a guess
+			int numColors = m_pvtkColors->GetNumberOfTuples();
+			vtkPoints *points = pPolyData->GetPoints();
+			int numPoints = points->GetNumberOfPoints();
+			int numCells = pPolyData->GetVerts()->GetNumberOfCells();
+			numCells += pPolyData->GetLines()->GetNumberOfCells();
+			numCells += pPolyData->GetPolys()->GetNumberOfCells();
+			numCells += pPolyData->GetStrips()->GetNumberOfCells();
+			if (numColors == 0){
+				m_iColorType = NOT_GIVEN;
+			} else if (numColors == numPoints){
+				m_iColorType = PER_VERTEX;
+			} else if (numColors == numCells){
+				m_iColorType = PER_CELL;
+			} else {
+				m_iColorType = NOT_GIVEN;
+			}
 		}
 	}
-	if (m_bVerbose){
+	if (m_bVerbose){	
 		if (m_iColorType != NOT_GIVEN){
 			std::cerr << "  number of colors: " << m_pvtkColors->GetNumberOfTuples() << std::endl;
 			std::cerr << "	colors are given: ";
@@ -290,7 +322,7 @@ void vtkOsgActor::LookForArraySizes(){
 	m_iNumGLLineStrips = pPolyData->GetLines()->GetNumberOfCells();
 	m_iNumGLPolygons = pPolyData->GetPolys()->GetNumberOfCells();
 	m_iNumGLTriStrips = pPolyData->GetStrips()->GetNumberOfCells();
-	m_iNumGLPrimitives = m_iNumGLPoints + m_iNumGLLineStrips + m_iNumGLPolygons + m_iNumGLTriStrips;
+	m_iNumGLPrimitives = m_iNumGLPoints + m_iNumGLLineStrips + m_iNumGLPolygons + m_iNumGLTriStrips; 
 
 
 	if (m_bVerbose){
@@ -341,7 +373,7 @@ void vtkOsgActor::CreateTexture(){
 		std::cout << "could not load texture data" << std::endl;
 		return;
 	}
-
+	
 	int iImgComps = data->GetNumberOfComponents();
 	int iImgPixels = data->GetNumberOfTuples();
 	if (iImgPixels != (iImgDims[0] * iImgDims[1] * iImgDims[2])){
@@ -365,7 +397,7 @@ void vtkOsgActor::CreateTexture(){
 	} else {
 		std::cout << "Pixel data come in unsupported vtk type" << std::endl;
 	}
-
+	
 	beginEditCP(m_posgImage);{
 		m_posgImage->setWidth(iImgDims[0]);
 		m_posgImage->setHeight(iImgDims[1]);
@@ -406,7 +438,7 @@ ChunkMaterialPtr vtkOsgActor::CreateMaterial(){
 	double ambient = prop->GetAmbient();
 	double specular = prop->GetSpecular();
 
-	float opacity = prop->GetOpacity();
+	//float opacity = prop->GetOpacity();
 	int representation = prop->GetRepresentation();
 
 	if (m_bVerbose){
@@ -482,7 +514,7 @@ NodePtr vtkOsgActor::ProcessGeometryNormalsAndColorsPerVertex(){
 	int iNumPoints = 0;
 	int iNumNormals = 0;
 	int iNumColors = 0;
-	int i, j;
+	int i;
 
 	vtkPolyData *pPolyData = NULL;
 	if (dynamic_cast<vtkPolyDataMapper*>(this->GetMapper())){
@@ -629,7 +661,9 @@ NodePtr vtkOsgActor::ProcessGeometryNormalsAndColorsPerVertex(){
 }
 
 NodePtr vtkOsgActor::ProcessGeometryNonIndexedCopyAttributes(int gl_primitive_type){
-	std::cout << "starting CVtkActorToOpenSG::ProcessGeometryNonIndexedCopyAttributes(int gl_primitive_type)" << std::endl;
+	if (m_bVerbose){
+		std::cout << "starting CVtkActorToOpenSG::ProcessGeometryNonIndexedCopyAttributes(int gl_primitive_type)" << std::endl;
+	}
 
 	beginEditCP(m_posgTypes);{
 		m_posgTypes->clear();
@@ -655,6 +689,10 @@ NodePtr vtkOsgActor::ProcessGeometryNonIndexedCopyAttributes(int gl_primitive_ty
 		m_posgNormals->clear();
 	};endEditCP(m_posgNormals);
 
+	beginEditCP(m_posgTexCoords);{
+		m_posgTexCoords->clear();
+	};endEditCP(m_posgTexCoords);
+
 	vtkPolyData *pPolyData = NULL;
 	if (dynamic_cast<vtkPolyDataMapper*>(this->GetMapper())){
 		pPolyData = (vtkPolyData*) this->GetMapper()->GetInput();
@@ -668,7 +706,7 @@ NodePtr vtkOsgActor::ProcessGeometryNonIndexedCopyAttributes(int gl_primitive_ty
 			std::cerr << "Using vtkPolyDataMapper via the vtkDataSetMapper" << std::endl;
 		}
 	}
-	if (pPolyData == NULL) NullFC;
+	if (pPolyData == NULL) return NullFC;
 
 	vtkCellArray *pCells;
 	if (gl_primitive_type == GL_POINTS){
@@ -728,11 +766,28 @@ NodePtr vtkOsgActor::ProcessGeometryNonIndexedCopyAttributes(int gl_primitive_ty
 				}
 			}
 		}
-	}endEditCP(m_posgTypes);
+	};endEditCP(m_posgTypes);
 	endEditCP(m_posgLengths);
 	endEditCP(m_posgPoints);
 	endEditCP(m_posgColors);
 	endEditCP(m_posgNormals);
+
+	//possibly getting the texture coordinates. These are always per vertex
+	vtkPoints *points = pPolyData->GetPoints();
+	if ((m_pvtkTexCoords != NULL) && (points != NULL)){
+		int numPoints = points->GetNumberOfPoints();
+		int numTexCoords = m_pvtkTexCoords->GetNumberOfTuples();
+		if (numPoints == numTexCoords){
+			beginEditCP(m_posgTexCoords);{
+				int numTuples = m_pvtkTexCoords->GetNumberOfTuples();
+				for (int i=0; i<numTuples; i++){
+					double texCoords[3];
+					m_pvtkTexCoords->GetTuple(i, texCoords);
+					m_posgTexCoords->addValue(Vec2f(texCoords[0], texCoords[1]));
+				}
+			};endEditCP(m_posgTexCoords);
+		}
+	}
 
 	ChunkMaterialPtr material = CreateMaterial();
 	//GeometryPtr geo = Geometry::create();
@@ -744,6 +799,7 @@ NodePtr vtkOsgActor::ProcessGeometryNonIndexedCopyAttributes(int gl_primitive_ty
 
 		if (m_iNormalType != NOT_GIVEN) m_posgGeometry->setNormals(m_posgNormals);
 		if (m_iColorType != NOT_GIVEN) m_posgGeometry->setColors(m_posgColors);
+		if (m_posgTexCoords->getSize() > 0) m_posgGeometry->setTexCoords(m_posgTexCoords);
 		//geo->setMaterial(getDefaultMaterial());
 	}endEditCP(m_posgGeometry);
 
