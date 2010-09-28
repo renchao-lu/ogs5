@@ -1,7 +1,9 @@
 #include <QtGui/QApplication>
 #include "mainwindow.h"
 #include "Configure.h"
+#ifdef OGS_USE_OPENSG
 #include <OpenSG/OSGBaseFunctions.h>
+#endif
 
 int main(int argc, char *argv[])
 {
