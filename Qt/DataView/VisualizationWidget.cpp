@@ -40,37 +40,6 @@ VisualizationWidget::VisualizationWidget( QWidget* parent /*= 0*/ )
 {
 	setupUi(this);
 
-	// Create renderer
-	_vtkRender = vtkRenderer::New();
-
-	VtkTrackedCamera* cam = new VtkTrackedCamera(this);
-	_vtkRender->SetActiveCamera(cam);
-	connect( cam, SIGNAL(viewUpdated()), this, SLOT(updateView()) );                                                                                                                          
-	
-	
-	#ifdef OGS_USE_VRPN
-	QSpaceNavigatorClient* spacenav = QSpaceNavigatorClient::Instance();
-	spacenav->init("spacenav@localhost", 1000 / 15, SpaceNavigatorClient::Z);
-	cam->setFocalPoint(0, 5.0, 0.5);
-	cam->updateView();
-	spacenav->setTranslationFactor(2.0);
-	//connect( spacenav, SIGNAL(translated(double, double, double)), cam, SLOT(setTrackingData(double, double, double)) );
-	//connect( spacenav, SIGNAL(translated(double, double, double)), cam, SLOT(translate(double, double, double)) );
-	
-	QVrpnArtTrackingClient* art = QVrpnArtTrackingClient::Instance();
-	//art->StartTracking("DTrack@141.65.34.36");
-	art->StartTracking("DTrack@visserv3.intern.ufz.de");
-	connect( art, SIGNAL(positionUpdated(double, double, double)), cam, SLOT(setTrackingData(double, double, double)) );
-	
-	// Connect the vtk event to the qt slot
-	_qtConnect = vtkEventQtSlotConnect::New();
-	_qtConnect->Connect(vtkWidget->GetRenderWindow()->GetInteractor(), vtkCommand::EndInteractionEvent,
-		cam, SLOT(updatedFromOutside()));
-		
-	#endif // OGS_USE_VRPN
-
-	_vtkRender->SetBackground(0.0,0.0,0.0);
-
 	_interactorStyle = VtkCustomInteractorStyle::New();
 	vtkWidget->GetRenderWindow()->GetInteractor()->SetInteractorStyle(_interactorStyle);
 
@@ -84,8 +53,37 @@ VisualizationWidget::VisualizationWidget( QWidget* parent /*= 0*/ )
 	vtkRenderWindow* renderWindow = vtkWidget->GetRenderWindow();
 	renderWindow->StereoCapableWindowOn();
 	renderWindow->SetStereoTypeToCrystalEyes();
+	_vtkRender = vtkRenderer::New();
 	renderWindow->AddRenderer(_vtkRender);
 #endif // OGS_VRED_PLUGIN
+
+	VtkTrackedCamera* cam = new VtkTrackedCamera(this);
+	_vtkRender->SetActiveCamera(cam);
+	connect( cam, SIGNAL(viewUpdated()), this, SLOT(updateView()) );                                                                                                                          
+
+
+#ifdef OGS_USE_VRPN
+	QSpaceNavigatorClient* spacenav = QSpaceNavigatorClient::Instance();
+	//spacenav->init("spacenav@localhost", 1000 / 15, SpaceNavigatorClient::Z);
+	cam->setFocalPoint(0, 5.0, 0.5);
+	cam->updateView();
+	spacenav->setTranslationFactor(2.0);
+	//connect( spacenav, SIGNAL(translated(double, double, double)), cam, SLOT(setTrackingData(double, double, double)) );
+	//connect( spacenav, SIGNAL(translated(double, double, double)), cam, SLOT(translate(double, double, double)) );
+
+	QVrpnArtTrackingClient* art = QVrpnArtTrackingClient::Instance();
+	art->StartTracking("DTrack@141.65.34.36");
+	//art->StartTracking("DTrack@visserv3.intern.ufz.de");
+	connect( art, SIGNAL(positionUpdated(double, double, double)), cam, SLOT(setTrackingData(double, double, double)) );
+
+	// Connect the vtk event to the qt slot
+	_qtConnect = vtkEventQtSlotConnect::New();
+	_qtConnect->Connect(vtkWidget->GetRenderWindow()->GetInteractor(), vtkCommand::EndInteractionEvent,
+		cam, SLOT(updatedFromOutside()));
+
+#endif // OGS_USE_VRPN
+
+	_vtkRender->SetBackground(0.0,0.0,0.0);
 
 	// Restore settings
 	QSettings settings("UFZ", "OpenGeoSys-5");

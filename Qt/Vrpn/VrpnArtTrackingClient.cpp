@@ -245,6 +245,6 @@ void VRPN_CALLBACK VrpnArtTrackingClient::CBHandleButtons(void *userdata, vrpn_B
 	{
 		int buttonIndex = buttonData.button;
 		if (buttonIndex < 10)
-			art->m_bButtonData[buttonIndex] = buttonData.state;
+			art->m_bButtonData[buttonIndex] = buttonData.state ? true:false;
 	}
 }

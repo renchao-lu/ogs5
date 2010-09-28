@@ -114,7 +114,10 @@ void SpaceNavigatorClient::setRotationFactor(double factor)
 
 bool SpaceNavigatorClient::getZUpAxis()
 {
-	return _upAxis;
+	if (_upAxis == Z)
+		return true;
+	else
+		return false;
 }
 
 void SpaceNavigatorClient::setZUpAxis( bool zUp )
@@ -200,7 +203,7 @@ void SpaceNavigatorClient::invertAxis(SpaceNavigatorAxes axisToInvert)
 void VRPN_CALLBACK SpaceNavigatorClient::_handleButtons(void *, vrpn_BUTTONCB buttonData)
 {
 	// read button data
-	_spacenavigator->buttons[buttonData.button] = (bool)buttonData.state;
+	_spacenavigator->buttons[buttonData.button] = buttonData.state ? true:false;
 
 	if(_spacenavigator->_defaultButtonBehaviour)
 	{

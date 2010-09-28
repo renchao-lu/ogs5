@@ -13,7 +13,9 @@
 #include "Configure.h"
 
 #include <QList>
+#ifdef OGS_USE_OPENSG
 #include <OpenSG/OSGNode.h>
+#endif // OGS_USE_OPENSG
 
 class vtkAlgorithm;
 class vtkPointSet;

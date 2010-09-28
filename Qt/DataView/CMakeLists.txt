@@ -98,7 +98,7 @@ if (OGS_COMPILE_QVTK)
 endif (OGS_COMPILE_QVTK)
 
 IF(VRPN_FOUND)
-	INCLUDE_DIRECTORIES( ../Vrpn )
+	INCLUDE_DIRECTORIES( ../Vrpn ${VRPN_INCLUDE_DIRS} )
 ENDIF()
 
 # Put moc files in a project folder

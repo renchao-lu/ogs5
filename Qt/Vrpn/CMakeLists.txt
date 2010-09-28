@@ -36,11 +36,12 @@ Qt4_WRAP_CPP( MOC_SOURCES ${MOC_HEADERS} )
 INCLUDE_DIRECTORIES(
 	.
 	${CMAKE_BINARY_DIR}/.
+	${VRPN_INCLUDE_DIRS}
 )
 
 # Put moc files in a project folder
 #SOURCE_GROUP("UI Files" REGULAR_EXPRESSION "\w*\.ui")
-#SOURCE_GROUP("Moc Files" REGULAR_EXPRESSION "moc_.*")
+SOURCE_GROUP("Moc Files" REGULAR_EXPRESSION "moc_.*")
 
 ### Create the library ###
 ADD_LIBRARY( OgsVrpn STATIC
