@@ -43,7 +43,7 @@ if (NOT Shapelib_FOUND)
 		set(Shapelib_PROCESS_LIBS Shapelib_LIBRARIES)
 		libfind_process(Shapelib)
 	else (NOT Shapelib_LIBRARIES STREQUAL "Shapelib_LIBRARIES-NOTFOUND" AND NOT Shapelib_INCLUDE_DIR STREQUAL "Shapelib_INCLUDE_DIR-NOTFOUND")
-		message (STATUS "Warning: shapelib not found!")
+		#message (STATUS "Warning: shapelib not found!")
 	endif (NOT Shapelib_LIBRARIES STREQUAL "Shapelib_LIBRARIES-NOTFOUND" AND NOT Shapelib_INCLUDE_DIR STREQUAL "Shapelib_INCLUDE_DIR-NOTFOUND")
 	
 endif (NOT Shapelib_FOUND)

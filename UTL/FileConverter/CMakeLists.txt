@@ -14,18 +14,19 @@ if (Shapelib_FOUND)
 	#set( HEADERS ${HEADERS} SHPInterface.h )
 	set (SOURCES ${SOURCES} ConvertSHPToGLI.cpp )
 	include_directories (${Shapelib_INCLUDE_DIR})
+
+	# Create executables
+	ADD_EXECUTABLE( ConvertSHPToGLI ConvertSHPToGLI.cpp )
+
+	TARGET_LINK_LIBRARIES( ConvertSHPToGLI
+		GEO
+		FileIO
+		${Shapelib_LIBRARIES}
+	)
+
+
+	IF (OGS_PACKAGING)
+		install (TARGETS ConvertSHPToGLI RUNTIME DESTINATION bin COMPONENT 	ConvertSHPToGLI )
+	ENDIF (OGS_PACKAGING)
+
 endif (Shapelib_FOUND)
-
-# Create executables
-ADD_EXECUTABLE( ConvertSHPToGLI ConvertSHPToGLI.cpp )
-
-TARGET_LINK_LIBRARIES( ConvertSHPToGLI
-	GEO
-	FileIO
-	${Shapelib_LIBRARIES}
-)
-
-IF (OGS_PACKAGING)
-	install (TARGETS ConvertSHPToGLI RUNTIME DESTINATION bin COMPONENT
-ConvertSHPToGLI )
-ENDIF (OGS_PACKAGING)

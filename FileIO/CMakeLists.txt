@@ -55,7 +55,6 @@ target_link_libraries( FileIO
 	Base
 	MathLib
 	GEO
-${Shapelib_LIBRARIES}
 )
 
 if (Shapelib_FOUND)
