@@ -28,13 +28,13 @@ cp bin/ogs ../Release/ogs_sp
 cd ..
 
 # Build FEM_MPI
-#mkdir -p build_mpi && cd build_mpi
-#wget http://gist.github.com/raw/527084/c32a0337164f7055ff3b7c92f07f883f4afd3966/cmake.ogs.sh
-#chmod +x cmake.ogs.sh
-#./cmake.ogs.sh -DOGS_FEM_MPI=ON -DOGS_DONT_USE_QT=ON ..
-#make -j
-#cp bin/ogs ../Release/ogs_mpi
-#cd ..
+mkdir -p build_mpi && cd build_mpi
+wget http://gist.github.com/raw/527084/c32a0337164f7055ff3b7c92f07f883f4afd3966/cmake.ogs.sh
+chmod +x cmake.ogs.sh
+./cmake.ogs.sh -DOGS_FEM_MPI=ON -DOGS_DONT_USE_QT=ON ..
+make -j
+cp bin/ogs ../Release/ogs_mpi
+cd ..
 
 # Build FEM_GEMS
 mkdir -p build_gems && cd build_gems
