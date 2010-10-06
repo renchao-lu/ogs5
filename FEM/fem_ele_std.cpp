@@ -5262,7 +5262,8 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
             rho = 1.0;
         else if(HEAD_Flag)
 		{
-			fkt = fkt*rho * gravity_constant/FluidProp->Viscosity();
+//FS/WW 21.05.2010 
+//			fkt = fkt*rho * gravity_constant/FluidProp->Viscosity();
 			rho = 1.0;
 		}
         else
@@ -5276,6 +5277,8 @@ void  CFiniteElementStd::AssembleRHS(int dimension)
                 {
 					NodalVal[i]  -= fkt*dshapefct[dimension*nnodes+j]
 							    *mat[dim*dimension+k]* shapefct[i] * NodalVal1[j];
+                    if (HEAD_Flag) //FS/WW 21.05.2010
+						continue;
                     NodalVal2[i] += fktG*dshapefct[dimension*nnodes+j]
                                  *mat[dim*dimension+k]* shapefct[i] * MeshElement->nodes[j]->Z();
                 }

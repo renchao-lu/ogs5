@@ -111,6 +111,7 @@ public:
 
 	int GridOption;
 	double CurrentTime;
+    double *ChanceOfIrreversed;
 
 	class FDMIndex
 	{

@@ -13,8 +13,8 @@ Programing:
 using namespace std;
 
 #define PCT_FILE_EXTENSION ".pct"
-#define OUTSIDEOFDOMAIN -10
 #define SWAP(x,y) {double t; t=x; x=y; y=t;}; //WW data type is change to double
+//#define CountParticleNumber //YS: to count the number of particles leave the domain
 
 /**************************************************************************
 Class: RandomWalk
@@ -31,13 +31,14 @@ RandomWalk::RandomWalk(void)
 	// This is going to be reset by user input.
 	// Further, used for allocating dynamic memory.
 	numOfParticles = 0;
-	leavingParticles = 0;
+	leavingParticles = 0;   //YS: to count the number of particles in the outflow
 	UniformOrNormal = 1;	// Uniform random number generation
 	RWPTMode = 0;	// Initialized to be homogeneous media
 	PURERWPT = 0;
 	CurrentTime = 0.0;
 	FDMIndexSwitch = 0;
 	GridOption = 0;
+	ChanceOfIrreversed = NULL;  //YS: judgement for decay
 
 	// To produce a different pseudo-random series each time your program is run.
 	srand((int)time(0));
@@ -79,6 +80,9 @@ last modification:
 RandomWalk::~RandomWalk(void)
 {
 	//    if(X) delete [] X;
+	if(ChanceOfIrreversed)
+       delete [] ChanceOfIrreversed;
+	ChanceOfIrreversed = NULL;
 }
 
 
@@ -2048,9 +2052,9 @@ void RandomWalk::AdvanceBySplitTime(double dt, int numOfSplit)
 {
 	double subdt = dt / (double)numOfSplit;
 	double ctime=0.0; //JT 05.2010: for continuous source compatible with SplitTimes.
+	leavingParticles = 0;
 	for(int i=0; i< numOfSplit; ++i)
 	{
-		leavingParticles = 0;
 		AdvanceToNextTimeStep(subdt,ctime);
 		ctime+=subdt;
 	}
@@ -2100,6 +2104,7 @@ Programing:
 void RandomWalk::AdvanceToNextTimeStep(double dt,double ctime)
 {
 	double tolerance = 1e-18;
+	double tol = 1e-10;
 	int TimeMobility;
 	double exceedtime = aktuelle_zeit + MKleinsteZahl + ctime; // 05.2010 JT
 	// Loop over all the particles
@@ -2108,14 +2113,14 @@ void RandomWalk::AdvanceToNextTimeStep(double dt,double ctime)
 	{
 		TimeMobility = 0; //JTARON 2010, using this for now. Setting identity = 1 causes simulation failure... not sure why??
 		//X[i].Now.identity=1;
-		if(X[i].Now.StartingTime <= exceedtime)
+		if((X[i].Now.StartingTime < exceedtime) || fabs(X[i].Now.StartingTime - exceedtime) < tol)
 		{
 			TimeMobility = 1;
 			//X[i].Now.identity=0;
 		}
 		
 		// components defined in .mcp should be syncronized with identity of particles.
-		CompProperties *m_cp = cp_vec[X[i].Now.identity];
+		CompProperties *m_cp = cp_vec[0];
 
 		// If mobile, do transport.
 		if(m_cp->mobil && TimeMobility>0)
@@ -2162,17 +2167,18 @@ void RandomWalk::AdvanceToNextTimeStep(double dt,double ctime)
 
 					if(Astatus == -1)
 						Y.t = dt;
+					if(X[i].Now.identity == 0)  //YS: attached and filtered particles don't move
 					Astatus = SolveForNextPosition(&(X[i].Now), &Y);
 
-					// YYS ToDO
+					#ifdef CountParticleNumber
 					if(Y.x< 1.e-20 && m_pcs->rwpt_app==2)
 						Y.x= 1.e-20;
 					if(Y.x> 0.1 && Y.identity != 2 && m_pcs->rwpt_app==2)
 					{
 						leavingParticles++;
-						Y.identity=-10;
+						Y.elementIndex=-10;  //YS: out of the domain
 					}
-					// YYS ToDO ends here.
+					#endif CountParticleNumber
 
 					// Just get the element index after this movement
 					// if not Homogeneous aquifer
@@ -2303,29 +2309,32 @@ void RandomWalk::AdvanceToNextTimeStep(double dt,double ctime)
 		}
 		else if(m_pcs->rwpt_app==2)	// Is the application Cryptosporidium oocysts?
 		{
-			// PCH: Removing sorption and desorption
 			// Do sorption-desorption by switching the identity of particles
-			// double ChanceOfSorbtion = randomZeroToOne();
-			double ChanceOfIrreversed = randomZeroToOne();
-			// Two-Rate Model: A = 0.5, k1=0.1, k2=0.01
-//			double FractionRemainingOnMedia = Two_rateModel(0.99, 0.1, 0.001, X[i].Now.t/60.0);
-			if(X[i].Now.elementIndex == -10 && X[i].Now.identity != 2)
+			double ChanceOfSorbtion = randomZeroToOne();
+			// Two-Rate Model: N/N0=Ae^(-k1t)+(1-A)e^(-k2t)
+			if(m_cp->isotherm_model == 5 && X[i].Now.elementIndex != -10 && X[i].Now.identity != 2)
 			{
-/*
+				double A = m_cp->isotherm_model_values[0];
+				double k1 = m_cp->isotherm_model_values[1];
+				double k2 = m_cp->isotherm_model_values[2];
+				double FractionRemainingOnMedia = Two_rateModel(A, k1, k2, X[i].Now.t);
+
 				if( ChanceOfSorbtion < FractionRemainingOnMedia )
-					X[i].Now.identity = 1;
+					X[i].Now.identity = 1; // Temporarily absorbed
 				else
 					X[i].Now.identity = 0;
-					*/
+			}
 
-				// Irreversible Reactions - Oocysts filtered for good or some chemicals decayed
-				// C/C0 = exp(-kt)
-				// For oocyst irreversible filtration, k = vp * lambda
+			// Irreversible Reactions - Oocysts filtered for good or some chemicals decayed
+			// C/C0 = exp(-kt)
+			// For oocyst irreversible filtration, k = vp * lambda
+			if(X[i].Now.elementIndex != -10 && X[i].Now.identity != 2)
+			{
 				double lamda = m_cp->decay_model_values[0];
 				double k = X[i].Now.Vx * lamda;
 				double Irreversed = exp(-k*X[i].Now.t);
 
-				if( ChanceOfIrreversed > Irreversed )
+				if( ChanceOfIrreversed[i] > Irreversed )
 					X[i].Now.identity = 2; // Permanently filtered
 			}
 		}
@@ -2697,7 +2706,7 @@ void RandomWalk::SolveDispersionCoefficient(Particle* A)
 	// I guess for Dual Porocity stuff can also be handled here.
 	double molecular_diffusion_value = 0.0;
 	// components defined in .mcp should be syncronized with identity of particles.
-	CompProperties *m_cp = cp_vec[A->identity];
+	CompProperties *m_cp = cp_vec[0];
 	double g[3]={0.,0.,0.};
 	double theta = 1.0;		// I'll just set it to be unity for moment.
 	molecular_diffusion_value = m_cp->CalcDiffusionCoefficientCP(A->elementIndex,1.0,m_pcs) * MediaProp->TortuosityFunction(A->elementIndex,g,theta);
@@ -4698,6 +4707,9 @@ void PCTRead(string file_base_name)
 		pct_file>>RW->numOfParticles>>ws;
 		Trace one;
 
+		//YS
+        RW->ChanceOfIrreversed = new double[RW->numOfParticles];
+
 		double Starting;
 		for(int i=0; i< RW->numOfParticles; ++i)
 		{
@@ -4719,6 +4731,8 @@ void PCTRead(string file_base_name)
 			one.Past.K = one.Now.K = K;
 
 			RW->X.push_back(one);
+
+            RW->ChanceOfIrreversed[i] = RW->randomZeroToOne();
 
 			// Creat pathline
 			if(i<50)

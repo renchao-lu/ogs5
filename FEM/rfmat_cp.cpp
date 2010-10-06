@@ -964,6 +964,8 @@ int CompProperties::GetNumberIsothermValuesCompProperties(int isotherm)
         n = 2;  break;                  /* Langmuir Isotherm */
     case 4:
         n = 1;  break;                  /* Linear Isotherm, for fracture surface CMCD */
+	case 5:
+        n = 3;  break;                  /* two-rate model */
 /*
     case 4:
         n = 3;  break;                  // Freundlich Langmuir Isotherm
@@ -1075,6 +1077,8 @@ double CompProperties::CalcElementRetardationFactorNew( long index, double *gp, 
    fracture_width = m_pcs->m_msh->ele_vector[index]->GetFluxArea();
    retard = 1+ (isotherm/(fracture_width/2.0));//Tang et al. 1981, Contaminant transport in fractured porous media, anaylitacl solution for a single fracture, WRR 17, 3, 555-564.
    break;
+ case 5: /* two-rate model */
+   break; //YS: the two-rate model is described in the RWPT
 // case 15: /* Input by curve */
 //	 isotherm = 0.0;
 //	 isotherm = GetCurveDerivative((int) isotherm_model_values[0], 0, fabs(conc), &gueltig);
