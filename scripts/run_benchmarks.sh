@@ -11,8 +11,8 @@ set +e >/dev/null
 
 # Run FEM benchmarks
 cd build_fem
-ctest -R 'NB|MCGB|FS|AKS|YW|UJG|MDL|NW|WW' -E 'FILE|EXCEED|thm_decov|h_us_line|h_us_quad|h_us_tri|w_exp' -j 32 > ../benchOut.txt
-ctest -R FILECOMPARE -E 'CB|HS|JOD|PCH|EXCEED|thm_decov|h_us_line|h_us_quad|h_us_tri|w_exp' >> ../benchOut.txt
+ctest -R 'NB|MCGB|FS|AKS|YW|UJG|MDL|NW|WW|HS' -E 'FILE|EXCEED|thm_decov|h_us_line|h_us_quad|h_us_tri|w_exp' -j 32 > ../benchOut.txt
+ctest -R FILECOMPARE -E 'CB|JOD|PCH|EXCEED|thm_decov|h_us_line|h_us_quad|h_us_tri|w_exp' >> ../benchOut.txt
 cd .. >/dev/null
 
 # Run FEM_BRNS benchmarks
