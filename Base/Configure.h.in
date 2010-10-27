@@ -32,4 +32,6 @@
 
 #cmakedefine OGS_USE_VRPN
 
+#cmakedefine HAVE_64_BIT
+
 #endif // CONFIGURE_H
