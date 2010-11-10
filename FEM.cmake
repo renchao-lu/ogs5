@@ -26,17 +26,24 @@ ENDIF(MKL)
 
 IF(LIS)
 	# Find LISlib
-	IF (UNIX)
-		FIND_PACKAGE( LIS REQUIRED )
-		#set (LIS ON)
-		set (NEW_EQS ON)
-		add_definitions(
-			-o3
-			-DIPMGEMPLUGIN
-		)	
-	ELSE(UNIX)
-		MESSAGE (FATAL_ERROR  "LIS is only supported under LINUX/UNIX" )	
-	ENDIF (UNIX)
+	FIND_PACKAGE( LIS REQUIRED )
+	#set (LIS ON)
+	set (NEW_EQS ON)
+	add_definitions(
+		-o3
+		-DIPMGEMPLUGIN
+	)	
+#	IF (UNIX)
+#		FIND_PACKAGE( LIS REQUIRED )
+#		#set (LIS ON)
+#		set (NEW_EQS ON)
+#		add_definitions(
+#			-o3
+#			-DIPMGEMPLUGIN
+#		)	
+#	ELSE(UNIX)
+#		MESSAGE (FATAL_ERROR  "LIS is only supported under LINUX/UNIX" )	
+#	ENDIF (UNIX)
 ENDIF(LIS)
 
 # Find OpenMP
