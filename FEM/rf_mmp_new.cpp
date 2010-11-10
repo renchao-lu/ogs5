@@ -2158,21 +2158,21 @@ double CMediumProperties::PermeabilitySaturationFunction(const double Saturation
       break;
     case 5:  // Haverkamp Problem: aus SOIL SCI. SOC. AM. J., VOL. 41, 1977, Pages 285ff
       break;
-    case 6:  // Brooks Corey:  WW
-        if (saturation > (saturation_max[phase] - MKleinsteZahl))
-            saturation = saturation_max[phase] - MKleinsteZahl;
-        if (saturation < (saturation_res[phase] + MKleinsteZahl))
-            saturation = saturation_res[phase] + MKleinsteZahl;
+    case 6:  // Brooks Corey:  WW; changed 27.10.2010. BG + SB, version 5.0.08
+        if (saturation > (saturation_max[0] - MKleinsteZahl))
+            saturation = saturation_max[0] - MKleinsteZahl;
+        if (saturation < (saturation_res[0] + MKleinsteZahl))
+            saturation = saturation_res[0] + MKleinsteZahl;
         //
         saturation_eff = (saturation - saturation_res[0]) / (1.-saturation_res[0]-saturation_res[1]);
         permeability_saturation = pow(saturation_eff,(2.0+3.0*saturation_exp[0])/saturation_exp[0]);
         permeability_saturation = MRange(DBL_EPSILON,permeability_saturation,1.);
       break;
-    case 66:  // Brooks Corey for non wetting fluid (e.g. gas):  WW
-        if (saturation > (saturation_max[phase] - MKleinsteZahl))
-            saturation = saturation_max[phase] - MKleinsteZahl;
-        if (saturation < (saturation_res[phase] + MKleinsteZahl))
-            saturation = saturation_res[phase] + MKleinsteZahl;
+    case 66:  // Brooks Corey for non wetting fluid (e.g. gas):  WW; changed 27.10.2010. BG + SB, version 5.0.08
+        if (saturation > (saturation_max[0] - MKleinsteZahl))
+            saturation = saturation_max[0] - MKleinsteZahl;
+        if (saturation < (saturation_res[0] + MKleinsteZahl))
+            saturation = saturation_res[0] + MKleinsteZahl;
         //
         saturation_eff = (saturation - saturation_res[0]) / (1.-saturation_res[0]-saturation_res[1]);
         permeability_saturation = pow(1.0-saturation_eff, 2.0)*
@@ -4555,11 +4555,11 @@ double CMediumProperties::SaturationCapillaryPressureFunction
   switch(capillary_pressure_model){
     case 0:  // k = f(x) user-defined function
       saturation = GetCurveValueInverse((int)capillary_pressure_model_values[0],0,capillary_pressure,&gueltig);
-      //WW 07.07.2008
-      if (saturation > (saturation_max[phase] - MKleinsteZahl))
-         saturation = saturation_max[phase] - MKleinsteZahl;
-      if (saturation < (saturation_res[phase] + MKleinsteZahl))
-        saturation = saturation_res[phase] + MKleinsteZahl;
+      //WW 07.07.2008; changed 27.10.2010. BG + SB, version 5.0.08
+      if (saturation > (saturation_max[0] - MKleinsteZahl))
+         saturation = saturation_max[0] - MKleinsteZahl;
+      if (saturation < (saturation_res[0] + MKleinsteZahl))
+        saturation = saturation_res[0] + MKleinsteZahl;
       break;
     case 1:  // constant
       saturation = 1.0;  //MX test for DECOVALEX
