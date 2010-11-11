@@ -64,7 +64,6 @@
 #include <OpenSG/OSGGroup.h>
 #include "vtkOsgActor.h"
 #include "OsgWidget.h"
-#include <OpenSG/OSGBaseFunctions.h>
 #endif
 
 #ifdef OGS_USE_VRPN
@@ -91,11 +90,6 @@ using namespace FileIO;
 MainWindow::MainWindow(QWidget *parent /* = 0*/)
 : QMainWindow(parent), _db (NULL)
 {
-
-#ifdef OGS_USE_OPENSG
-	OSG::osgInit(0, NULL);
-#endif
-
     setupUi(this);
 
 	// Setup connection GEOObjects to GUI through GEOModels and tab widgets
@@ -297,9 +291,6 @@ MainWindow::~MainWindow()
 	delete _meshModels;
 	delete _geoModels;
 
-#ifdef OGS_USE_OPENSG
-	OSG::osgExit();
-#endif // OGS_USE_OPENSG
 #ifdef OGS_USE_VRPN
 	delete _trackingSettingsWidget;
 #endif // OGS_USE_VRPN

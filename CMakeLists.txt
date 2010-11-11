@@ -27,6 +27,9 @@ SET (OGS_DATE "14.09.2010")
 # Adds useful macros and variables
 INCLUDE( CMakeConfiguration/Macros.cmake )
 
+# Suppress waring on add_subdirectory(dir) where dir contains no CMakeLists.txt
+CMAKE_POLICY(SET CMP0014 OLD)
+
 IF (WIN32)
 	## For Visual Studio compiler
 	IF (MSVC)
