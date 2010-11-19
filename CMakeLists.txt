@@ -28,7 +28,9 @@ SET (OGS_DATE "10.10.2010")
 INCLUDE( CMakeConfiguration/Macros.cmake )
 
 # Suppress waring on add_subdirectory(dir) where dir contains no CMakeLists.txt
-CMAKE_POLICY(SET CMP0014 OLD)
+IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 2.6)
+	CMAKE_POLICY(SET CMP0014 OLD)
+ENDIF ()
 
 IF (WIN32)
 	## For Visual Studio compiler
