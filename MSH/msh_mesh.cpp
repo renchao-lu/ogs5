@@ -4090,7 +4090,7 @@ void CFEMesh::GetELEOnPLY(CGLPolyline*m_ply, vector<long>&ele_vector_ply) {
 	}
 	//----------------------------------------------------------------------
 	ele_vector_ply.clear();
-	vec<long> node_indeces(8);
+	vec<long> node_indeces(20);
 	for (i = 0; i < (long) ele_vector.size(); i++) {
 		m_ele = ele_vector[i];
 		m_ele->GetEdges(ele_edges_vector);
