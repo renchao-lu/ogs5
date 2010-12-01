@@ -256,7 +256,10 @@ protected:
   TEST_F(MinBMTest, MostBasicModelEverMade)
   {
     // setup the model for running
-    copyModelToTmpDir( "data/bmskel" );
+	char result[256];
+	strcpy(result,SOURCEPATH);
+	strcat(result,"/tests/data/bmskel");
+    copyModelToTmpDir( result );
 
     // run ogs, ignoring echo output
     // need to make "ogs /path/to/tmpdir/a"
