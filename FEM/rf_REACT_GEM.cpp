@@ -613,7 +613,6 @@ short REACT_GEM::Init_RUN() {
         nNodes = GetNodeNumber_MT();
         nElems = GetElemNumber_MT();
         long ii=0,in = 0,i=0,j;
-        long idummy;
         double scalfac=1.0;
 //        CompProperties *m_cp = NULL;
         CRFProcess* this_pcs;
@@ -757,7 +756,7 @@ short REACT_GEM::Init_RUN() {
                                         cout << " sucess with second try.... "<<  endl;
 
                                 }
-                        
+
                 }// end loop if initial gems run fails
 
                 //Get data
@@ -1066,7 +1065,7 @@ short REACT_GEM::Run_MainLoop ( ) {
         nNodes = GetNodeNumber_MT();
         nElems = GetElemNumber_MT();
         long /*i,j,ii,*/in,ii,idummy,node_fail=0, repeated_fail=0;
-        double scalfac,oldvolume;
+        double oldvolume;
 
 
 
@@ -1135,7 +1134,7 @@ short REACT_GEM::Run_MainLoop ( ) {
 
                                                 idummy=1; // end the while loop because we have a result
                                                 // cout << " GEM sucess with scaling of : " << scalfac << endl;
-                                    
+
                         }// end loop if initial gems run fails
                         else {
 
@@ -1179,7 +1178,7 @@ short REACT_GEM::Run_MainLoop ( ) {
                                 if ( flag_porosity_change ==1 ) {
                                         REACT_GEM::CalcPorosity ( in );
                                 }
- 
+
 				// Convert to concentration  ..
                                 REACT_GEM::MassToConcentration ( in, 1 );
 
@@ -1215,9 +1214,10 @@ short REACT_GEM::Run_MainLoop ( ) {
 
 int REACT_GEM::GetHeatFlag_MT ( void ) {
         //heat transport
-        for ( int i=0; i < ( int ) pcs_vector.size() ; i++ ) {
+        for ( size_t i=0; i < pcs_vector.size() ; i++ ) {
                 m_pcs = pcs_vector[i];
-                if ( m_pcs->pcs_type_name.compare ( "HEAT_TRANSPORT" ) == 0 ) {
+//                if ( m_pcs->pcs_type_name.compare ( "HEAT_TRANSPORT" ) == 0 ) {
+                if ( m_pcs->getProcessType() == HEAT_TRANSPORT ) { // TF
                         return 1;
                 }
         }
@@ -1225,56 +1225,62 @@ int REACT_GEM::GetHeatFlag_MT ( void ) {
 }
 
 int REACT_GEM::GetFlowType_MT ( void ) {
-        //flow type
-        for ( int i=0; i < ( int ) pcs_vector.size() ; i++ ) {
-                m_pcs = pcs_vector[i];
-                if ( m_pcs->pcs_type_name.compare ( "GROUNDWATER_FLOW" ) ==0 ) {
-                        m_flow_pcs = m_pcs;
-                        return 1;
-                } else if ( m_pcs->pcs_type_name.compare ( "LIQUID_FLOW" ) ==0 ) {
-                        m_flow_pcs = m_pcs;
-                        return 2;
-                } else if ( m_pcs->pcs_type_name.compare ( "RICHARDS_FLOW" ) ==0 ) {
-                        m_flow_pcs = m_pcs;
-                        return 3;
-                } else if ( m_pcs->pcs_type_name.compare ( "MULTI_PHASE_FLOW" ) ==0 ) {
-                        m_flow_pcs = m_pcs;
-                        return 4;
-                }
-        }
-        return 0;
+	//flow type
+	for ( size_t i=0; i < pcs_vector.size(); i++ ) {
+		m_pcs = pcs_vector[i];
+		//                if ( m_pcs->pcs_type_name.compare ( "GROUNDWATER_FLOW" ) ==0 ) {
+		if ( m_pcs->getProcessType() == GROUNDWATER_FLOW) {
+			m_flow_pcs = m_pcs;
+			return 1;
+			//                } else if ( m_pcs->pcs_type_name.compare ( "LIQUID_FLOW" ) ==0 ) {
+		} else if ( m_pcs->getProcessType() == LIQUID_FLOW) {
+			m_flow_pcs = m_pcs;
+			return 2;
+			//                } else if ( m_pcs->pcs_type_name.compare ( "RICHARDS_FLOW" ) ==0 ) {
+		} else if ( m_pcs->getProcessType() == RICHARDS_FLOW) {
+			m_flow_pcs = m_pcs;
+			return 3;
+			//                } else if ( m_pcs->pcs_type_name.compare ( "MULTI_PHASE_FLOW" ) ==0 ) {
+		} else if ( m_pcs->getProcessType() == MULTI_PHASE_FLOW ) {
+		}
+		m_flow_pcs = m_pcs;
+		return 4;
+	}
+	return 0;
 }
 
 void REACT_GEM::GetFluidProperty_MT ( void ) {
         m_FluidProp = MFPGet ( "LIQUID" );
 }
 
-long REACT_GEM::GetNodeNumber_MT ( void ) {
-        long number;
-        //------------read number of nodes--------------
-        for ( int i=0; i < ( int ) pcs_vector.size(); i++ ) {
-                m_pcs = pcs_vector[i];
-                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) ==0 ) {
-                        number = ( long ) m_pcs->m_msh->GetNodesNumber ( false );
-                        return number;
-                }
-        }
-        //------------end of reading number of nodes----
-        return 0;
+long REACT_GEM::GetNodeNumber_MT ( void )
+{
+	long number;
+	//------------read number of nodes--------------
+	for ( size_t i=0; i < pcs_vector.size(); i++ ) {
+		m_pcs = pcs_vector[i];
+//		if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) ==0 ) {
+		if ( m_pcs->getProcessType() == MASS_TRANSPORT ) {
+			number = ( long ) m_pcs->m_msh->GetNodesNumber ( false );
+			return number;
+		}
+	}
+	//------------end of reading number of nodes----
+	return 0;
 }
 
 long REACT_GEM::GetElemNumber_MT ( void ) {
-        long number;
-        //------------read number of elems--------------
-        for ( int i=0; i < ( int ) pcs_vector.size(); i++ ) {
-                m_pcs = pcs_vector[i];
-                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) ==0 ) {
-                        number = ( long ) m_pcs->m_msh->ele_vector.size();
-                        return number;
-                }
-        }
-        //------------end of reading number of nodes----
-        return 0;
+	long number;
+	//------------read number of elems--------------
+	for (size_t i=0; i < pcs_vector.size(); i++ ) {
+		m_pcs = pcs_vector[i];
+//                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) ==0 ) {
+		if ( m_pcs->getProcessType() == MASS_TRANSPORT) {
+			number = ( long ) m_pcs->m_msh->ele_vector.size();
+			return number;
+		}
+	}
+	return 0;
 }
 
 double REACT_GEM::GetTempValue_MT ( long node_Index, int timelevel ) {
@@ -1429,7 +1435,8 @@ double REACT_GEM::GetPressureValue_MT ( long node_Index, int timelevel ) {
         return pressure;
 }
 
-short REACT_GEM::SetPressureValue_MT ( long node_Index, int timelevel, double pressure ) {
+short REACT_GEM::SetPressureValue_MT ( long node_Index, int timelevel, double pressure )
+{
         //Set pressure value
         int indx;
         indx = 0;
@@ -1476,12 +1483,15 @@ short REACT_GEM::SetPressureValue_MT ( long node_Index, int timelevel, double pr
         }
         return 1;
 }
-double REACT_GEM::GetComponentValue_MT ( long node_Index, string m_component, int timelevel ) {
+
+double REACT_GEM::GetComponentValue_MT ( long node_Index, string m_component, int timelevel )
+{
         double m_comp_value;
         m_comp_value = -1.0;
-        for ( int i=0; i < ( int ) pcs_vector.size() ; i++ ) {
+        for ( size_t i=0; i < pcs_vector.size(); i++ ) {
                 m_pcs = pcs_vector[i];
-                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+//                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+                if ( m_pcs->getProcessType() == MASS_TRANSPORT) {
                         if ( strcmp ( m_pcs->pcs_primary_function_name[0],m_component.c_str() ) == 0 ) {
                                 m_comp_value = m_pcs->GetNodeValue ( node_Index,m_pcs->GetNodeValueIndex ( m_pcs->pcs_primary_function_name[0] ) +timelevel );
                         }
@@ -1498,13 +1508,15 @@ double REACT_GEM::GetComponentValue_MT ( long node_Index, string m_component, in
         }
 }
 
-short REACT_GEM::GetDCValue_MT ( long node_Index, int timelevel, double* m_DC, double* m_DC_pts ,double* m_DC_MT_delta ) {
+short REACT_GEM::GetDCValue_MT ( long node_Index, int timelevel, double* m_DC, double* m_DC_pts ,double* m_DC_MT_delta )
+{
         string str;
         double /*DC_MT_pre,*/ DC_MT_cur;
 
         for ( int i=0; i < nDC ; i++ ) {
                 m_pcs = pcs_vector[i+1];// dangerous!!
-                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+//                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+                if ( m_pcs->getProcessType() == MASS_TRANSPORT ) {
                         //if ( m_pcs->m_msh->nod_vector[node_Index]->onBoundary() == false ) // do not update values for boundary node?
 
                         str = m_pcs->pcs_primary_function_name[0];
@@ -1528,7 +1540,8 @@ short REACT_GEM::GetBValue_MT ( long node_Index, int timelevel, double* m_solute
 
         for ( int i=0; i < nIC ; i++ ) {
                 m_pcs = pcs_vector[i+1];// dangerous!!
-                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+//                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+                if ( m_pcs->getProcessType() == MASS_TRANSPORT) {
                         //if ( m_pcs->m_msh->nod_vector[node_Index]->onBoundary() == false ) // do not update values for boundary node?
 
                         str = m_pcs->pcs_primary_function_name[0];
@@ -1552,7 +1565,8 @@ double REACT_GEM::GetDCValueSpecies_MT ( long node_Index, int timelevel, int iDc
         double /*DC_MT_pre,*/ DC_MT_cur=0.0;
 
         m_pcs = pcs_vector[iDc+1];// dangerous!!
-        if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+//        if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+        if ( m_pcs->getProcessType() == MASS_TRANSPORT) {
 
                 str = m_pcs->pcs_primary_function_name[0];
                 if ( str.compare ( "pH" ) != 0 && str.compare ( "pe" ) != 0 && str.compare ( "Eh" ) != 0 && str.compare ( "NodePorosity" ) != 0 ) {
@@ -1576,12 +1590,14 @@ double REACT_GEM::GetDCValueSpecies_MT ( long node_Index, int timelevel, int iDc
 
 
 
-short REACT_GEM::GetSoComponentValue_MT ( long node_Index, int timelevel, double* m_Phase ) {
+short REACT_GEM::GetSoComponentValue_MT ( long node_Index, int timelevel, double* m_Phase )
+{
         string str;
         int x_Component = 0;
-        for ( int i=0; i < ( int ) pcs_vector.size() ; i++ ) {
+        for (size_t i=0; i < pcs_vector.size() ; i++ ) {
                 m_pcs = pcs_vector[i];
-                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+//                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+                if ( m_pcs->getProcessType() == MASS_TRANSPORT) {
 
                         x_Component = -1;
 
@@ -1604,7 +1620,8 @@ short REACT_GEM::SetDCValue_MT ( long node_Index, int timelevel, double* m_DC ) 
 
                 m_pcs = pcs_vector[i+1];
 
-                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+//                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+                if ( m_pcs->getProcessType() == MASS_TRANSPORT) {
                         str = m_pcs->pcs_primary_function_name[0];
                         if ( str.compare ( "pH" ) != 0 && str.compare ( "pe" ) != 0 && str.compare ( "Eh" ) != 0 && str.compare ( "NodePorosity" ) != 0 ) {
                                 if ( flag_iterative_scheme > 0 ) {
@@ -1630,7 +1647,8 @@ short REACT_GEM::SetBValue_MT ( long node_Index, int timelevel, double* m_solute
 
                 m_pcs = pcs_vector[i+1];
 
-                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+//                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+                if ( m_pcs->getProcessType() == MASS_TRANSPORT) {
                         str = m_pcs->pcs_primary_function_name[0];
                         if ( flag_iterative_scheme > 0 ) {
                                 if ( CPGetMobil ( m_pcs->GetProcessComponentNumber() ) > 0 ) {
@@ -1792,9 +1810,10 @@ short REACT_GEM::SetSoComponentValue_MT ( long node_Index, int timelevel, double
         string str;
         int x_Component = -1;
 
-        for ( int i=0; i < ( int ) pcs_vector.size() ; i++ ) {
+        for (size_t i=0; i < pcs_vector.size() ; i++ ) {
                 m_pcs = pcs_vector[i];
-                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+//                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+                if ( m_pcs->getProcessType() == MASS_TRANSPORT) {
                         x_Component = -1;
 
                         str = m_pcs->pcs_primary_function_name[0];//get the name of compound from MT;
@@ -1815,10 +1834,10 @@ short REACT_GEM::SetSoComponentValue_MT ( long node_Index, int timelevel, double
 
 short REACT_GEM::SetNodePorosityValue_MT ( long node_Index, int timelevel, double m_porosity ) {
         string str;
-        int i;
-        for ( i=0; i < ( int ) pcs_vector.size() ; i++ ) {
+        for ( size_t i=0; i < pcs_vector.size() ; i++ ) {
                 m_pcs = pcs_vector[i];
-                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+//                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+                if ( m_pcs->getProcessType() == MASS_TRANSPORT) {
                         str = m_pcs->pcs_primary_function_name[0];//get the name of compound from MT;
                         //x_Component = m_Node->Ph_name_to_xDB(str.c_str());//get the index of certain compound, -1: no match
                         if ( str.compare ( "NodePorosity" ) == 0 ) {
@@ -1831,12 +1850,13 @@ short REACT_GEM::SetNodePorosityValue_MT ( long node_Index, int timelevel, doubl
         return 1;
 }
 
-short REACT_GEM::SetPHValue_MT ( long node_Index, int timelevel, double m_PH ) {
-        int i;
+short REACT_GEM::SetPHValue_MT ( long node_Index, int timelevel, double m_PH )
+{
         string str;
-        for ( i=0; i < ( int ) pcs_vector.size() ; i++ ) {
+        for ( size_t i=0; i < pcs_vector.size() ; i++ ) {
                 m_pcs = pcs_vector[i];
-                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+//                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+                if ( m_pcs->getProcessType() == MASS_TRANSPORT) {
                         str = m_pcs->pcs_primary_function_name[0];//get the name of compound from MT;
                         //x_Component = m_Node->Ph_name_to_xDB(str.c_str());//get the index of certain compound, -1: no match
                         if ( str.compare ( "pH" ) == 0 ) {
@@ -1849,13 +1869,13 @@ short REACT_GEM::SetPHValue_MT ( long node_Index, int timelevel, double m_PH ) {
         return 0;
 }
 
-short REACT_GEM::SetPeValue_MT ( long node_Index, int timelevel, double m_PE ) {
-        int i;
+short REACT_GEM::SetPeValue_MT ( long node_Index, int timelevel, double m_PE )
+{
         string str;
-        for ( i=0; i < ( int ) pcs_vector.size() ; i++ ) {
+        for ( size_t i=0; i < pcs_vector.size() ; i++ ) {
                 m_pcs = pcs_vector[i];
-                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
-
+//                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+                if ( m_pcs->getProcessType() == MASS_TRANSPORT) {
                         str = m_pcs->pcs_primary_function_name[0];//get the name of compound from MT;
                         //x_Component = m_Node->Ph_name_to_xDB(str.c_str());//get the index of certain compound, -1: no match
                         if ( str.compare ( "pe" ) == 0 ) {
@@ -1868,12 +1888,13 @@ short REACT_GEM::SetPeValue_MT ( long node_Index, int timelevel, double m_PE ) {
         return 0;
 }
 
-short REACT_GEM::SetEhValue_MT ( long node_Index, int timelevel, double m_EH ) {
-        int i;
+short REACT_GEM::SetEhValue_MT ( long node_Index, int timelevel, double m_EH )
+{
         string str;
-        for ( i=0; i < ( int ) pcs_vector.size() ; i++ ) {
+        for ( size_t i=0; i < pcs_vector.size() ; i++ ) {
                 m_pcs = pcs_vector[i];
-                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+//                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+                if ( m_pcs->getProcessType() == MASS_TRANSPORT) {
                         str = m_pcs->pcs_primary_function_name[0];//get the name of compound from MT;
                         //x_Component = m_Node->Ph_name_to_xDB(str.c_str());//get the index of certain compound, -1: no match
                         if ( str.compare ( "Eh" ) == 0 ) {
@@ -2129,7 +2150,7 @@ void REACT_GEM::MassToConcentration ( long in /*idx of node*/ ,int i_timestep ) 
                         i = in*nIC + j;
                         m_bIC[i] -= m_bPS[j]; // B vector without solute
                         m_bPS[j] *=skal_faktor; // newly scaled first phase
-  
+
 		}
                 for ( j=0 ; j <= idx_water; j++ ) {
                         i = in*nDC + j;
@@ -2542,7 +2563,7 @@ ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file ) {
                                 }
 
                         }
-                        in.clear(); 
+                        in.clear();
                         // next line is surface area
                         in.str ( GetLineFromFile1 ( gem_file ) );
                         in >> d_kin.surface_model;
@@ -3226,7 +3247,7 @@ int REACT_GEM::ReadReloadGem() {
         for ( i=0; i<nNodes; i++ ) {
                 for ( j=0;j<nIC;j++ ) {
                         is3>>m_bIC[i*nIC + j ];
-			is3 >> m_soluteB[i*nIC + j ];		
+			is3 >> m_soluteB[i*nIC + j ];
                         is3>>ws;
                 }
         }

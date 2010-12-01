@@ -9,14 +9,17 @@
 
 namespace GEOLIB {
 
-PointVec::PointVec (const std::string& name, std::vector<Point*>* points, std::vector<std::string>* names,
+PointVec::PointVec (const std::string& name, std::vector<Point*>* points, std::map<std::string, size_t>* name_id_map,
 			PointType type)
-: NameMapper (names), _pnt_vec(points), _type(type), _name (name)
+: _pnt_vec (points), _name_id_map (name_id_map), _type(type), _name (name)
 {
 	assert (_pnt_vec);
 	std::cout << "INFO: " << _pnt_vec->size() << " points" << std::endl;
 	makePntsUnique (_pnt_vec, _pnt_id_map);
 	std::cout << "INFO: " << _pnt_vec->size() << " unique points" << std::endl;
+
+	if (name_id_map)
+		std::cout << "INFO: " << _name_id_map->size() << " points are named" << std::endl;
 }
 
 PointVec::~PointVec ()
@@ -26,30 +29,107 @@ PointVec::~PointVec ()
 		(*_pnt_vec)[k] = NULL;
 	}
 	delete _pnt_vec;
+	delete _name_id_map;
+}
+
+void PointVec::push_back (Point *pnt)
+{
+	_pnt_id_map.push_back (uniqueInsert(pnt));
+}
+
+void PointVec::push_back (Point *pnt, const std::string& name)
+{
+	std::map<std::string,size_t>::const_iterator it (_name_id_map->find (name));
+	if (it != _name_id_map->end()) {
+		std::cerr << "ERROR: PointVec::push_back (): two points with the same name" << std::endl;
+		exit (1);
+	}
+
+	size_t id (uniqueInsert (pnt));
+	_pnt_id_map.push_back (id);
+	(*_name_id_map)[name] = id;
+}
+
+size_t PointVec::uniqueInsert (Point* pnt)
+{
+	size_t n (_pnt_vec->size()), k;
+	bool nfound (true);
+	double eps (sqrt(std::numeric_limits<double>::min()));
+	for (k=0; k<n && nfound; k++) {
+		if (fabs((*((*_pnt_vec)[k]))[0]-(*pnt)[0]) < eps
+				&&  fabs( (*((*_pnt_vec)[k]))[1]-(*pnt)[1]) < eps
+				&&  fabs( (*((*_pnt_vec)[k]))[2]-(*pnt)[2]) < eps) {
+			nfound = false;
+		}
+	}
+	if(nfound) {
+		_pnt_vec->push_back (pnt);
+		k++;
+	}
+	if (k<n) {
+		delete pnt;
+		pnt = NULL;
+	}
+	return k;
 }
 
 std::vector<Point*> * PointVec::filterStations(const std::vector<PropertyBounds> &bounds) const
 {
 	std::vector<Point*> *tmpStations (new std::vector<Point*>);
 	size_t size (_pnt_vec->size());
-	for (size_t i=0; i<size; i++)
-	{
+	for (size_t i=0; i<size; i++) {
 		if (static_cast<Station*>((*_pnt_vec)[i])->inSelection(bounds)) tmpStations->push_back((*_pnt_vec)[i]);
 	}
 	return tmpStations;
 }
 
-bool PointVec::getPointIDByName (const std::string& name, size_t &id) const
+bool PointVec::getElementIDByName (const std::string& name, size_t &id) const
 {
-	bool ret;
-	if ((ret = getElementIDByName (name, id)))
-		id = _pnt_id_map[id];
-	return ret;
+	std::map<std::string,size_t>::const_iterator it (_name_id_map->find (name));
+
+	if (it != _name_id_map->end()) {
+		id = it->second;
+		return true;
+	} else return false;
 }
 
+const Point* PointVec::getElementByName (const std::string& name) const
+{
+	size_t id;
+	bool ret (getElementIDByName (name, id));
+	if (ret) {
+		return (*_pnt_vec)[id];
+	} else {
+		return NULL;
+	}
 }
 
-void makePntsUnique (std::vector<GEOLIB::Point*>* pnt_vec, std::vector<size_t> &pnt_id_map)
+bool PointVec::getNameOfElement (const Point* data, std::string& name) const
+{
+	for (size_t k(0); k<_pnt_vec->size(); k++) {
+		if ((*_pnt_vec)[k] == data) {
+			return getNameOfElementByID (k, name);
+		}
+	}
+	return false;
+}
+
+bool PointVec::getNameOfElementByID (size_t id, std::string& element_name) const
+{
+	if (! _name_id_map) return false;
+	// search in map for id
+	std::map<std::string,size_t>::const_iterator it (_name_id_map->begin());
+	while (it != _name_id_map->end()) {
+		if (it->second == id) {
+			element_name = it->first;
+			return true;
+		}
+		it++;
+	}
+	return false;
+}
+
+void PointVec::makePntsUnique (std::vector<GEOLIB::Point*>* pnt_vec, std::vector<size_t> &pnt_id_map)
 {
 	size_t n_pnts_in_file (pnt_vec->size());
 	std::vector<size_t> perm;
@@ -59,9 +139,10 @@ void makePntsUnique (std::vector<GEOLIB::Point*>* pnt_vec, std::vector<size_t> &
 		pnt_id_map.push_back(k);
 	}
 
-	// sort the points, unfortunately quicksort is not stable
+	// sort the points
 	Quicksort<GEOLIB::Point*> (*pnt_vec, 0, n_pnts_in_file, perm);
 
+	// unfortunately quicksort is not stable -
 	// sort identical points by id - to make sorting stable
 	double eps (sqrt(std::numeric_limits<double>::min()));
 	// determine intervals with identical points to resort for stability of sorting
@@ -117,8 +198,7 @@ void makePntsUnique (std::vector<GEOLIB::Point*>* pnt_vec, std::vector<size_t> &
 		}
 	}
 	// remove NULL-ptr from vector
-	for (std::vector<GEOLIB::Point*>::iterator it(pnt_vec->begin());
-		it != pnt_vec->end(); ) {
+	for (std::vector<GEOLIB::Point*>::iterator it(pnt_vec->begin()); it != pnt_vec->end(); ) {
 		if (*it == NULL) {
 			it = pnt_vec->erase (it);
 		}
@@ -146,5 +226,6 @@ void makePntsUnique (std::vector<GEOLIB::Point*>* pnt_vec, std::vector<size_t> &
 //
 //	std::cout << pnt_vec->size() << " unique points: " << std::endl;
 //	for (size_t k(0); k<pnt_vec->size(); k++) std::cout << k << ": " << *((*pnt_vec)[k]) << std::endl;
-
 }
+
+} // end namespace

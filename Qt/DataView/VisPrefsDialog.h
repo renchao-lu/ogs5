@@ -27,11 +27,8 @@ public:
 
 
 private slots:
-	/// Sets the Background-Colour to black.
-	void on_bgBlackButton_toggled();
-
-	/// Sets the Background-Colour to white.
-	void on_bgWhiteButton_toggled();
+	/// Sets the background colour.
+	void on_bgColorButton_colorPicked(QColor color);
 
 	/// Adds a light above the scene.
 	void on_lightAboveBox_clicked();

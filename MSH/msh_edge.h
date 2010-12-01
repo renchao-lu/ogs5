@@ -15,8 +15,10 @@ last modified
 namespace Mesh_Group
 {
 /**
- * class CEdge represent an edge of a finite element mesh. The edge consists
- * of two mesh nodes. Additionaly the class stores the middle point as a mesh node
+ * \brief Class CEdge represent an edge of a finite element mesh.
+ *
+ * The edge consists of two mesh nodes. Additionally the class
+ * stores the middle point as a mesh node
  * (into the vector nodes_of_edges).
  */
 class CEdge: public CCore {
@@ -84,12 +86,9 @@ private:
 	vec<CNode*> nodes_of_edges;
 	int joint; // PCH
 	double* velocity; // PCH
+
+
 	friend class CElem;
-	friend class FiniteElement::CElement;
-	friend class FiniteElement::CFiniteElementStd;
-	friend class FiniteElement::CFiniteElementVec;
-	friend class FiniteElement::ElementMatrix;
-	friend class FiniteElement::ElementMatrix_DM;
 };
 
 } // namespace Mesh_Group

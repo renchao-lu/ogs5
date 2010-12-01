@@ -109,18 +109,18 @@ typedef Matrix Vec;
 template<class T> class vec
 {
     public:
-      vec(const int argSize);
-	  vec() {size=0;}
+      vec(int argSize);
+	  vec() : size(0) {}
       explicit vec(const vec<T>& v);
 
       virtual ~vec();
       // Operator
-      virtual void operator = (T v) { for (int i=0; i<size; i++) entry[i] = v; }
+      virtual void operator = (T v) { for (size_t i=0; i<size; i++) entry[i] = v; }
       virtual void operator = (const vec<T>&);
-	  virtual void resize(const int newh);
+	  virtual void resize(int newh);
       virtual T& operator[] (int i) { return (T&) entry[i]; }
       virtual const T& operator[] (int i) const {return (const T&) entry[i]; }
-      virtual int Size() const { return size; }
+      virtual size_t Size() const { return size; }
 
       T* Entry()        { return entry; }
       T* Entry()  const { return entry; }
@@ -129,21 +129,21 @@ template<class T> class vec
 
     protected:
       T* entry;
-      int size;
+      size_t size;
 
 };
 
 template<> class vec<void*>
  {
     public:
-      vec(const int argSize);
-	  vec() {size=0;}
+      vec(int argSize);
+	  vec() : size (0) {}
       explicit vec(const vec<void*>& v);
 
       virtual ~vec();
       // Operator
       void operator = (void* v)
-	      { for (int i=0; i<size; i++) entry[i] = v; }
+	      { for (size_t i=0; i<size; i++) entry[i] = v; }
       void operator = (const vec<void*>& v);
       void*& operator[] (int i) { return entry[i]; }
       const void*& operator[] (int i) const { return (const void*&) entry[i]; }
@@ -152,26 +152,26 @@ template<> class vec<void*>
       void** Entry()          { return entry; }
       const void** Entry()  const { return (const void**)entry; }
 
-	  virtual void resize(const int newh);
-      virtual int Size() const { return size; }
+	  virtual void resize(int newh);
+      virtual size_t Size() const { return size; }
       virtual void Write(std::ostream& os = std::cout) const;
 
     protected:
       void** entry;
-      int size;
+      size_t size;
 };
 
 template<class T> class vec<T*> : public vec<void*>
 {
    public:
-      vec(const int Size) : vec<void*>(Size) { }
+      vec( int Size) : vec<void*>(Size) { }
       vec()               : vec<void*>()     { }
       explicit vec(const vec<T*>& v) : vec<void*>(v) { }
 
       ~vec() { }
 
 	  // Operator
-      void operator = (T* v) { for (int i=0; i<size;i++) entry[i] = v; }
+      void operator = (T* v) { for (size_t i=0; i<size;i++) entry[i] = v; }
       void operator = (const vec<T*>& v);
       T*& operator[] (int i) { return (T*&) entry[i]; }
       const T*& operator[] (int i) const {return (const T*&) entry[i]; }

@@ -12,6 +12,7 @@ last modified
 #include <iostream>
 
 // MSHLib
+#include "MSHEnums.h"
 #include "msh_edge.h"
 #ifdef USE_TOKENBUF
 #include "tokenbuf.h"
@@ -39,7 +40,19 @@ public:
 	CElem(size_t Index, CElem* onwer, int Face); // For Faces: Face, local face index
 	CElem(size_t Index, CElem* m_ele_parent); //WWOK
 	~CElem();
+
 	//------------------------------------------------------------------
+
+	/**
+	 * \brief Sets the default properties for the given element type.
+	 * \param t The element type of this element.
+	 * \param isFace Signals if the element is initialised as a face of an owner element, some properties of the element might change in this case.
+	 */
+	void setElementProperties(MshElemType::type t, bool isFace = false);
+
+	/// Depricated method kept for backward compatibility. Use setElementProperties(MshElemType::type t) instead.
+	void Config(MshElemType::type t) { setElementProperties(t); };
+
 	// Geometry
 	int GetDimension() const {
 		return ele_dim;
@@ -75,12 +88,9 @@ public:
 	      double GetRepLength() {return representative_length;}//CMCD
 	//------------------------------------------------------------------
 	// ID
-	int GetElementType() const {
-		return geo_type;
-	}
-	void SetElementType(const int Type) {
-		geo_type = Type;
-	}
+	MshElemType::type GetElementType() const { return geo_type;	};
+	void SetElementType( MshElemType::type type) { geo_type = type; };
+
 	void MarkingAll(bool makop);
 	std::string GetName() const;
 	//------------------------------------------------------------------
@@ -90,6 +100,13 @@ public:
 		for (int i = 0; i < (int) nodes_index.Size(); i++)
 			node_index[i] = nodes_index[i];
 	}
+
+	/**
+	 * const access to the vector nodes_index
+	 * @return a const reference to the vector
+	 */
+	const vec<long>& GetNodeIndeces () const { return nodes_index; }
+
 	long GetNodeIndex(const int index) const {
 		return nodes_index[index];
 	}
@@ -98,19 +115,19 @@ public:
 	}
 
 	void GetNodes(vec<CNode*>& ele_nodes) {
-		for (int i=0; i<nodes.Size(); i++)
+		for (size_t i=0; i<nodes.Size(); i++)
 			ele_nodes[i] = nodes[i];
 	}
 
 	void GetNodes(std::vector<CNode*>& nodesVec) {
-		for (int i=0; i<nodes.Size(); i++)
+		for (size_t i=0; i<nodes.Size(); i++)
 			nodesVec.push_back(nodes[i]);
 	}
 
-	CNode* GetNode(const int index) {
+	CNode* GetNode(int index) {
 		return nodes[index];
 	}
-	void SetNodes(vec<CNode*>& ele_nodes, const bool ReSize = false);
+	void SetNodes(vec<CNode*>& ele_nodes, bool ReSize = false);
 	int GetNodesNumber_H() const {
 		return nnodesHQ;
 	}
@@ -131,7 +148,7 @@ public:
 	} //YD
 
 	// Initialize topological properties
-	void InitializeMembers(); 
+	void InitializeMembers();
 	//------------------------------------------------------------------
 	// Edges
 	void GetEdges(vec<CEdge*>& ele_edges) {
@@ -145,7 +162,7 @@ public:
 		for (int i = 0; i < nedges; i++)
 			edges[i] = ele_edges[i];
 	}
-	int FindFaceEdges(const int LocalFaceIndex, vec<CEdge*>& face_edges);
+	// KR not used int FindFaceEdges(const int LocalFaceIndex, vec<CEdge*>& face_edges);
 	void SetEdgesOrientation(vec<int>& ori_edg) {
 		for (int i = 0; i < nedges; i++)
 			edges_orientation[i] = ori_edg[i];
@@ -182,7 +199,7 @@ public:
 		for (int i = 0; i < nfaces; i++)
 			ele_neighbors[i] = neighbors[i];
 	}
-	CElem* GetNeighbor(const int index) {
+	CElem* GetNeighbor(int index) {
 		return neighbors[index];
 	}
 
@@ -211,7 +228,7 @@ public:
 	void WriteIndex_TEC(std::ostream& os = std::cout) const;
 	void WriteAll(std::ostream& os = std::cout) const;
 	void WriteNeighbors(std::ostream& os = std::cout) const;
-	void Config(); //OK
+
 	//------------------------------------------------------------------
 	// MAT
 	Vec mat_vector; //OKWW
@@ -228,7 +245,7 @@ public:
 
 	 // Since m_tim->CheckCourant() is deactivated, the following member are
 	 // put in comment.
-	// kg44 21042010 reactivated 
+	// kg44 21042010 reactivated
 	 double representative_length;//For stability calculations
 	 double courant;
 	 double neumann;	  // MSH topology
@@ -236,7 +253,7 @@ public:
 private:
 	// Members
 	// ID
-	int geo_type; // 1 Line, 2 Quad, 3 Hex, 4 Tri, 5 Tet, 6 Pris
+	MshElemType::type geo_type; //KR: See MSHEnums.h -  1 Line, 2 Quad, 3 Hex, 4 Tri, 5 Tet, 6 Pris
 	CElem* owner;
 	// Geometrical properties
 	int ele_dim; // Dimension of element

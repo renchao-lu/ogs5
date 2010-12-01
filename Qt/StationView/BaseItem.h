@@ -23,11 +23,12 @@ class BaseItem
 {
 
 public:
-	BaseItem( const std::vector<GEOLIB::Point*> *stations = NULL )
+	BaseItem(const QString &listName, const std::vector<GEOLIB::Point*> *stations = NULL )
 		: _stations(stations), _vtkSource(VtkStationSource::New())
 	{
 		// create the vtk-object for 3d-visualisation of this list
 		static_cast<VtkStationSource*>(_vtkSource)->setStations(stations);
+		static_cast<VtkStationSource*>(_vtkSource)->SetName(listName);
 	}
 
 	~BaseItem()

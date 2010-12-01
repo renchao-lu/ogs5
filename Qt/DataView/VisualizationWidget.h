@@ -65,6 +65,9 @@ protected slots:
 	
 	/// Resets the camera to view the entire scene
 	void on_showAllPushButton_pressed();
+	
+	/// Toggles the display of bounding boxes around
+	void on_highlightToolButton_toggled(bool checked);
 
 private:
 	vtkRenderer* _vtkRender;

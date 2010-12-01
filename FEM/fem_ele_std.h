@@ -2,10 +2,14 @@
    Class element declaration
    class for finite element.
    Designed and programmed by WW/OK, 12/2004
+   modified by TF, 10/2010
 */
 
 #ifndef fem_std_INC
 #define fem_std_INC
+
+#include "FEMEnums.h"
+
 #include "fem_ele.h"
 // Problems
 #include "rf_mfp_new.h"
@@ -26,7 +30,7 @@
      //R: Richards flow
 //F: Fluid momentum
 //A: Gas flow
-enum ProcessType { L, U, G, T, C, H, M, O, R, F, A, V, P};
+enum EnumProcessType { L, U, G, T, C, H, M, O, R, F, A, V, P};
 //-----------------------------------------------------
 
 namespace process {class CRFProcessDeformation;}
@@ -34,18 +38,19 @@ using SolidProp::CSolidProperties;
 // Predeclared classes  01/07, WW
 class CMediumProperties;
 class CSolidProperties;
-class CFluidProperties;    
+class CFluidProperties;
 
 class CRFProcess;
 namespace FiniteElement{
-  using Math_Group::SymMatrix; 
+  using Math_Group::SymMatrix;
   using Math_Group::Matrix;
   using Math_Group::Vec;
   using process::CRFProcessDeformation;
   using ::CRFProcess;
+
 class CFiniteElementStd:public CElement
 {
-   public:  
+   public:
      CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, const int order=1);
      ~CFiniteElementStd();
 
@@ -71,9 +76,9 @@ class CFiniteElementStd:public CElement
      // 3. Laplace matrix
      void CalcLaplace();
      // 4. Gravity term
-     void CalcGravity(); 
+     void CalcGravity();
      // 5. Strain coupling matrix
-     void CalcStrainCoupling(); 
+     void CalcStrainCoupling();
      // 6. Thermal coupling
      void CalcRHS_by_ThermalDiffusion();
      // 7. Advection matrix
@@ -82,15 +87,15 @@ class CFiniteElementStd:public CElement
      void CalcStorage();
 	 // 9. Content matrix
 	 void CalcContent();
-     // 
+     //
      void CalcSatution(); //WW
-     // 
+     //
      void CalcEnergyNorm(const double *x_n1, double &err_norm0, double &err_normn); //25.08.2008. WW
      void CalcEnergyNorm_Dual(const double *x_n1, double &err_norm0, double &err_normn); //25.09.2008. WW
-     // 
+     //
      void CalcNodeMatParatemer(); //WW
      // Assembly
-     void Assembly(); 
+     void Assembly();
 	 void Assembly(int option, int dimension);	// PCH for Fluid Momentum
      void Cal_Velocity();
      void Cal_Velocity_2(); //CB this is to provide velocity only at the element center of gravity
@@ -112,7 +117,7 @@ class CFiniteElementStd:public CElement
      void CalcOverlandCKWRatNodes(int i, int j, double* head, double* ckwr, int* iups);
      void CalcOverlandResidual(double* head, double* swval, double* swold, double ast, double* residuall, double** amat);
      double CalcOverlandJacobiNodes(int i, int j, double *depth, double *depth_keep, double akrw, double axx, double ayy, double** amatij, double* sumjac);
-   	 void CalcOverlandUpwindedCoefficients(double** amat, double* ckwr, double axx, double ayy); 
+   	 void CalcOverlandUpwindedCoefficients(double** amat, double* ckwr, double axx, double ayy);
      //
      inline void UpwindAlphaMass(double *alpha); //CB added by CB: 090507
      inline void UpwindUnitCoord(int p, int point, int ind); //CB added by CB: 090507
@@ -125,14 +130,14 @@ class CFiniteElementStd:public CElement
      void ExtropolateGauss(CRFProcess *m_pcs, const int idof);
      //
 
-  private:  
+  private:
      bool newton_raphson;  //24.05.2007 WW
      long index;
      int dof_index; //24.02.2007 WW
 	 // Column index in the node value table
-     int idx0, idx1, idxS, idxSn0, idxSn1, idx3; 
-     int idxp0,idxp1, idxp20, idxp21; 
-     int phase; 
+     int idx0, idx1, idxS, idxSn0, idxSn1, idx3;
+     int idxp0,idxp1, idxp20, idxp21;
+     int phase;
      int comp; // Component
      int LocalShift; // For RHS
      // Danymic
@@ -143,9 +148,15 @@ class CFiniteElementStd:public CElement
      double mat[9];
      double *eqs_rhs; //For DDC WW
      bool heat_phase_change;
-     ::CRFProcess *cpl_pcs; // Pointer to coupled process. WW  
+     ::CRFProcess *cpl_pcs; // Pointer to coupled process. WW
+
      char pcsT;
-     bool dynamic; 
+//     /**
+//      * process type, \sa enum ProcessType
+//      */
+//     ProcessType _pcs_type; // TF
+
+     bool dynamic;
      CRFProcess *mfp_pcs;
      CSolidProperties *SolidProp;
      CFluidProperties *FluidProp;
@@ -165,7 +176,7 @@ class CFiniteElementStd:public CElement
      //25.2.2007.WW  SymMatrix *GravityMatrix;
      // Gauss point value. Buffers. // Some changes. 27.2.2007 WW
      double TG, TG0, PG, PG2, drho_gw_dT;
-     double Sw, rhow, poro, dSdp;    
+     double Sw, rhow, poro, dSdp;
      double rho_gw, rho_ga, rho_g, p_gw, M_g, tort;
      //
      double edlluse[16];
@@ -179,17 +190,17 @@ class CFiniteElementStd:public CElement
      Matrix *Storage; //SB4200
 	 Matrix *Content; //SB4209
      Matrix *StrainCoupling;
-     Vec       *RHS;      
+     Vec       *RHS;
      //-------------------------------------------------------
-     void SetHighOrderNodes();  // 25.2.2007 WW 
+     void SetHighOrderNodes();  // 25.2.2007 WW
      // Primary as water head
-     bool HEAD_Flag; 
+     bool HEAD_Flag;
      //
      void Config();
      //
      inline double CalCoefMass();
-     inline double CalCoefMass2(int dof_index); // 25.2.2007 WW 
-		 inline double CalCoefMassPSGLOBAL(int dof_index); // 03.3.2009 PCH 
+     inline double CalCoefMass2(int dof_index); // 25.2.2007 WW
+		 inline double CalCoefMassPSGLOBAL(int dof_index); // 03.3.2009 PCH
      inline void CalCoefLaplace(bool Gravity, int ip=0);
 	 inline void CalCoefLaplaceMultiphase(int phase, int ip=0); // 10 2008 PCH
      inline void CalCoefLaplace2(bool Gravity, int dof_index);
@@ -220,7 +231,7 @@ class CFiniteElementStd:public CElement
      //R: Richards flow
      //A: Gas flow
 	 //F: Fluid Momentum
-     ProcessType PcsType;
+     EnumProcessType PcsType;
      //-----------------------------------------------------
      // Local Assembly
      // Assembly of parabolic equation

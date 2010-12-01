@@ -1,6 +1,6 @@
 /**
  * \file NetCDFInterface.cpp
- * 29/07/2010 YW Initial implementation
+ * 29/07/2010 YW Initial implementations
  */
 #include <stdio.h>
 #include <vtknetcdf/netcdf.h>
@@ -30,14 +30,10 @@ void NetCDFInterface::readNetCDFData(std::string &ifname, std::vector<GEOLIB::Po
    int lat_varid, lon_varid;
    int choose_varid;
 
-   /* The start and count arrays will tell the netCDF library where to
-      read our data. */
+   /* The start and count arrays will tell the netCDF library where to read our data. */
    static size_t start2[2], count2[2];
    static size_t start3[3], count3[3];
    static size_t start4[4], count4[4];
-
-   /* Loop indexes. */
-   size_t i;
    
    /* Error handling. */
    int status;
@@ -58,7 +54,7 @@ void NetCDFInterface::readNetCDFData(std::string &ifname, std::vector<GEOLIB::Po
    status = nc_inq_dimlen(ncid, rlon_dimid, &NRLON); 
    if (status != NC_NOERR)   HANDLE_ERROR(status);
 
-   /* Get the choosed variable name from the opened NetCDF file. */
+   /* Get the choosen variable name from the opened NetCDF file. */
    string nc_fname; 
    basic_string <char>::size_type indexChar; 
    indexChar = ifname.find_last_of('/');
@@ -81,8 +77,7 @@ void NetCDFInterface::readNetCDFData(std::string &ifname, std::vector<GEOLIB::Po
 
    /* Program variables to hold the data we will read. We will only
       need enough space to hold one timestep of data; one record.*/
-   size_t len_vals;
-   len_vals = NRLAT * NRLON;
+   size_t len_vals = NRLAT * NRLON;
    float *lat_in = new float[len_vals];
    float *lon_in = new float[len_vals];
    float *var_in = new float[len_vals];
@@ -100,37 +95,34 @@ void NetCDFInterface::readNetCDFData(std::string &ifname, std::vector<GEOLIB::Po
    count4[2] = NRLAT;
    count4[3] = NRLON;
 
-   for (i = 0; i < 2; i++)
+   for (size_t i = 0; i < 2; i++)
      start2[i] = 0;
-   for (i = 0; i < 3; i++)
+   for (size_t i = 0; i < 3; i++)
      start3[i] = 0;
-   for (i = 0; i < 4; i++)
+   for (size_t i = 0; i < 4; i++)
      start4[i] = 0;
 
    /* Read the above netCDF variables with their corresponding varids. */
-   status = nc_get_vara_float(ncid, lon_varid, start2, 
-				      count2, lon_in);
+   status = nc_get_vara_float(ncid, lon_varid, start2, count2, lon_in);
    if (status != NC_NOERR)   HANDLE_ERROR(status);
-   status = nc_get_vara_float(ncid, lat_varid, start2,
-				      count2, lat_in);
+
+   status = nc_get_vara_float(ncid, lat_varid, start2, count2, lat_in);
    if (status != NC_NOERR)   HANDLE_ERROR(status);
+
    if (var_name.compare("T_2M") == 0)
    {
-       status = nc_get_vara_float(ncid, choose_varid, start4,
-				      count4, var_in);
+       status = nc_get_vara_float(ncid, choose_varid, start4, count4, var_in);
        if (status != NC_NOERR)   HANDLE_ERROR(status);
    }
    else if (var_name.compare("TOT_PREC") == 0)
    {
-       status = nc_get_vara_float(ncid, choose_varid, start3,
-				      count3, var_in);
+       status = nc_get_vara_float(ncid, choose_varid, start3, count3, var_in);
        if (status != NC_NOERR)   HANDLE_ERROR(status);
    }
-   else if (var_name.compare("HSURF") == 0)
-   {
-       status = nc_get_vara_float(ncid, choose_varid, start3,
-				      count3, var_in);
-       if (status != NC_NOERR)   HANDLE_ERROR(status);
+    else if (var_name.compare("HSURF") == 0) 
+   { 
+       status = nc_get_vara_float(ncid, choose_varid, start3, count3, var_in); 
+       if (status != NC_NOERR)   HANDLE_ERROR(status); 
    }
 
    /* Close the file. */
@@ -139,14 +131,8 @@ void NetCDFInterface::readNetCDFData(std::string &ifname, std::vector<GEOLIB::Po
 
    printf("Reading netCDF file successfully!\n");
 
-   float coords_x, coords_y, values_z;
-   for (i = 0; i < len_vals; i++)  
-   {
-       coords_x = lon_in[i];
-       coords_y = lat_in[i];
-       values_z = var_in[i];
-	   points_vec->push_back(new Point(coords_x, coords_y, values_z));
-   }
+   for (size_t i = 0; i < len_vals; i++)  
+	   points_vec->push_back(new Point( lon_in[i], lat_in[i], var_in[i] ));
 
    delete [] lat_in;
    delete [] lon_in;
@@ -171,30 +157,22 @@ CFEMesh* NetCDFInterface::createMeshFromPoints(std::vector<GEOLIB::Point*>* poin
 	}
 
     // set mesh elements
-    int n = 0;
     for (size_t i = 0; i < NRLAT-1; i++)  
     {
       for (size_t j = 0; j < NRLON-1; j++)
       {
-        size_t n_Elems = j + i * (NRLON - 1);
+        size_t n_Elems = i * NRLON + j;
 		Mesh_Group::CElem* elem = new Mesh_Group::CElem();
-	    elem->SetElementType(2);
-
-		// Element configuration
-	    elem->Config();
-		bool N_Flag = false;
-		int nnodes = elem->GetNodesNumber(N_Flag);
-        elem->nodes_index.resize(nnodes);
+		elem->setElementProperties(MshElemType::QUAD);
   	    // Assignment for the element nodes
-		elem->nodes_index[0] = (long) (n_Elems + n);
-        elem->nodes_index[1] = (long) (n_Elems + 1 + n);
-		elem->nodes_index[2] = (long) (n_Elems + 1 + NRLON + n);
-		elem->nodes_index[3] = (long) (n_Elems + NRLON + n);
+		elem->nodes_index[0] = (long) (n_Elems);
+        elem->nodes_index[1] = (long) (n_Elems + 1);
+		elem->nodes_index[2] = (long) (n_Elems + NRLON + 1);
+		elem->nodes_index[3] = (long) (n_Elems + NRLON);
         // Initialize topological properties
 		elem->InitializeMembers();
 		mesh->ele_vector.push_back(elem);
 	  }
-      n++;
 	}
 	// Establish topology of a grid
 	mesh->ConstructGrid();

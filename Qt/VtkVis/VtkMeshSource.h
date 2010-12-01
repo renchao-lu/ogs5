@@ -31,45 +31,48 @@ public:
 
 	const char* GetMaterialArrayName() const { return _matName; }
 
-	/// Returns the colour lookup table generated for material groups. 
+	/// Returns the colour lookup table generated for material groups.
 	/// This method should only be called after setColorsFromMaterials().
-	const std::map<std::string, GEOLIB::Color>& getColorLookupTable() const { return _colorLookupTable; };
+	const std::map<std::string, GEOLIB::Color*>& getColorLookupTable() const { return _colorLookupTable; };
 
+	/// Returns the base object of this grid
+	const GridAdapter* GetGrid() { return this->_grid; };
 
-	/// Sets the nodes and elements of the mesh that should be visualised
-	void setMesh(const std::vector<GEOLIB::Point*> *nodes, const std::vector<GridAdapter::Element*> *elems) 
-	{ 
-		_nodes = nodes; 
-		_elems = elems;
-	};
+	/// Sets a predefined color lookup table for the colouring of borehole stratigraphies
+	int setColorLookupTable(const std::string &filename) { return readColorLookupTable(_colorLookupTable, filename); };
+
+	/// Sets the grid object that should be visualized
+	void SetGrid(const GridAdapter* grid) { _grid = grid; };
 
 	/// Prints the mesh data to an output stream.
 	void PrintSelf(ostream& os, vtkIndent indent);
 
-	/** 
-	 * \brief Generates random colors based on the material scalar value. 
+	/**
+	 * \brief Generates random colors based on the material scalar value.
 	 * Each element of the mesh is assigned an RGB-value based on its material group.
 	 * This method should only be called after setMesh()!
 	 */
-	void setColorsFromMaterials();
+	ogsUserPropertyMacro(ColorByMaterial,bool);
+	//void setColorsFromMaterials();
+
+	virtual void SetUserProperty(QString name, QVariant value);
 
 protected:
 	VtkMeshSource();
-	~VtkMeshSource() {};
+	~VtkMeshSource();
 
 	/// Computes the unstructured grid data object.
-	int RequestData(vtkInformation* request, 
-		            vtkInformationVector** inputVector, 
+	int RequestData(vtkInformation* request,
+		            vtkInformationVector** inputVector,
 					vtkInformationVector* outputVector);
 
 
 
-	const std::vector<GEOLIB::Point*> *_nodes;
-	const std::vector<GridAdapter::Element*> *_elems;
+	const GridAdapter* _grid;
 
 private:
 	/// The colour table for material groups. This table is generated in the setColorsFromMaterials() method.
-	std::map<std::string, GEOLIB::Color> _colorLookupTable;
+	std::map<std::string, GEOLIB::Color*> _colorLookupTable;
 
 	const char* _matName;
 

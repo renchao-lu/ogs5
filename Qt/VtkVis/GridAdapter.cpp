@@ -12,13 +12,19 @@
 #include <cstdlib>
 #include "StringTools.h"
 
+// Conversion from Image to QuadMesh
+#include <vtkImageData.h>
+#include <vtkPointData.h>
+#include <vtkSmartPointer.h>
+#include <vtkUnsignedCharArray.h>
+
+using Mesh_Group::CFEMesh;
 
 GridAdapter::GridAdapter(const Mesh_Group::CFEMesh* mesh) :
 	_name(""), _nodes(new std::vector<GEOLIB::Point*>), _elems(new std::vector<Element*>), _mesh(mesh)
 {
 	if (mesh) convertCFEMesh(mesh);
 }
-
 
 GridAdapter::GridAdapter(const std::string &filename) :
 	_name(""), _nodes(new std::vector<GEOLIB::Point*>), _elems(new std::vector<Element*>), _mesh(NULL)
@@ -34,8 +40,8 @@ GridAdapter::~GridAdapter()
 	for (size_t i=0; i<nNodes; i++) delete (*_nodes)[i];
 	for (size_t i=0; i<nElems; i++) delete (*_elems)[i];
 
-	delete _nodes;
-	delete _elems;
+	delete this->_nodes;
+	delete this->_elems;
 }
 
 
@@ -57,13 +63,10 @@ int GridAdapter::convertCFEMesh(const Mesh_Group::CFEMesh* mesh)
 	for (size_t i=0; i<nElems; i++)
 	{
 		newElem = new Element();
-
-		int type = static_cast<int>(mesh->ele_vector[i]->GetElementType());
-		newElem->type = getElementType(type);
-
+		newElem->type = mesh->ele_vector[i]->GetElementType();
 		newElem->material = mesh->ele_vector[i]->GetPatchIndex();
 
-		if (newElem->type != INVALID)
+		if (newElem->type != MshElemType::INVALID)
 		{
 			std::vector<long> elemNodes;
 			nElemNodes = mesh->ele_vector[i]->nodes_index.Size();
@@ -85,10 +88,9 @@ const CFEMesh* GridAdapter::getCFEMesh() const
 	return toCFEMesh();
 }
 
-const CFEMesh* GridAdapter::toCFEMesh() const	
+const CFEMesh* GridAdapter::toCFEMesh() const
 {
-	if (!this) return NULL;
-	CFEMesh* mesh = new CFEMesh();
+	CFEMesh* mesh (new CFEMesh());
 	std::cout << "Converting mesh object ... ";
 
 	// set mesh nodes
@@ -97,7 +99,7 @@ const CFEMesh* GridAdapter::toCFEMesh() const
 	{
 		Mesh_Group::CNode* node = new Mesh_Group::CNode(i);
 		double coords[3] = { (*(*_nodes)[i])[0], (*(*_nodes)[i])[1], (*(*_nodes)[i])[2] };
-		node->SetCoordinates(coords);     
+		node->SetCoordinates(coords);
 		mesh->nod_vector.push_back(node);
 	}
 
@@ -106,7 +108,7 @@ const CFEMesh* GridAdapter::toCFEMesh() const
 	for (size_t i=0; i<nElems; i++)
 	{
 		Mesh_Group::CElem* elem = new Mesh_Group::CElem();
-		elem->SetElementType((*_elems)[i]->type); 
+		elem->SetElementType((*_elems)[i]->type);
 		elem->SetPatchIndex((*_elems)[i]->material);
 
 		size_t nElemNodes = ((*_elems)[i]->nodes).size();
@@ -210,7 +212,7 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 					if ((++it)->empty()) it++;
 					newElem->type = getElementType(*it);	// element type
 
-					if (newElem->type != INVALID)
+					if (newElem->type != MshElemType::INVALID)
 					{
 						while ((++it) != fields.end())
 						{
@@ -238,26 +240,15 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 	return 1;
 }
 
-GridAdapter::MeshType GridAdapter::getElementType(const std::string &t)
+const MshElemType::type GridAdapter::getElementType(const std::string &t)
 {
-	if (t.compare("tri") == 0)  return TRIANGLE;
-	if (t.compare("line") == 0)  return LINE;
-	if (t.compare("quad") == 0) return QUAD;
-	if (t.compare("tet") == 0)  return TETRAEDER;
-	if (t.compare("hex") == 0)  return HEXAHEDRON;
-	if (t.compare("pri") == 0)  return PRISM;
-	else return INVALID;
-}
-
-GridAdapter::MeshType GridAdapter::getElementType(int type)
-{
-	if (type == TRIANGLE)  return TRIANGLE;
-	if (type == LINE)  return LINE;
-	if (type == QUAD) return QUAD;
-	if (type == TETRAEDER)  return TETRAEDER;
-	if (type == HEXAHEDRON)  return HEXAHEDRON;
-	if (type == PRISM)  return PRISM;
-	else return INVALID;
+	if (t.compare("tri") == 0)  return MshElemType::TRIANGLE;
+	if (t.compare("line") == 0) return MshElemType::LINE;
+	if (t.compare("quad") == 0) return MshElemType::QUAD;
+	if (t.compare("tet") == 0)  return MshElemType::TETRAHEDRON;
+	if (t.compare("hex") == 0)  return MshElemType::HEXAHEDRON;
+	if (t.compare("pri") == 0)  return MshElemType::PRISM;
+	else return MshElemType::INVALID;
 }
 
 size_t GridAdapter::getNumberOfMaterials() const
@@ -283,4 +274,63 @@ const std::vector<GridAdapter::Element*> *GridAdapter::getElements(size_t matID)
 	}
 
 	return matElems;
+}
+
+Mesh_Group::CFEMesh* GridAdapter::convertImgToMesh(vtkImageData* img, const std::pair<double,double> &origin, const double &scalingFactor)
+{
+	vtkSmartPointer<vtkUnsignedCharArray> pixelData = vtkSmartPointer<vtkUnsignedCharArray>(vtkUnsignedCharArray::SafeDownCast(img->GetPointData()->GetScalars()));
+	int* dims = img->GetDimensions();
+
+	Mesh_Group::CFEMesh* mesh(new CFEMesh());
+	size_t imgHeight = dims[0];
+	size_t imgWidth  = dims[1];
+	std::vector<size_t> visNodes(imgWidth*imgHeight);
+
+	for (size_t i=0; i<imgWidth; i++)
+	{
+		for (size_t j=0; j<imgHeight; j++)
+		{
+			size_t index = i*imgHeight+j;
+			const double* colour = pixelData->GetTuple4(index);
+			double pixcol = 0.3*colour[0] + 0.6*colour[1] + 0.1*colour[2];
+			double coords[3] = { origin.first+(scalingFactor*j), origin.second+(scalingFactor*i), pixcol };
+			visNodes[index] = (colour[3]>0);
+
+			Mesh_Group::CNode* node = new Mesh_Group::CNode(index);
+			node->SetCoordinates(coords);
+			mesh->nod_vector.push_back(node);
+		}
+	}
+
+	// set mesh elements
+	for (size_t i=0; i<imgWidth-1; i++)
+    {
+		for (size_t j=0; j<imgHeight-1; j++)
+		{
+			int index = i*imgHeight+j;
+
+			// if node is visible
+			if (visNodes[index])
+			{
+
+				mesh->ele_vector.push_back(createElement(index, index+1, index+imgHeight)); // upper left triangle
+				mesh->ele_vector.push_back(createElement(index+1, index+imgHeight+1, index+imgHeight)); // lower right triangle
+			}
+		}
+	}
+	mesh->ConstructGrid();
+	return mesh;
+}
+
+Mesh_Group::CElem* GridAdapter::createElement(size_t node1, size_t node2, size_t node3)
+{
+	Mesh_Group::CElem* elem = new Mesh_Group::CElem();
+	elem->setElementProperties(MshElemType::TRIANGLE);
+	elem->SetPatchIndex(1);
+	elem->SetNodesNumber(3);
+	elem->SetNodeIndex(0, node1);
+	elem->SetNodeIndex(1, node2);
+	elem->SetNodeIndex(2, node3);
+	elem->InitializeMembers();
+	return elem;
 }

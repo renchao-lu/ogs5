@@ -29,6 +29,7 @@
 //#include "msh_mesh.h"
 using namespace std;
 using SolidProp::CSolidProperties;
+using namespace Math_Group;
 
 vector<CKinReact*> KinReact_vector; // declare instance CKinReact_vector
 vector<CKinReactData*> KinReactData_vector; // declare instance CKinReact_vector
@@ -274,7 +275,7 @@ void KRConfig(const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
 	int i, j, k, length;
 	int idx, idummy;
 	long l, ll;
-	string m_name, sp_name, s_geo_name, s_geo_type;
+	string m_name, sp_name;
 	CompProperties *m_cp = NULL;
 	CRFProcess* m_pcs = NULL;
 	vector<long> nodes_vector;
@@ -690,9 +691,12 @@ void KRConfig(const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
 		for (l = 0; l < (long) m_msh->nod_vector.size(); l++)
 			m_krd->is_a_CCBC.push_back(false);
 		// Go through specified geometry elements
+		std::string s_geo_name, s_geo_type;
+		size_t s_geo_id;
 		for (j = 0; j < (int) m_krd->NoReactGeoName.size(); j++) {
 			s_geo_name = m_krd->NoReactGeoName[j];
 			s_geo_type = m_krd->NoReactGeoType[j];
+			s_geo_id = m_krd->NoReactGeoID[j];
 			//------------------------------------------------------------------
 			if (s_geo_type.compare("POINT") == 0) {
 				// 06/2010 TF switch to new GEOLIB
@@ -702,20 +706,19 @@ void KRConfig(const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
 //					l = m_msh->GetNODOnPNT(m_geo_point); // + ShiftInNodeVector; // find MSH point number stored in l
 
 				const std::vector<GEOLIB::Point*>* pnt_vec (geo_obj.getPointVec(unique_name));
-
 				l = m_msh->GetNODOnPNT ((*pnt_vec)[m_krd->NoReactGeoID[j]]);
-
 				m_krd->is_a_CCBC[l] = true;
 			}
 			//------------------------------------------------------------------
 			if (s_geo_type.compare("POLYLINE") == 0) {
-				CGLPolyline *m_polyline = NULL;
-				m_polyline = GEOGetPLYByName(s_geo_name);// get Polyline by name
-				if (m_polyline) {
-					if (m_polyline->type == 100) //WW
-						m_msh->GetNodesOnArc(m_polyline, nodes_vector);
+//				CGLPolyline *ply = NULL;
+//				ply = GEOGetPLYByName(s_geo_name);// get Polyline by name
+				CGLPolyline *ply (polyline_vector[s_geo_id]);
+				if (ply) {
+					if (ply->getType() == 100) //WW
+						m_msh->GetNodesOnArc(ply, nodes_vector);
 					else
-						m_msh->GetNODOnPLY(m_polyline, nodes_vector);
+						m_msh->GetNODOnPLY(ply, nodes_vector);
 					for (i = 0; i < (long) nodes_vector.size(); i++) {
 						ll = nodes_vector[i];
 						l = ll; //+ShiftInNodeVector;
@@ -763,6 +766,7 @@ void KRConfig(const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
 				for (j = 0; j < (int) m_kr->NotThisReactGeoName.size(); j++) {
 					s_geo_name = m_kr->NotThisReactGeoName[j];
 					s_geo_type = m_kr->NotThisReactGeoType[j];
+					s_geo_id = m_kr->NotThisReactGeoID[j];
 					//------------------------------------------------------------------
 					if (s_geo_type.compare("POINT") == 0) {
 						// 06/2010 TF - switch to new GEOLIB
@@ -778,13 +782,14 @@ void KRConfig(const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
 					}
 					//------------------------------------------------------------------
 					if (s_geo_type.compare("POLYLINE") == 0) {
-						CGLPolyline *m_polyline = NULL;
-						m_polyline = GEOGetPLYByName(s_geo_name);// get Polyline by name
-						if (m_polyline) {
-							if (m_polyline->type == 100) //WW
-								m_msh->GetNodesOnArc(m_polyline, nodes_vector);
+//						CGLPolyline *ply = NULL;
+//						ply = GEOGetPLYByName(s_geo_name);// get Polyline by name
+						CGLPolyline *ply (polyline_vector[s_geo_id]);
+						if (ply) {
+							if (ply->getType() == 100) //WW
+								m_msh->GetNodesOnArc(ply, nodes_vector);
 							else
-								m_msh->GetNODOnPLY(m_polyline, nodes_vector);
+								m_msh->GetNODOnPLY(ply, nodes_vector);
 							for (i = 0; i < (long) nodes_vector.size(); i++) {
 								ll = nodes_vector[i];
 								l = ll; //+ShiftInNodeVector;
@@ -1253,10 +1258,20 @@ bool CKinReact::Read(std::ifstream *rfd_file, const GEOLIB::GEOObjects& geo_obj,
 
 				if (s_geo_type.find("POINT") != std::string::npos) {
 					// TF 06/2010 - get the point vector and set the geo_obj_idx
-					if (!((geo_obj.getPointVecObj(unique_name))->getPointIDByName(
+					if (!((geo_obj.getPointVecObj(unique_name))->getElementIDByName(
 							s_geo_name, geo_obj_idx))) {
 						std::cerr
 								<< "error in CKinReact::Read: point name not found!"
+								<< std::endl;
+						exit(1);
+					}
+				}
+				if (s_geo_type.find("POLYLINE") != std::string::npos) {
+					// TF 07/2010 - get the polyline vector and set the geo_obj_idx
+					if (!((geo_obj.getPolylineVecObj(unique_name))->getElementIDByName(
+							s_geo_name, geo_obj_idx))) {
+						std::cerr
+								<< "error in CKinReact::Read: polyline name not found!"
 								<< std::endl;
 						exit(1);
 					}
@@ -1721,11 +1736,9 @@ bool CKinBlob::Read(ifstream *rfd_file, const GEOLIB::GEOObjects& geo_obj, const
 					in >> s_geo_name >> d_inivalue;
 					BlobGeoName.push_back(s_geo_name);
 
-
-
 					if (s_geo_type.find("POINT") != std::string::npos) {
 						// TF 06/2010 - get the point vector and set the geo_obj_idx
-						if (!((geo_obj.getPointVecObj(unique_name))->getPointIDByName(
+						if (!((geo_obj.getPointVecObj(unique_name))->getElementIDByName(
 								s_geo_name, geo_obj_idx))) {
 							std::cerr
 									<< "error in CKinBlob::Read: point name not found!"
@@ -1733,6 +1746,17 @@ bool CKinBlob::Read(ifstream *rfd_file, const GEOLIB::GEOObjects& geo_obj, const
 							exit(1);
 						}
 					}
+
+					if (s_geo_type.find("POLYLINE") != std::string::npos) {
+						// TF 06/2010 - get the polyline vector and set the geo_obj_idx
+						if (!((geo_obj.getPolylineVecObj(unique_name))->getElementIDByName(
+								s_geo_name, geo_obj_idx))) {
+							std::cerr << "error in CKinBlob::Read: polyline name not found!"
+									<< std::endl;
+							exit(1);
+						}
+					}
+
 					Area_Value.push_back(d_inivalue);
 				}
 				BlobGeoID.push_back(geo_obj_idx);
@@ -1783,6 +1807,7 @@ void CKinBlob::Write(std::ostream& rfe_file) const
 void KBlobConfig(const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
 {
 	std::string s_geo_name, s_geo_type;
+	size_t s_geo_id;
 	std::vector<long> nodes_vector;
 
 	// create vector for Interfacial_area and initialization with input value (Interfacial_area[0]=input value)
@@ -1800,7 +1825,7 @@ void KBlobConfig(const GEOLIB::GEOObjects& geo_obj, const std::string& unique_na
 		for (size_t j = 0; j < m_kb->BlobGeoName.size(); j++) {
 			s_geo_name = m_kb->BlobGeoName[j];
 			s_geo_type = m_kb->BlobGeoType[j];
-
+			s_geo_id = (m_kb->getBlobGeoID())[j];
 			if (s_geo_type.compare("POINT") == 0) {
 				// 06/2010 TF - switch to new GEOLIB - REMOVE CANDIDATE
 //				CGLPoint* m_geo_point = NULL; // make new GEO point
@@ -1816,13 +1841,14 @@ void KBlobConfig(const GEOLIB::GEOObjects& geo_obj, const std::string& unique_na
 			} // end if POINT
 
 			if (s_geo_type.compare("POLYLINE") == 0) {
-				CGLPolyline *m_polyline = NULL;
-				m_polyline = GEOGetPLYByName(s_geo_name);// get Polyline by name
-				if (m_polyline) {
-					if (m_polyline->type == 100) //WW
-						m_msh->GetNodesOnArc(m_polyline, nodes_vector);
+//				CGLPolyline *ply = NULL;
+//				ply = GEOGetPLYByName(s_geo_name);// get Polyline by name
+				CGLPolyline *ply (polyline_vector[s_geo_id]);
+				if (ply) {
+					if (ply->getType() == 100) //WW
+						m_msh->GetNodesOnArc(ply, nodes_vector);
 					else
-						m_msh->GetNODOnPLY(m_polyline, nodes_vector);
+						m_msh->GetNODOnPLY(ply, nodes_vector);
 					for (size_t k = 0; k < nodes_vector.size(); k++) {
 						size_t msh_node_id = nodes_vector[k]; //+ShiftInNodeVector;
 						m_kb->Interfacial_area[msh_node_id] = m_kb->Area_Value[j];
@@ -2081,10 +2107,20 @@ bool CKinReactData::Read(ifstream *rfd_file, const GEOLIB::GEOObjects& geo_obj, 
 
 				if (s_geo_type.find("POINT") != std::string::npos) {
 					// get the point vector and set the geo_obj_idx
-					if (!((geo_obj.getPointVecObj(unique_name))->getPointIDByName(
+					if (!((geo_obj.getPointVecObj(unique_name))->getElementIDByName(
 							s_geo_name, geo_obj_idx))) {
 						std::cerr
-								<< "error in CKinReactData::Read: point name not found!"
+								<< "error in CKinReactData::Read: (type=" << s_geo_type << "): " << s_geo_name << " point name not found!"
+								<< std::endl;
+						exit(1);
+					}
+				}
+				if (s_geo_type.find("POLYLINE") != std::string::npos) {
+					// get the point vector and set the geo_obj_idx
+					if (!((geo_obj.getPolylineVecObj(unique_name))->getElementIDByName(
+							s_geo_name, geo_obj_idx))) {
+						std::cerr
+								<< "error in CKinReactData::Read: polyline name " << s_geo_name << " not found!"
 								<< std::endl;
 						exit(1);
 					}
@@ -2974,38 +3010,33 @@ int CKinReact::GetPhase(int species) {
 /* 08/2008     DS         Consider saturation of water phase in case of multiphase flow  */
 /* 09/2009     CB         Heterogeneous Porosities update                                */
 /*****************************************************************************************/
-double CKinReact::GetReferenceVolume(int comp, long index) {
-
+double CKinReact::GetReferenceVolume(int comp, long index)
+{
 	double refvol = 0.0, theta = 1.0, saturation = 1;
-	long phase;
-	CRFProcess *m_pcs = NULL;
-	CRFProcess *m_pcs_f = NULL;
-	CKinReactData *m_krd = NULL;
-	//OK411 CElem* m_ele_geo = NULL;
-	int idx;
-
-	m_krd = KinReactData_vector[0];
 
 	// Get process
-	m_pcs = PCSGet("MASS_TRANSPORT", cp_vec[comp]->compname); //SB todo check
-	m_pcs = pcs_vector[m_krd->sp_pcsind[comp]];
+	CRFProcess *m_pcs (PCSGet("MASS_TRANSPORT", cp_vec[comp]->compname)); //SB todo check
+	m_pcs = pcs_vector[KinReactData_vector[0]->sp_pcsind[comp]];
 	theta = m_pcs->m_num->ls_theta;
-	phase = cp_vec[comp]->transport_phase;
+	long phase = cp_vec[comp]->transport_phase;
 
 	if (phase == 0) {
+		int idx;
 		refvol = GetPhaseVolumeAtNode(index, theta, phase);
 		// water phase, reference volume might be less than pore space in case of multiphase or richards flow
 		// --> Get node saturation of mobile (water) phase, required for all exchange processes
 		saturation = 1.0; // default
-		m_pcs_f = PCSGetFlow();
-		if (m_pcs_f->pcs_type_name.compare("TWO_PHASE_FLOW") == 0) {
-			if (m_pcs_f->pcs_type_number == 0)
-				m_pcs_f = pcs_vector[m_pcs_f->pcs_number + 1]; // this is the saturation equation
-			idx = m_pcs_f->GetNodeValueIndex("SATURATION1"); // Sat of water phase
-			saturation = m_pcs_f->GetNodeValue(index, idx);
-		} else if (m_pcs_f->pcs_type_name.compare("RICHARDS_FLOW") == 0) {
-			idx = m_pcs_f->GetNodeValueIndex("SATURATION1"); // Sat of water phase
-			saturation = m_pcs_f->GetNodeValue(index, idx);
+		CRFProcess *pcs_flow = PCSGetFlow();
+		//		if (pcs_flow->pcs_type_name.compare("TWO_PHASE_FLOW") == 0) { TF
+		if (pcs_flow->getProcessType() == TWO_PHASE_FLOW) {
+			if (pcs_flow->pcs_type_number == 0)
+				pcs_flow = pcs_vector[pcs_flow->pcs_number + 1]; // this is the saturation equation
+			idx = pcs_flow->GetNodeValueIndex("SATURATION1"); // Sat of water phase
+			saturation = pcs_flow->GetNodeValue(index, idx);
+			//		} else if (pcs_flow->pcs_type_name.compare("RICHARDS_FLOW") == 0) { TF
+		} else if (pcs_flow->getProcessType() == RICHARDS_FLOW) {
+			idx = pcs_flow->GetNodeValueIndex("SATURATION1"); // Sat of water phase
+			saturation = pcs_flow->GetNodeValue(index, idx);
 		}
 		refvol *= saturation;
 	} else if (phase == 3) // NAPL phase (refers to REV)
@@ -3938,6 +3969,7 @@ bool KNaplDissCheck(void) {
  weighted mean of the connecting elements velocities
  Programing:
  08/2008 CB Implementation
+ 10/2010 TF changed access to process type
  **************************************************************************/
 double CKinReact::GetNodePoreVelocity(long node) {
 
@@ -3961,12 +3993,14 @@ double CKinReact::GetNodePoreVelocity(long node) {
 
 	// Get node saturation of mobile (water) phase
 	satu = 1.0; // default
-	if (m_pcs->pcs_type_name.compare("TWO_PHASE_FLOW") == 0) {
+//	if (m_pcs->pcs_type_name.compare("TWO_PHASE_FLOW") == 0) { TF
+	if (m_pcs->getProcessType () == TWO_PHASE_FLOW) {
 		if (m_pcs->pcs_type_number == 0)
 			m_pcs = pcs_vector[m_pcs->pcs_number + 1]; // this is the saturation equation
 		idxs1 = m_pcs->GetNodeValueIndex("SATURATION1"); // Sat of water phase
 		satu = m_pcs->GetNodeValue(node, idxs1);
-	} else if (m_pcs->pcs_type_name.compare("RICHARDS_FLOW") == 0) {
+//	} else if (m_pcs->pcs_type_name.compare("RICHARDS_FLOW") == 0) {
+	} else if (m_pcs->getProcessType () == RICHARDS_FLOW) {
 		idxs1 = m_pcs->GetNodeValueIndex("SATURATION1"); // Sat of water phase
 		satu = m_pcs->GetNodeValue(node, idxs1);
 	}
@@ -4200,17 +4234,17 @@ void CKinReactData::ReactDeactPlotFlagsToTec() {
 	nnodes = (long) m_msh->nod_vector.size();
 	nele = (long) m_msh->ele_vector.size();
 
-	if (m_msh->msh_no_line > 0)
+	if (m_msh->getNumberOfLines () > 0)
 		eleType = "QUADRILATERAL";
-	if (m_msh->msh_no_quad > 0)
+	if (m_msh->getNumberOfQuads () > 0)
 		eleType = "QUADRILATERAL";
-	if (m_msh->msh_no_hexs > 0)
+	if (m_msh->getNumberOfHexs () > 0)
 		eleType = "BRICK";
-	if (m_msh->msh_no_tris > 0)
+	if (m_msh->getNumberOfTris () > 0)
 		eleType = "QUADRILATERAL";
-	if (m_msh->msh_no_tets > 0)
+	if (m_msh->getNumberOfTets () > 0)
 		eleType = "TETRAHEDRON";
-	if (m_msh->msh_no_pris > 0)
+	if (m_msh->getNumberOfPrisms () > 0)
 		eleType = "BRICK";
 
 	if (NumberReactions > 0) {

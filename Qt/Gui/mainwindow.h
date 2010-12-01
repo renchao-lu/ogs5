@@ -8,13 +8,20 @@
 #define MAINWINDOW_H
 
 #include "ui_mainwindow.h"
-#include "DatabaseConnection.h"
 #include <QStringList>
+#include <QList>
+#include <QByteArray>
+#include "FileFinder.h"
+#include "ProjectData.h"
 
-class StationTreeModel;
 class GEOModels;
 class MshModel;
+class StationTreeModel;
 class VtkVisPipeline;
+class DatabaseConnection;
+class QRect;
+
+
 #ifdef OGS_USE_VRPN
 	class TrackingSettingsWidget;
 #endif // OGS_USE_VRPN
@@ -41,16 +48,17 @@ protected slots:
 	void showMshDockWidget( bool show );
 	void showVisDockWidget( bool show );
 
-private slots:
     void open();
 	void save();
 	void exportBoreholesToGMS(std::string listName, std::string fileName);
     void importGMS();
 	void importGoCad();
 	void importRaster();
+	void importRasterAsPoly();
 	void importShape();
 	void importPetrel();
 	void importNetcdf();     //YW  07.2010
+	void importVtk();
 	void openDatabase();
 	void openDatabaseConnection();
 	void openRecentFile();
@@ -60,12 +68,17 @@ private slots:
 	void showVisalizationPrefsDialog();
 	void showTrackingSettingsDialog();
 	void updateDataViews();
+	void writeStationListToFile(QString listName, QString fileName);
 	void showAddPipelineFilterItemDialog(QModelIndex parentIndex);
 
 	void on_actionExportVTK_triggered(bool checked = false);
 	void on_actionExportVRML2_triggered(bool checked = false);
 	void on_actionExportObj_triggered(bool checked = false);
 	void on_actionExportOpenSG_triggered(bool checked = false);
+	
+	void createPresentationMenu();
+	void startPresentationMode();
+	void quitPresentationMode();
 
 private:
 	QMenu* createImportFilesMenu();
@@ -78,9 +91,14 @@ private:
     QString curFile;
 
 	DatabaseConnection* _db;
+	FileFinder _fileFinder;
 	GEOModels* _geoModels;
 	MshModel* _meshModels;
+	ProjectData _project;
 	VtkVisPipeline* _vtkVisPipeline;
+	QList<QRect> _screenGeometries;
+	QWidget* _vtkWidget;
+	QByteArray _windowState;
 	#ifdef OGS_USE_VRPN
 		TrackingSettingsWidget* _trackingSettingsWidget;
 	#endif // OGS_USE_VRPN

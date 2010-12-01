@@ -41,6 +41,9 @@ public:
 	/// Returns the maximum y-value.
 	float maxYValue() const { return _maxY; }
 
+	/// Returns the start date of this list
+	const QDateTime getStartDate() const { return _startDate; };
+
 	/// Returns the name of the diagram.
 	QString getName() const { return _name; };
 
@@ -150,6 +153,7 @@ private:
 	QString _xUnit;
 	QString _yUnit;
 	QColor  _colour;
+	QDateTime _startDate;
 
 };
 

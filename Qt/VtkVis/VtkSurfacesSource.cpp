@@ -14,6 +14,7 @@
 #include <vtkPolygon.h>
 #include <vtkCellArray.h>
 #include <vtkPolyData.h>
+#include <vtkCellData.h>
 #include <vtkInformation.h>
 #include <vtkInformationVector.h>
 #include <vtkObjectFactory.h>
@@ -62,6 +63,10 @@ int VtkSurfacesSource::RequestData( vtkInformation* request, vtkInformationVecto
 	vtkSmartPointer<vtkCellArray> newPolygons = vtkSmartPointer<vtkCellArray>::New();
 		//newPolygons->Allocate(nSurfaces);
 
+	vtkSmartPointer<vtkUnsignedCharArray> sfcColors = vtkSmartPointer<vtkUnsignedCharArray>::New();
+		sfcColors->SetNumberOfComponents(3);
+		sfcColors->SetName("Colors");
+
 	for (size_t i=0; i<nPoints; i++)
 	{
 		double* coords = const_cast<double*>((*surfacePoints)[i]->getData());
@@ -71,6 +76,10 @@ int VtkSurfacesSource::RequestData( vtkInformation* request, vtkInformationVecto
 	for (std::vector<GEOLIB::Surface*>::const_iterator it = _surfaces->begin();
 		it != _surfaces->end(); ++it)
 	{
+		//const GEOLIB::Color *c (GEOLIB::getColor(/*getNameOfSurface*/, _colorLookupTable));
+		const GEOLIB::Color *c = GEOLIB::getRandomColor();
+		unsigned char sColor[3] = { (*c)[0], (*c)[1], (*c)[2] };
+
 		const size_t nTriangles = (*it)->getNTriangles();
 
 		for (size_t i = 0; i < nTriangles; i++)
@@ -84,15 +93,19 @@ int VtkSurfacesSource::RequestData( vtkInformation* request, vtkInformationVecto
 				aPolygon->GetPointIds()->SetId(j, ((*triangle)[j]));
 			}
 			newPolygons->InsertNextCell(aPolygon);
+			sfcColors->InsertNextTupleValue(sColor);
+
 			aPolygon->Delete();
 		}
 	}
 
 	output->SetPoints(newPoints);
 	output->SetPolys(newPolygons);
+	output->GetCellData()->AddArray(sfcColors);
+	output->GetCellData()->SetActiveAttribute("Colors", vtkDataSetAttributes::SCALARS);
 
-	const GEOLIB::Color* c = GEOLIB::getRandomColor();
-	this->GetProperties()->SetColor((*c)[0]/255.0,(*c)[1]/255.0,(*c)[2]/255.0);
+	//const GEOLIB::Color* c = GEOLIB::getRandomColor();
+	//this->GetProperties()->SetColor((*c)[0]/255.0,(*c)[1]/255.0,(*c)[2]/255.0);
 
 	return 1;
 }
@@ -106,4 +119,10 @@ int VtkSurfacesSource::RequestInformation( vtkInformation* request, vtkInformati
 	outInfo->Set(vtkStreamingDemandDrivenPipeline::MAXIMUM_NUMBER_OF_PIECES(), -1);
 
 	return 1;
+}
+
+void VtkSurfacesSource::SetUserProperty( QString name, QVariant value )
+{
+	Q_UNUSED(name);
+	Q_UNUSED(value);
 }

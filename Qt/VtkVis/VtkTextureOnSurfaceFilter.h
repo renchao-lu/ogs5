@@ -40,8 +40,7 @@ public:
 	/// Sets the raster/image to be used as a texture map
 	void SetRaster(QImage &img, std::pair<float, float> origin, double scalingFactor);
 
-	/// Converts a QImage-object into a vtkTexture-object
-	static vtkTexture* ConvertImageToTexture(QImage &img);
+	virtual void SetUserProperty(QString name, QVariant value);
 
 protected:
 	VtkTextureOnSurfaceFilter();
@@ -54,8 +53,6 @@ protected:
 					vtkInformationVector* outputVector);
 
 private:
-	static float normalize(float min, float max, float val) { return ((val-min)/static_cast<float>(max-min)); };
-
 	std::pair<float, float> _origin;
 	double _scalingFactor;
 };

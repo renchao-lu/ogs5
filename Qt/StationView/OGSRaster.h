@@ -34,17 +34,33 @@ class OGSRaster
 
 public:
 	/**
-	 * \brief Loads an image- or raster-file into a QPixmap.
+	 * \brief Loads an image- or raster-file into an QImage.
 	 *
 	 * Public method for loading all data formats. Internally the method automatically differentiates between
 	 * images and georeferenced files and then calls the appropriate method for reading the file.
 	 * \param fileName Filename of the file that should be loaded.
-	 * \param raster The QPixmap into which the raster data will be written.
+	 * \param raster The QImage into which the raster data will be written.
 	 * \param origin The upper left corner of the data set, the default value is (0,0).
 	 * \param scalingFactor The size of each pixel in the image which is needed for re-scaling the data, the default value is 1.
+	 * \param autoscale Determines if the histogram of the raster will be contrast-stretched to [0, 255]. If false, the streching process will be skipped.
+	 * \param mirrorX Mirror around x-axis.
 	 * \return True if the raster data was loaded correctly, false otherwise.
 	 */
-	static bool loadImage(const QString &fileName, QImage &raster, QPointF &origin, double &scalingFactor);
+	static bool loadImage(const QString &fileName, QImage &raster, QPointF &origin, double &scalingFactor, bool autoscale = true, bool mirrorX = false);
+	
+	/**
+	 * \brief Loads an ASC file into a double array
+	 *
+	 * \param fileName Filename of the file that should be loaded.
+	 * \param values All pixel values in a 1D array.
+	 * \param x0 The x-coordinate of the origin.
+ 	 * \param y0 The y-coordinate of the origin.
+	 * \param width The width of the image.
+	 * \param height The height of the image
+	 * \param delta The size of each pixel in the image which is needed for re-scaling the data.
+	 * \return True if the raster data was loaded correctly, false otherwise.
+	 */	
+	static double* loadDataFromASC(const QString &fileName, double& x0, double &y0, size_t &width, size_t &height, double &delta);
 
 	/// Converts raster to an 8 bit greyscale image that is contrast-stretched in [min:max].
 	static void convertToGreyscale(QImage &raster, const int &min = 0, const int &max = 255);
@@ -58,6 +74,7 @@ public:
 	/// Returns the minimum intensity of raster.
 	static int getMinValue(const QImage &raster);
 
+
 private:
 	/**
 	 * Loads ArcGIS asc-files to a QPixmap object and automatically does a contrast stretching to adjust values to 8 bit greyscale images.
@@ -67,7 +84,7 @@ private:
 	 * \param cellsize The size of each pixel in the image which is needed for re-scaling the data
 	 * \return True if the raster data was loaded correctly, false otherwise.
 	 */
-	static bool loadImageFromASC(const QString &fileName, QImage &raster, QPointF &origin, double &scalingFactor);
+	static bool loadImageFromASC(const QString &fileName, QImage &raster, QPointF &origin, double &scalingFactor, bool autoscale = true);
 
 
 	/**

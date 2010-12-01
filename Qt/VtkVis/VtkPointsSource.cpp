@@ -11,7 +11,7 @@
 #include <vtkCellArray.h>
 #include <vtkInformation.h>
 #include <vtkInformationVector.h>
-#include "vtkObjectFactory.h"
+#include <vtkObjectFactory.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
 #include <vtkPointData.h>
 #include <vtkPoints.h>
@@ -101,4 +101,10 @@ int VtkPointsSource::RequestInformation( vtkInformation* request, vtkInformation
 	outInfo->Set(vtkStreamingDemandDrivenPipeline::MAXIMUM_NUMBER_OF_PIECES(), -1);
 
 	return 1;
+}
+
+void VtkPointsSource::SetUserProperty( QString name, QVariant value )
+{
+	Q_UNUSED(name);
+	Q_UNUSED(value);
 }

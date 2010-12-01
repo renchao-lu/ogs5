@@ -8,7 +8,7 @@
 #define PNTSMODEL_H
 
 // ** INCLUDES **
-#include "Point.h"
+#include "PointVec.h"
 #include "Model.h"
 #include <QVector>
 
@@ -20,7 +20,7 @@ class PntsModel : public Model
 	Q_OBJECT
 
 public:
-	PntsModel(QString name, std::vector<GEOLIB::Point*>* pntVec, QObject* parent = 0);
+	PntsModel(QString name, const GEOLIB::PointVec* pntVec, QObject* parent = 0);
 	~PntsModel();
 
     int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -31,29 +31,14 @@ public:
 	bool setData(const QModelIndex& index, const QVariant& value,
 		int role = Qt::EditRole);
 
-	/// Erases the corresponding entries in the internal points data structure.
-	/// At the moment this is gli_points_vector. At the end Model::removeRows()
-	/// is called.
-	bool removeRows(int row, int count, const QModelIndex & parent = QModelIndex() );
-
-	/// Returns a QModelIndex from a GEOLIB::Point.
-	QModelIndex indexFromPoint(const GEOLIB::Point* pnt) const;
-
 public slots:
 	/// Reloads all items.
 	void updateData();
 
-protected slots:
-	/**
-	 * Every 2d pnt item is connected to this slot which emit a dataChanged
-	 * signal with the index of the item.
-	 */
-	void item2dChanged(GEOLIB::Point* point);
-
 private:
-	void setData(std::vector<GEOLIB::Point*> *points, TreeItem* parent);
+	void setData(const GEOLIB::PointVec* pntVec, TreeItem* parent);
 
-	std::vector<GEOLIB::Point*>* _pntVec;
+	const GEOLIB::PointVec* _pntVec;
 
 };
 

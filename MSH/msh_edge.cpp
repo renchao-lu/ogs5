@@ -53,7 +53,7 @@ void CEdge::operator = (CEdge& ed)
    boundary_type = ed.boundary_type;
    index = ed.index;
    mark = ed.mark;
-   for(int i=0; i<nodes_of_edges.Size(); i++)
+   for(size_t i=0; i<nodes_of_edges.Size(); i++)
       nodes_of_edges[i] = ed.nodes_of_edges[i];
 }
 
@@ -113,7 +113,7 @@ Programing:
 void CEdge::Write(ostream& osm) const
 {
     osm<<"Edge: "<< index<<endl;
-   	for(int i=0; i<nodes_of_edges.Size(); i++)
+   	for(size_t i=0; i<nodes_of_edges.Size(); i++)
    	{
        osm<<"Node: "<< i<<endl;
        nodes_of_edges[i]->Write(osm);

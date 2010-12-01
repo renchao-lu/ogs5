@@ -10,8 +10,9 @@
 
 // ** INCLUDES **
 #include <vtkPolyDataAlgorithm.h>
+#include "VtkAlgorithmProperties.h"
 
-#include "ColorLookupTable.h"
+class VtkColorLookupTable;
 
 /**
  * \brief VTK filter object for colouring vtkPolyData objects based on z-coordinates.
@@ -20,48 +21,63 @@
  * ColorLookupTable using the method GetColorLookupTable(). Using this method allows the user to set a number
  * of properties on that lookup table such as interpolation method, the range of values over which the lookup
  * table is calculated and so on.
- * If no range boundaries are explicitely set, the minimum and maximum height value will be calculated from 
+ * If no range boundaries are explicitly set, the minimum and maximum height value will be calculated from 
  * the data and set as minimum and maximum value for the lookup table.
  */
-class VtkColorByHeightFilter : public vtkPolyDataAlgorithm
+class VtkColorByHeightFilter : public vtkPolyDataAlgorithm, public VtkAlgorithmProperties
 {
 
 public:
-	/// Create new objects with New() because of VTKs object reference counting.
+	/// @brief Create new objects with New() because of VTKs object reference counting.
 	static VtkColorByHeightFilter* New();
 
 	vtkTypeRevisionMacro(VtkColorByHeightFilter, vtkPolyDataAlgorithm);
 
-	/// Prints the mesh data to an output stream.
+	/// @brief Prints the mesh data to an output stream.
 	void PrintSelf(ostream& os, vtkIndent indent);
 
-	/// Returns the underlying colour look up table object.
-	ColorLookupTable* GetColorLookupTable() const { return _colorLookupTable; }
+	/// @brief Returns the underlying colour look up table object.
+	vtkGetObjectMacro(ColorLookupTable,VtkColorLookupTable)
 
-	/// Manually set boundaries for the look-up table.
-	void SetLimits(double min, double max);
+	/// @brief This filter gets updated when the color look-up table was modified.
+	virtual unsigned long GetMTime();
+
+	/// @brief Sets user properties.
+ 	void SetUserProperty(QString name, QVariant value)
+ 	{
+		Q_UNUSED(name);
+		Q_UNUSED(value);
+ 	}
+
+	/// @brief Sets the boundaries for the color look-up table.
+	void SetTableRange(double min, double max);
+
+	/// @brief Sets the scaling of the color look-up table boundaries.
+	/// This is used in VtkVisTabWidget when a parent filter is scaled.
+	void SetTableRangeScaling(double scale);
 
 protected:
 	VtkColorByHeightFilter();
 	~VtkColorByHeightFilter();
 
-	/// Computes the unstructured grid data object.
+	/// @brief The filter logic.
 	int RequestData(vtkInformation* request, 
 		            vtkInformationVector** inputVector, 
 					vtkInformationVector* outputVector);
 
+	/// @brief Calculates the color lookup table based on set parameters.
+	VtkColorLookupTable* BuildColorTable();
 
-private:
-	/// Calculates the color lookup table based on set parameters.
-	ColorLookupTable* BuildColorTable();
-
-	/// Returns the value of the smallest z-coordinate in the data set.
+	/// @brief Returns the value of the smallest z-coordinate in the data set.
 	double getMinHeight(vtkPolyData* data);
 
-	/// Returns the value of the largest z-coordinate in the data set.
+	/// @brief Returns the value of the largest z-coordinate in the data set.
 	double getMaxHeight(vtkPolyData* data);
 
-	ColorLookupTable* _colorLookupTable;
+	VtkColorLookupTable* ColorLookupTable;
+
+	double _tableRange[2];
+	double _tableRangeScaling;
 };
 
 #endif // VTKCOLORBYHEIGHTFILTER_H

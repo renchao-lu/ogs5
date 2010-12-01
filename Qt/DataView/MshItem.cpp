@@ -16,14 +16,13 @@
  * \param grid The mesh associated with this item
  */
 MshItem::MshItem(const QList<QVariant> &data, TreeItem *parent, GridAdapter* grid)
-:TreeItem(data, parent), _grid(grid)
+: TreeItem(data, parent)
 {
 	_meshSource = VtkMeshSource::New();
-	_meshSource->setMesh(grid->getNodes(), grid->getElements());
+	_meshSource->SetGrid(grid);
 }
 
 MshItem::~MshItem()
 {
-	delete _grid;
 	_meshSource->Delete();
 }

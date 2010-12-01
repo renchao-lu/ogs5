@@ -30,7 +30,7 @@ int StationIO::readStationFile(const std::string &path, std::string &name, std::
 	/* read all stations */
 	while ( getline(in, line) )
 	{
-		GEOLIB::Station* newStation;
+		GEOLIB::Station* newStation (NULL);
 		if (type == GEOLIB::Station::STATION)
 			newStation = GEOLIB::Station::createStation(line);
 		if (type == GEOLIB::Station::BOREHOLE)
@@ -77,6 +77,6 @@ void StationIO::writeStratigraphyTable(const std::vector<GEOLIB::Point*> *boreho
 		out << std::endl;
 	}
 
-	out.close();	
+	out.close();
 }
 

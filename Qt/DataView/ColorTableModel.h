@@ -11,14 +11,14 @@
 #include "Color.h"
 
 /**
- * The PolylinesModel is a Qt model which represents Polylines. 
+ * The PolylinesModel is a Qt model which represents Polylines.
  */
 class ColorTableModel : public QAbstractTableModel
 {
 	Q_OBJECT
 
 public:
-	ColorTableModel( std::map<std::string, GEOLIB::Color> &colorLookupTable, QObject* parent = 0 );
+	ColorTableModel( const std::map<std::string, GEOLIB::Color*> &colorLookupTable, QObject* parent = 0 );
 	~ColorTableModel();
 
 	int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -34,7 +34,7 @@ public:
 	QVariant headerData( int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole*/ ) const;
 
 private:
-	bool buildTable( std::map<std::string, GEOLIB::Color> &colorLookupTable );
+	bool buildTable( const std::map<std::string, GEOLIB::Color*> &colorLookupTable );
 
 	QList< QPair<QString, QColor> > _listOfPairs;
 

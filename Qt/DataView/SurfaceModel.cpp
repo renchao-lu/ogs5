@@ -8,17 +8,19 @@
 
 #include "VtkSurfacesSource.h"
 
-SurfaceModel::SurfaceModel( QString name, std::vector<GEOLIB::Surface*>* surfaceVec, QObject* parent /*= 0*/ )
+SurfaceModel::SurfaceModel( QString name, const GEOLIB::SurfaceVec* surfaceVec, QObject* parent /*= 0*/ )
 : Model(name, parent), _surfaceVec(surfaceVec)
 {
 	QList<QVariant> rootData;
 	delete _rootItem;
 	rootData << "Id" << "x" << "y" << "z";
 	_rootItem = new TreeItem(rootData, NULL);
-	setData(surfaceVec, _rootItem);
+	setData(_surfaceVec, _rootItem);
 
 	_vtkSource = VtkSurfacesSource::New();
-	static_cast<VtkSurfacesSource*>(_vtkSource)->setSurfaces(surfaceVec);
+	VtkSurfacesSource* source = static_cast<VtkSurfacesSource*>(_vtkSource);
+	source->SetName(name);
+	source->setSurfaces(_surfaceVec->getVector());
 }
 
 SurfaceModel::~SurfaceModel()
@@ -33,14 +35,18 @@ int SurfaceModel::columnCount( const QModelIndex& parent /*= QModelIndex()*/ ) c
 	return 4;
 }
 
-void SurfaceModel::setData(std::vector<GEOLIB::Surface*> *surfaces, TreeItem* parent)
+void SurfaceModel::setData(const GEOLIB::SurfaceVec* surfaceVec, TreeItem* parent)
 {
 	Q_UNUSED(parent)
+	const std::vector<GEOLIB::Surface*> *surfaces = surfaceVec->getVector();
 	int nSurfaces = surfaces->size();
 	for (int i=0; i<nSurfaces; i++)
 	{
 		QList<QVariant> surface;
+		std::string sfc_name("");
 		surface << "Surface " + QString::number(i);
+		if (surfaceVec->getNameOfElementByID(i, sfc_name)) surface << QString::fromStdString(sfc_name);
+
 		TreeItem* surfaceItem = new TreeItem(surface, _rootItem);
 		_rootItem->appendChild(surfaceItem);
 
@@ -67,40 +73,8 @@ void SurfaceModel::setData(std::vector<GEOLIB::Surface*> *surfaces, TreeItem* pa
 	reset();
 }
 
-bool SurfaceModel::setData( const QModelIndex& index, const QVariant& value, int role /*= Qt::EditRole*/ )
-{
-	Q_UNUSED(index)
-	Q_UNUSED(value)
-	Q_UNUSED(role)
-	return false;
-}
-
 void SurfaceModel::updateData()
 {
 	clearData();
 	TreeModel::updateData();
 }
-
-
-QModelIndex SurfaceModel::indexFromSurface( const GEOLIB::Surface* surface ) const
-{
-	if (surface != NULL)
-	{
-		for (int i = 0; i < rowCount(); ++i)
-		{
-			QModelIndex surfaceIndex = index(i, 0);
-
-			if (surface == (*_surfaceVec)[i])
-				return surfaceIndex;
-		}
-	}
-	return QModelIndex();
-}
-
-void SurfaceModel::item2dChanged( GEOLIB::Surface* surface )
-{
-	QModelIndex itemIndex = indexFromSurface(surface);
-	QModelIndex indexEnd = index(itemIndex.row(), columnCount());
-	emit dataChanged(itemIndex, indexEnd);
-}
-

@@ -1,12 +1,11 @@
 /**************************************************************************
-FEMLib-Object: MAT-MP 
+FEMLib-Object: MAT-MP
 Task: MediumProperties
 Programing:
 01/2004 OK Implementation
 **************************************************************************/
 
 #ifndef rfmat_mp_new_INC
-
 #define rfmat_mp_new_INC
   /* Schutz gegen mehrfaches Einfuegen */
 
@@ -19,7 +18,6 @@ using namespace std;
 // PCSLib
 #include "rf_pcs.h"
 
-using namespace std;
 namespace FiniteElement {class CFiniteElementStd;}
 using FiniteElement::CFiniteElementStd;
 class CMediumProperties
@@ -44,7 +42,7 @@ class CMediumProperties
     // Permeability
     // Permeabilty stress corrector WW
     int permeability_stress_mode;
-    double *c_coefficient; 
+    double *c_coefficient;
     //
 	double PermeabilityPressureFunctionMethod1(long ,double );//CMCD 9/2004 GeoSys 4
 	double PermeabilityPressureFunctionMethod2(long ,double );//CMCD 9/2004 GeoSys 4
@@ -69,17 +67,17 @@ class CMediumProperties
 #ifdef RFW_FRACTURE
     double RelativePermeability (long index); //RW/CMCD03/06
 #endif
-  double Porosity(CElement* assem=NULL);//CMCD 9/2004 GeoSys 4
+  double Porosity(FiniteElement::CElement* assem=NULL);//CMCD 9/2004 GeoSys 4
   double TortuosityFunction(long number,double*gp,double theta, CFiniteElementStd* assem=NULL);//CMCD 9/2004 GeoSys 4
   double NonlinearFlowFunction(long number, double *gp, double theta);//CMCD 9/2004 GeoSys 4
   double PermeabilityPressureFunction(long index,double *gp,double theta);//CMCD 9/2004 GeoSys 4
   double PermeabilitySaturationFunction(long number,double*gp,double theta,int phase);//CMCD 9/2004 GeoSys 4
   double PermeabilityPorosityFunction(long index,double *gp,double theta);//CMCD 9/2004 GeoSys 4
-  double KozenyCarman(double k0/*old permeability*/, 
-                      double n0/*old porosity*/, 
+  double KozenyCarman(double k0/*old permeability*/,
+                      double n0/*old porosity*/,
 					  double n/*new porosity*/);//HS: 11.2008
-  double KozenyCarman_normalized(double k0/*old permeability*/, 
-                                 double n0/*old porosity*/, 
+  double KozenyCarman_normalized(double k0/*old permeability*/,
+                                 double n0/*old porosity*/,
 								 double n/*new porosity*/);//HS: 11.2008
   void CalStressPermeabilityFactor(double *kfac, const double T = 273.0); //WW
   void CalStressPermeabilityFactor2(double *kfac, const double T = 273.0); //WW
@@ -132,7 +130,7 @@ class CMediumProperties
   int porosity_model; // porosity
   int porosity_curve;
   double porosity_model_values[15];
-  double porosity;   
+  double porosity;
   double KC_porosity_initial; // HS 11.2008
   double KC_permeability_initial; // HS 11.2008
   string porosity_file; //OK/MB
@@ -161,8 +159,8 @@ class CMediumProperties
 
 #ifdef RFW_FRACTURE
     //---------------------------  RFW 07/2005
-    string frac_perm_average_type; 
-    string roughness; 
+    string frac_perm_average_type;
+    string roughness;
    //---------------------------  RFW 11/2005
     long frac_num, fracs_set;
     vector<string> frac_names;
@@ -176,7 +174,7 @@ class CMediumProperties
   double permeability_pressure_rel;
   int permeability_saturation_model[3];
   double permeability_saturation;
-  string permeability_file; //SB //OK/MB string permeability_dis_type_file; 
+  string permeability_file; //SB //OK/MB string permeability_dis_type_file;
   string tortuosity_file;	// PCH
   int capillary_pressure_model;
   double capillary_pressure;
@@ -227,15 +225,15 @@ class CMediumProperties
  class CMediumPropertiesGroup  //YD
 {
   public:
-    CMediumPropertiesGroup() {OrigSize=0;} 
+    CMediumPropertiesGroup() {OrigSize=0;}
     void Set(CRFProcess* m_pcs);
     string pcs_name;
-    string pcs_type_name; 
+    string pcs_type_name;
     CFEMesh* m_msh;
-    vector<CMediumProperties*>mmp_group_vector; 
+    vector<CMediumProperties*>mmp_group_vector;
   private:
-    int OrigSize;  // For excavation simulation. 
-}; 
+    int OrigSize;  // For excavation simulation.
+};
 
 extern CMediumPropertiesGroup* MMPGetGroup(const string &pcs_type_name); //YD
 extern list<CMediumPropertiesGroup*>mmp_group_list;   //YD

@@ -40,6 +40,17 @@ public:
 	~GaussAlgorithm();
 
 	/**
+	 * A direct solver for the (dense) linear system \$fA x = b\f$.
+	 * @param A at the beginning the matrix A, at the end of the construction
+	 * of the object the matrix contains the factor L (without the diagonal)
+	 * in the strictly lower part and the factor U in the upper part.
+	 * The diagonal entries of L are all 1.0 and are not explicitly stored.
+	 * Attention: the given matrix will be destroyed!
+	 * @return a object of type GaussAlgorithm
+	 */
+	void LUdcmp ();
+
+	/**
 	 * Method solves the linear system \$fA x = b\f$ (based on the LU factorization)
 	 * using forward solve and backward solve
 	 * @param b at the beginning the right hand side, at the end the solution
@@ -66,6 +77,10 @@ private:
 	 * the permutation of the rows
 	 */
 	size_t* _perm;
+	/**
+	 * the pivot index
+	 */
+	int* _pivot_idx;
 };
 
 } // end namespace MATHLIB

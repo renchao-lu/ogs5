@@ -13,7 +13,7 @@
 
 class QItemSelection;
 class VtkVisPipelineItem;
-class vtkActor;
+class vtkProp3D;
 
 /**
  * VtkVisPipelineView is a QTreeView and shows VtkVisPipelineItems.
@@ -28,7 +28,7 @@ public:
 protected slots:
 	/// Emits itemSelected() signals when an items was selected.
 	void selectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
-	void selectItem(vtkActor* actor);
+	void selectItem(vtkProp3D* actor);
 
 private:
 	/// Creates a menu on right-clicking on an item.
@@ -50,11 +50,14 @@ private slots:
 	/// a filter.
 	void addPipelineFilterItem();
 
+	/// Converts a vtkImageData object into an OGS Mesh.
+	void convertImageToMesh();
+
 signals:
 	void requestRemovePipelineItem(QModelIndex);
 	void requestAddPipelineFilterItem(QModelIndex);
 	void itemSelected(VtkVisPipelineItem*);
-	void actorSelected(vtkActor*);
+	void actorSelected(vtkProp3D*);
 
 };
 

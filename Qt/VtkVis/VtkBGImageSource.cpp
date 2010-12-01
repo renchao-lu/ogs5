@@ -6,7 +6,7 @@
 
 // ** INCLUDES **
 #include "VtkBGImageSource.h"
-#include "VtkTextureOnSurfaceFilter.h"
+#include "VtkVisHelper.h"
 
 #include <QImage>
 
@@ -37,7 +37,7 @@ void VtkBGImageSource::SetImage(vtkTexture* texture)
 
 void VtkBGImageSource::SetRaster(QImage &img) 
 {
-	vtkTexture* texture = VtkTextureOnSurfaceFilter::ConvertImageToTexture(img);
+	vtkTexture* texture = VtkVisHelper::QImageToVtkTexture(img);
 
 	vtkSmartPointer<vtkPlaneSource> plane = vtkSmartPointer<vtkPlaneSource>::New();
 		plane->SetOrigin( _origin.first, _origin.second, -1 );
@@ -48,4 +48,9 @@ void VtkBGImageSource::SetRaster(QImage &img)
 	this->SetTexture(texture);
 
 
+}
+
+void VtkBGImageSource::SetUserProperty( QString name, QVariant value )
+{
+	VtkAlgorithmProperties::SetUserProperty(name, value);
 }

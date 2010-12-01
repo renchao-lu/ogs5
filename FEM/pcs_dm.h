@@ -1,11 +1,10 @@
 /**************************************************************************
 ROCKFLOW - Object: Process PCS_Deformation
-Task: 
+Task:
 Programing:
 07/2003 WW Implementation
 **************************************************************************/
 #ifndef pcs_dm_INC
-
 #define pcs_dm_INC
 
 #include "Configure.h"
@@ -13,7 +12,6 @@ Programing:
 #include <vector>
 
 #include "rf_pcs.h"
-using namespace std;
 
 // Strong discontinuity
 extern bool Localizing; // for tracing localization
@@ -21,36 +19,36 @@ typedef struct {
    int ElementIndex;
    int NumInterFace; // Number of intersection faces
    // Local indeces of intersection faces (3D)
-   int *InterFace; 
+   int *InterFace;
 } DisElement;
 extern vector<DisElement*> LastElement; // Last discontinuity element correponding to SeedElement
 extern vector<long> ElementOnPath;  // Element on the discontinuity path
 
-
-namespace FiniteElement {class CFiniteElementVec; } 
+namespace FiniteElement {class CFiniteElementVec; }
 using FiniteElement::CFiniteElementVec;
 class CPARDomain;
+
 namespace process{
 
-// Elasto-platsic Deformation
-class CRFProcessDeformation:public CRFProcess
+// Elasto-plastic Deformation
+class CRFProcessDeformation : public CRFProcess
 {
-     public:
-     CRFProcessDeformation();	 
+public:
+     CRFProcessDeformation();
 	 virtual ~CRFProcessDeformation();
 
      void Initialization();
 
-     // Assemble system equation 
+     // Assemble system equation
      void GlobalAssembly();
 
-     double Execute(const int CouplingIterations=0); // overloaded  
+     double Execute(const int CouplingIterations=0); // overloaded
 
      // Aux. Memory
      double* GetAuxArray() const {return ARRAY;};
- 
+
      void ScalingNodeForce(const double SFactor);
-     void InitGauss(); 
+     void InitGauss();
      //
      void SetInitialGuess_EQS_VEC();
      void UpdateIterativeStep(const double damp, const int Type);
@@ -68,8 +66,8 @@ class CRFProcessDeformation:public CRFProcess
      void ResetTimeStep();
      //
      void UpdateStress();
-     void UpdateInitialStress(bool ZeroInitialS); 
-     void Extropolation_GaussValue(); 
+     void UpdateInitialStress(bool ZeroInitialS);
+     void Extropolation_GaussValue();
 
      // Excavation computation
      void ReleaseLoadingByExcavation();
@@ -79,7 +77,7 @@ class CRFProcessDeformation:public CRFProcess
      bool CalcBC_or_SecondaryVariable_Dynamics(bool BC = false);
      // Calculate scaling factor for load increment
      double CaclMaxiumLoadRatio() ;
- 
+
      // Write stresses
      void WriteGaussPointStress();
      void ReadGaussPointStress();
@@ -90,10 +88,10 @@ private:
      double *ARRAY;
      int *unknown_vector_indeces;
      long *unknown_node_numbers;
-     int counter; 
-     double InitialNorm; 
-     double InitialNormU; 
-     double InitialNormU0; 
+     int counter;
+     double InitialNorm;
+     double InitialNormU;
+     double InitialNormU0;
 
      //
      double error_k0;
@@ -112,7 +110,7 @@ extern double Tolerance_global_Newton;
 extern double Tolerance_Local_Newton;
 extern int enhanced_strain_dm;
 extern int number_of_load_steps;
-extern int problem_dimension_dm; 
+extern int problem_dimension_dm;
 extern int PreLoad;
 extern bool GravityForce;
 #endif

@@ -14,14 +14,14 @@ Programing:
 04/2005 OK/WW Implementation
 last modification:
 **************************************************************************/
-CNodeValue::CNodeValue()
+CNodeValue::CNodeValue() :
+	_node_distype (INVALID_DIS_TYPE)
 {
   geo_node_number = -1;
   msh_node_number = -1;
   msh_node_number_conditional = -1;
   node_value = 0.;
   node_area = 0.;
-  node_distype = -1;
   node_parameterA = 0.;
   node_parameterB = 0.;
   node_parameterC = 0.;
@@ -51,16 +51,16 @@ Programing:
 03/2006 WW Implementation
 last modification:
 **************************************************************************/
-void CNodeValue::Write(ostream& os) const
+void CNodeValue::Write(std::ostream& os) const
 {
-   string deli = "  ";
+	std::string deli = "  ";
    os<<geo_node_number<<deli;
    os<<msh_node_number<<deli;
    os<< CurveIndex <<deli;
    os<< node_value <<deli;
    /*
    // This is for river flow
-   // This writing will be valid for river flow when some 
+   // This writing will be valid for river flow when some
    // of its parameters being moved from CSourceTerm to here
    os<< node_distype <<deli;
    os<< node_area <<deli;
@@ -71,7 +71,7 @@ void CNodeValue::Write(ostream& os) const
    os<< node_parameterE <<deli;
    os<< conditional <<deli;
    */
-   os<<endl;  
+   os<<std::endl;
 }
 
 /**************************************************************************
@@ -81,15 +81,15 @@ Programing:
 03/2006 WW Implementation
 last modification:
 **************************************************************************/
-void CNodeValue::Read(istream& is) 
+void CNodeValue::Read(std::istream& is)
 {
    is>>geo_node_number;
    is>>msh_node_number;
    is>> CurveIndex ;
    is>> node_value ;
-   /* 
+   /*
    // This is for river flow
-   // This writing will be valid for river flow when some 
+   // This writing will be valid for river flow when some
    // of its parameters being moved from CSourceTerm to here
    is>> node_distype ;
    is>> node_area ;
@@ -100,5 +100,5 @@ void CNodeValue::Read(istream& is)
    is>> node_parameterE ;
    is>> conditional ;
    */
-   is>> ws;  
+   is>> std::ws;
 }

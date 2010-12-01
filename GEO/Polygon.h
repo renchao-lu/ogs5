@@ -15,6 +15,10 @@
 
 namespace GEOLIB {
 
+/**
+ * \ingroup GEOLIB
+ */
+
 class Polygon : public Polyline
 {
 public:
@@ -22,12 +26,15 @@ public:
 	virtual ~Polygon();
 
 	bool isPntInPolygon (const GEOLIB::Point& pnt) const;
+	bool isPolylineInPolygon (const Polyline& ply) const;
 	void computeListOfSimplePolygons ();
 	const std::list<Polygon*>& getListOfSimplePolygons ();
 
 private:
 	void splitPolygonAtIntersection (std::list<Polygon*>::iterator polygon_it);
 	void splitPolygonAtPoint (std::list<Polygon*>::iterator polygon_it);
+	double _maxx;
+	double _maxy;
 	std::list<Polygon*> _simple_polygon_list;
 };
 

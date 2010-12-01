@@ -25,7 +25,7 @@ using namespace std;
 //WW #include "elements.h" //set functions for stability criteria
 // ToDo
 double aktuelle_zeit;
-long aktueller_zeitschritt = 0;
+size_t aktueller_zeitschritt = 0;
 double dt = 0.0;
 int rwpt_numsplits = -1; //JTARON 2010
 //==========================================================================
@@ -638,7 +638,7 @@ Programing:
 12/2004 OK Implementation
 last modified:
 **************************************************************************/
-CTimeDiscretization* TIMGet(string &pcs_type_name) //kg44 const string gave trouble for me
+CTimeDiscretization* TIMGet(const std::string &pcs_type_name) //kg44 const string gave trouble for me
 {
   CTimeDiscretization *m_tim = NULL;
   int i;
@@ -697,83 +697,91 @@ Programing:
 **************************************************************************/
 double CTimeDiscretization::FirstTimeStepEstimate(void)
 {
-  CMediumProperties* m_mmp = NULL;
-  CRFProcess* m_pcs = NULL;
-  CElem* elem =NULL;
-  int i, j, EleType;
-  int idxS;
-  long group;
-  double GP[3];
-  static double Node_Sat[8];
-  double buffer;
-  int no_time_steps;
-//WW  int no_processes =(int)pcs_vector.size();
-  int mmp_vector_size = (int)mmp_vector.size();
-  CFluidProperties *m_mfp = NULL;
-  m_mfp = MFPGet("LIQUID");  //WW
-  double density_fluid = m_mfp->Density(); //WW
-  //
+	CMediumProperties* m_mmp = NULL;
+	CRFProcess* m_pcs = NULL;
+	CElem* elem = NULL;
+	int idxS;
+	long group;
+	double GP[3];
+	static double Node_Sat[8];
+	double buffer;
+	int no_time_steps;
+	//WW  int no_processes =(int)pcs_vector.size();
+	CFluidProperties *m_mfp = NULL;
+	m_mfp = MFPGet("LIQUID"); //WW
+	double density_fluid = m_mfp->Density(); //WW
 
-  for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
-  m_pcs = pcs_vector[n_p];
-  CFiniteElementStd* fem = m_pcs->GetAssembler();
+	for (size_t n_p = 0; n_p < pcs_vector.size(); n_p++) {
+		m_pcs = pcs_vector[n_p];
+		CFiniteElementStd* fem = m_pcs->GetAssembler();
 
-  time_step_length = min_time_step; // take min time step as conservative best guess for testing
-  switch(m_pcs->pcs_type_name[0]){
-      case 'G': // kg44 groudnwater flow ---if steady state, time step should be greater zero...transient flow does not work with adaptive stepping
-        time_step_length = min_time_step; // take min time step as conservative best guess for testing
-      break;
-      case 'M': // kg44 Mass transport ---if steady state, time step should be greater zero..
-        time_step_length = min_time_step; // take min time step as conservative best guess for testing
-      break;
-
-    case 'R': // Richards
-      idxS  = m_pcs->GetNodeValueIndex("SATURATION1");
-      no_time_steps = 1000000000; //OK (int)(1.0e10);
-	  time_step_length = 1.e10;
-	  for(int m=0;m< mmp_vector_size;m++) m_mmp = mmp_vector[m];
-	  for (i=0;i< (long)m_pcs->m_msh->ele_vector.size();i++){
-        elem = m_pcs->m_msh->ele_vector[i];
-        if (elem->GetMark())     // Element selected
-           {
-            // Activated Element
-            group = elem->GetPatchIndex();
-            m_mmp = mmp_vector[group];
-            m_mmp->m_pcs=m_pcs;
-            EleType = elem->GetElementType();
-            if(EleType==4) // Traingle
-              {
-                 GP[0] = GP[1] = 0.1/0.3;
-                 GP[2] = 0.0;
-              }
-              else if(EleType==5)
-		         GP[0] = GP[1] = GP[2] = 0.25;
-              else
-		         GP[0] = GP[1] = GP[2] = 0.0;
-            }
-		   for(j=0; j<elem->GetVertexNumber(); j++)
-              Node_Sat[j] =  m_pcs->GetNodeValue(elem->GetNodeIndex(j),idxS);
-		buffer = m_mmp->SaturationPressureDependency(fem->interpolate(Node_Sat),  density_fluid, m_pcs->m_num->ls_theta);
-	    buffer *= 0.5*elem->GetVolume()*elem->GetVolume();
-	    buffer *=m_mmp->porosity_model_values[0]*mfp_vector[0]->Viscosity()/m_mmp->permeability_tensor[0];
-        buffer /=m_pcs->time_unit_factor;
-	    time_step_length = MMin(time_step_length, buffer);
-	  } // ele_vector
-			  if (time_step_length < MKleinsteZahl){
-				  cout<<"Waning : Time Control Step Wrong, dt = 0.0 "<<endl;
-                  time_step_length = 1.e-6;
-			  }
-			 cout<<"Neumann Time Step: "<<time_step_length<<endl;
-             time_step_length_neumann = 1.e10;
-             time_step_length = MMin(time_step_length, max_time_step);
-			if(Write_tim_discrete)
-			*tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
-
-      break;
-//-----------------------------------------------------
- }
-}
-  return time_step_length;
+		time_step_length = min_time_step; // take min time step as conservative best guess for testing
+//		switch (m_pcs->pcs_type_name[0]) {
+		switch (m_pcs->getProcessType()) { // TF
+//		case 'G': // kg44 groudnwater flow ---if steady state, time step should be greater zero...transient flow does not work with adaptive stepping
+		case GROUNDWATER_FLOW: // TF, if steady state, time step should be greater zero...transient flow does not work with adaptive stepping
+			time_step_length = min_time_step; // take min time step as conservative best guess for testing
+			break;
+//		case 'M': // kg44 Mass transport ---if steady state, time step should be greater zero..
+		case MASS_TRANSPORT: // TF, if steady state, time step should be greater zero..
+			time_step_length = min_time_step; // take min time step as conservative best guess for testing
+			break;
+//		case 'R': // Richards
+		case RICHARDS_FLOW: { // TF
+			idxS = m_pcs->GetNodeValueIndex("SATURATION1");
+			no_time_steps = 1000000000; //OK (int)(1.0e10);
+			time_step_length = 1.e10;
+			size_t mmp_vector_size = mmp_vector.size();
+			for (size_t m = 0; m < mmp_vector_size; m++)
+				m_mmp = mmp_vector[m];
+			const size_t size (m_pcs->m_msh->ele_vector.size());
+			for (size_t i = 0; i < size; i++) {
+				elem = m_pcs->m_msh->ele_vector[i];
+				if (elem->GetMark()) { // Element selected
+					// Activated Element
+					group = elem->GetPatchIndex();
+					m_mmp = mmp_vector[group];
+					m_mmp->m_pcs = m_pcs;
+					MshElemType::type EleType = elem->GetElementType();
+					if (EleType == MshElemType::TRIANGLE) { // Triangle
+						GP[0] = GP[1] = 0.1 / 0.3;
+						GP[2] = 0.0;
+					} else if (EleType == MshElemType::TETRAHEDRON)
+						GP[0] = GP[1] = GP[2] = 0.25;
+					else
+						GP[0] = GP[1] = GP[2] = 0.0;
+				}
+				const int vertex_number (elem->GetVertexNumber());
+				for (int j = 0; j < vertex_number; j++)
+					Node_Sat[j] = m_pcs->GetNodeValue(elem->GetNodeIndex(j),
+							idxS);
+				buffer = m_mmp->SaturationPressureDependency(fem->interpolate(
+						Node_Sat), density_fluid, m_pcs->m_num->ls_theta);
+				buffer *= 0.5 * elem->GetVolume() * elem->GetVolume();
+				buffer *= m_mmp->porosity_model_values[0]
+						* mfp_vector[0]->Viscosity()
+						/ m_mmp->permeability_tensor[0];
+				buffer /= m_pcs->time_unit_factor;
+				time_step_length = MMin(time_step_length, buffer);
+			} // ele_vector
+			if (time_step_length < MKleinsteZahl) {
+				cout << "Waning : Time Control Step Wrong, dt = 0.0 " << endl;
+				time_step_length = 1.e-6;
+			}
+			cout << "Neumann Time Step: " << time_step_length << endl;
+			time_step_length_neumann = 1.e10;
+			time_step_length = MMin(time_step_length, max_time_step);
+			if (Write_tim_discrete)
+				*tim_discrete << aktueller_zeitschritt << "  " << aktuelle_zeit
+						<< "   " << time_step_length << "  " << m_pcs->iter
+						<< endl;
+			break;
+		}
+		default:
+			std::cout << "CTimeDiscretization::FirstTimeStepEstimate default case" << std::endl;
+		}
+	}
+	return time_step_length;
 }
 /**************************************************************************
 FEMLib-Method:
@@ -863,25 +871,30 @@ Programing:
 **************************************************************************/
 double CTimeDiscretization::NeumannTimeControl(void)
 {
-  CRFProcess* m_pcs = NULL;
+	CRFProcess* m_pcs = NULL;
 
-  for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
-  m_pcs = pcs_vector[n_p];
-  switch(m_pcs->pcs_type_name[0]){
-  case 'R': // Richards
-  time_step_length = time_step_length_neumann;
-  break;
-  default:
-      cout << "Fatal error: No valid PCS type" << endl;
-      break;
- }
-}
-  cout<<"Neumann Time Step: "<<time_step_length<<endl;
+	for (size_t n_p = 0; n_p < pcs_vector.size(); n_p++) {
+		m_pcs = pcs_vector[n_p];
+//		switch (m_pcs->pcs_type_name[0]) {
+//				case 'R': // Richards
+		switch (m_pcs->getProcessType()) { // TF
+		case RICHARDS_FLOW:
+			time_step_length = time_step_length_neumann;
+			break;
+		default:
+			cout << "Fatal error: No valid PCS type" << endl;
+			break;
+		}
+	}
+
+	cout << "Neumann Time Step: " << time_step_length << endl;
 	time_step_length_neumann = 1.e10;
-  if(Write_tim_discrete)
-      *tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
-  return time_step_length;
+	if (Write_tim_discrete)
+		*tim_discrete << aktueller_zeitschritt << "  " << aktuelle_zeit
+				<< "   " << time_step_length << "  " << m_pcs->iter << endl;
+	return time_step_length;
 }
+
 /**************************************************************************
 FEMLib-Method:
 Task: Self adaptive method
@@ -904,51 +917,61 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 		m_pcs->PrimaryVariableReload();
 	}
 
-  // First calculate maximum time step according to Neumann criteria
+	// First calculate maximum time step according to Neumann criteria
 #ifdef GEM_REACT
-  my_max_time_step= MMin(max_time_step,MaxTimeStep());
-  cout<<"Self_Adaptive Time Step: max time step "<<my_max_time_step<< endl;
+	my_max_time_step= MMin(max_time_step,MaxTimeStep());
+	cout<<"Self_Adaptive Time Step: max time step "<<my_max_time_step<< endl;
 #endif
 
-	for ( int n_p = 0; n_p< ( int ) pcs_vector.size(); n_p++ )
-	{
+	ProcessType pcs_type (convertProcessType (pcs_type_name)); // TF
+	for (size_t n_p = 0; n_p < pcs_vector.size(); n_p++) {
 		m_pcs = pcs_vector[n_p];
 
-		if (m_pcs->pcs_type_name == pcs_type_name ) { //compare process type and type name from Tim object
-		iprocs++;
-		switch ( m_pcs->pcs_type_name[0] )
-		{
+//		if (m_pcs->pcs_type_name == pcs_type_name) { //compare process type and type name from Tim object
+		if (m_pcs->getProcessType() == pcs_type) { //compare process type and type from Tim object
+			iprocs++;
+//			switch (m_pcs->pcs_type_name[0]) {
+			switch (m_pcs->getProcessType()) { // TF
 			default:
 				cout << "Fatal error: No valid PCS type" << endl;
 				break;
-			case 'R': // Richards
-				if ( (imflag>0) && ( m_pcs->iter  >= time_adapt_tim_vector[time_adapt_tim_vector.size()-1] ) )
-				{
-					imflag=0;
-					time_step_length = time_step_length * time_adapt_coe_vector[time_adapt_tim_vector.size()-1];
+//			case 'R': // Richards
+			case RICHARDS_FLOW: // TF
+				if ((imflag > 0) && (m_pcs->iter
+						>= time_adapt_tim_vector[time_adapt_tim_vector.size()
+								- 1])) {
+					imflag = 0;
+					time_step_length
+							= time_step_length
+									* time_adapt_coe_vector[time_adapt_tim_vector.size()
+											- 1];
 				}
-				if ( (imflag == 1) && ( m_pcs->iter  <= time_adapt_tim_vector[0] ) )
-				{
-					imflag=2;
-					time_step_length = time_step_length * time_adapt_coe_vector[0];
-				}
-				break;
-			case 'G': //Groundwater flow
-			  // iterdum=MMax(iterdum,m_pcs->iter);
-				imflag=1;
-				if ( (imflag>0) && ( m_pcs->iter  >= time_adapt_tim_vector[time_adapt_tim_vector.size()-1] ) )
-				{
-					imflag=0; iterdum = max ( iterdum,m_pcs->iter );
-				}
-				if ( ((imflag == 1) && ( m_pcs->iter  <= time_adapt_tim_vector[0] ) ))
-				{
-					imflag=2;iterdum = max ( iterdum,m_pcs->iter );
+				if ((imflag == 1) && (m_pcs->iter <= time_adapt_tim_vector[0])) {
+					imflag = 2;
+					time_step_length = time_step_length
+							* time_adapt_coe_vector[0];
 				}
 				break;
-			case 'M': // Mass transport
-				iterdum = max ( iterdum,m_pcs->iter );
+//			case 'G': //Groundwater flow
+			case GROUNDWATER_FLOW: // TF
+				// iterdum=MMax(iterdum,m_pcs->iter);
+				imflag = 1;
+				if ((imflag > 0) && (m_pcs->iter
+						>= time_adapt_tim_vector[time_adapt_tim_vector.size()
+								- 1])) {
+					imflag = 0;
+					iterdum = max(iterdum, m_pcs->iter);
+				}
+				if (((imflag == 1) && (m_pcs->iter <= time_adapt_tim_vector[0]))) {
+					imflag = 2;
+					iterdum = max(iterdum, m_pcs->iter);
+				}
 				break;
-		}
+//			case 'M': // Mass transport
+			case MASS_TRANSPORT: // TF
+				iterdum = max(iterdum, m_pcs->iter);
+				break;
+			}
 		}
 	}
 
@@ -1035,52 +1058,60 @@ Programing:
 **************************************************************************/
 double CTimeDiscretization::AdaptiveFirstTimeStepEstimate(void)
 {
-  CNumerics *m_num = NULL;
-  CRFProcess* m_pcs = NULL;
-  CElem* elem =NULL;
-  int i, j, idxp;
-  static double Node_p[8];
-  double p_ini,buff=0.0;
-  int no_time_steps;
-  m_num = num_vector[0];
-  safty_coe = 5.0;
-  p_ini = 1.0e-10;
+	CNumerics *m_num (num_vector[0]);
+	CElem* elem = NULL;
+	static double Node_p[8];
+	double p_ini, buff = 0.0;
+	int no_time_steps;
+	safty_coe = 5.0;
+	p_ini = 1.0e-10;
 
-  for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++){
-  m_pcs = pcs_vector[n_p];
-  CFiniteElementStd* fem = m_pcs->GetAssembler();
+	for (size_t n_p = 0; n_p < pcs_vector.size(); n_p++) {
+		CRFProcess* m_pcs = pcs_vector[n_p];
+		CFiniteElementStd* fem = m_pcs->GetAssembler();
 
-  switch(m_pcs->pcs_type_name[0]){
-    case 'R': // Richards
-      idxp  = m_pcs->GetNodeValueIndex("PRESSURE1")+1;
-      no_time_steps = 1000000000; //OK (int)(1e10);
-	  time_step_length = 1.e10;
-	  for (i=0;i< (long)m_pcs->m_msh->ele_vector.size();i++){
-        elem = m_pcs->m_msh->ele_vector[i];
-		for(j=0; j<elem->GetVertexNumber(); j++)
-           Node_p[j] =  m_pcs->GetNodeValue(elem->GetNodeIndex(j),idxp);
-        p_ini = MMax(fabs(fem->interpolate(Node_p)),p_ini);
-	  }
-	  buff = safty_coe*sqrt(m_num->nls_error_tolerance/p_ini);
-      buff /=m_pcs->time_unit_factor;
-      time_step_length = MMin(time_step_length,buff);
-	  if (time_step_length < MKleinsteZahl){
-		cout<<"Waning : Time Control Step Wrong, dt = 0.0 "<<endl;
-        time_step_length = 1.0e-8;
-	  }
-	  cout<<"Error Control Time Step: "<<time_step_length<<endl;
-	  if(Write_tim_discrete)
-		*tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
-      break;
-      case 'M': // kg44 mass transport
-        time_step_length = min_time_step; // take min time step as conservative best guess for testing
-      break;
-      case 'G': // kg44 groudnwater flow ---if steady state, time step should be greater zeor...transient flow does not work with adaptive stepping
-        time_step_length = min_time_step; // take min time step as conservative best guess for testing
-      break;
- }
-}
-  return time_step_length;
+		//  switch(m_pcs->pcs_type_name[0]){
+		switch (m_pcs->getProcessType()) { // TF
+		//  case 'R': // Richards
+		case RICHARDS_FLOW: // TF
+			{
+				int idxp = m_pcs->GetNodeValueIndex("PRESSURE1") + 1;
+				no_time_steps = 1000000000; //OK (int)(1e10);
+				time_step_length = 1.e10;
+				for (size_t i = 0; i < m_pcs->m_msh->ele_vector.size(); i++) {
+					elem = m_pcs->m_msh->ele_vector[i];
+					for (int j = 0; j < elem->GetVertexNumber(); j++)
+						Node_p[j]
+								= m_pcs->GetNodeValue(elem->GetNodeIndex(j), idxp);
+					p_ini = MMax(fabs(fem->interpolate(Node_p)), p_ini);
+				}
+				buff = safty_coe * sqrt(m_num->nls_error_tolerance / p_ini);
+				buff /= m_pcs->time_unit_factor;
+				time_step_length = MMin(time_step_length, buff);
+				if (time_step_length < MKleinsteZahl) {
+					cout << "Waning : Time Control Step Wrong, dt = 0.0 " << endl;
+					time_step_length = 1.0e-8;
+				}
+				cout << "Error Control Time Step: " << time_step_length << endl;
+				if (Write_tim_discrete)
+					*tim_discrete << aktueller_zeitschritt << "  " << aktuelle_zeit
+							<< "   " << time_step_length << "  " << m_pcs->iter
+							<< endl;
+				break;
+			}
+//		case 'M': // kg44 mass transport
+		case MASS_TRANSPORT: // TF
+			time_step_length = min_time_step; // take min time step as conservative best guess for testing
+			break;
+//		case 'G': // kg44 groudnwater flow ---if steady state, time step should be greater zeor...transient flow does not work with adaptive stepping
+		case GROUNDWATER_FLOW: // if steady state, time step should be greater zero ... transient flow does not work with adaptive stepping
+			time_step_length = min_time_step; // take min time step as conservative best guess for testing
+			break;
+		default:
+			break;
+		}
+	}
+	return time_step_length;
 }
 
 /**************************************************************************
@@ -1091,39 +1122,39 @@ Programing:
 **************************************************************************/
 double CTimeDiscretization::ErrorControlAdaptiveTimeControl(void)
 {
-  CRFProcess* m_pcs = NULL;
-  double rmax = 5.0;
-  double rmin = 0.5;
-  //double error = 0.0;
-  double safty_coe = 0.8;
-  //----------------------------------------------------------------------
-  for(int n_p = 0; n_p< (int)pcs_vector.size(); n_p++)
-  {
-    m_pcs = pcs_vector[n_p];
-    switch(m_pcs->pcs_type_name[0])
-    {
-      //..................................................................
-      default:
-        cout << "Fatal error: No valid PCS type" << endl;
-        break;
-      //..................................................................
-      case 'R': // Richards, accepted and refused time step
-        //nonlinear_iteration_error = m_pcs->nonlinear_iteration_error;
-        if(repeat)
-        {
-          time_step_length *=MMax(safty_coe*sqrt(m_pcs->m_num->nls_error_tolerance/nonlinear_iteration_error),rmin);
-        }
-        else
-        {
-          time_step_length *=MMin(safty_coe*sqrt(m_pcs->m_num->nls_error_tolerance/nonlinear_iteration_error),rmax);
-        }
-        cout<<"Error_Self_Adaptive Time Step: "<<time_step_length<<endl;
-        if(Write_tim_discrete)
-          *tim_discrete<<aktueller_zeitschritt<<"  "<<aktuelle_zeit<<"   "<<time_step_length<< "  "<<m_pcs->iter<<endl;
-      //..................................................................
-    }
-  }
-  return time_step_length;
+	CRFProcess* m_pcs = NULL;
+	double rmax = 5.0;
+	double rmin = 0.5;
+	double safty_coe = 0.8;
+
+	for (size_t n_p = 0; n_p < pcs_vector.size(); n_p++) {
+		m_pcs = pcs_vector[n_p];
+//		switch (m_pcs->pcs_type_name[0]) {
+		switch (m_pcs->getProcessType()) { // TF
+		default:
+			cout << "Fatal error: No valid PCS type" << endl;
+			break;
+//		case 'R': // Richards, accepted and refused time step
+		case RICHARDS_FLOW: // accepted and refused time step
+			//nonlinear_iteration_error = m_pcs->nonlinear_iteration_error;
+			if (repeat) {
+				time_step_length *= MMax(safty_coe * sqrt(
+						m_pcs->m_num->nls_error_tolerance
+								/ nonlinear_iteration_error), rmin);
+			} else {
+				time_step_length *= MMin(safty_coe * sqrt(
+						m_pcs->m_num->nls_error_tolerance
+								/ nonlinear_iteration_error), rmax);
+			}
+			cout << "Error_Self_Adaptive Time Step: " << time_step_length
+					<< endl;
+			if (Write_tim_discrete)
+				*tim_discrete << aktueller_zeitschritt << "  " << aktuelle_zeit
+						<< "   " << time_step_length << "  " << m_pcs->iter
+						<< endl;
+		}
+	}
+	return time_step_length;
 }
 /**************************************************************************
 FEMLib-Method:
@@ -1199,6 +1230,7 @@ double CTimeDiscretization::CheckTime(double const c_time, const double dt0)
   }
   return this_stepsize;
 }
+
 /**************************************************************************
 FEMLib-Method:
 Task:  Used to force time steps matching the times requried by output or
@@ -1208,42 +1240,31 @@ Programing:
 **************************************************************************/
 void CTimeDiscretization::FillCriticalTime()
 {
-   COutput *a_out = NULL;
-   double val;
-   int i, j, k;
-   bool done;
-   for(i=0; i<(int)out_vector.size(); i++)
-   {
-      a_out = out_vector[i];
-      for(j=0; j<(int) a_out->time_vector.size(); j++)
-      {
-         done = false;
-         for(k=0; k<(int)critical_time.size(); k++)
-         {
-            if(fabs(critical_time[k]-a_out->time_vector[j])<DBL_MIN)
-            {
-               done = true;
-               break;
-            }
-
-         }
-         if(!done)
-           critical_time.push_back(a_out->time_vector[j]);
-      }
-   }
-   // Sort
-   for(i=0; i<(int)critical_time.size(); i++)
-   {
-      for(j=i; j<(int)critical_time.size(); j++)
-      {
-         if(critical_time[i]>critical_time[j])
-         {
-            val = critical_time[i];
-            critical_time[i] = critical_time[j];
-            critical_time[j] = val;
-         }
-      }
-   }
+	for (size_t i = 0; i < out_vector.size(); i++) {
+		COutput *a_out = out_vector[i];
+		for (size_t j = 0; j < a_out->getTimeVector().size(); j++) {
+			bool done = false;
+			for (size_t k = 0; k < critical_time.size(); k++) {
+				if (fabs(critical_time[k] - a_out->getTimeVector()[j]) < DBL_MIN) {
+					done = true;
+					break;
+				}
+			}
+			if (!done)
+				critical_time.push_back(a_out->getTimeVector()[j]);
+		}
+	}
+	// Sort
+	for (size_t i = 0; i < critical_time.size(); i++) {
+		for (size_t j = i; j < critical_time.size(); j++) {
+			if (critical_time[i] > critical_time[j]) {
+//				double val = critical_time[i];
+//				critical_time[i] = critical_time[j];
+//				critical_time[j] = val;
+				swap (critical_time[i], critical_time[j]);
+			}
+		}
+	}
 }
 /**************************************************************************
 FEMLib-Method:

@@ -12,7 +12,7 @@
 #include <QObject>
 #include <vtkCommand.h>
 
-class vtkActor;
+class vtkProp3D;
 
 /**
  * VtkPickCallback is a vtkCommand that implements functionality when
@@ -32,7 +32,7 @@ protected:
 
 signals:
 	/// Is emitted when an vtkActor was picked.
-	void actorPicked (vtkActor* actor);
+	void actorPicked (vtkProp3D* actor);
 
 };
 

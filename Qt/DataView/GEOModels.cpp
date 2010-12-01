@@ -25,11 +25,11 @@ GEOModels::~GEOModels()
 	delete _stationModel;
 }
 
-void GEOModels::addPointVec( std::vector<GEOLIB::Point*> *points, std::string &name, std::vector<std::string>* names )
+void GEOModels::addPointVec( std::vector<GEOLIB::Point*> *points, std::string &name, std::map<std::string, size_t>* name_pnt_id_map )
 {
-	GEOObjects::addPointVec(points, name, names);
+	GEOObjects::addPointVec(points, name, name_pnt_id_map);
 
-	PntsModel* model = new PntsModel(QString::fromStdString(name), points, this);
+	PntsModel* model = new PntsModel(QString::fromStdString(name), this->getPointVecObj(name), this);
 	_pntModels.push_back(model);
 	emit pointModelAdded(model);
 }
@@ -92,12 +92,12 @@ bool GEOModels::removeStationVec( const std::string &name )
 	return GEOObjects::removeStationVec(name);
 }
 
-void GEOModels::addPolylineVec( std::vector<GEOLIB::Polyline*> *lines, const std::string &name, std::vector<std::string>* ply_names )
+void GEOModels::addPolylineVec( std::vector<GEOLIB::Polyline*> *lines, const std::string &name, std::map<std::string,size_t>* ply_names )
 {
 	GEOObjects::addPolylineVec(lines, name, ply_names);
 	if (lines->empty()) return;
 
-	PolylinesModel* model = new PolylinesModel(QString::fromStdString(name), lines, this);
+	PolylinesModel* model = new PolylinesModel(QString::fromStdString(name), this->getPolylineVecObj(name), this);
 	_lineModels.push_back(model);
 	emit polylineModelAdded(model);
 }
@@ -116,12 +116,12 @@ bool GEOModels::removePolylineVec( const std::string &name )
 	return false;
 }
 
-void GEOModels::addSurfaceVec( std::vector<GEOLIB::Surface*> *surfaces, const std::string &name, std::vector<std::string>* sfc_names )
+void GEOModels::addSurfaceVec( std::vector<GEOLIB::Surface*> *surfaces, const std::string &name, std::map<std::string,size_t>* sfc_names )
 {
 	GEOObjects::addSurfaceVec(surfaces, name, sfc_names);
 	if (surfaces->empty()) return;
 
-	SurfaceModel* model = new SurfaceModel(QString::fromStdString(name), surfaces, this);
+	SurfaceModel* model = new SurfaceModel(QString::fromStdString(name), this->getSurfaceVecObj(name), this);
 	_surfaceModels.push_back(model);
 	emit surfaceModelAdded(model);
 }

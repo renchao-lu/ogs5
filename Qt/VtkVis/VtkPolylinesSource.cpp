@@ -1,7 +1,7 @@
 /**
  * \file VtkPolylinesSource.cpp
  * 2/2/2010 LB Initial implementation
- * 
+ *
  * Implementation of VtkPolylinesSource
  */
 
@@ -40,7 +40,7 @@ void VtkPolylinesSource::PrintSelf( ostream& os, vtkIndent indent )
 		it != _polylines->end(); ++it)
 	{
 		os << indent << "== Polyline ==" << "\n";
-		int numPoints = (*it)->getSize();
+		int numPoints = (*it)->getNumberOfPoints();
 		for (int i = 0; i < numPoints; i++)
 		{
 			const GEOLIB::Point* point = (**it)[i];
@@ -48,7 +48,7 @@ void VtkPolylinesSource::PrintSelf( ostream& os, vtkIndent indent )
 			os << indent << "Point " << i <<" (" << coords[0] << ", " << coords[1] << ", " << coords[2] << ")\n";
 		}
 	}
-	
+
 }
 
 int VtkPolylinesSource::RequestData( vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector )
@@ -80,7 +80,7 @@ int VtkPolylinesSource::RequestData( vtkInformation* request, vtkInformationVect
 	for (std::vector<GEOLIB::Polyline*>::const_iterator it = _polylines->begin();
 		it != _polylines->end(); ++it)
 	{
-		const int numPoints = (*it)->getSize();
+		const int numPoints = (*it)->getNumberOfPoints();
 		//const int numLines = numPoints - 1;
 
 		// Generate points
@@ -117,4 +117,10 @@ int VtkPolylinesSource::RequestInformation( vtkInformation* request, vtkInformat
 	outInfo->Set(vtkStreamingDemandDrivenPipeline::MAXIMUM_NUMBER_OF_PIECES(), -1);
 
 	return 1;
+}
+
+void VtkPolylinesSource::SetUserProperty( QString name, QVariant value )
+{
+	Q_UNUSED(name);
+	Q_UNUSED(value);
 }

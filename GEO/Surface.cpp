@@ -11,7 +11,7 @@
 namespace GEOLIB {
 
 Surface::Surface (const std::vector<Point*> &pnt_vec) :
-	m_sfc_pnts(pnt_vec), bv (new AABB())
+	GeoObject(), m_sfc_pnts(pnt_vec), bv (new AABB())
 {}
 
 Surface::~Surface ()

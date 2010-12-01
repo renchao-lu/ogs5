@@ -53,41 +53,32 @@ public:
 	// Operator
 	void operator =(const CNode& n);
 	bool operator ==(const CNode& n);
+
 	// Get functions
-	double X() const {
-		return coordinate[0];
-	}
-	double Y() const {
-		return coordinate[1];
-	}
-	double Z() const {
-		return coordinate[2];
-	}
+	double X() const { return coordinate[0]; };
+	double Y() const { return coordinate[1]; };
+	double Z() const { return coordinate[2]; };
+
 	void Coordinates(double *xyz) const {
 		for (size_t i = 0; i < 3; i++)
 			xyz[i] = coordinate[i];
 	}
+
 	// 04/2010 TF
 	/** returns the coordinates of the mesh node */
 	const double* getData () const { return coordinate; }
 
-	int GetEquationIndex() const {
-		return eqs_index;
-	}
+
 	// Set functions
-	void SetX(double argX) {
-		coordinate[0] = argX;
-	}
-	void SetY(double argY) {
-		coordinate[1] = argY;
-	}
-	void SetZ(double argZ) {
-		coordinate[2] = argZ;
-	}
+	void SetX(double argX) { coordinate[0] = argX; };
+	void SetY(double argY) { coordinate[1] = argY; };
+	void SetZ(double argZ) { coordinate[2] = argZ; };
+	
 	void SetCoordinates(const double* argCoord);
-	void SetEquationIndex(long eqIndex) {
-		eqs_index = eqIndex;
-	} //
+
+	int GetEquationIndex() const { return eqs_index; };
+	void SetEquationIndex(long eqIndex) { eqs_index = eqIndex; };
+
 	// Output
 	void Write(std::ostream& os = std::cout) const;
 
@@ -96,14 +87,8 @@ private:
 	long eqs_index; // renumber
 	double coordinate[3];
 
-	friend class CEdge;
 	friend class CElem;
-	// FEM
-	friend class FiniteElement::CElement;
-	friend class FiniteElement::CFiniteElementStd;
-	friend class FiniteElement::CFiniteElementVec;
-	friend class FiniteElement::ElementMatrix;
-	friend class FiniteElement::ElementMatrix_DM;
+
 };
 
 } // namespace Mesh_Group

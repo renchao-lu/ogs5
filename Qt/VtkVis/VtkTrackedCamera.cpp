@@ -96,7 +96,9 @@ void VtkTrackedCamera::translate(double x, double y, double z)
 
 void VtkTrackedCamera::rotate(double yaw, double elevation, double roll)
 {
-	
+	Q_UNUSED(yaw);
+	Q_UNUSED(elevation);
+	Q_UNUSED(roll);
 }
 
 void VtkTrackedCamera::updateView()

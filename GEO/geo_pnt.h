@@ -23,11 +23,14 @@ std::string get_sub_string(std::string buffer, std::string delimiter, int pos1, 
 /*---------------------------------------------------------------*/
 class CGLPoint
 {
-  private:
-	  /** geometry */
-	  double data[3];
+private:
+	/** geometry */
+	double data[3];
 
-  public:
+public:
+	  double getPropert () const { return _propert; };
+	  void setPropert (double propert) { _propert = propert; }
+
   //----------------------------------------------------------------------
   // Properties
     // ID
@@ -71,7 +74,7 @@ class CGLPoint
     long node; //OK
     int mat;//CC9999
     double value;
-    double propert;
+
     // Display
     //bool highlighted;
     int x_pix, y_pix;
@@ -84,6 +87,20 @@ class CGLPoint
   // Methods
     // Create
 	CGLPoint(void);
+	// 07/2010 TF
+	/**
+	 * constructor for CGLPoint object
+	 * @param x the first coordinate
+	 * @param y the second coordinate
+	 * @param z the third coordinate
+	 */
+	CGLPoint (double x, double y, double z);
+	/**
+	 * constructor for CGLPoint object
+	 * @param data the field contains the coordinates
+	 */
+	CGLPoint (const double *coordinates);
+
     ~CGLPoint(void);
 
     // Access
@@ -102,6 +119,8 @@ class CGLPoint
     bool IsInTriangleXYProjection(double*,double*);//CC
     bool IsInsideRectangle(double*,double*,double*);//CC
     bool IsInsidePrism(double*,double*,double*);//CC
+private:
+	double _propert;
 };
 //------------------------------------------------------------------------
 // Properties

@@ -10,6 +10,10 @@ Programing:
 #include <string>
 #include <vector>
 using namespace std;
+
+// FileIO
+#include "GMSHInterface.h"
+
 // GEOLib
 #include "geo_lib.h"
 #include "files0.h"
@@ -43,8 +47,10 @@ double msh_y_min,msh_y_max; //OK
 double msh_z_min,msh_z_max; //OK
 double msh_x_mid,msh_y_mid,msh_z_mid; //OK
 
-bool msh_file_binary = false;
 #define MSH_SIZE 1e5
+
+
+using namespace Math_Group;
 
 /**************************************************************************
 FEMLib-Method:
@@ -55,24 +61,14 @@ Programing:
 void MSHDelete(string m_msh_name)
 {
   CFEMesh* m_fem_msh = NULL;
-  int fem_msh_vector_size = (int)fem_msh_vector.size();
-  for(int i=0;i<fem_msh_vector_size;i++){
+  size_t fem_msh_vector_size = fem_msh_vector.size();
+  for(size_t i=0;i<fem_msh_vector_size;i++){
     m_fem_msh = fem_msh_vector[i];
     if(m_fem_msh->pcs_name.compare(m_msh_name)==0){
-      if(m_fem_msh) delete m_fem_msh;
+      delete m_fem_msh;
       fem_msh_vector.erase((fem_msh_vector.begin()+i));
     }
   }
-}
-
-/**************************************************************************
-GeoSys-Method: MSHOpen
-11/2003 OK Implementation
-**************************************************************************/
-void MSHOpen(string file_name_base)
-{
-  (void)file_name_base;
-  //OK411 ReadRFIFile(file_name_base);
 }
 
 /**************************************************************************
@@ -97,147 +93,103 @@ Programing:
 03/2005 OK Implementation
 08/2005 WW Topology construction and rfi compatible
 10/2005 OK BINARY
+08/2010 KR deleted binary mesh read
 **************************************************************************/
-bool FEMRead(string file_base_name)
+
+CFEMesh* FEMRead(const std::string &file_base_name, GEOLIB::GEOObjects* geo_obj, std::string* unique_name)
 {
+	//----------------------------------------------------------------------
+    CFEMesh *fem_msh (NULL);
+	char line[MAX_ZEILE];
+	string sub_line;
+	string line_string;
+	ios::pos_type position;
+	//========================================================================
+	// File handling
+	string msh_file_name_ascii = file_base_name + FEM_FILE_EXTENSION;
 
-  //----------------------------------------------------------------------
-  FEMDeleteAll();
-  //----------------------------------------------------------------------
-  CFEMesh *m_fem_msh = NULL;
-  char line[MAX_ZEILE];
-  string sub_line;
-  string line_string;
-  ios::pos_type position;
-  //========================================================================
-  // File handling
-  msh_file_binary = false;
-  string msh_file_name_bin = file_base_name + "_binary" + FEM_FILE_EXTENSION;
-  string msh_file_name_ascii = file_base_name + FEM_FILE_EXTENSION;
-  ifstream msh_file_bin;
-  ifstream msh_file_ascii;
-#ifdef USE_TOKENBUF
-  TokenBuf *tokenbuf;
-#endif
+	// test if this is a GMSH mesh
+	if (FileIO::GMSHInterface::isGMSHMeshFile (msh_file_name_ascii)) {
+		// create mesh object
+		fem_msh = new CFEMesh();
+		// read mesh
+		GMSH2MSH(msh_file_name_ascii.c_str(), fem_msh);
+		return fem_msh;
+	}
 
-  msh_file_bin.open(msh_file_name_bin.c_str(),ios::binary|ios::in);
-  if(msh_file_bin.good()){
-    msh_file_binary = true;
-  }
-/*
-  //......................................................................
-  fem_msh_file_name = file_base_name + FEM_FILE_EXTENSION;
-  ifstream fem_msh_file;
-  //......................................................................
-  fem_msh_file.open(fem_msh_file_name.data(),ios::in);
-  if (!fem_msh_file.good())
-    return false;
-  fem_msh_file.getline(line,MAX_ZEILE);
-  line_string = line;
-  if(line_string.find("BINARY")!=string::npos)
-    msh_file_binary = true;
-  else
-    msh_file_binary = false;
-  fem_msh_file.close();
-*/
-  //----------------------------------------------------------------------
-  cout << "MSHRead: ";
-  if(msh_file_binary){
-    cout << "BINARY file" << endl;
-    if (!msh_file_bin.good())
-      return false;
-  }
-  else{
-    cout << "ASCII file" << endl;
-    msh_file_ascii.open(msh_file_name_ascii.data(),ios::in);
-    if (!msh_file_ascii.good()){
-      return false;
-    }
-  }
-  //----------------------------------------------------------------------
-  // RFI - WW
-if(!msh_file_binary){
-  bool rfiMesh = true;
-  getline(msh_file_ascii,line_string); // The first line
-  if(line_string.find("#FEM_MSH")!=string::npos)
-    rfiMesh = false;
-  if(line_string.find("GeoSys-MSH")!=string::npos) //OK
-    rfiMesh = false;
-  msh_file_ascii.seekg(0L,ios::beg);
+	ifstream msh_file_ascii;
 
 #ifdef USE_TOKENBUF
-  tokenbuf = new TokenBuf(msh_file_ascii, 10485760);
+	TokenBuf *tokenbuf;
 #endif
+	cout << "MSHRead: ";
+	cout << "ASCII file" << endl;
+	msh_file_ascii.open(msh_file_name_ascii.data(),ios::in);
+	if (!msh_file_ascii.good()) return NULL;
 
-  if (rfiMesh)
-  {
-#ifdef TRACE
-    std::cout << "RFI MESH" << std::endl;
-#endif
-     m_fem_msh = new CFEMesh();
-     Read_RFI(msh_file_ascii, m_fem_msh);
-     fem_msh_vector.push_back(m_fem_msh);
-     msh_file_ascii.close();
-     return true;
-  }
-}
-  //========================================================================
-  // Keyword loop
-  //----------------------------------------------------------------------
-  if(msh_file_binary){
-    while(!msh_file_bin.eof()){
-      char keyword_char[9];
-      msh_file_bin.read((char*)(&keyword_char),sizeof(keyword_char));
-      line_string = keyword_char;
-      if(line_string.find("#STOP")!=string::npos)
-        return true;
-      //..................................................................
-      if(line_string.find("#FEM_MSH")!=string::npos){ // keyword found
-        m_fem_msh = new CFEMesh();
-        position = m_fem_msh->ReadBIN(&msh_file_bin);
-        fem_msh_vector.push_back(m_fem_msh);
-        msh_file_bin.seekg(position,ios::beg);
-      } // keyword found
-    } // eof
-    msh_file_bin.close();
-  }
-  //----------------------------------------------------------------------
-  else{
+	//----------------------------------------------------------------------
+	// RFI - WW
+	bool rfiMesh = true;
+	getline(msh_file_ascii, line_string); // The first line
+	if(line_string.find("#FEM_MSH")!=string::npos)
+		rfiMesh = false;
+//	else	// KR: included error message
+//	{
+//		std::cout << "Error in CFEMesh::FEMRead() - The file \"" << file_base_name << "\" is not an OpenGeoSys mesh file." << std::endl;
+//		return NULL;
+//	}
+
+	msh_file_ascii.seekg(0L,ios::beg);
+
 #ifdef USE_TOKENBUF
-    while(!tokenbuf->done()) {
-      tokenbuf->get_non_empty_line(line, MAX_ZEILE);
-      line_string = line;
-      if(line_string.find("#STOP") != string::npos)
-        return true;
+	tokenbuf = new TokenBuf(msh_file_ascii, 10485760);
+#endif
 
-      if(line_string.find("#FEM_MSH") != string::npos) { // mesh
-        m_fem_msh = new CFEMesh();
-        m_fem_msh->Read(tokenbuf);
-        fem_msh_vector.push_back(m_fem_msh);
-      }
-    }
-    delete tokenbuf;
+	if (rfiMesh) {
+		fem_msh = new CFEMesh(geo_obj, unique_name);
+		Read_RFI(msh_file_ascii, fem_msh);
+		//KR fem_msh_vector.push_back(fem_msh);
+		msh_file_ascii.close();
+		return fem_msh;
+	}
+
+
+#ifdef USE_TOKENBUF
+	while(!tokenbuf->done()) {
+		tokenbuf->get_non_empty_line(line, MAX_ZEILE);
+		line_string = line;
+		if(line_string.find("#STOP") != string::npos)
+			return true;
+
+		if(line_string.find("#FEM_MSH") != string::npos) { // mesh
+			m_fem_msh = new CFEMesh();
+			m_fem_msh->Read(tokenbuf);
+			fem_msh_vector.push_back(m_fem_msh);
+		}
+	}
+	delete tokenbuf;
 #else
-    while(!msh_file_ascii.eof()){
-      msh_file_ascii.getline(line,MAX_ZEILE);
-      line_string = line;
-      if(line_string.find("#STOP")!=string::npos)
-        return true;
-      //..................................................................
-      if(line_string.find("#FEM_MSH")!=string::npos) { // keyword found
-        m_fem_msh = new CFEMesh();
-        position = m_fem_msh->Read(&msh_file_ascii);
-        fem_msh_vector.push_back(m_fem_msh);
-        msh_file_ascii.seekg(position,ios::beg);
-      } // keyword found
-    } // eof
+
+	while(!msh_file_ascii.eof()){
+		msh_file_ascii.getline(line,MAX_ZEILE);
+		line_string = line;
+		if(line_string.find("#STOP")!=string::npos)
+			return fem_msh;
+		//..................................................................
+		if(line_string.find("#FEM_MSH")!=string::npos) { // keyword found
+			fem_msh = new CFEMesh(geo_obj, unique_name);
+			position = fem_msh->Read(&msh_file_ascii);
+			//fem_msh_vector.push_back(m_fem_msh);
+			msh_file_ascii.seekg(position,ios::beg);
+		} // keyword found
+	} // eof
+
 #endif
 
-    msh_file_ascii.close();
-  }
+	msh_file_ascii.close();
 
-  //========================================================================
-  return true;
+	//========================================================================
+	return fem_msh;
 }
 /**************************************************************************
 MSHLib-Method: Read rfi file ()
@@ -300,56 +252,36 @@ Programing:
 03/2005 OK Implementation
 10/2005 OK BINARY
 last modification:
+08/2010	KR binary case deleted
 **************************************************************************/
 void MSHWrite(string file_base_name)
 {
-  int i;
-  CFEMesh* m_fem_msh = NULL;
-  string sub_line;
-  string line_string;
-  msh_file_binary = false;
-  //----------------------------------------------------------------------
-  // File handling
-  string fem_msh_file_name = file_base_name + FEM_FILE_EXTENSION;
-  fstream fem_msh_file;
-  string msh_file_test_name = file_base_name + "_test" + FEM_FILE_EXTENSION;
-  fstream msh_file_test;
-  for(i=0;i<(int)fem_msh_vector.size();i++){
-    m_fem_msh = fem_msh_vector[i];
-    if(m_fem_msh->ele_vector.size()>MSH_SIZE)
-      //msh_file_binary = true;
-      msh_file_binary = false; //TK 21.12.05 default false / TODO!!!
-  }
-  if(msh_file_binary){
-    fem_msh_file_name = file_base_name + "_binary" + FEM_FILE_EXTENSION;
-    fem_msh_file.open(fem_msh_file_name.c_str(),ios::binary|ios::out);
-    //msh_file_test.open(msh_file_test_name.c_str(),ios::trunc|ios::out);OK
-    //msh_file_test.open(fem_msh_file_name.c_str(),ios::trunc|ios::out);//TK
-    if(!fem_msh_file.good()) return;
-  }
-  else{
-    fem_msh_file.open(fem_msh_file_name.c_str(),ios::trunc|ios::out);
-    if(!fem_msh_file.good()) return;
-    fem_msh_file.setf(ios::scientific,ios::floatfield);
-    fem_msh_file.precision(12);
-  }
-  //----------------------------------------------------------------------
-  for(i=0;i<(int)fem_msh_vector.size();i++){
-    m_fem_msh = fem_msh_vector[i];
-    if(msh_file_binary)
-      m_fem_msh->WriteBIN(&fem_msh_file,&msh_file_test);
-    else
-      m_fem_msh->Write(&fem_msh_file);
-  }
-  //----------------------------------------------------------------------
-  if(msh_file_binary){
-    char binary_char[6] = "#STOP";
-    fem_msh_file.write((char*)(&binary_char),sizeof(binary_char));
-  }
-  else{
-    fem_msh_file << "#STOP";
-  }
-  fem_msh_file.close();
+	CFEMesh* m_fem_msh = NULL;
+	string sub_line;
+	string line_string;
+	//----------------------------------------------------------------------
+	// File handling
+	string fem_msh_file_name = file_base_name + FEM_FILE_EXTENSION;
+	fstream fem_msh_file;
+	string msh_file_test_name = file_base_name + "_test" + FEM_FILE_EXTENSION;
+	fstream msh_file_test;
+	for(size_t i=0; i<fem_msh_vector.size(); i++)
+	{
+		m_fem_msh = fem_msh_vector[i];
+	}
+	fem_msh_file.open(fem_msh_file_name.c_str(),ios::trunc|ios::out);
+	if(!fem_msh_file.good()) return;
+	fem_msh_file.setf(ios::scientific,ios::floatfield);
+	fem_msh_file.precision(12);
+
+	//----------------------------------------------------------------------
+	for(size_t i=0; i<fem_msh_vector.size(); i++){
+		m_fem_msh = fem_msh_vector[i];
+		m_fem_msh->Write(&fem_msh_file);
+	}
+	//----------------------------------------------------------------------
+	fem_msh_file << "#STOP";
+	fem_msh_file.close();
 }
 
 /**************************************************************************
@@ -361,14 +293,12 @@ last modification:
 **************************************************************************/
 CFEMesh* FEMGet(const string &msh_name)
 {
-  int no_msh = (int)fem_msh_vector.size();
+  size_t no_msh = fem_msh_vector.size();
   // If there is only one msh file available, use it for all process. WW
-  if(no_msh==1) return fem_msh_vector[0]; //WW
-  CFEMesh* m_msh = NULL;
-  for(int i=0;i<no_msh;i++){
-    m_msh = fem_msh_vector[i];
-    if(m_msh->pcs_name.compare(msh_name)==0)
-      return m_msh;
+  if (no_msh==1) return fem_msh_vector[0]; //WW
+  for(size_t i=0;i<no_msh;i++){
+    if ( fem_msh_vector[i]->pcs_name.compare(msh_name) == 0 )
+      return fem_msh_vector[i];
   }
   return NULL;
 }
@@ -447,7 +377,7 @@ void MSHWriteVOL2TEC(string m_msh_name)
   if(!m_msh)
     return;
   long no_nodes = (long)m_msh->nod_vector.size();
-  long ep_layer = (long)m_msh->ele_vector.size() / m_msh->no_msh_layer;
+  long ep_layer = (long)m_msh->ele_vector.size() / m_msh->getNumberOfMeshLayers();
   //--------------------------------------------------------------------
   // File handling
   string tec_path;
@@ -486,7 +416,8 @@ void MSHWriteVOL2TEC(string m_msh_name)
     vec<long>node_indeces(6);
     for(i=jb;i<je;i++){
       m_ele = m_msh->ele_vector[i];
-	  if(m_ele->GetElementType()==6){
+	  if (m_ele->GetElementType()==MshElemType::PRISM)
+	  {
         m_ele->GetNodeIndeces(node_indeces);
         //nodes = m_msh->ele_vector[i]->nodes;
         x=0.0; y=0.0; z=0.0;
@@ -519,7 +450,7 @@ void MSHWriteVOL2TEC(string m_msh_name)
     }
     for(long i=jb;i<je;i++){
       m_ele = m_msh->ele_vector[i];
-	  if(m_ele->GetElementType()==6){
+	  if(m_ele->GetElementType()==MshElemType::PRISM){
         m_ele->GetNodeIndeces(node_indeces);
         x=0.0; y=0.0; z=0.0;
         for(j=0;j<6;j++) {
@@ -555,154 +486,159 @@ Programing:
 **************************************************************************/
 void MSHWriteTecplot()
 {
-  int ele_type  = -1;
-  long no_nodes;
-  long no_elements;
-  string delimiter(", ");
-  long i;
-  CElem* m_ele = NULL;
-  vec<long>node_indeces(8);
-  //----------------------------------------------------------------------
-  // File handling
-  string file_path = "MSH";
-  CGSProject* m_gsp = NULL;
-  m_gsp = GSPGetMember("msh");
-  if(m_gsp)
-    file_path = m_gsp->path + "MSH";
-  //----------------------------------------------------------------------
-  CFEMesh* m_msh = NULL;
-  for(int j=0;j<(int)fem_msh_vector.size();j++){
-    m_msh = fem_msh_vector[j];
-    no_nodes = (long)m_msh->nod_vector.size();
-    no_elements = (long)m_msh->ele_vector.size();
-    // Test ele_type
-    if(no_elements>0)
-    {
-      m_ele = m_msh->ele_vector[0];
-      ele_type = m_ele->GetElementType();
-    }
-    // File handling
-    string msh_file_name = file_path + "_" + m_msh->pcs_name + TEC_FILE_EXTENSION;
-    fstream msh_file (msh_file_name.data(),ios::trunc|ios::out);
-    msh_file.setf(ios::scientific,ios::floatfield);
-    msh_file.precision(12);
-    if (!msh_file.good()) return;
-    msh_file.seekg(0L,ios::beg);
-    msh_file << "VARIABLES = X,Y,Z" << endl;
-    msh_file << "ZONE T = " << m_msh->pcs_name << delimiter \
-             << "N = " << no_nodes << delimiter \
-             << "E = " << no_elements << delimiter;
-    msh_file << "F = FEPOINT" << delimiter;
-    switch(ele_type)
-    {
-      //..................................................................
-      case 1:
-        msh_file << "ET = QUADRILATERAL" << endl;
-        for(i=0;i<no_nodes;i++) {
-          msh_file \
-            << m_msh->nod_vector[i]->X() << " " << m_msh->nod_vector[i]->Y() << " " << m_msh->nod_vector[i]->Z() << endl;
-        }
-        for(i=0;i<no_elements;i++) {
-          m_ele = m_msh->ele_vector[i];
-          m_ele->GetNodeIndeces(node_indeces);
-          msh_file \
-            << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " \
-            << node_indeces[1]+1 << " " << node_indeces[0]+1 << endl;
-        }
-        break;
-      //..................................................................
-      case 2:
-        msh_file << "ET = QUADRILATERAL" << endl;
-        for(i=0;i<no_nodes;i++) {
-          msh_file \
-            << m_msh->nod_vector[i]->X() << " " << m_msh->nod_vector[i]->Y() << " " << m_msh->nod_vector[i]->Z() << endl;
-        }
-        for(i=0;i<no_elements;i++) {
-          m_ele = m_msh->ele_vector[i];
-          m_ele->GetNodeIndeces(node_indeces);
-          msh_file \
-            << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " \
-            << node_indeces[2]+1 << " " << node_indeces[3]+1 << endl;
-        }
-        break;
-      //..................................................................
-      case 3:
-        msh_file << "ET = BRICK" << endl;
-        for(i=0;i<no_nodes;i++) {
-          msh_file \
-            << m_msh->nod_vector[i]->X() << " " << m_msh->nod_vector[i]->Y() << " " << m_msh->nod_vector[i]->Z() << endl;
-        }
-        for(i=0;i<no_elements;i++) {
-          m_ele = m_msh->ele_vector[i];
-          m_ele->GetNodeIndeces(node_indeces);
-          msh_file \
-            << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " \
-            << node_indeces[2]+1 << " " << node_indeces[3]+1 << " " \
-            << node_indeces[4]+1 << " " << node_indeces[5]+1 << " " \
-            << node_indeces[6]+1 << " " << node_indeces[7]+1 << endl;
-        }
-        break;
-      //..................................................................
-      case 4:
-        msh_file << "ET = TRIANGLE" << endl;
-        for(i=0;i<no_nodes;i++) {
-          msh_file \
-            << m_msh->nod_vector[i]->X() << " " << m_msh->nod_vector[i]->Y() << " " << m_msh->nod_vector[i]->Z() << endl;
-        }
-        for(i=0;i<no_elements;i++) {
-          m_ele = m_msh->ele_vector[i];
-          m_ele->GetNodeIndeces(node_indeces);
-          msh_file \
-            << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " \
-            << node_indeces[2]+1 << endl;
-        }
-        break;
-      //..................................................................
-      case 5:
-        msh_file << "ET = TETRAHEDRON" << endl;
-        for(i=0;i<no_nodes;i++) {
-          msh_file \
-            << m_msh->nod_vector[i]->X() << " " << m_msh->nod_vector[i]->Y() << " " << m_msh->nod_vector[i]->Z() << endl;
-        }
-        for(i=0;i<no_elements;i++) {
-          m_ele = m_msh->ele_vector[i];
-          m_ele->GetNodeIndeces(node_indeces);
-          msh_file \
-            << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " \
-            << node_indeces[2]+1 << " " << node_indeces[3]+1 << endl;
-        }
-        break;
-      //..................................................................
-      case 6:
-        msh_file << "ET = BRICK" << endl;
-        for(i=0;i<no_nodes;i++) {
-          msh_file \
-            << m_msh->nod_vector[i]->X() << " " << m_msh->nod_vector[i]->Y() << " " << m_msh->nod_vector[i]->Z() << endl;
-        }
-        for(i=0;i<no_elements;i++)
-        {
-          m_ele = m_msh->ele_vector[i];
-          m_ele->GetNodeIndeces(node_indeces);
-          if(m_ele->GetElementType()==6)
-          {
-            msh_file \
-              << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " \
-              << node_indeces[2]+1 << " " << node_indeces[2]+1 << " " \
-              << node_indeces[3]+1 << " " << node_indeces[4]+1 << " " \
-              << node_indeces[5]+1 << " " << node_indeces[5]+1 << endl;
-          }
-          if(m_ele->GetElementType()==3)
-          {
-            msh_file \
-              << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " \
-              << node_indeces[2]+1 << " " << node_indeces[3]+1 << " " \
-              << node_indeces[4]+1 << " " << node_indeces[5]+1 << " " \
-              << node_indeces[6]+1 << " " << node_indeces[7]+1 << endl;
-          }
-        }
-        break;
-    }
-  }
+	MshElemType::type ele_type = MshElemType::INVALID;
+	long no_nodes;
+	long no_elements;
+	string delimiter(", ");
+	long i;
+	CElem* m_ele = NULL;
+	vec<long> node_indeces(8);
+	//----------------------------------------------------------------------
+	// File handling
+	string file_path = "MSH";
+	CGSProject* m_gsp = NULL;
+	m_gsp = GSPGetMember("msh");
+	if (m_gsp)
+		file_path = m_gsp->path + "MSH";
+	//----------------------------------------------------------------------
+	CFEMesh* m_msh = NULL;
+	for (int j = 0; j < (int) fem_msh_vector.size(); j++) {
+		m_msh = fem_msh_vector[j];
+		no_nodes = (long) m_msh->nod_vector.size();
+		no_elements = (long) m_msh->ele_vector.size();
+		// Test ele_type
+		if (no_elements > 0) {
+			m_ele = m_msh->ele_vector[0];
+			ele_type = m_ele->GetElementType();
+		}
+		// File handling
+		string msh_file_name = file_path + "_" + m_msh->pcs_name
+				+ TEC_FILE_EXTENSION;
+		fstream msh_file(msh_file_name.data(), ios::trunc | ios::out);
+		msh_file.setf(ios::scientific, ios::floatfield);
+		msh_file.precision(12);
+		if (!msh_file.good())
+			return;
+		msh_file.seekg(0L, ios::beg);
+		msh_file << "VARIABLES = X,Y,Z" << endl;
+		msh_file << "ZONE T = " << m_msh->pcs_name << delimiter << "N = "
+				<< no_nodes << delimiter << "E = " << no_elements << delimiter;
+		msh_file << "F = FEPOINT" << delimiter;
+		switch (ele_type) {
+		//..................................................................
+		case MshElemType::LINE:
+			msh_file << "ET = QUADRILATERAL" << endl;
+			for (i = 0; i < no_nodes; i++) {
+				msh_file << m_msh->nod_vector[i]->X() << " "
+						<< m_msh->nod_vector[i]->Y() << " "
+						<< m_msh->nod_vector[i]->Z() << endl;
+			}
+			for (i = 0; i < no_elements; i++) {
+				m_ele = m_msh->ele_vector[i];
+				m_ele->GetNodeIndeces(node_indeces);
+				msh_file << node_indeces[0] + 1 << " " << node_indeces[1] + 1
+						<< " " << node_indeces[1] + 1 << " " << node_indeces[0]
+						+ 1 << endl;
+			}
+			break;
+			//..................................................................
+		case MshElemType::QUAD:
+			msh_file << "ET = QUADRILATERAL" << endl;
+			for (i = 0; i < no_nodes; i++) {
+				msh_file << m_msh->nod_vector[i]->X() << " "
+						<< m_msh->nod_vector[i]->Y() << " "
+						<< m_msh->nod_vector[i]->Z() << endl;
+			}
+			for (i = 0; i < no_elements; i++) {
+				m_ele = m_msh->ele_vector[i];
+				m_ele->GetNodeIndeces(node_indeces);
+				msh_file << node_indeces[0] + 1 << " " << node_indeces[1] + 1
+						<< " " << node_indeces[2] + 1 << " " << node_indeces[3]
+						+ 1 << endl;
+			}
+			break;
+			//..................................................................
+		case MshElemType::HEXAHEDRON:
+			msh_file << "ET = BRICK" << endl;
+			for (i = 0; i < no_nodes; i++) {
+				msh_file << m_msh->nod_vector[i]->X() << " "
+						<< m_msh->nod_vector[i]->Y() << " "
+						<< m_msh->nod_vector[i]->Z() << endl;
+			}
+			for (i = 0; i < no_elements; i++) {
+				m_ele = m_msh->ele_vector[i];
+				m_ele->GetNodeIndeces(node_indeces);
+				msh_file << node_indeces[0] + 1 << " " << node_indeces[1] + 1
+						<< " " << node_indeces[2] + 1 << " " << node_indeces[3]
+						+ 1 << " " << node_indeces[4] + 1 << " "
+						<< node_indeces[5] + 1 << " " << node_indeces[6] + 1
+						<< " " << node_indeces[7] + 1 << endl;
+			}
+			break;
+			//..................................................................
+		case MshElemType::TRIANGLE:
+			msh_file << "ET = TRIANGLE" << endl;
+			for (i = 0; i < no_nodes; i++) {
+				msh_file << m_msh->nod_vector[i]->X() << " "
+						<< m_msh->nod_vector[i]->Y() << " "
+						<< m_msh->nod_vector[i]->Z() << endl;
+			}
+			for (i = 0; i < no_elements; i++) {
+				m_ele = m_msh->ele_vector[i];
+				m_ele->GetNodeIndeces(node_indeces);
+				msh_file << node_indeces[0] + 1 << " " << node_indeces[1] + 1
+						<< " " << node_indeces[2] + 1 << endl;
+			}
+			break;
+			//..................................................................
+		case MshElemType::TETRAHEDRON:
+			msh_file << "ET = TETRAHEDRON" << endl;
+			for (i = 0; i < no_nodes; i++) {
+				msh_file << m_msh->nod_vector[i]->X() << " "
+						<< m_msh->nod_vector[i]->Y() << " "
+						<< m_msh->nod_vector[i]->Z() << endl;
+			}
+			for (i = 0; i < no_elements; i++) {
+				m_ele = m_msh->ele_vector[i];
+				m_ele->GetNodeIndeces(node_indeces);
+				msh_file << node_indeces[0] + 1 << " " << node_indeces[1] + 1
+						<< " " << node_indeces[2] + 1 << " " << node_indeces[3]
+						+ 1 << endl;
+			}
+			break;
+			//..................................................................
+		case MshElemType::PRISM:
+			msh_file << "ET = BRICK" << endl;
+			for (i = 0; i < no_nodes; i++) {
+				msh_file << m_msh->nod_vector[i]->X() << " "
+						<< m_msh->nod_vector[i]->Y() << " "
+						<< m_msh->nod_vector[i]->Z() << endl;
+			}
+			for (i = 0; i < no_elements; i++) {
+				m_ele = m_msh->ele_vector[i];
+				m_ele->GetNodeIndeces(node_indeces);
+				if (m_ele->GetElementType() == MshElemType::PRISM) {
+					msh_file << node_indeces[0] + 1 << " " << node_indeces[1]
+							+ 1 << " " << node_indeces[2] + 1 << " "
+							<< node_indeces[2] + 1 << " " << node_indeces[3]
+							+ 1 << " " << node_indeces[4] + 1 << " "
+							<< node_indeces[5] + 1 << " " << node_indeces[5]
+							+ 1 << endl;
+				}
+				if (m_ele->GetElementType() == MshElemType::HEXAHEDRON) {
+					msh_file << node_indeces[0] + 1 << " " << node_indeces[1]
+							+ 1 << " " << node_indeces[2] + 1 << " "
+							<< node_indeces[3] + 1 << " " << node_indeces[4]
+							+ 1 << " " << node_indeces[5] + 1 << " "
+							<< node_indeces[6] + 1 << " " << node_indeces[7]
+							+ 1 << endl;
+				}
+			}
+			break;
+		default:
+			std::cerr << "MSHWriteTecplot MshElemType not handled" << std::endl;
+		}
+	}
 }
 
 /**************************************************************************
@@ -712,149 +648,158 @@ Programing:
 04/2005 OK Implementation
 11/2005 OK OO-ELE
 **************************************************************************/
-void MSHLayerWriteTecplot()
-{
-  int ele_type  = -1;
-  long no_nodes;
-  long no_elements;
-  string delimiter(", ");
-  long i;
-  CElem* m_ele = NULL;
-  vec<long>node_indeces(8);
-  int k;
-  string no_layer_str;
-  char no_layer_char[3];
-  //----------------------------------------------------------------------
-  // File handling
-  string file_path = "MSH";
-  CGSProject* m_gsp = NULL;
-  m_gsp = GSPGetMember("msh");
-  if(m_gsp)
-    file_path = m_gsp->path;
-  //----------------------------------------------------------------------
-  CFEMesh* m_msh = NULL;
-  for(int j=0;j<(int)fem_msh_vector.size();j++){
-    m_msh = fem_msh_vector[j];
-for(k=0;k<m_msh->no_msh_layer;k++){
-    sprintf(no_layer_char,"%i",k+1);
-    no_layer_str = no_layer_char;
-    no_nodes = (long)m_msh->nod_vector.size()/(m_msh->no_msh_layer+1);
-    no_elements = (long)m_msh->ele_vector.size()/m_msh->no_msh_layer;
-    // Test ele_type
-    if(no_elements>0){
-      m_ele = m_msh->ele_vector[0];
-      ele_type = m_ele->GetElementType();
-    }
-    // File handling
-    string msh_file_name = file_path + "MSH_LAYER" + no_layer_str + "_" + m_msh->pcs_name + TEC_FILE_EXTENSION;
-    fstream msh_file (msh_file_name.data(),ios::trunc|ios::out);
-    msh_file.setf(ios::scientific,ios::floatfield);
-    msh_file.precision(12);
-    if (!msh_file.good()) return;
-    msh_file.seekg(0L,ios::beg);
-    msh_file << "VARIABLES = X,Y,Z" << endl;
-    msh_file << "ZONE T = " << m_msh->pcs_name << delimiter \
-             << "N = " << (long)m_msh->nod_vector.size() << delimiter \
-             << "E = " << no_elements << delimiter;
-    msh_file << "F = FEPOINT" << delimiter;
-    switch(ele_type){
-      //..................................................................
-      case 1:
-        msh_file << "ET = QUADRILATERAL" << endl;
-        for(i=0;i<(long)m_msh->nod_vector.size();i++) {
-          msh_file \
-            << m_msh->nod_vector[i]->X() << " " << m_msh->nod_vector[i]->Y() << " " << m_msh->nod_vector[i]->Z() << endl;
-        }
-        for(i=k*no_elements;i<(k+1)*no_elements;i++) {
-          m_ele = m_msh->ele_vector[i];
-          m_ele->GetNodeIndeces(node_indeces);
-          msh_file \
-            << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " \
-            << node_indeces[1]+1 << " " << node_indeces[0]+1 << endl;
-        }
-        break;
-      //..................................................................
-      case 2:
-        msh_file << "ET = QUADRILATERAL" << endl;
-        for(i=0;i<(long)m_msh->nod_vector.size();i++) {
-          msh_file \
-            << m_msh->nod_vector[i]->X() << " " << m_msh->nod_vector[i]->Y() << " " << m_msh->nod_vector[i]->Z() << endl;
-        }
-        for(i=k*no_elements;i<(k+1)*no_elements;i++) {
-          m_ele = m_msh->ele_vector[i];
-          m_ele->GetNodeIndeces(node_indeces);
-          msh_file \
-            << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " \
-            << node_indeces[2]+1 << " " << node_indeces[3]+1 << endl;
-        }
-        break;
-      //..................................................................
-      case 3:
-        msh_file << "ET = BRICK" << endl;
-        for(i=0;i<(long)m_msh->nod_vector.size();i++) {
-          msh_file \
-            << m_msh->nod_vector[i]->X() << " " << m_msh->nod_vector[i]->Y() << " " << m_msh->nod_vector[i]->Z() << endl;
-        }
-        for(i=k*no_elements;i<(k+1)*no_elements;i++) {
-          m_ele = m_msh->ele_vector[i];
-          m_ele->GetNodeIndeces(node_indeces);
-          msh_file \
-            << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " \
-            << node_indeces[2]+1 << " " << node_indeces[3]+1 << " " \
-            << node_indeces[4]+1 << " " << node_indeces[5]+1 << " " \
-            << node_indeces[6]+1 << " " << node_indeces[7]+1 << endl;
-        }
-        break;
-      //..................................................................
-      case 4:
-        msh_file << "ET = TRIANGLE" << endl;
-        for(i=0;i<(long)m_msh->nod_vector.size();i++) {
-          msh_file \
-            << m_msh->nod_vector[i]->X() << " " << m_msh->nod_vector[i]->Y() << " " << m_msh->nod_vector[i]->Z() << endl;
-        }
-        for(i=k*no_elements;i<(k+1)*no_elements;i++) {
-          m_ele = m_msh->ele_vector[i];
-          m_ele->GetNodeIndeces(node_indeces);
-          msh_file \
-            << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " \
-            << node_indeces[2]+1 << endl;
-        }
-        break;
-      //..................................................................
-      case 5:
-        msh_file << "ET = TETRAHEDRON" << endl;
-        for(i=0;i<(long)m_msh->nod_vector.size();i++) {
-          msh_file \
-            << m_msh->nod_vector[i]->X() << " " << m_msh->nod_vector[i]->Y() << " " << m_msh->nod_vector[i]->Z() << endl;
-        }
-        for(i=k*no_elements;i<(k+1)*no_elements;i++) {
-          m_ele = m_msh->ele_vector[i];
-          m_ele->GetNodeIndeces(node_indeces);
-          msh_file \
-            << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " \
-            << node_indeces[2]+1 << " " << node_indeces[3]+1 << endl;
-        }
-        break;
-      //..................................................................
-      case 6:
-        msh_file << "ET = BRICK" << endl;
-        for(i=0;i<(long)m_msh->nod_vector.size();i++) {
-          msh_file \
-            << m_msh->nod_vector[i]->X() << " " << m_msh->nod_vector[i]->Y() << " " << m_msh->nod_vector[i]->Z() << endl;
-        }
-        for(i=k*no_elements;i<(k+1)*no_elements;i++) {
-          m_ele = m_msh->ele_vector[i];
-          m_ele->GetNodeIndeces(node_indeces);
-          msh_file \
-            << node_indeces[0]+1 << " " << node_indeces[1]+1 << " " \
-            << node_indeces[2]+1 << " " << node_indeces[2]+1 << " " \
-            << node_indeces[3]+1 << " " << node_indeces[4]+1 << " " \
-            << node_indeces[5]+1 << " " << node_indeces[5]+1 << endl;
-        }
-        break;
-    }
-} // layer
-  }
+void MSHLayerWriteTecplot() {
+	MshElemType::type ele_type = MshElemType::INVALID;
+	long no_nodes;
+	long no_elements;
+	string delimiter(", ");
+	CElem* m_ele = NULL;
+	vec<long> node_indeces(8);
+	string no_layer_str;
+	char no_layer_char[3];
+	//----------------------------------------------------------------------
+	// File handling
+	string file_path = "MSH";
+	CGSProject* m_gsp = NULL;
+	m_gsp = GSPGetMember("msh");
+	if (m_gsp)
+		file_path = m_gsp->path;
+	//----------------------------------------------------------------------
+	CFEMesh* m_msh = NULL;
+	for (int j = 0; j < (int) fem_msh_vector.size(); j++) {
+		m_msh = fem_msh_vector[j];
+		for (size_t k = 0; k < m_msh->getNumberOfMeshLayers(); k++) {
+			sprintf(no_layer_char, "%lu", k + 1);
+			no_layer_str = no_layer_char;
+			no_nodes = (long) m_msh->nod_vector.size() / (m_msh->getNumberOfMeshLayers()
+					+ 1);
+			no_elements = (long) m_msh->ele_vector.size() / m_msh->getNumberOfMeshLayers();
+			// Test ele_type
+			if (no_elements > 0) {
+				m_ele = m_msh->ele_vector[0];
+				ele_type = m_ele->GetElementType();
+			}
+			// File handling
+			string msh_file_name = file_path + "MSH_LAYER" + no_layer_str + "_"
+					+ m_msh->pcs_name + TEC_FILE_EXTENSION;
+			fstream msh_file(msh_file_name.data(), ios::trunc | ios::out);
+			msh_file.setf(ios::scientific, ios::floatfield);
+			msh_file.precision(12);
+			if (!msh_file.good())
+				return;
+			msh_file.seekg(0L, ios::beg);
+			msh_file << "VARIABLES = X,Y,Z" << endl;
+			msh_file << "ZONE T = " << m_msh->pcs_name << delimiter << "N = "
+					<< (long) m_msh->nod_vector.size() << delimiter << "E = "
+					<< no_elements << delimiter;
+			msh_file << "F = FEPOINT" << delimiter;
+			switch (ele_type) {
+			//..................................................................
+			case MshElemType::LINE:
+				msh_file << "ET = QUADRILATERAL" << endl;
+				for (size_t i = 0; i < m_msh->nod_vector.size(); i++) {
+					msh_file << m_msh->nod_vector[i]->X() << " "
+							<< m_msh->nod_vector[i]->Y() << " "
+							<< m_msh->nod_vector[i]->Z() << endl;
+				}
+				for (size_t i = k * no_elements; i < (k + 1) * no_elements; i++) {
+					m_ele = m_msh->ele_vector[i];
+					m_ele->GetNodeIndeces(node_indeces);
+					msh_file << node_indeces[0] + 1 << " " << node_indeces[1]
+							+ 1 << " " << node_indeces[1] + 1 << " "
+							<< node_indeces[0] + 1 << endl;
+				}
+				break;
+				//..................................................................
+			case MshElemType::QUAD:
+				msh_file << "ET = QUADRILATERAL" << endl;
+				for (size_t i = 0; i < m_msh->nod_vector.size(); i++) {
+					msh_file << m_msh->nod_vector[i]->X() << " "
+							<< m_msh->nod_vector[i]->Y() << " "
+							<< m_msh->nod_vector[i]->Z() << endl;
+				}
+				for (size_t i = k * no_elements; i < (k + 1) * no_elements; i++) {
+					m_ele = m_msh->ele_vector[i];
+					m_ele->GetNodeIndeces(node_indeces);
+					msh_file << node_indeces[0] + 1 << " " << node_indeces[1]
+							+ 1 << " " << node_indeces[2] + 1 << " "
+							<< node_indeces[3] + 1 << endl;
+				}
+				break;
+				//..................................................................
+			case MshElemType::HEXAHEDRON:
+				msh_file << "ET = BRICK" << endl;
+				for (size_t i = 0; i < m_msh->nod_vector.size(); i++) {
+					msh_file << m_msh->nod_vector[i]->X() << " "
+							<< m_msh->nod_vector[i]->Y() << " "
+							<< m_msh->nod_vector[i]->Z() << endl;
+				}
+				for (size_t i = k * no_elements; i < (k + 1) * no_elements; i++) {
+					m_ele = m_msh->ele_vector[i];
+					m_ele->GetNodeIndeces(node_indeces);
+					msh_file << node_indeces[0] + 1 << " " << node_indeces[1]
+							+ 1 << " " << node_indeces[2] + 1 << " "
+							<< node_indeces[3] + 1 << " " << node_indeces[4]
+							+ 1 << " " << node_indeces[5] + 1 << " "
+							<< node_indeces[6] + 1 << " " << node_indeces[7]
+							+ 1 << endl;
+				}
+				break;
+				//..................................................................
+			case MshElemType::TRIANGLE:
+				msh_file << "ET = TRIANGLE" << endl;
+				for (size_t i = 0; i < m_msh->nod_vector.size(); i++) {
+					msh_file << m_msh->nod_vector[i]->X() << " "
+							<< m_msh->nod_vector[i]->Y() << " "
+							<< m_msh->nod_vector[i]->Z() << endl;
+				}
+				for (size_t i = k * no_elements; i < (k + 1) * no_elements; i++) {
+					m_ele = m_msh->ele_vector[i];
+					m_ele->GetNodeIndeces(node_indeces);
+					msh_file << node_indeces[0] + 1 << " " << node_indeces[1]
+							+ 1 << " " << node_indeces[2] + 1 << endl;
+				}
+				break;
+				//..................................................................
+			case MshElemType::TETRAHEDRON:
+				msh_file << "ET = TETRAHEDRON" << endl;
+				for (size_t i = 0; i < m_msh->nod_vector.size(); i++) {
+					msh_file << m_msh->nod_vector[i]->X() << " "
+							<< m_msh->nod_vector[i]->Y() << " "
+							<< m_msh->nod_vector[i]->Z() << endl;
+				}
+				for (size_t i = k * no_elements; i < (k + 1) * no_elements; i++) {
+					m_ele = m_msh->ele_vector[i];
+					m_ele->GetNodeIndeces(node_indeces);
+					msh_file << node_indeces[0] + 1 << " " << node_indeces[1]
+							+ 1 << " " << node_indeces[2] + 1 << " "
+							<< node_indeces[3] + 1 << endl;
+				}
+				break;
+				//..................................................................
+			case MshElemType::PRISM:
+				msh_file << "ET = BRICK" << endl;
+				for (size_t i = 0; i < m_msh->nod_vector.size(); i++) {
+					msh_file << m_msh->nod_vector[i]->X() << " "
+							<< m_msh->nod_vector[i]->Y() << " "
+							<< m_msh->nod_vector[i]->Z() << endl;
+				}
+				for (size_t i = k * no_elements; i < (k + 1) * no_elements; i++) {
+					m_ele = m_msh->ele_vector[i];
+					m_ele->GetNodeIndeces(node_indeces);
+					msh_file << node_indeces[0] + 1 << " " << node_indeces[1]
+							+ 1 << " " << node_indeces[2] + 1 << " "
+							<< node_indeces[2] + 1 << " " << node_indeces[3]
+							+ 1 << " " << node_indeces[4] + 1 << " "
+							<< node_indeces[5] + 1 << " " << node_indeces[5]
+							+ 1 << endl;
+				}
+				break;
+			default:
+				std::cerr << "MSHLayerWriteTecplot MshElemType not handled" << std::endl;
+			}
+		} // layer
+	}
 }
 
 /**************************************************************************
@@ -1443,20 +1388,9 @@ bool CompleteMesh(string pcs_name)
 /**************************************************************************/
 long MSHGetNextNode (long startnode, CFEMesh* m_msh)
 {
-  long nextnode;
-
-  long NumberOfNodes;
-  long NumberOfNodesPerLayer;
-  int NumberOfLayers;
-
-  NumberOfNodes = (long)m_msh->nod_vector.size();
-  NumberOfLayers = m_msh->no_msh_layer;
-
-  NumberOfNodesPerLayer = NumberOfNodes / (NumberOfLayers + 1);
-
-  nextnode = startnode + NumberOfNodesPerLayer;
-
-  return nextnode;
+  size_t NumberOfNodes (m_msh->nod_vector.size());
+  long NumberOfNodesPerLayer = NumberOfNodes / (m_msh->getNumberOfMeshLayers () + 1);
+  return startnode + NumberOfNodesPerLayer;
 }
 
 /**************************************************************************/
@@ -1481,7 +1415,6 @@ long MSHGetNextNode (long startnode, CFEMesh* m_msh)
 void MSHSelectFreeSurfaceNodes (CFEMesh* m_msh)
 {
   long i;
-  int j =0;
   long startnode;
   long nextnode;
   long *strang=NULL;
@@ -1491,7 +1424,7 @@ void MSHSelectFreeSurfaceNodes (CFEMesh* m_msh)
 
   // Number of nodes per node layer
   NumberOfNodes = (long)m_msh->nod_vector.size();
-  NumberOfLayers = m_msh->no_msh_layer;
+  NumberOfLayers = m_msh->getNumberOfMeshLayers();
   NumberOfNodesPerLayer = NumberOfNodes / (NumberOfLayers + 1);
   int no_unconfined_layer = 0;
   // create array with nodes in vertical column
@@ -1500,7 +1433,7 @@ void MSHSelectFreeSurfaceNodes (CFEMesh* m_msh)
     if(m_msh->nod_vector[i]->free_surface == 4){
       nextnode = i;
       no_unconfined_layer = 0;
-      for (j=0; j < m_msh->no_msh_layer; j++) {
+      for (size_t j=0; j < m_msh->getNumberOfMeshLayers(); j++) {
         strang = (long*) Realloc(strang,(j+1)*sizeof(long));
         strang[j] = nextnode;
         startnode = nextnode;
@@ -1552,7 +1485,7 @@ void MSHDefineMobile(CRFProcess*m_pcs)
     //m_pcs->m_msh->cross_section
 
     //if (m_mat_mp->unconfined_flow_group ==1 && m_pcs->m_msh->GetMaxElementDim() == 3){
-   if ((m_mat_mp->unconfined_flow_group ==1 && m_pcs->m_msh->GetMaxElementDim() == 3) || m_pcs->m_msh->cross_section){
+   if ((m_mat_mp->unconfined_flow_group ==1 && m_pcs->m_msh->GetMaxElementDim() == 3) || m_pcs->m_msh->hasCrossSection()){
 
     //if (m_mat_mp->unconfined_flow_group ==1){
     //if (m_pcs->m_msh->cross_section){
@@ -1670,16 +1603,10 @@ void MSHMoveNODUcFlow (CRFProcess*m_pcs)
   double head =0.0;
   int xxflag;
   int nidy;
-  long NumberOfNodes;
-  long NumberOfNodesPerLayer;
-  int NumberOfLayers;
+  // Number of nodes per node layer
+  const long NumberOfNodesPerLayer (m_pcs->m_msh->nod_vector.size() / (m_pcs->m_msh->getNumberOfMeshLayers() + 1));
   double MinThickness = 1e-1; //OKMB
   double z_bottom; //OKMB
-
-  // Number of nodes per node layer
-  NumberOfNodes = (long)m_pcs->m_msh->nod_vector.size();
-  NumberOfLayers = m_pcs->m_msh->no_msh_layer;
-  NumberOfNodesPerLayer = NumberOfNodes / (NumberOfLayers + 1);
 
   for (node = 0; node < NumberOfNodesPerLayer; node++) {
 
@@ -1785,7 +1712,7 @@ void CFEMesh::DefineMobileNodes(CRFProcess*m_pcs)
   if(m_pcs->geo_type.find("LAYER")!=string::npos)
   {
     string m_string;
-    long no_nodes_per_layer = (long)nod_vector.size() / (no_msh_layer+1);
+    long no_nodes_per_layer = (long)nod_vector.size() / (getNumberOfMeshLayers()+1);
     int pos = 0;
     int layer_start=0,layer_end=0;
     if(m_pcs->geo_type_name.find("-")!=string::npos)

@@ -15,15 +15,29 @@
 #include "StationTreeModel.h"
 #include "VtkVisPipelineItem.h"
 #include "VtkMeshSource.h"
+#include "VtkAlgorithmProperties.h"
 #include "VtkTrackedCamera.h"
 
 #include <vtkSmartPointer.h>
 #include <vtkRenderer.h>
 #include <vtkAlgorithm.h>
 #include <vtkPointSet.h>
-#include <vtkActor.h>
+#include <vtkProp3D.h>
 #include <vtkLight.h>
+#include <vtkGenericDataObjectReader.h>
+#include <vtkImageReader2.h>
 #include <vtkCamera.h>
+#include <vtkImageActor.h>
+#include <vtkXMLPolyDataReader.h>
+#include <vtkXMLImageDataReader.h>
+#include <vtkXMLRectilinearGridReader.h>
+#include <vtkXMLStructuredGridReader.h>
+#include <vtkXMLUnstructuredGridReader.h>
+
+#include <QString>
+#include <QTime>
+#include <QFileInfo>
+#include <QColor>
 
 #ifdef OGS_USE_OPENSG
 #include "vtkOsgActor.h"
@@ -34,6 +48,7 @@ VtkVisPipeline::VtkVisPipeline(vtkRenderer* renderer, OSG::SimpleSceneManager* m
 	rootData << "Object name" << "Visible";
 	delete _rootItem;
 	_rootItem = new TreeItem(rootData, NULL);
+	VtkVisPipelineItem::rootNode = _sceneManager->getRoot();
 }
 #else // OGS_USE_OPENSG
 VtkVisPipeline::VtkVisPipeline( vtkRenderer* renderer, QObject* parent /*= 0*/ )
@@ -96,12 +111,19 @@ void VtkVisPipeline::removeLight(const GEOLIB::Point &pos)
 	}
 }
 
-void VtkVisPipeline::setBGColor(const GEOLIB::Color &color)
-{ 
-	_renderer->SetBackground(color[0]/255.0, color[1]/255.0, color[2]/255.0); 
+const QColor VtkVisPipeline::getBGColor() const
+{
+	double* color = _renderer->GetBackground();
+	QColor c(static_cast<int>(color[0]*255), static_cast<int>(color[1]*255), static_cast<int>(color[2]*255));
+	return c;
 }
 
-QModelIndex VtkVisPipeline::getIndex( vtkActor* actor )
+void VtkVisPipeline::setBGColor(const QColor &color)
+{
+	_renderer->SetBackground(color.redF(), color.greenF(), color.blueF());
+}
+
+QModelIndex VtkVisPipeline::getIndex( vtkProp3D* actor )
 {
 	return _actorMap.value(actor, QModelIndex());
 }
@@ -119,6 +141,48 @@ Qt::ItemFlags VtkVisPipeline::flags( const QModelIndex &index ) const
 	return defaultFlags;
 }
 
+void VtkVisPipeline::loadFromFile(QString filename)
+{
+	#ifndef NDEBUG
+	    	 QTime myTimer;
+	    	 myTimer.start();
+			std::cout << "VTK Read: " << filename.toStdString() <<
+				std::endl << std::flush;
+	#endif
+
+	if (filename.size() > 0)
+	{
+		vtkXMLDataReader* reader;
+		if (filename.endsWith("vti"))
+			reader = vtkXMLImageDataReader::New();
+		else if (filename.endsWith("vtr"))
+			reader = vtkXMLRectilinearGridReader::New();
+		else if (filename.endsWith("vts"))
+			reader = vtkXMLStructuredGridReader::New();
+		else if (filename.endsWith("vtp"))
+			reader = vtkXMLPolyDataReader::New();
+		else if (filename.endsWith("vtu"))
+			reader = vtkXMLUnstructuredGridReader::New();
+		else if (filename.endsWith("vtk"))
+		{
+			vtkGenericDataObjectReader* oldStyleReader = vtkGenericDataObjectReader::New();
+			oldStyleReader->SetFileName(filename.toStdString().c_str());
+			addPipelineItem(oldStyleReader);
+			return;
+		}
+		else
+			return;
+
+		reader->SetFileName(filename.toStdString().c_str());
+		addPipelineItem(reader);
+		reader->Delete();
+	}
+
+	#ifndef NDEBUG
+	    	 std::cout << myTimer.elapsed() << " ms" << std::endl;
+	#endif
+}
+
 void VtkVisPipeline::addPipelineItem( Model* model )
 {
 	addPipelineItem(model->vtkSource());
@@ -134,47 +198,79 @@ void VtkVisPipeline::addPipelineItem(MshModel* model, const QModelIndex &idx)
 	addPipelineItem(static_cast<MshItem*>(model->getItem(idx))->vtkSource());
 }
 
-void VtkVisPipeline::addPipelineItem( vtkAlgorithm* source,
-									  QModelIndex parent /* = QModelindex() */)
+void VtkVisPipeline::addPipelineItem(VtkVisPipelineItem* item, const QModelIndex &parent)
 {
-	TreeItem* parentItem = getItem(parent);
-	vtkPointSet* input = NULL;
-
-	// If the parent is not the root TreeItem
-	if (parent.isValid())
-	{
-		VtkVisPipelineItem* visParentItem = static_cast<VtkVisPipelineItem*>(parentItem);
-		input = static_cast<vtkPointSet*>(visParentItem->algorithm()->GetOutputDataObject(0));
-	}
-
-	QList<QVariant> itemData;
-	itemData << source->GetClassName() << true;
-#ifdef OGS_USE_OPENSG
-	VtkVisPipelineItem* item;
-	if (parent.isValid())
-	{
-		VtkVisPipelineItem* visParentItem = static_cast<VtkVisPipelineItem*>(parentItem);
-		OSG::NodePtr parentNode = static_cast<vtkOsgActor*>(visParentItem->actor())->GetOsgRoot();
-		item = new VtkVisPipelineItem(_renderer, source, parentItem, input, parentNode, itemData);
-	}
-	else
-		item = new VtkVisPipelineItem(_renderer, source, parentItem, input, _sceneManager->getRoot(), itemData);
-		
-	_sceneManager->showAll();
-#else // OGS_USE_OPENSG
-	VtkVisPipelineItem* item = new VtkVisPipelineItem(_renderer, source, parentItem, input, itemData);
-#endif // OGS_USE_OPENSG
+	item->Initialize(_renderer);
+	TreeItem* parentItem = item->parentItem();
 	parentItem->appendChild(item);
+
+	if (parent.isValid())  // KR scale children according to parent
+	{
+		double* scale = static_cast<VtkVisPipelineItem*>(parentItem)->actor()->GetScale();
+		item->actor()->SetScale(scale);
+	}
 
 	int parentChildCount = parentItem->childCount();
 	QModelIndex newIndex = index(parentChildCount - 1, 0, parent);
 
-	_renderer->ResetCamera();
-
+	_renderer->ResetCamera(_renderer->ComputeVisiblePropBounds());
 	_actorMap.insert(item->actor(), newIndex);
+
+	// Do not interpolate images
+#ifndef OGS_USE_OPENSG
+	if (dynamic_cast<vtkImageAlgorithm*>(item->algorithm()))
+		static_cast<vtkImageActor*>(item->actor())->InterpolateOff();
+#endif // OGS_USE_OPENSG
 
 	reset();
 	emit vtkVisPipelineChanged();
+}
+
+void VtkVisPipeline::addPipelineItem( vtkAlgorithm* source,
+									  QModelIndex parent /* = QModelindex() */)
+{
+	TreeItem* parentItem = getItem(parent);
+
+	// If the parent is not the root TreeItem
+	//if (parent.isValid())
+	//	VtkVisPipelineItem* visParentItem = static_cast<VtkVisPipelineItem*>(parentItem);
+
+	QList<QVariant> itemData;
+	QString itemName;
+	if (!parent.isValid())	// if source object
+	{
+		vtkGenericDataObjectReader* reader = dynamic_cast<vtkGenericDataObjectReader*>(source);
+		vtkImageReader2* imageReader = dynamic_cast<vtkImageReader2*>(source);
+		VtkAlgorithmProperties* props = dynamic_cast<VtkAlgorithmProperties*>(source);
+		if (reader)
+		{
+			QFileInfo fi(QString(reader->GetFileName()));
+			itemName = fi.fileName();
+		}
+		else if (imageReader)
+		{
+			QFileInfo fi(QString(imageReader->GetFileName()));
+			itemName = fi.fileName();
+		}
+		else if (props)
+		{
+			QFileInfo fi(props->GetName());
+			itemName = fi.fileName();
+		}
+		else
+			itemName = QString(source->GetClassName());
+	}
+	else
+		itemName = QString(source->GetClassName());
+	itemData << itemName << true;
+
+
+	VtkVisPipelineItem* item = new VtkVisPipelineItem(source, parentItem, itemData);
+	this->addPipelineItem(item, parent);
+
+#ifdef OGS_USE_OPENSG
+	_sceneManager->showAll();
+#endif // OGS_USE_OPENSG
 }
 
 void VtkVisPipeline::removeSourceItem( Model* model )
@@ -203,7 +299,7 @@ void VtkVisPipeline::removeSourceItem(StationTreeModel* model, const std::string
 void VtkVisPipeline::removeSourceItem(MshModel* model, const QModelIndex &idx)
 {
 	MshItem* sItem = static_cast<MshItem*>(model->getItem(idx));
-	
+
 	for (int i = 0; i < _rootItem->childCount(); i++)
 	{
 		VtkVisPipelineItem* item = static_cast<VtkVisPipelineItem*>(getItem(index(i, 0)));
@@ -220,7 +316,7 @@ void VtkVisPipeline::removePipelineItem( QModelIndex index )
 	if (!index.isValid())
 		return;
 
-	QMap<vtkActor*, QModelIndex>::iterator it = _actorMap.begin();
+	QMap<vtkProp3D*, QModelIndex>::iterator it = _actorMap.begin();
 	while (it != _actorMap.end())
 	{
 		QModelIndex itIndex = it.value();

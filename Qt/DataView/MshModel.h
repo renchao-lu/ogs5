@@ -11,6 +11,7 @@
 
 // ** INCLUDES **
 #include "TreeModel.h"
+#include "ProjectData.h"
 #include "GridAdapter.h"
 
 class VtkMeshSource;
@@ -23,14 +24,14 @@ class MshModel : public TreeModel
 	Q_OBJECT
 
 public:
-	MshModel(QObject* parent = 0);
+	MshModel(ProjectData &project, QObject* parent = 0);
 
 	/// Returns the number of columns used for the data list
 	int columnCount(const QModelIndex& parent = QModelIndex()) const;
 
 public slots:
 	/// Adds a new mesh
-	void addMesh(GridAdapter* mesh, std::string &name);
+	void addMesh(Mesh_Group::CFEMesh* mesh, std::string &name);
 	/// Returns the mesh with the given index.
 	const GridAdapter* getMesh(const QModelIndex &idx) const;
 	/// Returns the mesh with the given name.
@@ -45,8 +46,12 @@ public slots:
 	VtkMeshSource* vtkSource(const std::string &name) const;
 
 private:
+	/// Adds the mesh to the GUI-Mesh-Model und -View
+	void addMesh(GridAdapter* mesh, std::string &name);
+
 	/// Checks if the name of the mesh is already exists, if so it generates a unique name.
-	bool isUniqueMeshName(std::string &name);
+	//bool isUniqueMeshName(std::string &name);
+	ProjectData& _project;
 
 signals:
 	void meshAdded(MshModel*, const QModelIndex&);

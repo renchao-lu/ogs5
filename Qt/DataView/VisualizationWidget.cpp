@@ -177,6 +177,7 @@ void VisualizationWidget::on_fullscreenToolButton_clicked( bool checked )
 
 void VisualizationWidget::on_eyeAngleSlider_valueChanged( int value )
 {
+	Q_UNUSED(value);
 	//_vtkRender->GetActiveCamera()->SetEyeAngle(value / 10.0);
 	//updateView();
 }
@@ -204,4 +205,9 @@ void VisualizationWidget::on_zoomToolButton_toggled( bool checked )
 void VisualizationWidget::on_showAllPushButton_pressed()
 {
 	_vtkRender->ResetCamera();
+}
+
+void VisualizationWidget::on_highlightToolButton_toggled(bool checked)
+{
+	_interactorStyle->setHighlightActor(checked);
 }

@@ -13,6 +13,8 @@
 #include <limits>
 #include "Point.h"
 
+namespace MATHLIB {
+
 /**
  * standard inner product in R^3
  * \param v0 array of type T representing the vector
@@ -43,15 +45,12 @@ void crossProd (const double u[3], const double v[3], double r[3]);
  * \param p the (mesh) point
  * \param a first point of line
  * \param b second point of line
- * \param proj_pnt the orthogonal projection of p to the line
  * \param lambda the projected point described by the line equation above
  * \param d0 distance to the line point a
- * \param d1 distance to the line point b
- * \returns the distance between p and the orthognal projection of p
+ * \returns the distance between p and the orthogonal projection of p
  */
 double calcProjPntToLineAndDists(const double p[3], const double a[3],
-		const double b[3], double proj_pnt[3],
-		double &lambda, double &d0, double &d1);
+		const double b[3], double &lambda, double &d0);
 
 /** squared euklid norm of the vector p0 */
 double sqrNrm2(const GEOLIB::Point* const p0);
@@ -61,5 +60,10 @@ double sqrDist(const GEOLIB::Point* p0, const GEOLIB::Point* p1);
 
 /** squared dist between double arrays p0 and p1 (size of arrays is 3) */
 double sqrDist(const double* p0, const double* p1);
+
+/** linear normalisation of val from [min, max] into [0,1] */
+float normalize(const float min, const float max, const float val);
+
+} // namespace
 
 #endif /* MATHTOOLS_H_ */

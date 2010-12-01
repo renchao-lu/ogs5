@@ -28,10 +28,12 @@ public:
 	vtkTypeRevisionMacro(VtkPointsSource,vtkPolyDataAlgorithm);
 
 	/// Sets the points as a vector
-	void setPoints(std::vector<GEOLIB::Point*>* points) { _points = points; };
+	void setPoints(const std::vector<GEOLIB::Point*>* points) { _points = points; };
 
 	/// Prints its data on a stream.
 	void PrintSelf(ostream& os, vtkIndent indent);
+
+	virtual void SetUserProperty(QString name, QVariant value);
 
 protected:
 	VtkPointsSource();
@@ -43,7 +45,7 @@ protected:
 	int RequestInformation(vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector);
 
 	/// The points to visualize
-	std::vector<GEOLIB::Point*>* _points;
+	const std::vector<GEOLIB::Point*>* _points;
 
 private:
 

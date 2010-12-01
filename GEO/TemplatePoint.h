@@ -13,13 +13,17 @@
 #include <string>
 #include <sstream>
 
+#include "GeoObject.h"
+
 namespace GEOLIB {
 
 /**
+ * \ingroup GEOLIB
+ *
  * \brief class-template for points can be instantiated by a numeric type.
  * \param T the coordinate type
  */
-template <class T> class TemplatePoint
+template <class T> class TemplatePoint : public GeoObject
 {
 public:
 	/** default constructor */
@@ -81,14 +85,16 @@ protected:
 	T x[3];
 };
 
-template <class T> TemplatePoint<T>::TemplatePoint()
+template <class T> TemplatePoint<T>::TemplatePoint() :
+	GeoObject()
 {
 	x[0] = static_cast<T>(0);
 	x[1] = static_cast<T>(0);
 	x[2] = static_cast<T>(0);
 }
 
-template <class T> TemplatePoint<T>::TemplatePoint(T x1, T x2, T x3)
+template <class T> TemplatePoint<T>::TemplatePoint(T x1, T x2, T x3) :
+	GeoObject()
 {
 	x[0] = x1;
 	x[1] = x2;

@@ -34,8 +34,8 @@ extern void remove_white_space(string*);
 
 CBoundaryConditionNode::CBoundaryConditionNode() {
 	conditional = false;
-	//  funct_name = "";
 }
+
 //==========================================================================
 list<CBoundaryCondition*> bc_list;
 vector<string> bc_db_head;
@@ -49,16 +49,14 @@ vector<CBoundaryCondition*> bc_db_vector;
  01/2004 OK Implementation
  **************************************************************************/
 CBoundaryCondition::CBoundaryCondition() :
-	GeoInfo (), geo_name ("")
+	GeoInfo (), geo_name (""), _curve_index (-1)
 {
-	dis_type = -1;
-	CurveIndex = -1;
+	this->setProcessDistributionType(INVALID_DIS_TYPE);
 	// FCT
 	conditional = false;
-	display_mode = false; //OK
 	time_dep_interpol = false;
     epsilon = 1e-9; //NW
-    periodic = false; 
+    _periodic = false; 
 }
 
 /**************************************************************************
@@ -67,34 +65,18 @@ CBoundaryCondition::CBoundaryCondition() :
  Programing:
  01/2004 OK Implementation
  **************************************************************************/
-CBoundaryCondition::~CBoundaryCondition(void) {
-	// PCS
-	pcs_type_name.clear();
+CBoundaryCondition::~CBoundaryCondition()
+{
 	// DIS
-	dis_type = -1;
-	dis_type_name.clear();
-	dis_file_name.clear();
+	this->setProcessDistributionType(INVALID_DIS_TYPE);
 	node_number_vector.clear();
-	node_value_vector.clear();
-	node_renumber_vector.clear();
 	geo_node_number = -1;
 	geo_node_value = 0.0;
-	//DB
-	db_file_name.clear();
-	// MSH
-	msh_node_number = -1;
-	PointsHaveDistribedBC.clear();
-	DistribedBC.clear();
 }
 
 const std::string& CBoundaryCondition::getGeoName ()
 {
 	return geo_name;
-}
-
-void CBoundaryCondition::setFileName (const std::string &name)
-{
-	fname = name;
 }
 
 /**************************************************************************
@@ -131,47 +113,73 @@ ios::pos_type CBoundaryCondition::Read(std::ifstream *bc_file,
 		//....................................................................
 		if (line_string.find("$PCS_TYPE") != string::npos) { // subkeyword found
 			in.str(GetLineFromFile1(bc_file));
-			in >> pcs_type_name;
+			std::string tmp;
+			in >> tmp; // pcs_type_name;
+			this->setProcessType(convertProcessType (tmp));
 			in.clear();
 		}
 		//....................................................................
 		if (line_string.find("$PRIMARY_VARIABLE") != string::npos) { // subkeyword found
 			in.str(GetLineFromFile1(bc_file));
-			in >> pcs_pv_name;
+			std::string tmp;
+			in >> tmp; // _pcs_pv_name;
+			this->setProcessPrimaryVariable(convertPrimaryVariable(tmp));
 			in.clear();
 		}
 		//....................................................................
 		if (line_string.find("$GEO_TYPE") != string::npos) { //subkeyword found
 			in.str(GetLineFromFile1(bc_file));
 			in >> sub_string; //sub_line
+
 			if (sub_string.compare("POINT") == 0) { //OK
 				in >> geo_name; //sub_line
 
-				// TF 05/2010 - get the index from the point vector
-				if (!((geo_obj.getPointVecObj(unique_fname))->getPointIDByName (geo_name, _geo_obj_idx))) {
-					std::cerr << "error in CBoundaryCondition::Read: point name \"" << geo_name << "\" not found!" << std::endl;
+				// TF 05/2010 - get the point from the point vector
+				const GEOLIB::Point *pnt ((geo_obj.getPointVecObj(unique_fname))->getElementByName (geo_name));
+				if (pnt == NULL) {
+					std::cerr << "ERROR in CBoundaryCondition::Read: point name \"" << geo_name << "\" from geometry \"" << unique_fname << "\" not found!" << std::endl;
 					exit (1);
 				}
 
 				in.clear();
-//				geo_type_name = "POINT";
+				geo_type_name = "POINT";
 				setGeoType (GEOLIB::POINT);
+				setGeoObj (pnt);
 			}
 			if (sub_string.find("POLYLINE") != string::npos) {
 				in >> geo_name; //sub_line
 				in.clear();
-//				geo_type_name = "POLYLINE";
-				CGLPolyline* m_ply = NULL;
-				m_ply = GEOGetPLYByName(geo_name); //CC 10/05
-				if (!m_ply)
-					cout << "Warning in BCRead: no PLY data" << endl;
+				// 07/2010 TF substitute source code in order to use new GEOLIB
+				geo_type_name = "POLYLINE";
+//				CGLPolyline* m_ply = NULL;
+//				m_ply = GEOGetPLYByName(geo_name); //CC 10/05
+//				if (!m_ply)
+//					cout << "Warning in BCRead: no PLY data" << endl;
+
+				// TF 07/2010 - get the index from the polyline vector
+				if (geo_obj.getPolylineVecObj(unique_fname) != NULL) {
+					const GEOLIB::Polyline* ply ((geo_obj.getPolylineVecObj(unique_fname))->getElementByName (geo_name));
+					if (ply == NULL) {
+						std::cerr << "Warning CBoundaryCondition::Read: polyline name \"" << geo_name << "\" not found!" << std::endl;
+						exit (1);
+					}
+					setGeoObj (ply);
+				}
+
 				setGeoType (GEOLIB::POLYLINE);
 			}
 
 			if (sub_string.find("SURFACE") != string::npos) {
 				in >> geo_name; //sub_line
 				in.clear();
-//				geo_type_name = "SURFACE";
+				// TF 07/2010 - get the index from the surface vector
+//				if (geo_obj.getSurfaceVecObj(unique_fname) != NULL) {
+//					if (!((geo_obj.getSurfaceVecObj(unique_fname))->getElementIDByName (geo_name, _geo_obj_idx))) {
+//						std::cerr << "Warning CBoundaryCondition::Read: surface name \"" << geo_name << "\" not found!" << std::endl;
+//						exit (1);
+//					}
+//				}
+				geo_type_name = "SURFACE";
 				setGeoType (GEOLIB::SURFACE);
 			}
 			if (sub_string.find("VOLUME") != string::npos) {
@@ -186,7 +194,8 @@ ios::pos_type CBoundaryCondition::Read(std::ifstream *bc_file,
 		if (line_string.find("$DIS_TYPE") != string::npos) { //PCH
 			in.str(GetLineFromFile1(bc_file));
 			in >> line_string; //sub_line
-			periodic = false; // JOD
+			_periodic = false; // JOD
+			/* KR not used
 			// Soure terms are assign to element nodes directly. 23.02.2009. WW
 			if (line_string.find("DIRECT") != string::npos) {
 				dis_type_name = "DIRECT";
@@ -194,6 +203,8 @@ ios::pos_type CBoundaryCondition::Read(std::ifstream *bc_file,
 				fname = FilePath + fname;
 				in.clear();
 			}
+			*/
+			/* KR not used
 			// Patch-wise constant. 19.03.2009. WW
 			if (line_string.find("PATCH_C") != string::npos) {
 				dis_type_name = "PATCH_C";
@@ -202,24 +213,14 @@ ios::pos_type CBoundaryCondition::Read(std::ifstream *bc_file,
 				in >> geo_node_value;
 				in.clear();
 			}
-
+			*/
 			if (line_string.find("CONSTANT") != string::npos) {
-				dis_type_name = "CONSTANT";
-				dis_type = 0;
-
+				this->setProcessDistributionType(CONSTANT);
 				in >> geo_node_value; //sub_line
 				in.clear();
 			}
-			if (line_string.find("POINTS") != string::npos) {
-				dis_type_name = "POINTS";
-				dis_type = 1;
-
-				in >> db_file_name; //sub_line
-				in.clear();
-			}
 			if (line_string.find("LINEAR") != string::npos) {
-				dis_type_name = "LINEAR";
-				dis_type = 2;
+				this->setProcessDistributionType(LINEAR);
 				// Distribued. WW
 				int nLBC;
 				in >> nLBC; //sub_line
@@ -234,37 +235,27 @@ ios::pos_type CBoundaryCondition::Read(std::ifstream *bc_file,
 					in.clear();
 
 					//           *bc_file>>ibuff>>dbuff;
-					PointsHaveDistribedBC.push_back(ibuff);
-					DistribedBC.push_back(dbuff);
+					_PointsHaveDistribedBC.push_back(ibuff);
+					_DistribedBC.push_back(dbuff);
 					if (strbuff.size() > 0) {
-						PointsFCTNames.push_back(strbuff);
+						_PointsFCTNames.push_back(strbuff);
 						time_dep_interpol = true;
 					}
 				}
 				//        bc_file->ignore(MAX_ZEILE,'\n');
 			}
-			if (line_string.find("DATA_BASE") != string::npos) {
-				dis_type_name = "DATA_BASE";
-				dis_type = 3;
-				in >> db_file_name; //sub_line
-				in.clear();
-			}
-			// TF 18/05/2010 not used anymore ?!
-//			if (line_string.find("SUBSTITUTE") != string::npos) {
-//				dis_type_name = "VARIABLE";
-//				in >> geo_node_substitute; //sub_line
-//				in.clear();
-//			}
+			/* KR not used
 			if (line_string.find("PERIODIC") != string::npos) { // JOD
 				dis_type_name = "PERIODIC";
-				periodic = true;
+				_periodic = true;
 				dis_type = 0;
 				in >> geo_node_value;
 				in.clear();
 				in.str(GetLineFromFile1(bc_file));
-				in >> periode_time_length >> periode_phase_shift; //sub_line
+				in >> _periode_time_length >> _periode_phase_shift; //sub_line
 				in.clear();
 			} // subkeyword found
+			*/
 		}
 		// Time dependent function
 		//..Time dependent curve ............................................
@@ -277,14 +268,14 @@ ios::pos_type CBoundaryCondition::Read(std::ifstream *bc_file,
 			//      pos1 = 0;
 			//      sub_string = get_sub_string(buffer,delimiter_type,pos1,&pos2);
 			if (line_string.find("CURVE") != string::npos) {
-				tim_type_name = "CURVE";
-				dis_type = 0;
-				in >> CurveIndex;
+//				tim_type_name = "CURVE";
+				this->setProcessDistributionType(CONSTANT);
+				in >> _curve_index;
 				in.clear();
 
 				//        pos1=pos2+1;
 				//        sub_string = get_sub_string(buffer,"  ",pos1,&pos2);
-				//		CurveIndex = atoi(sub_string.c_str());
+				//		_curve_index = atoi(sub_string.c_str());
 			}
 			continue;
 		}
@@ -304,9 +295,9 @@ ios::pos_type CBoundaryCondition::Read(std::ifstream *bc_file,
 		if (line_string.find("$MSH_TYPE") != string::npos) { //subkeyword found
 			in.str(GetLineFromFile1(bc_file));
 			in >> sub_string; //sub_line
-			msh_type_name = "NODE";
+			_msh_type_name = "NODE";
 			if (sub_string.find("NODE") != string::npos) {
-				in >> msh_node_number;
+				in >> _msh_node_number;
 				in.clear();
 			}
 		}
@@ -316,16 +307,17 @@ ios::pos_type CBoundaryCondition::Read(std::ifstream *bc_file,
 			in.str(GetLineFromFile1(bc_file)); // CONSTANT -21500.0
 			in >> line_string;
 			if (line_string.find("CONSTANT") != string::npos) {
-				dis_type_name = "CONSTANT";
-				dis_type = 0;
+				this->setProcessDistributionType(CONSTANT);
 				in >> geo_node_value;
 				in.clear();
 			}
 			in.str(GetLineFromFile1(bc_file)); // 0.0 IF HEAD > 0.04
+			std::string pcs_pv_name_cond; // 07/2010 TF temp string
 			in >> node_value_cond >> line_string >> pcs_pv_name_cond
 					>> line_string >> condition;
 			in.clear();
 			in.str(GetLineFromFile1(bc_file)); // PCS OVERLAND_FLOW
+			std::string pcs_type_name_cond;
 			in >> line_string >> pcs_type_name_cond;
 			in.clear();
 			conditional = true;
@@ -348,15 +340,15 @@ ios::pos_type CBoundaryCondition::Read(std::ifstream *bc_file,
  10/2008 OK NOD
  06/2009 OK MSH_TYPE off
  **************************************************************************/
-void CBoundaryCondition::Write(fstream* rfd_file) {
+void CBoundaryCondition::Write(fstream* rfd_file) const {
 	//KEYWORD
 	*rfd_file << "#BOUNDARY_CONDITION" << endl;
 	//--------------------------------------------------------------------
 	//NAME+NUMBER
 	*rfd_file << " $PCS_TYPE" << endl;
-	*rfd_file << "  " << pcs_type_name << endl;
+	*rfd_file << "  " << convertProcessTypeToString(getProcessType()) << endl;
 	*rfd_file << " $PRIMARY_VARIABLE" << endl;
-	*rfd_file << "  " << pcs_pv_name << endl;
+	*rfd_file << "  " << convertPrimaryVariableToString(this->getProcessPrimaryVariable()) << endl;
 	//--------------------------------------------------------------------
 	//GEO_TYPE
 	*rfd_file << " $GEO_TYPE" << endl;
@@ -376,24 +368,32 @@ void CBoundaryCondition::Write(fstream* rfd_file) {
 	//DIS_TYPE
 	*rfd_file << " $DIS_TYPE" << endl;
 	*rfd_file << "  ";
-	*rfd_file << dis_type_name;
-	switch (dis_type_name[0]) {
-	case 'C': // Constant
+	*rfd_file << convertDisTypeToString(this->getProcessDistributionType());
+	//switch (dis_type_name[0]) {
+	//case 'C': // Constant
+	if (this->getProcessDistributionType() == CONSTANT)
+	{
 		*rfd_file << " " << geo_node_value;
 		*rfd_file << endl;
-		break;
-	case 'L': // Linear
-		*rfd_file << " " << (int) PointsHaveDistribedBC.size() << endl;
-		for (long i = 0; i < (long) PointsHaveDistribedBC.size(); i++) {
-			*rfd_file << "  " << PointsHaveDistribedBC[i] << " ";
-			*rfd_file << "  " << DistribedBC[i] << endl;
+		//break;
+	}
+	//case 'L': // Linear
+	else if (this->getProcessDistributionType() == LINEAR)
+	{
+		*rfd_file << " " << _PointsHaveDistribedBC.size() << endl;
+		for (size_t i = 0; i < _PointsHaveDistribedBC.size(); i++) {
+			*rfd_file << "  " << _PointsHaveDistribedBC[i] << " ";
+			*rfd_file << "  " << _DistribedBC[i] << endl;
 		}
-		break;
+		//break;
+	}
+	/* KR not used
 	case 'N': //OK4801 NOD
 		*rfd_file << " " << geo_node_value;
 		*rfd_file << endl;
 		break;
 	}
+	*/
 	//--------------------------------------------------------------------
 	//FCT
 	if (fct_name.length() > 0) { //OK4108
@@ -410,7 +410,7 @@ void CBoundaryCondition::Write(fstream* rfd_file) {
  02/2004 OK Implementation
  last modification:
  **************************************************************************/
-void CBoundaryCondition::WriteTecplot(fstream* tec_file) {
+void CBoundaryCondition::WriteTecplot(fstream* tec_file) const {
 	long i;
 	CGLPolyline* m_polyline1 = NULL;
 	CGLPolyline* m_polyline2 = NULL;
@@ -495,70 +495,6 @@ void CBoundaryCondition::WriteTecplot(fstream* tec_file) {
   }
 }
 
-	/**************************************************************************
-	 GEOLib-Method:
-	 Task: Prescibe the boundary values to all points of a polyline by the means
-	 of spline
-	 Programing:
-	 02/2004 WW Implementation
-	 last modification:
-	 **************************************************************************/
-void InterpolateValues(vector<CNodeValue*> node_value_vector) {
-	(void)node_value_vector;
-	/*OK4111
-	 long node_value_vector_length = (long)node_value_vector.size();
-	 long i;
-	 double *distance_vector = NULL;
-	 double x0,y0,z0;
-	 double x,y,z;
-	 double distance;
-	 distance_vector = new double[node_value_vector_length];
-	 // --------------------------------------------------------------------
-	 distance_vector[0] = 0.0;
-	 for(i=1;i<node_value_vector_length;i++)
-	 {
-	 x0 = GetNodeX(node_value_vector[i-1]->msh_node_number);
-	 y0 = GetNodeY(node_value_vector[i-1]->msh_node_number);
-	 z0 = GetNodeZ(node_value_vector[i-1]->msh_node_number);
-	 x = GetNodeX(node_value_vector[i]->msh_node_number);
-	 y = GetNodeY(node_value_vector[i]->msh_node_number);
-	 z = GetNodeZ(node_value_vector[i]->msh_node_number);
-	 distance_vector[i] = distance_vector[i-1]
-	 + sqrt((x-x0)*(x-x0)+(y-y0)*(y-y0)+(z-z0)*(z-z0));
-	 }
-	 //distance_vector[]
-	 //node_value_vector[]->node_value
-	 // Spline interpolation
-	 double ss;
-	 vector<double> ss0;
-	 vector<double> bVal;
-	 for(i=0;i<node_value_vector_length;i++) {
-	 if(fabs(node_value_vector[i]->node_value)> MKleinsteZahl) {
-	 ss = distance_vector[i];
-	 ss0.push_back(ss);
-	 bVal.push_back(node_value_vector[i]->node_value);
-	 }
-	 }
-	 int ss0_length = (int)ss0.size();
-	 if(ss0_length==0)
-	 return;
-
-	 CubicSpline *csp = NULL;
-	 csp = new CubicSpline(ss0, bVal);
-
-	 for(i=0;i<node_value_vector_length;i++) {
-	 if(fabs(node_value_vector[i]->node_value)< MKleinsteZahl) {
-	 distance = distance_vector[i];
-	 node_value_vector[i]->node_value = csp->interpolation(distance);
-	 }
-	 }
-	 // Memory release
-	 ss0.clear();
-	 bVal.clear();
-	 delete distance_vector;
-	 */
-}
-
 /**************************************************************************
  FEMLib-Method:
  Task: BC read function
@@ -592,9 +528,9 @@ bool BCRead(std::string file_base_name, const GEOLIB::GEOObjects& geo_obj, const
 			return true;
 		}
 		if (line_string.find("#BOUNDARY_CONDITION") != std::string::npos) { // keyword found
-			CBoundaryCondition *m_bc (new CBoundaryCondition());
-			position = m_bc->Read (&bc_file, geo_obj, unique_name);
-			bc_list.push_back(m_bc);
+			CBoundaryCondition *bc (new CBoundaryCondition());
+			position = bc->Read (&bc_file, geo_obj, unique_name);
+			bc_list.push_back(bc);
 			bc_file.seekg(position, ios::beg);
 		} // keyword found
 	} // eof
@@ -662,51 +598,22 @@ void BCWrite(string base_file_name) {
 //	return NULL;
 //}
 
-/**************************************************************************
- FEMLib-Method: CBoundaryCondition::SetDISType
- Task:
- Programing:
- 02/2004 OK Implementation
- last modification:
- **************************************************************************/
-void CBoundaryCondition::SetDISType(void) {
-	if (dis_type_name.compare("CONSTANT") == 0)
-		dis_type = 0;
-	if (dis_type_name.compare("LINEAR") == 0)
-		dis_type = 1;
-}
 
-/**************************************************************************
- FEMLib-Method: CBoundaryCondition::SetGEOType
- Task:
- Programing:
- 02/2004 OK Implementation
- last modification:
- **************************************************************************/
-void CBoundaryCondition::SetGEOType(void)
-{
-	if (getGeoType () == GEOLIB::POLYLINE) {
-		CGLPolyline *m_polyline = NULL;
-		m_polyline = GEOGetPLYByName(geo_name);//CC
-		if (m_polyline)
-			m_polyline->type = BC;
-	}
-}
 
 /**************************************************************************
  GeoSys source term function:
  02/2009 WW Implementation
  **************************************************************************/
-inline void CBoundaryCondition::DirectAssign(const long ShiftInNodeVector) {
+inline void CBoundaryCondition::DirectAssign(long ShiftInNodeVector)
+{
 	string line_string;
-	string st_file_name;
 	std::stringstream in;
 	long n_index;
 	double n_val;
 	CRFProcess* m_pcs = NULL;
 	CBoundaryConditionNode *m_node_value = NULL;
 
-	m_pcs = PCSGet(pcs_type_name);
+	m_pcs = PCSGet(convertProcessTypeToString(this->getProcessType()));
 
 	//========================================================================
 	// File handling
@@ -736,16 +643,17 @@ inline void CBoundaryCondition::DirectAssign(const long ShiftInNodeVector) {
 		m_node_value->msh_node_number = n_index + ShiftInNodeVector;
 		m_node_value->geo_node_number = n_index;
 		m_node_value->node_value = n_val;
-		m_node_value->CurveIndex = CurveIndex;
+		m_node_value->CurveIndex = _curve_index;
 		m_pcs->bc_node.push_back(this);
 		m_pcs->bc_node_value.push_back(m_node_value);
 	} // eof
 }
+
 /**************************************************************************
  GeoSys BC function:
  03/2009 WW Implementation
  **************************************************************************/
-inline void CBoundaryCondition::PatchAssign(const long ShiftInNodeVector) {
+inline void CBoundaryCondition::PatchAssign(long ShiftInNodeVector) {
 	string line_string;
 	string st_file_name;
 	std::stringstream in;
@@ -754,7 +662,7 @@ inline void CBoundaryCondition::PatchAssign(const long ShiftInNodeVector) {
 	CRFProcess* m_pcs = NULL;
 	CBoundaryConditionNode *m_node_value = NULL;
 
-	m_pcs = PCSGet(pcs_type_name);
+	m_pcs = PCSGet(convertProcessTypeToString(this->getProcessType()));
 
 	Surface *m_surface = NULL;
 	m_surface = GEOGetSFCByName(geo_name);
@@ -792,7 +700,7 @@ inline void CBoundaryCondition::PatchAssign(const long ShiftInNodeVector) {
 		m_node_value->msh_node_number = n_index + ShiftInNodeVector;
 		m_node_value->geo_node_number = n_index;
 		m_node_value->node_value = geo_node_value;
-		m_node_value->CurveIndex = CurveIndex;
+		m_node_value->CurveIndex = _curve_index;
 		m_pcs->bc_node.push_back(this);
 		m_pcs->bc_node_value.push_back(m_node_value);
 	} // eof
@@ -830,10 +738,9 @@ CBoundaryConditionsGroup::~CBoundaryConditionsGroup(void) {
  10/2008 WW/CB SetTransientBCtoNodes
  last modification:
  **************************************************************************/
-void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
-		const int ShiftInNodeVector, string this_pv_name)
+void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs, int ShiftInNodeVector, const std::string& this_pv_name)
 {
-	long number_of_nodes = 0;
+//	long number_of_nodes = 0;
 	long *nodes = NULL;
 	vector<long> nodes_vector;
 	vector<double> node_value;
@@ -841,12 +748,12 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 	long i, j;
 	CBoundaryCondition *m_bc = NULL;
 	CBoundaryConditionNode *m_node_value = NULL;
-	group_name = pcs_type_name;
+	group_name = _pcs_type_name;
 	bool quadratic = false;
 	bool cont = false; //WW
 	//----------------------------------------------------------------------
-	if (this_pv_name.size() != 0)
-		pcs_pv_name = this_pv_name;
+	if (!this_pv_name.empty())
+		_pcs_pv_name = this_pv_name;
 	CFEMesh* m_msh = m_pcs->m_msh;
 	// Tests //OK
 	if (!m_msh) {
@@ -854,18 +761,15 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 				<< endl;
 		//return;
 	}
-	if (m_msh)//WW
-	{
+	if (m_msh) {//WW
 		/// In case of P_U coupling monolithic scheme
-		if (m_pcs->type == 41) //WW Mono
-		{
-			if (pcs_pv_name.find("DISPLACEMENT") != string::npos) //Deform
-				quadratic = true;
-			else if (pcs_pv_name.find("VELOCITY_DM") != string::npos) //Deform
+		if (m_pcs->type == 41) { //WW Mono
+			if (_pcs_pv_name.find("DISPLACEMENT") != string::npos || _pcs_pv_name.find("VELOCITY_DM") != string::npos) //Deform
 				quadratic = true;
 			else
 				quadratic = false;
-		} else if (m_pcs->type == 4)
+		}
+		else if (m_pcs->type == 4)
 			quadratic = true;
 		else
 			quadratic = false;
@@ -874,15 +778,16 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 	list<CBoundaryCondition*>::const_iterator p_bc = bc_list.begin();
 	while (p_bc != bc_list.end()) {
 		m_bc = *p_bc;
-		if (m_bc->time_dep_interpol) //WW/CB
-		{
+		if (m_bc->time_dep_interpol) { //WW/CB
 			++p_bc;
 			continue;
 		}
 		//====================================================================
 		//OK if(m_bc->pcs_type_name.compare(pcs_type_name)==0){ //OK/SB 4108
-		if ((m_bc->pcs_type_name.compare(pcs_type_name) == 0)
-				&& (m_bc->pcs_pv_name.compare(pcs_pv_name) == 0)) {
+		if ((m_bc->getProcessType() == convertProcessType(_pcs_type_name))
+				&& (m_bc->getProcessPrimaryVariable() == convertPrimaryVariable(_pcs_pv_name)))
+		{
+			/* KR not used
 			//................................................................
 			//-- 23.02.3009. WW
 			if (m_bc->dis_type_name.find("DIRECT") != string::npos) {
@@ -890,140 +795,108 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 				++p_bc;
 				continue;
 			}
+			*/
+			/* KR not used
 			//-- 19.03.3009. WW
 			if (m_bc->dis_type_name.find("PATCH_C") != string::npos) {
 				m_bc->PatchAssign(ShiftInNodeVector);
 				++p_bc;
 				continue;
 			}
+			*/
 			//
 			cont = false;
-			// TF 18/05/2010 not used anymore ?!
-//			if (m_bc->dis_type_name.compare("VARIABLE") == 0) //OK
-//			{
-//				cont = true;
-//				CGLPoint* m_geo_point = NULL;
-//				m_geo_point = GEOGetPointByName(m_bc->geo_node_substitute);//C10/05
-//				if (m_geo_point) {
-//					//            m_node_value->msh_node_number = ShiftInNodeVector
-//					//                                          + GetNodeNumberClose(m_geo_point->x,m_geo_point->y,m_geo_point->z);
-//					msh_node_number_subst = ShiftInNodeVector
-//							+ m_msh->GetNODOnPNT(m_geo_point);
-//				}
-//			}
 			//------------------------------------------------------------------
 			if (m_bc->getGeoType () == GEOLIB::POINT) {
 				m_node_value = new CBoundaryConditionNode;
-				// TF get the point vector
-				const GEOLIB::GEOObjects* geo_obj ((m_pcs->getProblemObjectPointer()->getGeoObj()));
-				std::string geo_name ((m_pcs->getProblemObjectPointer()->getGeoObjName()));
-				const std::vector<GEOLIB::Point*> *pnt_vec (geo_obj->getPointVec (geo_name));
-
 				// Get MSH node number
-				if (m_bc->dis_type_name.compare("CONSTANT") == 0
-						|| m_bc->dis_type_name.compare("PERIODIC") == 0) { //JOD
+				if (m_bc->getProcessDistributionType() == CONSTANT) {
+						// KR not used || m_bc->dis_type_name.compare("PERIODIC") == 0) { //JOD
 					// TF - tests from CC removed -> should be checked while reading data
-					m_node_value->geo_node_number = m_msh->GetNODOnPNT((*pnt_vec)[m_bc->getGeoObjIdx()]);
+					m_node_value->geo_node_number = m_msh->GetNODOnPNT(static_cast<const GEOLIB::Point*>(m_bc->getGeoObj()));
 				}
+				/* KR not used
 				if (m_bc->dis_type_name.compare("VARIABLE") == 0) { //OK
 					m_node_value->conditional = true;
-					m_node_value->geo_node_number = m_msh->GetNODOnPNT((*pnt_vec)[m_bc->getGeoObjIdx()]);
+					m_node_value->geo_node_number = m_msh->GetNODOnPNT(static_cast<const GEOLIB::Point*>(m_bc->getGeoObj()));
 					m_node_value->msh_node_number = m_node_value->geo_node_number; // WW ShiftInNodeVector +
 				}
+				*/
 
 				m_node_value->conditional = cont;
-				m_node_value->CurveIndex = m_bc->CurveIndex;
+				m_node_value->CurveIndex = m_bc->getCurveIndex();
 				m_node_value->node_value = m_bc->geo_node_value;
 				m_node_value->msh_node_number = m_node_value->geo_node_number
 						+ ShiftInNodeVector; //WW
-				m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
+				m_node_value->pcs_pv_name = _pcs_pv_name; //YD/WW
 				m_node_value->msh_node_number_subst = msh_node_number_subst;
 				m_pcs->bc_node.push_back(m_bc); //WW
 				m_pcs->bc_node_value.push_back(m_node_value); //WW
 			}
 			//------------------------------------------------------------------
-			// MHS node close (<=eps) to point
-			// TF 06/2010 commented out because keyword POINTS is never used in Read-method
-			// and also never used in the benchmarks
-//			if (m_bc->geo_type_name.compare("POINTS") == 0) {
-//				// Get MSH nodes numbers
-//				vector<long> bc_group_msh_nodes_vector;
-//				// TF - tests from CC removed -> should be checked while reading data
-//				m_bc->geo_node_number = m_bc->getGeoObjIdx (); // TF
-////				MSHGetNodesClose(bc_group_msh_nodes_vector, m_geo_point);//CC
-//				long no_nodes = (long) bc_group_msh_nodes_vector.size();
-//				for (i = 0; i < no_nodes; i++) {
-//					m_node_value = new CBoundaryConditionNode;
-//					m_node_value->conditional = cont;
-//					m_node_value->geo_node_number = m_bc->geo_node_number;
-//					m_node_value->CurveIndex = m_bc->CurveIndex;
-//					m_node_value->msh_node_number
-//							= bc_group_msh_nodes_vector[i];
-//					m_node_value->node_value = m_bc->geo_node_value;
-//					m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-//					m_pcs->bc_node.push_back(m_bc); //WW
-//					m_pcs->bc_node_value.push_back(m_node_value); //WW
-//					//WW group_vector.push_back(m_node_value);
-//					//WW bc_group_vector.push_back(m_bc); //OK
-//				}
-//				bc_group_msh_nodes_vector.clear(); // ? enough
-//			}
-			//------------------------------------------------------------------
 			if (m_bc->getGeoType () == GEOLIB::POLYLINE) {
 				m_polyline = GEOGetPLYByName(m_bc->geo_name);//CC
+
+				// 08/2010 TF get the new polyline data structure
+				const GEOLIB::Polyline *ply (static_cast<const GEOLIB::Polyline*> (m_bc->getGeoObj()));
+
 				if (m_polyline) {
-					//  if(m_polyline->type==100)
-					//    m_bc->dis_type_name = "CONSTANT"; // arc. WW
-					//  else
-					//    m_polyline->type = 3;
-					//..............................................................
-					if (m_bc->dis_type_name.compare("CONSTANT") == 0
-							|| m_bc->dis_type_name.compare("PERIODIC") == 0) { // JOD
-						if (m_msh) { //OK
-							if (m_polyline->type == 100) //WW
-								m_msh->GetNodesOnArc(m_polyline, nodes_vector);
-							else
-								m_msh->GetNODOnPLY(m_polyline, nodes_vector);
-							for (i = 0; i < (long) nodes_vector.size(); i++) {
-								m_node_value = new CBoundaryConditionNode();
-								m_node_value->msh_node_number = -1;
-								m_node_value->msh_node_number = nodes_vector[i]
-										+ ShiftInNodeVector;
-								m_node_value->geo_node_number = nodes_vector[i];
-								m_node_value->node_value = m_bc->geo_node_value; //dis_prop[0];
-								m_node_value->CurveIndex = m_bc->CurveIndex;
-								m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-								m_pcs->bc_node.push_back(m_bc); //WW
-								m_pcs->bc_node_value.push_back(m_node_value); //WW
-								//WW group_vector.push_back(m_node_value);
-								//WW bc_group_vector.push_back(m_bc); //OK
-							}
-						} else {
-							//OK411 if(m_polyline->type==100)
-							//OK411 nodes = GetNodesOnArc(number_of_nodes,m_polyline); //WW CC
-							//OK411 else
-							nodes = MSHGetNodesClose(&number_of_nodes,
-									m_polyline);
-							for (i = 0; i < number_of_nodes; i++) {
-								m_node_value = new CBoundaryConditionNode();
-								m_node_value->msh_node_number = -1;
-								m_node_value->msh_node_number = nodes[i]
-										+ ShiftInNodeVector;
-								m_node_value->geo_node_number = nodes[i];
-								m_node_value->node_value = m_bc->geo_node_value; //dis_prop[0];
-								m_node_value->CurveIndex = m_bc->CurveIndex;
-								m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-								m_pcs->bc_node.push_back(m_bc); //WW
-								m_pcs->bc_node_value.push_back(m_node_value); //WW
-							}
+					if (m_bc->getProcessDistributionType() == CONSTANT) {
+							// KR not used || m_bc->dis_type_name.compare("PERIODIC") == 0) { // JOD
+
+//						std::vector<long> long_nodes_vector;
+//						m_msh->GetNODOnPLY(m_polyline, long_nodes_vector);
+
+						// 08/2010 TF
+						double msh_min_edge_length = m_msh->getMinEdgeLength();
+						m_msh->setMinEdgeLength (m_polyline->epsilon);
+						std::vector<size_t> my_nodes_vector;
+						m_msh->GetNODOnPLY (ply, my_nodes_vector);
+						m_msh->setMinEdgeLength (msh_min_edge_length);
+
+						nodes_vector.clear ();
+						for (size_t k(0); k<my_nodes_vector.size(); k++)
+							nodes_vector.push_back (my_nodes_vector[k]);
+
+						// for some benchmarks we need the vector entries sorted by index
+						std::vector<size_t> perm;
+						for (size_t k(0); k<my_nodes_vector.size(); k++) perm.push_back (k);
+						Quicksort<long> (nodes_vector, 0, nodes_vector.size(), perm);
+
+						for (i = 0; i < (long) nodes_vector.size(); i++) {
+							m_node_value = new CBoundaryConditionNode();
+							m_node_value->msh_node_number = -1;
+							m_node_value->msh_node_number = nodes_vector[i]
+									+ ShiftInNodeVector;
+							m_node_value->geo_node_number = nodes_vector[i];
+							m_node_value->node_value = m_bc->geo_node_value; //dis_prop[0];
+							m_node_value->CurveIndex = m_bc->getCurveIndex();
+							m_node_value->pcs_pv_name = _pcs_pv_name; //YD/WW
+							m_pcs->bc_node.push_back(m_bc); //WW
+							m_pcs->bc_node_value.push_back(m_node_value); //WW
+							//WW group_vector.push_back(m_node_value);
+							//WW bc_group_vector.push_back(m_bc); //OK
 						}
 					}
 
+					/* KR not used
 					if (m_bc->dis_type_name.compare("VARIABLE") == 0) {
-						if (m_polyline->type == 100) //WW
-							m_msh->GetNodesOnArc(m_polyline, nodes_vector);
-						else
-							m_msh->GetNODOnPLY(m_polyline, nodes_vector);
+//						m_msh->GetNODOnPLY(m_polyline, nodes_vector);
+						double msh_min_edge_length = m_msh->getMinEdgeLength();
+						m_msh->setMinEdgeLength (m_polyline->epsilon);
+						std::vector<size_t> my_nodes_vector;
+						m_msh->GetNODOnPLY (ply, my_nodes_vector);
+						m_msh->setMinEdgeLength (msh_min_edge_length);
+
+						nodes_vector.clear ();
+						for (size_t k(0); k<my_nodes_vector.size(); k++)
+							nodes_vector.push_back (my_nodes_vector[k]);
+
+						// for some benchmarks we need the vector entries sorted by index
+						std::vector<size_t> perm;
+						for (size_t k(0); k<my_nodes_vector.size(); k++) perm.push_back (k);
+						Quicksort<long> (nodes_vector, 0, nodes_vector.size(), perm);
+
 						for (i = 0; i < (long) nodes_vector.size(); i++) {
 							m_node_value = new CBoundaryConditionNode();
 							m_node_value->conditional = cont;
@@ -1032,8 +905,8 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 									+ ShiftInNodeVector;
 							m_node_value->geo_node_number = nodes_vector[i];
 							m_node_value->node_value = m_bc->geo_node_value; //dis_prop[0];
-							m_node_value->CurveIndex = m_bc->CurveIndex;
-							m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
+							m_node_value->CurveIndex = m_bc->getCurveIndex();
+							m_node_value->pcs_pv_name = _pcs_pv_name; //YD/WW
 							m_node_value->msh_node_number_subst
 									= msh_node_number_subst; //WW
 							m_pcs->bc_node.push_back(m_bc); //WW
@@ -1042,7 +915,9 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 							//WW bc_group_vector.push_back(m_bc); //OK
 						}
 					}
+					*/
 
+					/* KR not used
 					//................................................................
 					if (m_bc->dis_type_name.compare("POINTS") == 0) {
 						long node_number_vector_length =
@@ -1055,34 +930,45 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 							//m_node_value->geo_node_number = m_bc->geo_node_number;
 							m_node_value->node_value
 									= m_bc->node_value_vector[i];
-							m_node_value->CurveIndex = m_bc->CurveIndex;
-							m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
+							m_node_value->CurveIndex = m_bc->getCurveIndex();
+							m_node_value->pcs_pv_name = _pcs_pv_name; //YD/WW
 							m_pcs->bc_node.push_back(m_bc); //WW
 							m_pcs->bc_node_value.push_back(m_node_value); //WW
 							//WW group_vector.push_back(m_node_value);
 							//WW bc_group_vector.push_back(m_bc); //OK
 						}
 					}
+					*/
 					//................................................................
-					if (m_bc->dis_type_name.compare("LINEAR") == 0) { //WW
-						if (m_polyline->type == 100) //WW
-							m_msh->GetNodesOnArc(m_polyline, nodes_vector);
-						else
-							m_msh->GetNODOnPLY(m_polyline, nodes_vector);
+					if (m_bc->getProcessDistributionType() == LINEAR) { //WW
+//						m_msh->GetNODOnPLY(m_polyline, nodes_vector);
+						double msh_min_edge_length = m_msh->getMinEdgeLength();
+						m_msh->setMinEdgeLength (m_polyline->epsilon);
+						std::vector<size_t> my_nodes_vector;
+						m_msh->GetNODOnPLY (ply, my_nodes_vector);
+						m_msh->setMinEdgeLength (msh_min_edge_length);
+
+						nodes_vector.clear ();
+						for (size_t k(0); k<my_nodes_vector.size(); k++)
+							nodes_vector.push_back (my_nodes_vector[k]);
+
+						// for some benchmarks we need the vector entries sorted by index
+						std::vector<size_t> perm;
+						for (size_t k(0); k<my_nodes_vector.size(); k++) perm.push_back (k);
+						Quicksort<long> (nodes_vector, 0, nodes_vector.size(), perm);
 
 						//            nodes = MSHGetNodesClose(&number_of_nodes, m_polyline);//CC
 						node_value.resize(nodes_vector.size());
 						// Piecewise linear distributed. WW
-						for (i = 0; i < (int) m_bc->DistribedBC.size(); i++) {
+						for (i = 0; i < (int) m_bc->getDistribedBC().size(); i++) {
 							for (j = 0; j
 									< (int) m_polyline->point_vector.size(); j++) {
-								if (m_bc->PointsHaveDistribedBC[i]
+								if (m_bc->getPointsWithDistribedBC()[i]
 										== m_polyline->point_vector[j]->id) {
-									if (fabs(m_bc->DistribedBC[i])
+									if (fabs(m_bc->getDistribedBC()[i])
 											< MKleinsteZahl)
-										m_bc->DistribedBC[i] = 1.0e-20;
-									m_polyline->point_vector[j]->propert
-											= m_bc->DistribedBC[i];
+										m_bc->getDistribedBC()[i] = 1.0e-20;
+									m_polyline->point_vector[j]->setPropert (m_bc->getDistribedBC()[i]);
 									break;
 								}
 							}
@@ -1095,8 +981,8 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 									+ ShiftInNodeVector;
 							m_node_value->geo_node_number = nodes_vector[i];
 							m_node_value->node_value = node_value[i];
-							m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-							m_node_value->CurveIndex = m_bc->CurveIndex;
+							m_node_value->pcs_pv_name = _pcs_pv_name; //YD/WW
+							m_node_value->CurveIndex = m_bc->getCurveIndex();
 							m_pcs->bc_node.push_back(m_bc); //WW
 							m_pcs->bc_node_value.push_back(m_node_value); //WW
 							//WW group_vector.push_back(m_node_value);
@@ -1111,15 +997,14 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 			}
 			//------------------------------------------------------------------
 			if (m_bc->getGeoType () == GEOLIB::SURFACE) {
-				Surface *m_surface = NULL;
-				m_surface = GEOGetSFCByName(m_bc->geo_name);//CC10/05
+				Surface *m_surface = GEOGetSFCByName(m_bc->geo_name);//CC10/05
 				if (m_surface) {
 					//..............................................................
 					if (m_msh) //MSH
 						m_msh->GetNODOnSFC(m_surface, nodes_vector);
 					long nodes_vector_length = (long) nodes_vector.size();
 					//..............................................................
-					if (m_bc->dis_type_name.compare("LINEAR") == 0) {
+					if (m_bc->getProcessDistributionType() == LINEAR) {
 						// Linear interpolation  polygon-wise. WW
 						// list<CGLPolyline*>::const_iterator p = m_surface->polyline_of_surface_list.begin();
 						vector<CGLPolyline*>::iterator p =
@@ -1128,16 +1013,15 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 						p = m_surface->polyline_of_surface_vector.begin();
 						while (p != m_surface->polyline_of_surface_vector.end()) {
 							m_polyline = *p;
-							for (i = 0; i < (int) m_bc->DistribedBC.size(); i++) {
+							for (i = 0; i < (int) m_bc->getDistribedBC().size(); i++) {
 								for (j = 0; j
 										< (int) m_polyline->point_vector.size(); j++) {
-									if (m_bc->PointsHaveDistribedBC[i]
+									if (m_bc->getPointsWithDistribedBC ()[i]
 											== m_polyline->point_vector[j]->id) {
-										if (fabs(m_bc->DistribedBC[i])
+										if (fabs(m_bc->getDistribedBC()[i])
 												< MKleinsteZahl)
-											m_bc->DistribedBC[i] = 1.0e-20;
-										m_polyline->point_vector[j]->propert
-												= m_bc->DistribedBC[i];
+											m_bc->getDistribedBC()[i] = 1.0e-20;
+										m_polyline->point_vector[j]->setPropert (m_bc->getDistribedBC()[i]);
 										break;
 									}
 								}
@@ -1146,7 +1030,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 							p++;
 						}
 						node_value.resize(nodes_vector_length); //WW
-						m_bc->SurfaceIntepolation(m_pcs, nodes_vector,
+						m_bc->SurfaceInterpolation(m_pcs, nodes_vector,
 								node_value); //WW
 					}
 					//..............................................................
@@ -1156,12 +1040,12 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 						m_node_value->msh_node_number = nodes_vector[i]
 								+ ShiftInNodeVector; //nodes[i];
 						m_node_value->geo_node_number = nodes_vector[i]; //nodes[i];
-						m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-						if (m_bc->dis_type_name.compare("LINEAR") == 0) //WW
+						m_node_value->pcs_pv_name = _pcs_pv_name; //YD/WW
+						if (m_bc->getProcessDistributionType() == LINEAR) //WW
 							m_node_value->node_value = node_value[i];
 						else
 							m_node_value->node_value = m_bc->geo_node_value;
-						m_node_value->CurveIndex = m_bc->CurveIndex;
+						m_node_value->CurveIndex = m_bc->getCurveIndex();
 						m_bc->node_number_vector = nodes_vector; //OK
 						m_pcs->bc_node.push_back(m_bc); //WW
 						m_pcs->bc_node_value.push_back(m_node_value); //WW
@@ -1184,7 +1068,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 //					m_node_value->geo_node_number = nodes_vector[i]; //nodes[i];
 //					m_node_value->node_value = m_bc->geo_node_value;
 //					m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-//					m_node_value->CurveIndex = m_bc->CurveIndex;
+//					m_node_value->CurveIndex = m_bc->getCurveIndex();
 //					m_pcs->bc_node.push_back(m_bc); //WW
 //					m_pcs->bc_node_value.push_back(m_node_value); //WW
 //					//WW group_vector.push_back(m_node_value);
@@ -1193,13 +1077,13 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 //			}
 			//------------------------------------------------------------------
 			// MSH types //OK4105
-			if (m_bc->msh_type_name.compare("NODE") == 0) {
+			if (m_bc->getMeshTypeName().compare("NODE") == 0) {
 				m_node_value = new CBoundaryConditionNode;
-				m_node_value->msh_node_number = m_bc->msh_node_number;
-				m_node_value->geo_node_number = m_bc->msh_node_number;
+				m_node_value->msh_node_number = m_bc->getMeshNodeNumber();
+				m_node_value->geo_node_number = m_bc->getMeshNodeNumber();
 				m_node_value->node_value = m_bc->geo_node_value;
-				m_node_value->CurveIndex = m_bc->CurveIndex;
-				m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
+				m_node_value->CurveIndex = m_bc->getCurveIndex();
+				m_node_value->pcs_pv_name = _pcs_pv_name; //YD/WW
 				m_pcs->bc_node.push_back(m_bc); //WW
 				m_pcs->bc_node_value.push_back(m_node_value); //WW
 				//WW group_vector.push_back(m_node_value);
@@ -1232,18 +1116,36 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 		}
 		//====================================================================
 		//OK if(m_bc->pcs_type_name.compare(pcs_type_name)==0){ //OK/SB 4108
-		if ((m_bc->pcs_type_name.compare(pcs_type_name) == 0)
-				&& (m_bc->pcs_pv_name.compare(pcs_pv_name) == 0)) {
+		if ((convertProcessTypeToString(m_bc->getProcessType()).compare(_pcs_type_name) == 0)
+				&& (m_bc->getProcessPrimaryVariable() == convertPrimaryVariable(_pcs_pv_name))) {
 			//................................................................
 			if (m_bc->getGeoType () == GEOLIB::POLYLINE) {
 				m_polyline = GEOGetPLYByName(m_bc->geo_name);//CC
+
 				if (m_polyline) {
 					//................................................................
-					if (m_bc->dis_type_name.compare("LINEAR") == 0) { //WW
-						if (m_polyline->type == 100) //WW
+					if (m_bc->getProcessDistributionType() == LINEAR) { //WW
+						if (m_polyline->getType() == 100) //WW
 							m_msh->GetNodesOnArc(m_polyline, nodes_vector);
-						else
-							m_msh->GetNODOnPLY(m_polyline, nodes_vector);
+						else {
+							m_msh->GetNODOnPLY(m_polyline, nodes_vector); // *** REMOVE CANDIDATE
+
+							double msh_min_edge_length = m_msh->getMinEdgeLength();
+							m_msh->setMinEdgeLength (m_polyline->epsilon);
+							std::vector<size_t> my_nodes_vector;
+
+							m_msh->GetNODOnPLY (static_cast<const GEOLIB::Polyline*>(m_bc->getGeoObj()), my_nodes_vector);
+							m_msh->setMinEdgeLength (msh_min_edge_length);
+
+							nodes_vector.clear ();
+							for (size_t k(0); k<my_nodes_vector.size(); k++)
+								nodes_vector.push_back (my_nodes_vector[k]);
+
+							// for some benchmarks we need the vector entries sorted by index
+							std::vector<size_t> perm;
+							for (size_t k(0); k<my_nodes_vector.size(); k++) perm.push_back (k);
+							Quicksort<long> (nodes_vector, 0, nodes_vector.size(), perm);
+						}
 
 						node_value.resize(nodes_vector.size());
 						//InterpolationAlongPolyline(m_polyline, node_value);
@@ -1256,8 +1158,8 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
 									+ ShiftInNodeVector;
 							m_node_value->geo_node_number = nodes_vector[i];
 							m_node_value->node_value = 0.0;
-							m_node_value->pcs_pv_name = pcs_pv_name; //YD/WW
-							m_node_value->CurveIndex = m_bc->CurveIndex;
+							m_node_value->pcs_pv_name = _pcs_pv_name; //YD/WW
+							m_node_value->CurveIndex = m_bc->getCurveIndex();
 							m_pcs->bc_node.push_back(m_bc); //WW
 							m_pcs->bc_node_value.push_back(m_node_value); //WW
 						}
@@ -1287,7 +1189,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* m_pcs,
  02/2004 OK Implementation
  last modification:
  **************************************************************************/
-CBoundaryConditionsGroup* CBoundaryConditionsGroup::Get(string pcs_name) {
+CBoundaryConditionsGroup* CBoundaryConditionsGroup::Get(const std::string& pcs_name) {
 	CBoundaryConditionsGroup *m_bc_group = NULL;
 	list<CBoundaryConditionsGroup*>::const_iterator p_bc_group =
 			bc_group_list.begin();
@@ -1307,16 +1209,14 @@ CBoundaryConditionsGroup* CBoundaryConditionsGroup::Get(string pcs_name) {
  04/2005 OK Implementation
  last modification:
  **************************************************************************/
-CBoundaryConditionsGroup* BCGetGroup(string pcs_type_name, string pcs_pv_name) {
-	CBoundaryConditionsGroup *m_bc_group = NULL;
-	list<CBoundaryConditionsGroup*>::const_iterator p_bc_group =
-			bc_group_list.begin();
-	while (p_bc_group != bc_group_list.end()) {
-		m_bc_group = *p_bc_group;
-		if ((m_bc_group->pcs_type_name.compare(pcs_type_name) == 0)
-				&& (m_bc_group->pcs_pv_name.compare(pcs_pv_name) == 0))
-			return m_bc_group;
-		++p_bc_group;
+CBoundaryConditionsGroup* BCGetGroup(const std::string& pcs_type_name, const std::string& pcs_pv_name)
+{
+	std::list<CBoundaryConditionsGroup*>::const_iterator it = bc_group_list.begin();
+	while (it != bc_group_list.end()) {
+		if (((*it)->getProcessTypeName().compare(pcs_type_name) == 0)
+				&& ((*it)->getProcessPrimaryVariableName().compare(pcs_pv_name) == 0))
+			return *it;
+		++it;
 	}
 	return NULL;
 }
@@ -1328,7 +1228,8 @@ CBoundaryConditionsGroup* BCGetGroup(string pcs_type_name, string pcs_pv_name) {
  01/2005 OK Implementation
  last modification:
  **************************************************************************/
-void CBoundaryConditionsGroup::WriteTecplot() {
+void CBoundaryConditionsGroup::WriteTecplot() const
+{
 	// File handling
 	string bc_path;
 	CGSProject* m_gsp = GSPGetMember("bc");
@@ -1449,15 +1350,14 @@ void BCGroupDelete() {
  01/2005 OK Implementation
  last modified:
  **************************************************************************/
-void BCGroupDelete(string pcs_type_name, string pcs_pv_name) {
-	CBoundaryConditionsGroup* m_bc_group = NULL;
-	list<CBoundaryConditionsGroup*>::const_iterator p = bc_group_list.begin();
+void BCGroupDelete(const std::string& pcs_type_name, const std::string& pcs_pv_name)
+{
+	std::list<CBoundaryConditionsGroup*>::iterator p = bc_group_list.begin();
 	while (p != bc_group_list.end()) {
-		m_bc_group = *p;
-		if ((m_bc_group->pcs_type_name.compare(pcs_type_name) == 0)
-				&& (m_bc_group->pcs_pv_name.compare(pcs_pv_name) == 0)) {
-			delete m_bc_group;
-			bc_group_list.remove(m_bc_group);
+		if (((*p)->getProcessTypeName().compare(pcs_type_name) == 0)
+				&& ((*p)->getProcessPrimaryVariableName().compare(pcs_pv_name) == 0)) {
+			delete *p;
+			bc_group_list.erase(p);
 			return;
 		}
 		++p;
@@ -1468,12 +1368,12 @@ void BCGroupDelete(string pcs_type_name, string pcs_pv_name) {
  FEMLib-Method:
  07/2007 OK Implementation
  **************************************************************************/
-CBoundaryCondition* BCGet(string pcs_type_name) {
+CBoundaryCondition* BCGet(const std::string& pcs_type_name) {
 	CBoundaryCondition *m_bc = NULL;
 	list<CBoundaryCondition*>::const_iterator p_bc = bc_list.begin();
 	while (p_bc != bc_list.end()) {
 		m_bc = *p_bc;
-		if (m_bc->pcs_type_name.compare(pcs_type_name) == 0)
+		if (m_bc->getProcessType() == convertProcessType(pcs_type_name))
 			return m_bc;
 		++p_bc;
 	}
@@ -1485,7 +1385,7 @@ CBoundaryCondition* BCGet(string pcs_type_name) {
  Programming:
  11/2007 WW Implementation
  **************************************************************************/
-void CBoundaryCondition::SurfaceIntepolation(CRFProcess* m_pcs,
+void CBoundaryCondition::SurfaceInterpolation(CRFProcess* m_pcs,
 		vector<long>&nodes_on_sfc, vector<double>&node_value_vector) {
 
 	long i, j, k, l;
@@ -1526,7 +1426,7 @@ void CBoundaryCondition::SurfaceIntepolation(CRFProcess* m_pcs,
 				gC[0] += m_polyline->point_vector[i]->x;
 				gC[1] += m_polyline->point_vector[i]->y;
 				gC[2] += m_polyline->point_vector[i]->z;
-				vn[2] += m_polyline->point_vector[i]->propert;
+				vn[2] += m_polyline->point_vector[i]->getPropert();
 			}
 			for (i = 0; i < 3; i++)
 				gC[i] /= (double) nPointsPly;
@@ -1543,8 +1443,8 @@ void CBoundaryCondition::SurfaceIntepolation(CRFProcess* m_pcs,
 				p2[0] = m_polyline->point_vector[k]->x;
 				p2[1] = m_polyline->point_vector[k]->y;
 				p2[2] = m_polyline->point_vector[k]->z;
-				vn[0] = m_polyline->point_vector[i]->propert;
-				vn[1] = m_polyline->point_vector[k]->propert;
+				vn[0] = m_polyline->point_vector[i]->getPropert();
+				vn[1] = m_polyline->point_vector[k]->getPropert();
 
 				Area1 = fabs(ComputeDetTri(p1, gC, p2));
 

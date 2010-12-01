@@ -11,6 +11,8 @@
 // ** INCLUDES **
 #include "msh_mesh.h"
 
+class vtkImageData; // For conversion from Image to QuadMesh
+
 namespace Mesh_Group
 {
 	class CFEMesh;
@@ -23,21 +25,10 @@ namespace Mesh_Group
 class GridAdapter
 {
 public:
-	/// The possible types of mesh elements.
-	enum MeshType {	// values are the same as in CElem::geo_type
-		LINE = 1,
-		QUAD = 2,
-		HEXAHEDRON = 3,
-		TRIANGLE = 4,
-		TETRAEDER = 5,
-		PRISM = 6,
-		INVALID = -1	// LB replaced symbol ERROR due to conflicts (with OpenSG?)
-	};
-
-	/// An element structure consisting of a number of nodes and a MeshType
+	/// An element structure consisting of a number of nodes and a MshElemType
 	typedef struct
 	{
-		MeshType			type;
+		MshElemType::type	type;
 		size_t				material;
 		std::vector<size_t> nodes;
 	} Element;
@@ -64,13 +55,16 @@ public:
 	const std::vector<Element*> *getElements(size_t matID) const;
 
 	/// Returns the grid as a CFEMesh for use in OGS-FEM
-	const CFEMesh* getCFEMesh() const;
+	const Mesh_Group::CFEMesh* getCFEMesh() const;
 
 	/// Returns the name of the mesh.
 	const std::string getName() const { return _name; };
 
 	/// Sets the name for the mesh.
 	void setName(const std::string &name) { _name = name; };
+
+	/// Converts greyscale image to quad mesh
+	static Mesh_Group::CFEMesh* convertImgToMesh(vtkImageData* img, const std::pair<double,double> &origin, const double &scalingFactor);
 
 private:
 	/// Converts an FEM Mesh to a list of nodes and elements.
@@ -79,19 +73,18 @@ private:
 	/// Reads a MSH file into a list of nodes and elements.
 	int readMeshFromFile(const std::string &filename);
 
-	/// Converts a string to a MeshType
-	MeshType getElementType(const std::string &t);
-
-	/// Converts an integer to a MeshType
-	MeshType getElementType(int type);
+	/// Converts a string to a MshElemType
+	const MshElemType::type getElementType(const std::string &t);
 
 	/// Converts a GridAdapter into an CFEMesh.
-	const CFEMesh* toCFEMesh() const;
+	const Mesh_Group::CFEMesh* toCFEMesh() const;
+
+	static Mesh_Group::CElem* createElement(size_t node1, size_t node2, size_t node3);
 
 	std::string _name;
 	std::vector<GEOLIB::Point*> *_nodes;
 	std::vector<Element*> *_elems;
-	const CFEMesh* _mesh;
+	const Mesh_Group::CFEMesh* _mesh;
 };
 
 #endif // GRIDADAPTER_H

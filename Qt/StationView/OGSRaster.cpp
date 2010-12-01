@@ -21,7 +21,8 @@
 #include "xtiffio.h"
 
 
-bool OGSRaster::loadImage(const QString &fileName, QImage &raster, QPointF &origin, double &scalingFactor)
+bool OGSRaster::loadImage(const QString &fileName, QImage &raster, QPointF &origin,
+						  double &scalingFactor, bool autoscale /* = true */, bool mirrorX /* = false */)
 {
 	QFileInfo fileInfo(fileName);
 	origin.setX(0);
@@ -30,22 +31,24 @@ bool OGSRaster::loadImage(const QString &fileName, QImage &raster, QPointF &orig
 
     if (fileInfo.suffix().toLower() == "asc")
 	{
-		if (!loadImageFromASC(fileName, raster, origin, scalingFactor)) return false;
-		else raster = raster.transformed(QTransform(1, 0, 0, -1, 0, 0), Qt::FastTransformation);
+		if (!loadImageFromASC(fileName, raster, origin, scalingFactor, autoscale)) return false;
+		if (mirrorX)
+			raster = raster.transformed(QTransform(1, 0, 0, -1, 0, 0), Qt::FastTransformation);
 	}
-	if (fileInfo.suffix().toLower() == "tif")
+	else if (fileInfo.suffix().toLower() == "tif")
 	{
 		if (!loadImageFromTIFF(fileName, raster, origin, scalingFactor)) return false;
+		if (!mirrorX)
+			raster = raster.transformed(QTransform(1, 0, 0, -1, 0, 0), Qt::FastTransformation);
 	}
 	else
 	{
 		if (!loadImageFromFile(fileName, raster)) return false;
-		else raster = raster.transformed(QTransform(1, 0, 0, -1, 0, 0), Qt::FastTransformation);
 	}
 	return true;
 }
 
-bool OGSRaster::loadImageFromASC(const QString &fileName, QImage &raster, QPointF &origin, double &cellsize)
+bool OGSRaster::loadImageFromASC(const QString &fileName, QImage &raster, QPointF &origin, double &cellsize, bool autoscale)
 {
 	std::ifstream in( fileName.toStdString().c_str() );
 
@@ -65,7 +68,7 @@ bool OGSRaster::loadImageFromASC(const QString &fileName, QImage &raster, QPoint
 		QImage img(header.ncols, header.nrows, QImage::Format_ARGB32);
 
 		std::string s;
-		// read the file into an int-array
+		// read the file into a double-array
 		for (int j=0; j<header.nrows; j++)
 		{
 			index = j*header.ncols;
@@ -91,10 +94,15 @@ bool OGSRaster::loadImageFromASC(const QString &fileName, QImage &raster, QPoint
 		{
 			index = j*header.ncols;
 			for (int i=0; i<header.ncols; i++)
-			{	// scale intensities and set nodata values to white (i.e. the background colour)
-				value = (pixVal[index+i]==header.noData) ? maxVal : pixVal[index+i];
-				gVal = static_cast<int> (floor((value-minVal)*scalingFactor));
-				img.setPixel(i,j, qRgb(gVal, gVal, gVal));
+			{	// scale intensities and set nodata values to zero (black)
+				if (pixVal[index+i]!=header.noData)
+				{
+					value = (pixVal[index+i]==header.noData) ? minVal : pixVal[index+i];
+					gVal = (autoscale) ? static_cast<int> (floor((value-minVal)*scalingFactor)) : static_cast<int> (value);
+					//gVal = value; // saudi arabia
+					img.setPixel(i,j, qRgba(gVal, gVal, gVal, 255));
+				}
+				else img.setPixel(i,j, qRgba(0, 0, 0, 0));
 			}
 		}
 
@@ -134,6 +142,47 @@ bool OGSRaster::readASCHeader(ascHeader &header, std::ifstream &in)
 	else return false;
 
 	return true;
+}
+
+double* OGSRaster::loadDataFromASC(const QString &fileName, double &x0, double &y0, size_t &width, size_t &height, double &delta)
+{
+	std::ifstream in( fileName.toStdString().c_str() );
+
+	if (!in.is_open())
+    {
+		std::cout << "OGSRaster::loadImageFromASC() - Could not open file..." << std::endl;
+		return false;
+	}
+
+	ascHeader header;
+
+	if (readASCHeader(header, in))
+	{
+		x0     = header.x;
+		y0     = header.y;
+		width  = header.ncols;
+		height = header.nrows;
+		delta  = header.cellsize;
+
+		double* values = new double[header.ncols * header.nrows];
+
+		int index(0);
+		std::string s("");
+		// read the file into a double-array
+		for (int j=0; j<header.nrows; j++)
+		{
+			index = (header.nrows-j-1)*header.ncols;
+			for (int i=0; i<header.ncols; i++)
+			{
+				in >> s;
+				values[index+i] = strtod(replaceString(",", ".", s).c_str(),0);
+			}
+		}
+
+		in.close();
+		return values;
+	}
+	return NULL;
 }
 
 bool OGSRaster::loadImageFromTIFF(const QString &fileName, QImage &raster, QPointF &origin, double &cellsize)
@@ -193,28 +242,27 @@ bool OGSRaster::loadImageFromTIFF(const QString &fileName, QImage &raster, QPoin
 			uint16 *cmap_red=NULL, *cmap_green=NULL, *cmap_blue=NULL;
 			int colormap_used = TIFFGetField(tiff, TIFFTAG_COLORMAP, &cmap_red, &cmap_green, &cmap_blue);
 
-			//int* pxl (new int[4]);
 			int lineindex=0, idx=0;
 			QImage img(imgWidth, imgHeight, QImage::Format_ARGB32);
 
+			int* pxl (new int[4]);
 			for (int j=0; j<imgHeight; j++)
 			{
 				lineindex = j*imgWidth;
 				for (int i=0; i<imgWidth; i++)
 				{	// scale intensities and set nodata values to white (i.e. the background colour)
+					idx = TIFFGetR(pixVal[lineindex + i]);
 					if (colormap_used)
-					{
-						idx = TIFFGetR(pixVal[lineindex + i]);
 						img.setPixel(i,j, qRgba(cmap_red[idx]>>8, cmap_green[idx]>>8, cmap_blue[idx]>>8, 255));
-					}
 					else
-						img.setPixel(i,j, qRgba(TIFFGetR(pixVal[idx]), TIFFGetG(pixVal[idx]), TIFFGetB(pixVal[idx]), TIFFGetA(pixVal[idx])));
-					//uint32toRGBA(pixVal[lineindex+i], pxl);
-					//img.setPixel(i,j, qRgba(pxl[0], pxl[1], pxl[2], pxl[3]));
+					{
+						//img.setPixel(i,j, qRgba(TIFFGetB(pixVal[idx]), TIFFGetG(pixVal[idx]), TIFFGetR(pixVal[idx]), TIFFGetA(pixVal[idx])));
+						uint32toRGBA(pixVal[lineindex+i], pxl);
+						img.setPixel(i,j, qRgba(pxl[0], pxl[1], pxl[2], pxl[3]));
+					}
 				}
 			}
-
-			//delete []pxl;
+			delete []pxl;
 
 			raster = img;
 
@@ -261,7 +309,7 @@ int* OGSRaster::getGreyscaleData(QImage &raster, const int &min, const int &max)
 	int index = 0;
 	double scalingFactor = 255.0/(max-min);
 	int *pixVal (new int[raster.height() * raster.width()]);
-	
+
 	for (int j=0; j<raster.height(); j++)
 	{
 		index = j*raster.width();

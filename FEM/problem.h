@@ -35,14 +35,6 @@ class Problem
    // Copy u_n for auto time stepping
    double* GetBufferArray() {return buffer_array;};
 
-#ifdef BRNS
-// BRNS-Coupling: For writing spatially resolved reaction rates at the final iteration,
-// we need to get the timing information.
-	
-   double getCurrentTime();
-   double getEndTime();
-#endif //BRNS
-
    /**
     * get the geometric objects stored in GEOLIB::GEOObjects
     * @return a pointer to an instance of class GEOLIB::GEOObjects
@@ -54,6 +46,14 @@ class Problem
     * @return the name to acces geometric data
     */
    const std::string& getGeoObjName () const;
+
+#ifdef BRNS
+	// BRNS-Coupling: For writing spatially resolved reaction rates at the final iteration,
+	// we need to get the timing information.
+
+	double getCurrentTime();
+	double getEndTime();
+#endif //BRNS
 
   private:
    // Time:
@@ -68,7 +68,7 @@ class Problem
    // Controls
    int loop_index;
    int max_coupling_iterations;
-   int max_time_steps;
+   size_t max_time_steps;
    double coupling_tolerance;
    //
    double TolCoupledF;

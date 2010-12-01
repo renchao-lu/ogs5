@@ -455,7 +455,7 @@ template<class T>  vec<T>:: vec(const vec<T>& v)
        abort();
     }
 #endif
-   for (int i=0; i<size; i++)
+   for (size_t i=0; i<size; i++)
 	  entry[i] = v.entry[i];
 
 }
@@ -492,12 +492,12 @@ template<class T> void vec<T>:: operator = (const vec<T>& v)
        abort();
     }
 #endif
-    for (int i=0; i<size; i++) entry[i] = v[i];
+    for (size_t i=0; i<size; i++) entry[i] = v[i];
 }
 
 template<class T> void vec<T>:: Write(std::ostream& os) const
 {
-   for (int i=0; i<size; i++)
+   for (size_t i=0; i<size; i++)
        os << entry[i] << "  ";
    os << std::endl;
 }
@@ -526,7 +526,7 @@ vec<void*>:: vec (const vec<void*>& v)
        abort();
     }
 #endif
-   for (int i=0; i<size; i++)
+   for (size_t i=0; i<size; i++)
 	  entry[i] = v.entry[i];
 
 }
@@ -555,7 +555,7 @@ void vec<void*>:: resize(const int argSize)
 
 void vec<void*>::Write(std::ostream& os) const
 {
-   for (int i=0; i<size; i++)
+   for (size_t i=0; i<size; i++)
        os << entry[i] << "  ";
    os << std::endl;
 }
@@ -568,7 +568,7 @@ void vec<void*>:: operator = (const vec<void*>& v)
        abort();
     }
 #endif
-	for (int i=0; i<size; i++) entry[i] = v.entry[i];
+	for (size_t i=0; i<size; i++) entry[i] = v.entry[i];
 }
 
 //3.

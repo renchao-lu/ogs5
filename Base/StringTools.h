@@ -54,7 +54,9 @@ template<typename T> T str2number (const std::string &str)
 	return v;
 }
 
-
+/**
+ * Strip whitespace (or other characters) from the beginning and end of a string.
+ */
 void trim(std::string &str);
 
 #ifdef MSVC

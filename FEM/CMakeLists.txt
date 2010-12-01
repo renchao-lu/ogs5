@@ -8,6 +8,7 @@ set( SOURCES
 	fem_ele.h
 	fem_ele_std.h
 	fem_ele_vec.h
+	FEMEnums.h
 	femlib.h
 	files0.h
 	#intrface.h
@@ -41,6 +42,11 @@ set( SOURCES
 	tools.h
 	vtk.h
 	GeoInfo.h
+	ProcessInfo.h
+	DistributionInfo.h
+	GeoInfo.cpp
+	ProcessInfo.cpp
+	DistributionInfo.cpp
 	Stiff_Bulirsch-Stoer.cpp
 	break.cpp
 	display.cpp
@@ -49,6 +55,7 @@ set( SOURCES
 	fem_ele_std.cpp
 	fem_ele_vec.cpp
 	femlib.cpp
+	FEMEnums.cpp
 	files0.cpp
 	#intrface.cpp
 	mathlib.cpp
@@ -77,7 +84,6 @@ set( SOURCES
 	timer.cpp
 	tools.cpp
 	vtk.cpp
-	GeoInfo.cpp
 )
 
 ## New sparse class. WW

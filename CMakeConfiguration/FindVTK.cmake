@@ -51,20 +51,11 @@ IF(NOT VTK_DIR)
 		${dir}/../lib64/vtk-5.8
 		${dir}/../lib64/vtk-5.7
 		${dir}/../lib64/vtk-5.6
-		${dir}/../lib64/vtk-5.4
-		${dir}/../lib64/vtk-5.3
-		${dir}/../lib64/vtk-5.2
-		${dir}/../lib64/vtk-5.1
-		${dir}/../lib64/vtk-5.0
 		${dir}/../lib64/vtk
 
 		${dir}/../lib/vtk-5.8
 		${dir}/../lib/vtk-5.7
 		${dir}/../lib/vtk-5.6
-		${dir}/../lib/vtk-5.4
-		${dir}/../lib/vtk-5.2
-		${dir}/../lib/vtk-5.1
-		${dir}/../lib/vtk-5.0
 		${dir}/../lib/vtk
       )
   ENDFOREACH(dir)
@@ -91,15 +82,14 @@ IF(NOT VTK_DIR)
     $ENV{VTK_DIR}
 
     # Look for installed on windows
-    "C:/Program Files (x86)/VTK/lib/vtk-5.4"
-    "C:/Program Files/VTK/lib/vtk-5.4"
+    "C:/Program Files (x86)/VTK/lib/vtk-5.6"
+    "C:/Program Files/VTK/lib/vtk-5.6"
 
     // OGS Self compiled
     ${PROJECT_SOURCE_DIR}/../Libs/vtk/VTK/Build
 
     # OGS Pre compiled
-    C:/OGS_Libs/VTK/lib/vtk-5.4
-    C:/VTK/lib/vtk-5.4
+    C:/OGS_Libs/VTK/lib/vtk-5.6
     $ENV{OGS_LIBS}/VTK/lib/vtk-5.6
 
     # Look in places relative to the system executable search path.
@@ -157,7 +147,7 @@ ENDIF(VTK_DIR)
 IF(VTK_FOUND)
   # Set USE_VTK_FILE for backward-compatability.
   SET(USE_VTK_FILE ${VTK_USE_FILE})
-MESSAGE(STATUS "Found VTK")
+  MESSAGE(STATUS "Found VTK in ${VTK_DIR}")
 ELSE(VTK_FOUND)
   # VTK not found, explain to the user how to specify its location.
   IF(VTK_FIND_REQUIRED)

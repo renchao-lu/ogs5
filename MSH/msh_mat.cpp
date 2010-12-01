@@ -82,7 +82,7 @@ void MSHAssignMATGroup2TrisElements(string msh_name)
 	//-----------------------------------------------------------------------
 	// Initialize MAT groups
 	for (size_t j = 0; j < m_msh->ele_vector.size(); j++) {
-		if (m_msh->ele_vector[j]->GetElementType() == 4)
+		if (m_msh->ele_vector[j]->GetElementType() == MshElemType::TRIANGLE)
 			m_msh->ele_vector[j]->SetPatchIndex(-1);
 	}
 	//-----------------------------------------------------------------------

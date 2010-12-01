@@ -16,7 +16,7 @@ namespace GEOLIB
 }
 
 /**
- * \brief A view in which to display the stratigraphy of a borehole. 
+ * \brief A view in which to display the stratigraphy of a borehole.
  */
 class StratView : public QGraphicsView
 {
@@ -29,13 +29,15 @@ public:
 	~StratView();
 
 	/// Sets the Borehole whose data should be visualised.
-	void setStation(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color> *stratColors = NULL);
+	void setStation(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color*> *stratColors = NULL);
 
 	/// Returns the height of the bounding rectangle of all objects within the scene.
 	int getHeight() { return static_cast<int>((_scene->itemsBoundingRect()).height()); }
 
 	/// Returns the width of the bounding rectangle of all objects within the scene.
 	int getWidth() { return static_cast<int>((_scene->itemsBoundingRect()).width()); }
+
+	void saveAsImage(QString fileName);
 
 protected:
 	/// Resizes the scene.

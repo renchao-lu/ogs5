@@ -91,27 +91,27 @@ Task: Create QUAD elements from polylines
 Programing:
 02/2004 OK Implementation
 **************************************************************************/
-void MSHCreateQuadsFromPLY(CGLPolyline *m_polyline,int msh_type)
+void MSHCreateQuadsFromPLY(CGLPolyline *m_polyline, int msh_type)
 {
-  CGLLine *m_line = NULL;
-  vector<CGLLine*>::iterator pl;//CC
+  switch (msh_type) {
+	case 1:
+		CGLLine *m_line = NULL;
+		std::vector<CGLLine*>::iterator pl;//CC
 
-  switch(msh_type){
-    case 1:
-      // create polyline lines, if necessary
-      if(m_polyline->line_vector.size()==0)
-        m_polyline->ComputeLines(m_polyline);
-      pl = m_polyline->line_vector.begin();//CC
-      while(pl!=m_polyline->line_vector.end()) {//CC
-        m_line = *pl;
-        m_line->mat_group = m_polyline->mat_group;
-        if(m_line->no_msh_nodes==0)
-          SetRFIPointsClose(m_line);//CC 10/05
-        MSHCreateQuadsFromLine(m_line);
-        pl++;
-      }
-      break;
-  }
+		// create polyline lines, if necessary
+		if (m_polyline->getLineVector().size() == 0)
+			m_polyline->ComputeLines();
+		pl = m_polyline->getLineVector().begin();//CC
+		while (pl != m_polyline->getLineVector().end()) {//CC
+			m_line = *pl;
+			m_line->mat_group = m_polyline->getMatGroup();
+			if (m_line->no_msh_nodes == 0)
+				SetRFIPointsClose(m_line);//CC 10/05
+			MSHCreateQuadsFromLine(m_line);
+			pl++;
+		}
+		break;
+	}
 }
 
 /**************************************************************************
@@ -138,12 +138,11 @@ void CFEMesh::CreatePriELEFromTri(int no_layer,double layer_thickness)
   //----------------------------------------------------------------------
   // Create MSH
   MSHDelete("PRIS_from_TRI");
-  CFEMesh* m_msh_pri = NULL;
-  m_msh_pri = new CFEMesh();
+  CFEMesh* m_msh_pri (new CFEMesh(_geo_obj, _geo_name));
   m_msh_pri->pcs_name = "PRIS_from_TRI";
-  m_msh_pri->ele_type = 6;
+  m_msh_pri->setElementType (MshElemType::PRISM);
   //m_msh_pri->no_msh_layer = no_layer;
-  m_msh_pri->no_msh_layer  = no_layer;
+  m_msh_pri->setNumberOfMeshLayers (no_layer);
   //----------------------------------------------------------------------
   // Create Prism elements
   size = (no_layer + 1) * no_tri_nodes;
@@ -156,7 +155,7 @@ void CFEMesh::CreatePriELEFromTri(int no_layer,double layer_thickness)
       m_tri_ele = ele_vector[i];
       m_ele = new  Mesh_Group::CElem;
       m_ele->SetPatchIndex((int)mmp_vector.size()+j); //OK
-      m_ele->SetElementType(6);
+	  m_ele->SetElementType(MshElemType::PRISM);
       m_ele->nnodes = 6;
       m_ele->nodes_index.resize(m_ele->nnodes);
       //Set indices
@@ -274,11 +273,10 @@ void CFEMesh::CreateLineELEFromQuad(int m_numberofprismlayers,double m_thickness
   //----------------------------------------------------------------------
   // Create MSH
   MSHDelete("LINE_from_QUAD");
-  CFEMesh* m_msh_line = NULL;
-  m_msh_line = new CFEMesh();
+  CFEMesh* m_msh_line(new CFEMesh(_geo_obj, _geo_name));
   m_msh_line->pcs_name = "LINE_from_QUAD";
-  m_msh_line->ele_type = 1;
-  m_msh_line->no_msh_layer = m_numberofprismlayers;
+  m_msh_line->setElementType (MshElemType::LINE);
+  m_msh_line->setNumberOfMeshLayers (m_numberofprismlayers);
   //----------------------------------------------------------------------
   // Create LINE elements
   size = (m_numberofprismlayers+1) * no_quad_elements;
@@ -297,7 +295,7 @@ void CFEMesh::CreateLineELEFromQuad(int m_numberofprismlayers,double m_thickness
       m_ele = new Mesh_Group::CElem;
       //m_ele->GetPatchIndex() = m_msh_line->mat_group;
       m_ele->SetIndex((i*m_numberofprismlayers) + j);
-      m_ele->SetElementType(1);
+	  m_ele->SetElementType(MshElemType::LINE);
       m_ele->nnodes = 2;
       m_ele->nodes_index.resize(m_ele->nnodes);
       //Set indices
@@ -538,8 +536,7 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
       {
         no_elements = (long)m_msh_ply->ele_vector.size();
         m_ele = new CElem(no_elements);
-        m_ele->geo_type = 1;
-        m_ele->Config();
+        m_ele->setElementProperties(MshElemType::LINE);
         m_ele->nodes_index[0] = i;
         m_ele->nodes_index[1] = i+1;
         m_ele->SetPatchIndex((int)mmp_vector.size());
@@ -632,7 +629,7 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
     //--------------------------------------------------------------------
     case 2: // based on triangles
       msh_line_list.clear();
-      m_polyline->line_vector.clear();
+      m_polyline->getLineVector().clear();
       ele_vector_at_ply.clear();
       GetELEOnPLY(m_polyline,ele_vector_at_ply);
       for(i=0;i<(long)ele_vector_at_ply.size();i++)
@@ -670,7 +667,7 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
         m_line->m_point2->x = nod_vector[m_line->m_point2->id]->X();
         //OK m_line->m_point2->y = GetNodeY(m_line->m_point2->id);
         m_line->m_point2->y = nod_vector[m_line->m_point2->id]->Y();
-        m_polyline->line_vector.push_back(m_line);
+        m_polyline->getLineVector().push_back(m_line);
         ++pl1;
       }
       //------------------------------------------------------------------
@@ -706,7 +703,7 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
       while(pl1!=msh_line_list.end())
       {
         m_line = *pl1;
-        m_line->mat_group = m_polyline->mat_group;
+        m_line->mat_group = m_polyline->getMatGroup();
         m_line->no_msh_nodes = 2;
         m_line->msh_nodes = new long[2];
         m_line->msh_nodes[0] = m_line->m_point1->id;
@@ -718,8 +715,7 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
         else
           no_elements = (long)ele_vector.size();
         m_ele = new CElem(no_elements);
-        m_ele->geo_type = 1;
-        m_ele->Config();
+		m_ele->setElementProperties(MshElemType::LINE);
 //OK        ElSetElementNodes(ElementListLength-1,m_line->msh_nodes);
         m_ele->nodes_index[0] = m_line->m_point1->id;
         m_ele->nodes_index[1] = m_line->m_point2->id;
@@ -759,7 +755,7 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
     //====================================================================
     case 3: // based on triangles / create new mesh (NW)
       {
-        m_polyline->line_vector.clear();
+        m_polyline->getLineVector().clear();
         ele_vector_at_ply.clear();
 
         //------------------------------------------------------------------
@@ -825,7 +821,7 @@ void CFEMesh::CreateLineELEFromPLY(CGLPolyline *m_polyline,int type,CFEMesh*m_ms
     //====================================================================
     case 4: // based on triangles / existing mesh (NW)
       {
-        m_polyline->line_vector.clear();
+        m_polyline->getLineVector().clear();
         ele_vector_at_ply.clear();
 
         //------------------------------------------------------------------
@@ -906,11 +902,10 @@ void CFEMesh::CreateHexELEFromQuad(int no_layer,double layer_thickness)
   //----------------------------------------------------------------------
   // Create MSH
   MSHDelete("HEX_from_QUAD");
-  CFEMesh* m_msh_hex = NULL;
-  m_msh_hex = new CFEMesh();
+  CFEMesh* m_msh_hex (new CFEMesh(_geo_obj, _geo_name));
   m_msh_hex->pcs_name = "HEX_from_QUAD";
-  m_msh_hex->ele_type = 3;
-  m_msh_hex->no_msh_layer = no_layer;
+  m_msh_hex->setElementType (MshElemType::HEXAHEDRON);
+  m_msh_hex->setNumberOfMeshLayers (no_layer);
   //----------------------------------------------------------------------
   // Create HEX elements
   size = (no_layer + 1) * no_quad_nodes;
@@ -926,7 +921,7 @@ void CFEMesh::CreateHexELEFromQuad(int no_layer,double layer_thickness)
       m_ele = new Mesh_Group::CElem;
       //m_ele->SetPatchIndex(j);
       m_ele->SetIndex((j*no_quad_elements) + i);
-      m_ele->SetElementType(3);
+	  m_ele->SetElementType(MshElemType::HEXAHEDRON);
       m_ele->nnodes = 8;
       m_ele->nodes_index.resize(m_ele->nnodes);
       //Set indices
@@ -977,7 +972,7 @@ Programing:
 08/2005 WW Re-implememtation
 10/2005 TK proper ordering and closing of gaps
 **************************************************************************/
-void GMSH2MSH(char* filename,CFEMesh* m_msh)
+void GMSH2MSH(const char* filename,CFEMesh* m_msh)
 {
   long id;
   long i=0;
@@ -985,7 +980,6 @@ void GMSH2MSH(char* filename,CFEMesh* m_msh)
   int NumElements=0;
   double x,y,z;
   string strbuffer;
-
 
 //WW  bool quad=false;
 //WW  CRFProcess* m_pcs = NULL;
@@ -1060,73 +1054,76 @@ void GMSH2MSH(char* filename,CFEMesh* m_msh)
   // END old GMSH Format----------------------------------------------------------------------
 
   // NEW 2008 GMSH  FORMAT----------------------------------------------------------------------
-  if (strbuffer.compare("$MeshFormat")==0)
-  {
-  getline(msh_file, strbuffer);// version-number file-type data-size
-  getline(msh_file, strbuffer);//$EndMeshFormat
-  getline(msh_file, strbuffer);//$Nodes Keywords
+  if (strbuffer.compare("$MeshFormat") == 0) {
+		getline(msh_file, strbuffer);// version-number file-type data-size
+		getline(msh_file, strbuffer);//$EndMeshFormat
+		getline(msh_file, strbuffer);//$Nodes Keywords
 
-  while (strbuffer.compare("$EndElements")!=0)
-  {
-    msh_file>>NumNodes>>ws;
-    //....................................................................
-	// Node data
-    for(i=0;i<NumNodes;i++){
-      msh_file>>id>>x>>y>>z>>ws;
-      node = new CNode(id,x,y,z);
-	  m_msh->nod_vector.push_back(node);
-    }
-	getline(msh_file, strbuffer); // End Node keyword $EndNodes
-    //....................................................................
-	// Element data
-    getline(msh_file, strbuffer); // Element keyword $Elements
-    msh_file>>NumElements>>ws; // number-of-elements
-    for(i=0;i<NumElements; i++)
-	{
-      elem = new CElem(i);
-	  elem->Read(msh_file, 7);
-      m_msh->ele_vector.push_back(elem);
+		while (strbuffer.compare("$EndElements") != 0) {
+			// Node data
+			msh_file >> NumNodes >> ws;
+			for (i = 0; i < NumNodes; i++) {
+				msh_file >> id >> x >> y >> z >> ws;
+				node = new CNode(id, x, y, z);
+				m_msh->nod_vector.push_back(node);
+			}
+			getline(msh_file, strbuffer); // End Node keyword $EndNodes
+
+			// Element data
+			getline(msh_file, strbuffer); // Element keyword $Elements
+			msh_file >> NumElements >> ws; // number-of-elements
+			for (i = 0; i < NumElements; i++) {
+				elem = new CElem(i);
+				elem->Read(msh_file, 7);
+				if (elem->GetElementType() != MshElemType::INVALID)
+					m_msh->ele_vector.push_back(elem);
+			}
+			getline(msh_file, strbuffer);// END keyword
+
+			// correct indices  TF
+			const size_t n_elements (m_msh->ele_vector.size());
+			for (size_t k(0); k<n_elements; k++) {
+				m_msh->ele_vector[k]->SetIndex(k);
+			}
+
+			// ordering nodes and closing gaps TK
+			vector<int> gmsh_id;
+			long new_node_id;
+			int counter = 0;
+			int diff = 0;
+			int j = 0;
+			for (i = 0; i < (int) m_msh->nod_vector.size(); i++) {
+				diff = m_msh->nod_vector[i]->GetIndex() - counter;
+				if (diff == 0) {
+					gmsh_id.push_back(i);
+					counter++;
+				} else {
+					for (j = 0; j < diff; j++) {
+						gmsh_id.push_back(i);
+						counter++;
+					}
+					i--;
+				}
+			}
+
+			for (i = 0; i < (int) m_msh->ele_vector.size(); i++) {
+				for (j = 0; j < (int) m_msh->ele_vector[i]->GetVertexNumber(); j++) {
+					new_node_id = gmsh_id[m_msh->ele_vector[i]->GetNodeIndex(j)
+							+ 1];
+					//m_msh->ele_vector[i]->nodes[j]->SetIndex(new_node_id);/*global*/
+					m_msh->ele_vector[i]->nodes_index[j] = new_node_id;/*local*/
+				}
+			}
+			for (i = 0; i < (int) m_msh->nod_vector.size(); i++) {
+				m_msh->nod_vector[i]->SetIndex(i);
+			}
+			// END OF: ordering nodes and closing gaps TK
+
+		}/*End while*/
 	}
-    getline(msh_file, strbuffer);// END keyword
-
-  // ordering nodes and closing gaps TK
-  vector<int> gmsh_id;
-  long new_node_id;
-  int counter=0;
-  int diff=0;
-  int j=0;
-    for(i=0;i<(int)m_msh->nod_vector.size();i++){
-        diff = m_msh->nod_vector[i]->GetIndex()-counter;
-        if (diff == 0){
-            gmsh_id.push_back(i);
-            counter++;
-        }
-        else {
-            for(j=0;j<diff;j++){
-            gmsh_id.push_back(i);
-            counter++;
-            }
-            i--;
-        }
-    }
-
-    for(i=0;i<(int)m_msh->ele_vector.size();i++){
-        for(j=0;j<(int)m_msh->ele_vector[i]->GetVertexNumber();j++){
-            new_node_id = gmsh_id[m_msh->ele_vector[i]->GetNodeIndex(j)+1];
-            //m_msh->ele_vector[i]->nodes[j]->SetIndex(new_node_id);/*global*/
-            m_msh->ele_vector[i]->nodes_index[j]=new_node_id;/*local*/
-        }
-    }
-    for(i=0;i<(int)m_msh->nod_vector.size();i++){
-        m_msh->nod_vector[i]->SetIndex(i);
-    }
-    // END OF: ordering nodes and closing gaps TK
-
-  }/*End while*/
-  }
   // END New 2008 GMSH Format----------------------------------------------------------------------
 
-  m_msh->ConstructGrid();
+//  m_msh->ConstructGrid(); // TF
 
   msh_file.close();
 }
@@ -1356,240 +1353,240 @@ void Mesh_Single_Surface(string surface_name, const char *file_name_const_char)
   }
 }
 
-/**************************************************************************
-MSHLib-Method:
-Task:    file_name_const_char = Path + Name  without extension of GMSH *msh-File
-
-Programing:
-12/2005 TK implementation
-**************************************************************************/
-void Select_Nodes_Elements_by_TINFile(const char *file_name_const_char)
-{
-   int i=0, j=0, k=0;
-//READ GMSH-File and fill local Element Vector
-  vector<Mesh_Group::CFEMesh*>check_msh_vector;
-  Mesh_Group::CFEMesh* m_check_elements;
-//WW  char text[1024];
-  long id_elem;
-
-  string m_strFileNameTIN = file_name_const_char;
-  m_strFileNameTIN = m_strFileNameTIN + ".tin";
-  file_name_const_char = m_strFileNameTIN.data();
-  ifstream tin_file (file_name_const_char,ios::in);
-  ifstream tin2check (file_name_const_char,ios::in);
-  m_check_elements = new Mesh_Group::CFEMesh;
-//Loop over all generated triangles of surface
-  CGLPoint point;
-  double angle_sum, dist;
-  double tolerance = 0.001;
-  double tri_point1[3],tri_point2[3],tri_point3[3],checkpoint[3];
-  double tri_x[3],tri_y[3],tri_z[3];
-  double min_mesh_dist=0.0;
-  double sfc_min[3],sfc_max[3];
-
-  while (!tin2check.eof())
-  {
-    i=tin2check.tellg();
-    tin2check>>id_elem>>tri_point1[0]>>tri_point1[1]>>tri_point1[2]>>tri_point2[0]>>tri_point2[1]>>tri_point2[2]>>tri_point3[0]>>tri_point3[1]>>tri_point3[2];
-
-    if (i==0)
-    {
-     sfc_min[0]= tri_point1[0];
-     sfc_min[1]= tri_point1[1];
-     sfc_min[2]= tri_point1[2];
-     sfc_max[0]= tri_point1[0];
-     sfc_max[1]= tri_point1[1];
-     sfc_max[2]= tri_point1[2];
-     if (tri_point1[0] < sfc_min[0]) sfc_min[0] = tri_point1[0];
-     if (tri_point2[0] < sfc_min[0]) sfc_min[0] = tri_point2[0];
-     if (tri_point3[0] < sfc_min[0]) sfc_min[0] = tri_point3[0];
-     if (tri_point1[0] > sfc_max[0]) sfc_max[0] = tri_point1[0];
-     if (tri_point2[0] > sfc_max[0]) sfc_max[0] = tri_point2[0];
-     if (tri_point3[0] > sfc_max[0]) sfc_max[0] = tri_point3[0];
-     if (tri_point1[1] < sfc_min[1]) sfc_min[1] = tri_point1[1];
-     if (tri_point2[1] < sfc_min[1]) sfc_min[1] = tri_point2[1];
-     if (tri_point3[1] < sfc_min[1]) sfc_min[1] = tri_point3[1];
-     if (tri_point1[1] > sfc_max[1]) sfc_max[1] = tri_point1[1];
-     if (tri_point2[1] > sfc_max[1]) sfc_max[1] = tri_point2[1];
-     if (tri_point3[1] > sfc_max[1]) sfc_max[1] = tri_point3[1];
-     if (tri_point1[2] < sfc_min[2]) sfc_min[2] = tri_point1[2];
-     if (tri_point2[2] < sfc_min[2]) sfc_min[2] = tri_point2[2];
-     if (tri_point3[2] < sfc_min[2]) sfc_min[2] = tri_point3[2];
-     if (tri_point1[2] > sfc_max[2]) sfc_max[2] = tri_point1[2];
-     if (tri_point2[2] > sfc_max[2]) sfc_max[2] = tri_point2[2];
-     if (tri_point3[2] > sfc_max[2]) sfc_max[2] = tri_point3[2];
-    }
-    else
-    {
-     if (tri_point1[0] < sfc_min[0]) sfc_min[0] = tri_point1[0];
-     if (tri_point2[0] < sfc_min[0]) sfc_min[0] = tri_point2[0];
-     if (tri_point3[0] < sfc_min[0]) sfc_min[0] = tri_point3[0];
-     if (tri_point1[0] > sfc_max[0]) sfc_max[0] = tri_point1[0];
-     if (tri_point2[0] > sfc_max[0]) sfc_max[0] = tri_point2[0];
-     if (tri_point3[0] > sfc_max[0]) sfc_max[0] = tri_point3[0];
-     if (tri_point1[1] < sfc_min[1]) sfc_min[1] = tri_point1[1];
-     if (tri_point2[1] < sfc_min[1]) sfc_min[1] = tri_point2[1];
-     if (tri_point3[1] < sfc_min[1]) sfc_min[1] = tri_point3[1];
-     if (tri_point1[1] > sfc_max[1]) sfc_max[1] = tri_point1[1];
-     if (tri_point2[1] > sfc_max[1]) sfc_max[1] = tri_point2[1];
-     if (tri_point3[1] > sfc_max[1]) sfc_max[1] = tri_point3[1];
-     if (tri_point1[2] < sfc_min[2]) sfc_min[2] = tri_point1[2];
-     if (tri_point2[2] < sfc_min[2]) sfc_min[2] = tri_point2[2];
-     if (tri_point3[2] < sfc_min[2]) sfc_min[2] = tri_point3[2];
-     if (tri_point1[2] > sfc_max[2]) sfc_max[2] = tri_point1[2];
-     if (tri_point2[2] > sfc_max[2]) sfc_max[2] = tri_point2[2];
-     if (tri_point3[2] > sfc_max[2]) sfc_max[2] = tri_point3[2];
-    }
-  }
-  tin2check.close();
-
-  CFEMesh* m_msh = NULL;
-  m_msh = new CFEMesh();
-  CNode* node = NULL;
-  fem_msh_vector.push_back(m_msh);
-  int temp_mesh = (long)fem_msh_vector.size();
-  //Loop over all meshes
-    for(j=0;j<(long)fem_msh_vector.size()-1;j++)
-    {
-    //Loop over all edges
-        for(i=0;i<(long)fem_msh_vector[j]->edge_vector.size();i++)
-        {
-            if (j==0 && i==0){
-              min_mesh_dist = fem_msh_vector[j]->edge_vector[i]->Length();
-            }
-            else{
-              if (min_mesh_dist  > fem_msh_vector[j]->edge_vector[i]->Length())
-                  min_mesh_dist = fem_msh_vector[j]->edge_vector[i]->Length();
-            }
-        }
-        tolerance = min_mesh_dist;
-    //Loop over all mesh nodes
-        for(i=0;i<(long)fem_msh_vector[j]->nod_vector.size();i++)
-        {
-            checkpoint[0] = fem_msh_vector[j]->nod_vector[i]->X();
-            checkpoint[1] = fem_msh_vector[j]->nod_vector[i]->Y();
-            checkpoint[2] = fem_msh_vector[j]->nod_vector[i]->Z();
-            node = new CNode(i,checkpoint[0],checkpoint[1],checkpoint[2]);
-            if((checkpoint[0]>=sfc_min[0]-tolerance && checkpoint[0]<=sfc_max[0]+tolerance )&&
-               (checkpoint[1]>=sfc_min[1]-tolerance && checkpoint[1]<=sfc_max[1]+tolerance )&&
-               (checkpoint[2]>=sfc_min[2]-tolerance && checkpoint[2]<=sfc_max[2]+tolerance ) )
-            {
-                fem_msh_vector[temp_mesh-1]->nod_vector.push_back(node);
-            }
-        }
-    }
-
-
-  while (!tin_file.eof())
-  {
-    //tin_file.getline(text, 1024);
-    tin_file>>id_elem>>tri_point1[0]>>tri_point1[1]>>tri_point1[2]>>tri_point2[0]>>tri_point2[1]>>tri_point2[2]>>tri_point3[0]>>tri_point3[1]>>tri_point3[2];
-         tri_x[0]=tri_point1[0];
-         tri_x[1]=tri_point2[0];
-         tri_x[2]=tri_point3[0];
-         tri_y[0]=tri_point1[1];
-         tri_y[1]=tri_point2[1];
-         tri_y[2]=tri_point3[1];
-         tri_z[0]=tri_point1[2];
-         tri_z[1]=tri_point2[2];
-         tri_z[2]=tri_point3[2];
-    //Loop over all preselected mesh nodes
-        for(i=0;i<(long)fem_msh_vector[temp_mesh-1]->nod_vector.size();i++)
-        {
-            point.x = fem_msh_vector[temp_mesh-1]->nod_vector[i]->X();
-            point.y = fem_msh_vector[temp_mesh-1]->nod_vector[i]->Y();
-            point.z = fem_msh_vector[temp_mesh-1]->nod_vector[i]->Z();
-            checkpoint[0] = fem_msh_vector[temp_mesh-1]->nod_vector[i]->X();
-            checkpoint[1] = fem_msh_vector[temp_mesh-1]->nod_vector[i]->Y();
-            checkpoint[2] = fem_msh_vector[temp_mesh-1]->nod_vector[i]->Z();
-            dist = MCalcDistancePointToPlane(checkpoint,tri_point1,tri_point2,tri_point3);
-            if (k==0) fem_msh_vector[temp_mesh-1]->nod_vector[i]->epsilon = dist;
-            else
-            {
-                if (fem_msh_vector[temp_mesh-1]->nod_vector[i]->epsilon > dist)
-                    fem_msh_vector[temp_mesh-1]->nod_vector[i]->epsilon = dist;
-            }
-                if (dist<=tolerance && dist>=-tolerance)
-                {
-                  angle_sum = AngleSumPointInsideTriangle(checkpoint,tri_point1,tri_point2,tri_point3, min_mesh_dist);
-                  if(angle_sum>359)
-                  fem_msh_vector[temp_mesh-1]->nod_vector[i]->selected = 1;
-                }
-        }
-        // Loop over all mesh elements
-        for(i=0;i<(long)fem_msh_vector[temp_mesh-2]->ele_vector.size();i++)
-        {
-            if (fem_msh_vector[temp_mesh-2]->ele_vector[i]->GetElementType() == 2 ||
-                fem_msh_vector[temp_mesh-2]->ele_vector[i]->GetElementType() == 4) /*Quad or Tri*/
-            {
-            double* xyz;
-            xyz = fem_msh_vector[temp_mesh-2]->ele_vector[i]->GetGravityCenter();
-            checkpoint[0] = xyz[0];
-            checkpoint[1] = xyz[1];
-            checkpoint[2] = xyz[2];
-            angle_sum = AngleSumPointInsideTriangle(checkpoint,tri_point1,tri_point2,tri_point3, min_mesh_dist/10);
-
-            if(angle_sum>359.8)
-            fem_msh_vector[temp_mesh-2]->ele_vector[i]->selected = 1;
-            }
-        }
-  }
-
-//WW  int a = (int)fem_msh_vector[temp_mesh-1]->nod_vector.size();
-  int index;
-  //Loop over all meshes
-    for(j=0;j<(long)fem_msh_vector.size()-1;j++)
-    {
-    //Loop over selected nodes
-        for(i=0;i<(long)fem_msh_vector[temp_mesh-1]->nod_vector.size();i++)
-        {
-            index = fem_msh_vector[temp_mesh-1]->nod_vector[i]->GetIndex();
-            if(index < (int)fem_msh_vector[j]->nod_vector.size())
-            {
-            if ((fem_msh_vector[temp_mesh-1]->nod_vector[i]->GetIndex() == fem_msh_vector[j]->nod_vector[index]->GetIndex())
-                &&
-                fem_msh_vector[temp_mesh-1]->nod_vector[i]->selected==1
-                &&
-                (fem_msh_vector[temp_mesh-1]->nod_vector[i]->X() == fem_msh_vector[j]->nod_vector[index]->X())
-                &&
-                (fem_msh_vector[temp_mesh-1]->nod_vector[i]->Y() == fem_msh_vector[j]->nod_vector[index]->Y())
-                &&
-                (fem_msh_vector[temp_mesh-1]->nod_vector[i]->Z() == fem_msh_vector[j]->nod_vector[index]->Z()))
-            {
-                fem_msh_vector[j]->nod_vector[index]->selected = 1;
-            }
-            }
-        }
-
-        // Loop over all mesh elements
-        vec<long> node_index(20);
-        for(i=0;i<(long)fem_msh_vector[j]->ele_vector.size();i++)
-        {
-            fem_msh_vector[j]->ele_vector[i]->GetNodeIndeces(node_index);
-
-            if (fem_msh_vector[j]->ele_vector[i]->GetElementType() == 0) /*Quad*/
-            {
-                if (fem_msh_vector[j]->nod_vector[node_index[0]]->selected == 1 ||
-                    fem_msh_vector[j]->nod_vector[node_index[1]]->selected == 1 ||
-                    fem_msh_vector[j]->nod_vector[node_index[2]]->selected == 1 ||
-                    fem_msh_vector[j]->nod_vector[node_index[3]]->selected == 1 )
-                    fem_msh_vector[j]->ele_vector[i]->selected = 1;
-            }
-
-            if (fem_msh_vector[j]->ele_vector[i]->GetElementType() == 0) /*TRI*/
-            {
-                if (fem_msh_vector[j]->nod_vector[node_index[0]]->selected == 1 &&
-                    fem_msh_vector[j]->nod_vector[node_index[1]]->selected == 1 &&
-                    fem_msh_vector[j]->nod_vector[node_index[2]]->selected == 1 )
-                    fem_msh_vector[j]->ele_vector[i]->selected = 1;
-            }
-        }
-    }
-
-
-    fem_msh_vector.erase(fem_msh_vector.begin()+ temp_mesh-1);
-
-}
+///**************************************************************************
+//MSHLib-Method:
+//Task:    file_name_const_char = Path + Name  without extension of GMSH *msh-File
+//
+//Programing:
+//12/2005 TK implementation
+//**************************************************************************/
+//void Select_Nodes_Elements_by_TINFile(const char *file_name_const_char)
+//{
+//   int i=0, j=0, k=0;
+////READ GMSH-File and fill local Element Vector
+//  vector<Mesh_Group::CFEMesh*>check_msh_vector;
+////  Mesh_Group::CFEMesh* m_check_elements;
+////WW  char text[1024];
+//  long id_elem;
+//
+//  string m_strFileNameTIN = file_name_const_char;
+//  m_strFileNameTIN = m_strFileNameTIN + ".tin";
+//  file_name_const_char = m_strFileNameTIN.data();
+//  ifstream tin_file (file_name_const_char,ios::in);
+//  ifstream tin2check (file_name_const_char,ios::in);
+////  m_check_elements = new Mesh_Group::CFEMesh;
+////Loop over all generated triangles of surface
+//  CGLPoint point;
+//  double angle_sum, dist;
+//  double tolerance = 0.001;
+//  double tri_point1[3],tri_point2[3],tri_point3[3],checkpoint[3];
+//  double tri_x[3],tri_y[3],tri_z[3];
+//  double min_mesh_dist=0.0;
+//  double sfc_min[3],sfc_max[3];
+//
+//  while (!tin2check.eof())
+//  {
+//    i=tin2check.tellg();
+//    tin2check>>id_elem>>tri_point1[0]>>tri_point1[1]>>tri_point1[2]>>tri_point2[0]>>tri_point2[1]>>tri_point2[2]>>tri_point3[0]>>tri_point3[1]>>tri_point3[2];
+//
+//    if (i==0)
+//    {
+//     sfc_min[0]= tri_point1[0];
+//     sfc_min[1]= tri_point1[1];
+//     sfc_min[2]= tri_point1[2];
+//     sfc_max[0]= tri_point1[0];
+//     sfc_max[1]= tri_point1[1];
+//     sfc_max[2]= tri_point1[2];
+//     if (tri_point1[0] < sfc_min[0]) sfc_min[0] = tri_point1[0];
+//     if (tri_point2[0] < sfc_min[0]) sfc_min[0] = tri_point2[0];
+//     if (tri_point3[0] < sfc_min[0]) sfc_min[0] = tri_point3[0];
+//     if (tri_point1[0] > sfc_max[0]) sfc_max[0] = tri_point1[0];
+//     if (tri_point2[0] > sfc_max[0]) sfc_max[0] = tri_point2[0];
+//     if (tri_point3[0] > sfc_max[0]) sfc_max[0] = tri_point3[0];
+//     if (tri_point1[1] < sfc_min[1]) sfc_min[1] = tri_point1[1];
+//     if (tri_point2[1] < sfc_min[1]) sfc_min[1] = tri_point2[1];
+//     if (tri_point3[1] < sfc_min[1]) sfc_min[1] = tri_point3[1];
+//     if (tri_point1[1] > sfc_max[1]) sfc_max[1] = tri_point1[1];
+//     if (tri_point2[1] > sfc_max[1]) sfc_max[1] = tri_point2[1];
+//     if (tri_point3[1] > sfc_max[1]) sfc_max[1] = tri_point3[1];
+//     if (tri_point1[2] < sfc_min[2]) sfc_min[2] = tri_point1[2];
+//     if (tri_point2[2] < sfc_min[2]) sfc_min[2] = tri_point2[2];
+//     if (tri_point3[2] < sfc_min[2]) sfc_min[2] = tri_point3[2];
+//     if (tri_point1[2] > sfc_max[2]) sfc_max[2] = tri_point1[2];
+//     if (tri_point2[2] > sfc_max[2]) sfc_max[2] = tri_point2[2];
+//     if (tri_point3[2] > sfc_max[2]) sfc_max[2] = tri_point3[2];
+//    }
+//    else
+//    {
+//     if (tri_point1[0] < sfc_min[0]) sfc_min[0] = tri_point1[0];
+//     if (tri_point2[0] < sfc_min[0]) sfc_min[0] = tri_point2[0];
+//     if (tri_point3[0] < sfc_min[0]) sfc_min[0] = tri_point3[0];
+//     if (tri_point1[0] > sfc_max[0]) sfc_max[0] = tri_point1[0];
+//     if (tri_point2[0] > sfc_max[0]) sfc_max[0] = tri_point2[0];
+//     if (tri_point3[0] > sfc_max[0]) sfc_max[0] = tri_point3[0];
+//     if (tri_point1[1] < sfc_min[1]) sfc_min[1] = tri_point1[1];
+//     if (tri_point2[1] < sfc_min[1]) sfc_min[1] = tri_point2[1];
+//     if (tri_point3[1] < sfc_min[1]) sfc_min[1] = tri_point3[1];
+//     if (tri_point1[1] > sfc_max[1]) sfc_max[1] = tri_point1[1];
+//     if (tri_point2[1] > sfc_max[1]) sfc_max[1] = tri_point2[1];
+//     if (tri_point3[1] > sfc_max[1]) sfc_max[1] = tri_point3[1];
+//     if (tri_point1[2] < sfc_min[2]) sfc_min[2] = tri_point1[2];
+//     if (tri_point2[2] < sfc_min[2]) sfc_min[2] = tri_point2[2];
+//     if (tri_point3[2] < sfc_min[2]) sfc_min[2] = tri_point3[2];
+//     if (tri_point1[2] > sfc_max[2]) sfc_max[2] = tri_point1[2];
+//     if (tri_point2[2] > sfc_max[2]) sfc_max[2] = tri_point2[2];
+//     if (tri_point3[2] > sfc_max[2]) sfc_max[2] = tri_point3[2];
+//    }
+//  }
+//  tin2check.close();
+//
+//  CFEMesh* m_msh = NULL;
+//  m_msh = new CFEMesh();
+//  CNode* node = NULL;
+//  fem_msh_vector.push_back(m_msh);
+//  int temp_mesh = (long)fem_msh_vector.size();
+//  //Loop over all meshes
+//    for(j=0;j<(long)fem_msh_vector.size()-1;j++)
+//    {
+//    //Loop over all edges
+//        for(i=0;i<(long)fem_msh_vector[j]->edge_vector.size();i++)
+//        {
+//            if (j==0 && i==0){
+//              min_mesh_dist = fem_msh_vector[j]->edge_vector[i]->Length();
+//            }
+//            else{
+//              if (min_mesh_dist  > fem_msh_vector[j]->edge_vector[i]->Length())
+//                  min_mesh_dist = fem_msh_vector[j]->edge_vector[i]->Length();
+//            }
+//        }
+//        tolerance = min_mesh_dist;
+//    //Loop over all mesh nodes
+//        for(i=0;i<(long)fem_msh_vector[j]->nod_vector.size();i++)
+//        {
+//            checkpoint[0] = fem_msh_vector[j]->nod_vector[i]->X();
+//            checkpoint[1] = fem_msh_vector[j]->nod_vector[i]->Y();
+//            checkpoint[2] = fem_msh_vector[j]->nod_vector[i]->Z();
+//            node = new CNode(i,checkpoint[0],checkpoint[1],checkpoint[2]);
+//            if((checkpoint[0]>=sfc_min[0]-tolerance && checkpoint[0]<=sfc_max[0]+tolerance )&&
+//               (checkpoint[1]>=sfc_min[1]-tolerance && checkpoint[1]<=sfc_max[1]+tolerance )&&
+//               (checkpoint[2]>=sfc_min[2]-tolerance && checkpoint[2]<=sfc_max[2]+tolerance ) )
+//            {
+//                fem_msh_vector[temp_mesh-1]->nod_vector.push_back(node);
+//            }
+//        }
+//    }
+//
+//
+//  while (!tin_file.eof())
+//  {
+//    //tin_file.getline(text, 1024);
+//    tin_file>>id_elem>>tri_point1[0]>>tri_point1[1]>>tri_point1[2]>>tri_point2[0]>>tri_point2[1]>>tri_point2[2]>>tri_point3[0]>>tri_point3[1]>>tri_point3[2];
+//         tri_x[0]=tri_point1[0];
+//         tri_x[1]=tri_point2[0];
+//         tri_x[2]=tri_point3[0];
+//         tri_y[0]=tri_point1[1];
+//         tri_y[1]=tri_point2[1];
+//         tri_y[2]=tri_point3[1];
+//         tri_z[0]=tri_point1[2];
+//         tri_z[1]=tri_point2[2];
+//         tri_z[2]=tri_point3[2];
+//    //Loop over all preselected mesh nodes
+//        for(i=0;i<(long)fem_msh_vector[temp_mesh-1]->nod_vector.size();i++)
+//        {
+//            point.x = fem_msh_vector[temp_mesh-1]->nod_vector[i]->X();
+//            point.y = fem_msh_vector[temp_mesh-1]->nod_vector[i]->Y();
+//            point.z = fem_msh_vector[temp_mesh-1]->nod_vector[i]->Z();
+//            checkpoint[0] = fem_msh_vector[temp_mesh-1]->nod_vector[i]->X();
+//            checkpoint[1] = fem_msh_vector[temp_mesh-1]->nod_vector[i]->Y();
+//            checkpoint[2] = fem_msh_vector[temp_mesh-1]->nod_vector[i]->Z();
+//            dist = MCalcDistancePointToPlane(checkpoint,tri_point1,tri_point2,tri_point3);
+//            if (k==0) fem_msh_vector[temp_mesh-1]->nod_vector[i]->epsilon = dist;
+//            else
+//            {
+//                if (fem_msh_vector[temp_mesh-1]->nod_vector[i]->epsilon > dist)
+//                    fem_msh_vector[temp_mesh-1]->nod_vector[i]->epsilon = dist;
+//            }
+//                if (dist<=tolerance && dist>=-tolerance)
+//                {
+//                  angle_sum = AngleSumPointInsideTriangle(checkpoint,tri_point1,tri_point2,tri_point3, min_mesh_dist);
+//                  if(angle_sum>359)
+//                  fem_msh_vector[temp_mesh-1]->nod_vector[i]->selected = 1;
+//                }
+//        }
+//        // Loop over all mesh elements
+//        for(i=0;i<(long)fem_msh_vector[temp_mesh-2]->ele_vector.size();i++)
+//        {
+//            if (fem_msh_vector[temp_mesh-2]->ele_vector[i]->GetElementType() == 2 ||
+//                fem_msh_vector[temp_mesh-2]->ele_vector[i]->GetElementType() == 4) /*Quad or Tri*/
+//            {
+//            double* xyz;
+//            xyz = fem_msh_vector[temp_mesh-2]->ele_vector[i]->GetGravityCenter();
+//            checkpoint[0] = xyz[0];
+//            checkpoint[1] = xyz[1];
+//            checkpoint[2] = xyz[2];
+//            angle_sum = AngleSumPointInsideTriangle(checkpoint,tri_point1,tri_point2,tri_point3, min_mesh_dist/10);
+//
+//            if(angle_sum>359.8)
+//            fem_msh_vector[temp_mesh-2]->ele_vector[i]->selected = 1;
+//            }
+//        }
+//  }
+//
+////WW  int a = (int)fem_msh_vector[temp_mesh-1]->nod_vector.size();
+//  int index;
+//  //Loop over all meshes
+//    for(j=0;j<(long)fem_msh_vector.size()-1;j++)
+//    {
+//    //Loop over selected nodes
+//        for(i=0;i<(long)fem_msh_vector[temp_mesh-1]->nod_vector.size();i++)
+//        {
+//            index = fem_msh_vector[temp_mesh-1]->nod_vector[i]->GetIndex();
+//            if(index < (int)fem_msh_vector[j]->nod_vector.size())
+//            {
+//            if ((fem_msh_vector[temp_mesh-1]->nod_vector[i]->GetIndex() == fem_msh_vector[j]->nod_vector[index]->GetIndex())
+//                &&
+//                fem_msh_vector[temp_mesh-1]->nod_vector[i]->selected==1
+//                &&
+//                (fem_msh_vector[temp_mesh-1]->nod_vector[i]->X() == fem_msh_vector[j]->nod_vector[index]->X())
+//                &&
+//                (fem_msh_vector[temp_mesh-1]->nod_vector[i]->Y() == fem_msh_vector[j]->nod_vector[index]->Y())
+//                &&
+//                (fem_msh_vector[temp_mesh-1]->nod_vector[i]->Z() == fem_msh_vector[j]->nod_vector[index]->Z()))
+//            {
+//                fem_msh_vector[j]->nod_vector[index]->selected = 1;
+//            }
+//            }
+//        }
+//
+//        // Loop over all mesh elements
+//        Math_Group::vec<long> node_index(20);
+//        for(i=0;i<(long)fem_msh_vector[j]->ele_vector.size();i++)
+//        {
+//            fem_msh_vector[j]->ele_vector[i]->GetNodeIndeces(node_index);
+//
+//            if (fem_msh_vector[j]->ele_vector[i]->GetElementType() == 0) /*Quad*/
+//            {
+//                if (fem_msh_vector[j]->nod_vector[node_index[0]]->selected == 1 ||
+//                    fem_msh_vector[j]->nod_vector[node_index[1]]->selected == 1 ||
+//                    fem_msh_vector[j]->nod_vector[node_index[2]]->selected == 1 ||
+//                    fem_msh_vector[j]->nod_vector[node_index[3]]->selected == 1 )
+//                    fem_msh_vector[j]->ele_vector[i]->selected = 1;
+//            }
+//
+//            if (fem_msh_vector[j]->ele_vector[i]->GetElementType() == 0) /*TRI*/
+//            {
+//                if (fem_msh_vector[j]->nod_vector[node_index[0]]->selected == 1 &&
+//                    fem_msh_vector[j]->nod_vector[node_index[1]]->selected == 1 &&
+//                    fem_msh_vector[j]->nod_vector[node_index[2]]->selected == 1 )
+//                    fem_msh_vector[j]->ele_vector[i]->selected = 1;
+//            }
+//        }
+//    }
+//
+//
+//    fem_msh_vector.erase(fem_msh_vector.begin()+ temp_mesh-1);
+//
+//}
 
 /**************************************************************************
 MSHLib-Method:
@@ -1638,10 +1635,10 @@ void CFEMesh::SetMSHPart(vector<long>&elements_active, long StrangNumber)
 
   // Create MSH
   if (!m_msh_strang){
-    m_msh_strang = new CFEMesh();
+    m_msh_strang = new CFEMesh(_geo_obj, _geo_name);
     m_msh_strang->pcs_name = "MSH_Strang";
-    m_msh_strang->ele_type = 1;
-    m_msh_strang->no_msh_layer = no_msh_layer;
+	m_msh_strang->setElementType (MshElemType::LINE);
+    m_msh_strang->setNumberOfMeshLayers (getNumberOfMeshLayers());
     //Resize
     m_msh_strang->ele_vector.resize(size);
     m_msh_strang->Eqs2Global_NodeIndex.resize(size+1);
@@ -1685,81 +1682,81 @@ Task:   GMSH 2 TIN
 Programing:
 02/2006 TK implementation
 **************************************************************************/
-void GMSH2TIN(const char *file_name_const_char)
-{
-   int i=0, k=0;
-//READ GMSH-File and fill local Element Vector
-  vector<Mesh_Group::CFEMesh*>check_msh_vector;
-  Mesh_Group::CFEMesh* m_check_elements;
-  char text[1024];
-  long nbnod, nbelm;
-  long node_id;
-  long pnt;
-  double x,y,z;
-
-
-  string m_strFileNameGMSH = file_name_const_char;
-  string m_strFileNameTIN = file_name_const_char;
-  m_strFileNameGMSH = m_strFileNameGMSH + ".msh";
-  m_strFileNameTIN = m_strFileNameTIN + ".tin";
-  file_name_const_char = m_strFileNameGMSH.data();
-  ifstream gmsh_file (file_name_const_char,ios::in);
-
-  m_check_elements = new Mesh_Group::CFEMesh;
-  while (!gmsh_file.eof())
-  {
-    gmsh_file.getline(text, 1024);
-    if (!strncmp(text,"$NOD",4)){
-        gmsh_file>>nbnod>>ws;
-        m_check_elements->nod_vector.resize(nbnod);
-        for(i=0;i<nbnod;i++)
-        {
-            gmsh_file>>node_id>>x>>y>>z>>ws;
-            m_check_elements->nod_vector[i] = new CNode(i,x,y,z);
-        }
-
-    }
-    if (!strncmp(text,"$ELM",4)){
-        gmsh_file>>nbelm>>ws;
-        m_check_elements->ele_vector.resize(nbelm);
-        for(i=0;i<nbelm;i++)
-        {
-            m_check_elements->ele_vector[i] = new CElem(i);
-	        m_check_elements->ele_vector[i]->Read(gmsh_file, 2);
-        }
-
-    }
-   if (!strncmp(text,"$ENDELM",7)) break;
-  }
-
-//Loop over all generated triangles of surface
-  double tri_point1[3],tri_point2[3],tri_point3[3];
-  FILE *tin_file=NULL;
-  file_name_const_char = m_strFileNameTIN.data();
-  tin_file = fopen(file_name_const_char, "w+t");
-  for(k=0;k<(int)m_check_elements->ele_vector.size();k++)
-  {
-        pnt = m_check_elements->ele_vector[k]->GetNodeIndex(0);
-         tri_point1[0] = m_check_elements->nod_vector[pnt]->X();
-         tri_point1[1] = m_check_elements->nod_vector[pnt]->Y();
-         tri_point1[2] = m_check_elements->nod_vector[pnt]->Z();
-        pnt = m_check_elements->ele_vector[k]->GetNodeIndex(1);
-         tri_point2[0] = m_check_elements->nod_vector[pnt]->X();
-         tri_point2[1] = m_check_elements->nod_vector[pnt]->Y();
-         tri_point2[2] = m_check_elements->nod_vector[pnt]->Z();
-        pnt = m_check_elements->ele_vector[k]->GetNodeIndex(2);
-         tri_point3[0] = m_check_elements->nod_vector[pnt]->X();
-         tri_point3[1] = m_check_elements->nod_vector[pnt]->Y();
-         tri_point3[2] = m_check_elements->nod_vector[pnt]->Z();
-
-		    fprintf(tin_file,"%i ",k);
-            fprintf(tin_file,"%lf %lf %lf ",tri_point1[0], tri_point1[1], tri_point1[2]);
-            fprintf(tin_file,"%lf %lf %lf ",tri_point2[0], tri_point2[1], tri_point2[2]);
-            fprintf(tin_file,"%lf %lf %lf\n",tri_point3[0], tri_point3[1], tri_point3[2]);
-
-  }
-  fclose(tin_file);
-}
+//void GMSH2TIN(const char *file_name_const_char)
+//{
+//   int i=0, k=0;
+////READ GMSH-File and fill local Element Vector
+//  vector<Mesh_Group::CFEMesh*>check_msh_vector;
+//  Mesh_Group::CFEMesh* m_check_elements;
+//  char text[1024];
+//  long nbnod, nbelm;
+//  long node_id;
+//  long pnt;
+//  double x,y,z;
+//
+//
+//  string m_strFileNameGMSH = file_name_const_char;
+//  string m_strFileNameTIN = file_name_const_char;
+//  m_strFileNameGMSH = m_strFileNameGMSH + ".msh";
+//  m_strFileNameTIN = m_strFileNameTIN + ".tin";
+//  file_name_const_char = m_strFileNameGMSH.data();
+//  ifstream gmsh_file (file_name_const_char,ios::in);
+//
+//  m_check_elements = new Mesh_Group::CFEMesh;
+//  while (!gmsh_file.eof())
+//  {
+//    gmsh_file.getline(text, 1024);
+//    if (!strncmp(text,"$NOD",4)){
+//        gmsh_file>>nbnod>>ws;
+//        m_check_elements->nod_vector.resize(nbnod);
+//        for(i=0;i<nbnod;i++)
+//        {
+//            gmsh_file>>node_id>>x>>y>>z>>ws;
+//            m_check_elements->nod_vector[i] = new CNode(i,x,y,z);
+//        }
+//
+//    }
+//    if (!strncmp(text,"$ELM",4)){
+//        gmsh_file>>nbelm>>ws;
+//        m_check_elements->ele_vector.resize(nbelm);
+//        for(i=0;i<nbelm;i++)
+//        {
+//            m_check_elements->ele_vector[i] = new CElem(i);
+//	        m_check_elements->ele_vector[i]->Read(gmsh_file, 2);
+//        }
+//
+//    }
+//   if (!strncmp(text,"$ENDELM",7)) break;
+//  }
+//
+////Loop over all generated triangles of surface
+//  double tri_point1[3],tri_point2[3],tri_point3[3];
+//  FILE *tin_file=NULL;
+//  file_name_const_char = m_strFileNameTIN.data();
+//  tin_file = fopen(file_name_const_char, "w+t");
+//  for(k=0;k<(int)m_check_elements->ele_vector.size();k++)
+//  {
+//        pnt = m_check_elements->ele_vector[k]->GetNodeIndex(0);
+//         tri_point1[0] = m_check_elements->nod_vector[pnt]->X();
+//         tri_point1[1] = m_check_elements->nod_vector[pnt]->Y();
+//         tri_point1[2] = m_check_elements->nod_vector[pnt]->Z();
+//        pnt = m_check_elements->ele_vector[k]->GetNodeIndex(1);
+//         tri_point2[0] = m_check_elements->nod_vector[pnt]->X();
+//         tri_point2[1] = m_check_elements->nod_vector[pnt]->Y();
+//         tri_point2[2] = m_check_elements->nod_vector[pnt]->Z();
+//        pnt = m_check_elements->ele_vector[k]->GetNodeIndex(2);
+//         tri_point3[0] = m_check_elements->nod_vector[pnt]->X();
+//         tri_point3[1] = m_check_elements->nod_vector[pnt]->Y();
+//         tri_point3[2] = m_check_elements->nod_vector[pnt]->Z();
+//
+//		    fprintf(tin_file,"%i ",k);
+//            fprintf(tin_file,"%lf %lf %lf ",tri_point1[0], tri_point1[1], tri_point1[2]);
+//            fprintf(tin_file,"%lf %lf %lf ",tri_point2[0], tri_point2[1], tri_point2[2]);
+//            fprintf(tin_file,"%lf %lf %lf\n",tri_point3[0], tri_point3[1], tri_point3[2]);
+//
+//  }
+//  fclose(tin_file);
+//}
 
 /**************************************************************************
 MSHLib-Method:
@@ -1957,10 +1954,8 @@ void CFEMesh::CreateLineElementsFromMarkedEdges(CFEMesh*m_msh_ply, vector<long> 
         no_elements = (long)ele_vector.size();
       }
       CElem* new_ele = new CElem(no_elements);
-      new_ele->geo_type = 1;
-      new_ele->Config();
+	  new_ele->setElementProperties(MshElemType::LINE);
       m_edg->GetNodes(edge_nodes);
-      new_ele->nodes_index.resize(new_ele->GetNodesNumber(false));
       new_ele->nodes_index[0] = edge_nodes[0]->GetIndex();
       new_ele->nodes_index[1] = edge_nodes[1]->GetIndex();
       new_ele->SetPatchIndex(m_ele->GetPatchIndex()+1);

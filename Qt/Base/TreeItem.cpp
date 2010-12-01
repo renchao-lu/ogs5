@@ -38,10 +38,14 @@ void TreeItem::appendChild(TreeItem *item)
 /**
  * Returns the child that corresponds to the specified row number 
  * in the item's list of child items
+ * Returns NULL if that child does not exist.
  */
 TreeItem *TreeItem::child(int row) const
 {
-	return _childItems.value(row);
+	if (_childItems.count() > row)
+		return _childItems.value(row);
+	else
+		return NULL;
 }
 
 /**
@@ -94,7 +98,7 @@ bool TreeItem::setData( int column, const QVariant &value )
 /**
  * Returns the parent object of the tree item.
  */
-TreeItem *TreeItem::parent() const
+TreeItem *TreeItem::parentItem() const
 {
 	return _parentItem;
 }

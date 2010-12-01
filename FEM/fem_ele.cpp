@@ -149,7 +149,7 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
                dx = a_node->X()-a_node0->X();
                dy = a_node->Y()-a_node0->Y();
                dz = a_node->Z()-a_node0->Z();
-							
+
                X[i] =  (*MeshElement->tranform_tensor)(0,0)*dx
                       +(*MeshElement->tranform_tensor)(1,0)*dy
                       +(*MeshElement->tranform_tensor)(2,0)*dz;
@@ -610,17 +610,17 @@ void CElement::SetGaussPoint(const int gp, int& gp_r, int& gp_s, int& gp_t)
 {
     switch(MeshElement->GetElementType())
     {
-       case 1:    // Line
+		case MshElemType::LINE:    // Line
           gp_r = gp;
           unit[0] = MXPGaussPkt(nGauss, gp_r);
           return;
-       case 2:    // Quadralateral
+		case MshElemType::QUAD:    // Quadralateral
           gp_r = (int)(gp/nGauss);
           gp_s = gp%nGauss;
           unit[0] = MXPGaussPkt(nGauss, gp_r);
           unit[1] = MXPGaussPkt(nGauss, gp_s);
           return;
-       case 3:    // Hexahedra
+		case MshElemType::HEXAHEDRON:    // Hexahedra
           gp_r = (int)(gp/(nGauss*nGauss));
           gp_s = (gp%(nGauss*nGauss));
           gp_t = gp_s%nGauss;
@@ -629,14 +629,14 @@ void CElement::SetGaussPoint(const int gp, int& gp_r, int& gp_s, int& gp_t)
           unit[1] = MXPGaussPkt(nGauss, gp_s);
           unit[2] = MXPGaussPkt(nGauss, gp_t);
           return;
-       case 4: // Triangle
+		case MshElemType::TRIANGLE: // Triangle
           SamplePointTriHQ(gp, unit);
           break;
-       case 5: // Tedrahedra
+		case MshElemType::TETRAHEDRON: // Tedrahedra
 //To be flexible          SamplePointTet15(gp, unit);
           SamplePointTet5(gp, unit);
           return;
-       case 6: // Prism
+		case MshElemType::PRISM: // Prism
           gp_r = gp%nGauss;
           gp_s = (int)(gp/nGauss);
           gp_t = (int)(nGaussPoints/nGauss);
@@ -644,6 +644,8 @@ void CElement::SetGaussPoint(const int gp, int& gp_r, int& gp_s, int& gp_t)
           unit[1] = MXPGaussPktTri(nGauss,gp_r,1);
           unit[2] = MXPGaussPkt(gp_t,gp_s);
           return;
+		default:
+			std::cerr << "CElement::SetGaussPoint invalid mesh element type given" << std::endl;
     }
 }
 /***************************************************************************
@@ -668,31 +670,33 @@ double CElement::GetGaussData(const int gp, int& gp_r, int& gp_s, int& gp_t)
     SetGaussPoint(gp, gp_r, gp_s, gp_t);
     switch(MeshElement->GetElementType())
     {
-       case 1:    // Line
+		case MshElemType::LINE:    // Line
           fkt = computeJacobian(Order)*MXPGaussFkt(nGauss, gp_r);
           break;
-       case 2:    // Quadralateral
+		case MshElemType::QUAD:    // Quadralateral
           fkt = computeJacobian(Order);
           fkt *= MXPGaussFkt(nGauss, gp_r) * MXPGaussFkt(nGauss, gp_s);
           break;
-       case 3:    // Hexahedra
+		case MshElemType::HEXAHEDRON:    // Hexahedra
           fkt = computeJacobian(Order);
           fkt *=   MXPGaussFkt(nGauss, gp_r) * MXPGaussFkt(nGauss, gp_s)
                  * MXPGaussFkt(nGauss, gp_t);
           break;
-       case 4: // Triangle
+		case MshElemType::TRIANGLE: // Triangle
           fkt = computeJacobian(Order);
           fkt *= unit[2];      // Weights
           break;
-       case 5: // Tedrahedra
+		case MshElemType::TETRAHEDRON: // Tedrahedra
 //To be flexible          SamplePointTet15(gp, unit);
           fkt = computeJacobian(Order);
           fkt *= unit[3];      // Weights
           break;
-       case 6: // Prism
+		case MshElemType::PRISM: // Prism
 		  fkt = computeJacobian(Order);
           fkt *= MXPGaussFktTri(nGauss,gp_r)*MXPGaussFkt(gp_t, gp_s);      // Weights
           break;
+		default:
+			std::cerr << "CElement::GetGaussData invalid mesh element type given" << std::endl;
     }
     return fkt;
 }
@@ -716,7 +720,7 @@ void CElement::FaceIntegration(double *NodeVal)
   if(Order==2)
   {
      sf = shapefctHQ;
-	 if(MeshElement->GetElementType()==2)
+	 if(MeshElement->GetElementType()==MshElemType::QUAD)
        ShapeFunctionHQ = ShapeFunctionQuadHQ8;
   }
 
@@ -732,22 +736,24 @@ void CElement::FaceIntegration(double *NodeVal)
       //---------------------------------------------------------
 	  switch(MeshElement->GetElementType())
       {
-          case 1:    // Line
-           gp_r = gp;
-           unit[0] = MXPGaussPkt(nGauss, gp_r);
-           fkt = 0.5*det*MXPGaussFkt(nGauss, gp_r);
-           break;
-         case 4: // Triangle
+		case MshElemType::LINE:    // Line
+			gp_r = gp;
+			unit[0] = MXPGaussPkt(nGauss, gp_r);
+			fkt = 0.5*det*MXPGaussFkt(nGauss, gp_r);
+			break;
+		case MshElemType::TRIANGLE: // Triangle
             SamplePointTriHQ(gp, unit);
             fkt = 2.0*det*unit[2];      // Weights
-          break;
-            case 2:    // Quadralateral
-             gp_r = (int)(gp/nGauss);
-             gp_s = gp%nGauss;
-             unit[0] = MXPGaussPkt(nGauss, gp_r);
-             unit[1] = MXPGaussPkt(nGauss, gp_s);
-             fkt = 0.25*det*MXPGaussFkt(nGauss, gp_r) * MXPGaussFkt(nGauss, gp_s);
-          break;
+			break;
+		case MshElemType::QUAD:    // Quadralateral
+			gp_r = (int)(gp/nGauss);
+			gp_s = gp%nGauss;
+			unit[0] = MXPGaussPkt(nGauss, gp_r);
+			unit[1] = MXPGaussPkt(nGauss, gp_s);
+			fkt = 0.25*det*MXPGaussFkt(nGauss, gp_r) * MXPGaussFkt(nGauss, gp_s);
+			break;
+		default:
+			std::cerr << "CElement::FaceIntegration element type not handled" << std::endl;
       }
 
       ComputeShapefct(Order);
@@ -862,9 +868,9 @@ void CElement::SetCenterGP()
 {
   // Center of the reference element
   unit[0] = unit[1] = unit[2] = 0.0;
-  if(MeshElement->GetElementType()==4)
+  if(MeshElement->GetElementType()==MshElemType::TRIANGLE)
     unit[0] = unit[1] = 1.0/3.0;
-  else if(MeshElement->GetElementType()==5)
+  else if(MeshElement->GetElementType()==MshElemType::TETRAHEDRON)
     unit[0] = unit[1] = unit[2] = 0.25;
 }
 /***************************************************************************
@@ -887,60 +893,90 @@ int CElement::GetLocalIndex(const int gp_r, const int gp_s, int gp_t)
    //---------------------------------------------------------
    // Accumulate strains
    //---------------------------------------------------------
-   switch(MeshElement->GetElementType())
-   {
-     case 2:  // Quadralateral
-         r = MXPGaussPkt(nGauss, gp_r);
-         s = MXPGaussPkt(nGauss, gp_s);
-         if(r>0.0&&s>0.0)  LoIndex = 0;
-         else if(r<0.0&&s>0.0) LoIndex = 1;
-         else if(r<0.0&&s<0.0) LoIndex = 2;
-         else if(r>0.0&&s<0.0) LoIndex = 3;
-         else if(fabs(r)<MKleinsteZahl&&s>0.0) LoIndex = 4;
-         else if(r<0.0&&fabs(s)<MKleinsteZahl) LoIndex = 5;
-         else if(fabs(r)<MKleinsteZahl&&s<0.0) LoIndex = 6;
-         else if(r>0.0&&fabs(s)<MKleinsteZahl) LoIndex = 7;
-         else if(fabs(r)<MKleinsteZahl&&fabs(s)<MKleinsteZahl) LoIndex = 8;
-         break;
-     case 3:  // Hexahedra
-         r = MXPGaussPkt(nGauss, gp_r);
-         s = MXPGaussPkt(nGauss, gp_s);
-         t = MXPGaussPkt(nGauss, gp_t);
+   switch (MeshElement->GetElementType()) {
+	case MshElemType::QUAD: // Quadralateral
+		r = MXPGaussPkt(nGauss, gp_r);
+		s = MXPGaussPkt(nGauss, gp_s);
+		if (r > 0.0 && s > 0.0)
+			LoIndex = 0;
+		else if (r < 0.0 && s > 0.0)
+			LoIndex = 1;
+		else if (r < 0.0 && s < 0.0)
+			LoIndex = 2;
+		else if (r > 0.0 && s < 0.0)
+			LoIndex = 3;
+		else if (fabs(r) < MKleinsteZahl && s > 0.0)
+			LoIndex = 4;
+		else if (r < 0.0 && fabs(s) < MKleinsteZahl)
+			LoIndex = 5;
+		else if (fabs(r) < MKleinsteZahl && s < 0.0)
+			LoIndex = 6;
+		else if (r > 0.0 && fabs(s) < MKleinsteZahl)
+			LoIndex = 7;
+		else if (fabs(r) < MKleinsteZahl && fabs(s) < MKleinsteZahl)
+			LoIndex = 8;
+		break;
+	case MshElemType::HEXAHEDRON: // Hexahedra
+		r = MXPGaussPkt(nGauss, gp_r);
+		s = MXPGaussPkt(nGauss, gp_s);
+		t = MXPGaussPkt(nGauss, gp_t);
 
-         if(t>0.0)
-         {
-            if(r>0.0&&s>0.0)  LoIndex = 0;
-            else if(r<0.0&&s>0.0) LoIndex = 1;
-            else if(r<0.0&&s<0.0) LoIndex = 2;
-            else if(r>0.0&&s<0.0) LoIndex = 3;
-            else if(fabs(r)<MKleinsteZahl&&s>0.0) LoIndex = 8;
-            else if(r<0.0&&fabs(s)<MKleinsteZahl) LoIndex = 9;
-            else if(fabs(r)<MKleinsteZahl&&s<0.0) LoIndex = 10;
-            else if(r>0.0&&fabs(s)<MKleinsteZahl) LoIndex = 11;
-            else if(fabs(r)<MKleinsteZahl&&fabs(s)<MKleinsteZahl) return -1;
-         }
-         else if(fabs(t)<MKleinsteZahl)
-         {
-            if(fabs(r)<MKleinsteZahl||fabs(s)<MKleinsteZahl) return -1;
-            if(r>0.0&&s>0.0)  LoIndex = 16;
-            else if(r<0.0&&s>0.0) LoIndex = 17;
-            else if(r<0.0&&s<0.0) LoIndex = 18;
-            else if(r>0.0&&s<0.0) LoIndex = 19;
-         }
-         if(t<0.0)
-         {
-            if(r>0.0&&s>0.0)  LoIndex = 4;
-            else if(r<0.0&&s>0.0) LoIndex = 5;
-            else if(r<0.0&&s<0.0) LoIndex = 6;
-            else if(r>0.0&&s<0.0) LoIndex = 7;
-            else if(fabs(r)<MKleinsteZahl&&s>0.0) LoIndex = 12;
-            else if(r<0.0&&fabs(s)<MKleinsteZahl) LoIndex = 13;
-            else if(fabs(r)<MKleinsteZahl&&s<0.0) LoIndex = 14;
-            else if(r>0.0&&fabs(s)<MKleinsteZahl) LoIndex = 15;
-            else if(fabs(r)<MKleinsteZahl&&fabs(s)<MKleinsteZahl) return -1;
-         }
-      break;
-   }
+		if (t > 0.0) {
+			if (r > 0.0 && s > 0.0)
+				LoIndex = 0;
+			else if (r < 0.0 && s > 0.0)
+				LoIndex = 1;
+			else if (r < 0.0 && s < 0.0)
+				LoIndex = 2;
+			else if (r > 0.0 && s < 0.0)
+				LoIndex = 3;
+			else if (fabs(r) < MKleinsteZahl && s > 0.0)
+				LoIndex = 8;
+			else if (r < 0.0 && fabs(s) < MKleinsteZahl)
+				LoIndex = 9;
+			else if (fabs(r) < MKleinsteZahl && s < 0.0)
+				LoIndex = 10;
+			else if (r > 0.0 && fabs(s) < MKleinsteZahl)
+				LoIndex = 11;
+			else if (fabs(r) < MKleinsteZahl && fabs(s) < MKleinsteZahl)
+				return -1;
+		} else if (fabs(t) < MKleinsteZahl) {
+			if (fabs(r) < MKleinsteZahl || fabs(s) < MKleinsteZahl)
+				return -1;
+			if (r > 0.0 && s > 0.0)
+				LoIndex = 16;
+			else if (r < 0.0 && s > 0.0)
+				LoIndex = 17;
+			else if (r < 0.0 && s < 0.0)
+				LoIndex = 18;
+			else if (r > 0.0 && s < 0.0)
+				LoIndex = 19;
+		}
+		if (t < 0.0) {
+			if (r > 0.0 && s > 0.0)
+				LoIndex = 4;
+			else if (r < 0.0 && s > 0.0)
+				LoIndex = 5;
+			else if (r < 0.0 && s < 0.0)
+				LoIndex = 6;
+			else if (r > 0.0 && s < 0.0)
+				LoIndex = 7;
+			else if (fabs(r) < MKleinsteZahl && s > 0.0)
+				LoIndex = 12;
+			else if (r < 0.0 && fabs(s) < MKleinsteZahl)
+				LoIndex = 13;
+			else if (fabs(r) < MKleinsteZahl && s < 0.0)
+				LoIndex = 14;
+			else if (r > 0.0 && fabs(s) < MKleinsteZahl)
+				LoIndex = 15;
+			else if (fabs(r) < MKleinsteZahl && fabs(s) < MKleinsteZahl)
+				return -1;
+		}
+		break;
+	default:
+		std::cerr << "CElement::GetLocalIndex invalid mesh element type given"
+				<< std::endl;
+	}
    return LoIndex;
 }
 /***************************************************************************
@@ -950,109 +986,103 @@ int CElement::GetLocalIndex(const int gp_r, const int gp_s, int gp_t)
 **************************************************************************/
 void CElement::SetExtropoGaussPoints(const int i)
 {
-  int j = 0;
-  int ElementType = MeshElement->GetElementType();
-  //
-  switch(ElementType)
-  {
-      case 4: // Triangle
-        // Compute values at verteces
-        // Compute values at verteces
-        switch(i)
-        {
-           case 0:
-             unit[0] = -0.1666666666667;
-             unit[1] = -0.1666666666667;
-             break;
-           case 1:
-             unit[0] = 1.6666666666667;
-             unit[1] = -0.1666666666667;
-             break;
-           case 2:
-             unit[0] = -0.1666666666667;
-             unit[1] = 1.6666666666667;
-             break;
-        }
-        break;
-      case 2: // Quadralateral element
-        // Extropolation over nodes
-        switch(i)
-        {
-           case 0:
-             unit[0] = Xi_p;
-             unit[1] = Xi_p;
-             break;
-           case 1:
-             unit[0] = -Xi_p;
-             unit[1] = Xi_p;
-             break;
-           case 2:
-             unit[0] = -Xi_p;
-             unit[1] = -Xi_p;
-             break;
-           case 3:
-             unit[0] = Xi_p;
-             unit[1] = -Xi_p;
-             break;
-        }
-        break;
-     case 3: // Hexahedra
-       if(i<4)
-       {
-          j = i;
-          unit[2] = Xi_p;
-       }
-       else
-       {
-          j = i-4;
-          unit[2] = -Xi_p;
-       }
-       switch(j)
-       {
-          case 0:
-            unit[0] = Xi_p;
-            unit[1] = Xi_p;
-            break;
-          case 1:
-            unit[0] = -Xi_p;
-            unit[1] = Xi_p;
-            break;
-          case 2:
-            unit[0] = -Xi_p;
-            unit[1] = -Xi_p;
-            break;
-          case 3:
-            unit[0] = Xi_p;
-            unit[1] = -Xi_p;
-            break;
-       }
-       break;
-     case 5: // Tedrahedra
-       // Compute values at verteces
-       switch(i)
-       {
-         case 0:
-           unit[0] = -0.166666666666667;
-           unit[1] = -0.166666666666667;
-           unit[2] = -0.166666666666667;
-           break;
-         case 1:
-           unit[0] = 1.5;
-           unit[1] = -0.166666666666667 ;
-           unit[2] = -0.166666666666667 ;
-           break;
-         case 2:
-           unit[0] = -0.166666666666667;
-           unit[1] = 1.5;
-           unit[2] = -0.166666666666667;
-           break;
-         case 3:
-           unit[0] = -0.166666666666667;
-           unit[1] = -0.166666666666667;
-           unit[2] = 1.5;
-       }
-       break;
-   }
+	int j = 0;
+	MshElemType::type ElementType = MeshElement->GetElementType();
+	//
+	switch (ElementType) {
+	case MshElemType::TRIANGLE: // Triangle
+		// Compute values at verteces
+		// Compute values at verteces
+		switch (i) {
+		case 0:
+			unit[0] = -0.1666666666667;
+			unit[1] = -0.1666666666667;
+			break;
+		case 1:
+			unit[0] = 1.6666666666667;
+			unit[1] = -0.1666666666667;
+			break;
+		case 2:
+			unit[0] = -0.1666666666667;
+			unit[1] = 1.6666666666667;
+			break;
+		}
+		break;
+	case MshElemType::QUAD: // Quadralateral element
+		// Extropolation over nodes
+		switch (i) {
+		case 0:
+			unit[0] = Xi_p;
+			unit[1] = Xi_p;
+			break;
+		case 1:
+			unit[0] = -Xi_p;
+			unit[1] = Xi_p;
+			break;
+		case 2:
+			unit[0] = -Xi_p;
+			unit[1] = -Xi_p;
+			break;
+		case 3:
+			unit[0] = Xi_p;
+			unit[1] = -Xi_p;
+			break;
+		}
+		break;
+	case MshElemType::HEXAHEDRON: // Hexahedra
+		if (i < 4) {
+			j = i;
+			unit[2] = Xi_p;
+		} else {
+			j = i - 4;
+			unit[2] = -Xi_p;
+		}
+		switch (j) {
+		case 0:
+			unit[0] = Xi_p;
+			unit[1] = Xi_p;
+			break;
+		case 1:
+			unit[0] = -Xi_p;
+			unit[1] = Xi_p;
+			break;
+		case 2:
+			unit[0] = -Xi_p;
+			unit[1] = -Xi_p;
+			break;
+		case 3:
+			unit[0] = Xi_p;
+			unit[1] = -Xi_p;
+			break;
+		}
+		break;
+	case MshElemType::TETRAHEDRON: // Tedrahedra
+		// Compute values at verteces
+		switch (i) {
+		case 0:
+			unit[0] = -0.166666666666667;
+			unit[1] = -0.166666666666667;
+			unit[2] = -0.166666666666667;
+			break;
+		case 1:
+			unit[0] = 1.5;
+			unit[1] = -0.166666666666667;
+			unit[2] = -0.166666666666667;
+			break;
+		case 2:
+			unit[0] = -0.166666666666667;
+			unit[1] = 1.5;
+			unit[2] = -0.166666666666667;
+			break;
+		case 3:
+			unit[0] = -0.166666666666667;
+			unit[1] = -0.166666666666667;
+			unit[2] = 1.5;
+		}
+		break;
+	default:
+		std::cerr << "CElement::SetExtropoGaussPoints MshElemType not handled" << std::endl;
+	}
 }
 
 /**************************************************************************

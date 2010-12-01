@@ -15,26 +15,29 @@
 
 // GEO
 #include "GeoType.h"
+#include "GeoObject.h"
 
 /**
- * GeoInfo stores the type of the geometric entity and
+ * \brief GeoInfo stores the type of the geometric entity and
  * the index within the vector the geometric entity is
- * managed
+ * managed. Possible geometric entities are documented in
+ * GeoType.h.
  */
 class GeoInfo {
 public:
 	/**
 	 * standard constructor. You need to set the attributes via
-	 * setGeoType() and setGeoObjIdx()!
+	 * setGeoType() and setGeoObj()!
 	 */
 	GeoInfo ();
 	/**
 	 * The constructor of a GeoInfo object initializes the
 	 * attributes of the object.
-	 * @param geo_type the type of the geometric entity
-	 * @param geo_obj_idx the index in the vector
+	 * @param geo_type the type of the geometric entity.
+	 * Possible geometric entities are documented in GeoType.h.
+	 * @param geo_obj the pointer to an object of class GeoObject
 	 */
-	GeoInfo(GEOLIB::GEOTYPE geo_type, size_t geo_obj_idx = std::numeric_limits<size_t>::max());
+	GeoInfo(GEOLIB::GEOTYPE geo_type, const GEOLIB::GeoObject* geo_obj = NULL);
 	/**
 	 * virtual destructor - destroys the object
 	 */
@@ -42,6 +45,7 @@ public:
 
 	/**
 	 * getter method for the geo type
+	 * @sa enum GeoType
 	 * @return the geo type
 	 */
 	GEOLIB::GEOTYPE getGeoType () const;
@@ -53,31 +57,32 @@ public:
 	std::string getGeoTypeAsString () const;
 
 	/**
-	 * getter for the obj index
+	 * getter for the pointer to the object
 	 * @return
 	 */
-	size_t getGeoObjIdx () const;
+	const GEOLIB::GeoObject* getGeoObj () const;
 
 	/**
 	 * setter for the geo type
+	 * @sa enum GeoType
 	 * @param geo_type type of the geometric entity
 	 */
 	void setGeoType (GEOLIB::GEOTYPE geo_type);
 	/**
-	 * setter for the object index
-	 * @param geo_obj_idx the object index within the vector
+	 * setter for the pointer to the GeoObject object
+	 * @param geo_obj an instance of class GeoObject
 	 */
-	void setGeoObjIdx (size_t geo_obj_idx);
+	void setGeoObj (const GEOLIB::GeoObject* geo_obj);
 
 protected:
 	/**
-	 * type of the geometric entity
+	 * type of the geometric entity. @sa enum GeoType
 	 */
 	GEOLIB::GEOTYPE _geo_type;
 	/**
-	 * index of geometric object (GEOLIB::Point, GEOLIB::Polyline, ...)
+	 * pointer to geometric object (GEOLIB::Point, GEOLIB::Polyline, GEOLIB::Surface, ...)
 	 */
-	size_t _geo_obj_idx;
+	const GEOLIB::GeoObject* _geo_obj;
 };
 
 #endif /* GEOINFO_H_ */

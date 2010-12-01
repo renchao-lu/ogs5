@@ -25,7 +25,7 @@ bool SimplePolygonTree::isPolygonInside (const SimplePolygonTree* polygon_hierar
 {
 	const Polygon* polygon (polygon_hierarchy->getPolygon());
 	// check *all* points of polygon
-	size_t n_pnts_polygon (polygon->getSize() - 1), cnt(0);
+	size_t n_pnts_polygon (polygon->getNumberOfPoints() - 1), cnt(0);
 	for (size_t k(0); k<n_pnts_polygon && cnt == k; k++) {
 		if (_node->isPntInPolygon (*(polygon->getPoint(k)))) {
 			cnt++;
@@ -46,7 +46,7 @@ void SimplePolygonTree::insertSimplePolygonTree (SimplePolygonTree* polygon_hier
 		it != _childs.end() && nfound; it++)
 	{
 		// check all points of polygon
-		size_t n_pnts_polygon (polygon->getSize()), cnt(0);
+		size_t n_pnts_polygon (polygon->getNumberOfPoints()), cnt(0);
 		for (size_t k(0); k<n_pnts_polygon && cnt == k; k++) {
 			if (((*it)->getPolygon())->isPntInPolygon (*(polygon->getPoint(k))))
 				cnt++;
@@ -61,32 +61,93 @@ void SimplePolygonTree::insertSimplePolygonTree (SimplePolygonTree* polygon_hier
 		_childs.push_back (polygon_hierarchy);
 }
 
-
-void SimplePolygonTree::visitAndProcessNodes (FileIO::GMSHInterface& gmsh_io)
+bool SimplePolygonTree::isGeoObjInside (const GeoObject* geo_obj) const
 {
-	if (getLevel() == 0) {
-		gmsh_io.writeGMSHPolygon (*_node);
+	if (dynamic_cast<const Point*>(geo_obj))
+		return _node->isPntInPolygon (*(dynamic_cast<const Point*>(geo_obj)));
 
-		std::list<SimplePolygonTree*>::iterator it (_childs.begin());
-		while (it != _childs.end()) {
-			(*it)->_visitAndProcessNodes (gmsh_io);
-			it++;
+	if (dynamic_cast<const Polyline*>(geo_obj))
+		return isPolylineInside (dynamic_cast<const Polyline*>(geo_obj));
+
+	return false;
+}
+
+bool SimplePolygonTree::isPolylineInside (const Polyline* ply) const
+{
+	// check *all* points of polyline
+	size_t n_pnts_polyline (ply->getNumberOfPoints() - 1), cnt(0);
+	for (size_t k(0); k<n_pnts_polyline && cnt == k; k++) {
+		if (_node->isPntInPolygon (*(ply->getPoint(k)))) {
+			cnt++;
 		}
-		gmsh_io.writePlaneSurface ();
 	}
+	// all points of the given polyline are contained in the polygon
+	if (cnt == n_pnts_polyline) return true;
+
+	return false;
 }
 
-void SimplePolygonTree::_visitAndProcessNodes (FileIO::GMSHInterface& gmsh_io)
+void SimplePolygonTree::insertGeoObj (const GeoObject* geo_obj)
 {
-	gmsh_io.writeGMSHPolygon (*_node);
-
-	std::list<SimplePolygonTree*>::iterator it (_childs.begin());
-	while (it != _childs.end()) {
-		(*it)->_visitAndProcessNodes (gmsh_io);
-		it++;
+	// check if the geo object is contained in a child of this node
+	bool nfound (true);
+	for (std::list<SimplePolygonTree*>::const_iterator it (_childs.begin());
+		it != _childs.end() && nfound; it++)
+	{
+		// check Point
+		if (dynamic_cast<const Point*>(geo_obj)) {
+			if (((*it)->getPolygon())->isPntInPolygon (*(dynamic_cast<const Point*>(geo_obj)))) {
+				(*it)->insertGeoObj (geo_obj);
+				nfound = false;
+			}
+		}
+		// check Polyline
+		if (nfound && dynamic_cast<const Polyline*>(geo_obj)) {
+			const Polyline* ply (dynamic_cast<const Polyline*>(geo_obj));
+			size_t n_pnts_polyline (ply->getNumberOfPoints()), cnt(0);
+			// check all points of Polyline
+			for (size_t k(0); k<n_pnts_polyline && cnt == k; k++) {
+				if (((*it)->getPolygon())->isPntInPolygon (*(ply->getPoint(k))))
+					cnt++;
+			}
+			// all points of the given polygon are contained in the current polygon
+			if (cnt == n_pnts_polyline) {
+				(*it)->insertGeoObj (geo_obj);
+				nfound = false;
+			}
+		}
 	}
+
+	if (nfound) {
+		_geo_objs.push_back (geo_obj);
+	}
+
 }
 
+//void SimplePolygonTree::visitAndProcessNodes (FileIO::GMSHInterface& gmsh_io)
+//{
+//	if (getLevel() == 0) {
+//		gmsh_io.writeGMSHPolygon (*_node);
+//
+//		std::list<SimplePolygonTree*>::iterator it (_childs.begin());
+//		while (it != _childs.end()) {
+//			(*it)->_visitAndProcessNodes (gmsh_io);
+//			it++;
+//		}
+//		gmsh_io.writePlaneSurface ();
+//	}
+//}
+
+//void SimplePolygonTree::_visitAndProcessNodes (FileIO::GMSHInterface& gmsh_io)
+//{
+//	gmsh_io.writeGMSHPolygon (*_node);
+//
+//	std::list<SimplePolygonTree*>::iterator it (_childs.begin());
+//	while (it != _childs.end()) {
+//		(*it)->_visitAndProcessNodes (gmsh_io);
+//		it++;
+//	}
+//}
 
 size_t SimplePolygonTree::getLevel () const
 {

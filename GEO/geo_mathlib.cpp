@@ -1,13 +1,13 @@
 /**************************************************************************
 GeoLib - Object:GEO mathlib
-Task: 
+Task:
 Programing:
 08/2005 CC Implementation
 **************************************************************************/
 
 #include <stdlib.h>
-#include <cstdio>  
-#include "geo_mathlib.h"  
+#include <cstdio>
+#include "geo_mathlib.h"
 
 /**************************************************************************/
 /* GEO MATHLIB - Funktion: EuklVek3dDist
@@ -117,7 +117,7 @@ int M3KreuzProdukt(double *vec1, double *vec2, double *vec)
     vec[1] = vec1[2] * vec2[0] - vec1[0] * vec2[2];
     vec[2] = vec1[0] * vec2[1] - vec1[1] * vec2[0];
     return 1;
-} 
+}
 /***************************************************************************
    GEO MATHLIB - Funktion: MBtrgVec
    Aufgabe:
@@ -161,7 +161,7 @@ double MSkalarprodukt(double *vec1, double *vec2, long g)
 {
 #ifndef CBLAS_MSkalarprodukt
     register long i;
-    register double sammy = 0.0; 
+    register double sammy = 0.0;
 #ifdef SX
 #pragma cdir nodep
 #endif
@@ -255,21 +255,21 @@ double CalcPyramidVolume(double *x,double *y,double *z)
   hight = MCalcProjectionOfPointOnPlane(p5,p1,p2,p3,proj);
   double xt[4],yt[4],zt[4];
   double volume1,volume2,volume3,volume4;
-  xt[0]= x[0]; xt[1]= x[1]; xt[2]= x[4]; xt[3]= proj[0]; 
-  yt[0]= y[0]; yt[1]= y[1]; yt[2]= y[4]; yt[3]= proj[1]; 
-  zt[0]= z[0]; zt[1]= z[1]; zt[2]= z[4]; zt[3]= proj[2]; 
+  xt[0]= x[0]; xt[1]= x[1]; xt[2]= x[4]; xt[3]= proj[0];
+  yt[0]= y[0]; yt[1]= y[1]; yt[2]= y[4]; yt[3]= proj[1];
+  zt[0]= z[0]; zt[1]= z[1]; zt[2]= z[4]; zt[3]= proj[2];
   volume1 = CalcTetraederVolume(xt,yt,zt);
-  xt[0]= x[1]; xt[1]= x[2]; xt[2]= x[4]; xt[3]= proj[0]; 
-  yt[0]= y[1]; yt[1]= y[2]; yt[2]= y[4]; yt[3]= proj[1]; 
-  zt[0]= z[1]; zt[1]= z[2]; zt[2]= z[4]; zt[3]= proj[2]; 
+  xt[0]= x[1]; xt[1]= x[2]; xt[2]= x[4]; xt[3]= proj[0];
+  yt[0]= y[1]; yt[1]= y[2]; yt[2]= y[4]; yt[3]= proj[1];
+  zt[0]= z[1]; zt[1]= z[2]; zt[2]= z[4]; zt[3]= proj[2];
   volume2 = CalcTetraederVolume(xt,yt,zt);
-  xt[0]= x[2]; xt[1]= x[3]; xt[2]= x[4]; xt[3]= proj[0]; 
-  yt[0]= y[2]; yt[1]= y[3]; yt[2]= y[4]; yt[3]= proj[1]; 
-  zt[0]= z[2]; zt[1]= z[3]; zt[2]= z[4]; zt[3]= proj[2]; 
+  xt[0]= x[2]; xt[1]= x[3]; xt[2]= x[4]; xt[3]= proj[0];
+  yt[0]= y[2]; yt[1]= y[3]; yt[2]= y[4]; yt[3]= proj[1];
+  zt[0]= z[2]; zt[1]= z[3]; zt[2]= z[4]; zt[3]= proj[2];
   volume3 = CalcTetraederVolume(xt,yt,zt);
-  xt[0]= x[3]; xt[1]= x[0]; xt[2]= x[4]; xt[3]= proj[0]; 
-  yt[0]= y[3]; yt[1]= y[0]; yt[2]= y[4]; yt[3]= proj[1]; 
-  zt[0]= z[3]; zt[1]= z[0]; zt[2]= z[4]; zt[3]= proj[2]; 
+  xt[0]= x[3]; xt[1]= x[0]; xt[2]= x[4]; xt[3]= proj[0];
+  yt[0]= y[3]; yt[1]= y[0]; yt[2]= y[4]; yt[3]= proj[1];
+  zt[0]= z[3]; zt[1]= z[0]; zt[2]= z[4]; zt[3]= proj[2];
   volume4 = CalcTetraederVolume(xt,yt,zt);
   volume = fabs(volume1)+fabs(volume2)+fabs(volume3)+fabs(volume4);
   return volume;
@@ -413,7 +413,7 @@ double M3Determinante(double *m)
 {
     return m[0] * m[4] * m[8] + m[1] * m[5] * m[6] + m[2] * m[3] * m[7]
         - m[2] * m[4] * m[6] - m[0] * m[5] * m[7] - m[1] * m[3] * m[8];
-}   
+}
 
 double MCalcDistancePointToPoint(double *pt1,double *pt2) {
  double vec[3];
@@ -425,229 +425,25 @@ double MCalcDistancePointToPoint(double *pt1,double *pt2) {
  return MBtrgVec(vec,3);
 }
 
-CubicSpline::CubicSpline(std::vector<double>&s, std::vector<double>&val)
-{
-   n = (int)s.size();
-   xx = s;
-   yy = val;
-   bb = new double[n];
-   cc = new double[n];
-   dd = new double[n];
-   //
-   ComputeCoefficents();
-}
-
-CubicSpline::~CubicSpline()
-{
-    delete [] bb;
-    delete [] cc;
-    delete [] dd;
-    bb = NULL;
-	cc = NULL;
-    dd = NULL;
-}
-
-double CubicSpline::interpolation(double x)
-{
-    int i;
-    double val = 0.0;
-	double y_max = -1.0e14;
-	double y_min = 1.0e14;
-	double x0=0.0, y0=0.0, x1=0.0, y1=0.0;
-    bool withinR = false;
-	for(i=0; i<n-1; i++)
-	{
-		if(x>=xx[i]&&x<xx[i+1])
-		{
-			val = yy[i] + bb[i]*(x-xx[i]) + cc[i]*pow(x-xx[i],2.0)
-			    + dd[i]*pow(x-xx[i],3.0);
-
-			//Check the local range
-			if(yy[i]>y_max) y_max = yy[i];
-			if(yy[i+1]>y_max) y_max = yy[i+1];
-			if(yy[i]<y_min) y_min = yy[i];
-			if(yy[i+1]<y_min) y_min = yy[i+1];
-
-			// Linear intepolation
-			if(val<y_min||val>y_max)
-			{
-				val =  yy[i] + (yy[i+1]-yy[i])*(x-xx[i])/(xx[i+1]-xx[i]);
-			}
-            if(!withinR) withinR = true;
-			break;
-		}
-	}
- 
-	if(withinR) return val;
-	//-------------------------------------
-	// Extropolate
-	//-------------------------------------
-    // Compute the golbal range
-	y_max = -1.0e14;
-	y_min = 1.0e14;
-	for(i=0; i<n; i++)
-	{
-	   if(yy[i]>y_max) y_max = yy[i];
-	   if(yy[i]<y_min) y_min = yy[i];
-	}
-	if((x>=xx[n-1])||(x<=xx[0]))
-	{
-		if(x<=xx[0])
-		{
-			x0 = xx[0];
-			y0 = yy[0];
-			x1 = xx[1];
-			y1 = yy[1];
-		} 
-		else if((x>=xx[n-1]))
-		{
-			x0 = xx[n-2];
-			y0 = yy[n-2];
-			x1 = xx[n-1];
-			y1 = yy[n-1];
-		}
-        val = y0 + (y1-y0)*(x-x0)/(x1-x0);
-		if(val<y_min) val = y_min;
-		if(val>y_max) val = y_max;
-	}
-
-	return val;
-}
-
-
-/*******************************************************************
-  the coefficients b(i), c(i), and d(i) are computed
-  for a cubic interpolating spline
-
-    s(x) = y(i) + b(i)*(x-x(i)) + c(i)*(x-x(i))**2 + d(i)*(x-x(i))**3
-
-    for  x(i) .le. x .le. x(i+1)
-
-  input..
-
-    n = the number of data points or knots (n.ge.2)
-    x = the abscissas of the knots in strictly increasing order
-    y = the ordinates of the knots
-
-  output..
-
-    b, c, d  = arrays of spline coefficients as defined above.
-
-  using  p  to denote differentiation,
-
-    y(i) = s(x(i))
-    b(i) = sp(x(i))
-    c(i) = spp(x(i))/2
-    d(i) = sppp(x(i))/6  (derivative from the right)
-
-  the accompanying function subprogram  seval  can be used
-  to evaluate the spline.
-*******************************************************************/
-void CubicSpline::ComputeCoefficents()
-{
-  int nm1, ib, i;
-  double t;
-
-  nm1 = n-1;
-  if ( n<2 ) 
-  {
-      printf("Dimension can not be less than 3 in spline");
-      abort();
-
-  }
-  if ( n==2 ) 
-    {
-      bb[0] = (yy[1]-yy[0])/(xx[1]-xx[0]);
-      cc[0] = 0.0;
-      dd[0] = 0.0;
-      bb[1] = bb[0];
-      cc[1] = 0.0;
-      dd[1] = 0.0;
-    }
-  else if(n>=3) {
-    /***************************************************
-  	set up tridiagonal system
-
-     b = diagonal, d = offdiagonal, c = right hand side.
-    ****************************************************/
-    dd[0] = xx[1] - xx[0];
-    cc[1] = (yy[1] - yy[0])/dd[0];
-    for(i= 1; i<nm1; i++)
-    {
-	    dd[i] = xx[i+1] - xx[i];
-    	bb[i] = 2.0*(dd[i-1] + dd[i]);
-    	cc[i+1] = (yy[i+1] - yy[i])/dd[i]; 
-    	cc[i] = cc[i+1] - cc[i];
-    }
-
-    /******************************************************
-     end conditions.  third derivatives at  x[1]  and  x[n]
-     otained from divided differences
-    ******************************************************/
-    bb[0] = -dd[0];
-    bb[n-1] = -dd[n-2];
-    cc[0] = 0.0;
-    cc[n-1] = 0.0;
-    if(n>3)
-      {
-	    cc[0] = cc[2]/(xx[3]-xx[1]) - cc[1]/(xx[2]-xx[0]);
-	    cc[n-1] = cc[n-2]/(xx[n-1]-xx[n-3]) - cc[n-3]/(xx[n-2]-xx[n-4]);
-	    cc[0] = cc[0]*pow(dd[0],2.0)/(xx[3]-xx[0]);
-	    cc[n-1] = -cc[n-1]*pow(dd[n-2],2.0)/(xx[n-1]-xx[n-4]);
-      }
-    //
-    //  forward elimination
-    //
-    for(i=1;i<n;i++) 
-      {
-         t = dd[i-1]/bb[i-1];
-	     bb[i] = bb[i] - t*dd[i-1];
-	     cc[i] = cc[i] - t*cc[i-1];
-      }
-    //
-    //  back substitution
-    //
-    cc[n-1] = cc[n-1]/bb[n-1];
-    for(ib=0; ib<nm1; ib++)
-      {
-         i = n-1-ib;
-	     cc[i] = (cc[i] - dd[i]*cc[i+1])/bb[i];
-      }
-    //
-    //  c[i] is now the sigma[i] of the text
-    //
-    //  compute polynomial coefficients
-    //
-    bb[n-1] = (yy[n-1] - yy[nm1-1])/dd[nm1-1] + dd[nm1-1]*(cc[nm1-1] + 2.0*cc[n-1]);
-    for(i=0; i<nm1; i++) 
-      {
-          bb[i] = (yy[i+1] - yy[i])/dd[i] - dd[i]*(cc[i+1] + 2.0*cc[i]);
-	      dd[i] = (cc[i+1] - cc[i])/dd[i];
-	      cc[i] = 3.0*cc[i];
-      }
-    cc[n-1] = 3.0*cc[n-1];
-    dd[n-1] = dd[n-2];
-  }
-}
 
 /**************************************************************************
    ROCKFLOW - Function: TOLSortNodes1
-   
-   Task:  
-   Sort nodes descending according to the criterium. 
-         
+
+   Task:
+   Sort nodes descending according to the criterium.
+
    Parameter: (I: Input; R: Return; X: Both)
            I: long* nodes, double* criterium, int anz
-           
+
    Return:
            *long nodes (aber sortiert!)
-   
+
    Programming:
    09/2002   MB   First Version
  **************************************************************************/
 long* TOLSortNodes1(long* nodes, double* criterium, int anz)
 {
-  int flag=1; 
+  int flag=1;
   int i;
   int nummer=0;
   long tempnode;
@@ -668,7 +464,7 @@ long* TOLSortNodes1(long* nodes, double* criterium, int anz)
       } /* end if */
     } /* end for */
   } while (flag == 1);
-  return nodes;  
+  return nodes;
 }
 /***************************************************************************
    ROCKFLOW - Funktion: MPhi2D
@@ -718,14 +514,14 @@ int MPhi2D(double *vf, double r, double s)
  Programmaenderungen:
    05/2005 RFW Implementierung
 ***************************************************************************/
-bool LineSegmentIntersection(vector<double> xline1, vector<double> yline1, 
-                                                vector<double> xline2, vector<double> yline2, 
+bool LineSegmentIntersection(vector<double> xline1, vector<double> yline1,
+                                                vector<double> xline2, vector<double> yline2,
                                                 vector<double>& intercept)
 {
 double determinant, t1; //WW, t2;
 bool crosses=false;
 
-determinant = (  (yline2[1]-yline2[0])*(xline1[1]-xline1[0]) 
+determinant = (  (yline2[1]-yline2[0])*(xline1[1]-xline1[0])
                        -  (xline2[1]-xline2[0])*(yline1[1]-yline1[0]) );
 if(determinant==0)
 {

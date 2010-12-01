@@ -168,7 +168,8 @@ void DiagramScene::constructGrid()
 
 	for (int i = 0; i <= numXTicks; ++i) {
 		float x = _bounds.left()/_scaleX + (i * (_bounds.width()/_scaleX) / numXTicks);
-		_xTicksText.push_back(addNonScalableText(QString::number(x)));
+		QDateTime currentDate = _startDate.addDays(x);
+		_xTicksText.push_back(addNonScalableText(currentDate.toString("dd.MM.yyyy")));
 		_xTicksText.last()->setPos(x*_scaleX, _bounds.bottom() + 15);
 	}
 
@@ -248,11 +249,13 @@ void DiagramScene::setDiagramBoundaries(DiagramList* list)
 		if (list->minYValue()<_unscaledBounds.top()) _unscaledBounds.setTop(list->minYValue());
 		if (list->maxXValue()>_unscaledBounds.right()) _unscaledBounds.setRight(list->maxXValue());
 		if (list->maxYValue()>_unscaledBounds.bottom()) _unscaledBounds.setBottom(list->maxYValue());
+		if (_startDate>list->getStartDate()) _startDate = list->getStartDate();
 	}
 	else
 	{
 		_unscaledBounds.setRect(list->minXValue(), list->minYValue(),
 			           list->maxXValue()-list->minXValue(), list->maxYValue()-list->minYValue());
+		_startDate = list->getStartDate();
 	}
 }
 

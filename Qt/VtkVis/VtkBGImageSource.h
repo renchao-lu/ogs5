@@ -41,6 +41,8 @@ public:
 	/// Sets the geo-referenced origin of the image (i.e. the lower left corner)
 	void SetOrigin(double x, double y) { _origin.first = x; _origin.second = y; };
 
+	virtual void SetUserProperty(QString name, QVariant value);
+
 protected:
 	VtkBGImageSource();
 	~VtkBGImageSource();

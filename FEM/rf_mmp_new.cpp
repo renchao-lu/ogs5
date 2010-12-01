@@ -380,7 +380,7 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 //------------------------------------------------------------------------
 //3..POROSITY
 //------------------------------------------------------------------------
-//CB 
+//CB
    if((line_string.find("$POROSITY")!=string::npos) && (!(line_string.find("_DISTRIBUTION")!=string::npos))){ //subkeyword found
 //    if(line_string.find("$POROSITY")!=string::npos) { //subkeyword found
       in.str(GetLineFromFile1(mmp_file));
@@ -459,8 +459,8 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
         case 11: //MB: read from file ToDo
 		 // in >> porosity_file; // CB
             in >> porosity_model_values[0];  // CB some dummy default value is read
-            // CB $POROSITY_DISTRIBUTION should be given as keyword in *.mmp file, 
-            //     porosities then are to be read in from file by fct. 
+            // CB $POROSITY_DISTRIBUTION should be given as keyword in *.mmp file,
+            //     porosities then are to be read in from file by fct.
             //     CMediumProperties::SetDistributedELEProperties
 		 break;
 #ifdef GEM_REACT
@@ -473,7 +473,7 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
       break;
 #endif
 #ifdef BRNS
-        case 16: 
+        case 16:
            in >> porosity_model_values[0]; // set a default value for BRNS calculation
          break;
 #endif
@@ -488,7 +488,7 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 	if(line_string.find("$VOL_MAT")!=string::npos) { //subkeyword found
       in.str(GetLineFromFile1(mmp_file));
 	     // in >> idummy >> this->vol_mat; CB
-      in >> vol_mat_model >> this->vol_mat; 
+      in >> vol_mat_model >> this->vol_mat;
       switch(vol_mat_model) {
         case 1:          // do nothing
           break;
@@ -504,7 +504,7 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
 	if(line_string.find("$VOL_BIO")!=string::npos) { //subkeyword found
       in.str(GetLineFromFile1(mmp_file));
 	     // in >> idummy >> this->vol_bio; CB
-      in >> vol_bio_model >> this->vol_bio; 
+      in >> vol_bio_model >> this->vol_bio;
       switch(vol_bio_model) {
         case 1:          // do nothing
           break;
@@ -1410,8 +1410,8 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
       in.clear();
       continue;
     }
-    
-    
+
+
 //------------------------------------------------------------------------
 //11..POROSITY_DISTRIBUTION
 //------------------------------------------------------------------------
@@ -1448,15 +1448,15 @@ ios::pos_type CMediumProperties::Read(ifstream *mmp_file)
       ifstream mmp_file(funfname.data(),ios::in); //WW
       if (!mmp_file.good()){
         cout << "Fatal error in MMPRead: no POROSITY_DISTRIBUTION file" << endl;
-      }  
+      }
       mmp_file.close();
       porosity_model = 11;
       in.clear();
       continue;
     }
-    
-    
-    
+
+
+
 //------------------------------------------------------------------------
 #ifdef RFW_FRACTURE
 //------------------------------------------------------------------------
@@ -1761,26 +1761,7 @@ void CMediumProperties::WriteTecplot(string msh_name)
   for(i=0;i<(long)m_msh->ele_vector.size();i++){
     m_ele = m_msh->ele_vector[i];
     if(m_ele->GetPatchIndex()==number) {
-      switch(m_ele->GetElementType()){
-        case 1:
-            j++;
-            break;
-          case 2:
-            j++;
-            break;
-          case 3:
-            j++;
-            break;
-          case 4:
-            j++;
-            break;
-          case 5:
-            j++;
-            break;
-          case 6:
-          j++;
-          break;
-      }
+      j++;
     }
   }
   long no_elements = j-1;
@@ -1802,44 +1783,46 @@ void CMediumProperties::WriteTecplot(string msh_name)
     m_ele = m_msh->ele_vector[i];
     if(m_ele->GetPatchIndex()==number) {
       switch(m_ele->GetElementType()){
-        case 1:
+		case MshElemType::LINE:
             mat_file \
               << m_ele->nodes_index[0]+1 << " " << m_ele->nodes_index[1]+1 << " " << m_ele->nodes_index[1]+1 << " " << m_ele->nodes_index[0]+1 << endl;
             j++;
             element_type = "ET = QUADRILATERAL";
             break;
-          case 2:
+		case MshElemType::QUAD:
             mat_file \
               << m_ele->nodes_index[0]+1 << " " << m_ele->nodes_index[1]+1 << " " << m_ele->nodes_index[2]+1 << " " << m_ele->nodes_index[3]+1 << endl;
             j++;
             element_type = "ET = QUADRILATERAL";
             break;
-          case 3:
+		case MshElemType::HEXAHEDRON:
             mat_file \
               << m_ele->nodes_index[0]+1 << " " << m_ele->nodes_index[1]+1 << " " << m_ele->nodes_index[2]+1 << " " << m_ele->nodes_index[3]+1 << " " \
               << m_ele->nodes_index[4]+1 << " " << m_ele->nodes_index[5]+1 << " " << m_ele->nodes_index[6]+1 << " " << m_ele->nodes_index[7]+1 << endl;
             j++;
             element_type = "ET = BRICK";
             break;
-          case 4:
+		case MshElemType::TRIANGLE:
             mat_file \
               << m_ele->nodes_index[0]+1 << " " << m_ele->nodes_index[1]+1 << " " << m_ele->nodes_index[2]+1 << endl;
             j++;
             element_type = "ET = TRIANGLE";
             break;
-          case 5:
+		case MshElemType::TETRAHEDRON:
             mat_file \
               << m_ele->nodes_index[0]+1 << " " << m_ele->nodes_index[1]+1 << " " << m_ele->nodes_index[2]+1 << " " << m_ele->nodes_index[3]+1 << endl;
             j++;
             element_type = "ET = TETRAHEDRON";
             break;
-          case 6:
+		case MshElemType::PRISM:
             mat_file \
               << m_ele->nodes_index[0]+1 << " " << m_ele->nodes_index[0]+1 << " " << m_ele->nodes_index[1]+1 << " " << m_ele->nodes_index[2]+1 << " " \
               << m_ele->nodes_index[3]+1 << " " << m_ele->nodes_index[3]+1 << " " << m_ele->nodes_index[4]+1 << " " << m_ele->nodes_index[5]+1 << endl;
           j++;
           element_type = "ET = BRICK";
           break;
+		default:
+			std::cerr << "CMediumProperties::WriteTecplot MshElemType not handled" << std::endl;
       }
     }
   }
@@ -1909,6 +1892,7 @@ Programing:
 05/2005 OK MSH
 last modification:
 ToDo: GetSoilRelPermSatu
+10/2010 TF changed access to process type
 **************************************************************************/
 double CMediumProperties::PermeabilitySaturationFunction(long number,double*gp,double theta,\
                                                          int phase)
@@ -1923,7 +1907,8 @@ double CMediumProperties::PermeabilitySaturationFunction(long number,double*gp,d
     cout << "CMediumProperties::PermeabilitySaturationFunction: no PCS data" << endl;
     return 1.0;
   }
-  if(!(m_pcs->pcs_type_name.compare("RICHARDS_FLOW")==0)&&no_fluid_phases!=2)
+//  if(!(m_pcs->pcs_type_name.compare("RICHARDS_FLOW")==0)&&no_fluid_phases!=2) TF
+  if(!(m_pcs->getProcessType () == RICHARDS_FLOW) && no_fluid_phases!=2)
      return 1.0;
   // static int nidx0,nidx1;
   double saturation=0.0,saturation_eff; //OK411
@@ -2086,7 +2071,8 @@ double CMediumProperties::PermeabilitySaturationFunction(const double Saturation
     cout << "CMediumProperties::PermeabilitySaturationFunction: no PCS data" << endl;
     return 1.0;
   }
-  if(!(m_pcs->pcs_type_name.find("RICHARDS")!=string::npos)&&no_fluid_phases!=2)
+//  if(!(m_pcs->pcs_type_name.find("RICHARDS")!=string::npos) && no_fluid_phases!=2) TF
+  if(!(m_pcs->getProcessType () == RICHARDS_FLOW) && no_fluid_phases!=2)
      return 1.0;
   double saturation, saturation_eff;
   int gueltig;
@@ -2245,99 +2231,98 @@ Programing:
 08/2004 OK MMP implementation
 03/2005 WW Case of no fluids
 10/2005 YD/OK: general concept for heat capacity
+10/2010 TF changed access to process type
 **************************************************************************/
-
-double CMediumProperties::HeatCapacity(long number,double theta,
-                                       CFiniteElementStd* assem)
+double CMediumProperties::HeatCapacity(long number, double theta,
+	CFiniteElementStd* assem)
 {
-  CSolidProperties *m_msp = NULL;
-//WW  int heat_capcity_model = 1;
-  double heat_capacity_fluids,specific_heat_capacity_solid;
-  double density_solid;
-  double porosity, Sat, PG;
-  int group;
-  double T0,T1=0.0;
-//  double H0,H1;
-  // ???
-  bool FLOW = false; //WW
-  for(int ii=0;ii<(int)pcs_vector.size();ii++){
-     if(pcs_vector[ii]->pcs_type_name.find("FLOW")!=string::npos)
-     {
-        FLOW = true;
-        break;
-     }
+	CSolidProperties *m_msp = NULL;
+	double heat_capacity_fluids, specific_heat_capacity_solid;
+	double density_solid;
+	double porosity, Sat, PG;
+	int group;
+	double T0, T1 = 0.0;
+	//  double H0,H1;
+	// ???
+	bool FLOW = false; //WW
+	for (size_t ii = 0; ii < pcs_vector.size(); ii++) {
+		// if(pcs_vector[ii]->pcs_type_name.find("FLOW")!=string::npos) {
+		if (isFlowProcess (pcs_vector[ii]->getProcessType ())) {
+			FLOW = true;
+			break;
+		}
 
-//WW     if(pcs_vector[ii]->pcs_type_name.find("RICHARDS")!=string::npos)
-//WW       nphase = 3;
-  }
-  //----------------------------------------------------------------------
-  switch(assem->SolidProp->GetCapacityModel())
-  {
-    //....................................................................
-    case 0:  // f(x) user-defined function
-      break;
-    //....................................................................
-    case 1:  // const
-      group = m_pcs->m_msh->ele_vector[number]->GetPatchIndex(); //OK411
-      m_msp = msp_vector[group];
-      specific_heat_capacity_solid = m_msp->Heat_Capacity();
-      density_solid = fabs(m_msp->Density());
-      if(FLOW)
-      {
-	    porosity = assem->MediaProp->Porosity(number,theta);
-    	  heat_capacity_fluids = MFPCalcFluidsHeatCapacity(assem);
-      }
-      else
-      {
-        heat_capacity_fluids = 0.0;
-        porosity = 0.0;
-      }
-      heat_capacity = porosity * heat_capacity_fluids \
-                       + (1.-porosity) * specific_heat_capacity_solid * density_solid;
-      break;
-    case 2:  //boiling model for YD
-      //YD/OK: n c rho = n S^g c^g rho^g + n S^l c^l rho^l + (1-n) c^s rho^s
-      T0 = assem->interpolate(assem->NodalVal0); //assem->GetNodalVal(1); WW
-  	 //This following lines moved from fem_ele_std but wrong.. WW
-     /*
-        if(assem->FluidProp->heat_phase_change_curve>0){ //
-      if(assem->FluidProp->heat_phase_change_curve>0||assem->heat_phase_change)
-      { //
-        if(fabs(assem->TG-T0)<1.0e-8) T1 +=1.0e-8;
-        H0 = assem->interpolate(assem->NodalVal2);
-        H1 = assem->interpolate(assem->NodalVal3);
-		heat_capacity = (H1-H0)/(assem->TG-T0);
-	  }
-	  else //WW
-      {
-      */
-         if(FLOW)
-         {
-            PG = assem->interpolate(assem->NodalValC1);
-            if (assem->cpl_pcs->type==1212)  // Multi-phase WW
-              PG *= -1.0;
-            Sat = SaturationCapillaryPressureFunction(-PG,0);
-         }
-         else
-            Sat = 1.0;
-          T1 = assem->TG;
-          if((T1-T0)<DBL_MIN)
-             T1 *= -1;
-          heat_capacity = assem->SolidProp->Heat_Capacity(T1, Porosity(assem), Sat);
-    //  }
-      break;
-    case 3:  // D_THM1 - Richards model //WW
-      T1 = assem->TG;
-      heat_capacity = assem->SolidProp->Heat_Capacity(T1)*fabs(assem->SolidProp->Density())+ \
-                      Porosity(assem)*MFPCalcFluidsHeatCapacity(assem);
-      break;
-    //....................................................................
-    default:
-      cout << "Error in CMediumProperties::HeatCapacity: no valid material model" << endl;
-      break;
-    //....................................................................
-  }
-  return heat_capacity;
+		//WW     if(pcs_vector[ii]->pcs_type_name.find("RICHARDS")!=string::npos)
+		//WW       nphase = 3;
+	}
+
+	//----------------------------------------------------------------------
+	switch (assem->SolidProp->GetCapacityModel()) {
+	//....................................................................
+	case 0: // f(x) user-defined function
+		break;
+		//....................................................................
+	case 1: // const
+		group = m_pcs->m_msh->ele_vector[number]->GetPatchIndex(); //OK411
+		m_msp = msp_vector[group];
+		specific_heat_capacity_solid = m_msp->Heat_Capacity();
+		density_solid = fabs(m_msp->Density());
+		if (FLOW) {
+			porosity = assem->MediaProp->Porosity(number, theta);
+			heat_capacity_fluids = MFPCalcFluidsHeatCapacity(assem);
+		} else {
+			heat_capacity_fluids = 0.0;
+			porosity = 0.0;
+		}
+		heat_capacity = porosity * heat_capacity_fluids + (1.
+				- porosity) * specific_heat_capacity_solid
+				* density_solid;
+		break;
+	case 2: //boiling model for YD
+		//YD/OK: n c rho = n S^g c^g rho^g + n S^l c^l rho^l + (1-n) c^s rho^s
+		T0 = assem->interpolate(assem->NodalVal0); //assem->GetNodalVal(1); WW
+		//This following lines moved from fem_ele_std but wrong.. WW
+		/*
+		 if(assem->FluidProp->heat_phase_change_curve>0){ //
+		 if(assem->FluidProp->heat_phase_change_curve>0||assem->heat_phase_change)
+		 { //
+		 if(fabs(assem->TG-T0)<1.0e-8) T1 +=1.0e-8;
+		 H0 = assem->interpolate(assem->NodalVal2);
+		 H1 = assem->interpolate(assem->NodalVal3);
+		 heat_capacity = (H1-H0)/(assem->TG-T0);
+		 }
+		 else //WW
+		 {
+		 */
+		if (FLOW) {
+			PG = assem->interpolate(assem->NodalValC1);
+			if (assem->cpl_pcs->type == 1212) // Multi-phase WW
+				PG *= -1.0;
+			Sat = SaturationCapillaryPressureFunction(-PG, 0);
+		} else
+			Sat = 1.0;
+		T1 = assem->TG;
+		if ((T1 - T0) < DBL_MIN)
+			T1 *= -1;
+		heat_capacity = assem->SolidProp->Heat_Capacity(T1, Porosity(
+				assem), Sat);
+		//  }
+		break;
+	case 3: // D_THM1 - Richards model //WW
+		T1 = assem->TG;
+		heat_capacity = assem->SolidProp->Heat_Capacity(T1) * fabs(
+				assem->SolidProp->Density()) + Porosity(assem)
+				* MFPCalcFluidsHeatCapacity(assem);
+		break;
+		//....................................................................
+	default:
+		cout
+				<< "Error in CMediumProperties::HeatCapacity: no valid material model"
+				<< endl;
+		break;
+		//....................................................................
+	}
+	return heat_capacity;
 }
 
 /**************************************************************************
@@ -2352,87 +2337,100 @@ Programing:
 03/2007 WW Conductivity for multi-phase flow
 last modification:
 ToDo:
+10/2010 TF changed access to process type
 **************************************************************************/
-double* CMediumProperties::HeatConductivityTensor(int number)
-{
-  int i, dimen;
-  CSolidProperties *m_msp = NULL;
-  double heat_conductivity_fluids;
-double dens_arg[3];//AKS
-//  double porosity =  this->porosity;  //MX
-  double Sw, porosity =  this->porosity_model_values[0];
-  bool FLOW = false; //WW
-//  int heat_capacity_model = 0;
-  CFluidProperties *m_mfp; //WW
- // long group = Fem_Ele_Std->GetMeshElement()->GetPatchIndex();
-  m_mfp = Fem_Ele_Std->FluidProp; //WW
+double* CMediumProperties::HeatConductivityTensor(int number) {
+	int i, dimen;
+	CSolidProperties *m_msp = NULL;
+	double heat_conductivity_fluids;
+	double dens_arg[3];//AKS
+	//  double porosity =  this->porosity;  //MX
+	double Sw, porosity = this->porosity_model_values[0];
+	bool FLOW = false; //WW
+	//  int heat_capacity_model = 0;
+	CFluidProperties *m_mfp; //WW
+	// long group = Fem_Ele_Std->GetMeshElement()->GetPatchIndex();
+	m_mfp = Fem_Ele_Std->FluidProp; //WW
 
-  for(int ii=0;ii<(int)pcs_vector.size();ii++){
-    if(pcs_vector[ii]->pcs_type_name.find("FLOW")!=string::npos)
-      FLOW = true;
-  }
-  if(FLOW) //WW
-  {
-    if (Fem_Ele_Std->cpl_pcs->type==1212)  // Multi-phase WW
-    {
-       double PG = Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalValC1); // Capillary pressure
-       double Sw = Fem_Ele_Std->MediaProp->SaturationCapillaryPressureFunction(PG,0);
-       //
-       m_mfp = mfp_vector[0];
-       heat_conductivity_fluids = Sw * m_mfp->HeatConductivity();
-       m_mfp = mfp_vector[1];
-       heat_conductivity_fluids += (1.0-Sw) * m_mfp->HeatConductivity();
-    }
-	else {
-if(Fem_Ele_Std->FluidProp->density_model==14 && Fem_Ele_Std->MediaProp->heat_diffusion_model==273 && Fem_Ele_Std->cpl_pcs )
-{
-dens_arg[0]=Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalValC1);//Pressure
-dens_arg[1]=Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalVal1)+273.15;//Temperature
-dens_arg[2]=Fem_Ele_Std->Index;//ELE index
-heat_conductivity_fluids = Fem_Ele_Std->FluidProp->HeatConductivity(dens_arg);
-}
-else
-{
-heat_conductivity_fluids = Fem_Ele_Std->FluidProp->HeatConductivity();
-}
-      Sw = 1;
-
-	  if(Fem_Ele_Std->cpl_pcs->type != 1) {
-        double PG = Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalValC1); // Capillary pressure
-
-	  if(PG < 0.0){
-         Sw = Fem_Ele_Std->MediaProp->SaturationCapillaryPressureFunction(-PG,0);
-	 	 heat_conductivity_fluids *= Sw;
-		 if(Fem_Ele_Std->GasProp != 0)
-		   heat_conductivity_fluids += (1.-Sw) * Fem_Ele_Std->GasProp->HeatConductivity();
-	  }
-
-
-
-	  }
-
+	for (size_t ii = 0; ii < pcs_vector.size(); ii++) {
+//		if (pcs_vector[ii]->pcs_type_name.find("FLOW") != string::npos) TF
+		if (isFlowProcess (pcs_vector[ii]->getProcessType ()))
+			FLOW = true;
 	}
-  }
-  else {
-    heat_conductivity_fluids = 0.0;
-    porosity = 0.0;
-  }
-  dimen = m_pcs->m_msh->GetCoordinateFlag()/10;
-  int group = m_pcs->m_msh->ele_vector[number]->GetPatchIndex();
+	if (FLOW) //WW
+	{
+		if (Fem_Ele_Std->cpl_pcs->type == 1212) // Multi-phase WW
+		{
+			double PG = Fem_Ele_Std->interpolate(
+					Fem_Ele_Std->NodalValC1); // Capillary pressure
+			double
+					Sw =
+							Fem_Ele_Std->MediaProp->SaturationCapillaryPressureFunction(
+									PG, 0);
+			//
+			m_mfp = mfp_vector[0];
+			heat_conductivity_fluids = Sw * m_mfp->HeatConductivity();
+			m_mfp = mfp_vector[1];
+			heat_conductivity_fluids += (1.0 - Sw)
+					* m_mfp->HeatConductivity();
+		} else {
+			if (Fem_Ele_Std->FluidProp->density_model == 14
+					&& Fem_Ele_Std->MediaProp->heat_diffusion_model
+							== 273 && Fem_Ele_Std->cpl_pcs) {
+				dens_arg[0] = Fem_Ele_Std->interpolate(
+						Fem_Ele_Std->NodalValC1);//Pressure
+				dens_arg[1] = Fem_Ele_Std->interpolate(
+						Fem_Ele_Std->NodalVal1) + 273.15;//Temperature
+				dens_arg[2] = Fem_Ele_Std->Index;//ELE index
+				heat_conductivity_fluids
+						= Fem_Ele_Std->FluidProp->HeatConductivity(
+								dens_arg);
+			} else {
+				heat_conductivity_fluids
+						= Fem_Ele_Std->FluidProp->HeatConductivity();
+			}
+			Sw = 1;
 
-  for(i=0;i<dimen*dimen;i++)  //MX
-    heat_conductivity_tensor[i] = 0.0;
+			if (Fem_Ele_Std->cpl_pcs->type != 1) {
+				double PG = Fem_Ele_Std->interpolate(
+						Fem_Ele_Std->NodalValC1); // Capillary pressure
 
-  m_msp = msp_vector[group];
-  m_msp->HeatConductivityTensor(dimen,heat_conductivity_tensor,group); //MX
+				if (PG < 0.0) {
+					Sw
+							= Fem_Ele_Std->MediaProp->SaturationCapillaryPressureFunction(
+									-PG, 0);
+					heat_conductivity_fluids *= Sw;
+					if (Fem_Ele_Std->GasProp != 0)
+						heat_conductivity_fluids
+								+= (1. - Sw)
+										* Fem_Ele_Std->GasProp->HeatConductivity();
+				}
+
+			}
+
+		}
+	} else {
+		heat_conductivity_fluids = 0.0;
+		porosity = 0.0;
+	}
+	dimen = m_pcs->m_msh->GetCoordinateFlag() / 10;
+	int group = m_pcs->m_msh->ele_vector[number]->GetPatchIndex();
+
+	for (i = 0; i < dimen * dimen; i++) //MX
+		heat_conductivity_tensor[i] = 0.0;
+
+	m_msp = msp_vector[group];
+	m_msp->HeatConductivityTensor(dimen, heat_conductivity_tensor,
+			group); //MX
 
 
-  for(i=0;i<dimen*dimen;i++)
-    heat_conductivity_tensor[i] *= (1.0 - porosity);
-  for(i=0;i<dimen;i++)
-    heat_conductivity_tensor[i*dimen+i] += porosity*heat_conductivity_fluids;
+	for (i = 0; i < dimen * dimen; i++)
+		heat_conductivity_tensor[i] *= (1.0 - porosity);
+	for (i = 0; i < dimen; i++)
+		heat_conductivity_tensor[i * dimen + i] += porosity
+				* heat_conductivity_fluids;
 
-  return heat_conductivity_tensor;
+	return heat_conductivity_tensor;
 }
 
 
@@ -2538,7 +2536,6 @@ ToDo:
 double* CMediumProperties::MassDispersionTensorNew(int ip)
 {
   static double advection_dispersion_tensor[9];//Name change due to static conflict
-  int eleType;
   int component = Fem_Ele_Std->pcs->pcs_component_number;
   int i;
   long index = Fem_Ele_Std->GetMeshElement()->GetIndex();
@@ -2552,7 +2549,7 @@ double* CMediumProperties::MassDispersionTensorNew(int ip)
   int set=0;
   ElementValue* gp_ele = ele_gp_value[index];
   CompProperties *m_cp = cp_vec[component];
-  eleType=m_pcs->m_msh->ele_vector[number]->GetElementType();
+  MshElemType::type eleType = m_pcs->m_msh->ele_vector[number]->GetElementType();
   int Dim = m_pcs->m_msh->GetCoordinateFlag()/10;
   //----------------------------------------------------------------------
   // Materials
@@ -3306,40 +3303,38 @@ double CMediumProperties::Porosity(long number,double theta)
   case 15:
         porosity = porosity_model_values[0]; // default value as backup
 
-	for (int i=0; i < (int)pcs_vector.size() ; i++)
-		{
-		if ((pcs_vector[i]->pcs_type_name.find("FLOW") != string::npos))
-		{
-			idx=pcs_vector[i]->GetElementValueIndex ( "POROSITY" ); 
+	for (size_t i=0; i < pcs_vector.size() ; i++) {
+//		if ((pcs_vector[i]->pcs_type_name.find("FLOW") != string::npos)) {
+		if (isFlowProcess(pcs_vector[i]->getProcessType())) {
+			idx=pcs_vector[i]->GetElementValueIndex ( "POROSITY" );
                 	porosity = pcs_vector[i]->GetElementValue(number, idx);
 			if (porosity <1.e-6 || porosity > 1.0) { cout <<"Porosity: error getting porosity for model 15. porosity: " <<porosity << " at node "<< number << endl; porosity = porosity_model_values[0];}
 		}
-		}
+	}
 
-      break;
+    break;
 #endif
 #ifdef BRNS
-    case 16: 
+    case 16:
         porosity = porosity_model_values[0]; // default value as backup
-        if ( aktueller_zeitschritt > 1  )
-        {
-	        for (int i=0; i < (int)pcs_vector.size() ; i++)
-	        {
+        if ( aktueller_zeitschritt > 1  ) {
+	        for (size_t i=0; i < pcs_vector.size() ; i++) {
 	            pcs_temp = pcs_vector[i];
-	            if ( pcs_temp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0 || 
-                     pcs_temp->pcs_type_name.compare("LIQUID_FLOW") == 0         )
-	            {
+//	            if ( pcs_temp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0 ||
+//                     pcs_temp->pcs_type_name.compare("LIQUID_FLOW") == 0         ) {
+	            if ( pcs_temp->getProcessType() == GROUNDWATER_FLOW
+	            		|| pcs_temp->getProcessType() == LIQUID_FLOW) {
                     int idx;
 	                idx=pcs_temp->GetElementValueIndex ( "POROSITY" );
 
                     porosity = pcs_temp->GetElementValue(number, idx);
-	                if (porosity <1.e-6) 
+	                if (porosity <1.e-6)
                         cout << "error for porosity1 " << porosity << " node "<< number << endl;
 	            }
 	        }
         }
         break;
-#endif 
+#endif
 	default:
       cout << "Unknown porosity model!" << endl;
       break;
@@ -3447,18 +3442,20 @@ double CMediumProperties::Porosity(CElement* assem) //WW
          porosity = porosity_model_values[0]; // default value as backup
 
 //                CRFProcess* mf_pcs = NULL;
-		for (int i=0; i < (int)pcs_vector.size() ; i++)
-		{
-		pcs_temp = pcs_vector[i];
-		if ((pcs_temp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0) || (pcs_temp->pcs_type_name.compare("RICHARDS_FLOW") == 0)||(pcs_temp->pcs_type_name.compare("MULTI_PHASE_FLOW") == 0))
-		{
-		int idx=pcs_temp->GetElementValueIndex ( "POROSITY" ); 
-
-                porosity = pcs_temp->GetElementValue(number, idx);
-		if (porosity <1.e-6 || porosity > 1.0) { cout <<" error getting porosity model 15 " <<porosity << " node "<< number << endl; porosity = porosity_model_values[0];}
+		for (size_t i=0; i < pcs_vector.size(); i++) {
+			pcs_temp = pcs_vector[i];
+//			if ((pcs_temp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0) || (pcs_temp->pcs_type_name.compare("RICHARDS_FLOW") == 0)||(pcs_temp->pcs_type_name.compare("MULTI_PHASE_FLOW") == 0))
+			if ( (pcs_temp->getProcessType() == GROUNDWATER_FLOW)
+					|| (pcs_temp->getProcessType() == RICHARDS_FLOW)
+					|| (pcs_temp->getProcessType() == MULTI_PHASE_FLOW) ) { // TF
+				int idx=pcs_temp->GetElementValueIndex ( "POROSITY" );
+				porosity = pcs_temp->GetElementValue(number, idx);
+				if (porosity <1.e-6 || porosity > 1.0) {
+					std:: cout <<" error getting porosity model 15 " <<porosity << " node "<< number << endl;
+					porosity = porosity_model_values[0];
+				}
+			}
 		}
-		}
-
 // KG44: TODO!!!!!!!!!!!!! check the above  ***************
       break;
 #endif
@@ -3614,7 +3611,7 @@ Programing:
            based on GetPermeabilityTensor by OK
 10/2004 SB adapted to het_file
 last modification:
-
+10/2010 TF changed access to process type
 **************************************************************************/
 double* CMediumProperties::PermeabilityTensor(long index)
 {
@@ -3717,15 +3714,14 @@ if ( permeability_tensor_type == 0 )
 		else if ( permeability_model == 5 )
 		{   // HS: 11.2008, for Clement clogging model
 
-			// if first time step, do nothing. otherwise, 
-			if ( aktueller_zeitschritt > 1 )
-            {
-
-                for (int i=0; i < (int)pcs_vector.size() ; i++)
-	            {
+			// if first time step, do nothing. otherwise,
+			if ( aktueller_zeitschritt > 1 ) {
+                for (size_t i=0; i < pcs_vector.size() ; i++) {
 	                m_pcs_tmp = pcs_vector[i];
-	                if ( m_pcs_tmp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0 || 
-                                   m_pcs_tmp->pcs_type_name.compare("LIQUID_FLOW") == 0)
+//	                if ( m_pcs_tmp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0 ||
+//                                   m_pcs_tmp->pcs_type_name.compare("LIQUID_FLOW") == 0)
+	                if ( m_pcs_tmp->getProcessType () == GROUNDWATER_FLOW ||
+                                   m_pcs_tmp->getProcessType () == LIQUID_FLOW)
                     break;
                 }
 			    // get index
@@ -3734,7 +3730,7 @@ if ( permeability_tensor_type == 0 )
 
 			    // get values of n.
 			    n_new = m_pcs_tmp->GetElementValue( index, idx_n + 1 );
-                
+
 		        // calculate new permeability
                 // k_rel(n) = n_rel^{19/6}
                 // first relative porosity change
@@ -3752,15 +3748,15 @@ if ( permeability_tensor_type == 0 )
 		}
 		else if ( permeability_model == 6 )
 		{   // HS: 11.2008, for Clement biomass colony clogging
-			
-            // if first time step, do nothing. otherwise, 
-			if ( aktueller_zeitschritt > 1 )
-            {
-                for (int i=0; i < (int)pcs_vector.size() ; i++)
-	            {
+
+            // if first time step, do nothing. otherwise,
+			if ( aktueller_zeitschritt > 1 ) {
+                for (size_t i=0; i < pcs_vector.size() ; i++) {
 	                m_pcs_tmp = pcs_vector[i];
-	                if ( m_pcs_tmp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0 || 
-                                   m_pcs_tmp->pcs_type_name.compare("LIQUID_FLOW") == 0)
+//	                if ( m_pcs_tmp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0 ||
+//                                   m_pcs_tmp->pcs_type_name.compare("LIQUID_FLOW") == 0) TF
+	                if ( m_pcs_tmp->getProcessType () == GROUNDWATER_FLOW ||
+                                   m_pcs_tmp->getProcessType () == LIQUID_FLOW)
                     break;
                 }
 			    // get index
@@ -3792,14 +3788,14 @@ if ( permeability_tensor_type == 0 )
 		}
 		else if ( permeability_model == 7 )
 		{   // HS: 11.2008, for Clement biofilm clogging
-            // if first time step, do nothing. otherwise, 
-			if ( aktueller_zeitschritt > 1 )
-            {
-                for (int i=0; i < (int)pcs_vector.size() ; i++)
-	            {
+            // if first time step, do nothing. otherwise,
+			if ( aktueller_zeitschritt > 1 ) {
+                for (size_t i=0; i < pcs_vector.size() ; i++) {
 	                m_pcs_tmp = pcs_vector[i];
-	                if ( m_pcs_tmp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0 || 
-                                   m_pcs_tmp->pcs_type_name.compare("LIQUID_FLOW") == 0)
+//	                if ( m_pcs_tmp->pcs_type_name.compare("GROUNDWATER_FLOW") == 0 ||
+//	                		m_pcs_tmp->pcs_type_name.compare("LIQUID_FLOW") == 0) TF
+	                if ( m_pcs_tmp->getProcessType() == GROUNDWATER_FLOW ||
+                                   m_pcs_tmp->getProcessType () == LIQUID_FLOW)
                     break;
                 }
 			    // get index
@@ -4947,7 +4943,7 @@ double CMediumProperties::SaturationPressureDependency(long number,double*gp,dou
                + theta*InterpolValue(number,nidx1,gp[0],gp[1],gp[2]);
     }
     else // Node values
-    { 
+    {
       saturation = SaturationCapillaryPressureFunction(number,NULL,theta,phase);
       saturation = (1.-theta)*GetNodeVal(number,nidx0) \
                  + theta*GetNodeVal(number,nidx1);
@@ -5127,8 +5123,8 @@ void GetHeterogeneousFields()
       //CB if(name_file != NULL)
       //CB  ok = FctReadHeterogeneousFields(name_file,m_mmp);
       //file_path_base_ext = file_path + m_mmp->porosity_file;
-      //m_mmp->SetDistributedELEProperties(file_path_base_ext); // CB Removed bugs in this function 
-      m_mmp->SetDistributedELEProperties(m_mmp->porosity_file); // CB Removed bugs in this function 
+      //m_mmp->SetDistributedELEProperties(file_path_base_ext); // CB Removed bugs in this function
+      m_mmp->SetDistributedELEProperties(m_mmp->porosity_file); // CB Removed bugs in this function
       m_mmp->WriteTecplotDistributedProperties();
     }
     //....................................................................
@@ -5155,7 +5151,7 @@ void CMediumProperties::SetConstantELEarea(double area, int group)
     int no_processes = (int) pcs_vector.size();
     if (area != 1.0) {
       for (i=0; i<no_processes; i++){
-        m_msh = FEMGet(pcs_vector[i]->pcs_type_name);
+        m_msh = FEMGet(convertProcessTypeToString (pcs_vector[i]->getProcessType()));
         if(!m_msh) return; //WW
         no_ele = (long) m_msh->ele_vector.size();
         for(j=0;j<no_ele;j++){
@@ -5373,7 +5369,7 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
   //Write sorted output file
   //----------------------------------------------------------------------
   // File handling
-  
+
   for(k=0;k<(int)m_msh->mat_names_vector.size();k++){ // CB
     //file_name +="_sorted";
     outfile = m_msh->mat_names_vector[k] + "_sorted";
@@ -5407,128 +5403,152 @@ Programing:
 **************************************************************************/
 void CMediumProperties::WriteTecplotDistributedProperties()
 {
-  int j,k;
-  long i;
-  string element_type;
-  string m_string = "MAT";
-  double m_mat_prop_nod;
-  //----------------------------------------------------------------------
-  // Path
-  string path;
-  CGSProject* m_gsp = NULL;
-  m_gsp = GSPGetMember("msh");
-  if(m_gsp){
-    path = m_gsp->path;
-  }
-  //--------------------------------------------------------------------
-  // MSH
-  CNode* m_nod = NULL;
-  CElem* m_ele = NULL;
-  if(!m_msh)
-    return;
-  //--------------------------------------------------------------------
-  // File handling
-  string mat_file_name = path + name + "_" + m_msh->pcs_name + "_PROPERTIES" + TEC_FILE_EXTENSION;
-  fstream mat_file (mat_file_name.data(),ios::trunc|ios::out);
-  mat_file.setf(ios::scientific,ios::floatfield);
-  mat_file.precision(12);
-  if (!mat_file.good()) return;
-  mat_file.seekg(0L,ios::beg);
-  //--------------------------------------------------------------------
-  if((long)m_msh->ele_vector.size()>0){
-    m_ele = m_msh->ele_vector[0];
-    switch(m_ele->GetElementType()){
-      case 1:
-        element_type = "QUADRILATERAL";
-        break;
-      case 2:
-        element_type = "QUADRILATERAL";
-        break;
-      case 3:
-        element_type = "BRICK";
-        break;
-      case 4:
-        element_type = "TRIANGLE";
-        break;
-      case 5:
-        element_type = "TETRAHEDRON";
-        break;
-      case 6:
-        element_type = "BRICK";
-        break;
-    }
-  }
-  //--------------------------------------------------------------------
-  // Header
-  mat_file << "VARIABLES = X,Y,Z";
-  for(j=0;j<(int)m_msh->mat_names_vector.size();j++){
-    mat_file << "," << m_msh->mat_names_vector[j];
-  }
-  mat_file << endl;
-  mat_file << "ZONE T = " << name << ", " \
-           << "N = " << (long)m_msh->nod_vector.size() << ", " \
-           << "E = " << (long)m_msh->ele_vector.size() << ", " \
-           << "F = FEPOINT" << ", " << "ET = " << element_type << endl;
-  //--------------------------------------------------------------------
-  // Nodes
-  for(i=0;i<(long)m_msh->nod_vector.size();i++) {
-    m_nod = m_msh->nod_vector[i];
-    mat_file << m_nod->X() << " " << m_nod->Y() << " " << m_nod->Z();
-    for(j=0;j<(int)m_msh->mat_names_vector.size();j++){
-      m_mat_prop_nod = 0.0;
-      for(k=0;k<(int)m_nod->connected_elements.size();k++){
-        m_ele = m_msh->ele_vector[m_nod->connected_elements[k]];
-        m_mat_prop_nod += m_ele->mat_vector(j);
-      }
-      m_mat_prop_nod /= (int)m_nod->connected_elements.size();
-      mat_file << " " << m_mat_prop_nod;
-    }
-    mat_file << endl;
-  }
-  //--------------------------------------------------------------------
-  // Elements
-  for(i=0;i<(long)m_msh->ele_vector.size();i++){
-    m_ele = m_msh->ele_vector[i];
-    //OK if(m_ele->GetPatchIndex()==number) {
-      switch(m_ele->GetElementType()){
-        case 1:
-            mat_file \
-              << m_ele->nodes_index[0]+1 << " " << m_ele->nodes_index[1]+1 << " " << m_ele->nodes_index[1]+1 << " " << m_ele->nodes_index[0]+1 << endl;
-            element_type = "QUADRILATERAL";
-            break;
-          case 2:
-            mat_file \
-              << m_ele->nodes_index[0]+1 << " " << m_ele->nodes_index[1]+1 << " " << m_ele->nodes_index[2]+1 << " " << m_ele->nodes_index[3]+1 << endl;
-            element_type = "QUADRILATERAL";
-            break;
-          case 3:
-            mat_file \
-              << m_ele->nodes_index[0]+1 << " " << m_ele->nodes_index[1]+1 << " " << m_ele->nodes_index[2]+1 << " " << m_ele->nodes_index[3]+1 << " " \
-              << m_ele->nodes_index[4]+1 << " " << m_ele->nodes_index[5]+1 << " " << m_ele->nodes_index[6]+1 << " " << m_ele->nodes_index[7]+1 << endl;
-            element_type = "BRICK";
-            break;
-          case 4:
-            mat_file \
-              << m_ele->nodes_index[0]+1 << " " << m_ele->nodes_index[1]+1 << " " << m_ele->nodes_index[2]+1 << endl;
-            element_type = "TRIANGLE";
-            break;
-          case 5:
-            mat_file \
-              << m_ele->nodes_index[0]+1 << " " << m_ele->nodes_index[1]+1 << " " << m_ele->nodes_index[2]+1 << " " << m_ele->nodes_index[3]+1 << endl;
-            element_type = "TETRAHEDRON";
-            break;
-          case 6:
-            mat_file \
-              << m_ele->nodes_index[0]+1 << " " << m_ele->nodes_index[0]+1 << " " << m_ele->nodes_index[1]+1 << " " << m_ele->nodes_index[2]+1 << " " \
-              << m_ele->nodes_index[3]+1 << " " << m_ele->nodes_index[3]+1 << " " << m_ele->nodes_index[4]+1 << " " << m_ele->nodes_index[5]+1 << endl;
-          element_type = "BRICK";
-          break;
-      }
-    //OK}
-  }
-  //--------------------------------------------------------------------
+	int j, k;
+	long i;
+	string element_type;
+	string m_string = "MAT";
+	double m_mat_prop_nod;
+	//----------------------------------------------------------------------
+	// Path
+	string path;
+	CGSProject* m_gsp = NULL;
+	m_gsp = GSPGetMember("msh");
+	if (m_gsp) {
+		path = m_gsp->path;
+	}
+	//--------------------------------------------------------------------
+	// MSH
+	CNode* m_nod = NULL;
+	CElem* m_ele = NULL;
+	if (!m_msh)
+		return;
+	//--------------------------------------------------------------------
+	// File handling
+	string mat_file_name = path + name + "_" + m_msh->pcs_name + "_PROPERTIES"
+			+ TEC_FILE_EXTENSION;
+	fstream mat_file(mat_file_name.data(), ios::trunc | ios::out);
+	mat_file.setf(ios::scientific, ios::floatfield);
+	mat_file.precision(12);
+	if (!mat_file.good())
+		return;
+	mat_file.seekg(0L, ios::beg);
+	//--------------------------------------------------------------------
+	if ((long) m_msh->ele_vector.size() > 0) {
+		m_ele = m_msh->ele_vector[0];
+		switch (m_ele->GetElementType()) {
+		case MshElemType::LINE:
+			element_type = "QUADRILATERAL";
+			break;
+		case MshElemType::QUAD:
+			element_type = "QUADRILATERAL";
+			break;
+		case MshElemType::HEXAHEDRON:
+			element_type = "BRICK";
+			break;
+		case MshElemType::TRIANGLE:
+			element_type = "TRIANGLE";
+			break;
+		case MshElemType::TETRAHEDRON:
+			element_type = "TETRAHEDRON";
+			break;
+		case MshElemType::PRISM:
+			element_type = "BRICK";
+			break;
+		default:
+			std::cerr
+					<< "CMediumProperties::WriteTecplotDistributedProperties MshElemType not handled"
+					<< std::endl;
+		}
+	}
+	//--------------------------------------------------------------------
+	// Header
+	mat_file << "VARIABLES = X,Y,Z";
+	for (j = 0; j < (int) m_msh->mat_names_vector.size(); j++) {
+		mat_file << "," << m_msh->mat_names_vector[j];
+	}
+	mat_file << endl;
+	mat_file << "ZONE T = " << name << ", " << "N = "
+			<< (long) m_msh->nod_vector.size() << ", " << "E = "
+			<< (long) m_msh->ele_vector.size() << ", " << "F = FEPOINT" << ", "
+			<< "ET = " << element_type << endl;
+	//--------------------------------------------------------------------
+	// Nodes
+	for (i = 0; i < (long) m_msh->nod_vector.size(); i++) {
+		m_nod = m_msh->nod_vector[i];
+		mat_file << m_nod->X() << " " << m_nod->Y() << " " << m_nod->Z();
+		for (j = 0; j < (int) m_msh->mat_names_vector.size(); j++) {
+			m_mat_prop_nod = 0.0;
+			for (k = 0; k < (int) m_nod->connected_elements.size(); k++) {
+				m_ele = m_msh->ele_vector[m_nod->connected_elements[k]];
+				m_mat_prop_nod += m_ele->mat_vector(j);
+			}
+			m_mat_prop_nod /= (int) m_nod->connected_elements.size();
+			mat_file << " " << m_mat_prop_nod;
+		}
+		mat_file << endl;
+	}
+	//--------------------------------------------------------------------
+	// Elements
+	for (i = 0; i < (long) m_msh->ele_vector.size(); i++) {
+		m_ele = m_msh->ele_vector[i];
+		//OK if(m_ele->GetPatchIndex()==number) {
+		switch (m_ele->GetElementType()) {
+		case MshElemType::LINE:
+			mat_file << m_ele->nodes_index[0] + 1 << " "
+					<< m_ele->nodes_index[1] + 1 << " "
+					<< m_ele->nodes_index[1] + 1 << " "
+					<< m_ele->nodes_index[0] + 1 << endl;
+			element_type = "QUADRILATERAL";
+			break;
+		case MshElemType::QUAD:
+			mat_file << m_ele->nodes_index[0] + 1 << " "
+					<< m_ele->nodes_index[1] + 1 << " "
+					<< m_ele->nodes_index[2] + 1 << " "
+					<< m_ele->nodes_index[3] + 1 << endl;
+			element_type = "QUADRILATERAL";
+			break;
+		case MshElemType::HEXAHEDRON:
+			mat_file << m_ele->nodes_index[0] + 1 << " "
+					<< m_ele->nodes_index[1] + 1 << " "
+					<< m_ele->nodes_index[2] + 1 << " "
+					<< m_ele->nodes_index[3] + 1 << " "
+					<< m_ele->nodes_index[4] + 1 << " "
+					<< m_ele->nodes_index[5] + 1 << " "
+					<< m_ele->nodes_index[6] + 1 << " "
+					<< m_ele->nodes_index[7] + 1 << endl;
+			element_type = "BRICK";
+			break;
+		case MshElemType::TRIANGLE:
+			mat_file << m_ele->nodes_index[0] + 1 << " "
+					<< m_ele->nodes_index[1] + 1 << " "
+					<< m_ele->nodes_index[2] + 1 << endl;
+			element_type = "TRIANGLE";
+			break;
+		case MshElemType::TETRAHEDRON:
+			mat_file << m_ele->nodes_index[0] + 1 << " "
+					<< m_ele->nodes_index[1] + 1 << " "
+					<< m_ele->nodes_index[2] + 1 << " "
+					<< m_ele->nodes_index[3] + 1 << endl;
+			element_type = "TETRAHEDRON";
+			break;
+		case MshElemType::PRISM:
+			mat_file << m_ele->nodes_index[0] + 1 << " "
+					<< m_ele->nodes_index[0] + 1 << " "
+					<< m_ele->nodes_index[1] + 1 << " "
+					<< m_ele->nodes_index[2] + 1 << " "
+					<< m_ele->nodes_index[3] + 1 << " "
+					<< m_ele->nodes_index[3] + 1 << " "
+					<< m_ele->nodes_index[4] + 1 << " "
+					<< m_ele->nodes_index[5] + 1 << endl;
+			element_type = "BRICK";
+			break;
+		default:
+			std::cerr
+					<< "CMediumProperties::WriteTecplotDistributedProperties MshElemType not handled"
+					<< std::endl;
+		}
+	}
 }
-
 
 /**************************************************************************
 MSHLib-Method: GetNearestHetVal2
@@ -6018,7 +6038,7 @@ Programmaenderungen:
 double CMediumProperties::PorosityEffectiveStress(long index, double element_pressure)
 {
 //OK411
-  element_pressure = element_pressure; 
+  element_pressure = element_pressure;
   index = index;
 
 /*OK411
@@ -6297,14 +6317,14 @@ double CMediumProperties::PorosityEffectiveConstrainedSwelling(long index,double
   epsilon =87.0+exp(-0.00456*(temperature-273.0));
   porosity_n = porosity_model_values[0];
 
-    // Maximal inter layer porosity 
+    // Maximal inter layer porosity
   porosity_IL=fmon * psi * mat_mp_m * S_0 * (density_rock * 1.0e3) \
            * sqrt(epsilon * epsilon_0 * R * temperature / (2000.0 * F_const * F_const * ion_strength ));
   d_porosity=porosity_IL*(pow(satu, beta)-pow(satu_0, beta));
 
 //-----------Interlayer porosity calculation------------------
 
-//  porosity_IL = porosity_IL*satu; 
+//  porosity_IL = porosity_IL*satu;
   porosity_IL  *=pow(satu,beta);
   ElSetElementVal(index,PCSGetELEValueIndex("POROSITY_IL"),porosity_IL);
     // constrained swelling
@@ -6320,7 +6340,7 @@ double CMediumProperties::PorosityEffectiveConstrainedSwelling(long index,double
 //  e = porosity/(1.-porosity);
 //  ElSetElementVal(index,PCSGetELEValueIndex("VoidRatio"),e);
 //-----------Swelling potential calculation------------------
-// constrained swelling 
+// constrained swelling
 //  n_total=porosity_n - d_porosity;
   n_total=porosity_n + d_porosity-porosity_min;
 
@@ -6543,7 +6563,7 @@ double CMediumProperties::PorosityVolumetricChemicalReaction(long index)
         element_nodes = NULL;
       }
 
-// calculate the solid phase: volume =v_mi*Ci 
+// calculate the solid phase: volume =v_mi*Ci
       timelevel=0;
 //      conc[i]=CalcElementMeanConcentration (index, i, timelevel, ergebnis);
       mineral_volume[component-n-2] = conc[component]*molar_volume[component-n-2];
@@ -6603,7 +6623,7 @@ double CMediumProperties::TortuosityFunction(long number, double *gp, double the
     }
   } //For Loop
 */
-  switch (tortuosity_model) 
+  switch (tortuosity_model)
   {
 	case 0:                     // Tortuosity is read from a curve
       //To do
@@ -6663,7 +6683,7 @@ double CMediumProperties::NonlinearFlowFunction(long index, double *gp, double t
     double mult[2];
     double detjac, *invjac, invjac2d[4];
     double grad_omega[8];
-    double grad_h_min = MKleinsteZahl;  
+    double grad_h_min = MKleinsteZahl;
 	double xgt[3],ygt[3],zgt[3];				//CMCD Global x,y,z coordinates of traingular element
 	double xt[3],yt[3];							//CMCD Local x,y coordinates of traingular element
 	double pt_element_node[4], ht_element_node[4], zt_element_node[4]; //CMCD Pressure, depth head traingular element
@@ -6876,16 +6896,16 @@ double CMediumProperties::StorageFunction(long index,double *gp,double theta)
 	  nidx0 = PCSGetNODValueIndex(pcs_name_vector[i],0);
 	  nidx1 = PCSGetNODValueIndex(pcs_name_vector[i],1);
 	  if(mode==0) // Gauss point values
-      { 
+      {
 	    primary_variable[i] = (1.-theta)*InterpolValue(index,nidx0,gp[0],gp[1],gp[2]) \
 							+ theta*InterpolValue(index,nidx1,gp[0],gp[1],gp[2]);		}
 	  else if(mode==1) // Node values
-      { 
+      {
 	    primary_variable[i] = (1.-theta)*GetNodeVal(index,nidx0) \
-		                    + theta*GetNodeVal(index,nidx1);		
+		                    + theta*GetNodeVal(index,nidx1);
       }
 	  else if(mode==2) // Element average value
-      { 
+      {
 //MX		count_nodes = ElNumberOfNodes[ElGetElementType(number) - 1];
 		count_nodes = ElNumberOfNodes[ElGetElementType(index) - 1];
 //MX		element_nodes = ElGetElementNodes(number);
@@ -7044,7 +7064,7 @@ double CMediumProperties::StorageFunction(long index,double *gp,double theta)
 				dircosm= normz/normlen;
 				dircosn= normx/normlen;
 				}
-				// Calculate average location of the element 
+				// Calculate average location of the element
 				CalculateSimpleMiddelPointElement(index, coords);
 				x_mid = coords[0];
 				y_mid = coords[1];

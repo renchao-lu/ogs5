@@ -58,7 +58,7 @@ vector <REACT*> REACT_vec;
    Aufgabe:
    Berechnet chemische Reaktionen zwischen den einzelnen Komponenten
    allererste VErsion
-   
+
    Programmaenderungen:
    06/2003     SB         Erste Version
    06/2003     MX         Read and Reaction functions
@@ -69,7 +69,7 @@ vector <REACT*> REACT_vec;
 
 **************************************************************************/
 void REACT::ExecuteReactionsPHREEQC(void){
- 
+
  long i,  ok = 0;
 // CRFProcess *m_pcs = NULL;
 // static REACTION_MODEL *rcml;
@@ -81,7 +81,7 @@ void REACT::ExecuteReactionsPHREEQC(void){
 
  /* Initialize arrays of concentrations and array for reaction rates (list, in pretimeloop)*/
  GetTransportResults();
- 
+
  /* Perform reaction step */
  /* --------------------------------------------------------------------------*/
   if(flag_pqc){
@@ -121,7 +121,7 @@ void REACT::ExecuteReactionsPHREEQC(void){
 	/* Extern Program call to PHREEQC */
     if(ok) ok = Call_Phreeqc();
 	if(ok ==0) exit(1);
- 
+
 
    /* Set up the output values for rockflow after Phreeqc reaction*/
     fsel_out=fopen(fsout,"r");
@@ -135,10 +135,10 @@ void REACT::ExecuteReactionsPHREEQC(void){
       fclose(fsel_out);
 	}
  } /* if flag */
- 
+
  /* Calculate Rates */
  CalculateReactionRates();
- 
+
  SetConcentrationResults();
 
 /* determine where to calculate the chemistry */
@@ -146,7 +146,7 @@ void REACT::ExecuteReactionsPHREEQC(void){
 
 /* pH and pe constant or variable */
 // ResetpHpe(rc, rcml);
- 
+
 /* test output*/
 /*
  for(comp=0; comp<this->number_of_comp;comp++){
@@ -157,7 +157,7 @@ void REACT::ExecuteReactionsPHREEQC(void){
 	 DisplayMsgLn("val_out: ");
 	 for(i=0;i<this->nodenumber;i++){	DisplayDouble(this->val_out[comp][i],0,0); DisplayMsg(", ");}
 	 DisplayMsgLn(" ");
-	
+
 	 DisplayMsgLn("rate : ");
 	 for(i=0;i<this->nodenumber;i++){	DisplayDouble(this->rate[comp][i],0,0); DisplayMsg(", ");}
 	 DisplayMsgLn(" ");
@@ -175,7 +175,7 @@ void REACT::ExecuteReactionsPHREEQC(void){
    Aufgabe:
    Berechnet chemische Reaktionen zwischen den einzelnen Komponenten
    allererste Version
-   
+
    Programmaenderungen:
    06/2003     SB         Erste Version
    06/2003     MX         Read and Reaction functions
@@ -187,7 +187,7 @@ void REACT::ExecuteReactionsPHREEQC(void){
 
 **************************************************************************/
 void REACT::ExecuteReactionsPHREEQCNew(void){
- 
+
     long i, ii,  ok = 0;
 
     cout << "   ExecuteReactionsPHREEQCNew:" << endl;
@@ -197,25 +197,25 @@ void REACT::ExecuteReactionsPHREEQCNew(void){
     if (!pqc_file.good()){
       cout << "! Error in ExecuteReactionsPHREEQCNew: no Input File (*.pqc) found !" << endl;
       //         exit(1);
-    } 
+    }
     //	File handling - data exchange file to phreeqc, input to PHREEQC
     ofstream outfile (this->outfile_name.data(),ios::out);
     if(!outfile.is_open()){
       cout << "Error: Outfile phinp.dat could not be opened for writing " << endl;
       //        exit(1);
     }
- 
+
     // Set up reaction model
     if((int)this->pqc_names.size()==0){
       ok = this->ReadReactionModelNew(&pqc_file);
-      if(!ok) 
+      if(!ok)
 	cout << "Error setting up reaction model" << endl;
     }
 
     // Check for nodes without reactions
     if((int)this->check_no_reaction_nodes == false){
       ok = this->CheckNoReactionNodes();
-      if(!ok) 
+      if(!ok)
 	cout << "Error when checking for nodes without reactions" << endl;
     }
     /* Read the input file (*.pqc) and set up the input file for PHREEQC ("phinp.dat")*/
@@ -227,7 +227,7 @@ void REACT::ExecuteReactionsPHREEQCNew(void){
 	ok = WriteInputPhreeqc(i, /*&pqc_file,*/ &outfile);
 	ii++;
       }
-    
+
 //  Close *.pqc input file
     pqc_file.close();
 //  Close phinp.dat file with input for phreeqc.exe
@@ -240,25 +240,25 @@ void REACT::ExecuteReactionsPHREEQCNew(void){
       cout.flush();
       //        exit(1);
     }
- 
+
     if(ok){
       ok = ReadOutputPhreeqcNew();
-      if(!ok) 
+      if(!ok)
 	cout << " Error in call to PHREEQC !!!" << endl;
     }
- 
+
     cout << " Calculated equilibrium geochemistry at " << ii << " nodes." << endl;
 
 
  /* Calculate Rates */
  // CalculateReactionRates();
- 
+
  /* determine where to calculate the chemistry */
  // CalculateReactionRateFlag();
 
  /* pH and pe constant or variable */
  // ResetpHpe(rc, rcml);
- 
+
 }/* End of ExecuteReactionsPHREEQCNew */
 
 
@@ -300,48 +300,51 @@ REACT::~REACT(void){
    Aufgabe:
    Stellt Datenstruktur für Ratenkommunikation zwischen Raecations and MTM2
    zur verfügung
-   
+
    Programmaenderungen:
    06/2003     SB         Erste Version
+   10/2010 TF restructured method a little bit, changed access to process type
 **************************************************************************/
-void REACT::CreateREACT(void){
+void REACT::CreateREACT(void)
+{
+	int np = 0;
 
-int  comp, i, vector_size, np=0;
-//REACT * rc = NULL;
-CRFProcess *m_pcs = NULL;
+	//rc = new REACT;
+	size_t vector_size (pcs_vector.size());
+	for (size_t i = 0; i < vector_size; i++) {
+//		CRFProcess *m_pcs = pcs_vector[i];
+		ProcessType pcs_type (pcs_vector[i]->getProcessType());
+//		if (m_pcs->pcs_type_name.compare("MASS_TRANSPORT") == 0)
+		if (pcs_type == MASS_TRANSPORT)
+			np++;
+//		if (m_pcs->pcs_type_name.compare("HEAT_TRANSPORT") == 0)
+		if (pcs_type == HEAT_TRANSPORT)
+			heatflag = 1;
+		nodenumber = pcs_vector[i]->m_msh->GetNodesNumber(false);
+		elenumber = (long) pcs_vector[i]->m_msh->ele_vector.size();
 
-//rc = new REACT;
-vector_size = (int) pcs_vector.size();
-for(i=0;i<vector_size;i++){
-	m_pcs = pcs_vector[i];
-	if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0) np++;
-	if(m_pcs->pcs_type_name.compare("HEAT_TRANSPORT")==0) heatflag = 1;
-	nodenumber = (long) m_pcs->m_msh->GetNodesNumber(false);
-    elenumber = (long) m_pcs->m_msh->ele_vector.size();
+#ifdef REACTION_ELEMENT
+		if (nodenumber<elenumber) nodenumber = elenumber; //MX 06/2006
+#endif
+	}
+	number_of_comp = np;
 
-	#ifdef REACTION_ELEMENT
-      if (nodenumber<elenumber) nodenumber = elenumber;  //MX 06/2006
-	#endif
- }
- number_of_comp = np;
+	np = np + heatflag; // allocate one for temperature
+	// allocate memory for the concentration arrays
+	name = (const char **) Malloc(sizeof(char *) * np);
+	val_in = (double **) Malloc(sizeof(double *) * np);
+	val_out = (double **) Malloc(sizeof(double *) * np);
+	rate = (double **) Malloc(sizeof(double *) * np);
+	rateflag = (int *) Malloc(sizeof(int) * nodenumber);
 
- np = np + heatflag; // allocate one for temperature
- // allocate memory for the concentration arrays 
+	for (int comp = 0; comp < np; comp++) {
+		val_in[comp] = (double *) Malloc(sizeof(double) * nodenumber);
+		val_out[comp] = (double *) Malloc(sizeof(double) * nodenumber);
+		rate[comp] = (double *) Malloc(sizeof(double) * nodenumber);
+		name[comp] = (char *) Malloc(sizeof(char) * 80);
+	}
 
- name     = (const char **)   Malloc(sizeof(char *)   * np);
- val_in   = (double **) Malloc(sizeof(double *) * np);
- val_out  = (double **) Malloc(sizeof(double *) * np);
- rate     = (double **) Malloc(sizeof(double *) * np);
- rateflag = (int *) Malloc(sizeof(int) * nodenumber);
- 
- for(comp=0; comp<np;comp++){
-	val_in[comp]  = (double *) Malloc(sizeof(double) * nodenumber);
-	val_out[comp] = (double *) Malloc(sizeof(double) * nodenumber);
-	rate[comp]    = (double *) Malloc(sizeof(double) * nodenumber);
-	name[comp]    = (char *)   Malloc(sizeof(char)  * 80);
- }
-
-// REACT_vec.push_back(rc);	
+	// REACT_vec.push_back(rc);
 }
 
 
@@ -350,7 +353,7 @@ for(i=0;i<vector_size;i++){
 
    Aufgabe:
    Zerstört Datenstructur REACT
-   
+
    Programmaenderungen:
    06/2003     SB         Erste Version
 **************************************************************************/
@@ -375,58 +378,64 @@ void DestroyREACT(void)
 
    Aufgabe:
    Inserts reaction rate of component at index in field RECT->rate
-   
+
    Programmaenderungen:
    06/2003     SB         Erste Version
+   10/2010 TF restructured method a little bit, changed access to process type
 **************************************************************************/
-void REACT::InitREACT(void){
+void REACT::InitREACT(void)
+{
+	int comp;
+	long i;
+	CRFProcess *m_pcs = NULL;
+	int timelevel = 1; // concentrations are in new timelevel
+//	int phase = 0; //single phase so far // TF not used
 
- int comp, phase, j, timelevel, np;
- long i;
- CRFProcess *m_pcs = NULL;
-// rc = rc->GetREACT();
-
- timelevel = 1;  // concentrations are in new timelevel
- phase = 0;      //single phase so far
- 
- /* Initialize arrays of concentrations and array for reaction rates */
- np = (int)pcs_vector.size();
- for(j=0;j<np;j++){ // for all processes
-	m_pcs = pcs_vector[j];
-	if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0){ // if it is a mass transport process
-		comp = m_pcs->pcs_component_number; // get component number
-		this->name[comp] = (char *) cp_vec[comp]->compname.data(); // get component name
-		for(i=0;i<this->nodenumber;i++){
-			// get concentration values
-			this->val_in[comp][i] = m_pcs->GetNodeValue(i,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0])+timelevel);
-			if((this->val_in[comp][i] < 0.0) && (strcmp(this->name[comp],"pe")!= 0) ) {  //MX, 01.2005
-				if(abs(this->val_in[comp][i]) > MKleinsteZahl) {
-					DisplayMsg(" Neg. conc for component "); DisplayLong((long) comp);
-					DisplayMsg(" at node "); DisplayLong((long)i);
-					DisplayMsg("; conc = "); DisplayDouble(this->val_in[comp][i],0,0);
-				DisplayMsgLn(" ");
+	/* Initialize arrays of concentrations and array for reaction rates */
+	size_t np (pcs_vector.size());
+	for (size_t j = 0; j < np; j++) { // for all processes
+		m_pcs = pcs_vector[j];
+//		if (m_pcs->pcs_type_name.compare("MASS_TRANSPORT") == 0) { // if it is a mass transport process
+		if (m_pcs->getProcessType () == MASS_TRANSPORT) { // if it is a mass transport process
+			comp = m_pcs->pcs_component_number; // get component number
+			this->name[comp] = (char *) cp_vec[comp]->compname.data(); // get component name
+			for (i = 0; i < this->nodenumber; i++) {
+				// get concentration values
+				this->val_in[comp][i] = m_pcs->GetNodeValue(i,
+						m_pcs->GetNodeValueIndex(
+								m_pcs->pcs_primary_function_name[0])
+								+ timelevel);
+				if ((this->val_in[comp][i] < 0.0) && (strcmp(this->name[comp],
+						"pe") != 0)) { //MX, 01.2005
+					if (abs(this->val_in[comp][i]) > MKleinsteZahl) {
+						DisplayMsg(" Neg. conc for component ");
+						DisplayLong((long) comp);
+						DisplayMsg(" at node ");
+						DisplayLong((long) i);
+						DisplayMsg("; conc = ");
+						DisplayDouble(this->val_in[comp][i], 0, 0);
+						DisplayMsgLn(" ");
+					}
+					this->val_in[comp][i] = 0.0 * this->val_in[comp][i];
 				}
-				this->val_in[comp][i] = 0.0 * this->val_in[comp][i];
+				this->val_out[comp][i] = this->val_in[comp][i];
+				this->rate[comp][i] = 0.0;
 			}
-		this->val_out[comp][i] = this->val_in[comp][i];
-		this->rate [comp][i] = 0.0;
 		}
 	}
- }
 
+	for (i = 0; i < this->nodenumber; i++)
+		this->rateflag[i] = 1;
+	this->countsteps = 50;
 
- for(i=0;i<this->nodenumber;i++)
-	this->rateflag[i] = 1;
- this->countsteps = 50;
-
- // Get Temperature values
- if(this->heatflag > 0){
-	this->name[np-2] = "temp";//MX CMCD
-    m_pcs = PCSGet("HEAT_TRANSPORT");
-    int index = m_pcs->GetNodeValueIndex("TEMPERATURE1");
-	for(i=0;i<this->nodenumber;i++)
-		this->val_in[np-2][i] = m_pcs->GetNodeValue(i, index); //OK PCSGetNODTemperature1L(i)//MX CMCD -2, Liquid Flow, Heat Transport
-  }	
+	// Get Temperature values
+	if (this->heatflag > 0) {
+		this->name[np - 2] = "temp";//MX CMCD
+		m_pcs = PCSGet("HEAT_TRANSPORT");
+		int index = m_pcs->GetNodeValueIndex("TEMPERATURE1");
+		for (i = 0; i < this->nodenumber; i++)
+			this->val_in[np - 2][i] = m_pcs->GetNodeValue(i, index); //OK PCSGetNODTemperature1L(i)//MX CMCD -2, Liquid Flow, Heat Transport
+	}
 }
 
 /**************************************************************************
@@ -434,82 +443,87 @@ void REACT::InitREACT(void){
 
    Aufgabe:
    Inserts reaction rate of component at index in field RECT->rate
-   
+
    Programmaenderungen:
    06/2006     MX         Erste Version
+   10/2010 TF restructured method a little bit, changed access to process type
 **************************************************************************/
-void REACT::InitREACT0(void){
+void REACT::InitREACT0()
+{
+	long i;
+	CRFProcess *pcs = NULL;
+	CInitialCondition* ic = NULL;
 
- int comp, phase, j, timelevel, np;
- long i;
- int nidxe, nidxe1;
- CRFProcess *m_pcs = NULL;
- CInitialCondition* m_ic = NULL;
+	int timelevel = 1; // concentrations are in new timelevel
+//	int phase = 0; //single phase so far
 
- timelevel = 1;  // concentrations are in new timelevel
- phase = 0;      //single phase so far
- 
- /* Initialize arrays of concentrations and array for reaction rates */
- np = (int)pcs_vector.size();
- for(j=0;j<np;j++){ // for all processes
-	m_pcs = pcs_vector[j];
-	if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0){ // if it is a mass transport process
-		comp = m_pcs->pcs_component_number; // get component number
-		this->name[comp] = (char *) cp_vec[comp]->compname.data(); // get component name
+	/* Initialize arrays of concentrations and array for reaction rates */
+	size_t np (pcs_vector.size());
+	for (size_t j = 0; j < np; j++) { // for all processes
+		pcs = pcs_vector[j];
+//		if (pcs->pcs_type_name.compare("MASS_TRANSPORT") == 0) { // if it is a mass transport process
+		if (pcs->getProcessType () == MASS_TRANSPORT) {
+			int comp = pcs->pcs_component_number; // get component number
+			this->name[comp] = (char *) cp_vec[comp]->compname.data(); // get component name
 
-        if (comp>=0 && (cp_vec[comp]->mobil > 0))
-            m_pcs->InterpolateTempGP(m_pcs,this->name[comp]);
+			if (comp >= 0 && (cp_vec[comp]->mobil > 0))
+				pcs->InterpolateTempGP(pcs, this->name[comp]);
 
-        if (comp>=0 && (cp_vec[comp]->mobil==0)){
-                m_ic = ic_vector[j];
-                m_ic->m_pcs = m_pcs;
-                if(m_ic->pcs_pv_name.compare(this->name[comp])==0){
-                    nidxe = m_pcs->GetElementValueIndex(this->name[comp]);
-                    nidxe1 = nidxe +1;
-                    m_ic->SetEle(nidxe);   //set IC to elements for reactions //MX 06/2006
-                    m_ic->SetEle(nidxe1);
-            } //for
-        }
- 
-		for(i=0;i<this->elenumber;i++){
-			// get concentration values
-			this->val_in[comp][i] = m_pcs->GetElementValue(i,m_pcs->GetElementValueIndex(m_pcs->pcs_primary_function_name[0])+timelevel);
-			if((this->val_in[comp][i] < 0.0) && (strcmp(this->name[comp],"pe")!= 0) ) {  //MX, 01.2005
-				if(abs(this->val_in[comp][i]) > MKleinsteZahl) {
-					DisplayMsg(" Neg. conc for component "); DisplayLong((long) comp);
-					DisplayMsg(" at node "); DisplayLong((long)i);
-					DisplayMsg("; conc = "); DisplayDouble(this->val_in[comp][i],0,0);
-				DisplayMsgLn(" ");
-				}
-				this->val_in[comp][i] = 0.0 * this->val_in[comp][i];
+			if (comp >= 0 && (cp_vec[comp]->mobil == 0)) {
+				ic = ic_vector[j];
+				ic->setProcess(pcs);
+				if (ic->getProcessPrimaryVariable()
+						== convertPrimaryVariable(this->name[comp])) {
+					int nidxe = pcs->GetElementValueIndex(this->name[comp]);
+					ic->SetEle(nidxe); //set IC to elements for reactions //MX 06/2006
+					ic->SetEle(nidxe+1);
+				} //for
 			}
-		    this->val_out[comp][i] = this->val_in[comp][i];
-		    this->rate [comp][i] = 0.0;
+
+			for (i = 0; i < this->elenumber; i++) {
+				// get concentration values
+				this->val_in[comp][i] = pcs->GetElementValue(i,
+						pcs->GetElementValueIndex(
+								pcs->pcs_primary_function_name[0])
+								+ timelevel);
+				if ((this->val_in[comp][i] < 0.0) && (strcmp(this->name[comp],
+						"pe") != 0)) { //MX, 01.2005
+					if (abs(this->val_in[comp][i]) > MKleinsteZahl) {
+						DisplayMsg(" Neg. conc for component ");
+						DisplayLong((long) comp);
+						DisplayMsg(" at node ");
+						DisplayLong((long) i);
+						DisplayMsg("; conc = ");
+						DisplayDouble(this->val_in[comp][i], 0, 0);
+						DisplayMsgLn(" ");
+					}
+					this->val_in[comp][i] = 0.0 * this->val_in[comp][i];
+				}
+				this->val_out[comp][i] = this->val_in[comp][i];
+				this->rate[comp][i] = 0.0;
+			}
 		}
-     }      
 	}
- 
 
+	for (i = 0; i < this->elenumber; i++)
+		this->rateflag[i] = 1;
+	this->countsteps = 50;
 
- for(i=0;i<this->elenumber;i++)
-	this->rateflag[i] = 1;
- this->countsteps = 50;
-
- // Get Temperature values for elements
- if(this->heatflag > 0){
-	this->name[np-2] = "temp";
-    m_pcs = PCSGet("HEAT_TRANSPORT");
-    int idxT = m_pcs->GetElementValueIndex("TEMPERATURE1")+1;
-    m_pcs->InterpolateTempGP(m_pcs, "TEMPERATURE1");
-	for(i=0;i<this->elenumber;i++)
-		this->val_in[np-2][i] = m_pcs->GetElementValue(i, idxT); 
-
-  }	
+	// Get Temperature values for elements
+	if (this->heatflag > 0) {
+		this->name[np - 2] = "temp";
+		pcs = PCSGet("HEAT_TRANSPORT");
+		int idxT = pcs->GetElementValueIndex("TEMPERATURE1") + 1;
+		pcs->InterpolateTempGP(pcs, "TEMPERATURE1");
+		for (i = 0; i < this->elenumber; i++)
+			this->val_in[np - 2][i] = pcs->GetElementValue(i, idxT);
+	}
 }
 
 void CRFProcess::InterpolateTempGP(CRFProcess *m_pcs, string name) //MX
 {
-  int j, EleType;
+  MshElemType::type EleType;
+  int j;
   long i, enode;
   long group;
   double T_ele;
@@ -521,23 +535,23 @@ void CRFProcess::InterpolateTempGP(CRFProcess *m_pcs, string name) //MX
     index1 = m_pcs->GetElementValueIndex(name)+1; //->fem->interpolate(
 
     for (i=0;i<(long) m_pcs->m_msh->ele_vector.size();i++) {
-      elem = m_pcs->m_msh->ele_vector[i]; 
+      elem = m_pcs->m_msh->ele_vector[i];
       m_pcs->GetAssembler();
 
-          // Activated Element 
+          // Activated Element
           group = elem->GetPatchIndex();
           m_mmp = mmp_vector[group];
           m_mmp->m_pcs=m_pcs;  //m_pcs_mmp
           EleType = elem->GetElementType();
-          if(EleType==4) // Traingle
+		  if(EleType==MshElemType::TRIANGLE) // Traingle
           {
-             GP[0] = GP[1] = 0.1/0.3; 
+             GP[0] = GP[1] = 0.1/0.3;
              GP[2] = 0.0;
           }
-          else if(EleType==5) 
+		  else if(EleType==MshElemType::TETRAHEDRON)
 		     GP[0] = GP[1] = GP[2] = 0.25;
           else
-		     GP[0] = GP[1] = GP[2] = 0.0;  
+		     GP[0] = GP[1] = GP[2] = 0.0;
 
           m_pcs->fem->ConfigElement(elem);
 		  m_pcs->fem->setUnitCoordinates(GP);
@@ -556,7 +570,8 @@ void CRFProcess::InterpolateTempGP(CRFProcess *m_pcs, string name) //MX
 
 void CRFProcess::ExtropolateTempGP(CRFProcess *m_pcs, string name) //MX
 {
-    int j, EleType;
+	MshElemType::type EleType;
+    int j;
     long i, enode, nn;
     long group;
     double GP[3];
@@ -573,23 +588,23 @@ void CRFProcess::ExtropolateTempGP(CRFProcess *m_pcs, string name) //MX
       SetNodeValue(i,index_nod, 0.0);
 
     for (i=0;i<(long) m_pcs->m_msh->ele_vector.size();i++) {
-      elem = m_pcs->m_msh->ele_vector[i]; 
+      elem = m_pcs->m_msh->ele_vector[i];
       m_pcs->GetAssembler();
 
-          // Activated Element 
+          // Activated Element
           group = elem->GetPatchIndex();
           m_mmp = mmp_vector[group];
           m_mmp->m_pcs=m_pcs;  //m_pcs_mmp
           EleType = elem->GetElementType();
-          if(EleType==4) // Traingle
+		  if(EleType==MshElemType::TRIANGLE) // Traingle
           {
-             GP[0] = GP[1] = 0.1/0.3; 
+             GP[0] = GP[1] = 0.1/0.3;
              GP[2] = 0.0;
           }
-          else if(EleType==5) 
+		  else if(EleType==MshElemType::TETRAHEDRON)
 		     GP[0] = GP[1] = GP[2] = 0.25;
           else
-		     GP[0] = GP[1] = GP[2] = 0.0;  
+		     GP[0] = GP[1] = GP[2] = 0.0;
 
           m_pcs->fem->ConfigElement(elem);
 		  m_pcs->fem->setUnitCoordinates(GP);
@@ -597,15 +612,15 @@ void CRFProcess::ExtropolateTempGP(CRFProcess *m_pcs, string name) //MX
 		  for(j=0; j<elem->GetVertexNumber(); j++)
 		  {
              enode = elem->GetNodeIndex(j);
-             Node_T[j] =  m_pcs->GetElementValue(i,index1); 
+             Node_T[j] =  m_pcs->GetElementValue(i,index1);
              T_sum = m_pcs->GetNodeValue(enode, index_nod);
              m_pcs->SetNodeValue(enode,index_nod, T_sum+Node_T[j]);
 		  }
    } //for
 
-  // Average 
+  // Average
     for (i = 0; i <(long)m_msh->GetNodesNumber(false); i++)
-    {       	  
+    {
 	  T_sum = m_pcs->GetNodeValue(i, index_nod);
       nn = (int) m_msh->nod_vector[i]->connected_elements.size();
       if(nn==0) nn =1;
@@ -619,14 +634,14 @@ void CRFProcess::ExtropolateTempGP(CRFProcess *m_pcs, string name) //MX
 
    Aufgabe:
    Calculates the reaction rates by: rate =  (val_out-val_in)/dt
-   
+
    Programmaenderungen:
    06/2003     SB         Erste Version
 **************************************************************************/
 void REACT::CalculateReactionRates(void)
 {
 /* Calculate Rates */
- 
+
  int comp, i;
  double teta, help=0.0, maxi, dc, delta_t;
 
@@ -647,7 +662,7 @@ void REACT::CalculateReactionRates(void)
 		help = (teta*this->val_out[comp][i] + (1.0-teta)*this->val_in[comp][i]);
 		if(help < MKleinsteZahl) {       // umgekehrt wichten
 			help = (1.0-teta)*this->val_out[comp][i] + teta*this->val_in[comp][i];
-			if(help < MKleinsteZahl) 
+			if(help < MKleinsteZahl)
 				this->rate[comp][i] = 0.0;
 			else
 				this->rate[comp][i] = this->rate[comp][i] /help;
@@ -655,13 +670,13 @@ void REACT::CalculateReactionRates(void)
 		else
 			this->rate[comp][i] = this->rate[comp][i] /help;
 
-		
+
 	}
 
 
 /* Reaction - Number dC */
 	for(i=0;i<this->nodenumber;i++){
-		if(fabs(maxi)< MKleinsteZahl) 
+		if(fabs(maxi)< MKleinsteZahl)
 			dc = 0;
 		else
 			dc = this->rate[comp][i]*delta_t/maxi;
@@ -686,7 +701,7 @@ void REACT::CalculateReactionRates(void)
 
    Aufgabe:
    Save concentrations after reaction in concentration array
-   
+
    Programmaenderungen:
    06/2003     SB         Erste Version
 **************************************************************************/
@@ -727,7 +742,7 @@ for(comp=0; comp<this->number_of_comp;comp++){
 
    Aufgabe:
    Save concentrations after reaction in concentration array
-   
+
    Programmaenderungen:
    06/2006     MX         Erste Version
 **************************************************************************/
@@ -750,8 +765,8 @@ void REACT::SetConcentrationResultsEle(void)
 		m_pcs->SetElementValue(i, idx,this->val_out[comp][i]);
 
     //Extropolate element data (center) to nodes
-    if (CPGetMobil(m_pcs->GetProcessComponentNumber())>= 0) 
-        m_pcs->ExtropolateTempGP(m_pcs, name);  
+    if (CPGetMobil(m_pcs->GetProcessComponentNumber())>= 0)
+        m_pcs->ExtropolateTempGP(m_pcs, name);
 
   }
 }
@@ -771,122 +786,119 @@ REACT* REACT::GetREACT(void)
 
    Aufgabe:
    Liest die Eingabedatei *.pqc und geben die Model-values zurück
-                                                                          
+
    Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    R REACTION_MODEL *rcml:Zeiger des REACTION_MODELs
    E FILE *File :Eigabedatei
-                                                                          
+
    Ergebnis:
    0 bei Fehler oder Ende aufgrund Dateitest, sonst 1
-                                                                       
+
    Programmaenderungen:
    06/2003     MX         Erste Version
+   10/2010 TF restructured method a little bit, changed access to process type
 **************************************************************************/
-int REACT::ReadReactionModel( FILE *File){
+int REACT::ReadReactionModel(FILE *File)
+{
+	int n_master_species = 0;
+	int n_equi_phases = 0;
+	int n_ion_exchange = 0;
+	int beginn = 0, p = 0;
+	int pos;
+	int nj;
+	char str[256], *sub, *sub1;
 
-  int n_master_species=0;
-  int n_equi_phases=0;
-  int n_ion_exchange=0;
-  int beginn=0, p=0;
-  int pos;
-  int nj;
-  char str[256],*sub, *sub1;
+	FILE *indatei = NULL;
+	indatei = File;
 
-  FILE *indatei=NULL;
-  indatei=File;
+	CRFProcess* m_pcs = NULL;
 
-  CRFProcess* m_pcs = NULL;
-  int no_processes = (int)pcs_vector.size();
+	/* Open input file  and read the reaction model values*/
+	if (indatei == NULL) { /*input dateien does not exist*/
+		DisplayMsgLn("");
+		DisplayMsgLn(" The input file *.pqc does not exist!!!");
+		exit(1);
+	} /*end if*/
 
-//  crdat = (char *) Malloc((int)(int)strlen(file_name));
-//  crdat = strcat(strcpy(crdat,file_name),CHEM_REACTION_EXTENSION);  /*MX:0603*/
-//  indatei=fopen(crdat, "r");
-
-
-/* Open input file  and read the reaction model values*/
-  if(indatei == NULL){           /*input dateien does not exist*/
-    DisplayMsgLn("");
-    DisplayMsgLn(" The input file *.pqc does not exist!!!");
-    exit(1);
-  } /*end if*/
-
-  /* zeilenweise lesen */
-   while(fgets(str,256,indatei)){
- //   DisplayMsgLn(str);
-
-
-/* Schleife ueber Keyword Solution */
-/*-------------------------------------------------------------------------------------*/
-    pos=0;
-    beginn=1;
-    p=0;
-//    while ((!strstr(str, "END")) && (!strstr(str, "#ende")) && StrOnlyReadStr(sub, str, f, TFString, &p)) {
-    while ((!strstr(str, "END")) && (!strstr(str, "#ende")) && StringReadStr(&sub, str, &p)) {
-      if (strcmp(sub, "SOLUTION")==0) {
-        while(fgets(str,256,indatei) && (!strstr(str,"#ende"))){
-          if (strstr(str,"# comp")){
-             StringReadStr(&sub, str, &p);
-             if (!strcmp(sub, "pH")==0 && !strcmp(sub, "pe")==0 ){
-                n_master_species +=1;
-             }
-          }
-		  if (strstr(str,"# temp")) 
-			 for(int i=0;i<no_processes;i++){
-				m_pcs = pcs_vector[i];
-				if(m_pcs->pcs_type_name.find("HEAT_TRANSPORT")!=string::npos){
-//			  if(GetRFProcessProcessingAndActivation("HT")) 
-					this->rcml_heat_flag=1;
-					break;}
-			}
-        }
-		this->rcml_number_of_master_species = n_master_species;
-      }
-      else if (strcmp(sub, "EQUILIBRIUM_PHASES")==0) {
-        while(fgets(str,256,indatei) && (!strstr(str,"#ende"))){
-          if (strstr(str,"# comp")){
-             StringReadStr(&sub, str, &p);
-            n_equi_phases +=1;
-          }
-        }
-		this->rcml_number_of_equi_phases = n_equi_phases;
-       } /*end if*/
-      else if (strcmp(sub, "EXCHANGE")==0) {
-        while(fgets(str,256,indatei) && (!strstr(str,"#ende"))){
-          if (strstr(str,"# comp")){
-             StringReadStr(&sub, str, &p);
-             n_ion_exchange +=1;
-          }
-        }
-		this->rcml_number_of_ion_exchanges = n_ion_exchange;
-       } /*end if*/
-//SB:neu
-	     else if (strcmp(sub, "SELECTED_OUTPUT")==0) {
-           while (fgets(str,256,indatei) && (!strstr(str, "#ende"))){
-				if (strstr(str,"-file")){
-					DisplayMsgLn("-file in *.pqc found");
-					p=0;
-					StringReadStr(&sub,str,&p);
-					StringReadStr(&sub1,&str[p],&p);
-					this->outfile = sub1;
+	/* zeilenweise lesen */
+	while (fgets(str, 256, indatei)) {
+		/* Schleife ueber Keyword Solution */
+		pos = 0;
+		beginn = 1;
+		p = 0;
+		while ((!strstr(str, "END")) && (!strstr(str, "#ende"))
+				&& StringReadStr(&sub, str, &p)) {
+			if (strcmp(sub, "SOLUTION") == 0) {
+				while (fgets(str, 256, indatei) && (!strstr(str, "#ende"))) {
+					if (strstr(str, "# comp")) {
+						StringReadStr(&sub, str, &p);
+						if (!strcmp(sub, "pH") == 0 && !strcmp(sub, "pe") == 0) {
+							n_master_species += 1;
+						}
+					}
+					if (strstr(str, "# temp")) {
+						size_t no_processes (pcs_vector.size());
+						for (size_t i = 0; i < no_processes; i++) {
+							m_pcs = pcs_vector[i];
+//							if (m_pcs->pcs_type_name.find("HEAT_TRANSPORT") != string::npos) {
+							if (m_pcs->getProcessType () == HEAT_TRANSPORT) {
+								//			  if(GetRFProcessProcessingAndActivation("HT"))
+								this->rcml_heat_flag = 1;
+								break;
+							}
+						}
+					}
 				}
-              }
-            }
+				this->rcml_number_of_master_species = n_master_species;
+			} else if (strcmp(sub, "EQUILIBRIUM_PHASES") == 0) {
+				while (fgets(str, 256, indatei) && (!strstr(str, "#ende"))) {
+					if (strstr(str, "# comp")) {
+						StringReadStr(&sub, str, &p);
+						n_equi_phases += 1;
+					}
+				}
+				this->rcml_number_of_equi_phases = n_equi_phases;
+			} /*end if*/
+			else if (strcmp(sub, "EXCHANGE") == 0) {
+				while (fgets(str, 256, indatei) && (!strstr(str, "#ende"))) {
+					if (strstr(str, "# comp")) {
+						StringReadStr(&sub, str, &p);
+						n_ion_exchange += 1;
+					}
+				}
+				this->rcml_number_of_ion_exchanges = n_ion_exchange;
+			} /*end if*/
+			//SB:neu
+			else if (strcmp(sub, "SELECTED_OUTPUT") == 0) {
+				while (fgets(str, 256, indatei) && (!strstr(str, "#ende"))) {
+					if (strstr(str, "-file")) {
+						DisplayMsgLn("-file in *.pqc found");
+						p = 0;
+						StringReadStr(&sub, str, &p);
+						StringReadStr(&sub1, &str[p], &p);
+						this->outfile = sub1;
+					}
+				}
+			}
 
-       else{
-         while(fgets(str,256,indatei) && (!strstr(str,"#ende"))){}
-         break;
- //        return 1;
-       }
-     }/*end while 2*/
-   } /*end while 1*/
-    nj=rcml_number_of_master_species+rcml_number_of_equi_phases+rcml_number_of_ion_exchanges;
-	if (nj+2!= this->number_of_comp){
-      DisplayMsgLn("!!!Error:Number of components in file *.pqc is not equal to that in file *.rfd!");
-//      fclose(indatei);
-//      return 0; 
-    }
-//    fclose(indatei);
-    return 1;
+			else {
+				while (fgets(str, 256, indatei) && (!strstr(str, "#ende"))) {
+				}
+				break;
+				//        return 1;
+			}
+		}/*end while 2*/
+	} /*end while 1*/
+	nj = rcml_number_of_master_species + rcml_number_of_equi_phases
+			+ rcml_number_of_ion_exchanges;
+	if (nj + 2 != this->number_of_comp) {
+		DisplayMsgLn(
+				"!!!Error:Number of components in file *.pqc is not equal to that in file *.rfd!");
+		//      fclose(indatei);
+		//      return 0;
+	}
+	//    fclose(indatei);
+	return 1;
 }
 
 /**************************************************************************
@@ -909,11 +921,13 @@ int REACT::ReadReactionModel( FILE *File){
     |exchange species 1  | <- n1+3+n2
     |      ...           |
     |exchange species n3 | <- n1+3+n2+n3-1
-                                                                                                                                           
+
    Programmaenderungen:
    01/2006     SB         Erste Version
+   10/2010 TF restructured method a little bit, changed access to process type
 **************************************************************************/
-int REACT::ReadReactionModelNew( ifstream *pqc_infile){
+int REACT::ReadReactionModelNew( ifstream *pqc_infile)
+{
 
   int n_master_species=0;
   int n_equi_phases=0;
@@ -925,13 +939,11 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
   string line_string, dummy, speciesname;
   CRFProcess* m_pcs = NULL;
   std::stringstream in;
-  int no_processes = (int)pcs_vector.size();
   int pH_found = 0;// Hplus_found = 0, count = -1;
-
 
   /* File handling */
   pqc_infile->seekg(0L,ios::beg);
-  
+
   /* zeilenweise lesen */
    while(!pqc_infile->eof()){
     pqc_infile->getline(line,MAX_ZEILE);
@@ -960,7 +972,7 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
                     pqc_names.push_back(speciesname); //store species name in vector names
                     pqc_process.push_back(m_pcs->pcs_number); // store process name in vector processes
                     pqc_index.push_back(idx);
-/*                    if(speciesname.compare("H+") == 0){ 
+/*                    if(speciesname.compare("H+") == 0){
                         Hplus_found = 1;
                         cout << "H+ found in GeoSys species" << endl;
                         this->pqc_Hplus_index = n_master_species-1; // Store index for H+ in vectors
@@ -972,15 +984,17 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
                     if (line_string.find("charge") != string::npos) this->rcml_pH_charge=1;
                 }
                 }
-		   if (line_string.find("# temp")!=string::npos){
-             // check if heat transport process is calculated in GeoSys 
-			 for(int i=0;i<no_processes;i++){
-				m_pcs = pcs_vector[i];
-				if(m_pcs->pcs_type_name.find("HEAT_TRANSPORT")!=string::npos){
-					this->rcml_heat_flag=1;
-					break;
-                 }
-			 }
+		   if (line_string.find("# temp")!=string::npos) {
+             // check if heat transport process is calculated in GeoSys
+			   size_t no_processes (pcs_vector.size());
+			   for (size_t i = 0; i < no_processes; i++) {
+					m_pcs = pcs_vector[i];
+//					if (m_pcs->pcs_type_name.find("HEAT_TRANSPORT") != string::npos) {
+					if (m_pcs->getProcessType() == HEAT_TRANSPORT) {
+						this->rcml_heat_flag = 1;
+						break;
+					}
+				}
            }
 			if(line_string.find("temp")!=string::npos){
 				if(this->rcml_heat_flag < 1){ // if no heat transport is calculated
@@ -1011,8 +1025,8 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
         }
         else{
             // Store dummy values anyway, as otherwise indexing in Write becomes too complicated
-            pqc_names.push_back(speciesname); 
-            pqc_process.push_back(-1); 
+            pqc_names.push_back(speciesname);
+            pqc_process.push_back(-1);
             pqc_index.push_back(-1);
         }
         // Treat pe
@@ -1042,7 +1056,7 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
             }
         }
 		this->rcml_number_of_equi_phases = n_equi_phases;
-       } 
+       }
 
       /* Schleife ueber Keyword EXCHANGE */
       if(line_string.find("EXCHANGE")!=string::npos) { // keyword found
@@ -1063,7 +1077,7 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
             }
         }
 		this->rcml_number_of_ion_exchanges = n_ion_exchange;
-       } 
+       }
 	  /* Scleife über Keyword GAS_PHASE */
 	  if(line_string.find("GAS_PHASE")!=string::npos) { // keyword found
 
@@ -1106,7 +1120,7 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
 	cout << rcml_number_of_gas_species << " gas species " << endl;
 //    for(i=0; i< (int) pqc_names.size();i++)
 //        cout << pqc_names[i] << ", " << pqc_index[i] << ", " << pqc_process[i] << endl;
- 
+
     return 1;
 }
 
@@ -1121,9 +1135,9 @@ int REACT::ReadReactionModelNew( ifstream *pqc_infile){
                                                                           */
 /* Ergebnis:
    0 bei Fehler oder Ende aufgrund Dateitest, sonst 1
-                                                                       
+
    Programmaenderungen:
-   06/2003     SB         Erste Version 
+   06/2003     SB         Erste Version
    06/2003     MX         Read function realisation
 **************************************************************************/
 int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
@@ -1178,11 +1192,11 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
             FilePrintInt(f, index+1);
             LineFeed(f);
 
-           
+
  //           while (fgets(str,256,indatei) && (!StrTestDollar(str, &pos))){
            while (fgets(str,256,indatei) && (!strstr(str, "#ende"))){
               if ((!strstr(str, "# comp")) && (!strstr(str, "# temp"))){
-//               DisplayMsgLn(" #ende and # not found"); 
+//               DisplayMsgLn(" #ende and # not found");
                FilePrintString(f, str);
 
               }
@@ -1195,7 +1209,7 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
 				if(strcmp(s,"temp")==0){
 					if(rcml_heat_flag == 1){
 						iheat = np;
-//                        printf("Temperature is %lf", val_in[iheat][index]);              
+//                        printf("Temperature is %lf", val_in[iheat][index]);
 						/* convert temperature from Kelvin to degree celsius for PHREEQC */
 						if (val_in[iheat][index]<273.0) val_in[iheat][index] += 273.15; //MX 03.05
                         FilePrintDouble(f, val_in[iheat][index] - 273.15);
@@ -1217,7 +1231,7 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
                     if(strcmp("pH",name[j])!=0){
                         nn += 1;
 						d_help = val_in[j][index];
-//                        printf("Component %s: concentration %lf", s, d_help);              
+//                        printf("Component %s: concentration %lf", s, d_help);
 						if(fabs(d_help) < 1.0e-019) d_help = 0.0;
                         FilePrintDouble(f, d_help);
                         FilePrintString(f, " # comp ");
@@ -1227,9 +1241,9 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
                             pe_flag=0;
                         break;
 					}
-/*		                        else{  // pH in RF input file 
+/*		                        else{  // pH in RF input file
                         pH_flag=0;
-                        printf("Component %s: concentration %lf", s, val_in[j][index]);              
+                        printf("Component %s: concentration %lf", s, val_in[j][index]);
                         FilePrintDouble(f, val_in[j][index]);
                         FilePrintString(f, " charge ");
                         FilePrintString(f, " # comp ");
@@ -1244,9 +1258,9 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
                      for (i=0;i<np;i++){
                        if (strcmp(s,name[i])==0){
                          if(strcmp("pH",name[i])==0){         /* pH in RF input file */
-                                           
+
                            pH_flag=0;
-//                           printf("Component %s: concentration %lf", s, val_in[i][index]);              
+//                           printf("Component %s: concentration %lf", s, val_in[i][index]);
                            FilePrintDouble(f, val_in[i][index]);
 //MX						   FilePrintString(f, " charge ");
 
@@ -1255,31 +1269,31 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
                            FilePrintInt(f, rcml_number_of_master_species+1);
                            LineFeed(f);
                            break;
-                         } 
+                         }
                        }
                       } /*end for*/
-                      
-                     if (pH_flag<0){ 
 
-                       DisplayMsgLn("pH is not included in the transport but will be calculated in the reaction"); 
-                       pH_flag=1;             
+                     if (pH_flag<0){
+
+                       DisplayMsgLn("pH is not included in the transport but will be calculated in the reaction");
+                       pH_flag=1;
                        p=0;
                        StrReadDouble(&dvalue, &str[p+=pos], f, TFDouble, &pos);
                        StrReadStr(s, &str[p+=pos], f, TFString, &pos);
-                       FilePrintString(f, " # comp "); 
+                       FilePrintString(f, " # comp ");
                        FilePrintInt(f, rcml_number_of_master_species+1);
                        LineFeed(f);
                        name[rcml_number_of_master_species+1]="pH";
                        break;}
                      break;
-                   } 
+                   }
 
                    else if (strcmp(s,"pe")==0){  /* if pe will change with the reaction! */
                      for (i=0;i<np;i++){
                        if (strcmp(s,name[i])==0){
                          if(strcmp("pe",name[i])==0){         /* pe in RF input file */
                            pe_flag=0;
-//                           printf("Component %s: concentration %lf", s, val_in[i][index]);              
+//                           printf("Component %s: concentration %lf", s, val_in[i][index]);
                            FilePrintDouble(f, val_in[i][index]);
                            FilePrintString(f, " # comp ");
                            FilePrintInt(f, rcml_number_of_master_species+2);
@@ -1288,9 +1302,9 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
                          }
                        }
                       } /*end for*/
-                      
-                     if (pe_flag<0){ 
-                       DisplayMsgLn("pe is not included in the transport but will be calculated in the reaction");              
+
+                     if (pe_flag<0){
+                       DisplayMsgLn("pe is not included in the transport but will be calculated in the reaction");
                        pe_flag=1;
                        StrReadDouble(&dvalue, &str[pos], f, TFDouble, &pos);
                        FilePrintString(f, " # comp ");
@@ -1299,7 +1313,7 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
                        break;}
                      break;
                    }
-                                 
+
                 }/*end-for*/
             } /*end-else*/
         } /*end while -3*/
@@ -1354,7 +1368,7 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
                  for (i=0;i<np;i++){
                     if (strcmp(s,name[i])==0){
                         nep += 1;
-//                        printf("  Phase %s:  %lf \n", s, val_in[i][index]);              
+//                        printf("  Phase %s:  %lf \n", s, val_in[i][index]);
                         FilePrintDouble(f, val_in[i][index]);
                         FilePrintString(f, " # comp ");
                         FilePrintInt(f, i+1);
@@ -1383,7 +1397,7 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
 				  sscanf(str," %s %lf %s %i %s", s1,&dvalue,s,&j,s2); ///OK
 				  /* steps in reaction model eintragen */
 				  this->rcml_number_of_pqcsteps = j;
-				  
+
 				  if(index > -1){
 				  FilePrintString(f, " -steps ");
   CTimeDiscretization *m_tim = NULL;
@@ -1445,7 +1459,7 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
                  for (i=0;i<np;i++){
                     if (strcmp(s,name[i])==0){
                         nj += 1;
-//                        printf("  Phase %s:  %lf \n", s, val_in[i][index]);              
+//                        printf("  Phase %s:  %lf \n", s, val_in[i][index]);
                         FilePrintDouble(f, val_in[i][index]);
                         FilePrintString(f, " # comp ");
                         FilePrintInt(f, i+1);
@@ -1508,7 +1522,7 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
             if (index==0){
                 FilePrintString(f, "USER_PUNCH  ");
                 LineFeed(f);
-        
+
     /*------------head------------------------------*/
                 fprintf(f, " -head");
                 for (j=0; j<rcml_number_of_master_species; j++){
@@ -1516,7 +1530,7 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
                     fprintf(f, " %s", name[j]);
                 }
                 fprintf(f, " pH pe");
-                
+
                 nj=rcml_number_of_master_species;
                 nk=rcml_number_of_equi_phases;
 
@@ -1537,16 +1551,16 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
                 }
                     fprintf(f, " TOT(%c%s%c)", 34, name[nj-1], 34);
 
- 
+
     /*------------pH pe-------------------------------*/
                LineFeed(f);
                 fprintf(f, " 20 PUNCH");
                 fprintf(f, " -LA(%c%s%c),", 34, "H+", 34);
                 fprintf(f, " -LA(%c%s%c)", 34, "e-", 34);
 
- 
+
     /*------------equilibrium phases-------------------*/
-               if (rcml_number_of_equi_phases>0){ 
+               if (rcml_number_of_equi_phases>0){
                   LineFeed(f);
                   fprintf(f, " 40 PUNCH");
                   for (j=nj+2; j<nj+rcml_number_of_equi_phases+1; j++){
@@ -1556,7 +1570,7 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
                 }
 
     /*------------exchange-------------------*/
-               if (rcml_number_of_ion_exchanges>0){ 
+               if (rcml_number_of_ion_exchanges>0){
                   LineFeed(f);
                   fprintf(f, " 60 PUNCH");
                   for (j=nj+nk+2; j<nj+nk+rcml_number_of_ion_exchanges+1; j++){
@@ -1620,9 +1634,9 @@ int REACT::ReadInputPhreeqc(long index, FILE *fpqc, FILE *Fphinp){
                                                                           */
 /* Ergebnis:
    0 bei Fehler oder Ende aufgrund Dateitest, sonst 1
-                                                                       
+
    Programmaenderungen:
-   06/2003     SB         Erste Version 
+   06/2003     SB         Erste Version
    06/2003     MX         Read function realisation
    01/2006     SB         Reimplementation, C++ class, IO, bugfixes
 **************************************************************************/
@@ -1635,7 +1649,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
   int i, ii, idx, n1, n2, n3, n4, count=-1;
   double dval, dval1, sat_index=0.0;
   double z, h, dens, press, partial_press, volume, temp=-1.0, mm;
- 
+
 //  cout << " WriteInputPhreeqc for node " << index << endl;
   cout.flush();
  /* File handling - rewind file */
@@ -1686,9 +1700,9 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
 //                    *out_file << speciesname << "       " << dval << " charge " << "       # comp " <<endl;
 //                in.clear();
               }
-            }		    
+            }
             else if (line_string.find("# temp")!=string::npos){
-             // check if heat transport process is calculated in GeoSys 
+             // check if heat transport process is calculated in GeoSys
                 if(this->rcml_heat_flag > 0){
                     m_pcs = PCSGet("HEAT_TRANSPORT");
                     idx = m_pcs->GetNodeValueIndex("TEMPERATURE1");
@@ -1697,14 +1711,14 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
                     dval -=273.15; // Input to PHREEQC is in °C
                     *out_file << "temp " << dval << "  # temp " << endl;
 					temp = dval; // save for gas phase input
-                }                
+                }
             }
             else { // Write units and temperature in the standard case
               if (line_string.find("pH") == string::npos && line_string.find("pe") == string::npos && line_string.find("#ende") == string::npos)
-                    *out_file << line_string << endl; 
+                    *out_file << line_string << endl;
             }
         }// end while
-        
+
         // special treat pH, and pe
         n1 = this->rcml_number_of_master_species;
         count++;
@@ -1729,7 +1743,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
         *out_file << "pe" << "       " << dval << "       # comp " <<endl;
 //SB to do screen output		if(index <2)  cout << "  pe: " << dval << ", " << pcs_vector[pqc_process[count]]->pcs_number << endl;
 
-		*out_file << line_string << endl; 
+		*out_file << line_string << endl;
       } // end SOLUTION
 //-------------------------------------------------------------------------------------------------------------
       /* Schleife ueber Keyword EQUILIBRIUM PHASES */
@@ -1745,7 +1759,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
 
 /*                m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
                 idx = m_pcs->GetNodeValueIndex(speciesname)+1; // old timelevel
-                dval = m_pcs->GetNodeValue(index,idx);                
+                dval = m_pcs->GetNodeValue(index,idx);
 */
 //                if(count != (n1+3)) cout << " Error in index pqc " << endl;
                 speciesname = pqc_names[count];
@@ -1796,29 +1810,29 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
         *out_file << endl << "GAS_PHASE   " <<  index+1 << endl;
 
 		// get necessary values for conversion of molar concentrations to partial pressures, and to calculate total pressure and total volume
-		
+
 		// get height of node z
 		CFEMesh* m_msh = fem_msh_vector[0]; //SB: ToDo hart gesetzt
 		Mesh_Group::CNode* m_nod = NULL;
 		m_nod = m_msh->nod_vector[index];
 		z = m_msh->nod_vector[index]->Z();
-		
+
 		// get piezometric hight h
 		m_pcs = PCSGet("GROUNDWATER_FLOW");
-		if(m_pcs == NULL) cout << "   Error - no flow process found!" << endl; 
+		if(m_pcs == NULL) cout << "   Error - no flow process found!" << endl;
 		idx = m_pcs->GetNodeValueIndex("HEAD")+1;
 		h = m_pcs->GetNodeValue(index,idx);
-		
+
 		// get fluid density
 		dens = mfp_vector[0]->Density();
-		
+
 		// calculate pressure in [Pa]
 		press = dens * gravity_constant * (h-z);
 		// cout << " Pressure: " << press << " = " << dens << " * " << gravity_constant << " * ( " << h << " - " << z << " ) " << endl;
-		
+
 
 		// get temperature in [°C]
-		if(rcml_heat_flag < 1) temp = this->temperature; 
+		if(rcml_heat_flag < 1) temp = this->temperature;
 
 		// get molar masses of gas phase
 		mm=0.0; // mm is total molar mass of gas phase in [mol]
@@ -1833,7 +1847,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
 
 		//  calculate Volume of gas phase in [mol * Pa * m^3 / K / mol * K / Pa = m^3 ]
 		volume = mm * 8.314472 * (273.15 + temp) /press;
-		
+
         while(line_string.find("#ende")==string::npos){
             pqc_infile.getline(line,MAX_ZEILE);
             line_string = line;
@@ -1851,7 +1865,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
                 // cout << "Testing index vectors: " << speciesname << " , with vectors: " << pqc_names[count] << ", " << pcs_vector[pqc_process[count]]->pcs_number << ", " << pqc_index[count];
 				// cout << " Molar mass: " << dval  << ", component / total mass: " << dval/mm << endl;
 				// dval is molar mass of gas component, convert to partial pressure [Pa]
-				if (mm > 0.0) 
+				if (mm > 0.0)
 					partial_press = press * dval/mm;
 				else
 						partial_press = 0.0;
@@ -1976,8 +1990,8 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
 
      }/*end while zeilenweises lesen */
     *out_file << "END" << endl << endl;
- 
-    pqc_infile.close();   
+
+    pqc_infile.close();
 //    out_file.close();
 
     return 1;
@@ -1990,11 +2004,11 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream *ou
    Ruft PHREEQC auf
 
    Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-                                                                          
+
    Ergebnis:
    0 bei Fehler oder Ende aufgrund Dateitest, sonst 1
 
-   
+
    Programmaenderungen:
    06/2003     SB         Erste Version
  **************************************************************************/
@@ -2004,7 +2018,7 @@ int REACT::Call_Phreeqc(void){
   const char *m_phreeqc;
 //  m_phreeqc="phrqc phinp.dat  phinp.out  phreeqc.dat";
    m_phreeqc="phreeqc phinp.dat  phinp.out  phreeqc.dat";
-   
+
 
 #ifdef PHREEQC
   if (!system(m_phreeqc)){
@@ -2013,9 +2027,9 @@ int REACT::Call_Phreeqc(void){
   }
    else {
     DisplayMsgLn("Warnung: Phreeqc doesn't run properly!!! ");
-    exit(1);   
+    exit(1);
   }
-#endif 
+#endif
 
 #ifndef PHREEQC
   return 1;
@@ -2023,24 +2037,24 @@ int REACT::Call_Phreeqc(void){
 }
 
 
- 
+
 /**************************************************************************
    ROCKFLOW - Funktion: ReadOutputPhreeqc
 
    Aufgabe:
    Liest Ergebnisse der PHREEQC-Berechnungen aus PHREEQC-Ausdgabedatei
-  
+
   Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    E char *File: Dateiname der PHREEQC-Ausdgabedatei
-   R char **val_out: Zeiger für chemische Conzentration 
-   E char **name: Componentnamen 
+   R char **val_out: Zeiger für chemische Conzentration
+   E char **name: Componentnamen
 
   Ergebnis:
    0 bei Fehler oder Ende aufgrund Dateitest, sonst 1
 
    Programmaenderungen:
    06/2003     MX/SB         Erste Version
-   11/2003     SB            Bugfix for large files, read long lines 
+   11/2003     SB            Bugfix for large files, read long lines
 							 switched to iostreams
 ************************************************************************************************/
 int REACT::ReadOutputPhreeqc(char* fout){
@@ -2058,7 +2072,7 @@ int REACT::ReadOutputPhreeqc(char* fout){
         return 0;
     }
 	/* get total number of species in PHREEQC output file */
-	ntot = rcml_number_of_master_species+2 + rcml_number_of_equi_phases + rcml_number_of_ion_exchanges; 
+	ntot = rcml_number_of_master_species+2 + rcml_number_of_equi_phases + rcml_number_of_ion_exchanges;
 	/* get lines to skip */
 	anz = this->rcml_number_of_pqcsteps;
 
@@ -2102,7 +2116,7 @@ int REACT::ReadOutputPhreeqc(char* fout){
      }
 
 	ok=1;
-    return ok; 
+    return ok;
 }
 
 /**************************************************************************
@@ -2110,18 +2124,18 @@ int REACT::ReadOutputPhreeqc(char* fout){
 
    Aufgabe:
    Liest Ergebnisse der PHREEQC-Berechnungen aus PHREEQC-Ausdgabedatei
-  
+
   Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
    E char *File: Dateiname der PHREEQC-Ausdgabedatei
-   R char **val_out: Zeiger für chemische Conzentration 
-   E char **name: Componentnamen 
+   R char **val_out: Zeiger für chemische Conzentration
+   E char **name: Componentnamen
 
   Ergebnis:
    0 bei Fehler oder Ende aufgrund Dateitest, sonst 1
 
    Programmaenderungen:
    06/2003     MX/SB         Erste Version
-   11/2003     SB            Bugfix for large files, read long lines 
+   11/2003     SB            Bugfix for large files, read long lines
 							 switched to iostreams
    01/2006     SB            ReImplementation, C++ classes, IO, bugfixes
 ************************************************************************************************/
@@ -2137,7 +2151,7 @@ int REACT::ReadOutputPhreeqcNew(void){
     int n1, n2, n3, n4, dix=0;
     CTimeDiscretization *m_tim = NULL;
 
-    // Get time step number   
+    // Get time step number
     if(time_vector.size()>0){
         m_tim = time_vector[0];
 	    if(m_tim->step_current == 0) dix = -1;
@@ -2152,9 +2166,9 @@ int REACT::ReadOutputPhreeqcNew(void){
     n2 = this->rcml_number_of_equi_phases;
     n3 = this->rcml_number_of_ion_exchanges;
 	n4 = this->rcml_number_of_gas_species;
-  
+
 	/* get total number of species in PHREEQC output file */
-	ntot = rcml_number_of_master_species + 3 + rcml_number_of_equi_phases + rcml_number_of_ion_exchanges + rcml_number_of_gas_species; 
+	ntot = rcml_number_of_master_species + 3 + rcml_number_of_equi_phases + rcml_number_of_ion_exchanges + rcml_number_of_gas_species;
 	/* get lines to skip */
 	anz = this->rcml_number_of_pqcsteps;
 
@@ -2194,13 +2208,13 @@ int REACT::ReadOutputPhreeqcNew(void){
 //				if(index<2) cout << " H+: " <<  dval << ", ";
                 pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
                 }
-            }     
+            }
             if(ein >> dval){ // read pe
                 j++;
                 m_pcs = pcs_vector[pqc_process[j]];
 //				if(index <2) cout << " pe: " <<  dval << endl;
                 pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
-            }     
+            }
 /*--------------------Read the concentration of all equilibrium phases -------*/
            for (j=n1+3; j<n1+3+n2; j++){
              if(ein >> dval){
@@ -2253,7 +2267,7 @@ int REACT::ReadOutputPhreeqcNew(void){
 
 	ok=1;
     ein.close();
-    return ok; 
+    return ok;
 }
 
 
@@ -2264,16 +2278,16 @@ int REACT::ReadOutputPhreeqcNew(void){
    Aufgabe:
    Testet, ob ein externes PHREEQC- Eingabefile da ist
    allererste Version
-   
+
    Programmaenderungen:
-   09/2003     SB         Erste Version 
+   09/2003     SB         Erste Version
    01/2006     SB         New File handling
 **************************************************************************/
 void REACT::TestPHREEQC(string file_base_name){
- 
+
 file_name_pqc = file_base_name + CHEM_REACTION_EXTENSION;
 ifstream pqc_file (file_name_pqc.data(),ios::in);
-if (pqc_file.good()) 
+if (pqc_file.good())
 	flag_pqc = true;
 pqc_file.close();
 }
@@ -2285,7 +2299,7 @@ pqc_file.close();
 
    Aufgabe:
    Sets all reaction rates to Zero
-   
+
    Programmaenderungen:
    03/2004     SB         Erste Version
 **************************************************************************/
@@ -2349,7 +2363,7 @@ for(i=0;i<ni;i++){
 	if(this->rateflag[i] > 0){
 		//get sourrounding elements and nodes
 		/* Aussuchen der Nachbarknoten */
-		  SetNeighborNodesActive (i,level,help); 
+		  SetNeighborNodesActive (i,level,help);
 //		  DisplayMsgLn(" ");
 	}
 }
@@ -2358,8 +2372,8 @@ for(i=0;i<ni;i++){
 j=0;
 for(i=0;i<ni;i++){
 	DisplayMsg(" i: "); DisplayLong(i);
-	DisplayMsg(",   this->rf[i]: "); DisplayLong(this->rateflag[i]); 
-	DisplayMsg(",   this->rate[i]: "); DisplayDouble(this->rate[0][i],0,0); 
+	DisplayMsg(",   this->rf[i]: "); DisplayLong(this->rateflag[i]);
+	DisplayMsg(",   this->rate[i]: "); DisplayDouble(this->rate[0][i],0,0);
 	DisplayMsg(",   help[i]: ");DisplayLong(help[i]); DisplayMsgLn(" ");
 	if(help[i] > 0){
 		this->rateflag[i] = 1;
@@ -2378,48 +2392,52 @@ helprates = (double*) Free(helprates);
 
    Aufgabe:
    Inserts reaction rate of component at index in field RECT->rate
-   
+
    Programmaenderungen:
    03/2004     SB         Erste Version
+   10/2010 TF restructured method a little bit, changed access to process type
 **************************************************************************/
-void REACT::GetTransportResults(void){
+void REACT::GetTransportResults(void)
+{
+	CRFProcess *pcs = NULL;
+	int timelevel = 1; // concentrations are in new timelevel
+//	int phase = 0; //single phase so far
+	size_t np(pcs_vector.size());
 
- int comp, phase, j, timelevel, np;
- CRFProcess *m_pcs = NULL;
- long  i, index;
-
- timelevel = 1;  // concentrations are in new timelevel
- phase = 0;      //single phase so far
- 
- np = (int)pcs_vector.size();
- for(j=0;j<np;j++){ // for all processes
-	m_pcs = pcs_vector[j];
-	if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0){ // if it is a mass transport process
-		comp = m_pcs->pcs_component_number; // get component number
-			for(i=0;i<nodenumber;i++){
-			// get concentration values
-			val_in[comp][i] = m_pcs->GetNodeValue(i,m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0])+timelevel);
-			if((val_in[comp][i] < 0.0) && (strcmp(name[comp],"pe")!= 0) ) {  //MX, 01.2005
-				if(abs(val_in[comp][i]) > MKleinsteZahl) {
-					DisplayMsg(" Neg. conc for component "); DisplayLong((long) comp);
-					DisplayMsg(" at node "); DisplayLong((long)i);
-					DisplayMsg("; conc = "); DisplayDouble(val_in[comp][i],0,0);
-					DisplayMsgLn(" ");
+	for (size_t j = 0; j < np; j++) { // for all processes
+		pcs = pcs_vector[j];
+//		if (pcs->pcs_type_name.compare("MASS_TRANSPORT") == 0) { // if it is a mass transport process
+		if (pcs->getProcessType() == MASS_TRANSPORT) {
+			int comp = pcs->pcs_component_number; // get component number
+			for (long i = 0; i < nodenumber; i++) {
+				// get concentration values
+				val_in[comp][i] = pcs->GetNodeValue(i,
+						pcs->GetNodeValueIndex(
+								pcs->pcs_primary_function_name[0])
+								+ timelevel);
+				if ((val_in[comp][i] < 0.0) && (strcmp(name[comp], "pe") != 0)) { //MX, 01.2005
+					if (abs(val_in[comp][i]) > MKleinsteZahl) {
+						DisplayMsg(" Neg. conc for component ");
+						DisplayLong((long) comp);
+						DisplayMsg(" at node ");
+						DisplayLong((long) i);
+						DisplayMsg("; conc = ");
+						DisplayDouble(val_in[comp][i], 0, 0);
+						DisplayMsgLn(" ");
+					}
+					val_in[comp][i] = 0.0 * val_in[comp][i];
 				}
-				val_in[comp][i] = 0.0 * val_in[comp][i];
 			}
 		}
 	}
- }
 
-
- if(heatflag > 0){
-	name[np-2] = "temp";//MX CMCD
-    m_pcs = PCSGet("HEAT_TRANSPORT");
-    index = m_pcs->GetNodeValueIndex("TEMPERATURE1");
-	for(i=0;i<this->nodenumber;i++)
-		this->val_in[np-2][i] = m_pcs->GetNodeValue(i, index); //OK PCSGetNODTemperature1L(i)//MX CMCD -2, Liquid Flow, Heat Transport
-	}	
+	if (heatflag > 0) {
+		name[np - 2] = "temp";//MX CMCD
+		pcs = PCSGet("HEAT_TRANSPORT");
+		long index = pcs->GetNodeValueIndex("TEMPERATURE1");
+		for (long i = 0; i < this->nodenumber; i++)
+			this->val_in[np - 2][i] = pcs->GetNodeValue(i, index); //OK PCSGetNODTemperature1L(i)//MX CMCD -2, Liquid Flow, Heat Transport
+	}
 }
 
 
@@ -2431,7 +2449,7 @@ void REACT::SetNeighborNodesActive(long startnode, long level, int* help) //ToDo
 /*OK411
 //  long *kanten=NULL;
   int anz_n;
-//  long nd1[2];  
+//  long nd1[2];
   int j=0,k;
   long *knoten;
 //  long* neighbor_nodes =NULL;
@@ -2480,7 +2498,7 @@ for (j=0; j<num_elems3d; j++) {
     }
 }
 
-  } //endifs   
+  } //endifs
 */
 }
 
@@ -2504,7 +2522,7 @@ double MATCalcIonicStrengthNew(long index)
   static long *element_nodes;
 //  long component;
   double conc[100];
-//  if (rcml) 
+//  if (rcml)
   REACT *rc = NULL; //SB
   rc->GetREACT();
 	n=rc->rcml_number_of_master_species;
@@ -2512,7 +2530,7 @@ double MATCalcIonicStrengthNew(long index)
 //  n = get_rcml_number_of_master_species(rcml);
   for ( component=0; component<n; component++) {
 	conc[component] =0.0;
-      if (ElGetElementActiveState(index)){  
+      if (ElGetElementActiveState(index)){
          nn = ElGetElementNodesNumber(index);
          element_nodes = ElGetElementNodes(index);
          for (j=0;j<nn;j++) {
@@ -2521,7 +2539,7 @@ double MATCalcIonicStrengthNew(long index)
 		}
         conc[component] /= (double)nn;
         element_nodes = NULL;
-      } 
+      }
 
 // calculate the solid phase: volume =v_mi*Ci
 //      conc[i]=CalcElementMeanConcentration (index, i, timelevel, ergebnis);
@@ -2529,7 +2547,7 @@ double MATCalcIonicStrengthNew(long index)
      z_i = m_cp->valence;
 
    ion_strength += 0.5 * conc[component]*z_i*z_i;
-	
+
   }
 */
   return ion_strength;
@@ -2542,7 +2560,7 @@ REACT *rc = new REACT(); //SB
 rc->TestPHREEQC(filename); // Test if *.pqc file is present
 if (rc->flag_pqc)           //MX
     REACT_vec.push_back(rc);
-else 
+else
     delete rc;
 rc =NULL;
 }
@@ -2553,13 +2571,13 @@ rc =NULL;
    Aufgabe:
    Berechnet chemische Reaktionen zwischen den einzelnen Komponenten
    allererste VErsion
-   
+
    Programmaenderungen:
    06/2006     MX         Erste Version
 
 **************************************************************************/
 void REACT::ExecuteReactionsPHREEQC0(void){
- 
+
  long i,  ok = 0;
  FILE *indatei, *fphinp, *fsel_out=NULL;
  char fsout[80];
@@ -2571,7 +2589,7 @@ void REACT::ExecuteReactionsPHREEQC0(void){
 
   if (aktuelle_zeit>0)
    GetTransportResults2Element();
- 
+
  /* Perform reaction step */
  /* --------------------------------------------------------------------------*/
   if(flag_pqc){
@@ -2607,7 +2625,7 @@ void REACT::ExecuteReactionsPHREEQC0(void){
 	/* Extern Program call to PHREEQC */
     if(ok) ok = Call_Phreeqc();
 	if(ok ==0) exit(1);
- 
+
 
    /* Set up the output values for rockflow after Phreeqc reaction*/
     fsel_out=fopen(fsout,"r");
@@ -2621,10 +2639,10 @@ void REACT::ExecuteReactionsPHREEQC0(void){
       fclose(fsel_out);
 	}
  } /* if flag */
- 
+
  /* Calculate Rates */
  CalculateReactionRates();
- 
+
  // SetConcentrationResults();
  SetConcentrationResultsEle();
 }/* End of ExecuteReactionsPHREEQC */
@@ -2634,69 +2652,71 @@ void REACT::ExecuteReactionsPHREEQC0(void){
 
    Aufgabe:
    Get node results after transport and interpolate to elements (center)
-   
+
    Programmaenderungen:
    06/2006     MX         Erste Version
+   10/2010 TF restructured method a little bit, changed access to process type
 **************************************************************************/
-void REACT::GetTransportResults2Element(void){
+void REACT::GetTransportResults2Element()
+{
+	CRFProcess *pcs = NULL;
+	int timelevel = 1; // concentrations are in new timelevel
+//	int phase = 0; //single phase so far
 
-  int comp, phase, j, timelevel, np;
-  CRFProcess *m_pcs = NULL;
-  long  i;  // index;
-  string cname;
+	size_t np (pcs_vector.size());
+	for (size_t j = 0; j < np; j++) { // for all processes
+		pcs = pcs_vector[j];
+//		if (pcs->pcs_type_name.compare("MASS_TRANSPORT") == 0) { // if it is a mass transport process
+		if (pcs->getProcessType () == MASS_TRANSPORT) { // if it is a mass transport process
+			int comp = pcs->pcs_component_number; // get component number
+			std::string cname (pcs->pcs_primary_function_name[0]);
+			if (CPGetMobil(pcs->GetProcessComponentNumber()) > 0)
+				pcs->InterpolateTempGP(pcs, cname); //line Interpolate to elements for ions
 
-  timelevel = 1;  // concentrations are in new timelevel
-  phase = 0;      //single phase so far
- 
-  np = (int)pcs_vector.size();
-  for(j=0;j<np;j++){ // for all processes
-	m_pcs = pcs_vector[j];
-	if(m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0){ // if it is a mass transport process
-		comp = m_pcs->pcs_component_number; // get component number
-        cname = m_pcs->pcs_primary_function_name[0];
-        if (CPGetMobil(m_pcs->GetProcessComponentNumber())> 0)
-            m_pcs->InterpolateTempGP(m_pcs,cname);  //line Interpolate to elements for ions  
-
-		for(i=0;i<elenumber;i++){
-			// get concentration values
-			val_in[comp][i] = m_pcs->GetElementValue(i,m_pcs->GetElementValueIndex(cname)+timelevel);
-			if((val_in[comp][i] < 0.0) && (strcmp(name[comp],"pe")!= 0) ) {  //MX, 01.2005
-				if(abs(val_in[comp][i]) > MKleinsteZahl) {
-					DisplayMsg(" Neg. conc for component "); DisplayLong((long) comp);
-					DisplayMsg(" at node "); DisplayLong((long)i);
-					DisplayMsg("; conc = "); DisplayDouble(val_in[comp][i],0,0);
-					DisplayMsgLn(" ");
+			for (long i = 0; i < elenumber; i++) {
+				// get concentration values
+				val_in[comp][i] = pcs->GetElementValue(i,
+						pcs->GetElementValueIndex(cname) + timelevel);
+				if ((val_in[comp][i] < 0.0) && (strcmp(name[comp], "pe") != 0)) { //MX, 01.2005
+					if (abs(val_in[comp][i]) > MKleinsteZahl) {
+						DisplayMsg(" Neg. conc for component ");
+						DisplayLong((long) comp);
+						DisplayMsg(" at node ");
+						DisplayLong((long) i);
+						DisplayMsg("; conc = ");
+						DisplayDouble(val_in[comp][i], 0, 0);
+						DisplayMsgLn(" ");
+					}
+					val_in[comp][i] = 0.0 * val_in[comp][i];
 				}
-				val_in[comp][i] = 0.0 * val_in[comp][i];
 			}
 		}
 	}
- }
 
- // Get Temperature values for elements
- if(this->heatflag > 0){
-	this->name[np-2] = "temp";//MX CMCD
-    m_pcs = PCSGet("HEAT_TRANSPORT");
-    int idxT = m_pcs->GetElementValueIndex("TEMPERATURE1")+1;
-    m_pcs->InterpolateTempGP(m_pcs, "TEMPERATURE1");
-	for(i=0;i<this->elenumber;i++)
-		this->val_in[np-2][i] = m_pcs->GetElementValue(i, idxT); //OK PCSGetNODTemperature1L(i)//MX CMCD -2, Liquid Flow, Heat Transport
+	// Get Temperature values for elements
+	if (this->heatflag > 0) {
+		this->name[np - 2] = "temp";//MX CMCD
+		pcs = PCSGet("HEAT_TRANSPORT");
+		int idxT = pcs->GetElementValueIndex("TEMPERATURE1") + 1;
+		pcs->InterpolateTempGP(pcs, "TEMPERATURE1");
+		for (long i = 0; i < this->elenumber; i++)
+			this->val_in[np - 2][i] = pcs->GetElementValue(i, idxT); //OK PCSGetNODTemperature1L(i)//MX CMCD -2, Liquid Flow, Heat Transport
 
-  }	
+	}
 }
 
 /**************************************************************************
-PCSLib-Method: 
+PCSLib-Method:
         SB Initialization of REACT structure for rate exchange between MTM2 and Reactions
-07/2007 OK Encapsulation 
+07/2007 OK Encapsulation
 **************************************************************************/
 void REACTInit()
-{ 
+{
   REACT *rc = NULL; //SB
 //  rc->TestPHREEQC(); // Test if *.pqc file is present
   rc = rc->GetREACT();
   if(rc) //OK
-  {  
+  {
     if(rc->flag_pqc){
       if(cp_vec.size()>0)
       { //OK
@@ -2705,12 +2725,12 @@ void REACTInit()
         rc->InitREACT0();
         rc->ExecuteReactionsPHREEQC0();
 	    REACT_vec.clear();
-	    REACT_vec.push_back(rc);        
+	    REACT_vec.push_back(rc);
       #else
-        //-------------------------------------------------- 
+        //--------------------------------------------------
 		// HB, for the GEM chemical reaction engine 05.2007
         #ifdef REAC_GEM
-          REACT_GEM *p_REACT_GEM = NULL;  
+          REACT_GEM *p_REACT_GEM = NULL;
           p_REACT_GEM->REACT_GEM();
         #else
 	  //--------------------------------------------------
@@ -2734,7 +2754,7 @@ void REACTInit()
 	CEqlink *eq=NULL;
 	eq = eq->GetREACTION();
   if(cp_vec.size()>0  && eq){ //MX
-    eq->TestCHEMAPPParameterFile(pcs_vector[0]->file_name_base); 
+    eq->TestCHEMAPPParameterFile(pcs_vector[0]->file_name_base);
 	if (eq->flag_chemapp){
 		eq->callCHEMAPP(pcs_vector[0]->file_name_base);
 	}
@@ -2750,10 +2770,10 @@ void REACTInit()
    ROCKFLOW - Funktion: CheckNoReactionNodes
 
    Aufgabe:
-   Checks, if in KinReactData (from kinetic reactions input file) geometries 
-   are defined, where no reactions are to be calculated. These are then 
+   Checks, if in KinReactData (from kinetic reactions input file) geometries
+   are defined, where no reactions are to be calculated. These are then
    transferred node wise to vector rateflag
-  
+
    Ergebnis:
    0 bei Fehler oder Ende aufgrund Dateitest, sonst 1
 
@@ -2791,17 +2811,17 @@ int REACT::CheckNoReactionNodes(void)
 	  }
 	}
       }
-      
+
       this->check_no_reaction_nodes = true;
     }
-  
+
   ok=1;
-  return ok; 
+  return ok;
 }
 
 
 
-// MDL: here the new functions begin 
+// MDL: here the new functions begin
 #ifdef LIBPHREEQC
 
 /**************************************************************************
@@ -2809,7 +2829,7 @@ int REACT::CheckNoReactionNodes(void)
 
    Aufgabe:
    Read input data *.pqc and form the buffer (stringstream) for libphreeqc
-   
+
    Formal parameters:
    In:   index = number of simulation (==node)
    Out:  out_buff = stringstream with the simulation's phreeqc input
@@ -2817,9 +2837,9 @@ int REACT::CheckNoReactionNodes(void)
 
    Ergebnis:
    0 bei Fehler oder Ende aufgrund Dateitest, sonst 1
-                                                                       
+
    Programmaenderungen:
-   04/2009     MDL        First Version 
+   04/2009     MDL        First Version
 **************************************************************************/
 int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 {
@@ -2831,16 +2851,16 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
   int nline;
   double dval, dval1;
   double z, h, dens, press, partial_press, volume, temp=-1.0, mm;
-  
+
   cout.flush();
   //  cout << "WriteInputPhreeqcLib starting ..." << endl;
   ifstream pqc_infile (this->file_name_pqc.data(),ios::in);
   pqc_infile.seekg(0L,ios::beg);
-  
+
   // precision output file
   out_buff->setf(ios::scientific,ios::floatfield);
   out_buff->precision(12);
-  
+
   // reset the (partial) counter of lines
   nline=0;
   //  cout << "Write: *nline =" << *nline << "; nline++ ="<< nline++ << endl;
@@ -2865,40 +2885,40 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 		count++;
 		speciesname = pqc_names[count];
 		dval = pcs_vector[pqc_process[count]]->GetNodeValue(index,pqc_index[count]);
-		
+
 		if(speciesname.compare("pe")) // if this is not pe
 		  if(dval < 1.0e-19) dval = 0.0;
-		*out_buff << speciesname << " " << dval << endl; 
+		*out_buff << speciesname << " " << dval << endl;
 		nline++;
 	      }
-	  }		    
+	  }
 	  else if (line_string.find("# temp")!=string::npos){
-	    // check if heat transport process is calculated in GeoSys 
+	    // check if heat transport process is calculated in GeoSys
 	    if(this->rcml_heat_flag > 0){
 	      m_pcs = PCSGet("HEAT_TRANSPORT");
 	      idx = m_pcs->GetNodeValueIndex("TEMPERATURE1");
 	      dval = m_pcs->GetNodeValue(index,idx);
 	      if (dval<273.0) dval += 273.15; //change from °C to Kelvin if necessary
 	      dval -=273.15; // Input to PHREEQC is in °C
-	      *out_buff << "temp " << dval << endl ; 
+	      *out_buff << "temp " << dval << endl ;
 	      nline++;
 	      temp = dval; // save for gas phase input
-	    }                
+	    }
 	  }
-	  else 
+	  else
 	    { // Write units and temperature in the standard case
 	      if (line_string.find("pH") == string::npos && line_string.find("pe") == string::npos && line_string.find("#ende") == string::npos)
 		{
-		  *out_buff << line_string << endl; 
+		  *out_buff << line_string << endl;
 		  nline++;
 		}
 	    }
 	}// end while
-        
+
         // special treat pH, and pe
         n1 = this->rcml_number_of_master_species;
         count++;
-        if(count != n1) 
+        if(count != n1)
 	  cout << "Error in index of pqc_vectors !" << endl;
         dval = pcs_vector[pqc_process[count]]->GetNodeValue(index,pqc_index[count]);
         count++;
@@ -2908,28 +2928,28 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
         }
         if(this->rcml_pH_charge > 0)
 	  {
-	    *out_buff << "pH " << dval << " charge " << endl; 
+	    *out_buff << "pH " << dval << " charge " << endl;
 	    nline++;
 	  }
         else
 	  {
 	    *out_buff << "pH " << dval << endl;
 	    nline++;
-	  } 
+	  }
         // pe
         count++;
         dval = pcs_vector[pqc_process[n1+2]]->GetNodeValue(index,pqc_index[n1+2]);
-        *out_buff << "pe " << dval << endl; 
+        *out_buff << "pe " << dval << endl;
 	nline++;
 	if (line_string.find("#ende")!=0)
 	  {
-	    *out_buff << line_string << endl; 
+	    *out_buff << line_string << endl;
 	    nline++;
 	  }
       } // end SOLUTION
 
       // Keyword EQUILIBRIUM PHASES
-      if(line_string.find("EQUILIBRIUM_PHASES")!=string::npos) 
+      if(line_string.find("EQUILIBRIUM_PHASES")!=string::npos)
 	{ // keyword found
 	  *out_buff << "PURE " << index+1 << endl;
 	  nline++;
@@ -2942,9 +2962,9 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 		  count++;
 		  speciesname = pqc_names[count];
 		  dval = pcs_vector[pqc_process[count]]->GetNodeValue(index,pqc_index[count]);
-		  if(dval < 1.0e-19) 
+		  if(dval < 1.0e-19)
 		    dval = 0.0;
-		  *out_buff << speciesname << " 0.0 " << dval << endl; 
+		  *out_buff << speciesname << " 0.0 " << dval << endl;
 		  nline++;
 		}
 	      else
@@ -2954,7 +2974,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 	} // end EQUILIBRIUM PHASES
 
       // Keyword EXCHANGE
-      if(line_string.find("EXCHANGE")!=string::npos) 
+      if(line_string.find("EXCHANGE")!=string::npos)
 	{ // keyword found
 	  *out_buff << "EXCHANGE " <<  index+1 << endl;
 	  nline++;
@@ -2965,9 +2985,9 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 	      count++;
 	      speciesname = pqc_names[count];
 	      dval = pcs_vector[pqc_process[count]]->GetNodeValue(index,pqc_index[count]);
-	      if(dval < 1.0e-19) 
+	      if(dval < 1.0e-19)
 		dval = 0.0;
-	      *out_buff << speciesname << "       " << dval << endl; 
+	      *out_buff << speciesname << "       " << dval << endl;
 	      nline++;
 	    }
 	    else
@@ -2981,36 +3001,36 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 
 
       // Keyword GAS_PHASE
-      if(line_string.find("GAS_PHASE")!=string::npos) 
+      if(line_string.find("GAS_PHASE")!=string::npos)
 	{ // keyword found
 	  *out_buff << "GAS_PHASE " <<  index+1 << endl;
 	  nline++;
-	
+
 	  // get necessary values for conversion of molar concentrations to partial pressures, and to calculate total pressure and total volume
-	  
+
 	  // get height of node z
 	  CFEMesh* m_msh = fem_msh_vector[0]; //SB: ToDo hart gesetzt
 	  Mesh_Group::CNode* m_nod = NULL;
 	  m_nod = m_msh->nod_vector[index];
 	  z = m_msh->nod_vector[index]->Z();
-	
+
 	  // get piezometric hight h
 	  m_pcs = PCSGet("GROUNDWATER_FLOW");
-	  if(m_pcs == NULL) 
-	    cout << "   Error - no flow process found!" << endl; 
+	  if(m_pcs == NULL)
+	    cout << "   Error - no flow process found!" << endl;
 	  idx = m_pcs->GetNodeValueIndex("HEAD")+1;
 	  h = m_pcs->GetNodeValue(index,idx);
-	  
+
 	  // get fluid density
 	  dens = mfp_vector[0]->Density();
-	  
+
 	  // calculate pressure in [Pa]
 	  press = dens * gravity_constant * (h-z);
-	  
+
 	  // get temperature in [°C]
-	  if(rcml_heat_flag < 1) 
-	    temp = this->temperature; 
-	
+	  if(rcml_heat_flag < 1)
+	    temp = this->temperature;
+
 	  // get molar masses of gas phase
 	  mm=0.0; // mm is total molar mass of gas phase in [mol]
 	  ii= rcml_number_of_master_species + 3 + rcml_number_of_ion_exchanges + rcml_number_of_equi_phases;
@@ -3020,10 +3040,10 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 	      dval = pcs_vector[pqc_process[i]]->GetNodeValue(index,pqc_index[i]);
 	      mm += dval;
 	    }
-	
+
 	  //  calculate Volume of gas phase in [mol * Pa * m^3 / K / mol * K / Pa = m^3 ]
 	  volume = mm * 8.314472 * (273.15 + temp) /press;
-	
+
 	  while(line_string.find("#ende")==string::npos){
 	    pqc_infile.getline(line,MAX_ZEILE);
 	    line_string = line;
@@ -3047,9 +3067,9 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 	      count++;
 	      speciesname = pqc_names[count];
 	      dval = pcs_vector[pqc_process[count]]->GetNodeValue(index,pqc_index[count]);
-	      if(dval < 1.0e-19) 
+	      if(dval < 1.0e-19)
 		dval = 0.0;
-	      if (mm > 0.0) 
+	      if (mm > 0.0)
 		{
 		  partial_press = press * dval/mm;
 		}
@@ -3057,8 +3077,8 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 		{
 		  partial_press = 0.0;
 		}
-	      
-	      *out_buff << " " << speciesname << " " << partial_press/101325.0 << endl; 
+
+	      *out_buff << " " << speciesname << " " << partial_press/101325.0 << endl;
 	      nline++;
 	    }
 	  else
@@ -3071,7 +3091,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 	} // end GAS_PHASE
 
       // Keyword SELECTED_OUTPUT
-      if(line_string.find("SELECTED_OUTPUT")!=string::npos) 
+      if(line_string.find("SELECTED_OUTPUT")!=string::npos)
 	{ // keyword found
 	  if(index < 1)  // this block has to appear just in the first solution
 	    {
@@ -3095,9 +3115,9 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 		}
 	    }
 	} // end SELECTED OUTPUT
-      
+
       // Keyword PRINT
-      if(line_string.find("PRINT")!=string::npos) 
+      if(line_string.find("PRINT")!=string::npos)
 	{ // keyword found
 	  if(index < 1)  // this block has to appear just in the first solution
 	    {
@@ -3109,7 +3129,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 		  line_string = line;
 		  if (line_string.find("#libprint")!=string::npos)
 		    {
-		      libphreeqc_print="T"; 
+		      libphreeqc_print="T";
 		    }
 		  else
 		    {
@@ -3124,8 +3144,8 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 	} // end PRINT
 
 
-      // Keyword USER_PUNCH 
-      if(line_string.find("USER_PUNCH")!=string::npos) 
+      // Keyword USER_PUNCH
+      if(line_string.find("USER_PUNCH")!=string::npos)
 	{ // keyword found
 	  if(index < 1){
 	    *out_buff << "USER_PUNCH" << endl;
@@ -3136,16 +3156,16 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 	    n3 = this->rcml_number_of_ion_exchanges;
 	    n4 = this->rcml_number_of_gas_species;
 	    *out_buff << "-head ";
-	    for(i=0;i<n1; i++) 
+	    for(i=0;i<n1; i++)
 	      *out_buff << " " << pqc_names[i];
 	    *out_buff << " pH ";
 	    *out_buff << " H+ ";
 	    *out_buff << " pe ";
-	    for(i=n1+3; i<n1+3+n2; i++) 
+	    for(i=n1+3; i<n1+3+n2; i++)
 	      *out_buff << " " << pqc_names[i];
-	    for(i=n1+3+n2;i<n1+3+n2+n3; i++) 
+	    for(i=n1+3+n2;i<n1+3+n2+n3; i++)
 	      *out_buff << " " << pqc_names[i];
-	    for(i=n1+3+n2+n3; i<n1+3+n2+n3+n4; i++) 
+	    for(i=n1+3+n2+n3; i<n1+3+n2+n3+n4; i++)
 	      *out_buff << " " << pqc_names[i];
 	    *out_buff << endl;
 	    nline++;
@@ -3164,29 +3184,29 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 	    // Write equilibrium phases
 	    if(n2 > 0)
 	      {
-		for(i=n1+3;i<n1+3+n2;i++) 
+		for(i=n1+3;i<n1+3+n2;i++)
 		  *out_buff << ", EQUI(\"" << pqc_names[i] << "\")";
 	      }
 
 	    // Write ion exchangers
 	    if(n3 > 0)
 	      {
-		for(i=n1+3+n2;i<n1+3+n2+n3;i++) 
+		for(i=n1+3+n2;i<n1+3+n2+n3;i++)
 		  *out_buff << ", MOL(\"" << pqc_names[i] << "\")";
 	      }
 
 	    // Write gas phase species
 	    if(n4 > 0)
 	      {
-		for(i=n1+3+n2+n3; i<n1+3+n2+n3+n4; i++) 
+		for(i=n1+3+n2+n3; i<n1+3+n2+n3+n4; i++)
 		  *out_buff << ", GAS(\"" << pqc_names[i] << "\")";
 	      }
-	    
+
 	    // MDL: now the endl
 	    *out_buff << endl;
 	    nline++;
 	  }// end if index < 1
-	  
+
 	  // search for end of USER_PUNCH data block in *.pqc input file
 	  while(!pqc_infile.eof()){
 	    pqc_infile.getline(line,MAX_ZEILE);
@@ -3197,7 +3217,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 	} // end USER_PUNCH
 
 
-      if(line_string.find("-steps")!=string::npos) 
+      if(line_string.find("-steps")!=string::npos)
 	{ // keyword found
 	  in.str(line_string);
 	  in >> dummy >> dval >> this->rcml_number_of_pqcsteps >> dummy;
@@ -3227,13 +3247,13 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 		}
 	    }
 	}
-      
+
    }// end of "while" linewise read
    *out_buff << "END" << endl;
    nline++;
    *nl = nline;
-   pqc_infile.close();   
-   
+   pqc_infile.close();
+
    return 1;
 }
 
@@ -3255,27 +3275,27 @@ void REACT::ExecuteReactionsPHREEQCNewLib(void)
   if (!pqc_file.good())
     {
       cout << "! Error in ExecuteReactionsPHREEQCNew: no Input File (*.pqc) found !" << endl;
-    } 
-  
+    }
+
   // data exchange buffer to libphreeqc, as stringstream
   stringstream out_buff;
 
   // Set up reaction model
   if((int)this->pqc_names.size()==0){
     ok = this->ReadReactionModelNew(&pqc_file);
-    if(!ok) 
+    if(!ok)
       cout << "Error setting up reaction model" << endl;
   }
-  
+
   // Check for nodes without reactions
   if((int)this->check_no_reaction_nodes == false){
     ok = this->CheckNoReactionNodes();
-    if(!ok) 
+    if(!ok)
       cout << "Error when checking for nodes without reactions" << endl;
   }
 
   // Read the input file (*.pqc) and set up the input for PHREEQC;
-  // Write input data block to PHREEQC for each node; 
+  // Write input data block to PHREEQC for each node;
   // sum number of lines of input.
   cout << endl << "Preparing phreeqc's input...";
   ii = 0;
@@ -3292,7 +3312,7 @@ void REACT::ExecuteReactionsPHREEQCNewLib(void)
 	nline = nline+nl;
       }
 
-  if(ok) 
+  if(ok)
       cout << " [OK]" << endl;
   else
     cout << " [ERROR]" << endl;
@@ -3308,7 +3328,7 @@ void REACT::ExecuteReactionsPHREEQCNewLib(void)
   //  Close *.pqc input file
   pqc_file.close();
 
-  npunch = this->rcml_number_of_master_species + this->rcml_number_of_equi_phases + 
+  npunch = this->rcml_number_of_master_species + this->rcml_number_of_equi_phases +
     this->rcml_number_of_ion_exchanges+ this->rcml_number_of_gas_species + 3;
 
   double* out_vec = new double [ npunch * ii ];
@@ -3316,13 +3336,13 @@ void REACT::ExecuteReactionsPHREEQCNewLib(void)
   // call to libphreeqc
   cout << endl << endl;
   ok = Call_PhreeqcLib(ii,npunch, nline, &out_buff, out_vec);
-  
+
 
   if(ok)
     {
       cout << "Reading phreeqc's output...";
       ok = ReadOutputPhreeqcNewLib(out_vec);
-      if(!ok) 
+      if(!ok)
 	cout << " [ERROR] ExecuteReactionsPHREEQCNewLib: Error reading phreeqc's output" << endl;
       else
 	cout << " [OK]" << endl;
@@ -3333,13 +3353,13 @@ void REACT::ExecuteReactionsPHREEQCNewLib(void)
 
  /* Calculate Rates */
  // CalculateReactionRates();
- 
+
  /* determine where to calculate the chemistry */
  // CalculateReactionRateFlag();
 
  /* pH and pe constant or variable */
  // ResetpHpe(rc, rcml);
- 
+
 }/* End of ExecuteReactionsPHREEQCNewLib */
 
 
@@ -3349,7 +3369,7 @@ void REACT::ExecuteReactionsPHREEQCNewLib(void)
 
    Aufgabe:
    Liest Ergebnisse der PHREEQC-Berechnungen aus PHREEQC-Ausdgabedatei
-   
+
    04/2009     MDL
 ************************************************************************************************/
 int REACT::ReadOutputPhreeqcNewLib(double* pqc_vec)
@@ -3361,11 +3381,11 @@ int REACT::ReadOutputPhreeqcNewLib(double* pqc_vec)
   CRFProcess* m_pcs = NULL;
   int n1, n2, n3, n4, dix=0;
   CTimeDiscretization *m_tim = NULL;
-  
-  // Get time step number   
+
+  // Get time step number
   if(time_vector.size()>0){
     m_tim = time_vector[0];
-    if(m_tim->step_current == 0) 
+    if(m_tim->step_current == 0)
       dix = -1;
   }
 
@@ -3375,7 +3395,7 @@ int REACT::ReadOutputPhreeqcNewLib(double* pqc_vec)
   n3 = this->rcml_number_of_ion_exchanges;
   n4 = this->rcml_number_of_gas_species;
 
-  ntot = n1 + 3 + n2 + n3 + n4; 
+  ntot = n1 + 3 + n2 + n3 + n4;
 
   for (index=0; index<this->nodenumber; index++)
     {
@@ -3385,7 +3405,7 @@ int REACT::ReadOutputPhreeqcNewLib(double* pqc_vec)
 	  for (j=0; j<n1; j++){
 	    pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,pqc_vec[index*ntot+j]);
 	  }
-	  
+
 	  // pH
 	  j = n1;
 	  pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,pqc_vec[index*ntot+j]);
@@ -3408,7 +3428,7 @@ int REACT::ReadOutputPhreeqcNewLib(double* pqc_vec)
 		pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,pqc_vec[index*ntot+j]);
 	      }
 	    }
-	  
+
 	  // concentrations of all ion exchangers
 	  if (n3 > 0)
 	    {
@@ -3416,7 +3436,7 @@ int REACT::ReadOutputPhreeqcNewLib(double* pqc_vec)
 		pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,pqc_vec[index*ntot+j]);
 	      }
 	    }
-	  
+
 	  // concentrations of all gas phase species
 	  if (n4 > 0)
 	    {
@@ -3425,8 +3445,8 @@ int REACT::ReadOutputPhreeqcNewLib(double* pqc_vec)
 	      }
 	    }
 	} //endif rateflag
-      
-	  
+
+
       // Determine new gamma_Hplus
       if(this->gamma_Hplus > 0)
 	{
@@ -3436,12 +3456,12 @@ int REACT::ReadOutputPhreeqcNewLib(double* pqc_vec)
 	  dval1 = pow(10.0,-dval1); // activity H+ from pH
 	  this->gamma_Hplus = dval1/dval;
 	}
-      
+
     } // end for (index...
-  
+
   ok=1;
 
-  return ok; 
+  return ok;
 }
 
 
@@ -3450,7 +3470,7 @@ int REACT::ReadOutputPhreeqcNewLib(double* pqc_vec)
 
    Ergebnis:
    0 bei Fehler oder Ende aufgrund Dateitest, sonst 1
-   
+
    Programmaenderungen:
    04/2009     MDL         First Version
  **************************************************************************/
@@ -3465,7 +3485,7 @@ int REACT::Call_PhreeqcLib(int nsim, int npunch, int nline, stringstream* pqc_bu
 #ifdef MDL_DEBUG
   cout <<"MDL_DEB:: Call_PhreeqcLib ->  nsim = "<< nsim << "; npunch = "  << npunch << "; nline = " << nline << endl;
 #endif
-    
+
   // copy the stringstream to a char ** for the c library
   char** buffer = new char* [nline];
 
@@ -3480,7 +3500,7 @@ int REACT::Call_PhreeqcLib(int nsim, int npunch, int nline, stringstream* pqc_bu
 
   // prepare args for Phreeqcmain (must be char **)
   char** libargs = new char*[5];
-  for (i=0;i<5;i++) 
+  for (i=0;i<5;i++)
     libargs[i] = new char[30];
 
   strcpy(libargs[0],"libphreeqc");
@@ -3509,9 +3529,9 @@ int REACT::Call_PhreeqcLib(int nsim, int npunch, int nline, stringstream* pqc_bu
     delete [] libargs[i];
   delete [] libargs;
 
-  if (out == 1) 
+  if (out == 1)
     return(1); // ok == 1 for Geosys conventions
-  else 
+  else
     {
       DisplayMsgLn("Warning: libphreeqc doesn't run properly!!! ");
       exit(1);

@@ -31,14 +31,12 @@ GEOLib-Method:
 Programing:
 10/2005 OK PNT name
 **************************************************************************/
-CGLPoint::CGLPoint(void) : x (data[0]), y(data[1]), z(data[2])
+CGLPoint::CGLPoint(void) : x (data[0]), y(data[1]), z(data[2]), _propert (0.0)
 {
-
 	index_msh=-1;
 	circle_pix = 3; //CC
 	mesh_density = 100.;
 	value = 0.0;
-	propert = 0;
 	data[0] = 0.0;
 	data[1] = 0.0;
 	data[2] = 0.0;
@@ -57,6 +55,18 @@ CGLPoint::CGLPoint(void) : x (data[0]), y(data[1]), z(data[2])
 	else os << 0; // TF 01/2010
 	name += os.str(); // TF 01/2010
 	//......................................................................
+}
+
+CGLPoint::CGLPoint (double x1, double y1, double z1) : x (data[0]), y(data[1]), z(data[2])
+{
+	data[0] = x1;
+	data[1] = y1;
+	data[2] = z1;
+}
+
+CGLPoint::CGLPoint (const double *coordinates) : x (data[0]), y(data[1]), z(data[2])
+{
+	for (size_t k(0); k<3; k++) data[k] = coordinates[k];
 }
 
 // deconstructor
@@ -924,7 +934,7 @@ double AngleSumPointInsideTriangle(double *point, double *tri_p1,double *tri_p2,
 double sqrDist(const CGLPoint* p0, const CGLPoint* p1)
 {
 	double v[3] = { p1->getX() - p0->getX(), p1->getY() - p0->getY(), p1->getZ() - p0->getZ() };
-	return scpr (v, v, 3);
+	return MATHLIB::scpr (v, v, 3);
 }
 
 CGLPoint* isPointInPointVector( const std::vector<CGLPoint*> &vec, const CGLPoint* const p, double tol)

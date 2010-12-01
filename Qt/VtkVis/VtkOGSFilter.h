@@ -7,129 +7,231 @@
 #ifndef VTKOGSFILTER_H
 #define VTKOGSFILTER_H
 
+#include <map>
 #include <string>
 #include <vector>
 #include <cstddef>
 
-class vtkAlgorithm;
+#include "VtkVisPipelineItem.h"
+
+class OGSFilterInfo;
+class vtkImageAlgorithm;
 class vtkPolyDataAlgorithm;
 class vtkUnstructuredGridAlgorithm;
+class vtkImageAlgorithm;
 
-class VtkFilterItem;
-
+class OGSFilterInfo;
 
 /**
- * \brief Access function for use of VTK filters in OGS.
+ * \brief Base class providing access functions for use of VTK filters in OGS.
  *
- * Filter functions are defined static and can thus be used from anywhere without object instantiation. For controlled
- * use in the GUI filters need to be "registered" in the Constructor and can then be accesses via the apply() function.
+ * Specific filters are derived from this class and must implement the applyFilter()-function. Existing filter should
+ * registered in the OGSVisFilter Enum and the getAvailableFilters()-method to be available in the GUI filter dialog.
  */
-class VtkOGSFilter
+class VtkOGSFilter : public VtkVisPipelineItem
 {
 public:
 	/// Registered filter aliases
 	enum OGSVisFilter
 	{
-		POINTTOGLYPHFILTER       = 0,
-		LINETOCYLINDERFILTER     = 1,
-		SURFACEFILTER            = 2,
-		COLORBYHEIGHTFILTER_GRID = 3,
-		COLORBYHEIGHTFILTER_POLY = 4,
-		MATGROUPFILTER           = 5,
-		TEXTOGRIDFILTER          = 6,
-		TEXTOSURFACEFILTER       = 7,
-		THRESHOLDINGFILTER       = 8
+		INVALIDFILTER = 0,
+		POINTTOGLYPHFILTER,       
+		LINETOCYLINDERFILTER,     
+		SURFACEFILTER,            
+		COLORBYHEIGHTFILTER_GRID,
+		COLORBYHEIGHTFILTER_POLY, 
+		MATGROUPFILTER,
+		TEXTOGRIDFILTER,          
+		TEXTOSURFACEFILTER,       
+		THRESHOLDINGFILTER,
+		MESHFROMIMAGEFILTER,
+		COLORMAPTOIMAGEFILTER,
+		IMAGETOCYLINDERSFILTER
 	};
 
 	/// Constructor
-	VtkOGSFilter();
+	VtkOGSFilter(vtkAlgorithm* algorithm,
+		VtkOGSFilter::OGSVisFilter filter,
+		TreeItem* parentItem, vtkPointSet* input,
+		const QList<QVariant> data = QList<QVariant>());
+
 	~VtkOGSFilter();
 
+	/// Implementation of the filter or filter pipeline (must be implemented in derived classes!)
+	virtual vtkAlgorithm* applyFilter(vtkAlgorithm* input) { return NULL; };
+
+	/// Get all parameters from the parameter list.
+	std::map<std::string, double> getParameters();
+
+	/// Reset the value of the parameter parameterName.
+	void setParameter(std::string parameterName, double value);
+
+	/// Returns all registered filters as VtkFilterItem-Objects.
+	static std::vector<OGSFilterInfo> getAvailableFilters();
+
+protected:
+/*
+	int RequestData(vtkInformation* request, 
+		            vtkInformationVector** inputVector, 
+					vtkInformationVector* outputVector);
+*/
+	std::map<std::string, double> _parameterList;
+
+private:
 	/// Access function for applying filters via the GUI
 	vtkAlgorithm* apply(vtkAlgorithm* input, VtkOGSFilter::OGSVisFilter filter);
 
-	/// Returns all registered filters as VtkFilterItem-Objects.
-	std::vector<VtkFilterItem> getAvailableFilters() const { return _availableFilters; };
+	//std::vector<VtkFilterItem> _availableFilters;
+
+};
+
+class OGSColorByHeightFilter : public VtkOGSFilter
+{
+public:
+	OGSColorByHeightFilter(vtkAlgorithm* algorithm,
+		VtkOGSFilter::OGSVisFilter filter,
+		TreeItem* parentItem, vtkPointSet* input,
+		const QList<QVariant> data = QList<QVariant>()) 
+	: VtkOGSFilter(algorithm, filter, parentItem, input, data) {};
 
 	/**
 	 * \brief Elevation filter for colouring objects based on their height. 
 	 * 
 	 * This function uses the ColorLookupTable class and allows customisaton of the applied transfer function.
 	 */
-	static vtkPolyDataAlgorithm* ColorByHeight(vtkPolyDataAlgorithm* algorithm);
+	vtkPolyDataAlgorithm* applyFilter(vtkPolyDataAlgorithm* algorithm);
 
 	/**
 	 * \brief Elevation filter for colouring objects based on their height. 
 	 * 
 	 * This function uses the ColorLookupTable class and allows customisaton of the applied transfer function.
 	 */
-	static vtkPolyDataAlgorithm* ColorByHeight(vtkUnstructuredGridAlgorithm* algorithm);
+	vtkPolyDataAlgorithm* applyFilter(vtkUnstructuredGridAlgorithm* algorithm);
+};
 
-	/// Filter for generating cylinders from lines. Currently not working correctly.
-	static vtkPolyDataAlgorithm* Line2CylinderFilter(vtkPolyDataAlgorithm* algorithm, double radius = 50);
+class OGSMaterialGroupFilter : public VtkOGSFilter
+{
+public:
+	OGSMaterialGroupFilter(vtkAlgorithm* algorithm,
+		VtkOGSFilter::OGSVisFilter filter,
+		TreeItem* parentItem, vtkPointSet* input,
+		const QList<QVariant> data = QList<QVariant>()) 
+		: VtkOGSFilter(algorithm, filter, parentItem, input, data) {};
 
 	/// Colorises the mesh based on its material groups.
-	static vtkUnstructuredGridAlgorithm* MaterialGroupFilter(vtkUnstructuredGridAlgorithm* algorithm);
+	vtkUnstructuredGridAlgorithm* applyFilter(vtkUnstructuredGridAlgorithm* algorithm);
+};
+
+class OGSPoint2GlyphFilter : public VtkOGSFilter
+{
+public:
+	OGSPoint2GlyphFilter(vtkAlgorithm* algorithm,
+		VtkOGSFilter::OGSVisFilter filter,
+		TreeItem* parentItem, vtkPointSet* input,
+		const QList<QVariant> data = QList<QVariant>()) 
+	: VtkOGSFilter(algorithm, filter, parentItem, input, data)
+	{ _parameterList.insert(std::pair<std::string, double>("Radius", 150)); };
 
 	/// Filter for generating spheres from points.
-	static vtkPolyDataAlgorithm* Point2GlyphFilter(vtkPolyDataAlgorithm* algorithm, double radius = 150);
+	vtkPolyDataAlgorithm* applyFilter(vtkPolyDataAlgorithm* algorithm);
+};
+
+class OGSLine2CylinderFilter : public VtkOGSFilter
+{
+public:
+	OGSLine2CylinderFilter(vtkAlgorithm* algorithm,
+		VtkOGSFilter::OGSVisFilter filter,
+		TreeItem* parentItem, vtkPointSet* input,
+		const QList<QVariant> data = QList<QVariant>()) 
+	: VtkOGSFilter(algorithm, filter, parentItem, input, data) 
+	{ _parameterList.insert(std::pair<std::string, double>("Radius", 150)); };
+
+	/// Filter for generating spheres from points.
+	vtkPolyDataAlgorithm* applyFilter(vtkPolyDataAlgorithm* algorithm);
+};
+
+class OGSSurfaceFilter : public VtkOGSFilter
+{
+public:
+	OGSSurfaceFilter(vtkAlgorithm* algorithm,
+		VtkOGSFilter::OGSVisFilter filter,
+		TreeItem* parentItem, vtkPointSet* input,
+		const QList<QVariant> data = QList<QVariant>()) 
+	: VtkOGSFilter(algorithm, filter, parentItem, input, data) {};
 
 	/// Filter for generating a surface (i.e. a polydata-object) from a mesh (i.e. a grid-object)
 	/// This is a base-filter for various other filters that require the input to be of type PolyData.
-	static vtkPolyDataAlgorithm* SurfaceFilter(vtkUnstructuredGridAlgorithm* algorithm);
-
-	/// Maps a texture onto a grid.
-	static vtkPolyDataAlgorithm* TextureToGridFilter(vtkUnstructuredGridAlgorithm* algorithm);
-
-	/// Maps a texture onto a surface.
-	static vtkPolyDataAlgorithm* TextureToSurfaceFilter(vtkPolyDataAlgorithm* algorithm);
-
-	/// Filtering data based on given thresholds. Currently not working correctly.
-	static vtkUnstructuredGridAlgorithm* ThresholdFilter(vtkUnstructuredGridAlgorithm* algorithm, size_t min, size_t max);
-
-private:
-	std::vector<VtkFilterItem> _availableFilters;
-
-	static float normalize(float min, float max, float val) { return ((val-min)/static_cast<float>(max-min)); };
-
+	vtkPolyDataAlgorithm* applyFilter(vtkUnstructuredGridAlgorithm* algorithm);
 };
 
-/**
- * \brief Stores information about filters in VtkOGSFilter for access-routines from the GUI.
- */
-class VtkFilterItem
+class OGSTextureToSurfaceFilter : public VtkOGSFilter
 {
 public:
-	/// Stores on which objects a filter can be applied. 
-	enum VtkTargetObject
-	{
-		POLYDATA         = 0,
-		UNSTRUCTUREDGRID = 1
-	};
+	OGSTextureToSurfaceFilter(vtkAlgorithm* algorithm,
+		VtkOGSFilter::OGSVisFilter filter,
+		TreeItem* parentItem, vtkPointSet* input,
+		const QList<QVariant> data = QList<QVariant>()) 
+	: VtkOGSFilter(algorithm, filter, parentItem, input, data) {};
 
-	/**
-	 * Constructor
-	 * \param name The name of the filter that will be displayed in the GUI
-	 * \param filter The registered name of the filter in VtkOGSFilter
-	 * \param target The object type on which the filter can be applied 
-	 */
-	VtkFilterItem(std::string name, VtkOGSFilter::OGSVisFilter filter, VtkTargetObject target = VtkFilterItem::POLYDATA);
+	/// Maps a texture onto a grid.
+	vtkPolyDataAlgorithm* applyFilter(vtkUnstructuredGridAlgorithm* algorithm);
 
-	/// Returns the name or description of the filter.
-	const std::string& name() const { return _name; };
-
-	/// Returns the registered name for use in VtkOGSFilter.
-	const VtkOGSFilter::OGSVisFilter& filter() const { return _filter; };
-
-	/// Returns the object type on which the filter can be applied.
-	const VtkTargetObject& target() const { return _target; };
-
-private:
-	std::string _name;
-	VtkOGSFilter::OGSVisFilter _filter;
-	VtkTargetObject _target;
+	/// Maps a texture onto a surface.
+	vtkPolyDataAlgorithm* applyFilter(vtkPolyDataAlgorithm* algorithm);
 };
 
+class OGSThresholdFilter : public VtkOGSFilter
+{
+public:
+	OGSThresholdFilter(vtkAlgorithm* algorithm,
+		VtkOGSFilter::OGSVisFilter filter,
+		TreeItem* parentItem, vtkPointSet* input,
+		const QList<QVariant> data = QList<QVariant>()) 
+	: VtkOGSFilter(algorithm, filter, parentItem, input, data)
+	{		
+		_parameterList.insert(std::pair<std::string, double>("Minimum", 1));
+		_parameterList.insert(std::pair<std::string, double>("Maximum", 2));
+	};
 
+	/// Filtering data based on given thresholds.
+	vtkUnstructuredGridAlgorithm* applyFilter(vtkUnstructuredGridAlgorithm* algorithm);
+};
+
+class OGSMeshFromImageFilter : public VtkOGSFilter
+{
+public:
+	OGSMeshFromImageFilter(vtkAlgorithm* algorithm,
+		VtkOGSFilter::OGSVisFilter filter,
+		TreeItem* parentItem, vtkPointSet* input,
+		const QList<QVariant> data = QList<QVariant>()) 
+	: VtkOGSFilter(algorithm, filter, parentItem, input, data){};
+
+	/// Filtering data based on given thresholds. 
+	vtkUnstructuredGridAlgorithm* applyFilter(vtkImageAlgorithm* algorithm);
+};
+
+class OGSColormapToImageFilter : public VtkOGSFilter
+{
+public:
+	OGSColormapToImageFilter(vtkAlgorithm* algorithm,
+		VtkOGSFilter::OGSVisFilter filter,
+		TreeItem* parentItem, vtkPointSet* input,
+		const QList<QVariant> data = QList<QVariant>()) 
+	: VtkOGSFilter(algorithm, filter, parentItem, input, data){};
+
+	/// Filtering data based on given thresholds.
+	vtkImageAlgorithm* applyFilter(vtkImageAlgorithm* algorithm);
+};
+
+class OGSImageToCylindersFilter : public VtkOGSFilter
+{
+public:
+	OGSImageToCylindersFilter(
+		vtkAlgorithm* algorithm, VtkOGSFilter::OGSVisFilter filter,
+		TreeItem* parentItem, vtkPointSet* input,
+		const QList<QVariant> data = QList<QVariant>());
+
+	vtkPolyDataAlgorithm* applyFilter(vtkImageAlgorithm* algorithm);
+};
 
 #endif // VTKOGSFILTER_H

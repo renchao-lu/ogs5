@@ -97,6 +97,13 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>filterListWidget</tabstop>
+  <tabstop>buttonBox</tabstop>
+  <tabstop>parentTypeLineEdit</tabstop>
+  <tabstop>parentOutputLineEdit</tabstop>
+  <tabstop>filterDescTextEdit</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

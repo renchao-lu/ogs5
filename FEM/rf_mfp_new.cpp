@@ -1,6 +1,6 @@
 /**************************************************************************
 FEMLib - Object: MFP Fluid Properties
-Task:  
+Task:
 Programing:
 08/2004 OK Implementation
 last modified:
@@ -42,7 +42,7 @@ double gravity_constant = 9.81; //TEST for FEBEX OK 9.81;
 vector<CFluidProperties*>mfp_vector;
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: OBJ constructor
 Programing:
 08/2004 OK Implementation
@@ -77,7 +77,7 @@ CFluidProperties::CFluidProperties(void)
   T_0 = 293.;
   C_0 = 0.;
   Z = 1.;
-  cal_gravity = true; 
+  cal_gravity = true;
   // Data
   mode = 0; // Gauss point values
   Fem_Ele_Std = NULL;
@@ -86,23 +86,23 @@ CFluidProperties::CFluidProperties(void)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: OBJ deconstructor
 Programing:
 05/2010 OK/AKS Implementation
 **************************************************************************/
-CFluidProperties::~CFluidProperties(void) 
+CFluidProperties::~CFluidProperties(void)
 {
 
     for (int i=0; i < (int)component_vector.size() ; i++ )
     {
-        component_vector[i] = NULL; 
+        component_vector[i] = NULL;
     }
     component_vector.clear();
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: OBJ read function
 Programing:
 08/2004 OK Implementation
@@ -122,7 +122,7 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
   string delimiter_type(":");
   std::stringstream in;
   //========================================================================
-  // Schleife ueber alle Phasen bzw. Komponenten 
+  // Schleife ueber alle Phasen bzw. Komponenten
   while (!new_keyword) {
     new_subkeyword = false;
     position = mfp_file->tellg();
@@ -300,7 +300,7 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
       }
       if(viscosity_model==5){ // my(p,T), Reichenberg (1971)
       }
-      if(viscosity_model==6){ // my(C,T), 
+      if(viscosity_model==6){ // my(C,T),
       }
       if(viscosity_model==7){ // my(p,T,C)
         in >> C_0;
@@ -352,7 +352,7 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
 	  if(heat_capacity_model==3){ // YD: improved phase change
         in >> T_Latent1; // Tmin for phase change
         in >> T_Latent2; // Tmax for phase change
-		in >> heat_phase_change_curve;  
+		in >> heat_phase_change_curve;
         specific_heat_capacity_pcs_name_vector.push_back("PRESSURE1");
         specific_heat_capacity_pcs_name_vector.push_back("TEMPERATURE1");
         specific_heat_capacity_pcs_name_vector.push_back("SATURATION1");
@@ -412,7 +412,7 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
 	if(line_string.find("$PHASE_DIFFUSION")!=string::npos) { // subkeyword found
 	  in.str(GetLineFromFile1(mfp_file));
       in >> diffusion_model;
-      if(diffusion_model==0){ // D = fct(x) 
+      if(diffusion_model==0){ // D = fct(x)
         in >> dif_fct_name;
       }
       if(diffusion_model==1){ // D = const //MX
@@ -424,7 +424,7 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
     //....................................................................
     if(line_string.find("$GRAVITY")!=string::npos) { // CMCD outer space version
 	  in.str(GetLineFromFile1(mfp_file));
-      in >> gravity_constant; 
+      in >> gravity_constant;
 	  in.clear();
       continue;
     }
@@ -434,7 +434,7 @@ ios::pos_type CFluidProperties::Read(ifstream *mfp_file)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: Master read function
 Programing:
 08/2004 OK Implementation
@@ -444,7 +444,7 @@ Programing:
 bool MFPRead(string file_base_name)
 {
   //----------------------------------------------------------------------
-//OK  MFPDelete();  
+//OK  MFPDelete();
   //----------------------------------------------------------------------
   CFluidProperties *m_mfp = NULL;
   char line[MAX_ZEILE];
@@ -455,7 +455,7 @@ bool MFPRead(string file_base_name)
   // File handling
   string mfp_file_name = file_base_name + MFP_FILE_EXTENSION;
   ifstream mfp_file (mfp_file_name.data(),ios::in);
-  if (!mfp_file.good()) 
+  if (!mfp_file.good())
     return false;
   mfp_file.seekg(0L,ios::beg);
   //========================================================================
@@ -496,7 +496,7 @@ bool MFPRead(string file_base_name)
   //----------------------------------------------------------------------
   // Test
   if((int)mfp_vector.size()==0){
-    cout << "Error in MFPRead: no MFP data" << endl;   
+    cout << "Error in MFPRead: no MFP data" << endl;
     abort();
   }
   //----------------------------------------------------------------------
@@ -504,7 +504,7 @@ bool MFPRead(string file_base_name)
 }
 
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: write function
 Programing:
 11/2004 SB Implementation
@@ -578,7 +578,7 @@ void MFPWrite(string base_file_name)
 FEMLib-Method:
 Task: Master calc function
 Programing:
-09/2005 WW implementation 
+09/2005 WW implementation
 11/2005 YD modification
 11/2005 CMCD Inclusion current and previous time step quantities
 05/2007 PCH improvement for density-dependent flow
@@ -587,7 +587,7 @@ last modification:
 void CFluidProperties::CalPrimaryVariable(vector<string>& pcs_name_vector)
 {
   CRFProcess* m_pcs = NULL;
- 
+
   int nidx0,nidx1;
   if(!Fem_Ele_Std) //OK
     return;
@@ -605,7 +605,7 @@ void CFluidProperties::CalPrimaryVariable(vector<string>& pcs_name_vector)
 
 
     if(mode==0){ // Gauss point values
-      primary_variable_t0[i]= Fem_Ele_Std->interpolate(nidx0,m_pcs); 
+      primary_variable_t0[i]= Fem_Ele_Std->interpolate(nidx0,m_pcs);
       primary_variable_t1[i]= Fem_Ele_Std->interpolate(nidx1,m_pcs);
       primary_variable[i] = (1.-Fem_Ele_Std->pcs->m_num->ls_theta)*Fem_Ele_Std->interpolate(nidx0,m_pcs)+
     		  Fem_Ele_Std->pcs->m_num->ls_theta*Fem_Ele_Std->interpolate(nidx1,m_pcs);
@@ -614,7 +614,7 @@ void CFluidProperties::CalPrimaryVariable(vector<string>& pcs_name_vector)
     else if(mode==2){ // Element average value
       primary_variable[i] = (1.-Fem_Ele_Std->pcs->m_num->ls_theta)*Fem_Ele_Std->elemnt_average(nidx0,m_pcs)
                                 + Fem_Ele_Std->pcs->m_num->ls_theta*Fem_Ele_Std->elemnt_average(nidx1,m_pcs);
-      primary_variable_t0[i]= Fem_Ele_Std->elemnt_average(nidx0,m_pcs); 
+      primary_variable_t0[i]= Fem_Ele_Std->elemnt_average(nidx0,m_pcs);
       primary_variable_t1[i]= Fem_Ele_Std->elemnt_average(nidx1,m_pcs);
 	}
     if (mode==3) //NB, just testing
@@ -630,7 +630,7 @@ void CFluidProperties::CalPrimaryVariable(vector<string>& pcs_name_vector)
 FEMLib-Method:
 Task: Master calc function
 Programing:
-08/2004 OK MFP implementation 
+08/2004 OK MFP implementation
            based on MATCalcFluidDensity by OK/JdJ,AH,MB
 11/2005 YD Modification
 05/2008 WW Add an argument: double* variables: P, T, C
@@ -691,13 +691,13 @@ double CFluidProperties::Density(double* variables)
 		  density = zbrent(variables[1],variables[0],fluid_id,1e-8); //NB
 		  break;
     case 14://AKS empiricaly extented Ideal gas Eq for real gas // it has used with fractional mass transport Eq.//
-    density = MixtureSubProperity(5, (long)  variables[2], variables[0], variables[1])* variables[0] / (CalCopressibility((long)  variables[2], variables[0], variables[1] )*variables[1] * GAS_CONSTANT) ; 
+    density = MixtureSubProperity(5, (long)  variables[2], variables[0], variables[1])* variables[0] / (CalCopressibility((long)  variables[2], variables[0], variables[1] )*variables[1] * GAS_CONSTANT) ;
      break;
 	  default:
 		  cout << "Error in CFluidProperties::Density: no valid model" << endl;
 		  break;
 	  }
-  }   
+  }
   else
   {
 	  CalPrimaryVariable(density_pcs_name_vector);
@@ -751,14 +751,14 @@ double CFluidProperties::Density(double* variables)
 		  if(!T_Process) primary_variable[1]=T_0;
 		  density = zbrent(primary_variable[1],primary_variable[0],fluid_id,1e-8); //NB
 		  break;
-    case 14://AKS empiricaly extented Ideal gas Eq for real gas 
-density = MixtureSubProperity(5, (long)  variables[2], variables[0], variables[1])* variables[0] / (CalCopressibility((long)  variables[2], variables[0], variables[1] )*variables[1] * GAS_CONSTANT) ; 
+    case 14://AKS empiricaly extented Ideal gas Eq for real gas
+density = MixtureSubProperity(5, (long)  variables[2], variables[0], variables[1])* variables[0] / (CalCopressibility((long)  variables[2], variables[0], variables[1] )*variables[1] * GAS_CONSTANT) ;
 //Replace MixtureSubProperity(5, (long)  variables[2], variables[0], variables[1])* variables[0] by molar_mass in case of no MASS_TRANSPORT proces
 	  default:
 		  cout << "Error in CFluidProperties::Density: no valid model" << endl;
 		  break;
 	  }
-  } 
+  }
   return density;
 }
 
@@ -767,17 +767,17 @@ density = MixtureSubProperity(5, (long)  variables[2], variables[0], variables[1
 
  Task:
    Density of a geothermal fluid as a function of temperature, pressure
-   and concentration. 
+   and concentration.
 
    Fluid-Density function according to IAPWS-IF97
- 
+
  Programmaenderungen:
    09/2003   CMCD  ARL  First implementation
    09/2004   CMCD  Inclusion in GeoSys vs. 4
 
 *************************************************************************/
 double CFluidProperties::MATCalcFluidDensityMethod8(double Press, double TempK, double Conc)
-{ 
+{
   Conc = Conc;
 	/*int c_idx;*/
 	double rho_0;
@@ -786,7 +786,7 @@ double CFluidProperties::MATCalcFluidDensityMethod8(double Press, double TempK, 
     double L[35],J[35],n[35];
     int i;
     double salinity;
-	
+
 	pressure_average = Press;
 	temperature_average = TempK;
 	salinity = C_0;
@@ -904,7 +904,7 @@ double CFluidProperties::MATCalcFluidDensityMethod8(double Press, double TempK, 
 	 J[33] =-40.;
 	 J[34] =-41.;
 
-		
+
 	Pressurevar = pressure_average / Pstar;
 	Tau = Tstar / temperature_average;
 
@@ -914,12 +914,12 @@ double CFluidProperties::MATCalcFluidDensityMethod8(double Press, double TempK, 
 
 			for (i=1; i<35; i++)
 			{
-				
+
 			GammaPi = GammaPi - (n[i]) * (L[i]) * (pow((7.1-Pressurevar),(L[i] -1))) * (pow((Tau-1.222),J[i]));
-				
+
 			}
 			/*END: Calculation of GammaPi*/
-			
+
 			/*BEGIN: Calculation of density*/
 			rho_0 = pressure_average / (GazConst * temperature_average * Pressurevar * GammaPi);
 			/*END: Calculation of density*/
@@ -999,14 +999,14 @@ double CFluidProperties::Viscosity(double* variables) //OK4709
     case 5: // my^g(p,T), Reichenberg (1971)
       viscosity = GasViscosity_Reichenberg_1971(primary_variable[0],primary_variable[1]);
       break;
-    case 6: // my(C,T), 
+    case 6: // my(C,T),
       viscosity = LiquidViscosity_NN(primary_variable[0],primary_variable[1]);
       break;
-    case 7: // my(p,C,T), 
+    case 7: // my(p,C,T),
       viscosity = LiquidViscosity_CMCD(primary_variable[0],primary_variable[1],primary_variable[2]);
       break;
     case 9: // viscosity as function of density and temperature, NB
-    
+
       if(!T_Process) primary_variable[1]=T_0;
       // TODO: switch case different models...
       // Problem.cpp 3 PS_GLOBAL, 1212,1313 pcs_type
@@ -1034,7 +1034,7 @@ viscosity = GasViscosity_Chung_1988((long)  primary_variable[2], primary_variabl
 
 /**************************************************************************
 FEMLib-Method:
-Task: 
+Task:
    Dynamische Gasviskositaet nach Reichenberg (1971)
    als Funktion von Temperatur und Druck
    in Reid et al. (1988), S. 420
@@ -1050,7 +1050,7 @@ double CFluidProperties::GasViscosity_Reichenberg_1971(double p,double T)
   double alpha1, alpha2, beta1, beta2, gamma1, gamma2, delta1, delta2;
   double a,c,d;
   double pc,Tc;
-  
+
   alpha1 = 1.9824e-3;
   alpha2 = 5.2683;
   beta1  = 1.6552;
@@ -1063,7 +1063,7 @@ double CFluidProperties::GasViscosity_Reichenberg_1971(double p,double T)
   c = -79.8678;
   d = -16.6169;
   Q = 1.0;
-  Tc = 126.2; 
+  Tc = 126.2;
   Tr = T/Tc;
   pc = 33.9*10000.; /* bar->Pascal*/
   Pr = p/pc;
@@ -1080,8 +1080,8 @@ double CFluidProperties::GasViscosity_Reichenberg_1971(double p,double T)
 
 /**************************************************************************
 FEMLib-Method:
-Task: 
-  Dynamic viscosity of real gaseous mixture 
+Task:
+  Dynamic viscosity of real gaseous mixture
    als Funktion von Temperatur und Density
 Programing:
 05/2010  Implementation  AKS
@@ -1136,13 +1136,13 @@ return my;
 
 /**************************************************************************
 FEMLib-Method:
-Task: 
+Task:
    Dynamische Fluessigkeits-Viskositaet nach Yaws et al. (1976)
    als Funktion von Temperatur
    in Reid et al. (1988), S. 441/455
    Eqn.(3): ln(my) = A + B/T + CT + DT^2
 Programing:
-08/2004 OK MFP implementation 
+08/2004 OK MFP implementation
            based on CalcFluidViscosityMethod8 by OK (06/2001)
 last modification:
 **************************************************************************/
@@ -1164,11 +1164,11 @@ double CFluidProperties::LiquidViscosity_Yaws_1976(double T)
 
 /**************************************************************************
 FEMLib-Method:
-Task: 
+Task:
    Fluessigkeits-Viskositaet in Abhaengigkeit von der Temperatur
    (nach Marsily 1986)
 Programing:
-08/2004 OK MFP implementation 
+08/2004 OK MFP implementation
            based on CalcFluidViscosityMethod9 by OK (05/2001)
 last modification:
 **************************************************************************/
@@ -1181,12 +1181,12 @@ double CFluidProperties::LiquidViscosity_Marsily_1986(double T)
 
 /**************************************************************************
 FEMLib-Method:
-Task: 
+Task:
    Liefert die Viskositaet in Abhaengigkeit von der Konzentration
    und der Temperatur.
 Programing:
 02/2000 AH Erste Version
-08/2004 OK MFP implementation 
+08/2004 OK MFP implementation
 last modification:
 **************************************************************************/
 double CFluidProperties::LiquidViscosity_NN(double c,double T)
@@ -1226,7 +1226,7 @@ double CFluidProperties::SpecificHeatCapacity(double *variables) //NB
 {
   int gueltig = -1;
   double pressure, saturation, temperature;
- 
+
     if(variables) //NB Jan 09
   {
     primary_variable[0] = variables[0]; //p (single phase)
@@ -1237,10 +1237,10 @@ double CFluidProperties::SpecificHeatCapacity(double *variables) //NB
   {
     CalPrimaryVariable(specific_heat_capacity_pcs_name_vector);
   }
-  
-  pressure = primary_variable[0];  
-  temperature =  primary_variable[1]; 
-  saturation = primary_variable[2]; 
+
+  pressure = primary_variable[0];
+  temperature =  primary_variable[1];
+  saturation = primary_variable[2];
   //......................................................................
   //
   switch(heat_capacity_model){
@@ -1275,12 +1275,12 @@ double CFluidProperties::PhaseChange()
   double pressure, saturation, temperature;
   double density_vapor, humi, drdT;
   double H1,H0,T0,T_1;//T1 defined at 662 in steam67???
- 
+
   //......................................................................
   CalPrimaryVariable(specific_heat_capacity_pcs_name_vector);
-  pressure = primary_variable[0];  
-  temperature =  primary_variable[1]; 
-  saturation = primary_variable[2]; 
+  pressure = primary_variable[0];
+  temperature =  primary_variable[1];
+  saturation = primary_variable[2];
 
   if(heat_capacity_model == 3){
 
@@ -1291,9 +1291,9 @@ double CFluidProperties::PhaseChange()
       heat_capacity_model = 5; // ??? JOD
       H1 = CalcEnthalpy(T_1);
 	  T0 = primary_variable_t0[1];
-      if(fabs(T_1-T0)<1.0e-8) 
+      if(fabs(T_1-T0)<1.0e-8)
 		T_1 +=1.0e-8;
-      H0 = CalcEnthalpy(T0); 
+      H0 = CalcEnthalpy(T0);
       heat_capacity_phase_change = (H1-H0)/(T_1-T_0);
 	  heat_capacity_model = 3;
     }
@@ -1303,9 +1303,9 @@ double CFluidProperties::PhaseChange()
 
     T_1 = primary_variable_t1[1];
     if(T_1 <= T_Latent1 || T_1 >= T_Latent2){
-         
-	  humi = exp( pressure /( GAS_CONSTANT_V * temperature_buffer * Density() ) );   
-	  density_vapor = humi * Density(); 
+
+	  humi = exp( pressure /( GAS_CONSTANT_V * temperature_buffer * Density() ) );
+	  density_vapor = humi * Density();
       drdT = ( vaporDensity_derivative( temperature_buffer )* humi \
              - density_vapor * pressure / ( GAS_CONSTANT_V * Density() * pow( temperature_buffer, 2.0 ) ) ) / Density();
 	  H1 =  latent_heat + specific_heat_capacity * ( temperature_buffer - T_Latent1);
@@ -1315,16 +1315,16 @@ double CFluidProperties::PhaseChange()
       heat_capacity_model = 5;
       H1 = CalcEnthalpy(T_1);
       T0 = primary_variable_t0[1];
-      if(fabs(T_1-T0)<1.0e-8) 
+      if(fabs(T_1-T0)<1.0e-8)
 		T_1 +=1.0e-8;
-      H0 = CalcEnthalpy(T0); 
+      H0 = CalcEnthalpy(T0);
       heat_capacity_phase_change = (H1-H0)/(T_1-T0);
 	  heat_capacity_model = 4;
-	} 
+	}
 
 
   }
-  
+
   return heat_capacity_phase_change;
 
 }
@@ -1349,7 +1349,7 @@ dens_arg[0]=assem->interpolate(assem->NodalValC1); // pressure
 dens_arg[1]=assem->interpolate(assem->NodalVal1)+T_KILVIN_ZERO;// temperature
 dens_arg[2]=assem->Index;//ELE index
 heat_capacity_fluids = assem->FluidProp->Density(dens_arg)*assem->FluidProp->SpecificHeatCapacity(dens_arg);
-} 
+}
 else
 {
   //
@@ -1357,35 +1357,35 @@ else
   if (m_pcs->type==1212) // non-isothermal multi-phase flow
   {
      PG = assem->interpolate(assem->NodalValC1); // Capillary pressure
-     Sw = assem->MediaProp->SaturationCapillaryPressureFunction(PG,0); 
-     double PG2 = assem->interpolate(assem->NodalVal_p2);   
+     Sw = assem->MediaProp->SaturationCapillaryPressureFunction(PG,0);
+     double PG2 = assem->interpolate(assem->NodalVal_p2);
      double rho_g = PG2*COMP_MOL_MASS_AIR/(GAS_CONSTANT*(assem->TG+273.15));
      //
      m_mfp = mfp_vector[0];
      heat_capacity_fluids = Sw * m_mfp->Density() * m_mfp->SpecificHeatCapacity();
      m_mfp = mfp_vector[1];
-     heat_capacity_fluids += (1.0-Sw) * rho_g * m_mfp->SpecificHeatCapacity();      
-  }  
+     heat_capacity_fluids += (1.0-Sw) * rho_g * m_mfp->SpecificHeatCapacity();
+  }
 
 
-else 
+else
 {
 heat_capacity_fluids = assem->FluidProp->Density() * assem->FluidProp->SpecificHeatCapacity();
-   
+
 	if(m_pcs->type != 1) { // neither liquid nor ground water flow
-   
-	 
+
+
 
       PG = assem->interpolate(assem->NodalValC1); //  pressure
-       
+
 	  if(PG < 0.0){
-         Sw = assem->MediaProp->SaturationCapillaryPressureFunction(-PG,0); 
+         Sw = assem->MediaProp->SaturationCapillaryPressureFunction(-PG,0);
 	 	 heat_capacity_fluids *= Sw;
-		 if( assem->GasProp != 0) 
-		   heat_capacity_fluids += (1.-Sw) * assem->GasProp->Density() * assem->GasProp->SpecificHeatCapacity(); 
+		 if( assem->GasProp != 0)
+		   heat_capacity_fluids += (1.-Sw) * assem->GasProp->Density() * assem->GasProp->SpecificHeatCapacity();
   		 heat_capacity_fluids += (1.-Sw) * assem->FluidProp->PhaseChange();
 	  }
-   
+
 	}
 
   }
@@ -1438,7 +1438,7 @@ overloaded function, see above, taken out, CMCD
 	  else
 	  {
          nidx0 = PCSGetNODValueIndex("SATURATION1",0);
-         nidx1 = PCSGetNODValueIndex("SATURATION1",1);	  
+         nidx1 = PCSGetNODValueIndex("SATURATION1",1);
          saturation_phase = (1.-assem->pcs->m_num->ls_theta)*assem->interpolate(nidx0) \
                        + assem->pcs->m_num->ls_theta*assem->interpolate(nidx1);
 	  }
@@ -1487,7 +1487,7 @@ double CFluidProperties::HeatConductivity(double *variables) //NB Dec 08 4.9.05
   }
 
   switch(heat_conductivity_model){
-    case 0: // rho = f(x)      
+    case 0: // rho = f(x)
       heat_conductivity = GetCurveValue(fct_number,0,primary_variable[0],&gueltig);
       break;
     case 1: // c = const
@@ -1512,6 +1512,7 @@ Task: Master calc function
 Programing:
 08/2004 OK MFP implementation based on MATCalcFluidHeatCapacity (OK)
 last modification:
+10/2010 TF changed access to process type
 **************************************************************************/
 double MFPCalcFluidsHeatConductivity(long index,double*gp,double theta, CFiniteElementStd* assem)
 {
@@ -1531,7 +1532,9 @@ double MFPCalcFluidsHeatConductivity(long index,double*gp,double theta, CFiniteE
   CRFProcess* m_pcs = NULL;
   for(int i=0;i<(int)pcs_vector.size();i++){
     m_pcs = pcs_vector[i];
-	if(m_pcs->pcs_type_name.find("RICHARDS_FLOW"))no_fluids =1;
+//    if(m_pcs->pcs_type_name.find("RICHARDS_FLOW"))
+	if(m_pcs->getProcessType () == RICHARDS_FLOW)
+		no_fluids =1;
   }
   //YD-----------
   switch(no_fluids){
@@ -1549,7 +1552,7 @@ double MFPCalcFluidsHeatConductivity(long index,double*gp,double theta, CFiniteE
                                 + theta*assem->interpolate(nidx1,m_pcs);
 
 	  }
-      heat_conductivity_fluids = saturation_phase 
+      heat_conductivity_fluids = saturation_phase
                                * m_mfp->HeatConductivity();
       m_mfp = mfp_vector[1];
       heat_conductivity_fluids += (1.0-saturation_phase )
@@ -1644,7 +1647,7 @@ double CFluidProperties::Enthalpy(int comp,double temperature)
   double viscosity;
   double critical_velocity;
   int action=0;
-  
+
     if((phase==0)&&(comp==0)) {
       enthalpy = 733.0*temperature + (GAS_CONSTANT*(temperature+0.0))/COMP_MOL_MASS_AIR;
     }
@@ -1721,7 +1724,7 @@ double CFluidProperties::EnthalpyPhase(long number,int comp,double*gp,double the
 
 /**************************************************************************
 FEMLib-Method:
-Task: 
+Task:
    Calculate Henry constant
 Programing:
 02/2002 JdJ First implementation
@@ -1737,7 +1740,7 @@ double MFPCalcHenryConstant(double temperature)
 
 /**************************************************************************
 FEMLib-Method:
-Task: 
+Task:
    Calculate mass fractions
    of gas phase    X^g_a, X^g_w according to Claudius-Clapeyron law
    of liquid phase X^l_a, X^l_w according to Henry law
@@ -1746,7 +1749,7 @@ Programing:
 03/2002 JdJ Gas phase in argument for pressure in mass fraction.
 04/2003 JdJ Dichteberechnung (setzt voraus, das Phase 0 gas ist).
 04/2003 JdJ Druckberechnung (setzt voraus, das Phase 0 gas ist).
-04/2004 JdJ Bugfix Gauss Points 
+04/2004 JdJ Bugfix Gauss Points
 08/2004 OK MFP implementation
 last modification:
 **************************************************************************/
@@ -1792,7 +1795,7 @@ double CFluidProperties::MassFraction(long number,int comp,double*gp,double thet
                            ((gas_pressure-vapour_pressure)*COMP_MOL_MASS_AIR) \
                          / (GAS_CONSTANT*(temperature+0.0)*gas_density);
             mass_fraction_air_in_gas = MRange(0.0,mass_fraction_air_in_gas,1.0);
-            if(comp==0) { /* air specie */ 
+            if(comp==0) { /* air specie */
               mass_fraction = mass_fraction_air_in_gas;
             }
             if(comp==1) { /* water specie */
@@ -1805,7 +1808,7 @@ double CFluidProperties::MassFraction(long number,int comp,double*gp,double thet
                            COMP_MOL_MASS_AIR / (COMP_MOL_MASS_AIR \
                          - COMP_MOL_MASS_WATER * (1.0-1.0/(henry_constant*(gas_pressure-vapour_pressure))));
             mass_fraction_air_in_liquid = MRange(0.0,mass_fraction_air_in_liquid,1.0);
-            if(comp==0) { /* air specie */ 
+            if(comp==0) { /* air specie */
               mass_fraction = mass_fraction_air_in_liquid;
             }
             if(comp==1) { /* water specie X_w^l = 1-X_a^l */
@@ -1819,7 +1822,7 @@ double CFluidProperties::MassFraction(long number,int comp,double*gp,double thet
 
 /**************************************************************************
 FEMLib-Method:
-Task: 
+Task:
    Calculate Henry constant
 Programing:
 02/2002 OK/JdJ Implementation
@@ -1852,7 +1855,7 @@ double CFluidProperties::InternalEnergy(long number,double*gp,double theta)
 
 /**************************************************************************
 FEMLib-Method:
-Task: 
+Task:
    Calculate Henry constant
    temperature in Kelvin
 Programing:
@@ -1861,7 +1864,7 @@ Programing:
 last modification:
 **************************************************************************/
 double CFluidProperties::DensityTemperatureDependence(long number,int comp,double*gp,double theta)
-{ 
+{
   double vapour_pressure;
   double dvapour_pressure_dT;
   double drho_dT;
@@ -1900,7 +1903,7 @@ double CFluidProperties::DensityTemperatureDependence(long number,int comp,doubl
 
 /**************************************************************************
 FEMLib-Method:
-Task: 
+Task:
 
 Programing:
 
@@ -1916,7 +1919,7 @@ C = C;
 	double sum1,sum2,sum3,sum4,sum5,sum6,sum7,sum8, exponent; /*intermediate values*/
 	/*CMcD end variables for 20 ALR*/
 	 /* //Prepared for introduction of solute transport in PCS version
-	    //Average Concentration 
+	    //Average Concentration
 	    comp=0; // nur fuer Einkomponenten-Systeme
 		timelevel=1;
 		concentration_average = 0.0;
@@ -1927,7 +1930,7 @@ C = C;
                 */
                //Link to function from ALR
 		Salinity=C_0/1000.;
-		/***constant values*******/   
+		/***constant values*******/
 		A1 = -7.419242;
 		A2 = -0.29721;
 		A3 = -0.1155286;
@@ -1952,7 +1955,7 @@ C = C;
 		sum6=pow((0.65-0.01*TempK),5)*A6;
 		sum7=pow((0.65-0.01*TempK),6)*A7;
 		sum8=pow((0.65-0.01*TempK),7)*A8;
-	
+
 		exponent = sum1+sum2+sum3+sum4+sum5+sum6+sum7+sum8; /*intermediate value*/
 		exponent= exponent*(374.136-TempC)/TempK; /*intermediate value*/
 
@@ -1961,7 +1964,7 @@ C = C;
 
 		/*Viscosity of pure water in Pa-S*/
 		my_Zero = 243.18e-7 * (pow(10.,(247.8/(TempK-140)))) * (1+(Pbar-PsatBar)*1.0467e-6 * (TempK-305));
-	
+
 		/*Viscosity of saline water in Pa-S*/
 		viscosity = my_Zero * (1-0.00187* (pow(Salinity,0.5)) + 0.000218* (pow(Salinity,2.5))+(pow(TempF,0.5)-0.0135*TempF)*(0.00276*Salinity-0.000344* (pow(Salinity,1.5))));
    return viscosity;
@@ -2010,7 +2013,7 @@ Conc = Conc;
 		double TstarTilda, PstarTilda, RhostarTilda;
 		double First_derivative, Second_derivative;
 
-		
+
 		pressure_average = Press;
 		temperature_average = TempK;
 		Salinity = C_0;
@@ -2032,8 +2035,8 @@ Conc = Conc;
 		PiiTC = pressure_average / Pstar1;
 		/*END: reduced dimensions*/
 
-		
-		
+
+
 
 	 nGamma[1] = 0.14632971213167;
 	 nGamma[2] = -0.84548187169114;
@@ -2142,8 +2145,8 @@ Conc = Conc;
 	 JGamma[33] =-40.;
 	 JGamma[34] =-41.;
 
-	
-	 
+
+
 
 	Pii = pressure_average / Pstar;
 	Tau = Tstar / temperature_average;
@@ -2192,9 +2195,9 @@ Conc = Conc;
 /*************************************************************************************************/
 
 
-		
 
-		
+
+
 		/*BEGIN: Constant values*/
 
 		Lambdastar = 0.4945;
@@ -2207,7 +2210,7 @@ Conc = Conc;
 		nZero[1] = 0.6978267e1;
 		nZero[2] = 0.2599096e1;
 		nZero[3] = -0.998254;
-		
+
 		n[0][0] = 0.13293046e1;
 		n[0][1] = -0.40452437;
 		n[0][2] = 0.24409490;
@@ -2243,7 +2246,7 @@ Conc = Conc;
 		n[4][4] = 0;
 		n[4][5] = 0;
 		/*END: Constant values*/
-	
+
 		/*BEGIN: reduced dimensions*/
 		TauTC = TstarTC / temperature_average;
 		Delta = Rho / Rhostar;
@@ -2254,11 +2257,11 @@ Conc = Conc;
 		Nabla0 = 0;
 		for (i=0; i<=3;i++)
 		{
-			Nabla0 = Nabla0 + (nZero[i]) * (pow(TauTC,i));	
+			Nabla0 = Nabla0 + (nZero[i]) * (pow(TauTC,i));
 		}
-		
+
 		Nabla0 = Nabla0 * (pow(TauTC, 0.5));
-		Nabla0 = 1 / Nabla0;		
+		Nabla0 = 1 / Nabla0;
 		/*END: Nabla0*/
 
 
@@ -2270,22 +2273,22 @@ Conc = Conc;
 			{
 				Nabla1 = Nabla1 + (n[i][j]) * (pow((TauTC-1),i)) * (pow((Delta-1),j));
 			}
-					
+
 		}
 		Nabla1 = Delta * (Nabla1);
 		Nabla1 = exp(Nabla1);
 		/*END: Nabla1*/
-	
+
 		/*Calculate Viscosity*/
 		/*Link to function from ALR*/
-		
+
 
 		TempK=temperature_average;
 		Press=pressure_average;
 		Salinity=C_0/1000.;
-        
-		
-		/***constant values*******/   
+
+
+		/***constant values*******/
 		A1 = -7.419242;
 		A2 = -0.29721;
 		A3 = -0.1155286;
@@ -2313,7 +2316,7 @@ Conc = Conc;
 		sum6=pow((0.65-0.01*TempK),5)*A6;
 		sum7=pow((0.65-0.01*TempK),6)*A7;
 		sum8=pow((0.65-0.01*TempK),7)*A8;
-	
+
 		exponent = sum1+sum2+sum3+sum4+sum5+sum6+sum7+sum8; /*intermediate value*/
 		exponent= exponent*(374.136-TempC)/TempK; /*intermediate value*/
 
@@ -2322,37 +2325,37 @@ Conc = Conc;
 
 		/*Viscosity of pure water in Pa-S*/
 		my_Zero = 243.18e-7 * (pow(10.,(247.8/(TempK-140)))) * (1+(Pbar-PsatBar)*1.0467e-6 * (TempK-305));
-	
+
 		/*Viscosity of saline water in Pa-S*/
 		viscosity = my_Zero * (1-0.00187* (pow(Salinity,0.5)) + 0.000218* (pow(Salinity,2.5))+(pow(TempF,0.5)-0.0135*TempF)*(0.00276*Salinity-0.000344* (pow(Salinity,1.5))));
-		
+
 		/* End of viscosity function*/
 
 
 		/*BEGIN: Nabla2*/
 		Nabla2 = 0.0013848 / ((viscosity)/55.071e-6) * (pow(((TauTC)*(Delta)),(-2))) * (pow(First_derivative,2)) * (pow((Delta * (Second_derivative)),0.4678)) * (pow(Delta,0.5)) * exp(-18.66 * (pow((1/TauTC-1),2)) - (pow(Delta-1,4)));
 		/*END: Nabla2*/
-	
+
 		/*BEGIN: Nabla => heat_conductivity*/
 		Nabla = Nabla0 * (Nabla1) + Nabla2;
 		heat_conductivity = Nabla * (Lambdastar);
 		/*END: Nabla => Lambda*/
-		
-	
-		return heat_conductivity;	
+
+
+		return heat_conductivity;
 	}
 
 /**************************************************************************
-ROCKFLOW - Funktion: 
-Task: 
+ROCKFLOW - Funktion:
+Task:
 Programming:
- 08/2005 WW Implementation 
+ 08/2005 WW Implementation
 **************************************************************************/
-double CFluidProperties::vaporDensity(const double T_abs) 
+double CFluidProperties::vaporDensity(const double T_abs)
 {
     return 1.0e-3*exp(19.81-4975.9/T_abs);
 }
-double CFluidProperties::vaporDensity_derivative(const double T_abs) 
+double CFluidProperties::vaporDensity_derivative(const double T_abs)
 {
     return 4.9759*exp(19.81-4975.9/T_abs)/(T_abs*T_abs);
 }
@@ -2373,22 +2376,22 @@ double CFluidProperties::vaporDensity_derivative(const double T_abs)
 /* Programming:
    09/2003   CMCD ARL   Implementation
    09/2004   CMCD included in Geosys ver. 4
-   
+
                                                                           */
 /**************************************************************************/
 double CFluidProperties::MATCalcFluidHeatCapacityMethod2(double Press, double TempK, double Conc)
-{ 
-Conc = Conc;	
+{
+Conc = Conc;
     double Pressurevar, Tau, pressure_average, temperature_average, Tstar, Pstar,GazConst;
     double GammaPi, GammaPiTau, GammaPiPi, GammaTauTau;
 	double L[35],J[35],n[35];
     int i;
     double salinity;
-	double Cp, Cv; 
+	double Cp, Cv;
 
 	pressure_average = Press;
 	temperature_average = TempK;
-	
+
     salinity=C_0;
 
 	Tstar = 1386;
@@ -2506,7 +2509,7 @@ Conc = Conc;
 	 J[33] =-40.;
 	 J[34] =-41.;
 
-		
+
 	Pressurevar = pressure_average / Pstar;
 	Tau = Tstar / temperature_average;
 
@@ -2555,9 +2558,9 @@ Conc = Conc;
 /*************************************************************************************************/
 /*************************************************************************************************/
 
-			
+
 			/*BEGIN: Fluid isobaric heat capacity*/
-			Cp = - (pow(Tau,2))* (GammaTauTau) * (GazConst); 
+			Cp = - (pow(Tau,2))* (GammaTauTau) * (GazConst);
 			/*END: Fluid isobaric heat capacity*/
 
 
@@ -2565,8 +2568,8 @@ Conc = Conc;
 			Cv = (- (pow(Tau,2))* (GammaTauTau) + pow(GammaPi - Tau * (GammaPiTau),2) / GammaPiPi) * GazConst; /* Cv is not used currently 9.2003*/
 			/*BEGIN: Fluid isochoric heat capacity*/
 
-			
-		return Cp;	
+
+		return Cp;
 }
 
 
@@ -2603,7 +2606,7 @@ CFluidProperties* MFPGet(const string &name)
   }
   return NULL;
 }
-CFluidProperties* MFPGet(int fluid) //NB 
+CFluidProperties* MFPGet(int fluid) //NB
 {
   CFluidProperties* m_mfp = NULL;
   for(int i=0;i<(int)mfp_vector.size();i++){
@@ -2627,15 +2630,15 @@ double CFluidProperties::CalcEnthalpy(double temperature)
   //double temperature = primary_variable[0];
   double val = 0.0;
   double T0_integrate = 0.0;
-  double T1_integrate = 0.0;         
+  double T1_integrate = 0.0;
   double heat_capacity_all;
-    
+
   switch(GetHeatCapacityModel()){
     case 5:
     MFPGet("LIQUID");
 //------------PART 1--------------------------------
   T0_integrate = 273.15;
-  T1_integrate = T_Latent1+273.15; 
+  T1_integrate = T_Latent1+273.15;
   int npoint = 100;  //Gauss point
   double DT = (T1_integrate-T0_integrate)/npoint;
   for(int i=0;i<npoint;i++){
@@ -2645,7 +2648,7 @@ double CFluidProperties::CalcEnthalpy(double temperature)
     heat_capacity_all += Fem_Ele_Std->FluidProp->SpecificHeatCapacity();
 	val += 0.5*DT*heat_capacity_all;
   }
- 
+
 //------------PART 2--------------------------------
     npoint = 500;
     T0_integrate = T_Latent1+273.15;
@@ -2655,7 +2658,7 @@ double CFluidProperties::CalcEnthalpy(double temperature)
     temperature_buffer = T0_integrate+i*DT-273.15;
     heat_capacity_all = Fem_Ele_Std->FluidProp->SpecificHeatCapacity();
     temperature_buffer = T0_integrate+(i+1)*DT-273.15;
-    heat_capacity_all += Fem_Ele_Std->FluidProp->SpecificHeatCapacity();   
+    heat_capacity_all += Fem_Ele_Std->FluidProp->SpecificHeatCapacity();
 	val += 0.5*DT*heat_capacity_all;
 	}
    break;
@@ -2666,7 +2669,7 @@ double CFluidProperties::CalcEnthalpy(double temperature)
 
 /**************************************************************************
 PCSLib-Method:
-08/2008 OK 
+08/2008 OK
 last change: 11/2008 NB
 **************************************************************************/
 double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
@@ -2724,8 +2727,8 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 	  arguments[0] = tp->GetNodeValue(node,val_idx);
   }
 
-    tp = PCSGet("TEMPERATURE1",true);       
-    arguments[1] = tp->GetNodeValue(node,0);   
+    tp = PCSGet("TEMPERATURE1",true);
+    arguments[1] = tp->GetNodeValue(node,0);
 */
   tp = PCSGet(pcs_name1,true);           //NB 4.8.01
   val_idx=tp->GetNodeValueIndex(pcs_name1); // NB
@@ -2743,7 +2746,7 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
     case 2: mfp_value = m_mfp->HeatConductivity(arguments); break;
 	case 3: mfp_value = m_mfp->SpecificHeatCapacity(arguments); break; //NB AUG 2009
     default: cout << "MFPGetNodeValue: no MFP data" << endl;
-  }  
+  }
   //......................................................................
   m_mfp->mode = restore_mode; //NB changeback
   return mfp_value;
@@ -2844,7 +2847,7 @@ double CFluidProperties::drhodT(double P, double T)
 
 /**************************************************************************
 Task: return super compressibility factor of the mixture
-Programing: 
+Programing:
 05/2010 AKS
  **************************************************************************/
 double CFluidProperties::CalCopressibility(long idx_elem, double p,double T)
@@ -2852,8 +2855,8 @@ double CFluidProperties::CalCopressibility(long idx_elem, double p,double T)
 vector<double> roots;
 double a,b,A,B, R=8314.41;//KR w,Pc,dff,TG,Tc,PG,zn,z,ff
 double z1,z2,z3,h; //KR d
-a=MixtureSubProperity(0, idx_elem, p, T); 
-b=MixtureSubProperity(1, idx_elem, p, T); 
+a=MixtureSubProperity(0, idx_elem, p, T);
+b=MixtureSubProperity(1, idx_elem, p, T);
 A=a*p/(R*R*T*T);
 B=b*p/(R*T);
 z1=-(1-B);
@@ -2889,24 +2892,24 @@ case 0 : // attraction parameter 'a'
 
 for (int i=0 ; i < component_number ; i++)
 {
-m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname); 
-mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs ); 
+m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname);
+mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs );
 w[i]=this->component_vector[i]->acentric_factor;
 pc[i]=this->component_vector[i]->critical_pressure;
 tc[i]=this->component_vector[i]->critical_teperature;
 fact[i]=(1+(0.37464+1.54226*w[i]-0.2699*w[i]*w[i])*(1-pow(T/tc[i],0.5)));
-components_properties[i] = 0.45724*R*R*tc[i]*tc[i]*fact[i]*fact[i]/pc[i];  
+components_properties[i] = 0.45724*R*R*tc[i]*tc[i]*fact[i]*fact[i]/pc[i];
 for (int j=0 ; j < component_number ; j++)
 {
-m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[j]->compname); 
-mass_fraction[j] = this->component_vector[j]->CalcElementMeanConcNew( idx_elem, m_pcs );  
+m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[j]->compname);
+mass_fraction[j] = this->component_vector[j]->CalcElementMeanConcNew( idx_elem, m_pcs );
 w[j]=this->component_vector[j]->acentric_factor;
 pc[j]=this->component_vector[j]->critical_pressure;
 tc[j]=this->component_vector[j]->critical_teperature;
 fact[j]=(1+(0.37464+1.54226*w[j]-0.2699*w[j]*w[j])*(1-pow(T/tc[j],0.5)));
-components_properties[j] = 0.45724*R*R*tc[j]*tc[j]*fact[j]*fact[j]/pc[j]; 
- 
-variables += mass_fraction[i]*mass_fraction[j]*pow(components_properties[i]*components_properties[j],0.5) ; 
+components_properties[j] = 0.45724*R*R*tc[j]*tc[j]*fact[j]*fact[j]/pc[j];
+
+variables += mass_fraction[i]*mass_fraction[j]*pow(components_properties[i]*components_properties[j],0.5) ;
 }
 }
 break;
@@ -2914,28 +2917,28 @@ break;
 case 1 : // repulsion parameter 'b'
 for (int i=0 ; i < component_number ; i++)
 {
-m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname); 
-mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs );  
+m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname);
+mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs );
 pc[i]=this->component_vector[i]->critical_pressure;
 tc[i]=this->component_vector[i]->critical_teperature;
 components_properties[i] =0.07780*R*tc[i]/pc[i];
 
-variables += mass_fraction[i]*components_properties[i]; 
+variables += mass_fraction[i]*components_properties[i];
 }
 break;
 
 case 2 : // potential parameter 'sigma'
 for (int i=0 ; i < component_number ; i++)
 {
-m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname); 
+m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname);
 if (m_pcs)
-mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs ); 
+mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs );
 components_properties[i] =pow(pow(0.809, 3.0)*this->component_vector[i]->critical_volume,0.5);
 
 for (int j=0 ; j < component_number ; j++)
 {
-m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[j]->compname); 
-mass_fraction[j] = this->component_vector[j]->CalcElementMeanConcNew( idx_elem, m_pcs );         
+m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[j]->compname);
+mass_fraction[j] = this->component_vector[j]->CalcElementMeanConcNew( idx_elem, m_pcs );
 components_properties[j] = pow(pow(0.809, 3.0)*this->component_vector[j]->critical_volume,0.5);
 
 variables += mass_fraction[i]*mass_fraction[j]*components_properties[i]*components_properties[j];
@@ -2947,17 +2950,17 @@ break;
 case 3 : // energy parameter 'epsilon'
 for (int i=0 ; i < component_number ; i++)
 {
-m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname); 
+m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname);
 if (m_pcs)
 mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs );
 components_properties[i] = pow((this->component_vector[i]->critical_teperature/1.2593)*pow(0.809, 3.0)*this->component_vector[i]->critical_volume, 0.5);
 
 for (int j=0 ; j < component_number ; j++)
 {
-m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[j]->compname); 
-mass_fraction[j] = this->component_vector[j]->CalcElementMeanConcNew( idx_elem, m_pcs );   
+m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[j]->compname);
+mass_fraction[j] = this->component_vector[j]->CalcElementMeanConcNew( idx_elem, m_pcs );
 components_properties[j] =pow((this->component_vector[j]->critical_teperature/1.2593)*pow(0.809, 3.0)*this->component_vector[j]->critical_volume, 0.5);
-      
+
 variables += mass_fraction[i]*mass_fraction[j]*components_properties[i]*components_properties[j];
 }
 }
@@ -2968,45 +2971,45 @@ break;
 case 4 : // acentric factor 'w'
 for (int i=0 ; i < component_number ; i++)
 {
-m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname); 
-mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs ); 
+m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname);
+mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs );
 components_properties[i] =this->component_vector[i]->acentric_factor;
-variables += mass_fraction[i]*components_properties[i]; 
+variables += mass_fraction[i]*components_properties[i];
 }
 break;
 
 case 5 : // molecular weight 'M'
 for (int i=0 ; i < component_number ; i++)
 {
-m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname); 
-mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs ); 
+m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname);
+mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs );
 components_properties[i] =this->component_vector[i]->mol_mass;
-variables += mass_fraction[i]*components_properties[i]; 
+variables += mass_fraction[i]*components_properties[i];
 }
 break;
 
 case 6 : // thermal conductivity 'k'
 for (int i=0 ; i < component_number ; i++)
 {
-m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname); 
-mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs ); 
+m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname);
+mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs );
 components_properties[i] =  Fluid_Heat_Conductivity(Density(dens_arg)*mass_fraction[i], T, 2*i);
-variables += mass_fraction[i]*components_properties[i]; 
+variables += mass_fraction[i]*components_properties[i];
 }
 break;
 
 case 7 : // heat capacity 'cp'
 for (int i=0 ; i < component_number ; i++)
 {
-m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname); 
-mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs ); 
+m_pcs = PCSGetNew("MASS_TRANSPORT", this->component_vector[i]->compname);
+mass_fraction[i] = this->component_vector[i]->CalcElementMeanConcNew( idx_elem, m_pcs );
 components_properties[i] =  this->component_vector[i]->comp_capacity;
-variables += mass_fraction[i]*components_properties[i]; 
+variables += mass_fraction[i]*components_properties[i];
 }
 break;
 
 default :
 variables = 0;
 }
-return variables ; 
+return variables ;
 }

@@ -490,7 +490,6 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
   int material_properties_index = -1;
   int EleStart = -1;
   int EleEnd = -1;
-  int NumberOfLayers = -1;
   long NumberOfElementsPerLayer = -1;
   Mesh_Group::CElem* m_ele = NULL;
   //------------------------------------------------------------------------
@@ -594,8 +593,7 @@ int FctReadHeterogeneousFields(char *name_file, CMediumProperties *m_mat_mp)
   //------------------------------------------------------------------------
   NumberOfElements = (long)m_msh->ele_vector.size();
   //------------------------------------------------------------------------
-    NumberOfLayers = m_msh->no_msh_layer;
-    NumberOfElementsPerLayer = NumberOfElements / NumberOfLayers;
+    NumberOfElementsPerLayer = NumberOfElements / m_msh->getNumberOfMeshLayers();
 
     //layers
     if(m_mat_mp->geo_type_name.compare("LAYER") == 0){

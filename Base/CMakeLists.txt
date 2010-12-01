@@ -4,16 +4,16 @@ set( HEADERS
 	DateTools.h
 	StringTools.h
 	swap.h
+	FileFinder.h
 	FileTools.h
 	quicksort.h
 	binarySearch.h
-	NameMapper.h
 )
 
 set( SOURCES
 	DateTools.cpp
 	StringTools.cpp
-	NameMapper.cpp
+	binarySearch.cpp
 )
 
 # Create the library

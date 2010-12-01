@@ -11,7 +11,9 @@ set( SOURCES
 	geo_vol.cpp
 	Point.cpp
 	Polyline.cpp
+	PolylineSmoother.cpp
 	Polygon.cpp
+	ProjectData.cpp
 	SimplePolygonTree.cpp
 	Surface.cpp
 	AxisAlignedBoundingBox.cpp
@@ -35,7 +37,9 @@ set( HEADERS
 	TemplatePoint.h
 	Point.h
 	Polyline.h
+	PolylineSmoother.h
 	Polygon.h
+	ProjectData.h
 	SimplePolygonTree.h
 	Triangle.h
 	Surface.h
@@ -46,7 +50,9 @@ set( HEADERS
 	PropertyBounds.h
 	Station.h	
 	GEOObjects.h
+	GeoObject.h
 	GeoType.h
+	QuadTree.h
 )
 
 # Create the library
@@ -57,10 +63,12 @@ add_library( GEO STATIC
 
 
 include_directories(
-	../Base
-	../MathLib
 	.
+	../Base
+	../FEM
 	../FileIO
+	../MathLib
+	../MSH
 )
 
 

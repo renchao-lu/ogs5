@@ -16,7 +16,9 @@ last modified
 #include <vector>
 
 // FEM
-#include "GeoInfo.h"
+#include "GeoInfo.h" // TF
+#include "ProcessInfo.h" // KR
+#include "DistributionInfo.h" // TF
 
 #include "rf_node.h"
 #include "rf_pcs.h"
@@ -24,7 +26,7 @@ last modified
 /**
  * class for handling initial conditions
  */
-class CInitialCondition : public GeoInfo
+class CInitialCondition : public ProcessInfo, public GeoInfo, public DistributionInfo
 {
 private:
 	size_t SubNumber; //WW
@@ -34,11 +36,6 @@ private:
 	// f = a0+b0*x+c0*y+d0*z
 	double *a0, *b0, *c0, *d0; //WW
 	std::string fname; //17.11.2009. PCH
-public:
-	// PCS
-	std::string pcs_type_name; //OK
-	std::string pcs_pv_name; //OK
-	CRFProcess* m_pcs; //OK
 private:
 	// REMOVE CANDIDATE
 	std::string geo_name; // TF 05/2010
@@ -51,7 +48,6 @@ public:
 	} //WW
 	//int mat_type; //MX
 	// DIS
-	std::string dis_type_name;
 	std::vector<CNodeValue*> node_value_vector;
 	void SetDomain(int);
 	void SetByNodeIndex(int); // 19.11.2009 PCH

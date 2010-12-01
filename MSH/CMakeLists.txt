@@ -5,22 +5,24 @@ set( SOURCES
 	msh_core.h
 	msh_edge.h
 	msh_elem.h
-	msh_gen_pris.h
 	msh_lib.h
 	msh_mesh.h
 	msh_node.h
-	msh_quality.h
+	MSHEnums.h
+	MeshNodesAlongPolyline.h
+	
+	
 	msh_core.cpp
 	msh_edge.cpp
 	msh_elem.cpp
 	msh_gen.cpp
-	msh_gen_pris.cpp
 	msh_lib.cpp
 	msh_mat.cpp
 	msh_mesh.cpp
 	msh_node.cpp
+	MSHEnums.cpp
+	MeshNodesAlongPolyline.cpp
 	#msh_pnt.cpp		# references removed elements.h nodes.h
-	#msh_quality.cpp 
 	
 	Delaunay/DT_Matrix.h
 	Delaunay/tricommon.h
@@ -83,6 +85,7 @@ include_directories(
 	../Base
 	../GEO
 	../MathLib
+	../FileIO
 	../FEM
 	../LIB
 	../OGSProject

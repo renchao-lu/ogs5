@@ -54,14 +54,14 @@ TreeItem* TreeModelIterator::next( const TreeItem* current )
 	else
 	{
 		// walk the sibling
-		TreeItem* parent = current->parent();
+		TreeItem* parent = current->parentItem();
 		next = parent ? parent->child(_currentIndex + 1)
 			: _model->rootItem()->child(_currentIndex + 1);
 		while (!next && parent)
 		{
 			// if we had no sibling walk up the parent
 			// and try the sibling of that
-			parent = parent->parent();
+			parent = parent->parentItem();
 			_currentIndex = _parentIndex.pop();
 			next = parent ? parent->child(_currentIndex + 1)
 				: _model->rootItem()->child(_currentIndex + 1);

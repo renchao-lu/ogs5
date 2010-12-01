@@ -10,6 +10,11 @@
 #include "TemplatePoint.h"
 
 namespace GEOLIB {
+
+/**
+ * \ingroup GEOLIB
+ */
+
 typedef TemplatePoint<double> Point;
 }
 

@@ -40,6 +40,9 @@ protected slots:
 private:
 	/// Actions to be taken after a right mouse click is performed in the station view.
 	void contextMenuEvent( QContextMenuEvent* e );
+	
+	/// Create image files from all stratigraphies in a borehole vector
+	void writeStratigraphiesAsImages(QString listName);
 
 private slots:
 	void on_Clicked(QModelIndex idx);
@@ -47,6 +50,7 @@ private slots:
 	void exportList();
 	void exportStation();
 	void removeStationList();
+	void saveList();
 	void showPropertiesDialog();
 	void showDiagramPrefsDialog();
 
@@ -55,6 +59,7 @@ signals:
 	void propertiesDialogRequested(std::string name);
 	void stationListExportRequested(std::string listName, std::string fileName);
 	void stationListRemoved(std::string name);
+	void stationListSaved(QString listName, QString fileName);
 	void diagramRequested(QModelIndex&);
 };
 

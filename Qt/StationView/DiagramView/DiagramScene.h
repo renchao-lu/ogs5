@@ -12,6 +12,8 @@
 #include "QGraphicsGrid.h"
 #include "QNonScalableGraphicsTextItem.h"
 
+class QDateTime;
+
 /**
  * \brief A scene graph for a 2D Diagram including coordinate axes with labels and ticks for one or more plotted graphs.
  */
@@ -55,6 +57,7 @@ private:
 	QVector<QGraphicsItemGroup*> _graphCaptions;
 	QVector<QGraphicsPathItem*> _graphs;
 	QGraphicsGrid* _grid;
+	QDateTime _startDate;
 	float _scaleX;
 	float _scaleY;
 	QArrow* _xAxis;

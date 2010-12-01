@@ -31,40 +31,51 @@
 vtkStandardNewMacro(VtkMeshSource);
 vtkCxxRevisionMacro(VtkMeshSource, "$Revision$");
 
-VtkMeshSource::VtkMeshSource() : _matName("Materials")
+VtkMeshSource::VtkMeshSource() : _matName("MatIDs")
 {
 	this->SetNumberOfInputPorts(0);
 
-	this->SetScalarVisibility(false);
+	this->SetColorByMaterial(true);
+
 	const GEOLIB::Color* c = GEOLIB::getRandomColor();
 	vtkProperty* vtkProps = GetProperties();
 	vtkProps->SetColor((*c)[0]/255.0,(*c)[1]/255.0,(*c)[2]/255.0);
-	//vtkProps->SetOpacity(0.5);
 	vtkProps->SetEdgeVisibility(1);
+}
+
+VtkMeshSource::~VtkMeshSource()
+{
+	std::map<std::string, GEOLIB::Color*>::iterator it;
+	for (it = _colorLookupTable.begin(); it != _colorLookupTable.end(); it++) {
+		delete it->second;
+	}
+	delete _grid;
 }
 
 void VtkMeshSource::PrintSelf( ostream& os, vtkIndent indent )
 {
 	this->Superclass::PrintSelf(os,indent);
 
-	if (_nodes->size() == 0 || _elems->size() == 0)
-		return;
+	if (_grid == NULL) return;
+	const std::vector<GEOLIB::Point*> *nodes = _grid->getNodes();
+	const std::vector<GridAdapter::Element*> *elems = _grid->getElements();
+	if (nodes->size() == 0 || elems->size() == 0) return;
 
 	os << indent << "== VtkMeshSource ==" << "\n";
 
 	int i = 0;
-	for (std::vector<GEOLIB::Point*>::const_iterator it = _nodes->begin();
-		it != _nodes->end(); ++it)
+	for (std::vector<GEOLIB::Point*>::const_iterator it = nodes->begin();
+		it != nodes->end(); ++it)
 	{
 		os << indent << "Point " << i <<" (" << (*it)[0] << ", " << (*it)[1] << ", " << (*it)[2] << ")" << std::endl;
 		i++;
 	}
 
 	i = 0;
-	for (std::vector<GridAdapter::Element*>::const_iterator it = _elems->begin();
-		it != _elems->end(); ++it)
+	for (std::vector<GridAdapter::Element*>::const_iterator it = elems->begin();
+		it != elems->end(); ++it)
 	{
-		
+
 		os << indent << "Element " << i <<": ";
 		for (size_t t=0; t<(*it)->nodes.size(); t++)
 			os << (*it)->nodes[t] << " ";
@@ -73,15 +84,19 @@ void VtkMeshSource::PrintSelf( ostream& os, vtkIndent indent )
 	}
 }
 
-int VtkMeshSource::RequestData( vtkInformation* request, 
-							    vtkInformationVector** inputVector, 
+int VtkMeshSource::RequestData( vtkInformation* request,
+							    vtkInformationVector** inputVector,
 								vtkInformationVector* outputVector )
 {
 	(void)request;
 	(void)inputVector;
 
-	size_t nPoints = _nodes->size();
-	size_t nElems  = _elems->size();
+	if (_grid == NULL) return 0;
+	const std::vector<GEOLIB::Point*> *nodes = _grid->getNodes();
+	const std::vector<GridAdapter::Element*> *elems = _grid->getElements();
+
+	size_t nPoints = nodes->size();
+	size_t nElems  = elems->size();
 	size_t nElemNodes = 0;
 	if (nPoints == 0 || nElems == 0)
 		return 0;
@@ -95,14 +110,14 @@ int VtkMeshSource::RequestData( vtkInformation* request,
 
 	// Insert grid points
 	vtkSmartPointer<vtkPoints> gridPoints = vtkSmartPointer<vtkPoints>::New();
-		gridPoints->Allocate(_nodes->size());
+		gridPoints->Allocate(nPoints);
 		// Generate mesh nodes
 		for (size_t i=0; i<nPoints; i++)
-			gridPoints->InsertPoint(i, (*(*_nodes)[i])[0], (*(*_nodes)[i])[1], (*(*_nodes)[i])[2]);
+			gridPoints->InsertPoint(i, (*(*nodes)[i])[0], (*(*nodes)[i])[1], (*(*nodes)[i])[2]);
 
 	// Generate attribute vector for material groups
 	vtkSmartPointer<vtkIntArray> materialIDs = vtkSmartPointer<vtkIntArray>::New();
-	    materialIDs->SetName(_matName);
+		materialIDs->SetName(_matName);
 		materialIDs->SetNumberOfComponents(1);
 		//materialIDs->SetNumberOfTuples(nElems);
 
@@ -110,61 +125,79 @@ int VtkMeshSource::RequestData( vtkInformation* request,
 	for (size_t i=0; i<nElems; i++)
 	{
 		vtkCell* newCell;
-		
-		switch ((*_elems)[i]->type)
+
+		switch ((*elems)[i]->type)
 		{
-			case GridAdapter::TRIANGLE:
+			case MshElemType::TRIANGLE:
 				newCell = vtkTriangle::New();   break;
-			case GridAdapter::LINE:
+			case MshElemType::LINE:
 				newCell = vtkLine::New();       break;
-			case GridAdapter::QUAD:
+			case MshElemType::QUAD:
 				newCell = vtkQuad::New();       break;
-			case GridAdapter::HEXAHEDRON:
+			case MshElemType::HEXAHEDRON:
 				newCell = vtkHexahedron::New(); break;
-			case GridAdapter::TETRAEDER:
+			case MshElemType::TETRAHEDRON:
 				newCell = vtkTetra::New();      break;
-			case GridAdapter::PRISM:
+			case MshElemType::PRISM:
 				newCell = vtkWedge::New();      break;
 			default:	// if none of the above can be applied
 				return 0;
 		}
 
-		materialIDs->InsertNextValue((*_elems)[i]->material);
+		materialIDs->InsertNextValue((*elems)[i]->material);
 
-		nElemNodes = (*_elems)[i]->nodes.size();
-		for (size_t j=0; j<nElemNodes; j++)	
-			newCell->GetPointIds()->SetId(j, (*_elems)[i]->nodes[j]);
+		nElemNodes = (*elems)[i]->nodes.size();
+		for (size_t j=0; j<nElemNodes; j++)
+			newCell->GetPointIds()->SetId(j, (*elems)[i]->nodes[j]);
 
 		output->InsertNextCell(newCell->GetCellType(), newCell->GetPointIds());
 		newCell->Delete();
 	}
 
 
-	output->SetPoints(gridPoints);	
+	output->SetPoints(gridPoints);
 
 	output->GetCellData()->AddArray(materialIDs);
 	output->GetCellData()->SetActiveAttribute(_matName, vtkDataSetAttributes::SCALARS);
 
-	return 1;
-}
-
-void VtkMeshSource::setColorsFromMaterials()
-{
-	vtkSmartPointer<vtkUnsignedCharArray> matColors = vtkSmartPointer<vtkUnsignedCharArray>::New();
+	if (ColorByMaterial)
+	{
+		// TODO Refactor this to use vtkLookupTable
+		vtkSmartPointer<vtkUnsignedCharArray> matColors = vtkSmartPointer<vtkUnsignedCharArray>::New();
 		matColors->SetNumberOfComponents(3);
 		matColors->SetName("MatColors");
 
-	vtkSmartPointer<vtkIntArray> materialIDs = vtkIntArray::SafeDownCast(this->GetOutput()->GetCellData()->GetArray(_matName));
+		vtkSmartPointer<vtkIntArray> materialIDs = vtkIntArray::SafeDownCast(output->GetCellData()->GetArray(_matName));
 
-	size_t nEntries = materialIDs->GetDataSize();
-	for (size_t i=0; i<nEntries; i++)
-	{
-		GEOLIB::Color c;
-		c = GEOLIB::getColor(materialIDs->GetComponent(i,0), _colorLookupTable);
-		unsigned char color[3] = { c[0], c[1], c[2] };
-		matColors->InsertNextTupleValue(color);
+		this->setColorLookupTable("./BoreholeColourReferenceMesh.txt");
+		if (_colorLookupTable.empty()) std::cout << "No look-up table for stratigraphy-colors specified. Generating colors on the fly..." << std::endl;
+
+		size_t nEntries = materialIDs->GetDataSize();
+		for (size_t i=0; i<nEntries; i++)
+		{
+			const GEOLIB::Color *c (GEOLIB::getColor(materialIDs->GetComponent(i,0), _colorLookupTable));
+			unsigned char color[3] = { (*c)[0], (*c)[1], (*c)[2] };
+			matColors->InsertNextTupleValue(color);
+		}
+
+		output->GetCellData()->AddArray(matColors);
+		output->GetCellData()->SetActiveAttribute("MatColors", vtkDataSetAttributes::SCALARS);
 	}
 
-	this->GetOutput()->GetCellData()->AddArray(matColors);
-	this->GetOutput()->GetCellData()->SetActiveAttribute("MatColors", vtkDataSetAttributes::SCALARS);
+	return 1;
+}
+
+void VtkMeshSource::SetUserProperty( QString name, QVariant value )
+{
+	VtkAlgorithmProperties::SetUserProperty(name, value);
+
+	if (name.compare("ColorByMaterial") == 0)
+	{
+		value.convert(QVariant::Bool);
+		this->SetColorByMaterial(value.toBool());
+		this->SetScalarVisibility(value.toBool());
+	}
+
+
+	(*_algorithmUserProperties)[name] = value;
 }

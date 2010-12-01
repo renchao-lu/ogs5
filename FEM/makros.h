@@ -332,7 +332,7 @@
 #define MAX_ZEILE 2048
   /* max. Laenge einer UCD-Zeile; bei Leseproblemen vergroessern */
 
-enum DIS_TYPES {CONSTANT,LINEAR};
+//enum DIS_TYPES {CONSTANT,LINEAR};
 
 #include "display.h"
 #include "memory.h"

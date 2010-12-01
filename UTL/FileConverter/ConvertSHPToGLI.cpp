@@ -27,7 +27,7 @@ void convertPoints (DBFHandle dbf_handle, std::ofstream &out)
 //		double z0 (DBFReadDoubleAttribute( dbf_handle, k, 3));
 		double z1 (DBFReadDoubleAttribute( dbf_handle, k, 4));
 		std::string name (DBFReadStringAttribute( dbf_handle, k, 2));
-		out << k << " " << x << " " << y << " " << z1 << " $NAME " << name << std::endl;
+		out << k << " " << x << " " << y << " " << z1 << " $NAME " << name.c_str() << std::endl;
 
 		// *** points Keuper, Muschelkalk, Buntsandstein, Zechstein
 //		double x (DBFReadDoubleAttribute( dbf_handle, k, 0));
@@ -43,7 +43,7 @@ int main (int argc, char *argv[])
 	if (argc == 1) return -1;
 
 	std::string fname (argv[1]);
-	std::cout << "open file " << fname << " ... " << std::flush;
+	std::cout << "open file " << fname.c_str() << " ... " << std::flush;
 
 	DBFHandle dbf_handle = DBFOpen(fname.c_str(),"rb");
 	if(dbf_handle) {

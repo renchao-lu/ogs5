@@ -12,8 +12,8 @@
 
 /**
  * \brief A 2D bar visualisation of a borehole stratigraphy.
- * 
- * A 2D bar visualisation of a borehole stratigraphy as a QGraphicsItem. 
+ *
+ * A 2D bar visualisation of a borehole stratigraphy as a QGraphicsItem.
  */
 class StratBar : public QGraphicsItem
 {
@@ -22,7 +22,7 @@ public:
 	 * \brief Constructor
 	 * \param station The borehole whose stratigraphy will be visualised.
 	 */
-	StratBar(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color> *stratColors = NULL, QGraphicsItem* parent = 0);
+	StratBar(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color*> *stratColors = NULL, QGraphicsItem* parent = 0);
 	~StratBar();
 
 	/// Returns the bounding rectangle of the bar.
@@ -36,7 +36,7 @@ private:
 	 * \brief Calculates the height for a soil layer by "log(d+1)*100".
 	 * \param h The original thickness of the soil layer.
      */
-	double logHeight(double h) const { return log(h+1)*100; } 
+	double logHeight(double h) const { return log(h+1)*100; }
 
 	 /// Calculates the total height of the bar by calculating and adding the log-height for all layers in the borehole
 	double totalLogHeight() const;
@@ -45,7 +45,7 @@ private:
 	static const int BARWIDTH = 50;
 
 	GEOLIB::StationBorehole* _station;
-	std::map<std::string, GEOLIB::Color> _stratColors;
+	std::map<std::string, GEOLIB::Color*> _stratColors;
 
 };
 

@@ -7,12 +7,10 @@
 
 // STL
 #include <limits>
+#include <vector>
 
 #ifndef BINARYSEARCH_H_
 #define BINARYSEARCH_H_
-
-// STL
-#include <limits>
 
 /**
  * Binary search in a sorted vector of elements to get the
@@ -37,5 +35,7 @@ size_t searchElement (const T& key, size_t beg, size_t end, const std::vector<T>
 	}
 	return searchElement (key, m+1, end, array);
 }
+
+size_t searchElement (double const& val, size_t beg, size_t end, const std::vector<double>& array);
 
 #endif /* BINARYSEARCH_H_ */

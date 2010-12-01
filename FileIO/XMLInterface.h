@@ -10,17 +10,17 @@
 #include "GEOObjects.h"
 
 #include <QXmlStreamReader>
-#if OGS_QT_VERSION > 45
-	#include <QtXmlPatterns/QXmlSchema>
-#endif // OGS_QT_VERSION > 45
-
-
 
 class QFile;
+class QDomDocument;
 class QDomNode;
+class QDomElement;
 
 /** 
  * \brief Reads and writes GeoObjects to and from XML files.
+ * Note: Currently it is possible to store names for objects in the xml-file (the schema DOES support that) but
+ * these names will neither be read or written by this interface as this functionality is not yet fully implemented
+ * within the new GEOLIB.
  */
 class XMLInterface
 {
@@ -30,38 +30,63 @@ public:
 	 * \param geoObjects An GEOObject that into which data will be read or from which data will be written.
 	 * \param schemaFile An XML schema file (*.xsd) that defines the structure of a valid data file.
 	 */
-	XMLInterface(GEOLIB::GEOObjects* geoObjects, std::string schemaFile);
+	XMLInterface(GEOLIB::GEOObjects* geoObjects, const std::string &schemaFile);
 
 	/// As QXMLStreamWriter seems currently unable to include style-file links into xml-files, this method will workaround this issue and include the stylefile link.
-	int insertStyleFileDefinition(const QString &fileName);
+	int insertStyleFileDefinition(const QString &fileName) const;
 
 	/// Check if the given xml-file is valid considering the schema-file used in the constructor
 	int isValid(const QString &fileName) const;
 
+	/// Sets the schema filename used to check if xml files are valid.
+	void setSchema(const std::string &schemaName);
+
+	/// Reads an xml-file containing a GeoSys project.
+	/// Project files currently cover only geo- and station data. This will be expanded in the future.
+	int readProjectFile(const QString &fileName);
+
 	/// Reads an xml-file containing geometric object definitions into the GEOObjects used in the contructor
 	int readGLIFile(const QString &fileName);
 
-	/// Sets the schema file used to check if xml files are valid.
-#if OGS_QT_VERSION > 45
-	int setSchema(const std::string &schemaFile);
-#endif // OGS_QT_VERSION > 45
+	/// Reads an xml-file containing station object definitions into the GEOObjects used in the contructor
+	int readSTNFile(const QString &fileName);
+
+	/// Writes a GeoSys project file containing all data that is currently loaded.
+	/// Project files currently cover only geo- and station data. This will be expanded in the future.
+	int writeProjectFile(const QString &fileName) const;
 
 	/**
-	 * Writes data from GEOObjects to an xml-file
+	 * Writes geometric data from GEOObjects to an xml-file
 	 * \param file The file into which the data will be written.
 	 * \param gliName The name of the GEOOBjects that will be written into the file.
 	 */
-	void writeGLIFile(QFile &file, const QString &gliName);
+	void writeGLIFile(const QString &filename, const QString &gliName) const;
+
+	/**
+	 * Writes geometric data from GEOObjects to an xml-file
+	 * \param filename The filename for the file into which the data will be written.
+	 * \param stnName The name of the station vector that will be written into the file.
+	 */
+	int writeSTNFile(const QString &filename, const QString &stnName) const;
+
+	/// Writes borehole-specific data to a station-xml-file.
+	void writeBoreholeData(QDomDocument &doc, QDomElement &boreholeTag, GEOLIB::StationBorehole* borehole) const;
 
 private:
 	/// Reads GEOLIB::Point-objects from an xml-file
-	void readPoints    ( const QDomNode &pointsRoot, std::vector<GEOLIB::Point*> *points );	
+	void readPoints    ( const QDomNode &pointsRoot, std::vector<GEOLIB::Point*> *points, std::map<std::string, size_t> *pnt_names );	
 
 	/// Reads GEOLIB::Polyline-objects from an xml-file
-	void readPolylines ( const QDomNode &polylinesRoot, std::vector<GEOLIB::Polyline*> *polylines, std::vector<GEOLIB::Point*> *points );
+	void readPolylines ( const QDomNode &polylinesRoot, std::vector<GEOLIB::Polyline*> *polylines, std::vector<GEOLIB::Point*> *points, std::map<std::string, size_t> *ply_names );
 
 	/// Reads GEOLIB::Surface-objects from an xml-file
-	void readSurfaces  ( const QDomNode &surfacesRoot, std::vector<GEOLIB::Surface*> *surfaces, std::vector<GEOLIB::Point*> *points );
+	void readSurfaces  ( const QDomNode &surfacesRoot, std::vector<GEOLIB::Surface*> *surfaces, std::vector<GEOLIB::Point*> *points, std::map<std::string, size_t> *sfc_names );
+
+	/// Reads GEOLIB::Station- or StationBorehole-objects from an xml-file
+	void readStations  ( const QDomNode &stationsRoot, std::vector<GEOLIB::Point*> *stations );	
+
+	/// Reads the stratigraphy of a borehole from an xml-file
+	void readStratigraphy( const QDomNode &stratRoot, GEOLIB::StationBorehole* borehole );
 
 	/// Checks if a hash for the given data file exists to skip the time-consuming validation part.
 	/// If a hash file exists _and_ the hash of the data file is the same as the content of the hash file the validation is skipped
@@ -72,13 +97,11 @@ private:
 	QByteArray calcHash(const QString &fileName) const;
 	
 	/// Checks if the given file is conform to the given hash.
-	bool fileIsValid(const QString &fileName, const QByteArray &hash) const;
+	bool hashIsGood(const QString &fileName, const QByteArray &hash) const;
 
 	GEOLIB::GEOObjects* _geoObjects;
 	
-#if OGS_QT_VERSION > 45
-	QXmlSchema _schema;
-#endif // OGS_QT_VERSION > 45
+	std::string _schemaName;
 	std::map<size_t, size_t> _idx_map;
 };
 

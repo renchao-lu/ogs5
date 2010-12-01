@@ -17,7 +17,7 @@ namespace GEOLIB
 /**
  * \brief Creates a window to visualise the stratigraphy of a borehole.
  */
-class StratWindow : public QWidget, private Ui_StratWindow
+class StratWindow : public QWidget, public Ui_StratWindow
 {
 	Q_OBJECT
 
@@ -26,7 +26,7 @@ public:
 	 * Constructor
 	 * \param station The borehole object to be visualised.
 	 */
-	StratWindow(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color> *stratColors = NULL, QWidget* parent = 0);
+	StratWindow(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color*> *stratColors = NULL, QWidget* parent = 0);
 	~StratWindow(void) { this->destroy(); };
 
 private:

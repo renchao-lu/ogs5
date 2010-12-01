@@ -37,13 +37,18 @@ public:
 	 */
 	bool writeGMSHInputFile(const std::string &proj_name, const GEOLIB::GEOObjects& geo);
 
+	void writeAllDataToGMSHInputFile (GEOLIB::GEOObjects& geo);
+
 	void writeGMSHPoints(const std::vector<GEOLIB::Point*>& pnt_vec);
 	void writeGMSHPolyline (const GEOLIB::Polyline* ply);
 	void writeGMSHPolylines(const std::vector<GEOLIB::Polyline*>& ply_vec);
 	void writeGMSHPolygon(const GEOLIB::Polygon& polygon);
 	void writePlaneSurface ();
 
+	static bool isGMSHMeshFile (const std::string& fname);
+
 private:
+	size_t _n_pnt_offset;
 	size_t _n_lines;
 	size_t _n_plane_sfc;
 	std::ofstream _out;

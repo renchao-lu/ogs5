@@ -11,7 +11,7 @@
 #include "VtkPolylinesSource.h"
 
 
-PolylinesModel::PolylinesModel( QString name, std::vector<GEOLIB::Polyline*>* polylineVec, QObject* parent /*= 0*/ )
+PolylinesModel::PolylinesModel( QString name, const GEOLIB::PolylineVec* polylineVec, QObject* parent /*= 0*/ )
 : Model(name, parent), _polylineVec(polylineVec)
 {
 	QList<QVariant> rootData;
@@ -21,7 +21,9 @@ PolylinesModel::PolylinesModel( QString name, std::vector<GEOLIB::Polyline*>* po
 	setData(polylineVec, _rootItem);
 
 	_vtkSource = VtkPolylinesSource::New();
-	static_cast<VtkPolylinesSource*>(_vtkSource)->setPolylines(polylineVec);
+	VtkPolylinesSource* source = static_cast<VtkPolylinesSource*>(_vtkSource);
+	source->SetName(name);
+	source->setPolylines(polylineVec->getVector());
 }
 
 PolylinesModel::~PolylinesModel()
@@ -36,19 +38,23 @@ int PolylinesModel::columnCount( const QModelIndex& parent /*= QModelIndex()*/ )
 	return 4;
 }
 
-void PolylinesModel::setData(std::vector<GEOLIB::Polyline*> *lines, TreeItem* parent)
+void PolylinesModel::setData(const GEOLIB::PolylineVec* polylineVec, TreeItem* parent)
 {
 	Q_UNUSED(parent)
+	const std::vector<GEOLIB::Polyline*> *lines = polylineVec->getVector();
 
 	int nLines = static_cast<int>(lines->size());
 	for (int i=0; i<nLines; i++)
 	{
 		QList<QVariant> line;
+		std::string ply_name("");
 		line << "Line " + QString::number(i);
+		if (polylineVec->getNameOfElementByID(i, ply_name)) line << QString::fromStdString(ply_name);
+
 		TreeItem* lineItem = new TreeItem(line, _rootItem);
 		_rootItem->appendChild(lineItem);
 
-		int nPoints = static_cast<int>((*lines)[i]->getSize());
+		int nPoints = static_cast<int>((*lines)[i]->getNumberOfPoints());
 		for (int j=0; j<nPoints; j++)
 		{
 			QList<QVariant> pnt;
@@ -61,40 +67,10 @@ void PolylinesModel::setData(std::vector<GEOLIB::Polyline*> *lines, TreeItem* pa
 	reset();
 }
 
-bool PolylinesModel::setData( const QModelIndex& index, const QVariant& value, int role /*= Qt::EditRole*/ )
-{
-	Q_UNUSED(index)
-	Q_UNUSED(value)
-	Q_UNUSED(role)
-	return false;
-}
 
 void PolylinesModel::updateData()
 {
 	clearData();
 	TreeModel::updateData();
-}
-
-
-QModelIndex PolylinesModel::indexFromPolyline( const GEOLIB::Polyline* line ) const
-{
-	if (line != NULL)
-	{
-		for (int i = 0; i < rowCount(); ++i)
-		{
-			QModelIndex lineIndex = index(i, 0);
-
-			if (line == (*_polylineVec)[i])
-				return lineIndex;
-		}
-	}
-	return QModelIndex();
-}
-
-void PolylinesModel::item2dChanged( GEOLIB::Polyline* line )
-{
-	QModelIndex itemIndex = indexFromPolyline(line);
-	QModelIndex indexEnd = index(itemIndex.row(), columnCount());
-	emit dataChanged(itemIndex, indexEnd);
 }
 

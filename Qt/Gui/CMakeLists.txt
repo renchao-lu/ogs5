@@ -72,6 +72,7 @@ ADD_EXECUTABLE( ogs-gui
 # Link Qt library
 TARGET_LINK_LIBRARIES( ogs-gui
 	${QT_LIBRARIES}
+	Base
 	GEO
 	FileIO
 	MSH

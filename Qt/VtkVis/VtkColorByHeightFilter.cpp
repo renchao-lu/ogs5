@@ -5,9 +5,12 @@
  */
 
 // ** VTK INCLUDES **
+#include "VtkColorByHeightFilter.h"
+#include "VtkColorLookupTable.h"
+
 #include <vtkInformation.h>
 #include <vtkInformationVector.h>
-#include "vtkObjectFactory.h"
+#include <vtkObjectFactory.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
@@ -15,50 +18,57 @@
 #include <vtkPointData.h>
 #include <vtkCellData.h>
 
-#include "VtkColorByHeightFilter.h"
-
 vtkStandardNewMacro(VtkColorByHeightFilter);
 vtkCxxRevisionMacro(VtkColorByHeightFilter, "$Revision$");
 
 
 VtkColorByHeightFilter::VtkColorByHeightFilter()
 {
-	_colorLookupTable = new ColorLookupTable();
+	ColorLookupTable = VtkColorLookupTable::New();
+	ColorLookupTable->GetTableRange(this->_tableRange);
+	this->_tableRangeScaling = 1.0;
 }
 
 VtkColorByHeightFilter::~VtkColorByHeightFilter()
 {
-	delete _colorLookupTable;
+	ColorLookupTable->Delete();
 }
 
 void VtkColorByHeightFilter::PrintSelf( ostream& os, vtkIndent indent )
 {
 	this->Superclass::PrintSelf(os,indent);
 
+	double range[2];
+	ColorLookupTable->GetTableRange(range);
 	os << indent << "== VtkColorByHeightFilter ==" << endl;
-	os << indent << "Range: " << _colorLookupTable->getMinRange() << "-" << _colorLookupTable->getMaxRange() << endl;
-	os << indent << "Interpolation Type:" << _colorLookupTable->getInterpolationType() << endl;
+	os << indent << "Range: " << range[0] << "-" << range[1] << endl;
+	os << indent << "Interpolation Type:" << ColorLookupTable->getInterpolationType() << endl;
 }
 
-int VtkColorByHeightFilter::RequestData( vtkInformation* request, 
+unsigned long VtkColorByHeightFilter::GetMTime()
+{
+	unsigned long t1, t2;
+
+	t1 = this->Superclass::GetMTime();
+	if (this->ColorLookupTable)
+	{
+		t2 = this->ColorLookupTable->GetMTime();
+		if (t2 > t1)
+			t1 = t2;
+	}
+	return t1;
+}
+int VtkColorByHeightFilter::RequestData( vtkInformation*, 
 							             vtkInformationVector** inputVector, 
 								         vtkInformationVector* outputVector )
 {
-	(void)request;
 
 	vtkInformation* inInfo = inputVector[0]->GetInformationObject(0);
     vtkPolyData *input = vtkPolyData::SafeDownCast(inInfo->Get(vtkDataObject::DATA_OBJECT()));
 	
-	// Generate a color lookup table
-/*	// vtk filter for lut-generation (supports only standard hsv colour sequence
-	vtkSmartPointer<vtkLookupTable> colorLookupTable = vtkSmartPointer<vtkLookupTable>::New();
-		colorLookupTable->SetTableRange(getMinHeight(input), getMaxHeight(input));
-		colorLookupTable->Build();
-*/
-	// our own colour table generation class 
-	_colorLookupTable->setMinRange(getMinHeight(input));
-	_colorLookupTable->setMaxRange(getMaxHeight(input));
-	_colorLookupTable->build();
+
+	ColorLookupTable->SetTableRange(getMinHeight(input), getMaxHeight(input));
+	ColorLookupTable->Build();
 
 	vtkSmartPointer<vtkUnsignedCharArray> colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
 		colors->SetNumberOfComponents(3);
@@ -71,8 +81,8 @@ int VtkColorByHeightFilter::RequestData( vtkInformation* request,
 		double p[3];
 		input->GetPoint(i,p);
 
-		unsigned char lutColor[3];
-		_colorLookupTable->getColor((size_t)p[2], lutColor);
+		unsigned char lutColor[4];
+		ColorLookupTable->getColor((int)p[2], lutColor);
 		colors->InsertNextTupleValue(lutColor);
 	}
 
@@ -89,9 +99,11 @@ int VtkColorByHeightFilter::RequestData( vtkInformation* request,
 
 double VtkColorByHeightFilter::getMinHeight(vtkPolyData* data)
 {
+	double range[2];
+	ColorLookupTable->GetTableRange(range);
+	double min = range[0];
 	size_t nPoints = data->GetNumberOfPoints();
-	double min = _colorLookupTable->getMinRange();
-	if (min == _colorLookupTable->DEFAULTMINVALUE && nPoints > 0)
+	if (min == ColorLookupTable->DEFAULTMINVALUE && nPoints > 0)
 	{
 		double p[3];
 		data->GetPoint(0,p);
@@ -108,9 +120,11 @@ double VtkColorByHeightFilter::getMinHeight(vtkPolyData* data)
 
 double VtkColorByHeightFilter::getMaxHeight(vtkPolyData* data)
 {
+	double range[2];
+	ColorLookupTable->GetTableRange(range);
+	double max = range[1];
 	size_t nPoints = data->GetNumberOfPoints();
-	double max = _colorLookupTable->getMaxRange();
-	if (max == _colorLookupTable->DEFAULTMAXVALUE && nPoints > 0)
+	if (max == ColorLookupTable->DEFAULTMAXVALUE && nPoints > 0)
 	{
 		double p[3];
 		data->GetPoint(0,p);
@@ -127,13 +141,21 @@ double VtkColorByHeightFilter::getMaxHeight(vtkPolyData* data)
 }
 
 
-void VtkColorByHeightFilter::SetLimits(double min, double max)
+void VtkColorByHeightFilter::SetTableRange(double min, double max)
 {
 	if (min < max)
 	{
-		this->_colorLookupTable->setRange(min, max);
+		this->_tableRange[0] = min;
+		this->_tableRange[1] = max;
+		this->ColorLookupTable->SetTableRange(min, max);
 	}
 	else 
 		vtkstd::cout << "VtkColorByHeightFilter::SetLimits(min, max) - Limits not changed because min value > max value." << vtkstd::endl;
 }
 
+void VtkColorByHeightFilter::SetTableRangeScaling( double scale )
+{
+	this->_tableRangeScaling = scale;
+	this->ColorLookupTable->SetTableRange(
+		this->_tableRange[0] * scale, this->_tableRange[1] * scale);
+}

@@ -11,17 +11,14 @@
 // ** INCLUDES **
 #include "ui_VtkAddFilterDialogBase.h"
 
-#include "VtkOGSFilter.h"
-
 class VtkVisPipeline;
-class VtkFilterItem;
 class QModelIndex;
 class QRadioButton;
 
 
 /**
  * \brief Dialog for selecting a filter to be applied to a VtkPipelineItem.
- * The dialog lets you select filters defined in VtkOGSFilter that have been registered as VtkFilterItem - objects.
+ * The dialog lets you select filters defined in VtkOGSFilter that have been registered as OGSFilterInfo - objects.
  */
 class VtkAddFilterDialog : public QDialog, public Ui_VtkAddFilterDialogBase
 {
@@ -33,10 +30,13 @@ public:
 
 public slots:
 	void on_buttonBox_accepted();
+
+protected slots:
+	void on_filterListWidget_currentRowChanged(int currentRow);
+
 private:
 	VtkVisPipeline* _pipeline;
 	QModelIndex _parentIndex;
-	std::vector<VtkFilterItem> _applicableFilters;
 };
 
 

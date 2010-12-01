@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>186</width>
-    <height>216</height>
+    <width>206</width>
+    <height>233</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -44,16 +44,9 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <widget class="QRadioButton" name="bgBlackButton">
+       <widget class="ColorPickerPushButton" name="bgColorButton">
         <property name="text">
-         <string>Black</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QRadioButton" name="bgWhiteButton">
-        <property name="text">
-         <string>White</string>
+         <string>(255,255,255)</string>
         </property>
        </widget>
       </item>
@@ -81,6 +74,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ColorPickerPushButton</class>
+   <extends>QPushButton</extends>
+   <header>ColorPickerPushButton.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>

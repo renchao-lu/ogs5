@@ -227,7 +227,7 @@ private:
     double ComputeVolume(Particle* A, Particle* element, CElem* m_ele);
     void CopyParticleCoordToArray(Particle* A, double* x1buff, double* x2buff, double* x3buff, double* x4buff);
 
-	void GetNodeOfMiniFEMforTheEdge(CNode* theNode, CEdge* theEdge, Particle* A);
+	void GetNodeOfMiniFEMforTheEdge(CNode* theNode, Mesh_Group::CEdge* theEdge, Particle* A);
 
 	int G_intersect_line_segments (
 		double ax1,double ay1, double ax2,double ay2,
@@ -239,6 +239,11 @@ private:
 		double* pp3,double* pi);
 	void ConcPTFile(const char *file_name);
 
+	/**
+	 * Select the mesh whose process name has the mesh for Fluid_Momentum
+	 * @return
+	 */
+	CFEMesh* selectMeshForFluidMomentumProcess ();
 };
 
 

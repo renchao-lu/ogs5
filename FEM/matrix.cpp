@@ -68,9 +68,9 @@
    1/2001  C.Thorenz    Diagonale bleibt bei Randbedingungseinbau und
                         Irr.Knotenbehandlung auf Wert.
    3/2000  C.Thorenz    CBLAS fuer M2MatVek eingehaengt
-                        NumDif korrigiert 
-                        Speichermodell 2 vereinfacht 
-   7/2002  C.Thorenz    Speichermodell 2 merkt sich max/min Spalteneintrag 
+                        NumDif korrigiert
+                        Speichermodell 2 vereinfacht
+   7/2002  C.Thorenz    Speichermodell 2 merkt sich max/min Spalteneintrag
                         -> schnelleres Suchen
 **************************************************************************/
 
@@ -87,7 +87,7 @@
 // MSHLib
 #include "msh_node.h"
 #include "msh_mesh.h"
-extern CFEMesh* FEMGet(const string&);
+extern Mesh_Group::CFEMesh* FEMGet(const string&);
 
 using Mesh_Group::CNode;
 
@@ -801,14 +801,14 @@ void *M34DestroyMatrix(void)
 //WW/PA 08/02/2006
 void *M5DestroyMatrix(void)
 {
-     free(jd_ptr1); 
+     free(jd_ptr1);
      free(jd_ptr2);
      free(jd_ptr);
      free(jd_ptrf);
 	 free(temp_ergebnis);
      free(col_ind);
      free(jdiag);
-     free(diag5_i); 
+     free(diag5_i);
      return (void*) 1;
 }
 
@@ -979,7 +979,7 @@ void M5InitMatrix(void)
 {
 
   long k;
-  for (k = 0; k < m_count; k++) 
+  for (k = 0; k < m_count; k++)
       jdiag[k] = 0.0;
 }
 
@@ -1136,7 +1136,7 @@ int M34Set(long i1, long k1, double aik)
  Programmaenderungen:
    Modell 1,2   11/1995     MSR        Erste Version
    Modell 3,4    2/2000     Ra         Letzte Version
-                 3/2002     CT         NumDif korrigiert 
+                 3/2002     CT         NumDif korrigiert
 *** Modell 1 ************************************************************/
 int M1Inc(long i, long j, double aij_inc)
 {
@@ -1436,9 +1436,9 @@ double M34Get(long i1, long k1)
 double M5Get(long i, long j)
 {
   long k,dim1;
-  long ii, jj;  
+  long ii, jj;
 
-  CFEMesh* m_msh = NULL;
+  Mesh_Group::CFEMesh* m_msh = NULL;
   CNode *m_nod_i = NULL;
 //  CNode *m_nod_j = NULL;
   m_msh = FEMGet("GROUNDWATER_FLOW");
@@ -1449,18 +1449,18 @@ double M5Get(long i, long j)
     MX_Exit("M5Get", 2);
 #endif
 
-  ii = m_msh->Eqs2Global_NodeIndex[i];       
-  jj = m_msh->Eqs2Global_NodeIndex[j]; 
+  ii = m_msh->Eqs2Global_NodeIndex[i];
+  jj = m_msh->Eqs2Global_NodeIndex[j];
   m_nod_i = m_msh->nod_vector[ii];
-  //  
+  //
   for(k=0; k<(int)m_nod_i->connected_nodes.size(); k++)
   {
      if(m_nod_i->connected_nodes[k]==jj)
-	 {          
+	 {
 //TEST WW		return  jdiag[m_nod_i->m5_index[k]];
         break;
 	 }
-  }   
+  }
 
   return 0.0;                          /* Kein Eintrag gefunden */
 }
@@ -1469,9 +1469,9 @@ double M5Get(long i, long j)
 int M5Set(long i, long j, double e_val)
 {
   long k, dim1;
-  long ii, jj;  
+  long ii, jj;
   e_val = e_val; //OK411
-  CFEMesh* m_msh = NULL;
+  Mesh_Group::CFEMesh* m_msh = NULL;
   CNode *m_nod_i = NULL;
 //  CNode *m_nod_j = NULL;
   m_msh = FEMGet("GROUNDWATER_FLOW");
@@ -1482,18 +1482,18 @@ int M5Set(long i, long j, double e_val)
     MX_Exit("M5Get", 2);
 #endif
 
-  ii = m_msh->Eqs2Global_NodeIndex[i];       
-  jj = m_msh->Eqs2Global_NodeIndex[j]; 
+  ii = m_msh->Eqs2Global_NodeIndex[i];
+  jj = m_msh->Eqs2Global_NodeIndex[j];
   m_nod_i = m_msh->nod_vector[ii];
-  //  
+  //
   for(k=0; k<(int)m_nod_i->connected_nodes.size(); k++)
   {
      if(m_nod_i->connected_nodes[k]==jj)
-	 {          
+	 {
 //TEST WW			jdiag[m_nod_i->m5_index[k]] = e_val;
         break;
 	 }
-  }   
+  }
 
   return 0;                          /* Kein Eintrag gefunden */
 }
@@ -1502,15 +1502,15 @@ int M5Set(long i, long j, double e_val)
  ROCKFLOW - Funktion: MxCopyToAMG1R5Structure
 
  Aufgabe:
-   Uebertraegt die RockFlow-Interne Speicherstruktur in die 
+   Uebertraegt die RockFlow-Interne Speicherstruktur in die
    Struktur fuer den AMG1R5-Loeser
 
  Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
 
-   Zu komplex es hier darzulegen    
- 
+   Zu komplex es hier darzulegen
+
  Ergebnis:
-   
+
    0: korrekte Ausfuehrung
 
  Programmaenderungen:
@@ -1522,23 +1522,23 @@ int M5Set(long i, long j, double e_val)
 int M1CopyToAMG1R5Structure(double *A, int *IA, int *JA, int NDA, int NDIA, int NDJA, double *x, double *U, double *b, double *F) {
     long i, j, NNA = 0, NIA = 0;
     double a;
-	NDA = NDA; /*TK*/ 
-	NDIA = NDIA;/*TK*/ 
-	NDJA = NDIA;/*TK*/ 
+	NDA = NDA; /*TK*/
+	NDIA = NDIA;/*TK*/
+	NDJA = NDIA;/*TK*/
 
     for (i = 0; i < dim; i++) {
       /* Vektoren umkopieren */
       U[i] = x[i];
       F[i] = b[i];
-      
+
       /* Diagonale eintragen */
       j = i;
       a = MXGet(i,j);
 
       A[NNA] = a;
-      JA[NNA] = j + 1;             
+      JA[NNA] = j + 1;
       NNA++;
-      IA[NIA] = NNA; 
+      IA[NIA] = NNA;
       NIA++;
 
       for (j = 0; j < dim; j++) {
@@ -1546,7 +1546,7 @@ int M1CopyToAMG1R5Structure(double *A, int *IA, int *JA, int NDA, int NDIA, int 
         a = MXGet(i,j);
         if((fabs(a)>MKleinsteZahl)&&(i!=j)) {
           A[NNA] = a;
-          JA[NNA] = j + 1;             
+          JA[NNA] = j + 1;
           NNA++;
         }
       }
@@ -1562,30 +1562,30 @@ int M2CopyToAMG1R5Structure(double *A, int *IA, int *JA, int NDA, int NDIA, int 
     Modell2 *w = (Modell2 *) wurzel;
     register int k;
 
-   	NDA = NDA; /*TK*/ 
-	NDIA = NDIA;/*TK*/ 
-	NDJA = NDIA;/*TK*/ 
+   	NDA = NDA; /*TK*/
+	NDIA = NDIA;/*TK*/
+	NDJA = NDIA;/*TK*/
     for (i = 0; i < dim; i++) {
       /* Vektoren umkopieren */
       U[i] = x[i];
       F[i] = b[i];
-      
+
       j = i;
       a = Aik2(i, 0);
 
       A[NNA] = a;
-      JA[NNA] = j + 1;             
+      JA[NNA] = j + 1;
       NNA++;
-      IA[NIA] = NNA; 
+      IA[NIA] = NNA;
       NIA++;
 
       k = 1; /* Diagonale ist schon beruecksichtigt */
       while (k < Zeil2(i).anz)
        {                                  /* Alle Eintraege durchsuchen */
          j = Ind2(i, k);
-         a = Aik2(i, k); 
+         a = Aik2(i, k);
          A[NNA] = a;
-         JA[NNA] = j + 1;             
+         JA[NNA] = j + 1;
          NNA++;
          k++;
        }
@@ -1599,28 +1599,28 @@ int M34CopyToAMG1R5Structure(double *A, int *IA, int *JA, int NDA, int NDIA, int
     long i, j, NNA = 0, NIA = 0;
     double a;
 
-	NDA = NDA; /*TK*/ 
-	NDIA = NDIA;/*TK*/ 
-	NDJA = NDIA;/*TK*/ 
+	NDA = NDA; /*TK*/
+	NDIA = NDIA;/*TK*/
+	NDJA = NDIA;/*TK*/
     for (i = 0; i < dim; i++) {
       j = i;
-  
+
       /* Vektoren umkopieren */
       U[i] = x[i];
       F[i] = b[i];
-      
+
       a = MXGet(i,j);
       A[NNA] = a;
-      JA[NNA] = j + 1;             
+      JA[NNA] = j + 1;
       NNA++;
-      IA[NIA] = NNA; 
+      IA[NIA] = NNA;
       NIA++;
 
       for (j = 0; j < dim; j++) {
         a = MXGet(i,j);
         if((fabs(a)>MKleinsteZahl)&&(i!=j)) {
           A[NNA] = a;
-          JA[NNA] = j + 1;             
+          JA[NNA] = j + 1;
           NNA++;
         }
       }
@@ -1698,9 +1698,9 @@ void M1MatVek(double *vektor, double *ergebnis)
 int M5Inc(long i, long j, double aij_inc)
 {
   long k, dim1;
-  long ii, jj;  
+  long ii, jj;
 
-  CFEMesh* m_msh = NULL;
+  Mesh_Group::CFEMesh* m_msh = NULL;
   CNode *m_nod_i = NULL;
 //  CNode *m_nod_j = NULL;
   m_msh = FEMGet("GROUNDWATER_FLOW");
@@ -1713,40 +1713,40 @@ int M5Inc(long i, long j, double aij_inc)
   if (fabs(aij_inc)<MKleinsteZahl)
     return 0;                          /* Abbruch bei Nullwert */
 
-  ii = m_msh->Eqs2Global_NodeIndex[i];       
-  jj = m_msh->Eqs2Global_NodeIndex[j]; 
+  ii = m_msh->Eqs2Global_NodeIndex[i];
+  jj = m_msh->Eqs2Global_NodeIndex[j];
   m_nod_i = m_msh->nod_vector[ii];
-  //  
+  //
   for(k=0; k<(int)m_nod_i->connected_nodes.size(); k++)
   {
      if(m_nod_i->connected_nodes[k]==jj)
-	 {          
-//TEST WW			 jdiag[m_nod_i->m5_index[k]] += aij_inc; 
+	 {
+//TEST WW			 jdiag[m_nod_i->m5_index[k]] += aij_inc;
          break;
 	 }
-  }   
+  }
   return 1;
 }
 
 //WW/PA 08/02/2006
 void Write_Matrix_M5(double *b, ostream& os)
 {
-  long i,j , dim1; 
-  CFEMesh* m_msh = NULL;
+  long i,j , dim1;
+  Mesh_Group::CFEMesh* m_msh = NULL;
   m_msh = FEMGet("GROUNDWATER_FLOW");
 
 #ifdef SX
 #pragma cdir nodep
 #endif
   dim1 = m_msh->NodesInUsage();
-  for (i = 0; i < dim1; i++) 
+  for (i = 0; i < dim1; i++)
   {
-    for (j = 0; j < dim1; j++) 
+    for (j = 0; j < dim1; j++)
     {
        if(fabs(MXGet(i,j))>MKleinsteZahl)
           os<<i<<"  "<<j<<"  "<<MXGet(i,j)<<endl;
-	}  
-    if(fabs(b[i])>MKleinsteZahl) 
+	}
+    if(fabs(b[i])>MKleinsteZahl)
      os<<i<<"  "<<dim1+1<<"  "<<b[i]<<endl;   // os<<endl;
   }
 }
@@ -1763,25 +1763,25 @@ void *M5CreateMatrix(long param1, long param2, long param3)
   Modell5 *w = (Modell5 *) wurzel;
   w = (Modell5 *) Malloc(sizeof(Modell5));
   MXSetMatrixPointer((void *) w);
-  
+
   matrix_type = param2;
 
   int i, ii,jj,count1;
   long k, index, Size, dim1; //OK
 /*------------------------------------------------------------*/
   jd_ptr_max = 0;
-  CFEMesh* m_msh = NULL;
+  Mesh_Group::CFEMesh* m_msh = NULL;
   m_msh = FEMGet("GROUNDWATER_FLOW");
 #ifdef SX
 #pragma cdir nodep
 #endif
   dim1 = m_msh->NodesInUsage();
   Dim_L = dim1;
-  for (k = 0; k < dim1; k++) 
+  for (k = 0; k < dim1; k++)
   {
 
-    index = m_msh->Eqs2Global_NodeIndex[k]; //      
-	Size = (int)m_msh->nod_vector[index]->connected_nodes.size(); //WW   
+    index = m_msh->Eqs2Global_NodeIndex[k]; //
+	Size = (int)m_msh->nod_vector[index]->connected_nodes.size(); //WW
     if ( Size > jd_ptr_max )
 	  jd_ptr_max = Size;
 #ifdef SX
@@ -1793,7 +1793,7 @@ void *M5CreateMatrix(long param1, long param2, long param3)
 /*------------------------------------------------------------*/
       jd_ptr1 = (int *)malloc(dim1*sizeof(int));
       jd_ptr2 = (int *)malloc(dim1*sizeof(int));
-/*------------------------------------------------------------*/	  
+/*------------------------------------------------------------*/
       jd_ptr = (int *)malloc(jd_ptr_max*sizeof(int));
       jd_ptrf = (int *)malloc((jd_ptr_max+1)*sizeof(int));
 	  temp_ergebnis = (double *)malloc(dim1*sizeof(double));
@@ -1801,22 +1801,22 @@ void *M5CreateMatrix(long param1, long param2, long param3)
       jdiag = (double *)malloc(m_count*sizeof(double));
       diag5_i = (long *)malloc(dim1*sizeof(long));
 
-/*------------------------------------------------------------*/	  
+/*------------------------------------------------------------*/
 	  for (k = 0; k < jd_ptr_max; k++)
 		jd_ptr[k]=0;
 
 	  for (k = 0; k < dim1; k++)
 	  {
-        index = m_msh->Eqs2Global_NodeIndex[k]; //      
-        Size = (int)m_msh->nod_vector[index]->connected_nodes.size(); //WW   
+        index = m_msh->Eqs2Global_NodeIndex[k]; //
+        Size = (int)m_msh->nod_vector[index]->connected_nodes.size(); //WW
 		for (i = 0; i < Size; i++)
 		  jd_ptr[i]++;
-	  } 
+	  }
 //	  printf("In transM2toM5 dim=%ld\n",dim1);
 	  for (k = 0; k < dim1; k++)
 	  {
 //	  printf("Zeil2(%d).anz=%d\n",k,Zeil2(k).anz);
-        index = m_msh->Eqs2Global_NodeIndex[k]; //      
+        index = m_msh->Eqs2Global_NodeIndex[k]; //
 		jd_ptr1[k]= (int)m_msh->nod_vector[index]->connected_nodes.size(); //       Zeil2(k).anz;
 		jd_ptr2[k]=k;
 	  }
@@ -1871,12 +1871,12 @@ void *M5CreateMatrix(long param1, long param2, long param3)
 	   {
           for (i = 0; i < jd_ptr[k]; i++)
           {
-             // Row of equation system 
-             ii = jd_ptr2[i]; 
-             index =  m_msh->Eqs2Global_NodeIndex[ii];   
-//			 col_ind[count1] =   m_msh->go[m_msh->nod_vector[index]->connected_nodes[k]];   
+             // Row of equation system
+             ii = jd_ptr2[i];
+             index =  m_msh->Eqs2Global_NodeIndex[ii];
+//			 col_ind[count1] =   m_msh->go[m_msh->nod_vector[index]->connected_nodes[k]];
              col_i = m_msh->nod_vector[index]->connected_nodes[k];
-			 col_ind[count1] = m_msh->nod_vector[col_i]->GetEquationIndex();   
+			 col_ind[count1] = m_msh->nod_vector[col_i]->GetEquationIndex();
              jj = col_ind[count1] ;
 //TEST WW				 m_msh->nod_vector[index]->m5_index[k]=count1;
              if(ii==jj)
@@ -1888,7 +1888,7 @@ void *M5CreateMatrix(long param1, long param2, long param3)
 //////////////////////////////////
 
              count1++;
-          }  
+          }
 //TEST WW
 //          cout<<endl;
 ////////////////////
@@ -1929,7 +1929,7 @@ void transM2toM6(void)
 
    dim1 = ((long*)wurzel)[0];
 /*------------------------------------  TEST ----------------------
- * 
+ *
   for (k = 0; k < dim1; k++)
    {
 		printf("Zeil2(%d).anz=%d\n",k, Zeil2(k).anz);
@@ -1951,14 +1951,14 @@ void transM2toM6(void)
 
 ------------------------------------  TEST ----------------------*/
 
-  
+
 /*------------------------------------------------------------*/
 	 itpack_max = 0;
 
 #ifdef SX
 #pragma cdir nodep
 #endif
-     for (k = 0; k < dim1; k++) 
+     for (k = 0; k < dim1; k++)
 	 {
 		 if ( Zeil2(k).anz > itpack_max )
 		 {
@@ -1966,7 +1966,7 @@ void transM2toM6(void)
 		 }
 	 }
 
-	 
+
       itpackv = (double *)malloc(itpack_max*dim1*sizeof(double));
       it_col = (int *)malloc(itpack_max*dim1*sizeof(int));
 //	  temp_ergebnis = (double *)malloc(dim*sizeof(double));
@@ -1993,13 +1993,13 @@ void transM2toM6(void)
 	  for(k=0; k<count1; k++)
 	  {
 		printf("itpackv[%d]=%le\n",k,itpackv[k]);
-	  } 
+	  }
 	  for(k=0; k<count1; k++)
 	  {
 		printf("it_col[%d]=%d\n",k,it_col[k]);
-	  } 
+	  }
 */
-	 
+
 }
 /**** Modell 2 ************************************************************/
 void M2MatVek(double *vektor, double *ergebnis)
@@ -2033,7 +2033,7 @@ void M2MatVek(double *vektor, double *ergebnis)
       for (i = 0; i < Zeil2(k).anz; i++)
         help[i] = vektor[Ind2(k, i)];
 
-      ergebnis[k] = cblas_ddot(Zeil2(k).anz, Zeil2(k).wert, 1, help, 1); 
+      ergebnis[k] = cblas_ddot(Zeil2(k).anz, Zeil2(k).wert, 1, help, 1);
 #endif
     }
 
@@ -2052,10 +2052,10 @@ void M5MatVek(double *b, double *erg)
 #endif
 {
 //  Modell2 *w = (Modell2 *) wurzel;
-  int i, dim1;  //k, 
+  int i, dim1;  //k,
   int j, num;
-  long col_len; 
-  CFEMesh* m_msh = NULL; //WW
+  long col_len;
+  Mesh_Group::CFEMesh* m_msh = NULL; //WW
   m_msh = FEMGet("GROUNDWATER_FLOW");
   dim1 = m_msh->NodesInUsage();
 
@@ -2068,7 +2068,7 @@ void M5MatVek(double *b, double *erg)
     for (i=0;i<dim1;i++)
     	temp_ergebnis[i]=0.0;
 
-   
+
 	for (i=0; i<jd_ptr_max; i++)
 	{
 	  col_len = jd_ptrf[i+1] - jd_ptrf[i];
@@ -2259,7 +2259,7 @@ void M34MatTVek(double *vektor, double *ergebnis)
                 10/1998   C.Thorenz  Hilfsvariable gegen kleine Differenzen
                                      grosser Zahlen
    Modell 3,4:   2/2000   Ra         Letzte Version
-   Alle Modelle: 3/2002   CT         Vereinfacht und alle Modelle zusammengefasst   
+   Alle Modelle: 3/2002   CT         Vereinfacht und alle Modelle zusammengefasst
 */
 
 void MXResiduum(double *x, double *b, double *ergebnis)
@@ -2272,9 +2272,9 @@ void MXResiduum(double *x, double *b, double *ergebnis)
 #endif
 
   MXMatVek(x, ergebnis);
-  
+
   //WW
-  long Dimension = 0;  
+  long Dimension = 0;
   if(matrix_type==5)
      Dimension = Dim_L;
   else
@@ -2303,7 +2303,7 @@ void MXResiduum(double *x, double *b, double *ergebnis)
                         der rechte Seite Eintrag skaliert
                         => keine boese Veraenderung an einer Stelle der Diagonale
   12/2001     C.Thorenz Diagonalwert = 0 abgefangen
-  02/2006      WW/PA M5 storage 
+  02/2006      WW/PA M5 storage
 *** Unterscheidung nach Modell innerhalb der Prozedur! ******************/
 void MXRandbed(long ir, double Ri, double *ReSei)
 {
@@ -2318,18 +2318,18 @@ void MXRandbed(long ir, double Ri, double *ReSei)
   /* Wenn das Diagonalelement ~= 0 ist, ein anderes suchen.
      Sollte eigentlich nicht vorkommen. */
 
-  if (fabs(diag) < DBL_MIN) 
+  if (fabs(diag) < DBL_MIN)
     for (i = 0; i < dim; i++) {
       ip = ir + i;
       im = ir - i;
       if(ip < dim)
-        if(fabs(diag=MXGet(ip, ip)) > DBL_MIN) break;   
+        if(fabs(diag=MXGet(ip, ip)) > DBL_MIN) break;
       if(im >= 0)
-        if(fabs(diag=MXGet(im, im)) > DBL_MIN) break;   
+        if(fabs(diag=MXGet(im, im)) > DBL_MIN) break;
     }
 
-  /* Dieser Fall sollte _nie_ auftreten */ 
-  if (fabs(diag) < DBL_MIN) 
+  /* Dieser Fall sollte _nie_ auftreten */
+  if (fabs(diag) < DBL_MIN)
     diag = MKleinsteZahl;
 
 //TEST WW
@@ -2404,7 +2404,7 @@ void MXRandbed(long ir, double Ri, double *ReSei)
           }
 
         MXSet(ir, ir, diag);                 /* Randwert einsetzen */
-        ReSei[ir] = Ri * diag; 
+        ReSei[ir] = Ri * diag;
 
         for (i = ir + 1; i <= Sp34(ir).rechts; i++)
           {
@@ -2424,18 +2424,18 @@ void MXRandbed(long ir, double Ri, double *ReSei)
       }
       break;
     case 5: //WW/PA  08/02/2006
-      {   
+      {
        long dim1;
-       long ii, jj, jr;  
-       CFEMesh* m_msh = NULL;
+       long ii, jj, jr;
+       Mesh_Group::CFEMesh* m_msh = NULL;
        CNode *m_nod_i = NULL;
        CNode *m_nod_j = NULL;
        m_msh = FEMGet("GROUNDWATER_FLOW");
        dim1 = m_msh->NodesInUsage();
-       ii = m_msh->Eqs2Global_NodeIndex[ir];       
+       ii = m_msh->Eqs2Global_NodeIndex[ir];
        m_nod_i = m_msh->nod_vector[ii];
        ReSei[ir] = Ri*MXGet(ir,ir);
-       for(k=0; k<(int)m_nod_i->connected_nodes.size(); k++) 
+       for(k=0; k<(int)m_nod_i->connected_nodes.size(); k++)
        {
            jj = m_nod_i->connected_nodes[k];
            m_nod_j=m_msh->nod_vector[jj];
@@ -3227,161 +3227,139 @@ void M2Vorkond(int aufgabe, double *x, double *b)
 /**** Modell 3,4 **********************************************************/
 void M34Vorkond(int aufgabe, double *x, double *b)
 {
-  Modell34 *w = (Modell34 *) wurzel;
-  long i, k, l;
-  register long zk;
-  register int ji, jk;
-  int j, u = w -> usym, o = 0;
-  double Oik, Uki = 0.0, Dkk, r;
-  static double *x0, *r0, h;
+	Modell34 *w = (Modell34 *) wurzel;
+	long i, k, l;
+	register long zk;
+	register int ji, jk;
+	int j, u = w -> usym, o = 0;
+	double Oik, Uki = 0.0, Dkk, r;
+	static double *x0, *r0, h;
 
 #ifdef ERROR_CONTROL
-  if (b == NULL || x == NULL)
-    MX_Exit("M34Vorkond", 3);
+	if (b == NULL || x == NULL)
+		MX_Exit("M34Vorkond", 3);
 #endif
 
-  switch (aufgabe)
-    {
-    case 0:                            /* Start des Vorkonditionierers - ILU! */
-
-      if VK_Modus
-        (VK_Extraktion)
-        {                              /* immer zuerst! */
-          x0 = (double *) Malloc(sizeof(double) * dim);
-          r0 = (double *) Malloc(sizeof(double) * dim);
-          MXResiduum(x, b, r0);         /* Rechte Seite ex A*(Startloesung x) */
-          for (i = 0; i < dim; i++)
-            {
-              b[i] = r0[i];
-              x0[i] = x[i];
-              x[i] = 0.0;
-            }
-          r0 = (double *) Free(r0);
-        }
-      if VK_Modus
-        (VK_Skalierung)
-        {
-          for (k = 0; k < dim; k++)
-            {
-              if(fabs(w -> Diag[k]) > DBL_MIN) {
-                h = 1. / w -> Diag[k];
-                b[k] *= h;
-                for (l = 0; l < dim; l++)
-                  M34Mul(k, l, h);
-              }
-			  /*
-			  else {
-                DisplayMsg("!!! Equation system: Line: ");
-                DisplayLong(k);
-                DisplayMsg(" Value: ");
-                DisplayDouble(w -> Diag[k], 0, 0);
-                DisplayMsgLn("");
-                DisplayMsgLn("!!! Diagonal near zero! Disable diagonal preconditioner!");
-                exit(1);
-              }*/
-            }
+	switch (aufgabe) {
+	case 0: /* Start des Vorkonditionierers - ILU! */
+		if (VK_Modus(VK_Extraktion)) { /* immer zuerst! */
+			x0 = (double *) Malloc(sizeof(double) * dim);
+			r0 = (double *) Malloc(sizeof(double) * dim);
+			MXResiduum(x, b, r0); /* Rechte Seite ex A*(Startloesung x) */
+			for (i = 0; i < dim; i++) {
+				b[i] = r0[i];
+				x0[i] = x[i];
+				x[i] = 0.0;
+			}
+			r0 = (double *) Free(r0);
+		}
+		if (VK_Modus (VK_Skalierung)) {
+			for (k = 0; k < dim; k++) {
+				if(fabs(w -> Diag[k]) > DBL_MIN) {
+					h = 1. / w -> Diag[k];
+					b[k] *= h;
+					for (l = 0; l < dim; l++)
+						M34Mul(k, l, h);
+				}
+				/*
+				 else {
+				 DisplayMsg("!!! Equation system: Line: ");
+				 DisplayLong(k);
+				 DisplayMsg(" Value: ");
+				 DisplayDouble(w -> Diag[k], 0, 0);
+				 DisplayMsgLn("");
+				 DisplayMsgLn("!!! Diagonal near zero! Disable diagonal preconditioner!");
+				 exit(1);
+				 }*/
+			}
 
 #ifdef geht_nicht
-          for (k = 0; k < dim; k++)
-            {
-              for (j = 0; j < Sp34(k).anz; j++)
-                {
-                  i = Ind34(k, j);
-                  Aik34(k, j, u) /= w -> Diag[k];       /* Untermatrix */
-                  Aik34(k, j, 0) /= w -> Diag[i];       /* Obermatrix  o=0! */
-                }
-            }
-          for (k = 0; k < dim; k++)
-            w -> Diag[k] = 1.;
+			for (k = 0; k < dim; k++) {
+				for (j = 0; j < Sp34(k).anz; j++) {
+					i = Ind34(k, j);
+					Aik34(k, j, u) /= w -> Diag[k]; /* Untermatrix */
+					Aik34(k, j, 0) /= w -> Diag[i]; /* Obermatrix  o=0! */
+				}
+			}
+			for (k = 0; k < dim; k++)
+			w -> Diag[k] = 1.;
 #endif
 
-        }
-      break;
+		}
+		break;
 
-    case 1:                            /* Ende des Vorkonditionierers */
-      if VK_Modus
-        (VK_Extraktion)
-        {                              /* immer zuletzt: Startloesung addieren */
-          for (i = 0; i < dim; i++)
-            x[i] += x0[i];
-          x0 = (double *) Free(x0);
-        }
-      break;                           /* Matrix fuer ILU-Zerlegung wird nicht freigegeben! */
+	case 1: /* Ende des Vorkonditionierers */
+		if (VK_Modus (VK_Extraktion)) { /* immer zuletzt: Startloesung addieren */
+			for (i = 0; i < dim; i++)
+				x[i] += x0[i];
+			x0 = (double *) Free(x0);
+		}
+		break; /* Matrix fuer ILU-Zerlegung wird nicht freigegeben! */
 
-    case 3:                            /* Linkstransformation des Gesamtsystems x <= L(t)*b */
-      u = 0;
-      o = w -> usym;
-      /* kein break! "Fall through" nach Aufgabe 2 */
+	case 3: /* Linkstransformation des Gesamtsystems x <= L(t)*b */
+		u = 0;
+		o = w -> usym;
+		/* kein break! "Fall through" nach Aufgabe 2 */
 
-    case 2:                            /* Linkstransformation  x <= L*b */
-      if VK_Modus
-        (VK_iLDU)
-        {                              /* incomplete L(D)U-Zerlegung */
-          if (w -> stat < 2)
-            {                          /* Matrix ist noch nicht zerlegt */
-              for (k = 0; k < dim; k++)
-                {                      /* Spalten reduzieren */
-                  for (j = 0; j < Sp34(k).anz; j++)
-                    {
-                      Oik = Aik34(k, j, o);
-                      if (u)
-                        Uki = Aik34(k, j, u);
-                      i = Ind34(k, j);
+	case 2: /* Linkstransformation  x <= L*b */
+		if (VK_Modus (VK_iLDU)) { /* incomplete L(D)U-Zerlegung */
+			if (w -> stat < 2) { /* Matrix ist noch nicht zerlegt */
+				for (k = 0; k < dim; k++) { /* Spalten reduzieren */
+					for (j = 0; j < Sp34(k).anz; j++) {
+						Oik = Aik34(k, j, o);
+						if (u)
+							Uki = Aik34(k, j, u);
+						i = Ind34(k, j);
 
-                      /* Skalarprodukte abziehen */
-                      jk = 0;
-                      zk = Ind34(k, jk);        /* oberstes Element Spalte k */
-                      for (ji = 0; ji < Sp34(i).anz; ji++)
-                        {
-                          while (Ind34(i, ji) > zk)
-                            zk = Ind34(k, ++jk);        /* zk existiert! */
-                          if (zk == Ind34(i, ji))
-                            {
-                              Oik -= Bik34(i, ji, u) * Bik34(k, jk, o);
-                              if (u)
-                                Uki -= Bik34(i, ji, o) * Bik34(k, jk, u);
-                            }
-                        }              /* Ende ji Skalarprodukt */
-                      Bik34(k, j, o) = Oik;
-                      if (u)
-                        Bik34(k, j, u) = Uki;
-                    }                  /* j, Spaltenelemente staffeln */
+						/* Skalarprodukte abziehen */
+						jk = 0;
+						zk = Ind34(k, jk); /* oberstes Element Spalte k */
+						for (ji = 0; ji < Sp34(i).anz; ji++) {
+							while (Ind34(i, ji) > zk)
+								zk = Ind34(k, ++jk); /* zk existiert! */
+							if (zk == Ind34(i, ji)) {
+								Oik -= Bik34(i, ji, u) * Bik34(k, jk, o);
+								if (u)
+									Uki -= Bik34(i, ji, o) * Bik34(k, jk, u);
+							}
+						} /* Ende ji Skalarprodukt */
+						Bik34(k, j, o) = Oik;
+						if (u)
+							Bik34(k, j, u) = Uki;
+					} /* j, Spaltenelemente staffeln */
 
-                  /* Diagonale extrahieren mit Sk.prod. fuer Diagonalelement */
-                  Dkk = w -> Diag[k];
-                  for (jk = 0; jk < Sp34(k).anz; jk++)
-                    {
-                      Oik = Bik34(k, jk, o);
-                      zk = Ind34(k, jk);
-                      Bik34(k, jk, o) *= w -> PreD[zk];
-                      if (u)
-                        Bik34(k, jk, u) *= w -> PreD[zk];
-                      Dkk -= Bik34(k, jk, u) * Oik;
-                    }
-                  if (fabs(Dkk) < fastNull)
-                    Dkk = (Dkk < 0.0) ? -fastNull : fastNull;   /*sign */
-                  w -> PreD[k] = 1.0 / Dkk;     /* Kehrwert speichern */
-                }
-              w -> stat = 2;           /* merken! */
-            }                          /* Ende der Zerlegung */
-          /* genaeherte Loesung von  A*x = b. Ergebnis: x */
-          for (k = 0; k < dim; k++)
-            {                          /* vorwaerts einsetzen mit Untermatrix */
-              r = b[k];
-              for (j = 0; j < Sp34(k).anz; j++)
-                r -= Bik34(k, j, u) * x[Ind34(k, j)];
-              x[k] = r;
-            }
-          for (k = 0; k < dim; k++)
-            x[k] *= w -> PreD[k];      /* Diagonal-Normierung */
-          for (k = dim - 1; k > 0; k--)
-            {                          /* rueckwaerts einsetzen mit Obermatrix */
-              r = x[k];
-              for (j = 0; j < Sp34(k).anz; j++)
-                x[Ind34(k, j)] -= Bik34(k, j, o) * r;
-            }
-        }                              /* Ende ILU-Vorkonditionierer */
-    }                                  /* switch aufgabe */
+					/* Diagonale extrahieren mit Sk.prod. fuer Diagonalelement */
+					Dkk = w -> Diag[k];
+					for (jk = 0; jk < Sp34(k).anz; jk++) {
+						Oik = Bik34(k, jk, o);
+						zk = Ind34(k, jk);
+						Bik34(k, jk, o) *= w -> PreD[zk];
+						if (u)
+							Bik34(k, jk, u) *= w -> PreD[zk];
+						Dkk -= Bik34(k, jk, u) * Oik;
+					}
+					if (fabs(Dkk) < fastNull)
+						Dkk = (Dkk < 0.0) ? -fastNull : fastNull; /*sign */
+					w -> PreD[k] = 1.0 / Dkk; /* Kehrwert speichern */
+				}
+				w -> stat = 2; /* merken! */
+			} /* Ende der Zerlegung */
+			/* genaeherte Loesung von  A*x = b. Ergebnis: x */
+			for (k = 0; k < dim; k++) { /* vorwaerts einsetzen mit Untermatrix */
+				r = b[k];
+				for (j = 0; j < Sp34(k).anz; j++)
+					r -= Bik34(k, j, u) * x[Ind34(k, j)];
+				x[k] = r;
+			}
+			for (k = 0; k < dim; k++)
+				x[k] *= w -> PreD[k]; /* Diagonal-Normierung */
+			for (k = dim - 1; k > 0; k--) { /* rueckwaerts einsetzen mit Obermatrix */
+				r = x[k];
+				for (j = 0; j < Sp34(k).anz; j++)
+					x[Ind34(k, j)] -= Bik34(k, j, o) * r;
+			}
+		} /* Ende ILU-Vorkonditionierer */
+	} /* switch aufgabe */
 }                                      /*M34Precond */
 
 
@@ -3424,7 +3402,7 @@ void M5Vorkond(int aufgabe, double *x, double *b)
         }
       if VK_Modus
         (VK_Skalierung)
-        {  
+        {
           for (k = 0; k < Dim_L; k++)
           {
               v_diag = jdiag[diag5_i[k]];
@@ -3432,7 +3410,7 @@ void M5Vorkond(int aufgabe, double *x, double *b)
                 h = 1. / v_diag;
                 b[k] *= h;
               }
-			  else 
+			  else
               {
                 DisplayMsg("!!! Equation system: Line: ");
                 DisplayLong(k);
@@ -3446,7 +3424,7 @@ void M5Vorkond(int aufgabe, double *x, double *b)
 
 
 		  // For test, must be improved
-		  
+
 		  double val;
           for (k = 0; k < Dim_L; k++)
           {
@@ -3458,27 +3436,27 @@ void M5Vorkond(int aufgabe, double *x, double *b)
                  MXSet(k,ii,val);
 			 }
 		  }
-          
-		  
+
+
 		  /*
            long count1 = 0;
 	        for (k = 0; k < jd_ptr_max; k++)
 	        {
                for (i = 0; i < jd_ptr[k]; i++)
                {
-                  // Row of equation system 
-                  ii = jd_ptr2[i]; 
-                  v_diag = jdiag[diag5_i[ii]]; 
-                  if(fabs(v_diag) > DBL_MIN) 
-                     jdiag[count1] /= v_diag;  //    
+                  // Row of equation system
+                  ii = jd_ptr2[i];
+                  v_diag = jdiag[diag5_i[ii]];
+                  if(fabs(v_diag) > DBL_MIN)
+                     jdiag[count1] /= v_diag;  //
                   count1++;
-               }  
+               }
 	        }
            */
-    ///////////////////////////////////////////////// 
+    /////////////////////////////////////////////////
 
           /*
-          // Diagonal-Skalierung 
+          // Diagonal-Skalierung
           for (k = 0; k < dim; k++)
             {
               if(fabs(Diag2(k)) > DBL_MIN) {

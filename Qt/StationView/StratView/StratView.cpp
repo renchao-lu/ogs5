@@ -13,7 +13,7 @@ StratView::~StratView()
 	delete _scene;
 }
 
-void StratView::setStation(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color> *stratColors)
+void StratView::setStation(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color*> *stratColors)
 {
 	_scene = new StratScene(station, stratColors);
 	setScene(_scene);
@@ -40,4 +40,16 @@ void StratView::update()
 	_scene->setSceneRect(viewRect);
 	QRectF sceneInView(_scene->MARGIN,_scene->MARGIN,viewRect.width()+2*_scene->MARGIN,viewRect.height()+2*_scene->MARGIN);
 	fitInView(sceneInView, Qt::IgnoreAspectRatio);
+}
+
+void StratView::saveAsImage(QString fileName)
+{
+	this->update();
+
+	QRectF viewRect = _scene->itemsBoundingRect();
+	QImage img(viewRect.width()+2*_scene->MARGIN, 600, QImage::Format_ARGB32);
+	QPainter painter(&img);
+
+	this->render(&painter);
+	img.save(fileName);
 }

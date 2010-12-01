@@ -20,7 +20,9 @@ using Mesh_Group::CNode;
 extern vector<Mesh_Group::CFEMesh*> fem_msh_vector;
 extern CFEMesh* FEMGet(const string &msh_name);
 extern void MSHCreateNOD2ELERelations(Mesh_Group::CFEMesh*); //OK
-extern bool FEMRead(string);
+
+extern CFEMesh* FEMRead(const std::string& , GEOLIB::GEOObjects* geo_obj = NULL, std::string* unique_name = NULL);
+
 extern void MSHWrite(string);
 extern void CompleteMesh(); //WW
 extern bool CompleteMesh(string); //OK
@@ -53,10 +55,10 @@ extern void MSHDelete(string);
 extern void DATWriteRFIFile(const char *file_name);
 extern void DATWriteParticleFile(int);     // PCH
 extern void MSHWriteVOL2TEC(string); //OK
-extern bool msh_file_binary; //OK
-extern void GMSH2MSH(char*,CFEMesh*);
+//KR extern bool msh_file_binary; //OK
+extern void GMSH2MSH(const char*,CFEMesh*);
 extern void Mesh_Single_Surface(string surface_name, const char *file_name_const_char);//TK
-extern void Select_Nodes_Elements_by_TINFile(const char *file_name_const_char);
+//extern void Select_Nodes_Elements_by_TINFile(const char *file_name_const_char);
 extern void Clear_Selected_Nodes_Elements();
 extern void GMSH2TIN(const char *file_name_const_char);
 extern void MSHLayerWriteTecplot(); //OK
@@ -71,7 +73,6 @@ extern void MSHSetFractureElements(void);
 extern void MSHResetFractureElements(void);
 extern long MSHWhatElemIsPointIn(double x, double y, long index); //RFW
 #endif
-extern void MSHOpen(string); //OK411
 extern void MSHDefineMobile(CRFProcess*); //OK411
 extern void MSHMoveNODUcFlow (CRFProcess*); //OK411
 extern long* MSHGetNodesClose(long*,CGLPolyline*); //OK411

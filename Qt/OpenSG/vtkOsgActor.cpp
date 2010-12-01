@@ -33,6 +33,7 @@ vtkOsgActor::vtkOsgActor(void) : vtkOpenGLActor(),
 	m_iNumGLTriStrips(0),
 	m_iNumGLPrimitives(0),
 	m_posgRoot(NullFC),
+	m_posgTransform(NullFC),
 	m_posgGeomNode(NullFC),
 	m_posgGeometry(NullFC),
 	m_posgMaterial(NullFC),
@@ -48,20 +49,20 @@ vtkOsgActor::vtkOsgActor(void) : vtkOpenGLActor(),
 	m_posgNormals(NullFC),
 	m_posgTexCoords(NullFC)
 {
+	TransformPtr tptr;
+	m_posgRoot = makeCoredNode<osg::Transform>(&tptr);
+	m_posgTransform = tptr;
 }
 
 vtkOsgActor::~vtkOsgActor(void)
 {
-	if (m_pvtkNormals != NULL) m_pvtkNormals->Delete();
-	if (m_pvtkTexCoords != NULL) m_pvtkTexCoords->Delete();
-	if (m_pvtkColors != NULL) m_pvtkColors->Delete();
+	m_posgRoot = NullFC;
 
-	ClearOsg();
 	//Open SG Objects are deleted via the reference counting scheme
+	ClearOsg();
 }
 
 void vtkOsgActor::InitOpenSG(){
-	m_posgRoot = makeCoredNode<Group>();
 	m_posgGeomNode = Node::create();
 	m_posgGeometry = Geometry::create();
 	m_posgMaterial = ChunkMaterial::create();
@@ -86,14 +87,12 @@ void vtkOsgActor::InitOpenSG(){
 
 vtkOsgActor *vtkOsgActor::New(){
 	// First try to create the object from the vtkGraphicsFactory
-	vtkObject* ret = vtkGraphicsFactory::CreateInstance("vtkOsgActor");
+	vtkObject* ret = vtkObjectFactory::CreateInstance("vtkOsgActor");
   
-	if (ret == NULL) {
-		// std::cout << "could not use vtkGraphicsFactory" << std::endl;
-		ret = new vtkOsgActor();
-  
+	if (ret) {
+		return static_cast<vtkOsgActor*>(ret);
 	}
-	return (vtkOsgActor*)ret;
+	return new vtkOsgActor;
 }
 
 void vtkOsgActor::PrintSelf(ostream& os, vtkIndent indent){
@@ -107,15 +106,34 @@ void vtkOsgActor::Render(vtkRenderer *ren, vtkMapper *mapper){
 }
 
 void vtkOsgActor::UpdateOsg(){
-	if (m_posgRoot == NullFC) InitOpenSG();
+	if (m_posgGeomNode == NullFC) InitOpenSG();
 	if (m_bTextureHasChanged) CreateTexture();
 
 	this->GetMapper()->Update();
+
 	LookForNormals();
 	LookForColors();
 	LookForTexCoords();
 	LookForArraySizes();
 	CreateTexture();
+
+	double scaling[3];
+	//double translation[3];
+	//double rotation[3];
+
+	//this->GetPosition(translation);
+	this->GetScale(scaling);
+
+	if (m_bVerbose){
+		std::cout << "set scaling: " << scaling[0] << " " << scaling[1] << " " << scaling[2] << std::endl;
+	}
+
+	osg::Matrix m;
+	m.setIdentity();
+	m.setScale(scaling[0], scaling[1], scaling[2]);
+	beginEditCP(m_posgTransform);{
+		m_posgTransform->setMatrix(m);
+	};endEditCP(m_posgTransform);
 
 	NodePtr newNodePtr = this->GetNodePtr();
 
@@ -140,7 +158,6 @@ void vtkOsgActor::UpdateOsg(){
 
 void vtkOsgActor::ClearOsg(){
 	//This also decrements the reference count, possibly deleting the objects
-	m_posgRoot = NullFC;
 	m_posgGeomNode = NullFC;
 	m_posgGeometry = NullFC;
 	m_posgMaterial = NullFC;

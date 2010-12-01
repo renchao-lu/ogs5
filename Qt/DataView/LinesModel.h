@@ -9,7 +9,7 @@
 
 #include "Model.h"
 #include "TreeItem.h"
-#include "Polyline.h"
+#include "PolylineVec.h"
 
 #include <QVector>
 
@@ -21,33 +21,19 @@ class PolylinesModel : public Model
 	Q_OBJECT
 
 public:
-	PolylinesModel( QString name, std::vector<GEOLIB::Polyline*>* polylineVec, QObject* parent = 0 );
+	PolylinesModel( QString name, const GEOLIB::PolylineVec* polylineVec, QObject* parent = 0 );
 	~PolylinesModel();
 
 	int columnCount(const QModelIndex& parent = QModelIndex()) const;
-
-	bool setData(const QModelIndex& index, const QVariant& value,
-		int role = Qt::EditRole);
-
-	/// Returns a QModelIndex from a GEOLIB::Polyline.
-	QModelIndex indexFromPolyline(const GEOLIB::Polyline* line) const;
 
 public slots:
 	/// Reloads all items.
 	void updateData();
 
-protected slots:
-	void item2dChanged(GEOLIB::Polyline* line);
-
 private:
-	void setData(std::vector<GEOLIB::Polyline*> *lines, TreeItem* parent);
+	void setData(const GEOLIB::PolylineVec* polylineVec, TreeItem* parent);
 
-	std::vector<GEOLIB::Polyline*>* _polylineVec;
-
-
-signals:
-	void itemPositionChanged(GEOLIB::Polyline* line);
-	//void selectionChanged(const QItemSelection & selected, const QItemSelection & deselected);
+	const GEOLIB::PolylineVec* _polylineVec;
 
 };
 #endif // LINESMODEL_H

@@ -106,6 +106,6 @@ void DiagramView::update()
 	//setResizeAnchor(QGraphicsView::AnchorViewCenter);
 	QRectF viewRect = _scene->itemsBoundingRect();
 	_scene->setSceneRect(viewRect);
-	QRectF sceneInView(_scene->MARGIN/2,_scene->MARGIN/2,viewRect.width()+_scene->MARGIN,viewRect.height()+_scene->MARGIN);
+	QRectF sceneInView(0/*_scene->MARGIN*/,_scene->MARGIN/2,viewRect.width()/*+_scene->MARGIN*/,viewRect.height()+_scene->MARGIN);
 	fitInView(sceneInView, Qt::IgnoreAspectRatio);
 }

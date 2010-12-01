@@ -24,6 +24,9 @@
 #include "RecentFiles.h"
 #include "VisPrefsDialog.h"
 #include "TreeModelIterator.h"
+#include "VtkGeoImageSource.h"
+#include "VtkBGImageSource.h"
+#include "DatabaseConnection.h"
 
 #include "modeltest.h"
 
@@ -50,13 +53,21 @@
 #include <QComboBox>
 #include <QImage>
 #include <QPixmap>
+#include <QDesktopWidget>
+#include <QList>
 
 // VTK
 #include <vtkRenderWindow.h>
-#include "VtkBGImageSource.h"
 #include <vtkVRMLExporter.h>
 #include <vtkOBJExporter.h>
+#include <vtkImageData.h>
+#include <vtkQImageToImageSource.h>
+#include <vtkTIFFReader.h>
+#include <vtkSmartPointer.h>
+#include <vtkImageChangeInformation.h>
 #include <vtkRenderer.h>
+#include <vtkPlaneSource.h>
+#include <vtkImageShiftScale.h>
 
 #ifdef OGS_USE_OPENSG
 #include <OpenSG/OSGSceneFileHandler.h>
@@ -101,6 +112,8 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 		this, SLOT(exportBoreholesToGMS(std::string, std::string)));	// export Stationlist to GMS
 	connect(stationTabWidget->treeView, SIGNAL(stationListRemoved(std::string)),
 		_geoModels, SLOT(removeStationVec(std::string)));	// update model when stations are removed
+	connect(stationTabWidget->treeView, SIGNAL(stationListSaved(QString, QString)),
+		this, SLOT(writeStationListToFile(QString, QString)));	// save Stationlist to File
 	connect(_geoModels, SIGNAL(stationVectorRemoved(StationTreeModel*, std::string)),
 		this, SLOT(updateDataViews()));						// update data view when stations are removed
 	connect(stationTabWidget->treeView, SIGNAL(diagramRequested(QModelIndex&)),
@@ -139,7 +152,7 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 
 
 	// Setup connections for mesh models to GUI
-	_meshModels = new MshModel();
+	_meshModels = new MshModel(_project);
 	mshTabWidget->treeView->setModel(_meshModels);
 	connect(mshTabWidget, SIGNAL(requestMeshRemoval(const QModelIndex&)),
 		_meshModels, SLOT(removeMesh(const QModelIndex&)));
@@ -147,8 +160,7 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	// vtk visualization pipeline
 #ifdef OGS_USE_OPENSG
 	OsgWidget* osgWidget = new OsgWidget(this, 0, Qt::Window);
-	osgWidget->show();
-	OSG::NodePtr box = OSG::makeBox(1,1,1,1,1,1);
+	//osgWidget->show();
 	osgWidget->sceneManager()->setRoot(makeCoredNode<OSG::Group>());
 	osgWidget->sceneManager()->showAll();
 	_vtkVisPipeline = new VtkVisPipeline(visualizationWidget->renderer(), osgWidget->sceneManager());
@@ -189,10 +201,10 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	connect(vtkVisTabWidget, SIGNAL(requestViewUpdate()),
 		visualizationWidget, SLOT(updateView()));
 
-	connect(vtkVisTabWidget->vtkVisPipelineView, SIGNAL(actorSelected(vtkActor*)),
-		(QObject*)(visualizationWidget->interactorStyle()), SLOT(highlightActor(vtkActor*)));
-	connect((QObject*)(visualizationWidget->vtkPickCallback()), SIGNAL(actorPicked(vtkActor*)),
-		vtkVisTabWidget->vtkVisPipelineView, SLOT(selectItem(vtkActor*)));
+	connect(vtkVisTabWidget->vtkVisPipelineView, SIGNAL(actorSelected(vtkProp3D*)),
+		(QObject*)(visualizationWidget->interactorStyle()), SLOT(highlightActor(vtkProp3D*)));
+	connect((QObject*)(visualizationWidget->vtkPickCallback()), SIGNAL(actorPicked(vtkProp3D*)),
+		vtkVisTabWidget->vtkVisPipelineView, SLOT(selectItem(vtkProp3D*)));
 
 	//TEST new ModelTest(_vtkVisPipeline, this);
 
@@ -204,6 +216,17 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 
 	// Restore window geometry
 	readSettings();
+	 
+	// Get info on screens geometry(ies)
+	_vtkWidget = visualizationWidget->vtkWidget;
+	QDesktopWidget* desktopWidget = QApplication::desktop();
+	#if OGS_QT_VERSION < 46
+	const unsigned int screenCount = desktopWidget->numScreens();
+	#else
+	const unsigned int screenCount = desktopWidget->screenCount();
+	#endif // OGS_QT_VERSION < 46
+	for(size_t i = 0; i < screenCount; ++i)
+		_screenGeometries.push_back(desktopWidget->availableGeometry(i));
 
 	// Setup import files menu
 	menu_File->insertMenu( action_Exit, createImportFilesMenu() );
@@ -244,12 +267,21 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 	connect(showVisDockAction, SIGNAL(triggered(bool)), this, SLOT(showVisDockWidget(bool)));
 	menuWindows->addAction(showVisDockAction);
 	
+	// Presentation mode
+	QMenu* presentationMenu = new QMenu();
+	presentationMenu->setTitle("Presentation on");
+	connect( presentationMenu, SIGNAL(aboutToShow()), this, SLOT(createPresentationMenu()) );
+	menuWindows->insertMenu(showVisDockAction, presentationMenu);
+
+	_fileFinder.addDirectory(".");
+	_fileFinder.addDirectory(std::string(SOURCEPATH).append("/FileIO"));
+
 	#ifdef OGS_USE_VRPN
 		VtkTrackedCamera* cam = static_cast<VtkTrackedCamera*>
 			(visualizationWidget->renderer()->GetActiveCamera());
 		_trackingSettingsWidget = new TrackingSettingsWidget(cam, visualizationWidget, Qt::Window);
 	#endif // OGS_USE_VRPN
-	
+
 
 	// connects for point model
 	//connect(pntTabWidget->pointsTableView, SIGNAL(itemSelectionChanged(const QItemSelection&,const QItemSelection&)),
@@ -281,7 +313,7 @@ MainWindow::MainWindow(QWidget *parent /* = 0*/)
 
 //	std::cout << "size of CSourceTerm: " << sizeof (CSourceTerm) << std::endl;
 //	std::cout << "size of CBoundaryCondition: " << sizeof (CBoundaryCondition) << std::endl;
-	
+
 }
 
 MainWindow::~MainWindow()
@@ -355,7 +387,7 @@ void MainWindow::open()
 	QSettings settings("UFZ", "OpenGeoSys-5");
     QString fileName = QFileDialog::getOpenFileName(this,
 		"Select data file to open", settings.value("lastOpenedFileDirectory").toString(),
-		"Geosys files (*.gli *.gml *.msh *.stn);;GLI files (*.gli);;MSH files (*.msh);;STN files (*.stn);;All files (* *.*)");
+		"Geosys files (*.gsp *.gli *.gml *.msh *.stn);;Project files (*.gsp);;GLI files (*.gli);;MSH files (*.msh);;STN files (*.stn);;All files (* *.*)");
      if (!fileName.isEmpty())
 	 {
 		QDir dir = QDir(fileName);
@@ -406,32 +438,35 @@ void MainWindow::save()
 	else dir_str = QDir::homePath();
 
 	QString gliName = pntTabWidget->dataViewWidget->modelSelectComboBox->currentText();
-	QString fileName = QFileDialog::getSaveFileName(this, "Save data as", dir_str,"Geosys geometry files (*.gml);;GMSH geometry files (*.geo)");
+	QString fileName = QFileDialog::getSaveFileName(this, "Save data as", dir_str,"GeoSys project (*.gsp);; Geosys geometry files (*.gml);;GeoSys4 geometry files (*.gli);;GMSH geometry files (*.geo)");
 
 	if (!(fileName.isEmpty() || gliName.isEmpty()))
 	{
 		QFileInfo fi(fileName);
 
-		QFile file(fileName);
-		file.open( QIODevice::WriteOnly );
-		std::cout << "Writing " << fileName.toStdString() << " ... ";
-
-		if (fi.suffix().toLower() == "gml")
+		if (fi.suffix().toLower() == "gsp")
 		{
-			std::string schemaName(SOURCEPATH);
-			schemaName.append("/OpenGeoSysGLI.xsd");
+			std::string schemaName(_fileFinder.getPath("OpenGeoSysProject.xsd"));
 			XMLInterface xml(_geoModels, schemaName);
-			xml.writeGLIFile(file, gliName);
-			xml.insertStyleFileDefinition(fileName);
+			xml.writeProjectFile(fileName);
+		}
+		else if (fi.suffix().toLower() == "gml")
+		{
+			std::string schemaName(_fileFinder.getPath("OpenGeoSysGLI.xsd"));
+			XMLInterface xml(_geoModels, schemaName);
+			xml.writeGLIFile(fileName, gliName);
 		}
 		else if (fi.suffix().toLower() == "geo")
 		{
 			GMSHInterface gmsh_io (fileName.toStdString());
-			gmsh_io.writeGMSHInputFile(gliName.toStdString(), *_geoModels);
+//			gmsh_io.writeGMSHInputFile(gliName.toStdString(), *_geoModels);
+			gmsh_io.writeAllDataToGMSHInputFile(*_geoModels);
+		}
+		else if (fi.suffix().toLower() == "gli") {
+//			writeGLIFileV4 (fileName.toStdString(), gliName.toStdString(), *_geoModels);
+			writeAllDataToGLIFileV4 (fileName.toStdString(), *_geoModels);
 		}
 
-		file.close();
-		std::cout << "done." << std::endl;
 	}
 	else if (!fileName.isEmpty() && gliName.isEmpty()) OGSError::box("No geometry data available.");
 }
@@ -475,14 +510,19 @@ void MainWindow::loadFile(const QString &fileName)
 //#endif
 // 		GEOCalcPointMinMaxCoordinates();
     }
+else if (fi.suffix().toLower() == "gsp")
+	{
+		std::string schemaName(_fileFinder.getPath("OpenGeoSysProject.xsd"));
+		XMLInterface xml(_geoModels, schemaName);
+		xml.readProjectFile(fileName);
+	}
 	else if (fi.suffix().toLower() == "gml")
 	{
 #ifndef NDEBUG
     	 QTime myTimer0;
     	 myTimer0.start();
 #endif
-		std::string schemaName(SOURCEPATH);
-		schemaName.append("/OpenGeoSysGLI.xsd");
+		std::string schemaName(_fileFinder.getPath("OpenGeoSysGLI.xsd"));
 		XMLInterface xml(_geoModels, schemaName);
 		xml.readGLIFile(fileName);
 #ifndef NDEBUG
@@ -492,7 +532,12 @@ void MainWindow::loadFile(const QString &fileName)
 	// OpenGeoSys observation station files (incl. boreholes)
 	else if (fi.suffix().toLower() == "stn")
 	{
-		GEOLIB::Station::StationType type = GEOLIB::Station::STATION;
+		std::string schemaName(_fileFinder.getPath("OpenGeoSysSTN.xsd"));
+		XMLInterface xml(_geoModels, schemaName);
+		xml.readSTNFile(fileName);
+/*
+		// old file reading routines for ascii files
+		GEOLIB::Station::StationType type = GEOLIB::Station::BOREHOLE;
 		vector<GEOLIB::Point*> *stations = new vector<GEOLIB::Point*>();
 		string name;
 
@@ -504,62 +549,70 @@ void MainWindow::loadFile(const QString &fileName)
 			{
 				QString filename = QFileDialog::getOpenFileName(this, tr("Open stratigraphy file"), "", tr("Station Files (*.stn)"));
 
-				/* read stratigraphy for all boreholes at once */
+				// read stratigraphy for all boreholes at once
 				vector<GEOLIB::Point*> *boreholes = new vector<GEOLIB::Point*>();
+
 				size_t vectorSize = stations->size();
 				for (size_t i=0; i<vectorSize; i++) boreholes->push_back(static_cast<GEOLIB::StationBorehole*>(stations->at(i)));
 				GEOLIB::StationBorehole::addStratigraphies(filename.toStdString(), boreholes);
 				for (size_t i=0; i<vectorSize; i++) (*stations)[i] = (*boreholes)[i];
 				delete boreholes;
-				/* read stratigraphy for each borehole seperately *
-				for (int i=0; i<static_cast<int>(stations.size());i++)
-				{
-				StationBorehole* borehole = static_cast<StationBorehole*>(stations.at(i));
-				StationBorehole::addStratigraphy(filename.toStdString(), borehole);
-				if (borehole->find("q")) stations.at(i)->setColor(255,0,0);
-				}
-				*/
+//				/// *** read stratigraphy for each borehole seperately
+//				for (int i=0; i<static_cast<int>(stations.size());i++)
+//				{
+//				StationBorehole* borehole = static_cast<StationBorehole*>(stations.at(i));
+//				StationBorehole::addStratigraphy(filename.toStdString(), borehole);
+//				if (borehole->find("q")) stations.at(i)->setColor(255,0,0);
+//				}
 			}
 
 			_geoModels->addStationVec(stations, name, GEOLIB::getRandomColor());
 		}
+*/
 	}
 	// OpenGeoSys mesh files
     else if (fi.suffix().toLower() == "msh")
 	{
+		std::cout << "FEMRead ... " << std::flush;
 #ifndef NDEBUG
-
-    	 QTime myTimer;
-    	 myTimer.start();
-    	 std::cout << "FEMRead ... " << std::flush;
+		QTime myTimer;
+		myTimer.start();
 #endif
-
-		 FEMRead(base);
-#ifndef NDEBUG
-    	 std::cout << myTimer.elapsed() << " ms" << std::endl;
-#endif
-
-        CompleteMesh();
-        if (fem_msh_vector.size() == 0)
+		FEMDeleteAll();
+		CFEMesh* msh = FEMRead(base);
+		if (msh)
 		{
-            cout << "Failed to load a mesh file: base path = " << base << endl;
-        	return;
-        }
-        cout << "Nr. Nodes: " << ::fem_msh_vector[0]->nod_vector.size() << endl;
-
 #ifndef NDEBUG
-    	 myTimer.start();
-    	 std::cout << "GridAdapter Read ... " << std::flush;
+			QTime constructTimer;
+			constructTimer.start();
 #endif
-
-		 //GridAdapter grid(fileName.toStdString());				// load mesh-files directly into GridAdapter
-		 GridAdapter* grid = new GridAdapter(fem_msh_vector[0]);	// convert CFEMeshes to GridAdapter
+			msh->ConstructGrid();
 #ifndef NDEBUG
-    	 std::cout << myTimer.elapsed() << " ms" << std::endl;
+			std::cout << "constructGrid time: " << constructTimer.elapsed() << " ms" << std::endl;
+			QTime fillTransformTimer;
+			fillTransformTimer.start();
 #endif
-		 std::string name = (fi.baseName()).toStdString();
-		 _meshModels->addMesh(grid, name);
+			msh->FillTransformMatrix();
+#ifndef NDEBUG
+			std::cout << "fillTransformMatrix time: " << fillTransformTimer.elapsed() << " ms" << std::endl;
+#endif
+			std::string name = fileName.toStdString();
+			_meshModels->addMesh(msh, name);
+
+			//fem_msh_vector.push_back(msh);
+			//CompleteMesh();
+#ifndef NDEBUG
+			std::cout << "Loading time: " << myTimer.elapsed() << " ms" << std::endl;
+#endif
+	        cout << "Nr. Nodes: " << msh->nod_vector.size() << endl;
+		}
+		else
+		{
+			OGSError::box("Failed to load a mesh file.");
+            cout << "Failed to load a mesh file: " << base << endl;
+		}
 	}
+
 	// GMS borehole files
 	else if (fi.suffix().toLower() == "txt")
 	{
@@ -573,9 +626,8 @@ void MainWindow::loadFile(const QString &fileName)
 	else if (fi.suffix().toLower() == "3dm")
 	{
 		std::string name = fileName.toStdString();
-		const CFEMesh* mesh = GMSInterface::readGMS3DMMesh(name);
-		GridAdapter* grid = new GridAdapter(mesh);
-		_meshModels->addMesh(grid, name);
+		CFEMesh* mesh = GMSInterface::readGMS3DMMesh(name);
+		_meshModels->addMesh(mesh, name);
 	}
 	// goCAD files
 	else if (fi.suffix().toLower() == "ts") {
@@ -603,9 +655,9 @@ void MainWindow::loadFile(const QString &fileName)
 		 /* Data dimensions. */
 		 size_t len_rlat, len_rlon;
     	 FileIO::NetCDFInterface::readNetCDFData(name, pnt_vec, _geoModels, len_rlat, len_rlon);
-		 const CFEMesh* mesh = FileIO::NetCDFInterface::createMeshFromPoints(pnt_vec, len_rlat, len_rlon);
-         GridAdapter* grid = new GridAdapter(mesh);
-         _meshModels->addMesh(grid, name);
+		 CFEMesh* mesh = FileIO::NetCDFInterface::createMeshFromPoints(pnt_vec, len_rlat, len_rlon);
+         //GridAdapter* grid = new GridAdapter(mesh);
+         _meshModels->addMesh(mesh, name);
 #ifndef NDEBUG
     	 std::cout << myTimer.elapsed() << " ms" << std::endl;
 #endif
@@ -667,8 +719,9 @@ void MainWindow::writeSettings()
 
 void MainWindow::about()
 {
-	QMessageBox::about(this, tr("About OpenGeoSys-5"), tr("Built on %1").
-		arg(QDate::currentDate().toString()));
+	QString ogsVersion = QString(OGS_VERSION);
+	QMessageBox::about(this, tr("About OpenGeoSys-5"), tr("Built on %1\nOGS Version: %2").
+		arg(QDate::currentDate().toString()).arg(ogsVersion));
 }
 
 QMenu* MainWindow::createImportFilesMenu()
@@ -677,16 +730,20 @@ QMenu* MainWindow::createImportFilesMenu()
 	QAction* gmsFiles = importFiles->addAction("GMS Files...");
 	connect(gmsFiles, SIGNAL(triggered()), this, SLOT(importGMS()));
 	QAction* gocadFiles = importFiles->addAction("Gocad Files...");
+	QAction* netcdfFiles = importFiles->addAction("NetCDF Files...");
+	connect(netcdfFiles, SIGNAL(triggered()), this, SLOT(importNetcdf()));
 	connect(gocadFiles, SIGNAL(triggered()), this, SLOT(importGoCad()));
 	QAction* petrelFiles = importFiles->addAction("Petrel Files...");
 	connect(petrelFiles, SIGNAL(triggered()), this, SLOT(importPetrel()));
 	QAction* rasterFiles = importFiles->addAction("Raster Files...");
 	connect(rasterFiles, SIGNAL(triggered()), this, SLOT(importRaster()));
+	QAction* rasterPolyFiles = importFiles->addAction("Raster Files as PolyData...");
+	connect(rasterPolyFiles, SIGNAL(triggered()), this, SLOT(importRasterAsPoly()));
 	QAction* shapeFiles = importFiles->addAction("Shape Files...");
 	connect(shapeFiles, SIGNAL(triggered()), this, SLOT(importShape()));
-	//YW  07.2010
-	QAction* netcdfFiles = importFiles->addAction("NetCDF Files...");
-	connect(netcdfFiles, SIGNAL(triggered()), this, SLOT(importNetcdf()));
+	QAction* vtkFiles = importFiles->addAction("VTK Files...");
+	connect( vtkFiles, SIGNAL(triggered()), this, SLOT(importVtk()) );
+
 	return importFiles;
 }
 
@@ -720,6 +777,38 @@ void MainWindow::importRaster()
 	QSettings settings("UFZ", "OpenGeoSys-5");
 	QString fileName = QFileDialog::getOpenFileName(this, "Select raster file to import", settings.value("lastOpenedFileDirectory").toString(),"Raster files (*.asc *.bmp *.jpg *.png *.tif);;");
 	QFileInfo fi(fileName);
+	QString fileType = fi.suffix().toLower();
+
+	if ((fileType == "asc") ||
+		(fileType == "tif") ||
+		(fileType == "png") ||
+		(fileType == "jpg") ||
+		(fileType == "bmp"))
+	{
+		VtkGeoImageSource* geoImage = VtkGeoImageSource::New();
+		geoImage->setImageFilename(fileName);
+		_vtkVisPipeline->addPipelineItem(geoImage);
+
+		QDir dir = QDir(fileName);
+		settings.setValue("lastOpenedFileDirectory", dir.absolutePath());
+		// create a 3d-quad-mesh from the image (this fails in CFEMesh::ConstructGrid() if the image is too large!)
+//		std::string tmp (fi.baseName().toStdString());
+//		 _meshModels->addMesh(GridAdapter::convertImgToMesh(raster, origin, scalingFactor), tmp);
+	}
+	//else if (fileType == "tif" || fileType == "tiff")
+	//{
+	//	vtkTIFFReader* imageSource = vtkTIFFReader::New();
+	//	imageSource->SetFileName(fileName.toStdString().c_str());
+	//	_vtkVisPipeline->addPipelineItem(imageSource);
+	//}
+	else if (fileName.length() > 0) OGSError::box("File extension not supported.");
+}
+
+void MainWindow::importRasterAsPoly()
+{
+	QSettings settings("UFZ", "OpenGeoSys-5");
+	QString fileName = QFileDialog::getOpenFileName(this, "Select raster file to import", settings.value("lastOpenedFileDirectory").toString(),"Raster files (*.asc *.bmp *.jpg *.png *.tif);;");
+	QFileInfo fi(fileName);
 
 	if ((fi.suffix().toLower() == "asc") ||
 		(fi.suffix().toLower() == "tif") ||
@@ -730,16 +819,18 @@ void MainWindow::importRaster()
 		QImage raster;
 		QPointF origin;
 		double scalingFactor;
-		OGSRaster::loadImage(fileName, raster, origin, scalingFactor);
+		OGSRaster::loadImage(fileName, raster, origin, scalingFactor, true);
 
 		VtkBGImageSource* bg = VtkBGImageSource::New();
 			bg->SetOrigin(origin.x(), origin.y());
 			bg->SetCellSize(scalingFactor);
 			bg->SetRaster(raster);
+			bg->SetName(fileName);
 		_vtkVisPipeline->addPipelineItem(bg);
-		
+
 		QDir dir = QDir(fileName);
 		settings.setValue("lastOpenedFileDirectory", dir.absolutePath());
+
 	}
 	else OGSError::box("File extension not supported.");
 }
@@ -755,7 +846,7 @@ void MainWindow::importShape()
 	{
 		SHPImportDialog dlg( (fileName.toUtf8 ()).constData(), _geoModels);
 		dlg.exec();
-		
+
 		QDir dir = QDir(fileName);
 		settings.setValue("lastOpenedFileDirectory", dir.absolutePath());
 	}
@@ -782,12 +873,28 @@ void MainWindow::importNetcdf()
     QSettings settings("UFZ", "OpenGeoSys-5");
     QString fileName = QFileDialog::getOpenFileName(this,
 		"Select NetCDF file to import", settings.value("lastOpenedFileDirectory").toString(), "NetCDF files (*.nc);;");
-     if (!fileName.isEmpty()) 
-	 {
-         loadFile(fileName);
-		 QDir dir = QDir(fileName);
-		 settings.setValue("lastOpenedFileDirectory", dir.absolutePath());
-     }
+	if (!fileName.isEmpty())
+	{
+		loadFile(fileName);
+		QDir dir = QDir(fileName);
+		settings.setValue("lastOpenedFileDirectory", dir.absolutePath());
+	}
+}
+
+void MainWindow::importVtk()
+{
+	QSettings settings("UFZ", "OpenGeoSys-5");
+    QStringList fileNames = QFileDialog::getOpenFileNames(this,
+		"Select VTK file(s) to import", settings.value("lastOpenedFileDirectory").toString(), "VTK files (*.vtk *.vti *.vtr *.vts *.vtp *.vtu);;");
+	foreach (QString fileName, fileNames)
+	{
+		if (!fileName.isEmpty())
+		{
+			_vtkVisPipeline->loadFromFile(fileName);
+			QDir dir = QDir(fileName);
+			settings.setValue("lastOpenedFileDirectory", dir.absolutePath());
+		}
+	}
 }
 
 void MainWindow::showPropertiesDialog(std::string name)
@@ -801,6 +908,13 @@ void MainWindow::showAddPipelineFilterItemDialog( QModelIndex parentIndex )
 {
 	VtkAddFilterDialog dlg(_vtkVisPipeline, parentIndex);
 	dlg.exec();
+}
+
+void MainWindow::writeStationListToFile	(QString listName, QString fileName)
+{
+	std::string schemaName(_fileFinder.getPath("OpenGeoSysSTN.xsd"));
+	XMLInterface xml(_geoModels, schemaName);
+	xml.writeSTNFile(fileName, listName);
 }
 
 void MainWindow::exportBoreholesToGMS(std::string listName, std::string fileName)
@@ -863,7 +977,7 @@ void MainWindow::on_actionExportVTK_triggered( bool checked /*= false*/ )
 	{
 		QDir dir = QDir(filename);
 		settings.setValue("lastExportedFileDirectory", dir.absolutePath());
-		
+
 		std::string basename = QFileInfo(filename).path().toStdString();
 		basename.append("/" + QFileInfo(filename).baseName().toStdString());
 		TreeModelIterator it(_vtkVisPipeline);
@@ -871,7 +985,7 @@ void MainWindow::on_actionExportVTK_triggered( bool checked /*= false*/ )
 		while(*it)
 		{
 			count++;
-			static_cast<VtkVisPipelineItem*>(*it)->writeToFile(basename + number2str(count) + ".vtk");
+			static_cast<VtkVisPipelineItem*>(*it)->writeToFile(basename + number2str(count));
 			++it;
 		}
 	}
@@ -887,7 +1001,7 @@ void MainWindow::on_actionExportVRML2_triggered( bool checked /*= false*/ )
 	{
 		QDir dir = QDir(fileName);
 		settings.setValue("lastExportedFileDirectory", dir.absolutePath());
-		
+
 		vtkVRMLExporter* exporter = vtkVRMLExporter::New();
 		exporter->SetFileName(fileName.toStdString().c_str());
 		exporter->SetRenderWindow(visualizationWidget->vtkWidget->GetRenderWindow());
@@ -906,7 +1020,7 @@ void MainWindow::on_actionExportObj_triggered( bool checked /*= false*/ )
 	{
 		QDir dir = QDir(fileName);
 		settings.setValue("lastExportedFileDirectory", dir.absolutePath());
-		
+
 		vtkOBJExporter* exporter = vtkOBJExporter::New();
 		exporter->SetFilePrefix(fileName.toStdString().c_str());
 		exporter->SetRenderWindow(visualizationWidget->vtkWidget->GetRenderWindow());
@@ -922,7 +1036,7 @@ void MainWindow::on_actionExportOpenSG_triggered(bool checked /*= false*/ )
 	QSettings settings("UFZ", "OpenGeoSys-5");
 	QString filename = QFileDialog::getSaveFileName(
 		this, "Export scene to OpenSG binary file",	settings.value(
-			"lastExportedFileDirectory").toString(), "OpenSG files (*.osb *.osg);;");
+			"lastExportedFileDirectory").toString(), "OpenSG files (*.osb);;");
 	if (!filename.isEmpty())
 	{
 		QDir dir = QDir(filename);
@@ -949,4 +1063,77 @@ void MainWindow::on_actionExportOpenSG_triggered(bool checked /*= false*/ )
 #else
 	QMessageBox::warning(this, "Functionality not implemented", "Sorry but this progam was not compiled with OpenSG support.");
 #endif
+}
+
+void MainWindow::createPresentationMenu()
+{
+	QMenu* menu = static_cast<QMenu*>(QObject::sender());
+	menu->clear();
+	if (!_vtkWidget->parent())
+	{
+		QAction* action = new QAction("Quit presentation mode", menu);
+		connect(action, SIGNAL(triggered()), this, SLOT(quitPresentationMode()));
+		action->setShortcutContext(Qt::WidgetShortcut);
+		action->setShortcut(QKeySequence(Qt::Key_Escape));
+		menu->addAction(action);
+	}
+	else
+	{
+		int count = 0;
+		const int currentScreen = QApplication::desktop()->screenNumber(visualizationWidget);
+		foreach (QRect screenGeo, _screenGeometries)
+		{
+			Q_UNUSED(screenGeo);
+			QAction* action = new QAction(QString("On screen %1").arg(count), menu);
+			connect( action, SIGNAL(triggered()), this, SLOT(startPresentationMode()) );
+			if (count == currentScreen)
+				action->setEnabled(false);
+			menu->addAction(action);
+			++count;
+		}
+	}
+}
+
+void MainWindow::startPresentationMode()
+{
+	// Save the QMainWindow state to restore when quitting presentation mode
+	_windowState = this->saveState();
+	
+	// Get the screen number from the QAction which sent the signal
+	QString actionText = static_cast<QAction*>(QObject::sender())->text();
+	int screen = actionText.split(" ").back().toInt();
+	
+	// Move the widget to the screen and maximize it
+	// Real fullscreen hides the menu
+	_vtkWidget->setParent(NULL, Qt::Window);
+	_vtkWidget->move(QPoint(_screenGeometries[screen].x(), _screenGeometries[screen].y()));
+	//_vtkWidget->showFullScreen();
+	_vtkWidget->showMaximized();
+
+	// Create an action which quits the presentation mode when pressing
+	// ESCAPE when the the window has focus
+	QAction* action = new QAction("Quit presentation mode", this);
+	connect(action, SIGNAL(triggered()), this, SLOT(quitPresentationMode()));
+	action->setShortcutContext(Qt::WidgetShortcut);
+	action->setShortcut(QKeySequence(Qt::Key_Escape));
+	_vtkWidget->addAction(action);
+
+	// Hide the central widget to maximize the dock widgets
+	QMainWindow::centralWidget()->hide();
+}
+
+void MainWindow::quitPresentationMode()
+{
+	// Remove the quit action
+	QAction* action = _vtkWidget->actions().back();
+	_vtkWidget->removeAction(action);
+	delete action;
+
+	// Add the widget back to visualization widget
+	visualizationWidget->layout()->addWidget(_vtkWidget);
+
+	QMainWindow::centralWidget()->show();
+
+	// Restore the previously saved QMainWindow state
+	this->restoreState(_windowState);
 }

@@ -14,6 +14,7 @@ int main(int argc, char *argv[])
 	QApplication a(argc, argv);
 	setlocale(LC_NUMERIC,"C");
 	MainWindow* w = new MainWindow();
+	w->setWindowTitle( w->windowTitle() + " - " + QString(OGS_VERSION) + " - FirstFloor");
 	w->show();
 	int returncode = a.exec();
 	delete w;

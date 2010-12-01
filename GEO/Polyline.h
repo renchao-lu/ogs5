@@ -11,6 +11,7 @@
 // Math
 #include "MathTools.h"
 
+#include "GeoObject.h"
 #include "Point.h"
 
 #include <vector>
@@ -18,13 +19,17 @@
 
 namespace GEOLIB {
 
-/** \brief Class Polyline consists mainly of a reference to a point vector and
+/**
+ * \ingroup GEOLIB
+ *
+ * \brief Class Polyline consists mainly of a reference to a point vector and
  * a vector that stores the indices in the point vector.
  * A polyline consists of at least one line segment. The polyline is specified by the points
  * of the line segments. The class Polyline stores the position of pointers to the points in the
  * m_ply_pnt_ids vector.
  * */
-class Polyline {
+class Polyline : public GeoObject
+{
 public:
 	/** constructor
 	 * \param pnt_vec a reference to the point vector
@@ -48,7 +53,7 @@ public:
 	 * returns the number of points,
 	 * the number of segments is about one smaller
 	 * */
-	size_t getSize() const;
+	size_t getNumberOfPoints() const;
 
 	/** returns true if the polyline is closed */
 	bool isClosed() const;
@@ -63,27 +68,42 @@ public:
 	 */
 	const Point* operator[](size_t i) const;
 
-	/** \brief access operator (see book Effektiv C++ programmieren - subsection 1.3.2 ).
-	 * \sa const Point& operator[] (size_t idx) const
-	 */
-//	Point* operator[](size_t i);
-
 	/**
-	 * \brief returns the coordinates of the i-th point contained in the polyline
+	 * \brief returns the i-th point contained in the polyline
 	 * */
 	const Point* getPoint(size_t i) const;
 
 	const std::vector<Point*> & getPointsVec () const;
+
+	/**
+	 * returns the length of the polyline until the k-th line segment, employed by
+	 * class CFEMesh for searching along the polyline
+	 * @param k the k-th line segment
+	 * @return the length of the polyline until the k-th line segment
+	 */
+	double getLength (size_t k) const;
+
+	/**
+	 * get the complete length vector
+	 * @return the length vector of the polyline
+	 */
+	const std::vector<double>& getLengthVec () const;
 
 protected:
 	/** a reference to the vector of pointers to the geometric points */
 	const std::vector<Point*> &_ply_pnts;
 	/** position of pointers to the geometric points */
 	std::vector<size_t> _ply_pnt_ids;
+	/**
+	 * the k-th element of the vector contains the length of the polyline until the k-th segment
+	 */
+	std::vector<double> _length;
 };
 
 /** overload the output operator for class Polyline */
 std::ostream& operator<< (std::ostream &os, const Polyline &pl);
+
+bool containsEdge (const Polyline& ply, size_t id0, size_t id1);
 
 } // end namespace
 

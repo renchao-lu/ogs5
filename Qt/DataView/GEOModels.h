@@ -37,7 +37,7 @@ public:
 	StationTreeModel* getStationModel() { return _stationModel; }
 
 public slots:
-	void addPointVec(std::vector<GEOLIB::Point*> *points, std::string &name, std::vector<std::string>* names = NULL);
+	void addPointVec(std::vector<GEOLIB::Point*> *points, std::string &name, std::map<std::string, size_t>* name_pnt_id_map = NULL);
 	bool appendPointVec(const std::vector<GEOLIB::Point*> &points, std::string &name);
 	bool removePointVec(const std::string &name);
 
@@ -45,10 +45,10 @@ public slots:
 	void filterStationVec(const std::string &name, const std::vector<PropertyBounds> &bounds);
 	bool removeStationVec(const std::string &name);
 
-	void addPolylineVec(std::vector<GEOLIB::Polyline*> *lines, const std::string &name, std::vector<std::string>* ply_names = NULL);
+	void addPolylineVec(std::vector<GEOLIB::Polyline*> *lines, const std::string &name, std::map<std::string,size_t>* ply_names = NULL);
 	bool removePolylineVec(const std::string &name);
 
-	void addSurfaceVec(std::vector<GEOLIB::Surface*> *surfaces, const std::string &name, std::vector<std::string>* sfc_names = NULL);
+	void addSurfaceVec(std::vector<GEOLIB::Surface*> *surfaces, const std::string &name, std::map<std::string,size_t>* sfc_names = NULL);
 	bool removeSurfaceVec(const std::string &name);
 
 protected:

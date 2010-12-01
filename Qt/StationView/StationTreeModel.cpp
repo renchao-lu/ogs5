@@ -89,7 +89,7 @@ GEOLIB::Station* StationTreeModel::stationFromIndex( const QModelIndex& index, Q
 	if (index.isValid())
 	{
 		ModelTreeItem* treeItem = static_cast<ModelTreeItem*>(index.internalPointer());
-		TreeItem* parentItem = treeItem->parent();
+		TreeItem* parentItem = treeItem->parentItem();
 		listName = parentItem->data(0).toString();
 		return treeItem->getStation();
 	}
@@ -126,7 +126,7 @@ void StationTreeModel::addStationList(QString listName, const std::vector<GEOLIB
 	grpName.push_back(QVariant(""));
 	grpName.push_back(QVariant(""));
 	grpName.push_back(QVariant(""));
-	BaseItem* grpItem = new BaseItem(stations);
+	BaseItem* grpItem = new BaseItem(listName, stations);
 	ModelTreeItem* group = new ModelTreeItem(grpName, _rootItem, grpItem);
 	_lists.push_back(group);
 	_rootItem->appendChild(group);

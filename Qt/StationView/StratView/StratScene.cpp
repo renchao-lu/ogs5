@@ -14,35 +14,38 @@
 #include "DateTools.h"
 
 
-StratScene::StratScene(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color> *stratColors, QObject* parent) : QGraphicsScene(parent)
+StratScene::StratScene(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color*> *stratColors, QObject* parent) : QGraphicsScene(parent)
 {
 	QRectF textBounds;
-	int stratBarOffset = 200;
+	int stratBarOffset = 250;
 
 	QFont font( "Arial" , 15, QFont::DemiBold, false);
 
 	QNonScalableGraphicsTextItem* boreholeTag = addNonScalableText("Borehole", font);
 	QNonScalableGraphicsTextItem* boreholeName = addNonScalableText("\"" + QString::fromStdString(station->getName()) + "\"", font);
 	textBounds = boreholeTag->boundingRect();
-	boreholeTag->setPos(50 + textBounds.width()/2, 60);
+	boreholeTag->setPos((textBounds.width()/2.0), 80);
 	textBounds = boreholeName->boundingRect();
-	boreholeName->setPos(50 + textBounds.width()/2, 140);
+	boreholeName->setPos((textBounds.width()/2.0), 200);
 
 	QNonScalableGraphicsTextItem* totalDepth = addNonScalableText("Depth: " + QString::number(station->getDepth()) + " m");
 	textBounds = totalDepth->boundingRect();
-	totalDepth->setPos(50 + textBounds.width()/2, 250);
-
-	QNonScalableGraphicsTextItem* dateText = addNonScalableText("Date: " + QString::fromStdString(date2String(station->getDate())));
+	totalDepth->setPos((textBounds.width()/2.0), 350);
+/*
+	QNonScalableGraphicsTextItem* dateText = addNonScalableText("Date: " + QString::fromStdString(date2string(station->getDate())));
 	textBounds = dateText->boundingRect();
-	dateText->setPos(50 + textBounds.width()/2, 350);
+	dateText->setPos(this->MARGIN + (textBounds.width()/2.0), 350);
+*/
+	QNonScalableGraphicsTextItem* dot = addNonScalableText(" ");
+	dot->setPos(0, 0);
 
 	StratBar* stratBar = addStratBar(station, stratColors);
 	stratBar->setPos(stratBarOffset, MARGIN);
 	QRectF stratBarBounds = stratBar->boundingRect();
 
 	addDepthLabels(station->getProfile(), stratBarOffset + stratBarBounds.width());
-	
-	if (station->getSoilNames().size()>0) 
+
+	if (station->getSoilNames().size()>0)
 		addSoilNameLabels(station->getSoilNames(), station->getProfile(), stratBarOffset + (stratBarBounds.width()/2));
 
 }
@@ -59,7 +62,7 @@ void StratScene::addDepthLabels(std::vector<GEOLIB::Point*> profile, double offs
 	depthText.push_back(addNonScalableText(QString::number((*(profile[0]))[2])));
 	textBounds = depthText[0]->boundingRect();
 	depthText[0]->setPos(offset + textBounds.width()/2, vertPos);
-	
+
 	for (size_t i=1; i<profile.size(); i++)
 	{
 		depthText.push_back(addNonScalableText(QString::number((*(profile[i]))[2])));
@@ -85,7 +88,7 @@ void StratScene::addSoilNameLabels(std::vector<std::string> soilNames, std::vect
 	soilText.push_back(addNonScalableText(QString::fromStdString(soilNames[0])));
 	//textBounds = soilText[0]->boundingRect();
 	soilText[0]->setPos(offset /* - textBounds.width() */, vertPos);
-	
+
 	for (size_t i=1; i<soilNames.size(); i++)
 	{
 		soilText.push_back(addNonScalableText(QString::fromStdString(soilNames[i])));
@@ -96,7 +99,7 @@ void StratScene::addSoilNameLabels(std::vector<std::string> soilNames, std::vect
 	}
 }
 
-StratBar* StratScene::addStratBar(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color> *stratColors)
+StratBar* StratScene::addStratBar(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color*> *stratColors)
 {
 	StratBar* b = new StratBar(station, stratColors);
 	addItem(b);

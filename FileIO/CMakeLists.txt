@@ -1,49 +1,52 @@
 # Source files
-set( SOURCES
+SET( SOURCES
 	GMSHInterface.cpp
 	GMSInterface.cpp
 	GocadInterface.cpp
 	OGSIOVer4.cpp
 	PetrelInterface.cpp	
 	StationIO.cpp
+	FEMIO/GeoIO.cpp
 )
 
 # Header files
-set( HEADERS
+SET( HEADERS
 	GMSHInterface.h
 	GMSInterface.h
 	GocadInterface.h
 	OGSIOVer4.h
 	PetrelInterface.h
 	StationIO.h
+	FEMIO/GeoIO.h
 )
 
-if (OGS_USE_NETCDF)
-	find_package( VTK REQUIRED )
+IF (OGS_USE_NETCDF)
+	FIND_PACKAGE( VTK REQUIRED )
 	INCLUDE( ${VTK_USE_FILE} )
-	set (HEADERS NetCDFInterface.h ${HEADERS})
-	set (SOURCES NetCDFInterface.cpp ${SOURCES})
-endif (OGS_USE_NETCDF)
+	SET (HEADERS NetCDFInterface.h ${HEADERS})
+	SET (SOURCES NetCDFInterface.cpp ${SOURCES})
+ENDIF (OGS_USE_NETCDF)
 
-if (Shapelib_FOUND)
-	set( HEADERS ${HEADERS} SHPInterface.h )
-	set (SOURCES ${SOURCES} SHPInterface.cpp )
-	include_directories (${Shapelib_INCLUDE_DIR})
-endif (Shapelib_FOUND)
+IF (Shapelib_FOUND)
+	SET( HEADERS ${HEADERS} SHPInterface.h )
+	SET (SOURCES ${SOURCES} SHPInterface.cpp )
+	INCLUDE_DIRECTORIES (${Shapelib_INCLUDE_DIR})
+ENDIF (Shapelib_FOUND)
 
-if (QT4_FOUND)
-	set( HEADERS ${HEADERS} XMLInterface.h )
-	set (SOURCES ${SOURCES} XMLInterface.cpp )
-endif (QT4_FOUND)
+IF (QT4_FOUND)
+	SET( HEADERS ${HEADERS} XMLInterface.h )
+	SET (SOURCES ${SOURCES} XMLInterface.cpp )
+ENDIF (QT4_FOUND)
 
 # Create the library
-add_library( FileIO STATIC
+ADD_LIBRARY( FileIO STATIC
 	${SOURCES}
 	${HEADERS}
 )
 
-include_directories(
+INCLUDE_DIRECTORIES(
 	.
+	./FEMIO
 	../Base
 	../FEM
 	../GEO
@@ -51,12 +54,18 @@ include_directories(
 	../MSH
 )
 
-target_link_libraries( FileIO
+TARGET_LINK_LIBRARIES( FileIO
 	Base
 	MathLib
 	GEO
 )
 
-if (Shapelib_FOUND)
-	target_link_libraries( FileIO ${Shapelib_LIBRARIES} )
-endif (Shapelib_FOUND)
+IF (Shapelib_FOUND)
+	TARGET_LINK_LIBRARIES( FileIO ${Shapelib_LIBRARIES} )
+ENDIF (Shapelib_FOUND)
+
+IF(OGS_PACKAGING)
+	# Install xml schema files
+	FILE (GLOB XML_SCHEMA_FILES . "*.xs?")
+	INSTALL (FILES ${XML_SCHEMA_FILES} DESTINATION bin)
+ENDIF(OGS_PACKAGING)

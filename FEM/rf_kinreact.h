@@ -155,7 +155,7 @@ public:
 	 */
 	bool Read(std::ifstream* in, const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name);
     void Write(std::ostream & out) const;
-    std::vector<size_t>& getBlobGeoID()
+    const std::vector<size_t>& getBlobGeoID()
     {
         return BlobGeoID;
     }

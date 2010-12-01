@@ -4,8 +4,10 @@
 #include <string>
 #include <vector>
 //#include "rf_out_new.h"
+#include "MSHEnums.h"
 
 class COutput;
+
 namespace Mesh_Group
 {
 class CFEMesh;
@@ -53,7 +55,7 @@ protected:
 
   //VTU
   void InitializeVTU();
-  unsigned char GetVTKCellType(const int ele_type);
+  unsigned char GetVTKCellType(const MshElemType::type ele_type);
   bool WriteDataArrayHeader(fstream &fin, VTK_XML_DATA_TYPE data_type, const string &str_name, int nr_components, const string &str_format, long offset=-1);
   bool WriteDataArrayFooter(fstream &fin);
   inline bool WriteMeshNodes(fstream &fin, bool output_data, CFEMesh *m_msh, long &offset);

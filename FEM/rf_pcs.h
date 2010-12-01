@@ -15,9 +15,9 @@ Programing:
 // MSHLib
 #include "msh_lib.h"
 // PCSLib
+#include "ProcessInfo.h"
 #include "rf_num_new.h"
 #include "rf_bc_new.h"
-//WW #include "rf_pcs.h" //Why this WW.
 #include "rf_tim_new.h"
 #include "rf_st_new.h"//CMCD 02_06
 // C++ STL
@@ -106,7 +106,7 @@ last modification:
 /**
  * class manages the physical processes
  */
-class CRFProcess {
+class CRFProcess : public ProcessInfo {
   //----------------------------------------------------------------------
   // Properties
   private:
@@ -138,10 +138,13 @@ class CRFProcess {
     long orig_size; // Size of source term nodes
     // ELE
     std::vector<FiniteElement::ElementMatrix*> Ele_Matrices;
-    // Storage type for all element matrices and vectors
-    // Case:
-    // 0. Do not keep them in the memory
-    // 1. Keep them to vector Ele_Matrices
+
+    /**
+     * Storage type for all element matrices and vectors
+     * Cases:
+     * 0. Do not keep them in the memory
+     * 1. Keep them to vector Ele_Matrices
+     */
     int Memory_Type;
     //....................................................................
     int additioanl2ndvar_print; //WW
@@ -169,7 +172,7 @@ public:
 #ifdef USE_MPI //WW
     clock_t cpu_time_assembly;
 #endif
-    // Position of unkowns from different DOFs in the system equation
+    // Position of unknowns from different DOFs in the system equation
     //....................................................................
     // OUT
     // Write indices of the nodes with boundary conditons
@@ -208,7 +211,6 @@ public:
 	   * @return
 	   */
 	  const Problem* getProblemObjectPointer () const;
-
 	  string geo_type; //OK
 	  string geo_type_name; //OK
 	//....................................................................
@@ -243,7 +245,7 @@ public:
     // 8-MSP
     //....................................................................
     // 9-MMP
-    int GetContinnumType() {return continuum;}
+    int GetContinnumType() const {return continuum;}
     // const int number_continuum=1;
     vector<double> continuum_vector;
     //....................................................................
@@ -326,11 +328,14 @@ public:
     char pcs_name[MAX_ZEILE]; //string pcs_name;
     int pcs_number;
     int mobile_nodes_flag;
-    string pcs_type_name;
-    int pcs_type_number;
-    vector<string> pcs_type_name_vector;
-    int type;
-    int GetObjType() {return type;}
+
+  private:
+	  std::vector<string> pcs_type_name_vector;
+
+  public:
+	  int pcs_type_number;
+	  int type;
+    int GetObjType() const {return type;}
     int pcs_component_number; //SB: counter for transport components
 		int ML_Cap;	// 23.01 2009 PCH
     int PartialPS; // 16.02 2009 PCH
@@ -341,13 +346,13 @@ public:
     PCS_NVAL_DATA *pcs_nval_data; ///OK
     int number_of_nvals;
     int pcs_number_of_primary_nvals;
-    int GetPrimaryVNumber() const {return pcs_number_of_primary_nvals;}
+    size_t GetPrimaryVNumber() const {return static_cast<size_t>(pcs_number_of_primary_nvals);}
 	const char *pcs_primary_function_unit[4];
 	const char *pcs_primary_function_name[4];
 	const char* GetPrimaryVName(const int index) const {return pcs_primary_function_name[index];}
     string primary_variable_name; //OK
     int pcs_number_of_secondary_nvals;
-    int GetSecondaryVNumber() const {return pcs_number_of_secondary_nvals;}
+    size_t GetSecondaryVNumber() const {return static_cast<size_t> (pcs_number_of_secondary_nvals);}
 	const char *pcs_secondary_function_name[PCS_NUMBER_MAX];
 	const char* GetSecondaryVName(const int index) const {return pcs_secondary_function_name[index];}
 	const char *pcs_secondary_function_unit[PCS_NUMBER_MAX];
@@ -393,8 +398,12 @@ public:
     double GetNodeValue(long,int); //OK
     int GetNodeValueIndex(const string&); //OK
     //-----------------------------
+
+    std::vector<std::string> const& getElementValueNameVector () { return ele_val_name_vector; }
+private:
+	std::vector<std::string> ele_val_name_vector; //PCH
+public:
     vector<double*> ele_val_vector; //PCH
-    vector<string> ele_val_name_vector; //PCH
     void SetElementValue(long,int,double); //PCH
     double GetElementValue(long,int); //PCH
     int GetElementValueIndex(const string&); //PCH
@@ -479,7 +488,7 @@ public:
     //WW void CheckSTGroup(); //OK
 #ifdef GEM_REACT
     void IncorporateSourceTerms_GEMS(void);//HS: dC/dt from GEMS chemical solver.
-    int GetRestartFlag(){return reload;}
+    int GetRestartFlag() const {return reload;}
 #endif
     // BC
     void IncorporateBoundaryConditions(const int rank=-1);
@@ -517,11 +526,11 @@ public:
     double *TempArry; //MX
     void PCSOutputNODValues(void);
     void PCSSetTempArry(void);  //MX
-    double GetTempArryVal(int index)  {return TempArry[index];} //MX
+    double GetTempArryVal(int index) const {return TempArry[index];} //MX
     void LOPCopySwellingStrain(CRFProcess *m_pcs);
     VoidFuncInt PCSSetIC_USER;
     void SetIC();
-    void CalcSecondaryVariables(const bool initial = false); // Remove argument. WW
+    void CalcSecondaryVariables(bool initial = false); // Remove argument. WW
     void MMPCalcSecondaryVariablesRichards(int timelevel, bool update);
     //WW Reomve int timelevel, bool update
     void CalcSecondaryVariablesUnsaturatedFlow(bool initial = false); //WW
@@ -542,6 +551,7 @@ public:
     // FLX
     void CalcELEFluxes(CGLPoint*); //OK
     double CalcELEFluxes(CGLPolyline*); //OK
+    double CalcELEFluxes(const GEOLIB::Polyline* ply);
     // NEW
     CRFProcess* CopyPCStoDM_PCS();
     bool OBJRelations(); //OK
@@ -564,12 +574,18 @@ public:
     void Delete(); //OK
     bool m_bCheck; //OK
 #ifdef USE_MPI //WW
-    void Print_CPU_time_byAssembly(ostream &os=cout)
+    void Print_CPU_time_byAssembly(ostream &os=cout) const
       {   os<<"\n***\nCPU time elapsed in the linear equation of "<<pcs_type_name<<"\n";
           os<<"--Global assembly: "<<(double)cpu_time_assembly/CLOCKS_PER_SEC<<"\n";
       }
 #endif
-
+private:
+	/**
+	 * Method configures the material parameters. For this purpose it searchs in all
+	 * COutput objects (in the vector _nod_value_vector) for the values
+	 * PERMEABILITY_X1 and POROSITY
+	 */
+	void configMaterialParameters ();
 };
 
 //========================================================================
@@ -580,13 +596,32 @@ extern bool PCSRead(string);
 extern void PCSWrite(string);
 extern void RelocateDeformationProcess(CRFProcess *m_pcs);
 extern void PCSDestroyAllProcesses(void);
-extern CRFProcess* PCSGet(const string&);
+
+extern CRFProcess* PCSGet(const std::string&);
+/**
+ * Function searchs in the global pcs_vector for a process with the process type pcs_type.
+ * @param pcs_type process type
+ * @return a pointer the the appropriate process or NULL (if not found)
+ */
+CRFProcess* PCSGet (ProcessType pcs_type); // TF
+
 extern CRFProcess* PCSGetNew(const string&,const string&);
 extern void PCSDelete();
-extern void PCSDelete(string);
+extern void PCSDelete(const std::string&);
 extern void PCSCreate();
 extern int PCSGetPCSIndex(const string&,const string&); //SB
 extern CRFProcess *PCSGet(const string&,const string&); //SB
+
+/**
+ * Function searchs in the global pcs_vector for a process
+ * with the process type pcs_type and the primary function name
+ * pv_name
+ * @param pcs_type the process type
+ * @param pv_name the name of the primary function
+ * @return
+ */
+CRFProcess* PCSGet(ProcessType pcs_type, const std::string &pv_name); // TF
+
 extern CRFProcess *PCSGet(const string&,bool); //OK
 extern CRFProcess *PCSGetFluxProcess();//CMCD
 extern CRFProcess *PCSGetFlow(); //OK

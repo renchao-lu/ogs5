@@ -16,11 +16,11 @@
 #include <QRadioButton>
 
 
-SHPImportDialog::SHPImportDialog(std::string filename, GEOModels* geoModels, QDialog* parent) : QDialog(parent), _filename(filename), _fileType(0)
+SHPImportDialog::SHPImportDialog(std::string filename, GEOModels* geoModels, QDialog* parent) 
+: QDialog(parent), _buttonBox(NULL), _layout(NULL), _shpContentLabel(NULL), _nameLabel(NULL),
+_listName(new QLineEdit()), _choice1(NULL), _choice2(NULL), _filename(filename), _fileType(0), 
+_shpInterface(new SHPInterface(geoModels))
 {
-	_listName = new QLineEdit();
-	_shpInterface = new SHPInterface(geoModels);
-
 	setupDialog();
 	show();
 }
@@ -101,7 +101,9 @@ void SHPImportDialog::setupDialog()
 		setLayout(_layout);
 	}
 	else
+	{
 		OGSError::box("Error reading shapefile!");
+	}
 }
 
 void SHPImportDialog::accept()

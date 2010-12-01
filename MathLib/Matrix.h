@@ -16,7 +16,7 @@
 #include <iostream>
 
 namespace MATHLIB {
-	
+
 
 /**
  * Matrix represents a dense matrix for a numeric data type.
@@ -214,7 +214,7 @@ template<class T> Matrix<T>* Matrix<T>::getSubMatrix(
 		size_t b_row, size_t b_col,
 		size_t e_row, size_t e_col) const throw (std::range_error)
 {
-	if (b_row <= e_row | b_col <= e_col)
+	if (b_row >= e_row | b_col >= e_col)
 		throw std::range_error ("Matrix::getSubMatrix() illegal sub matrix");
 	if (e_row > nrows | e_col > ncols)
 		throw std::range_error ("Matrix::getSubMatrix() illegal sub matrix");
@@ -231,7 +231,7 @@ template<class T> Matrix<T>* Matrix<T>::getSubMatrix(
 template<class T> void Matrix<T>::setSubMatrix(
 		size_t b_row, size_t b_col, const Matrix<T>& sub_mat) throw (std::range_error)
 {
-	if (b_row + sub_mat.getNRows() <= nrows | b_col + sub_mat.getNCols() <= ncols)
+	if (b_row + sub_mat.getNRows() > nrows | b_col + sub_mat.getNCols() > ncols)
 		throw std::range_error ("Matrix::setSubMatrix() sub matrix to big");
 
 	for (size_t i=0; i<sub_mat.getNRows(); i++) {

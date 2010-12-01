@@ -13,7 +13,7 @@
 
 #include "VtkPointsSource.h"
 
-PntsModel::PntsModel( QString name, std::vector<GEOLIB::Point*>* pntVec, QObject* parent /*= 0*/ )
+PntsModel::PntsModel( QString name, const GEOLIB::PointVec* pntVec, QObject* parent /*= 0*/ )
 : Model(name, parent), _pntVec(pntVec)
 {
 	QList<QVariant> rootData;
@@ -23,7 +23,9 @@ PntsModel::PntsModel( QString name, std::vector<GEOLIB::Point*>* pntVec, QObject
 	setData(pntVec, _rootItem);
 
 	_vtkSource = VtkPointsSource::New();
-	static_cast<VtkPointsSource*>(_vtkSource)->setPoints(pntVec);
+	VtkPointsSource* pntsSource = static_cast<VtkPointsSource*>(_vtkSource);
+	pntsSource->SetName(name);
+	pntsSource->setPoints(pntVec->getVector());
 }
 
 PntsModel::~PntsModel()
@@ -46,7 +48,7 @@ QVariant PntsModel::data( const QModelIndex& index, int role ) const
 	if ((size_t)index.row() >= _pntVec->size())
 		return QVariant();
 
-	GEOLIB::Point* point = (*_pntVec)[index.row()];
+	GEOLIB::Point* point = (*_pntVec->getVector())[index.row()];
 	if (point == NULL)
 		return QVariant();
 
@@ -100,8 +102,10 @@ QVariant PntsModel::headerData( int section, Qt::Orientation orientation, int ro
 		return QString("Row %1").arg(section);
 }
 
-void PntsModel::setData(std::vector<GEOLIB::Point*> *points, TreeItem* parent)
+void PntsModel::setData(const GEOLIB::PointVec* pntVec, TreeItem* parent)
 {
+	const std::vector<GEOLIB::Point*> *points = pntVec->getVector();
+
 	int nPoints = static_cast<int>(points->size());
 	for (int j=0; j<nPoints; j++)
 	{
@@ -114,12 +118,13 @@ void PntsModel::setData(std::vector<GEOLIB::Point*> *points, TreeItem* parent)
 	reset();
 }
 
+
 bool PntsModel::setData( const QModelIndex& index, const QVariant& value, int role /*= Qt::EditRole*/ )
 {
 
 	if (index.isValid() && role == Qt::EditRole)
 	{
-		GEOLIB::Point* point = (*_pntVec)[index.row()];
+		GEOLIB::Point* point = (*_pntVec->getVector())[index.row()];
 		bool wasConversionSuccesfull = false;
 		double x, y, z;
 		switch (index.column())
@@ -167,33 +172,4 @@ void PntsModel::updateData()
 {
 	clearData();
 	Model::updateData();
-}
-
-QModelIndex PntsModel::indexFromPoint( const GEOLIB::Point* pnt ) const
-{
-	if (pnt != NULL)
-	{
-		for (int i = 0; i < rowCount(); ++i)
-		{
-			if (pnt == (*_pntVec)[i])
-				return index(i, 0);
-		}
-	}
-	return QModelIndex();
-}
-
-void PntsModel::item2dChanged( GEOLIB::Point* point )
-{
-	QModelIndex itemIndex = indexFromPoint(point);
-	QModelIndex indexEnd = index(itemIndex.row(), columnCount());
-	emit dataChanged(itemIndex, indexEnd);
-}
-
-bool PntsModel::removeRows( int row, int count, const QModelIndex & parent /*= QModelIndex() */ )
-{
-	//for (int i = count; i > 0; i--)
-	//	_pntVec->erase(_pntVec->begin() + row + i - 1);
-	// TODO send signal
-
-	return Model::removeRows(row, count, parent);
 }

@@ -112,7 +112,6 @@ void CURWrite(); //OK
 /**************************************************************************/
 int ReadData ( char *dateiname, GEOLIB::GEOObjects& geo_obj, std::string& unique_name )
 {
-  bool MSH = false;
 #if defined(USE_MPI) //WW
   if(myrank==0)
   {
@@ -167,10 +166,13 @@ int ReadData ( char *dateiname, GEOLIB::GEOObjects& geo_obj, std::string& unique
   CHMRead(dateiname); //MX for CHEMAPP
 #endif
   NUMRead(dateiname);
-  if(FEMRead(dateiname)) //OK4108//WW4107
+
+  FEMDeleteAll(); // KR moved from FEMRead()
+  CFEMesh* msh = FEMRead(dateiname, &geo_obj, &unique_name);
+  if (msh) //KR
   {
+	 fem_msh_vector.push_back(msh);
      CompleteMesh(); //WW
-     MSH = true;
   }
 //SBOK4209 MSHWrite(dateiname);
   // PCTRead is bounded by msh
@@ -185,7 +187,7 @@ int ReadData ( char *dateiname, GEOLIB::GEOObjects& geo_obj, std::string& unique
 
   msgdat = (char *)Free(msgdat);
 
-  if(MSH) return 100;
+  if (msh) return 100;
 
   return 1;
 }

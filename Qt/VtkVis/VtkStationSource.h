@@ -26,9 +26,9 @@ public:
 
 	vtkTypeRevisionMacro(VtkStationSource,vtkPolyDataAlgorithm);
 
-	/// Returns the colour lookup table generated for boreholes. 
+	/// Returns the colour lookup table generated for boreholes.
 	/// This method should only be called after the colour lookup table has actually been build (via RequestData() or setColorLookupTable()).
-	const std::map<std::string, GEOLIB::Color>& getColorLookupTable() const { return _colorLookupTable; };
+	const std::map<std::string, GEOLIB::Color*>& getColorLookupTable() const { return _colorLookupTable; };
 
 	/// Sets a predefined color lookup table for the colouring of borehole stratigraphies
 	int setColorLookupTable(const std::string &filename) { return readColorLookupTable(_colorLookupTable, filename); };
@@ -39,9 +39,11 @@ public:
 	/// Prints its data on a stream.
 	void PrintSelf(ostream& os, vtkIndent indent);
 
+	virtual void SetUserProperty(QString name, QVariant value);
+
 protected:
 	VtkStationSource();
-	~VtkStationSource() {};
+	~VtkStationSource();
 
 	/// Computes the polygonal data object.
 	int RequestData(vtkInformation* request, vtkInformationVector** inputVector, vtkInformationVector* outputVector);
@@ -50,10 +52,10 @@ protected:
 
 	/// The stations to visualize
 	const std::vector<GEOLIB::Point*> *_stations;
-	
-	/// The colour table for stratigraphic data. This table is either set using the setStratColors() method or is generated 
+
+	/// The colour table for stratigraphic data. This table is either set using the setColorLookupTable() method or is generated
 	/// automatically with random colours while creating the VtkStationSource-object.
-	std::map<std::string, GEOLIB::Color> _colorLookupTable;
+	std::map<std::string, GEOLIB::Color*> _colorLookupTable;
 
 private:
 

@@ -112,18 +112,17 @@ void SHPInterface::readPolylines(const SHPHandle &hSHP, int numberOfElements, st
 
 				// check if point already exists
 				cnpoints = points->size();
-				for (size_t k=0; k<cnpoints; k++)
-				{
-					if ( (j>0) && (fabs((*pnt)[0]-(*((*points)[k]))[0]) < eps
+
+				for (size_t k=0; k<cnpoints; k++) {
+					// TF
+					if ( /*(j>0) &&*/ (fabs((*pnt)[0]-(*((*points)[k]))[0]) < eps
 							   &&  fabs((*pnt)[1]-(*((*points)[k]))[1]) < eps
-							   &&  fabs((*pnt)[2]-(*((*points)[k]))[2]) < eps))
-					{
+							   &&  fabs((*pnt)[2]-(*((*points)[k]))[2]) < eps)) {
 						nextIdx=k;
 						k=cnpoints;
 					}
 				}
-				if (nextIdx<0)
-				{
+				if (nextIdx<0) {
 					points->push_back(pnt);
 					nextIdx = points->size() - 1;
 				}
@@ -157,14 +156,14 @@ void SHPInterface::readPolygons(const SHPHandle &hSHP, int numberOfElements, std
 	for (std::vector<GEOLIB::Polyline*>::const_iterator poly_it (polylines->begin());
 		poly_it != polylines->end(); poly_it++) {
 
-		std::cout << "triangulation of Polygon with " << (*poly_it)->getSize() << " points ... " << std::flush;
+		std::cout << "triangulation of Polygon with " << (*poly_it)->getNumberOfPoints() << " points ... " << std::flush;
 
-		if ((*poly_it)->getSize() > 2) {
+		if ((*poly_it)->getNumberOfPoints() > 2) {
 			if (MATHLIB::getOrientation ((*(*poly_it))[0], (*(*poly_it))[1], (*(*poly_it))[2]) == MATHLIB::CCW) {
 				// create empty surface
 				GEOLIB::Surface *sfc(new GEOLIB::Surface(*pnt_vec));
 
-				std::cout << "triangulation of Polygon with " << (*poly_it)->getSize() << " points ... " << std::flush;
+				std::cout << "triangulation of Polygon with " << (*poly_it)->getNumberOfPoints() << " points ... " << std::flush;
 				std::list<GEOLIB::Triangle> triangles;
 				MATHLIB::earClippingTriangulationOfPolygon(*poly_it, triangles);
 				std::cout << "done - " << triangles.size () << " triangles " << std::endl;

@@ -7,7 +7,6 @@ last modified
 02/2005 MB node parameter....
 **************************************************************************/
 #ifndef rf_node_INC
-
 #define rf_node_INC
 
 // C++ STL
@@ -16,20 +15,25 @@ last modified
 #include <fstream>
 #include <string>
 #include <vector>
-using namespace std;
 
-//========================================================================
+// FEM
+#include "FEMEnums.h"
+
 class CNodeValue
 {
   public:
 	CNodeValue(void);
     ~CNodeValue(void);
+
+    void setProcessDistributionType (DistributionType distype) { _node_distype = distype; }
+    DistributionType getProcessDistributionType () const { return _node_distype; }
  //
     long geo_node_number;
     long msh_node_number;
     double node_value;
     double node_area;
-    int node_distype;
+
+//    int node_distype;
     double node_parameterA;
     double node_parameterB;
     double node_parameterC;
@@ -37,28 +41,17 @@ class CNodeValue
     double node_parameterE;
     int CurveIndex;
     int conditional;
-    //vector<double>history_value;
+    //std::vector<double>history_value;
     long msh_node_number_conditional;
-	vector<long> msh_node_numbers_averaging;  // JOD   st-coupling 4.7.10
-	vector<double> msh_node_weights_averaging; // JOD       
-    string tim_type_name;
-    void Write(ostream& os=cout) const; //WW
-    void Read(istream& is=cin); //WW
+	std::vector<long> msh_node_numbers_averaging;  // JOD   st-coupling 4.7.10
+	std::vector<double> msh_node_weights_averaging; // JOD
+	std::string tim_type_name;
+    void Write(std::ostream& os=std::cout) const; //WW
+    void Read(std::istream& is=std::cin); //WW
     bool check_me; //OK
+
+  private:
+	  DistributionType _node_distype;
 };
 
-//========================================================================
-/* // Commented by WW
-class CNodeValueGroup
-{
-  private:
-  public:
-    string pcs_name;
-    vector<CNodeValue*>group_vector;
-	//CNodeValueGroup(void);
-    //~CNodeValueGroup(void);
-    void Set(string);
-    CNodeValueGroup* Get(string);
-};
-*/
 #endif

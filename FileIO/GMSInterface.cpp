@@ -6,6 +6,7 @@
 
 #include <fstream>
 #include "GMSInterface.h"
+#include "MSHEnums.h"
 #include "StringTools.h"
 
 int GMSInterface::readBoreholesFromGMS(std::vector<GEOLIB::Point*> *boreholes, const std::string &filename)
@@ -193,7 +194,7 @@ std::vector<std::string> GMSInterface::readSoilIDfromFile(const std::string &fil
 }
 
 
-CFEMesh* GMSInterface::readGMS3DMMesh(std::string filename)
+Mesh_Group::CFEMesh* GMSInterface::readGMS3DMMesh(std::string filename)
 {
 	std::string buffer("");
 
@@ -211,34 +212,34 @@ CFEMesh* GMSInterface::readGMS3DMMesh(std::string filename)
 		std::cout << "GMSInterface::readGMS3DMMesh() - Could not read expected file header..." << std::endl;
 		return NULL;
 	}
-	
-	std::cout << "Read GMS-3DM data...";
-	CFEMesh* mesh = new CFEMesh();
 
-	while (!in.eof()) 
-	{  
+	std::cout << "Read GMS-3DM data...";
+	Mesh_Group::CFEMesh* mesh (new Mesh_Group::CFEMesh());
+
+	while (!in.eof())
+	{
 		Mesh_Group::CElem* elem = new Mesh_Group::CElem();
 		std::string element_id("");
 		in >> element_id;
 
 		if (element_id.compare("E6W") == 0)
 		{
-			elem->SetElementType(6); 
+			elem->SetElementType(MshElemType::PRISM);
 			elem->Read(in, 8);
 			mesh->ele_vector.push_back(elem);
-		}     
+		}
 		else if (element_id.compare("E4T") == 0)
 		{
-			elem->SetElementType(5); 
+			elem->SetElementType(MshElemType::TETRAHEDRON);
 			elem->Read(in, 8);
 			mesh->ele_vector.push_back(elem);
 
-		}  
+		}
 		else if (element_id.compare("E4P") == 0)
 		{
 			int i(0);
 			long node_index[5];
-			elem->SetElementType(5); 
+			elem->SetElementType(MshElemType::TETRAHEDRON);
 			elem->Read(in, 8);
 			mesh->ele_vector.push_back(elem);
 			for (size_t j=0; j<4; j++)
@@ -267,10 +268,10 @@ CFEMesh* GMSInterface::readGMS3DMMesh(std::string filename)
 			in >> i;
 			Mesh_Group::CNode* node = new Mesh_Group::CNode(i-1);
 			in >> xyz[0] >> xyz[1] >> xyz[2] >> ws;
-			node->SetCoordinates(xyz);     
+			node->SetCoordinates(xyz);
 			mesh->nod_vector.push_back(node);
 		}
-		else // default
+		else //default
 		{
 			std::cout << std::endl << "GMSInterface::readGMS3DMMesh() - Unknown identifier ..." << std::endl;
 			return NULL;
@@ -280,6 +281,7 @@ CFEMesh* GMSInterface::readGMS3DMMesh(std::string filename)
 	in.close();
 
 	mesh->ConstructGrid();
+	mesh->FillTransformMatrix();
 
 	std::cout << "finished" << std::endl;
 

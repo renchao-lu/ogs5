@@ -1,6 +1,6 @@
 /**************************************************************************
 FEMLib - Object: NUM
-Task: 
+Task:
 Programing:
 11/2004 OK Implementation
 last modified:
@@ -16,9 +16,9 @@ last modified:
 #ifdef USE_MPI //WW
 #include "mpi.h"
 #include "par_ddc.h"
-//#undef SEEK_SET 
-//#undef SEEK_END 
-//#undef SEEK_CUR 
+//#undef SEEK_SET
+//#undef SEEK_END
+//#undef SEEK_CUR
 #endif
 
 #include "makros.h"
@@ -43,12 +43,12 @@ extern ios::pos_type GetNextSubKeyword(ifstream* file,string* line, bool* keywor
 #include "rf_pcs.h"
 // GeoSys-MSHLib
 
-extern int max_dim;  //OK411 todo
+extern size_t max_dim;  //OK411 todo
 
 //==========================================================================
 vector<CNumerics*>num_vector;
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: constructor
 Programing:
 11/2004 OK Implementation
@@ -76,7 +76,7 @@ CNumerics::CNumerics(string name)
   nls_error_tolerance_local = 1.0e-10; //For element level
   nls_relaxation = 0.0;
   // cpl WW
-  cpl_iterations = 1; //OK  
+  cpl_iterations = 1; //OK
   cpl_tolerance = 1.0e-3;
   cpl_variable = "FLUX";
   // ELE
@@ -116,18 +116,18 @@ CNumerics::CNumerics(string name)
   //
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: deconstructor
 Programing:
 11/2004 OK Implementation
 **************************************************************************/
-CNumerics::~CNumerics(void) 
+CNumerics::~CNumerics(void)
 {
   if(DynamicDamping) delete DynamicDamping;
   DynamicDamping = NULL;
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: OBJ read function
 Programing:
 11/2004 OK Implementation
@@ -135,7 +135,7 @@ Programing:
 bool NUMRead(string file_base_name)
 {
   //----------------------------------------------------------------------
-//OK  NUMDelete();  
+//OK  NUMDelete();
   //----------------------------------------------------------------------
   CNumerics *m_num = NULL;
   char line[MAX_ZEILE];
@@ -146,7 +146,7 @@ bool NUMRead(string file_base_name)
   // File handling
   string num_file_name = file_base_name + NUM_FILE_EXTENSION;
   ifstream num_file (num_file_name.data(),ios::in);
-  if (!num_file.good()) 
+  if (!num_file.good())
     return false;
   num_file.seekg(0L,ios::beg);
   //========================================================================
@@ -168,8 +168,8 @@ bool NUMRead(string file_base_name)
   return true;
 }
 /**************************************************************************
-FEMLib-Method: 
-Task: 
+FEMLib-Method:
+Task:
 Programing:
 05/2005 WW Implementation
 **************************************************************************/
@@ -178,10 +178,10 @@ bool CNumerics::CheckDynamic()
    if(DynamicDamping)
      return true;
    else
-     return false;     
+     return false;
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: OBJ read function
 Programing:
 11/2004 OK Implementation
@@ -195,13 +195,13 @@ ios::pos_type CNumerics::Read(ifstream *num_file)
   ios::pos_type position_subkeyword;
   std::stringstream line;
   //========================================================================
-  // Schleife ueber alle Phasen bzw. Komponenten 
+  // Schleife ueber alle Phasen bzw. Komponenten
   while(!new_keyword) {
     if(new_subkeyword)
       num_file->seekg(position,ios::beg);
     new_subkeyword = false;
     position = GetNextSubKeyword(num_file,&line_string,&new_keyword);
-    if(new_keyword) 
+    if(new_keyword)
       return position;
     //....................................................................
     if(line_string.find("$PCS_TYPE")!=string::npos) { // subkeyword found
@@ -226,7 +226,7 @@ ios::pos_type CNumerics::Read(ifstream *num_file)
       line >> nls_error_tolerance;
       if(nls_method_name.find("NEWTON")!=string::npos)
         line>>nls_error_tolerance_local;
-      nls_method = 1;  
+      nls_method = 1;
       line >> nls_max_iterations;
       line >> nls_relaxation;
       line.clear();
@@ -355,7 +355,7 @@ void NUMWrite(string base_file_name)
   num_file.close();
 }
 /**************************************************************************
-FEMLib-Method: 
+FEMLib-Method:
 Task: write function
 Programing:
 11/2004 OK Implementation
@@ -417,32 +417,32 @@ void CNumerics::Write(fstream* num_file)
 #ifndef NEW_EQS //WW. 06.11.2008
 /**************************************************************************
  ROCKFLOW - Funktion: NormOfUnkonwn
-                                                                         
+
  Aufgabe:
    Compute the norm of RHS of a linear equation
-                                                                         
+
  Formalparameter: (E: Eingabe; R: Rueckgabe; X: Beides)
-   E: LINEAR_SOLVER * ls: linear solver 
-                                                                         
+   E: LINEAR_SOLVER * ls: linear solver
+
  Ergebnis:
    - double - Eucleadian Norm
-                                                                         
+
  Programmaenderungen:
    12/2002   WW   Erste Version
-                                                                         
+
 **************************************************************************/
 double CalcNormOfRHS(LINEAR_SOLVER*ls)
 {
     int i, j;
     int unknown_vector_dimension;
     long number_of_nodes;
-    double NormW = 0.0;  
-    
+    double NormW = 0.0;
+
     if (!ls) {printf(" \n Warning: solver not defined, exit from loop_ww.cc"); exit(1);}
     /* Ergebnisse eintragen */
     unknown_vector_dimension = GetUnknownVectorDimensionLinearSolver(ls);
     for (i = 0; i < unknown_vector_dimension; i++)
-    {   
+    {
         number_of_nodes=ls->unknown_node_numbers[i];
         for(j=0; j<number_of_nodes; j++)
           NormW += ls->b[number_of_nodes*i+j]*ls->b[number_of_nodes*i+j];
@@ -602,7 +602,7 @@ LINEAR_SOLVER *DestroyLinearSolver(LINEAR_SOLVER * ls)
         MXSetMatrixPointer(ls->matrix);
         ls->matrix = MXDestroyMatrix();
     }
-    /* Multiple unknowns (Dim) / multiple solvers (MultSolvers) */    
+    /* Multiple unknowns (Dim) / multiple solvers (MultSolvers) */
     if (ls->name_ls)
         ls->name_ls = (char *) Free(ls->name_ls);
 
@@ -707,7 +707,7 @@ LINEAR_SOLVER *InitLinearSolver(LINEAR_SOLVER * ls)
 /////////////////////////////////////////////////////////////////////
 /**************************************************************************
 FEMLib-Method:
-Task: 
+Task:
       Based on LINEAR_SOLVER *InitLinearSolver(LINEAR_SOLVER * ls)
 07/2006 WW
 last modified:
@@ -795,7 +795,7 @@ void ConfigSolverProperties(void)
  Programmaenderungen:
    02/1999     AH         Erste Version
    08/1999     AH         Erweiterung memory  (neq)
-09/2004      Remove BC/Sink incoorperation    
+09/2004      Remove BC/Sink incoorperation
 *************************************************************************/
 void SetLinearSolverType(LINEAR_SOLVER* ls ,CNumerics *m_num) //WW
 {
@@ -810,7 +810,7 @@ void SetLinearSolverType(LINEAR_SOLVER* ls ,CNumerics *m_num) //WW
     ls->lsp = lsp;
     ls->store = get_lsp_store(ls->lsp);
   }
-  // Entwickler-Eigenschaften 
+  // Entwickler-Eigenschaften
   if (ls->lsp_name && !ls->lsp) {
     sprintf(string, "DEFAULT_");
     strcat(string, ls->lsp_name);
@@ -820,7 +820,7 @@ void SetLinearSolverType(LINEAR_SOLVER* ls ,CNumerics *m_num) //WW
       ls->store = get_lsp_store(ls->lsp);
     }
   }
-  // Master Default-Eigenschaften 
+  // Master Default-Eigenschaften
   if (!ls->lsp) {
     ls->lsp = GetLinearSolverProperties(MASTER_DEFAULT_LINEAR_SOLVER_PROPERTIES);
     if (ls->lsp) {
@@ -877,7 +877,7 @@ LINEAR_SOLVER *InitializeLinearSolver(LINEAR_SOLVER* ls ,CNumerics *m_num)
     SetLinearSolverType(ls,m_num);
 #ifdef USE_MPI //WW
     InitVectorLinearSolver(ls);
-#else  
+#else
     InitLinearSolver(ls);
 #endif
     /* Internen Speicher allokieren */
@@ -1028,7 +1028,7 @@ LINEAR_SOLVER *CreateLinearSolver(long store, long dim)
     ls->system_time_name = NULL;
     ls->system_time_assemble_function_name = NULL;
 
-    /* Multiple unknowns (Dim) / multiple solvers (MultSolvers) */    
+    /* Multiple unknowns (Dim) / multiple solvers (MultSolvers) */
     ls->name_group_ls = NULL;
     ls->name_ls = NULL;
     ls->number_ls = -1;
@@ -1055,7 +1055,7 @@ LINEAR_SOLVER *CreateLinearSolver(long store, long dim)
    10/1999     AH         Systemzeit
    05/2000     OK         Erweiterung fuer vektorielle Groessen
    08/2000     MK         CreateLinearSolver->CreateLinearSolverDim
-   04/2003     MK         wird durch CreateLinearSolver wieder abgeloest            
+   04/2003     MK         wird durch CreateLinearSolver wieder abgeloest
 *************************************************************************/
 LINEAR_SOLVER *CreateLinearSolverDim(long store, int unknown_vector_dimension, long dim)
 {
@@ -1086,7 +1086,7 @@ LINEAR_SOLVER *CreateLinearSolverDim(long store, int unknown_vector_dimension, l
     ls->bc_name2 = NULL;
     ls->bc_name3 = NULL;
     ls->boundary_conditions_function = NULL;
-    // SS 
+    // SS
     ls->sousin_name1 = NULL;
     ls->sousin_name2 = NULL;
     ls->sousin_name3 = NULL;
@@ -1109,7 +1109,7 @@ LINEAR_SOLVER *CreateLinearSolverDim(long store, int unknown_vector_dimension, l
     ls->system_time_name = NULL;
     ls->system_time_assemble_function_name = NULL;
 
-    /* Multiple unknowns (Dim) / multiple solvers (MultSolvers) */    
+    /* Multiple unknowns (Dim) / multiple solvers (MultSolvers) */
     ls->name_group_ls = NULL;
     ls->name_ls = NULL;
     ls->number_ls = -1;
@@ -1236,7 +1236,7 @@ double NUMCalcIterationError(double *new_iteration, double *old_iteration, doubl
 int GetNumericsGaussPoints(int element_dimension)
 {
   int m_gaussian_points = 3;
-  int g_gaussian_points = 3;  
+  int g_gaussian_points = 3;
   switch (element_dimension)
     {
     case 1:

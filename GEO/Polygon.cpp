@@ -9,6 +9,7 @@
 
 // MathLib
 #include "AnalyticalGeometry.h"
+#include "MathTools.h"
 
 // Base
 #include "quicksort.h"
@@ -16,8 +17,20 @@
 namespace GEOLIB {
 
 Polygon::Polygon(const Polyline &ply) :
-	Polyline (ply)
-{}
+	Polyline (ply),
+	_maxx (std::numeric_limits<double>::min()),
+	_maxy (std::numeric_limits<double>::min())
+{
+	size_t n_nodes (getNumberOfPoints()-1);
+	for (size_t k(0); k<n_nodes; k++) {
+		if ((*(getPoint(k)))[0] > _maxx) _maxx = (*(getPoint(k)))[0];
+		if ((*(getPoint(k)))[1] > _maxy) _maxy = (*(getPoint(k)))[1];
+	}
+
+	double s0 (0.1), s1(0.2); // small random values
+	_maxx += _maxx*s0;
+	_maxy += _maxy*s1;
+}
 
 Polygon::~Polygon()
 {}
@@ -26,20 +39,10 @@ bool Polygon::isPntInPolygon (const GEOLIB::Point& pnt) const
 {
 	size_t n_intersections (0);
 	GEOLIB::Point s;
-	double s0 (0.1), s1(0.2); // small random values
 
 	if (_simple_polygon_list.empty ()) {
-		double maxx (std::numeric_limits<double>::min());
-		double maxy (std::numeric_limits<double>::min());
-		size_t n_nodes (getSize()-1);
-		for (size_t k(0); k<n_nodes; k++) {
-			if ((*(getPoint(k)))[0] > maxx) maxx = (*(getPoint(k)))[0];
-			if ((*(getPoint(k)))[1] > maxy) maxy = (*(getPoint(k)))[1];
-		}
-		maxx += maxx*s0;
-		maxy += maxy*s1;
-		const GEOLIB::Point other (maxx, maxy, pnt[2]);
-
+		const size_t n_nodes (getNumberOfPoints()-1);
+		const GEOLIB::Point other (_maxx, _maxy, pnt[2]);
 		for (size_t k(0); k<n_nodes; k++) {
 			if (MATHLIB::lineSegmentIntersect (*(getPoint(k)), *(getPoint(k+1)), other, pnt, s)) {
 				n_intersections++;
@@ -49,21 +52,9 @@ bool Polygon::isPntInPolygon (const GEOLIB::Point& pnt) const
 		for (std::list<Polygon*>::const_iterator it (_simple_polygon_list.begin());
 			it != _simple_polygon_list.end(); ++it) {
 			const Polygon* polygon (*it);
-
-			// ToDo TF cache this value?
-			// to prevent numerical problems - search for maximal x coord
-			double maxx (std::numeric_limits<double>::min());
-			double maxy (std::numeric_limits<double>::min());
-			size_t n_nodes (polygon->getSize()-1);
-			for (size_t k(0); k<n_nodes; k++) {
-				if ((*(polygon->getPoint(k)))[0] > maxx) maxx = (*(polygon->getPoint(k)))[0];
-				if ((*(polygon->getPoint(k)))[1] > maxy) maxy = (*(polygon->getPoint(k)))[1];
-			}
-			maxx += maxx*s0;
-			maxy += maxy*s1;
-			const GEOLIB::Point other (maxx, maxy, pnt[2]);
-
-			for (size_t k(0); k<n_nodes; k++) {
+			const GEOLIB::Point other (_maxx, _maxy, pnt[2]);
+			const size_t n_nodes_simple_polygon (polygon->getNumberOfPoints()-1);
+			for (size_t k(0); k<n_nodes_simple_polygon; k++) {
 				if (MATHLIB::lineSegmentIntersect (*(polygon->getPoint(k)), *(polygon->getPoint(k+1)), other, pnt, s)) {
 					n_intersections++;
 				}
@@ -71,6 +62,39 @@ bool Polygon::isPntInPolygon (const GEOLIB::Point& pnt) const
 		}
 	}
 	if (n_intersections%2 == 1) return true;
+
+	// check if point is at the border
+	if (_simple_polygon_list.empty ()) {
+		const size_t n_nodes (getNumberOfPoints());
+		for (size_t k(0); k<n_nodes; k++) {
+			if (MATHLIB::sqrDist (getPoint(k), &pnt) < std::numeric_limits<double>::min())
+				return true;
+		}
+	} else {
+		for (std::list<Polygon*>::const_iterator it (_simple_polygon_list.begin());
+			it != _simple_polygon_list.end(); ++it) {
+			const size_t n_nodes_simple_polygon ((*it)->getNumberOfPoints());
+			for (size_t k(0); k<n_nodes_simple_polygon; k++) {
+				if (MATHLIB::sqrDist ((*it)->getPoint(k), &pnt)) {
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+bool Polygon::isPolylineInPolygon (const Polyline& ply) const
+{
+	size_t ply_size (ply.getNumberOfPoints()), cnt (0);
+	for (size_t k(0); k<ply_size; k++) {
+		if (isPntInPolygon (*(ply[k]))) {
+			cnt++;
+		}
+	}
+	if (cnt == ply_size)
+		return true;
 	return false;
 }
 
@@ -105,7 +129,7 @@ void Polygon::splitPolygonAtIntersection (std::list<Polygon*>::iterator polygon_
 			GEOLIB::Polygon* polygon0 (new GEOLIB::Polygon((*polygon_it)->getPointsVec()));
 			for (size_t k(0); k<=idx0; k++) polygon0->addPoint ((*polygon_it)->getPointID (k));
 			polygon0->addPoint (intersection_pnt_id);
-			for (size_t k(idx1+1); k<(*polygon_it)->getSize(); k++)
+			for (size_t k(idx1+1); k<(*polygon_it)->getNumberOfPoints(); k++)
 				polygon0->addPoint ((*polygon_it)->getPointID (k));
 
 			GEOLIB::Polygon* polygon1 (new GEOLIB::Polygon((*polygon_it)->getPointsVec()));
@@ -130,7 +154,7 @@ void Polygon::splitPolygonAtIntersection (std::list<Polygon*>::iterator polygon_
 
 void Polygon::splitPolygonAtPoint (std::list<GEOLIB::Polygon*>::iterator polygon_it)
 {
-	size_t n ((*polygon_it)->getSize()-1), idx0 (0), idx1(0);
+	size_t n ((*polygon_it)->getNumberOfPoints()-1), idx0 (0), idx1(0);
 	size_t *id_vec (new size_t[n]), *perm (new size_t[n]);
 	for (size_t k(0); k<n; k++) {
 		id_vec[k] = (*polygon_it)->getPointID (k);
@@ -150,7 +174,7 @@ void Polygon::splitPolygonAtPoint (std::list<GEOLIB::Polygon*>::iterator polygon
 
 			GEOLIB::Polygon* polygon0 (new GEOLIB::Polygon((*polygon_it)->getPointsVec()));
 			for (size_t k(0); k<=idx0; k++) polygon0->addPoint ((*polygon_it)->getPointID (k));
-			for (size_t k(idx1+1); k<(*polygon_it)->getSize(); k++) polygon0->addPoint ((*polygon_it)->getPointID (k));
+			for (size_t k(idx1+1); k<(*polygon_it)->getNumberOfPoints(); k++) polygon0->addPoint ((*polygon_it)->getPointID (k));
 
 			GEOLIB::Polygon* polygon1 (new GEOLIB::Polygon((*polygon_it)->getPointsVec()));
 			for (size_t k(idx0); k<=idx1; k++) polygon1->addPoint ((*polygon_it)->getPointID (k));

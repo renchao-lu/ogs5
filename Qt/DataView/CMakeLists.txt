@@ -2,14 +2,18 @@
 set( SOURCES
 	ColorTableModel.cpp
 	ColorTableView.cpp
+	ConditionModel.cpp
 	DataViewWidget.cpp
 	DBConnectionDialog.cpp
+	FEMCondition.cpp
 	GEOModels.cpp
 	LinesModel.cpp
 	LineTabWidget.cpp
 	DataView.cpp
 	Model.cpp
+	MshEditDialog.cpp
 	MshItem.cpp
+	MshLayerMapper.cpp
 	MshModel.cpp
 	MshTabWidget.cpp
 	PntsModel.cpp
@@ -26,6 +30,7 @@ set( SOURCES
 set( MOC_HEADERS
 	ColorTableModel.h
 	ColorTableView.h
+	ConditionModel.h
 	DataView.h
 	DataViewWidget.h
 	DBConnectionDialog.h
@@ -33,6 +38,7 @@ set( MOC_HEADERS
 	LinesModel.h
 	LineTabWidget.h
 	Model.h
+	MshEditDialog.h
 	MshModel.h
 	MshTabWidget.h
 	PntsModel.h
@@ -47,7 +53,10 @@ set( MOC_HEADERS
 
 # Header files
 set( HEADERS
+	CondItem.h
+	FEMCondition.h
 	MshItem.h
+	MshLayerMapper.h
 )
 
 # UI files
@@ -55,6 +64,7 @@ set( UIS
 	DataViewWidgetBase.ui
 	DBConnection.ui
 	LineTabWidgetBase.ui
+	MshEdit.ui
 	MshTabWidgetBase.ui
 	PntTabWidgetBase.ui
 	StationTabWidgetBase.ui

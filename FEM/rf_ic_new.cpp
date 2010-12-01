@@ -41,12 +41,12 @@ Programing:
 CInitialCondition::CInitialCondition()
 {
 //  geo_type_name = "DOMAIN";
-  dis_type_name = "CONSTANT";
+  this->setProcessDistributionType(CONSTANT);
   // HS: not needed, removed.
   // m_node = new CNodeValue();
   // m_node->node_value = 0.0;
   SubNumber=0;
-  m_pcs = NULL; //OK
+  this->setProcess(NULL); //OK
   a0=b0=c0=d0=NULL; //WW
   m_msh = NULL; //OK
   m_node = NULL; //HS
@@ -60,16 +60,18 @@ Programing:
 **************************************************************************/
 CInitialCondition::~CInitialCondition(void)
 {
-  if ( node_value_vector.size() > 0)
-      for (int i=0 ; i < (int)node_value_vector.size() ; i++ )
+  if ( !node_value_vector.empty() )
+  {
+      for (int i=0; i < (int)node_value_vector.size(); i++)
           delete node_value_vector[i];
+  }
   node_value_vector.clear();
   delete m_node; //HS
   //WW
-  if(a0) delete a0;
-  if(b0) delete b0;
-  if(c0) delete c0;
-  if(d0) delete d0;
+  delete a0;
+  delete b0;
+  delete c0;
+  delete d0;
   a0=b0=c0=d0=NULL;
 }
 /**************************************************************************
@@ -88,7 +90,7 @@ bool ICRead(const std::string& file_base_name,
 	std::string ic_file_name = file_base_name + IC_FILE_EXTENSION;
 	std::ifstream ic_file(ic_file_name.data(), std::ios::in);
 	if (!ic_file.good()) {
-		std::cout << "! Error in ICRead: No initial conditions !" << std::endl;
+		std::cout << "WARNING: ICRead: No initial conditions !" << std::endl;
 		return false;
 	}
 
@@ -106,8 +108,14 @@ bool ICRead(const std::string& file_base_name,
 
 		if (line_string.find("#INITIAL_CONDITION") != std::string::npos) { // keyword found
 			CInitialCondition *ic = new CInitialCondition();
+			std::ios::pos_type pos (ic_file.tellg());
 			position = ic->Read(&ic_file, geo_obj, unique_name);
-			ic_vector.push_back(ic);
+			if (pos != position) {
+				ic_vector.push_back(ic);
+			} else {
+				std::cerr << "WARNING: in ICRead: could not read initial condition" << std::endl;
+				delete ic;
+			}
 			ic = NULL;
 			ic_file.seekg(position, ios::beg);
 		} // keyword found
@@ -163,7 +171,7 @@ Programing:
 06/2010 TF changed signature to use the new GEOLIB data structures
 **************************************************************************/
 ios::pos_type CInitialCondition::Read(std::ifstream *ic_file,
-		const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
+		const GEOLIB::GEOObjects& geo_obj, const std::string& unique_geo_name)
 {
 	string line_string;
 	std::stringstream in;
@@ -186,42 +194,53 @@ ios::pos_type CInitialCondition::Read(std::ifstream *ic_file,
 		//....................................................................
 		if (line_string.find("$PCS_TYPE") != string::npos) { // subkeyword found
 			in.str(GetLineFromFile1(ic_file));
-			in >> pcs_type_name;
+			std::string tmp;
+			in >> tmp; // pcs_type_name;
+			this->setProcessType(convertProcessType(tmp));
 			in.clear();
 			continue;
 		}
 		//....................................................................
 		if (line_string.find("$PRIMARY_VARIABLE") != string::npos) { // subkeyword found
 			in.str(GetLineFromFile1(ic_file));
-			in >> pcs_pv_name;
+			std::string tmp;
+			in >> tmp; // pcs_pv_name;
+			this->setProcessPrimaryVariable(convertPrimaryVariable(tmp));
 			in.clear();
 			continue;
 		}
 		//....................................................................
 		if (line_string.find("$DIS_TYPE") != string::npos) { // subkeyword found
 			in.str(GetLineFromFile1(ic_file));
-			in >> dis_type_name;
+			std::string tmp;
+			in >> tmp; // dis_type_name;
+			this->setProcessDistributionType(convertDisType(tmp));
 
 			// Initial conditions are assign to mesh nodes directly. 17.11.2009. PCH
+			/* KR not used in benchmarks
 			if (dis_type_name.find("DIRECT") != string::npos) {
 				dis_type_name = "DIRECT";
 				in >> fname;
 				fname = FilePath + fname;
 				in.clear();
 			}
+			*/
 
-			if (dis_type_name.find("CONSTANT") != string::npos) {
+			//if (dis_type_name.find("CONSTANT") != string::npos) {
+			if (this->getProcessDistributionType() == CONSTANT) {
 				m_node = new CNodeValue();
 				in >> m_node->node_value;
 				node_value_vector.push_back(m_node);
 				m_node = NULL;
 			}
-			if (dis_type_name.find("GRADIENT") != string::npos) {
+			//if (dis_type_name.find("GRADIENT") != string::npos) {
+			if (this->getProcessDistributionType() == GRADIENT) {
 				in >> gradient_ref_depth; //CMCD
 				in >> gradient_ref_depth_value; //CMCD
 				in >> gradient_ref_depth_gradient; //CMCD
 			}
-			if (dis_type_name.find("RESTART") != string::npos) { //OK
+			//if (dis_type_name.find("RESTART") != string::npos) { //OK
+			if (this->getProcessDistributionType() == RESTART) {
 				in >> rfr_file_name;
 			}
 			in.clear();
@@ -233,24 +252,39 @@ ios::pos_type CInitialCondition::Read(std::ifstream *ic_file,
 			std::string geo_type_name;
 			in >> geo_type_name;
 			if (geo_type_name.find("POINT") != string::npos) {
-				setGeoType (GEOLIB::POINT);
 				in >> geo_name;
-
-				// TF 06/2010 - get the point vector
-				if (!((geo_obj.getPointVecObj(unique_name))->getPointIDByName (geo_name, _geo_obj_idx))) {
-					std::cerr << "ERROR: CInitialCondition::Read: point name not found!" << std::endl;
+				const GEOLIB::Point *pnt ((geo_obj.getPointVecObj(unique_geo_name))->getElementByName (geo_name));
+				if (pnt == NULL) {
+					std::cerr << "error in CInitialCondition::Read: point name \"" << geo_name << "\" not found!" << std::endl;
 					exit (1);
 				}
+				setGeoType (GEOLIB::POINT);
+				setGeoObj (pnt);
 
 				in.clear();
 				geo_name = ""; // REMOVE CANDIDATE
 			}
 			if (geo_type_name.find("POLYLINE") != string::npos) {
-				setGeoType (GEOLIB::POLYLINE);
 				in >> geo_name;
+				const GEOLIB::Polyline *ply ((geo_obj.getPolylineVecObj(unique_geo_name))->getElementByName (geo_name));
+				if (ply == NULL) {
+					std::cerr << "error in CInitialCondition::Read: polyline name \"" << geo_name << "\" not found!" << std::endl;
+					exit (1);
+				}
+				setGeoType (GEOLIB::POLYLINE);
+				setGeoObj (ply);
+
 			}
 			if (geo_type_name.find("SURFACE") != string::npos) {
 				setGeoType (GEOLIB::SURFACE);
+//				// TF 07/2010 - get the surface vector and get the surface ID
+//				if (!((geo_obj.getSurfaceVecObj(unique_name))->getElementIDByName(
+//						geo_name, _geo_obj_idx))) {
+//					std::cerr
+//							<< "ERROR: CInitialCondition::Read: surface name not found!"
+//							<< std::endl;
+//					exit(1);
+//				}
 				in >> geo_name;
 			}
 			if (geo_type_name.find("VOLUME") != string::npos) {
@@ -261,8 +295,8 @@ ios::pos_type CInitialCondition::Read(std::ifstream *ic_file,
 				//  Give initial condition by patches of domain. WW
 				if (geo_type_name.find("SUB") != string::npos) {
 					*ic_file >> SubNumber;
-					if (pcs_pv_name.find("STRESS") != string::npos
-							|| dis_type_name.find("FUNCTION") != string::npos) //01.07.2008 WW
+					if (convertPrimaryVariableToString(this->getProcessPrimaryVariable()).find("STRESS") != string::npos)
+							//KR not used || dis_type_name.find("FUNCTION") != string::npos) //01.07.2008 WW
 					{
 						string str_buff;
 						vector<string> tokens;
@@ -347,29 +381,29 @@ void CInitialCondition::Write(fstream* ic_file) const
   //NAME+NUMBER
   *ic_file << " $PCS_TYPE" << endl;
   *ic_file << "  ";
-  *ic_file << pcs_type_name << endl;
+  *ic_file << convertProcessTypeToString(this->getProcessType()) << endl;
   *ic_file << " $PRIMARY_VARIABLE" << endl;
   *ic_file << "  ";
-  *ic_file << pcs_pv_name << endl;
+  *ic_file << convertPrimaryVariableToString(this->getProcessPrimaryVariable()) << endl;
   //--------------------------------------------------------------------
   //GEO_TYPE
   *ic_file << " $GEO_TYPE" << endl;
-  *ic_file << "  " << getGeoTypeAsString() << " " << _geo_obj_idx << std::endl;
+  *ic_file << "  " << getGeoTypeAsString() << " CInitialCondition::Write ToDo write name of GeoObject " << std::endl;
 
   //--------------------------------------------------------------------
   //DIS_TYPE
   *ic_file << " $DIS_TYPE" << endl;
   *ic_file << "  ";
-  *ic_file << dis_type_name;
+  *ic_file << convertDisTypeToString(this->getProcessDistributionType()) << endl;
   *ic_file << " ";
-  if (dis_type_name == "CONSTANT") {
+  if (this->getProcessDistributionType() == CONSTANT) {
     CNodeValue* m_node = NULL;
     int node_value_vector_size = (int)node_value_vector.size();
     if(node_value_vector_size>0){
       m_node = node_value_vector[0];
      *ic_file << m_node->node_value;
     }
-  } else if (dis_type_name == "GRADIENT") {
+  } else if (this->getProcessDistributionType() == GRADIENT) {
     *ic_file << this->gradient_ref_depth << " ";
     *ic_file << this->gradient_ref_depth_value << " ";
     *ic_file << this->gradient_ref_depth_gradient;
@@ -405,11 +439,13 @@ void CInitialCondition::Set(int nidx)
 	  break;
     }
 
+/* KR not used in benchmarks
 	// Direct assign by node indeces 17.11.2009 PCH
 	if(dis_type_name.find("DIRECT")!=string::npos)
   {
 		SetByNodeIndex(nidx);
 	}
+*/
 }
 
 
@@ -418,41 +454,33 @@ FEMLib-Method:
 Task:
 Programing:
 11/2009 PCH Implementation
+09/2010 KR cleaned up code
 **************************************************************************/
 void CInitialCondition::SetByNodeIndex(int nidx)
 {
-		string line_string;
-		string st_file_name;
-		std::stringstream in;
-		long node_index;
-		double node_val;
-    vector<long>nodes_vector;
+	string line_string;
+	std::stringstream in;
+	long node_index;
+	double node_val;
 
-	//========================================================================
-  // File handling
-  ifstream d_file (fname.c_str(),ios::in);
-  //if (!st_file.good()) return;
+	// File handling
+	ifstream d_file (fname.c_str(),ios::in);
+	if (!d_file.is_open()){
+	  cout << "! Error in direct node source terms: Could not find file " << fname << endl;
+	  abort();
+	}
 
-  if (!d_file.good()){
-    cout << "! Error in direct node source terms: Could not find file:!\n"
-         <<fname<<endl;
-    abort();
-  }
-  // Rewind the file
-  d_file.clear();
-  d_file.seekg(0L,ios::beg);
-  //========================================================================
-  while (!d_file.eof())
-  {
-    line_string = GetLineFromFile1(&d_file);
-    if(line_string.find("#STOP")!=string::npos)
-      break;
+	while (!d_file.eof())
+	{
+		line_string = GetLineFromFile1(&d_file);
+		if(line_string.find("#STOP")!=string::npos)
+			break;
 
-    in.str(line_string);
-    in>>node_index>>node_val;
-    in.clear();
+		in.str(line_string);
+		in >> node_index >> node_val;
+		in.clear();
 
-		m_pcs->SetNodeValue(node_index,nidx,node_val);
+		this->getProcess()->SetNodeValue(node_index,nidx,node_val);
 	}
 }
 
@@ -465,17 +493,13 @@ last modification:
 **************************************************************************/
 void CInitialCondition::SetPoint(int nidx)
 {
-	if ((m_msh) && dis_type_name.find("CONSTANT") != std::string::npos) {
-		// get the GEOObject data
-		const GEOLIB::GEOObjects *geo_obj ((m_pcs->getProblemObjectPointer())->getGeoObj());
-		std::string name ((m_pcs->getProblemObjectPointer())->getGeoObjName());
-		const std::vector<GEOLIB::Point*> *pnt (geo_obj->getPointVec(name));
-
-		m_pcs->SetNodeValue(m_pcs->m_msh->GetNODOnPNT((*pnt)[_geo_obj_idx]), nidx,
+	if (m_msh && this->getProcessDistributionType() == CONSTANT) {
+		this->getProcess()->SetNodeValue(this->getProcess()->m_msh->GetNODOnPNT(static_cast<const GEOLIB::Point*>(getGeoObj())), nidx,
 				node_value_vector[0]->node_value);
 	} else {
-		std::cerr << "Error in CInitialCondition::SetPoint - point: " << _geo_obj_idx
-				<< " not found" << endl;
+		std::cerr << "Error in CInitialCondition::SetPoint - point: "
+			<< *(static_cast<const GEOLIB::Point*>(getGeoObj()))
+			<< " not found" << endl;
 	}
 }
 
@@ -516,33 +540,31 @@ Programing:
 **************************************************************************/
 void CInitialCondition::SetPolyline(int nidx)
 {
-  long i;
-  CGLPolyline *m_polyline = NULL;
-  long* msh_nodes;
-  msh_nodes = NULL; //OK411
-  vector<long>nodes_vector;
-  double value;
-  //----------------------------------------------------------------------
-  if(dis_type_name.find("CONSTANT")!=string::npos)
-  {
-    m_polyline = GEOGetPLYByName(geo_name);//CC
-    if(m_polyline)
-    { //OK411
-      m_msh->GetNODOnPLY(m_polyline,nodes_vector);
-      //msh_nodes = MSHGetNodesClose(&no_nodes, m_polyline);//CC
-      for(i=0;i<(long)nodes_vector.size();i++)
-      {
-        value = node_value_vector[0]->node_value;
-		m_pcs->SetNodeValue(nodes_vector[i],nidx, value);
-      }
-    }
-    else{
-      cout << "Error in CInitialCondition::SetPolyline - polyline: " << geo_name << " not found" << endl;
-    }
-  }
-  if(dis_type_name.find("LINEAR")!=string::npos){
-  }
-  //----------------------------------------------------------------------
+	if (this->getProcessDistributionType() == CONSTANT) {
+//		CGLPolyline* m_polyline = polyline_vector[getGeoObjIdx()];
+//		if (m_polyline) {
+//			std::vector<long> nodes_vector;
+//			m_msh->GetNODOnPLY(m_polyline, nodes_vector);
+//			for (size_t i = 0; i < nodes_vector.size(); i++) {
+//				m_pcs->SetNodeValue(nodes_vector[i], nidx, node_value_vector[0]->node_value);
+//			}
+//		} else {
+//			std::cout << "Error in CInitialCondition::SetPolyline - polyline: "
+//					<< geo_name << " not found" << std::endl;
+//		}
+		if (getGeoObj()) {
+			std::vector<long> nodes_vector;
+			m_msh->GetNODOnPLY(static_cast<const GEOLIB::Polyline*>(getGeoObj()), nodes_vector);
+			for (size_t i = 0; i < nodes_vector.size(); i++) {
+				this->getProcess()->SetNodeValue(nodes_vector[i], nidx, node_value_vector[0]->node_value);
+			}
+		} else {
+			std::cout << "Error in CInitialCondition::SetPolyline - polyline: "
+					<< geo_name << " not found" << std::endl;
+		}
+	}
+//	if (dis_type_name.find("LINEAR") != string::npos) {
+//	}
 }
 
 /**************************************************************************
@@ -553,47 +575,45 @@ Programing:
 **************************************************************************/
 void CInitialCondition::SetSurface(int nidx)
 {
-
-  Surface* m_sfc = NULL;
   double value, node_depth;
   vector<long>sfc_nod_vector;
-
-  m_sfc = GEOGetSFCByName(geo_name);
+  Surface* m_sfc = GEOGetSFCByName(geo_name);
 
   if(m_sfc && m_msh)  {
 
     m_msh->GetNODOnSFC(m_sfc, sfc_nod_vector);
 
-    if(dis_type_name.find("CONSTANT")!=string::npos) {
-
-		for(long i = 0; i < (long)sfc_nod_vector.size(); i++) {
+    if(this->getProcessDistributionType() == CONSTANT)
+	{
+		for(size_t i = 0; i < sfc_nod_vector.size(); i++) {
           value = node_value_vector[0]->node_value;
-   		  m_pcs->SetNodeValue(sfc_nod_vector[i],nidx, value);
+   		  this->getProcess()->SetNodeValue(sfc_nod_vector[i],nidx, value);
         } // end surface nodes
 
     } // end constant
-    else if(dis_type_name.find("GRADIENT")!=string::npos) {
-
+    else if(this->getProcessDistributionType() == GRADIENT)
+	{
       int onZ = m_msh->GetCoordinateFlag()%10;
       long msh_node;
 
-	  for(long i = 0; i < (long)sfc_nod_vector.size(); i++) {
+	  for (size_t i = 0; i < sfc_nod_vector.size(); i++)
+	  {
 		 msh_node = sfc_nod_vector[i];
          if(onZ == 1) //2D
            node_depth = m_msh->nod_vector[msh_node]->Y();
          else if(onZ == 2) //3D
            node_depth = m_msh->nod_vector[msh_node]->Z();
 		 else {
-		    cout << "Error in CInitialCondition::SetSurface - dis_type: " << dis_type_name << "don't know If 2D or 3D"<<  endl;
+		    cout << "Error in CInitialCondition::SetSurface - dis_type: " << convertDisTypeToString(this->getProcessDistributionType()) << "don't know If 2D or 3D"<<  endl;
 			node_depth = 0;
 		 }
-	     value = ((gradient_ref_depth_gradient)*(gradient_ref_depth-node_depth))+ gradient_ref_depth_value;
-		 m_pcs->SetNodeValue(msh_node,nidx, value);
+	     value = ((gradient_ref_depth_gradient) * (gradient_ref_depth-node_depth)) + gradient_ref_depth_value;
+		 this->getProcess()->SetNodeValue(msh_node,nidx, value);
       } // end surface nodes
 
 	} // end gradient
 	else
-       cout << "Error in CInitialCondition::SetSurface - dis_type: " << dis_type_name << " not found" << endl;
+       cout << "Error in CInitialCondition::SetSurface - dis_type: " << convertDisTypeToString(this->getProcessDistributionType()) << " not found" << endl;
 
 
   }  // end m_sfc
@@ -608,16 +628,16 @@ FEMLib-Method:
 Task:
 Programing:
 04/2004 OK Implementation
-last modification:
+09/2010 KR cleaned up code
 **************************************************************************/
 CInitialConditionGroup* GetInitialConditionGroup(string this_pcs_name)
 {
-  long i;
   CInitialConditionGroup *m_ic_group = NULL;
-  long no_ic_groups = (long)ic_group_vector.size();
-  for(i=0;i<no_ic_groups;i++){
+  size_t no_ic_groups = ic_group_vector.size();
+  for(size_t i=0;i<no_ic_groups;i++)
+  {
     m_ic_group = ic_group_vector[i];
-    if(m_ic_group->pcs_type_name.find(this_pcs_name)!=string::npos)
+    if (m_ic_group->pcs_type_name.find(this_pcs_name) != string::npos)
       return m_ic_group;
   }
   return NULL;
@@ -638,222 +658,222 @@ Programing:
 **************************************************************************/
 void CInitialCondition::SetDomain(int nidx)
 {
-    int k, onZ;
+	int k, onZ;
 	long i;
 	double node_val, node_depth;
-    vector<long>nodes_vector;
-    CFEMesh* m_msh = m_pcs->m_msh;
-    onZ = 0;
-    if(m_msh) //OK
-      onZ = m_msh->GetCoordinateFlag()%10;
-    node_depth = 0.0;
-    k=0;
-    if(SubNumber==0)
-    {
-      //----------------------------------------------------------------------
-      if(dis_type_name.find("CONSTANT")!=string::npos)
-      {
-        //....................................................................
-        if(m_pcs->pcs_type_name.compare("OVERLAND_FLOW")==0)
-        {
-          for(i=0;i<m_pcs->m_msh->GetNodesNumber(false);i++){ //OK MSH
-            node_val = node_value_vector[0]->node_value + m_pcs->m_msh->nod_vector[i]->Z();
-            m_pcs->SetNodeValue(i,nidx,node_val);
-          }
-        }
-        else
-        {
-          //................................................................
-          node_val = node_value_vector[0]->node_value;
-          for(i=0;i<m_msh->GetNodesNumber(true);i++) //OK MSH
-             m_pcs->SetNodeValue(i,nidx,node_val);
-          //................................................................
-        }
-      }
-      //--------------------------------------------------------------------
-      if(dis_type_name.find("GRADIENT")!=string::npos)
-	  {  // Remove unused stuff by WW
-         for(i=0;i<m_msh->GetNodesNumber(true);i++) //WW
-         {
-           if(onZ==1) //2D
-            node_depth = m_msh->nod_vector[i]->Y();
-           if(onZ==2) //3D
-             node_depth = m_msh->nod_vector[i]->Z();
-           node_val = gradient_ref_depth_gradient*(gradient_ref_depth-node_depth)+
-                        gradient_ref_depth_value;
-           m_pcs->SetNodeValue(m_msh->nod_vector[i]->GetIndex(),nidx,node_val);
-         }
-     } //if(dis_type_name.find("GRADIENT")!=string::npos)
-  //----------------------------------------------------------------------
-  if(dis_type_name.compare("RESTART")==0)
-  {
-    char line[MAX_ZEILEN];
-    int no_var;
-    int* var_n;
-    vector<string>var_name;
-    string var_name_string;
-    string sdummy;
-    double ddummy, dddummy;
-    long ldummy;
-    //....................................................................
-    // File handling
-    if(rfr_file_name.size()==0){
-      cout << "Warning in CInitialCondition::SetDomain - no RFR file" << endl;
-      return;
-    }
-    ifstream rfr_file;
-    CGSProject* m_gsp = GSPGetMember("msh");
-    string restart_file_name;
-    restart_file_name = rfr_file_name;
-    if(m_gsp)
-      restart_file_name = m_gsp->path + rfr_file_name;
-    //---------------------------------------------------------------------
-    else //Get absolut path of the file. 07.01.2009. WW
-    {
-      basic_string <char>::size_type indexChWin, indexChLinux;
-      indexChWin = indexChLinux = 0;
-      indexChWin = FileName.find_last_of('\\');
-      indexChLinux = FileName.find_last_of('/');
-      //
-      string funfname;
-      if(indexChWin==string::npos&&indexChLinux==string::npos)
-         funfname = rfr_file_name;
-      else if(indexChWin!=string::npos)
-      {
-         funfname = FileName.substr(0,indexChWin);
-         funfname = funfname+"\\"+rfr_file_name;
-      }
-      else if(indexChLinux!=string::npos)
-      {
-         funfname = FileName.substr(0,indexChLinux);
-         funfname = funfname+"/"+rfr_file_name;
-      }
-      restart_file_name = funfname;
-    }
-    //-------------------------------------------------------------------
-    rfr_file.open(restart_file_name.c_str(),ios::in);
-    if(!rfr_file.good()){
-      cout << "Warning in CInitialCondition::SetDomain - no RFR file" << endl;
-      return;
-    }
-    rfr_file.seekg(0L,ios::beg); // rewind?
-    rfr_file.getline(line,MAX_ZEILEN); //#0#0#0#1#100000#0#4.2.13 ###########################################
-    rfr_file.getline(line,MAX_ZEILEN); //1 1 4
-    rfr_file >> no_var; //2 1 1
-    var_n = new int[no_var];
-    for(i=0;i<no_var;i++){
-      rfr_file >> var_n[i];
-    }
-    size_t pos;
-    for(i=0;i<no_var;i++){ // HEAD, m ...
-      rfr_file >> var_name_string >> sdummy;
-      pos = var_name_string.find_first_of(',');
-      var_name_string.erase(pos,1);
-      var_name.push_back(var_name_string);
-    }
-    while(!rfr_file.eof()) { //TODO Implementation/Manual Correction of Keyword #STOP: TK
-      rfr_file >> dddummy;
-        ldummy  = (long)dddummy;
-//WW        cout << ldummy << endl;
-      for(i=0;i<no_var;i++){ // HEAD, m ...
-         rfr_file >> ddummy;
-          m_pcs->SetNodeValue(ldummy,nidx,ddummy);
-      }
-    }
-    //....................................................................
-    delete var_n;
-    var_name.clear();
-  }
-  //----------------------------------------------------------------------
-}
-//========================================================================
-    else //WW
-    {
-       bool quadratic = false;
-       /// In case of P_U coupling monolithic scheme
-       if(m_pcs->type==41) //WW Mono
-       {
-         if(pcs_pv_name.find("DISPLACEMENT")!=string::npos) //Deform
-            quadratic = true;
-         else quadratic = false;
-       }
-       else if(m_pcs->type==4) quadratic = true;
-       else quadratic = false;
-       //WW if (m_msh){
-	   for(k=0; (size_t)k<SubNumber; k++)
-       {
-          GEOGetNodesInMaterialDomain(m_msh, subdom_index[k], nodes_vector, quadratic);
-          if(dis_type_name.find("GRADIENT")!=string::npos)
-          {
-             if(k==0) //TEST for DECOVALEX
-             {
-                 for(i=0;i<(int)nodes_vector.size();i++)
-                   m_pcs->SetNodeValue(nodes_vector[i],nidx, subdom_ic[k]);
-             }
-             else
-             {
-               for(i=0;i<(int)nodes_vector.size();i++)
-	           {
-                  if(onZ==1) //2D
-                      node_depth =  m_msh->nod_vector[nodes_vector[i]]->Y();
-                  if(onZ==2) //2D
-		              node_depth =  m_msh->nod_vector[nodes_vector[i]]->Z();
-	              node_val = ((gradient_ref_depth_gradient)*(gradient_ref_depth-node_depth))+
-                        gradient_ref_depth_value;
-                  m_pcs->SetNodeValue(nodes_vector[i],nidx,node_val);
-               }
-             }
-           }
-           else if(dis_type_name.find("FUNCTION")!=string::npos) //01.07.2008 WW
-           {
-              for(i=0;i<(int)nodes_vector.size();i++)
-              {
-                 CNode *thisNode = m_msh->nod_vector[nodes_vector[i]];
-                 m_pcs->SetNodeValue(nodes_vector[i],nidx,DistributionFuntion(k, thisNode->X(),thisNode->Y(), thisNode->Z()));
-              }
-           }
-           else
-           {
-              for(i=0;i<(int)nodes_vector.size();i++)
-                 m_pcs->SetNodeValue(nodes_vector[i],nidx, subdom_ic[k]);
-           }
-        }
-      //  }
-       /*  // Comment by WW
-      else {
-       for(k=0; k<SubNumber; k++)
-       {
-           GEOGetNodesInMaterialDomain(subdom_index[k], nodes_vector);
-          if(dis_type_name.find("GRADIENT")!=string::npos)
-          {
-             if(k==0) //TEST for DECOVALEX
-             {
-                for(i=0;i<(int)nodes_vector.size();i++)
-                   SetNodeVal(nodes_vector[i],nidx, subdom_ic[k]);
-             }
-             else
-             for(i=0;i<(int)nodes_vector.size();i++)
-	         {
-                if(max_dim==1) //2D
-                    node_depth = GetNodeY(nodes_vector[i]);
-                if(max_dim==2) //3D
-		            node_depth = GetNodeZ(nodes_vector[i]);
-	            node_val = ((gradient_ref_depth_gradient)*(gradient_ref_depth-node_depth))+
-                        gradient_ref_depth_value;
-                SetNodeVal(nodes_vector[i],nidx,node_val);
-             }
+	vector<long> nodes_vector;
+	CFEMesh* m_msh = this->getProcess()->m_msh;
+	onZ = 0;
+	if (m_msh) //OK
+		onZ = m_msh->GetCoordinateFlag() % 10;
+	node_depth = 0.0;
+	k = 0;
+	if (SubNumber == 0) {
+		if (this->getProcessDistributionType() == CONSTANT) {
+			// if (this->getProcess()->pcs_type_name.compare("OVERLAND_FLOW") == 0)
+			if (this->getProcess()->getProcessType() == OVERLAND_FLOW) {
+				for (i = 0; i < this->getProcess()->m_msh->GetNodesNumber(false); i++) { //OK MSH
+					node_val = node_value_vector[0]->node_value
+							+ this->getProcess()->m_msh->nod_vector[i]->Z();
+					this->getProcess()->SetNodeValue(i, nidx, node_val);
+				}
+			} else {
+				//................................................................
+				node_val = node_value_vector[0]->node_value;
+				for (i = 0; i < m_msh->GetNodesNumber(true); i++) //OK MSH
+					this->getProcess()->SetNodeValue(i, nidx, node_val);
+				//................................................................
+			}
+		}
+		//--------------------------------------------------------------------
+		if (this->getProcessDistributionType() == GRADIENT) { // Remove unused stuff by WW
+			for (i = 0; i < m_msh->GetNodesNumber(true); i++) //WW
+			{
+				if (onZ == 1) //2D
+					node_depth = m_msh->nod_vector[i]->Y();
+				if (onZ == 2) //3D
+					node_depth = m_msh->nod_vector[i]->Z();
+				node_val = gradient_ref_depth_gradient * (gradient_ref_depth
+						- node_depth) + gradient_ref_depth_value;
+				this->getProcess()->SetNodeValue(
+						m_msh->nod_vector[i]->GetIndex(), nidx, node_val);
+			}
+		} //if(dis_type_name.find("GRADIENT")!=string::npos)
+		//----------------------------------------------------------------------
+		if (this->getProcessDistributionType() == RESTART) {
+			char line[MAX_ZEILEN];
+			int no_var;
+			int* var_n;
+			vector<string> var_name;
+			string var_name_string;
+			string sdummy;
+			double ddummy, dddummy;
+			long ldummy;
+			//....................................................................
+			// File handling
+			if (rfr_file_name.size() == 0) {
+				cout << "Warning in CInitialCondition::SetDomain - no RFR file"
+						<< endl;
+				return;
+			}
+			ifstream rfr_file;
+			CGSProject* m_gsp = GSPGetMember("msh");
+			string restart_file_name;
+			restart_file_name = rfr_file_name;
+			if (m_gsp)
+				restart_file_name = m_gsp->path + rfr_file_name;
+			//---------------------------------------------------------------------
+			else //Get absolut path of the file. 07.01.2009. WW
+			{
+				basic_string<char>::size_type indexChWin, indexChLinux;
+				indexChWin = indexChLinux = 0;
+				indexChWin = FileName.find_last_of('\\');
+				indexChLinux = FileName.find_last_of('/');
+				//
+				string funfname;
+				if (indexChWin == string::npos && indexChLinux == string::npos)
+					funfname = rfr_file_name;
+				else if (indexChWin != string::npos) {
+					funfname = FileName.substr(0, indexChWin);
+					funfname = funfname + "\\" + rfr_file_name;
+				} else if (indexChLinux != string::npos) {
+					funfname = FileName.substr(0, indexChLinux);
+					funfname = funfname + "/" + rfr_file_name;
+				}
+				restart_file_name = funfname;
+			}
+			//-------------------------------------------------------------------
+			rfr_file.open(restart_file_name.c_str(), ios::in);
+			if (!rfr_file.good()) {
+				cout << "Warning in CInitialCondition::SetDomain - no RFR file"
+						<< endl;
+				return;
+			}
+			rfr_file.seekg(0L, ios::beg); // rewind?
+			rfr_file.getline(line, MAX_ZEILEN); //#0#0#0#1#100000#0#4.2.13 ###########################################
+			rfr_file.getline(line, MAX_ZEILEN); //1 1 4
+			rfr_file >> no_var; //2 1 1
+			var_n = new int[no_var];
+			for (i = 0; i < no_var; i++) {
+				rfr_file >> var_n[i];
+			}
+			size_t pos;
+			for (i = 0; i < no_var; i++) { // HEAD, m ...
+				rfr_file >> var_name_string >> sdummy;
+				pos = var_name_string.find_first_of(',');
+				var_name_string.erase(pos, 1);
+				var_name.push_back(var_name_string);
+			}
+			while (!rfr_file.eof()) { //TODO Implementation/Manual Correction of Keyword #STOP: TK
+				rfr_file >> dddummy;
+				ldummy = (long) dddummy;
+				//WW        cout << ldummy << endl;
+				for (i = 0; i < no_var; i++) { // HEAD, m ...
+					rfr_file >> ddummy;
+					this->getProcess()->SetNodeValue(ldummy, nidx, ddummy);
+				}
+			}
+			//....................................................................
+			delete var_n;
+			var_name.clear();
+		}
+		//----------------------------------------------------------------------
+	}
+	//========================================================================
+	else //WW
+	{
+		bool quadratic = false;
+		/// In case of P_U coupling monolithic scheme
+		if (this->getProcess()->type == 41) //WW Mono
+		{
+			if (convertPrimaryVariableToString(
+					this->getProcessPrimaryVariable()).find("DISPLACEMENT")
+					!= string::npos) //Deform
+				quadratic = true;
+			else
+				quadratic = false;
+		} else if (this->getProcess()->type == 4)
+			quadratic = true;
+		else
+			quadratic = false;
+		//WW if (m_msh){
+		for (k = 0; (size_t) k < SubNumber; k++) {
+			GEOGetNodesInMaterialDomain(m_msh, subdom_index[k], nodes_vector,
+					quadratic);
+			if (this->getProcessDistributionType() == GRADIENT) {
+				if (k == 0) //TEST for DECOVALEX
+				{
+					for (i = 0; i < (int) nodes_vector.size(); i++)
+						this->getProcess()->SetNodeValue(nodes_vector[i], nidx,
+								subdom_ic[k]);
+				} else {
+					for (i = 0; i < (int) nodes_vector.size(); i++) {
+						if (onZ == 1) //2D
+							node_depth
+									= m_msh->nod_vector[nodes_vector[i]]->Y();
+						if (onZ == 2) //2D
+							node_depth
+									= m_msh->nod_vector[nodes_vector[i]]->Z();
+						node_val = ((gradient_ref_depth_gradient)
+								* (gradient_ref_depth - node_depth))
+								+ gradient_ref_depth_value;
+						this->getProcess()->SetNodeValue(nodes_vector[i], nidx,
+								node_val);
+					}
+				}
+			}
+			/* KR not used
+			 else if(dis_type_name.find("FUNCTION")!=string::npos) //01.07.2008 WW
+			 {
+			 for(i=0;i<(int)nodes_vector.size();i++)
+			 {
+			 CNode *thisNode = m_msh->nod_vector[nodes_vector[i]];
+			 this->getProcess()->SetNodeValue(nodes_vector[i],nidx,DistributionFuntion(k, thisNode->X(),thisNode->Y(), thisNode->Z()));
+			 }
+			 }
+			 */
+			else {
+				for (i = 0; i < (int) nodes_vector.size(); i++)
+					this->getProcess()->SetNodeValue(nodes_vector[i], nidx,
+							subdom_ic[k]);
+			}
+		}
+		//  }
+		/*  // Comment by WW
+		 else {
+		 for(k=0; k<SubNumber; k++)
+		 {
+		 GEOGetNodesInMaterialDomain(subdom_index[k], nodes_vector);
+		 if(dis_type_name.find("GRADIENT")!=string::npos)
+		 {
+		 if(k==0) //TEST for DECOVALEX
+		 {
+		 for(i=0;i<(int)nodes_vector.size();i++)
+		 SetNodeVal(nodes_vector[i],nidx, subdom_ic[k]);
+		 }
+		 else
+		 for(i=0;i<(int)nodes_vector.size();i++)
+		 {
+		 if(max_dim==1) //2D
+		 node_depth = GetNodeY(nodes_vector[i]);
+		 if(max_dim==2) //3D
+		 node_depth = GetNodeZ(nodes_vector[i]);
+		 node_val = ((gradient_ref_depth_gradient)*(gradient_ref_depth-node_depth))+
+		 gradient_ref_depth_value;
+		 SetNodeVal(nodes_vector[i],nidx,node_val);
+		 }
 
-           }
-           else
-           {
-              for(i=0;i<(int)nodes_vector.size();i++)
-                 SetNodeVal(nodes_vector[i],nidx, subdom_ic[k]);
-           }
+		 }
+		 else
+		 {
+		 for(i=0;i<(int)nodes_vector.size();i++)
+		 SetNodeVal(nodes_vector[i],nidx, subdom_ic[k]);
+		 }
 
-        }
-      }
-       */
-    }
+		 }
+		 }
+		 */
+	}
 }
 
 
@@ -863,20 +883,18 @@ FEMLib-Method:
 Task:
 Programing:
 01/2005 OK Implementation
-last modified:
+09/2010 KR cleaned up code
 **************************************************************************/
 void ICDelete()
 {
-  long i;
-  int no_ic =(int)ic_vector.size();
-  for(i=0;i<no_ic;i++){
+  size_t no_ic = ic_vector.size();
+  for(size_t i=0;i<no_ic;i++)
     delete ic_vector[i];
-  }
   ic_vector.clear();
-  no_ic = (int)ic_group_vector.size();
-  for(i=0;i<no_ic;i++){
+
+  no_ic = ic_group_vector.size();
+  for(size_t i=0;i<no_ic;i++)
     delete ic_group_vector[i];
-  }
   ic_group_vector.clear();
 }
 
@@ -885,15 +903,13 @@ FEMLib-Method:
 Task:
 Programing:
 01/2005 OK Implementation
-last modified:
+09/2010 KR cleaned up code
 **************************************************************************/
 void ICGroupDelete()
 {
-  long i;
-  int no_ic_group =(int)ic_group_vector.size();
-  for(i=0;i<no_ic_group;i++){
+  size_t no_ic_group = ic_group_vector.size();
+  for (size_t i=0; i<no_ic_group; i++)
     delete ic_group_vector[i];
-  }
   ic_group_vector.clear();
 }
 
@@ -909,7 +925,7 @@ void CInitialCondition::SetDomainEle(int nidx)
 	long i;
 	double ele_val=0.0;
     vector<long>ele_vector;
-    CFEMesh* m_msh = m_pcs->m_msh;
+    CFEMesh* m_msh = this->getProcess()->m_msh;
     k=0;
     CElem* m_ele = NULL;
 
@@ -920,7 +936,7 @@ void CInitialCondition::SetDomainEle(int nidx)
           m_ele = m_msh->ele_vector[i];
           if(m_ele->GetMark()) // Marked for use
           {
-            m_pcs->SetElementValue(i,nidx, ele_val);
+            this->getProcess()->SetElementValue(i,nidx, ele_val);
           }
        }
     }
@@ -935,8 +951,8 @@ void CInitialCondition::SetDomainEle(int nidx)
              m_ele = m_msh->ele_vector[i];
              if(m_ele->GetMark() && m_ele->GetPatchIndex() == subdom_index[k] ) // Marked for use
              {
-               m_pcs->SetElementValue(i, nidx, subdom_ic[k]);
-               ele_val = m_pcs->GetElementValue(i, nidx);
+               this->getProcess()->SetElementValue(i, nidx, subdom_ic[k]);
+               ele_val = this->getProcess()->GetElementValue(i, nidx);
              }
            }
          }
@@ -954,7 +970,7 @@ CInitialCondition* ICGet(string ic_name)
   for(int i=0;i<(int)ic_vector.size();i++)
   {
     m_ic = ic_vector[i];
-    if(m_ic->pcs_type_name.compare(ic_name)==0)
+    if(m_ic->getProcessType() == convertProcessType(ic_name))
       return m_ic;
   }
   return NULL;

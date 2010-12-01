@@ -11,6 +11,9 @@
 namespace GEOLIB {
 
 /**
+ *
+ * \ingroup GEOLIB
+ *
  * \brief Class AABB is a bounding box around a given geometric entity
  * */
 class AABB

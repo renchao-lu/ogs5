@@ -1,7 +1,4 @@
 #include "makros.h"
-#ifdef MFC // -> makros.h
-#include "afxpriv.h" // For WM_SETMESSAGESTRING
-#endif
 
 #include <math.h>
 #include <iostream>
@@ -9,6 +6,7 @@
 #include<fstream>
 #include <time.h>
 
+#include "FEMEnums.h"
 #include "mathlib.h"
 //#include "femlib.h"
 // Element
@@ -253,16 +251,14 @@ last modified: 23.05.2003
 **************************************************************************/
 double CRFProcessDeformation::Execute(const int CouplingIterations)
 {
-#ifdef MFC
-  CWnd *pWin = ((CWinApp *) AfxGetApp())->m_pMainWnd;
-#endif
-
 #if defined(USE_MPI)
   if(myrank==1)
   {
 #endif
   DisplayMsg("\n    ->Process: "); DisplayLong(pcs_number);
-  DisplayMsg(", "); cout << pcs_type_name << endl;
+  DisplayMsg(", ");
+//  cout << pcs_type_name << endl; // TF
+  std::cout << convertProcessTypeToString (getProcessType ()) << std::endl;
 #if defined(USE_MPI)
   }
 #endif
@@ -841,18 +837,12 @@ void CRFProcessDeformation::InitGauss(void)
   for(j=0;j<(long)ic_vector.size();j++)
   {
     m_ic = ic_vector[j];
-    if(m_ic->pcs_pv_name.compare("STRESS_XX")==0)
-      stress_ic[0] = m_ic;
-    if(m_ic->pcs_pv_name.compare("STRESS_YY")==0)
-      stress_ic[1] = m_ic;
-    if(m_ic->pcs_pv_name.compare("STRESS_ZZ")==0)
-      stress_ic[2] = m_ic;
-    if(m_ic->pcs_pv_name.compare("STRESS_XY")==0)
-      stress_ic[3] = m_ic;
-    if(m_ic->pcs_pv_name.compare("STRESS_XZ")==0)
-      stress_ic[4] = m_ic;
-    if(m_ic->pcs_pv_name.compare("STRESS_YZ")==0)
-      stress_ic[5] = m_ic;
+	if (m_ic->getProcessPrimaryVariable() == STRESS_XX) stress_ic[0] = m_ic;
+    if (m_ic->getProcessPrimaryVariable() == STRESS_YY) stress_ic[1] = m_ic;
+    if (m_ic->getProcessPrimaryVariable() == STRESS_ZZ) stress_ic[2] = m_ic;
+    if (m_ic->getProcessPrimaryVariable() == STRESS_XY) stress_ic[3] = m_ic;
+    if (m_ic->getProcessPrimaryVariable() == STRESS_XZ) stress_ic[4] = m_ic;
+    if (m_ic->getProcessPrimaryVariable() == STRESS_YZ) stress_ic[5] = m_ic;
   }
   int ccounter = 0;
   for(j=0; j<NS; j++)
@@ -1572,15 +1562,17 @@ double CRFProcessDeformation::CaclMaxiumLoadRatio(void)
          {
               switch(elem->GetElementType())
               {
-	            case 4: // Triangle
+				case MshElemType::TRIANGLE: // Triangle
                    SamplePointTriHQ(gp, fem_dm->unit);
                    break;
-	             case 2:    // Quadralateral
+				case MshElemType::QUAD:    // Quadralateral
                   gp_r = (int)(gp/NGPS);
                   gp_s = gp%NGPS;
                   fem_dm->unit[0] = MXPGaussPkt(NGPS, gp_r);
                   fem_dm->unit[1] = MXPGaussPkt(NGPS, gp_s);
                   break;
+				default:
+					std::cerr << "CRFProcessDeformation::CaclMaxiumLoadRatio MshElemType not handled" << std::endl;
 	           }
                fem_dm->computeJacobian(2);
 			   fem_dm->ComputeGradShapefct(2);
@@ -1872,7 +1864,7 @@ void CRFProcessDeformation::Trace_Discontinuity()
 
           fem_dm->ConfigElement(elem);
           elem->GetElementFaceNodes(bFaces, FNodes0); //2D
-		  if(elem->GetElementType()==2||elem->GetElementType()==4)
+		  if (elem->GetElementType()==MshElemType::QUAD || elem->GetElementType()==MshElemType::TRIANGLE)
              nPathNodes=2;
           // Locate memory for points on the path of this element
           eleV_DM->NodesOnPath = new Matrix(3, nPathNodes);
@@ -2467,182 +2459,175 @@ void CRFProcessDeformation::ReadGaussPointStress()
 **************************************************************************/
 void CRFProcessDeformation::ReleaseLoadingByExcavation()
 {
-   long i, actElements;
-   int j, k, l, SizeSt, SizeSubD;
-   ElementValue_DM *ele_val=NULL;
+	long i, actElements;
+	int j, k, l, SizeSt, SizeSubD;
+	ElementValue_DM *ele_val = NULL;
 
-   vector<int> ExcavDomainIndex;
-   vector<long> NodesOnCaveSurface;
+	vector<int> ExcavDomainIndex;
+	vector<long> NodesOnCaveSurface;
 
-   CSourceTerm *m_st = NULL;
-   SizeSt = (int)st_vector.size();
-   bool exist = false;
-   double *eqs_b = NULL;
+	CSourceTerm *m_st = NULL;
+	SizeSt = (int) st_vector.size();
+	bool exist = false;
+	double *eqs_b = NULL;
 #ifdef NEW_EQS
-   eqs_b = eqs_new->b;
+	eqs_b = eqs_new->b;
 #else
-   eqs_b = eqs->b;
+	eqs_b = eqs->b;
 #endif
 
-   for(k=0; k<SizeSt; k++)
-   {
-      m_st = st_vector[k];
-      if(m_st->pcs_pv_name.find("EXCAVATION")!=string::npos)
-      {
-          // ---- 16.01.2009 WW
-          exist = false;
-          for(j=k+1; j<SizeSt; j++)
-          {
-            if(m_st->getGeoType() == st_vector[j]->getGeoType())
-            {
-              //
-              exist = true;
-              break;
-            }
-          }
-          if(!exist)
-          //---
-            ExcavDomainIndex.push_back(m_st->getGeoType());
-      }
-   }
-   SizeSubD = (int)ExcavDomainIndex.size();
-   if(SizeSubD==0) return; //05.09.2007 WW
-   exist = false;   // 16.02
-   // 1. De-active host domain to be exvacated
-   actElements = 0;
-   CElem* elem = NULL;
-   for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
-   {
-      elem = m_msh->ele_vector[i];
-      elem->SetMark(false);
-      for(k=0; k<SizeSubD; k++)
-      {
-         if(elem->GetPatchIndex()==ExcavDomainIndex[k])
-           elem->SetMark(true);
-      }
-      if(elem->GetMark()) actElements++;
-   }
-   if(actElements==0)
-   {
-       cout<<"No element specified for excavation. Please check data in .st file "<<endl;
-       abort();
-   }
-   // 2. Compute the released node loading
+	for (k = 0; k < SizeSt; k++) {
+		m_st = st_vector[k];
+		if (m_st->getProcessPrimaryVariable () == EXCAVATION) {
+			// ---- 16.01.2009 WW
+			exist = false;
+			for (j = k + 1; j < SizeSt; j++) {
+				if (m_st->getGeoType() == st_vector[j]->getGeoType()) {
+					//
+					exist = true;
+					break;
+				}
+			}
+			if (!exist)
+				//---
+				ExcavDomainIndex.push_back(m_st->getGeoType());
+		}
+	}
+	SizeSubD = (int) ExcavDomainIndex.size();
+	if (SizeSubD == 0)
+		return; //05.09.2007 WW
+	exist = false; // 16.02
+	// 1. De-active host domain to be exvacated
+	actElements = 0;
+	CElem* elem = NULL;
+	for (i = 0; i < (long) m_msh->ele_vector.size(); i++) {
+		elem = m_msh->ele_vector[i];
+		elem->SetMark(false);
+		for (k = 0; k < SizeSubD; k++) {
+			if (elem->GetPatchIndex() == ExcavDomainIndex[k])
+				elem->SetMark(true);
+		}
+		if (elem->GetMark())
+			actElements++;
+	}
+	if (actElements == 0) {
+		cout
+				<< "No element specified for excavation. Please check data in .st file "
+				<< endl;
+		abort();
+	}
+	// 2. Compute the released node loading
 #ifndef NEW_EQS //WW. 06.11.2008
-   SetLinearSolver(eqs);
-   SetZeroLinearSolver(eqs);
+	SetLinearSolver(eqs);
+	SetZeroLinearSolver(eqs);
 #endif
-   for(i=0; i<4; i++) // In case the domain decomposition is employed
-     fem_dm->NodeShift[i] = Shift[i];
-   //
-   PreLoad = 11;
-   LoadFactor = 1.0;
-   for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
-   {
-      elem = m_msh->ele_vector[i];
-      if (elem->GetMark()) // Marked for use
-	  {
-		  fem_dm->ConfigElement(elem);
-          fem_dm->LocalAssembly(0);
-          ele_val = ele_value_dm[i];
-          // Clear stresses in excavated domain
-          (*ele_val->Stress0) = 0.0;
-          (*ele_val->Stress) =0.0;
-          if(ele_val->Stress_j)
-            (*ele_val->Stress_j) = 0.0;
-	  }
-   }
+	for (i = 0; i < 4; i++) // In case the domain decomposition is employed
+		fem_dm->NodeShift[i] = Shift[i];
+	//
+	PreLoad = 11;
+	LoadFactor = 1.0;
+	for (i = 0; i < (long) m_msh->ele_vector.size(); i++) {
+		elem = m_msh->ele_vector[i];
+		if (elem->GetMark()) // Marked for use
+		{
+			fem_dm->ConfigElement(elem);
+			fem_dm->LocalAssembly(0);
+			ele_val = ele_value_dm[i];
+			// Clear stresses in excavated domain
+			(*ele_val->Stress0) = 0.0;
+			(*ele_val->Stress) = 0.0;
+			if (ele_val->Stress_j)
+				(*ele_val->Stress_j) = 0.0;
+		}
+	}
 
-   // 3 --------------------------------------------------------
-   // Store the released loads to source term buffer
-   long number_of_nodes;
-   CNodeValue *m_node_value = NULL;
-   CGLPolyline *m_polyline = NULL;
-   Surface *m_surface = NULL;
-   vector<long> nodes_vector(0);
+	// 3 --------------------------------------------------------
+	// Store the released loads to source term buffer
+	long number_of_nodes;
+	CNodeValue *m_node_value = NULL;
+	vector<long> nodes_vector(0);
 
-   number_of_nodes = 0;
-   RecordNodeVSize((long)st_node_value.size());
+	number_of_nodes = 0;
+	RecordNodeVSize((long) st_node_value.size());
 
-   //TEST
-   st_node_value.clear();
-   //
+	//TEST
+	st_node_value.clear();
+	//
 
-   for(k=0; k<SizeSt; k++)
-   {
-      // Get nodes on cave surface
-      m_st = st_vector[k];
-      if(m_st->pcs_pv_name.find("EXCAVATION")==string::npos) continue;
-      if(m_st->geo_type_name.compare("POLYLINE")==0)
-      {
-         m_polyline = GEOGetPLYByName(m_st->getGeoName());//CC 10/05
-         if(m_polyline)
-         {
-            m_st->SetPolyline(m_polyline);
-            if(m_polyline->type==100)
-                m_msh->GetNodesOnArc(m_polyline, nodes_vector); //WW
-            else
-            {
-               m_polyline->type = 3;
-               m_msh->GetNODOnPLY(m_polyline, nodes_vector);
-            }
-        }
-      }
-      if(m_st->geo_type_name.compare("SURFACE")==0)
-      {
+	for (k = 0; k < SizeSt; k++) {
+		// Get nodes on cave surface
+		m_st = st_vector[k];
+		if (m_st->getProcessPrimaryVariable () == EXCAVATION)
+			continue;
+		if (m_st->getGeoType () == GEOLIB::POLYLINE) {
+//			CGLPolyline *m_polyline (GEOGetPLYByName(m_st->getGeoName()));
+//			if (m_polyline) {
+//				m_st->SetPolyline(m_polyline);
+//				if (m_polyline->type == 100)
+//					m_msh->GetNodesOnArc(m_polyline, nodes_vector); //WW
+//				else {
+//					m_polyline->type = 3;
+//					m_msh->GetNODOnPLY(m_polyline, nodes_vector);
+//				}
+//			}
+			if (m_st->getGeoObj()) {
+				m_msh->GetNODOnPLY(static_cast<const GEOLIB::Polyline*>(m_st->getGeoObj()), nodes_vector);
+			}
+		}
+		if (m_st->getGeoType () == GEOLIB::SURFACE) {
+			Surface *m_surface = GEOGetSFCByName(m_st->getGeoName());//CC 10/05
+//			 07/2010 TF ToDo: to do away with the global vector surface_vector
+//			                  fetch the geometry from CFEMesh
+//			Surface *m_surface (surface_vector[m_st->getGeoObjIdx()]);
+			if (m_surface) {
+				if (m_surface->type == 100)
+					m_msh->GetNodesOnCylindricalSurface(m_surface, nodes_vector);
+				else
+					m_msh->GetNODOnSFC_PLY(m_surface, nodes_vector);
+			}
+		}
+		// Set released node forces from eqs->b;
+		number_of_nodes = (int) nodes_vector.size();
+		for (j = 0; j < problem_dimension_dm; j++) {
+			for (i = 0; i < number_of_nodes; i++) {
+				m_node_value = new CNodeValue();
+				m_node_value->msh_node_number = nodes_vector[i] + Shift[j];
+				m_node_value->geo_node_number = nodes_vector[i];
+				m_node_value->node_value = -eqs_b[m_node_value->geo_node_number
+						+ Shift[j]];
+				m_node_value->CurveIndex = m_st->CurveIndex;
+				// Each node only take once
+				exist = false;
+				for (l = 0; l < (int) st_node_value.size(); l++) {
+					if (st_node_value[l]->msh_node_number
+							== m_node_value->msh_node_number) {
+						exist = true;
+						break;
+					}
+				}
+				if (!exist)
+					st_node_value.push_back(m_node_value);
 
-          m_surface = GEOGetSFCByName(m_st->getGeoName());//CC 10/05
-          if(m_surface) {
-             if(m_surface->type==100)
-                m_msh->GetNodesOnCylindricalSurface(m_surface, nodes_vector);
-             else
-                m_msh->GetNODOnSFC_PLY(m_surface, nodes_vector);
-          }
-      }
-      // Set released node forces from eqs->b;
-      number_of_nodes = (int)nodes_vector.size();
-      for(j=0;j<problem_dimension_dm;j++)
-      {
-          for(i=0;i<number_of_nodes;i++)
-          {
-             m_node_value = new CNodeValue();
-             m_node_value->msh_node_number = nodes_vector[i]+Shift[j];
-             m_node_value->geo_node_number = nodes_vector[i];
-             m_node_value->node_value = -eqs_b[m_node_value->geo_node_number+Shift[j]];
-             m_node_value->CurveIndex = m_st->CurveIndex;
-             // Each node only take once
-             exist = false;
-             for(l=0; l<(int)st_node_value.size(); l++)
-             {
-                if(st_node_value[l]->msh_node_number==m_node_value->msh_node_number)
-                {
-                   exist = true;
-                   break;
-                }
-             }
-             if(!exist)
-                st_node_value.push_back(m_node_value);
+			}
+		}
 
-          }
-      }
+	}
+	//
+	// Deactivate the subdomains to be excavated
+	if (Deactivated_SubDomain)
+		delete[] Deactivated_SubDomain;
+	Deactivated_SubDomain = new int[SizeSubD];
+	NumDeactivated_SubDomains = SizeSubD;
+	for (j = 0; j < SizeSubD; j++)
+		Deactivated_SubDomain[j] = ExcavDomainIndex[j];
 
-   }
-   //
-   // Deactivate the subdomains to be excavated
-   if(Deactivated_SubDomain) delete [] Deactivated_SubDomain;
-   Deactivated_SubDomain = new int[SizeSubD];
-   NumDeactivated_SubDomains = SizeSubD;
-   for(j=0; j<SizeSubD; j++)
-     Deactivated_SubDomain[j] = ExcavDomainIndex[j];
-
-   // Activate the host domain for excavtion analysis
-   for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
-   {
-      elem = m_msh->ele_vector[i];
-      if(!elem->GetMark())
-      elem->SetMark(true);
-   }
-   PreLoad = 1;
+	// Activate the host domain for excavtion analysis
+	for (i = 0; i < (long) m_msh->ele_vector.size(); i++) {
+		elem = m_msh->ele_vector[i];
+		if (!elem->GetMark())
+			elem->SetMark(true);
+	}
+	PreLoad = 1;
 //TEST OUTPUT
 //   {MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  abort();}
 }
@@ -2684,7 +2669,7 @@ void CRFProcessDeformation::UpdateInitialStress(bool ZeroInitialS)
 bool CRFProcessDeformation::CalcBC_or_SecondaryVariable_Dynamics(bool BC)
 {
   const char *function_name[7];
-  long i, j;
+  long j;
   double v, bc_value, time_fac = 1.0;
 
   vector<int> bc_type;
@@ -2696,15 +2681,14 @@ bool CRFProcessDeformation::CalcBC_or_SecondaryVariable_Dynamics(bool BC)
   int idx_pre, idx_dpre, idx_dpre0;
   int nv, k;
 
-  int Size = m_msh->GetNodesNumber(true)+ m_msh->GetNodesNumber(false);
-  CBoundaryConditionNode *m_bc_node=NULL;
+  size_t Size = m_msh->GetNodesNumber(true)+ m_msh->GetNodesNumber(false);
   CBoundaryCondition *m_bc=NULL;
   bc_type.resize(Size);
 
   v = 0.0;
   // 0: not given
   // 1, 2, 3: x,y, or z is given
-  for(i=0; i<Size; i++) bc_type[i] = 0;
+  for(size_t i=0; i<Size; i++) bc_type[i] = 0;
 
   idx_dpre0 = GetNodeValueIndex("PRESSURE_RATE1");
   idx_dpre = idx_dpre0+1;
@@ -2750,13 +2734,12 @@ bool CRFProcessDeformation::CalcBC_or_SecondaryVariable_Dynamics(bool BC)
   }
 
   //
-  for(i=0;i<(long)bc_node_value.size();i++) {
-     m_bc_node = bc_node_value[i];
+  for(size_t i=0;i<bc_node_value.size();i++) {
+	 CBoundaryConditionNode *m_bc_node = bc_node_value[i];
 	 m_bc = bc_node[i];
      for(j=0; j<nv; j++)
      {
-		if(m_bc->pcs_pv_name.compare(function_name[j])==0)
-          break;
+		if (convertPrimaryVariableToString(m_bc->getProcessPrimaryVariable()).compare(function_name[j]) == 0) break;
 	 }
      if(j==nv)
 	 {
@@ -2834,7 +2817,7 @@ bool CRFProcessDeformation::CalcBC_or_SecondaryVariable_Dynamics(bool BC)
 
 
   // BC
-  for(i=0; i<m_msh->GetNodesNumber(true); i++)
+  for(long i=0; i<m_msh->GetNodesNumber(true); i++)
   {
      for(k=0; k<problem_dimension_dm; k++)
      {
@@ -2860,7 +2843,7 @@ bool CRFProcessDeformation::CalcBC_or_SecondaryVariable_Dynamics(bool BC)
      }
   }
 
-  for(i=0; i<m_msh->GetNodesNumber(false); i++)
+  for(long i=0; i<m_msh->GetNodesNumber(false); i++)
   {
     if(bc_type[i]&(int)pow(2.0, (double)(nv-1)))
          continue;

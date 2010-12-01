@@ -10,6 +10,7 @@ last modified
 #include <cstdlib>  //WW
 #include "mathlib.h"
 // MSHLib
+#include "MSHEnums.h" // KR 2010/11/15
 #include "msh_elem.h"
 
 using namespace std;
@@ -52,7 +53,7 @@ Task:
 Programing:
 06/2005 WW Implementation
 **************************************************************************/
-CElem::CElem(size_t Index) : CCore(Index)
+CElem::CElem(size_t Index) : CCore(Index), normal_vector(NULL)
 {
    grid_adaptation = -1;
    nnodes = 0;
@@ -76,7 +77,7 @@ Task:
 Programing:
 06/2005 WW Implementation
 **************************************************************************/
-CElem::CElem():CCore(0)
+CElem::CElem():CCore(0), normal_vector(NULL)
 {
    selected = 0;
    matgroup_view = 0;
@@ -105,7 +106,7 @@ Programing:
 06/2005 WW Implementation
 **************************************************************************/
 CElem::CElem(size_t Index, CElem* onwer, int Face) :
-	CCore(Index), owner(onwer)
+	CCore(Index), normal_vector(NULL), owner(onwer)
 {
    int i, j, k, n, ne;
    static int faceIndex_loc[10];
@@ -120,60 +121,27 @@ CElem::CElem(size_t Index, CElem* onwer, int Face) :
    //
    switch(owner->geo_type)
    {
-       case 1:  // 1-D bar element
-           break;
-       case 2: // 2-D quadrilateral element
-           nnodes = 2;
-           nnodesHQ = 3;
-           ele_dim = 1;
-           geo_type = 1;
-           nfaces = 2;
-           nedges = 0;
-           break;
-       case 3: // 3-D hexahedral element
-           nnodes = 4;
-           nnodesHQ = 8;
-           ele_dim = 2;
-           geo_type = 2;
-           nfaces = 4;
-           nedges = 4;
-           break;
-       case 4:  // 2-D triagular element
-           nnodes = 2;
-           nnodesHQ = 3;
-           ele_dim = 1;
-           geo_type = 1;
-           nfaces = 2;
-           nedges = 0;
-           break;
-       case 5:  // 3-D tetrahedral element
-           nnodes = 3;
-           nnodesHQ = 6;
-           ele_dim = 2;
-           geo_type = 4;
-           nfaces = 3;
-           nedges = 3;
-           break;
-       case 6:
-           if(Face<2)
-	       {
-              nnodes = 3;
-              nnodesHQ = 6;
-              ele_dim = 2;
-              geo_type = 4;
-              nfaces = 3;
-              nedges = 3;
-           }
-           else
-	       {
-              nnodes = 4;
-              nnodesHQ = 8;
-              ele_dim = 2;
-              geo_type = 2;
-              nfaces = 4;
-              nedges = 4;
-           }
-           break; // 3-D prismatic element
+		//case MshElemType::LINE:  // 1-D bar element //KR need not be processed
+		case MshElemType::QUAD: // 2-D quadrilateral element
+			this->setElementProperties(MshElemType::LINE, true);
+			break;
+		case MshElemType::HEXAHEDRON: // 3-D hexahedral element
+			this->setElementProperties(MshElemType::QUAD, true);
+			break;
+		case MshElemType::TRIANGLE:  // 2-D triagular element
+			this->setElementProperties(MshElemType::LINE, true);
+			break;
+		case MshElemType::TETRAHEDRON:  // 3-D tetrahedral element
+			this->setElementProperties(MshElemType::TRIANGLE, true);
+			break;
+		case MshElemType::PRISM:	// 3-D prismatic element
+			if (Face<2) // top or bottom face of the prism
+				this->setElementProperties(MshElemType::TRIANGLE, true);
+			else // side of the prism
+				this->setElementProperties(MshElemType::QUAD, true);
+			break;
+		default:
+			std::cerr << "CElem::CElem MshElemType not handled" << std::endl;
     }
 
     patch_index =  owner->patch_index;
@@ -225,7 +193,7 @@ Programing:
 06/2005 WW/OK Implementation
 **************************************************************************/
 CElem::CElem(size_t Index, CElem* m_ele_parent) :
-	CCore(Index)
+	CCore(Index), normal_vector(NULL)
 {
   int i;
 //  static int faceIndex_loc[10];
@@ -233,61 +201,10 @@ CElem::CElem(size_t Index, CElem* m_ele_parent) :
   gravity_center[0] = gravity_center[1] = gravity_center[2] = 0.0;
   tranform_tensor = NULL;
   angle = NULL;
-  switch(m_ele_parent->geo_type)
-  {
-      case 1:
-         nnodes = 2;
-         nnodesHQ = 3;
-         ele_dim = 1;
-         geo_type = 1;
-         nfaces = 2;
-         nedges = 0;
-         break;
-      case 2:
-         nnodes = 4;
-         nnodesHQ = 9;
-         ele_dim = 2;
-         geo_type = 2;
-         nfaces = 4;
-         nedges = 4;
-         break;
-      case 3:
-         nnodes = 8;
-         nnodesHQ = 20;
-         ele_dim = 3;
-         nfaces = 6;
-         nedges = 12;
-         geo_type = 3;
-         break;
-      case 4:
-         nnodes = 3;
-         nnodesHQ = 6;
-         ele_dim = 2;
-         geo_type = 4;
-         nfaces = 3;
-         nedges = 3;
-         break;
-      case 5:
-         nnodes = 4;
-         nnodesHQ = 10;
-         ele_dim = 3;
-         geo_type = 5;
-         nfaces = 4;
-         nedges = 6;
-         break;
-      case 6:
-         nnodes = 6;
-         nnodesHQ = 15;
-         ele_dim = 3;
-         geo_type = 6;
-         nfaces = 5;
-         nedges = 9;
-		 break;
-    }
+  this->setElementProperties(m_ele_parent->geo_type);
+
     patch_index =  m_ele_parent->patch_index;
 	quadratic = m_ele_parent->quadratic;
-    nodes_index.resize(nnodes);
-    nodes.resize(nnodes);
 
 	boundary_type='I';
     //----------------------------------------------------------------------
@@ -343,7 +260,7 @@ void CElem::FillTransformMatrix()
    double yy[3];
    double zz[3];
    tranform_tensor = new Matrix(3,3);
-   if(geo_type==1)
+   if(geo_type==MshElemType::LINE)
    {
        // x"_vec
 	   xx[0] = nodes[1]->X()-nodes[0]->X();
@@ -377,7 +294,7 @@ void CElem::FillTransformMatrix()
        CrossProduction(zz,xx,yy);
        NormalizeVector(yy,3);
    }
-   else if (geo_type==2||geo_type==4)
+   else if (geo_type==MshElemType::QUAD || geo_type==MshElemType::TRIANGLE)
    {
        // x"_vec
 	   xx[0] = nodes[1]->X()-nodes[0]->X();
@@ -443,48 +360,23 @@ void CElem:: SetFace(CElem* onwer, const int Face)
    face_index = Face;
    switch(owner->geo_type)
    {
-       case 1:  // 1-D bar element
-           break;
-       case 2: // 2-D quadrilateral element
-           break;
-       case 3: // 3-D hexahedral element
-           nnodes = 4;
-           nnodesHQ = 8;
-           ele_dim = 2;
-           geo_type = 2;
-           nfaces = 4;
-           nedges = 4;
-           break;
-       case 4:  // 2-D triagular element
-           break;
-       case 5:  // 3-D tetrahedral element
-           nnodes = 3;
-           nnodesHQ = 6;
-           ele_dim = 2;
-           geo_type = 4;
-           nfaces = 3;
-           nedges = 3;
-           break;
-       case 6:
-           if(Face<2)
-	       {
-              nnodes = 3;
-              nnodesHQ = 6;
-              ele_dim = 2;
-              geo_type = 4;
-              nfaces = 3;
-              nedges = 3;
-           }
-           else
-	       {
-              nnodes = 4;
-              nnodesHQ = 8;
-              ele_dim = 2;
-              geo_type = 2;
-              nfaces = 4;
-              nedges = 4;
-           }
-           break; // 3-D prismatic element
+		//case MshElemType::LINE:  // 1-D bar element
+		//case MshElemType::QUAD: // 2-D quadrilateral element
+		case MshElemType::HEXAHEDRON: // 3-D hexahedral element
+			this->setElementProperties(MshElemType::QUAD, true);
+			break;
+		//case MshElemType::TRIANGLE:  // 2-D triagular element
+		case MshElemType::TETRAHEDRON:  // 3-D tetrahedral element
+			this->setElementProperties(MshElemType::TRIANGLE, true);
+			break;
+		case MshElemType::PRISM:
+			if(Face<2)
+				this->setElementProperties(MshElemType::TRIANGLE, true);
+			else
+				this->setElementProperties(MshElemType::QUAD, true);
+			break; // 3-D prismatic element
+		default:
+			std::cerr << "CElem::SetFace MshElemType not handled" << std::endl;
     }
 
 
@@ -499,28 +391,13 @@ MSHLib-Method:
 Task:
 Programing:
 06/2005 WW Implementation
+11/2010 KR moved to MSHEnums.h
 **************************************************************************/
 string CElem::GetName() const
 {
-
-   switch(geo_type)
-   {
-     case 1:
-       return "line";
-     case 2:
-       return "quad";
-     case 3:
-       return "hex";
-     case 4:
-       return "tri";
-     case 5:
-       return "tet";
-     case 6:
-       return "pris";
-     default:
-       return "none";
-   }
+	return MshElemType2String(geo_type);
 }
+
 /**************************************************************************
 MSHLib-Method:
 Programing:
@@ -554,6 +431,7 @@ void CElem::Read(istream& is, int fileType)
     case 0: // msh
       is>>index>>patch_index;
       is>>buffer;
+
 	  if(buffer.find("-1")!=string::npos)
 	  {
           grid_adaptation = strtol(buffer.data(),NULL,0);
@@ -561,144 +439,80 @@ void CElem::Read(istream& is, int fileType)
 	  }
 	  else
 	    name = buffer;
-      if(name.find("line")!=string::npos)
-         geo_type = 1;
-      else if(name.find("quad")!=string::npos)
-         geo_type = 2;
-      else if(name.find("hex")!=string::npos)
-         geo_type = 3;
-      else if(name.find("tri")!=string::npos)
-         geo_type = 4;
-      else if(name.find("tet")!=string::npos)
-         geo_type = 5;
-      else if(name.find("pri")!=string::npos)
-         geo_type = 6;
+
+      geo_type = String2MshElemType(name);
       break;
     //....................................................................
     case 1: // rfi
 	  is>>index>>patch_index>>name;
-      if(name.find("line")!=string::npos)
-         geo_type = 1;
-      else if(name.find("quad")!=string::npos)
-         geo_type = 2;
-      else if(name.find("hex")!=string::npos)
-         geo_type = 3;
-      else if(name.find("tri")!=string::npos)
-         geo_type = 4;
-      else if(name.find("tet")!=string::npos)
-         geo_type = 5;
-      else if(name.find("pri")!=string::npos)
-         geo_type = 6;
+      geo_type = String2MshElemType(name);
       break;
     //....................................................................
     case 2: // gmsh
-      is>>index>>et>>gmsh_patch_index>>idummy>>nnodes;
+      is >> index >> et >> gmsh_patch_index >> idummy >> nnodes;
       patch_index = gmsh_patch_index-1; //OK
       switch(et)
       {
-         case 1: geo_type = 1; break;
-         case 2: geo_type = 4; break;
-         case 3: geo_type = 2; break;
-         case 4: geo_type = 5; break;
-         case 5: geo_type = 3; break;
-         case 6: geo_type = 6; break;
+		case 1: geo_type = MshElemType::LINE; break;
+		case 2: geo_type = MshElemType::TRIANGLE; break;
+		case 3: geo_type = MshElemType::QUAD; break;
+		case 4: geo_type = MshElemType::TETRAHEDRON; break;
+		case 5: geo_type = MshElemType::HEXAHEDRON; break;
+		case 6: geo_type = MshElemType::PRISM; break;
       }
 	  index--;
       break;
     case 7: // GMSH 2008
-	  is>>index>>et>>nb_tags>>gmsh_patch_index;
+	  is >> index >> et >> nb_tags >> gmsh_patch_index;
       patch_index = gmsh_patch_index;
 	  for (j=0;j<nb_tags-1;j++){
-      is>>idummy;
+		  is>>idummy;
       }
       switch(et)
       {
-         case 1: geo_type = 1; nnodes=2; break;
-         case 2: geo_type = 4; nnodes=3; break;
-         case 3: geo_type = 2; nnodes=4; break;
-         case 4: geo_type = 5; nnodes=4; break;
-         case 5: geo_type = 3; nnodes=8; break;
-         case 6: geo_type = 6; nnodes=6; break;
+		case 1: geo_type = MshElemType::LINE; nnodes=2; break;
+		case 2: geo_type = MshElemType::TRIANGLE; nnodes=3; break;
+		case 3: geo_type = MshElemType::QUAD; nnodes=4; break;
+		case 4: geo_type = MshElemType::TETRAHEDRON; nnodes=4; break;
+		case 5: geo_type = MshElemType::HEXAHEDRON; nnodes=8; break;
+		case 6: geo_type = MshElemType::PRISM; nnodes=6; break;
+		case 15: geo_type = MshElemType::INVALID; nnodes=1; break;
+		default:
+			geo_type = MshElemType::INVALID;
       }
 	  index--;
       break;
     //....................................................................
     case 3: // GMS
-      geo_type = 4;
+		geo_type = MshElemType::TRIANGLE;
       break;
     //....................................................................
     case 4: // gmsh
-      geo_type = 4;
+		geo_type = MshElemType::TRIANGLE;
       break;
     //....................................................................
     case 5: // FLAC 3D. 14.01.2008 WW
-      geo_type = 3;
+		geo_type = MshElemType::HEXAHEDRON;
       break;
-    case 53: // FLAC3D - hex (Brick)        //MR
-    case 55: // FLAC3D - tet (Tetrahedron)  //MR
     case 56: // FLAC3D - pri (Wedge)        //MR
-      geo_type = fileType - 50;             //MR
+	  geo_type = MshElemType::PRISM;             //MR
       fileType = 5;                         //MR
       break;                                //MR
-    //....................................................................
-    case 6: // FEFLOW
-      // nothing todo
-      break;
   }
+
+  // TF
+  if (geo_type == MshElemType::INVALID) {
+	  // read rest of line
+	  std::string tmp;
+	  getline (is, tmp);
+	  return;
+  }
+
   //----------------------------------------------------------------------
   // 2 Element configuration
-  switch(geo_type)
-   {
-      case 1:
-         nnodes = 2;
-         nnodesHQ = 3;
-         ele_dim = 1;
-         geo_type = 1;
-         nfaces = 2;
-         nedges = 0;
-         break;
-      case 2:
-         nnodes = 4;
-         nnodesHQ = 9;
-         ele_dim = 2;
-         geo_type = 2;
-         nfaces = 4;
-         nedges = 4;
-         break;
-      case 3:
-         nnodes = 8;
-         nnodesHQ = 20;
-         ele_dim = 3;
-         nfaces = 6;
-         nedges = 12;
-         geo_type = 3;
-         break;
-      case 4:
-         nnodes = 3;
-         nnodesHQ = 6;
-         ele_dim = 2;
-         geo_type = 4;
-         nfaces = 3;
-         nedges = 3;
-         break;
-      case 5:
-         nnodes = 4;
-         nnodesHQ = 10;
-         ele_dim = 3;
-         geo_type = 5;
-         nfaces = 4;
-         nedges = 6;
-         break;
-      case 6:
-         nnodes = 6;
-         nnodesHQ = 15;
-         ele_dim = 3;
-         geo_type = 6;
-         nfaces = 5;
-         nedges = 9;
-		 break;
-   }
-   nodes_index.resize(nnodes);
+  this->setElementProperties(geo_type);
+
+
   //----------------------------------------------------------------------
   // 3 Reading element node data
   switch(fileType){
@@ -721,11 +535,17 @@ void CElem::Read(istream& is, int fileType)
       break;
     //....................................................................
     case 7: // GMSH 2008
-      for(int i=0; i<nnodes; i++){
-        is>>nodes_index[i];
-        nodes_index[i] -= 1;
-      }
-      break;
+    	if (et != 15) {
+    		for(int i=0; i<nnodes; i++){
+    			is>>nodes_index[i];
+    			nodes_index[i] -= 1;
+    		}
+    	} else {
+    		// eat rest of line
+    		std::string dummy;
+    		is >> dummy;
+    	}
+    	break;
     //....................................................................
     case 3: // GMS
       for(int i=0; i<nnodes; i++){
@@ -758,7 +578,7 @@ void CElem::Read(istream& is, int fileType)
       }
       break;
     case 8: // GMS_3DM
-	  is>>idummy;	 
+	  is>>idummy;
       for(int i=0; i<nnodes; i++)
       {
         is>>nodes_index[i];
@@ -887,16 +707,14 @@ Programing:
 void CElem::WriteIndex_TEC(ostream &os) const
 {
     string deli = "  ";
-    if(geo_type==1)
-       os<<nodes_index[0]+1<<deli<<nodes_index[1]+1<<deli
-	     <<nodes_index[1]+1<<deli<<nodes_index[0]+1;
+	if(geo_type==MshElemType::LINE)
+       os<<nodes_index[0]+1<<deli<<nodes_index[1]+1<<deli<<nodes_index[1]+1<<deli<<nodes_index[0]+1;
 
-	else if(geo_type==4)
+	else if(geo_type==MshElemType::TRIANGLE)
 	{
-       os<<nodes_index[0]+1<<deli<<nodes_index[1]+1<<deli
-	     <<nodes_index[2]+1<<deli<<nodes_index[0]+1;
+       os<<nodes_index[0]+1<<deli<<nodes_index[1]+1<<deli<<nodes_index[2]+1<<deli<<nodes_index[0]+1;
     }
-    else if(geo_type==6)
+	else if(geo_type==MshElemType::PRISM)
     {
        os<<nodes_index[0]+1<<deli<<nodes_index[0]+1<<deli<<nodes_index[1]+1<<deli<<nodes_index[2]+1<<deli
          <<nodes_index[3]+1<<deli<<nodes_index[3]+1<<deli<<nodes_index[4]+1<<deli<<nodes_index[5]+1<<deli;
@@ -921,7 +739,7 @@ void CElem::WriteAll(ostream &os) const
     os<<index<<deli<<patch_index<<deli<<GetName()<<deli;
     //if(index==0)
     os<<"Index X Y Z: "<<endl;
-				for(int i=0; i<nodes.Size(); i++)
+				for(size_t i=0; i<nodes.Size(); i++)
     {
        os<<nodes_index[i]
        <<deli<<nodes[i]->X()
@@ -967,7 +785,7 @@ Task:
 Programing:
 06/2005 WW Implementation
 **************************************************************************/
-void CElem::SetNodes(vec<CNode*>&  ele_nodes, const bool ReSize)
+void CElem::SetNodes(vec<CNode*>&  ele_nodes, bool ReSize)
 {
     int SizeV = nnodes;
     if(quadratic) SizeV = nnodesHQ;
@@ -992,13 +810,13 @@ void  CElem::GetLocalIndicesOfEdgeNodes(const int Edge, int *EdgeNodes)
 {
 	switch(geo_type)
 	{
-       case 1:
+		case MshElemType::LINE:
            break; // 1-D bar element
-       case 2: // 2-D quadrilateral element
+		case MshElemType::QUAD: // 2-D quadrilateral element
           EdgeNodes[0] = Edge;
           EdgeNodes[1] = (Edge+1)%4;
           break;
-       case 3: // 3-D hexahedral element
+		case MshElemType::HEXAHEDRON: // 3-D hexahedral element
           if(Edge<8)
           {
              EdgeNodes[0] = Edge;
@@ -1010,11 +828,11 @@ void  CElem::GetLocalIndicesOfEdgeNodes(const int Edge, int *EdgeNodes)
              EdgeNodes[1] = Edge%4+4;
           }
           break;
-       case 4:  // 2-D triagular element
+		case MshElemType::TRIANGLE:  // 2-D triagular element
           EdgeNodes[0] = Edge;
           EdgeNodes[1] = (Edge+1)%3;
           break;
-       case 5:  // 3-D tetrahedra
+		case MshElemType::TETRAHEDRON:  // 3-D tetrahedra
           if(Edge<3)
           {
              EdgeNodes[0] = Edge;
@@ -1027,7 +845,7 @@ void  CElem::GetLocalIndicesOfEdgeNodes(const int Edge, int *EdgeNodes)
           }
 
           break;
-       case 6: // 3-D prismatic element
+		case MshElemType::PRISM: // 3-D prismatic element
           if(Edge<6)
           {
              EdgeNodes[0] = Edge;
@@ -1039,6 +857,8 @@ void  CElem::GetLocalIndicesOfEdgeNodes(const int Edge, int *EdgeNodes)
              EdgeNodes[1] = Edge%3+3;
           }
           break;
+		default:
+			std::cerr << "CElem::GetLocalIndicesOfEdgeNodes MshElemType not handled" << std::endl;
 	}
 }
 /**************************************************************************
@@ -1367,22 +1187,25 @@ int CElem::GetElementFaceNodes(int Face, int *FacesNode)
 {
    switch(geo_type)
    {
-       case 1:  // 1-D bar element
+		case MshElemType::LINE:  // 1-D bar element
            return GetElementFaces1D(FacesNode);
-       case 2: // 2-D quadrilateral element
+		case MshElemType::QUAD: // 2-D quadrilateral element
            return GetElementFacesQuad(Face, FacesNode);
-       case 3: // 3-D hexahedral element
+		case MshElemType::HEXAHEDRON: // 3-D hexahedral element
            return GetElementFacesHex(Face, FacesNode);
-       case 4:  // 2-D triagular element
+		case MshElemType::TRIANGLE:  // 2-D triagular element
            return GetElementFacesTri(Face, FacesNode);
-       case 5:  // 3-D tetrahedral element
+		case MshElemType::TETRAHEDRON:  // 3-D tetrahedral element
            return GetElementFacesTet(Face, FacesNode);
-       case 6:
+		case MshElemType::PRISM:
            return GetElementFacesPri(Face, FacesNode);
 			 // 3-D prismatic element
+		default:
+			std::cerr << "CElem::GetElementFaceNodes MshElemType not handled" << std::endl;
     }
     return 0;
 }
+
 /**************************************************************************
 FindFaceEdges(const int LocalFaceIndex, vec<CEdge*>&  face_edges)
 Task: set element faces (Geometry)
@@ -1394,19 +1217,20 @@ retrun: number of face edges
 Programing:
 07/2005 WW
 **************************************************************************/
+/* KR not used
 int CElem::FindFaceEdges(const int LocalFaceIndex, vec<CEdge*>&  face_edges)
 {
     int i;
 	i=0;
 	switch(geo_type)
 	{
-       case 1:
+		case MshElemType::LINE:
            break; // 1-D bar element
-       case 2: // 2-D quadrilateral element
+		case MshElemType::QUAD: // 2-D quadrilateral element
 		  face_edges[0] = edges[LocalFaceIndex];
           return 1;
           break;
-       case 3: // 3-D hexahedral element
+		case MshElemType::HEXAHEDRON: // 3-D hexahedral element
           if(LocalFaceIndex<2)
           {
              for(i=0; i<4; i++)
@@ -1443,11 +1267,11 @@ int CElem::FindFaceEdges(const int LocalFaceIndex, vec<CEdge*>&  face_edges)
 
           return 4;
           break;
-       case 4:  // 2-D triagular element
+		case MshElemType::TRIANGLE:  // 2-D triagular element
 		  face_edges[0] = edges[LocalFaceIndex];
           return 1;
           break;
-       case 5:  // 3-D tetrahedra
+		case MshElemType::TETRAHEDRON:  // 3-D tetrahedra
           if(LocalFaceIndex==0)
           {
 			 face_edges[0] = edges[1];
@@ -1474,7 +1298,7 @@ int CElem::FindFaceEdges(const int LocalFaceIndex, vec<CEdge*>&  face_edges)
 		  }
           return 3;
           break;
-       case 6: // 3-D prismatic element
+		case MshElemType::PRISM: // 3-D prismatic element
           if(LocalFaceIndex<2)
           {
              for(i=0; i<3; i++)
@@ -1510,6 +1334,8 @@ int CElem::FindFaceEdges(const int LocalFaceIndex, vec<CEdge*>&  face_edges)
 	}
 	return 0;
 }
+*/
+
 /**************************************************************************
 MSHLib-Method:
 Task:´For elements with straight edges and surfaces
@@ -1523,7 +1349,8 @@ void CElem::ComputeVolume()
     double x3buff[3];
     double x4buff[3];
     volume = 0.0;
-    if(geo_type!=1)
+
+	if(geo_type!=MshElemType::LINE)
     {
        x1buff[0] = nodes[0]->X();
        x1buff[1] = nodes[0]->Y();
@@ -1540,18 +1367,18 @@ void CElem::ComputeVolume()
 
 	switch(geo_type)
     {
-      case 1: // Line
+		case MshElemType::LINE: // Line
          x2buff[0] = nodes[nnodes-1]->X()-nodes[0]->X();
          x2buff[1] = nodes[nnodes-1]->Y()-nodes[0]->Y();
          x2buff[2] = nodes[nnodes-1]->Z()-nodes[0]->Z();
          volume = sqrt(x2buff[0]*x2buff[0]+x2buff[1]*x2buff[1]+x2buff[2]*x2buff[2]) ;
          representative_length = sqrt(x2buff[0]*x2buff[0]+x2buff[1]*x2buff[1]+x2buff[2]*x2buff[2]) ;//CMCD kg44 reactivated
         break;
-      case 4: // Triangle
+		case MshElemType::TRIANGLE: // Triangle
          volume = ComputeDetTri(x1buff, x2buff, x3buff);
          representative_length = sqrt(volume)*4.0; //kg44 reactivated
         break;
-      case 2:    // Quadrilateral
+		case MshElemType::QUAD:    // Quadrilateral
          x4buff[0] = nodes[3]->X();
          x4buff[1] = nodes[3]->Y();
          x4buff[2] = nodes[3]->Z();
@@ -1560,7 +1387,7 @@ void CElem::ComputeVolume()
                +ComputeDetTri(x3buff, x4buff, x1buff);
          representative_length = sqrt(volume); //kg44 reactivated
         break;
-      case 5:    // Tedrahedra
+		case MshElemType::TETRAHEDRON:    // Tedrahedra
          x4buff[0] = nodes[3]->X();
          x4buff[1] = nodes[3]->Y();
          x4buff[2] = nodes[3]->Z();
@@ -1568,7 +1395,7 @@ void CElem::ComputeVolume()
          volume =  ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
          representative_length = sqrt(volume)*6.0; //kg44 reactivated
          break;
-      case 3:    // Hexehadra
+		case MshElemType::HEXAHEDRON:    // Hexehadra
          x1buff[0] = nodes[4]->X();
          x1buff[1] = nodes[4]->Y();
          x1buff[2] = nodes[4]->Z();
@@ -1673,7 +1500,7 @@ void CElem::ComputeVolume()
          volume  += ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
          representative_length = pow(volume,1./3.); //kg44 reactivated
          break;
-      case 6:    // Prism
+	  case MshElemType::PRISM:    // Prism
          x4buff[0] = nodes[3]->X();
          x4buff[1] = nodes[3]->Y();
          x4buff[2] = nodes[3]->Z();
@@ -1714,68 +1541,11 @@ void CElem::ComputeVolume()
          volume  += ComputeDetTex(x1buff, x2buff, x3buff, x4buff);
          representative_length = pow(volume,1./3.);  // kg44 reactivated ---------Here the direction of flow needs to be taken into account, we need rep length in x,y,z direction
          break;
+		default:
+			std::cerr << "CElem::ComputeVolume MshElemType not handled" << std::endl;
     }
 }
 
-/**************************************************************************
-MSHLib-Method:
-Programing:
-10/2005 OK Implementation
-**************************************************************************/
-void CElem::Config()
-{
-  switch(geo_type)
-   {
-      case 1:
-         nnodes = 2;
-         nnodesHQ = 3;
-         ele_dim = 1;
-         geo_type = 1;
-         nfaces = 2;
-         nedges = 0;
-         break;
-      case 2:
-         nnodes = 4;
-         nnodesHQ = 9;
-         ele_dim = 2;
-         geo_type = 2;
-         nfaces = 4;
-         nedges = 4;
-         break;
-      case 3:
-         nnodes = 8;
-         nnodesHQ = 20;
-         ele_dim = 3;
-         nfaces = 6;
-         nedges = 12;
-         geo_type = 3;
-         break;
-      case 4:
-         nnodes = 3;
-         nnodesHQ = 6;
-         ele_dim = 2;
-         geo_type = 4;
-         nfaces = 3;
-         nedges = 3;
-         break;
-      case 5:
-         nnodes = 4;
-         nnodesHQ = 10;
-         ele_dim = 3;
-         geo_type = 5;
-         nfaces = 4;
-         nedges = 6;
-         break;
-      case 6:
-         nnodes = 6;
-         nnodesHQ = 15;
-         ele_dim = 3;
-         geo_type = 6;
-         nfaces = 5;
-         nedges = 9;
-		 break;
-   }
-}
 
 /**************************************************************************
 MSHLib-Method:
@@ -1789,7 +1559,8 @@ void CElem::FaceNormal(int index0, int index1, double* face)
    double xx[3];
    double yy[3];
    double zz[3];
-   if (GetElementType() == 4 || GetElementType() == 2){
+   if (GetElementType() == MshElemType::TRIANGLE || GetElementType() == MshElemType::QUAD)
+   {
 //----plane normal----------------------------
       // tranform_tensor = new Matrix(3,3);
        // face"_vec
@@ -1824,26 +1595,82 @@ MSHLib-Method:
 **************************************************************************/
 void CElem::SetNormalVector()
 {
-  double v1[3],v2[3];
-  if(!normal_vector)
-     normal_vector = new double[3]; //WW
-  switch(GetElementType())
-  {
-    case 1: // line
-      break;
-    case 2: // quad
-      break;
-    case 4: // tri
-      v1[0] = nodes[1]->X() - nodes[0]->X();
-      v1[1] = nodes[1]->Y() - nodes[0]->Y();
-      v1[2] = nodes[1]->Z() - nodes[0]->Z();
-      v2[0] = nodes[2]->X() - nodes[0]->X();
-      v2[1] = nodes[2]->Y() - nodes[0]->Y();
-      v2[2] = nodes[2]->Z() - nodes[0]->Z();
-      CrossProduction(v1,v2,normal_vector);
-      NormalizeVector(normal_vector,3);
-      break;
-  }
+	double v1[3],v2[3];
+	if(!normal_vector)
+		normal_vector = new double[3]; //WW
+
+	if (this->GetElementType() == MshElemType::TRIANGLE)
+	{
+		v1[0] = nodes[1]->X() - nodes[0]->X();
+		v1[1] = nodes[1]->Y() - nodes[0]->Y();
+		v1[2] = nodes[1]->Z() - nodes[0]->Z();
+		v2[0] = nodes[2]->X() - nodes[0]->X();
+		v2[1] = nodes[2]->Y() - nodes[0]->Y();
+		v2[2] = nodes[2]->Z() - nodes[0]->Z();
+		CrossProduction(v1,v2,normal_vector);
+		NormalizeVector(normal_vector,3);
+	}
 }
+
+// KR 2010/11/16
+void CElem::setElementProperties(MshElemType::type t, bool isFace)
+{
+	switch(t)
+	{
+		case MshElemType::LINE:
+			 nnodes = 2;
+			 nnodesHQ = 3;
+			 ele_dim = 1;
+			 geo_type = MshElemType::LINE;
+			 nfaces = 2;
+			 nedges = 0;
+			 break;
+		case MshElemType::QUAD:
+			 nnodes = 4;
+			 nnodesHQ = (isFace) ? 8 : 9; // if a QUAD is the face of a hex it has 8 nodes, otherwise it has 9
+			 ele_dim = 2;
+			 geo_type = MshElemType::QUAD;
+			 nfaces = 4;
+			 nedges = 4;
+			 break;
+		case MshElemType::HEXAHEDRON:
+			 nnodes = 8;
+			 nnodesHQ = 20;
+			 ele_dim = 3;
+			 nfaces = 6;
+			 nedges = 12;
+			 geo_type = MshElemType::HEXAHEDRON;
+			 break;
+		case MshElemType::TRIANGLE:
+			 nnodes = 3;
+			 nnodesHQ = 6;
+			 ele_dim = 2;
+			 geo_type = MshElemType::TRIANGLE;
+			 nfaces = 3;
+			 nedges = 3;
+			 break;
+		case MshElemType::TETRAHEDRON:
+			 nnodes = 4;
+			 nnodesHQ = 10;
+			 ele_dim = 3;
+			 geo_type = MshElemType::TETRAHEDRON;
+			 nfaces = 4;
+			 nedges = 6;
+			 break;
+		case MshElemType::PRISM:
+			 nnodes = 6;
+			 nnodesHQ = 15;
+			 ele_dim = 3;
+			 geo_type = MshElemType::PRISM;
+			 nfaces = 5;
+			 nedges = 9;
+			 break;
+		default:
+			std::cerr << "CElem::setElementProperties MshElemType not handled" << std::endl;
+    }
+	this->nodes_index.resize(nnodes);
+}
+
+
 
 } // namespace Mesh_Group

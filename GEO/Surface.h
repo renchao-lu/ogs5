@@ -9,17 +9,22 @@
 #define SURFACE_H_
 
 #include <vector>
+
+#include "GeoObject.h"
 #include "Point.h"
 #include "Triangle.h"
 #include "AxisAlignedBoundingBox.h"
 
 namespace GEOLIB {
 
-/** \brief A Surface is represented by Triangles. It consists of a reference
+/**
+ * \ingroup GEOLIB
+ *
+ * \brief A Surface is represented by Triangles. It consists of a reference
  * to a vector of (pointers to) points (m_sfc_pnts) and a vector that stores
  * the Triangles consisting of points from m_sfc_pnts.
  * */
-class Surface
+class Surface : public GeoObject
 {
 public:
 	Surface	(const std::vector<Point*> &pnt_vec);

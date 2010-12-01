@@ -9,15 +9,15 @@
 #include <limits>
 
 // FEM
-#include <GeoInfo.h>
+#include "GeoInfo.h"
 
 
 GeoInfo::GeoInfo() :
-	_geo_type (GEOLIB::POINT), _geo_obj_idx (std::numeric_limits<size_t>::max())
+	_geo_type (GEOLIB::POINT), _geo_obj (NULL)
 {}
 
-GeoInfo::GeoInfo(GEOLIB::GEOTYPE geo_type, size_t geo_obj_idx) :
-	_geo_type (geo_type), _geo_obj_idx (geo_obj_idx)
+GeoInfo::GeoInfo(GEOLIB::GEOTYPE geo_type, const GEOLIB::GeoObject* geo_obj) :
+	_geo_type (geo_type), _geo_obj (geo_obj)
 {}
 
 GeoInfo::~GeoInfo()
@@ -51,12 +51,12 @@ void GeoInfo::setGeoType (GEOLIB::GEOTYPE geo_type)
 	_geo_type = geo_type;
 }
 
-size_t GeoInfo::getGeoObjIdx () const
+const GEOLIB::GeoObject* GeoInfo::getGeoObj () const
 {
-	return _geo_obj_idx;
+	return _geo_obj;
 }
 
-void GeoInfo::setGeoObjIdx (size_t geo_obj_idx)
+void GeoInfo::setGeoObj (const GEOLIB::GeoObject* geo_obj)
 {
-	_geo_obj_idx = geo_obj_idx;
+	_geo_obj = geo_obj;
 }

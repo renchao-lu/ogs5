@@ -7,6 +7,7 @@
 #define MSHITEM_H
 
 #include "TreeItem.h"
+#include "VtkMeshSource.h"
 
 class GridAdapter;
 class VtkMeshSource;
@@ -24,13 +25,12 @@ public:
 	~MshItem();
 
 	/// Returns the mesh as a GridAdapter.
-	GridAdapter* getGrid() const { return _grid; };
+	const GridAdapter* getGrid() const { return this->_meshSource->GetGrid(); };
 	/// Returns the VTK object.
 	VtkMeshSource* vtkSource() const { return _meshSource; };	
 
 
 private:
-	GridAdapter* _grid;
 	VtkMeshSource* _meshSource;
 };
 

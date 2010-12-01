@@ -8,6 +8,7 @@
 
 // ** INCLUDES **
 #include "GridAdapter.h"
+#include "MshEditDialog.h"
 #include "MshTabWidget.h"
 #include "MshModel.h"
 #include "OGSError.h"
@@ -25,7 +26,7 @@ MshTabWidget::MshTabWidget( QWidget* parent /*= 0*/ )
 
 	connect(this->clearSelectedPushButton, SIGNAL(clicked()), this, SLOT(removeMesh()));
 	connect(this->clearAllPushButton, SIGNAL(clicked()), this, SLOT(removeAllMeshes()));
-	
+
 
 /*
 	mshTableView->setSelectionMode(QAbstractItemView::ExtendedSelection);
@@ -56,16 +57,29 @@ void MshTabWidget::removeAllMeshes()
 void MshTabWidget::contextMenuEvent( QContextMenuEvent* event )
 {
 	QMenu menu;
+	QAction* editMeshAction    = menu.addAction("Edit mesh...");
 	QAction* saveMeshAction    = menu.addAction("Save mesh...");
+	connect(editMeshAction, SIGNAL(triggered()), this, SLOT(openMshEditDialog()));
 	connect(saveMeshAction, SIGNAL(triggered()), this, SLOT(writeMeshToFile()));
 	menu.exec(event->globalPos());
+}
+
+void MshTabWidget::openMshEditDialog()
+{
+	MshModel* model = static_cast<MshModel*>(this->treeView->model());
+	QModelIndex index = this->treeView->selectionModel()->currentIndex();
+	const Mesh_Group::CFEMesh* mesh = static_cast<MshModel*>(this->treeView->model())->getMesh(index)->getCFEMesh();
+
+	MshEditDialog meshEdit(mesh);
+	connect(&meshEdit, SIGNAL(mshEditFinished(Mesh_Group::CFEMesh*, std::string&)), model, SLOT(addMesh(Mesh_Group::CFEMesh*, std::string&)));
+	meshEdit.exec();
 }
 
 int MshTabWidget::writeMeshToFile() const
 {
 	QModelIndex index = this->treeView->selectionModel()->currentIndex();
-	const CFEMesh* mesh = static_cast<MshModel*>(this->treeView->model())->getMesh(index)->getCFEMesh();
-    
+	const Mesh_Group::CFEMesh* mesh = static_cast<MshModel*>(this->treeView->model())->getMesh(index)->getCFEMesh();
+
 	if (mesh)
 	{
 		QString mshName = QString::fromStdString(static_cast<MshModel*>(this->treeView->model())->getMesh(index)->getName());
@@ -80,7 +94,7 @@ int MshTabWidget::writeMeshToFile() const
 				out->close();
 				return 1;
 			}
-			else 
+			else
 				std::cout << "MshTabWidget::saveMeshFile() - Could not create file..." << std::endl;
 		}
 		else OGSError::box("No file name entered.");

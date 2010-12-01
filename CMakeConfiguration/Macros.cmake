@@ -137,11 +137,21 @@ FUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration)
     STRING (SUBSTRING ${benchmarkName} 0 ${substringLength} benchmarkDir)
     STRING (REPLACE "/" "_" benchmarkNameUnderscore ${benchmarkName})
 
+    # Delete output files on testing
+    FOREACH (entry ${ARGN})
+	SET (FILES_TO_DELETE "${FILES_TO_DELETE} ${entry}")
+    ENDFOREACH (entry ${ARGN})
+
+    # Adds a benchmark run. This calls AddTest.cmake to execute several steps.
     ADD_TEST (
       ${authorName}_BENCHMARK_${benchmarkName}
-      ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/../benchmarks/${benchmarkDir}
-      ${ogsExe}
-      ${benchmarkStrippedName}
+      ${CMAKE_COMMAND}
+	-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+	-DEXECUTABLE_OUTPUT_PATH=${EXECUTABLE_OUTPUT_PATH}
+	-DbenchmarkStrippedName=${benchmarkStrippedName}
+	-DbenchmarkDir=${benchmarkDir}
+	-DFILES_TO_DELETE=${FILES_TO_DELETE}
+	-P ${PROJECT_SOURCE_DIR}/CMakeConfiguration/AddBenchmark.cmake
     )
     
     # compare file differences with python script only on dev2.intern.ufz.de
@@ -155,7 +165,7 @@ FUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration)
     	    ${authorName}_FILECOMPARE_${benchmarkName}  
     	    ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/../benchmarks/results
     	    ${PYTHON_EXECUTABLE}
-    	    ../compare.py
+    	    ${PROJECT_SOURCE_DIR}/scripts/compare.py
     	    temp/temp_${benchmarkNameUnderscore}.txt
     	    ../../benchmarks_ref/
     	    ${authorName}_${benchmarkNameUnderscore}.html
@@ -182,30 +192,6 @@ FUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration)
   ENDIF (CONFIG_MATCH)   
   
 ENDFUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration filesToCompare)
-
-MACRO(ADD_FILES_COMPARE authorName)
-  # compare file differences with python script
-  IF (PYTHONINTERP_FOUND)
-    ADD_TEST (
-      ${authorName}_FILECOMPARE    
-      ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/../benchmarks
-      ${PYTHON_EXECUTABLE}
-      compare.py
-      ${authorName}_output_list.cmake
-      ../benchmarks_ref/
-      ${authorName}.html
-    )
-  # compare files with builtin cmake command
-  ELSE (PYTHONINTERP_FOUND)
-    INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/${authorName}_output_list.cmake)
-    FOREACH (OUTPUTFILE ${${authorName}_OUTPUT_LIST})
-      ADD_TEST (
-        ${authorName}_FILECOMPARE_${OUTPUTFILE}
-        ${CMAKE_COMMAND} -E compare_files ${PROJECT_SOURCE_DIR}/../benchmarks/${OUTPUTFILE} ${PROJECT_SOURCE_DIR}/../benchmarks_ref/${OUTPUTFILE}
-      )
-    ENDFOREACH (OUTPUTFILE ${${authorName}_OUTPUT_LIST})
-  ENDIF (PYTHONINTERP_FOUND)
-ENDMACRO(ADD_FILES_COMPARE authorName)
 
 # Checks if a valid ogs configuration is given
 FUNCTION(CHECK_CONFIG)
@@ -247,5 +233,46 @@ FUNCTION(CHECK_CONFIG)
 			OGS_FEM_LIS
 			OGS_FEM_CHEMAPP")
 	ENDIF (counter GREATER 1)
+	
+ENDFUNCTION()
+
+# Sets variable PROCESSOR_COUNT
+# Can be used with: cmake --build .
+FUNCTION(CHECK_PROCESSOR_COUNT)
+	
+	IF(NOT DEFINED PROCESSOR_COUNT)
+
+	  # Unknown:
+	  SET(PROCESSOR_COUNT 0)
+
+	  # Linux:
+	  SET(cpuinfo_file "/proc/cpuinfo")
+	  IF(EXISTS "${cpuinfo_file}")
+	    FILE(STRINGS "${cpuinfo_file}" procs REGEX "^processor.: [0-9]+$")
+	    LIST(LENGTH procs PROCESSOR_COUNT)
+	  ENDIF()
+
+	  # Mac:
+	  IF(APPLE)
+	    FIND_PROGRAM(cmd_sys_pro "system_profiler")
+	    IF(cmd_sys_pro)
+	      EXECUTE_PROCESS(COMMAND ${cmd_sys_pro} OUTPUT_VARIABLE info)
+	      STRING(REGEX REPLACE "^.*Total Number Of Cores: ([0-9]+).*$" "\\1"
+	        PROCESSOR_COUNT "${info}")
+	    ENDIF()
+	  ENDIF()
+
+	  # Windows:
+	  IF(WIN32)
+	    SET(PROCESSOR_COUNT "$ENV{NUMBER_OF_PROCESSORS}")
+	  ENDIF()
+
+	ENDIF()
+	
+	IF(PROCESSOR_COUNT)
+	  SET(CTEST_BUILD_FLAGS "-j${PROCESSOR_COUNT}")
+	ENDIF()
+	
+	# MESSAGE(STATUS "No. of processors: ${PROCESSOR_COUNT}")
 	
 ENDFUNCTION()

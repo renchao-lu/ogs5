@@ -1,12 +1,11 @@
 # Source files
 SET( SOURCES
-	ColorLookupTable.cpp
 	GridAdapter.cpp
 	VtkAddFilterDialog.cpp
-	VtkBGImageSource.cpp
+	VtkApplyColorTableFilter.cpp
 	VtkColorByHeightFilter.cpp
+	VtkColorLookupTable.cpp
 	VtkMeshSource.cpp
-	VtkOGSFilter.cpp
 	VtkTextureOnSurfaceFilter.cpp
 	VtkPolylinesSource.cpp
 	VtkPointsSource.cpp
@@ -16,7 +15,24 @@ SET( SOURCES
 	VtkVisPipelineItem.cpp
 	VtkVisPipelineView.cpp
 	VtkVisTabWidget.cpp
+	VtkVisHelper.cpp
 	VtkTrackedCamera.cpp
+	VtkGeoImageSource.cpp
+	VtkBGImageSource.cpp
+	VtkImageDataToLinePolyDataFilter.cpp
+	VtkAlgorithmPropertyLineEdit.cpp
+	VtkCompositeFilter.cpp
+	VtkCompositeImageToCylindersFilter.cpp
+	VtkAlgorithmPropertyCheckbox.cpp
+	VtkFilterFactory.cpp
+	VtkCompositeLineToTubeFilter.cpp
+	VtkCompositePointToGlyphFilter.cpp
+	VtkCompositeColorByHeightFilter.cpp
+	VtkCompositeColormapToImageFilter.cpp
+	VtkCompositeTextureOnSurfaceFilter.cpp
+	VtkCompositeThresholdFilter.cpp
+	VtkAlgorithmPropertyVectorEdit.cpp
+	QVtkDataSetMapper.cpp
 )
 
 # Moc headers
@@ -26,22 +42,40 @@ SET( MOC_HEADERS
 	VtkVisPipelineView.h
 	VtkVisTabWidget.h
 	VtkTrackedCamera.h
+	VtkAlgorithmPropertyLineEdit.h
+	VtkAlgorithmPropertyCheckbox.h
+	VtkAlgorithmPropertyVectorEdit.h
+	VtkAlgorithmProperties.h
+	QVtkDataSetMapper.h
 )
 
 # Header files
 SET( HEADERS
-	ColorLookupTable.h
 	GridAdapter.h
-	VtkAlgorithmProperties.h	
-	VtkBGImageSource.h
+	#OGSFilterInfo.h
+	VtkApplyColorTableFilter.h
 	VtkColorByHeightFilter.h
+	VtkColorLookupTable.h
 	VtkMeshSource.h
-	VtkOGSFilter.h
+	#VtkOGSFilter.h
 	VtkTextureOnSurfaceFilter.h
 	VtkPolylinesSource.h
 	VtkPointsSource.h
 	VtkStationSource.h
 	VtkSurfacesSource.h
+	VtkVisHelper.h
+	VtkGeoImageSource.h
+	VtkBGImageSource.h
+	VtkImageDataToLinePolyDataFilter.h
+	VtkCompositeFilter.h
+	VtkCompositeImageToCylindersFilter.h
+	VtkFilterFactory.h
+	VtkCompositeLineToTubeFilter.h
+	VtkCompositePointToGlyphFilter.h
+	VtkCompositeColorByHeightFilter.h
+	VtkCompositeColormapToImageFilter.h
+	VtkCompositeTextureOnSurfaceFilter.h
+	VtkCompositeThresholdFilter.h
 	VtkVisPipelineItem.h
 )
 
@@ -54,6 +88,14 @@ SET ( UIS
 # Put moc files in a project folder
 SOURCE_GROUP("UI Files" REGULAR_EXPRESSION "\\w*\\.ui")
 SOURCE_GROUP("Moc Files" REGULAR_EXPRESSION "moc_.*")
+
+# Put filter in a folder
+SOURCE_GROUP("Filter Header Files" REGULAR_EXPRESSION "[.]*Filter.h")
+SOURCE_GROUP("Filter Source Files" REGULAR_EXPRESSION "[.]*Filter.cpp")
+
+# Put vtk source files in a folder
+SOURCE_GROUP("Source Header Files" REGULAR_EXPRESSION "[.]*Source.h")
+SOURCE_GROUP("Source Source Files" REGULAR_EXPRESSION "[.]*Source.cpp")
 
 # Run Qts user interface compiler uic on .ui files
 QT4_WRAP_UI( UI_HEADERS ${UIS} )

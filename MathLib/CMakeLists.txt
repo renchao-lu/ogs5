@@ -6,7 +6,9 @@ set( HEADERS
 	AnalyticalGeometry.h
 	max.h
 	LinkedTriangle.h
-	# direcory LinAlg
+	CubicSpline.h
+	LinearInterpolation.h
+	# directory LinAlg
 	LinAlg/GaussAlgorithm.h
 	LinAlg/TriangularSolve.h
 )
@@ -15,7 +17,9 @@ set( SOURCES
 	MathTools.cpp
 	AnalyticalGeometry.cpp
 	LinkedTriangle.cpp
-	# direcory LinAlg
+	CubicSpline.cpp
+	LinearInterpolation.cpp
+	# directory LinAlg
 	LinAlg/GaussAlgorithm.cpp
 	LinAlg/TriangularSolve.cpp
 )
@@ -31,3 +35,9 @@ include_directories(
 	.
 	./LinAlg
 )
+
+target_link_libraries (
+	MathLib
+        Base
+)
+

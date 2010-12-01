@@ -19,7 +19,7 @@ Color* getRandomColor()
 	return new Color((rand()%5)*50, (rand()%5)*50, (rand()%5)*50);
 }
 
-int readColorLookupTable(std::map<std::string, Color> &colors, const std::string &filename)
+int readColorLookupTable(std::map<std::string, Color*> &colors, const std::string &filename)
 {
 	std::string id = "", line = "";
 
@@ -34,38 +34,38 @@ int readColorLookupTable(std::map<std::string, Color> &colors, const std::string
 	while ( getline(in, line) )
 	{
 		std::list<std::string> fields = splitString(line, '\t');
-		Color c;
+		Color *c = new Color();
 
 		if (fields.size()>=4)
 		{
 			id = fields.front();
 			fields.pop_front();
-			c[0] = atoi(fields.front().c_str());
+			(*c)[0] = atoi(fields.front().c_str());
 			fields.pop_front();
-			c[1] = atoi(fields.front().c_str());
+			(*c)[1] = atoi(fields.front().c_str());
 			fields.pop_front();
-			c[2] = atoi(fields.front().c_str());
-			colors.insert(std::pair<std::string, Color>(id, c));
+			(*c)[2] = atoi(fields.front().c_str());
+			colors.insert(std::pair<std::string, Color*>(id, c));
 		}
 	}
 
 	return 1;
 }
 
-Color getColor(const std::string &id, std::map<std::string, Color> &colors)
+const Color* getColor(const std::string &id, std::map<std::string, Color*> &colors)
 {
-	for (std::map<std::string, Color>::const_iterator it=colors.begin(); it !=colors.end(); ++it)
+	for (std::map<std::string, Color*>::const_iterator it=colors.begin(); it !=colors.end(); ++it)
 	{
 		if (id.compare(it->first) == 0)
 			return it->second;
 	}
-	std::cout << "Key not found in color lookup table..." << std::endl;
+	std::cout << "Key \"" << id << "\" not found in color lookup table..." << std::endl;
 	Color* c = getRandomColor();
-	colors.insert(std::pair<std::string, Color>(id, *c));
-	return *c;
+	colors.insert(std::pair<std::string, Color*>(id, c));
+	return c;
 }
 
-Color getColor(const double id, std::map<std::string, GEOLIB::Color> &colors)
+const Color* getColor(double id, std::map<std::string, GEOLIB::Color*> &colors)
 {
 	std::ostringstream stream;
 	stream << id;

@@ -365,14 +365,13 @@ Programing:
 void GEOSurfaceGLI2GEO(FILE *geo_file)
 {
 //OK3908
-  int mesh_surface;
-  mesh_surface=0;
+  int mesh_surface (0);
   CGLPolyline *polyline;
   /* Write the forth entity, surface */
    vector<CGLPolyline*>::iterator p = polyline_vector.begin();//CC
   while(p!=polyline_vector.end()) {
     polyline = *p;
-    if(polyline->type==2) {
+    if(polyline->getType() == 2) {
       mesh_surface++;
       FilePrintString(geo_file, "// Surface");
       LineFeed (geo_file);
@@ -568,6 +567,7 @@ void Surface::ReArrangePolylineList()
 	while(buff.size())
         buff.pop_back();
 }
+
 /**************************************************************************
 GeoLib-Method: Surface::PolylineOrientation(void)
 Task: check the polyline orientation of surface
@@ -690,42 +690,34 @@ Programing:
 08/2004 CC Modification
 09/2004 OK for what surfaces (data_type)
 01/2006 OK Compact
+10/2010 TF some improvements in code structure
 **************************************************************************/
 void GEOSurfaceTopology(void)
 {
-  Surface *m_sfc = NULL;
-  CGLPolyline* m_ply = NULL;
-  // Not used: long polyline_of_surface_list_length;
-  int j;
-  //----------------------------------------------------------------------
-  for(int i=0;i<(int)surface_vector.size();i++)
-  {
-    m_sfc = surface_vector[i];
-    if(m_sfc->polyline_of_surface_vector.size()==0)
-      continue;
-	if(m_sfc->order==false)
-    {
-      for(j=0;j<(int)m_sfc->polyline_of_surface_vector.size();j++)
-      {
-        m_ply = m_sfc->polyline_of_surface_vector[j];
-        if(m_ply->data_type==1)   // OK not a toplogical polyline
-        {
-          continue;
-        }
-	    //compute lines and put into polyline line, here all orientation is 1
-	    m_ply->ComputeLines(m_ply);
-      }
-      //..................................................................
-      // Reorder the polyline list
-      m_sfc->ReArrangePolylineList();
-      //..................................................................
-      // Check start and end point of polyline, change the orientation value
-      m_sfc->PolylineOrientation();
-      //surface polyline --point rearrangement
-      m_sfc->order = false;
+	for (size_t i = 0; i < surface_vector.size(); i++) {
+		Surface *sfc = surface_vector[i];
+		if (sfc->polyline_of_surface_vector.size() == 0)
+			continue;
+		if (sfc->order == false) {
+			for (size_t j = 0; j < sfc->polyline_of_surface_vector.size(); j++) {
+				CGLPolyline* ply = sfc->polyline_of_surface_vector[j];
+				if (ply->getDataType() == 1) { // OK not a toplogical polyline
+					continue;
+				}
+				//compute lines and put into polyline line, here all orientation is 1
+				ply->ComputeLines();
+			}
+			//..................................................................
+			// Reorder the polyline list
+			sfc->ReArrangePolylineList();
+			//..................................................................
+			// Check start and end point of polyline, change the orientation value
+			sfc->PolylineOrientation();
+			//surface polyline --point rearrangement
+			sfc->order = false;
+		}
+		//----------------------------------------------------------------------
 	}
-  //----------------------------------------------------------------------
-  }
 }
 
 /**************************************************************************
@@ -1583,6 +1575,7 @@ Surface* GEOGetSFCByName(const std::string &name)
   }
   return NULL;
 }
+
 /**************************************************************************
 GEOLib-Method:
 Task:

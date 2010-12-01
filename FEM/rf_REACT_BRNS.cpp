@@ -34,7 +34,7 @@ REACT_BRNS::REACT_BRNS(void)
 {
     // number of Components;
     num_Comp = 0;
-    
+
     // set initialized flag to false by default;
     init_flag = false;
 
@@ -118,7 +118,7 @@ void REACT_BRNS::TestRUN(void)
 	for (int i = 0 ; i < sizeOfArray; i++){
 		cout << i << ": " << myArray[i] << endl;
 	}
-	
+
 	delete [] myArray;
 	myArray = NULL;
 
@@ -130,16 +130,15 @@ long REACT_BRNS::GetNodesNumber(void)
 	long number;
     number =0;
 	//------------read number of nodes--------------
-	for (int i=0; i < (int)pcs_vector.size(); i++)
-	{
+	for (size_t i=0; i < pcs_vector.size(); i++) {
 		m_pcs = pcs_vector[i];
-		if (m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0)
-		{
+//		if (m_pcs->pcs_type_name.compare("MASS_TRANSPORT")==0) {
+		if (m_pcs->getProcessType() == MASS_TRANSPORT) {
 			number = (long) m_pcs->m_msh->GetNodesNumber(false);
 			return number;
 		}
 	}
-	//------------end of reading number of nodes---- 
+	//------------end of reading number of nodes----
 	return number;
 }
 
@@ -147,11 +146,10 @@ long REACT_BRNS::GetElemNumber(void)
 {
 	long number;
 	//------------read number of elems--------------
-	for ( int i=0; i < ( int ) pcs_vector.size(); i++ )
-	{
+	for ( size_t i=0; i < pcs_vector.size(); i++ ) {
 		m_pcs = pcs_vector[i];
-		if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) ==0 )
-		{
+//		if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) ==0 ) {
+		if ( m_pcs->getProcessType() == MASS_TRANSPORT) {
 			number = ( long ) m_pcs->m_msh->ele_vector.size();
 			return number;
 		}
@@ -164,7 +162,7 @@ int REACT_BRNS::GetCompsNumber(void)
 {
     long number;
     number = 0;
-    
+
     number = (int)cp_vec.size();
 
     return number;
@@ -174,7 +172,7 @@ void REACT_BRNS::InitBRNS(Problem *myProblem)
 {
     num_Comp = GetCompsNumber();
     nNodes = GetNodesNumber();
-    nElems = GetElemNumber(); 
+    nElems = GetElemNumber();
 	flowflag = GetFlowType_MT();
 
 	this->myProblem = myProblem;
@@ -183,7 +181,7 @@ void REACT_BRNS::InitBRNS(Problem *myProblem)
     cur_ts_Conc = new double[num_Comp*nNodes];
     pre_ts_Conc = new double[num_Comp*nNodes];
     m_dC_Chem_delta = new double[num_Comp*nNodes];
-    m_porosity_Node = new double[nNodes]; 
+    m_porosity_Node = new double[nNodes];
     m_porosity_Elem = new double[nElems];
 
     rt_BRNS = new int[nNodes];
@@ -228,7 +226,7 @@ void REACT_BRNS::InitBRNS(Problem *myProblem)
 			this_pcs = NULL;
 			m_cp = cp_vec[k];
 
-			// Get the pointer to the proper PCS. 
+			// Get the pointer to the proper PCS.
 			this_pcs = PCSGet( "MASS_TRANSPORT", m_cp->compname );
 			if (this_pcs)
 			{
@@ -237,8 +235,9 @@ void REACT_BRNS::InitBRNS(Problem *myProblem)
 					// Let's print BC and ST values
 					CBoundaryConditionsGroup *m_bc_group = NULL;
 
-					m_bc_group = BCGetGroup(this_pcs->pcs_type_name,this_pcs->pcs_primary_function_name[p]);
-				
+					const std::string tmp_pcs_type (convertProcessTypeToString(this_pcs->getProcessType()));
+					m_bc_group = BCGetGroup(tmp_pcs_type,this_pcs->pcs_primary_function_name[p]);
+
 					// BC printing
 					if( IsThisPointBCIfYesStoreValue(i, this_pcs, BCValue) )
 					{
@@ -253,26 +252,22 @@ void REACT_BRNS::InitBRNS(Problem *myProblem)
 					}
 				} 	// end of for
 			}		// end of if (this_pcs)
-			else  // not getting the pointer to the proper PCS. 
-			{
-				#ifdef MFC
-				  AfxMessageBox("!!! In Data transfer for BRNS, can not find corresponding PCS!");
-				#endif
+			else  { // not getting the pointer to the proper PCS.
 				  DisplayErrorMsg("!!! In InitBRNS, can not find corresponding PCS!");
 				abort();
 			}
-		
+
 		}	// end of for components
 	}
     // fill in the porosity values.
-    for ( long i=0 ; i < (long)m_flow_pcs->m_msh->ele_vector.size(); i++ ) 
+    for ( size_t i=0 ; i < m_flow_pcs->m_msh->ele_vector.size(); i++ )
     {
         int idx_patch = m_flow_pcs->m_msh->ele_vector[i]->GetPatchIndex();
-        MediaProp = mmp_vector[idx_patch]; 
-        m_porosity_Elem[i] = MediaProp->Porosity( i , 0.0 ); 
+        MediaProp = mmp_vector[idx_patch];
+        m_porosity_Elem[i] = MediaProp->Porosity( i , 0.0 );
     }
     // averaging to Nodes
-    int idx_elem; 
+    int idx_elem;
     double elem_volume;
     double total_volume;
     for ( long i=0 ; i < nNodes ; i++ )
@@ -284,10 +279,10 @@ void REACT_BRNS::InitBRNS(Problem *myProblem)
             {
                 idx_elem = m_flow_pcs->m_msh->nod_vector[i]->connected_elements[j];
                 elem_volume = m_flow_pcs->m_msh->ele_vector[idx_elem]->GetVolume();
-                m_porosity_Node[i] += m_porosity_Elem[idx_elem] * elem_volume; 
-                total_volume += elem_volume; 
+                m_porosity_Node[i] += m_porosity_Elem[idx_elem] * elem_volume;
+                total_volume += elem_volume;
             }
-            m_porosity_Node[i] = m_porosity_Node[i]/total_volume; 
+            m_porosity_Node[i] = m_porosity_Node[i]/total_volume;
         }
         else
         {
@@ -305,7 +300,7 @@ void REACT_BRNS::GSRF2Buffer(long i)
           this_pcs = NULL;
           m_cp = cp_vec[k];
 
-          // Get the pointer to the proper PCS. 
+          // Get the pointer to the proper PCS.
           this_pcs = PCSGet( "MASS_TRANSPORT", m_cp->compname );
           if (this_pcs)
           {
@@ -314,7 +309,7 @@ void REACT_BRNS::GSRF2Buffer(long i)
               pre_ts_Conc[i_times_num_Comp_plus_k] = this_pcs->GetNodeValue( i , this_pcs->GetNodeValueIndex( this_pcs->pcs_primary_function_name[0] )+ 0 );
 
           }
-          else  // not getting the pointer to the proper PCS. 
+          else  // not getting the pointer to the proper PCS.
           {
 	          #ifdef MFC
     	        AfxMessageBox("!!! In Data transfer for BRNS, can not find corresponding PCS!");
@@ -334,14 +329,14 @@ void REACT_BRNS::Buffer2GSRF(long i)
           this_pcs = NULL;
           m_cp = cp_vec[k];
 
-          // Get the pointer to the proper PCS. 
+          // Get the pointer to the proper PCS.
           this_pcs = PCSGet( "MASS_TRANSPORT", m_cp->compname );
           if (this_pcs)
           {
               // Set the Concentration of this component at current time step;
               this_pcs->SetNodeValue( i, this_pcs->GetNodeValueIndex(this_pcs->pcs_primary_function_name[0])+1/*1-current time step*/,pre_ts_Conc[i_times_num_Comp_plus_k]);
           }
-          else  // not getting the pointer to the proper PCS. 
+          else  // not getting the pointer to the proper PCS.
           {
               #ifdef MFC
                 AfxMessageBox("!!! In Data transfer for BRNS, can not find corresponding PCS!");
@@ -365,9 +360,9 @@ void REACT_BRNS::RUN(double time_step)
 #else
 			startTime = clock();
 #endif
-	
 
-      // Loop over all nodes to transfer data 
+
+      // Loop over all nodes to transfer data
       for ( i=0 ; i < nNodes ; i++ )
       {
           // Get Conc Data from GSRF;
@@ -381,7 +376,7 @@ void REACT_BRNS::RUN(double time_step)
 	  // double porosity;
 	  double waterSaturation;
 
-	  //------------end of reading number of nodes---- 
+	  //------------end of reading number of nodes----
 
 
 
@@ -398,9 +393,9 @@ void REACT_BRNS::RUN(double time_step)
       omp_set_num_threads((int)NUM_THREADS);
       cout << "Max. thread num is:" << omp_get_max_threads() << endl;
 
-      #pragma omp parallel for shared(nNodes_temp, num_Comp_temp, time_step, cur_ts_Conc_temp, pre_ts_Conc_temp, boundary_flag_temp) private(i,pos_x,pos_y,pos_z) 
+      #pragma omp parallel for shared(nNodes_temp, num_Comp_temp, time_step, cur_ts_Conc_temp, pre_ts_Conc_temp, boundary_flag_temp) private(i,pos_x,pos_y,pos_z)
       for ( i=0 ; i < nNodes_temp ; i++ )
-      {   
+      {
 	  pos_x = m_pcs->m_msh->nod_vector[i]->X();
 	  pos_y = m_pcs->m_msh->nod_vector[i]->Y();
 	  pos_z = m_pcs->m_msh->nod_vector[i]->Z();
@@ -426,7 +421,7 @@ void REACT_BRNS::RUN(double time_step)
 #else
       for ( i=0 ; i < nNodes ; i++ )
 #endif
-      {   
+      {
 		  // Check out if this node is on the boundary - A fixed boundary condition
 	  pos_x = m_pcs->m_msh->nod_vector[i]->X();
 	  pos_y = m_pcs->m_msh->nod_vector[i]->Y();
@@ -441,7 +436,7 @@ void REACT_BRNS::RUN(double time_step)
 	  //------------------------
 
           // Run BRNS;
-//	 solverTime=0.0;		
+//	 solverTime=0.0;
 //	 if (pos_x== 0 && pos_y==0) { porosity=8; pos_z=99.9; waterSaturation=3.3; solverTime=7.0; cout << "solverTime passed to BRNS: " << solverTime << endl; }
 
 #ifdef USE_MPI_BRNS
@@ -459,10 +454,10 @@ void REACT_BRNS::RUN(double time_step)
       // calculate dC
       for ( i=0 ; i < nNodes*num_Comp ; i++)
         m_dC_Chem_delta[i] = cur_ts_Conc[i] - pre_ts_Conc[i];
-           
+
       // Loop over all nodes to retrieve data
       for ( i=0 ; i < nNodes ; i++ )
-      {  
+      {
           // Set data back to GSRF
           Buffer2GSRF(i);
 		  if (rt_BRNS[i] == 2 || rt_BRNS[i] == 3) {
@@ -493,8 +488,8 @@ void REACT_BRNS::RUN(double time_step)
 		  }
 #endif
 	  }
-      // do not forget to write the porosity value into the Node data structure here. 
-      // 1 stands for new time step. 
+      // do not forget to write the porosity value into the Node data structure here.
+      // 1 stands for new time step.
       ConvPorosityNodeValue2Elem(0);
       ConvPorosityNodeValue2Elem(1);
 
@@ -522,7 +517,7 @@ void REACT_BRNS::RUN(double time_step)
 
 int REACT_BRNS::IsThisPointBCIfYesStoreValue(int index, CRFProcess* m_pcs, double& value)
 {
-   for(int p=0; p< (int)m_pcs->bc_node_value.size(); ++p)	
+   for(int p=0; p< (int)m_pcs->bc_node_value.size(); ++p)
    {
      if(index == m_pcs->bc_node_value[p]->msh_node_number)
      {
@@ -603,28 +598,26 @@ void REACT_BRNS::GetFluidProperty_MT ( void )
 
 int REACT_BRNS::GetFlowType_MT ( void )
 {
-
 	//flow type
-	for ( int i=0; i < ( int ) pcs_vector.size() ; i++ )
-	{
+	for ( size_t i=0; i < pcs_vector.size() ; i++ ) {
 		m_pcs = pcs_vector[i];
-		if ( m_pcs->pcs_type_name.compare ( "GROUNDWATER_FLOW" ) ==0 )
-		{
+//		if ( m_pcs->pcs_type_name.compare ( "GROUNDWATER_FLOW" ) ==0 ) {
+		if ( m_pcs->getProcessType() == GROUNDWATER_FLOW) {
 			m_flow_pcs = m_pcs;
 			return 1;
 		}
-		else if ( m_pcs->pcs_type_name.compare ( "LIQUID_FLOW" ) ==0 )
-		{
+//		else if ( m_pcs->pcs_type_name.compare ( "LIQUID_FLOW" ) ==0 ) {
+		else if ( m_pcs->getProcessType() == LIQUID_FLOW ) {
 			m_flow_pcs = m_pcs;
 			return 2;
 		}
-		else if ( m_pcs->pcs_type_name.compare ( "RICHARDS_FLOW" ) ==0 )
-		{
+//		else if ( m_pcs->pcs_type_name.compare ( "RICHARDS_FLOW" ) ==0 ) {
+		else if ( m_pcs->getProcessType() == RICHARDS_FLOW ) {
 			m_flow_pcs = m_pcs;
 			return 3;
 		}
-		else if ( m_pcs->pcs_type_name.compare ( "TWO_PHASE_FLOW" ) ==0 )
-		{
+//		else if ( m_pcs->pcs_type_name.compare ( "TWO_PHASE_FLOW" ) ==0 ) {
+		else if ( m_pcs->getProcessType() == TWO_PHASE_FLOW  ) {
 			m_flow_pcs = m_pcs;
 			return 4;
 		}
@@ -676,7 +669,7 @@ void REACT_BRNS::ConvPorosityNodeValue2Elem ( int i_timestep )
 #ifdef USE_MPI_BRNS
 void REACT_BRNS::GetBRNSResult_MPI(void)
 {
-    // Retrieve the values from MPI buffer to the main memory 
+    // Retrieve the values from MPI buffer to the main memory
     MPI_Allreduce( rt_BRNS_buf, rt_BRNS, nNodes, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     MPI_Allreduce( pre_ts_Conc_buf, pre_ts_Conc, num_Comp*nNodes, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 

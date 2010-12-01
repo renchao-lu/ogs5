@@ -11,27 +11,27 @@
 #include "Station.h"
 
 // Base
-#include "NameMapper.h"
 #include "quicksort.h"
 #include "binarySearch.h"
 
 #include <vector>
 #include <string>
+#include <map>
 
 #ifndef POINTVEC_H_
 #define POINTVEC_H_
 
-void makePntsUnique (std::vector<GEOLIB::Point*>* pnt_vec, std::vector<size_t> &pnt_id_map);
-
 namespace GEOLIB {
 
 /**
+ * \ingroup GEOLIB
+ *
  * \brief This class manages pointers to Points in a std::vector along with a name.
  * It also handles the deleting of points. Additionally, each vector of points is identified by
  * a unique name from class GEOObject. For this reason PointVec should have
  * a name.
  * */
-class PointVec : public NameMapper
+class PointVec
 {
 public:
 	/// Signals if the vector contains object of type Point or Station
@@ -56,35 +56,23 @@ public:
 	 * @param type the type of the point, \sa enum PointType
 	 * @return an object of type PointVec
 	 */
-	PointVec (const std::string& name, std::vector<Point*>* points, std::vector<std::string>* names,
-			PointType type = PointVec::POINT);
+	PointVec (const std::string& name, std::vector<Point*>* points, std::map<std::string, size_t>* name_id_map = NULL,
+				PointType type = PointVec::POINT);
 
 	/** Destructor deletes all Points of this PointVec. */
 	~PointVec ();
 
 	/**
-	 * Method adds a Point to the vector and takes care to delete it.
+	 * Method adds a Point to the vector and takes the ownership.
 	 * */
-	void push_back (Point *pnt) {
-		push_back (pnt, "");
-	}
+	void push_back (Point *pnt);
 
 	/**
-	 * push_back adds new elements at the end of the vectors _pnt_vec
-	 * and _pnt_vec_names.
-	 * @param pnt a pointer to the point, PointVec takes ownership
+	 * push_back adds new elements at the end of the vector _pnt_vec.
+	 * @param pnt a pointer to the point, PointVec takes ownership of the point
 	 * @param name the name of the point
 	 */
-	void push_back (Point *pnt, const std::string& name)
-	{
-		_perm.push_back (_pnt_vec->size());
-		_pnt_vec->push_back (pnt);
-		if (_ele_vec_names) {
-			_ele_vec_names->push_back (name);
-			// sort names of points
-			Quicksort<std::string> (*_ele_vec_names, 0, _ele_vec_names->size(), _perm);
-		}
-	}
+	void push_back (Point *pnt, const std::string& name);
 
 	/**
 	 * get the actual number of Points
@@ -92,7 +80,8 @@ public:
 	size_t size () const { return _pnt_vec->size(); }
 	/**
 	 * get the type of Point, this can be either POINT or STATION
-	 * */
+	 *
+	 */
 	int getType() const { return _type; }
 
 	/**
@@ -115,11 +104,43 @@ public:
 	 * @param id the id of the point
 	 * @return the id of the point
 	 */
-	bool getPointIDByName (const std::string& name, size_t &id) const;
+	bool getElementIDByName (const std::string& name, size_t &id) const;
+
+	/**
+	 * Method searchs for point with the given name. If it found a point with the name
+	 * it returns a pointer to the point, else it returns the NULL pointer.
+	 * @param name the name of the point
+	 * @return the pointer to the point or NULL
+	 */
+	const Point* getElementByName (const std::string& name) const;
+
+	/**
+	 * The method returns true if the given element of type T
+	 * can be found and the element has a name, else method returns false.
+	 * @param data the data element, one wants to know the name
+	 * @param name the name of the data element (if the data element is
+	 * found and the data element has a name)
+	 * @return if element is found and has a name: true, else false
+	 */
+	bool getNameOfElement (const Point* data, std::string& name) const;
+
+
+	/**
+	 * The method returns true if there is a name associated
+	 * with the given id, else method returns false.
+	 * @param id the id
+	 * @param element_name if a name associated with the id
+	 * is found name is assigned to element_name
+	 * @return if there is name associated with the given id:
+	 * true, else false
+	 */
+	bool getNameOfElementByID (size_t id, std::string& element_name) const;
 
 	const std::vector<size_t>& getIDMap () const { return _pnt_id_map; }
 
 private:
+	void makePntsUnique (std::vector<GEOLIB::Point*>* pnt_vec, std::vector<size_t> &pnt_id_map);
+
 	/** copy constructor doesn't have an implementation */
 	// compiler does not create a (possible unwanted) copy constructor
 	PointVec (const PointVec &);
@@ -131,13 +152,22 @@ private:
 	// this way the compiler does not create a (possible unwanted) assignment operator
 	PointVec& operator= (const PointVec& rhs);
 
+	size_t uniqueInsert (Point *pnt);
+
 	/** pointer to a vector of pointers to Points */
 	std::vector <Point*> *_pnt_vec;
+	/**
+	 * store the name associated with a point
+	 */
+	std::map<std::string, size_t>* _name_id_map;
 	/** the type of the point (\sa enum PointType) */
 	PointType _type;
 	/** the name of the object */
 	std::string _name;
-
+	/**
+	 * permutation of the geometric elements according
+	 * to their lexicographical order
+	 */
 	std::vector<size_t> _pnt_id_map;
 };
 

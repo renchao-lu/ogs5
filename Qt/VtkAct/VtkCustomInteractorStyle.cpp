@@ -17,6 +17,7 @@
 vtkStandardNewMacro(VtkCustomInteractorStyle);
 
 VtkCustomInteractorStyle::VtkCustomInteractorStyle()
+: _highlightActor(true)
 {
 
 }
@@ -35,7 +36,15 @@ void VtkCustomInteractorStyle::OnChar()
 	}
 }
 
-void VtkCustomInteractorStyle::highlightActor( vtkActor* actor )
+void VtkCustomInteractorStyle::highlightActor( vtkProp3D* actor )
 {
-	HighlightProp((vtkProp*)actor);
+	if (_highlightActor)
+		HighlightProp((vtkProp*)actor);
+}
+
+void VtkCustomInteractorStyle::setHighlightActor(bool on)
+{ 
+	_highlightActor = on;
+	if (!on)
+		HighlightProp((vtkProp*)NULL);
 }

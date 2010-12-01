@@ -23,21 +23,21 @@ class CTimeDiscretization
    	double safty_coe;
     double dt_sum; // 17.09.2007 WW
     // For PI time step control. Aug-Nov.2008. by WW
-    //Begin of data section for PI Time control ------------------------ 
+    //Begin of data section for PI Time control ------------------------
   public: //OK
-    double this_stepsize; 
-    double relative_error; 
-    double absolute_error; 
+    double this_stepsize;
+    double relative_error;
+    double absolute_error;
   private:
-    double h_min; 
-    double h_max; 
-    double hacc; 
-    double erracc; 
+    double h_min;
+    double h_max;
+    double hacc;
+    double erracc;
   public: //OK
-    int tsize_ctrl_type; 
+    int tsize_ctrl_type;
   private:
-    vector<double> critical_time;  
-    //End of data section for PI Time control ------------------------ 
+    vector<double> critical_time;
+    //End of data section for PI Time control ------------------------
     friend bool IsSynCron(); //WW
   public:
     string file_base_name;
@@ -63,7 +63,7 @@ class CTimeDiscretization
 	double iter_times;  //YD
 	double multiply_coef; //YD
     double max_time_step;  //YD
-    double min_time_step; 
+    double min_time_step;
 	double courant_desired; //JTARON
 	double courant_initial; //JTARON
 	int courant_static; //JTARON
@@ -87,24 +87,24 @@ class CTimeDiscretization
     double FirstTimeStepEstimate();
     double AdaptiveFirstTimeStepEstimate();
     // For PI time step control. Aug-Nov.2008. by WW
-    //Begin of function section for PI Time control ------------------------ 
-    int GetTimeStepCrtlType() const {return tsize_ctrl_type;} 
-    double GetTimeStep() const {return this_stepsize;} 
-    void SetTimeStep( double hnew)  {this_stepsize = hnew;} 
-    double GetRTol() const { return relative_error;} 
-    double GetATol() const { return absolute_error;} 
-    double GetMaximumTSizeRestric() const { return h_max;} 
-    double GetMinimumTSizeRestric() const { return h_min;} 
-    double GetHacc() const { return hacc;} 
-    double GetErracc() const { return erracc;} 
-    void SetHacc(const double hacc_val)  { hacc = hacc_val;} 
-    void setErracc(const double erracc_val) { erracc = erracc_val;} 
-    double CheckTime(double const c_time, const double dt0); 
+    //Begin of function section for PI Time control ------------------------
+    int GetTimeStepCrtlType() const {return tsize_ctrl_type;}
+    double GetTimeStep() const {return this_stepsize;}
+    void SetTimeStep( double hnew)  {this_stepsize = hnew;}
+    double GetRTol() const { return relative_error;}
+    double GetATol() const { return absolute_error;}
+    double GetMaximumTSizeRestric() const { return h_max;}
+    double GetMinimumTSizeRestric() const { return h_min;}
+    double GetHacc() const { return hacc;}
+    double GetErracc() const { return erracc;}
+    void SetHacc(const double hacc_val)  { hacc = hacc_val;}
+    void setErracc(const double erracc_val) { erracc = erracc_val;}
+    double CheckTime(double const c_time, const double dt0);
     void FillCriticalTime();  //21.08.2008.
-    //Begin of function section for PI Time control ------------------------ 
+    //Begin of function section for PI Time control ------------------------
    	double ErrorControlAdaptiveTimeControl();
     double NeumannTimeControl();
-	double CourantTimeControl(); // JTARON 2010 
+	double CourantTimeControl(); // JTARON 2010
     double SelfAdaptiveTimeControl();
 #ifdef GEM_REACT
 	double MaxTimeStep();
@@ -117,7 +117,7 @@ class CTimeDiscretization
 extern vector<CTimeDiscretization*> time_vector;
 extern bool TIMRead(string);
 // extern CTimeDiscretization* TIMGet(const string&);
- extern CTimeDiscretization* TIMGet(string&); //kg44 const string made trouble for me
+ extern CTimeDiscretization* TIMGet(const std::string& pcs_type_name); //kg44 const string made trouble for me
 
 
 extern void TIMWrite(string);
@@ -127,7 +127,7 @@ extern void TIMDelete(string);
 #define TIM_FILE_EXTENSION ".tim"
 //ToDo
 extern double aktuelle_zeit;
-extern long aktueller_zeitschritt;
+extern size_t aktueller_zeitschritt;
 extern double dt;
 extern int rwpt_numsplits; // JTARON 2010, for specifying sub time step for random walker in .tim input file
 #endif

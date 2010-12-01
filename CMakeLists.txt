@@ -18,11 +18,11 @@ endif( CMAKE_CMD_ARGS )
 # OGS version information. Adjust these if you release a new version.
 SET (OGS_VERSION_MAJOR 5)
 SET (OGS_VERSION_MINOR 0)
-SET (OGS_VERSION_PATCH 08)
-SET (OGS_RELEASE_PERSONS "BG")
+SET (OGS_VERSION_PATCH 09)
+SET (OGS_RELEASE_PERSONS "KR/TF/LB")
 SET (OGS_VERSION "${OGS_VERSION_MAJOR}.${OGS_VERSION_MINOR}.${OGS_VERSION_PATCH}(${OGS_RELEASE_PERSONS})")
 # should we use ISO dates: 2010-12-31 ?
-SET (OGS_DATE "10.10.2010")
+SET (OGS_DATE "30.11.2010")
 
 # Adds useful macros and variables
 INCLUDE( CMakeConfiguration/Macros.cmake )
@@ -48,12 +48,16 @@ ENDIF (WIN32)
 
 ### For GNU C/CXX. WW
 IF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCC)
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wall -Wextra")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wno-deprecated -Wall -Wextra")
         ADD_DEFINITIONS(
 		-DGCC
 		-fno-nonansi-builtins
 	)
 ENDIF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCC)
+
+IF (OGS_PROFILE)
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+ENDIF (OGS_PROFILE)
 
 # Set build directories
 SET( EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin )
@@ -134,6 +138,12 @@ IF (UNIX) # Only supported on Linux
 	OPTION(OGS_FEM_MPI "Message passing interface configuration" OFF)
 ENDIF (UNIX)
 
+# Set default configuration when no other config is given
+IF (NOT OGS_FEM AND NOT OGS_FEM_SP AND NOT OGS_FEM_GEMS AND NOT OGS_FEM_PQC AND NOT OGS_FEM_BRNS AND NOT OGS_FEM_CHEMAPP AND NOT OGS_FEM_LIS AND NOT OGS_FEM_MKL AND NOT OGS_FEM_MPI AND NOT OGS_USE_QT)
+	MESSAGE (STATUS "No configuration specified. Default confuguration is used.")
+	SET (OGS_FEM ON)
+ENDIF (NOT OGS_FEM AND NOT OGS_FEM_SP AND NOT OGS_FEM_GEMS AND NOT OGS_FEM_PQC AND NOT OGS_FEM_BRNS AND NOT OGS_FEM_CHEMAPP AND NOT OGS_FEM_LIS AND NOT OGS_FEM_MKL AND NOT OGS_FEM_MPI AND NOT OGS_USE_QT)
+
 # Additional options
 OPTION(OGS_PACKAGING "Creating installers / packages" OFF)
 IF (OGS_PACKAGING)
@@ -149,6 +159,9 @@ OPTION(OGS_BUILD_INFO "Should build information be generated" ON)
 
 # Check if a valid OGS configuration is given (see Macros.cmake)
 CHECK_CONFIG()
+
+# Check for number of processors
+CHECK_PROCESSOR_COUNT()
 
 ###LIBRARY
 FIND_PACKAGE (PythonInterp)
@@ -317,7 +330,7 @@ IF(CMAKE_MINOR_VERSION GREATER 6)
 	FIND_PACKAGE (GTest)
 ENDIF(CMAKE_MINOR_VERSION GREATER 6)
 
-FIND_PATH (BENCHMARK_DIR_FOUND compare.py ${PROJECT_SOURCE_DIR}/../benchmarks)
+FIND_PATH (BENCHMARK_DIR_FOUND copy.py ${PROJECT_SOURCE_DIR}/../benchmarks)
 
 IF (BENCHMARK_DIR_FOUND OR GTEST_FOUND)
 	ENABLE_TESTING()
@@ -346,24 +359,19 @@ ENDIF (OGS_CMAKE_DEBUG)
 
 IF (BENCHMARK_DIR_FOUND)
 	STRING (COMPARE EQUAL "$ENV{HOSTNAME}" "dev2.intern.ufz.de" HOST_IS_DEV2)
-	MESSAGE (STATUS "Host is dev2: ${HOST_IS_DEV2}")
 	MESSAGE (STATUS "Benchmarking through CTest enabled")
-	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/AKS.cmake)
-	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/CB.cmake)
-	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/FS.cmake)
-	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/HS.cmake)
-	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/JOD.cmake)
-	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/NB.cmake)
-	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/NW.cmake)
-	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/PCH.cmake)
-	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/UJG.cmake)
-	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/WW.cmake)
-	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/YW.cmake)
-	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/MCGB.cmake)
-	INCLUDE (${PROJECT_SOURCE_DIR}/../benchmarks/FC.cmake)
+	IF (${HOST_IS_DEV2})
+		MESSAGE (STATUS "On dev2: file comparing enabled")
+	ENDIF (${HOST_IS_DEV2})
+	
+	FILE (GLOB BENCHMARK_CONFIGS "${PROJECT_SOURCE_DIR}/../benchmarks/*.cmake")
+	FOREACH (BENCHMARK_CONFIG ${BENCHMARK_CONFIGS})
+		INCLUDE ("${BENCHMARK_CONFIG}")
+	ENDFOREACH(BENCHMARK_CONFIG)
+	
 	UNSET (COPY_BENCHMARKS_TO_REF CACHE)
 ENDIF (BENCHMARK_DIR_FOUND)
 
-IF (FileConverter)
+#IF (FileConverter)
 	ADD_SUBDIRECTORY (UTL/FileConverter/)
-ENDIF (FileConverter)
+#ENDIF (FileConverter)

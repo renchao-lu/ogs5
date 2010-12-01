@@ -23,12 +23,6 @@ namespace FiniteElement
 
 namespace Mesh_Group
 {
- // Finite element object
- using FiniteElement::CElement;
- using FiniteElement::CFiniteElementStd;
- using FiniteElement::CFiniteElementVec;
- using FiniteElement::ElementMatrix;
- using FiniteElement::ElementMatrix_DM;
 
 //------------------------------------------------------------------------
 class CCore {
@@ -113,12 +107,7 @@ protected:
 	char boundary_type;
 	bool mark; // e.g. marked to be refined or active
 	bool quadratic; // higher order
-	// Finite element objects
-	friend class FiniteElement::CElement;
-	friend class FiniteElement::CFiniteElementStd;
-	friend class FiniteElement::CFiniteElementVec;
-	friend class FiniteElement::ElementMatrix;
-	friend class FiniteElement::ElementMatrix_DM;
+
 };
 
 } // namespace Mesh_Group

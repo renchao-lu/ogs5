@@ -16,17 +16,18 @@ last modified
 #include <string>
 #include <vector>
 
-// GEO
-#include "GeoType.h"
-
+// FEM
 #include "rf_pcs.h" // TF
 #include "GeoInfo.h" // TF
+#include "ProcessInfo.h" // TF
+#include "DistributionInfo.h" // TF
+
+// MSH
+#include "MeshNodesAlongPolyline.h" // TF
 
 //#include "gs_project.h" // TF
 #include "rf_node.h"
 #include "geo_ply.h"
-
-using namespace std;
 
 typedef struct {
   std::vector<double> value_reference;
@@ -35,127 +36,145 @@ typedef struct {
   double** value_store;//[PCS_NUMBER_MAX*2]First ref no processes(two fields per process..time, value), second ref no values
 } NODE_HISTORY;
 
-//========================================================================
-class CSourceTerm : public GeoInfo
+class CSourceTerm : public ProcessInfo, public GeoInfo, public DistributionInfo
 {
-    std::string fname;
 public:
-    int CurveIndex;
-    std::vector<int> PointsHaveDistribedBC;
-    std::vector<double> DistribedBC;
-    std::vector<double> DistBC_KRiverBed;
-    std::vector<double> DistBC_WRiverBed;
-    std::vector<double> DistBC_TRiverBed;
-    std::vector<double> DistBC_BRiverBed;
-    std::vector<double> node_value_vectorA;
-    std::vector<double> node_value_vectorB;
-    std::vector<double> node_value_vectorC;
-    std::vector<double> node_value_vectorD;
-    std::vector<double> node_value_vectorE;
-    std::vector<double> node_value_vectorArea;
-    std::vector<double*> normal2surface;
-    std::vector<double*> pnt_parameter_vector;
-    std::vector<int> element_st_vector;
-private:
-    CGLPolyline *plyST;
-    string nodes_file;
-    friend class CSourceTermGroup;
-public:
-    std::string pcs_pv_name;
-    std::string pcs_type_name;
-    CRFProcess *m_pcs;
-    int pcs_number;
-    std::string pcs_type_name_cond;
-    std::string pcs_pv_name_cond;
-    double coup_leakance, rill_height;
-    double sorptivity, constant, rainfall, rainfall_duration, moistureDeficit;
-    bool conditional, node_averaging, no_surface_water_pressure;
-    bool river;
-    bool COUPLING_SWITCH;
-    double normaldepth_slope;
-    bool critical_depth, channel;
-    double channel_width;
-    std::string geo_prop_name;
-    int geo_node_number;
-    double geo_node_value;
-    std::string geo_type_name;
-    int msh_node_number;
+    CSourceTerm();
+    ~CSourceTerm();
+
+    ios::pos_type Read(std::ifstream *in, const GEOLIB::GEOObjects & geo_obj, const std::string & unique_name);
+    void Write(fstream*);
+
+    void EdgeIntegration(CFEMesh *m_msh, const std::vector<long> & nodes_on_ply, std::vector<double> & node_value_vector) const;
+    void FaceIntegration(CFEMesh *m_msh, std::vector<long> & nodes_on_sfc, std::vector<double> & node_value_vector);
+    void DomainIntegration(CFEMesh *m_msh, const std::vector<long> & nodes_in_dom, std::vector<double> & node_value_vector) const;
+
+    inline void DirectAssign(long ShiftInNodeVector);
+    void SetNOD2MSHNOD(std::vector<long> & nodes, std::vector<long> & conditional_nodes);
 
     /**
-     * REMOVE CANDIDATE
+     * @param nodes
+     * @param conditional_nodes
+     */
+    void SetNOD2MSHNOD(const std::vector<size_t>& nodes, std::vector<size_t>& conditional_nodes) const; // 09/2010 TF
+
+    double GetNodeLastValue(long n, int idx);	// used only once in a global in rf_st_new
+    void SetNodePastValue(long n, int idx, int pos, double value);	// used only once in a global in rf_st_new
+    void SetNodeLastValue(long n, int idx, double value);	// used only once in a global in rf_st_new
+    double GetNodePastValue(long, int, int);	// used only once in a global in rf_st_new
+    double GetNodePastValueReference(long n, int idx);	// used only once in a global in rf_st_new
+    void SetSurfaceNodeVectorConditional(std::vector<long> & sfc_nod_vector, std::vector<long> & sfc_nod_vector_cond);	// used only in sourcetermgroup
+    void InterpolatePolylineNodeValueVector(CGLPolyline *m_ply, std::vector<double> & Distribed, std::vector<double> & ply_nod_vector);	// used only once in sourcetermgroup
+
+
+    void SetNodeValues(const std::vector<long> & nodes, const std::vector<long> & nodes_cond,
+    		const std::vector<double> & node_values, int ShiftInNodeVector);	// used only in sourcetermgroup
+
+    /**
+     * the only difference to the previous SetNodeValues() method is the change of vector type from long to size_t
+     * @param nodes
+     * @param nodes_cond
+     * @param node_values
+     * @param ShiftInNodeVector
+     */
+    void SetNodeValues(const std::vector<size_t>& nodes, const std::vector<size_t>& nodes_cond,
+    		const std::vector<double>& node_values, int ShiftInNodeVector);
+
+    void SetNOD();
+
+    double getCoupLeakance () const;
+
+    const std::vector<double>& getDistribution () const { return DistribedBC; }
+
+    /**
+     * REMOVE CANDIDATE only for compatibility with old GEOLIB version
      * @return
      */
     const std::string & getGeoName();
 
-private:
-    std::string geo_name;
+    int CurveIndex;
+    std::vector<int> element_st_vector;
 
-public:
-    std::string dis_type_name;
-    int component;
-    int dis_type;
-    int fct_method;
-    double dis_prop[3];
+    double rill_height;
+	double sorptivity, constant, rainfall, rainfall_duration, moistureDeficit /*1x*/;
+	bool node_averaging, no_surface_water_pressure /*2x*/;
+
+	bool isCoupled () const { return _coupled; }
+	double getNormalDepthSlope () const { return normaldepth_slope; }
+
+	const std::string& getFunctionName () const { return fct_name; }
+	int getFunctionMethod () const { return fct_method; }
+
+	bool isAnalytical () const { return analytical; }
+	double GetAnalyticalSolution(long location);
+	size_t getNumberOfTerms () const { return number_of_terms; }
+	void setMaxNumberOfTerms (size_t max_no_terms) { _max_no_terms = max_no_terms; }
+	void setNumberOfAnalyticalSolutions (size_t no_an_sol) { _no_an_sol = no_an_sol; }
+
+	bool channel;
+	double channel_width;
+	int geo_node_number;
+	double geo_node_value;
+
     double *nodes;
     std::vector<int> node_number_vector;
     std::vector<double> node_value_vector;
     std::vector<int> node_renumber_vector;
-    std::string fct_name;
-    int curve;
     std::string tim_type_name;
-    bool analytical;
-    int analytical_material_group;
-    int resolution;
-    double st_area;
-    double analytical_diffusion;
+
+    std::string pcs_type_name_cond;
+    std::string pcs_pv_name_cond;
+
+private: // TF, KR
+    void ReadDistributionType(std::ifstream *st_file);
+    void ReadGeoType(std::ifstream *st_file, const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name);
+
+	void CreateHistoryNodeMemory(NODE_HISTORY *nh);
+	void DeleteHistoryNodeMemory();
+
+	/**
+	 * is the source term coupled with another source term
+	 */
+	bool _coupled;
+
+	double normaldepth_slope; // used only once in a global in rf_st_new
+
+    int fct_method;
+	std::string fct_name;
+
+    bool analytical; //2x?
     size_t number_of_terms;
-    int no_an_sol;
-    int max_no_terms;
+    size_t _max_no_terms;    // used only once in a global in rf_st_new
+    size_t _no_an_sol;
+    int analytical_material_group;	// used only once in a global in rf_st_new
+    int resolution;   // used only once in a global in rf_st_new
+    double analytical_diffusion;   // used only once in a global in rf_st_new
+    double analytical_porosity;	// used only once in a global in rf_st_new
+    double analytical_tortousity;	// used only once in a global in rf_st_new
+    double analytical_linear_sorption_Kd;	// used only once in a global in rf_st_new
+    double analytical_matrix_density;	// used only once in a global in rf_st_new
     double factor;
-    double analytical_porosity;
-    double analytical_tortousity;
-    double analytical_linear_sorption_Kd;
-    double analytical_matrix_density;
-    std::string msh_type_name;
 
-    CSourceTerm(void);
-    ~CSourceTerm(void);
-    ios::pos_type Read(std::ifstream *in, const GEOLIB::GEOObjects & geo_obj, const std::string & unique_name);
-    void Write(fstream*);
-    void SetDISType(void);
-    void SetGEOType(void);
-    void EdgeIntegration(CFEMesh *m_msh, std::vector<long> & nodes_on_ply, std::vector<double> & node_value_vector);
-    void FaceIntegration(CFEMesh *m_msh, std::vector<long> & nodes_on_sfc, std::vector<double> & node_value_vector);
-    void DomainIntegration(CFEMesh *m_msh, std::vector<long> & nodes_in_dom, std::vector<double> & node_value_vector);
-    void SetPolyline(CGLPolyline *Polyline)
-    {
-        plyST = Polyline;
-    }
+	string nodes_file;
+	int msh_node_number;
+	std::string msh_type_name;
+    std::string fname;
+    std::vector<int> PointsHaveDistribedBC;
+    std::vector<double> DistribedBC;
+    std::vector<double> node_value_vectorArea;
+    std::vector<double*> normal2surface;
+    std::vector<double*> pnt_parameter_vector;
 
-    inline void DirectAssign(long ShiftInNodeVector);
-    void SetNOD2MSHNOD(std::vector<long> & nodes, std::vector<long> & conditional_nodes);
-    double GetNodeLastValue(long n, int idx);
-    void SetNodePastValue(long n, int idx, int pos, double value);
-    void SetNodeLastValue(long n, int idx, double value);
-    double GetNodePastValue(long, int, int);
-    double GetNodePastValueReference(long n, int idx);
-    void CreateHistoryNodeMemory(NODE_HISTORY *nh);
-    void DeleteHistoryNodeMemory();
-    void SetSurfaceNodeVectorConditional(std::vector<long> & sfc_nod_vector, std::vector<long> & sfc_nod_vector_cond);
-    void SetPolylineRiverNodeValueVectors(CGLPolyline *m_ply, int number_of_nodes);
-    void InterpolatePolylineRiverNodeValueVector(CGLPolyline *m_ply, std::vector<double> & Distribed, std::vector<double> & ply_nod_vector);
-    void SetNodeValues(std::vector<long> & nodes, std::vector<long> & nodes_cond, std::vector<double> & node_values, const int ShiftInNodeVector);
-    void SetNOD();
-    ios::pos_type ReadDistributionType(ifstream *st_file);
-    ios::pos_type ReadGeoType(std::ifstream *st_file, const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name);
+    friend class CSourceTermGroup;
+
+    std::string geo_name;
+    double _coup_leakance;
 };
 
-//========================================================================
 class CSourceTermGroup
 {
   public:
     CSourceTermGroup() {} //WW
-    CSourceTermGroup* Get(std::string);
     void Set(CRFProcess* m_pcs, const int ShiftInNodeVector, std::string this_pv_name="");
 //WW    std::vector<CNodeValue*>group_vector;
     /**
@@ -192,19 +211,42 @@ class CSourceTermGroup
   private:
 	void SetPNT(CRFProcess* m_pcs, CSourceTerm* m_st, const int ShiftInNodeVector); // JOD
 	void SetLIN(CRFProcess* m_pcs, CSourceTerm* m_st, const int ShiftInNodeVector);  // JOD
-    void SetPLY(CSourceTerm* m_st, const int ShiftInNodeVector); //OK
+    void SetPLY(CSourceTerm* st, int ShiftInNodeVector); //OK
 	void SetDMN(CSourceTerm* m_st, const int ShiftInNodeVector);  // JOD
 	void SetSFC(CSourceTerm* m_st, const int ShiftInNodeVector);  // JOD
 	void SetCOL(CSourceTerm *m_st, const int ShiftInNodeVector); // JOD
+
 	void SetPolylineNodeVector(CGLPolyline* m_ply, std::vector<long>&ply_nod_vector); // JOD
+
 	void SetPolylineNodeVectorConditional(CSourceTerm* m_st, CGLPolyline* m_ply,
 		std::vector<long>&ply_nod_vector, std::vector<long>&ply_nod_vector_cond);
-    void SetPolylineNodeValueVector(CSourceTerm* m_st, CGLPolyline* m_ply, std::vector<long>&ply_nod_vector, std::vector<long>&ply_nod_vector_cond
-										  , std::vector<double>&ply_nod_val_vector);
+
+	/**
+	 * 09/2010 TF
+	 * @param st
+	 * @param ply_nod_vector
+	 * @param ply_nod_vector_cond
+	 */
+	void SetPolylineNodeVectorConditional(CSourceTerm* st,
+			std::vector<size_t>& ply_nod_vector,
+			std::vector<size_t>& ply_nod_vector_cond);
+
+    void SetPolylineNodeValueVector(CSourceTerm* st, CGLPolyline* ply, const std::vector<long>& ply_nod_vector,
+    		std::vector<long>& ply_nod_vector_cond, std::vector<double>& ply_nod_val_vector);
+    /**
+     * 09/2010 TF
+     * @param st
+     * @param msh_nodes_along_polyline
+     * @param ply_nod_vector_cond
+     * @param ply_nod_val_vector
+     */
+    void SetPolylineNodeValueVector(CSourceTerm* st, const Mesh_Group::MeshNodesAlongPolyline& msh_nodes_along_polyline,
+    		const std::vector<long>& ply_nod_vector_cond, std::vector<double>& ply_nod_val_vector) const;
+
     void SetSurfaceNodeVector(Surface* m_sfc, std::vector<long>&sfc_nod_vector); // JOD
 	void SetSurfaceNodeValueVector( CSourceTerm* m_st, Surface* m_sfc, std::vector<long>&sfc_nod_vector, std::vector<double>&sfc_nod_val_vector);
-    void AreaAssembly(CSourceTerm* m_st,  std::vector<long>&ply_nod_vector_cond,
-									std::vector<double>& ply_nod_val_vector);
+    void AreaAssembly(const CSourceTerm* const st, const std::vector<long>& ply_nod_vector_cond,
+									std::vector<double>&  ply_nod_val_vector) const;
 };
 
 extern CSourceTermGroup* STGetGroup(std::string pcs_type_name,std::string pcs_pv_name);
@@ -221,21 +263,21 @@ bool STRead(const std::string& file_base_name, const GEOLIB::GEOObjects& geo_obj
 
 extern void STWrite(std::string);
 #define ST_FILE_EXTENSION ".st"
-extern void STCreateFromPNT();
+//extern void STCreateFromPNT();
 extern std::vector<CSourceTerm*> st_vector;
 extern void STDelete();
 void STCreateFromLIN(std::vector<CGLLine*>);
 CSourceTerm* STGet(std::string);
 extern void STGroupDelete(std::string pcs_type_name,std::string pcs_pv_name);
 extern void STGroupsDelete(void);//Haibing;
-extern long aktueller_zeitschritt;
+extern size_t aktueller_zeitschritt;
 extern double aktuelle_zeit;
 extern std::vector<std::string>analytical_processes;
 extern CSourceTerm* STGet(const std::string&, const std::string&, const std::string&); //OK
 
 // WW moved here
 extern  double GetAnalyticalSolution(long node_number, CSourceTerm *m_st);//CMCD, WW
-extern  void GetRiverNODValue(double& value, CNodeValue* cnodev,CSourceTerm* m_st);
+//extern  void GetRiverNODValue(double& value, CNodeValue* cnodev, const CSourceTerm* m_st);
 extern	double GetConditionalNODValue(CSourceTerm* m_st, CNodeValue* cnodev);
 extern  void GetCriticalDepthNODValue(double& value, CSourceTerm*, long msh_node); //MB
 extern  void GetCouplingNODValue(double& value, CSourceTerm* m_st, CNodeValue* cnodev); // JOD
@@ -247,8 +289,8 @@ extern  void GetCouplingNODValuePicard(double& value, CSourceTerm* m_st, CNodeVa
 extern  double CalcCouplingValue(double factor, double h_this, double h_cond, double z_cond, CSourceTerm* m_st); // JOD
 extern  void GetCouplingNODValueMixed(double& value, CSourceTerm* m_st, CNodeValue* cnodev); // JOD
 extern  void GetCouplingFieldVariables(double* h_this, double* h_cond, double* h_shifted, double* h_averaged, double* z_this, double* z_cond, CSourceTerm* m_st, CNodeValue* cnodev);// JOD
-extern  double GetRelativeCouplingPermeability(CRFProcess* m_pcs, double head, CSourceTerm* m_st, long msh_node); // JOD
-extern  void GetPhilipNODValue(double& value,CSourceTerm* m_st); // JOD
+extern  double GetRelativeCouplingPermeability(const CRFProcess* m_pcs, double head, const CSourceTerm* m_st, long msh_node); // JOD
+extern  void GetPhilipNODValue(double& value, const CSourceTerm* m_st); // JOD
 extern  void GetGreenAmptNODValue(double& value, CSourceTerm* m_st, long msh_node); // JOD
 extern  void GetNODValue(double& value, CNodeValue* cnodev,CSourceTerm* m_st); // JOD
 #endif

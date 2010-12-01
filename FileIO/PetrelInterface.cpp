@@ -59,11 +59,7 @@ PetrelInterface::PetrelInterface(std::list<std::string> &sfc_fnames,
 }
 
 PetrelInterface::~PetrelInterface()
-{
-	delete pnt_vec;
-	delete well_vec;
-	delete ply_vec;
-}
+{}
 
 void PetrelInterface::readPetrelSurface(std::istream &in) {
 	char buffer[MAX_COLS_PER_ROW];

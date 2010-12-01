@@ -28,16 +28,18 @@ private:
 	void contextMenuEvent( QContextMenuEvent* event );
 	
 private slots:
-	// Remove the currently selected mesh.
+	/// Open a dialog for editing meshes.
+	void openMshEditDialog();
+
+	/// Remove the currently selected mesh.
 	void removeMesh();
 
-	// Remove all currently loaded meshes.
+	/// Remove all currently loaded meshes.
 	void removeAllMeshes();
 
-	// Calls the FileDialog to save a mesh to a file.
+	/// Calls the FileDialog to save a mesh to a file.
 	int writeMeshToFile() const;
 
-//	void changeMshSubmodelViews(QItemSelection selected, QItemSelection deselected);
 
 signals:
 	void requestMeshRemoval(const QModelIndex&);

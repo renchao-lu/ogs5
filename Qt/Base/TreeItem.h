@@ -29,7 +29,7 @@ public:
 	virtual QVariant data(int column) const;
 	virtual bool setData(int column, const QVariant &value);
 	int row() const;
-	TreeItem* parent() const;
+	TreeItem* parentItem() const;
 	bool removeChildren(int position, int count);
 
 private:

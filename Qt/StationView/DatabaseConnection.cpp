@@ -202,7 +202,7 @@ int DatabaseConnection::loadStationList(int listID, const GEOLIB::Color* const c
 				QString listName = (query.value(0)).toString() + " (" + (query.value(1)).toString() + ")";
 
 				if (type == GEOLIB::Station::BOREHOLE)
-					stnQuery.exec("select s.stationid, s.name, s.x, s.y, s.z, b.bdepth, to_char(b.bdate, 'DD.MM.YYYY') from stations s, boreholes b where s.listid=b.listid and s.stationid=b.stationid and s.listid=" + QString::number(listID) + " order by stationid");
+					stnQuery.exec("select s.stationid, s.name, s.x, s.y, s.z, b.bdepth, to_char(b.bdate, 'YYYY-MM-DD') from stations s, boreholes b where s.listid=b.listid and s.stationid=b.stationid and s.listid=" + QString::number(listID) + " order by stationid");
 				else
 					stnQuery.exec("select stationid, name, x, y, z from stations where listid=" + QString::number(listID) + " order by stationid");
 
@@ -593,7 +593,7 @@ bool DatabaseConnection::addBoreholeToDB(int listID, int stationID, std::string 
 		query.bindValue(":listid", listID);
 		query.bindValue(":stationid", stationID);
 		query.bindValue(":bdepth", station->getDepth());
-		QString sDate = QString::fromStdString(date2String(station->getDate()));
+		QString sDate = QString::fromStdString(date2string(station->getDate()));
 		query.bindValue(":bdate", sDate);
 		return query.exec();
 	}

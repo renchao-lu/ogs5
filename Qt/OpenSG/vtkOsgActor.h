@@ -9,7 +9,7 @@
 #pragma once
 #include "vtkOpenGLActor.h"
 
-#include "vtkGraphicsFactory.h"
+#include "vtkObjectFactory.h"
 #include "vtkTimeStamp.h"
 
 #include <vtkActor.h>
@@ -26,6 +26,8 @@
 
 #include <OpenSG/OSGRefPtr.h>
 #include <OpenSG/OSGNode.h>
+#include <OpenSG/OSGTransform.h>
+#include <OpenSG/OSGMatrix.h>
 #include <OpenSG/OSGSimpleGeometry.h>
 #include <OpenSG/OSGSimpleMaterial.h>
 #include <OpenSG/OSGChunkMaterial.h>
@@ -45,7 +47,7 @@ class vtkOsgActor : public vtkOpenGLActor
 {
 protected:
 	vtkOsgActor(void);
-	~vtkOsgActor(void);
+	virtual ~vtkOsgActor(void);
 	void InitOpenSG(void);
 
 public: //VTK related
@@ -84,6 +86,7 @@ private:
 
 	//For the translation to OpenSG
 	RefPtr<NodePtr> m_posgRoot;
+	RefPtr<TransformPtr> m_posgTransform;
 	RefPtr<NodePtr> m_posgGeomNode;
 	RefPtr<GeometryPtr> m_posgGeometry;
 	RefPtr<ChunkMaterialPtr> m_posgMaterial;

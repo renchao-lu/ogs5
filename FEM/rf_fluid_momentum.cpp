@@ -1,7 +1,7 @@
 // Some change
 
 /**************************************************************************
-FEMLib-Object: 
+FEMLib-Object:
 Task: MediumProperties
 Programing:
 05/2005 PCH Implementation
@@ -90,6 +90,7 @@ Task: compute the Darcy velocity on node
 Programing:
 05/2005 PCH Implementation
 last modification:
+01/2010 TF changed access to process type
 **************************************************************************/
 double CFluidMomentum::Execute()
 {
@@ -102,16 +103,20 @@ double CFluidMomentum::Execute()
 	for(int i=0; i< no_processes; ++i)
 	{
 		m_pcs = pcs_vector[i];
-        
-		// Select the mesh whose process name has the mesh for Fluid_Momentum
-		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
-			m_msh = FEMGet("RICHARDS_FLOW");
-		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
-			m_msh = FEMGet("LIQUID_FLOW");
-		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
-			m_msh = FEMGet("GROUNDWATER_FLOW");	
 
-		if(m_pcs->pcs_type_name.find("FLUID_MOMENTUM")!=string::npos)
+		// Select the mesh whose process name has the mesh for Fluid_Momentum
+//		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos) TF
+		if( m_pcs->getProcessType () == RICHARDS_FLOW)
+			m_msh = FEMGet("RICHARDS_FLOW");
+//		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos) TF
+		else if( m_pcs->getProcessType () == LIQUID_FLOW)
+			m_msh = FEMGet("LIQUID_FLOW");
+//		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos) TF
+		else if( m_pcs->getProcessType () == GROUNDWATER_FLOW)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
+
+//		if(m_pcs->pcs_type_name.find("FLUID_MOMENTUM")!=string::npos) TF
+		if(m_pcs->getProcessType () == FLUID_MOMENTUM)
 			SolveDarcyVelocityOnNode();
 	}
 
@@ -139,8 +144,8 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 	int nidx1 = 0; //OK411
     long i;
     CElem* elem = NULL;
-	
-	fem = new CFiniteElementStd(m_pcs, m_msh->GetCoordinateFlag()); 
+
+	fem = new CFiniteElementStd(m_pcs, m_msh->GetCoordinateFlag());
 
 	// Checking the coordinateflag for proper solution.
 	int coordinateflag = m_msh->GetCoordinateFlag();
@@ -172,19 +177,19 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 	}
 
 	// Loop over three dimension to solve three velocity components
-	for (int phase=0;phase<GetRFProcessNumPhases();phase++)  
+	for (int phase=0;phase<GetRFProcessNumPhases();phase++)
 	{
 		for(int d=0; d < dimension; ++d)
 		{
-		
+
 			/* Initializations */
 			/* System matrix */
 #ifdef NEW_EQS //WW
-            m_pcs->EQSInitialize(); 
+            m_pcs->EQSInitialize();
 #else
 			SetZeroLinearSolver(m_pcs->eqs);
 #endif
-  
+
             for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
             {
                 elem = m_msh->ele_vector[i];
@@ -192,7 +197,7 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
                 {
                     fem->ConfigElement(elem);
 					fem->Assembly(0, d);
-				} 
+				}
 			}
 
 			//		MXDumpGLS("rf_pcs.txt",1,m_pcs->eqs->b,m_pcs->eqs->x); //abort();
@@ -203,7 +208,7 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 			double* x;
 			int size = (int)m_msh->nod_vector.size(); //OK411??? long
 			x = new double[size];
-#if defined(LIS) 
+#if defined(LIS)
 			m_pcs->EQSSolver(x);		// an option added to tell FLUID_MOMENTUM for sparse matrix system.
 			cout << "Solver passed in FLUID_MOMENTUM." <<endl;
 #endif
@@ -227,17 +232,17 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 				nidx1 = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[d])+1;
 			else
 				abort();	// Just stop something's wrong.
-     		
-			
-			
+
+
+
 #ifdef NEW_EQS
 			for(int j=0;j<size;j++)
 				m_pcs->SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,x[j]);
-			
+
 			delete [] x;
 #else
 			for(int j=0;j<m_pcs->eqs->dim;j++)
-              m_pcs->SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,m_pcs->eqs->x[j]);	
+              m_pcs->SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,m_pcs->eqs->x[j]);
 #endif
 		}
 
@@ -257,18 +262,18 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 				}
 				else
 				{
-					// I assume that all the element stay on the same plane. 
+					// I assume that all the element stay on the same plane.
 					// So, I use element No.1 as the reference element or plane
 					for(int j=0; j<3; ++j)
-						norm[j] = m_msh->ele_vector[0]->getTransformTensor(j+6);	
-				}	
+						norm[j] = m_msh->ele_vector[0]->getTransformTensor(j+6);
+				}
 
 				// Do some proper projection of velocity computed from Fluid Momentum.
 				// Get the fluid velocity for this node
 				double V[3];
-				V[0] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);  
-				V[1] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);  
-				V[2] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);  
+				V[0] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);
+				V[1] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);
+				V[2] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);
 
 				// Let's solve the projected velocity on the element plane
 				// by  Vp = norm X (V X norm) assuming norm is a unit vector
@@ -279,40 +284,40 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 				// Store the projected velocity back to the node velocity
 				m_pcs->SetNodeValue(i,m_pcs->GetNodeValueIndex("VELOCITY1_X")+1,Vp[0]);
 				m_pcs->SetNodeValue(i,m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1,Vp[1]);
-				m_pcs->SetNodeValue(i,m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1,Vp[2]);	
+				m_pcs->SetNodeValue(i,m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1,Vp[2]);
 			}
 		}
 		 */
 		// Obtain the edge velocity
 		SolveForEdgeVelocity();
-    
+
         // Obtain element-based velocity
         for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
         {
             elem = m_msh->ele_vector[i];
-                
+
 
             double vx = 0.0, vy = 0.0, vz = 0.0;
-			int numOfNodeInElement = elem->GetVertexNumber(); 
+			int numOfNodeInElement = elem->GetVertexNumber();
 
 			for(int j=0;j< numOfNodeInElement;++j)
 			{
-                vx += m_pcs->GetNodeValue(elem->GetNodeIndex(j), m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);  
-                vy += m_pcs->GetNodeValue(elem->GetNodeIndex(j), m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);  
-                vz += m_pcs->GetNodeValue(elem->GetNodeIndex(j), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);  
+                vx += m_pcs->GetNodeValue(elem->GetNodeIndex(j), m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);
+                vy += m_pcs->GetNodeValue(elem->GetNodeIndex(j), m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);
+                vz += m_pcs->GetNodeValue(elem->GetNodeIndex(j), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);
 			}
 			vx /= (double)numOfNodeInElement; vy /= (double)numOfNodeInElement; vz /= (double)numOfNodeInElement;
 
-/*				
-			switch(phase) 
+/*
+			switch(phase)
 			{
 				case 0:
 */
-			
+
                     m_pcs->SetElementValue(i, m_pcs->GetElementValueIndex("VELOCITY1_X")+1, vx);
                     m_pcs->SetElementValue(i, m_pcs->GetElementValueIndex("VELOCITY1_Y")+1, vy);
                     m_pcs->SetElementValue(i, m_pcs->GetElementValueIndex("VELOCITY1_Z")+1, vz);
-					
+
 /*
 					break;
 				case 1:
@@ -329,7 +334,7 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 	}
 
 	// Release memroy
-	delete fem;	
+	delete fem;
 }
 
 /**************************************************************************
@@ -343,13 +348,13 @@ void CFluidMomentum::Create()
 {
 	// NUM_NEW
 	int no_numerics = (int)num_vector.size();
-	
+
 	CNumerics* m_num_tmp = NULL;
-	
+
 	for(int i=0;i<no_numerics;i++)
 	{
 		m_num_tmp = num_vector[i];
-		
+
 		if(m_num_tmp->pcs_type_name.compare("FLUID_MOMENTUM") == 0 )
 			m_num = m_num_tmp;
 	}
@@ -371,22 +376,26 @@ Task: The function constructs the joint edges and crossroad nodes.
 Programing:
 01/2006 PCH Implementation
 last modification:
+10/2010 TF changed access to process type
 **************************************************************************/
 void CFluidMomentum::ConstructFractureNetworkTopology()
 {
 	// Mount the process and the mesh
-	CFEMesh* m_msh = NULL; 
+	CFEMesh* m_msh = NULL;
 	for(int i=0; i< (int)pcs_vector.size(); ++i)
 	{
 		m_pcs = pcs_vector[i];
 
 		// Select the mesh whose process name has the mesh for Fluid_Momentum
-		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos)
+//		if( m_pcs->pcs_type_name.find("RICHARDS_FLOW")!=string::npos) TF
+		if( m_pcs->getProcessType () == RICHARDS_FLOW)
 			m_msh = FEMGet("RICHARDS_FLOW");
-		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos)
+//		else if( m_pcs->pcs_type_name.find("LIQUID_FLOW")!=string::npos) TF
+		else if( m_pcs->getProcessType () == LIQUID_FLOW)
 			m_msh = FEMGet("LIQUID_FLOW");
-		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos)
-			m_msh = FEMGet("GROUNDWATER_FLOW");	
+//		else if( m_pcs->pcs_type_name.find("GROUNDWATER_FLOW")!=string::npos) TF
+		else if( m_pcs->getProcessType () == GROUNDWATER_FLOW)
+			m_msh = FEMGet("GROUNDWATER_FLOW");
 	}
 	m_pcs = PCSGet("FLUID_MOMENTUM");
 	// Something must be done later on here.
@@ -398,11 +407,11 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
         {
                 CNode* thisNode = m_msh->nod_vector[i];
                 int NumOfNeighborElements = (int)thisNode->connected_elements.size();
-			
+
 		// Let's get the norm of the first connected element plane.
 		double norm[3];
 		int index = thisNode->connected_elements[0];
-		// Let's store the index of the reference element 
+		// Let's store the index of the reference element
 		// to the connected_planes of thisNode
 		thisNode->connected_planes.push_back(index);
 		if(m_msh->GetCoordinateFlag() != 32 && m_msh->GetCoordinateFlag() != 22)
@@ -412,8 +421,8 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 		else
 		{
 			for(int j=0; j<3; ++j)
-				norm[j] = m_msh->ele_vector[index]->getTransformTensor(j+6);	
-		}	
+				norm[j] = m_msh->ele_vector[index]->getTransformTensor(j+6);
+		}
 
 		// Let's compare this norm with other norms of the connected elements
 		for(int j=1; j<NumOfNeighborElements; ++j)
@@ -430,21 +439,21 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 					normOther[k] = m_msh->ele_vector[indexOther]->getTransformTensor(k+6);
 
 			// Check two norms are same.
-			if( fabs(norm[0]-normOther[0]) < tolerance && fabs(norm[1]-normOther[1]) < tolerance 
+			if( fabs(norm[0]-normOther[0]) < tolerance && fabs(norm[1]-normOther[1]) < tolerance
 				&& fabs(norm[2]-normOther[2]) < tolerance )
 				; // Two elements stay on the same plane
 			else
 			{
 				thisNode->crossroad = 1;
 				// I am going to store all the element indeces which are different from
-				// the reference element. Then, I will get rid of the duplicate elements 
+				// the reference element. Then, I will get rid of the duplicate elements
 				// of the same plane.
 				int indexOther = -1;
 				indexOther = thisNode->connected_elements[j];
 				thisNode->connected_planes.push_back(indexOther);
-			}	
+			}
 		}
-	
+
 		// Get rid of duplicates of the elements that have the same norm for the potential crossroads
 		// This works great with h_frac example in RWPT
 		if(thisNode->crossroad == 1)
@@ -463,7 +472,7 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 				else
 					for(int k=0; k<3; ++k)
 						normOther[k] = m_msh->ele_vector[indexOther]->getTransformTensor(k+6);
-			
+
 				for(int l=j+1; l<numOfPlanesAtCrossroad; ++l)
 				{
 					double normAnother[3];
@@ -479,19 +488,19 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 
 					// Check two norms are same.
 					// If two norms of the elemenets are same,
-					if( fabs(normOther[0]-normAnother[0]) < tolerance && fabs(normOther[1]-normAnother[1]) < tolerance 
+					if( fabs(normOther[0]-normAnother[0]) < tolerance && fabs(normOther[1]-normAnother[1]) < tolerance
 						&& fabs(normOther[2]-normAnother[2]) < tolerance )
 					{
 						// Two elements stay on the same plane
 						for(int m = l; m < (numOfPlanesAtCrossroad - 1); ++m)
 							thisNode->connected_planes[m] = thisNode->connected_planes[m+1];
-						
+
 						// Erase the element of the vector and adjust the number of the planes at crossroad
 						thisNode->connected_planes.erase(thisNode->connected_planes.begin() + numOfPlanesAtCrossroad -1);
                                                 numOfPlanesAtCrossroad = (int)thisNode->connected_planes.size();
 						--l;	// Very important. Huh.
 					}
-				} 	
+				}
 			}
 		}
 		// Now we got the number of connected planes on nodes.
@@ -500,9 +509,9 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 		// Do some proper projection of velocity computed from Fluid Momentum.
 		// Get the fluid velocity for this node
 		double V[3];
-		V[0] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);  
-        V[1] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);  
-        V[2] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);  
+		V[0] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);
+        V[1] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);
+        V[2] = m_pcs->GetNodeValue(i, m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);
 		if(thisNode->crossroad == 0)
 		{
 			// Let's solve the projected velocity on the element plane
@@ -514,10 +523,10 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 			// Store the projected velocity back to the node velocity
 			m_pcs->SetNodeValue(i,m_pcs->GetNodeValueIndex("VELOCITY1_X")+1,Vp[0]);
 			m_pcs->SetNodeValue(i,m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1,Vp[1]);
-			m_pcs->SetNodeValue(i,m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1,Vp[2]);	
+			m_pcs->SetNodeValue(i,m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1,Vp[2]);
 
 		}
-		else 
+		else
 		{
 			// For the velocity of the node that has more than one connected planes.
 			double Vmag = 0.0;
@@ -532,19 +541,19 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 			{
 				// Some local variables within this else
 				double norm[3], VxNorm[3], Vp[3];
-				// Solve for the norm of this plane.	
+				// Solve for the norm of this plane.
 				int index = thisNode->connected_planes[j];
 				if(m_msh->GetCoordinateFlag() != 32 && m_msh->GetCoordinateFlag() != 22)
 				{
-					thisCross->plane[j].norm[0]=norm[0] = 0.0; 
-					thisCross->plane[j].norm[1]=norm[1] = 0.0; 
+					thisCross->plane[j].norm[0]=norm[0] = 0.0;
+					thisCross->plane[j].norm[1]=norm[1] = 0.0;
 					thisCross->plane[j].norm[2]=norm[2] = 1.0;
 				}
 				else
-					for(int k=0; k<3; ++k)					
+					for(int k=0; k<3; ++k)
 						thisCross->plane[j].norm[k] = norm[k] = m_msh->ele_vector[index]->getTransformTensor(k+6);
 
-				// Store the position vector defined below 
+				// Store the position vector defined below
 				CenterOfEle = m_msh->ele_vector[index]->GetGravityCenter();
 				thisCross->plane[j].Eele[0] = CenterOfEle[0] - thisNode->X();
 				thisCross->plane[j].Eele[1] = CenterOfEle[1] - thisNode->Y();
@@ -553,9 +562,9 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 				// Solve the velocity contribution for this plane.
 				CrossProduction(V,norm,VxNorm);
 				CrossProduction(norm,VxNorm, Vp);
-				for(int k=0; k<3; ++k) 
+				for(int k=0; k<3; ++k)
 					thisCross->plane[j].V[k] = Vp[k];
-				
+
 				// For ratio and Vmag
 				thisCross->plane[j].ratio = sqrt(Vp[0]*Vp[0] + Vp[1]*Vp[1] + Vp[2]*Vp[2]);
 				Vmag += thisCross->plane[j].ratio;
@@ -564,7 +573,7 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 			}
 			// Let's sort the contribution of each plane and the index of this node
 			for(int j=0; j< thisCross->numOfThePlanes; ++j)
-				thisCross->plane[j].ratio = thisCross->plane[j].ratio / Vmag; 
+				thisCross->plane[j].ratio = thisCross->plane[j].ratio / Vmag;
 			thisCross->Index = i;
 			// velocity for each connected planes ends here.
 
@@ -586,17 +595,17 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 				double dotProduct = a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 
 				angle = acos(dotProduct);
-	
+
 				// If this angle is bigger than Pi/2 (90 degree),
 				// then this crossroad is not a realone.
 				if(angle > PI / 2.0)
 					thisNode->crossroad = 0;
-			} 
+			}
 			// Extraction ends here.
-				
+
 			// Now add this crossroad to the vector of all crossroads in the domain
 			if(thisNode->crossroad == 1)
-				crossroads.push_back(thisCross);	
+				crossroads.push_back(thisCross);
 		}
 	}
 	// Checking the node is a crossroad ends here
@@ -611,13 +620,13 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 
 		// Do some proper projection of velocity computed from Fluid Momentum.
 		// Get the fluid velocity for this edge
-		double V[3], V0[3], V1[3];	
-		V0[0] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);  
-        V0[1] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);  
-        V0[2] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1); 
-		V1[0] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);  
-        V1[1] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);  
-        V1[2] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1); 
+		double V[3], V0[3], V1[3];
+		V0[0] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);
+        V0[1] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);
+        V0[2] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);
+		V1[0] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);
+        V1[1] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);
+        V1[2] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);
 		V[0] = (V0[0]+V1[0])/2.0; V[1] = (V0[1]+V1[1])/2.0; V[2] = (V0[2]+V1[2])/2.0;
 
 		if( theNodesOfThisEdge[0]->crossroad == 1 && theNodesOfThisEdge[1]->crossroad == 1 )
@@ -627,7 +636,7 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 			// Constructing the connected elements of an edge starts here
 			int numOfCEfromNode0 = (int)theNodesOfThisEdge[0]->connected_elements.size();
                         int numOfCEfromNode1 = (int)theNodesOfThisEdge[1]->connected_elements.size();
-		
+
 			for(int j=0; j<numOfCEfromNode0; ++j)
 				for(int k=0; k<numOfCEfromNode1; ++k)
 				{
@@ -652,17 +661,17 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 			{
 				// Some local variables within this else
 				double norm[3], VxNorm[3], Vp[3];
-				// Solve for the norm of this plane.	
+				// Solve for the norm of this plane.
 				int index = m_msh->edge_vector[i]->connected_elements[j];
 				if(m_msh->GetCoordinateFlag() != 32 && m_msh->GetCoordinateFlag() != 22)
 				{
 					norm[0] = 0.0; norm[1] = 0.0; norm[2] = 1.0;
 				}
 				else
-					for(int k=0; k<3; ++k)					
+					for(int k=0; k<3; ++k)
 						thisJoint->plane[j].norm[k] = norm[k] = m_msh->ele_vector[index]->getTransformTensor(k+6);
 
-				// Store the position vector defined below 
+				// Store the position vector defined below
 				CenterOfEle = m_msh->ele_vector[index]->GetGravityCenter();
 				// I am using the center position of the joint
 				thisJoint->plane[j].Eele[0] = CenterOfEle[0] - (theNodesOfThisEdge[0]->X()+theNodesOfThisEdge[1]->X())/2.0;
@@ -672,18 +681,18 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 				// Solve the velocity contribution for this plane.
 				CrossProduction(V,norm,VxNorm);
 				CrossProduction(norm,VxNorm, Vp);
-				for(int k=0; k<3; ++k) 
+				for(int k=0; k<3; ++k)
 					thisJoint->plane[j].V[k] = Vp[k];
-				
+
 				// For ratio and Vmag
 				thisJoint->plane[j].ratio = sqrt(Vp[0]*Vp[0] + Vp[1]*Vp[1] + Vp[2]*Vp[2]);
 				Vmag += thisJoint->plane[j].ratio;
 				// Update the eleIndex for this plane
-				thisJoint->plane[j].eleIndex = m_msh->edge_vector[i]->connected_elements[j];	
+				thisJoint->plane[j].eleIndex = m_msh->edge_vector[i]->connected_elements[j];
 			}
 			// Let's sort the contribution of each plane and the index of this node
 			for(int j=0; j< thisJoint->numOfThePlanes; ++j)
-				thisJoint->plane[j].ratio = thisJoint->plane[j].ratio / Vmag; 
+				thisJoint->plane[j].ratio = thisJoint->plane[j].ratio / Vmag;
 			thisJoint->Index = i;
 			// velocity for each connected planes ends here.
 
@@ -705,18 +714,18 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 				double dotProduct = a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 
 				angle = acos(dotProduct);
-	
+
 				// If this angle is bigger than Pi/2 (90 degree),
 				// then this crossroad is not a realone.
 				if(angle > PI / 2.0)
 					m_msh->edge_vector[i]->SetJoint(0);
-			} 
+			}
 			// Extraction ends here.
-				
+
 			// Now add this crossroad to the vector of all crossroads in the domain
 			if(m_msh->edge_vector[i]->GetJoint() == 1)
-				joints.push_back(thisJoint);	
-		}	
+				joints.push_back(thisJoint);
+		}
 	}
 	// Checking the edge is a joint ends here
 
@@ -759,14 +768,14 @@ void CFluidMomentum::SolveForEdgeVelocity(void)
 		MagOfVector = sqrt(VectorOfEdge[0]*VectorOfEdge[0] + VectorOfEdge[1]*VectorOfEdge[1]);
 
 		// Geting velocity on two ending nodes of the edge
-		double V[3], V0[3], V1[3], Ve0[3], Ve1[3];	
+		double V[3], V0[3], V1[3], Ve0[3], Ve1[3];
 
-		V0[0] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);  
-		V0[1] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);  
-		V0[2] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1); 
-		V1[0] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);  
-		V1[1] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);  
-		V1[2] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1); 
+		V0[0] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);
+		V0[1] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);
+		V0[2] = m_pcs->GetNodeValue(theNodesOfThisEdge[0]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);
+		V1[0] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_X")+1);
+		V1[1] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1);
+		V1[2] = m_pcs->GetNodeValue(theNodesOfThisEdge[1]->GetIndex(), m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1);
 
 		double cos, sin, MagOfV0, MagOfV1;
 		MagOfV0 = sqrt(V0[0]*V0[0] + V0[1]*V0[1]); MagOfV1 = sqrt(V1[0]*V1[0] + V1[1]*V1[1]);
@@ -775,7 +784,7 @@ void CFluidMomentum::SolveForEdgeVelocity(void)
 		// such as (-y,x) or (y,-x) for (x,y) edge vector
 		double UNVOfE[2];
 		// I will only use (-y,x) for rightys
-		UNVOfE[0] =  -VectorOfEdge[1]; 
+		UNVOfE[0] =  -VectorOfEdge[1];
 		UNVOfE[1] =  VectorOfEdge[0];
 
 		// Check if denominator is zero
@@ -856,7 +865,7 @@ void DATWriteHETFile(const char *file_name)
     CFEMesh* m_msh = NULL;
     m_msh = fem_msh_vector[0];  // Something must be done later on here.
 	CElem* elem = NULL;
-									
+
 	sprintf(tet_file_name,"%s.%s",file_name,"tet");
     tet_file = fopen(tet_file_name,"w+t");
 	// Obtain element-based velocity
@@ -864,9 +873,9 @@ void DATWriteHETFile(const char *file_name)
     {
 		elem = m_msh->ele_vector[i];
 		center = elem->GetGravityCenter();
-																		  
+
   		fprintf(tet_file, "%17.12e %17.12e %17.12e %17.12e\n",
-			center[0], center[1], center[2], elem->mat_vector(0)*1e7); 
+			center[0], center[1], center[2], elem->mat_vector(0)*1e7);
 	}
 
     // Let's close it, now

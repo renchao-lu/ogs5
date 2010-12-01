@@ -7,7 +7,7 @@
 #include "Station.h"
 
 
-StratWindow::StratWindow(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color> *stratColors, QWidget* parent) : QWidget(parent)
+StratWindow::StratWindow(GEOLIB::StationBorehole* station, std::map<std::string, GEOLIB::Color*> *stratColors, QWidget* parent) : QWidget(parent)
 {
 	setupUi(this);
 	stationView->setRenderHints( QPainter::Antialiasing );

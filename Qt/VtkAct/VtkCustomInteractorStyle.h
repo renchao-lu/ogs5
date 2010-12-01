@@ -28,13 +28,16 @@ public:
 	virtual void OnChar();
 
 public slots:
-	void highlightActor(vtkActor* prop);
+	void highlightActor(vtkProp3D* prop);
+	
+	void setHighlightActor(bool on);
 
 protected:
 	VtkCustomInteractorStyle();
 	
 
 private:
+	bool _highlightActor;
 
 };
 

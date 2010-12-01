@@ -16,7 +16,9 @@
 #include <vtkCellData.h>
 #include <vtkFloatArray.h>
 
+#include "MathTools.h"
 #include "VtkTextureOnSurfaceFilter.h"
+#include "VtkVisHelper.h"
 
 #include <QImage>
 
@@ -37,13 +39,13 @@ void VtkTextureOnSurfaceFilter::PrintSelf( ostream& os, vtkIndent indent )
 	this->Superclass::PrintSelf(os,indent);
 }
 
-int VtkTextureOnSurfaceFilter::RequestData( vtkInformation* request, 
-							             vtkInformationVector** inputVector, 
+int VtkTextureOnSurfaceFilter::RequestData( vtkInformation* request,
+							             vtkInformationVector** inputVector,
 								         vtkInformationVector* outputVector )
 {
 	(void)request;
 
-	if (this->GetTexture() == NULL) 
+	if (this->GetTexture() == NULL)
 	{
 		std::cout << "Error in VtkTextureOnSurfaceFilter::RequestData() - No texture specified ..." << std::endl;
 		return 0;
@@ -69,7 +71,7 @@ int VtkTextureOnSurfaceFilter::RequestData( vtkInformation* request,
 		{
 			double coords[3];
 			points->GetPoint(i, coords);
-			float newcoords[3] = {normalize(min.first, max.first, coords[0]), normalize(min.second, max.second, coords[1]), coords[2] };
+			float newcoords[3] = {MATHLIB::normalize(min.first, max.first, coords[0]), MATHLIB::normalize(min.second, max.second, coords[1]), 0 /*coords[2]*/ };
 			textureCoordinates->InsertNextTuple(newcoords);
 		}
 
@@ -81,7 +83,7 @@ int VtkTextureOnSurfaceFilter::RequestData( vtkInformation* request,
 		output->GetCellData()->PassData(input->GetCellData());
 		output->GetPointData()->SetTCoords(textureCoordinates);
 
-	
+
 	return 1;
 }
 
@@ -89,36 +91,11 @@ void VtkTextureOnSurfaceFilter::SetRaster(QImage &img, std::pair<float, float> o
 {
 	_origin = origin;
 	_scalingFactor = scalingFactor;
-	this->SetTexture(this->ConvertImageToTexture(img));
+	QImage raster = img.transformed(QTransform(1, 0, 0, -1, 0, 0), Qt::FastTransformation);
+	this->SetTexture(VtkVisHelper::QImageToVtkTexture(raster));
 }
 
-vtkTexture* VtkTextureOnSurfaceFilter::ConvertImageToTexture(QImage &img)
+void VtkTextureOnSurfaceFilter::SetUserProperty( QString name, QVariant value )
 {
-	size_t imgWidth = img.width(), imgHeight = img.height();
-	vtkSmartPointer<vtkUnsignedCharArray> data = vtkSmartPointer<vtkUnsignedCharArray>::New();
-		data->SetNumberOfComponents(3);
-		data->SetNumberOfTuples( imgWidth*imgHeight );
-	
-		for (size_t j=0; j<imgHeight; j++) {
-			for (size_t i=0; i<imgWidth; i++) {
-				QRgb pix = img.pixel(i,j);
-				const float color[3] = { qRed(pix), qGreen(pix), qBlue(pix) };
-				data->SetTuple(j*imgWidth+i, color);
-			}
-		}
-
-	vtkSmartPointer<vtkImageData> imgData = vtkSmartPointer<vtkImageData>::New();
-		imgData->SetExtent(0, imgWidth-1, 0, imgHeight-1, 0, 0);
-		imgData->SetOrigin(0, 0, 0);
-		imgData->SetNumberOfScalarComponents(3);
-		imgData->GetPointData()->SetScalars(data);
-
-	vtkTexture* texture = vtkTexture::New();
-		texture->InterpolateOff();
-		texture->RepeatOff();
-		//texture->EdgeClampOff();
-		//texture->SetBlendingMode(0);
-		texture->SetInput(imgData);
-
-	return texture;
+	VtkAlgorithmProperties::SetUserProperty(name, value);
 }

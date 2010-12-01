@@ -44,6 +44,7 @@ void Station::addProperty(std::string pname, double (*getFct)(void*), void (*set
 
 Station::~Station()
 {
+	delete _color;
 }
 
 void Station::setColor(unsigned char r, unsigned char g, unsigned char b)
@@ -131,10 +132,9 @@ bool Station::inSelection(const std::vector<PropertyBounds> &bounds)
 
 
 
-
-// The Borehole class
-
-#include "DateTools.h"
+////////////////////////
+// The Borehole class //
+////////////////////////
 
 StationBorehole::StationBorehole(double x, double y, double z) :
 	Station (x,y,z)
@@ -308,7 +308,7 @@ StationBorehole* StationBorehole::createStation(const std::string &line)
 			borehole->_date = 0;
 		else
 		{
-			borehole->_date = strDate2Double(fields.front());
+			borehole->_date = strDate2double(fields.front());
 			fields.pop_front();
 		}
 	}
@@ -329,7 +329,7 @@ StationBorehole* StationBorehole::createStation(const std::string &name, double 
 	(*station)[1]   = y;
 	(*station)[2]   = z;
 	station->_depth = depth;
-	station->_date  = strDate2Double(date);
+	station->_date  = xmlDate2double(date);
 	return station;
 }
 
@@ -361,7 +361,7 @@ void StationBorehole::addSoilLayer ( double thickness, const std::string &soil_n
 
 	// KR - Bode
 	if (_profilePntVec.empty())
-		addSoilLayer ((*this)[0], (*this)[1], (*this)[2], soil_name);
+		addSoilLayer ((*this)[0], (*this)[1], (*this)[2], "");
 
 	size_t idx (_profilePntVec.size());
 	double x((*_profilePntVec[idx-1])[0]);

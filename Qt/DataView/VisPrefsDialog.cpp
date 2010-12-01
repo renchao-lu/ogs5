@@ -17,22 +17,19 @@ VisPrefsDialog::VisPrefsDialog(VtkVisPipeline* pipeline, QDialog* parent) :
 		lightAboveBox->toggle();
 	if (_vtkVisPipeline->getLight(_below))
 		lightBelowBox->toggle();
+
+	QColor color = _vtkVisPipeline->getBGColor();
+	bgColorButton->setColor(_vtkVisPipeline->getBGColor());
 }
 
 VisPrefsDialog::~VisPrefsDialog()
 {
 }
 
-void VisPrefsDialog::on_bgBlackButton_toggled()
+void VisPrefsDialog::on_bgColorButton_colorPicked( QColor color )
 {
-	GEOLIB::Color black(0,0,0);
-	_vtkVisPipeline->setBGColor(black);
-}
-
-void VisPrefsDialog::on_bgWhiteButton_toggled()
-{
-	GEOLIB::Color white(255, 255, 255);
-	_vtkVisPipeline->setBGColor(white);
+	QColor bgColor(color.red(), color.green(), color.blue());
+	_vtkVisPipeline->setBGColor(bgColor);
 }
 
 void VisPrefsDialog::on_lightAboveBox_clicked()

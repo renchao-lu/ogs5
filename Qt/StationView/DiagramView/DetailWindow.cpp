@@ -26,13 +26,13 @@ DetailWindow::DetailWindow(QWidget* parent) : QWidget(parent)
 	/* ================================================== */
 
 	/* make up list-object for the first test station */
-	list->setName("Water Level Observation Station: Oschersleben 2003");
+	list->setName("Water Level Observation Station: Halberstadt 2002" /*Oschersleben 2003*/);
 	list->setXLabel("Time");
 	list->setYLabel("Water Level");
 	list->setXUnit("day");
 	list->setYUnit("metres");
 	list->setColor(QColor(Qt::red));
-	list->readList("d:\\teststation-a.txt");
+	list->readList("c:\\project\\timeseries-a.stn");
 
 	/* make up list-object for the second test station */
 	list2->setName("Water Level Observation Station: Oschersleben 2002");
@@ -41,7 +41,7 @@ DetailWindow::DetailWindow(QWidget* parent) : QWidget(parent)
 	list2->setXUnit("day");
 	list2->setYUnit("metres");
 	list2->setColor(QColor(Qt::green));
-	list2->readList("d:\\teststation-b.txt");
+	list2->readList("c:\\project\\timeseries-b.stn");
 
 	/* ================================================== */
 

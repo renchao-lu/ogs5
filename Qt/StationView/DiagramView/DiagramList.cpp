@@ -10,7 +10,7 @@
 #include "StringTools.h"
 
 
-DiagramList::DiagramList() : _maxX(0), _maxY(0), _minX(0), _minY(0), _xLabel(""), _yLabel(""), _xUnit(""), _yUnit("")
+DiagramList::DiagramList() : _maxX(0), _maxY(0), _minX(0), _minY(0), _xLabel(""), _yLabel(""), _xUnit(""), _yUnit(""), _startDate()
 {
 }
 
@@ -61,7 +61,6 @@ float DiagramList::calcMaxYValue()
 	}
 	return max;
 }
-
 
 bool DiagramList::getPath(QPainterPath &path, float scaleX, float scaleY)
 {
@@ -157,8 +156,8 @@ int DiagramList::readList(const QString &path)
 		int numberOfDays = 0;
 		QString stringDate = fields.takeFirst();
 		float value = fields.takeFirst().toDouble();
-		QDateTime date1 = QDateTime::fromString(stringDate, "dd.MM.yyyy");
-		QDateTime date2;
+		_startDate = QDateTime::fromString(stringDate, "dd.MM.yyyy");
+		QDateTime currentDate;
 
 		_coords.push_back(std::pair<float, float>(0, value));
 
@@ -169,9 +168,9 @@ int DiagramList::readList(const QString &path)
 				stringDate = fields.takeFirst();
 				//value = fields.takeFirst().toDouble();
 				value = strtod(replaceString(",", ".", fields.takeFirst().toStdString()).c_str(),0);
-				date2 = QDateTime::fromString(stringDate, "dd.MM.yyyy");
+				currentDate = QDateTime::fromString(stringDate, "dd.MM.yyyy");
 
-				numberOfDays = date1.daysTo(date2);
+				numberOfDays = _startDate.daysTo(currentDate);
 				_coords.push_back(std::pair<float, float>(numberOfDays, value));
 			}
 			else return 0;

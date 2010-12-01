@@ -95,7 +95,7 @@ bool lineSegmentIntersect (const GEOLIB::Point& a, const GEOLIB::Point& b,
 
 bool lineSegmentsIntersect (const GEOLIB::Polyline* ply, size_t &idx0, size_t &idx1, GEOLIB::Point& intersection_pnt)
 {
-	size_t n_segs (ply->getSize());
+	size_t n_segs (ply->getNumberOfPoints() - 1);
 	/**
 	 * computing the intersections of all possible pairs of line segments of the given polyline
 	 * as follows:
@@ -103,9 +103,9 @@ bool lineSegmentsIntersect (const GEOLIB::Polyline* ply, size_t &idx0, size_t &i
 	 * of the polyline and segment \f$s_2 = (C,B)\f$ defined by \f$j\f$-th and
 	 * \f$j+1\f$-st point of the polyline, \f$j>k+1\f$
 	 */
-	for (size_t k(0); k<n_segs-3; k++) {
-		for (size_t j(k+2); j<n_segs-1; j++) {
-			if (k!=0 || j<n_segs-2) {
+	for (size_t k(0); k<n_segs-2; k++) {
+		for (size_t j(k+2); j<n_segs; j++) {
+			if (k!=0 || j<n_segs-1) {
 				if (lineSegmentIntersect (*(*ply)[k], *(*ply)[k+1], *(*ply)[j], *(*ply)[j+1], intersection_pnt)) {
 					idx0 = k;
 					idx1 = j;
@@ -407,8 +407,8 @@ void earClippingTriangulationOfPolygon(const GEOLIB::Polyline* ply, std::list<GE
 		std::cerr << "Polyline is not a Polygon!" << std::endl;
 		return;
 	}
-	// copy points
-	size_t n_pnts (ply->getSize()-1);
+	// copy points - last point is identical to the first
+	size_t n_pnts (ply->getNumberOfPoints()-1);
 
 	std::vector<GEOLIB::Point*> pnts;
 	pnts.reserve (n_pnts);
@@ -433,7 +433,7 @@ void earClippingTriangulationOfPolygon(const GEOLIB::Polyline* ply, std::list<GE
 	// check orientation and if CW change orientation
 	size_t orientation (CCW);
 	double z_axis[3] = {0.0, 0.0, 1.0};
-	if (scpr (plane_normal.getData(), z_axis, 3) <= 0.0) {
+	if (MATHLIB::scpr (plane_normal.getData(), z_axis, 3) <= 0.0) {
 		// CW orientation of polygon
 		orientation = CW;
 		for (size_t k(0); k<n_pnts/2; k++) {

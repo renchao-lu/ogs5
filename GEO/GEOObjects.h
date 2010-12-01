@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 #include "PointVec.h"
 #include "Point.h"
@@ -23,8 +24,15 @@
 
 namespace GEOLIB {
 
-/// \brief Container class for geometric objects.
+///
 /**
+ * \defgroup GEOLIB
+ * This module consists of classes governing geometric objects and related algorithms.
+ */
+
+/**
+ * \brief Container class for geometric objects.
+ *
  * This class contains all the methods necessary for the I/O of geometric objects.
  * Said objects are Points, polylines, Surfaces and Stations and they are stored in
  * vectors (arrays) which are identified by a unique name.
@@ -52,7 +60,7 @@ public:
 	 * @param name the project name
 	 * @param pnt_names vector of the names corresponding to the points
 	 */
-	virtual void addPointVec(std::vector<Point*> *points, std::string &name, std::vector<std::string>* pnt_names = NULL);
+	virtual void addPointVec(std::vector<Point*> *points, std::string &name, std::map<std::string, size_t>* pnt_names = NULL);
 
 	/** copies the pointers to the points in the vector to the PointVec with provided name.
 	 * the pointers are managed by the GEOObjects, i.e. GEOObjects will delete the Points at the
@@ -104,12 +112,19 @@ public:
 	 * @param ply_names vector of the names corresponding to the polylines
 	*/
 	virtual void addPolylineVec(std::vector<Polyline*> *lines,
-			const std::string &name, std::vector<std::string>* ply_names = NULL);
+			const std::string &name, std::map<std::string,size_t>* ply_names = NULL);
 
 	/**
 	 * Returns the polyline vector with the given name.
 	 * */
 	const std::vector<Polyline*> *getPolylineVec(const std::string &name) const;
+
+	/**
+	 * Returns a pointer to a PolylineVec object for the given name.
+	 * @param name the name of the vector of polylines
+	 * @return PolylineVec object
+	 */
+	const PolylineVec* getPolylineVecObj(const std::string &name) const;
 
 	/**
 	 * If no Surfaces depends on the vector of Polylines with the given
@@ -120,11 +135,25 @@ public:
 
 	/** Adds a vector of surfaces with the given name to GEOObjects. */
 	virtual void addSurfaceVec(std::vector<Surface*> *surfaces,
-			const std::string &name, std::vector<std::string>* sfc_names = NULL);
+			const std::string &name, std::map<std::string, size_t>* sfc_names = NULL);
+
 	/// Returns the surface vector with the given name.
 	const std::vector<Surface*> *getSurfaceVec(const std::string &name) const;
 	/** removes the vector of Surfaces with the given name */
 	virtual bool removeSurfaceVec(const std::string &name);
+	/**
+	 * Returns a pointer to a SurfaceVec object for the given name. The class
+	 * SurfaceVec stores the relation between surfaces and the names of the surfaces.
+	 * @param name the name of the vector of surfaces (the project name)
+	 * @return SurfaceVec object
+	 */
+	const SurfaceVec* getSurfaceVecObj(const std::string &name) const;
+
+	/// Returns the names of all geometry vectors.
+	void getGeometryNames (std::vector<std::string>& names) const;
+
+	/// Returns the names of all station vectors.
+	void getStationNames(std::vector<std::string>& names) const;
 
 	/** constructor */
 	GEOObjects();

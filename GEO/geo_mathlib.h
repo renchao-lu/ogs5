@@ -1,6 +1,6 @@
 /**************************************************************************
 GeoLib - Object:GEO Mathlib
-Task: 
+Task:
 Programing:
 08/2005 CC Implementation
 **************************************************************************/
@@ -9,16 +9,15 @@ Programing:
 
 #include <limits>
 #include <cmath>
-#include <vector>
 
 #define MKleinsteZahlen std::numeric_limits<double>::min()
 #define MAX_ZEILEN 256 //2048 OK
 #define CSV_FILE_EXTENSIONS ".csv"
 #define TEC_FILE_EXTENSIONS ".tec"
 
-extern double EuklVek3dDist( double *x, double *y ); 
-extern double EuklVek3dDistCoor(double x1,double y1,double z1,double x2,double y2,double z2); 
-extern double Vek3dDistCoor(double x1,double y1,double z1,double x2,double y2,double z2,int norm); 
+extern double EuklVek3dDist( double *x, double *y );
+extern double EuklVek3dDistCoor(double x1,double y1,double z1,double x2,double y2,double z2);
+extern double Vek3dDistCoor(double x1,double y1,double z1,double x2,double y2,double z2,int norm);
 extern int M3KreuzProdukt( double *vec1, double *vec2 , double *vec);
 extern double MBtrgVec(double *vec, long n);
 extern double MSkalarprodukt ( double *vec1, double *vec2, long g );
@@ -35,21 +34,5 @@ extern int MPhi2D(double *vf,double r, double s);
 #ifdef RFW_FRACTURE
 extern bool LineSegmentIntersection(vector<double>, vector<double>, vector<double>, vector<double>, vector<double>&); //RFW 04/2005
 #endif
-
-class CubicSpline {
-public:
-	CubicSpline(std::vector<double>&s, std::vector<double>&val);
-	~CubicSpline();
-	double interpolation(double x);
-
-private:
-	std::vector<double> xx;
-	std::vector<double> yy;
-	double *bb;
-	double *cc;
-	double *dd;
-	int n;
-	void ComputeCoefficents();
-};
 
 #endif

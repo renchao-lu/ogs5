@@ -13,8 +13,9 @@
 
 namespace GEOLIB {
 
-
 /**
+ * \ingroup GEOLIB
+ *
  * \brief class PolylineVec encapsulate a std::vector of Polylines
  * additional one can give the vector of polylines a name
  * */
