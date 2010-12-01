@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Clean results directory
+rm -rf ../../benchmarks/results/*
+
 # Goto sources directory
 cd .. >/dev/null
 
