@@ -67,7 +67,7 @@ Mesh_Group::CFEMesh* MshLayerMapper::CreateLayers(const Mesh_Group::CFEMesh* mes
 		}
 	}
 
-	new_mesh->setNumberOfMeshLayers(nLayers+1);
+	new_mesh->setNumberOfMeshLayers(nLayers);
 
 	new_mesh->ConstructGrid();
 	new_mesh->FillTransformMatrix();
