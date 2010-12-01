@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Clean results directory
-rm -rf ../../benchmarks/results/*
+rm -rf ../../benchmarks/results/*.html
 
 # Goto sources directory
 cd .. >/dev/null
