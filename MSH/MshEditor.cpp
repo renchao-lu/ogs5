@@ -9,6 +9,55 @@
 #include "GridAdapter.h"
 
 
+void MshEditor::getNodeAreas(const MeshLib::CFEMesh* mesh, std::vector<double> &node_area_vec)
+{
+	double total_area (0);
+
+	// for each node, a vector containing all the element idget every element
+	const size_t nNodes ( mesh->nod_vector.size() );
+	for (size_t n=0; n<nNodes; n++)
+	{
+		double node_area (0);
+
+		std::vector<size_t> connected_elements (mesh->nod_vector[n]->getConnectedElementIDs());
+
+		for (size_t i=0; i<connected_elements.size();i++)
+		{
+			MeshLib::CElem *Element (mesh->ele_vector[connected_elements[i]]);
+
+			// get nodes of this element
+			std::vector<MeshLib::CNode*> ElementNodes;
+			Element->GetNodes(ElementNodes);
+
+			// get area of this Element
+			// first, get coordinates for each node
+
+			GEOLIB::Point A (ElementNodes[0]->getData());
+			GEOLIB::Point B (ElementNodes[1]->getData());
+			GEOLIB::Point C (ElementNodes[2]->getData());
+
+			// distances of AB, BC, and AC
+			const double a = sqrt((A[0]-B[0])*(A[0]-B[0]) + (A[1]-B[1])*(A[1]-B[1]) + (A[2]-B[2])*(A[2]-B[2]));
+			const double b = sqrt((C[0]-B[0])*(C[0]-B[0]) + (C[1]-B[1])*(C[1]-B[1]) + (C[2]-B[2])*(C[2]-B[2]));
+			const double c2= (A[0]-C[0])*(A[0]-C[0]) + (A[1]-C[1])*(A[1]-C[1]) + (A[2]-C[2])*(A[2]-C[2]);
+
+			// angle AC-BC
+			const double cos_gamma = (c2-a*a-b*b)/(-2*a*b);
+			
+			// Area of tri-element
+			const double Area = 0.5*a*b*sin(acos(cos_gamma));
+
+			node_area += Area/3.0; // the third part of the area of each connected element adds up to the nodal area of n
+			total_area += Area/3.0;
+		}
+
+		node_area_vec.push_back(node_area);
+	}
+
+	std::cout<< "Total surface Area: " << total_area << std::endl;
+}
+
+
 MeshLib::CFEMesh* MshEditor::removeMeshNodes(MeshLib::CFEMesh* mesh,
                                              const std::vector<size_t> &nodes)
 {
@@ -77,7 +126,7 @@ MeshLib::CFEMesh* MshEditor::removeMeshNodes(MeshLib::CFEMesh* mesh,
 	return new_mesh;
 }
 
-const std::vector<GEOLIB::PointWithID*> MshEditor::getSurfaceNodes(const MeshLib::CFEMesh &mesh)
+std::vector<GEOLIB::PointWithID*> MshEditor::getSurfaceNodes(const MeshLib::CFEMesh &mesh)
 {
 	std::cout << "Extracting surface nodes..." << std::endl;
 	// Sort points lexicographically
@@ -86,13 +135,13 @@ const std::vector<GEOLIB::PointWithID*> MshEditor::getSurfaceNodes(const MeshLib
 	std::vector<size_t> perm;
 	for (size_t j(0); j<nNodes; j++)
 	{
-		nodes.push_back(new GEOLIB::PointWithID(mesh.nod_vector[j]->getData(), j));		
+		nodes.push_back(new GEOLIB::PointWithID(mesh.nod_vector[j]->getData(), j));
 		perm.push_back(j);
 	}
 	Quicksort<GEOLIB::PointWithID*> (nodes, 0, nodes.size(), perm);
 
 	// Extract surface points
-	double eps (sqrt(std::numeric_limits<double>::min()));
+	double eps (std::numeric_limits<double>::epsilon());
 	std::vector<GEOLIB::PointWithID*> surface_pnts;
 	for (size_t k(1); k < nNodes; k++)
 	{
@@ -115,17 +164,17 @@ MeshLib::CFEMesh* MshEditor::getMeshSurface(const MeshLib::CFEMesh &mesh)
 	const size_t nSurfacePoints (sfc_points.size());
 
 	std::vector<GridAdapter::Element*> *elements = new std::vector<GridAdapter::Element*>;
-	
+
 	const size_t nElements = mesh.ele_vector.size();
 	for (size_t j=0; j<nElements; j++)
 	{
 		MeshLib::CElem* elem (mesh.ele_vector[j]);
 		std::vector<size_t> elem_nodes;
 		bool is_surface (true);
-		for (size_t i=0; i<3; i++)
+		for (size_t i=0; i<4; i++)
 		{
 			size_t node_index = elem->GetNodeIndex(i);
-			bool node_found(false);
+			bool node_found(false), one_node(true);
 			for (size_t k=0; k<nSurfacePoints; k++)
 			{
 				if (sfc_points[k]->getID() == node_index)
@@ -137,8 +186,13 @@ MeshLib::CFEMesh* MshEditor::getMeshSurface(const MeshLib::CFEMesh &mesh)
 			}
 			if (!node_found)
 			{
-				is_surface = false;
-				break;
+				if (one_node == true)
+					one_node = false;
+				else
+				{
+					is_surface = false;
+					break;
+				}
 			}
 		}
 		if (is_surface)

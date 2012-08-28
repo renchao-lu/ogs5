@@ -6,6 +6,9 @@
 #include "Configure.h"
 #include "mainwindow.h"
 
+// BaseLib
+#include "MemWatch.h"
+
 // models
 #include "ProcessModel.h"
 #include "ElementTreeModel.h"
@@ -74,6 +77,7 @@
 
 // MSH
 #include "msh_mesh.h"
+#include "MshEditor.h" //test
 
 // MSHGEOTOOLS
 #include "ExtractMeshNodes.h"
@@ -608,11 +612,30 @@ void MainWindow::loadFile(const QString &fileName)
 	// OpenGeoSys mesh files
 	else if (fi.suffix().toLower() == "msh")
 	{
+		QTime myTimer0;
+		myTimer0.start();
+
 		FileIO::OGSMeshIO meshIO;
 		std::string name = fileName.toStdString();
+#ifndef WIN32
+		BaseLib::MemWatch mem_watch;
+		unsigned long mem_without_mesh(mem_watch.getVirtMemUsage());
+#endif
+#ifndef NDEBUG
+		clock_t start_mesh_time(clock());
+#endif
 		MeshLib::CFEMesh* msh = meshIO.loadMeshFromFile(name);
+#ifndef NDEBUG
+		clock_t end_mesh_time(clock());
+		std::cout << "time for loading mesh and constructing topology: " << (end_mesh_time - start_mesh_time) / (double)(CLOCKS_PER_SEC) << " s" << std::endl;
+#endif
+#ifndef WIN32
+		unsigned long mem_with_mesh(mem_watch.getVirtMemUsage());
+		std::cout << "mem for pure mesh data structures: " << (mem_with_mesh-mem_without_mesh) / (1024*1024) << " MB" << std::endl;
+#endif
 		if (msh)
 		{
+			std::cout << "Total mesh loading time: " << myTimer0.elapsed() << " ms" << std::endl;
 			std::string mesh_name = fi.baseName().toStdString();
 			_meshModels->addMesh(msh, mesh_name);
 		}
@@ -1093,18 +1116,24 @@ void MainWindow::addFEMConditions(const std::vector<FEMCondition*> conditions)
 	{
 		for (size_t i = 0; i < conditions.size(); i++)
 		{
-
+			bool condition_ok(true);
 			if (conditions[i]->getProcessDistributionType() == FiniteElement::DIRECT)
 			{
-				std::vector<GEOLIB::Point*> *points = GEOLIB::PointVec::deepcopy(_meshModels->getMesh(conditions[i]->getAssociatedGeometryName())->getNodes());
-				GEOLIB::PointVec pnt_vec("MeshNodes", points);
-				std::vector<GEOLIB::Point*> *cond_points = pnt_vec.getSubset(conditions[i]->getDisNodes());
-				std::string geo_name = conditions[i]->getGeoName();
-				this->_geoModels->addPointVec(cond_points, geo_name);
-				conditions[i]->setGeoName(geo_name); // this might have been changed upon inserting it into geo_objects
+				if (_meshModels->getMesh(conditions[i]->getAssociatedGeometryName()) != NULL) {
+					std::vector<GEOLIB::Point*> *points = GEOLIB::PointVec::deepcopy(_meshModels->getMesh(conditions[i]->getAssociatedGeometryName())->getNodes());
+					GEOLIB::PointVec pnt_vec("MeshNodes", points);
+					std::vector<GEOLIB::Point*> *cond_points = pnt_vec.getSubset(conditions[i]->getDisNodes());
+					std::string geo_name = conditions[i]->getGeoName();
+					this->_geoModels->addPointVec(cond_points, geo_name);
+					conditions[i]->setGeoName(geo_name); // this might have been changed upon inserting it into geo_objects
+				} else {
+					OGSError::box("Please load an appropriate geometry first", "Error");
+					condition_ok = false;
+				}
 			}
-
-			this->_processModel->addCondition(conditions[i]);
+			if (condition_ok) {
+				this->_processModel->addCondition(conditions[i]);
+			}
 		}
 
 		for (std::list<CBoundaryCondition*>::iterator it = bc_list.begin();
@@ -1285,10 +1314,7 @@ void MainWindow::callGMSH(std::vector<std::string> & selectedGeometries,
 		}
 	}
 	else
-	{
-		OGSError::box("No geometry information selected.", "Error");
 		std::cout << "No geometry information selected..." << std::endl;
-	}
 }
 
 void MainWindow::showConditionWriterDialog()
@@ -1305,15 +1331,15 @@ void MainWindow::showDiagramPrefsDialog(QModelIndex &index)
 	GEOLIB::Station* stn = _geoModels->getStationModel()->stationFromIndex(
 	        index, listName);
 
-	if (stn->type() == GEOLIB::Station::STATION)
+	if ((stn->type() == GEOLIB::Station::STATION) && stn->getSensorData())
 	{
-		DiagramPrefsDialog* prefs = new DiagramPrefsDialog(stn, listName, _db);
+		DiagramPrefsDialog* prefs ( new DiagramPrefsDialog(stn) );
+		//DiagramPrefsDialog* prefs = new DiagramPrefsDialog(stn, listName, _db);
 		prefs->setAttribute(Qt::WA_DeleteOnClose);
 		prefs->show();
 	}
 	if (stn->type() == GEOLIB::Station::BOREHOLE)
-		OGSError::box(
-		        "No time series data available for borehole.");
+		OGSError::box("No time series data available for borehole.");
 }
 
 void MainWindow::showDiagramPrefsDialog()
@@ -1367,7 +1393,7 @@ void MainWindow::showCondSetupDialog(const std::string &geometry_name, const GEO
 	}
 	// Object should now have a name ... if not, cancel the setup process
 	if (geo_name.empty())
-		OGSError::box("FEM Condition Setup cancelled.");
+		OGSError::box("FEM Condition Setup canceled.");
 	else
 	{
 		if (on_points)
@@ -1428,6 +1454,9 @@ void MainWindow::showVisalizationPrefsDialog()
 
 void MainWindow::FEMTestStart()
 {
+	std::string name ("Test");
+	_meshModels->addMesh(MshEditor::getMeshSurface(*_project.getMesh("Ammer-Homogen100m-Final")), name);
+
 /*
 	const std::vector<GEOLIB::Polyline*> *lines = this->_geoModels->getPolylineVec("WESS Rivers");
 	MeshLib::CFEMesh* mesh = const_cast<MeshLib::CFEMesh*>(_project.getMesh("Ammer-Homogen100m-Final"));

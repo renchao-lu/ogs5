@@ -36,9 +36,6 @@ void VtkCompositeThresholdFilter::init()
 	vtkThreshold* threshold = vtkThreshold::New();
 	threshold->SetInputConnection(_inputAlgorithm->GetOutputPort());
 
-	// Note: There is no need to select the input array because it is
-	//       automatically selected.
-
 	// Sets a filter property which will be user editable
 	threshold->SetSelectedComponent(0);
 
@@ -54,10 +51,14 @@ void VtkCompositeThresholdFilter::init()
 	thresholdRangeList.push_back(dMin);
 	thresholdRangeList.push_back(dMax);
 	// Put that list in the property map
-	(*_algorithmUserVectorProperties)["Threshold Between"] = thresholdRangeList;
+	(*_algorithmUserVectorProperties)["Range"] = thresholdRangeList;
 
 	// Make a new entry in the property map for the SelectedComponent property
 	(*_algorithmUserProperties)["Selected Component"] = 0;
+
+	// Must all scalars match the criterium
+	threshold->SetAllScalars(1);
+	(*_algorithmUserProperties)["Evaluate all points"] = true;
 
 	// The threshold filter is last one and so it is also the _outputAlgorithm
 	_outputAlgorithm = threshold;
@@ -71,6 +72,8 @@ void VtkCompositeThresholdFilter::SetUserProperty( QString name, QVariant value 
 	if (name.compare("Selected Component") == 0)
 		// Set the property on the algorithm
 		static_cast<vtkThreshold*>(_outputAlgorithm)->SetSelectedComponent(value.toInt());
+	else if (name.compare("Evaluate all points") == 0)
+		static_cast<vtkThreshold*>(_outputAlgorithm)->SetAllScalars(value.toBool());
 }
 
 void VtkCompositeThresholdFilter::SetUserVectorProperty( QString name, QList<QVariant> values )
@@ -78,7 +81,7 @@ void VtkCompositeThresholdFilter::SetUserVectorProperty( QString name, QList<QVa
 	VtkAlgorithmProperties::SetUserVectorProperty(name, values);
 
 	// Use the same name as in init()
-	if (name.compare("Threshold Between") == 0)
+	if (name.compare("Range") == 0)
 		// Set the vector property on the algorithm
 		static_cast<vtkThreshold*>(_outputAlgorithm)->ThresholdBetween(
 		        values[0].toDouble(), values[1].toDouble());

@@ -64,13 +64,10 @@ void ExtractMeshNodes::writeTopSurfaceMeshNodeIDs (std::ostream& os,
 
 	std::vector<GEOLIB::PointWithID> nodes_as_points;
 
-	for (size_t j(0); j < msh_nodes.size(); j++)
-	{
-//		if (msh_nodes[j]->Interior()) {
+	for (size_t j(0); j < msh_nodes.size(); j++) {
 		GEOLIB::Point pnt (msh_nodes[j]->getData());
 		if (polygon.isPntInPolygon(pnt))
 			nodes_as_points.push_back (GEOLIB::PointWithID (msh_nodes[j]->getData(), j));
-		//		}
 	}
 
 	std::vector<size_t> perm;
@@ -106,8 +103,7 @@ void ExtractMeshNodes::writeTopSurfaceMeshNodeIDs (std::ostream& os,
 	}
 	// write last point
 	gli_out << n_nodes + _gli_pnt_offset << " " << std::scientific <<
-	nodes_as_points[nodes_as_points.size() -
-	                1] << " $NAME " <<
+	nodes_as_points[nodes_as_points.size() - 1] << " $NAME " <<
 	nodes_as_points[nodes_as_points.size() - 1].getID() << std::endl;
 	n_nodes++;
 	_gli_pnt_offset += n_nodes;
@@ -456,4 +452,20 @@ void ExtractMeshNodes::writeNearestMeshNodeToPoint (std::ostream& os,
 
 	_gli_pnt_offset++;
 }
+
+void ExtractMeshNodes::getMeshNodeIDsWithinPolygon(GEOLIB::Polygon const& polygon,
+				std::vector<size_t> & node_ids) const
+{
+	// get all nodes of the mesh
+	const std::vector<MeshLib::CNode*>& mesh_nodes(_msh->getNodeVector());
+
+	// check if nodes (projected to x-y-plane) are inside the polygon
+	const size_t number_of_mesh_nodes(mesh_nodes.size());
+	for (size_t j(0); j < number_of_mesh_nodes; j++) {
+		if (polygon.isPntInPolygon(mesh_nodes[j]->getData())) {
+			node_ids.push_back(j);
+		}
+	}
+}
+
 } // end namespace MeshLib

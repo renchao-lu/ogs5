@@ -22,7 +22,7 @@ namespace MeshLib
    Programing:
    06/2005 WW Implementation
 **************************************************************************/
-CElem::CElem(size_t Index) 
+CElem::CElem(size_t Index)
 : CCore(Index), normal_vector(NULL), /*geo_type(t), */owner(NULL), ele_dim(1),
 	nnodes(0), nnodesHQ(0), nodes(nnodes), nodes_index(nnodes),
 	patch_index(0), transform_tensor(NULL), angle(NULL)
@@ -1018,7 +1018,7 @@ int CElem::GetElementFacesQuad(int Face, int* FaceNode)
 	else
 	{
 		FaceNode[0] = Face;
-		FaceNode[1] = (Face + 1) % 4; 
+		FaceNode[1] = (Face + 1) % 4;
 		FaceNode[2] = Face + 4;
 		return 3;
 	}
@@ -1560,7 +1560,7 @@ void CElem::SetNormalVector()
       {
 		double const* const p0 (nodes[0]->getData());
 		double const* const p1 (nodes[1]->getData());
-		double const* const p2 (nodes[2]->getData());
+//		double const* const p2 (nodes[2]->getData()); // TF unused variable
 		double const* const p3 (nodes[3]->getData());
         const double v1[3] = {p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]};
 		const double v2[3] = {p3[0] - p0[0], p3[1] - p0[1], p3[2] - p0[2]};

@@ -13,7 +13,9 @@ INCLUDE(CMakeConfiguration/CMakeSetup.cmake)
 INCLUDE(CMakeConfiguration/CompilerSetup.cmake)
 
 ### Find directories and libraries ###
-INCLUDE (CMakeConfiguration/Find.cmake)
+IF(NOT OGS_NO_EXTERNAL_LIBS)
+	INCLUDE (CMakeConfiguration/Find.cmake)
+ENDIF() # NOT OGS_NO_EXTERNAL_LIBS
 
 ### General project setup ###
 INCLUDE(CMakeConfiguration/GeneralProjectSetup.cmake)
@@ -65,10 +67,12 @@ IF(GCC)
 			OPTION(OGS_OUTPUT_PROFILE "Enables pdf output of profiling results." OFF)
 		ENDIF() # OGS_PROFILE AND DOT_TOOL_PATH
 	ENDIF() # GPROF_PATH
-	
+
 	OPTION_REQUIRES(OGS_COVERAGE "Enables code coverage measurements with gcov/lcov." OGS_BUILD_TESTS)
-ENDIF() # GCC 
+ENDIF() # GCC
 OPTION (OGS_BUILD_TESTS "Enables building of tests." OFF)
+OPTION (OGS_NO_EXTERNAL_LIBS "Builds OGS without any external dependencies."
+OFF)
 
 MARK_AS_ADVANCED(FORCE OGS_PYTHON OGS_CMAKE_DEBUG OGS_ONE_BIG_GTEST OGS_BUILD_INFO CMAKE_CMD_ARGS)
 
@@ -77,11 +81,11 @@ MARK_AS_ADVANCED(FORCE OGS_PYTHON OGS_CMAKE_DEBUG OGS_ONE_BIG_GTEST OGS_BUILD_IN
 ###########################################################################
 SET (OGS_VERSION_MAJOR 5)
 SET (OGS_VERSION_MINOR 3)
-SET (OGS_VERSION_PATCH 2)
-SET (OGS_RELEASE_PERSONS "LB/TF/KR/DN")
+SET (OGS_VERSION_PATCH 3)
+SET (OGS_RELEASE_PERSONS "LB/NB/TF/JOD/KR")
 SET (OGS_VERSION "${OGS_VERSION_MAJOR}.${OGS_VERSION_MINOR}.${OGS_VERSION_PATCH}(${OGS_RELEASE_PERSONS})")
 # should we use ISO dates: 2010-12-31 ?
-SET (OGS_DATE "08.06.2012")
+SET (OGS_DATE "28.08.2012")
 
 # Check for number of processors
 INCLUDE(ProcessorCount)
@@ -249,7 +253,8 @@ IF (OGS_PACKAGING)
 ENDIF (OGS_PACKAGING)
 
 IF (OGS_CMAKE_DEBUG)
-	INCLUDE (CMakeConfiguration/PrintVariables.cmake)
+	INCLUDE(ListAllCMakeVariableValues)
+	list_all_cmake_variable_values()
 ENDIF (OGS_CMAKE_DEBUG)
 
 IF (BENCHMARK_DIR_FOUND)

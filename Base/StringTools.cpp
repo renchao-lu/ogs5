@@ -46,6 +46,8 @@ void trim(std::string &str, char ch)
 		str.erase(str.begin(), str.end());
 }
 
+namespace BaseLib {
+
 std::string getFileNameFromPath(const std::string &str, bool with_extension)
 {
 	std::string::size_type beg1 = str.find_last_of('/');
@@ -61,6 +63,38 @@ std::string getFileNameFromPath(const std::string &str, bool with_extension)
 	std::string::size_type end  = file.find_last_of('.');
 	return file.substr(0,end);
 }
+
+std::string copyPathToFileName(const std::string &file_name, const std::string &source)
+{
+	// check if file_name already contains a full path
+	size_t pos(file_name.rfind("/")); // linux, mac delimiter
+	if (pos == std::string::npos) 
+	{
+		pos = file_name.rfind("\\"); // windows delimiter
+		if (pos == std::string::npos)
+		{
+			std::string path;
+			BaseLib::extractPath(source, path);
+			return path.append(file_name);
+		}
+		else return std::string(file_name);
+	}
+	else return std::string(file_name);
+}
+
+
+void extractPath (std::string const& fname, std::string& path)
+{
+	// extract path for reading external files
+	size_t pos(fname.rfind("/")); // linux, mac delimiter
+	if (pos == std::string::npos) {
+		pos = fname.rfind("\\"); // windows delimiter
+		if (pos == std::string::npos)
+			pos = 0;
+	}
+	path = fname.substr(0, pos==0 ? pos : pos + 1);
+}
+} // end namespace BaseLib
 
 #ifdef MSVC
 void correctScientificNotation(std::string filename, size_t precision)

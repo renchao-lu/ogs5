@@ -332,12 +332,18 @@ void CFEMesh::computeSearchLength(double c)
 		sum_of_sqr += (x_k * x_k);
 	}
 
-	// sum - 2 s, where s is standard deviation
-	_search_length = sum/n - c * sqrt(1.0/(n-1) * (sum_of_sqr - (sum*sum)/n) );
-	if (_search_length <= 0) {
-		std::cerr << "[CFEMesh::computeSearchLength] computed _search_length = " << _search_length << ", set _search_lenght to " << 1e-3 << std::endl;
-		_search_length = 1e-3;
+	// criterion: mu - c times s, where mu is the average and s is standard deviation
+	const double mu (sum/n);
+	const double s (sqrt(1.0/(n-1) * (sum_of_sqr - (sum*sum)/n) ));
+	while (mu < c * s) {
+		c *= 0.9;
 	}
+	_search_length = mu - c * s;
+#ifndef NDEBUG
+	if (c < 2) {
+		std::cerr << "[CFEMesh::computeSearchLength] computed _search_length = " << _search_length << ", the average value is: " << mu << ", standard deviation is: " << s << std::endl;
+	}
+#endif
 }
 
 /**************************************************************************
@@ -876,15 +882,15 @@ void CFEMesh::ConstructGrid()
 
 void CFEMesh::constructMeshGrid()
 {
-#ifndef NDEBUG
-	std::cout << "CFEMesh::constructMeshGrid() ... " << std::flush;
-	clock_t start(clock());
-#endif
+//#ifndef NDEBUG
+//	std::cout << "CFEMesh::constructMeshGrid() ... " << std::flush;
+//	clock_t start(clock());
+//#endif
 	_mesh_grid = new GEOLIB::Grid<MeshLib::CNode>(this->getNodeVector(), 511);
-#ifndef NDEBUG
-	clock_t end(clock());
-	std::cout << "done, took " << (end-start)/(double)(CLOCKS_PER_SEC) << " s -- " << std::flush;
-#endif
+//#ifndef NDEBUG
+//	clock_t end(clock());
+//	std::cout << "done, took " << (end-start)/(double)(CLOCKS_PER_SEC) << " s -- " << std::flush;
+//#endif
 }
 
 /**************************************************************************
@@ -1494,7 +1500,13 @@ void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* const ply,
 		ply_name = "unknown-ply";
 	}
 	std::cout << "[DEBUG-INFO] computed " << n_valid_nodes << " nodes for polyline "
-	          << ply_name << " - " << NodesInUsage() << std::endl;
+	         << ply_name << " - " << NodesInUsage() << std::endl;
+
+//	std::string fname ("MeshNodeIDsAlongPolyline"+ply_name+".txt");
+//	std::ofstream os (fname.c_str());
+//	for (size_t k(0); k < n_valid_nodes; k++)
+//		os << node_ids[k] << std::endl;
+//	os.close();
 #endif
 }
 
@@ -2517,7 +2529,8 @@ void CFEMesh::GetELEOnPLY(const GEOLIB::Polyline* ply, std::vector<size_t>& ele_
 		{
 			for (size_t k = 0; k < nodes_near_ply.size(); k++)
 			{
-				if ((ele_vector[i]->GetNodeIndex(0) == nodes_near_ply[k]) || (ele_vector[i]->GetNodeIndex(1) == nodes_near_ply[k]))
+				if ((static_cast<size_t>(ele_vector[i]->GetNodeIndex(0)) == nodes_near_ply[k])
+								|| (static_cast<size_t>(ele_vector[i]->GetNodeIndex(1)) == nodes_near_ply[k]))
 					ele_vector_ply.push_back(ele_vector[i]->GetIndex());
 			}
 		}

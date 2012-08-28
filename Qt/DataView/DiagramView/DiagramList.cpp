@@ -4,7 +4,9 @@
  */
 
 #include "DiagramList.h"
+#include "DateTools.h"
 #include "StringTools.h"
+#include "SensorData.h"
 #include <QFile>
 #include <QTextStream>
 #include <limits>
@@ -184,10 +186,7 @@ int DiagramList::readList(const QString &path, std::vector<DiagramList*> &lists)
 
 				for (int i = 0; i < nLists; i++)
 				{
-					value =
-					        strtod(replaceString(",", ".",
-					                             fields.takeFirst().toStdString(
-					                                     )).c_str(),0);
+					value = strtod(replaceString(",", ".",fields.takeFirst().toStdString()).c_str(),0);
 					lists[i]->addNextPoint(numberOfSecs,value);
 				}
 			}
@@ -210,6 +209,65 @@ int DiagramList::readList(const QString &path, std::vector<DiagramList*> &lists)
 
 	for (int i = 0; i < nLists; i++)
 		lists[i]->update();
+
+	return nLists;
+}
+
+int DiagramList::readList(const SensorData* data, std::vector<DiagramList*> &lists)
+{
+	const std::vector<SensorDataType::type> time_series_names (data->getTimeSeriesNames());
+	int nLists(time_series_names.size());
+
+	std::vector<size_t> time_steps;
+	if (data->getStepSize()>0)
+	{
+		const size_t start    = data->getStartTime();
+		const size_t end      = data->getEndTime();
+		const size_t stepsize = data->getStepSize();
+		for (size_t i = start; i <= end;  i+=stepsize)
+			time_steps.push_back(i);
+	}
+	else
+		time_steps = data->getTimeSteps();
+
+	bool is_date (false);
+
+	if (!(int2date(time_steps[0])).empty())
+		is_date = true;
+
+	
+	size_t nValues (time_steps.size());
+
+	for (int i = 0; i < nLists; i++)
+	{
+		DiagramList* l = new DiagramList;
+		l->setName(QString::fromStdString(SensorData::convertSensorDataType2String(time_series_names[i])));
+		l->setXLabel("Time");
+		lists.push_back(l);
+
+		const std::vector<float> *time_series = data->getTimeSeries(time_series_names[i]);
+
+		if (is_date)
+		{
+			l->setXUnit("day");
+			QDateTime startDate(getDateTime(QString::fromStdString(int2date(time_steps[0]))));
+			lists[i]->setStartDate(startDate);
+			int numberOfSecs(0);
+			for (size_t j = 0; j < nValues; j++)
+			{
+				numberOfSecs = startDate.secsTo(getDateTime(QString::fromStdString(int2date(time_steps[j]))));
+				lists[i]->addNextPoint(numberOfSecs, (*time_series)[j]);
+			}
+		}
+		else
+		{
+			l->setXUnit("time step");
+			for (size_t j = 0; j < nValues; j++)
+				lists[i]->addNextPoint(time_steps[j], (*time_series)[j]);
+		}
+
+		lists[i]->update();
+	}	
 
 	return nLists;
 }

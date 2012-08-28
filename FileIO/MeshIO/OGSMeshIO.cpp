@@ -53,10 +53,10 @@ MeshLib::CFEMesh* OGSMeshIO::loadMeshFromFile(std::string const& fname)
 
 		mesh_vec[mesh_vec.size() - 1]->FillTransformMatrix();
 
-   #ifndef NDEBUG
+#ifndef NDEBUG
 		clock_t end(clock());
         std::cout << "total loading time: " << (end - start) / (double)(CLOCKS_PER_SEC) << " s" << std::endl;
-   #endif
+#endif
 
 		return mesh_vec[mesh_vec.size() - 1];
 	}
@@ -134,6 +134,18 @@ void OGSMeshIO::writeElementsExceptLines(std::vector<MeshLib::CElem*> const& ele
 void OGSMeshIO::setMesh(MeshLib::CFEMesh const* mesh)
 {
 	_mesh = mesh;
+}
+
+void OGSMeshIO::writeMeshNodesAsGLIPnts (std::vector<size_t> const& mesh_node_ids, std::ostream & os)
+{
+	std::vector<MeshLib::CNode*> const& nodes (_mesh->getNodeVector());
+	for (size_t k(0); k<mesh_node_ids.size(); k++) {
+		MeshLib::CNode const& node (*(nodes[mesh_node_ids[k]]));
+		double const*const coords (node.getData());
+		_out << k << " " << coords[0] << " " << coords[1] << " " << coords[2] << " $NAME " << node.GetIndex() << std::endl;
+	}
+
+	os << _out.str();
 }
 
 } // end namespace FileIO
