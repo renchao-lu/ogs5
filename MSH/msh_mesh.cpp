@@ -886,10 +886,8 @@ void CFEMesh::constructMeshGrid()
 //	std::cout << "CFEMesh::constructMeshGrid() ... " << std::flush;
 //	clock_t start(clock());
 //#endif
-
 	if (_mesh_grid == NULL)
 		_mesh_grid = new GEOLIB::Grid<MeshLib::CNode>(this->getNodeVector(), 511);
-
 //#ifndef NDEBUG
 //	clock_t end(clock());
 //	std::cout << "done, took " << (end-start)/(double)(CLOCKS_PER_SEC) << " s -- " << std::flush;
