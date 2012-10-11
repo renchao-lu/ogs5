@@ -1243,7 +1243,7 @@ double CFluidProperties::Viscosity(double* variables)
 
 	double a, a0, A, b, B, m0, p, R, T, z, rho, my, z1, z2, z3, Tr, k1, k2, c, C, fac, Trr;
 	std::vector<double> roots;
-	CRFProcess* m_pcs;
+	CRFProcess* m_pcs = NULL;
 	int ele_id;
 	double y[4];
 	y[0] = 1.0;
@@ -1312,7 +1312,7 @@ ele_id = variables[2];
 	case 6:                               // my(C,T),
 		viscosity = LiquidViscosity_NN(primary_variable[0],primary_variable[1]);
 		break;
-	case 8:                               // my(p,C,T),
+	case 7:                               // my(p,C,T),
 		viscosity = LiquidViscosity_CMCD(primary_variable[0],
 		                                 primary_variable[1],
 		                                 primary_variable[2]);
@@ -1332,7 +1332,7 @@ ele_id = variables[2];
 		viscosity = Fluid_Viscosity(density,mfp_arguments[1],mfp_arguments[0],fluid_id);
 		break;
 
-	case 7: // ideal gas
+	case 77: // ideal gas
 	for (int i = 0; i < CNr; i++)
 	{
 	if(Fem_Ele_Std->cpl_pcs)
