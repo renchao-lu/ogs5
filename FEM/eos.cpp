@@ -2208,10 +2208,6 @@ void CFluidProperties::therm_prop (string caption)
 		Rs = 188.9241;            // specific gas constant [J/kg/K]
 		molar_mass = 44.0099;     // [g/mol]
 		omega = 0.22491;          // azentric factor, see PREOS
-		Vd = 26.9;
-		Zc = 0.27468;	//critical super-compressibility, see PREOS
-		n0=0.11333;
-		k3=0.28996;
 
 		// Limits sums in FHE-derivations
 
@@ -2459,11 +2455,6 @@ void CFluidProperties::therm_prop (string caption)
 		K[13][36] = 1;
 		K[13][37] = 1;
 		K[13][38] = 1;
-	    //poly coef
-		KP[0]= -1.21;
-		KP[1]=  7.4643e-07;
-		KP[2]= -6.622e-14;
-		KP[3]=  1.6187e-021;
 
 		break;
 	}
@@ -2478,11 +2469,6 @@ void CFluidProperties::therm_prop (string caption)
 		Rs = 461.51805;           //  [J/kg/K]
 		molar_mass = 18.01528;    //  [g/mol]
 		omega = 0.344;            // azentric factor, see PREOS
-		Vd = 25.14;
-		Zc = 0.2909;//0.22944;	//critical super-compressibility, see PREOS
-		n0=0.1156;
-		k3=0.0471;
-
 
 		// Limits for Sums in FHE-derivations
 
@@ -2765,11 +2751,6 @@ void CFluidProperties::therm_prop (string caption)
 		K[13][51] = 1;
 		K[13][52] = 1;
 		K[13][53] = 1;
-		//poly coef
-		KP[0]= 1.0777;
-		KP[1]= 1.4370e-09;
-		KP[2]= 7.9678e-18;
-		KP[3]= -3.2289e-025;
 
 		break;
 	}
@@ -2784,10 +2765,7 @@ void CFluidProperties::therm_prop (string caption)
 		Rs = 518.3;               //  [J/kg/K]
 		molar_mass = 16.04;       //  [g/mol]
 		omega = 0.011;            // azentric factor, see PREOS
-		Vd = 25.14;
-		Zc = 0.286060;	//critical super-compressibility, see PREOS
-		n0=0.08248;
-		k3=0.20978;
+
 		// Limits sums in FHE-derivations
 
 		limit[0] = 13;
@@ -2989,11 +2967,7 @@ void CFluidProperties::therm_prop (string caption)
 		K[13][37] = 1;
 		K[13][38] = 1;
 		K[13][39] = 1;
-		//poly coef TODO
-		KP[0]= 1.0;
-		KP[1]= 0.0;
-		KP[2]= 0.0;
-		KP[3]= 0.0;
+
 		break;
 	}
 	case 'N':                             // Nitrogen
@@ -3007,10 +2981,7 @@ void CFluidProperties::therm_prop (string caption)
 		Rs = 296.8;               //  [J/kg/K]
 		molar_mass = 28.013;      //  [g/mol]
 		omega = 0.039;            // azentric factor, see PREOS
-		Vd = 18.5;
-		Zc = 0.287634;	//critical super-compressibility, see PREOS
-		n0=0.09967;
-		k3=0.24086;
+
 		// Limits sums in FHE-derivations
 		limit[0] = 6;
 		limit[1] = 32;
@@ -3202,11 +3173,6 @@ void CFluidProperties::therm_prop (string caption)
 		K[13][33] = 1;
 		K[13][34] = 1;
 		K[13][35] = 1;
-		//poly coef TODO
-		KP[0]= 1.0;
-		KP[1]= 0.0;
-		KP[2]= 0.0;
-		KP[3]= 0.0;
 		break;
 	}
 

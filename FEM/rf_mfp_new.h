@@ -85,7 +85,6 @@ private:
 	double Ru;                            //universal_gas_constant;
 	double omega;                         // azentric factor for Peng-Robinson EOS
 	double molar_mass;
-	double Vd, Zc, n0, k3;
 	/**
 	 * density
 	 */
@@ -138,8 +137,8 @@ private:
 	// compressibility
 	int compressibility_model_pressure;   //NB
 	int compressibility_model_temperature; //NB
-	double compressibility_pressure;         //NB
-	double compressibility_temperature;      //NB
+	int compressibility_pressure;         //NB
+	int compressibility_temperature;      //NB
 		int JTC;      //NB
 
 	int phase;
@@ -148,7 +147,7 @@ private:
 	// Limits and coefficients for free Helmholtz Energy, NB JUN 09
 	int limit[5];
 	double k [2][8];
-	double K [14][56], KP[4];
+	double K [14][56];
 
 public:
 	// FEM
@@ -210,6 +209,7 @@ public:
 	double Density(double* variables = NULL);
 	double drhodP (int idx_elem, double P, double T);
 	//AKS
+	double MixtureSubProperity(int properties, long idx_elem, double p, double T);
 	double GetElementValueFromNodes(long ElementIndex,
 	                                int GPIndex,
 	                                int PhaseIndex,
@@ -243,6 +243,8 @@ public:
 	double phi_r_dt (double rho, double T) const;
 	double phi_r_dd (double rho, double T) const;
 	double phi_0_tt (double T) const;
+	double SuperCompressibiltyFactor(int idx_elem, double p, double T); //AKS
+	double dZ(int idx_elem, double p, double T, int nk);//AKS
 	double MaxwellStefanDiffusionCoef(int idx_elem, double p, double T, int CNm); //AKS
 
 private:

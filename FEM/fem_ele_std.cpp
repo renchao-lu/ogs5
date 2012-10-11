@@ -1659,8 +1659,6 @@ double CFiniteElementStd::CalCoefMass2(int dof_index)
 double CFiniteElementStd::CalCoefMassPTC(int dof_index)
 {
 	int Index = MeshElement->GetIndex();
-	if(pcs->m_num->ele_mass_lumping)
-	ComputeShapefct(1);
 	double val = 0.0;
     PG = interpolate(NodalVal1);
     TG = interpolate(NodalVal_t1);
@@ -1677,7 +1675,7 @@ double CFiniteElementStd::CalCoefMassPTC(int dof_index)
 
 	case 2:
 	if(FluidProp->JTC==1)
-	val = -poro*TG*FluidProp->drhodT(Index, PG, TG);
+	val = poro*TG*FluidProp->drhodT(Index, PG, TG);
 	break;
 
 	case 3:
@@ -2561,7 +2559,6 @@ void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
 **************************************************************************/
 void CFiniteElementStd::CalCoefLaplacePTC(int dof_index)
 {
-	    ComputeShapefct(1); 
 	double* tensor = NULL;
 	double mat_fac = 1.0;
 
@@ -3226,7 +3223,7 @@ double CFiniteElementStd::CalCoefAdvectionPTC(int dof_index)
 
 	case 2:
 	if(FluidProp->JTC==1)
-	val = -1.0 - TG*FluidProp->drhodT(Index, PG, TG);
+	val = 1.0 + TG*FluidProp->drhodT(Index, PG, TG);
 	break;
 
 	case 3:
@@ -4192,52 +4189,6 @@ void CFiniteElementStd::CalcLumpedMass2()
 		{
 			// Factor
 			factor = CalCoefMass2(in * dof_n + jn);
-			pcs->timebuffer = factor; // Tim Control "Neumann"
-			// Volume
-			factor *= vol / (double)nnodes;
-			for (i = 0; i < nnodes; i++)
-				(*Mass2)(i + in * nnodes,i + jn * nnodes) = factor;
-		}
-	//TEST OUT
-	// Mass2->Write();
-}
-/***************************************************************************
-   GeoSys - Funktion:
-   CFiniteElementStd:: CalcLumpedMassPTC
-   Programming:
-   07/2012   AKS Compositional gas flow
- **************************************************************************/
-void CFiniteElementStd::CalcLumpedMassPTC()
-{
-	int i, in, jn, gp_r, gp_s, gp_t;
-	double factor, vol = 0.0;
-	int dof_n = 2;
-	//----------------------------------------------------------------------
-	// Volume
-	if(axisymmetry)
-	{                                     // This calculation should be done in CompleteMesh.
-		// However, in order not to destroy the concise of the code,
-		// it is put here. Anyway it is computational cheap. WW
-		vol = 0.0;
-		for (gp = 0; gp < nGaussPoints; gp++)
-			//---------------------------------------------------------
-			//  Get local coordinates and weights
-			//  Compute Jacobian matrix and its determinate
-			//---------------------------------------------------------
-			vol += GetGaussData(gp, gp_r, gp_s, gp_t);
-	}
-	else
-		vol = MeshElement->GetVolume();
-	//----------------------------------------------------------------------
-	// Initialize
-	(*Mass2) = 0.0;
-	// Center of the reference element
-	SetCenterGP();
-	for(in = 0; in < pcs->dof; in++)
-		for(jn = 0; jn < pcs->dof; jn++)
-		{
-			// Factor
-			factor = CalCoefMassPTC(in * pcs->dof + jn);
 			pcs->timebuffer = factor; // Tim Control "Neumann"
 			// Volume
 			factor *= vol / (double)nnodes;
@@ -6489,13 +6440,9 @@ void CFiniteElementStd::AssembleParabolicEquation()
 		else
 			CalcMassPSGLOBAL();
 	}
-	else if(PcsType == S)                 //AKS
-	{
-		if(pcs->m_num->ele_mass_lumping)
-			CalcLumpedMassPTC();
-		else
-			CalcMassPTC();
-	}
+	else if(PcsType == S)                 //AKS/NB
+
+		CalcMassPTC();
 	else
 	{
 		if(pcs->m_num->ele_mass_lumping)
@@ -7664,8 +7611,8 @@ void CFiniteElementStd::Config()
 
 		for(i = 0; i < nnodes; i++)
 		{
-			NodalVal_t0[i] = pcs->GetNodeValue(nodes[i],idxt0);
-			NodalVal_t1[i] = pcs->GetNodeValue(nodes[i],idxt1);
+			NodalVal_t0[i] = pcs->GetNodeValue(nodes[i],idxt0) + T_KILVIN_ZERO;
+			NodalVal_t1[i] = pcs->GetNodeValue(nodes[i],idxt1) + T_KILVIN_ZERO;
 		}
 	if(PcsType == P)
 		for(i = 0; i < nnodes; i++)
@@ -7684,8 +7631,8 @@ void CFiniteElementStd::Config()
 		}
 		if(cpl_pcs->type == 1111)
 			{
-			NodalVal_t0[i] = cpl_pcs->GetNodeValue(nodes[i],idx_c0 + 2);
-			NodalVal_t1[i] = cpl_pcs->GetNodeValue(nodes[i],idx_c1 + 2);
+			NodalVal_t0[i] = cpl_pcs->GetNodeValue(nodes[i],idx_c0 + 2) + T_KILVIN_ZERO;
+			NodalVal_t1[i] = cpl_pcs->GetNodeValue(nodes[i],idx_c1 + 2) + T_KILVIN_ZERO;
 			}
 		}
 }
