@@ -78,6 +78,7 @@ public:
 	// 2. Lumped mass matrix
 	void CalcLumpedMass();
 	void CalcLumpedMass2();
+    void CalcLumpedMassPTC();  //AKS
 	void CalcLumpedMassPSGLOBAL();        // PCH
 	// 3. Laplace matrix
 	void CalcLaplace();
