@@ -168,7 +168,7 @@ ENDIF(OGS_FEM_PQC)
 
 if (WIN32)
 	if (OGS_FEM_GEMS)
-		target_link_libraries( FEM debug GEMS3_dbg optimized GEMS3_rl ) 
+		target_link_libraries( FEM GEM ) 
 	endif (OGS_FEM_GEMS)
 	if (LIS)
 		target_link_libraries( FEM ${LIS_LIBRARIES} ) 
@@ -191,7 +191,7 @@ endif (WIN32)
 
 if (UNIX)
 	if (OGS_FEM_GEMS)
-		target_link_libraries( FEM gemipm2k boost_thread-mt )
+		target_link_libraries( FEM GEM boost_thread )
 	endif (OGS_FEM_GEMS)
 
 	if (OGS_FEM_BRNS)

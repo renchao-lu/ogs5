@@ -1,23 +1,33 @@
 //-------------------------------------------------------------------
-// $Id: num_methods.h 705 2006-04-28 19:39:01Z gems $
+// $Id: num_methods.h 725 2012-10-02 15:43:37Z kulik $
 //
-// C/C++ Numerical Methods used in GEMS-PSI and GEMS3K
-// (c) 2006,2011 S.Dmytriyeva, D.Kulik
+/// \file num_methods.h
+/// Declarations of C/C++ Numerical Methods used in GEMS3K code.
 //
-// This file is part of a GEM-Selektor library for thermodynamic
-// modelling by Gibbs energy minimization and of the GEMIPM2K code
+// Copyright (C) 2006-2012 S.Dmytriyeva, D.Kulik
+// <GEMS Development Team, mailto:gems2.support@psi.ch>
 //
-// This file may be distributed under the terms of the GEMS-PSI
-// QA Licence (GEMSPSI.QAL)
+// This file is part of the GEMS3K code for thermodynamic modelling
+// by Gibbs energy minimization <http://gems.web.psi.ch/GEMS3K/>
 //
-// See http://gems.web.psi.ch/ for more information
-// E-mail: gems2.support@psi.ch
+// GEMS3K is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as
+// published by the Free Software Foundation, either version 3 of
+// the License, or (at your option) any later version.
+
+// GEMS3K is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with GEMS3K code. If not, see <http://www.gnu.org/licenses/>.
 //-------------------------------------------------------------------
 
 #ifndef _num_methods_h_
 #define _num_methods_h_
 
-#include <math.h>
+#include <cmath>
 
 // Calculate number of points from iterators
 long int  getNpoints( double Tai[4] );
@@ -52,7 +62,8 @@ double prod3 ( double u, double v, double w, double du, double dv, double dw,
 
 typedef double (*minFunction)(double x, double y );
 
-struct GoldenSelectionData
+/// Data for minimization of convex one parameter function ( f(x)=>0 )
+struct GoldenSectionData
 {
     double Fa;
     double Fb;
@@ -65,7 +76,7 @@ struct GoldenSelectionData
     double Xtol;
 
 
-    GoldenSelectionData( double xstart, double xend, double Xtol_)
+    GoldenSectionData( double xstart, double xend, double Xtol_)
     {
       Xtol = Xtol_;
       x1 = xstart;
@@ -77,21 +88,21 @@ struct GoldenSelectionData
  };
 
 
-// Class for minimization of convex one parameter function ( f(x)=>0 )
-// Method of Gold Selection
-class GoldenSelection
+/// Class for minimization of convex one parameter function ( f(x)=>0 )
+/// Method of Gold Selection
+class GoldenSection
 {
 protected:
 
-  GoldenSelectionData dat1;
+  GoldenSectionData dat1;
   double Ftol;
   minFunction minF;
 
 public:
 
-  // Golden Selection in interval x1 to x2, to minimize function f_proc
-  // xtol, ftol tolerance for the parameter and function
-  GoldenSelection( double x1, double x2, double xtol, double ftol,
+  /// Golden Selection in interval x1 to x2, to minimize function f_proc
+  /// xtol, ftol tolerance for the parameter and function
+  GoldenSection( double x1, double x2, double xtol, double ftol,
                    double (f_proc)(double val, double val2 )):
    dat1(x1,x2,xtol),Ftol(ftol)
   {
@@ -108,27 +119,27 @@ public:
      return getMinimumDat( dat1, val2 );
   }
 
-  virtual double getMinimumDat( GoldenSelectionData dat, double val2 );
+  virtual double getMinimumDat( GoldenSectionData dat, double val2 );
 
 };
 
-// Class for minimization of convex two parameter function ( f(x,y)=>0 )
-// Method of Gold Selection
-class GoldenSelectionTwo : public GoldenSelection
+/// Class for minimization of convex two parameter function ( f(x,y)=>0 )
+/// Method of Gold Selection
+class GoldenSectionTwo : public GoldenSection
 {
-  GoldenSelectionData dat2;
+  GoldenSectionData dat2;
   int nOperand;   // minimization for first or second parameter
   double minX;
   double minY;
 
 public:
 
-  // Golden Selection in intervals x1 to x2, y1 to y2 to minimize function f_proc
-  // xtol, ytol, ftol tolerance for the parameters and function
-  GoldenSelectionTwo( double x1, double x2, double xtol,
+  /// Golden Selection in intervals x1 to x2, y1 to y2 to minimize function f_proc
+  /// xtol, ytol, ftol tolerance for the parameters and function
+  GoldenSectionTwo( double x1, double x2, double xtol,
                       double y1, double y2, double ytol,
                       double ftol, double (f_proc)(double val, double val2 )):
-  GoldenSelection( x1, x2, xtol, ftol, f_proc),  dat2(y1,y2,ytol)
+  GoldenSection( x1, x2, xtol, ftol, f_proc),  dat2(y1,y2,ytol)
   {}
 
   double calcFunction( double x, double y );
@@ -143,7 +154,7 @@ public:
 
 
 // Golden Selection in interval x1 to x2, to minimize function f_proc
-//double GoldenSelection( double x1, double x2, double xtol, double ftol,
+//double GoldenSection( double x1, double x2, double xtol, double ftol,
 //                        double val2, double (f_proc)(double val, double val2 ));
 // Method of Gold Selection for two parameters
 //   ystart, yend, ytol,  parameter y    - start, end, tolerance
@@ -151,7 +162,7 @@ public:
 //   ftol  function tolerance
 //   ymin and xmin return values
 //   f_proc function to minimize ( f( y, x)=>0 )
-//void GoldenSelection2( double ystart, double yend, double Ytol,
+//void GoldenSection2( double ystart, double yend, double Ytol,
 //                       double xstart, double xend, double Xtol,
 //                       double Ftol, double& ymin, double& xmin,
 //                       double (f_proc)(double valy, double valx ));

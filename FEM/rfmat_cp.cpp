@@ -686,8 +686,9 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
 	static int count_nodes;
 	// TF unused variable - fix a compiler warning
 //   static double eta = 0.0;                       //, theta = 1.0;
-	double porosity;
-	int i;
+	double porosity=1.0,saturation=1.0, dummy=0.0;
+	int i, flowflag;
+	CRFProcess* f_pcs = NULL;
 #endif
 	// static int p_ind, t_ind;
 	//OK411
@@ -789,22 +790,38 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
 		m_Elem =  m_pcs->m_msh->ele_vector[index];
 		// we average the diffusion coefficient directly
 		count_nodes = m_Elem->GetNodesNumber ( false );
-
 		diffusion_average = 0.0;
+		// we need saturation for multi-phase flow: ***  attention: ***  only coupling to Richards flow implemented so far
+		flowflag=m_vec_GEM->REACT_GEM::GetFlowType_MT();
+		if (flowflag == 3) 
+		  f_pcs = PCSGet ( "RICHARDS_FLOW" );
+
 		for (i = 0; i < count_nodes; i++) //calculate harmonic mean of node based diffusion coefficients
 		{
 			// then get the values from nodes
-
-			double dummy = m_vec_GEM->REACT_GEM::GetNodePorosityValue(
-			        m_Elem->GetNodeIndex ( i ));
+			dummy = m_vec_GEM->REACT_GEM::GetNodePorosityValue(m_Elem->GetNodeIndex ( i ));
+			// for Multi-Phase flow we also have to account for the saturation......the following line would account for element saturatuions all flow types
+		if ( flowflag == 3)  // RICHARDS_FLOW ...get node based saturations
+		{	
+		    saturation=f_pcs->GetNodeValue ( m_Elem->GetNodeIndex ( i ),f_pcs->GetNodeValueIndex ( "SATURATION1" )+1 ); //current volume of water phase after hydraulic step
+		}
+		else
+		{
+		   saturation=1.0; 
+		}	
+			// Attention....this does not work for gas phase/non wetting phase ....tr_phase=10
+			dummy *=saturation; // account for "mean element" saturation in Archies law ....better would be to get node saturations!
 			Dm = k[0] * pow(dummy,k[1]); //node based diffusion coefficient
+			
 			diffusion_average += 1.0 / Dm;
 			//	cout << "debug: " << Dm << " porosity: " << GetNodePorosityValue_MT(m_Elem->GetNodeIndex ( i ), 0) << endl;
 		}
 		Dm =  count_nodes / diffusion_average; // This is now harmonic mean of node diffusion coefficients
 		// end calculation of diffusion coefficient
-		Dm = Dm / porosity;       //correct for multiplication with element porosities -> Pore diffusion coefficient
-		//	cout << "Mean: " << Dm*porosity << endl;
+		saturation = PCSGetEleMeanNodeSecondary_2(index, m_pcs->flow_pcs_type,"SATURATION1", 1); // this line accounts for element saturatuions for all flow types....of course we have a problem if we have saturation ne 1 and not Richards flow
+		if (saturation <= 1.0e-20) saturation=1.0e-20; // set to an arbitrary small number to avoid divsion by zero...
+		Dm = Dm / (porosity*saturation);       //correct for multiplication with element porosities & saturations -> Pore diffusion coefficient
+		//			cout << " CalcDiffusionCoefficientCP: De: " << Dm*porosity*saturation << " saturation " << saturation << " porosity " << endl;
 
 		return Dm;
 	}

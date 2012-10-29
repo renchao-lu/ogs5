@@ -154,7 +154,12 @@ int main ( int argc, char* argv[] )
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || \
 	defined(USE_MPI_GEMS)
 	printf("Before MPI_Init\n");
+#if defined(USE_MPI_GEMS)
+	int prov;
+	MPI_Init_thread(&argc,&argv,MPI_THREAD_FUNNELED, &prov);
+#else
 	MPI_Init(&argc,&argv);
+#endif
 	MPI_Barrier (MPI_COMM_WORLD); // 12.09.2007 WW
 	elapsed_time_mpi = -MPI_Wtime(); // 12.09.2007 WW
 	MPI_Comm_size(MPI_COMM_WORLD,&mysize);

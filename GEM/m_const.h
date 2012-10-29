@@ -1,22 +1,36 @@
 //-------------------------------------------------------------------
-// $Id: m_const.h 1431 2009-08-28 16:28:04Z gems $
+// $Id: m_const.h 733 2012-10-08 13:52:46Z kulik $
 //
-// Copyright (C) 2006,2009  S.Dmitrieva, D.Kulik
+/// \file m_const.h
+/// Declarations of enums and constants from GEM-Selektor code that
+/// are used in GEMS3K standalone code (this file is not used otherwise).
 //
-// Codes and parameters used in GEM IPM work structure (standalone version)
+// Copyright (c) 1995-2012 S.Dmytriyeva, D.Kulik
+// <GEMS Development Team, mailto:gems2.support@psi.ch>
 //
-// This file is part of the standalone GEMIPM2K code
+// This file is part of the GEMS3K code for thermodynamic modelling
+// by Gibbs energy minimization <http://gems.web.psi.ch/GEMS3K/>
 //
-// This file may be distributed under the terms of the GEMS-PSI
-// QA Licence (GEMSPSI.QAL)
-//
-// See http://gems.web.psi.ch/ for more information
-// E-mail: gems2.support@psi.ch; chud@igc.irk.ru
+// GEMS3K is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as
+// published by the Free Software Foundation, either version 3 of
+// the License, or (at your option) any later version.
+
+// GEMS3K is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with GEMS3K code. If not, see <http://www.gnu.org/licenses/>.
 //-------------------------------------------------------------------
 //
+
 #ifndef _m_const_h
 #define _m_const_h
 
+#ifdef IPMGEMPLUGIN
+// This header is only used in standalone GEMS3K code!
 #include <ctype.h>
 #include <fstream>
 
@@ -66,34 +80,40 @@ enum solmod_switches { // indexes of keys of model solution
     SM_STNGAM = 'S',
     SM_NOSTGAM = 'N',
     //  Possible values: (SPHAS_TYP)
-    // Code to identify the mixing models used (during IPM iterations)
-    SM_IDEAL =  'I',	// ideal solution or single-component phase;
+    // Codes to identify the mixing models used (during IPM iterations)
+    SM_IDEAL =  'I',	// ideal solution or single-component phase
+SM_BERMAN = 'B',    // built-in multicomponent microscopic (a)symmetric solid-solution model (reserved)
     SM_REDKIS = 'G', 	// built-in binary Guggenheim (Redlich-Kister) solid-solution model
-    SM_MARGB = 'M',		// built-in binary Margules solid-solutions (subregular)
-    SM_MARGT = 'T',		// built-in ternary Margules solid-solution (regular)
+    SM_MARGB = 'M',	// built-in binary Margules solid-solutions (subregular)
+    SM_MARGT = 'T',	// built-in ternary Margules solid-solution (regular)
     SM_VANLAAR = 'V',	// built-in multi-component Van Laar solid-solution model
     SM_GUGGENM = 'K',	// built-in multi-component Guggenheim solid-solution model
     SM_REGULAR = 'R',	// built-in multi-component Regular solid-solution model
     SM_NRTLLIQ = 'L',	// built-in multi-component NRTL model for liquid solutions
     SM_WILSLIQ = 'W',	// built-in multi-component Wilson model for liquid solutions
-    SM_CGFLUID = 'F',	// built-in multi-component Churakov-Gottschalk (CG) fluid EOS model
-    SM_PRFLUID = 'P',	// built-in Peng-Robinson-Stryjek-Vera (PRSV) fluid EOS model
-    SM_SRFLUID = 'E',	// built-in Soave-Redlich-Kwong (SRK) fluid EOS model
-    SM_PR78FL = '7',	// built-in Peng-Robinson (PR78) fluid EoS model (under construction)
-    SM_CORKFL = '8',    // built-in compensated Redlich-Kwong (CORK) fluid EoS model (under construction)
-    SM_AQDAV = 'D',		// built-in Davies model (with 0.3) for aqueous electrolytes
-    SM_AQDH1 = '1',		// built-in Debye-Hueckel limiting law for aqueous electrolytes
-    SM_AQDH2 = '2',		// built-in 2-term Debye-Hueckel model for aqueous electrolytes
-    SM_AQDH3 = '3',		// built-in 3-term Debye-Hueckel model for aqueous electrolytes (Karpov version)
-    SM_AQDHH = 'H',		// built-in 3-term Debye-Hueckel model for aqueous electrolytes (Helgeson version)
-    SM_AQDHS = 'Y',		// built-in 3-term Debye-Hueckel model for aqueous electrolytes (Shvarov version)
-    SM_AQSIT = 'S',		// built-in SIT model for aqueous electrolytes
-    SM_AQEXUQ = 'Q',    // built-in EUNIQUAC model for aqueous electrolytes
+    SM_CGFLUID = 'F',	// built-in multi-component Churakov-Gottschalk (CG) fluid EoS model
+    SM_PRFLUID = 'P',	// built-in Peng-Robinson-Stryjek-Vera (PRSV) fluid EoS model
+    SM_PCFLUID = '5',   // built-in perturbed-chain statistical-association (PCSAFT) fluid EoS model (reserved)
+    SM_STFLUID = '6',   // built-in Sterner-Pitzer (STP) fluid EoS model
+    SM_PR78FL = '7',	// built-in Peng-Robinson (PR78) fluid EoS model
+    SM_CORKFL = '8',    // built-in compensated Redlich-Kwong (CORK) fluid EoS model
+    SM_REFLUID = '9',   // built-in reference EoS fluid model (reserved)
+    SM_SRFLUID = 'E',	// built-in Soave-Redlich-Kwong (SRK) fluid EoS model
+    SM_AQDAV = 'D',	// built-in Davies model (with 0.3) for aqueous electrolytes
+    SM_AQDH1 = '1',	// built-in Debye-Hueckel limiting law for aqueous electrolytes
+    SM_AQDH2 = '2',	// built-in 2-term Debye-Hueckel model for aqueous electrolytes
+    SM_AQDH3 = '3',	// built-in 3-term Debye-Hueckel model for aqueous electrolytes (Karpov version)
+    SM_AQDHH = 'H',	// built-in 3-term Debye-Hueckel model for aqueous electrolytes (Helgeson version)
+    SM_AQDHS = 'Y',	// built-in 3-term Debye-Hueckel model for aqueous electrolytes (Shvarov version)
+    SM_AQSIT = 'S',	// built-in SIT model for aqueous electrolytes
+    SM_AQEXUQ = 'Q',    // built-in extended UNIQUAC model for aqueous electrolytes
     SM_AQPITZ = 'Z',    // built-in Pitzer HMW model for aqueous electrolytes
-		// SM_IONEX = 'X',		// ion exchange (Donnan, Nikolskii) (reserved)
+    SM_AQMIX = 'C',     // built-in mixed-solvent aqueous Debye-Hueckel model (reserved)
+    SM_AQELVIS = 'J',   // built-in modified extended UNIQUAC model (ELVIS) for aqueous electrolytes (reserved)
+    SM_IONEX = 'X',     // ion exchange (Donnan, Nikolskii) (reserved)
     SM_SURCOM = 'A',	// models of surface complexation at solid-aqueous interface
     SM_USERDEF = 'U',	// user-defined mixing model (scripts in Phase record)
-    SM_OTHER = 'O'		// other built-in phase-specific models of non-ideal solutions
+    SM_OTHER = 'O'  	// other built-in phase-specific models of non-ideal solutions (selected by phase name)
     	                //    (selected through phase name)
 };
 
@@ -141,10 +161,13 @@ DC_AQ_SURCOMP = 'K',     // Surface complex represented as aqueous species
     DC_GAS_H2      = 'H',   // H2 hydrogen
     DC_GAS_N2      = 'N',   // N2 nitrogen
     // Solid/liquid non-electrolyte multicomponent phases:
-    DC_SOL_IDEAL   = 'I',   // end-member component with ideal behaviour
-    DC_SOL_MINOR   = 'J',   // junior component (Henry's Law)
-    DC_SOL_MAJOR   = 'M',   // major component (Raoult's Law)
-    // Sorption phases and poly(oligo)electrolytes
+    DC_SOL_IDEAL   = 'I',   // end-member of ideal solution
+    DC_SOL_MINOR   = 'J',   // junior independent end member (for initial approximation)
+    DC_SOL_MAJOR   = 'M',   // major independent end member (for initial approximation)
+    DC_SOL_MINDEP   = 'F',      // junior independent end member (for initial approximation)
+    DC_SOL_MAJDEP   = 'D',      // major independent end member (for initial approximation)
+
+// Sorption phases and poly(oligo)electrolytes
     DC_SUR_CARRIER = 'Q',   // Principal end-member of solid carrier
     DC_SUR_MINAL   = 'P',   // Minor end-member of solid carrier
     DC_PEL_CARRIER = 'R',   // Carrier of poly(oligo)electrolyte
@@ -289,7 +312,11 @@ const char S_OFF = '-',
                    S_ON = '+',
                           S_REM = '*',
                                   A_NUL ='?';
-/*
+/*#ifdef IPMGEMPLUGIN
+
+#ifndef _chbr_classes_h_
+#define _chbr_classes_h_
+
 typedef enum {  // classes of independent components IC used in ccIC code list
     IC_ELEMENT  =  'e',  // chemical element (except oxygen and hydrogen)
     IC_OXYGEN   =  'o',  // oxygen
@@ -315,15 +342,17 @@ typedef enum {  // Classes of dependent components DC used in ccDC code list
     DC_SCP_CONDEN  = 'O',       // DC forming a single-component phase
 
         // Solid/liquid non-electrolyte multicomponent phases:
-    DC_SOL_IDEAL   = 'I',   // ideal end-member component (Raoult)
-    DC_SOL_MINOR   = 'J',   // junior (minor) component (Henry)
-    DC_SOL_MAJOR   = 'M',   // major component (Raoult)
+    DC_SOL_IDEAL   = 'I',      // end-member of ideal solution
+    DC_SOL_MINOR   = 'J',      // junior independent end member (for initial approximation)
+    DC_SOL_MAJOR   = 'M',      // major independent end member (for initial approximation)
+    DC_SOL_MINDEP   = 'F',     // junior independent end member (for initial approximation)
+    DC_SOL_MAJDEP   = 'D',     // major independent end member (for initial approximation)
 
         // Aqueous electrolyte phase:
     DC_AQ_PROTON   = 'T',      // hydrogen ion H+
     DC_AQ_ELECTRON = 'E',      // electron (as a DC)
     DC_AQ_SPECIES  = 'S',      // other aqueous species (ions, complexes and ion pairs)
-    DC_AQ_SURCOMP = 'K',     // Surface complex represented as aqueous species
+    DC_AQ_SURCOMP  = 'K',       // Surface complex represented as aqueous species
     DC_AQ_SOLVENT  = 'W',      // water H2O (major solvent)
     DC_AQ_SOLVCOM  = 'L',      // other components of a solvent (eg. alcohol)
 
@@ -364,7 +393,6 @@ typedef enum {  // Classes of dependent components DC used in ccDC code list
 
 } DCL_CLASSES;
 
-
 typedef enum {  // Classes of Phases used in ccPH code list
     PH_AQUEL    = 'a',  // aqueous electrolyte (also with HKF EoS)
     PH_GASMIX   = 'g',  // mixture of gases (also corresponding states theory)
@@ -375,7 +403,8 @@ typedef enum {  // Classes of Phases used in ccPH code list
     PH_SINCOND  = 's',  // condenced solid phase, also multicomponent (solid solution)
     PH_SINDIS   = 'd',  // dispersed solid phase, also multicomponent
 } PHL_CLASSES;
-*/
 
+#endif*/
 #endif
-// m_const.h in GEMIPM2K
+#endif
+// m_const.h in GEMS3K

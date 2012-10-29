@@ -2,7 +2,7 @@
 #define JAMA_CHOLESKY_H
 
 #include "tnt.h"
-#include <math.h>
+#include <cmath>
 //#include "math.h"
 	/* needed for sqrt() below. */
 

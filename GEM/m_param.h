@@ -1,27 +1,34 @@
 //-------------------------------------------------------------------
-// $Id: m_param.h 1406 2009-08-21 08:37:56Z gems $
+// $Id: m_param.h 725 2012-10-02 15:43:37Z kulik $
 //
-// Declaration of TProfil class, config and calculation functions
+/// \file m_param.h
+/// Declaration of TProfil class, config and calculation functions
 //
-// Rewritten from C to C++ by S.Dmytriyeva
-// Copyright (C) 1995-2007 S.Dmytriyeva, D.Kulik
+// Copyright (c) 1995-2012 S.Dmytriyeva, D.Kulik
+// <GEMS Development Team, mailto:gems2.support@psi.ch>
 //
-// This file is part of a GEM-Selektor library for thermodynamic
-// modelling by Gibbs energy minimization
-// Uses: GEM-Vizor GUI DBMS
+// This file is part of the GEMS3K code for thermodynamic modelling
+// by Gibbs energy minimization <http://gems.web.psi.ch/GEMS3K/>
 //
-// This file may be distributed under the terms of the GEMS-PSI
-// QA Licence (GEMSPSI.QAL)
-//
-// See http://gems.web.psi.ch/ for more information
-// E-mail: gems2.support@psi.ch
+// GEMS3K is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as
+// published by the Free Software Foundation, either version 3 of
+// the License, or (at your option) any later version.
+
+// GEMS3K is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with GEMS3K code. If not, see <http://www.gnu.org/licenses/>.
 //-------------------------------------------------------------------
 //
 
 #ifndef _m_param_h_
 #define _m_param_h_
 
-#include <math.h>
+#include <cmath>
 
 // Physical constants - see m_param.cpp or ms_param.cpp
 extern const double R_CONSTANT, NA_CONSTANT, F_CONSTANT,
@@ -33,73 +40,72 @@ extern const double R_CONSTANT, NA_CONSTANT, F_CONSTANT,
 #include "ms_multi.h"
 #include "verror.h"
 
-
-struct BASE_PARAM
-{ // Flags and thresholds for numeric modules
+struct BASE_PARAM /// Flags and thresholds for numeric modules
+{
    long int
-           PC,   // Mode of PhaseSelect() operation ( 0 1 2 ... ) { 1 }
-           PD,   // abs(PD): Mode of execution of CalculateActivityCoefficients() functions { 2 }
-                 // Modes: 0-invoke, 1-at MBR only, 2-every MBR it, every IPM it. 3-not MBR, every IPM it.
-                 // if PD < 0 then use test qd_real accuracy mode
-           PRD,  // Since r1583/r409: Disable (0) or activate (-5 or less) the SpeciationCleanup() procedure { -5 }
-           PSM,  // Level of diagnostic messages: 0- disabled (no ipmlog file); 1- errors; 2- also warnings 3- uDD trace { 1 }
-           DP,   // Maximum allowed number of iterations in the MassBalanceRefinement() procedure {  30 }
-           DW,   // Since r1583: Activate (1) or disable (0) error condition when DP was exceeded { 1 }
-           DT,   // Since r1583/r409: DHB is relative for all (0) or absolute (-6 or less ) cutoff for major ICs { 0 }
-           PLLG, // IPM tolerance for detecting divergence in dual solution { 10; range 1 to 1000; 0 disables the detection }
-           PE,   // Flag for using electroneutrality condition in GEM IPM calculations { 0 1 }
-           IIM   // Maximum allowed number of iterations in the MainIPM_Descent() procedure up to 9999 { 1000 }
+           PC,   ///< Mode of PhaseSelect() operation ( 0 1 2 ... ) { 1 }
+           PD,   ///< abs(PD): Mode of execution of CalculateActivityCoefficients() functions { 2 }.
+                 ///< Modes: 0-invoke, 1-at MBR only, 2-every MBR it, every IPM it. 3-not MBR, every IPM it.
+                 ///< if PD < 0 then use test qd_real accuracy mode
+           PRD,  ///< Since r1583/r409: Disable (0) or activate (-5 or less) the SpeciationCleanup() procedure { -5 }
+           PSM,  ///< Level of diagnostic messages: 0- disabled (no ipmlog file); 1- errors; 2- also warnings 3- uDD trace { 1 }
+           DP,   ///< Maximum allowed number of iterations in the MassBalanceRefinement() procedure {  30 }
+           DW,   ///< Since r1583: Activate (1) or disable (0) error condition when DP was exceeded { 1 }
+           DT,   ///< Since r1583/r409: DHB is relative for all (0) or absolute (-6 or less ) cutoff for major ICs { 0 }
+           PLLG, ///< IPM tolerance for detecting divergence in dual solution { 10; range 1 to 1000; 0 disables the detection }
+           PE,   ///< Flag for using electroneutrality condition in GEM IPM calculations { 0 1 }
+           IIM   ///< Maximum allowed number of iterations in the MainIPM_Descent() procedure up to 9999 { 1000 }
            ;
-         double DG,   // Standart total moles { 1e5 }
-           DHB,  // Maximum allowed relative mass balance residual for Independent Components ( 1e-9 to 1e-15 ) { 1e-10 }
-           DS,   // Cutoff minimum mole amount of stable Phase present in the IPM primal solution { 1e-12 }
-           DK,   // IPM-2 convergence threshold for the Dikin criterion (may be set in the interval 1e-6 < DK < 1e-4) { 1e-5 }
-           DF,   // Threshold for the application of the Karpov phase stability criterion: (Fa > DF) for a lost stable phase { 0.01 }
-           DFM,  // Threshold for Karpov stability criterion f_a for insertion of a phase (Fa < -DFM) for a present unstable phase { 0.1 }
-           DFYw, // Insertion mole amount for water-solvent { 1e-6 }
-           DFYaq,// Insertion mole amount for aqueous species { 1e-6 }
-           DFYid,// Insertion mole amount for ideal solution components { 1e-6 }
-           DFYr, // Insertion mole amount for major solution components { 1e-6 }
-           DFYh, // Insertion mole amount for minor solution components { 1e-6 }
-           DFYc, // Insertion mole amount for single-component phase { 1e-6 }
-           DFYs, // Insertion mole amount used in PhaseSelect() for a condensed phase component  { 1e-7 }
-           DB,   // Minimum amount of Independent Component in the bulk system composition (except charge "Zz") (moles) (1e-17)
-           AG,   // Smoothing parameter for non-ideal increments to primal chemical potentials between IPM descent iterations { -1 }
-           DGC,  // Exponent in the sigmoidal smoothing function, or minimal smoothing factor in new functions { -0.99 }
-           GAR,  // Initial activity coefficient value for major (M) species in a solution phase before LPP approximation { 1 }
-           GAH,  // Initial activity coefficient value for minor (J) species in a solution phase before LPP approximation { 1000 }
-           GAS,  // Since r1583/r409: threshold for primal-dual chem.pot.difference (mol/mol) used in SpeciationCleanup() { 1e-3 }
-                 // before: Obsolete IPM-2 balance accuracy control ratio DHBM[i]/b[i], for minor ICs { 1e-3 }
-           DNS,  // Standard surface density (nm-2) for calculating activity of surface species (12.05)
-           XwMin,// Cutoff mole amount for elimination of water-solvent { 1e-9 }
-           ScMin,// Cutoff mole amount for elimination of solid sorbent {1e-7}
-           DcMin,// Cutoff mole amount for elimination of solution- or surface species { 1e-30 }
-           PhMin,// Cutoff mole amount for elimination of  non-electrolyte solution phase with all its components { 1e-10 }
-           ICmin,// Minimal effective ionic strength (molal), below which the activity coefficients for aqueous species are set to 1. { 3e-5 }
-           EPS,  // Precision criterion of the SolveSimplex() procedure to obtain the AIA ( 1e-6 to 1e-14 ) { 1e-10 }
-           IEPS, // Convergence parameter of SACT calculation in sorption/surface complexation models { 0.01 to 0.000001, default 0.001 }
-           DKIN; // Tolerance on the amount of DC with two-side metastability constraints  { 1e-7 }
-    char *tprn;       // internal
+         double DG,   ///< Standart total moles { 1e5 }
+           DHB,  ///< Maximum allowed relative mass balance residual for Independent Components ( 1e-9 to 1e-15 ) { 1e-10 }
+           DS,   ///< Cutoff minimum mole amount of stable Phase present in the IPM primal solution { 1e-12 }
+           DK,   ///< IPM-2 convergence threshold for the Dikin criterion (may be set in the interval 1e-6 < DK < 1e-4) { 1e-5 }
+           DF,   ///< Threshold for the application of the Karpov phase stability criterion: (Fa > DF) for a lost stable phase { 0.01 }
+           DFM,  ///< Threshold for Karpov stability criterion f_a for insertion of a phase (Fa < -DFM) for a present unstable phase { 0.1 }
+           DFYw, ///< Insertion mole amount for water-solvent { 1e-6 }
+           DFYaq,///< Insertion mole amount for aqueous species { 1e-6 }
+           DFYid,///< Insertion mole amount for ideal solution components { 1e-6 }
+           DFYr, ///< Insertion mole amount for major solution components { 1e-6 }
+           DFYh, ///< Insertion mole amount for minor solution components { 1e-6 }
+           DFYc, ///< Insertion mole amount for single-component phase { 1e-6 }
+           DFYs, ///< Insertion mole amount used in PhaseSelect() for a condensed phase component  { 1e-7 }
+           DB,   ///< Minimum amount of Independent Component in the bulk system composition (except charge "Zz") (moles) (1e-17)
+           AG,   ///< Smoothing parameter for non-ideal increments to primal chemical potentials between IPM descent iterations { -1 }
+           DGC,  ///< Exponent in the sigmoidal smoothing function, or minimal smoothing factor in new functions { -0.99 }
+           GAR,  ///< Initial activity coefficient value for major (M) species in a solution phase before LPP approximation { 1 }
+           GAH,  ///< Initial activity coefficient value for minor (J) species in a solution phase before LPP approximation { 1000 }
+           GAS,  ///< Since r1583/r409: threshold for primal-dual chem.pot.difference (mol/mol) used in SpeciationCleanup() { 1e-3 }.
+                 ///< before: Obsolete IPM-2 balance accuracy control ratio DHBM[i]/b[i], for minor ICs { 1e-3 }
+           DNS,  ///< Standard surface density (nm-2) for calculating activity of surface species (12.05)
+           XwMin,///< Cutoff mole amount for elimination of water-solvent { 1e-9 }
+           ScMin,///< Cutoff mole amount for elimination of solid sorbent {1e-7}
+           DcMin,///< Cutoff mole amount for elimination of solution- or surface species { 1e-30 }
+           PhMin,///< Cutoff mole amount for elimination of  non-electrolyte solution phase with all its components { 1e-10 }
+           ICmin,///< Minimal effective ionic strength (molal), below which the activity coefficients for aqueous species are set to 1. { 3e-5 }
+           EPS,  ///< Precision criterion of the SolveSimplex() procedure to obtain the AIA ( 1e-6 to 1e-14 ) { 1e-10 }
+           IEPS, ///< Convergence parameter of SACT calculation in sorption/surface complexation models { 0.01 to 0.000001, default 0.001 }
+           DKIN; ///< Tolerance on the amount of DC with two-side metastability constraints  { 1e-7 }
+    char *tprn;       ///< internal
 
     void write(fstream& oss);
 };
 
-struct SPP_SETTING
-{   // Base Parametres of SP
-    char ver[TDBVERSION]; // Version & Copyright 64
+struct SPP_SETTING /// Base Parametres of SP
+{
+    char ver[TDBVERSION]; ///< Version & Copyright 64
     BASE_PARAM p; //
     void write(fstream& oss);
 };
 
 extern SPP_SETTING pa_;
 
-// Module TParam ( +MULTY )
-class TProfil //: public TCModule
+/// Module contains a Flags and thresholds for numeric modules
+class TProfil
 {
 
 public:
 
-    static TProfil* pm;
+    //static TProfil* pm;
 
     TMulti* multi;
     MULTI *pmp;
@@ -115,26 +121,36 @@ public:
    void outMulti( GemDataStream& ff, gstring& path  );
    void outMultiTxt( const char *path, bool append=false  );
    void readMulti( GemDataStream& ff );
-   void readMulti(  TNode *na, const char* path );
+   void readMulti( const char* path,  DATACH  *dCH );
 
    double ComputeEquilibriumState( long int& PrecLoops_, long int& NumIterFIA_, long int& NumIterIPM_ );
-   long int testMulti( );
-   void test_G0_V0_H0_Cp0_DD_arrays( long int nT, long int nP );
+
+   inline double HelmholtzEnergy( double x )
+   {
+       return multi->HelmholtzEnergy(x);
+   }
+
+   inline double InternalEnergy( double TC, double P )
+   {
+       return multi->InternalEnergy( TC, P );
+   }
+
+   //void test_G0_V0_H0_Cp0_DD_arrays( long int nT, long int nP );
 };
 
 enum QpQdSizes {   // see m_phase.h
-   QPSIZE = 60,    // This enum is for GEMIPM2K only!
+   QPSIZE = 180,    // This enum is for GEMS3K only!
    QDSIZE = 60
 };
 
 #else
 
 #include "v_mod.h"
-#include "submod/ms_rmults.h"
-#include "submod/ms_mtparm.h"
-#include "submod/ms_system.h"
+#include "ms_rmults.h"
+#include "ms_mtparm.h"
+#include "ms_system.h"
 #include "ms_multi.h"
-#include "submod/ms_calc.h"
+#include "ms_calc.h"
 
 class GemDataStream;
 class QWidget;
@@ -329,11 +345,11 @@ public:
 // temporary !Use_mt_mode
     bool fStopCalc;
 
-    RMULTS* mup;
-    MTPARM *tpp;
-    SYSTEM *syp;
-    MULTI *pmp;
-TMulti *pmulti;
+    //RMULTS* mup;
+    //MTPARM *tpp;
+    //SYSTEM *syp;
+    //MULTI *pmp;
+//TMulti *pmulti;
 
     SPP_SETTING pa;
 
@@ -358,7 +374,7 @@ TMulti *pmulti;
     void ChangeSettings(int nSettings);
 
     // work with Project
-    bool initCalcMode();
+    bool initCalcMode( const char * profileKey );
     void loadSystat( const char *key=0 );
     void newSystat( int mode );
     void deriveSystat();
@@ -374,12 +390,8 @@ TMulti *pmulti;
     // Multi make functions
     void PMtest( const char *key );
     void CheckMtparam();
-//    void CheckMtparamFromLookup();
-//    void BuildLookupArrays();
 
-    void LoadFromMtparm(double T, double P,double *G0,  double *V0,
-    		double *H0, double *S0, double *Cp0, double *A0, double *U0,
-    		double denW[5], double epsW[5], double denWg[5], double epsWg[5], int* tp_mark );
+   void LoadFromMtparm( QWidget* par, DATACH *CSD, bool no_interpolat );
     void CalcBcc(); // Calc bulk composition
     void ShowPhaseWindow();
     void ShowEqPhaseWindow();
@@ -397,6 +409,16 @@ TMulti *pmulti;
     void SyTestSizes()
      { 	syst->SyTestSizes(); }
 
+    inline double HelmholtzEnergy( double x )
+    {
+        return multi->HelmholtzEnergy(x);
+    }
+    inline double InternalEnergy( double TC, double P )
+    {
+        return multi->InternalEnergy( TC, P );
+    }
+
+
    //test
    void outMulti( GemDataStream& ff, gstring& path  );
    // brief_mode - Do not write data items that contain only default values
@@ -406,11 +428,13 @@ TMulti *pmulti;
    void makeGEM2MTFiles(QWidget* par);
    void outMultiTxt( const char *path, bool append=false  );
    void readMulti( GemDataStream& ff );
-   void readMulti(  TNode *na,const char* path );
+   void readMulti( const char* path,  DATACH  *dCH );
    void CmReadMulti( QWidget* par, const char* path );
    double ComputeEquilibriumState( long int& NumPrecLoops, long int& NumIterFIA, long int& NumIterIPM );
-   long int testMulti();
-
+   //long int testMulti( );
+   bool CompareProjectName( const char* SysKey );
+   void ChangeTPinKey( double T, double P );
+   void SetSysSwitchesFromMulti( );
 };
 
 /* Work codes of surface site types in pm->AtNdx vector (compatibility with old-style SCMs *

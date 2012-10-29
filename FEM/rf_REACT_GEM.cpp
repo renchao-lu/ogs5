@@ -8,9 +8,10 @@
  * current maintainer: Georg Kosakowski
  * georg.kosakowski@psi.ch
  * last major changes: 01 April 2010 start of doxygen documentation
- *	       03 April 2010 start of cleaning code and reducing memory consumption/communication for MPI!
+ *	       03 April 2010 start of cleaning code and reducing memory consumption/communication for !
  *              05.10.2010  extend doxygen documentation, kintetics with solid solutions and richards flow coupling
  *             22. Feb. 2012 extended for multi-threading, needs boost library and fixed GEMS3K kernel 
+ *             June 2012 adjusted Richards flow coupling and added density dependence
  * Code description
  *
  * The files rf_REACT_GEM.cpp and rf_REACT_GEM.h contain the main core modules of the OpenGeosys - GEMIPM2K coupling.
@@ -43,6 +44,9 @@
 #include "rfmat_cp.h"
 #include "msh_node.h"
 #include "msh_elem.h"
+// GeoSys-FEMLib for Gauss points
+#include "fem_ele_std.h"
+#include "fem_ele_vec.h"
 // -----------------------
 #include "files0.h"
 //Headers for shuffling
@@ -50,6 +54,8 @@
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
+// use for time measurements
+#include <sys/time.h>
 
 #include <cstring>
 #include <iostream>
@@ -60,6 +66,8 @@
 #include "unistd.h" // on unix/linux platform
 #include "stdlib.h"
 #endif
+
+using namespace std;
 
 #ifdef GEM_REACT
 /**
@@ -92,7 +100,6 @@ REACT_GEM::REACT_GEM ( void )
     min_possible_porosity=1.e-4;                   // minimum porostiy in case of changing porosity: avoid zero porosity
     max_possible_porosity=0.9999;                  // max porosity
     flag_coupling_hydrology = 1;                   //0-not coupled;1=coupled;
-    flag_permeability_porosity=0;                  //0-no coupling; 1-Kozeny-Carman; 2-Kozeny-Carman normalized;
     m_gem_temperature=298.15;                      //default gem temperature is 25°C, in Kelvin!
     m_gem_pressure=1.0e+5;                         // default pressure 1 bar
     flag_iterative_scheme = 0;                     //0-not iteration;1=iteration;
@@ -109,6 +116,7 @@ REACT_GEM::REACT_GEM ( void )
     mp_nodeTypes = new long;
     * ( mp_nodeTypes ) = 0;
 
+    Fem_Ele_Std = NULL;
 
     gem_nThread=1; // default number of threads
     string tinit_path=" ";
@@ -119,6 +127,10 @@ REACT_GEM::REACT_GEM ( void )
     boost::barrier*  gem_barrier_finish;
     boost::thread *gemThread;
     boost::mutex rwmutex, getnode_mutex;
+#ifndef USE_MPI_GEMS
+    int myrank=0;
+    int mysize =1;
+#endif
 }
 
 
@@ -131,6 +143,7 @@ REACT_GEM::~REACT_GEM ( void )
         delete [] m_gam;
         delete [] m_xPH;
         delete []m_aPH;
+	delete [] m_bSP;
         delete []m_vPS;
         delete []m_mPS;
         delete []m_bPS;
@@ -169,6 +182,7 @@ REACT_GEM::~REACT_GEM ( void )
         delete [] m_Node_Volume;
         delete [] m_gas_volume;
         delete [] m_fluid_volume;
+	delete [] m_fluid_density;
         delete [] m_soluteB;
         delete [] m_soluteB_buff;
         // delete MPI buffer--------
@@ -194,6 +208,7 @@ REACT_GEM::~REACT_GEM ( void )
         delete [] m_boundary;
         delete [] m_gas_volume_buff;
         delete [] m_fluid_volume_buff;
+	delete [] m_fluid_density_buff;
         delete [] m_dul_buff;
         delete [] m_dll_buff;
         delete [] m_xDC_pts_buff ;
@@ -234,7 +249,7 @@ Initialization of the GEM TNode Class
 Here we read the files needed as input for initializing GEMIPM2K
 The easiest way to prepare them is to use GEMS-PSI code (GEM2MT module)
 
-**/
+*/
 short REACT_GEM::Init_Nodes ( string Project_path)
 {
     long ii=0, i=0, in=0;
@@ -366,6 +381,9 @@ short REACT_GEM::Init_Nodes ( string Project_path)
         m_fluid_volume  = new double [nNodes];
         m_fluid_volume_buff  = new double [nNodes];
 
+        m_fluid_density  = new double [nNodes];
+        m_fluid_density_buff  = new double [nNodes];	
+	
         m_gas_volume  = new double [nNodes];
         m_gas_volume_buff  = new double [nNodes];
 
@@ -396,6 +414,7 @@ short REACT_GEM::Init_Nodes ( string Project_path)
         m_xPA = new double [nNodes*nPS];
         m_xPA_buff = new double [nNodes*nPS];
 
+	m_bSP = new double [nNodes*nIC]; //Bulk composition of all solids, moles [nIC] ...not yet buffered via MPI, because we do not use the data yet
         // ----------------------------------
         // this is for kinetics
         Kinetic_GEMS m_kin;                         // new kinetic vector
@@ -468,6 +487,7 @@ short REACT_GEM::Init_Nodes ( string Project_path)
             m_porosity[in]=0.0;
             m_porosity_initial[in]=0.0;
             m_fluid_volume[in]=0.0;
+	    m_fluid_density[in]=1000.0;
             m_gas_volume[in]=0.0;
 
             m_Vs_buff[in] = 0.0;
@@ -480,6 +500,7 @@ short REACT_GEM::Init_Nodes ( string Project_path)
             m_Eh_buff[in] = 0.0;
             m_porosity_buff[in]= 0.0;
             m_fluid_volume_buff[in]=0.0;
+	    m_fluid_density_buff[in]=0.0;
             m_gas_volume_buff[in]=0.0;
 
             m_excess_water[in] = 0.0;
@@ -579,23 +600,30 @@ short REACT_GEM::Init_Nodes ( string Project_path)
         }
 
         string tinit_path=Project_path;
+//	  if ( myrank == 0 /*should be set to root*/ )
+	  {
 // here the boost barriers are defined....
-        gem_barrier_finish = (new boost::barrier(gem_nThread+1));
-        gem_barrier_start = (new boost::barrier(gem_nThread+1));
-        gemThread = (new boost::thread[gem_nThread]);
-
+           gem_barrier_finish = (new boost::barrier((gem_nThread+1))); 
+           gem_barrier_start = (new boost::barrier((gem_nThread+1)));
+           gemThread = (new boost::thread[gem_nThread]); //each mpi task creates gem_nThread workers
+	  
 
 
         for (i=0; i<gem_nThread; ++i) // here we create the threads! 
         {
-            rwmutex.lock();
-            cout << "In main: creating thread " << i << endl;
+#ifdef USE_MPI_GEMS
+                        rwmutex.lock();
+            cout << "Creating GEMS-worker thread " << i << " for MPI task " <<  myrank << endl;
             rwmutex.unlock();
-
+#else
+            rwmutex.lock();
+            cout << "Creating GEMS-worker thread " << i << endl;
+            rwmutex.unlock();
+#endif
             gemThread[i]= boost::thread(boost::bind(&REACT_GEM::gems_worker, this, (int) i, Project_path));
 
         }
-
+	  }
         return 0;                                //successed
     }
     return 1; //something went wrong
@@ -711,7 +739,7 @@ short REACT_GEM::Init_RUN(string Project_path)
             if ( IsThisPointBCIfYesStoreValue ( i, this_pcs, BCValue ) )
             {
                 // If this node is on the fixed boudnary for this component
-                cout << "Node " << i <<", Comp " << this_pcs->pcs_primary_function_name[0] << " ,Value " << BCValue << " is boundary node" <<endl;
+//                cout << "Node " << i <<", Comp " << this_pcs->pcs_primary_function_name[0] << " ,Value " << BCValue << " is boundary node" <<endl;
                 m_boundary[i] = 1;
             }
             else
@@ -773,10 +801,15 @@ short REACT_GEM::Init_RUN(string Project_path)
     // MPI initialization.
     MPI_Bcast ( &nNodes, 1, MPI_LONG, 0, MPI_COMM_WORLD );
 #endif
-
+//  if ( myrank == 0 /*should be set to root*/ ) 
+  {
+    //    cout << "main waits for start barrier " << endl;
+    
     gem_barrier_start->wait(); // give the workers the start signal
+    //    cout << "main passed start barrier " << endl;
 
     gem_barrier_finish->wait(); // wait for the workers to finish the initial stuff
+  }
 #ifdef USE_MPI_GEMS
     // For MPI scheme, gather the data here.
     REACT_GEM::GetGEMResult_MPI();
@@ -975,9 +1008,11 @@ void REACT_GEM::GetReactInfoFromGEM ( long in ,  TNode* m_Node )
 {
     m_Node->GEM_to_MT ( m_NodeHandle[in], m_NodeStatusCH[in], m_IterDone[in],
                         m_Vs[in], m_Ms[in], m_Gs[in], m_Hs[in], m_IC[in], m_pH[in], m_pe[in], m_Eh[in],
-                        m_rMB+in*nIC, m_uIC+in*nIC, m_xDC+in*nDC, m_gam+in*nDC, m_xPH+in*nPH, m_vPS+in*nPS, m_mPS+in*nPS,
-                        m_bPS+in*nPS*nIC, m_xPA+in*nPS, m_aPH+in*nPH );
+                        m_rMB+in*nIC, m_uIC+in*nIC, m_xDC+in*nDC, m_gam+in*nDC, m_xPH+in*nPH, m_vPS+in*nPS, m_mPS+in*nPS, 
+                        m_bPS+in*nPS*nIC, m_xPA+in*nPS, m_aPH+in*nPH , m_bSP+in*nIC);
+			// old kernel version m_bPS+in*nPS*nIC, m_xPA+in*nPS, m_aPH+in*nPH );
 
+    
     return;
 }
 
@@ -986,8 +1021,9 @@ void REACT_GEM::SetReactInfoBackGEM ( long in ,  TNode* m_Node )
     // Setting input data for GEMIPM
 
     // set charge to zero
+  int i;
 
-    //	cout << *m_xDC+in*nDC << "   " << *m_bIC_dummy+in*nIC << endl;
+  //  for (i=0;i<nIC;i++) cout << m_bIC[in*nIC+i] << endl;
 
     if ( flag_transport_b == 1 )   //here we insert the actual B vector
     {
@@ -1010,7 +1046,8 @@ short REACT_GEM::Run_MainLoop ( )
     // So here is going to distribute the task.
     MPI_Bcast ( &nNodes, 1, MPI_LONG, 0, MPI_COMM_WORLD );
 #endif
-
+    //  if ( myrank == 0 /*should be set to root*/ )
+  {
     gem_barrier_start->wait();
     // cout << "main "<< " passed for start barrier "<<endl;
 
@@ -1021,16 +1058,17 @@ short REACT_GEM::Run_MainLoop ( )
     //  cout << "main "<< " waiting for finish barrier "<<endl;
     gem_barrier_finish->wait();
     // cout << "main "<< " passed for finish barrier "<<endl;
-
+  }
 #ifdef USE_MPI_GEMS
     // For MPI scheme, gather the data here.
     REACT_GEM::GetGEMResult_MPI();
     REACT_GEM::CleanMPIBuffer();
 #endif
-
-    rwmutex.lock();
+#ifdef USE_MPI_GEMS
+    rwmutex.lock();   // avoid mutual exclusion in the MPI version
     cout << " GEM  run successful. "  << endl;
     rwmutex.unlock();
+#endif    
     return 0;
 }
 
@@ -1940,6 +1978,86 @@ void REACT_GEM::ConvPorosityNodeValue2Elem ( int i_timestep )
     if ( i_timestep==1 ) cout <<"min, max porosity: "<< pormin << " " << pormax <<endl; //only output for current time step....old time step will give wrong values
 }
 
+double REACT_GEM::FluidDensity(long elem, int gaussnode)
+{
+    long idx_Node;
+    int number_of_nodes, j,i;
+    MeshLib::CElem* m_Elem;
+    MeshLib::CNode* m_ogsNode;
+    double density;
+    double distance, weight, sum_weights;
+    int size_m = 20;                      //assigned to the value in CFiniteElementStd(CRFProcess *Pcs, const int C_Sys_Flad, const int order=1);
+    double* NodalVal_BG;
+
+    density=1000.0; //default backup value
+
+    distance =  weight = sum_weights = 0.0;
+
+
+
+    //  cout << "GEMS DEBUG: FluidDensity " << density << "elem " << elem << " gaussnode " << gaussnode<< endl;
+
+    m_Elem =  m_flow_pcs->m_msh->ele_vector[elem];
+    number_of_nodes = ( int ) m_Elem->GetNodesNumber ( false );
+
+    if (gaussnode>-1) // gauss point like in InterpolatPorpertytoGausPoints
+    {
+
+        if (!Fem_Ele_Std)
+        {
+            cout << "DEBUG REACTGEM: fluiddensity from gauss node failed: could not get Fem_Ele_Std"<< endl ;
+            return density; //make sure call to interpolate does not fail
+        }
+        NodalVal_BG = new double [size_m];    //BG
+        // Get gauss point data
+        // GetGaussData(gp, gp_r, gp_s, gp_t);
+        //fkt = GetGaussData(GPIndex, gp_r, gp_s, gp_t);
+        // Compute the shape function for interpolation within element
+        //ComputeShapefct(1);
+        //read density from nodes
+        for(i = 0; i < number_of_nodes; i++)
+        {
+            idx_Node = m_Elem->GetNodeIndex ( i );
+            NodalVal_BG[i] = m_fluid_density[idx_Node];
+        }
+        // Interpolate density from nodes to gauss point
+        density = Fem_Ele_Std->interpolate(NodalVal_BG);
+
+    }
+    else //arithmetric average on element
+    {
+
+        // get the values from nodes
+        for ( j = 0 ; j < number_of_nodes ; j++ )
+        {
+            // get the connected nodes;
+            idx_Node = m_Elem->GetNodeIndex ( j );
+            m_ogsNode = m_flow_pcs->m_msh->nod_vector[idx_Node];
+            //calculate distance between the node and the barycentre
+            double const* gravity_centre(m_Elem->GetGravityCenter());
+            double const* const pnt (m_ogsNode->getData());
+            distance =  (gravity_centre[0] - pnt[0]) * (gravity_centre[0] - pnt[0]);
+            distance += (gravity_centre[1] - pnt[1]) * (gravity_centre[1] - pnt[1]);
+            distance += (gravity_centre[2] - pnt[2]) * (gravity_centre[2] - pnt[2]);
+            distance =  sqrt(distance);
+
+            //Weight of each face depending on distance
+            weight = (1.0 / distance);
+            // Sum of weights
+            sum_weights += weight;
+            //Density
+            // this is arithmetric mean
+            density += m_fluid_density[idx_Node] *weight;
+        }
+        density=density/sum_weights;
+
+    }
+
+    //  cout << "GEMS DEBUG: FluidDensity " << density << endl;
+    return density;
+}
+
+
 int REACT_GEM::CalcPorosity ( long in,  TNode* m_Node  )
 {
     int k;                                   //must be int for Ph_Volume !
@@ -1984,7 +2102,7 @@ int REACT_GEM::CalcPorosity ( long in,  TNode* m_Node  )
     }
     if ( m_porosity[in] <= min_possible_porosity )
     {
-        m_porosity[in]=min_possible_porosity; //lower limit of porosity..
+        m_porosity[in]=min_possible_porosity; //lower limit of porosity..	     cout << " skal factor " << skal_faktor << " excess water volume " << m_excess_water[in] ; 
     }
     // cout <<" porosity:" << m_porosity[in] << " node: "<< in <<" Vs "<<m_Vs[in]<<endl;
     return 1;
@@ -1996,7 +2114,7 @@ int REACT_GEM::MassToConcentration ( long in,int i_failed ,  TNode* m_Node )  //
     long i,j,k,ii;
     int idx;
     double gas_volume,fluid_volume;
-    double skal_faktor=0.0,skal_faktor_gas=0.0;
+    double skal_faktor=0.0,skal_faktor_gas=0.0, saturation=1.0;
     DATACH* dCH;                                //pointer to DATACH
     DATABR* dBR;
     // Getting direct access to DataCH structure in GEMIPM2K memory
@@ -2035,13 +2153,14 @@ int REACT_GEM::MassToConcentration ( long in,int i_failed ,  TNode* m_Node )  //
 
             // * 1.0e-6;    // transform cm3 -> m3 !!
         }
+        	//     cout << " node " << in << " fluid_volume " << fluid_volume << " gas volume " << gas_volume << " total-gas: " << m_Vs[in]-gas_volume << endl; 
     }
 
     if ( ( fluid_volume <= 0.0 ) )
     {
         cout <<"OGSGEM MassToConcentration: fluid volume negative or zero " << fluid_volume  << " node " << in << " " << m_fluid_volume[in] << endl;
-     m_Node->GEM_write_dbr ( "dbr_for_crash_node_fluid_volume.txt" );
-     m_Node->GEM_print_ipm ( "ipm_for_crash_node_fluid_volume.txt" );
+        m_Node->GEM_write_dbr ( "dbr_for_crash_node_fluid_volume.txt" );	     cout << " skal factor " << skal_faktor << " excess water volume " << m_excess_water[in] ; 
+        m_Node->GEM_print_ipm ( "ipm_for_crash_node_fluid_volume.txt" );
 
 #ifdef USE_MPI_GEMS
         MPI_Finalize();                          //make sure MPI exits
@@ -2061,13 +2180,13 @@ int REACT_GEM::MassToConcentration ( long in,int i_failed ,  TNode* m_Node )  //
     // store volumes for reuse during concentration_to_mass
     m_fluid_volume[in]=fluid_volume;
     m_gas_volume[in]=gas_volume ;
-
+  
     // calculate excess water: volume of fluid phase bigger/smaller than porosity;
-    // requires updated porosity (calc porosity before calculation of execc water
+    // requires updated porosity (calc porosity before calculation of execc water)
     CRFProcess* m_pcs = NULL;
     switch ( flowflag )
     {
-    case 1:                                  // groundwater flow
+    case 1:                                  // groundwater flow	     cout << " skal factor " << skal_faktor << " excess water volume " << m_excess_water[in] ; 
         m_excess_water[in] = m_fluid_volume[in]- m_porosity[in];
         skal_faktor= ( m_porosity[in] ) /m_fluid_volume[in]; //scale water to available volume
         m_fluid_volume[in] = m_porosity[in];
@@ -2077,15 +2196,30 @@ int REACT_GEM::MassToConcentration ( long in,int i_failed ,  TNode* m_Node )  //
         skal_faktor= ( m_porosity[in] ) /m_fluid_volume[in]; //scale water to available volume
         m_fluid_volume[in] = m_porosity[in];
         break;
-    case 3:                                  // Richards flow
+    case 3:                                  // Richards flow: Saturation is directly calculated from the pressure, therefore add a source-sink term to induce pressure/saturation changes
         m_pcs = PCSGet ( "RICHARDS_FLOW" );
         idx=m_pcs->GetNodeValueIndex ( "SATURATION1" );
-        m_excess_water[in] = m_fluid_volume[in]- m_porosity[in]*m_pcs->GetNodeValue ( in,idx+1 );
-        m_excess_gas[in] = m_gas_volume[in]- m_porosity[in]* ( 1.0 - m_pcs->GetNodeValue ( in,idx+1 ) );
-        skal_faktor= ( m_porosity[in]*m_pcs->GetNodeValue ( in,idx+1 ) ) /m_fluid_volume[in]; //mol amount of water in first phase
-        skal_faktor_gas= ( m_porosity[in]* ( 1.0-m_pcs->GetNodeValue ( in,idx+1 ) ) ) /m_gas_volume[in];
-        m_fluid_volume[in] = m_porosity[in]*m_pcs->GetNodeValue ( in,idx+1 );
-        m_gas_volume[in] = m_porosity[in]* ( 1-m_pcs->GetNodeValue ( in,idx+1 ) );
+
+	if (  m_fluid_volume[in] > m_porosity[in] ) // fluid volume exceeds available pore space
+	{
+             m_excess_water[in] =  m_fluid_volume[in] - m_porosity[in];
+	     skal_faktor=  m_porosity[in]/ m_fluid_volume[in]; //mol amount of water in first phase
+             m_fluid_volume[in] = m_porosity[in];	
+	     m_pcs->SetNodeValue ( in, idx, 1.0); // instead change saturation accordingly; 
+	 //    cout << " skal factor " << skal_faktor << " excess water volume " << m_excess_water[in] ; 
+	}
+	else 
+	{
+             m_excess_water[in] = m_fluid_volume[in]- m_porosity[in]*m_pcs->GetNodeValue ( in,idx+1);
+	     skal_faktor=m_porosity[in]*m_pcs->GetNodeValue ( in,idx+1)/m_fluid_volume[in]; //KG44 18.10.2012  is this really correct??
+	     m_fluid_volume[in] = m_porosity[in]*m_pcs->GetNodeValue ( in,idx+1);		     
+
+//	     m_pcs->SetNodeValue ( in, idx, m_fluid_volume[in] / m_porosity[in]); // instead change saturation accordingly; this is done always.
+	             
+	}
+      //  m_excess_gas[in] = m_gas_volume[in]- m_porosity[in]* ( 1.0 - m_pcs->GetNodeValue ( in,idx+1 ) ); // in contrast to fluid this is not really strongly coupled ...we calculate the stuff but do not couple it to gas flow (yet)
+      //  skal_faktor_gas= ( m_porosity[in]* ( 1.0-m_pcs->GetNodeValue ( in,idx+1 ) ) ) /m_gas_volume[in];
+      //  m_gas_volume[in] = m_porosity[in]* ( 1-m_pcs->GetNodeValue ( in,idx+1 ) );
 
         break;
     case 4:                                  // multiphase flow...works with case 1 ...pressure saturation scheme
@@ -2148,7 +2282,7 @@ int REACT_GEM::MassToConcentration ( long in,int i_failed ,  TNode* m_Node )  //
             m_xDC[i]*=skal_faktor;                   //newly scaled xDC including water /excluding rest
         }
 
-        // here we do not need to account for different flow processes .... as long as we work only with one wetting phase (water!!!) ...for liqid CO2 we have to change something ....
+        // here we do not need to account for different flow processes ....            
         //****************************************************************************************
         if ( flag_transport_b ==1 )
         {
@@ -2168,17 +2302,16 @@ int REACT_GEM::MassToConcentration ( long in,int i_failed ,  TNode* m_Node )  //
 
         }
     } // flowflag < 3 is finished
-    else if ( flowflag == 3 ) // richards flow
+    else if ( flowflag == 3 ) // richards flow ....no corrections in gas phase for Richards flow!
     {
         for ( j=0 ; j < nIC; j++ )
         {
             i = in*nIC + j;
             ii=in*nPS*nIC+0*nIC+j; // corresponding index of first phase (fluid) for m_bPS
-            m_bIC[i] -= ( m_bPS[ii]+m_bPS[nIC+ii] );                  // B vector without solute and gas (second phase)
-            if ( flag_coupling_hydrology )
+            m_bIC[i] -= ( m_bPS[ii]);                  // B vector without solute 
+            if ( flag_coupling_hydrology ) // in any case this accounts only for fully saturated conditions 
             {
                 m_bPS[ii] *=skal_faktor;                  // completely newly scaled first phase ...only for coupling with hydraulics
-                m_bPS[nIC+ii] *=skal_faktor_gas;	        // completely newly scaled second phase ...this is assumed to be the gas phase
             }
             else
             {  // this is necessary for not coupling with hydrology, but porosity change or water is used by gems....
@@ -2196,7 +2329,7 @@ int REACT_GEM::MassToConcentration ( long in,int i_failed ,  TNode* m_Node )  //
         // here we do not need to account for different flow processes .... as long as we work only with one wetting phase (water!!!) ...for liqid CO2 we have to change something ....
         //****************************************************************************************
         if ( flag_transport_b ==1 )
-        {
+        {              
             for ( j=0 ; j < nIC; j++ )
             {
                 i = in*nIC + j;
@@ -2219,11 +2352,11 @@ int REACT_GEM::ConcentrationToMass ( long l /*idx of node*/, int i_timestep )
 {
     // converting the value from mol/m^3 water to moles.
     long i,j,ii;
-    double water_volume=0.0, gas_volume=0.0;
+    double water_volume=0.0, gas_volume=0.0, scale_factor=1.0;
     int idx;
     string ErrorOut;
 
-
+  
     //	cout <<"water volume " << water_volume << endl;
     // I think here it has to be different than in MassToConcentration module, as after hydraulics, the volume is limited to porosity
     // As we work with an unit volume of "one", it should be save to directly take porosity as volume....
@@ -2240,8 +2373,11 @@ int REACT_GEM::ConcentrationToMass ( long l /*idx of node*/, int i_timestep )
     case 3:                                     // Richards flow
         m_pcs = PCSGet ( "RICHARDS_FLOW" );
         idx=m_pcs->GetNodeValueIndex ( "SATURATION1" );
-        //	water_volume=m_porosity[l]*m_pcs->GetNodeValue ( l,idx+i_timestep );
-        water_volume=m_fluid_volume[l];
+        scale_factor=m_porosity[l]*m_pcs->GetNodeValue ( l,idx+i_timestep ); //current volume of water phase after hydraulic step
+        water_volume=m_fluid_volume[l]; // old volume of water phase after last GEMS step
+        scale_factor /=water_volume; // 1: same volume <1 decrease in water volume >1 incresing volume
+        m_fluid_volume[l]=water_volume; // update fluid volume
+        // cout << "conctomass " << m_fluid_volume[l] << " " << scale_factor <<" " ;
         break;
     case 4:                                     // multiphase flow...works with case 1 ...pressure saturation scheme
         m_pcs = PCSGet ( "MULTI_PHASE_FLOW" );
@@ -2277,7 +2413,7 @@ int REACT_GEM::ConcentrationToMass ( long l /*idx of node*/, int i_timestep )
             {
                 // make sure it is greater/eq zero and take value from last timestep ---> second argument is zero!
                 m_soluteB[i] = fabs ( GetDCValueSpecies_MT ( l, 0, ( int ) j ) );
-            }
+            } 
             m_soluteB[i] *= water_volume ;
             //carrier for zero(first phase)  is normally water!
             if ( idx_hydrogen == j )   m_soluteB[i] += ( 2.0*m_xDC[l*nDC + idx_water] ) ;
@@ -2296,22 +2432,35 @@ int REACT_GEM::ConcentrationToMass ( long l /*idx of node*/, int i_timestep )
         {
             i = l*nIC + j;
             ii=l*nPS*nIC+0*nIC+j; // corresponding index of first phase (fluid) for m_bPS
+	    // cout <<  " i " << i << " " << m_soluteB[i] << " " <<m_bPS[ii] << " scale factor " << scale_factor << endl;
+	    
+	     // test for NaN!! ---seems necessary as nan run through the system
+	     //  this part is for debug reasons....
+            if ( ! (  m_soluteB[i]<=1.0 ) && ! (  m_soluteB[i]>1.0 ) )
+            {
+                cout << " m_soluteB[i] " <<  m_soluteB[i] << " is NaN " << " i "<< i <<" stop calculations " << endl;
+#ifdef USE_MPI_GEMS
+              MPI_Finalize();                             //make sure MPI exits
+#endif
+             exit ( 1 );
+            }
             // also check if xDC values is negative
             if ( m_soluteB[i] < 0.0 )
             {
                 // make sure it is greater/eq zero and take value from last timestep ---> second argument is zero!
                 m_soluteB[i] = fabs ( GetDCValueSpecies_MT ( l, 0, ( int ) j ) );
-            }
-            m_soluteB[i] *= water_volume ;
+            } 
+            m_soluteB[i] *= water_volume*scale_factor ; //match solutes with old fluid volume and account for hydraulic changes
             //carrier for zero(first phase)  is normally water!
-            if ( idx_hydrogen == j )   m_soluteB[i] += ( 2.0*m_xDC[l*nDC + idx_water] ) ;
-            else if ( idx_oxygen == j )  m_soluteB[i] +=  m_xDC[l*nDC + idx_water]  ;
+            if ( idx_hydrogen == j )   m_soluteB[i] += ( 2.0*m_xDC[l*nDC + idx_water] )*scale_factor ; //match to volume after hydraulic step
+            else if ( idx_oxygen == j )  m_soluteB[i] +=  m_xDC[l*nDC + idx_water]*scale_factor  ;
 
-            m_bIC[i]+= ( m_soluteB[i]+m_bPS[nIC+ii] );                //updated B vector for GEMS with gas phase
-            // here we check again if the vector if negative or smaller than a minimum amount...if yes we add some stuff....
+//            m_bIC[i]+= ( m_soluteB[i]+m_bPS[ii] );                //updated B vector for GEMS ....no correction in gas phase for Richards flow!
+            m_bIC[i]+= ( m_soluteB[i]);                //updated B vector for GEMS ....no correction in gas phase for Richards flow!
+  
+	    // here we check again if the vector if negative or smaller than a minimum amount...if yes we add some stuff....
             // adding 10-6 Mol/m^3 should be save, as this corresponds aprox to 10-9 Mol/kg ..which is well above the accuracy for most calculations
             if ( m_bIC[i] <= 1.0e-8 )  m_bIC[i]=1e-6;
-            //                        cout <<  " i " << i << " " << m_bIC[i] << endl;
         }
     }
     return 1;
@@ -2376,43 +2525,6 @@ void REACT_GEM::RestoreOldSolution ( long in )
     return;
 }
 
-// retrun the new permeability based on original permeability and old/new porosity
-double REACT_GEM::KozenyCarman ( double k0, double n0, double n )
-{
-    double rt = 0.0;
-
-    if ( k0 < 1.0e-20 || k0 > 1.0 || n0 <=0 || n0 >= 1 || n <=0 || n >= 1 )
-        return 0.0;
-    else
-    {
-        rt = k0 ;
-
-        rt *= MathLib::fastpow ( n / n0 , 3 );
-    }
-
-    return rt;
-}
-
-
-// retrun the new permeability based on original permeability and old/new porosity
-
-double REACT_GEM::KozenyCarman_normalized ( double k0, double n0, double n )
-{
-    double rt = 0.0;
-
-    if ( k0 < 1.0e-20 || k0 > 1.0 || n0 <=0 || n0 >= 1 || n <=0 || n >= 1 )
-        return 0.0;
-    else
-    {
-        rt = k0 ;
-
-        rt *=MathLib::fastpow ( n / n0 , 3 );
-
-        rt *= ( 1 - n0 ) / ( 1 - n ) * ( 1 - n0 ) / ( 1 - n );
-    }
-
-    return rt;
-}
 
 
 bool GEMRead ( string base_file_name, REACT_GEM *m_GEM_p )
@@ -2452,8 +2564,11 @@ bool GEMRead ( string base_file_name, REACT_GEM *m_GEM_p )
     return true;
 }
 
-
-ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file )
+/** Read: This function reads the input file with ending ".gem"
+ * 
+ * 
+*/
+ ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file )
 {
     Kinetic_GEMS d_kin;                            // dummy kinetic vector
     int j;
@@ -2483,7 +2598,7 @@ ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file )
             new_keyword = true;
             break;
         }
-        // Key word "$GEM_INIT_FILE" .......................
+        /// Key word "$GEM_INIT_FILE" : next line contains the name of the GEMS file with ending ".lst" that defines the setup, thermodynamic data and the numerical settings for the simulation........................
         if ( line_string.find ( "$GEM_INIT_FILE" ) !=string::npos )
         {
             // subkeyword found
@@ -2493,7 +2608,7 @@ ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file )
             continue;
         }
 
-        // Key word "$GEM_THREADS" .......................
+        /// Key word "$GEM_THREADS" : next line contains the number of GEMS3K worker threads to be started (for each MPI process). The minimum number of threads is 1!.......................
         if ( line_string.find ( "$GEM_THREADS" ) !=string::npos )
         {
             // subkeyword found
@@ -2504,7 +2619,7 @@ ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file )
             continue;
         }
 
-        // Key word "$GEM_INIT_FILE" .......................
+        /// Key word "$TRANSPORT_B": next line should be "1" to indicate the transport of total concentrations of independet species in fluid phase. The transport of all dependent species in the fluid phase is currently not supported anymore. .......................
         if ( line_string.find ( "$TRANSPORT_B" ) !=string::npos )
         {
             // subkeyword found
@@ -2524,7 +2639,7 @@ ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file )
         }
 
         // ......................................................
-        // Key word "$FLAG_POROSITY_CHANGE" .......................
+        /// Key word "$FLAG_POROSITY_CHANGE": next line could be either "0" or "1" (recommended). "1": changes in the volume of solid phases cause the porosity to change   .......................
         if ( line_string.find ( "$FLAG_POROSITY_CHANGE" ) !=string::npos )
         {
             // subkeyword found
@@ -2534,7 +2649,7 @@ ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file )
             continue;
         }
         // ......................................................
-        // Key word "$MIN_POROSITY" .............................
+        /// Key word "$MIN_POROSITY": next line should contain the minim porosity which has to be bigger than "0" e.g. "1e-6" .............................
         if ( line_string.find ( "$MIN_POROSITY" ) !=string::npos )
         {
             // subkeyword found
@@ -2544,7 +2659,7 @@ ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file )
             continue;
         }
         // ......................................................
-        // Key word "$MAX_POROSITY" .............................
+        /// Key word "$MAX_POROSITY": next line should contain the maximum porosity, recommended value: 1.0 .............................
         if ( line_string.find ( "$MAX_POROSITY" ) !=string::npos )
         {
             // subkeyword found
@@ -2554,7 +2669,7 @@ ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file )
             continue;
         }
         // ......................................................
-        // Key word "$FLAG_COUPLING_HYDROLOGY" ..................
+        /// Key word "$FLAG_COUPLING_HYDROLOGY": If the system volume exceeds the reference volume (1 m^3) due to volume changes of solids and/or fluid phases the excess fluid is substracted from the volume. It is reinjected into the system during the next time step via source/sink time in the flow equation. ..................
         if ( line_string.find ( "$FLAG_COUPLING_HYDROLOGY" ) !=string::npos )
         {
             // subkeyword found
@@ -2564,17 +2679,7 @@ ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file )
             continue;
         }
         // ......................................................
-        // Key word "$PERMEABILITY_POROSITY_MODEL" ..............
-        if ( line_string.find ( "$PERMEABILITY_POROSITY_MODEL" ) !=string::npos )
-        {
-            // subkeyword found
-            in.str ( GetLineFromFile1 ( gem_file ) );
-            in >> flag_permeability_porosity;
-            in.clear();
-            continue;
-        }
-        // ......................................................
-        // Key word "$ITERATIVE_SCHEME" .........................
+        /// Key word "$ITERATIVE_SCHEME": not yet implemented, set to zero or remove keyword from input file .........................
         if ( line_string.find ( "$ITERATIVE_SCHEME" ) !=string::npos )
         {
             // subkeyword found
@@ -2584,7 +2689,7 @@ ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file )
             continue;
         }
         // ......................................................
-        // Key word "$GEM_SIMPLEX" .........................
+        /// Key word "$GEM_CALCULATE_BOUNDARY_NODES": By setting this to "1" it is possible to switch on GEMS calculations at boundary nodes (e.g. kinetically controlled porosity change at boundary nodes). This normally requires the definition of time dependent concentration values via time curves (see documentation of .bc files how to do this). ..................
         if ( line_string.find ( "$CALCULATE_BOUNDARY_NODES" ) !=string::npos )
         {
             // subkeyword found
@@ -2595,7 +2700,7 @@ ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file )
         }
         // ......................................................
         // ......................................................
-        // Key word "$ITERATIVE_SCHEME" .........................
+        /// Key word "$TEMPERATURE_GEM": with this keyword it is possible to change the overall temperature of the  system (default 298.15 K).........................
         if ( line_string.find ( "$TEMPERATURE_GEM" ) !=string::npos )
         {
             // subkeyword found
@@ -2604,7 +2709,7 @@ ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file )
             in.clear();
             continue;
         }
-        // Key word "$ITERATIVE_SCHEME" .........................
+        /// Key word "$PRESSURE_GEM": with this keyword it is possible to disable the coupling between fluid pressures and GEMS calculations: set the desired value for GEMS calculations   .........................
         if ( line_string.find ( "$PRESSURE_GEM" ) !=string::npos )
         {
             // subkeyword found
@@ -2616,7 +2721,7 @@ ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file )
         }
 
         // ......................................................
-        // Key word "$MAX_FAILED_NODES" limits the number of failed nodes .........................
+        /// Key word "$MAX_FAILED_NODES" limits the number of failed nodes of GEMS calcuations for each MPI process. Run is exited if the number is exceeded..........................
         if ( line_string.find ( "$MAX_FAILED_NODES" ) !=string::npos )
         {
             // subkeyword found
@@ -2625,7 +2730,7 @@ ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file )
             in.clear();
             continue;
         }
-        // Key word "$MAX_FAILED_NODES" limits the number of failed nodes .........................
+        /// Key word "$MY_SMART_GEMS": if the summarized change in b-vector is smaller than this value, GEMS calculations are not done and previous values are taken.  .........................
         if ( line_string.find ( "$MY_SMART_GEMS" ) !=string::npos )
         {
             // subkeyword found
@@ -2636,7 +2741,26 @@ ios::pos_type REACT_GEM::Read ( std::ifstream *gem_file )
         }                // ......................................................
 
         // kg44 26.11.2008 read in parameters for kinetics and GEM
-        // subkeyword found
+        /** $KINETIC_GEM
+	 *       first line: general kinetic parameters
+	 * Name of phase (from GEMS setup) which is controlled 
+	 *number of kinetic model
+	 *number of species activites used
+         * double E_acid,E_neutral,E_base;  activation energies
+	 * double k_acid, k_neutral,k_base;  dissolution/precipitation rate constants
+	 * double q1,p1,q2,q3,p2,p3; exponents for omega
+	 * name of first species
+	 * double n_1, n_2,n_3; exponents for acidic, neutral and base cases for species one
+	 * name of next species
+	 * .....three more exponents for each additional species
+	 * next line: reactive surface area
+	 *number of model for calculation of reactive surface area
+	 * model parameters for reactive surface area: e.g. specific reactive surface area
+	 * example:
+	 *   $KINETIC_GEM       ; Quartz phase no 45 (starts at 0) wie Fernandez et al 2009       
+	 *     Quartz 1  1   0.0  0.0  0.0  0.0   -13.99 -16.29   0.0 1.0 0.0 1.0 1.0 1.0   H+  0.0  0.0 -0.5    ; this are the kinetic parameters
+	 *   1 1.0e4    ; this are the parameters for reactive surface area
+	*/  
         if ( line_string.find ( "$KINETIC_GEM" ) !=string::npos )
         {
 
@@ -2841,7 +2965,7 @@ int REACT_GEM::CalcReactionRate ( long in, double temp ,  TNode* m_Node )
                 idx= m_Node-> DC_name_to_xCH ( species );
                 if ( idx < 0 )
                 {
-                    cout << "CalcReactionRate: no DC-name "<< m_kin[ii]. active_species[i] <<" found" << endl;
+                    cout << "failed CalcReactionRate: no DC-name "<< m_kin[ii]. active_species[i] <<" found" << endl;
 #ifdef USE_MPI_GEMS
                     MPI_Finalize();                    //make sure MPI exits
 #endif
@@ -2872,12 +2996,12 @@ int REACT_GEM::CalcReactionRate ( long in, double temp ,  TNode* m_Node )
 
             // rate is scaled to the total amount available via the surface area
             dmdt[in*nPH+k]= -1.0 * sa * ( pow ( 10.0,m_kin[ii].kinetic_parameters[3] ) * rra + pow ( 10.0,m_kin[ii].kinetic_parameters[4] ) * rrn + pow ( 10.0,m_kin[ii].kinetic_parameters[5] ) * rrb );
-            // cout << "dmdt " <<dmdt[in*nPH+k] << " sa "<< sa <<" rra "<< rra << " rrn "<< rrn << " rrb "<< rrb << " m_gam " << m_gam[idx]<< " dmdt " << dmdt[in*nPH+k]<< endl;
+//            cout << "mol_phase " <<mol_phase[in*nPH+k] << " sa "<< sa <<" rra "<< rra << " rrn "<< rrn << " rrb "<< rrb << " m_gam " << m_gam[idx]<< " dmdt " << dmdt[in*nPH+k]<< endl;
 
             // test for NaN!! ---seems necessary as sometimes rra, rrn, rrb get Inf! ---seems enough to test the upper limit---this test does not resolve the real problem ;-)...probably pow(0.0,0.0) for rra,rrn,rrb ?
             if ( ! ( dmdt[in*nPH+k]<=1.0 ) && ! ( dmdt[in*nPH+k]>1.0 ) )
             {
-                cout << "dmdt " <<dmdt << " is NaN " << " sa "<< sa <<" rra "<< rra << " rrn "<< rrn << " rrb "<< rrb << endl;
+                cout << "failed dmdt " <<dmdt << " is NaN " << " sa "<< sa <<" rra "<< rra << " rrn "<< rrn << " rrb "<< rrb << endl;
                 dmdt[in*nPH+k]= 0.0;                  // no change!
             }
 
@@ -2950,6 +3074,7 @@ int REACT_GEM::CalcLimitsInitial ( long in , TNode* m_Node)
                     if ( m_dul[in*nDC+j] < 0.0 ) m_dul[in*nDC+j]=0.0;
                     if ( m_dll[in*nDC+j] > m_dul[in*nDC+j] ) m_dll[in*nDC+j]=m_dul[in*nDC+j];
                 }
+
             }
         }                                           //end kinetic model
 
@@ -2986,7 +3111,7 @@ int REACT_GEM::CalcLimits ( long in , TNode* m_Node)
     for ( ii=0;ii< ( int ) m_kin.size();ii++ )
     {
         k=m_kin[ii].phase_number;
-
+        // cout << " kinetics phase " << ii << " "  << m_kin[ii].kinetic_model << endl;
         if ( m_kin[ii].kinetic_model > 0 && m_kin[ii].kinetic_model < 6 )         // do it only if kinetic model is defined take model
         {
             // kinetic_model==1 dissolution+precipitation kinetics
@@ -2994,7 +3119,7 @@ int REACT_GEM::CalcLimits ( long in , TNode* m_Node)
             // kinetic_mocel==3 only precipitation (no dissolution)
             for ( j=m_kin[ii].dc_counter;j<m_kin[ii].dc_counter+dCH->nDCinPH[k];j++ )
             {
-                // cout << "Kin debug " << in << " mol amount species " << m_xDC[in*nDC+j] << " saturation phase " << omega_phase[in*nPH+k] << " saturation species" << omega_components[in*nDC+j] << " mol fraction now" << (m_xDC[in*nDC+j]/mol_phase[in*nPH+k] )<< endl;
+	      //     cout << "Kin debug " << in << " mol amount species " << m_xDC[in*nDC+j] << " saturation phase " << omega_phase[in*nPH+k] << " saturation species" << omega_components[in*nDC+j] << " mol fraction now" << (m_xDC[in*nDC+j]/mol_phase[in*nPH+k] )<< endl;
                 // surface complexation species are not kinetically controlled -- 0 is old way...X is new way in DCH files
                 if ( ( dCH -> ccDC[j]  == '0' ) || ( dCH->ccDC[j]  == 'X' ) || ( dCH->ccDC[j]  == 'Y' ) || ( dCH->ccDC[j]  == 'Z' ) )
                 {
@@ -3055,7 +3180,7 @@ int REACT_GEM::CalcLimits ( long in , TNode* m_Node)
                         m_dll[in*nDC+j]=0.0;
                     }
                 }
-                //cout << "Kin debug for component no. " << j << " at node " << in << " m_xDC "  <<  m_xDC[in*nDC+j] << " m_dll, mdul " << m_dll[in*nDC+j] << " " << m_dul[in*nDC+j] << " diff " << m_dul[in*nDC+j]- m_dll[in*nDC+j] << endl;
+                // cout << "Kin debug for component no. " << j << " at node " << in << " m_xDC "  <<  m_xDC[in*nDC+j] << " m_dll, mdul " << m_dll[in*nDC+j] << " " << m_dul[in*nDC+j] << " diff " << m_dul[in*nDC+j]- m_dll[in*nDC+j] << endl;
                 //            if ((fabs((m_dul[in*nDC+j]- m_dll[in*nDC+j]))>0.0)) cout << "Kinetics for component no. " << j << " at node " << in << " m_xDC "  <<  m_xDC[in*nDC+j] << " m_dll, mdul " << m_dll[in*nDC+j] << " " << m_dul[in*nDC+j] << " diff " << m_dul[in*nDC+j]- m_dll[in*nDC+j] << endl; // give some debug output for kinetics
             }
         }
@@ -3121,6 +3246,7 @@ void REACT_GEM::GetGEMResult_MPI ( void )
     MPI_Allreduce ( m_Eh_buff, m_Eh, nNodes, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
     MPI_Allreduce ( m_porosity_buff, m_porosity, nNodes, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
     MPI_Allreduce ( m_fluid_volume_buff, m_fluid_volume, nNodes, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
+    MPI_Allreduce ( m_fluid_density_buff, m_fluid_density, nNodes, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
     MPI_Allreduce ( m_gas_volume_buff, m_gas_volume, nNodes, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
     MPI_Allreduce ( m_excess_water_buff, m_excess_water, nNodes, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
     MPI_Allreduce ( m_excess_gas_buff, m_excess_gas, nNodes, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
@@ -3172,6 +3298,7 @@ void REACT_GEM::CleanMPIBuffer ( void )
         m_Eh_buff[in] = 0.0;
         m_porosity_buff[in]= 0.0;
         m_fluid_volume_buff[in]= 0.0;
+        m_fluid_density_buff[in]= 0.0;	
         m_gas_volume_buff[in]= 0.0;
 
         m_excess_water_buff[in] = 0.0;
@@ -3248,6 +3375,8 @@ void REACT_GEM::CopyToMPIBuffer ( long in )
     m_Eh_buff[in] = m_Eh[in];
     m_porosity_buff[in]= m_porosity[in];
     m_fluid_volume_buff[in]= m_fluid_volume[in];
+    m_fluid_density_buff[in]= m_fluid_density[in];
+    
     m_gas_volume_buff[in]= m_gas_volume[in];
 
     m_excess_water_buff[in] = m_excess_water[in];
@@ -3296,10 +3425,10 @@ void REACT_GEM::CopyToMPIBuffer ( long in )
 
 #endif                                            // end MPI
 
-// function coming from GEMS coupling...extract node based porosities..does only
-// work with GEMS coupling and if a species "POROSITY" or "NodePorosity" is defined
-// georg.kosakowski@psi.ch 02.11.2009
-
+/** GetNodePorosityValue(long node_Index): function coming from GEMS coupling...extract node based porosities..does only
+* work with GEMS coupling and if a species "POROSITY" or "NodePorosity" is defined
+* georg.kosakowski@psi.ch 02.11.2009
+*/
 double  REACT_GEM::GetNodePorosityValue ( long node_Index )
 {
 
@@ -3311,6 +3440,20 @@ double  REACT_GEM::GetNodePorosityValue ( long node_Index )
 
 }
 
+// function coming from GEMS coupling...extract node based fluid phase densities..does only
+// work with GEMS coupling a
+// georg.kosakowski@psi.ch 15.06.2012
+
+double  REACT_GEM::GetNodeFluidDensityValue ( long node_Index )
+{
+
+    double fluid_density=-1.0;                        //default value is negative...that should not happen
+
+    fluid_density=m_fluid_density[node_Index];
+
+    return fluid_density;
+
+}
 
 
 
@@ -3589,11 +3732,20 @@ void REACT_GEM::WriteVTKGEMValues ( fstream &vtk_file )
     {
         vtk_file <<" "<<  m_Vs[j] << endl;
     }
+    vtk_file << "SCALARS " << " FluidDensity " << " double 1" << endl;
+    vtk_file << "LOOKUP_TABLE default" <<endl;
+    //....................................................................
+    for ( j=0;j<nNodes;j++ )
+    {
+        vtk_file <<" "<<  m_fluid_density[j] << endl;
+    }
 
     return ;
 }
 
-
+/** gems_worker: 
+ * This function creates and initializes one GEMS3K kernel. It may be spawned several times. Calculations are coordinated with boost barrier commands.
+ */
 void REACT_GEM::gems_worker(int tid, string m_Project_path)
 {
     nNodes = GetNodeNumber_MT();
@@ -3602,13 +3754,17 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
     double oldvolume;
 
     // collection of time data for rough performance analysis
-    double time_gem_total, time_fraction, tdummy, tdummy1, tdummy2, twait;
+    double time_gem_total, time_fraction, tdummy, tdummy1, tdummy2, twait, tstart, twaittotal, td1,td2,tdsum;
     time_gem_total=0.0;
     time_fraction=0.0;
     tdummy=0.0;
-
+    twaittotal=0.0;
+    tstart=GetTimeOfDayDouble();
 
     long *tmp_nodeTypes;
+
+    //
+        MeshLib::CNode* m_ogsNode;
 
     // create data necessary for running gems in thread
     TNode* t_Node;
@@ -3695,31 +3851,68 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
     mystart=tid+(myrank*gem_nThread);
     mycount=gem_nThread*mysize;
 
+    	 rwmutex.lock();   //avoid mutual exclusion in the MPI version
+        cout << "GEMS3K MPI Processe / Thread: " << myrank << " " << tid << " mystart,mycont: " << mystart << " " << mycount << endl;
+        rwmutex.unlock();
+
     // here "myrank" is the index of the CPU Processes, and "mysize" is the number of CPU Processes
 #else
-    int myrank=0;
-    int mysize =1;
-
     mycount=gem_nThread; //make sure the loop over the nodes counts only the threads!
     mystart=tid;
+    int myrank=0;
+    int mysize=1;
 #endif
 
 
 
+    //    cout << "thread " << tid << " waits for start barrier " << endl;
     gem_barrier_start->wait(); // wait for init run start
-    tdummy=TGetTimerDouble(0);
+    //    cout << "thread " << tid << " passed start barrier " << endl;
+    tdummy=GetTimeOfDayDouble();
 
     
     for ( in = mystart; in < nNodes; in+=mycount ) // myrank ist defined vi USE_MPI_GEMS
       {
-        // now we calculate kinetic constraints for GEMS!
+//    	 rwmutex.lock();
+//        cout << "GEMS3K MPI Processe / Thread: " << myrank << " " << tid << " in " << in << endl;
+//        rwmutex.unlock();
+
+	// now we calculate kinetic constraints for GEMS!
         REACT_GEM::CalcLimitsInitial ( in , t_Node);  
-        //Get data
-        REACT_GEM::SetReactInfoBackGEM ( in ,t_Node );// this is necessary, otherwise the correct data is not available
+      /*	
+// special version for create gravel kinetics and concrete kinetics in 2D
+
+            m_ogsNode = m_flow_pcs->m_msh->nod_vector[in];
+            //calculate distance between the node and the barycentre
+            double const* const pnt (m_ogsNode->getData());
+ //           distance =  (gravity_centre[0] - pnt[0]) * (gravity_centre[0] - pnt[0]);
+ 
+  if ((pnt[0] > 0.0) && (pnt[0] < 10.0)) //gravel
+	{
+        m_dul[in*nDC+147]=0.0;  //   quartz is zero -> everything goes to gravel
+	m_dll[in*nDC+147]=0.0;
+	}
+	else if ((pnt[0] <=0.0) ) // concrete
+	{
+	m_dul[in*nDC+145]=0.0;  //gravel
+	m_dll[in*nDC+145]=0.0;
+	m_dll[in*nDC+147]=2.73e4;  // Qtz ..aka sand
+        m_dul[in*nDC+147]=2.73e4;
+	}
+	else
+	{
+        m_dll[in*nDC+145]=0.0;    // gravel is zero -> everything goes to sand
+	m_dul[in*nDC+145]=0.0;
+	}	
+
+	*/
+	//Get data
+        REACT_GEM::SetReactInfoBackGEM ( in ,t_Node );// thcc1p.pcs.initialis is necessary, otherwise the correct data is not available
 
         // Order GEM to run
         tdBR->NodeStatusCH = NEED_GEM_AIA;
         m_NodeStatusCH[in] = t_Node->GEM_run ( false );
+	//                t_Node->GEM_write_dbr ( "dbr_for_crash_node_init_thread_1.txt" );
 
 	REACT_GEM::GetReactInfoFromGEM ( in , t_Node);// test case..get the data even if GEMS failed
 	
@@ -3728,7 +3921,7 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
 	    rwmutex.lock();
             cout << "Initial GEMs run first pass failed at node " << in ;
             cout  << " repeat calculations and change kinetic constraintsby 0.1%" << endl;
-	    rwmutex.unlock();
+	    rwmutex.unlock();   
             // change a bit the kinetic constraints -> make the system less stiff
             for ( j=0;j<nDC;j++ )
             {
@@ -3758,21 +3951,27 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
             }
             else if ( m_NodeStatusCH[in] == BAD_GEM_AIA || m_NodeStatusCH[in] == BAD_GEM_SIA )
             {
-	        rwmutex.lock();
+#ifdef USE_MPI_GEMS
+                rwmutex.lock();
                 cout << "error: Initial GEMs run after Read GEMS gives bad result..proceed in any case. node: " << in << endl;
 		rwmutex.unlock();
+#endif		
             }
             else
             {
+#ifdef USE_MPI_GEMS	      
 	        rwmutex.lock();
                 cout << " sucess with second try.... "<<  endl;
                 rwmutex.unlock();
+#endif		
             }
 
         }       // end loop if initial gems run fails
 
         //Get data also for volumes!
         REACT_GEM::GetReactInfoFromGEM ( in , t_Node);// this we need also for restart
+	// calculate density of fluid phase, which is normally the first phase
+	m_fluid_density[in]=m_mPS[in*nPS+0]/m_vPS[in*nPS+0 ];
 
        if ( ( m_flow_pcs->GetRestartFlag() < 2 ) ) // we do not need the second pass for complete restart
        {
@@ -3783,7 +3982,31 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
              {
                  m_bIC[in*nIC+j]/= m_Vs[in]; //This is then for b vector
              }
-          }
+             for ( j=0;j<nDC;j++ )
+             {
+                 m_dll[in*nDC+j]/= m_Vs[in];
+                 m_dul[in*nDC+j]/= m_Vs[in];
+	     }
+	   
+	   }
+
+          
+// special version for create gravel kinetics
+/*  
+  if ((in >-1) && (in < 183)) 
+	{
+	m_dul[in*nDC+145]=0;
+	}
+	else if ((in >182) && (in < 283)) 
+	{
+	m_dul[in*nDC+147]=0;
+	}
+	else
+	{
+	m_dul[in*nDC+145]=0;
+	m_dll[in*nDC+147]=2.73e4;
+	}
+  */	
         REACT_GEM::SetReactInfoBackGEM ( in ,t_Node );// this is necessary, otherwise the correct data is not available
     
         // Order GEM to run
@@ -3794,10 +4017,12 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
 
         if ( ! ( m_NodeStatusCH[in] == OK_GEM_AIA || m_NodeStatusCH[in] == OK_GEM_SIA ) )
         {
+#ifdef USE_MPI_GEMS
 	    rwmutex.lock();
             cout << "Initial GEMs run second pass failed at node " << in ;
             cout  << " repeat calculations and change kinetic constraintsby 0.1%" << endl;
 	    rwmutex.unlock();
+#endif	    
             // change a bit the kinetic constraints -> make the system less stiff
             for ( j=0;j<nDC;j++ )
             {
@@ -3827,17 +4052,20 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
             }
             else if ( m_NodeStatusCH[in] == BAD_GEM_AIA || m_NodeStatusCH[in] == BAD_GEM_SIA )
             {
+#ifdef USE_MPI_GEMS
 	        rwmutex.lock();
                 cout << "error: Initial GEMs run after Read GEMS gives bad result..proceed in any case. node" << in << endl;
 		rwmutex.unlock();
+#endif		
             }
 
             else
             {
+#ifdef USE_MPI_GEMS	      
 	        rwmutex.lock();
                 cout << " sucess with second try.... "<<  endl;
 		rwmutex.unlock();
-
+#endif
             }
         }                                     // end loop if initial gems run fails
 
@@ -3859,14 +4087,14 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
     }                                        // end for loop for all nodes
 
     gem_barrier_finish->wait(); // init run finished ...now the init routine takes over
-    time_gem_total += (TGetTimerDouble(0)-tdummy);
-    time_fraction = time_gem_total/TGetTimerDouble(0);
+    time_gem_total += (GetTimeOfDayDouble()-tdummy);
+    time_fraction = time_gem_total/GetTimeOfDayDouble();
 
     // main loop which is synchronized via run_main
     for (;;) {
 
         gem_barrier_start->wait(); // central barrier for synchonizing the main runs
-        tdummy=TGetTimerDouble(0);
+        tdummy=GetTimeOfDayDouble();
 
         repeated_fail=0; // set this to zero for each new run_main
         
@@ -3890,21 +4118,25 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
                 REACT_GEM::SetReactInfoBackGEM ( in ,t_Node); // this should be also save for MPI
                 // take values from old B volume for comparison
                 oldvolume=m_Vs[in];
+		//		if (in==2) t_Node->GEM_write_dbr ( "dbr_debug_fail_before_fail.txt" );
 
                 // Order GEM to run
                 tdBR->NodeStatusCH = NEED_GEM_AIA; // first try without simplex using old solution
                 m_NodeStatusCH[in] = t_Node->GEM_run ( false );
 
+		//                    if (in==2) t_Node->GEM_write_dbr ( "dbr_debug_after_fail_node2.txt" );
 
                 if ( ! ( m_NodeStatusCH[in] == OK_GEM_AIA || m_NodeStatusCH[in] == OK_GEM_SIA || m_NodeStatusCH[in] == BAD_GEM_AIA || m_NodeStatusCH[in] == BAD_GEM_SIA )  ||
                      ( ( abs ( oldvolume-tdBR->Vs ) /oldvolume ) >0.1 ) && ( flowflag != 3 ) ) // not for Richards flow  // ups...failed..try again with changed kinetics
                 {
-                    rwmutex.lock();
+#ifndef USE_MPI_GEMS
+                    rwmutex.lock(); //KG44 try to avoid mutual exclusion at least in the parallel version, as this might slow down execution 
                     cout << "Error: Main Loop failed when running GEM on Node #" << in << "." << " Returned Error Code: " << m_NodeStatusCH[in] ;
                     cout << " or GEM weird result at node " << in << " volume " <<  tdBR->Vs << " old volume " <<oldvolume;
                     cout  << " repeat calculations and change kinetic constraintsby 0.1%" << endl;
                     rwmutex.unlock();
-                    // change a bit the kinetic constraints -> make the system less stiff
+#endif
+		    // change a bit the kinetic constraints -> make the system less stiff
                     for ( j=0;j<nDC;j++ )
                     {
                         m_dll[in*nDC+j]=0.999*m_dll[in*nDC+j]-1.0e-6;                        // make smaller
@@ -3928,14 +4160,16 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
                     ( ( ( abs ( oldvolume-tdBR->Vs ) /oldvolume ) >0.1 ) && ( flowflag != 3 ) ) // not for Richards flow
                 )
                 {
-                    rwmutex.lock();
+#ifndef USE_MPI_GEMS
+		  rwmutex.lock();
                     cout << "Error: Main Loop failed when running GEM on Node #" << in << "." << " Returned Error Code: " << m_NodeStatusCH[in] ;
                     cout << " or GEM weird result at node " << in << " volume " <<  tdBR->Vs << " old volume " <<oldvolume;
                     cout  << " continue with last good solution for this node" << endl;
-                    t_Node->GEM_write_dbr ( "dbr_for_crash_node_fail.txt" );
-                    t_Node->GEM_print_ipm ( "ipm_for_crash_node_fail.txt" );
+//                    t_Node->GEM_write_dbr ( "dbr_for_crash_node_fail.txt" );
+//                    t_Node->GEM_print_ipm ( "ipm_for_crash_node_fail.txt" );
                     rwmutex.unlock();
-                    // exit ( 1 );
+#endif
+		    // exit ( 1 );
                     node_fail=1;
                     repeated_fail +=1;
                     if ( repeated_fail >m_max_failed_nodes )
@@ -3972,6 +4206,9 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
                     // Convert to concentration  ..
                     REACT_GEM::MassToConcentration ( in, 0 ,t_Node);
 
+		    // calculate density of fluid phase, which is normally the first phase
+		    m_fluid_density[in]=m_mPS[in*nPS+0]/m_vPS[in*nPS+0 ];
+
                 }
                 else
                 {
@@ -3985,33 +4222,44 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
             } //end if check for boundary node12
         } // end for loop for all nodes
 
-        twait=TGetTimerDouble(0); //this if for performance check...init waiting time
+        twait=GetTimeOfDayDouble(); //this if for performance check...init waiting time
 
         gem_barrier_finish->wait();         // barrier for synchonizing threads
 
-        tdummy1=TGetTimerDouble(0); // now get and calculate the times for GEMS execution
+        tdummy1=GetTimeOfDayDouble(); // now get and calculate the times for GEMS execution
         time_gem_total += (tdummy1-tdummy);
-        time_fraction = time_gem_total/tdummy1;
         tdummy2=(tdummy1-tdummy);
+        time_fraction = time_gem_total/(tdummy1-tstart);
 
         // this is for performance check .....
         twait-=tdummy1;
         twait*= -1.0;
-    //    rwmutex.lock();
-    //    cout << "GEMS3K MPI Processe / Thread: " << myrank << " " << tid << " waiting time: " << twait << endl;
-    //    rwmutex.unlock();
-        // write some time values for performance ...only for first thread
-        if (tid ==0 && myrank ==0) {
+	twaittotal +=twait;
+//        rwmutex.lock();
+//        cout << "GEMS3K MPI Processe / Thread: " << myrank << " " << tid << " waiting time: " << twait << endl;
+//        rwmutex.unlock();
+        // write some time values for performance ...only for first thread..do only for all threads if 
+#ifndef USE_MPI_GEMS
+       if (tid ==0 && myrank ==0) {    //try to avoid mutual exclusion in MPI version
             rwmutex.lock();
-            cout << "GEMS3K MPI Processes / Threads: " << mysize << " " << gem_nThread << " total time: " << tdummy1 << " s, this dt for GEMS: " <<  tdummy2 << " total fraction in GEMS: " << time_fraction << endl;
+            cout << "GEMS3K MPI Processes / Threads: " << mysize << " " << gem_nThread << " mid/tid " << myrank << " " << tid << " total time: " << time_gem_total << " s, this dt for GEMS: " <<  tdummy2 << " total fraction in GEMS: " << time_fraction << " idle time: " << twaittotal << endl;
             rwmutex.unlock();
-        }
-
-    } // end of repeated GEMS executions
+            }
+#endif
+    } // end of for loop....
 
     return ;
 }
 
+double REACT_GEM::GetTimeOfDayDouble()
+{
+ timeval current;
+ double dtime;
+ 
+ gettimeofday(&current,0);
+ dtime=1.0*current.tv_sec + 1.0e-6*current.tv_usec;
+  return dtime;
+}
 
 #endif
 

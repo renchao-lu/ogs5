@@ -1,6 +1,6 @@
 # Source files
 
-set( SOURCES
+set( HEADERS
 	databr.h
 	datach.h
 	gdatastream.h
@@ -12,7 +12,9 @@ set( SOURCES
 	ms_multi.h
 	node.h
 	num_methods.h
-	s_fgl.h
+        s_kinmet.h
+	s_solmod.h
+        s_sorpmod.h
 	tnt.h
 	tnt_array1d.h
 	tnt_array2d.h
@@ -21,13 +23,46 @@ set( SOURCES
 	verror.h
 )
 
+set ( SOURCES
+	gdatastream.cpp
+	io_arrays.cpp
+	ipm_chemical2.cpp
+	ipm_chemical3.cpp
+	ipm_chemical.cpp
+	ipm_main.cpp
+	ipm_simplex.cpp
+	ms_multi_file.cpp
+	ms_multi_format.cpp
+	ms_param.cpp
+	node.cpp
+	node_format.cpp
+	num_methods.cpp
+	s_kinmet.cpp
+	s_solmod2.cpp
+	s_solmod3.cpp
+	s_solmod4.cpp
+	s_solmod5.cpp
+	s_solmod6.cpp
+	s_solmod.cpp
+	s_sorpmod.cpp
+)
 
 # Create the library
-add_library( GEM STATIC ${SOURCES} )
+add_library( GEM STATIC 
+	     ${SOURCES}
+             ${HEADERS} 
+)
+include_directories(
+        ${CMAKE_SOURCE_DIR}/GEM
+)
 
-SET_TARGET_PROPERTIES(GEM PROPERTIES LINKER_LANGUAGE CXX)
 
-# Link Qt library
-#target_link_libraries( GEM
-#	${QT_LIBRARIES}
-#)
+##SET_TARGET_PROPERTIES(GEM PROPERTIES LINKER_LANGUAGE CXX)
+
+IF (WIN32)
+	SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIPMGEMPLUGIN")
+ENDIF (WIN32)
+
+IF (UNIX)
+	SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIPMGEMPLUGIN -D__unix")
+ENDIF (UNIX)

@@ -1,19 +1,26 @@
 //-------------------------------------------------------------------
-// $Id: verror.h 968 2007-12-13 13:23:32Z gems $
+// $Id: verror.h 725 2012-10-02 15:43:37Z kulik $
+/// \file verror.h
+/// Declarations of classes TError and TFatalError for error handling.
 //
-// Error handling: classes TError and TFatalError
+// Copyright (C) 1996-2012 A.Rysin, S.Dmytriyeva
+// <GEMS Development Team, mailto:gems2.support@psi.ch>
 //
-// Copyright (C) 1996-2001 A.Rysin, S.Dmytriyeva
-// Uses  gstring class (C) A.Rysin 1999
+// This file is part of the GEMS3K code for thermodynamic modelling
+// by Gibbs energy minimization <http://gems.web.psi.ch/GEMS3K/>
 //
-// This file is part of the GEM-Vizor library and GEMIPM2K
-// code package
-//
-// This file may be distributed under the terms of the GEMS-PSI
-// QA Licence (GEMSPSI.QAL)
-//
-// See http://gems.web.psi.ch/ for more information
-// E-mail gems2.support@psi.ch
+// GEMS3K is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as
+// published by the Free Software Foundation, either version 3 of
+// the License, or (at your option) any later version.
+
+// GEMS3K is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with GEMS3K code. If not, see <http://www.gnu.org/licenses/>.
 //-------------------------------------------------------------------
 #ifndef _verror_h_
 #define _verror_h_

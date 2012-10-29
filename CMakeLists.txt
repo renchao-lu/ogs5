@@ -38,6 +38,8 @@ OPTION(OGS_FEM_MKL "Math kernel library configuration" OFF)
 
 # supported on Linux and Windows
 OPTION(OGS_FEM_MPI "Message passing interface configuration" OFF)
+# needs to be set of MPI and GEMS is used
+OPTION(PARALLEL_USE__MPI "Message passing interface configuration also for GEMS coupling" OFF)
 
 # Set default configuration when no other config is given
 IF (NOT OGS_FEM AND NOT OGS_FEM_SP AND NOT OGS_FEM_GEMS AND NOT OGS_FEM_PQC AND NOT OGS_FEM_BRNS AND NOT OGS_FEM_CHEMAPP AND NOT OGS_FEM_LIS AND NOT OGS_FEM_MKL AND NOT OGS_FEM_MPI AND NOT OGS_USE_QT)
@@ -81,11 +83,11 @@ MARK_AS_ADVANCED(FORCE OGS_PYTHON OGS_CMAKE_DEBUG OGS_ONE_BIG_GTEST OGS_BUILD_IN
 ###########################################################################
 SET (OGS_VERSION_MAJOR 5)
 SET (OGS_VERSION_MINOR 3)
-SET (OGS_VERSION_PATCH 4)
-SET (OGS_RELEASE_PERSONS "AKS")
+SET (OGS_VERSION_PATCH 5)
+SET (OGS_RELEASE_PERSONS "KG44")
 SET (OGS_VERSION "${OGS_VERSION_MAJOR}.${OGS_VERSION_MINOR}.${OGS_VERSION_PATCH}(${OGS_RELEASE_PERSONS})")
 # should we use ISO dates: 2010-12-31 ?
-SET (OGS_DATE "17.10.2012")
+SET (OGS_DATE "29.10.2012")
 
 # Check for number of processors
 INCLUDE(ProcessorCount)

@@ -51,6 +51,19 @@ TARGET_LINK_LIBRARIES( ogs
 	${CMAKE_THREAD_LIBS_INIT}
 )
 
+IF (OGS_FEM_GEMS)
+  TARGET_LINK_LIBRARIES( ogs
+	  FEM
+	  MSH
+	  GEO
+	  MathLib
+	  FileIO
+	  Base
+	  GEM
+	  OGSProject
+	${CMAKE_THREAD_LIBS_INIT}
+)
+ENDIF (OGS_FEM_GEMS)
 
 ####################
 ### Installation ###

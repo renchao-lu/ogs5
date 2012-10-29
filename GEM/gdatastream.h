@@ -1,31 +1,38 @@
 //-------------------------------------------------------------------
-// $Id: gdatastream.h 968 2007-12-13 13:23:32Z gems $
+// $Id: gdatastream.h 725 2012-10-02 15:43:37Z kulik $
+/// \file gdatastream.h
+/// Contains definition of the GemDataStream class for processing
+/// binary data streams on platforms with different endianness.
 //
-// Stream binary file operations extended for endianness (e.g.
-// for compatibility between Intel- and old Mac processors)
+/// \class  GemDataStream  gdatastream.h
+/// Stream binary file operations extended for endianness
+/// (e.g. for compatibility between Intel- and old Mac processors)
 //
-// Copyright (C) 1996-2004 A.Rysin, S.Dmytriyeva
-// Uses  gstring class (C) A.Rysin 1999
+// Copyright (c) 1996-2012 A.Rysin, S.Dmytriyeva
+// <GEMS Development Team, mailto:gems2.support@psi.ch>
 //
-// This file is part of the GEM-Vizor library and GEMIPM2K
-// code package
+// This file is part of the GEMS3K code for thermodynamic modelling
+// by Gibbs energy minimization <http://gems.web.psi.ch/GEMS3K/>
 //
-// This file may be distributed under the terms of the GEMS-PSI
-// QA Licence (GEMSPSI.QAL)
-//
-// See http://gems.web.psi.ch/ for more information
-// E-mail gems2.support@psi.ch
+// GEMS3K is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as
+// published by the Free Software Foundation, either version 3 of
+// the License, or (at your option) any later version.
+
+// GEMS3K is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with GEMS3K code. If not, see <http://www.gnu.org/licenses/>.
 //-------------------------------------------------------------------
 
 #ifndef _gemdatastream_h_
 #define _gemdatastream_h_
 
 #include <fstream>
-
-
 #include "verror.h"
-
-
 
 class GemDataStream				// data stream class
 {

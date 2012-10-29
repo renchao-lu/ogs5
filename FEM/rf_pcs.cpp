@@ -8767,6 +8767,11 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 				m_pcs = pcs_vector[i];
 				found = true;
 			}
+			if (pcs_vector[i]->getProcessType () == FiniteElement::RICHARDS_FLOW)
+			{
+				m_pcs = pcs_vector[i];
+				found = true;
+			}			
 			if (found)
 				return m_pcs;
 		}

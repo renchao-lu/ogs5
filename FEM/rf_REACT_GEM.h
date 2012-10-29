@@ -36,7 +36,10 @@ private:
 
 public:
     REACT_GEM(void);
-    ~REACT_GEM(void);
+    ~REACT_GEM(void);	
+    
+    //FEM
+	CFiniteElementStd* Fem_Ele_Std;
 
     /// Instance of TNode class
     /// HS: 06.2007 Only set one TNode here, repeatedly use its resources for GEM calculation
@@ -63,6 +66,9 @@ public:
     /// this we need for porosity coupling to groundwater flow & multiphase flow
     double *m_fluid_volume, *m_gas_volume;
 
+    /// take the fluid density from GEMS for density driven flow
+    double *m_fluid_density;
+    
     /// indexes, which one in the xDC vector is water, oxygen or hydrogen
     int idx_water, idx_hydrogen, idx_oxygen;
 
@@ -71,7 +77,7 @@ public:
     *m_Eh;
 
     double *m_xDC, *m_gam, *m_xPH, *m_aPH, *m_vPS, *m_mPS, *m_bPS,
-    *m_xPA, *m_dul, *m_dll, *m_bIC, *m_bIC_dummy, *m_rMB, *m_uIC;
+    *m_xPA, *m_dul, *m_dll, *m_bIC, *m_bIC_dummy, *m_rMB, *m_uIC, *m_bSP;
 
     double  *m_porosity_Elem, *m_porosity_Elem_buff;
 
@@ -142,7 +148,6 @@ public:
     int flowflag;                               //0-initialized;1-GROUNDWATER_FLOW;2-LIQUID_FLOW;3-RICHARDS_FLOW;4-FLOW;
     int flag_porosity_change;                   //0-porosity change not coupled into transport; 1=coupled;
     int flag_coupling_hydrology;                //0-without coupling; 1=with coupling;
-    int flag_permeability_porosity;             //0-no coupling; 1-Kozeny-Carman; 2-Kozeny-Carman normalized;
     int flag_calculate_boundary_nodes;          // set to zero to avoid precipitation/dissolution (porosity change) at boundary nodes
     int gem_pressure_flag;                      //shall we give a constant user defined pressure to gems?
     int flag_transport_b;                       //1: transport only dissolved components of b vector; 0: transport full speciation
@@ -198,6 +203,9 @@ public:
     int SetPorosityValue_MT(long ele_Index, double m_porosity_Elem, int i_timestep);
     int SetSourceSink_MT(long in, double time_step_size /*in sec*/);
 
+    // pass fluid density back
+    double FluidDensity(long elem, int gaussnode);
+
     // find which one in xDC vector is water
     int FindWater_xDC(TNode* m_Node);
     int Findhydrogen_bIC ( TNode* m_Node);
@@ -221,16 +229,6 @@ public:
     // given argument is the index of one particular node;
     double GetNodeAdjacentVolume(long Idx_Node);
 
-    // Permeability-Porosity relationship--------------------------------
-    // they return the new permeability value
-    double KozenyCarman( double k0 /*original permeability*/,
-                         double n0 /*original porosity*/,
-                         double n  /*new porosity*/);
-    double KozenyCarman_normalized( double k0 /*original permeability*/,
-                                    double n0 /*original porosity*/,
-                                    double n  /*new porosity*/);
-    // ------------------------------------------------------------------
-
     // GEMS mass scaling parameter
     double gem_mass_scale;
     // GEM temperature (without coupling to temperature)
@@ -241,7 +239,7 @@ public:
     /// Definition of buffer variables for MPI
     long *m_NodeHandle_buff, *m_NodeStatusCH_buff, *m_IterDone_buff;
     // porosity buffer
-    double *m_porosity_buff, *m_fluid_volume_buff, *m_gas_volume_buff;
+    double *m_porosity_buff, *m_fluid_volume_buff, *m_gas_volume_buff, *m_fluid_density_buff;
     double *m_Vs_buff, *m_Ms_buff, *m_Gs_buff, *m_Hs_buff, *m_IC_buff, *m_pH_buff, *m_pe_buff, *m_Eh_buff;
     double *m_xDC_buff, *m_xPH_buff,*m_aPH_buff,*m_xPA_buff,*m_excess_water_buff,*m_excess_gas_buff,*m_dul_buff, *m_dll_buff, *m_Node_Volume_buff, *m_saturation_buff,*m_bIC_buff,*m_bIC_dummy_buff, *m_xDC_pts_buff, *m_xDC_MT_delta_buff, *m_xDC_Chem_delta_buff;
     double *m_bPS_buff; // for Richards flow and gas transport...
@@ -261,6 +259,7 @@ public:
 
 
     double GetNodePorosityValue( long node_Index);
+    double GetNodeFluidDensityValue( long node_Index);
 
     // Name lists from DCH file!
     // const long int
@@ -272,6 +271,9 @@ public:
     char (*m_PHNL)[MaxPHN]; // List of Phase names  [nPH]  of MaxPHN length
     void WriteVTKGEMValues(fstream &vtk_file);
 
+    // timer 
+    double GetTimeOfDayDouble();
+    
     typedef struct
     {
         //kg44 25.11.2008 kinetics...for coupling with GEMS

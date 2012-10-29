@@ -907,7 +907,15 @@ void Problem::Euler_TimeDiscretize()
 	ScreenMessage("\n\n***Start time steps\n");
 	//
 	// Output zero time initial values
+#if defined(USE_MPI)
+		if(myrank == 0)
+		{
+#endif
 	OUTData(0.0,aktueller_zeitschritt,true);
+#if defined(USE_MPI)
+		}
+#endif
+	
 	//
 	// ------------------------------------------
 	// PERFORM TRANSIENT SIMULATION
@@ -962,8 +970,15 @@ void Problem::Euler_TimeDiscretize()
 					force_output = false;
 				else // JT: Make sure we printout on last time step
 					force_output = true;
-				//
+#if defined(USE_MPI)
+				if(myrank == 0)
+				{
+#endif
+					//
 				OUTData(current_time, aktueller_zeitschritt,force_output);
+#if defined(USE_MPI)
+				}
+#endif
 			}
 			accepted_times++;
 			for(i=0; i<(int)active_process_index.size(); i++)

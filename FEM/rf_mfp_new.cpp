@@ -27,7 +27,10 @@ extern double InterpolValue(long number,int ndx,double r,double s,double t);
 #include "rfmat_cp.h"
 extern double GetCurveValue(int,int,double,int*);
 #include "tools.h"                                //GetLineFromFile
-
+// KG44 used for GEMS part
+#ifdef GEM_REACT
+#include "rf_REACT_GEM.h"
+#endif
 using namespace std;
 
 /* Umrechnungen SI - Amerikanisches System */
@@ -303,10 +306,16 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 				if (T_Process)
 					density_pcs_name_vector.push_back(arg2);
 			}
+
 			if(density_model == 18) // BG, NB calculated node densities from the phase transition model
 			{
 			}
-
+			/// Density model no. 19: Extracts fluid densities from GEM3K calculations
+			/// The densites depend on the thermodynamic data base (including pressure and temperature corrections)
+			/// in addition various gas/fluid models (&EOS) are defined in GEMS3K
+			if(density_model == 19) // KG44 get node densities from GEMS calculations
+			{
+			}
 			//      mfp_file->ignore(MAX_ZEILE,'\n');
 			in.clear();
 			continue;
@@ -377,6 +386,11 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 			if(viscosity_model == 18) // BG, NB calculated node viscosities from the phase transition model
 			{
 			}
+			/// Viscosity model no. 19: Extracts viscosities from GEM3K calculations (not yet implemented) 
+			if(viscosity_model == 19) // KG44 extract viscosity from GEMS
+			{
+			}
+
 
 			//    mfp_file->ignore(MAX_ZEILE,'\n');
 			in.clear();
@@ -747,6 +761,7 @@ double CFluidProperties::Density(double* variables)
 	// static double air_gas_density,vapour_density,vapour_pressure;
 	int fct_number = 0;
 	int gueltig;
+
 	//----------------------------------------------------------------------
 	if(variables)                         // This condition is added by WW
 	{
@@ -868,6 +883,24 @@ density =  rho;
 			                                   int(variables[2]),
 			                                   0);                                // hand over element index, Gauss point index and phase index
 			break;
+		case 19:                // KG44 get the density from GEMS calculations
+		                       // seems complicated, as we probably have to call GEMS.....or take values from last GEMS calculation ---> update during iterations is not possible
+		     //  long elem = Fem_Ele_Std->GetMeshElement()->GetIndex();
+ 		       density=1000.0;
+#ifdef GEM_REACT
+			if (!Fem_Ele_Std) //for Richards flow (when saturation is needed initially in GEMS setup) we have to make 
+			{
+			     density=1000.0;
+			}
+			else
+			{
+ 			    // elem = Fem_Ele_Std->GetMeshElement()->GetIndex(); //kg44 need element index or node index for GEMS ...currently we stick to arithmetric average of node data (even for gauss points!)
+                             density=m_vec_GEM->REACT_GEM::FluidDensity( long(variables[0]), int(variables[1])); //hand over element index and gauss point index 
+			     // here we can interpolate values from nodes to elemnt or to gauss points
+			}
+#endif
+		       //insert call for GEMS densities..
+		       break;
 		default:
 			std::cout << "Error in CFluidProperties::Density: no valid model" <<
 			std::endl;
@@ -944,6 +977,24 @@ density =  rho;
 			//NB
 			density = zbrent(primary_variable[1],primary_variable[0],fluid_id,1e-8);
 			break;
+		case 19:                // KG44 get the density from GEMS calculations
+		                       // seems complicated, as we probably have to call GEMS.....or take values from last GEMS calculation ---> update during iterations is not possible
+		     //  long elem = Fem_Ele_Std->GetMeshElement()->GetIndex();
+ 		       density=1000.0;
+#ifdef GEM_REACT
+			if (!Fem_Ele_Std) //for Richards flow (when saturation is needed initially in GEMS setup) we have to make 
+			{
+			     density=1000.0;
+			}
+			else
+			{
+  			    long elem = Fem_Ele_Std->GetMeshElement()->GetIndex(); //kg44 need element index or node index for GEMS ...currently we stick to arithmetric average of node data (even for gauss points!)
+                             density=m_vec_GEM->REACT_GEM::FluidDensity( elem, -1); //hand over element index and set gauss point to -1... 
+			     // Remark: Interpolation from Gauss points to element is not possible here: Fluid densities are only calculated at nodes, therefore interpolation from gauss points onto element will not work
+			}
+#endif
+		       //insert call for GEMS densities..
+		       break;
 		default:
 			std::cout << "Error in CFluidProperties::Density: no valid model" <<
 			std::endl;
@@ -1405,6 +1456,8 @@ viscosity =  my;
 		        GetElementValueFromNodes(int(variables[0]), int(variables[1]),
 		                                 int(variables[2]), 1);                           // hand over element index, Gauss point index, phase index and variable index
 		break;
+	case 19: // reserved for GEMS coupling
+	        break;
 	default:
 		cout << "Error in CFluidProperties::Viscosity: no valid model" << endl;
 		break;

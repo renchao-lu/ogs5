@@ -1207,7 +1207,7 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 	double my_max_time_step = 0.0;
 	CRFProcess* m_pcs = NULL;             //YDToDo: m_pcs should be member
 
-	// First calculate maximum time step according to Neumann criteria
+	// First calculate maximum time step according to Neumann and Courant criteria
 #ifdef GEM_REACT
 	my_max_time_step = MMin(max_time_step,MaxTimeStep());
 	std::cout << "Self_Adaptive Time Step: max time step " << my_max_time_step << std::endl;
@@ -1237,20 +1237,24 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 				break;
 			//			case 'R': // Richards
 			case FiniteElement::RICHARDS_FLOW: // TF
-				if ( (imflag > 0) &&
-				     ( m_pcs->iter_lin  >=
-				       time_adapt_tim_vector[time_adapt_tim_vector.size() - 1] ) )
+                                imflag = 1;
+				if ( (imflag > 0) && ( m_pcs->iter_lin  >=   time_adapt_tim_vector[1] ) )
 				{
 					imflag = 0;
-					time_step_length = time_step_length *
-					                   time_adapt_coe_vector[
-					        time_adapt_tim_vector.size() - 1];
+					std::cout <<
+					"Self adaptive time step: to many iterations for Richards_flow "
+					          << m_pcs->iter_lin << " " <<
+					time_adapt_tim_vector[1] <<
+					std::endl;
+//					time_step_length = time_step_length *
+//					                   time_adapt_coe_vector[
+//					        time_adapt_tim_vector.size() - 1];
 				}
 				if ((imflag == 1) && (m_pcs->iter_lin <= time_adapt_tim_vector[0]))
 				{
 					imflag = 2;
-					time_step_length = time_step_length *
-					                   time_adapt_coe_vector[0];
+//					time_step_length = time_step_length *
+//					                   time_adapt_coe_vector[0];
 				}
 				break;
 			//			case 'G': //Groundwater flow and LIQUID_FLOW
@@ -1300,7 +1304,7 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 	time_step_length = MMin ( time_step_length,my_max_time_step );
 	time_step_length = MMax ( time_step_length,min_time_step );
 
-	std::cout << "Self_Adaptive Time Step: " << " imflag " << imflag << " dr " <<
+	std::cout << "Self_Adaptive time step size: " << " imflag " << imflag << " dr " <<
 	time_step_length << " max iterations: " << iterdum << " number of evaluated processes: " <<
 	iprocs << std::endl;
 	if ( Write_tim_discrete )
@@ -1323,8 +1327,9 @@ double CTimeDiscretization::CheckCourant(void)
 	double porosity, vg, advective_velocity, length, courant;
 	CRFProcess* m_pcs = NULL;
 	m_pcs = PCSGetFluxProcess();
-	if (!m_pcs)
+	if (!m_pcs) {
 		return 0.0;
+	}
 	int pcs_no = m_pcs->pcs_number;
 	CMediumProperties* m_mmp = NULL;
 	MeshLib::CElem* elem = NULL;
@@ -1693,6 +1698,13 @@ double CTimeDiscretization::MaxTimeStep()
 	CMediumProperties* m_mat_mp = NULL;
 	// Get the pointer to a proper PCS. ..we assume that all transport processes use the same diffusion coefficient
 
+	dummy = CheckCourant();               // courant number
+	std::cout << "GEMS3K_Adaptive_Time_stepping: Advective Time Step " << dummy << " ";
+
+	//only do if Courant number bigger than zero
+	if (dummy > DBL_EPSILON)
+		max_adv_time_step = std::min(max_diff_time_step, dummy);	
+	
 	this_pcs = PCSGet ( "MASS_TRANSPORT" );
 	long nElems = ( long ) this_pcs->m_msh->ele_vector.size();
 	int component = this_pcs->pcs_component_number;
@@ -1700,11 +1712,7 @@ double CTimeDiscretization::MaxTimeStep()
 
 	CompProperties* m_cp = cp_vec[component];
 
-	dummy = CheckCourant();               // courant number
-	std::cout << " Advective Time Step " << dummy << " ";
-	//only do if Courant number bigger than zero
-	if (dummy > DBL_EPSILON)
-		max_adv_time_step = std::min(max_diff_time_step, dummy);
+
 
 	// find Neumann for first mass transport process
 	for(i = 0; i < nElems; i++)
