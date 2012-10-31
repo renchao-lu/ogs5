@@ -173,14 +173,13 @@ public:
 
     double GetTempValue_MT(long node_Index, int timelevel);
     double GetPressureValue_MT(long node_Index, int timelevel);
-    double GetComponentValue_MT(long node_Index, string m_component, int timelevel);
     short GetDCValue_MT(long node_Index, int timelevel, double* m_DC, double* m_DC_pts, double* m_DC_MT_delta);
     short GetBValue_MT ( long node_i, int timelevel, double *m_soluteB);
     short GetSoComponentValue_MT(long node_Index, int timelevel, double* m_Phase,  TNode* m_Node );
     double GetDCValueSpecies_MT ( long node_Index, int timelevel, int iDc );
     short SetTempValue_MT(long node_Index, int timelevel, double temp);
     short SetPressureValue_MT(long node_Index, int timelevel, double pressure);
-    short SetDCValue_MT(long node_Index, int timelevel, double* m_DC);
+//    short SetDCValue_MT(long node_Index, int timelevel, double* m_DC);
     short SetBValue_MT(long node_Index, int timelevel, double* m_soluteB);
 
     int IsThisPointBCIfYesStoreValue ( long index, CRFProcess* m_pcs, double& value );/// taken from rf_REACT_BRNS

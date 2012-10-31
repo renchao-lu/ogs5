@@ -1398,37 +1398,6 @@ short REACT_GEM::SetPressureValue_MT ( long node_Index, int timelevel, double pr
     return 1;
 }
 
-double REACT_GEM::GetComponentValue_MT ( long node_Index, string m_component, int timelevel )
-{
-    CRFProcess* m_pcs = NULL;
-    double m_comp_value;
-    m_comp_value = -1.0;
-    for ( size_t i=0; i < pcs_vector.size(); i++ )
-    {
-        m_pcs = pcs_vector[i];
-        //                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
-        if ( m_pcs->getProcessType() == FiniteElement::MASS_TRANSPORT )
-        {
-            if ( strcmp ( m_pcs->pcs_primary_function_name[0],m_component.c_str() ) == 0 )
-            {
-                m_comp_value = m_pcs->GetNodeValue ( node_Index,m_pcs->GetNodeValueIndex ( m_pcs->pcs_primary_function_name[0] ) +timelevel );
-            }
-        }
-    }
-    if ( m_comp_value != -1.0 )
-    {
-        return m_comp_value;
-    }
-    else
-    {
-#ifdef USE_MPI_GEMS
-        if ( myrank == 0 /*should be set to root*/ )
-#endif
-            cout<< "Error: Corresponding Component NOT FOUND!!!" << endl;
-        exit(1);
-        return m_comp_value;
-    }
-}
 
 short REACT_GEM::GetDCValue_MT ( long node_Index, int timelevel, double* m_DC, double* m_DC_pts ,double* m_DC_MT_delta )
 {
@@ -1491,35 +1460,54 @@ double REACT_GEM::GetDCValueSpecies_MT ( long node_Index, int timelevel, int iDc
 {
     string str;
     double /*DC_MT_pre,*/ DC_MT_cur=0.0;
+    int i=0; //counter for processes
     CRFProcess* m_pcs = NULL;
-    m_pcs = pcs_vector[iDc+1];            // dangerous!!
-    //        if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
-    if ( m_pcs->getProcessType() == FiniteElement::MASS_TRANSPORT )
+    // first find out the number for the first Mass_transport process
+    while ( i< pcs_vector.size() )
     {
-
-        str = m_pcs->pcs_primary_function_name[0];
-        if ( str.compare ( "pH" ) != 0 && str.compare ( "pe" ) != 0 && str.compare ( "Eh" ) != 0 && str.compare ( "NodePorosity" ) != 0 )
+        m_pcs = pcs_vector[i];           // dangerous!!
+        //                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+        if ( m_pcs->getProcessType() == FiniteElement::MASS_TRANSPORT )
         {
-            // Get previous iteration mass transport concentration value
-            // DC_MT_pre = m_pcs->GetNodeValue ( node_Index,m_pcs->GetNodeValueIndex ( str ) +0 );
-            // Get current iteration mass transport concentration value
-            getnode_mutex.lock();
-            DC_MT_cur = m_pcs->GetNodeValue ( node_Index,m_pcs->GetNodeValueIndex ( str ) +timelevel ); //KG44 I am not quite sure, but it looks as this is not thread safe...lets look it with a special mutex
-            getnode_mutex.unlock();
-        }
-        else
-        {
-            cout << "Error in GetDCValueSpecies_MT ... return zero value" << endl;
-            DC_MT_cur=0.0;
-        }
-    }
-    else
-    {
-        cout << "Error in GetDCValueSpecies_MT ... return zero value" << endl;
-        DC_MT_cur=0.0;
-    }
 
-    return DC_MT_cur;
+            m_pcs = pcs_vector[iDc+i];            // dangerous!! ... this is now the process we are looking for
+            //        if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+            if ( m_pcs->getProcessType() == FiniteElement::MASS_TRANSPORT )
+            {
+
+                str = m_pcs->pcs_primary_function_name[0];
+                if ( str.compare ( "pH" ) != 0 && str.compare ( "pe" ) != 0 && str.compare ( "Eh" ) != 0 && str.compare ( "NodePorosity" ) != 0 )
+                {
+                    // Get previous iteration mass transport concentration value
+                    // DC_MT_pre = m_pcs->GetNodeValue ( node_Index,m_pcs->GetNodeValueIndex ( str ) +0 );
+                    // Get current iteration mass transport concentration value
+                    getnode_mutex.lock();
+                    DC_MT_cur = m_pcs->GetNodeValue ( node_Index,m_pcs->GetNodeValueIndex ( str ) +timelevel ); //KG44 I am not quite sure, but it looks as this is not thread safe...lets look it with a special mutex
+                    getnode_mutex.unlock();
+                }
+                else
+                {
+                    cout << "Error in GetDCValueSpecies_MT ... return zero value" << endl;
+                    DC_MT_cur=0.0;
+                }
+            }
+            else
+            {
+                cout << "Error in GetDCValueSpecies_MT ... return zero value" << endl;
+                DC_MT_cur=0.0;
+            }
+
+            return DC_MT_cur;
+	break;    
+        }
+        i+=1;
+    }
+// something went wrong...we exit the program
+     cout << "error in GetDCValueSpecies_MT " << endl;
+#ifdef USE_MPI_GEMS
+            MPI_Finalize();                       //make sure MPI exits
+#endif
+            exit ( 1 );
 }
 
 short REACT_GEM::GetSoComponentValue_MT ( long node_Index, int timelevel, double* m_Phase ,  TNode* m_Node )
@@ -1554,14 +1542,15 @@ short REACT_GEM::GetSoComponentValue_MT ( long node_Index, int timelevel, double
     //DisplayErrorMsg("Error: MASS TRANSPORT NOT FOUND!!");
     return 1;
 }
-short REACT_GEM::SetDCValue_MT ( long node_Index, int timelevel, double* m_DC )
+/*
+short REACT_GEM::SetDCValue_MT ( long node_Index, int timelevel, double* m_DC ) // This routine does not work properly!!!!!!!!!!!!!
 {
     CRFProcess* m_pcs = NULL;
     string str;
     for ( int i=0; i < nDC ; i++ )
     {
 
-        m_pcs = pcs_vector[i+1];
+        m_pcs = pcs_vector[i+1]; // DANGEROUS: this does not work with more than 1 process before 
 
         //                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
         if ( m_pcs->getProcessType() == FiniteElement::MASS_TRANSPORT )
@@ -1597,21 +1586,23 @@ short REACT_GEM::SetDCValue_MT ( long node_Index, int timelevel, double* m_DC )
 
     return 1;
 }
-
+*/
 short REACT_GEM::SetBValue_MT ( long node_Index, int timelevel, double* m_soluteB )
 {
     CRFProcess* m_pcs = NULL;
     string str;
-    for ( int i=0; i < nIC ; i++ )
+    int i=-1;
+    for ( int j=0; j < pcs_vector.size() ; j++ )
     {
 
-        m_pcs = pcs_vector[i+1];
+        m_pcs = pcs_vector[j]; // not good!
 
         //                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
         if ( m_pcs->getProcessType() == FiniteElement::MASS_TRANSPORT )
         {
             str = m_pcs->pcs_primary_function_name[0];
-            if ( flag_iterative_scheme > 0 )
+            i+=1;
+	    if ( flag_iterative_scheme > 0 )
             {
                 if ( CPGetMobil ( m_pcs->GetProcessComponentNumber() ) > 0 )
                 {
