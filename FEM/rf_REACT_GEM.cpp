@@ -1020,9 +1020,6 @@ void REACT_GEM::SetReactInfoBackGEM ( long in ,  TNode* m_Node )
 {
     // Setting input data for GEMIPM
 
-    // set charge to zero
-  int i;
-
   //  for (i=0;i<nIC;i++) cout << m_bIC[in*nIC+i] << endl;
 
     if ( flag_transport_b == 1 )   //here we insert the actual B vector
@@ -1438,25 +1435,22 @@ short REACT_GEM::GetDCValue_MT ( long node_Index, int timelevel, double* m_DC, d
     string str;
     double /*DC_MT_pre,*/ DC_MT_cur;
     CRFProcess* m_pcs = NULL;
+    int i=-1;
 
-    for ( int i=0; i < nDC ; i++ )
+    for ( int j=0; j < pcs_vector.size() ; j++ )
     {
-        m_pcs = pcs_vector[i+1];           // dangerous!!
-        //                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
+        m_pcs = pcs_vector[j];           // dangerous!!
         if ( m_pcs->getProcessType() == FiniteElement::MASS_TRANSPORT )
         {
             //if ( m_pcs->m_msh->nod_vector[node_Index]->onBoundary() == false ) // do not update values for boundary node?
-
+            i+=+1;
             str = m_pcs->pcs_primary_function_name[0];
-            if ( str.compare ( "pH" ) != 0 && str.compare ( "pe" ) != 0 && str.compare ( "Eh" ) != 0 && str.compare ( "NodePorosity" ) != 0 )
-            {
-                // Get previous iteration mass transport concentration value
-                // DC_MT_pre = m_pcs->GetNodeValue ( node_Index,m_pcs->GetNodeValueIndex ( str ) +0 );
-                // Get current iteration mass transport concentration value
-                DC_MT_cur = m_pcs->GetNodeValue ( node_Index,m_pcs->GetNodeValueIndex ( str ) +timelevel );
 
-                * ( m_DC+i ) = DC_MT_cur;
-            }
+	    // Get previous iteration mass transport concentration value
+	    // DC_MT_pre = m_pcs->GetNodeValue ( node_Index,m_pcs->GetNodeValueIndex ( str ) +0 );
+	    // Get current iteration mass transport concentration value
+	    DC_MT_cur = m_pcs->GetNodeValue ( node_Index,m_pcs->GetNodeValueIndex ( str ) +timelevel );
+	    * ( m_DC+i ) = DC_MT_cur;
         }
     }
 
@@ -1468,23 +1462,24 @@ short REACT_GEM::GetBValue_MT ( long node_Index, int timelevel, double* m_solute
     string str;
     double /*DC_MT_pre,*/ DC_B_cur;
     CRFProcess* m_pcs = NULL;
-    for ( int i=0; i < nIC ; i++ )
+    int i=-1 ; // set it to minus 1 as we add 1 before we use it
+    for ( int j=0; j <   pcs_vector.size(); j++ )
     {
-        m_pcs = pcs_vector[i+1];           // dangerous!!
+        m_pcs = pcs_vector[j];           // dangerous!! 
         //                if ( m_pcs->pcs_type_name.compare ( "MASS_TRANSPORT" ) == 0 ) {
         if ( m_pcs->getProcessType() == FiniteElement::MASS_TRANSPORT )
         {
             //if ( m_pcs->m_msh->nod_vector[node_Index]->onBoundary() == false ) // do not update values for boundary node?
 
             str = m_pcs->pcs_primary_function_name[0];
-
+	       // here we could add some type of test in order to make sure we get the correct process!
+            i+=1; //add one to counter
             // Get previous iteration mass transport concentration value
             // DC_MT_pre = m_pcs->GetNodeValue ( node_Index,m_pcs->GetNodeValueIndex ( str ) +0 );
             // Get current iteration mass transport concentration value
             DC_B_cur = m_pcs->GetNodeValue ( node_Index,m_pcs->GetNodeValueIndex ( str ) +timelevel );
 
             * ( m_soluteB+i ) = DC_B_cur;
-
         }
     }
 
@@ -1649,10 +1644,8 @@ int REACT_GEM::SetPorosityValue_MT ( long ele_Index,  double m_porosity_Elem , i
 {
 
     int idx;
-    double old_porosity ;
-
     idx = -1;
-    old_porosity = 0.0;
+
 
     CRFProcess* m_pcs = NULL;
 
@@ -1930,7 +1923,6 @@ void REACT_GEM::ConvPorosityNodeValue2Elem ( int i_timestep )
     long i,idx_Node;
     int j, number_of_nodes;
     double pormin=2.0,pormax=0.0;
-    MeshLib::CNode* m_ogsNode;
     MeshLib::CElem* m_Elem;
 
     for ( i=0 ; i < nElems ; i++ )
@@ -1952,7 +1944,7 @@ void REACT_GEM::ConvPorosityNodeValue2Elem ( int i_timestep )
             {
                 // get the connected nodes;
                 idx_Node = m_Elem->GetNodeIndex ( j );
-                m_ogsNode = m_flow_pcs->m_msh->nod_vector[idx_Node];
+
                 // this is arithmetric mean
                 m_porosity_Elem[i] += m_porosity[idx_Node] / number_of_nodes;
                 // here we use harmonic mean, as porosity is used for permeability/diffusivity changes....flux in the element is strongly influenced by the minimum values
@@ -2580,7 +2572,6 @@ bool GEMRead ( string base_file_name, REACT_GEM *m_GEM_p )
     string hash ( "#" );
     ios::pos_type position;
     string sub_string;
-    bool new_subkeyword = false;
     string dollar ( "$" );
     string delimiter_type ( ":" );
     std::stringstream in;
@@ -2589,7 +2580,6 @@ bool GEMRead ( string base_file_name, REACT_GEM *m_GEM_p )
     // Loop over all the key words----------------------
     while ( !new_keyword )
     {
-        new_subkeyword = false;
         position = gem_file->tellg();
         line_string = GetLineFromFile1 ( gem_file );
         if ( line_string.size() < 1 ) break;
@@ -3754,7 +3744,7 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
     double oldvolume;
 
     // collection of time data for rough performance analysis
-    double time_gem_total, time_fraction, tdummy, tdummy1, tdummy2, twait, tstart, twaittotal, td1,td2,tdsum;
+    double time_gem_total, time_fraction, tdummy, tdummy1, tdummy2, twait, tstart, twaittotal;
     time_gem_total=0.0;
     time_fraction=0.0;
     tdummy=0.0;
@@ -3763,8 +3753,8 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
 
     long *tmp_nodeTypes;
 
-    //
-        MeshLib::CNode* m_ogsNode;
+    //special version to make gravel kinetics
+    //    MeshLib::CNode* m_ogsNode;
 
     // create data necessary for running gems in thread
     TNode* t_Node;
