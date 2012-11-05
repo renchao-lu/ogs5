@@ -54,8 +54,6 @@
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
-// use for time measurements
-#include <sys/time.h>
 
 #include <cstring>
 #include <iostream>
@@ -65,8 +63,9 @@
 #else
 #include "unistd.h" // on unix/linux platform
 #include "stdlib.h"
+// use for time measurements
+#include <sys/time.h>
 #endif
-
 using namespace std;
 
 #ifdef GEM_REACT
@@ -4234,16 +4233,21 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
 
 double REACT_GEM::GetTimeOfDayDouble()
 {
- timeval current;
  double dtime;
- 
+
+#ifdef WIN32
+ dtime=1.0; // plugin dummy value as long as sys/time.h for windoof is not available
+#else
+ timeval current;
  gettimeofday(&current,0);
  dtime=1.0*current.tv_sec + 1.0e-6*current.tv_usec;
-  return dtime;
-}
-
 #endif
 
+ return dtime;
+}
+
+
+#endif
 
 
 
