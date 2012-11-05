@@ -1,5 +1,5 @@
 //-------------------------------------------------------------------
-// $Id: ipm_chemical.cpp 724 2012-10-02 14:25:25Z kulik $
+// $Id: ipm_chemical.cpp 742 2012-10-17 16:01:21Z kulik $
 //
 /// \file ipm_chemical.cpp
 /// Implementation of chemistry-specific functions (concentrations,
@@ -1107,7 +1107,7 @@ void TMulti::KarpovsPhaseStabilityCriteria()
 {
     bool KinConstr, fRestore;
     long int k, j, ii;
-    double *EMU,*NMU, YF, Nu, dNuG, Wx, Yj, Fj, sumWx, fDQF, NonLogTerm = 0.;
+    double *EMU,*NMU, YF, Nu, dNuG, Wx, Yj, Fj, sumWx, NonLogTerm = 0.;
     SPP_SETTING *pa = paTProfil;
 
     EMU = pm.EMU;

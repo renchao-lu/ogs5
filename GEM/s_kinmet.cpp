@@ -1,5 +1,5 @@
 //-------------------------------------------------------------------
-// $Id: s_kinmet.cpp 725 2012-10-02 15:43:37Z kulik $
+// $Id: s_kinmet.cpp 754 2012-11-05 07:52:44Z kosakowski $
 //
 // Stub implementation of TKinMet class for further development
 //
