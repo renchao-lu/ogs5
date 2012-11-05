@@ -1,5 +1,5 @@
 //-------------------------------------------------------------------
-// $Id: ipm_simplex.cpp 736 2012-10-12 12:28:54Z ext_miron_d $
+// $Id: ipm_simplex.cpp 756 2012-11-05 13:59:16Z kosakowski $
 //
 /// \file ipm_simplex.cpp
 /// Implementation of parts of the Interior Points Method (IPM) algorithm
@@ -536,19 +536,27 @@ try{
        switch( pm.tMin )
        {
        case  A_TV_:
-           {   GoldenSection gsData( pm.Pai[0], pm.Pai[1], pm.Pai[3], pm.Fdev1[1], A_P);
+           {   
+	     // kg44 this is not yet properly implemented ....removed it
+	     /*
+               GoldenSection gsData( pm.Pai[0], pm.Pai[1], pm.Pai[3], pm.Fdev1[1], A_P);
                pm.P = gsData.getMinimum();
                A_P(pm.P);
+	     */
            }
            break;
        case  U_SV_:
-           {      GoldenSectionTwo gsData( pm.Tai[0], pm.Tai[1], pm.Tai[3],
+           {      
+	     // kg44 this is not yet properly implemented...removed it 
+	     /*
+                  GoldenSectionTwo gsData( pm.Tai[0], pm.Tai[1], pm.Tai[3],
                                              pm.Pai[0], pm.Pai[1], pm.Pai[3],
                                              pm.Fdev1[1], U_TP);
                   gsData.getMinimum();
                   pm.TC = gsData.getMinX();
                   pm.P = gsData.getMinY();
                   U_TP(pm.TC, pm.P);
+	     */
               }
             break;
        case  H_PS_:
@@ -1217,15 +1225,16 @@ double TMulti::HelmholtzEnergy( double x )
     GibbsEnergyMinimization();
     return( pm.VXc - pm.VX_ ); // VXc current value, VX_ value from key
 }
-
-// kg44: if the function is only used in "BIG GEMS", one should remove it from the kernel sources
-#ifndef IPMGEMPLUGIN
+//
+// kg44: not properly implemented...removed it
+/*
 double A_P( double x, double )
 {
+#ifndef IPMGEMPLUGIN
   return TProfil::pm->HelmholtzEnergy(x);
-}
 #endif
-
+}
+*/
 
 /// Calls to minimization of other system potentials - InternalEnergy.
 /// Calc function for Method of golden section (only in GEMS ).
@@ -1238,12 +1247,13 @@ double TMulti::InternalEnergy( double TC, double P )
     return( (pm.VXc - pm.VX_)+(pm.SXc - pm.SX_) ); // VXc current value, VX_ value from key
 }
 
-// kg44: if the function is only used in "BIG GEMS", one should remove it from the kernel sources
-#ifndef IPMGEMPLUGIN
+// kg44: not properly implemented...removed it
+/*
 double U_TP( double TC, double P)
 {
+#ifndef IPMGEMPLUGIN
   return TProfil::pm->InternalEnergy(  TC,  P );
-}
 #endif
-
+}
+*/
 //--------------------- End of ipm_simplex.cpp ---------------------------

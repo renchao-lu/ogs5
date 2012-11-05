@@ -1,5 +1,5 @@
 //-------------------------------------------------------------------
-// $Id: ms_multi.h 729 2012-10-03 18:34:10Z ext_wagner_t $
+// $Id: ms_multi.h 756 2012-11-05 13:59:16Z kosakowski $
 //
 /// \file ms_multi.h
 /// Declaration of TMulti class, configuration, and related functions
@@ -727,8 +727,9 @@ typedef enum {  // Symbols of thermodynamic potential to minimize
 
 } NUM_POTENTIALS;
 
-double A_P( double x, double x2=0.);
-double U_TP( double TC, double P);
+// kg44: this is not correctly implemented!! 
+//double A_P( double x, double x2=0.);
+//double U_TP( double TC, double P);
 
 
 typedef enum {  // Field index into outField structure
