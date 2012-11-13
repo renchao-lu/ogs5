@@ -404,21 +404,11 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 					"_Eigenvector_3" << " double" << endl;
 					for(vector<vector<double> >::iterator it = eigenvectors_3.begin(); it != eigenvectors_3.end(); ++it)
 						vtk_file << (*it)[0] << " " << (*it)[1] << " " << (*it)[2] << endl;
+    				k += tensor_com;
+	    			toNext = true;
 #else
-				for (long j = 0l; j < numNodes; j++)
-				{
-
-                    const long node_id = _mesh->nod_vector[j]->GetIndex();
-			     	for(int kk=0; kk<tensor_com; kk++)
-					{
-                       vtk_file << pcs->GetNodeValue(node_id, tensor_val_idx[kk]) << " "; 
-					}
-					vtk_file << endl;
-				}
-
-				k += tensor_com;
+					 // TBD
 #endif
-					toNext = true;
 				}
 			}
 		}
