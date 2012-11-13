@@ -238,10 +238,22 @@ void LegacyVtkInterface::WriteVTKCellData(fstream &vtk_file) const
    10/2006 WW Output secondary variables
    08/2008 OK MAT values
    06/2009 WW/OK WriteELEVelocity for different coordinate systems
+   11/2012 WW   Rewrite this fucntion in order to have a correct vec/teosor output
 **************************************************************************/
 void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 {
 	long numNodes = _mesh->GetNodesNumber(false);
+
+	// For components of vectors and tensors. //11.2012. WW
+	const int space_dim = _mesh->GetMaxElementDim();
+	int vec_val_idx[3];
+	int tensor_val_idx[6];
+
+	int tensor_com = 4;
+
+	if(space_dim == 3)
+       tensor_com = 6;
+
 
 	// NODAL DATA
 	vtk_file << "POINT_DATA " << numNodes << endl;
@@ -251,71 +263,73 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 	{
 		size_t numComponents = 0;
 		bool toNext = false;
-		string arrayName = _pointArrayNames[k];
-		std::cout << "ArrayName: " << arrayName << std::endl;
 
 		// Write X, Y and Z arrays as vectors
-		if(k + 1 < numPointArrays)
+		//WW. 11.2012. if(k + 1 < numPointArrays)
 		{
-			if (_pointArrayNames[k].find("_X") != string::npos && _pointArrayNames[k + 1].find("_Y") &&
-				_pointArrayNames[k].find("_XX") == string::npos)
+			if (_pointArrayNames[k].find("_X") != string::npos && _pointArrayNames[k + 1].find("_Y") != string::npos)
 			{
-				numComponents = 2;
-				if(k + 2 < numPointArrays)
-					if (_pointArrayNames[k + 2].find("_Z"))
-						numComponents = 3;
+               string arrayName = _pointArrayNames[k];
+               CRFProcess* pcs = PCSGet(arrayName, true);
+               if (!pcs)
+				  continue;
 
+			    vec_val_idx[0] = pcs->GetNodeValueIndex(arrayName);
+				for(int kk=1; kk<space_dim; kk++)
+				{
+                    vec_val_idx[kk] =  vec_val_idx[0] + kk;
+				}
+
+		        std::cout << "ArrayName: " << arrayName << std::endl;
 				vtk_file << "VECTORS " << arrayName.substr(0, arrayName.size() - 2) <<
 				" double" << endl;
 				
-				double vector3[3];
 				for (long j = 0l; j < numNodes; j++)
 				{
-					for(size_t component = 0; component < numComponents; ++component)
+
+                    const long node_id = _mesh->nod_vector[j]->GetIndex();
+			     	for(int kk=0; kk<space_dim; kk++)
 					{
-						int indexDataArray = k + component;
-						CRFProcess* pcs = PCSGet(_pointArrayNames[indexDataArray], true);
-						if (!pcs)
-							continue;
-						vector3[component] = pcs->GetNodeValue(_mesh->nod_vector[j]->GetIndex(),
-															   indexDataArray);
+                       vtk_file << pcs->GetNodeValue(node_id, vec_val_idx[kk]) << " " ;
 					}
-					if (numComponents == 2)
-						vtk_file << vector3[0] << " " << vector3[1] << endl;
-					else
-						vtk_file << vector3[0] << " " << vector3[1] << " " << vector3[2] << endl;
+					vtk_file << endl;
 				}
 
+				k += space_dim;
 				toNext = true;
 			}
 			// Write tensors as Eigenvectors
 			// XX, XY, YY, ZZ, XZ, YZ must be present in that order
-			else if(k + 5 < numPointArrays)
+			else if(_pointArrayNames[k].find("_XX") != string::npos)
 			{
-				if(_pointArrayNames[k + 0].find("_XX") != string::npos &&
-				   _pointArrayNames[k + 1].find("_XY") != string::npos &&
-				   _pointArrayNames[k + 2].find("_YY") != string::npos &&
-				   _pointArrayNames[k + 3].find("_ZZ") != string::npos &&
-				   _pointArrayNames[k + 4].find("_XZ") != string::npos &&
-				   _pointArrayNames[k + 5].find("_YZ") != string::npos)
+
+               string arrayName = _pointArrayNames[k];
+               CRFProcess* pcs = PCSGet(arrayName, true);
+               if (!pcs)
+				  continue;
+
+			    tensor_val_idx[0] = pcs->GetNodeValueIndex(arrayName);
+				for(int kk=1; kk<tensor_com; kk++)
 				{
-					numComponents = 6;
+                    tensor_val_idx[kk] =  tensor_val_idx[0] + kk;
+				}
+
+				{
 #if defined(VTK_FOUND) && defined(OGS_USE_QT)
+
+					
 					vector<vector<double> > eigenvectors_1, eigenvectors_2, eigenvectors_3;
 
 					// Iterate over nodes
 					for (long j = 0l; j < numNodes; j++)
 					{
+                        const long node_id = _mesh->nod_vector[j]->GetIndex();
 						double vector6[6];
 						// Iterate over the tensor 6 arrays
-						for(size_t component = 0; component < numComponents; ++component)
+						for(size_t component = 0; component < tensor_com; ++component)
 						{
-							int indexDataArray = k + component;
-							CRFProcess* pcs = PCSGet(_pointArrayNames[indexDataArray], true);
-							if (!pcs)
-								continue;
 							
-							vector6[component] = pcs->GetNodeValue(_mesh->nod_vector[j]->GetIndex(), indexDataArray);
+							vector6[component] = pcs->GetNodeValue(node_id, tensor_val_idx[component]);
 							//std::cout << "vector " << component << " : " << vector6[component] << std::endl;
 						}
 
@@ -327,17 +341,23 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 						tensor[1] = tensor1;
 						tensor[2] = tensor2;
 
-
-						tensor0[0] = vector6[0];
-						tensor0[1] = vector6[1];
-						tensor0[2] = vector6[4];
-						tensor1[0] = vector6[1];
-						tensor1[1] = vector6[2];
-						tensor1[2] = vector6[5];
-						tensor2[0] = vector6[4];
-						tensor2[1] = vector6[5];
-						tensor2[2] = vector6[3];
-
+						if(tensor_com == 6)
+						{
+					    	tensor0[0] = vector6[0];
+					    	tensor0[1] = vector6[1];
+				    		tensor0[2] = vector6[4];
+				    		tensor1[0] = vector6[1];
+				    		tensor1[1] = vector6[2];
+				    		tensor1[2] = vector6[5];
+					    	tensor2[0] = vector6[4];
+					    	tensor2[1] = vector6[5];
+					    	tensor2[2] = vector6[3];
+						}
+						else 
+						{
+							 continue;
+                             //std::cout << " To be finished / " << std::endl;
+						}
 						// std::cout << "TensorMat:" << std::endl;
 						// std::cout << tensor0[0] << " " << tensor0[1] << " " << tensor0[2] << std::endl;
 						// std::cout << tensor1[0] << " " << tensor1[1] << " " << tensor1[2] << std::endl;
@@ -385,8 +405,18 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 					for(vector<vector<double> >::iterator it = eigenvectors_3.begin(); it != eigenvectors_3.end(); ++it)
 						vtk_file << (*it)[0] << " " << (*it)[1] << " " << (*it)[2] << endl;
 #else
-					for(size_t component = 0; component < numComponents; ++component)
-						printScalarArray(_pointArrayNames[k + component], vtk_file);
+				for (long j = 0l; j < numNodes; j++)
+				{
+
+                    const long node_id = _mesh->nod_vector[j]->GetIndex();
+			     	for(int kk=0; kk<tensor_com; kk++)
+					{
+                       vtk_file << pcs->GetNodeValue(node_id, tensor_val_idx[kk]) << " "; 
+					}
+					vtk_file << endl;
+				}
+
+				k += tensor_com;
 #endif
 					toNext = true;
 				}
@@ -394,10 +424,8 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 		}
 
 		if (!toNext)
-			printScalarArray(arrayName, vtk_file);
+			printScalarArray(_pointArrayNames[k], vtk_file);
 
-		if(numComponents > 0)
-			k += (numComponents - 1);
 	}
 	//======================================================================
 	// Saturation 2 for 1212 pp - scheme. 01.04.2009. WW
