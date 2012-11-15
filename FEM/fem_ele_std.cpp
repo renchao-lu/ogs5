@@ -1428,7 +1428,7 @@ double CFiniteElementStd::CalCoefMass()
 
 			if(SolidProp->K == 0) //WX: if HM Partitioned, K still 0 here
 				SolidProp->K = SolidProp->E / 3 / (1 - 2 * SolidProp->PoissonRatio);
-			val += poro_val * (FluidProp->drho_dp / rho_val) \
+			val += poro_val * FluidProp->drho_dp \
 			       + (biot_val - poro_val) * (1.0 - biot_val) / SolidProp->K;
 			// Will handle the dual porosity version later...
 		}
@@ -1463,7 +1463,7 @@ double CFiniteElementStd::CalCoefMass()
 			{
 				biot_val = SolidProp->biot_const;
 				poro_val = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
-				Se = poro_val * (FluidProp->drho_dp / rho_val) \
+				Se = poro_val * FluidProp->drho_dp \
 				     + (biot_val - poro_val) * (1.0 - biot_val) / SolidProp->K;
 				// The poroelastic portion
 				val += Se * MMax(0.,Sw);
@@ -1534,7 +1534,7 @@ double CFiniteElementStd::CalCoefMass()
 
 		// Fluid compressibility
 		if(rhow > 0.0)
-			val += poro  * Sw * FluidProp->drho_dp / rhow;
+			val += poro  * Sw * FluidProp->drho_dp;
 		// Capillarity
 		val += poro * dSdp;
 		//WW
@@ -1642,7 +1642,7 @@ double CFiniteElementStd::CalCoefMass2(int dof_index)
 			dens_arg[1] = TG;
 		/// d dens_g/dp_g:
 		if (GasProp->density_model==2)//dens_g/dp_g = drho_dp 02.2012. WX
-			val = (1.0 - Sw) * poro *GasProp->drho_dp / rhow;
+			val = (1.0 - Sw) * poro * rho_ga * GasProp->drho_dp / rhow;
 		else
 			val = (1.0 - Sw) * poro * (GasProp->Density(dens_arg) - rho_ga) / (pert * rhow);
 		break;
@@ -7723,6 +7723,7 @@ void CFiniteElementStd::Assembly()
 	case L:                               // Liquid flow
 		AssembleParabolicEquation();
 		Assemble_Gravity();
+		Assemble_RHS_LIQUIDFLOW();
 		if(dm_pcs)
 			Assemble_strainCPL();
 		break;
@@ -9007,6 +9008,65 @@ void CFiniteElementStd::Assemble_RHS_Pc()
 		}
 	}
 	//
+}
+
+/***************************************************************************
+   GeoSys - Funktion:
+          Assemble_RHS_LIQUIDFLOW
+   Programming:
+   11/2012   NW
+ **************************************************************************/
+void CFiniteElementStd::Assemble_RHS_LIQUIDFLOW()
+{
+    if (FluidProp->drho_dT == .0) return;
+
+    int dm_shift = 0;
+    if(pcs->type / 10 == 4)
+        dm_shift = problem_dimension_dm;
+    //----------------------------------------------------------------------
+    for (int i = 0; i < nnodes; i++)
+        NodalVal[i] = 0.0;
+    //======================================================================
+    // Loop over Gauss points
+    int gp_r = 0,gp_s = 0,gp_t = 0;
+    for (gp = 0; gp < nGaussPoints; gp++)
+    {
+        //---------------------------------------------------------
+        //  Get local coordinates and weights
+        //  Compute Jacobian matrix and its determinate
+        //---------------------------------------------------------
+        const double gp_fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+        //---------------------------------------------------------
+        // Compute geometry
+        //---------------------------------------------------------
+        ComputeShapefct(1);       // Linear interpolation function
+        //---------------------------------------------------------
+        //  Evaluate variables
+        //---------------------------------------------------------
+        const double T_n = interpolate(NodalValC);
+        const double T_n1 = interpolate(NodalValC1);
+        const double dT = T_n1 -T_n;
+        //---------------------------------------------------------
+        //  Evaluate material property
+        //---------------------------------------------------------
+        const double poro = MediaProp->Porosity(Index, pcs->m_num->ls_theta);
+        const double alpha_T_s = SolidProp->Thermal_Expansion();
+        const double alpha_T_l = - FluidProp->drho_dT; //negative sign is required due to OGS input
+        // Effective thermal expansion = (biot-poro)*alpha_T^s + poro*alpha_T^f
+        const double eff_thermal_expansion = (SolidProp->biot_const-poro)*alpha_T_s + poro*alpha_T_l;
+        //---------------------------------------------------------
+        //  Compute RHS+=int{N^T alpha_T dT/dt}
+        //---------------------------------------------------------
+        const double fac = eff_thermal_expansion * dT / dt;
+        for (int i = 0; i < nnodes; i++)
+            NodalVal[i] += gp_fkt * fac * shapefct[i];
+    }
+    int i_sh = NodeShift[dm_shift];
+    for (int i = 0; i < nnodes; i++)
+    {
+        eqs_rhs[i_sh + eqs_number[i]] += NodalVal[i];
+        (*RHS)(i + LocalShift) +=  NodalVal[i];
+    }
 }
 
 /***************************************************************************

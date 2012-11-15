@@ -336,6 +336,7 @@ private:
 	void Assemble_RHS_HEAT_TRANSPORT2();  //AKS
 	void Assemble_RHS_T_PSGlobal();       // Assembly of RHS by temperature for PSGlobal
 	void AssembleRHS(int dimension);      // PCH
+	void Assemble_RHS_LIQUIDFLOW();       //NW
 	void Assemble_DualTransfer();
 	bool check_matrices;                  //OK4104
 	void AssembleRHSVector();             //OK
