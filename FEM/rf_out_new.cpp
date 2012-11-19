@@ -211,6 +211,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 
 	for (size_t i = 0; i < out_vector.size(); i++)
 	{
+	    OutputBySteps = false; // reset this flag for each COutput
 		m_out = out_vector[i];
 		// MSH
 		//		m_msh = m_out->GetMSH();
@@ -260,7 +261,6 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 						m_out->NODWriteDOMDataTEC();
 						m_out->ELEWriteDOMDataTEC();
 					}
-					OutputBySteps = false;
 					if (!m_out->_new_file_opened)
 						//WW
 						m_out->_new_file_opened = true;
@@ -303,7 +303,6 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 					if (!m_out->_new_file_opened)
 						//WW
 						m_out->_new_file_opened = true;
-					OutputBySteps = false;
 				}
 				else
 				{
@@ -346,7 +345,6 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 					{
 						m_out->NODWriteSFCAverageDataTEC(time_current,
 						                                 time_step_number);
-						OutputBySteps = false;
 						if (!m_out->_new_file_opened)
 							//WW
 							m_out->_new_file_opened = true;
@@ -358,7 +356,6 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 					if (OutputBySteps)
 					{
 						m_out->NODWriteSFCDataTEC(time_step_number);
-						OutputBySteps = false;
 						if (!m_out->_new_file_opened)
 							//WW
 							m_out->_new_file_opened = true;
@@ -425,7 +422,6 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 			case GEOLIB::GEODOMAIN: // domain data
 				if (OutputBySteps)
 				{
-					OutputBySteps = false;
 					//OK
 					//m_out->WriteDataVTK(time_step_number);
 					LegacyVtkInterface vtkOutput(m_msh,
@@ -513,7 +509,6 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 				// Output
 				if (OutputBySteps)
 				{
-					OutputBySteps = false;
 					vtk->WriteXMLUnstructuredGrid(pvd_vtk_file_path, m_out,
 					                              time_step_number);
 					VTK_Info dat;
