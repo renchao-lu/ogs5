@@ -292,6 +292,12 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 					{
                        vtk_file << pcs->GetNodeValue(node_id, vec_val_idx[kk]) << " " ;
 					}
+
+			     	for(int kk=space_dim; kk<3; kk++)
+					{
+                       vtk_file << "0.0  " ;
+					}
+
 					vtk_file << endl;
 				}
 
