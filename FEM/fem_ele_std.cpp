@@ -1642,7 +1642,7 @@ double CFiniteElementStd::CalCoefMass2(int dof_index)
 			dens_arg[1] = TG;
 		/// d dens_g/dp_g:
 		if (GasProp->density_model==2)//dens_g/dp_g = drho_dp 02.2012. WX
-			val = (1.0 - Sw) * poro * rho_ga * GasProp->drho_dp / rhow;
+			val = (1.0 - Sw) * poro * GasProp->rho_0 * GasProp->drho_dp / rhow;
 		else
 			val = (1.0 - Sw) * poro * (GasProp->Density(dens_arg) - rho_ga) / (pert * rhow);
 		break;
