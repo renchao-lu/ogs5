@@ -9050,7 +9050,7 @@ void CFiniteElementStd::Assemble_RHS_LIQUIDFLOW()
         //  Evaluate material property
         //---------------------------------------------------------
         const double poro = MediaProp->Porosity(Index, pcs->m_num->ls_theta);
-        const double alpha_T_s = SolidProp->Thermal_Expansion();
+        const double alpha_T_s = 3.*SolidProp->Thermal_Expansion(); // multiply 3 for volumetrix expression
         const double alpha_T_l = - FluidProp->drho_dT; //negative sign is required due to OGS input
         // Effective thermal expansion = (biot-poro)*alpha_T^s + poro*alpha_T^f
         const double eff_thermal_expansion = (SolidProp->biot_const-poro)*alpha_T_s + poro*alpha_T_l;
