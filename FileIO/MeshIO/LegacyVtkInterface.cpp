@@ -274,11 +274,24 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
                if (!pcs)
 				  continue;
 
-			    vec_val_idx[0] = pcs->GetNodeValueIndex(arrayName);
-				for(int kk=1; kk<space_dim; kk++)
+
+			    if(pcs->getProcessType() == FiniteElement::FLUID_MOMENTUM ) // 23.11.2012. WW
 				{
-                    vec_val_idx[kk] =  vec_val_idx[0] + kk;
+			       vec_val_idx[0] = pcs->GetNodeValueIndex(arrayName) + 1;
+			       for(int kk=1; kk<space_dim; kk++)
+			    	{
+                       vec_val_idx[kk] =  vec_val_idx[kk-1] + 2;
+				    }
 				}
+				else
+				{
+			       vec_val_idx[0] = pcs->GetNodeValueIndex(arrayName);
+			       for(int kk=1; kk<space_dim; kk++)
+			    	{
+                       vec_val_idx[kk] =  vec_val_idx[0] + kk;
+				    }
+				}
+
 
 		        std::cout << "ArrayName: " << arrayName << std::endl;
 				vtk_file << "VECTORS " << arrayName.substr(0, arrayName.size() - 2) <<
