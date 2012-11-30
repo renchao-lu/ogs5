@@ -779,12 +779,13 @@ short REACT_GEM::Init_RUN(string Project_path)
     if ( ( m_flow_pcs->GetRestartFlag() >=2 ) ) //get the restart data specific for gems 
     {
         if ( !ReadReloadGem() ) exit(1); // we save m_bic and m_soluteb as is, therefore these are concentrations -> call concentration_to:mass 
-        for ( i=0 ; i < nNodes ; i++ )
+ /*       for ( i=0 ; i < nNodes ; i++ )  Better not here.....
          {
            REACT_GEM::ConcentrationToMass ( i,1); // now it should be identical to the normal start: total b vectors!
-	 }
+	 }  */
     }
-    else
+    
+//    else  test: we do this always! ...should be safe ;-)
     {
         GetInitialReactInfoFromMassTransport ( 1 ); //get the initial values from MD ...IC are total B vectors - last time step! this is not necessary for restart
         cout << "Attentione GEMS users: Initial kinetics calculated without restart! This probably kills kinetics, as phases in m_xDC are not yet properly initialized!" << endl;
@@ -1214,8 +1215,6 @@ double REACT_GEM::GetPressureValue_MT ( long node_Index, int timelevel )
         switch ( flowflag )
         {
         case 1:                         // for "GROUNDWATER_FLOW";
-            if ( aktueller_zeitschritt > 0 )   // not for first time step
-            {
 
                 if ( gem_pressure_flag<1 )
                 {
@@ -1244,17 +1243,8 @@ double REACT_GEM::GetPressureValue_MT ( long node_Index, int timelevel )
                     pressure = 1.0e+05;
                 }
                 break;
-            }
-            else
-            {
-                pressure=m_gem_pressure;  // set to m_gem_pressure default is 1e5P
-                break;
-            }
 
         case 2:                         // for "LIQUID_FLOW", not tested!!!
-            // not for first time step
-            if ( aktueller_zeitschritt > 0 )
-            {
 
                 indx = m_flow_pcs->GetNodeValueIndex ( "PRESSURE1" ) +timelevel;
                 // The unit of HEAD is in meters
@@ -1267,17 +1257,7 @@ double REACT_GEM::GetPressureValue_MT ( long node_Index, int timelevel )
                         || pressure > 1.0e+15  /*some very high pressure*/
                    ) pressure = 1.0e+5;   // then set it to 1.0 bar;
                 break;
-            }
-            else
-            {
-                // just set to 1.0 bar.
-                pressure = 1.0e+05 ;
-                break;
-            }
         case 3:                         // for "RICHARDS_FLOW", not tested!!!
-            // not for first time step
-            if ( aktueller_zeitschritt > 0 )
-            {
                 pressure = m_gem_pressure;
                 //	indx = m_flow_pcs->GetNodeValueIndex ( "PRESSURE1" ) +timelevel;
                 //	pressure = m_flow_pcs->GetNodeValue ( node_Index, indx ); // The unit of HEAD is in meters
@@ -1290,20 +1270,7 @@ double REACT_GEM::GetPressureValue_MT ( long node_Index, int timelevel )
                         || pressure > 1.0e+15  /*some very high pressure*/
                    ) pressure = 1.0e+5;   // then set it to 1.0 bar;
                 break;
-            }
-            else
-            {
-                // just set to 1.0 bar.
-                pressure = m_gem_pressure;
-                if ( pressure < 0.0       /*valcumm suction in groundwater is not so realistic*/
-                        || pressure > 1.0e+15  /*some very high pressure*/
-                   ) pressure = 1.0e+5;   // then set it to 1.0 bar;
-                break;
-            }
         case 4:                         // MULTIPHASE ....not tested
-            // not for first time step
-            if ( aktueller_zeitschritt > 0 )
-            {
                 indx = m_flow_pcs->GetNodeValueIndex ( "PRESSURE1" );
                 // The unit of HEAD is in meters
                 pressure = m_flow_pcs->GetNodeValue ( node_Index, indx +timelevel );
@@ -1316,13 +1283,6 @@ double REACT_GEM::GetPressureValue_MT ( long node_Index, int timelevel )
                         || pressure > 1.0e+15  /*some very high pressure*/
                    ) pressure = 1.0e+5;   // then set it to 1.0 bar;
                 break;
-            }
-            else
-            {
-                // just set to 1.0 bar.
-                pressure = 1.0e+05 ;
-                break;
-            }
         default:
 #ifdef USE_MPI_GEMS
             if ( myrank == 0 /*should be set to root*/ )
@@ -3024,42 +2984,41 @@ int REACT_GEM::CalcLimitsInitial ( long in , TNode* m_Node)
         m_dul[in*nDC+j]=1.0e+10;                    // very high number
     }
 
-    if ( ! ( m_flow_pcs->GetRestartFlag() >=2 ) )
+    if ( ( m_flow_pcs->GetRestartFlag() >=2 ) ) // we test if restart flag is set....if not this will not work, as x_dc might be not correct
     {
-        return 1;
-    }
 
-    for ( ii=0;ii< ( int ) m_kin.size();ii++ )
-    {
-        k=m_kin[ii].phase_number;
-
-        if ( m_kin[ii].kinetic_model > 0 )          // do it only if kinetic model is defined take model
+        for ( ii=0; ii< ( int ) m_kin.size(); ii++ )
         {
-            // kinetic_model==1 dissolution+precipitation kinetics
-            // kinetic_model==2 only dissolution (no precipitation)
-            // kinetic_mocel==3 only precipitation (no dissolution)
-// we test if restart flag is set....if no....this will not work, as x_dc might be not correct
-            for ( j=m_kin[ii].dc_counter;j<m_kin[ii].dc_counter+dCH->nDCinPH[k];j++ )
+            k=m_kin[ii].phase_number;
+
+            if ( m_kin[ii].kinetic_model > 0 )          // do it only if kinetic model is defined take model
             {
-                if ( ( dCH -> ccDC[j]  == '0' ) || ( dCH->ccDC[j]  == 'X' ) || ( dCH->ccDC[j]  == 'Y' ) || ( dCH->ccDC[j]  == 'Z' ) )
+                // kinetic_model==1 dissolution+precipitation kinetics
+                // kinetic_model==2 only dissolution (no precipitation)
+                // kinetic_mocel==3 only precipitation (no dissolution)
+
+                for ( j=m_kin[ii].dc_counter; j<m_kin[ii].dc_counter+dCH->nDCinPH[k]; j++ )
                 {
-                    m_dll[in*nDC+j]=0.0;               // set to zero
-                    m_dul[in*nDC+j]=1.0e+10;           // very high number
+                    if ( ( dCH -> ccDC[j]  == '0' ) || ( dCH->ccDC[j]  == 'X' ) || ( dCH->ccDC[j]  == 'Y' ) || ( dCH->ccDC[j]  == 'Z' ) )
+                    {
+                        m_dll[in*nDC+j]=0.0;               // set to zero
+                        m_dul[in*nDC+j]=1.0e+10;           // very high number
+                    }
+                    else
+                    {
+                        m_dul[in*nDC+j]= m_xDC[in*nDC+j];
+                        m_dll[in*nDC+j]= m_xDC[in*nDC+j];
+                        if ( m_dll[in*nDC+j] < 0.0 ) m_dll[in*nDC+j]=0.0; // no negative masses allowed
+                        if ( m_dul[in*nDC+j] < 0.0 ) m_dul[in*nDC+j]=0.0;
+                        if ( m_dll[in*nDC+j] > m_dul[in*nDC+j] ) m_dll[in*nDC+j]=m_dul[in*nDC+j];
+                    }
+
                 }
-                else
-                {
-                    m_dul[in*nDC+j]= m_xDC[in*nDC+j];
-                    m_dll[in*nDC+j]= m_xDC[in*nDC+j];
-                    if ( m_dll[in*nDC+j] < 0.0 ) m_dll[in*nDC+j]=0.0; // no negative masses allowed
-                    if ( m_dul[in*nDC+j] < 0.0 ) m_dul[in*nDC+j]=0.0;
-                    if ( m_dll[in*nDC+j] > m_dul[in*nDC+j] ) m_dll[in*nDC+j]=m_dul[in*nDC+j];
-                }
+            }                                           //end kinetic model
 
-            }
-        }                                           //end kinetic model
-
-    }                                              // end loop over phases
-
+        }                                              // end loop over phases
+        return 1; // end restart
+    }
     return 1;
 }
 
@@ -3723,7 +3682,7 @@ void REACT_GEM::WriteVTKGEMValues ( fstream &vtk_file )
     return ;
 }
 
-/** gems_worker: 
+/** gems_worker:
  * This function creates and initializes one GEMS3K kernel. It may be spawned several times. Calculations are coordinated with boost barrier commands.
  */
 void REACT_GEM::gems_worker(int tid, string m_Project_path)
@@ -3741,10 +3700,8 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
     twaittotal=0.0;
     tstart=GetTimeOfDayDouble();
 
-    long *tmp_nodeTypes;
 
-    //special version to make gravel kinetics
-    //    MeshLib::CNode* m_ogsNode;
+    long *tmp_nodeTypes;
 
     // create data necessary for running gems in thread
     TNode* t_Node;
@@ -3815,14 +3772,14 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
         exit(1) ;
 
     // run GEMS once
-     tdBR->NodeStatusCH = NEED_GEM_AIA;
-     t_Node->GEM_run ( false );
-    
-    
+    tdBR->NodeStatusCH = NEED_GEM_AIA;
+    t_Node->GEM_run ( false );
+
+
 //    t_Node->GEM_write_dbr ( "dbr_for_crash_node_init_thread1.txt" );
 //    t_Node->GEM_print_ipm ( "ipm_for_crash_node_init_thread1.txt" );
 
-    
+
     rwmutex.unlock();
 // now we set the loop variables
     int mycount,mystart;
@@ -3831,9 +3788,9 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
     mystart=tid+(myrank*gem_nThread);
     mycount=gem_nThread*mysize;
 
-    	 rwmutex.lock();   //avoid mutual exclusion in the MPI version
-        cout << "GEMS3K MPI Processe / Thread: " << myrank << " " << tid << " mystart,mycont: " << mystart << " " << mycount << endl;
-        rwmutex.unlock();
+    rwmutex.lock();   //avoid mutual exclusion in the MPI version
+    cout << "GEMS3K MPI Processe / Thread: " << myrank << " " << tid << " mystart,mycont: " << mystart << " " << mycount << endl;
+    rwmutex.unlock();
 
     // here "myrank" is the index of the CPU Processes, and "mysize" is the number of CPU Processes
 #else
@@ -3850,60 +3807,42 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
     //    cout << "thread " << tid << " passed start barrier " << endl;
     tdummy=GetTimeOfDayDouble();
 
-    
+
     for ( in = mystart; in < nNodes; in+=mycount ) // myrank ist defined vi USE_MPI_GEMS
-      {
+    {
 //    	 rwmutex.lock();
 //        cout << "GEMS3K MPI Processe / Thread: " << myrank << " " << tid << " in " << in << endl;
 //        rwmutex.unlock();
 
+  
+      if ( ( m_flow_pcs->GetRestartFlag() >= 2 ) ) // everything is stored in concentrations for restart ...moved it to here from init_gems
+      {
+  // Convert from concentration
+                REACT_GEM::ConcentrationToMass ( in,1); // I believe this is save for MPI
+  // this we have already
+	
+      }
+
 	// now we calculate kinetic constraints for GEMS!
-        REACT_GEM::CalcLimitsInitial ( in , t_Node);  
-      /*	
-// special version for create gravel kinetics and concrete kinetics in 2D
-
-            m_ogsNode = m_flow_pcs->m_msh->nod_vector[in];
-            //calculate distance between the node and the barycentre
-            double const* const pnt (m_ogsNode->getData());
- //           distance =  (gravity_centre[0] - pnt[0]) * (gravity_centre[0] - pnt[0]);
- 
-  if ((pnt[0] > 0.0) && (pnt[0] < 10.0)) //gravel
-	{
-        m_dul[in*nDC+147]=0.0;  //   quartz is zero -> everything goes to gravel
-	m_dll[in*nDC+147]=0.0;
-	}
-	else if ((pnt[0] <=0.0) ) // concrete
-	{
-	m_dul[in*nDC+145]=0.0;  //gravel
-	m_dll[in*nDC+145]=0.0;
-	m_dll[in*nDC+147]=2.73e4;  // Qtz ..aka sand
-        m_dul[in*nDC+147]=2.73e4;
-	}
-	else
-	{
-        m_dll[in*nDC+145]=0.0;    // gravel is zero -> everything goes to sand
-	m_dul[in*nDC+145]=0.0;
-	}	
-
-	*/
-	//Get data
+        REACT_GEM::CalcLimitsInitial ( in , t_Node);
+        //Get data
         REACT_GEM::SetReactInfoBackGEM ( in ,t_Node );// thcc1p.pcs.initialis is necessary, otherwise the correct data is not available
 
         // Order GEM to run
         tdBR->NodeStatusCH = NEED_GEM_AIA;
         m_NodeStatusCH[in] = t_Node->GEM_run ( false );
-	//                t_Node->GEM_write_dbr ( "dbr_for_crash_node_init_thread_1.txt" );
+        //                t_Node->GEM_write_dbr ( "dbr_for_crash_node_init_thread_1.txt" );
 
-	REACT_GEM::GetReactInfoFromGEM ( in , t_Node);// test case..get the data even if GEMS failed
-	
+        REACT_GEM::GetReactInfoFromGEM ( in , t_Node);// test case..get the data even if GEMS failed
+
         if ( ! ( m_NodeStatusCH[in] == OK_GEM_AIA || m_NodeStatusCH[in] == OK_GEM_SIA ) )
         {
-	    rwmutex.lock();
+            rwmutex.lock();
             cout << "Initial GEMs run first pass failed at node " << in ;
             cout  << " repeat calculations and change kinetic constraintsby 0.1%" << endl;
-	    rwmutex.unlock();   
+            rwmutex.unlock();
             // change a bit the kinetic constraints -> make the system less stiff
-            for ( j=0;j<nDC;j++ )
+            for ( j=0; j<nDC; j++ )
             {
                 m_dll[in*nDC+j]=0.999*m_dll[in*nDC+j]-1.0e-6;                        // make smaller
                 if ( m_dll[in*nDC+j]<0.0 ) m_dll[in*nDC+j]=0.0;
@@ -3917,12 +3856,12 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
 
             if ( ( m_NodeStatusCH[in] == ERR_GEM_AIA || m_NodeStatusCH[in] == ERR_GEM_SIA ) )
             {
-	        rwmutex.lock();
+                rwmutex.lock();
                 cout << " Error: Init Loop failed when running GEM on Node #" << in << "." << endl;
                 cout << "Returned Error Code: " << m_NodeStatusCH[in] << endl;
                 t_Node->GEM_write_dbr ( "dbr_for_crash_node_init_thread.txt" );
                 t_Node->GEM_print_ipm ( "ipm_for_crash_node_init_thread.txt" );
-		rwmutex.unlock();
+                rwmutex.unlock();
 #ifdef USE_MPI_GEMS
                 MPI_Finalize();                 //make sure MPI exits
 #endif
@@ -3934,124 +3873,108 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
 #ifdef USE_MPI_GEMS
                 rwmutex.lock();
                 cout << "error: Initial GEMs run after Read GEMS gives bad result..proceed in any case. node: " << in << endl;
-		rwmutex.unlock();
-#endif		
+                rwmutex.unlock();
+#endif
             }
             else
             {
-#ifdef USE_MPI_GEMS	      
-	        rwmutex.lock();
+#ifdef USE_MPI_GEMS
+                rwmutex.lock();
                 cout << " sucess with second try.... "<<  endl;
                 rwmutex.unlock();
-#endif		
+#endif
             }
 
         }       // end loop if initial gems run fails
 
         //Get data also for volumes!
         REACT_GEM::GetReactInfoFromGEM ( in , t_Node);// this we need also for restart
-	// calculate density of fluid phase, which is normally the first phase
-	m_fluid_density[in]=m_mPS[in*nPS+0]/m_vPS[in*nPS+0 ];
+        // calculate density of fluid phase, which is normally the first phase
+        m_fluid_density[in]=m_mPS[in*nPS+0]/m_vPS[in*nPS+0 ];
 
-       if ( ( m_flow_pcs->GetRestartFlag() < 2 ) ) // we do not need the second pass for complete restart
-       {
-        // scale data so that second pass gives the normalized volume of 1m^3
-         if (m_Vs[in] >=0.0) 
-	 { // this should be not done for restart,  decoupled porosity runs do not change volumes and the other runs should be ok
-             for ( j=0;j<nIC;j++ )
-             {
-                 m_bIC[in*nIC+j]/= m_Vs[in]; //This is then for b vector
-             }
-             for ( j=0;j<nDC;j++ )
-             {
-                 m_dll[in*nDC+j]/= m_Vs[in];
-                 m_dul[in*nDC+j]/= m_Vs[in];
-	     }
-	   
-	   }
-
-          
-// special version for create gravel kinetics
-/*  
-  if ((in >-1) && (in < 183)) 
-	{
-	m_dul[in*nDC+145]=0;
-	}
-	else if ((in >182) && (in < 283)) 
-	{
-	m_dul[in*nDC+147]=0;
-	}
-	else
-	{
-	m_dul[in*nDC+145]=0;
-	m_dll[in*nDC+147]=2.73e4;
-	}
-  */	
-        REACT_GEM::SetReactInfoBackGEM ( in ,t_Node );// this is necessary, otherwise the correct data is not available
-    
-        // Order GEM to run
-        tdBR->NodeStatusCH = NEED_GEM_AIA;
-
-        m_NodeStatusCH[in] = t_Node->GEM_run ( false );
-
-
-        if ( ! ( m_NodeStatusCH[in] == OK_GEM_AIA || m_NodeStatusCH[in] == OK_GEM_SIA ) )
+        if ( ( m_flow_pcs->GetRestartFlag() < 2 ) ) // we do not need the second pass for complete restart
         {
-#ifdef USE_MPI_GEMS
-	    rwmutex.lock();
-            cout << "Initial GEMs run second pass failed at node " << in ;
-            cout  << " repeat calculations and change kinetic constraintsby 0.1%" << endl;
-	    rwmutex.unlock();
-#endif	    
-            // change a bit the kinetic constraints -> make the system less stiff
-            for ( j=0;j<nDC;j++ )
-            {
-                m_dll[in*nDC+j]=0.999*m_dll[in*nDC+j]-1.0e-6;                        // make smaller
-                if ( m_dll[in*nDC+j]<0.0 ) m_dll[in*nDC+j]=0.0;
-                m_dul[in*nDC+j]=1.001*m_dul[in*nDC+j]+1.0e-6;                    // make bigger
-            }
-            REACT_GEM::SetReactInfoBackGEM ( in , t_Node); // needs to be done to
-            //            m_Node->GEM_write_dbr ( "dbr_for_crash_node_fail1.txt" );
+            // scale data so that second pass gives the normalized volume of 1m^3
+            if (m_Vs[in] >=0.0)
+            {   // this should be not done for restart,  decoupled porosity runs do not change volumes and the other runs should be ok
+                for ( j=0; j<nIC; j++ )
+                {
+                    m_bIC[in*nIC+j]/= m_Vs[in]; //This is then for b vector
+                }
+                for ( j=0; j<nDC; j++ )
+                {
+                    m_dll[in*nDC+j]/= m_Vs[in];
+                    m_dul[in*nDC+j]/= m_Vs[in];
+                }
 
-            // run GEMS again
+            }
+	} // end if for restart
+
+            REACT_GEM::SetReactInfoBackGEM ( in ,t_Node );// this is necessary, otherwise the correct data is not available
+
+            // Order GEM to run
             tdBR->NodeStatusCH = NEED_GEM_AIA;
+
             m_NodeStatusCH[in] = t_Node->GEM_run ( false );
-            //            m_Node->GEM_write_dbr ( "dbr_for_crash_node_fail2.txt" );
+
+
             if ( ( m_NodeStatusCH[in] == ERR_GEM_AIA || m_NodeStatusCH[in] == ERR_GEM_SIA ) )
             {
-	        rwmutex.lock();
-                cout << " Error: Init Loop failed when running GEM on Node #" << in << "." << endl;
-                cout << "Returned Error Code: " << m_NodeStatusCH[in] << endl;
-                t_Node->GEM_write_dbr ( "dbr_for_crash_node_init2.txt" );
-		rwmutex.unlock();
 #ifdef USE_MPI_GEMS
-                MPI_Finalize();                 //make sure MPI exits
+                rwmutex.lock();
+                cout << "Initial GEMs run second pass failed at node " << in ;
+                cout  << " repeat calculations and change kinetic constraintsby 0.1%" << endl;
+                rwmutex.unlock();
+#endif
+                // change a bit the kinetic constraints -> make the system less stiff
+                for ( j=0; j<nDC; j++ )
+                {
+                    m_dll[in*nDC+j]=0.999*m_dll[in*nDC+j]-1.0e-6;                        // make smaller
+                    if ( m_dll[in*nDC+j]<0.0 ) m_dll[in*nDC+j]=0.0;
+                    m_dul[in*nDC+j]=1.001*m_dul[in*nDC+j]+1.0e-6;                    // make bigger
+                }
+                REACT_GEM::SetReactInfoBackGEM ( in , t_Node); // needs to be done to
+                //            m_Node->GEM_write_dbr ( "dbr_for_crash_node_fail1.txt" );
+
+                // run GEMS again
+                tdBR->NodeStatusCH = NEED_GEM_AIA;
+                m_NodeStatusCH[in] = t_Node->GEM_run ( false );
+                //            m_Node->GEM_write_dbr ( "dbr_for_crash_node_fail2.txt" );
+                if ( ( m_NodeStatusCH[in] == ERR_GEM_AIA || m_NodeStatusCH[in] == ERR_GEM_SIA ) )
+                {
+                    rwmutex.lock();
+                    cout << " Error: Init Loop second pass failed when running GEM on Node #" << in << "." << endl;
+                    cout << "Returned Error Code: " << m_NodeStatusCH[in] << endl;
+                    t_Node->GEM_write_dbr ( "dbr_for_crash_node_init2.txt" );
+                    rwmutex.unlock();
+#ifdef USE_MPI_GEMS
+                    MPI_Finalize();                 //make sure MPI exits
 #endif
 
-                exit ( 1 );
-            }
-            else if ( m_NodeStatusCH[in] == BAD_GEM_AIA || m_NodeStatusCH[in] == BAD_GEM_SIA )
-            {
+                    exit ( 1 );
+                }
+                else if ( m_NodeStatusCH[in] == BAD_GEM_AIA || m_NodeStatusCH[in] == BAD_GEM_SIA )
+                {
 #ifdef USE_MPI_GEMS
-	        rwmutex.lock();
-                cout << "error: Initial GEMs run after Read GEMS gives bad result..proceed in any case. node" << in << endl;
-		rwmutex.unlock();
-#endif		
-            }
-
-            else
-            {
-#ifdef USE_MPI_GEMS	      
-	        rwmutex.lock();
-                cout << " sucess with second try.... "<<  endl;
-		rwmutex.unlock();
+                    rwmutex.lock();
+                    cout << "error: Initial GEMs run after Read GEMS gives bad result..proceed in any case. node" << in << endl;
+                    rwmutex.unlock();
 #endif
-            }
-        }                                     // end loop if initial gems run fails
+                }
 
-        REACT_GEM::GetReactInfoFromGEM ( in , t_Node );
+                else
+                {
+#ifdef USE_MPI_GEMS
+                    rwmutex.lock();
+                    cout << " sucess with second try.... "<<  endl;
+                    rwmutex.unlock();
+#endif
+                }
+            }                                     // end loop if initial gems run fails
 
-        } // end if for restart
+            REACT_GEM::GetReactInfoFromGEM ( in , t_Node );
+
+//        } // end if for restart
 
         // calculate the chemical porosity
         if ( m_flow_pcs->GetRestartFlag() <2 ) REACT_GEM::CalcPorosity ( in , t_Node); //during init it should be always done, except for restart !!!
@@ -4077,7 +4000,7 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
         tdummy=GetTimeOfDayDouble();
 
         repeated_fail=0; // set this to zero for each new run_main
-        
+
         for ( in = mystart; in < nNodes; in+=mycount ) // myrank ist defined vi USE_MPI_GEMS
         {
 
@@ -4098,26 +4021,24 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
                 REACT_GEM::SetReactInfoBackGEM ( in ,t_Node); // this should be also save for MPI
                 // take values from old B volume for comparison
                 oldvolume=m_Vs[in];
-		//		if (in==2) t_Node->GEM_write_dbr ( "dbr_debug_fail_before_fail.txt" );
 
                 // Order GEM to run
                 tdBR->NodeStatusCH = NEED_GEM_AIA; // first try without simplex using old solution
                 m_NodeStatusCH[in] = t_Node->GEM_run ( false );
 
-		//                    if (in==2) t_Node->GEM_write_dbr ( "dbr_debug_after_fail_node2.txt" );
 
                 if ( ! ( m_NodeStatusCH[in] == OK_GEM_AIA || m_NodeStatusCH[in] == OK_GEM_SIA || m_NodeStatusCH[in] == BAD_GEM_AIA || m_NodeStatusCH[in] == BAD_GEM_SIA )  ||
-                     ( ( abs ( oldvolume-tdBR->Vs ) /oldvolume ) >0.1 ) && ( flowflag != 3 ) ) // not for Richards flow  // ups...failed..try again with changed kinetics
+                        ( ( abs ( oldvolume-tdBR->Vs ) /oldvolume ) >0.1 ) && ( flowflag != 3 ) ) // not for Richards flow  // ups...failed..try again with changed kinetics
                 {
 #ifndef USE_MPI_GEMS
-                    rwmutex.lock(); //KG44 try to avoid mutual exclusion at least in the parallel version, as this might slow down execution 
+                    rwmutex.lock(); //KG44 try to avoid mutual exclusion at least in the parallel version, as this might slow down execution
                     cout << "Error: Main Loop failed when running GEM on Node #" << in << "." << " Returned Error Code: " << m_NodeStatusCH[in] ;
                     cout << " or GEM weird result at node " << in << " volume " <<  tdBR->Vs << " old volume " <<oldvolume;
                     cout  << " repeat calculations and change kinetic constraintsby 0.1%" << endl;
                     rwmutex.unlock();
 #endif
-		    // change a bit the kinetic constraints -> make the system less stiff
-                    for ( j=0;j<nDC;j++ )
+                    // change a bit the kinetic constraints -> make the system less stiff
+                    for ( j=0; j<nDC; j++ )
                     {
                         m_dll[in*nDC+j]=0.999*m_dll[in*nDC+j]-1.0e-6;                        // make smaller
                         if ( m_dll[in*nDC+j]<0.0 ) m_dll[in*nDC+j]=0.0;
@@ -4141,7 +4062,7 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
                 )
                 {
 #ifndef USE_MPI_GEMS
-		  rwmutex.lock();
+                    rwmutex.lock();
                     cout << "Error: Main Loop failed when running GEM on Node #" << in << "." << " Returned Error Code: " << m_NodeStatusCH[in] ;
                     cout << " or GEM weird result at node " << in << " volume " <<  tdBR->Vs << " old volume " <<oldvolume;
                     cout  << " continue with last good solution for this node" << endl;
@@ -4149,7 +4070,7 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
 //                    t_Node->GEM_print_ipm ( "ipm_for_crash_node_fail.txt" );
                     rwmutex.unlock();
 #endif
-		    // exit ( 1 );
+                    // exit ( 1 );
                     node_fail=1;
                     repeated_fail +=1;
                     if ( repeated_fail >m_max_failed_nodes )
@@ -4186,8 +4107,8 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
                     // Convert to concentration  ..
                     REACT_GEM::MassToConcentration ( in, 0 ,t_Node);
 
-		    // calculate density of fluid phase, which is normally the first phase
-		    m_fluid_density[in]=m_mPS[in*nPS+0]/m_vPS[in*nPS+0 ];
+                    // calculate density of fluid phase, which is normally the first phase
+                    m_fluid_density[in]=m_mPS[in*nPS+0]/m_vPS[in*nPS+0 ];
 
                 }
                 else
@@ -4214,17 +4135,17 @@ void REACT_GEM::gems_worker(int tid, string m_Project_path)
         // this is for performance check .....
         twait-=tdummy1;
         twait*= -1.0;
-	twaittotal +=twait;
+        twaittotal +=twait;
 //        rwmutex.lock();
 //        cout << "GEMS3K MPI Processe / Thread: " << myrank << " " << tid << " waiting time: " << twait << endl;
 //        rwmutex.unlock();
-        // write some time values for performance ...only for first thread..do only for all threads if 
+        // write some time values for performance ...only for first thread..do only for all threads if
 #ifndef USE_MPI_GEMS
-       if (tid ==0 && myrank ==0) {    //try to avoid mutual exclusion in MPI version
+        if (tid ==0 && myrank ==0) {    //try to avoid mutual exclusion in MPI version
             rwmutex.lock();
             cout << "GEMS3K MPI Processes / Threads: " << mysize << " " << gem_nThread << " mid/tid " << myrank << " " << tid << " total time: " << time_gem_total << " s, this dt for GEMS: " <<  tdummy2 << " total fraction in GEMS: " << time_fraction << " idle time: " << twaittotal << endl;
             rwmutex.unlock();
-            }
+        }
 #endif
     } // end of for loop....
 
