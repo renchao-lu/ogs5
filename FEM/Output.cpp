@@ -907,21 +907,20 @@ void COutput::WriteTECNodeData(fstream &tec_file)
 				if (m_pcs != NULL) { //WW
 
 					if (NodeIndex[k] > -1) {
-						if ((m_pcs->type == 14) && (_nod_value_vector[k] == "HEAD")) // HEAD output in Richards 6/2012 JOD
-						{
-							double rhow;
-							CRFProcess* pcs_transport (PCSGet("MASS_TRANSPORT"));
-							if (pcs_transport) {
-								double dens_arg[3];
-								dens_arg[2] = pcs_transport->GetNodeValue(
-												m_msh->nod_vector[j]->GetIndex(), 1); // first component!!!
-								rhow = mfp_vector[0]->Density(dens_arg); // first phase!!!  dens_arg
-							} else rhow = mfp_vector[0]->Density();
-
-							val_n = m_pcs->GetNodeValue(m_msh->nod_vector[j]->GetIndex(),
-															m_pcs->GetNodeValueIndex("PRESSURE1") + 1) / (rhow * 9.81)
-															+ m_msh->nod_vector[m_msh->nod_vector[j]->GetIndex()]->getData()[2];
-							tec_file << val_n << " ";
+						if ((m_pcs->type == 14) && (_nod_value_vector[k] == "HEAD"))
+						{    // HEAD output for RICHARDS_FLOW (unconfined GW) 5.3.07 JOD 
+					 double rhow;
+			               double dens_arg[3];
+						   CRFProcess* m_pcs_transport = NULL;
+						   m_pcs_transport = PCSGet("MASS_TRANSPORT");
+						   if(m_pcs_transport) {
+	                         dens_arg[2]  = m_pcs_transport->GetNodeValue(m_msh->nod_vector[j]->GetIndex(), 1);  // first component!!! 
+		                     rhow = mfp_vector[0]->Density(dens_arg);   // first phase!!!  dens_arg
+						   }
+						   else
+						     rhow = mfp_vector[0]->Density(); 
+ 			               val_n = m_pcs->GetNodeValue(m_msh->nod_vector[j]->GetIndex(), m_pcs->GetNodeValueIndex("PRESSURE1") + 1) / (rhow * 9.81 ) + m_msh->nod_vector[m_msh->nod_vector[j]->GetIndex()]->getData()[2];
+						   tec_file << val_n << " ";
 						} else {
 							val_n = m_pcs->GetNodeValue(m_msh->nod_vector[j]->GetIndex(), NodeIndex[k]); //WW
 							tec_file << val_n << " ";
@@ -1333,8 +1332,13 @@ double COutput::NODWritePLYDataTEC(int number)
 		//project_title;
 		std::string project_title_string = "Profiles along polylines";
 
-		tec_file << " TITLE = \"" << project_title_string
+	    if (dat_type_name.compare("GNUPLOT") != 0) // 5.3.07 JOD
+		   tec_file << " TITLE = \"" << project_title_string
 		         << "\"" << endl;
+		else
+		   tec_file << "# ";
+
+
 		tec_file << " VARIABLES = \"DIST\" ";
 		for (size_t k = 0; k < no_variables; k++)
 		{
@@ -1591,6 +1595,9 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
 			tec_file << " p_(1st_Invariant) " << " q_(2nd_Invariant)  "
 			         << " Effective_Strain";
 		tec_file << endl;
+
+		if (dat_type_name.compare("GNUPLOT") == 0) // 5.3.07 JOD
+		  tec_file << "# "; // comment
 
 		if (geo_name.find("POINT") == std::string::npos)
 			tec_file << " ZONE T=\"POINT="

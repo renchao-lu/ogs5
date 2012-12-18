@@ -62,7 +62,7 @@ public:
 	                     const std::vector<long> & nodes_on_ply,
 	                     std::vector<double> & node_value_vector) const;
 	void FaceIntegration(MeshLib::CFEMesh* m_msh,
-	                     std::vector<long> & nodes_on_sfc,
+	                     std::vector<long> const & nodes_on_sfc,
 	                     std::vector<double> & node_value_vector);
 	void DomainIntegration(MeshLib::CFEMesh* m_msh,
 	                       const std::vector<long> & nodes_in_dom,
@@ -130,10 +130,11 @@ public:
 	int CurveIndex;
 	std::vector<int> element_st_vector;
 
-	double rill_height;
+	double st_rill_height, coup_pressure_head, coup_residualPerm; // JOD 
 	double sorptivity, constant, rainfall, rainfall_duration, moistureDeficit /*1x*/;
-	bool node_averaging, no_surface_water_pressure /*2x*/;
-
+	bool node_averaging, distribute_volume_flux; // JOD 
+	bool no_surface_water_pressure, explicit_surface_water_pressure; // JOD 
+	
 	bool isCoupled () const { return _coupled; }
 	double getNormalDepthSlope () const { return normaldepth_slope; }
 
@@ -147,9 +148,12 @@ public:
 	size_t getNumberOfTerms () const { return number_of_terms; }
 	void setMaxNumberOfTerms (size_t max_no_terms) { _max_no_terms = max_no_terms; }
 	void setNumberOfAnalyticalSolutions (size_t no_an_sol) { _no_an_sol = no_an_sol; }
+	double GetRelativeInterfacePermeability(CRFProcess* m_pcs,  // JOD
+                                              double head,
+                                              long msh_node);
 
-	bool channel;
-	double channel_width;
+	bool channel, channel_width, air_breaking;
+	double air_breaking_factor, air_breaking_capillaryPressure, air_closing_capillaryPressure;
 	int geo_node_number;
 
 	double* nodes;
@@ -303,11 +307,11 @@ private:
 	                                      std::vector<size_t>& ply_nod_vector,
 	                                      std::vector<size_t>& ply_nod_vector_cond);
 
-	void SetPolylineNodeValueVector(CSourceTerm* st,
+	/*void SetPolylineNodeValueVector(CSourceTerm* st,
 	                                CGLPolyline* old_ply,
 	                                const std::vector<long>& ply_nod_vector,
 	                                std::vector<long>& ply_nod_vector_cond,
-	                                std::vector<double>& ply_nod_val_vector);
+	                                std::vector<double>& ply_nod_val_vector);*/ // removed with 5.3.07 JOD
 
 	/**
 	 * 09/2010 / 03/2011 TF
@@ -318,17 +322,19 @@ private:
 	 */
 	void SetPolylineNodeValueVector(CSourceTerm* st,
 	                                std::vector<long> const & ply_nod_vector,
-	                                std::vector<long>& ply_nod_vector_cond,
+	                                std::vector<long> const & ply_nod_vector_cond,
 	                                std::vector<double>& ply_nod_val_vector) const;
 
 	// JOD
 	void SetSurfaceNodeVector(Surface* m_sfc, std::vector<long>&sfc_nod_vector);
 	void SetSurfaceNodeValueVector( CSourceTerm* m_st,
 	                                Surface* m_sfc,
-	                                std::vector<long>&sfc_nod_vector,
+	                                std::vector<long> const &sfc_nod_vector,
 	                                std::vector<double>&sfc_nod_val_vector);
 	void AreaAssembly(const CSourceTerm* const st, const std::vector<long>& ply_nod_vector_cond,
 	                  std::vector<double>&  ply_nod_val_vector) const;
+	void DistributeVolumeFlux(CSourceTerm* st, std::vector<long> const & ply_nod_vector, // 5.3.07 
+		                      std::vector<double>& ply_nod_val_vector);
 };
 
 extern CSourceTermGroup* STGetGroup(std::string pcs_type_name,std::string pcs_pv_name);
@@ -386,19 +392,20 @@ extern double CalcCouplingValue(double factor,
 // JOD
 extern void GetCouplingNODValueMixed(double& value, CSourceTerm* m_st, CNodeValue* cnodev);
 // JOD
-extern void GetCouplingFieldVariables(double* h_this,
+extern void GetCouplingFieldVariables(CRFProcess* m_pcs_this,  
+                                      CRFProcess* m_pcs_cond,
+									  double* h_this,
                                       double* h_cond,
                                       double* h_shifted,
                                       double* h_averaged,
                                       double* z_this,
                                       double* z_cond,
                                       CSourceTerm* m_st,
-                                      CNodeValue* cnodev);
-// JOD
-extern double GetRelativeCouplingPermeability(const CRFProcess* m_pcs,
-                                              double head,
-                                              const CSourceTerm* m_st,
-                                              long msh_node);
+                                      CNodeValue* cnodev, 
+									  long msh_node_number, 
+									  long msh_node_number_cond, 
+									  double gamma);
+
 // JOD
 extern void GetPhilipNODValue(double& value, const CSourceTerm* m_st);
 // JOD

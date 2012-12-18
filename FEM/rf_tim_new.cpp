@@ -190,13 +190,14 @@ std::ios::pos_type CTimeDiscretization::Read(std::ifstream* tim_file)
 		}
 		//....................................................................
 		// subkeyword found
-		if(line_string.find("$TIME_START") != std::string::npos)
-		{
-			line.str(GetLineFromFile1(tim_file));
-			line >> time_start;
-			line.clear();
-			continue;
-		}
+		  if(line_string.find("$TIME_START") != std::string::npos)
+        {
+            line.str(GetLineFromFile1(tim_file));
+            line >> time_start;
+            last_active_time=time_start; // JOD for GK  5.3.07
+            line.clear();
+            continue;
+        }
 		//....................................................................
 		// subkeyword found
 		if(line_string.find("$TIME_END") != std::string::npos)

@@ -212,8 +212,10 @@ std::ios::pos_type CSourceTerm::Read(std::ifstream *st_file,
 
    std::stringstream in;
 
-                                                  // JOD 4.10.01
-   channel = 0, node_averaging = 0, no_surface_water_pressure = 0;
+                                                  // JOD 
+   channel = 0, node_averaging = 0, air_breaking = false;
+   no_surface_water_pressure = 0, explicit_surface_water_pressure = false;
+   distribute_volume_flux = false;
    std::ios::pos_type position;
 
    // read loop
@@ -319,7 +321,7 @@ std::ios::pos_type CSourceTerm::Read(std::ifstream *st_file,
             in.clear();
 //            in.str(GetLineFromFile1(st_file));
             in.str(readNonBlankLineFromInputStream(*st_file));
-            in >> _coup_leakance >> rill_height;
+            in >> _coup_leakance >> st_rill_height >> coup_pressure_head >> coup_residualPerm;
             in.clear();
          }                                        //05.09.2008 WW
          else
@@ -335,11 +337,25 @@ std::ios::pos_type CSourceTerm::Read(std::ifstream *st_file,
          node_averaging = true;
          continue;
       }
-                                                  // JOD 4.10.01
-      if (line_string.find("$NEGLECT_SURFACE_WATER_PRESSURE") != std::string::npos)
+
+	  if (line_string.find("$DISTRIBUTE_VOLUME_FLUX") != std::string::npos) //  JOD 5.3.07
       {
          in.clear();
+         distribute_volume_flux = true;
+         continue;
+      }
+                                               
+      if (line_string.find("$NEGLECT_SURFACE_WATER_PRESSURE") != std::string::npos)
+      {       // JOD 4.10.01
+         in.clear();
          no_surface_water_pressure = true;
+         continue;
+      }
+
+	  if (line_string.find("$EXPLICIT_SURFACE_WATER_PRESSURE") != std::string::npos) 
+      {       // JOD 5.3.07
+         in.clear();
+         explicit_surface_water_pressure = true;
          continue;
       }
 
@@ -496,7 +512,7 @@ void CSourceTerm::ReadDistributionType(std::ifstream *st_file)
       in >> geo_node_value;
       in.clear();
       in.str(GetLineFromFile1(st_file));
-      in >> rill_height;
+      in >> st_rill_height;
       in.clear();
       //		dis_type = 6;
    }
@@ -507,7 +523,7 @@ void CSourceTerm::ReadDistributionType(std::ifstream *st_file)
       in >> geo_node_value;
       in.clear();
       in.str(GetLineFromFile1(st_file));
-      in >> normaldepth_slope >> rill_height;
+      in >> normaldepth_slope >> st_rill_height;
       in.clear();
    }
 
@@ -1413,7 +1429,7 @@ std::vector<double>&node_value_vector) const
  01/2010 NW improvement of efficiency to search faces
  **************************************************************************/
 
-void CSourceTerm::FaceIntegration(CFEMesh* msh, std::vector<long>&nodes_on_sfc,
+void CSourceTerm::FaceIntegration(CFEMesh* msh, std::vector<long> const &nodes_on_sfc,
 		std::vector<double>&node_value_vector)
 {
    if (!msh)
@@ -2028,11 +2044,14 @@ void GetCouplingNODValue(double &value, CSourceTerm* st, CNodeValue* cnodev)
    //	else
    //		cout << "Error in GetCouplingNODValue";
 
-   if (st->isCoupled() ||
-      st->getProcessType() == FiniteElement::GROUNDWATER_FLOW ||
+   if (st->isCoupled() &&
+      (st->getProcessType() == FiniteElement::GROUNDWATER_FLOW ||
       st->getProcessType() == FiniteElement::RICHARDS_FLOW ||
-      st->getProcessType() == FiniteElement::OVERLAND_FLOW)
+      st->getProcessType() == FiniteElement::MULTI_PHASE_FLOW) )
       GetCouplingNODValuePicard(value, st, cnodev);
+   else if (st->isCoupled() &&
+      st->getProcessType() == FiniteElement::OVERLAND_FLOW)
+	  GetCouplingNODValueNewton(value, st, cnodev);
    else
       std::cout << "Error in GetCouplingNODValue";
 }
@@ -2046,54 +2065,105 @@ void GetCouplingNODValue(double &value, CSourceTerm* st, CNodeValue* cnodev)
  Programing:
  01/2007 JOD Implementation
  10/2008 JOD overland node shifting for soil columns, averaging automatically 4.7.10
+ 12/2012 JOD Extension to TWO_PHASE_FLOW  5.3.07
  **************************************************************************/
 #ifndef NEW_EQS                                   //WW. 06.11.2008
-void GetCouplingNODValuePicard(double &value, CSourceTerm* m_st,
+void GetCouplingNODValuePicard(double &value
+	, CSourceTerm* m_st,
 CNodeValue* cnodev)
 {
 
-   double relPerm, condArea, gamma;
-   CRFProcess* m_pcs_cond = NULL;
-   CRFProcess* m_pcs_this = NULL;
+   double relPerm, condArea;
    double h_this, h_cond, z_this, z_cond, h_cond_shifted, help;
-
-                                                  // only one phase
-   gamma = mfp_vector[0]->Density() * GRAVITY_CONSTANT;
+   double gamma = 1;
+   CRFProcess* m_pcs_this = NULL;
+   CRFProcess* m_pcs_cond = NULL;  
    m_pcs_this = PCSGet(convertProcessTypeToString(m_st->getProcessType()));
    m_pcs_cond = PCSGet(m_st->pcs_type_name_cond);
-   GetCouplingFieldVariables(&h_this, &h_cond, &h_cond_shifted, &help,
-      &z_this, &z_cond, m_st, cnodev);            // z_cond shifted for soil columns
-   ////////   coupling factor
-   if (h_this > h_cond_shifted)
-      relPerm = GetRelativeCouplingPermeability(m_pcs_this, h_this, m_st,
-         cnodev->msh_node_number);                // groundwater or richards
-   else
-      relPerm = GetRelativeCouplingPermeability(m_pcs_cond, h_cond, m_st,
-         cnodev->msh_node_number_conditional);    // overland
+   long mesh_node_number, mesh_node_number_conditional;
 
-   condArea = value * relPerm;                    // leakance in relPerm
-   if (m_st->channel)                             // wetted perimeter, pcs_cond has to be overland flow
+   if( (mesh_node_number = cnodev->msh_node_number) <  (long)m_pcs_this->m_msh->nod_vector.size())      
+   {     // liquid 
+	   mesh_node_number_conditional = cnodev->msh_node_number_conditional; 
+	   if (m_st->getProcessType() == FiniteElement::RICHARDS_FLOW)
+          gamma = mfp_vector[0]->Density() * GRAVITY_CONSTANT;  // liquid pressure as a primary variable
+       else if (m_st->getProcessType() == FiniteElement::MULTI_PHASE_FLOW)
+	      gamma = -mfp_vector[0]->Density() * GRAVITY_CONSTANT; // capillary pressure as a primary variable
+   }
+   else
+   {       // gas
+	   mesh_node_number -= m_pcs_this->m_msh->nod_vector.size(); 
+	   /*if( m_st->pcs_type_name_cond == "MULTI_PHASE_FLOW") 
+	      mesh_node_number_conditional = cnodev->msh_node_number_conditional - m_pcs_this->m_msh->nod_vector.size(); 
+	   else*/
+	   mesh_node_number_conditional = cnodev->msh_node_number_conditional;
+       gamma = mfp_vector[1]->Density() * GRAVITY_CONSTANT; // gas pressure as a primary variable
+   }
+   
+   GetCouplingFieldVariables(m_pcs_this, m_pcs_cond, &h_this, &h_cond, &h_cond_shifted, &help,
+      &z_this, &z_cond, m_st, cnodev, mesh_node_number, mesh_node_number_conditional, gamma);   // z_cond shifted for soil columns
+
+   /////   relative interface permeability
+   if(m_st->pcs_pv_name_cond == "PRESSURE2")// || m_st->pcs_type_name_cond == "OVERLAND_FLOW")
+   { // gas
+	    CRFProcess* m_pcs_overland = NULL;
+		double head_overland;
+        m_pcs_overland = PCSGet(m_st->pcs_type_name_cond);
+        head_overland = m_pcs_overland->GetNodeValue(cnodev->msh_node_number_conditional, m_pcs_overland->GetNodeValueIndex("HEAD") + 1);
+	    
+		relPerm = m_st->GetRelativeInterfacePermeability(m_pcs_overland, head_overland,
+          cnodev->msh_node_number_conditional);    // overland		
+	}
+   else
+   {  // liquid
+     if (h_this < h_cond_shifted)  // flow direction from overland compartment
+        relPerm = m_st->GetRelativeInterfacePermeability(m_pcs_cond, h_cond,
+          cnodev->msh_node_number_conditional);   
+     else          // flow direction from subsurface compartment (, where now relPerm = 1)
+	    relPerm = m_st->GetRelativeInterfacePermeability(m_pcs_this, h_this,
+          cnodev->msh_node_number_conditional);    
+   }
+
+		
+    if( m_st->explicit_surface_water_pressure) { // put hyrostatic surface liquid pressure explicitly in coupling flux
+		    h_cond = m_pcs_cond->GetNodeValue(mesh_node_number_conditional, 0);
+	        h_cond_shifted =  h_cond - z_cond + z_this;
+	}
+  
+   condArea = value * relPerm * m_st->getCoupLeakance();   // area * total interface permeability (m^2/s)        
+
+   if (m_st->channel)                   // wetted perimeter, pcs_cond must be overland flow
       condArea *= m_st->channel_width + (h_cond - z_cond);
-   ///////   source term & matrix
-                                                  // hydrostatic overland pressure
+   ///// RHS part (a surface liquid pressure term) of coupling flux (m^3/s)                                            
    value = CalcCouplingValue(condArea, h_this, h_cond_shifted, z_cond, m_st);
 
-   if (m_st->getProcessType() == FiniteElement::RICHARDS_FLOW)
-      condArea /= gamma;
 
    if (m_st->getProcessType() == FiniteElement::GROUNDWATER_FLOW && h_this < z_cond
       && m_st->pcs_type_name_cond == "OVERLAND_FLOW")
-      condArea = 0;
+	 condArea = 0;   //  decoupled, only RHS
+ 
 
-                                                  // groundwater / soil pressure
-   MXInc(cnodev->msh_node_number, cnodev->msh_node_number, condArea);
-   /////  output
-   m_pcs_this->SetNodeValue(cnodev->msh_node_number,
-                                                  // update coupling variable for error estimation
-      m_pcs_this->GetNodeValueIndex("COUPLING") + 1, h_this);
+   if ( m_st->getProcessPrimaryVariable() == FiniteElement::PRESSURE 
+		&& (mesh_node_number == cnodev->msh_node_number) ) // only for liquid phase
+      condArea /= gamma; // pressure as a primary variable
+   /////                  
+   MXInc(cnodev->msh_node_number, cnodev->msh_node_number, condArea); 
 
-   if (m_st->no_surface_water_pressure)           // 4.10.01
-      value = 0;
+   if(m_st->getProcessType() == FiniteElement::MULTI_PHASE_FLOW &&  m_st->pcs_pv_name_cond == "HEAD"   // 
+		 && m_st->pcs_type_name_cond == "OVERLAND_FLOW" ) // ??? 
+   {   // gas pressure term 
+	   MXInc(cnodev->msh_node_number , cnodev->msh_node_number+ m_pcs_this->m_msh->nod_vector.size(), -condArea); 
+	   value  -= condArea * m_st->coup_pressure_head;
+   }
+  
+                          
+   m_pcs_this->SetNodeValue( mesh_node_number,   // for GW water balance ply / pnt 
+	   m_pcs_this->GetNodeValueIndex("FLUX") + 1, condArea); 
+
+
+   if (m_st->no_surface_water_pressure)           // neglect hydrostatic surface liquid pressure
+     value = 0; 
+
 }
 #endif
 
@@ -2105,124 +2175,165 @@ CNodeValue* cnodev)
  Programing:
  01/2007 JOD Implementation
  10/2008 JOD node shifting for soil columns 4.7.10
+ 12/2012 JOD coupling with TWO_PHASE_FLOW  5.3.07
  **************************************************************************/
+
 #ifndef NEW_EQS                                   //WW. 06.11.2008
 void GetCouplingNODValueNewton(double &value, CSourceTerm* m_st,
 CNodeValue* cnodev)
 {
-   double relPerm, area, condArea;
-   CRFProcess* m_pcs_cond = NULL;
-   CRFProcess* m_pcs_this = NULL;
+   double relPerm, area, condArea, gamma;
    double h_this, h_cond, z_this, z_cond, h_this_shifted, h_this_averaged;
    double epsilon = 1.e-7, value_jacobi, h_this_epsilon = 0.0,
       relPerm_epsilon, condArea_epsilon;          //OK411 epsilon as in pcs->assembleParabolicEquationNewton
-
+   
+   CRFProcess* m_pcs_cond = NULL;
+   CRFProcess* m_pcs_this = NULL;
    m_pcs_this = PCSGet(convertProcessTypeToString(m_st->getProcessType()));
    m_pcs_cond = PCSGet(m_st->pcs_type_name_cond);
-   GetCouplingFieldVariables(&h_this, &h_cond, &h_this_shifted,
-                                                  // z_this shifted for soil columns
-      &h_this_averaged, &z_this, &z_cond, m_st, cnodev);
-   ///// factor
-   if (h_this_shifted > h_cond)
-      relPerm = GetRelativeCouplingPermeability(m_pcs_this, h_this, m_st,
-         cnodev->msh_node_number);                // overland
-   else
-      relPerm = GetRelativeCouplingPermeability(m_pcs_cond, h_cond, m_st,
-         cnodev->msh_node_number_conditional);    // richards or groundwater
+   ///// 
+   if(m_st->pcs_type_name_cond == "RICHARDS_FLOW")
+     gamma = mfp_vector[0]->Density() * GRAVITY_CONSTANT; // liquid pressure as a primary variable
+   else if(m_st->pcs_type_name_cond == "MULTI_PHASE_FLOW")
+     gamma = -mfp_vector[0]->Density() * GRAVITY_CONSTANT; // capillary pressure as a primary variable
 
-   area = value;                                  // for condArea_epsilon
-   condArea = value * relPerm;                    // leakance in relPerm
-   if (m_st->channel)                             // wetted perimeter
-      condArea *= m_st->channel_width + (h_this - z_this);
-   //////  source term
-   value = CalcCouplingValue(condArea, h_this_averaged, h_cond, z_cond, m_st);
-   /////   epsilon shift for jacobian
-   if (m_st->node_averaging)
-   {
+   GetCouplingFieldVariables(m_pcs_this, m_pcs_cond, &h_this, &h_cond, &h_this_shifted,
+                                // if soil column, z_this, h_this_averaged, h_this_shifted are shifted to the column 
+      &h_this_averaged, &z_this, &z_cond, m_st, cnodev, cnodev->msh_node_number, cnodev->msh_node_number_conditional, gamma);
+
+   /////   relative coupling interface permeability (calculate ALWAYS implicitly)
+   if (h_this_shifted > h_cond)
+   { // flow direction from the overland compartment
+      relPerm = m_st->GetRelativeInterfacePermeability(m_pcs_this, h_this,
+         cnodev->msh_node_number);               
+      relPerm_epsilon = m_st->GetRelativeInterfacePermeability(m_pcs_this, h_this + epsilon, // for jacobian
+		  cnodev->msh_node_number);
+   }
+   else // flow direction from a subsurface compartment
+      relPerm = relPerm_epsilon = 1; 
+
+   if (m_st->node_averaging) 
+   {  // h_this_epsilon for jacobian if multiple overland nodes are coupled to a soil column
       for (long i = 0; i < (long) cnodev->msh_node_numbers_averaging.size(); i++)
          if (cnodev->msh_node_numbers_averaging[i]
          == cnodev->msh_node_number)
             h_this_epsilon = h_this_averaged + epsilon
                * cnodev->msh_node_weights_averaging[i];
-   } else
-   h_this_epsilon = h_this + epsilon;
-   /////  factor
-   if (h_this_shifted + epsilon > h_cond)
-      relPerm_epsilon = GetRelativeCouplingPermeability(m_pcs_this, h_this
-         + epsilon, m_st, cnodev->msh_node_number);
-   else
-      relPerm_epsilon = GetRelativeCouplingPermeability(m_pcs_cond, h_cond,
-         m_st, cnodev->msh_node_number_conditional);// richards or groundwater
+   } 
+   else // h_this_epsilon for jacobian
+      h_this_epsilon = h_this + epsilon;
 
-   condArea_epsilon = area * relPerm_epsilon;
-   if (m_st->channel)                             // wetted perimeter
-      condArea_epsilon *= m_st->channel_width + (h_this_epsilon - z_this);
-
-   if (m_st->no_surface_water_pressure)           // 4.10.01
+   if (m_st->no_surface_water_pressure)  // neglect hydrostatic surface liquid pressure
       h_this_epsilon = z_this;
-   /////  jacobian
-   value_jacobi = -condArea_epsilon * (h_cond - h_this_epsilon) + value;
-   MXInc(cnodev->msh_node_number, cnodev->msh_node_number, value_jacobi
-      / epsilon);
-   /////  output
-   m_pcs_this->SetNodeValue(cnodev->msh_node_number,
-                                                  // coupling flux (m/s)
-      m_pcs_this->GetNodeValueIndex("COUPLING") + 1, -value / area);
 
+   if (m_st->explicit_surface_water_pressure)       
+   {    // put hydrostatic surface liquid pressure explicitly in the coupling flux
+	  h_this = m_pcs_this->GetNodeValue(cnodev->msh_node_number, 0);
+      h_this_epsilon = h_this; // for jacobian
+
+	   if (m_st->node_averaging)                  
+      {               // shift overland node to soil column 
+         h_this_shifted = h_this - m_pcs_this->m_msh->nod_vector[cnodev->msh_node_number]->getData()[2] + z_cond;
+         h_this_averaged = 0;
+         for (long i = 0; i
+            < (long) cnodev->msh_node_numbers_averaging.size(); i++)
+            h_this_averaged 
+               += cnodev->msh_node_weights_averaging[i]
+               * (m_pcs_this->GetNodeValue(
+               cnodev->msh_node_numbers_averaging[i],
+               0)
+               - m_pcs_this->m_msh->nod_vector[cnodev->msh_node_numbers_averaging[i]]->getData()[2]);
+
+         h_this_averaged += z_cond;
+      
+	   }
+
+   } // end explicit
+ 
+   area = value;                                 
+   condArea = condArea_epsilon = area * m_st->getCoupLeakance();     
+   condArea *= relPerm;
+   condArea_epsilon *= relPerm_epsilon;
+
+   if (m_st->channel)  
+   {                           // wetted perimeter
+      condArea *= m_st->channel_width + (h_this - z_this);
+	  condArea_epsilon *= m_st->channel_width + (h_this_epsilon - z_this);
+   }
+   //////  coupling flux as a source term (m^3/s)   
+   value = CalcCouplingValue(condArea, h_this_averaged, h_cond, z_cond, m_st);
+
+   value_jacobi = -condArea_epsilon * (h_cond - h_this_epsilon) + value; // it's a Newton iteration
+   MXInc(cnodev->msh_node_number, cnodev->msh_node_number, value_jacobi 
+      / epsilon);
+   /////  output 
+   m_pcs_this->SetNodeValue(cnodev->msh_node_number,
+   // coupling flux (m/s)
+      m_pcs_this->GetNodeValueIndex("COUPLING") + 1, -value/ area);
+ 
+ 
 }
 #endif
+
 /**************************************************************************
  FEMLib-Method:
  Task: Calculate relative coupling permeability for GetCouplingNODValue(***).
  Programing: prerequisites: phase 0 in mfp
  06/2007 JOD Implementation
  10/2008 JOD include leakance 4.7.10
+ 10/2012 JOD extension to two-phase flow
+ Gives 0 < relPerm < 1 dependent on liquid depth in the overland compartment
+                       with reference to an interface thickness
  **************************************************************************/
-double GetRelativeCouplingPermeability(const CRFProcess* pcs, double head, const CSourceTerm* source_term, long msh_node)
+
+double CSourceTerm::GetRelativeInterfacePermeability(CRFProcess* pcs, double head, long msh_node)
 {
-   double relPerm;
-   double z = pcs->m_msh->nod_vector[msh_node]->getData()[2];
 
-   //	if (pcs->pcs_type_name == "OVERLAND_FLOW") {
-   if (pcs->getProcessType() == FiniteElement::OVERLAND_FLOW)
-   {
-      double sat = (head - z) / std::max(1.e-6, source_term->rill_height);
-      if (sat > 1)
-         relPerm = 1;
-      else if (sat < 0)
-         relPerm = 0;
-      else
-         relPerm = pow(sat, 2* (1 - sat));
-   }
-   //	else if( pcs->pcs_type_name == "GROUNDWATER_FLOW")
-   else if( pcs->getProcessType() == FiniteElement::GROUNDWATER_FLOW)
-      relPerm = 1;
-   //	else if( pcs->pcs_type_name == "RICHARDS_FLOW") {
-   else if( pcs->getProcessType() == FiniteElement::RICHARDS_FLOW)
-   {
-      /*CElem *m_ele = NULL;
-       long msh_ele;
-       int group;
-       double gamma =  mfp_vector[0]->Density() * GRAVITY_CONSTANT; // only one phase
+   double relPerm, sat, z;
+  
+   if(pcs->getProcessType() == FiniteElement::OVERLAND_FLOW)
+   {                // flow direction from the overland compartment 
 
-       msh_ele = pcs->m_msh->nod_vector[msh_node]->connected_elements[0];
-       m_ele = pcs->m_msh->ele_vector[msh_ele];
-       group = pcs->m_msh->ele_vector[msh_ele]->GetPatchIndex();
+	 z = pcs->m_msh->nod_vector[msh_node]->getData()[2];
+     sat =  (head - z) / std::max(1.e-6, st_rill_height); // liquid content in an interface
+	       
+     if( sat > 1 )
+	    relPerm = 1; // liquid-covered surface (interface is filled)
+     else if( sat < 0 )
+	    relPerm = 0;  // no liquid on the surface
+     else
+	    relPerm = pow(sat, 2*(1- sat)); // interface is partially filled by a liquid
+		 
+	 CRFProcess* m_pcs_multiPhase = NULL;  
+     m_pcs_multiPhase = PCSGet("MULTI_PHASE_FLOW");
+	
+	 if(relPerm == 1 && pcs_pv_name_cond == "PRESSURE2") // surface closed for gas
+	 {
+        double capillaryPressure =  m_pcs_multiPhase->GetNodeValue(0, 3);
+		
+	    if( capillaryPressure > air_breaking_capillaryPressure || air_breaking == true ) 
+		{	
+	        relPerm *=  air_breaking_factor; // air-breaking
+		 	air_breaking = true;
+			
+			if( capillaryPressure <  air_closing_capillaryPressure ) 
+			{   // and  air-breaking (hysteresis)
+			   air_breaking = false;
+			}
+		} // end air_breaking	
+	 } // end relPerm = 1
+	
 
-       sat = mmp_vector[group]->SaturationCapillaryPressureFunction( -(head - z) * gamma, 0);
-       relPerm = mmp_vector[group]->PermeabilitySaturationFunction(sat,0);*/
-
-      relPerm = 1;                                // JOD 4.10.01
-   }
-   else
-   {
-      std::cout <<"!!!!! Coupling flux upwinding not implemented for this case !!!!!" << std::endl;
-      relPerm = 1;
-   }
-
-   return relPerm * source_term->getCoupLeakance();
+	 if (pcs_pv_name_cond == "PRESSURE2")
+	 {          // gas
+		 relPerm = (1 - relPerm)* (1-  coup_residualPerm) +  coup_residualPerm;    
+	 }
+  } // end overland flow
+  else
+    relPerm = 1;  // flow direction not from the overland compartment 
+	
+  return relPerm;
 }
-
 
 /**************************************************************************
  FEMLib-Method:
@@ -2253,7 +2364,7 @@ CNodeValue* cnodev)
 
    area = value;
    leakance = m_st->getCoupLeakance();
-   deltaZ = m_st->rill_height;
+   deltaZ = m_st->st_rill_height;
                                                   // phase  = 0 !!!!
    gamma = mfp_vector[0]->Density() * GRAVITY_CONSTANT;
    long msh_node_2nd;
@@ -2466,7 +2577,7 @@ void GetCriticalDepthNODValue(double &value, CSourceTerm* m_st, long msh_node)
    m_pcs_this = PCSGet(convertProcessTypeToString(m_st->getProcessType()));
    long nidx1 = m_pcs_this->GetNodeValueIndex("HEAD") + 1;
    flowdepth = m_pcs_this->GetNodeValue(msh_node, nidx1)
-      - m_pcs_this->m_msh->nod_vector[msh_node]->getData()[2] - m_st->rill_height;
+      - m_pcs_this->m_msh->nod_vector[msh_node]->getData()[2] - m_st->st_rill_height;
 
    if (flowdepth < 0.0)
    {
@@ -2543,7 +2654,7 @@ void GetNormalDepthNODValue(double &value, CSourceTerm* st, long msh_node)
    S_0 = st->getNormalDepthSlope();
 
    double flowdepth = pcs_this->GetNodeValue(msh_node, 1)
-      - mesh->nod_vector[msh_node]->getData()[2] - st->rill_height;
+      - mesh->nod_vector[msh_node]->getData()[2] - st->st_rill_height;
    double flowdepth_epsilon = flowdepth + epsilon;
    if (flowdepth < 0.0)
    {
@@ -2796,9 +2907,12 @@ void CSourceTermGroup::SetPLY(CSourceTerm* st, int ShiftInNodeVector)
 		m_msh->GetNODOnPLY(static_cast<const GEOLIB::Polyline*>(st->getGeoObj()), ply_nod_vector);
 		m_msh->setMinEdgeLength (min_edge_length);
 
-		if (st->isCoupled()) {
+		if (st->isCoupled())
 			SetPolylineNodeVectorConditional(st, ply_nod_vector, ply_nod_vector_cond);
-		}
+
+
+		if (st->distribute_volume_flux)   // 5.3.07 JOD
+			DistributeVolumeFlux(st, ply_nod_vector, ply_nod_val_vector);
 
 		SetPolylineNodeValueVector(st, ply_nod_vector, ply_nod_vector_cond, ply_nod_val_vector);
 
@@ -2895,6 +3009,10 @@ void CSourceTermGroup::SetSFC(CSourceTerm* m_st, const int ShiftInNodeVector)
       //		m_st->SetDISType();
       SetSurfaceNodeValueVector(m_st, m_sfc, sfc_nod_vector,
          sfc_nod_val_vector);
+
+	  if (m_st->distribute_volume_flux)   // 5.3.07 JOD
+		  DistributeVolumeFlux(m_st, sfc_nod_vector, sfc_nod_val_vector);
+
       m_st->SetNodeValues(sfc_nod_vector, sfc_nod_vector_cond,
          sfc_nod_val_vector, ShiftInNodeVector);
 
@@ -2969,6 +3087,7 @@ void CSourceTermGroup::SetSurfaceNodeVector(Surface* m_sfc,
  Task:
  Programing:
  11/2007 JOD
+ 12/2012 JOD Extension to TWO_PHASE_FLOW 5.3.07
  last modification:
  **************************************************************************/
 void CSourceTermGroup::SetPolylineNodeVectorConditional(CSourceTerm* st,
@@ -2980,22 +3099,22 @@ void CSourceTermGroup::SetPolylineNodeVectorConditional(CSourceTerm* st,
    {
       if (m_msh_cond)
       {
-         if (pcs_type_name == "RICHARDS_FLOW")
+         if (pcs_type_name == "RICHARDS_FLOW" || pcs_type_name == "MULTI_PHASE_FLOW")
          {
             //				m_msh_cond->GetNODOnPLY(m_ply, ply_nod_vector_cond);
             m_msh_cond->GetNODOnPLY(static_cast<const GEOLIB::Polyline*>(st->getGeoObj()), ply_nod_vector_cond);
             number_of_nodes = ply_nod_vector_cond.size();
-            assembled_mesh_node = ply_nod_vector[0];
+            assembled_mesh_node = ply_nod_vector[0]; // JOD  carefull !!! Sometimes fails
             ply_nod_vector.resize(number_of_nodes);
             for (size_t i = 0; i < number_of_nodes; i++)
                ply_nod_vector[i] = assembled_mesh_node;
-         }                                        // end richards
+         }                                        // end richards / multi_phase
          else if (pcs_type_name == "OVERLAND_FLOW" || pcs_type_name == "GROUNDWATER_FLOW")                // JOD 4.10.01
          {
             number_of_nodes = ply_nod_vector.size();
             //				m_msh_cond->GetNODOnPLY(m_ply, ply_nod_vector_cond);
             m_msh_cond->GetNODOnPLY(static_cast<const GEOLIB::Polyline*>(st->getGeoObj()), ply_nod_vector_cond);
-            assembled_mesh_node = ply_nod_vector_cond[0];
+            assembled_mesh_node = ply_nod_vector_cond[0];  // JOD  carefull !!! Sometimes fails
             ply_nod_vector_cond.resize(number_of_nodes);
             for (size_t i = 0; i < number_of_nodes; i++)
                ply_nod_vector_cond[i] = assembled_mesh_node;
@@ -3017,7 +3136,7 @@ void CSourceTermGroup::SetPolylineNodeVectorConditional(CSourceTerm* st,
    }                                              // end !area_assembly
 }
 
-
+/*
 // 09/2010 TF
 void CSourceTermGroup::SetPolylineNodeVectorConditional(CSourceTerm* st,
 		std::vector<size_t>& ply_nod_vector,
@@ -3062,7 +3181,7 @@ void CSourceTermGroup::SetPolylineNodeVectorConditional(CSourceTerm* st,
 		ply_nod_vector_cond.resize(number_of_nodes);
 		st->SetNOD2MSHNOD(ply_nod_vector, ply_nod_vector_cond);
 	} // end !area_assembly
-}
+}*/
 
 /**************************************************************************
  MSHLib-Method:
@@ -3118,9 +3237,9 @@ void CSourceTerm::InterpolatePolylineNodeValueVector(
  Task:
  Programing:
  11/2007 JOD
- last modification:
+ last modification: 
  **************************************************************************/
-void CSourceTermGroup::SetPolylineNodeValueVector(CSourceTerm* st, CGLPolyline * old_ply,
+/*void CSourceTermGroup::SetPolylineNodeValueVector(CSourceTerm* st, CGLPolyline * old_ply,
 		const std::vector<long>& ply_nod_vector,
 		std::vector<long>& ply_nod_vector_cond,
 		std::vector<double>& ply_nod_val_vector)
@@ -3158,7 +3277,7 @@ void CSourceTermGroup::SetPolylineNodeValueVector(CSourceTerm* st, CGLPolyline *
 				ply_nod_val_vector[i] = st->geo_node_value / (double) number_of_nodes; // distribute flow to nodes along polyline. To do.. 4.10.06
 		}
 	}
-	/*|| st->getProcessDistributionType() == PHILIP */
+	
 	if (st->getProcessDistributionType() == FiniteElement::CONSTANT_NEUMANN
 			|| st->getProcessDistributionType()
 					== FiniteElement::LINEAR_NEUMANN
@@ -3180,11 +3299,12 @@ void CSourceTermGroup::SetPolylineNodeValueVector(CSourceTerm* st, CGLPolyline *
 	if (st->isCoupled() && st->node_averaging)
 		AreaAssembly(st, ply_nod_vector_cond, ply_nod_val_vector);
 }
+*/
 
 // 09/2010 TF
 void CSourceTermGroup::SetPolylineNodeValueVector(CSourceTerm* st,
 		std::vector<long> const & ply_nod_vector,
-		std::vector<long>& ply_nod_vector_cond,
+		std::vector<long> const & ply_nod_vector_cond,
 		std::vector<double>& ply_nod_val_vector) const
 {
 	size_t number_of_nodes(ply_nod_vector.size());
@@ -3264,13 +3384,14 @@ void CSourceTermGroup::SetPolylineNodeValueVector(CSourceTerm* st,
  Task:
  Programing:
  11/2007 JOD
+ 12/2012 JOD Extension to TWO_PHASE_FLOW
  last modification:
  **************************************************************************/
 void CSourceTermGroup::AreaAssembly(const CSourceTerm* const st,
 const std::vector<long>& ply_nod_vector_cond,
 std::vector<double>& ply_nod_val_vector) const
 {
-   if (pcs_type_name == "RICHARDS_FLOW")
+   if (pcs_type_name == "RICHARDS_FLOW" || pcs_type_name == "MULTI_PHASE_FLOW")
    {
       if (m_msh_cond->GetMaxElementDim() == 1)    // 1D  //WW MB
          st->DomainIntegration(m_msh_cond, ply_nod_vector_cond,
@@ -3287,6 +3408,7 @@ std::vector<double>& ply_nod_val_vector) const
 }
 
 
+
 /**************************************************************************
  MSHLib-Method:
  Task:
@@ -3295,7 +3417,7 @@ std::vector<double>& ply_nod_val_vector) const
  last modification:
  **************************************************************************/
 void CSourceTermGroup::SetSurfaceNodeValueVector(CSourceTerm* st,
-		Surface* m_sfc, std::vector<long>&sfc_nod_vector,
+		Surface* m_sfc, std::vector<long> const &sfc_nod_vector,
 		std::vector<double>&sfc_nod_val_vector)
 {
    // CRFProcess* m_pcs = NULL;
@@ -3363,6 +3485,39 @@ void CSourceTermGroup::SetSurfaceNodeValueVector(CSourceTerm* st,
 
 }
 
+/**************************************************************************
+ FEMLib-Method: Distributes source term [m^3/s] uniformly on SFC, PLY 
+  use GEO_TYPE CONSTANT_NEUMANN 
+ 12/2012 5.3.07 JOD Implementation
+ **************************************************************************/
+void CSourceTermGroup::DistributeVolumeFlux(CSourceTerm* st, std::vector<long> const & nod_vector, 
+		                      std::vector<double>& nod_val_vector)
+{
+
+	double area;
+    std::vector<double> nod_val_vector_area;
+	    
+	area = 0;    
+    st->geo_node_value = 1;
+
+	if(st->getGeoType () == GEOLIB::POLYLINE)
+	  SetPolylineNodeValueVector(st, nod_vector, nod_vector, nod_val_vector_area);
+	else if(st->getGeoType () == GEOLIB::SURFACE)
+	{
+	   Surface* m_sfc = NULL;
+       m_sfc = GEOGetSFCByName(st->geo_name); 	  
+	   SetSurfaceNodeValueVector(st, m_sfc, nod_vector, nod_val_vector_area);
+	}
+	else
+		std::cout << "GEO_TYPE not supported in CSourceTermGroup::DistributeVolumeFlux()" << std::endl;
+
+	for(int i=0; i<(int)nod_val_vector_area.size();i++)
+	   area +=nod_val_vector_area[i];
+     	 
+	for(int i=0; i<(int)nod_val_vector.size();i++)
+       nod_val_vector[i] /= area;
+
+}
 
 /**************************************************************************
  MSHLib-Method:
@@ -4147,35 +4302,49 @@ void CSourceTerm::DeleteHistoryNodeMemory()
 /**************************************************************************
  FEMLib-Method: 4.7.10 shift and average field variables
  10/2008 JOD Implementation
+ 12/2012 JOD extension to two-phase flow  5.3.07
+ gives heads for liquids and pressures for gases
+ overland / groundwater nodes are shifted to a soil column if required
  **************************************************************************/
-void GetCouplingFieldVariables(double* h_this, double* h_cond,
+void GetCouplingFieldVariables( CRFProcess* m_pcs_this,  CRFProcess* m_pcs_cond, double* h_this, double* h_cond,
 double* h_shifted, double* h_averaged, double* z_this, double* z_cond,
-CSourceTerm* m_st, CNodeValue* cnodev)
+CSourceTerm* m_st, CNodeValue* cnodev, long msh_node_number, long msh_node_number_cond, double gamma)
 {
 
    int nidx, nidx_cond;
-   double gamma;
-   CRFProcess* m_pcs_this = NULL;
-   CRFProcess* m_pcs_cond = NULL;
+                                    
+   *z_this = m_pcs_this->m_msh->nod_vector[msh_node_number]->getData()[2];
+   *z_cond  = m_pcs_cond->m_msh->nod_vector[msh_node_number_cond]->getData()[2];
 
-   m_pcs_this = PCSGet(convertProcessTypeToString(m_st->getProcessType()));
-   m_pcs_cond = PCSGet(m_st->pcs_type_name_cond);
-                                                  // only one phase
-   gamma = mfp_vector[0]->Density() * GRAVITY_CONSTANT;
-   *z_this = m_pcs_this->m_msh->nod_vector[cnodev->msh_node_number]->getData()[2];
-   *z_cond
-      = m_pcs_cond->m_msh->nod_vector[cnodev->msh_node_number_conditional]->getData()[2];
    nidx = m_pcs_this->GetNodeValueIndex (convertPrimaryVariableToString (m_st->getProcessPrimaryVariable())) + 1;
    nidx_cond = m_pcs_cond->GetNodeValueIndex(m_st->pcs_pv_name_cond) + 1;
-   *h_this = m_pcs_this->GetNodeValue(cnodev->msh_node_number, nidx);
-   *h_cond = m_pcs_cond->GetNodeValue(cnodev->msh_node_number_conditional,
-      nidx_cond);
 
-   if (m_st->getProcessType() == FiniteElement::OVERLAND_FLOW)
+   *h_this = m_pcs_this->GetNodeValue(msh_node_number, nidx);
+
+   if(m_st->pcs_pv_name_cond == "HEIGHT" || m_st->pcs_pv_name_cond == "PRESSURE2")
    {
-      if (m_st->node_averaging)                   // shift overland node on soil column top, averaging over nodes
-      {
-         *h_shifted = *h_this - *z_this + *z_cond;
+	 *h_cond = *h_shifted = m_st->coup_pressure_head; // coupled to fixed pressure head / or atmospheric pressure
+	 *z_this = *z_cond = 0;
+	 return;
+   }
+   else
+     *h_cond = m_pcs_cond->GetNodeValue(msh_node_number_cond, nidx_cond); // coupled to a liquid
+
+   if(m_st->pcs_pv_name_cond == "PRESSURE1") {
+	
+	   if(m_st->pcs_type_name_cond == "MULTI_PHASE_FLOW")
+	   { // capillary pressure as a primary variable in the coupled process 
+	     double gasPressure =  m_pcs_cond->GetNodeValue(msh_node_number_cond, 3);
+	     *h_cond -= (gasPressure - m_st->coup_pressure_head);
+      }
+   }
+
+   if (m_st->getProcessType() == FiniteElement::OVERLAND_FLOW 
+	   || m_st->getProcessType() == FiniteElement::GROUNDWATER_FLOW)
+   {
+      if (m_st->node_averaging)                 
+      { // average pressures from overland / groundwater (soil column coupled to multiple nodes)
+         *h_shifted = *h_this - *z_this + *z_cond;  // shift overland / groundwater node to soil column
          *h_averaged = 0;
          for (long i = 0; i
             < (long) cnodev->msh_node_numbers_averaging.size(); i++)
@@ -4186,48 +4355,55 @@ CSourceTerm* m_st, CNodeValue* cnodev)
                nidx)
                - m_pcs_this->m_msh->nod_vector[cnodev->msh_node_numbers_averaging[i]]->getData()[2]);
 
-         *h_averaged += *z_cond;
+         *h_averaged += *z_cond; // convert to head
          *z_this = *z_cond;
       }                                           // end averaging
       else                                        // no averaging
-      {
+      {   // no column, no shifting
          *h_shifted = *h_this;
          *h_averaged = *h_this;
       }                                           // end no averaging
 
       if (m_st->pcs_pv_name_cond == "PRESSURE1")
-      {
-         *h_cond /= gamma;
-         *h_cond += *z_cond;
+      {       // convert to head
+		 if (m_st->pcs_type_name_cond == "MULTI_PHASE_FLOW")
+           *h_cond /= -gamma;
+		 else
+		   *h_cond /= gamma;
+         
+		 *h_cond += *z_cond;
       }
       if (m_st->pcs_type_name_cond == "GROUNDWATER_FLOW")
-         h_cond = std::max(h_cond, z_this);       //groundwater level might not reach overland flow bottom, than only hydrostatic overland pressure
-   }                                              // end overland flow
-   else                                           // richards & groundwater flow
-   {
+         h_cond = std::max(h_cond, z_this);       //groundwater level might not reach surface  
+   }          // end overland flow
+   else      
+   {     // subsurface flow
       if (m_st->pcs_pv_name_cond == "PRESSURE1")  // JOD 4.10.01
-      {
-         *h_cond /= gamma;
+      { // convert to head
+          if (m_st->pcs_type_name_cond == "MULTI_PHASE_FLOW")
+           *h_cond /= -gamma;
+		 else
+		   *h_cond /= gamma;
+
          *h_cond += *z_cond;
       }
-      if (m_st->node_averaging)                   // shift overland/groundwater node on soil column top, averaging over nodes
-      {
+      if (m_st->node_averaging)                   
+      {             // shift overland / groundwater node to the soil column
          *h_shifted = *h_cond - *z_cond;
          *h_shifted += *z_this;
          *z_cond = *z_this;
       }                                           // end averaging
       else
-         *h_shifted = *h_cond;
+         *h_shifted = *h_cond;  // no column, no shifting
 
       if (m_st->getProcessPrimaryVariable() == FiniteElement::PRESSURE)
-      {
-         *h_this /= gamma;
+      {   // convert pressure into head
+         *h_this /=  gamma;   
          *h_this += *z_this;
       }
-   }                                              // end richards & groundwater flow
+   }                                              // end subsurface flow
 
 }
-
 
 /**************************************************************************
  FEMLib-Method: 4.7.10
@@ -4239,21 +4415,22 @@ double z_cond, CSourceTerm* m_st)
 
    if (m_st->getProcessType() == FiniteElement::OVERLAND_FLOW)
    {
-      if (m_st->no_surface_water_pressure)        // 4.10.01
-         return factor * (h_cond - z_cond);
+      if (m_st->no_surface_water_pressure)        
+         return factor * (h_cond - z_cond); // neglect hydrostatic surface liquid pressure
       else
          return factor * (h_cond - h_this);
-   }                                              // richards & groundwater flow
+   }                                              // Richards' & groundwater flow
    else
    {
       if (m_st->getProcessType() == FiniteElement::GROUNDWATER_FLOW)
       {
          if (h_this < z_cond && m_st->pcs_type_name_cond == "OVERLAND_FLOW")
-            return factor * (h_cond - z_cond);
+            return factor * (h_cond - z_cond); // decoupled
          else
             return factor * h_cond;
       } else
-      // richards flow
-      return factor * (h_cond - z_cond);
+      return factor * (h_cond - z_cond);  // Richards', two-phase flow (liquid & gas)
    }
 }
+
+

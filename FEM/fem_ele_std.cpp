@@ -2014,6 +2014,17 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
                         global_tensor(i,j)+=(*MeshElement->transform_tensor)(i,k)*temp_tensor(k,j);
                }
                //cout << "K:" << endl; global_tensor.Write();
+			   if(MediaProp->unconfined_flow_group == 2) // 3D unconfined GW JOD, 5.3.07
+				{
+					double * pressureHead;
+					pressureHead = new double[8];
+					for(int i = 0; i < nnodes; i++)
+			              pressureHead[i] = pcs->GetNodeValue(nodes[i], 1) - pcs->m_msh->nod_vector[nodes[i]]->getData()[2];
+					PG = interpolate(pressureHead);
+					delete [] pressureHead;
+
+		            mat_fac = MediaProp->PermeabilitySaturationFunction(-PG,0);
+				}
                for(size_t i=0; i<dim; i++)
                {
                   for(size_t j=0; j<dim; j++)
@@ -2247,7 +2258,12 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 		Sw = MediaProp->SaturationCapillaryPressureFunction(-PG);
 
 		tensor = MediaProp->PermeabilityTensor(Index);
-		mat_fac = time_unit_factor * MediaProp->PermeabilitySaturationFunction(Sw,0) \
+
+		if(MediaProp->unconfined_flow_group == 2) // 3D unconfined GW JOD, 5.3.07
+		   mat_fac = time_unit_factor * MediaProp->PermeabilitySaturationFunction(-PG,0) \
+		          / FluidProp->Viscosity();
+		else 		  
+			mat_fac = time_unit_factor * MediaProp->PermeabilitySaturationFunction(Sw,0) \
 		          / FluidProp->Viscosity();
 		// Modified LBNL model WW
 		if(MediaProp->permeability_stress_mode > 1)

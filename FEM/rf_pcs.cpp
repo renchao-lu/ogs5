@@ -3185,6 +3185,11 @@ void CRFProcess::ConfigUnsaturatedFlow()
 		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
 		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
 		pcs_number_of_secondary_nvals++;
+			// for calibration (unconfined groundwater flow with variable density) 5.3.07 JOD
+	    pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "HEAD";
+        pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m";
+        pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+        pcs_number_of_secondary_nvals++;
 	}
 	else if ((int) continuum_vector.size() == 2)
 	{

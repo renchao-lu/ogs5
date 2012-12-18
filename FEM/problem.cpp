@@ -505,15 +505,15 @@ Problem::~Problem()
    -------------------------------------------------------------------------*/
 inline int Problem::AssignProcessIndex(CRFProcess* m_pcs, bool activefunc)
 {
-	//	if (m_pcs->pcs_type_name.compare("LIQUID_FLOW") == 0) {
-	if (m_pcs->getProcessType() == FiniteElement::LIQUID_FLOW)
+	//	if (m_pcs->pcs_type_name.compare("OVERLAND_FLOW") == 0) {
+	if (m_pcs->getProcessType() == FiniteElement::OVERLAND_FLOW)
 	{
 		if (!activefunc)
 			return 0;
 		total_processes[0] = m_pcs;
-		active_processes[0] = &Problem::LiquidFlow;
+		active_processes[0] = &Problem::OverlandFlow;
 		return 0;
-		//	} else if (m_pcs->pcs_type_name.compare("GROUNDWATER_FLOW") == 0) {
+		//	} else if (m_pcs->pcs_type_name.compare("AIR_FLOW") == 0) {
 	}
 	else if (m_pcs->getProcessType() == FiniteElement::GROUNDWATER_FLOW)
 	{
@@ -558,14 +558,14 @@ inline int Problem::AssignProcessIndex(CRFProcess* m_pcs, bool activefunc)
 		//		return 5;
 		//	} else if (m_pcs->pcs_type_name.compare("OVERLAND_FLOW") == 0) {
 	}
-	else if (m_pcs->getProcessType() == FiniteElement::OVERLAND_FLOW)
+	else if (m_pcs->getProcessType() == FiniteElement::LIQUID_FLOW)
 	{
 		if (!activefunc)
 			return 6;
 		total_processes[6] = m_pcs;
-		active_processes[6] = &Problem::OverlandFlow;
+		active_processes[6] = &Problem::LiquidFlow;
 		return 6;
-		//	} else if (m_pcs->pcs_type_name.compare("AIR_FLOW") == 0) {
+		//	} else if (m_pcs->pcs_type_name.compare("GROUNDWATER_FLOW") == 0) {
 	}
 	else if (m_pcs->getProcessType() == FiniteElement::AIR_FLOW)
 	{
@@ -1373,7 +1373,7 @@ inline double Problem::LiquidFlow()
 {
 	int success;
 	double error = 0.;
-	CRFProcess* m_pcs = total_processes[0];
+	CRFProcess* m_pcs = total_processes[6];
 	if(!m_pcs->selected)
 		return error;
 	//  error = m_pcs->Execute();
@@ -2740,7 +2740,7 @@ inline double Problem::ComponentalFlow()
 inline double Problem::OverlandFlow()
 {
 	double error = 1.e8;
-	CRFProcess* m_pcs = total_processes[6];
+	CRFProcess* m_pcs = total_processes[0];
 	if(!m_pcs->selected)
 		return error;             //12.12.2008 WW
 

@@ -292,7 +292,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 				break;
 			//------------------------------------------------------------------
 			case GEOLIB::POLYLINE: // profiles along polylines
-				 if (m_out->dat_type_name.compare("GNUPLOT") != 0) // JOD !!!!!
+				 if (m_out->dat_type_name.compare("GNUPLOT") != 0) // JOD 5.3.07
 					 std::cout << "Data output: Polyline profile - " << m_out->getGeoName() << std::endl;
 				if (OutputBySteps)
 				{
@@ -328,7 +328,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 				break;
 			//------------------------------------------------------------------
 			case GEOLIB::POINT: // breakthrough curves in points
-				if (m_out->dat_type_name.compare("GNUPLOT") != 0) // JOD !!!!!
+				if (m_out->dat_type_name.compare("GNUPLOT") != 0) // JOD 5.3.07
 					cout << "Data output: Breakthrough curves - " << m_out->getGeoName() << endl;
 				m_out->NODWritePNTDataTEC(time_current, time_step_number);
 				if (!m_out->_new_file_opened)
