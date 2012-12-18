@@ -368,6 +368,14 @@ std::ios::pos_type CSourceTerm::Read(std::ifstream *st_file,
          continue;
       }
 
+	  if (line_string.find("$AIR_BREAKING") != std::string::npos) // JOD 5.3.07
+      {
+         in.clear();
+         in.str(readNonBlankLineFromInputStream(*st_file));
+         in >> air_breaking_factor >> air_breaking_capillaryPressure >> air_closing_capillaryPressure;
+         continue;
+      }
+
       if (line_string.find("$TIM_TYPE") != std::string::npos)
       {
          in.str(readNonBlankLineFromInputStream(*st_file));
