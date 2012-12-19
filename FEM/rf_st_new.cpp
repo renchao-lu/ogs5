@@ -338,8 +338,8 @@ std::ios::pos_type CSourceTerm::Read(std::ifstream *st_file,
          continue;
       }
 
-	  if (line_string.find("$DISTRIBUTE_VOLUME_FLUX") != std::string::npos) //  JOD 5.3.07
-      {
+	  if (line_string.find("$DISTRIBUTE_VOLUME_FLUX") != std::string::npos) 
+      {    //  JOD 5.3.07
          in.clear();
          distribute_volume_flux = true;
          continue;
@@ -368,8 +368,8 @@ std::ios::pos_type CSourceTerm::Read(std::ifstream *st_file,
          continue;
       }
 
-	  if (line_string.find("$AIR_BREAKING") != std::string::npos) // JOD 5.3.07
-      {
+	  if (line_string.find("$AIR_BREAKING") != std::string::npos) 
+      {   // JOD 5.3.07
          in.clear();
          in.str(readNonBlankLineFromInputStream(*st_file));
          in >> air_breaking_factor >> air_breaking_capillaryPressure >> air_closing_capillaryPressure;
@@ -2160,13 +2160,13 @@ CNodeValue* cnodev)
    if(m_st->getProcessType() == FiniteElement::MULTI_PHASE_FLOW &&  m_st->pcs_pv_name_cond == "HEAD"   // 
 		 && m_st->pcs_type_name_cond == "OVERLAND_FLOW" ) // ??? 
    {   // gas pressure term 
-	   MXInc(cnodev->msh_node_number , cnodev->msh_node_number+ m_pcs_this->m_msh->nod_vector.size(), -condArea); 
-	   value  -= condArea * m_st->coup_pressure_head;
+	  MXInc(cnodev->msh_node_number , cnodev->msh_node_number+ m_pcs_this->m_msh->nod_vector.size(), -condArea); 
+	  value  -= condArea * m_st->coup_pressure_head;
    }
   
-                          
-   m_pcs_this->SetNodeValue( mesh_node_number,   // for GW water balance ply / pnt 
-	   m_pcs_this->GetNodeValueIndex("FLUX") + 1, condArea); 
+   if (m_st->getProcessType() == FiniteElement::GROUNDWATER_FLOW)                   
+     m_pcs_this->SetNodeValue( mesh_node_number,   // for GW water balance ply / pnt 
+	     m_pcs_this->GetNodeValueIndex("FLUX") + 1, condArea); 
 
 
    if (m_st->no_surface_water_pressure)           // neglect hydrostatic surface liquid pressure
@@ -3112,7 +3112,7 @@ void CSourceTermGroup::SetPolylineNodeVectorConditional(CSourceTerm* st,
             //				m_msh_cond->GetNODOnPLY(m_ply, ply_nod_vector_cond);
             m_msh_cond->GetNODOnPLY(static_cast<const GEOLIB::Polyline*>(st->getGeoObj()), ply_nod_vector_cond);
             number_of_nodes = ply_nod_vector_cond.size();
-            assembled_mesh_node = ply_nod_vector[0]; // JOD  carefull !!! Sometimes fails
+            assembled_mesh_node = 0;// ply_nod_vector[0]; // JOD  carefull !!! ply sometimes fails
             ply_nod_vector.resize(number_of_nodes);
             for (size_t i = 0; i < number_of_nodes; i++)
                ply_nod_vector[i] = assembled_mesh_node;
@@ -3122,7 +3122,7 @@ void CSourceTermGroup::SetPolylineNodeVectorConditional(CSourceTerm* st,
             number_of_nodes = ply_nod_vector.size();
             //				m_msh_cond->GetNODOnPLY(m_ply, ply_nod_vector_cond);
             m_msh_cond->GetNODOnPLY(static_cast<const GEOLIB::Polyline*>(st->getGeoObj()), ply_nod_vector_cond);
-            assembled_mesh_node = ply_nod_vector_cond[0];  // JOD  carefull !!! Sometimes fails
+            assembled_mesh_node = 0; // ply_nod_vector_cond[0];  // JOD  carefull !!! ply sometimes fails
             ply_nod_vector_cond.resize(number_of_nodes);
             for (size_t i = 0; i < number_of_nodes; i++)
                ply_nod_vector_cond[i] = assembled_mesh_node;
@@ -4374,9 +4374,9 @@ CSourceTerm* m_st, CNodeValue* cnodev, long msh_node_number, long msh_node_numbe
 
       if (m_st->pcs_pv_name_cond == "PRESSURE1")
       {       // convert to head
-		 if (m_st->pcs_type_name_cond == "MULTI_PHASE_FLOW")
-           *h_cond /= -gamma;
-		 else
+		// if (m_st->pcs_type_name_cond == "MULTI_PHASE_FLOW")
+          // *h_cond /= -gamma;
+		 //else
 		   *h_cond /= gamma;
          
 		 *h_cond += *z_cond;
@@ -4388,9 +4388,9 @@ CSourceTerm* m_st, CNodeValue* cnodev, long msh_node_number, long msh_node_numbe
    {     // subsurface flow
       if (m_st->pcs_pv_name_cond == "PRESSURE1")  // JOD 4.10.01
       { // convert to head
-          if (m_st->pcs_type_name_cond == "MULTI_PHASE_FLOW")
-           *h_cond /= -gamma;
-		 else
+          //if (m_st->pcs_type_name_cond == "MULTI_PHASE_FLOW")
+          // *h_cond /= -gamma;
+		 //else
 		   *h_cond /= gamma;
 
          *h_cond += *z_cond;
