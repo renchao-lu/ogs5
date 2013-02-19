@@ -61,20 +61,15 @@ ENDIF()
 MARK_AS_ADVANCED(CMAKE_THREAD_PREFER_PTHREAD)
 
 ## boost (see FindBoost.cmake for more options) ##
-IF (UNIX AND GCC AND OGS_FEM_GEMS)
-       set(Boost_USE_STATIC_LIBS    OFF)
-ELSE()
-       set(Boost_USE_STATIC_LIBS    ON)
-ENDIF()
-
-set(Boost_USE_MULTITHREADED      ON)
-set(Boost_USE_STATIC_RUNTIME    OFF)
+set(Boost_USE_STATIC_LIBS    ON)
+set(Boost_USE_MULTITHREADED  ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
 
 IF(NOT OGS_FEM_GEMS)
-	FIND_PACKAGE( Boost COMPONENTS filesystem system regex)
+	FIND_PACKAGE( Boost 1.50.0 COMPONENTS filesystem system regex)
 ELSE()
 	# Boost with threads is required for GEMS
-	FIND_PACKAGE( Boost COMPONENTS filesystem system regex thread )
+	FIND_PACKAGE( Boost 1.50.0 COMPONENTS filesystem system regex thread )
 ENDIF()
 
 ## VTK ##
