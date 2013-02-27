@@ -98,4 +98,4 @@ private:
 };
 
 extern void FMRead(std::string pcs_name = "");
-extern void DATWriteHETFile(const char* file_name);
+//WWextern void DATWriteHETFile(const char* file_name);

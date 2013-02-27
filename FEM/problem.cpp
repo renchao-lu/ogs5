@@ -14,9 +14,7 @@
 #include <mpi.h>
 #endif
 
-#if defined(USE_MPI_REGSOIL)
-#include "par_ddc.h"
-#endif
+
 #include <cfloat>
 #include <iostream>
 #include <sstream>
@@ -38,7 +36,11 @@ extern int ReadData(char*, GEOLIB::GEOObjects& geo_obj, std::string& unique_name
 #include "pcs_dm.h"
 #include "rf_pcs.h"
 //16.12.2008.WW #include "rf_apl.h"
+
+#if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
 #include "par_ddc.h"
+#endif
+
 #include "rf_react.h"
 #include "rf_st_new.h"
 #include "rf_tim_new.h"
@@ -72,6 +74,10 @@ extern int ReadData(char*, GEOLIB::GEOObjects& geo_obj, std::string& unique_name
 #endif
 #include "rf_kinreact.h"
 
+#if defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
+#include "PETSC/PETScLinearSolver.h"
+#endif
+
 namespace process
 {class CRFProcessDeformation;
 }
@@ -96,9 +102,12 @@ Problem::Problem (char* filename) :
 	{
 		// read data
 		ReadData(filename, *_geo_obj, _geo_name);
+#if !defined(USE_PETSC) && !defined(NEW_EQS) // && defined(other parallel libs)//03~04.3012. WW
 		DOMRead(filename);
+#endif
 	}
-#ifndef NEW_EQS
+#if !defined(USE_PETSC) && !defined(NEW_EQS) // && defined(other parallel libs)//03~04.3012. WW
+	//#ifndef NEW_EQS
 	ConfigSolverProperties();             //_new. 19.10.2008. WW
 #endif
 
@@ -301,6 +310,9 @@ Problem::Problem (char* filename) :
 	// DDC
 	size_t no_processes = pcs_vector.size();
 	CRFProcess* m_pcs = NULL;
+#if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
+	//----------------------------------------------------------------------
+	// DDC
 	if(dom_vector.size() > 0)
 	{
 		DOMCreate();
@@ -334,6 +346,7 @@ Problem::Problem (char* filename) :
 		}
 #endif
 	}
+#endif //#if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
 	//----------------------------------------------------------------------
 	PCSRestart();                         //SB
 	if(transport_processes.size() > 0)    //WW. 12.12.2008
@@ -415,16 +428,25 @@ Problem::Problem (char* filename) :
 				maxi_eqs_dim = m_pcs->size_unknowns;
 		}
 		buffer_array = new double[maxi_eqs_dim];
+		buffer_array1 = new double[maxi_eqs_dim];			
 	}
 	else
+	  {
 		buffer_array = NULL;
+		buffer_array1 = NULL;
+	  }
 	//========================================================================
 	CRFProcessDeformation* dm_pcs = NULL;
 
 	//  //WW
+	bool fluid_mom_pcs = false;
 	for (size_t i = 0; i < no_processes; i++)
 	{
 		m_pcs = pcs_vector[i];
+		if(m_pcs->getProcessType() == FiniteElement::FLUID_MOMENTUM) //09.2012 WW
+		{
+			fluid_mom_pcs = true;
+		}
 		m_pcs->CalcSecondaryVariables(true); //WW
 		m_pcs->Extropolation_MatValue(); //WW
 	}
@@ -434,6 +456,15 @@ Problem::Problem (char* filename) :
 	dm_pcs = (CRFProcessDeformation*)total_processes[12];
 	if(dm_pcs)
 		dm_pcs->CreateInitialState4Excavation();
+
+	// Free memory occupied by edges. 09.2012. WW
+	if(!fluid_mom_pcs)
+	{
+       for(size_t k = 0; k < fem_msh_vector.size(); k++)
+       {
+		  fem_msh_vector[k]->FreeEdgeMemory();
+	   }
+	}
 }
 
 /**************************************************************************
@@ -454,7 +485,10 @@ Problem::~Problem()
 	delete[] exe_flag;
 	if (buffer_array)
 		delete[] buffer_array;
+	if (buffer_array1)
+		delete[] buffer_array1;
 	buffer_array = NULL;
+	buffer_array1 = NULL;
 	active_processes = NULL;
 	exe_flag = NULL;
 	//
@@ -758,9 +792,6 @@ void Problem::PCSCreate()
 		pcs_vector[i]->Config();  //OK
 	}
 
-#ifdef NEW_EQS
-	CreateEQS_LinearSolver();             //WW
-#endif
 
 	for (size_t i = 0; i < no_processes; i++)
 	{
@@ -779,6 +810,11 @@ void Problem::PCSCreate()
 		std::cout << "\n";
 		pcs_vector[i]->Create();
 	}
+
+
+#if defined(USE_PETSC) || defined(NEW_EQS) // || defined(other solver libs)//03.3012. WW
+       CreateEQS_LinearSolver();  
+#endif
 
 	for (size_t i = 0; i < no_processes; i++)
 		MMP2PCSRelation(pcs_vector[i]);
@@ -1344,7 +1380,8 @@ void Problem::PostCouplingLoop()
 		}
 	}
 // WW
-#ifndef NEW_EQS                                //WW. 07.11.2008
+#if !defined(USE_PETSC) && !defined(NEW_EQS) // && defined(other parallel libs)//03~04.3012. WW
+	//#ifndef NEW_EQS                                //WW. 07.11.2008
 	if (total_processes[1])
 		total_processes[1]->AssembleParabolicEquationRHSVector();
 #endif
@@ -2697,7 +2734,8 @@ inline double Problem::GroundWaterFlow()
 		}
 	}
 	// ELE values
-#ifndef NEW_EQS                                //WW. 07.11.2008
+#if !defined(USE_PETSC) && !defined(NEW_EQS) // && defined(other parallel libs)//03~04.3012. WW
+	//#ifndef NEW_EQS                                //WW. 07.11.2008
 	if(m_pcs->tim_type_name.compare("STEADY") == 0) //CMCD 05/2006
 	{
 		//std::cout << "      Calculation of secondary ELE values" << "\n";
@@ -3116,6 +3154,12 @@ inline double Problem::Deformation()
 	//
 	dm_pcs = (CRFProcessDeformation*)(m_pcs);
 	error = dm_pcs->Execute(loop_process_number);
+
+	if(   dm_pcs->pcs_type_name_vector.size()>0 
+		&&dm_pcs->pcs_type_name_vector[0].find("DYNAMIC") != std::string::npos)
+	{
+       return  error;
+	} 
 	//Error
 	if (dm_pcs->type / 10 == 4)
 	{

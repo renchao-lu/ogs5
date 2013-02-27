@@ -45,8 +45,8 @@ extern size_t max_dim;                            //OK411 todo
 #include "par_ddc.h"
 #endif
 #ifdef SUPERCOMPUTER
-// kg44 this is usefull for io-buffering as "\n" flushes the buffer
-#define "\n" '\n'     // Introduced by WW. LB super bad programming style: this breaks platform independet IO
+// kg44 this is usefull for io-buffering as endl flushes the buffer
+#define endl '\n'     // Introduced by WW. LB super bad programming style: this breaks platform independet IO
 #define MY_IO_BUFSIZE 4096
 #endif // SUPERCOMPUTER
 #ifdef GEM_REACT
@@ -67,6 +67,7 @@ COutput::COutput() :
 	tim_type_name = "TIMES";
 	m_pcs = NULL;
 	vtk = NULL; //NW
+	tecplot_zone_share = false; // 10.2012. WW
 	VARIABLESHARING = false;	//BG
 }
 
@@ -77,9 +78,31 @@ COutput::COutput(size_t id) :
 	tim_type_name = "TIMES";
 	m_pcs = NULL;
 	vtk = NULL; //NW
+	tecplot_zone_share = false; // 10.2012. WW
 	VARIABLESHARING = false;	//BG
 }
+#if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//03.3012. WW
+void COutput::setMPI_Info(const int rank, const int size, std::string rank_str)
+{
+  mrank = rank;
+  msize = size;
+  mrank_str = rank_str;
+}  
+#endif
 
+/*!
+   Create the instance of class CVTK
+   04.2012. WW
+ */
+void COutput::CreateVTKInstance(void)
+{
+#if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//03.3012. WW
+  vtk = new CVTK(mrank, mrank_str);
+#else
+   vtk = new CVTK();
+#endif
+
+}
 void COutput::init()
 {
 	if (getProcessType () == FiniteElement::INVALID_PROCESS)
@@ -433,6 +456,12 @@ ios::pos_type COutput::Read(std::ifstream& in_str,
 
 			continue;
 		}
+		// For teplot zone share. 10.2012. WW
+		if (line_string.find("$TECPLOT_ZONE_SHARE") != string::npos)
+		{
+			tecplot_zone_share = true; 
+			continue;
+		}
 	}
 	return position;
 }
@@ -652,6 +681,10 @@ void COutput::NODWriteDOMDataTEC()
 		tec_file_name += "_" + string(tf_name);
 		std::cout << "Tecplot filename: " << tec_file_name << "\n";
 #endif
+#if defined(USE_PETSC)  //|| defined(other parallel libs)//03.3012. WW
+		tec_file_name += "_"+mrank_str;
+		std::cout << "Tecplot filename: " << tec_file_name << "\n";
+#endif
 		tec_file_name += TEC_FILE_EXTENSION;
 		//WW
 		if(!_new_file_opened)
@@ -669,7 +702,18 @@ void COutput::NODWriteDOMDataTEC()
 		//
 		WriteTECHeader(tec_file,te,eleType);
 		WriteTECNodeData(tec_file);
-		WriteTECElementData(tec_file,te);
+
+		// 08.2012. WW
+        if(tecplot_zone_share)
+		{
+	     	if(!_new_file_opened)  
+	           WriteTECElementData(tec_file,te);
+		}
+		else
+		{
+            WriteTECElementData(tec_file,te);
+		}
+
 		tec_file.close();         // kg44 close file
 		//--------------------------------------------------------------------
 		// tri elements
@@ -816,6 +860,9 @@ void COutput::WriteTECNodeData(fstream &tec_file)
 	int nidx, nidx_dm[3];
 	vector<int> NodeIndex(nName);
 	string nod_value_name;                //OK
+	CNode *node = NULL;
+	CRFProcess *deform_pcs = NULL; // 23.01.2012. WW. nulltpr
+
 	int timelevel;
 	//	m_msh = GetMSH();
 	CRFProcess* m_pcs_out = NULL;
@@ -825,38 +872,55 @@ void COutput::WriteTECNodeData(fstream &tec_file)
 		m_pcs = PCSGet(_nod_value_vector[k], true);
 		if (m_pcs != NULL)
 		{
-			NodeIndex[k] = m_pcs->GetNodeValueIndex(_nod_value_vector[k],true); // JT Latest.
-		}
-	}
+            NodeIndex[k] = m_pcs->GetNodeValueIndex(_nod_value_vector[k],true); // JT Latest.
+            if(     (m_pcs->getProcessType() == FiniteElement::DEFORMATION)
+                 || (m_pcs->getProcessType() == FiniteElement::DEFORMATION_DYNAMIC)
+                 ||  (m_pcs->getProcessType() == FiniteElement::DEFORMATION_FLOW)
+                 ||  (m_pcs->getProcessType() == FiniteElement::DEFORMATION_H2)			
+               )
+            {
+                deform_pcs = m_pcs;
+            }
+         }
+    }
 
-	if (M_Process || MH_Process)          //WW
+	if (deform_pcs)    // 23.01.2012. WW.
 	{
-		m_pcs = PCSGet("DISPLACEMENT_X1", true);
-		nidx_dm[0] = m_pcs->GetNodeValueIndex("DISPLACEMENT_X1") + 1;
-		nidx_dm[1] = m_pcs->GetNodeValueIndex("DISPLACEMENT_Y1") + 1;
+		nidx_dm[0] = deform_pcs->GetNodeValueIndex("DISPLACEMENT_X1") + 1;
+		nidx_dm[1] = deform_pcs->GetNodeValueIndex("DISPLACEMENT_Y1") + 1;
 		if (max_dim > 1)
-			nidx_dm[2] = m_pcs->GetNodeValueIndex("DISPLACEMENT_Z1") + 1;
+			nidx_dm[2] = deform_pcs->GetNodeValueIndex("DISPLACEMENT_Z1") + 1;
 		else
 			nidx_dm[2] = -1;
 	}
+	// 08.2012. WW
+	bool out_coord = true;
+	if(tecplot_zone_share && _new_file_opened)
+       out_coord = false;
 	for (size_t j = 0; j < m_msh->GetNodesNumber(false); j++)
 	{
-		// XYZ
-		double x[3] =
-		{(m_msh->nod_vector[j]->getData())[0], (m_msh->nod_vector[j]->getData())[1],
-		 (m_msh->nod_vector[j]->getData())[2]};
-//      x[0] = m_msh->nod_vector[j]->X();
-//      x[1] = m_msh->nod_vector[j]->Y();
-//      x[2] = m_msh->nod_vector[j]->Z();
-		// Amplifying DISPLACEMENTs
-		if (M_Process || MH_Process) //WW
+       node = m_msh->nod_vector[j];  // 23.01.2013. WW
+       const size_t n_id = node->GetIndex(); 
 
-			for (size_t k = 0; k < max_dim + 1; k++)
-				x[k] += out_amplifier * m_pcs->GetNodeValue(
-				        m_msh->nod_vector[j]->GetIndex(), nidx_dm[k]);
-		for (size_t i = 0; i < 3; i++)
-			tec_file << x[i] << " ";
+	   if(out_coord) // 08.2012. WW
+	   {
+		  // XYZ
+		  const double *x = node->getData(); // 23.01.2013. WW
 
+		  // Amplifying DISPLACEMENTs
+	      if (deform_pcs)  // 23.01.2012. WW.
+		  {
+	         for (size_t i = 0; i <max_dim+1; i++)
+		        tec_file << x[i] + out_amplifier * m_pcs->GetNodeValue(n_id, nidx_dm[i]) << " ";
+	         for (size_t i = max_dim+1; i<3; i++)
+		        tec_file << x[i] << " ";
+		  }
+		  else
+		  {
+	         for (size_t i = 0; i < 3; i++)
+		        tec_file << x[i] << " ";
+		  }
+	   }  
 		// NOD values
 		// Mass transport
 		//     if(pcs_type_name.compare("MASS_TRANSPORT")==0){
@@ -889,10 +953,7 @@ void COutput::WriteTECNodeData(fstream &tec_file)
 									        +
 									        timelevel;
 									tec_file <<
-									m_pcs_out->GetNodeValue(
-									        m_msh->nod_vector[j
-									        ]->GetIndex(),
-									        nidx) << " ";
+									m_pcs_out->GetNodeValue(n_id, nidx) << " ";
 								}
 								timelevel++;
 							}
@@ -909,20 +970,20 @@ void COutput::WriteTECNodeData(fstream &tec_file)
 					if (NodeIndex[k] > -1) {
 						if ((m_pcs->type == 14) && (_nod_value_vector[k] == "HEAD"))
 						{    // HEAD output for RICHARDS_FLOW (unconfined GW) 5.3.07 JOD 
-					 double rhow;
+				          double rhow;
 			               double dens_arg[3];
 						   CRFProcess* m_pcs_transport = NULL;
 						   m_pcs_transport = PCSGet("MASS_TRANSPORT");
 						   if(m_pcs_transport) {
-	                         dens_arg[2]  = m_pcs_transport->GetNodeValue(m_msh->nod_vector[j]->GetIndex(), 1);  // first component!!! 
+	                         dens_arg[2]  = m_pcs_transport->GetNodeValue(n_id, 1);  // first component!!! 
 		                     rhow = mfp_vector[0]->Density(dens_arg);   // first phase!!!  dens_arg
 						   }
 						   else
 						     rhow = mfp_vector[0]->Density(); 
- 			               val_n = m_pcs->GetNodeValue(m_msh->nod_vector[j]->GetIndex(), m_pcs->GetNodeValueIndex("PRESSURE1") + 1) / (rhow * 9.81 ) + m_msh->nod_vector[m_msh->nod_vector[j]->GetIndex()]->getData()[2];
+ 			               val_n = m_pcs->GetNodeValue(n_id, m_pcs->GetNodeValueIndex("PRESSURE1") + 1) / (rhow * 9.81 ) + m_msh->nod_vector[m_msh->nod_vector[j]->GetIndex()]->getData()[2];
 						   tec_file << val_n << " ";
 						} else {
-							val_n = m_pcs->GetNodeValue(m_msh->nod_vector[j]->GetIndex(), NodeIndex[k]); //WW
+							val_n = m_pcs->GetNodeValue(n_id, NodeIndex[k]); //WW
 							tec_file << val_n << " ";
 							if ((m_pcs->type == 1212 || m_pcs->type == 42)
 								&& _nod_value_vector[k].find("SATURATION") != string::npos) //WW
@@ -934,7 +995,7 @@ void COutput::WriteTECNodeData(fstream &tec_file)
 			//OK4704
 			for (size_t k = 0; k < mfp_value_vector.size(); k++)
 				//tec_file << MFPGetNodeValue(m_msh->nod_vector[j]->GetIndex(),mfp_value_vector[k]) << " "; //NB
-				tec_file << MFPGetNodeValue(m_msh->nod_vector[j]->GetIndex(),
+				tec_file << MFPGetNodeValue(n_id,
 				                            mfp_value_vector[k], atoi(&mfp_value_vector[k][mfp_value_vector[k].size() - 1]) - 1) << " ";  //NB: MFP output for all phases
 		}
 		tec_file << "\n";
@@ -1038,6 +1099,12 @@ void COutput::WriteTECHeader(fstream &tec_file,int e_type, string e_type_name)
 	   //int timestep = this->getNSteps;
       //if (this->
     }
+	//
+    if(_new_file_opened && tecplot_zone_share)  // 08.2012. WW
+	{
+        tec_file <<"VARSHARELIST=([1-3]=1)"<<"\n";
+        tec_file <<"CONNECTIVITYSHAREZONE=1"<<"\n";
+	}
 }
 
 /**************************************************************************
@@ -1501,6 +1568,11 @@ double COutput::NODWritePLYDataTEC(int number)
 **************************************************************************/
 void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
 {
+	long msh_node_number(m_msh->GetNODOnPNT(
+	                             static_cast<const GEOLIB::Point*> (getGeoObj())));
+        if(msh_node_number < 0)  //11.06.2012. WW
+	  return;
+
 	CRFProcess* dm_pcs = NULL;
 	for (size_t i = 0; i < pcs_vector.size(); i++)
 		//		if (pcs_vector[i]->pcs_type_name.find("DEFORMATION") != string::npos) { TF
@@ -1646,8 +1718,8 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
 	if (pcs_vector[0] == NULL)
 		return;
 
-	long msh_node_number(m_msh->GetNODOnPNT(
-	                             static_cast<const GEOLIB::Point*> (getGeoObj())));
+	//11.06.2012. WW// long msh_node_number(m_msh->GetNODOnPNT(
+	//                             static_cast<const GEOLIB::Point*> (getGeoObj())));
 
 	// Mass transport
 	if (getProcessType() == FiniteElement::MASS_TRANSPORT)
@@ -2771,14 +2843,16 @@ double COutput::NODFlux(long nod_number)
 	   flux_sum += m_pcs->GetNodeValue(gnode,NodeIndex[k]);
 	 */
 	// All elements at node //OK
-#ifdef NEW_EQS                                 //WW. 07.11.2008
+#if defined (USE_PETSC) // || defined (other parallel solver lib). 04.2012 WW
+	return 0;
+#elif NEW_EQS                                 //WW. 07.11.2008
 	return 0.;                            //To do: m_pcs->eqs_new->b[nod_number];
 #else
 	// Element nodal RHS contributions
-	m_pcs->eqs->b[nod_number] = 0.0;
+	m_pcs->getEQSPointer()->b[nod_number] = 0.0;
 	MeshLib::CNode* nod = m_msh->nod_vector[nod_number];
 	m_pcs->AssembleParabolicEquationRHSVector(nod);
-	return m_pcs->eqs->b[nod_number];
+	return m_pcs->getEQSPointer()->b[nod_number];
 #endif
 }
 

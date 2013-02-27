@@ -6,6 +6,8 @@
 #include "fem_ele.h"
 #include "fem_ele_std.h"
 
+#include "geo_pnt.h" 
+
 class CReadTextfiles_DuMux
 {
 public:

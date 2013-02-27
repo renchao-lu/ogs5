@@ -3986,7 +3986,7 @@ void CECLIPSEData::WriteDataToGeoSys(CRFProcess* m_pcs, std::string path)
 	if (int(this->Phases.size()) == 1)
 	{
 		index_pressure1 = m_pcs->GetNodeValueIndex("PRESSURE1") + 1; //+1... new time level
-		index_water_density = m_pcs->GetNodeValueIndex("DENSITY1");
+		index_water_density = m_pcs->GetNodeValueIndex("DENSITY1");  //DENSITY1 is not a variable for some flow process, e.g. LIQUID_FLOW
 		for(unsigned long i = 0; i < m_pcs->nod_val_vector.size(); i++)
 		{
 			value = this->NodeData[i]->pressure;

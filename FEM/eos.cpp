@@ -988,24 +988,24 @@ double melting_pressure_co2(double T,double Tt,double pt)
  *             caption defines fluid
  * Programming: NB, Dec 08
  **************************************************************/
-double preos(double T, double P, int c)
+double preos(const CFluidProperties *mfp, double T, double P)
 {
 	double z1,z2,z3,h;
 	vector<double> roots;
 
-	CFluidProperties* mfp_prop;
+	// WW CFluidProperties* mfp_prop;
 
 	double a,b,Tc,pc,MM,Ru;
 	double omega,alpha;
 
 	//int i;
-	mfp_prop = MFPGet (c);
+	//mfp_prop = MFPGet (c); //14.11.2012. WW
 
-	Ru = mfp_prop->getUniversalGasConstant();
-	MM = mfp_prop->getMolarMass();
-	Tc = mfp_prop->getCriticalTemperature();
-	pc = mfp_prop->getCriticalPressure() / 1000;
-	omega = mfp_prop->getAzentricFactor();              // azentric factor
+	Ru = mfp->getUniversalGasConstant();
+	MM = mfp->getMolarMass();
+	Tc = mfp->getCriticalTemperature();
+	pc = mfp->getCriticalPressure() / 1000;
+	omega = mfp->getAzentricFactor();              // azentric factor
 
 	// Peng Robinson EOS:
 	// P= R*T / (V-b) - a*alpha / (V^2+2bV-b^2)   where V = MM/rho

@@ -5362,12 +5362,12 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
 			return;
 		}
 		mmp_property_file_out << "#MEDIUM_PROPERTIES_DISTRIBUTED" << "\n";
-		mmp_property_file_out << "$MSH_TYPE" << "\n" << "  " << mmp_property_mesh << "\n";
-		//mmp_property_file_out << "$MSH_TYPE" << "\n" << "  " << mmp_property_mesh << "\n";
-		//mmp_property_file_out << "$MMP_TYPE" << "\n" << "  " << "PERMEABILITY" << "\n";
-		mmp_property_file_out << "$MMP_TYPE" << "\n" << "  " <<
+		mmp_property_file_out << "$MSH_TYPE" << endl << "  " << mmp_property_mesh << "\n";
+		//mmp_property_file_out << "$MSH_TYPE" << endl << "  " << mmp_property_mesh << "\n";
+		//mmp_property_file_out << "$MMP_TYPE" << endl << "  " << "PERMEABILITY" << "\n";
+		mmp_property_file_out << "$MMP_TYPE" << endl << "  " <<
 		_mesh->mat_names_vector[k] << "\n";
-		mmp_property_file_out << "$DIS_TYPE" << "\n" << "  " << "ELEMENT" << "\n";
+		mmp_property_file_out << "$DIS_TYPE" << endl << "  " << "ELEMENT" << "\n";
 		mmp_property_file_out << "$DATA" << "\n";
 		for(i = 0; i < (long)_mesh->ele_vector.size(); i++)
 		{

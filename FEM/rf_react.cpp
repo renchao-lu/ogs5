@@ -2003,7 +2003,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 		// keyword found
 		if(line_string.find("EQUILIBRIUM_PHASES") != string::npos)
 		{
-			*out_file << "\n" << "EQUILIBRIUM_PHASES   " << index + 1 << "\n";
+			*out_file << endl << "EQUILIBRIUM_PHASES   " << index + 1 << "\n";
 			while(line_string.find("#ende") == string::npos)
 			{
 				pqc_infile.getline(line,MAX_ZEILE);
@@ -2041,7 +2041,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 		/* Schleife ueber Keyword EXCHANGE */
 		if(line_string.find("EXCHANGE") != string::npos) // keyword found
 		{
-			*out_file << "\n" << "EXCHANGE   " <<  index + 1 << "\n";
+			*out_file << endl << "EXCHANGE   " <<  index + 1 << "\n";
 			while(line_string.find("#ende") == string::npos)
 			{
 				pqc_infile.getline(line,MAX_ZEILE);
@@ -2078,7 +2078,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 		/* Schleife ueber Keyword GAS_PHASE */
 		if(line_string.find("GAS_PHASE") != string::npos) // keyword found
 		{
-			*out_file << "\n" << "GAS_PHASE   " <<  index + 1 << "\n";
+			*out_file << endl << "GAS_PHASE   " <<  index + 1 << "\n";
 
 			// get necessary values for conversion of molar concentrations to partial pressures, and to calculate total pressure and total volume
 
@@ -2169,7 +2169,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 		if(line_string.find("SELECTED_OUTPUT") != string::npos)
 			if(index < 1)
 			{
-				*out_file << "\n" << "SELECTED_OUTPUT" << "\n";
+				*out_file << endl << "SELECTED_OUTPUT" << "\n";
 				while(line_string.find("#ende") == string::npos)
 				{
 					pqc_infile.getline(line,MAX_ZEILE);
@@ -2188,7 +2188,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 
 			if(index < 1)
 			{
-				*out_file << "\n" << "PRINT" << "\n";
+				*out_file << endl << "PRINT" << "\n";
 				while(line_string.find("#ende") == string::npos)
 				{
 					pqc_infile.getline(line,MAX_ZEILE);
@@ -2204,7 +2204,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 		{
 			if(index < 1)
 			{
-				*out_file << "\n" << "USER_PUNCH" << "\n";
+				*out_file << endl << "USER_PUNCH" << "\n";
 				// Write Header
 				n1 = this->rcml_number_of_master_species;
 				n2 = this->rcml_number_of_equi_phases;
@@ -2294,7 +2294,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 		if(line_string.find("KNOBS") != string::npos)
 			if(index < 1)
 			{
-				*out_file << "\n" << "KNOBS" << "\n";
+				*out_file << endl << "KNOBS" << "\n";
 				while(line_string.find("#ende") == string::npos)
 				{
 					pqc_infile.getline(line,MAX_ZEILE);
@@ -2304,7 +2304,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 			}
 	}                                     /*end while zeilenweises lesen */
 
-	*out_file << "END" << "\n" << "\n";
+	*out_file << "END" << endl << "\n";
 
 	pqc_infile.close();
 //    out_file.close();
@@ -3585,7 +3585,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 					for(i = n1 + 3 + n2 + n3; i < n1 + 3 + n2 + n3 + n4; i++)
 						*out_buff << ", GAS(\"" << pqc_names[i] << "\")";
 
-				// MDL: now the "\n"
+				// MDL: now the endl
 				*out_buff << "\n";
 				nline++;
 			}             // end if index < 1
@@ -3679,7 +3679,7 @@ void REACT::ExecuteReactionsPHREEQCNewLib(void)
 	// Read the input file (*.pqc) and set up the input for PHREEQC;
 	// Write input data block to PHREEQC for each node;
 	// sum number of lines of input.
-	cout << "\n" << "Preparing phreeqc's input...";
+	cout << endl << "Preparing phreeqc's input...";
 	ii = 0;
 	nline = 0;
 	// Should libphreeqc print to file? Defaults to no (=="F")
@@ -3705,7 +3705,7 @@ void REACT::ExecuteReactionsPHREEQCNewLib(void)
 	cout << "MDL_DEBUG: libphreeqc_print = " << libphreeqc_print << "\n";
 	cout << "MDL_DEBUG: final input is " << nline << " lines, nodes " << ii << "/" <<
 	this->nodenumber << "\n";
-	cout << "\n" << "MDL_DEBUG: ****** Current input:" << "\n" << out_buff.str() << "\n" <<
+	cout << endl << "MDL_DEBUG: ****** Current input:" << endl << out_buff.str() << endl <<
 	"MDL_DEBUG: ****** end of input" << "\n";
 #endif
 
@@ -3718,7 +3718,7 @@ void REACT::ExecuteReactionsPHREEQCNewLib(void)
 	double* out_vec = new double [ npunch * ii ];
 
 	// call to libphreeqc
-	std::cout << "\n" << "\n";
+	std::cout << endl << "\n";
 	ok = Call_PhreeqcLib(ii,npunch, nline, &out_buff, out_vec);
 
 	if(ok)

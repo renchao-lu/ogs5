@@ -7,6 +7,7 @@
 //#include <stdio.h>
 //#include <string>
 
+class CFluidProperties; //14.11.2012. WW
 double pressure (double rho, double T, int fluid);
 // calculates the pressure depending on density and temperature
 //double density (double P, double rho0, double T, double prec, string c);
@@ -37,7 +38,7 @@ double sublime_pressure_co2(double T,double Tt,double pt);
  */
 double vapour_pressure_co2(double T);
 double rkeos(double T, double P, int fluid);
-double preos(double T, double P, int fluid);
+double preos(const CFluidProperties *mfp, double T, double P);
 double h2o_viscosity_IAPWS (double rho, double T);
 double h2o_heat_conductivity_IAPWS_ind (double rho, double T);
 double ch4_viscosity (double rho, double T);

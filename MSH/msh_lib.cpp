@@ -80,6 +80,7 @@ void FEMDeleteAll()
 	fem_msh_vector.clear();
 }
 
+#ifndef USE_PETSC // && not defined(other parallel method with ddc)
 /**************************************************************************
    FEMLib-Method:
    Task:
@@ -147,6 +148,7 @@ void FEMRead(const std::string &file_base_name,
 
 	msh_file_ascii.close();
 }
+#endif
 
 /**************************************************************************
    MSHLib-Method: Read rfi file ()
@@ -302,6 +304,7 @@ MeshLib::CFEMesh* FEMGet(const std::string &msh_name)
    }
  */
 
+#ifdef ObsoleteGUI //WW 03.2012
 /**************************************************************************
    GeoLib-Method:
    Task:
@@ -445,184 +448,6 @@ void MSHWriteVOL2TEC(std::string m_msh_name)
 		//======================================================================
 	}
 }
-
-/**************************************************************************
-   GeoLib-Method:
-   Task:
-   Programing:
-   04/2005 OK Implementation
-   11/2005 OK OO-ELE
-**************************************************************************/
-void MSHWriteTecplot()
-{
-	MshElemType::type ele_type = MshElemType::INVALID;
-	long no_nodes;
-	long no_elements;
-	std::string delimiter(", ");
-	long i;
-	MeshLib::CElem* m_ele = NULL;
-	vec<long> node_indeces(8);
-	//----------------------------------------------------------------------
-	// File handling
-	std::string file_path = "MSH";
-	CGSProject* m_gsp = NULL;
-	m_gsp = GSPGetMember("msh");
-	if (m_gsp)
-		file_path = m_gsp->path + "MSH";
-	//----------------------------------------------------------------------
-	MeshLib::CFEMesh* m_msh = NULL;
-	for (int j = 0; j < (int) fem_msh_vector.size(); j++)
-	{
-		m_msh = fem_msh_vector[j];
-		no_nodes = (long) m_msh->nod_vector.size();
-		no_elements = (long) m_msh->ele_vector.size();
-		// Test ele_type
-		if (no_elements > 0)
-		{
-			m_ele = m_msh->ele_vector[0];
-			ele_type = m_ele->GetElementType();
-		}
-		// File handling
-		std::string msh_file_name = file_path + "_" + m_msh->pcs_name
-		                            + TEC_FILE_EXTENSION;
-		std::fstream msh_file(msh_file_name.data(), std::ios::trunc | std::ios::out);
-		msh_file.setf(std::ios::scientific, std::ios::floatfield);
-		msh_file.precision(12);
-		if (!msh_file.good())
-			return;
-		msh_file.seekg(0L, std::ios::beg);
-		msh_file << "VARIABLES = X,Y,Z" << "\n";
-		msh_file << "ZONE T = " << m_msh->pcs_name << delimiter << "N = "
-		         << no_nodes << delimiter << "E = " << no_elements << delimiter;
-		msh_file << "F = FEPOINT" << delimiter;
-		switch (ele_type)
-		{
-		//..................................................................
-		case MshElemType::LINE:
-			msh_file << "ET = QUADRILATERAL" << "\n";
-			for (i = 0; i < no_nodes; i++)
-			{
-				double const* const pnt_i(m_msh->nod_vector[i]->getData());
-				msh_file << pnt_i[0] << " " << pnt_i[1] << " " << pnt_i[2] <<
-				"\n";
-			}
-			for (i = 0; i < no_elements; i++)
-			{
-				m_ele = m_msh->ele_vector[i];
-				m_ele->GetNodeIndeces(node_indeces);
-				msh_file << node_indeces[0] + 1 << " " << node_indeces[1] + 1
-				         << " " << node_indeces[1] + 1 << " " << node_indeces[0]
-				+ 1 << "\n";
-			}
-			break;
-		//..................................................................
-		case MshElemType::QUAD:
-			msh_file << "ET = QUADRILATERAL" << "\n";
-			for (i = 0; i < no_nodes; i++)
-			{
-				double const* const pnt_i(m_msh->nod_vector[i]->getData());
-				msh_file << pnt_i[0] << " " << pnt_i[1] << " " << pnt_i[2] <<
-				"\n";
-			}
-			for (i = 0; i < no_elements; i++)
-			{
-				m_ele = m_msh->ele_vector[i];
-				m_ele->GetNodeIndeces(node_indeces);
-				msh_file << node_indeces[0] + 1 << " " << node_indeces[1] + 1
-				         << " " << node_indeces[2] + 1 << " " << node_indeces[3]
-				+ 1 << "\n";
-			}
-			break;
-		//..................................................................
-		case MshElemType::HEXAHEDRON:
-			msh_file << "ET = BRICK" << "\n";
-			for (i = 0; i < no_nodes; i++)
-			{
-				double const* const pnt_i(m_msh->nod_vector[i]->getData());
-				msh_file << pnt_i[0] << " " << pnt_i[1] << " " << pnt_i[2] <<
-				"\n";
-			}
-			for (i = 0; i < no_elements; i++)
-			{
-				m_ele = m_msh->ele_vector[i];
-				m_ele->GetNodeIndeces(node_indeces);
-				msh_file << node_indeces[0] + 1 << " " << node_indeces[1] + 1
-				         << " " << node_indeces[2] + 1 << " " << node_indeces[3]
-				+ 1 << " " << node_indeces[4] + 1 << " "
-				         << node_indeces[5] + 1 << " " << node_indeces[6] + 1
-				         << " " << node_indeces[7] + 1 << "\n";
-			}
-			break;
-		//..................................................................
-		case MshElemType::TRIANGLE:
-			msh_file << "ET = TRIANGLE" << "\n";
-			for (i = 0; i < no_nodes; i++)
-			{
-				double const* const pnt_i(m_msh->nod_vector[i]->getData());
-				msh_file << pnt_i[0] << " " << pnt_i[1] << " " << pnt_i[2] <<
-				"\n";
-			}
-			for (i = 0; i < no_elements; i++)
-			{
-				m_ele = m_msh->ele_vector[i];
-				m_ele->GetNodeIndeces(node_indeces);
-				msh_file << node_indeces[0] + 1 << " " << node_indeces[1] + 1
-				         << " " << node_indeces[2] + 1 << "\n";
-			}
-			break;
-		//..................................................................
-		case MshElemType::TETRAHEDRON:
-			msh_file << "ET = TETRAHEDRON" << "\n";
-			for (i = 0; i < no_nodes; i++)
-			{
-				double const* const pnt_i(m_msh->nod_vector[i]->getData());
-				msh_file << pnt_i[0] << " " << pnt_i[1] << " " << pnt_i[2] <<
-				"\n";
-			}
-			for (i = 0; i < no_elements; i++)
-			{
-				m_ele = m_msh->ele_vector[i];
-				m_ele->GetNodeIndeces(node_indeces);
-				msh_file << node_indeces[0] + 1 << " " << node_indeces[1] + 1
-				         << " " << node_indeces[2] + 1 << " " << node_indeces[3]
-				+ 1 << "\n";
-			}
-			break;
-		//..................................................................
-		case MshElemType::PRISM:
-			msh_file << "ET = BRICK" << "\n";
-			for (i = 0; i < no_nodes; i++)
-			{
-				double const* const pnt_i(m_msh->nod_vector[i]->getData());
-				msh_file << pnt_i[0] << " " << pnt_i[1] << " " << pnt_i[2] <<
-				"\n";
-			}
-			for (i = 0; i < no_elements; i++)
-			{
-				m_ele = m_msh->ele_vector[i];
-				m_ele->GetNodeIndeces(node_indeces);
-				if (m_ele->GetElementType() == MshElemType::PRISM)
-					msh_file << node_indeces[0] + 1 << " " << node_indeces[1]
-					+ 1 << " " << node_indeces[2] + 1 << " "
-					         << node_indeces[2] + 1 << " " << node_indeces[3]
-					+ 1 << " " << node_indeces[4] + 1 << " "
-					         << node_indeces[5] + 1 << " " << node_indeces[5]
-					+ 1 << "\n";
-				if (m_ele->GetElementType() == MshElemType::HEXAHEDRON)
-					msh_file << node_indeces[0] + 1 << " " << node_indeces[1]
-					+ 1 << " " << node_indeces[2] + 1 << " "
-					         << node_indeces[3] + 1 << " " << node_indeces[4]
-					+ 1 << " " << node_indeces[5] + 1 << " "
-					         << node_indeces[6] + 1 << " " << node_indeces[7]
-					+ 1 << "\n";
-			}
-			break;
-		default:
-			std::cerr << "MSHWriteTecplot MshElemType not handled" << "\n";
-		}
-	}
-}
-
 /**************************************************************************
    GeoLib-Method:
    Task:
@@ -801,6 +626,185 @@ void MSHLayerWriteTecplot()
 		}                                 // layer
 	}
 }
+#endif //#ifdef ObsoleteGUI //WW 03.2012
+
+/**************************************************************************
+   GeoLib-Method:
+   Task:
+   Programing:
+   04/2005 OK Implementation
+   11/2005 OK OO-ELE
+**************************************************************************/
+void MSHWriteTecplot()
+{
+	MshElemType::type ele_type = MshElemType::INVALID;
+	long no_nodes;
+	long no_elements;
+	std::string delimiter(", ");
+	long i;
+	MeshLib::CElem* m_ele = NULL;
+	vec<long> node_indeces(8);
+	//----------------------------------------------------------------------
+	// File handling
+	std::string file_path = "MSH";
+	CGSProject* m_gsp = NULL;
+	m_gsp = GSPGetMember("msh");
+	if (m_gsp)
+		file_path = m_gsp->path + "MSH";
+	//----------------------------------------------------------------------
+	MeshLib::CFEMesh* m_msh = NULL;
+	for (int j = 0; j < (int) fem_msh_vector.size(); j++)
+	{
+		m_msh = fem_msh_vector[j];
+		no_nodes = (long) m_msh->nod_vector.size();
+		no_elements = (long) m_msh->ele_vector.size();
+		// Test ele_type
+		if (no_elements > 0)
+		{
+			m_ele = m_msh->ele_vector[0];
+			ele_type = m_ele->GetElementType();
+		}
+		// File handling
+		std::string msh_file_name = file_path + "_" + m_msh->pcs_name
+		                            + TEC_FILE_EXTENSION;
+		std::fstream msh_file(msh_file_name.data(), std::ios::trunc | std::ios::out);
+		msh_file.setf(std::ios::scientific, std::ios::floatfield);
+		msh_file.precision(12);
+		if (!msh_file.good())
+			return;
+		msh_file.seekg(0L, std::ios::beg);
+		msh_file << "VARIABLES = X,Y,Z" << "\n";
+		msh_file << "ZONE T = " << m_msh->pcs_name << delimiter << "N = "
+		         << no_nodes << delimiter << "E = " << no_elements << delimiter;
+		msh_file << "F = FEPOINT" << delimiter;
+		switch (ele_type)
+		{
+		//..................................................................
+		case MshElemType::LINE:
+			msh_file << "ET = QUADRILATERAL" << "\n";
+			for (i = 0; i < no_nodes; i++)
+			{
+				double const* const pnt_i(m_msh->nod_vector[i]->getData());
+				msh_file << pnt_i[0] << " " << pnt_i[1] << " " << pnt_i[2] <<
+				"\n";
+			}
+			for (i = 0; i < no_elements; i++)
+			{
+				m_ele = m_msh->ele_vector[i];
+				m_ele->GetNodeIndeces(node_indeces);
+				msh_file << node_indeces[0] + 1 << " " << node_indeces[1] + 1
+				         << " " << node_indeces[1] + 1 << " " << node_indeces[0]
+				+ 1 << "\n";
+			}
+			break;
+		//..................................................................
+		case MshElemType::QUAD:
+			msh_file << "ET = QUADRILATERAL" << "\n";
+			for (i = 0; i < no_nodes; i++)
+			{
+				double const* const pnt_i(m_msh->nod_vector[i]->getData());
+				msh_file << pnt_i[0] << " " << pnt_i[1] << " " << pnt_i[2] <<
+				"\n";
+			}
+			for (i = 0; i < no_elements; i++)
+			{
+				m_ele = m_msh->ele_vector[i];
+				m_ele->GetNodeIndeces(node_indeces);
+				msh_file << node_indeces[0] + 1 << " " << node_indeces[1] + 1
+				         << " " << node_indeces[2] + 1 << " " << node_indeces[3]
+				+ 1 << "\n";
+			}
+			break;
+		//..................................................................
+		case MshElemType::HEXAHEDRON:
+			msh_file << "ET = BRICK" << "\n";
+			for (i = 0; i < no_nodes; i++)
+			{
+				double const* const pnt_i(m_msh->nod_vector[i]->getData());
+				msh_file << pnt_i[0] << " " << pnt_i[1] << " " << pnt_i[2] <<
+				"\n";
+			}
+			for (i = 0; i < no_elements; i++)
+			{
+				m_ele = m_msh->ele_vector[i];
+				m_ele->GetNodeIndeces(node_indeces);
+				msh_file << node_indeces[0] + 1 << " " << node_indeces[1] + 1
+				         << " " << node_indeces[2] + 1 << " " << node_indeces[3]
+				+ 1 << " " << node_indeces[4] + 1 << " "
+				         << node_indeces[5] + 1 << " " << node_indeces[6] + 1
+				         << " " << node_indeces[7] + 1 << "\n";
+			}
+			break;
+		//..................................................................
+		case MshElemType::TRIANGLE:
+			msh_file << "ET = TRIANGLE" << "\n";
+			for (i = 0; i < no_nodes; i++)
+			{
+				double const* const pnt_i(m_msh->nod_vector[i]->getData());
+				msh_file << pnt_i[0] << " " << pnt_i[1] << " " << pnt_i[2] <<
+				"\n";
+			}
+			for (i = 0; i < no_elements; i++)
+			{
+				m_ele = m_msh->ele_vector[i];
+				m_ele->GetNodeIndeces(node_indeces);
+				msh_file << node_indeces[0] + 1 << " " << node_indeces[1] + 1
+				         << " " << node_indeces[2] + 1 << "\n";
+			}
+			break;
+		//..................................................................
+		case MshElemType::TETRAHEDRON:
+			msh_file << "ET = TETRAHEDRON" << "\n";
+			for (i = 0; i < no_nodes; i++)
+			{
+				double const* const pnt_i(m_msh->nod_vector[i]->getData());
+				msh_file << pnt_i[0] << " " << pnt_i[1] << " " << pnt_i[2] <<
+				"\n";
+			}
+			for (i = 0; i < no_elements; i++)
+			{
+				m_ele = m_msh->ele_vector[i];
+				m_ele->GetNodeIndeces(node_indeces);
+				msh_file << node_indeces[0] + 1 << " " << node_indeces[1] + 1
+				         << " " << node_indeces[2] + 1 << " " << node_indeces[3]
+				+ 1 << "\n";
+			}
+			break;
+		//..................................................................
+		case MshElemType::PRISM:
+			msh_file << "ET = BRICK" << "\n";
+			for (i = 0; i < no_nodes; i++)
+			{
+				double const* const pnt_i(m_msh->nod_vector[i]->getData());
+				msh_file << pnt_i[0] << " " << pnt_i[1] << " " << pnt_i[2] <<
+				"\n";
+			}
+			for (i = 0; i < no_elements; i++)
+			{
+				m_ele = m_msh->ele_vector[i];
+				m_ele->GetNodeIndeces(node_indeces);
+				if (m_ele->GetElementType() == MshElemType::PRISM)
+					msh_file << node_indeces[0] + 1 << " " << node_indeces[1]
+					+ 1 << " " << node_indeces[2] + 1 << " "
+					         << node_indeces[2] + 1 << " " << node_indeces[3]
+					+ 1 << " " << node_indeces[4] + 1 << " "
+					         << node_indeces[5] + 1 << " " << node_indeces[5]
+					+ 1 << "\n";
+				if (m_ele->GetElementType() == MshElemType::HEXAHEDRON)
+					msh_file << node_indeces[0] + 1 << " " << node_indeces[1]
+					+ 1 << " " << node_indeces[2] + 1 << " "
+					         << node_indeces[3] + 1 << " " << node_indeces[4]
+					+ 1 << " " << node_indeces[5] + 1 << " "
+					         << node_indeces[6] + 1 << " " << node_indeces[7]
+					+ 1 << "\n";
+			}
+			break;
+		default:
+			std::cerr << "MSHWriteTecplot MshElemType not handled" << "\n";
+		}
+	}
+}
+
 
 /**************************************************************************
    MSHLib-Method:
@@ -1725,3 +1729,238 @@ void SetRFIPointsClose(CGLLine* m_lin)
 //    return false; //OK
 //  return ok;
 //}
+
+
+
+
+/**************************************************************************
+   MSHLib-Method:
+   01/2006 OK Implementation
+   06/2009 OK Bug fix
+**************************************************************************/
+int MSHSetMaxMMPGroups()
+{
+	int i;
+	long j;
+	CFEMesh* m_msh = NULL;
+	//----------------------------------------------------------------------
+	size_t msh_max_mmp_groups;
+	for (i = 0; i < (int) fem_msh_vector.size(); i++)
+	{
+		m_msh = fem_msh_vector[i];
+		m_msh->max_mmp_groups = 0;
+		msh_max_mmp_groups = 0;
+		for (j = 0; j < (long) m_msh->ele_vector.size(); j++)
+			if ((m_msh->ele_vector[j]->GetPatchIndex() + 1) > msh_max_mmp_groups)
+				msh_max_mmp_groups++;
+		m_msh->max_mmp_groups = msh_max_mmp_groups;
+	}
+	//----------------------------------------------------------------------
+	size_t g_msh_max_mmp_groups = 0;
+	for (i = 0; i < (int) fem_msh_vector.size(); i++)
+		if (m_msh->max_mmp_groups > g_msh_max_mmp_groups)
+			g_msh_max_mmp_groups++;
+	//----------------------------------------------------------------------
+	return g_msh_max_mmp_groups;
+}
+
+/**************************************************************************
+   MSHLib-Method:
+   07/2007 OK Implementation
+**************************************************************************/
+bool MSHTestMATGroups()
+{
+	int g_max_mmp_groups = MSHSetMaxMMPGroups();
+	if (g_max_mmp_groups > (int) mmp_vector.size())
+	{
+		std::cout << "Error: not enough MMP data";
+		return false;                     //abort();
+	}
+	return true;
+}
+
+
+
+
+/**************************************************************************
+   MSHLib-Method:
+   Task:
+   Programing:
+   04/2005 OK Implementation based on MSH2RFI by WW
+   08/2005 WW Re-implememtation
+   10/2005 TK proper ordering and closing of gaps
+   09/2011 TF changed std::string::compare to std::string::find for the new gmsh format
+        to avoid dos unix line-ending issues
+**************************************************************************/
+void GMSH2MSH(const char* filename,CFEMesh* m_msh)
+{
+	long id;
+	long i = 0;
+	int NumNodes = 0;
+	int NumElements = 0;
+	double x, y, z;
+	std::string strbuffer;
+
+	//WW  bool quad=false;
+	//WW  CRFProcess* m_pcs = NULL;
+	MeshLib::CNode* node = NULL;
+	MeshLib::CElem* elem = NULL;
+	std::ifstream msh_file(filename, std::ios::in);
+	getline(msh_file, strbuffer);             // Node keyword
+
+	// OLD GMSH  FORMAT----------------------------------------------------------------------
+	if (strbuffer.compare("$NOD") == 0)
+		while (strbuffer.compare("$ENDELM") != 0)
+		{
+			msh_file >> NumNodes >> std::ws;
+			//....................................................................
+			// Node data
+			for (i = 0; i < NumNodes; i++)
+			{
+				msh_file >> id >> x >> y >> z >> std::ws;
+
+				node = new MeshLib::CNode(id, x, y, z);
+				m_msh->nod_vector.push_back(node);
+			}
+
+			getline(msh_file, strbuffer); // End Node keyword
+			//....................................................................
+			// Element data
+			getline(msh_file, strbuffer); // Element keyword
+			msh_file >> NumElements >> std::ws;
+			for (i = 0; i < NumElements; i++)
+			{
+				elem = new MeshLib::CElem(i);
+				elem->Read(msh_file, 2);
+				m_msh->ele_vector.push_back(elem);
+			}
+			getline(msh_file, strbuffer); // END keyword
+
+			// ordering nodes and closing gaps TK
+			std::vector<int> gmsh_id;
+			long new_node_id;
+			int counter = 0;
+			int diff = 0;
+			int j = 0;
+			for (i = 0; i < (int) m_msh->nod_vector.size(); i++)
+			{
+				diff = m_msh->nod_vector[i]->GetIndex() - counter;
+				if (diff == 0)
+				{
+					gmsh_id.push_back(i);
+					counter++;
+				}
+				else
+				{
+					for (j = 0; j < diff; j++)
+					{
+						gmsh_id.push_back(i);
+						counter++;
+					}
+					i--;
+				}
+			}
+
+			for (i = 0; i < (int) m_msh->ele_vector.size(); i++)
+				for (j = 0; j < (int) m_msh->ele_vector[i]->GetVertexNumber(); j++)
+				{
+					new_node_id = gmsh_id[m_msh->ele_vector[i]->GetNodeIndex(j)
+					                      + 1];
+					//m_msh->ele_vector[i]->nodes[j]->SetIndex(new_node_id);/*global*/
+					/*local*/
+					m_msh->ele_vector[i]->getNodeIndices()[j] = new_node_id;
+				}
+			for (i = 0; i < (int) m_msh->nod_vector.size(); i++)
+				m_msh->nod_vector[i]->SetIndex(i);
+			// END OF: ordering nodes and closing gaps TK
+		}                                 /*End while*/
+	// END old GMSH Format----------------------------------------------------------------------
+	msh_file.close();
+
+	FileIO::GMSHInterface::readGMSHMesh(filename, m_msh);
+//   // NEW 2008 GMSH  FORMAT----------------------------------------------------------------------
+//   if (strbuffer.find("$MeshFormat") != std::string::npos)
+//   {
+//      getline(msh_file, strbuffer);               // version-number file-type data-size
+//      getline(msh_file, strbuffer);               //$EndMeshFormat
+//      getline(msh_file, strbuffer);               //$Nodes Keywords
+//
+//      while (strbuffer.find("$EndElements") == std::string::npos)
+//      {
+//         // Node data
+//         msh_file >> NumNodes >> std::ws;
+//         for (i = 0; i < NumNodes; i++)
+//         {
+//            msh_file >> id >> x >> y >> z >> std::ws;
+//            node = new MeshLib::CNode(id, x, y, z);
+//            m_msh->nod_vector.push_back(node);
+//         }
+//         getline(msh_file, strbuffer);            // End Node keyword $EndNodes
+//
+//         // Element data
+//         getline(msh_file, strbuffer);            // Element keyword $Elements
+//         msh_file >> NumElements >> std::ws;      // number-of-elements
+//         for (i = 0; i < NumElements; i++)
+//         {
+//            elem = new MeshLib::CElem(i);
+//            elem->Read(msh_file, 7);
+//            if (elem->GetElementType() != MshElemType::INVALID)
+//               m_msh->ele_vector.push_back(elem);
+//         }
+//         getline(msh_file, strbuffer);            // END keyword
+//
+//         // correct indices TF
+//         const size_t n_elements(m_msh->ele_vector.size());
+//         for (size_t k(0); k < n_elements; k++)
+//         {
+//            m_msh->ele_vector[k]->SetIndex(k);
+//         }
+//
+//         // ordering nodes and closing gaps TK
+//         std::vector<int> gmsh_id;
+//         long new_node_id;
+//         int counter = 0;
+//         int diff = 0;
+//         int j = 0;
+//         for (i = 0; i < (int) m_msh->nod_vector.size(); i++)
+//         {
+//            diff = m_msh->nod_vector[i]->GetIndex() - counter;
+//            if (diff == 0)
+//            {
+//               gmsh_id.push_back(i);
+//               counter++;
+//            }
+//            else
+//            {
+//               for (j = 0; j < diff; j++)
+//               {
+//                  gmsh_id.push_back(i);
+//                  counter++;
+//               }
+//               i--;
+//            }
+//         }
+//
+//         for (i = 0; i < (int) m_msh->ele_vector.size(); i++)
+//         {
+//            for (j = 0; j < (int) m_msh->ele_vector[i]->GetVertexNumber(); j++)
+//            {
+//               new_node_id = gmsh_id[m_msh->ele_vector[i]->GetNodeIndex(j)
+//                  + 1];
+//               //m_msh->ele_vector[i]->nodes[j]->SetIndex(new_node_id);/*global*/
+//                                                  /*local*/
+//               m_msh->ele_vector[i]->nodes_index[j] = new_node_id;
+//            }
+//         }
+//         for (i = 0; i < (int) m_msh->nod_vector.size(); i++)
+//         {
+//            m_msh->nod_vector[i]->SetIndex(i);
+//         }
+//         // END OF: ordering nodes and closing gaps TK
+//
+//      }                                           /*End while*/
+//   }
+//   // END New 2008 GMSH Format----------------------------------------------------------------------
+
+	//  m_msh->ConstructGrid(); // TF
+}

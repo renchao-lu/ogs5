@@ -405,7 +405,7 @@ void CClockTime::PrintTimes(void)
 
 	cout.precision(2);
 	tot = time_total_flow + time_total_transport + time_total_kinreact + time_total_equireact;
-	cout << "ClockTimes: " << "\n" <<
+	cout << "ClockTimes: " << endl <<
 	"Unit   Flow:  Transport:  KinReactions:  EquiReactions:  total: " << "\n";
 	cout <<  "[sec] " << setw(6) << time_total_flow << "  " << setw(10) <<
 	time_total_transport << "  " << setw(13) << time_total_kinreact << "  " << setw(14) <<

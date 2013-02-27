@@ -147,6 +147,10 @@ public:
 		return _connected_nodes;
 	}
 
+        size_t getNumConnectedNodes() const 
+        {
+	  return _connected_nodes.size();
+        }
 private:
 	double coordinate[3];
 	long eqs_index; // renumber

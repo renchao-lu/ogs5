@@ -27,6 +27,10 @@
 //
 // The follows are implicit declaration. WW
 //---------------------------------------------------------------------------
+#if defined(USE_PETSC) // || defined(using other parallel scheme)
+namespace petsc_group {class  PETScLinearSolver;}
+#endif
+
 namespace FiniteElement
 {
 class CFiniteElementStd;
@@ -197,6 +201,7 @@ private:
 	bool continuum_ic;
 
 	bool isRSM; // WW
+    double *eqs_x;     //> Pointer to x array of eqs (added due to PETSC)
 
 	std::vector<std::string> pcs_type_name_vector;
 
@@ -226,10 +231,12 @@ protected:                                        //WW
 	// ELE
 	std::vector<FiniteElement::ElementMatrix*> Ele_Matrices;
 	//Global matrix
+#if !defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
 	Math_Group::Vec* Gl_Vec;              //NW
 	Math_Group::Vec* Gl_Vec1;             //NW
 	Math_Group::Vec* Gl_ML;               //NW
 	Math_Group::SparseMatrixDOK* FCT_AFlux; //NW
+#endif
 	/**
 	 * Storage type for all element matrices and vectors
 	 * Cases:
@@ -249,7 +256,11 @@ protected:                                        //WW
 	int NumDeactivated_SubDomains;
 	int* Deactivated_SubDomain;
 	//New equation and solver objects WW
-#ifdef NEW_EQS
+#if defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
+   petsc_group::PETScLinearSolver *eqs_new;
+  int mysize;                               
+  int myrank; 
+#elif NEW_EQS
 #ifdef LIS
 public:
 	Linear_EQS* eqs_new;
@@ -257,9 +268,14 @@ public:
 	Linear_EQS* eqs_new;
 #endif                                         // LIS endif for Fluid Momentum	// PCH
 	bool configured_in_nonlinearloop;
+#else
+  LINEAR_SOLVER* eqs;
 #endif
+
+
+
 	//
-#ifdef USE_MPI                                 //WW
+#if defined( USE_MPI) || defined( USE_PETSC)     //WW
 	clock_t cpu_time_assembly;
 #endif
 	// Position of unknowns from different DOFs in the system equation
@@ -348,9 +364,11 @@ public:
 	//WW
 	std::vector<CBoundaryConditionNode*> bc_node_value;
 	std::vector<CBoundaryCondition*> bc_node; //WW
+#if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
 	std::vector<long> bc_node_value_in_dom; //WW for domain decomposition
 	std::vector<long> bc_local_index_in_dom; //WW for domain decomposition
 	std::vector<long> rank_bc_node_value_in_dom; //WW
+#endif //#if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
 	std::vector<long> bc_transient_index; //WW/CB
     std::vector<long> st_transient_index;       //WW/CB...BG
     void UpdateTransientBC();                   //WW/CB
@@ -360,9 +378,11 @@ public:
 	// Node values from sourse/sink or Neumann BC. WW
 	std::vector<CNodeValue*> st_node_value; //WW
 	std::vector<CSourceTerm*> st_node;    //WW
+#if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
 	std::vector<long> st_node_value_in_dom; //WW for domain decomposition
 	std::vector<long> st_local_index_in_dom; //WW for domain decomposition
 	std::vector<long> rank_st_node_value_in_dom; //WW
+#endif //#if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
 	void RecordNodeVSize(const int Size)  //WW
 	{
 		orig_size = Size;
@@ -397,7 +417,7 @@ public:
 	// Construction / destruction
 	CRFProcess(void);
 	void Create(void);
-#ifndef NEW_EQS                                //WW. 07.11.2008
+#if !defined(USE_PETSC) && !defined(NEW_EQS) // && defined(other parallel libs)//03~04.3012. WW
 	void CreateNew(void);
 	void CreateFDMProcess();
 	void DestroyFDMProcess();
@@ -457,7 +477,9 @@ public:
 
 	void Clean_Water_ST_vec(void);
 	void Add_GEMS_Water_ST(long idx, double val);
+#if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
 	void SetSTWaterGemSubDomain(int myrank);
+#endif
 	// ECLIPSE interface:
 	CDUMUXData* DuMuxData;                //SBG
 	CECLIPSEData* EclipseData;            //BG
@@ -533,9 +555,6 @@ public:
 	// Configuration 3 - ELE matrices
 	// Execution
 	// NUM
-#ifndef NEW_EQS                                //WW 07.11.2008
-	LINEAR_SOLVER* eqs;
-#endif
 	std::string num_type_name;
 	int rwpt_app;
 	int srand_seed;
@@ -556,6 +575,10 @@ public:
 	std::vector<std::string> nod_val_name_vector;
 	void SetNodeValue(long,int,double);   //OK
 	double GetNodeValue(size_t,int);        //OK
+         double *getNodeValue_per_Variable(const int entry_id) const //WW
+	{
+            return nod_val_vector[entry_id];
+	}
 	int GetNodeValueIndex(const std::string&, bool reverse_order = false); //OK
 	//-----------------------------
 
@@ -601,7 +624,12 @@ public:
 	void ConfigPS_Global();               // PCH
 	void ConfigPTC_FLOW();                // AKS/NB
 	// Configuration 1 - NOD
-#ifndef NEW_EQS                                //WW. 07.11.2008
+#if defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
+        void setSolver( petsc_group::PETScLinearSolver *petsc_solver );
+	double CalcIterationNODError(int method); //OK // PETSC version in rf_pcs1.cpp WW
+#endif
+
+#if !defined(USE_PETSC) && !defined(NEW_EQS) // && defined(other parallel libs)//03~04.3012. WW
 	void ConfigNODValues1(void);
 	void ConfigNODValues2(void);
 	void CreateNODValues(void);
@@ -668,7 +696,9 @@ public:
 	void PrintStandardIterationInformation(bool write_std_errors = true);
 
 	virtual void CalculateElementMatrices(void);
+#if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
 	void DDCAssembleGlobalMatrix();
+#endif
 	virtual void AssembleSystemMatrixNew(void);
 	// This function is a part of the monolithic scheme
 	//  and it is related to ST, BC, IC, TIM and OUT. WW
@@ -684,14 +714,19 @@ public:
 	void IncorporateBoundaryConditions(const int rank = -1);
 	// PCH for FLUID_MOMENTUM
 	void IncorporateBoundaryConditions(const int rank, const int axis);
+#if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
 	void SetBoundaryConditionSubDomain(); //WW
+#endif //#if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
 	//WW void CheckBCGroup(); //OK
+#if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
 #ifdef NEW_EQS                                 //WW
 	void EQSInitialize();
 	void EQSSolver(double* x);            // PCH
 #else
 	int ExecuteLinearSolver(void);
 	int ExecuteLinearSolver(LINEAR_SOLVER* eqs);
+        LINEAR_SOLVER *getEQSPointer() const { return eqs; } // WW
+#endif
 #endif
 
 	CTimeDiscretization* GetTimeStepping() const {return Tim; }
@@ -802,7 +837,7 @@ public:
 	void OBJRelationsDelete();            //OK
 	bool NODRelations();                  //OK
 	bool ELERelations();                  //OK
-#ifndef NEW_EQS                                //WW 07.11.2008
+#if !defined(USE_PETSC) && !defined(NEW_EQS) // && defined(other parallel libs)//03~04.3012. WW
 	bool CreateEQS();                     //OK
 	void EQSDelete();                     //OK
 	// Dumping matrix and RHS. WW
@@ -822,7 +857,7 @@ public:
 	int ExcavCurve;                       //WX
 	double ExcavBeginCoordinate;          //WX
 	int PCS_ExcavState;                   //WX
-#ifdef USE_MPI                                 //WW
+#if defined(USE_MPI) || defined (USE_PETSC)                                 //WW
 	void Print_CPU_time_byAssembly(std::ostream &os = std::cout) const
 	{
 		os << "\n***\nCPU time elapsed in the linear equation of " <<
@@ -837,6 +872,11 @@ private:
 	 * PERMEABILITY_X1 and POROSITY
 	 */
 	void configMaterialParameters ();
+#if defined(USE_PETSC) //03.3012. WW
+  /// Initialize the RHS array of the system of equations with the previous solution.
+  void InitializeRHS_with_u0(); //in rf_pcs1.cpp
+
+#endif
 };
 
 //========================================================================
@@ -992,13 +1032,14 @@ extern void CalcNewNAPLSat(CRFProcess* m_pcs);     //CB 01/08
 extern double CalcNAPLDens(CRFProcess* m_pcs, int node);
 extern void SetFlowProcessType();                 //CB 01/08
 extern void CopyTimestepNODValuesSVTPhF();        //CB 13/08
-#ifndef NEW_EQS                                   //WW. 07.11.2008
+#if !defined(USE_PETSC) && !defined(NEW_EQS) // && defined(other parallel libs)//03~04.3012. WW
+//#ifndef NEW_EQS                                   //WW. 07.11.2008
 extern void PCSCreateNew();                       //OK
 #endif
 extern bool PCSCheck();                           //OK
 // New solvers WW
 // Create sparse graph for each mesh    //1.11.2007 WW
-#ifdef NEW_EQS                                    //1.11.2007 WW
+#if defined(NEW_EQS) || defined(USE_PETSC) // || defined(other solver libs)//03.3012. WW
 extern void CreateEQS_LinearSolver();
 #endif
 

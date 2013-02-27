@@ -90,6 +90,7 @@ CFluidProperties::CFluidProperties() :
 	// WW
 	molar_mass = COMP_MOL_MASS_AIR;
 
+	compressibility_model_pressure = -1;
 #ifdef MFP_TEST //WW
 	scatter_data = NULL;
 #endif
@@ -813,7 +814,7 @@ double CFluidProperties::Density(double* variables)
 			if(!T_Process)
 				variables[1] = T_0;
 			//NB
-			density = preos(variables[1],variables[0],fluid_id);
+			density = preos(this, variables[1],variables[0]);
 			break;
 		case 13:                  // Helmholtz free Energy NB JUN 09
 			//NB
@@ -969,7 +970,7 @@ density =  rho;
 		case 12:                  //Redlich-Kwong equation of state NB
 			if(!T_Process)
 				primary_variable[1] = T_0;
-			density = preos(primary_variable[1],primary_variable[0],fluid_id);
+			density = preos(this, primary_variable[1],primary_variable[0]);
 			break;
 		case 13:                  // Helmholtz free Energy NB JUN 09
 			if(!T_Process)

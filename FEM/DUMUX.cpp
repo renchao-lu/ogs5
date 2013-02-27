@@ -33,7 +33,7 @@ CReadTextfiles_DuMux::~CReadTextfiles_DuMux(void)
 using std::string;
 using std::vector;
 using std::cout;
-//using std::endl;
+//using std:endl;
 
 /*-------------------------------------------------------------------------
    GeoSys - Function: SplitStrings

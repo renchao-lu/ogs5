@@ -35,6 +35,12 @@ CElem::CElem(size_t Index)
 	normal_vector = NULL;
 	area = 1.0;                               //WW
 	excavated = -1;                           //WX
+
+#if defined(USE_PETSC) // || defined(using other parallel scheme). WW
+        g_index = NULL;
+#endif
+
+
 }
 /**************************************************************************
    MSHLib-Method:
@@ -45,7 +51,7 @@ CElem::CElem(size_t Index)
 CElem::CElem() : CCore(0), normal_vector(NULL)
 {
 	selected = 0;
-	matgroup_view = 0;
+	//matgroup_view = 0;
 	grid_adaptation = -1;
 	nnodes = 0;
 	nnodesHQ = 0;
@@ -63,6 +69,11 @@ CElem::CElem() : CCore(0), normal_vector(NULL)
 	area = 1.0;                               //WW area = 1.0
 	normal_vector = NULL;
 	excavated = -1;                           //WX
+
+#if defined(USE_PETSC) // || defined(using other parallel scheme). WW
+        g_index = NULL;
+#endif
+
 }
 
 /**************************************************************************
@@ -157,6 +168,12 @@ CElem::CElem(size_t Index, CElem* onwer, int Face) :
 			}
 		}
 	}
+
+#if defined(USE_PETSC) // || defined(using other parallel scheme). WW
+        g_index = NULL;
+#endif
+
+
 }
 
 /**************************************************************************
@@ -194,12 +211,16 @@ CElem::CElem(size_t Index, CElem* m_ele_parent) :
 	area = 1.0;                               //WW
 
 	excavated = -1;   //12.08.2011. WW
+
+#if defined(USE_PETSC) // || defined(using other parallel scheme). WW
+        g_index = NULL;
+#endif
 }
 
 CElem::CElem(CElem const &elem) :
 	CCore(elem.GetIndex()),
 	mat_vector (elem.mat_vector),
-	matgroup_view (elem.matgroup_view),
+	//matgroup_view (elem.matgroup_view),
 	selected (elem.selected),
 	normal_vector(new double[3]),
 	representative_length (elem.representative_length),
@@ -246,6 +267,11 @@ CElem::CElem(CElem const &elem) :
 
 	// copy neighbors
 //	vec<CElem*> neighbors;
+
+#if defined(USE_PETSC) // || defined(using other parallel scheme). WW
+        g_index = elem.g_index;
+#endif
+
 }
 
 
@@ -267,6 +293,11 @@ CElem::CElem (MshElemType::type t, size_t node0, size_t node1, size_t node2, int
 		edges[i] = NULL;
 		edges_orientation[i] = 1;
 	}
+
+#if defined(USE_PETSC) // || defined(using other parallel scheme). WW
+        g_index = NULL;
+#endif
+
 }
 
 CElem::CElem (MshElemType::type t, size_t node0, size_t node1, size_t node2, size_t node3, int mat) :
@@ -288,6 +319,10 @@ CElem::CElem (MshElemType::type t, size_t node0, size_t node1, size_t node2, siz
 		edges[i] = NULL;
 		edges_orientation[i] = 1;
 	}
+#if defined(USE_PETSC) // || defined(using other parallel scheme). WW
+        g_index = NULL;
+#endif
+
 }
 
 /**************************************************************************
@@ -318,6 +353,13 @@ CElem::~CElem()
 		delete [] normal_vector;
 	normal_vector = NULL;
 	delete [] angle;
+
+#if defined(USE_PETSC) // || defined(using other parallel scheme). WW
+        if(g_index)
+          delete [] g_index;
+        g_index  = NULL;
+#endif
+
 }
 /**************************************************************************
    MSHLib-Method:
@@ -790,7 +832,7 @@ void CElem::WriteIndex_TEC(std::ostream &os) const
 
 		for(int i = 0; i < nnodes; i++)
 			os << nodes_index[i] + 1 << deli;
-	os << '\n';                               // GK44 for io performance do not flush buffer with "\n"...
+	os << '\n';                               // GK44 for io performance do not flush buffer with endl...
 }
 /**************************************************************************
    MSHLib-Method:
@@ -839,7 +881,9 @@ void CElem:: MarkingAll(bool makop)
 		SizeV = nnodesHQ;
 	for (int i = 0; i < SizeV; i++)
 		nodes[i]->SetMark(makop);
-	for (size_t i = 0; i < nedges; i++)
+
+	size_t nedg = edges.Size();
+	for (size_t i = 0; i < nedg; i++)
 		edges[i]->SetMark(makop);
 }
 /**************************************************************************

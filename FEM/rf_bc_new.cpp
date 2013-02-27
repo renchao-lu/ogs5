@@ -355,7 +355,7 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			if (line_string.find("CURVE") != std::string::npos)
 			{
 				//				tim_type_name = "CURVE";
-				this->setProcessDistributionType(FiniteElement::CONSTANT);
+				//WW this->setProcessDistributionType(FiniteElement::CONSTANT);
 				in >> _curve_index;
 				in.clear();
 
@@ -983,13 +983,19 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 			//................................................................
 			if (bc->getGeoType() == GEOLIB::POINT)
 			{
+			  //05.2012. WW
+			  long node_idx =  m_msh->GetNODOnPNT(static_cast<const GEOLIB::Point*> 
+								(bc->getGeoObj()));
+			  if(node_idx<0)
+			    {
+			      ++p_bc;
+			      continue;
+			    }
+			  //-------
 				m_node_value = new CBoundaryConditionNode;
 				// Get MSH node number
-				if (bc->getProcessDistributionType()
-				    == FiniteElement::CONSTANT)
-					m_node_value->geo_node_number
-					        = m_msh->GetNODOnPNT(
-					        static_cast<const GEOLIB::Point*> (bc->getGeoObj()));
+			  if (bc->getProcessDistributionType()  == FiniteElement::CONSTANT)
+			    m_node_value->geo_node_number = node_idx;
 
 				m_node_value->conditional = cont;
 				m_node_value->CurveIndex = bc->getCurveIndex();

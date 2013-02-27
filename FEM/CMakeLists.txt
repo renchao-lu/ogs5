@@ -14,13 +14,11 @@ set( SOURCES
 	femlib.h
 	files0.h
 	InitialCondition.h
-	intrface.h
 	makros.h
 	mathlib.h
 	matrix_class.h
 	SparseMatrixDOK.h
 	memory.h
-	par_ddc.h
 	pcs_dm.h
 	problem.h
 	prototyp.h
@@ -72,12 +70,10 @@ set( SOURCES
 	FEMEnums.cpp
 	files0.cpp
 	InitialCondition.cpp
-	#intrface.cpp
 	mathlib.cpp
 	matrix_class.cpp
 	SparseMatrixDOK.cpp
 	memory.cpp
-	par_ddc.cpp
 	pcs_dm.cpp
 	problem.cpp
 	rf_bc_new.cpp
@@ -106,6 +102,10 @@ set( SOURCES
 	Output.cpp
 )
 
+IF(OGS_FEM_PETSC)
+ SET( SOURCES ${SOURCES} rf_pcs1.cpp )
+ELSE(OGS_FEM_PETSC)
+  SET( SOURCES ${SOURCES} par_ddc.h par_ddc.cpp)
 ## New sparse class. WW
 IF(OGS_FEM_SP OR OGS_FEM_MPI OR OGS_FEM_GEMS OR OGS_FEM_BRNS OR OGS_FEM_PQC OR OGS_FEM_MKL OR OGS_FEM_LIS OR OGS_FEM_JFNK )
 	SET( SOURCES ${SOURCES} equation_class.h equation_class.cpp )
@@ -115,7 +115,7 @@ IF(OGS_FEM_SP OR OGS_FEM_MPI OR OGS_FEM_GEMS OR OGS_FEM_BRNS OR OGS_FEM_PQC OR O
 ELSE(OGS_FEM_SP OR OGS_FEM_MPI OR OGS_FEM_GEMS OR OGS_FEM_BRNS OR OGS_FEM_PQC OR OGS_FEM_MKL OR OGS_FEM_LIS OR OGS_FEM_JFNK)
 	SET( SOURCES ${SOURCES} solver.h solver.cpp matrix_routines.h matrix_routines.cpp)
 ENDIF(OGS_FEM_SP OR OGS_FEM_MPI OR OGS_FEM_GEMS OR OGS_FEM_BRNS OR OGS_FEM_PQC OR OGS_FEM_MKL OR OGS_FEM_LIS OR OGS_FEM_JFNK)
-
+ENDIF()
 
 IF(OGS_FEM_GEMS)
 	SET( SOURCES ${SOURCES} rf_REACT_GEM.h rf_REACT_GEM.cpp )
@@ -190,6 +190,7 @@ if (WIN32)
 endif (WIN32)
 
 if (UNIX)
+
 	if (OGS_FEM_BRNS)
 		target_link_libraries( FEM dl )
 	endif (OGS_FEM_BRNS)

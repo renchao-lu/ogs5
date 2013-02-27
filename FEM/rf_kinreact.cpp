@@ -707,7 +707,7 @@ void KRConfig(const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
 		   cout << " ProductionStoch2 for reaction " << m_kr->name << "\n";
 		   for(i=0;i<m_krd->kr_active_species;i++)
 		   cout << m_kr->ProductionStoch2[i] << "\n";
-		   cout << "\n" << " ProductionStoch for reaction " << m_kr->name << "\n";
+		   cout << endl << " ProductionStoch for reaction " << m_kr->name << "\n";
 		   for(i=0;i<length;i++)
 		   cout << m_kr->ProductionStoch[i] << "\n";
 		   } //if type == monod
@@ -1596,14 +1596,14 @@ void CKinReact::Write(ofstream* rfe_file)
 	// Write Keyword
 	*rfe_file << "#REACTION" << "\n";
 	// Name of reaction
-	*rfe_file << "$NAME" << "\n" << name << "\n";
+	*rfe_file << "$NAME" << endl << name << "\n";
 	// Type of reaction
-	*rfe_file << "$TYPE" << "\n" << type << "\n";
+	*rfe_file << "$TYPE" << endl << type << "\n";
 	// bacteria name
 	if (type == "monod")
-		*rfe_file << "$BACTERIANAME" << "\n" << bacteria_name << "\n";
+		*rfe_file << "$BACTERIANAME" << endl << bacteria_name << "\n";
 	if (type == "exchange")
-		*rfe_file << "$SORPTION_TYPE" << "\n" << exType << "\n";
+		*rfe_file << "$SORPTION_TYPE" << endl << exType << "\n";
 	//ReactionEquation
 	*rfe_file << "$EQUATION" << "\n";
 	for (i = 0; i < number_reactionpartner; i++)
@@ -1631,9 +1631,9 @@ void CKinReact::Write(ofstream* rfe_file)
 	// Rateconstant and order
 	if (type == "monod")
 	{
-		*rfe_file << "$RATECONSTANT" << "\n" << rateconstant << "   "
+		*rfe_file << "$RATECONSTANT" << endl << rateconstant << "   "
 		          << rateorder << "\n";
-		*rfe_file << "$GROWTH" << "\n" << grow << "\n";
+		*rfe_file << "$GROWTH" << endl << grow << "\n";
 		//Monod terms
 		*rfe_file << "$MONODTERMS" << "\n"; //<< number_monod << "\n";
 		for (i = 0; i < number_monod; i++)
@@ -1646,7 +1646,7 @@ void CKinReact::Write(ofstream* rfe_file)
 			          << inhibit[i]->concentration << "  " << inhibit[i]->order
 			          << "\n";
 		// Production Terms
-		//*rfe_file << "$PRODUCTIONTERMS" << "\n" << number_production << "\n";
+		//*rfe_file << "$PRODUCTIONTERMS" << endl << number_production << "\n";
 		//for(i=0;i<number_production;i++)
 		//	*rfe_file << production[i]->species << "  " << production[i]->concentration << "  " << production[i]->order << "\n";
 		// Production Terms
@@ -1988,13 +1988,13 @@ void CKinBlob::Write(std::ostream& rfe_file) const
 {
 	rfe_file << "\n";
 	rfe_file << "#BLOB_PROPERTIES" << "\n";
-	rfe_file << "$NAME" << "\n" << name << "\n";
-	rfe_file << "$D50" << "\n" << d50 << "\n";
+	rfe_file << "$NAME" << endl << name << "\n";
+	rfe_file << "$D50" << endl << d50 << "\n";
 	rfe_file << "$CALC_SHERWOOD" << "\n";
 	rfe_file << " Sh_factor : " << Sh_factor << "\n";
 	rfe_file << " Re_expo   : " << Re_expo << "\n";
 	rfe_file << " Sc_expo   : " << Sc_expo << "\n";
-	rfe_file << "$GEOMETRY" << "\n" << Geometry_expo << "\n";
+	rfe_file << "$GEOMETRY" << endl << Geometry_expo << "\n";
 	rfe_file << "$INTERFACIAL_AREA" << "\n";
 	for (size_t j = 0; j < BlobGeoName.size(); j++)
 	{
@@ -2117,7 +2117,7 @@ void KBlobCheck(void)
 	CKinBlob* m_kb = NULL;
 	CFEMesh* m_msh = fem_msh_vector[0];   //SB: ToDo hart gesetzt
 
-	cout << "\n" << "Checking defined blob classes" << "\n";
+	cout << endl << "Checking defined blob classes" << "\n";
 	for (i = 0; i < (int) KinBlob_vector.size(); i++)
 	{
 		m_kb = KinBlob_vector[i];
@@ -2415,11 +2415,11 @@ void CKinReactData::Write(ofstream* rfe_file)
 	// Write Keyword
 	*rfe_file << "\n";
 	*rfe_file << "#KINREACTIONDATA" << "\n";
-	*rfe_file << "$SOLVER_TYPE" << "\n" << SolverType << "\n";
-	*rfe_file << "$RELATIVE_ERROR" << "\n" << relErrorTolerance << "\n";
-	*rfe_file << "$MIN_TIMESTEP" << "\n" << minTimestep << "\n";
-	*rfe_file << "$INITIAL_TIMESTEP" << "\n" << initialTimestep << "\n";
-	*rfe_file << "$BACTERIACAPACITY" << "\n" << maxBacteriaCapacity << "\n";
+	*rfe_file << "$SOLVER_TYPE" << endl << SolverType << "\n";
+	*rfe_file << "$RELATIVE_ERROR" << endl << relErrorTolerance << "\n";
+	*rfe_file << "$MIN_TIMESTEP" << endl << minTimestep << "\n";
+	*rfe_file << "$INITIAL_TIMESTEP" << endl << initialTimestep << "\n";
+	*rfe_file << "$BACTERIACAPACITY" << endl << maxBacteriaCapacity << "\n";
 	//*rfe_file << " max Surfaces : " << maxSurfaces << "\n";
 	*rfe_file << "$SURFACES" << "\n";     //<< (int)exSurface.size() << "\n";
 	for (i = 0; i < (int) exSurface.size(); i++)
@@ -2427,9 +2427,9 @@ void CKinReactData::Write(ofstream* rfe_file)
 	*rfe_file << "NO_REACTIONS" << "\n";  // << (int)NoReactGeoName.size() << "\n";
 	for (i = 0; i < (int) NoReactGeoName.size(); i++)
 		*rfe_file << NoReactGeoType[i] << "  " << NoReactGeoName[i] << "\n";
-	*rfe_file << "$REACTION_DEACTIVATION	"<< "\n" << ReactDeactMode << " "
+	*rfe_file << "$REACTION_DEACTIVATION	"<< endl << ReactDeactMode << " "
 	          << ReactDeactEpsilon << " " << ReactDeactPlotFlag << "\n";
-	*rfe_file << "$DEBUG_OUTPUT	"<< "\n" << debugoutflag << "\n";
+	*rfe_file << "$DEBUG_OUTPUT	"<< endl << debugoutflag << "\n";
 	//*rfe_file << " Number of reactions: " << NumberReactions << "\n";
 	//*rfe_file << " Number of linear exchange reactions: " << NumberLinear << "\n";
 	//*rfe_file << " Number of freundlich exchange reactions: " << NumberFreundlich << "\n";
@@ -2459,14 +2459,14 @@ void CKinReactData::TestWrite(void)
 	int i;                                //CB
 	// Write Keyword
 	cout << "#KINREACTIONDATA" << "\n";
-	cout << "$SOLVER_TYPE" << "\n" << SolverType << "\n";
-	cout << "$RELATIVE_ERROR" << "\n" << relErrorTolerance << "\n";
-	cout << "$MIN_TIMESTEP" << "\n" << minTimestep << "\n";
-	cout << "$INITIAL_TIMESTEP" << "\n" << initialTimestep << "\n";
-	cout << "$BACTERIACAPACITY" << "\n" << maxBacteriaCapacity << "\n";
-	cout << "$REACTION_DEACTIVATION	" << "\n" << ReactDeactMode << " "
+	cout << "$SOLVER_TYPE" << endl << SolverType << "\n";
+	cout << "$RELATIVE_ERROR" << endl << relErrorTolerance << "\n";
+	cout << "$MIN_TIMESTEP" << endl << minTimestep << "\n";
+	cout << "$INITIAL_TIMESTEP" << endl << initialTimestep << "\n";
+	cout << "$BACTERIACAPACITY" << endl << maxBacteriaCapacity << "\n";
+	cout << "$REACTION_DEACTIVATION	" << endl << ReactDeactMode << " "
 	     << ReactDeactEpsilon << " " << ReactDeactPlotFlag << "\n";
-	cout << "$DEBUG_OUTPUT	"<< "\n" << debugoutflag << "\n";
+	cout << "$DEBUG_OUTPUT	"<< endl << debugoutflag << "\n";
 
 	cout << "\n";
 	cout << " usedt " << usedt << "\n";
@@ -2477,9 +2477,9 @@ void CKinReactData::TestWrite(void)
 	cout << "\n";
 	cout << " Exchange reactions : " << "\n";
 	//ACHTUNG: die folgende Zeile wird ausgegeben BEVOR NumberXXX berechnet wurde !
-	cout << " Linear exchange : " << NumberLinear << "\n"
-	     << " Freundlich exchange : " << NumberFreundlich << "\n"
-	     << " Langmuir exchange : " << NumberLangmuir << "\n"
+	cout << " Linear exchange : " << NumberLinear << endl
+	     << " Freundlich exchange : " << NumberFreundlich << endl
+	     << " Langmuir exchange : " << NumberLangmuir << endl
 	     << " NAPL dissolution : " << NumberNAPLdissolution << "\n";
 	for (i = 0; i < (int) exSurface.size(); i++)
 		cout << " " << exSurface[i];
@@ -2511,7 +2511,7 @@ bool KRWrite(std::string const & prot_name)
 		return false;
 	rfe_file.seekp(0L, ios::end);         // go to end
 	//========================================================================
-	rfe_file << "\n"
+	rfe_file << endl
 	         <<
 	"; Reactions ----------------------------------------------------------------- "
 	         << "\n";
@@ -2633,7 +2633,7 @@ void CKinReactData::ExecuteKinReact(void)
 
 		if (usedttmp < usedt)
 		{
-			cout << "\n" << "Kinetics in node " << save_node
+			cout << endl << "Kinetics in node " << save_node
 			     << " limit integration step - nok: ";
 			cout << save_nok << " nbad: " << save_nbad << "\n";
 		}
@@ -2643,7 +2643,7 @@ void CKinReactData::ExecuteKinReact(void)
 		// konservative, aber stabile Annahme
 		usedttmp = DMAX(usedttmp,hmin);
 		usedt = DMIN(usedttmp, dt);
-		// cout << "\n" << " Next suggested integration step " << usedt << "\n";
+		// cout << endl << " Next suggested integration step " << usedt << "\n";
 	} // end if((dt>1.E-20)&&(aktueller_zeitschritt>0)){
 
 	if (debugoutflag)
@@ -2697,7 +2697,7 @@ void CKinReactData::Biodegradation(long node, double eps, double hmin,
 
 	if (debugoutflag)
 		debugoutstr << "Biodegradation node timestep " << flush;
-	//debugoutstr << " --> Biodegradation" << "\n" << flush;
+	//debugoutstr << " --> Biodegradation" << endl << flush;
 
 	CKinReact* m_kr = NULL;
 	CKinBlob* m_kb = NULL;
@@ -2729,7 +2729,7 @@ void CKinReactData::Biodegradation(long node, double eps, double hmin,
 
 	if (debugoutflag)
 	{
-		//debugoutstr << " Concentrations before odeint: " << "\n" << " " << flush;
+		//debugoutstr << " Concentrations before odeint: " << endl << " " << flush;
 		for (sp = 0; sp < Number_of_Components; sp++)
 			// debugoutstr << pcs_vector[sp_pcsind[sp]]->nod_val_name_vector[0]
 			debugoutstr << cp_vec[sp]->getProcess()->nod_val_name_vector[0]
@@ -2740,7 +2740,7 @@ void CKinReactData::Biodegradation(long node, double eps, double hmin,
 		            << flush;
 		for (sp = 0; sp < Number_of_Components; sp++)
 			debugoutstr << Concentration[sp + 1] << " " << flush;
-		debugoutstr << "-" << "\n" << flush;
+		debugoutstr << "-" << endl << flush;
 	}
 	//#ds
 	/* PREPARE PARAMETERS FOR NAPL-DISSOLUION*/
@@ -2880,12 +2880,12 @@ void CKinReactData::Biodegradation(long node, double eps, double hmin,
 
 	if (debugoutflag)
 	{
-		//debugoutstr << " Concentrations after odeint: " << "\n" << " " << flush;
+		//debugoutstr << " Concentrations after odeint: " << endl << " " << flush;
 		debugoutstr << " " << node << " " << aktueller_zeitschritt << " "
 		            << flush;
 		for (sp = 0; sp < Number_of_Components; sp++)
 			debugoutstr << Concentration[sp + 1] << " " << flush;
-		debugoutstr << baditerations << "\n" << flush;
+		debugoutstr << baditerations << endl << flush;
 	}
 
 	/* #ds calculate Interfacial areas for this node after dissolution for next time step */
@@ -2971,7 +2971,7 @@ void derivs(double t, double c[], double dcdt[], int n, long node)
 	m_krd = KinReactData_vector[0];
 
 	//if(m_krd->debugoutflag)
-	//  m_krd->debugoutstr << " derivs" << "\n" << flush;
+	//  m_krd->debugoutstr << " derivs" << endl << flush;
 
 	CTimeDiscretization* m_tim = NULL;
 	m_tim = time_vector[0];
@@ -3726,7 +3726,7 @@ void jacobn(double t, double c[], double dfdt[], double** dfdc, int n,
 	m_krd = KinReactData_vector[0];
 
 	//if(m_krd->debugoutflag)
-	//  m_krd->debugoutstr << " jacobn" << "\n" << flush;
+	//  m_krd->debugoutstr << " jacobn" << endl << flush;
 
 	/* Hilfsvektor f�r partielle Ableitung des Bakterienwachstums nach Species S */
 	d2X_dtdS = dvector(1, n);
@@ -4251,11 +4251,11 @@ void CKinReact::TestWrite(void)
 	<< "\n";
 	cout << "#REACTION" << "\n";
 	// Name of reaction
-	cout << "$NAME" << "\n" << name << "\n";
+	cout << "$NAME" << endl << name << "\n";
 	// Type of reaction
-	cout << "$TYPE" << "\n" << type << "\n";
+	cout << "$TYPE" << endl << type << "\n";
 	// bacteria name
-	cout << "$BACTERIANAME" << "\n" << bacteria_name << "\n";
+	cout << "$BACTERIANAME" << endl << bacteria_name << "\n";
 	//ReactionEquation
 	cout << "$EQUATION" << "\n";
 	for (i = 0; i < number_reactionpartner; i++)
@@ -4277,31 +4277,31 @@ void CKinReact::TestWrite(void)
 	}
 	cout << "\n";
 	// Rateconstant and order
-	cout << "$RATEKONSTANT" << "\n" << rateconstant << "   " << rateorder
+	cout << "$RATEKONSTANT" << endl << rateconstant << "   " << rateorder
 	     << "\n";
-	cout << "$GROWTH" << "\n" << grow << "\n";
+	cout << "$GROWTH" << endl << grow << "\n";
 	//Monod terms
-	cout << "$MONODTERMS" << "\n" << number_monod << "\n";
+	cout << "$MONODTERMS" << endl << number_monod << "\n";
 	for (i = 0; i < number_monod; i++)
 		cout << monod[i]->species << "  " << monod[i]->concentration << "  "
 		     << monod[i]->order << "\n";
 	//Inhibition terms
-	cout << "$INHIBITIONTERMS" << "\n" << number_inhibit << "\n";
+	cout << "$INHIBITIONTERMS" << endl << number_inhibit << "\n";
 	for (i = 0; i < number_inhibit; i++)
 		cout << inhibit[i]->species << "  " << inhibit[i]->concentration
 		     << "  " << inhibit[i]->order << "\n";
 	// Production Terms
-	cout << "$PRODUCTIONTERMS" << "\n" << number_production << "\n";
+	cout << "$PRODUCTIONTERMS" << endl << number_production << "\n";
 	for (i = 0; i < number_production; i++)
 		cout << production[i]->species << "  " << production[i]->concentration
 		     << "  " << production[i]->order << "\n";
 	// ProductionStochhelp Terms
-	cout << "$PRODUCTIONSTOCH" << "\n" << (int) ProdStochhelp.size() << "\n";
+	cout << "$PRODUCTIONSTOCH" << endl << (int) ProdStochhelp.size() << "\n";
 	for (i = 0; i < (int) ProdStochhelp.size(); i++)
 		cout << ProdStochhelp[i]->species << "  "
 		     << ProdStochhelp[i]->concentration << "\n";
 	// exchange
-	cout << "$EXCHANGE_PARAMETERS" << "\n" << (int) ex_param.size() << "\n";
+	cout << "$EXCHANGE_PARAMETERS" << endl << (int) ex_param.size() << "\n";
 	for (i = 0; i < (int) ex_param.size(); i++)
 		cout << ex_param[i] << "  ";
 	cout << "\n";

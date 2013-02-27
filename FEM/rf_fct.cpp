@@ -271,7 +271,7 @@ void CFunction::Write(std::fstream* fct_file)
 	*fct_file << "#FUNCTION" << "\n";
 	//--------------------------------------------------------------------
 	// TYPE
-	*fct_file << " $TYPE" << std:: "\n";
+	*fct_file << " $TYPE" <<  "\n";
 	*fct_file << "  ";
 	*fct_file << type_name << "\n";
 	//--------------------------------------------------------------------

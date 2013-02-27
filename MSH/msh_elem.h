@@ -261,6 +261,11 @@ public:
 		for (size_t i = 0; i < nedges; i++)
 			edges_orientation[i] = ori_edg[i];
 	}
+	void FreeEdgeMemory()  // 09.2012. WW
+	{
+		edges.resize(0);
+		edges_orientation.resize(0);
+	}
 	void GetLocalIndicesOfEdgeNodes(const int Edge, int* EdgeNodes);
 	size_t GetEdgesNumber() const
 	{
@@ -336,7 +341,7 @@ public:
 	//------------------------------------------------------------------
 	// MAT
 	Math_Group::Vec mat_vector;                           //OKWW
-	int matgroup_view;                        //TK
+	//WWint matgroup_view;                        //TK
 	//------------------------------------------------------------------
 	// Operator
 	// virtual void operator = (const CElem& elem);
@@ -369,6 +374,10 @@ private:
 	int nnodesHQ;
 	Math_Group::vec<CNode*> nodes;
 	Math_Group::vec<long> nodes_index;
+#if defined(USE_PETSC) // || defined(using other parallel scheme). WW
+        int *g_index;
+#endif
+
 
 	size_t nedges;
 	Math_Group::vec<CEdge*> edges;

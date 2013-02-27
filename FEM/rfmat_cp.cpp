@@ -565,7 +565,7 @@ void CPWrite(std::string base_file_name,int flag)
 	if(flag == 1)
 		rfe_file.seekp(0L,ios::end);  // go to end
 	//========================================================================
-	rfe_file << "\n" <<
+	rfe_file << endl <<
 	"; CompProperties ----------------------------------------------------------------- " <<
 	"\n";
 	// Output all components
@@ -575,7 +575,7 @@ void CPWrite(std::string base_file_name,int flag)
 		m_kr = cp_vec[i];
 		m_kr->Write(&rfe_file);
 	}
-	rfe_file << "\n" << "#STOP " << "\n";
+	rfe_file << endl << "#STOP " << "\n";
 	rfe_file.close();
 	//  delete rfe_file;
 }
@@ -593,13 +593,13 @@ void CompProperties::Write(ofstream* rfe_file)
 	// Write Keyword
 	*rfe_file << "#COMPONENT_PROPERTIES" << "\n";
 	// Name of component
-	*rfe_file << "$NAME" << "\n" << compname << "\n";
+	*rfe_file << "$NAME" << endl << compname << "\n";
 	// mobile or not?
-	*rfe_file << "$MOBILE" << "\n" << mobil << "\n";
+	*rfe_file << "$MOBILE" << endl << mobil << "\n";
 	// TRANSPORT_PHASE
-	*rfe_file << "$TRANSPORT_PHASE" << "\n" << transport_phase << "\n";
+	*rfe_file << "$TRANSPORT_PHASE" << endl << transport_phase << "\n";
 	// FLUID_PHASE
-	*rfe_file << "$FLUID_PHASE" << "\n" << transport_phase << "\n";
+	*rfe_file << "$FLUID_PHASE" << endl << transport_phase << "\n";
 	// Diffusion
 	if(diffusion_model > -1 )
 	{

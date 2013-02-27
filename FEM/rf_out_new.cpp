@@ -60,9 +60,14 @@ extern size_t max_dim;                            //OK411 todo
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 #include "par_ddc.h"
 #endif
+
+#if defined(USE_PETSC) ||  defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)//|| defined(other parallel libs)//03.3012. WW
+#include <mpi.h>
+#endif
+
 #ifdef SUPERCOMPUTER
-// kg44 this is usefull for io-buffering as "\n" flushes the buffer
-#define "\n" '\n'
+// kg44 this is usefull for io-buffering as endl flushes the buffer
+#define endl '\n'
 #define MY_IO_BUFSIZE 4096
 #endif
 #ifdef GEM_REACT
@@ -92,6 +97,19 @@ bool OUTRead(const std::string& file_base_name,
 	ios::pos_type position;
 	bool output_version = false; // 02.2011. WW
 
+#if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//03.3012. WW
+	int rank , msize;
+	string rank_str;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &msize);
+	std::ifstream is;
+	stringstream ss (stringstream::in | stringstream::out);
+	ss.clear(); 
+	ss.str("");
+	ss << rank;
+	rank_str = ss.str();
+	ss.clear();
+#endif
 	// File handling
 	std::string out_file_name = file_base_name + OUT_FILE_EXTENSION;
 	std::ifstream out_file(out_file_name.data(), ios::in);
@@ -109,6 +127,10 @@ bool OUTRead(const std::string& file_base_name,
 			return true;
 
 		COutput* out(new COutput(out_vector.size()));
+
+#if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//03.3012. WW
+		out->setMPI_Info(rank, msize, rank_str);
+#endif
 		out->getFileBaseName() = file_base_name;
 		// Give version in file name
 		//15.01.2008. WW
@@ -478,7 +500,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 		else if (m_out->dat_type_name.find("PVD") != string::npos)
 		{
 			if (m_out->vtk == NULL)
-				m_out->vtk = new CVTK();
+			  m_out->CreateVTKInstance(); //WW m_out->vtk = new CVTK();
 			CVTK* vtk = m_out->vtk;
 
 			bool vtk_appended = false;

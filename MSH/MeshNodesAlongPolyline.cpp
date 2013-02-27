@@ -23,14 +23,21 @@ MeshNodesAlongPolyline::MeshNodesAlongPolyline(
 	std::vector<CNode*> const& mesh_nodes (mesh->getNodeVector());
 	double epsilon_radius (mesh->getMinEdgeLength()); // getSearchLength());
 
+#if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2012
+	size_t n_linear_order_nodes = mesh->getNumNodesLocal();
+	size_t n_nodes = mesh->getNumNodesLocal_Q();
+#else
 	size_t n_linear_order_nodes (mesh->GetNodesNumber (false));
 	size_t n_nodes (mesh->GetNodesNumber (true));
-
+#endif
 	std::vector<size_t> msh_node_higher_order_ids;
 	std::vector<double> dist_of_proj_higher_order_node_from_ply_start;
 
+	//We need exactly defined polyline for DDC. If there is not any node located within the
+	// threhold the ployline, we do not forced to fill the _msh_node_ids.
+	//Therefore, the repeating loop is skipped.
 	// repeat until at least one relevant node was found
-	while (_msh_node_ids.empty())
+	// WW while (_msh_node_ids.empty())
 	{
 		// loop over all line segments of the polyline
 		for (size_t k = 0; k < ply->getNumberOfPoints() - 1; k++)
@@ -75,8 +82,10 @@ MeshNodesAlongPolyline::MeshNodesAlongPolyline(
 			} // end node loop
 		} // end line segment loop
 
-		if (_msh_node_ids.empty())
-			epsilon_radius *= 2.0;
+		//We need exactly defined polyline for DDC. 
+		//Therefore, the following two line should be dropped.
+		//if (_msh_node_ids.empty())
+		//	epsilon_radius *= 2.0;
 	}
 
 	// sort the (linear) nodes along the polyline according to their distances
